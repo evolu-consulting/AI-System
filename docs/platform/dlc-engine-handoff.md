@@ -334,32 +334,136 @@ Lịch sử lượt trên The Memories:
 
 ## 11. Full flow test (làm lại từ đầu)
 
-Chuẩn bị (local; trên host thay bằng mục 8):
-1. Bật AI-System (`scripts\dev-up.ps1 -DbName ai_system_gd0`), Dify local, agent-runtime, rồi
-   `E:\STTTemp\dlc-gd0-local\dlc-local-up.ps1` (workspace :4600, trello-mock :4700, trello-cron).
-2. Tenant `demo` đã bật gói `dlc`; Group `dlc-owner` / `dlc-editor` có người duyệt; seed Dify đã chạy
-   (`tools/dlc-dify/seed.ts --apply --tenant demo --users demo-owner`), dlc-agent có tool `dlc-start`.
-3. App The Memories đang chạy ở :4610 (`dlc-app-the-memories`).
+Mỗi bước dưới đây ghi: **Làm gì**, **Cần gì** (thành phần phải chạy, dữ liệu phải có), **Config** (env, seed,
+quyền), **Deploy** (bản code nào phải lên đâu). Cột "Deploy" nói theo host sohoptac2; local thì "deploy" = chạy bản code
+đó trên máy (dev-up / dlc-local-up / container runtime) và restart tiến trình sau khi đổi code.
 
-Enhancement:
-1. Mở http://localhost:4610/, bấm **Góp ý**, chọn **Ý tưởng**, viết yêu cầu (vd "hiện thời gian đọc ước tính").
-   Hoặc gọi `POST http://localhost:4610/api/feedback {"kind":"idea","message":"..."}`.
-2. Chờ ≤ 30 s: thẻ ở mock ⇒ ticket `new` (`GET :4600/tickets?status=new`, Bearer `DLC_WS_TOKEN`).
-3. Chat (chat-web :3100, user demo-owner), hội thoại mới: `@dlc-agent Hôm nay có những gì cần giải quyết` ⇒ danh sách
-   2 dòng/mục có mã ticket.
-4. Gõ `xử lý mục 1` (không tag; sticky agent) ⇒ dlc-agent gọi `dlc-start` ⇒ trả id lượt; thẻ run xuất hiện trong hội
-   thoại. Yêu cầu thêm của người nên viết luôn trong câu này, nhưng hiện dlc-agent chưa chuyển nó vào lượt (mục 12).
-5. intake (tự) ⇒ spec: dlc-spec có thể hỏi (A/B/C…) trong thread ⇒ trả lời trong thread hoặc tag `@dlc-spec`. Không
-   ai trả lời tới hết hạn bước (240') ⇒ bước lỗi, engine mở quyết định ⇒ `add_attempt` để chạy lại.
-6. **Cổng spec**: thẻ "chờ duyệt" trên khung nhập ⇒ "Xem và duyệt" ⇒ đọc plan đầy đủ ⇒ Duyệt (hoặc Từ chối + lý do ⇒
-   spec chạy lại với góp ý).
-7. qc: dlc-qc viết test lên `main` (test của task mới đỏ là đúng) ⇒ **cổng qc** ⇒ Duyệt (Từ chối ⇒ về spec).
-8. setup ⇒ build (mỗi task: agent domain làm trên nhánh, `integrate` merge + cổng test) ⇒ verify (gaps ⇒ việc sửa, build
-   lại, tối đa `max_rounds`).
-9. report ⇒ **cổng duyệt deploy**: modal hiện báo cáo (queue, build log, nghiệm thu, git) ⇒ Duyệt ⇒ deploy.
-   Từ chối + góp ý ⇒ quay về build, góp ý thành 1 việc sửa đầu queue.
-10. Kiểm: stage deploy `deployed`, http://localhost:4610/ có tính năng mới, ticket `done`, việc trong queue `deployed`,
-    `project.json` có bản ghi deploy mới, `docs/dlc/result.md` trong repo.
+### Bước 0 — Nền (làm một lần cho mỗi môi trường)
+
+- **Cần**: AI-System (hub-api, admin-api, chat-web, admin-web, agent-runtime, Postgres), Dify (hook + tool workflow),
+  KH fork cho hook (`dlc-kh:9310`, chỉ có trên host), dlc-workspace + trello-cron, Docker trên máy chạy workspace (exec
+  và deploy app đều là container).
+- **Config**:
+  - hub-api: `DLC_WS_URL`, `DLC_WS_TOKEN`, `HUB_PUBLIC_INTERNAL_URL` (runtime gọi `/mcp`), `HUB_ADMIN_API_URL`,
+    `HUB_INTERNAL_TOKEN`, `HUB_DIFY_TIMEOUT_MAX_S=3600`, `HUB_STICKY_AGENT=on`, `HUB_MAX_CONCURRENT_RUNS=5`.
+  - agent-runtime: `AGENT_RT_HUB_TOOL_TIMEOUT_MAX_S=3600`; login Claude hợp lệ (`claude-home/.claude/.credentials.json`).
+  - dlc-workspace: `DLC_WS_DIR`, `DLC_WS_TOKEN` (cùng giá trị với hub-api), `DLC_WS_IMAGE`, `DLC_WS_EXEC_MAX_S`.
+  - trello-cron: `TRELLO_API_URL` (thật hoặc mock), `TRELLO_KEY`, `TRELLO_TOKEN`, `TRELLO_LIST_IDS`, `TRELLO_POLL_S`,
+    `DLC_WS_URL`, `DLC_WS_TOKEN`.
+  - Tenant: bật gói `dlc` (`PUT /admin/tenants/:id/packs/dlc`) ⇒ tạo Group `dlc-owner` / `dlc-editor`; thêm người duyệt
+    vào Group (`host-port.sh pack` làm cả hai cho tenant demo).
+  - Seed Dify + agent: `tools/dlc-dify/seed.ts --apply --tenant <t> --users <...>` (`host-port.sh seed`): tạo flow hook
+    + tool trên Dify, catalog workflow ở admin, 5 agent DLC, gắn hook/tool, bật agent cho tenant, cấp quyền user,
+    dlc-agent có `pack_tools: ["dlc-start"]`.
+- **Deploy**:
+  - Code hub/admin/chat/runtime: `deploy.ps1 -Ref platform/gd0` (chạy `setup.sh`: migrate hub ⇒ 0070 seed 3 sơ đồ
+    mặc định; migrate pack ⇒ `dlc.flows`).
+  - Code dlc-workspace + trello-cron: **không** đi theo deploy.ps1; đóng gói `apps/dlc-workspace/src` ⇒
+    `/tmp/dlc-ws-src.tgz` ⇒ `host-port.sh ws`.
+  - Biến `.env` của hub: `host-port.sh env` (có backup).
+  - Kiểm: `/health` hub, `GET <dlc-ws>/health`, trong DB có `dlc.flows` và 3 def `dlc-*-md`.
+
+### Bước 1 — Project test có trong workspace (một lần cho mỗi project)
+
+- **Làm gì**: project `the-memories` tồn tại trong workspace với repo `main`, lệnh test, cấu hình deploy, app đang chạy.
+- **Cần**: repo app trong `<DLC_WS_DIR>/the-memories/repo` (local lấy từ `tm2.bundle`); KH project của app
+  (`eval-the-memories`) để `dlc-kh-search` có tri thức.
+- **Config**: `POST /projects {key, title, conversation_id?, kh_project}` (hoặc dlc-agent `dlc-project-init`);
+  `PUT /projects/the-memories/settings {test_command, stack, apps:["The Memories"], deploy:{build_command, image,
+  run_command, port:4610, container_port:8000, url}}`; file `<DLC_WS_DIR>/the-memories/deploy.env` (bí mật app + Trello
+  để nút Góp ý tạo thẻ).
+- **Deploy**: `POST /projects/the-memories/deploy` một lần ⇒ container `dlc-app-the-memories` ở :4610.
+
+### Bước 2 — Khách góp ý ⇒ thẻ Trello
+
+- **Làm gì**: nút **Góp ý** trên :4610 (Ý tưởng ⇒ Enhancement, Lỗi ⇒ Bug Fix) hoặc
+  `POST :4610/api/feedback {"kind":"idea"|"bug","message":"..."}`.
+- **Cần**: app đang chạy; Trello (thật, hoặc mock :4700 ở local) nhận được.
+- **Config**: `TRELLO_API_URL`, `TRELLO_KEY`, `TRELLO_TOKEN`, `TRELLO_FEEDBACK_LIST_ID` trong `deploy.env` của app
+  (list phải trùng một list trong `TRELLO_LIST_IDS` của cron). Mô tả thẻ phải có `DLC project: the-memories` (app tự ghi).
+- **Deploy**: không (đã có từ bước 1). Đổi `deploy.env` ⇒ deploy lại app để container nhận env mới.
+
+### Bước 3 — Thẻ ⇒ ticket trong workspace
+
+- **Làm gì**: trello-cron poll (30 s) ⇒ `POST /tickets/hook` ⇒ ticket `new` (`kind` bug/enhancement, `project_key`).
+- **Cần**: trello-cron chạy và gọi được workspace.
+- **Config**: env trello-cron (bước 0). Kiểm `GET <ws>/tickets?status=new` (Bearer `DLC_WS_TOKEN`).
+- **Deploy**: không.
+
+### Bước 4 — Hỏi dlc-agent trong chat
+
+- **Làm gì**: chat-web, hội thoại mới: `@dlc-agent Hôm nay có những gì cần giải quyết` ⇒ `dlc-tickets` ⇒ danh sách 2
+  dòng/mục có mã ticket.
+- **Cần**: agent `dlc-agent` bật cho tenant và người dùng có quyền; tool workflow Dify `dlc-tickets`,
+  `dlc-ticket-read` tới được agent qua `/mcp`; hook Dify chạy (KH lỗi không chặn).
+- **Config**: seed bước 0; `HUB_PUBLIC_INTERNAL_URL`, `HUB_ADMIN_API_URL`; Dify gọi được workspace
+  (`DLC_WS_URL_FOR_DIFY`) lúc seed.
+- **Deploy**: Dify flow (seed). Đổi prompt/tool của agent ⇒ sửa `tools/dlc-dify/*` rồi chạy lại seed.
+
+### Bước 5 — Mở lượt (`dlc-start`)
+
+- **Làm gì**: `xử lý mục 1` (không tag) ⇒ dlc-agent gọi tool gói `dlc-start(ticket_id)` ⇒ lượt `dlc-<mode>` gắn hội
+  thoại, thẻ run hiện trong chat.
+- **Cần**: hub-api có gói `dlc` (code từ `66c2a9f1`), engine quy trình bật, sơ đồ của khe hợp lệ, Group duyệt phân giải
+  được, người gọi có quyền ghi gói `dlc`.
+- **Config**: `HUB_STICKY_AGENT=on` (nếu không phải gõ `@dlc-agent xử lý mục 1`); sơ đồ khe: mặc định từ 0070, admin
+  sửa ở Quy trình › Thư viện (khe `dlc.*`, Canvas); Group `dlc-editor` + `dlc-owner` có thành viên.
+- **Deploy**: hub-api (deploy.ps1).
+- Lời dặn thêm trong câu này hiện **không** vào lượt (mục 12).
+
+### Bước 6 — intake + spec (agent hỏi người)
+
+- **Làm gì**: intake tạo/gắn project, ticket ⇒ `taken`, spec đầu vào ⇒ artifact `spec-input`. spec: dlc-spec đọc code,
+  tra KH, hỏi người trong thread (A/B/C…) ⇒ trả lời trong thread hoặc tag `@dlc-spec` ⇒ plan + đội + JSON `tasks`.
+- **Cần**: `AgentCallService` (hub), agent-runtime chạy được Claude, tool `dlc-ws-*` + `dlc-kh-search` cho dlc-spec,
+  workspace chạy được container exec.
+- **Config**: `DLC_WS_URL/TOKEN` ở hub; hạn bước spec (mặc định 240'); không ai trả lời tới hạn ⇒ bước lỗi, engine mở
+  quyết định ⇒ `add_attempt`.
+- **Deploy**: hub-api, agent-runtime; dlc-workspace (bước 0).
+
+### Bước 7 — Cổng spec trong chat
+
+- **Làm gì**: thẻ "chờ duyệt" trên khung nhập ⇒ **Xem và duyệt** ⇒ modal plan đầy đủ ⇒ Duyệt (pass) hoặc Từ chối + lý
+  do (spec chạy lại với góp ý).
+- **Cần**: chat-web có `DlcConversationReview` (`18d375b3`) + modal đọc `GET /pack/dlc/runs/:id/steps/spec`
+  (`e2e0fb03`); người duyệt là người bắt đầu run / admin / thành viên Group cổng.
+- **Config**: `HUB_PROCESS_ROUTES`: host đang `admin` ⇒ chỉ tenant_admin thấy và quyết; `all` ⇒ `dlc-editor` cũng
+  quyết được (cần chủ sản phẩm chốt). Không cần bật `PUBLIC_FROZEN_MODULES`.
+- **Deploy**: chat-web + hub-api (deploy.ps1, cùng bản `platform/gd0`).
+
+### Bước 8 — qc + cổng qc
+
+- **Làm gì**: dlc-qc viết test case + test tự động lên `main` (test của task mới đỏ là đúng), commit, artifact
+  `test-plan` ⇒ cổng qc ⇒ Duyệt (Từ chối ⇒ quay về spec).
+- **Cần**: như bước 6 (agent dlc-qc + tool ws); lệnh test chạy được trong `DLC_WS_IMAGE`.
+- **Config**: `test_command` lấy từ plan/QC (The Memories: `python3 scripts/test_all.py`).
+- **Deploy**: không thêm.
+
+### Bước 9 — setup + build + verify
+
+- **Làm gì**: setup sinh agent `dlc-the-memories-<domain>` từ mẫu `dlc-build` / `dlc-qc`, đặt settings, đưa task vào
+  queue. build: lấy việc theo mã lượt ⇒ agent domain làm trên nhánh ⇒ `integrate` (merge tuần tự + cổng test, lỗi ⇒
+  thử lại tới 3 lần). verify: dlc-verify đối chiếu 100% spec, gaps ⇒ việc sửa ⇒ build lại (tối đa `max_rounds`).
+- **Cần**: `SpawnService` (hub) + agent mẫu `dlc-build`, `dlc-qc` có profile; workspace có `queue/next {prefix}`
+  (`793e1ede`); Docker cho exec.
+- **Config**: hạn build/verify 1440'; `max_rounds` theo sơ đồ.
+- **Deploy**: hub-api; dlc-workspace phải có bản ≥ `793e1ede` (host đã có).
+
+### Bước 10 — report + cổng duyệt deploy
+
+- **Làm gì**: report ghi `docs/dlc/result.md`, ticket ⇒ `done` ⇒ cổng "Báo cáo · duyệt deploy": modal hiện báo cáo
+  (queue, build log, nghiệm thu, git) ⇒ Duyệt ⇒ deploy. Từ chối + góp ý ⇒ quay về build, góp ý thành 1 việc sửa đầu
+  queue.
+- **Cần / Config / Deploy**: như bước 7 (route `steps/report`).
+
+### Bước 11 — deploy app
+
+- **Làm gì**: `ws.deploy` ⇒ build release của commit đã merge ⇒ thay `dlc-app-the-memories` ⇒ việc ⇒ `deployed`.
+- **Cần**: project có cấu hình `deploy` (bước 1), Docker trên máy workspace, cổng 4610 trống/được thay.
+- **Config**: `deploy.env` của project.
+- **Deploy**: không (chính bước này deploy app).
+- **Kiểm**: stage deploy `deployed`, :4610 có thay đổi, ticket `done`, `GET /projects/the-memories/deploys` có bản ghi
+  mới, `docs/dlc/result.md` trong repo.
 
 Bug Fix: như trên, bước 1 chọn **Lỗi** (`kind: "bug"`) ⇒ ticket `kind=bug` ⇒ dây chuyền Bug Fix (spec tên "Phân tích lỗi
 + plan", agent đọc code `main`, tìm nguyên nhân, plan sửa nhỏ nhất + test hồi quy).
