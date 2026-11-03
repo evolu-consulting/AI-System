@@ -31,16 +31,14 @@ beforeAll(async () => {
   for (const [i, n] of [10, 1000].entries()) {
     const t = ids[i] as string;
     const keys = Array.from({ length: n }, (_, k) => `cr116-r${k}`);
-    const gm = await groups(sql, t, keys);
-    const rows = keys.map((k, j) => ({
-      tenant_id: t,
-      pack: "contracts",
-      key: k,
-      name: JSON.stringify({ vi: k }),
-      level: ["read", "write", "admin"][j % 3],
-      group_id: gm.get(k) as string,
-    }));
-    const out = await sql<{ id: string }[]>`insert into admin.app_roles ${sql(rows)} returning id`;
+    await groups(sql, t, keys);
+    const out = await sql<
+      { id: string }[]
+    >`insert into admin.app_roles (tenant_id, pack, key, name, level, group_id)
+      select ${t}::uuid, 'contracts', k.k, jsonb_build_object('vi', k.k), (array['read','write','admin'])[(k.i % 3) + 1], g.id
+      from unnest(${sql.array(keys)}::text[]) with ordinality k(k, i)
+      join admin.groups g on g.tenant_id = ${t}::uuid and g.key = k.k
+      returning id`;
     T.push({ id: t, n, roles: out.map((r) => r.id) });
   }
   await sql`analyze admin.app_roles, admin.feature_grants, admin.groups`;
@@ -161,7 +159,7 @@ async function benchTenant(t: Ten): Promise<boolean> {
     const rel = await reliability(t, v.f, keys[0] as string);
     ok = ok && eq && rel === "✓";
     console.log(
-      `CR116|C4 compileRoles|${v.label}|${t.n} vai|${st.p50.toFixed(2)}|${st.p95.toFixed(2)}|${(counts[i] as number) - 1}|${eq ? "✓" : "✗"}|${rel}|conn=1`,
+      `CR116|C4 compileRoles|${v.label}|${t.n} vai|${st.p50.toFixed(2)}|${st.p95.toFixed(2)}|${(counts[i] as number) - 1}|${eq ? "✓" : "✗"}|${rel}|conn=1|mean=${((ms[i] as number[]).reduce((a, b) => a + b, 0) / (ms[i] as number[]).length).toFixed(2)}`,
     );
   }
   return ok;

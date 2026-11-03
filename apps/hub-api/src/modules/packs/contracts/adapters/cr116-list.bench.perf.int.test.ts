@@ -75,11 +75,15 @@ const client = (): Sql => (db.db as unknown as { $client: Sql }).$client;
 
 /** Chụp [set_config, list] của đường chạy thật. */
 async function capture(tid: string, who: string, f: ContractListFilter) {
-  return captureSql(client(), () =>
+  const c = await captureSql(client(), () =>
     withPackScope(db, { packKey: "contracts", tenantId: tid, userId: who }, (tx) =>
       contractsRepo(tx, tid).list(f),
     ),
   );
+  const scope = c.queries.find((x) => x.text.includes("set_config('role'"));
+  const list = c.queries.find((x) => x.text.includes("with f as materialized"));
+  if (!scope || !list) throw new Error(`capture: thiếu câu scope/list (${c.queries.length} câu)`);
+  return { r: c.r, queries: [scope, list] as Cap[], all: c.queries.length };
 }
 
 beforeAll(async () => {
@@ -199,7 +203,7 @@ async function compare(
     ok = ok && eq && isolated;
     const res = await resources(scope, v);
     console.log(
-      `CR116|${label}|${v.name}|${rows}|${st.p50.toFixed(2)}|${st.p95.toFixed(2)}|2|${eq ? "✓" : "✗"}|${isolated ? "✓" : `✗ ${cross.slice(0, 40)}`}|${res}`,
+      `CR116|${label}|${v.name}|${rows}|${st.p50.toFixed(2)}|${st.p95.toFixed(2)}|2|${eq ? "✓" : "✗"}|${isolated ? "✓" : `✗ ${cross.slice(0, 40)}`}|${res}|mean=${mean(ms.get(v.name) as number[]).toFixed(2)}`,
     );
     if (explainOf.includes(i))
       console.log(`CR116-EXPLAIN ${label} ${v.name} ${rows}\n${await resources(scope, v, true)}`);
@@ -207,6 +211,7 @@ async function compare(
   return ok;
 }
 
+const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 type ListRow = { total: number; items: unknown };
 const listKey = (o: unknown): string => {
   const r = (o as ListRow[])[0];
@@ -240,17 +245,18 @@ const v = (name: string, c: Cap, text = c.text, setup: string[] = []): Variant =
 
 /** ORDER BY tĩnh thay CASE (văn bản riêng mỗi kiểu sắp xếp). */
 const staticOrder = (text: string): string =>
-  text.replace(
-    /p as \(select f\.id from f order by[\s\S]*?f\.id desc/,
-    "p as (select f.id from f order by f.updated_at desc, f.id desc",
-  );
+  text.replace(/p as \(select f\.id from f order by[\s\S]*?f\.id desc/, (m) => {
+    // Giữ tham số `order` được tham chiếu (kiểu xác định lúc parse; `… or true` bị gấp hằng ⇒ không ảnh hưởng kế hoạch).
+    const ps = [...new Set([...m.matchAll(/\$(\d+)::text/g)].map((x) => `$${x[1]}::text is null`))];
+    return `p as (select f.id from f where (${ps.join(" or ")} or true) order by f.updated_at desc, f.id desc`;
+  });
 const notMaterialized = (text: string): string =>
   staticOrder(text).replace("with f as materialized", "with f as not materialized");
 
 describe("CR-116 · A/B danh sách HĐ", () => {
   it("SQL mỗi request (list, detail) — đường chạy thật", async () => {
     for (const t of T) {
-      const { r, queries } = await capture(t.id, t.V, filter);
+      const { r, all } = await capture(t.id, t.V, filter);
       const id = (r.items[0] as { id: string }).id;
       const d = await captureSql(client(), () =>
         withPackScope(db, { packKey: "contracts", tenantId: t.id, userId: t.V }, (tx) =>
@@ -258,9 +264,9 @@ describe("CR-116 · A/B danh sách HĐ", () => {
         ),
       );
       console.log(
-        `CR116-SQLCOUNT|${t.name}|list=${queries.length}|detail=${d.queries.length}|total=${r.total}`,
+        `CR116-SQLCOUNT|${t.name}|list=${all}|detail=${d.queries.length}|total=${r.total}`,
       );
-      expect(queries.length).toBe(2);
+      expect(all).toBe(2);
     }
   }, 120_000);
 
