@@ -1,0 +1,46 @@
+﻿{
+    "commit":  "ec55fefc",
+    "date":  "2026-11-03",
+    "env":  "evotest -Step perf -Exclusive (pg 4 CPU, runner 4 CPU), PG 16.15, bun 1.3.14",
+    "size":  2000,
+    "runs":  3,
+    "note":  "cpu = server Execution Time ms (EXPLAIN ANALYZE, 1 lần); rss không đo; buffers = shared hit+read",
+    "probes":  {
+                   "A CASE + materialized (hiện tại)":  {
+                                                            "p50":  22.13,
+                                                            "p95":  24.73,
+                                                            "mean":  22.59,
+                                                            "sql":  2,
+                                                            "rt":  2,
+                                                            "cpu":  7.79,
+                                                            "rss":  null,
+                                                            "buffers":  412,
+                                                            "equal":  true,
+                                                            "isolated":  true
+                                                        },
+                   "B tĩnh + materialized":  {
+                                                 "p50":  22.16,
+                                                 "p95":  24.35,
+                                                 "mean":  22.57,
+                                                 "sql":  2,
+                                                 "rt":  2,
+                                                 "cpu":  7.73,
+                                                 "rss":  null,
+                                                 "buffers":  412,
+                                                 "equal":  true,
+                                                 "isolated":  true
+                                             },
+                   "C tĩnh + not materialized":  {
+                                                     "p50":  26.31,
+                                                     "p95":  29.07,
+                                                     "mean":  26.66,
+                                                     "sql":  2,
+                                                     "rt":  2,
+                                                     "cpu":  8.69,
+                                                     "rss":  null,
+                                                     "buffers":  449,
+                                                     "equal":  true,
+                                                     "isolated":  true
+                                                 }
+               }
+}
