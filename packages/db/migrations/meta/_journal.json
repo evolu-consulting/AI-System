@@ -225,6 +225,13 @@
       "when": 1801210000000,
       "tag": "0031_app_roles_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1801220000000,
+      "tag": "0032_app_roles_agents_guard",
+      "breakpoints": true
     }
   ]
 }

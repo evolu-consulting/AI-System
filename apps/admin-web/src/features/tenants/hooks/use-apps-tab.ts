@@ -6,12 +6,14 @@ import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { useApplyTenantEntitlements } from "@/features/features/api";
 import { useOrgList } from "@/features/partners/api";
+import { useSession } from "@/lib/auth/use-session";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useSetTenantPack, useTenantFeatureStates, useTenantPacks } from "../api";
 import { useTenantAppRoles } from "../api-apps";
 import {
+  derivePacks,
   nextIntent,
   type PackIntent,
   PlanError,
@@ -50,18 +52,23 @@ export function useAppsTab(
   const tr = useTr();
   const qc = useQueryClient();
   const query = useTenantFeatureStates(tenant.id, true);
-  const packsQ = useTenantPacks(tenant.id, true);
+  // GET packs chỉ cho platform_admin (tenant_admin ⇒ 403): tenant_admin suy trạng thái gói từ entitlement + vai.
+  const isPlatform = useSession((s) => s.me?.role) === "platform_admin";
+  const packsQ = useTenantPacks(tenant.id, isPlatform);
   const rolesQ = useTenantAppRoles(tenant.id, true);
   const apply = useApplyTenantEntitlements(tenant.id);
   const setPack = useSetTenantPack(tenant.id);
   const features = query.data;
-  const packs = useMemo(() => packsQ.data?.items ?? [], [packsQ.data]);
+  const cards = useMemo(() => buildCards(features ?? []), [features]);
+  const packs = useMemo(
+    () => (isPlatform ? (packsQ.data?.items ?? []) : derivePacks(cards, rolesQ.data?.items ?? [])),
+    [isPlatform, packsQ.data, cards, rolesQ.data],
+  );
   const current = useMemo(() => entitledKeys(features ?? []), [features]);
   const [draft, setDraft] = useState<ReadonlySet<string> | null>(null);
   const [intent, setIntent] = useState<PackIntent>({});
   const [saving, setSaving] = useState(false);
   const value = draft ?? current;
-  const cards = useMemo(() => buildCards(features ?? []), [features]);
   const hasCommunity = cards.some((c) => c.app === "community" && c.mode === "levels");
   const partnersQ = useOrgList({ tenantId: tenant.id, q: "", offset: 0 }, hasCommunity);
   const plan = useMemo(
@@ -90,7 +97,7 @@ export function useAppsTab(
     setSaving(true);
     try {
       await runPlan(plan, {
-        setPack: (key, on) => setPack.mutateAsync({ key, on }),
+        setPack: (key, on, level) => setPack.mutateAsync({ key, on, level }),
         apply: (grant, revoke) => apply.mutateAsync({ grant, revoke }),
       });
       reset();

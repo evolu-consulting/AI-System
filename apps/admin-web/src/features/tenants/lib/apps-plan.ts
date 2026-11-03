@@ -5,6 +5,7 @@ import { LEVELS } from "@/features/features/lib/feature-meta";
 import {
   type AppCard,
   type AppLevel,
+  detectLevel,
   diffEntitlements,
   entitledKeys,
   type TenantFeature,
@@ -20,14 +21,37 @@ export type RoleInfo = { pack: string; level: Level };
 /** Ý định bật/tắt gói theo app, đặt khi người dùng chọn mức (app → true = bật gói, false = tắt gói). */
 export type PackIntent = Readonly<Record<string, boolean>>;
 
+/**
+ * tenant_admin không gọi được GET packs (chỉ platform): suy gói từ thẻ app dạng mức — bật ⇔ có entitlement mức Xem; số vai/người
+ * từ danh sách vai (người = tổng thành viên các vai, có thể đếm trùng người giữ 2 vai).
+ */
+export function derivePacks(
+  cards: readonly AppCard[],
+  roles: readonly { pack: string; member_count: number }[],
+): PackInfo[] {
+  return cards
+    .filter((c) => c.mode === "levels")
+    .map((c) => {
+      const mine = roles.filter((r) => r.pack === c.app);
+      return {
+        key: c.app,
+        enabled: c.levelFeatures.read?.entitled === true,
+        role_count: mine.length,
+        member_count: mine.reduce((n, r) => n + r.member_count, 0),
+      };
+    });
+}
+
 /** Gói của một thẻ app: chỉ app dạng mức (Xem/Sửa/Quản trị) có gói trùng tên. */
 export function packOf(card: AppCard, packs: readonly PackInfo[]): PackInfo | undefined {
   return card.mode === "levels" ? packs.find((p) => p.key === card.app) : undefined;
 }
 
 export type AppsPlan = {
-  /** Gói cần bật (làm trước: bật gói cấp sẵn cả 3 entitlement mức). */
+  /** Gói cần bật (làm trước: bật gói cấp entitlement tới đúng mức đích `enableLevels[k]`). */
   enablePacks: string[];
+  /** Mức đích khi bật gói (PUT `?level=`): lỗi ở bước sau thì trần công ty không bị đẩy lên Quản trị. */
+  enableLevels?: Readonly<Record<string, Level>>;
   grant: TenantFeature[];
   /** Mọi việc thu hồi (kể cả mức thừa sau khi bật gói). */
   revoke: TenantFeature[];
@@ -46,8 +70,9 @@ export function planChanges(
   intent: PackIntent,
 ): AppsPlan {
   const enablePacks: string[] = [];
+  const enableLevels: Record<string, Level> = {};
   const disablePacks: string[] = [];
-  const afterEnable = new Set<string>(); // key mức mà bật gói sẽ cấp thêm
+  const afterEnable = new Set<string>(); // key mức mà bật gói sẽ cấp thêm (tới đúng mức đích)
   for (const card of cards) {
     const pack = packOf(card, packs);
     const want = pack ? intent[card.app] : undefined;
@@ -56,8 +81,11 @@ export function planChanges(
       disablePacks.push(pack.key);
       continue;
     }
+    const target = detectLevel(card, draft).level;
+    const level: Level = target === "off" ? "read" : target;
     enablePacks.push(pack.key);
-    for (const l of LEVELS) {
+    enableLevels[pack.key] = level;
+    for (const l of LEVELS.slice(0, LEVELS.indexOf(level) + 1)) {
       const f = card.levelFeatures[l];
       if (f) afterEnable.add(f.key);
     }
@@ -67,6 +95,7 @@ export function planChanges(
   const revoke = diffEntitlements(virtual, draft).revoke;
   return {
     enablePacks,
+    enableLevels,
     // Cấp theo trạng thái thật: PUT entitlement đã có là idempotent, nên không phụ thuộc gói có tự cấp hay không.
     grant: diffEntitlements(features, draft).grant,
     revoke,
@@ -106,7 +135,8 @@ export function roleStats(
 }
 
 export type PlanIO = {
-  setPack: (key: string, on: boolean) => Promise<unknown>;
+  /** `level` chỉ khi bật: gói cấp entitlement tới đúng mức đó. */
+  setPack: (key: string, on: boolean, level?: Level) => Promise<unknown>;
   /** Cấp/thu hồi entitlement (id feature); ném lỗi đầu tiên sau khi đã thử hết. */
   apply: (grant: string[], revoke: string[]) => Promise<void>;
 };
@@ -126,8 +156,9 @@ async function settlePacks(
   on: boolean,
   io: PlanIO,
   done: string[],
+  levels: Readonly<Record<string, Level>> = {},
 ): Promise<void> {
-  const res = await Promise.allSettled(keys.map((k) => io.setPack(k, on)));
+  const res = await Promise.allSettled(keys.map((k) => io.setPack(k, on, levels[k])));
   res.forEach((r, i) => {
     if (r.status === "fulfilled") done.push(`${on ? "pack+" : "pack-"}:${keys[i]}`);
   });
@@ -138,7 +169,7 @@ async function settlePacks(
 /** Chạy theo phase, dừng ở phase lỗi đầu tiên: bật gói → entitlement (cấp+thu hồi) → tắt gói. */
 export async function runPlan(plan: AppsPlan, io: PlanIO): Promise<string[]> {
   const done: string[] = [];
-  await settlePacks(plan.enablePacks, true, io, done);
+  await settlePacks(plan.enablePacks, true, io, done, plan.enableLevels);
   if (plan.grant.length + plan.revoke.length > 0) {
     try {
       await io.apply(

@@ -4,6 +4,7 @@ import type {
   DailyLimitsPut,
   DailyLimitsResponse,
   GrantMatrix,
+  PackAction,
   PackListResponse,
   PackState,
   QuotaSetRequest,
@@ -177,9 +178,11 @@ export function useTenantPacks(id: string, enabled: boolean) {
 export function useSetTenantPack(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ key, on }: { key: string; on: boolean }) =>
+    mutationFn: ({ key, on, level }: { key: string; on: boolean; level?: PackAction }) =>
       api<PackState | undefined>(`/admin/tenants/${id}/packs/${key}`, {
         method: on ? "PUT" : "DELETE",
+        // CR-112: bật gói tới đúng mức đích (thiếu ⇒ cả 3 mức như cũ).
+        query: on && level ? { level } : undefined,
       }),
     onSettled: () => qc.invalidateQueries({ queryKey: PACK_KEYS.list(id) }),
   });

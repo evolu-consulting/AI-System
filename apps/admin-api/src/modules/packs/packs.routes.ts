@@ -1,9 +1,9 @@
 // PK-FR-05 · D-05 · N1 plan §2 (readiness #1, #7): `/admin/tenants/:tenant_id/packs[/:pack_key]`, chỉ platform_admin (không
 // token ⇒ 401, sai vai ⇒ 403). Khoá sai dạng/bị cấm ⇒ 400 VALIDATION_ERROR (trước khi chạm DB); tenant_id không phải uuid ⇒ 404.
-import { PackKeySchema } from "@ai/contracts";
+import { PackEnableQuerySchema, PackKeySchema } from "@ai/contracts";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
-import { parseIdParam, parseWith } from "../../lib/http";
+import { parseIdParam, parseQuery, parseWith } from "../../lib/http";
 import type { TestHooks } from "../../lib/test-hooks";
 import { disablePack, enablePack, listPacks, type PacksCall } from "./packs.service";
 
@@ -25,7 +25,8 @@ export function packsRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> 
   );
   r.put("/:tenant_id/packs/:pack_key", async (c) => {
     const [tenantId, k] = ids(c);
-    return c.json(await enablePack(call(c), tenantId, k));
+    const { level } = parseQuery(c, PackEnableQuerySchema);
+    return c.json(await enablePack(call(c), tenantId, k, level));
   });
   r.delete("/:tenant_id/packs/:pack_key", async (c) => {
     const [tenantId, k] = ids(c);

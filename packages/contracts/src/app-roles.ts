@@ -112,5 +112,9 @@ export const APP_ROLE_ERRORS = {
   PACK_NOT_ROLEABLE: 422,
   /** Xoá Group của vai tuỳ biến qua `/admin/groups` (S6) ⇒ phải xoá qua `DELETE /admin/app-roles/:id`. */
   ROLE_GROUP_MANAGED: 409,
+  /** Vai tuỳ biến không được dùng khoá của vai mặc định (`viewer|editor|owner`). */
+  ROLE_KEY_RESERVED: 422,
+  /** Bật gói: Group `<k'>-viewer|editor|owner` đang thuộc một vai tuỳ biến ⇒ từ chối (không nhận nhầm Group); `details.keys`. */
+  ROLE_GROUP_CONFLICT: 409,
 } as const;
 export type AppRoleErrorCode = keyof typeof APP_ROLE_ERRORS;

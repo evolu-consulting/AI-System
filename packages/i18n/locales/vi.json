@@ -791,7 +791,10 @@
       "knowledgeNote": "Chưa có màn dùng mức Quản trị của Tri thức.",
       "pendingPacks": "bật {on} gói, tắt {off} gói",
       "confirmPackOff": "Tắt gói {list}: {members} người dùng của công ty mất quyền vào ứng dụng này ngay. Nhóm và vai được giữ để bật lại sau.",
-      "partial": "Đã áp dụng {done} bước, phần còn lại chưa lưu — bấm Lưu lại để tiếp tục."
+      "partial": "Đã áp dụng {done} bước, phần còn lại chưa lưu — bấm Lưu lại để tiếp tục.",
+      "error": {
+        "roleGroupConflict": "Không bật được gói: nhóm vai mặc định đang thuộc một vai tuỳ biến. Đổi khoá hoặc xoá vai đó rồi bật lại."
+      }
     },
     "features": {
       "title": "Tính năng theo ứng dụng",
@@ -2145,7 +2148,8 @@
       "keyTaken": "Key đã được dùng trong tenant này",
       "nameRequired": "Nhập tên group (tối đa 64 ký tự)",
       "descMax": "Mô tả tối đa 400 ký tự",
-      "betaProtected": "Group beta-testers có sẵn: không xoá hay đổi key được."
+      "betaProtected": "Group beta-testers có sẵn: không xoá hay đổi key được.",
+      "roleManaged": "Nhóm này thuộc một vai theo app — hãy xoá vai ở tab Phân quyền."
     }
   },
   "access": {
@@ -2275,7 +2279,8 @@
       "defaultProtected": "Vai mặc định không xoá được và không đổi được mức (đổi tên được).",
       "hasMembers": "Vai còn {count} người, hãy gỡ hết người trước khi xoá.",
       "notRoleable": "Ứng dụng này chưa có gói nghiệp vụ nên không tạo được vai.",
-      "keyTaken": "Mã vai đã được dùng."
+      "keyTaken": "Mã vai đã được dùng.",
+      "keyReserved": "Mã viewer/editor/owner dành cho vai mặc định, hãy chọn mã khác."
     },
     "toast": {
       "saved_one": "Đã lưu {count} thay đổi",

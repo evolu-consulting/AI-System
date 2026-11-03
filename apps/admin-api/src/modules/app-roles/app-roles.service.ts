@@ -11,6 +11,7 @@ import {
   type AppRoleUpdateRequest,
   GroupNameSchema,
   PACK_ACTIONS,
+  PACK_ROLES,
   packFeatureKey,
 } from "@ai/contracts";
 import {
@@ -44,6 +45,16 @@ import {
 /** Cho importer (module khác không import repo trực tiếp — depcruise `no-cross-module-repo`). */
 export { insertDefaultRolesFor } from "./app-roles.repo";
 
+/** Bật gói: Group vai mặc định đang thuộc vai tuỳ biến ⇒ 409 ROLE_GROUP_CONFLICT (không nhận nhầm Group, không cấp admin). */
+export async function assertDefaultGroupsFree(
+  tx: Tx,
+  tenantId: string,
+  pack: string,
+): Promise<void> {
+  const keys = await repo.customRolesOnDefaultKeys(tx, tenantId, pack);
+  if (keys.length > 0) throw roleError("ROLE_GROUP_CONFLICT", { keys });
+}
+
 export type Call = { ctx: { db: Db; hooks?: TestHooks }; actor: Actor; scope: DbScope };
 
 const ROLE_MESSAGES: Record<AppRoleErrorCode, string> = {
@@ -51,6 +62,8 @@ const ROLE_MESSAGES: Record<AppRoleErrorCode, string> = {
   ROLE_HAS_MEMBERS: "Role still has members",
   PACK_NOT_ROLEABLE: "Roles are only available for installed business packs",
   ROLE_GROUP_MANAGED: "This group belongs to a role; delete the role instead",
+  ROLE_KEY_RESERVED: "This role key is reserved for default roles",
+  ROLE_GROUP_CONFLICT: "A default role group key is used by a custom role",
 };
 
 export function roleError(code: AppRoleErrorCode, details?: unknown): AppError {
@@ -134,8 +147,9 @@ export async function createRole(
   return configWrite(c, "group.save", async (tx, ch) => {
     if (!(await repo.tenantExists(tx, tenantId))) throw appError("NOT_FOUND");
     const codes = PACK_ACTIONS.map((a) => packFeatureKey(input.pack, a));
-    if (!(await repo.packInstalled(tx, codes))) throw roleError("PACK_NOT_ROLEABLE");
+    if (!(await repo.packRoleable(tx, tenantId, codes))) throw roleError("PACK_NOT_ROLEABLE");
     const key = input.key ?? generatedRoleKey(Bun.randomUUIDv7());
+    if ((PACK_ROLES as readonly string[]).includes(key)) throw roleError("ROLE_KEY_RESERVED");
     if (!roleKeyFits(input.pack, key)) throw appError("VALIDATION_ERROR", { field: "key" });
     const group = await createGroupIn({ tx, ch }, c, {
       tenantId,

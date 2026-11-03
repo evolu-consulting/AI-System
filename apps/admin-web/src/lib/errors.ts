@@ -132,6 +132,9 @@ const STATIC_KEYS: Partial<Record<string, string>> = {
   INVALID_REFERENCE: "errors.invalidReference",
   BETA_GROUP_PROTECTED: "groups.error.betaProtected",
   NOT_ENTITLED: "access.error.notEntitled",
+  // CR-112: xoá Group của vai qua mục Nhóm; bật gói khi Group vai mặc định thuộc vai tuỳ biến.
+  ROLE_GROUP_MANAGED: "groups.error.roleManaged",
+  ROLE_GROUP_CONFLICT: "tenants.apps.error.roleGroupConflict",
 };
 
 const asList = (v: unknown): string[] =>

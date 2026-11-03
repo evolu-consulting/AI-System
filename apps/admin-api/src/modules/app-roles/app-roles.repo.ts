@@ -163,11 +163,38 @@ export async function tenantExists(tx: Tx, id: string): Promise<boolean> {
   );
 }
 
-/** Gói đã cài ⇔ có đủ 3 feature `<k'>-read|write|admin`. */
-export async function packInstalled(tx: Tx, keys: readonly string[]): Promise<boolean> {
-  const [r] = await run<{ n: number }>(
+/**
+ * Tạo vai được ⇔ gói đã cài (đủ 3 feature `<k'>-read|write|admin`) VÀ công ty đang có entitlement còn hiệu lực cho ít nhất
+ * một mã (trần ≠ null). Một câu.
+ */
+export async function packRoleable(
+  tx: Tx,
+  tenantId: string,
+  keys: readonly string[],
+): Promise<boolean> {
+  const arr = `{${keys.join(",")}}`;
+  const [r] = await run<{ n: number; ent: boolean }>(
     tx,
-    sql`select count(*)::int as n from admin.features where key = any(${`{${keys.join(",")}}`}::text[])`,
+    sql`select count(*)::int as n,
+        exists (select 1 from admin.feature_entitlements e join admin.features f2 on f2.id = e.feature_id
+          where e.tenant_id = ${tenantId}::uuid and e.revoked_at is null and f2.key = any(${arr}::text[])) as ent
+      from admin.features where key = any(${arr}::text[])`,
   );
-  return r?.n === keys.length;
+  return r?.n === keys.length && r.ent === true;
+}
+
+/** Khoá Group vai mặc định của gói (`<k'>-viewer|editor|owner`) đang gắn một vai TUỲ BIẾN của tenant (bật gói phải từ chối). */
+export async function customRolesOnDefaultKeys(
+  tx: Tx,
+  tenantId: string,
+  pack: string,
+): Promise<string[]> {
+  const gks = `{${PACK_ROLES.map((r) => packGroupKey(pack, r)).join(",")}}`;
+  const rows = await run<{ key: string }>(
+    tx,
+    sql`select g.key from admin.groups g join admin.app_roles r on r.group_id = g.id
+      where g.tenant_id = ${tenantId}::uuid and g.key = any(${gks}::text[]) and not r.is_default
+      order by g.key`,
+  );
+  return rows.map((r) => r.key);
 }

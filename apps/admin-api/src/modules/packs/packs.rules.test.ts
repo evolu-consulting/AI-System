@@ -1,6 +1,7 @@
 // PK-FR-05 · D-05 · N1 plan §5 · luật thuần bật gói (khoá feature/Group, 6 cặp grant, PackState).
 import { describe, expect, test } from "bun:test";
 import {
+  entitledFeatureKeys,
   isInstalled,
   packFeatureKeys,
   packGroupKeys,
@@ -10,6 +11,11 @@ import {
 } from "./packs.rules";
 
 describe("packs.rules", () => {
+  test("CR-112 · bật gói tới mức: cộng dồn, vắng ⇒ cả 3", () => {
+    expect(entitledFeatureKeys("pk", "write")).toEqual(["pk-read", "pk-write"]);
+    expect(entitledFeatureKeys("pk", "read")).toEqual(["pk-read"]);
+    expect(entitledFeatureKeys("pk")).toEqual(["pk-read", "pk-write", "pk-admin"]);
+  });
   test("PK-FR-05 · khoá feature/Group đổi `_`→`-`", () => {
     expect(packFeatureKeys("my_pk")).toEqual(["my-pk-read", "my-pk-write", "my-pk-admin"]);
     expect(packGroupKeys("my_pk")).toEqual(["my-pk-owner", "my-pk-editor", "my-pk-viewer"]);

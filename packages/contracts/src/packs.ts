@@ -66,6 +66,10 @@ export const PackStateSchema = z.object({
 });
 export type PackState = z.infer<typeof PackStateSchema>;
 
+/** `PUT …/packs/:k?level=` — CR-112: chỉ cấp entitlement tới mức này (cộng dồn); vắng ⇒ cả 3 mức (như cũ). */
+export const PackEnableQuerySchema = z.strictObject({ level: PackActionSchema.optional() });
+export type PackEnableQuery = z.infer<typeof PackEnableQuerySchema>;
+
 export const PackListResponseSchema = z.object({ items: z.array(PackStateSchema).max(50) });
 export type PackListResponse = z.infer<typeof PackListResponseSchema>;
 

@@ -3,15 +3,17 @@
 // `packs.grant_agents` khoá + bump `hub.config_meta`, NOTIFY `hub_config_changed` trong tx) · đọc lại Group · bump + audit
 // (chỉ khi có đổi — bất biến M3-R15/M4 sự kiện ⇔ audit) · NOTIFY `config_changed` sau commit. Tắt = thu hồi 3 entitlement,
 // giữ Group/grant. Audit dùng enum M4 sẵn có (`grant`/`revoke` · entity `entitlement`, summary `op: pack.enable|disable`).
-import type { PackListResponse, PackState } from "@ai/contracts";
+import type { PackAction, PackListResponse, PackState } from "@ai/contracts";
 import { type AuditInput, type DbScope, type Tx, withScope } from "@ai/db";
 import { auditOf } from "../../lib/audit/audit.write";
 import { type ConfigCall, configWrite } from "../../lib/config/config-write";
 import { AppError, appError } from "../../lib/errors";
 import { afterLock } from "../../lib/test-hooks";
 import { insertDefaultRoles } from "../app-roles/app-roles.repo";
+import { assertDefaultGroupsFree } from "../app-roles/app-roles.service";
 import * as repo from "./packs.repo";
 import {
+  entitledFeatureKeys,
   isInstalled,
   packFeatureKeys,
   packGroupKeys,
@@ -76,13 +78,24 @@ export async function grantAgentsAndNotify(
   if (hubVersion !== null) await repo.notifyHubConfig(tx, hubVersion);
 }
 
-export function enablePack(c: PacksCall, tenantId: string, k: string): Promise<PackState> {
+/**
+ * `level` (CR-112): chỉ cấp entitlement tới mức đó (cộng dồn) — tab Ứng dụng bật gói đúng mức đích, lỗi bước sau không để trần
+ * lên Quản trị; vắng ⇒ cả 3 (như cũ). Group vai mặc định đang thuộc vai tuỳ biến ⇒ 409 ROLE_GROUP_CONFLICT trước mọi ghi.
+ */
+export function enablePack(
+  c: PacksCall,
+  tenantId: string,
+  k: string,
+  level?: PackAction,
+): Promise<PackState> {
   return configWrite(c, "entitlement.save", async (tx, ch) => {
     const feats = await target(c, tx, tenantId, k);
+    await assertDefaultGroupsFree(tx, tenantId, k);
     const actorId = c.actor.userId;
+    const want = new Set(entitledFeatureKeys(k, level));
     const ent = await repo.enableEntitlements(tx, {
       tenantId,
-      featureIds: feats.map((f) => f.id),
+      featureIds: feats.filter((f) => want.has(f.key)).map((f) => f.id),
       actorId,
     });
     const grp = await repo.insertRoleGroups(tx, { tenantId, actorId, rows: roleGroupRows(k) });

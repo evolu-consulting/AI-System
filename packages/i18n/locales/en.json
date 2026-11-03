@@ -791,7 +791,10 @@
       "knowledgeNote": "There is no screen that uses the Knowledge Admin level yet.",
       "pendingPacks": "enable {on} pack(s), disable {off} pack(s)",
       "confirmPackOff": "Turning off {list}: {members} company user(s) lose access to this app immediately. Groups and roles are kept for when it is turned back on.",
-      "partial": "{done} step(s) applied, the rest is not saved — press Save again to continue."
+      "partial": "{done} step(s) applied, the rest is not saved — press Save again to continue.",
+      "error": {
+        "roleGroupConflict": "Cannot enable the pack: a default role group belongs to a custom role. Rename or delete that role, then enable again."
+      }
     },
     "features": {
       "title": "Features by app",
@@ -2151,7 +2154,8 @@
       "keyTaken": "Key is already used in this tenant",
       "nameRequired": "Enter a group name (at most 64 characters)",
       "descMax": "Description can be at most 400 characters",
-      "betaProtected": "The built-in beta-testers group can't be deleted or re-keyed."
+      "betaProtected": "The built-in beta-testers group can't be deleted or re-keyed.",
+      "roleManaged": "This group belongs to an app role — delete the role in the Permissions tab."
     }
   },
   "access": {
@@ -2281,7 +2285,8 @@
       "defaultProtected": "Default roles cannot be deleted or change level (they can be renamed).",
       "hasMembers": "The role still has {count} people, remove them before deleting.",
       "notRoleable": "This app has no business pack installed, so roles cannot be created.",
-      "keyTaken": "The role key is already used."
+      "keyTaken": "The role key is already used.",
+      "keyReserved": "viewer/editor/owner are reserved for default roles, choose another key."
     },
     "toast": {
       "saved_one": "Saved {count} change",

@@ -150,6 +150,8 @@ describe("describeRoleError", () => {
       params: { count: 4 },
     });
     expect(e("PACK_NOT_ROLEABLE").key).toBe("appRoles.error.notRoleable");
+    expect(e("ROLE_KEY_RESERVED").key).toBe("appRoles.error.keyReserved");
+    expect(e("ROLE_GROUP_MANAGED").key).toBe("groups.error.roleManaged");
     expect(e("EXTERNAL_USER_NOT_ALLOWED", { usernames: ["dt"] }).key).toBe(
       "errors.externalNotAllowed",
     );

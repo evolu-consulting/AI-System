@@ -21,6 +21,7 @@ export function describeRoleError(err: unknown): MessageSpec {
     }
     if (code === "PACK_NOT_ROLEABLE") return { key: "appRoles.error.notRoleable" };
     if (code === "KEY_TAKEN") return { key: "appRoles.error.keyTaken" };
+    if (code === "ROLE_KEY_RESERVED") return { key: "appRoles.error.keyReserved" };
   }
   return describeError(err);
 }

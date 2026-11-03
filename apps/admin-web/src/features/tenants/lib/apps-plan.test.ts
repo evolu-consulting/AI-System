@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { appsConfirmMessage, needsConfirm } from "./apps-confirm";
 import {
   type AppsPlan,
+  derivePacks,
   nextIntent,
   type PackInfo,
   PlanError,
@@ -56,14 +57,41 @@ function pick(on: string[], packs: PackInfo[], level: Parameters<typeof setLevel
   return { f, cards, draft, intent, plan: planChanges(f, cards, packs, draft, intent) };
 }
 
+describe("derivePacks · tenant_admin không gọi GET packs", () => {
+  test("bật ⇔ có entitlement Xem; số vai/người từ danh sách vai", () => {
+    const cards = buildCards(feats(["contracts-read"]));
+    const roles = [
+      { pack: "contracts", member_count: 2 },
+      { pack: "contracts", member_count: 1 },
+      { pack: "community", member_count: 5 },
+    ];
+    expect(derivePacks(cards, roles)).toEqual([
+      { key: "contracts", enabled: true, role_count: 2, member_count: 3 },
+    ]);
+    expect(derivePacks(buildCards(feats()), [])[0]?.enabled).toBe(false);
+  });
+});
+
 describe("planChanges · mức ⇒ gói + entitlement", () => {
-  test("AC1: Tắt → Sửa ⇒ bật gói, cấp Xem+Sửa, thu hồi mức Quản trị thừa do gói cấp sẵn", () => {
+  test("AC1: Tắt → Sửa ⇒ bật gói ĐÚNG mức Sửa (không cấp Quản trị rồi gỡ), cấp Xem+Sửa, không thu hồi", () => {
     const { plan } = pick([], [pack(false)], "write");
     expect(plan.enablePacks).toEqual(["contracts"]);
+    expect(plan.enableLevels).toEqual({ contracts: "write" });
     expect(plan.disablePacks).toEqual([]);
     expect(keys(plan.grant)).toEqual(["contracts-read", "contracts-write"]);
-    expect(keys(plan.revoke)).toEqual(["contracts-admin"]); // gói bật cấp cả 3 ⇒ phải gỡ admin
-    expect(plan.revokeShown).toEqual([]); // người dùng chưa từng có admin ⇒ không đưa vào xác nhận
+    expect(plan.revoke).toEqual([]); // gói bật chỉ tới Sửa ⇒ lỗi bước sau không để trần lên Quản trị
+    expect(plan.revokeShown).toEqual([]);
+  });
+  test("runPlan truyền mức đích khi bật gói", async () => {
+    const { plan } = pick([], [pack(false)], "read");
+    const calls: string[] = [];
+    await runPlan(plan, {
+      setPack: async (k, on, level) => {
+        calls.push(`${k}:${on}:${level}`);
+      },
+      apply: async () => {},
+    });
+    expect(calls).toEqual(["contracts:true:read"]);
   });
   test("AC2: Sửa → Tắt ⇒ tắt gói, thu hồi mức và tính năng thêm", () => {
     const { plan } = pick(

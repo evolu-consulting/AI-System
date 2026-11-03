@@ -4,6 +4,7 @@ import {
   PACK_ACTIONS,
   PACK_ROLE_ACTIONS,
   PACK_ROLES,
+  type PackAction,
   type PackRole,
   type PackState,
   packFeatureKey,
@@ -38,6 +39,11 @@ export const LEGACY_ROLE_NAME_VI: Record<PackRole, string> = {
 };
 export const packFeatureKeys = (k: string): string[] =>
   PACK_ACTIONS.map((a) => packFeatureKey(k, a));
+/** Feature được cấp entitlement khi bật gói tới `level` (cộng dồn read ⊂ write ⊂ admin); vắng ⇒ cả 3. */
+export const entitledFeatureKeys = (k: string, level?: PackAction): string[] =>
+  (level ? PACK_ACTIONS.slice(0, PACK_ACTIONS.indexOf(level) + 1) : PACK_ACTIONS).map((a) =>
+    packFeatureKey(k, a),
+  );
 export const packGroupKeys = (k: string): string[] => PACK_ROLES.map((r) => packGroupKey(k, r));
 
 /** Hàng Group vai: key `<k'>-<vai>`, tên `{"vi": "Sổ Hợp Tác – Toàn quyền", "en": …}` + mô tả ngắn. */
