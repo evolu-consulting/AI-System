@@ -6,3 +6,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends git ca-certific
 FROM mcr.microsoft.com/playwright:v1.63.0-noble AS e2e
 COPY --from=oven/bun:1.3.14 /usr/local/bin/bun /usr/local/bin/bun
 RUN ln -s /usr/local/bin/bun /usr/local/bin/bunx; apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
+
+# target py = bước `py` (pytest của apps/agent-runtime trên Linux): ảnh uv + Python 3.12 bookworm (cùng ảnh scripts/run.ts dùng trên
+# Windows), thêm git (autofix/workspace cần) + bun (chỉ để chạy tools/scripts/src/pytest-reds.ts - quarantine known-red).
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS py
+COPY --from=oven/bun:1.3.14 /usr/local/bin/bun /usr/local/bin/bun
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*

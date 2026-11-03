@@ -132,3 +132,16 @@ export function intReds(text: string): Red[] {
   }
   return out;
 }
+
+/**
+ * Các ca đỏ trong log `pytest -rfE` (dòng tóm tắt `FAILED <file>::<ca> - …` / `ERROR <file>::<ca> - …`), suite `py`.
+ * `name` = `<file> › <ca>` (cùng khuôn với `intReds`); ca tham số `ca[p]` giữ nguyên.
+ */
+export function pytestReds(text: string): Red[] {
+  const out: Red[] = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const m = /^(?:FAILED|ERROR) (\S+?)::(\S.*?)(?: - .*)?$/.exec(raw);
+    if (m?.[1] && m[2]) out.push({ suite: "py", name: `${m[1].replaceAll("\\", "/")} › ${m[2]}` });
+  }
+  return out;
+}

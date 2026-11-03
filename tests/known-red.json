@@ -135,6 +135,30 @@
       "owner": "contracts",
       "expires": "2026-11-17",
       "since": "2026-11-03"
+    },
+    {
+      "id": "src/agent_runtime/runtimes/cli/test_confirm.py › test_hub_fr_95_model_need_input_kept",
+      "suite": "py",
+      "reason": "unit py đỏ sẵn trên base cdf07e7d (thấy khi chạy -Step py lần đầu 2026-11-03); chưa điều tra",
+      "owner": "agent-runtime",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "tests/acceptance/result_int_test.py › test_wrk_fr_27_partial_need_input",
+      "suite": "py",
+      "reason": "int py đỏ sẵn trên base: sự kiện job.result có thêm khoá source_reads (EVENT_KEYS của test chưa cập nhật)",
+      "owner": "agent-runtime",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "tests/acceptance/result_int_test.py › test_wrk_fr_03_event_sequence",
+      "suite": "py",
+      "reason": "int py đỏ sẵn trên base: sự kiện job.result có thêm khoá source_reads (EVENT_KEYS của test chưa cập nhật)",
+      "owner": "agent-runtime",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
     }
   ]
 }

@@ -21,6 +21,7 @@
     "hono": "4.13.12",
     "ioredis": "6.0.0",
     "jose": "6.2.12",
+    "msgpackr": "1.11.14",
     "nodemailer": "10.0.14",
     "postgres": "3.4.9",
     "saxes": "6.0.0",

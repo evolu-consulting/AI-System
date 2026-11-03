@@ -11,6 +11,7 @@ import {
   type KnownRed,
   newCount,
   parseKnownRed,
+  pytestReds,
   quarantineOn,
   splitReds,
 } from "./known-red.rules";
@@ -139,6 +140,24 @@ describe("known-red · đọc dữ liệu", () => {
         name: "tests/acceptance/K2/readers.int.test.ts › K2 · màn đọc > v2 xác nhận",
       },
     ]);
+  });
+
+  it("pytestReds: FAILED/ERROR của pytest -rfE → suite py, bỏ phần ' - lý do', giữ ca tham số", () => {
+    const log = [
+      "tests/runtime/test_a.py ..F",
+      "=========== short test summary info ===========",
+      "FAILED tests/runtime/test_a.py::test_x - assert 1 == 2",
+      "FAILED src/agent_runtime/q/test_b.py::TestK::test_y[p-1] - AssertionError",
+      "ERROR tests/acceptance/foo_int_test.py::test_z",
+      "1 failed, 2 passed",
+    ].join("\n");
+    expect(pytestReds(log)).toEqual([
+      { suite: "py", name: "tests/runtime/test_a.py › test_x" },
+      { suite: "py", name: "src/agent_runtime/q/test_b.py › TestK::test_y[p-1]" },
+      { suite: "py", name: "tests/acceptance/foo_int_test.py › test_z" },
+    ]);
+    const known = mk({ id: "tests/runtime/test_a.py › test_x", suite: "py" });
+    expect(splitReds(pytestReds(log), [known], TODAY).fresh).toHaveLength(2);
   });
 
   it("tests/known-red.json thật: hợp lệ, đủ trường, hết hạn 2026-11-17, id không trùng, khớp ca mẫu", () => {

@@ -1,8 +1,8 @@
-﻿# Chạy test:all trên máy chủ 149.202.83.5 trong project Docker RIÊNG "evotest" (xem README.md). Cần: ssh key, git, tar, scp.
-#   pwsh deploy/evotest/run-tests.ps1 [-Step int|e2e|unit|all] [-Ref HEAD] [-Dirty] [-All: gồm cả suite module đóng băng (F1, kiểm tra hằng tháng); mặc định bỏ] [-Filter "tests/a tests/b" (int/perf) | "root,N1" (e2e: việc test:e2e:par)] [-Workers N (int)]; -Step perf = PERF=1, mặc định HD4 [-DryRun]
+# Chạy test:all trên máy chủ 149.202.83.5 trong project Docker RIÊNG "evotest" (xem README.md). Cần: ssh key, git, tar, scp.
+#   pwsh deploy/evotest/run-tests.ps1 [-Step int|e2e|unit|py|all] [-Ref HEAD] [-Dirty] [-All: gồm cả suite module đóng băng (F1, kiểm tra hằng tháng); mặc định bỏ] [-Filter "tests/a tests/b" (int/perf) | "root,N1" (e2e: việc test:e2e:par)] [-Workers N (int)]; -Step perf = PERF=1, mặc định HD4; -Step py = pytest agent-runtime (Linux, python3.12 + uv sync --frozen; -Filter = đường dẫn/biểu thức pytest tương đối apps/agent-runtime; không nằm trong all) [-DryRun]
 # git archive <Ref> (+ thay đổi chưa commit nếu -Dirty) -> scp -> remote.sh (build, chạy, dọn) -> log về .data/evotest/<giờ>/.
 # Thoát bằng mã test (0 xanh; 2 lỗi dựng/setup; 3 chờ slot quá 90 phút; 4 đĩa).
-param([ValidateSet("int", "e2e", "unit", "all", "perf")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,8)][int]$Slots = 8, [ValidateSet("", "cw")][string]$Capture = "")
+param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,8)][int]$Slots = 8, [ValidateSet("", "cw")][string]$Capture = "")
 $ErrorActionPreference = "Stop"
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
 $Key = "F:\workspace\id_evoc_key"; $Server = "evoc@149.202.83.5"

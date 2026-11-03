@@ -4,6 +4,26 @@
 set -uo pipefail
 cd /app
 mkdir -p "$HOME" /out
+
+# EVO_STEP=py (run-tests.ps1 -Step py): pytest của apps/agent-runtime (unit + int) trên Linux trong ảnh uv/python3.12, dùng PG/Redis của slot.
+# Không cài bun deps / migrate: test Python tự dựng schema (tests/acceptance/_rt.py ensure_schema) vào DB ai_system_h1_test.
+# EVO_FILTER = đường dẫn/biểu thức pytest tương đối apps/agent-runtime (vd "src/agent_runtime/events tests/runtime -k delta"); vắng = cả bộ.
+if [ "$EVO_STEP" = py ]; then
+  export UV_CACHE_DIR=/cache/uv UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never UV_PYTHON_PREFERENCE=only-system PYTHONDONTWRITEBYTECODE=1 TEST_QUARANTINE=1
+  export AGENT_RT_TEST_DATABASE_URL=postgres://agent_runtime:agent_runtime_dev_pw@pg:5432/ai_system_h1_test
+  export HUB_TEST_DATABASE_URL=postgres://ai:ai_dev_pw@pg:5432/ai_system_h1_test
+  export AGENT_RT_TEST_REDIS_URL=redis://redis:6379/15 REDIS_URL=redis://redis:6379
+  cd /app/apps/agent-runtime || exit 2
+  t0=$(date +%s)
+  uv sync --frozen >/out/setup.log 2>&1 || { echo "uv sync lỗi"; tail -n 40 /out/setup.log; exit 2; }
+  echo "[evotest] $(python3 --version) · uv $(uv --version | cut -d' ' -f2) · git $(git --version | cut -d' ' -f3) · nproc $(nproc) · setup $(( $(date +%s) - t0 )) s · bước: py · filter: ${EVO_FILTER:-(cả bộ)}"
+  # -m "int or not int" = unit + int trong một lượt (addopts mặc định loại int). -rfE: dòng tóm tắt FAILED/ERROR cho known-red.
+  uv run --frozen pytest -m "int or not int" -rfE -p no:cacheprovider ${EVO_FILTER:-} 2>&1 | tee /out/pytest.log
+  rc=${PIPESTATUS[0]}
+  # Đỏ cũ (tests/known-red.json, suite "py", còn hạn) in riêng, không tính vào mã thoát; đỏ MỚI vẫn làm bước đỏ.
+  bun /app/tools/scripts/src/pytest-reds.ts /out/pytest.log "$rc"
+  exit $?
+fi
 git init -q . && git add -A >/dev/null 2>&1 || true   # keys:dev cần gốc repo git
 # postinstall = `lefthook install` (git hook dev) - bỏ trong bản sao tạm.
 bun -e "const f='package.json',p=JSON.parse(await Bun.file(f).text());delete p.scripts.postinstall;await Bun.write(f,JSON.stringify(p,null,2))"
