@@ -58,19 +58,20 @@ Mật khẩu `evolu` là mật khẩu dev cố định của fixture (`tools/hub
 ## 5. Checklist test
 
 **CR-112 · ai-admin (http://localhost:3000, đăng nhập `platform` / `admin`)**
-1. Menu Công ty, chọn **Evolu** → tab **Ứng dụng & Gói** → thấy Sổ Hợp Tác, Community, DLC kèm số vai và số người.
+1. Menu Công ty, chọn **Evolu** → tab **Ứng dụng & Gói** → thấy thẻ Sổ Hợp Tác và Community, mỗi thẻ ghi "Gói đang bật 3 vai 5 người" (DLC không có thẻ app riêng ở tab này).
 2. Tab **Phân quyền** → mỗi app có 3 vai (Toàn quyền, Nhân viên, Chỉ xem) với mức Quản trị / Sửa / Xem; `julian.bui` ở vai Toàn quyền.
-3. Bấm **Tạo vai** cho Sổ Hợp Tác (tên "Kiểm soát", mức Xem), gán `rowan.nguyen`, Lưu → vai mới hiện; xoá vai này (đang có người thì báo lỗi, gỡ người rồi xoá được).
+3. Bấm **Tạo vai** cho Sổ Hợp Tác (tên "Kiểm soát", mức Xem), gán `rowan.nguyen`, Lưu → vai mới hiện; xoá vai này (đang có người thì nút "Xoá vai" bị khoá, không báo lỗi; gỡ người, Lưu rồi xoá được).
 4. Đăng xuất, đăng nhập `evolu` / `julian.bui` → chỉ thấy công ty mình, không có nhóm Nền tảng; mở tab Người dùng, Phân quyền được.
-5. Quay lại `platform`, **Thêm công ty** → wizard 4 bước (Thông tin, Ứng dụng, Phân quyền, Người dùng); mã trùng `evolu` báo lỗi ở bước 1.
+5. Quay lại `platform`, **Thêm công ty** → wizard 4 bước (Thông tin, Ứng dụng & Gói, Phân quyền & Người dùng, Xem lại); mã trùng `evolu` báo "Mã công ty đã được dùng" ngay dưới ô mã ở bước 1 (ô đỏ, không có hộp cảnh báo).
 
 **CR-113 · Sổ Hợp Tác (http://localhost:3300)**
-1. Đăng nhập `evolu` / `julian.bui` → **Cài đặt › Quy trình duyệt**: thấy 2 bước; bước 1 ghi quá hạn thì chuyển về Toàn quyền (mặc định), bước 2 ghi nhóm chuyển cấp tường minh; có ghi chú Toàn quyền duyệt thay được mọi bước.
-2. Mở HĐ `[CR-113] HĐ chờ duyệt bước 1` (vẫn là `julian.bui`) → thẻ duyệt: bước 1 đang mở và `julian.bui` có nút Đạt / Trả lại dù không thuộc Kế toán. Chưa bấm.
+1. Đăng nhập `evolu` / `julian.bui` → **Cài đặt › Quy trình duyệt**: thấy sơ đồ 2 bước; node bước 1 ghi "Quá hạn ⇒ chuyển … (mặc định)" (về Toàn quyền), node bước 2 ghi "Quá hạn ⇒ chuyển …" không kèm "(mặc định)" (nhóm tường minh); hộp **Luật duyệt** dưới sơ đồ nêu hai luật (Toàn quyền duyệt thay được mọi bước; quá hạn tự chuyển cấp).
+2. Mở HĐ `[CR-113] HĐ chờ duyệt bước 1` (vẫn là `julian.bui`) → mục "Các bước duyệt": bước 1 "Đang chờ duyệt"; `julian.bui` có nút **Xác nhận và lưu** dù không thuộc Kế toán (bước 1 là bước xác nhận; "Đạt / Trả lại" chỉ có từ bước 2). Chưa bấm.
 3. Mở HĐ `[CR-113] HĐ do Toàn quyền duyệt thay bước 1` → bước 1 có huy hiệu **Duyệt thay · Toàn quyền**, bước 2 đang chờ Pháp chế.
-4. Đăng xuất, đăng nhập `thomas.tran`, mở HĐ chờ duyệt bước 1 → bấm **Đạt** → bước 1 đã duyệt **không** có huy hiệu duyệt thay (người của bước), bước 2 mở cho Pháp chế.
+4. Đăng xuất, đăng nhập `thomas.tran`, mở HĐ chờ duyệt bước 1 → điền các ô bắt buộc (Tên hợp đồng, Nhà cung cấp, Hiệu lực từ; HĐ mẫu chưa có) rồi bấm **Xác nhận và lưu** (không có nút "Đạt" ở bước 1) → bước 1 đã duyệt **không** có huy hiệu duyệt thay (người của bước), bước 2 mở cho Pháp chế.
 5. Mở HĐ `[CR-113] HĐ quá hạn bước 1…` → huy hiệu **Quá hạn**; sau tối đa 5 phút tải lại: thêm **Đã chuyển cho …** (nhóm Toàn quyền). `julian.bui` quyết bước này không còn là "duyệt thay" (đã thuộc nhóm của bước).
-6. ai-admin › Quy trình › mẫu "Duyệt HĐ 2 cấp (mẫu CR-113)": dưới sơ đồ có hộp nêu hai luật; node bước 1 ghi chuyển cấp về Toàn quyền kèm "(mặc định)".
+6. ai-admin › Quy trình › Thư viện › mẫu "Duyệt HĐ 2 cấp (mẫu CR-113)": bấm "Danh sách" ở nút **Cách xem** (không phải Sơ đồ) → có hộp **Luật duyệt** nêu hai luật. Dòng "(mặc định)" của node bước 1 nằm ở Sổ Hợp Tác (bước 1 phía trên), không ở ai-admin.
+(Checklist trên được e2e `e2e/pm-checklist` chạy từng bước trên stack thật: `run-tests.ps1 -Step e2e -Filter pm-checklist-pm -All`.)
 Muốn chạy lại các HĐ mẫu về trạng thái ban đầu: `bun run pm:reset`.
 
 ## 6. Lỗi hay gặp
