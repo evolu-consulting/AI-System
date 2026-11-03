@@ -1,0 +1,39 @@
+{
+  "commit": "13e66a9f",
+  "date": "2026-11-03T11:36:15.135Z",
+  "env": "evotest -Step perf -Exclusive (pg 16.15, 4 CPU pg + 4 CPU runner)",
+  "size": 100,
+  "runs": 2,
+  "probes": {
+    "hiện tại: 4 câu/hẹn tuần tự trong 1 tx": {
+      "p50": 117.92,
+      "p95": 141.95,
+      "mean": 123.307,
+      "sql": 400,
+      "rt": 400,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    },
+    "4 câu/hẹn pipeline (Promise.all) trong 1 tx": {
+      "p50": 113.2,
+      "p95": 161.07,
+      "mean": 117.973,
+      "sql": 400,
+      "rt": 400,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    },
+    "1 câu CTE theo tập (jsonb_to_recordset)": {
+      "p50": 5.64,
+      "p95": 7.11,
+      "mean": 5.837,
+      "sql": 1,
+      "rt": 1,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    }
+  }
+}

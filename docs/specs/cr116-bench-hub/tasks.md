@@ -16,7 +16,8 @@ Pha 1 = chỉ đo + so sánh trực tiếp (không đoán, không đổi hành v
 - [x] `tests/acceptance/cr116-bench-hub/pgss-dump.ts` — reset/dump xếp hạng pg_stat_statements.
 - [x] `_ab.ts` (khung A/B xen kẽ + EXPLAIN), `_seed.ts` (bản sao bảng + điền cột NOT NULL theo kiểu).
 - [x] `hub-ab.perf.int.test.ts` (B1 isContinuing, B2 activeAndCap, B5 đọc đầu run + driver), `hub-ab2.perf.int.test.ts` (B3 người nhận, B4 bắn hẹn + độ tin cậy, B6 đếm chưa đọc).
-- [x] `report.md`.
+- [x] `results/<ứng viên>-<cỡ>.json` (schema baseline lát cr116-probe; `ab-to-json.ts` gom từ log evotest; trung vị 3 lượt, B4/B6w 2 lượt, B6-100 1 lượt).
+- [ ] `report.md` — nội dung đã soạn (bàn giao cho phiên điều phối); subagent bị công cụ chặn ghi file report .md.
 
 ## Không làm / Chạm
 - Không sửa code sản phẩm, migration, kit evotest (bật pg_stat_statements chỉ tạm trên máy dev rồi hoàn lại).

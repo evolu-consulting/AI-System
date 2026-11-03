@@ -1,0 +1,29 @@
+{
+  "commit": "13e66a9f",
+  "date": "2026-11-03T11:36:15.131Z",
+  "env": "evotest -Step perf -Exclusive (pg 16.15, 4 CPU pg + 4 CPU runner)",
+  "size": 100,
+  "runs": 3,
+  "probes": {
+    "hiện tại (index một phần status, lọc pack_key ở heap)": {
+      "p50": 0.49,
+      "p95": 0.86,
+      "mean": 0.547,
+      "sql": 1,
+      "rt": 1,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    },
+    "+index một phần status AND pack_key is null (index-only)": {
+      "p50": 0.49,
+      "p95": 0.7,
+      "mean": 0.517,
+      "sql": 1,
+      "rt": 1,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    }
+  }
+}

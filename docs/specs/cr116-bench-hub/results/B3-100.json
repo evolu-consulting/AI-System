@@ -1,0 +1,49 @@
+{
+  "commit": "13e66a9f",
+  "date": "2026-11-03T11:36:15.126Z",
+  "env": "evotest -Step perf -Exclusive (pg 16.15, 4 CPU pg + 4 CPU runner)",
+  "size": 100,
+  "runs": 3,
+  "probes": {
+    "hiện tại: hàm definer × 100 (tuần tự)": {
+      "p50": 44.44,
+      "p95": 72.33,
+      "mean": 49.667,
+      "sql": 101,
+      "rt": 101,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    },
+    "hàm × 100 pipeline postgres.js (Promise.all)": {
+      "p50": 43.07,
+      "p95": 77.11,
+      "mean": 47.567,
+      "sql": 101,
+      "rt": 101,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    },
+    "1 câu theo tập (lateral, = any)": {
+      "p50": 8.34,
+      "p95": 14.66,
+      "mean": 9.09,
+      "sql": 2,
+      "rt": 2,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    },
+    "hàm × 100 tuần tự qua Bun.sql native": {
+      "p50": 30.77,
+      "p95": 60.66,
+      "mean": 35.097,
+      "sql": null,
+      "rt": null,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    }
+  }
+}

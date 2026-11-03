@@ -1,0 +1,49 @@
+{
+  "commit": "13e66a9f",
+  "date": "2026-11-03T11:36:15.134Z",
+  "env": "evotest -Step perf -Exclusive (pg 16.15, 4 CPU pg + 4 CPU runner)",
+  "size": 10000,
+  "runs": 3,
+  "probes": {
+    "hiện tại: 3 câu PK (prepared)": {
+      "p50": 0.93,
+      "p95": 1.56,
+      "mean": 0.997,
+      "sql": 3,
+      "rt": 3,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    },
+    "3 câu PK, prepare:false": {
+      "p50": 1,
+      "p95": 1.68,
+      "mean": 1.105,
+      "sql": null,
+      "rt": null,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    },
+    "1 câu gộp (prepared)": {
+      "p50": 0.4,
+      "p95": 0.65,
+      "mean": 0.445,
+      "sql": 1,
+      "rt": 1,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    },
+    "3 câu PK qua Bun.sql native": {
+      "p50": 0.44,
+      "p95": 0.89,
+      "mean": 0.518,
+      "sql": null,
+      "rt": null,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    }
+  }
+}

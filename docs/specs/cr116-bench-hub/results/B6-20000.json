@@ -1,0 +1,29 @@
+{
+  "commit": "13e66a9f",
+  "date": "2026-11-03T11:36:15.129Z",
+  "env": "evotest -Step perf -Exclusive (pg 16.15, 4 CPU pg + 4 CPU runner)",
+  "size": 20000,
+  "runs": 3,
+  "probes": {
+    "hiện tại: count(*) index một phần (đã VACUUM)": {
+      "p50": 7.22,
+      "p95": 13.63,
+      "mean": 7.875,
+      "sql": 1,
+      "rt": 1,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    },
+    "bảng đếm (tenant,user)→n": {
+      "p50": 0.42,
+      "p95": 0.79,
+      "mean": 0.478,
+      "sql": 1,
+      "rt": 1,
+      "cpu": null,
+      "rss": null,
+      "equal": true
+    }
+  }
+}
