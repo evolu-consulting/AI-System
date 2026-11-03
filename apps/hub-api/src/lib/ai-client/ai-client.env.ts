@@ -13,6 +13,7 @@ import { logger } from "../logger";
 import { type AiCaps, type AiClient, createAiClient, type ModelProvider } from "./ai-client";
 import { anthropicProvider } from "./anthropic.provider";
 import { type CliRun, claudeCliProvider } from "./claude-cli.provider";
+import type { TokenBucket } from "./token-bucket";
 import { pgUsageStore } from "./usage.pg";
 
 export const AI_TENANT_DAILY_TOKENS = 5_000_000;
@@ -137,6 +138,8 @@ export function createHubAiClient(
     env?: Env;
     sub?: SubOptions;
     limitsOf?: TenantLimitsOf;
+    /** CR-114 · bucket token/phút theo tenant (`redisTokenBucket`); vắng ⇒ không chặn tốc độ. */
+    rate?: TokenBucket;
   } = {},
 ): AiClient {
   const env = o.env ?? process.env;
@@ -148,5 +151,6 @@ export function createHubAiClient(
     usage: pgUsageStore(db),
     caps: hubAiCaps(cap, o.limitsOf),
     log: logger,
+    ...(o.rate ? { rate: o.rate } : {}),
   });
 }

@@ -5,6 +5,7 @@
 // giữa chừng (usage một phần, review B #14) — rồi trả chỗ giữ (quyết toán). Khoá API chỉ từ env/secret (provider dựng ở
 // `ai-client.env.ts`). Không log nội dung lời nhắc/đầu ra. Không bao giờ ném.
 import { costUsd } from "./pricing";
+import type { TokenBucket } from "./token-bucket";
 
 export type AiUsage = {
   inputTokens: number;
@@ -121,6 +122,8 @@ export type AiClientDeps = {
   caps: AiCaps;
   now?: () => Date;
   log?: Log;
+  /** CR-114 · trần tốc độ token/phút theo tenant (Redis, fail-open); vắng ⇒ không chặn. Kiểm TRƯỚC trần ngày. */
+  rate?: TokenBucket;
 };
 
 const DEFAULT_MAX_TOKENS = 32_000;
@@ -201,6 +204,15 @@ const tagsOf = (r: AiCallTags): AiCallTags => ({
   ...(r.subjectId ? { subjectId: r.subjectId } : {}),
 });
 
+/** CR-114 · hết bucket tốc độ ⇒ `CAP_EXCEEDED` (mã sẵn có, người gọi đã xử lý như trần) + log phân biệt với trần ngày. */
+async function rateLimited(d: AiClientDeps, req: AiCallRequest): Promise<boolean> {
+  if (!d.rate) return false;
+  const want = estimateInputTokens(req) + (req.maxTokens ?? DEFAULT_MAX_TOKENS);
+  if ((await d.rate.take(req.tenantId, want)).ok) return false;
+  d.log?.warn("ai-rate-limited", { tenant_id: req.tenantId, feature: req.feature });
+  return true;
+}
+
 export function createAiClient(d: AiClientDeps): AiClient {
   const now = d.now ?? (() => new Date());
   const pick = d.provider;
@@ -211,6 +223,7 @@ export function createAiClient(d: AiClientDeps): AiClient {
     async complete(req) {
       const provider = providerOf(req.feature);
       if (!provider) return { ok: false, code: "UNAVAILABLE" };
+      if (await rateLimited(d, req)) return { ok: false, code: "CAP_EXCEEDED" };
       const gate = await admit(d, req, now());
       if (gate.kind === "unavailable") return { ok: false, code: "UNAVAILABLE" };
       if (gate.kind === "cap") return { ok: false, code: "CAP_EXCEEDED" };
