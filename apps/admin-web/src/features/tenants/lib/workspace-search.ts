@@ -26,7 +26,8 @@ const oneOf = <T extends string>(v: unknown, allowed: readonly T[]): T | undefin
 export function validateWorkspaceSearch(s: Record<string, unknown>): WorkspaceSearch {
   const page = Number(s.page);
   return {
-    tab: oneOf(s.tab, TENANT_TABS),
+    // `?tab=packs` cũ (trước CR-112) ⇒ tab gộp "Ứng dụng & Gói".
+    tab: s.tab === "packs" ? "features" : oneOf(s.tab, TENANT_TABS),
     q: str(s.q),
     status: oneOf(s.status, ["active", "locked"]),
     role: oneOf(s.role, ["platform_admin", "tenant_admin", "member"]),
