@@ -1,0 +1,14 @@
+{
+  "entries": [
+    {
+      "owner": "rowan",
+      "paths": [
+        "apps/dlc-workspace/**",
+        "apps/hub-api/src/modules/packs/dlc/**",
+        "tools/dlc-dify/**",
+        "packages/db/migrations-pack-dlc/**"
+      ],
+      "testPathPattern": "(^|[^a-z])(ai)?dlc([^a-z]|$)"
+    }
+  ]
+}

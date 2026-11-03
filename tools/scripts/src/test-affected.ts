@@ -1,22 +1,30 @@
-// TS1 · `bun run test:affected [--base=<ref>] [--e2e=owner|wide|none] [--no-e2e] [--dry-run]`: cổng LÁT — chỉ chạy test dính tới
-// diff hiện tại so với `base` (mặc định: merge-base của HEAD với `main`, hoặc HEAD khi đang ở `main` ⇒ chỉ thay đổi chưa commit).
-// Đồ thị import (lib/import-graph) → bao đóng ngược của file đổi → unit / int / cấu hình e2e; `check` + `lock` luôn chạy;
-// `typecheck` qua `turbo --filter=...[base]`. `test:all` vẫn là cổng ĐỢT (WORKFLOW.md "Cổng lát và cổng đợt").
+// TS1 · `bun run test:affected [--base <ref>] [--json] [--run local|server|all] [--e2e=owner|wide|none] [--no-e2e] [--frozen]
+// [--no-quarantine]`: cổng LÁT — chỉ test dính tới diff `base...HEAD` + chưa commit (mặc định base: merge-base HEAD với
+// `platform/gd0`, rồi `main`; không có ⇒ HEAD). Đồ thị import (lib/import-graph) → bao đóng ngược → unit / int / cấu hình + việc e2e /
+// gói typecheck. Không `--run` ⇒ CHỈ in kế hoạch (người + `--json`). `--run local` = check+lock+typecheck+unit tại máy; `--run server` =
+// int + e2e trên evotest chia theo slot trống; `--run all` = mọi thứ tại máy (dùng bởi `slice:merge`). Quarantine đỏ đã biết
+// (tests/known-red.json) mặc định bật ở các lệnh int/e2e. `test:all` vẫn là cổng ĐỢT (WORKFLOW.md "Cổng lát và cổng đợt").
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Glob } from "bun";
+import { loadExternalOwned } from "./external-owned";
+import { externalMatcher } from "./external-owned.rules";
 import { isFrozenConfig, isFrozenFile } from "./frozen.rules";
 import { repoRoot } from "./lib/git";
 import { affectedBy, buildGraph, posix } from "./lib/import-graph";
-import { type RunStep, runWaves, summarizeRun } from "./lib/run-steps";
+import { type RunStep, runWaves, type StepResult, summarizeRun } from "./lib/run-steps";
 import {
+  type AffectedArgs,
   type AffectedPlan,
   compact,
   configInfos,
+  jobOfConfig,
   MIGRATION_SEEDS,
   parseAffectedArgs,
   planAffected,
+  planToJson,
 } from "./test-affected.rules";
+import { runServer } from "./test-affected.server";
 import { findE2eConfigs } from "./test-all.discover";
 
 function git(root: string, args: string[]): string {
@@ -24,17 +32,25 @@ function git(root: string, args: string[]): string {
   return p.exitCode === 0 ? p.stdout.toString().trim() : "";
 }
 
-/** `main` còn khác HEAD ⇒ merge-base (diff cả lát đã commit); đang ở `main` hoặc không có `main` ⇒ HEAD (chỉ chưa commit). */
+/** merge-base của HEAD với `platform/gd0` (rồi `main`) khi còn khác HEAD (diff cả lát đã commit); không có ⇒ HEAD (chỉ chưa commit). */
 function defaultBase(root: string): string {
-  const mb = git(root, ["merge-base", "HEAD", "main"]);
-  return mb && mb !== git(root, ["rev-parse", "HEAD"]) ? mb : "HEAD";
+  const head = git(root, ["rev-parse", "HEAD"]);
+  for (const ref of ["platform/gd0", "main"]) {
+    const mb = git(root, ["merge-base", "HEAD", ref]);
+    if (mb && mb !== head) return mb;
+  }
+  return "HEAD";
 }
 
-/** File đổi so với `base` (đã commit + sửa chưa commit) + file chưa theo dõi; đường dẫn `/` tương đối gốc. */
+/** `git diff <base>...HEAD` (đã commit) + sửa chưa commit + file chưa theo dõi; đường dẫn `/` tương đối gốc. */
 function changedSince(root: string, base: string): string[] {
-  const tracked = git(root, ["diff", "--name-only", "--diff-filter=ACMRD", base]).split("\n");
+  const names = (...a: string[]) => git(root, ["diff", "--name-only", "--diff-filter=ACMRD", ...a]);
+  const committed = names(`${base}...HEAD`).split("\n");
+  const dirty = names("HEAD").split("\n");
   const fresh = git(root, ["ls-files", "--others", "--exclude-standard"]).split("\n");
-  return [...new Set([...tracked, ...fresh].map((f) => posix(f.trim())).filter(Boolean))].sort();
+  return [
+    ...new Set([...committed, ...dirty, ...fresh].map((f) => posix(f.trim())).filter(Boolean)),
+  ].sort();
 }
 
 /** `pathIgnorePatterns` của một bunfig → bộ khớp (giống cách `bun test` bỏ file). */
@@ -52,6 +68,10 @@ function describePlan(base: string, p: AffectedPlan): void {
   );
   console.log(
     `  unit ${n(p.unit)} · int ${p.int.length} · e2e ${p.e2e.length} (${p.e2e.join(", ") || "—"})`,
+  );
+  console.log(`  việc e2e: ${p.jobs.join(", ") || "—"}`);
+  console.log(
+    `  typecheck: ${p.typecheck ? `${p.typecheckPackages.length} gói (${p.typecheckPackages.join(", ")})` : "không"}${p.typecheckTests ? " + tests/e2e (tsconfig.tests)" : ""}`,
   );
   for (const note of p.notes) console.log(`  ! ${note}`);
   if (p.changed.length > 400)
@@ -96,16 +116,23 @@ function lightSteps(p: AffectedPlan, base: string): RunStep[] {
   return steps;
 }
 
-function stepsOf(p: AffectedPlan, base: string, pyBlocked: string | undefined): RunStep[] {
+/** `all` (mọi thứ tại máy, như `test:affected` cũ / `slice:merge`): thêm int + e2e + python; `quarantine` ⇒ mã thoát chỉ tính đỏ mới. */
+function stepsOf(
+  p: AffectedPlan,
+  base: string,
+  pyBlocked: string | undefined,
+  quarantine: boolean,
+): RunStep[] {
   const steps = lightSteps(p, base);
+  const q = quarantine ? ["--quarantine"] : [];
   if (p.int.length)
     steps.push({
       name: "int",
-      cmd: ["bun", "run", "test:int:par", ...compact(p.int)],
+      cmd: ["bun", "run", "test:int:par", ...q, ...compact(p.int)],
       wave: HEAVY,
     });
   if (p.e2e.length) {
-    const cmd = ["bun", "tools/scripts/src/test-e2e-par.ts", `--only=${p.e2e.join(",")}`];
+    const cmd = ["bun", "tools/scripts/src/test-e2e-par.ts", ...q, `--only=${p.e2e.join(",")}`];
     steps.push({ name: "e2e", cmd, wave: HEAVY });
   }
   if (p.python) {
@@ -131,6 +158,14 @@ async function main(): Promise<number> {
     ...(changed.some((f) => f.startsWith("packages/db/migrations")) ? MIGRATION_SEEDS : []),
   ];
   const configs = await findE2eConfigs(root);
+  // Test của người khác sở hữu (tests/external-owned.json, vd DLC của rowan): bỏ, đếm số file bị bỏ; `--include-external` giữ.
+  const isExternal = args.includeExternal ? () => false : externalMatcher(loadExternalOwned(root));
+  const extSeen = new Set<string>();
+  const external = (f: string): boolean => {
+    const hit = isExternal(f);
+    if (hit && !f.endsWith("config.ts")) extSeen.add(f);
+    return hit;
+  };
   const plan = planAffected({
     changed,
     affected: affectedBy(graph, seeds),
@@ -140,25 +175,49 @@ async function main(): Promise<number> {
     ),
     infos: configInfos(configs, (c) => readFileSync(join(root, c), "utf8")),
     exists: (f) => existsSync(join(root, f)),
-    // F1 (CR-095): suite của module đóng băng ra khỏi cổng lát (`bun run test:frozen` chạy theo yêu cầu).
-    ignoredUnit: (f) => ignorer(root, "bunfig.toml")(f) || isFrozenFile(f),
-    ignoredInt: (f) => ignorer(root, "bunfig.int.toml")(f) || isFrozenFile(f),
+    // F1 (CR-095): suite của module đóng băng ra khỏi cổng lát (`bun run test:frozen` chạy theo yêu cầu; hoặc `--frozen`).
+    ignoredUnit: (f) =>
+      ignorer(root, "bunfig.toml")(f) || (!args.frozen && isFrozenFile(f)) || external(f),
+    ignoredInt: (f) =>
+      ignorer(root, "bunfig.int.toml")(f) || (!args.frozen && isFrozenFile(f)) || external(f),
     opts: { e2e: args.e2e },
   });
-  const skipped = plan.e2e.filter(isFrozenConfig);
-  plan.e2e = plan.e2e.filter((c) => !isFrozenConfig(c));
+  const skipped = args.frozen ? [] : plan.e2e.filter(isFrozenConfig);
+  const skippedExt = plan.e2e.filter(external);
+  plan.e2e = plan.e2e.filter((c) => !skipped.includes(c) && !skippedExt.includes(c));
+  plan.externalSkipped = extSeen.size + skippedExt.length;
+  if (plan.externalSkipped)
+    plan.notes.push(`bỏ ${plan.externalSkipped} test của rowan (--include-external để chạy).`);
+  plan.jobs = plan.jobs.filter((j) => plan.e2e.some((c) => jobOfConfig(c) === j));
   if (skipped.length)
     plan.notes.push(
-      `bỏ ${skipped.length} cấu hình e2e đóng băng (${skipped.join(", ")}); dùng \`bun run test:frozen\`.`,
+      `bỏ ${skipped.length} cấu hình e2e đóng băng (${skipped.join(", ")}); dùng \`bun run test:frozen\` hoặc --frozen.`,
     );
-  describePlan(base, plan);
-  console.log(`  (lập kế hoạch ${((performance.now() - t0) / 1000).toFixed(1)} s)`);
-  if (args.dryRun) return 0;
+  if (args.json) console.log(JSON.stringify(planToJson(base, plan), null, 2));
+  else {
+    describePlan(base, plan);
+    console.log(`  (lập kế hoạch ${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+  }
+  if (args.run === "none") return 0;
+  return runPlan(root, args, { base, plan, configs: configs.map(posix), t0 });
+}
+
+type Planned = { base: string; plan: AffectedPlan; configs: string[]; t0: number };
+
+async function runPlan(root: string, args: AffectedArgs, x: Planned): Promise<number> {
+  const { base, plan, configs, t0 } = x;
   const pyBlocked =
     Bun.which(process.platform === "linux" ? "uv" : "docker") === null
       ? "thiếu docker/uv trên PATH (không tải về)"
       : undefined;
-  const results = await runWaves(stepsOf(plan, base, pyBlocked), root, ".data/test-affected");
+  const logs = ".data/test-affected";
+  const results: StepResult[] = [];
+  if (args.run === "all")
+    results.push(...(await runWaves(stepsOf(plan, base, pyBlocked, args.quarantine), root, logs)));
+  else {
+    if (args.run === "local") results.push(...(await runWaves(lightSteps(plan, base), root, logs)));
+    if (args.run === "server") results.push(...(await runServer(root, plan, configs, args)));
+  }
   return summarizeRun("test:affected", results, performance.now() - t0);
 }
 

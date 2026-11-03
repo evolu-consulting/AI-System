@@ -247,3 +247,10 @@ Sự cố đã gặp: Postgres test local phải crash-recovery nhiều phút, R
 2. **Không chồng tải:** int/e2e nặng luôn lên slot evotest; local ≤ 2 Playwright; không hai lượt test dùng chung DB/Redis/cổng (làn e2e tự cấp, root config cũng theo làn); agent chỉ ghi trong worktree của mình (Write/Edit, không redirect shell) và tắt server mình bật; merge tuần tự, refresh index trước merge.
 3. **Giữ chất lượng:** mỗi lát có test của chính nó; cuối đợt một lượt review + security (Opus) rồi e2e trên evotest; lỗi do đợt này phải sửa (kể cả Thấp) trước push/deploy; lỗi có sẵn phải chứng minh đỏ trên base trước khi bỏ qua.
 4. **Trước deploy:** so `VERSION` prod với nhánh định deploy — prod đang ở nhánh khác (vd `platform/gd0_dlc`) ⇒ dừng, hỏi người dùng có merge nhánh đó vào không, tránh deploy làm mất việc của người khác.
+
+## test:affected và đỏ đã biết có hạn
+- `bun run test:affected [--base <ref>] [--json]` chỉ **in kế hoạch** (unit / int / việc e2e / gói typecheck) từ `git diff <base>...HEAD` + chưa commit; base mặc định = merge-base với `platform/gd0`. `--run local` chạy check+typecheck+unit tại máy; `--run server` chạy int + e2e trên evotest, chia theo slot trống (`res:check --server --json`); `--run all` = mọi thứ tại máy (`slice:merge` dùng). `--frozen` gồm suite module đóng băng.
+- `tests/known-red.json` = đỏ có sẵn đã kiểm chứng `{id, suite, reason, owner, expires, since}`; `id` = tiêu đề ca hoặc file (khớp theo ranh giới), `suite` = tiền tố `e2e:<việc>` / `int`. `test:e2e:par`, `test:int:par` và tóm tắt evotest in **đỏ MỚI** riêng với **đỏ cũ**; mục hết hạn tính là đỏ mới.
+- Mã thoát chỉ tính đỏ mới khi quarantine bật: `--quarantine` / `TEST_QUARANTINE=1` (`test:affected` và evotest bật sẵn; `--no-quarantine` tắt). `test:all` giữ nghiêm (mọi đỏ).
+- `tests/external-owned.json`: code người khác sở hữu (DLC/AIDLC của rowan) — `test:affected` bỏ test thuộc path đó và test/e2e có token `dlc` trong đường dẫn (in "bỏ N test của rowan"); `--include-external` để chạy. Code dùng chung (processes, i18n) vẫn chạy test của ta.
+- Sửa xong ca đỏ ⇒ xoá mục; hết hạn mà chưa sửa ⇒ gia hạn có lý do (không để mục tự im lặng).

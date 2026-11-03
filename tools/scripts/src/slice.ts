@@ -166,7 +166,7 @@ function cmdMerge(name: string | undefined, noTest: boolean, noOpenspec: boolean
   }
   if (
     !noTest &&
-    !run(dir, ["bun", "tools/scripts/src/test-affected.ts", `--base=${BASE}`], true).ok
+    !run(dir, ["bun", "tools/scripts/src/test-affected.ts", `--base=${BASE}`, "--run=all"], true).ok
   )
     fail("test:affected đỏ — chưa merge");
   const cur = git(main, "rev-parse", "--abbrev-ref", "HEAD").out;

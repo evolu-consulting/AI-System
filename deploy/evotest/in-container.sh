@@ -81,6 +81,9 @@ bun /tmp/redis-fwd.ts >>/out/setup.log 2>&1 &
 bun run keys:dev >>/out/setup.log 2>&1 && bun run db:setup >>/out/setup.log 2>&1 || { echo "setup lỗi"; tail -n 40 /out/setup.log; exit 2; }
 echo "[evotest] bun $(bun --version) · nproc $(nproc) · setup $(( $(date +%s) - t0 )) s · bước: $EVO_STEP"
 
+# Đỏ đã biết (tests/known-red.json, còn hạn) in riêng, không tính vào mã thoát; đỏ MỚI/hết hạn vẫn làm bước đỏ.
+export TEST_QUARANTINE=1
+
 # --no-python: Python/agent-runtime ngoài phạm vi runner này.
 # EVO_FILTER (chỉ int): tiền tố/đường dẫn file, chạy thẳng test:int:par (bỏ qua test:all) để chạy lại vài file.
 if [ "$EVO_STEP" = perf ]; then PERF=1 bun --env-file=.env.local --config=bunfig.perf.toml test --timeout 120000 ${EVO_FILTER:-tests/acceptance/HD4/perf/}   # đo hiệu năng, mặc định HD4

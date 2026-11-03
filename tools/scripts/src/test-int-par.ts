@@ -7,6 +7,8 @@ import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { Glob } from "bun";
 import { isFrozenFile } from "./frozen.rules";
+import { reportReds } from "./known-red";
+import { intReds, quarantineOn } from "./known-red.rules";
 import { repoRoot } from "./lib/git";
 import {
   lptQueue,
@@ -222,7 +224,20 @@ async function main(): Promise<number> {
     `test:int:par: ${pass} pass, ${fail} fail, ${((performance.now() - t0) / 1000).toFixed(1)} s` +
       (bad.length ? ` — đỏ: ${bad.map((r) => r.name).join(", ")} (log .data/int-s*.log)` : ""),
   );
-  return bad.length ? 1 : 0;
+  // Đỏ MỚI in riêng với đỏ cũ (tests/known-red.json); mã thoát chỉ tính đỏ mới khi `--quarantine`/TEST_QUARANTINE=1.
+  return reportReds({
+    root,
+    label: "test:int:par",
+    // "(unhandled)" (lỗi ngoài ca) không bao giờ khớp mục known-red ⇒ luôn là đỏ mới.
+    reds: bad.flatMap((r) => [
+      ...intReds(r.text),
+      ...summarize(r)
+        .fails.filter((l) => l.startsWith("(unhandled)"))
+        .map((name) => ({ suite: "int", name })),
+    ]),
+    unattributed: bad.filter((r) => summarize(r).fails.length === 0).length,
+    quarantine: quarantineOn(process.argv.slice(2), process.env),
+  });
 }
 
 process.exit(await main());

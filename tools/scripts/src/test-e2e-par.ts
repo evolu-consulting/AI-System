@@ -8,6 +8,8 @@ import { Glob } from "bun";
 import { installCleanup, leaseRedisDb, resolveLane } from "./e2e-lane";
 import { e2eDbTag, lanePortEnv } from "./e2e-lane.rules";
 import { isFrozenConfig } from "./frozen.rules";
+import { reportReds } from "./known-red";
+import { quarantineOn } from "./known-red.rules";
 import { repoRoot } from "./lib/git";
 import { findE2eConfigs } from "./test-all.discover";
 import {
@@ -202,7 +204,15 @@ async function main(): Promise<number> {
         ? ` — đỏ: ${bad.map((d) => d.job.name).join(", ")} (log ${DIR}/<việc>/out.log)`
         : ""),
   );
-  return bad.length ? 1 : 0;
+  // Đỏ MỚI in riêng với đỏ cũ (tests/known-red.json); mã thoát chỉ tính đỏ mới khi `--quarantine`/TEST_QUARANTINE=1.
+  const reds = bad.flatMap((d) => d.failed.map((name) => ({ suite: `e2e:${d.job.name}`, name })));
+  return reportReds({
+    root,
+    label: "test:e2e:par",
+    reds,
+    unattributed: bad.filter((d) => d.failed.length === 0).length,
+    quarantine: quarantineOn(process.argv.slice(2), process.env),
+  });
 }
 
 process.exit(await main());

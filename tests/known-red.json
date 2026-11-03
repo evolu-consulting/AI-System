@@ -1,0 +1,124 @@
+{
+  "entries": [
+    {
+      "id": "m4-usage.spec.ts › M4-R08 · M4-AC03 · E6",
+      "suite": "e2e:root",
+      "reason": "cũ từ 2026-10-21 (tenant-admin-scope đổi UI /usage)",
+      "owner": "admin-web",
+      "expires": "2026-11-17",
+      "since": "2026-10-21"
+    },
+    {
+      "id": "m4-usage.spec.ts › M4-R07 · M4-R08 · E7",
+      "suite": "e2e:root",
+      "reason": "cũ từ 2026-10-21 (tenant-admin-scope đổi UI /usage)",
+      "owner": "admin-web",
+      "expires": "2026-11-17",
+      "since": "2026-10-21"
+    },
+    {
+      "id": "m4-usage.spec.ts › ADM-FR-42 · E8",
+      "suite": "e2e:root",
+      "reason": "cũ từ 2026-10-21 (tenant-admin-scope đổi UI /usage)",
+      "owner": "admin-web",
+      "expires": "2026-11-17",
+      "since": "2026-10-21"
+    },
+    {
+      "id": "cr052-login.spec.ts › [CR-052] trình duyệt vi-VN",
+      "suite": "e2e:root",
+      "reason": "locale bị ép vi nên không ra tiếng Anh",
+      "owner": "admin-web",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "cr052-login.spec.ts › [CR-052] công tắc EN/VI",
+      "suite": "e2e:root",
+      "reason": "locale bị ép vi nên công tắc EN không còn hiệu lực",
+      "owner": "admin-web",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "workflows.spec.ts",
+      "suite": "e2e:root",
+      "reason": "UI Workflow Process chỉ có ở bản DLC/Dify",
+      "owner": "admin-web",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "conflict-workflows.spec.ts",
+      "suite": "e2e:root",
+      "reason": "UI Workflow Process chỉ có ở bản DLC/Dify",
+      "owner": "admin-web",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "m2-flow.spec.ts",
+      "suite": "e2e:root",
+      "reason": "UI Workflow Process chỉ có ở bản DLC/Dify",
+      "owner": "admin-web",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "workflows-dify.spec.ts",
+      "suite": "e2e:root",
+      "reason": "UI Workflow Process chỉ có ở bản DLC/Dify",
+      "owner": "admin-web",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "usage-analytics.spec.ts › ADM-FR-42 · platform_admin",
+      "suite": "e2e:root",
+      "reason": "migration usage_logs.feature lệch với dữ liệu mẫu",
+      "owner": "admin-api",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "usage-analytics.spec.ts › ADM-FR-42 · tenant_admin binh",
+      "suite": "e2e:root",
+      "reason": "migration usage_logs.feature lệch với dữ liệu mẫu",
+      "owner": "admin-api",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "secrets.spec.ts › AC-A06 · ADM-BR-04 · quét rò",
+      "suite": "e2e:root",
+      "reason": "quá giờ khi máy tải cao (chập chờn)",
+      "owner": "admin-web",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "m4-audit.spec.ts › ADM-FR-51 · BR-04 · E17",
+      "suite": "e2e:root",
+      "reason": "quá giờ khi máy tải cao (chập chờn)",
+      "owner": "admin-web",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "A48–A51 · migration Hub và quyền",
+      "suite": "int",
+      "reason": "HUB-FR-75: runHubMigrations (migrate-hub) lệch kỳ vọng, 2 ca",
+      "owner": "hub-db",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "K2 · màn đọc bỏ bản đã bị thay",
+      "suite": "int",
+      "reason": "tests/acceptance/K2/readers.int.test.ts đỏ sẵn",
+      "owner": "contracts",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    }
+  ]
+}
