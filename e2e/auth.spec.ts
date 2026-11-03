@@ -111,12 +111,15 @@ test("ADM-FR-01 · UX · vào /tenants khi chưa đăng nhập → /login?next=%
   await expect(page).toHaveURL(/\/tenants$/);
 });
 
-test("ADM-FR-01 · bảo mật · next=//evil.com bị bỏ qua, vẫn ở cùng origin", async ({ page }) => {
+test("ADM-FR-01 · bảo mật · next=//evil.com bị bỏ qua, vẫn ở cùng origin", async ({
+  page,
+  baseURL,
+}) => {
   await page.goto("/login?next=//evil.com");
   await fillLogin(page, "acme", "binh", PW);
   await submit(page).click();
   await expect(page.getByRole("heading", { level: 1, name: "Tổng quan" })).toBeVisible();
-  expect(new URL(page.url()).host).toBe("localhost:3000");
+  expect(new URL(page.url()).host).toBe(new URL(baseURL ?? "").host);
 });
 
 test("ADM-FR-01 · M1-R04 · tài khoản em (đã khoá) đăng nhập đúng mật khẩu → alert 'Tài khoản đã bị khoá'", async ({

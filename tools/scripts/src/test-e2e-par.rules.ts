@@ -58,7 +58,7 @@ export const META: Record<string, Meta> = {
   "e2e/contracts-web/playwright.config.ts": { cost: 22 },
   "e2e/studio/playwright.config.ts": { cost: 101 },
   "e2e/x1/playwright.config.ts": { db: "x1", cost: 62 },
-  "playwright.config.ts": { db: "root", cost: 613 },
+  "playwright.config.ts": { db: "root", redis: REDIS_URL("E2E_ROOT_REDIS_URL"), cost: 613 },
 };
 
 export const norm = (p: string): string => p.replaceAll("\\", "/");
@@ -163,13 +163,7 @@ export function planJobs(p: Plan, timings: Readonly<Record<string, number>>, onl
   return jobs.filter(keep).sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
 }
 
-import { e2eDbTag, portShift, shiftNumericEnv } from "./e2e-lane.rules";
-
-const withDb = (url: string, name: string): string => {
-  const u = new URL(url);
-  u.pathname = `/${encodeURIComponent(name)}`;
-  return u.toString();
-};
+import { laneDbEnv, portShift, shiftNumericEnv } from "./e2e-lane.rules";
 
 /** DB test riêng của việc (URL của chủ và của `admin_api` giữ user/mật khẩu, chỉ đổi tên DB). */
 function dbEnv(
@@ -177,14 +171,7 @@ function dbEnv(
   base: Readonly<Record<string, string | undefined>>,
   lane = 0,
 ): Record<string, string> {
-  const out: Record<string, string> = {};
-  if (!job.meta.db) return out;
-  const name = `ai_system_${e2eDbTag(lane, job.meta.db)}_test`;
-  for (const k of ["TEST_DATABASE_URL", "TEST_ADMIN_API_DATABASE_URL"]) {
-    const v = base[k];
-    if (v) out[k] = withDb(v, name);
-  }
-  return out;
+  return job.meta.db ? laneDbEnv(lane, job.meta.db, base) : {};
 }
 
 /** Redis DB đã cấp cho việc, ghi vào đúng biến của cấu hình (`db` ⇒ số, `url` ⇒ URL). */

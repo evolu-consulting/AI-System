@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 import {
   allocateLane,
   descendants,
+  directDbEnv,
   ENV_FILE_VARS,
   e2eDbTag,
+  laneDbEnv,
   laneEnvFile,
   lanePortEnv,
   lanePortRange,
@@ -115,6 +117,42 @@ test("e2eDbTag hợp lệ (<=24, [a-z0-9_]) và duy nhất giữa các việc/l�
     }
   expect(tags.size).toBe((MAX_LANE + 1) * dbs.length);
   expect(e2eDbTag(0, "pa")).toBe("e2e_pa");
+});
+
+describe("DB theo làn của cấu hình gốc chạy trực tiếp", () => {
+  const base = {
+    TEST_DATABASE_URL: "postgres://ai:pw@localhost:5432/ai_system_test",
+    TEST_ADMIN_API_DATABASE_URL: "postgres://admin_api:pw2@localhost:5432/ai_system_test",
+  };
+  test("mỗi làn một DB riêng, không còn ai_system_test chung; giữ user/mật khẩu", () => {
+    const urls = new Set<string>();
+    for (let lane = 0; lane <= MAX_LANE; lane++) {
+      const e = directDbEnv(lane, "playwright.config.ts", base);
+      expect(e.TEST_DATABASE_URL).not.toBe(base.TEST_DATABASE_URL);
+      expect(e.TEST_DATABASE_URL).toMatch(/^postgres:\/\/ai:pw@localhost:5432\/ai_system_e2e_root/);
+      expect(e.TEST_ADMIN_API_DATABASE_URL).toMatch(/^postgres:\/\/admin_api:pw2@localhost:5432\//);
+      urls.add(e.TEST_DATABASE_URL ?? "");
+    }
+    expect(urls.size).toBe(MAX_LANE + 1);
+  });
+  test("lane 0 = ai_system_e2e_root_test, lane 3 = ..._root_l3_test (trùng việc root của test:e2e:par)", () => {
+    expect(directDbEnv(0, "playwright.config.ts", base).TEST_DATABASE_URL).toMatch(
+      /\/ai_system_e2e_root_test$/,
+    );
+    expect(directDbEnv(3, "./playwright.config.ts", base).TEST_DATABASE_URL).toMatch(
+      /\/ai_system_e2e_root_l3_test$/,
+    );
+    expect(laneDbEnv(3, "root", base)).toEqual(directDbEnv(3, "playwright.config.ts", base));
+  });
+  test("Redis của cấu hình gốc: biến riêng E2E_ROOT_REDIS_URL (không dùng REDIS_URL luôn có sẵn từ .env.local)", () => {
+    expect(redisEnvFor("playwright.config.ts", 9, "redis://localhost:6379")).toEqual({
+      E2E_ROOT_REDIS_URL: "redis://localhost:6379/9",
+    });
+  });
+  test("cấu hình khác (có env-file / DB riêng) không bị ghi đè; thiếu biến thì bỏ qua", () => {
+    expect(directDbEnv(2, "e2e/P-a/playwright.pa.config.ts", base)).toEqual({});
+    expect(directDbEnv(2, "playwright.config.ts", {})).toEqual({});
+  });
 });
 
 describe("reap", () => {

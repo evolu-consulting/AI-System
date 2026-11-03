@@ -29,8 +29,9 @@ test("ADM-FR-01 · M1-AC08 · admin seed → Tenants → tạo tenant → mật 
   await expect(temp).toHaveValue(/^[A-Za-z0-9]{16}$/);
   const tempPassword = await temp.inputValue();
   await dialog.getByRole("checkbox", { name: "Tôi đã lưu mật khẩu tạm" }).check();
-  await dialog.getByRole("button", { name: "Đi tới tenant" }).click();
-  await expect(page).toHaveURL(/\/tenants\/[0-9a-f-]{36}$/);
+  // CR-112 S7 (ADM-FR-79): "Tiếp tục cấu hình" ⇒ bước 2 của wizard (`/tenants/new?tenant=<id>&step=2`).
+  await dialog.getByRole("button", { name: "Tiếp tục cấu hình" }).click();
+  await expect(page).toHaveURL(/\/tenants\/new\?.*step=2/);
 
   await page.getByRole("button", { name: "Tài khoản của bạn" }).click();
   await page.getByRole("menuitem", { name: "Đăng xuất" }).click();

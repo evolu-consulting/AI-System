@@ -71,6 +71,8 @@ export const REDIS_VARS: Readonly<Record<string, { kind: "db" | "url"; vars: str
   "e2e/chat/playwright.x2b.config.ts": { kind: "url", vars: ["X2B_REDIS_URL"] },
   "e2e/chat/playwright.x2b2.config.ts": { kind: "url", vars: ["X2B_REDIS_URL"] },
   "e2e/combine/playwright.config.ts": { kind: "url", vars: ["REDIS_TEST_URL"] },
+  // Cấu hình gốc (admin): khoá đăng nhập L1 trên Redis; biến riêng (REDIS_URL của .env.local luôn có sẵn nên không dùng làm cờ).
+  "playwright.config.ts": { kind: "url", vars: ["E2E_ROOT_REDIS_URL"] },
 };
 
 /** Redis chỉ có 16 DB; 0 = dev, 1..6 = test:int:par, 7..15 = e2e (cấp phát bằng hợp đồng thuê toàn máy, không chia theo làn). */
@@ -223,3 +225,36 @@ export function descendants(procs: readonly Proc[], root: number): number[] {
 
 /** `PATH` không cần ở đây; tách dấu ngăn để test không phụ thuộc OS. */
 export const PATH_DELIM = delimiter;
+
+/** Cùng URL nhưng đổi tên database (giữ user, mật khẩu, host, cổng). */
+const withDb = (url: string, name: string): string => {
+  const u = new URL(url);
+  u.pathname = `/${encodeURIComponent(name)}`;
+  return u.toString();
+};
+
+/** DB test riêng của một việc e2e theo làn: `ai_system_e2e_<db>[_l<làn>]_test` cho chủ và `admin_api` (chỉ đổi tên DB). */
+export function laneDbEnv(lane: number, db: string, base: Env): Record<string, string> {
+  const out: Record<string, string> = {};
+  const name = `ai_system_${e2eDbTag(lane, db)}_test`;
+  for (const k of ["TEST_DATABASE_URL", "TEST_ADMIN_API_DATABASE_URL"]) {
+    const v = base[k];
+    if (v) out[k] = withDb(v, name);
+  }
+  return out;
+}
+
+/**
+ * Cấu hình chạy trực tiếp (`run-playwright.ts`) dùng thẳng `TEST_DATABASE_URL` (không qua env-file) ⇒ ghi đè URL theo làn,
+ * cùng tên DB với việc tương ứng của `test:e2e:par` (cấu hình gốc `playwright.config.ts` = việc `root`).
+ * DB do `e2e/support/prepare-db.ts` dựng (CREATE nếu thiếu), nên không cần bước tạo riêng.
+ */
+export const DIRECT_DB_CONFIGS: Readonly<Record<string, string>> = {
+  "playwright.config.ts": "root",
+};
+
+/** Env DB theo làn của cấu hình chạy trực tiếp; `{}` nếu cấu hình không thuộc `DIRECT_DB_CONFIGS` hoặc đã có env-file riêng. */
+export function directDbEnv(lane: number, config: string, base: Env): Record<string, string> {
+  const db = DIRECT_DB_CONFIGS[config.replaceAll("\\", "/").replace(/^\.\//, "")];
+  return db ? laneDbEnv(lane, db, base) : {};
+}

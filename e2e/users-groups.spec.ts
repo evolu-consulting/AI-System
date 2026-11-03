@@ -69,15 +69,18 @@ test("ADM-FR-62 · M3-R13 · ?group=khong-co (key lạ) → bỏ lọc, hiện c
   await expect(rowOf(page, "Users", "an")).toBeVisible();
 });
 
-test("ADM-FR-62 · M3-R13 · platform chưa chọn tenant → combobox 'Group' bị khoá ('Chọn tenant trước')", async ({
+// CR-112 (ADM-FR-76 AC2): màn Users nằm trong workspace công ty, không còn ô chọn Tenant ⇒ trạng thái "chưa chọn tenant" không còn;
+// platform_admin chưa có công ty chọn gần nhất vào /users → danh sách công ty (chọn công ty rồi mới có combobox Group, đã bật).
+test("ADM-FR-62 · M3-R13 · CR-112 · platform chưa chọn công ty: /users → danh sách công ty; chọn công ty → combobox 'Group' bật", async ({
   page,
 }) => {
   await loginAdmin(page);
+  await page.evaluate(() => localStorage.removeItem("ai.lastTenant"));
   await page.goto("/users");
+  await expect(page).toHaveURL(/\/tenants$/);
+  await page.goto(`/tenants/${TENANT_ID.acme}?tab=users`);
   await expect(page.getByRole("table", { name: "Users" })).toBeVisible();
-  const picker = page.getByRole("combobox", { name: "Group" });
-  await expect(picker).toBeDisabled();
-  await expect(picker).toHaveAttribute("title", "Chọn tenant trước");
+  await expect(page.getByRole("combobox", { name: "Group" })).toBeEnabled();
 });
 
 test("ADM-FR-62 · M3-R13 · A11 · drawer sửa lan: tab 'Thông tin' có list 'Groups' CHỈ ĐỌC (chip link tới /groups/<id>), gợi ý 'Sửa thành viên ở trang Group.', không có combobox sửa Groups; an → 'Chưa thuộc group nào'", async ({

@@ -26,7 +26,7 @@ test.beforeAll(() => {
 
 const nav = (page: Page) => page.getByRole("navigation", { name: "Điều hướng chính" });
 
-test("ADM-BR-14 · M2-AC01 · menu: admin thấy Secrets/Workflows (nhóm: Workflow Steps · Workflow Process)/Commands/Features; tenant_admin (binh) không thấy mục nào và /secrets → ForbiddenState, không gọi API secrets", async ({
+test("ADM-BR-14 · M2-AC01 · menu: admin thấy Secrets/Workflows/Commands/Features; tenant_admin (binh) không thấy mục nào và /secrets → ForbiddenState, không gọi API secrets", async ({
   page,
   browser,
 }) => {
@@ -34,23 +34,17 @@ test("ADM-BR-14 · M2-AC01 · menu: admin thấy Secrets/Workflows (nhóm: Workf
   for (const name of ["Secrets", "Commands", "Features"]) {
     await expect(nav(page).getByRole("link", { name, exact: true })).toBeVisible();
   }
-  // DLC-R15: "Workflows" là nhóm sổ xuống (Workflow Steps · Workflow Process), không còn là liên kết.
-  const group = nav(page).getByRole("button", { name: "Workflows", exact: true });
-  await expect(group).toBeVisible();
-  if ((await group.getAttribute("aria-expanded")) !== "true") await group.click();
-  for (const name of ["Workflow Steps", "Workflow Process"]) {
-    await expect(nav(page).getByRole("link", { name, exact: true })).toBeVisible();
-  }
+  // CR-112 (nav.ts, nhóm NỀN TẢNG): "Workflows" là một liên kết trong sidebar (nhóm sổ xuống DLC-R15 không thuộc nhánh này).
+  await expect(nav(page).getByRole("link", { name: "Workflows", exact: true })).toBeVisible();
   const ctx = await browser.newContext({ locale: "vi-VN", timezoneId: "Asia/Ho_Chi_Minh" });
   try {
     const other = await ctx.newPage();
     const calls: string[] = [];
     other.on("request", (r) => calls.push(r.url()));
     await loginToShell(other, "acme", "binh", PW);
-    for (const name of ["Secrets", "Commands", "Features", "Workflow Steps", "Workflow Process"]) {
+    for (const name of ["Secrets", "Commands", "Features", "Workflows"]) {
       await expect(nav(other).getByRole("link", { name, exact: true })).toHaveCount(0);
     }
-    await expect(nav(other).getByRole("button", { name: "Workflows", exact: true })).toHaveCount(0);
     await other.goto("/secrets");
     await expect(
       other.getByRole("heading", { name: "Bạn không có quyền xem trang này" }),

@@ -73,6 +73,10 @@ export default defineConfig({
         JWT_KID: need("JWT_KID"),
         // M2: admin-api (từ T3) bắt buộc khoá mã hoá secret.
         SECRET_MASTER_KEY: need("SECRET_MASTER_KEY"),
+        // Khoá đăng nhập (L1) nằm trên Redis: `run-playwright`/`test:e2e:par` thuê một Redis DB riêng (E2E_ROOT_REDIS_URL) để
+        // worktree/lượt chạy khác không dùng chung bộ đếm (spec auth "5 sai ⇒ 423" chỉ đạt lần đầu trong cửa sổ khoá).
+        // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+        ...(process.env.E2E_ROOT_REDIS_URL ? { REDIS_URL: process.env.E2E_ROOT_REDIS_URL } : {}),
       },
     },
     {

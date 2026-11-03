@@ -67,7 +67,7 @@ test("ADM-BR-05 · BR-09 · tenant_admin vào /tenants → 'Bạn không có quy
   await expect(page.getByRole("link", { name: "Về Tổng quan" })).toBeVisible();
 });
 
-test("ADM-FR-60 · M1-R17 · tạo tenant → dialog 'Đã tạo tenant initech': mật khẩu tạm 16 ký tự, Esc/click nền không đóng, 'Đi tới tenant' khoá tới khi tick", async ({
+test("ADM-FR-60 · M1-R17 · tạo tenant → dialog 'Đã tạo tenant initech': mật khẩu tạm 16 ký tự, Esc/click nền không đóng, 'Tiếp tục cấu hình' khoá tới khi tick", async ({
   page,
 }) => {
   await openTenants(page);
@@ -83,12 +83,15 @@ test("ADM-FR-60 · M1-R17 · tạo tenant → dialog 'Đã tạo tenant initech'
   await expect(dialog).toBeVisible();
   await page.mouse.click(5, 5);
   await expect(dialog).toBeVisible();
-  const go = dialog.getByRole("button", { name: "Đi tới tenant" });
+  // CR-112 S7 (ADM-FR-79): nút đổi thành "Tiếp tục cấu hình" ⇒ bước 2 của wizard (`/tenants/new?tenant=<id>&step=2`).
+  const go = dialog.getByRole("button", { name: "Tiếp tục cấu hình" });
   await expect(go).toBeDisabled();
   await dialog.getByRole("checkbox", { name: "Tôi đã lưu mật khẩu tạm" }).check();
   await expect(go).toBeEnabled();
   await go.click();
-  await expect(page).toHaveURL(/\/tenants\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(
+    /\/tenants\/new\?.*tenant=[0-9a-f-]{36}.*step=2|\/tenants\/new\?.*step=2.*tenant=[0-9a-f-]{36}/,
+  );
 });
 
 test("ADM-FR-60 · M1-R15 · tạo tenant với mã trùng 'acme' → 'Mã công ty đã được dùng'", async ({
@@ -112,6 +115,7 @@ test("ADM-FR-60 · M1-R19 · chi tiết acme: mã readonly, sửa tên + Lưu �
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Đã lưu acme" })).toBeVisible();
   await expect(page.getByRole("tab")).toHaveText([
+    "Tổng quan",
     "Thông tin",
     "Ứng dụng & Gói",
     "Người dùng",

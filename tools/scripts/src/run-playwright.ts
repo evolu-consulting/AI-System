@@ -3,12 +3,22 @@
 // e2e-isolation: chạy trực tiếp tự lấy "làn" của checkout (cổng, DB test, Redis DB) — không cần đặt env tay; biến đã đặt
 // vẫn thắng. Thoát (kể cả lỗi / Ctrl-C) là dọn cây tiến trình mình bật.
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { playwrightArgv } from "./done-n1.rules";
 import { detectRealNode, REPO, stepEnv } from "./done-pd1";
 import { resolveNodeDir } from "./done-pd1.rules";
 import { installCleanup, leaseRedisDb, resolveLane } from "./e2e-lane";
-import { LOGIN_IP_MAX, laneEnvFile, lanePortEnv, REDIS_VARS, redisEnvFor } from "./e2e-lane.rules";
+import {
+  DIRECT_DB_CONFIGS,
+  directDbEnv,
+  e2eDbTag,
+  LOGIN_IP_MAX,
+  laneEnvFile,
+  lanePortEnv,
+  REDIS_VARS,
+  redisEnvFor,
+} from "./e2e-lane.rules";
+import { parseEnv } from "./test-int-par.rules";
 
 const norm = (s: string) => s.replaceAll("\\", "/");
 
@@ -24,6 +34,32 @@ function ensureLaneDb(lane: number, config: string, env: Record<string, string |
     if (p.exitCode !== 0) throw new Error(`db:test:create ${m.tag} lỗi`);
   }
   return { [m.var]: m.file };
+}
+
+/**
+ * Cấu hình gốc `playwright.config.ts` đọc thẳng TEST_DATABASE_URL (`ai_system_test` chung) ⇒ chạy từ nhiều worktree sẽ
+ * giẫm nhau (trùng khoá). Ghi đè theo làn (`ai_system_e2e_root[_l<làn>]_test`, giống việc `root` của `test:e2e:par`),
+ * tạo DB rỗng nếu thiếu (prepare-db lo migrate). `TEST_DATABASE_URL=… playwright.config.ts` đặt tay vẫn thắng.
+ */
+function ensureDirectDb(
+  lane: number,
+  config: string,
+  env: Record<string, string | undefined>,
+  extraEnv: Record<string, string>,
+): Record<string, string> {
+  const envLocal = existsSync(`${REPO}/.env.local`)
+    ? parseEnv(readFileSync(`${REPO}/.env.local`, "utf8"))
+    : {};
+  const base = { ...envLocal, ...env };
+  const out = directDbEnv(lane, norm(config), base);
+  if (!out.TEST_DATABASE_URL || extraEnv.TEST_DATABASE_URL) return {};
+  const tag = e2eDbTag(lane, DIRECT_DB_CONFIGS[norm(config).replace(/^\.\//, "")] ?? "root");
+  const p = Bun.spawnSync(
+    ["bun", "--env-file=.env.local", "packages/db/src/test-db-cli.ts", "ensure", tag],
+    { cwd: REPO, stdout: "ignore", stderr: "inherit" },
+  );
+  if (p.exitCode !== 0) throw new Error(`db:test:ensure ${tag} lỗi`);
+  return out;
 }
 
 export async function main(
@@ -60,6 +96,7 @@ export async function main(
   const laneEnv: Record<string, string> = {};
   if (!underPar) {
     Object.assign(laneEnv, lanePortEnv(lane, env), ensureLaneDb(lane, config, env));
+    Object.assign(laneEnv, ensureDirectDb(lane, config, env, extraEnv));
     if (!env.LOGIN_IP_MAX_ATTEMPTS) laneEnv.LOGIN_IP_MAX_ATTEMPTS = LOGIN_IP_MAX;
     const rv = REDIS_VARS[norm(config)];
     if (rv && !rv.vars.some((v) => env[v] || extraEnv[v])) {

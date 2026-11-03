@@ -72,10 +72,11 @@ test("ADM-FR-75 · thêm tài khoản → mật khẩu tạm 16 ký tự hiện 
 test("ADM-FR-75 · /users hiện badge 'Đối tác' bên cạnh tài khoản đối tác", async ({ page }) => {
   await loginToShell(page, "acme", "binh", PW);
   await page.goto("/users");
-  const row = rowOf(page, "Users", USERNAME);
+  // Ô tài khoản chứa cả tên đăng nhập lẫn badge "Đối tác" ⇒ tên cell là "dt.nam Đối tác", khớp theo tiền tố (không exact).
+  const row = rowOf(page, "Users", /^dt\.nam\b/);
   await expect(row).toBeVisible();
   await expect(row.getByText("Đối tác", { exact: true })).toBeVisible();
-  await expect(rowOf(page, "Users", "lan").getByText("Đối tác", { exact: true })).toHaveCount(0);
+  await expect(rowOf(page, "Users", /^lan\b/).getByText("Đối tác", { exact: true })).toHaveCount(0);
 });
 
 test("ADM-FR-74 · vô hiệu công ty (xác nhận) → trạng thái 'Đã vô hiệu', ẩn '+ Thêm tài khoản'", async ({

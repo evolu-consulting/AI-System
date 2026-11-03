@@ -18,19 +18,21 @@ test.beforeEach(() => {
   resetFixture();
 });
 
-const CTX = {
-  baseURL: "http://localhost:3000",
-  locale: "vi-VN",
-  timezoneId: "Asia/Ho_Chi_Minh",
-} as const;
+/** baseURL lấy từ cấu hình (cổng theo làn / ca của test:e2e:par), không gán cứng 3000. */
+const ctxOptions = () =>
+  ({
+    baseURL: test.info().project.use.baseURL,
+    locale: "vi-VN",
+    timezoneId: "Asia/Ho_Chi_Minh",
+  }) as const;
 
 /** Hai phiên platform_admin cùng mở editor /dich ở version 7; B lưu trước (→ 8); A đã sửa Mô tả + thêm alias, chưa lưu. */
 async function twoSessions(browser: Browser) {
   await withOwner(async (sql) => {
     await sql`update admin.commands set version = 7 where id = ${ID.command.dich}`;
   });
-  const ctxA = await browser.newContext(CTX);
-  const ctxB = await browser.newContext(CTX);
+  const ctxA = await browser.newContext(ctxOptions());
+  const ctxB = await browser.newContext(ctxOptions());
   const [a, b] = [await ctxA.newPage(), await ctxB.newPage()];
   for (const p of [a, b]) {
     await loginAdmin(p);
