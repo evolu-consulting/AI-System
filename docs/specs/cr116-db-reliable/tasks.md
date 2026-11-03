@@ -42,5 +42,7 @@ Mọi transaction qua withScope / withHubScope / withPackScope / withPackJobScop
 - Kịch bản: khi phân loại lỗi thì 40P01/40001 luôn chạy lại, mất kết nối chạy lại chỉ khi chưa tới COMMIT, lỗi khác ném nguyên [test: packages/db/src/tx-retry.test.ts » mất kết nối trước COMMIT ⇒ conn-retry, lúc/sau COMMIT ⇒ unknown]
 
 ## Việc còn lại
+- **Perf chưa đo:** evotest bị lượt `-Exclusive` khác (owner a08c40a9, từ 20:06) giữ suốt 20:39–21:08 — cả lượt int lẫn `perf:compare --scenario contracts.read|chat.first-delta --runs 3` chỉ xếp hàng; đã huỷ. Chạy lại: `bun run perf:compare --scenario contracts.read --runs 3` và `--scenario chat.first-delta`. Dự kiến không đổi: không thêm câu SQL, mỗi tx thêm một closure + một cờ.
+- Int đã chạy LOCAL (`test:int:par`, 7 file: tx-conn-loss, hub-rls, rls, hub-uow, config-write, lock-order, packs-install) 49 pass / 0 fail; chưa chạy trên evotest (cùng lý do).
 - Đường idempotent cần "đọc lại để quyết định" khi `TX_OUTCOME_UNKNOWN` (vd outbox/followup): chưa có use case nào đổi; ghi nhận cho lát sau.
 - Bỏ patch khi lên postgres.js ≥ bản có vá tương đương (kiểm 4.x sau 2026-11-12).
