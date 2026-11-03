@@ -8,7 +8,12 @@
 import { JOB_DELTA_TEXT_MAX, type RunEvent, type TokenUsage } from "@ai/contracts/hub";
 import { estimateInputTokens } from "../../../lib/ai-client/ai-client";
 import type { TurnReply, TurnStreamer } from "../../../lib/ai-client/anthropic.provider";
-import { cachedPrompt, promptTokens } from "../../../lib/ai-client/prompt-cache";
+import {
+  blockWindowDrop,
+  cachedPrompt,
+  historyBlock,
+  promptTokens,
+} from "../../../lib/ai-client/prompt-cache";
 import type { TokenBucket } from "../../../lib/ai-client/token-bucket";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
@@ -150,7 +155,7 @@ export class DirectSdkRunner implements AgentRunner {
         model: directSdkModel(o, task.agent.model, this.d.envModel),
         prompt: cachedPrompt({
           system,
-          history: task.history,
+          history: blockHistory(task),
           prompt: task.prompt,
           ...(volatile ? { volatile } : {}),
         }),
@@ -222,6 +227,13 @@ export class DirectSdkRunner implements AgentRunner {
       this.d.log.warn("step-emit-failed", { run_id: task.run.id, ...safeErrorFields(err) });
     }
   }
+}
+
+/** Cửa sổ history dịch theo khối (biết tổng tin của flow) ⇒ tiền tố cache giữ nguyên qua một khối lượt. */
+export function blockHistory(task: Pick<AgentTask, "history" | "historyTotal">) {
+  const n = task.history.length;
+  if (task.historyTotal === undefined) return task.history;
+  return task.history.slice(blockWindowDrop(task.historyTotal, n, historyBlock(n)));
 }
 
 /** Trần ngày đếm cả token đọc/ghi cache (không đếm thiếu khi trúng cache). */

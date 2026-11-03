@@ -30,6 +30,8 @@ export type AgentTask = {
   /** Vắng → `agent.systemPrompt` (Orchestrator: B8 nối khối định dạng §6.3). */
   systemPrompt?: string;
   history: readonly HistoryItem[];
+  /** CR-114 · tổng tin của flow (`history` = `history_n` tin cuối); đường SDK dịch cửa sổ theo khối. Vắng ⇒ không dịch. */
+  historyTotal?: number;
   /** H2b P11 · có ⇒ `payload.stream=true`, `runJob` chuyển `job.delta` qua sink (plan §5.5); vắng = không stream. */
   stream?: DeltaSink;
   /** `run_steps.id` do người gọi chọn (vắng → mới); `reopen` = thử lại cùng step (Orchestrator JSON hỏng, plan §6.1). */

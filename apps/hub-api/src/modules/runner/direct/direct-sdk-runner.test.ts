@@ -7,7 +7,7 @@ import { logger } from "../../../lib/logger";
 import { DeltaSink } from "../../stream/delta-sink";
 import type { AgentTask } from "../job/job-agent-runner";
 import { directEligible, RoutingRunner } from "../routing-runner";
-import { DirectSdkRunner, type DirectSteps } from "./direct-sdk-runner";
+import { blockHistory, DirectSdkRunner, type DirectSteps } from "./direct-sdk-runner";
 
 const usage = { inputTokens: 10, outputTokens: 5, cacheReadTokens: 100, cacheWriteTokens: 7 };
 const sdk: TurnStreamer = async (r) => {
@@ -107,6 +107,20 @@ describe("CR-114 · direct-sdk runner", () => {
       reason: "provider_busy",
     });
     expect(log).toHaveLength(0);
+  });
+
+  it("history window shifts by block when flow total is known", () => {
+    const msgs = (from: number, to: number) =>
+      Array.from({ length: to - from }, (_, i) => ({
+        role: (from + i) % 2 === 0 ? ("user" as const) : ("assistant" as const),
+        content: `m${from + i}`,
+      }));
+    // n=20, khối 10: tổng 23 và 29 ⇒ cùng bắt đầu ở tin tuyệt đối 10 (tiền tố cache giữ nguyên).
+    const a = blockHistory({ history: msgs(3, 23), historyTotal: 23 });
+    const b = blockHistory({ history: msgs(9, 29), historyTotal: 29 });
+    expect(a[0]?.content).toBe("m10");
+    expect(b[0]?.content).toBe("m10");
+    expect(blockHistory({ history: msgs(0, 5) })).toHaveLength(5);
   });
 
   it("routing picks direct only when eligible", async () => {

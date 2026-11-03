@@ -53,6 +53,8 @@ export type LoopJob = {
   prompt: string;
   systemPrompt?: string;
   history: readonly HistoryItem[];
+  /** CR-114 · tổng tin của flow (đường SDK dịch cửa sổ cache theo khối); vắng = không dịch. */
+  historyTotal?: number;
   stepId?: string;
   reopen?: boolean;
   /** H2b P13 · gộp vào `run_steps.detail` của step (vd `scope` của run thu hẹp, R09). */
@@ -77,6 +79,8 @@ export type LoopInput = {
   visible: readonly HubAgentRef[];
   hint: FlowHint;
   history: readonly HistoryItem[];
+  /** CR-114 · tổng tin của flow (cửa sổ `history` là `history_n` tin cuối); vắng = không biết (run phòng). */
+  historyTotal?: number;
   message: string;
   locale: "vi" | "en";
   /** H2b P13 · `detail` cho mọi step Orchestrator (run thu hẹp: `{scope}`). */
@@ -248,6 +252,7 @@ async function delegate(
     role: "agent",
     prompt: d.task,
     history: c.history,
+    ...(c.historyTotal !== undefined ? { historyTotal: c.historyTotal } : {}),
     ...acceptOf(c, { role: "agent", runKind: "orchestrated", firstDelegate }),
   });
   addUsage(s, o);

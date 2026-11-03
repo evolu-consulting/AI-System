@@ -122,6 +122,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
   if (d.db)
     mountKnowledge(d.db, d.packTools, {
       limitsOf: tenantLimits(d), // tenant-quotas · trần token AI riêng của tenant
+      redis: d.redis, // CR-114 · bucket token/phút theo tenant (vắng ⇒ không chặn)
       ...(d.packs?.knowledgeDsn ? { dsn: d.packs.knowledgeDsn } : {}),
       ...(d.signal ? { signal: d.signal } : {}),
     }); // N4 Â· R1 pool riÃªng
@@ -175,6 +176,7 @@ function contractsCtx(d: PacksMountDeps & { db: Db }, view: PackAccessView, fb: 
   const limitsOf = tenantLimits(d);
   const aiClient = createHubAiClient(db, {
     limitsOf,
+    ...(d.redis ? { redis: d.redis } : {}), // CR-114 · bucket token/phút theo tenant
     ...(model === undefined ? {} : { provider: model }),
   }); // M3 Â· dÃ¹ng chung trÃ­ch HÄ + V2-I tÃ¬m web
   const quota = actionQuota({

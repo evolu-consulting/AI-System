@@ -1,7 +1,14 @@
 // CR-114 hub-fast-sdk · prompt caching: tiền tố (bỏ dấu `cache_control`) tới breakpoint history của lượt N là tiền tố BYTE
 // của lượt N+1 qua 3 lượt; phần biến động (dòng giờ) nằm sau breakpoint cuối; tools sắp theo tên.
 import { describe, expect, it } from "bun:test";
-import { type CachedPrompt, type CacheTurn, cachedPrompt, promptTokens } from "./prompt-cache";
+import {
+  blockWindowDrop,
+  type CachedPrompt,
+  type CacheTurn,
+  cachedPrompt,
+  historyBlock,
+  promptTokens,
+} from "./prompt-cache";
 
 const strip = (v: unknown): unknown =>
   JSON.parse(JSON.stringify(v, (k, x) => (k === "cache_control" ? undefined : x)));
@@ -50,6 +57,22 @@ describe("CR-114 · prompt-cache", () => {
     });
     expect(p.messages).toHaveLength(1);
     expect(p.tools?.map((t) => t.name)).toEqual(["a", "b"]);
+  });
+
+  it("history window shifts by block, keeping the start stable", () => {
+    const n = 20;
+    const block = historyBlock(n);
+    expect(block).toBe(10);
+    expect(historyBlock(40)).toBe(16);
+    expect(blockWindowDrop(15, n, block)).toBe(0); // chưa đầy cửa sổ
+    // Điểm bắt đầu tuyệt đối = total − n + drop: không đổi trong cả khối, nhảy đúng `block` khi qua khối.
+    const starts = [21, 22, 25, 30, 31, 40].map((t) => t - n + blockWindowDrop(t, n, block));
+    expect(starts).toEqual([10, 10, 10, 10, 20, 20]);
+    for (let t = n + 1; t < 200; t++) {
+      const kept = n - blockWindowDrop(t, n, block);
+      expect(kept).toBeGreaterThan(n - block);
+      expect(kept).toBeLessThanOrEqual(n);
+    }
   });
 
   it("promptTokens counts cached input", () => {

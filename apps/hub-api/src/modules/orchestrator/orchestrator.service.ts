@@ -40,11 +40,14 @@ async function loadInput(d: OrchestratorDeps, ctx: RunContext): Promise<LoopInpu
   const groupIds = us?.groupIds ?? new Set<string>();
   const who = { tenantId: r.tenantId, userId: r.userId, groupIds, external: us?.external === true };
   const access = accessInput(snapshot, who, scope ? { onlyKeys: scope } : undefined);
-  const { flow, history } = await withHubScope(d.db, { kind: "system" }, async (tx) => ({
+  const { flow, win } = await withHubScope(d.db, { kind: "system" }, async (tx) => ({
     flow: await repo.flowState(tx, r),
     // X2b D7 · run phòng: ngữ cảnh phòng thay flow nền (không đọc `hub.messages`).
-    history: ctx.roomHistory ?? (await repo.flowHistory(tx, r, settings.historyN)),
+    win: ctx.roomHistory
+      ? { items: ctx.roomHistory, total: null }
+      : await repo.flowHistoryWindow(tx, r, settings.historyN),
   }));
+  const history = win.items;
   const keyOf = (id: string | null) => snapshot.agents.find((a) => a.id === id)?.key ?? null;
   const last = keyOf(flow.agentId);
   return {
@@ -55,6 +58,8 @@ async function loadInput(d: OrchestratorDeps, ctx: RunContext): Promise<LoopInpu
     visible: visibleAgents(access),
     hint: { last_agent: last, waiting_for: flow.pendingAsk ? last : null },
     history,
+    // CR-114 · tổng tin của flow ⇒ đường SDK dịch cửa sổ history theo khối (cache ổn định).
+    ...(win.total !== null ? { historyTotal: win.total } : {}),
     message: ctx.content,
     locale: r.locale,
     ...(scope ? { stepDetail: { scope: [...scope].sort() } } : {}),
@@ -161,4 +166,13 @@ export function orchestratorDriver(d: OrchestratorDeps): RunDriver {
 /** H2b P10 · `history_n` tin gần nhất của flow cho run `direct` (cùng câu với vòng Orchestrator, không nhánh SQL mới). */
 export function flowHistoryOf(db: Db, run: repo.RunKey, historyN: number): Promise<HistoryItem[]> {
   return withHubScope(db, { kind: "system" }, (tx) => repo.flowHistory(tx, run, historyN));
+}
+
+/** CR-114 · như `flowHistoryOf` + tổng tin của flow (cùng một câu). */
+export function flowHistoryWindowOf(
+  db: Db,
+  run: repo.RunKey,
+  historyN: number,
+): Promise<{ items: HistoryItem[]; total: number }> {
+  return withHubScope(db, { kind: "system" }, (tx) => repo.flowHistoryWindow(tx, run, historyN));
 }

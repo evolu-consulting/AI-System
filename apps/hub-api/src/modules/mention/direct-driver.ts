@@ -10,7 +10,7 @@ import type { Db } from "../../lib/db";
 import { safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import { chunkText } from "../orchestrator/orchestrator.rules";
-import { deltaEmit, flowHistoryOf } from "../orchestrator/orchestrator.service";
+import { deltaEmit, flowHistoryWindowOf } from "../orchestrator/orchestrator.service";
 import { type AgentRunner, type JobOutcome, runJob } from "../runner/job/job-agent-runner";
 import type { RunContext, RunDriver } from "../runs/runs.service";
 import type { RunOutcome, SseWriter } from "../runs/sse/sse-writer";
@@ -101,7 +101,10 @@ async function runDirect(d: DirectDriverDeps, ctx: RunContext, plan: DirectRunSt
   const { writer, snapshot } = ctx;
   const historyN = ctx.orchestrator?.config.historyN ?? FALLBACK_HISTORY_N;
   // X2b D7 · run phòng: ngữ cảnh phòng thay flow nền.
-  const history = ctx.roomHistory ?? (await flowHistoryOf(d.db, writer.run, historyN));
+  const win = ctx.roomHistory
+    ? { items: ctx.roomHistory, total: undefined }
+    : await flowHistoryWindowOf(d.db, writer.run, historyN);
+  const history = win.items;
   const task = {
     run: writer.run,
     snapshot,
@@ -111,6 +114,7 @@ async function runDirect(d: DirectDriverDeps, ctx: RunContext, plan: DirectRunSt
     // one-agent · khối ngữ cảnh nơi gửi (vắng ⇒ prompt của agent như cũ).
     ...(ctx.systemNote && { systemPrompt: `${plan.agent.systemPrompt}\n\n${ctx.systemNote}` }),
     history,
+    ...(win.total !== undefined ? { historyTotal: win.total } : {}), // CR-114 · cửa sổ cache theo khối
     // H2c P9 · tập file của run → `payload.attachments` + khối file trong `prompt` (P10).
     files: ctx.files,
     stream: deltaSinkFor(

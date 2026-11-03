@@ -10,10 +10,11 @@
 import { aiTokensSince, effectiveDailyLimit } from "@ai/contracts";
 import type { Db } from "../db";
 import { logger } from "../logger";
+import type { Redis } from "../redis";
 import { type AiCaps, type AiClient, createAiClient, type ModelProvider } from "./ai-client";
 import { anthropicProvider } from "./anthropic.provider";
 import { type CliRun, claudeCliProvider } from "./claude-cli.provider";
-import type { TokenBucket } from "./token-bucket";
+import { envTokensPerMin, redisTokenBucket, type TokenBucket } from "./token-bucket";
 import { pgUsageStore } from "./usage.pg";
 
 export const AI_TENANT_DAILY_TOKENS = 5_000_000;
@@ -140,10 +141,17 @@ export function createHubAiClient(
     limitsOf?: TenantLimitsOf;
     /** CR-114 · bucket token/phút theo tenant (`redisTokenBucket`); vắng ⇒ không chặn tốc độ. */
     rate?: TokenBucket;
+    /** CR-114 · Redis của Hub ⇒ bucket `AI_TENANT_TOKENS_PER_MIN` (khi không truyền `rate`); vắng ⇒ không chặn tốc độ. */
+    redis?: Redis;
   } = {},
 ): AiClient {
   const env = o.env ?? process.env;
   const cap = envDailyTokens(env);
+  const rate =
+    o.rate ??
+    (o.redis
+      ? redisTokenBucket(o.redis, { tokensPerMin: () => envTokensPerMin(env), log: logger })
+      : undefined);
   const routed = o.provider === undefined ? envProviderRouter(env, o.sub) : null;
   return createAiClient({
     provider: routed ? routed.pick : (o.provider ?? null),
@@ -151,6 +159,6 @@ export function createHubAiClient(
     usage: pgUsageStore(db),
     caps: hubAiCaps(cap, o.limitsOf),
     log: logger,
-    ...(o.rate ? { rate: o.rate } : {}),
+    ...(rate ? { rate } : {}),
   });
 }

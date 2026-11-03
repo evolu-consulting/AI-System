@@ -4,7 +4,7 @@ import type { HistoryItem } from "@ai/contracts/hub";
 import { HISTORY_CONTENT_MAX } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { flows, messages } from "@ai/db/schema/hub";
-import { and, desc, eq, isNull, ne, or } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
 import { insertStep } from "../../lib/run-steps";
 
 export type FlowState = { agentId: string | null; pendingAsk: boolean };
@@ -20,9 +20,22 @@ export async function flowState(tx: Tx, r: RunKey): Promise<FlowState> {
 
 /** `history_n` tin gần nhất của flow, trừ tin của run hiện tại; cũ → mới. */
 export async function flowHistory(tx: Tx, r: RunKey, limit: number): Promise<HistoryItem[]> {
-  if (limit <= 0) return [];
+  return (await flowHistoryWindow(tx, r, limit)).items;
+}
+
+/** CR-114 · như `flowHistory` + `total` tin của flow (cùng MỘT câu, `count(*) over ()`) để dịch cửa sổ cache theo khối. */
+export async function flowHistoryWindow(
+  tx: Tx,
+  r: RunKey,
+  limit: number,
+): Promise<{ items: HistoryItem[]; total: number }> {
+  if (limit <= 0) return { items: [], total: 0 };
   const rows = await tx
-    .select({ role: messages.role, content: messages.content })
+    .select({
+      role: messages.role,
+      content: messages.content,
+      total: sql<number>`count(*) over ()`,
+    })
     .from(messages)
     .where(
       and(
@@ -33,9 +46,11 @@ export async function flowHistory(tx: Tx, r: RunKey, limit: number): Promise<His
     )
     .orderBy(desc(messages.createdAt), desc(messages.id))
     .limit(limit);
-  return rows
+  const total = Number(rows[0]?.total ?? 0);
+  const items = rows
     .reverse()
     .map((m) => ({ role: m.role, content: m.content.slice(0, HISTORY_CONTENT_MAX) }));
+  return { items, total };
 }
 
 /** H1-R06 · delegate ngoài danh sách được phép: ghi trace `skipped`, không job. `seq` do DB cấp (P11). */

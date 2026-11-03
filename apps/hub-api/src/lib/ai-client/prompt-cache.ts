@@ -53,6 +53,20 @@ export function cachedPrompt(i: CachedPromptInput): CachedPrompt {
   };
 }
 
+/** Khối dịch cửa sổ history (số tin): 8 lượt = 16 tin, không quá nửa `history_n` (giữ ≥ n/2 tin). */
+export const historyBlock = (n: number): number => Math.max(2, Math.min(16, Math.floor(n / 2)));
+
+/**
+ * CR-114 · cửa sổ history dịch THEO KHỐI: `total` tin của flow, lấy `n` tin cuối ⇒ số tin bỏ ở đầu cửa sổ để điểm bắt đầu
+ * (tuyệt đối) là bội của `block` — giữ nguyên qua `block` tin mới ⇒ tiền tố history (cache) ổn định thay vì đổi mỗi lượt.
+ * Giữ lại trong (n − block, n] tin. Chưa đầy cửa sổ ⇒ 0 (không bỏ).
+ */
+export function blockWindowDrop(total: number, n: number, block: number): number {
+  if (total <= n || block <= 1) return 0;
+  const start = Math.ceil((total - n) / block) * block;
+  return start - (total - n);
+}
+
 /** Tổng token prompt (input chưa cache + đọc cache + ghi cache) — dùng cho trần (không đếm thiếu khi trúng cache). */
 export const promptTokens = (u: {
   input_tokens: number;

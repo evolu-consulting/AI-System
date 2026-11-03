@@ -7,6 +7,7 @@ import { createDb, type Db } from "@ai/db";
 import type { AiClient } from "../../lib/ai-client/ai-client";
 import { createHubAiClient, type TenantLimitsOf } from "../../lib/ai-client/ai-client.env";
 import { logger } from "../../lib/logger";
+import type { Redis } from "../../lib/redis";
 import { createDocxConverter } from "../packs/kit/adapters/docx";
 import { createPackUow } from "../packs/kit/adapters/pack-uow";
 import { createPdfConverter } from "../packs/kit/adapters/pdf";
@@ -181,6 +182,8 @@ export function mountKnowledge(
     aiClient?: AiClient | null;
     /** tenant-quotas · trần token AI riêng của tenant (cache cấu hình). */
     limitsOf?: TenantLimitsOf;
+    /** CR-114 · bucket token/phút theo tenant cho AI client. */
+    redis?: Redis | undefined;
   } = {},
 ): void {
   if (!tools) return;
@@ -189,7 +192,10 @@ export function mountKnowledge(
   // F-07: usage/trần token ghi qua pool Hub chung (`db`, role hub_api) — pool tri thức chỉ SET ROLE knowledge_rw
   const aiClient =
     o.aiClient === undefined
-      ? createHubAiClient(db, o.limitsOf ? { limitsOf: o.limitsOf } : {})
+      ? createHubAiClient(db, {
+          ...(o.limitsOf ? { limitsOf: o.limitsOf } : {}),
+          ...(o.redis ? { redis: o.redis } : {}),
+        })
       : o.aiClient;
   const svc = knowledgeService(kdb, { env, aiClient });
   for (const t of knowledgeTools(svc)) tools.register(t);
