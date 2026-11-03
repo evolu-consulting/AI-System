@@ -36,7 +36,7 @@ export type HubUowDeps = {
   /** Q4 (chữ ký khoá): repo nhận `now` từ use case, UoW không tự đọc giờ. */
   clock: Clock;
   /** Phát sự kiện SAU COMMIT (mount: `makeOutboxPublisher`). Lỗi phát không rollback (đã COMMIT). */
-  publish: (events: readonly OutboxEvent[]) => Promise<void>;
+  publish: (events: readonly OutboxEvent[], opts?: { kickMany?: boolean }) => Promise<void>;
   /** Vắng ⇒ `createNotifier()` (notice `run_finished` theo lô; một run khi bắn `wait_until` kết thúc run — T8b). */
   notifier?: Pick<ProcessNotifier, "runsFinished" | "runFinished">;
   /** P-d2 · D2-11 · repo stage `tool` (cần `ProcessDeps` của mount — dựng trễ); vắng ⇒ gọi ném (chưa nối). */
@@ -188,7 +188,8 @@ async function systemEach<I, T>(
     }
     return res;
   });
-  if (events.length > 0) await deps.publish(events);
+  // CR-115 · chỉ lô này (vòng hẹn giờ) được gom kick thành `kickMany` (Thấp1).
+  if (events.length > 0) await deps.publish(events, { kickMany: true });
   return out;
 }
 

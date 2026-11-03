@@ -13,14 +13,21 @@ type PublishDeps = Pick<ProcessDeps, "launcher" | "postThread"> & {
   log: Pick<Logger, "warn">;
 };
 
+/** CR-115 · `kickMany` ⇒ phát của lô `systemEach` (CHỈ vòng hẹn giờ `retry`); vắng ⇒ đường cũ, giữ thứ tự sự kiện. */
+export type PublishOpts = { kickMany?: boolean };
+
 /**
- * CR-115 · ≥ 2 kick (lô `systemEach` của vòng hẹn giờ) ⇒ `kickMany` (một tx cho cả lô, lỗi từng run tự rơi về `kick`).
- * `true` ⇒ đã kick theo lô (người gọi bỏ sự kiện `kick` lẻ).
+ * CR-115 · lô hẹn giờ (`opts.kickMany`) có ≥ 2 kick ⇒ `kickMany` (một tx cho cả lô, lỗi từng run tự rơi về `kick`).
+ * `true` ⇒ đã kick theo lô (người gọi bỏ sự kiện `kick` lẻ). Mọi phát khác (chat, PF2, huỷ/apply…) giữ đường cũ.
  */
-async function kickBatch(d: PublishDeps, events: readonly OutboxEvent[]): Promise<boolean> {
+async function kickBatch(
+  d: PublishDeps,
+  events: readonly OutboxEvent[],
+  opts: PublishOpts | undefined,
+): Promise<boolean> {
   const kicks = events.flatMap((e) => (e.kind === "kick" ? [e.runId] : []));
   const kickMany = d.launcher.kickMany;
-  if (!kickMany || kicks.length < 2) return false;
+  if (opts?.kickMany !== true || !kickMany || kicks.length < 2) return false;
   await kickMany
     .call(d.launcher, kicks)
     .catch((err) =>
@@ -31,12 +38,12 @@ async function kickBatch(d: PublishDeps, events: readonly OutboxEvent[]): Promis
 
 export function makeOutboxPublisher(
   d: PublishDeps,
-): (events: readonly OutboxEvent[]) => Promise<void> {
-  return async (events) => {
+): (events: readonly OutboxEvent[], opts?: PublishOpts) => Promise<void> {
+  return async (events, opts) => {
     // `user_events` do adapter/code cũ dựng đúng kiểu `UserEvent` (lớp 2 chỉ chuyển tiếp).
     const user = events.flatMap((e) => (e.kind === "user_events" ? (e.events as UserEvent[]) : []));
     if (user.length > 0) await publishUserEvents(d.redis, user, d.log);
-    const many = await kickBatch(d, events);
+    const many = await kickBatch(d, events, opts);
     for (const e of events) {
       if (e.kind === "user_events" || (many && e.kind === "kick")) continue;
       try {

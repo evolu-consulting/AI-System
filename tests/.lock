@@ -1204,6 +1204,7 @@ e3d56610603df20af01acada42b847fc3a8e129335f58d09b6c8605ca1cf8710  tests/acceptan
 b194322ecf9b5734193e5d3455180bd5ba54b7300c0f8b9bf0cc8987797a5bf9  tests/acceptance/P-d/d1/_remind.ts
 ab97ee1f63ff99835ce15358f25148434901cb838efe2b7d774355905a4549d0  tests/acceptance/P-d/d1/_retry.ts
 2a328285b420ffff1c09b901c9c30a44da2ac571bb646cbd2608d7ec5ad2859e  tests/acceptance/P-d/d1/_wait.ts
+ba315e9951d5fc3a0251d035d8716a75dd1de807c389f55e256b3a304b254934  tests/acceptance/P-d/d1/batch-launch-fix.int.test.ts
 f06a79cf52a4710db3915d465ab4bdad7113953c5f0e3c7aec09bececc203916  tests/acceptance/P-d/d1/batch-launch.int.test.ts
 6aa8af598568f807f79fa4e02577ac97a619d4e9121b64fed351898c3b83b525  tests/acceptance/P-d/d1/batch-queries.int.test.ts
 5b7e491028ff2f1274af70454271b40140e582be0f974d7532ff012e327e479f  tests/acceptance/P-d/d1/cancel-timers.int.test.ts

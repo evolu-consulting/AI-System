@@ -56,13 +56,27 @@ async function fireBatch(d: ProcessBgDeps, now: Date): Promise<number> {
 const FIRE_TXS = 4;
 
 async function fireChunk(d: ProcessBgDeps, now: Date, limit: number): Promise<number> {
-  const claim = async (t: Parameters<typeof claimTx>[0]) =>
-    [...(await claimDueByRun(claimTx(t), now, limit))].sort(byRun);
-  const rows = await d.sysUow.systemEach(
-    claim,
-    (t) => t.tenant_id,
-    (r, t) => fireTimer(r, { id: t.id, runId: t.process_run_id, stageRunId: t.stage_run_id }, now),
-  );
+  // Hàng đã chọn của lần chạy (cuối) tx — cả tx ném (claim xong mà COMMIT lỗi) ⇒ từng hàng đi `fireOne` (Thấp2).
+  let claimed: readonly DueTimer[] = [];
+  const claim = async (t: Parameters<typeof claimTx>[0]) => {
+    claimed = [];
+    claimed = [...(await claimDueByRun(claimTx(t), now, limit))].sort(byRun);
+    return claimed;
+  };
+  const rows = await d.sysUow
+    .systemEach(
+      claim,
+      (t) => t.tenant_id,
+      (r, t) =>
+        fireTimer(r, { id: t.id, runId: t.process_run_id, stageRunId: t.stage_run_id }, now),
+    )
+    .catch((error: unknown) => {
+      d.log.warn("process-timer-batch-failed", {
+        count: claimed.length,
+        ...safeErrorFields(error),
+      });
+      return claimed.map((item) => ({ item, ok: false as const, error }));
+    });
   let fired = 0;
   for (const x of rows) {
     const out = x.ok ? x.value : await fireOne(d, x.item, now);
