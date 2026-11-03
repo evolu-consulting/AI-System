@@ -1,8 +1,8 @@
 // platform/gd0_dlc_fix · nút "Xem và duyệt" trên thẻ run DLC (chỉ key `dlc-*`) → modal: kết quả đầy đủ của bước + Duyệt / Từ chối.
 // Duyệt = `pass` (đi tiếp). Từ chối = `fail` + lý do + quay lại bước cấu hình cho điểm duyệt (lib/dlc-review). Lỗi ⇒ câu riêng.
 import { FEEDBACK_MAX, type ProcessRunSummary } from "@ai/contracts/chat";
-import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
@@ -15,13 +15,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "~/components/ui/dialog";
+import { Skeleton } from "~/components/ui/skeleton";
 import { Textarea } from "~/components/ui/textarea";
 import { OutputView } from "../../shared/components/OutputView";
 import { useProcessRun } from "../../shared/hooks/use-process-run";
 import { processKeys } from "../../shared/keys";
+import { fetchDlcStepDetail } from "../api";
 import { useReviewDecision } from "../hooks/use-review-actions";
 import { type DlcReviewTarget, dlcReviewTarget, isDlcProcess } from "../lib/dlc-review";
 import { reviewErrorMessage } from "../lib/review-error";
+
+const Markdown = lazy(() => import("~/features/answer/components/Markdown"));
 
 /** Có hiện nút không: chỉ run DLC đang chờ kiểm. */
 export const showDlcReview = (run: ProcessRunSummary): boolean =>
@@ -102,11 +106,7 @@ function DlcReviewBody(p: { runId: string; target: DlcReviewTarget; onDone: () =
   return (
     <>
       <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border p-3">
-        {target.outputId ? (
-          <OutputView runId={p.runId} outputId={target.outputId} />
-        ) : (
-          <p className="text-sm text-secondary-foreground">{t("process.run.dlcReview.noOutput")}</p>
-        )}
+        <DlcStepContent runId={p.runId} target={target} />
       </div>
       {rejecting && (
         <div className="flex flex-col gap-1">
@@ -157,4 +157,26 @@ function DlcReviewBody(p: { runId: string; target: DlcReviewTarget; onDone: () =
       </DialogFooter>
     </>
   );
+}
+
+/** Nội dung đầy đủ của bước (plan/báo cáo của gói DLC); chưa có hoặc lỗi ⇒ bản kết quả của stage (bảng tóm tắt). */
+function DlcStepContent({ runId, target }: { runId: string; target: DlcReviewTarget }) {
+  const { t } = useTranslation();
+  const detail = useQuery({
+    queryKey: ["process", "dlc-step", runId, target.stage.key, target.outputId],
+    queryFn: ({ signal }) => fetchDlcStepDetail(runId, target.stage.key, signal),
+    retry: false,
+  });
+  if (detail.isPending) return <Skeleton aria-busy="true" className="h-16 w-full" />;
+  if (detail.data) {
+    return (
+      <div className="text-sm">
+        <Suspense fallback={<Skeleton className="h-16 w-full" />}>
+          <Markdown content={detail.data} />
+        </Suspense>
+      </div>
+    );
+  }
+  if (target.outputId) return <OutputView runId={runId} outputId={target.outputId} />;
+  return <p className="text-sm text-secondary-foreground">{t("process.run.dlcReview.noOutput")}</p>;
 }

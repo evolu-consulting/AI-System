@@ -47,7 +47,7 @@ import { sourcingModule } from "./contracts/sourcing.mount";
 import { supplierPricesModule } from "./contracts/supplier-prices.mount";
 import { type UploadMountDeps, uploadModule } from "./contracts/upload.mount";
 import { mountCoreTools, mountDlcWired } from "./core-tools.mount";
-import type { AgentHubBridge } from "./dlc/dlc.mount";
+import { type AgentHubBridge, DLC_PACK, dlcRoutes } from "./dlc/dlc.mount";
 import { packMeRoutes } from "./kit/adapters/me.route";
 import { createPackFiles, packFilesRepo } from "./kit/adapters/pack-files.filebox";
 import { packFilesRoutes } from "./kit/adapters/pack-files.routes";
@@ -130,6 +130,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
     mountCoreTools({ ...d, db: d.db }, view);
     mountCommunityWired(app, PACK_PREFIX, d.db, view, tenantTz(d), { signal: d.signal }); // CR-102 · com-c3 · bảng tin chủ quản ↔ đối tác
     mountDlcWired({ ...d, db: d.db }); // dlc-engine · khe DLC + tool bước DLC (Agent Hub qua cầu `dlcAgents`)
+    app.route(`${PACK_PREFIX}/${DLC_PACK}`, dlcRoutes(d.db, d.packRuns)); // dlc-chat-review · nội dung bước cho modal duyệt
     setChatUsageSink(chatUsageSink(d.db)); // M3 Â· usage chat (M2) â‡’ báº£ng usage chung cá»§a AI client
   }
   rejectToolCollisions(d);
