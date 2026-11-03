@@ -1,0 +1,106 @@
+diff --git a/node_modules/postgres/.bun-tag-59b1265508b1977c b/.bun-tag-59b1265508b1977c
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/node_modules/postgres/.bun-tag-fe630f586bf7be3c b/.bun-tag-fe630f586bf7be3c
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/cjs/src/connection.js b/cjs/src/connection.js
+index 07f6716702ac888215c86ad6e0071aaf55ae519c..cd27622fe6f2998de775d902e3c00f3076c5b3c2 100644
+--- a/cjs/src/connection.js
++++ b/cjs/src/connection.js
+@@ -157,6 +157,11 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+     if (terminated)
+       return queryError(q, Errors.connection('CONNECTION_DESTROYED', options))
+ 
++    // patch(cr116): socket closed while the connection is still reserved (begin() sends ROLLBACK after the backend
++    // died) => reject instead of scheduling a write to a null socket (uncaught TypeError in setImmediate).
++    if (!socket)
++      return queryError(q, Errors.connection('CONNECTION_CLOSED', options))
++
+     if (stream)
+       return queryError(q, Errors.generic('COPY_IN_PROGRESS', 'You cannot execute queries during copy'))
+ 
+@@ -252,6 +257,11 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+   }
+ 
+   function nextWrite(fn) {
++    if (!socket) { // patch(cr116): closed meanwhile => drop the pending chunk, never throw
++      nextWriteTimer !== null && clearImmediate(nextWriteTimer)
++      chunk = nextWriteTimer = null
++      return false
++    }
+     const x = socket.write(chunk, fn)
+     nextWriteTimer !== null && clearImmediate(nextWriteTimer)
+     chunk = nextWriteTimer = null
+@@ -438,6 +448,7 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+     remaining = 0
+     incomings = null
+     clearImmediate(nextWriteTimer)
++    chunk = nextWriteTimer = null // patch(cr116): stale chunk/timer would block the reconnect's StartupMessage
+     socket.removeListener('data', data)
+     socket.removeListener('connect', connected)
+     idleTimer.cancel()
+@@ -451,6 +462,13 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+       return reconnect()
+ 
+     !hadError && (query || sent.length) && error(Errors.connection('CONNECTION_CLOSED', options, socket))
++    // patch(cr116): fail what is still queued and forget the dead socket's in-flight state. On hadError the socket
++    // 'error' event failed only what was queued THEN; begin()'s ROLLBACK queued after it would stay in `sent` and be
++    // matched against the reconnected session's replies (tx hangs). A stale `errorResponse` (57P01 FATAL, no
++    // ReadyForQuery follows) would reject the next connection's first query.
++    hadError && (query || sent.length) && error(Errors.connection('CONNECTION_CLOSED', options, socket))
++    query = results = errorResponse = null
++    result = new Result()
+     closedTime = performance.now()
+     hadError && options.shared.retries++
+     delay = (typeof backoff === 'function' ? backoff(options.shared.retries) : backoff) * 1000
+diff --git a/src/connection.js b/src/connection.js
+index 1b1cccde43b4570d5d071d6ffaab2669b3c2065a..57b016bc9d5dac2a06eb8b18f8faa8b53c47934f 100644
+--- a/src/connection.js
++++ b/src/connection.js
+@@ -157,6 +157,11 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+     if (terminated)
+       return queryError(q, Errors.connection('CONNECTION_DESTROYED', options))
+ 
++    // patch(cr116): socket closed while the connection is still reserved (begin() sends ROLLBACK after the backend
++    // died) => reject instead of scheduling a write to a null socket (uncaught TypeError in setImmediate).
++    if (!socket)
++      return queryError(q, Errors.connection('CONNECTION_CLOSED', options))
++
+     if (stream)
+       return queryError(q, Errors.generic('COPY_IN_PROGRESS', 'You cannot execute queries during copy'))
+ 
+@@ -252,6 +257,11 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+   }
+ 
+   function nextWrite(fn) {
++    if (!socket) { // patch(cr116): closed meanwhile => drop the pending chunk, never throw
++      nextWriteTimer !== null && clearImmediate(nextWriteTimer)
++      chunk = nextWriteTimer = null
++      return false
++    }
+     const x = socket.write(chunk, fn)
+     nextWriteTimer !== null && clearImmediate(nextWriteTimer)
+     chunk = nextWriteTimer = null
+@@ -438,6 +448,7 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+     remaining = 0
+     incomings = null
+     clearImmediate(nextWriteTimer)
++    chunk = nextWriteTimer = null // patch(cr116): stale chunk/timer would block the reconnect's StartupMessage
+     socket.removeListener('data', data)
+     socket.removeListener('connect', connected)
+     idleTimer.cancel()
+@@ -451,6 +462,13 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+       return reconnect()
+ 
+     !hadError && (query || sent.length) && error(Errors.connection('CONNECTION_CLOSED', options, socket))
++    // patch(cr116): fail what is still queued and forget the dead socket's in-flight state. On hadError the socket
++    // 'error' event failed only what was queued THEN; begin()'s ROLLBACK queued after it would stay in `sent` and be
++    // matched against the reconnected session's replies (tx hangs). A stale `errorResponse` (57P01 FATAL, no
++    // ReadyForQuery follows) would reject the next connection's first query.
++    hadError && (query || sent.length) && error(Errors.connection('CONNECTION_CLOSED', options, socket))
++    query = results = errorResponse = null
++    result = new Result()
+     closedTime = performance.now()
+     hadError && options.shared.retries++
+     delay = (typeof backoff === 'function' ? backoff(options.shared.retries) : backoff) * 1000

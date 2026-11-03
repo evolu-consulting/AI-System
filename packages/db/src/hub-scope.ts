@@ -4,7 +4,8 @@
 import { sql } from "drizzle-orm";
 import type { PgTransactionConfig } from "drizzle-orm/pg-core";
 import type { Db } from "./client";
-import { SCOPE_MAX_ATTEMPTS, sqlState, type Tx } from "./scope";
+import type { Tx } from "./scope";
+import { runTx } from "./tx-retry";
 
 export type HubScope = { kind: "user"; tenantId: string; userId: string } | { kind: "system" };
 
@@ -18,10 +19,8 @@ export async function setHubScope(tx: Tx, scope: HubScope): Promise<void> {
   );
 }
 
-const RETRYABLE = new Set(["40P01", "40001"]);
-
 /**
- * Mở transaction, đặt scope hub rồi chạy fn. 40P01/40001 → chạy lại cả transaction (tối đa SCOPE_MAX_ATTEMPTS),
+ * Mở transaction, đặt scope hub rồi chạy fn. 40P01/40001/mất kết nối trước COMMIT (tx-retry.ts) → chạy lại cả transaction (tối đa SCOPE_MAX_ATTEMPTS),
  * nên `fn` chỉ được làm việc DB (không gửi gì ra ngoài) để chạy lại không có tác dụng phụ.
  */
 export async function withHubScope<T>(
@@ -30,15 +29,12 @@ export async function withHubScope<T>(
   fn: (tx: Tx) => Promise<T>,
   config?: PgTransactionConfig,
 ): Promise<T> {
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await db.db.transaction(async (tx) => {
-        await setHubScope(tx, scope);
-        return fn(tx);
-      }, config);
-    } catch (err) {
-      const state = sqlState(err);
-      if (!state || !RETRYABLE.has(state) || attempt >= SCOPE_MAX_ATTEMPTS) throw err;
-    }
-  }
+  return runTx(
+    db,
+    async (tx) => {
+      await setHubScope(tx, scope);
+      return fn(tx);
+    },
+    config,
+  );
 }

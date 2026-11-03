@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import type { PgTransactionConfig } from "drizzle-orm/pg-core";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type { Db } from "./client";
+import { runTx } from "./tx-retry";
 
 export type DbScope = { kind: "tenant"; tenantId: string } | { kind: "platform" };
 export type Tx = Parameters<Parameters<PostgresJsDatabase["transaction"]>[0]>[0];
@@ -20,18 +21,11 @@ export async function setScope(tx: Tx, scope: DbScope): Promise<void> {
   );
 }
 
-/** 40P01 deadlock, 40001 serialization failure: Postgres đã rollback cả transaction nên chạy lại an toàn. */
-const RETRYABLE = new Set(["40P01", "40001"]);
-export const SCOPE_MAX_ATTEMPTS = 3;
-
-export function sqlState(err: unknown): string | undefined {
-  const e = err as { code?: unknown; cause?: { code?: unknown } } | null;
-  const code = e?.code ?? e?.cause?.code;
-  return typeof code === "string" ? code : undefined;
-}
+export { SCOPE_MAX_ATTEMPTS, sqlState } from "./tx-retry";
 
 /**
- * Mở transaction, đặt app.scope/app.tenant_id (transaction-local) rồi chạy fn. Gặp 40P01/40001 thì chạy lại cả
+ * Mở transaction, đặt app.scope/app.tenant_id (transaction-local) rồi chạy fn. Gặp 40P01/40001 (hoặc mất kết nối
+ * trước COMMIT — CR-116, tx-retry.ts) thì chạy lại cả
  * transaction (tối đa SCOPE_MAX_ATTEMPTS lần) thay vì để thành 500 — `fn` chỉ được làm việc DB (không gửi gì ra
  * ngoài) để chạy lại không có tác dụng phụ. `config` (tuỳ chọn): mức cô lập/chế độ truy cập, vd đọc nhiều câu cần cùng
  * một snapshot → `{ isolationLevel: "repeatable read", accessMode: "read only" }`.
@@ -42,15 +36,12 @@ export async function withScope<T>(
   fn: (tx: Tx) => Promise<T>,
   config?: PgTransactionConfig,
 ): Promise<T> {
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await db.db.transaction(async (tx) => {
-        await setScope(tx, scope);
-        return fn(tx);
-      }, config);
-    } catch (err) {
-      const state = sqlState(err);
-      if (!state || !RETRYABLE.has(state) || attempt >= SCOPE_MAX_ATTEMPTS) throw err;
-    }
-  }
+  return runTx(
+    db,
+    async (tx) => {
+      await setScope(tx, scope);
+      return fn(tx);
+    },
+    config,
+  );
 }

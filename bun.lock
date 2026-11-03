@@ -383,6 +383,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "postgres@3.4.9": "patches/postgres@3.4.9.patch",
+  },
   "packages": {
     "@ai/admin-api": ["@ai/admin-api@workspace:apps/admin-api"],
 

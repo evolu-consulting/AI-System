@@ -5,7 +5,8 @@ import { PackKeySchema } from "@ai/contracts";
 import { sql } from "drizzle-orm";
 import type { PgTransactionConfig } from "drizzle-orm/pg-core";
 import type { Db } from "./client";
-import { SCOPE_MAX_ATTEMPTS, sqlState, type Tx } from "./scope";
+import type { Tx } from "./scope";
+import { runTx } from "./tx-retry";
 
 /** `userId: null` = việc nền (PackSystemUow) — chỉ đặt tenant. */
 export type PackScope = { packKey: string; tenantId: string; userId: string | null };
@@ -20,7 +21,6 @@ export class PackScopeError extends Error {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const RETRYABLE = new Set(["40P01", "40001"]);
 
 /** Role DB của gói (`packs.install`): `<k>_rw`. Khoá sai dạng / bị cấm ⇒ `PACK_KEY_INVALID`. */
 export function packRole(packKey: string): string {
@@ -48,21 +48,14 @@ export async function withPackJobScope<T>(
 ): Promise<T> {
   if (!PackKeySchema.safeParse(packKey).success) throw new PackScopeError("PACK_KEY_INVALID");
   const role = `${packKey}_job`;
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await db.db.transaction(async (tx) => {
-        await tx.execute(sql`select set_config('role', ${role}, true)`);
-        return fn(tx);
-      });
-    } catch (err) {
-      const state = sqlState(err);
-      if (!state || !RETRYABLE.has(state) || attempt >= SCOPE_MAX_ATTEMPTS) throw err;
-    }
-  }
+  return runTx(db, async (tx) => {
+    await tx.execute(sql`select set_config('role', ${role}, true)`);
+    return fn(tx);
+  });
 }
 
 /**
- * Mở tx, một câu `set_config('role'…)` + tenant/user, rồi chạy `fn`. `fn` chỉ làm việc DB (chạy lại khi 40P01/40001 không
+ * Mở tx, một câu `set_config('role'…)` + tenant/user, rồi chạy `fn`. `fn` chỉ làm việc DB (chạy lại khi 40P01/40001/mất kết nối trước COMMIT không
  * có tác dụng phụ). Mọi bảng gói có RLS FORCE theo `app.tenant_id` (`packs.secure_table`).
  */
 export async function withPackScope<T>(
@@ -72,30 +65,27 @@ export async function withPackScope<T>(
   config?: PgTransactionConfig,
 ): Promise<T> {
   const { role, tid, uid } = checkScope(scope);
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await db.db.transaction(async (tx) => {
-        // HD78 · Luật 4c: tắt JIT trong tx gói (cùng câu, không thêm câu). Policy RESTRICTIVE của M1 (subplan EXISTS) đẩy ước lượng
-        // chi phí câu danh sách vượt `jit_above_cost` ⇒ Postgres biên dịch JIT ~70 ms cho câu chạy ~30 ms (đo: GET /payments
-        // 125,6 ms, JIT 70,7 ms). Câu gói là OLTP ngắn ⇒ JIT chỉ tốn.
-        // CR-102a · com-c2: `app.user_kind` lấy từ DB (sự thật, không tin người gọi) trong CÙNG câu; việc nền / user lạ ⇒ ''.
-        // RLS phòng thủ của gói (vd contracts 0067) chặn 'external'. CR-102 · com-c3: `app.ext_org_id` (kit 0006
-        // `packs.scope_ext_org`: ''/'internal'/uuid công ty/'denied') cũng trong câu này. Cả hai qua hàm SECURITY DEFINER (kit
-        // 0008 `packs.scope_user_kind`) — không đọc thẳng `admin.users` ⇒ pool riêng của gói (R1 `knowledge_api`, không USAGE
-        // `admin`) chạy được. `set_config('role'…)` ĐỨNG ĐẦU câu (đếm câu HD1/N1 neo vào đó): quyền EXECUTE kiểm lúc khởi tạo
-        // câu bằng role đăng nhập (hub_api / knowledge_api), thân hàm chạy bằng chủ hàm ⇒ role gói không cần quyền gì thêm.
-        await tx.execute(
-          sql`select set_config('role', ${role}, true), set_config('app.tenant_id', ${tid}, true),
+  return runTx(
+    db,
+    async (tx) => {
+      // HD78 · Luật 4c: tắt JIT trong tx gói (cùng câu, không thêm câu). Policy RESTRICTIVE của M1 (subplan EXISTS) đẩy ước lượng
+      // chi phí câu danh sách vượt `jit_above_cost` ⇒ Postgres biên dịch JIT ~70 ms cho câu chạy ~30 ms (đo: GET /payments
+      // 125,6 ms, JIT 70,7 ms). Câu gói là OLTP ngắn ⇒ JIT chỉ tốn.
+      // CR-102a · com-c2: `app.user_kind` lấy từ DB (sự thật, không tin người gọi) trong CÙNG câu; việc nền / user lạ ⇒ ''.
+      // RLS phòng thủ của gói (vd contracts 0067) chặn 'external'. CR-102 · com-c3: `app.ext_org_id` (kit 0006
+      // `packs.scope_ext_org`: ''/'internal'/uuid công ty/'denied') cũng trong câu này. Cả hai qua hàm SECURITY DEFINER (kit
+      // 0008 `packs.scope_user_kind`) — không đọc thẳng `admin.users` ⇒ pool riêng của gói (R1 `knowledge_api`, không USAGE
+      // `admin`) chạy được. `set_config('role'…)` ĐỨNG ĐẦU câu (đếm câu HD1/N1 neo vào đó): quyền EXECUTE kiểm lúc khởi tạo
+      // câu bằng role đăng nhập (hub_api / knowledge_api), thân hàm chạy bằng chủ hàm ⇒ role gói không cần quyền gì thêm.
+      await tx.execute(
+        sql`select set_config('role', ${role}, true), set_config('app.tenant_id', ${tid}, true),
             set_config('app.user_id', ${uid}, true),
             set_config('app.user_kind', packs.scope_user_kind(${uid}), true),
             set_config('app.ext_org_id', packs.scope_ext_org(${tid}, ${uid}), true),
             set_config('jit', 'off', true)`,
-        );
-        return fn(tx);
-      }, config);
-    } catch (err) {
-      const state = sqlState(err);
-      if (!state || !RETRYABLE.has(state) || attempt >= SCOPE_MAX_ATTEMPTS) throw err;
-    }
-  }
+      );
+      return fn(tx);
+    },
+    config,
+  );
 }

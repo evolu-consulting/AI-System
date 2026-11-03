@@ -136,5 +136,8 @@
     "postgres": "3.4.9",
     "turbo": "2.11.5",
     "typescript": "6.0.3"
+  },
+  "patchedDependencies": {
+    "postgres@3.4.9": "patches/postgres@3.4.9.patch"
   }
 }
