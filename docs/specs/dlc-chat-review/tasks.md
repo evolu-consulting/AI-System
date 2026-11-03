@@ -12,6 +12,7 @@ Vấn đề (Rowan 2026-11-03): demo DLC trên sohoptac2 dùng giao diện chat;
 |---|---|
 | `run-block/lib/dlc-review.ts`: chỉ run key `dlc-*`; task review mở (của tôi thắng task chung); Từ chối ⇒ `fail` + bước gần nhất trong `back_to_steps`, rỗng ⇒ làm lại chính bước đang duyệt | [x] |
 | `DlcReviewDialog.tsx`: nút "Xem và duyệt" trên `RunCard` khi run DLC `waiting_review` ⇒ modal: kết quả đầy đủ (`OutputView`) + Duyệt / Từ chối (lý do bắt buộc, hiện bước sẽ quay lại) | [x] |
+| `DlcConversationReview.tsx`: prod build `PUBLIC_FROZEN_MODULES` off ⇒ cổng engine off, thẻ run bị ẩn; thẻ "chờ duyệt" DLC hiện ở fallback của cổng (tự nạp chuỗi `process.*`, hỏi lại 15 s, lỗi/403 ⇒ ẩn) | [x] |
 | i18n `process.run.dlcReview.*` (vi/en) | [x] |
 | deploy sohoptac2: `HUB_MAX_CONCURRENT_RUNS` mặc định 5 (bước DLC chờ người tính 1 run ⇒ 2 làm nghẽn chat); `deploy.ps1 -Key` | [x] |
 | unit `dlc-review.test.ts` (4 ca) | [x] |
@@ -20,6 +21,7 @@ Vấn đề (Rowan 2026-11-03): demo DLC trên sohoptac2 dùng giao diện chat;
 - Không đổi `ReviewTaskCard`, trang `/runs/$id`, admin-web: các chỗ duyệt khác giữ nguyên (Rowan: "đừng apply cho mọi chỗ duyệt").
 - "Từ chối quay lại bước trước đó" = bước cấu hình cho điểm duyệt (`after.back_to_steps`, lấy bước lớn nhất); không cấu hình ⇒
   làm lại chính bước vừa tạo kết quả (vd bước plan của DLC Bug Fix). Không cứng bước plan.
+- Không bật `PUBLIC_FROZEN_MODULES` trên prod (sẽ mở phòng, menu `!`, hộp việc…); chỉ thẻ DLC nằm ngoài cờ.
 - Quyền duyệt do Hub quyết (`POST /review-tasks/:id/decision`); lỗi hiện câu riêng (`reviewErrorMessage`).
 
 ## Delta (so với docs/current)

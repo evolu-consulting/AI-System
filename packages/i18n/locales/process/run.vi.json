@@ -135,6 +135,8 @@
     "reason": "Lý do / cần sửa gì (bắt buộc)",
     "backTo": "Từ chối sẽ quay lại bước: {{step}}",
     "approved": "Đã duyệt \"{{stage}}\", quy trình đi tiếp.",
-    "rejected": "Đã từ chối, quay lại bước \"{{step}}\"."
+    "rejected": "Đã từ chối, quay lại bước \"{{step}}\".",
+    "section": "Quy trình DLC chờ duyệt",
+    "waiting": "{{name}} đang chờ bạn duyệt"
   }
 }

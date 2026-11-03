@@ -135,6 +135,8 @@
     "reason": "Reason / what to change (required)",
     "backTo": "Rejecting goes back to step: {{step}}",
     "approved": "Approved \"{{stage}}\", the process continues.",
-    "rejected": "Rejected, going back to step \"{{step}}\"."
+    "rejected": "Rejected, going back to step \"{{step}}\".",
+    "section": "DLC processes waiting for review",
+    "waiting": "{{name}} is waiting for your review"
   }
 }
