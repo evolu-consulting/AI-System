@@ -21,6 +21,21 @@ export function withArtifactTools(keys: string[], on = artifactHandoffOn()): str
   return keys;
 }
 
+/** fix114 · job THỰC SỰ đọc được artifact: `payload.mcp` (sau `withArtifactTools` + `mcpConfigFor`) có `artifact-get`. */
+export const artifactToolsGranted = (mcp: { tools: readonly string[] } | null): boolean =>
+  mcp?.tools.includes(ARTIFACT_GET) === true;
+
+/**
+ * fix114 · prompt/lịch sử job dùng: `byRef` chỉ khi đã cấp `artifact-get` cho đúng job này; còn lại (noTools ⇒ không MCP,
+ * đủ `MCP_TOOLS_MAX`, không URL `/mcp`, cờ tắt) ⇒ nguyên văn như khi tắt cờ.
+ */
+export function jobVariant<T extends { prompt: string; history: readonly unknown[] }>(
+  task: T & { byRef?: { prompt: string; history: T["history"] } },
+  mcp: { tools: readonly string[] } | null,
+): { prompt: string; history: T["history"] } {
+  return task.byRef && artifactToolsGranted(mcp) ? task.byRef : task;
+}
+
 /** `tools` = `payload.mcp.tools` của job; `runId` rỗng ⇒ cả tenant (chỉ dùng trong test/việc nền). */
 export type ArtifactMcpCtx = {
   tenantId: string;

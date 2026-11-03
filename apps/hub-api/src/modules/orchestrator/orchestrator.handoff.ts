@@ -1,13 +1,12 @@
 // CR-114 · hub-agent-handoff · bàn giao bằng tham chiếu trong vòng Orchestrator (thuần + một cổng ghi tiêm vào).
-// - Kết quả agent ≥ 300 token ⇒ lưu artifact; `<steps>` giữ nguyên văn bước MỚI NHẤT (Orchestrator không có MCP, cần nó để
-//   quyết/trả lời), các bước cũ còn trích đoạn + `art:…`.
-// - Delegate sau đó nhận phong bì `{g,in,c,o,b}`: kết quả bước trước là `ref` nếu agent đọc được MCP (`canFetch`), không thì
-//   nguyên văn (không mất dữ kiện).
-// - Lịch sử > N lượt ⇒ tóm tắt + khoá artifact giữ nguyên văn lượt cũ, N lượt cuối giữ nguyên.
+// fix114: người đọc KHÔNG có MCP artifact (Orchestrator, dify, direct-SDK, job noTools, job đã đủ MCP_TOOLS_MAX) thấy y như
+// khi tắt cờ: `<steps>` và lịch sử nguyên văn, `prompt` = task. Bản tham chiếu đi kèm job ở `byRef`; chỉ runner job — nơi
+// cấp tool — chọn nó khi job THỰC SỰ nhận `artifact-get` (`artifactToolsGranted`), nên không ai nhận `ref` mà không đọc được.
+// - Kết quả agent ≥ 300 token ⇒ lưu artifact; bản tham chiếu mang phong bì `{g,in,o,b}` (`in` = ref + tóm tắt).
+// - Lịch sử > N lượt ⇒ bản tham chiếu mang tóm tắt + khoá artifact giữ nguyên văn lượt cũ, N lượt cuối nguyên văn.
 import type { AgentResult, HistoryItem } from "@ai/contracts/hub";
 import {
   type ArtifactRef,
-  type HandoffInput,
   inputOf,
   renderEnvelope,
   shouldInline,
@@ -18,22 +17,18 @@ import {
   olderBody,
   splitHistory,
 } from "../artifacts/history.rules";
-import type { AgentConfig } from "../config/config.rules";
-import type { StepNote } from "./orchestrator.prompt";
 import { canPassThrough } from "./orchestrator.rules";
 
 export type LoopHandoff = {
   put(body: string, meta: { summary?: string }): Promise<ArtifactRef>;
-  /** Job của agent có MCP `/mcp` (đọc được `artifact.get`). */
-  canFetch(agent: AgentConfig): boolean;
   keepTurns?: number;
 };
 
+/** Bản tham chiếu của một job delegate (runner job chỉ dùng khi đã cấp `artifact-get`). */
+export type ByRef = { prompt: string; history: readonly HistoryItem[] };
+
 /** Một kết quả bước đã có (theo thứ tự). `ref` null = nhỏ, giữ nguyên văn. */
 export type StepOutput = { agent: string; text: string; ref: ArtifactRef | null };
-
-/** Trích đoạn bước cũ trong `<steps>`. */
-export const STEP_EXCERPT_CHARS = 400;
 
 /** Kết quả sẽ vào `<steps>` (không pass-through, không hỏi lại) ⇒ đáng lưu artifact. */
 export const willNote = (
@@ -52,66 +47,58 @@ export async function storeOutput(h: LoopHandoff, text: string): Promise<Artifac
   }
 }
 
-const excerpt = (text: string, ref: ArtifactRef): string => {
-  const pts = [...text];
-  const head =
-    pts.length <= STEP_EXCERPT_CHARS ? text : `${pts.slice(0, STEP_EXCERPT_CHARS).join("")}…`;
-  return `${head} [full: ${ref.short}, ${ref.tokens} tok]`;
-};
-
-/** `<steps>`: mọi bước trừ bước cuối có ref ⇒ trích đoạn + khoá. `refs[i]` ứng với `notes[i]`. */
-export function stepsView(
-  notes: readonly StepNote[],
-  refs: readonly (ArtifactRef | null)[],
-): StepNote[] {
-  const last = notes.length - 1;
-  return notes.map((n, i) => {
-    const ref = refs[i];
-    if (i === last || !ref || n.status === "skipped") return n;
-    return { ...n, text: excerpt(n.text, ref) };
-  });
-}
-
-/** Prompt của delegate: không có bước trước ⇒ `task` nguyên như cũ; có ⇒ phong bì với `in`. */
+/** Prompt tham chiếu: không có bước trước ⇒ `task` nguyên; có ⇒ phong bì, kết quả lớn thành `ref`. */
 export function delegatePrompt(
   task: string,
   prior: readonly StepOutput[],
-  o: { canFetch: boolean; budget?: number },
+  budget?: number,
 ): string {
   if (prior.length === 0) return task;
-  const inputs: HandoffInput[] = prior.map((p) =>
-    o.canFetch ? inputOf(p.text, p.ref) : { text: p.text },
-  );
   return renderEnvelope({
     g: task,
-    in: inputs,
+    in: prior.map((p) => inputOf(p.text, p.ref)),
     o: "answer",
-    ...(o.budget && o.budget > 0 ? { b: o.budget } : {}),
+    ...(budget && budget > 0 ? { b: budget } : {}),
   });
 }
 
-/** `prompt` của job delegate: không `handoff` ⇒ `task` nguyên văn (như cũ). */
-export const delegateTask = (
-  h: LoopHandoff | undefined,
-  d: { agent: AgentConfig; task: string },
-  prior: readonly StepOutput[],
-  budget: number,
-): string =>
-  h ? delegatePrompt(d.task, prior, { canFetch: h.canFetch(d.agent), budget }) : d.task;
-
-/** Lịch sử đã nén cho cả run (một lần ghi artifact cho các lượt cũ). */
+/** Lịch sử đã nén cho bản tham chiếu (một lần ghi artifact cho các lượt cũ); ngắn / lỗi kho ⇒ null (dùng nguyên văn). */
 export async function compactRunHistory(
   h: LoopHandoff,
   history: readonly HistoryItem[],
-): Promise<HistoryItem[]> {
+): Promise<HistoryItem[] | null> {
   const keep = h.keepTurns ?? KEEP_LAST_TURNS;
   const { older } = splitHistory(history, keep);
-  if (older.length === 0) return [...history];
-  let ref: string | null = null;
+  if (older.length === 0) return null;
   try {
-    ref = (await h.put(olderBody(older), { summary: `${older.length} earlier turns` })).short;
+    const ref = (await h.put(olderBody(older), { summary: `${older.length} earlier turns` })).short;
+    return compactHistory(history, { keep, ref });
   } catch {
-    ref = null;
+    return null;
   }
-  return compactHistory(history, { keep, ref });
+}
+
+/** `byRef` của delegate cho vòng lặp: lịch sử nén ghi artifact một lần mỗi run (`st.compacted`, lười, chỉ khi có delegate). */
+export async function byRefJob(
+  h: LoopHandoff,
+  st: { outputs: readonly StepOutput[]; compacted?: Promise<HistoryItem[] | null> },
+  history: readonly HistoryItem[],
+  task: string,
+  budget: number,
+): Promise<{ byRef?: ByRef }> {
+  st.compacted ??= compactRunHistory(h, history);
+  const b = byRefOf(task, st.outputs, history, await st.compacted, budget);
+  return b ? { byRef: b } : {};
+}
+
+/** `byRef` của job delegate; không có gì để rút gọn (không bước trước, lịch sử ngắn) ⇒ undefined (job như cũ). */
+export function byRefOf(
+  task: string,
+  prior: readonly StepOutput[],
+  history: readonly HistoryItem[],
+  compacted: readonly HistoryItem[] | null,
+  budget: number,
+): ByRef | undefined {
+  if (prior.every((p) => !p.ref) && !compacted) return undefined;
+  return { prompt: delegatePrompt(task, prior, budget), history: compacted ?? history };
 }

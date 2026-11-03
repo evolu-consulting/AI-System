@@ -12,7 +12,7 @@ import type { Span } from "@opentelemetry/api";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import { runSpanOf, setTokens, spanError, startSpan, traceparentOf } from "../../../lib/otel";
-import { withArtifactTools } from "../../artifacts/artifact.mcp";
+import { jobVariant, withArtifactTools } from "../../artifacts/artifact.mcp";
 import {
   agentFilesBlock,
   jobAttachments,
@@ -194,8 +194,9 @@ export class JobAgentRunner implements AgentRunner {
   ): AgentCliJob | null {
     const attachments = jobAttachments(agentFiles(task));
     const block = agentFilesBlock(attachments);
+    const v = jobVariant(task, mcp); // CR-114 fix114 · bản tham chiếu chỉ khi job có `artifact-get`
     // K1 D10 · có `kh-query` ⇒ dòng gợi ý cuối prompt nhiệm vụ.
-    const prompt = khItems.length > 0 ? `${task.prompt}\n\n${KH_QUERY_HINT}` : task.prompt;
+    const prompt = khItems.length > 0 ? `${v.prompt}\n\n${KH_QUERY_HINT}` : v.prompt;
     const payload = buildJobPayload({
       jobId: ids.jobId,
       stepId: ids.stepId,
@@ -208,7 +209,7 @@ export class JobAgentRunner implements AgentRunner {
       systemPrompt: now
         ? withNowLine(task.systemPrompt ?? task.agent.systemPrompt, now, SYSTEM_PROMPT_MAX)
         : (task.systemPrompt ?? task.agent.systemPrompt),
-      history: task.history,
+      history: v.history,
       stream: task.stream !== undefined,
       attachments,
       ...(task.role === "agent" && task.sources?.length ? { sources: task.sources } : {}),

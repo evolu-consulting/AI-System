@@ -30,23 +30,19 @@ export type OrchestratorDeps = {
   log: Logger;
   /** CR-114 · kho artifact cho bàn giao bằng tham chiếu; vắng ⇒ nguyên văn như cũ. */
   artifacts?: ArtifactSink;
-  /** = `HUB_PUBLIC_INTERNAL_URL` (runner chỉ cấp MCP khi có). */
-  mcpUrl?: string;
 };
 
 /**
- * CR-114 · khi bật, runner cấp `artifact-get/search` cho MỌI job agent `agentic-cli` (job-agent-runner `#mcp`) nếu Hub có
- * URL `/mcp` (`HUB_PUBLIC_INTERNAL_URL`) ⇒ agent đó nhận `ref`; agent khác nhận nguyên văn.
+ * CR-114 · kho artifact của run. Không quyết ai đọc được `ref`: job delegate mang `byRef`, runner job chọn nó chỉ khi job
+ * thực sự nhận `artifact-get` (`artifactToolsGranted`); người đọc khác thấy nguyên văn.
  */
 function handoffOf(d: OrchestratorDeps, ctx: RunContext): LoopHandoff | undefined {
   const store = d.artifacts;
   if (!store) return undefined;
   const r = ctx.writer.run;
   const who = { tenantId: r.tenantId, userId: r.userId };
-  const mcpOn = !!d.mcpUrl;
   return {
     put: (body, meta) => store.put(who, body, { ...meta, runId: r.id }),
-    canFetch: (agent) => agent.runtime === "agentic-cli" && mcpOn,
   };
 }
 
@@ -190,7 +186,6 @@ export function orchestratorDriver(base: OrchestratorDeps): RunDriver {
       : {
           ...base,
           artifacts: artifactStoreFor(base.db, env),
-          ...(env.HUB_PUBLIC_INTERNAL_URL ? { mcpUrl: env.HUB_PUBLIC_INTERNAL_URL } : {}),
         };
   return {
     start: (ctx) => {

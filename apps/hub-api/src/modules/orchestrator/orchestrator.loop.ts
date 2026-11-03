@@ -27,11 +27,10 @@ import {
   streamAccept,
 } from "../stream/delta.rules";
 import {
-  compactRunHistory,
-  delegateTask,
+  type ByRef,
+  byRefJob,
   type LoopHandoff,
   type StepOutput,
-  stepsView,
   storeOutput,
   willNote,
 } from "./orchestrator.handoff";
@@ -71,6 +70,8 @@ export type LoopJob = {
   detail?: Readonly<Record<string, unknown>>;
   /** H2b P11 · loại delta chuyển tiếp (`streamAccept`); vắng = job không stream. */
   stream?: readonly DeltaKind[];
+  /** CR-114 · bản tham chiếu; chỉ runner job dùng, khi job thực sự nhận `artifact-get`. */
+  byRef?: ByRef;
 };
 
 export type LoopIo = {
@@ -129,10 +130,9 @@ type State = {
   hadPartial: boolean;
   answered: string | null;
   notes: StepNote[];
-  /** CR-114 · `refs[i]` ứng `notes[i]`; `outputs` cho phong bì delegate sau; `history` đã nén khi có `handoff`. */
-  refs: (ArtifactRef | null)[];
+  /** CR-114 · kết quả agent cho bản tham chiếu của delegate sau; `compacted` = lịch sử nén (một lần, lười). */
   outputs: StepOutput[];
-  history: readonly HistoryItem[];
+  compacted?: Promise<HistoryItem[] | null>;
 };
 
 const addUsage = (s: State, o: LoopJobOutcome) => {
@@ -225,8 +225,8 @@ async function decide(io: LoopIo, c: LoopInput, s: State): Promise<Decided> {
       {
         agents: c.visible,
         hint: c.hint,
-        history: s.history,
-        steps: io.handoff ? stepsView(s.notes, s.refs) : s.notes,
+        history: c.history,
+        steps: s.notes,
         stepsLeft: c.settings.maxSteps - s.steps,
         message: c.message,
         ...(c.attachments?.length ? { attachments: c.attachments } : {}),
@@ -267,10 +267,10 @@ async function delegate(
   const o = await io.job({
     agent: d.agent,
     role: "agent",
-    prompt: delegateTask(h, d, s.outputs, c.settings.tokenBudget - s.tokens),
-    history: s.history,
-    // Cửa sổ cache theo khối (fast-sdk) chỉ khi lịch sử chưa nén; có `handoff` ⇒ nén thay cho cửa sổ.
-    ...(!h && c.historyTotal !== undefined ? { historyTotal: c.historyTotal } : {}),
+    prompt: d.task,
+    history: c.history,
+    ...(c.historyTotal !== undefined ? { historyTotal: c.historyTotal } : {}),
+    ...(h ? await byRefJob(h, s, c.history, d.task, c.settings.tokenBudget - s.tokens) : {}),
     ...acceptOf(c, { role: "agent", runKind: "orchestrated", firstDelegate }),
   });
   addUsage(s, o);
@@ -303,7 +303,6 @@ function afterAgent(s: State, agent: AgentConfig, r: AgentResult, ref: Ref = nul
   } else {
     s.notes.push({ agent: agent.key, status: "done", text: r.text });
   }
-  s.refs.push(ref);
   s.outputs.push({ agent: agent.key, text: r.text, ref });
   s.answered = r.text;
   return null;
@@ -366,7 +365,6 @@ async function onDelegate(
   await io.skip({ agentId: known?.id ?? null, agentKey: dec.agent });
   s.steps++;
   s.notes.push({ agent: dec.agent, status: "skipped", reason: "not_allowed" });
-  s.refs.push(null);
   return null;
 }
 
@@ -382,9 +380,7 @@ export async function runLoop(io: LoopIo, c: LoopInput): Promise<LoopEnd> {
     hadPartial: false,
     answered: null,
     notes: [],
-    refs: [],
     outputs: [],
-    history: io.handoff ? await compactRunHistory(io.handoff, c.history) : c.history,
   };
   const { maxSteps, tokenBudget } = c.settings;
   for (;;) {

@@ -1,7 +1,8 @@
-// CR-114 · hub-agent-handoff · đo kịch bản đa agent CỐ ĐỊNH (LLM giả, đếm token prompt dựng ra bằng `estimateTokens`):
-// lịch sử 24 lượt → Orchestrator giao researcher → analyst → writer → trả lời. "Trước" = nguyên văn (Orchestrator phải dán kết
-// quả bước trước vào `task` vì không có kênh khác); "sau" = `LoopIo.handoff` (artifact trong bộ nhớ). Đúng đắn: mọi dữ kiện
-// FACTS mà writer cần đều tới được writer (trong prompt/lịch sử, hoặc qua `artifact.get` của khoá có trong prompt).
+// CR-114 · hub-agent-handoff (+ fix114) · kịch bản đa agent CỐ ĐỊNH (LLM giả, đếm token prompt bằng `estimateTokens`):
+// lịch sử 24 lượt (dữ kiện ở lượt cũ, sau ký tự 120) → Orchestrator giao researcher → analyst → writer → trả lời; Orchestrator
+// dán kết quả bước trước vào `task` (nó không biết người nhận có MCP hay không). Runner giả chọn bản job như `JobAgentRunner`
+// (`jobVariant`: `byRef` chỉ khi job có `artifact-get`). Đúng đắn: Orchestrator thấy y như tắt cờ; agent không MCP nhận y như
+// tắt cờ; agent có MCP tới được mọi dữ kiện (prompt/lịch sử + `artifact-get` của khoá có trong đó).
 import { describe, expect, it } from "bun:test";
 import type { AgentResult, HistoryItem, JobOutput, TokenUsage } from "@ai/contracts/hub";
 import { accessInput, visibleAgents } from "../agents/agent-access.rules";
@@ -13,6 +14,7 @@ import {
   type LoopJob,
   runLoop,
 } from "../orchestrator/orchestrator.loop";
+import { ARTIFACT_GET, jobVariant } from "./artifact.mcp";
 import { type ArtifactRef, artifactKey, estimateTokens, shortKey } from "./artifact.rules";
 
 const T = "00000000-0000-4000-8000-000000000001";
@@ -54,7 +56,7 @@ const REPORT = "Báo cáo cuối: tóm tắt cho khách KH-7781.";
 
 const HISTORY: HistoryItem[] = Array.from({ length: 24 }, (_, i) => ({
   role: i % 2 === 0 ? "user" : "assistant",
-  content: `${i === 1 ? `Ghi nhận ${FACTS.history}. ` : ""}Lượt ${i}: ${"trao đổi về phạm vi báo cáo và định dạng. ".repeat(8)}`,
+  content: `Lượt ${i}: ${"trao đổi về phạm vi báo cáo và định dạng. ".repeat(8)}${i === 1 ? `Ghi nhận ${FACTS.history}.` : ""}`,
 }));
 
 function input(): LoopInput {
@@ -97,31 +99,20 @@ const AGENT_REPLY: Record<string, JobOutput> = {
   writer: done(REPORT),
 };
 
-/** Quyết định thứ n của Orchestrator giả; `paste` = chế độ trước (dán kết quả bước trước vào task). */
-const decisions = (paste: boolean): object[] => [
+/** Quyết định thứ n của Orchestrator giả (dán kết quả bước trước vào task). */
+const DECISIONS: object[] = [
   { decision: "delegate", agent: "researcher", task: "Thu thập số liệu quý 3" },
-  {
-    decision: "delegate",
-    agent: "analyst",
-    task: paste ? `Phân tích số liệu sau:\n${RESEARCH}` : "Phân tích số liệu nghiên cứu",
-  },
-  {
-    decision: "delegate",
-    agent: "writer",
-    task: paste
-      ? `Viết báo cáo từ:\n${RESEARCH}\n${ANALYSIS}`
-      : "Viết báo cáo từ nghiên cứu và phân tích",
-  },
+  { decision: "delegate", agent: "analyst", task: `Phân tích số liệu sau:\n${RESEARCH}` },
+  { decision: "delegate", agent: "writer", task: `Viết báo cáo từ:\n${RESEARCH}\n${ANALYSIS}` },
   { decision: "answer", text: REPORT },
 ];
 
-function script(paste: boolean) {
-  const ds = decisions(paste);
+function script() {
   let n = 0;
   return (j: LoopJob): JobOutput =>
     j.role === "agent"
       ? (AGENT_REPLY[j.agent.key] as JobOutput)
-      : say(ds[Math.min(n++, ds.length - 1)] as object);
+      : say(DECISIONS[Math.min(n++, DECISIONS.length - 1)] as object);
 }
 
 function memHandoff() {
@@ -137,58 +128,76 @@ function memHandoff() {
         summary: meta.summary ?? body.split("\n")[0] ?? "",
       };
     },
-    canFetch: () => true,
   };
   return { h, store };
 }
 
-const jobTokens = (j: LoopJob) =>
-  estimateTokens(j.prompt) +
-  estimateTokens(j.systemPrompt ?? "") +
-  j.history.reduce((n, x) => n + estimateTokens(x.content), 0);
+/** Bản job runner dùng thật: agent trong `mcp` ⇒ job có `artifact-get`; còn lại không MCP (noTools/direct/đủ tool). */
+type Served = { key: string; role: string; prompt: string; history: readonly HistoryItem[] };
+const serve = (j: LoopJob, mcp: ReadonlySet<string>): Served => {
+  const tools = j.role === "agent" && mcp.has(j.agent.key) ? { tools: [ARTIFACT_GET] } : null;
+  const v = jobVariant(j, tools);
+  return { key: j.agent.key, role: j.role, prompt: v.prompt, history: v.history };
+};
 
-async function run(handoff?: LoopHandoff) {
-  const jobs: LoopJob[] = [];
-  const s = script(!handoff);
+const tokensOf = (jobs: readonly Served[]) =>
+  jobs.reduce(
+    (n, j) =>
+      n + estimateTokens(j.prompt) + j.history.reduce((m, x) => m + estimateTokens(x.content), 0),
+    0,
+  );
+
+async function run(handoff: LoopHandoff | undefined, mcp: ReadonlySet<string>) {
+  const jobs: Served[] = [];
+  const s = script();
   const io: LoopIo = {
     job: async (j) => {
-      jobs.push(j);
+      jobs.push(serve(j, mcp));
       return { kind: "result", output: s(j), usage: USAGE };
     },
     skip: async () => {},
     ...(handoff ? { handoff } : {}),
   };
   const end = await runLoop(io, input());
-  return { end, jobs, tokens: jobs.reduce((n, j) => n + jobTokens(j), 0) };
+  return { end, jobs, tokens: tokensOf(jobs) };
 }
 
-/** Văn bản writer thấy được: prompt + lịch sử + nội dung mọi khoá `art:` xuất hiện trong đó (artifact.get). */
-function reachable(j: LoopJob, store: Map<string, string>): string {
+/** Văn bản job thấy được: prompt + lịch sử + nội dung mọi khoá `art:` xuất hiện trong đó (`artifact-get`). */
+function reachable(j: Served, store: Map<string, string>): string {
   const seen = [j.prompt, ...j.history.map((h) => h.content)].join("\n");
   const refs = seen.match(/art:[0-9a-f]{8}/g) ?? [];
   return [seen, ...refs.map((r) => store.get(r) ?? "")].join("\n");
 }
 
+const ALL = new Set(["researcher", "analyst", "writer"]);
+const ALL_FACTS = [FACTS.history, ...FACTS.research, ...FACTS.analysis];
+
 describe("CR-114 · đo bàn giao bằng tham chiếu", () => {
   it("kịch bản đa agent: giảm token và đủ dữ kiện", async () => {
-    const before = await run();
+    const off = await run(undefined, ALL);
     const { h, store } = memHandoff();
-    const after = await run(h);
-    expect(before.end).toEqual({ kind: "text", text: REPORT });
-    expect(after.end).toEqual(before.end);
-    expect(after.jobs.map((j) => j.agent.key)).toEqual(before.jobs.map((j) => j.agent.key));
-
-    const writer = after.jobs.find((j) => j.agent.key === "writer") as LoopJob;
-    const text = reachable(writer, store);
-    for (const f of [FACTS.history, ...FACTS.research, ...FACTS.analysis])
-      expect(text).toContain(f);
-    // Orchestrator cuối vẫn thấy nguyên văn bước mới nhất (không có MCP).
-    expect(after.jobs.at(-1)?.prompt).toContain(REPORT);
-
-    const saved = 1 - after.tokens / before.tokens;
+    const on = await run(h, ALL);
+    expect(off.end).toEqual({ kind: "text", text: REPORT });
+    expect(on.end).toEqual(off.end);
+    // Orchestrator (không MCP): prompt + lịch sử y hệt khi tắt cờ (không nén, không trích `<steps>`).
+    const orch = (r: typeof on) => r.jobs.filter((j) => j.role === "orchestrator");
+    expect(orch(on)).toEqual(orch(off));
+    for (const j of orch(on)) expect(j.prompt).toContain(FACTS.history);
+    const writer = on.jobs.find((j) => j.key === "writer") as Served;
+    for (const f of ALL_FACTS) expect(reachable(writer, store)).toContain(f);
+    const saved = 1 - on.tokens / off.tokens;
     console.log(
-      `[CR-114 handoff] prompt tokens before=${before.tokens} after=${after.tokens} saved=${(saved * 100).toFixed(1)}%`,
+      `[CR-114 handoff] prompt tokens off=${off.tokens} on=${on.tokens} saved=${(saved * 100).toFixed(1)}%`,
     );
-    expect(saved).toBeGreaterThan(0.4);
+    expect(on.tokens).toBeLessThan(off.tokens);
+  });
+
+  it("agent không có artifact-get (noTools / direct-SDK / đủ tool) nhận nguyên văn như tắt cờ", async () => {
+    const off = await run(undefined, new Set());
+    const on = await run(memHandoff().h, new Set());
+    expect(on.jobs).toEqual(off.jobs);
+    const writer = on.jobs.find((j) => j.key === "writer") as Served;
+    for (const f of ALL_FACTS)
+      expect([writer.prompt, ...writer.history.map((x) => x.content)].join("\n")).toContain(f);
   });
 });
