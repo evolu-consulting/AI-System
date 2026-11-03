@@ -11,7 +11,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-from agent_runtime.db.jobs_sql import new_token
+from agent_runtime.db.jobs_sql import K_CLAIM_SANDBOX, new_token
 from agent_runtime.db.pool import Conn
 
 # C22/C38: đếm job tự-sửa (`payload.autofix` object) **và** job `source.apply` đang chạy của worker
@@ -44,6 +44,7 @@ async def claim_apply(conn: Conn, worker_id: str, sandbox_max: int) -> ApplyJob 
     """Một transaction: SELECT (slot sandbox) … SKIP LOCKED → `running` + `token_hash` (RT1)."""
     token, digest = new_token()
     async with conn.transaction():
+        await conn.execute(K_CLAIM_SANDBOX, worker_id)  # CR-114: chung slot với claim tự-sửa
         row = await conn.fetchrow(CLAIM_SELECT, worker_id, sandbox_max)
         if row is None:
             return None

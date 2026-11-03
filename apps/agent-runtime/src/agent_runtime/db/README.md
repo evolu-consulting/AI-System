@@ -6,7 +6,7 @@ Không ORM, không migration (migration ở `packages/db`, CONVENTIONS §8). SQL
 | File | Nội dung |
 |---|---|
 | `pool.py` | pool asyncpg + kết nối LISTEN riêng; `Conn`/`Pool` Protocol (asyncpg không kèm kiểu) |
-| `jobs_sql.py` | claim (`K_CLAIM` + SKIP LOCKED, ghi `token_hash` lần claim — RT1), pgid, heartbeat, requeue `workflow.async` mồ côi (+ NOTIFY) **trước** quét orphan, khởi động lại, `orphan_one`, `finished_as`, reset provider; `FINISH_FENCED`/`FINISHED_AS_FENCED` = câu gốc + `AND token_hash = $n` |
+| `jobs_sql.py` | claim (CR-114: PEEK → `K_CLAIM(provider)` [+ `K_CLAIM_TENANT`, `K_CLAIM_SANDBOX`] + SKIP LOCKED, ghi `token_hash` lần claim — RT1), pgid, heartbeat, requeue `workflow.async` mồ côi (+ NOTIFY) **trước** quét orphan, khởi động lại, `orphan_one`, `finished_as`, reset provider; `FINISH_FENCED`/`FINISHED_AS_FENCED` = câu gốc + `AND token_hash = $n` |
 | `workflow_sql.py` | job `workflow.async`: `mark_dispatched` (Q6) · "Kết thúc" = `FINISH_FENCED` + usage `billing=dify` (`ON CONFLICT (job_id) DO NOTHING`), không đụng `provider_state` |
 | `agent_types_sql.py` | Manifest `hub.agent_types` (UPSERT + `available=false`) |
 | `finish_sql.py` | transaction "Kết thúc": `jobs` → `usage_logs` → `cli_sessions` → `provider_state` |

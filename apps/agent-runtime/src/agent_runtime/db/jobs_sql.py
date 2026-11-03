@@ -16,26 +16,56 @@ from typing import Any
 
 from agent_runtime.db.pool import Conn, Row
 
-K_CLAIM = "SELECT pg_advisory_xact_lock(hashtext('hub.jobs.claim'));"
+# CR-114 hub-claim-scale: khoá claim **theo provider** (2 khoá, `$1` = provider_key) thay cho một
+# khoá toàn cục ⇒ worker của các provider khác nhau claim song song. Mọi chỗ đổi slot/trạng thái
+# provider (claim, "Kết thúc" làm hỏng provider, probe) giữ đúng khoá của provider đó. Job
+# `subscription` của tenant có giới hạn: thêm `K_CLAIM_TENANT` (sau hàng `jobs`) rồi `TENANT_OK`.
+# Thứ tự khoá: `K_CLAIM(provider)` → hàng `jobs` → `K_CLAIM_TENANT` → `provider_state`.
+K_CLAIM = "SELECT pg_advisory_xact_lock(hashtext('hub.jobs.claim'), hashtext($1::text));"
+K_CLAIM_TENANT = (
+    "SELECT pg_advisory_xact_lock(hashtext('hub.jobs.claim.tenant'), hashtext($1::text));"
+)
+# Slot sandbox (P-c1/P-c2) đếm theo worker: claim tự-sửa và claim `source.apply` cùng worker giữ
+# khoá này trước (thứ tự: `K_CLAIM_SANDBOX` → `K_CLAIM(provider)` → …).
+K_CLAIM_SANDBOX = (
+    "SELECT pg_advisory_xact_lock(hashtext('hub.jobs.claim.sandbox'), hashtext($1::text));"
+)
+TENANT_OK = """SELECT hub.tenant_sub_limit($1::uuid) IS NULL
+  OR (SELECT count(*) FROM hub.jobs r JOIN hub.providers rp ON rp.key = r.provider_key
+      WHERE r.status = 'running' AND r.tenant_id = $1::uuid AND rp.kind = 'subscription')
+     < hub.tenant_sub_limit($1::uuid) AS ok;"""
 
-CLAIM_SELECT = """SELECT j.id, j.payload FROM hub.jobs j
+# plan-db §5.4 "Claim", cùng điều kiện; CR-114 (Luật 4c) đếm `running` theo provider / tenant MỘT
+# lần mỗi câu (CTE) thay vì một subquery mỗi hàng ứng viên (O(queued × running): 28.8 ms → xem
+# `claim_scale_int_test.py`); trả thêm provider/tenant/kind/giới hạn cho bước khoá tenant.
+_CLAIM_BODY = """WITH pr AS MATERIALIZED (SELECT r.provider_key, count(*) AS n FROM hub.jobs r
+    WHERE r.status = 'running' AND r.provider_key = ANY($1::text[]) GROUP BY r.provider_key),
+  tr AS MATERIALIZED (SELECT r.tenant_id, count(*) AS n FROM hub.jobs r
+    JOIN hub.providers rp ON rp.key = r.provider_key AND rp.kind = 'subscription'
+    WHERE r.status = 'running' GROUP BY r.tenant_id)
+SELECT j.id, j.provider_key, j.tenant_id::text AS tenant_id, p.kind,
+  hub.tenant_sub_limit(j.tenant_id) AS sub_limit
+FROM hub.jobs j
 JOIN hub.providers p ON p.key = j.provider_key AND p.enabled
 LEFT JOIN hub.provider_state s ON s.provider_key = p.key
+LEFT JOIN pr ON pr.provider_key = j.provider_key
+LEFT JOIN tr ON tr.tenant_id = j.tenant_id
 WHERE j.status = 'queued' AND j.cancel_requested_at IS NULL
   AND j.provider_key = ANY($1::text[])
   AND (s.status IS NULL OR s.status IN ('ok','busy') OR (s.status = 'cooldown' AND s.cooldown_until <= now()))
-  AND (SELECT count(*) FROM hub.jobs r WHERE r.status = 'running' AND r.provider_key = j.provider_key) < p.max_concurrency
+  AND coalesce(pr.n, 0) < p.max_concurrency
   AND (p.kind <> 'subscription' OR hub.tenant_sub_limit(j.tenant_id) IS NULL
-       OR (SELECT count(*) FROM hub.jobs r JOIN hub.providers rp ON rp.key = r.provider_key
-           WHERE r.status = 'running' AND r.tenant_id = j.tenant_id AND rp.kind = 'subscription')
-          < hub.tenant_sub_limit(j.tenant_id))
+       OR coalesce(tr.n, 0) < hub.tenant_sub_limit(j.tenant_id))
   AND NOT EXISTS (SELECT 1 FROM hub.jobs b
        WHERE b.conversation_id = j.conversation_id AND b.agent_id = j.agent_id
          AND (b.status = 'running' OR (b.status = 'queued'
               AND (b.priority, b.created_at, b.id) < (j.priority, j.created_at, j.id))))
 ORDER BY j.priority, j.created_at, j.id
-LIMIT 1
-FOR UPDATE OF j SKIP LOCKED;"""  # noqa: E501 — nguyên văn plan-db §5.4
+LIMIT 1"""  # noqa: E501
+_LOCK_ROW = "\nFOR UPDATE OF j SKIP LOCKED;"
+CLAIM_SELECT = _CLAIM_BODY + _LOCK_ROW
+# PEEK: cùng điều kiện, không khoá hàng/advisory — chỉ để chọn provider của job đứng đầu hàng đợi.
+CLAIM_PEEK = _CLAIM_BODY + ";"
 
 # P-c1 plan-runtime §5.1 (`RUNTIME_SANDBOX_MAX`): job tự-sửa (`payload.autofix` là object) chỉ
 # claim khi số job tự-sửa `running` của worker này < $3 ($2 = worker_id); job thường không đổi.
@@ -46,10 +76,12 @@ SANDBOX_SLOT = """  AND (jsonb_typeof(j.payload->'autofix') IS DISTINCT FROM 'ob
            AND (jsonb_typeof(a.payload->'autofix') = 'object' OR a.type = 'source.apply')) < $3)
 """
 CLAIM_SELECT_SANDBOX = CLAIM_SELECT.replace("ORDER BY", SANDBOX_SLOT + "ORDER BY", 1)
+CLAIM_PEEK_SANDBOX = CLAIM_PEEK.replace("ORDER BY", SANDBOX_SLOT + "ORDER BY", 1)
 
 # H2a RT1: thêm `token_hash = $3` (sha256 của token claim, mọi job — `plan-runtime` §3.3 bước 0).
 CLAIM_UPDATE = """UPDATE hub.jobs SET status = 'running', worker_id = $2, started_at = now(), heartbeat_at = now(), attempts = attempts + 1, token_hash = $3
-WHERE id = $1 AND status = 'queued';"""  # noqa: E501 — nguyên văn plan-db §5.4 ($3 → $1) + RT1
+WHERE id = $1 AND status = 'queued'
+RETURNING payload;"""  # noqa: E501 — nguyên văn plan-db §5.4 ($3 → $1) + RT1
 
 SET_PGID = (
     """UPDATE hub.jobs SET pgid = $3 WHERE id = $1 AND worker_id = $2 AND status = 'running';"""  # noqa: E501
@@ -154,21 +186,53 @@ def _orphan(row: Row) -> OrphanRow:
 async def claim_one(
     conn: Conn, providers: list[str], worker_id: str, sandbox_max: int | None = None
 ) -> ClaimedJob | None:
-    """Một transaction READ COMMITTED: `K_CLAIM` → SELECT … SKIP LOCKED → `running` + `token_hash`
-    (RT1, mọi job; claim lại sau requeue → token mới). `sandbox_max` (P-c1) ⇒ slot tự-sửa."""
+    """CR-114: PEEK (không khoá) chọn provider của job đứng đầu → `_claim_in` (transaction READ
+    COMMITTED dưới `K_CLAIM` của provider đó). Provider hết job claim được bị bỏ khỏi lượt PEEK sau;
+    trượt khoá tenant ⇒ thử lại (có chặn). `sandbox_max` (P-c1) ⇒ slot tự-sửa."""
+    extra: tuple[object, ...] = () if sandbox_max is None else (worker_id, sandbox_max)
+    peek = CLAIM_PEEK if sandbox_max is None else CLAIM_PEEK_SANDBOX
+    left = list(dict.fromkeys(providers))
+    for _ in range(len(left) + TENANT_RETRIES):
+        hit = await conn.fetchrow(peek, left, *extra) if left else None
+        if hit is None:
+            return None
+        key = str(hit["provider_key"])
+        got = await _claim_in(conn, key, worker_id, extra)
+        if got is _EMPTY:
+            left.remove(key)
+        elif isinstance(got, ClaimedJob):
+            return got
+    return None
+
+
+TENANT_RETRIES = 3
+_EMPTY, _RACE = object(), object()
+
+
+async def _claim_in(
+    conn: Conn, key: str, worker_id: str, extra: tuple[object, ...]
+) -> ClaimedJob | object:
+    """`K_CLAIM(key)` → SELECT … SKIP LOCKED (1 provider) → [tenant giới hạn: `K_CLAIM_TENANT` →
+    `TENANT_OK`, câu mới thấy claim đã commit của provider khác] → `running` + `token_hash` (RT1,
+    mọi job; claim lại sau requeue → token mới). `_EMPTY` = provider hết job; `_RACE` = thử lại."""
     token, digest = new_token()
+    select = CLAIM_SELECT if not extra else CLAIM_SELECT_SANDBOX
     async with conn.transaction():
-        await conn.execute(K_CLAIM)
-        if sandbox_max is None:
-            row = await conn.fetchrow(CLAIM_SELECT, providers)
-        else:
-            row = await conn.fetchrow(CLAIM_SELECT_SANDBOX, providers, worker_id, sandbox_max)
+        if extra:  # slot tự-sửa đếm theo worker: chung khoá với claim `source.apply` (apply_sql)
+            await conn.execute(K_CLAIM_SANDBOX, worker_id)
+        await conn.execute(K_CLAIM, key)
+        row = await conn.fetchrow(select, [key], *extra)
         if row is None:
-            return None
-        status = await conn.execute(CLAIM_UPDATE, row["id"], worker_id, digest)
-        if status != "UPDATE 1":
-            return None
-        return ClaimedJob(id=str(row["id"]), payload=_payload(row["payload"]), token=token)
+            return _EMPTY
+        if row["kind"] == "subscription" and row["sub_limit"] is not None:
+            await conn.execute(K_CLAIM_TENANT, row["tenant_id"])
+            ok = await conn.fetchrow(TENANT_OK, row["tenant_id"])
+            if ok is None or not ok["ok"]:
+                return _RACE
+        done = await conn.fetchrow(CLAIM_UPDATE, row["id"], worker_id, digest)
+        if done is None:
+            return _RACE
+        return ClaimedJob(id=str(row["id"]), payload=_payload(done["payload"]), token=token)
 
 
 async def set_pgid(conn: Conn, job_id: str, worker_id: str, pgid: int) -> bool:

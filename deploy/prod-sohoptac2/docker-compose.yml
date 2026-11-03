@@ -33,6 +33,32 @@ services:
     mem_limit: 2g
     cpu_shares: 512
 
+  # CR-114 hub-claim-scale · pgbouncer TUỲ CHỌN (transaction mode), TẮT mặc định: chỉ chạy khi
+  # `docker compose --profile pgbouncer up -d pgbouncer`. Chưa service nào trỏ vào — đọc README-pgbouncer.md
+  # trước khi đổi DSN (prepared statement, LISTEN/NOTIFY và khoá advisory phiên PHẢI đi thẳng `pg`).
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.24.1-p1
+    profiles: ["pgbouncer"]
+    restart: unless-stopped
+    environment:
+      # Chuyển tiếp user/DB của client tới `pg` (không nhúng mật khẩu owner); xác thực theo userlist gắn dưới.
+      DB_HOST: pg
+      DB_PORT: "5432"
+      AUTH_TYPE: scram-sha-256
+      AUTH_FILE: /etc/pgbouncer/userlist.txt
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN:-500}
+      DEFAULT_POOL_SIZE: ${PGBOUNCER_POOL_SIZE:-40}
+      # pgbouncer ≥ 1.21: theo dõi prepared statement mức giao thức (asyncpg / postgres.js `prepare: true`).
+      MAX_PREPARED_STATEMENTS: ${PGBOUNCER_MAX_PREPARED:-200}
+    expose: ["5432"]
+    volumes:
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    depends_on:
+      pg: { condition: service_healthy }
+    cpus: 0.5
+    mem_limit: 256m
+
   redis:
     image: redis:7.4.11-alpine
     restart: unless-stopped
@@ -102,6 +128,8 @@ services:
       HUB_OPS_WATCH: ${HUB_OPS_WATCH:-on}
       HUB_OPS_STATUS_DIR: /run/s2/ops
       OPS_PUBLIC_URLS: "${OPS_PUBLIC_URLS:-}"
+      # CR-114: cỡ pool `connectDb` (mặc định 10).
+      HUB_DB_POOL_MAX: ${HUB_DB_POOL_MAX:-10}
     command: ["bun", "--env-file=/run/s2/app.env", "apps/hub-api/src/server.ts"]
     volumes:
       - ./.env:/run/s2/app.env:ro
@@ -195,6 +223,8 @@ services:
       AGENT_RT_CLI_PATH: /opt/claude/claude
       # dlc-dify: trần chờ một tool MCP của Hub (= HUB_DIFY_TIMEOUT_MAX_S).
       AGENT_RT_HUB_TOOL_TIMEOUT_MAX_S: "3600"
+      # CR-114: cỡ pool asyncpg (claim/heartbeat/kết thúc); mặc định 4.
+      AGENT_RT_DB_POOL_MAX: ${AGENT_RT_DB_POOL_MAX:-4}
     volumes:
       - ./claude-home:/claude-home
       - ./claude-bin/claude:/opt/claude/claude:ro

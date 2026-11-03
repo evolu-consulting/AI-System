@@ -319,7 +319,7 @@ async def test_wrk_fr_22_p37_probe_does_not_wait_claim_lock(ctx: Ctx) -> None:
     start(ctx, 2)
     await until_ready(ctx)
     async with owner_conn() as lock, lock.transaction():
-        await lock.execute(K_CLAIM)
+        await lock.execute(K_CLAIM, FAKE)  # CR-114: khoá claim theo provider
         await until_probed_after(ctx, await db_now(ctx))
 
 

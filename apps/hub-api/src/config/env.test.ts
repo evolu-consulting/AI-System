@@ -36,6 +36,12 @@ describe("hub-api env", () => {
     expect(env.LOG_LEVEL).toBe("debug");
   });
 
+  test("CR-114 · HUB_DB_POOL_MAX: mặc định 10, đọc giá trị đặt, ngoài 1..200 → lỗi", () => {
+    expect(loadEnv(base).HUB_DB_POOL_MAX).toBe(10);
+    expect(loadEnv({ ...base, HUB_DB_POOL_MAX: "40" }).HUB_DB_POOL_MAX).toBe(40);
+    expect(() => loadEnv({ ...base, HUB_DB_POOL_MAX: "0" })).toThrow("HUB_DB_POOL_MAX");
+  });
+
   test("HUB-NFR-04 · sai/thiếu → lỗi liệt kê tên biến, không in giá trị", () => {
     const bad = {
       ...base,

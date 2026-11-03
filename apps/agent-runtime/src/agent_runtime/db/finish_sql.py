@@ -61,7 +61,7 @@ async def finish_tx(conn: Conn, job_id: str, worker_id: str, tx: FinishTx) -> Fi
 async def _body(conn: Conn, job_id: str, worker_id: str, tx: FinishTx) -> Finished:
     key, effect = tx.provider_key, tx.provider
     if isinstance(effect, Broken) or effect == "error":
-        await conn.execute(K_CLAIM)  # chặn claim tới khi provider_state đã đổi
+        await conn.execute(K_CLAIM, key)  # chặn claim tới khi provider_state đã đổi
     if not await jobs_sql.finish_job(conn, job_id, worker_id, tx.finish):
         raise _NotOwned
     broken = effect if isinstance(effect, Broken) else None

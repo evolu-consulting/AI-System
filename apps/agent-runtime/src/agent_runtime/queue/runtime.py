@@ -154,7 +154,7 @@ async def start(  # noqa: PLR0913
 ) -> QueueRuntime:
     log = get_logger()
     dsn = settings.database_url.get_secret_value()
-    pool = await create_pool(dsn)
+    pool = await create_pool(dsn, settings.db_pool_max)
     listen = await connect_listen(dsn)
     redis = await connect_redis(settings.redis_url.get_secret_value())
     events = RunEvents(redis, settings.worker_id)

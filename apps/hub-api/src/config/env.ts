@@ -23,6 +23,8 @@ export const EnvSchema = z.object({
   HUB_PORT: z.coerce.number().int().min(1).max(65535).default(4000),
   // Role hub_api (NOBYPASSRLS), không phải owner DATABASE_URL (plan §3.4).
   HUB_DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+  // CR-114 hub-claim-scale · cỡ pool `connectDb` (mặc định 10 như trước).
+  HUB_DB_POOL_MAX: z.coerce.number().int().min(1).max(200).default(10),
   // R1 · pool riêng của module tri thức (role `knowledge_api`, chỉ SET ROLE `knowledge_rw`); vắng ⇒ DSN chính ở trên.
   KNOWLEDGE_DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }).optional(),
   REDIS_URL: z.url({ protocol: /^rediss?$/ }),

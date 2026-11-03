@@ -140,7 +140,7 @@ async def _error(conn: Conn, key: str, snap: ProviderSnap, result: ProbeResult) 
         return Applied(snap.status, snap.status)
     try:
         async with conn.transaction():
-            await conn.execute(K_CLAIM)
+            await conn.execute(K_CLAIM, key)
             return await _error_locked(conn, key, msg)
     except _Fenced:
         return None
@@ -167,7 +167,7 @@ async def _broken(conn: Conn, key: str, snap: ProviderSnap, b: Broken) -> Applie
     """`K_CLAIM → jobs → provider_state` (PL8), rào `updated_at` của snapshot (R15)."""
     try:
         async with conn.transaction():
-            await conn.execute(K_CLAIM)
+            await conn.execute(K_CLAIM, key)
             queued = await fail_queued(conn, key, b.reason)
             await _mark(conn, key, b, snap.updated_at)
             return Applied(snap.status, b.status, queued, b)

@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     work_dir: Path = Path("/home/worker/work")
     log_dir: Path = Path("/home/worker/logs")
     poll_s: float = Field(default=1.0, gt=0)
+    # CR-114 hub-claim-scale: `AGENT_RT_DB_POOL_MAX` — cỡ pool asyncpg (claim/heartbeat/kết thúc).
+    db_pool_max: int = Field(default=4, ge=1, le=100)
     heartbeat_s: float = Field(default=10.0, gt=0)
     orphan_s: float = Field(default=60.0, gt=0)
     kill_grace_s: float = Field(default=3.0, gt=0)

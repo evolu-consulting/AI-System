@@ -62,6 +62,16 @@ def test_wrk_nfr_04_reads_agent_rt_vars(monkeypatch: pytest.MonkeyPatch) -> None
     assert s.providers == ("claude-sub", "fake-cli")
 
 
+def test_cr114_db_pool_max(monkeypatch: pytest.MonkeyPatch) -> None:
+    """CR-114 · `AGENT_RT_DB_POOL_MAX`: mặc định 4 (như `POOL_MAX` cũ), đọc giá trị đặt, 0 → lỗi."""
+    assert load_settings().db_pool_max == 4
+    monkeypatch.setenv("AGENT_RT_DB_POOL_MAX", "12")
+    assert load_settings().db_pool_max == 12
+    monkeypatch.setenv("AGENT_RT_DB_POOL_MAX", "0")
+    with pytest.raises(ValidationError):
+        load_settings()
+
+
 @pytest.mark.parametrize(
     ("name", "value"),
     [

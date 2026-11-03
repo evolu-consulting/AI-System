@@ -46,10 +46,16 @@ class Pool(Protocol):
     async def close(self) -> None: ...
 
 
-async def create_pool(dsn: str) -> Pool:
-    """Pool cho câu SQL ngắn (claim, heartbeat, sweeper, kết thúc job)."""
+async def create_pool(dsn: str, max_size: int = POOL_MAX) -> Pool:
+    """Pool cho câu SQL ngắn (claim, heartbeat, sweeper, kết thúc job); `max_size` =
+    `AGENT_RT_DB_POOL_MAX` (CR-114). Đi qua pgbouncer transaction mode ⇒ DSN pool phải tắt
+    prepared statement cache phía bouncer hoặc trỏ thẳng Postgres; LISTEN (`connect_listen`) luôn
+    trỏ thẳng Postgres (`deploy/prod-sohoptac2/README-pgbouncer.md`)."""
     pool: Pool = await _PG.create_pool(
-        dsn, min_size=POOL_MIN, max_size=POOL_MAX, timeout=CONNECT_TIMEOUT_S
+        dsn,
+        min_size=min(POOL_MIN, max_size),
+        max_size=max_size,
+        timeout=CONNECT_TIMEOUT_S,
     )
     return pool
 
