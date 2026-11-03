@@ -22,7 +22,10 @@
 | `current/sht/sp-va-gia.md` | Sổ Hợp Tác: SP & Giá (VAT, hạn, thay/gỡ mềm, Lịch sử giá) |
 | `current/engine/flow-engine.md` | Engine quy trình (CR-103): registry node, If, set, đổi node, canvas/drawer, showcase, `HUB_PROCESS_ROUTES`, catalog tool |
 | `current/engine/thu-vien-quy-trinh.md` | Thư viện quy trình (CR-105): gán quy trình theo tenant cho khe `contracts.approval`, lọc mẫu chạy thử, backfill |
+| `current/admin/README.md` | Admin hiện hành (CR-112 nhập Phần A): tổng quan, NFR; kèm `tenant-user.md`, `nhom-doi-tac.md`, `ung-dung-quyen.md`, `catalog-quota-audit.md` |
 | `current/admin/ghi-chu.md` | Admin: công ty/user đối tác (ngắn) |
+| `specs/cr112-admin-config/README.md` | CR-112 cải tổ cấu hình ai-admin: spec master, ADM-FR-76..83, lát S1..S7 |
+| `adr/0033-app-roles-source-of-truth.md` | Vai theo app là nguồn quyền (`admin.app_roles` → Group) |
 | `current/community/README.md` | Community App (gói `community`, CR-102): nghiệp vụ, ma trận hiển thị thành ca test, Chưa rõ. **Đã code C1–C12 trên platform/gd0, chưa deploy** |
 | `adr/0031-pack-to-pack-ports.md` | Cổng gói↔gói: gói khai port, `packs.mount.ts` tiêm usecase gói kia |
 

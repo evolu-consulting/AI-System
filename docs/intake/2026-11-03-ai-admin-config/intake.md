@@ -115,3 +115,23 @@ Song song: S1 ‖ S2 ‖ S0; rồi S3 ‖ S4 ‖ S5 ‖ S6; cuối S7. e2e + tes
 8. "bước 3/4 bỏ qua được (Q8)" — không có danh sách Q nào.
 9. Mức "Đọc/Đọc+Ghi/Quản trị" vs nhãn CR-111 vừa làm "Xem/Sửa/Quản trị".
 10. Tab Chi phí & quota: HTML gồm "hạn mức ngày", PDF chỉ "Quota"; HTML bước 1 có "slot subscription", PDF bước 1 không.
+
+## Chốt (2026-11-03)
+Người dùng nhận TOÀN BỘ mặc định ("làm theo recommend"):
+1. Đánh số: CR-112 / ADR-0033 / ADM-FR-76..83 (+ ADM-BR-15..17).
+2. Vai lưu ở bảng mỏng `admin.app_roles` (tenant, pack, key, tên, mức, group_id 1–1, is_default, version, RLS); Group vẫn là đơn vị thực thi.
+3. Gộp một tab "Ứng dụng & Gói" dựng trên thẻ CR-111; Tắt ⇒ tắt gói, mức khác ⇒ bật gói + entitlement theo mức (trần công ty); vai vượt trần "không hiệu lực" (BR-12).
+4. Vai tuỳ biến = Group mới gắn một app + một mức (cùng bộ grant với vai mặc định cùng mức); không gắn tính năng thêm theo vai ở v1; platform_admin và tenant_admin đều tạo được.
+5. Community: vai tuỳ biến cho user nội bộ; đối tác không vào vai, giữ 2 mức tĩnh read/write.
+6. Nhãn vai mặc định "Toàn quyền/Nhân viên/Chỉ xem" cho mọi app; mức hiển thị "Quản trị/Sửa/Xem".
+7. Group phòng ban/Group thường có grant gói không phải vai: ở mục Nhóm; Kiểm tra quyền ghi "quyền ngoài vai"; backfill không thu hồi.
+8. Backfill: CLI dry-run + báo cáo; chỉ áp sau xác nhận người dùng trên prod; thêm grant thiếu + gỡ grant thừa trên Group vai; audit từng dòng; không đụng Group khác.
+9. Sidebar: Nền tảng = Ứng dụng · Features · Commands · Workflows · Quy trình · Agents; Công ty = danh sách; Hệ thống = Secrets · Tình trạng · Chi phí toàn hệ thống · Nhật ký · Góp ý · Import/Export; Người dùng/Nhóm/Đối tác/Phân quyền vào workspace; route cũ giữ, chuyển hướng.
+10. Workspace giữ thêm tab Agents + Công cụ quy trình; khe quy trình ở tab Ứng dụng & Gói; tenant_admin vẫn cấp agent cho group (FR-37).
+11. tenant_admin: sidebar chỉ công ty mình; GET tenant mình (công ty khác ⇒ 404); thông tin chỉ đọc, sửa Người dùng/Phân quyền, Quota rút gọn.
+12. Wizard không giao dịch xuyên bước: bước 1 tạo công ty ngay, bước sau gọi endpoint có sẵn, bỏ ngang thì tiếp ở workspace; bước 3/4 bỏ qua được.
+13. "Onboard lại" = mở wizard từ bước 2 trên công ty có sẵn.
+14. Tab Tổng quan công ty chỉ đọc (số user, app bật, số vai, quota tháng); COULD.
+15. Knowledge hiện trong Phân quyền khi gói bật, ghi chú "chưa có màn dùng mức Quản trị".
+16. Một người giữ hai vai cùng app: cho phép; quyền thực tế = mức cao nhất.
+17. Mức: MUST 76,77,78,81,82,83; SHOULD 79,80; COULD Tổng quan công ty.
