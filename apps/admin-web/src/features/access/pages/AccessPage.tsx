@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/shared/states/EmptyState";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { TenantPicker } from "@/components/shared/TenantPicker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RolesPanel } from "@/features/app-roles/components/RolesPanel";
 import { useSession } from "@/lib/auth/use-session";
 import { CheckTab } from "../components/check/CheckTab";
 import { MatrixTab } from "../components/matrix/MatrixTab";
@@ -30,9 +31,17 @@ export function AccessPage() {
       ) : null}
       <Tabs value={view.tab} onValueChange={(v) => view.setTab(v as AccessTab)}>
         <TabsList>
+          <TabsTrigger value="roles">{t("access.tab.roles")}</TabsTrigger>
           <TabsTrigger value="matrix">{t("access.tab.matrix")}</TabsTrigger>
           <TabsTrigger value="check">{t("access.tab.check")}</TabsTrigger>
         </TabsList>
+        <TabsContent value="roles" className="pt-4">
+          {view.needsTenant ? (
+            <EmptyState message={t("access.selectTenant")} />
+          ) : (
+            <RolesPanel key={view.tenantId ?? "self"} tenantId={view.tenantId} />
+          )}
+        </TabsContent>
         <TabsContent value="matrix" className="pt-4">
           {view.needsTenant ? (
             <EmptyState message={t("access.selectTenant")} />

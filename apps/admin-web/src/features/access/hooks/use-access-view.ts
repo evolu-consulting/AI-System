@@ -1,11 +1,11 @@
-// ADM-FR-35 · M3-R13 · trang Phân quyền: tab + tenant trên URL (`?tab=matrix|check&tenant=<mã>&user=`); platform chưa chọn tenant → không gọi API (D9).
+// ADM-FR-35 · M3-R13 · trang Phân quyền: tab + tenant trên URL (`?tab=roles|matrix|check&tenant=<mã>&user=`); platform chưa chọn tenant → không gọi API (D9).
 import type { Me } from "@ai/contracts";
 import { getRouteApi } from "@tanstack/react-router";
 import { useTenantOptions } from "@/features/tenants/api";
 import { resolveViewedTenant } from "@/lib/viewed-tenant";
 
 const route = getRouteApi("/_authed/access");
-export type AccessTab = "matrix" | "check";
+export type AccessTab = "roles" | "matrix" | "check";
 
 export function useAccessView(me: Me | null) {
   const search = route.useSearch();
@@ -17,7 +17,7 @@ export function useAccessView(me: Me | null) {
   return {
     ...tn,
     user: search.user,
-    tab: (search.tab ?? "matrix") as AccessTab,
+    tab: (search.tab ?? "roles") as AccessTab,
     needsTenant: tn.isPlatform && !tn.tenantId,
     setTab: (tab: AccessTab) => patch({ tab }),
     setUser: (user: string | undefined) => patch({ user }),

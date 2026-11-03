@@ -2137,6 +2137,7 @@
     },
     "subtitle": "Grant features to groups. You can only grant features the platform has opened for the company.",
     "tab": {
+      "roles": "Roles by app",
       "matrix": "Matrix",
       "check": "Access check"
     },
@@ -2197,6 +2198,129 @@
       "userInactive": "This account is locked.",
       "tenantLocked": "The company is locked.",
       "unknown": "Reason unknown."
+    }
+  },
+  "appRoles": {
+    "level": {
+      "read": "View",
+      "write": "Edit",
+      "admin": "Admin"
+    },
+    "defaultRole": {
+      "viewer": "View only",
+      "editor": "Staff",
+      "owner": "Full access"
+    },
+    "pack": {
+      "contracts": "Contracts",
+      "community": "Community",
+      "knowledge": "Knowledge"
+    },
+    "ineffective": {
+      "label": "not in effect",
+      "tip": "The role level is above the company ceiling ({level}), so it has no effect yet.",
+      "off": "The app is off for this company, so the role has no effect yet."
+    },
+    "error": {
+      "conflict": "The role was changed elsewhere. Data was reloaded, please redo your changes.",
+      "defaultProtected": "Default roles cannot be deleted or change level (they can be renamed).",
+      "hasMembers": "The role still has {count} people, remove them before deleting.",
+      "notRoleable": "This app has no business pack installed, so roles cannot be created.",
+      "keyTaken": "The role key is already used."
+    },
+    "toast": {
+      "saved_one": "Saved {count} change",
+      "saved_other": "Saved {count} changes"
+    },
+    "dialog": {
+      "createTitle": "Create role · {app}",
+      "editTitle": "Edit role · {app}",
+      "desc": "Each role belongs to exactly one app and carries one level. Changes take effect after you press Save.",
+      "name": "Role name",
+      "level": "Level",
+      "create": "Create role",
+      "apply": "Apply",
+      "levelHint": {
+        "read": "View: read only.",
+        "write": "Edit: read and write.",
+        "admin": "Admin: read, write and administer the app."
+      }
+    },
+    "role": {
+      "default": "Default",
+      "new": "New",
+      "edited": "Edited",
+      "deleted": "To delete",
+      "members_one": "{count} person",
+      "members_other": "{count} people",
+      "restore": "Undo",
+      "edit": "Edit",
+      "editAria": "Edit role {name}",
+      "delete": "Delete",
+      "deleteAria": "Delete role {name}",
+      "deleteBlocked": "The role still has people, remove them before deleting."
+    },
+    "block": {
+      "aria": "App {app}",
+      "tableAria": "Roles of {app}",
+      "ceiling": "Company ceiling: {level}",
+      "off": "App is off for the company",
+      "create": "Create role"
+    },
+    "note": {
+      "community": "Only internal users can be assigned to Community roles. Partners use two fixed levels, View/Edit, outside roles.",
+      "knowledge": "Knowledge: no screen uses the Admin level yet."
+    },
+    "col": {
+      "role": "Role",
+      "level": "Level",
+      "people": "People",
+      "edit": "Edit"
+    },
+    "callout": {
+      "title": "App permissions have 3 tiers",
+      "tier1": "Company: turn the app on and set the ceiling (Off/View/Edit/Admin) in the Apps & Packs tab.",
+      "tier2": "Role: each app has default roles (Full access/Staff/View only) and custom roles, each with one level.",
+      "tier3": "User: assigned to roles. The effective level is the highest among their roles, never above the company ceiling.",
+      "other": "Chat AI is only on/off per company; Studio and Admin follow system roles, so they have no roles here."
+    },
+    "dirty_one": "{count} unsaved change",
+    "dirty_other": "{count} unsaved changes",
+    "clean": "No changes",
+    "discard": "Discard changes",
+    "empty": "The company has no business app turned on, so there are no roles to manage.",
+    "users": {
+      "title": "Assign users to roles",
+      "desc": "Internal users only; partners cannot join roles.",
+      "search": "Search users",
+      "empty": "No users.",
+      "tableAria": "Assign users to roles",
+      "col": {
+        "user": "User",
+        "system": "System role",
+        "roles": "App roles",
+        "effective": "Effective access",
+        "check": "Check access"
+      },
+      "check": "Check access",
+      "checkAria": "Check access of {user}"
+    },
+    "user": {
+      "none": "No roles",
+      "removeAria": "Remove {user} from role {role}",
+      "assignAria": "Assign a role to {user}",
+      "assign": "Assign to role…"
+    },
+    "check": {
+      "title": "Check access · {user}",
+      "desc": "Effective level of {username} per app and where it comes from.",
+      "empty": "No app to check yet.",
+      "noAccess": "No access",
+      "noSource": "No role or group grants access to this app.",
+      "viaRole": "Via role {role}",
+      "outside": "Via group {group}",
+      "outsideBadge": "access outside roles",
+      "direct": "Granted directly to the user"
     }
   },
   "audit": {

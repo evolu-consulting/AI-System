@@ -29,6 +29,7 @@ const openMatrix = async (page: Page, tenant = "acme", user = "binh") => {
   await loginAs(page, tenant, user);
   await page.getByRole("navigation").getByRole("link", { name: "Phân quyền" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Phân quyền" })).toBeVisible();
+  await page.getByRole("tab", { name: "Ma trận", exact: true }).click(); // CR-112: tab mặc định là "Vai theo ứng dụng"
   await expect(grid(page)).toBeVisible();
 };
 const grantCount = (featureId: string) =>
@@ -131,7 +132,7 @@ test("ADM-BR-12 · M3-R09 · platform chọn globex: hàng Kế toán hiện 'Đ
   page,
 }) => {
   await loginAdmin(page);
-  await page.goto("/access?tenant=globex");
+  await page.goto("/access?tab=matrix&tenant=globex");
   await expect(grid(page)).toBeVisible();
   await expect(grid(page).getByText("Đã thu hồi entitlement")).toBeVisible();
   const box = cell(page, "Kế toán", "Kế toán");

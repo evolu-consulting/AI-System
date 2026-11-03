@@ -2131,6 +2131,7 @@
     },
     "subtitle": "Cấp feature cho từng group. Chỉ cấp được feature mà công ty đã được nền tảng mở.",
     "tab": {
+      "roles": "Vai theo ứng dụng",
       "matrix": "Ma trận",
       "check": "Kiểm tra quyền"
     },
@@ -2191,6 +2192,129 @@
       "userInactive": "Tài khoản này đang bị khoá.",
       "tenantLocked": "Công ty đang bị khoá.",
       "unknown": "Không rõ lý do."
+    }
+  },
+  "appRoles": {
+    "level": {
+      "read": "Xem",
+      "write": "Sửa",
+      "admin": "Quản trị"
+    },
+    "defaultRole": {
+      "viewer": "Chỉ xem",
+      "editor": "Nhân viên",
+      "owner": "Toàn quyền"
+    },
+    "pack": {
+      "contracts": "Hợp đồng",
+      "community": "Community",
+      "knowledge": "Knowledge"
+    },
+    "ineffective": {
+      "label": "không hiệu lực",
+      "tip": "Mức của vai cao hơn mức trần công ty ({level}) nên chưa có hiệu lực.",
+      "off": "Ứng dụng đang tắt cho công ty này nên vai chưa có hiệu lực."
+    },
+    "error": {
+      "conflict": "Vai đã được thay đổi ở nơi khác. Đã tải lại dữ liệu, hãy làm lại thay đổi của bạn.",
+      "defaultProtected": "Vai mặc định không xoá được và không đổi được mức (đổi tên được).",
+      "hasMembers": "Vai còn {count} người, hãy gỡ hết người trước khi xoá.",
+      "notRoleable": "Ứng dụng này chưa có gói nghiệp vụ nên không tạo được vai.",
+      "keyTaken": "Mã vai đã được dùng."
+    },
+    "toast": {
+      "saved_one": "Đã lưu {count} thay đổi",
+      "saved_other": "Đã lưu {count} thay đổi"
+    },
+    "dialog": {
+      "createTitle": "Tạo vai · {app}",
+      "editTitle": "Sửa vai · {app}",
+      "desc": "Mỗi vai thuộc đúng một ứng dụng và mang một mức. Thay đổi chỉ có hiệu lực sau khi bấm Lưu.",
+      "name": "Tên vai",
+      "level": "Mức",
+      "create": "Tạo vai",
+      "apply": "Áp dụng",
+      "levelHint": {
+        "read": "Xem: chỉ đọc.",
+        "write": "Sửa: đọc và ghi.",
+        "admin": "Quản trị: đọc, ghi và quản trị ứng dụng."
+      }
+    },
+    "role": {
+      "default": "Mặc định",
+      "new": "Mới",
+      "edited": "Đã sửa",
+      "deleted": "Sẽ xoá",
+      "members_one": "{count} người",
+      "members_other": "{count} người",
+      "restore": "Hoàn tác",
+      "edit": "Sửa",
+      "editAria": "Sửa vai {name}",
+      "delete": "Xoá",
+      "deleteAria": "Xoá vai {name}",
+      "deleteBlocked": "Vai còn người, hãy gỡ hết người trước khi xoá."
+    },
+    "block": {
+      "aria": "Ứng dụng {app}",
+      "tableAria": "Vai của {app}",
+      "ceiling": "Trần công ty: {level}",
+      "off": "Ứng dụng đang tắt cho công ty",
+      "create": "Tạo vai"
+    },
+    "note": {
+      "community": "Chỉ người dùng nội bộ được gán vào vai Community. Đối tác dùng hai mức cố định Xem/Sửa, không qua vai.",
+      "knowledge": "Knowledge: chưa có màn dùng mức Quản trị."
+    },
+    "col": {
+      "role": "Vai",
+      "level": "Mức",
+      "people": "Người",
+      "edit": "Sửa"
+    },
+    "callout": {
+      "title": "Quyền theo ứng dụng gồm 3 tầng",
+      "tier1": "Công ty: bật ứng dụng và đặt mức trần (Tắt/Xem/Sửa/Quản trị) ở tab Ứng dụng & Gói.",
+      "tier2": "Vai: mỗi ứng dụng có vai mặc định (Toàn quyền/Nhân viên/Chỉ xem) và vai tuỳ biến, mỗi vai một mức.",
+      "tier3": "Người dùng: gán vào vai. Quyền thực tế là mức cao nhất trong các vai, không vượt mức trần công ty.",
+      "other": "Chat AI chỉ bật/tắt theo công ty; Studio và Admin phân theo vai hệ thống nên không có vai ở đây."
+    },
+    "dirty_one": "{count} thay đổi chưa lưu",
+    "dirty_other": "{count} thay đổi chưa lưu",
+    "clean": "Không có thay đổi",
+    "discard": "Bỏ thay đổi",
+    "empty": "Công ty chưa bật ứng dụng nghiệp vụ nào nên chưa có vai để phân quyền.",
+    "users": {
+      "title": "Gán người dùng vào vai",
+      "desc": "Chỉ người dùng nội bộ; đối tác không vào vai.",
+      "search": "Tìm người dùng",
+      "empty": "Không có người dùng nào.",
+      "tableAria": "Gán người dùng vào vai",
+      "col": {
+        "user": "Người dùng",
+        "system": "Vai hệ thống",
+        "roles": "Vai theo ứng dụng",
+        "effective": "Quyền thực tế",
+        "check": "Kiểm tra quyền"
+      },
+      "check": "Kiểm tra quyền",
+      "checkAria": "Kiểm tra quyền của {user}"
+    },
+    "user": {
+      "none": "Chưa có vai",
+      "removeAria": "Gỡ {user} khỏi vai {role}",
+      "assignAria": "Gán vai cho {user}",
+      "assign": "Gán vào vai…"
+    },
+    "check": {
+      "title": "Kiểm tra quyền · {user}",
+      "desc": "Mức thực tế của {username} theo từng ứng dụng và nguồn cấp quyền.",
+      "empty": "Chưa có ứng dụng nào để kiểm tra.",
+      "noAccess": "Chưa có quyền",
+      "noSource": "Không có vai hay nhóm nào cấp quyền ứng dụng này.",
+      "viaRole": "Qua vai {role}",
+      "outside": "Qua nhóm {group}",
+      "outsideBadge": "quyền ngoài vai",
+      "direct": "Cấp lẻ cho người dùng"
     }
   },
   "audit": {

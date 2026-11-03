@@ -124,6 +124,7 @@ test("M3-AC09 · ADM-FR-62 · ADM-FR-32 · ADM-FR-35 · ADM-FR-36 · F3 → F4: 
 
   await nav.getByRole("link", { name: "Phân quyền" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Phân quyền" })).toBeVisible();
+  await page.getByRole("tab", { name: "Ma trận", exact: true }).click(); // CR-112: tab mặc định là "Vai theo ứng dụng"
   await page.getByRole("checkbox", { name: "Kế toán cho group Kế toán" }).check();
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(toast(page, /Đã lưu quyền · 1 cấp, 0 thu/)).toBeVisible();
