@@ -215,6 +215,14 @@
       "owner": "platform",
       "expires": "2026-11-17",
       "since": "2026-11-03"
+    },
+    {
+      "id": "tests/acceptance/P-a/pf1/lock-order.int.test.ts › P1-48d…P1-48e · apply (stage-driver) ∥ cancel / expire [§10 · Major #1]",
+      "suite": "int",
+      "reason": "chập chờn có sẵn trên platform/gd0 trước CR-115 (đỏ 1/lượt chung, 5/5 xanh khi chạy riêng): expire SKIP LOCKED bỏ qua run tx khác còn giữ sau apply",
+      "owner": "hub-api processes",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
     }
   ]
 }
