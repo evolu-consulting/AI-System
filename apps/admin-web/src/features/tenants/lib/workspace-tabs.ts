@@ -13,7 +13,6 @@ const ALL: readonly TenantTab[] = [
   "features",
   "agents",
   "workflow-tools",
-  "packs",
   "quota",
   "users",
 ];
@@ -34,5 +33,6 @@ export const visibleTabs = (isPlatform: boolean): readonly TenantTab[] =>
 
 /** Tab trên URL không thuộc vai ⇒ về "info" (không render nội dung tab chỉ-platform). */
 export function activeTab(tab: TenantTab | undefined, isPlatform: boolean): TenantTab {
-  return tab && visibleTabs(isPlatform).includes(tab) ? tab : "info";
+  const t = tab === "packs" ? "features" : tab; // CR-112 S4: tab Gói đã gộp vào "Ứng dụng & Gói" (URL cũ vẫn mở được)
+  return t && visibleTabs(isPlatform).includes(t) ? t : "info";
 }

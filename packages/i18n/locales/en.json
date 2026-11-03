@@ -607,7 +607,7 @@
     },
     "tab": {
       "info": "Details",
-      "features": "Features",
+      "features": "Apps & Packs",
       "agents": "Agents",
       "quota": "Quota",
       "users": "Users",
@@ -719,29 +719,24 @@
         "gone": "This workflow is no longer in the catalog. The list was reloaded."
       }
     },
-    "packs": {
-      "title": "Business packs",
-      "desc": "Only the platform operator enables a pack. Enabling creates the Full access / Staff / View only groups and grants the pack's AI assistant to them.",
-      "col": {
-        "name": "Pack",
-        "status": "Status",
-        "on": "Enabled for company"
-      },
-      "name": {
-        "contracts": "Contracts",
-        "knowledge": "Knowledge"
-      },
-      "on": "Enabled",
-      "off": "Off",
-      "switchAria": "Enable pack {name}",
-      "empty": "No pack is installed on this system yet.",
-      "offTitle": "Turn off pack {name}?",
-      "offBody": "Company users can no longer open the pack. Groups and permissions are kept for when it is turned back on.",
-      "offConfirm": "Turn off pack",
-      "toast": {
-        "on": "Enabled pack {name} for {tenant}",
-        "off": "Turned off pack {name} for {tenant}"
-      }
+    "apps": {
+      "title": "Apps & Packs",
+      "desc": "Pick the access level of each app for this company. Off = pack off; View/Edit/Admin = pack on with matching access (the company ceiling). Roles in the app only take effect up to this level.",
+      "descReadOnly": "The company's apps and levels (read only). The platform operator changes them.",
+      "packOn": "Pack on",
+      "packOff": "Pack off",
+      "roles": "{count} role(s)",
+      "members": "{count} member(s)",
+      "ineffective": "{count} role(s) not in effect",
+      "ineffectiveHint": "Roles above the company level keep their grants but are not enforced. Raise the company level to make them effective.",
+      "openAccess": "Permissions",
+      "communityWarn": "Partners never join roles and keep the static View/Edit levels on Community. Review partner isolation after enabling.",
+      "communityBelowWrite": "The company has {count} partner organization(s): a level below Edit does not narrow their static Edit access.",
+      "communityOffPartners": "The company has {count} partner organization(s); they cannot use Community while it is off.",
+      "knowledgeNote": "There is no screen that uses the Knowledge Admin level yet.",
+      "pendingPacks": "enable {on} pack(s), disable {off} pack(s)",
+      "confirmPackOff": "Turning off {list}: {members} company user(s) lose access to this app immediately. Groups and roles are kept for when it is turned back on.",
+      "partial": "{done} step(s) applied, the rest is not saved — press Save again to continue."
     },
     "features": {
       "title": "Features by app",

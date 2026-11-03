@@ -8,12 +8,14 @@ type Props = {
   value: AppLevel;
   available: Record<AppLevel, boolean>;
   ariaLabel: string;
+  /** Chỉ xem (tenant_admin): khoá cả thanh. */
+  disabled?: boolean;
   onChange: (level: AppLevel) => void;
 };
 
 const ORDER: readonly AppLevel[] = ["off", ...LEVELS];
 
-export function LevelControl({ value, available, ariaLabel, onChange }: Props) {
+export function LevelControl({ value, available, ariaLabel, disabled, onChange }: Props) {
   const { t } = useTranslation();
   return (
     <ToggleGroup
@@ -28,7 +30,7 @@ export function LevelControl({ value, available, ariaLabel, onChange }: Props) {
         <ToggleGroupItem
           key={l}
           value={l}
-          disabled={!available[l]}
+          disabled={disabled || !available[l]}
           className="h-9 rounded-none first:rounded-l-md last:rounded-r-md"
         >
           {t(`tenants.features.level.${l}`)}

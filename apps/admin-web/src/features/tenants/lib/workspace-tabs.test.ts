@@ -8,6 +8,9 @@ describe("ADM-FR-81 · workspace-tabs", () => {
     expect(activeTab("quota", false)).toBe("info");
     expect(activeTab("users", false)).toBe("users");
     expect(activeTab(undefined, false)).toBe("info");
-    expect(activeTab("packs", true)).toBe("packs");
+    // CR-112 S4 · ADM-FR-78: tab Gói gộp vào Ứng dụng & Gói — URL cũ ?tab=packs mở tab gộp, tab không còn trong danh sách.
+    expect(activeTab("packs", true)).toBe("features");
+    expect(visibleTabs(true)).not.toContain("packs");
+    expect(activeTab("packs", false)).toBe("info");
   });
 });

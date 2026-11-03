@@ -36,10 +36,8 @@ export type { TenantTab } from "../lib/workspace-tabs";
 
 /** P-d2 · tab "Tool quy trình" nạp lười (chỉ khi mở tab). */
 const TenantToolsTab = lazy(() => import("../components/tools/TenantToolsTab"));
-/** CR-111 · tab "Feature" (thẻ app: mức Tắt/Xem/Sửa/Quản trị + tính năng thêm) nạp lười. */
+/** CR-112 · tab "Ứng dụng & Gói" (CR-111 thẻ app + gói nghiệp vụ, gộp) nạp lười. */
 const TenantFeaturesTab = lazy(() => import("../components/features/TenantFeaturesTab"));
-/** UAT B3 · tab "Gói" (bật/tắt gói nghiệp vụ, D-05 chỉ platform_admin) nạp lười. */
-const TenantPacksTab = lazy(() => import("../components/packs/TenantPacksTab"));
 
 function Header({
   tenant,
@@ -188,11 +186,6 @@ export function TenantDetailPage() {
         <TabsContent value="workflow-tools" className="pt-4">
           <Suspense fallback={<LoadingState />}>
             <TenantToolsTab tenant={tenant} />
-          </Suspense>
-        </TabsContent>
-        <TabsContent value="packs" className="pt-4">
-          <Suspense fallback={<LoadingState />}>
-            <TenantPacksTab tenant={tenant} />
           </Suspense>
         </TabsContent>
         <TabsContent value="quota" className="pt-4">

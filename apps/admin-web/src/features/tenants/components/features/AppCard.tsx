@@ -1,21 +1,32 @@
 // CR-111 · thẻ một app trong tab Feature của công ty: tên + dòng tóm tắt "Đang: Sửa · 1 tính năng thêm", thanh mức hoặc công tắc, tính năng thêm.
+import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Switch } from "@/components/ui/switch";
 import { APPS } from "@/features/features/lib/feature-meta";
 import { useTr } from "@/lib/use-translate";
 import {
+  type AppLevel,
   activeAddons,
   availableLevels,
   type AppCard as Card,
   detectLevel,
   setKey,
-  setLevel,
 } from "../../lib/feature-assign";
 import { AddonList } from "./AddonList";
+import { AppCardMeta } from "./AppCardMeta";
 import { LevelControl } from "./LevelControl";
 
-type Props = { card: Card; draft: ReadonlySet<string>; onChange: (next: Set<string>) => void };
+type Props = {
+  card: Card;
+  draft: ReadonlySet<string>;
+  onChange: (next: Set<string>) => void;
+  /** Đặt mức: cũng ghi ý định bật/tắt gói (tab Ứng dụng & Gói). */
+  onLevel: (card: Card, level: AppLevel) => void;
+  readOnly?: boolean;
+  /** Gói của app + số vai (tính theo mức đang chọn) + số công ty đối tác, khi app có gói. */
+  meta?: Omit<ComponentProps<typeof AppCardMeta>, "app" | "level"> | null;
+};
 
 function useSummary(card: Card, draft: ReadonlySet<string>) {
   const { t } = useTranslation();
@@ -36,7 +47,33 @@ function useSummary(card: Card, draft: ReadonlySet<string>) {
   return `${t("tenants.features.summary.now", { state })}${extra}`;
 }
 
-export function AppCard({ card, draft, onChange }: Props) {
+/** Công tắc bên phải thẻ: Cơ bản (luôn bật, khoá) hoặc Chat AI (một công tắc); app dạng mức/danh sách không có. */
+function CardSwitch({
+  card,
+  draft,
+  name,
+  readOnly,
+  onChange,
+}: Pick<Props, "card" | "draft" | "readOnly" | "onChange"> & { name: string }) {
+  const { t } = useTranslation();
+  if (card.mode === "core")
+    return <Switch checked disabled aria-label={t("tenants.features.coreAria")} />;
+  const main = card.mode === "switch" ? card.main : undefined;
+  if (!main) return null;
+  return (
+    <Switch
+      checked={draft.has(main.key)}
+      disabled={readOnly}
+      aria-label={t("tenants.features.switchAria", { name })}
+      onCheckedChange={(on) => {
+        const next = setKey(draft, main.key, on);
+        if (!on) for (const f of card.addons) next.delete(f.key);
+        onChange(next);
+      }}
+    />
+  );
+}
+export function AppCard({ card, draft, onChange, onLevel, readOnly, meta }: Props) {
   const { t } = useTranslation();
   const tr = useTr();
   const Icon = APPS[card.app].icon;
@@ -69,35 +106,25 @@ export function AppCard({ card, draft, onChange }: Props) {
           </h3>
           <p className="text-caption text-muted-foreground">{summary}</p>
         </div>
-        {card.mode === "core" ? (
-          <Switch checked disabled aria-label={t("tenants.features.coreAria")} />
-        ) : card.mode === "switch" && card.main ? (
-          <Switch
-            checked={mainOn}
-            aria-label={t("tenants.features.switchAria", { name })}
-            onCheckedChange={(on) => {
-              const next = setKey(draft, (card.main as { key: string }).key, on);
-              if (!on) for (const f of card.addons) next.delete(f.key);
-              onChange(next);
-            }}
-          />
-        ) : null}
+        <CardSwitch card={card} draft={draft} name={name} readOnly={readOnly} onChange={onChange} />
       </div>
       {card.mode === "levels" ? (
         <LevelControl
           value={level?.level ?? "off"}
           available={availableLevels(card)}
           ariaLabel={t("tenants.features.levelAria", { name })}
-          onChange={(l) => onChange(setLevel(draft, card, l))}
+          disabled={readOnly}
+          onChange={(l) => onLevel(card, l)}
         />
       ) : null}
       <AddonList
         items={card.addons}
         draft={draft}
-        locked={appOff}
+        locked={appOff || !!readOnly}
         showAddonBadge={card.mode !== "list"}
         onToggle={(key, on) => onChange(setKey(draft, key, on))}
       />
+      {meta ? <AppCardMeta {...meta} app={card.app} level={level?.level ?? "off"} /> : null}
     </section>
   );
 }
