@@ -120,7 +120,8 @@ async function reliability(t: Ten, fn: Fn, want: string): Promise<string> {
   try {
     await db.db.transaction(async (tx) => {
       await fn(tx);
-      await tx.execute(dsql`select pg_terminate_backend(pg_backend_pid())`);
+      // Lỗi giữa tx sau khi đã xoá/chèn (pg_terminate_backend làm postgres.js 3.4.9 crash `socket.write` ⇒ dùng lỗi câu lệnh).
+      await tx.execute(dsql`select 1 / 0`);
     });
   } catch {
     killed = true;
