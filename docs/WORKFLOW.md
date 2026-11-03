@@ -182,6 +182,10 @@ Một session làm một mốc → giữ cách cũ: commit thẳng `main` (Luậ
 - **Conflict ngữ nghĩa** (git không báo, ghép xong test feature trước đỏ): nhánh đến sau sửa. Code sai → sửa code. Hai spec loại trừ nhau / test quá chặt → **Tranh chấp test** (không tự sửa test của feature khác), qc + người dùng quyết, sửa spec (có thể CR) trước.
 - Không format/đổi tên hàng loạt trong nhánh feature — làm nhánh riêng, merge riêng.
 
+**Giảm conflict tự động trong `slice:merge`** (lát `tool-merge`):
+- **Locale JSON** (`packages/i18n/locales/**/*.json`): merge driver `i18njson` gộp theo key (`json-merge-driver.ts`, đăng ký ở `.gitattributes`; `merge.i18njson.driver` do `bun install` postinstall / `slice:new` / `slice:merge` ghi, idempotent). Hai lát thêm key khác nhau ⇒ tự gộp; cùng key đổi khác nhau ⇒ conflict thật (dấu conflict + danh sách key ở stderr) — gỡ tay.
+- **`tests/.lock`**: lát vẫn được relock cục bộ; khi rebase chỉ conflict ở file này, `slice:merge` lấy bản upstream, `rebase --continue`, rồi `test:lock:write` và commit `chore(tests): relock sau rebase`. Conflict ở file khác vẫn dừng cho người gỡ. CI vẫn kiểm bằng `test:lock:verify`.
+
 ### 5. Ghi chú bàn giao khi xin merge (cuối `tasks.md` của feature)
 Nhánh · task đã xong · file đã sửa ngoài cột `File` (nếu có, kèm lý do) · giả định về contract · "Quyết định trong lúc làm" · việc còn lại · lệnh test đã chạy + kết quả.
 

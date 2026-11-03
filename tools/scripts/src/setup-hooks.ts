@@ -4,6 +4,8 @@
 // checkout chính trỏ vào worktree (hỏng khi xoá worktree). `core.hooksPath` tương đối + hook tự tìm
 // lefthook trong worktree hiện tại thì cài ở đâu cũng không ảnh hưởng chỗ khác. Idempotent.
 
+import { ensureMergeDriver } from "./setup-merge-driver";
+
 const HOOKS_PATH = "tools/hooks";
 
 function git(args: string[]): { ok: boolean; out: string } {
@@ -16,4 +18,6 @@ if (git(["rev-parse", "--git-dir"]).ok) {
     git(["config", "core.hooksPath", HOOKS_PATH]);
     console.log(`setup-hooks: core.hooksPath=${HOOKS_PATH}`);
   }
+  if (ensureMergeDriver())
+    console.log("setup-hooks: merge.i18njson.driver (gộp locale JSON theo key)");
 }

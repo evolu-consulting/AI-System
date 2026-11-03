@@ -1,3 +1,4 @@
 * text=auto eol=lf
+packages/i18n/locales/**/*.json merge=i18njson
 *.png binary
 *.jpg binary

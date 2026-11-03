@@ -12,6 +12,8 @@ import { dirname, join, resolve } from "node:path";
 import { pruneLanes, resolveLane } from "./e2e-lane";
 import { collectLocal } from "./res-check";
 import { hardLimits } from "./res-check.rules";
+import { ensureMergeDriver } from "./setup-merge-driver";
+import { rebaseResolvingLock, relockAfterRebase } from "./slice-rebase";
 
 const BASE = "platform/gd0";
 
@@ -133,6 +135,7 @@ function cmdNew(name: string | undefined, force: boolean): void {
   copyEnv(main, dir);
   if (!run(dir, ["bun", "install"], true).ok) fail("bun install lỗi");
   verifyHooks(dir);
+  ensureMergeDriver(dir);
   writeTasksTemplate(dir, name as string);
   console.log(
     `slice: làn e2e ${resolveLane(dir)} (cổng/DB/Redis riêng, xem docs/WORKFLOW.md "e2e theo làn")`,
@@ -148,8 +151,19 @@ function cmdMerge(name: string | undefined, noTest: boolean, noOpenspec: boolean
     console.warn("slice: CẢNH BÁO --no-openspec: bỏ qua kiểm Delta (chỉ dùng khi khẩn cấp)");
   else if (!run(dir, ["bun", "tools/scripts/src/openspec.ts", "check", name as string], true).ok)
     fail("openspec:check đỏ — sửa Delta trong tasks.md (hoặc --no-openspec khi khẩn cấp)");
-  const rb = git(dir, "rebase", BASE);
+  ensureMergeDriver(dir); // locale JSON gộp theo key (git config không nằm trong git)
+  const rb = rebaseResolvingLock((...a) => git(dir, ...a), BASE);
   if (!rb.ok) fail(`rebase lỗi (gỡ conflict trong ${dir}, rồi chạy lại):\n${rb.out}`);
+  if (rb.lockResolved > 0) {
+    console.log(
+      `slice: tự giải ${rb.lockResolved} conflict tests/.lock, sinh lại bằng test:lock:write`,
+    );
+    const rl = relockAfterRebase(
+      (...a) => git(dir, ...a),
+      () => run(dir, ["bun", "tools/scripts/src/test-lock.ts", "write"], true).ok,
+    );
+    if (rl.error) fail(`relock sau rebase lỗi: ${rl.error}`);
+  }
   if (
     !noTest &&
     !run(dir, ["bun", "tools/scripts/src/test-affected.ts", `--base=${BASE}`], true).ok
