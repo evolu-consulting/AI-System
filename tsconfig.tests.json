@@ -1,4 +1,10 @@
 {
   "extends": "./packages/config/tsconfig/bun.json",
-  "include": ["tests/**/*.ts", "e2e/**/*.ts", "playwright.config.ts"]
+  "include": [
+    "tests/**/*.ts",
+    "e2e/**/*.ts",
+    "playwright.config.ts",
+    "eval/hub/**/*.ts",
+    "tools/eval/**/*.ts"
+  ]
 }
