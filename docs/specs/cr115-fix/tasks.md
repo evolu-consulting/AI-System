@@ -55,6 +55,8 @@ Lô bắn hẹn `retry` không làm mất hay lặp lần chạy khi một hẹn
 - Kịch bản: khi cả giao dịch lô lỗi sau khi đã chọn hẹn thì từng hẹn được bắn lại riêng, lỗi nữa thì lùi hạn từng hẹn [test: apps/hub-api/src/modules/processes/adapters/timers/timer-sweep.batch.test.ts » Thấp2]
 
 ## Số đo sau (evotest)
-(điền sau khi đo)
+PD-P01 (mã f0e625ed, `-Step perf -Exclusive`, 1 lượt theo điều phối): p50 548,0 / p95 663,6 ms (ngưỡng 991 / 1.226) — đạt.
+Đỏ trước sửa (31b2e328): systemEach TB1, PD-B07 (40P01 trên `conversations`), PD-B08; PD-B05/B06 xanh cả trước (B06 là đua,
+không tái hiện ổn định). Sau sửa: P-d/d1 + processes/adapters + P-a/pf1 + P-a/pf2 351 pass / 0 fail.
 
 ## Việc còn lại
