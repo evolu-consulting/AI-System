@@ -218,6 +218,13 @@
       "when": 1801200000000,
       "tag": "0030_app_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1801210000000,
+      "tag": "0031_app_roles_backfill",
+      "breakpoints": true
     }
   ]
 }

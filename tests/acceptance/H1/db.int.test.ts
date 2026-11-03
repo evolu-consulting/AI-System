@@ -79,15 +79,21 @@ afterAll(async () => {
   await sql?.end();
 });
 
-/** Mô tả schema `hub`: cột, CHECK/FK/UNIQUE, index, policy RLS (so hai DB). */
+/**
+ * Index trên bảng hub do migration GÓI tạo (DB "full" chạy cả migration gói, DB stub chỉ admin+hub) — danh sách khoá, cố ý:
+ * `review_tasks_decided_by_idx` = CR-109 pack_contracts 0070 (perf hiển thị cho người duyệt). Thêm index gói mới ⇒ qc thêm ở đây.
+ */
+const PACK_OWNED_HUB_IDX = ["review_tasks_decided_by_idx"];
+
+/** Mô tả schema `hub`: cột, CHECK/FK/UNIQUE, index (trừ index của gói), policy RLS (so hai DB). */
 async function hubSchema(db: Sql): Promise<Json> {
   const cols = await db`select table_name, column_name, data_type, is_nullable, column_default
     from information_schema.columns where table_schema = 'hub' order by 1, 2`;
   const cons =
     await db`select c.conrelid::regclass::text as tbl, c.conname, pg_get_constraintdef(c.oid) as def
     from pg_constraint c join pg_namespace n on n.oid = c.connamespace where n.nspname = 'hub' order by 1, 2`;
-  const idx =
-    await db`select tablename, indexname, indexdef from pg_indexes where schemaname = 'hub' order by 1, 2`;
+  const idx = await db`select tablename, indexname, indexdef from pg_indexes
+    where schemaname = 'hub' and indexname <> all(${PACK_OWNED_HUB_IDX}::text[]) order by 1, 2`;
   const pol = await db`select tablename, policyname, roles::text as roles, cmd, qual, with_check
     from pg_policies where schemaname = 'hub' order by 1, 2`;
   const rls =

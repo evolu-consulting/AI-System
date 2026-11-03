@@ -110,5 +110,7 @@ export const APP_ROLE_ERRORS = {
   ROLE_HAS_MEMBERS: 409,
   /** App không phải gói nghiệp vụ đã cài (thiếu `<k'>-read|write|admin`) ⇒ không tạo vai. */
   PACK_NOT_ROLEABLE: 422,
+  /** Xoá Group của vai tuỳ biến qua `/admin/groups` (S6) ⇒ phải xoá qua `DELETE /admin/app-roles/:id`. */
+  ROLE_GROUP_MANAGED: 409,
 } as const;
 export type AppRoleErrorCode = keyof typeof APP_ROLE_ERRORS;

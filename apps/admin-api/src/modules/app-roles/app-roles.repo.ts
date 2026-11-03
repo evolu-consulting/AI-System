@@ -127,7 +127,18 @@ export async function deleteRoleGroup(
 }
 
 /** Vai mặc định của gói từ 3 Group vai `<k'>-viewer|editor|owner` (đã có) — trùng ⇒ bỏ qua. Trả số vai mới. */
-export async function insertDefaultRoles(tx: Tx, tenantId: string, pack: string): Promise<number> {
+export function insertDefaultRoles(tx: Tx, tenantId: string, pack: string): Promise<number> {
+  return insertDefaultRolesFor(tx, [tenantId], pack);
+}
+
+/** Như `insertDefaultRoles` cho nhiều tenant một câu (importer — S6). */
+export async function insertDefaultRolesFor(
+  tx: Tx,
+  tenantIds: readonly string[],
+  pack: string,
+): Promise<number> {
+  if (tenantIds.length === 0) return 0;
+  const tids = `{${tenantIds.join(",")}}`;
   const rows = PACK_ROLES.map((r) => ({
     gk: packGroupKey(pack, r),
     key: r,
@@ -138,7 +149,7 @@ export async function insertDefaultRoles(tx: Tx, tenantId: string, pack: string)
     sql`insert into admin.app_roles (tenant_id, pack, key, name, level, group_id, is_default)
       select g.tenant_id, ${pack}, x.key, g.name, x.level, g.id, true
       from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) as x(gk text, key text, level text)
-      join admin.groups g on g.tenant_id = ${tenantId}::uuid and g.key = x.gk
+      join admin.groups g on g.tenant_id = any(${tids}::uuid[]) and g.key = x.gk
       on conflict do nothing
       returning id`,
   );

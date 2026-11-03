@@ -83,6 +83,7 @@
     "db:migrate": "bun --env-file=.env.local packages/db/src/migrate.ts",
     "db:seed": "bun --env-file=.env.local packages/db/src/seed.ts",
     "db:setup": "bun run db:migrate && bun run db:seed",
+    "admin:roles-backfill": "bun --env-file=.env.local apps/admin-api/src/modules/app-roles/app-roles-backfill.cli.ts",
     "db:reset:dev": "bun --env-file=.env.local packages/db/src/dev-reset.ts",
     "hub:seed": "bun --env-file=.env.local apps/hub-api/src/modules/seed/seed.ts",
     "hub:seed:fixtures": "bun --env-file=.env.local apps/hub-api/src/modules/seed/seed.tenant-fixtures.ts",

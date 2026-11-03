@@ -5,6 +5,7 @@
 import { type ConfigSink, type Db, type Tx, withConfigWrite, withScope } from "@ai/db";
 import { auditOf } from "../../../lib/audit/audit.write";
 import { publishConfigChanged } from "../../../lib/config/config-write";
+import { insertDefaultRolesFor } from "../../app-roles/app-roles.service";
 import {
   packFeatureKeys,
   packGroupKeys,
@@ -62,6 +63,8 @@ async function packForNew({ d, tx, ch }: W, tids: string[]): Promise<void> {
   const ent = await repo.enableEntitlements(tx, tids, FEATURES, d.actorId);
   const grp = await repo.insertRoleGroups(tx, tids, roleGroupRows(PACK), d.actorId);
   const grants = await repo.insertRoleGrants(tx, tids, roleGrantPairs(PACK), d.actorId);
+  // CR-112 S6 · ADM-FR-81: 3 vai mặc định trỏ 3 Group vai vừa tạo (như enablePack); trùng ⇒ bỏ qua.
+  await insertDefaultRolesFor(tx, tids, PACK);
   // UAT B4: trợ lý của gói cho tenant mới, cùng tx (như PUT /packs).
   await grantAgentsAndNotify(tx, { tenantIds: tids, key: PACK, actorId: d.actorId });
   const touched = new Set<string>();

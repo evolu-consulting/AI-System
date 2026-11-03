@@ -16,6 +16,7 @@ import {
 import {
   type AuditActionValue,
   type AuditInput,
+  type ConfigSink,
   type Db,
   type DbScope,
   type Tx,
@@ -29,6 +30,7 @@ import { uniqueViolation } from "../../lib/pg-errors";
 import type { TestHooks } from "../../lib/test-hooks";
 import { createGroupIn, tenantFilter } from "../groups/groups.service";
 import type { Actor } from "../users/users.rules";
+import { grantRoleAgents, recordAgentGrants } from "./app-roles.agents";
 import { compileRoles, recordCompile } from "./app-roles.compile";
 import * as repo from "./app-roles.repo";
 import {
@@ -39,12 +41,16 @@ import {
   roleKeyFits,
 } from "./app-roles.rules";
 
+/** Cho importer (module khác không import repo trực tiếp — depcruise `no-cross-module-repo`). */
+export { insertDefaultRolesFor } from "./app-roles.repo";
+
 export type Call = { ctx: { db: Db; hooks?: TestHooks }; actor: Actor; scope: DbScope };
 
 const ROLE_MESSAGES: Record<AppRoleErrorCode, string> = {
   DEFAULT_ROLE_PROTECTED: "Default roles cannot be deleted or change level",
   ROLE_HAS_MEMBERS: "Role still has members",
   PACK_NOT_ROLEABLE: "Roles are only available for installed business packs",
+  ROLE_GROUP_MANAGED: "This group belongs to a role; delete the role instead",
 };
 
 export function roleError(code: AppRoleErrorCode, details?: unknown): AppError {
@@ -146,6 +152,9 @@ export async function createRole(
       tenantId,
       await compileRoles(tx, { tenantId, roleIds: [id], actorId: c.actor.userId }),
     );
+    // S6: trợ lý gói như Group vai mặc định cùng mức (nếu Group mặc định có).
+    const agents = await grantRoleAgents(tx, { tenantId, roleIds: [id], actorId: c.actor.userId });
+    recordAgentGrants(ch, tenantId, agents, () => roleGroupKey(input.pack, key));
     return readRole(tx, c, id);
   });
 }
@@ -170,16 +179,23 @@ export function updateRole(c: Call, id: string, input: AppRoleUpdateRequest): Pr
     ch.audit(
       roleAudit("update", cur, { op: "role.update", from: cur.level, to: set.level ?? cur.level }),
     );
-    if (set.level !== undefined) {
-      const res = await compileRoles(tx, {
-        tenantId: cur.tenant_id,
-        roleIds: [id],
-        actorId: c.actor.userId,
-      });
-      recordCompile(ch, cur.tenant_id, res);
-    }
+    if (set.level !== undefined) await recompileRole({ tx, ch }, cur, c.actor.userId);
     return readRole(tx, c, id);
   });
+}
+
+/** Mức đổi ⇒ biên dịch lại grant; vai tuỳ biến nhận thêm agent trợ lý của mức mới (S6). */
+async function recompileRole(
+  w: { tx: Tx; ch: ConfigSink },
+  cur: repo.RoleRow,
+  actorId: string,
+): Promise<void> {
+  const a = { tenantId: cur.tenant_id, roleIds: [cur.id], actorId };
+  recordCompile(w.ch, cur.tenant_id, await compileRoles(w.tx, a));
+  if (cur.is_default) return;
+  recordAgentGrants(w.ch, cur.tenant_id, await grantRoleAgents(w.tx, a), () =>
+    roleGroupKey(cur.pack, cur.key),
+  );
 }
 
 /** Chỉ vai tuỳ biến (mặc định ⇒ 409); xoá Group của vai (cascade vai, thành viên, grant). */

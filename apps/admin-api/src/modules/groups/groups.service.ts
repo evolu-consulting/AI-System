@@ -1,6 +1,7 @@
 // ADM-FR-62, ADM-FR-55, ADM-BR-09 · nghiệp vụ groups (spec M3 §3, M3-R01…R06, R23; plan §5.4). Không biết HTTP.
 // Ghi qua `configWrite` (một request = một transaction + bump + NOTIFY sau commit). Khoá: group NKU (PATCH/DELETE), hạng 3.
 import {
+  APP_ROLE_ERRORS,
   BETA_GROUP_KEY,
   GROUP_NAME_MAX,
   type Group,
@@ -24,7 +25,7 @@ import { z } from "zod";
 import type { InTx, RestoreAt } from "../../lib/audit/audit.write";
 import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";
-import { appError } from "../../lib/errors";
+import { AppError, appError } from "../../lib/errors";
 import { uniqueViolation } from "../../lib/pg-errors";
 import { afterLock, type TestHooks } from "../../lib/test-hooks";
 import { type Actor, resolveTenantScope } from "../users/users.rules";
@@ -212,13 +213,25 @@ export async function updateGroupIn(
   return after;
 }
 
-/** 404 → BETA_GROUP_PROTECTED → xoá (cascade thành viên + grant, M3-R04). */
+/**
+ * CR-112 S6 · ADM-FR-80: Group của vai không xoá qua `/admin/groups` — vai mặc định ⇒ 409 DEFAULT_ROLE_PROTECTED, vai tuỳ
+ * biến ⇒ 409 ROLE_GROUP_MANAGED (xoá qua `DELETE /admin/app-roles/:id`, có kiểm thành viên).
+ */
+async function assertNotRoleGroup(tx: Tx, groupId: string): Promise<void> {
+  const role = await repo.roleOfGroup(tx, groupId);
+  if (!role) return;
+  const code = role.is_default ? "DEFAULT_ROLE_PROTECTED" : "ROLE_GROUP_MANAGED";
+  throw new AppError(code, APP_ROLE_ERRORS[code], "Group belongs to an app role");
+}
+
+/** 404 → BETA_GROUP_PROTECTED → vai (409) → xoá (cascade thành viên + grant, M3-R04). */
 export function deleteGroup(c: Call, id: string): Promise<void> {
   return configWrite(c, "group.delete", async (tx, ch) => {
     const g = await repo.lockGroup(tx, tenantFilter(c.actor), id, "no key update");
     if (!g) throw appError("NOT_FOUND");
     await afterLock(c.ctx.hooks, "group.delete", "locked");
     fail(checkGroupDelete(g));
+    await assertNotRoleGroup(tx, g.id);
     const before = toGroup(await mustFind(tx, c, id));
     await repo.deleteGroup(tx, g);
     ch.changed({ entity: "group", tenantId: g.tenantId });

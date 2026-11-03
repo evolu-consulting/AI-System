@@ -132,6 +132,17 @@ export async function bumpGroup(
     where tenant_id = ${g.tenantId} and id = ${g.id}`);
 }
 
+/** CR-112 S6: Group là Group của một vai? ⇒ `{ is_default }`; không ⇒ null. Group đã khoá NKU nên vai không đổi giữa chừng. */
+export async function roleOfGroup(
+  tx: Tx,
+  groupId: string,
+): Promise<{ is_default: boolean } | null> {
+  const rows = (await tx.execute(
+    sql`select is_default from admin.app_roles where group_id = ${groupId}`,
+  )) as unknown as { is_default: boolean }[];
+  return rows[0] ?? null;
+}
+
 export async function deleteGroup(tx: Tx, g: { tenantId: string; id: string }): Promise<void> {
   await tx.execute(sql`delete from admin.groups where tenant_id = ${g.tenantId} and id = ${g.id}`);
 }

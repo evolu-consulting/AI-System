@@ -17,7 +17,7 @@ const RETURNING = sql`returning id, feature_id, group_id, user_id,
 /** `roleIds` null ⇒ mọi vai của tenant. */
 export async function compileRoles(
   tx: Tx,
-  a: { tenantId: string; roleIds: readonly string[] | null; actorId: string },
+  a: { tenantId: string; roleIds: readonly string[] | null; actorId: string | null },
 ): Promise<CompileResult> {
   const ids = a.roleIds === null ? null : `{${a.roleIds.join(",")}}`;
   const roles = (await tx.execute(sql`select group_id, pack, level from admin.app_roles
