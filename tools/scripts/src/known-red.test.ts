@@ -159,22 +159,34 @@ describe("known-red · đọc dữ liệu", () => {
         },
         {
           suite: "int",
-          name: "tests/acceptance/H1/db.int.test.ts › A48–A51 · migration Hub và quyền [HUB-H1-AC-08 · HUB-FR-75] > x",
+          name: "packages/db/src/migrate-hub.int.test.ts › HUB-FR-75 · runHubMigrations (int, ai_system_h1_test) > DB sạch (production): main → hub đủ bảng",
+        },
+        {
+          suite: "int",
+          name: "apps/hub-api/src/modules/chat-gate/chat-gate.int.test.ts › (unnamed)",
+        },
+        {
+          suite: "int",
+          name: "tests/acceptance/V2-G/perf.int.test.ts › V2-G perf > thời gian: Lưu 200 dòng + 50 mốc (tenant tắt duyệt) — p95",
         },
         { suite: "e2e:root-0", name: "m4-usage.spec.ts › E9 · ca không có trong danh sách" },
+        {
+          suite: "int",
+          name: "packages/db/src/migrate-hub.int.test.ts › HUB-FR-75 · role + GRANT (int) > x",
+        },
       ],
       entries,
       "2026-11-03",
     );
-    expect(s.known).toHaveLength(3);
-    expect(s.fresh).toHaveLength(1);
-    // hết hạn ⇒ cả ba thành đỏ mới
+    expect(s.known).toHaveLength(5);
+    expect(s.fresh).toHaveLength(2);
+    // hết hạn ⇒ cả năm thành đỏ mới
     expect(
       splitReds(
         s.known.map((h) => h.red),
         entries,
         "2026-11-18",
       ).expired,
-    ).toHaveLength(3);
+    ).toHaveLength(5);
   });
 });

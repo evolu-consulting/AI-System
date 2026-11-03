@@ -105,17 +105,33 @@
       "since": "2026-11-03"
     },
     {
-      "id": "A48–A51 · migration Hub và quyền",
+      "id": "packages/db/src/migrate-hub.int.test.ts › HUB-FR-75 · runHubMigrations (int, ai_system_h1_test) > DB sạch (production)",
       "suite": "int",
-      "reason": "HUB-FR-75: runHubMigrations (migrate-hub) lệch kỳ vọng, 2 ca",
+      "reason": "HUB-FR-75 migrate-hub: đỏ trên cả base 45f218e7 và HEAD (evotest 2026-11-03)",
       "owner": "hub-db",
       "expires": "2026-11-17",
       "since": "2026-11-03"
     },
     {
-      "id": "K2 · màn đọc bỏ bản đã bị thay",
+      "id": "packages/db/src/migrate-hub.int.test.ts › HUB-FR-75 · runHubMigrations (int, ai_system_h1_test) > DB có stub",
       "suite": "int",
-      "reason": "tests/acceptance/K2/readers.int.test.ts đỏ sẵn",
+      "reason": "HUB-FR-75 migrate-hub: đỏ trên cả base 45f218e7 và HEAD (evotest 2026-11-03)",
+      "owner": "hub-db",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "apps/hub-api/src/modules/chat-gate/chat-gate.int.test.ts",
+      "suite": "int",
+      "reason": "hook beforeAll timeout 30 s (ca \"(unnamed)\"), đỏ trên cả base và HEAD",
+      "owner": "hub-api",
+      "expires": "2026-11-17",
+      "since": "2026-11-03"
+    },
+    {
+      "id": "thời gian: Lưu 200 dòng + 50 mốc",
+      "suite": "int",
+      "reason": "tests/acceptance/V2-G/perf.int.test.ts p95 ≤ 250 ms chập chờn theo tải máy",
       "owner": "contracts",
       "expires": "2026-11-17",
       "since": "2026-11-03"
