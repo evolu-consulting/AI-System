@@ -181,7 +181,8 @@
           "approver": "{{count}} người duyệt",
           "approvers": "{{count}} người duyệt",
           "escalate": "Quá hạn ⇒ chuyển {{group}}",
-          "escalateDefault": "Quá hạn ⇒ chuyển {{group}} (mặc định)"
+          "escalateDefault": "Quá hạn ⇒ chuyển {{group}} (mặc định)",
+          "escalateMissing": "Lỗi cấu hình: nhóm nhận khi quá hạn đã bị xoá"
         },
         "rules": {
           "title": "Luật duyệt",

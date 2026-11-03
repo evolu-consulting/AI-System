@@ -10,6 +10,7 @@ import type {
   ActivityWindow,
   RecordHistory,
 } from "../../kit/application/activity.ports";
+import { eventDataOut } from "./approval-engine.repo";
 
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS"Z"'`;
 const iso = (col: SQL) => sql`to_char(${col} at time zone 'UTC', ${sql.raw(ISO)})`;
@@ -28,7 +29,7 @@ function contractParts(tid: string, uid: string, w: ActivityWindow): SQL[] {
   const act = w.action ?? "%";
   return [
     sql`(select 'contract'::text as object, e.type as action, e.at, e.actor_user_id as actor_id, c.id as ref_id,
-        c.title as name, c.number, null::text as party, e.data::text as detail
+        c.title as name, c.number, null::text as party, ${eventDataOut("e")}::text as detail
       from contracts.contract_events e join contracts.contracts c on c.id = e.contract_id and c.tenant_id = e.tenant_id
       where e.tenant_id = ${tid}::uuid and e.actor_user_id = ${uid}::uuid and e.at >= ${lo} and e.at < ${hi}
         and e.type like ${act} order by e.at desc limit ${w.limit}::int)`,
@@ -89,7 +90,7 @@ async function record(
     select k.id, k.title, k.number,
       (select json_agg(json_build_object('at', ${iso(sql`e.at`)}, 'action', e.type, 'actor_id', e.actor_user_id,
           'detail', e.data) order by e.id desc)::text
-        from (select e.id, e.type, e.at, e.actor_user_id, e.data from contracts.contract_events e
+        from (select e.id, e.type, e.at, e.actor_user_id, ${eventDataOut("e")} as data from contracts.contract_events e
           where e.contract_id = k.id and e.tenant_id = ${tid}::uuid order by e.id desc limit ${limit}::int) e) as events
     from k order by k.created_at desc`);
   return [...rows].map((r) => ({

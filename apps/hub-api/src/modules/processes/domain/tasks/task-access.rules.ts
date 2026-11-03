@@ -64,6 +64,31 @@ export function alsoGroupsOf(
 }
 
 /**
+ * CR-113 · người xem quyết task duyệt CHỈ nhờ Group "cũng quyết" (`also_group_ids`, Toàn quyền) ⇒ "duyệt thay". Người của bước =
+ * được giao đích danh/chuyển tiếp ∪ Group duyệt qua cửa (trưởng phòng / người cụ thể — `gate`) ∪ Group chuyển cấp ĐÃ thêm
+ * (`escalated`, grant `via='escalated'`). Quyết định (review): bước đã chuyển cấp cho chính nhóm owner ⇒ owner là người của bước.
+ * Gọi khi `canAct` đã đúng.
+ */
+export function overrideOnly(
+  userId: string,
+  groupIds: ReadonlySet<string>,
+  t: {
+    userIds: ReadonlySet<string>;
+    groupId: string | null;
+    gate: string | null | undefined;
+    escalated: readonly string[];
+    also: readonly string[];
+  },
+): boolean {
+  const inGroup = (g: string) => groupIds.has(g);
+  const own =
+    t.userIds.has(userId) ||
+    inReviewGroup(userId, groupIds, t.groupId, t.gate) ||
+    t.escalated.some(inGroup);
+  return !own && t.also.some(inGroup);
+}
+
+/**
  * contract-flow S1b · người xem thuộc "Group duyệt" của task: có cửa trưởng phòng ⇒ chỉ đúng trưởng phòng (kể cả khi trưởng
  * phòng không nằm trong `group_members`); không cửa ⇒ thành viên Group. Group chuyển cấp KHÔNG qua hàm này (không bị head_only).
  */

@@ -20,6 +20,7 @@ import type {
   ListParentRef,
 } from "../application/ports";
 import { appendixRepo } from "./appendix.repo";
+import { eventDataOut } from "./approval-engine.repo";
 import { categoriesRepo } from "./categories.repo";
 import {
   type ContractDetailDto,
@@ -294,7 +295,7 @@ async function detail(
           i.unit_price, i.vat_rate, i.moq, i.lead_time_days, i.valid_from, i.valid_to, i.category_id, i.quote, i.verified,
           i.edited, i.product_id, i.component_ids from contracts.contract_items i where i.contract_id = c.id and i.tenant_id = c.tenant_id
           order by i.ord limit ${CONTRACT_ITEMS_MAX}::int) i),
-      'events', (select json_agg(e order by e.id desc) from (select e.id, e.type, e.actor_user_id, e.at, e.data
+      'events', (select json_agg(e order by e.id desc) from (select e.id, e.type, e.actor_user_id, e.at, ${eventDataOut("e")} as data
           from contracts.contract_events e where e.contract_id = c.id and e.tenant_id = c.tenant_id
           order by e.id desc limit ${CONTRACT_EVENTS_MAX}::int) e),
       'file', (select json_build_object('id', f.id, 'name', f.name, 'mime', f.mime, 'size_bytes', f.size_bytes)

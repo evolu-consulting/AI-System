@@ -13,7 +13,7 @@ import type {
 import { approverSql, headGateSql } from "../core/head-gate.sql";
 import type { ProcessDeps } from "../core/ports";
 import { dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules";
-import { alsoGroupsOf, canAct, headGate, inReviewGroup } from "../domain/tasks/task-access.rules";
+import { alsoGroupsOf, canAct, headGate, overrideOnly } from "../domain/tasks/task-access.rules";
 import type { ProcessRunStatus } from "../domain/types";
 
 type Ts = Date | string;
@@ -136,10 +136,7 @@ function canActFn(
       headGate: headGate(stage?.after, r.group_head), // S1b
     };
     const inGroup = (g: string | null) => g !== null && groupIds.has(g);
-    const own =
-      userIds.has(u.userId) ||
-      inReviewGroup(u.userId, groupIds, r.assignee_group_id, task.headGate) ||
-      escalated.some(inGroup);
+    const t = { userIds, groupId: r.assignee_group_id, gate: task.headGate, escalated, also };
     const assignee =
       userIds.has(u.userId) ||
       inGroup(r.assignee_group_id) ||
@@ -148,7 +145,7 @@ function canActFn(
     const run = { tenantId: u.tenantId, startedBy: r.started_by, originRoom: "none" as const };
     const status = r.run_status as ProcessRunStatus;
     const can = canAct(v, task, { ...run, taskAssignee: assignee, status });
-    return { can, override: can && !own && also.some(inGroup) };
+    return { can, override: can && overrideOnly(u.userId, groupIds, t) };
   };
 }
 

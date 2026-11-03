@@ -73,6 +73,8 @@ export const CONTRACT_EVENT_TYPES = [
   "created_manual",
   /** HD5: gắn/gỡ HĐ gốc (`data: {from, to}`). */
   "parent_changed",
+  /** CR-113 · chủ gói "duyệt thay" một bước (`data: {stage, action}` — id nội bộ không trả ra). */
+  "approval_override",
 ] as const;
 export const ContractEventTypeSchema = z.enum(CONTRACT_EVENT_TYPES);
 export type ContractEventType = z.infer<typeof ContractEventTypeSchema>;

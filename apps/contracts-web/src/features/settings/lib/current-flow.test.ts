@@ -43,6 +43,22 @@ describe("current-flow · toCurrentFlow", () => {
 });
 
 describe("current-flow · CR-113 luật duyệt", () => {
+  test("review · escalate_group_missing ⇒ escalateMissing (lỗi cấu hình), vắng ⇒ false", () => {
+    const f = toCurrentFlow(
+      raw([
+        {
+          name: "A",
+          department_name: null,
+          kind: "review",
+          due_h: 24,
+          escalate_group_missing: true,
+        },
+        { name: "B", department_name: null, kind: "review", due_h: 24 },
+      ]),
+    );
+    expect(f?.steps.map((s) => s.escalateMissing)).toEqual([true, false]);
+  });
+
   test("owner_* và escalate_default ánh xạ, vắng ⇒ mặc định luật chung", () => {
     const f = toCurrentFlow(
       raw(

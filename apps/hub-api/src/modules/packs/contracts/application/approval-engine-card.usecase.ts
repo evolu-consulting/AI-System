@@ -182,14 +182,15 @@ export function engineAct(d: EngineCardDeps) {
     });
     if (plan.kind === "error") return { error: plan.code };
     const c = { who, id, st, runId: a.engineRunId, b };
-    const out = await exec(d, port, c, plan);
-    if (out === "ok" && plan.kind !== "redo") await noteOverride(d, c, inp.sv, plan.taskId);
-    return out;
+    if (plan.kind !== "redo") await noteOverride(d, c, inp.sv, plan.taskId);
+    return exec(d, port, c, plan);
   };
 }
 
-/** CR-113 · quyết xong mà người quyết chỉ có quyền nhờ Toàn quyền ⇒ ghi "duyệt thay" (`contract_events` `approval_override`, kèm
- *  task) — lịch sử/audit + `decided_as` của thẻ. Sau khi engine đã nhận quyết: lỗi ghi chỉ log (không làm hỏng lần quyết). */
+/** CR-113 (review) · người quyết chỉ có quyền nhờ Toàn quyền ⇒ ghi "duyệt thay" (`contract_events` `approval_override`) TRƯỚC khi
+ *  engine nhận quyết (write-ahead, tx gói, idempotent theo lượt × task × người): ghi lỗi ⇒ ném, KHÔNG quyết ⇒ không bao giờ có
+ *  quyết duyệt thay thiếu audit. Engine từ chối sau đó (đua) ⇒ bản ghi chỉ là lần bấm; thẻ chỉ hiện `owner_override` khi người
+ *  quyết của task = người ghi (`decidedAsOf`). */
 async function noteOverride(
   d: EngineCardDeps,
   c: Ctx,
@@ -206,9 +207,7 @@ async function noteOverride(
     action: c.b.action,
     actor: c.who.userId,
   };
-  await d.uow
-    .tenant(c.who, async (r) => (await r.approvalEngine.recordOverride?.(c.id, aid, ev)) ?? false)
-    .catch(() => d.warn?.("contract-approval-override-log-failed", { contract_id: c.id }));
+  await d.uow.tenant(c.who, async (r) => r.approvalEngine.recordOverride?.(c.id, aid, ev));
 }
 
 type Plan = Exclude<ReturnType<typeof planEngineAct>, { kind: "error" }>;

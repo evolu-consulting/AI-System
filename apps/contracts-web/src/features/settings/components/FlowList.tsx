@@ -20,6 +20,7 @@ export function FlowList({ flow }: { flow: CurrentFlow }) {
                 approvers: s.approverCount,
                 escalate: s.escalateGroup,
                 escalateDefault: s.escalateDefault,
+                escalateMissing: s.escalateMissing,
               }}
             />
           </span>

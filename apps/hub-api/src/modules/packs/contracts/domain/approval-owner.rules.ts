@@ -48,12 +48,20 @@ export function escalateOf(
   return d ? { after_h: s.due_h, group_id: d } : null;
 }
 
-/** `decided_as` của bước đã quyết: task quyết gần nhất (`taskRef`) có trong các lần "duyệt thay" đã ghi ⇒ `owner_override`. */
+/** Khoá một lần "duyệt thay" đã ghi: task × người (khớp `contract_events` `task_id` + `actor_user_id`). */
+export const overrideKey = (taskId: string, userId: string): string => `${taskId}:${userId}`;
+
+/**
+ * `decided_as` của bước đã quyết: có bản ghi "duyệt thay" của ĐÚNG task quyết gần nhất (`taskRef`) bởi ĐÚNG người quyết
+ * (`deciderId`) ⇒ `owner_override` (bản ghi write-ahead của người bấm thua đua không tính); còn lại `member`. Quyết định CR-113
+ * (review): owner quyết khi bước CHƯA chuyển cấp ⇒ duyệt thay; SAU khi bước đã chuyển cấp cho nhóm owner ⇒ owner là đích chuyển
+ * cấp hợp lệ ⇒ `member` (engine không gắn cờ override ⇒ không có bản ghi).
+ */
 export function decidedAsOf(
-  decided: boolean,
+  deciderId: string | null | undefined,
   taskRef: string | null | undefined,
   overrides: ReadonlySet<string>,
 ): DecidedAs | null {
-  if (!decided) return null;
-  return taskRef && overrides.has(taskRef) ? "owner_override" : "member";
+  if (!deciderId) return null;
+  return taskRef && overrides.has(overrideKey(taskRef, deciderId)) ? "owner_override" : "member";
 }

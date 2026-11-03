@@ -5,16 +5,19 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
   act,
+  addRole,
   agentJson,
   approval,
+  bump,
   CBASE,
   contractRow,
   errCode,
   groupId,
   seedContract,
   total,
+  untilActions,
 } from "../HD3/_hd3";
-import { type Json, PA, type Role, remind, waitStatus } from "../P-d/_support/pd";
+import { type Json, PA, type Role, remind, T, waitFor, waitStatus } from "../P-d/_support/pd";
 import { type CtxCf, startCf } from "./_cf";
 
 let c: CtxCf;
@@ -83,5 +86,53 @@ describe("CR-113 · chủ gói duyệt thay + chuyển cấp mặc định", () 
         to: "string",
       },
     );
+    // review · quyết định: bước ĐÃ chuyển cấp cho nhóm owner ⇒ H quyết là người của bước (member), không ghi duyệt thay
+    expect((await act(c, "H", id, "approve")).status).toBe(200);
+    await waitStatus(c.sql, run, "done");
+    expect(await overrides(id)).toEqual([]);
+    expect((await card("A", id)).steps?.[0]?.decided_as).toBe("member");
   }, 90_000);
+
+  it("review · A (Toàn quyền CŨNG thuộc Group bước) Đạt ⇒ member, không ghi", async () => {
+    const { id, run } = await openBy("B", 795, 10_000_000);
+    expect((await act(c, "A", id, "approve")).status).toBe(200);
+    await waitStatus(c.sql, run, "done");
+    expect(await overrides(id)).toEqual([]);
+    expect((await card("A", id)).steps?.[0]?.decided_as).toBe("member");
+  }, 90_000);
+
+  it("review · chế độ org: T là người duyệt ngoài cây không sees_all, đọc thẻ thấy owner_override, lịch sử không lộ id nội bộ", async () => {
+    await addRole(c, "editor", [PA.T]);
+    await c.sql`insert into contracts.visibility_settings (tenant_id, mode) values (${T.acme}, 'org')
+      on conflict (tenant_id) do update set mode = 'org'`;
+    await bump(c);
+    await untilActions(c, "T", ["read", "write"]);
+    const { id } = await openBy("B", 796, BIG);
+    expect((await act(c, "T", id, "approve")).status).toBe(200); // T quyết s0 (người của bước)
+    await stepOpen(id, 1);
+    expect((await act(c, "A", id, "return", "sửa lại")).status).toBe(200); // về s0
+    await stepOpen(id, 0);
+    expect((await act(c, "H", id, "approve")).status).toBe(200); // H duyệt thay s0
+    await stepOpen(id, 1);
+    const asT = await card("T", id);
+    expect({ as: asT.steps?.[0]?.decided_as, by: asT.steps?.[0]?.decided_by?.id }).toEqual({
+      as: "owner_override",
+      by: PA.H.id,
+    });
+    const ev = ((await c.call("A", "GET", `${CBASE}/${id}`)).json as Json).events as Json[];
+    const ov = ev.filter((e) => e.type === "approval_override");
+    expect(ov.map((e) => [e.data?.stage, e.data?.task_id, e.data?.engine_run_id])).toEqual([
+      ["s0", undefined, undefined],
+    ]);
+  }, 120_000);
 });
+
+const BIG = 600_000_000;
+async function stepOpen(id: string, idx: number): Promise<void> {
+  const j = await waitFor(
+    () => card("A", id),
+    (x) => x?.steps?.[idx]?.status === "open",
+    10_000,
+  );
+  expect(j?.steps?.[idx]?.status).toBe("open");
+}

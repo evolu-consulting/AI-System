@@ -112,7 +112,7 @@ function stateQ(tx: Tx, tid: string): ApprovalRepo["state"] {
         a.esign_status as a_es, a.esign_reason as a_er, c.owner_user_id as owner,
         (a.esign_status = 'sending' and a.esign_at < now() - make_interval(mins => ${ESIGN_SENDING_STALE_MIN}::int)) as a_est,
         ${ISO("a.esign_at")} as a_eat, ${ISO("a.esign_reminded_at")} as a_erm,
-        (select array_agg(e.data->>'task_id') from contracts.contract_events e
+        (select array_agg((e.data->>'task_id') || ':' || e.actor_user_id::text) from contracts.contract_events e
           where e.contract_id = c.id and e.tenant_id = c.tenant_id and e.type = ${OVERRIDE_EVENT}
             and e.data->>'run_id' = a.id::text) as a_ovr,
         c.fields -> 'total_value' -> 'value' as v,

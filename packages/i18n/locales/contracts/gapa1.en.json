@@ -44,6 +44,7 @@
         "parent_changed": "changed the parent contract",
         "approval_started": "sent for approval",
         "approved": "approved",
+        "approval_override": "approved on behalf (full access)",
         "feedback": "left approval feedback",
         "extract_requested": "asked AI to re-read",
         "created_manual": "entered the contract by hand",

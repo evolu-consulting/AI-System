@@ -85,12 +85,15 @@ export type CardExtras = {
 /** CR-113 · trường "duyệt thay / quá hạn / chuyển cấp tới" của một bước. */
 function ownerFields(st: EngineStageView | undefined, x: CardExtras) {
   if (!st) return {};
-  const decided = st.decided_by !== null && st.status !== "open";
-  const as = decidedAsOf(decided, st.task_ref, x.overrides ?? new Set());
+  const decider = st.status !== "open" ? st.decided_by?.id : null;
+  const as = decidedAsOf(decider, st.task_ref, x.overrides ?? new Set());
   const due = st.due_at ? Date.parse(st.due_at) : Number.NaN;
   const overdue = st.status === "open" && x.now !== undefined && due < x.now.getTime();
+  // CR-113 (review) · tên Group cắt an toàn ≤ 200 ký tự (= `escalated_to` của contract).
   const to =
-    st.escalated && st.escalated_group_id ? x.groupNames?.get(st.escalated_group_id) : undefined;
+    st.escalated && st.escalated_group_id
+      ? x.groupNames?.get(st.escalated_group_id)?.slice(0, 200)
+      : undefined;
   return {
     ...(as ? { decided_as: as } : {}),
     ...(st.status === "open" && x.now ? { overdue } : {}),

@@ -80,6 +80,8 @@ export type CurrentFlowStep = {
   approver_count?: number;
   /** CR-113 · nhóm nhận khi quá hạn là mặc định Toàn quyền (bước có hạn, không đặt nhóm chuyển cấp). */
   escalate_default?: boolean;
+  /** CR-113 (review) · nhóm chuyển cấp đặt tường minh đã bị xoá ở tenant ⇒ lỗi cấu hình (lượt mới sẽ kẹt FLOW_GROUP_MISSING). */
+  escalate_group_missing?: true;
 };
 export type CurrentFlow = {
   def_id: string;
@@ -107,25 +109,32 @@ type ReviewSlotStep = {
   escalate_group_key?: string | null;
   approver_user_id?: string | null;
 };
-/** CR-113 · tên Group Toàn quyền + chuyển cấp mặc định của bước duyệt (như `compileDef`: Group gắn task = phòng của bước; người
- *  cụ thể không phòng ⇒ Toàn quyền đầu tiên; đặt tường minh thắng). */
-function ownerView(
+const NAME_MAX = 200;
+/** CR-113 · tên Group Toàn quyền + chuyển cấp mặc định của bước duyệt — CÙNG luật `compileDef`: Group gắn task = phòng của bước;
+ *  người cụ thể không phòng ⇒ Toàn quyền đầu tiên theo `escalateOrder` (như `ownerGroupIds` của engine); đặt tường minh thắng;
+ *  review · nhóm chuyển cấp đặt tường minh mà Group đã xoá ⇒ lỗi cấu hình (`escalate_group_missing`, compileDef ném
+ *  `approval-flow-group-missing`), KHÔNG rơi về mặc định. */
+export function ownerView(
   ids: ReadonlyMap<string, string>,
   names: ReadonlyMap<string, string>,
   level2Key: string,
 ) {
   const owners = escalateOrder(ids, level2Key);
   const set = new Set(owners);
+  const nameOf = (g: string) => names.get(g)?.slice(0, NAME_MAX) ?? null;
   const escalate = (s: ReviewSlotStep) => {
-    if (s.escalate_group_key && ids.has(s.escalate_group_key)) return { escalate_default: false };
+    if (s.escalate_group_key)
+      return ids.has(s.escalate_group_key)
+        ? { escalate_default: false }
+        : { escalate_default: false, escalate_group_missing: true as const };
     const dept = ids.get(s.department_group_key ?? "") ?? null;
     const group = dept ?? (s.approver_user_id ? (owners[0] ?? null) : null);
     const g = defaultEscalateOf({ due_h: s.due_h ?? null }, group, owners, set);
     return g
-      ? { escalate_group_name: names.get(g) ?? null, escalate_default: true }
+      ? { escalate_group_name: nameOf(g), escalate_default: true }
       : { escalate_default: false };
   };
-  return { name: owners[0] ? (names.get(owners[0]) ?? null) : null, escalate };
+  return { name: owners[0] ? nameOf(owners[0]) : null, escalate };
 }
 
 /** Quy trình đang dùng cho tenant của `who`; khe chưa có bản xuất bản áp được / engine không nối ⇒ null (route trả 404). */

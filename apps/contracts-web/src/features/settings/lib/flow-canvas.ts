@@ -32,11 +32,15 @@ export type StepInfo = {
   escalate: string | null;
   /** CR-113 · nhóm chuyển cấp là mặc định ⇒ thêm "(mặc định)". */
   escalateDefault?: boolean;
+  /** CR-113 (review) · nhóm chuyển cấp đặt tường minh đã bị xoá ⇒ dòng cảnh báo lỗi cấu hình (thay dòng chuyển cấp). */
+  escalateMissing?: boolean;
 };
 const NO_INFO: StepInfo = { dueH: null, remindH: null, approvers: null, escalate: null };
 /** Số dòng thông tin sẽ hiện (khớp StepInfoLines). */
 export const infoLineCount = (i: StepInfo): number =>
-  (i.dueH !== null ? 1 : 0) + (i.approvers !== null ? 1 : 0) + (i.escalate ? 1 : 0);
+  (i.dueH !== null ? 1 : 0) +
+  (i.approvers !== null ? 1 : 0) +
+  (i.escalate || i.escalateMissing ? 1 : 0);
 
 export type FlowNodeData = {
   kind: CanvasKind;
@@ -137,6 +141,7 @@ export function buildFlowCanvas(
         approvers: s.approverCount,
         escalate: s.escalateGroup,
         escalateDefault: s.escalateDefault,
+        escalateMissing: s.escalateMissing,
       },
       locked: false,
       dim: run ? run[i] === false : false,

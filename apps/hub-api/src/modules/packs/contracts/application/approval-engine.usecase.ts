@@ -80,14 +80,16 @@ export type FlowOrInvalid = EngineFlow | { invalid: string };
 export type Compiled = { def: Record<string, unknown> } | { invalid: string };
 
 /** prod-fix2 · Group "Toàn quyền" của gói còn ở tenant: Group cấp 2 của cài đặt + Group vai owner (quyền gói `admin`).
- *  CR-113 · `escalateTo` = cùng các Group đó theo thứ tự đích chuyển cấp mặc định (owner trước). */
+ *  CR-113 (review) · MỘT thứ tự xác định (`escalateOrder`: owner trước, rồi cấp 2) cho cả Group gắn task của bước chỉ có người
+ *  cụ thể (`reviewGroupOf`), đích chuyển cấp mặc định và preview `GET /approval-flow` — không phụ thuộc thứ tự Map của `idsOf`. */
 async function ownerGroupIds(
   d: ApprovalEngineDeps,
   who: PackWho,
 ): Promise<{ owners: string[]; escalateTo: string[] }> {
   const s = await d.uow.tenant(who, (r) => r.approvalFlow.settings());
   const ids = await d.groups.idsOf(who.tenantId, [s.level2GroupKey, PACK_OWNER_GROUP_KEY]);
-  return { owners: [...new Set(ids.values())], escalateTo: escalateOrder(ids, s.level2GroupKey) };
+  const order = escalateOrder(ids, s.level2GroupKey);
+  return { owners: order, escalateTo: order };
 }
 
 /** Def theo mẫu; Group mẫu trỏ không còn ở tenant / workflow Dify đã gỡ ⇒ lý do (lượt kẹt, không về máy cũ). */

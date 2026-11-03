@@ -181,7 +181,8 @@
           "approver": "{{count}} approver",
           "approvers": "{{count}} approvers",
           "escalate": "Overdue ⇒ escalate to {{group}}",
-          "escalateDefault": "Overdue ⇒ escalate to {{group}} (default)"
+          "escalateDefault": "Overdue ⇒ escalate to {{group}} (default)",
+          "escalateMissing": "Configuration error: the overdue escalation group was deleted"
         },
         "rules": {
           "title": "Approval rules",

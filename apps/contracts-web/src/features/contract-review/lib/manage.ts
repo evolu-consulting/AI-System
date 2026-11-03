@@ -34,6 +34,7 @@ const KNOWN = new Set([
   "parent_changed",
   "approval_started",
   "approved",
+  "approval_override", // CR-113 · "duyệt thay"
   "feedback",
   "extract_requested",
   "created_manual",

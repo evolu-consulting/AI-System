@@ -22,7 +22,16 @@ export function StepInfoLines({ info, className = "" }: { info: StepInfo; classN
           })}
         </span>
       )}
-      {info.escalate && (
+      {info.escalateMissing && (
+        <span
+          role="alert"
+          className={`truncate text-caption text-late ${className}`}
+          data-testid="step-escalate-missing"
+        >
+          {t("contracts.flow.current.info.escalateMissing")}
+        </span>
+      )}
+      {info.escalate && !info.escalateMissing && (
         <span className={`${line} ${className}`} data-testid="step-escalate" title={info.escalate}>
           {t(
             info.escalateDefault

@@ -199,6 +199,8 @@ export const ApprovalFlowCurrentStepSchema = z.strictObject({
   approver_count: z.number().int().min(0).optional(),
   /** CR-113 · true ⇒ nhóm nhận khi quá hạn (`escalate_group_name`) là MẶC ĐỊNH Toàn quyền (bước có hạn, không đặt nhóm chuyển cấp). */
   escalate_default: z.boolean().optional(),
+  /** CR-113 (review) · nhóm chuyển cấp đặt tường minh đã bị xoá ⇒ lỗi cấu hình (lượt mới kẹt `FLOW_GROUP_MISSING`). */
+  escalate_group_missing: z.literal(true).optional(),
 });
 export type ApprovalFlowCurrentStep = z.infer<typeof ApprovalFlowCurrentStepSchema>;
 export const ApprovalFlowCurrentSchema = z.strictObject({

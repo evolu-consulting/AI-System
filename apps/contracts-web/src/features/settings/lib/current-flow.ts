@@ -21,6 +21,8 @@ export type CurrentStep = {
   approverCount: number | null;
   /** CR-113 · nhóm chuyển cấp là mặc định (Toàn quyền). */
   escalateDefault?: boolean;
+  /** CR-113 (review) · nhóm chuyển cấp đặt tường minh đã bị xoá (lỗi cấu hình). */
+  escalateMissing?: boolean;
 };
 export type CurrentFlow = {
   defId: string;
@@ -57,6 +59,7 @@ export function toCurrentFlow(raw: unknown): CurrentFlow | null {
       escalateGroup: s.escalate_group_name ?? null,
       approverCount: s.approver_count ?? null,
       escalateDefault: s.escalate_default ?? false,
+      escalateMissing: s.escalate_group_missing === true,
     })),
   };
 }

@@ -33,7 +33,7 @@ export type ApprovalState = ContractRunRef & {
     esignAt?: string | null;
     esignRemindedAt?: string | null;
     /** CR-113 · id task engine mà chủ gói đã "duyệt thay" trong lượt (`contract_events` `approval_override`). */
-    overrideTasks?: string[];
+    overrideTasks?: string[]; // CR-113 (review) · khoá `task_id:actor` (`overrideKey`)
   } | null;
   /** esign-flow · người phụ trách HĐ (`owner_user_id`) — quyền "Gửi lại" bước Ký số. */
   owner?: string | null;

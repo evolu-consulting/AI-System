@@ -5,7 +5,7 @@ import { PACK_OWNER_GROUP_KEY } from "./approval-def.rules";
 import { cardSteps, type EngineStageView } from "./approval-engine-card.rules";
 import { compileDef } from "./approval-flow.rules";
 import type { FlowStep } from "./approval-flow.types";
-import { decidedAsOf, defaultEscalateOf, escalateOrder } from "./approval-owner.rules";
+import { decidedAsOf, defaultEscalateOf, escalateOrder, overrideKey } from "./approval-owner.rules";
 
 const G = {
   kt: "00000000-0000-4000-8000-0000000000a1",
@@ -88,9 +88,12 @@ const facts = { deal: null, total_value: 1 };
 
 describe("CR-113 · thẻ: decided_as / overdue / escalated_to", () => {
   it("task đã ghi duyệt thay ⇒ owner_override, còn lại member, chưa quyết ⇒ vắng", () => {
-    expect(decidedAsOf(true, "t1", new Set(["t1"]))).toBe("owner_override");
-    expect(decidedAsOf(true, "t2", new Set(["t1"]))).toBe("member");
-    expect(decidedAsOf(false, "t1", new Set(["t1"]))).toBeNull();
+    const ov = new Set([overrideKey("t1", "u1")]);
+    expect(decidedAsOf("u1", "t1", ov)).toBe("owner_override");
+    expect(decidedAsOf("u1", "t2", ov)).toBe("member");
+    expect(decidedAsOf(null, "t1", ov)).toBeNull();
+    // review · bản ghi write-ahead của người bấm thua đua (u2 ghi, u1 quyết) không tính
+    expect(decidedAsOf("u1", "t1", new Set([overrideKey("t1", "u2")]))).toBe("member");
     const flow = [review("a", G.kt), review("b", G.gd), review("c", G.kt)];
     const sv = {
       status: "waiting_review",
@@ -111,14 +114,14 @@ describe("CR-113 · thẻ: decided_as / overdue / escalated_to", () => {
       ],
     };
     const out = cardSteps(flow, sv, facts, {
-      overrides: new Set(["t1"]),
+      overrides: new Set([overrideKey("t1", "u1")]),
       now: new Date("2026-11-03T00:00:00.000Z"),
-      groupNames: new Map([[G.own, "Toàn quyền"]]),
+      groupNames: new Map([[G.own, `Toàn quyền ${"x".repeat(300)}`]]),
     });
-    expect(out.map((s) => [s.decided_as, s.overdue, s.escalated_to])).toEqual([
+    expect(out.map((s) => [s.decided_as, s.overdue, s.escalated_to?.length])).toEqual([
       ["owner_override", undefined, undefined],
       ["member", undefined, undefined],
-      [undefined, true, "Toàn quyền"],
+      [undefined, true, 200], // review #6 · tên Group cắt an toàn ≤ 200
     ]);
   });
 

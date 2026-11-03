@@ -44,6 +44,7 @@
         "parent_changed": "đã đổi hợp đồng gốc",
         "approval_started": "đã gửi duyệt",
         "approved": "đã duyệt",
+        "approval_override": "đã duyệt thay (Toàn quyền)",
         "feedback": "đã góp ý khi duyệt",
         "extract_requested": "đã yêu cầu AI đọc lại",
         "created_manual": "đã nhập hợp đồng bằng tay",
