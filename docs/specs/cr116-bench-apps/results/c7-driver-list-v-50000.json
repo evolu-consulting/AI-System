@@ -1,0 +1,38 @@
+﻿{
+    "commit":  "d2e59d61",
+    "date":  "2026-11-03",
+    "env":  "evotest -Step perf -Exclusive, PG 16.15, bun 1.3.14",
+    "size":  50000,
+    "runs":  3,
+    "note":  "cpu/plan = server Execution/Planning ms (EXPLAIN ANALYZE 1 lần); rss không đo",
+    "probes":  {
+                   "postgres.js 3.4.9":  {
+                                             "p50":  50.27,
+                                             "p95":  54.25,
+                                             "mean":  null,
+                                             "sql":  2,
+                                             "rt":  2,
+                                             "cpu":  null,
+                                             "plan":  null,
+                                             "rss":  null,
+                                             "buffers":  null,
+                                             "total":  null,
+                                             "equal":  true,
+                                             "isolated":  true
+                                         },
+                   "Bun.SQL":  {
+                                   "p50":  49.51,
+                                   "p95":  53.66,
+                                   "mean":  null,
+                                   "sql":  2,
+                                   "rt":  2,
+                                   "cpu":  null,
+                                   "plan":  null,
+                                   "rss":  null,
+                                   "buffers":  null,
+                                   "total":  null,
+                                   "equal":  true,
+                                   "isolated":  true
+                               }
+               }
+}

@@ -1,0 +1,80 @@
+﻿{
+    "commit":  "d2e59d61",
+    "date":  "2026-11-03",
+    "env":  "evotest -Step perf -Exclusive, PG 16.15, bun 1.3.14",
+    "size":  2000,
+    "runs":  3,
+    "note":  "cpu/plan = server Execution/Planning ms (EXPLAIN ANALYZE 1 lần); rss không đo",
+    "probes":  {
+                   "A count(*) chính xác (hiện tại)":  {
+                                                           "p50":  22.96,
+                                                           "p95":  37.63,
+                                                           "mean":  26.38,
+                                                           "sql":  2,
+                                                           "rt":  2,
+                                                           "cpu":  8.17,
+                                                           "plan":  12.74,
+                                                           "rss":  null,
+                                                           "buffers":  364,
+                                                           "total":  426,
+                                                           "equal":  true,
+                                                           "isolated":  true
+                                                       },
+                   "B trần 1.000+ (not mat)":  {
+                                                   "p50":  26.13,
+                                                   "p95":  30.15,
+                                                   "mean":  26.72,
+                                                   "sql":  2,
+                                                   "rt":  2,
+                                                   "cpu":  9.42,
+                                                   "plan":  17.38,
+                                                   "rss":  null,
+                                                   "buffers":  385,
+                                                   "total":  426,
+                                                   "equal":  true,
+                                                   "isolated":  true
+                                               },
+                   "C có-trang-sau (limit 21, not mat)":  {
+                                                              "p50":  23.01,
+                                                              "p95":  32.33,
+                                                              "mean":  24.15,
+                                                              "sql":  2,
+                                                              "rt":  2,
+                                                              "cpu":  5.28,
+                                                              "plan":  15.27,
+                                                              "rss":  null,
+                                                              "buffers":  236,
+                                                              "total":  21,
+                                                              "equal":  true,
+                                                              "isolated":  true
+                                                          },
+                   "D ước lượng EXPLAIN + trang":  {
+                                                       "p50":  26.62,
+                                                       "p95":  32.01,
+                                                       "mean":  27.42,
+                                                       "sql":  3,
+                                                       "rt":  3,
+                                                       "cpu":  null,
+                                                       "plan":  null,
+                                                       "rss":  null,
+                                                       "buffers":  null,
+                                                       "total":  1625,
+                                                       "equal":  true,
+                                                       "isolated":  true
+                                                   },
+                   "E bảng đếm theo tenant":  {
+                                                  "p50":  19.52,
+                                                  "p95":  27.09,
+                                                  "mean":  20.53,
+                                                  "sql":  2,
+                                                  "rt":  2,
+                                                  "cpu":  4.22,
+                                                  "plan":  12.95,
+                                                  "rss":  null,
+                                                  "buffers":  218,
+                                                  "total":  2000,
+                                                  "equal":  true,
+                                                  "isolated":  true
+                                              }
+               }
+}

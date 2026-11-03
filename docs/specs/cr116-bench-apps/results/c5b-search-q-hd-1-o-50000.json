@@ -1,0 +1,66 @@
+﻿{
+    "commit":  "d2e59d61",
+    "date":  "2026-11-03",
+    "env":  "evotest -Step perf -Exclusive, PG 16.15, bun 1.3.14",
+    "size":  50000,
+    "runs":  3,
+    "note":  "cpu/plan = server Execution/Planning ms (EXPLAIN ANALYZE 1 lần); rss không đo",
+    "probes":  {
+                   "A hiện tại (is null or like)":  {
+                                                        "p50":  44.06,
+                                                        "p95":  47.55,
+                                                        "mean":  44.62,
+                                                        "sql":  2,
+                                                        "rt":  2,
+                                                        "cpu":  30.9,
+                                                        "plan":  12.42,
+                                                        "rss":  null,
+                                                        "buffers":  1734,
+                                                        "total":  null,
+                                                        "equal":  true,
+                                                        "isolated":  true
+                                                    },
+                   "B tách nhánh, không index":  {
+                                                     "p50":  43.95,
+                                                     "p95":  49.07,
+                                                     "mean":  44.75,
+                                                     "sql":  2,
+                                                     "rt":  2,
+                                                     "cpu":  32.26,
+                                                     "plan":  12.55,
+                                                     "rss":  null,
+                                                     "buffers":  1734,
+                                                     "total":  null,
+                                                     "equal":  true,
+                                                     "isolated":  true
+                                                 },
+                   "C tách nhánh + GIN trgm":  {
+                                                   "p50":  44.14,
+                                                   "p95":  47.24,
+                                                   "mean":  44.61,
+                                                   "sql":  2,
+                                                   "rt":  2,
+                                                   "cpu":  31.34,
+                                                   "plan":  12.73,
+                                                   "rss":  null,
+                                                   "buffers":  1734,
+                                                   "total":  null,
+                                                   "equal":  true,
+                                                   "isolated":  true
+                                               },
+                   "D hiện tại + GIN trgm":  {
+                                                 "p50":  43.91,
+                                                 "p95":  46.12,
+                                                 "mean":  44.3,
+                                                 "sql":  2,
+                                                 "rt":  2,
+                                                 "cpu":  30.78,
+                                                 "plan":  12.35,
+                                                 "rss":  null,
+                                                 "buffers":  1734,
+                                                 "total":  null,
+                                                 "equal":  true,
+                                                 "isolated":  true
+                                             }
+               }
+}
