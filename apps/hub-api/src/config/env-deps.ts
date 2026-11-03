@@ -31,6 +31,7 @@ export type EnvAppDeps = Required<
     | "frozenModules"
     | "processRoutes"
     | "fastRoute"
+    | "stickyAgent"
     | "notify"
     | "ops"
   >;
@@ -81,6 +82,7 @@ export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
     frozenModules: env.HUB_FROZEN_MODULES === "on",
     ...(env.HUB_PROCESS_ROUTES ? { processRoutes: env.HUB_PROCESS_ROUTES } : {}), // CR-103
     fastRoute: env.HUB_FAST_ROUTE === "on",
+    stickyAgent: env.HUB_STICKY_AGENT === "on",
     notify: {
       mode: env.HUB_NOTIFY_MODE,
       worker: env.HUB_NOTIFY_MODE !== "off",

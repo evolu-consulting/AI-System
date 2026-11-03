@@ -55,10 +55,47 @@ function SlotBody({ v }: { v: StageView }) {
   );
 }
 
-export function StageBody({ v }: { v: StageView }) {
+/** dlc-engine · bước DLC của khe: "Bước n: tên", việc + agent, cổng duyệt; trộn với bước duyệt ⇒ huy hiệu lỗi. */
+function DlcBody({ v }: { v: StageView }) {
   const { t } = useTranslation();
+  const s = v.dlc;
+  if (!s) return null;
+  const name = v.name || t("process.admin.editor.stage.unnamed");
+  const action = t(`process.admin.library.dlc.action.${s.action}`, { defaultValue: s.action });
+  return (
+    <span className="block min-w-0 text-left">
+      <span className="inline-block w-full truncate text-label font-medium" title={name}>
+        {t("process.admin.library.canvas.stageAria", { n: s.no, name })}
+      </span>{" "}
+      <span className="inline-block w-full truncate text-caption text-muted-foreground">
+        {`DLC · ${action}${s.agent ? ` · @${s.agent}` : ""}`}
+      </span>{" "}
+      <span className="inline-block w-full truncate text-caption text-muted-foreground">
+        {s.gate ? t("process.admin.library.dlc.gateOn") : t("process.admin.library.dlc.gateOff")}
+      </span>
+      {v.hasError ? (
+        <>
+          {" "}
+          <Badge variant="err">
+            <CircleAlert aria-hidden />
+            {t("process.admin.canvas.node.error")}
+          </Badge>
+        </>
+      ) : null}
+    </span>
+  );
+}
+
+export function StageBody({ v }: { v: StageView }) {
   if (v.sys) return <SystemPill v={v} />;
+  if (v.dlc) return <DlcBody v={v} />;
   if (v.slotInfo) return <SlotBody v={v} />;
+  return <PlainBody v={v} />;
+}
+
+/** Giai đoạn thường (không phải bước của khe). */
+function PlainBody({ v }: { v: StageView }) {
+  const { t } = useTranslation();
   const name = v.name || t("process.admin.editor.stage.unnamed");
   // Chỉ dùng phần tử inline / inline-block cách nhau đúng một dấu cách ⇒ `innerText` là MỘT dòng (e2e so sánh chuỗi).
   return (

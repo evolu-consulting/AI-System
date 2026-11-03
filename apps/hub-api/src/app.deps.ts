@@ -6,7 +6,7 @@ import type { Redis } from "./lib/redis";
 import type { AttachmentDeps } from "./modules/attachments/storage";
 import type { NotifyDeps } from "./modules/notify/notify.mount";
 import type { OpsDeps } from "./modules/ops/ops.mount";
-import type { PacksDeps } from "./modules/packs/packs.mount";
+import type { PacksDeps, PacksMountDeps } from "./modules/packs/packs.mount";
 import type { ProcessSeams } from "./modules/processes/processes.mount";
 import type { ProcessRoutesMode } from "./modules/processes/routes-mode";
 import type { RunDriver } from "./modules/runs/runs.service";
@@ -52,6 +52,8 @@ export type AppDeps = {
   maxConcurrentRuns?: number;
   /** chat-fast · = `HUB_FAST_ROUTE==="on"`: tin không tag mà AU đúng một agent ⇒ run `direct` (bỏ job Orchestrator). Vắng ⇒ tắt. */
   fastRoute?: boolean;
+  /** dlc-sticky · = `HUB_STICKY_AGENT==="on"`: tin không tag sau run `direct` của X (cùng hội thoại/flow) ⇒ tiếp tục với X. Vắng ⇒ tắt. */
+  stickyAgent?: boolean;
   /** H2c · storage + hạn mức + sweeper (`HUB_ATTACH_*`, server điền). Vắng ⇒ không mount route file (PL14). */
   attachments?: AttachmentDeps;
   /** H3b · ghi `hub.audit_log` (grant/revoke/view_trace). Vắng ⇒ `dbHubAudit`; test tiêm lỗi giữa transaction (P12). */
@@ -78,6 +80,8 @@ export type AppDeps = {
   kh?: KhConfig;
   /** N1 T5c · module gói (`modules/packs/packs.mount.ts`): `pkdemo` vắng ⇒ chỉ mở khi `appEnv` là development/test. */
   packs?: PacksDeps;
+  /** dlc-engine · cầu Agent Hub cho gói `dlc` (`withPackBridges` dựng, `bindDlcAgents` gắn port). */
+  dlcAgents?: PacksMountDeps["dlcAgents"];
   /** N3 · cổng thông báo (`modules/notify/notify.mount.ts`): route chuông luôn mở; worker chỉ khi `worker` và `mode` ≠ off. */
   notify?: NotifyDeps;
   /** CR-104 · ops-watch (`modules/ops/ops.mount.ts`): route `/ops/*` luôn mở khi có db; vòng nền chỉ khi `watch`. */

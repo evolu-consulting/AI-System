@@ -32,6 +32,7 @@ type LoadRow = {
   retry_round: number | null;
   attempt: number;
   round: number;
+  feedback: string | null;
 };
 type RawArg = { from: string; key?: string; stage_key?: string; field?: string; value?: unknown };
 type RawInput = { type: string; key: string; text?: string; value?: string };
@@ -58,7 +59,7 @@ export async function loadCallRow(
       (u.active and not u.locked_by_tenant and tn.active) as usable,
       (cardinality(d.run_group_ids) = 0 or exists (select 1 from admin.group_members gm
         where gm.tenant_id = r.tenant_id and gm.user_id = r.started_by and gm.group_id = any(d.run_group_ids))) as can_run,
-      s.retry_count, s.retry_attempt, s.retry_round, s.attempt, s.round
+      s.retry_count, s.retry_attempt, s.retry_round, s.attempt, s.round, s.feedback
     from hub.stage_runs s
     join hub.process_runs r on r.id = s.process_run_id and r.tenant_id = s.tenant_id
     cross join lateral (select r.snapshot->'stages'->(s.stage_idx::int) as st) x
@@ -111,6 +112,8 @@ export function toLoad(r: LoadRow): ToolCallLoad {
     canRun: r.can_run === true,
     switchOn: r.switch_on === true,
     wfEnabled: r.wf_enabled === true,
+    // dlc-engine · góp ý của người duyệt khi stage được chạy lại (Chưa đạt / quay lại) — tool gói nhận qua `ctx.feedback`.
+    feedback: r.feedback ?? null,
     ...(r.workflow_id && r.app_type && r.base_url
       ? {
           endpoint: {

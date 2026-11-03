@@ -50,7 +50,7 @@ export async function runToolStage(d: RunToolDeps, link: ToolLink): Promise<Tool
     processRunId: link.runId,
     workflowId: l.workflowId,
     ...(l.endpoint ? { endpoint: l.endpoint } : {}),
-    ...(l.packTool ? { packTool: l.toolKey } : {}),
+    ...(l.packTool ? { packTool: l.toolKey, feedback: l.feedback ?? null } : {}),
     args: built.values,
     timeoutS: l.timeoutS,
   });

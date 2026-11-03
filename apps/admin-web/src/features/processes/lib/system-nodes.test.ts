@@ -14,8 +14,12 @@ const tool = (key: string, slotRaw?: Record<string, unknown>) => ({
 });
 
 describe("system-nodes", () => {
-  test("hai tool hệ thống của khe contracts.approval", () => {
-    expect(SYSTEM_TOOL_KEYS).toEqual(["contracts-route", "contracts-finalize"]);
+  test("tool hệ thống của khe: contracts.approval (route/finalize) + dlc.* (dlc-step)", () => {
+    expect(SYSTEM_TOOL_KEYS).toEqual(["contracts-route", "contracts-finalize", "dlc-step"]);
+  });
+  test("dlc-engine · bước DLC (dlc-step mang slot.kind dlc) là bước của khe, không khoá", () => {
+    expect(isSlotStep(tool("dlc-step", { kind: "dlc" }))).toBe(true);
+    expect(isSystemStage(tool("dlc-step", { kind: "dlc" }))).toBe(false);
   });
   test("isSystemStage: chỉ route/finalize (tool hệ thống không mang slot.kind)", () => {
     expect(isSystemStage(tool("contracts-route"))).toBe(true);

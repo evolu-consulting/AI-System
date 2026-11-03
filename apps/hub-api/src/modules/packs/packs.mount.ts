@@ -15,12 +15,9 @@ import { createTaxRegistry, taxBaseUrl } from "../../lib/tax-registry.http";
 import { agentSpecOf } from "../agents/agent-spec.service";
 import { DEFAULT_TENANT_TZ } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
-import { mountGuide } from "../guide/guide.mount";
 import { mountKnowledge } from "../knowledge/knowledge.mount";
-import { mountMyHistory } from "../my-history/my-history.mount";
 import { setChatUsageSink } from "../usage/chat-usage";
 import { mountCommunityWired } from "./community-wire.mount";
-import { contractsActivitySource } from "./contracts/activity.mount";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
 import { packWriters } from "./contracts/adapters/esign-flow.repo";
 import { LINK_CHECKS_PER_MINUTE } from "./contracts/adapters/link-check-limit.redis";
@@ -49,6 +46,8 @@ import { serviceCustomersModule } from "./contracts/service-customers.mount";
 import { sourcingModule } from "./contracts/sourcing.mount";
 import { supplierPricesModule } from "./contracts/supplier-prices.mount";
 import { type UploadMountDeps, uploadModule } from "./contracts/upload.mount";
+import { mountCoreTools, mountDlcWired } from "./core-tools.mount";
+import type { AgentHubBridge } from "./dlc/dlc.mount";
 import { packMeRoutes } from "./kit/adapters/me.route";
 import { createPackFiles, packFilesRepo } from "./kit/adapters/pack-files.filebox";
 import { packFilesRoutes } from "./kit/adapters/pack-files.routes";
@@ -100,6 +99,8 @@ export type PacksMountDeps = {
   signal?: AbortSignal;
   /** cf-esign-docusign · use case ký số dựng sẵn bởi `mountEsignWebhook` (trước JWT) — dùng chung cho route người dùng. */
   esign?: ESignModule | undefined;
+  /** dlc-engine · cầu Agent Hub cho gói `dlc` (nền tảng gắn `port` khi dựng runs). */
+  dlcAgents?: AgentHubBridge;
 };
 
 /** Review m-04 Â· `pkdemo` chá»‰ má»Ÿ khi `APP_ENV` khai bÃ¡o rÃµ `development`/`test`; váº¯ng hoáº·c giÃ¡ trá»‹ láº¡ â‡’ táº¯t (fail-closed). */
@@ -127,21 +128,11 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
   if (d.db) {
     mountCoreTools({ ...d, db: d.db }, view);
     mountCommunityWired(app, PACK_PREFIX, d.db, view, tenantTz(d), { signal: d.signal }); // CR-102 · com-c3 · bảng tin chủ quản ↔ đối tác
+    mountDlcWired({ ...d, db: d.db }); // dlc-engine · khe DLC + tool bước DLC (Agent Hub qua cầu `dlcAgents`)
     setChatUsageSink(chatUsageSink(d.db)); // M3 Â· usage chat (M2) â‡’ báº£ng usage chung cá»§a AI client
   }
   rejectToolCollisions(d);
   return view;
-}
-
-/** Tool lÃµi chá»‰ Ä‘á»c (khÃ´ng entitlement, tá»± lá»c theo ngÆ°á»i gá»i): app-guide + my-activity / my-chat-history (my-activity-rag). */
-function mountCoreTools(d: PacksMountDeps & { db: Db }, view: PackAccessView): void {
-  mountGuide(d.db, d.packTools, view);
-  const contractsOn = d.packs?.contracts ?? true;
-  mountMyHistory(d.db, d.packTools, {
-    view,
-    timeZoneOf: tenantTz(d),
-    sources: contractsOn ? [contractsActivitySource(d.db)] : [],
-  });
 }
 
 /** Security L1 Â· sau khi má»i gÃ³i Ä‘Äƒng kÃ½: tool gÃ³i trÃ¹ng khoÃ¡ workflow catalog bá»‹ gá»¡ (áº£nh catalog Ä‘áº§u tiÃªn, cache). */

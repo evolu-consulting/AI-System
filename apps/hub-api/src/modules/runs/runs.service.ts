@@ -76,6 +76,7 @@ export type RunServiceDeps = {
   /** H2b R16 · = `AppDeps.maxConcurrentRuns`; vắng ⇒ không giới hạn (L1). */
   maxConcurrentRuns?: number;
   fastRoute?: boolean; // chat-fast · = `HUB_FAST_ROUTE=on`; vắng ⇒ tin không tag qua Orchestrator như trước
+  stickyAgent?: boolean; // dlc-sticky · = `HUB_STICKY_AGENT=on`; vắng ⇒ tin không tag không "dính" agent vừa trả lời
   /** X2b · gọi sau COMMIT kết thúc run (`SseWriter.finish`, tx1); vắng = C1. */
   onClosed?: (runId: string) => void;
 };
@@ -168,12 +169,20 @@ export class RunService {
     u: AuthUser,
     req: SendMessageRequest,
     requested: RunPlan | undefined,
-    x: { snapshot: ConfigSnapshot; who: AccessSubject; runId: string },
+    x: { snapshot: ConfigSnapshot; who: AccessSubject; runId: string; conversationId: string },
   ) {
     const untagged = requested?.kind === "untagged" && !(await this.#pendingAsk(u, req.flow_id));
-    const r = untaggedRoute(untagged, x.snapshot, x.who, this.d.fastRoute);
+    const sticky =
+      untagged && this.d.stickyAgent
+        ? await this.#scoped(u, (tx, o) =>
+            repo.lastDirectAgent(tx, o, x.conversationId, req.flow_id),
+          )
+        : null;
+    const r = untaggedRoute(untagged, x.snapshot, x.who, this.d.fastRoute, sticky);
     if (r.route?.kind === "forbidden") throw appError("DEFAULT_AGENT_FORBIDDEN");
     if (r.fast) this.d.log.info("run-fast-route", { run_id: x.runId, rule: r.fast.rule });
+    if (sticky && r.route?.kind === "direct" && r.route.agent.id === sticky)
+      this.d.log.info("run-sticky-agent", { run_id: x.runId, agent_id: sticky });
     return r;
   }
 
@@ -193,7 +202,7 @@ export class RunService {
       groupIds: user?.groupIds ?? new Set<string>(),
       external: u.userKind === "external" || user?.external === true, // CR-102a · com-c2
     };
-    const x = { snapshot, who, runId: run.id };
+    const x = { snapshot, who, runId: run.id, conversationId };
     const { route, fast } = await this.#untagged(u, req, requested, x);
     const plan = planOf(fast ?? route, requested, run.locale, req.content);
     const command = plan?.kind === "command" ? plan : undefined;

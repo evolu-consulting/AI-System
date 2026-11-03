@@ -1,5 +1,5 @@
 // dlc-dify · bộ dựng chung cho tool (flow Dify) gắn agent qua MCP Hub: header, biến start, khung app một tool, node `fmt`.
-import { app, code, end, env, type Node, ref, type StartVar, start } from "./dsl";
+import { app, code, end, env, type Node, type StartVar, start } from "./dsl";
 
 export type ToolFlow = {
   key: string;
@@ -18,10 +18,6 @@ def resp(raw):
         return {"raw": raw}
 `;
 export const WS = [`Authorization:Bearer ${env("ws_token")}`, "Content-Type:application/json"];
-export const HUB = [
-  `Authorization:Bearer ${ref("start", "hub_ticket")}`,
-  "Content-Type:application/json",
-];
 export const T = (name: string, label: string, required = false): StartVar => ({
   name,
   label,

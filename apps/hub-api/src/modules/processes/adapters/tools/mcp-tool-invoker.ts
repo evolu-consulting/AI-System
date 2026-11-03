@@ -72,6 +72,7 @@ export function mcpToolInvoker(d: {
           userId: c.userId,
           runId: c.hubRunId,
           processRunId: c.processRunId ?? null,
+          feedback: c.feedback ?? null,
         };
         // Review Trung #1 · cùng hạn `min(stage.timeout_s, …)` + huỷ như workflow: tool treo ⇒ TIMEOUT, không kẹt `running`.
         return d.packs.call(c.packTool, ctx, c.args, { timeoutS: c.timeoutS, signal: c.signal });

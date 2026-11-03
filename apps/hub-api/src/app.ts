@@ -15,7 +15,7 @@ import { Hono, type MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
 import { mountDifyCredential, workflowJobs } from "./app.async";
 import type { AppDeps, HealthProbe } from "./app.deps";
-import { mountDlcDify } from "./app.dlc";
+import { bindDlcAgents } from "./app.dlc";
 import { commandDriverFor, mountH2a, mountTestRun } from "./app.h2a";
 import { mountH2b } from "./app.h2b";
 import { mountH2c } from "./app.h2c";
@@ -299,8 +299,8 @@ function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache)
     context: contextLabelerOf(deps.packTools), // one-agent · nhãn bản ghi đang xem (RLS gói)
   };
   app.route("/conversations", sendMessageRoutes(conversations, runs, prepare));
-  // dlc-dify · node Dify gọi agent (vé flow, không JWT) và chờ kết quả; sinh agent domain/QC.
-  mountDlcDify(app, {
+  // dlc-engine · bước DLC (engine quy trình) chạy agent trong hội thoại + sinh agent domain/QC — qua cầu của gói `dlc`.
+  bindDlcAgents(deps.dlcAgents, {
     ...base,
     runs,
     prepareMention: h2b.prepareMention,

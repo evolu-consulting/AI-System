@@ -24,6 +24,8 @@ export type PackToolCtx = {
   processRunId?: string | null;
   /** com-c10b · loại người gọi (vắng ⇒ nội bộ). Tool dữ liệu chủ quản (tra giá…) từ chối `external` rõ ràng. */
   userKind?: "internal" | "external";
+  /** dlc-engine · stage tool chạy lại sau Chưa đạt / quay lại ⇒ góp ý của người duyệt (`stage_runs.feedback`); `/mcp` ⇒ vắng. */
+  feedback?: string | null;
   signal?: AbortSignal;
 };
 /** Hạn lời gọi (review Trung #1): hết hạn ⇒ `failed{code:"TIMEOUT"}`. */

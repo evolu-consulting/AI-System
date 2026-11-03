@@ -5,9 +5,12 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
+import { dlcDraftErrors, isDlcStep } from "../../lib/dlc-slot";
+import type { StageDraft } from "../../lib/draft-types";
 import { isSystemStage } from "../../lib/system-nodes";
 import { StageForm } from "../editor/StageForm";
-import { useLibraryCanvas } from "../library/library-canvas-ctx";
+import { DlcStageForm } from "../library/DlcStageForm";
+import { type LibraryCanvasCtx, useLibraryCanvas } from "../library/library-canvas-ctx";
 import { SlotStageForm } from "../library/SlotStageForm";
 import { PANEL_ID, type Workbench } from "./use-workbench";
 
@@ -31,6 +34,44 @@ function useEscClose(active: boolean, onClose: () => void) {
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [active, onClose]);
+}
+
+/** dlc-engine · bước duyệt nằm trong sơ đồ DLC (hoặc ngược lại): không nối được, không lưu được. */
+function MixAlert({ k }: { k: string }) {
+  const { t } = useTranslation();
+  return (
+    <p role="alert" className="mb-2 text-label text-destructive">
+      {t(k)}
+    </p>
+  );
+}
+
+/** Bước của khe trên Canvas thư viện: bước DLC ⇒ form DLC; bước duyệt ⇒ form theo mã phòng ban. */
+function LibraryStepForm({
+  d,
+  w,
+  lib,
+  refs,
+}: Pick<Props, "d" | "w" | "refs"> & { lib: LibraryCanvasCtx }) {
+  const { sel, index, ops } = w;
+  if (!sel) return null;
+  const common = {
+    stage: sel,
+    index,
+    groups: lib.groups,
+    onChange: (p: Partial<StageDraft>) => d.patchStage(index, p),
+    onMove: (dir: -1 | 1) => ops.moveColumn(index, dir),
+    onRemove: () => w.remove(index),
+  };
+  if (isDlcStep(sel))
+    return <DlcStageForm {...common} all={w.stages} agents={refs.agentKeys ?? []} />;
+  const mix = dlcDraftErrors(w.stages)[`stages.${index}.dlc.kind`];
+  return (
+    <>
+      {mix ? <MixAlert k={mix} /> : null}
+      <SlotStageForm {...common} count={w.stages.length} />
+    </>
+  );
 }
 
 export function StagePanel({ d, w, readOnly, refs, variant = "column" }: Props) {
@@ -71,16 +112,7 @@ export function StagePanel({ d, w, readOnly, refs, variant = "column" }: Props) 
         </p>
       ) : null}
       {sel && lib && !readOnly && !isSystemStage(sel) ? (
-        <SlotStageForm
-          key={sel.uid}
-          stage={sel}
-          index={index}
-          count={w.stages.length}
-          groups={lib.groups}
-          onChange={(p) => d.patchStage(index, p)}
-          onMove={(dir) => ops.moveColumn(index, dir)}
-          onRemove={() => w.remove(index)}
-        />
+        <LibraryStepForm key={sel.uid} d={d} w={w} lib={lib} refs={refs} />
       ) : sel ? (
         <StageForm
           key={sel.uid}

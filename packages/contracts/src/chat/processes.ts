@@ -23,6 +23,8 @@ export const REMIND_AFTER_H = 24;
 export const TOO_MANY_PROCESS_RUNS_RETRY_AFTER_S = 30;
 export const PROCESS_SUGGESTIONS_MAX = 3;
 export const STAGE_TIMEOUT_S = { min: 60, default: 600, max: 3600 } as const;
+/** dlc-engine · trần CỨNG khi lưu def (stage `tool` chạy lâu, vd build DLC theo queue); form admin vẫn giới hạn `STAGE_TIMEOUT_S.max`. */
+export const STAGE_TIMEOUT_S_HARD_MAX = 86_400;
 export const HISTORY_MAX = 200;
 export const PROCESS_LIST_LIMIT = { default: 50, max: 200 } as const;
 export const TEAM_LIMITS_DEFAULT = {

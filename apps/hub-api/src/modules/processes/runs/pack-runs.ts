@@ -309,7 +309,9 @@ export function packRunsOf(d: ProcessDeps): PackRunsPort {
         {
           process_key: req.process_key,
           input: req.input,
-          origin: { kind: "none" },
+          origin: req.conversation_id
+            ? { kind: "conversation", conversation_id: req.conversation_id }
+            : { kind: "none" },
           ...(req.inputs ? { inputs: req.inputs as ProcessInputValue[] } : {}),
         },
         {

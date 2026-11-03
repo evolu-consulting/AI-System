@@ -82,6 +82,9 @@ export const EnvSchema = z.object({
   // chat-fast · `on` ⇒ tin không tag mà người gửi chỉ thấy đúng 1 agent → chạy thẳng agent đó (bỏ job Orchestrator, cùng kiểm
   // quyền). Mặc định `off` (test khoá giữ hành vi cũ); production bật trong compose.
   HUB_FAST_ROUTE: z.enum(["on", "off"]).default("off"),
+  // dlc-sticky · `on` ⇒ tin không tag ngay sau run `direct` của agent X trong cùng hội thoại/flow → tiếp tục với X (nếu X còn trong
+  // AU của người gửi), không rơi về Orchestrator. Mặc định `off` (giữ hành vi cũ); host chạy DLC bật.
+  HUB_STICKY_AGENT: z.enum(["on", "off"]).default("off"),
   // CR-104 · vòng ops-watch (tick 60 s, lượt theo `every_min` trong hub.ops_settings). Vắng ⇒ bật ở development/production,
   // tắt ở test. Route `/ops/*` luôn mở (chỉ platform_admin) bất kể cờ.
   HUB_OPS_WATCH: z.enum(["on", "off"]).optional(),

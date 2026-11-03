@@ -116,11 +116,13 @@ export function queueRoutes(app: Hono, d: QueueDeps): void {
   });
   app.post("/projects/:key/queue/next", async (c) => {
     const key = proj(c.req.param("key")).key;
+    // dlc-engine · `prefix` = mã lượt DLC (body tuỳ chọn): chỉ lấy việc của lượt đó; lượt khác đang merge ⇒ `busy`.
+    const b = await body(c, z.object({ prefix: z.string().max(40).optional() }).default({}));
     const r = await store.update(key, (p) => {
-      const n = next(p.queue, now());
+      const n = next(p.queue, now(), b.prefix ?? "");
       return {
         project: { ...p, queue: n.queue },
-        value: { item: n.item, summary: summary(n.queue) },
+        value: { item: n.item, busy: n.busy, summary: summary(n.queue) },
       };
     });
     if (r?.item?.branch) await ensureWorktree(store.root, key, r.item.branch);
@@ -148,7 +150,7 @@ function integrateRoutes(app: Hono, d: QueueDeps): void {
     if (b.skip || !item?.branch) return c.json({ skipped: true });
     const { ok, merged, output, note } = await integrateBranch(p, item.branch, b.timeout_s ?? 900);
     const r = await store.update(p.key, (pp) => {
-      const x = result(pp.queue, item.id, { ok, note }, now());
+      const x = result(pp.queue, item.id, { ok, note, sha: merged.sha }, now());
       return {
         project: { ...pp, queue: x.queue },
         value: { item: x.item, summary: summary(x.queue) },

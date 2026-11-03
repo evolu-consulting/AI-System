@@ -79,6 +79,13 @@ function useStepMutations(ref: Ref, update: Update, select: (uid: string) => voi
       ),
     /** Chèn bước mới (một giai đoạn trống) ngay sau bước `step`. */
     addStepAfter: (step: number) => addWith((st, s) => insertStepAfter(st, step, s)),
+    /** dlc-engine · thêm giai đoạn dựng sẵn (vd bước DLC từ khung bước DLC có sẵn) thành bước mới cuối. */
+    addFresh: (make: (st: readonly StageDraft[]) => StageDraft) => {
+      const s = make(ref.current.stages);
+      const r = applySteps((st) => addStageAsNewStep(st, s));
+      if ("stages" in r) select(s.uid);
+      return r;
+    },
     moveToStep: (i: number, step: number) => applySteps((st) => moveToStep(st, i, step)),
     splitToNewStep: (i: number) => applySteps((st) => splitToNewStep(st, i)),
   };

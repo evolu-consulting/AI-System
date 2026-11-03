@@ -4,7 +4,13 @@
 
 export const MAX_ATTEMPTS = 3;
 
-export type QueueStatus = "queued" | "in_progress" | "ready_to_deploy" | "failed" | "cancelled";
+export type QueueStatus =
+  | "queued"
+  | "in_progress"
+  | "ready_to_deploy"
+  | "deployed"
+  | "failed"
+  | "cancelled";
 export type QueueItem = {
   id: string;
   title: string;
@@ -16,6 +22,8 @@ export type QueueItem = {
   branch: string | null;
   notes: string[];
   source: string | null;
+  /** Commit merge vào `main` khi đạt cổng test (deploy chọn theo việc dựa vào đây). */
+  sha?: string | null;
   updated_at: string;
 };
 export type NewItem = Pick<QueueItem, "id" | "title"> &
@@ -55,11 +63,23 @@ export function enqueue(q: QueueItem[], items: readonly NewItem[], now: string):
 }
 
 /** Việc kế: đang có việc `in_progress` ⇒ trả lại chính nó (tuần tự); không ⇒ việc `queued` đầu tiên → `in_progress`. */
-export function next(q: QueueItem[], now: string): { queue: QueueItem[]; item: QueueItem | null } {
-  const busy = q.find((x) => x.status === "in_progress");
-  if (busy) return { queue: q, item: busy };
-  const i = q.findIndex((x) => x.status === "queued");
-  if (i < 0) return { queue: q, item: null };
+/**
+ * Việc kế (merge tuần tự ⇒ một việc `in_progress` mỗi project). `prefix` (mã lượt DLC) ⇒ chỉ việc của lượt đó; việc đang làm
+ * thuộc lượt KHÁC ⇒ `busy` (người gọi chờ rồi hỏi lại), không trả việc của lượt khác.
+ */
+export function next(
+  q: QueueItem[],
+  now: string,
+  prefix = "",
+): { queue: QueueItem[]; item: QueueItem | null; busy: boolean } {
+  const mine = (x: QueueItem) => x.id.startsWith(prefix);
+  const doing = q.find((x) => x.status === "in_progress");
+  if (doing)
+    return mine(doing)
+      ? { queue: q, item: doing, busy: false }
+      : { queue: q, item: null, busy: true };
+  const i = q.findIndex((x) => x.status === "queued" && mine(x));
+  if (i < 0) return { queue: q, item: null, busy: false };
   const cur = q[i] as QueueItem;
   const item: QueueItem = {
     ...cur,
@@ -69,14 +89,14 @@ export function next(q: QueueItem[], now: string): { queue: QueueItem[]; item: Q
   };
   const queue = [...q];
   queue[i] = item;
-  return { queue, item };
+  return { queue, item, busy: false };
 }
 
 /** Kết quả việc đang làm: đạt ⇒ ready_to_deploy; lỗi ⇒ về đầu queue (attempts+1) hoặc failed khi quá hạn. */
 export function result(
   q: QueueItem[],
   id: string,
-  outcome: { ok: boolean; note: string },
+  outcome: { ok: boolean; note: string; sha?: string },
   now: string,
 ): { queue: QueueItem[]; item: QueueItem | null } {
   const { ok, note } = outcome;
@@ -85,7 +105,13 @@ export function result(
   const cur = q[i] as QueueItem;
   const notes = note ? [...cur.notes, note.slice(0, 4000)].slice(-10) : cur.notes;
   if (ok) {
-    const item: QueueItem = { ...cur, status: "ready_to_deploy", notes, updated_at: now };
+    const item: QueueItem = {
+      ...cur,
+      status: "ready_to_deploy",
+      notes,
+      sha: outcome.sha || cur.sha || null,
+      updated_at: now,
+    };
     const queue = [...q];
     queue[i] = item;
     return { queue, item };
@@ -108,6 +134,7 @@ export const summary = (q: readonly QueueItem[]) => {
     queued: by("queued"),
     in_progress: by("in_progress"),
     ready_to_deploy: by("ready_to_deploy"),
+    deployed: by("deployed"),
     failed: by("failed"),
   };
 };

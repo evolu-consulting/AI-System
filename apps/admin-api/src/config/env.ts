@@ -45,6 +45,8 @@ export const EnvSchema = z.object({
   TRELLO_API_KEY: z.string().min(1).optional(),
   TRELLO_TOKEN: z.string().min(1).optional(),
   TRELLO_FEEDBACK_LIST_ID: z.string().min(1).optional(),
+  /** dlc-engine · gốc REST Trello (vắng ⇒ api.trello.com); dev trỏ Trello giả của workspace DLC. */
+  TRELLO_API_URL: z.url().optional(),
   /** Gốc Hub cho "Chạy thử" lệnh (ADM-FR-23, X1 §2.2). Không dùng tên `HUB_URL` (dành cho chat). Vắng ⇒ 503. */
   ADMIN_HUB_URL: z.url({ protocol: /^https?$/ }).optional(),
   /** Token dịch vụ Hub `/internal/*` — chỉ server-side, cùng giá trị với hub-api. Vắng ⇒ 503. */
