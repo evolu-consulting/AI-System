@@ -29,9 +29,9 @@ import { defaultSourceBudget } from "./sources.rules";
 import { type JobInputs, jobInputs } from "./stage-job-inputs";
 import {
   auditSourceReads,
-  loadStageSourceCtx,
   type StageSourceCtx,
   stageRefsCheck,
+  stageSourceCtxOf,
 } from "./stage-sources";
 import { type StageRowIdx, stageRowById, stepsOfSnap } from "./step-persist";
 import { runTeamStage } from "./team-exec";
@@ -276,15 +276,29 @@ async function retried(tx: Tx, x: ApplyInput, head: RunHead, idx: number): Promi
  * thúc ∧ `current_run_id` = run này (đua với quay lại/huỷ ⇒ bỏ).
  */
 async function lockAndLoad(tx: Tx, x: ApplyInput): Promise<Loaded | null> {
-  const head0 = await headOf(tx, x.runId);
-  if (!head0 || !(await core.lockRun(tx, head0.tenant_id, x.runId))) return null;
-  const head = await headOf(tx, x.runId);
+  const head = await lockHead(tx, x.runId);
   if (!head || isTerminal(head.status as ProcessRunStatus)) return null;
   const stage = await stageRowById(tx, x.runId, x.stageRunId, head.tenant_id);
   if (!stage || stage.current_run_id !== x.hubRunId) return null;
   const def = head.snapshot.stages[stage.stage_idx];
   if (!def) return null;
-  return { head, stage, def, srcCtx: await loadStageSourceCtx(tx, x.runId, stage.stage_idx) };
+  const srcCtx = stageSourceCtxOf(head.snapshot, head.pinned_sources, stage.stage_idx);
+  const { pinned_sources: _p, ...h } = head;
+  return { head: h, stage, def, srcCtx };
+}
+
+/**
+ * CR-116 B5 · khoá run (FOR UPDATE, §10 — câu ĐẦU của tx) + đầu run + `pinned_sources` MỘT câu PK (trước: đọc đầu → khoá
+ * → đọc lại đầu → đọc nguồn = 4 câu). Nguồn của stage dựng từ chính hàng này (`stageSourceCtxOf`).
+ */
+export async function lockHead(
+  tx: Tx,
+  runId: string,
+): Promise<(RunHead & { pinned_sources: unknown }) | null> {
+  const [h] = await tx.execute<RunHead & { pinned_sources: unknown }>(sql`select tenant_id,
+      started_by, status, current_stage_idx, input, snapshot, pinned_sources
+    from hub.process_runs where id = ${runId} for update`);
+  return h ?? null;
 }
 
 /** Ngữ cảnh stage đã nạp cho đánh giá kết quả job. */

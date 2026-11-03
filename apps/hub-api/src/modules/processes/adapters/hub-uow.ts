@@ -19,6 +19,12 @@ import type {
 } from "../application/ports";
 import type { ToolStageRepo } from "../application/tools/tool.ports";
 import type { ProcessNotifier } from "../core/ports";
+import {
+  type PendingUpdated,
+  type RecipientsDefer,
+  recipientsDefer,
+  resolveDeferred,
+} from "../core/recipients-defer";
 import { DomainError } from "../domain/errors";
 import { writeNotices } from "../notify/batch.repo";
 import { createNotifier } from "../notify/notifier";
@@ -57,7 +63,7 @@ function txRepos(
   tx: Tx,
   tenantId: string,
   outbox: Outbox,
-  opts: { notifier?: RunFinishedNotifier; tools?: ToolRepoFactory } = {},
+  opts: { notifier?: RunFinishedNotifier; tools?: ToolRepoFactory; defer?: RecipientsDefer } = {},
 ): TxRepos {
   const notifier = opts.notifier ?? createNotifier();
   const { tools } = opts;
@@ -65,7 +71,7 @@ function txRepos(
     tenantId,
     runs: runRepo(tx, tenantId),
     timers: timerRepo(tx, tenantId),
-    stageTimers: stageTimerRepo(tx, tenantId, outbox, notifier),
+    stageTimers: stageTimerRepo(tx, tenantId, outbox, notifier, opts.defer),
     retry: retryRepo(tx, tenantId),
     sideEffect: sideEffectProbe(tx, tenantId),
     team: teamRunRepo(tx, tenantId),
@@ -171,21 +177,28 @@ async function systemEach<I, T>(
   let events: OutboxEvent[] = [];
   const out = await withHubScope(db, { kind: "system" }, async (tx) => {
     events = [];
+    const pending: PendingUpdated[] = [];
     const res: EachResult<I, T>[] = [];
     for (const item of await x.claim(tx as unknown as SystemClaimTx)) {
       const c = collector();
+      // CR-116 B3 · người nhận `process.updated` của hàng: chỗ chờ; chỉ hàng COMMIT savepoint mới vào lô.
+      const defer = recipientsDefer();
       try {
         const tenantId = x.tenantOf(item);
         assertTenantId(tenantId);
         const value = await tx.transaction((sp) =>
-          x.fn(txRepos(sp, tenantId, c.outbox, deps), item),
+          x.fn(txRepos(sp, tenantId, c.outbox, { ...deps, defer }), item),
         );
         events.push(...c.events);
+        pending.push(...defer.pending);
         res.push({ item, ok: true, value });
       } catch (error) {
         res.push({ item, ok: false, error });
       }
     }
+    // MỘT câu người nhận cho cả lô, trước COMMIT (cùng tx scope system); bỏ chỗ chờ không ai nhận.
+    await resolveDeferred(tx, pending);
+    events = events.filter((e) => e.kind !== "user_events" || e.events.length > 0);
     return res;
   });
   // CR-115 · chỉ lô này (vòng hẹn giờ) được gom kick thành `kickMany` (Thấp1).

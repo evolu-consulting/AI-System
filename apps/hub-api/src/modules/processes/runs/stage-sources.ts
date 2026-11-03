@@ -61,9 +61,27 @@ export async function loadStageSourceCtx(
       coalesce(snapshot->'stages'->(${idx}::int)->'sources', '[]'::jsonb) as stage_sources,
       pinned_sources as pinned
     from hub.process_runs where id = ${runId}`);
-  const defSources = Array.isArray(r?.def_sources) ? (r.def_sources as ResolveSource[]) : [];
-  const stageSources = Array.isArray(r?.stage_sources) ? (r.stage_sources as StageSource[]) : [];
-  const pinned = Array.isArray(r?.pinned) ? (r.pinned as SourcePin[]) : null;
+  return sourceCtxOf(idx, r?.def_sources, r?.stage_sources, r?.pinned);
+}
+
+/**
+ * CR-116 B5 · ngữ cảnh nguồn dựng từ đầu run ĐÃ đọc (cùng phép chiếu với `loadStageSourceCtx`: `snapshot.sources`,
+ * `snapshot.stages[idx].sources`, `pinned_sources`) — không thêm câu SQL.
+ */
+export function stageSourceCtxOf(
+  snapshot: unknown,
+  pinnedSources: unknown,
+  idx: number,
+): StageSourceCtx {
+  const snap = (snapshot ?? {}) as { sources?: unknown; stages?: { sources?: unknown }[] };
+  const stages = Array.isArray(snap.stages) ? snap.stages : [];
+  return sourceCtxOf(idx, snap.sources, stages[idx]?.sources, pinnedSources);
+}
+
+function sourceCtxOf(idx: number, def: unknown, stage: unknown, pin: unknown): StageSourceCtx {
+  const defSources = Array.isArray(def) ? (def as ResolveSource[]) : [];
+  const stageSources = Array.isArray(stage) ? (stage as StageSource[]) : [];
+  const pinned = Array.isArray(pin) ? (pin as SourcePin[]) : null;
   return {
     idx,
     stageSources,

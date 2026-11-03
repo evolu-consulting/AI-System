@@ -41,6 +41,29 @@ export async function runRecipients(tx: Tx, runId: string, tenantId: string): Pr
   return rows.map((r) => r.uid).filter((x): x is string => x !== null);
 }
 
+export type RunKey = { runId: string; tenantId: string };
+
+/**
+ * CR-116 B3 · người nhận như `runRecipients` cho CẢ LÔ run, MỘT câu (definer theo tập `hub.process_runs_recipients`, 0088 —
+ * cùng thân + cách ly của 0020). Trả `runId → người nhận` (run không thấy/khác tenant/scope sai ⇒ `[]`). Lô rỗng ⇒ 0 câu.
+ */
+export async function runRecipientsMany(
+  tx: Tx,
+  runs: readonly RunKey[],
+): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>(runs.map((r) => [r.runId, []]));
+  if (runs.length === 0) return out;
+  const arr = (xs: string[]) => `{${xs.join(",")}}`;
+  const rows = await tx.execute<{ run_id: string; uid: string | null }>(
+    sql`select run_id, uid from hub.process_runs_recipients(${arr(runs.map((r) => r.runId))}::uuid[], ${arr(runs.map((r) => r.tenantId))}::uuid[])`,
+  );
+  for (const r of rows) {
+    const xs = out.get(r.run_id);
+    if (xs && r.uid !== null && !xs.includes(r.uid)) xs.push(r.uid);
+  }
+  return out;
+}
+
 /** Đọc đầu run không khoá. */
 export async function loadRunHead(
   tx: Tx,

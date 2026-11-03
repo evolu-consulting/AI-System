@@ -8,6 +8,7 @@ import type { Outbox, StageTimerRepo } from "../../application/ports";
 import * as core from "../../core/core.repo";
 import { processUpdated } from "../../core/events";
 import type { ProcessNotifier } from "../../core/ports";
+import type { RecipientsDefer } from "../../core/recipients-defer";
 import { enqueueThread } from "../../core/thread";
 import type { RunState } from "../../domain/runs/run-state.rules";
 import { waitedText, waitOutputMd } from "../../domain/timers/due-at.rules";
@@ -24,7 +25,15 @@ type Head = {
   snapshot: SnapshotStages & { stages?: { name?: string; step?: number }[] };
 };
 type StageRow = { id: string; stage_idx: number; attempt: number; round: number };
-type Ctx = { tx: Tx; tenantId: string; outbox: Outbox; notifier: RunFinishedNotifier };
+type Ctx = {
+  tx: Tx;
+  tenantId: string;
+  outbox: Outbox;
+  notifier: RunFinishedNotifier;
+  /** CR-116 B3 · lô `systemEach`: người nhận gom một câu cuối tx; vắng ⇒ gọi definer ngay (đường từng hàng). */
+  defer?: RecipientsDefer;
+};
+type UpdatedRun = Parameters<typeof processUpdated>[1];
 
 /** Không dùng khi `done` (persistStage bỏ qua `next`); chỉ thoả kiểu `StageWrite`. */
 const DONE_NEXT: RunState = {
@@ -48,8 +57,9 @@ export function stageTimerRepo(
   tenantId: string,
   outbox: Outbox,
   notifier: RunFinishedNotifier,
+  defer?: RecipientsDefer,
 ): StageTimerRepo {
-  const c: Ctx = { tx, tenantId, outbox, notifier };
+  const c: Ctx = { tx, tenantId, outbox, notifier, defer };
   return {
     async lockStage(runId, stageRunId) {
       const [s] = await tx.execute<{ id: string; status: StageRunStatus }>(sql`
@@ -62,7 +72,13 @@ export function stageTimerRepo(
           updated_at = ${now.toISOString()}::timestamptz
         where id = ${stageRunId} and process_run_id = ${runId} and tenant_id = ${tenantId}`);
       const h = await head(c, runId);
-      if (h) emit(c, await updated(c, runId, h));
+      if (h)
+        await emitUpdated(c, runId, {
+          id: runId,
+          status: h.status as ProcessRunStatus,
+          stageIdx: Number(h.current_stage_idx),
+          step: Number(h.current_step),
+        });
     },
     finishWait: (runId, stageRunId, w) => finishWait(c, runId, stageRunId, w),
   };
@@ -74,13 +90,15 @@ async function head(c: Ctx, runId: string): Promise<Head | null> {
   return h ?? null;
 }
 
-async function updated(c: Ctx, runId: string, h: Head): Promise<UserEvent[]> {
-  return processUpdated(await core.runRecipients(c.tx, runId, c.tenantId), {
-    id: runId,
-    status: h.status as ProcessRunStatus,
-    stageIdx: Number(h.current_stage_idx),
-    step: Number(h.current_step),
-  });
+/** `process.updated` vào outbox: lô ⇒ chỗ chờ đúng vị trí (điền cuối tx, `resolveDeferred`); không ⇒ definer ngay. */
+async function emitUpdated(c: Ctx, runId: string, run: UpdatedRun): Promise<void> {
+  if (c.defer) {
+    const into: UserEvent[] = [];
+    c.outbox.emit({ kind: "user_events", events: into });
+    c.defer.add({ runId, tenantId: c.tenantId, run, into });
+    return;
+  }
+  emit(c, processUpdated(await core.runRecipients(c.tx, runId, c.tenantId), run));
 }
 
 function emit(c: Ctx, events: UserEvent[]): void {
@@ -123,14 +141,14 @@ type WaitStep = Awaited<ReturnType<typeof persistStage>>;
 
 /** Sự kiện + (finish: thông báo, thread `run_end`) / (next_step: kick) của stage chờ vừa xong — vào outbox. */
 async function emitAfterWait(c: Ctx, runId: string, step: WaitStep): Promise<void> {
-  const events: UserEvent[] = step
-    ? processUpdated(await core.runRecipients(c.tx, runId, c.tenantId), {
-        id: runId,
-        status: step.status,
-        stageIdx: step.stageIdx,
-        step: step.step,
-      })
-    : [];
+  if (step)
+    await emitUpdated(c, runId, {
+      id: runId,
+      status: step.status,
+      stageIdx: step.stageIdx,
+      step: step.step,
+    });
+  const events: UserEvent[] = [];
   if (step?.kind === "finish") {
     events.push(...(await c.notifier.runFinished(c.tx, runId)));
     await enqueueThread(c.tx, {
