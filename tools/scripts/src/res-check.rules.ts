@@ -30,6 +30,8 @@ export type ServerMetrics = {
   containers: number;
   /** Mỗi phần tử: slot evotest đang bận (khoá `.lock` tồn tại). */
   slotsBusy: boolean[];
+  /** CR-115: có lượt `run-tests.ps1 -Exclusive` (perf) đang giữ máy; vắng = chưa kiểm. */
+  exclusive?: boolean;
 };
 
 export type Thresholds = {
@@ -124,6 +126,7 @@ export function recommendPlaywright(l: LocalMetrics, t: Thresholds): number {
 
 export function recommendServerSlots(s: ServerMetrics | undefined): number | null {
   if (!s) return null;
+  if (s.exclusive) return 0; // lượt perf độc quyền: mọi lượt mới xếp hàng tới khi xong
   const free = s.slotsBusy.filter((b) => !b).length;
   if (s.load1 > s.cores || s.freeRamMb < 2048 || s.freeDiskGb < 10) return Math.min(free, 1);
   return free;
@@ -155,6 +158,10 @@ function localWarnings(l: LocalMetrics, t: Thresholds): string[] {
 function serverWarnings(s: ServerMetrics, t: Thresholds): string[] {
   const w: string[] = [];
   const free = s.slotsBusy.filter((b) => !b).length;
+  if (s.exclusive)
+    w.push(
+      "evotest: đang có lượt perf -Exclusive giữ cả máy — lượt mới xếp hàng tới khi đo xong (không chạy thêm)",
+    );
   if (s.slotsBusy.length > 0 && free === 0)
     w.push(
       `evotest: cả ${s.slotsBusy.length} slot đều bận — lượt mới sẽ xếp hàng (tối đa 90 phút)`,
@@ -223,7 +230,7 @@ export function formatReport(
       ["SERVER đĩa", `${server.freeDiskGb.toFixed(1)} GB trống, ${server.containers} container`],
       [
         "SERVER slot",
-        `bận ${busy.length}/${server.slotsBusy.length}${busy.length ? ` (${busy.join(",")})` : ""}`,
+        `bận ${busy.length}/${server.slotsBusy.length}${busy.length ? ` (${busy.join(",")})` : ""}${server.exclusive ? " · PERF -Exclusive đang giữ máy" : ""}`,
       ],
     );
   } else if (serverError) rows.push(["SERVER", `không kiểm được: ${serverError}`]);

@@ -61,6 +61,9 @@ for i in $(seq 1 ${slots}); do
   if [ "$i" = 1 ]; then l="$HOME/workspace/evotest/.lock"; else l="$HOME/workspace/evotest/slots/s$i/.lock"; fi
   if [ -d "$l" ]; then echo "slot$i=busy"; else echo "slot$i=free"; fi
 done
+# CR-115: lượt perf -Exclusive đang giữ máy (khoá .exclusive, owner còn sống) - lượt mới xếp hàng.
+e="$HOME/workspace/evotest/.exclusive"
+if [ -d "$e" ] && p=$(cut -d" " -f1 "$e/owner" 2>/dev/null) && [ -n "$p" ] && [ -d "/proc/$p" ]; then echo "exclusive=busy"; else echo "exclusive=free"; fi
 `;
 
 export function parseServerOut(text: string): ServerMetrics | undefined {
@@ -93,6 +96,7 @@ export function parseServerOut(text: string): ServerMetrics | undefined {
     freeDiskGb: disk / 1024 ** 2,
     containers: num("containers") ?? 0,
     slotsBusy: slots,
+    ...(kv.has("exclusive") ? { exclusive: kv.get("exclusive") === "busy" } : {}),
   };
 }
 

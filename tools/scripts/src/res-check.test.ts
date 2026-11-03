@@ -14,6 +14,7 @@ import {
   type LocalMetrics,
   procClass,
   recommend,
+  recommendServerSlots,
   type ServerMetrics,
 } from "./res-check.rules";
 
@@ -279,5 +280,20 @@ describe("res-check parse · mẫu đầu ra", () => {
     expect(s).not.toMatch(/\b(rm|mkdir|kill|docker (stop|rm|run)|mv)\b/);
     expect(PS_LOCAL_SCRIPT).toContain("{DRIVE}");
     expect(PS_LOCAL_SCRIPT).not.toMatch(/Remove-|Stop-|Set-|New-Item/);
+  });
+  test("CR-115: dòng exclusive=busy ⇒ cờ exclusive, khuyến nghị 0 slot + cảnh báo; vắng dòng ⇒ không có khoá exclusive", () => {
+    const base =
+      "nproc=12\nload1=1\nmem_avail_kb=16777216\nmem_total_kb=33554432\ndisk_free_kb=104857600\nslot1=free\nslot2=free";
+    expect(serverScript(2)).toContain("exclusive=busy");
+    expect(parseServerOut(base)?.exclusive).toBeUndefined();
+    expect(parseServerOut(`${base}\nexclusive=free`)?.exclusive).toBe(false);
+    const s = parseServerOut(`${base}\nexclusive=busy`);
+    expect(s?.exclusive).toBe(true);
+    if (!s) throw new Error("parse");
+    expect(recommendServerSlots(s)).toBe(0);
+    expect(recommendServerSlots({ ...s, exclusive: false })).toBe(2);
+    const r = recommend(local(), s);
+    expect(r.serverSlots).toBe(0);
+    expect(r.warnings.some((w) => w.includes("-Exclusive"))).toBe(true);
   });
 });

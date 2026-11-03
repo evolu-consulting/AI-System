@@ -1,5 +1,5 @@
 # evotest - test:all trên máy chủ (project Docker riêng)
-`powershell -File deploy/evotest/run-tests.ps1 [-Step unit|int|e2e|py|all] [-Ref HEAD] [-Dirty] [-Filter "tests/a tests/b"] [-DryRun]` (cũng chạy được bằng pwsh).
+`powershell -File deploy/evotest/run-tests.ps1 [-Step unit|int|e2e|py|all] [-Step perf -Exclusive [-ExclusiveTimeoutMin 60]] [-Ref HEAD] [-Dirty] [-Filter "tests/a tests/b"] [-DryRun]` (cũng chạy được bằng pwsh).
 - Gửi `git archive <Ref>` (+ thay đổi chưa commit nếu `-Dirty`) tới `evoc@149.202.83.5:~/workspace/evotest`, chạy `bun run test:all --no-python --only=<bước>` trong container, thoát bằng mã test.
 - Project `-p evotest`: pg (Postgres 16.15, tmpfs) + redis 7.4.11 + runner (oven/bun 1.3.14; e2e: playwright v1.63.0-noble + bun). Không publish cổng, mạng riêng.
 - Ngân sách: 6 CPU (3.5 + 2 + 0.5), 23 GB RAM (14 + 8 + 1), cpu_shares 128 + `nice -n 19`. Đĩa trống < 40 GB thì dừng. Ngân sách trên là của project cũ; xem mục Slot song song.
@@ -18,6 +18,7 @@
 - Chạy **local**: unit test + typecheck (nhanh, không cần stack). Chạy trên **evotest**: int, e2e, perf (`run-tests.ps1 -Step int|e2e|perf` hoặc `-Dirty` từ worktree của lát; archive lấy từ chính worktree đó).
 - Playwright local: tối đa **2 lát cùng lúc**, mỗi lát một cổng riêng.
 - Bước `py` (pytest `apps/agent-runtime`, unit + int, Linux python3.12 + `uv sync --frozen`): target `py` của `Dockerfile` (ảnh uv + git + bun cho quarantine), service `runner-py` (profile `py`, ngoài `all`); `-Filter` = đường dẫn pytest tương đối `apps/agent-runtime`; known-red suite `py`. Kiểm 2026-11-03: `-Step py -Filter "src/agent_runtime/queue src/agent_runtime/runtimes/cli tests/acceptance/result_int_test.py"` = 190 pass + 3 đỏ cũ, 93 s trong container.
+- `-Step perf -Exclusive` (CR-115): khoá toàn máy `~/workspace/evotest/.exclusive` (luật ở `lock.sh`, sourced bởi `boot.sh`): chờ mọi slot rảnh (timeout, exit 3), lượt thường xếp hàng khi có khoá, nhả khi lỗi/Ctrl-C/kill; load/RAM đầu-cuối vào console + `exclusive.txt`. Test: `tools/scripts/src/evotest-lock.int.test.ts`. Lượt chạy từ nhánh CHƯA có `lock.sh` bỏ qua khoá này; `mgmt/run.ps1` chỉ khoá slot 1.
 - Đêm: `nightly.ps1` (Task Scheduler local) chạy `-Step all -Ref platform/gd0`, tóm tắt ở `.data/evotest/nightly-<ngày>.md`; không cron trên máy chủ.
 
 ## evotest-mgmt (I1 — bản sao mgmt-app có seed để kiểm importer)
