@@ -1,0 +1,487 @@
+ai-admin — Tài liệ u nghiệ p vụ (source of
+truth)
+ Nov 2, 2026  ·  @Chieucasmen
+Nguồ n chu ẩ n về  nghiệp vụ ai-admin. T ổ ng h ợ p t ừ  BA gố c ( ba-admin.md  v0.4), code, spec
+con và ADR — BA v0.4 đã lỗ i th ờ i vài chỗ  (SSO, cộ t m ớ i c ủ a user/tenant, app_catalog/gói,
+đố i tác), nên tài liệ u này m ớ i là b ả n h ợ p nhấ t. Cấ u trúc: Phần A mô t ả  toàn bộ  nghiệ p vụ
+hiệ n hành theo m ả ng; Phần B là h ướ ng đang tri ể n khai (c ả i t ổ  cấ u hình + phân quyề n, CR-
+107). Tham chiế u: ADM-FR/ADM-BR, ADR, CR.
+T ổ ng quan ai-admin
+Mục đích. Mộ t n ơ i quyế t định tenant nào, nhóm nào, ai đ ượ c dùng gì và dùng bao nhiêu —
+đ ổ i hành vi hệ  thố ng mà không cầ n deploy.
+Admin lo: danh tính (tenant, user, group, đăng nhậ p, token); phân quyề n (3 vai qu ả n trị,
+feature/entitlement/grant); catalog workflow Dify + command dùng chung; quota & chi
+phí theo tenant; secret mã hoá; audit + export/import.
+Admin KHÔNG lo: chạy workflow, gọi LLM, l ư u hộ i thoại, cấ u hình agent — thuộ c Agent
+Hub (nút Test ch ỉ  nh ờ  Hub chạy th ử ).
+Bốn khối nền t ả ng: Admin · Agent Hub (điề u phố i agent, Studio, process engine) · Worker
+(job, CLI) · Chat App/Extension (ng ườ i dùng cuố i). Trang Quy trình và Nguồ n hi ể n thị trong
+admin-web nh ư ng d ữ  liệ u thuộ c schema hub .
+Gi ả  định nền: command, workflow, secret, key Dify dùng chung toàn hệ  thố ng; tenant ch ỉ
+đ ượ c cấ p quyề n dùng, không t ự  tạo. Admin và Hub chung mộ t Postgres; admin s ở  h ữ u
+schema admin .
+Actor: platform_admin · tenant_admin · member · Agent Hub (hệ  thố ng, đọc hub_ro ) ·
+Builder.
+Tenant / công ty
+Mục đích. Mỗ i tenant là mộ t công ty khách hàng; mọi user và d ữ  liệ u thuộ c đúng mộ t
+tenant. Công ty vậ n hành cũng là tenant platform .
+B ả ng admin.tenants : key  (mã công ty, unique), name , active , max_concurrent_sub ,
+settings , timezone  (IANA, mặ c định Asia/Ho_Chi_Minh ), process_runs_max ,
+profile , default_app , version .
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 1 of 14
+
+=== PAGE ===
+Luật chính: ADM-FR-60 CRUD tenant (không Xoá ở  v1, ch ỉ  Khoá; tạo tenant kèm
+tenant_admin đầ u) · ADM-FR-61 khoá tenant thì khoá mọi user + thu hồ i refresh token, m ở
+khoá khôi phục trạng thái t ừ ng user · ADM-FR-72 timezone (tenant_admin ch ỉ  xem) ·
+ADM-BR-08 mỗ i tenant luôn còn ít nhấ t mộ t tenant_admin active · ADM-BR-09
+tenant_admin bị gi ớ i hạn theo tenant_id  (ngoài phạm vi tr ả  404) · ADM-NFR-06 seed tạo
+tenant platform  + feature core  + platform_admin đầ u tiên.
+Quyền & cách ly: ch ỉ  platform_admin tạo/s ử a/khoá; b ả ng tenants  là gố c c ủ a RLS. Không
+đóng băng.
+Ng ườ i dùng, vai hệ  thố ng & đăng nhậ p
+Mục đích. Tài kho ả n đăng nhậ p, mỗ i tài kho ả n thuộ c đúng mộ t tenant; không có trang t ự
+đăng ký.
+B ả ng admin.users : tenant_id , username  (unique trong tenant), password_hash
+(argon2id), display_name , email , role , locale , theme , active ,
+must_change_password , failed_logins , locked_until , locked_by_tenant , kind
+(internal/external), external_org_id , default_app , version . 2FA ở  b ả ng riêng
+( user_totp , user_backup_codes ; Hub không đọc). Phiên: refresh_tokens  (xoay vòng,
+l ư u hash).
+Vai hệ thống (ADM-BR-05): platform_admin (toàn hệ  thố ng + Studio) · tenant_admin (ch ỉ
+tenant mình, không vào Studio) · member (ch ỉ  /auth/*  + đ ổ i mậ t kh ẩ u mình).
+Luật chính: ADM-FR-01..03 đăng nhậ p (mã công ty + username + mậ t kh ẩ u → JWT 15 phút,
+refresh 30 ngày; refresh xoay vòng; logout thu hồ i) · FR-04/05 admin CRUD/khoá user +
+reset mậ t kh ẩ u, khoá thì thu hồ i token · FR-06 mậ t kh ẩ u tạm, bắ t đ ổ i lầ n đầ u · FR-07 sai 5
+lầ n khoá 15 phút · FR-08 2FA TOTP (bắ t buộ c cho admin) · FR-63 username duy nhấ t trong
+tenant · BR-08 không t ự  khoá/hạ vai mình, luôn còn ít nhấ t mộ t platform_admin · NFR-01
+argon2id, JWT EdDSA, master key ở  env · NFR-04 Admin chế t thì Hub vẫ n verify đ ượ c
+JWT.
+Quyền & cách ly: tenant_admin ch ỉ  thao tác user trong tenant mình. Không đóng băng.
+Nhóm (groups)
+Mục đích. Nhóm user trong mộ t tenant; là đ ơ n vị cấ p feature và agent. Không lồ ng nhóm.
+B ả ng: groups  ( tenant_id , key , name  jsonb vi/en, description , version ; unique
+(tenant_id, key) ) · group_members  ( group_id , user_id , added_by , added_at ).
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 2 of 14
+
+=== PAGE ===
+Luật chính: ADM-FR-62 CRUD group + thêm/b ớ t thành viên (dán danh sách username
+thêm hàng loạt) · ADM-FR-37 trang group hiệ n agent đ ượ c cấ p; tenant_admin cấ p agent
+cho group (ghi hub.agent_grants  qua API Hub) · ADM-FR-55 version  chố ng ghi đè
+(409) · nhóm beta-testers  đ ượ c b ả o vệ , feature beta  ch ỉ  hiệ n cho nhóm này · user
+external bị chặ n vào group (422 + trigger).
+Liên quan RBAC: enablePack  t ự  tạo Group vai <pack>-owner/-editor/-viewer  (xem
+mục Ứ ng dụng & gói / Phầ n B).
+Quyền & cách ly: platform_admin & tenant_admin (trong tenant); có RLS. Không đóng
+băng.
+Đố i tác (external orgs)
+Mục đích. Công ty đố i tác nằ m trong tenant ch ủ  qu ả n, phục vụ gói Community (CR-102a).
+BA v0.4 ch ư a mô t ả ; nguồ n: ghi-chu.md + spec com-c1-ext-identity.
+B ả ng: admin.external_orgs  ( tenant_id , name , active , created_by ; không xoá c ứ ng)
+· users.kind='external'  + external_org_id  + deactivated_at  (FK kép theo tenant).
+Luật chính: ADM-FR-74/75 nhậ n diệ n user ngoài & công ty đố i tác · vai luôn member , không
+vào group, không làm qu ả n lý (422) · vô hiệ u công ty ⇒  vô hiệ u mọi user c ủ a nó (audit t ừ ng
+user) + route 'M ở  lại' · kind / external_org_id  bấ t biế n (trigger) · CR-102: xoá tài kho ả n
+đố i tác = vô hiệ u + hu ỷ  kế t bạn, gi ữ  bài/bình luậ n ('đố i tác đã r ờ i').
+Cách ly: đố i tác ch ỉ  thấ y gói community  (EXTERNAL_PACKS = read/write tĩnh); Hub tra
+qua mộ t c ổ ng duy nhấ t ExternalOrgResolver ; JWT có claim kind:external  + xorg .
+GĐ1 ch ỉ  Admin ch ủ  qu ả n thêm/khoá; đố i tác t ự  qu ả n là GĐ2 (ch ư a rõ). Không đóng băng.
+Ứ ng dụng & gói nghiệ p vụ
+Mục đích. Hai l ớ p ' ứ ng dụng': (a) app web trong app_catalog  (switcher ' Ứ ng dụng' + đích
+SSO); (b) gói nghiệp vụ (pack) nố i v ớ i app qua required_feature . BA v0.4 ch ư a mô t ả ;
+nguồ n: code + ADR-0031 + CR-107.
+admin.app_catalog  (toàn hệ  thố ng, không RLS): key , name  jsonb, icon , url ,
+audience  (all/admin/platform), required_feature , sso , sort_order , enabled ,
+version . Seed: chat, contracts, community, studio, admin. Đọc qua GET /me/apps  (lọc
+theo quyề n); ghi /admin/apps  ch ỉ  platform_admin.
+Gói: contracts (S ổ  H ợ p Tác), community, knowledge. Mỗ i gói có 3 feature <pack>-read/-
+write/-admin . enablePack bậ t gói cho tenant: tạo entitlement + 3 Group vai ( <pack>-
+owner/-editor/-viewer , nhãn 'Toàn quyề n/Nhân viên/Ch ỉ  xem') + 6 grant + agent +
+NOTIFY Hub (PK-FR-05). API GET/PUT/DELETE /admin/tenants/:id/packs .
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 3 of 14
+
+=== PAGE ===
+Nguyên tắc (ADR-0033/CR-107): 'vai theo app' ch ỉ  cho business pack
+(contracts/community/knowledge); Chat = feature chat-app  bậ t/tắ t theo tenant;
+Studio/Admin theo role hệ  thố ng ( required_feature=null ).
+Quyền & cách ly: catalog/entitlement/bậ t gói do platform_admin; Hub đọc th ẳ ng b ả ng
+admin. Không đóng băng.
+Mô hình quyề n: feature → entitlement → grant
+Mục đích. Quyế t định user dùng đ ượ c /cmd  hay gói nào.
+B ả ng: features  ( key , name / description  jsonb, status  on/off/beta, version ) ·
+feature_commands  · feature_entitlements  (feature × tenant) · feature_grants
+(feature × tenant × group|user) · config_meta.config_version .
+Luật chính: FR-30 CRUD feature (platform_admin) · FR-31 entitlement cho tenant · FR-32
+grant cho group/user trong phạm vi entitlement (UI ch ỉ  cấ p cho group; cấ p cho user ch ỉ
+qua API) · FR-33 kill switch: tắ t feature ⇒  command biế n kh ỏ i menu ≤ 5 giây (run đang chạy
+vẫ n xong) · FR-34 beta  ch ỉ  hiệ n cho beta-testers  · FR-35 ma trậ n feature × group · FR-
+36 'Ki ể m tra quyề n'.
+Luật cốt lõi: BR-11 dùng đ ượ c /cmd  khi lệ nh thuộ c feature F ∧  F bậ t (hoặ c beta + user
+trong beta-testers) ∧  F entitlement cho tenant ∧  F grant cho user/group c ủ a user · BR-12
+thu hồ i entitlement ⇒  grant mấ t hiệ u l ự c nh ư ng vẫ n gi ữ  · BR-13 workflow không có quyề n
+riêng (quyề n ở  command qua feature, hoặ c agent qua agent-grant) · BR-14 tenant không
+t ự  tạo command/workflow/secret · FR-53 mỗ i lầ n l ư u tăng config_version  + NOTIFY
+config_changed  (Hub nhậ n ≤ 5 giây).
+Cách ly: entitlement = platform_admin; grant = tenant_admin trong tenant mình; có RLS.
+CR-107 (vai theo app) là l ớ p trên, biên dịch xuố ng feature-grant (ADR-0033). Không đóng
+băng.
+Command & Workflow (catalog — ĐÓNG BĂNG)
+Mục đích. Workflow Dify dùng chung; command /  tr ỏ  t ớ i đúng mộ t workflow.
+B ả ng: workflows  ( key , name , description  20–400 ký t ự , app_type , base_url ,
+secret_id , input_schema  jsonb, output_field , dify_app_id , enabled , side_effect ,
+version ) · commands  ( name , aliases[] , description , workflow_id , args ,
+input_map , output , mode  sync/async, timeout_s , enabled , version ) ·
+command_names  (tên+alias duy nhấ t toàn hệ  thố ng) · tenant_workflow_tools  (công tắ c
+tool theo tenant, Hub ch ỉ  đọc).
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 4 of 14
+
+=== PAGE ===
+Luật chính: FR-10/11 CRUD workflow + nhậ p input schema tay (mô t ả  bắ t buộ c — Hub
+dùng nguyên văn làm tool cho model) · FR-13 không xoá/tắ t workflow đang dùng (hộ p xác
+nhậ n liệ t kê n ơ i dùng) · FR-14/15 workflow 'Ch ư a gắ n' h ợ p lệ  + cộ t 'Đang đ ượ c dùng b ở i' ·
+FR-20..22 CRUD command; input map các nguồ n $args.* , $selection ,
+$page.url/text , $attachment , $user.id , $tenant.id , hằ ng · FR-23 nút Test chạy b ả n
+nháp qua Hub ('Chạy v ớ i t ư  cách user…') · FR-73 công tắ c tool quy trình theo tenant (audit
+mỗ i lầ n) · BR-01 tên/alias duy nhấ t (ch ữ  th ườ ng/số /-) · BR-02 mỗ i command → 1 workflow ·
+BR-06 th ự c th ể  tắ t vẫ n l ư u, Hub coi nh ư  không tồ n tại · BR-04 secret không ra kh ỏ i Admin.
+Cách ly & đóng băng: CRUD do platform_admin; catalog toàn cục (không RLS), riêng
+tenant_workflow_tools  có RLS. ĐÓNG BĂNG ( ADMIN_FROZEN_MODULES ): admin-api
+workflows/workflow-tools/commands/transfer; admin-web
+Commands/Workflows/Transfer/Nguồ n redirect / .
+Quota & chi phí
+Mục đích. Ki ể m soát m ứ c dùng & tính phí theo tenant. V ượ t quota KHÔNG chặ n — ch ỉ
+c ả nh báo + tính phầ n v ượ t.
+B ả ng: tenant_quotas  ( tenant_id , feature_id  null=c ả  tenant, period  month,
+max_runs , max_tokens , max_usd , warn_pct  mặ c định 80) · quota_alerts  ·
+tenant_daily_limits  (hạn m ứ c NGÀY: uploads/actions/ai_tokens; null = dùng env). Đọc
+hub.usage_logs  cho báo cáo.
+Luật chính: FR-40 platform_admin đặ t quota tháng (run/token/USD), chung hoặ c theo
+feature; mặ c định không gi ớ i hạn · FR-41 không chặ n khi v ượ t; c ả nh báo 80% & 100% cho
+tenant_admin (email + banner); phầ n v ượ t Hub đánh dấ u overage  · FR-42 màn 'Chi phí &
+quota' (KPI, thanh quota, bi ể u đồ  ngày, top feature, CSV); platform_admin thấ y cost_usd
++ billable_usd , tenant_admin ch ỉ  số  c ủ a tenant mình · hạn m ứ c ngày: GET/PUT
+/admin/tenants/:id/daily-limits  + reset, ch ỉ  platform_admin (uploads/actions theo
+múi gi ờ  tenant, ai_tokens theo UTC) · tenant-admin-scope: tenant_admin thấ y usage rút
+gọn (l ượ t/token/%quota, không tiề n; analytics/records/csv → 403) · NFR-03 báo cáo chi
+phí 1 tháng < 2 giây.
+Cách ly & đóng băng: platform_admin đặ t, tenant_admin đọc rút gọn tenant mình; có RLS.
+Không đóng băng.
+Agent Hub — cấ p agent cho tenant
+Mục đích. Đi ể m giao gi ữ a Admin và Hub về  agent. D ữ  liệ u thuộ c schema hub ; admin ch ỉ
+đọc / ghi qua API Hub.
+Th ự c th ể : hub.agent_grants , hub.agent_workflows  (Admin đọc hub_ro ).
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 5 of 14
+
+=== PAGE ===
+Luật chính: FR-37 trang group hiệ n agent đ ượ c cấ p + cho cấ p agent cho group (ghi
+hub.agent_grants  qua API Hub bằ ng JWT tenant_admin; Hub ch ỉ  cho cấ p agent đã
+entitlement cho tenant đó) · FR-13/15 workflow đ ượ c agent dùng thì chặ n xoá/tắ t (đọc
+hub.agent_workflows ) · FR-36 'Quyề n hiệ u l ự c' gồ m c ả  agent · BR-13 quyề n agent nằ m ở
+agent-grant c ủ a Hub.
+Phạm vi: luậ t entitlement agent × tenant và models thuộ c BA Agent Hub / H4b-2 (ngoài ai-
+admin). Không đóng băng ( agents , agent-grants  là lõi chung).
+Secrets
+Mục đích. L ư u secret (app-key Dify) mã hoá; giá trị ch ỉ  ghi, không đọc lại.
+B ả ng: admin.secrets  ( name  unique, ciphertext , iv , key_version , last4 , note ,
+updated_by ). Hub có b ả ng riêng hub.secrets  (H4b-1) — không chung master key.
+Luật chính: FR-50 CRUD (platform_admin); AES-256-GCM, master key
+SECRET_MASTER_KEY  ở  env (không trong DB) · BR-04 giá trị không bao gi ờ  tr ả  ra qua
+API/UI/export; GET /admin/secrets  ch ỉ  tr ả  tên + last4 (AC-A06) · FR-51 audit ch ỉ  ghi 'đã
+đ ổ i' · FR-54 export ch ỉ  ghi tên.
+Cách ly & đóng băng: ch ỉ  platform_admin; catalog toàn cục. Không đóng băng.
+Audit / nhậ t ký
+Mục đích. Truy vế t ai s ử a gì, khi nào; khôi phục b ả n tr ướ c.
+B ả ng admin.audit_log : seq , at , tenant_id , actor_id , action , entity  (enum 12 giá
+trị), entity_id , before / after  jsonb, summary , snapshot ; append-only (trigger).
+Luật chính: FR-51 mọi thay đ ổ i cấ u hình/user/group/quyề n/quota ghi audit (secret ch ỉ  'đã
+đ ổ i'); tenant_admin ch ỉ  xem audit tenant mình · FR-52 khôi phục th ự c th ể  về  trạng thái
+'tr ướ c' ( POST /admin/audit/:id/restore ) · FR-55 chố ng ghi đè bằ ng version  (409) ·
+tenant-admin-scope: tenant_admin ch ỉ  thấ y audit user/group/grant/entitlement c ủ a
+tenant mình, b ỏ  before / after / version /file/ tenant_key .
+Cách ly & đóng băng: platform_admin thấ y toàn bộ , tenant_admin rút gọn. Audit không
+đóng băng (export/import transfer  đóng băng).
+Định danh & SSO
+Mục đích. Mộ t nguồ n định danh cho mọi gói; đăng nhậ p SSO gi ữ a các app. BA v0.4 ghi
+'ngoài phạm vi' — đã lỗ i th ờ i; nguồ n chu ẩ n: ADR-0018 + code.
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 6 of 14
+
+=== PAGE ===
+ADR-0018 (Accepted): admin-api là nguồ n đăng nhậ p duy nhấ t (JWT EdDSA, JWKS);
+mgmt-app b ỏ  user/session riêng (org→tenant, owner/editor/viewer→group); SSO OIDC
+theo tenant (Google Workspace, Entra) ở  GĐ2; MFA bắ t buộ c cho admin; Hub cấ p token
+ngắ n hạn cho tool MCP. Tiêu chí: đăng nhậ p mộ t lầ n dùng mọi gói; tắ t tài kho ả n ở  IdP ⇒  mấ t
+quyề n ≤ 5 phút.
+SSO nội bộ đã làm (spec sso-switch): POST /auth/sso/code  tạo mã 32 byte số ng 60 giây
+(SHA-256 trong Redis, dùng mộ t lầ n) · POST /auth/sso/redeem  đ ổ i mã lấ y phiên app đích
+(cookie riêng mỗ i app ai_rt_<app> ) · URL đích ch ỉ  t ừ  cấ u hình build (không open
+redirect) · app switcher ở  chat-web.
+identity-import (N5): chuy ể n user mgmt-app sang admin-api (CLI, dry-run, lô 500,
+idempotent); auth.legacy  verify scrypt rồ i rehash sang argon2id
+( LEGACY_HASH_SUNSET ).
+Cách ly & đóng băng: token SSO gắ n tid/sub/sid/app ; sai công ty hoặ c phiên nguồ n đã
+logout đề u 401. Không đóng băng.
+Quy trình, Nguồ n, Export/Import
+Quy trình (Process Engine, ADM-FR-65..71). Trang 'Quy trình' + editor + run + token theo
+run. D ữ  liệ u thuộ c schema hub ; admin-web ch ỉ  là giao diệ n (gọi th ẳ ng Hub). Route editor
+admin dùng khi HUB_PROCESS_ROUTES=admin ; nhóm route phục vụ chat-web đóng băng.
+ADM-FR-70 đã b ỏ  (CR-074).
+Nguồn tham chiếu (ADM-FR-68/69). git_remote , library , local_path , nút 'Ki ể m tra
+kế t nố i'. Hub sources  và màn 'Nguồ n' c ủ a admin-web ĐÓNG BĂNG.
+Export/Import yaml (ADM-FR-54). Xuấ t/nhậ p workflow, command, feature, tenant,
+group, grant; nhậ p có b ướ c xem diff; trầ n 5000 mỗ i loại. Module transfer  ĐÓNG BĂNG.
+T ổ ng quan (Dashboard) & yêu cầ u phi ch ứ c năng
+Dashboard (BA §9). Màn T ổ ng quan khác nhau theo vai: số  tenant, command, workflow,
+user, tenant v ượ t quota (module overview ).
+Phi ch ứ c năng & cách ly (ADM-NFR-01..07, AC-A01..A15): b ả o mậ t (argon2id, JWT EdDSA,
+master key env, HTTPS, gi ớ i hạn IP/VPN cho API platform_admin) · lan truyề n cấ u hình ≤ 5
+giây (NFR-02) · CRUD < 300ms, báo cáo chi phí < 2s · Admin chế t thì Hub vẫ n chạy bằ ng
+cache + verify JWT (NFR-04) · cách ly tenant ở  tầng repository (mọi truy vấ n
+tenant_admin kẹp tenant_id , ngoài → 404) · chố ng ghi đè bằ ng version  (FR-55, chéo
+mọi m ả ng). AC chính: AC-A01 (đăng nhậ p + khoá sau 5 lầ n), AC-A02 (khoá user ⇒  mấ t
+quyề n ≤ 15 phút), AC-A06 (secret không lộ ).
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 7 of 14
+
+=== PAGE ===
+Phầ n B — C ả i t ổ  cấ u hình & phân quyề n (CR-107)
+H ướ ng đang tri ể n khai (spec draft, ch ư a Gate, ch ư a code; mã ADM-FR-76..85). Chi tiế t
+nghiệ p vụ + mock UI + s ơ  đồ  luồ ng quyề n ở  các mục d ướ i; kiế n trúc ở  ADR-0033, spec
+docs/specs/CR-107-admin-config-nesting .
+Mục tiêu & bố i c ả nh
+Tài liệ u cho độ i phát tri ể n: mô t ả  nghiệ p vụ và ràng buộ c đ ể  hiệ n th ự c việ c c ả i t ổ  cấ u hình
+ai-admin. Chi tiế t kỹ  thuậ t nằ m ở  ADR-0033 và spec docs/specs/CR-107 .
+Hiện trạng. Các màn cấ u hình ( ứ ng dụng, feature, ng ườ i dùng, nhóm, phân quyề n) nằ m tr ả i
+đề u ở  sidebar; muố n cấ u hình mộ t công ty ph ả i nh ả y qua nhiề u màn, mỗ i màn t ự  chọn lại
+công ty. Quyề n đọc/ghi đang ẩ n trong khái niệ m "feature" kỹ  thuậ t, khó hi ể u v ớ i ng ườ i vậ n
+hành.
+Mục tiêu. (1) Gom cấ u hình theo ng ữ  c ả nh công ty (tenant); (2) trình bày quyề n bằ ng ngôn
+ng ữ  vai + đọc/ghi; (3) gi ữ  nguyên cách ly tenant và đi ể m chặ n quyề n đang chạy ở  backend.
+Mô hình t ổ ng th ể
+Ba trục, tách bạch:
+Ứ ng dụng gán theo công ty. Mỗ i công ty (tenant) đ ượ c bậ t các ứ ng dụng/gói nghiệ p vụ
+cầ n dùng (H ợ p đồ ng, Community, Chat AI…). Bậ t = cấ p quyề n dùng cho công ty đó.
+Điều h ướ ng lồng. Sidebar trái ch ỉ  liệ t kê tên công ty + "Thêm công ty". Chọn mộ t công
+ty → m ở  workspace bên ph ả i, trong đó có tab: T ổ ng quan · Ứ ng dụng & Gói · Phân quyề n
+· Ng ườ i dùng · Chi phí & quota. Danh mục dùng chung (định nghĩa ứ ng dụng, feature)
+vẫ n ở  cấ p Nề n t ả ng, tách kh ỏ i công ty.
+Quyền 3 tầng. ①  vai hệ  thố ng (toàn admin) · ②  vai theo app (đọc/ghi) · ③  gán ng ườ i
+dùng vào vai — chi tiế t ở  mục Phân quyề n.
+Phân quyề n — vai theo app
+Quyề n chia 3 tầ ng, không trộ n:
+1. Vai hệ thống — platform_admin  / tenant_admin  / member . Gán ở  hồ  s ơ  ng ườ i dùng,
+quyế t quyề n qu ả n trị. Không nằ m trong màn phân quyề n.
+2. Vai theo app — mỗ i vai thuộ c đúng mộ t ứ ng dụng, mang mộ t m ứ c quyề n. Mỗ i app khi
+bậ t có sẵ n 3 vai mặ c định; tạo thêm vai tuỳ biế n đ ượ c.
+3. Gán ng ườ i dùng vào vai — mộ t ng ườ i có th ể  gi ữ  vai ở  nhiề u app; quyề n th ự c tế  tính
+theo t ừ ng app.
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 8 of 14
+
+=== PAGE ===
+Số  vai hiệ n tại: 3 vai hệ thống (cố  định) + 3 vai mặc định cho mỗi app nghiệp vụ (Ch ủ  s ở
+h ữ u / Biên tậ p / Ng ườ i xem). Công ty bậ t 2 app ⇒  3 + 6 vai.
+Luồ ng onboard công ty
+"Thêm công ty" m ở  mộ t wizard liề n mạch:
+1. Thông tin công ty — tên, mã (cố  định sau khi tạo), múi gi ờ ; tạo tài kho ả n qu ả n trị đầ u
+tiên (tenant_admin).
+2. Gán ứ ng dụng — chọn t ừ  ứ ng dụng có sẵ n; bậ t = cấ p cho công ty.
+3. Phân quyền — mỗ i app bậ t sẵ n 3 vai mặ c định; ch ỉ nh hoặ c thêm vai nế u cầ n.
+4. Ng ườ i dùng — tạo tài kho ả n và gán vai.
+Wizard dùng cho lầ n đầ u; về  sau s ử a t ừ ng phầ n trong tab c ủ a workspace công ty (cùng d ữ
+liệ u, cùng endpoint).
+Ranh gi ớ i & cách ly
+Nguyên tắ c: ch ỉ  lồ ng vào công ty nh ữ ng cấ u hình thuộ c mộ t công ty (có cách ly theo
+tenant); danh mục dùng chung gi ữ  ở  Nề n t ả ng.
+M ứ c quyề n (vai) Ý nghĩa T ươ ng ứ ng kỹ  thuậ t
+Đọc Xem, không s ử a read
+Đọc + Ghi Xem và ch ỉ nh s ử a read + write
+Qu ả n trị Toàn quyề n trong app read + write + admin
+Cấ u hình Phạm vi N ơ i đặ t Ai s ử a
+Định nghĩa ứ ng dụng / feature /
+command
+Dùng
+chung
+Nề n t ả ng platform_admin
+Gán ứ ng dụng/gói cho công ty Theo
+tenant
+Trong công
+ty
+platform_admin
+Phân quyề n (vai + đọc/ghi) Theo
+tenant
+Trong công
+ty
+platform_admin ·
+tenant_admin
+Ng ườ i dùng, nhóm Theo
+tenant
+Trong công
+ty
+platform_admin ·
+tenant_admin
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 9 of 14
+
+=== PAGE ===
+Cách ly bắ t buộ c:
+User đối tác (external / Community): KHÔNG cho tạo vai tuỳ biế n; đố i tác ch ỉ  có 2 m ứ c
+tĩnh đọc/ghi hiệ n hành. Gi ữ  cách ly đố i tác (không thấ y d ữ  liệ u nộ i bộ ).
+Chat AI, Studio, Admin KHÔNG có "vai theo app": Chat AI ch ỉ  bậ t/tắ t theo công ty;
+Studio/Admin theo vai hệ  thố ng. Màn phân quyề n không hi ể n thị "tạo vai" cho các app
+này (tránh quyề n ả o).
+Ả nh h ưở ng xuyên app
+Quyề n vẫ n đ ượ c th ự c thi ở  n ơ i cũ (feature-grant); việ c đ ổ i sang "vai" ch ỉ  là l ớ p trên, nên
+v ớ i các gói nghiệ p vụ là trong suố t.
+Ràng buộ c kỹ  thuậ t cho độ i dev
+Mô hình "vai" là nguồ n ở  tầ ng admin; khi l ư u, hệ  thố ng biên dịch mộ t chiề u xuố ng l ớ p cấ p
+quyề n đang chạy (nhóm + feature-grant). Đi ể m chặ n quyề n ở  backend không đ ổ i. Bố n
+ràng buộ c bắ t buộ c:
+Cấ u hình Phạm vi N ơ i đặ t Ai s ử a
+Quota Theo
+tenant
+Trong công
+ty
+platform_admin
+App Lấ y quyề n thế  nào Ả nh h ưở ng L ư u ý
+H ợ p đồ ng
+(SHT)
+Đọc quyề n đọc/ghi/qu ả n trị
+c ủ a gói contracts
+Trong suố t Ph ả i cấ p đ ủ  quyề n đọc thì
+app m ớ i hiệ n
+Community Nh ư  trên; đố i tác dùng 2
+m ứ c tĩnh
+Trong suố t Không cấ p quyề n chéo cho
+đố i tác
+Chat AI Ch ỉ  bậ t/tắ t theo công ty Không áp
+dụng vai
+Dock "S ổ  H ợ p Tác" trong
+chat m ở  theo quyề n đọc
+contracts
+Knowledge Có 3 vai nh ư ng ch ư a có màn
+tiêu thụ rõ
+Trong suố t Ch ư a h ứ a đ ủ  3 m ứ c t ớ i khi có
+app dùng
+Studio /
+Admin
+Theo vai hệ  thố ng Không áp
+dụng vai
+Không ph ả i gói nghiệ p vụ
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 10 of 14
+
+=== PAGE ===
+R1 — đ ủ  c ả  3 quyền, không bao hàm nhau: Đọc ⇒  cấ p quyề n đọc; Đọc+Ghi ⇒  cấ p c ả
+đọc và ghi; Qu ả n trị ⇒  c ả  ba. Thiế u quyề n đọc thì app báo "không có quyề n" và ẩ n kh ỏ i
+launcher.
+R2 — cấp qua nhóm (group), không gán th ẳ ng cho ng ườ i dùng (backend b ỏ  qua
+quyề n gán l ẻ  cho user).
+R3 — phát tín hiệu làm m ớ i sau khi biên dịch đ ể  backend nạp lại quyề n (quên ⇒  quyề n
+đ ổ i nh ư ng ch ư a có hiệ u l ự c).
+R4 — "vai theo app" ch ỉ  cho gói nghiệp vụ (H ợ p đồ ng/Community/Knowledge);
+Chat/Studio/Admin loại kh ỏ i UI phân quyề n.
+Backfill (d ữ  liệu hiện có). Nhậ n 3 nhóm vai sẵ n có thành vai mặ c định; nhóm đã bị s ử a tay
+lệ ch chu ẩ n sẽ  ép về  chu ẩ n. Vì đ ổ i quyề n hiệ u l ự c c ủ a khách, bắ t buộ c: chạy th ử  (dry-run)
++ báo cáo công ty/nhóm sẽ  đ ổ i + xác nhậ n th ủ  công ở  production + ghi audit t ừ ng thay đ ổ i.
+Liên quan Community-unify (CR-106). Ch ỉ  số  "quyề n h ợ p đồ ng" (caps.contracts) ph ả i
+tính t ừ  quyề n gói hiệ n có, không đọc b ả ng vai m ớ i — tránh hai nguồ n quyề n. Đố i tác luôn
+"không có quyề n".
+L ư u vai → biên dịch → nhóm + feature-grant → backend đọc nh ư  cũ; nên chuy ể n sang vai là
+trong suố t v ớ i app.
+Luồ ng quyề n: vai admin → biên dịch → feature-grant → backend
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 11 of 14
+
+=== PAGE ===
+Giao diệ n (mock)
+Mock t ươ ng tác (4 màn, nhãn tiế ng Việ t, có sáng/tố i): m ở  mock UI
+Khái niệm & nav — so sánh tr ả i-đề u vs lồ ng; b ả ng cái gì lồ ng đ ượ c / không.
+Wizard onboard — 4 b ướ c; luồ ng tạo công ty.
+Workspace công ty — tab Ứ ng dụng & Gói (bậ t/tắ t app) và các tab khác.
+Phân quyền — vai theo t ừ ng app (3 m ứ c), tạo vai, gán ng ườ i dùng; panel ki ể m tra
+quyề n.
+Trạng thái cầ n d ự ng khi code (ch ư a có trong mock): đang t ả i, rỗ ng, lỗ i t ả i, không đ ủ  quyề n.
+B ả n đồ  màn hình ↔  nghiệ p vụ
+Màn 1 — Điề u h ướ ng lồ ng (shell + sidebar)
+Mục đích. Mộ t v ỏ ; chọn công ty rồ i cấ u hình trong ng ữ  c ả nh đó.
+Thành phần. Sidebar trái (248px) 3 nhóm: Nền t ả ng ( Ứ ng dụng, Features, Agents — ch ỉ
+platform_admin) · Công ty (tenant) = danh sách tên công ty + 'Thêm công ty' · Hệ thống
+(Secrets, Nhậ t ký). Topbar 60px: breadcrumb, badge 'Nề n t ả ng', chuông, avatar. Click tên
+công ty → m ở  workspace; bộ  tab ở  container ph ả i.
+Vai. platform_admin thấ y đ ủ ; tenant_admin ch ỉ  thấ y công ty mình (không có nhóm Nề n
+t ả ng).
+Nghiệp vụ. Tenant, Ng ườ i dùng, Nhóm, Quyề n; ranh gi ớ i global vs tenant.
+Trạng thái. Nhiề u công ty → cuộ n/tìm; đang t ả i danh sách; ch ư a có công ty (platform m ớ i
+d ự ng).
+Màn (mock) Nghiệ p vụ (Phầ n A) Page admin th ự c
+Điề u h ướ ng lồ ng Tenant, Quyề n, cách ly shell/nav ( nav.ts )
+Wizard onboard Tenant + Ứ ng dụng & gói + Quyề n +
+Ng ườ i dùng
+(m ớ i) + /tenants ,
+/users
+Workspace công
+ty
+Ứ ng dụng & gói, Ng ườ i dùng, Quota /tenants/$id  (các tab)
+Phân quyề n
+(RBAC)
+Mô hình quyề n /access , /groups  (hiệ n
+tại)
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 12 of 14
+
+=== PAGE ===
+Màn 2 — Wizard 'Onboard công ty'
+Mục đích. Tạo + cấ u hình công ty m ớ i trong mộ t luồ ng.
+B ướ c. 1 Thông tin (tên, mã cố  định, múi gi ờ , tạo tenant_admin đầ u — createFirstAdmin) · 2
+Gán ứ ng dụng (bậ t gói có sẵ n = entitlement; Community kèm c ả nh báo đố i tác) · 3 Phân
+quyề n (mỗ i app 3 vai mặ c định) · 4 Ng ườ i dùng (tạo + gán vai).
+Vai. platform_admin (tạo tenant, gán app/entitlement); phầ n grant/user có th ể
+tenant_admin làm sau.
+Nghiệp vụ. Tenant (FR-60), Ứ ng dụng & gói (enablePack), Mô hình quyề n, Ng ườ i dùng (FR-
+04/60).
+Trạng thái. Mã công ty trùng → lỗ i; b ướ c 3/4 b ỏ  qua đ ượ c (Q8); bậ t Community → nhắ c
+ki ể m cách ly HT-75/76. Wizard = lầ n đầ u; về  sau s ử a ở  workspace.
+Màn 3 — Workspace công ty
+Mục đích. S ử a cấ u hình mộ t công ty về  sau (không qua wizard).
+Thành phần. Header: tên + badge trạng thái (Đang hoạt độ ng/Đã khoá) + nút Khoá /
+Onboard lại. Tabs: T ổ ng quan · Ứ ng dụng & Gói (b ả ng: Ứ ng dụng | Khoá | Trạng thái Đang
+bậ t/Ch ư a bậ t | Vai đã tạo | switch bậ t/tắ t) · Phân quyền · Ng ườ i dùng · Chi phí & quota.
+Vai. platform_admin đ ủ ; tenant_admin: Ng ườ i dùng / Phân quyề n / Quota (rút gọn, theo
+tenant mình).
+Nghiệp vụ. Tab → Phầ n A: Ứ ng dụng & gói, Mô hình quyề n, Ng ườ i dùng, Quota. T ươ ng
+đ ươ ng page th ự c /tenants/$id .
+Trạng thái. Community bậ t kèm c ả nh báo đố i tác; trong mock các tab T ổ ng quan/Ng ườ i
+dùng/Quota ch ư a d ự ng nộ i dung.
+Màn 4 — Phân quyề n (RBAC)
+Mục đích. Gán quyề n đọc/ghi theo vai, theo t ừ ng app.
+Thành phần. Callout 3 tầ ng · Vai theo ứ ng dụng (mỗ i app mộ t khố i: b ả ng Vai | M ứ c quyề n |
+Ng ườ i | S ử a + nút 'Tạo vai') · Gán ng ườ i dùng vào vai (Ng ườ i dùng | Vai hệ  thố ng | Vai theo
+app | Quyề n th ự c tế ) · Ki ể m tra quyền · ghi chú kiế n trúc (biên dịch xuố ng feature-grant).
+Vai. platform_admin + tenant_admin (trong tenant).
+Nghiệp vụ. Mô hình quyề n (Phầ n A) + ADR-0033 (R1–R4). External: không tạo vai;
+Chat/Studio/Admin: không có vai. T ươ ng đ ươ ng page th ự c /access  + /groups .
+Trạng thái. Badge 'ch ư a l ư u'; vai mặ c định vs tuỳ biế n; đang t ả i; lỗ i t ả i; không đ ủ  quyề n.
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 13 of 14
+
+=== PAGE ===
+Quyế t định đã chố t & liên kế t
+Liên kết. ADR-0033 (kiế n trúc RBAC) · spec repo docs/specs/CR-107-admin-config-
+nesting  · mock UI.
+Ch ủ  đề Quyế t định
+Nav Sidebar = tên công ty; workspace có tab
+Tạo công ty Wizard onboard (b ướ c 1 = thông tin + admin đầ u)
+Quyề n 3 tầ ng; vai theo app; 3 m ứ c Đọc/Ghi/Qu ả n trị
+Vai 3 mặ c định mỗ i app + tạo vai tuỳ biế n
+External Cấ m vai tuỳ biế n; 2 m ứ c tĩnh đọc/ghi
+Backfill Ép về  chu ẩ n + dry-run/xác nhậ n/audit
+Kiế n trúc Vai → biên dịch xuố ng feature-grant; backend
+không đ ổ i
+ai-admin — Tài liệu nghiệp vụ (source of truth)
+Page 14 of 14

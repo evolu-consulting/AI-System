@@ -1,0 +1,498 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Cải tổ cấu hình ai-admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: thanh chọn màn (mock control) trên cùng; dưới là "cửa sổ" admin-web mô phỏng = sidebar 248px + topbar 60px + content. Màu/nhãn lấy đúng admin-web. */
+:root{
+  --bg:#f4f4f9; --card:#ffffff; --muted:#f5f5f5; --fg:#0a0a0a; --mfg:#6b6b6b;
+  --border:#e5e5e5; --input:#d4d4d8;
+  --primary:#4f46e5; --primary-strong:#4338ca; --accent:#eef2ff; --accent-fg:#4338ca; --ink:#1e1b4b;
+  --ok-bg:#e3f4ec; --ok-fg:#05603f; --warn-bg:#fdf0df; --warn-fg:#7f3c04;
+  --err-bg:#fde8e8; --err-fg:#9b1c1c; --off-bg:#f0f0f3; --off-fg:#404040;
+  --side:#fafafd; --side-fg:#404040; --side-active:#eef2ff;
+  --shadow:0 1px 2px rgb(16 24 40 / .06); --shadow-lg:0 20px 48px rgb(30 27 75 / .18);
+  --radius:8px;
+  --f-sans:"Be Vietnam Pro",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b0f16; --card:#141a24; --muted:#1b222e; --fg:#e8eaf0; --mfg:#9aa3b2;
+  --border:#263041; --input:#2c3647;
+  --primary:#6366f1; --primary-strong:#818cf8; --accent:#1e1b4b; --accent-fg:#c7d0ff; --ink:#c7d0ff;
+  --ok-bg:#0f3024; --ok-fg:#7fe7bf; --warn-bg:#3a2a10; --warn-fg:#f3c583;
+  --err-bg:#3a1716; --err-fg:#f2a9a4; --off-bg:#1b222e; --off-fg:#9aa3b2;
+  --side:#10151d; --side-fg:#b7c0cf; --side-active:#1e1b4b;
+  --shadow:0 1px 2px rgb(0 0 0 / .4); --shadow-lg:0 20px 48px rgb(0 0 0 / .5);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0b0f16; --card:#141a24; --muted:#1b222e; --fg:#e8eaf0; --mfg:#9aa3b2;
+  --border:#263041; --input:#2c3647;
+  --primary:#6366f1; --primary-strong:#818cf8; --accent:#1e1b4b; --accent-fg:#c7d0ff; --ink:#c7d0ff;
+  --ok-bg:#0f3024; --ok-fg:#7fe7bf; --warn-bg:#3a2a10; --warn-fg:#f3c583;
+  --err-bg:#3a1716; --err-fg:#f2a9a4; --off-bg:#1b222e; --off-fg:#9aa3b2;
+  --side:#10151d; --side-fg:#b7c0cf; --side-active:#1e1b4b;
+  --shadow:0 1px 2px rgb(0 0 0 / .4); --shadow-lg:0 20px 48px rgb(0 0 0 / .5);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-sans);line-height:1.5;margin:0}
+h1,h2,h3,h4{text-wrap:balance;margin:0}
+.mono{font-family:var(--f-mono)}
+
+/* ---- thanh chọn màn (mock control) ---- */
+.topbar-mock{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--card);
+  border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
+.topbar-mock .inner{padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.brandmock{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14px}
+.brandmock .dot{width:22px;height:22px;border-radius:6px;background:var(--primary);display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700}
+.badge-draft{font-size:11px;font-weight:600;background:var(--warn-bg);color:var(--warn-fg);padding:2px 8px;border-radius:999px;letter-spacing:.02em}
+.segtabs{display:flex;gap:4px;background:var(--muted);border-radius:10px;padding:3px;flex-wrap:wrap}
+.segtabs button{font-family:inherit;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--fg) 58%,transparent);
+  border:0;background:transparent;padding:7px 12px;border-radius:7px;cursor:pointer}
+.segtabs button[aria-selected="true"]{background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+.theme-btn{margin-left:auto;font-family:inherit;font-size:12px;font-weight:600;color:var(--mfg);
+  border:1px solid var(--border);background:var(--card);padding:6px 12px;border-radius:7px;cursor:pointer}
+
+/* ---- cửa sổ admin ---- */
+.wrap{padding:16px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));max-width:1320px;margin:0 auto}
+.win{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-lg);display:grid;grid-template-columns:248px 1fr;min-height:660px}
+.side{background:var(--side);border-right:1px solid var(--border);padding:12px 10px;display:flex;flex-direction:column;gap:3px}
+.side .logo{display:flex;align-items:center;gap:8px;padding:6px 8px 12px;font-weight:700;font-size:13px}
+.side .logo .lk{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--primary),var(--primary-strong));color:#fff;display:grid;place-items:center;font-size:12px}
+.navgrp{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--mfg);padding:12px 10px 4px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.navgrp .lock{font-size:10px;font-weight:600;color:var(--accent-fg);background:var(--accent);padding:1px 6px;border-radius:999px;letter-spacing:.01em}
+.navitem{display:flex;align-items:center;gap:9px;height:36px;padding:0 10px;border-radius:7px;color:var(--side-fg);font-size:13px;font-weight:500;cursor:pointer;text-decoration:none}
+.navitem:hover{background:color-mix(in srgb,var(--side-active) 60%,transparent)}
+.navitem.active{background:var(--side-active);color:var(--accent-fg);font-weight:600}
+.navitem .ic{width:16px;height:16px;flex:none;color:currentColor;opacity:.85}
+.navitem.sub{margin-left:14px;height:32px;font-size:12.5px;border-left:2px solid var(--border);border-radius:0 7px 7px 0;padding-left:12px}
+.navitem.sub.active{border-left-color:var(--primary)}
+.navitem.co{font-weight:600}
+.navitem.co .chev{margin-left:auto;transition:transform .15s;width:14px;height:14px;flex:none}
+.navitem.co[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.navitem.co[aria-expanded="true"]{background:color-mix(in srgb,var(--side-active) 55%,transparent);color:var(--accent-fg)}
+.navitem.co span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.navitem.co.active{background:var(--side-active);color:var(--accent-fg)}
+.cosub{display:flex;flex-direction:column;gap:2px;margin:2px 0 4px}
+.navitem.add{color:var(--primary);font-weight:600}
+.ctxcard{margin:6px 4px 2px;padding:8px 10px;background:var(--accent);border-radius:8px;display:flex;align-items:center;gap:8px}
+.ctxcard .av{width:26px;height:26px;border-radius:6px;background:var(--primary);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700}
+.ctxcard .nm{font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.2}
+.ctxcard .mk{font-size:11px;color:var(--accent-fg);font-family:var(--f-mono)}
+.sidefoot{margin-top:auto;display:flex;align-items:center;gap:8px;padding:10px 8px 2px;border-top:1px solid var(--border)}
+.sidefoot .av{width:28px;height:28px;border-radius:7px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700}
+.sidefoot .nm{font-size:12.5px;font-weight:600;line-height:1.15}
+.sidefoot .rl{font-size:11px;color:var(--mfg);font-family:var(--f-mono)}
+
+/* topbar trong cửa sổ */
+.apptop{height:60px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 20px;background:var(--card)}
+.crumb{font-size:13px;color:var(--mfg)}
+.crumb b{color:var(--fg)}
+.apptop .pill{margin-left:0;font-size:12px;font-weight:600;background:var(--accent);color:var(--accent-fg);padding:3px 10px;border-radius:999px}
+.apptop .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.iconbtn{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--card);display:grid;place-items:center;color:var(--mfg);cursor:pointer}
+.appmain{padding:22px 24px 30px;display:flex;flex-direction:column;gap:18px;min-width:0}
+
+/* tiêu đề trang */
+.phead{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.phead h2{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.phead p{margin:3px 0 0;color:var(--mfg);font-size:13.5px;max-width:62ch}
+.phead .acts{margin-left:auto;display:flex;gap:8px}
+
+/* nút */
+.btn{font-family:inherit;font-size:13px;font-weight:600;border-radius:8px;padding:0 14px;height:36px;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn.primary{background:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-strong)}
+.btn.outline{background:var(--card);border-color:var(--border);color:var(--fg)}
+.btn.ghost{background:transparent;color:var(--mfg)}
+.btn.sm{height:30px;font-size:12.5px;padding:0 11px}
+
+/* card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+.card.pad0{padding:0;overflow:hidden}
+.card h3{font-size:16px;font-weight:600}
+.card .sub{color:var(--mfg);font-size:13px;margin-top:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+
+/* badge */
+.bdg{font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.bdg.ok{background:var(--ok-bg);color:var(--ok-fg)} .bdg.off{background:var(--off-bg);color:var(--off-fg)}
+.bdg.warn{background:var(--warn-bg);color:var(--warn-fg)} .bdg.info{background:var(--accent);color:var(--accent-fg)}
+.bdg.err{background:var(--err-bg);color:var(--err-fg)}
+
+/* switch */
+.sw{width:38px;height:22px;border-radius:999px;background:var(--input);position:relative;cursor:pointer;flex:none;border:0;transition:background .15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgb(0 0 0/.25)}
+.sw[aria-checked="true"]{background:var(--primary)} .sw[aria-checked="true"]::after{left:18px}
+
+/* table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:600;color:var(--mfg);font-size:12px;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.tbl-wrap{overflow-x:auto}
+
+/* tabs trong trang */
+.ptabs{display:flex;gap:4px;background:var(--muted);border-radius:9px;padding:3px;overflow-x:auto}
+.ptabs button{font-family:inherit;font-size:13px;font-weight:600;color:color-mix(in srgb,var(--fg) 55%,transparent);border:0;background:transparent;padding:7px 13px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.ptabs button[aria-selected="true"]{background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+
+/* callout ghi chú thiết kế */
+.note{display:flex;gap:10px;background:var(--accent);border:1px solid color-mix(in srgb,var(--accent-fg) 25%,transparent);border-radius:9px;padding:12px 14px;font-size:13px;color:var(--ink)}
+.note .k{font-weight:700;color:var(--accent-fg)}
+.note.plain{background:var(--muted);border-color:var(--border);color:var(--fg)}
+
+/* stepper */
+.stepper{display:flex;gap:6px;flex-wrap:wrap}
+.step{flex:1;min-width:150px;display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--border);border-radius:9px;background:var(--card)}
+.step.done{border-color:var(--primary)} .step.cur{border-color:var(--primary);background:var(--accent)}
+.step .n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:700;background:var(--muted);color:var(--mfg);flex:none}
+.step.done .n{background:var(--ok-fg);color:#fff} .step.cur .n{background:var(--primary);color:#fff}
+.step .t{font-size:13px;font-weight:600;line-height:1.2} .step .d{font-size:11.5px;color:var(--mfg)}
+
+/* app assign grid */
+.applist{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.appcard{border:1px solid var(--border);border-radius:9px;padding:13px 14px;display:flex;gap:12px;align-items:flex-start}
+.appcard.on{border-color:var(--primary);background:color-mix(in srgb,var(--accent) 40%,var(--card))}
+.appcard .ai{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;font-weight:700;color:#fff;flex:none;font-size:13px}
+.appcard .nm{font-size:14px;font-weight:600} .appcard .ds{font-size:12px;color:var(--mfg);margin-top:1px}
+.appcard .meta{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap}
+
+/* segmented quyền */
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;background:var(--card)}
+.seg button{font-family:inherit;font-size:12px;font-weight:600;border:0;background:transparent;color:var(--mfg);padding:5px 10px;cursor:pointer;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--primary);color:#fff}
+.seg button[data-lvl="none"][aria-pressed="true"]{background:var(--off-fg)}
+
+.formrow{display:flex;flex-direction:column;gap:5px}
+.formrow label{font-size:12.5px;font-weight:600}
+.formrow input,.formrow select{font-family:inherit;font-size:13px;height:36px;border:1px solid var(--input);border-radius:8px;padding:0 11px;background:var(--card);color:var(--fg)}
+.formrow .hint{font-size:11.5px;color:var(--mfg)}
+.ro{background:var(--muted)!important;color:var(--mfg)!important}
+
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--mfg)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sqr{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cmp .col h4{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.navtree{list-style:none;margin:0;padding:0;font-size:12.5px}
+.navtree li{padding:5px 10px;border-radius:6px;color:var(--side-fg)}
+.navtree li.g{font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--mfg);text-transform:uppercase;padding-top:10px}
+.navtree li.flat{background:var(--muted);margin:2px 0}
+.navtree li.nest{margin-left:16px;border-left:2px solid var(--primary);border-radius:0 6px 6px 0}
+.navtree li.plat{background:color-mix(in srgb,var(--accent) 55%,var(--card))}
+
+.foothint{font-size:12px;color:var(--mfg);text-align:center;padding:16px 10px 0}
+@media (max-width:900px){
+  .win{grid-template-columns:1fr}
+  .side{display:none}
+  .grid2,.grid3,.applist,.cmp{grid-template-columns:1fr}
+}
+</style>
+
+<div class="topbar-mock"><div class="inner">
+  <div class="brandmock"><span class="dot">A</span> ai-admin · đề xuất lồng cấu hình</div>
+  <span class="badge-draft">MOCK — chưa code</span>
+  <div class="segtabs" role="tablist" aria-label="Chọn màn">
+    <button role="tab" aria-selected="true" data-view="v-concept">Khái niệm &amp; nav</button>
+    <button role="tab" aria-selected="false" data-view="v-wizard">Wizard onboard</button>
+    <button role="tab" aria-selected="false" data-view="v-workspace">Workspace công ty</button>
+    <button role="tab" aria-selected="false" data-view="v-perm">Phân quyền (RBAC)</button>
+  </div>
+  <button class="theme-btn" id="themeBtn">◐ Sáng/Tối</button>
+</div></div>
+
+<div class="wrap">
+ <div class="win">
+  <!-- SIDEBAR đề xuất: tách Nền tảng (global) vs Công ty (tenant) -->
+  <aside class="side">
+    <div class="logo"><span class="lk">E</span> Evolu · ai-admin</div>
+    <a class="navitem" data-nav="home"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg> Tổng quan</a>
+
+    <div class="navgrp">Nền tảng <span class="lock">platform</span></div>
+    <a class="navitem" data-nav="apps"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> Ứng dụng</a>
+    <a class="navitem" data-nav="feat"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Features</a>
+    <a class="navitem" data-nav="agents"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M9 14h.01M15 14h.01"/></svg> Agents</a>
+
+    <div class="navgrp">Công ty (tenant)</div>
+    <a class="navitem co active" data-co="evolu"><span>Evolu Consulting</span></a>
+    <a class="navitem co" data-co="minhkhue"><span>Công ty Luật Minh Khuê</span></a>
+    <a class="navitem co" data-co="platform"><span>Nền tảng (vận hành)</span></a>
+    <a class="navitem add" id="navAdd"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Thêm công ty</a>
+
+    <div class="navgrp">Hệ thống <span class="lock">platform</span></div>
+    <a class="navitem" data-nav="sec"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8-8M17 5l2 2M14 8l2 2"/></svg> Secrets</a>
+    <a class="navitem" data-nav="audit"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.4 2.6L3 8"/><path d="M3 3v5h5M12 7v5l3 3"/></svg> Nhật ký</a>
+
+    <div class="sidefoot"><span class="av">C</span><div><div class="nm">Chiêu B.</div><div class="rl">platform_admin</div></div></div>
+  </aside>
+
+  <!-- CONTENT -->
+  <div style="display:flex;flex-direction:column;min-width:0">
+   <div class="apptop">
+     <div class="crumb" id="crumb"><b>Tổng quan</b></div>
+     <div class="right"><span class="pill">Nền tảng</span><span class="iconbtn">🔔</span><span class="iconbtn">C</span></div>
+   </div>
+
+   <!-- ===== VIEW 1: KHÁI NIỆM & NAV ===== -->
+   <main class="appmain view" id="v-concept">
+     <div class="phead">
+       <div><h2>Trải đều → lồng theo công ty</h2>
+         <p>Hiện cấu hình nằm rải ở nhiều màn ngang hàng. Đề xuất: gom việc <b>gán cho một công ty</b> (ứng dụng, quyền, người dùng, quota) vào trong ngữ cảnh công ty; giữ <b>danh mục dùng chung</b> ở cấp Nền tảng.</p>
+       </div>
+     </div>
+
+     <div class="note"><span class="k">Nguyên tắc:</span><div>Chỉ lồng config <b>thuộc một công ty</b> (có cách ly theo tenant). Danh mục <b>dùng chung toàn hệ thống</b> (Ứng dụng, Features, Commands) ở lại Nền tảng — sửa một lần, áp mọi công ty, chỉ <b>platform_admin</b> đụng.</div></div>
+
+     <div class="cmp">
+       <div class="col card">
+         <h4><span class="bdg off">Hiện tại</span> Trải đều ở sidebar</h4>
+         <ul class="navtree">
+           <li>Tổng quan</li>
+           <li class="g">Chức năng</li>
+           <li class="flat">Agents</li><li class="flat">Features</li><li class="flat">Ứng dụng</li><li class="flat">Commands</li><li class="flat">Workflows</li>
+           <li class="g">Truy cập</li>
+           <li class="flat">Tenants</li><li class="flat">Users</li><li class="flat">Đối tác</li><li class="flat">Groups</li><li class="flat">Phân quyền</li>
+         </ul>
+         <p class="sub" style="margin-top:10px">Muốn onboard một công ty phải nhảy qua 5–6 màn: Tenants → Gói → Phân quyền → Groups → Users, mỗi màn tự chọn lại công ty.</p>
+       </div>
+       <div class="col card">
+         <h4><span class="bdg info">Đề xuất</span> Lồng theo ngữ cảnh</h4>
+         <ul class="navtree">
+           <li>Tổng quan</li>
+           <li class="g">Nền tảng · dùng chung</li>
+           <li class="plat">Ứng dụng</li><li class="plat">Features</li><li class="plat">Agents</li>
+           <li class="g">Công ty · Evolu</li>
+           <li class="nest">Tổng quan công ty</li><li class="nest">Ứng dụng &amp; Gói</li><li class="nest">Phân quyền</li><li class="nest">Người dùng</li><li class="nest">Chi phí &amp; quota</li>
+         </ul>
+         <p class="sub" style="margin-top:10px">Chọn một công ty → mọi cấu hình của nó nằm gọn trong một nơi. Có lối tắt <b>“Onboard công ty”</b> chạy tuần tự các bước (màn Wizard).</p>
+       </div>
+     </div>
+
+     <div class="card">
+       <h3>Cái gì lồng được, cái gì không</h3>
+       <p class="sub">Ranh giới = phạm vi dữ liệu. Có RLS theo tenant ⇒ lồng. Dùng chung ⇒ giữ ở Nền tảng.</p>
+       <div class="tbl-wrap" style="margin-top:12px"><table>
+         <thead><tr><th>Cấu hình</th><th>Phạm vi</th><th>Nơi đặt</th><th>Ai sửa</th></tr></thead>
+         <tbody>
+           <tr><td>Định nghĩa ứng dụng / Feature / Command</td><td><span class="bdg off">Dùng chung</span></td><td>Nền tảng</td><td>platform_admin</td></tr>
+           <tr><td><b>Gán</b> ứng dụng/gói cho công ty</td><td><span class="bdg ok">Theo tenant</span></td><td>Trong công ty</td><td>platform_admin</td></tr>
+           <tr><td>Phân quyền (vai + đọc/ghi) cho nhóm/người</td><td><span class="bdg ok">Theo tenant</span></td><td>Trong công ty</td><td>platform_admin · tenant_admin</td></tr>
+           <tr><td>Người dùng, nhóm</td><td><span class="bdg ok">Theo tenant</span></td><td>Trong công ty</td><td>platform_admin · tenant_admin</td></tr>
+           <tr><td>Quota, hạn mức ngày</td><td><span class="bdg ok">Theo tenant</span></td><td>Trong công ty</td><td>platform_admin</td></tr>
+         </tbody>
+       </table></div>
+       <div class="legend" style="margin-top:12px">
+         <span><span class="sqr" style="background:var(--accent)"></span> Nền tảng (global)</span>
+         <span><span class="sqr" style="background:var(--primary)"></span> Lồng theo công ty</span>
+       </div>
+     </div>
+   </main>
+
+   <!-- ===== VIEW 2: WIZARD ===== -->
+   <main class="appmain view" id="v-wizard" hidden>
+     <div class="phead"><div><h2>Onboard công ty</h2><p>Một luồng liền mạch: thông tin → gán ứng dụng → phân quyền → người dùng. Mỗi bước chỉ hiện việc mà vai của bạn được làm.</p></div></div>
+     <div class="stepper">
+       <div class="step cur"><span class="n">1</span><div><div class="t">Công ty</div><div class="d">Thông tin cơ bản</div></div></div>
+       <div class="step"><span class="n">2</span><div><div class="t">Ứng dụng</div><div class="d">Gán gói có sẵn</div></div></div>
+       <div class="step"><span class="n">3</span><div><div class="t">Phân quyền</div><div class="d">Vai + đọc/ghi</div></div></div>
+       <div class="step"><span class="n">4</span><div><div class="t">Người dùng</div><div class="d">Tạo tài khoản</div></div></div>
+     </div>
+
+     <div class="card">
+       <h3>Bước 1 · Thông tin công ty</h3>
+       <p class="sub">Tạo một công ty (tenant) mới. Mã công ty không đổi được sau khi tạo.</p>
+       <div class="grid2" style="margin-top:14px">
+         <div class="formrow"><label for="w-name">Tên công ty</label><input id="w-name" value="Công ty TNHH ABC" placeholder="Nhập tên…"></div>
+         <div class="formrow"><label for="w-key">Mã công ty</label><input id="w-key" class="mono" value="abc" placeholder="a-z, 0-9, -"><span class="hint">Dùng trong URL &amp; đăng nhập; cố định sau khi tạo.</span></div>
+         <div class="formrow"><label for="w-tz">Múi giờ</label><select id="w-tz"><option>Asia/Ho_Chi_Minh (GMT+7)</option><option>Asia/Bangkok</option></select></div>
+         <div class="formrow"><label for="w-slot">Giới hạn slot subscription</label><input id="w-slot" placeholder="Để trống = không giới hạn"><span class="hint">Để trống = không giới hạn.</span></div>
+       </div>
+     </div>
+
+     <div class="phead" style="margin-top:4px"><div><h2 style="font-size:15px">Xem trước các bước sau</h2><p>Sau khi tạo công ty, wizard dẫn tiếp qua các bước dưới.</p></div></div>
+
+     <div class="grid2">
+       <div class="card">
+         <h3>Bước 2 · Ứng dụng đã gán <span class="bdg ok">2 bật</span></h3>
+         <p class="sub">Chọn từ ứng dụng có sẵn trên Nền tảng. Bật = cấp quyền dùng cho công ty này (entitlement).</p>
+         <div class="applist" style="margin-top:12px">
+           <div class="appcard on"><span class="ai" style="background:#4f46e5">HĐ</span><div style="flex:1"><div class="nm">Hợp đồng</div><div class="ds mono">contracts</div><div class="meta"><span class="bdg ok">Đang bật</span></div></div><button class="sw" aria-checked="true"></button></div>
+           <div class="appcard on"><span class="ai" style="background:#db2777">Co</span><div style="flex:1"><div class="nm">Community</div><div class="ds mono">community</div><div class="meta"><span class="bdg ok">Đang bật</span> <span class="bdg warn">App đối tác</span></div></div><button class="sw" aria-checked="true"></button></div>
+           <div class="appcard"><span class="ai" style="background:#059669">Ch</span><div style="flex:1"><div class="nm">Chat AI</div><div class="ds mono">chat</div><div class="meta"><span class="bdg off">Chưa bật</span></div></div><button class="sw" aria-checked="false"></button></div>
+         </div>
+       </div>
+
+       <div class="card">
+         <h3>Bước 3 · Vai của từng ứng dụng</h3>
+         <p class="sub">Mỗi ứng dụng gán vào có sẵn 3 vai; thêm vai tuỳ biến sau. Vai thuộc về app đó, mang một mức quyền.</p>
+         <div class="grid2" style="margin-top:12px">
+           <div><div class="sub" style="font-weight:700;color:var(--fg);margin-bottom:6px">Hợp đồng</div>
+             <div style="display:flex;flex-direction:column;gap:6px">
+               <div style="display:flex;justify-content:space-between;gap:8px"><span>Chủ sở hữu</span><span class="bdg info">Quản trị</span></div>
+               <div style="display:flex;justify-content:space-between;gap:8px"><span>Biên tập</span><span class="bdg ok">Đọc+Ghi</span></div>
+               <div style="display:flex;justify-content:space-between;gap:8px"><span>Người xem</span><span class="bdg off">Đọc</span></div>
+             </div></div>
+           <div><div class="sub" style="font-weight:700;color:var(--fg);margin-bottom:6px">Community</div>
+             <div style="display:flex;flex-direction:column;gap:6px">
+               <div style="display:flex;justify-content:space-between;gap:8px"><span>Quản trị viên</span><span class="bdg info">Quản trị</span></div>
+               <div style="display:flex;justify-content:space-between;gap:8px"><span>Thành viên</span><span class="bdg ok">Đọc+Ghi</span></div>
+               <div style="display:flex;justify-content:space-between;gap:8px"><span>Khách</span><span class="bdg off">Đọc</span></div>
+             </div></div>
+         </div>
+         <div class="note plain" style="margin-top:12px"><div>Chỉnh chi tiết ở màn <b>Phân quyền</b>.</div></div>
+       </div>
+     </div>
+
+     <div class="card" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+       <div style="flex:1;min-width:200px"><b>Đang ở Bước 1.</b> <span class="sub">Nhập thông tin rồi tiếp tục gán ứng dụng, phân quyền, tạo người dùng.</span></div>
+       <button class="btn ghost">Huỷ</button>
+       <button class="btn primary">Tạo &amp; tiếp: Ứng dụng →</button>
+     </div>
+   </main>
+
+   <!-- ===== VIEW 3: WORKSPACE CÔNG TY ===== -->
+   <main class="appmain view" id="v-workspace" hidden>
+     <div class="phead">
+       <div><h2>Evolu Consulting <span class="bdg ok" style="vertical-align:middle">Đang hoạt động</span></h2>
+         <p>Tạo lúc 12/08/2026 · 24 user · mã <span class="mono">evolu</span></p></div>
+       <div class="acts"><button class="btn outline sm">Khoá</button><button class="btn primary sm">Onboard lại</button></div>
+     </div>
+     <div class="ptabs" role="tablist">
+       <button role="tab" aria-selected="false" data-goto="v-workspace">Tổng quan</button>
+       <button role="tab" aria-selected="true" data-goto="v-workspace">Ứng dụng &amp; Gói</button>
+       <button role="tab" aria-selected="false" data-goto="v-perm">Phân quyền</button>
+       <button role="tab" aria-selected="false" data-goto="v-workspace">Người dùng</button>
+       <button role="tab" aria-selected="false" data-goto="v-workspace">Chi phí &amp; quota</button>
+     </div>
+
+     <div class="card pad0">
+       <div style="padding:16px 18px;border-bottom:1px solid var(--border)"><h3>Ứng dụng &amp; gói nghiệp vụ</h3><p class="sub">Bật = cấp cho công ty. Mỗi gói kèm bộ vai (Quản trị / Biên tập / Người xem).</p></div>
+       <div class="tbl-wrap"><table>
+         <thead><tr><th>Ứng dụng</th><th>Khoá</th><th>Trạng thái</th><th>Vai đã tạo</th><th style="text-align:right">Bật cho công ty</th></tr></thead>
+         <tbody>
+           <tr><td><b>Hợp đồng</b></td><td class="mono">contracts</td><td><span class="bdg ok">Đang bật</span></td><td class="sub">3 vai · 18 người</td><td style="text-align:right"><button class="sw" aria-checked="true"></button></td></tr>
+           <tr><td><b>Community</b></td><td class="mono">community</td><td><span class="bdg ok">Đang bật</span> <span class="bdg warn">App đối tác</span></td><td class="sub">3 vai · 29 người</td><td style="text-align:right"><button class="sw" aria-checked="true"></button></td></tr>
+           <tr><td><b>Chat AI</b></td><td class="mono">chat</td><td><span class="bdg off">Chưa bật</span></td><td class="sub">—</td><td style="text-align:right"><button class="sw" aria-checked="false"></button></td></tr>
+         </tbody>
+       </table></div>
+     </div>
+     <div class="note"><span class="k">Cách ly:</span><div>Community là app cho <b>đối tác ngoài</b> — bật kéo theo dữ liệu đối tác (external org). Cần kiểm vùng cách ly HT-75/76 trước khi mở.</div></div>
+   </main>
+
+   <!-- ===== VIEW 4: PHÂN QUYỀN RBAC ===== -->
+   <main class="appmain view" id="v-perm" hidden>
+     <div class="phead"><div><h2>Phân quyền</h2><p>Gán quyền <b>đọc / ghi</b> theo vai, cho từng ứng dụng của công ty. Thay cho cách gán “feature” kỹ thuật trước đây.</p></div>
+       <div class="acts"><button class="btn outline sm">Kiểm tra quyền</button><button class="btn primary sm">Lưu</button></div></div>
+     <div class="ptabs" role="tablist">
+       <button role="tab" aria-selected="false" data-goto="v-workspace">Tổng quan</button>
+       <button role="tab" aria-selected="false" data-goto="v-workspace">Ứng dụng &amp; Gói</button>
+       <button role="tab" aria-selected="true" data-goto="v-perm">Phân quyền</button>
+       <button role="tab" aria-selected="false" data-goto="v-workspace">Người dùng</button>
+       <button role="tab" aria-selected="false" data-goto="v-workspace">Chi phí &amp; quota</button>
+     </div>
+
+     <div class="note"><span class="k">3 tầng:</span><div><b>① Vai hệ thống</b> (platform_admin / tenant_admin / member) — gán ở hồ sơ người dùng, quyết việc quản trị, <b>không</b> nằm ở đây. <b>② Vai theo app</b> — mỗi vai thuộc một ứng dụng và mang một mức quyền (Đọc / Đọc+Ghi / Quản trị). <b>③ Gán người dùng</b> vào vai của app.</div></div>
+
+     <div class="card pad0">
+       <div style="padding:16px 18px;border-bottom:1px solid var(--border)"><h3>Vai theo ứng dụng</h3><p class="sub">Mỗi vai thuộc <b>một</b> ứng dụng và mang một mức quyền. Mỗi app bật sẵn 3 vai; thêm vai tuỳ biến nếu cần.</p></div>
+
+       <div style="padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+         <span class="ai" style="width:28px;height:28px;background:#4f46e5">HĐ</span><b style="flex:1">Hợp đồng</b><button class="btn outline sm">+ Tạo vai</button></div>
+       <div class="tbl-wrap"><table>
+         <thead><tr><th style="min-width:160px">Vai</th><th>Mức quyền</th><th>Người</th><th></th></tr></thead>
+         <tbody>
+           <tr><td><b>Chủ sở hữu</b><div class="sub">owner · mặc định</div></td><td><span class="bdg info">Quản trị</span></td><td>2</td><td style="text-align:right"><button class="btn ghost sm">Sửa</button></td></tr>
+           <tr><td><b>Biên tập</b><div class="sub">editor · mặc định</div></td><td><span class="bdg ok">Đọc+Ghi</span></td><td>12</td><td style="text-align:right"><button class="btn ghost sm">Sửa</button></td></tr>
+           <tr><td><b>Người xem</b><div class="sub">viewer · mặc định</div></td><td><span class="bdg off">Đọc</span></td><td>4</td><td style="text-align:right"><button class="btn ghost sm">Sửa</button></td></tr>
+         </tbody>
+       </table></div>
+
+       <div style="padding:13px 18px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+         <span class="ai" style="width:28px;height:28px;background:#db2777">Co</span><b style="flex:1">Community</b><button class="btn outline sm">+ Tạo vai</button></div>
+       <div class="tbl-wrap"><table>
+         <thead><tr><th style="min-width:160px">Vai</th><th>Mức quyền</th><th>Người</th><th></th></tr></thead>
+         <tbody>
+           <tr><td><b>Quản trị viên</b><div class="sub">owner · mặc định</div></td><td><span class="bdg info">Quản trị</span></td><td>1</td><td style="text-align:right"><button class="btn ghost sm">Sửa</button></td></tr>
+           <tr><td><b>Thành viên</b><div class="sub">editor · mặc định</div></td><td><span class="bdg ok">Đọc+Ghi</span></td><td>20</td><td style="text-align:right"><button class="btn ghost sm">Sửa</button></td></tr>
+           <tr><td><b>Khách</b><div class="sub">viewer · mặc định</div></td><td><span class="bdg off">Đọc</span></td><td>8</td><td style="text-align:right"><button class="btn ghost sm">Sửa</button></td></tr>
+         </tbody>
+       </table></div>
+     </div>
+
+     <div class="card pad0">
+       <div style="padding:16px 18px;border-bottom:1px solid var(--border)"><h3>Gán người dùng vào vai</h3><p class="sub">Một người có thể giữ vai ở nhiều app. Vai hệ thống (cột giữa) gán ở hồ sơ người dùng, tách khỏi vai theo app.</p></div>
+       <div class="tbl-wrap"><table>
+         <thead><tr><th>Người dùng</th><th>Vai hệ thống</th><th>Vai theo app</th><th>Quyền thực tế</th></tr></thead>
+         <tbody>
+           <tr><td><b>an.nguyen</b></td><td><span class="bdg off">member</span></td><td><span class="bdg info">Hợp đồng · Biên tập</span></td><td class="sub">Hợp đồng: Đọc+Ghi</td></tr>
+           <tr><td><b>binh.tran</b></td><td><span class="bdg warn">tenant_admin</span></td><td><span class="bdg info">Hợp đồng · Chủ sở hữu</span> <span class="bdg info">Community · Quản trị viên</span></td><td class="sub">Hợp đồng: Quản trị · Community: Quản trị</td></tr>
+           <tr><td><b>chi.le</b></td><td><span class="bdg off">member</span></td><td><span class="bdg info">Community · Thành viên</span></td><td class="sub">Community: Đọc+Ghi</td></tr>
+         </tbody>
+       </table></div>
+     </div>
+
+     <div class="grid2">
+       <div class="card">
+         <h3>Kiểm tra quyền</h3><p class="sub">“Vì sao người này không thấy chức năng X?”</p>
+         <div class="formrow" style="margin-top:12px"><label for="chk">Người dùng</label><input id="chk" value="an.nguyen" placeholder="Nhập username…"></div>
+         <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+           <div style="display:flex;justify-content:space-between;gap:8px"><span>Hợp đồng</span><span class="bdg ok">Đọc+Ghi · vai Biên tập</span></div>
+           <div style="display:flex;justify-content:space-between;gap:8px"><span>Community</span><span class="bdg err">Chưa gán vai</span></div>
+         </div>
+       </div>
+       <div class="note plain" style="align-items:flex-start">
+         <div><b>Ghi chú kiến trúc (production, không phải PoC):</b><br>
+         Vai + mức đọc/ghi là mô hình quyền chính, có bảng thật. Khi lưu, hệ thống <b>chiếu xuống</b> lớp cấp quyền đang chạy ở Hub (feature grant) — nên điểm chặn quyền và cách ly tenant giữ nguyên, không phải viết lại. Màn này là <b>đề xuất UI</b>; cách thực thi backend sẽ chốt ở BA sau khi bạn duyệt.</div>
+       </div>
+     </div>
+   </main>
+  </div>
+ </div>
+ <p class="foothint">Mock đề xuất · màu &amp; nhãn lấy từ admin-web (platform/gd0). Chưa sửa code/BA. Chọn màn ở thanh trên.</p>
+</div>
+
+<script>
+(function(){
+  var crumbMap={ "v-concept":"Trải đều → lồng", "v-wizard":"Công ty › Onboard", "v-workspace":"Công ty › Evolu", "v-perm":"Công ty › Phân quyền" };
+  var navMap={ "v-concept":"home", "v-wizard":null, "v-workspace":"t-apps", "v-perm":"t-perm" };
+  var tabs=document.querySelectorAll('.segtabs [role=tab]');
+  var views=document.querySelectorAll('.view');
+  function show(id){
+    views.forEach(function(v){ v.hidden = v.id!==id; });
+    tabs.forEach(function(t){ t.setAttribute('aria-selected', t.dataset.view===id); });
+    document.getElementById('crumb').innerHTML='<b>'+crumbMap[id]+'</b>';
+    document.querySelectorAll('.side .navitem').forEach(function(n){ n.classList.toggle('active', n.dataset.nav===navMap[id]); });
+  }
+  tabs.forEach(function(t){ t.addEventListener('click', function(){ show(t.dataset.view); }); });
+  // nav bên trái cũng chuyển màn khi khớp
+  var navToView={ home:"v-concept", "t-apps":"v-workspace", "t-perm":"v-perm", "t-overview":"v-workspace", "t-users":"v-workspace", "t-quota":"v-workspace" };
+  document.querySelectorAll('.side .navitem').forEach(function(n){ if(n.classList.contains('co')||n.classList.contains('add')) return; n.addEventListener('click', function(){ var v=navToView[n.dataset.nav]; if(v) show(v); }); });
+  // click tên công ty → mở workspace (tab chuyển nằm ở container bên phải)
+  document.querySelectorAll('.side .navitem.co').forEach(function(c){ c.addEventListener('click', function(){
+    document.querySelectorAll('.side .navitem.co').forEach(function(o){ o.classList.remove('active'); });
+    c.classList.add('active'); show('v-workspace');
+  }); });
+  var na=document.getElementById('navAdd'); if(na) na.addEventListener('click', function(){ show('v-wizard'); });
+
+  // switch & segmented tương tác nhẹ
+  document.addEventListener('click', function(e){
+    var sw=e.target.closest('.sw'); if(sw){ sw.setAttribute('aria-checked', sw.getAttribute('aria-checked')!=='true'); var c=sw.closest('.appcard'); if(c) c.classList.toggle('on', sw.getAttribute('aria-checked')==='true'); }
+    var sb=e.target.closest('.seg button'); if(sb){ sb.parentElement.querySelectorAll('button').forEach(function(b){ b.removeAttribute('aria-pressed'); }); sb.setAttribute('aria-pressed','true'); }
+    var pt=e.target.closest('.ptabs [role=tab]'); if(pt){ pt.parentElement.querySelectorAll('[role=tab]').forEach(function(b){ b.setAttribute('aria-selected','false'); }); pt.setAttribute('aria-selected','true'); if(pt.dataset.goto) show(pt.dataset.goto); }
+  });
+  // theme
+  var tb=document.getElementById('themeBtn'); var cur=null;
+  tb.addEventListener('click', function(){ cur = cur==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme',cur); });
+  show('v-workspace');
+})();
+</script>
+
+</body></html>
