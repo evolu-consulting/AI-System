@@ -10,6 +10,7 @@ import type { Db } from "../../lib/db";
 import { hashJobToken, isJobToken } from "../../lib/job-token";
 import type { Logger } from "../../lib/logger";
 import { traced } from "../../lib/otel";
+import type { ArtifactMcpTools } from "../artifacts/artifact.mcp";
 import type { CatalogWorkflow } from "../commands/catalog.types";
 import { agentWorkflowIds } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
@@ -81,6 +82,8 @@ export type McpServiceDeps = {
   packTools?: PackMcpTools;
   /** M2-chat · token chat ngắn hạn (Dify); vắng ⇒ chỉ token job. */
   chatTokens?: Pick<ChatToolTokens, "resolve">;
+  /** CR-114 · `artifact.get` / `artifact.search` cho token job; vắng ⇒ không có. */
+  artifacts?: ArtifactMcpTools;
 };
 
 /** Một lời gọi tool; `signal` = kết nối `/mcp` của request (đóng = huỷ run → abort Dify + stop). */
@@ -180,6 +183,7 @@ export class McpService {
         hasFiles: ctx.files.length > 0,
       }),
       ...(this.d.kh?.tools(ctx) ?? []),
+      ...(this.d.artifacts?.tools(ctx) ?? []),
       ...((await this.d.packTools?.tools(ctx)) ?? []),
     ];
   }
@@ -205,6 +209,8 @@ export class McpService {
     const { name, args } = toolCallParams(req.params);
     const kh = this.d.kh?.accepts(ctx, name);
     if (kh) return rpcResult(req.id, await kh.call(args), stateless);
+    const art = this.d.artifacts?.accepts(ctx, name); // CR-114
+    if (art) return rpcResult(req.id, await art.call(args), stateless);
     const pk = await this.d.packTools?.accepts(ctx, name); // N2-FR-03
     if (pk) return rpcResult(req.id, await pk.call(args), stateless);
     if (ctx.readOnly) return rpcError(req.id, -32602, MCP_UNKNOWN_TOOL); // M2-chat · token chat

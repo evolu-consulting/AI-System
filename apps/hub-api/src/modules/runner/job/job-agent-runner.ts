@@ -12,6 +12,7 @@ import type { Span } from "@opentelemetry/api";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import { runSpanOf, setTokens, spanError, startSpan, traceparentOf } from "../../../lib/otel";
+import { withArtifactTools } from "../../artifacts/artifact.mcp";
 import {
   agentFilesBlock,
   jobAttachments,
@@ -141,7 +142,7 @@ export class JobAgentRunner implements AgentRunner {
         khItems = [];
       }
     }
-    const mcp = mcpConfigFor(task.agent, keys, m.url);
+    const mcp = mcpConfigFor(task.agent, withArtifactTools(keys), m.url); // CR-114
     return { mcp, khItems: mcp ? khItems : [] };
   }
 

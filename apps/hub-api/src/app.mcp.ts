@@ -6,6 +6,8 @@ import type { Logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
 import { hiddenInputsFor } from "./modules/agent-hooks/hidden-inputs";
 import { userTokens } from "./modules/agent-hooks/user-token";
+import { artifactHandoffOn, artifactMcpTools } from "./modules/artifacts/artifact.mount";
+import { startArtifactSweeper } from "./modules/artifacts/artifact.sweeper";
 import type { AttachmentStorage } from "./modules/attachments/storage";
 import type { ConfigCache } from "./modules/config/config.service";
 import { CredentialService, loadMasterKey } from "./modules/dify/credential.service";
@@ -63,7 +65,12 @@ export type McpMountDeps = {
   /** dlc-dify · admin-api + token dịch vụ (biến ẩn `user_token` của workflow). */
   adminApiUrl?: string;
   internalToken?: string;
+  /** CR-114 · dừng vòng dọn artifact. */
+  signal?: AbortSignal;
 };
+
+/** CR-114 · vòng dọn artifact hết hạn mỗi 10 phút (an toàn nhiều Hub: khoá thử advisory). */
+const ARTIFACT_SWEEP_MS = 600_000;
 
 /** M2-chat · token tool chat ngắn hạn (Redis + registry tool gói) — dùng chung cho `/mcp` (tra) và runner Dify (cấp). */
 export function chatToolTokens(redis: Redis, packTools: PackToolCatalog): ChatToolTokens {
@@ -116,6 +123,14 @@ export function mountMcp<E extends Env>(app: Hono<E>, d: McpMountDeps): void {
     kh: d.kh && new KhQueryService({ db: d.db, rt: d.kh, log: d.log }),
     ...(d.packTools ? { packTools: packMcpTools(d.packTools) } : {}),
     ...(d.redis && d.packTools ? { chatTokens: chatToolTokens(d.redis, d.packTools) } : {}),
+    ...(artifactHandoffOn() ? { artifacts: artifactMcpTools(d.db) } : {}),
   });
+  if (artifactHandoffOn())
+    startArtifactSweeper({
+      db: d.db,
+      log: d.log,
+      everyMs: ARTIFACT_SWEEP_MS,
+      ...(d.signal ? { signal: d.signal } : {}),
+    });
   app.route("/mcp", mcpRoutes(svc, { requestTimeoutS: difyTimeoutMaxS + MCP_IDLE_MARGIN_S }));
 }

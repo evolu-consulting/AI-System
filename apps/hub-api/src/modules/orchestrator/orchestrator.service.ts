@@ -6,6 +6,9 @@ import type { Db } from "../../lib/db";
 import { safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import { accessInput, visibleAgents } from "../agents/agent-access.rules";
+import { artifactHandoffOn } from "../artifacts/artifact.flag";
+import { artifactStoreFor } from "../artifacts/artifact.mount";
+import type { ArtifactSink } from "../artifacts/artifact.service";
 import { fileBrief } from "../attachments/run-files.rules";
 import type { UserState } from "../config/config.rules";
 import { type AgentRunner, runJob } from "../runner/job/job-agent-runner";
@@ -14,6 +17,7 @@ import type { SseWriter } from "../runs/sse/sse-writer";
 import { chunkDelta } from "../stream/delta.rules";
 import { DeltaSink } from "../stream/delta-sink";
 import { gapTrace, reconcileTrace } from "../stream/stream-trace";
+import type { LoopHandoff } from "./orchestrator.handoff";
 import { type LoopEnd, type LoopInput, type LoopIo, runLoop } from "./orchestrator.loop";
 import * as repo from "./orchestrator.repo";
 import { chunkText } from "./orchestrator.rules";
@@ -24,7 +28,27 @@ export type OrchestratorDeps = {
   /** Nhóm của user (grant theo group) từ cache cấu hình. */
   users: { user(id: string): Promise<UserState | undefined> };
   log: Logger;
+  /** CR-114 · kho artifact cho bàn giao bằng tham chiếu; vắng ⇒ nguyên văn như cũ. */
+  artifacts?: ArtifactSink;
+  /** = `HUB_PUBLIC_INTERNAL_URL` (runner chỉ cấp MCP khi có). */
+  mcpUrl?: string;
 };
+
+/**
+ * CR-114 · khi bật, runner cấp `artifact-get/search` cho MỌI job agent `agentic-cli` (job-agent-runner `#mcp`) nếu Hub có
+ * URL `/mcp` (`HUB_PUBLIC_INTERNAL_URL`) ⇒ agent đó nhận `ref`; agent khác nhận nguyên văn.
+ */
+function handoffOf(d: OrchestratorDeps, ctx: RunContext): LoopHandoff | undefined {
+  const store = d.artifacts;
+  if (!store) return undefined;
+  const r = ctx.writer.run;
+  const who = { tenantId: r.tenantId, userId: r.userId };
+  const mcpOn = !!d.mcpUrl;
+  return {
+    put: (body, meta) => store.put(who, body, { ...meta, runId: r.id }),
+    canFetch: (agent) => agent.runtime === "agentic-cli" && mcpOn,
+  };
+}
 
 /**
  * Ảnh thiếu Orchestrator (BR-08 đã chặn lúc khởi động) → null. H2b P7: dùng bản đã chọn lúc tạo run
@@ -75,6 +99,7 @@ export const deltaEmit = (writer: SseWriter) => (text: string) =>
 
 function loopIo(d: OrchestratorDeps, ctx: RunContext): LoopIo {
   const { writer, snapshot, log } = ctx;
+  const handoff = handoffOf(d, ctx);
   return {
     job: async ({ stream, ...j }) => {
       const sink = stream ? new DeltaSink(stream, deltaEmit(writer)) : undefined;
@@ -95,6 +120,7 @@ function loopIo(d: OrchestratorDeps, ctx: RunContext): LoopIo {
       withHubScope(d.db, { kind: "system" }, (tx) =>
         repo.insertSkippedStep(tx, { run: writer.run, ...s }),
       ),
+    ...(handoff ? { handoff } : {}),
   };
 }
 
@@ -155,7 +181,17 @@ export async function driveRun(d: OrchestratorDeps, base: RunContext): Promise<v
 }
 
 /** `RunDriver` mặc định (B6 chỗ cắm): chạy nền, tự `finish`. */
-export function orchestratorDriver(d: OrchestratorDeps): RunDriver {
+export function orchestratorDriver(base: OrchestratorDeps): RunDriver {
+  // CR-114 · cờ `HUB_ARTIFACT_HANDOFF=1` ⇒ kho artifact dùng chung theo `db` (không đi qua app.runner).
+  const env = process.env;
+  const d: OrchestratorDeps =
+    base.artifacts || !artifactHandoffOn(env)
+      ? base
+      : {
+          ...base,
+          artifacts: artifactStoreFor(base.db, env),
+          ...(env.HUB_PUBLIC_INTERNAL_URL ? { mcpUrl: env.HUB_PUBLIC_INTERNAL_URL } : {}),
+        };
   return {
     start: (ctx) => {
       void driveRun(d, ctx);

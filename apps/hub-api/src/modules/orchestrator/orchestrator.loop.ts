@@ -16,6 +16,7 @@ import {
   type VisibleAgentsInput,
 } from "../agents/agent-access.rules";
 import type { NoMatchPolicy } from "../agents/default-agent.rules";
+import type { ArtifactRef } from "../artifacts/artifact.rules";
 import type { FileBrief } from "../attachments/run-files.rules";
 import type { AgentConfig } from "../config/config.rules";
 import type { AgentRole } from "../runner/runner.rules";
@@ -25,6 +26,15 @@ import {
   reconcileStream,
   streamAccept,
 } from "../stream/delta.rules";
+import {
+  compactRunHistory,
+  delegateTask,
+  type LoopHandoff,
+  type StepOutput,
+  stepsView,
+  storeOutput,
+  willNote,
+} from "./orchestrator.handoff";
 import {
   type FlowHint,
   orchestratorPrompt,
@@ -67,6 +77,8 @@ export type LoopIo = {
   job(j: LoopJob): Promise<LoopJobOutcome>;
   /** Step `skipped` (H1-R06); `seq` do DB cấp (P11). */
   skip(s: { agentId: string | null; agentKey: string }): Promise<void>;
+  /** CR-114 · bàn giao bằng tham chiếu (artifact); vắng = như cũ (nguyên văn). */
+  handoff?: LoopHandoff;
 };
 
 export type LoopInput = {
@@ -117,6 +129,10 @@ type State = {
   hadPartial: boolean;
   answered: string | null;
   notes: StepNote[];
+  /** CR-114 · `refs[i]` ứng `notes[i]`; `outputs` cho phong bì delegate sau; `history` đã nén khi có `handoff`. */
+  refs: (ArtifactRef | null)[];
+  outputs: StepOutput[];
+  history: readonly HistoryItem[];
 };
 
 const addUsage = (s: State, o: LoopJobOutcome) => {
@@ -209,8 +225,8 @@ async function decide(io: LoopIo, c: LoopInput, s: State): Promise<Decided> {
       {
         agents: c.visible,
         hint: c.hint,
-        history: c.history,
-        steps: s.notes,
+        history: s.history,
+        steps: io.handoff ? stepsView(s.notes, s.refs) : s.notes,
         stepsLeft: c.settings.maxSteps - s.steps,
         message: c.message,
         ...(c.attachments?.length ? { attachments: c.attachments } : {}),
@@ -247,12 +263,14 @@ async function delegate(
   const firstDelegate = s.delegates === 0;
   s.steps++;
   s.delegates++;
+  const h = io.handoff;
   const o = await io.job({
     agent: d.agent,
     role: "agent",
-    prompt: d.task,
-    history: c.history,
-    ...(c.historyTotal !== undefined ? { historyTotal: c.historyTotal } : {}),
+    prompt: delegateTask(h, d, s.outputs, c.settings.tokenBudget - s.tokens),
+    history: s.history,
+    // Cửa sổ cache theo khối (fast-sdk) chỉ khi lịch sử chưa nén; có `handoff` ⇒ nén thay cho cửa sổ.
+    ...(!h && c.historyTotal !== undefined ? { historyTotal: c.historyTotal } : {}),
     ...acceptOf(c, { role: "agent", runKind: "orchestrated", firstDelegate }),
   });
   addUsage(s, o);
@@ -262,7 +280,8 @@ async function delegate(
   if (!r) return { kind: "failed", code: "UPSTREAM_ERROR" };
   if (r.status === "partial" && isFallback(c, d.agent))
     return { kind: "text", text: r.text, agentId: d.agent.id };
-  return afterAgent(s, d.agent, r);
+  const ref = h && willNote(s, r) ? await storeOutput(h, r.text) : null;
+  return afterAgent(s, d.agent, r, ref);
 }
 
 /**
@@ -272,7 +291,8 @@ async function delegate(
 const isFallback = (c: LoopInput, agent: AgentConfig): boolean =>
   c.noMatch?.kind === "fallback" && c.noMatch.agent.id === agent.id;
 
-function afterAgent(s: State, agent: AgentConfig, r: AgentResult): LoopEnd | null {
+type Ref = ArtifactRef | null;
+function afterAgent(s: State, agent: AgentConfig, r: AgentResult, ref: Ref = null): LoopEnd | null {
   if (canPassThrough(s, r) && r.status === "done")
     return { kind: "text", text: r.text, agentId: agent.id };
   if (r.status === "need_input")
@@ -283,6 +303,8 @@ function afterAgent(s: State, agent: AgentConfig, r: AgentResult): LoopEnd | nul
   } else {
     s.notes.push({ agent: agent.key, status: "done", text: r.text });
   }
+  s.refs.push(ref);
+  s.outputs.push({ agent: agent.key, text: r.text, ref });
   s.answered = r.text;
   return null;
 }
@@ -344,6 +366,7 @@ async function onDelegate(
   await io.skip({ agentId: known?.id ?? null, agentKey: dec.agent });
   s.steps++;
   s.notes.push({ agent: dec.agent, status: "skipped", reason: "not_allowed" });
+  s.refs.push(null);
   return null;
 }
 
@@ -359,6 +382,9 @@ export async function runLoop(io: LoopIo, c: LoopInput): Promise<LoopEnd> {
     hadPartial: false,
     answered: null,
     notes: [],
+    refs: [],
+    outputs: [],
+    history: io.handoff ? await compactRunHistory(io.handoff, c.history) : c.history,
   };
   const { maxSteps, tokenBudget } = c.settings;
   for (;;) {

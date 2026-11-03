@@ -484,6 +484,13 @@
       "when": 1801200000000,
       "tag": "0070_dlc_library_seed",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1802600000000,
+      "tag": "0084_hub_artifacts",
+      "breakpoints": true
     }
   ]
 }
