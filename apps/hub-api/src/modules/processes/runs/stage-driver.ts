@@ -23,9 +23,10 @@ import {
   transition,
 } from "../domain/runs/run-state.rules";
 import { stageGateStatus, stepCountOf } from "../domain/runs/step.rules";
-import { autofixDecision, stageJobExtras } from "./autofix.repo";
+import { autofixDecision } from "./autofix.repo";
 import { commitOutputBlob } from "./output-attachment";
 import { defaultSourceBudget } from "./sources.rules";
+import { type JobInputs, jobInputs } from "./stage-job-inputs";
 import {
   auditSourceReads,
   loadStageSourceCtx,
@@ -74,10 +75,11 @@ type Received = { at: { runId: string; stageRunId: string }; out: AgentOut };
 
 /** Chờ kết quả job (agent đơn / nhóm) của stage; `null` ⇒ `hub.runs` không gắn stage quy trình. */
 async function receive(d: Deps, ctx: RunContext, o: StageDriverOpts): Promise<Received | null> {
-  const link = await linkOf(d, ctx.writer.run.id);
-  if (!link?.process_run_id || !link.stage_run_id) return null;
+  const got = await jobInputs(d.db, ctx.writer.run.id, ctx.direct !== undefined);
+  const link = got?.link;
+  if (!got || !link?.process_run_id || !link.stage_run_id) return null;
   const out: AgentOut = ctx.direct
-    ? await runAgent(d, ctx, link, o)
+    ? await runAgent(d, ctx, got, o)
     : { jobReason: null, job: null, ...(await runTeamStage(d, ctx, link)) };
   return { at: { runId: link.process_run_id, stageRunId: link.stage_run_id }, out };
 }
@@ -147,19 +149,6 @@ async function failStuckRun(d: Deps, hubRunId: string): Promise<void> {
   await d.postThread(runId).catch(() => {});
 }
 
-/** §4 · `stage.timeout_s` (60..3600) ⇒ `AgentTask.agent.timeoutS` cho job (P1-25). P-b2 D3 · stage theo `stage_run_id`. */
-async function stageTimeout(d: Deps, link: Link): Promise<number | null> {
-  if (!link.process_run_id || !link.stage_run_id) return null;
-  const [r] = await withHubScope(d.db, { kind: "system" }, (tx) =>
-    tx.execute<{
-      t: number | null;
-    }>(sql`select (r.snapshot->'stages'->(s.stage_idx::int)->>'timeout_s')::int as t
-      from hub.stage_runs s join hub.process_runs r on r.id = s.process_run_id
-      where s.id = ${link.stage_run_id} and r.id = ${link.process_run_id}`),
-  );
-  return r?.t ? Number(r.t) : null;
-}
-
 async function linkOf(d: Deps, hubRunId: string): Promise<Link | null> {
   const [r] = await withHubScope(d.db, { kind: "system" }, (tx) =>
     tx.execute<Link>(
@@ -169,17 +158,14 @@ async function linkOf(d: Deps, hubRunId: string): Promise<Link | null> {
   return r ?? null;
 }
 
-/** PB-R10 · P-c1 PC-R05/R11 · `sources`/`autofix` của job stage (`stageJobExtras`, scope system + tenant tường minh). */
-const jobExtras = (d: Deps, link: Link) =>
-  withHubScope(d.db, { kind: "system" }, (tx) => stageJobExtras(tx, link));
-
 /** N4 · một job vai `agent`; `detail` mang `process_run_id/stage_run_id/role` cho usage (PF4). */
 async function runAgent(
   d: Deps,
   ctx: RunContext,
-  link: Link,
+  got: JobInputs,
   opts: StageDriverOpts,
 ): Promise<AgentOut> {
+  const link = got.link as Link;
   if (!ctx.direct)
     return {
       result: { kind: "failed", reason: "agent_failed" },
@@ -188,8 +174,7 @@ async function runAgent(
       jobReason: null,
       job: null,
     };
-  const timeoutS = await stageTimeout(d, link);
-  const extras = await jobExtras(d, link);
+  const { timeoutS, extras } = got;
   const o = await runJob(
     d.runner,
     {

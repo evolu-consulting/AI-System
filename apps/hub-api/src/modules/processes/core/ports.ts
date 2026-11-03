@@ -48,7 +48,14 @@ export type ProcessStartPort = {
 };
 
 /** PF1 (D10) · sau COMMIT: tx người bắt đầu khoá run → kiểm lại quyền → `createRunTx` → `launch`. PF2 gọi sau trả lời. */
-export type StageLauncher = { kick(runId: string): Promise<void> };
+export type StageLauncher = {
+  kick(runId: string): Promise<void>;
+  /**
+   * CR-115 · kick theo lô (vòng hẹn giờ `retry`): MỘT tx cho cả lô, mỗi run một SAVEPOINT; run lỗi ⇒ `kick` từng run sau
+   * COMMIT. Kết quả hàng giống hệt `kick` lần lượt. Vắng ⇒ người gọi `kick` từng run.
+   */
+  kickMany?(runIds: readonly string[]): Promise<void>;
+};
 
 /**
  * PF3 · gọi TRONG tx của PF1/PF2 (sau khi ghi task/notice), trả `UserEvent[]` để người gọi phát SAU COMMIT
@@ -127,4 +134,8 @@ export type ProcessDeps = {
  * T6c · phụ thuộc của vòng nền + `ProcessHandles` (sweep, nhắc, hết hạn, làm nóng pool): thêm cổng scope `system`. Route
  * và use case HTTP KHÔNG nhận kiểu này (test `uow-boundary.test.ts` chặn `SystemUow`/`ProcessBgDeps`/`.system(`).
  */
-export type ProcessBgDeps = ProcessDeps & { sysUow: SystemUow };
+export type ProcessBgDeps = ProcessDeps & {
+  sysUow: SystemUow;
+  /** CR-115 · false ⇒ bắn hẹn giờ theo đường từng hàng cũ (seam test so sánh tương đương); vắng ⇒ theo lô. */
+  timerBatch?: boolean;
+};

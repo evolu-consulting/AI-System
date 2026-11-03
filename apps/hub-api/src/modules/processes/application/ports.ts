@@ -299,6 +299,21 @@ export type SystemUow = {
   system<T>(tenantId: string, fn: (r: TxRepos) => Promise<T>): Promise<T>;
   /** CHỈ vòng nền theo tập (nhắc, chuyển cấp, hết hạn — CR-093, A11): một tx scope `system` mỗi lô. */
   systemBatch<T>(fn: (r: BatchRepos) => Promise<T>): Promise<T>;
+  /**
+   * CR-115 · MỘT tx scope `system` cho cả lô theo hàng: `claim` chọn hàng (vd `FOR UPDATE SKIP LOCKED`), mỗi hàng chạy
+   * `fn` trong SAVEPOINT riêng với repo gắn `tenantId` của hàng — hàng lỗi chỉ ROLLBACK savepoint của nó (trả `ok:false`,
+   * người gọi chạy lại theo đường từng hàng), hàng khác vẫn COMMIT. Outbox của hàng thành công phát MỘT lần sau COMMIT.
+   */
+  systemEach<I, T>(
+    claim: (tx: SystemClaimTx) => Promise<readonly I[]>,
+    tenantOf: (item: I) => string,
+    fn: (r: TxRepos, item: I) => Promise<T>,
+  ): Promise<EachResult<I, T>[]>;
 };
+/** CR-115 · tx đã mở của `systemEach` (kiểu mờ cho lớp 2 — chỉ adapter đọc được). */
+export type SystemClaimTx = { readonly __claimTx: unique symbol };
+export type EachResult<I, T> =
+  | { item: I; ok: true; value: T }
+  | { item: I; ok: false; error: unknown };
 /** Adapter `createHubUow` dựng đủ cả hai; mount tách thành hai object riêng (`tenantOnly`/`systemOnly`). */
 export type UnitOfWork = TenantUow & SystemUow;

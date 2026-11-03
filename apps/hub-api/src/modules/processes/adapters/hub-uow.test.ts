@@ -37,8 +37,8 @@ describe("T6c · guard uuid tenant", () => {
 });
 
 describe("T6c · tách cổng tenant / system", () => {
-  it("HUB-FR-143 · tenantOnly chỉ có `tenant`; systemOnly chỉ có `system`, `systemBatch`", () => {
+  it("HUB-FR-143 · tenantOnly chỉ có `tenant`; systemOnly chỉ có `system`, `systemBatch`, `systemEach` (CR-115)", () => {
     expect(Object.keys(tenantOnly(uow)).sort()).toEqual(["tenant"]);
-    expect(Object.keys(systemOnly(uow)).sort()).toEqual(["system", "systemBatch"]);
+    expect(Object.keys(systemOnly(uow)).sort()).toEqual(["system", "systemBatch", "systemEach"]);
   });
 });

@@ -12,6 +12,7 @@ const HTTP_ENTRY =
 const FORBIDDEN: [string, RegExp][] = [
   ["gọi .system(", /\.system\s*(<[^>]*>)?\s*\(/],
   ["gọi .systemBatch(", /\.systemBatch\b/],
+  ["gọi .systemEach( (CR-115)", /\.systemEach\b/],
   ["kiểu SystemUow", /\bSystemUow\b/],
   ["kiểu ProcessBgDeps", /\bProcessBgDeps\b/],
   ["trường sysUow", /\bsysUow\b/],

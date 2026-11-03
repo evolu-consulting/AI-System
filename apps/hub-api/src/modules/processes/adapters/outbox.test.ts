@@ -64,4 +64,26 @@ describe("makeOutboxPublisher", () => {
       warns: ["process-outbox-publish-failed"],
     });
   });
+  it("CR-115 · ≥ 2 kick + launcher có `kickMany` ⇒ một lần `kickMany` cả lô, không kick lẻ; 1 kick ⇒ `kick`", async () => {
+    const calls: string[] = [];
+    const publish = makeOutboxPublisher({
+      redis: { pipeline: (() => ({})) as never },
+      log: { warn: () => {} },
+      launcher: {
+        kick: async (id) => void calls.push(`kick:${id}`),
+        kickMany: async (ids) => void calls.push(`many:${ids.join(",")}`),
+      },
+      postThread: async (id) => {
+        calls.push(`post:${id}`);
+        return 0;
+      },
+    });
+    await publish([
+      { kind: "kick", runId: "r1" },
+      { kind: "post_thread", runId: "r1" },
+      { kind: "kick", runId: "r2" },
+    ]);
+    await publish([{ kind: "kick", runId: "r3" }]);
+    expect(calls).toEqual(["many:r1,r2", "post:r1", "kick:r3"]);
+  });
 });

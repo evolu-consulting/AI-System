@@ -30,6 +30,8 @@ Cờ (mặc định `off`; `.env.example` bật cho dev/test): `HUB_FROZEN_MODUL
 
 CR-102 (Community): gói mới `community` (đang dùng khi có) và user ngoài `admin.users.kind='external'`. `/directory`, `/me/stream`, kit members, pack guard, chat-gate, agent-grants, portal catalog phải lọc/chặn user ngoài (lát C2) — sửa lọc nhỏ, không mở lại module đóng băng (`processes`/`rooms`/`dlc`); không cần `test:frozen`. Cổng gói↔gói: ADR-0031.
 
+CR-115 (người dùng chốt 2026-11-03, lát `cr115-batch-launch`): **mở khoá có giới hạn** — CHỈ cho stage agent khởi chạy từ hẹn `retry` của vòng hẹn giờ: đường launcher/timer (`processes/adapters/timers/timer-sweep.ts`, `runs/launcher*.ts`, `adapters/hub-uow.ts` `systemEach`, `adapters/outbox.ts` `kickMany`, `runs/stage-job-inputs.ts`), `runs` `insertRun`, tạo job + `run_steps`, dọn `cli_sessions` của dify. Đường chat/HTTP và mọi đường khác giữ nguyên; không đổi hành vi bên ngoài (test tương đương `tests/acceptance/P-d/d1/batch-launch.int.test.ts`). Ngoài phạm vi này các module trên vẫn theo bảng.
+
 Test: suite đóng băng ở `tools/scripts/src/frozen.rules.ts`. `test:affected` và `test:all --no-frozen` (cổng hằng ngày trên server) bỏ chúng; `bun run test:frozen` chạy theo yêu cầu; `bun run test:all` / `run-tests.ps1 -All` chạy hết. Sửa mã module đóng băng (hoặc engine quy trình khi làm M3) ⇒ chạy `test:frozen` trước khi xong lát.
 
 ## Nâng cấp hằng tháng (3 dòng)

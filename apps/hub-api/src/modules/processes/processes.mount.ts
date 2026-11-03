@@ -3,6 +3,7 @@
 // không gọi ⇒ mọi route quy trình 404, `!` là chữ thường.
 import type { Env, Hono, MiddlewareHandler } from "hono";
 import { requireAdminRole } from "../../lib/admin-role.middleware";
+import { safeErrorFields } from "../../lib/errors";
 import { KhWriter } from "../kh/kh.writer";
 import type { WorkflowInvoker } from "../mcp/adapters/workflow-invoker";
 import type { PackRunsBridge } from "../packs/kit/application/pack-runs.ports";
@@ -59,6 +60,8 @@ export type ProcessSeams = {
   now?: Clock;
   /** false ⇒ không chạy vòng nền (test gọi `*Once` qua handles). */
   processLoops?: boolean;
+  /** CR-115 · false ⇒ bắn hẹn giờ + kick theo đường từng hàng cũ (test so sánh tương đương); vắng ⇒ theo lô. */
+  processTimerBatch?: boolean;
   onProcessHandles?: (h: ProcessHandles) => void;
   /** PB-R05 · cầu nối từ `/sources-resolved`; engine gắn `onReport` để ghim/kick/needs_decision. */
   resolveBridge?: ResolveBridge;
@@ -107,7 +110,7 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
     redis: m.redis,
     log: m.log,
     postThread,
-    launcher: { kick: (runId) => d.launcher.kick(runId) },
+    launcher: { kick: (runId) => d.launcher.kick(runId), kickMany: (ids) => kickMany(d, ids) },
   });
   // T6c · tách cổng: route/use case HTTP chỉ thấy `tenant`; vòng nền + handles nhận `sysUow` (object riêng, không lộ qua `d`).
   // P-d2 · D2-11 · repo stage `tool` cần `ProcessDeps` (dựng sau ⇒ gọi trễ qua closure).
@@ -137,7 +140,11 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   if (m.packRuns) m.packRuns.port = packRunsOf(d); // N2-FR-01
   mountRoutes(app, d, m.publicRoutes ?? "all");
   app.route("/internal", libraryInternalRoutes(d, m.internalToken)); // CR-105 · L5 · token dịch vụ, không JWT
-  const bg: ProcessBgDeps = { ...d, sysUow: systemOnly(uow) };
+  const bg: ProcessBgDeps = {
+    ...d,
+    sysUow: systemOnly(uow),
+    timerBatch: m.processTimerBatch !== false,
+  };
   startBackground({ m, bg, poster, khWriter, drain });
   return { roomSender: roomStart(d), conversationStart: d.start };
 }
@@ -168,6 +175,19 @@ function mountRoutes<E extends Env>(app: Hono<E>, d: ProcessDeps, mode: ProcessR
   }
   for (const r of mode === "admin" ? ADMIN_ROUTES : ALL_ROUTES) app.route("/", r(d));
   app.route("/", previewRoutes(d)); // CR-105 · L2b · xem trước đường đi quy trình thư viện (platform_admin)
+}
+
+/** CR-115 · kick theo lô của launcher (vắng — vd launcher giả của test ⇒ `kick` từng run, lỗi một run chỉ log). */
+async function kickMany(d: ProcessDeps, ids: readonly string[]): Promise<void> {
+  if (d.launcher.kickMany) return d.launcher.kickMany(ids);
+  for (const id of ids)
+    await d.launcher.kick(id).catch((err) =>
+      d.log.warn("process-outbox-publish-failed", {
+        kind: "kick",
+        run_id: id,
+        ...safeErrorFields(err),
+      }),
+    );
 }
 
 /** P-d2 · D2-12/S11 · driver stage `tool` giữ cổng scope system trong closure; launcher chỉ nhận factory. */

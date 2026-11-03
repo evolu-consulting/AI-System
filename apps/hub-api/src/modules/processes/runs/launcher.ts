@@ -17,6 +17,7 @@ import { isTerminal } from "../domain/runs/run-state.rules";
 import { stageIdxsOfStep } from "../domain/runs/step.rules";
 import { nodeLauncherOf } from "../nodes/registry.launch";
 import { type KickResult, type LauncherDeps, lostPermission, type StageRow } from "./launch-common";
+import { kickMany } from "./launcher-batch";
 import { gateResolve, type Head } from "./launcher-prompt";
 import { stageDriver } from "./stage-driver";
 import { stepsOfSnap } from "./step-persist";
@@ -26,11 +27,14 @@ export type { LauncherDeps } from "./launch-common";
 /** B0: no-op; P-a mount dựng bản thật. */
 export function createStageLauncher(d?: LauncherDeps): StageLauncher {
   if (!d) return NOOP_LAUNCHER;
-  const self: StageLauncher = { kick: (runId) => kick(d, self, runId) };
+  const self: StageLauncher = {
+    kick: (runId) => kick(d, self, runId),
+    kickMany: (runIds) => kickMany(d, self, runIds, (runId) => kick(d, self, runId)),
+  };
   return self;
 }
 
-async function headOf(tx: Tx, runId: string): Promise<Head | null> {
+export async function headOf(tx: Tx, runId: string): Promise<Head | null> {
   const [r] = await tx.execute<Head>(sql`select tenant_id, started_by, status, current_stage_idx,
     conversation_id, input, snapshot, pinned_sources, inputs from hub.process_runs where id = ${runId}`);
   return r ?? null;
@@ -81,13 +85,23 @@ async function kickOnce(
     return { more: result.more === true, sync: true };
   }
   if (result.kind !== "launch") return none;
+  if (!(await launchAfterCommit(d, self, result))) return none;
+  return { more: result.more === true, sync: false };
+}
+
+/** Sau COMMIT: driver stage (tool ⇒ `toolDriver`) → `RunService.launch`. `false` ⇒ không có driver (bỏ). */
+export async function launchAfterCommit(
+  d: LauncherDeps,
+  self: StageLauncher,
+  result: Extract<KickResult, { kind: "launch" }>,
+): Promise<boolean> {
   // m2 · stage tool không bao giờ rơi về `stageDriver`; thiếu `toolDriver` đã quyết `tool_failed` ở `plan`.
   const driver = result.toolLink
     ? d.toolDriver?.(result.toolLink)
     : stageDriver(d, self, { useSession: result.useSession });
-  if (!driver) return none;
+  if (!driver) return false;
   await d.runs.launch(result.prepared, result.files as never, { driver });
-  return { more: result.more === true, sync: false };
+  return true;
 }
 
 /** D3/D5 · stage `queued` nhỏ nhất của bước hiện tại chưa có `hub.runs` chạy (run đã khoá); `more` = còn stage queued sau nó. */
@@ -114,7 +128,12 @@ async function nextQueued(
 }
 
 /** Trong tx scope user người bắt đầu: khoá run, chọn stage queued của bước, kiểm quyền, tạo `hub.runs`. */
-async function plan(d: LauncherDeps, tx: Tx, u: AuthUser, runId: string): Promise<KickResult> {
+export async function plan(
+  d: LauncherDeps,
+  tx: Tx,
+  u: AuthUser,
+  runId: string,
+): Promise<KickResult> {
   // T19-perf · khoá run (câu ĐẦU, §10) + đọc đầu run gửi liền (pipeline): câu đọc chạy sau khoá, cùng ảnh.
   const [run, head] = await Promise.all([core.lockRun(tx, u.tenantId, runId), headOf(tx, runId)]);
   if (!run || isTerminal(run.status as ProcessRunStatus)) return { kind: "skip" };

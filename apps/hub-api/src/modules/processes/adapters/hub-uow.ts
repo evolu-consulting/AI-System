@@ -8,8 +8,10 @@ import { type HubScope, withHubScope } from "@ai/db/hub-scope";
 import type {
   BatchRepos,
   Clock,
+  EachResult,
   Outbox,
   OutboxEvent,
+  SystemClaimTx,
   SystemUow,
   TenantUow,
   TxRepos,
@@ -145,7 +147,49 @@ export function createHubUow(db: Db, deps: HubUowDeps): UnitOfWork {
       return run({ kind: "system" }, make, fn);
     },
     systemBatch: (fn) => run({ kind: "system" }, (tx, o) => batchRepos(tx, o, deps.notifier), fn),
+    systemEach: (claim, tenantOf, fn) => systemEach(db, deps, { claim, tenantOf, fn }),
   };
+}
+
+/** CR-115 · tx đã mở ⇄ kiểu mờ của port (`claim` của adapter đọc lại `Tx`). */
+export const claimTx = (t: SystemClaimTx): Tx => t as unknown as Tx;
+
+/**
+ * CR-115 · `SystemUow.systemEach`: một tx scope `system`; mỗi hàng một SAVEPOINT (`tx.transaction` lồng của drizzle) với
+ * outbox riêng — chỉ outbox của hàng COMMIT savepoint mới được gộp. Chạy lại cả tx (40P01/40001) ⇒ mảng kết quả/sự kiện
+ * dựng lại từ đầu. Hàng có `tenantId` sai dạng ⇒ `ok:false` (không mở savepoint).
+ */
+async function systemEach<I, T>(
+  db: Db,
+  deps: HubUowDeps,
+  x: {
+    claim: (tx: SystemClaimTx) => Promise<readonly I[]>;
+    tenantOf: (item: I) => string;
+    fn: (r: TxRepos, item: I) => Promise<T>;
+  },
+): Promise<EachResult<I, T>[]> {
+  let events: OutboxEvent[] = [];
+  const out = await withHubScope(db, { kind: "system" }, async (tx) => {
+    events = [];
+    const res: EachResult<I, T>[] = [];
+    for (const item of await x.claim(tx as unknown as SystemClaimTx)) {
+      const c = collector();
+      try {
+        const tenantId = x.tenantOf(item);
+        assertTenantId(tenantId);
+        const value = await tx.transaction((sp) =>
+          x.fn(txRepos(sp, tenantId, c.outbox, deps), item),
+        );
+        events.push(...c.events);
+        res.push({ item, ok: true, value });
+      } catch (error) {
+        res.push({ item, ok: false, error });
+      }
+    }
+    return res;
+  });
+  if (events.length > 0) await deps.publish(events);
+  return out;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -162,5 +206,5 @@ export function tenantOnly(u: UnitOfWork): TenantUow {
 
 /** T6c · object riêng CHỈ có `system`/`systemBatch` (vòng nền + handles qua `ProcessBgDeps`). */
 export function systemOnly(u: UnitOfWork): SystemUow {
-  return { system: u.system, systemBatch: u.systemBatch };
+  return { system: u.system, systemBatch: u.systemBatch, systemEach: u.systemEach };
 }

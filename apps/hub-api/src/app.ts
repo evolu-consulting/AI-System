@@ -149,6 +149,7 @@ const seamsOf = (d: AppDeps): ProcessSeams => ({
   stageLauncher: d.stageLauncher,
   now: d.now,
   processLoops: d.processLoops,
+  processTimerBatch: d.processTimerBatch, // CR-115
   onProcessHandles: d.onProcessHandles,
   ...{ packRuns: d.packRuns, packTools: d.packTools }, // N2-FR-01/03
 });

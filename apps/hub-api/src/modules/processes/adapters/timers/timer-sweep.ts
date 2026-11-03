@@ -10,6 +10,7 @@ import { safeErrorFields } from "../../../../lib/errors";
 import { type FireCandidate, fireTimer } from "../../application/timers/fire-timer.usecase";
 import type { ProcessBgDeps } from "../../core/ports";
 import { failedTimerDueAt } from "../../domain/timers/timer.rules";
+import { claimTx } from "../hub-uow";
 import { type SnapshotStages, waitOriginalDue } from "./timer-origin";
 
 /** Q10 · trần mỗi lượt (`SweepResult.timers` ≤ 100). */
@@ -26,18 +27,52 @@ export type DueTimer = {
 
 /**
  * Một lượt: số hẹn đã BẮN (không tính hẹn bị bỏ/huỷ vì stage đã đổi hay run đã kết thúc).
- * CR-114 · TD #196 (đo PD-P01, evotest): mỗi hẹn ~60 câu SQL / ~8 tx, ~90% là `kick` launcher SAU COMMIT (tạo hub run, job,
- * message…); tx bắn chỉ ~7 câu. Thử bắn song song 4 hẹn: KHÔNG nhanh hơn (1,49–1,69 s/100 so với 1,57 s) — nút cổ chai
- * là luồng JS + số câu của launcher, không phải chờ DB ⇒ giữ tuần tự. Gom tx bắn theo lô bớt tối đa ~7% ⇒ chưa làm
- * (đổi máy trạng thái không đáng); việc thật là gom launch (engine đóng băng) — `docs/specs/hub-ha-sweeps/tasks.md`.
+ * CR-114 · TD #196 (đo PD-P01, evotest): mỗi hẹn ~60 câu SQL / ~8 tx, ~90% là `kick` launcher SAU COMMIT. CR-115 ⇒ mặc
+ * định theo lô (`fireBatch` + `kickMany`, `docs/specs/cr115-batch-launch/tasks.md`); `timerBatch: false` = đường từng
+ * hàng cũ dưới đây (seam test tương đương).
  */
 export async function fireDueTimers(d: ProcessBgDeps): Promise<number> {
   const now = d.now();
+  if (d.timerBatch !== false) return fireBatch(d, now);
   const due = await withHubScope(d.db, SYSTEM, (tx) => dueTimers(tx, now));
   let fired = 0;
   for (const t of due) if ((await fireOne(d, t, now)) === "fired") fired++;
   return fired;
 }
+
+/**
+ * CR-115 · lô: MỘT tx `systemEach` — chọn ≤ 100 hẹn `FOR UPDATE SKIP LOCKED` (khoá GIỮ tới COMMIT ⇒ Hub kia bỏ qua hẹn
+ * này, không cùng bắn), bắn mỗi hẹn trong SAVEPOINT (sắp theo run ⇒ thứ tự khoá run nhất quán), kick cả lô một lần sau
+ * COMMIT (`kickMany`). Hẹn lỗi ⇒ savepoint ROLLBACK, chạy lại đường từng hàng (`fireOne`: lỗi nữa ⇒ log + lùi hạn).
+ */
+async function fireBatch(d: ProcessBgDeps, now: Date): Promise<number> {
+  // ≤ FIRE_TXS tx song song, mỗi tx chọn ≤ 100/FIRE_TXS hẹn: SKIP LOCKED ⇒ các tx nhặt tập rời nhau (tổng ≤ 100/lượt).
+  const per = Math.ceil(TIMER_SWEEP_BATCH / FIRE_TXS);
+  const counts = await Promise.all(Array.from({ length: FIRE_TXS }, () => fireChunk(d, now, per)));
+  return counts.reduce((a, n) => a + n, 0);
+}
+
+/** CR-115 · số tx bắn song song mỗi lượt (đo PD-P01: 1 tx ≈ 1,02 s/100; chia tx ⇒ round-trip bắn chạy song song). */
+const FIRE_TXS = 4;
+
+async function fireChunk(d: ProcessBgDeps, now: Date, limit: number): Promise<number> {
+  const claim = async (t: Parameters<typeof claimTx>[0]) =>
+    [...(await dueTimers(claimTx(t), now, limit))].sort(byRun);
+  const rows = await d.sysUow.systemEach(
+    claim,
+    (t) => t.tenant_id,
+    (r, t) => fireTimer(r, { id: t.id, runId: t.process_run_id, stageRunId: t.stage_run_id }, now),
+  );
+  let fired = 0;
+  for (const x of rows) {
+    const out = x.ok ? x.value : await fireOne(d, x.item, now);
+    if (out === "fired") fired++;
+  }
+  return fired;
+}
+
+const byRun = (a: DueTimer, b: DueTimer): number =>
+  a.process_run_id < b.process_run_id ? -1 : a.process_run_id > b.process_run_id ? 1 : 0;
 
 /** Một hẹn: tx `system(tenantId)` riêng (bắn + kick sau COMMIT); lỗi ⇒ log + lùi hạn, không ném. */
 async function fireOne(d: ProcessBgDeps, t: DueTimer, now: Date): Promise<string> {
