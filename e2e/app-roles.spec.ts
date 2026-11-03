@@ -117,7 +117,7 @@ test("ADM-FR-80 · ADM-FR-82 · platform_admin: 3 vai mặc định không sửa
 }) => {
   await loginAdmin(page);
   await page.goto("/access?tenant=acme");
-  await expect(page.getByRole("heading", { level: 1, name: "Phân quyền" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Phân quyền" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Vai theo ứng dụng", selected: true })).toBeVisible();
   for (const n of ["Toàn quyền", "Nhân viên", "Chỉ xem", "Quản lý HĐ"]) {
     await expect(roleRow(page, n)).toBeVisible();

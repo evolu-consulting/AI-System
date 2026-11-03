@@ -2,7 +2,6 @@
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
-import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
 import { PARTNERS_PAGE_SIZE } from "../api";
@@ -23,7 +22,6 @@ export function PartnersPage() {
   const { list, tenantKey, page } = view;
 
   if (!me) return null;
-  if (view.unknown) return <NotFoundState backTo="/partners" />;
 
   const create = (
     <Button disabled={!view.canCreate} onClick={actions.openCreate}>
@@ -39,13 +37,7 @@ export function PartnersPage() {
         description={t("partners.subtitle", { tenant: tenantKey ?? t("common.tenantPicker.all") })}
         actions={create}
       />
-      <PartnerFilters
-        tenants={view.isPlatform ? (view.tenants ?? []) : undefined}
-        tenantKey={tenantKey}
-        q={view.search.q ?? ""}
-        onTenant={(key) => patch({ tenant: key ?? undefined, org: undefined })}
-        onQuery={(q) => patch({ q: q || undefined })}
-      />
+      <PartnerFilters q={view.search.q ?? ""} onQuery={(q) => patch({ q: q || undefined })} />
       <PartnerTable
         orgs={view.needsTenant ? [] : list.data?.items}
         isLoading={!view.needsTenant && list.isPending && view.ready}

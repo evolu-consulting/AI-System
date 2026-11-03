@@ -1,26 +1,23 @@
-// ADM-FR-35 · M3-R13 · trang Phân quyền: tab + tenant trên URL (`?tab=roles|matrix|check&tenant=<mã>&user=`); platform chưa chọn tenant → không gọi API (D9).
+// ADM-FR-35 · M3-R13 · tab Phân quyền của workspace công ty: tab con + user trên URL (`?tab=access&view=roles|matrix|check&user=`); tenant theo workspace (CR-112).
 import type { Me } from "@ai/contracts";
 import { getRouteApi } from "@tanstack/react-router";
-import { useTenantOptions } from "@/features/tenants/api";
-import { resolveViewedTenant } from "@/lib/viewed-tenant";
+import { useWorkspaceView } from "@/features/tenants/lib/use-workspace-view";
 
-const route = getRouteApi("/_authed/access");
+const route = getRouteApi("/_authed/tenants/$tenantId");
 export type AccessTab = "roles" | "matrix" | "check";
 
 export function useAccessView(me: Me | null) {
   const search = route.useSearch();
   const navigate = route.useNavigate();
-  const options = useTenantOptions(me?.role === "platform_admin");
-  const tn = resolveViewedTenant(me, search.tenant, options);
+  const tn = useWorkspaceView(me);
   const patch = (p: Record<string, string | undefined>) =>
     void navigate({ search: (prev) => ({ ...prev, ...p }), replace: true });
   return {
     ...tn,
     user: search.user,
-    tab: (search.tab ?? "roles") as AccessTab,
+    tab: (search.view ?? "roles") as AccessTab,
     needsTenant: tn.isPlatform && !tn.tenantId,
-    setTab: (tab: AccessTab) => patch({ tab }),
+    setTab: (view: AccessTab) => patch({ view }),
     setUser: (user: string | undefined) => patch({ user }),
-    setTenant: (key: string | null) => patch({ tenant: key ?? undefined, user: undefined }),
   };
 }

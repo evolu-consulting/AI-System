@@ -1,7 +1,7 @@
-// ADM-FR-60, ADM-FR-61 · /tenants/$tenantId (mẫu B): header (tên, badge, khoá/mở khoá), tab Thông tin/Feature/Agent/Quota/Users.
+// ADM-FR-60, ADM-FR-61, ADM-FR-76 · workspace công ty /tenants/$tenantId (mẫu B): header (tên, badge, khoá/mở khoá) + tab theo `lib/workspace-tabs.ts`.
 import type { TenantDetail } from "@ai/contracts";
 import { getRouteApi } from "@tanstack/react-router";
-import { lazy, Suspense, useCallback, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -18,16 +18,18 @@ import { TIMEZONE_UNSUPPORTED_KEY } from "@/features/processes/domain/error-keys
 import { useSession } from "@/lib/auth/use-session";
 import { describeError, validationIssues } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
+import { setLastTenant } from "@/lib/last-tenant";
 import { useTr } from "@/lib/use-translate";
 import { useTenantDetail } from "../api";
+import { EmbeddedTab, isEmbeddedTab } from "../components/EmbeddedTab";
 import { TenantQuotaTab } from "../components/quota/TenantQuotaTab";
 import { TenantDefaultAppCard } from "../components/TenantDefaultAppCard";
 import { TenantInfoForm } from "../components/TenantInfoForm";
 import { TenantProfileCard } from "../components/TenantProfileCard";
-import { TenantUsersTab, UnavailableTab } from "../components/TenantTabs";
 import { useLockFlow } from "../hooks/use-lock-flow";
 import { useTenantConflict } from "../hooks/use-tenant-conflict";
 import { slotsToValue, type TenantInfoValues } from "../lib/schemas";
+import { WorkspaceProvider } from "../lib/workspace-context";
 import { activeTab, TAB_LABEL, type TenantTab, visibleTabs } from "../lib/workspace-tabs";
 
 const route = getRouteApi("/_authed/tenants/$tenantId");
@@ -115,6 +117,12 @@ export function TenantDetailPage() {
   const [quotaDirty, setQuotaDirty] = useState(false);
   const [featuresDirty, setFeaturesDirty] = useState(false);
   const reloadTenant = useCallback(() => void query.refetch(), [query.refetch]);
+  const loaded = query.data;
+  const workspace = useMemo(() => (loaded ? { id: loaded.id, key: loaded.key } : null), [loaded]);
+  // ADM-FR-76: nhớ công ty platform_admin đang mở — route cũ (`/users`…) chuyển tới đây.
+  useEffect(() => {
+    if (isPlatform && loaded?.id) setLastTenant(loaded.id);
+  }, [isPlatform, loaded?.id]);
 
   if (!allowed) return <ForbiddenState />;
   if (query.isPending) return <LoadingState />;
@@ -144,8 +152,10 @@ export function TenantDetailPage() {
     );
   };
 
+  const current = activeTab(tab, isPlatform);
+
   return (
-    <>
+    <WorkspaceProvider value={workspace}>
       <Header
         tenant={tenant}
         canLock={isPlatform}
@@ -153,12 +163,12 @@ export function TenantDetailPage() {
         onUnlock={() => requestUnlock(tenant)}
       />
       <Tabs
-        value={activeTab(tab, isPlatform)}
+        value={current}
         onValueChange={(v) => void navigate({ search: { tab: v as TenantTab }, replace: true })}
       >
-        <TabsList>
+        <TabsList className="h-auto flex-wrap justify-start group-data-[orientation=horizontal]/tabs:h-auto">
           {visibleTabs(isPlatform).map((v) => (
-            <TabsTrigger key={v} value={v}>
+            <TabsTrigger key={v} value={v} className="h-8 flex-none">
               {t(TAB_LABEL[v])}
             </TabsTrigger>
           ))}
@@ -180,9 +190,6 @@ export function TenantDetailPage() {
             <TenantFeaturesTab tenant={tenant} onDirtyChange={setFeaturesDirty} />
           </Suspense>
         </TabsContent>
-        <TabsContent value="agents" className="pt-4">
-          <UnavailableTab body="tenants.agents.unavailable" />
-        </TabsContent>
         <TabsContent value="workflow-tools" className="pt-4">
           <Suspense fallback={<LoadingState />}>
             <TenantToolsTab tenant={tenant} />
@@ -195,13 +202,17 @@ export function TenantDetailPage() {
             onReloadTenant={reloadTenant}
           />
         </TabsContent>
-        <TabsContent value="users" className="pt-4">
-          <TenantUsersTab tenant={tenant} />
-        </TabsContent>
+        {visibleTabs(isPlatform)
+          .filter(isEmbeddedTab)
+          .map((v) => (
+            <TabsContent key={v} value={v} className="pt-4">
+              <EmbeddedTab tab={v} />
+            </TabsContent>
+          ))}
       </Tabs>
       <UnsavedGuard dirty={infoDirty || quotaDirty || featuresDirty} />
       {dialogs}
       <LazyConflictDialog props={conflict.props} />
-    </>
+    </WorkspaceProvider>
   );
 }

@@ -1,23 +1,8 @@
+// CR-112 · ADM-FR-76 · route cũ giữ lại, chuyển tới tab groups của workspace công ty (giữ query).
 import { createFileRoute } from "@tanstack/react-router";
-import { GroupsPage } from "@/features/groups/pages/GroupsPage";
+import { redirectLegacy } from "@/features/shell/lib/legacy-route";
 
-export type GroupsSearch = {
-  tenant?: string;
-  q?: string;
-  page?: number;
-};
-
-const str = (v: unknown): string | undefined => (typeof v === "string" && v !== "" ? v : undefined);
-
-// Viết tay thay zod (như users): bộ lọc nằm trên URL, đổi bộ lọc bỏ `page`.
 export const Route = createFileRoute("/_authed/groups/")({
-  validateSearch: (s: Record<string, unknown>): GroupsSearch => {
-    const page = Number(s.page);
-    return {
-      tenant: str(s.tenant),
-      q: str(s.q),
-      page: Number.isInteger(page) && page > 1 ? page : undefined,
-    };
-  },
-  component: GroupsPage,
+  validateSearch: (s: Record<string, unknown>) => s,
+  beforeLoad: ({ search }) => redirectLegacy("groups", search),
 });

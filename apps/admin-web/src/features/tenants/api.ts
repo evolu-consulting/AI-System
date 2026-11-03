@@ -81,16 +81,17 @@ export function useSetTenantLocked() {
 }
 
 /** Danh sách tenant cho ô chọn Tenant (chỉ platform_admin; ánh xạ mã → id); dùng chung cho Groups, Phân quyền. */
+export const tenantOptionsQuery = {
+  queryKey: ["tenants", "options"] as const,
+  staleTime: 30_000,
+  queryFn: async () => {
+    const res = await api<TenantListResponse>("/admin/tenants", { query: { limit: 200 } });
+    return res.items.map((t) => ({ id: t.id, key: t.key }));
+  },
+};
+
 export function useTenantOptions(enabled: boolean) {
-  return useQuery({
-    queryKey: ["tenants", "options"] as const,
-    enabled,
-    staleTime: 30_000,
-    queryFn: async () => {
-      const res = await api<TenantListResponse>("/admin/tenants", { query: { limit: 200 } });
-      return res.items.map((t) => ({ id: t.id, key: t.key }));
-    },
-  });
+  return useQuery({ ...tenantOptionsQuery, enabled });
 }
 
 const QUOTA_KEYS = {

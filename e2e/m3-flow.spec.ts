@@ -109,8 +109,7 @@ test("M3-AC09 · ADM-FR-62 · ADM-FR-32 · ADM-FR-35 · ADM-FR-36 · F3 → F4: 
     await sql`delete from admin.groups where key <> 'beta-testers'`;
   });
   await loginAs(page, "acme", "binh");
-  const nav = page.getByRole("navigation");
-  await nav.getByRole("link", { name: "Groups" }).click();
+  await page.goto("/groups");
   await page.getByRole("link", { name: "+ Tạo group" }).click();
   await page.getByRole("textbox", { name: "Key", exact: true }).fill("ke-toan");
   await page.getByRole("textbox", { name: "Tên", exact: true }).fill("Kế toán");
@@ -122,9 +121,9 @@ test("M3-AC09 · ADM-FR-62 · ADM-FR-32 · ADM-FR-35 · ADM-FR-36 · F3 → F4: 
   await expect(toast(page, "Đã thêm 2 người, 1 username không tìm thấy")).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Không tìm thấy: an.vu" })).toBeVisible();
 
-  await nav.getByRole("link", { name: "Phân quyền" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Phân quyền" })).toBeVisible();
-  await page.getByRole("tab", { name: "Ma trận", exact: true }).click(); // CR-112: tab mặc định là "Vai theo ứng dụng"
+  await page.goto("/access");
+  await expect(page.getByRole("heading", { level: 2, name: "Phân quyền" })).toBeVisible();
+  await page.getByRole("tab", { name: "Ma trận", exact: true }).click(); // tab con mặc định là "Vai theo ứng dụng"
   await page.getByRole("checkbox", { name: "Kế toán cho group Kế toán" }).check();
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(toast(page, /Đã lưu quyền · 1 cấp, 0 thu/)).toBeVisible();

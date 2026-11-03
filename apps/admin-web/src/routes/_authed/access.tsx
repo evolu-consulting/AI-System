@@ -1,15 +1,8 @@
+// CR-112 · ADM-FR-76 · route cũ giữ lại, chuyển tới tab access của workspace công ty (giữ query).
 import { createFileRoute } from "@tanstack/react-router";
-import { AccessPage } from "@/features/access/pages/AccessPage";
-
-export type AccessSearch = { tab?: "roles" | "matrix" | "check"; tenant?: string; user?: string };
-
-const str = (v: unknown): string | undefined => (typeof v === "string" && v !== "" ? v : undefined);
+import { redirectLegacy } from "@/features/shell/lib/legacy-route";
 
 export const Route = createFileRoute("/_authed/access")({
-  validateSearch: (s: Record<string, unknown>): AccessSearch => ({
-    tab: s.tab === "check" || s.tab === "matrix" || s.tab === "roles" ? s.tab : undefined,
-    tenant: str(s.tenant),
-    user: str(s.user),
-  }),
-  component: AccessPage,
+  validateSearch: (s: Record<string, unknown>) => s,
+  beforeLoad: ({ search }) => redirectLegacy("access", search),
 });

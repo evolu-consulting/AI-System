@@ -192,9 +192,21 @@
       "access": "ACCESS",
       "features": "FEATURES",
       "security": "SECURITY",
-      "system": "SYSTEM"
+      "system": "SYSTEM",
+      "platform": "PLATFORM",
+      "companies": "COMPANIES"
     },
-    "tenants": "Tenants",
+    "companies": {
+      "search": "Search companies",
+      "create": "Create company",
+      "loading": "Loading companies…",
+      "empty": "No companies yet.",
+      "noMatch": "No matching company.",
+      "error": "Could not load the company list.",
+      "locked": "Locked",
+      "list": "Company list"
+    },
+    "tenants": "Companies",
     "users": "Users",
     "partners": "Partners",
     "collapse": "Collapse sidebar",
@@ -611,6 +623,9 @@
       "agents": "Agents",
       "quota": "Quota",
       "users": "Users",
+      "groups": "Groups",
+      "partners": "Partners",
+      "access": "Permissions",
       "workflowTools": "Process tools",
       "packs": "Packs",
       "unavailableBody": "This section will be available in a later release."

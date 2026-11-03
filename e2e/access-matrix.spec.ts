@@ -27,9 +27,10 @@ const dirty = (page: Page, n: number) =>
   page.getByRole("status").filter({ hasText: `${n} thay đổi chưa lưu` });
 const openMatrix = async (page: Page, tenant = "acme", user = "binh") => {
   await loginAs(page, tenant, user);
-  await page.getByRole("navigation").getByRole("link", { name: "Phân quyền" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Phân quyền" })).toBeVisible();
-  await page.getByRole("tab", { name: "Ma trận", exact: true }).click(); // CR-112: tab mặc định là "Vai theo ứng dụng"
+  // CR-112: Phân quyền là tab của workspace công ty; `/access` chuyển tới tab đó (tenant_admin: công ty mình).
+  await page.goto("/access");
+  await expect(page.getByRole("heading", { level: 2, name: "Phân quyền" })).toBeVisible();
+  await page.getByRole("tab", { name: "Ma trận", exact: true }).click(); // tab con mặc định là "Vai theo ứng dụng"
   await expect(grid(page)).toBeVisible();
 };
 const grantCount = (featureId: string) =>
@@ -39,7 +40,7 @@ const grantCount = (featureId: string) =>
     return r?.n as number;
   });
 
-test("ADM-FR-35 · M3-R13 · trang Phân quyền: heading, hai tab 'Ma trận' và 'Kiểm tra quyền'; platform admin có combobox Tenant, chưa chọn → KHÔNG gọi /admin/grants/matrix", async ({
+test("ADM-FR-35 · M3-R13 · trang Phân quyền: heading, hai tab 'Ma trận' và 'Kiểm tra quyền'; platform admin: /access chưa chọn công ty → danh sách công ty, KHÔNG gọi /admin/grants/matrix; /access?tenant=acme → workspace tab Phân quyền, không còn combobox Tenant", async ({
   page,
 }) => {
   const calls: string[] = [];
@@ -48,12 +49,13 @@ test("ADM-FR-35 · M3-R13 · trang Phân quyền: heading, hai tab 'Ma trận' v
   });
   await loginAdmin(page);
   await page.goto("/access");
-  await expect(page.getByRole("heading", { level: 1, name: "Phân quyền" })).toBeVisible();
+  await expect(page).toHaveURL(/\/tenants$/);
+  expect(calls).toEqual([]);
+  await page.goto("/access?tenant=acme");
+  await expect(page.getByRole("heading", { level: 2, name: "Phân quyền" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Ma trận", exact: true })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Kiểm tra quyền", exact: true })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "Tenant" })).toBeVisible();
-  await expect(page.getByText("Chọn một tenant để phân quyền cho tenant đó.")).toBeVisible();
-  expect(calls).toEqual([]);
+  await expect(page.getByRole("combobox", { name: "Tenant" })).toHaveCount(0);
 });
 
 test("ADM-FR-35 · M3-R09 · acme: hàng core có 'Mặc định' và ô khoá (aria-disabled); ô 'Kế toán cho group Kế toán' đã tick (G1), 'Dịch thuật cho group Kinh doanh' chưa", async ({

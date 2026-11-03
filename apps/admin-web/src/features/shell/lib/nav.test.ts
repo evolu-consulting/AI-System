@@ -5,19 +5,14 @@ const ids = (role: Parameters<typeof navGroups>[0]) =>
   navGroups(role).flatMap((g) => g.items.map((i) => i.id));
 
 describe("ADM-FR-60 · menu theo role", () => {
-  test("platform_admin thấy Tenants, Users và 4 mục M2 theo nhóm", () => {
+  test("ADM-FR-76 · platform_admin thấy 3 nhóm Nền tảng · Công ty · Hệ thống đúng thứ tự Q9", () => {
     expect(ids("platform_admin")).toEqual([
       "overview",
-      "agents",
-      "features",
       "apps",
+      "features",
       "commands",
       "workflows",
-      "tenants",
-      "users",
-      "partners",
-      "groups",
-      "access",
+      "agents",
       "secrets",
       "system",
       "usage",
@@ -27,24 +22,30 @@ describe("ADM-FR-60 · menu theo role", () => {
     ]);
     expect(navGroups("platform_admin").map((g) => g.labelKey)).toEqual([
       null,
-      "nav.group.features",
-      "nav.group.access",
-      "nav.group.security",
+      "nav.group.platform",
+      "nav.group.companies",
       "nav.group.system",
     ]);
+    expect(navGroups("platform_admin").find((g) => g.kind === "companies")?.labelKey).toBe(
+      "nav.group.companies",
+    );
   });
 
-  test("tenant_admin không thấy Tenants và các mục M2", () => {
-    expect(ids("tenant_admin")).toEqual([
-      "overview",
-      "agents",
-      "users",
-      "partners",
-      "groups",
-      "access",
-      "usage",
-      "audit",
-      "feedback",
+  test("ADM-FR-76 · Người dùng/Nhóm/Đối tác/Phân quyền không còn trên sidebar (nằm trong workspace công ty)", () => {
+    for (const role of ["platform_admin", "tenant_admin"] as const) {
+      const all = ids(role);
+      for (const gone of ["users", "groups", "partners", "access", "tenants"]) {
+        expect(all).not.toContain(gone);
+      }
+    }
+  });
+
+  test("ADM-FR-77 · tenant_admin không có nhóm Nền tảng, chỉ nhóm Công ty (của mình) và Hệ thống", () => {
+    expect(ids("tenant_admin")).toEqual(["overview", "usage", "audit", "feedback"]);
+    expect(navGroups("tenant_admin").map((g) => g.labelKey)).toEqual([
+      null,
+      "nav.group.companies",
+      "nav.group.system",
     ]);
   });
 
@@ -107,14 +108,16 @@ describe("P-a · mục Quy trình theo cờ engine", () => {
     expect(ids("platform_admin")).not.toContain("sources");
     expect(ids("tenant_admin")).not.toContain("sources");
   });
-  test("engine on: có ở CHỨC NĂNG của platform_admin và tenant_admin", () => {
+  test("engine on: Quy trình + Nguồn có ở Nền tảng (platform_admin, trước Agents) và nhóm Chức năng (tenant_admin)", () => {
+    const groupOf = { platform_admin: "nav.group.platform", tenant_admin: "nav.group.features" };
     for (const role of ["platform_admin", "tenant_admin"] as const) {
-      const g = navGroups(role, { processes: true }).find(
-        (x) => x.labelKey === "nav.group.features",
-      );
+      const g = navGroups(role, { processes: true }).find((x) => x.labelKey === groupOf[role]);
       expect(g?.items.map((i) => i.id)).toContain("processes");
       expect(g?.items.map((i) => i.id)).toContain("sources");
     }
+    const platform = navGroups("platform_admin", { processes: true }).flatMap((g) => g.items);
+    const order = platform.map((i) => i.id);
+    expect(order.indexOf("processes")).toBeLessThan(order.indexOf("agents"));
   });
   test("member không có mục nào dù cờ on; crumbs /processes*", () => {
     expect(navGroups("member", { processes: true })).toEqual([]);

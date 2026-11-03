@@ -1,19 +1,17 @@
 // ADM-FR-04 · ADM-FR-62 · dữ liệu của trang Users: tenant đang xem (platform chọn qua URL, tenant_admin cố định), bộ lọc Group, danh sách.
 import type { Me } from "@ai/contracts";
 import { getRouteApi } from "@tanstack/react-router";
-import { useTenantOptions } from "@/features/tenants/api";
+import { useWorkspaceView } from "@/features/tenants/lib/use-workspace-view";
 import { ApiError } from "@/lib/http";
-import { resolveViewedTenant } from "@/lib/viewed-tenant";
 import { USERS_PAGE_SIZE, useUserList } from "../api";
 import type { RoleFilter, StatusFilter } from "../components/list/UserFilters";
 import { useUsersGroupFilter } from "./use-users-group-filter";
 
-const route = getRouteApi("/_authed/users");
+const route = getRouteApi("/_authed/tenants/$tenantId");
 
 export function useUsersView(me: Me | null) {
   const search = route.useSearch();
-  const options = useTenantOptions(me?.role === "platform_admin");
-  const tn = resolveViewedTenant(me, search.tenant, options);
+  const tn = useWorkspaceView(me);
   const group = useUsersGroupFilter(search.group, tn, !!me);
   const page = search.page ?? 1;
   const list = useUserList(

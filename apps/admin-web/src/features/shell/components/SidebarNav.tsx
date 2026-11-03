@@ -1,4 +1,4 @@
-// ADM-FR-60, ADM-FR-04 · danh sách mục menu (dùng cho Sidebar và Sheet di động); mục hiện tại có aria-current="page".
+// ADM-FR-60, ADM-FR-04, CR-112 ADM-FR-76 · danh sách mục menu (nhóm "Công ty" vẽ bằng SidebarCompanies) (dùng cho Sidebar và Sheet di động); mục hiện tại có aria-current="page".
 import { Link } from "@tanstack/react-router";
 import {
   Activity,
@@ -28,6 +28,7 @@ import { useSession } from "@/lib/auth/use-session";
 import { frozenModulesOn } from "@/lib/frozen";
 import { cn } from "@/lib/utils";
 import { type NavId, type NavItem, navGroups } from "../lib/nav";
+import { SidebarCompanies } from "./SidebarCompanies";
 
 const ICONS: Record<NavId, LucideIcon> = {
   overview: LayoutDashboard,
@@ -89,7 +90,10 @@ export function SidebarNav({ collapsed = false, onNavigate }: Props) {
     <nav aria-label={t("nav.main")} className="flex-1 space-y-4 overflow-y-auto p-3">
       {navGroups(role, { processes, frozen: frozenModulesOn }).map((group) => (
         <div key={group.labelKey ?? "root"} className="space-y-1">
-          {group.labelKey && !collapsed ? (
+          {group.kind === "companies" ? (
+            <SidebarCompanies collapsed={collapsed} onNavigate={onNavigate} />
+          ) : null}
+          {group.labelKey && !collapsed && group.kind !== "companies" ? (
             <p className="px-3 pb-1 text-micro font-semibold tracking-wide text-subtle-foreground">
               {t(group.labelKey)}
             </p>

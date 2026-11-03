@@ -1,7 +1,7 @@
 // ADM-FR-62 · resolveViewedTenant (hàm thuần theo dữ liệu): tenant_admin cố định, platform chọn qua URL, mã lạ → unknown.
 import { describe, expect, test } from "bun:test";
 import type { Me } from "@ai/contracts";
-import { resolveViewedTenant } from "./viewed-tenant";
+import { resolveViewedTenant, resolveWorkspaceTenant } from "./viewed-tenant";
 
 const me = (role: Me["role"]) => ({ role, tenant: { key: "acme" } }) as unknown as Me;
 const options = { data: [{ id: "t1", key: "acme" }] };
@@ -35,5 +35,18 @@ describe("ADM-FR-62 · resolveViewedTenant", () => {
       ready: false,
     });
     expect(resolveViewedTenant(me("platform_admin"), "acme", {}).ready).toBe(false);
+  });
+});
+
+describe("CR-112 · resolveWorkspaceTenant", () => {
+  test("platform: tenantId lấy từ workspace; tenant_admin: không gửi tenantId", () => {
+    const ws = { id: "t9", key: "globex" };
+    expect(resolveWorkspaceTenant(me("platform_admin"), ws)).toMatchObject({
+      tenantKey: "globex",
+      tenantId: "t9",
+      ready: true,
+      unknown: false,
+    });
+    expect(resolveWorkspaceTenant(me("tenant_admin"), ws).tenantId).toBeUndefined();
   });
 });

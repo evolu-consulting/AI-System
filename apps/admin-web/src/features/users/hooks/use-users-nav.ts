@@ -2,7 +2,7 @@
 import { getRouteApi } from "@tanstack/react-router";
 import { useCallback } from "react";
 
-const route = getRouteApi("/_authed/users");
+const route = getRouteApi("/_authed/tenants/$tenantId");
 
 export type SearchPatch = Record<string, string | number | undefined>;
 

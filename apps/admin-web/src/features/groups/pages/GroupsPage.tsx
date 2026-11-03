@@ -3,7 +3,6 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
-import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
 import { GroupFilters } from "../components/list/GroupFilters";
@@ -24,7 +23,6 @@ export function GroupsPage() {
   const { list, tenantKey, page } = view;
 
   if (!me) return null;
-  if (view.unknown) return <NotFoundState backTo="/groups" />;
 
   const create = view.canCreate ? (
     <Button asChild>
@@ -48,13 +46,7 @@ export function GroupsPage() {
         })}
         actions={create}
       />
-      <GroupFilters
-        tenants={view.isPlatform ? (view.tenants ?? []) : undefined}
-        tenantKey={tenantKey}
-        q={view.search.q ?? ""}
-        onTenant={(key) => patch({ tenant: key ?? undefined })}
-        onQuery={(q) => patch({ q: q || undefined })}
-      />
+      <GroupFilters q={view.search.q ?? ""} onQuery={(q) => patch({ q: q || undefined })} />
       <GroupTable
         groups={view.needsTenant ? [] : list.data?.items}
         isLoading={!view.needsTenant && list.isPending && view.ready}

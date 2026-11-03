@@ -12,16 +12,17 @@ const USERNAME = "dt.nam";
 
 const asBinh = async (page: Page) => {
   await loginToShell(page, "acme", "binh", PW);
+  // CR-112: `/partners` chuyển tới tab Đối tác của workspace (tiêu đề tab là h2; bảng chỉ có khi đã có công ty đối tác).
   await page.goto("/partners");
-  await expect(page.getByRole("table", { name: "Đối tác" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Đối tác", exact: true })).toBeVisible();
 };
 
-test("ADM-FR-74 · menu 'Đối tác' có cho tenant_admin; thêm công ty → hiện trong bảng, 0/0 tài khoản", async ({
+test("ADM-FR-74 · tab 'Đối tác' trong workspace công ty có cho tenant_admin; thêm công ty → hiện trong bảng, 0/0 tài khoản", async ({
   page,
 }) => {
   await asBinh(page);
-  await expect(page.getByRole("link", { name: "Đối tác" })).toBeVisible();
-  await page.getByRole("button", { name: "+ Thêm công ty đối tác" }).click();
+  await expect(page.getByRole("tab", { name: "Đối tác", selected: true })).toBeVisible();
+  await page.getByRole("button", { name: "+ Thêm công ty đối tác" }).first().click();
   const dialog = page.getByRole("dialog", { name: "Thêm công ty đối tác" });
   await dialog.getByRole("textbox", { name: "Tên công ty" }).fill(COMPANY);
   await dialog.getByRole("button", { name: "Lưu" }).click();
@@ -34,7 +35,7 @@ test("ADM-FR-74 · menu 'Đối tác' có cho tenant_admin; thêm công ty → h
 
 test("ADM-FR-74 · tên công ty trùng → lỗi ngay ở ô, hộp thoại giữ mở", async ({ page }) => {
   await asBinh(page);
-  await page.getByRole("button", { name: "+ Thêm công ty đối tác" }).click();
+  await page.getByRole("button", { name: "+ Thêm công ty đối tác" }).first().click();
   const dialog = page.getByRole("dialog", { name: "Thêm công ty đối tác" });
   const name = dialog.getByRole("textbox", { name: "Tên công ty" });
   await name.fill(COMPANY);

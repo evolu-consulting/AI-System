@@ -192,9 +192,21 @@
       "access": "TRUY CẬP",
       "features": "CHỨC NĂNG",
       "security": "BẢO MẬT",
-      "system": "HỆ THỐNG"
+      "system": "HỆ THỐNG",
+      "platform": "NỀN TẢNG",
+      "companies": "CÔNG TY"
     },
-    "tenants": "Tenants",
+    "companies": {
+      "search": "Tìm công ty",
+      "create": "Tạo công ty",
+      "loading": "Đang tải công ty…",
+      "empty": "Chưa có công ty nào.",
+      "noMatch": "Không có công ty khớp.",
+      "error": "Không tải được danh sách công ty.",
+      "locked": "Đã khoá",
+      "list": "Danh sách công ty"
+    },
+    "tenants": "Công ty",
     "users": "Users",
     "partners": "Đối tác",
     "collapse": "Thu gọn thanh bên",
@@ -608,10 +620,13 @@
     "tab": {
       "info": "Thông tin",
       "features": "Ứng dụng & Gói",
-      "agents": "Agent",
+      "agents": "Agents",
       "quota": "Quota",
-      "users": "Users",
-      "workflowTools": "Tool quy trình",
+      "users": "Người dùng",
+      "groups": "Nhóm",
+      "partners": "Đối tác",
+      "access": "Phân quyền",
+      "workflowTools": "Công cụ quy trình",
       "packs": "Gói",
       "unavailableBody": "Mục này sẽ khả dụng ở bản sau."
     },

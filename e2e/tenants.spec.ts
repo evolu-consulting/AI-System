@@ -24,7 +24,7 @@ const openTenants = async (page: Page) => {
   await asAdmin(page);
   await page
     .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("link", { name: "Tenants" })
+    .getByRole("link", { name: "CÔNG TY", exact: true })
     .click();
   await expect(page.getByRole("table", { name: "Tenants" })).toBeVisible();
 };
@@ -101,7 +101,7 @@ test("ADM-FR-60 · M1-R15 · tạo tenant với mã trùng 'acme' → 'Mã công
   await expect(page.getByText("Mã công ty đã được dùng")).toBeVisible();
 });
 
-test("ADM-FR-60 · M1-R19 · chi tiết acme: mã readonly, sửa tên + Lưu → toast 'Đã lưu acme'; tab Feature/Agent 'Chưa khả dụng'", async ({
+test("ADM-FR-60 · M1-R19 · chi tiết acme: mã readonly, sửa tên + Lưu → toast 'Đã lưu acme'; thứ tự tab workspace (CR-112) + tab Agents nhúng màn Agents", async ({
   page,
 }) => {
   await asAdmin(page);
@@ -111,10 +111,20 @@ test("ADM-FR-60 · M1-R19 · chi tiết acme: mã readonly, sửa tên + Lưu �
   await page.getByRole("textbox", { name: "Tên công ty" }).fill("Acme Corp 2");
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Đã lưu acme" })).toBeVisible();
-  for (const tab of ["Feature", "Agent"]) {
-    await page.getByRole("tab", { name: tab }).click();
-    await expect(page.getByText("Chưa khả dụng").first()).toBeVisible();
-  }
+  await expect(page.getByRole("tab")).toHaveText([
+    "Thông tin",
+    "Ứng dụng & Gói",
+    "Người dùng",
+    "Nhóm",
+    "Đối tác",
+    "Phân quyền",
+    "Agents",
+    "Công cụ quy trình",
+    "Quota",
+  ]);
+  await page.getByRole("tab", { name: "Agents" }).click();
+  await expect(page.getByRole("heading", { level: 2, name: "Agents", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
 });
 
 test("ADM-FR-61 · M1-AC03 · khoá acme: gõ 'acme' mới bật nút; user acme không đăng nhập được; mở khoá → toast", async ({

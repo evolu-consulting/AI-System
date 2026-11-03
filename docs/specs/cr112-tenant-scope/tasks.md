@@ -58,7 +58,7 @@ tenant_admin xem chi tiết công ty mình (chỉ xem) và quota rút gọn; tha
 - Kịch bản: khi member gọi workspace công ty thì 403 [test: apps/admin-api/src/modules/tenants/tenant-scope.int.test.ts » member ⇒ 403 cả tenant mình lẫn tenant khác]
 - Kịch bản: khi đối tác gọi workspace công ty thì 403 [test: apps/admin-api/src/modules/tenants/tenant-scope.int.test.ts » đối tác (user ngoài) ⇒ 403 trên workspace công ty]
 - Kịch bản: khi platform_admin mở mọi công ty thì như cũ 200 [test: apps/admin-api/src/modules/tenants/tenant-scope.int.test.ts » platform_admin: mọi tenant như cũ (chi tiết + quota đủ tiền)]
-- Kịch bản: khi tenant_admin mở /tenants/<id> trên admin-web thì chỉ thấy tab Thông tin (chỉ xem)/Agent/Users [test: apps/admin-web/src/features/tenants/lib/workspace-tabs.test.ts » tenant_admin chỉ info/agents/users, tab chỉ-platform trên URL ⇒ info]
+- Kịch bản: khi tenant_admin mở /tenants/<id> trên admin-web thì chỉ thấy tab Thông tin (chỉ xem)/Agent/Users [test: apps/admin-web/src/features/tenants/lib/workspace-tabs.test.ts » tenant_admin chỉ thấy info/features/users/groups/partners/access/agents, tab chỉ-platform trên URL ⇒ info]
 
 ## Việc còn lại
 - Web: tab Quota rút gọn cho tenant_admin; sidebar chỉ công ty mình (lát nav).

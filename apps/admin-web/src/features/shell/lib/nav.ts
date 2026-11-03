@@ -1,7 +1,10 @@
 // ADM-FR-60, ADM-FR-04, ADM-FR-10 · mục menu theo role: Tổng quan; TRUY CẬP: Tenants (chỉ platform_admin), Users; HỆ THỐNG (cuối, M4): Chi phí & quota, Nhật ký (cả hai role), Import / Export (chỉ platform_admin).
 // CR-060 (P-b FS1): CHỨC NĂNG có thêm Nguồn (`/sources`, cả hai role, cùng cờ engine với Quy trình).
 // CR-054: CHỨC NĂNG có Agents (cả hai role; tenant_admin chỉ thấy Agents trong nhóm này).
-// TRUY CẬP gồm cả Groups và Phân quyền (M3, tenant_admin cũng thấy); CHỨC NĂNG (trên TRUY CẬP, plan-frontend D3): Features, Commands, Workflows; BẢO MẬT (dưới cùng): Secrets (M2, chỉ platform_admin).
+// CR-112 · ADM-FR-76/77 (Q9): sidebar lồng 3 nhóm. NỀN TẢNG (chỉ platform_admin): Ứng dụng · Features · Commands · Workflows · Quy trình · Agents.
+// CÔNG TY: danh sách công ty (nhóm động, vẽ ở SidebarCompanies) — platform_admin mọi công ty + tìm, tenant_admin chỉ công ty mình.
+// HỆ THỐNG: Secrets · Tình trạng · Chi phí toàn hệ thống · Nhật ký · Góp ý · Import/Export (tenant_admin: Chi phí, Nhật ký, Góp ý).
+// Người dùng / Nhóm / Đối tác / Phân quyền nằm trong workspace công ty; route cũ chuyển hướng (lib/legacy-redirect.ts).
 import type { Role } from "@ai/contracts";
 
 export type NavId =
@@ -70,27 +73,25 @@ export type NavItem = {
 };
 export type NavGroup = {
   labelKey:
-    | "nav.group.access"
+    | "nav.group.platform"
+    | "nav.group.companies"
     | "nav.group.features"
-    | "nav.group.security"
     | "nav.group.system"
     | null;
+  /** `companies` ⇒ nhóm động: SidebarNav vẽ danh sách công ty thay cho `items`. */
+  kind?: "companies";
   items: NavItem[];
 };
 
+const COMPANIES_GROUP: NavGroup = { labelKey: "nav.group.companies", kind: "companies", items: [] };
 const item = (id: NavId, to: NavTo): NavItem => ({ id, to, labelKey: `nav.${id}` });
 const OVERVIEW = item("overview", "/");
-const TENANTS = item("tenants", "/tenants");
-const USERS = item("users", "/users");
-const PARTNERS = item("partners", "/partners");
 const AGENTS = item("agents", "/agents");
 const FEATURES = item("features", "/features");
 const COMMANDS = item("commands", "/commands");
 const WORKFLOWS = item("workflows", "/workflows");
 const PROCESSES = item("processes", "/processes");
 const SOURCES = item("sources", "/sources");
-const GROUPS = item("groups", "/groups");
-const ACCESS = item("access", "/access");
 const SECRETS = item("secrets", "/secrets");
 const APPS = item("apps", "/apps");
 const USAGE = item("usage", "/usage");
@@ -115,7 +116,7 @@ const FROZEN_PREFIXES = ["/transfer", "/sources"];
 export const isFrozenPath = (pathname: string): boolean =>
   FROZEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
-/** Menu theo role. `member` không dùng khung quản trị nên không có mục nào. Mục "Quy trình" (CHỨC NĂNG, cả hai role) chỉ khi `opts.processes`. */
+/** Menu theo role. `member` không dùng khung quản trị nên không có mục nào. Mục "Quy trình" chỉ khi `opts.processes`. */
 export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGroup[] {
   const on = opts.frozen !== false;
   // CR-103 · "Quy trình" theo Hub (dò lúc chạy) kể cả khi cờ build đóng băng off; "Nguồn" vẫn cần cờ build on.
@@ -124,22 +125,21 @@ export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGro
     return [
       { labelKey: null, items: [OVERVIEW] },
       {
-        labelKey: "nav.group.features",
-        items: [AGENTS, FEATURES, APPS, COMMANDS, WORKFLOWS, ...proc],
+        labelKey: "nav.group.platform",
+        items: [APPS, FEATURES, COMMANDS, WORKFLOWS, ...proc, AGENTS],
       },
-      { labelKey: "nav.group.access", items: [TENANTS, USERS, PARTNERS, GROUPS, ACCESS] },
-      { labelKey: "nav.group.security", items: [SECRETS] },
+      COMPANIES_GROUP,
       {
         labelKey: "nav.group.system",
-        items: [SYSTEM, USAGE, AUDIT, FEEDBACK, ...(on ? [TRANSFER] : [])],
+        items: [SECRETS, SYSTEM, USAGE, AUDIT, FEEDBACK, ...(on ? [TRANSFER] : [])],
       },
     ];
   }
   if (role === "tenant_admin") {
     return [
       { labelKey: null, items: [OVERVIEW] },
-      { labelKey: "nav.group.features", items: [AGENTS, ...proc] },
-      { labelKey: "nav.group.access", items: [USERS, PARTNERS, GROUPS, ACCESS] },
+      COMPANIES_GROUP,
+      ...(proc.length ? [{ labelKey: "nav.group.features" as const, items: proc }] : []),
       { labelKey: "nav.group.system", items: [USAGE, AUDIT, FEEDBACK] },
     ];
   }

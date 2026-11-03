@@ -57,7 +57,7 @@ test("ADM-FR-01 · UX · khi đang gửi nút hiện 'Đang đăng nhập…'", 
   }
 });
 
-test("ADM-FR-01 · BR-05 · binh (tenant_admin) vào khung: main + Tổng quan (region 'Users đang hoạt động', M4); menu có Users, 'Chi phí & quota', 'Nhật ký', không có Tenants, 'Import / Export'", async ({
+test("ADM-FR-01 · BR-05 · binh (tenant_admin) vào khung: main + Tổng quan (region 'Users đang hoạt động', M4); menu (CR-112) có nhóm CÔNG TY chỉ công ty mình, 'Chi phí & quota', 'Nhật ký', không có Users/Tenants/'Import / Export'", async ({
   page,
 }) => {
   await loginToShell(page, "acme", "binh", PW);
@@ -65,21 +65,26 @@ test("ADM-FR-01 · BR-05 · binh (tenant_admin) vào khung: main + Tổng quan (
   // M4 (Q2a, test-plan §5 K10): Tổng quan thật thay câu chào (ui 7.2); menu thêm mục M4 theo role.
   await expect(page.getByRole("region", { name: "Users đang hoạt động" })).toBeVisible();
   const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
-  await expect(nav.getByRole("link", { name: "Users" })).toBeVisible();
+  await expect(nav.getByRole("list", { name: "Danh sách công ty" }).getByRole("link")).toHaveCount(
+    1,
+  );
   await expect(nav.getByRole("link", { name: "Chi phí & quota" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Nhật ký" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Tenants" })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: "Users", exact: true })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: "Công ty", exact: true })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Import / Export" })).toHaveCount(0);
 });
 
-test("ADM-FR-01 · BR-05 · admin (platform_admin) thấy cả link Tenants và Users; tải lại trang vẫn đăng nhập", async ({
+test("ADM-FR-01 · BR-05 · admin (platform_admin) thấy link CÔNG TY và danh sách công ty; tải lại trang vẫn đăng nhập", async ({
   page,
 }) => {
   const a = seedAdmin();
   await loginToShell(page, "platform", a.username, a.password);
   const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
-  await expect(nav.getByRole("link", { name: "Tenants" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Users" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "CÔNG TY", exact: true })).toBeVisible();
+  await expect(
+    nav.getByRole("list", { name: "Danh sách công ty" }).getByRole("link").first(),
+  ).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { level: 1, name: "Tổng quan" })).toBeVisible();
 });

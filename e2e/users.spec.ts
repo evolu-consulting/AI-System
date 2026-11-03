@@ -6,6 +6,7 @@ import {
   resetFixture,
   rowOf,
   seedAdmin,
+  TENANT_ID,
   USER_ID,
   withOwner,
 } from "./support/helpers";
@@ -20,10 +21,11 @@ const asBinh = async (page: Page) => {
   await page.goto("/users");
   await expect(page.getByRole("table", { name: "Users" })).toBeVisible();
 };
-const asAdmin = async (page: Page, tenant?: string) => {
+const asAdmin = async (page: Page, tenant = "acme") => {
   const a = seedAdmin();
   await loginToShell(page, "platform", a.username, a.password);
-  await page.goto(tenant ? `/users?tenant=${tenant}` : "/users");
+  // CR-112: `/users?tenant=<mã>` chuyển tới tab Người dùng của workspace công ty.
+  await page.goto(`/users?tenant=${tenant}`);
   await expect(page.getByRole("table", { name: "Users" })).toBeVisible();
 };
 const rowMenu = async (page: Page, username: string, item: string) => {
@@ -48,17 +50,17 @@ test("ADM-FR-04 · BR-09 · binh: bảng chỉ có user acme, hàng 'binh (bạn
   await expect(page.getByRole("menuitem", { name: "Sửa" })).toBeVisible();
 });
 
-test("ADM-FR-04 · M1-R14 · admin: có combobox Tenant, 'Tất cả tenant' → '+ Tạo user' bị khoá; chọn acme → bật", async ({
+test("ADM-FR-04 · ADM-FR-76 · M1-R14 · admin: /users?tenant=acme → workspace acme tab Người dùng, không còn combobox Tenant, '+ Tạo user' bật", async ({
   page,
 }) => {
   await asAdmin(page);
-  const picker = page.getByRole("combobox", { name: "Tenant" });
-  await expect(picker).toContainText("Tất cả tenant");
-  const create = page.getByRole("button", { name: "+ Tạo user" });
-  await expect(create).toHaveAttribute("aria-disabled", "true");
-  await picker.click();
-  await page.getByRole("option", { name: /acme/i }).click();
-  await expect(create).not.toHaveAttribute("aria-disabled", "true");
+  await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.acme}.*tab=users`));
+  await expect(page.getByRole("tab", { name: "Người dùng", selected: true })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Tenant" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "+ Tạo user" })).not.toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
 });
 
 test("ADM-FR-04 · M1-R17 · tạo user: khối mật khẩu tạm 16 ký tự; đóng khi chưa sao chép → hỏi xác nhận", async ({

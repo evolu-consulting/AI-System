@@ -1,10 +1,9 @@
-// ADM-FR-04 · hàng bộ lọc Users: Tenant (platform), chip trạng thái có số, Role, chip "Chưa đăng nhập", ô tìm. Mọi giá trị nằm trên URL.
+// ADM-FR-04 · hàng bộ lọc Users: chip trạng thái có số, Role, chip "Chưa đăng nhập", ô tìm. Mọi giá trị nằm trên URL.
 import type { ListCounts } from "@ai/contracts";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FilterChips } from "@/components/shared/form/FilterChips";
 import { SearchBox } from "@/components/shared/form/SearchBox";
-import { type TenantOption, TenantPicker } from "@/components/shared/TenantPicker";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -22,9 +21,6 @@ export type RoleFilter = "all" | "platform_admin" | "tenant_admin" | "member";
 const ALL_GROUPS = "all";
 
 type Props = {
-  /** Có giá trị → hiện ô chọn Tenant (chỉ platform_admin). */
-  tenants?: TenantOption[];
-  tenantKey: string | null;
   status: StatusFilter;
   role: RoleFilter;
   never: boolean;
@@ -39,7 +35,6 @@ type Props = {
   unknownGroupKey?: string;
   groupDisabled: boolean;
   onGroup: (key: string | undefined) => void;
-  onTenant: (key: string | null) => void;
   onStatus: (s: StatusFilter) => void;
   onRole: (r: RoleFilter) => void;
   onNever: (never: boolean) => void;
@@ -50,9 +45,6 @@ export function UserFilters(p: Props) {
   const { t, i18n } = useTranslation();
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3">
-      {p.tenants ? (
-        <TenantPicker tenants={p.tenants} value={p.tenantKey} onChange={p.onTenant} />
-      ) : null}
       <FilterChips<StatusFilter>
         label={t("users.col.status")}
         value={p.status}

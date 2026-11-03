@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { TenantDetailPage, type TenantTab } from "@/features/tenants/pages/TenantDetailPage";
+import { validateWorkspaceSearch } from "@/features/tenants/lib/workspace-search";
+import { TenantDetailPage } from "@/features/tenants/pages/TenantDetailPage";
 
-const TABS = ["info", "features", "agents", "workflow-tools", "packs", "quota", "users"] as const;
-
+// CR-112 · workspace công ty: `?tab=` + bộ lọc của các tab nhúng (Người dùng, Nhóm, Đối tác, Phân quyền).
 export const Route = createFileRoute("/_authed/tenants/$tenantId")({
-  validateSearch: (s: Record<string, unknown>): { tab?: TenantTab } => ({
-    tab: TABS.find((t) => t === s.tab),
-  }),
+  validateSearch: validateWorkspaceSearch,
   component: TenantDetailPage,
 });

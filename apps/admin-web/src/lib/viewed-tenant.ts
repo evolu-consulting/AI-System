@@ -5,6 +5,19 @@ import type { Me } from "@ai/contracts";
 export type TenantOptionData = { id: string; key: string };
 export type TenantOptionsQuery = { data?: TenantOptionData[] };
 
+/** CR-112 · trong workspace công ty `/tenants/$id`: tenant do route quyết định (đã tải chi tiết), không qua `?tenant=` / danh sách. */
+export function resolveWorkspaceTenant(me: Me | null, ws: TenantOptionData) {
+  const isPlatform = me?.role === "platform_admin";
+  return {
+    isPlatform,
+    tenants: undefined as TenantOptionData[] | undefined,
+    tenantKey: ws.key as string | null,
+    tenantId: isPlatform ? ws.id : undefined,
+    unknown: false,
+    ready: true,
+  };
+}
+
 export function resolveViewedTenant(
   me: Me | null,
   tenantParam: string | undefined,

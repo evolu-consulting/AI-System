@@ -2,7 +2,6 @@
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
-import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { useSession } from "@/lib/auth/use-session";
 import { USERS_PAGE_SIZE } from "../api";
 import { CreateUserButton } from "../components/list/CreateUserButton";
@@ -23,7 +22,6 @@ export function UsersPage() {
   const { onAction, dialogs } = useUserActions();
 
   if (!me) return null;
-  if (view.unknown) return <NotFoundState backTo="/users" />;
 
   const createButton = <CreateUserButton canCreate={view.canCreate} onCreate={nav.openCreate} />;
   const clearFilters = () =>
@@ -46,8 +44,6 @@ export function UsersPage() {
       />
       <UserFilters
         {...filterState}
-        tenants={view.isPlatform ? (view.tenants ?? []) : undefined}
-        tenantKey={tenantKey}
         counts={list.data?.counts}
         showPlatformRole={tenantKey === "platform"}
         groups={view.group.options}
@@ -55,7 +51,6 @@ export function UsersPage() {
         unknownGroupKey={view.group.unknownKey}
         groupDisabled={view.group.disabled}
         onGroup={(key) => nav.patch({ group: key })}
-        onTenant={(key) => nav.patch({ tenant: key ?? undefined, group: undefined })}
         onStatus={(s: StatusFilter) => nav.patch({ status: s === "all" ? undefined : s })}
         onRole={(r: RoleFilter) => nav.patch({ role: r === "all" ? undefined : r })}
         onNever={(never) => nav.patch({ login: never ? "never" : undefined })}

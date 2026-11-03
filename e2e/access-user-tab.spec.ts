@@ -32,15 +32,15 @@ test("ADM-FR-36 · M3-R13 · lan: tab 'Quyền hiệu lực' chỉ có khi SỬA
   await expect(create.getByRole("tab", { name: "Quyền hiệu lực" })).toHaveCount(0);
 });
 
-test("ADM-FR-36 · M3-R13 · link 'Mở Kiểm tra quyền' → /access?tab=check&user=lan&tenant=acme và tab 'Kiểm tra quyền' đang chọn", async ({
+test("ADM-FR-36 · M3-R13 · link 'Mở Kiểm tra quyền' → route cũ /access?tab=check&user=lan&tenant=acme chuyển tới workspace acme (tab=access&view=check) và tab 'Kiểm tra quyền' đang chọn", async ({
   page,
 }) => {
   const drawer = await openDrawer(page, "lan");
   await drawer.getByRole("tab", { name: "Quyền hiệu lực" }).click();
   await drawer.getByRole("link", { name: "Mở Kiểm tra quyền" }).click();
-  await expect(page).toHaveURL(/\/access\?.*tab=check/);
+  await expect(page).toHaveURL(/\/tenants\/[0-9a-f-]{36}\?.*tab=access/);
+  await expect(page).toHaveURL(/view=check/);
   await expect(page).toHaveURL(/user=lan/);
-  await expect(page).toHaveURL(/tenant=acme/);
   await expect(page.getByRole("tab", { name: "Kiểm tra quyền", exact: true })).toHaveAttribute(
     "aria-selected",
     "true",
