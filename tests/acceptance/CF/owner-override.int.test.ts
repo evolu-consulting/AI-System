@@ -41,11 +41,12 @@ async function openBy(who: Role, n: number, v: number): Promise<{ id: string; ru
   return { id, run: a?.run as string };
 }
 const card = async (r: Role, id: string) => (await approval(c, r, id)).json as Json;
-const overrides = (id: string) =>
-  c.sql<
+const overrides = async (id: string): Promise<Json[]> => [
+  ...(await c.sql<
     Json[]
   >`select actor_user_id::text as actor, data->>'stage' as stage, data->>'action' as action
-    from contracts.contract_events where contract_id = ${id} and type = 'approval_override'`;
+    from contracts.contract_events where contract_id = ${id} and type = 'approval_override'`),
+];
 
 describe("CR-113 · chủ gói duyệt thay + chuyển cấp mặc định", () => {
   it("H (Toàn quyền, ngoài Group cấp 1) Đạt ⇒ owner_override được ghi, B (người của bước) Đạt ⇒ member", async () => {

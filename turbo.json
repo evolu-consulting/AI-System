@@ -21,7 +21,8 @@
     "MOCK_TIMEOUT_MS",
     "DIFY_MOCK_PORT",
     "HUB_MOCK_PORT",
-    "HUB_DLC_URL"
+    "HUB_DLC_URL",
+    "AI_SUB_CLI_PATH"
   ],
   "tasks": {
     "build": {

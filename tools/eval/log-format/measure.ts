@@ -1,5 +1,6 @@
 // CR-114 hub-eval · đo token + mức hiểu của model trên 4 khuôn log, qua `claude -p` (gói Claude CLI; tốn hạn mức).
 // token log = (input + cache_creation + cache_read) của lời gọi với log trừ lời gọi với log rỗng (cùng câu hỏi).
+import { costUsd } from "../../../apps/hub-api/src/lib/ai-client/pricing";
 import { type Dataset, FORMATS, type FormatName, generate, gradeAnswer } from "./generate";
 
 export type Call = { tokensIn: number; text: string; ms: number };
@@ -101,3 +102,50 @@ export const formatRows = (rows: readonly Row[]): string =>
         `${r.model.padEnd(7)} ${r.format.padEnd(12)} log_tokens=${String(r.logTokens).padStart(6)}  dung=${r.correct}/${r.total}  ${r.secPerRun.toFixed(1)}s/lan`,
     )
     .join("\n");
+
+const CHARS_PER_TOKEN = 3.5;
+const OUT_TOKENS = 150;
+const MODEL_IDS: Record<string, string> = {
+  haiku: "claude-haiku-5-5",
+  sonnet: "claude-sonnet-5-5",
+  opus: "claude-opus-5-5",
+};
+
+export type MeasureEstimate = {
+  calls: number;
+  inputTokens: number;
+  outputTokens: number;
+  usd: number | null;
+};
+
+/** Ước tính trước khi chạy: mỗi lời gọi ≈ (câu hỏi + log)/3,5 token vào, ~150 token ra; USD theo giá API (bí danh haiku/sonnet/opus). */
+export function estimateMeasure(
+  o: MeasureOpts,
+  ds: Dataset = generate(o.complex),
+): MeasureEstimate {
+  const q = Math.ceil(ds.question.length / CHARS_PER_TOKEN);
+  const logs = FORMATS.reduce((s, f) => s + Math.ceil(ds.formats[f].length / CHARS_PER_TOKEN), 0);
+  const perModelIn = q + o.reps * (FORMATS.length * q + logs);
+  const perModelOut = OUT_TOKENS * (1 + FORMATS.length * o.reps);
+  let usd: number | null = 0;
+  for (const m of o.models) {
+    const c = costUsd(MODEL_IDS[m] ?? m, {
+      inputTokens: perModelIn,
+      outputTokens: perModelOut,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    });
+    usd = usd === null || c === null ? null : usd + c;
+  }
+  return {
+    calls: plannedCalls(o),
+    inputTokens: perModelIn * o.models.length,
+    outputTokens: perModelOut * o.models.length,
+    usd: usd === null ? null : Math.round(usd * 10_000) / 10_000,
+  };
+}
+
+export function formatEstimate(e: MeasureEstimate): string {
+  const usd = e.usd === null ? "model chưa có trong bảng giá" : `~$${e.usd.toFixed(4)} (giá API)`;
+  return `Ước tính: ${e.calls} lời gọi \`claude -p\`, ~${e.inputTokens} token vào + ~${e.outputTokens} ra, ${usd}; gói Claude: tốn hạn mức gói`;
+}

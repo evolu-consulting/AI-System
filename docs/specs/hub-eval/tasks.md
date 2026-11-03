@@ -17,7 +17,7 @@ Bộ eval chất lượng dùng lại cho agent Hub + bộ đo khuôn log, chạ
   - Đầu ra: điểm theo agent + chênh so baseline, tóm tắt ≤ 10 dòng; `--json` cho script. Mã thoát: 0 ổn · 1 hồi quy (agent mất > ngưỡng
     điểm, mặc định 0,05) · 2 sai tham số / live chưa đủ điều kiện.
 - `bun run eval:log-format [--complex] [--models haiku,sonnet] [--reps 2] [--dry-run]`: thay `gen*.py`/`measure*.ps1` (đã xoá) bằng TS
-  chạy mọi OS; sinh log (hạt cố định), gọi `claude -p`, trừ token của lời gọi log rỗng, chấm 6 khoá đáp án. `--dry-run` chỉ in kích thước.
+  chạy mọi OS; sinh log (hạt cố định), gọi `claude -p`, trừ token của lời gọi log rỗng, chấm 6 khoá đáp án. `--dry-run` chỉ in kích thước; chạy thật in ước tính (lời gọi/token/USD) rồi BẮT BUỘC `--yes` (thiếu ⇒ thoát 2).
 
 ## Làm
 - [x] `eval/hub/` — `types.ts` (định dạng), `grade.ts` (luật chấm), `judge.ts`, `baseline.ts` (so baseline + tóm tắt), `runner.ts`, `live.ts`
@@ -45,14 +45,14 @@ Bộ eval chất lượng dùng lại cho agent Hub + bộ đo khuôn log, chạ
 - Số liệu log-format sinh từ PRNG TS (khác hạt Python cũ) nên không tái hiện đúng từng số token bên dưới; kết luận không đổi.
 
 ## Test tối thiểu
-- `bun test eval/hub tools/eval` (26 test: luật chấm, judge, baseline, live helpers + `--yes`, replay + hồi quy, log-format).
+- `bun test eval/hub tools/eval` (28 test: luật chấm, judge, baseline, live helpers + `--yes`, replay + hồi quy, log-format).
 - `bun run typecheck` phần `tsc -p tsconfig.tests.json` không lỗi mới ở `eval/hub`, `tools/eval`; `bun run openspec:check`.
 
 ## Quyết định trong lúc làm
 - Đặt ở `eval/hub/` (cạnh `eval/n4-knowledge/`), không dưới `tests/` (tránh khoá test `tests/.lock`).
 - Mã thoát 1 chỉ khi có `--baseline`; không baseline thì chỉ báo điểm.
 - `--filter` khớp chuỗi con của id/agent/tag; chạy lọc thì không so tổng với baseline đầy đủ, chỉ so agent đã chạy.
-- Đo khuôn log dùng `claude -p` (gói Claude) nên không có `--yes`; thay vào đó in số lời gọi trước khi chạy và có `--dry-run`.
+- Đo khuôn log cũng in ước tính trước và đòi `--yes` (như live của eval:hub); `--dry-run` chỉ sinh log. Sửa kèm: kiểu `tests/acceptance/CF/owner-override.int.test.ts` (helper `overrides` trả mảng thường, không đổi hành vi, relock) và khai `AI_SUB_CLI_PATH` trong `turbo.json`.
 
 ## Kết quả đo khuôn log (đo 2026-11-03 bằng `gen*.py`/`measure*.ps1` cũ, `claude -p`)
 Token log (không gồm câu hỏi) / đúng trên tổng khoá.

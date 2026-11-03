@@ -1,7 +1,7 @@
 // CR-114 hub-eval · bộ đo khuôn log: sinh dữ liệu xác định, 4 khuôn cùng số dòng, chấm đáp án, vòng đo với model giả.
 import { describe, expect, test } from "bun:test";
 import { FORMATS, generate, gradeAnswer } from "./generate";
-import { type CallFn, measure, plannedCalls } from "./measure";
+import { type CallFn, estimateMeasure, formatEstimate, measure, plannedCalls } from "./measure";
 
 describe("log-format eval", () => {
   test("generation is deterministic and the four formats carry the same events", () => {
@@ -62,5 +62,25 @@ describe("log-format eval", () => {
       expect(r.secPerRun).toBe(2);
     }
     expect(rows[0]?.logTokens).toBeGreaterThan(rows[3]?.logTokens ?? Number.POSITIVE_INFINITY);
+  });
+
+  test("estimate counts planned calls and prices known models", () => {
+    const opts = { complex: true, models: ["haiku", "sonnet"], reps: 2 };
+    const e = estimateMeasure(opts);
+    expect(e.calls).toBe(plannedCalls(opts));
+    expect(e.usd).toBeGreaterThan(0);
+    expect(formatEstimate(e)).toContain(`${e.calls} lời gọi`);
+    expect(estimateMeasure({ ...opts, models: ["mystery"] }).usd).toBeNull();
+  });
+
+  test("run without --yes prints the estimate and exits 2 without calling a model", async () => {
+    const p = Bun.spawn(["bun", `${import.meta.dir}/run.ts`, "--models", "haiku"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const [out, err] = [await new Response(p.stdout).text(), await new Response(p.stderr).text()];
+    expect(await p.exited).toBe(2);
+    expect(out).toContain("Ước tính");
+    expect(err).toContain("--yes");
   });
 });
