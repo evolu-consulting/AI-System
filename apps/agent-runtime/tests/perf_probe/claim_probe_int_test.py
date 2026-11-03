@@ -1,9 +1,9 @@
-"""CR-116 probe · kịch bản `claim.n`: claim N job qua `jobs_sql.claim_one` thật (pool asyncpg có tap).
+"""CR-116 probe · kịch bản `claim.n`: claim N job qua `jobs_sql.claim_one` thật (pool có tap).
 
-Chỉ chạy khi `PERF_PROBE=1` (evotest `-Step py -Probe`); tùy chọn `PERF_PROBE_OPTS="runs=3,size=small"`.
+Chỉ chạy khi `PERF_PROBE=1` (evotest `-Step py -Probe`); tuỳ chọn: `PERF_PROBE_OPTS`.
 small = 100 job / 1 provider; large = 400 job / 4 provider (như S2 của `claim_scale_int_test.py`).
-Mỗi lượt: seed lại N job (ngoài khoảng đo) → N lần `claim_one` tuần tự (probe `claim.one` từ mã thật) và một
-probe tổng `claim.batch`; thêm `claim.parallel` = 8 claimer song song trên cùng số job.
+Mỗi lượt: seed lại N job (ngoài khoảng đo) → N/2 lần `claim_one` tuần tự (probe `claim.one` của
+mã thật, tổng `claim.batch`) rồi phần còn lại bằng 8 claimer song song (`claim.parallel`).
 """
 
 from __future__ import annotations
@@ -72,14 +72,23 @@ async def _seed(own: Any, n: int, providers: tuple[str, ...]) -> None:
 
 
 async def _conns(own: Any) -> int:
-    return int(await own.fetchval("select count(*) from pg_stat_activity where datname = current_database()"))
+    return int(
+        await own.fetchval(
+            "select count(*) from pg_stat_activity where datname = current_database()"
+        )
+    )
 
 
 async def test_probe_claim_n(own: Any) -> None:
     o = _opts()
     runs, large = int(o.get("runs", "3")), o.get("size", "small") == "large"
     n, providers = (400, PROVIDERS) if large else (100, PROVIDERS[:1])
-    probe_emit("meta", scn="claim.n", pg=await own.fetchval("show server_version"), size=o.get("size", "small"))
+    probe_emit(
+        "meta",
+        scn="claim.n",
+        pg=await own.fetchval("show server_version"),
+        size=o.get("size", "small"),
+    )
     pool = await create_pool(rt_db_url(), max_size=8)
     try:
         for r in range(1, runs + 1):
@@ -88,7 +97,9 @@ async def test_probe_claim_n(own: Any) -> None:
             with probe("claim.batch"):
                 for _ in range(n // 2):
                     async with pool.acquire() as conn:
-                        assert await jobs_sql.claim_one(conn, list(providers), "probe-seq") is not None
+                        assert (
+                            await jobs_sql.claim_one(conn, list(providers), "probe-seq") is not None
+                        )
 
             async def claimer(i: int) -> int:
                 got = 0

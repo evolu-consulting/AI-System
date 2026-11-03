@@ -1,4 +1,4 @@
-"""CR-116 probe · unit: tắt ⇒ không ghi + gần như không tốn; bật ⇒ một dòng kv, thống kê, đếm câu."""
+"""CR-116 probe · unit: tắt ⇒ không ghi, gần như không tốn; bật ⇒ một dòng kv, thống kê, đếm câu."""
 
 import re
 import time
