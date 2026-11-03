@@ -233,3 +233,9 @@ Sự cố đã gặp: Postgres test local phải crash-recovery nhiều phút, R
 - **Playwright local ≤ 2 lượt cùng lúc** (cần RAM trống ≥ 4 GB và ≥ 2 lõi rảnh cho 1 lượt; ≥ 6 GB và ≥ 4 lõi cho 2 lượt); số còn lại đã trừ lượt đang chạy. Postgres local không chạy ⇒ cảnh báo, chuyển int/e2e sang evotest.
 - **Dọn worktree sau khi merge:** `bun run slice:rm <tên>` ngay sau `slice:merge`; cảnh báo khi worktree đã merge + thư mục mồ côi (`evolu-wt`, `.claude/worktrees`) vượt 3 (~0,6 GB/cái).
 - Cảnh báo không chặn; chỉ giới hạn cứng (đĩa < 15 GB, RAM < 2 GB) chặn `slice:new`. Điều phối đọc khuyến nghị rồi tự giảm số lát chạy cùng lúc — không hỏi người dùng.
+
+**Nguyên tắc pipeline (người dùng chốt 2026-11-03): tốc độ tối đa, không chồng tải, giữ chất lượng.**
+1. **Dùng hết tài nguyên:** việc không phụ thuộc nhau chạy cùng lúc tới đúng mức `res:check` cho phép (agent chỉ-code local, slot evotest trống) — không để máy/slot rảnh khi còn việc độc lập.
+2. **Không chồng tải:** int/e2e nặng luôn lên slot evotest; local ≤ 2 Playwright; không hai lượt test dùng chung DB/Redis/cổng (làn e2e tự cấp, root config cũng theo làn); agent chỉ ghi trong worktree của mình (Write/Edit, không redirect shell) và tắt server mình bật; merge tuần tự, refresh index trước merge.
+3. **Giữ chất lượng:** mỗi lát có test của chính nó; cuối đợt một lượt review + security (Opus) rồi e2e trên evotest; lỗi do đợt này phải sửa (kể cả Thấp) trước push/deploy; lỗi có sẵn phải chứng minh đỏ trên base trước khi bỏ qua.
+4. **Trước deploy:** so `VERSION` prod với nhánh định deploy — prod đang ở nhánh khác (vd `platform/gd0_dlc`) ⇒ dừng, hỏi người dùng có merge nhánh đó vào không, tránh deploy làm mất việc của người khác.
