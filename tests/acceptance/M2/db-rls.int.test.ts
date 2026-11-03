@@ -271,12 +271,13 @@ describe("ADM-FR-31 · RLS feature_entitlements", () => {
 });
 
 describe("ADM-NFR-07 · cấu hình RLS", () => {
-  it("ADM-NFR-07 · spec M2 §4 · relrowsecurity bật đúng 22 bảng (CR-102 external_orgs 0028 + 8 bảng M1–M3 + audit_log, quota_alerts, tenant_quotas, user_backup_codes, user_totp của M4 + tenant_workflow_tools của P-d2 0012 + 3 bảng M1D 0014 + feedback 0017 + tenant_daily_limits 0025 + trello_config 0027); không bảng nào FORCE", async () => {
+  it("ADM-NFR-07 · spec M2 §4 · relrowsecurity bật đúng 23 bảng (CR-112 app_roles 0030 + CR-102 external_orgs 0028 + 8 bảng M1–M3 + audit_log, quota_alerts, tenant_quotas, user_backup_codes, user_totp của M4 + tenant_workflow_tools của P-d2 0012 + 3 bảng M1D 0014 + feedback 0017 + tenant_daily_limits 0025 + trello_config 0027); không bảng nào FORCE", async () => {
     const rows = await owner`select c.relname, c.relrowsecurity, c.relforcerowsecurity
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'admin' and c.relkind = 'r' order by c.relname`;
     const on = rows.filter((r) => r.relrowsecurity).map((r) => r.relname);
     expect(on).toEqual([
+      "app_roles",
       "audit_log",
       "departments",
       "external_orgs",
@@ -303,6 +304,7 @@ describe("ADM-NFR-07 · cấu hình RLS", () => {
     expect(rows.some((r) => r.relforcerowsecurity)).toBe(false);
     expect(rows.map((r) => r.relname)).toEqual([
       "app_catalog",
+      "app_roles",
       "audit_log",
       "command_names",
       "commands",

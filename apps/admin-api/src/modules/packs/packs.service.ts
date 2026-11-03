@@ -9,6 +9,7 @@ import { auditOf } from "../../lib/audit/audit.write";
 import { type ConfigCall, configWrite } from "../../lib/config/config-write";
 import { AppError, appError } from "../../lib/errors";
 import { afterLock } from "../../lib/test-hooks";
+import { insertDefaultRoles } from "../app-roles/app-roles.repo";
 import * as repo from "./packs.repo";
 import {
   isInstalled,
@@ -56,7 +57,13 @@ export function listPacks(
   return withScope(c.ctx.db, c.scope, async (tx) => {
     if (!(await repo.tenantExists(tx, tenantId))) throw appError("NOT_FOUND");
     const rows = await repo.listPacks(tx, tenantId, LIST_LIMIT);
-    return { items: rows.map((r) => packState(r.key, r.enabled, r.groups)) };
+    return {
+      items: rows.map((r) => ({
+        ...packState(r.key, r.enabled, r.groups),
+        role_count: r.role_count,
+        member_count: r.member_count,
+      })),
+    };
   });
 }
 
@@ -80,12 +87,14 @@ export function enablePack(c: PacksCall, tenantId: string, k: string): Promise<P
     });
     const grp = await repo.insertRoleGroups(tx, { tenantId, actorId, rows: roleGroupRows(k) });
     const grants = await repo.insertRoleGrants(tx, { tenantId, actorId, pairs: roleGrantPairs(k) });
+    // CR-112 · ADM-FR-81: 3 vai mặc định (viewer=read · editor=write · owner=admin) trỏ 3 Group vai; trùng ⇒ bỏ qua.
+    const roles = await insertDefaultRoles(tx, tenantId, k);
     // UAT B4: trợ lý của gói cho 3 Group vai, cùng tx (không chờ `hub:seed`); NOTIFY Hub giao khi commit.
     await grantAgentsAndNotify(tx, { tenantIds: [tenantId], key: k, actorId });
     if (ent > 0) ch.changed({ entity: "entitlement", tenantId });
-    if (grp > 0) ch.changed({ entity: "group", tenantId });
+    if (grp + roles > 0) ch.changed({ entity: "group", tenantId });
     if (grants > 0) ch.changed({ entity: "grant", tenantId });
-    if (ent + grp + grants > 0) ch.audit(packAudit("pack.enable", k, tenantId, feats));
+    if (ent + grp + grants + roles > 0) ch.audit(packAudit("pack.enable", k, tenantId, feats));
     await afterLock(c.ctx.hooks, "entitlement.save", "rows");
     return packState(k, true, await repo.findGroups(tx, tenantId, packGroupKeys(k)));
   });

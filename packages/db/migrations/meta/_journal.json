@@ -211,6 +211,13 @@
       "when": 1798750000000,
       "tag": "0029_external_org_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1801200000000,
+      "tag": "0030_app_roles",
+      "breakpoints": true
     }
   ]
 }

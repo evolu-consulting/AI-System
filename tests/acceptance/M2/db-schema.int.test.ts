@@ -58,6 +58,7 @@ const names = async (schemas: string[]) =>
 
 const ADMIN20 = [
   "admin.app_catalog",
+  "admin.app_roles",
   "admin.audit_log",
   "admin.command_names",
   "admin.commands",

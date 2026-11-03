@@ -142,12 +142,13 @@ describe("ADM-FR-31 · RLS admin.feature_entitlements", () => {
     expect(ins).toEqual({ code: "42501" });
   });
 
-  test("ADM-NFR-07 · relrowsecurity đúng 21 bảng (CR-102 external_orgs 0028;trello-config-ui 0027 thêm trello_config;M1D 0014 thêm user_managers, user_reports, departments; M3 thêm groups, group_members, feature_grants; M4 thêm audit_log, quota_alerts, tenant_quotas, user_backup_codes, user_totp; P-d2 0012 thêm tenant_workflow_tools), không FORCE", async () => {
+  test("ADM-NFR-07 · relrowsecurity đúng 23 bảng (CR-112 app_roles 0030;CR-102 external_orgs 0028;trello-config-ui 0027 thêm trello_config;M1D 0014 thêm user_managers, user_reports, departments; M3 thêm groups, group_members, feature_grants; M4 thêm audit_log, quota_alerts, tenant_quotas, user_backup_codes, user_totp; P-d2 0012 thêm tenant_workflow_tools), không FORCE", async () => {
     const rows =
       await owner`select c.relname, c.relrowsecurity as rls, c.relforcerowsecurity as force
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'admin' and c.relkind = 'r' order by c.relname`;
     expect(rows.filter((r) => r.rls).map((r) => r.relname)).toEqual([
+      "app_roles",
       "audit_log",
       "departments",
       "external_orgs",

@@ -10,7 +10,13 @@ const texts = (xs: readonly string[]) => sql`${`{${xs.join(",")}}`}::text[]`;
 
 export type PackFeature = { id: string; key: string };
 export type PackGroupRow = { id: string; key: string };
-export type PackListRow = { key: string; enabled: boolean; groups: PackGroupRow[] };
+export type PackListRow = {
+  key: string;
+  enabled: boolean;
+  groups: PackGroupRow[];
+  role_count: number;
+  member_count: number;
+};
 
 export async function tenantExists(tx: Tx, id: string): Promise<boolean> {
   const r = await run<{ id: string }>(tx, sql`select id from admin.tenants where id = ${id}`);
@@ -142,7 +148,12 @@ export function listPacks(tx: Tx, tenantId: string, limit: number): Promise<Pack
         coalesce((select json_agg(json_build_object('id', g.id, 'key', g.key) order by g.key)
           from admin.groups g where g.tenant_id = ${tenantId}
             and g.key = any (array[replace(r.key, '_', '-') || '-owner', replace(r.key, '_', '-') || '-editor',
-              replace(r.key, '_', '-') || '-viewer'])), '[]'::json) as groups
+              replace(r.key, '_', '-') || '-viewer'])), '[]'::json) as groups,
+        (select count(*)::int from admin.app_roles ar where ar.tenant_id = ${tenantId} and ar.pack = r.key)
+          as role_count,
+        (select count(distinct m.user_id)::int from admin.app_roles ar
+          join admin.group_members m on m.group_id = ar.group_id
+          where ar.tenant_id = ${tenantId} and ar.pack = r.key) as member_count
       from packs.registry r order by r.key limit ${limit}`,
   );
 }

@@ -19,6 +19,7 @@ import {
   meAppsRoutes,
   tenantDefaultAppRoutes,
 } from "./modules/app-catalog/app-catalog.routes";
+import { appRolesRoutes } from "./modules/app-roles/app-roles.routes";
 import { auditRoutes } from "./modules/audit/audit.routes";
 import { meRoutes, selfChangeHandler } from "./modules/auth/auth.me.routes";
 import { authRoutes } from "./modules/auth/auth.routes";
@@ -168,6 +169,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/users", accessRoutes(ctx));
   app.route("/admin/users", usersRoutes({ ...ctx, hooks }));
   app.route("/admin/groups", groupsRoutes({ ...ctx, hooks }));
+  app.route("/admin/app-roles", appRolesRoutes({ ...ctx, hooks })); // CR-112 · vai theo app
   app.route("/admin/external-orgs", externalOrgsRoutes({ ...ctx, hooks })); // CR-102a · com-c1
   app.route("/admin/org", orgRoutes({ ...ctx, hooks })); // M1D
   app.route("/admin/grants", grantsRoutes({ ...ctx, hooks }));

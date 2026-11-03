@@ -81,6 +81,7 @@ describe("ADM-NFR-06 · migration development", () => {
   it("ADM-NFR-06 · spec §4 · đúng 29 bảng admin.* (CR-102 external_orgs 0028 + M4 + P-d2 0012 + M1D 0014 + app-catalog 0016 + feedback + tenant_daily_limits 0025 + trello_config 0027) và 3 bảng hub.*; users không có totp_secret (M4 Q2a K2)", async () => {
     expect(await names(["admin", "hub"])).toEqual([
       "admin.app_catalog",
+      "admin.app_roles",
       "admin.audit_log",
       "admin.command_names",
       "admin.commands",
@@ -305,6 +306,7 @@ describe("ADM-NFR-06 · migration production", () => {
     expect(r).toEqual({ main: MAIN_COUNT, dev: 0 });
     expect(await names(["admin", "hub"])).toEqual([
       "admin.app_catalog",
+      "admin.app_roles",
       "admin.audit_log",
       "admin.command_names",
       "admin.commands",

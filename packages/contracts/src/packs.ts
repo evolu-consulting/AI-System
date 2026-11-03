@@ -60,6 +60,9 @@ export const PackStateSchema = z.object({
   key: PackKeySchema,
   enabled: z.boolean(),
   groups: z.array(z.object({ role: PackRoleSchema, group_id: z.uuid() })).max(3),
+  /** CR-112 · ADM-FR-78: số vai (`admin.app_roles`) và số người khác nhau trong các vai — chỉ có ở GET danh sách. */
+  role_count: z.number().int().nonnegative().optional(),
+  member_count: z.number().int().nonnegative().optional(),
 });
 export type PackState = z.infer<typeof PackStateSchema>;
 

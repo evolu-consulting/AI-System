@@ -1,6 +1,7 @@
 // ADM-NFR-06, ADM-FR-01, ADM-FR-10, ADM-FR-62 · điểm vào contract dùng chung giữa admin-api, admin-web và test.
 export * from "./access";
 export * from "./app-catalog";
+export * from "./app-roles";
 export * from "./audit";
 export * from "./auth";
 export * from "./auth-limit";
