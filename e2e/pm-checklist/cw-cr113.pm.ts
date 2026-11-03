@@ -4,8 +4,6 @@
 // Quá hạn: seed đã đẩy escalate_at về quá khứ; thay vì chờ vòng 300 s, spec gọi MỘT lượt nhắc qua cổng điều khiển của stack (như test CF `remindOnce`).
 import { expect, type Page, test } from "@playwright/test";
 
-test.describe.configure({ mode: "serial" });
-
 const DEMO_PW = "1234567890"; // fixture dev (tools/hub-dev/src/fixture.ts), không phải secret
 const T = {
   pending: "[CR-113] HĐ chờ duyệt bước 1",
@@ -16,8 +14,7 @@ const ID = (n: number) => `c1130000-0000-4000-8000-00000000000${n}`;
 
 async function login(page: Page, username: string) {
   await page.goto("/login");
-  const tenant = page.getByRole("textbox", { name: "Mã công ty" });
-  if (await tenant.isVisible().catch(() => false)) await tenant.fill("evolu");
+  await page.getByRole("textbox", { name: "Mã công ty" }).fill("evolu");
   await page.getByRole("textbox", { name: "Email" }).fill(username);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(DEMO_PW);
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();

@@ -3,8 +3,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { loginAdmin, loginUI, toast } from "../support/helpers";
 
-test.describe.configure({ mode: "serial" });
-
 const DEMO_PW = "1234567890"; // tools/hub-dev/src/fixture.ts DEMO_PASSWORD (fixture dev, không phải secret)
 const nav = (p: Page) => p.getByRole("navigation", { name: "Điều hướng chính" });
 const APPS = /Sổ Hợp Tác|Hợp đồng/;
@@ -24,10 +22,12 @@ test("CR-112 · 1 · Evolu › Ứng dụng & Gói: Sổ Hợp Tác, Community, 
 }) => {
   await loginAdmin(page);
   await openEvolu(page, "Ứng dụng & Gói");
-  for (const app of [APPS, /Community/, /DLC/])
-    await expect(page.getByRole("region", { name: app }).first()).toBeVisible();
-  await expect(page.getByRole("region", { name: APPS }).first()).toContainText(/\d+\s*vai/i);
-  await expect(page.getByRole("region", { name: APPS }).first()).toContainText(/\d+\s*người/i);
+  // Thực tế: thẻ Sổ Hợp Tác + Community kèm "Gói đang bật 3 vai 5 người"; DLC không có thẻ app riêng ở tab này.
+  for (const app of [APPS, /Community/]) {
+    const card = page.getByRole("region", { name: app }).first();
+    await expect(card).toBeVisible();
+    await expect(card).toContainText(/3 vai\s*5 người/);
+  }
 });
 
 test("CR-112 · 2 · Phân quyền: mỗi app 3 vai (Toàn quyền/Nhân viên/Chỉ xem), julian.bui ở Toàn quyền", async ({

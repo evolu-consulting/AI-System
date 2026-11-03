@@ -13,6 +13,10 @@ test("CR-113 · 6 · ai-admin: mẫu Duyệt HĐ 2 cấp có hộp Luật duyệ
     .getByText(/Duyệt HĐ 2 cấp/)
     .first()
     .click();
+  await page
+    .getByRole("group", { name: "Cách xem" })
+    .getByRole("button", { name: "Danh sách" })
+    .click();
   const box = page.getByTestId("flow-form-rules");
   await expect(box).toContainText("Luật duyệt");
   await expect(box.getByRole("listitem")).toHaveCount(2);
