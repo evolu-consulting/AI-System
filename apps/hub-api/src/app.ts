@@ -37,6 +37,7 @@ import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
 import { dbHubAudit } from "./lib/hub-audit";
 import { type Logger, logger } from "./lib/logger";
+import { traceRequest } from "./lib/request-span";
 import { closeUnreadBody } from "./lib/unread-body";
 import { chatGate } from "./modules/chat-gate/chat-gate.middleware";
 import { CHAT_GATED_PREFIXES } from "./modules/chat-gate/chat-gate.rules";
@@ -321,17 +322,18 @@ function requestContext(config?: ConfigCache): MiddlewareHandler<AppVars> {
     c.set("log", logger.child({ request_id: id }));
     if (config) c.set("config", config);
     const t0 = performance.now();
-    await next();
-    c.res.headers.set(REQUEST_ID_HEADER, id);
-    c.get("log").info("request", {
-      method: c.req.method,
-      path: c.req.path,
-      status: c.res.status,
-      ms: Math.round((performance.now() - t0) * 10) / 10,
+    await traceRequest(c, async () => {
+      await next();
+      c.res.headers.set(REQUEST_ID_HEADER, id);
+      c.get("log").info("request", {
+        method: c.req.method,
+        path: c.req.path,
+        status: c.res.status,
+        ms: Math.round((performance.now() - t0) * 10) / 10,
+      });
     });
   };
 }
-
 const corsOf = (cfg: AppConfig): MiddlewareHandler =>
   cors({
     origin: cfg.corsOrigins,

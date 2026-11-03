@@ -8,6 +8,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
+import { endRun, runSpanOf } from "../../../lib/otel";
 import type { Redis } from "../../../lib/redis";
 import { bindRunOutputs } from "../../attachments/run-files";
 import { cancelJobs } from "../close/cancel.repo";
@@ -101,6 +102,7 @@ export class SseWriter {
   #done = false;
   /** Nối `delta` đã XADD — nội dung tin assistant khi run kết thúc lỗi. */
   #deltas = "";
+  #deltaCount = 0;
 
   constructor(
     readonly run: RunInfo,
@@ -124,13 +126,18 @@ export class SseWriter {
   abort(): void {
     this.#done = true;
     this.#ac.abort();
+    endRun(this.run.id, { status: "aborted", deltas: this.#deltaCount });
   }
 
   /** XADD sự kiện kế (`seq + 1`). Ném `RunFencedError` khi đã dừng hoặc Redis từ chối id. */
   async emit(ev: SseEventBody): Promise<number> {
     if (this.#done || isTerminalEvent(ev.event)) throw new RunFencedError(this.run.id);
     const seq = await this.#xadd(ev);
-    if (ev.event === "delta") this.#deltas += (ev.data as { text: string }).text;
+    if (ev.event === "delta") {
+      this.#deltas += (ev.data as { text: string }).text;
+      // CR-114 · chỉ đếm + mốc delta đầu (không nội dung) trên span `run`.
+      if (this.#deltaCount++ === 0) runSpanOf(this.run.id)?.addEvent("sse.first_delta");
+    }
     return seq;
   }
 
@@ -203,6 +210,11 @@ export class SseWriter {
       return t;
     });
     this.#done = true;
+    endRun(this.run.id, {
+      status,
+      deltas: this.#deltaCount,
+      ...(o.kind === "failed" && { error: o.code }),
+    });
     if (!times) {
       this.#ac.abort();
       return false;

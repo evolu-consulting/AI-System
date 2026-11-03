@@ -34,6 +34,28 @@ services:
     volumes:
       - redisdata:/data
 
+  # CR-114 hub-otel · tracing dev, CHỈ khi `docker compose --profile otel up -d` (mặc định không chạy, không ảnh hưởng
+  # `docker compose up --wait`). Bật tracing: đặt OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318 cho hub-api + runtime;
+  # xem trace ở http://127.0.0.1:16686 (Jaeger). Xem docs/WORKFLOW.md "Tracing và log kv".
+  otel-collector:
+    profiles: ["otel"]
+    image: otel/opentelemetry-collector:0.116.1
+    command: ["--config=/etc/otelcol/config.yaml"]
+    ports:
+      - "127.0.0.1:${OTEL_HTTP_PORT:-4318}:4318"
+    volumes:
+      - ./infra/otel/collector.yaml:/etc/otelcol/config.yaml:ro
+    depends_on:
+      - jaeger
+
+  jaeger:
+    profiles: ["otel"]
+    image: jaegertracing/all-in-one:1.64.0
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "127.0.0.1:${JAEGER_UI_PORT:-16686}:16686"
+
 volumes:
   pgdata:
   redisdata:

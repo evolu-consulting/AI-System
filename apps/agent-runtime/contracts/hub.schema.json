@@ -469,6 +469,10 @@
                 "base_patch"
               ],
               "additionalProperties": false
+            },
+            "traceparent": {
+              "type": "string",
+              "pattern": "^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$"
             }
           },
           "required": [

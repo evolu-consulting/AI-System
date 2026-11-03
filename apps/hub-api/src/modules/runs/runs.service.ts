@@ -14,6 +14,7 @@ import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
 import { appError, safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
+import { beginRun } from "../../lib/otel";
 import type { Redis } from "../../lib/redis";
 import type { AccessSubject } from "../agents/agent-access.rules";
 import type { NoMatchPolicy } from "../agents/default-agent.rules";
@@ -265,6 +266,9 @@ export class RunService {
     const { run, direct, command, scoped } = p;
     const writer = new SseWriter(run, this.d);
     this.registry.add(writer);
+    // CR-114 · gốc trace của run chat (con của span request E12); tắt ⇒ no-op. Writer đóng span khi run kết thúc/abort.
+    const kind = command ? "command" : direct ? "direct" : "orchestrated";
+    beginRun(run.id, { tenant_id: run.tenantId, agent: direct?.agent.key, "run.kind": kind });
     await this.#announce(writer, direct?.responder);
     const driver =
       opts?.driver ?? command?.driver ?? (direct && this.d.directDriver) ?? this.d.driver;

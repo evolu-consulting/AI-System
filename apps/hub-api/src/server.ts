@@ -9,7 +9,8 @@ import { attachEnvOf, envAppDeps } from "./config/env-deps";
 import { connectDb, type Db, pingDb } from "./lib/db";
 import { safeErrorFields } from "./lib/errors";
 import { importJwtPublicKey } from "./lib/jwt";
-import { logger, setMinLevel } from "./lib/logger";
+import { logger, setLogFormat, setMinLevel } from "./lib/logger";
+import { flushOtel, initOtel } from "./lib/otel";
 import { createRedis, pingRedis, type Redis } from "./lib/redis";
 import { MAX_REQUEST_BODY_BYTES } from "./lib/unread-body";
 import { envFileboxToken } from "./modules/attachments/filebox-token";
@@ -53,6 +54,8 @@ function readEnv(): Env {
   try {
     const env = loadEnv(process.env);
     setMinLevel(env.LOG_LEVEL);
+    setLogFormat(env.LOG_FORMAT ?? (env.APP_ENV === "production" ? "kv" : "json"));
+    initOtel(process.env); // CR-114 · tắt khi vắng OTEL_EXPORTER_OTLP_ENDPOINT
     return env;
   } catch (err) {
     fail("env", err);
@@ -210,6 +213,7 @@ async function main(): Promise<void> {
     await processes?.settled();
     redis.disconnect();
     await db.close();
+    await flushOtel();
     process.exit(0);
   };
   process.once("SIGINT", () => void shutdown("SIGINT"));

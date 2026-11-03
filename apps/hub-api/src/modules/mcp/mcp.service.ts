@@ -9,6 +9,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
 import { hashJobToken, isJobToken } from "../../lib/job-token";
 import type { Logger } from "../../lib/logger";
+import { traced } from "../../lib/otel";
 import type { CatalogWorkflow } from "../commands/catalog.types";
 import { agentWorkflowIds } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
@@ -183,7 +184,19 @@ export class McpService {
     ];
   }
 
-  async #call(
+  /** CR-114 · span `mcp.tool` (con của span request `/mcp`, nối vào trace job qua header `traceparent`); chỉ tên tool + id. */
+  #call(
+    ctx: McpContext,
+    req: RpcRequest,
+    stateless: boolean,
+    signal?: AbortSignal,
+  ): Promise<RpcResponse> {
+    const tool = toolCallParams(req.params).name?.slice(0, 64);
+    const attrs = { tool, tenant_id: ctx.tenantId, run_id: ctx.runId, job_id: ctx.jobId };
+    return traced("mcp.tool", attrs, () => this.#callTraced(ctx, req, stateless, signal));
+  }
+
+  async #callTraced(
     ctx: McpContext,
     req: RpcRequest,
     stateless: boolean,

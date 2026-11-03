@@ -44,11 +44,21 @@ class Settings(BaseSettings):
     home: Path = Field(validation_alias="HOME")
     redis_url: SecretStr = Field(validation_alias="REDIS_URL")
     log_level: LogLevel = Field(default="info", validation_alias="LOG_LEVEL")
+    # CR-114 · `kv` gọn cho agent đọc; vắng ⇒ `kv` khi APP_ENV=production, ngược lại `json`.
+    log_format_raw: Literal["json", "kv"] | None = Field(
+        default=None, validation_alias="LOG_FORMAT"
+    )
     database_url: SecretStr
     worker_id: str = Field(default_factory=socket.gethostname, min_length=1, max_length=200)
     providers: Annotated[tuple[str, ...], NoDecode] = ()
     work_dir: Path = Path("/home/worker/work")
     log_dir: Path = Path("/home/worker/logs")
+
+    @property
+    def log_format(self) -> Literal["json", "kv"]:
+        """CR-114: `LOG_FORMAT` hoặc mặc định theo APP_ENV (production ⇒ kv)."""
+        return self.log_format_raw or ("kv" if self.app_env == "production" else "json")
+
     poll_s: float = Field(default=1.0, gt=0)
     # CR-114 hub-claim-scale: `AGENT_RT_DB_POOL_MAX` — cỡ pool asyncpg (claim/heartbeat/kết thúc).
     db_pool_max: int = Field(default=4, ge=1, le=100)

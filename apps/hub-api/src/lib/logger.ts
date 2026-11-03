@@ -1,7 +1,10 @@
 // HUB-NFR-04 · H1-R26 · log JSON một dòng có `request_id`, `run_id`, `tenant_id`, `user_id`.
 // Không log secret/JWT/nội dung tin (A52): che theo tên key và theo giá trị trông như JWT/Bearer.
+import { formatKv, type LogFields } from "./log-kv";
+import { currentRequestSpan, runSpanOf, shortTraceId } from "./otel";
+
 export type Level = "debug" | "info" | "warn" | "error" | "fatal";
-export type LogFields = Record<string, unknown>;
+export type { LogFields };
 export type LogContext = {
   request_id?: string;
   run_id?: string;
@@ -21,6 +24,14 @@ let sink: (level: Level, line: string) => void = stdSink;
 /** null = mặc định: `info`; dưới `bun test` sink stdout bỏ debug/info cho gọn, sink của test (`setSink`, A52) vẫn nhận `info`. */
 let minLevel: Level | null = null;
 const effectiveMin = (): Level => minLevel ?? (QUIET_TEST && sink === stdSink ? "warn" : "info");
+
+export type LogFormat = "json" | "kv";
+let format: LogFormat = "json";
+
+/** CR-114 · `LOG_FORMAT`: `json` (mặc định, người đọc/dev) hoặc `kv` (gọn cho agent; server chọn kv khi `APP_ENV=production`). */
+export function setLogFormat(f: LogFormat): void {
+  format = f;
+}
 
 /** Server gọi với `LOG_LEVEL`. */
 export function setMinLevel(level: Level): void {
@@ -57,6 +68,13 @@ function make(ctx: LogContext): Logger {
     (level: Level) =>
     (msg: string, fields: LogFields = {}): void => {
       if (RANK[level] < RANK[effectiveMin()]) return;
+      if (format === "kv") {
+        const all = { ...ctx, ...fields };
+        const rid = typeof all.run_id === "string" ? all.run_id : undefined;
+        const span = (rid && runSpanOf(rid)) || currentRequestSpan();
+        sink(level, formatKv({ level, msg, fields: all, trace: shortTraceId(span) }, redact));
+        return;
+      }
       const rec = {
         level,
         time: new Date().toISOString(),

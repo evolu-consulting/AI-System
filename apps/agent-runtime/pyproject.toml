@@ -10,6 +10,10 @@ dependencies = [
   "claude-agent-sdk==0.2.163",
   # ADR-0010 (H2a PY-02): đã có bắc cầu qua claude-agent-sdk → mcp; khai báo trực tiếp, không thêm gói.
   "httpx2>=2.13,<3",
+  # CR-114 hub-otel: tracing tuỳ chọn (tắt khi vắng OTEL_EXPORTER_OTLP_ENDPOINT); ghim chính xác.
+  "opentelemetry-api==1.45.0",
+  "opentelemetry-exporter-otlp-proto-http==1.45.0",
+  "opentelemetry-sdk==1.45.0",
   "pydantic-settings>=2.15",
   "redis>=8.1",
   "structlog>=26.1",

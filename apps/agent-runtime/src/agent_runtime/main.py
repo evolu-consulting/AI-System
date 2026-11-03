@@ -18,6 +18,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from agent_runtime import otel
 from agent_runtime.apply.host import ApplyCfg
 from agent_runtime.autofix.host import AutofixHost
 from agent_runtime.autofix.oci import SandboxCfg, open_sandbox
@@ -233,6 +234,7 @@ async def run(settings: Settings) -> int:
         finally:
             await rt.shutdown()
     log.info("runtime.stop", exit_code=code)
+    otel.shutdown()
     return code
 
 
@@ -243,7 +245,8 @@ def main() -> int:
         configure_logging("info", worker_id=socket.gethostname())
         get_logger().error("runtime.config_invalid", errors=config_errors(err))
         return EXIT_CONFIG
-    configure_logging(settings.log_level, worker_id=settings.worker_id)
+    configure_logging(settings.log_level, worker_id=settings.worker_id, fmt=settings.log_format)
+    otel.init()  # CR-114 · tắt khi vắng OTEL_EXPORTER_OTLP_ENDPOINT
     try:
         registry_providers(settings)
     except UnknownProviders as err:  # khoá do người vận hành đặt, không phải secret

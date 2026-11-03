@@ -38,6 +38,8 @@ export const EnvSchema = z.object({
   HUB_CONFIG_POLL_S: z.coerce.number().int().min(1).default(60),
   HUB_CORS_ORIGINS: OriginList.default(["http://localhost:3100"]),
   LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
+  // CR-114 · `kv` gọn cho agent đọc; vắng ⇒ `kv` khi APP_ENV=production, ngược lại `json`.
+  LOG_FORMAT: z.enum(["json", "kv"]).optional(),
   // H2a plan §8: chung với admin-api (base64 32 byte). Vắng → gọi Dify luôn NOT_CONFIGURED; sai → env lỗi (fatal).
   SECRET_MASTER_KEY: z.string().refine(isMasterKeyB64).optional(),
   // H4b-1 plan §4, D10 · khoá secrets của Hub (base64 32 byte, KHÁC SECRET_MASTER_KEY). Bắt buộc mọi môi trường nhưng kiểm

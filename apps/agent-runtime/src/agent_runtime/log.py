@@ -13,6 +13,9 @@ from typing import TextIO, cast
 import structlog
 from structlog.typing import EventDict, FilteringBoundLogger, WrappedLogger
 
+from agent_runtime.log_kv import format_kv
+from agent_runtime.otel import current_trace_id
+
 REDACTED = "[REDACTED]"
 # ADR-0010 · R17: httpx2/httpcore2 ở DEBUG/INFO in URL, header — chặn ở WARNING.
 HTTP_LOGGERS = ("httpx2", "httpcore2")
@@ -97,17 +100,26 @@ def quiet_http_loggers() -> None:
         logging.getLogger(name).setLevel(logging.WARNING)
 
 
-def configure_logging(level: str, worker_id: str, stream: TextIO | None = None) -> None:
-    """Cấu hình structlog JSON ra `stream` (mặc định stdout → journald)."""
+def kv_renderer(_logger: WrappedLogger, _method: str, event_dict: EventDict) -> str:
+    """CR-114: một dòng `key=value` gọn (xem `log_kv.py`); gắn `trace=` khi OTel bật và có span."""
+    return format_kv(event_dict, trace=current_trace_id())
+
+
+def configure_logging(
+    level: str, worker_id: str, stream: TextIO | None = None, fmt: str = "json"
+) -> None:
+    """Cấu hình structlog ra `stream` (mặc định stdout → journald): `json` hoặc `kv` (CR-114)."""
     quiet_http_loggers()
+    renderer = kv_renderer if fmt == "kv" else structlog.processors.JSONRenderer()
+    stamp = [] if fmt == "kv" else [structlog.processors.TimeStamper(fmt="iso", utc=True, key="ts")]
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
-            structlog.processors.TimeStamper(fmt="iso", utc=True, key="ts"),
+            *stamp,
             structlog.processors.format_exc_info,
             redact_processor,
-            structlog.processors.JSONRenderer(),
+            renderer,
         ],
         wrapper_class=structlog.make_filtering_bound_logger(level),
         logger_factory=structlog.PrintLoggerFactory(file=stream or sys.stdout),

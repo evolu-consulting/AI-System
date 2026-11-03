@@ -22,6 +22,7 @@
     "e2e:reap": "bun tools/scripts/src/e2e-lane.cli.ts reap",
     "test:affected": "bun tools/scripts/src/test-affected.ts",
     "res:check": "bun tools/scripts/src/res-check.ts",
+    "log:view": "bun tools/scripts/src/log-view.ts",
     "verify:slice": "bun tools/scripts/src/verify-slice.ts",
     "verify:wave": "bun tools/scripts/src/verify-wave.ts",
     "verify:predeploy": "bun tools/scripts/src/verify-predeploy.ts",

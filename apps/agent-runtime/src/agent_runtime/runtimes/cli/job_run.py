@@ -16,6 +16,7 @@ from contextlib import suppress
 from dataclasses import replace
 from typing import TYPE_CHECKING, Protocol
 
+from agent_runtime import otel
 from agent_runtime.contracts.hub import JobAttachment, JobPayload1, Source
 from agent_runtime.db import sessions_sql
 from agent_runtime.db.finish_sql import FinishTx
@@ -135,10 +136,19 @@ class JobRun:
         return self.control.reason == "shutdown" or self.cfg.stopping.is_set()
 
     async def execute(self) -> None:
-        try:
-            await self._execute()
-        finally:
-            await self.pump.close()  # `_close` đã xả; còn lại = dừng không ghi / lỗi giữa chừng
+        p = self.payload
+        # CR-114 · span job nối vào trace của Hub qua `payload.traceparent` (vắng/tắt ⇒ no-op).
+        attrs = {
+            "tenant_id": str(p.tenant_id),
+            "run_id": str(p.run_id),
+            "agent": p.agent.key,
+            "provider": p.provider_key,
+        }
+        with otel.span("job.run", attrs, traceparent=p.traceparent):
+            try:
+                await self._execute()
+            finally:
+                await self.pump.close()  # `_close` đã xả; còn lại = dừng không ghi / lỗi giữa chừng
 
     async def _execute(self) -> None:
         if not await self._prepare_files():
@@ -262,12 +272,19 @@ class JobRun:
         outcome: Outcome = "lost"
         hp = self.proc_host
         hp.reset()
-        try:
-            await hp.spawn()
-            if await hp.record_pgid():
-                outcome = await hp.supervise()
-        finally:
-            await hp.kill_leftovers()
+        with otel.span("llm.call", {"agent": self.payload.agent.key}) as sp:
+            try:
+                await hp.spawn()
+                if await hp.record_pgid():
+                    outcome = await hp.supervise()
+            finally:
+                await hp.kill_leftovers()
+                t = self.seen.total()
+                sp.set_attribute("tokens.in", t.input_tokens)
+                sp.set_attribute("tokens.out", t.output_tokens)
+                sp.set_attribute("tokens.cache_read", t.cache_read)
+                sp.set_attribute("tokens.cache_write", t.cache_write)
+                sp.set_attribute("outcome", outcome)
         return outcome
 
     async def _apply(self, outcome: Outcome) -> None:
@@ -340,6 +357,15 @@ class JobRun:
         total = self.seen.total()
         latency = int((time.monotonic() - self.started) * 1000)
         f = v.failure
+        otel.annotate(  # CR-114 · mã lỗi (không message) + token job (gồm cache) lên span `job.run`
+            {
+                "tokens.in": total.input_tokens,
+                "tokens.out": total.output_tokens,
+                "tokens.cache_read": total.cache_read,
+                "tokens.cache_write": total.cache_write,
+                "error": f.code if f is not None else None,
+            }
+        )
         sid = self.seen.session_id
         session = (self.skey, sid) if self.skey is not None and sid and f is None else None
         tx = FinishTx(

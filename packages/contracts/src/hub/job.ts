@@ -140,6 +140,11 @@ export const AgentCliJobSchema = z.strictObject({
   sources: z.array(JobSourceSchema).max(STAGE_SOURCES_MAX).optional(),
   /** P-c1 · job tự-sửa trong sandbox container; vắng = job thường (không `default` — pydantic sinh khớp). */
   autofix: JobAutofixSchema.optional(),
+  /** CR-114 · W3C `traceparent` của span `job.enqueue` (OTel bật); vắng = tắt tracing. Runtime nối span job vào cùng trace. */
+  traceparent: z
+    .string()
+    .regex(/^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/)
+    .optional(),
 });
 export type AgentCliJob = z.infer<typeof AgentCliJobSchema>;
 

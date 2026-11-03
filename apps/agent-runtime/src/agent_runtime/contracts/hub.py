@@ -614,6 +614,9 @@ class JobPayload1(BaseModel):
     attachments: Annotated[list[JobAttachment] | None, Field(max_length=10)] = None
     sources: Annotated[list[Source] | None, Field(max_length=5)] = None
     autofix: Autofix | None = None
+    traceparent: Annotated[
+        str | None, Field(pattern="^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$")
+    ] = None
 
 
 class JobPayload(

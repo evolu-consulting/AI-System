@@ -8,8 +8,10 @@ import {
 import { KH_TOOL_KEY } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
+import type { Span } from "@opentelemetry/api";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
+import { runSpanOf, setTokens, spanError, startSpan, traceparentOf } from "../../../lib/otel";
 import {
   agentFilesBlock,
   jobAttachments,
@@ -247,7 +249,24 @@ export class JobAgentRunner implements AgentRunner {
     return gatedRun(gate, task, this.d.log, () => this.#runJob(task, signal));
   }
 
+  /** CR-114 · span `agent.step` (con của span `run`): một bước Orchestrator/agent. Tắt ⇒ NOOP_SPAN, không cấp phát. */
   async *#runJob(task: AgentTask, signal: AbortSignal): AsyncGenerator<RunEvent> {
+    const step = startSpan(
+      "agent.step",
+      { tenant_id: task.run.tenantId, run_id: task.run.id, agent: task.agent.key, role: task.role },
+      runSpanOf(task.run.id),
+    );
+    try {
+      yield* this.#runJobIn(task, signal, step);
+    } catch (err) {
+      spanError(step, err);
+      throw err;
+    } finally {
+      step.end();
+    }
+  }
+
+  async *#runJobIn(task: AgentTask, signal: AbortSignal, step: Span): AsyncGenerator<RunEvent> {
     const jobId = crypto.randomUUID();
     const stepId = task.stepId ?? crypto.randomUUID();
     const jm = await this.#mcp(task);
@@ -276,19 +295,43 @@ export class JobAgentRunner implements AgentRunner {
     try {
       const type = stepType(task.role);
       // Huỷ/mất lease → không INSERT job (job mồ côi giữ slot tới timeout); `runJob` quy về `aborted`.
-      const seq = await this.#enqueue(task, { payload, khItems: jm.khItems }, stepId, signal);
+      const seq = await this.#enqueueTraced(task, { payload, khItems: jm.khItems }, step, signal);
       if (typeof seq !== "number")
         return this.d.log.info("job-enqueue-skipped", { run_id: task.run.id, reason: seq });
       const label = stepLabel(type, task.run.locale);
       const data = { step_id: `s${seq}`, label, agent: stepAgent(task, payload.model) };
       await emitStep(task, { event: "step.started", data }, this.d.log);
-      yield* this.#follower.follow(
-        { task, jobId, stepId, seq, providerKey: payload.provider_key },
-        queue,
-        signal,
-      );
+      const follow = { task, jobId, stepId, seq, providerKey: payload.provider_key };
+      for await (const ev of this.#follower.follow(follow, queue, signal)) {
+        if (ev.type === "job.result") setTokens(step, ev.usage);
+        else if (ev.type === "job.failed") {
+          setTokens(step, ev.usage);
+          step.setAttribute("error", ev.code);
+        }
+        yield ev;
+      }
     } finally {
       unsub();
+    }
+  }
+
+  /** CR-114 · span `job.enqueue`; OTel bật ⇒ `payload.traceparent` = traceparent của span này (Runtime nối trace). */
+  async #enqueueTraced(
+    task: AgentTask,
+    j: { payload: AgentCliJob; khItems: readonly KhJobItem[] },
+    step: Span,
+    signal: AbortSignal,
+  ): Promise<number | "aborted" | "not_enqueued"> {
+    const span = startSpan("job.enqueue", { run_id: task.run.id, job_id: j.payload.job_id }, step);
+    try {
+      const tp = traceparentOf(span);
+      const payload = tp ? { ...j.payload, traceparent: tp } : j.payload;
+      return await this.#enqueue(task, { ...j, payload }, j.payload.step_id, signal);
+    } catch (err) {
+      spanError(span, err);
+      throw err;
+    } finally {
+      span.end();
     }
   }
 

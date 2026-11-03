@@ -17,6 +17,7 @@ from contextlib import suppress
 from pathlib import Path
 
 from agent_runtime.contracts.hub import JobPayload1
+from agent_runtime.otel import current_traceparent
 from agent_runtime.providers.base import ProviderJob
 
 MCP_SERVER = "hub"
@@ -71,9 +72,13 @@ def config_path(work_root: Path, job_id: str) -> Path:
     return work_root / MCP_DIR / f"{job_id}.json"
 
 
-def server_config(url: str, token: str) -> dict[str, object]:
-    """`McpHttpServerConfig` của SDK, bọc trong `mcpServers` như file `--mcp-config`."""
-    hub = {"type": "http", "url": url, "headers": {"Authorization": f"Bearer {token}"}}
+def server_config(url: str, token: str, traceparent: str | None = None) -> dict[str, object]:
+    """`McpHttpServerConfig` của SDK, bọc trong `mcpServers` như file `--mcp-config`. CR-114:
+    `traceparent` (OTel bật) ⇒ header W3C để span `/mcp` của Hub nối vào trace của job."""
+    headers = {"Authorization": f"Bearer {token}"}
+    if traceparent:
+        headers["traceparent"] = traceparent
+    hub = {"type": "http", "url": url, "headers": headers}
     return {"mcpServers": {MCP_SERVER: hub}}
 
 
@@ -104,7 +109,7 @@ def write_config(work_root: Path, job_id: str, url: str, token: str) -> Path:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             os.fchmod(f.fileno(), 0o600)
-            json.dump(server_config(url, token), f)
+            json.dump(server_config(url, token, current_traceparent()), f)
     except BaseException:
         remove_config(path)
         raise
