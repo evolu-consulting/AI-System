@@ -57,6 +57,21 @@ export function containsId(name: string, id: string): boolean {
 const suiteMatches = (e: KnownRed, red: Red): boolean =>
   e.suite === "*" || red.suite.startsWith(e.suite);
 
+const FILE_HEAD = /^\S+\.(?:test|spec)\.[cm]?[jt]sx?(?= › )/;
+/** Tên đỏ đã có phần file (`<file> › <ca>`). */
+export const hasFile = (name: string): boolean => FILE_HEAD.test(name);
+
+/**
+ * Khớp (file, tên): id có file (`<file> › <ca>`) khớp nguyên văn. Dự phòng khi đỏ KHÔNG có file chắc chắn (log thiếu tiêu đề file):
+ * khớp phần tên ca của id (sau `› `) — id chỉ có đường dẫn file (không có phần ca) thì không dự phòng được.
+ */
+export function matchesEntry(red: Red, e: KnownRed): boolean {
+  if (containsId(red.name, e.id)) return true;
+  if (hasFile(red.name)) return false;
+  const cut = e.id.indexOf(" › ");
+  return cut > 0 && containsId(red.name, e.id.slice(cut + 3));
+}
+
 /** Phân loại các đỏ: mục còn hạn ⇒ known; chỉ khớp mục hết hạn ⇒ expired (tính là MỚI); không khớp ⇒ fresh. */
 export function splitReds(
   reds: readonly Red[],
@@ -65,7 +80,7 @@ export function splitReds(
 ): Split {
   const out: Split = { known: [], fresh: [], expired: [] };
   for (const red of reds) {
-    const hits = entries.filter((e) => suiteMatches(e, red) && containsId(red.name, e.id));
+    const hits = entries.filter((e) => suiteMatches(e, red) && matchesEntry(red, e));
     const live = hits.find((e) => !isExpired(e, today));
     const dead = hits.find((e) => isExpired(e, today));
     if (live) out.known.push({ red, entry: live });
@@ -118,19 +133,50 @@ export function quarantineOn(
   return argv.includes("--quarantine") || env.TEST_QUARANTINE === "1";
 }
 
-/** Các ca `(fail)` trong log `bun test` (kèm file lấy từ dòng tiêu đề `path/x.test.ts:` đứng trước); `[12ms]` ở cuối bị bỏ. */
+const FAIL_RECAP = /^\s*\d+ tests? failed:\s*$/;
+const failTitle = (raw: string): string => raw.slice(7).replace(/\s*\[[\d.]+m?s\]\s*$/, "");
+
+/**
+ * Các ca `(fail)` trong log `bun test`. File lấy từ dòng tiêu đề `path/x.test.ts:` đứng trước CA ĐÓ (đúng chỗ ca chạy; hook hỏng
+ * `(unnamed)` thuộc file đang chạy hook). Khối tóm tắt cuối (`N tests failed:` + lặp lại các `(fail)`) KHÔNG có tiêu đề file nên
+ * gán nhầm vào file cuối cùng ⇒ chỉ lấy ca trong khối đó khi KHÔNG có lần xuất hiện nào ở trên (khi đó ca không có file, khớp theo tên).
+ */
 export function intReds(text: string): Red[] {
-  const out: Red[] = [];
-  let file = "";
-  for (const raw of text.split(/\r?\n/)) {
-    const head = /^(\S+\.(?:test|spec)\.[cm]?[jt]sx?):$/.exec(raw);
-    if (head?.[1]) file = head[1].replaceAll("\\", "/").replace(/^\.\//, "");
-    else if (raw.startsWith("(fail) ")) {
-      const title = raw.slice(7).replace(/\s*\[[\d.]+m?s\]\s*$/, "");
-      out.push({ suite: "int", name: file ? `${file} › ${title}` : title });
-    }
+  const { inline, recap } = splitFails(text);
+  const seen = new Map<string, number>();
+  for (const r of inline) {
+    const t = r.name.includes(" › ") ? r.name.slice(r.name.indexOf(" › ") + 3) : r.name;
+    seen.set(t, (seen.get(t) ?? 0) + 1);
   }
-  return out;
+  const extra = recap.filter((t) => {
+    const n = seen.get(t) ?? 0;
+    if (n > 0) seen.set(t, n - 1);
+    return n === 0;
+  });
+  return [...inline, ...extra.map((name) => ({ suite: "int", name }))];
+}
+
+/** `(fail)` nằm cùng chỗ ca chạy (kèm file) tách khỏi `(fail)` trong khối tóm tắt cuối (chỉ tên). */
+function splitFails(text: string): { inline: Red[]; recap: string[] } {
+  const inline: Red[] = [];
+  const recap: string[] = [];
+  let file = "";
+  let inRecap = false;
+  for (const raw of text.split(/\r?\n/)) {
+    inRecap = FAIL_RECAP.test(raw) || (inRecap && !/^\d+ tests? skipped:/.test(raw));
+    file = fileHeader(raw) ?? file;
+    if (!raw.startsWith("(fail) ")) continue;
+    const title = failTitle(raw);
+    if (inRecap) recap.push(title);
+    else inline.push({ suite: "int", name: file ? `${file} › ${title}` : title });
+  }
+  return { inline, recap };
+}
+
+/** Dòng tiêu đề file của bun (`path/x.test.ts:`) ⇒ đường dẫn chuẩn hoá `/`; dòng khác ⇒ undefined. */
+function fileHeader(raw: string): string | undefined {
+  const m = /^(\S+\.(?:test|spec)\.[cm]?[jt]sx?):$/.exec(raw);
+  return m?.[1]?.replaceAll("\\", "/").replace(/^\.\//, "");
 }
 
 /**
