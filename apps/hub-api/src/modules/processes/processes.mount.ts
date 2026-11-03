@@ -221,6 +221,7 @@ function startBackground(o: {
     remindOnce: () => remindOnce(bg),
     postThreadOnce: () => poster.postThreadOnce(),
     kick: (runId) => bg.launcher.kick(runId),
+    kickMany: (runIds) => kickMany(bg, runIds),
     khWriteOnce: () => khWriter?.writeOnce() ?? Promise.resolve(0),
     settled: () => drain.settled(),
   });

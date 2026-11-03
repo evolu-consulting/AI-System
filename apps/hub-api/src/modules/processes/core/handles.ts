@@ -9,6 +9,8 @@ export type ProcessHandles = {
   remindOnce(): Promise<number>;
   postThreadOnce(): Promise<number>;
   kick(runId: string): Promise<void>;
+  /** CR-115 · `StageLauncher.kickMany` (đường kick của lô hẹn giờ) — test gọi trực tiếp (ca khoá/lỗi COMMIT). */
+  kickMany(runIds: readonly string[]): Promise<void>;
   /** K1 · G2 · một lô bộ gửi Tóm tắt; số hàng đã xử lý (0 khi không có KH runtime). */
   khWriteOnce(): Promise<number>;
   /**

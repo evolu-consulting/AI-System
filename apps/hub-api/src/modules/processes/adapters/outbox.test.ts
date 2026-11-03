@@ -64,7 +64,32 @@ describe("makeOutboxPublisher", () => {
       warns: ["process-outbox-publish-failed"],
     });
   });
-  it("CR-115 · ≥ 2 kick + launcher có `kickMany` ⇒ một lần `kickMany` cả lô, không kick lẻ; 1 kick ⇒ `kick`", async () => {
+  it("CR-115 · phát của lô hẹn giờ (`kickMany: true`) ≥ 2 kick ⇒ một lần `kickMany` cả lô, không kick lẻ; 1 kick ⇒ `kick`", async () => {
+    const { publish, calls } = manyFakes();
+    await publish(
+      [
+        { kind: "kick", runId: "r1" },
+        { kind: "post_thread", runId: "r1" },
+        { kind: "kick", runId: "r2" },
+      ],
+      { kickMany: true },
+    );
+    await publish([{ kind: "kick", runId: "r3" }], { kickMany: true });
+    expect(calls).toEqual(["many:r1,r2", "post:r1", "kick:r3"]);
+  });
+  it("CR-115 · Thấp1 · phát KHÔNG phải lô hẹn giờ ≥ 2 kick ⇒ đường cũ: `kick` từng run, giữ thứ tự với post_thread", async () => {
+    const { publish, calls } = manyFakes();
+    await publish([
+      { kind: "kick", runId: "r1" },
+      { kind: "post_thread", runId: "r1" },
+      { kind: "kick", runId: "r2" },
+    ]);
+    expect(calls).toEqual(["kick:r1", "post:r1", "kick:r2"]);
+  });
+});
+
+function manyFakes() {
+  return (() => {
     const calls: string[] = [];
     const publish = makeOutboxPublisher({
       redis: { pipeline: (() => ({})) as never },
@@ -78,12 +103,6 @@ describe("makeOutboxPublisher", () => {
         return 0;
       },
     });
-    await publish([
-      { kind: "kick", runId: "r1" },
-      { kind: "post_thread", runId: "r1" },
-      { kind: "kick", runId: "r2" },
-    ]);
-    await publish([{ kind: "kick", runId: "r3" }]);
-    expect(calls).toEqual(["many:r1,r2", "post:r1", "kick:r3"]);
-  });
-});
+    return { publish, calls };
+  })();
+}
