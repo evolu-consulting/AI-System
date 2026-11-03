@@ -82,7 +82,14 @@ async function totalCase(t: Ten, who: string): Promise<boolean> {
       `(select count(*) from (select 1 from f limit ${k}) z)::int as total`,
     );
   if (cap(1001) === base) throw new Error("không tìm thấy biểu thức total");
-  const fBody = /with f as not materialized \(([\s\S]*?)\),\s*p as/.exec(base)?.[1] as string;
+  const body0 = /with f as not materialized \(([\s\S]*?)\),\s*p as/.exec(base)?.[1] as string;
+  // Tham số không có trong thân f vẫn phải được tham chiếu (kiểu xác định lúc parse; `or true` gấp hằng).
+  const used = new Set([...body0.matchAll(/\$(\d+)/g)].map((m) => Number(m[1])));
+  const extra = list.params
+    .map((_p, i) => i + 1)
+    .filter((k) => !used.has(k))
+    .map((k) => ` and ($${k}::text is null or true)`);
+  const fBody = `${body0}${extra.join("")}`;
   const est: Variant = {
     name: "D ước lượng EXPLAIN + trang",
     setup: [],
@@ -184,7 +191,7 @@ describe("CR-116 vòng 2", () => {
         ];
         const split = list.text.replace(
           /\((\$\d+)::text is null or c\.search_key like (\$\d+)::text\)/,
-          "c.search_key like $2::text",
+          "($1::text is not null and c.search_key like $2::text)",
         );
         if (split === list.text) throw new Error("không tìm thấy vị từ like");
         ok =
@@ -243,8 +250,7 @@ describe("CR-116 vòng 2", () => {
       let err = "không lỗi";
       try {
         await run(async (q) => {
-          await q(scope.text, scope.params);
-          await q("select pg_terminate_backend(pg_backend_pid())", []);
+          await q("select pg_terminate_backend(pg_backend_pid())", []); // trước khi đổi role (role gói không được kết thúc tiến trình)
           await q("select 1", []);
         });
       } catch (e) {
