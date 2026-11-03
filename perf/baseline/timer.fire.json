@@ -1,0 +1,56 @@
+{
+  "scenario": "timer.fire",
+  "commit": "271b8456",
+  "date": "2026-11-03T11:42:29.469Z",
+  "env": {
+    "pg": "16.15",
+    "cpus": "pg: cpus=4 cpu_shares=1024 entrypoint=[ ] | redis: cpus=1 cpu_shares=1024 entrypoint=[ ] | runner: cpus=4 cpu_shares=1024 entrypoint=[ bash /in-contain",
+    "exclusive": true
+  },
+  "size": "small",
+  "runs": 3,
+  "scn": {
+    "ms": 3898,
+    "cpu": 4423,
+    "rss": 328536,
+    "conns": 10
+  },
+  "probes": {
+    "expire.runs": {
+      "n": 15,
+      "p50": 71.8,
+      "p95": 156.3,
+      "mean": 80.7,
+      "sql": 479,
+      "rt": 688,
+      "cpu": 96.3,
+      "rss": 328,
+      "spread": 10.8,
+      "sqlSpread": 19.2
+    },
+    "sweep.once": {
+      "n": 15,
+      "p50": 623.6,
+      "p95": 1033,
+      "mean": 683.4,
+      "sql": 3608,
+      "rt": 3907,
+      "cpu": 804.5,
+      "rss": 4240,
+      "spread": 18.8,
+      "sqlSpread": 22.6
+    },
+    "timer.fire": {
+      "n": 15,
+      "p50": 486.4,
+      "p95": 796.8,
+      "mean": 522.2,
+      "sql": 2823,
+      "rt": 2660,
+      "cpu": 650.6,
+      "rss": 1124,
+      "spread": 15.1,
+      "sqlSpread": 24
+    }
+  }
+}

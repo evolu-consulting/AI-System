@@ -1,0 +1,104 @@
+{
+  "scenario": "contracts.read",
+  "commit": "271b8456",
+  "date": "2026-11-03T11:42:29.469Z",
+  "env": {
+    "pg": "16.15",
+    "cpus": "pg: cpus=4 cpu_shares=1024 entrypoint=[ ] | redis: cpus=1 cpu_shares=1024 entrypoint=[ ] | runner: cpus=4 cpu_shares=1024 entrypoint=[ bash /in-contain",
+    "exclusive": true
+  },
+  "size": "small",
+  "runs": 3,
+  "scn": {
+    "ms": 5469,
+    "cpu": 1827,
+    "rss": 258112,
+    "conns": 7
+  },
+  "probes": {
+    "contracts.detail": {
+      "n": 90,
+      "p50": 9.1,
+      "p95": 79.7,
+      "mean": 26.1,
+      "sql": 2,
+      "rt": 4,
+      "cpu": 5.1,
+      "rss": 0,
+      "spread": 715.6,
+      "sqlSpread": 0
+    },
+    "contracts.list": {
+      "n": 360,
+      "p50": 38.9,
+      "p95": 58.4,
+      "mean": 40.3,
+      "sql": 2,
+      "rt": 4,
+      "cpu": 10.5,
+      "rss": 0,
+      "spread": 6.7,
+      "sqlSpread": 0
+    },
+    "http.detail": {
+      "n": 90,
+      "p50": 11,
+      "p95": 81.8,
+      "mean": 27.7,
+      "sql": 2,
+      "rt": 4,
+      "cpu": 6.5,
+      "rss": 0,
+      "spread": 586.4,
+      "sqlSpread": 0
+    },
+    "http.list.lastpage": {
+      "n": 90,
+      "p50": 44.8,
+      "p95": 64.5,
+      "mean": 47.7,
+      "sql": 2,
+      "rt": 4,
+      "cpu": 14.1,
+      "rss": 0,
+      "spread": 13.6,
+      "sqlSpread": 0
+    },
+    "http.list.nofilter": {
+      "n": 90,
+      "p50": 43.1,
+      "p95": 68.5,
+      "mean": 47.5,
+      "sql": 2,
+      "rt": 4,
+      "cpu": 14.9,
+      "rss": 128,
+      "spread": 33.9,
+      "sqlSpread": 0
+    },
+    "http.list.q3": {
+      "n": 90,
+      "p50": 41.8,
+      "p95": 62.8,
+      "mean": 45,
+      "sql": 2,
+      "rt": 4,
+      "cpu": 12.9,
+      "rss": 0,
+      "spread": 7.8,
+      "sqlSpread": 0
+    },
+    "http.list.status": {
+      "n": 90,
+      "p50": 25.7,
+      "p95": 42.6,
+      "mean": 28.4,
+      "sql": 2,
+      "rt": 4,
+      "cpu": 9,
+      "rss": 128,
+      "spread": 10.9,
+      "sqlSpread": 0
+    }
+  }
+}

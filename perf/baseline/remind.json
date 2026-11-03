@@ -1,0 +1,44 @@
+{
+  "scenario": "remind",
+  "commit": "271b8456",
+  "date": "2026-11-03T11:42:29.469Z",
+  "env": {
+    "pg": "16.15",
+    "cpus": "pg: cpus=4 cpu_shares=1024 entrypoint=[ ] | redis: cpus=1 cpu_shares=1024 entrypoint=[ ] | runner: cpus=4 cpu_shares=1024 entrypoint=[ bash /in-contain",
+    "exclusive": true
+  },
+  "size": "small",
+  "runs": 3,
+  "scn": {
+    "ms": 576,
+    "cpu": 329,
+    "rss": 336944,
+    "conns": 10
+  },
+  "probes": {
+    "remind.batch100": {
+      "n": 15,
+      "p50": 49.2,
+      "p95": 75.4,
+      "mean": 49.2,
+      "sql": 5,
+      "rt": 6,
+      "cpu": 29.2,
+      "rss": 768,
+      "spread": 26.5,
+      "sqlSpread": 0
+    },
+    "remind.once": {
+      "n": 15,
+      "p50": 49,
+      "p95": 75.3,
+      "mean": 49,
+      "sql": 5,
+      "rt": 6,
+      "cpu": 28.2,
+      "rss": 768,
+      "spread": 26.6,
+      "sqlSpread": 0
+    }
+  }
+}

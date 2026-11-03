@@ -1,0 +1,56 @@
+{
+  "scenario": "expire",
+  "commit": "271b8456",
+  "date": "2026-11-03T11:42:29.469Z",
+  "env": {
+    "pg": "16.15",
+    "cpus": "pg: cpus=4 cpu_shares=1024 entrypoint=[ ] | redis: cpus=1 cpu_shares=1024 entrypoint=[ ] | runner: cpus=4 cpu_shares=1024 entrypoint=[ bash /in-contain",
+    "exclusive": true
+  },
+  "size": "small",
+  "runs": 3,
+  "scn": {
+    "ms": 551,
+    "cpu": 266,
+    "rss": 336944,
+    "conns": 10
+  },
+  "probes": {
+    "expire.runs": {
+      "n": 15,
+      "p50": 32.5,
+      "p95": 60.4,
+      "mean": 37.1,
+      "sql": 4,
+      "rt": 5,
+      "cpu": 14.5,
+      "rss": -792,
+      "spread": 8.4,
+      "sqlSpread": 0
+    },
+    "sweep.once": {
+      "n": 15,
+      "p50": 41,
+      "p95": 69.8,
+      "mean": 45.9,
+      "sql": 16,
+      "rt": 25,
+      "cpu": 18.6,
+      "rss": -792,
+      "spread": 12,
+      "sqlSpread": 0
+    },
+    "timer.fire": {
+      "n": 15,
+      "p50": 2.5,
+      "p95": 7.7,
+      "mean": 3.2,
+      "sql": 8,
+      "rt": 16,
+      "cpu": 1.7,
+      "rss": 0,
+      "spread": 105,
+      "sqlSpread": 0
+    }
+  }
+}
