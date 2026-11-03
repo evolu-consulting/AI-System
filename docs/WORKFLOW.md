@@ -243,6 +243,7 @@ Sự cố đã gặp: Postgres test local phải crash-recovery nhiều phút, R
 - Cảnh báo không chặn; chỉ giới hạn cứng (đĩa < 15 GB, RAM < 2 GB) chặn `slice:new`. Điều phối đọc khuyến nghị rồi tự giảm số lát chạy cùng lúc — không hỏi người dùng.
 
 **Nguyên tắc pipeline (người dùng chốt 2026-11-03): tốc độ tối đa, không chồng tải, giữ chất lượng.**
+0. **Gốc là spec (SDD + OpenSpec, ADR-0032):** mọi lát bắt đầu từ spec/`tasks.md` có mục `## Delta (so với docs/current)` (ADDED/MODIFIED/REMOVED + Kịch bản kèm `[test: …]`); code và test đi theo Kịch bản, không theo trí nhớ. `openspec:check` xanh trước `slice:merge`; cuối đợt gộp Delta vào `docs/current` (`openspec:archive`). Đổi hành vi mà chưa có Delta ⇒ viết Delta trước rồi mới code. Lát công cụ/tài liệu ghi "Không thay đổi hành vi (lý do: …)".
 1. **Dùng hết tài nguyên:** việc không phụ thuộc nhau chạy cùng lúc tới đúng mức `res:check` cho phép (agent chỉ-code local, slot evotest trống) — không để máy/slot rảnh khi còn việc độc lập.
 2. **Không chồng tải:** int/e2e nặng luôn lên slot evotest; local ≤ 2 Playwright; không hai lượt test dùng chung DB/Redis/cổng (làn e2e tự cấp, root config cũng theo làn); agent chỉ ghi trong worktree của mình (Write/Edit, không redirect shell) và tắt server mình bật; merge tuần tự, refresh index trước merge.
 3. **Giữ chất lượng:** mỗi lát có test của chính nó; cuối đợt một lượt review + security (Opus) rồi e2e trên evotest; lỗi do đợt này phải sửa (kể cả Thấp) trước push/deploy; lỗi có sẵn phải chứng minh đỏ trên base trước khi bỏ qua.
