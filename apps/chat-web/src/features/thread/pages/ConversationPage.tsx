@@ -10,6 +10,7 @@ import { FlowPane } from "~/features/flow-panel/components/FlowPane";
 import { useOpenFlow } from "~/features/flow-panel/hooks/use-open-flow";
 import { useBangSubmit } from "~/features/processes/composer/hooks/use-bang-submit";
 import { ConversationRunCards } from "~/features/processes/run-block/components/ConversationRunCards";
+import { DlcConversationReview } from "~/features/processes/run-block/components/DlcConversationReview";
 import { ProcessEngineGate, useProcessEngine } from "~/features/processes/shared/engine";
 import { useActiveRun } from "~/features/run/hooks/use-run-stream";
 import { useSend } from "~/features/run/hooks/use-send";
@@ -96,7 +97,7 @@ function ConversationView({ convId }: { convId: string }) {
           autoscroll={autoscroll}
         />
         <div className="mx-auto w-full max-w-[800px] px-4 pt-3 pb-5 sm:px-6">
-          <ProcessEngineGate>
+          <ProcessEngineGate fallback={<DlcConversationReview conversationId={convId} />}>
             <ConversationRunCards conversationId={convId} />
           </ProcessEngineGate>
           <Composer variant="main" draftKey={mainDraftKey} autoFocus={!open.flow} {...composer} />

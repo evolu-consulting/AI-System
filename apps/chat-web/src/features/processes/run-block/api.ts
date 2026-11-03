@@ -63,3 +63,16 @@ export async function postCancelRun(runId: string): Promise<ProcessRunSummary> {
     await api<unknown>(`${runPath(runId)}/cancel`, { method: "POST", body: {} }),
   );
 }
+
+/** dlc-chat-review · nội dung đầy đủ của bước DLC (plan/báo cáo) cho modal duyệt: `GET /pack/dlc/runs/:id/steps/:step`. */
+export async function fetchDlcStepDetail(
+  runId: string,
+  step: string,
+  signal?: AbortSignal,
+): Promise<string> {
+  const r = await api<{ text?: unknown }>(
+    `/pack/dlc/runs/${encodeURIComponent(runId)}/steps/${encodeURIComponent(step)}`,
+    { signal },
+  );
+  return typeof r.text === "string" ? r.text : "";
+}

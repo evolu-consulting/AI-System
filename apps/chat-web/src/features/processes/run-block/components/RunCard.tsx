@@ -7,6 +7,7 @@ import { buttonVariants } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 import { RunStatusBadge } from "../../shared/components/RunStatusBadge";
 import { reasonKey, reasonParams } from "../../shared/lib/decision-reason";
+import { DlcReviewButton, showDlcReview } from "./DlcReviewDialog";
 
 export type RunCardProps = { run: ProcessRunSummary };
 
@@ -57,13 +58,16 @@ function RunCardImpl({ run }: RunCardProps) {
         <RunStatusBadge status={run.status} />
       </div>
       {line && <p className="text-caption text-secondary-foreground">{line}</p>}
-      <Link
-        to="/runs/$id"
-        params={{ id: run.id }}
-        className={cn(buttonVariants({ variant: "outline", size: "sm" }), "self-start")}
-      >
-        {t(ACTION_KEY[run.status])}
-      </Link>
+      <div className="flex flex-wrap gap-2">
+        {showDlcReview(run) && <DlcReviewButton run={run} />}
+        <Link
+          to="/runs/$id"
+          params={{ id: run.id }}
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "self-start")}
+        >
+          {t(ACTION_KEY[run.status])}
+        </Link>
+      </div>
     </article>
   );
 }

@@ -8,6 +8,7 @@ import { slotRegistry } from "../kit/adapters/slot-registry";
 import type { PackRunsBridge } from "../kit/application/pack-runs.ports";
 import type { PackToolDef } from "../kit/application/pack-tools.ports";
 import type { SlotSpec } from "../kit/application/slot.ports";
+import { dlcReadRoutes } from "./adapters/dlc.routes";
 import { dlcTools } from "./adapters/dlc.tools";
 import { dlcRepos } from "./adapters/flows.repo";
 import { type WorkspaceConfig, workspaceClient } from "./adapters/workspace.client";
@@ -76,4 +77,13 @@ export function mountDlc(d: DlcMountDeps): void {
   const warn = (msg: string, meta: Record<string, unknown>) => logger.warn(msg, meta);
   const start = startDlcFlow({ runs: d.runs, ws, uow, warn });
   for (const t of dlcTools({ uow, ws, hub: d.hub }, start)) d.tools.register(t);
+}
+
+/** dlc-chat-review · route đọc của gói (`/pack/dlc/*`): nội dung đầy đủ của bước cho modal duyệt trong chat. */
+export function dlcRoutes(db: Db, runs: PackRunsBridge = {}) {
+  const uow = createPackUow(db, DLC_PACK, dlcRepos);
+  return dlcReadRoutes({
+    stepsView: (u, id) => (runs.port ? runs.port.stepsView(u, id) : Promise.resolve(null)),
+    getFlow: (who, id) => uow.tenant(who, (r) => r.flows.get(id)),
+  });
 }

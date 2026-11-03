@@ -121,5 +121,22 @@
     "latest": "mới nhất",
     "old": "trước khi quay lại",
     "label": "Phiên bản kết quả"
+  },
+  "dlcReview": {
+    "open": "Xem và duyệt",
+    "title": "Duyệt: {{stage}}",
+    "titleEmpty": "Không có bước nào chờ duyệt",
+    "loading": "Đang tải…",
+    "none": "Bước này không còn chờ duyệt.",
+    "noOutput": "Bước này chưa có kết quả để xem.",
+    "approve": "Duyệt",
+    "reject": "Từ chối",
+    "rejectSubmit": "Từ chối và quay lại",
+    "reason": "Lý do / cần sửa gì (bắt buộc)",
+    "backTo": "Từ chối sẽ quay lại bước: {{step}}",
+    "approved": "Đã duyệt \"{{stage}}\", quy trình đi tiếp.",
+    "rejected": "Đã từ chối, quay lại bước \"{{step}}\".",
+    "section": "Quy trình DLC chờ duyệt",
+    "waiting": "{{name}} đang chờ bạn duyệt"
   }
 }

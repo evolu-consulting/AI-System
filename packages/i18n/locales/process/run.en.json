@@ -121,5 +121,22 @@
     "latest": "latest",
     "old": "before going back",
     "label": "Result versions"
+  },
+  "dlcReview": {
+    "open": "View and approve",
+    "title": "Review: {{stage}}",
+    "titleEmpty": "No step is waiting for review",
+    "loading": "Loading…",
+    "none": "This step is no longer waiting for review.",
+    "noOutput": "This step has no result to show yet.",
+    "approve": "Approve",
+    "reject": "Reject",
+    "rejectSubmit": "Reject and go back",
+    "reason": "Reason / what to change (required)",
+    "backTo": "Rejecting goes back to step: {{step}}",
+    "approved": "Approved \"{{stage}}\", the process continues.",
+    "rejected": "Rejected, going back to step \"{{step}}\".",
+    "section": "DLC processes waiting for review",
+    "waiting": "{{name}} is waiting for your review"
   }
 }
