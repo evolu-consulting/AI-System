@@ -27,14 +27,15 @@ test.beforeAll(async () => {
 });
 test.afterAll(() => resetFixture());
 
-/** Server thật bật gói ⇒ upsert 3 entitlement, tắt ⇒ thu hồi 3 entitlement. */
-const syncEntitlements = (key: string, on: boolean) =>
+/** Server thật bật gói `?level=L` ⇒ upsert entitlement chỉ tới mức L (CR-112 review fix), tắt ⇒ thu hồi cả 3. */
+const syncEntitlements = (key: string, on: boolean, level: "read" | "write" | "admin") =>
   withOwner(async (sql) => {
     if (key !== "contracts") return;
+    const upTo = KEYS.slice(0, ["read", "write", "admin"].indexOf(level) + 1);
     await (on
       ? sql`insert into admin.feature_entitlements (feature_id, tenant_id)
           select f.id, t.id from admin.features f, admin.tenants t
-          where f.key = any(${KEYS}) and t.key = 'acme'
+          where f.key = any(${upTo}) and t.key = 'acme'
           on conflict (feature_id, tenant_id) do update set revoked_at = null`
       : sql`update admin.feature_entitlements set revoked_at = now()
           where tenant_id = (select id from admin.tenants where key = 'acme')

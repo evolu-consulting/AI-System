@@ -29,13 +29,14 @@ test.beforeAll(async () => {
 });
 test.afterAll(() => resetFixture());
 
-/** Server thật bật gói ⇒ cấp 3 entitlement mức cho công ty `wizco` (công ty tạo trong ca), tắt ⇒ thu hồi. */
-const syncWizco = (key: string, on: boolean) =>
+/** Server thật bật gói `?level=L` ⇒ cấp entitlement mức tới L cho công ty `wizco` (công ty tạo trong ca), tắt ⇒ thu hồi. */
+const syncWizco = (key: string, on: boolean, level: "read" | "write" | "admin") =>
   withOwner(async (sql) => {
     if (key !== "contracts" || !on) return;
+    const upTo = KEYS.slice(0, ["read", "write", "admin"].indexOf(level) + 1);
     await sql`insert into admin.feature_entitlements (feature_id, tenant_id)
       select f.id, t.id from admin.features f, admin.tenants t
-      where f.key = any(${KEYS}) and t.key = 'wizco'
+      where f.key = any(${upTo}) and t.key = 'wizco'
       on conflict (feature_id, tenant_id) do update set revoked_at = null`;
   });
 

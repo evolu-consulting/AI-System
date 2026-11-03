@@ -3,6 +3,8 @@
 // GET liệt kê (kèm role_count/member_count), PUT bật (200 PackState), DELETE tắt (204); ghi lại các lời gọi ghi theo thứ tự.
 import type { Page } from "@playwright/test";
 
+export type Level = "read" | "write" | "admin";
+
 export type FakePack = {
   key: string;
   enabled: boolean;
@@ -21,27 +23,30 @@ export async function fakePacks(
   page: Page,
   tenantId: string,
   init: Partial<FakePack> = {},
-  sync?: (key: string, on: boolean) => Promise<void>,
+  sync?: (key: string, on: boolean, level: Level) => Promise<void>,
 ) {
   const state: FakePack[] = [
     { key: "contracts", enabled: false, groups: [], role_count: 3, member_count: 3, ...init },
   ];
   const calls: string[] = [];
-  const re = new RegExp(`/admin/tenants/${tenantId}/packs(?:/([a-z_]+))?$`);
+  // `?level=` (CR-112 review fix): page.route khớp URL đầy đủ nên phải cho phép query; bật gói cấp entitlement chỉ tới mức đó (mặc định admin).
+  const re = new RegExp(`/admin/tenants/${tenantId}/packs(?:/([a-z_]+))?(?:\\?.*)?$`);
   await page.route(re, async (route) => {
     const req = route.request();
-    const key = re.exec(new URL(req.url()).pathname)?.[1];
+    const url = new URL(req.url());
+    const key = re.exec(url.pathname)?.[1];
+    const level = (url.searchParams.get("level") ?? "admin") as Level;
     const row = state.find((p) => p.key === key);
     if (req.method() === "GET" && !key) return route.fulfill({ json: { items: state } });
     if (!row) return route.fulfill({ status: 404, json: { error: { code: "PACK_NOT_FOUND" } } });
     calls.push(`${req.method()} ${key}`);
     if (req.method() === "PUT") {
       Object.assign(row, { enabled: true, groups: GROUPS });
-      await sync?.(row.key, true);
+      await sync?.(row.key, true, level);
       return route.fulfill({ json: row });
     }
     row.enabled = false;
-    await sync?.(row.key, false);
+    await sync?.(row.key, false, "read");
     return route.fulfill({ status: 204, body: "" });
   });
   return calls;
