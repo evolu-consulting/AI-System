@@ -22,3 +22,12 @@ ALTER INDEX hub.review_tasks_remind_due_id_idx RENAME TO review_tasks_remind_due
 -- `review_tasks_remind_idx` (0019, `reminded_at IS NULL`) bị `remind_due` (0036) bao trùm, không câu nào dùng riêng — bỏ để
 -- mỗi lô `markRemindedMany` (đổi `remind_at`/`reminded_at`, không HOT) bớt một index phải ghi.
 DROP INDEX IF EXISTS hub.review_tasks_remind_idx;
+--> statement-breakpoint
+-- Đếm chưa đọc mỗi lô notice (`writeNotices`: `user_id = any(…) and tenant_id = any(…) and read_at is null group by
+-- tenant_id, user_id`): index cũ chỉ `(user_id)` ⇒ đọc heap lấy `tenant_id` + Sort mỗi lô (tăng theo số chưa đọc). Index
+-- `(user_id, tenant_id)` cùng predicate: lọc + gom theo thứ tự index, không Sort; vẫn phục vụ tra theo `user_id`. Giữ tên.
+CREATE INDEX IF NOT EXISTS process_notices_unread_ut_idx ON hub.process_notices (user_id, tenant_id) WHERE read_at IS NULL;
+--> statement-breakpoint
+DROP INDEX IF EXISTS hub.process_notices_unread_idx;
+--> statement-breakpoint
+ALTER INDEX hub.process_notices_unread_ut_idx RENAME TO process_notices_unread_idx;

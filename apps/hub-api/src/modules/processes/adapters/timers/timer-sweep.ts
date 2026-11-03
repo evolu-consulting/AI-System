@@ -24,26 +24,35 @@ export type DueTimer = {
   stage_run_id: string;
 };
 
-/** Một lượt: số hẹn đã BẮN (không tính hẹn bị bỏ/huỷ vì stage đã đổi hay run đã kết thúc). */
+/**
+ * Một lượt: số hẹn đã BẮN (không tính hẹn bị bỏ/huỷ vì stage đã đổi hay run đã kết thúc).
+ * CR-114 · TD #196 (đo PD-P01, evotest): mỗi hẹn ~60 câu SQL / ~8 tx, ~90% là `kick` launcher SAU COMMIT (tạo hub run, job,
+ * message…); tx bắn chỉ ~7 câu. Thử bắn song song 4 hẹn: KHÔNG nhanh hơn (1,49–1,69 s/100 so với 1,57 s) — nút cổ chai
+ * là luồng JS + số câu của launcher, không phải chờ DB ⇒ giữ tuần tự. Gom tx bắn theo lô bớt tối đa ~7% ⇒ chưa làm
+ * (đổi máy trạng thái không đáng); việc thật là gom launch (engine đóng băng) — `docs/specs/hub-ha-sweeps/tasks.md`.
+ */
 export async function fireDueTimers(d: ProcessBgDeps): Promise<number> {
   const now = d.now();
   const due = await withHubScope(d.db, SYSTEM, (tx) => dueTimers(tx, now));
   let fired = 0;
-  for (const t of due) {
-    const c: FireCandidate = { id: t.id, runId: t.process_run_id, stageRunId: t.stage_run_id };
-    try {
-      const out = await d.sysUow.system(t.tenant_id, (r) => fireTimer(r, c, now));
-      if (out === "fired") fired++;
-    } catch (err) {
-      d.log.warn("process-timer-fire-failed", {
-        timer_id: t.id,
-        run_id: t.process_run_id,
-        ...safeErrorFields(err),
-      });
-      await postponeFailed(d, t, now);
-    }
-  }
+  for (const t of due) if ((await fireOne(d, t, now)) === "fired") fired++;
   return fired;
+}
+
+/** Một hẹn: tx `system(tenantId)` riêng (bắn + kick sau COMMIT); lỗi ⇒ log + lùi hạn, không ném. */
+async function fireOne(d: ProcessBgDeps, t: DueTimer, now: Date): Promise<string> {
+  const c: FireCandidate = { id: t.id, runId: t.process_run_id, stageRunId: t.stage_run_id };
+  try {
+    return await d.sysUow.system(t.tenant_id, (r) => fireTimer(r, c, now));
+  } catch (err) {
+    d.log.warn("process-timer-fire-failed", {
+      timer_id: t.id,
+      run_id: t.process_run_id,
+      ...safeErrorFields(err),
+    });
+    await postponeFailed(d, t, now);
+    return "failed";
+  }
 }
 
 type OpenTimer = {

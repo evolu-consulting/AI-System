@@ -34,11 +34,13 @@ async function remindBatch(
 ): Promise<{ n: number; more: boolean }> {
   const { tasks, claimed, more } = await r.reviewTasks.claimDueReminders(limit, now);
   const due = tasks.filter((t) => dueReminder({ ...t, status: "open" }, now));
-  if (due.length > 0) {
-    await r.reviewTasks.markRemindedMany(due.map(markOf), now);
-    await r.notices.notifyMany("reminder", due.flatMap(noticeRows));
-  }
-  const esc = await escalateBatch(r, now, limit);
+  // CR-114 · ba bước không dùng kết quả của nhau ⇒ gửi cùng lúc (pipeline trên kết nối của tx): server chạy đúng thứ tự gửi
+  // (áp mốc → chèn notice → chuyển cấp) như tuần tự, chỉ bớt vòng chờ mạng.
+  const [, , esc] = await Promise.all([
+    due.length > 0 ? r.reviewTasks.markRemindedMany(due.map(markOf), now) : undefined,
+    due.length > 0 ? r.notices.notifyMany("reminder", due.flatMap(noticeRows)) : undefined,
+    escalateBatch(r, now, limit),
+  ]);
   // Lô đầy tính theo `claimed` (gồm task bị bỏ vì run đang bị giữ — T12 #1) ⇒ không dừng xả sớm. Khoá ≥ 1 mà giữ 0 (mọi
   // run đang bị giữ, R2-1) ⇒ lô sau chỉ gặp lại đúng chúng: dừng phần nhắc của lượt, lượt kế thử lại.
   const stalled = claimed > 0 && tasks.length === 0;

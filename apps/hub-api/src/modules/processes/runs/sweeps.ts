@@ -48,7 +48,16 @@ export async function sweepOnce(d: ProcessBgDeps): Promise<SweepResult> {
   const expired = await expireRuns(d);
   const now = d.now();
   const cutoff = new Date(now.getTime() - INTERRUPT_GRACE_MS);
-  const due = await withHubScope(d.db, SYSTEM, (tx) => scanDue(tx, cutoff));
+  // CR-114 · ba câu quét chỉ đọc của lượt chung MỘT tx, gửi cùng lúc (pipeline) — bớt 2 tx (begin/scope/commit) mỗi lượt.
+  // Đọc ứng viên resolve/orphan sớm hơn các bước ghi của lượt là an toàn: `markUnresolvable` khoá + kiểm lại run, `kick`
+  // idempotent; stage vừa đổi trong lượt này được lượt sau thấy.
+  const [due, resolve, orphans] = await withHubScope(d.db, SYSTEM, (tx) =>
+    Promise.all([
+      scanDue(tx, cutoff),
+      resolveCands(tx, new Date(now.getTime() - RESOLVE_STALE_MS)),
+      orphanCands(tx),
+    ]),
+  );
   const ports = interruptedPorts(d);
   let interrupted = 0;
   for (const r of due)
@@ -57,7 +66,7 @@ export async function sweepOnce(d: ProcessBgDeps): Promise<SweepResult> {
       (await sweepInterrupted(ports, { runId: r.process_run_id, stageRunId: r.stage_run_id }, now))
     )
       interrupted++;
-  await resolveTimeouts(d);
+  await resolveTimeouts(d, resolve);
   // Áp: bỏ qua nếu stage đã bị `toDecision` chuyển khỏi `running` (advanceApply tự re-khoá + re-kiểm, idempotent).
   for (const r of due)
     if (r.apply_ready && !r.interrupted)
@@ -67,7 +76,7 @@ export async function sweepOnce(d: ProcessBgDeps): Promise<SweepResult> {
           ...safeErrorFields(err),
         }),
       );
-  const queued = await requeueOrphans(d);
+  const queued = await requeueOrphans(d, orphans);
   return { queued, interrupted, expired, timers };
 }
 
@@ -113,9 +122,7 @@ function scanDue(tx: Tx, cutoff: Date, limit = BATCH): Promise<DueRow[]> {
 }
 
 /** PB-R05 · run chờ resolve mà không còn job resolve còn sống (failed/timeout/orphan) ⇒ needs_decision source_unresolvable. */
-async function resolveTimeouts(d: ProcessDeps): Promise<number> {
-  const cutoff = new Date(d.now().getTime() - RESOLVE_STALE_MS);
-  const rows = await withHubScope(d.db, SYSTEM, (tx) => resolveCands(tx, cutoff));
+async function resolveTimeouts(d: ProcessDeps, rows: readonly { id: string }[]): Promise<number> {
   let n = 0;
   for (const { id } of rows) if (await markUnresolvable(d, id)) n++;
   return n;
@@ -151,8 +158,10 @@ async function markUnresolvable(d: ProcessDeps, runId: string): Promise<boolean>
 }
 
 /** K4 · stage `queued` mồ côi (chưa có `hub.runs` đang chạy) ⇒ `kick` lại (idempotent ở launcher). */
-async function requeueOrphans(d: ProcessDeps): Promise<number> {
-  const rows = await withHubScope(d.db, SYSTEM, (tx) => orphanCands(tx));
+async function requeueOrphans(
+  d: ProcessDeps,
+  rows: readonly { process_run_id: string }[],
+): Promise<number> {
   let n = 0;
   for (const { process_run_id } of rows) {
     try {

@@ -45,8 +45,13 @@ async function expireBatch(d: ProcessDeps, limit: number): Promise<{ n: number; 
   const out = await withHubScope(d.db, { kind: "system" }, async (tx) => {
     const { runs, more } = await claimExpired(tx, now, limit);
     if (runs.length === 0) return { n: 0, more: false, events: [] };
-    await insertRunEnds(tx, runs);
-    return { n: runs.length, more, events: await d.notifier.runsFinished(tx, runs) };
+    // CR-114 · hai câu chèn độc lập (bảng khác nhau, chỉ phụ thuộc kết quả claim) gửi cùng lúc ⇒ postgres.js pipeline trên
+    // kết nối của tx: server vẫn chạy ĐÚNG thứ tự gửi, bớt một vòng chờ mạng mỗi lô.
+    const [, events] = await Promise.all([
+      insertRunEnds(tx, runs),
+      d.notifier.runsFinished(tx, runs),
+    ]);
+    return { n: runs.length, more, events };
   });
   await publishUserEvents(d.redis, out.events, d.log);
   return { n: out.n, more: out.more };
