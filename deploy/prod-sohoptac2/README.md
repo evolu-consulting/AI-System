@@ -333,3 +333,24 @@ e2e: `e2e-deployed.ps1 -Domain evoluconsulting.com -Hosts prod` (hoac `DEP_DOMAI
 - Người nội bộ vẫn đăng nhập contracts/chat/admin bình thường; log hub-api không lỗi `community` sweep.
 
 **Hoàn tác:** (a) chỉ tắt app: `bash disable-domain.sh` hoặc gỡ server community khỏi `sohoptac2.conf` + reload edge; đặt `COMMUNITY_SWEEP=off` trong `.env` rồi `up -d hub-api`. (b) Về bản trước: `deploy.ps1 -Ref <commit cũ>` — nhưng migration KHÔNG tự lùi: schema mới (cột/bảng thêm) tương thích ngược với hub/admin cũ; chỉ khôi phục DB từ `backup.sh` (`restore-test.sh` để thử trước) khi thật cần. Partner chưa có phiên community nên không ảnh hưởng người dùng nội bộ.
+## Deploy CR-114 (hub-ha-sweeps, hub-agent-handoff, hub-otel) — runbook
+
+1. **Giờ vắng + đếm trước (chỉ đọc).** Migration hub `0082_sweep_claim_indexes` dựng lại index trên `hub.process_runs`,
+   `hub.review_tasks`, `hub.process_notices` bằng `CREATE INDEX` thường (không CONCURRENTLY: khoá chặn GHI suốt lúc dựng) rồi
+   `DROP INDEX`/`ALTER INDEX … RENAME` (khoá ACCESS EXCLUSIVE, ngắn) ⇒ chạy ngoài giờ làm việc. Trước khi deploy, đếm để ước
+   thời gian dựng (vài trăm nghìn hàng ≈ giây):
+   ```sql
+   select (select count(*) from hub.process_runs) as process_runs,
+          (select count(*) from hub.review_tasks) as review_tasks,
+          (select count(*) from hub.process_notices) as process_notices;
+   ```
+2. **Dừng HẾT bản cũ rồi mới chạy bản mới** (hub-api và runtime, không cuốn chiếu): câu claim của vòng nhắc/hết hạn bản cũ
+   và bản mới không loại trừ nhau ⇒ hai bản chạy cùng lúc có thể xử lý trùng một lô. `docker compose stop hub-api agent-runtime`
+   → migrate → `up -d`.
+3. **OTEL bật SAU CÙNG:** chỉ đặt `OTEL_EXPORTER_OTLP_ENDPOINT` trong `.env` (rồi `up -d hub-api agent-runtime`) khi MỌI runtime đã
+   lên bản mới — runtime cũ dùng `JobPayload` `extra=forbid` nên từ chối job mang trường trace mới. Trống = tắt.
+4. **Số migration hub:** 0071–0081 và 0083 đang trống (dải DLC / chưa cấp). Migration hub kế tiếp (kể cả DLC) phải có
+   `when` > **1802600000000** (của `0084_hub_artifacts`) — drizzle bỏ qua âm thầm migration có `when` nhỏ hơn bản đã áp
+   (`bun run dlc:check` báo `WHEN CŨ`; `docs/platform/dlc-integration.md` §3).
+5. **Kiểm sau deploy:** log migrate có `0082` và `0084`; log hub-api không có `process-sweep-failed` /
+   `process-remind-failed` trong 10 phút đầu.
