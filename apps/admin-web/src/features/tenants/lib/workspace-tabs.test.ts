@@ -3,8 +3,9 @@ import { describe, expect, it } from "bun:test";
 import { activeTab, TENANT_TABS, visibleTabs } from "./workspace-tabs";
 
 describe("ADM-FR-81 · workspace-tabs", () => {
-  it("tenant_admin chỉ thấy info/features/users/groups/partners/access/agents, tab chỉ-platform trên URL ⇒ info", () => {
+  it("tenant_admin thấy overview/info/features/users/groups/partners/access/agents/quota (Quota rút gọn), tab chỉ-platform trên URL ⇒ info", () => {
     expect(visibleTabs(false)).toEqual([
+      "overview",
       "info",
       "features",
       "users",
@@ -12,8 +13,10 @@ describe("ADM-FR-81 · workspace-tabs", () => {
       "partners",
       "access",
       "agents",
+      "quota",
     ]);
-    expect(activeTab("quota", false)).toBe("info");
+    expect(activeTab("workflow-tools", false)).toBe("info");
+    expect(activeTab("quota", false)).toBe("quota");
     expect(activeTab("users", false)).toBe("users");
     expect(activeTab("access", false)).toBe("access");
     expect(activeTab(undefined, false)).toBe("info");
@@ -23,11 +26,12 @@ describe("ADM-FR-81 · workspace-tabs", () => {
     expect(activeTab("packs", false)).toBe("features"); // tenant_admin cũng thấy tab gộp (chỉ xem)
   });
 
-  it("platform_admin đủ tab theo thứ tự spec: Thông tin, Ứng dụng & Gói, Người dùng…, Agents, Công cụ quy trình, Quota", () => {
+  it("platform_admin đủ tab theo thứ tự spec: Tổng quan, Thông tin, Ứng dụng & Gói, Người dùng…, Agents, Công cụ quy trình, Quota", () => {
     expect(visibleTabs(true)).toEqual([...TENANT_TABS]);
-    expect(TENANT_TABS[0]).toBe("info");
-    expect(TENANT_TABS[1]).toBe("features");
-    expect(TENANT_TABS.slice(2)).toEqual([
+    expect(TENANT_TABS[0]).toBe("overview");
+    expect(TENANT_TABS[1]).toBe("info");
+    expect(TENANT_TABS[2]).toBe("features");
+    expect(TENANT_TABS.slice(3)).toEqual([
       "users",
       "groups",
       "partners",

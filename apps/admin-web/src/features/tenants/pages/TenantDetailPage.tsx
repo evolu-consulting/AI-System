@@ -1,6 +1,6 @@
 // ADM-FR-60, ADM-FR-61, ADM-FR-76 · workspace công ty /tenants/$tenantId (mẫu B): header (tên, badge, khoá/mở khoá) + tab theo `lib/workspace-tabs.ts`.
 import type { TenantDetail } from "@ai/contracts";
-import { getRouteApi } from "@tanstack/react-router";
+import { getRouteApi, useRouter } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
@@ -22,6 +22,8 @@ import { setLastTenant } from "@/lib/last-tenant";
 import { useTr } from "@/lib/use-translate";
 import { useTenantDetail } from "../api";
 import { EmbeddedTab, isEmbeddedTab } from "../components/EmbeddedTab";
+import { TenantOverview } from "../components/overview/TenantOverview";
+import { TenantQuotaReadonly } from "../components/quota/TenantQuotaReadonly";
 import { TenantQuotaTab } from "../components/quota/TenantQuotaTab";
 import { TenantDefaultAppCard } from "../components/TenantDefaultAppCard";
 import { TenantInfoForm } from "../components/TenantInfoForm";
@@ -29,6 +31,7 @@ import { TenantProfileCard } from "../components/TenantProfileCard";
 import { useLockFlow } from "../hooks/use-lock-flow";
 import { useTenantConflict } from "../hooks/use-tenant-conflict";
 import { slotsToValue, type TenantInfoValues } from "../lib/schemas";
+import { onboardAgainSearch } from "../lib/wizard";
 import { WorkspaceProvider } from "../lib/workspace-context";
 import { activeTab, TAB_LABEL, type TenantTab, visibleTabs } from "../lib/workspace-tabs";
 
@@ -46,11 +49,14 @@ function Header({
   canLock,
   onLock,
   onUnlock,
+  onOnboard,
 }: {
   tenant: TenantDetail;
   canLock: boolean;
   onLock: () => void;
   onUnlock: () => void;
+  /** ADM-FR-79 · "Onboard lại": mở wizard từ bước 2 (chỉ platform_admin). */
+  onOnboard?: () => void;
 }) {
   const { t, i18n } = useTranslation();
   const date = new Date(tenant.created_at).toLocaleDateString(
@@ -68,6 +74,11 @@ function Header({
           ) : (
             <StatusBadge tone="ok">{t("tenants.status.active")}</StatusBadge>
           )}
+          {onOnboard && tenant.status !== "locked" ? (
+            <Button variant="outline" onClick={onOnboard}>
+              {t("tenants.wizard.onboardAgain")}
+            </Button>
+          ) : null}
           {noLock ? null : tenant.status === "locked" ? (
             <Button variant="outline" onClick={onUnlock}>
               {t("tenants.unlock.button")}
@@ -89,6 +100,7 @@ export function TenantDetailPage() {
   const { tenantId } = route.useParams();
   const { tab } = route.useSearch();
   const navigate = route.useNavigate();
+  const router = useRouter();
   const role = useSession((s) => s.me?.role);
   // CR-112 · ADM-FR-81: tenant_admin vào workspace công ty mình (API trả 404 với công ty khác), chỉ xem thông tin.
   const isPlatform = role === "platform_admin";
@@ -161,6 +173,15 @@ export function TenantDetailPage() {
         canLock={isPlatform}
         onLock={() => requestLock(tenant)}
         onUnlock={() => requestUnlock(tenant)}
+        onOnboard={
+          isPlatform
+            ? () =>
+                void router.navigate({
+                  to: "/tenants/new",
+                  search: onboardAgainSearch(tenant.id),
+                })
+            : undefined
+        }
       />
       <Tabs
         value={current}
@@ -173,6 +194,9 @@ export function TenantDetailPage() {
             </TabsTrigger>
           ))}
         </TabsList>
+        <TabsContent value="overview" className="pt-4">
+          <TenantOverview tenant={tenant} />
+        </TabsContent>
         <TabsContent value="info" className="pt-4">
           <TenantInfoForm
             readOnly={!isPlatform}
@@ -196,11 +220,15 @@ export function TenantDetailPage() {
           </Suspense>
         </TabsContent>
         <TabsContent value="quota" className="pt-4">
-          <TenantQuotaTab
-            tenant={tenant}
-            onDirtyChange={setQuotaDirty}
-            onReloadTenant={reloadTenant}
-          />
+          {isPlatform ? (
+            <TenantQuotaTab
+              tenant={tenant}
+              onDirtyChange={setQuotaDirty}
+              onReloadTenant={reloadTenant}
+            />
+          ) : (
+            <TenantQuotaReadonly tenantId={tenant.id} />
+          )}
         </TabsContent>
         {visibleTabs(isPlatform)
           .filter(isEmbeddedTab)

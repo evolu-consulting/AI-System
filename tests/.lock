@@ -430,6 +430,7 @@ f30891fa26eec7d42cb54df91f16da128c92508fee8a2d4b8cda54456480f36b  e2e/contracts-
 2f5c49e16e1ecbbd4dd043aedd4885772217ec51a0dccf6f8bdef211b5e4badb  e2e/contracts-web/v2m-delete.cw.ts
 9c31c35763802fe5ef197656d74316190ffca4c3be71e06475560ecc358261a9  e2e/cr052-login.spec.ts
 3b43a44da60d7076f33e6873c79618b126b1c40905a92433f0cd6c64d00a93c3  e2e/cr112-nav.spec.ts
+a61f224c20d9dda926ad989ceab189769737632da5bf8e1d868d361cdf871b73  e2e/cr112-wizard.spec.ts
 d704ce4d4bd14c2dc3f67bf0d7c83bde3eec51b47c89dfe46fc38b871969b8f5  e2e/deployed/01-login-sso.deployed.ts
 93b7409c576ff6c4591e2c575f365660a730a446940d3ec497a8867ce194d029  e2e/deployed/02-contracts-pages.deployed.ts
 b767faf467e5231cd37c48d9286e7f452faded6fd33f402a4998987e38cd190c  e2e/deployed/03-chat.deployed.ts

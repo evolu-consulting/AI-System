@@ -604,7 +604,46 @@
       "company": "Công ty",
       "firstAdmin": "Tenant admin đầu tiên",
       "submit": "Tạo tenant",
-      "goTo": "Đi tới tenant"
+      "goTo": "Tiếp tục cấu hình"
+    },
+    "wizard": {
+      "title": "Thêm công ty",
+      "subtitle": "Tạo công ty rồi cấu hình ứng dụng, vai và người dùng. Mỗi bước lưu ngay; bỏ ngang thì tiếp ở workspace công ty.",
+      "subtitleTenant": "{name} ({key}) — mỗi bước lưu ngay; bỏ ngang thì tiếp ở workspace công ty.",
+      "stepsLabel": "Các bước thêm công ty",
+      "stepOf": "Bước {n}/{total}",
+      "step": {
+        "company": "Thông tin",
+        "apps": "Ứng dụng & Gói",
+        "people": "Phân quyền & Người dùng",
+        "review": "Xem lại"
+      },
+      "peopleHint": "Gán người dùng vào vai theo từng ứng dụng. Có thể bỏ qua và làm sau trong tab Phân quyền.",
+      "addUsers": "Thêm người dùng ở workspace",
+      "reviewHint": "Tóm tắt cấu hình của {name}. Bấm Hoàn tất để vào workspace công ty.",
+      "back": "Quay lại",
+      "next": "Tiếp tục",
+      "skip": "Bỏ qua",
+      "finish": "Hoàn tất",
+      "exit": "Thoát, tiếp tục ở workspace",
+      "saveFirst": "Lưu thay đổi của bước này trước khi sang bước khác.",
+      "done": "Đã thêm công ty {name}",
+      "onboardAgain": "Onboard lại"
+    },
+    "overview": {
+      "title": "Tổng quan",
+      "hint": "Chỉ đọc. Sửa ở các tab Ứng dụng & Gói, Phân quyền, Người dùng.",
+      "users": "Người dùng",
+      "apps": "Ứng dụng đang bật",
+      "appsNone": "Chưa bật ứng dụng nào.",
+      "roles": "Vai đã tạo",
+      "quota": "Quota tháng {month}",
+      "quotaNone": "Chưa có dữ liệu quota."
+    },
+    "quotaRo": {
+      "title": "Quota tháng này",
+      "hint": "Chỉ đọc: mức dùng tháng này so với giới hạn công ty. Liên hệ quản trị nền tảng để đổi giới hạn.",
+      "note": "Quota theo lượt chạy và token; tháng tính theo giờ Việt Nam."
     },
     "field": {
       "key": "Mã công ty",
@@ -618,6 +657,7 @@
       "processRunsHint": "Từ 1 đến 1000. Lượt đang chờ duyệt vẫn được tính."
     },
     "tab": {
+      "overview": "Tổng quan",
       "info": "Thông tin",
       "features": "Ứng dụng & Gói",
       "agents": "Agents",

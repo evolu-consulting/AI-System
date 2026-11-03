@@ -1,8 +1,9 @@
-// CR-112 · ADM-FR-76/77 · tab workspace công ty theo vai. Thứ tự (Q9/Q10): Thông tin · Ứng dụng & Gói (key `features`, S4 đã gộp Feature + Gói) ·
-// Người dùng · Nhóm · Đối tác · Phân quyền · Agents · Công cụ quy trình · Quota. Tổng quan (COULD) chưa làm.
-// platform_admin đủ tab; tenant_admin: Thông tin (chỉ xem), Ứng dụng & Gói (chỉ xem), nhóm quyền người dùng, Agents (Quota rút gọn: việc còn lại).
+// CR-112 · ADM-FR-76/77 · tab workspace công ty theo vai. Thứ tự (Q9/Q10): Tổng quan (COULD, chỉ đọc) · Thông tin · Ứng dụng & Gói (key `features`, S4 đã gộp Feature + Gói) ·
+// Người dùng · Nhóm · Đối tác · Phân quyền · Agents · Công cụ quy trình · Quota. Tab mặc định (không `?tab=`) vẫn là Thông tin.
+// platform_admin đủ tab; tenant_admin: Tổng quan, Thông tin (chỉ xem), Ứng dụng & Gói (chỉ xem), nhóm quyền người dùng, Agents, Quota rút gọn (chỉ đọc, không tiền).
 // "packs" chỉ còn là key URL cũ (activeTab chuyển sang `features`), không nằm trong danh sách tab.
 export type TenantTab =
+  | "overview"
   | "info"
   | "features"
   | "packs"
@@ -15,6 +16,7 @@ export type TenantTab =
   | "quota";
 
 export const TENANT_TABS: readonly TenantTab[] = [
+  "overview",
   "info",
   "features",
   "users",
@@ -26,6 +28,7 @@ export const TENANT_TABS: readonly TenantTab[] = [
   "quota",
 ];
 const TENANT_ADMIN: readonly TenantTab[] = [
+  "overview",
   "info",
   "features",
   "users",
@@ -33,9 +36,11 @@ const TENANT_ADMIN: readonly TenantTab[] = [
   "partners",
   "access",
   "agents",
+  "quota",
 ];
 
 export const TAB_LABEL = {
+  overview: "tenants.tab.overview",
   info: "tenants.tab.info",
   features: "tenants.tab.features",
   packs: "tenants.tab.packs",

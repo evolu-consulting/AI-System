@@ -1,94 +1,86 @@
-// ADM-FR-60 · /tenants/new: tạo tenant + tenant_admin đầu tiên (một transaction), hiện mật khẩu tạm một lần.
-import type { TenantCreateResponse } from "@ai/contracts";
-import { useRouter } from "@tanstack/react-router";
-import { useState } from "react";
+// ADM-FR-60 · ADM-FR-79 · /tenants/new: wizard onboard 4 bước (Thông tin → Ứng dụng & Gói → Phân quyền/Người dùng → Xem lại).
+// Không giao dịch xuyên bước: bước 1 tạo công ty ngay; bước sau gọi endpoint có sẵn; trạng thái nằm trên URL (`?tenant=&step=`) nên
+// tải lại / bỏ ngang đều tiếp được (ở wizard hoặc ở workspace). "Onboard lại" mở thẳng bước 2 trên công ty có sẵn.
+import { useQueryClient } from "@tanstack/react-query";
+import { getRouteApi, useRouter } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
-import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
+import { notifySuccess } from "@/components/shared/toast";
 import { useSession } from "@/lib/auth/use-session";
-import { describeError } from "@/lib/errors";
-import { ApiError } from "@/lib/http";
-import { useTr } from "@/lib/use-translate";
-import { useCreateTenant } from "../api";
-import { TenantCreatedDialog } from "../components/TenantCreatedDialog";
-import { type CreateFieldErrors, TenantCreateForm } from "../components/TenantCreateForm";
-import { slotsToValue, type TenantCreateValues } from "../lib/schemas";
+import { useTenantDetail } from "../api";
+import { WizardCompanyStep } from "../components/wizard/WizardCompanyStep";
+import { WizardStepper } from "../components/wizard/WizardStepper";
+import { WizardTenantStep } from "../components/wizard/WizardTenantStep";
+import { resolveStep, stepNumber, type WizardStep } from "../lib/wizard";
 
-const FIELD_BY_CODE: Record<string, keyof CreateFieldErrors> = {
-  KEY_TAKEN: "key",
-  USERNAME_TAKEN: "username",
-  EMAIL_TAKEN: "email",
-};
+const route = getRouteApi("/_authed/tenants/new");
 
 export function TenantCreatePage() {
   const { t } = useTranslation();
-  const tr = useTr();
   const router = useRouter();
-  const role = useSession((s) => s.me?.role);
-  const create = useCreateTenant();
-  const [dirty, setDirty] = useState(false);
-  const [errors, setErrors] = useState<CreateFieldErrors>({});
-  const [created, setCreated] = useState<TenantCreateResponse | null>(null);
+  const qc = useQueryClient();
+  const search = route.useSearch();
+  const navigate = route.useNavigate();
+  const isPlatform = useSession((s) => s.me?.role) === "platform_admin";
+  const step = resolveStep(search);
+  const tenantId = search.tenant;
+  const query = useTenantDetail(tenantId ?? "", isPlatform && !!tenantId);
 
-  if (role !== "platform_admin") return <ForbiddenState />;
+  // Vào bước Xem lại thì làm mới số liệu (người dùng, vai, quota) vì các bước trước đã ghi.
+  useEffect(() => {
+    if (step !== "review" || !tenantId) return;
+    void qc.invalidateQueries({
+      queryKey: ["tenants"],
+      predicate: (q) => q.queryKey.includes(tenantId),
+    });
+  }, [step, tenantId, qc]);
 
-  const fail = (err: unknown) => {
-    const spec = describeError(err);
-    const text = tr(spec.key, spec.params);
-    const field = err instanceof ApiError ? FIELD_BY_CODE[err.code] : undefined;
-    if (field) setErrors({ [field]: text });
-    else if (!(err instanceof ApiError && err.code === "UNAUTHORIZED")) notifyError(text);
-  };
+  if (!isPlatform) return <ForbiddenState />;
 
-  const submit = async (v: TenantCreateValues) => {
-    setErrors({});
-    try {
-      const res = await create.mutateAsync({
-        key: v.key,
-        name: v.name,
-        max_concurrent_sub: slotsToValue(v.slots),
-        timezone: v.timezone,
-        first_admin: {
-          username: v.username,
-          display_name: v.display_name,
-          email: v.email,
-          locale: v.locale,
-        },
-      });
-      setDirty(false);
-      setCreated(res);
-    } catch (err) {
-      fail(err);
-    }
-  };
-
-  const goToTenant = async () => {
-    if (!created) return;
-    notifySuccess(t("tenants.toast.created", { key: created.tenant.key }));
-    await router.navigate({ to: "/tenants/$tenantId", params: { tenantId: created.tenant.id } });
+  const go = (s: WizardStep) =>
+    void navigate({ search: { tenant: tenantId, step: stepNumber(s) }, replace: true });
+  const toWorkspace = (tab?: "overview") =>
+    void router.navigate(
+      tenantId
+        ? { to: "/tenants/$tenantId", params: { tenantId }, search: { tab } }
+        : { to: "/tenants" },
+    );
+  const finish = () => {
+    if (query.data) notifySuccess(t("tenants.wizard.done", { name: query.data.name }));
+    toWorkspace("overview");
   };
 
   return (
     <>
-      <PageHeader title={t("tenants.new.title")} />
-      <TenantCreateForm
-        pending={create.isPending}
-        serverErrors={errors}
-        onDirtyChange={setDirty}
-        onCancel={() => void router.navigate({ to: "/tenants" })}
-        onSubmit={submit}
+      <PageHeader
+        title={t("tenants.wizard.title")}
+        description={
+          query.data
+            ? t("tenants.wizard.subtitleTenant", { name: query.data.name, key: query.data.key })
+            : t("tenants.wizard.subtitle")
+        }
       />
-      <UnsavedGuard dirty={dirty} />
-      {created ? (
-        <TenantCreatedDialog
-          tenantKey={created.tenant.key}
-          username={created.first_admin.username}
-          password={created.temp_password}
-          onContinue={goToTenant}
+      <WizardStepper current={step} />
+      {step === "company" ? (
+        <WizardCompanyStep
+          onCancel={() => void router.navigate({ to: "/tenants" })}
+          onCreated={(res) => {
+            notifySuccess(t("tenants.toast.created", { key: res.tenant.key }));
+            void navigate({ search: { tenant: res.tenant.id, step: 2 }, replace: true });
+          }}
         />
-      ) : null}
+      ) : (
+        <WizardTenantStep
+          key={step}
+          step={step}
+          tenant={query}
+          onGo={go}
+          onFinish={finish}
+          onExit={() => toWorkspace()}
+        />
+      )}
     </>
   );
 }

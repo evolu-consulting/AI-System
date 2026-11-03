@@ -604,7 +604,46 @@
       "company": "Company",
       "firstAdmin": "First tenant admin",
       "submit": "Create tenant",
-      "goTo": "Go to tenant"
+      "goTo": "Continue setup"
+    },
+    "wizard": {
+      "title": "Add company",
+      "subtitle": "Create the company, then set up apps, roles and users. Each step saves right away; if you leave midway, carry on in the company workspace.",
+      "subtitleTenant": "{name} ({key}) — each step saves right away; if you leave midway, carry on in the company workspace.",
+      "stepsLabel": "Add company steps",
+      "stepOf": "Step {n}/{total}",
+      "step": {
+        "company": "Details",
+        "apps": "Apps & Packs",
+        "people": "Access & Users",
+        "review": "Review"
+      },
+      "peopleHint": "Assign users to roles per app. You can skip this and do it later in the Access tab.",
+      "addUsers": "Add users in the workspace",
+      "reviewHint": "Summary of {name}'s setup. Click Finish to open the company workspace.",
+      "back": "Back",
+      "next": "Continue",
+      "skip": "Skip",
+      "finish": "Finish",
+      "exit": "Exit, continue in workspace",
+      "saveFirst": "Save this step's changes before moving to another step.",
+      "done": "Company {name} added",
+      "onboardAgain": "Re-onboard"
+    },
+    "overview": {
+      "title": "Overview",
+      "hint": "Read-only. Edit in the Apps & Packs, Access and Users tabs.",
+      "users": "Users",
+      "apps": "Apps on",
+      "appsNone": "No app is on yet.",
+      "roles": "Roles created",
+      "quota": "Quota {month}",
+      "quotaNone": "No quota data yet."
+    },
+    "quotaRo": {
+      "title": "Quota this month",
+      "hint": "Read-only: this month's usage against the company limits. Ask a platform admin to change limits.",
+      "note": "Quota counts runs and tokens; the month follows Vietnam time."
     },
     "field": {
       "key": "Company code",
@@ -618,6 +657,7 @@
       "processRunsHint": "From 1 to 1000. Runs waiting for review still count."
     },
     "tab": {
+      "overview": "Overview",
       "info": "Details",
       "features": "Apps & Packs",
       "agents": "Agents",
