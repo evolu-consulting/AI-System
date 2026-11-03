@@ -37,6 +37,7 @@ H1/H2b orchestrator/runner trên evotest.
   **tắt cờ 32179 → bật 22639 token (−29,6 %)**; 7/7 dữ kiện tới writer (prompt/lịch sử + `artifact-get`),
   analyst đủ 3/3 dữ kiện nghiên cứu; prompt Orchestrator bỏ khối `<handoff>` thì y hệt khi tắt cờ. Agent không MCP: 0 % (y
   hệt tắt cờ). (Số −50,8 % lần đầu có nén `<steps>`/lịch sử của Orchestrator — đã bỏ vì mất dữ kiện.)
+- `packages/db/src/hub-rls.int.test.ts` (không khoá) đỏ mới sau 0084: thêm `artifacts`, `artifact_runs` vào `LATER_POLICY_TABLES` (hành vi đúng: 2 bảng RLS mới, 1 policy `hub_rw` mỗi bảng).
 - Thăm dò `artifactAccess` gọi `#mcp` (catalog từ cache, gate quyền, KH khi là job stage — delegate chat thì không) cho mỗi
   agent hiển thị, một lần mỗi run và chỉ sau khi có artifact; lỗi ⇒ coi như không nhận (Orchestrator chép như cũ).
 
@@ -53,5 +54,9 @@ Khi đã có kết quả bước lưu thành artifact, prompt Orchestrator có k
 - Kịch bản: khi agent đi dify hoặc direct-SDK thì không được báo là nhận tham chiếu [test: apps/hub-api/src/modules/runner/routing-runner.test.ts » artifactAccess: dify / direct-SDK ⇒ false]
 - Kịch bản: khi runner báo nhận tham chiếu nhưng job không có artifact-get thì agent vẫn nhận toàn văn [test: apps/hub-api/src/modules/artifacts/handoff.scenario.test.ts » runner báo nhận tham chiếu nhưng lúc chạy job không có artifact-get]
 - Kịch bản: khi chạy kịch bản đa agent cố định thì token giảm và writer tới được 7/7 dữ kiện [test: apps/hub-api/src/modules/artifacts/handoff.scenario.test.ts » kịch bản đa agent: giảm token và đủ dữ kiện]
+
+#### Yêu cầu: RLS trên bảng artifact
+Bảng `hub.artifacts` và `hub.artifact_runs` (0084) bật RLS, mỗi bảng một policy tenant chỉ cho `hub_rw`.
+- Kịch bản: khi liệt kê bảng hub có RLS thì có artifacts và artifact_runs với policy chỉ cho hub_rw [test: packages/db/src/hub-rls.int.test.ts » RLS bật trên đúng 5 bảng hội thoại]
 
 ## Việc còn lại

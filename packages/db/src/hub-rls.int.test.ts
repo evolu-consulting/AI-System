@@ -176,6 +176,9 @@ const LATER_POLICY_TABLES = [
   "process_slot_assignments",
   "process_def_releases",
   "process_slots",
+  // CR-114 (0084): kho artifact + nối run ↔ artifact — RLS tenant (system hoặc user đúng tenant), 1 policy mỗi bảng, chỉ hub_rw.
+  "artifacts",
+  "artifact_runs",
 ];
 /** 0022 (B4 · WRK-FR-27): agent_runtime đọc `hub.runs` cột (id, status), chỉ hàng `running`. */
 const RUNTIME_POLICIES = [
