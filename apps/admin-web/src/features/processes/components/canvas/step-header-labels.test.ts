@@ -6,9 +6,15 @@ const review = (step: number, no: number) => ({
   step,
   slotInfo: { no, dept: "", dueH: null, cond: null },
   sys: null,
+  dlc: null,
 });
-const sys = (step: number, kind: "route" | "finalize") => ({ step, slotInfo: null, sys: kind });
-const plain = (step: number) => ({ step, slotInfo: null, sys: null });
+const sys = (step: number, kind: "route" | "finalize") => ({
+  step,
+  slotInfo: null,
+  sys: kind,
+  dlc: null,
+});
+const plain = (step: number) => ({ step, slotInfo: null, sys: null, dlc: null });
 
 describe("stepHeaderLabels", () => {
   test("s0(0) → route(1) → s1(2) → finalize(3): Bước 1, (trống), Bước 2, (trống)", () => {
