@@ -1,0 +1,30 @@
+apps/hub-api/src/modules/chat-gate/chat-gate.int.test.ts:
+(pass) chat-api-gate · chặn API Chat AI theo entitlement công ty > công ty còn quyền ⇒ như cũ [18.14ms]
+(fail) (unnamed) [30001.39ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+packages/db/src/hub-rls.int.test.ts:
+(pass) HUB-FR-75 · RLS hội thoại hub_rw (int) > HUB-FR-75 · scope user chỉ thấy đúng (tenant, user); system thấy hết [29.24ms]
+(fail) HUB-FR-75 · withHubScope thử lại, quyền role, policy (int) > HUB-FR-75 · HUB-FR-96 · RLS bật trên đúng 5 bảng hội thoại (+ tool_confirmations H2a, attachments H2c, 3 bảng phòng X2a: 7 policy), policy chỉ cho hub_rw [4.52ms]
+packages/db/src/migrate-hub.int.test.ts:
+{"level":"warn","msg":"run-lease-sweep-failed","error":"write CONNECTION_ENDED pg:5432"}
+(fail) HUB-FR-75 · runHubMigrations (int, ai_system_h1_test) > DB sạch (production): main → hub đủ bảng (H3b + audit_log + 3 bảng phòng X2a), không hub-dev; lần 2 {0,0} [2172.67ms]
+(fail) HUB-FR-75 · runHubMigrations (int, ai_system_h1_test) > DB có stub: dòng cũ giữ (FK NOT VALID), dòng mới phải có agent; lần 2 {0,0} [2228.28ms]
+(pass) HUB-FR-83 · usage_logs trên DB có stub (int) > HUB-FR-83 · cột mới nullable [2142.77ms]
+tools/scripts/src/seed-community-demo.int.test.ts:
+(pass) com-c12 · seed-community-demo > dry-run: chỉ in kế hoạch, không ghi DB/file [1.66ms]
+
+9 tests skipped:
+(skip) ADM-FR-53 · chi phí bump + NOTIFY (spec M3 §6) > (unnamed)
+
+4 tests failed:
+(fail) (unnamed) [30001.39ms]
+  ^ a beforeEach/afterEach hook timed out for this test.
+(fail) HUB-FR-75 · withHubScope thử lại, quyền role, policy (int) > HUB-FR-75 · HUB-FR-96 · RLS bật trên đúng 5 bảng hội thoại (+ tool_confirmations H2a, attachments H2c, 3 bảng phòng X2a: 7 policy), policy chỉ cho hub_rw [4.52ms]
+(fail) HUB-FR-75 · runHubMigrations (int, ai_system_h1_test) > DB sạch (production): main → hub đủ bảng (H3b + audit_log + 3 bảng phòng X2a), không hub-dev; lần 2 {0,0} [2172.67ms]
+(fail) HUB-FR-75 · runHubMigrations (int, ai_system_h1_test) > DB có stub: dòng cũ giữ (FK NOT VALID), dòng mới phải có agent; lần 2 {0,0} [2228.28ms]
+
+ 4047 pass
+ 9 skip
+ 4 fail
+ 31832 expect() calls
+Ran 4060 tests across 498 files. [1284.55s]

@@ -12,7 +12,7 @@ import {
   splitReds,
 } from "./known-red.rules";
 
-const fixture = readFileSync(resolve(import.meta.dir, "__fixtures__/int-recap.log"), "utf8");
+const fixture = readFileSync(resolve(import.meta.dir, "__fixtures__/int-recap.txt"), "utf8");
 const entries = parseKnownRed(
   readFileSync(resolve(import.meta.dir, "../../../tests/known-red.json"), "utf8"),
 );
