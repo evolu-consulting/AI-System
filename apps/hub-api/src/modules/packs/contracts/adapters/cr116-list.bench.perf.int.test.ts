@@ -1,9 +1,11 @@
 // CR-116 · cr116-bench-apps · Luật 4c: A/B TRỰC TIẾP (không đoán) các phương án cho đường nóng danh sách HĐ — CHỈ ĐO, không đổi
-// hành vi: biến thể policy RLS áp bằng `ALTER POLICY` TRONG một tx rồi ROLLBACK (DB test clone riêng); biến thể câu SQL = văn bản
-// thật của `contractsRepo().list` (chụp qua `captureSql`) sửa tối thiểu. Cùng dữ liệu, cùng kết nối, xen kẽ biến thể mỗi vòng.
+// hành vi: biến thể DDL (policy RLS, index pg_trgm) áp TRONG một tx rồi ROLLBACK (DB test clone riêng); biến thể câu SQL = văn bản
+// thật của `contractsRepo().list` (chụp qua `captureSql`) sửa tối thiểu. Cùng dữ liệu, cùng kết nối, xen kẽ biến thể ROUNDS vòng.
 // Dữ liệu: tenant S 2.000 HĐ (cỡ prod) và L 50.000 HĐ, mỗi tenant 300 người phụ trách, quản lý V 60 cấp dưới (2 tầng), owner O;
-// tenant nền 60.000 HĐ. Chế độ thấy `org`. Mỗi biến thể: kết quả (total + id trang) PHẢI bằng biến thể hiện tại.
-// Chạy: `powershell deploy/evotest/run-tests.ps1 -Step perf -Exclusive -Filter <file này>`. In bảng `CR116|…` để chép vào report.
+// tenant nền Q 60.000 HĐ. Chế độ thấy `org`. Mỗi biến thể chấm 3 tiêu chí: (1) tin cậy — kết quả (total + id trang) BẰNG biến thể
+// hiện tại VÀ chạy cùng câu dưới phạm vi tenant Q ⇒ 0 hàng (RLS vẫn chặn chéo tenant); (2) tài nguyên — EXPLAIN (ANALYZE, BUFFERS):
+// shared hit+read, temp blocks, 1 kết nối; (3) p50/p95.
+// Chạy: `powershell deploy/evotest/run-tests.ps1 -Step perf -Exclusive -Filter <file này>`. In dòng `CR116|…` để chép vào report.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createDb, type Db } from "@ai/db";
 import { withPackScope } from "@ai/db/pack-scope";
@@ -30,6 +32,7 @@ let db: Db;
 
 type Ten = { name: string; id: string; n: number; base: number; V: string; O: string };
 const T: Ten[] = [];
+let foreign: Cap; // set_config của người tenant Q (kiểm chặn chéo tenant)
 
 const filter: ContractListFilter = {
   status: null,
@@ -68,6 +71,17 @@ async function seedTenant(t: Ten, ownerGroup: string): Promise<void> {
   );
 }
 
+const client = (): Sql => (db.db as unknown as { $client: Sql }).$client;
+
+/** Chụp [set_config, list] của đường chạy thật. */
+async function capture(tid: string, who: string, f: ContractListFilter) {
+  return captureSql(client(), () =>
+    withPackScope(db, { packKey: "contracts", tenantId: tid, userId: who }, (tx) =>
+      contractsRepo(tx, tid).list(f),
+    ),
+  );
+}
+
 beforeAll(async () => {
   await cloneDb("full");
   sql = openOwner(2);
@@ -77,6 +91,7 @@ beforeAll(async () => {
   await users(sql, q, 10, { from: 5001 });
   const roles = await enablePack(sql, [s, l, q], "contracts");
   for (const t of T) await seedTenant(t, roles.get(t.id)?.owner as string);
+  await members(sql, q, roles.get(q)?.owner as string, [userId(5001)]);
   await sql.unsafe(
     `insert into contracts.contracts (tenant_id, title, status, owner_user_id, created_by)
      select $1::uuid, 'Nen ' || i, 'active', $2::uuid, $2::uuid from generate_series(1, 60000) i`,
@@ -87,6 +102,7 @@ beforeAll(async () => {
   await sql`analyze admin.user_reports`;
   await sql`analyze admin.group_members`;
   db = createDb(urls().hubApi, { max: 2 });
+  foreign = (await capture(q, userId(5001), filter)).queries[0] as Cap;
 }, 600_000);
 
 afterAll(async () => {
@@ -94,137 +110,135 @@ afterAll(async () => {
   await sql?.end({ timeout: 2 });
 });
 
-const client = (): Sql => (db.db as unknown as { $client: Sql }).$client;
-
-/** Chụp [set_config, list] của đường chạy thật. */
-async function capture(t: Ten, who: string, f: ContractListFilter) {
-  const { r, queries } = await captureSql(client(), () =>
-    withPackScope(db, { packKey: "contracts", tenantId: t.id, userId: who }, (tx) =>
-      contractsRepo(tx, t.id).list(f),
-    ),
-  );
-  return { r, queries };
-}
-
+type Variant = { name: string; setup: string[]; text: string; params: unknown[] };
 class Rollback extends Error {}
-type Run = { ms: number[]; out: unknown };
-/** Một tx chủ DB: (tuỳ chọn) ALTER POLICY biến thể → set_config như app → đo `n` lượt `q` → ROLLBACK. */
-async function runVariant(
+
+/** Một tx chủ DB: DDL biến thể → set_config như app → `body(tx)` → ROLLBACK (không để lại dấu vết). */
+async function inVariant<R>(
   scope: Cap,
-  policy: string | null,
-  q: (tx: Sql) => Promise<unknown>,
-  n = N,
-): Promise<Run> {
-  let res: Run = { ms: [], out: null };
+  setup: string[],
+  body: (tx: Sql) => Promise<R>,
+): Promise<R> {
+  let out: R | undefined;
   try {
     await sql.begin(async (tx) => {
-      if (policy)
-        await tx.unsafe(`alter policy contracts_visible on contracts.contracts using (${policy})`);
+      for (const s of setup) await tx.unsafe(s);
       await tx.unsafe(scope.text, scope.params as never[]);
-      for (let i = 0; i < WARM; i++) await q(tx);
-      const ms: number[] = [];
-      let out: unknown = null;
-      for (let i = 0; i < n; i++) {
-        const t0 = performance.now();
-        out = await q(tx);
-        ms.push(performance.now() - t0);
-      }
-      res = { ms, out };
+      out = await body(tx);
       throw new Rollback();
     });
   } catch (e) {
     if (!(e instanceof Rollback)) throw e;
   }
-  return res;
+  return out as R;
 }
 
-async function explain(scope: Cap, policy: string | null, text: string, params: unknown[]) {
-  let plan = "";
-  try {
-    await sql.begin(async (tx) => {
-      if (policy)
-        await tx.unsafe(`alter policy contracts_visible on contracts.contracts using (${policy})`);
-      await tx.unsafe(scope.text, scope.params as never[]);
-      const rows = (await tx.unsafe(
-        `explain (analyze, buffers, costs off, timing off, summary on) ${text}`,
-        params as never[],
+const q = (v: Variant) => (tx: Sql) => tx.unsafe(v.text, v.params as never[]);
+
+async function timeIt(scope: Cap, v: Variant): Promise<{ ms: number[]; out: unknown }> {
+  return inVariant(scope, v.setup, async (tx) => {
+    for (let i = 0; i < WARM; i++) await q(v)(tx);
+    const ms: number[] = [];
+    let out: unknown = null;
+    for (let i = 0; i < N; i++) {
+      const t0 = performance.now();
+      out = await q(v)(tx);
+      ms.push(performance.now() - t0);
+    }
+    return { ms, out };
+  });
+}
+
+type PlanJ = { Plan: Record<string, number>; "Execution Time": number };
+/** Tài nguyên: shared hit+read, temp written, thời gian thực thi phía server (EXPLAIN ANALYZE BUFFERS). */
+async function resources(scope: Cap, v: Variant, text = false): Promise<string> {
+  return inVariant(scope, v.setup, async (tx) => {
+    await q(v)(tx); // nóng
+    if (text) {
+      const r = (await tx.unsafe(
+        `explain (analyze, buffers, costs off, timing off) ${v.text}`,
+        v.params as never[],
       )) as unknown as { "QUERY PLAN": string }[];
-      plan = rows.map((r) => r["QUERY PLAN"]).join("\n");
-      throw new Rollback();
-    });
-  } catch (e) {
-    if (!(e instanceof Rollback)) throw e;
-  }
-  return plan;
+      return r.map((x) => x["QUERY PLAN"]).join("\n");
+    }
+    const r = (await tx.unsafe(
+      `explain (analyze, buffers, format json) ${v.text}`,
+      v.params as never[],
+    )) as unknown as { "QUERY PLAN": PlanJ[] }[];
+    const j = r[0]?.["QUERY PLAN"]?.[0] as PlanJ;
+    const p = j.Plan;
+    const bufs = (p["Shared Hit Blocks"] ?? 0) + (p["Shared Read Blocks"] ?? 0);
+    return `buf=${bufs} temp=${p["Temp Written Blocks"] ?? 0} exec=${j["Execution Time"].toFixed(2)}ms conn=1`;
+  });
 }
 
-type Variant = {
-  name: string;
-  policy: string | null;
-  q: (tx: Sql) => Promise<unknown>;
-  sqlCount: number;
-};
-/** Xen kẽ biến thể ROUNDS vòng; gộp ms; so `key(out)` với biến thể đầu. */
+/** Xen kẽ biến thể ROUNDS vòng; in `CR116|nhãn|biến thể|hàng|p50|p95|SQL|bằng|chéo-tenant|tài nguyên`. */
 async function compare(
   label: string,
-  t: Ten,
+  rows: number,
   scope: Cap,
   vs: Variant[],
   key: (o: unknown) => string,
+  explainOf: number[] = [],
 ): Promise<boolean> {
-  const all = new Map<string, number[]>(vs.map((v) => [v.name, []]));
+  const ms = new Map<string, number[]>(vs.map((v) => [v.name, []]));
   const outs = new Map<string, string>();
   for (let r = 0; r < ROUNDS; r++)
     for (const v of vs) {
-      const run = await runVariant(scope, v.policy, v.q);
-      all.get(v.name)?.push(...run.ms);
+      const run = await timeIt(scope, v);
+      ms.get(v.name)?.push(...run.ms);
       outs.set(v.name, key(run.out));
     }
   const base = outs.get(vs[0]?.name as string);
   let ok = true;
-  for (const v of vs) {
-    const st = latencyStats(all.get(v.name) as number[]);
+  for (const [i, v] of vs.entries()) {
+    const st = latencyStats(ms.get(v.name) as number[]);
     const eq = outs.get(v.name) === base;
-    ok &&= eq;
+    const cross = key(await inVariant(foreign, v.setup, q(v)));
+    const isolated = cross === key([]) || cross === key([{ total: 0, items: [] }]);
+    ok = ok && eq && isolated;
+    const res = await resources(scope, v);
     console.log(
-      `CR116|${label}|${v.name}|${t.n}|${st.p50.toFixed(2)}|${st.p95.toFixed(2)}|${v.sqlCount}|${eq ? "✓" : "✗"}`,
+      `CR116|${label}|${v.name}|${rows}|${st.p50.toFixed(2)}|${st.p95.toFixed(2)}|2|${eq ? "✓" : "✗"}|${isolated ? "✓" : `✗ ${cross.slice(0, 40)}`}|${res}`,
     );
+    if (explainOf.includes(i))
+      console.log(`CR116-EXPLAIN ${label} ${v.name} ${rows}\n${await resources(scope, v, true)}`);
   }
   return ok;
 }
 
 type ListRow = { total: number; items: unknown };
 const listKey = (o: unknown): string => {
-  const r = (o as ListRow[])[0] as ListRow;
+  const r = (o as ListRow[])[0];
+  if (!r) return "0:";
   const items = typeof r.items === "string" ? JSON.parse(r.items) : r.items;
   return `${r.total}:${(items as { id: string }[]).map((i) => i.id).join(",")}`;
 };
+const idsKey = (rows: unknown) => (rows as { id: string }[]).map((r) => r.id).join(",");
 
 // ── Policy `contracts_visible` (0070) — nhánh cây quản lý ──────────────────────────────────────────────────────────────────
 const P_HEAD = `(SELECT contracts.sees_all() OR coalesce(current_setting('app.vis_cascade', true), '') = '1')`;
 const P_TAIL = `OR id IN (SELECT unnest(contracts.reviewer_contract_ids()))`;
-const POL_ANY = `${P_HEAD}
-  OR owner_user_id = ANY ((SELECT contracts.org_owner_ids())::uuid[])
-  OR (owner_user_id IS NULL AND (created_by = NULLIF(current_setting('app.user_id', true), '')::uuid
-       OR visibility_owner_id = ANY ((SELECT contracts.org_owner_ids())::uuid[])))
-  ${P_TAIL}`;
-const POL_IN = `${P_HEAD}
-  OR owner_user_id IN (SELECT unnest(contracts.org_owner_ids()))
-  OR (owner_user_id IS NULL AND (created_by = NULLIF(current_setting('app.user_id', true), '')::uuid
-       OR visibility_owner_id IN (SELECT unnest(contracts.org_owner_ids()))))
-  ${P_TAIL}`;
-const POL_EXISTS = `${P_HEAD}
-  OR EXISTS (SELECT 1 FROM unnest((SELECT contracts.org_owner_ids())) o(u) WHERE o.u = owner_user_id)
-  OR (owner_user_id IS NULL AND (created_by = NULLIF(current_setting('app.user_id', true), '')::uuid
-       OR EXISTS (SELECT 1 FROM unnest((SELECT contracts.org_owner_ids())) o(u) WHERE o.u = visibility_owner_id)))
-  ${P_TAIL}`;
+const ME = `NULLIF(current_setting('app.user_id', true), '')::uuid`;
+const pol = (owner: (col: string) => string) =>
+  `alter policy contracts_visible on contracts.contracts using (${P_HEAD}
+  OR ${owner("owner_user_id")}
+  OR (owner_user_id IS NULL AND (created_by = ${ME} OR ${owner("visibility_owner_id")}))
+  ${P_TAIL})`;
+const POL_ANY = pol((c) => `${c} = ANY ((SELECT contracts.org_owner_ids())::uuid[])`);
+const POL_IN = pol((c) => `${c} IN (SELECT unnest(contracts.org_owner_ids()))`);
+const POL_EXISTS = pol(
+  (c) => `EXISTS (SELECT 1 FROM unnest((SELECT contracts.org_owner_ids())) o(u) WHERE o.u = ${c})`,
+);
 
-const replay =
-  (c: Cap, text = c.text) =>
-  (tx: Sql) =>
-    tx.unsafe(text, c.params as never[]);
+const v = (name: string, c: Cap, text = c.text, setup: string[] = []): Variant => ({
+  name,
+  setup,
+  text,
+  params: c.params,
+});
 
-/** Biến thể câu danh sách: ORDER BY tĩnh thay CASE (văn bản riêng mỗi kiểu sắp xếp). */
+/** ORDER BY tĩnh thay CASE (văn bản riêng mỗi kiểu sắp xếp). */
 const staticOrder = (text: string): string =>
   text.replace(
     /p as \(select f\.id from f order by[\s\S]*?f\.id desc/,
@@ -236,7 +250,7 @@ const notMaterialized = (text: string): string =>
 describe("CR-116 · A/B danh sách HĐ", () => {
   it("SQL mỗi request (list, detail) — đường chạy thật", async () => {
     for (const t of T) {
-      const { r, queries } = await capture(t, t.V, filter);
+      const { r, queries } = await capture(t.id, t.V, filter);
       const id = (r.items[0] as { id: string }).id;
       const d = await captureSql(client(), () =>
         withPackScope(db, { packKey: "contracts", tenantId: t.id, userId: t.V }, (tx) =>
@@ -253,67 +267,42 @@ describe("CR-116 · A/B danh sách HĐ", () => {
   it("C1 · RLS cây quản lý: = ANY(mảng) vs IN (unnest) hashed vs EXISTS(unnest)", async () => {
     let ok = true;
     for (const t of T) {
-      const { queries } = await capture(t, t.V, filter);
-      const [scope, list] = queries as [Cap, Cap];
-      ok &&= await compare(
-        "C1 rls-owner (V, list p1)",
-        t,
-        scope,
-        [
-          { name: "A = ANY (hiện tại)", policy: POL_ANY, q: replay(list), sqlCount: 2 },
-          { name: "B IN (select unnest)", policy: POL_IN, q: replay(list), sqlCount: 2 },
-          { name: "C EXISTS unnest", policy: POL_EXISTS, q: replay(list), sqlCount: 2 },
-        ],
-        listKey,
-      );
-      if (t.n > 10_000) {
-        console.log(
-          `CR116-EXPLAIN C1-A ${t.name}\n${await explain(scope, POL_ANY, list.text, list.params)}`,
-        );
-        console.log(
-          `CR116-EXPLAIN C1-B ${t.name}\n${await explain(scope, POL_IN, list.text, list.params)}`,
-        );
-      }
+      const [scope, list] = (await capture(t.id, t.V, filter)).queries as [Cap, Cap];
+      ok =
+        (await compare(
+          "C1 rls-owner (V, list p1)",
+          t.n,
+          scope,
+          [
+            v("A = ANY (hiện tại)", list, list.text, [POL_ANY]),
+            v("B IN (select unnest)", list, list.text, [POL_IN]),
+            v("C EXISTS unnest", list, list.text, [POL_EXISTS]),
+          ],
+          listKey,
+          t.n > 10_000 ? [0, 1] : [],
+        )) && ok;
     }
     expect(ok).toBe(true);
   }, 900_000);
 
-  it("C2 · ORDER BY CASE (1 văn bản) vs ORDER BY tĩnh vs tĩnh + CTE không materialize", async () => {
+  it("C2 · ORDER BY CASE vs ORDER BY tĩnh vs tĩnh + CTE không materialize", async () => {
     let ok = true;
     for (const t of T)
       for (const who of [t.V, t.O]) {
-        const { queries } = await capture(t, who, filter);
-        const [scope, list] = queries as [Cap, Cap];
-        ok &&= await compare(
-          `C2 order (${who === t.V ? "V" : "O"}, list p1)`,
-          t,
-          scope,
-          [
-            {
-              name: "A CASE + materialized (hiện tại)",
-              policy: null,
-              q: replay(list),
-              sqlCount: 2,
-            },
-            {
-              name: "B tĩnh + materialized",
-              policy: null,
-              q: replay(list, staticOrder(list.text)),
-              sqlCount: 2,
-            },
-            {
-              name: "C tĩnh + not materialized",
-              policy: null,
-              q: replay(list, notMaterialized(list.text)),
-              sqlCount: 2,
-            },
-          ],
-          listKey,
-        );
-        if (t.n > 10_000 && who === t.O)
-          console.log(
-            `CR116-EXPLAIN C2-A ${t.name} O\n${await explain(scope, null, list.text, list.params)}`,
-          );
+        const [scope, list] = (await capture(t.id, who, filter)).queries as [Cap, Cap];
+        ok =
+          (await compare(
+            `C2 order (${who === t.V ? "V" : "O"}, list p1)`,
+            t.n,
+            scope,
+            [
+              v("A CASE + materialized (hiện tại)", list),
+              v("B tĩnh + materialized", list, staticOrder(list.text)),
+              v("C tĩnh + not materialized", list, notMaterialized(list.text)),
+            ],
+            listKey,
+            t.n > 10_000 && who === t.O ? [0, 2] : [],
+          )) && ok;
       }
     expect(ok).toBe(true);
   }, 900_000);
@@ -321,56 +310,78 @@ describe("CR-116 · A/B danh sách HĐ", () => {
   it("C3 · trang cuối: OFFSET vs keyset (updated_at, id) — O thấy cả tenant", async () => {
     let ok = true;
     for (const t of T) {
-      const { queries } = await capture(t, t.O, { ...filter, offset: t.n - 20 });
-      const [scope, list] = queries as [Cap, Cap];
-      // Con trỏ = hàng cuối trang kề trước (đọc một lần, như client giữ con trỏ).
-      const cur = (
-        await runVariant(
-          scope,
-          null,
-          (tx) => tx`select updated_at::text as u, id::text as id from contracts.contracts
+      const [scope] = (await capture(t.id, t.O, filter)).queries as [Cap, Cap];
+      const cur = (await inVariant(
+        scope,
+        [],
+        (tx) => tx`select updated_at::text as u, id::text as id from contracts.contracts
           where tenant_id = ${t.id}::uuid and superseded_at is null
           order by updated_at desc, id desc offset ${t.n - 21} limit 1`,
-          1,
-        )
-      ).out as { u: string; id: string }[];
+      )) as unknown as { u: string; id: string }[];
       const c0 = cur[0] as { u: string; id: string };
-      const ids = (rows: unknown) => (rows as { id: string }[]).map((r) => r.id).join(",");
-      ok &&= await compare(
-        "C3 page-last (O, chỉ trang)",
-        t,
-        scope,
-        [
-          {
-            name: "A OFFSET n-20",
-            policy: null,
-            q: (
-              tx,
-            ) => tx`select id from contracts.contracts where tenant_id = ${t.id}::uuid and superseded_at is null
-              order by updated_at desc, id desc limit 20 offset ${t.n - 20}`,
-            sqlCount: 2,
-          },
-          {
-            name: "B keyset (u,id) <",
-            policy: null,
-            q: (
-              tx,
-            ) => tx`select id from contracts.contracts where tenant_id = ${t.id}::uuid and superseded_at is null
-              and (updated_at, id) < (${c0.u}::timestamptz, ${c0.id}::uuid)
-              order by updated_at desc, id desc limit 20`,
-            sqlCount: 2,
-          },
-        ],
-        ids,
+      const page = `select id from contracts.contracts where tenant_id = $1::uuid and superseded_at is null`;
+      const ord = `order by updated_at desc, id desc limit 20`;
+      ok =
+        (await compare(
+          "C3 page-last (O, chỉ trang)",
+          t.n,
+          scope,
+          [
+            {
+              name: "A OFFSET n-20",
+              setup: [],
+              text: `${page} ${ord} offset $2::int`,
+              params: [t.id, t.n - 20],
+            },
+            {
+              name: "B keyset (u,id) <",
+              setup: [],
+              text: `${page} and (updated_at, id) < ($2::timestamptz, $3::uuid) ${ord}`,
+              params: [t.id, c0.u, c0.id],
+            },
+          ],
+          idsKey,
+        )) && ok;
+      // Ngữ cảnh: câu list THẬT trang đầu vs trang cuối (cùng `count(*)` toàn tập lọc).
+      const [s2, last] = (await capture(t.id, t.O, { ...filter, offset: t.n - 20 })).queries as [
+        Cap,
+        Cap,
+      ];
+      const [, first] = (await capture(t.id, t.O, filter)).queries as [Cap, Cap];
+      await compare(
+        "C3 list-real (O)",
+        t.n,
+        s2,
+        [v("trang đầu", first), v("trang cuối OFFSET", last)],
+        () => "-",
       );
-      // Ngữ cảnh: câu list thật trang đầu vs trang cuối (cùng `count(*)` toàn tập lọc).
-      const first = await capture(t, t.O, filter);
-      const [s1, l1] = first.queries as [Cap, Cap];
-      const a = latencyStats((await runVariant(s1, null, replay(l1))).ms);
-      const b = latencyStats((await runVariant(scope, null, replay(list))).ms);
-      console.log(
-        `CR116|C3 list-real (O)|trang đầu|${t.n}|${a.p50.toFixed(2)}|${a.p95.toFixed(2)}|2|-\nCR116|C3 list-real (O)|trang cuối OFFSET|${t.n}|${b.p50.toFixed(2)}|${b.p95.toFixed(2)}|2|-`,
-      );
+    }
+    expect(ok).toBe(true);
+  }, 900_000);
+
+  it("C5 · tìm HĐ `search_key LIKE '%q%'`: không index vs GIN pg_trgm", async () => {
+    let ok = true;
+    for (const t of T) {
+      const [scope, list] = (await capture(t.id, t.O, { ...filter, like: "%777%" })).queries as [
+        Cap,
+        Cap,
+      ];
+      ok =
+        (await compare(
+          "C5 search q=777 (O)",
+          t.n,
+          scope,
+          [
+            v("A LIKE, index b-tree hiện có", list),
+            v("B + GIN pg_trgm(search_key)", list, list.text, [
+              "create extension if not exists pg_trgm",
+              "create index cr116_trgm on contracts.contracts using gin (search_key gin_trgm_ops)",
+              "analyze contracts.contracts",
+            ]),
+          ],
+          listKey,
+          t.n > 10_000 ? [0, 1] : [],
+        )) && ok;
     }
     expect(ok).toBe(true);
   }, 900_000);
