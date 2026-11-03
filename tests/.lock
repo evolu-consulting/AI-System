@@ -883,7 +883,7 @@ d4117e76978a30fa47a915208f4fa55559062c198dcae5731a8cb8e5fee70691  tests/acceptan
 7da0fe82837b32b32d07999678d0a90b7ddf35b87ba04236c0aa3e4743fd25b6  tests/acceptance/M1/rules/users.rules.test.ts
 62fe822163f0b4c8d36e74c8e76bbccc17a00e906090eca65cef2bdfa70aeed7  tests/acceptance/M1/seed.int.test.ts
 507f9181e95078b9cef4d78da70d9172f82d4fc238d71a982c877a305c6ad24e  tests/acceptance/M1/server.int.test.ts
-777dda81e99e4f63915ee6836546a3f8b3ec9d28d8af8984b03121833c489ce3  tests/acceptance/M1/tenants.int.test.ts
+9bf4ad44ee032ce03e289e9b02da7950e2acad07d15fd5fdf818b38260b07c53  tests/acceptance/M1/tenants.int.test.ts
 2f5d2afc92f0df368d3a1bef52cda02e1c2f706a8e2777ba024c1a5870d3186f  tests/acceptance/M1/users-isolation.int.test.ts
 0254ea09a09cce92120da4d1fd723b7d21bde4e0dc8c34b998461ca710c8d5bc  tests/acceptance/M1/users.int.test.ts
 2c20a20a2453022fb18bd05048ea06fc14ce647d35bd192a4077fdb9fdb736df  tests/acceptance/M1D/perf/visibility.perf.int.test.ts

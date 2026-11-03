@@ -3,8 +3,8 @@
 import { QuotaSetRequestSchema } from "@ai/contracts";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
-import { appError } from "../../lib/errors";
 import { parseIdParam, parseJson } from "../../lib/http";
+import { requireTenantScope } from "../../lib/tenant-scope";
 import type { EvaluatorCtx } from "./quotas.evaluator";
 import { stripQuotaMoney } from "./quotas.rules";
 import { getQuotas, putQuotas, type QuotasCall, type QuotasCtx } from "./quotas.service";
@@ -22,7 +22,7 @@ export function quotasRoutes(d: AuthDeps & QuotasCtx & EvaluatorCtx): Hono<AppVa
   r.get(PATH, requireAuth(d), requireRole("platform_admin", "tenant_admin"), async (c) => {
     const id = parseIdParam(c);
     const a = c.get("actor");
-    if (a.role === "tenant_admin" && a.tenantId !== id) throw appError("NOT_FOUND");
+    requireTenantScope(c, id); // CR-112 · lớp hai sau cổng app.ts
     const out = await getQuotas(call(c), id);
     // tenant_admin (2026-10-21): chỉ lượt/token/%, không giới hạn hay số dùng bằng tiền.
     return c.json(

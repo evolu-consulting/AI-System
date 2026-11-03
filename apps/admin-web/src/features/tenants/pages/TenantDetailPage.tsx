@@ -28,16 +28,11 @@ import { TenantUsersTab, UnavailableTab } from "../components/TenantTabs";
 import { useLockFlow } from "../hooks/use-lock-flow";
 import { useTenantConflict } from "../hooks/use-tenant-conflict";
 import { slotsToValue, type TenantInfoValues } from "../lib/schemas";
+import { activeTab, TAB_LABEL, type TenantTab, visibleTabs } from "../lib/workspace-tabs";
 
 const route = getRouteApi("/_authed/tenants/$tenantId");
-export type TenantTab =
-  | "info"
-  | "features"
-  | "agents"
-  | "workflow-tools"
-  | "packs"
-  | "quota"
-  | "users";
+
+export type { TenantTab } from "../lib/workspace-tabs";
 
 /** P-d2 · tab "Tool quy trình" nạp lười (chỉ khi mở tab). */
 const TenantToolsTab = lazy(() => import("../components/tools/TenantToolsTab"));
@@ -48,10 +43,12 @@ const TenantPacksTab = lazy(() => import("../components/packs/TenantPacksTab"));
 
 function Header({
   tenant,
+  canLock,
   onLock,
   onUnlock,
 }: {
   tenant: TenantDetail;
+  canLock: boolean;
   onLock: () => void;
   onUnlock: () => void;
 }) {
@@ -59,7 +56,7 @@ function Header({
   const date = new Date(tenant.created_at).toLocaleDateString(
     i18n.language === "vi" ? "vi-VN" : "en-GB",
   );
-  const isPlatform = tenant.key === "platform";
+  const noLock = tenant.key === "platform" || !canLock;
   return (
     <PageHeader
       title={tenant.name}
@@ -71,7 +68,7 @@ function Header({
           ) : (
             <StatusBadge tone="ok">{t("tenants.status.active")}</StatusBadge>
           )}
-          {isPlatform ? null : tenant.status === "locked" ? (
+          {noLock ? null : tenant.status === "locked" ? (
             <Button variant="outline" onClick={onUnlock}>
               {t("tenants.unlock.button")}
             </Button>
@@ -93,7 +90,9 @@ export function TenantDetailPage() {
   const { tab } = route.useSearch();
   const navigate = route.useNavigate();
   const role = useSession((s) => s.me?.role);
-  const allowed = role === "platform_admin";
+  // CR-112 · ADM-FR-81: tenant_admin vào workspace công ty mình (API trả 404 với công ty khác), chỉ xem thông tin.
+  const isPlatform = role === "platform_admin";
+  const allowed = isPlatform || role === "tenant_admin";
   const query = useTenantDetail(tenantId, allowed);
   const [tzError, setTzError] = useState<string | undefined>();
   const conflict = useTenantConflict(tenantId, {
@@ -151,24 +150,24 @@ export function TenantDetailPage() {
     <>
       <Header
         tenant={tenant}
+        canLock={isPlatform}
         onLock={() => requestLock(tenant)}
         onUnlock={() => requestUnlock(tenant)}
       />
       <Tabs
-        value={tab ?? "info"}
+        value={activeTab(tab, isPlatform)}
         onValueChange={(v) => void navigate({ search: { tab: v as TenantTab }, replace: true })}
       >
         <TabsList>
-          <TabsTrigger value="info">{t("tenants.tab.info")}</TabsTrigger>
-          <TabsTrigger value="features">{t("tenants.tab.features")}</TabsTrigger>
-          <TabsTrigger value="agents">{t("tenants.tab.agents")}</TabsTrigger>
-          <TabsTrigger value="workflow-tools">{t("tenants.tab.workflowTools")}</TabsTrigger>
-          <TabsTrigger value="packs">{t("tenants.tab.packs")}</TabsTrigger>
-          <TabsTrigger value="quota">{t("tenants.tab.quota")}</TabsTrigger>
-          <TabsTrigger value="users">{t("tenants.tab.users")}</TabsTrigger>
+          {visibleTabs(isPlatform).map((v) => (
+            <TabsTrigger key={v} value={v}>
+              {t(TAB_LABEL[v])}
+            </TabsTrigger>
+          ))}
         </TabsList>
         <TabsContent value="info" className="pt-4">
           <TenantInfoForm
+            readOnly={!isPlatform}
             tenant={tenant}
             pending={conflict.pending}
             timezoneError={tzError}
@@ -176,7 +175,7 @@ export function TenantDetailPage() {
             onSubmit={save}
           />
           <TenantProfileCard profile={tenant.profile} />
-          <TenantDefaultAppCard tenant={tenant} />
+          {isPlatform ? <TenantDefaultAppCard tenant={tenant} /> : null}
         </TabsContent>
         <TabsContent value="features" className="pt-4">
           <Suspense fallback={<LoadingState />}>

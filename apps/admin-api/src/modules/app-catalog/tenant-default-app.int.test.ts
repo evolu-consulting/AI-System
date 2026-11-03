@@ -51,7 +51,7 @@ describe("tenant-default-app · platform_admin", () => {
     expect(
       (await env.call("PUT", path(TENANT_ID.globex), { token: binh, body: { app: "chat" } }))
         .status,
-    ).toBe(403);
+    ).toBe(404); // CR-112 · ADM-FR-81: công ty khác ⇒ 404
     expect((await env.get(path(TENANT_ID.acme), { token: binh })).status).toBe(403);
 
     // app không tồn tại trong catalog ⇒ INVALID_REFERENCE; tenant lạ ⇒ 404

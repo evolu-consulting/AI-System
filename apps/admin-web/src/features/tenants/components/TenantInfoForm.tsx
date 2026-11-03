@@ -20,6 +20,8 @@ type Props = {
   timezoneError?: string | undefined;
   onDirtyChange: (dirty: boolean) => void;
   onSubmit: (values: TenantInfoValues) => void;
+  /** CR-112: tenant_admin xem thông tin công ty, không sửa (PATCH chỉ platform_admin). */
+  readOnly?: boolean;
 };
 
 const toValues = (t: TenantDetail): TenantInfoValues => ({
@@ -29,7 +31,14 @@ const toValues = (t: TenantDetail): TenantInfoValues => ({
   processRuns: String(t.process_runs_max ?? TENANT_PROCESS_RUNS_MAX.default),
 });
 
-export function TenantInfoForm({ tenant, pending, timezoneError, onDirtyChange, onSubmit }: Props) {
+export function TenantInfoForm({
+  tenant,
+  pending,
+  timezoneError,
+  onDirtyChange,
+  onSubmit,
+  readOnly = false,
+}: Props) {
   const { t } = useTranslation();
   const tr = useTr();
   const online = useOnline();
@@ -64,60 +73,62 @@ export function TenantInfoForm({ tenant, pending, timezoneError, onDirtyChange, 
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
-        if (form.formState.isDirty && online) void save();
+        if (form.formState.isDirty && online && !readOnly) void save();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [form, online, save]);
+  }, [form, online, save, readOnly]);
 
   return (
     <form onSubmit={save} noValidate className="max-w-xl space-y-4 pb-20">
-      <FormField
-        id="info-key"
-        label={t("tenants.field.key")}
-        description={t("tenants.field.keyHint")}
-      >
-        {(p) => <Input {...p} value={tenant.key} readOnly className="bg-muted font-mono" />}
-      </FormField>
-      <FormField id="info-name" label={t("tenants.field.name")} error={msg(errors.name?.message)}>
-        {(p) => <Input {...p} {...form.register("name")} autoComplete="off" />}
-      </FormField>
-      <FormField
-        id="info-slots"
-        label={t("tenants.field.slots")}
-        description={t("tenants.field.slotsHint")}
-        error={msg(errors.slots?.message)}
-      >
-        {(p) => (
-          <Input {...p} {...form.register("slots")} type="number" min={1} inputMode="numeric" />
-        )}
-      </FormField>
-      <FormField
-        id="info-process-runs"
-        label={t("tenants.field.processRuns")}
-        description={t("tenants.field.processRunsHint")}
-        error={msg(errors.processRuns?.message)}
-      >
-        {(p) => (
-          <Input
-            {...p}
-            {...form.register("processRuns")}
-            type="number"
-            min={TENANT_PROCESS_RUNS_MAX.min}
-            max={TENANT_PROCESS_RUNS_MAX.max}
-            inputMode="numeric"
-          />
-        )}
-      </FormField>
-      <TenantTimezoneField
-        id="info-timezone"
-        value={form.watch("timezone")}
-        error={msg(errors.timezone?.message) ?? timezoneError}
-        onChange={(zone) =>
-          form.setValue("timezone", zone, { shouldDirty: true, shouldValidate: true })
-        }
-      />
+      <fieldset disabled={readOnly} className="contents">
+        <FormField
+          id="info-key"
+          label={t("tenants.field.key")}
+          description={t("tenants.field.keyHint")}
+        >
+          {(p) => <Input {...p} value={tenant.key} readOnly className="bg-muted font-mono" />}
+        </FormField>
+        <FormField id="info-name" label={t("tenants.field.name")} error={msg(errors.name?.message)}>
+          {(p) => <Input {...p} {...form.register("name")} autoComplete="off" />}
+        </FormField>
+        <FormField
+          id="info-slots"
+          label={t("tenants.field.slots")}
+          description={t("tenants.field.slotsHint")}
+          error={msg(errors.slots?.message)}
+        >
+          {(p) => (
+            <Input {...p} {...form.register("slots")} type="number" min={1} inputMode="numeric" />
+          )}
+        </FormField>
+        <FormField
+          id="info-process-runs"
+          label={t("tenants.field.processRuns")}
+          description={t("tenants.field.processRunsHint")}
+          error={msg(errors.processRuns?.message)}
+        >
+          {(p) => (
+            <Input
+              {...p}
+              {...form.register("processRuns")}
+              type="number"
+              min={TENANT_PROCESS_RUNS_MAX.min}
+              max={TENANT_PROCESS_RUNS_MAX.max}
+              inputMode="numeric"
+            />
+          )}
+        </FormField>
+        <TenantTimezoneField
+          id="info-timezone"
+          value={form.watch("timezone")}
+          error={msg(errors.timezone?.message) ?? timezoneError}
+          onChange={(zone) =>
+            form.setValue("timezone", zone, { shouldDirty: true, shouldValidate: true })
+          }
+        />
+      </fieldset>
       <div className="flex items-center gap-3 text-body text-muted-foreground">
         <span>{t("tenants.col.status")}</span>
         {tenant.status === "locked" ? (
@@ -126,7 +137,7 @@ export function TenantInfoForm({ tenant, pending, timezoneError, onDirtyChange, 
           <StatusBadge tone="ok">{t("tenants.status.active")}</StatusBadge>
         )}
       </div>
-      {isDirty ? (
+      {isDirty && !readOnly ? (
         <div className="fixed right-0 bottom-0 left-0 z-30 flex items-center justify-between gap-3 border-t border-border bg-card px-6 py-3 shadow-drawer lg:left-sidebar">
           <span className="text-label text-muted-foreground">{t("common.unsaved")}</span>
           <div className="flex gap-2">

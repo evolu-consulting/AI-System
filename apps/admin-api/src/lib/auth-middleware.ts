@@ -77,6 +77,8 @@ export async function authenticate(c: Context, d: AuthDeps): Promise<Actor> {
 
 export function requireAuth(d: AuthDeps): MiddlewareHandler<AppVars> {
   return async (c, next) => {
+    // CR-112: cổng `/admin/tenants/:id/*` đã xác thực trong cùng request ⇒ không đọc lại DB lần hai.
+    if ((c.get("actor") as Actor | undefined) !== undefined) return next();
     const actor = await authenticate(c, d);
     // CR-102a · com-c2: đối tác chỉ qua danh sách cho phép (một chỗ, mọi route cần đăng nhập).
     if (actor.userKind === "external" && !externalRouteAllowed(c.req.method, c.req.path))

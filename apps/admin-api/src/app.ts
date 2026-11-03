@@ -11,6 +11,7 @@ import type { Mailer } from "./lib/mailer";
 import { externalGuardViolation, safeErrorFields } from "./lib/pg-errors";
 import type { SecretKey } from "./lib/secret-crypto";
 import { Semaphore } from "./lib/semaphore";
+import { tenantWorkspaceGate } from "./lib/tenant-scope";
 import type { TestHooks } from "./lib/test-hooks";
 import { accessRoutes } from "./modules/access/access.routes";
 import {
@@ -147,6 +148,9 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   const qctx = { ...ctx, mailer: deps.mailer, webUrl: deps.adminWebUrl };
   if (deps.mailer) startQuotaListener(qctx);
   app.route("/admin/quota-banner", quotaBannerRoutes(qctx));
+  // CR-112 · ADM-FR-81: cổng phạm vi chung cho MỌI route `/admin/tenants/:id*` (gắn trước các router bên dưới).
+  app.use("/admin/tenants/:id", ...tenantWorkspaceGate(ctx));
+  app.use("/admin/tenants/:id/*", ...tenantWorkspaceGate(ctx));
   app.route("/admin/tenants", quotasRoutes({ ...qctx, hooks }));
   app.route(
     "/admin/tenants",

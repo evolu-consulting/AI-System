@@ -257,20 +257,25 @@ describe("ADM-FR-61 · M1-AC03 · khoá tenant", () => {
 });
 
 describe("ADM-BR-05 · ADM-BR-09 · phân quyền tenants", () => {
-  it("ADM-BR-05 · M1-R12 · tenant_admin và member gọi mọi endpoint /admin/tenants* → 403 FORBIDDEN (kể cả id lạ, body sai)", async () => {
-    const calls: Array<[string, string, unknown?]> = [
+  it("ADM-BR-05 · M1-R12 · ADM-FR-81 · member mọi endpoint /admin/tenants* → 403; tenant_admin: list/tạo → 403, id công ty khác/lạ → 404 (CR-112)", async () => {
+    const root: Array<[string, string, unknown?]> = [
       ["GET", "/admin/tenants"],
       ["POST", "/admin/tenants", { sai: true }],
+    ];
+    const byId: Array<[string, string, unknown?]> = [
       ["GET", `/admin/tenants/${UNKNOWN_ID}`],
       ["PATCH", `/admin/tenants/${UNKNOWN_ID}`, { sai: true }],
       ["POST", `/admin/tenants/${UNKNOWN_ID}/lock`],
       ["POST", `/admin/tenants/${UNKNOWN_ID}/unlock`],
     ];
-    for (const who of ["binh", "an"]) {
-      const token = await env.token("acme", who);
-      for (const [m, p, body] of calls)
-        expectErr(await env.call(m, p, { token, body }), "FORBIDDEN");
-    }
+    const an = await env.token("acme", "an");
+    for (const [m, p, body] of [...root, ...byId])
+      expectErr(await env.call(m, p, { token: an, body }), "FORBIDDEN");
+    const binh = await env.token("acme", "binh");
+    for (const [m, p, body] of root)
+      expectErr(await env.call(m, p, { token: binh, body }), "FORBIDDEN");
+    for (const [m, p, body] of byId)
+      expectErr(await env.call(m, p, { token: binh, body }), "NOT_FOUND");
   });
 
   it("ADM-BR-05 · M1-R12 · không Bearer → 401 UNAUTHORIZED", async () => {
