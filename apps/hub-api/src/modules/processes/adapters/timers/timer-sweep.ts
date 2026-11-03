@@ -57,7 +57,7 @@ const FIRE_TXS = 4;
 
 async function fireChunk(d: ProcessBgDeps, now: Date, limit: number): Promise<number> {
   const claim = async (t: Parameters<typeof claimTx>[0]) =>
-    [...(await dueTimers(claimTx(t), now, limit))].sort(byRun);
+    [...(await claimDueByRun(claimTx(t), now, limit))].sort(byRun);
   const rows = await d.sysUow.systemEach(
     claim,
     (t) => t.tenant_id,
@@ -147,7 +147,22 @@ function dueTimers(tx: Tx, now: Date, limit = TIMER_SWEEP_BATCH): Promise<DueTim
     for update skip locked`);
 }
 
+/**
+ * CR-115 · ứng viên của tx lô: khoá RUN (`FOR UPDATE OF r SKIP LOCKED`, giữ tới COMMIT) chứ không khoá hẹn ⇒ đúng thứ tự §10
+ * run → stage → timer (`fireTimer` khoá stage rồi timer sau), và tx/Hub khác bỏ qua run đang bị lô này giữ (tập rời nhau).
+ * Hẹn của run đang bị đường khác khoá (huỷ, quay lại, apply) ⇒ lượt sau.
+ */
+function claimDueByRun(tx: Tx, now: Date, limit: number): Promise<DueTimer[]> {
+  return tx.execute<DueTimer>(sql`
+    select t.id, t.tenant_id, t.process_run_id, t.stage_run_id
+    from hub.process_timers t join hub.process_runs r on r.id = t.process_run_id and r.tenant_id = t.tenant_id
+    where t.fired_at is null and t.cancelled_at is null and t.due_at <= ${now.toISOString()}::timestamptz
+    order by t.due_at limit ${limit}
+    for update of r skip locked`);
+}
+
 /** CR-093 · làm nóng pool: cùng văn bản câu quét hẹn giờ, limit 0 (không khoá, không đọc hàng nào). */
 export async function warmTimerSweep(tx: Tx): Promise<void> {
   await dueTimers(tx, new Date(0), 0);
+  await claimDueByRun(tx, new Date(0), 0);
 }

@@ -20,6 +20,9 @@ import { toDecision } from "./team-runner";
 
 export type LauncherDeps = Omit<ProcessDeps, "launcher" | "start">;
 
+/** CR-115 · tx (savepoint) của `kickMany`: `launchStage` tạo run stage không lấy khoá tư vấn theo user. */
+export const BATCH_TXS = new WeakSet<object>();
+
 export type StageRow = {
   id: string;
   status: string;
@@ -123,6 +126,7 @@ export async function launchStage(
       ),
   ]);
   const p = processStageOf(c, executor, priorOut, real?.preconfirm);
+  if (BATCH_TXS.has(tx)) p.process.noUserLock = true; // CR-115 · không giữ khoá user tới COMMIT cả lô
   const req: SendMessageRequest = { content: sp.content };
   let prepared: Prepared;
   try {

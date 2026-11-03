@@ -12,7 +12,7 @@ import { safeErrorFields } from "../../../lib/errors";
 import { publishUserEvents } from "../../../lib/user-stream";
 import type { StageLauncher } from "../core/ports";
 import { isTerminal } from "../domain/runs/run-state.rules";
-import type { KickResult, LauncherDeps } from "./launch-common";
+import { BATCH_TXS, type KickResult, type LauncherDeps } from "./launch-common";
 import { launchAfterCommit, plan } from "./launcher";
 import type { Head } from "./launcher-prompt";
 
@@ -48,6 +48,7 @@ async function planAll(d: LauncherDeps, tx: Tx, ids: readonly string[]): Promise
  * với các câu đầu của `plan` (pipeline, cùng kết nối ⇒ chạy trước chúng): bớt một round-trip mỗi run.
  */
 async function planAs(d: LauncherDeps, sp: Tx, u: AuthUser, runId: string): Promise<KickResult> {
+  BATCH_TXS.add(sp);
   const scope = setHubScope(sp, { kind: "user", tenantId: u.tenantId, userId: u.userId });
   scope.catch(() => {});
   const r = plan(d, sp, u, runId);

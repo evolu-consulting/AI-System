@@ -34,6 +34,11 @@ export type ProcessRunInput = {
   teamRunId: string | null;
   files: RunFile[];
   preconfirm?: { agentId: string; workflowIds: readonly string[] };
+  /**
+   * CR-115 · lô kick hẹn `retry` (`kickMany`): KHÔNG lấy khoá tư vấn theo user (`lockUserRuns`) — khoá xact giữ tới COMMIT
+   * cả lô sẽ chặn chat của người bắt đầu. Run stage không tự kiểm trần (`sendLimit` bỏ `process`); xem tasks.md CR-115.
+   */
+  noUserLock?: boolean;
 };
 
 export type CreateRunInput = {
@@ -214,7 +219,7 @@ export async function createRunTx(tx: Tx, o: repo.Owner, p: CreateRunInput): Pro
  */
 async function sendRunWrites(tx: Tx, o: repo.Owner, p: CreateRunInput): Promise<void> {
   const r = p.run;
-  const lock = sent(repo.lockUserRuns(tx, o));
+  const lock = p.process?.noUserLock ? Promise.resolve() : sent(repo.lockUserRuns(tx, o));
   const bg = p.room ? "room" : p.process ? "process" : undefined;
   const conv = sent(repo.touchConversation(tx, o, r.conversationId, bg));
   const flow = sendFlow(tx, o, p);

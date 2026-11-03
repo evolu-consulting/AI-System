@@ -135,7 +135,12 @@ export async function plan(
   runId: string,
 ): Promise<KickResult> {
   // T19-perf · khoá run (câu ĐẦU, §10) + đọc đầu run gửi liền (pipeline): câu đọc chạy sau khoá, cùng ảnh.
-  const [run, head] = await Promise.all([core.lockRun(tx, u.tenantId, runId), headOf(tx, runId)]);
+  // CR-115 · kiểm người bắt đầu (chỉ đọc) gửi liền sau khoá run — cùng round-trip; xét kết quả đúng chỗ cũ bên dưới.
+  const lockQ = core.lockRun(tx, u.tenantId, runId);
+  const headQ = headOf(tx, runId);
+  const usableQ = starterUsable(tx, u);
+  usableQ.catch(() => {});
+  const [run, head] = await Promise.all([lockQ, headQ]);
   if (!run || isTerminal(run.status as ProcessRunStatus)) return { kind: "skip" };
   if (!head) return { kind: "skip" };
   const next = await nextQueued(tx, runId, head, Number(run.currentStep));
@@ -150,7 +155,7 @@ export async function plan(
     lostPermission(d, tx, { runId, tenantId: u.tenantId, idx, stageRunId: stage.id, reason });
   // P-R10 · người bắt đầu phải còn dùng được (active, không bị tenant khoá, tenant bật) — đọc TƯƠI trong tx (khoá
   // `locked_by_tenant` KHÔNG bump config version ⇒ cache có thể cũ; P1-24 user_inactive).
-  if (!(await starterUsable(tx, u))) return { ...(await lost("user_inactive")), more };
+  if (!(await usableQ)) return { ...(await lost("user_inactive")), more };
   // C2 · chuẩn bị riêng loại node (nhóm: kiểm sẵn sàng + `team_run`) — giữ thứ tự cũ: starterUsable → team → launch.
   const node = nodeLauncherOf(def.executor.kind);
   const prep = { u, def, stageId: stage.id, attempt: stage.attempt, runId };

@@ -128,6 +128,25 @@ describe("CR-115 · bắn hẹn retry theo lô ⇔ từng hàng [AC-H41]", () =>
     expect(badStage?.status).toBe("queued");
   }, 120_000);
 
+  it("AC-H41 · PD-B04 · lô không lấy khoá tư vấn theo user (`hub.runs.user`): đang có tx khác giữ khoá của A, lô vẫn bắn + tạo run/job ⇒ lô không chặn chat của A", async () => {
+    needPdSchema(c.pd);
+    const ids = await seed(10, null);
+    const st = await c.sql.begin(async (tx) => {
+      await tx`select pg_advisory_xact_lock(hashtext('hub.runs.user'), hashtext(${PA.A.id}::text))`;
+      const run = (async () => {
+        await sweepN(c, 1);
+        return waitFor(
+          () => fireStats(c.sql, ids.stageIds),
+          (s) => s.jobs >= 10,
+          8_000,
+        );
+      })();
+      const timeout = new Promise<"blocked">((r) => setTimeout(() => r("blocked"), 10_000));
+      return Promise.race([run, timeout]);
+    });
+    expect(st).toEqual({ fired: 10, open: 0, jobs: 10, dupJobs: 0, noJob: 0 });
+  }, 60_000);
+
   it("AC-H41 · PD-B02 · 2 Hub lô quét song song 60 hẹn ⇒ 60 bắn đúng 1 lần, 60 job, 0 trùng", async () => {
     needPdSchema(c.pd);
     h3 = await secondHub(c, { now: c.clk.now, instanceId: "qc-pf1-3" });
