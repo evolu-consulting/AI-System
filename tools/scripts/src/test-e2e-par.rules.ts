@@ -55,6 +55,11 @@ export const META: Record<string, Meta> = {
     redis: REDIS_DB("CS_REDIS_DB"),
     cost: 60,
   },
+  "e2e/pm-checklist/playwright.pm.config.ts": {
+    db: "pmc",
+    redis: REDIS_DB("PMC_REDIS_DB"),
+    cost: 90,
+  },
   "e2e/contracts-web/playwright.config.ts": { cost: 22 },
   "e2e/studio/playwright.config.ts": { cost: 101 },
   "e2e/x1/playwright.config.ts": { db: "x1", cost: 62 },
