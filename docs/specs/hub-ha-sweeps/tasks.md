@@ -3,7 +3,7 @@ id: hub-ha-sweeps
 lát: hub-ha-sweeps
 cr: CR-114
 làn: đầy đủ (đường nóng có ngưỡng perf, khoá/đồng thời)
-migration: không
+migration: hub 0082 (chỉ index)
 phụ thuộc:
 ---
 ## Plan (ngắn)
@@ -42,6 +42,12 @@ Mục tiêu: hub-api chạy ≥ 2 instance an toàn; vòng nhắc / hết hạn 
 - [x] Đo perf thật trên evotest (`-Step perf`): PD-P13 nhắc lô 100 p95 86 ms (p50 68), 10k task 5.179 ms; PD-P14 hết hạn
   lô 100 p95 58 ms (p50 38), 20k run 11.978 ms; PD-P01 hẹn giờ lô 100 p50 1.594 / p95 2.302 ms; PD-P02 2 hub p95 5.610 ms.
 - [x] TECH-DEBT #196, #254: ghi số đo mới, vẫn mở.
+- [x] Lượt 2: (a) `tests/acceptance/P-a/pf1/_local.ts` `stop()` chờ `handles.settled()` trước khi đóng pool ⇒ hết
+  "Unhandled error between tests" (int 3 file exit 0). (b) EXPLAIN (ANALYZE, BUFFERS) từng câu trên dữ liệu PD-P13/P14
+  (test chẩn đoán tạm, không commit): `markRemindedMany` quét MỌI task `open` + tính lại `jsonb_to_recordset` mỗi hàng
+  (7 → 66 ms theo vòng) ⇒ CTE `materialized` + `id = any((select ids from x)::uuid[])` (tra PK); claim hết hạn Bitmap Heap
+  Scan đọc 24.300 entry chết (4.840 trang) ⇒ migration 0082 index `(hạn, id)` cho Index Scan + Limit, bỏ index thừa
+  `review_tasks_remind_idx`.
 
 ## Không làm / Chạm
 - Không thêm leader-election khoá phiên (`pg_try_advisory_lock` giữ theo kết nối): mọi singleton hiện có đã dùng khoá theo tx
@@ -60,12 +66,18 @@ Không thêm test (đã có): `tests/acceptance/P-d/d1/{remind-load,race,batch-q
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-Không thay đổi hành vi (lý do: lát chỉ kiểm kê + chạy lại test có sẵn + ghi số đo; không đổi code).
+Không thay đổi hành vi (lý do: chỉ đổi kế hoạch truy vấn — câu cập nhật cùng tập hàng, index mới thay index cũ cùng tên —
+và hạ tầng test; kiểm kê + số đo).
 
 ## Việc còn lại
-- PD-P13/PD-P14 chưa đạt p95 ≤ 50 ms (86 / 58 ms): lát perf riêng — hồ sơ từng câu của `claimDueReminders`/`writeNotices`
-  /`escalateBatch` và các câu quét khác trong `sweepOnce` (PD-P14 đo cả lượt, không chỉ hết hạn).
-- Hẹn giờ (TD #196): gom bắn theo lô, đặt ngưỡng PD-P01.
-- `race.int.test.ts` chạy chung worker với `remind-load`/`batch-queries` sinh "Unhandled error between tests"
-  (`postgres` `socket.write` null sau khi đóng kết nối — việc nền còn chạy khi hub dừng); mọi ca pass. Cần chờ việc nền xong
-  trước `stop()` hoặc ghi known-red.
+- PD-P13/PD-P14 vẫn trên p95 ≤ 50 ms trên evotest (số ở TECH-DEBT #254) — không còn tăng theo vòng, phần còn lại là chi phí
+  cố định mỗi lô + nhiễu máy chủ chung: notice 200 hàng ~18 ms (2 FK trigger ~10 ms), claim nhắc ~13 ms (cổng trưởng phòng
+  tra `users` mỗi hàng ~6 ms, `more` anti-join ~4 ms), commit 4–11 ms (fsync). PD-P14 theo test-plan-addendum đo CẢ
+  `sweepOnce` (giữ). Đếm unread (`count` notice chưa đọc của người nhận) vẫn tăng tuyến tính theo số chưa đọc — muốn hết
+  phải có bộ đếm (đổi contract/bảng), ngoài lát.
+- **Đề xuất TD #196 (hẹn giờ theo lô) — chưa làm:** `fireTimer` mỗi hẹn một tx (khoá run → stage → timer, 5–6 câu) rồi
+  `kick` launcher SAU COMMIT; PD-P01 ~16 ms/hẹn. Gom: một tx `systemBatch` mỗi lô — (1) CTE khoá timer tới hạn
+  `SKIP LOCKED` + run `FOR UPDATE SKIP LOCKED` + stage theo `any(array)`, (2) `fireAction` lớp 1 trên mảng, (3) một câu
+  `update … from jsonb_to_recordset` cho từng nhóm hành động (markFired / requeue stage / finishWait / cancel), (4) outbox
+  `kick` gom mỗi run. Exactly-once giữ nhờ khoá run+timer trong cùng tx (như nhắc). Cần đo trước phần `kick` (launcher tạo
+  job) — nếu chiếm phần lớn 16 ms thì gom tx không đủ. Đổi máy trạng thái ⇒ Opus, lát riêng, test PD-I24/PD-I39/PD-P02.

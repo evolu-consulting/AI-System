@@ -140,10 +140,12 @@ export async function markRemindedMany(
       remind_count: r.remindCount,
     })),
   );
-  // JSON gom thành MỘT hàng mảng ⇒ nested loop 1 hàng ngoài + `id = any(ids)` tra PK (không hash/seq scan theo thống
-  // kê cũ sau chèn hàng loạt); giá trị mỗi hàng lấy theo vị trí, `tenant_id` phải khớp hàng nguồn (K3 lô).
+  // JSON gom thành MỘT hàng mảng (CTE `materialized` — tính một lần) + `t.id = any((select ids from x)::uuid[])` = InitPlan mảng
+  // ⇒ tra PK. CR-114: thiếu InitPlan, planner (thống kê cũ ước 1 hàng `open`) quét MỌI task `open` qua `group_idx` và
+  // tính lại `jsonb_to_recordset` mỗi hàng ⇒ chi phí tăng theo số task mở (lô 100: 7 → 66 ms sau 2.300 task mở).
+  // Giá trị mỗi hàng lấy theo vị trí, `tenant_id` phải khớp hàng nguồn (K3 lô).
   await tx.execute(sql`
-    with x as (
+    with x as materialized (
       select array_agg(r.id) as ids, array_agg(r.tenant_id) as tids, array_agg(r.remind_at) as ats,
         array_agg(r.remind_count) as cnts
       from jsonb_to_recordset(${json}::jsonb) as r(id uuid, tenant_id uuid, remind_at timestamptz, remind_count int)
@@ -153,7 +155,8 @@ export async function markRemindedMany(
       remind_at = x.ats[array_position(x.ids, t.id)],
       remind_count = x.cnts[array_position(x.ids, t.id)]
     from x
-    where t.id = any(x.ids) and t.tenant_id = x.tids[array_position(x.ids, t.id)] and t.status = 'open'`);
+    where t.id = any((select ids from x)::uuid[]) and t.tenant_id = x.tids[array_position(x.ids, t.id)]
+      and t.status = 'open'`);
 }
 
 /** Làm nóng: chạy đủ văn bản câu của vòng nhắc + chuyển cấp với lô rỗng (không ghi hàng nào). */

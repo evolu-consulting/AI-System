@@ -323,10 +323,23 @@ async function startHub(k: Awaited<ReturnType<typeof makeKeys>>, o: Pf1Opts): Pr
     stop: async () => {
       ac.abort();
       await server.stop(true);
+      // CR-114 · việc stage-driver đang dở (kết quả job → tx → kick) phải xong TRƯỚC khi đóng pool, không thì câu xếp hàng
+      // của nó ghi vào socket đã đóng ("Unhandled error between tests"). Chờ tín hiệu `settled()`; 10 s chỉ là lưới treo.
+      await settledOrHang(handles);
       redis.disconnect();
       await db.close();
     },
   };
+}
+
+async function settledOrHang(h: Json | null): Promise<void> {
+  const settled = (h as { settled?: () => Promise<void> } | null)?.settled;
+  if (!settled) return;
+  let t: ReturnType<typeof setTimeout> | undefined;
+  const hang = new Promise<void>((r) => {
+    t = setTimeout(r, 10_000);
+  });
+  await Promise.race([settled(), hang]).finally(() => clearTimeout(t));
 }
 
 /** DB sạch + persona P-a + (ready ⇒ seed PF1) + hub-api launcher thật. */
