@@ -139,7 +139,7 @@ export class Bench {
       await this.sql.begin(async (tx) => {
         for (const s of setup) await tx.unsafe(s);
         await tx.unsafe(scope.text, scope.params as never[]);
-        out = await body(tx);
+        out = await body(tx as unknown as Sql);
         throw new Rollback();
       });
     } catch (e) {
