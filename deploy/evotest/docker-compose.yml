@@ -26,7 +26,7 @@ x-runner: &runner
     redis: { condition: service_healthy }
   entrypoint: ["nice", "-n", "19", "bash", "/in-container.sh"]
   cpus: 2
-  mem_limit: 5g
+  mem_limit: 6g
   cpu_shares: 128
   shm_size: 1g
   init: true
