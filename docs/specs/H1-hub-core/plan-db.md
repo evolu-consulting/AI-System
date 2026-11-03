@@ -15,31 +15,13 @@ Hàm `hub.tenant_sub_limit(uuid) RETURNS int` — `sql STABLE SECURITY DEFINER S
 
 ### 5.4 SQL Runtime (nguyên văn, tham số asyncpg)
 Runtime chỉ ghi `hub.jobs` (và bảng §3.3), **không** `hub.runs` (không GRANT, `plan` §3.4): `jobs.error_code` không phải lỗi run; Hub kết thúc run và ghi `runs.error_*` qua `runErrorText` (`plan-errors` §Ghi, readiness #45).
-**Claim** — một transaction READ COMMITTED; advisory lock **toàn cục** `K_CLAIM` (P5, không theo provider), câu khoá tách riêng để snapshot câu sau thấy mọi claim đã commit:
-```sql
-SELECT pg_advisory_xact_lock(hashtext('hub.jobs.claim'));
-SELECT j.id, j.payload FROM hub.jobs j
-JOIN hub.providers p ON p.key = j.provider_key AND p.enabled
-LEFT JOIN hub.provider_state s ON s.provider_key = p.key
-WHERE j.status = 'queued' AND j.cancel_requested_at IS NULL
-  AND j.provider_key = ANY($1::text[])
-  AND (s.status IS NULL OR s.status IN ('ok','busy') OR (s.status = 'cooldown' AND s.cooldown_until <= now()))
-  AND (SELECT count(*) FROM hub.jobs r WHERE r.status = 'running' AND r.provider_key = j.provider_key) < p.max_concurrency
-  AND (p.kind <> 'subscription' OR hub.tenant_sub_limit(j.tenant_id) IS NULL
-       OR (SELECT count(*) FROM hub.jobs r JOIN hub.providers rp ON rp.key = r.provider_key
-           WHERE r.status = 'running' AND r.tenant_id = j.tenant_id AND rp.kind = 'subscription')
-          < hub.tenant_sub_limit(j.tenant_id))
-  AND NOT EXISTS (SELECT 1 FROM hub.jobs b
-       WHERE b.conversation_id = j.conversation_id AND b.agent_id = j.agent_id
-         AND (b.status = 'running' OR (b.status = 'queued'
-              AND (b.priority, b.created_at, b.id) < (j.priority, j.created_at, j.id))))
-ORDER BY j.priority, j.created_at, j.id
-LIMIT 1
-FOR UPDATE OF j SKIP LOCKED;
-UPDATE hub.jobs SET status = 'running', worker_id = $2, started_at = now(), heartbeat_at = now(), attempts = attempts + 1
-WHERE id = $3 AND status = 'queued';
--- COMMIT → XADD job.started. Không dòng → COMMIT, chờ job_enqueued / poll 1 s
-```
+**Claim** (CR-114 hub-claim-scale thay khoá toàn cục cũ; SQL nguyên văn ở `apps/agent-runtime/src/agent_runtime/db/jobs_sql.py`) — khoá advisory 2 khoá theo **provider** `K_CLAIM(p) = pg_advisory_xact_lock(hashtext('hub.jobs.claim'), hashtext(p))`, không còn khoá chung cho mọi claim:
+1. **PEEK** (không khoá): câu claim không `FOR UPDATE` trên mọi provider của worker → `provider_key` của job đứng đầu (giữ thứ tự `priority, created_at, id` toàn cục).
+2. Transaction READ COMMITTED: [`K_CLAIM_SANDBOX(worker)` khi có slot tự-sửa — chung với claim `source.apply`] → `K_CLAIM(p)` → câu claim giới hạn `provider_key = ANY([p])` `… LIMIT 1 FOR UPDATE OF j SKIP LOCKED` (đếm `running` theo provider / theo tenant subscription MỘT lần bằng CTE `MATERIALIZED`; điều kiện như trước: provider `enabled`, `provider_state` ok/busy/cooldown hết hạn, `running < max_concurrency`, tenant `< hub.tenant_sub_limit`, BR-05 hội thoại+agent tuần tự).
+3. Job thuộc provider `subscription` của tenant có giới hạn: `K_CLAIM_TENANT(tenant)` → `TENANT_OK` (câu mới, thấy claim đã commit của provider khác); trượt ⇒ COMMIT rỗng, thử lại (có chặn).
+4. `UPDATE hub.jobs SET status = 'running', worker_id = $2, started_at = now(), heartbeat_at = now(), attempts = attempts + 1, token_hash = $3 WHERE id = $1 AND status = 'queued' RETURNING payload;` → COMMIT → XADD `job.started`. Provider không còn job claim được bị bỏ khỏi lượt PEEK sau; hết provider → chờ `job_enqueued` / poll 1 s.
+
+Thứ tự khoá: `K_CLAIM_SANDBOX(worker)` → `K_CLAIM(provider)` → hàng `jobs` → `K_CLAIM_TENANT` → `provider_state`. "Kết thúc" làm hỏng provider và probe chỉ giữ `K_CLAIM` của provider đó.
 **pgid:** `UPDATE hub.jobs SET pgid = $3 WHERE id = $1 AND worker_id = $2 AND status = 'running';`
 **Heartbeat 10 s** (một câu cho mọi job của worker): `UPDATE hub.jobs SET heartbeat_at = now() WHERE worker_id = $1 AND status = 'running' RETURNING id, cancel_requested_at IS NOT NULL AS cancel;` — job đang giữ mà không có trong kết quả = không còn của mình → giết group, không ghi gì; `cancel` → huỷ (dự phòng mất `job_cancel`).
 **Kết thúc** (một transaction, sau khi group đã hết; thứ tự `plan.md` §3.5):
@@ -61,7 +43,7 @@ ON CONFLICT (conversation_id, agent_id, provider_key) DO UPDATE
 ```
 **Provider OK:** `UPDATE hub.provider_state SET consecutive_errors = 0, updated_at = now() WHERE provider_key = $1 AND consecutive_errors <> 0;`
 **Provider lỗi:** `INSERT INTO hub.provider_state (provider_key, consecutive_errors, last_error, updated_at) VALUES ($1, 1, $2, now()) ON CONFLICT (provider_key) DO UPDATE SET consecutive_errors = hub.provider_state.consecutive_errors + 1, last_error = EXCLUDED.last_error, updated_at = now() RETURNING consecutive_errors;` — ≥ 3 → **Provider hỏng** `status='error'`.
-**Provider hỏng** (rate limit / đăng nhập / lỗi lặp; transaction riêng sau kết thúc): `K_CLAIM` → `UPDATE hub.jobs SET status = 'failed', error_code = 'ALL_PROVIDERS_EXHAUSTED', error_reason = $4, finished_at = now() WHERE status = 'queued' AND provider_key = $1 RETURNING id, run_id;` → `INSERT INTO hub.provider_state (provider_key, status, cooldown_until, last_error, updated_at) VALUES ($1, $2, $3, $5, now()) ON CONFLICT (provider_key) DO UPDATE SET status = EXCLUDED.status, cooldown_until = EXCLUDED.cooldown_until, last_error = EXCLUDED.last_error, updated_at = now();` → COMMIT → XADD `job.failed` từng job. `$2` ∈ `cooldown`/`logged_out`/`error`; `$3` = giờ reset khi `cooldown`, khác → NULL; `$4` = `quota` khi `cooldown`, khác → `provider_unavailable` (jobs trước provider_state theo §3.5).
+**Provider hỏng** (rate limit / đăng nhập / lỗi lặp; transaction riêng sau kết thúc): `K_CLAIM(provider_key)` → `UPDATE hub.jobs SET status = 'failed', error_code = 'ALL_PROVIDERS_EXHAUSTED', error_reason = $4, finished_at = now() WHERE status = 'queued' AND provider_key = $1 RETURNING id, run_id;` → `INSERT INTO hub.provider_state (provider_key, status, cooldown_until, last_error, updated_at) VALUES ($1, $2, $3, $5, now()) ON CONFLICT (provider_key) DO UPDATE SET status = EXCLUDED.status, cooldown_until = EXCLUDED.cooldown_until, last_error = EXCLUDED.last_error, updated_at = now();` → COMMIT → XADD `job.failed` từng job. `$2` ∈ `cooldown`/`logged_out`/`error`; `$3` = giờ reset khi `cooldown`, khác → NULL; `$4` = `quota` khi `cooldown`, khác → `provider_unavailable` (jobs trước provider_state theo §3.5).
 **Khởi động lại:** `UPDATE hub.jobs SET status = 'failed', error_code = 'INTERNAL_ERROR', error_reason = 'orphaned', finished_at = now() WHERE worker_id = $1 AND status = 'running' RETURNING id, run_id, pgid;` → giết pgid còn sống → XADD `job.failed`. `worker_id` cố định (`AGENT_RT_WORKER_ID`). Rồi `UPDATE hub.provider_state SET status = 'ok', consecutive_errors = 0, cooldown_until = NULL, updated_at = now() WHERE provider_key = ANY($2::text[]) AND status IN ('error','logged_out');` (đăng nhập lại = `systemctl restart`).
 **Manifest:** `INSERT INTO hub.agent_types (…7 cột, available) VALUES (…, true, now()) ON CONFLICT (key) DO UPDATE SET` mọi cột `= EXCLUDED.*`, `available = true`, `registered_at = now()`; rồi `UPDATE hub.agent_types SET available = false WHERE worker_id = $1 AND key <> ALL($2::text[]);` (không xoá).
 **XADD:** `XADD run:<run_id> MAXLEN ~ 10000 * e <json>` + `EXPIRE run:<run_id> 86400` (pipeline).

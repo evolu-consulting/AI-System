@@ -57,6 +57,8 @@ Chạm: `apps/agent-runtime/src/agent_runtime/db/{jobs_sql,finish_sql,probe_sql,
 - pgbouncer: thêm service sau profile, chưa trỏ DSN nào vào (LISTEN + khoá probe mức phiên phải đi thẳng
   `pg`) — `deploy/prod-sohoptac2/README-pgbouncer.md`.
 
+- Kiểm trên Linux (máy evotest, container `uv:python3.12` + PG16/Redis tạm, dọn sau): int claim_scale + claim + probe (gồm P37) + probe_error_lock + pc2/apply = 42 passed; unit queue/db/config 87 passed. `plan-db` H1 §5.4 đã cập nhật.
+
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
@@ -64,4 +66,3 @@ Không thay đổi hành vi (lý do: chỉ đổi cách khoá claim để nhiề
 
 ## Việc còn lại
 - Tách DSN LISTEN riêng (hub-api `db.listen`, Runtime `connect_listen`) trước khi trỏ pool qua pgbouncer.
-- Docs plan-db §5.4 (H1) còn ghi `K_CLAIM` toàn cục — cập nhật khi gộp cuối đợt.
