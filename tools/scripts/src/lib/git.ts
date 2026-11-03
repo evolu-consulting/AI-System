@@ -1,6 +1,6 @@
 // ADM-NFR-06 · helper git dùng chung cho CLI trong tools/scripts (T-CLI-1, T-SIZE-4).
 
-function git(args: string[], cwd: string): { ok: boolean; out: string } {
+export function git(args: string[], cwd: string): { ok: boolean; out: string } {
   const p = Bun.spawnSync(["git", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
   return { ok: p.exitCode === 0, out: p.stdout.toString() };
 }

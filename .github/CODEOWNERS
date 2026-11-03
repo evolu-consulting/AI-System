@@ -1,0 +1,10 @@
+# CODEOWNERS - xem docs/platform/dlc-integration.md
+# TODO: thay @rowan bang GitHub handle that cua Rowan (git log chi cho thay ten "Rowan", khong co handle).
+/apps/dlc-workspace/                                                        @rowan
+/apps/hub-api/src/modules/packs/dlc/                                        @rowan
+/apps/hub-api/src/modules/dlc-calls/                                        @rowan
+/apps/hub-api/src/app.dlc.ts                                                @rowan
+/tools/dlc-dify/                                                            @rowan
+/packages/db/migrations-pack-dlc/                                           @rowan
+/apps/admin-web/src/features/processes/lib/dlc-slot*                        @rowan
+/apps/admin-web/src/features/processes/components/library/DlcStageForm.tsx  @rowan

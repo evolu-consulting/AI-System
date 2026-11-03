@@ -7,6 +7,7 @@
 |---|---|
 | `../CLAUDE.md` | Luật làm việc (nạp mỗi phiên) |
 | `WORKFLOW.md` | Vòng một mốc, đội agent, Gate, khoá test |
+| `platform/dlc-integration.md` | **DLC của Rowan**: ai sở hữu đường nào, luồng nhánh, số migration dành riêng, `bun run dlc:check` |
 | `platform/dev-flow.md` | **Sơ đồ dây chuyền hiện tại**: proposal OpenSpec → duyệt → lát song song theo model → merge/cổng → review + e2e → duyệt deploy → gộp current; so với AI SDLC |
 | `CONVENTIONS.md` | Chuẩn code, cấu trúc bốn lớp Clean Architecture (§2, ADR-0023), giới hạn, format, chuyển dần (§10) |
 | `ROADMAP.md` | Mốc M0–M5, C1, H1–H4, FR thuộc mốc nào |

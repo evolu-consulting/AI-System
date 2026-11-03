@@ -95,6 +95,7 @@
     "contracts:check": "bun tools/contracts-gen/hub.ts check",
     "check:size": "bun tools/scripts/src/check-size.ts",
     "check:fn": "bun tools/scripts/src/check-fn.ts",
+    "dlc:check": "bun tools/scripts/src/dlc-sync-check.ts",
     "db:test:create": "bun --env-file=.env.local packages/db/src/test-db-cli.ts create",
     "db:test:drop": "bun --env-file=.env.local packages/db/src/test-db-cli.ts drop",
     "depcruise": "bun tools/scripts/src/depcruise.ts",
