@@ -46,7 +46,22 @@ export type PromptInput = {
   message: string;
   /** H2c P11 · tập file của run (R15); ≥ 1 → khối `<attachments>` ngay trước `<message>`; vắng/rỗng → như H1. */
   attachments?: readonly FileBrief[];
+  /** CR-114 · có ⇒ khối `<handoff>` ngay trước `<message>` (phần biến động, sau breakpoint cache); vắng ⇒ prompt như cũ. */
+  handoff?: HandoffHint;
 };
+
+/** CR-114 · agent nhận được tham chiếu (job có `artifact-get`) + khoá của kết quả bước trước đã lưu. */
+export type HandoffHint = {
+  agents: readonly string[];
+  refs: readonly { agent: string; ref: string; sum: string }[];
+};
+
+/** Câu luật của khối `<handoff>` (nguyên văn; đổi thì đo lại kịch bản handoff). */
+export const HANDOFF_RULE =
+  "Agent trong `agents` đọc được artifact: khi `delegate` cho họ, KHÔNG chép lại nội dung bước trước vào `task` — chỉ ghi khoá `art:…` + tóm tắt 1–2 dòng (hệ thống tự đính kèm). Agent khác: chép như thường.";
+
+const handoffBlock = (h: HandoffHint): string =>
+  tag("handoff", `${json({ agents: h.agents, refs: h.refs })}\n${HANDOFF_RULE}`);
 
 const cut = (s: string, max: number): string => {
   const pts = [...s];
@@ -87,6 +102,8 @@ export function orchestratorPrompt(p: PromptInput, retry = false): string {
   ];
   const files = orchestratorFilesBlock(p.attachments ?? []);
   if (files) blocks.push(files);
+  if (p.handoff && p.handoff.agents.length > 0 && p.handoff.refs.length > 0)
+    blocks.push(handoffBlock(p.handoff));
   blocks.push(tag("message", json(p.message)));
   if (retry) blocks.push(RETRY_REMINDER);
   return blocks.join("\n");

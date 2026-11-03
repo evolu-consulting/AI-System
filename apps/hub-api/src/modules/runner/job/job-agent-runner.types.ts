@@ -63,6 +63,11 @@ export type AgentTask = {
 /** plan §5.6. Sự kiện của đúng một job, kết thúc bằng `job.result`/`job.failed`; `signal` abort → dừng, không ghi gì. */
 export interface AgentRunner {
   run(task: AgentTask, signal: AbortSignal): AsyncIterable<RunEvent>;
+  /**
+   * CR-114 fix114-handoff2 · job của `task` có nhận `artifact-get` không (cùng đường cấp tool + `artifactToolsGranted` mà
+   * `jobVariant` dùng lúc chạy). Vắng ⇒ không (người đọc nhận nguyên văn).
+   */
+  artifactAccess?(task: AgentTask): Promise<boolean>;
 }
 
 /** H2b P11 · phần đã phát (S), `seq` hở (nếu có) và step của job (để ghi trace). */

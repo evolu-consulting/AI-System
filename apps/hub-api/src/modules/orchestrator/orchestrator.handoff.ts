@@ -17,12 +17,56 @@ import {
   olderBody,
   splitHistory,
 } from "../artifacts/history.rules";
+import type { AgentConfig } from "../config/config.rules";
+import type { HandoffHint } from "./orchestrator.prompt";
 import { canPassThrough } from "./orchestrator.rules";
 
 export type LoopHandoff = {
   put(body: string, meta: { summary?: string }): Promise<ArtifactRef>;
   keepTurns?: number;
+  /**
+   * fix114-handoff2 · key các agent mà job delegate SẼ nhận `artifact-get` (runner `artifactAccess` — cùng luật cấp tool và
+   * `artifactToolsGranted` mà `jobVariant` dùng lúc chạy). Vắng ⇒ không ai (Orchestrator chép như cũ).
+   */
+  refAgents?(agents: readonly AgentConfig[]): Promise<ReadonlySet<string>>;
 };
+
+/** Trạng thái bàn giao trong một run (lười: chỉ hỏi runner khi đã có kết quả bước lưu thành artifact). */
+export type HandoffState = {
+  outputs: StepOutput[];
+  compacted?: Promise<HistoryItem[] | null>;
+  refAgents?: Promise<ReadonlySet<string>>;
+  /** Tập đã báo cho Orchestrator ở lần gọi gần nhất (để delegate biết task có thể chỉ mang ref). */
+  told?: ReadonlySet<string>;
+};
+
+/**
+ * Khối `<handoff>` cho prompt Orchestrator: agent nhận được tham chiếu + khoá các kết quả đã lưu. Chưa có kết quả lưu /
+ * không agent nào nhận được ⇒ undefined (prompt y như tắt cờ).
+ */
+export async function orchestratorHint(
+  h: LoopHandoff,
+  st: HandoffState,
+  agents: readonly AgentConfig[],
+): Promise<HandoffHint | undefined> {
+  const refs = st.outputs.flatMap((o) =>
+    o.ref ? [{ agent: o.agent, ref: o.ref.short, sum: o.ref.summary }] : [],
+  );
+  if (refs.length === 0 || !h.refAgents) return undefined;
+  st.refAgents ??= h.refAgents(agents).catch(() => new Set<string>());
+  const set = await st.refAgents;
+  st.told = set;
+  return set.size > 0 ? { agents: [...set].sort(), refs } : undefined;
+}
+
+/**
+ * `prompt` nguyên văn của delegate. Agent đã được báo là nhận tham chiếu ⇒ Orchestrator có thể chỉ ghi ref, nên nếu lúc chạy
+ * job lại KHÔNG có `artifact-get` (lệch hiếm) bản nguyên văn tự đính kèm toàn văn kết quả bước trước — không mất dữ kiện.
+ */
+export function fullPrompt(task: string, st: HandoffState, agentKey: string): string {
+  if (!st.told?.has(agentKey) || st.outputs.every((o) => !o.ref)) return task;
+  return renderEnvelope({ g: task, in: st.outputs.map((o) => ({ text: o.text })), o: "answer" });
+}
 
 /** Bản tham chiếu của một job delegate (runner job chỉ dùng khi đã cấp `artifact-get`). */
 export type ByRef = { prompt: string; history: readonly HistoryItem[] };

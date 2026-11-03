@@ -12,7 +12,7 @@ import type { Span } from "@opentelemetry/api";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import { runSpanOf, setTokens, spanError, startSpan, traceparentOf } from "../../../lib/otel";
-import { jobVariant, withArtifactTools } from "../../artifacts/artifact.mcp";
+import { artifactToolsGranted, jobVariant, withArtifactTools } from "../../artifacts/artifact.mcp";
 import {
   agentFilesBlock,
   jobAttachments,
@@ -97,11 +97,8 @@ export function agentToolKeys(
 ): string[] {
   const workflows = [...catalog.workflows.values()];
   const allowed = workflows.map((w) => w.key);
-  const input = {
-    agentWorkflowIds: allow ? new Set([...ids].filter(allow)) : ids,
-    workflows,
-    allowed,
-  };
+  const agentWorkflowIds = allow ? new Set([...ids].filter(allow)) : ids;
+  const input = { agentWorkflowIds, workflows, allowed };
   return mcpToolsFor(hasFiles === undefined ? input : { ...input, hasFiles })
     .map((t) => t.name)
     .slice(0, MCP_TOOLS_MAX);
@@ -119,6 +116,11 @@ export class JobAgentRunner implements AgentRunner {
 
   constructor(private readonly d: JobAgentRunnerDeps) {
     this.#follower = new JobFollower(d);
+  }
+
+  /** CR-114 · cùng `#mcp` + `artifactToolsGranted` mà `jobVariant` dùng lúc chạy. */
+  async artifactAccess(task: AgentTask): Promise<boolean> {
+    return artifactToolsGranted((await this.#mcp(task)).mcp);
   }
 
   #system<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {

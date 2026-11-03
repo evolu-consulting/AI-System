@@ -32,6 +32,23 @@ describe("RoutingRunner [HUB-FR-23 · H2a-R14]", () => {
     expect(calls).toEqual(["job", "dify", "dify"]);
   });
 
+  it("CR-114 · artifactAccess: dify / direct-SDK ⇒ false; job ⇒ hỏi runner job", async () => {
+    const job: AgentRunner = { ...fake("job", []), artifactAccess: async () => true };
+    const r = new RoutingRunner({ job, dify: fake("dify", []), direct: fake("direct", []) });
+    const t = (runtime: string, runtimeOptions: Record<string, unknown>) =>
+      ({
+        agent: { id: "a", runtime, runtimeOptions },
+        role: "agent",
+        files: [],
+        snapshot: { agents: [], workflows: [], agentWorkflows: new Map() },
+      }) as unknown as AgentTask;
+    expect(await r.artifactAccess(t("dify-agent", {}))).toBe(false);
+    expect(await r.artifactAccess(t("agentic-cli", { direct_sdk: true }))).toBe(false);
+    expect(await r.artifactAccess(t("agentic-cli", {}))).toBe(true);
+    const noProbe = new RoutingRunner({ job: fake("job", []) });
+    expect(await noProbe.artifactAccess(t("agentic-cli", {}))).toBe(false);
+  });
+
   it("HUB-FR-23 · thiếu dify runner → job.failed NOT_CONFIGURED (job_id = id bước)", async () => {
     const r = new RoutingRunner({ job: fake("job", []) });
     const [ev] = await drain(r.run(task("dify-workflow"), signal));

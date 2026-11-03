@@ -34,6 +34,11 @@ export class HookedRunner implements AgentRunner {
     private readonly d: HookedRunnerDeps,
   ) {}
 
+  /** CR-114 · hook không đổi tool của job ⇒ hỏi runner bên trong. */
+  artifactAccess(task: AgentTask): Promise<boolean> {
+    return this.inner.artifactAccess?.(task) ?? Promise.resolve(false);
+  }
+
   async *run(task: AgentTask, signal: AbortSignal): AsyncIterable<RunEvent> {
     const rows = task.role === "agent" ? await this.#rows(task) : [];
     if (rows.length === 0) {

@@ -29,8 +29,10 @@ import {
 import {
   type ByRef,
   byRefJob,
+  fullPrompt,
+  type HandoffState,
   type LoopHandoff,
-  type StepOutput,
+  orchestratorHint,
   storeOutput,
   willNote,
 } from "./orchestrator.handoff";
@@ -130,10 +132,7 @@ type State = {
   hadPartial: boolean;
   answered: string | null;
   notes: StepNote[];
-  /** CR-114 · kết quả agent cho bản tham chiếu của delegate sau; `compacted` = lịch sử nén (một lần, lười). */
-  outputs: StepOutput[];
-  compacted?: Promise<HistoryItem[] | null>;
-};
+} & HandoffState; // CR-114 · kết quả agent, lịch sử nén, agent nhận tham chiếu (lười)
 
 const addUsage = (s: State, o: LoopJobOutcome) => {
   if (o.kind !== "aborted") s.tokens += o.usage.input_tokens + o.usage.output_tokens;
@@ -220,6 +219,7 @@ function orchestratorJob(c: LoopInput, s: State) {
  * P11–P12: run stream → job `stream=["answer"]`; đã phát thì không thử lại (R21).
  */
 async function decide(io: LoopIo, c: LoopInput, s: State): Promise<Decided> {
+  const handoff = io.handoff && (await orchestratorHint(io.handoff, s, visibleConfigs(c)));
   const prompt = (retry: boolean) =>
     orchestratorPrompt(
       {
@@ -230,6 +230,7 @@ async function decide(io: LoopIo, c: LoopInput, s: State): Promise<Decided> {
         stepsLeft: c.settings.maxSteps - s.steps,
         message: c.message,
         ...(c.attachments?.length ? { attachments: c.attachments } : {}),
+        ...(handoff ? { handoff } : {}),
       },
       retry,
     );
@@ -267,7 +268,7 @@ async function delegate(
   const o = await io.job({
     agent: d.agent,
     role: "agent",
-    prompt: d.task,
+    prompt: h ? fullPrompt(d.task, s, d.agent.key) : d.task,
     history: c.history,
     ...(c.historyTotal !== undefined ? { historyTotal: c.historyTotal } : {}),
     ...(h ? await byRefJob(h, s, c.history, d.task, c.settings.tokenBudget - s.tokens) : {}),
@@ -307,6 +308,10 @@ function afterAgent(s: State, agent: AgentConfig, r: AgentResult, ref: Ref = nul
   s.answered = r.text;
   return null;
 }
+
+/** Agent `c.visible` (trừ Orchestrator) dạng cấu hình — để hỏi runner ai nhận tham chiếu. */
+const visibleConfigs = (c: LoopInput) =>
+  c.agents.filter((a) => a.id !== c.orchestrator.id && c.visible.some((v) => v.id === a.id));
 
 const hasFiles = (c: LoopInput): boolean => (c.attachments?.length ?? 0) > 0;
 

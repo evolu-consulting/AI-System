@@ -43,6 +43,25 @@ function handoffOf(d: OrchestratorDeps, ctx: RunContext): LoopHandoff | undefine
   const who = { tenantId: r.tenantId, userId: r.userId };
   return {
     put: (body, meta) => store.put(who, body, { ...meta, runId: r.id }),
+    // fix114-handoff2 · hỏi runner (cùng đường cấp tool như lúc chạy job) với task delegate thăm dò của run này.
+    refAgents: async (agents) => {
+      const runner = d.runner;
+      if (!runner.artifactAccess) return new Set<string>();
+      const probe = (agent: (typeof agents)[number]) =>
+        runner
+          .artifactAccess?.({
+            agent,
+            role: "agent",
+            prompt: "",
+            history: [],
+            run: r,
+            snapshot: ctx.snapshot,
+            files: ctx.files,
+          })
+          .catch(() => false) ?? Promise.resolve(false);
+      const ok = await Promise.all(agents.map(probe));
+      return new Set(agents.filter((_, i) => ok[i]).map((a) => a.key));
+    },
   };
 }
 

@@ -48,6 +48,13 @@ export class RoutingRunner implements AgentRunner {
     if (this.d.dify) return this.d.dify.run(task, signal);
     return notConfigured(task);
   }
+
+  /** CR-114 · cùng luật chọn đường như `run`: dify / direct-SDK không có MCP artifact ⇒ false; job ⇒ hỏi runner job. */
+  async artifactAccess(task: AgentTask): Promise<boolean> {
+    if (DIFY_RUNTIMES.has(task.agent.runtime)) return false;
+    if (this.d.direct && directEligible(task, true)) return false;
+    return (await this.d.job.artifactAccess?.(task)) ?? false;
+  }
 }
 
 async function* notConfigured(task: AgentTask): AsyncGenerator<RunEvent> {

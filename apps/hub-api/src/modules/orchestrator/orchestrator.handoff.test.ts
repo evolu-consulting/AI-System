@@ -1,13 +1,18 @@
 // CR-114 · hub-agent-handoff (+ fix114) · phần thuần của bàn giao trong vòng Orchestrator.
 import { describe, expect, it } from "bun:test";
 import { type ArtifactRef, HANDOFF_HINT } from "../artifacts/artifact.rules";
+import type { AgentConfig } from "../config/config.rules";
 import {
   byRefOf,
   compactRunHistory,
   delegatePrompt,
+  fullPrompt,
+  type HandoffState,
   type LoopHandoff,
+  orchestratorHint,
   storeOutput,
 } from "./orchestrator.handoff";
+import { HANDOFF_RULE, orchestratorPrompt } from "./orchestrator.prompt";
 
 const LONG = `Dòng đầu.\n${"x".repeat(3000)}`;
 const REF: ArtifactRef = {
@@ -55,6 +60,48 @@ describe("CR-114 · orchestrator.handoff", () => {
     expect(out?.[0]?.content.startsWith("[3 earlier turns · full text: art:aaaaaaaa]")).toBe(true);
     expect(await compactRunHistory(h, hist(2))).toBeNull();
     expect(await compactRunHistory({ ...handoff(true), keepTurns: 2 }, hist(5))).toBeNull();
+  });
+
+  it("khối <handoff>: chỉ khi có kết quả lưu và có agent nhận tham chiếu; nằm ngay trước <message>", async () => {
+    const agents = [{ key: "a" }, { key: "b" }] as unknown as AgentConfig[];
+    const h: LoopHandoff = { ...handoff(), refAgents: async () => new Set(["b"]) };
+    const st: HandoffState = { outputs: [{ agent: "r", text: "ngắn", ref: null }] };
+    expect(await orchestratorHint(h, st, agents)).toBeUndefined();
+    st.outputs.push({ agent: "r", text: LONG, ref: REF });
+    const hint = await orchestratorHint(h, st, agents);
+    expect(hint).toEqual({
+      agents: ["b"],
+      refs: [{ agent: "r", ref: "art:aaaaaaaa", sum: "Dòng đầu." }],
+    });
+    const base = {
+      agents: [],
+      hint: { last_agent: null, waiting_for: null },
+      history: [],
+      steps: [],
+      stepsLeft: 3,
+      message: "m",
+    };
+    const plain = orchestratorPrompt(base);
+    const withH = orchestratorPrompt({ ...base, ...(hint ? { handoff: hint } : {}) });
+    const cut = plain.indexOf("<message>");
+    expect(withH.slice(0, cut)).toBe(plain.slice(0, cut)); // tiền tố y hệt
+    expect(withH.slice(cut)).toContain(HANDOFF_RULE);
+    expect(withH.endsWith(plain.slice(cut))).toBe(true);
+    const none: LoopHandoff = { ...handoff(), refAgents: async () => new Set() };
+    expect(await orchestratorHint(none, { outputs: st.outputs }, agents)).toBeUndefined();
+  });
+
+  it("bản nguyên văn tự đính kèm toàn văn khi agent đã được báo nhận tham chiếu", () => {
+    const st: HandoffState = {
+      outputs: [{ agent: "r", text: LONG, ref: REF }],
+      told: new Set(["b"]),
+    };
+    expect(fullPrompt("việc", st, "a")).toBe("việc");
+    expect(JSON.parse(fullPrompt("việc", st, "b"))).toEqual({
+      g: "việc",
+      in: [{ text: LONG }],
+      o: "answer",
+    });
   });
 
   it("byRef chỉ khi có gì rút gọn", () => {
