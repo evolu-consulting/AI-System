@@ -80,7 +80,10 @@ describe("CR-105 · RLS thư viện quy trình", () => {
         [`{${ids.libA},${ids.libB}}`],
       ),
       slotUser: await count(user("a"), "select count(*)::int as n from hub.process_slots"),
-      slotSys: await count(sys, "select count(*)::int as n from hub.process_slots"),
+      slotSys: await count(
+        sys,
+        `select count(*)::int as n from hub.process_slots where slot = '${SLOT}'`,
+      ),
     };
     expect(read).toEqual({
       asgOwn: 1,
