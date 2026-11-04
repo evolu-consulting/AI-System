@@ -128,11 +128,15 @@ describe("CR-118 · UW-FR-04 · /pack/me", () => {
     await c.sql`update hub.config_meta set hub_config_version = hub_config_version + 1`;
     const [v] = await c.sql<{ v: number }[]>`select hub_config_version as v from hub.config_meta`;
     await c.sql`select pg_notify('hub_config_changed', json_build_object('v', 1, 'version', ${v?.v ?? 1}::int)::text)`;
-    const cold = await untilHubSettles(
+    // chờ ảnh Hub mới qua `/pack/me` (không nạp phần khe) rồi mới đếm lần đầu của capabilities ⇒ chỉ đếm câu của view
+    await untilHubSettles(
       c.hub,
-      () => countHops(c, () => get(tok, capsPath(T.acme))),
-      (h) => h.r.json?.versions?.hub === v?.v,
+      async () => (await get(await c.tok(P.hoa), "/pack/me")).json,
+      (j) => j?.versions?.hub === v?.v,
     );
+    const cold = await countHops(c, () => get(tok, capsPath(T.acme)));
+    expect(cold.r.json?.versions?.hub).toBe(v?.v);
+    console.log(`CR-118 capabilities nạp lại phần Hub: ${cold.sql} câu`, cold.queries);
     const warm = await countHops(c, () => get(tok, capsPath(T.acme)));
     const nm = await countHops(c, () =>
       get(tok, capsPath(T.acme), { "if-none-match": warm.r.etag ?? "" }),
@@ -160,6 +164,12 @@ describe("CR-118 · N3 · /me/stream config.changed", () => {
       // mốc: đổi cấu hình beta ⇒ sb nhận; nếu frame của acme từng tới sb thì nó đến TRƯỚC (cùng kết nối, có thứ tự)
       await bumpConfig(c.sql, T.beta);
       const evB = await sb.until((e) => e.event === "config.changed", 5_000);
+      expect({
+        got: evB !== undefined,
+        closed: sb.isClosed(),
+        ct: sb.headers.get("content-type"),
+        head: sb.text().slice(0, 120),
+      }).toMatchObject({ got: true });
       expect(evB?.data.admin).toBeGreaterThan(ev?.data.admin);
       expect(sb.events.filter((e) => e.event === "config.changed").length).toBe(1);
     } finally {
