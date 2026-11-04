@@ -28,7 +28,7 @@ export async function requireSession(location: Loc): Promise<void> {
   if (
     typeof __COMMUNITY_MOCK__ !== "undefined" &&
     __COMMUNITY_MOCK__ &&
-    /\/community(\/|$)/.test(location.href)
+    /\/community(?:[/?#]|$)/.test(location.href)
   )
     return;
   const status = await session.ensure();
