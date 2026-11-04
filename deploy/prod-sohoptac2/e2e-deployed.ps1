@@ -51,7 +51,9 @@ try {
   # -Spec/-Grep áp cho cả ba. Lượt không có test khớp (-Spec thuộc project khác) ⇒ bỏ qua.
   $code = 0
   function Test-Lane($name) {
-    $list = & bun @pw --project $name --list 2>$null
+    # PS 5.1: stderr cua lenh native + ErrorActionPreference=Stop => throw (lane khong co test khop -Spec); tam ha xuong Continue.
+    $prev = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    try { $list = & bun @pw --project $name --list 2>$null } finally { $ErrorActionPreference = $prev }
     return ($LASTEXITCODE -eq 0 -and ($list -match "Total: [1-9]"))
   }
   $t0 = Get-Date
