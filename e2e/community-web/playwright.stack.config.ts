@@ -79,7 +79,7 @@ export default defineConfig({
           },
         },
         {
-          command: `bun run --filter @ai/community-web build && bun run --filter @ai/community-web preview --port ${P.web}`,
+          command: `bun run --filter @ai/sohoptac-web build && bun run --filter @ai/sohoptac-web preview --port ${P.web}`,
           cwd: "../..",
           url: WEB,
           reuseExistingServer: false,

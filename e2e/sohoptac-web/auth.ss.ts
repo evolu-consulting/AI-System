@@ -51,8 +51,9 @@ test("thành viên SHT: đăng nhập vào /overview, đăng xuất xoá phiên"
   expect(await refreshStatus(page)).toBe(200);
   // đăng xuất qua phiên chung (cùng một cookie ai_rt_contracts cho cả SHT và Community)
   await page.goto("/community");
-  await expect(page.getByRole("heading", { name: "Cộng đồng" })).toBeVisible();
-  await page.getByRole("button", { name: "Đăng xuất" }).click();
+  await expect(page.getByRole("link", { name: "Bảng tin" })).toBeVisible();
+  await page.getByRole("button", { name: "Tài khoản" }).click();
+  await page.getByRole("menuitem", { name: "Đăng xuất" }).click();
   await expect(page).toHaveURL(/\/login/);
   expect(await refreshStatus(page)).toBe(401);
   await page.goto("/overview");
@@ -73,7 +74,7 @@ test("đối tác lần đầu: buộc đổi mật khẩu rồi vào /community
   await page.getByLabel("Nhập lại mật khẩu mới").fill(NEW_PW);
   await page.getByRole("button", { name: "Lưu mật khẩu" }).click();
   await expect(page).toHaveURL(/\/community$/);
-  await expect(page.getByRole("heading", { name: "Cộng đồng" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Bảng tin" })).toBeVisible();
   for (const path of ["/overview", "/contracts", "/partners"]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/community$/);

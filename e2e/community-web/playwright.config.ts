@@ -22,7 +22,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `bun run --filter @ai/community-web build && bun run --filter @ai/community-web preview --port ${PORT}`,
+    command: `bun run --filter @ai/sohoptac-web build && bun run --filter @ai/sohoptac-web preview --port ${PORT}`,
     cwd: "../..",
     // Review Thấp-12: bản build mặc định (production) = http, không có mock ⇒ e2e mock phải bật cờ lúc build.
     env: { PUBLIC_COMMUNITY_API: "mock" },

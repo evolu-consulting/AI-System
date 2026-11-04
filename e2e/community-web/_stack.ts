@@ -37,7 +37,7 @@ function pwOf(who: Who): string {
 
 /** Mở community-web ⇒ màn Đăng nhập (Mã công ty / Tên đăng nhập / Mật khẩu) ⇒ bảng tin đã có phiên. */
 export async function loginAs(page: Page, who: Who): Promise<void> {
-  await page.goto("/");
+  await page.goto("/login?next=%2Fcommunity");
   const pw = page.locator("input[type=password]").first();
   await pw.waitFor({ timeout: 45_000 });
   const tenant = page.getByRole("textbox", { name: /Mã công ty|Company code/ });

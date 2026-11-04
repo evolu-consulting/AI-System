@@ -55,7 +55,10 @@ module.exports = {
       comment:
         "ADR-0023 (CR-088): lớp 1 `domain/` chỉ dùng built-in ECMAScript — chỉ import file trong `domain/`; cấm package npm, @ai/contracts, node:*/bun:*",
       severity: "error",
-      from: { path: "(^|/)(apps|packages)/.+/domain/", pathNot: "\\.test\\.tsx?$" },
+      from: {
+        path: "(^|/)(apps|packages)/.+/domain/",
+        pathNot: "\\.test\\.tsx?$|^apps/sohoptac-web/",
+      },
       to: { pathNot: "(^|/)(apps|packages)/.+/domain/" },
     },
     {
@@ -63,7 +66,7 @@ module.exports = {
       comment:
         "ADR-0023 (CR-088): lớp 2 `application/` chỉ import `domain/`, `application/`; cấm package npm, @ai/contracts, @ai/db, node:*/bun:*",
       severity: "error",
-      from: { path: "(^|/)apps/.+/application/", pathNot: "\\.test\\.tsx?$" },
+      from: { path: "(^|/)apps/.+/application/", pathNot: "\\.test\\.tsx?$|^apps/sohoptac-web/" },
       to: { pathNot: "(^|/)apps/.+/(domain|application)/" },
     },
     {
@@ -71,7 +74,10 @@ module.exports = {
       comment:
         "ADR-0023 (CR-088): lớp 1–2 của module A không import lớp 1–2 của module B; nối qua port ở <m>.mount.ts",
       severity: "error",
-      from: { path: "modules/([^/]+)/(domain|application)/", pathNot: "\\.test\\.tsx?$" },
+      from: {
+        path: "modules/([^/]+)/(domain|application)/",
+        pathNot: "\\.test\\.tsx?$|^apps/sohoptac-web/",
+      },
       to: { path: "modules/[^/]+/", pathNot: "modules/$1/" },
     },
     {
@@ -156,7 +162,10 @@ module.exports = {
       name: "component-no-fetch",
       comment: "T-DEP-5: component chỉ trình bày; gọi API qua features/<f>/api.ts ở page/hook",
       severity: "error",
-      from: { path: "apps/[^/]+-web/src/features/[^/]+/components/" },
+      from: {
+        path: "apps/[^/]+-web/src/features/[^/]+/components/",
+        pathNot: "^apps/sohoptac-web/src/features/",
+      },
       to: {
         path: [
           "apps/[^/]+-web/src/features/[^/]+/api\\.tsx?$",
@@ -165,6 +174,21 @@ module.exports = {
         ],
       },
     },
+    {
+      name: "component-no-fetch-legacy",
+      comment:
+        "CR-118 TECH-DEBT: 27 vi pháº¡m cÅ© cá»§a contracts (apps/sohoptac-web/src/features/*) giá»¯ warn tá»›i háº¡n xá»­ lÃ½ (docs/TECH-DEBT.md); code má»›i (modules/, platform/, shell/) váº«n error theo component-no-fetch",
+      severity: "warn",
+      from: { path: "^apps/sohoptac-web/src/features/[^/]+/components/" },
+      to: {
+        path: [
+          "apps/[^/]+-web/src/features/[^/]+/api\\.tsx?$",
+          "apps/[^/]+-web/src/lib/http",
+          "(^|/)packages/web-kit/src/http",
+        ],
+      },
+    },
+
     {
       name: "test-kit-no-apps",
       comment:
@@ -235,7 +259,7 @@ module.exports = {
       name: "web-mod-no-cross-module",
       comment:
         "CR-118 luáº­t 1: modules/X khÃ´ng import modules/Y (giao tiáº¿p chá»‰ qua route path dáº¡ng chuá»—i + server port ADR-0031; giá»¯ COM-FR-26 P0-AC02)",
-      severity: "warn",
+      severity: "error",
       from: { path: "^apps/sohoptac-web/src/modules/([^/]+)/" },
       to: {
         path: "^apps/sohoptac-web/src/modules/[^/]+/",
@@ -246,7 +270,7 @@ module.exports = {
       name: "web-shell-manifest-only",
       comment:
         "CR-118 luáº­t 2: shell/ chá»‰ import modules/<m>/manifest.ts (khÃ´ng import ruá»™t module)",
-      severity: "warn",
+      severity: "error",
       from: { path: "^apps/sohoptac-web/src/shell/" },
       to: {
         path: "^apps/sohoptac-web/src/modules/",
@@ -256,7 +280,7 @@ module.exports = {
     {
       name: "web-modules-no-shell",
       comment: "CR-118 luáº­t 2 (chiá»u ngÆ°á»£c): modules/ khÃ´ng import shell/",
-      severity: "warn",
+      severity: "error",
       from: { path: "^apps/sohoptac-web/src/modules/" },
       to: { path: "^apps/sohoptac-web/src/shell/" },
     },
@@ -264,8 +288,11 @@ module.exports = {
       name: "web-domain-pure",
       comment:
         "CR-118 luáº­t 3: domain / features/<f>/lib lÃ  hÃ m thuáº§n â€” cáº¥m react, @ai/web-kit, adapters, ui (chá»‰ shared/kernel + kiá»ƒu @ai/contracts)",
-      severity: "warn",
-      from: { path: "^apps/sohoptac-web/src/modules/[^/]+/(domain|features/[^/]+/lib)/" },
+      severity: "error",
+      from: {
+        path: "^apps/sohoptac-web/src/modules/[^/]+/(domain|features/[^/]+/lib)/",
+        pathNot: "\\.test\\.tsx?$",
+      },
       to: {
         path: [
           "(^|/)node_modules/(react|react-dom)/",
@@ -280,7 +307,7 @@ module.exports = {
       name: "web-ui-no-adapters",
       comment:
         "CR-118 luáº­t 4: ui / components / pages khÃ´ng import adapters hay api.ts (Ä‘i qua application/hooks); má»Ÿ rá»™ng component-no-fetch",
-      severity: "warn",
+      severity: "error",
       from: {
         path: "^apps/sohoptac-web/src/modules/[^/]+/(ui|features/[^/]+/(components|pages))/",
       },
@@ -335,9 +362,18 @@ module.exports = {
       name: "no-circular",
       comment: "T-DEP-7: không vòng import",
       severity: "error",
-      from: {},
+      from: { pathNot: "^apps/sohoptac-web/src/features/" },
       to: { circular: true },
     },
+    {
+      name: "no-circular-legacy",
+      comment:
+        "CR-118 TECH-DEBT: 3 vÃ²ng import cÅ© cá»§a contracts (features/partners, contract-approval, contracts-list) giá»¯ warn tá»›i háº¡n xá»­ lÃ½ (docs/TECH-DEBT.md); code má»›i váº«n error theo no-circular",
+      severity: "warn",
+      from: { path: "^apps/sohoptac-web/src/features/" },
+      to: { circular: true },
+    },
+
     {
       name: "not-to-unresolvable",
       comment: "T-DEP-7: import phải resolve được (trừ bun, bun:*)",

@@ -11,7 +11,7 @@ const open = async (page: Page) => {
 };
 
 test("đối tác: chỉ nhóm Cá nhân, không có Sổ Hợp Tác / Công ty trong DOM", async ({ page }) => {
-  await page.goto("/#/feed");
+  await page.goto("/community");
   await as(page, "tp");
   await open(page);
   await expect(page.getByTestId("settings-group-personal")).toBeVisible();
@@ -21,10 +21,10 @@ test("đối tác: chỉ nhóm Cá nhân, không có Sổ Hợp Tác / Công ty 
   expect(await page.locator("body").innerHTML()).not.toContain("Sổ Hợp Tác");
 });
 
-test("Admin: SHT có 5 deep-link ?sec=, tiêu đề 'Áp dụng cho cả công ty' chỉ ở Công ty/SHT", async ({
+test("Admin: mục Sổ Hợp Tác nằm trong dialog Cài đặt, không đổi URL ngoài ?settings=", async ({
   page,
 }) => {
-  await page.goto("/#/feed");
+  await page.goto("/community");
   await as(page, "an");
   await open(page);
   await expect(page.getByTestId("settings-group-sht")).toBeVisible();
@@ -37,25 +37,22 @@ test("Admin: SHT có 5 deep-link ?sec=, tiêu đề 'Áp dụng cho cả công t
   ).not.toHaveAttribute("title", /.+/);
   for (const sec of ["co", "rep", "biz", "scout", "flow"]) {
     await page.getByTestId(`settings-nav-${sec}`).click();
-    await expect(page.getByTestId("settings-sht-link")).toHaveAttribute(
-      "href",
-      new RegExp(`/settings\\?sec=${sec}$`),
-    );
+    await expect(page.getByTestId("settings-sht-link")).toHaveAttribute("data-sec", sec);
+    expect(new URL(page.url()).pathname).toBe("/community");
   }
 });
-
 test("thành viên chủ quản không phải Admin: mục Công ty báo chưa có quyền", async ({ page }) => {
-  await page.goto("/#/feed");
+  await page.goto("/community");
   await as(page, "cuong");
   await open(page);
   await page.getByTestId("settings-nav-brand").click();
   await expect(page.getByTestId("settings-no-perm")).toBeVisible();
 });
 
-test("ngôn ngữ: chọn English đổi nhãn và lưu community.lang", async ({ page }) => {
-  await page.goto("/#/feed");
+test("ngôn ngữ: chọn English đổi nhãn và lưu ai.locale", async ({ page }) => {
+  await page.goto("/community");
   await open(page);
   await page.getByTestId("settings-nav-lang").click();
   await page.getByRole("button", { name: "English" }).click();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("community.lang"))).toBe("en");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("ai.locale"))).toBe("en");
 });

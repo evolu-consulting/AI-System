@@ -140,6 +140,9 @@
       "videoN": "Video {{n}}",
       "maxImages": "Tối đa 10 ảnh",
       "maxVideos": "Tối đa 2 video",
+      "fileUnsupported": "Chưa hỗ trợ tệp này (hiện chỉ ảnh/video)",
+      "attach": "Đính kèm",
+      "collapse": "Thu gọn",
       "publish": "Đăng bài",
       "posted": "Đã đăng bài",
       "postFailed": "Không đăng được"
@@ -370,6 +373,7 @@
       "sht": {
         "lead": "Cấu hình nằm trong Sổ Hợp Tác. Bấm để mở đúng mục.",
         "open": "Mở trong Sổ Hợp Tác",
+        "openHere": "Mở cài đặt Sổ Hợp Tác",
         "readonly": "Chỉ xem; chỉnh trong Sổ Hợp Tác."
       },
       "notify": {

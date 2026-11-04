@@ -28,6 +28,8 @@ export const proxy = {
   // CR-118 §11.2 · tenant_admin sửa luật chọn quy trình + đọc năng lực của công ty mình (`/hub-admin/tenants/:tid/…`).
   "/hub-admin": HUB_URL,
   "/tenants": HUB_URL,
+  // CR-118 N3: SSE `/me/stream` (config.changed) của hub; route SPA không dùng tiền tố này.
+  "/me/stream": HUB_URL,
   "/notifications": spaNavigation,
   // M2-chat · trợ lý: hội thoại (E6/E12 SSE) + dừng run (E15) của Agent Hub.
   "/conversations": HUB_URL,
@@ -46,7 +48,12 @@ export default defineConfig({
       },
     }),
   ],
-  source: { entry: { index: "./src/main.tsx" } },
+  source: {
+    entry: { index: "./src/main.tsx" },
+    // CR-118: adapter mock của module Community (dev/e2e không backend) chỉ có trong bản dựng khi PUBLIC_COMMUNITY_API=mock;
+    // hằng lúc build ⇒ nhánh `import("./mock")` bị bỏ hẳn khỏi bản production.
+    define: { __COMMUNITY_MOCK__: JSON.stringify(process.env.PUBLIC_COMMUNITY_API === "mock") },
+  },
   html: { template: "./index.html", title: "Sổ Hợp Tác" },
   // Lazy compilation + autoCodeSplitting của router → chunk route thiếu module ("reading 'call'") ở dev.
   dev: { lazyCompilation: false },

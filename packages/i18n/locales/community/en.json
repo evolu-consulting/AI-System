@@ -140,6 +140,9 @@
       "videoN": "Video {{n}}",
       "maxImages": "Up to 10 photos",
       "maxVideos": "Up to 2 videos",
+      "fileUnsupported": "This file type is not supported yet (photos/videos only)",
+      "attach": "Attach",
+      "collapse": "Collapse",
       "publish": "Post",
       "posted": "Post published",
       "postFailed": "Could not publish"
@@ -369,6 +372,7 @@
       },
       "sht": {
         "lead": "This is configured in Partner Ledger. Click to open the exact section.",
+        "openHere": "Open Contracts settings",
         "open": "Open in Partner Ledger",
         "readonly": "View only; edit in Partner Ledger."
       },

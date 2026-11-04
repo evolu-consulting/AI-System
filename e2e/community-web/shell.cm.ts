@@ -1,7 +1,7 @@
 // CR-110 · COM-FR-27..31, 43 · e2e lớp vỏ community-web (adapter mock + persona switcher). VIẾT, CHƯA CHẠY (Luật 0b: e2e chạy một lần cuối đợt).
 // Trọng tâm: cách ly đối tác (I1/I3, HT-75/76) — nhóm "Sổ Hợp Tác" và link contracts KHÔNG có trong DOM (không phải CSS ẩn).
 import { expect, type Page, test } from "@playwright/test";
-import { HOST_ORG } from "../../apps/community-web/src/modules/community/adapters/seed";
+import { HOST_ORG } from "../../apps/sohoptac-web/src/modules/community/adapters/seed";
 
 const as = async (page: Page, id: string) => {
   await page.getByLabel("Chọn nhân vật").selectOption(id);
@@ -18,7 +18,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
     test(`${label}: không nhóm SHT, không sht-link, không chữ "${SHT}" ở trang, user-menu và Cài đặt`, async ({
       page,
     }) => {
-      await page.goto("/#/feed");
+      await page.goto("/community");
       await as(page, id);
       await expect(page.getByTestId("nav-group-community")).toBeVisible();
       await expect(page.getByTestId("nav-group-sht")).toHaveCount(0);
@@ -32,7 +32,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
       expect(await page.locator("body").innerHTML()).not.toContain(SHT);
       await page.keyboard.press("Escape");
       // hồ sơ cũng không có link SHT
-      await page.goto("/#/profile");
+      await page.goto("/community/profile");
       await expect(page.getByTestId("nav-group-sht")).toHaveCount(0);
       expect(await page.locator("body").innerHTML()).not.toContain(SHT);
     });
@@ -41,7 +41,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
   test("chủ quản có quyền (Admin): nhóm SHT + đúng 4 link ngoài, href = contractsUrl + đường dẫn, cùng tab", async ({
     page,
   }) => {
-    await page.goto("/#/feed");
+    await page.goto("/community");
     await as(page, "an");
     const g = page.getByTestId("nav-group-sht");
     await expect(g).toBeVisible();
@@ -62,7 +62,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
 test("topbar: brand công ty chủ quản (kể cả đối tác), không navtab / bánh răng / Đăng xuất riêng", async ({
   page,
 }) => {
-  await page.goto("/#/feed");
+  await page.goto("/community");
   for (const id of ["an", "tp"]) {
     await as(page, id);
     await expect(page.locator("header.top .brand")).toContainText(HOST_ORG.name);
@@ -77,7 +77,7 @@ test("topbar: brand công ty chủ quản (kể cả đối tác), không navtab
 test("user-menu role=menu, Tường nhà mở hồ sơ mình, Esc đóng, sidebar xổ/gập nhớ qua tải lại", async ({
   page,
 }) => {
-  await page.goto("/#/feed");
+  await page.goto("/community");
   const avatar = page.getByRole("button", { name: "Tài khoản" });
   await avatar.click();
   await expect(page.getByRole("menu")).toBeVisible();
@@ -85,13 +85,13 @@ test("user-menu role=menu, Tường nhà mở hồ sơ mình, Esc đóng, sideba
   await expect(page.getByRole("menu")).toHaveCount(0);
   await avatar.click();
   await page.getByRole("menuitem", { name: "Tường nhà" }).click();
-  await expect(page).toHaveURL(/#\/profile$/);
+  await expect(page).toHaveURL(/\/community\/profile$/);
 
   // gập nhóm Community ⇒ chuyển trang vẫn gập ⇒ tải lại vẫn gập
   const head = page.getByRole("button", { name: "Community", exact: true });
   await head.click();
   await expect(head).toHaveAttribute("aria-expanded", "false");
-  await page.goto("/#/feed");
+  await page.goto("/community");
   await expect(head).toHaveAttribute("aria-expanded", "false");
   await page.reload();
   await expect(page.getByRole("button", { name: "Community", exact: true })).toHaveAttribute(
@@ -100,20 +100,22 @@ test("user-menu role=menu, Tường nhà mở hồ sơ mình, Esc đóng, sideba
   );
 });
 
-test("#/settings = Bảng tin + hộp thoại; Esc đóng và giữ route nền", async ({ page }) => {
-  await page.goto("/#/settings");
+test("/community?settings=1 = Bảng tin + hộp thoại; Esc đóng và giữ route nền", async ({
+  page,
+}) => {
+  await page.goto("/community?settings=1");
   await expect(page.getByRole("dialog", { name: "Cài đặt" })).toBeVisible();
   await expect(page.getByTestId("composer")).toBeVisible(); // nền = Bảng tin
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page).toHaveURL(/#\/feed$/);
+  await expect(page).toHaveURL(/\/community$/);
 });
 
 test("≤ 900 px / 375 px: sidebar là drawer mở bằng burger, đóng bằng nền; topbar không tràn", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto("/#/feed");
+  await page.goto("/community");
   const feedLink = page.locator("#shell-nav").getByRole("link", { name: "Bảng tin" });
   await expect(feedLink).toBeHidden();
   await page.getByRole("button", { name: "Mở menu" }).click();
