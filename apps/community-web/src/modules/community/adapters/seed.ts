@@ -93,7 +93,7 @@ export type RawPost = {
   body: string;
   fields: Record<string, string | null>;
   cats: string[];
-  media: { kind: "image" | "video"; label: string }[];
+  media: { kind: "image" | "video" | "file"; label: string }[];
   audience: PostAudience;
 };
 export type RawComment = {
