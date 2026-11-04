@@ -18,6 +18,7 @@ import type { AttachmentDeps } from "./modules/attachments/storage";
 import { createFileboxStorage } from "./modules/attachments/storage.filebox";
 import { createLocalStorage } from "./modules/attachments/storage.local";
 import { bootOrchestratorProblem } from "./modules/config/config.service";
+import { assertHubSchemaCaps } from "./modules/config/schema-caps";
 import { missingAdminColumns } from "./modules/config/schema-check";
 import { loadMasterKey, probeMasterKey } from "./modules/dify/credential.service";
 import { checkHubSecretsKey, type SecretKey } from "./modules/secrets/secrets.crypto";
@@ -111,6 +112,19 @@ async function assertAdminSchema(db: Db): Promise<void> {
   process.exit(1);
 }
 
+/** CR-118 · cr118-schema-caps-prod: production thiếu phần schema tuỳ chọn (packs.pack_agents, cột default_app/profile_version) → exit 1. */
+async function assertSchemaCaps(env: Env, db: Db): Promise<void> {
+  try {
+    await assertHubSchemaCaps(env.APP_ENV, db);
+  } catch (err) {
+    logger.fatal("hub-schema-missing", {
+      reason: err instanceof Error ? err.message : String(err),
+    });
+    await db.close();
+    process.exit(1);
+  }
+}
+
 /** HUB-BR-08: Orchestrator thiếu/tắt → exit 1 trước khi mở cổng. */
 async function assertOrchestrator(db: Db): Promise<void> {
   const problem = await bootOrchestratorProblem(db).catch((err) => fail("orchestrator", err));
@@ -179,6 +193,7 @@ async function main(): Promise<void> {
   );
   const db = await openDb(env).catch((err) => fail("db", err));
   await assertAdminSchema(db);
+  await assertSchemaCaps(env, db);
   await assertOrchestrator(db);
   await checkMasterKey(env, db);
   const hubSecretsKey = await checkHubKey(env, db);

@@ -30,6 +30,7 @@ import {
   type TenantState,
   type UserState,
 } from "./config.rules";
+import { refreshHubSchemaCaps } from "./schema-caps";
 
 /** Nguồn dữ liệu của cache — tách khỏi `Db` để unit test thay bằng giả. */
 export type ConfigSource = {
@@ -40,6 +41,8 @@ export type ConfigSource = {
   /** Catalog Admin H2a (P5, P14); nạp cùng phần Admin. */
   loadCatalog(adminVersion: number): Promise<CatalogRows>;
   listen(channel: string, onPayload: (payload: string) => void): Promise<() => Promise<void>>;
+  /** cr118-schema-caps-prod · đầu mỗi lần nạp: còn thiếu schema tuỳ chọn ⇒ dò lại (đủ ⇒ 0 SQL). */
+  refreshSchema?(): Promise<void>;
 };
 
 export function dbConfigSource(db: Db): ConfigSource {
@@ -50,6 +53,9 @@ export function dbConfigSource(db: Db): ConfigSource {
     loadUsers: (ids) => loadUsers(db, ids),
     loadCatalog: (v) => loadCatalogRows(db, v),
     listen: (channel, fn) => db.listen(channel, fn),
+    refreshSchema: async () => {
+      await refreshHubSchemaCaps(db);
+    },
   };
 }
 
@@ -92,6 +98,7 @@ export class ConfigCache {
     this.#opts = opts;
     this.reloadHub = coalesce(async () => {
       const prev = this.#hub?.version;
+      await this.#src.refreshSchema?.();
       this.#hub = await this.#src.loadHub();
       if (prev !== undefined && prev !== this.#hub.version) this.#emit(null);
     });
@@ -251,6 +258,7 @@ export class ConfigCache {
     this.#fullWanted = false;
     const touched = this.#pendingTenants;
     this.#pendingTenants = new Set();
+    await this.#src.refreshSchema?.();
     // Đọc phiên bản TRƯỚC dữ liệu: thay đổi xen giữa làm phiên bản mới hơn ⇒ vòng poll sau nạp lại, không bỏ sót.
     const v = await this.#src.readVersions();
     const { admin } = v;
