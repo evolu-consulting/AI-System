@@ -12,7 +12,7 @@ import type {
   PackWorkflow,
 } from "../../kit/application/pack-runs.ports";
 import type { PackUow } from "../../kit/application/ports";
-import type { ResolvedSlot, RoutedSlot } from "../../kit/application/slot.ports";
+import type { ResolvedSlot, RoutedSlot, RouteSlotFacts } from "../../kit/application/slot.ports";
 import type { FlowStep } from "../domain/approval-flow.types";
 import type { ApprovalFlowRepo } from "./approval-flow.usecase";
 import type { ProductLinksRepo } from "./product-links.usecase";
@@ -50,7 +50,12 @@ export type ApprovalEnginePort = {
   /** CR-105 · quy trình đang chạy của khe cho tenant (gán ⇒ mặc định ⇒ bản xuất bản); vắng/không có ⇒ đường cũ `readFlow`. */
   resolveSlot?(tenantId: string, slot: string): Promise<ResolvedSlot | null>;
   /** CR-118 §11.2 · chọn quy trình theo luật phòng ban của người khởi tạo; vắng ⇒ `resolveSlot`. */
-  routeSlot?(tenantId: string, slot: string, userId: string): Promise<RoutedSlot | null>;
+  routeSlot?(
+    tenantId: string,
+    slot: string,
+    userId: string,
+    facts?: RouteSlotFacts,
+  ): Promise<RoutedSlot | null>;
   /** CR-105 · `source_ref` (sha256 16 hex) của def đã biên dịch — engine tính (lớp 1–2 gói không dùng `node:*`). */
   sourceRefOf?(def: Record<string, unknown>): string;
   /** Mở run (COMMIT, CHƯA kick) gắn `ref` (pack_ref); người gọi `kick()` sau khi gắn run vào HĐ. */
@@ -116,6 +121,8 @@ export type EngineStartRow = {
   engineRunId: string | null;
   /** Người bắt đầu lượt (run mở luôn mang người này — không phải người kích job/Đọc lại). */
   startedBy: string | null;
+  /** cr118-route-kind · loại HĐ (`contracts.deal`: buy|sell|referral|null) — điều kiện luật chọn quy trình. Vắng ⇒ không biết. */
+  deal?: string | null;
 };
 /** cf-dify · dữ liệu HĐ gửi workflow Dify (`openRun` điền input run). */
 export type EngineDifyFacts = {

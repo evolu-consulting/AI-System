@@ -88,7 +88,9 @@ export const processRoutingRules = hub.table("process_routing_rules", {
   tenantId: uuid("tenant_id").notNull(),
   slot: text("slot").notNull(),
   priority: integer("priority").notNull(),
-  condition: jsonb("condition").$type<{ departmentIds?: string[] }>().notNull(),
+  condition: jsonb("condition")
+    .$type<{ departmentIds?: string[]; contractKinds?: string[] }>()
+    .notNull(),
   defId: uuid("def_id").notNull(),
   isDefault: boolean("is_default").notNull().default(false),
 });

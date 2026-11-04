@@ -63,16 +63,22 @@ function scopeFor(u: AuthUser, tenantId: string): HubScope {
   throw appError(u.role === "tenant_admin" ? "NOT_FOUND" : "FORBIDDEN");
 }
 
-/** Hình luật: luật thường cần ≥ 1 phòng ban; ≤ 1 mặc định (điều kiện của mặc định bỏ qua ⇒ lưu `{}`). */
+/** Hình luật: luật thường cần ≥ 1 điều kiện không rỗng (phòng ban và/hoặc loại HĐ — cr118-route-kind); ≤ 1 mặc định (điều kiện
+ *  của mặc định bỏ qua ⇒ lưu `{}`). Điều kiện rỗng không lưu (luật chỉ phòng ban giữ đúng hình `{departmentIds}` cũ). */
 function normalize(b: PutProcessRoutingRequest): rt.RuleWrite[] {
   if (b.rules.filter((r) => r.is_default).length > 1)
     throw routingError("ROUTING_RULES_INVALID", { reason: "multiple_defaults" });
   return b.rules.map((r, i) => {
     const depts = [...new Set(r.condition.departmentIds ?? [])];
-    if (!r.is_default && depts.length === 0)
-      throw routingError("ROUTING_RULES_INVALID", { reason: "no_departments", index: i });
+    const kinds = [...new Set(r.condition.contractKinds ?? [])];
+    if (!r.is_default && depts.length === 0 && kinds.length === 0)
+      throw routingError("ROUTING_RULES_INVALID", { reason: "no_condition", index: i });
+    const cond = {
+      ...(depts.length ? { departmentIds: depts } : {}),
+      ...(kinds.length ? { contractKinds: kinds } : {}),
+    };
     return {
-      condition: r.is_default ? {} : { departmentIds: depts },
+      condition: r.is_default ? {} : cond,
       defId: r.def_id,
       isDefault: r.is_default,
     };

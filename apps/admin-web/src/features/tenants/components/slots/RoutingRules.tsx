@@ -1,4 +1,4 @@
-// CR-118 §11.2 · bộ sửa luật chọn quy trình theo phòng ban của một tenant × khe (platform_admin; logic dùng chung `@ai/web-kit/routing-rules`).
+// CR-118 §11.2 · bộ sửa luật chọn quy trình theo phòng ban (+ loại HĐ, cr118-route-kind) của một tenant × khe (platform_admin; logic dùng chung `@ai/web-kit/routing-rules`).
 // Bản của sohoptac-web (Cài đặt) là bản nhỏ trùng chức năng nhưng dùng token/shadcn riêng của app đó.
 import type { ProcessRouting } from "@ai/contracts/hub-admin";
 import {
@@ -8,13 +8,16 @@ import {
   moveRule,
   newRuleKey,
   patchRule,
+  ROUTING_KINDS,
   type RoutingErrorSpec,
   type RuleDraft,
   removeRule,
   ruleIssues,
   sameRules,
   setDefault,
+  slotHasKinds,
   toggleDepartment,
+  toggleKind,
 } from "@ai/web-kit/routing-rules";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -33,6 +36,7 @@ function Row(p: {
   depts: readonly Dept[];
   bad?: string;
   busy: boolean;
+  kinds: boolean;
   set: (f: (l: RuleDraft[]) => RuleDraft[]) => void;
 }) {
   const { t } = useTranslation();
@@ -121,6 +125,30 @@ function Row(p: {
           ))}
         </ul>
       )}
+      {!r.isDefault && p.kinds && (
+        <fieldset
+          data-testid={`admin-routing-rule-${i}-kinds`}
+          className="flex flex-wrap items-center gap-x-4 gap-y-1"
+        >
+          <legend className="sr-only">{k("kinds")}</legend>
+          <span className="text-caption text-muted-foreground">
+            {k("kinds")}
+            {r.contractKinds.length === 0 ? ` · ${k("anyKind")}` : ""}
+          </span>
+          {ROUTING_KINDS.map((x) => (
+            <label key={x} className="flex items-center gap-1 text-body">
+              <input
+                type="checkbox"
+                data-testid={`admin-routing-rule-${i}-kind-${x}`}
+                checked={r.contractKinds.includes(x)}
+                disabled={busy}
+                onChange={() => set((l) => toggleKind(l, r.key, x))}
+              />
+              {k(`kind${x[0]?.toUpperCase()}${x.slice(1)}`)}
+            </label>
+          ))}
+        </fieldset>
+      )}
       {r.unavailable && (
         <p
           data-testid={`admin-routing-rule-${i}-unavailable`}
@@ -190,6 +218,7 @@ export function RoutingRules({
             depts={departments}
             bad={issues.find((x) => x.key === r.key)?.code}
             busy={act.pending}
+            kinds={slotHasKinds(slot)}
             set={set}
           />
         ))}

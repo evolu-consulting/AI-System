@@ -14,6 +14,7 @@ import {
   sameRules,
   setDefault,
   toggleDepartment,
+  toggleKind,
   toPutBody,
 } from "./routing-rules";
 
@@ -25,6 +26,7 @@ const mk = (key: string, defId = P1, depts: string[] = [], isDefault = false): R
   key,
   defId,
   departmentIds: depts,
+  contractKinds: [],
   isDefault,
 });
 
@@ -157,5 +159,47 @@ describe("cr118-routing-deleted · quy trình không chạy được", () => {
     expect(routingErrorOf({ status: 422, code: "ROUTING_PROCESS_UNAVAILABLE" }).kind).toBe(
       "unavailable",
     );
+  });
+});
+
+describe("cr118-route-kind · điều kiện loại HĐ", () => {
+  test("fromServer/toPutBody khứ hồi; chỉ gửi phần không rỗng", () => {
+    const d = fromServer([
+      {
+        id: "a",
+        priority: 0,
+        condition: { contractKinds: ["sell"] },
+        def_id: P1,
+        is_default: false,
+      },
+      {
+        id: "b",
+        priority: 1,
+        condition: { departmentIds: [D1], contractKinds: ["buy"] },
+        def_id: P2,
+        is_default: false,
+      },
+      { id: "c", priority: 2, condition: { departmentIds: [D2] }, def_id: P1, is_default: false },
+    ]);
+    expect(d.map((r) => r.contractKinds)).toEqual([["sell"], ["buy"], []]);
+    expect(toPutBody(1, d).rules.map((r) => r.condition)).toEqual([
+      { contractKinds: ["sell"] },
+      { departmentIds: [D1], contractKinds: ["buy"] },
+      { departmentIds: [D2] },
+    ]);
+  });
+
+  test("toggleKind giữ thứ tự enum; mặc định xoá loại; sameRules + ruleIssues tính loại", () => {
+    let l = [mk("a"), mk("b", P2, [D1])];
+    l = toggleKind(l, "a", "referral");
+    l = toggleKind(l, "a", "buy");
+    expect(l[0]?.contractKinds).toEqual(["buy", "referral"]);
+    expect(ruleIssues(l, new Set([P1, P2]), new Set([D1]))).toEqual([]);
+    expect(sameRules(l, [mk("a"), mk("b", P2, [D1])])).toBe(false);
+    l = toggleKind(l, "a", "buy");
+    expect(l[0]?.contractKinds).toEqual(["referral"]);
+    l = setDefault(l, "a", true);
+    expect(l[0]).toMatchObject({ isDefault: true, contractKinds: [] });
+    expect(toggleKind(l, "a", "sell")[0]?.contractKinds).toEqual([]);
   });
 });

@@ -1,5 +1,6 @@
 // CR-118 §11.2 · SQL tập quy trình đã gán + luật chọn quy trình (hub 0087). Mỗi hàm MỘT câu cố định, lọc tenant TƯỜNG MINH
 // (chạy được cả scope system lẫn scope user của tenant đích — RLS thêm một lớp). Mảng qua MỘT tham số JSON (Luật 4c).
+import type { RoutingCondition } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 
@@ -83,7 +84,7 @@ export async function deleteAssigned(
 export type RuleRow = {
   id: string;
   priority: number;
-  condition: { departmentIds?: string[] };
+  condition: RoutingCondition;
   def_id: string;
   is_default: boolean;
 };

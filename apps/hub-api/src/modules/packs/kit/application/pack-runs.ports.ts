@@ -4,7 +4,7 @@
 // contract-flow S1a · cầu v2: def gói (`ensureDef`), run gắn bản ghi gói (`ref`), quyết task (`act`, scope user ⇒ canAct/RLS
 // của engine), đọc dòng thời gian (`stepsView`) + lời gọi hệ thống lọc tenant tường minh.
 
-import type { ResolvedSlot, RoutedSlot } from "./slot.ports";
+import type { ResolvedSlot, RoutedSlot, RouteSlotFacts } from "./slot.ports";
 
 /** Người gọi = user của JWT (cấu trúc khớp `AuthUser`). */
 export type PackRunCaller = { userId: string; tenantId: string; role: string };
@@ -148,7 +148,12 @@ export type PackRunsPort = {
   /** CR-105 · quy trình đang chạy của khe cho tenant (gán ⇒ mặc định ⇒ bản xuất bản), MỘT câu scope system; không có ⇒ null. */
   resolveSlot(tenantId: string, slot: string): Promise<ResolvedSlot | null>;
   /** CR-118 §11.2 · như `resolveSlot` + luật chọn quy trình theo phòng ban người khởi tạo (MỘT câu); không có luật ⇒ như cũ. */
-  routeSlot?(tenantId: string, slot: string, userId: string): Promise<RoutedSlot | null>;
+  routeSlot?(
+    tenantId: string,
+    slot: string,
+    userId: string,
+    facts?: RouteSlotFacts,
+  ): Promise<RoutedSlot | null>;
   /** CR-105 · `source_ref` của def đã biên dịch (sha256 16 hex, thuần) — gói gửi lại ở `ensureDef`/`start.slot`. */
   sourceRefOf(def: Record<string, unknown>): string;
   /** S1a · quyết task duyệt mở của run trong scope USER người quyết (canAct/RLS/exclude_starter của engine; lỗi ném như

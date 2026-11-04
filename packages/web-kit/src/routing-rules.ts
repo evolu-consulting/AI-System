@@ -5,10 +5,18 @@ import type { ProcessRoutingRule, PutProcessRoutingRequest } from "@ai/contracts
 /** = `ROUTING_RULES_MAX` của hợp đồng (giữ số ở đây để không kéo zod schema vào chunk web). */
 export const RULES_MAX = 50;
 
+/** = `ROUTING_CONTRACT_KINDS` của hợp đồng (Mua / Bán / Giới thiệu) — thứ tự hiển thị. */
+export const ROUTING_KINDS = ["buy", "sell", "referral"] as const;
+export type RoutingKind = (typeof ROUTING_KINDS)[number];
+/** Khe có loại HĐ lúc khởi tạo (duyệt hợp đồng) ⇒ UI hiện ô chọn loại; khe khác bỏ qua điều kiện này. */
+export const slotHasKinds = (slot: string): boolean => slot === "contracts.approval";
+
 export type RuleDraft = {
   /** Khoá React ổn định (id luật từ server hoặc khoá tạm `n<k>`). */
   key: string;
   departmentIds: string[];
+  /** cr118-route-kind · loại HĐ (`ROUTING_CONTRACT_KINDS`); rỗng = mọi loại. AND với phòng ban. */
+  contractKinds: RoutingKind[];
   defId: string;
   isDefault: boolean;
   /** cr118-routing-deleted · từ server: quy trình của luật bị xoá / chưa xuất bản ⇒ không lưu được cho tới khi sửa hoặc xoá luật. */
@@ -30,10 +38,21 @@ export function fromServer(rules: readonly ServerRule[]): RuleDraft[] {
     .map((r) => ({
       key: r.id,
       departmentIds: [...(r.condition.departmentIds ?? [])],
+      contractKinds: [...(r.condition.contractKinds ?? [])],
       defId: r.def_id,
       isDefault: r.is_default,
       ...(r.unavailable ? { unavailable: r.unavailable } : {}),
     }));
+}
+
+/** Điều kiện gửi server: chỉ phần không rỗng (luật chỉ phòng ban giữ hình `{departmentIds}` cũ). */
+function conditionOf(d: RuleDraft): PutProcessRoutingRequest["rules"][number]["condition"] {
+  return {
+    ...(d.departmentIds.length || !d.contractKinds.length
+      ? { departmentIds: [...d.departmentIds] }
+      : {}),
+    ...(d.contractKinds.length ? { contractKinds: [...d.contractKinds] } : {}),
+  };
 }
 
 /** Thân PUT: luật thường theo thứ tự đang có, luật mặc định (không điều kiện) xếp cuối. */
@@ -42,7 +61,7 @@ export function toPutBody(version: number, drafts: readonly RuleDraft[]): PutPro
   return {
     version,
     rules: ordered.map((d) => ({
-      condition: d.isDefault ? {} : { departmentIds: [...d.departmentIds] },
+      condition: d.isDefault ? {} : conditionOf(d),
       def_id: d.defId,
       is_default: d.isDefault,
     })),
@@ -54,7 +73,7 @@ export const canAddRule = (list: readonly RuleDraft[]): boolean => list.length <
 /** Thêm một luật thường ở cuối (chưa chọn phòng ban); quá trần ⇒ không đổi. */
 export function addRule(list: readonly RuleDraft[], defId: string, key: string): RuleDraft[] {
   if (!canAddRule(list)) return [...list];
-  return [...list, { key, departmentIds: [], defId, isDefault: false }];
+  return [...list, { key, departmentIds: [], contractKinds: [], defId, isDefault: false }];
 }
 
 export const removeRule = (list: readonly RuleDraft[], key: string): RuleDraft[] =>
@@ -91,7 +110,9 @@ export const patchRule = (
 export function setDefault(list: readonly RuleDraft[], key: string, on: boolean): RuleDraft[] {
   return list.map((r) => {
     if (r.key === key)
-      return on ? { ...r, isDefault: true, departmentIds: [] } : { ...r, isDefault: false };
+      return on
+        ? { ...r, isDefault: true, departmentIds: [], contractKinds: [] }
+        : { ...r, isDefault: false };
     return on ? { ...r, isDefault: false } : r;
   });
 }
@@ -114,6 +135,21 @@ export function toggleDepartment(
   });
 }
 
+/** cr118-route-kind · bật/tắt một loại HĐ trong luật (giữ thứ tự `ROUTING_KINDS`). */
+export function toggleKind(
+  list: readonly RuleDraft[],
+  key: string,
+  kind: RoutingKind,
+): RuleDraft[] {
+  return list.map((r) => {
+    if (r.key !== key || r.isDefault) return r;
+    const on = new Set(r.contractKinds);
+    if (on.has(kind)) on.delete(kind);
+    else on.add(kind);
+    return { ...r, contractKinds: ROUTING_KINDS.filter((k) => on.has(k)) };
+  });
+}
+
 export const sameRules = (a: readonly RuleDraft[], b: readonly RuleDraft[]): boolean =>
   a.length === b.length &&
   a.every((r, i) => {
@@ -123,14 +159,16 @@ export const sameRules = (a: readonly RuleDraft[], b: readonly RuleDraft[]): boo
       r.defId === o.defId &&
       r.isDefault === o.isDefault &&
       r.departmentIds.length === o.departmentIds.length &&
-      r.departmentIds.every((d, k) => d === o.departmentIds[k])
+      r.departmentIds.every((d, k) => d === o.departmentIds[k]) &&
+      r.contractKinds.length === o.contractKinds.length &&
+      r.contractKinds.every((d, k) => d === o.contractKinds[k])
     );
   });
 
 export type RuleIssueCode = "noDepartment" | "notAssigned" | "deptGone" | "unavailable";
 export type RuleIssue = { key: string; code: RuleIssueCode };
 
-/** Kiểm trước khi lưu (server vẫn là nguồn thật): luật thường cần ≥ 1 phòng ban; quy trình/phòng ban phải còn hợp lệ. */
+/** Kiểm trước khi lưu (server vẫn là nguồn thật): luật thường cần ≥ 1 điều kiện (phòng ban hoặc loại HĐ); quy trình/phòng ban phải còn hợp lệ. */
 export function ruleIssues(
   list: readonly RuleDraft[],
   assigned: ReadonlySet<string>,
@@ -141,7 +179,9 @@ export function ruleIssues(
     if (r.unavailable) out.push({ key: r.key, code: "unavailable" });
     else if (!assigned.has(r.defId)) out.push({ key: r.key, code: "notAssigned" });
     if (r.isDefault) continue;
-    if (r.departmentIds.length === 0) out.push({ key: r.key, code: "noDepartment" });
+    // `noDepartment` = luật thường chưa có điều kiện nào (phòng ban / loại HĐ).
+    if (r.departmentIds.length === 0 && r.contractKinds.length === 0)
+      out.push({ key: r.key, code: "noDepartment" });
     else if (r.departmentIds.some((d) => !departments.has(d)))
       out.push({ key: r.key, code: "deptGone" });
   }

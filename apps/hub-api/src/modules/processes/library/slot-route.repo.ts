@@ -5,7 +5,7 @@
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { Db } from "../../../lib/db";
-import type { RoutedSlot } from "../../packs/kit/application/slot.ports";
+import type { RoutedSlot, RouteSlotFacts } from "../../packs/kit/application/slot.ports";
 import { pickProcess, type RoutingRule } from "./routing.rules";
 import { RESOLVE_SLOT_SQL } from "./slot-resolve.repo";
 
@@ -46,12 +46,13 @@ export const ROUTE_SLOT_SQL = (tenantId: string, slot: string, userId: string | 
     b.def_id, b.name, b.rel_version, b.slot_body, b.is_default
   from (select 1) one left join lateral (${RESOLVE_SLOT_SQL(tenantId, slot)}) b on true`;
 
-/** Quy trình của khe cho người khởi tạo `userId`; tham số sai / khe không có bản áp được (không luật) ⇒ null. */
+/** Quy trình của khe cho người khởi tạo `userId` (+ `facts` của lượt, vd loại HĐ — cr118-route-kind); tham số sai / khe không có bản áp được (không luật) ⇒ null. */
 export async function routeSlot(
   db: Db,
   tenantId: string,
   slot: string,
   userId: string | null,
+  facts: RouteSlotFacts = {},
 ): Promise<RoutedSlot | null> {
   if (!UUID.test(tenantId) || !SLOT.test(slot) || (userId !== null && !UUID.test(userId)))
     return null;
@@ -71,7 +72,7 @@ export async function routeSlot(
       ruleId: null,
     };
   }
-  const p = pickProcess(rules, r.depts ?? []);
+  const p = pickProcess(rules, r.depts ?? [], facts);
   if (p.kind === "none") return { blocked: "route_none", ruleId: null };
   const c = r.defs?.[p.rule.defId];
   if (!c) return { blocked: "route_unavailable", ruleId: p.rule.id };

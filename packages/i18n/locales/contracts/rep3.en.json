@@ -113,6 +113,9 @@
           "default": "Default",
           "defaultCond": "When no rule matches",
           "pickDepartments": "Pick departments",
+          "pickKinds": "Contract kind",
+          "anyKind": "Any kind",
+          "kind": { "buy": "Purchase", "sell": "Sell", "referral": "Referral" },
           "noDepartments": "The company has no departments.",
           "unassigned": "(process no longer assigned)",
           "unavailable": {
@@ -121,7 +124,7 @@
           }
         },
         "issue": {
-          "noDepartment": "Pick at least one department, or make it the default.",
+          "noDepartment": "Pick at least one department or contract kind, or make it the default.",
           "notAssigned": "This process is no longer assigned to the company.",
           "unavailable": "This rule's process cannot run: pick another process or remove the rule before saving.",
           "deptGone": "A department no longer exists."
@@ -131,7 +134,7 @@
           "notAssigned": "The process is not assigned to the company by the platform admin.",
           "unavailable": "A rule uses a deleted or unpublished process, so it cannot be saved. Remove the rule or pick another process.",
           "deptInvalid": "A department does not belong to the company.",
-          "rulesInvalid": "Invalid rules: each normal rule needs departments and only one default is allowed.",
+          "rulesInvalid": "Invalid rules: each normal rule needs departments or a contract kind, and only one default is allowed.",
           "inUse": "The process is used by rules.",
           "forbidden": "You are not allowed to edit routing rules.",
           "other": "Could not save the rules. Try again later."

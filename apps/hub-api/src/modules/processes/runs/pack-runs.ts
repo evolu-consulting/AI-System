@@ -335,7 +335,7 @@ export function packRunsOf(d: ProcessDeps): PackRunsPort {
       return { runId: s.id, kick: () => d.launcher.kick(s.id) };
     },
     resolveSlot: (tenantId, slot) => resolveSlot(d.db, tenantId, slot),
-    routeSlot: (tenantId, slot, userId) => routeSlot(d.db, tenantId, slot, userId),
+    routeSlot: (tenantId, slot, userId, facts) => routeSlot(d.db, tenantId, slot, userId, facts),
     sourceRefOf: defSourceRef,
     cancel: (u, runId) => cancelOwn(d, gates, u, runId),
     async outcomes(u, runIds) {

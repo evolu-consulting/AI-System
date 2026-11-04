@@ -19,16 +19,24 @@ export const HUB_ADMIN_ROUTING_ERRORS = {
   ROUTING_PROCESS_UNAVAILABLE: 422,
   /** Phòng ban không thuộc tenant. */
   ROUTING_DEPARTMENT_INVALID: 422,
-  /** Luật lệch hình (luật thường không có phòng ban / > 1 mặc định). */
+  /** Luật lệch hình (luật thường không có điều kiện / > 1 mặc định). */
   ROUTING_RULES_INVALID: 422,
   /** Bỏ gán quy trình đang được luật dùng — `details.rules` = luật bị ảnh hưởng. */
   ROUTING_PROCESS_IN_USE: 409,
 } as const;
 export type HubAdminRoutingErrorCode = keyof typeof HUB_ADMIN_ROUTING_ERRORS;
 
-/** Điều kiện bản đầu: phòng ban người khởi tạo (gồm phòng ban con). Mở rộng sau theo cùng cấu trúc. */
+/** cr118-route-kind · loại HĐ (= `CONTRACT_DEALS` của pack-contracts: Mua / Bán / Giới thiệu; giữ bản sao để hub-admin không
+ *  kéo zod của gói hợp đồng). */
+export const ROUTING_CONTRACT_KINDS = ["buy", "sell", "referral"] as const;
+export const RoutingContractKindSchema = z.enum(ROUTING_CONTRACT_KINDS);
+export type RoutingContractKind = z.infer<typeof RoutingContractKindSchema>;
+
+/** Điều kiện: phòng ban người khởi tạo (gồm phòng ban con) VÀ loại HĐ. Cả hai tuỳ chọn, kết hợp AND; rỗng/vắng = mọi giá trị.
+ *  Luật thường cần ≥ 1 điều kiện không rỗng. Khe không có loại HĐ ⇒ bỏ qua `contractKinds`. */
 export const RoutingConditionSchema = z.strictObject({
   departmentIds: z.array(UuidSchema).max(ROUTING_DEPTS_MAX).optional(),
+  contractKinds: z.array(RoutingContractKindSchema).max(ROUTING_CONTRACT_KINDS.length).optional(),
 });
 export type RoutingCondition = z.infer<typeof RoutingConditionSchema>;
 

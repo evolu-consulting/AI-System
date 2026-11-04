@@ -9,11 +9,14 @@ import {
   newRuleKey,
   patchRule,
   type RoutingErrorSpec,
+  type RoutingKind,
   removeRule,
   ruleIssues,
   sameRules,
   setDefault,
+  slotHasKinds,
   toggleDepartment,
+  toggleKind,
 } from "@ai/web-kit/routing-rules";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -46,6 +49,7 @@ export function RoutingEditor({
   const issues = ruleIssues(rules, assigned, new Set(departments.map((d) => d.id)));
   const dirty = !sameRules(rules, base);
   const first = data.processes[0]?.def_id;
+  const kinds = slotHasKinds(slot);
 
   const edit = (next: typeof rules) => {
     setRules(next);
@@ -83,6 +87,9 @@ export function RoutingEditor({
             onRemove={() => edit(removeRule(rules, r.key))}
             onProcess={(defId) => edit(patchRule(rules, r.key, { defId }))}
             onToggleDept={(id) => edit(toggleDepartment(rules, r.key, id))}
+            {...(kinds
+              ? { onToggleKind: (k: RoutingKind) => edit(toggleKind(rules, r.key, k)) }
+              : {})}
             onDefault={(on) => edit(setDefault(rules, r.key, on))}
           />
         ))}

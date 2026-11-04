@@ -113,6 +113,9 @@
           "default": "Mặc định",
           "defaultCond": "Khi không luật nào khớp",
           "pickDepartments": "Chọn phòng ban",
+          "pickKinds": "Loại hợp đồng",
+          "anyKind": "Mọi loại hợp đồng",
+          "kind": { "buy": "Mua", "sell": "Bán", "referral": "Giới thiệu" },
           "noDepartments": "Công ty chưa có phòng ban.",
           "unassigned": "(quy trình không còn được gán)",
           "unavailable": {
@@ -121,7 +124,7 @@
           }
         },
         "issue": {
-          "noDepartment": "Chọn ít nhất một phòng ban, hoặc đặt làm mặc định.",
+          "noDepartment": "Chọn ít nhất một phòng ban hoặc loại hợp đồng, hoặc đặt làm mặc định.",
           "notAssigned": "Quy trình này không còn được gán cho công ty.",
           "deptGone": "Có phòng ban không còn tồn tại.",
           "unavailable": "Quy trình của luật này không chạy được: hãy chọn quy trình khác hoặc xoá luật, rồi mới lưu được."
@@ -131,7 +134,7 @@
           "notAssigned": "Quy trình chưa được quản trị nền tảng gán cho công ty.",
           "unavailable": "Có luật đang dùng quy trình đã xoá hoặc chưa xuất bản nên chưa lưu được. Hãy xoá hoặc đổi quy trình của luật đó.",
           "deptInvalid": "Có phòng ban không thuộc công ty.",
-          "rulesInvalid": "Luật không hợp lệ: mỗi luật thường cần phòng ban và chỉ một luật mặc định.",
+          "rulesInvalid": "Luật không hợp lệ: mỗi luật thường cần phòng ban hoặc loại hợp đồng và chỉ một luật mặc định.",
           "inUse": "Quy trình đang được luật dùng.",
           "forbidden": "Bạn không có quyền sửa luật chọn quy trình.",
           "other": "Không lưu được luật. Thử lại sau."

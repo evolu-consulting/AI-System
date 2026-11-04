@@ -585,6 +585,11 @@
         "default": "Default",
         "defaultCond": "When no rule matches",
         "noDepartments": "The company has no departments.",
+        "kinds": "Contract kind",
+        "anyKind": "Any contract kind",
+        "kindBuy": "Purchase",
+        "kindSell": "Sale",
+        "kindReferral": "Referral",
         "unassigned": "(process no longer assigned)",
         "unavailableDeleted": "Process was deleted",
         "unavailableUnpublished": "Process not published",
@@ -594,7 +599,7 @@
         "discard": "Discard changes",
         "reload": "Reload",
         "issue": {
-          "noDepartment": "Pick at least one department, or make it the default.",
+          "noDepartment": "Pick at least one department or contract kind, or make it the default.",
           "notAssigned": "This process is no longer assigned.",
           "deptGone": "A department no longer exists.",
           "unavailable": "This rule's process cannot run: pick another process or remove the rule before saving."
@@ -604,7 +609,7 @@
           "notAssigned": "The process is not assigned to the company.",
           "unavailable": "A rule uses a deleted or unpublished process, so it cannot be saved. Remove the rule or pick another process.",
           "deptInvalid": "A department does not belong to the company.",
-          "rulesInvalid": "Invalid rules: normal rules need departments, only one default.",
+          "rulesInvalid": "Invalid rules: normal rules need departments or a contract kind, only one default.",
           "inUse": "Cannot unassign: the process is used by rule(s) {rules}. Edit or remove those rules first.",
           "forbidden": "Only the platform admin can assign processes.",
           "other": "Could not complete. Try again later."

@@ -58,8 +58,9 @@ function startStateQ(tx: Tx, tid: string): ApprovalEngineRepo["startState"] {
       mode: string | null;
       engine_run_id: string | null;
       started_by: string | null;
+      deal: string | null;
     }>(sql`
-      select a.id as approval_id, a.status as a_status, a.mode, a.engine_run_id, a.started_by
+      select a.id as approval_id, a.status as a_status, a.mode, a.engine_run_id, a.started_by, c.deal
       from contracts.contracts c
       left join contracts.approvals a on a.id = c.run_id and a.tenant_id = c.tenant_id
       where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
@@ -70,6 +71,7 @@ function startStateQ(tx: Tx, tid: string): ApprovalEngineRepo["startState"] {
       mode: r.mode,
       engineRunId: r.engine_run_id,
       startedBy: r.started_by,
+      deal: r.deal,
     };
     return out;
   };

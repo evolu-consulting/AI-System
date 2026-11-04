@@ -57,6 +57,23 @@ export type OpenRunArgs = {
 
 type Deps = { bridge: ApprovalEngineBridge; groups: Pick<FlowGroups, "idsOf"> };
 
+/** CR-118 §11.2 · có người khởi tạo + cổng hỗ trợ ⇒ chọn theo luật (không luật ⇒ như resolveSlot). cr118-route-kind · kèm loại
+ *  HĐ của lượt (`deal` vắng = chưa đọc ⇒ luật bỏ qua điều kiện loại). */
+const pickSlot = (
+  port: ApprovalEnginePort,
+  tenantId: string,
+  starter: string | null | undefined,
+  deal: string | null | undefined,
+) =>
+  starter && port.routeSlot
+    ? port.routeSlot(
+        tenantId,
+        APPROVAL_SLOT,
+        starter,
+        deal === undefined ? {} : { contractKind: deal },
+      )
+    : (port.resolveSlot?.(tenantId, APPROVAL_SLOT) ?? Promise.resolve(null));
+
 /**
  * Mẫu của khe cho tenant. `null` = khe chưa có bản áp được; `{invalid}` = body hỏng (`FLOW_INVALID`) hoặc thiếu mã Group ở
  * tenant (`FLOW_GROUP_MISSING:<mã>`) ⇒ CR-107: lượt kẹt `mode='engine'` chờ owner "Mở lại quy trình" (không về máy cũ).
@@ -65,14 +82,11 @@ export async function slotFlowOf(
   d: Deps,
   tenantId: string,
   starter?: string | null,
+  deal?: string | null,
 ): Promise<SlotFlow | { invalid: string } | null> {
   const port = d.bridge.port;
   if (!port?.resolveSlot || !port.sourceRefOf) return null;
-  // CR-118 §11.2 · có người khởi tạo + cổng hỗ trợ ⇒ chọn theo luật phòng ban (không luật ⇒ như resolveSlot).
-  const r =
-    starter && port.routeSlot
-      ? await port.routeSlot(tenantId, APPROVAL_SLOT, starter)
-      : await port.resolveSlot(tenantId, APPROVAL_SLOT);
+  const r = await pickSlot(port, tenantId, starter, deal);
   if (!r) return null;
   if ("blocked" in r)
     return { invalid: r.blocked === "route_none" ? FLOW_ROUTE_NONE : FLOW_ROUTE_UNAVAILABLE };

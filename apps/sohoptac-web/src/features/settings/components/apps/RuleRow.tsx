@@ -1,9 +1,10 @@
-// CR-118 §11.2 · một dòng luật: thứ tự (lên/xuống), phòng ban (nhiều), quy trình (chỉ trong số đã gán), mặc định, xoá.
+// CR-118 §11.2 · một dòng luật: thứ tự (lên/xuống), phòng ban (nhiều) + loại HĐ (cr118-route-kind, khe có loại), quy trình (chỉ trong số đã gán), mặc định, xoá.
 import type { AssignedProcess } from "@ai/contracts/hub-admin";
-import type { RuleDraft, RuleIssueCode } from "@ai/web-kit/routing-rules";
+import type { RoutingKind, RuleDraft, RuleIssueCode } from "@ai/web-kit/routing-rules";
 import { useTranslation } from "react-i18next";
 import { FIELD } from "../controls";
 import { type Dept, DeptPicker } from "./DeptPicker";
+import { KindPicker } from "./KindPicker";
 
 export type RuleRowProps = {
   rule: RuleDraft;
@@ -17,6 +18,8 @@ export type RuleRowProps = {
   onRemove: () => void;
   onProcess: (defId: string) => void;
   onToggleDept: (deptId: string) => void;
+  /** Vắng ⇒ khe không có loại HĐ (ẩn ô chọn loại). */
+  onToggleKind?: (k: RoutingKind) => void;
   onDefault: (on: boolean) => void;
 };
 
@@ -55,13 +58,23 @@ export function RuleRow(p: RuleRowProps) {
       {p.rule.isDefault ? (
         <p className="self-center text-body text-dim">{a("rule.defaultCond")}</p>
       ) : (
-        <DeptPicker
-          testId={`${id}-depts`}
-          value={p.rule.departmentIds}
-          departments={p.departments}
-          disabled={p.disabled}
-          onToggle={p.onToggleDept}
-        />
+        <div className="flex min-w-0 flex-col gap-2">
+          <DeptPicker
+            testId={`${id}-depts`}
+            value={p.rule.departmentIds}
+            departments={p.departments}
+            disabled={p.disabled}
+            onToggle={p.onToggleDept}
+          />
+          {p.onToggleKind && (
+            <KindPicker
+              testId={`${id}-kinds`}
+              value={p.rule.contractKinds}
+              disabled={p.disabled}
+              onToggle={p.onToggleKind}
+            />
+          )}
+        </div>
       )}
       <select
         data-testid={`${id}-process`}

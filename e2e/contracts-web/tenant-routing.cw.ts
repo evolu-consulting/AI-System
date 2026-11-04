@@ -19,7 +19,7 @@ const SLOT = "contracts.approval";
 type Rule = {
   id: string;
   priority: number;
-  condition: { departmentIds?: string[] };
+  condition: { departmentIds?: string[]; contractKinds?: string[] };
   def_id: string;
   is_default: boolean;
 };
@@ -92,7 +92,11 @@ async function install(page: Page, role: "tenant_admin" | "member") {
       return json(r, 200, { slot: SLOT, version: st.version, rules: st.rules, processes });
     const body = r.request().postDataJSON() as {
       version: number;
-      rules: { condition: { departmentIds?: string[] }; def_id: string; is_default: boolean }[];
+      rules: {
+        condition: { departmentIds?: string[]; contractKinds?: string[] };
+        def_id: string;
+        is_default: boolean;
+      }[];
     };
     st.puts.push(body);
     if (st.conflictNext || body.version !== st.version) {
@@ -147,6 +151,36 @@ test("tenant admin thêm luật theo phòng ban ⇒ người phòng đó khởi 
   // Luật lưu đúng: người phòng Kinh doanh ⇒ quy trình "Duyệt nhanh Kinh doanh" (hub chọn bằng pickProcess; xem int routing-launch).
   const saved = st.rules.find((r) => r.condition.departmentIds?.includes(D_SALES));
   expect(saved?.def_id).toBe(P_SALES);
+  await expect(dlg.getByTestId("routing-save")).toBeDisabled();
+});
+
+test("cr118-route-kind · luật phòng ban + loại HĐ (Mua) ⇒ PUT gửi contractKinds", async ({
+  page,
+}) => {
+  const { st } = await install(page, "tenant_admin");
+  const dlg = await open(page);
+  await dlg.getByTestId("routing-add").click();
+  const rule = dlg.getByTestId("routing-rule-0");
+  await rule.getByTestId("routing-rule-0-depts").click();
+  await rule.getByTestId(`routing-rule-0-depts-${D_SALES}`).check();
+  await rule.getByTestId("routing-rule-0-depts").locator("summary").click(); // đóng hộp phòng ban
+  await expect(rule.getByTestId("routing-rule-0-kinds")).toContainText("Mọi loại hợp đồng");
+  await rule.getByTestId("routing-rule-0-kinds").locator("summary").click();
+  await rule.getByTestId("routing-rule-0-kinds-buy").check();
+  await expect(rule.getByTestId("routing-rule-0-kinds").locator("summary")).toHaveText("Mua");
+  await rule.getByTestId("routing-rule-0-process").selectOption(P_SALES);
+  await dlg.getByTestId("routing-save").click();
+  await expect.poll(() => st.puts.length).toBe(1);
+  expect(st.puts[0]).toEqual({
+    version: 0,
+    rules: [
+      {
+        condition: { departmentIds: [D_SALES], contractKinds: ["buy"] },
+        def_id: P_SALES,
+        is_default: false,
+      },
+    ],
+  });
   await expect(dlg.getByTestId("routing-save")).toBeDisabled();
 });
 

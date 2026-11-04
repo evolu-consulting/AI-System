@@ -29,6 +29,12 @@ const X = tenantId(1191);
 const Z = tenantId(1192); // không luật ⇒ đường cũ
 const U = { north: userId(1191), ops: userId(1192), none: userId(1193), z: userId(1194) };
 const KEYS = ["ke-toan", "phap-che"];
+// cr118-route-kind · tenant W: luật phòng ban × loại HĐ (không mặc định).
+const W = tenantId(1195);
+const UW = { kd: userId(1195), bgd: userId(1196) };
+const kindLib = { C: "" };
+const kindRule = { kdBuy: "", kdSell: "", bgdBuy: "" };
+let gw: Map<string, string>;
 
 let o: Sql;
 let db: Db;
@@ -75,7 +81,13 @@ async function fakeStart(u: { tenantId: string }, req: EngineStartRequest) {
   runs.set(runId, { stages: structuredClone(d.stages), slot: structuredClone(req.slot) });
   return { runId, kick: async () => {} };
 }
-type Appr = { starter: string; mode: string; run: string | null; reason?: string };
+type Appr = {
+  starter: string;
+  mode: string;
+  run: string | null;
+  reason?: string;
+  deal?: string | null;
+};
 const appr = new Map<string, Appr>();
 const uow = {
   tenant: async (_who: unknown, fn: (r: unknown) => Promise<unknown>) =>
@@ -85,7 +97,8 @@ const uow = {
           const a = appr.get(id);
           if (!a) return null;
           const st = { approvalId: id, approvalStatus: "level1", mode: a.mode };
-          return { ...st, engineRunId: a.run, startedBy: a.starter };
+          const deal = a.deal !== undefined ? { deal: a.deal } : {};
+          return { ...st, engineRunId: a.run, startedBy: a.starter, ...deal };
         },
         attach: async (id: string, _a: string, x: { runId: string }) => {
           Object.assign(appr.get(id) as Appr, { mode: "engine", run: x.runId });
@@ -113,16 +126,16 @@ const groupsOf = {
     return new Set(rows.map((r) => r.id));
   },
 };
-const open = async (n: number, starter: string) => {
+const open = async (n: number, starter: string, o: { t?: string; deal?: string | null } = {}) => {
   const id = contractId(n);
-  appr.set(id, { starter, mode: "machine", run: null });
+  appr.set(id, { starter, mode: "machine", run: null, ...("deal" in o ? { deal: o.deal } : {}) });
   const start = startEngineApproval({
     bridge: { port },
     uow: uow as never,
     groups: groupsOf as never,
     warn: () => {},
   });
-  const out = await start({ tenantId: X, userId: starter }, id);
+  const out = await start({ tenantId: o.t ?? X, userId: starter }, id);
   const a = appr.get(id) as Appr;
   return { out, a, run: a.run ? runs.get(a.run) : undefined };
 };
@@ -157,6 +170,28 @@ beforeAll(async () => {
     returning id::text as id, is_default as f`;
   rule.kd = rows.find((r) => !r.f)?.id as string;
   rule.dflt = rows.find((r) => r.f)?.id as string;
+  await o`insert into admin.tenants (id, key, name) values (${W}, 't1195', 'W')`;
+  await users(o, W, 2, { from: 1195 });
+  gw = await groups(o, W, [...KEYS, "kiem-soat", "kinh-doanh", "bgd"]);
+  const w = (k: string) => gw.get(k) as string;
+  await o`insert into admin.departments (tenant_id, group_id, parent_group_id) values
+    (${W}, ${w("kinh-doanh")}, null), (${W}, ${w("bgd")}, null)`;
+  await members(o, W, w("kinh-doanh"), [UW.kd]);
+  await members(o, W, w("bgd"), [UW.bgd]);
+  kindLib.C = await libDef("rl-c", "QT C", { steps: [review("ks", "kiem-soat")] });
+  await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values
+    (${W}, ${lib.A}, ${APPROVAL_SLOT}), (${W}, ${lib.B}, ${APPROVAL_SLOT}), (${W}, ${kindLib.C}, ${APPROVAL_SLOT})`;
+  await o`insert into hub.process_routings (tenant_id, slot) values (${W}, ${APPROVAL_SLOT})`;
+  const cond = (dept: string, kind: string) =>
+    JSON.stringify({ departmentIds: [w(dept)], contractKinds: [kind] });
+  const kr = await o<{ id: string; p: number }[]>`insert into hub.process_routing_rules
+      (tenant_id, slot, priority, condition, def_id, is_default)
+    values (${W}, ${APPROVAL_SLOT}, 0, ${cond("kinh-doanh", "buy")}::text::jsonb, ${lib.A}, false),
+      (${W}, ${APPROVAL_SLOT}, 1, ${cond("kinh-doanh", "sell")}::text::jsonb, ${lib.B}, false),
+      (${W}, ${APPROVAL_SLOT}, 2, ${cond("bgd", "buy")}::text::jsonb, ${kindLib.C}, false)
+    returning id::text as id, priority as p`;
+  const byP = (p: number) => kr.find((r) => Number(r.p) === p)?.id as string;
+  Object.assign(kindRule, { kdBuy: byP(0), kdSell: byP(1), bgdBuy: byP(2) });
   const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((t) => ({
     key: t.name,
     name: t.name,
@@ -252,6 +287,35 @@ describe("CR-118 §11.2 · launch theo luật phòng ban", () => {
       now: now && "defId" in now ? now.defId : now,
       after: await snap(),
     }).toEqual({ snap: [lib.A, rule.kd, "QT A"], now: lib.B, after: before });
+  });
+
+  it("cr118-route-kind · launch chọn theo phòng ban + loại HĐ", async () => {
+    const kdBuy = await open(11, UW.kd, { t: W, deal: "buy" });
+    const kdSell = await open(12, UW.kd, { t: W, deal: "sell" });
+    const bgdBuy = await open(13, UW.bgd, { t: W, deal: "buy" });
+    const bgdSell = await open(14, UW.bgd, { t: W, deal: "sell" }); // không khớp, không mặc định ⇒ chặn
+    const slotOf = (x: Awaited<ReturnType<typeof open>>) => [
+      x.run?.slot?.process_def_id,
+      x.run?.slot?.route_rule_id,
+    ];
+    expect({
+      outs: [kdBuy.out, kdSell.out, bgdBuy.out, bgdSell.out],
+      groups: [kdBuy, kdSell, bgdBuy].map((x) => reviewGroups(x.run?.stages)),
+      slots: [kdBuy, kdSell, bgdBuy].map(slotOf),
+      blocked: [bgdSell.a.run, bgdSell.a.reason],
+    }).toEqual({
+      outs: ["started", "started", "started", "stalled"],
+      groups: [[gw.get("ke-toan")], [gw.get("phap-che")], [gw.get("kiem-soat")]],
+      slots: [
+        [lib.A, kindRule.kdBuy],
+        [lib.B, kindRule.kdSell],
+        [kindLib.C, kindRule.bgdBuy],
+      ],
+      blocked: [null, FLOW_ROUTE_NONE],
+    });
+    // Khe không cung cấp loại (facts vắng) ⇒ bỏ qua điều kiện loại ⇒ luật đầu khớp phòng ban.
+    const noKind = await routeSlot(db, W, APPROVAL_SLOT, UW.kd);
+    expect(noKind && "ruleId" in noKind ? noKind.ruleId : noKind).toBe(kindRule.kdBuy);
   });
 
   it("không có luật ⇒ như resolveSlot", async () => {

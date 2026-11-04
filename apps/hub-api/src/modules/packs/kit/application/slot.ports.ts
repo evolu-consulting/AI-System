@@ -69,3 +69,7 @@ export type ResolvedSlot = {
 export type RoutedSlot =
   | (ResolvedSlot & { ruleId: string | null })
   | { blocked: "route_none" | "route_unavailable"; ruleId: string | null };
+
+/** cr118-route-kind · dữ kiện lượt khe gửi kèm `routeSlot`. `contractKind` vắng ⇒ khe không có loại HĐ (luật bỏ qua điều kiện
+ *  loại); `null` ⇒ HĐ chưa có loại (luật có điều kiện loại không khớp). */
+export type RouteSlotFacts = { contractKind?: string | null };

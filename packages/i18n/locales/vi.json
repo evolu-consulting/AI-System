@@ -585,6 +585,11 @@
         "default": "Mặc định",
         "defaultCond": "Khi không luật nào khớp",
         "noDepartments": "Công ty chưa có phòng ban.",
+        "kinds": "Loại hợp đồng",
+        "anyKind": "Mọi loại hợp đồng",
+        "kindBuy": "Mua",
+        "kindSell": "Bán",
+        "kindReferral": "Giới thiệu",
         "unassigned": "(quy trình không còn được gán)",
         "unavailableDeleted": "Quy trình đã bị xoá",
         "unavailableUnpublished": "Quy trình chưa xuất bản",
@@ -594,7 +599,7 @@
         "discard": "Bỏ thay đổi",
         "reload": "Tải lại",
         "issue": {
-          "noDepartment": "Chọn ít nhất một phòng ban, hoặc đặt làm mặc định.",
+          "noDepartment": "Chọn ít nhất một phòng ban hoặc loại hợp đồng, hoặc đặt làm mặc định.",
           "notAssigned": "Quy trình này không còn được gán.",
           "deptGone": "Có phòng ban không còn tồn tại.",
           "unavailable": "Quy trình của luật này không chạy được: chọn quy trình khác hoặc xoá luật rồi mới lưu được."
@@ -604,7 +609,7 @@
           "notAssigned": "Quy trình chưa được gán cho công ty.",
           "unavailable": "Có luật đang dùng quy trình đã xoá hoặc chưa xuất bản nên chưa lưu được. Hãy xoá hoặc đổi quy trình của luật đó.",
           "deptInvalid": "Có phòng ban không thuộc công ty.",
-          "rulesInvalid": "Luật không hợp lệ: luật thường cần phòng ban, chỉ một luật mặc định.",
+          "rulesInvalid": "Luật không hợp lệ: luật thường cần phòng ban hoặc loại hợp đồng, chỉ một luật mặc định.",
           "inUse": "Không bỏ gán được: quy trình đang được luật số {rules} dùng. Sửa hoặc xoá các luật đó trước.",
           "forbidden": "Chỉ quản trị nền tảng gán được quy trình.",
           "other": "Không thực hiện được. Thử lại sau."

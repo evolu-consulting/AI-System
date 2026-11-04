@@ -327,4 +327,39 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
     // Ghi vẫn chỉ platform_admin.
     expect((await call("A", "DELETE", PROC(X, lib.B))).status).toBe(403);
   });
+
+  it("cr118-route-kind · luật theo loại HĐ: lưu, loại ngoài enum ⇒ 400, không điều kiện ⇒ 422", async () => {
+    const version = (await call("A", "GET", R(X))).json.version as number;
+    const kd = dx.get("kinh-doanh") as string;
+    const r = await call("A", "PUT", R(X), {
+      version,
+      rules: [
+        { condition: { departmentIds: [kd], contractKinds: ["buy", "buy"] }, def_id: lib.A },
+        { condition: { contractKinds: ["sell"], departmentIds: [] }, def_id: lib.B },
+        { condition: { departmentIds: [kd] }, def_id: lib.B },
+      ],
+    });
+    expect({ s: r.status, c: r.json.rules?.map((x: Json) => x.condition) }).toEqual({
+      s: 200,
+      c: [
+        { departmentIds: [kd], contractKinds: ["buy"] },
+        { contractKinds: ["sell"] },
+        { departmentIds: [kd] },
+      ],
+    });
+    const bad = await call("A", "PUT", R(X), {
+      version: version + 1,
+      rules: [{ condition: { contractKinds: ["lease"] }, def_id: lib.A }],
+    });
+    expect(bad.status).toBe(400);
+    const empty = await call("A", "PUT", R(X), {
+      version: version + 1,
+      rules: [{ condition: { departmentIds: [], contractKinds: [] }, def_id: lib.A }],
+    });
+    expect({ s: empty.status, d: empty.json.error?.details }).toEqual({
+      s: 422,
+      d: { reason: "no_condition", index: 0 },
+    });
+    expect((await rulesInDb(X)).length).toBe(3);
+  });
 });
