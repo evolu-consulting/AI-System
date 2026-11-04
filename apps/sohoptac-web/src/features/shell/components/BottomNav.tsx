@@ -1,10 +1,13 @@
 // PK-FR-10 · TF5 · nav-v2 · điện thoại: cùng các mục của menu trái (5 sau CR-097 G2 thêm Giao dịch; 5 cột vừa 390 px) ở thanh dưới, tầm ngón cái.
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { useFeature } from "~/platform/features";
 import { NAV } from "../lib/nav";
 
 export function BottomNav() {
   const { t } = useTranslation();
+  const contractsOn = useFeature("contracts", true);
+  if (!contractsOn) return null;
   return (
     <nav
       aria-label={t("contracts.shell.navBottom")}

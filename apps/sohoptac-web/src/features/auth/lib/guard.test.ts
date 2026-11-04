@@ -59,7 +59,10 @@ describe("requireSession", () => {
     mockRefresh(true);
     expect(await caught(requireSession({ href: "/contracts" }))).toBeNull();
     expect(await caught(requireSession({ href: "/partners" }))).toBeNull();
-    expect(calls).toEqual([{ url: "/auth/refresh", app: "contracts" }]);
+    // CR-118: `/pack/me` (nguồn quyền app của FeatureGate) không tính vào số lần refresh.
+    expect(calls.filter((c) => c.url !== "/pack/me")).toEqual([
+      { url: "/auth/refresh", app: "contracts" },
+    ]);
   });
   test("PK-FR-10 · không có phiên → redirect /login?next=<href>", async () => {
     mockRefresh(false);

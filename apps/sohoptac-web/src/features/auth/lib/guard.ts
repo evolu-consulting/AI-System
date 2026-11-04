@@ -3,8 +3,19 @@
 // (không dội — đối tác không có chat-web). Có phiên nhưng module không mở được (đối tác gõ path SHT) ⇒ home theo quyền, trước khi
 // tải chunk route. Vào `/login` khi đã có phiên ⇒ home theo quyền.
 import { redirect } from "@tanstack/react-router";
-import { bouncesToSso, canOpen, currentCaps, homeFor, moduleOf, session } from "~/platform/auth";
+import {
+  bouncesToSso,
+  canOpen,
+  currentCaps,
+  homeFor,
+  moduleOf,
+  session,
+  setAppsSource,
+} from "~/platform/auth";
 import { bounceToSso } from "./sso";
+
+// CR-118: quyền mở module lấy từ `/pack/me.apps` (FeatureGate, nạp động để OpenFeature không vào bundle đầu); lỗi ⇒ `currentCaps` suy từ `me.kind`.
+setAppsSource(async () => (await import("~/platform/features")).featureAppsSource());
 
 type Loc = { href: string };
 

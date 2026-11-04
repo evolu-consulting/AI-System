@@ -295,7 +295,7 @@ module.exports = {
       name: "web-features-port-only",
       comment:
         "CR-118 luáº­t 5: má»i nÆ¡i chá»‰ vÃ o platform/features qua platform/features/index.ts (FeatureGate má»ng, khÃ´ng ráº£i if)",
-      severity: "warn",
+      severity: "error",
       from: {
         path: "^apps/sohoptac-web/src/",
         pathNot: "^apps/sohoptac-web/src/platform/features/",

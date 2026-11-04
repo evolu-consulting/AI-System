@@ -4,6 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { appNameOf, nameOf, useBrand } from "~/features/settings/lib/brand";
 import { cn } from "~/lib/utils";
+import { useFeature } from "~/platform/features";
 import { NAV, type NavItem, type Role } from "../lib/nav";
 import { BrandMark } from "./BrandMark";
 import { type ShellUser, UserMenu } from "./UserMenu";
@@ -34,6 +35,8 @@ export function Sidebar({
   onLogout: () => Promise<void>;
 }) {
   const { t } = useTranslation();
+  // CR-118: gói `contracts` tắt ⇒ ẩn mục menu (server vẫn chặn); chưa có ảnh cờ ⇒ giữ hiện.
+  const contractsOn = useFeature("contracts", true);
   const brand = useBrand();
   const app = appNameOf(brand, t("contracts.app.name"));
   const company = nameOf(brand, user?.tenant.name);
@@ -61,7 +64,7 @@ export function Sidebar({
           </span>
         )}
       </Link>
-      {NAV.map((n) => (
+      {(contractsOn ? NAV : []).map((n) => (
         <SideLink key={n.to} n={n} wide={pinned} />
       ))}
       <div className="mt-auto flex flex-col gap-1 pt-2">

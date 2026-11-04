@@ -16,8 +16,17 @@ export const retryQuery = (failures: number, err: unknown): boolean =>
 
 const fx = { conflict: () => toast(i18n.t("contracts.errors.conflict"), "late") };
 
+/** CR-118: 403 ở bất kỳ API ⇒ gói có thể vừa tắt ⇒ tải lại cờ (`/pack/me`, 304 rẻ) rồi xử lý lỗi gói như cũ. */
+const onError = (err: unknown) => {
+  // Nạp động: OpenFeature ra khỏi bundle đầu (chunk của vùng đã đăng nhập).
+  if ((err as { status?: unknown } | null)?.status === 403) {
+    void import("~/platform/features").then((m) => m.reportForbidden());
+  }
+  handlePackError(err, queryClient, fx);
+};
+
 export const queryClient: QueryClient = new QueryClient({
-  queryCache: new QueryCache({ onError: (err) => handlePackError(err, queryClient, fx) }),
-  mutationCache: new MutationCache({ onError: (err) => handlePackError(err, queryClient, fx) }),
+  queryCache: new QueryCache({ onError }),
+  mutationCache: new MutationCache({ onError }),
   defaultOptions: { queries: { staleTime: 30_000, retry: retryQuery } },
 });

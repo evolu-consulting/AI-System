@@ -214,6 +214,8 @@
         "@fontsource/be-vietnam-pro": "5.3.0",
         "@fontsource/roboto-mono": "5.3.0",
         "@hookform/resolvers": "5.9.1",
+        "@openfeature/react-sdk": "1.4.1",
+        "@openfeature/web-sdk": "1.10.0",
         "@tanstack/react-query": "5.104.0",
         "@tanstack/react-router": "1.170.41",
         "@xyflow/react": "12.11.6",
@@ -636,6 +638,12 @@
     "@msgpackr-extract/msgpackr-extract-win32-x64": ["@msgpackr-extract/msgpackr-extract-win32-x64@3.0.6", "", { "os": "win32", "cpu": "x64" }, "sha512-J1mT1tp4v9aqcRwUtFrdJ94yei2SlIKm243nWK5bCyOPNnnNknaPzjG6a2Aa5OSfXE36rrth0X2OPHpispZTJw=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.6", "", { "dependencies": { "@tybys/wasm-util": "^0.10.3" }, "peerDependencies": { "@emnapi/core": "^1.7.1", "@emnapi/runtime": "^1.7.1" } }, "sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg=="],
+
+    "@openfeature/core": ["@openfeature/core@1.12.0", "", {}, "sha512-7PCPzyd1OC19begz30+CRknFB0ChtyaZUhk7YWrk+Bov1fpVw0HYkTXtoxxsvPfDZB9P9WsT7uixN+Z8f9+bcA=="],
+
+    "@openfeature/react-sdk": ["@openfeature/react-sdk@1.4.1", "", { "peerDependencies": { "@openfeature/web-sdk": "^1.9.0", "react": ">=16.8.0" } }, "sha512-xKpXBXVT0w9CIrhl6IzGkIuxmsqy7At+eYUW1XtaZbk+odKW424ZnmmjqiQMrbu31pfAhQrzww36QokTQaIf7g=="],
+
+    "@openfeature/web-sdk": ["@openfeature/web-sdk@1.10.0", "", { "peerDependencies": { "@openfeature/core": "^1.12.0" } }, "sha512-qf+JmJSnaslhegNwoDDLn2Cf72P6cIobuAQPUb61MSkzJOZuVLU6f9pv/90FlLcK6UDtp6od//xZHW712rBrmg=="],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.10.0", "", {}, "sha512-lMkyes8iHrG+mk6WH7X70MdCLI2RS0FwNBY1PyQ8UemaijE2m5mv5A0Niy3HtbYTFrgkUEQjFMXmSAk2hQDuPQ=="],
 
