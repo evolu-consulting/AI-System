@@ -21,11 +21,12 @@ import {
   SELECT_OPTION_MAX,
   SELECT_OPTIONS_MAX,
 } from "../common";
+/** Key trường output (dời từ `./processes` để file này dùng không vòng import; `./processes` re-export). */
+import { FIELD_KEY_RE } from "./field-key";
 import { type ProcessDefIssue, resolveSteps, type StepStageShape } from "./process-steps";
 import { SourceKeySchema } from "./sources";
 
-/** Key trường output (dời từ `./processes` để file này dùng không vòng import; `./processes` re-export). */
-export const FIELD_KEY_RE = /^[a-z][a-z0-9_]{0,31}$/;
+export { FIELD_KEY_RE };
 
 // ── Schema ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 export const ArgSourceSchema = z.discriminatedUnion("from", [

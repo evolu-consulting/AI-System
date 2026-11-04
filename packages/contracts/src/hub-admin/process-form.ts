@@ -1,10 +1,10 @@
 // CR-118 · cr118-form-node · node `form` (họ `work`): một người (thành viên Group của bước, như cổng kiểm) điền form có
 // trường từ TẬP CON CỐ ĐỊNH; Hub kiểm giá trị theo form trong SNAPSHOT run (bỏ trường lạ), ghi vào output stage + đóng task
 // trong CÙNG transaction. Không HTML/script/biểu thức: nhãn là văn bản thuần (không `<`/`>`/ký tự điều khiển).
-// `FormField` định nghĩa Ở ĐÂY (node definition); lát cr118-flow-contract (FlowFormSchema dưới `flow/`) có thể dùng lại —
-// điều phối gộp khi merge. Không import `./processes` (file đó import file này) ⇒ không vòng import.
+// `FormField` định nghĩa Ở ĐÂY (MỘT nguồn): `flow/form.ts` (FlowFormSchema/FlowFormFieldSchema) dùng lại đúng schema này.
+// Không import `./processes` (file đó import file này) ⇒ không vòng import.
 import { z } from "zod";
-import { FIELD_KEY_RE } from "./process-tools";
+import { FIELD_KEY_RE } from "./field-key";
 
 export const FORM_FIELDS_MAX = 20;
 export const FORM_LABEL_MAX = 120;
@@ -38,9 +38,18 @@ export const FormLabelSchema = z
   .refine(plainLabel, "plain text only");
 export const FORM_OPTION_VALUE_RE = /^[a-z0-9_-]{1,40}$/;
 
+export const FORM_HELP_MAX = 300;
+/** Gợi ý ngắn dưới ô nhập (văn bản thuần). */
+export const FormHelpSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(FORM_HELP_MAX)
+  .refine(plainLabel, "plain text only");
 const base = {
   key: z.string().regex(FIELD_KEY_RE),
   label: FormLabelSchema,
+  help: FormHelpSchema.optional(),
   required: z.boolean().default(false),
 };
 const bound = z.number().finite().min(-FORM_NUMBER_ABS_MAX).max(FORM_NUMBER_ABS_MAX);
@@ -101,15 +110,24 @@ function fieldsIssues(fields: readonly FormField[]): string[] {
   return out;
 }
 
-export const FormExecutorSchema = z
-  .strictObject({
-    kind: z.literal("form"),
-    fields: z.array(FormFieldSchema).min(1).max(FORM_FIELDS_MAX),
-  })
-  .superRefine((ex, ctx) => {
-    for (const p of fieldsIssues(ex.fields))
-      ctx.addIssue({ code: "custom", path: ["fields", ...p.split(".")], message: "FORM_INVALID" });
+/** MỘT danh sách trường form (executor `form` của quy trình và `FlowForm` của view dùng chung). */
+export const FormFieldsSchema = z
+  .array(FormFieldSchema)
+  .min(1)
+  .max(FORM_FIELDS_MAX)
+  .superRefine((fields, ctx) => {
+    for (const p of fieldsIssues(fields))
+      ctx.addIssue({
+        code: "custom",
+        path: p.split(".").map((x) => (/^\d+$/.test(x) ? Number(x) : x)),
+        message: "FORM_INVALID",
+      });
   });
+
+export const FormExecutorSchema = z.strictObject({
+  kind: z.literal("form"),
+  fields: FormFieldsSchema,
+});
 export type FormExecutor = z.infer<typeof FormExecutorSchema>;
 
 /** Kiểu field output (`output.fields[].type`) của từng loại trường — để If/bước sau đọc. */

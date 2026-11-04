@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { withCurrent } from "../../hooks/use-editor-refs";
 import { canRealAction, type StageDraft } from "../../lib/def-form";
+import { isForm } from "../../lib/form-fields";
 import { SelectField } from "./Fields";
 import type { StageFormProps } from "./stage-form-props";
 
@@ -23,7 +24,10 @@ export function StageGate(p: StageFormProps) {
         readOnly={readOnly}
         options={[
           { value: "review", label: t("process.admin.editor.stage.review") },
-          { value: "auto", label: t("process.admin.editor.stage.auto") },
+          // CR-118 · bước form luôn chờ người điền (Hub: FORM_INVALID nếu tự chạy) ⇒ không có lựa chọn "tự chạy"
+          ...(isForm(stage)
+            ? []
+            : [{ value: "auto", label: t("process.admin.editor.stage.auto") }]),
         ]}
         onChange={(v) => onChange({ after: v as StageDraft["after"] })}
       />
@@ -38,27 +42,29 @@ export function StageGate(p: StageFormProps) {
           onChange={(v) => onChange({ groupId: v })}
         />
       ) : null}
-      <div className="space-y-1">
-        <div
-          className="flex items-center gap-2"
-          title={locked ? t("process.admin.editor.stage.realLocked") : undefined}
-        >
-          <Switch
-            id={realId}
-            checked={stage.real}
-            disabled={readOnly || locked}
-            aria-describedby={locked ? `${realId}-hint` : undefined}
-            onCheckedChange={(v) => onChange({ real: v })}
-          />
-          <Label htmlFor={realId}>{t("process.admin.editor.stage.real")}</Label>
+      {isForm(stage) ? null : (
+        <div className="space-y-1">
+          <div
+            className="flex items-center gap-2"
+            title={locked ? t("process.admin.editor.stage.realLocked") : undefined}
+          >
+            <Switch
+              id={realId}
+              checked={stage.real}
+              disabled={readOnly || locked}
+              aria-describedby={locked ? `${realId}-hint` : undefined}
+              onCheckedChange={(v) => onChange({ real: v })}
+            />
+            <Label htmlFor={realId}>{t("process.admin.editor.stage.real")}</Label>
+          </div>
+          {locked ? (
+            <p id={`${realId}-hint`} className="text-caption text-muted-foreground">
+              {t("process.admin.editor.stage.realLocked")}
+            </p>
+          ) : null}
+          {rErr ? <p className="text-caption text-destructive">{t(rErr)}</p> : null}
         </div>
-        {locked ? (
-          <p id={`${realId}-hint`} className="text-caption text-muted-foreground">
-            {t("process.admin.editor.stage.realLocked")}
-          </p>
-        ) : null}
-        {rErr ? <p className="text-caption text-destructive">{t(rErr)}</p> : null}
-      </div>
+      )}
     </div>
   );
 }

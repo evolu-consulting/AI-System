@@ -3,6 +3,7 @@
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { isApply } from "../../lib/apply-form";
+import { isForm } from "../../lib/form-fields";
 import { isIf } from "../../lib/if-form";
 import { isSet } from "../../lib/set-form";
 import { isTool } from "../../lib/tool-form";
@@ -13,6 +14,7 @@ import { StageAnswerer } from "./StageAnswerer";
 import { StageApply } from "./StageApply";
 import { StageAutofix } from "./StageAutofix";
 import { StageBranch } from "./StageBranch";
+import { StageFormFields } from "./StageFormFields";
 import { StageGate } from "./StageGate";
 import { StageGeneral, StageLimits } from "./StageGeneral";
 import { StageIfForm } from "./StageIf";
@@ -48,7 +50,9 @@ function Body(p: StageFormProps) {
   const { t } = useTranslation();
   const { stage, index, errors, readOnly, onChange } = p;
   const set = isSet(stage);
-  const tool = isTool(stage) || set; // `set` như `tool`: không nguồn/tự-sửa/người trả lời/ghi nhớ (Hub ép khi lưu)
+  const form = isForm(stage);
+  // `set`/`form` như `tool`: không nguồn/tự-sửa/người trả lời/ghi nhớ (Hub ép khi lưu)
+  const tool = isTool(stage) || set || form;
   const apply = isApply(stage);
   return (
     <>
@@ -71,6 +75,8 @@ function Body(p: StageFormProps) {
         <Suspense fallback={null}>
           <StageTool {...p} />
         </Suspense>
+      ) : form ? (
+        <StageFormFields {...p} />
       ) : (
         <StageOutput
           stage={stage}

@@ -8,6 +8,7 @@ import {
 } from "@ai/contracts/hub-admin";
 import { APPLY_EXECUTOR, APPLY_PATCH, executorToDef } from "../lib/apply-form";
 import type { StageDraft } from "../lib/draft-types";
+import { draftsToFields, FORM_EXECUTOR, FORM_PATCH, fieldToDraft } from "../lib/form-fields";
 import { draftToIf, IF_EXECUTOR, IF_PATCH, ifToDraft } from "../lib/if-form";
 import { SET_EXECUTOR, SET_PATCH, setFromDef, setToDef } from "../lib/set-form";
 import { TOOL_EXECUTOR, TOOL_PATCH, toolFromDef, toolToDef } from "../lib/tool-form";
@@ -103,16 +104,16 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
     fromDef: (ex) => ({ ifx: ifToDraft(ex) }),
     toDef: (s) => draftToIf(s.ifx),
   },
-  // CR-118 · cr118-form-node · stub: giữ nguyên trường form qua Canvas/Form (khối sửa trường do lát editor làm sau).
+  // CR-118 · node form: trường sửa ở `StageFormFields`; `fields` (output) đồng bộ ở `formPatch`/`normalizeForm`.
   form: {
     kind: "form",
     family: NODE_FAMILY_OF.form,
     labelKey: "process.admin.editor.stage.kind.form",
-    defaults: () => ({ executor: "form" }),
-    draftValue: "form",
-    draftExecutor: () => "form",
-    fromDef: (ex) => ({ formFields: ex.fields }),
-    toDef: (s) => ({ kind: "form", fields: s.formFields ?? [] }),
+    defaults: () => ({ ...FORM_PATCH }),
+    draftValue: FORM_EXECUTOR,
+    draftExecutor: () => FORM_EXECUTOR,
+    fromDef: (ex) => ({ formFields: ex.fields.map(fieldToDraft) }),
+    toDef: (s) => ({ kind: "form", fields: draftsToFields(s.formFields ?? []) }),
   },
 };
 

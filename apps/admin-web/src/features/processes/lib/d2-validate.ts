@@ -14,6 +14,7 @@ import { targetHasReal } from "../domain/branch-rules";
 import { realActionAllowed } from "../domain/tool-rules";
 import { branchToRules } from "./branch-form";
 import type { DraftErrors, StageDraft } from "./draft-types";
+import { formFieldErrors, isFormErrKey } from "./form-fields";
 import { draftToIf, isIf } from "./if-form";
 import type { InputDraft } from "./sources-form";
 import { isSystemToolStage } from "./system-nodes";
@@ -33,7 +34,8 @@ export const TOOL_ERR = {
 } as const;
 /** Khoá lỗi P-d2 do `d2LiveErrors` tính lại mỗi lần render (`argRequired` cũng sinh live; còn giữ khi Lưu nếu tham số vẫn trống). */
 export const isD2Key = (v: string): boolean =>
-  v !== TOOL_ERR.argRequired && (v.startsWith(T) || v.startsWith(B) || v === IF_ERR);
+  v !== TOOL_ERR.argRequired &&
+  (v.startsWith(T) || v.startsWith(B) || v === IF_ERR || isFormErrKey(v));
 /** CR-103 · fnr-if · một câu chung cho mọi lỗi node If (đủ chi tiết ở ô có viền lỗi). */
 export const IF_ERR = "process.admin.editor.stage.if.err.IF_INVALID";
 export const BRANCH_ERR = { all: `${B}BRANCH_INVALID`, real: `${B}real` } as const;
@@ -192,6 +194,7 @@ export function d2LiveErrors(
     ...branchErrors(stages),
     ...ifErrors(stages, inputs),
     ...toolErrors(stages, inputs, tools),
+    ...formFieldErrors(stages),
   };
 }
 

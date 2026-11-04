@@ -1,10 +1,13 @@
 // CR-118 · UW-FR-10..14 · contract flow runtime: round-trip (parse ∘ JSON = đồng nhất), giới hạn form, validator từ snapshot,
 // lô summary ≤ 100, exhaustive renderer map (typecheck).
 import { describe, expect, test } from "bun:test";
+import { FormExecutorSchema, FormFieldSchema } from "../hub-admin/process-form";
 import {
+  FLOW_FORM_FIELD_TYPES,
   FLOW_STEP_KINDS,
   FlowActionRequestSchema,
   type FlowForm,
+  FlowFormFieldSchema,
   FlowFormSchema,
   type FlowStepRenderers,
   type FlowSummary,
@@ -33,10 +36,11 @@ const FORM: FlowForm = FlowFormSchema.parse({
   fields: [
     { key: "ly_do", label: "Lý do", type: "textarea", required: true, max_len: 500 },
     { key: "so_tien", label: "Số tiền", type: "number", min: 0, integer: true },
-    { key: "han", label: "Hạn", type: "date", min: "2026-01-01" },
+    { key: "han", label: "Hạn", type: "date" },
     { key: "loai", label: "Loại", type: "select", options: [{ value: "a", label: "A" }] },
     { key: "dong_y", label: "Đồng ý", type: "checkbox" },
-    { key: "tep", label: "Tệp", type: "file_ref", max_files: 2, accept: "pdf" },
+    { key: "tien", label: "Thành tiền", type: "money", min: 1000, max: 5000000 },
+    { key: "tep", label: "Tệp", type: "file_ref" },
     { key: "ghi_chu", label: "Ghi chú", type: "text" },
   ],
 });
@@ -139,18 +143,46 @@ describe("CR-118 contract flow", () => {
     expect(f([{ key: "a", label: "A", type: "text", max_len: 501 }])).toBe(false);
   });
 
+  test("MỘT schema trường: flow dùng đúng FormFieldSchema của hub-admin (8 loại, money + file_ref)", () => {
+    expect(FlowFormFieldSchema).toBe(FormFieldSchema);
+    expect(new Set<string>(FLOW_FORM_FIELD_TYPES)).toEqual(
+      new Set(["checkbox", "date", "file_ref", "money", "number", "select", "text", "textarea"]),
+    );
+    const fields = FORM.fields;
+    // cùng một danh sách ⇒ cùng kết quả ở def (executor) lẫn view (form) — kể cả luật chéo (khoá trùng / min > max)
+    expect(FormExecutorSchema.safeParse({ kind: "form", fields }).success).toBe(true);
+    const dup = [
+      { key: "a", label: "A", type: "money" },
+      { key: "a", label: "B", type: "file_ref" },
+    ];
+    expect(FormExecutorSchema.safeParse({ kind: "form", fields: dup }).success).toBe(false);
+    expect(FlowFormSchema.safeParse({ fields: dup }).success).toBe(false);
+    const inverted = [{ key: "a", label: "A", type: "money", min: 10, max: 5 }];
+    expect(FormExecutorSchema.safeParse({ kind: "form", fields: inverted }).success).toBe(false);
+    expect(FlowFormSchema.safeParse({ fields: inverted }).success).toBe(false);
+  });
+
   test("validator từ form snapshot: strict, giới hạn, bắt buộc", () => {
     const v = flowFormValuesSchema(FORM);
     expect(
-      v.safeParse({ ly_do: "ok", so_tien: 5, han: "2026-02-01", loai: "a", tep: [U(9)] }).success,
+      v.safeParse({
+        ly_do: "ok",
+        so_tien: 5,
+        han: "2026-02-01",
+        loai: "a",
+        tien: 2000,
+        tep: U(9),
+      }).success,
     ).toBe(true);
     expect(v.safeParse({}).success).toBe(false); // thiếu bắt buộc
     expect(v.safeParse({ ly_do: "ok", la: 1 }).success).toBe(false); // trường lạ
     expect(v.safeParse({ ly_do: "x".repeat(501) }).success).toBe(false);
     expect(v.safeParse({ ly_do: "ok", so_tien: 1.5 }).success).toBe(false);
-    expect(v.safeParse({ ly_do: "ok", han: "2025-12-31" }).success).toBe(false);
+    expect(v.safeParse({ ly_do: "ok", han: "31/12/2025" }).success).toBe(false);
     expect(v.safeParse({ ly_do: "ok", loai: "z" }).success).toBe(false);
-    expect(v.safeParse({ ly_do: "ok", tep: [U(1), U(2), U(3)] }).success).toBe(false);
+    expect(v.safeParse({ ly_do: "ok", tien: 999 }).success).toBe(false); // money < min
+    expect(v.safeParse({ ly_do: "ok", tien: 1500.5 }).success).toBe(false); // money phải nguyên
+    expect(v.safeParse({ ly_do: "ok", tep: "không-phải-uuid" }).success).toBe(false);
     expect(v.safeParse({ ly_do: "a\u0000" }).success).toBe(false);
   });
 

@@ -6,6 +6,7 @@ import { executorToDef, normalizeApply } from "./apply-form";
 import { autofixToDef, autofixToDraft, emptyAutofix } from "./autofix-form";
 import { branchToRules, rulesToBranch } from "./branch-form";
 import type { StageDraft } from "./draft-types";
+import { normalizeForm } from "./form-fields";
 import { emptyIf, normalizeIf } from "./if-form";
 import { emptySet, normalizeSet } from "./set-form";
 import { repairSlot } from "./slot-canvas";
@@ -131,7 +132,9 @@ function branchOf(s: StageDraft): ProcessStageDef["after"]["branch"] {
 }
 
 export function stageToInput(draft: StageDraft): ProcessStageDef {
-  const s = normalizeIf(normalizeSet(normalizeTool(normalizeWait(normalizeApply(draft)))));
+  const s = normalizeForm(
+    normalizeIf(normalizeSet(normalizeTool(normalizeWait(normalizeApply(draft))))),
+  );
   const rules = branchOf(s) ?? [];
   const branch = rules.length > 0 ? { branch: rules } : {};
   return {

@@ -3,6 +3,7 @@ import type { ExecutorKind } from "@ai/contracts/hub-admin";
 import { useTranslation } from "react-i18next";
 import { withCurrent } from "../../hooks/use-editor-refs";
 import { applyKeyOnly, isApply } from "../../lib/apply-form";
+import { isForm } from "../../lib/form-fields";
 import { swapCheck } from "../../lib/swap-guard";
 import { isTool } from "../../lib/tool-form";
 import { isWait } from "../../lib/wait-form";
@@ -115,7 +116,7 @@ export function StageLimits(p: StageFormProps) {
         readOnly={readOnly}
         onChange={(v) => onChange({ timeout: v })}
       />
-      {isApply(stage) || isTool(stage) ? null : (
+      {isApply(stage) || isTool(stage) || isForm(stage) ? null : (
         <TextField
           id={`${stage.uid}-budget`}
           label={t("process.admin.editor.stage.budget")}

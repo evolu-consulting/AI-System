@@ -19,6 +19,7 @@ import { ttlFromValue, ttlIssue, ttlToValue } from "../domain/ttl-rules";
 import { APPLY_RULE_ERR, applyCrossErrors, normalizeApply } from "./apply-form";
 import { AUTOFIX_RULE_ERR, validateAutofixPart } from "./autofix-form";
 import { carryErrors, d2LiveErrors, toolSubmitErrors } from "./d2-validate";
+import { normalizeForm } from "./form-fields";
 import { type InputDraft, inputsToDef, inputsToDraft, validateSourcesPart } from "./sources-form";
 import { emptyStage, intOrNull, num, stageToDraft, stageToInput } from "./stage-convert";
 import { slugKey } from "./stage-key";
@@ -179,11 +180,11 @@ export function validateDraft(
   if (!budgetOk(d.budget)) e.token_budget = `${P}budget`;
   if (d.stages.length < 1 || d.stages.length > PROCESS_STAGES_MAX) e.stages = `${P}stageCount`;
   d.stages.forEach((s, i) => {
-    validateStage(normalizeTool(normalizeWait(s)), i, d.stages, e);
+    validateStage(normalizeForm(normalizeTool(normalizeWait(s))), i, d.stages, e);
     if (forEnable && s.after === "review" && s.groupId === "" && !slotHasReviewer(s))
       e[`stages.${i}.after.group_id`] = "process.admin.apiError.PROCESS_DEF_INCOMPLETE";
   });
-  const eff = d.stages.map((s) => normalizeTool(normalizeWait(normalizeApply(s))));
+  const eff = d.stages.map((s) => normalizeForm(normalizeTool(normalizeWait(normalizeApply(s)))));
   validateWaitPart(eff, d.inputs, e);
   validateSteps(eff, e, { inputs: d.inputs, teams });
   validateSourcesPart({ ...d, stages: eff }, e);

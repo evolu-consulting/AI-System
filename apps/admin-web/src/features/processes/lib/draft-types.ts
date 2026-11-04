@@ -1,6 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-d1: kiểu bản nháp của editor quy trình (tách khỏi `def-form` để các module `*-form` không import vòng).
 // Chỉ kiểu — không giá trị; `def-form` re-export cho nơi dùng cũ.
-import type { FormField } from "@ai/contracts/hub-admin";
+import type { FormFieldType } from "@ai/contracts/hub-admin";
 import type { AutofixDraft } from "./autofix-form";
 import type { InputDraft, StageSourceDraft } from "./sources-form";
 
@@ -32,6 +32,29 @@ export type IfDraft = {
   /** Bước Đúng (`yes`) / Sai (`no`) đếm từ 1; `no = null` ⇒ Sai thì sang bước kế; `yes = null` = chưa chọn. */
   yes: number | null;
   no: number | null;
+};
+/** CR-118 · một lựa chọn của trường `select`. */
+export type FormOptionDraft = { value: string; label: string };
+/**
+ * CR-118 · một trường form ở dạng nhập tay (chuỗi như các draft khác): giới hạn là chuỗi, chuyển sang `FormField` khi gửi.
+ * `keyAuto` = mã còn tự sinh từ nhãn (người dùng chưa sửa tay).
+ */
+export type FormFieldDraft = {
+  type: FormFieldType;
+  key: string;
+  keyAuto: boolean;
+  label: string;
+  help: string;
+  required: boolean;
+  /** text / textarea: độ dài tối đa. */
+  maxLen: string;
+  /** number / money: nhỏ nhất, lớn nhất (rỗng = không giới hạn; money rỗng = 0). */
+  min: string;
+  max: string;
+  /** number: chỉ nhận số nguyên. */
+  integer: boolean;
+  /** select. */
+  options: FormOptionDraft[];
 };
 export type FieldDraft = { key: string; type: "number" | "string" | "date"; required: boolean };
 export type StageDraft = {
@@ -81,8 +104,8 @@ export type StageDraft = {
   branch: BranchDraft[];
   /** CR-103 · fnr-if · khối "Nếu" (chỉ dùng khi `executor = "if"`). */
   ifx: IfDraft;
-  /** CR-118 · trường của node `form` (giữ nguyên khi sửa def; editor trường làm ở lát sau). */
-  formFields?: FormField[];
+  /** CR-118 · trường của node `form` (chỉ có nghĩa khi `executor = form`); `fields` (output) luôn đồng bộ theo đây. */
+  formFields?: FormFieldDraft[];
   /** CR-105 · `stage.slot` của khe (mô tả bước người dùng: review/Dify, hoặc `esign` ở finalize) — giữ nguyên qua Canvas, Hub `fromStages` dựng lại `slot_body`. */
   slotRaw?: Record<string, unknown> | undefined;
   /** CR-103 · fnr-canvas · `y` đã lưu của node trên canvas (`ui.y`, chỉ-UI); vắng = bố cục tự động. */
