@@ -7,7 +7,14 @@ import type { UserEvent } from "../../../lib/user-stream";
 import { processNotice, reviewTaskClosed, reviewTaskCreated } from "../core/events";
 import type { FinishedRun, ProcessNotifier } from "../core/ports";
 import { noticeRecipients } from "../domain/notify/remind.rules";
-import { enqueuePackBells, resolvePackBells, unreadKey, writeNotices } from "./batch.repo";
+import {
+  enqueueConvBells,
+  enqueuePackBells,
+  resolveConvBells,
+  resolvePackBells,
+  unreadKey,
+  writeNotices,
+} from "./batch.repo";
 import {
   type InsertedNotice,
   insertNotices,
@@ -111,7 +118,10 @@ async function onTaskOpened(tx: Tx, taskId: string): Promise<UserEvent[]> {
     }),
     unreadByUser(tx, t.tenantId, recipients),
   ]);
-  if (t.pack) await enqueuePackBells(tx, kind, bellRows(inserted, t.processRunId, payload));
+  // dlc-bell · run gắn gói ⇒ chuông của gói; còn lại ⇒ chuông hội thoại (SQL bỏ run không có hội thoại).
+  const bells = bellRows(inserted, t.processRunId, payload);
+  if (t.pack) await enqueuePackBells(tx, kind, bells);
+  else await enqueueConvBells(tx, kind, bells);
   return [
     ...reviewTaskCreated(recipients, {
       task_id: taskId,
@@ -126,7 +136,9 @@ async function onTaskClosed(tx: Tx, taskId: string): Promise<UserEvent[]> {
   const t = await loadNoticeTask(tx, taskId);
   if (!t) return [];
   const all = noticeRecipients(t);
-  if (t.pack) await resolvePackBells(tx, [taskId]); // chuông "cần duyệt" của bước này ⇒ đã xử lý
+  if (t.pack)
+    await resolvePackBells(tx, [taskId]); // chuông "cần duyệt" của bước này ⇒ đã xử lý
+  else await resolveConvBells(tx, [taskId]);
   const result: TaskResult = t.result ?? "pass";
   const events: UserEvent[] = [...reviewTaskClosed(all, { id: taskId, result })];
   // Không tự báo cho người vừa thao tác (decidedBy).

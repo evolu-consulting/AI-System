@@ -5,7 +5,7 @@
 import type { NoticeKind } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import { type BellSource, packBellsOf } from "../domain/notify/pack-bell.rules";
+import { type BellSource, convBellsOf, packBellsOf } from "../domain/notify/pack-bell.rules";
 import type { InsertedNotice } from "./inbox.repo";
 
 export type NoticeRow = {
@@ -154,6 +154,29 @@ export async function resolvePackBells(tx: Tx, taskIds: readonly string[]): Prom
   if (taskIds.length === 0) return;
   await tx.execute(
     sql`select notify.resolve_pack_tasks(array[${sql.join(
+      taskIds.map((i) => sql`${i}`),
+      sql`, `,
+    )}]::uuid[]) as n`,
+  );
+}
+
+/** dlc-bell · chuông "cần người" của run trong hội thoại Chat (`notify.enqueue_conv_runs`, migrations-hub/0085). */
+export async function enqueueConvBells(
+  tx: Tx,
+  kind: NoticeKind,
+  rows: readonly BellSource[],
+): Promise<void> {
+  if (rows.length === 0) return;
+  await tx.execute(
+    sql`select notify.enqueue_conv_runs(${JSON.stringify(convBellsOf(kind, rows))}::jsonb) as n`,
+  );
+}
+
+/** dlc-bell · bước xong/huỷ ⇒ chuông hội thoại của task đánh dấu đã đọc (`notify.resolve_conv_tasks`, 0085). */
+export async function resolveConvBells(tx: Tx, taskIds: readonly string[]): Promise<void> {
+  if (taskIds.length === 0) return;
+  await tx.execute(
+    sql`select notify.resolve_conv_tasks(array[${sql.join(
       taskIds.map((i) => sql`${i}`),
       sql`, `,
     )}]::uuid[]) as n`,
