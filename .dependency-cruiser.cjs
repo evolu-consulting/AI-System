@@ -210,6 +210,94 @@ module.exports = {
       from: { path: "apps/studio-web/" },
       to: { path: "apps/(admin|chat)-web/" },
     },
+    // ---- CR-118 Â· web nghiá»‡p vá»¥ há»£p nháº¥t (apps/sohoptac-web): 6 luáº­t web-module (ADR-0034). 1â€“5 = warn tá»›i khi code dá»i xong
+    // (cÃ¡c lÃ¡t cr118-*), 6 = error ngay. ÄÆ°á»ng dáº«n Ä‘Ã­ch: src/{shell,platform,shared,modules/<m>}.
+    {
+      name: "web-mod-no-cross-module",
+      comment:
+        "CR-118 luáº­t 1: modules/X khÃ´ng import modules/Y (giao tiáº¿p chá»‰ qua route path dáº¡ng chuá»—i + server port ADR-0031; giá»¯ COM-FR-26 P0-AC02)",
+      severity: "warn",
+      from: { path: "^apps/sohoptac-web/src/modules/([^/]+)/" },
+      to: {
+        path: "^apps/sohoptac-web/src/modules/[^/]+/",
+        pathNot: "^apps/sohoptac-web/src/modules/$1/",
+      },
+    },
+    {
+      name: "web-shell-manifest-only",
+      comment:
+        "CR-118 luáº­t 2: shell/ chá»‰ import modules/<m>/manifest.ts (khÃ´ng import ruá»™t module)",
+      severity: "warn",
+      from: { path: "^apps/sohoptac-web/src/shell/" },
+      to: {
+        path: "^apps/sohoptac-web/src/modules/",
+        pathNot: "^apps/sohoptac-web/src/modules/[^/]+/manifest\\.tsx?$",
+      },
+    },
+    {
+      name: "web-modules-no-shell",
+      comment: "CR-118 luáº­t 2 (chiá»u ngÆ°á»£c): modules/ khÃ´ng import shell/",
+      severity: "warn",
+      from: { path: "^apps/sohoptac-web/src/modules/" },
+      to: { path: "^apps/sohoptac-web/src/shell/" },
+    },
+    {
+      name: "web-domain-pure",
+      comment:
+        "CR-118 luáº­t 3: domain / features/<f>/lib lÃ  hÃ m thuáº§n â€” cáº¥m react, @ai/web-kit, adapters, ui (chá»‰ shared/kernel + kiá»ƒu @ai/contracts)",
+      severity: "warn",
+      from: { path: "^apps/sohoptac-web/src/modules/[^/]+/(domain|features/[^/]+/lib)/" },
+      to: {
+        path: [
+          "(^|/)node_modules/(react|react-dom)/",
+          "(^|/)packages/web-kit/",
+          "^apps/sohoptac-web/src/modules/[^/]+/(adapters|ui)/",
+          "^apps/sohoptac-web/src/modules/[^/]+/features/[^/]+/(components|pages|hooks)/",
+          "^apps/sohoptac-web/src/modules/[^/]+/features/[^/]+/api\\.tsx?$",
+        ],
+      },
+    },
+    {
+      name: "web-ui-no-adapters",
+      comment:
+        "CR-118 luáº­t 4: ui / components / pages khÃ´ng import adapters hay api.ts (Ä‘i qua application/hooks); má»Ÿ rá»™ng component-no-fetch",
+      severity: "warn",
+      from: {
+        path: "^apps/sohoptac-web/src/modules/[^/]+/(ui|features/[^/]+/(components|pages))/",
+      },
+      to: {
+        path: [
+          "^apps/sohoptac-web/src/modules/[^/]+/adapters/",
+          "^apps/sohoptac-web/src/modules/[^/]+/features/[^/]+/api\\.tsx?$",
+        ],
+      },
+    },
+    {
+      name: "web-features-port-only",
+      comment:
+        "CR-118 luáº­t 5: má»i nÆ¡i chá»‰ vÃ o platform/features qua platform/features/index.ts (FeatureGate má»ng, khÃ´ng ráº£i if)",
+      severity: "warn",
+      from: {
+        path: "^apps/sohoptac-web/src/",
+        pathNot: "^apps/sohoptac-web/src/platform/features/",
+      },
+      to: {
+        path: "^apps/sohoptac-web/src/platform/features/",
+        pathNot: "^apps/sohoptac-web/src/platform/features/index\\.tsx?$",
+      },
+    },
+    {
+      name: "web-business-no-other-web",
+      comment:
+        "CR-118 luáº­t 6: web nghiá»‡p vá»¥ há»£p nháº¥t khÃ´ng import apps/(admin|chat|studio|dlc-workspace)-web (nhÆ° studio-web-no-other-web)",
+      severity: "error",
+      from: { path: "^apps/sohoptac-web/" },
+      // `~/*` trong tsconfig.depcruise.json trỏ cả chat-web lẫn sohoptac-web ⇒ import alias bị resolve nhầm sang chat-web: bỏ qua "aliased".
+      to: {
+        path: "^apps/(admin|chat|studio|dlc-workspace)-web/",
+        dependencyTypesNot: ["aliased"],
+      },
+    },
     {
       name: "api-no-web",
       comment: "T-DEP-6: api không import code web",
