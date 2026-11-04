@@ -1,5 +1,6 @@
 // app-catalog · /apps (chỉ platform_admin): bảng danh mục app web + thêm/sửa/xoá. Bật/tắt nhanh ngay trên bảng.
 import type { AppCatalogItem, AppCreateRequest } from "@ai/contracts";
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -80,7 +81,11 @@ function AppsContent() {
         <TableBody>
           {(list.data?.items ?? []).map((a) => (
             <TableRow key={a.key}>
-              <TableCell className="font-medium">{a.name.vi}</TableCell>
+              <TableCell className="font-medium">
+                <Link to="/apps/$appKey" params={{ appKey: a.key }} className="hover:underline">
+                  {a.name.vi}
+                </Link>
+              </TableCell>
               <TableCell className="font-mono">{a.key}</TableCell>
               <TableCell className="max-w-64 truncate">{a.url || "—"}</TableCell>
               <TableCell>{t(`apps.audience.${a.audience}`)}</TableCell>

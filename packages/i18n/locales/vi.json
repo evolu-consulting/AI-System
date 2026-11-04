@@ -823,7 +823,7 @@
       "confirmTitle": "Lưu thay đổi cho {tenant}?",
       "confirmBody": "{count} tính năng sẽ bị thu hồi ({list}): người dùng của công ty mất quyền tương ứng trong vài giây. Có thể cấp lại sau.",
       "toast": {
-        "saved": "Đã lưu tính năng cho {tenant}"
+        "saved": "Đã lưu tính năng cho {tenant}. Công ty sẽ thấy thay đổi trong vòng 1 phút."
       }
     },
     "timezone": {
@@ -2748,6 +2748,127 @@
     "toast": {
       "downloaded": "Đã tải {file}",
       "imported": "Đã import · Thêm {a} · Sửa {u} · v{n}"
+    }
+  },
+  "appcfg": {
+    "subtitle": "Cấu hình một ứng dụng: bật cho công ty nào, ở mức nào, chạy quy trình nào.",
+    "back": "Danh sách ứng dụng",
+    "edit": "Sửa thông tin app",
+    "openApp": "Mở cấu hình app",
+    "tabs": "Các phần cấu hình của app",
+    "tab": {
+      "overview": "Tổng quan",
+      "features": "Tính năng",
+      "processes": "Quy trình",
+      "companies": "Công ty",
+      "preview": "Xem trước"
+    },
+    "overview": {
+      "noPerCompany": "App này không bật hay tắt theo từng công ty nên không có phần cấu hình cho công ty.",
+      "enabledFor": "Đang bật",
+      "enabledOf": "Đang bật cho {on}/{total} công ty",
+      "byLevel": "Công ty theo mức",
+      "slots": "Khe quy trình",
+      "access": "Đăng nhập và đối tượng",
+      "ssoOn": "SSO bật",
+      "ssoOff": "SSO tắt",
+      "url": "Địa chỉ",
+      "noUrl": "Chưa đặt địa chỉ",
+      "warnings": "Cảnh báo cấu hình",
+      "noWarnings": "Chưa thấy vấn đề nào.",
+      "edit": "Sửa thông tin app"
+    },
+    "warn": {
+      "noUrl": "App chưa có địa chỉ nhưng đã có {count} công ty bật: người dùng chưa mở được. Điền địa chỉ ở \"Sửa thông tin app\".",
+      "disabled": "App đang bị ẩn khỏi danh mục nhưng {count} công ty đã bật: người dùng không thấy app trong menu.",
+      "flowNeedsAddon": "Các công ty {companies} được gán quy trình riêng nhưng chưa bật tính năng thêm \"{addon}\", nên quy trình đó chưa chạy. Bật ở tab Công ty."
+    },
+    "features": {
+      "noGroup": "App này chưa có nhóm tính năng trong danh mục.",
+      "empty": "Chưa có tính năng nào cho app này.",
+      "rolesTitle": "Vai theo app",
+      "rolesDesc": "Vai là dữ liệu của từng công ty nên không sửa ở đây. Mở công ty ở tab Công ty, rồi vào Phân quyền để xem và đổi vai.",
+      "catalogHint": "Muốn xem mọi tính năng của hệ thống?",
+      "catalogLink": "Mở danh mục tính năng"
+    },
+    "processes": {
+      "noHub": "Chưa cấu hình địa chỉ Hub nên chưa xem được quy trình.",
+      "noSlots": "App này chưa có khe quy trình. Khe là chỗ app cho phép gắn một quy trình, ví dụ \"Duyệt hợp đồng\".",
+      "intro": "Mỗi khe có một quy trình mặc định. Công ty nào cần luồng riêng thì nhân bản, sửa rồi gán ở tab Công ty. Lượt đang chạy giữ bản cũ; lượt mới dùng bản mới.",
+      "default": "Mặc định",
+      "noDefault": "Chưa có",
+      "view": "Xem sơ đồ",
+      "clone": "Nhân bản để sửa",
+      "pickDefault": "Chọn quy trình làm mặc định",
+      "pickDefaultPlaceholder": "Chọn quy trình đã xuất bản…",
+      "changeDefault": "Đổi mặc định",
+      "defaultDone": "Đã đặt \"{name}\" làm mặc định.",
+      "confirmTitle": "Đặt \"{name}\" làm mặc định?",
+      "confirmDesc": "Các công ty chưa được gán riêng sẽ dùng quy trình này cho lượt mới. Lượt đang chạy giữ quy trình cũ.",
+      "others": "Quy trình khác của khe",
+      "noOthers": "Chưa có quy trình nào khác. Dùng \"Nhân bản để sửa\" để tạo luồng riêng.",
+      "draftOnly": "Nháp, chưa xuất bản",
+      "unpublished": "Có thay đổi chưa xuất bản",
+      "usedBy": "Đang gán cho {count} công ty",
+      "noUsers": "Chưa công ty nào dùng quy trình riêng: các công ty đều chạy mặc định. Gán ở tab Công ty.",
+      "openCompanies": "Xem danh sách công ty"
+    },
+    "companies": {
+      "levelFilter": "Lọc theo mức",
+      "search": "Tìm công ty…",
+      "blocked": "Hãy lưu hoặc hoàn tác thay đổi của công ty đang mở trước khi chuyển sang công ty khác.",
+      "empty": "Chưa có công ty nào trong hệ thống.",
+      "noMatch": "Không có công ty nào khớp bộ lọc.",
+      "col": {
+        "name": "Công ty",
+        "level": "Mức",
+        "addons": "Tính năng thêm",
+        "flows": "Quy trình theo khe",
+        "users": "Số người"
+      },
+      "open": "Mở cấu hình của {name}",
+      "locked": "Đã khoá",
+      "flowDefault": "Mặc định",
+      "drawer": "Cấu hình công ty đang chọn",
+      "drawerHint": "Cùng thẻ app như ở trang công ty. Lưu một lượt, có hộp xác nhận.",
+      "preview": "Xem trước công ty này sẽ thấy gì",
+      "pickHint": "Chọn một công ty trong bảng để đổi mức, bật tính năng thêm và gán quy trình."
+    },
+    "preview": {
+      "roleAria": "Xem như vai",
+      "versionAria": "Bản xem trước",
+      "saved": "Bản đang lưu",
+      "draft": "Bản nháp",
+      "draftHint": "Bản nháp có khi bạn đang sửa dở một công ty ở tab Công ty và chưa lưu.",
+      "pickCompany": "Chọn một công ty để xem họ thấy gì.",
+      "noManifest": "App này chưa có mô tả màn hình nên chưa xem trước được.",
+      "companyAria": "Công ty cần xem",
+      "companyPlaceholder": "Chọn công ty…",
+      "role": {
+        "company_admin": "Quản trị công ty",
+        "member": "Thành viên",
+        "partner": "Đối tác"
+      },
+      "sidebar": "Menu người này thấy",
+      "noGroup": "Không hiện nhóm {app} trong menu.",
+      "actions": "Màn mở được và việc làm được",
+      "noScreens": "Không mở được màn nào của app này.",
+      "viewOnly": "Chỉ xem.",
+      "flows": "Quy trình chạy",
+      "flowsPartner": "Đối tác không thấy và không làm bước nào của quy trình công ty.",
+      "flowsNone": "App này chưa có khe quy trình.",
+      "running": "Đang chạy",
+      "notRunning": "Chưa chạy",
+      "flowRuns": "Chạy quy trình \"{name}\" (v{version}).",
+      "flowFallback": "Dùng cách duyệt mặc định cũ."
+    },
+    "reason": {
+      "appOff": "App đang tắt cho công ty này",
+      "needLevel": "Cần mức {level}",
+      "needAddon": "Cần bật tính năng thêm \"{addon}\"",
+      "adminOnly": "Chỉ quản trị công ty thấy",
+      "partnerNever": "Đối tác không bao giờ thấy",
+      "noRole": "Chưa có vai nào đủ mức {level}"
     }
   }
 }

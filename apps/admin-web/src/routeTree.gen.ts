@@ -30,6 +30,7 @@ import { Route as AuthedUsageRouteImport } from './routes/_authed/usage'
 import { Route as AuthedUsersRouteImport } from './routes/_authed/users'
 import { Route as AuthedAccount2faRouteImport } from './routes/_authed/account.2fa'
 import { Route as AuthedAccountPasswordRouteImport } from './routes/_authed/account.password'
+import { Route as AuthedAppsAppKeyRouteImport } from './routes/_authed/apps_.$appKey'
 import { Route as AuthedAuditAuditIdRouteImport } from './routes/_authed/audit/$auditId'
 import { Route as AuthedCommandsIndexRouteImport } from './routes/_authed/commands/index'
 import { Route as AuthedCommandsCommandIdRouteImport } from './routes/_authed/commands/$commandId'
@@ -155,6 +156,11 @@ const AuthedAccount2faRoute = AuthedAccount2faRouteImport.update({
 const AuthedAccountPasswordRoute = AuthedAccountPasswordRouteImport.update({
   id: '/account/password',
   path: '/account/password',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAppsAppKeyRoute = AuthedAppsAppKeyRouteImport.update({
+  id: '/apps_/$appKey',
+  path: '/apps/$appKey',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAuditAuditIdRoute = AuthedAuditAuditIdRouteImport.update({
@@ -292,6 +298,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof AuthedUsersRoute
   '/account/2fa': typeof AuthedAccount2faRoute
   '/account/password': typeof AuthedAccountPasswordRoute
+  '/apps/$appKey': typeof AuthedAppsAppKeyRoute
   '/audit/$auditId': typeof AuthedAuditAuditIdRoute
   '/commands/$commandId': typeof AuthedCommandsCommandIdRoute
   '/commands/new': typeof AuthedCommandsNewRoute
@@ -336,6 +343,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthedIndexRoute
   '/account/2fa': typeof AuthedAccount2faRoute
   '/account/password': typeof AuthedAccountPasswordRoute
+  '/apps/$appKey': typeof AuthedAppsAppKeyRoute
   '/audit/$auditId': typeof AuthedAuditAuditIdRoute
   '/commands/$commandId': typeof AuthedCommandsCommandIdRoute
   '/commands/new': typeof AuthedCommandsNewRoute
@@ -382,6 +390,7 @@ export interface FileRoutesById {
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/account/2fa': typeof AuthedAccount2faRoute
   '/_authed/account/password': typeof AuthedAccountPasswordRoute
+  '/_authed/apps_/$appKey': typeof AuthedAppsAppKeyRoute
   '/_authed/audit/$auditId': typeof AuthedAuditAuditIdRoute
   '/_authed/commands/$commandId': typeof AuthedCommandsCommandIdRoute
   '/_authed/commands/new': typeof AuthedCommandsNewRoute
@@ -428,6 +437,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/account/2fa'
     | '/account/password'
+    | '/apps/$appKey'
     | '/audit/$auditId'
     | '/commands/$commandId'
     | '/commands/new'
@@ -472,6 +482,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account/2fa'
     | '/account/password'
+    | '/apps/$appKey'
     | '/audit/$auditId'
     | '/commands/$commandId'
     | '/commands/new'
@@ -517,6 +528,7 @@ export interface FileRouteTypes {
     | '/_authed/'
     | '/_authed/account/2fa'
     | '/_authed/account/password'
+    | '/_authed/apps_/$appKey'
     | '/_authed/audit/$auditId'
     | '/_authed/commands/$commandId'
     | '/_authed/commands/new'
@@ -695,6 +707,13 @@ declare module '@tanstack/react-router' {
       path: '/account/password'
       fullPath: '/account/password'
       preLoaderRoute: typeof AuthedAccountPasswordRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/apps_/$appKey': {
+      id: '/_authed/apps_/$appKey'
+      path: '/apps/$appKey'
+      fullPath: '/apps/$appKey'
+      preLoaderRoute: typeof AuthedAppsAppKeyRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/audit/$auditId': {
@@ -883,6 +902,7 @@ interface AuthedRouteChildren {
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedAccount2faRoute: typeof AuthedAccount2faRoute
   AuthedAccountPasswordRoute: typeof AuthedAccountPasswordRoute
+  AuthedAppsAppKeyRoute: typeof AuthedAppsAppKeyRoute
   AuthedCommandsCommandIdRoute: typeof AuthedCommandsCommandIdRoute
   AuthedCommandsNewRoute: typeof AuthedCommandsNewRoute
   AuthedFeaturesFeatureIdRoute: typeof AuthedFeaturesFeatureIdRoute
@@ -924,6 +944,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedAccount2faRoute: AuthedAccount2faRoute,
   AuthedAccountPasswordRoute: AuthedAccountPasswordRoute,
+  AuthedAppsAppKeyRoute: AuthedAppsAppKeyRoute,
   AuthedCommandsCommandIdRoute: AuthedCommandsCommandIdRoute,
   AuthedCommandsNewRoute: AuthedCommandsNewRoute,
   AuthedFeaturesFeatureIdRoute: AuthedFeaturesFeatureIdRoute,

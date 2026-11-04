@@ -1,5 +1,5 @@
 // CR-111 · một nhóm app trong danh mục Feature: tiêu đề (icon app, tên, mô tả) + bảng tên dễ hiểu / mô tả / trạng thái / key kỹ thuật.
-import type { FeatureListItem } from "@ai/contracts";
+import { type FeatureListItem, getAppManifest } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge";
@@ -43,7 +43,25 @@ export function FeatureGroupSection({ group, isFetching, onStatus, onDelete }: P
             {tr(`featmeta.app.${group.app}.desc`)}
           </p>
         </div>
-        <span className="ml-auto text-label text-muted-foreground">{group.items.length}</span>
+        {getAppManifest(group.app) ? (
+          <Link
+            to="/apps/$appKey"
+            params={{ appKey: group.app }}
+            search={{ tab: "features" }}
+            className="ml-auto text-label text-primary hover:underline"
+          >
+            {t("appcfg.openApp")}
+          </Link>
+        ) : null}
+        <span
+          className={
+            getAppManifest(group.app)
+              ? "text-label text-muted-foreground"
+              : "ml-auto text-label text-muted-foreground"
+          }
+        >
+          {group.items.length}
+        </span>
       </header>
       <Table
         containerClassName="overflow-visible"

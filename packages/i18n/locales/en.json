@@ -823,7 +823,7 @@
       "confirmTitle": "Save changes for {tenant}?",
       "confirmBody": "{count} feature(s) will be revoked ({list}): the company's users lose the matching access within seconds. You can grant them again later.",
       "toast": {
-        "saved": "Saved features for {tenant}"
+        "saved": "Saved features for {tenant}. The company will see the change within a minute."
       }
     },
     "timezone": {
@@ -2754,6 +2754,127 @@
     "toast": {
       "downloaded": "Downloaded {file}",
       "imported": "Imported · {a} added · {u} updated · v{n}"
+    }
+  },
+  "appcfg": {
+    "subtitle": "Configure one app: which companies have it, at what level, and which flows run.",
+    "back": "App list",
+    "edit": "Edit app details",
+    "openApp": "Open app settings",
+    "tabs": "App settings sections",
+    "tab": {
+      "overview": "Overview",
+      "features": "Features",
+      "processes": "Flows",
+      "companies": "Companies",
+      "preview": "Preview"
+    },
+    "overview": {
+      "noPerCompany": "This app is not switched on or off per company, so it has no company settings.",
+      "enabledFor": "Switched on",
+      "enabledOf": "On for {on}/{total} companies",
+      "byLevel": "Companies by level",
+      "slots": "Flow slots",
+      "access": "Sign-in and audience",
+      "ssoOn": "SSO on",
+      "ssoOff": "SSO off",
+      "url": "Address",
+      "noUrl": "No address set",
+      "warnings": "Configuration warnings",
+      "noWarnings": "No problems found.",
+      "edit": "Edit app details"
+    },
+    "warn": {
+      "noUrl": "The app has no address but {count} companies have it on: people cannot open it yet. Set the address in \"Edit app details\".",
+      "disabled": "The app is hidden from the catalog but {count} companies have it on: people do not see it in the menu.",
+      "flowNeedsAddon": "Companies {companies} have their own flow assigned but the add-on \"{addon}\" is off, so that flow does not run yet. Turn it on in the Companies tab."
+    },
+    "features": {
+      "noGroup": "This app has no feature group in the catalog.",
+      "empty": "No features for this app yet.",
+      "rolesTitle": "Roles of this app",
+      "rolesDesc": "Roles belong to each company, so they are not edited here. Open a company in the Companies tab, then go to Access to view and change roles.",
+      "catalogHint": "Want to see every feature in the system?",
+      "catalogLink": "Open the feature catalog"
+    },
+    "processes": {
+      "noHub": "The Hub address is not configured, so flows cannot be shown.",
+      "noSlots": "This app has no flow slots. A slot is a place where the app lets you plug in a flow, for example \"Contract approval\".",
+      "intro": "Each slot has a default flow. For a company that needs its own, duplicate, edit, then assign it in the Companies tab. Running items keep the old version; new items use the new one.",
+      "default": "Default",
+      "noDefault": "None",
+      "view": "View diagram",
+      "clone": "Duplicate to edit",
+      "pickDefault": "Pick the default flow",
+      "pickDefaultPlaceholder": "Pick a published flow…",
+      "changeDefault": "Change default",
+      "defaultDone": "\"{name}\" is now the default.",
+      "confirmTitle": "Make \"{name}\" the default?",
+      "confirmDesc": "Companies without their own flow will use it for new items. Running items keep the old flow.",
+      "others": "Other flows of this slot",
+      "noOthers": "No other flows yet. Use \"Duplicate to edit\" to create your own.",
+      "draftOnly": "Draft, not published",
+      "unpublished": "Unpublished changes",
+      "usedBy": "Assigned to {count} companies",
+      "noUsers": "No company uses a custom flow: all run the default. Assign one in the Companies tab.",
+      "openCompanies": "See company list"
+    },
+    "companies": {
+      "levelFilter": "Filter by level",
+      "search": "Search companies…",
+      "blocked": "Save or undo the open company's changes before switching to another company.",
+      "empty": "There are no companies yet.",
+      "noMatch": "No company matches the filter.",
+      "col": {
+        "name": "Company",
+        "level": "Level",
+        "addons": "Add-ons",
+        "flows": "Flow per slot",
+        "users": "People"
+      },
+      "open": "Open settings of {name}",
+      "locked": "Locked",
+      "flowDefault": "Default",
+      "drawer": "Settings of the selected company",
+      "drawerHint": "Same app card as on the company page. Saved in one go, with a confirmation.",
+      "preview": "Preview what this company will see",
+      "pickHint": "Pick a company in the table to change its level, turn on add-ons and assign flows."
+    },
+    "preview": {
+      "roleAria": "View as role",
+      "versionAria": "Preview version",
+      "saved": "Saved version",
+      "draft": "Draft",
+      "draftHint": "A draft exists while you are editing a company in the Companies tab and have not saved.",
+      "pickCompany": "Pick a company to see what they see.",
+      "noManifest": "This app has no screen description yet, so it cannot be previewed.",
+      "companyAria": "Company to preview",
+      "companyPlaceholder": "Pick a company…",
+      "role": {
+        "company_admin": "Company admin",
+        "member": "Member",
+        "partner": "Partner"
+      },
+      "sidebar": "Menu this person sees",
+      "noGroup": "The {app} group is not shown in the menu.",
+      "actions": "Screens they can open and what they can do",
+      "noScreens": "No screen of this app can be opened.",
+      "viewOnly": "View only.",
+      "flows": "Flows that run",
+      "flowsPartner": "Partners do not see or do any step of the company's flows.",
+      "flowsNone": "This app has no flow slots.",
+      "running": "Running",
+      "notRunning": "Not running",
+      "flowRuns": "Runs flow \"{name}\" (v{version}).",
+      "flowFallback": "Uses the old default approval."
+    },
+    "reason": {
+      "appOff": "The app is off for this company",
+      "needLevel": "Needs level {level}",
+      "needAddon": "Needs the add-on \"{addon}\"",
+      "adminOnly": "Only company admins see this",
+      "partnerNever": "Partners never see this",
+      "noRole": "No role reaches level {level}"
     }
   }
 }

@@ -14,6 +14,7 @@ type Props = {
     | "/workflows"
     | "/commands"
     | "/features"
+    | "/apps"
     | "/groups"
     | "/agents"
     | "/processes";

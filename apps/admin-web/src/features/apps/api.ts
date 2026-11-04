@@ -4,8 +4,9 @@ import type {
   AppCatalogListResponse,
   AppCreateRequest,
   AppUpdateRequest,
+  EntitlementListResponse,
 } from "@ai/contracts";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 
 const KEY = ["apps"] as const;
@@ -37,5 +38,18 @@ export function useDeleteApp() {
   return useMutation({
     mutationFn: (key: string) => api<undefined>(path(key), { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+  });
+}
+
+/** CR-118 · công ty được cấp từng feature của app (≤ 200 mỗi feature) — nguồn của bảng "Công ty" và số liệu Tổng quan. */
+export function useFeatureEntitlementLists(featureIds: readonly string[]) {
+  return useQueries({
+    queries: featureIds.map((id) => ({
+      queryKey: ["features", "entitlements", id, 0, 200] as const,
+      queryFn: () =>
+        api<EntitlementListResponse>(`/admin/features/${id}/entitlements`, {
+          query: { limit: 200 },
+        }),
+    })),
   });
 }

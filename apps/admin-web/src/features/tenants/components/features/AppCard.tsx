@@ -1,5 +1,5 @@
 // CR-111 · thẻ một app trong tab Feature của công ty: tên + dòng tóm tắt "Đang: Sửa · 1 tính năng thêm", thanh mức hoặc công tắc, tính năng thêm.
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Switch } from "@/components/ui/switch";
@@ -26,6 +26,10 @@ type Props = {
   readOnly?: boolean;
   /** Gói của app + số vai (tính theo mức đang chọn) + số công ty đối tác, khi app có gói. */
   meta?: Omit<ComponentProps<typeof AppCardMeta>, "app" | "level"> | null;
+  /** CR-118: khối "Gán quy trình" của app nằm trong thẻ (cùng một component ở trang công ty và ngăn Công ty của trang app). */
+  slots?: ReactNode;
+  /** CR-118: lối tắt ở đầu thẻ (vd "Mở cấu hình app"). */
+  headerAction?: ReactNode;
 };
 
 function useSummary(card: Card, draft: ReadonlySet<string>) {
@@ -73,7 +77,16 @@ function CardSwitch({
     />
   );
 }
-export function AppCard({ card, draft, onChange, onLevel, readOnly, meta }: Props) {
+export function AppCard({
+  card,
+  draft,
+  onChange,
+  onLevel,
+  readOnly,
+  meta,
+  slots,
+  headerAction,
+}: Props) {
   const { t } = useTranslation();
   const tr = useTr();
   const Icon = APPS[card.app].icon;
@@ -106,6 +119,7 @@ export function AppCard({ card, draft, onChange, onLevel, readOnly, meta }: Prop
           </h3>
           <p className="text-caption text-muted-foreground">{summary}</p>
         </div>
+        {headerAction}
         <CardSwitch card={card} draft={draft} name={name} readOnly={readOnly} onChange={onChange} />
       </div>
       {card.mode === "levels" ? (
@@ -125,6 +139,7 @@ export function AppCard({ card, draft, onChange, onLevel, readOnly, meta }: Prop
         onToggle={(key, on) => onChange(setKey(draft, key, on))}
       />
       {meta ? <AppCardMeta {...meta} app={card.app} level={level?.level ?? "off"} /> : null}
+      {slots}
     </section>
   );
 }

@@ -13,7 +13,13 @@ import type {
   ReleaseRef,
   TenantProcessSlot,
 } from "@ai/contracts/hub-admin";
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { api } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";
 import { LIST_LIMIT, PKEYS } from "./api";
@@ -106,6 +112,18 @@ export const useAssignments = (id: string, enabled: boolean) =>
     staleTime: 0,
     queryFn: async () =>
       (await api<{ items: AssignmentItem[] }>(url(`${D(id)}/assignments`))).items,
+  });
+
+/** CR-118: công ty đang được GÁN của nhiều quy trình một lượt (trang cấu hình app) — cùng khoá cache với `useAssignments`. */
+export const useAssignmentsOf = (ids: readonly string[], enabled: boolean) =>
+  useQueries({
+    queries: ids.map((id) => ({
+      queryKey: LKEYS.assignments(id),
+      enabled: enabled && hubConfigured(),
+      staleTime: 0,
+      queryFn: async () =>
+        (await api<{ items: AssignmentItem[] }>(url(`${D(id)}/assignments`))).items,
+    })),
   });
 
 export const useTenantSlots = (tenantId: string, enabled: boolean) =>

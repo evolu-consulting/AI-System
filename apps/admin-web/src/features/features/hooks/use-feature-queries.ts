@@ -4,6 +4,7 @@ export {
   type FeatureStatusFilter,
   useCommandOptions,
   useEntitlements,
+  useFeatureList,
   useGrantedTenantIds,
   useTenantOptions,
 } from "../api";

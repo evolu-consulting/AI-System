@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { slotsOfApp } from "@/features/apps/lib/app-config";
 import type { TenantSlotInfo } from "@/features/processes/library-api";
 import { useTenantSlotBlock } from "../../hooks/use-tenant-slots";
 
@@ -73,23 +74,35 @@ function SlotRow({ row, b }: { row: TenantSlotInfo; b: Block }) {
   );
 }
 
-export function TenantProcessSlots({ tenant }: { tenant: { id: string; name: string } }) {
+/**
+ * CR-118: khối nằm TRONG thẻ app — chỉ hiện các khe của `app` (tiền tố `<app>.`), không có khe ⇒ không hiện gì. Cả trang công ty và
+ * ngăn "Công ty" của trang app dùng chung đúng component + hook này (một đường gán).
+ */
+export function TenantProcessSlots({
+  tenant,
+  app,
+}: {
+  tenant: { id: string; name: string };
+  app: string;
+}) {
   const { t } = useTranslation();
   const b = useTenantSlotBlock(tenant);
   if (b.hidden) return null;
-  const rows = b.slots.data ?? [];
+  const rows = slotsOfApp(b.slots.data ?? [], app);
+  if (rows.length === 0 && !b.slots.isError) return null;
   return (
-    <section className="space-y-3" aria-label={t("tenants.slots.title")}>
+    <section
+      className="space-y-3 border-t border-border pt-3"
+      aria-label={t("tenants.slots.title")}
+    >
       <div>
-        <h2 className="text-h3 font-semibold">{t("tenants.slots.title")}</h2>
+        <h4 className="text-label font-semibold">{t("tenants.slots.title")}</h4>
         <p className="text-caption text-muted-foreground">{t("tenants.slots.desc")}</p>
       </div>
       {b.slots.isError ? (
         <p role="alert" className="text-body text-destructive">
           {t("tenants.slots.loadFail")}
         </p>
-      ) : rows.length === 0 && !b.slots.isPending ? (
-        <p className="text-body text-muted-foreground">{t("tenants.slots.empty")}</p>
       ) : (
         <ul className="space-y-2">
           {rows.map((r) => (
