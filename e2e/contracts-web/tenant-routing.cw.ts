@@ -168,6 +168,7 @@ test("cr118-route-kind · luật phòng ban + loại HĐ (Mua) ⇒ PUT gửi con
   await rule.getByTestId("routing-rule-0-kinds").locator("summary").click();
   await rule.getByTestId("routing-rule-0-kinds-buy").check();
   await expect(rule.getByTestId("routing-rule-0-kinds").locator("summary")).toHaveText("Mua");
+  await rule.getByTestId("routing-rule-0-kinds").locator("summary").click(); // đóng hộp loại (che nút Lưu)
   await rule.getByTestId("routing-rule-0-process").selectOption(P_SALES);
   await dlg.getByTestId("routing-save").click();
   await expect.poll(() => st.puts.length).toBe(1);
