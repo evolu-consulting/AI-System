@@ -24,7 +24,7 @@ npm: `react` 19.2.9 (2026-10-14), `babel-plugin-react-compiler` 1.0.0 (chỉ app
 | `/login`, `/sso`, `/privacy`, `/terms` | platform | `/sso` giữ (admin/chat hand-off vào) |
 Hash cũ (`legacy-hash.ts` thuần + unit): `#/feed`→`/community`; `#/profile/<o>/<s>`→`/community/profile/<o>/<s>`; `#/settings`→`/community?settings=1`.
 301 (edge): `community.<d>/*` → `sohoptac.<d>/community` (host chính; fragment giữ); proxy `/auth`,`/pack` giữ 30 ngày; `COMMUNITY_WEB_URL` + catalog `community` = `https://sohoptac.<d>/community`, `sso=false`.
-Phiên: một phiên `X-App: contracts` (`ai_rt_contracts`); đối tác đăng nhập lại 1 lần; login gộp có đổi mật khẩu bắt buộc + TOTP; `/community*` không bounce sang AI System.
+Phiên: một phiên `X-App: contracts` (`ai_rt_contracts`); đối tác đăng nhập lại 1 lần; login gộp có đổi mật khẩu bắt buộc + TOTP; `/community*` không bounce.
 
 ## 3. Cây thư mục đích + 6 luật depcruise (mức error)
 `src/{app, routes (mỏng: path+beforeLoad+lazy), shell (chỉ đọc manifest), platform/{auth,features,flow,brand,i18n,prefs}, shared/{kernel (thuần), ui}, modules/{contracts,community}/{manifest.ts,i18n.ts,domain,application,adapters,ui}}`. Contracts giữ `features/<f>/{lib,hooks,api.ts,components,pages}` dưới `modules/contracts/`, ánh xạ lớp bằng luật.
@@ -47,7 +47,7 @@ App chỉ dùng hook OpenFeature + `<Gate>`/`useCan` qua `platform/features/inde
 | ETag | `"<config_version>.<hub_config_version>"`; `If-None-Match` → 304; `Cache-Control: private, no-cache`; cache web xoá khi hết phiên |
 | SSE (N3) | `/me/stream` thêm event `config.changed`, data `{config_version,hub_config_version}`, phát khi hub nạp lại ảnh (LISTEN `config_changed`/`hub_config_changed`) |
 | Web | Query key `["platform","me"]`; `config.changed` → refetch (304 rẻ); dự phòng: focus, 403/404 gói tắt, `staleTime` 60 s |
-| Fail-closed | server (pack guard) là nguồn thật; gate web chỉ ẩn UI; module vừa tắt → về home + toast. Độ trễ: hub nạp ≤ 5 s, web gần tức thời (SSE) hoặc ≤ focus/60 s |
+| Fail-closed | server (pack guard) là nguồn thật; gate web chỉ ẩn UI; module vừa tắt → về home + toast. Độ trễ: hub ≤ 5 s, web gần tức thời (SSE) / ≤ 60 s |
 
 ## 5. FlowRuntime (UW-FR-10..15, đợt 2)
 | Phần | Hợp đồng |
@@ -67,7 +67,10 @@ Thêm loại bước = contract + `hub nodes/<kind>` + editor admin-web + render
 | Quy trình | mỗi khe một thẻ (mặc định + phiên bản, sơ đồ chỉ đọc, công ty đang dùng); Sửa → `/processes/$id` (editor duy nhất) |
 | Công ty | bảng mức/add-on/khe; ngăn kéo = đúng `AppCard` + khe (chung `/tenants/$id?tab=features`); xác nhận nêu tác động; `GET /admin/apps/:key/tenants` nếu cần (Opus, platform_admin) |
 | Xem trước | công ty × vai (Quản trị/Thành viên/Đối tác) × bản lưu/nháp; `previewApp(manifest, entitlements, slotAssignments, role)` thuần, dùng chung shell (`@ai/contracts/apps/<key>.manifest.ts`) |
-Tenant chỉ xem: web gộp › Cài đặt › "Ứng dụng & quy trình" (quản trị công ty + chủ gói): mức, add-on, mỗi khe tên + phiên bản + sơ đồ + luật CR-113; không nút sửa; thành viên/đối tác không thấy. `/features`, `/processes` giữ.
+Tenant chỉ xem: web gộp › Cài đặt › "Ứng dụng & quy trình" (quản trị công ty + chủ gói): mức, add-on, mỗi khe tên + phiên bản + sơ đồ + luật CR-113; không nút sửa; thành viên/đối tác không thấy.
+
+## 6b. Sơ đồ flow dùng chung (@ai/flow-canvas)
+MỘT gói vẽ sơ đồ cho editor (`edit`), tenant và thẻ khe `/apps` (`view`); lười nạp; registry đủ `FlowStepKind`. Chi tiết: `spec-flow-canvas.md`.
 
 ## 7. Capability read-model (không bảng mới, không migration)
 8 khái niệm: Tenant(+Group/Vai) · App · Feature · Capability (Agent/Flow/Tool; owner = App hoặc Dùng chung) · Slot · Binding · Policy · Snapshot. Hàm thuần GHÉP kết quả luật gốc (`computeEffectiveAccess`, `effectiveAgents`, `packAccessInput`, `resolveSlot`), test tương đương từng luật; luật thật chạy chỗ cũ.
@@ -75,7 +78,7 @@ Tenant chỉ xem: web gộp › Cài đặt › "Ứng dụng & quy trình" (qu�
 |---|---|---|
 | `GET /pack/me` | người dùng (lát cắt tenant×user) | như §4 |
 | `GET /hub-admin/tenants/:id/capabilities` | platform_admin; tenant_admin chỉ tenant mình, chỉ đọc | 0 SQL nóng, p95 ≤ 20 ms (≤ 50 agent, ≤ 20 khe, ≤ 200 feature); ≤ 3 SQL khi ảnh hub thiếu; ETag/304 |
-Nạp ảnh sau NOTIFY: SQL cố định, ≤ 200 ms/100 tenant (ghi số thật). Không làm chậm contracts.list p95 ≤ 58,4 ms ×1,1, chat.first-delta p50 ≤ 43,7 ms ×1,1. Baseline mới `perf/baseline/platform.{me,capabilities}.json`. Dify chỉ đọc (ADR-0022); DLC không đụng. UI: tab "Ứng dụng & năng lực" (key URL `features`): thẻ app (+Agent/Tool), Dùng chung, Giới hạn, lý do không hiệu lực.
+Nạp ảnh sau NOTIFY: SQL cố định, ≤ 200 ms/100 tenant (ghi số thật). Không làm chậm contracts.list (p95 ≤ 58,4 ms ×1,1), chat.first-delta (p50 ≤ 43,7 ms ×1,1). Baseline mới `perf/baseline/platform.{me,capabilities}.json`. Dify chỉ đọc (ADR-0022); DLC không đụng. UI: tab "Ứng dụng & năng lực" (URL `features`): thẻ app (+Agent/Tool), Dùng chung, Giới hạn, lý do không hiệu lực.
 
 ## 8. Lát
 Làn: **F**=đầy đủ (Opus medium, test trước), **N**=nhanh. | Lát | Đợt | Làn | Model | Phụ thuộc |
@@ -100,7 +103,7 @@ Làn: **F**=đầy đủ (Opus medium, test trước), **N**=nhanh. | Lát | Đ�
 | capability-ui · tenant-settings | 2 | N | Sonnet | capability-api + admin-app-page · flow-web |
 | e2e2 (viết, không chạy) | 2 | N | Sonnet | các lát UI |
 | slot-intake (COULD) | 2 | F | Opus + Sonnet | node-form, flow-web |
-Tên lát `cr118-<…>`. `move` chỉ chạy khi không lát nào khác mở trên contracts-web. Migration: dự kiến không (admin 0033 / hub ≥ 0087 do điều phối giao).
+Tên lát `cr118-<…>`. `move` chỉ chạy khi không lát nào khác mở trên contracts-web. Migration: dự kiến không.
 
 | community-ui (§11.1) | 2 | N | Sonnet | shell |
 | flow-routing: chọn quy trình theo điều kiện (§11.2; engine/resolve Opus, admin UI Sonnet) | 2 | F | Opus + Sonnet | flow-api, admin-app-page |
@@ -125,9 +128,9 @@ Tên lát `cr118-<…>`. `move` chỉ chạy khi không lát nào khác mở tr�
 ## 9. Kế hoạch test
 - Trong lát: unit luật thuần (gate, nav, legacy-hash, login outcome, home pick, previewApp); int một đường chính mỗi endpoint + chặn chéo tenant + đối tác + đếm SQL; e2e viết không chạy.
 - Một lần cuối MỖI đợt, evotest (T1): `run-tests.ps1 -Step e2e -Filter <job>` (đợt 1: sohoptac-web, community, N1, deployed; đợt 2 thêm admin app-config, P-a) + `-Capture cw` + `test:all --no-frozen`; đợt 2 thêm `test:frozen`, `dlc:check`; chỉ báo đỏ mới (`known-red.json`). Perf `-Exclusive` do điều phối, một lần, tuần tự.
-- UAT stg riêng: project `sohoptac2-cr118`, image tag `cr118` (KHÔNG `:latest`), cổng 127.0.0.1:2853x, tunnel, DB tmpfs, seed demo; 3 vai (chủ quản admin, member, đối tác): chuyển Community↔SHT không reload, tắt Community ⇒ nav mất, đối tác gõ `/contracts`. Dọn: `down -v`, xoá image `cr118`, `e2e:reap`, `e2e:lanes --prune`, xoá worktree (kiểm đĩa F:).
-- Cuối đợt: một review + security Opus medium trên diff gộp.
+- UAT stg riêng: project `sohoptac2-cr118`, image tag `cr118` (KHÔNG `:latest`), cổng 127.0.0.1:2853x, tunnel, DB tmpfs, seed demo; 3 vai (chủ quản admin, member, đối tác): chuyển Community↔SHT không reload, tắt Community ⇒ nav mất, đối tác gõ `/contracts`. Dọn: `down -v`, image `cr118`, `e2e:reap`, `e2e:lanes --prune`, worktree.
+- Cuối đợt: một review + security Opus medium.
 
 ## 10. Rollout / rollback (chỉ khi người dùng xác nhận deploy)
 1. Kiểm VERSION/migration prod trước (lệch deploy 2026-10-30). 2. Deploy lên `sohoptac.<d>`; cùng lần đổi catalog community + `COMMUNITY_WEB_URL`, `community.<d>` 301. 3. `e2e-deployed` + verify-ui.
-Rollback: giữ image tag trước; trả server block 8085 + catalog community về URL cũ (không migration).
+Rollback: giữ image tag trước; trả server block 8085 + catalog community về URL cũ.

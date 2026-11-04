@@ -196,6 +196,25 @@ module.exports = {
       to: { path: "(^|/)apps/" },
     },
     {
+      name: "flow-canvas-public-entry",
+      comment:
+        "CR-118 cr118-flow-canvas: apps chỉ import cửa công khai `@ai/flow-canvas` (nặng, nạp lười) và `@ai/flow-canvas/pure` — không import ruột packages/flow-canvas/src/*",
+      severity: "error",
+      from: { path: "^apps/" },
+      to: {
+        path: "(^|/)packages/flow-canvas/src/",
+        pathNot: "(^|/)packages/flow-canvas/src/(index|pure)\\.ts$",
+      },
+    },
+    {
+      name: "flow-canvas-no-apps",
+      comment:
+        "CR-118: packages/flow-canvas dùng chung cho các web app — không import code từ apps/**",
+      severity: "error",
+      from: { path: "(^|/)packages/flow-canvas/" },
+      to: { path: "(^|/)apps/" },
+    },
+    {
       name: "web-no-db-or-api",
       comment: "T-DEP-6: web không import db hay code api",
       severity: "error",

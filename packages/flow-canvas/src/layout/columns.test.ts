@@ -9,7 +9,7 @@ import {
   ROW_H,
   revealDx,
   stepFromDropX,
-} from "./canvas-layout";
+} from "./columns";
 
 const st = (uid: string, step: number, backTo: number[] = []) => ({
   uid,
@@ -53,7 +53,8 @@ describe("layoutSteps", () => {
 });
 
 describe("stepFromDropX", () => {
-  test("cột gần nhất, kẹp 0…steps (steps = bước mới)", () => {
+  test("stepFromDropX: cột gần nhất, vượt cuối ⇒ bước mới, revealDx", () => {
+    expect(revealDx(100, 340, 1000, 460)).toBe(0);
     expect(stepFromDropX(COL_W * 1.4, 3)).toBe(1);
     expect(stepFromDropX(COL_W * 1.6, 3)).toBe(2);
     expect(stepFromDropX(-500, 3)).toBe(0);
@@ -146,4 +147,60 @@ test("revealDx: node dưới ngăn phải thì pan vào; đã thấy thì 0; l�
   expect(revealDx(400, 640, 1000, 460)).toBe(-116); // right 640 > 524
   expect(revealDx(-50, 190, 1000, 460)).toBe(66);
   expect(revealDx(900, 1140, 1000, 0)).toBe(-156);
+});
+
+describe("snapshot bố cục cột", () => {
+  const s = (uid: string, step: number, extra: Record<string, unknown> = {}) => ({
+    uid,
+    step,
+    backTo: [] as number[],
+    after: "auto" as const,
+    ...extra,
+  });
+  // Giá trị lấy từ bản `canvas-layout.ts` của admin-web trước khi gộp gói (cùng fixture) ⇒ toạ độ không đổi một điểm.
+  test("snapshot bố cục cột: toạ độ node và cạnh giữ nguyên (song song, quay lại, If)", () => {
+    const l = layoutSteps([
+      s("a", 0),
+      s("i", 1, { ifs: { yes: 2, no: 3 } }),
+      s("t1", 2),
+      s("t2", 2),
+      s("e", 3),
+      s("r", 4, { backTo: [0], after: "review" as const }),
+      s("b", 5, { branch: [1, null] }),
+    ]);
+    expect({
+      steps: l.steps,
+      nodes: l.nodes.map((n) => [n.id, n.kind, n.x, n.y]),
+      edges: l.edges.map((e) => [e.id, e.kind, e.rule ?? null, e.side ?? null]),
+    }).toEqual({
+      steps: 6,
+      nodes: [
+        ["h0", "stepHeader", 0, 0],
+        ["a", "stage", 0, 296],
+        ["h1", "stepHeader", 320, 0],
+        ["i", "stage", 320, 296],
+        ["h2", "stepHeader", 640, 0],
+        ["t1", "stage", 640, 56],
+        ["t2", "stage", 640, 176],
+        ["j2", "join", 872, 154],
+        ["h3", "stepHeader", 960, 0],
+        ["e", "stage", 960, 296],
+        ["h4", "stepHeader", 1280, 0],
+        ["r", "stage", 1280, 296],
+        ["h5", "stepHeader", 1600, 0],
+        ["b", "stage", 1600, 296],
+      ],
+      edges: [
+        ["a>i", "forward", null, null],
+        ["t1>j2", "forward", null, null],
+        ["t2>j2", "forward", null, null],
+        ["j2>e", "forward", null, null],
+        ["e>r", "forward", null, null],
+        ["r>b", "forward", null, null],
+        ["r<h0", "back", null, null],
+        ["i>t1#yes", "branch", 1, "yes"],
+        ["i>e#no", "branch", 2, "no"],
+      ],
+    });
+  });
 });

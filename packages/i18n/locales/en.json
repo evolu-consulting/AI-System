@@ -2901,7 +2901,8 @@
       },
       "timing": "Due in {due} h",
       "timingRemind": "Due in {due} h, remind every {remind} h",
-      "always": "Runs for every contract"
+      "always": "Runs for every contract",
+      "skip": "Not met ⇒ skipped"
     },
     "reason": {
       "appOff": "The app is off for this company",

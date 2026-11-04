@@ -1,12 +1,31 @@
+// CR-118 · @ai/flow-canvas · bố cục `vertical` (chuyển từ sohoptac-web `lib/flow-canvas.ts`, giữ nguyên toạ độ/chữ).
 // CR-106 · canvas CHỈ ĐỌC của quy trình duyệt đang dùng: hàm thuần dựng node/edge từ `CurrentFlow.steps`
 // (Bắt đầu → từng bước theo thứ tự → "Ghi Đã duyệt"). Bố cục dọc, khoảng cách cố định, không dagre.
 // Không import runtime của @xyflow (chỉ kiểu) để test bun chạy nhanh, không kéo thư viện vào chunk chính.
 
 import type { FlowCond, FlowWhen } from "@ai/contracts";
 import type { Edge, Node } from "@xyflow/react";
-import type { CurrentStep, DealKind } from "./current-flow";
+import { stepKindSpec } from "../registry";
 
-export const NODE_W = 280;
+export type DealKind = "buy" | "sell" | "referral";
+/** Bước đầu vào (dạng `CurrentStep` của sohoptac-web; `kind` là chuỗi: loại lạ/DLC vẽ chung, xem `registry.ts`). */
+export type VerticalStepInput = {
+  key: string;
+  name: string;
+  department: string | null;
+  kind: string;
+  when: FlowWhen | null;
+  dueH: number | null;
+  remindH: number | null;
+  escalateGroup: string | null;
+  approverCount: number | null;
+  escalateDefault?: boolean;
+  escalateMissing?: boolean;
+};
+/** Bước đã ghép sẵn chữ điều kiện (host không dùng `FlowWhen`, vd thẻ khe `/apps`). */
+export type VerticalStep = Omit<VerticalStepInput, "when"> & { condition: string | null };
+
+export const VERTICAL_NODE_W = 280;
 export const GAP_Y = 52; // đủ chỗ cho nhãn điều kiện trên cạnh vào bước
 const H_START = 40;
 const H_FINAL = 52;
@@ -71,6 +90,15 @@ export type CondLabels = {
   number: (n: number) => string;
   /** Nhãn nhánh bỏ qua (\Không thoả ⇒ bỏ qua\). */
   skip: string;
+  /** Màu chữ/nền nhãn trên cạnh (CSS var của host); vắng ⇒ token shadcn. */
+  edge?: EdgeLabelStyle;
+};
+
+export type EdgeLabelStyle = { fill: string; bgFill: string; bgStroke: string };
+export const DEFAULT_EDGE_LABEL: EdgeLabelStyle = {
+  fill: "var(--muted-foreground)",
+  bgFill: "var(--card)",
+  bgStroke: "var(--border)",
 };
 
 const OPS = { ge: "≥", gt: ">", le: "≤", lt: "<" } as const;
@@ -96,11 +124,11 @@ function stepHeight(d: FlowNodeData): number {
   );
 }
 
-function badgesOf(s: CurrentStep, conditional: boolean): StepBadge[] {
+function badgesOf(kind: string, conditional: boolean): StepBadge[] {
   const out: StepBadge[] = [];
   if (conditional) out.push("conditional");
-  if (s.kind === "esign") out.push("esign");
-  if (s.kind === "dify") out.push("dify");
+  const kindBadge = stepKindSpec(kind).badge;
+  if (kindBadge) out.push(kindBadge);
   return out;
 }
 
@@ -114,26 +142,41 @@ const SYSTEM: Omit<FlowNodeData, "kind" | "locked"> = {
   dim: false,
 };
 
+/** Dựng từ bước có `when` (ghép chữ điều kiện bằng `labels`). */
+export function buildFlowCanvas(
+  steps: readonly VerticalStepInput[],
+  labels: CondLabels,
+  run?: readonly boolean[],
+): { nodes: FlowCanvasNode[]; edges: Edge[] } {
+  return buildVerticalGraph(
+    steps.map(({ when, ...s }) => ({ ...s, condition: conditionLabel(when, labels) })),
+    labels.skip,
+    run,
+    labels.edge,
+  );
+}
+
 /**
  * Dựng canvas: Bắt đầu → bước 1..n → Ghi Đã duyệt (khoá). `run` (tuỳ chọn, cùng độ dài `steps`) = kết quả
  * `previewPath`; bước `false` ⇒ `dim`. Node/edge xếp một cột dọc, tâm cùng x.
  */
-export function buildFlowCanvas(
-  steps: readonly CurrentStep[],
-  labels: CondLabels,
+export function buildVerticalGraph(
+  steps: readonly VerticalStep[],
+  skipLabel: string,
   run?: readonly boolean[],
+  edgeStyle: EdgeLabelStyle = DEFAULT_EDGE_LABEL,
 ): { nodes: FlowCanvasNode[]; edges: Edge[] } {
   const items: { id: string; data: FlowNodeData; h: number }[] = [
     { id: "start", data: { ...SYSTEM, kind: "start", locked: false }, h: H_START },
   ];
   steps.forEach((s, i) => {
-    const condition = conditionLabel(s.when, labels);
+    const condition = s.condition;
     const data: FlowNodeData = {
       kind: "step",
       title: s.name,
       index: i + 1,
       department: s.department && s.department !== s.name ? s.department : null,
-      badges: badgesOf(s, condition !== null),
+      badges: badgesOf(s.kind, condition !== null),
       condition,
       info: {
         dueH: s.dueH,
@@ -161,7 +204,7 @@ export function buildFlowCanvas(
       type: it.data.kind,
       position: { x: 0, y },
       data: it.data,
-      width: NODE_W,
+      width: VERTICAL_NODE_W,
       height: it.h,
       draggable: false,
       connectable: false,
@@ -180,16 +223,18 @@ export function buildFlowCanvas(
     selectable: false,
     style: it.data.dim ? { opacity: 0.35 } : undefined,
     // CR-108 · cạnh vào bước có điều kiện ghi rõ điều kiện ("Giá trị ≥ 500.000.000").
-    ...(it.data.kind === "step" && it.data.condition ? labelProps(it.data.condition) : {}),
+    ...(it.data.kind === "step" && it.data.condition
+      ? labelProps(it.data.condition, edgeStyle)
+      : {}),
   }));
-  return { nodes, edges: [...edges, ...skipEdges(items, labels.skip)] };
+  return { nodes, edges: [...edges, ...skipEdges(items, skipLabel, edgeStyle)] };
 }
 
-const labelProps = (label: string) => ({
+const labelProps = (label: string, s: EdgeLabelStyle) => ({
   label,
-  // Nền nhãn mặc định của xyflow là đen (chỉ có base.css) ⇒ tô theo token giao diện để đọc được ở cả sáng/tối.
-  labelStyle: { fontSize: 11, fill: "var(--ink-2)" },
-  labelBgStyle: { fill: "var(--card)", stroke: "var(--rule, #dcdce6)", strokeWidth: 1 },
+  // Nền nhãn mặc định của xyflow là đen (chỉ có base.css) ⇒ tô theo token giao diện của host để đọc được ở cả sáng/tối.
+  labelStyle: { fontSize: 11, fill: s.fill },
+  labelBgStyle: { fill: s.bgFill, stroke: s.bgStroke, strokeWidth: 1 },
   labelBgPadding: [6, 3] as [number, number],
   labelBgBorderRadius: 6,
 });
@@ -198,7 +243,11 @@ const labelProps = (label: string) => ({
  * CR-108 · nhánh bỏ qua: bước có điều kiện (không phải bước đầu) ⇒ cạnh nét đứt đi vòng bên phải từ node liền trước sang node liền sau.
  * Bước bị bỏ qua theo xem trước (`dim`) ⇒ nhánh này sáng lên (đường thật), ngược lại mờ.
  */
-function skipEdges(items: { id: string; data: FlowNodeData }[], label: string): Edge[] {
+function skipEdges(
+  items: { id: string; data: FlowNodeData }[],
+  label: string,
+  edgeStyle: EdgeLabelStyle,
+): Edge[] {
   const out: Edge[] = [];
   items.forEach((it, i) => {
     const prev = items[i - 1];
@@ -215,7 +264,7 @@ function skipEdges(items: { id: string; data: FlowNodeData }[], label: string): 
       deletable: false,
       selectable: false,
       style: { strokeDasharray: "6 4", opacity: it.data.dim ? 1 : 0.5 },
-      ...labelProps(label),
+      ...labelProps(label, edgeStyle),
     } as Edge);
   });
   return out;

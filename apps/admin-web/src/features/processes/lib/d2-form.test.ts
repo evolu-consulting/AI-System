@@ -7,6 +7,7 @@ import {
   type ProcessStageDef,
   type ProcessToolItem,
 } from "@ai/contracts/hub-admin";
+import { layoutSteps } from "@ai/flow-canvas/pure";
 import {
   BRANCH_RULES_MAX as D_MAX,
   BRANCH_OPS as D_OPS,
@@ -17,7 +18,6 @@ import {
 } from "../domain/branch-rules";
 import { fieldOptions, inputOptions, paramCompatible, TOOL_ARGS_LIMIT } from "../domain/tool-rules";
 import { branchToRules, emptyBranch, rulesToBranch } from "./branch-form";
-import { layoutSteps } from "./canvas-layout";
 import { branchErrors, d2LiveErrors, toolErrors, toolSubmitErrors } from "./d2-validate";
 import type { StageDraft } from "./draft-types";
 import { emptyStage, stageToDraft, stageToInput } from "./stage-convert";

@@ -10,7 +10,7 @@ import {
   getSmoothStepPath,
 } from "@xyflow/react";
 import { memo } from "react";
-import { useTranslation } from "react-i18next";
+import { useFlowHost } from "../context";
 
 type Side = "yes" | "no";
 const SIDE_STYLE = {
@@ -27,7 +27,7 @@ const SIDE_STYLE = {
 } as const;
 
 function BranchEdgeImpl(p: EdgeProps) {
-  const { t } = useTranslation();
+  const { labels } = useFlowHost();
   const d = p.data as { rule?: number; side?: Side } | undefined;
   const geo = {
     sourceX: p.sourceX,
@@ -62,9 +62,7 @@ function BranchEdgeImpl(p: EdgeProps) {
             s?.pill ?? "rounded bg-accent text-accent-foreground"
           }`}
         >
-          {d?.side
-            ? t(`process.admin.canvas.if.${d.side}`)
-            : t("process.admin.canvas.edge.branch", { n: rule })}
+          {d?.side ? labels[d.side] : labels.edgeBranch(rule)}
         </span>
       </EdgeLabelRenderer>
     </>

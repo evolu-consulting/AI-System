@@ -7,6 +7,9 @@
 @import "@fontsource/be-vietnam-pro/700.css";
 @import "@fontsource-variable/jetbrains-mono";
 
+/* CR-118 · gói sơ đồ dùng chung: Tailwind quét lớp CSS trong packages/flow-canvas (ngoài thư mục app). */
+@source "../../../../packages/flow-canvas/src";
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

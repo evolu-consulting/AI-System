@@ -3,24 +3,21 @@
 import { type Node, type NodeProps, Position } from "@xyflow/react";
 import { Lock, Plus } from "lucide-react";
 import { memo } from "react";
-import { useTranslation } from "react-i18next";
-import { HEADER_NODE_H, NODE_W } from "../../lib/canvas-layout";
-import { useBlockedStep, useHandlers } from "./canvas-ctx";
+import { useFlowHost } from "../context";
+import { HEADER_NODE_H, NODE_W } from "../layout/columns";
 import { HiddenHandle } from "./HiddenHandle";
 
 /** `label` (quy trình khe): số bước duyệt hiển thị, `null` = cột nút hệ thống (không số, không nút thêm); vắng = đếm cũ. */
 export type StepHeaderData = {
   step: number;
   full: boolean;
-  readOnly: boolean;
   label?: number | null;
 };
 export type StepHeaderType = Node<StepHeaderData, "stepHeader">;
 
 function StepHeaderImpl({ data }: NodeProps<StepHeaderType>) {
-  const { t } = useTranslation();
-  const h = useHandlers();
-  const blocked = useBlockedStep() === data.step;
+  const { labels, mode, onAddToStep, blockedStep } = useFlowHost();
+  const blocked = blockedStep === data.step;
   const slotMode = data.label !== undefined;
   const n = data.label ?? data.step + 1;
   return (
@@ -34,18 +31,18 @@ function StepHeaderImpl({ data }: NodeProps<StepHeaderType>) {
       <HiddenHandle type="target" position={Position.Left} />
       <h3 className="flex items-center gap-1 text-label font-medium">
         {blocked ? <Lock aria-hidden className="size-3.5 text-destructive" /> : null}
-        {data.label === null ? null : t("process.admin.canvas.step.title", { n })}
+        {data.label === null ? null : labels.stepTitle(n)}
       </h3>
-      {data.readOnly || slotMode ? null : (
+      {mode !== "edit" || slotMode || !onAddToStep ? null : (
         <button
           type="button"
-          aria-label={t("process.admin.canvas.step.addTo", { n })}
+          aria-label={labels.addToStep(n)}
           aria-disabled={data.full || undefined}
-          title={t("process.admin.canvas.step.addTo", { n })}
+          title={labels.addToStep(n)}
           className={`nodrag inline-flex size-6 items-center justify-center rounded-md border border-border bg-card hover:bg-accent ${
             data.full ? "opacity-50" : ""
           }`}
-          onClick={() => h.ops.add(data.step)}
+          onClick={() => onAddToStep(data.step)}
         >
           <Plus aria-hidden className="size-4" />
         </button>

@@ -1,10 +1,9 @@
-// CR-106 · node của canvas quy trình duyệt (chỉ đọc): Bắt đầu / Bước duyệt / Ghi Đã duyệt (khoá hệ thống).
+// CR-106 · node của sơ đồ duyệt dọc (chỉ đọc): Bắt đầu / Bước duyệt / Ghi Đã duyệt (khoá hệ thống). Chữ + lớp CSS lấy từ host.
 import { Handle, type NodeProps, Position } from "@xyflow/react";
 import { Flag, Lock, Play } from "lucide-react";
 import { memo } from "react";
-import { useTranslation } from "react-i18next";
-import { type FlowCanvasNode, SKIP_IN, SKIP_OUT, type StepBadge } from "../lib/flow-canvas";
-import { StepInfoLines } from "./StepInfoLines";
+import { useFlowHost } from "../context";
+import { type FlowCanvasNode, SKIP_IN, SKIP_OUT, type StepBadge } from "../layout/vertical";
 
 // Tay nắm chỉ để xyflow nối cạnh: ẩn, không bắt chuột.
 const HANDLE = "!pointer-events-none !h-px !w-px !border-0 !bg-transparent !opacity-0";
@@ -52,69 +51,52 @@ function Edges({
 }
 
 function Pill({ kind }: { kind: StepBadge }) {
-  const { t } = useTranslation();
+  const { labels, theme } = useFlowHost();
   const label =
-    kind === "conditional"
-      ? t("contracts.flow.current.conditional")
-      : kind === "esign"
-        ? t("contracts.flow.current.esign")
-        : "Dify";
-  return (
-    <span className="rounded-full bg-act-soft px-2 py-0.5 text-caption font-semibold text-act">
-      {label}
-    </span>
-  );
+    kind === "conditional" ? labels.conditional : kind === "esign" ? labels.esign : labels.dify;
+  return <span className={theme.pill}>{label}</span>;
 }
 
 function StartImpl({ width, height }: NodeProps<FlowCanvasNode>) {
-  const { t } = useTranslation();
+  const { labels, theme } = useFlowHost();
   return (
-    <div
-      style={{ width, height }}
-      className="flex items-center justify-center gap-2 rounded-full border border-rule bg-sunk text-label font-medium"
-    >
+    <div style={{ width, height }} className={theme.start}>
       <Edges top={false} bottom skipOut />
-      <Play aria-hidden className="size-3.5 text-dim" />
-      {t("contracts.flow.current.canvas.start")}
+      <Play aria-hidden className={theme.startIcon} />
+      {labels.start}
     </div>
   );
 }
 
 function FinalizeImpl({ width, height }: NodeProps<FlowCanvasNode>) {
-  const { t } = useTranslation();
+  const { labels, theme } = useFlowHost();
   return (
-    <div
-      style={{ width, height }}
-      className="flex items-center justify-center gap-2 rounded-xl border border-dashed border-field bg-sunk px-3 text-label font-medium"
-    >
+    <div style={{ width, height }} className={theme.finalize}>
       <Edges top bottom={false} skipIn />
-      <Flag aria-hidden className="size-4 text-dim" />
-      <span>{t("contracts.flow.current.canvas.finalize")}</span>
-      <Lock aria-hidden className="size-3.5 text-dim" />
-      <span className="sr-only">{t("contracts.flow.current.canvas.locked")}</span>
+      <Flag aria-hidden className={theme.finalizeIcon} />
+      <span>{labels.finalize}</span>
+      <Lock aria-hidden className={theme.lockIcon} />
+      <span className="sr-only">{labels.locked}</span>
     </div>
   );
 }
 
 function StepImpl({ data, width, height }: NodeProps<FlowCanvasNode>) {
+  const { theme, renderInfo } = useFlowHost();
   return (
     <div
       style={{ width, height }}
       data-run={data.dim ? "false" : "true"}
-      className={`flex flex-col justify-center gap-1 overflow-hidden rounded-xl border bg-panel px-3 py-2 ${
-        data.dim ? "border-dashed border-rule opacity-40" : "border-rule shadow-sm"
-      }`}
+      className={`${theme.step} ${data.dim ? theme.stepOff : theme.stepOn}`}
     >
       <Edges top bottom skipIn skipOut />
       <div className="flex items-center gap-2">
-        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sunk text-caption text-dim">
-          {data.index}
-        </span>
+        <span className={theme.stepIndex}>{data.index}</span>
         <span className="truncate font-medium" title={data.title}>
           {data.title}
         </span>
       </div>
-      {data.department && <span className="truncate text-caption text-dim">{data.department}</span>}
+      {data.department && <span className={theme.stepDept}>{data.department}</span>}
       {data.badges.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {data.badges.map((b) => (
@@ -122,12 +104,12 @@ function StepImpl({ data, width, height }: NodeProps<FlowCanvasNode>) {
           ))}
         </div>
       )}
-      <StepInfoLines info={data.info} />
+      {renderInfo?.(data.info)}
     </div>
   );
 }
 
-export const FLOW_NODE_TYPES = {
+export const VERTICAL_NODE_TYPES = {
   start: memo(StartImpl),
   step: memo(StepImpl),
   finalize: memo(FinalizeImpl),

@@ -2895,7 +2895,8 @@
       },
       "timing": "Hạn {due} giờ",
       "timingRemind": "Hạn {due} giờ, nhắc mỗi {remind} giờ",
-      "always": "Chạy với mọi hợp đồng"
+      "always": "Chạy với mọi hợp đồng",
+      "skip": "Không thoả ⇒ bỏ qua"
     },
     "reason": {
       "appOff": "App đang tắt cho công ty này",

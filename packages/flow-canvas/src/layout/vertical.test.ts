@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import type { CurrentStep } from "./current-flow";
-import { buildFlowCanvas, type CondLabels, conditionLabel, GAP_Y } from "./flow-canvas";
+import {
+  buildFlowCanvas,
+  buildVerticalGraph,
+  type CondLabels,
+  conditionLabel,
+  GAP_Y,
+  type VerticalStepInput,
+} from "./vertical";
 
 const L: CondLabels = {
   value: "Giá trị",
@@ -11,7 +17,7 @@ const L: CondLabels = {
   number: (n) => String(n),
   skip: "Không thoả ⇒ bỏ qua",
 };
-const step = (key: string, extra: Partial<CurrentStep> = {}): CurrentStep => ({
+const step = (key: string, extra: Partial<VerticalStepInput> = {}): VerticalStepInput => ({
   key,
   name: `Bước ${key}`,
   department: null,
@@ -70,7 +76,7 @@ describe("flow-canvas · buildFlowCanvas", () => {
     expect(r.edges.find((e) => e.id === "e-s0-s1")?.style?.opacity).toBe(0.35);
     expect(r.edges.find((e) => e.id === "e-s1-s2")?.style).toBeUndefined();
   });
-  test('CR-108 nhánh bỏ qua: bước điều kiện ⇒ cạnh nét đứt từ node trước sang node sau, nhãn "Không thoả ⇒ bỏ qua"', () => {
+  test('nhánh bỏ qua (CR-108): bước có điều kiện (không phải bước đầu) ⇒ cạnh nét đứt từ node liền trước sang node liền sau, nhãn "Không thoả ⇒ bỏ qua"', () => {
     const skips = edges.filter((e) => e.id.startsWith("skip-"));
     expect(skips.map((e) => [e.id, e.source, e.target, e.label])).toEqual([
       ["skip-s1", "s0", "s2", "Không thoả ⇒ bỏ qua"],
@@ -98,7 +104,7 @@ describe("flow-canvas · buildFlowCanvas", () => {
       buildFlowCanvas([step("a"), step("b")], L).edges.some((e) => e.id.startsWith("skip-")),
     ).toBe(false);
   });
-  test("CR-108 thông tin bước: hạn/nhắc/người duyệt/chuyển cấp có ⇒ node cao thêm từng dòng; vắng ⇒ ẩn", () => {
+  test("chiều cao node theo số dòng thông tin (chuyển cấp / cảnh báo thiếu nhóm): hạn/nhắc/người duyệt/chuyển cấp có ⇒ node cao thêm từng dòng; vắng ⇒ ẩn", () => {
     const plain = buildFlowCanvas([step("a")], L).nodes[1];
     const full = buildFlowCanvas(
       [step("a", { dueH: 24, remindH: 8, approverCount: 3, escalateGroup: "Ban giám đốc" })],
@@ -132,5 +138,34 @@ describe("flow-canvas · conditionLabel", () => {
       ),
     ).toBe("Loại HĐ: Mua, Bán hoặc Giá trị < 5");
     expect(conditionLabel(null, L)).toBeNull();
+  });
+});
+
+describe("flow-canvas · buildVerticalGraph", () => {
+  test("dòng bước đã gắn nhãn điều kiện (host tự ghép chữ) vẫn dựng đúng nhánh bỏ qua", () => {
+    const { when: _w, ...a } = step("a");
+    const { when: _x, ...b } = step("b");
+    const r = buildVerticalGraph(
+      [
+        { ...a, condition: null },
+        { ...b, condition: "Chỉ khi giá trị > 500 tr" },
+      ],
+      "bỏ qua",
+    );
+    expect(r.nodes.map((n) => n.id)).toEqual(["start", "a", "b", "finalize"]);
+    expect(r.edges.find((e) => e.id === "e-a-b")?.label).toBe("Chỉ khi giá trị > 500 tr");
+    expect(
+      r.edges.filter((e) => e.id.startsWith("skip-")).map((e) => [e.source, e.target]),
+    ).toEqual([["a", "finalize"]]);
+  });
+  test("snapshot toạ độ: cột dọc x = 0, y cộng dồn chiều cao + GAP_Y (giữ như bản sohoptac-web cũ)", () => {
+    const { nodes } = buildFlowCanvas(STEPS, L);
+    expect(nodes.map((n) => [n.id, n.position.x, n.position.y, n.width, n.height])).toEqual([
+      ["start", 0, 0, 280, 40],
+      ["s0", 0, 92, 280, 64],
+      ["s1", 0, 208, 280, 92],
+      ["s2", 0, 352, 280, 70],
+      ["finalize", 0, 474, 280, 52],
+    ]);
   });
 });

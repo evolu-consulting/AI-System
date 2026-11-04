@@ -1,7 +1,8 @@
 // CR-108 · dòng thông tin của một bước duyệt (dùng chung canvas và danh sách): "Hạn 24 giờ · nhắc mỗi 8 giờ", "3 người duyệt",
 // "Quá hạn ⇒ chuyển <nhóm>". Thông tin vắng (null) ⇒ ẩn dòng, không hiện số 0 giả.
+
+import type { StepInfo } from "@ai/flow-canvas/pure";
 import { useTranslation } from "react-i18next";
-import type { StepInfo } from "../lib/flow-canvas";
 
 export function StepInfoLines({ info, className = "" }: { info: StepInfo; className?: string }) {
   const { t } = useTranslation();

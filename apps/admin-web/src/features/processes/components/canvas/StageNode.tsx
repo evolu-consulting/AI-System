@@ -1,10 +1,11 @@
 // ADM-FR-71 · P-b2 (plan-frontend §1, FB9): node giai đoạn trên canvas — một `button` "Giai đoạn n: <tên>" (tabIndex thủ công),
 // phím Alt+mũi tên/Delete như StepList; kéo thả do xyflow (`onNodeDragStop` ở ProcessCanvas).
+
+import { HiddenHandle } from "@ai/flow-canvas";
+import { NODE_H, NODE_W } from "@ai/flow-canvas/pure";
 import { type Node, type NodeProps, Position } from "@xyflow/react";
 import { memo } from "react";
-import { NODE_H, NODE_W } from "../../lib/canvas-layout";
 import { useHandlers } from "./canvas-ctx";
-import { HiddenHandle } from "./HiddenHandle";
 import { StageBody, stageButtonClass } from "./StageBody";
 import { onStageKeyDown } from "./stage-keys";
 import { type StageView, sameView } from "./stage-view";

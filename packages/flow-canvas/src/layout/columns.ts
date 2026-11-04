@@ -1,8 +1,10 @@
+// CR-118 · @ai/flow-canvas · bố cục `columns` (chuyển từ admin-web `canvas-layout.ts`, giữ nguyên toạ độ).
 // HUB-FR-104 · P-b2 (plan-frontend FB4, ADR-0013 #3) · CR-103 fnr-canvas: bố cục canvas theo cột bước + làn nhánh If — hàm thuần.
 // `x` luôn suy từ bước; `y` tự động theo làn, hoặc `y` đã lưu của giai đoạn (`ui.y`, chỉ-UI).
 // Trả mô tả node/cạnh trung tính (không phụ thuộc xyflow) để test không cần DOM.
 import { PROCESS_STEP_STAGES_MAX } from "@ai/contracts/hub-admin";
-import type { Stepped } from "./step-ops";
+/** Phần tối thiểu của giai đoạn mà bố cục cần (khớp `Stepped` của editor admin-web). */
+export type Stepped = { uid: string; step: number; backTo: number[]; after: "review" | "auto" };
 
 export const COL_W = 320;
 export const ROW_H = 120;

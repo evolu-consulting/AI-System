@@ -1,11 +1,12 @@
 // CR-103 · fnr-if (flow-node-registry design §3): node If trên canvas — hình thoi, cổng ra "Đúng" / "Sai" tới bước đích (cạnh dùng
 // lại `BranchEdge`; handle id `yes` / `no`, cạnh tiến thường ra bên phải). Chọn / phím như `StageNode` (một `button` "Giai đoạn n: <tên>").
+
+import { HiddenHandle } from "@ai/flow-canvas";
+import { NODE_H, NODE_W } from "@ai/flow-canvas/pure";
 import { type Node, type NodeProps, Position } from "@xyflow/react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { NODE_H, NODE_W } from "../../lib/canvas-layout";
 import { useHandlers } from "./canvas-ctx";
-import { HiddenHandle } from "./HiddenHandle";
 import { onStageKeyDown } from "./stage-keys";
 import { type StageView, sameView } from "./stage-view";
 

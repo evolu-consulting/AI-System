@@ -2,10 +2,10 @@
 // (không chỉ màu).
 import { BaseEdge, EdgeLabelRenderer, type EdgeProps, getBezierPath } from "@xyflow/react";
 import { memo } from "react";
-import { useTranslation } from "react-i18next";
+import { useFlowHost } from "../context";
 
 function BackEdgeImpl(p: EdgeProps) {
-  const { t } = useTranslation();
+  const { labels } = useFlowHost();
   const [path, lx, ly] = getBezierPath({
     sourceX: p.sourceX,
     sourceY: p.sourceY,
@@ -28,7 +28,7 @@ function BackEdgeImpl(p: EdgeProps) {
           style={{ transform: `translate(-50%, -50%) translate(${lx}px, ${ly}px)` }}
           className="pointer-events-none absolute rounded bg-warning-bg px-1.5 py-0.5 text-caption text-warning"
         >
-          {t("process.admin.canvas.edge.back")}
+          {labels.edgeBack}
         </span>
       </EdgeLabelRenderer>
     </>
