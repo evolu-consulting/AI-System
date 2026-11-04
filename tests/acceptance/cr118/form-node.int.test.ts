@@ -113,7 +113,7 @@ describe("CR-118 · node form", () => {
     expect((await submit("X", taskId, ok)).status).toBe(404); // tam: member acme, ngoài Group Kế toán
     expect((await submit("Db", taskId, ok)).status).toBe(404); // tadmin_beta: tenant khác
     // Đối tác: cuc (thuộc Group) nhưng token user ngoài, run gắn gói contracts ⇒ không bao giờ làm bước.
-    await c.sql`update hub.process_runs set pack_key = 'contracts' where id = ${runId}`;
+    await c.sql`update hub.process_runs set pack_key = 'contracts', pack_record_id = gen_random_uuid() where id = ${runId}`;
     const ext = await sign(c.k, PA.T, {
       claims: {
         tid: PA.T.tid,
@@ -131,7 +131,7 @@ describe("CR-118 · node form", () => {
       s: 409,
       code: "TASK_KIND_MISMATCH",
     });
-    await c.sql`update hub.process_runs set pack_key = null where id = ${runId}`;
+    await c.sql`update hub.process_runs set pack_key = null, pack_record_id = null where id = ${runId}`;
     const res = await submit("B", taskId, ok);
     expect(res.status).toBe(200);
     await settled(c);
@@ -149,7 +149,7 @@ describe("CR-118 · node form", () => {
     const [t] = await c.sql<Json[]>`select status from hub.review_tasks where id = ${taskId}`;
     expect(t?.status).toBe("open");
     const [o] = await stageOutputs(c.sql, runId, 0);
-    expect(o?.fields ?? null).toBeNull();
+    expect(Object.keys(o?.fields ?? {})).toEqual([]);
   }, 60_000);
 
   it("idempotent: gửi 2 lần cùng giá trị ⇒ 200 cả hai, một output, một audit, giá trị khác sau khi đóng ⇒ 409", async () => {
@@ -196,13 +196,16 @@ describe("CR-118 · node form", () => {
       ...def.body,
       version: def.version,
       stages: [
-        formStage("dien", 0, [{ key: "ly_do", label: "Lý do", type: "textarea", required: true }]),
+        formStage("dien", 0, [
+          { key: "so_tien", label: "Số tiền", type: "money", required: true, max: 10 },
+          { key: "ly_do", label: "Lý do", type: "textarea", required: true },
+        ]),
         ...def.body.stages.slice(1),
       ],
     };
     const up = await c.call("Adm", "PUT", `/process-defs/${def.id}`, v2);
     expect(up.status).toBe(200);
-    // Theo def MỚI thì thiếu `ly_do` (bắt buộc) và `so_tien` là trường lạ — run cũ vẫn theo snapshot ⇒ hợp lệ.
+    // Theo def MỚI thì thiếu `ly_do` (bắt buộc) và `so_tien` > 10 — run cũ vẫn theo snapshot ⇒ hợp lệ.
     expect((await submit("B", taskId, { so_tien: 50 })).status).toBe(200);
     await settled(c);
     const [o] = await stageOutputs(c.sql, runId, 0);
