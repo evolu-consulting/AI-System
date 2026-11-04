@@ -95,6 +95,11 @@ Trạng thái của một lượt nằm ở 3 nơi:
   `conversation_id` (run có origin `conversation` ⇒ bước duyệt + câu hỏi hiện trong hội thoại) → insert `dlc.flows`
   (lỗi ⇒ cancel run) → `kick()`.
 - Trả `{ run_id, mode, project, process }`.
+- **Quy trình theo agent** (dlc-agent-flows): Agent Forge › Sửa agent › "Quy trình DLC" lưu `runtime_options.dlc_flows =
+  { "<mode>": "<key def thư viện>" }` (+ tick `pack_tools`). `jobContext` đọc `dlc_flows` của agent của job (join
+  `hub.agents`); dây chuyền có chỉ định ⇒ `slotSourceOf` gọi `PackRunsPort.resolveSlotDef(khe, key)` (bản xuất bản của def
+  đó, bỏ qua gán tenant; không còn ⇒ lỗi rõ, không rơi về tenant); không chỉ định ⇒ `resolveSlot(tenant, khe)` như cũ. Gói
+  không import module hub: dữ liệu đi qua cổng `AgentHubPort.jobContext` (nền tảng cài) + port engine.
 - **Giới hạn đã biết**: `input` của run = `requirement || ticket.name || project`. dlc-agent hiện **không chuyển lời
   dặn thêm của người** (vd "dùng Times New Roman") vào `requirement` ⇒ spec agent phải hỏi lại. Chưa sửa.
 

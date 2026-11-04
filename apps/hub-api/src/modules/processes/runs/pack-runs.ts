@@ -29,7 +29,7 @@ import type { ProcessRunStatus } from "../domain/types";
 import { cancelEnd } from "../gates/gates.effects";
 import type * as g from "../gates/gates.repo";
 import { GateService } from "../gates/gates.service";
-import { resolveSlot } from "../library/slot-resolve.repo";
+import { resolveSlot, resolveSlotDef } from "../library/slot-resolve.repo";
 import { routeSlot } from "../library/slot-route.repo";
 import { defSourceRef } from "../library/source-ref";
 import { openTaskFor, openTasksOf, stepsView, UUID } from "./pack-runs-view";
@@ -335,6 +335,7 @@ export function packRunsOf(d: ProcessDeps): PackRunsPort {
       return { runId: s.id, kick: () => d.launcher.kick(s.id) };
     },
     resolveSlot: (tenantId, slot) => resolveSlot(d.db, tenantId, slot),
+    resolveSlotDef: (slot, key) => resolveSlotDef(d.db, slot, key),
     routeSlot: (tenantId, slot, userId, facts) => routeSlot(d.db, tenantId, slot, userId, facts),
     sourceRefOf: defSourceRef,
     cancel: (u, runId) => cancelOwn(d, gates, u, runId),

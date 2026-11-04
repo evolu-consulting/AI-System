@@ -147,6 +147,9 @@ export type PackRunsPort = {
   ): Promise<"created" | "exists" | "synced">;
   /** CR-105 · quy trình đang chạy của khe cho tenant (gán ⇒ mặc định ⇒ bản xuất bản), MỘT câu scope system; không có ⇒ null. */
   resolveSlot(tenantId: string, slot: string): Promise<ResolvedSlot | null>;
+  /** dlc-agent-flows · def thư viện `defKey` của khe ở bản xuất bản hiện hành (agent chỉ định quy trình, KHÔNG qua gán tenant);
+   *  không có ⇒ null. Vắng (bản giả) ⇒ gói báo lỗi khi agent có chỉ định. */
+  resolveSlotDef?(slot: string, defKey: string): Promise<ResolvedSlot | null>;
   /** CR-118 §11.2 · như `resolveSlot` + luật chọn quy trình theo phòng ban người khởi tạo (MỘT câu); không có luật ⇒ như cũ. */
   routeSlot?(
     tenantId: string,

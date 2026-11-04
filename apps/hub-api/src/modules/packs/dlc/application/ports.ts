@@ -91,6 +91,8 @@ export type AgentCallOutcome = {
   dialog: { question: string; answer: string }[];
   error?: string;
 };
+/** dlc-agent-flows · dây chuyền → key def thư viện quy trình agent chỉ định (Agent Forge › "Quy trình DLC"). */
+export type AgentFlows = Partial<Record<DlcMode, string>>;
 /** Ai + ở đâu: người bắt đầu lượt, hội thoại Chat của lượt. */
 export type DlcWho = { tenantId: string; userId: string; conversationId: string };
 
@@ -111,11 +113,17 @@ export type AgentHubPort = {
       agents: { domain: string; name: string; focus: string }[];
     },
   ): Promise<string[]>;
-  /** Job agent đang gọi tool (`/mcp`, `hub.runs.id`) ⇒ hội thoại của job + vai người dùng; không thấy ⇒ null. */
+  /** Job agent đang gọi tool (`/mcp`, `hub.runs.id`) ⇒ hội thoại của job + vai người dùng + quy trình agent của job chỉ
+   *  định cho từng dây chuyền (`runtime_options.dlc_flows`, đã lọc hợp lệ; vắng ⇒ theo tenant); không thấy ⇒ null. */
   jobContext(
     tenantId: string,
     hubRunId: string,
-  ): Promise<{ conversationId: string | null; userId: string; role: string } | null>;
+  ): Promise<{
+    conversationId: string | null;
+    userId: string;
+    role: string;
+    agentFlows?: AgentFlows;
+  } | null>;
 };
 /** Cầu nền tảng ↔ gói (khuôn `PackRunsBridge`): nền tảng gắn `port` khi đã dựng Agent Hub. */
 export type AgentHubBridge = { port?: AgentHubPort };
