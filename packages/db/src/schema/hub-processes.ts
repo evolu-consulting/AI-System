@@ -28,7 +28,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import { LIB_AUDIT_ACTIONS } from "./hub-process-library";
+import { DLC_STEP_AUDIT_ENTITIES, LIB_AUDIT_ACTIONS } from "./hub-process-library";
 import { hub } from "./hub-readonly";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true });
@@ -73,6 +73,7 @@ export const PA_AUDIT_ENTITIES = [
   "process_run",
   "review_task",
   "agent_team",
+  ...DLC_STEP_AUDIT_ENTITIES, // dlc-step-library (0071)
 ] as const;
 
 /** Cột 0019 trên `hub.runs` (run stage): CHECK `runs_process_ck` (process_run_id NULL) = (stage_run_id NULL). */

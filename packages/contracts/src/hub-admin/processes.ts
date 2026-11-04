@@ -68,6 +68,7 @@ export {
   ProcessRunViewSchema,
 } from "../chat/processes-entities";
 export * from "./autofix";
+export * from "./dlc-step-templates";
 export * from "./process-library";
 export * from "./process-routing";
 export * from "./process-steps";

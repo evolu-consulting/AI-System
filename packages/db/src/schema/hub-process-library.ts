@@ -19,6 +19,9 @@ export const LIB_AUDIT_ACTIONS = [
   "set_routing",
 ] as const;
 
+/** dlc-step-library · audit thư viện bước DLC (0071 `hub_audit_log_entity_check`) — trải vào `PA_AUDIT_ENTITIES` (hub-processes.ts). */
+export const DLC_STEP_AUDIT_ENTITIES = ["dlc_step_template"] as const;
+
 /** Bản xuất bản BẤT BIẾN của def thư viện; quay lại = chụp bản cũ thành bản mới (số bản luôn tăng). */
 export const processDefReleases = hub.table(
   "process_def_releases",
@@ -93,4 +96,21 @@ export const processRoutingRules = hub.table("process_routing_rules", {
     .notNull(),
   defId: uuid("def_id").notNull(),
   isDefault: boolean("is_default").notNull().default(false),
+});
+
+/** dlc-step-library · bước DLC mẫu (platform_admin): Canvas khe `dlc.*` chép thành bước. DDL/CHECK/RLS: `0071_dlc_step_templates.sql`. */
+export const dlcStepTemplates = hub.table("dlc_step_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull(),
+  name: text("name").notNull(),
+  action: text("action").notNull(),
+  agentKey: text("agent_key"),
+  instruction: text("instruction").notNull().default(""),
+  gateGroup: text("gate_group"),
+  rejectTo: text("reject_to"),
+  maxRounds: integer("max_rounds").notNull().default(3),
+  timeoutMin: integer("timeout_min").notNull().default(60),
+  version: integer("version").notNull().default(1),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
 });

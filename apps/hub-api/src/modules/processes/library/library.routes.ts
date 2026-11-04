@@ -13,6 +13,7 @@ import { requirePlatformAdmin } from "../../../lib/admin-role.middleware";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { parseIdParam, parseJson, validationError } from "../../../lib/http";
 import type { ProcessDeps } from "../core/ports";
+import { dlcStepRoutes } from "./dlc-steps.routes";
 import { LibraryService } from "./library.service";
 import { routingRoutes } from "./routing.routes";
 import { RoutingService } from "./routing.service";
@@ -79,6 +80,7 @@ export function libraryRoutes(d: ProcessDeps): Hono<AuthVars> {
   );
   tenantRoutes(r, svc);
   routingRoutes(r, new RoutingService(d, svc)); // CR-118 §11.2
+  r.route("/", dlcStepRoutes(d)); // dlc-step-library
   return r;
 }
 

@@ -51,6 +51,7 @@ export const PROCESS_PROTECTED_PREFIXES = [
   "/process-editor", // P-d1 · `GET /process-editor/context` (plan-contract §4)
   "/process-slots", // CR-105 · L2a · khe thư viện (platform_admin)
   "/tenants", // CR-105 · L2a · `/tenants/:tid/process-slots…` (platform_admin)
+  "/dlc-step-templates", // dlc-step-library · thư viện bước DLC (platform_admin)
 ] as const;
 
 /** Seam test (plan-contract §7.1): vắng ⇒ hành vi chạy thật. */
