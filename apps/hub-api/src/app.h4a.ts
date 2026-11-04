@@ -17,6 +17,8 @@ import { mountSecrets } from "./modules/secrets/secrets.mount";
 import { HubSecretReader } from "./modules/secrets/secrets.use";
 import { agentRoutes } from "./modules/studio/agents/agents.routes";
 import { AgentsService } from "./modules/studio/agents/agents.service";
+import { dlcFlowRoutes } from "./modules/studio/dlc-flows/dlc-flows.routes";
+import { type AgentPackTools, DlcFlowsService } from "./modules/studio/dlc-flows/dlc-flows.service";
 import { entitlementRoutes } from "./modules/studio/entitlements/entitlements.routes";
 import { EntitlementsService } from "./modules/studio/entitlements/entitlements.service";
 import { profileRoutes } from "./modules/studio/models/profiles.routes";
@@ -36,7 +38,7 @@ export const STUDIO_API = "/studio/api";
 export type H4aDeps = {
   db?: Db;
   /** M2-chat · m2c (A-19) · registry tool gói để Studio kiểm `runtime_options.pack_tools` khi lưu agent. */
-  packTools?: { has(key: string): boolean };
+  packTools?: { has(key: string): boolean } & AgentPackTools;
   studioDist?: string;
   hubAudit?: HubAuditWriter;
   /** H4b-1 D11 · khoá secrets Hub; vắng ⇒ POST/PUT secret có `value` 409 `NOT_CONFIGURED`. */
@@ -69,6 +71,11 @@ export function mountH4a<E extends Env>(app: Hono<E>, deps: H4aDeps): KhRuntime 
     );
     // dlc-dify · `PUT /agents/:id/hooks` (tab Hook của Sửa agent).
     app.route(STUDIO_API, agentHooksRoutes(new AgentHooksService({ db: deps.db, audit })));
+    // dlc-agent-flows · `GET /dlc-flows`, `GET /pack-tools` (section "Quy trình DLC" của Sửa agent).
+    app.route(
+      STUDIO_API,
+      dlcFlowRoutes(new DlcFlowsService({ db: deps.db, packTools: deps.packTools })),
+    );
     app.route(STUDIO_API, orchestratorRoutes(new OrchestratorService({ db: deps.db, audit })));
     // H4b-2 · Models: provider (B3, B4), model profile (B5). Fail-closed: vắng `appEnv` ⇒ không dev (http loopback bị chặn).
     const env = { dev: deps.appEnv === "development" || deps.appEnv === "test" };

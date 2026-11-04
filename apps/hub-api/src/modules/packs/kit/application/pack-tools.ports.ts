@@ -41,6 +41,8 @@ export type PackToolDef = {
   action?: "read" | "write";
   /** Tool lõi (vd `app-guide`, không có gói/entitlement): bỏ qua cổng gói; tool tự lọc theo người gọi. Chỉ dùng với `action: read`. */
   open?: boolean;
+  /** dlc-agent-flows · `false` ⇒ tool chỉ stage quy trình gọi (vd `dlc-step`): Agent Forge không cho gắn vào `pack_tools`. */
+  agent?: false;
   params: readonly PackToolParam[];
   /** Chạy trong tx gói của `ctx.tenantId`; trả object JSON (= `output.fields` của stage). Ném ⇒ lỗi tool. */
   run(ctx: PackToolCtx, args: PackToolArgs): Promise<Record<string, unknown>>;

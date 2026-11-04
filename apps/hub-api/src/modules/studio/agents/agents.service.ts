@@ -15,6 +15,7 @@ import { appError } from "../../../lib/errors";
 import { readHubVersion } from "../studio-read.repo";
 import { type StudioWriteDeps, withConfigWrite } from "../studio-write";
 import { auditSnapshot, changedFields, toAgent, toListItem, toWorkflowRef } from "./agents.map";
+import { checkDlcFlows, keepCliExtras } from "./agents.options";
 import {
   type AgentDbRow,
   type AgentListFilter,
@@ -191,6 +192,7 @@ export class AgentsService {
       if (await findAgentByKey(tx, b.key)) throw appError("KEY_TAKEN", { field: "key" });
       const wfs = await checkRefs(tx, b);
       checkPackTools(runtimeOptionsOf(b.runtime, b.runtime_options, wfs), this.d.packTools);
+      await checkDlcFlows(tx, runtimeOptionsOf(b.runtime, b.runtime_options, wfs));
       const tools = b.runtime === "agentic-cli" ? cliTools(b.runtime_options) : [];
       const bashAck = needsBashAck(null, tools);
       if (bashAck && b.bash_ack !== true) throw appError("BASH_ACK_REQUIRED");
@@ -260,8 +262,9 @@ export class AgentsService {
       if (disableBlocked(scopes.length, b.enabled)) throw inUseError(scopes);
       await assertNotDefault(tx, id, b.enabled);
       const wfs = await checkRefs(tx, { ...b, runtime });
-      const given = b.runtime_options as Record<string, unknown> | undefined;
+      const given = keepCliExtras(runtime, b.runtime_options, row.runtimeOptions);
       checkPackTools(runtimeOptionsOf(runtime, given, wfs), this.d.packTools);
+      await checkDlcFlows(tx, runtimeOptionsOf(runtime, given, wfs));
       const bashAck = needsBashAck(toolsOf(runtime, row.runtimeOptions), toolsOf(runtime, given));
       if (bashAck && b.bash_ack !== true) throw appError("BASH_ACK_REQUIRED");
       const before = auditSnapshot(await this.#detail(tx, row));
