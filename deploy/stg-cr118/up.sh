@@ -41,7 +41,7 @@ run dc run --rm -T tool tools/scripts/src/stg-seed.ts
 run dc up -d --remove-orphans admin-api hub-api agent-runtime web
 if [ "$DRY" = 1 ]; then
   echo "[dry-run] cho admin-api + hub-api /health; roi s2-app-urls.ts --community-url http://127.0.0.1:28531/community --apply (hang catalog community: url /community, sso=false)"
-  echo "[dry-run] kiem: curl 127.0.0.1:28531/community/x (200 SPA) · curl -H 'Host: community.example.test' 127.0.0.1:28535/ (301 -> https://sohoptac.example.test/community)"
+  echo "[dry-run] kiem: curl 127.0.0.1:28531/community/x (200 SPA) · curl 127.0.0.1:28535/ (301 -> http://127.0.0.1:28531/community; tunnel: cong ...5 -> ...1)"
   exit 0
 fi
 ok=0
@@ -55,5 +55,5 @@ done
 dc run --rm -T tool tools/scripts/src/s2-app-urls.ts --community-url http://127.0.0.1:28531/community --apply
 echo "up: kiem nhanh:"
 echo "  /community fallback : $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:28531/community/profile/x/y) (mong 200)"
-echo "  community cu 301    : $(curl -s -o /dev/null -w '%{http_code} -> %{redirect_url}' -H 'Host: community.example.test' http://127.0.0.1:28535/) (mong 301 -> https://sohoptac.example.test/community)"
+echo "  community cu 301    : $(curl -s -o /dev/null -w '%{http_code} -> %{redirect_url}' http://127.0.0.1:28535/) (mong 301 -> http://127.0.0.1:28531/community)"
 dc ps --format '{{.Service}}: {{.Status}}'
