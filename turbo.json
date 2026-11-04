@@ -22,7 +22,8 @@
     "DIFY_MOCK_PORT",
     "HUB_MOCK_PORT",
     "HUB_DLC_URL",
-    "AI_SUB_CLI_PATH"
+    "AI_SUB_CLI_PATH",
+    "HUB_FLOW_RUNTIME"
   ],
   "tasks": {
     "build": {
