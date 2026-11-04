@@ -94,9 +94,9 @@ async function runJob(job: Job, ctx: Ctx, redisDb?: number) {
       lane,
     ),
     E2E_PAR: "1",
-    // fail-fast: stack (`e2e/**/_*.ts`) có tiến trình con thoát bất thường ⇒ stack thoát ngay với lý do (xem e2e-failfast.ts)
-    BUN_OPTIONS:
-      `${process.env.BUN_OPTIONS ?? ""} --preload ${join(import.meta.dir, "e2e-failfast.ts").replaceAll("\\", "/")}`.trim(),
+    // fail-fast: stack (`e2e/**/_*.ts`) có tiến trình con thoát bất thường ⇒ stack thoát ngay với lý do (preload trong bunfig.toml, xem e2e-failfast.ts;
+    // không dùng BUN_OPTIONS vì làm hỏng `bunx` = `bun x` trong ảnh evotest: "Script not found x")
+    E2E_FAILFAST: "1",
   };
   const t0 = performance.now();
   const p = Bun.spawn(

@@ -1,3 +1,6 @@
+# tool-evotest-cache: fail-fast stack e2e (chi hoat dong khi test-e2e-par dat E2E_FAILFAST=1 va script la e2e/**/_*.ts; xem tools/scripts/src/e2e-failfast.ts)
+preload = ["./tools/scripts/src/e2e-failfast.ts"]
+
 [install]
 # Ghi tường minh: gốc repo chỉ thấy dependency khai ở package.json gốc (plan.md R8).
 linker = "isolated"

@@ -51,6 +51,7 @@ setInterval(() => {}, 1000); // stack "sống" chờ /health như thật`;
     writeFileSync(join(d, "e2e/x/_x-stack.ts"), body);
     const t0 = performance.now();
     const p = Bun.spawn([process.execPath, "--preload", PRELOAD, join(d, "e2e/x/_x-stack.ts")], {
+      env: { ...process.env, E2E_FAILFAST: "1" },
       stdout: "pipe",
       stderr: "pipe",
     });
@@ -66,6 +67,7 @@ setInterval(() => {}, 1000); // stack "sống" chờ /health như thật`;
       `${body.replace("setInterval(() => {}, 1000);", "await Bun.sleep(600); process.exit(0); //")}`,
     );
     const p = Bun.spawn([process.execPath, "--preload", PRELOAD, join(d, "plain.ts")], {
+      env: { ...process.env, E2E_FAILFAST: "1" },
       stdout: "ignore",
       stderr: "ignore",
     });

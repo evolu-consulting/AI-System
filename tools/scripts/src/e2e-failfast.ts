@@ -1,4 +1,4 @@
-// tool-evotest-cache · fail-fast cho stack e2e (Luật 4c "không chờ hết giờ"). `test-e2e-par.ts` đặt BUN_OPTIONS="--preload <file này>" cho
+// tool-evotest-cache · fail-fast cho stack e2e (Luật 4c "không chờ hết giờ"). `bunfig.toml` (preload) nạp file này và `test-e2e-par.ts` đặt E2E_FAILFAST=1 cho
 // mọi việc ⇒ tiến trình `bun e2e/**/_*.ts` (stack dựng admin-api/hub-api… rồi chờ /health) mà có TIẾN TRÌNH CON thoát bất thường
 // (mã ≠ 0, không do mình kill) thì CHÍNH stack in lý do và thoát ngay cùng mã đó ⇒ webServer của Playwright báo "Process … exited early"
 // trong vài giây thay vì chờ timeout 240–300 s (hoặc để từng ca test treo tới hết giờ khi hub chết sau khi đã sẵn sàng).
@@ -37,7 +37,7 @@ export function watchChild(
   });
 }
 
-if (isStackScript(Bun.main)) {
+if (process.env.E2E_FAILFAST === "1" && isStackScript(Bun.main)) {
   const real = Bun.spawn;
   Bun.spawn = ((...args: unknown[]) => {
     const p = (real as (...a: unknown[]) => Exited)(...args);
