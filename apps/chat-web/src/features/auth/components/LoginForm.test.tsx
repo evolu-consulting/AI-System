@@ -53,7 +53,7 @@ describe("LoginForm", () => {
   test("CHAT-AC-01 · đã nhớ mã → điền sẵn, khoá ô, có nút Đổi công ty", () => {
     const html = render({ defaultTenant: "acme" });
     expect(html).toContain('value="acme"');
-    expect(html).toContain('readonly=""');
+    expect(html).toMatch(/readonly=""|readOnly=""/); // React 19 SSR viết readOnly
     expect(html).toContain(">Đổi công ty</button>");
   });
   test("CHAT-AC-02 · lỗi chung trong role=alert; đang gửi → nút disabled + Đang đăng nhập…", () => {

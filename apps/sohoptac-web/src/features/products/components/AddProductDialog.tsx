@@ -10,7 +10,7 @@ import { FIELD, Field } from "./Field";
 const GROUPS: readonly ProductGroup[] = ["goods", "service", "referral"];
 const EMPTY = { name: "", group: "goods" as ProductGroup, unit: "", spec: "" };
 
-export function AddProductDialog({ dlg }: { dlg: RefObject<HTMLDialogElement> }) {
+export function AddProductDialog({ dlg }: { dlg: RefObject<HTMLDialogElement | null> }) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.gapd1.add.${k}`);
   const nav = useNavigate();

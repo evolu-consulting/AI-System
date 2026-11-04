@@ -19,8 +19,8 @@ type Props = {
   seen: { messageId: string | null; readers: RoomMember[] };
   hasOlder: boolean;
   loadingOlder: boolean;
-  scrollRef: RefObject<HTMLDivElement>;
-  contentRef: RefObject<HTMLDivElement>;
+  scrollRef: RefObject<HTMLDivElement | null>;
+  contentRef: RefObject<HTMLDivElement | null>;
   onScroll(): void;
   /** Run đang chạy/chờ chưa có tin agent (D7). */
   pending?: readonly RoomActiveRun[];

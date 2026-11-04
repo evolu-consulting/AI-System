@@ -20,7 +20,7 @@ export function ManualPriceDialog({
   dlg,
   productId,
 }: {
-  dlg: RefObject<HTMLDialogElement>;
+  dlg: RefObject<HTMLDialogElement | null>;
   productId: string;
 }) {
   const { t } = useTranslation();

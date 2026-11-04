@@ -19,7 +19,7 @@ export type RowAttach = {
 };
 
 type Props = {
-  areaRef: RefObject<HTMLTextAreaElement>;
+  areaRef: RefObject<HTMLTextAreaElement | null>;
   text: string;
   labels: { input: string; placeholder: string };
   aria: { expanded?: boolean; controls?: string; activeDescendant?: string; describedBy?: string };

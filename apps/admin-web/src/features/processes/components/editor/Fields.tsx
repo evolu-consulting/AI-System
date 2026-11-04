@@ -108,6 +108,7 @@ export function SelectField(
   },
 ) {
   const { t } = useTranslation();
+  const chooseLabel = t("process.admin.editor.choose", { defaultValue: "Chọn…" });
   return (
     <FormField
       id={p.id}
@@ -119,7 +120,7 @@ export function SelectField(
       {(c) => (
         <Select value={p.value} onValueChange={p.onChange} disabled={p.disabled || p.readOnly}>
           <SelectTrigger {...c} aria-label={p.label} className="w-full">
-            <SelectValue placeholder={p.placeholder ?? t("process.admin.editor.choose")} />
+            <SelectValue placeholder={p.placeholder ?? chooseLabel} />
           </SelectTrigger>
           <SelectContent>
             {p.options.map((o) => (

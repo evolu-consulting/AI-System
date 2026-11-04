@@ -22,7 +22,7 @@ describe("notify hooks", () => {
   it("push-sw.js giống hệt ở contracts/admin/chat/studio", () => {
     const f = (a: string) =>
       readFileSync(new URL(`../../../../apps/${a}/public/push-sw.js`, import.meta.url), "utf8");
-    const base = f("contracts-web");
+    const base = f("sohoptac-web");
     expect(base).toContain("showNotification");
     for (const a of ["admin-web", "chat-web", "studio-web"]) expect(f(a)).toBe(base);
   });

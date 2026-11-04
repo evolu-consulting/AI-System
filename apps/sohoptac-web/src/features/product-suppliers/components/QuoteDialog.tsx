@@ -13,7 +13,7 @@ export function QuoteDialog({
   productId,
   productName,
 }: {
-  dlg: RefObject<HTMLDialogElement>;
+  dlg: RefObject<HTMLDialogElement | null>;
   productId: string;
   productName: string;
 }) {

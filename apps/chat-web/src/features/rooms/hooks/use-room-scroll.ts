@@ -15,8 +15,8 @@ const TOP_PX = 48;
 type Anchor = { height: number; firstId: string | undefined } | null;
 
 type Refs = {
-  scroll: RefObject<HTMLDivElement>;
-  content: RefObject<HTMLDivElement>;
+  scroll: RefObject<HTMLDivElement | null>;
+  content: RefObject<HTMLDivElement | null>;
   /** Đang bám đáy. */
   stick: MutableRefObject<boolean>;
   /** Neo trước khi tải trang cũ; khác `null` = đang giữ vị trí. */

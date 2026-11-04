@@ -13,7 +13,7 @@ export function SearchDialog({
   productId,
   productName,
 }: {
-  dlg: RefObject<HTMLDialogElement>;
+  dlg: RefObject<HTMLDialogElement | null>;
   productId: string;
   productName: string;
 }) {

@@ -1,7 +1,7 @@
 // COM-FR-28/29 · Sidebar cố định của Shell: nhóm Community (Bảng tin, Bài đăng của tôi) + nhóm Sổ Hợp Tác (link ngoài sang contracts-web).
 // Nhóm Sổ Hợp Tác chỉ nằm trong mô hình nav khi `caps.contracts` (lib/nav.ts) ⇒ đối tác / chủ quản thiếu quyền: KHÔNG có trong DOM
 // (không phải CSS ẩn — I1/I3, HT-75/76). ≤ 900 px thành drawer (Shell giữ `open`). Xổ/gập nhớ trong localStorage.
-import { type MouseEvent, useMemo, useState } from "react";
+import { type JSX, type MouseEvent, useMemo, useState } from "react";
 import { t } from "../i18n";
 import { openContracts } from "../lib/contracts-link";
 import {
