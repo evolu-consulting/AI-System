@@ -8,7 +8,8 @@ param(
   [string]$Domain = "",   # vd evoluconsulting.com: chay qua https host (DEP_DOMAIN), KHONG mo tunnel
   [ValidateSet("test", "prod")][string]$Hosts = "test",   # DEP_HOSTS: prod = sohoptac./ai./ai-admin./ai-hub. (dung voi -Domain)
   [string]$Key ="F:\workspace\id_evoc_key",
-  [string]$Server = "evoc@149.202.83.5"
+  [string]$Server = "evoc@149.202.83.5",
+  [int]$RwDelay = 600   # giay: toi thieu tu luc bat dau ro+ai toi luc rw dang nhap (cua so gioi han IP 10 phut); 0 = khong cho
 )
 $ErrorActionPreference = "Stop"
 $root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
@@ -46,16 +47,42 @@ try {
   $pw = @("tools/scripts/src/run-playwright.ts", "e2e/deployed/deployed.config.ts")
   if ($Spec) { $pw += $Spec }
   if ($Grep) { $pw += @("--grep", $Grep) }
-  # Hai lượt nối tiếp (xem đầu deployed.config.ts): ro = chỉ đọc, 4 worker song song; rw = ghi/AI, 1 worker. -Spec/-Grep áp cho cả hai.
-  # Lượt nào không có test khớp (-Spec thuộc project kia) ⇒ Playwright thoát 1 "No tests found": bỏ qua lượt đó.
+  # Ba lượt (xem đầu deployed.config.ts): ro (chỉ đọc, 4 worker) SONG SONG ai (chat AI, 2 worker, outputDir riêng), rồi rw (ghi, 1 worker).
+  # -Spec/-Grep áp cho cả ba. Lượt không có test khớp (-Spec thuộc project khác) ⇒ bỏ qua.
   $code = 0
-  foreach ($lane in @(@("ro", "4"), @("rw", "1"))) {
-    Write-Host "== e2e deployed: project $($lane[0]) (workers $($lane[1]))"
-    $list = & bun @pw --project $lane[0] --list 2>$null
-    if ($LASTEXITCODE -ne 0 -or -not ($list -match "Total: [1-9]")) { Write-Host "(khong co test khop o project $($lane[0]))"; continue }
-    & bun @pw --project $lane[0] --workers $lane[1]
-    if ($LASTEXITCODE -ne 0) { $code = $LASTEXITCODE }
+  function Test-Lane($name) {
+    $list = & bun @pw --project $name --list 2>$null
+    return ($LASTEXITCODE -eq 0 -and ($list -match "Total: [1-9]"))
   }
+  $t0 = Get-Date
+  $aiProc = $null
+  $aiLog = Join-Path $env:TEMP ("e2e-deployed-ai-" + [guid]::NewGuid().ToString("N") + ".log")
+  if (Test-Lane "ai") {
+    Write-Host "== e2e deployed: project ai (workers 2) chay song song voi ro; log: ai-lane (in sau khi xong)"
+    $aiProc = Start-Process -FilePath "bun" -ArgumentList ($pw + @("--project", "ai", "--workers", "2", "--output", "test-results/deployed-ai")) `
+      -NoNewWindow -PassThru -RedirectStandardOutput $aiLog -RedirectStandardError "$aiLog.err"
+  }
+  if (Test-Lane "ro") {
+    Write-Host "== e2e deployed: project ro (workers 4)"
+    & bun @pw --project ro --workers 4
+    if ($LASTEXITCODE -ne 0) { $code = $LASTEXITCODE }
+  } else { Write-Host "(khong co test khop o project ro)" }
+  if ($aiProc) {
+    $aiProc.WaitForExit()
+    Write-Host "== e2e deployed: ket qua project ai"
+    Get-Content $aiLog -Tail 200 | Write-Host
+    if ($aiProc.ExitCode -ne 0) { $code = $aiProc.ExitCode }
+    Remove-Item $aiLog, "$aiLog.err" -ErrorAction SilentlyContinue
+  }
+  # Gioi han dang nhap IP 30 luot / 10 phut: ro+ai da dung ~22; cho het cua so truoc khi rw dang nhap (RwDelay=0 de bo).
+  $left = [int]($RwDelay - ((Get-Date) - $t0).TotalSeconds)
+  if ($left -gt 0 -and (Test-Lane "rw")) { Write-Host "(cho $left s cho het cua so gioi han dang nhap truoc rw)"; Start-Sleep -Seconds $left }
+  if (Test-Lane "rw") {
+    Write-Host "== e2e deployed: project rw (workers 1)"
+    & bun @pw --project rw --workers 1
+    if ($LASTEXITCODE -ne 0) { $code = $LASTEXITCODE }
+  } else { Write-Host "(khong co test khop o project rw)" }
+
 }
 finally {
   $env:DEMO_PW = $null
