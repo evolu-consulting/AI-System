@@ -47,6 +47,8 @@ export function dbConfigSource(db: Db): ConfigSource {
 }
 
 type Waiter = { min: number; done: (v: number) => void };
+/** CR-118 N3 · ảnh vừa đổi: `tenants` = tenant bị chạm (theo `tenant_id` của NOTIFY); null = mọi tenant (poll/hub/không rõ). */
+export type ConfigChange = { admin: number; hub: number; tenants: ReadonlySet<string> | null };
 export type ConfigCacheOptions = { pollS: number; log: Logger; signal?: AbortSignal };
 
 /** Gộp các lần gọi chồng nhau: đang chạy thì đánh dấu chạy lại một lần nữa sau khi xong. */
@@ -91,6 +93,10 @@ export class ConfigCache {
   #queuedPoll: Promise<void> | null = null;
   /** Người chờ `reloaded()`: resolve khi một lần `#loadAdmin` xong với version ≥ `min`. */
   #waiters: Waiter[] = [];
+  /** CR-118 N3 · người nghe "ảnh đã đổi" (đẩy `config.changed` qua `/me/stream`). */
+  readonly #listeners = new Set<(c: ConfigChange) => void>();
+  /** Tenant bị chạm từ NOTIFY `config_changed` chờ lần nạp Admin kế; "all" = không rõ ⇒ mọi tenant. */
+  #pendingTenants: Set<string> | "all" = new Set();
   readonly reloadHub: () => Promise<void>;
   readonly reloadAdmin: () => Promise<void>;
   readonly #adminRun: Coalesced;
@@ -99,7 +105,9 @@ export class ConfigCache {
     this.#src = src;
     this.#opts = opts;
     this.reloadHub = coalesce(async () => {
+      const prev = this.#hub?.version;
       this.#hub = await this.#src.loadHub();
+      if (prev !== undefined && prev !== this.#hub.version) this.#emit(null);
     });
     this.#adminRun = coalesce(() => this.#loadAdmin());
     this.reloadAdmin = this.#adminRun;
@@ -216,8 +224,34 @@ export class ConfigCache {
     }
   }
 
+  /** CR-118 · cặp version hiện có (0 SQL; -1 = chưa nạp). */
+  versions(): { admin: number; hub: number } {
+    return { admin: this.#adminVersion, hub: this.#hub?.version ?? -1 };
+  }
+
+  /** CR-118 N3 · nghe ảnh đổi (sau khi nạp xong, version khác lần trước). Trả hàm huỷ. Lỗi người nghe không lan. */
+  onChange(fn: (c: ConfigChange) => void): () => void {
+    this.#listeners.add(fn);
+    return () => this.#listeners.delete(fn);
+  }
+
+  #emit(tenants: ReadonlySet<string> | null): void {
+    if (this.#listeners.size === 0) return;
+    const c: ConfigChange = { ...this.versions(), tenants };
+    for (const fn of this.#listeners) {
+      try {
+        fn(c);
+      } catch (err) {
+        this.#opts.log.warn("config-change-listener-failed", safeErrorFields(err));
+      }
+    }
+  }
+
   async #loadAdmin(): Promise<void> {
     this.#adminGen++;
+    const prevVersion = this.#adminVersion;
+    const touched = this.#pendingTenants;
+    this.#pendingTenants = new Set();
     // Đọc phiên bản TRƯỚC dữ liệu: thay đổi xen giữa làm phiên bản mới hơn ⇒ vòng poll sau nạp lại, không bỏ sót.
     const { admin } = await this.#src.readVersions();
     const tenants = await this.#src.loadTenants();
@@ -229,6 +263,8 @@ export class ConfigCache {
     this.#users = new Map(users.map((u) => [u.id, u]));
     this.#adminVersion = admin;
     this.#settleWaiters(admin);
+    if (prevVersion >= 0 && prevVersion !== admin)
+      this.#emit(touched === "all" || touched.size === 0 ? null : touched);
   }
 
   /**
@@ -256,8 +292,11 @@ export class ConfigCache {
   }
 
   #onAdminChanged = (payload: string): void => {
-    if (!ConfigChangedPayloadSchema.safeParse(safeJson(payload)).success)
-      this.#opts.log.warn("config-changed-invalid-payload");
+    const p = ConfigChangedPayloadSchema.safeParse(safeJson(payload));
+    if (!p.success) this.#opts.log.warn("config-changed-invalid-payload");
+    const tid = p.success ? p.data.tenant_id : undefined;
+    if (tid && this.#pendingTenants !== "all") this.#pendingTenants.add(tid);
+    else this.#pendingTenants = "all";
     this.reloadAdmin().catch((err) =>
       this.#opts.log.warn("config-reload-failed", safeErrorFields(err)),
     );

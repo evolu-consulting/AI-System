@@ -21,6 +21,8 @@ const under = (path: string, p: string): boolean => path === p || path.startsWit
 /** Đường dẫn hub-api đối tác được gọi: `/pack/<k>[/...]` với `k` ∈ `EXTERNAL_PACKS`, hoặc `EXTERNAL_OPEN_PREFIXES`. */
 export function externalPathAllowed(path: string, packPrefix = "/pack"): boolean {
   if (EXTERNAL_OPEN_PREFIXES.some((p) => under(path, p))) return true;
+  // CR-118 · ảnh năng lực của chính user (shell/FeatureGate); thân đã lọc gói theo `EXTERNAL_PACKS`. Đúng một đường, không con.
+  if (path === `${packPrefix}/me`) return true;
   if (!path.startsWith(`${packPrefix}/`)) return false;
   const key = path.slice(packPrefix.length + 1).split("/", 1)[0] ?? "";
   return externalPackActions(key).length > 0;

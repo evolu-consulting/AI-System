@@ -20,7 +20,8 @@ export const ME_STREAM_BUFFER_BYTES = 1_048_576;
 const MAX_TIMER_MS = 2_147_483_647;
 
 type Ctl = ReadableStreamDefaultController<Uint8Array>;
-type Closable = { end(): void };
+/** `tenantId` + `notify` (CR-118 N3): phiên thật có; giả trong test có thể vắng (không nhận broadcast). */
+type Closable = { end(): void; tenantId?: string; notify?(frame: string): void };
 
 export const userEntryFrame = (e: UserEntry): string =>
   `id: ${e.id}\nevent: ${e.ev.event}\ndata: ${JSON.stringify(e.ev.data)}\n\n`;
@@ -43,6 +44,24 @@ export class MeStreamConns {
 
   count(userId: string): number {
     return this.#by.get(userId)?.length ?? 0;
+  }
+
+  /**
+   * CR-118 N3 · gửi `frame` (không id, không qua Redis) tới phiên đang mở TRÊN INSTANCE NÀY thuộc `tenants` (null = mọi
+   * tenant). Mỗi instance tự nghe NOTIFY ⇒ đúng nhiều instance. Fan-out bị chặn bởi số phiên (≤ USER_STREAM_CONN_MAX/user)
+   * và `max`; trả số phiên đã gửi.
+   */
+  broadcast(frame: string, tenants: ReadonlySet<string> | null, max = 50_000): number {
+    let n = 0;
+    for (const list of this.#by.values()) {
+      for (const s of list) {
+        if (n >= max) return n;
+        if (!s.notify || (tenants && (!s.tenantId || !tenants.has(s.tenantId)))) continue;
+        s.notify(frame);
+        n++;
+      }
+    }
+    return n;
   }
 }
 
@@ -100,12 +119,20 @@ class MeStreamSession implements Closable {
     setTimeout(() => this.end(), 0);
   };
 
+  readonly tenantId: string;
+
   constructor(
     private readonly d: MeStreamDeps,
     private readonly o: MeStreamOpen,
     private readonly ctl: Ctl,
   ) {
     this.#last = o.plan.from;
+    this.tenantId = o.user.tenantId;
+  }
+
+  /** CR-118 N3 · frame ngoài Redis (vd `config.changed`): không dời `#last`, không qua bộ lọc chat (không phải sự kiện chat). */
+  notify(frame: string): void {
+    this.#send(frame);
   }
 
   async start(): Promise<void> {

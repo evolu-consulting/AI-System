@@ -39,6 +39,7 @@ import { dbHubAudit } from "./lib/hub-audit";
 import { type Logger, logger } from "./lib/logger";
 import { traceRequest } from "./lib/request-span";
 import { closeUnreadBody } from "./lib/unread-body";
+import { mountCapabilities } from "./modules/capabilities/capabilities.mount";
 import { chatGate } from "./modules/chat-gate/chat-gate.middleware";
 import { CHAT_GATED_PREFIXES } from "./modules/chat-gate/chat-gate.rules";
 import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
@@ -216,8 +217,7 @@ function processHooks(
 /** Route chỉ cần `db` (+ `config` nếu có): phòng X2a, lệnh/`@`, quyền agent, trace, nguồn. Trả phần cần cho vòng run. */
 function mountDbRoutes(app: Hono<AppVars>, deps: AppDeps & { db: Db }, config?: ConfigCache) {
   const frozenOn = deps.frozenModules !== false; // F1 (CR-095): false ⇒ không mount route công khai module đóng băng
-  const { redis, pingMs, signal } = deps;
-  const x2a = mountX2a(app, { db: deps.db, redis, log: logger, pingMs, signal, rooms: frozenOn });
+  const x2a = mountX2a(app, { ...deps, log: logger, rooms: frozenOn }); // + `meConns` (CR-118 N3)
   const drivers = commandDrivers(deps, deps.db);
   if (config) mountDifyCredential(app, { ...deps, db: deps.db, config, log: logger });
   const h2a = config && mountH2a(app, config, drivers);
@@ -371,7 +371,8 @@ export function createApp(cfg: AppConfig, depsIn: AppDeps = {}): Hono<AppVars> {
   app.route("/health", healthRoutes(cfg, deps.probes ?? []));
   // cf-esign-docusign · webhook ký số gắn TRƯỚC JWT `/pack/*` (nhà cung cấp tự xác thực, map envelope ⇒ tenant qua bảng).
   const esign = mountEsignWebhook(app, deps); // vắng db (⇔ vắng config) ⇒ undefined
-  const kh = mountProtected(app, deps, config);
+  const { meConns } = mountCapabilities(app, { ...deps, config }); // CR-118 · tự gắn JWT; vắng db ⇒ không mount
+  const kh = mountProtected(app, { ...deps, meConns }, config);
   if (config) mountPacks(app, { ...deps, config, esign }); // N1 · `/pack/:k/me` + route gói (pkdemo)
   if (deps.db) {
     mountNotify(app, { ...deps, db: deps.db, log: logger }); // N3

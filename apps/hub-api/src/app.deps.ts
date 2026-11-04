@@ -4,6 +4,7 @@ import type { Db } from "./lib/db";
 import type { HubAuditWriter } from "./lib/hub-audit";
 import type { Redis } from "./lib/redis";
 import type { AttachmentDeps } from "./modules/attachments/storage";
+import type { MeStreamConns } from "./modules/me-stream/me-stream.session";
 import type { NotifyDeps } from "./modules/notify/notify.mount";
 import type { OpsDeps } from "./modules/ops/ops.mount";
 import type { PacksDeps, PacksMountDeps } from "./modules/packs/packs.mount";
@@ -19,6 +20,8 @@ export type HealthProbe = () => Promise<void>;
  * (test khung). Có `db` ⇒ vòng nền tự chạy ngay trong `createApp` và dừng khi `signal` abort.
  */
 export type AppDeps = {
+  /** CR-118 N3 · tập phiên `/me/stream` dùng chung với đẩy `config.changed` (createApp tự tạo qua `mountCapabilities`). */
+  meConns?: MeStreamConns;
   probes?: HealthProbe[];
   db?: Db;
   redis?: Redis;

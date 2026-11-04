@@ -5,6 +5,7 @@ export * from "./app-roles";
 export * from "./audit";
 export * from "./auth";
 export * from "./auth-limit";
+export * from "./capabilities";
 export * from "./command-test";
 export * from "./commands";
 export * from "./common";

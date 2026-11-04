@@ -137,6 +137,14 @@ export class PackToolRegistry implements PackToolCatalog {
     return this.#tools.has(key);
   }
 
+  /** CR-118 · tool đăng ký của một gói (chỉ đọc cho view năng lực), sắp theo khoá. */
+  listByPack(pack: string): PackToolInfo[] {
+    return [...this.#tools.values()]
+      .filter((t) => t.pack === pack)
+      .map(infoOf)
+      .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+  }
+
   info(key: string): PackToolInfo | undefined {
     const t = this.#tools.get(key);
     return t ? infoOf(t) : undefined;

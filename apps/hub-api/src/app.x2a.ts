@@ -37,6 +37,8 @@ export type X2aDeps = {
   signal?: AbortSignal;
   /** F1 (CR-095) · `false` ⇒ không mount route `/rooms*` (module phòng đóng băng); dịch vụ + `/directory` + `/me/stream` vẫn chạy. Vắng ⇒ mount. */
   rooms?: boolean;
+  /** CR-118 N3 · tập phiên `/me/stream` dùng chung với đẩy `config.changed` (vắng ⇒ tạo mới). */
+  meConns?: MeStreamConns;
 };
 
 /** Dịch vụ X2a mà X2b nối thêm (gọi agent cần runtime dựng sau trong `app.ts`). */
@@ -80,7 +82,7 @@ export function mountX2a<E extends Env>(app: Hono<E>, deps: X2aDeps): X2aMounted
     "/me",
     meStreamRoutes({
       reader,
-      conns: new MeStreamConns(),
+      conns: deps.meConns ?? new MeStreamConns(),
       log: deps.log,
       pingMs,
       signal: deps.signal,
