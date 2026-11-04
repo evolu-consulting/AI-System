@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { gateOk, testCounts } from "./test-gate.rules";
+import { baselineUsable, gateOk, testCounts } from "./test-gate.rules";
 
 describe("dlc-dify · cổng test khi merge", () => {
   test("đếm Jest (bỏ dòng Test Suites, bỏ mã màu)", () => {
@@ -23,6 +23,17 @@ describe("dlc-dify · cổng test khi merge", () => {
     expect(testCounts("Ran 57 tests in 0.2s\n\nOK\n")).toEqual({ passed: 57, failed: 0 });
     expect(testCounts("Ran 5 tests in 0.0s\n\nOK (skipped=2)\n")).toEqual({ passed: 3, failed: 0 });
     expect(testCounts("Ran 0 tests in 0.000s\n\nNO TESTS RAN\n")).toBeNull();
+  });
+  test("mốc cache: đỏ không số liệu ⇒ chạy lại; khác sha ⇒ chạy lại", () => {
+    expect(baselineUsable({ sha: "a", exit: 1, counts: null }, "a")).toBe(false);
+    expect(baselineUsable({ sha: "a", exit: 0, counts: null }, "a")).toBe(true);
+    expect(baselineUsable({ sha: "a", exit: 1, counts: { passed: 1, failed: 55 } }, "a")).toBe(
+      true,
+    );
+    expect(baselineUsable({ sha: "a", exit: 1, counts: { passed: 1, failed: 55 } }, "b")).toBe(
+      false,
+    );
+    expect(baselineUsable(undefined, "a")).toBe(false);
   });
   test("thoát 0 ⇒ đạt; không thụt lùi ⇒ đạt; thụt lùi / không đọc được ⇒ không đạt", () => {
     const base = { exit: 1, counts: { passed: 9, failed: 33 } };

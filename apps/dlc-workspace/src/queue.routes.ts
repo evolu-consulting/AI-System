@@ -8,7 +8,7 @@ import { ensureWorktree, mainSha, mergeToMain, repoDir, resetMain } from "./git"
 import { body, now } from "./http";
 import { enqueue, next, result, summary } from "./queue.rules";
 import type { Project, Store } from "./store";
-import { describeRun, gateOk, type TestRun, testCounts } from "./test-gate.rules";
+import { baselineUsable, describeRun, gateOk, type TestRun, testCounts } from "./test-gate.rules";
 
 export type QueueDeps = {
   store: Store;
@@ -55,7 +55,7 @@ function testRunner(d: QueueDeps) {
       value: null,
     }));
   const baselineOf = async (p: Project, sha: string, timeoutS: number): Promise<TestRun> => {
-    if (p.test_baseline?.sha === sha) return p.test_baseline;
+    if (p.test_baseline && baselineUsable(p.test_baseline, sha)) return p.test_baseline;
     const t = await runTests(p, timeoutS);
     await saveBaseline(p.key, { sha, ...t });
     return t;

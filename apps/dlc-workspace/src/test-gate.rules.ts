@@ -56,6 +56,11 @@ export function gateOk(base: TestRun | null, after: TestRun): boolean {
   return after.counts.passed >= base.counts.passed && after.counts.failed <= base.counts.failed;
 }
 
+/** Mốc đã lưu dùng lại được cho `sha`? Mốc đỏ mà không đọc được số liệu (vd bản đếm cũ) ⇒ chạy lại, kẻo cổng chặn mãi. */
+export function baselineUsable(b: (TestRun & { sha: string }) | undefined, sha: string): boolean {
+  return b?.sha === sha && (b.exit === 0 || b.counts !== null);
+}
+
 export function describeRun(r: TestRun): string {
   return r.counts
     ? `exit=${r.exit}, ${r.counts.passed} passed, ${r.counts.failed} failed`
