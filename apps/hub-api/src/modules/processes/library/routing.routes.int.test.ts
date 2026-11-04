@@ -207,7 +207,8 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
       condition: { departmentIds: [dx.get("van-hanh")] },
       def_id: lib.A,
     }));
-    expect((await call("A", "PUT", R(X), { version: 2, rules: many })).status).toBe(422);
+    // > 50 luật ⇒ chặn ở contract (zod `max`) ⇒ 400 VALIDATION_ERROR, không ghi gì.
+    expect((await call("A", "PUT", R(X), { version: 2, rules: many })).status).toBe(400);
     expect((await call("A", "GET", R(X))).json.version).toBe(2);
   });
 
