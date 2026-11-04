@@ -223,19 +223,19 @@
       "tools": "Pack tools the agent may call",
       "toolsEmpty": "No pack tools can be attached to agents yet",
       "toolsFailed": "Could not load pack tools",
-      "toolGone": "{{key}} — no longer available, untick to remove",
+      "toolGone": "{key} — no longer available, untick to remove",
       "tool": {
         "dlc-start": "Start a DLC process",
         "dlc-runs": "View the conversation's DLC runs"
       },
-      "flowFor": "Process used when the agent starts a {{mode}} run",
+      "flowFor": "Process used when the agent starts a {mode} run",
       "mode": {
         "new-system": "New System",
         "enhancement": "Enhancement",
         "bug-fix": "Bug Fix"
       },
       "byTenant": "By tenant (default)",
-      "flowGone": "{{key}} (no published release)",
+      "flowGone": "{key} (no published release)",
       "flowsFailed": "Could not load DLC processes",
       "err": {
         "tools": "Invalid or unavailable pack tool",
