@@ -55,6 +55,12 @@ export const META: Record<string, Meta> = {
     redis: REDIS_DB("CS_REDIS_DB"),
     cost: 60,
   },
+  // CR-118 · cr118-auth: login gộp sohoptac-web trên stack thật (backend dùng chung `_cs-stack.ts`).
+  "e2e/sohoptac-web/playwright.stack.config.ts": {
+    db: "ss",
+    redis: REDIS_DB("SS_REDIS_DB"),
+    cost: 60,
+  },
   "e2e/pm-checklist/playwright.pm.config.ts": {
     db: "pmc",
     redis: REDIS_DB("PMC_REDIS_DB"),

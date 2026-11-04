@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import type { Me, TokenGrant } from "@ai/contracts/chat";
 import { isRedirect } from "@tanstack/react-router";
-import { redirectIfAuthed, requireSession } from "./guard";
+import { homeRedirect, redirectIfAuthed, requireSession } from "./guard";
 import { AUTH_CHANNEL_NAME, CONTRACTS_APP, REFRESH_LOCK_NAME, session } from "./session";
 
 const me = { id: "u1", username: "lan", tenant: { key: "acme" } } as unknown as Me;
@@ -71,12 +71,41 @@ describe("requireSession", () => {
   });
 });
 
+describe("CR-118 · đối tác (me.kind = external): một phiên, chỉ Community", () => {
+  const partnerGrant = { ...grant, user: { ...me, kind: "external" } as unknown as Me };
+  const mockPartner = () => {
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify(partnerGrant), { status: 200 })) as unknown as typeof fetch;
+  };
+  test("gõ path SHT ⇒ redirect /community (trước khi tải trang SHT)", async () => {
+    mockPartner();
+    const e = await caught(requireSession({ href: "/contracts/abc" }));
+    expect(isRedirect(e)).toBe(true);
+    expect((e as { options: { href: string } }).options.href).toBe("/community");
+  });
+  test("/community mở được; /login đã có phiên ⇒ /community; / ⇒ /community", async () => {
+    mockPartner();
+    expect(await caught(requireSession({ href: "/community?settings=1" }))).toBeNull();
+    const e = await caught(redirectIfAuthed());
+    expect((e as { options: { href: string } }).options.href).toBe("/community");
+    const h = await caught(homeRedirect());
+    expect((h as { options: { href: string } }).options.href).toBe("/community");
+  });
+  test("chưa có phiên ở /community ⇒ /login?next=/community (không dội AI System)", async () => {
+    mockRefresh(false);
+    const e = await caught(requireSession({ href: "/community" }));
+    const opts = (e as { options: { to: string; search: { next: string } } }).options;
+    expect(opts.to).toBe("/login");
+    expect(opts.search.next).toBe("/community");
+  });
+});
+
 describe("redirectIfAuthed", () => {
   test("PK-FR-10 · nav-v2 · đã đăng nhập → /overview (Tổng quan)", async () => {
     mockRefresh(true);
     const e = await caught(redirectIfAuthed());
     expect(isRedirect(e)).toBe(true);
-    expect((e as { options: { to: string } }).options.to).toBe("/overview");
+    expect((e as { options: { href: string } }).options.href).toBe("/overview");
   });
   test("PK-FR-10 · sau đăng xuất → ở lại /login, vùng _authed lại đòi đăng nhập", async () => {
     mockRefresh(true);

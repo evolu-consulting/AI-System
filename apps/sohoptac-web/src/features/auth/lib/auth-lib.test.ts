@@ -1,8 +1,5 @@
 // PK-FR-10 · TF4 · luật thuần của đăng nhập: `next` an toàn, mã công ty biết trước (D-21), kết quả đăng nhập → câu báo.
 import { describe, expect, test } from "bun:test";
-import type { LoginResponse } from "@ai/contracts/chat";
-import { ApiError } from "@ai/web-kit/http";
-import { outcomeOfError, outcomeOfResponse } from "./login-outcome";
 import { safeNext } from "./next";
 import { knownTenant, normalizeLoginId } from "./tenant";
 
@@ -38,22 +35,5 @@ describe("knownTenant (Q-F3)", () => {
   });
   test("normalizeLoginId trim + chữ thường", () => {
     expect(normalizeLoginId("  Lan ")).toBe("lan");
-  });
-});
-
-describe("login-outcome", () => {
-  test("PK-FR-10 · authenticated ⇒ vào app; cần đổi mật khẩu/2FA ⇒ nhắc trang quản trị", () => {
-    expect(outcomeOfResponse({ status: "authenticated" } as LoginResponse)).toBeNull();
-    expect(outcomeOfResponse({ status: "totp_required" } as unknown as LoginResponse)?.key).toBe(
-      "contracts.login.useAdmin",
-    );
-  });
-  test("PK-FR-10 · lỗi ⇒ một câu chung theo loại (L1b: kết quả là {key, params})", () => {
-    const key = (e: unknown) => outcomeOfError(e)?.key;
-    expect(key(new ApiError(401, "INVALID_CREDENTIALS", "x"))).toBe("contracts.login.invalid");
-    expect(key(new ApiError(423, "ACCOUNT_LOCKED", "x"))).toBe("contracts.login.locked");
-    expect(key(new ApiError(0, "NETWORK_ERROR", "x"))).toBe("contracts.errors.network");
-    expect(key(new ApiError(502, "HTTP_ERROR", "x"))).toBe("contracts.errors.unknown");
-    expect(key(new Error("x"))).toBe("contracts.errors.unknown");
   });
 });

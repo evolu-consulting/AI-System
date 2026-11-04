@@ -1,8 +1,6 @@
-// PK-FR-10 · TF1 · nav-v2 · `/` → `/overview` (Tổng quan là trang đầu; guard `_authed` thêm ở TF4).
-import { createFileRoute, redirect } from "@tanstack/react-router";
+// PK-FR-10 · TF1 · nav-v2 · CR-118 · `/` → home theo quyền (có SHT ⇒ `/overview`, đối tác ⇒ `/community`); chưa có phiên ⇒ `/overview`.
+import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
-  beforeLoad: () => {
-    throw redirect({ to: "/overview" });
-  },
+  beforeLoad: async () => (await import("~/features/auth/lib/guard")).homeRedirect(),
 });
