@@ -10,7 +10,11 @@ export function installCommunityHost(router: AnyRouter): void {
   const go = (url: string, replace: boolean) => void router.navigate({ href: url, replace });
   configureCommunityHost({
     low: {
-      location: () => router.state.location,
+      // `searchStr` (chuỗi) — `location.search` của TanStack là object đã parse.
+      location: () => {
+        const l = router.state.location;
+        return { pathname: l.pathname, search: l.searchStr };
+      },
       navigate: (url, o) => go(url, o.replace),
       subscribe: (cb) => router.subscribe("onResolved", cb),
     },
