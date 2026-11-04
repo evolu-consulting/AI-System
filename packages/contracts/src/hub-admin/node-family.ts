@@ -15,6 +15,7 @@ export const NODE_FAMILY_OF: Readonly<Record<ExecutorKind, NodeFamily>> = {
   wait_until: "wait",
   apply: "apply",
   if: "control",
+  form: "work", // CR-118 · người điền form
 };
 
 /** CR-103 · R3: loại node có khai báo field output cho bước sau dùng không ("none" ⇒ không được có tham chiếu tới nó). */
@@ -27,6 +28,7 @@ export const NODE_PRODUCES: Readonly<Record<ExecutorKind, NodeProduces>> = {
   wait_until: "none",
   apply: "none",
   if: "none",
+  form: "declared", // CR-118 · output.fields dựng từ trường form
 };
 
 /** Họ của loại node; loại lạ (def cũ/hỏng) ⇒ null. */

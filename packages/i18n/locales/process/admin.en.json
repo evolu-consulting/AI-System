@@ -77,7 +77,8 @@
         "wait": "Wait until date",
         "tool": "Call tool",
         "set": "Set values",
-        "if": "If (true/false branch)"
+        "if": "If (true/false branch)",
+        "form": "Person fills a form"
       },
       "swap": {
         "family": "Different node family — can't switch to this type.",

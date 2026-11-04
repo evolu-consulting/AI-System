@@ -12,6 +12,7 @@ export * from "./node-family";
 export * from "./node-swap";
 export * from "./ops";
 export * from "./ops-status";
+export * from "./process-form";
 export * from "./process-if";
 export * from "./process-set";
 export * from "./processes";

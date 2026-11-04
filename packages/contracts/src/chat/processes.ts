@@ -152,6 +152,8 @@ export const EXECUTOR_KINDS = [
   "tool",
   "set",
   "if",
+  // CR-118 · node `form` (người điền form, cuối).
+  "form",
 ] as const;
 export const STEP_ROLES = ["agent", "plan", "member"] as const;
 

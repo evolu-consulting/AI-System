@@ -28,7 +28,7 @@ export type FeNode<K extends ExecutorKind = ExecutorKind> = {
   /** Giá trị ô `executor` của draft. */
   draftExecutor(ex: Ex<K>): string;
   /** Phần draft riêng của loại khi nạp def (vắng ⇒ giữ rỗng). */
-  fromDef?(ex: Ex<K>): Partial<Pick<StageDraft, "wait" | "tool" | "set" | "ifx">>;
+  fromDef?(ex: Ex<K>): Partial<Pick<StageDraft, "wait" | "tool" | "set" | "ifx" | "formFields">>;
   /** Draft → executor của contract. */
   toDef(s: StageDraft): Executor;
 };
@@ -102,6 +102,17 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
     draftExecutor: () => IF_EXECUTOR,
     fromDef: (ex) => ({ ifx: ifToDraft(ex) }),
     toDef: (s) => draftToIf(s.ifx),
+  },
+  // CR-118 · cr118-form-node · stub: giữ nguyên trường form qua Canvas/Form (khối sửa trường do lát editor làm sau).
+  form: {
+    kind: "form",
+    family: NODE_FAMILY_OF.form,
+    labelKey: "process.admin.editor.stage.kind.form",
+    defaults: () => ({ executor: "form" }),
+    draftValue: "form",
+    draftExecutor: () => "form",
+    fromDef: (ex) => ({ formFields: ex.fields }),
+    toDef: (s) => ({ kind: "form", fields: s.formFields ?? [] }),
   },
 };
 

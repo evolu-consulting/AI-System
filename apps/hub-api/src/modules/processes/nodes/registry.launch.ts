@@ -4,6 +4,7 @@ import type { ExecutorKind } from "@ai/contracts/hub-admin";
 import type { NodeLauncher } from "../runs/launch-common";
 import { agentLauncher } from "./agent/launch";
 import { applyLauncher } from "./apply/launch";
+import { formLauncher } from "./form/launch";
 import { ifLauncher } from "./if/launch";
 import { setLauncher } from "./set/launch";
 import { teamLauncher } from "./team/launch";
@@ -19,6 +20,7 @@ export const NODE_LAUNCHERS: Readonly<Record<ExecutorKind, NodeLauncher>> = {
   tool: toolLauncher,
   set: setLauncher,
   if: ifLauncher,
+  form: formLauncher,
 };
 
 export const nodeLauncherOf = (kind: ExecutorKind): NodeLauncher => NODE_LAUNCHERS[kind];

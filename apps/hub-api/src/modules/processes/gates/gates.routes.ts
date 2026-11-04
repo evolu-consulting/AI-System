@@ -5,6 +5,7 @@ import {
   DecideProcessRunRequestSchema,
   ReviewDecisionRequestSchema,
 } from "@ai/contracts/chat";
+import { FormSubmitRequestSchema } from "@ai/contracts/hub-admin";
 import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { parseJson } from "../../../lib/http";
@@ -19,6 +20,12 @@ export function gatesRoutes(d: ProcessDeps): Hono<AuthVars> {
   r.post("/review-tasks/:id/decision", async (c) => {
     const body = await parseJson(c, ReviewDecisionRequestSchema);
     return c.json(await svc.reviewDecision(c.var.user, c.req.param("id"), body, tenantIdQuery(c)));
+  });
+
+  // CR-118 · node `form`: người điền gửi giá trị (Hub kiểm theo snapshot; cùng giá trị gửi lại ⇒ 200 cùng kết quả).
+  r.post("/review-tasks/:id/form", async (c) => {
+    const body = await parseJson(c, FormSubmitRequestSchema);
+    return c.json(await svc.formSubmit(c.var.user, c.req.param("id"), body, tenantIdQuery(c)));
   });
 
   r.post("/process-runs/:id/cancel", async (c) => {

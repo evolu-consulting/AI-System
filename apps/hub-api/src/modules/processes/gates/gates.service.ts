@@ -11,6 +11,7 @@ import type {
   ReviewDecisionRequest,
   TaskDetail,
 } from "@ai/contracts/chat";
+import type { FormSubmitRequest } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
@@ -37,6 +38,7 @@ import type { StepOutcome } from "../runs/step-persist";
 import { stageRowOf } from "../runs/team-runner";
 import { ViewService } from "../runs/view.service";
 import { type BackOut, backFromDecision, type CancelIds } from "./back.effects";
+import { type FormSubmit, formPre, formReplayCheck } from "./form-out";
 import { reviewDecisionCheck } from "./gate.rules";
 import {
   buildState,
@@ -120,6 +122,7 @@ const vrole = (r: AuthUser["role"]): Viewer["role"] =>
   r === "platform_admin" || r === "tenant_admin" ? r : "member";
 
 type LoadedTask = Awaited<ReturnType<typeof g.loadTask>>;
+const PASS: ReviewDecisionRequest = { result: "pass" };
 
 /** Task phải có, cùng tenant (trừ platform_admin), người quyết thuộc Group duyệt/chuyển cấp, đúng loại, phản hồi hợp lệ. */
 function assertMayDecide(
@@ -168,11 +171,33 @@ export class GateService {
     return out.body;
   }
 
+  // ── CR-118 · POST /review-tasks/:id/form (node `form`): Đạt kèm giá trị form trong CÙNG tx; gửi lại cùng giá trị ⇒ 200.
+  // Khoá run TRƯỚC khi đọc trạng thái task: hai lần gửi đồng thời ⇒ lần sau thấy task đã đóng ⇒ nhánh gửi lại. ──
+  async formSubmit(u: AuthUser, taskId: string, b: FormSubmitRequest, tq?: string) {
+    const req = await this.#req(u);
+    const form = { values: b.values, external: u.userKind === "external" };
+    const out = await withHubScope(this.d.db, scopeOf(u, tq), async (tx) => {
+      const t0 = await g.loadTask(tx, taskId);
+      assertMayDecide(t0, req, PASS);
+      const run = await core.lockRun(tx, t0.tenant_id, t0.process_run_id);
+      if (!run) throw notFound();
+      const task = await g.loadTask(tx, taskId);
+      if (task?.status !== "closed") return this.#review(tx, req, taskId, PASS, form);
+      await formReplayCheck(tx, { run, idx: task.stage_idx, taskId, form });
+      const [body] = await loadTaskDetails(tx, { ...req.v, groupIds: req.groupIds }, [taskId]);
+      if (!body) throw notFound();
+      return { body, events: [], kick: false, runId: run.id } satisfies Outcome<TaskDetail>;
+    });
+    await this.#post(out);
+    return out.body;
+  }
+
   async #review(
     tx: Tx,
     req: Req,
     taskId: string,
     b: ReviewDecisionRequest,
+    form?: FormSubmit,
   ): Promise<Outcome<TaskDetail>> {
     const { v, groupIds } = req;
     const task = await g.loadTask(tx, taskId);
@@ -187,6 +212,8 @@ export class GateService {
     ]);
     assertHeadGate(run, idx, task, req); // run không thấy ⇒ 404 · S1b · head_only (snapshot đã khoá)
     assertReviewAllowed(run, idx, v.userId, b); // N2-FR-05 403 · P-b2 422 BACK_TARGET_INVALID — trước khi đóng task
+    const pre = { run, idx, outputId: s?.current_output_id ?? null, taskId, v, form };
+    const answer = await formPre(tx, pre); // CR-118 · stage form chỉ quyết qua gửi form (ghi output cùng tx)
     const t = transition(buildState({ run, s, def: snapOf(run).stages[idx], idx, reason: null }), {
       kind: "review",
       result: b.result,
@@ -198,6 +225,7 @@ export class GateService {
         decidedBy: v.userId,
         feedback: b.feedback ?? null,
         sections: b.sections ?? null,
+        answer,
       }),
       g.actorRef(tx, v.userId, run.tenantId), // đọc tên người quyết — gửi liền sau UPDATE (pipeline)
     ]);

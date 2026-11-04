@@ -1,5 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-d1: kiểu bản nháp của editor quy trình (tách khỏi `def-form` để các module `*-form` không import vòng).
 // Chỉ kiểu — không giá trị; `def-form` re-export cho nơi dùng cũ.
+import type { FormField } from "@ai/contracts/hub-admin";
 import type { AutofixDraft } from "./autofix-form";
 import type { InputDraft, StageSourceDraft } from "./sources-form";
 
@@ -80,6 +81,8 @@ export type StageDraft = {
   branch: BranchDraft[];
   /** CR-103 · fnr-if · khối "Nếu" (chỉ dùng khi `executor = "if"`). */
   ifx: IfDraft;
+  /** CR-118 · trường của node `form` (giữ nguyên khi sửa def; editor trường làm ở lát sau). */
+  formFields?: FormField[];
   /** CR-105 · `stage.slot` của khe (mô tả bước người dùng: review/Dify, hoặc `esign` ở finalize) — giữ nguyên qua Canvas, Hub `fromStages` dựng lại `slot_body`. */
   slotRaw?: Record<string, unknown> | undefined;
   /** CR-103 · fnr-canvas · `y` đã lưu của node trên canvas (`ui.y`, chỉ-UI); vắng = bố cục tự động. */

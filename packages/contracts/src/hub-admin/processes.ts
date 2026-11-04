@@ -19,6 +19,7 @@ import {
 } from "../chat/processes";
 import { IsoDateTime, UuidSchema } from "../common";
 import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "./autofix";
+import { FormExecutorSchema } from "./process-form";
 import {
   AnswererGroupSchema,
   type StageEscalate,
@@ -154,6 +155,8 @@ export const ProcessStageDefSchema = z.strictObject({
     SetExecutorSchema, // CR-103 · R4 · node `set` (luật `setDefIssues`)
     /** CR-103 · fnr-if · node If (họ control) — luật `ifStageIssues`. */
     IfExecutorSchema,
+    /** CR-118 · node `form` (người điền form; luật `formDefIssues`). */
+    FormExecutorSchema,
   ]),
   instruction: z.string().max(STAGE_INSTRUCTION_MAX),
   output: z.strictObject({

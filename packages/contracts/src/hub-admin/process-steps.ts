@@ -38,6 +38,8 @@ export const PROCESS_DEF_RULES = [
   "SET_INVALID",
   // CR-103 · fnr-if · node If (`ifStageIssues` — `process-if.ts`).
   "IF_INVALID",
+  // CR-118 · node `form` (`formDefIssues`, hub-api nodes/form).
+  "FORM_INVALID",
 ] as const;
 export type ProcessDefRule = (typeof PROCESS_DEF_RULES)[number];
 export type ProcessDefIssue = { path: string; rule: ProcessDefRule };
