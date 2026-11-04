@@ -60,8 +60,9 @@ type Ctx = {
 const NewProjectSchema = z.object({
   key: z.string().regex(KEY_RE),
   title: z.string().min(1).max(200),
-  conversation_id: z.string().max(64).optional(),
-  kh_project: z.string().max(100).optional(),
+  // tool Dify `dlc-project-init` gửi `null` khi chưa có hội thoại ⇒ nhận null (= chưa gắn; intake gắn lại khi mở lượt)
+  conversation_id: z.string().max(64).nullable().optional(),
+  kh_project: z.string().max(100).nullable().optional(),
   stack: z.string().max(200).optional(),
 });
 

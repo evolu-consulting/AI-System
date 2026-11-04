@@ -39,7 +39,7 @@ export function packMcpTools(packs: PackToolCatalog): PackMcpTools {
     const who = { tenantId: ctx.tenantId, userId: ctx.userId };
     return (await packs.enabled(ctx.tenantId, key)) && (await packs.canUse(who, key));
   };
-  const inputsOf = (key: string) => (packs.info(key)?.params ?? []) as unknown as WorkflowInput[];
+  const inputsOf = (key: string) => packInputs(packs.info(key)?.params ?? []);
   return {
     async tools(ctx) {
       const keys = ctx.tools.filter((k) => packs.has(k));
@@ -73,4 +73,12 @@ export function packMcpTools(packs: PackToolCatalog): PackMcpTools {
       };
     },
   };
+}
+
+/** Tham số tool gói → input workflow cho schema MCP + kiểm tham số: `paragraph` (chữ dài, vd `requirement` của dlc-start)
+ *  là chuỗi như `text` — trước đây bị bỏ khỏi schema nên model không truyền được. */
+export function packInputs(params: readonly { name: string; type: string }[]): WorkflowInput[] {
+  return params.map((p) =>
+    p.type === "paragraph" ? { ...p, type: "text" } : p,
+  ) as unknown as WorkflowInput[];
 }

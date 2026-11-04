@@ -2,7 +2,8 @@
 // side_effect (N2-D03); lời gọi chạy bằng tenant/user của job, tham số qua `validateToolArgs`.
 import { describe, expect, test } from "bun:test";
 import type { PackToolCatalog, PackToolInfo } from "../packs/kit/application/pack-tools.ports";
-import { packMcpTools } from "./pack-tools.provider";
+import { toolInputSchema, validateToolArgs } from "./mcp.rules";
+import { packInputs, packMcpTools } from "./pack-tools.provider";
 
 const P = [{ name: "title", type: "text", required: true }];
 const INFO: Record<string, PackToolInfo> = {
@@ -46,5 +47,21 @@ describe("N2-AC09 · tool gói trong /mcp", () => {
     const ok = await h?.call({ title: "x" });
     expect(ok?.isError).toBe(false);
     expect(calls[0]).toMatchObject({ key: "pk-a", ctx: { tenantId: "t1", userId: "u1" } });
+  });
+});
+
+describe("tham số `paragraph` của tool gói (vd `requirement` của dlc-start)", () => {
+  const inputs = packInputs([
+    { name: "project", type: "text" },
+    { name: "requirement", type: "paragraph" },
+  ]);
+  test("có trong schema MCP và giữ giá trị khi gọi", () => {
+    const s = toolInputSchema(inputs) as { properties: Record<string, { type: string }> };
+    expect(s.properties.requirement?.type).toBe("string");
+    const v = validateToolArgs(inputs, {
+      project: "mini-wiki",
+      requirement: "spec dài, nhiều câu",
+    });
+    expect(v.ok && v.inputs.requirement).toBe("spec dài, nhiều câu");
   });
 });
