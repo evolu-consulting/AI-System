@@ -141,5 +141,23 @@
     "stopped": "{{name}} has stopped: {{reason}}",
     "retry": "Run the step again",
     "decided": "Chosen: {{option}}"
+  },
+  "dlcProgress": {
+    "running": "{{name}} is running",
+    "step": "Step {{n}}/{{total}}: {{name}}",
+    "done": "{{done}}/{{total}} tasks done",
+    "current": "working on {{id}}: {{title}} ({{role}})",
+    "openRunning": "Open the running thread",
+    "openLast": "Open the latest thread",
+    "tasks": "Tasks of this run",
+    "attempt": "attempt {{n}}",
+    "status": {
+      "queued": "queued",
+      "in_progress": "in progress",
+      "ready_to_deploy": "done, waiting for deploy",
+      "deployed": "deployed",
+      "failed": "failed",
+      "cancelled": "cancelled"
+    }
   }
 }

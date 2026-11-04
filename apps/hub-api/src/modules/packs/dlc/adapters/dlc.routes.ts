@@ -11,11 +11,17 @@ import type { PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import type { PackRunCaller, PackStepsView } from "../../kit/application/pack-runs.ports";
 import type { DlcFlow } from "../application/ports";
 import { DLC_STEP_KEY_RE, dlcStepDetail } from "../domain/dlc-detail.rules";
+import { type DlcAgentRun, dlcProgress, tasksOfRun } from "../domain/dlc-progress.rules";
+import type { QueueItem } from "../domain/dlc-prompts.rules";
 
 export type DlcReadDeps = {
   /** Vắng (engine tắt) ⇒ 404. */
   stepsView?: (u: PackRunCaller, runId: string) => Promise<PackStepsView | null>;
   getFlow: (who: { tenantId: string; userId: string }, id: string) => Promise<DlcFlow | null>;
+  /** dlc-progress · queue của project (workspace DLC); lỗi/không cấu hình ⇒ rỗng. */
+  queueOf?: (project: string) => Promise<QueueItem[]>;
+  /** dlc-progress · run agent DLC mới nhất (trừ dlc-agent) của hội thoại. */
+  latestAgentRun?: (tenantId: string, conversationId: string) => Promise<DlcAgentRun | null>;
 };
 
 /** Người gọi được đọc nội dung bước của run không (run đã thấy được). */
@@ -39,6 +45,24 @@ export function dlcReadRoutes(d: DlcReadDeps): Hono<PackGuardVars> {
     const flow = await d.getFlow(who, id);
     if (!flow) throw appError("NOT_FOUND");
     return c.json({ step, text: dlcStepDetail(flow.state, step) });
+  });
+  // dlc-progress · tiến độ của lượt cho thẻ trên khung nhập: bước đang mở, việc queue đang làm, agent + thread đang chạy.
+  r.get("/runs/:id/progress", async (c) => {
+    const id = parseIdParam(c);
+    const u = c.get("user");
+    const who = { tenantId: u.tenantId, userId: u.userId };
+    const caller = { ...who, role: u.role };
+    const seen = d.stepsView ? await d.stepsView(caller, id) : null;
+    if (!seen || !canReadDlcRun(caller, seen)) throw appError("NOT_FOUND");
+    const flow = await d.getFlow(who, id);
+    if (!flow) throw appError("NOT_FOUND");
+    const [queue, agent] = await Promise.all([
+      d.queueOf ? d.queueOf(flow.project).catch(() => []) : Promise.resolve([]),
+      flow.conversationId && d.latestAgentRun
+        ? d.latestAgentRun(u.tenantId, flow.conversationId).catch(() => null)
+        : Promise.resolve(null),
+    ]);
+    return c.json(dlcProgress(seen, tasksOfRun(queue, flow.state.tag), agent));
   });
   return r;
 }
