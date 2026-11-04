@@ -17,7 +17,20 @@ function fromLine(line: string): TestCounts | null {
   return { passed: passed ?? 0, failed: failed ?? 0 };
 }
 
-/** Đếm test từ output: Jest/Vitest (`Tests: …`), node:test (`# pass N` / `# fail N`), pytest (dòng tổng kết cuối). */
+/** Python unittest: `Ran N tests` + `OK` / `FAILED (failures=a, errors=b, skipped=c)`; skipped không tính đạt. */
+function fromUnittest(plain: string): TestCounts | null {
+  const ran = [...plain.matchAll(/^Ran (\d+) tests? in /gm)].pop();
+  if (!ran) return null;
+  const tail = plain.slice(ran.index);
+  const status = /^(OK|FAILED)\b(?:\s*\(([^)]*)\))?/m.exec(tail);
+  if (!status) return null;
+  const field = (k: string) => Number(new RegExp(`\\b${k}=(\\d+)`).exec(status[2] ?? "")?.[1] ?? 0);
+  const failed = field("failures") + field("errors") + field("unexpected successes");
+  const passed = Number(ran[1]) - failed - field("skipped") - field("expected failures");
+  return { passed: Math.max(passed, 0), failed };
+}
+
+/** Đếm test từ output: Jest/Vitest (`Tests: …`), node:test (`# pass N` / `# fail N`), Python unittest, pytest (dòng tổng kết cuối). */
 export function testCounts(output: string): TestCounts | null {
   // biome-ignore lint/suspicious/noControlCharactersInRegex: bỏ mã màu ANSI của output test
   const plain = output.replace(/\x1b\[[0-9;]*m/g, "");
@@ -27,6 +40,8 @@ export function testCounts(output: string): TestCounts | null {
   const pass = [...plain.matchAll(/^# pass (\d+)$/gm)].pop();
   const fail = [...plain.matchAll(/^# fail (\d+)$/gm)].pop();
   if (pass || fail) return { passed: Number(pass?.[1] ?? 0), failed: Number(fail?.[1] ?? 0) };
+  const unittest = fromUnittest(plain);
+  if (unittest) return unittest;
   for (const l of lines.reverse()) {
     const c = fromLine(l);
     if (c) return c;

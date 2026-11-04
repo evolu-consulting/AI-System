@@ -16,6 +16,14 @@ describe("dlc-dify · cổng test khi merge", () => {
     expect(testCounts("Tests: 5 passed, 5 total")).toEqual({ passed: 5, failed: 0 });
     expect(testCounts("npm ERR! missing script: test")).toBeNull();
   });
+  test("đếm Python unittest (skipped không tính đạt)", () => {
+    const red =
+      "test_a (t.T.test_a) ... FAIL\n----------------------------------------------------------------------\nRan 57 tests in 0.412s\n\nFAILED (failures=40, errors=12, skipped=1)\n";
+    expect(testCounts(red)).toEqual({ passed: 4, failed: 52 });
+    expect(testCounts("Ran 57 tests in 0.2s\n\nOK\n")).toEqual({ passed: 57, failed: 0 });
+    expect(testCounts("Ran 5 tests in 0.0s\n\nOK (skipped=2)\n")).toEqual({ passed: 3, failed: 0 });
+    expect(testCounts("Ran 0 tests in 0.000s\n\nNO TESTS RAN\n")).toBeNull();
+  });
   test("thoát 0 ⇒ đạt; không thụt lùi ⇒ đạt; thụt lùi / không đọc được ⇒ không đạt", () => {
     const base = { exit: 1, counts: { passed: 9, failed: 33 } };
     expect(gateOk(null, { exit: 0, counts: null })).toBe(true);
