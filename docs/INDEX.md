@@ -27,6 +27,8 @@
 | `current/admin/ghi-chu.md` | Admin: công ty/user đối tác (ngắn) |
 | `specs/cr112-admin-config/README.md` | CR-112 cải tổ cấu hình ai-admin: spec master, ADM-FR-76..83, lát S1..S7 |
 | `adr/0033-app-roles-source-of-truth.md` | Vai theo app là nguồn quyền (`admin.app_roles` → Group) |
+| `specs/CR-118/spec.md` | CR-118 web nghiệp vụ hợp nhất + FeatureGate OpenFeature + flow runtime + trang app + năng lực: spec master, UW-FR-01..15, bảng lát |
+| `adr/0034-web-hop-nhat.md` | Web gộp sohoptac-web: shell + manifest + Clean Architecture + OpenFeature + flow runtime |
 | `current/community/README.md` | Community App (gói `community`, CR-102): nghiệp vụ, ma trận hiển thị thành ca test, Chưa rõ. **Đã code C1–C12 trên platform/gd0, chưa deploy** |
 | `adr/0031-pack-to-pack-ports.md` | Cổng gói↔gói: gói khai port, `packs.mount.ts` tiêm usecase gói kia |
 

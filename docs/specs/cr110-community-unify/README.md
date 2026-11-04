@@ -1,5 +1,7 @@
 # CR-110 — Community hợp nhất lớp vỏ với Sổ Hợp Tác (COM-FR-26..46)
 
+> **CR-118 (2026-11-04) thay một phần:** COM-FR-31 (routing hash → path `/community/*`), COM-FR-43 (link SHT thành link trong app), COM-FR-44 (SSO hand-off community→SHT bỏ), phiên riêng theo app (một phiên `contracts`). Delta: `../cr118-spec/tasks.md`; thiết kế: `../CR-118/spec.md`. Gate lại theo Luật 0b (làn nhanh, Delta + `openspec:check`).
+
 Spec chính cho dev. Nguồn: `docs/intake/2026-11-02-community-unify/` (`intake.md` = phân tích 56 ý R1..R56 + mục "Chốt (2026-11-02)"; `spec-community-hop-nhat.txt`/`.pdf` = spec gốc 29 trang, ghi nhầm "CR-106"; đổi thành **CR-110** vì CR-106 đã dùng cho canvas quy trình duyệt). Người dùng chốt cả 13 câu theo mặc định (2026-11-02). Trạng thái: đã chốt, chưa code. Làm theo Luật 0b (lát nhỏ, một agent/lát); chỉ ports và profile-api chạy readiness 1 vòng.
 
 Mockup (tham chiếu giao diện, KHÔNG sao chép CSS ẩn vai):

@@ -30,3 +30,4 @@ Mỗi quyết định kiến trúc một file `NNNN-<slug>.md`: Trạng thái (P
 | 0029 | AI client chung của Hub gọi Claude bằng `@anthropic-ai/sdk` 0.135.0 (usage + trần theo tenant, M3-decouple) | Accepted (người dùng, 2026-10-20) |
 | 0030 | Duyệt hợp đồng chạy trên process engine, đảo một phần M3-decouple (cờ `CONTRACTS_APPROVAL_ENGINE`, `HUB_PROCESS_ENGINE`) | Accepted (người dùng, 2026-10-23) |
 | 0032 | Delta kiểu OpenSpec + bộ kiểm `openspec:check/pending/archive`, không dùng CLI OpenSpec | Accepted (người dùng, 2026-10-28) |
+| 0034 | Web gộp sohoptac-web: shell + module manifest + Clean Architecture boundaries + OpenFeature FeatureGate + flow runtime (CR-118; React 19.2.9 + Compiler) | Accepted (người dùng, 2026-11-04) |
