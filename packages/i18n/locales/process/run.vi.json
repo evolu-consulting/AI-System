@@ -136,7 +136,28 @@
     "backTo": "Từ chối sẽ quay lại bước: {{step}}",
     "approved": "Đã duyệt \"{{stage}}\", quy trình đi tiếp.",
     "rejected": "Đã từ chối, quay lại bước \"{{step}}\".",
-    "section": "Quy trình DLC chờ duyệt",
-    "waiting": "{{name}} đang chờ bạn duyệt"
+    "section": "Quy trình DLC cần bạn",
+    "waiting": "{{name}} đang chờ bạn duyệt",
+    "stopped": "{{name}} đang dừng: {{reason}}",
+    "retry": "Chạy lại bước",
+    "decided": "Đã chọn: {{option}}"
+  },
+  "dlcProgress": {
+    "running": "{{name}} đang chạy",
+    "step": "Bước {{n}}/{{total}}: {{name}}",
+    "done": "{{done}}/{{total}} việc xong",
+    "current": "đang làm {{id}}: {{title}} ({{role}})",
+    "openRunning": "Mở thread đang chạy",
+    "openLast": "Mở thread gần nhất",
+    "tasks": "Các việc của lượt",
+    "attempt": "lần {{n}}",
+    "status": {
+      "queued": "chờ",
+      "in_progress": "đang làm",
+      "ready_to_deploy": "xong, chờ deploy",
+      "deployed": "đã deploy",
+      "failed": "lỗi",
+      "cancelled": "đã huỷ"
+    }
   }
 }

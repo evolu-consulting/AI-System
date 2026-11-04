@@ -54,3 +54,23 @@ export function packBellsOf(kind: string, rows: readonly BellSource[]): PackBell
     dedup_key: r.id,
   }));
 }
+
+/**
+ * dlc-bell · run chạy trong hội thoại Chat (không gắn gói, vd lượt DLC) ⇒ mục chuông `process.<kind>`; tiêu đề thêm tên quy
+ * trình để người biết lượt nào ("Cần duyệt: Báo cáo · duyệt deploy — DLC · Bug Fix"). SQL (`notify.enqueue_conv_runs`) bỏ hàng
+ * của run gắn gói / không có hội thoại.
+ */
+export function convBellsOf(kind: string, rows: readonly BellSource[]): PackBell[] {
+  return rows.map((r) => {
+    const head = packBellTitle(kind, r.payload);
+    const proc = str(r.payload.process_name);
+    const title = proc && str(r.payload.stage_name) ? `${head} — ${proc}` : head;
+    return {
+      run_id: r.processRunId,
+      user_id: r.userId,
+      kind: `process.${kind}`,
+      title: title.slice(0, TITLE_MAX),
+      dedup_key: r.id,
+    };
+  });
+}

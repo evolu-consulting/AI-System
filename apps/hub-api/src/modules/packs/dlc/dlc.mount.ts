@@ -2,6 +2,8 @@
 // ở Quy trình › Thư viện), tool `dlc-step` (stage của khe) + `dlc-start` (dlc-agent mở lượt trong Chat). Phía ngoài: workspace
 // DLC qua HTTP (`DLC_WS_URL`, `DLC_WS_TOKEN`; vắng ⇒ bước báo "chưa cấu hình"), Agent Hub qua cầu `AgentHubBridge` (nền tảng gắn).
 import type { Db } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
+import { sql } from "drizzle-orm";
 import { logger } from "../../../lib/logger";
 import { createPackUow } from "../kit/adapters/pack-uow";
 import { slotRegistry } from "../kit/adapters/slot-registry";
@@ -25,6 +27,7 @@ import {
   dlcGroupKeys,
   validateDlcBody,
 } from "./domain/dlc-flow.rules";
+import type { DlcAgentRun } from "./domain/dlc-progress.rules";
 
 export type { AgentHubBridge, AgentHubPort } from "./application/ports";
 export { DLC_PACK };
@@ -76,14 +79,34 @@ export function mountDlc(d: DlcMountDeps): void {
   const ws = workspaceOf(d.workspace);
   const warn = (msg: string, meta: Record<string, unknown>) => logger.warn(msg, meta);
   const start = startDlcFlow({ runs: d.runs, ws, uow, warn });
-  for (const t of dlcTools({ uow, ws, hub: d.hub }, start)) d.tools.register(t);
+  for (const t of dlcTools({ uow, ws, hub: d.hub }, start, d.runs)) d.tools.register(t);
 }
 
 /** dlc-chat-review · route đọc của gói (`/pack/dlc/*`): nội dung đầy đủ của bước cho modal duyệt trong chat. */
 export function dlcRoutes(db: Db, runs: PackRunsBridge = {}) {
   const uow = createPackUow(db, DLC_PACK, dlcRepos);
+  const ws = workspaceOf(undefined);
   return dlcReadRoutes({
     stepsView: (u, id) => (runs.port ? runs.port.stepsView(u, id) : Promise.resolve(null)),
     getFlow: (who, id) => uow.tenant(who, (r) => r.flows.get(id)),
+    queueOf: async (project) => (await ws.project(project)).queue,
+    latestAgentRun: (tenantId, conversationId) => latestDlcAgentRun(db, tenantId, conversationId),
   });
+}
+
+/** dlc-progress · run agent DLC (key `dlc-*`, trừ dlc-agent) mới nhất của hội thoại; scope system, lọc tenant tường minh. */
+async function latestDlcAgentRun(
+  db: Db,
+  tenantId: string,
+  conversationId: string,
+): Promise<DlcAgentRun | null> {
+  const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
+    tx.execute<DlcAgentRun>(sql`select a.key as agent, r.flow_id::text as flow_id, r.status,
+        r.started_at::text as started_at
+      from hub.runs r join hub.agents a on a.id = r.agent_id
+      where r.conversation_id = ${conversationId}::uuid and r.tenant_id = ${tenantId}::uuid
+        and a.key like 'dlc-%' and a.key <> 'dlc-agent'
+      order by r.started_at desc limit 1`),
+  );
+  return r ?? null;
 }

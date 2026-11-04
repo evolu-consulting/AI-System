@@ -1,7 +1,12 @@
 // platform/gd0_dlc_fix · duyệt bước DLC ngay trong chat (chỉ quy trình gói `dlc`, key `dlc-*`). Luật thuần, không gọi API.
 // Từ chối = `fail` + quay lại bước ĐÃ CẤU HÌNH cho điểm duyệt đó (`back_to_steps`, lấy bước gần nhất); không cấu hình ⇒ làm lại
 // chính bước vừa duyệt. Các chỗ duyệt khác (ReviewTaskCard, admin-web) giữ nguyên.
-import type { ProcessRunFullView, ProcessRunView, StageView } from "@ai/contracts/chat";
+import type {
+  DecisionOption,
+  ProcessRunFullView,
+  ProcessRunView,
+  StageView,
+} from "@ai/contracts/chat";
 
 const DLC_KEY_PREFIX = "dlc-";
 
@@ -29,6 +34,16 @@ function namesOfStep(view: ProcessRunFullView, step: number): string {
 /** Bước quay lại gần nhất được cấu hình (lớn nhất trong `back_to_steps`); rỗng ⇒ vắng. */
 export function rejectStepOf(stage: StageView): number | undefined {
   return stage.back_to_steps.length > 0 ? Math.max(...stage.back_to_steps) : undefined;
+}
+
+export type DlcDecisionTarget = { stageIdx: number; options: DecisionOption[] };
+
+/** Quyết định đang mở của run DLC `needs_decision` mà người xem được quyết (`can_decide`); không ⇒ `null`. */
+export function dlcDecisionTarget(view: ProcessRunView | undefined): DlcDecisionTarget | null {
+  if (view?.access !== "full" || !isDlcProcess(view.process.key)) return null;
+  const d = view.decision;
+  if (view.status !== "needs_decision" || !d?.can_decide || d.options.length === 0) return null;
+  return { stageIdx: d.stage_idx, options: d.options };
 }
 
 /** Điểm duyệt đang mở của run DLC (task `review` mở), hoặc `null` khi không có / không xem được đầy đủ. */

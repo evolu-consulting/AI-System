@@ -41,6 +41,19 @@ export function flowsRepo(tx: Tx, tenantId: string): DlcFlowsRepo {
         values (${f.id}::uuid, ${tenantId}::uuid, ${f.mode}, ${f.project}, ${f.ticketId}, ${f.requirement},
           ${f.conversationId}::uuid, ${f.startedBy}::uuid, ${JSON.stringify(f.state)}::jsonb)`);
     },
+    async byConversation(conversationId, limit) {
+      const rows = await tx.execute<
+        Pick<Row, "id" | "mode" | "project" | "ticket_id">
+      >(sql`select id, mode,
+          project, ticket_id from dlc.flows where conversation_id = ${conversationId}::uuid
+          and tenant_id = ${tenantId}::uuid order by created_at desc limit ${limit}`);
+      return rows.map((r) => ({
+        id: r.id,
+        mode: r.mode,
+        project: r.project,
+        ticketId: r.ticket_id,
+      }));
+    },
     async patch(id, patch) {
       await tx.execute(sql`update dlc.flows set state = state || ${JSON.stringify(patch)}::jsonb, updated_at = now()
         where id = ${id}::uuid and tenant_id = ${tenantId}::uuid`);

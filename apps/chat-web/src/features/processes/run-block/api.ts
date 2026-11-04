@@ -76,3 +76,17 @@ export async function fetchDlcStepDetail(
   );
   return typeof r.text === "string" ? r.text : "";
 }
+
+/** dlc-progress · tiến độ một lượt DLC (`GET /pack/dlc/runs/:id/progress`) cho thẻ trên khung nhập. */
+export type DlcProgress = {
+  status: string;
+  step: { idx: number; total: number; name: string; status: string } | null;
+  tasks: { id: string; title: string; domain: string; status: string; attempts: number }[];
+  done: number;
+  current: { id: string; title: string } | null;
+  agent: { agent: string; flow_id: string; status: string; started_at: string } | null;
+};
+
+export async function fetchDlcProgress(runId: string, signal?: AbortSignal): Promise<DlcProgress> {
+  return api<DlcProgress>(`/pack/dlc/runs/${encodeURIComponent(runId)}/progress`, { signal });
+}

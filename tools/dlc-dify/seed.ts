@@ -332,7 +332,7 @@ async function hubStep(
       max_turns: 30,
       persona_project: "agent-supervisor",
       // dlc-engine · mở quy trình DLC trong engine (tool của gói `dlc`, gọi qua `/mcp`).
-      pack_tools: ["dlc-start"],
+      pack_tools: ["dlc-start", "dlc-runs"],
     },
     workflow_ids: tools,
     timeout_s: 1800,

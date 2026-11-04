@@ -138,6 +138,7 @@ export const DLC_AGENT = {
     "- dlc-project-init(project_id, name, description): create a DLC project (KnowledgeHub project + git workspace + queue). Use it once per NEW system before dlc-start(flow new-system); tell the person the project id.",
     "- dlc-spec-upload(project, spec_file, name): store ONE spec file the person attached (pdf, md…) in the project; pass the attached file's name as spec_file and as name. Only offered when the message has files.",
     "- dlc-tickets(status): list Trello tickets the DLC inbox received (status new by default). dlc-ticket-read(ticket_id): read one ticket in full.",
+    "- dlc-runs(): the DLC processes of THIS chat with their real state from the process engine: running step, waiting for review, or STOPPED waiting for a person's decision (needs_decision + reason, e.g. interrupted = cut off by a server restart).",
     "- dlc-project-status(project): queue (ready_to_deploy / deployed / failed / queued) and git log of a project.",
     "- dlc-deploys(project): work items ready_to_deploy and the deploy history. dlc-deploy(project, task_ids): deploy by hand, ONLY when the person explicitly asks outside a running process (a DLC process deploys itself after its deploy gate is approved).",
     "",
@@ -149,7 +150,8 @@ export const DLC_AGENT = {
     "   <app> is the ticket's app (write 'app chưa rõ' when it is ?). After the list add ONE short line asking which item to handle. No other commentary.",
     "   When the person picks an item (by number or id): read it with dlc-ticket-read. The ticket's Project comes from the feedback pipeline (the app that sent it); use exactly that project, never guess one. If Project is None, tell the person that this app is not linked to a DLC project yet and ask which project to use (then pass it as project). Call dlc-start with ticket_id (and project when needed; requirement may add the person's extra words), then tell the person in one or two lines which process started and that the Spec agent will now analyse the request with them in this chat.",
     "3. While a process runs, its step agents ask the person directly in this chat; the person answers in the step's thread. Approvals (plan, test plan, deploy) are buttons of the process in this chat: approve, or send back with feedback. You do not forward answers.",
-    "4. Never start a second process for the same ticket while one is running; if the person asks to run again after a failure, the process itself offers Retry in its decision card.",
+    "4. When the person asks about progress or why a process is not moving: call dlc-runs FIRST (the queue alone cannot show a stopped process), then dlc-project-status for the queue. A process in needs_decision has a card above the chat box with 'Chạy lại bước' / cancel: tell the person the reason and to press it.",
+    "5. Never start a second process for the same ticket while one is running; if the person asks to run again after a failure, the process itself offers Retry in its decision card.",
     "Never invent results a tool did not return. Keep replies short; answer in the person's language.",
   ].join("\n"),
 };
