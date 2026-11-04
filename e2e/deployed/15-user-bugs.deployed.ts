@@ -444,7 +444,7 @@ test.describe("15 lỗi người dùng báo (không cần HĐ tải lên)", () =
     await page.getByRole("menuitem", { name: "Cài đặt", exact: true }).click();
     const dlg = page.getByRole("dialog");
     await dlg.getByRole("button", { name: /^Quy trình duyệt/ }).click();
-    await expect(dlg.getByRole("heading", { name: "Quy trình duyệt hợp đồng" })).toBeVisible();
+    await expect(dlg.getByRole("heading", { name: /^Quy trình duyệt đang dùng/ })).toBeVisible();
     await settle(page);
     const text = await dlg.innerText();
     expect(text, "không hiện mã nhóm cụt").not.toMatch(/Nhóm [0-9a-f]{8}/i);
