@@ -50,22 +50,23 @@ describe("prod kit · web gộp", () => {
     expect(conf).toContain("2026-12-05"); // mốc gỡ proxy (30 ngày)
     expect(conf).toContain("max-age=86400"); // giới hạn cache 301 (rollback)
   });
-  it("map đích 301: community[-test].<d> → sohoptac[-test].<d>; tunnel cổng …5 → …1 (không nhảy sang cổng prod khi UAT)", () => {
-    expect(conf).toContain("~^community(?<sfx>-test)?\\.(?<dom>.+)$ https://sohoptac$sfx.$dom;");
-    expect(conf).toContain("~^(?<hh>[^:]+):(?<pre>\\d*)5$ http://$hh:${pre}1;");
-    // mô phỏng hai regex trên (nginx dùng PCRE, cú pháp tương thích JS)
-    const target = (h: string) => {
-      const c = /^community(?<sfx>-test)?\.(?<dom>.+)$/.exec(h)?.groups;
-      if (c) return `https://sohoptac${c.sfx ?? ""}.${c.dom}`;
-      const p = /^(?<hh>[^:]+):(?<pre>\d*)5$/.exec(h)?.groups;
-      return p ? `http://${p.hh}:${p.pre}1` : `http://${h}:18431`;
-    };
-    expect(target("community.evoluconsulting.com")).toBe("https://sohoptac.evoluconsulting.com");
-    expect(target("community-test.evoluconsulting.com")).toBe(
-      "https://sohoptac-test.evoluconsulting.com",
-    );
-    expect(target("127.0.0.1:18435")).toBe("http://127.0.0.1:18431");
-    expect(target("127.0.0.1:28535")).toBe("http://127.0.0.1:28531");
+  it("map đích 301: không lấy từ Host client; edge đặt X-S2-Main-Origin từ domain cấu hình; tunnel …5 → …1", () => {
+    const edge = read(`${PROD}/edge/sohoptac2.conf`);
+    expect(conf).not.toContain("(?<dom>");
+    expect(conf).not.toContain("http://$host:18431");
+    expect(conf).toContain("default http://localhost:18431;");
+    expect(conf).toContain("map $http_x_s2_main_origin $s2_main_origin");
+    expect(conf).toContain("~^https://sohoptac(-test)?\\.[a-z0-9.-]+$ $http_x_s2_main_origin;");
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: chuỗi nginx map, không phải template JS
+    expect(conf).toContain("~^(?<hh>127\\.0\\.0\\.1|localhost):(?<pre>\\d*)5$ http://$hh:${pre}1;");
+    expect(edge).toContain("community.__BASE__ https://sohoptac.__BASE__");
+    expect(edge).toContain("community-test.__BASE__ https://sohoptac-test.__BASE__");
+    expect(edge).toContain("proxy_set_header X-S2-Main-Origin $s2_cm_main;");
+    const tun = /^(?<hh>127\.0\.0\.1|localhost):(?<pre>\d*)5$/;
+    const m = (h: string) => tun.exec(h)?.groups;
+    expect(m("127.0.0.1:18435")?.pre).toBe("1843");
+    expect(m("127.0.0.1:28535")?.pre).toBe("2853");
+    expect(m("evil.example:18435")).toBeUndefined();
   });
   it("compose prod + gen-env: COMMUNITY_WEB_URL / catalog community = <SHT>/community", () => {
     const c = read(`${PROD}/docker-compose.yml`);
