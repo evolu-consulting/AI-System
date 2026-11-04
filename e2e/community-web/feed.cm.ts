@@ -6,7 +6,7 @@ const as = async (page: import("@playwright/test").Page, id: string) => {
 };
 
 test("chủ quản: đăng Cần bán, sửa (đã sửa), lưu trữ, xoá có xác nhận", async ({ page }) => {
-  await page.goto("/#/feed");
+  await page.goto("/community");
   // topbar hiện thương hiệu công ty chủ quản (GET /brand); nhóm "Sổ Hợp Tác" nằm ở sidebar (chủ quản Admin có quyền)
   await expect(page.locator("header.top button.brand")).toBeVisible();
   await expect(page.getByText("Sổ Hợp Tác").first()).toBeVisible();
@@ -35,7 +35,7 @@ test("chủ quản: đăng Cần bán, sửa (đã sửa), lưu trữ, xoá có 
 test("đối tác: bài của NCC bị che liên hệ, không có Lưu báo giá, không chatbot, ghi chú chỉ chủ quản", async ({
   page,
 }) => {
-  await page.goto("/#/feed");
+  await page.goto("/community");
   await as(page, "tp");
   await page
     .getByTestId("composer")
@@ -57,7 +57,7 @@ test("đối tác: bài của NCC bị che liên hệ, không có Lưu báo giá
 test("chủ quản: luồng theo từng công ty + audience preview + nút Lưu báo giá bật và mở form (C7b)", async ({
   page,
 }) => {
-  await page.goto("/#/feed");
+  await page.goto("/community");
   await page
     .getByTestId("composer")
     .getByRole("button", { name: /đang có hàng/ })
@@ -78,7 +78,7 @@ test("chủ quản: luồng theo từng công ty + audience preview + nút Lưu 
 });
 
 test("thông báo, cài đặt và hồ sơ qua user-menu", async ({ page }) => {
-  await page.goto("/#/feed");
+  await page.goto("/community");
   await page.locator('button.iconbtn[aria-label="Thông báo"]').click(); // chuông; chip lọc "Thông báo" cùng tên nên không dùng getByRole
   await expect(page.getByRole("dialog", { name: "Thông báo" })).toBeVisible();
   await page.getByRole("button", { name: "Đánh dấu đã đọc" }).click();
@@ -96,7 +96,7 @@ test("thông báo, cài đặt và hồ sơ qua user-menu", async ({ page }) => 
 test("bảng tin 2 cột: tab sticky, dải deal hiển thị giá chào, rail có bộ lọc và đối tác", async ({
   page,
 }) => {
-  await page.goto("/#/feed");
+  await page.goto("/community");
   await expect(page.getByRole("tab", { name: /Tất cả/ })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("tab", { name: /Cần bán/ }).click();
   await expect(page.getByRole("tab", { name: /Cần bán/ })).toHaveAttribute("aria-selected", "true");
@@ -107,6 +107,6 @@ test("bảng tin 2 cột: tab sticky, dải deal hiển thị giá chào, rail c
   await expect(rail.getByLabel("Nhóm hàng")).toBeVisible();
   await expect(rail.getByTestId("rail-partners")).toBeVisible();
   const org = rail.getByTestId("rail-org").first();
-  await expect(org).toHaveAttribute("href", /#\/profile\//);
+  await expect(org).toHaveAttribute("href", /\/community\/profile\//);
   await expect(org).toHaveAttribute("target", "_blank");
 });

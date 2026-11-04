@@ -2,14 +2,18 @@
 // localhost/127.0.0.1 (hàng đã sửa tay hoặc đã đổi rồi giữ nguyên). Mặc định chỉ in kế hoạch; --apply mới ghi.
 //   docker compose -p sohoptac2 run --rm -T tool tools/scripts/src/s2-app-urls.ts --base-domain evoluconsulting.com [--apply]
 // (cần ./build mới đã có file này, tức sau deploy.ps1; DATABASE_URL = owner do compose cấp). Không in bí mật.
+// CR-118: Community nằm trong web gộp ⇒ hàng `community` = `<host Sổ Hợp Tác>/community` và `sso=false` (không còn hand-off SSO). Hàng còn host
+// cũ `community[-test].<d>` cũng được đổi. Staging/UAT (không domain): `--community-url http://127.0.0.1:28531/community --apply` chỉ chỉnh hàng community.
 import postgres from "postgres";
 
-export type CatalogRow = { key: string; url: string };
+export type CatalogRow = { key: string; url: string; sso?: boolean };
 export type UrlChange = { key: string; from: string; to: string };
 
 const LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?(\/|$)/i;
 const TESTHOST =
   /^https:\/\/(sohoptac-test|ai-test|ai-test-admin|ai-test-hub|community-test)\.[a-z0-9.-]+(\/|$)/i;
+/** Host Community trước CR-118 (host riêng, SPA riêng) — nay chỉ còn 301 về `/community` của host chính. */
+const LEGACY_COMMUNITY = /^https:\/\/community(-test)?\.[a-z0-9.-]+(\/|$)/i;
 const BASE = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/;
 export type Hosts = "test" | "prod";
 
@@ -22,14 +26,14 @@ export function targetUrls(base: string, hosts: Hosts = "test"): Record<string, 
       contracts: `https://sohoptac.${base}`,
       studio: `https://ai-hub.${base}/studio/`,
       admin: `https://ai-admin.${base}`,
-      community: `https://community.${base}`, // ten host CHUA chot (placeholder) - khop edge-lib.sh
+      community: `https://sohoptac.${base}/community`, // CR-118: trong web gop; community.<d> chi con 301 (edge-lib.sh)
     };
   return {
     chat: `https://ai-test.${base}`,
     contracts: `https://sohoptac-test.${base}`,
     studio: `https://ai-test-hub.${base}/studio/`,
     admin: `https://ai-test-admin.${base}`,
-    community: `https://community-test.${base}`,
+    community: `https://sohoptac-test.${base}/community`,
   };
 }
 
@@ -40,42 +44,77 @@ export function planUrlChanges(
   hosts: Hosts = "test",
 ): UrlChange[] {
   const t = targetUrls(base, hosts);
-  const old = (u: string) => LOCAL.test(u) || (hosts === "prod" && TESTHOST.test(u));
+  const old = (r: CatalogRow) =>
+    LOCAL.test(r.url) ||
+    (r.key === "community" && LEGACY_COMMUNITY.test(r.url)) ||
+    (hosts === "prod" && TESTHOST.test(r.url));
   return rows.flatMap((r) =>
-    t[r.key] !== undefined && old(r.url) && r.url !== t[r.key]
+    t[r.key] !== undefined && old(r) && r.url !== t[r.key]
       ? [{ key: r.key, from: r.url, to: t[r.key] as string }]
       : [],
   );
 }
 
-async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-  const i = args.indexOf("--base-domain");
-  const base = i >= 0 ? args[i + 1] : undefined;
-  if (!base) throw new Error("cần --base-domain <domain>");
-  const hi = args.indexOf("--hosts");
-  const hosts = hi >= 0 ? args[hi + 1] : "test";
+/** CR-118: `--community-url` (staging/UAT, không domain): đặt đúng URL cho hàng `community` nếu khác. */
+export function planCommunityUrl(rows: CatalogRow[], url: string): UrlChange[] {
+  if (!/^https?:\/\/[^\s]+\/community$/.test(url))
+    throw new Error("--community-url phải có dạng http(s)://<host>[:cổng]/community");
+  return rows.flatMap((r) =>
+    r.key === "community" && r.url !== url ? [{ key: r.key, from: r.url, to: url }] : [],
+  );
+}
+
+/** CR-118: Community trong web gộp ⇒ không còn hand-off SSO; trả khoá còn `sso=true` cần tắt (chỉ `community`). */
+export function planCommunitySso(rows: CatalogRow[]): string[] {
+  return rows.filter((r) => r.key === "community" && r.sso !== false).map((r) => r.key);
+}
+
+function flag(args: string[], k: string): string | undefined {
+  const i = args.indexOf(k);
+  return i >= 0 ? args[i + 1] : undefined;
+}
+
+type Opts = { base?: string; cmUrl?: string; hosts: Hosts; apply: boolean };
+
+function parseArgs(args: string[]): Opts {
+  const base = flag(args, "--base-domain");
+  const cmUrl = flag(args, "--community-url");
+  if (!base && !cmUrl) throw new Error("cần --base-domain <domain> hoặc --community-url <url>");
+  const hosts = flag(args, "--hosts") ?? "test";
   if (hosts !== "test" && hosts !== "prod") throw new Error("--hosts phải là prod|test");
-  const apply = args.includes("--apply");
+  return { base, cmUrl, hosts, apply: args.includes("--apply") };
+}
+
+async function main(): Promise<void> {
+  const o = parseArgs(process.argv.slice(2));
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("thiếu DATABASE_URL");
   const sql = postgres(url, { max: 1 });
   try {
-    const rows = await sql<CatalogRow[]>`select key, url from admin.app_catalog`;
-    const changes = planUrlChanges(base, rows, hosts);
-    for (const c of changes)
-      console.log(`${apply ? "đổi" : "sẽ đổi"} ${c.key}: ${c.from} -> ${c.to}`);
-    if (changes.length === 0)
-      console.log("s2-app-urls: không có hàng nào còn trỏ localhost — không đổi gì");
-    if (!apply) return void console.log("s2-app-urls: chạy thử (thêm --apply để ghi)");
-    // Điều kiện url còn localhost lặp lại trong UPDATE để an toàn khi chạy song song.
+    const rows = await sql<CatalogRow[]>`select key, url, sso from admin.app_catalog`;
+    const changes = o.cmUrl
+      ? planCommunityUrl(rows, o.cmUrl)
+      : planUrlChanges(o.base as string, rows, o.hosts);
+    const ssoOff = planCommunitySso(rows);
+    const verb = o.apply ? "đổi" : "sẽ đổi";
+    for (const c of changes) console.log(`${verb} ${c.key}: ${c.from} -> ${c.to}`);
+    for (const k of ssoOff) console.log(`${verb} ${k}: sso true -> false`);
+    if (changes.length === 0 && ssoOff.length === 0)
+      console.log("s2-app-urls: không có hàng nào cần đổi — không đổi gì");
+    if (!o.apply) return void console.log("s2-app-urls: chạy thử (thêm --apply để ghi)");
+    // Điều kiện "còn giá trị cũ" lặp lại trong UPDATE để an toàn khi chạy song song.
     const n = await sql`
       update admin.app_catalog a set url = v.url, version = a.version + 1, updated_at = now()
       from (select * from json_to_recordset((${JSON.stringify(changes.map((c) => ({ key: c.key, url: c.to })))}::text)::json)
             as x(key text, url text)) v
-      where a.key = v.key and (a.url ~* '^https?://(localhost|127\\.0\\.0\\.1|\\[::1\\])(:[0-9]+)?(/|$)'
-        or (${hosts === "prod"} and a.url ~* '^https://(sohoptac-test|ai-test|ai-test-admin|ai-test-hub|community-test)\\.'))`;
-    console.log(`s2-app-urls: đã ghi ${n.count} hàng`);
+      where a.key = v.key and a.url <> v.url and (${o.cmUrl !== undefined}
+        or a.url ~* '^https?://(localhost|127\\.0\\.0\\.1|\\[::1\\])(:[0-9]+)?(/|$)'
+        or (a.key = 'community' and a.url ~* '^https://community(-test)?\\.')
+        or (${o.hosts === "prod"} and a.url ~* '^https://(sohoptac-test|ai-test|ai-test-admin|ai-test-hub|community-test)\\.'))`;
+    const s = await sql`
+      update admin.app_catalog set sso = false, version = version + 1, updated_at = now()
+      where key = 'community' and sso`;
+    console.log(`s2-app-urls: đã ghi ${n.count} hàng url, ${s.count} hàng sso`);
   } finally {
     await sql.end();
   }

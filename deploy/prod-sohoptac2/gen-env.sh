@@ -25,7 +25,7 @@ S2_PORT_COMMUNITY=$P_COMMUNITY
 S2_PUBLIC_ADMIN_URL=http://localhost:$P_ADMIN
 S2_PUBLIC_CHAT_URL=http://localhost:$P_CHAT
 S2_PUBLIC_HUB_URL=http://localhost:$P_HUB
-S2_PUBLIC_COMMUNITY_URL=http://localhost:$P_COMMUNITY
+S2_PUBLIC_COMMUNITY_URL=http://localhost:$P_CONTRACTS/community
 PG_OWNER_PASSWORD=$OWNER_PW
 APP_ENV=production
 LOG_LEVEL=info
@@ -89,14 +89,16 @@ if [ "$MODE" != keep ]; then
     [[ "$D" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]] || { echo "gen-env: S2_DOMAIN khong hop le"; exit 2; }
     T_C="https://sohoptac-test.$D"; T_A="https://ai-test-admin.$D"; T_H="https://ai-test-hub.$D"; T_CH="https://ai-test.$D"
     P_C="https://sohoptac.$D"; P_A="https://ai-admin.$D"; P_H="https://ai-hub.$D"; P_CH="https://ai.$D"
-    # community: ten host CHUA chot (placeholder) - phai khop edge-lib.sh s2_names + s2-app-urls.ts.
+    # community (CR-118): host cu community[-test].<d> chi con 301 (edge + nginx 8085); URL cong khai cua Community = <host So Hop Tac>/community.
+    # P_CM/T_CM van la origin hop le cho CORS (tab cu) - khop edge-lib.sh s2_names.
     T_CM="https://community-test.$D"; P_CM="https://community.$D"
-    if [ "$H" = prod ]; then U_C="$P_C"; U_A="$P_A"; U_H="$P_H"; U_CH="$P_CH"; U_CM="$P_CM"; else U_C="$T_C"; U_A="$T_A"; U_H="$T_H"; U_CH="$T_CH"; U_CM="$T_CM"; fi
+    if [ "$H" = prod ]; then U_C="$P_C"; U_A="$P_A"; U_H="$P_H"; U_CH="$P_CH"; else U_C="$T_C"; U_A="$T_A"; U_H="$T_H"; U_CH="$T_CH"; fi
+    U_CM="$U_C/community"
     setkv S2_DOMAIN "$D"; setkv S2_HOSTS "$H"; setkv TRUST_PROXY_HOPS 3
     ORIG="$P_C,$P_A,$P_CH,$P_H,$P_CM,$T_C,$T_A,$T_CH,$T_H,$T_CM,$LOCAL"
   else
     U_C="http://localhost:$(envget S2_PORT_CONTRACTS)"; U_A="http://localhost:$(envget S2_PORT_ADMIN)"
-    U_CH="http://localhost:$(envget S2_PORT_CHAT)"; U_H="http://localhost:$(envget S2_PORT_HUB)"; U_CM="http://localhost:$(envget S2_PORT_COMMUNITY)"
+    U_CH="http://localhost:$(envget S2_PORT_CHAT)"; U_H="http://localhost:$(envget S2_PORT_HUB)"; U_CM="$U_C/community"
     setkv S2_DOMAIN ""; setkv S2_HOSTS ""; setkv TRUST_PROXY_HOPS 1
     ORIG="$LOCAL"
   fi
@@ -108,7 +110,9 @@ if [ "$MODE" != keep ]; then
 elif ! grep -q '^S2_PUBLIC_CONTRACTS_URL=' .env; then
   setkv S2_PUBLIC_CONTRACTS_URL "http://localhost:$(envget S2_PORT_CONTRACTS)"
 fi
-grep -q '^S2_PUBLIC_COMMUNITY_URL=' .env || setkv S2_PUBLIC_COMMUNITY_URL "http://localhost:$(envget S2_PORT_COMMUNITY)"
+# CR-118: .env cu (host rieng community / localhost:18435) => doi sang <contracts>/community (idempotent; ket thuc bang /community thi giu).
+CUR_CM="$(envget S2_PUBLIC_COMMUNITY_URL)"
+case "$CUR_CM" in */community) ;; *) setkv S2_PUBLIC_COMMUNITY_URL "$(envget S2_PUBLIC_CONTRACTS_URL)/community" ;; esac
 chmod 600 .env
 # dify-demo-flow: gốc Dify console ⇒ Admin → Workflows hiện "Mở trong Dify" (chỉ đặt khi chưa có; sửa tay giữ nguyên).
 grep -q '^DIFY_CONSOLE_URL=' .env || setkv DIFY_CONSOLE_URL "http://149.202.83.5:4203" # web Dify gọi API qua http IP ⇒ mở bằng https bị chặn mixed content

@@ -14,7 +14,7 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     browser,
   }) => {
     const { ctx, page } = await openAs(browser, "host");
-    await page.goto("/#/feed");
+    await page.goto("/community");
     for (const t of ["Thùng phi 200L", "Lịch nghỉ lễ 20/11", "Băng keo 5cm"])
       await expect(postByTitle(page, t).first()).toBeVisible();
     // hai bài Chữ ký số (của chủ quản + của ABC) và hai bài Băng keo (Tân Phát bán, Hưng Thịnh mua)
@@ -39,7 +39,7 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     browser,
   }) => {
     const { ctx, page } = await openAs(browser, "supplier");
-    await page.goto("/#/feed");
+    await page.goto("/community");
     await expect(postByTitle(page, "Thùng phi 200L")).toBeVisible(); // Cần mua của chủ quản gửi NCC Thùng phi
     await expect(postByTitle(page, "Lịch nghỉ lễ 20/11")).toBeVisible(); // thông báo: mọi bạn bè
     // KHÔNG thấy: bài CKS của chủ quản (audience người mua nhóm CKS), bài của ABC / Hưng Thịnh
@@ -75,7 +75,7 @@ test.describe("community-web · 3 vai (stack thật)", () => {
     browser,
   }) => {
     const { ctx, page } = await openAs(browser, "buyer");
-    await page.goto("/#/feed");
+    await page.goto("/community");
     await expect(postByTitle(page, "Lịch nghỉ lễ 20/11")).toBeVisible();
     await expect(postByTitle(page, "Thùng phi 200L")).toHaveCount(0); // Cần mua gửi NCC, ABC chỉ là người mua
     await expect(postByTitle(page, "Băng keo 5cm")).toHaveCount(0); // bài Tân Phát/Hưng Thịnh: chỉ chủ quản
@@ -95,7 +95,7 @@ test.describe("community-web · 3 vai (stack thật)", () => {
   test("hai đối tác không thấy nhau: bài gửi NCC không tới người mua", async ({ browser }) => {
     const a = await openAs(browser, "supplier");
     const b = await openAs(browser, "buyer");
-    for (const p of [a.page, b.page]) await p.goto("/#/feed");
+    for (const p of [a.page, b.page]) await p.goto("/community");
     await expect(postByTitle(a.page, "Thùng phi 200L")).toBeVisible();
     await expect(postByTitle(b.page, "Thùng phi 200L")).toHaveCount(0);
     await a.ctx.close();
