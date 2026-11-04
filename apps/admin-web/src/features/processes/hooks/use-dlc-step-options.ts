@@ -20,5 +20,7 @@ export function useDlcStepOptions() {
   return {
     agents: agentKeysOf(settings.data?.agents ?? [], lang),
     groups: [...groups.values()],
+    // agent bật theo tenant ⇒ platform_admin chọn công ty lấy danh sách agent (chung lựa chọn với màn Quy trình)
+    tenant,
   };
 }

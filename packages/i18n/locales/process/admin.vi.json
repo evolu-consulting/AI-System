@@ -974,6 +974,7 @@
       "steps": {
         "title": "Bước DLC",
         "subtitle": "Thư viện bước dùng lại cho quy trình DLC: chọn việc, agent, cổng duyệt và chỗ quay lại khi từ chối. Canvas quy trình chép bước mẫu khi thêm — sửa mẫu không đổi quy trình đã có.",
+        "agentTenant": "Lấy agent từ công ty",
         "create": "Thêm bước",
         "edit": "Sửa",
         "delete": "Xoá",

@@ -7,6 +7,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
 import { ErrorState } from "@/components/shared/states/ErrorState";
+import { TenantPicker } from "@/components/shared/TenantPicker";
 import { notifySuccess } from "@/components/shared/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -100,7 +101,19 @@ function DlcStepsContent() {
       <PageHeader
         title={t(`${S}title`)}
         description={t(`${S}subtitle`)}
-        actions={<Button onClick={() => setEditing({ item: null })}>{t(`${S}create`)}</Button>}
+        actions={
+          <>
+            {opts.tenant.isPlatform ? (
+              <TenantPicker
+                tenants={opts.tenant.tenants ?? []}
+                value={opts.tenant.tenantKey}
+                onChange={opts.tenant.setTenant}
+                label={t(`${S}agentTenant`)}
+              />
+            ) : null}
+            <Button onClick={() => setEditing({ item: null })}>{t(`${S}create`)}</Button>
+          </>
+        }
       />
       {err ? (
         <ErrorState message={err.message} code={err.code} onRetry={() => void list.refetch()} />

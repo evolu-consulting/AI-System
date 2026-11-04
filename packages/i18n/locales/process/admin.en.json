@@ -974,6 +974,7 @@
       "steps": {
         "title": "DLC steps",
         "subtitle": "Reusable step library for DLC processes: pick the action, agent, approval gate and where a rejection goes back to. The process canvas copies a library step when you add it — editing it later does not change existing processes.",
+        "agentTenant": "Agents from company",
         "create": "Add step",
         "edit": "Edit",
         "delete": "Delete",
