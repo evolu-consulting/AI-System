@@ -14,7 +14,7 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
   const p = await ctx.newPage();
   try {
     await adminLogin(p);
-    await p.getByRole("link", { name: "Quy trình", exact: true }).click();
+    await p.getByRole("link", { name: "Quy trình nghiệp vụ", exact: true }).click();
     await p.getByRole("tab", { name: "Mẫu · chạy thử" }).click(); // CR-105: def tenant không khe/không của gói nằm ở tab này
     const row = p
       .getByRole("table", { name: "Quy trình" })
@@ -58,7 +58,7 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
     // mẫu: chỉ xem (breadcrumb cũng có link "Quy trình" ⇒ thu hẹp vào sidebar)
     await p
       .getByRole("navigation", { name: "Điều hướng chính" })
-      .getByRole("link", { name: "Quy trình", exact: true })
+      .getByRole("link", { name: "Quy trình nghiệp vụ", exact: true })
       .click();
     await p.getByRole("tab", { name: "Mẫu" }).click();
     await p

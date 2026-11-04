@@ -23,7 +23,7 @@ test("dify-workflows · menu hàng có 'Mở trong Dify' (target _blank, noopene
   });
   await loginAdmin(page);
   await openPage(page, "/workflows", "Workflow Process");
-  const row = page.getByRole("table", { name: "Workflows" }).getByRole("row").nth(1);
+  const row = page.getByRole("table", { name: "Workflow Dify (tool AI)" }).getByRole("row").nth(1);
   await row.getByRole("button", { name: "Thao tác khác" }).click();
   const link = page.getByRole("menuitem", { name: "Mở trong Dify" });
   await expect(link).toHaveAttribute("href", `${CONSOLE}/workflow`);

@@ -1,7 +1,7 @@
 // ADM-FR-60, ADM-FR-04, ADM-FR-10 · mục menu theo role: Tổng quan; TRUY CẬP: Tenants (chỉ platform_admin), Users; HỆ THỐNG (cuối, M4): Chi phí & quota, Nhật ký (cả hai role), Import / Export (chỉ platform_admin).
 // CR-060 (P-b FS1): CHỨC NĂNG có thêm Nguồn (`/sources`, cả hai role, cùng cờ engine với Quy trình).
 // CR-054: CHỨC NĂNG có Agents (cả hai role; tenant_admin chỉ thấy Agents trong nhóm này).
-// CR-112 · ADM-FR-76/77 (Q9): sidebar lồng 3 nhóm. NỀN TẢNG (chỉ platform_admin): Ứng dụng · Features · Commands · Workflows · Quy trình · Agents.
+// CR-112 · ADM-FR-76/77 (Q9): sidebar lồng 3 nhóm. NỀN TẢNG (chỉ platform_admin): Ứng dụng · Features · Commands · Agents; TỰ ĐỘNG HOÁ: Workflow Dify · Quy trình (+ Nguồn).
 // CÔNG TY: danh sách công ty (nhóm động, vẽ ở SidebarCompanies) — platform_admin mọi công ty + tìm, tenant_admin chỉ công ty mình.
 // HỆ THỐNG: Secrets · Tình trạng · Chi phí toàn hệ thống · Nhật ký · Góp ý · Import/Export (tenant_admin: Chi phí, Nhật ký, Góp ý).
 // Người dùng / Nhóm / Đối tác / Phân quyền nằm trong workspace công ty; route cũ chuyển hướng (lib/legacy-redirect.ts).
@@ -76,6 +76,7 @@ export type NavGroup = {
     | "nav.group.platform"
     | "nav.group.companies"
     | "nav.group.features"
+    | "nav.group.automation"
     | "nav.group.system"
     | null;
   /** `companies` ⇒ nhóm động: SidebarNav vẽ danh sách công ty thay cho `items`. */
@@ -126,8 +127,9 @@ export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGro
       { labelKey: null, items: [OVERVIEW] },
       {
         labelKey: "nav.group.platform",
-        items: [APPS, FEATURES, COMMANDS, WORKFLOWS, ...proc, AGENTS],
+        items: [APPS, FEATURES, COMMANDS, AGENTS],
       },
+      { labelKey: "nav.group.automation", items: [WORKFLOWS, ...proc] },
       COMPANIES_GROUP,
       {
         labelKey: "nav.group.system",

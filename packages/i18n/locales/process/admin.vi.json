@@ -1,6 +1,6 @@
 {
   "list": {
-    "title": "Quy trình",
+    "title": "Quy trình nghiệp vụ",
     "subtitle": "Chuỗi giai đoạn do agent hoặc nhóm agent làm. Người kiểm bấm Đạt thì quy trình tự chạy tiếp, Chưa đạt thì agent làm lại theo góp ý.",
     "tab": {
       "own": "Của công ty",

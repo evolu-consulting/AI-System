@@ -1,4 +1,4 @@
-﻿// ADM-FR-71 · HUB-FR-143 · HUB-FR-144 · HUB-FR-145 · AC-H41 · AC-H42 · AC-H43 · P-d1 · e2e admin editor (test-plan-e2e PD-E01…E04;
+// ADM-FR-71 · HUB-FR-143 · HUB-FR-144 · HUB-FR-145 · AC-H41 · AC-H42 · AC-H43 · P-d1 · e2e admin editor (test-plan-e2e PD-E01…E04;
 // nhãn nguyên văn plan-frontend §7 + i18n). Def `pd-edit` / `pd-bad` nạp bằng SQL (`seedPd`). Lưu ⇒ chờ PUT (CONVENTIONS §2).
 import { expect, type Page, test } from "@playwright/test";
 import {
@@ -209,7 +209,7 @@ test("AC-H47 · PD2-E05 · công ty chưa bật tool: danh sách rỗng có thô
     await loginAs(p, "globex", "hoa");
     await p
       .getByRole("navigation", { name: "Điều hướng chính" })
-      .getByRole("link", { name: "Quy trình", exact: true })
+      .getByRole("link", { name: "Quy trình nghiệp vụ", exact: true })
       .click();
     await p.getByRole("tab", { name: "Mẫu · chạy thử" }).click(); // CR-105: def tenant không khe/không của gói nằm ở tab này
     await p

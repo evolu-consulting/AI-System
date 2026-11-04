@@ -75,7 +75,7 @@ test("ADM-FR-50 · M2-AC09 · admin seed → Secrets (thêm) → Workflows (tạ
   await expect(page).toHaveURL(/\/workflows\/[0-9a-f-]{36}$/);
   await openWorkflowProcessFromNav(page);
   const wfRow = page
-    .getByRole("table", { name: "Workflows" })
+    .getByRole("table", { name: "Workflow Dify (tool AI)" })
     .getByRole("row")
     .filter({ hasText: /translate-e2e/ });
   await expect(wfRow).toContainText("Chưa gắn");

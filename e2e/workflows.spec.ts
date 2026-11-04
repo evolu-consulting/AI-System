@@ -11,7 +11,7 @@ test.beforeAll(() => {
 /** Hàng bảng Workflows theo key (không nhầm 'report-tax' với 'report-tax-2'). */
 const wfRow = (page: Page, key: string) =>
   page
-    .getByRole("table", { name: "Workflows" })
+    .getByRole("table", { name: "Workflow Dify (tool AI)" })
     .getByRole("row")
     .filter({ hasText: new RegExp(`(?<![\\w-])${key}(?![\\w-])`) });
 const rowMenu = async (page: Page, key: string, item: string) => {
@@ -32,7 +32,7 @@ test("ADM-FR-14 · M2-R26 · /workflows: heading, bảng, chip Tất cả 5 / B�
 }) => {
   await loginAdmin(page);
   await openPage(page, "/workflows", "Workflow Process");
-  await expect(page.getByRole("table", { name: "Workflows" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Workflow Dify (tool AI)" })).toBeVisible();
   await expect(page.getByRole("button", { name: "+ Thêm workflow" })).toBeVisible();
   for (const [label, n] of [
     ["Tất cả", 5],

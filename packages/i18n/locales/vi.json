@@ -194,7 +194,14 @@
       "security": "BẢO MẬT",
       "system": "HỆ THỐNG",
       "platform": "NỀN TẢNG",
-      "companies": "CÔNG TY"
+      "companies": "CÔNG TY",
+      "automation": "Tự động hoá"
+    },
+    "automation": {
+      "workflowsNote": "Workflow Dify là các tool AI: command và agent gọi chúng để làm việc.",
+      "workflowsLink": "Cần luồng duyệt nghiệp vụ? Xem Quy trình nghiệp vụ →",
+      "processesNote": "Quy trình nghiệp vụ là luồng duyệt do hub chạy (các bước, người duyệt, tự chạy tiếp).",
+      "processesLink": "Cần tool AI cho command? Xem Workflow Dify →"
     },
     "companies": {
       "search": "Tìm công ty",
@@ -215,8 +222,8 @@
     "skip": "Bỏ qua điều hướng",
     "breadcrumb": "Đường dẫn",
     "commands": "Commands",
-    "workflows": "Workflows",
-    "processes": "Quy trình",
+    "workflows": "Workflow Dify (tool AI)",
+    "processes": "Quy trình nghiệp vụ",
     "processesNew": "Quy trình mới",
     "sources": "Nguồn",
     "features": "Features",
@@ -1403,7 +1410,7 @@
   },
   "workflows": {
     "list": {
-      "title": "Workflows",
+      "title": "Workflow Dify (tool AI)",
       "subtitle": "Catalog dùng chung. Command và agent đều chọn workflow từ đây. Khai báo trước, gắn sau cũng được.",
       "create": "+ Khai báo workflow",
       "search": "Tìm theo tên, key, mô tả…"

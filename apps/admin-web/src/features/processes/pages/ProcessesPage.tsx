@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { AutomationNote } from "@/components/shared/AutomationNote";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { FilterChips } from "@/components/shared/form/FilterChips";
@@ -104,6 +105,7 @@ function ListPage() {
   return (
     <>
       <ProcessesHeader v={v} />
+      <AutomationNote kind="processes" showLink={v.tenant.isPlatform} />
       {hubConfigured() ? (
         <Tabs value={v.tab} onValueChange={(x) => v.setTab(x as Tab)}>
           <TabsList>

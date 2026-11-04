@@ -1,6 +1,6 @@
 {
   "list": {
-    "title": "Processes",
+    "title": "Business processes",
     "subtitle": "A chain of stages done by agents or agent teams. When a reviewer passes a stage the process continues; if it needs rework the agent redoes it using the feedback.",
     "tab": {
       "own": "Company",

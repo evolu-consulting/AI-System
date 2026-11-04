@@ -1,11 +1,13 @@
 // ADM-FR-14 · /workflows (canvas Workflows): hướng dẫn 3 bước, chip có số, ô tìm, bảng phân trang server 50 dòng, hành động hàng.
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { AutomationNote } from "@/components/shared/AutomationNote";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Pagination } from "@/components/shared/Pagination";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { Button } from "@/components/ui/button";
+import { useProcessEngineOn } from "@/features/processes/engine";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useWorkflowList, WORKFLOWS_PAGE_SIZE } from "../api";
@@ -23,6 +25,7 @@ function WorkflowsContent() {
   const search = route.useSearch();
   const patch = useWorkflowsNav();
   const actions = useWorkflowActions();
+  const processesOn = useProcessEngineOn();
   const page = search.page ?? 1;
   const list = useWorkflowList(
     {
@@ -49,6 +52,7 @@ function WorkflowsContent() {
         description={t("workflows.list.subtitle")}
         actions={create}
       />
+      <AutomationNote kind="workflows" showLink={processesOn} />
       <WorkflowGuide />
       <WorkflowFilters
         status={search.status ?? "all"}
