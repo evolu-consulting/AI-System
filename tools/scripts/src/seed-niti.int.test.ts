@@ -140,7 +140,7 @@ describe("seed-niti", () => {
       (
         await o`select role, must_change_password from admin.users where tenant_id = ${t} order by username`
       ).map((u) => `${u.role}/${u.must_change_password}`),
-    ).toEqual(["member/true", "member/true", "member/true", "tenant_admin/true"]);
+    ).toEqual(["member/true", "tenant_admin/true", "member/true", "member/true"]);
     const dep =
       await o`select g.key from admin.groups g where tenant_id = ${t} and key like 'pb-%' order by key`;
     expect(dep.map((g) => g.key)).toEqual(["pb-acc", "pb-root", "pb-sales"]);
