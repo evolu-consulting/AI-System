@@ -34,7 +34,7 @@ if ($CachePrune) {
   return
 }
 if ($DryRun) {
-  Write-Host "commit $commit, bước $Step -> $Server ~/workspace/evotest/slots/sN (N = slot trống đầu tiên trong $Slots); log: $out$(if ($isFull) { '; LƯỢT TOÀN BỘ' + $(if ($Force) { ' (-Force)' } else { ' (từ chối nếu slot khác bận)' }) })"
+  Write-Host "commit $commit, bước $Step -> $Server ~/workspace/evotest/slots/sN (N = slot trống đầu tiên trong $Slots); log: $out; luot toan bo: $isFull (-Force: $Force)"
   Write-Host "ssh: bash ~/workspace/evotest/boot.sh -> remote.sh $Step $commit (sau khi scp evotest-app.tgz + evotest-kit.tgz vào /tmp)"
   return
 }
