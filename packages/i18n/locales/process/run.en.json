@@ -143,6 +143,8 @@
     "decided": "Chosen: {{option}}"
   },
   "dlcProgress": {
+    "finished": "{{name}} finished",
+    "openApp": "Open app: {{url}}",
     "running": "{{name}} is running",
     "step": "Step {{n}}/{{total}}: {{name}}",
     "done": "{{done}}/{{total}} tasks done",

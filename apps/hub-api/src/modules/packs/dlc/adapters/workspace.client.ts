@@ -6,6 +6,7 @@ import type {
   DeployResult,
   IntegrateResult,
   ProjectView,
+  TeamMember,
   WorkspacePort,
 } from "../application/ports";
 import type { QueueItem, Ticket } from "../domain/dlc-prompts.rules";
@@ -78,7 +79,12 @@ export function workspaceClient(
       await call("PUT", `${p(project)}/artifacts/${encodeURIComponent(name)}`, { content });
     },
     async settings(project, b) {
-      await call("PUT", `${p(project)}/settings`, { test_command: b.testCommand, stack: b.stack });
+      await call("PUT", `${p(project)}/settings`, {
+        test_command: b.testCommand,
+        stack: b.stack,
+        ...(b.team && { team: b.team }),
+        ...(b.deploySpec !== undefined && { deploy_spec: b.deploySpec }),
+      });
     },
     async enqueue(project, items) {
       if (items.length) await call("POST", `${p(project)}/queue`, { items });
@@ -106,11 +112,15 @@ export function workspaceClient(
         queue?: QueueItem[];
         summary?: Record<string, unknown>;
         log?: string;
+        team?: TeamMember[];
+        deploy?: { url?: string } | null;
       }>("GET", p(project));
       return {
         queue: r.queue ?? [],
         summary: r.summary ?? {},
         log: r.log ?? "",
+        team: r.team ?? [],
+        url: r.deploy?.url || null,
       } satisfies ProjectView;
     },
     async deploy(project) {

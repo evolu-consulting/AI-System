@@ -1,6 +1,8 @@
 // dlc-engine · dựng giai đoạn MỚI cho Canvas quy trình thư viện (bước DLC / bước duyệt mang `slot` ngay khi thêm). Tách riêng để
 // `dlc-slot` / `slot-canvas` không phụ thuộc `stage-convert` (tránh vòng import).
-import { freeDlcKey, isDlcStep, newDlcSlot } from "./dlc-slot";
+import type { DlcStepTemplate } from "@ai/contracts/hub-admin";
+import { dlcOf, freeDlcKey, isDlcStep, newDlcSlot } from "./dlc-slot";
+import { dlcSlotFromTemplate } from "./dlc-template";
 import type { StageDraft } from "./draft-types";
 import { defaultReviewSlot } from "./slot-canvas";
 import { emptyStage, nextUid } from "./stage-convert";
@@ -12,10 +14,18 @@ export const freshReviewStage = (): StageDraft => ({
   slotRaw: defaultReviewSlot(""),
 });
 
-/** Giai đoạn mới cho bước DLC: khung stage lấy từ bước DLC có sẵn (executor `dlc-step` hợp lệ để Hub nhận), `slot` = bước mới. */
-export function freshDlcStage(stages: readonly StageDraft[], name: string): StageDraft {
+/**
+ * Giai đoạn mới cho bước DLC (thêm cuối): khung stage lấy từ bước DLC có sẵn (executor `dlc-step` hợp lệ để Hub nhận), `slot` = bước
+ * trống hoặc chép từ bước mẫu `tpl` của thư viện (dlc-step-library; tên = tên mẫu, quay lại phân giải theo các bước đứng trước).
+ */
+export function freshDlcStage(
+  stages: readonly StageDraft[],
+  name: string,
+  tpl?: DlcStepTemplate,
+): StageDraft {
   const tmpl = stages.find(isDlcStep);
   const key = freeDlcKey(stages);
+  const slot = tpl ? dlcSlotFromTemplate(tpl, key, stages.filter(isDlcStep).map(dlcOf)) : null;
   const base: StageDraft = tmpl
     ? { ...tmpl }
     : { ...emptyStage(), executor: "tool", tool: { ...emptyStage().tool, key: "dlc-step" } };
@@ -25,10 +35,10 @@ export function freshDlcStage(stages: readonly StageDraft[], name: string): Stag
     uid: nextUid(),
     key,
     keyAuto: false,
-    name,
-    after: "auto",
+    name: slot?.name ?? name,
+    after: slot?.gate ? "review" : "auto",
     backTo: [],
     branch: [],
-    slotRaw: newDlcSlot(key, name) as unknown as Record<string, unknown>,
+    slotRaw: (slot ?? newDlcSlot(key, name)) as unknown as Record<string, unknown>,
   };
 }

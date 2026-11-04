@@ -3,7 +3,7 @@
 // workspace DLC; cổng duyệt deploy nằm ở bước báo cáo của quy trình). Quyền: người gọi cần quyền ghi gói `dlc` (Group của gói).
 
 import type { PackRunsBridge, PackStepsView } from "../../kit/application/pack-runs.ports";
-import type { PackToolDef } from "../../kit/application/pack-tools.ports";
+import type { PackToolArgs, PackToolDef } from "../../kit/application/pack-tools.ports";
 import { PackToolBusinessError } from "../../kit/domain/pack-tool-error";
 import type { AgentHubBridge } from "../application/ports";
 import { runDlcStep } from "../application/run-step.usecase";
@@ -29,6 +29,7 @@ const stepTool = (d: StepDeps): PackToolDef => ({
     "Một bước của quy trình DLC (khởi tạo, spec, QC, chuẩn bị đội, build theo queue, nghiệm thu, báo cáo, deploy, agent). Chỉ chạy trong stage của lượt DLC.",
   side_effect: false,
   action: "write",
+  agent: false,
   params: [
     { name: "action", type: "select", required: true, options: DLC_ACTIONS },
     { name: "mode", type: "select", required: true, options: DLC_MODES },
@@ -39,6 +40,17 @@ const stepTool = (d: StepDeps): PackToolDef => ({
   ],
   run: runDlcStep(d),
 });
+
+/** Tham số tool `dlc-start` → yêu cầu mở lượt (chuỗi rỗng ⇒ null; `flow` lạ ⇒ theo ticket). */
+function startArgs(args: PackToolArgs): Omit<StartRequest, "conversationId" | "agentFlows"> {
+  const flow = String(args.flow ?? "");
+  return {
+    mode: (DLC_MODES as readonly string[]).includes(flow) ? (flow as DlcMode) : null,
+    project: String(args.project ?? "") || null,
+    ticketId: String(args.ticket_id ?? "") || null,
+    requirement: String(args.requirement ?? "") || null,
+  };
+}
 
 const startTool = (hub: AgentHubBridge, start: Start): PackToolDef => ({
   pack: DLC_PACK,
@@ -75,15 +87,12 @@ const startTool = (hub: AgentHubBridge, start: Start): PackToolDef => ({
     const job = await port.jobContext(ctx.tenantId, ctx.runId);
     if (!job?.conversationId || job.userId !== ctx.userId)
       throw new PackToolBusinessError("dlc-start: không tìm thấy hội thoại của lời gọi");
-    const flow = String(args.flow ?? "");
     const r = await start(
       { userId: ctx.userId, tenantId: ctx.tenantId, role: job.role },
       {
-        mode: (DLC_MODES as readonly string[]).includes(flow) ? (flow as DlcMode) : null,
-        project: String(args.project ?? "") || null,
-        ticketId: String(args.ticket_id ?? "") || null,
-        requirement: String(args.requirement ?? "") || null,
+        ...startArgs(args),
         conversationId: job.conversationId,
+        agentFlows: job.agentFlows ?? null,
       },
     );
     return { ...r };

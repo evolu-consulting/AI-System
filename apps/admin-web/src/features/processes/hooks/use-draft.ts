@@ -19,6 +19,7 @@ import {
   removeStage,
   type StepOpResult,
   splitToNewStep,
+  swapStepColumns,
 } from "../lib/step-ops";
 
 type Update = (fn: (d: DefDraft) => DefDraft) => void;
@@ -31,6 +32,9 @@ function draftOps(update: Update) {
       update((d) => ({ ...d, stages: patchStage(d.stages, i, p) })),
     moveInColumn: (i: number, dir: -1 | 1) =>
       update((d) => ({ ...d, stages: moveInColumn(d.stages, i, dir) })),
+    /** dlc-step-library · Lên/Xuống của bước DLC: đổi chỗ cả bước (cột) với bước kề. */
+    swapStep: (i: number, dir: -1 | 1) =>
+      update((d) => ({ ...d, stages: swapStepColumns(d.stages, i, dir) })),
     removeStage: (i: number) => update((d) => ({ ...d, stages: removeStage(d.stages, i) })),
     /** fnr-canvas · lưu `y` của node `uid` (chỉ-UI); `undefined` ⇒ bỏ (về bố cục tự động). */
     setUiY: (uid: string, y: number | undefined) =>

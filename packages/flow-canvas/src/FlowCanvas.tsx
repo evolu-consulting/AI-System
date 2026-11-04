@@ -11,6 +11,7 @@ import {
   type Node,
   type NodeChange,
   type NodeTypes,
+  type OnConnectEnd,
   ReactFlow,
   ReactFlowProvider,
   type XYPosition,
@@ -69,7 +70,8 @@ export type FlowCanvasProps = {
   // ---- móc của host (edit) ----
   onNodeDrag?: (node: Node, pos: XYPosition) => void;
   onNodeDragStop?: (node: Node, pos: XYPosition) => void;
-  onConnect?: (c: { source: string; target: string }) => void;
+  /** Nối tay: thả lên handle đích hợp lệ HOẶC lên thân node (handle đích của node ẩn) — kể cả thả lên chính node nguồn. */
+  onConnect?: (c: { source: string; target: string; sourceHandle?: string | null }) => void;
   onNodeClick?: (node: Node) => void;
 };
 
@@ -119,6 +121,19 @@ function useDragOverlay(p: FlowCanvasProps) {
   return { nodes, onNodesChange, onNodeDrag, onNodeDragStop };
 }
 
+/** Thả dây nối không trúng handle đích (handle của node ẩn, không nối được) ⇒ lấy node dưới con trỏ làm đích. */
+function connectEndOf(onConnect: FlowCanvasProps["onConnect"]): OnConnectEnd | undefined {
+  if (!onConnect) return undefined;
+  return (ev, st) => {
+    if (st.isValid || !st.fromNode) return;
+    const pt = "changedTouches" in ev ? ev.changedTouches[0] : ev;
+    const el = pt ? document.elementFromPoint(pt.clientX, pt.clientY) : null;
+    const target = el?.closest(".react-flow__node")?.getAttribute("data-id");
+    if (target)
+      onConnect({ source: st.fromNode.id, target, sourceHandle: st.fromHandle?.id ?? null });
+  };
+}
+
 const ariaOf = (c: FlowLabels["controls"]) =>
   c && {
     "controls.ariaLabel": c.title,
@@ -152,6 +167,7 @@ function Flow(p: FlowCanvasProps) {
     onNodeDrag: d.onNodeDrag,
     onNodeDragStop: d.onNodeDragStop,
     onConnect: p.onConnect,
+    onConnectEnd: connectEndOf(p.onConnect),
     onNodeClick: p.onNodeClick && ((_: unknown, n: Node) => p.onNodeClick?.(n)),
   } as const;
   const furniture = (

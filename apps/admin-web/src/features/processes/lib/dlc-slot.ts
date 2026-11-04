@@ -88,24 +88,65 @@ export function diagramKind(stages: readonly StageDraft[]): string | null {
 export const stageFamily = (s: Pick<StageDraft, "slotRaw">): "dlc" | "review" | null =>
   s.slotRaw?.kind === "dlc" ? "dlc" : typeof s.slotRaw?.kind === "string" ? "review" : null;
 
-/** Canvas khe DLC: bước engine = vị trí, khoá stage = khoá bước, không nhánh/quay-lại ở stage (cổng nằm trong `slot.gate`). */
+/** Khoá bước của stage DLC (vắng ⇒ khoá stage). */
+const keyOf = (s: StageDraft): string => dlcOf(s).key || s.key;
+
+/**
+ * Canvas khe DLC: bước engine = vị trí, khoá stage = khoá bước, không nhánh. Cổng nằm trong `slot.gate` (Hub biên dịch lại từ
+ * `slot`); `backTo` của stage = vị trí các bước `gate.back_to` đứng trước (khớp `back_to_steps` Hub dựng) ⇒ canvas vẽ "Từ chối".
+ */
 export function normalizeDlcStages(stages: readonly StageDraft[]): StageDraft[] {
+  const keys = stages.map((s, i) => (isDlcStep(s) ? dlcOf(s).key || `d${i + 1}` : null));
   return stages.map((s, i) => {
     if (!isDlcStep(s)) return { ...s, step: i };
     const slot = { ...dlcOf(s), name: s.name };
-    const key = slot.key || `d${i + 1}`;
+    const key = keys[i] as string;
     const after = slot.gate ? ("review" as const) : ("auto" as const);
+    const back = (slot.gate?.back_to ?? [])
+      .map((k) => keys.indexOf(k))
+      .filter((n) => n >= 0 && n < i);
     return {
       ...s,
       key,
       keyAuto: false,
       step: i,
       after,
-      backTo: [],
+      backTo: slot.gate ? back : [],
       branch: [],
       slotRaw: { ...slot, key },
     };
   });
+}
+
+/** dlc-step-library · bước (cột) đích "Từ chối" của một bước DLC có cổng, theo `gate.back_to` (chỉ bước đứng trước). */
+export function dlcBackSteps(s: StageDraft, all: readonly StageDraft[]): number[] {
+  const g = isDlcStep(s) ? dlcOf(s).gate : null;
+  if (!g) return [];
+  return g.back_to.flatMap((k) => {
+    const t = all.find((x) => isDlcStep(x) && keyOf(x) === k);
+    return t && t.step < s.step ? [t.step] : [];
+  });
+}
+
+export type DlcRejectLink = { index: number; slot: DlcSlot } | { error: "noGate" | "notEarlier" };
+
+/**
+ * dlc-step-library · kéo cổng "Từ chối" của bước `from` thả lên bước `to`: `to` phải là bước DLC ĐỨNG TRƯỚC ⇒ `gate.back_to = [to]`.
+ * Không phải hai bước DLC ⇒ null (bỏ qua im lặng). Áp cho MỌI bước có cổng — không phân biệt khoá/việc.
+ */
+export function linkDlcReject(
+  stages: readonly StageDraft[],
+  from: string,
+  to: string,
+): DlcRejectLink | null {
+  const index = stages.findIndex((s) => s.uid === from);
+  const a = stages[index];
+  const b = stages.find((s) => s.uid === to);
+  if (!a || !b || !isDlcStep(a) || !isDlcStep(b)) return null;
+  const d = dlcOf(a);
+  if (!d.gate) return { error: "noGate" };
+  if (b.step >= a.step) return { error: "notEarlier" };
+  return { index, slot: { ...d, gate: { ...d.gate, back_to: [keyOf(b)] } } };
 }
 
 const E = "process.admin.library.dlc.err.";

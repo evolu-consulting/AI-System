@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
+import { isDlcStep } from "../../lib/dlc-slot";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
 import { SlotCanvasToolbar } from "../library/SlotCanvasToolbar";
 import { CanvasToolbar } from "./CanvasToolbar";
@@ -34,16 +35,25 @@ function Empty({ onAdd, readOnly }: { onAdd: () => void; readOnly: boolean }) {
   );
 }
 
+/** dlc-step-library · Canvas thư viện có bước DLC + sửa được ⇒ kéo cổng "Từ chối" nối được. */
+const linkableOf = (lib: unknown, readOnly: boolean, stages: DraftState["draft"]["stages"]) =>
+  !!lib && !readOnly && stages.some(isDlcStep);
+
 export function StageWorkbench({ d, readOnly, refs }: Props) {
   const { t } = useTranslation();
   const w = useWorkbench(d, refs);
   const lib = useLibraryCanvas();
   const { ops } = w;
-  const views = lib ? withoutSlotLinks(w.views) : w.views; // CR-105 UX: quy trình khe không vẽ "Quay lại"/"Rẽ nhánh"
+  // CR-105 UX: quy trình khe không vẽ "Quay lại"/"Rẽ nhánh" — trừ cổng "Từ chối" của bước DLC (dlc-step-library).
+  const views = lib ? withoutSlotLinks(w.views) : w.views;
   const addStage = () => ops.add();
   const addReview = () => ops.addReview();
-  const addDlc = () =>
-    ops.addDlc(t("process.admin.library.dlc.newName", { n: w.stages.length + 1 }));
+  const dlcSteps = lib?.dlcSteps;
+  const addDlc = (id?: string) =>
+    ops.addDlc(
+      t("process.admin.library.dlc.newName", { n: w.stages.length + 1 }),
+      dlcSteps?.find((x) => x.id === id),
+    );
   const viewProps = {
     views,
     selected: w.sel?.uid,
@@ -51,6 +61,7 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
     ops,
     fitKey: ops.arranged,
     fitMin: lib ? 0.7 : undefined,
+    linkable: linkableOf(lib, readOnly, w.stages),
     onSelect: w.select,
     onRemove: w.askRemove,
   };
@@ -65,6 +76,7 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
           ) : lib ? (
             <SlotCanvasToolbar
               count={w.stages.length}
+              templates={dlcSteps}
               onAdd={addReview}
               onAddDlc={addDlc}
               onArrange={ops.arrange}

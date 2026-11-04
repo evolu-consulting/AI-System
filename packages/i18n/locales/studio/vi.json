@@ -216,7 +216,32 @@
       "body": "Mọi tin nhắn của tenant không có bản riêng sẽ đi qua agent này.",
       "confirm": "Đặt làm Orchestrator"
     },
-    "truncated": "Chỉ hiện 200 agent đầu. Dùng ô tìm để lọc trên máy chủ."
+    "truncated": "Chỉ hiện 200 agent đầu. Dùng ô tìm để lọc trên máy chủ.",
+    "dlc": {
+      "title": "Quy trình DLC",
+      "hint": "Tool gói agent được gọi trong Chat và quy trình (thư viện Quy trình, bản đã xuất bản) dùng khi agent mở lượt DLC. \"Theo tenant\" = quy trình đang gán cho công ty của người dùng. Bấm Lưu để áp dụng.",
+      "tools": "Tool gói agent được gọi",
+      "toolsEmpty": "Chưa có tool gói nào gắn được cho agent",
+      "toolsFailed": "Không tải được danh sách tool gói",
+      "toolGone": "{key} — không còn trong hệ thống, bỏ tick để gỡ",
+      "tool": {
+        "dlc-start": "Mở quy trình DLC",
+        "dlc-runs": "Xem lượt DLC của hội thoại"
+      },
+      "flowFor": "Quy trình dùng khi agent mở lượt {mode}",
+      "mode": {
+        "new-system": "New System",
+        "enhancement": "Enhancement",
+        "bug-fix": "Bug Fix"
+      },
+      "byTenant": "Theo tenant (mặc định)",
+      "flowGone": "{key} (không còn bản xuất bản)",
+      "flowsFailed": "Không tải được danh sách quy trình DLC",
+      "err": {
+        "tools": "Tool gói không hợp lệ hoặc không còn trong hệ thống",
+        "flows": "Quy trình DLC đã chọn không hợp lệ hoặc chưa xuất bản"
+      }
+    }
   },
   "errors": {
     "FORBIDDEN": "Bạn không còn quyền thực hiện thao tác này",

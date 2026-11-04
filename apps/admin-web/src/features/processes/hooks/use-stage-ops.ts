@@ -1,8 +1,10 @@
 ﻿// ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend §2): thao tác bước trên bản nháp + thông báo cho người dùng
 // (câu lỗi inline đã dịch, vùng `aria-live`). Canvas, StepList và panel cùng dùng một bộ.
+import type { DlcStepTemplate } from "@ai/contracts/hub-admin";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { StageDraft } from "../lib/def-form";
+import { linkDlcReject } from "../lib/dlc-slot";
 import { freshDlcStage, freshReviewStage } from "../lib/fresh-stages";
 import { stepLabel } from "../lib/step-label";
 import { columnNeighbor, type StepOpResult } from "../lib/step-ops";
@@ -10,6 +12,7 @@ import type { DraftState } from "./use-draft";
 
 type Notice = { uid?: string; error: string };
 const LIVE = "process.admin.canvas.live.";
+const LINK = "process.admin.library.dlc.link.";
 
 type Report = (uid: string | undefined, r: StepOpResult<unknown>, before?: number) => void;
 
@@ -35,8 +38,23 @@ function useReport(d: DraftState) {
   return { notice, live, setNotice, setLive, find, report, t };
 }
 
+/** dlc-step-library · nối cổng "Từ chối" (luật ở `linkDlcReject`); sai đích ⇒ câu lỗi inline, xong ⇒ live. */
+function linkRejectOf(d: DraftState, r: ReturnType<typeof useReport>) {
+  return (from: string, to: string) => {
+    const st = d.draftRef.current.stages;
+    const out = linkDlcReject(st, from, to);
+    if (!out) return;
+    if ("error" in out) return r.setNotice({ uid: from, error: r.t(`${LINK}${out.error}`) });
+    d.patchStage(out.index, { slotRaw: out.slot as unknown as Record<string, unknown> });
+    r.setNotice(null);
+    const name = (uid: string) => st.find((s) => s.uid === uid)?.name ?? "";
+    r.setLive(r.t(`${LINK}done`, { from: name(from), to: name(to) }));
+  };
+}
+
 export function useStageOps(d: DraftState) {
-  const { notice, live, setNotice, setLive, find, report, t } = useReport(d);
+  const rep = useReport(d);
+  const { notice, live, setNotice, setLive, find, report, t } = rep;
   const [arranged, setArranged] = useState(0);
   const stageAt = (i: number) => d.draftRef.current.stages[i];
   const setStep = (i: number, step: number) => {
@@ -79,10 +97,13 @@ export function useStageOps(d: DraftState) {
     add: (step?: number) => addVia(() => d.addStage(step)),
     /** Chèn bước mới ngay sau bước `step`. */
     addStep: (step: number) => addVia(() => d.addStepAfter(step)),
-    /** dlc-engine · thêm bước DLC (khe `dlc.*`) thành bước cuối. */
-    addDlc: (name: string) => addVia(() => d.addFresh((st) => freshDlcStage(st, name))),
+    /** dlc-engine · thêm bước DLC (khe `dlc.*`) thành bước cuối; `tpl` = bước mẫu của thư viện (dlc-step-library), vắng ⇒ bước trống. */
+    addDlc: (name: string, tpl?: DlcStepTemplate) =>
+      addVia(() => d.addFresh((st) => freshDlcStage(st, name, tpl))),
     /** dlc-engine · thêm bước duyệt của khe (mang `slot.kind = review` ngay ⇒ không nối với bước DLC, KIND_MIX khi trộn). */
     addReview: () => addVia(() => d.addFresh(() => freshReviewStage())),
+    /** dlc-step-library · kéo cổng "Từ chối" của bước `from` thả lên bước `to` (phải đứng trước) ⇒ `gate.back_to = [to]`. */
+    linkReject: linkRejectOf(d, rep),
     clearNotice: () => setNotice(null),
   };
 }

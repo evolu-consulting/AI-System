@@ -5,6 +5,7 @@ import {
   AgentCreateSchema,
   type AgentRuntime,
   agentUpdateSchemaFor,
+  type DlcFlows,
 } from "@ai/contracts/studio";
 
 export type FieldKey =
@@ -19,7 +20,9 @@ export type FieldKey =
   | "token_budget"
   | "agent_type_key"
   | "max_turns"
-  | "options_json";
+  | "options_json"
+  | "pack_tools"
+  | "dlc_flows";
 export type FieldErrors = Partial<Record<FieldKey, string>>;
 
 export type AgentDraft = {
@@ -47,6 +50,10 @@ export type AgentDraft = {
   /** Id các ô JSON thô (SchemaForm) đang chứa JSON sai — chặn Lưu (`editor.err.json`). */
   badJson: string[];
   bashAck: boolean;
+  /** dlc-agent-flows · `runtime_options.pack_tools` (chỉ agentic-cli) — trước đây form bỏ mất khi Lưu. */
+  packTools: string[];
+  /** dlc-agent-flows · `runtime_options.dlc_flows`: dây chuyền DLC → key def thư viện; vắng ⇒ theo tenant. */
+  dlcFlows: DlcFlows;
 };
 
 export const emptyDraft = (): AgentDraft => ({
@@ -71,6 +78,8 @@ export const emptyDraft = (): AgentDraft => ({
   rawOptions: {},
   badJson: [],
   bashAck: false,
+  packTools: [],
+  dlcFlows: {},
 });
 
 type CliOpts = {
@@ -79,6 +88,8 @@ type CliOpts = {
   mcp?: boolean;
   cwd_mode?: string;
   max_turns?: number;
+  pack_tools?: string[];
+  dlc_flows?: DlcFlows;
 };
 
 /** Agent đã lưu có Bash trong tool được phép — sửa giữ Bash không cần xác nhận lại (R05). */
@@ -110,6 +121,8 @@ export function fromAgent(a: Agent): AgentDraft {
     workflowIds: a.workflow_ids,
     agentTypeKey: a.agent_type_key ?? "",
     rawOptions: a.runtime === "python" ? a.runtime_options : {},
+    packTools: a.runtime === "agentic-cli" ? (o.pack_tools ?? []) : [],
+    dlcFlows: a.runtime === "agentic-cli" ? (o.dlc_flows ?? {}) : {},
   };
 }
 
@@ -129,7 +142,14 @@ function runtimeFields(d: AgentDraft): Record<string, unknown> {
   const wf = d.workflowIds;
   switch (d.runtime) {
     case "agentic-cli": {
-      const opts: CliOpts = { cli: d.cli, allowed_tools: d.tools, mcp: d.mcp, cwd_mode: d.cwdMode };
+      const opts: CliOpts = {
+        cli: d.cli,
+        allowed_tools: d.tools,
+        mcp: d.mcp,
+        cwd_mode: d.cwdMode,
+        pack_tools: d.packTools,
+        dlc_flows: d.dlcFlows,
+      };
       if (d.maxTurns.trim() !== "") opts.max_turns = Number(d.maxTurns);
       return {
         profile_id: d.profileId,
@@ -180,6 +200,8 @@ const PATHS: Record<string, FieldKey> = {
   token_budget: "token_budget",
   agent_type_key: "agent_type_key",
   "runtime_options.max_turns": "max_turns",
+  "runtime_options.pack_tools": "pack_tools",
+  "runtime_options.dlc_flows": "dlc_flows",
 };
 
 /** `path` (chuỗi "a.b" hoặc mảng) → trường form; `workflow_ids.0` ⇒ `workflow_ids`; không map được ⇒ null. */
@@ -205,6 +227,8 @@ export const FIELD_MESSAGE: Record<FieldKey, string> = {
   agent_type_key: "editor.err.agentType",
   max_turns: "editor.err.maxTurns",
   options_json: "editor.err.json",
+  pack_tools: "agents.dlc.err.tools",
+  dlc_flows: "agents.dlc.err.flows",
 };
 
 export type IssueLike = { path?: unknown };
@@ -249,6 +273,8 @@ export const FIELD_ORDER: FieldKey[] = [
   "agent_type_key",
   "max_turns",
   "options_json",
+  "pack_tools",
+  "dlc_flows",
   "timeout_s",
   "token_budget",
   "workflow_ids",

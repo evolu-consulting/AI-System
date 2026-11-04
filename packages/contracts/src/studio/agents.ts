@@ -11,6 +11,7 @@ import {
   listMetaSchema,
   STUDIO_CLI_TOOLS,
 } from "./common";
+import { DlcFlowsSchema } from "./dlc-flows";
 
 const unique = (a: readonly unknown[]) => new Set(a).size === a.length;
 const Version = z.number().int().min(1);
@@ -42,6 +43,8 @@ const CliOptionsSchema = z.strictObject({
     .string()
     .regex(/^[a-z0-9][a-z0-9_-]{1,79}$/)
     .optional(),
+  /** dlc-agent-flows · quy trình thư viện agent dùng khi `dlc-start` mở lượt từng dây chuyền; vắng ⇒ theo tenant. */
+  dlc_flows: DlcFlowsSchema.optional(),
 });
 const PythonOptionsSchema = z
   .record(z.string(), z.unknown())

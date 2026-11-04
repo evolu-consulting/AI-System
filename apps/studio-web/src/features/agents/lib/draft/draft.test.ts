@@ -14,6 +14,7 @@ import {
   validateDraft,
 } from "./draft";
 import { diffDrafts } from "./draft-diff";
+import { classifySaveError } from "./save-error";
 
 const PROFILE = "e4a0e000-0000-4000-8000-000000000020";
 const WF = "e4a0e000-0000-4000-8000-000000000040";
@@ -186,5 +187,37 @@ describe("JSON thô sai chặn Lưu (RV1 #2)", () => {
     expect(markBadJson(b, "x", true)).toBe(b);
     expect(markBadJson(b, "x", false)).toEqual([]);
     expect(markBadJson(a, "x", false)).toBe(a);
+  });
+});
+
+describe("dlc-agent-flows · pack_tools + dlc_flows", () => {
+  const dlcAgent = agent({
+    key: "dlc-agent",
+    runtime_options: {
+      cli: "claude",
+      mcp: true,
+      cwd_mode: "job",
+      max_turns: 30,
+      allowed_tools: ["Read"],
+      pack_tools: ["dlc-start", "dlc-runs"],
+      dlc_flows: { "bug-fix": "dlc-bug-fix-md" },
+    },
+  });
+  test("lỗi prod: Lưu agentic-cli không làm mất pack_tools (fromAgent → toPayload giữ nguyên)", () => {
+    const p = toPayload(fromAgent(dlcAgent), 3);
+    expect(p.runtime_options).toEqual(dlcAgent.runtime_options);
+    expect(validateDraft(fromAgent(dlcAgent), { mode: "edit", hadBash: false }).errors).toEqual({});
+  });
+  test("bỏ hết tick ⇒ gửi pack_tools [] (xoá thật); dify-* vẫn không gửi runtime_options", () => {
+    const d = { ...fromAgent(dlcAgent), packTools: [], dlcFlows: {} };
+    expect(toPayload(d, 3).runtime_options).toMatchObject({ pack_tools: [], dlc_flows: {} });
+    const dify = valid({ runtime: "dify-workflow", workflowIds: [WF], packTools: ["dlc-start"] });
+    expect(toPayload(dify)).not.toHaveProperty("runtime_options");
+  });
+  test("dlc_flows key sai ⇒ lỗi trường dlc_flows; INVALID_REFERENCE từ Hub gắn đúng section", () => {
+    const d = valid({ runtime: "agentic-cli", dlcFlows: { enhancement: "Sai Key" } });
+    expect(validateDraft(d, NEW).errors.dlc_flows).toBe("agents.dlc.err.flows");
+    const err = { code: "INVALID_REFERENCE", details: { field: "runtime_options.pack_tools" } };
+    expect(classifySaveError(err).errors).toEqual({ pack_tools: "agents.dlc.err.tools" });
   });
 });

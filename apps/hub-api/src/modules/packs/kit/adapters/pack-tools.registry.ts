@@ -145,6 +145,19 @@ export class PackToolRegistry implements PackToolCatalog {
       .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
   }
 
+  /** dlc-agent-flows · tool agent gắn được qua `pack_tools` (Agent Forge): bỏ tool lõi `open` và tool chỉ stage gọi; theo khoá. */
+  forAgents(): { key: string; pack: string; description: string; action: "read" | "write" }[] {
+    return [...this.#tools.values()]
+      .filter((t) => t.open !== true && t.agent !== false)
+      .map((t) => ({
+        key: t.name,
+        pack: t.pack,
+        description: t.description,
+        action: t.action ?? "write",
+      }))
+      .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+  }
+
   info(key: string): PackToolInfo | undefined {
     const t = this.#tools.get(key);
     return t ? infoOf(t) : undefined;

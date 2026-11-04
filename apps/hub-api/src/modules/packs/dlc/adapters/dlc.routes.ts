@@ -62,7 +62,7 @@ export function dlcReadRoutes(d: DlcReadDeps): Hono<PackGuardVars> {
         ? d.latestAgentRun(u.tenantId, flow.conversationId).catch(() => null)
         : Promise.resolve(null),
     ]);
-    return c.json(dlcProgress(seen, tasksOfRun(queue, flow.state.tag), agent));
+    return c.json(dlcProgress(seen, tasksOfRun(queue, flow.state.tag), agent, flow.state.deploy));
   });
   return r;
 }

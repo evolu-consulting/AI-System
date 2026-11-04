@@ -93,9 +93,32 @@ const extra = (instruction: string): string =>
     ? `## Extra instruction from the process owner\n${instruction.trim()}\n\n`
     : "";
 
+/** Đội đã có của project (từ lượt New System) ⇒ Enhancement / Bug Fix dùng lại đúng các domain agent đó. */
+const teamBlock = (all: readonly TeamLine[]): string => {
+  const team = all.filter((a) => !a.domain.startsWith("qc-"));
+  return team.length
+    ? "## Existing team of this project (created by the first New System run)\n" +
+        team
+          .map((a) => `- ${a.domain}: ${a.name}${a.focus ? ` - ${a.focus.slice(0, 300)}` : ""}`)
+          .join("\n") +
+        "\nREUSE these domains: copy them unchanged into `domains` (and one `qc` entry per domain, same domain name) and give every task one of these domains. Add a new domain only when the request needs a new area of the system.\n\n"
+    : "";
+};
+type TeamLine = { domain: string; name: string; focus: string };
+
+const DEPLOY_JSON =
+  '"deploy": {"kind": "static", "root": "<folder that holds index.html, empty = repo root>"} OR {"kind": "command", "build_command": "...", "image": "python:3.12-slim|node:22-bookworm", "run_command": "<starts the app in the foreground, listening on 0.0.0.0>", "container_port": 8000}';
+
 export function specPrompt(
   mode: DlcMode,
-  o: { project: string; spec: string; feedback: string | null; prev: string; instruction: string },
+  o: {
+    project: string;
+    spec: string;
+    feedback: string | null;
+    prev: string;
+    instruction: string;
+    team?: readonly TeamLine[];
+  },
 ): string {
   return (
     `DLC ${TITLE[mode]} - SPEC step. Project \`${o.project}\` (workspace branch main).\n${SPEC_TASK[mode]}\n\n${RULES_TOOLS}\n\n` +
@@ -105,8 +128,11 @@ export function specPrompt(
     "3. Save the plan with dlc-ws-artifact (name plan), then answer status done with the whole plan + team in Markdown and ONE ```json block:\n" +
     '{"stack": "...", "test_command": "<one command that runs the whole automated test suite from the repo root, non-interactive>", ' +
     '"tasks": [{"id": "t1", "title": "...", "domain": "backend", "detail": "...", "acceptance": "..."}], ' +
-    '"domains": [{"domain": "backend", "name": "...", "focus": "..."}], "qc": [{"domain": "backend", "name": "...", "focus": "..."}]}\n' +
-    "Rules: the stack must run in Node 22 / npm / python3 on Linux; small tasks in build order (each builds on the earlier ones); every spec item maps to at least one task; task.domain is one of domains.\n\n" +
+    '"domains": [{"domain": "backend", "name": "...", "focus": "..."}], "qc": [{"domain": "backend", "name": "...", "focus": "..."}], ' +
+    `${DEPLOY_JSON}}\n` +
+    "Rules: the stack must run in Node 22 / npm / python3 on Linux; small tasks in build order (each builds on the earlier ones); every spec item maps to at least one task; task.domain is one of domains. " +
+    "`deploy` says how the server runs the app after approval (published at http://<server>:<port>/): a static site (HTML/CSS/JS only) is `static` with the folder that holds index.html; anything with a server process is `command`.\n\n" +
+    teamBlock(o.team ?? []) +
     review(o.feedback, o.prev) +
     extra(o.instruction) +
     `## Spec\n${o.spec}`

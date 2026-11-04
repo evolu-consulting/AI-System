@@ -93,6 +93,26 @@ export function moveInColumn<T extends Stepped>(stages: readonly T[], i: number,
   return out;
 }
 
+/** Đổi chỗ CẢ cột của stage `i` với cột kề theo `dir` (bước DLC: mỗi bước một cột). Ngoài biên ⇒ không đổi; `backTo` đổi
+ *  số theo cột rồi bỏ đích không còn đứng trước. */
+export function swapStepColumns<T extends Stepped>(
+  stages: readonly T[],
+  i: number,
+  dir: -1 | 1,
+): T[] {
+  const a = stages[i]?.step;
+  if (a === undefined) return [...stages];
+  const b = a + dir;
+  if (b < 0 || b > lastStep(stages)) return [...stages];
+  const swap = (n: number) => (n === a ? b : n === b ? a : n);
+  return stages
+    .map((s) => {
+      const step = swap(s.step);
+      return { ...s, step, backTo: s.backTo.map(swap).filter((t) => t < step) };
+    })
+    .sort((x, y) => x.step - y.step);
+}
+
 /** Thêm stage vào CUỐI cột `step` (`step` = bước cuối + 1 ⇒ bước mới). */
 export function addStageToStep<T extends Stepped>(
   stages: readonly T[],

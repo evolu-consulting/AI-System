@@ -907,7 +907,10 @@
       "due": "hạn {{n}} giờ",
       "always": "Luôn chạy",
       "addMenu": "Chọn loại bước để thêm",
-      "addDlcStep": "Thêm bước DLC"
+      "addDlcStep": "Thêm bước DLC",
+      "dlcLibrary": "Bước DLC trong thư viện",
+      "dlcLibraryEmpty": "Chưa có bước mẫu — thêm ở trang Bước DLC.",
+      "dlcBlank": "Bước trống"
     },
     "dlc": {
       "newName": "Bước DLC {{n}}",
@@ -958,6 +961,75 @@
         "GATE_GROUP_INVALID": "Nhập mã Group duyệt (vd dlc-editor).",
         "BACK_TARGET_INVALID": "Chỉ quay lại được bước DLC đứng trước.",
         "KIND_MIX": "Bước duyệt và bước DLC không nối được với nhau trong một sơ đồ — xoá bước khác loại hoặc dùng quy trình của khe tương ứng."
+      },
+      "reject": "Từ chối",
+      "rejectHint": "Kéo cổng này thả lên một bước đứng trước: khi người duyệt bấm Chưa đạt, quy trình quay lại bước đó.",
+      "approve": "Duyệt",
+      "approveNext": "Duyệt ⇒ sang bước kế tiếp.",
+      "link": {
+        "noGate": "Bước này không có cổng duyệt — bật \"Chờ người duyệt\" trước.",
+        "notEarlier": "Chỉ quay lại được bước DLC đứng TRƯỚC bước này.",
+        "done": "Từ chối ở \"{{from}}\" ⇒ quay lại \"{{to}}\"."
+      },
+      "steps": {
+        "title": "Bước DLC",
+        "subtitle": "Thư viện bước dùng lại cho quy trình DLC: chọn việc, agent, cổng duyệt và chỗ quay lại khi từ chối. Canvas quy trình chép bước mẫu khi thêm — sửa mẫu không đổi quy trình đã có.",
+        "agentTenant": "Lấy agent từ công ty",
+        "create": "Thêm bước",
+        "edit": "Sửa",
+        "delete": "Xoá",
+        "save": "Lưu",
+        "cancel": "Huỷ",
+        "empty": "Chưa có bước mẫu nào.",
+        "deleteTitle": "Xoá bước \"{{name}}\"?",
+        "deleteDesc": "Quy trình đã chép bước này không bị ảnh hưởng.",
+        "saved": "Đã lưu bước \"{{name}}\".",
+        "deleted": "Đã xoá bước \"{{name}}\".",
+        "col": {
+          "name": "Tên",
+          "key": "Khoá",
+          "action": "Việc",
+          "agent": "Agent",
+          "gate": "Duyệt",
+          "reject": "Từ chối ⇒",
+          "rounds": "Số vòng",
+          "timeout": "Hạn (phút)"
+        },
+        "field": {
+          "name": "Tên bước",
+          "key": "Khoá",
+          "keyHint": "Tự sinh từ tên; chữ thường, số, dấu gạch.",
+          "agent": "Agent",
+          "agentDefault": "Mặc định của việc này ({{agent}})",
+          "agentNone": "Mặc định của việc này",
+          "rounds": "Số vòng",
+          "timeout": "Hạn bước (phút)",
+          "gate": "Chờ người duyệt sau bước này",
+          "group": "Group duyệt",
+          "reject": "Từ chối ⇒"
+        },
+        "gateNone": "Không",
+        "agentDefault": "Mặc định",
+        "reject": {
+          "self": "Làm lại chính bước này",
+          "prev": "Bước ngay trước",
+          "action": "Bước gần nhất: {{action}}"
+        },
+        "err": {
+          "key": "Khoá: chữ thường đầu, gồm a-z, 0-9, dấu gạch (≤ 40).",
+          "name": "Nhập tên bước (≤ 80 ký tự).",
+          "agent_key": "Chọn agent cho việc \"Agent tuỳ chọn\".",
+          "instruction": "Lời dặn quá dài (≤ 8000 ký tự).",
+          "gate_group": "Nhập mã Group duyệt (vd dlc-editor).",
+          "reject_to": "Chỉ chọn được khi có cổng duyệt.",
+          "max_rounds": "Số vòng từ 1 đến 10.",
+          "timeout_min": "Hạn từ 5 đến 1440 phút.",
+          "action": "Chọn việc.",
+          "keyTaken": "Khoá này đã có — đổi khoá khác.",
+          "conflict": "Bước vừa được người khác sửa — đóng và mở lại để lấy bản mới.",
+          "invalid": "Dữ liệu chưa hợp lệ.",
+          "generic": "Không lưu được, thử lại."
+        }
       }
     }
   }

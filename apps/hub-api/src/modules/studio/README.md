@@ -16,6 +16,8 @@ API cấu hình Hub cho Agent Studio (H4a). Chỉ `platform_admin` (`requirePlat
 | `agents/agents.map.ts` | Hàng DB → `Agent`/`AgentListItem`, `auditSnapshot`, `changedFields` |
 | `agents/agents.rules.ts` | Luật thuần plan §4.1 (QC test `tests/acceptance/H4a/rules/agents-rules.test.ts`) |
 
+| `agents/agents.options.ts` | dlc-agent-flows · PUT agentic-cli vắng `pack_tools`/`dlc_flows`/`persona_project` ⇒ giữ bản đang lưu (client cũ làm mất `pack_tools`); `dlc_flows` phải là def thư viện đã xuất bản của khe `dlc.<mode>` (400 `INVALID_REFERENCE`) |
+| `dlc-flows/dlc-flows.{routes,service,repo,map}.ts` | dlc-agent-flows · `GET /dlc-flows` (def thư viện đã xuất bản của 3 khe DLC), `GET /pack-tools` (tool gói agent gắn được — `PackToolRegistry.forAgents`, bỏ tool `open` và `agent: false`) |
 | `orchestrator/orchestrator.routes.ts` | `GET /orchestrator`, `PUT/DELETE /orchestrator/default` (DELETE ⇒ 409 protected), `POST /orchestrator/tenants`, `PUT/DELETE /orchestrator/tenants/:tenant_id` |
 | `orchestrator/orchestrator.service.ts` | Qua `withConfigWrite`: khoá hàng → `VERSION_CONFLICT{current, updated_at}` → kiểm agent (`AGENT_NOT_ORCHESTRATABLE`) / tenant (`TENANT_INACTIVE`, `ORCHESTRATOR_EXISTS`) → ghi → audit tenant (null = mặc định) |
 | `orchestrator/orchestrator.repo.ts` | SQL `hub.orchestrator_settings` (+ agent, tenant) |

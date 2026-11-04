@@ -23,7 +23,18 @@ export type Project = {
   /** Cách deploy (build + chạy container `dlc-app-<key>`), xem deploy.ts. */
   deploy?: DeployCfg;
   deploys?: DeployRecord[];
+  /** Đội domain của project (dev + `qc-<domain>`), xem SettingsSchema.team. */
+  team?: TeamMember[];
 };
+
+export type TeamMember = { domain: string; name: string; focus: string };
+
+/** Đội mới gộp vào đội cũ theo domain (domain đã có ⇒ cập nhật tên/trọng tâm, domain mới ⇒ thêm), giữ thứ tự cũ. */
+export function mergeTeam(cur: readonly TeamMember[], next: readonly TeamMember[]): TeamMember[] {
+  const out = cur.map((a) => next.find((b) => b.domain === a.domain) ?? a);
+  for (const b of next) if (!out.some((a) => a.domain === b.domain)) out.push(b);
+  return out;
+}
 
 export type Ticket = {
   id: string;

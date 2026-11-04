@@ -6,7 +6,9 @@ import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
+import { useDlcStepTemplates } from "../../dlc-steps-api";
 import { useCloneFlow } from "../../hooks/use-clone-flow";
+import { isDlcSlotKey } from "../../lib/dlc-slot";
 import { processErrorSpec } from "../../lib/errors";
 import { type LibraryDef, setSlotDefault, useLibraryRefresh, useSlots } from "../../library-api";
 import { AssignTenantsDialog } from "./AssignTenantsDialog";
@@ -34,6 +36,7 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
   const navigate = useNavigate();
   const refresh = useLibraryRefresh();
   const slots = useSlots(true);
+  const dlcSteps = useDlcStepTemplates(isDlcSlotKey(def.slot));
   const [mode, setMode] = useState<EditorMode>("canvas");
   const [action, setAction] = useState<LibraryAction | null>(null);
   const cloneFlow = useCloneFlow(
@@ -67,7 +70,9 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
         onAction={onAction}
       />
       {mode === "canvas" ? (
-        <LibraryCanvasContext.Provider value={{ groups: slot?.group_keys ?? [] }}>
+        <LibraryCanvasContext.Provider
+          value={{ groups: slot?.group_keys ?? [], dlcSteps: dlcSteps.data ?? [] }}
+        >
           {canvas}
         </LibraryCanvasContext.Provider>
       ) : (

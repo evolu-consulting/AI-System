@@ -158,11 +158,14 @@ function laneTops(
   return { top, height };
 }
 
+/** Tuỳ chọn bố cục: `back` = đích cạnh quay lại — `header` (mặc định: tiêu đề cột) | `node` (giai đoạn đầu của cột đích). */
+export type LayoutOptions = { back?: "header" | "node" };
+
 /**
  * Bố cục: cột `x = step × COL_W`; `y` theo làn (nhánh Đúng của If lên làn trên — xem `stepLanes`), các giai đoạn song song xếp
  * dọc gọn trong làn, căn giữa theo cột cao nhất của làn. `y` đã lưu của giai đoạn (`stage.y`) thắng toạ độ tự động.
  */
-export function layoutSteps(stages: readonly LayoutStage[]): Layout {
+export function layoutSteps(stages: readonly LayoutStage[], opts: LayoutOptions = {}): Layout {
   const steps = stages.reduce((m, s) => Math.max(m, s.step + 1), 0);
   const cols: number[][] = Array.from({ length: steps }, () => []);
   for (const [i, s] of stages.entries()) cols[s.step]?.push(i);
@@ -202,25 +205,29 @@ export function layoutSteps(stages: readonly LayoutStage[]): Layout {
     nodes,
     edges: [
       ...forwardEdges(cols, uids, new Set(stages.filter((s) => s.ifs).map((s) => s.uid))),
-      ...backEdges(stages),
+      ...backEdges(stages, opts.back === "node" ? { cols, uids } : null),
       ...branchEdges(stages, steps, { cols, uids }),
     ],
     steps,
   };
 }
 
-/** Cạnh "Chưa đạt" quay lại: stage `review` → header của bước đích `backTo` (< bước hiện tại). */
-const backEdges = (stages: readonly LayoutStage[]): LayoutEdge[] =>
+/**
+ * Cạnh "Chưa đạt" quay lại: stage `review` → header của bước đích `backTo` (< bước hiện tại). `c` có (tuỳ chọn `back: "node"`, vd
+ * cổng "Từ chối" của bước DLC) ⇒ tới GIAI ĐOẠN đầu của cột đích (cột rỗng ⇒ bỏ cạnh).
+ */
+const backEdges = (stages: readonly LayoutStage[], c: Cols | null): LayoutEdge[] =>
   stages.flatMap((s) =>
     s.after === "review"
       ? s.backTo
           .filter((t) => t < s.step && t >= 0)
-          .map((t) => ({
-            id: `${s.uid}<${headerId(t)}`,
-            source: s.uid,
-            target: headerId(t),
-            kind: "back" as const,
-          }))
+          .flatMap((t) => {
+            const first = c?.cols[t]?.[0];
+            const target = c ? (first === undefined ? undefined : c.uids[first]) : headerId(t);
+            return target === undefined
+              ? []
+              : [{ id: `${s.uid}<${target}`, source: s.uid, target, kind: "back" as const }];
+          })
       : [],
   );
 

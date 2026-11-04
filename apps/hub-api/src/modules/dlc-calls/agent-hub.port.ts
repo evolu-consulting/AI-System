@@ -1,6 +1,7 @@
 // dlc-engine · cài cổng Agent Hub cho gói `dlc` (kiểu theo cấu trúc `AgentHubPort` của gói — nền tảng không import nội bộ gói):
 // chạy agent trong hội thoại của lượt (`AgentCallService`), sinh agent domain/QC (`SpawnService`), và tra ngữ cảnh job agent
-// đang gọi tool `/mcp` (hội thoại + vai người dùng) cho `dlc-start`.
+// đang gọi tool `/mcp` (hội thoại + vai người dùng + quy trình DLC agent chỉ định — `runtime_options.dlc_flows`) cho `dlc-start`.
+import { DlcFlowsSchema } from "@ai/contracts/studio";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../lib/auth.middleware";
@@ -55,11 +56,21 @@ export function agentHubPort(d: Deps) {
           conversation_id: string | null;
           user_id: string;
           role: string;
-        }>(sql`select r.conversation_id,
-            r.user_id, u.role from hub.runs r join admin.users u on u.id = r.user_id and u.tenant_id = r.tenant_id
+          dlc_flows: unknown;
+        }>(sql`select r.conversation_id, r.user_id, u.role, a.runtime_options->'dlc_flows' as dlc_flows
+          from hub.runs r join admin.users u on u.id = r.user_id and u.tenant_id = r.tenant_id
+          left join hub.agents a on a.id = r.agent_id
           where r.id = ${hubRunId}::uuid and r.tenant_id = ${tenantId}::uuid`),
       );
-      return r ? { conversationId: r.conversation_id, userId: r.user_id, role: r.role } : null;
+      if (!r) return null;
+      // Ghi đã kiểm ở Studio; dữ liệu lệch (seed tay) ⇒ bỏ qua, lượt theo quy trình của tenant.
+      const flows = DlcFlowsSchema.safeParse(r.dlc_flows ?? {});
+      return {
+        conversationId: r.conversation_id,
+        userId: r.user_id,
+        role: r.role,
+        agentFlows: flows.success ? flows.data : {},
+      };
     },
   };
 }

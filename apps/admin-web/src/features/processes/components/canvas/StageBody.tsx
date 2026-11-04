@@ -55,7 +55,7 @@ function SlotBody({ v }: { v: StageView }) {
   );
 }
 
-/** dlc-engine · bước DLC của khe: "Bước n: tên", việc + agent, cổng duyệt; trộn với bước duyệt ⇒ huy hiệu lỗi. */
+/** dlc-engine · bước DLC của khe: "Bước n: tên", việc + agent, cổng duyệt (+ huy hiệu Group duyệt); trộn với bước duyệt ⇒ huy hiệu lỗi. */
 function DlcBody({ v }: { v: StageView }) {
   const { t } = useTranslation();
   const s = v.dlc;
@@ -71,7 +71,17 @@ function DlcBody({ v }: { v: StageView }) {
         {`DLC · ${action}${s.agent ? ` · @${s.agent}` : ""}`}
       </span>{" "}
       <span className="inline-block w-full truncate text-caption text-muted-foreground">
-        {s.gate ? t("process.admin.library.dlc.gateOn") : t("process.admin.library.dlc.gateOff")}
+        {s.gate ? (
+          <>
+            <ShieldCheck aria-hidden className="mr-1 inline size-3.5 align-text-bottom" />
+            {t("process.admin.library.dlc.gateOn")}{" "}
+            <Badge variant="info" title={t("process.admin.library.dlc.gateGroup")}>
+              {s.group}
+            </Badge>
+          </>
+        ) : (
+          t("process.admin.library.dlc.gateOff")
+        )}
       </span>
       {v.hasError ? (
         <>

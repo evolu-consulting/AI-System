@@ -90,4 +90,16 @@ describe("PackToolRegistry · quyền + khoá", () => {
     expect([reg.has("pk-a"), reg.has("pk-b")]).toEqual([false, true]);
     expect(logs).toEqual(["pack-tool-key-collision"]);
   });
+
+  test("dlc-agent-flows · forAgents bỏ tool lõi open + tool chỉ stage, sắp theo khoá", () => {
+    const reg = new PackToolRegistry();
+    reg.register(tool({ name: "pk-z", action: "read" }));
+    reg.register(tool({ name: "pk-step", agent: false }));
+    reg.register(tool({ name: "pk-guide", action: "read", open: true }));
+    reg.register(tool({ description: "mở" }));
+    expect(reg.forAgents()).toEqual([
+      { key: "pk-a", pack: "pk", description: "mở", action: "write" },
+      { key: "pk-z", pack: "pk", description: "", action: "read" },
+    ]);
+  });
 });

@@ -12,12 +12,14 @@ import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { useAgentEditor } from "../../hooks/use-agent-editor";
 import { useAgentPeers } from "../../hooks/use-agent-peers";
+import { useDlcCatalogs } from "../../hooks/use-dlc-catalogs";
 import { useEditorCatalogs } from "../../hooks/use-editor-catalogs";
 import type { AgentDraft } from "../../lib/draft/draft";
 import { AccessSection } from "../sections/AccessSection";
 import { AgentHooksSection } from "../sections/AgentHooksSection";
 import { AgentKnowledgeSection } from "../sections/AgentKnowledgeSection";
 import { DetailsSection } from "../sections/DetailsSection";
+import { DlcFlowsSection } from "../sections/DlcFlowsSection";
 import { PromptSection } from "../sections/PromptSection";
 import { RuntimeSection } from "../sections/RuntimeSection";
 import { WorkflowSection } from "../sections/WorkflowSection";
@@ -39,6 +41,7 @@ export function EditorForm({ initial, agent }: Props) {
   const navigate = useNavigate();
   const ed = useAgentEditor({ initial, agent });
   const cat = useEditorCatalogs();
+  const dlc = useDlcCatalogs();
   const { peers, self } = useAgentPeers(agent?.id);
   useFocusFirstInvalid(ed.errors);
   useEffect(() => {
@@ -89,6 +92,9 @@ export function EditorForm({ initial, agent }: Props) {
       <StepCard n={5}>
         <AccessSection granted={self?.entitled_tenant_count ?? 0} />
       </StepCard>
+      {ed.draft.runtime === "agentic-cli" ? (
+        <DlcFlowsSection {...section} tools={dlc.tools} flows={dlc.flows} />
+      ) : null}
       {agent ? (
         <AgentKnowledgeSection agent={agent} version={ed.base.version} onSynced={ed.syncVersion} />
       ) : null}

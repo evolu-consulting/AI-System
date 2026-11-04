@@ -184,6 +184,8 @@ const LATER_POLICY_TABLES = [
   "process_tenant_defs",
   "process_routings",
   "process_routing_rules",
+  // dlc-step-library (0071): thư viện bước DLC — chỉ system, 1 policy.
+  "dlc_step_templates",
 ];
 /** 0022 (B4 · WRK-FR-27): agent_runtime đọc `hub.runs` cột (id, status), chỉ hàng `running`. */
 const RUNTIME_POLICIES = [

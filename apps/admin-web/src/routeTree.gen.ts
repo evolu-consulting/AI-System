@@ -18,6 +18,7 @@ import { Route as AuthedAccessRouteImport } from './routes/_authed/access'
 import { Route as AuthedAgentsRouteImport } from './routes/_authed/agents'
 import { Route as AuthedAppsRouteImport } from './routes/_authed/apps'
 import { Route as AuthedAuditRouteRouteImport } from './routes/_authed/audit/route'
+import { Route as AuthedDlcStepsRouteImport } from './routes/_authed/dlc-steps'
 import { Route as AuthedFeedbackRouteImport } from './routes/_authed/feedback'
 import { Route as AuthedMemberRouteImport } from './routes/_authed/member'
 import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifications'
@@ -96,6 +97,11 @@ const AuthedAppsRoute = AuthedAppsRouteImport.update({
 const AuthedAuditRouteRoute = AuthedAuditRouteRouteImport.update({
   id: '/audit',
   path: '/audit',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedDlcStepsRoute = AuthedDlcStepsRouteImport.update({
+  id: '/dlc-steps',
+  path: '/dlc-steps',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedFeedbackRoute = AuthedFeedbackRouteImport.update({
@@ -286,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/access': typeof AuthedAccessRoute
   '/agents': typeof AuthedAgentsRoute
   '/apps': typeof AuthedAppsRoute
+  '/dlc-steps': typeof AuthedDlcStepsRoute
   '/feedback': typeof AuthedFeedbackRoute
   '/member': typeof AuthedMemberRoute
   '/notifications': typeof AuthedNotificationsRoute
@@ -330,6 +337,7 @@ export interface FileRoutesByTo {
   '/access': typeof AuthedAccessRoute
   '/agents': typeof AuthedAgentsRoute
   '/apps': typeof AuthedAppsRoute
+  '/dlc-steps': typeof AuthedDlcStepsRoute
   '/feedback': typeof AuthedFeedbackRoute
   '/member': typeof AuthedMemberRoute
   '/notifications': typeof AuthedNotificationsRoute
@@ -377,6 +385,7 @@ export interface FileRoutesById {
   '/_authed/access': typeof AuthedAccessRoute
   '/_authed/agents': typeof AuthedAgentsRoute
   '/_authed/apps': typeof AuthedAppsRoute
+  '/_authed/dlc-steps': typeof AuthedDlcStepsRoute
   '/_authed/feedback': typeof AuthedFeedbackRoute
   '/_authed/member': typeof AuthedMemberRoute
   '/_authed/notifications': typeof AuthedNotificationsRoute
@@ -425,6 +434,7 @@ export interface FileRouteTypes {
     | '/access'
     | '/agents'
     | '/apps'
+    | '/dlc-steps'
     | '/feedback'
     | '/member'
     | '/notifications'
@@ -469,6 +479,7 @@ export interface FileRouteTypes {
     | '/access'
     | '/agents'
     | '/apps'
+    | '/dlc-steps'
     | '/feedback'
     | '/member'
     | '/notifications'
@@ -515,6 +526,7 @@ export interface FileRouteTypes {
     | '/_authed/access'
     | '/_authed/agents'
     | '/_authed/apps'
+    | '/_authed/dlc-steps'
     | '/_authed/feedback'
     | '/_authed/member'
     | '/_authed/notifications'
@@ -623,6 +635,13 @@ declare module '@tanstack/react-router' {
       path: '/audit'
       fullPath: '/audit'
       preLoaderRoute: typeof AuthedAuditRouteRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/dlc-steps': {
+      id: '/_authed/dlc-steps'
+      path: '/dlc-steps'
+      fullPath: '/dlc-steps'
+      preLoaderRoute: typeof AuthedDlcStepsRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/feedback': {
@@ -889,6 +908,7 @@ interface AuthedRouteChildren {
   AuthedAccessRoute: typeof AuthedAccessRoute
   AuthedAgentsRoute: typeof AuthedAgentsRoute
   AuthedAppsRoute: typeof AuthedAppsRoute
+  AuthedDlcStepsRoute: typeof AuthedDlcStepsRoute
   AuthedFeedbackRoute: typeof AuthedFeedbackRoute
   AuthedMemberRoute: typeof AuthedMemberRoute
   AuthedNotificationsRoute: typeof AuthedNotificationsRoute
@@ -931,6 +951,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAccessRoute: AuthedAccessRoute,
   AuthedAgentsRoute: AuthedAgentsRoute,
   AuthedAppsRoute: AuthedAppsRoute,
+  AuthedDlcStepsRoute: AuthedDlcStepsRoute,
   AuthedFeedbackRoute: AuthedFeedbackRoute,
   AuthedMemberRoute: AuthedMemberRoute,
   AuthedNotificationsRoute: AuthedNotificationsRoute,

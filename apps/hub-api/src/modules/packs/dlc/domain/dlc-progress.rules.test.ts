@@ -42,3 +42,12 @@ test("run đã xong ⇒ không bước mở, không việc đang làm", () => {
   expect(p.step).toBeNull();
   expect(p.current).toBeNull();
 });
+
+test("URL app chỉ khi bước deploy thành công", () => {
+  const done = { ...view, status: "done", steps: [step(0, "Deploy", "passed")] };
+  expect(dlcProgress(done, [], null, { ok: true, url: "http://h:4620/" }).app_url).toBe(
+    "http://h:4620/",
+  );
+  expect(dlcProgress(done, [], null, { ok: false, url: "http://h:4620/" }).app_url).toBeNull();
+  expect(dlcProgress(done, [], null).app_url).toBeNull();
+});

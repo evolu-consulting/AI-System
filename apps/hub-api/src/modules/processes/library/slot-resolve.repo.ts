@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import type { Db } from "../../../lib/db";
 import type { ResolvedSlot } from "../../packs/kit/application/slot.ports";
 
+const KEY = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLOT = /^[a-z][a-z0-9-]{0,39}\.[a-z][a-z0-9-]{0,39}$/;
 
@@ -44,5 +45,24 @@ export async function resolveSlot(
         slotBody: r.slot_body,
         isDefault: r.is_default === true,
       }
+    : null;
+}
+
+/** dlc-agent-flows · def thư viện `key` của khe (agent chỉ định, bỏ qua gán tenant) ở bản xuất bản hiện hành; MỘT câu theo
+ *  index key, scope system. Def đã xoá / chưa xuất bản / khác khe ⇒ null. */
+export async function resolveSlotDef(
+  db: Db,
+  slot: string,
+  key: string,
+): Promise<ResolvedSlot | null> {
+  if (!SLOT.test(slot) || !KEY.test(key)) return null;
+  const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
+    tx.execute<Row>(sql`select d.id as def_id, r.name, r.rel_version, r.slot_body, false as is_default
+      from hub.process_defs d
+      join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version
+      where d.key = ${key} and d.slot = ${slot} and d.tenant_id is null and d.deleted_at is null`),
+  );
+  return r
+    ? { defId: r.def_id, name: r.name, relVersion: Number(r.rel_version), slotBody: r.slot_body }
     : null;
 }

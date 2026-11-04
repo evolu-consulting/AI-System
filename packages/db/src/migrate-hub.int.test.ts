@@ -70,6 +70,7 @@ const HUB_TABLES = [
   "config_meta",
   "conversations",
   "dify_runs", // dify-workflows hub 0056
+  "dlc_step_templates", // dlc-step-library hub 0071
   "dlc_workflows",
   "flows",
   "jobs",

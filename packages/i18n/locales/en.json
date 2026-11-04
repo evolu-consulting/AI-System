@@ -225,6 +225,7 @@
     "workflows": "Dify workflows (AI tools)",
     "processes": "Business processes",
     "processesNew": "New process",
+    "dlcSteps": "DLC steps",
     "sources": "Sources",
     "features": "Features",
     "secrets": "Secrets",

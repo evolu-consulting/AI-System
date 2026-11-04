@@ -18,7 +18,9 @@ const prevOf = (c: StepCtx): string => (c.feedback ? (c.flow.state.results?.[c.a
 
 export async function specStep(c: StepCtx): Promise<StepOut> {
   const spec = need(c.flow.state.spec, "spec đầu vào (bước khởi tạo)");
+  const team = c.a.mode === "new-system" ? [] : (await c.d.ws.project(c.flow.project)).team;
   const prompt = specPrompt(c.a.mode, {
+    team,
     project: c.flow.project,
     spec,
     feedback: c.feedback,

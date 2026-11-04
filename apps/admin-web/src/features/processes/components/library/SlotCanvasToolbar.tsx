@@ -1,6 +1,7 @@
 // CR-105 UX · thanh công cụ Canvas của quy trình khe + "Sắp xếp". dlc-engine: nút thêm là nút TÁCH — bấm phần chính = "Thêm bước
 // duyệt" (mặc định, như cũ), mũi tên mở menu "Thêm bước duyệt" / "Thêm bước DLC". Hai loại bước không nối với nhau trong một
-// sơ đồ (trộn ⇒ lỗi KIND_MIX, không lưu được).
+// sơ đồ (trộn ⇒ lỗi KIND_MIX, không lưu được). dlc-step-library: "Thêm bước DLC" là menu con chọn BƯỚC MẪU của thư viện
+// (tên + việc) hoặc "Bước trống".
 import { PROCESS_STAGES_MAX } from "@ai/contracts/hub-admin";
 import { ChevronDown, LayoutTemplate, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -9,12 +10,55 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type Props = { count: number; onAdd: () => void; onAddDlc: () => void; onArrange: () => void };
+type Template = { id: string; name: string; action: string };
+type Props = {
+  count: number;
+  /** Bước DLC mẫu của thư viện (rỗng / vắng ⇒ menu con chỉ còn "Bước trống"). */
+  templates?: readonly Template[];
+  onAdd: () => void;
+  /** `id` = bước mẫu; vắng ⇒ bước DLC trống. */
+  onAddDlc: (id?: string) => void;
+  onArrange: () => void;
+};
 
-export function SlotCanvasToolbar({ count, onAdd, onAddDlc, onArrange }: Props) {
+function DlcSubMenu({ templates = [], onAddDlc }: Pick<Props, "templates" | "onAddDlc">) {
+  const { t } = useTranslation();
+  const f = (k: string) => t(`process.admin.library.canvas.${k}`);
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger>{f("addDlcStep")}</DropdownMenuSubTrigger>
+      <DropdownMenuSubContent className="max-h-80 overflow-y-auto">
+        <DropdownMenuLabel>{f("dlcLibrary")}</DropdownMenuLabel>
+        {templates.length === 0 ? (
+          <DropdownMenuItem disabled>{f("dlcLibraryEmpty")}</DropdownMenuItem>
+        ) : (
+          templates.map((x) => (
+            <DropdownMenuItem key={x.id} onSelect={() => onAddDlc(x.id)}>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate">{x.name}</span>
+                <span className="text-caption text-muted-foreground">
+                  {t(`process.admin.library.dlc.action.${x.action}`, { defaultValue: x.action })}
+                </span>
+              </span>
+            </DropdownMenuItem>
+          ))
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => onAddDlc()}>{f("dlcBlank")}</DropdownMenuItem>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
+  );
+}
+
+export function SlotCanvasToolbar({ count, templates, onAdd, onAddDlc, onArrange }: Props) {
   const { t } = useTranslation();
   const full = count >= PROCESS_STAGES_MAX;
   return (
@@ -48,9 +92,7 @@ export function SlotCanvasToolbar({ count, onAdd, onAddDlc, onArrange }: Props) 
             <DropdownMenuItem onSelect={onAdd}>
               {t("process.admin.library.canvas.addStep")}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={onAddDlc}>
-              {t("process.admin.library.canvas.addDlcStep")}
-            </DropdownMenuItem>
+            <DlcSubMenu templates={templates} onAddDlc={onAddDlc} />
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
