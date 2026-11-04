@@ -101,7 +101,7 @@ const submit = (r: "B" | "T" | "X" | "Db", taskId: string, values: Json) =>
   c.call(r, "POST", `/review-tasks/${taskId}/form`, { values });
 
 describe("CR-118 · node form", () => {
-  it("ma trận người làm: member ngoài Group / tenant khác / đối tác (run gói contracts) ⇒ 404; thành viên Group ⇒ 200", async () => {
+  it("ma trận người làm: member ngoài Group / tenant khác / đối tác (run gói contracts) ⇒ 404, thành viên Group ⇒ 200", async () => {
     const { runId, taskId } = await formRun();
     const ok = { so_tien: 500, ghi_chu: "x" };
     expect((await submit("X", taskId, ok)).status).toBe(404); // tam: member acme, ngoài Group Kế toán
@@ -132,7 +132,7 @@ describe("CR-118 · node form", () => {
     await waitStageStatus(c, runId, 0, "done");
   }, 60_000);
 
-  it("giá trị sai ⇒ 422 FORM_VALUES_INVALID {paths}; task vẫn mở, output không đổi", async () => {
+  it("giá trị sai ⇒ 422 FORM_VALUES_INVALID {paths}, task vẫn mở, output không đổi", async () => {
     const { runId, taskId } = await formRun();
     const res = await submit("B", taskId, { so_tien: -5, ghi_chu: "x".repeat(51) });
     expect({ s: res.status, code: res.json?.error?.code, d: res.json?.error?.details }).toEqual({
@@ -146,7 +146,7 @@ describe("CR-118 · node form", () => {
     expect(o?.fields ?? null).toBeNull();
   }, 60_000);
 
-  it("idempotent: gửi 2 lần cùng giá trị ⇒ 200 cả hai, một output, một audit; giá trị khác sau khi đóng ⇒ 409", async () => {
+  it("idempotent: gửi 2 lần cùng giá trị ⇒ 200 cả hai, một output, một audit, giá trị khác sau khi đóng ⇒ 409", async () => {
     const { runId, taskId } = await formRun();
     const v = { so_tien: 500, ghi_chu: "lần 1", la: "<b>bỏ</b>" };
     const [a, b] = [await submit("B", taskId, v), await submit("T", taskId, v)];

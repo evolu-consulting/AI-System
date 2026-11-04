@@ -48,9 +48,9 @@ Loại node `form` (họ work, produces = các trường form) chờ một thàn
 cho tập trường cố định (≤ 20; text, textarea, number, money, date, select, checkbox, file_ref; không HTML/biểu thức). Hub kiểm
 theo form trong snapshot run, bỏ trường lạ, ghi field vào output stage và Đạt trong cùng transaction; If/bước sau đọc được.
 - Kịch bản: khi giá trị vượt giới hạn/ sai loại/ thiếu bắt buộc thì từ chối theo key trường [test: apps/hub-api/src/modules/processes/domain/form/form.rules.test.ts » giới hạn từng loại]
-- Kịch bản: khi người gửi ngoài Group, khác tenant hoặc là đối tác ở run gói contracts thì 404; thành viên Group thì 200 [test: tests/acceptance/cr118/form-node.int.test.ts » ma trận người làm: member ngoài Group / tenant khác / đối tác (run gói contracts) ⇒ 404; thành viên Group ⇒ 200]
-- Kịch bản: khi giá trị sai thì 422 FORM_VALUES_INVALID và task vẫn mở [test: tests/acceptance/cr118/form-node.int.test.ts » giá trị sai ⇒ 422 FORM_VALUES_INVALID {paths}; task vẫn mở, output không đổi]
-- Kịch bản: khi gửi hai lần cùng giá trị thì một kết quả, một audit; giá trị khác sau khi đóng thì 409 [test: tests/acceptance/cr118/form-node.int.test.ts » idempotent: gửi 2 lần cùng giá trị ⇒ 200 cả hai, một output, một audit; giá trị khác sau khi đóng ⇒ 409]
+- Kịch bản: khi người gửi ngoài Group, khác tenant hoặc là đối tác ở run gói contracts thì 404, thành viên Group thì 200 [test: tests/acceptance/cr118/form-node.int.test.ts » ma trận người làm: member ngoài Group / tenant khác / đối tác (run gói contracts) ⇒ 404, thành viên Group ⇒ 200]
+- Kịch bản: khi giá trị sai thì 422 FORM_VALUES_INVALID và task vẫn mở [test: tests/acceptance/cr118/form-node.int.test.ts » giá trị sai ⇒ 422 FORM_VALUES_INVALID {paths}, task vẫn mở, output không đổi]
+- Kịch bản: khi gửi hai lần cùng giá trị thì một kết quả, một audit, giá trị khác sau khi đóng thì 409 [test: tests/acceptance/cr118/form-node.int.test.ts » idempotent: gửi 2 lần cùng giá trị ⇒ 200 cả hai, một output, một audit, giá trị khác sau khi đóng ⇒ 409]
 - Kịch bản: khi bước sau là If trên field form thì rẽ theo giá trị đã gửi [test: tests/acceptance/cr118/form-node.int.test.ts » If bước sau đọc field form: so_tien > 100 ⇒ nhảy bước 3 (bước 2 skipped), run done]
 - Kịch bản: khi def đổi trường sau khi run bắt đầu thì run cũ vẫn kiểm theo snapshot [test: tests/acceptance/cr118/form-node.int.test.ts » snapshot: def sửa sau khi run bắt đầu (đổi trường) ⇒ run cũ vẫn kiểm theo form lúc bắt đầu]
 
