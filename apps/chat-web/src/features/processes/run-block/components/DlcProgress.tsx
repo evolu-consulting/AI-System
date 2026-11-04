@@ -15,9 +15,16 @@ export const agentRole = (key: string): string => key.split("-").pop() ?? key;
 
 const TASK_TONE: Record<string, string> = {
   in_progress: "text-primary font-medium",
-  ready_to_deploy: "text-secondary-foreground line-through",
-  deployed: "text-secondary-foreground line-through",
+  ready_to_deploy: "text-secondary-foreground",
+  deployed: "text-secondary-foreground",
   failed: "text-destructive",
+};
+
+const TASK_MARK: Record<string, string> = {
+  in_progress: "▶",
+  ready_to_deploy: "✓",
+  deployed: "✓",
+  failed: "✗",
 };
 
 export function DlcProgress(p: { runId: string; conversationId: string }) {
@@ -85,10 +92,10 @@ export function DlcProgress(p: { runId: string; conversationId: string }) {
           <summary className="cursor-pointer select-none">
             {t("process.run.dlcProgress.tasks")}
           </summary>
-          <ol className="mt-1 flex flex-col gap-0.5 pl-4">
+          <ol className="mt-1 flex list-none flex-col gap-0.5 pl-4">
             {v.tasks.map((x) => (
               <li key={x.id} className={cn(TASK_TONE[x.status])}>
-                {x.id.split("-").pop()} · {x.title}{" "}
+                {TASK_MARK[x.status] ?? "○"} {x.id.split("-").pop()} · {x.title}{" "}
                 <span className="text-secondary-foreground">
                   ({t(`process.run.dlcProgress.status.${x.status}`, { defaultValue: x.status })}
                   {x.domain ? `, ${x.domain}` : ""}
