@@ -60,6 +60,13 @@ export default defineConfig({
               chunks: "async",
               enforce: true,
             },
+            // CR-118 bundle: React Compiler làm chunk route chi tiết HĐ > 50 KB gz ⇒ tách phần duyệt/mốc/ký số/phiên bản ra chunk song song (tải cùng lúc, không đổi thời điểm render).
+            contractDetailParts: {
+              test: /[\\/]src[\\/]features[\\/](contract-approval|contract-milestones|contract-esign|contract-versions)[\\/]/,
+              name: "contract-detail-parts",
+              chunks: "async",
+              enforce: true,
+            },
           },
         },
       },

@@ -9,7 +9,7 @@ mock.module("sonner", () => ({
   },
 }));
 
-import { confirmDialog, promptDialog, type Req, registerHost } from "./dialog-bus";
+import { confirmDialog, expectHost, promptDialog, type Req, registerHost } from "./dialog-bus";
 import { toast } from "./toast";
 
 let unregister = () => {};
@@ -52,5 +52,19 @@ describe("toast", () => {
     await toast("Đã lưu");
     await toast("Lỗi", "late");
     expect(calls).toEqual(["ok:Đã lưu", "late:Lỗi"]);
+  });
+});
+
+describe("dialog-bus · host tải lười (CR-118 bundle)", () => {
+  test("expectHost: gọi sớm xếp hàng tới khi host đăng ký; tải lỗi ⇒ trả mặc định", async () => {
+    let fail = () => {};
+    expectHost(new Promise((_, rej) => (fail = () => rej(new Error("chunk")))));
+    const early = confirmDialog({ title: "Xoá?" });
+    unregister = registerHost((r: Req) => r.resolve(true));
+    expect(await early).toBe(true);
+    unregister();
+    const lost = promptDialog({ title: "Tên" });
+    fail();
+    expect(await lost).toBeNull();
   });
 });

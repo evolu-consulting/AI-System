@@ -2,10 +2,12 @@
 // CR-118 bundle: DialogHost (radix dialog) + Toaster (sonner) tải lười — không nằm trong JS ban đầu.
 import { createRootRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
+import { expectHost } from "~/components/shared/dialog-bus";
 
-const DialogHost = lazy(() =>
-  import("~/components/shared/dialog-host").then((m) => ({ default: m.DialogHost })),
-);
+// Tải ngay khi nạp route gốc; confirm/prompt gọi sớm chờ host (dialog-bus.expectHost).
+const hostChunk = import("~/components/shared/dialog-host");
+expectHost(hostChunk);
+const DialogHost = lazy(() => hostChunk.then((m) => ({ default: m.DialogHost })));
 const Toaster = lazy(() => import("~/components/ui/sonner").then((m) => ({ default: m.Toaster })));
 
 function Root() {
@@ -14,6 +16,8 @@ function Root() {
       <Outlet />
       <Suspense fallback={null}>
         <DialogHost />
+      </Suspense>
+      <Suspense fallback={null}>
         <Toaster position="bottom-right" />
       </Suspense>
     </>
