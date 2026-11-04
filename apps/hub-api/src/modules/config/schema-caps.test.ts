@@ -10,7 +10,7 @@ const ALL: HubSchemaCaps = {
 };
 
 describe("CR-118 · schemaCapsVerdict", () => {
-  test("production thiếu ⇒ fatal; test/development thiếu ⇒ warn; đủ ⇒ ok", () => {
+  test("production thiếu ⇒ fatal, test/development thiếu ⇒ warn, đủ ⇒ ok", () => {
     const miss = { ...ALL, packAgents: false, profileVersion: false };
     expect({
       prodMiss: schemaCapsVerdict("production", miss),

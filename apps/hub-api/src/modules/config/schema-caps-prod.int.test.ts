@@ -27,7 +27,7 @@ afterAll(async () => {
 });
 
 describe("CR-118 · cr118-schema-caps-prod", () => {
-  it("production thiếu ⇒ ném liệt kê packAgents; test ⇒ không ném", async () => {
+  it("production thiếu ⇒ ném liệt kê packAgents, test ⇒ không ném", async () => {
     const db = hubDb();
     const prod = await assertHubSchemaCaps("production", db).then(
       () => "ok",

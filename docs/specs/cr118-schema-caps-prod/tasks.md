@@ -31,8 +31,8 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Production không được lặng lẽ thiếu schema gói
 `APP_ENV=production` thiếu `packs.pack_agents`/cột default_app/profile_version ⇒ Hub dừng lúc khởi động, liệt kê phần thiếu; môi trường khác chạy mềm và nhận migrate muộn ở lần nạp lại kế.
-- Kịch bản: khi production thiếu packs.pack_agents thì boot ném lỗi liệt kê packAgents; test thì không [test: apps/hub-api/src/modules/config/schema-caps-prod.int.test.ts » production thiếu ⇒ ném liệt kê packAgents; test ⇒ không ném]
+- Kịch bản: khi production thiếu packs.pack_agents thì boot ném lỗi liệt kê packAgents; test thì không [test: apps/hub-api/src/modules/config/schema-caps-prod.int.test.ts » production thiếu ⇒ ném liệt kê packAgents, test ⇒ không ném]
 - Kịch bản: khi migrate sau khi Hub chạy thì lần nạp lại kế dò lại và thấy bảng [test: apps/hub-api/src/modules/config/schema-caps-prod.int.test.ts » migrate sau khi chạy ⇒ lần nạp lại kế dò lại và thấy bảng]
-- Kịch bản: quyết định theo APP_ENV [test: apps/hub-api/src/modules/config/schema-caps.test.ts » production thiếu ⇒ fatal; test/development thiếu ⇒ warn; đủ ⇒ ok]
+- Kịch bản: quyết định theo APP_ENV [test: apps/hub-api/src/modules/config/schema-caps.test.ts » production thiếu ⇒ fatal, test/development thiếu ⇒ warn, đủ ⇒ ok]
 
 ## Việc còn lại
