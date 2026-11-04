@@ -74,6 +74,12 @@ GET/PUT luật cho platform_admin và tenant_admin của chính tenant; thay c�
 - Kịch bản: ghi đồng thời cùng version ⇒ 409 [test: apps/hub-api/src/modules/processes/library/routing.routes.int.test.ts » ghi đồng thời ⇒ 409]
 - Kịch bản: RLS — scope user tenant khác không đọc được luật/tập gán [test: apps/hub-api/src/modules/processes/library/routing.routes.int.test.ts » RLS chặn đọc chéo tenant]
 
+## Kết quả
+- evotest int (routing.routes, routing-launch, hub-rls, hub-pd1, approval-engine-slot): xanh. Perf: resolveSlot p95 0.80 ms,
+  routeSlot p95 2.29 ms (ngưỡng 5 ms).
+- Đỏ CÓ SẴN (không do lát, cũng đỏ ở base 47ea8cf5): `library.routes.int.test.ts` 2 ca (khe DLC 0070 lọt vào danh sách khe).
+- Typecheck: 14/15 gói xanh; `@ai/scripts` đỏ có sẵn (evotest-lock / perf-probe, không chạm), agent-runtime cần docker.
+
 ## Việc còn lại
 - UI (lát admin/tenant-settings) dùng API trên.
 - e2e (viết, chạy cuối đợt): tenant admin thêm luật theo phòng ban, người phòng đó khởi tạo ⇒ đúng quy trình.
