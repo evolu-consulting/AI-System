@@ -8,7 +8,14 @@ describe("rsbuild.config (D-18)", () => {
     const target = (k: string) =>
       typeof p[k] === "string" ? p[k] : (p[k] as { target: string }).target;
     expect(target("/auth")).not.toBe(target("/pack"));
-    for (const k of ["/notifications", "/conversations", "/runs", "/hub-admin", "/tenants"])
+    for (const k of [
+      "/notifications",
+      "/conversations",
+      "/runs",
+      "/hub-admin",
+      "/tenants",
+      "/me/stream",
+    ])
       expect(target(k)).toBe(target("/pack"));
     expect(new Set(Object.keys(p).map(target))).toEqual(
       new Set([target("/auth"), target("/pack")]),

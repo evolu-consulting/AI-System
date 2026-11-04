@@ -21,7 +21,16 @@ setHomeSource(async () => (await import("~/platform/features")).featureHomeSourc
 
 type Loc = { href: string };
 
+/** Hằng lúc build (rsbuild define): mock Community (dev/e2e không backend) ⇒ `/community*` không cần phiên, không /pack/me. */
+declare const __COMMUNITY_MOCK__: boolean | undefined;
+
 export async function requireSession(location: Loc): Promise<void> {
+  if (
+    typeof __COMMUNITY_MOCK__ !== "undefined" &&
+    __COMMUNITY_MOCK__ &&
+    /\/community(?:[/?#]|$)/.test(location.href)
+  )
+    return;
   const status = await session.ensure();
   if (status !== "authed" || !session.getState().me) {
     // sso-switch: thử phiên AI System trước khi hỏi mật khẩu; đang rời trang ⇒ treo router tới khi trình duyệt chuyển.

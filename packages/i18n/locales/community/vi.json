@@ -140,6 +140,21 @@
       "videoN": "Video {{n}}",
       "maxImages": "Tối đa 10 ảnh",
       "maxVideos": "Tối đa 2 video",
+      "maxFiles": "Tối đa 10 tệp",
+      "fileTooLarge": "Tệp quá lớn, vui lòng chọn tệp nhỏ hơn",
+      "fileTypeNotAllowed": "Loại tệp này không được phép tải lên",
+      "filesUnavailable": "Chưa bật kho tệp, thử lại sau",
+      "quota": {
+        "user": "Bạn đã dùng hết hạn mức tải tệp ({{limit}} lượt).",
+        "tenant": "Công ty đã dùng hết hạn mức tải tệp ({{limit}} lượt).",
+        "global": "Hệ thống đang quá tải tải tệp, thử lại sau.",
+        "busy": "Đang có quá nhiều lượt tải tệp, thử lại sau ít phút.",
+        "retryAt": "Thử lại sau {{time}}.",
+        "unavailable": "Chưa kiểm tra được hạn mức tải tệp, thử lại sau."
+      },
+      "uploadFailed": "Không tải được tệp lên",
+      "attach": "Đính kèm",
+      "collapse": "Thu gọn",
       "publish": "Đăng bài",
       "posted": "Đã đăng bài",
       "postFailed": "Không đăng được"
@@ -163,6 +178,8 @@
       "errNeededBy": "Chọn ngày cần"
     },
     "post": {
+      "download": "Tải về",
+      "downloadFailed": "Không tải được tệp",
       "options": "Tuỳ chọn bài đăng",
       "friends": "Bạn bè",
       "hostOnly": "Chỉ chủ quản",
@@ -370,6 +387,7 @@
       "sht": {
         "lead": "Cấu hình nằm trong Sổ Hợp Tác. Bấm để mở đúng mục.",
         "open": "Mở trong Sổ Hợp Tác",
+        "openHere": "Mở cài đặt Sổ Hợp Tác",
         "readonly": "Chỉ xem; chỉnh trong Sổ Hợp Tác."
       },
       "notify": {

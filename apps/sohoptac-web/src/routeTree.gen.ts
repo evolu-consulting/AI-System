@@ -24,6 +24,8 @@ import { Route as AuthedPartnersRouteImport } from './routes/_authed/partners'
 import { Route as AuthedPricesRouteImport } from './routes/_authed/prices'
 import { Route as AuthedProductsRouteImport } from './routes/_authed/products'
 import { Route as AuthedSourcingRouteImport } from './routes/_authed/sourcing'
+import { Route as CommunityIndexRouteImport } from './routes/community/index'
+import { Route as CommunitySplatRouteImport } from './routes/community/$'
 import { Route as AuthedCksIndexRouteImport } from './routes/_authed/cks/index'
 import { Route as AuthedCksIdRouteImport } from './routes/_authed/cks/$id'
 import { Route as AuthedContractsIndexRouteImport } from './routes/_authed/contracts/index'
@@ -110,6 +112,16 @@ const AuthedSourcingRoute = AuthedSourcingRouteImport.update({
   path: '/sourcing',
   getParentRoute: () => AuthedRoute,
 } as any)
+const CommunityIndexRoute = CommunityIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CommunityRoute,
+} as any)
+const CommunitySplatRoute = CommunitySplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => CommunityRoute,
+} as any)
 const AuthedCksIndexRoute = AuthedCksIndexRouteImport.update({
   id: '/cks/',
   path: '/cks/',
@@ -168,7 +180,7 @@ const AuthedTransactionsNewRoute = AuthedTransactionsNewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/community': typeof CommunityRoute
+  '/community': typeof CommunityRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/sso': typeof SsoRoute
@@ -181,6 +193,8 @@ export interface FileRoutesByFullPath {
   '/prices': typeof AuthedPricesRoute
   '/products': typeof AuthedProductsRoute
   '/sourcing': typeof AuthedSourcingRoute
+  '/community/$': typeof CommunitySplatRoute
+  '/community/': typeof CommunityIndexRoute
   '/cks/$id': typeof AuthedCksIdRoute
   '/contracts/$id': typeof AuthedContractsIdRoute
   '/contracts/new': typeof AuthedContractsNewRoute
@@ -195,7 +209,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/community': typeof CommunityRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/sso': typeof SsoRoute
@@ -208,6 +221,8 @@ export interface FileRoutesByTo {
   '/prices': typeof AuthedPricesRoute
   '/products': typeof AuthedProductsRoute
   '/sourcing': typeof AuthedSourcingRoute
+  '/community/$': typeof CommunitySplatRoute
+  '/community': typeof CommunityIndexRoute
   '/cks/$id': typeof AuthedCksIdRoute
   '/contracts/$id': typeof AuthedContractsIdRoute
   '/contracts/new': typeof AuthedContractsNewRoute
@@ -224,7 +239,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
-  '/community': typeof CommunityRoute
+  '/community': typeof CommunityRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/sso': typeof SsoRoute
@@ -237,6 +252,8 @@ export interface FileRoutesById {
   '/_authed/prices': typeof AuthedPricesRoute
   '/_authed/products': typeof AuthedProductsRoute
   '/_authed/sourcing': typeof AuthedSourcingRoute
+  '/community/$': typeof CommunitySplatRoute
+  '/community/': typeof CommunityIndexRoute
   '/_authed/cks/$id': typeof AuthedCksIdRoute
   '/_authed/contracts/$id': typeof AuthedContractsIdRoute
   '/_authed/contracts/new': typeof AuthedContractsNewRoute
@@ -266,6 +283,8 @@ export interface FileRouteTypes {
     | '/prices'
     | '/products'
     | '/sourcing'
+    | '/community/$'
+    | '/community/'
     | '/cks/$id'
     | '/contracts/$id'
     | '/contracts/new'
@@ -280,7 +299,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/community'
     | '/login'
     | '/privacy'
     | '/sso'
@@ -293,6 +311,8 @@ export interface FileRouteTypes {
     | '/prices'
     | '/products'
     | '/sourcing'
+    | '/community/$'
+    | '/community'
     | '/cks/$id'
     | '/contracts/$id'
     | '/contracts/new'
@@ -321,6 +341,8 @@ export interface FileRouteTypes {
     | '/_authed/prices'
     | '/_authed/products'
     | '/_authed/sourcing'
+    | '/community/$'
+    | '/community/'
     | '/_authed/cks/$id'
     | '/_authed/contracts/$id'
     | '/_authed/contracts/new'
@@ -337,7 +359,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
-  CommunityRoute: typeof CommunityRoute
+  CommunityRoute: typeof CommunityRouteWithChildren
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
   SsoRoute: typeof SsoRoute
@@ -450,6 +472,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/sourcing'
       preLoaderRoute: typeof AuthedSourcingRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/community/': {
+      id: '/community/'
+      path: '/'
+      fullPath: '/community/'
+      preLoaderRoute: typeof CommunityIndexRouteImport
+      parentRoute: typeof CommunityRoute
+    }
+    '/community/$': {
+      id: '/community/$'
+      path: '/$'
+      fullPath: '/community/$'
+      preLoaderRoute: typeof CommunitySplatRouteImport
+      parentRoute: typeof CommunityRoute
     }
     '/_authed/cks/': {
       id: '/_authed/cks/'
@@ -578,10 +614,24 @@ const AuthedRouteChildren: AuthedRouteChildren = {
 const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
+interface CommunityRouteChildren {
+  CommunitySplatRoute: typeof CommunitySplatRoute
+  CommunityIndexRoute: typeof CommunityIndexRoute
+}
+
+const CommunityRouteChildren: CommunityRouteChildren = {
+  CommunitySplatRoute: CommunitySplatRoute,
+  CommunityIndexRoute: CommunityIndexRoute,
+}
+
+const CommunityRouteWithChildren = CommunityRoute._addFileChildren(
+  CommunityRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
-  CommunityRoute: CommunityRoute,
+  CommunityRoute: CommunityRouteWithChildren,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
   SsoRoute: SsoRoute,

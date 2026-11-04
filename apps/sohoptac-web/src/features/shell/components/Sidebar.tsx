@@ -2,6 +2,7 @@
 // thu thành cột biểu tượng 64 px (nút ở thanh trên); trạng thái nhớ theo trình duyệt (`nav:pinned`).
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { IconPartners } from "~/components/icons";
 import { appNameOf, nameOf, useBrand } from "~/features/settings/lib/brand";
 import { cn } from "~/lib/utils";
 import { useFeature } from "~/platform/features";
@@ -37,6 +38,7 @@ export function Sidebar({
   const { t } = useTranslation();
   // CR-118: gói `contracts` tắt ⇒ ẩn mục menu (server vẫn chặn); chưa có ảnh cờ ⇒ giữ hiện.
   const contractsOn = useFeature("contracts", true);
+  const communityOn = useFeature("community");
   const brand = useBrand();
   const app = appNameOf(brand, t("contracts.app.name"));
   const company = nameOf(brand, user?.tenant.name);
@@ -67,6 +69,18 @@ export function Sidebar({
       {(contractsOn ? NAV : []).map((n) => (
         <SideLink key={n.to} n={n} wide={pinned} />
       ))}
+      {communityOn && (
+        // CR-118: nhóm Community theo quyền (FeatureGate); điều hướng trong app, không tải lại. Route file chưa có kiểu ⇒ ép `to`.
+        <Link
+          to={"/community" as never}
+          title={pinned ? undefined : t("contracts.nav.community")}
+          data-testid="nav-community"
+          className="flex h-11 items-center gap-3 overflow-hidden rounded-[10px] px-3 text-body whitespace-nowrap text-ink-2 transition-colors hover:bg-sunk"
+        >
+          <IconPartners className="shrink-0" />
+          <span className={pinned ? "" : "sr-only"}>{t("contracts.nav.community")}</span>
+        </Link>
+      )}
       <div className="mt-auto flex flex-col gap-1 pt-2">
         <UserMenu user={user} role={role} onLogout={onLogout} side wide={pinned} />
       </div>

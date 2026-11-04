@@ -1,8 +1,0 @@
-{
-  "extends": "../../packages/config/tsconfig/web.json",
-  "compilerOptions": {
-    "paths": { "~/*": ["./src/*"] }
-  },
-  "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
-}
