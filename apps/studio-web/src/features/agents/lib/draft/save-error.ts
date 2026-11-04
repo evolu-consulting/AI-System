@@ -1,13 +1,23 @@
 // HUB-FR-60 · H4a-R03 · lỗi lưu (không phải 409 VERSION_CONFLICT) → lỗi gắn trường / câu chung / toast theo mã (plan-frontend-copy).
 import { describeApiError, type MessageSpec } from "#/lib/api-error";
-import { type FieldErrors, mapIssues } from "./draft";
+import { FIELD_MESSAGE, type FieldErrors, fieldOfPath, mapIssues } from "./draft";
 
 export type SaveFailure = { errors: FieldErrors; invalid: boolean; toast?: MessageSpec };
 
-type Detailed = { code?: unknown; details?: { issues?: unknown } | null };
+type Detailed = { code?: unknown; details?: { issues?: unknown; field?: unknown } | null };
+
+/** dlc-agent-flows · `INVALID_REFERENCE` của `pack_tools`/`dlc_flows` ⇒ lỗi gắn section "Quy trình DLC"; còn lại ⇒ null. */
+function dlcRefError(e: Detailed): SaveFailure | null {
+  const f = e.code === "INVALID_REFERENCE" ? fieldOfPath(e.details?.field) : null;
+  return f === "pack_tools" || f === "dlc_flows"
+    ? { errors: { [f]: FIELD_MESSAGE[f] }, invalid: false }
+    : null;
+}
 
 export function classifySaveError(err: unknown): SaveFailure {
   const e = (err ?? {}) as Detailed;
+  const dlc = dlcRefError(e);
+  if (dlc) return dlc;
   switch (e.code) {
     case "VALIDATION_ERROR": {
       const issues = Array.isArray(e.details?.issues)

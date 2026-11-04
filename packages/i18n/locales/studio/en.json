@@ -216,7 +216,32 @@
       "body": "All messages of tenants without their own Orchestrator will go through this agent.",
       "confirm": "Set as Orchestrator"
     },
-    "truncated": "Showing the first 200 agents. Use search to filter on the server."
+    "truncated": "Showing the first 200 agents. Use search to filter on the server.",
+    "dlc": {
+      "title": "DLC processes",
+      "hint": "Pack tools the agent may call in Chat and the process (Process library, published release) used when the agent starts a DLC run. \"By tenant\" = the process assigned to the user's company. Click Save to apply.",
+      "tools": "Pack tools the agent may call",
+      "toolsEmpty": "No pack tools can be attached to agents yet",
+      "toolsFailed": "Could not load pack tools",
+      "toolGone": "{{key}} — no longer available, untick to remove",
+      "tool": {
+        "dlc-start": "Start a DLC process",
+        "dlc-runs": "View the conversation's DLC runs"
+      },
+      "flowFor": "Process used when the agent starts a {{mode}} run",
+      "mode": {
+        "new-system": "New System",
+        "enhancement": "Enhancement",
+        "bug-fix": "Bug Fix"
+      },
+      "byTenant": "By tenant (default)",
+      "flowGone": "{{key}} (no published release)",
+      "flowsFailed": "Could not load DLC processes",
+      "err": {
+        "tools": "Invalid or unavailable pack tool",
+        "flows": "The selected DLC process is invalid or not published"
+      }
+    }
   },
   "errors": {
     "FORBIDDEN": "You no longer have permission to do this",

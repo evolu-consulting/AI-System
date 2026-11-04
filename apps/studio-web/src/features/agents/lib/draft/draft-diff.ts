@@ -4,7 +4,7 @@ import type { AgentDraft } from "./draft";
 
 type Key = Exclude<
   keyof AgentDraft,
-  "bashAck" | "rawOptions" | "badJson" | "runtime" | "maxTurns" | "cwdMode"
+  "bashAck" | "rawOptions" | "badJson" | "runtime" | "maxTurns" | "cwdMode" | "dlcFlows"
 >;
 /** Thứ tự + khoá i18n nhãn (`editor.field.*`); `workflowIds` dùng nhãn bước 3. */
 const FIELDS: [Key, string][] = [
@@ -23,6 +23,7 @@ const FIELDS: [Key, string][] = [
   ["enabled", "editor.field.enabled"],
   ["workflowIds", "editor.step.3"],
   ["agentTypeKey", "editor.field.agentType"],
+  ["packTools", "agents.dlc.tools"],
 ];
 const MAX_ROWS = 8;
 

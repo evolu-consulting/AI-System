@@ -6,8 +6,10 @@ import type {
   AgentRuntime,
   AgentTypeListSchema,
   AgentWriteResponse,
+  DlcFlowList,
   ModelCatalogList,
   ModelProfileListSchema,
+  PackToolList,
   WorkflowListSchema,
 } from "@ai/contracts/studio";
 import { queryOptions } from "@tanstack/react-query";
@@ -67,6 +69,17 @@ export const workflowsQuery = queryOptions({
 export const agentTypesQuery = queryOptions({
   queryKey: ["studio", "agent-types"] as const,
   queryFn: ({ signal }) => api<AgentTypeList>("/studio/api/agent-types", { signal }),
+});
+
+/** dlc-agent-flows · tool gói agent gắn được (`pack_tools`) + def thư viện đã xuất bản của 3 khe DLC. */
+export const packToolsQuery = queryOptions({
+  queryKey: ["studio", "pack-tools"] as const,
+  queryFn: ({ signal }) => api<PackToolList>("/studio/api/pack-tools", { signal }),
+});
+
+export const dlcFlowsQuery = queryOptions({
+  queryKey: ["studio", "dlc-flows"] as const,
+  queryFn: ({ signal }) => api<DlcFlowList>("/studio/api/dlc-flows", { signal }),
 });
 
 export const createAgent = (body: Record<string, unknown>) =>
