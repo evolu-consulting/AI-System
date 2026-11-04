@@ -74,6 +74,63 @@
       }
     },
     "settings": {
+      "sec": {
+        "apps": "Ứng dụng & quy trình",
+        "appsHint": "Mức, add-on, quy trình đã gán, luật chọn theo phòng ban"
+      },
+      "apps": {
+        "title": "Ứng dụng & quy trình",
+        "lead": "Quy trình do quản trị nền tảng gán cho công ty. Bạn chỉ sửa được luật chọn quy trình theo phòng ban, không sửa nội dung quy trình.",
+        "levelLabel": "Mức",
+        "level": { "off": "Tắt", "read": "Chỉ xem", "write": "Xem và ghi", "admin": "Quản trị" },
+        "noAddons": "Không có add-on.",
+        "addonOn": "bật",
+        "addonOff": "tắt",
+        "slotTitle": "Khe quy trình: {{slot}}",
+        "noneAssigned": "Chưa có quy trình nào được gán cho công ty ở khe này. Liên hệ quản trị nền tảng để được gán.",
+        "noVersion": "chưa xuất bản",
+        "viewDiagram": "Xem sơ đồ",
+        "hideDiagram": "Ẩn sơ đồ",
+        "diagramCurrentOnly": "Sơ đồ chỉ xem được khi quy trình đang được dùng",
+        "loadFail": "Không tải được dữ liệu.",
+        "rules": "Luật chọn quy trình",
+        "rulesLead": "Luật đầu tiên khớp thắng (xét từ trên xuống); không khớp thì dùng luật mặc định. Chỉ chọn trong số quy trình đã được gán.",
+        "subDeptNote": "Chọn một phòng ban thì áp cả phòng ban con của nó.",
+        "noRules": "Chưa có luật nào: hợp đồng chạy theo quy trình mặc định của khe.",
+        "addRule": "Thêm luật",
+        "save": "Lưu luật",
+        "saving": "Đang lưu…",
+        "saved": "Đã lưu luật chọn quy trình",
+        "discard": "Bỏ thay đổi",
+        "reload": "Tải lại",
+        "tooMany": "Đã đủ 50 luật.",
+        "rule": {
+          "n": "Luật {{n}}",
+          "up": "Lên trên",
+          "down": "Xuống dưới",
+          "remove": "Xoá",
+          "process": "Quy trình",
+          "default": "Mặc định",
+          "defaultCond": "Khi không luật nào khớp",
+          "pickDepartments": "Chọn phòng ban",
+          "noDepartments": "Công ty chưa có phòng ban.",
+          "unassigned": "(quy trình không còn được gán)"
+        },
+        "issue": {
+          "noDepartment": "Chọn ít nhất một phòng ban, hoặc đặt làm mặc định.",
+          "notAssigned": "Quy trình này không còn được gán cho công ty.",
+          "deptGone": "Có phòng ban không còn tồn tại."
+        },
+        "err": {
+          "conflict": "Đã có người sửa luật này trước bạn. Hãy tải lại rồi sửa tiếp.",
+          "notAssigned": "Quy trình chưa được quản trị nền tảng gán cho công ty.",
+          "deptInvalid": "Có phòng ban không thuộc công ty.",
+          "rulesInvalid": "Luật không hợp lệ: mỗi luật thường cần phòng ban và chỉ một luật mặc định.",
+          "inUse": "Quy trình đang được luật dùng.",
+          "forbidden": "Bạn không có quyền sửa luật chọn quy trình.",
+          "other": "Không lưu được luật. Thử lại sau."
+        }
+      },
       "cell": {
         "needOne": "Cần ít nhất một tiêu chí bật có trọng số",
         "decayMonths": "Mốc tháng phải tăng dần và nằm trong khoảng tính điểm",

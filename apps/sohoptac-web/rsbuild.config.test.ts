@@ -8,11 +8,17 @@ describe("rsbuild.config (D-18)", () => {
     const target = (k: string) =>
       typeof p[k] === "string" ? p[k] : (p[k] as { target: string }).target;
     expect(target("/auth")).not.toBe(target("/pack"));
-    for (const k of ["/notifications", "/conversations", "/runs"])
+    for (const k of ["/notifications", "/conversations", "/runs", "/hub-admin", "/tenants"])
       expect(target(k)).toBe(target("/pack"));
     expect(new Set(Object.keys(p).map(target))).toEqual(
       new Set([target("/auth"), target("/pack")]),
     );
+  });
+
+  test("proxy /hub-admin và /tenants chuyển sang hub-api", () => {
+    const p = proxy as Record<string, string>;
+    expect(p["/hub-admin"]).toBe(p["/pack"]);
+    expect(p["/tenants"]).toBe(p["/pack"]);
   });
 
   test("/notifications: tải trang (GET text/html) ⇒ index.html; gọi API ⇒ proxy", () => {

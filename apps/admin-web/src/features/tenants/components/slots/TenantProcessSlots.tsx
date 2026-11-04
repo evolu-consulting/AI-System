@@ -15,10 +15,11 @@ import {
 import { slotsOfApp } from "@/features/apps/lib/app-config";
 import type { TenantSlotInfo } from "@/features/processes/library-api";
 import { useTenantSlotBlock } from "../../hooks/use-tenant-slots";
+import { SlotRouting } from "./SlotRouting";
 
 type Block = ReturnType<typeof useTenantSlotBlock>;
 
-function SlotRow({ row, b }: { row: TenantSlotInfo; b: Block }) {
+function SlotRow({ row, b, tenantId }: { row: TenantSlotInfo; b: Block; tenantId: string }) {
   const { t } = useTranslation();
   const [choice, setChoice] = useState("");
   const options = b.candidates(row.slot);
@@ -70,6 +71,7 @@ function SlotRow({ row, b }: { row: TenantSlotInfo; b: Block }) {
           </Button>
         )}
       </div>
+      <SlotRouting tenantId={tenantId} slot={row.slot} candidates={options} />
     </li>
   );
 }
@@ -106,7 +108,7 @@ export function TenantProcessSlots({
       ) : (
         <ul className="space-y-2">
           {rows.map((r) => (
-            <SlotRow key={r.slot} row={r} b={b} />
+            <SlotRow key={r.slot} row={r} b={b} tenantId={tenant.id} />
           ))}
         </ul>
       )}

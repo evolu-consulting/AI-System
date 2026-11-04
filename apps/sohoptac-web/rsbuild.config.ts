@@ -25,6 +25,9 @@ export const proxy = {
   // M1D · Thành viên & phòng ban: `/admin/org*`, `/admin/groups*` (route SPA không dùng tiền tố này).
   "/admin": ADMIN_API_URL,
   "/pack": HUB_URL,
+  // CR-118 §11.2 · tenant_admin sửa luật chọn quy trình + đọc năng lực của công ty mình (`/hub-admin/tenants/:tid/…`).
+  "/hub-admin": HUB_URL,
+  "/tenants": HUB_URL,
   "/notifications": spaNavigation,
   // M2-chat · trợ lý: hội thoại (E6/E12 SSE) + dừng run (E15) của Agent Hub.
   "/conversations": HUB_URL,

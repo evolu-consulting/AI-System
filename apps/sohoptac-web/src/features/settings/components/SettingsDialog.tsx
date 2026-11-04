@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
+import { useCanSeeApps } from "../hooks/use-apps-settings";
 import { brandOf, useSaveSettings, useSettingsState } from "../hooks/use-settings";
 import { brandStore } from "../lib/brand";
 import { settingsBus, useSettingsOpen } from "../lib/bus";
@@ -14,21 +15,23 @@ import type { SectionId, SettingsData } from "../lib/types";
 import { BizPane } from "./BizPane";
 import { CompanyPane } from "./CompanyPane";
 import { Dot } from "./controls";
-import { FlowCurrentPane } from "./FlowCurrentPane";
-import { ScoringPane } from "./ScoringPane";
-import { ScoutPane } from "./ScoutPane";
+import { SectionPanes } from "./SectionPanes";
 import { SettingsHeader } from "./SettingsHeader";
 
 /** Mục dùng bản nháp chung + nút Lưu chung (công ty, điểm kinh doanh); còn lại lưu riêng. */
 const isDraftSection = (s: SectionId) => s === "co" || s === "biz";
 const SECTIONS: readonly SectionId[] = ["co", "rep", "biz", "scout", "flow"];
 
-/** CR-108 · mục chỉ xem và không có nháp chưa lưu ⇒ ẩn thanh Lưu (ký số trong mục này tự lưu khi bấm). */
-const noSaveFor = (s: SectionId, dirty: boolean) => s === "flow" && !dirty;
+/** CR-118 §11.2 · "Ứng dụng & quy trình" chỉ cho quản trị công ty + chủ gói. */
+const sectionsOf = (apps: boolean): readonly SectionId[] =>
+  apps ? [...SECTIONS, "apps"] : SECTIONS;
+
+/** CR-108 · mục chỉ xem và không có nháp chưa lưu ⇒ ẩn thanh Lưu (ký số trong mục này tự lưu khi bấm). Mục `apps` lưu riêng từng khe. */
+const noSaveFor = (s: SectionId, dirty: boolean) => (s === "flow" && !dirty) || s === "apps";
 
 /** Mục có chấm cam "đã khác mặc định"? Điểm uy tín / dò giá / quy trình lưu riêng (không nằm trong bản nháp) ⇒ không chấm. */
 function sectionChanged(k: SectionId, vsDef: ReturnType<typeof changedParts> | null) {
-  if (!vsDef || k === "scout" || k === "flow" || k === "rep") return false;
+  if (!vsDef || k === "scout" || k === "flow" || k === "rep" || k === "apps") return false;
   return k === "co" ? vsDef.company : vsDef.biz;
 }
 
@@ -66,6 +69,8 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
   const [sec, setSec] = useState<SectionId>("co");
   const [saving, setSaving] = useState(false);
   const s = (k: string) => t(`contracts.settings.${k}`);
+  const apps = useCanSeeApps(owner);
+  const sections = sectionsOf(apps.visible);
 
   // Dữ liệu đã lưu đổi (mở lần đầu, sau khi Lưu) ⇒ bản nháp = bản mới (không đè nháp đang chỉnh dở: chỉ khi nháp chưa khác bản lưu cũ).
   const last = useRef<SettingsData | null>(null);
@@ -124,7 +129,7 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
             aria-label={s("sections")}
             className="flex flex-col gap-1 overflow-y-auto border-r border-rule p-3 max-md:flex-row max-md:overflow-x-auto max-md:border-r-0 max-md:border-b"
           >
-            {SECTIONS.map((k) => (
+            {sections.map((k) => (
               <button
                 key={k}
                 type="button"
@@ -145,9 +150,7 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
           <div className="min-w-0 overflow-y-auto p-5" id="settings-scroll">
             <LoadState loading={loading} error={error} retry={retry} />
 
-            {sec === "scout" && <ScoutPane />}
-            {sec === "flow" && <FlowCurrentPane owner={owner} />}
-            {sec === "rep" && <ScoringPane owner={owner} />}
+            <SectionPanes sec={sec} owner={owner} appsTenantId={apps.tenantId} />
             {isDraftSection(sec) && draft && saved && defaults && (
               <fieldset disabled={!owner || saving} className="min-w-0 border-0 p-0">
                 {sec === "co" && (

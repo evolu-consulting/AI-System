@@ -1,0 +1,144 @@
+// CR-118 §11.2 · trong mỗi khe của tenant (trang công ty + ngăn "Công ty" của /apps/$appKey, cùng component): tập quy trình ĐÃ GÁN
+// (gán thêm / bỏ gán, bỏ gán bị chặn khi còn luật dùng ⇒ nêu luật bị ảnh hưởng) + bộ sửa luật chọn theo phòng ban. Chỉ platform_admin.
+import type { RoutingErrorSpec } from "@ai/web-kit/routing-rules";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { notifySuccess } from "@/components/shared/toast";
+import { Button } from "@/components/ui/button";
+import { useTenantDepartments, useTenantRouting } from "../../api-routing";
+import { useSlotRoutingActions } from "../../hooks/use-slot-routing";
+import type { SlotCandidate } from "../../lib/slot-candidates";
+import { RoutingRules } from "./RoutingRules";
+
+const SEL = "h-9 min-w-0 w-72 rounded-md border border-input bg-background px-2 text-body";
+
+function Body({
+  tenantId,
+  slot,
+  candidates,
+}: {
+  tenantId: string;
+  slot: string;
+  candidates: SlotCandidate[];
+}) {
+  const { t } = useTranslation();
+  const k = (s: string) => t(`tenants.slots.routing.${s}`);
+  const q = useTenantRouting(tenantId, slot, true);
+  const depts = useTenantDepartments(tenantId, true);
+  const act = useSlotRoutingActions(tenantId, slot);
+  const [pick, setPick] = useState("");
+  const [err, setErr] = useState<RoutingErrorSpec | null>(null);
+  if (q.isError)
+    return (
+      <p role="alert" className="text-body text-destructive">
+        {k("loadFail")}
+      </p>
+    );
+  if (!q.data)
+    return (
+      <p className="text-body text-muted-foreground">
+        {t("common.loading", { defaultValue: "…" })}
+      </p>
+    );
+  const data = q.data;
+  const have = new Set(data.processes.map((p) => p.def_id));
+  const options = candidates.filter((c) => !have.has(c.id));
+  const doAssign = async () => {
+    const r = await act.assign(pick);
+    if (r.ok) {
+      setPick("");
+      setErr(null);
+      notifySuccess(k("assignedToast"));
+    } else setErr(r.spec);
+  };
+  const doUnassign = async (defId: string) => {
+    const r = await act.unassign(defId);
+    setErr(r.ok ? null : r.spec);
+  };
+  return (
+    <div className="space-y-3" data-testid={`admin-assigned-${slot}`}>
+      <ul className="space-y-1">
+        {data.processes.length === 0 && (
+          <li className="text-body text-muted-foreground">{k("noneAssigned")}</li>
+        )}
+        {data.processes.map((p) => (
+          <li
+            key={p.def_id}
+            className="flex flex-wrap items-center gap-2"
+            data-testid={`admin-assigned-${p.def_id}`}
+          >
+            <span className="text-body">
+              {p.name}
+              {p.rel_version !== null ? ` · v${p.rel_version}` : ""}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={act.pending}
+              onClick={() => void doUnassign(p.def_id)}
+            >
+              {k("unassign")}
+            </Button>
+          </li>
+        ))}
+      </ul>
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          aria-label={k("addPick")}
+          className={SEL}
+          value={pick}
+          disabled={act.pending}
+          onChange={(e) => setPick(e.target.value)}
+          data-testid="admin-assign-pick"
+        >
+          <option value="">{k("addPlaceholder")}</option>
+          {options.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <Button
+          size="sm"
+          data-testid="admin-assign-add"
+          disabled={act.pending || !pick}
+          onClick={() => void doAssign()}
+        >
+          {k("add")}
+        </Button>
+      </div>
+      {err && (
+        <p role="alert" data-testid="admin-assign-error" className="text-body text-destructive">
+          {err.kind === "inUse"
+            ? t("tenants.slots.routing.err.inUse", { rules: err.rules.join(", ") })
+            : k(`err.${err.kind}`)}
+        </p>
+      )}
+      <RoutingRules
+        key={data.version}
+        tenantId={tenantId}
+        slot={slot}
+        data={data}
+        departments={depts.data ?? []}
+        onReload={() => void q.refetch()}
+      />
+    </div>
+  );
+}
+
+export function SlotRouting(p: { tenantId: string; slot: string; candidates: SlotCandidate[] }) {
+  const { t } = useTranslation();
+  return (
+    <details
+      className="rounded-md border border-dashed border-border p-2"
+      data-testid={`admin-routing-details-${p.slot}`}
+    >
+      <summary className="cursor-pointer text-label font-medium">
+        {t("tenants.slots.routing.title")}
+      </summary>
+      <div className="pt-2">
+        <Body {...p} />
+      </div>
+    </details>
+  );
+}
