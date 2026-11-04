@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createDb, type Db } from "@ai/db";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
-import { urls } from "@ai/test-kit/env";
+import { urls, withCreds } from "@ai/test-kit/env";
 import { connectDb } from "../../../apps/hub-api/src/lib/db";
 import { runSeed } from "./seed-niti";
 import type { SeedSpec } from "./seed-niti.data";
@@ -102,7 +102,7 @@ async function snap(): Promise<string> {
 beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
-  admin = createDb(urls().adminApi, { max: 2 });
+  admin = createDb(withCreds(urls().owner, "admin_api", "admin_api_dev_pw"), { max: 2 });
   hub = connectDb(urls().hubApi, 4);
   const [p] = await o`select 1 from admin.users where role = 'platform_admin'`;
   if (!p) {
