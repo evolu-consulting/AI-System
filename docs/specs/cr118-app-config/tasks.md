@@ -65,6 +65,6 @@ Hàm thuần `previewApp` ghép manifest dữ liệu của app, feature của c�
 - Kịch bản: khi lọc khe theo app thì chỉ giữ khe có tiền tố của app đó [test: apps/admin-web/src/features/apps/lib/app-config.test.ts » lọc khe theo tiền tố app]
 
 ## Việc còn lại
-- Chạy e2e MỘT lần trên evotest (`-Filter` job admin) và ghi kết quả; relock `tests/.lock` vì thêm `e2e/app-config.spec.ts` (qc/điều phối).
+- e2e đã chạy MỘT lần trên evotest (`-Step e2e -Filter root`): F1, F2 xanh; F3 đỏ do selector trùng hai chỗ (đã sửa, chưa chạy lại); F4 bị bỏ qua vì serial sau F3 ⇒ chưa chạy lần nào, chạy ở lượt root cuối đợt. Đỏ mới ngoài lát (không phải của lát này): `cr052-login.spec.ts` showcase, `m4-2fa.spec.ts` D11. `tests/.lock` đã ghi lại.
 - Chưa có: sơ đồ chỉ-đọc nhúng + bảng bước trong tab Quy trình, HĐ mẫu (loại/giá trị) trong Xem trước, endpoint gộp `GET /admin/apps/:key/tenants`, lọc `/processes` theo app. Luồng F2 đầy đủ (nhân bản → sửa → xuất bản → gán) cần job có Hub.
 - Cập nhật `docs/current/admin/*` (MODIFIED) khi gộp đợt.
