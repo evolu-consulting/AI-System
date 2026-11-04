@@ -16,8 +16,11 @@ import {
 import { mapError } from "../../../../lib/errors";
 import { pgExternalOrgResolver } from "../../kit/adapters/ext-org.pg";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
+import { createPackUow } from "../../kit/adapters/pack-uow";
 import type { CommunityBlobs } from "../application/pack-ports";
 import { communityModule } from "../community.mount";
+import { attachableFiles } from "./files.repo";
+import { type FileSweepDeps, sweepFilesTenant } from "./files.sweep";
 
 let sql: Sql;
 let db: Db;
@@ -235,5 +238,56 @@ describe("GET /files/:id — chỉ người xem được bài (CR-118 §11.1, RL
     expect((await download("hM", loose.id)).status).toBe(404);
     expect((await download("s1a", loose.id)).status).toBe(404);
     expect((await download("hA", "khong-phai-uuid")).status).toBe(404);
+  });
+});
+
+describe("Gắn tệp × vòng dọn tệp — không cùng thắng (CR-118 cr118-r2-server)", () => {
+  const NOW = new Date(Date.now() + 25 * 3_600_000); // mọi tệp tạo trong test đã "quá 24 h"
+  const failing = new Set<string>();
+  const sweepDeps = (): FileSweepDeps => ({
+    uow: createPackUow(db, "community", (tx) => ({ tx })),
+    tenants: async () => [c.A],
+    blobs: {
+      ...blobs,
+      drop: async (t, f) => {
+        if (failing.has(f)) throw new Error("filebox delete 503");
+        return blobs.drop(t, f);
+      },
+    },
+  });
+  const fileIdOf = async (id: string) =>
+    (await sql<{ f: string }[]>`select file_id as f from community.files where id = ${id}::uuid`)[0]
+      ?.f as string;
+  const marked = async (id: string) =>
+    (
+      await sql<
+        { m: boolean }[]
+      >`select deleted_at is not null as m from community.files where id = ${id}::uuid`
+    )[0]?.m;
+
+  it("đã claim (đánh dấu) rồi gắn ⇒ 400", async () => {
+    const f = await uploaded("hA", "bi-claim.pdf", PDF);
+    failing.add(await fileIdOf(f.id)); // byte xoá lỗi ⇒ hàng còn, đã đánh dấu
+    const r = await sweepFilesTenant(sweepDeps(), c.A, NOW);
+    expect(r.failed).toBeGreaterThanOrEqual(1);
+    expect(await marked(f.id)).toBe(true);
+    expect((await createPost("hA", note(f.id))).status).toBe(400);
+    expect((await sql`select 1 from community.media where file_id = ${f.id}::uuid`).length).toBe(0);
+  });
+
+  it("đang gắn (hàng bị khoá trong tx ghi bài) ⇒ claim bỏ qua; xong tx mới claim được", async () => {
+    const f = await uploaded("hA", "dang-gan.pdf", PDF);
+    const uow = createPackUow(db, "community", (tx) => ({ tx }));
+    await uow.tenant({ tenantId: c.A, userId: c.hA } as never, async ({ tx }) => {
+      const rows = await attachableFiles(tx, c.A, [f.id], c.hA, null);
+      expect(rows.map((x) => x.id)).toEqual([f.id]);
+      // claim chạy trên kết nối khác trong lúc tx gắn còn giữ khoá ⇒ SKIP LOCKED bỏ qua (không chờ, không đánh dấu)
+      await sweepFilesTenant(sweepDeps(), c.A, NOW);
+      expect(await marked(f.id)).toBe(false);
+    });
+    expect(await marked(f.id)).toBe(false);
+    // Không còn khoá ⇒ lượt sau claim + xoá được tệp này (không gắn).
+    await sweepFilesTenant(sweepDeps(), c.A, NOW);
+    expect((await sql`select 1 from community.files where id = ${f.id}::uuid`).length).toBe(0);
   });
 });

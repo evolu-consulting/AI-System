@@ -41,6 +41,9 @@ int `apps/hub-api/src/modules/packs/community/adapters/community-files-sweep.int
   policy RESTRICTIVE: chỉ system, chỉ hàng `deleted_at` đã đặt, không còn media ⇒ user không bao giờ xoá cứng được.
 - "Tệp của bài đã xoá": bài xoá cứng (media ON DELETE CASCADE) ⇒ không phân biệt được với "chưa gắn" khi không thêm cột; luật
   chung "không gắn + tạo quá 24 h" (tệp bài xoá trong 24 h đầu đợi tới mốc 24 h). Không thêm cột.
+- Đua gắn × dọn (review điều phối): `attachableFiles` khoá tệp của chính mình `FOR KEY SHARE` trong tx ghi bài (xung đột
+  với `FOR UPDATE SKIP LOCKED` của claim); claim giữ trước ⇒ gắn chờ rồi đọc lại `deleted_at` ⇒ 400. Tệp đã trên bài của người
+  khác không khoá (còn media đã commit ⇒ claim không chọn; khoá hàng dưới RLS cần policy UPDATE chỉ người tải lên có).
 - Tenant tắt gói ⇒ vòng nền không quét tenant đó (giống các pha khác của vòng nền Community).
 
 ## Delta (so với docs/current)
@@ -60,6 +63,7 @@ byte lỗi ⇒ giữ hàng (đã đánh dấu, không tải/gắn được) đ�
 không đổi kết quả.
 - Kịch bản: không gắn > 24 h bị xoá (hàng + byte); < 24 h giữ; đang gắn giữ; tệp của bài đã xoá bị xoá [test: apps/hub-api/src/modules/packs/community/adapters/community-files-sweep.int.test.ts » dọn tệp không gắn, giữ tệp mới và tệp đang gắn]
 - Kịch bản: FileBox lỗi ⇒ hàng giữ (đánh dấu), lượt sau xoá xong [test: apps/hub-api/src/modules/packs/community/adapters/community-files-sweep.int.test.ts » FileBox lỗi ⇒ giữ hàng để làm lại]
+- Kịch bản: gắn tệp và vòng dọn không cùng thắng — đã claim rồi gắn ⇒ 400; đang gắn (tx ghi bài khoá hàng `FOR KEY SHARE`) ⇒ claim bỏ qua [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » Gắn tệp × vòng dọn tệp — không cùng thắng]
 - Kịch bản: số câu SQL mỗi lô cố định [test: apps/hub-api/src/modules/packs/community/adapters/community-files-sweep.int.test.ts » số câu SQL mỗi lô cố định]
 - Kịch bản: user không xoá cứng được tệp (RLS) [test: apps/hub-api/src/modules/packs/community/adapters/community-files-sweep.int.test.ts » user không xoá cứng được tệp]
 
