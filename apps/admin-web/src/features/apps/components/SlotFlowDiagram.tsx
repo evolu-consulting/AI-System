@@ -7,7 +7,7 @@ import {
   type StepInfo,
   type VerticalStep,
 } from "@ai/flow-canvas";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { StepRow, StepWho } from "../lib/flow-view";
 
@@ -40,14 +40,17 @@ export default function SlotFlowDiagram({ rows, who }: SlotFlowDiagramProps) {
     }),
     [t],
   );
-  const renderInfo = (info: StepInfo) =>
-    info.dueH === null ? null : (
-      <span className="truncate text-caption text-muted-foreground">
-        {info.remindH
-          ? t("appcfg.flow.timingRemind", { due: info.dueH, remind: info.remindH })
-          : t("appcfg.flow.timing", { due: info.dueH })}
-      </span>
-    );
+  const renderInfo = useCallback(
+    (info: StepInfo) =>
+      info.dueH === null ? null : (
+        <span className="truncate text-caption text-muted-foreground">
+          {info.remindH
+            ? t("appcfg.flow.timingRemind", { due: info.dueH, remind: info.remindH })
+            : t("appcfg.flow.timing", { due: info.dueH })}
+        </span>
+      ),
+    [t],
+  );
   return (
     <section
       aria-label={t("appcfg.flow.diagram")}

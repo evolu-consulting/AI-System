@@ -132,10 +132,14 @@ function Flow(p: FlowCanvasProps) {
   const { host, labels } = useHostValue(p);
   const d = useDragOverlay(p);
   const it = interactionOf(p.mode, p);
+  const nodeTypes = useMemo(
+    () => ({ ...(columns ? COLUMNS_NODE_TYPES : VERTICAL_NODE_TYPES), ...p.nodeTypes }),
+    [columns, p.nodeTypes],
+  );
   const common = {
     nodes: d.nodes,
     edges: p.edges as Edge[],
-    nodeTypes: { ...(columns ? COLUMNS_NODE_TYPES : VERTICAL_NODE_TYPES), ...p.nodeTypes },
+    nodeTypes,
     nodesFocusable: false,
     edgesFocusable: false,
     deleteKeyCode: null,
