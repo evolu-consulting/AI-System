@@ -63,7 +63,7 @@ export const WEB_OWNERS: Record<string, string[]> = {
   "apps/admin-web": ["playwright.config.ts"],
   "apps/chat-web": ["e2e/chat/*"],
   "apps/studio-web": ["e2e/studio/playwright.config.ts"],
-  "apps/contracts-web": ["e2e/contracts-web/playwright.config.ts", "e2e/N1/playwright.config.ts"],
+  "apps/sohoptac-web": ["e2e/contracts-web/playwright.config.ts", "e2e/N1/playwright.config.ts"],
   "apps/community-web": ["e2e/community-web/*"],
   // Thư viện quy trình (UI + hub) → nghiệm thu P-a (module đóng băng: chỉ lấy khi `--frozen`).
   "apps/admin-web/src/features/processes": ["e2e/P-a/playwright.pa.config.ts"],

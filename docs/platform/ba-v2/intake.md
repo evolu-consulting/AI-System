@@ -24,7 +24,7 @@ doanh thu/hoa hồng theo mốc). Phần lớn là **mới** (danh mục SP, kho
 `partner_events`, `companies`, mywork).
 
 ## 1. Bảng khoảng cách (một dòng mỗi ý BA)
-Effort: S ≤ ½ ngày · M ½–2 ngày · L > 2 ngày. Đường dẫn: `H` = `apps/hub-api/src/modules/packs/contracts`, `MG` = `packages/db/migrations-pack-contracts`, `W` = `apps/contracts-web/src`.
+Effort: S ≤ ½ ngày · M ½–2 ngày · L > 2 ngày. Đường dẫn: `H` = `apps/hub-api/src/modules/packs/contracts`, `MG` = `packages/db/migrations-pack-contracts`, `W` = `apps/sohoptac-web/src`.
 
 ### 1a. Khái niệm (BA §2)
 | ID | Ý BA | Trạng thái | Bằng chứng | Effort |

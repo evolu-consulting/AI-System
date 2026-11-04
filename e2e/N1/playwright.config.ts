@@ -1,7 +1,7 @@
 // PK-FR-10 · D-02 · N1 plan-frontend §6–§7 (TF4, TF5): e2e khung `contracts-web` — đăng nhập, quyền/trạng thái gói, layout/menu,
 // trạng thái đang tải/lỗi. Config RIÊNG (`e2e/**/playwright*.config.ts` ⇒ `test:all` tự nhận), đuôi `.n1.ts`. Backend GIẢ bằng
 // `page.route` (auth + /pack/contracts/me) ⇒ không cần stack; so ảnh với mgmt-app là việc của TF7 (`e2e/contracts-web`). Chạy từ
-// gốc repo: `bunx playwright test -c e2e/N1/playwright.config.ts`. App chưa có ⇒ webServer `bun run --filter @ai/contracts-web
+// gốc repo: `bunx playwright test -c e2e/N1/playwright.config.ts`. App chưa có ⇒ webServer `bun run --filter @ai/sohoptac-web
 // build` thoát lỗi NGAY ⇒ đỏ ngay (không treo chờ cổng).
 import { defineConfig, devices } from "@playwright/test";
 import { viStorageState } from "../support/locale-vi";
@@ -38,7 +38,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `bun run --filter @ai/contracts-web build && bun run --filter @ai/contracts-web preview --port ${WEB_PORT}`,
+    command: `bun run --filter @ai/sohoptac-web build && bun run --filter @ai/sohoptac-web preview --port ${WEB_PORT}`,
     cwd: "../..",
     url: WEB,
     reuseExistingServer: false,

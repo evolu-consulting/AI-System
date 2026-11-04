@@ -1,4 +1,4 @@
-﻿# Dựng toàn bộ AI System trên máy dev bằng một lệnh: lõi (admin-api, hub-api) + 5 web (ai-admin, chat, studio,
+# Dựng toàn bộ AI System trên máy dev bằng một lệnh: lõi (admin-api, hub-api) + 5 web (ai-admin, chat, studio,
 # Sổ Hợp Tác, Community). Chạy lại an toàn: bước nào đã xong thì bỏ qua. Log + PID ở .data\dev-up\. Tắt: scripts\dev-down.ps1.
 #   scripts\dev-up.ps1              Postgres/Redis: dùng cái đang chạy, không có thì docker compose (hoặc dev-db.ps1)
 #   scripts\dev-up.ps1 -Only core   chỉ admin-api + hub-api
@@ -172,7 +172,7 @@ if ($Only -eq "all") {
   $common["PUBLIC_SSO_URL"] = "http://localhost:3100"
   if (-not $common.ContainsKey("PUBLIC_COMMUNITY_API")) { $common["PUBLIC_COMMUNITY_API"] = "http" }
   $common["PUBLIC_FROZEN_MODULES"] = "on"
-  $webs = [ordered]@{ "admin-web" = 3000; "chat-web" = 3100; "studio-web" = 3200; "contracts-web" = 3300; "community-web" = 3400 }
+  $webs = [ordered]@{ "admin-web" = 3000; "chat-web" = 3100; "studio-web" = 3200; "sohoptac-web" = 3300; "community-web" = 3400 }
   $procs = @{}
   foreach ($w in $webs.Keys) { $procs[$w] = Start-Bg $w (Join-Path $repo "apps\$w") @("bun", "run", "dev") $common }
   foreach ($w in $webs.Keys) { Wait-Port $webs[$w] $w (Join-Path $out "$w.log") $procs[$w] }

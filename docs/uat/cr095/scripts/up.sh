@@ -23,7 +23,7 @@ done
 export ADMIN_API_URL=http://localhost:3001 HUB_URL=http://localhost:4000 AUTH_URL=http://localhost:3001
 (cd apps/admin-web && bun run preview --host 0.0.0.0 --port 3000 >/out/web-admin.log 2>&1 &)
 (cd apps/chat-web && bun run preview --host 0.0.0.0 --port 3100 >/out/web-chat.log 2>&1 &)
-(cd apps/contracts-web && bun run preview --host 0.0.0.0 --port 3300 >/out/web-contracts.log 2>&1 &)
+(cd apps/sohoptac-web && bun run preview --host 0.0.0.0 --port 3300 >/out/web-contracts.log 2>&1 &)
 sleep 3
 echo "UAT STACK READY"
 wait

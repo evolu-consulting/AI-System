@@ -24,7 +24,7 @@ Người phụ trách hoặc owner được mở lại.
 - Lát không đổi hành vi (hạ tầng/test/nhãn): thay các khối bằng đúng một dòng `Không thay đổi hành vi (lý do: …)`.
 - Lệnh: `bun run openspec:check [lát…]` (kiểm; `slice:merge` tự chạy), `bun run openspec:pending` (lát chưa gộp + file đích, dùng khi gộp cuối đợt), `bun run openspec:archive <lát> [--dot <tên>]` (chỉ ghi sổ "đã gộp"; việc gộp văn xuôi vào đây vẫn do docs-architect).
 
-Viết tắt đường dẫn: `H` = `apps/hub-api/src/modules/packs/contracts`, `W` = `apps/contracts-web/src`, `C` = `packages/contracts/src/pack-contracts`, `MG` = `packages/db/migrations-pack-contracts`, `T` = `tests/acceptance`.
+Viết tắt đường dẫn: `H` = `apps/hub-api/src/modules/packs/contracts`, `W` = `apps/sohoptac-web/src`, `C` = `packages/contracts/src/pack-contracts`, `MG` = `packages/db/migrations-pack-contracts`, `T` = `tests/acceptance`.
 
 ## Mục lục
 

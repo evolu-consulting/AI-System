@@ -23,13 +23,13 @@ ENV PUBLIC_HUB_URL=$PUBLIC_HUB_URL PUBLIC_STUDIO_URL=$PUBLIC_STUDIO_URL PUBLIC_C
     PUBLIC_ADMIN_WEB_URL=$PUBLIC_ADMIN_WEB_URL PUBLIC_CHAT_WEB_URL=$PUBLIC_CHAT_WEB_URL PUBLIC_AUTH_URL=$PUBLIC_AUTH_URL \
     PUBLIC_CONTRACTS_WEB_URL=$PUBLIC_CONTRACTS_WEB_URL PUBLIC_SSO_URL=$PUBLIC_SSO_URL
 # Build từng web riêng (turbo strict env có thể bỏ mất PUBLIC_*).
-RUN bun run --cwd apps/contracts-web build && bun run --cwd apps/chat-web build \
+RUN bun run --cwd apps/sohoptac-web build && bun run --cwd apps/chat-web build \
  && bun run --cwd apps/admin-web build && bun run --cwd apps/studio-web build \
  && bun run --cwd apps/community-web build \
  && chmod -R a+rX /app
 
 FROM nginx:stable-alpine AS web
-COPY --from=app /app/apps/contracts-web/dist /srv/contracts
+COPY --from=app /app/apps/sohoptac-web/dist /srv/contracts
 COPY --from=app /app/apps/admin-web/dist /srv/admin
 COPY --from=app /app/apps/chat-web/dist /srv/chat
 COPY --from=app /app/apps/community-web/dist /srv/community
