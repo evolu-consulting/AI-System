@@ -168,8 +168,10 @@ describe("CR-118 · N3 · /me/stream config.changed", () => {
         got: evB !== undefined,
         closed: sb.isClosed(),
         ct: sb.headers.get("content-type"),
-        head: sb.text().slice(0, 120),
-      }).toMatchObject({ got: true });
+        head: sb.text().slice(0, 300),
+        evs: sb.events.map((e) => `${e.event}|${e.raw}`),
+        a: ev?.raw,
+      }).toMatchObject({ got: true, a: "" });
       expect(evB?.data.admin).toBeGreaterThan(ev?.data.admin);
       expect(sb.events.filter((e) => e.event === "config.changed").length).toBe(1);
     } finally {
