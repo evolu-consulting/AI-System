@@ -113,6 +113,8 @@ export const FLOW_MISSING = "FLOW_MISSING";
 /** CR-118 §11.2 · tenant có luật chọn quy trình mà người khởi tạo không khớp luật nào và không có mặc định (hoặc quy trình của
  *  luật không còn bản xuất bản) ⇒ chặn khởi tạo. */
 export const FLOW_ROUTE_NONE = "FLOW_ROUTE_NONE";
+/** cr118-routing-deleted · luật đã khớp nhưng quy trình của luật bị xoá / chưa xuất bản ⇒ chặn khởi tạo (lý do riêng cho UI). */
+export const FLOW_ROUTE_UNAVAILABLE = "FLOW_ROUTE_UNAVAILABLE";
 /** Owner/admin "Huỷ & mở lại" một run đang chờ quyết. */
 export const CANCELLED_BY_OWNER = "CANCELLED_BY_OWNER";
 /** Thiếu Group ⇒ `FLOW_GROUP_MISSING:<mã,…>` (mã Group thiếu, tối đa 5, cắt 200 ký tự); không biết mã ⇒ `FLOW_GROUP_MISSING`. */

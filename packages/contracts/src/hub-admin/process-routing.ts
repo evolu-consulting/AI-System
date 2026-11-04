@@ -14,6 +14,8 @@ export const ROUTING_DEPTS_MAX = 100;
 export const HUB_ADMIN_ROUTING_ERRORS = {
   /** Quy trình chưa được platform gán cho tenant × khe. */
   ROUTING_PROCESS_NOT_ASSIGNED: 422,
+  /** Quy trình trong tập gán nhưng đã bị xoá / chưa xuất bản — không chọn được cho luật. */
+  ROUTING_PROCESS_UNAVAILABLE: 422,
   /** Phòng ban không thuộc tenant. */
   ROUTING_DEPARTMENT_INVALID: 422,
   /** Luật lệch hình (luật thường không có phòng ban / > 1 mặc định). */
@@ -49,6 +51,9 @@ export const ProcessRoutingRuleSchema = z.strictObject({
   condition: RoutingConditionSchema,
   def_id: UuidSchema,
   is_default: z.boolean(),
+  /** cr118-routing-deleted · quy trình của luật không chạy được: `deleted` (def bị xoá mềm / bỏ khỏi tập) hoặc `unpublished`
+   *  (chưa có bản xuất bản) ⇒ người khớp luật bị chặn khởi tạo. Vắng = chạy được. */
+  unavailable: z.enum(["deleted", "unpublished"]).optional(),
 });
 export type ProcessRoutingRule = z.infer<typeof ProcessRoutingRuleSchema>;
 
@@ -72,7 +77,8 @@ export type ProcessRouting = z.infer<typeof ProcessRoutingSchema>;
 /**
  * `GET /hub-admin/tenants/:tid/process-routing/:slot/processes/:defId` (platform_admin + tenant_admin CHÍNH tenant; def ∉ tập
  * gán / tenant khác ⇒ 404) — sơ đồ cho `@ai/flow-canvas` chế độ xem. `stages`/`slot_body` cùng hình `ProcessDef` (thư viện),
- * lấy từ bản xuất bản đang dùng (`rel_version`; null = chưa xuất bản ⇒ nháp).
+ * lấy từ bản xuất bản đang dùng. Def đã xoá ⇒ 404. Chưa xuất bản: tenant_admin ⇒ 404 (không lộ nháp của platform);
+ * platform_admin ⇒ nháp (`rel_version` null).
  */
 export const ProcessRoutingDefViewSchema = z.strictObject({
   def_id: UuidSchema,

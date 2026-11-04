@@ -4,10 +4,13 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 
 export type AssignedRow = { def_id: string; name: string; rel_version: number | null };
-/** Tập đã gán của tenant × khe + tên/bản xuất bản (cần đọc `process_defs` thư viện ⇒ chỉ gọi ở scope system). */
+/** Tập đã gán của tenant × khe + tên/bản xuất bản, BỎ def đã xoá mềm (cần đọc `process_defs` thư viện ⇒ chỉ scope system).
+ *  `rel_version` lấy từ bản phát hành thật (không có hàng release ⇒ null = chưa chạy được). */
 export const assignedOf = (tx: Tx, tenantId: string, slot: string): Promise<AssignedRow[]> =>
-  tx.execute<AssignedRow>(sql`select a.def_id::text as def_id, d.name, d.published_version as rel_version
-    from hub.process_tenant_defs a join hub.process_defs d on d.id = a.def_id
+  tx.execute<AssignedRow>(sql`select a.def_id::text as def_id, coalesce(r.name, d.name) as name,
+      r.rel_version
+    from hub.process_tenant_defs a join hub.process_defs d on d.id = a.def_id and d.deleted_at is null
+    left join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version
     where a.tenant_id = ${tenantId} and a.slot = ${slot} order by d.name, a.def_id`);
 
 export type AssignedDefRow = {
@@ -17,19 +20,21 @@ export type AssignedDefRow = {
   stages: unknown[];
   slot_body: unknown;
 };
-/** Sơ đồ MỘT def trong tập gán của tenant × khe: bản xuất bản đang dùng (chưa có ⇒ nháp). Không trong tập ⇒ null. Một câu. */
+/**
+ * Sơ đồ MỘT def trong tập gán của tenant × khe: bản xuất bản đang dùng. Def đã xoá mềm / không trong tập ⇒ null. Chưa có bản
+ * xuất bản: `draft` (chỉ platform_admin) ⇒ nháp, ngược lại ⇒ null (không lộ nháp của platform cho tenant). Một câu.
+ */
 export async function assignedDef(
   tx: Tx,
-  tenantId: string,
-  slot: string,
-  defId: string,
+  w: { tenantId: string; slot: string; defId: string; draft: boolean },
 ): Promise<AssignedDefRow | null> {
   const [r] = await tx.execute<AssignedDefRow>(sql`select a.def_id::text as def_id,
       coalesce(r.name, d.name) as name, r.rel_version, coalesce(r.stages, d.stages) as stages,
       case when r.def_id is null then d.slot_body else r.slot_body end as slot_body
-    from hub.process_tenant_defs a join hub.process_defs d on d.id = a.def_id
+    from hub.process_tenant_defs a join hub.process_defs d on d.id = a.def_id and d.deleted_at is null
     left join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version
-    where a.tenant_id = ${tenantId} and a.slot = ${slot} and a.def_id = ${defId}`);
+    where a.tenant_id = ${w.tenantId} and a.slot = ${w.slot} and a.def_id = ${w.defId}
+      and (r.def_id is not null or ${w.draft})`);
   return r ?? null;
 }
 

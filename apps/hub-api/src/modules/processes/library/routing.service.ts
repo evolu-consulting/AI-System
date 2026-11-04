@@ -26,7 +26,17 @@ const MESSAGES: Record<HubAdminRoutingErrorCode, string> = {
   ROUTING_DEPARTMENT_INVALID: "Department does not belong to the tenant",
   ROUTING_RULES_INVALID: "Invalid routing rules",
   ROUTING_PROCESS_IN_USE: "Process is used by routing rules",
+  ROUTING_PROCESS_UNAVAILABLE: "Process is deleted or not published",
 };
+
+/** cr118-routing-deleted · `live` = tập gán còn sống (def chưa xoá) ⇒ rel_version; vắng ⇒ deleted, null ⇒ unpublished. */
+function unavailableOf(
+  live: ReadonlyMap<string, number | null>,
+  defId: string,
+): { unavailable?: "deleted" | "unpublished" } {
+  if (!live.has(defId)) return { unavailable: "deleted" };
+  return live.get(defId) == null ? { unavailable: "unpublished" } : {};
+}
 export const routingError = (code: HubAdminRoutingErrorCode, details?: unknown): AppError =>
   new AppError(code, HUB_ADMIN_ROUTING_ERRORS[code], MESSAGES[code], details);
 
@@ -94,8 +104,10 @@ export class RoutingService {
   ): Promise<ProcessRoutingDefView> {
     scopeFor(u, tenantId);
     specOrThrow(slot);
+    // cr118-routing-deleted · chỉ platform_admin xem được nháp (def chưa xuất bản); def đã xoá ⇒ 404 cho mọi vai.
+    const draft = u.role === "platform_admin";
     const r = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
-      rt.assignedDef(tx, tenantId, slot, defId),
+      rt.assignedDef(tx, { tenantId, slot, defId, draft }),
     );
     if (!r) throw appError("NOT_FOUND");
     return {
@@ -114,6 +126,7 @@ export class RoutingService {
         await rt.readRouting(tx, tenantId, slot),
         await rt.assignedOf(tx, tenantId, slot),
       ];
+      const live = new Map(processes.map((p) => [p.def_id, p.rel_version]));
       return {
         slot,
         version,
@@ -123,6 +136,7 @@ export class RoutingService {
           condition: r.condition,
           def_id: r.def_id,
           is_default: r.is_default === true,
+          ...unavailableOf(live, r.def_id),
         })),
         processes: processes.map((p) => ({
           def_id: p.def_id,
@@ -142,6 +156,7 @@ export class RoutingService {
     const scope = scopeFor(u, tenantId);
     specOrThrow(slot);
     const rules = normalize(b);
+    await this.#usable(tenantId, slot, rules);
     await withConfigWrite(
       this.#w,
       u,
@@ -158,6 +173,20 @@ export class RoutingService {
       scope,
     );
     return this.#view(tenantId, slot);
+  }
+
+  /** cr118-routing-deleted · def trong tập gán nhưng đã xoá / chưa xuất bản ⇒ 422 `ROUTING_PROCESS_UNAVAILABLE` (đọc `process_defs`
+   *  thư viện cần scope system ⇒ kiểm trước tx ghi; def ngoài tập để `#validate` trả `ROUTING_PROCESS_NOT_ASSIGNED`). Hai câu. */
+  async #usable(tenantId: string, slot: string, rules: readonly rt.RuleWrite[]) {
+    if (rules.length === 0) return;
+    const [ids, live] = await withHubScope(this.d.db, { kind: "system" }, async (tx) => [
+      await rt.assignedIds(tx, tenantId, slot),
+      new Map((await rt.assignedOf(tx, tenantId, slot)).map((p) => [p.def_id, p.rel_version])),
+    ]);
+    for (const r of rules) {
+      const why = ids.has(r.defId) ? unavailableOf(live, r.defId).unavailable : undefined;
+      if (why) throw routingError("ROUTING_PROCESS_UNAVAILABLE", { def_id: r.defId, reason: why });
+    }
   }
 
   async #validate(tx: Tx, tenantId: string, slot: string, rules: readonly rt.RuleWrite[]) {

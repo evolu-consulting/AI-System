@@ -2,7 +2,12 @@
 // `contracts.approval` cho tenant (`port.resolveSlot`: gán ⇒ mặc định ⇒ bản xuất bản — 1 SQL), phân giải mã Group ⇒ id theo tenant
 // (`groups.idsOf` — 1 SQL), rồi để `startEngineApproval` biên dịch + `ensureDef({sourceRef})` vào def tenant `contracts-approval`.
 // Lớp 2. Không có bản xuất bản nào ⇒ null (L1 rơi về đường cũ `readFlow`; L4 xoá).
-import { FLOW_INVALID, FLOW_ROUTE_NONE, groupMissingReason } from "../domain/approval-engine.rules";
+import {
+  FLOW_INVALID,
+  FLOW_ROUTE_NONE,
+  FLOW_ROUTE_UNAVAILABLE,
+  groupMissingReason,
+} from "../domain/approval-engine.rules";
 import type { FlowStep } from "../domain/approval-flow.types";
 import {
   APPROVAL_SLOT,
@@ -69,7 +74,8 @@ export async function slotFlowOf(
       ? await port.routeSlot(tenantId, APPROVAL_SLOT, starter)
       : await port.resolveSlot(tenantId, APPROVAL_SLOT);
   if (!r) return null;
-  if ("blocked" in r) return { invalid: FLOW_ROUTE_NONE };
+  if ("blocked" in r)
+    return { invalid: r.blocked === "route_none" ? FLOW_ROUTE_NONE : FLOW_ROUTE_UNAVAILABLE };
   const ruleId = "ruleId" in r ? (r.ruleId as string | null) : undefined;
   const body = slotBodyOf(r.slotBody);
   if (!body) return { invalid: FLOW_INVALID };
