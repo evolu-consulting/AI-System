@@ -139,7 +139,7 @@ describe("cr118-routing-deleted · quy trình không chạy được", () => {
     expect(fromServer([server("deleted")])[0]?.unavailable).toBe("deleted");
     expect("unavailable" in (fromServer([server()])[0] ?? {})).toBe(false);
   });
-  test("ruleIssues: luật unavailable ⇒ mã 'unavailable' (chặn lưu); đổi quy trình thì hết", () => {
+  test("ruleIssues: luật unavailable ⇒ mã 'unavailable' (chặn lưu), đổi quy trình thì hết", () => {
     const [r] = fromServer([server("unpublished")]);
     if (!r) throw new Error("no rule");
     const assigned = new Set([P1, P2]);
