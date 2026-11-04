@@ -46,7 +46,7 @@ describe("uploadNotice", () => {
     expect(n.retry?.params.time).toBe(formatResetTime("2026-11-05T01:00:00.000Z", "en-US"));
     expect(
       uploadNotice({ status: 429, code: "UPLOAD_QUOTA", details: { scope: "busy", limit: 3 } })
-        .then,
+        .retry,
     ).toBeUndefined();
     expect(
       uploadNotice({ status: 429, code: "UPLOAD_QUOTA", details: { scope: "zzz", limit: 1 } }).key,
