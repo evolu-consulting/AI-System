@@ -15,13 +15,13 @@ describe("uploadFiles", () => {
     };
     const r = await uploadFiles(api, [f("a.pdf"), f("bad.exe"), f("b.png")], []);
     expect(r.media.map((m) => `${m.kind}:${m.label}`)).toEqual(["file:a.pdf", "image:b.png"]);
-    expect(r.notices).toEqual(["community.composer.fileTypeNotAllowed"]);
+    expect(r.notices).toEqual([{ key: "community.composer.fileTypeNotAllowed" }]);
   });
   it("quá 10 tệp thì báo tối đa", async () => {
     const api = { uploadFile: async (file: File) => ok(file.name, "application/pdf") };
     const files = Array.from({ length: 11 }, (_, i) => f(`f${i}.pdf`));
     const r = await uploadFiles(api, files, []);
     expect(r.media.length).toBe(10);
-    expect(r.notices).toEqual(["community.composer.maxFiles"]);
+    expect(r.notices).toEqual([{ key: "community.composer.maxFiles" }]);
   });
 });

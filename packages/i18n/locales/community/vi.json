@@ -144,6 +144,14 @@
       "fileTooLarge": "Tệp quá lớn, vui lòng chọn tệp nhỏ hơn",
       "fileTypeNotAllowed": "Loại tệp này không được phép tải lên",
       "filesUnavailable": "Chưa bật kho tệp, thử lại sau",
+      "quota": {
+        "user": "Bạn đã dùng hết hạn mức tải tệp ({{limit}} lượt).",
+        "tenant": "Công ty đã dùng hết hạn mức tải tệp ({{limit}} lượt).",
+        "global": "Hệ thống đang quá tải tải tệp, thử lại sau.",
+        "busy": "Đang có quá nhiều lượt tải tệp, thử lại sau ít phút.",
+        "retryAt": "Thử lại sau {{time}}.",
+        "unavailable": "Chưa kiểm tra được hạn mức tải tệp, thử lại sau."
+      },
       "uploadFailed": "Không tải được tệp lên",
       "attach": "Đính kèm",
       "collapse": "Thu gọn",

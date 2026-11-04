@@ -13,12 +13,47 @@ export const mediaItemOf = (f: CommunityFile): MediaItem => ({
   mime: f.mime,
 });
 
-/** Lỗi `POST /pack/community/files` ⇒ khoá i18n: 413 quá cỡ, 415 loại không cho phép, 503 chưa bật FileBox; khác ⇒ chung. */
-export function uploadErrorKey(status: number | undefined): string {
-  if (status === 413) return "community.composer.fileTooLarge";
-  if (status === 415) return "community.composer.fileTypeNotAllowed";
-  if (status === 503) return "community.composer.filesUnavailable";
-  return "community.composer.uploadFailed";
+export type UploadNotice = {
+  key: string;
+  params?: Record<string, string | number>;
+  /** Câu nối sau (vd gợi ý thời điểm thử lại). */
+  retry?: { key: string; params: Record<string, string | number> };
+};
+
+const QUOTA_SCOPES = ["user", "tenant", "global", "busy"] as const;
+
+/** Giờ mở lại hạn mức, theo ngôn ngữ UI; ISO hỏng ⇒ chuỗi rỗng. */
+export function formatResetTime(iso: string, locale = "vi-VN"): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleString(locale, { dateStyle: "short", timeStyle: "short" });
+}
+
+/**
+ * Lỗi `POST /pack/community/files` ⇒ thông báo (khoá i18n + tham số): 413 quá cỡ, 415 loại không cho phép, 503 chưa bật kho tệp,
+ * 429 `UPLOAD_QUOTA` {scope user|tenant|global|busy, limit, resets_at} (kèm giờ thử lại nếu có), 503 `UPLOAD_QUOTA_UNAVAILABLE`.
+ */
+export function uploadNotice(
+  err: { status?: number; code?: string; details?: unknown },
+  locale = "vi-VN",
+): UploadNotice {
+  const { status, code } = err;
+  if (code === "UPLOAD_QUOTA_UNAVAILABLE") return { key: "community.composer.quota.unavailable" };
+  if (status === 429 && code === "UPLOAD_QUOTA") {
+    const d = (err.details ?? {}) as { scope?: string; limit?: number; resets_at?: string };
+    const scope = QUOTA_SCOPES.find((s) => s === d.scope) ?? "tenant";
+    const time = d.resets_at ? formatResetTime(d.resets_at, locale) : "";
+    return {
+      key: `community.composer.quota.${scope}`,
+      params: { limit: d.limit ?? 0 },
+      ...(time ? { retry: { key: "community.composer.quota.retryAt", params: { time } } } : {}),
+    };
+  }
+  if (status === 413) return { key: "community.composer.fileTooLarge" };
+  if (status === 415) return { key: "community.composer.fileTypeNotAllowed" };
+  if (status === 503) return { key: "community.composer.filesUnavailable" };
+  return { key: "community.composer.uploadFailed" };
 }
 
 /** 1536 ⇒ "1,5 KB" (dấu thập phân theo `locale` của UI). */

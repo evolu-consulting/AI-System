@@ -166,7 +166,8 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
     setUploading(true);
     try {
       const r = await uploadFiles(api, Array.from(files), draft.media);
-      for (const n of r.notices) toast(t(n));
+      for (const n of r.notices)
+        toast(t(n.key, n.params) + (n.retry ? ` ${t(n.retry.key, n.retry.params)}` : ""));
       setDraft((d) => ({ ...d, media: r.media }));
     } finally {
       setUploading(false);

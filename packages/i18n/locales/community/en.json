@@ -144,6 +144,14 @@
       "fileTooLarge": "The file is too large, pick a smaller one",
       "fileTypeNotAllowed": "This file type is not allowed",
       "filesUnavailable": "File storage is not enabled, try again later",
+      "quota": {
+        "user": "You have used your file upload quota ({{limit}} uploads).",
+        "tenant": "Your company has used its file upload quota ({{limit}} uploads).",
+        "global": "File uploads are overloaded, try again later.",
+        "busy": "Too many uploads in progress, try again in a few minutes.",
+        "retryAt": "Try again after {{time}}.",
+        "unavailable": "Could not check the upload quota, try again later."
+      },
       "uploadFailed": "Could not upload the file",
       "attach": "Attach",
       "collapse": "Collapse",
