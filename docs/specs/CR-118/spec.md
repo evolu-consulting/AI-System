@@ -102,6 +102,25 @@ Làn: **F**=đầy đủ (Opus medium, test trước), **N**=nhanh. | Lát | Đ�
 | slot-intake (COULD) | 2 | F | Opus + Sonnet | node-form, flow-web |
 Tên lát `cr118-<…>`. `move` chỉ chạy khi không lát nào khác mở trên contracts-web. Migration: dự kiến không (admin 0033 / hub ≥ 0087 do điều phối giao).
 
+| community-ui (§11.1) | 2 | N | Sonnet | shell |
+| flow-routing: chọn quy trình theo điều kiện (§11.2; engine/resolve Opus, admin UI Sonnet) | 2 | F | Opus + Sonnet | flow-api, admin-app-page |
+
+## 11. Bổ sung người dùng 2026-11-04
+### 11.1 Community UI (làn N)
+- **Thẻ đăng bản tin (composer):** thêm nút thu gọn về trạng thái tối thiểu (một dòng "Bạn đang nghĩ gì…"), bấm lại để mở; nhớ trạng thái theo người dùng (localStorage, lỗi ⇒ mặc định mở).
+- **Đính kèm:** gộp nút Ảnh + Video thành một nút "Đính kèm"; cho tải file bất kỳ (ảnh/video xem trước như cũ, file khác hiện thẻ tên + dung lượng + tải về). Giới hạn kích thước/loại lấy từ cấu hình upload hiện có (FileBox); quét loại MIME phía server, không tin đuôi file.
+- **Dialog Cài đặt:** sửa padding các mục sidebar trái cho đều (theo token `--cm-*`); phần cài đặt Sổ Hợp Tác hiển thị NGAY trong dialog Cài đặt Community (một mục/nhóm "Sổ Hợp Tác"), không mở trang riêng; chỉ hiện khi `/pack/me` bật app contracts và người dùng có quyền.
+- Kịch bản e2e (viết, chạy cuối đợt): thu gọn/mở composer; đăng bài kèm PDF; mở Cài đặt › Sổ Hợp Tác không đổi URL ngoài `?settings=`.
+
+### 11.2 Nhiều quy trình mỗi tenant + điều kiện chọn quy trình (làn F)
+- **Gán quy trình cho tenant:** một tenant có thể có NHIỀU quy trình (nhiều phiên bản/định nghĩa cho cùng khe và nhiều khe). Quy trình chỉ hiện với tenant admin sau khi **platform_admin gán** quy trình đó cho tenant (trang `/apps/$appKey` › tab Công ty, hoặc `/tenants/$id`). Chưa gán ⇒ tenant không thấy, không chọn, không chạy được.
+- **Điều kiện chọn quy trình (routing):** mỗi khe của tenant có danh sách luật có thứ tự `{điều kiện → quy trình}` + một quy trình mặc định. Điều kiện bản đầu: **phòng ban của người khởi tạo** (một hoặc nhiều phòng ban, gồm phòng ban con); mở rộng sau (loại hợp đồng, giá trị) theo cùng cấu trúc. Luật đầu tiên khớp thắng; không khớp ⇒ mặc định; không có mặc định ⇒ chặn khởi tạo với thông báo rõ.
+- **Chốt khi khởi tạo:** quy trình được chọn ghi vào run (snapshot definition + id luật đã khớp) lúc launch; đổi luật/gán sau KHÔNG ảnh hưởng run đang chạy.
+- **Ai sửa:** platform_admin gán quy trình + sửa luật (mặc định đề xuất). Tenant admin xem được danh sách quy trình đã gán và luật chọn ở "Cài đặt › Ứng dụng & quy trình" (chỉ đọc, như §6). Thành viên/đối tác không thấy.
+- **Dữ liệu:** mở rộng bảng gán khe hiện có theo tenant (thêm `priority`, `condition jsonb` dạng `{departmentIds: uuid[]}` đã validate bằng zod; RLS theo tenant; `process` phải thuộc danh sách đã gán). Migration hub số do điều phối giao (≥ 0087, tránh 0071–0080 và 0085). Resolve bằng hàm thuần `pickProcess(rules, initiatorDeptPath)` + một câu SQL cố định khi launch (nằm trong ảnh cấu hình nóng, 0 SQL thêm); bump `config_version` + `config.changed` khi đổi.
+- **Test:** unit `pickProcess` (khớp phòng ban con, thứ tự, mặc định, không mặc định); int: gán/bỏ gán, tenant khác không đọc được luật (RLS), launch chọn đúng quy trình theo phòng ban, run cũ giữ quy trình khi đổi luật; perf launch không vượt PD-P01 hiện tại.
+- Câu hỏi mở (đang dùng mặc định trên, người dùng có thể đổi): tenant admin có được tự sửa luật chọn quy trình trong số quy trình đã được gán không? Mặc định: chưa, chỉ xem.
+
 ## 9. Kế hoạch test
 - Trong lát: unit luật thuần (gate, nav, legacy-hash, login outcome, home pick, previewApp); int một đường chính mỗi endpoint + chặn chéo tenant + đối tác + đếm SQL; e2e viết không chạy.
 - Một lần cuối MỖI đợt, evotest (T1): `run-tests.ps1 -Step e2e -Filter <job>` (đợt 1: sohoptac-web, community, N1, deployed; đợt 2 thêm admin app-config, P-a) + `-Capture cw` + `test:all --no-frozen`; đợt 2 thêm `test:frozen`, `dlc:check`; chỉ báo đỏ mới (`known-red.json`). Perf `-Exclusive` do điều phối, một lần, tuần tự.
