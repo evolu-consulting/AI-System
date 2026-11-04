@@ -7,6 +7,7 @@ import type { NotifyTxRepos } from "../../kit/application/notify";
 import type { PackUow } from "../../kit/application/ports";
 import type {
   CommunityBlobs,
+  CommunityUploadGate,
   CompanyBrandReader,
   ContractsCapReader,
   HostBookReader,
@@ -35,4 +36,8 @@ export type CommunityDeps = {
   webUrl?: string | undefined;
   /** CR-118 §11.1: kho byte tệp bài (FileBox); vắng ⇒ `/files` 503. */
   blobs?: CommunityBlobs | undefined;
+  /** cr118-files-quota: giữ lượt tải (người/phút + tenant/ngày); vắng ⇒ không giới hạn (chỉ seam test — wire luôn tiêm). */
+  gate?: CommunityUploadGate | undefined;
+  /** Trần upload đọc thân đồng thời mỗi tiến trình (vắng ⇒ `UPLOADS_INFLIGHT`). */
+  uploadsInflight?: number | undefined;
 };

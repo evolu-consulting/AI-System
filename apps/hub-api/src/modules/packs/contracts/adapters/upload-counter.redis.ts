@@ -6,9 +6,9 @@ import type { UploadCounter, UploadDays } from "../application/upload-contract.p
 export const QUOTA_KEY_PREFIX = "q:contracts:";
 export const QUOTA_TTL_S = 172_800;
 
-const keysOf = (tenantId: string, d: UploadDays): [string, string] => [
-  `${QUOTA_KEY_PREFIX}t:${tenantId}:${d.tenant}`,
-  `${QUOTA_KEY_PREFIX}g:${d.global}`,
+const keysOf = (tenantId: string, d: UploadDays, prefix: string): [string, string] => [
+  `${prefix}t:${tenantId}:${d.tenant}`,
+  `${prefix}g:${d.global}`,
 ];
 
 /** DECR từng khoá; xuống dưới 0 ⇒ đặt 0 (giữ TTL). Trả giá trị sau hoàn. */
@@ -27,10 +27,11 @@ function counts(out: ExecOut): { tenant: number; global: number } {
   return { tenant: Number(out[0]?.[1]), global: Number(out[1]?.[1]) };
 }
 
-export function redisUploadCounter(redis: Redis): UploadCounter {
+/** `prefix`: CR-118 · bộ đếm riêng của gói khác dùng lại (vd `q:community:`); mặc định = khoá contracts. */
+export function redisUploadCounter(redis: Redis, prefix = QUOTA_KEY_PREFIX): UploadCounter {
   return {
     take: async (tenantId, days) => {
-      const [t, g] = keysOf(tenantId, days);
+      const [t, g] = keysOf(tenantId, days, prefix);
       const out = await redis
         .pipeline()
         .incr(t)
@@ -42,7 +43,7 @@ export function redisUploadCounter(redis: Redis): UploadCounter {
     },
     // tenant-quotas-fix: hoàn kẹp ≥ 0 (một EVAL) — Admin "Đặt lại hôm nay" đưa khoá về 0 trong lúc một lượt đang giữ.
     refund: async (tenantId, days) => {
-      await redis.eval(REFUND_CLAMPED, 2, ...keysOf(tenantId, days));
+      await redis.eval(REFUND_CLAMPED, 2, ...keysOf(tenantId, days, prefix));
     },
   };
 }

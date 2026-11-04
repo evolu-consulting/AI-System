@@ -135,3 +135,11 @@ export type CommunityBlobs = {
   /** Xoá byte (idempotent: đã không còn ⇒ xong). Kho lỗi ⇒ NÉM (upload hoàn tác bỏ qua; vòng dọn tệp giữ hàng làm lại). */
   drop(tenantId: string, fileId: string): Promise<void>;
 };
+
+/** CR-118 · cr118-files-quota: giữ MỘT lượt tải tệp bài TRƯỚC khi đọc thân (trần lượt/phút theo người + lượt/ngày theo tenant +
+ * toàn hệ thống). Vượt ⇒ ném 429 `UPLOAD_QUOTA` {scope: "user"|"tenant"|"global", limit, resets_at}; bộ đếm lỗi/vắng ⇒ 503
+ * `UPLOAD_QUOTA_UNAVAILABLE`. Trả hàm hoàn lượt (gọi khi tải thất bại sau đó: 413/415/kho/DB). */
+export type CommunityUploadGate = (who: {
+  tenantId: string;
+  userId: string;
+}) => Promise<() => Promise<void>>;

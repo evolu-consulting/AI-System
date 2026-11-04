@@ -12,6 +12,28 @@ import type { Access } from "./community-access";
 import { insertFile, visibleFile } from "./files.repo";
 
 export const FILE_MAX_BYTES = ATTACH_MAX_BYTES;
+/** cr118-files-quota: số upload đọc thân cùng lúc mỗi tiến trình (trần bộ nhớ ≈ n × `FILE_MAX_BYTES`). */
+export const UPLOADS_INFLIGHT = 8;
+
+/** Chỗ đồng thời trong tiến trình; hết chỗ ⇒ 429 `UPLOAD_QUOTA` scope `busy` (không chờ hàng). */
+export function inflightSlots(max: number) {
+  let used = 0;
+  return {
+    take(): () => void {
+      if (used >= max)
+        throw new AppError("UPLOAD_QUOTA", 429, "Upload quota exceeded", {
+          scope: "busy",
+          limit: max,
+        });
+      used++;
+      let done = false;
+      return () => {
+        if (!done) used--;
+        done = true;
+      };
+    },
+  };
+}
 
 type Uow = PackUow<{ tx: Tx }>;
 

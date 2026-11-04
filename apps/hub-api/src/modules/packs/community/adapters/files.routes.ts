@@ -23,11 +23,15 @@ function filenameOf(raw: string | undefined): string {
   }
 }
 
-/** Đọc thân ≤ `max` byte; vượt ⇒ 413 ngay (không đọc tiếp). */
-async function readCapped(c: Context<PackGuardVars>, max: number): Promise<Uint8Array> {
+/** `Content-Length` vượt ⇒ 413 trước khi giữ lượt/đọc thân. */
+function precheckLength(c: Context<PackGuardVars>, max: number): void {
   const len = c.req.header("content-length");
   if (len !== undefined && /^\d+$/.test(len) && Number(len) > max)
     throw appError("ATTACHMENT_TOO_LARGE");
+}
+
+/** Đọc thân ≤ `max` byte; vượt ⇒ 413 ngay (không đọc tiếp). */
+async function readCapped(c: Context<PackGuardVars>, max: number): Promise<Uint8Array> {
   const body = c.req.raw.body;
   if (!body) return new Uint8Array();
   const reader = body.getReader();
@@ -54,12 +58,29 @@ async function readCapped(c: Context<PackGuardVars>, max: number): Promise<Uint8
 
 export function filesRoutes(d: CommunityDeps): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
+  const slots = files.inflightSlots(d.uploadsInflight ?? files.UPLOADS_INFLIGHT);
 
+  // cr118-files-quota: 413 sớm → chỗ đọc đồng thời (trần bộ nhớ) → giữ lượt (người/phút + tenant/ngày) → đọc thân → lưu.
+  // Thất bại sau khi giữ lượt (413/415/kho/DB) ⇒ hoàn lượt ngày.
   r.post("/files", async (c) => {
     const a = await accessOf(d.view, d.resolver, c, "write");
     const name = filenameOf(c.req.header(FILENAME_HEADER));
-    const bytes = await readCapped(c, files.FILE_MAX_BYTES);
-    return c.json(await files.upload(d.uow, d.blobs, a, name, bytes), 201);
+    precheckLength(c, files.FILE_MAX_BYTES);
+    const release = slots.take();
+    try {
+      const refund = d.gate ? await d.gate(a.who) : async () => {};
+      let ok = false;
+      try {
+        const bytes = await readCapped(c, files.FILE_MAX_BYTES);
+        const out = await files.upload(d.uow, d.blobs, a, name, bytes);
+        ok = true;
+        return c.json(out, 201);
+      } finally {
+        if (!ok) await refund();
+      }
+    } finally {
+      release();
+    }
   });
 
   r.get("/files/:id", async (c) => {

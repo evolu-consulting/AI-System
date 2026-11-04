@@ -3,6 +3,7 @@
 // Quyền ghi giá = việc `write` của gói contracts (nhóm được giao); user ngoài bị chặn ở usecase (`kind=external`).
 import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
+import type { Redis } from "ioredis";
 import type {
   CommunityBlobs,
   CompanyBrandReader,
@@ -11,6 +12,7 @@ import type {
   SupplierQuoteWriter,
 } from "./community/application/pack-ports";
 import { mountCommunity } from "./community/community.mount";
+import { communityUploadGate } from "./community-quota.mount";
 import { productsRepo } from "./contracts/adapters/products.repo";
 import { supplierQuoteRepo } from "./contracts/adapters/supplier-quote.repo";
 import { saveQuoteUsecase } from "./contracts/application/save-quote.usecase";
@@ -69,13 +71,26 @@ export function mountCommunityWired<E extends Env>(
   db: Db,
   view: PackAccessView,
   timeZoneOf: (tenantId: string) => Promise<string>,
-  o: { signal?: AbortSignal | undefined; worker?: boolean; fb?: PackFb | null } = {},
+  o: {
+    signal?: AbortSignal | undefined;
+    worker?: boolean;
+    fb?: PackFb | null;
+    /** cr118-files-quota: bộ đếm lượt tải tệp (vắng ⇒ `/files` 503 `UPLOAD_QUOTA_UNAVAILABLE`, như contracts). */
+    redis?: Redis | undefined;
+    uploadsLimitOf?: (tenantId: string) => Promise<number | null>;
+  } = {},
 ): void {
-  const { fb, ...rest } = o;
+  const { fb, redis, uploadsLimitOf, ...rest } = o;
+  const gate = communityUploadGate({
+    redis,
+    timeZoneOf,
+    ...(uploadsLimitOf ? { tenantLimitOf: uploadsLimitOf } : {}),
+  });
   mountCommunity(app, prefix, db, view, {
     ...rest,
     ...communityPorts(db, view, { timeZoneOf }),
     ...(fb ? { blobs: communityBlobs(fb) } : {}),
+    gate,
   });
 }
 

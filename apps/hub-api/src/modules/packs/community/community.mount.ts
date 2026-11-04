@@ -23,6 +23,7 @@ import { stockMatchVia } from "./adapters/quote.service";
 import { threadsRoutes } from "./adapters/threads.routes";
 import type {
   CommunityBlobs,
+  CommunityUploadGate,
   CompanyBrandReader,
   ContractsCapReader,
   HostBookReader,
@@ -50,6 +51,9 @@ export function communityModule(
     webUrl?: string | undefined;
     /** CR-118 §11.1: kho byte tệp bài (vắng ⇒ `/files` 503). */
     blobs?: CommunityBlobs | undefined;
+    /** cr118-files-quota: giữ lượt tải tệp (vắng ⇒ không giới hạn — chỉ seam test). */
+    gate?: CommunityUploadGate | undefined;
+    uploadsInflight?: number | undefined;
     now?: () => Date;
   } = {},
 ): Hono<PackGuardVars> {
@@ -78,6 +82,8 @@ export function communityModule(
     caps: opts.caps,
     webUrl: opts.webUrl,
     blobs: opts.blobs,
+    gate: opts.gate,
+    uploadsInflight: opts.uploadsInflight,
   };
   const r = new Hono<PackGuardVars>();
   r.route("/", postsRoutes(d));
@@ -103,9 +109,10 @@ export function mountCommunity<E extends Env>(
     brand?: CompanyBrandReader;
     caps?: ContractsCapReader;
     blobs?: CommunityBlobs;
+    gate?: CommunityUploadGate;
   } = {},
 ): void {
-  const { quotes, hostBook, brand, caps, blobs, ...sweep } = o;
+  const { quotes, hostBook, brand, caps, blobs, gate, ...sweep } = o;
   startSweeper(db, view, { ...sweep, ...(blobs ? { blobs } : {}) });
   const shtUrl = process.env.CONTRACTS_WEB_URL || "/";
   app.route(
@@ -117,6 +124,7 @@ export function mountCommunity<E extends Env>(
       ...(brand ? { brand } : {}),
       ...(caps ? { caps } : {}),
       ...(blobs ? { blobs } : {}),
+      ...(gate ? { gate } : {}),
       webUrl: process.env.COMMUNITY_WEB_URL || undefined,
     }),
   );
