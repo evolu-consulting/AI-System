@@ -15,9 +15,19 @@ export function formDefIssues(d: ProcessDefInput): DefIssue[] {
     if (s.executor.kind !== "form") return;
     if (s.after.kind !== "review") out.push({ path: `stages.${i}.after`, rule: "FORM_INVALID" });
     if (s.real_action) out.push({ path: `stages.${i}.real_action`, rule: "FORM_INVALID" });
+    // Luật chéo stage (If/wait đọc field) kiểm TRƯỚC `normalize` ⇒ `output.fields` phải khớp trường form (key + kiểu).
+    if (!sameFields(formOutputFields(s.executor.fields), s.output.fields))
+      out.push({ path: `stages.${i}.output.fields`, rule: "FORM_INVALID" });
   });
   return out;
 }
+
+const sig = (fs: readonly { key: string; type: string }[]): string =>
+  fs.map((f) => `${f.key}:${f.type}`).join(",");
+const sameFields = (
+  a: readonly { key: string; type: string }[],
+  b: readonly { key: string; type: string }[],
+): boolean => sig(a) === sig(b);
 
 /** `form`: Hub ép template/mục/fields/answerer/token_budget/sources/must_know/autofix; giữ `after`, `timeout_s`. */
 export function ensureFormStage<S extends DefStage>(s: S): S {

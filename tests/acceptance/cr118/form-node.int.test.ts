@@ -39,10 +39,16 @@ const formStage = (key: string, step: number, fields: Json[] = FORM_FIELDS): Jso
     filename: `${key}.md`,
     template: "# x\n\n## Kết quả\n",
     required_sections: ["Kết quả"],
-    fields: [],
+    // Khớp trường form (FORM_INVALID nếu lệch); Hub ép `required: false` khi lưu.
+    fields: fields.map((f) => ({
+      key: f.key,
+      type: OUT_TYPE[f.type] ?? "string",
+      required: false,
+    })),
   },
   after: { kind: "review", group_id: G1, back_to_steps: [] },
 });
+const OUT_TYPE: Record<string, string> = { money: "number", number: "number", date: "date" };
 const setStage = (key: string, step: number): Json => ({
   ...agentStage({
     key,
