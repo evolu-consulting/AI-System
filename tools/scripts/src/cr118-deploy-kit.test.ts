@@ -56,11 +56,13 @@ describe("prod kit · web gộp", () => {
     expect(conf).not.toContain("http://$host:18431");
     expect(conf).toContain("default http://localhost:18431;");
     expect(conf).toContain("map $http_x_s2_main_origin $s2_main_origin");
-    expect(conf).toContain("~^https://sohoptac(-test)?\\.[a-z0-9.-]+$ $http_x_s2_main_origin;");
+    expect(conf).toContain(
+      "~^https://(sohoptac|app)(-test)?\\.[a-z0-9.-]+$ $http_x_s2_main_origin;",
+    );
     // biome-ignore lint/suspicious/noTemplateCurlyInString: chuỗi nginx map, không phải template JS
     expect(conf).toContain("~^(?<hh>127\\.0\\.0\\.1|localhost):(?<pre>\\d*)5$ http://$hh:${pre}1;");
-    expect(edge).toContain("community.__BASE__ https://sohoptac.__BASE__");
-    expect(edge).toContain("community-test.__BASE__ https://sohoptac-test.__BASE__");
+    expect(edge).toContain("community.__BASE__ __MAIN_PROD__");
+    expect(edge).toContain("community-test.__BASE__ __MAIN_TEST__");
     expect(edge).toContain("proxy_set_header X-S2-Main-Origin $s2_cm_main;");
     const tun = /^(?<hh>127\.0\.0\.1|localhost):(?<pre>\d*)5$/;
     const m = (h: string) => tun.exec(h)?.groups;
@@ -176,5 +178,35 @@ describe("stg-cr118 · cô lập khỏi prod", () => {
       expect(out).toContain("[dry-run]");
       expect(out).not.toContain(":latest");
     }
+  });
+
+  it("CR-119: host app[-test].<d> + cờ S2_APP_HOST_LIVE (301 chỉ khi =1, đích cố định, không từ Host client)", () => {
+    const edge = read(`${PROD}/edge/sohoptac2.conf`);
+    const lib = read(`${PROD}/edge-lib.sh`);
+    const gen = read(`${PROD}/gen-env.sh`);
+    const web = read(`${PROD}/nginx.conf`);
+    expect(lib).toContain("app) p=app; t=app-test");
+    expect(lib).toContain('s/__N_APP__/$(s2_names app "$2" "$3")/');
+    expect(lib).toContain("S2_APP_HOST_LIVE phai la 0|1");
+    expect(lib).toContain("lp='\"\"'"); // =0: map legacy rỗng ⇒ sohoptac.<d> vẫn phục vụ
+    expect(edge).toContain("server_name __N_APP__;");
+    expect(edge).toContain(
+      "sohoptac.__BASE__ __LEGACY_PROD__; sohoptac-test.__BASE__ __LEGACY_TEST__;",
+    );
+    expect(edge).toContain("return 301 $s2_legacy_to$request_uri;"); // giữ path
+    expect(edge).toContain(
+      "community.__BASE__ __MAIN_PROD__; community-test.__BASE__ __MAIN_TEST__;",
+    );
+    expect(edge).not.toMatch(/return 301 .*\$(host|http_host)/); // không phản chiếu Host client
+    expect(lib).toContain('mp="https://app.$2"'); // =1: đích community = app.<d>
+    expect(web).toContain(
+      "~^https://(sohoptac|app)(-test)?\\.[a-z0-9.-]+$ $http_x_s2_main_origin;",
+    );
+    expect(gen).toContain('A="${A_IN:-${A_OLD:-0}}"'); // mặc định 0
+    expect(gen).toContain('if [ "$A" = 1 ]; then if [ "$H" = prod ]; then U_C="$P_APP"');
+    expect(gen).toContain("$P_C,$P_APP,$P_A"); // CORS gồm cả hai host
+    expect(gen).toContain("$T_C,$T_APP,$T_A");
+    expect(read(`${PROD}/enable-domain.sh`)).toContain('HOSTS="ai-test sohoptac-test app-test');
+    expect(read(`${PROD}/deploy.ps1`)).toContain("S2_APP_HOST_LIVE=$AppHostLive");
   });
 });

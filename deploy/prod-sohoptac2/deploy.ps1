@@ -4,11 +4,12 @@
 # git archive <Ref> + bộ kit này -> scp -> giải nén vào build/app -> gen-env.sh (bí mật một lần, trên máy chủ) -> docker compose build
 # -> setup.sh (migrate, seed, chạy, /health). Không đụng project khác; không đổi routing/TLS của host; dữ liệu (volume pgdata,
 # data/, claude-home/, .env, ADMIN_CREDENTIALS.txt) giữ nguyên giữa các lần deploy.
+# -AppHostLive 0|1 (CR-119): 1 = URL cong khai SHT/Community la app[-test].<d> (can DNS+cert app.<d> truoc; README "Deploy CR-119"); mac dinh giu gia tri trong .env (0).
 # -Hosts prod|test: bo hostname cong khai (prod = sohoptac./ai-admin./ai./ai-hub. (+ community.); test = ...-test); CORS luon gom ca hai bo + tunnel. Can -Domain (hoac da co trong .env).
 # fix-migrate-guard (su co 2026-10-30): moi lenh native (git/tar/ssh/scp) loi => throw (PS 5.1 khong tu throw theo exit code);
 # build loi => dung; VERSION tren may chu chi ghi SAU KHI setup.sh xong; tu choi deploy khi commit trong VERSION khong phai to tien
 # cua -Ref (vd prod dang chay nhanh khac) tru khi -Force (in canh bao).
-param([string]$Ref = "platform/gd0", [switch]$DryRun, [string]$Domain = "", [ValidateSet("", "prod", "test")][string]$Hosts = "", [switch]$Force, [string]$Key = "F:\workspace\id_evoc_key")
+param([string]$Ref = "platform/gd0", [switch]$DryRun, [string]$Domain = "", [ValidateSet("", "prod", "test")][string]$Hosts = "", [ValidateSet("", "0", "1")][string]$AppHostLive = "", [switch]$Force, [string]$Key = "F:\workspace\id_evoc_key")
 $ErrorActionPreference = "Stop"
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
 $Server = "evoc@149.202.83.5"; $Dir = "~/workspace/sohoptac2"
@@ -22,7 +23,7 @@ $commit = "$commit".Trim()
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $tmp = Join-Path $env:TEMP "sohoptac2-$stamp"
 if ($Domain -and $Domain -ne "none" -and $Domain -notmatch '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$') { throw "-Domain khong hop le: $Domain" }
-$envDomain = $(if ($Domain) { "S2_DOMAIN=$Domain " } else { "" }) + $(if ($Hosts) { "S2_HOSTS=$Hosts " } else { "" })
+$envDomain = $(if ($Domain) { "S2_DOMAIN=$Domain " } else { "" }) + $(if ($Hosts) { "S2_HOSTS=$Hosts " } else { "" }) + $(if ($AppHostLive) { "S2_APP_HOST_LIVE=$AppHostLive " } else { "" })
 $kit = @("docker-compose.yml", "Dockerfile", "nginx.conf", "gen-env.sh", "filebox-env.sh", "setup.sh", "backup.sh", "ops-host-status.sh", "restore-test.sh", "smoke-ai.ts", "env.template", "README.md", "enable-domain.sh", "disable-domain.sh", "cutover.sh", "rollback-cutover.sh", "edge-lib.sh", "edge/sohoptac2.conf")
 
 # Ban dang chay (dong dau VERSION, "<commit> (<ref>)") phai la to tien cua $Ref: deploy nhanh khac len prod roi deploy $Ref se mat

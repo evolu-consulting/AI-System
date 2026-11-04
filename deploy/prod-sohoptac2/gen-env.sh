@@ -65,7 +65,7 @@ EOF
 fi
 
 # --- Domain (S2_DOMAIN) -------------------------------------------------------------------------------------------------
-# S2_DOMAIN=evoluconsulting.com bash gen-env.sh  => URL cong khai = https://{sohoptac-test,ai-test-admin,ai-test,ai-test-hub}.<domain>; CORS gom CA https
+# S2_DOMAIN=evoluconsulting.com [S2_APP_HOST_LIVE=1] bash gen-env.sh  => URL cong khai = https://{sohoptac-test,ai-test-admin,ai-test,ai-test-hub}.<domain>; CORS gom CA https
 # lan localhost (tunnel van chay); TRUST_PROXY_HOPS=3 (host nginx -> edge-proxy -> web). S2_DOMAIN=none => ve che do tunnel. Khong dat
 # bien => giu che do da ghi trong .env (S2_DOMAIN=...). Chi sua cac khoa URL/CORS/hops, idempotent; sao luu .env.bak-domain MOT lan.
 # Cookie refresh da Secure (APP_ENV=production; Chrome van nhan Secure tren http://localhost) va nginx `web` giu X-Forwarded-Proto.
@@ -79,6 +79,10 @@ if [ "$D_IN" = "none" ]; then MODE=tunnel; D=""; elif [ -n "$D_IN" ]; then MODE=
 H_IN="${S2_HOSTS-}"; H_OLD="$(envget S2_HOSTS)"; H="${H_IN:-${H_OLD:-test}}"
 [[ "$H" == prod || "$H" == test ]] || { echo "gen-env: S2_HOSTS phai la prod|test"; exit 2; }
 [ -z "$H_IN" ] || [ "$MODE" = domain ] || { echo "gen-env: S2_HOSTS can che do domain (dat S2_DOMAIN)"; exit 2; }
+# CR-119: S2_APP_HOST_LIVE=0|1 (mac dinh 0, hoac giu gia tri trong .env). 0 = URL cong khai van la sohoptac[-test].<d> (app.<d> chay song song, chua can DNS/cert);
+# 1 = URL cong khai cua SHT/Community = app[-test].<d> (+ edge 301 sohoptac./community. -> app.; xem README "Deploy CR-119"). CORS luon gom CA HAI host.
+A_IN="${S2_APP_HOST_LIVE-}"; A_OLD="$(envget S2_APP_HOST_LIVE)"; A="${A_IN:-${A_OLD:-0}}"
+[[ "$A" == 0 || "$A" == 1 ]] || { echo "gen-env: S2_APP_HOST_LIVE phai la 0|1"; exit 2; }
 LOCAL=""
 # .env cu (truoc community) chua co S2_PORT_COMMUNITY => them 18435 (idempotent; compose cung mac dinh 18435).
 grep -q "^S2_PORT_COMMUNITY=" .env || setkv S2_PORT_COMMUNITY 18435
@@ -92,14 +96,16 @@ if [ "$MODE" != keep ]; then
     # community (CR-118): host cu community[-test].<d> chi con 301 (edge + nginx 8085); URL cong khai cua Community = <host So Hop Tac>/community.
     # P_CM/T_CM van la origin hop le cho CORS (tab cu) - khop edge-lib.sh s2_names.
     T_CM="https://community-test.$D"; P_CM="https://community.$D"
+    T_APP="https://app-test.$D"; P_APP="https://app.$D"   # CR-119: host trung tinh app[-test].<d> (khop edge-lib.sh s2_names app)
     if [ "$H" = prod ]; then U_C="$P_C"; U_A="$P_A"; U_H="$P_H"; U_CH="$P_CH"; else U_C="$T_C"; U_A="$T_A"; U_H="$T_H"; U_CH="$T_CH"; fi
+    if [ "$A" = 1 ]; then if [ "$H" = prod ]; then U_C="$P_APP"; else U_C="$T_APP"; fi; fi
     U_CM="$U_C/community"
-    setkv S2_DOMAIN "$D"; setkv S2_HOSTS "$H"; setkv TRUST_PROXY_HOPS 3
-    ORIG="$P_C,$P_A,$P_CH,$P_H,$P_CM,$T_C,$T_A,$T_CH,$T_H,$T_CM,$LOCAL"
+    setkv S2_DOMAIN "$D"; setkv S2_HOSTS "$H"; setkv S2_APP_HOST_LIVE "$A"; setkv TRUST_PROXY_HOPS 3
+    ORIG="$P_C,$P_APP,$P_A,$P_CH,$P_H,$P_CM,$T_C,$T_APP,$T_A,$T_CH,$T_H,$T_CM,$LOCAL"
   else
     U_C="http://localhost:$(envget S2_PORT_CONTRACTS)"; U_A="http://localhost:$(envget S2_PORT_ADMIN)"
     U_CH="http://localhost:$(envget S2_PORT_CHAT)"; U_H="http://localhost:$(envget S2_PORT_HUB)"; U_CM="$U_C/community"
-    setkv S2_DOMAIN ""; setkv S2_HOSTS ""; setkv TRUST_PROXY_HOPS 1
+    setkv S2_DOMAIN ""; setkv S2_HOSTS ""; setkv S2_APP_HOST_LIVE 0; setkv TRUST_PROXY_HOPS 1
     ORIG="$LOCAL"
   fi
   setkv S2_PUBLIC_CONTRACTS_URL "$U_C"; setkv S2_PUBLIC_ADMIN_URL "$U_A"; setkv S2_PUBLIC_CHAT_URL "$U_CH"; setkv S2_PUBLIC_HUB_URL "$U_H"; setkv S2_PUBLIC_COMMUNITY_URL "$U_CM"

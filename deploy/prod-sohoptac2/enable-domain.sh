@@ -15,7 +15,7 @@ S2_NET="${S2_NET:-sohoptac2_default}"
 S2_WEB="${S2_WEB:-sohoptac2-web-1}"
 SRC="edge/sohoptac2.conf"
 DST="$EDGE_DIR/conf.d/sohoptac2.conf"
-HOSTS="ai-test sohoptac-test ai-test-admin ai-test-hub community-test"
+HOSTS="ai-test sohoptac-test app-test ai-test-admin ai-test-hub community-test"   # CR-119: + app-test
 
 [[ "$BASE" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]] || { echo "enable-domain: base-domain khong hop le: $BASE"; exit 2; }
 [ -f "$SRC" ] || { echo "enable-domain: thieu $SRC (chay tu thu muc kit)"; exit 2; }
@@ -113,7 +113,8 @@ fi
 echo "--- kiem tra (qua host nginx + wildcard TLS):"
 for h in $HOSTS; do echo "curl -sSI -o /dev/null -w '$h.$BASE %{http_code}\\n' https://$h.$BASE/"; done
 echo "curl -sS https://ai-test-hub.$BASE/health ; echo ; curl -sS https://ai-test-hub.$BASE/auth-health ; echo"
-echo "curl -sSI https://sohoptac-test.$BASE/ | head -n1   # 200 = SPA contracts"
+echo "curl -sSI https://sohoptac-test.$BASE/ | head -n1   # 200 (S2_APP_HOST_LIVE=0) hoac 301 -> https://app-test.$BASE/ (=1)"
+echo "curl -sSI https://app-test.$BASE/ | head -n1   # 200 = web gop (CR-119; can DNS + cert cho app-test.$BASE)"
 echo "curl -sSI https://community-test.$BASE/ | head -n2   # 301 -> https://sohoptac-test.$BASE/community (host cu; CR-118)"
 echo "curl -sSI https://sohoptac-test.$BASE/community/profile/x/y | head -n1   # 200 = SPA fallback web gop"
 echo "(bat 4 host: nho chay 'S2_DOMAIN=$BASE' deploy/gen-env + build lai web de URL PUBLIC_* tro https; xem README)"

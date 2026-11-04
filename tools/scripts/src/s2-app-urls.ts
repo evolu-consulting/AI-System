@@ -4,6 +4,8 @@
 // (cần ./build mới đã có file này, tức sau deploy.ps1; DATABASE_URL = owner do compose cấp). Không in bí mật.
 // CR-118: Community nằm trong web gộp ⇒ hàng `community` = `<host Sổ Hợp Tác>/community` và `sso=false` (không còn hand-off SSO). Hàng còn host
 // cũ `community[-test].<d>` cũng được đổi. Staging/UAT (không domain): `--community-url http://127.0.0.1:28531/community --apply` chỉ chỉnh hàng community.
+// CR-119: `--app-host` (cùng --base-domain, --hosts prod|test): contracts → `https://app[-test].<d>`, community → `https://app[-test].<d>/community`
+// (thay cả hàng còn host `sohoptac[-test].<d>`; idempotent). Chạy SAU khi DNS + cert của app.<d> sẵn sàng và S2_APP_HOST_LIVE=1.
 import postgres from "postgres";
 
 export type CatalogRow = { key: string; url: string; sso?: boolean };
@@ -14,12 +16,23 @@ const TESTHOST =
   /^https:\/\/(sohoptac-test|ai-test|ai-test-admin|ai-test-hub|community-test)\.[a-z0-9.-]+(\/|$)/i;
 /** Host Community trước CR-118 (host riêng, SPA riêng) — nay chỉ còn 301 về `/community` của host chính. */
 const LEGACY_COMMUNITY = /^https:\/\/community(-test)?\.[a-z0-9.-]+(\/|$)/i;
+/** CR-119: host chính cũ `sohoptac[-test].<d>` — thay bằng `app[-test].<d>` khi `--app-host`. */
+const SOHOPTAC_HOST = /^https:\/\/sohoptac(-test)?\.[a-z0-9.-]+(\/|$)/i;
 const BASE = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/;
 export type Hosts = "test" | "prod";
 
 /** Host https theo khoá app (khớp edge/sohoptac2.conf). */
-export function targetUrls(base: string, hosts: Hosts = "test"): Record<string, string> {
+export function targetUrls(
+  base: string,
+  hosts: Hosts = "test",
+  appHost = false,
+): Record<string, string> {
   if (!BASE.test(base)) throw new Error(`base-domain không hợp lệ: ${base}`);
+  // CR-119: host trung tính app[-test].<d>; đường dẫn giữ nguyên (SHT ở gốc, Community ở /community).
+  if (appHost) {
+    const a = hosts === "prod" ? `https://app.${base}` : `https://app-test.${base}`;
+    return { ...targetUrls(base, hosts), contracts: a, community: `${a}/community` };
+  }
   if (hosts === "prod")
     return {
       chat: `https://ai.${base}`,
@@ -42,12 +55,14 @@ export function planUrlChanges(
   base: string,
   rows: CatalogRow[],
   hosts: Hosts = "test",
+  appHost = false,
 ): UrlChange[] {
-  const t = targetUrls(base, hosts);
+  const t = targetUrls(base, hosts, appHost);
   const old = (r: CatalogRow) =>
     LOCAL.test(r.url) ||
     (r.key === "community" && LEGACY_COMMUNITY.test(r.url)) ||
-    (hosts === "prod" && TESTHOST.test(r.url));
+    (hosts === "prod" && TESTHOST.test(r.url)) ||
+    (appHost && (r.key === "contracts" || r.key === "community") && SOHOPTAC_HOST.test(r.url));
   return rows.flatMap((r) =>
     t[r.key] !== undefined && old(r) && r.url !== t[r.key]
       ? [{ key: r.key, from: r.url, to: t[r.key] as string }]
@@ -74,7 +89,7 @@ function flag(args: string[], k: string): string | undefined {
   return i >= 0 ? args[i + 1] : undefined;
 }
 
-type Opts = { base?: string; cmUrl?: string; hosts: Hosts; apply: boolean };
+type Opts = { base?: string; cmUrl?: string; hosts: Hosts; apply: boolean; appHost: boolean };
 
 function parseArgs(args: string[]): Opts {
   const base = flag(args, "--base-domain");
@@ -82,7 +97,9 @@ function parseArgs(args: string[]): Opts {
   if (!base && !cmUrl) throw new Error("cần --base-domain <domain> hoặc --community-url <url>");
   const hosts = flag(args, "--hosts") ?? "test";
   if (hosts !== "test" && hosts !== "prod") throw new Error("--hosts phải là prod|test");
-  return { base, cmUrl, hosts, apply: args.includes("--apply") };
+  const appHost = args.includes("--app-host");
+  if (appHost && !base) throw new Error("--app-host cần --base-domain");
+  return { base, cmUrl, hosts, apply: args.includes("--apply"), appHost };
 }
 
 async function main(): Promise<void> {
@@ -94,7 +111,7 @@ async function main(): Promise<void> {
     const rows = await sql<CatalogRow[]>`select key, url, sso from admin.app_catalog`;
     const changes = o.cmUrl
       ? planCommunityUrl(rows, o.cmUrl)
-      : planUrlChanges(o.base as string, rows, o.hosts);
+      : planUrlChanges(o.base as string, rows, o.hosts, o.appHost);
     const ssoOff = planCommunitySso(rows);
     const verb = o.apply ? "đổi" : "sẽ đổi";
     for (const c of changes) console.log(`${verb} ${c.key}: ${c.from} -> ${c.to}`);
@@ -110,7 +127,8 @@ async function main(): Promise<void> {
       where a.key = v.key and a.url <> v.url and (${o.cmUrl !== undefined}
         or a.url ~* '^https?://(localhost|127\\.0\\.0\\.1|\\[::1\\])(:[0-9]+)?(/|$)'
         or (a.key = 'community' and a.url ~* '^https://community(-test)?\\.')
-        or (${o.hosts === "prod"} and a.url ~* '^https://(sohoptac-test|ai-test|ai-test-admin|ai-test-hub|community-test)\\.'))`;
+        or (${o.hosts === "prod"} and a.url ~* '^https://(sohoptac-test|ai-test|ai-test-admin|ai-test-hub|community-test)\\.')
+        or (${o.appHost} and a.key in ('contracts', 'community') and a.url ~* '^https://sohoptac(-test)?\\.'))`;
     const s = await sql`
       update admin.app_catalog set sso = false, version = version + 1, updated_at = now()
       where key = 'community' and sso`;
