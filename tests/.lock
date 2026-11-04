@@ -577,6 +577,7 @@ f4e1e120afdcd75c76dcf9ca53ca42ded719c9c58779936343c7c700dcba14f1  tests/acceptan
 d397d82c125bf81bc2871d5b2a1aad5081f8da4289f4abc24a99d196c5440cab  tests/acceptance/CR118/approval-flow-runtime.int.test.ts
 4c128b43789651b6df543fad369caca5adce14a73261f7e682ef8b8176840a44  tests/acceptance/CR118/approval-flow-summary.perf.int.test.ts
 aff8fbafdade829813b2cba7420c706de9f862b5bd04a04c5a658ffa4b2e2061  tests/acceptance/CR118/capabilities.int.test.ts
+6a29e75a9c8e3269c116b880a704591a08899f06386076e726dc664c000aef19  tests/acceptance/CR118/config-consistency.int.test.ts
 c3d590782f1d5a5d99c8fc98cb9a0544f3b645bd3750f1528e1282b2d2cfb4a3  tests/acceptance/CR118/form-node.int.test.ts
 6920999ba5134855c884c00350332d2074af1e0b1dfe5ce580938e482c88bdb1  tests/acceptance/CR118/perf/capabilities.perf.int.test.ts
 cfe45e59f8e76936e83609632717125bbe9d987a02c6542a6be11653bc04b5af  tests/acceptance/D1/backfill.int.test.ts
