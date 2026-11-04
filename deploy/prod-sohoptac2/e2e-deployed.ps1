@@ -46,8 +46,16 @@ try {
   $pw = @("tools/scripts/src/run-playwright.ts", "e2e/deployed/deployed.config.ts")
   if ($Spec) { $pw += $Spec }
   if ($Grep) { $pw += @("--grep", $Grep) }
-  & bun @pw
-  $code = $LASTEXITCODE
+  # Hai lượt nối tiếp (xem đầu deployed.config.ts): ro = chỉ đọc, 4 worker song song; rw = ghi/AI, 1 worker. -Spec/-Grep áp cho cả hai.
+  # Lượt nào không có test khớp (-Spec thuộc project kia) ⇒ Playwright thoát 1 "No tests found": bỏ qua lượt đó.
+  $code = 0
+  foreach ($lane in @(@("ro", "4"), @("rw", "1"))) {
+    Write-Host "== e2e deployed: project $($lane[0]) (workers $($lane[1]))"
+    $list = & bun @pw --project $lane[0] --list 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not ($list -match "Total: [1-9]")) { Write-Host "(khong co test khop o project $($lane[0]))"; continue }
+    & bun @pw --project $lane[0] --workers $lane[1]
+    if ($LASTEXITCODE -ne 0) { $code = $LASTEXITCODE }
+  }
 }
 finally {
   $env:DEMO_PW = $null
