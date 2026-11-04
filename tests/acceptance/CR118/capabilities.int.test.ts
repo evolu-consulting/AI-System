@@ -164,16 +164,11 @@ describe("CR-118 · N3 · /me/stream config.changed", () => {
       // mốc: đổi cấu hình beta ⇒ sb nhận; nếu frame của acme từng tới sb thì nó đến TRƯỚC (cùng kết nối, có thứ tự)
       await bumpConfig(c.sql, T.beta);
       const evB = await sb.until((e) => e.event === "config.changed", 5_000);
-      expect({
-        got: evB !== undefined,
-        closed: sb.isClosed(),
-        ct: sb.headers.get("content-type"),
-        head: sb.text().slice(0, 300),
-        evs: sb.events.map((e) => `${e.event}|${e.raw}`),
-        a: ev?.raw,
-      }).toMatchObject({ got: true, a: "" });
-      expect(evB?.data.admin).toBeGreaterThan(ev?.data.admin);
-      expect(sb.events.filter((e) => e.event === "config.changed").length).toBe(1);
+      const va = JSON.parse(ev?.raw ?? "{}") as { admin: number };
+      const vb = JSON.parse(evB?.raw ?? "{}") as { admin: number };
+      const seenB = sb.events.filter((e) => e.event === "config.changed");
+      // sb chỉ có đúng frame của beta (version sau acme) ⇒ frame acme không tới phiên beta
+      expect({ n: seenB.length, later: vb.admin > va.admin }).toEqual({ n: 1, later: true });
     } finally {
       sa.close();
       sb.close();
