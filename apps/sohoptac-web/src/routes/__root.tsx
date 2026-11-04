@@ -1,14 +1,21 @@
 // PK-FR-10 · TF1 · route gốc: Outlet + Toaster dùng chung; đường lạ → `/contracts` (plan-frontend §1).
+// CR-118 bundle: DialogHost (radix dialog) + Toaster (sonner) tải lười — không nằm trong JS ban đầu.
 import { createRootRoute, Navigate, Outlet } from "@tanstack/react-router";
-import { DialogHost } from "~/components/shared/dialog-host";
-import { Toaster } from "~/components/ui/sonner";
+import { lazy, Suspense } from "react";
+
+const DialogHost = lazy(() =>
+  import("~/components/shared/dialog-host").then((m) => ({ default: m.DialogHost })),
+);
+const Toaster = lazy(() => import("~/components/ui/sonner").then((m) => ({ default: m.Toaster })));
 
 function Root() {
   return (
     <>
       <Outlet />
-      <DialogHost />
-      <Toaster position="bottom-right" />
+      <Suspense fallback={null}>
+        <DialogHost />
+        <Toaster position="bottom-right" />
+      </Suspense>
     </>
   );
 }

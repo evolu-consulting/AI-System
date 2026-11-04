@@ -2,7 +2,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-export const JS_BUDGET_BYTES = 150 * 1024;
+export const JS_BUDGET_BYTES = 162 * 1024; // CR-118 bundle: React 19 runtime (+23,5 KB gzip) trá»« pháº§n Ä‘Ã£ cáº¯t lÆ°á»i (ná»›i 150 -> 162, xem docs/specs/cr118-bundle/tasks.md)
 export const CSS_BUDGET_BYTES = 25 * 1024;
 export const CHUNK_BUDGET_BYTES = 50 * 1024;
 /** CR-106: chunk `canvas*` (xyflow, lazy trong Cài đặt › Quy trình duyệt; như admin-web ADR-0013 #2): ngân sách riêng. */
@@ -82,7 +82,8 @@ export function checkBundle(distDir: string): BundleReport {
   const jsKb = toKb(jsBytes);
   const cssKb = toKb(cssBytes);
   const errors = missing.map((p) => `check:bundle: thiếu ${p}`);
-  if (jsBytes > JS_BUDGET_BYTES) errors.push(`check:bundle js ${jsKb} KB > 150 KB`);
+  if (jsBytes > JS_BUDGET_BYTES)
+    errors.push(`check:bundle js ${jsKb} KB > ${JS_BUDGET_BYTES / 1024} KB`);
   if (cssBytes > CSS_BUDGET_BYTES) errors.push(`check:bundle css ${cssKb} KB > 25 KB`);
   const chunks = asyncChunkSizes(distDir);
   for (const [name, bytes] of chunks) {

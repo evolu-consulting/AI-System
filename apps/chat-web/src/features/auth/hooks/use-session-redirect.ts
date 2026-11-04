@@ -3,7 +3,6 @@
 import { useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { session } from "~/lib/auth/session";
 
 export function useSessionRedirect(): void {
@@ -12,7 +11,8 @@ export function useSessionRedirect(): void {
 
   useEffect(() => {
     const offExpired = session.on("expired", () => {
-      toast.error(t("session.expired"));
+      const msg = t("session.expired");
+      void import("sonner").then(({ toast }) => toast.error(msg)); // CR-118 bundle: sonner tải lười
       void router.navigate({
         to: "/login",
         search: { next: router.state.location.href },

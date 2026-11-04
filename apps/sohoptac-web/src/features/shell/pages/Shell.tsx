@@ -4,7 +4,7 @@ import { Outlet, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { IconRobot } from "~/components/icons";
 import { logout } from "~/features/auth/api";
-import { SettingsDialog } from "~/features/settings/components/SettingsDialog";
+import { SettingsDialogLazy } from "~/features/settings/components/SettingsDialogLazy";
 import { useBrandSync } from "~/features/settings/hooks/use-settings";
 import { cn } from "~/lib/utils";
 import { AssistantDock, DockBody } from "../components/AssistantDock";
@@ -71,7 +71,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
         </div>
       </div>
       <BottomNav />
-      <SettingsDialog owner={owner} tenantName={user?.tenant.name ?? ""} />
+      <SettingsDialogLazy owner={owner} tenantName={user?.tenant.name ?? ""} />
       <button
         type="button"
         onClick={dock.openAssistant}

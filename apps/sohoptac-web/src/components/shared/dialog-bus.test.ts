@@ -48,9 +48,9 @@ describe("dialog-bus", () => {
 });
 
 describe("toast", () => {
-  test("ok → success, late → error", () => {
-    toast("Đã lưu");
-    toast("Lỗi", "late");
+  test("ok → success, late → error", async () => {
+    await toast("Đã lưu");
+    await toast("Lỗi", "late");
     expect(calls).toEqual(["ok:Đã lưu", "late:Lỗi"]);
   });
 });

@@ -2,7 +2,11 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { asyncChunkSizes, checkBundle, initialAssets } from "./check-bundle";
+import { asyncChunkSizes, checkBundle, initialAssets, JS_BUDGET_BYTES } from "./check-bundle";
+
+const JS_KB = JS_BUDGET_BYTES / 1024;
+const OVER_KB = Math.ceil(JS_KB) + 10;
+const HALF_KB = Math.ceil(OVER_KB / 2);
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -56,19 +60,27 @@ describe("ADM-NFR-06 · M0-AC19 · check:bundle", () => {
   });
 
   test("JS vượt ngưỡng → lỗi đúng câu", () => {
-    const dir = makeDist(page(["/static/js/big.js"]), { "static/js/big.js": noise(160) });
+    const dir = makeDist(page(["/static/js/big.js"]), { "static/js/big.js": noise(OVER_KB) });
     const { errors } = checkBundle(dir);
     expect(errors).toHaveLength(1);
-    expect(errors[0]).toMatch(/^check:bundle js \d+\.\d KB > 150 KB$/);
+    expect(errors[0]).toMatch(new RegExp(`^check:bundle js \\d+\\.\\d KB > ${JS_KB} KB$`));
   });
 
   test("2 script cộng dồn vượt dù từng file dưới ngưỡng", () => {
-    const dir = makeDist(page(["/a.js", "/b.js"]), { "a.js": noise(80), "b.js": noise(80) });
-    expect(checkBundle(dir).errors[0]).toMatch(/^check:bundle js \d+\.\d KB > 150 KB$/);
+    const dir = makeDist(page(["/a.js", "/b.js"]), {
+      "a.js": noise(HALF_KB),
+      "b.js": noise(HALF_KB),
+    });
+    expect(checkBundle(dir).errors[0]).toMatch(
+      new RegExp(`^check:bundle js \\d+\\.\\d KB > ${JS_KB} KB$`),
+    );
   });
 
   test("CSS vượt ngưỡng → lỗi css, JS trước CSS", () => {
-    const dir = makeDist(page(["/a.js"], ["/a.css"]), { "a.js": noise(160), "a.css": noise(30) });
+    const dir = makeDist(page(["/a.js"], ["/a.css"]), {
+      "a.js": noise(OVER_KB),
+      "a.css": noise(30),
+    });
     const { errors } = checkBundle(dir);
     expect(errors[0]).toStartWith("check:bundle js ");
     expect(errors[1]).toMatch(/^check:bundle css \d+\.\d KB > 25 KB$/);

@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { onForbidden } from "#/app/query-client";
 import { safeNext } from "#/lib/auth/next";
 import { session } from "#/lib/auth/session";
@@ -20,7 +19,8 @@ export function SessionWatcher() {
         qc.clear();
         void router
           .navigate({ to: "/login", search: { next }, replace: true })
-          .then(() => toast.error(t("session.expired")));
+          .then(() => import("sonner")) // CR-118 bundle: sonner tải lười
+          .then(({ toast }) => toast.error(t("session.expired")));
       }),
     [router, qc, t],
   );

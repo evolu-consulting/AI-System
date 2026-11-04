@@ -11,26 +11,28 @@ import { toast } from "~/components/shared/toast";
 import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
 import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
-import { EsignPanel } from "~/features/contract-esign/components/EsignPanel";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import { LockBanner } from "~/features/contract-lock/components/LockBanner";
 import { lockView, reopenRight } from "~/features/contract-lock/lib/lock-view";
-import { VersionsPanels } from "~/features/contract-versions/components/VersionsPanels";
 import { versionGate } from "~/features/contract-versions/lib/versions";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
 import { dialogOpen } from "~/features/contracts-list/lib/extract-progress";
 import { shortName } from "~/features/contracts-list/lib/list-model";
-import { FramePanel } from "~/features/frame-panel/components/FramePanel";
-import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ProductLinkDialog } from "~/features/product-links/components/ProductLinkDialog";
-import { EditLogPanel } from "~/features/promote-deal/components/EditLogPanel";
 import { PromoteDeal } from "~/features/promote-deal/components/PromoteDeal";
 import { contractKey, fetchContract, fileHref } from "../api";
 import { ContractHead } from "../components/ContractHead";
 import { DetailGrid } from "../components/DetailGrid";
 import { DetailLead } from "../components/DetailLead";
-import { HistoryPanel } from "../components/HistoryPanel";
+import {
+  ContractLog,
+  EditLogPanel,
+  EsignPanel,
+  FramePanel,
+  HistoryPanel,
+  VersionsPanels,
+} from "../components/LazyPanels";
 import { LegalBanner } from "../components/LegalBanner";
 import { ManagePanel } from "../components/ManagePanel";
 import { OriginalFileHost } from "../components/OriginalFileDialog";
