@@ -17,6 +17,7 @@ import {
 import { processErrorSpec } from "@/features/processes/lib/errors";
 import { setSlotDefault, useLibraryRefresh } from "@/features/processes/library-api";
 import type { SlotView } from "../hooks/use-app-processes";
+import { SlotFlowView } from "./SlotFlowView";
 
 type Props = {
   view: SlotView;
@@ -96,6 +97,7 @@ export function SlotCard({ view, onClone, onOpenCompanies }: Props) {
           {t("appcfg.processes.changeDefault")}
         </Button>
       </div>
+      <SlotFlowView defId={current?.id} />
       <div className="space-y-1">
         <h4 className="text-label font-semibold">{t("appcfg.processes.others")}</h4>
         {others.length === 0 ? (
@@ -133,6 +135,11 @@ export function SlotCard({ view, onClone, onOpenCompanies }: Props) {
           : used.map((d) => `${d.name} ${d.tenant_count}`).join(" · ")}{" "}
         <Button variant="link" size="sm" className="h-auto p-0" onClick={onOpenCompanies}>
           {t("appcfg.processes.openCompanies")}
+        </Button>{" "}
+        <Button variant="link" size="sm" className="h-auto p-0" asChild>
+          <Link to="/processes" search={{ app: slot.slot.split(".")[0] }}>
+            {t("appcfg.processes.openList")}
+          </Link>
         </Button>
       </p>
       <ConfirmDialog

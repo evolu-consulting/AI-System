@@ -21,7 +21,7 @@ quy trình (`TenantProcessSlots`) và một đường lưu (`useAppsTab` + `Apps
 
 ## Không làm / Chạm
 - Không thêm endpoint gộp `GET /admin/apps/:key/tenants` (làn đầy đủ): tab Công ty dùng API sẵn có (số lời gọi = số feature của app, ≤ 8, không theo số công ty; tối đa 200 công ty/feature).
-- Không sơ đồ chỉ-đọc nhúng trong tab Quy trình: "Xem sơ đồ" mở `/processes/$id` (editor duy nhất). Chưa có HĐ mẫu (loại/giá trị) trong Xem trước: dùng `PreviewDialog` thư viện ở editor.
+- Sơ đồ chỉ-đọc trong tab Quy trình là component riêng của admin-web (CSS + bảng bước, đọc `slot_body`), không import FlowCanvas của contracts-web (khác app); "Xem sơ đồ" vẫn mở `/processes/$id`. Chưa có HĐ mẫu (loại/giá trị) trong Xem trước: dùng `PreviewDialog` thư viện ở editor.
 - F4 phía web gộp (Cài đặt › Ứng dụng & quy trình) thuộc lát `cr118-tenant-settings`; ở đây chỉ giữ tab chỉ-xem của tenant_admin trong ai-admin (câu 20).
 - Không đổi hành vi lưu của tab công ty; không đụng DLC, không đụng frozen, không migration.
 
@@ -64,7 +64,16 @@ Hàm thuần `previewApp` ghép manifest dữ liệu của app, feature của c�
 Ở tab Ứng dụng & Gói của công ty, các khe quy trình của một app hiện ngay trong thẻ app đó (không còn khối riêng cuối tab); app không có khe thì thẻ không hiện khối này.
 - Kịch bản: khi lọc khe theo app thì chỉ giữ khe có tiền tố của app đó [test: apps/admin-web/src/features/apps/lib/app-config.test.ts » lọc khe theo tiền tố app]
 
+#### Yêu cầu: Sơ đồ và bảng bước chỉ đọc trong tab Quy trình (ADM-FR-84)
+Thẻ khe hiện sơ đồ Bắt đầu → các bước → Ghi Đã duyệt (nút hệ thống khoá) và bảng bước (tên, người làm, hạn và nhắc, điều kiện) của quy trình mặc định, chỉ đọc; nút "Xem sơ đồ" vẫn mở trình soạn. Khe có dạng thân lạ thì mời mở trình soạn.
+- Kịch bản: khi quy trình mặc định có bước duyệt, ký số và tự động thì bảng nêu đúng người làm, hạn, nhắc và điều kiện bằng lời [test: apps/admin-web/src/features/apps/lib/flow-view.test.ts » dạng bọc {steps}: dòng bước đủ người làm, hạn/nhắc và điều kiện bằng lời]
+- Kịch bản: khi thân quy trình có dạng lạ thì không vẽ và mời mở trình soạn [test: apps/admin-web/src/features/apps/lib/flow-view.test.ts » mảng trần cũng đọc được, dạng lạ hoặc loại bước lạ ⇒ null (UI mời mở trình soạn)]
+
+#### Yêu cầu: Danh sách quy trình lọc theo app (ADM-FR-84)
+Từ thẻ khe có link tới `/processes?app=<key>`: thư viện chỉ hiện quy trình của khe thuộc app đó, có dòng nói rõ đang lọc, link về trang app và nút bỏ lọc.
+- Kịch bản: khi lọc theo app thì chỉ giữ khe có tiền tố của app đó [test: apps/admin-web/src/features/apps/lib/app-config.test.ts » lọc khe theo tiền tố app]
+
 ## Việc còn lại
 - e2e đã chạy MỘT lần trên evotest (`-Step e2e -Filter root`): F1, F2 xanh; F3 đỏ do selector trùng hai chỗ (đã sửa, chưa chạy lại); F4 bị bỏ qua vì serial sau F3 ⇒ chưa chạy lần nào, chạy ở lượt root cuối đợt. Đỏ mới ngoài lát (không phải của lát này): `cr052-login.spec.ts` showcase, `m4-2fa.spec.ts` D11. `tests/.lock` đã ghi lại.
-- Chưa có: sơ đồ chỉ-đọc nhúng + bảng bước trong tab Quy trình, HĐ mẫu (loại/giá trị) trong Xem trước, endpoint gộp `GET /admin/apps/:key/tenants`, lọc `/processes` theo app. Luồng F2 đầy đủ (nhân bản → sửa → xuất bản → gán) cần job có Hub.
+- Chưa có: HĐ mẫu (loại/giá trị) trong Xem trước, endpoint gộp `GET /admin/apps/:key/tenants`. Sơ đồ nhúng + lọc `/processes?app=` cần Hub nên chỉ kiểm bằng unit + thủ công (root e2e không có Hub). Luồng F2 đầy đủ (nhân bản → sửa → xuất bản → gán) cần job có Hub.
 - Cập nhật `docs/current/admin/*` (MODIFIED) khi gộp đợt.

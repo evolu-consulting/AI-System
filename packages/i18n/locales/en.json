@@ -2817,7 +2817,8 @@
       "unpublished": "Unpublished changes",
       "usedBy": "Assigned to {count} companies",
       "noUsers": "No company uses a custom flow: all run the default. Assign one in the Companies tab.",
-      "openCompanies": "See company list"
+      "openCompanies": "See company list",
+      "openList": "See in the flow list"
     },
     "companies": {
       "levelFilter": "Filter by level",
@@ -2867,6 +2868,40 @@
       "notRunning": "Not running",
       "flowRuns": "Runs flow \"{name}\" (v{version}).",
       "flowFallback": "Uses the old default approval."
+    },
+    "listFilter": "Showing flows of the app {app}.",
+    "listFilterClear": "Clear filter",
+    "flow": {
+      "title": "Steps of the default flow (read only)",
+      "diagram": "Flow steps diagram",
+      "start": "Start",
+      "finalize": "Mark Approved",
+      "locked": "System step, cannot be edited",
+      "conditional": "Conditional",
+      "loading": "Loading steps…",
+      "unavailable": "The steps of this slot cannot be shown yet. Open the editor to see them.",
+      "kind": {
+        "review": "Review",
+        "esign": "E-sign",
+        "dify": "Automatic"
+      },
+      "col": {
+        "step": "Step",
+        "who": "Who",
+        "timing": "Due and reminder",
+        "condition": "Condition"
+      },
+      "headOnly": "department head only",
+      "noGroup": "No department chosen",
+      "workflow": "Automatic workflow {key}",
+      "signer": {
+        "owner": "Contract owner",
+        "dept_head": "Department head",
+        "user": "A specific person"
+      },
+      "timing": "Due in {due} h",
+      "timingRemind": "Due in {due} h, remind every {remind} h",
+      "always": "Runs for every contract"
     },
     "reason": {
       "appOff": "The app is off for this company",

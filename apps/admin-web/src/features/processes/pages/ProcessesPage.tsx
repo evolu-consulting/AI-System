@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/http";
 import { hubConfigured } from "@/lib/hub";
+import { useTr } from "@/lib/use-translate";
 import { CloneDialog } from "../components/library/CloneDialog";
 import { ProcessesHeader } from "../components/ProcessesHeader";
 import { ProcessesTable } from "../components/ProcessesTable";
@@ -21,6 +23,29 @@ import {
   useProcessesView,
 } from "../hooks/use-processes-view";
 
+/** CR-118 · đang lọc theo app (link từ trang cấu hình app): nói rõ + lối về trang app + bỏ lọc. */
+function AppFilterNotice({ app, onClear }: { app: string; onClear: () => void }) {
+  const { t } = useTranslation();
+  const tr = useTr();
+  const name = tr(`featmeta.app.${app}.name`, { defaultValue: app });
+  return (
+    <p
+      role="note"
+      className="flex flex-wrap items-center gap-2 rounded-md bg-muted px-3 py-2 text-caption"
+    >
+      {t("appcfg.listFilter", { app: name })}
+      <Button variant="link" size="sm" className="h-auto p-0" asChild>
+        <Link to="/apps/$appKey" params={{ appKey: app }} search={{ tab: "processes" }}>
+          {t("appcfg.openApp")}
+        </Link>
+      </Button>
+      <Button variant="link" size="sm" className="h-auto p-0" onClick={onClear}>
+        {t("appcfg.listFilterClear")}
+      </Button>
+    </p>
+  );
+}
+
 function Body({ v }: { v: ProcessesView }) {
   const { t } = useTranslation();
   const err = v.q.error;
@@ -32,6 +57,7 @@ function Body({ v }: { v: ProcessesView }) {
   const emptyKey = v.templates ? "emptyTemplates" : "empty";
   return (
     <div className="space-y-3">
+      {v.app ? <AppFilterNotice app={v.app} onClear={v.clearApp} /> : null}
       {v.templates ? null : (
         <FilterChips
           label={t("process.admin.list.col.enabled")}

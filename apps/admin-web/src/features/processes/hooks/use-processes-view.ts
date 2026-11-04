@@ -3,6 +3,7 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
+import { slotsOfApp } from "@/features/apps/lib/app-config";
 import { copyDef, deleteDef, useInvalidateDefs, useProcessDefs } from "../api";
 import type { CloneSource } from "../components/library/CloneDialog";
 import { processErrorSpec } from "../lib/errors";
@@ -92,7 +93,7 @@ function useRowActions(
 export function useProcessesView() {
   const tenant = useProcessTenant();
   const navigate = useNavigate();
-  const search = useSearch({ strict: false }) as { tab?: Tab };
+  const search = useSearch({ strict: false }) as { tab?: Tab; app?: string };
   const templates = search.tab === "templates";
   const [filter, setFilter] = useState<StateFilter>("all");
   const [runRow, setRunRow] = useState<Row | null>(null);
@@ -123,6 +124,8 @@ export function useProcessesView() {
     goOwn,
     cloneFlow.open,
   );
+  // CR-118: `?app=` lọc thư viện theo app (chỉ ở tab thư viện của platform_admin).
+  const app = library ? search.app : undefined;
   const rows = useMemo(() => {
     if (!q.data) return undefined;
     const list = rowsForTab(
@@ -130,8 +133,8 @@ export function useProcessesView() {
       templates,
       filter,
     );
-    return library ? sortLibraryRows(list) : list; // thư viện: mặc định ghim đầu, còn lại mới cập nhật trước
-  }, [q.data, templates, filter, library]);
+    return library ? sortLibraryRows(app ? slotsOfApp(list, app) : list) : list; // thư viện: mặc định ghim đầu, còn lại mới cập nhật trước
+  }, [q.data, templates, filter, library, app]);
   // "Tạo từ quy trình mặc định": nhân bản def mặc định của khe (từ danh sách đã tải hoặc từ khe).
   const dflt = rows?.find((r) => r.is_default);
   const slot = slots.data?.[0];
@@ -142,6 +145,8 @@ export function useProcessesView() {
       : null;
   return {
     tenant,
+    app,
+    clearApp: () => void navigate({ to: "/processes", search: {}, replace: true }),
     tab: (templates ? "templates" : "own") as Tab,
     setTab: (v: Tab) => void navigate({ to: "/processes", search: { tab: v }, replace: true }),
     filter,

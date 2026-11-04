@@ -2811,7 +2811,8 @@
       "unpublished": "Có thay đổi chưa xuất bản",
       "usedBy": "Đang gán cho {count} công ty",
       "noUsers": "Chưa công ty nào dùng quy trình riêng: các công ty đều chạy mặc định. Gán ở tab Công ty.",
-      "openCompanies": "Xem danh sách công ty"
+      "openCompanies": "Xem danh sách công ty",
+      "openList": "Xem trong danh sách quy trình"
     },
     "companies": {
       "levelFilter": "Lọc theo mức",
@@ -2861,6 +2862,40 @@
       "notRunning": "Chưa chạy",
       "flowRuns": "Chạy quy trình \"{name}\" (v{version}).",
       "flowFallback": "Dùng cách duyệt mặc định cũ."
+    },
+    "listFilter": "Đang lọc quy trình theo app {app}.",
+    "listFilterClear": "Bỏ lọc",
+    "flow": {
+      "title": "Các bước của quy trình mặc định (chỉ xem)",
+      "diagram": "Sơ đồ các bước",
+      "start": "Bắt đầu",
+      "finalize": "Ghi Đã duyệt",
+      "locked": "Bước hệ thống, không sửa được",
+      "conditional": "Có điều kiện",
+      "loading": "Đang tải các bước…",
+      "unavailable": "Chưa hiển thị được các bước của khe này. Hãy mở trình soạn để xem.",
+      "kind": {
+        "review": "Duyệt",
+        "esign": "Ký số",
+        "dify": "Tự động"
+      },
+      "col": {
+        "step": "Bước",
+        "who": "Người làm",
+        "timing": "Hạn và nhắc",
+        "condition": "Điều kiện"
+      },
+      "headOnly": "chỉ trưởng phòng",
+      "noGroup": "Chưa chọn phòng ban",
+      "workflow": "Quy trình tự động {key}",
+      "signer": {
+        "owner": "Người phụ trách hợp đồng",
+        "dept_head": "Trưởng phòng",
+        "user": "Người được chỉ định"
+      },
+      "timing": "Hạn {due} giờ",
+      "timingRemind": "Hạn {due} giờ, nhắc mỗi {remind} giờ",
+      "always": "Chạy với mọi hợp đồng"
     },
     "reason": {
       "appOff": "App đang tắt cho công ty này",
