@@ -2,6 +2,8 @@
 // CR-118 · cr118-flow-canvas: khung xyflow, bố cục, node khung (tiêu đề cột, join), cạnh quay lại/rẽ nhánh, fit/kéo nằm ở `@ai/flow-canvas`
 // (mode "edit", layout "columns"); file này giữ phần NGHIỆP VỤ: dựng node giai đoạn từ bản nháp, luật thả (`ops.setStep` x chốt cột + `ops.setY`
 // y tự do, lưu `ui.y`; cột đầy ⇒ trượt về chỗ cũ). nodes/edges là DẪN XUẤT từ bản nháp (không giữ state riêng).
+// dlc-step-library: sơ đồ DLC ⇒ cạnh "Từ chối" tới NODE đích (không tới tiêu đề cột), cạnh tiến sau bước có cổng mang nhãn "Duyệt";
+// `linkable` ⇒ kéo cổng "Từ chối" của bước nào có cổng cũng nối được (`ops.linkReject` kiểm đích đứng trước).
 import { FlowCanvas, type FlowLabels, toEdge } from "@ai/flow-canvas";
 import {
   HEADER_H,
@@ -14,7 +16,7 @@ import {
   ROW_H,
   stepFromDropX,
 } from "@ai/flow-canvas/pure";
-import type { Node, XYPosition } from "@xyflow/react";
+import type { Edge, Node, XYPosition } from "@xyflow/react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { countAtStep } from "../../lib/step-ops";
@@ -37,6 +39,8 @@ export type ProcessCanvasProps = CanvasHandlers & {
   inset?: number;
   /** CR-105 UX · mức zoom tối thiểu khi fit (quy trình khe: node đủ to đọc được; phần dư kéo ngang). Mặc định 0.3. */
   fitMin?: number;
+  /** dlc-step-library · kéo cổng "Từ chối" của bước DLC sang bước đứng trước để đặt chỗ quay lại (Canvas thư viện, sửa được). */
+  linkable?: boolean;
 };
 
 type Lay = ReturnType<typeof layoutSteps>;
@@ -87,10 +91,19 @@ function clampY(y: number, nodes: readonly Node[]): number {
   return Math.min(Math.max(y, HEADER_H), Math.max(...ys, HEADER_H) + ROW_H);
 }
 
-function useFlowGraph(p: ProcessCanvasProps) {
+/** Cạnh tiến ra khỏi bước DLC có cổng = nhánh "Duyệt" (đi tiếp bước kế). */
+const approveEdge = (e: Edge, label: string): Edge => ({
+  ...e,
+  label,
+  labelStyle: { fill: "var(--color-success)", fontSize: 12 },
+  labelBgStyle: { fill: "var(--color-card)" },
+});
+
+function useFlowGraph(p: ProcessCanvasProps, approve: string) {
   const { views, selected, readOnly } = p;
   return useMemo(() => {
-    const lay = layoutSteps(views);
+    const dlc = views.some((v) => v.dlc);
+    const lay = layoutSteps(views, dlc ? { back: "node" } : {});
     const byUid = new Map(views.map((v) => [v.uid, v]));
     const labels = stepHeaderLabels(views);
     const nodes = lay.nodes.map((n) => toNode(n, byUid, selected, readOnly, labels));
@@ -100,18 +113,22 @@ function useFlowGraph(p: ProcessCanvasProps) {
       const [a, b] = [fam(e.source), fam(e.target)];
       return a === null || b === null || a === b;
     });
-    return { nodes, edges: linked.map(toEdge), steps: lay.steps };
-  }, [views, selected, readOnly]);
+    const gated = (id: string) => byUid.get(id)?.dlc?.gate === true;
+    const edges = linked.map((e) =>
+      e.kind === "forward" && gated(e.source) ? approveEdge(toEdge(e), approve) : toEdge(e),
+    );
+    return { nodes, edges, steps: lay.steps, dlc };
+  }, [views, selected, readOnly, approve]);
 }
 
-function useCanvasLabels(): Partial<FlowLabels> {
+function useCanvasLabels(dlc: boolean): Partial<FlowLabels> {
   const { t } = useTranslation();
   return useMemo(
     () => ({
       stepTitle: (n) => t("process.admin.canvas.step.title", { n }),
       addToStep: (n) => t("process.admin.canvas.step.addTo", { n }),
       join: (n) => t("process.admin.canvas.join", { n }),
-      edgeBack: t("process.admin.canvas.edge.back"),
+      edgeBack: t(dlc ? "process.admin.library.dlc.reject" : "process.admin.canvas.edge.back"),
       edgeBranch: (n) => t("process.admin.canvas.edge.branch", { n }),
       yes: t("process.admin.canvas.if.yes"),
       no: t("process.admin.canvas.if.no"),
@@ -123,7 +140,7 @@ function useCanvasLabels(): Partial<FlowLabels> {
         fit: t("process.admin.canvas.controls.fit"),
       },
     }),
-    [t],
+    [t, dlc],
   );
 }
 
@@ -132,9 +149,16 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
   const [blocked, setBlocked] = useState<number | null>(null);
   const handlers = useRef<CanvasHandlers>(p);
   handlers.current = p;
-  const g = useFlowGraph(p);
-  const labels = useCanvasLabels();
+  const { t } = useTranslation();
+  const g = useFlowGraph(p, t("process.admin.library.dlc.approve"));
+  const labels = useCanvasLabels(g.dlc);
   const onAddToStep = useCallback((step: number) => handlers.current.ops.add(step), []);
+  const onConnect = useCallback(
+    (c: { source: string; target: string; sourceHandle?: string | null }) => {
+      if (c.sourceHandle === "back") handlers.current.ops.linkReject(c.source, c.target);
+    },
+    [],
+  );
 
   const target = (node: Node, pos: XYPosition): { v: StageView; step: number } | null => {
     const v = p.views.find((x) => x.uid === node.id);
@@ -186,6 +210,7 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
           resetKey={tick}
           onNodeDrag={onDrag}
           onNodeDragStop={onDragStop}
+          onConnect={p.linkable && !p.readOnly ? onConnect : undefined}
         />
       </HandlersCtx.Provider>
     </div>

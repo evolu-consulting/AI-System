@@ -4,7 +4,7 @@ import type { FlowWhen } from "@ai/contracts";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { branchOff } from "../../lib/d2-validate";
 import type { DraftErrors, StageDraft } from "../../lib/def-form";
-import { dlcOf, isDlcStep, stageFamily } from "../../lib/dlc-slot";
+import { dlcBackSteps, dlcOf, isDlcStep, stageFamily } from "../../lib/dlc-slot";
 import { isIf } from "../../lib/if-form";
 import { describeWhen } from "../../lib/library-list";
 import { isSlotStep, isSystemStage } from "../../lib/system-nodes";
@@ -41,8 +41,8 @@ export type StageView = {
   slotInfo: { no: number; dept: string; dueH: number | null; cond: string | null } | null;
   /** fnr-canvas · `y` đã lưu của node (`ui.y`); null = bố cục tự động. */
   y: number | null;
-  /** dlc-engine · bước DLC của khe: số thứ tự, việc, agent, có cổng duyệt; stage khác ⇒ null. */
-  dlc: { no: number; action: string; agent: string; gate: boolean } | null;
+  /** dlc-engine · bước DLC của khe: số thứ tự, việc, agent, có cổng duyệt (+ mã Group duyệt); stage khác ⇒ null. */
+  dlc: { no: number; action: string; agent: string; gate: boolean; group: string | null } | null;
   /** dlc-engine · họ bước (dlc / review) để không nối hai loại; stage thường / hệ thống ⇒ null. */
   family: "dlc" | "review" | null;
 };
@@ -83,6 +83,7 @@ function dlcInfoOf(s: StageDraft, all: readonly StageDraft[]): StageView["dlc"] 
     action: String(d.action ?? ""),
     agent: String(d.agent_key ?? ""),
     gate: d.gate !== null && d.gate !== undefined,
+    group: d.gate?.group_key ?? null,
   };
 }
 
@@ -114,7 +115,8 @@ export function stageViews(
     executor: executorLabel(s, labels, tools),
     after: s.after,
     real: s.real,
-    backTo: s.backTo,
+    // dlc-step-library · bước DLC: đích "Từ chối" dẫn xuất từ `slot.gate.back_to` (sửa ở form / kéo cổng ⇒ vẽ lại ngay).
+    backTo: isDlcStep(s) ? dlcBackSteps(s, stages) : s.backTo,
     autofix: s.autofix.on,
     apply: s.executor === "apply",
     wait: s.executor === "wait_until",
@@ -158,9 +160,12 @@ export const sameView = (a: StageView, b: StageView): boolean =>
   a.y === b.y &&
   a.backTo.join() === b.backTo.join();
 
-/** CR-105 UX · quy trình khe: ẩn cạnh "Quay lại" và nhãn "Rẽ nhánh" (Hub biên dịch lại; người dùng chỉ thấy chuỗi bước duyệt). */
+/**
+ * CR-105 UX · quy trình khe: ẩn cạnh "Quay lại" và nhãn "Rẽ nhánh" (Hub biên dịch lại; người dùng chỉ thấy chuỗi bước duyệt).
+ * dlc-step-library: bước DLC có cổng GIỮ đích "Từ chối" (cổng là thuộc tính của bước, kéo nối được trên canvas).
+ */
 export const withoutSlotLinks = (views: StageView[]): StageView[] =>
-  views.map((v) => ({ ...v, backTo: [], branch: [] }));
+  views.map((v) => ({ ...v, backTo: v.dlc?.gate ? v.backTo : [], branch: [] }));
 
 /**
  * CR-105 UX · tiêu đề cột "Bước n" của quy trình khe chỉ đếm BƯỚC DUYỆT (khớp nhãn "Bước n: tên"); cột chỉ có nút hệ thống

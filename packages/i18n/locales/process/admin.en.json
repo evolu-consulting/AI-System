@@ -907,7 +907,10 @@
       "due": "due {{n}} h",
       "always": "Always runs",
       "addMenu": "Choose the kind of step to add",
-      "addDlcStep": "Add DLC step"
+      "addDlcStep": "Add DLC step",
+      "dlcLibrary": "DLC steps in the library",
+      "dlcLibraryEmpty": "No library steps yet — add them on the DLC steps page.",
+      "dlcBlank": "Blank step"
     },
     "dlc": {
       "newName": "DLC step {{n}}",
@@ -958,6 +961,74 @@
         "GATE_GROUP_INVALID": "Enter the approver group key (e.g. dlc-editor).",
         "BACK_TARGET_INVALID": "Can only go back to an earlier DLC step.",
         "KIND_MIX": "Approval steps and DLC steps cannot be connected in one diagram — remove the other kind of step or use the process of the matching slot."
+      },
+      "reject": "Reject",
+      "rejectHint": "Drag this port onto an earlier step: when the reviewer marks Not passed, the process goes back to that step.",
+      "approve": "Approve",
+      "approveNext": "Approve ⇒ continue to the next step.",
+      "link": {
+        "noGate": "This step has no approval gate — turn on \"Wait for approval\" first.",
+        "notEarlier": "You can only go back to a DLC step BEFORE this one.",
+        "done": "Reject at \"{{from}}\" ⇒ back to \"{{to}}\"."
+      },
+      "steps": {
+        "title": "DLC steps",
+        "subtitle": "Reusable step library for DLC processes: pick the action, agent, approval gate and where a rejection goes back to. The process canvas copies a library step when you add it — editing it later does not change existing processes.",
+        "create": "Add step",
+        "edit": "Edit",
+        "delete": "Delete",
+        "save": "Save",
+        "cancel": "Cancel",
+        "empty": "No library steps yet.",
+        "deleteTitle": "Delete step \"{{name}}\"?",
+        "deleteDesc": "Processes that already copied this step are not affected.",
+        "saved": "Saved step \"{{name}}\".",
+        "deleted": "Deleted step \"{{name}}\".",
+        "col": {
+          "name": "Name",
+          "key": "Key",
+          "action": "Action",
+          "agent": "Agent",
+          "gate": "Approval",
+          "reject": "Reject ⇒",
+          "rounds": "Rounds",
+          "timeout": "Time limit (min)"
+        },
+        "field": {
+          "name": "Step name",
+          "key": "Key",
+          "keyHint": "Generated from the name; lowercase letters, digits, dashes.",
+          "agent": "Agent",
+          "agentDefault": "Default for this action ({{agent}})",
+          "agentNone": "Default for this action",
+          "rounds": "Rounds",
+          "timeout": "Step time limit (minutes)",
+          "gate": "Wait for approval after this step",
+          "group": "Approving group",
+          "reject": "Reject ⇒"
+        },
+        "gateNone": "No",
+        "agentDefault": "Default",
+        "reject": {
+          "self": "Redo this step",
+          "prev": "The step right before",
+          "action": "Nearest step: {{action}}"
+        },
+        "err": {
+          "key": "Key: starts with a lowercase letter; a-z, 0-9, dashes (≤ 40).",
+          "name": "Enter a step name (≤ 80 characters).",
+          "agent_key": "Pick an agent for the \"Custom agent\" action.",
+          "instruction": "Instruction too long (≤ 8000 characters).",
+          "gate_group": "Enter the approving group key (e.g. dlc-editor).",
+          "reject_to": "Only available with an approval gate.",
+          "max_rounds": "Rounds between 1 and 10.",
+          "timeout_min": "Between 5 and 1440 minutes.",
+          "action": "Pick an action.",
+          "keyTaken": "This key already exists — choose another.",
+          "conflict": "Someone else just edited this step — close and reopen to load the latest.",
+          "invalid": "Some fields are invalid.",
+          "generic": "Could not save, try again."
+        }
       }
     }
   }

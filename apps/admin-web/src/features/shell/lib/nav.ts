@@ -2,6 +2,7 @@
 // CR-060 (P-b FS1): CHỨC NĂNG có thêm Nguồn (`/sources`, cả hai role, cùng cờ engine với Quy trình).
 // CR-054: CHỨC NĂNG có Agents (cả hai role; tenant_admin chỉ thấy Agents trong nhóm này).
 // CR-112 · ADM-FR-76/77 (Q9): sidebar lồng 3 nhóm. NỀN TẢNG (chỉ platform_admin): Ứng dụng · Features · Commands · Agents; TỰ ĐỘNG HOÁ: Workflow Dify · Quy trình (+ Nguồn).
+// dlc-step-library: TỰ ĐỘNG HOÁ của platform_admin thêm "Bước DLC" (thư viện bước DLC) sau Quy trình, cùng điều kiện engine quy trình.
 // CÔNG TY: danh sách công ty (nhóm động, vẽ ở SidebarCompanies) — platform_admin mọi công ty + tìm, tenant_admin chỉ công ty mình.
 // HỆ THỐNG: Secrets · Tình trạng · Chi phí toàn hệ thống · Nhật ký · Góp ý · Import/Export (tenant_admin: Chi phí, Nhật ký, Góp ý).
 // Người dùng / Nhóm / Đối tác / Phân quyền nằm trong workspace công ty; route cũ chuyển hướng (lib/legacy-redirect.ts).
@@ -17,6 +18,7 @@ export type NavId =
   | "commands"
   | "workflows"
   | "processes"
+  | "dlcSteps"
   | "sources"
   | "groups"
   | "access"
@@ -39,6 +41,7 @@ type NavTo =
   | "/commands"
   | "/workflows"
   | "/processes"
+  | "/dlc-steps"
   | "/sources"
   | "/secrets"
   | "/apps"
@@ -60,6 +63,7 @@ export type NavItem = {
     | "nav.commands"
     | "nav.workflows"
     | "nav.processes"
+    | "nav.dlcSteps"
     | "nav.sources"
     | "nav.groups"
     | "nav.access"
@@ -92,6 +96,7 @@ const FEATURES = item("features", "/features");
 const COMMANDS = item("commands", "/commands");
 const WORKFLOWS = item("workflows", "/workflows");
 const PROCESSES = item("processes", "/processes");
+const DLC_STEPS = item("dlcSteps", "/dlc-steps");
 const SOURCES = item("sources", "/sources");
 const SECRETS = item("secrets", "/secrets");
 const APPS = item("apps", "/apps");
@@ -129,7 +134,10 @@ export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGro
         labelKey: "nav.group.platform",
         items: [APPS, FEATURES, COMMANDS, AGENTS],
       },
-      { labelKey: "nav.group.automation", items: [WORKFLOWS, ...proc] },
+      {
+        labelKey: "nav.group.automation",
+        items: [WORKFLOWS, ...proc, ...(opts.processes ? [DLC_STEPS] : [])],
+      },
       COMPANIES_GROUP,
       {
         labelKey: "nav.group.system",
@@ -192,6 +200,7 @@ const EXACT_CRUMBS: Record<string, Crumb[]> = {
   "/sources": [{ labelKey: "nav.sources" }],
   "/secrets": [{ labelKey: "nav.secrets" }],
   "/apps": [{ labelKey: "nav.apps" }],
+  "/dlc-steps": [{ labelKey: "nav.dlcSteps" }],
   "/account/password": [{ labelKey: "account.changePassword" }],
   "/account/2fa": [{ labelKey: "account.twofa" }],
   "/usage": [{ labelKey: "nav.usage" }],

@@ -74,6 +74,7 @@ function GateFields(p: {
             error={p.err("gate")}
             onChange={(v) => p.set({ gate: { ...g, group_key: v ?? "" } })}
           />
+          <p className="text-caption text-muted-foreground">{f("approveNext")}</p>
           <fieldset className="space-y-1.5">
             <legend className="text-label font-medium">{f("backTo")}</legend>
             {p.earlier.length === 0 ? (
@@ -103,6 +104,7 @@ function GateFields(p: {
                 );
               })
             )}
+            <p className="text-caption text-muted-foreground">{f("rejectHint")}</p>
             {p.err("back_to") ? (
               <p className="text-caption text-destructive">{p.err("back_to")}</p>
             ) : null}

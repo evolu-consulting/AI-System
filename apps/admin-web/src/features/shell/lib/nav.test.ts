@@ -133,6 +133,22 @@ describe("P-a · mục Quy trình theo cờ engine", () => {
   });
 });
 
+describe("dlc-step-library · mục Bước DLC", () => {
+  test("chỉ platform_admin, nhóm Tự động hoá sau Quy trình + Nguồn, cùng cờ engine; crumb /dlc-steps", () => {
+    const auto = (role: "platform_admin" | "tenant_admin", processes: boolean) =>
+      navGroups(role, { processes })
+        .flatMap((g) => g.items)
+        .map((i) => i.id);
+    expect(auto("platform_admin", false)).not.toContain("dlcSteps");
+    expect(auto("tenant_admin", true)).not.toContain("dlcSteps");
+    const g = navGroups("platform_admin", { processes: true }).find(
+      (x) => x.labelKey === "nav.group.automation",
+    );
+    expect(g?.items.map((i) => i.id)).toEqual(["workflows", "processes", "sources", "dlcSteps"]);
+    expect(crumbsFor("/dlc-steps")).toEqual([{ labelKey: "nav.dlcSteps" }]);
+  });
+});
+
 describe("dify-workflows · Workflows không bị cờ đóng băng", () => {
   test("frozen=false: platform_admin vẫn có Workflows và Commands; /workflows không bị gate", () => {
     const items = navGroups("platform_admin", { frozen: false }).flatMap((g) => g.items);

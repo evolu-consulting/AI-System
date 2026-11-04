@@ -1,5 +1,5 @@
 // ADM-FR-66 · CR-056 · P-a F5: danh sách chọn của editor — agent đã bật, nhóm agent, Group, người dùng của tenant đang xem.
-import type { ProcessToolItem } from "@ai/contracts/hub-admin";
+import type { AgentSettingsResponse, ProcessToolItem } from "@ai/contracts/hub-admin";
 import { useTranslation } from "react-i18next";
 import { useAgentSettings, useAgentUserOptions } from "@/features/agents/api";
 import { useGroupOptions } from "@/features/groups/api";
@@ -33,6 +33,13 @@ export function withCurrent(opts: Option[], value: string, gone: string): Option
   return [...opts, { value, label: gone }];
 }
 
+/** dlc-engine · khoá + tên agent BẬT (bước DLC chọn agent theo khoá — def thư viện / bước mẫu dùng chung nhiều tenant). */
+export const agentKeysOf = (
+  agents: AgentSettingsResponse["agents"],
+  lang: "vi" | "en",
+): { key: string; label: string }[] =>
+  agents.filter((a) => a.enabled).map((a) => ({ key: a.agent.key, label: a.agent.name[lang] }));
+
 export function useEditorRefs(tenantId: string | undefined, enabled: boolean): EditorRefs {
   const { i18n } = useTranslation();
   const lang = i18n.language === "vi" ? "vi" : "en";
@@ -47,10 +54,7 @@ export function useEditorRefs(tenantId: string | undefined, enabled: boolean): E
     agents: (settings.data?.agents ?? [])
       .filter((a) => a.entitled && a.enabled)
       .map((a) => ({ value: `agent:${a.agent.id}`, label: a.agent.name[lang] })),
-    // dlc-engine · khoá agent (bước DLC chọn agent theo khoá — def thư viện dùng chung nhiều tenant).
-    agentKeys: (settings.data?.agents ?? [])
-      .filter((a) => a.enabled)
-      .map((a) => ({ key: a.agent.key, label: a.agent.name[lang] })),
+    agentKeys: agentKeysOf(settings.data?.agents ?? [], lang),
     teams: (teams.data?.items ?? []).map((x) => ({ value: `team:${x.id}`, label: x.name[lang] })),
     groups: (groups.data ?? []).map((g) => ({ value: g.id, label: pickLocalized(g.name, lang) })),
     users: (users.data ?? []).map((u) => ({ value: u.id, label: u.name || u.username })),

@@ -225,6 +225,7 @@
     "workflows": "Workflow Dify (tool AI)",
     "processes": "Quy trình nghiệp vụ",
     "processesNew": "Quy trình mới",
+    "dlcSteps": "Bước DLC",
     "sources": "Nguồn",
     "features": "Features",
     "secrets": "Secrets",
