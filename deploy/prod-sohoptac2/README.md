@@ -374,3 +374,19 @@ Chỉ chạy khi người dùng xác nhận deploy. **UAT trước** trên host 
 2. Catalog trả về URL cũ: `UPDATE admin.app_catalog SET url='https://community.<d>', sso=true, version=version+1, updated_at=now() WHERE key='community';` (qua `docker compose -p sohoptac2 exec -T pg psql -U s2_owner -d ai_system`; hoặc sửa ở Admin → Ứng dụng) và trong `.env` đặt lại `S2_PUBLIC_COMMUNITY_URL=https://community.<d>` rồi `up -d hub-api` (COMMUNITY_WEB_URL).
 3. Trình duyệt đã nhớ 301: `Cache-Control: max-age=86400` giới hạn ≤ 1 ngày; người dùng cần xoá cache/mở ẩn danh nếu bị đẩy sang `/community` sớm hơn.
 4. Kiểm `curl -sI https://community.<d>/` = 200, đối tác đăng nhập lại qua AI System → community-web như trước (phiên `ai_rt_community` cũ vẫn hợp lệ trong 30 ngày).
+
+## Deploy CR-119 (host trung tính app.<d>) — chuyển từ sohoptac.<d>
+Chỉ chạy khi người dùng xác nhận deploy. Chuẩn: web gộp ở `app.<d>` (test `app-test.<d>`), SHT ở gốc, Community ở `/community`; chi tiết `docs/specs/CR-119/spec.md`.
+
+**Cờ `S2_APP_HOST_LIVE`** (mặc định `0`, lưu trong `.env`, `deploy.ps1 -AppHostLive 0|1` hoặc đặt biến khi chạy `gen-env.sh`/`cutover.sh`/`enable-domain.sh`):
+- `0`: edge có thêm server `app[-test].<d>` (cùng upstream `web:8081`) nhưng **`sohoptac.<d>` vẫn phục vụ như cũ**, `community.<d>` 301 → `sohoptac.<d>/community`, URL công khai/catalog vẫn `sohoptac`. An toàn để deploy trước khi có DNS/cert.
+- `1`: `sohoptac[-test].<d>` 301 → `https://app[-test].<d>$request_uri` (giữ path/query, `max-age=86400`), `community[-test].<d>` 301 → `app[-test].<d>/community`; URL công khai (`S2_PUBLIC_CONTRACTS_URL`, `COMMUNITY_WEB_URL`, `APP_URL_*`, `HUB_NOTIFY_BASE_URL`) = `app`. Đích 301 là domain cấu hình cố định (không lấy từ Host client). CORS luôn gồm cả `app*` và `sohoptac*`.
+
+**Bước (A = người dùng, B = kit):**
+1. B: deploy kit với cờ `0`: `deploy.ps1 -Ref <ref> -Domain evoluconsulting.com -Hosts prod` (build web, `gen-env.sh` thêm `app*` vào CORS), rồi `bash cutover.sh` (hoặc `enable-domain.sh` cho `-test`) để render lại edge có server `app`. Kiểm: `sohoptac.<d>` vẫn 200.
+2. **A: DNS** — tạo bản ghi `app.<d>` và `app-test.<d>` (cùng IP/CNAME như `sohoptac.<d>`).
+3. **A: chứng chỉ** — nếu cert host nginx không phải wildcard: `certbot certonly ... --expand -d app.<d> -d app-test.<d> (giữ các -d cũ)`; reload nginx host. Kiểm: `curl -sI https://app.<d>/` có TLS hợp lệ (200 — web gộp).
+4. B: đặt cờ bật: `S2_APP_HOST_LIVE=1` — `deploy.ps1 -Ref <ref> -Domain evoluconsulting.com -Hosts prod -AppHostLive 1` (build lại web với URL `app`, `up -d`), rồi `S2_APP_HOST_LIVE=1 bash cutover.sh` (render edge: 301 sohoptac/community → app).
+5. B: catalog: `docker compose -p sohoptac2 run --rm -T tool tools/scripts/src/s2-app-urls.ts --base-domain <d> --hosts prod --app-host` (xem kế hoạch) rồi thêm `--apply` (contracts → `https://app.<d>`, community → `https://app.<d>/community`).
+6. Kiểm: `curl -sI https://sohoptac.<d>/contracts?x=1` = `301` → `https://app.<d>/contracts?x=1`; `curl -sI https://community.<d>/` = `301` → `https://app.<d>/community`; đăng nhập `app.<d>`, chuyển Community ↔ SHT, mở link từ admin/chat (đọc catalog).
+**Rollback:** `S2_APP_HOST_LIVE=0` (+ `-AppHostLive 0`), build/`up -d` lại, `bash cutover.sh`, `s2-app-urls.ts` chỉ đổi hàng còn localhost/-test nên đặt lại 2 hàng catalog bằng tay (admin-web › Ứng dụng) về `sohoptac`. Lưu ý trình duyệt đã nhớ 301 tối đa 1 ngày.
