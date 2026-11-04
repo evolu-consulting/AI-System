@@ -177,6 +177,7 @@ const tenantDef = async (t: string) =>
       where tenant_id = ${t} and key = ${APPROVAL_PROCESS_KEY} and deleted_at is null`
   )[0];
 
+let origDefault: { present: boolean; def: string | null } = { present: false, def: null };
 beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
@@ -191,6 +192,9 @@ beforeAll(async () => {
   lib.A = await libDef("pl-slot-a", "Quy trình A", BODY.A);
   lib.B = await libDef("pl-slot-b", "Quy trình B", BODY.B);
   lib.D = await libDef("pl-slot-d", "Quy trình HĐ mặc định", BODY.D);
+  const prev =
+    await o`select default_def_id::text as d from hub.process_slots where slot = ${APPROVAL_SLOT}`;
+  origDefault = { present: prev.length > 0, def: (prev[0]?.d as string | undefined) ?? null };
   await o`insert into hub.process_slots (slot, default_def_id) values (${APPROVAL_SLOT}, ${lib.D})
     on conflict (slot) do update set default_def_id = excluded.default_def_id`;
   await o`insert into hub.process_slot_assignments (tenant_id, slot, def_id)
@@ -219,6 +223,12 @@ beforeAll(async () => {
   } as unknown as ApprovalEnginePort;
 }, 180_000);
 afterAll(async () => {
+  // Trả mặc định khe về như trước (cùng worker còn chạy library.routes).
+  if (o && lib.D) {
+    if (origDefault.present)
+      await o`update hub.process_slots set default_def_id = ${origDefault.def} where slot = ${APPROVAL_SLOT}`;
+    else await o`delete from hub.process_slots where slot = ${APPROVAL_SLOT}`;
+  }
   await db?.close();
   await o?.end({ timeout: 2 });
 });
