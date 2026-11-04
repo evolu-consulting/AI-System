@@ -1,5 +1,6 @@
 // PK-FR-10 · TF1 · cấu hình build contracts-web (plan-frontend §0, §1; D-18: route/proxy).
 import { defineConfig } from "@rsbuild/core";
+import { pluginBabel } from "@rsbuild/plugin-babel";
 import { pluginReact } from "@rsbuild/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/rspack";
 
@@ -31,7 +32,17 @@ export const proxy = {
 };
 
 export default defineConfig({
-  plugins: [pluginReact()],
+  plugins: [
+    pluginReact(),
+    // CR-118 N1: React Compiler 1.0 (bản Babel) chỉ cho code của app; React 19 ⇒ không cần react-compiler-runtime.
+    pluginBabel({
+      include: /\.(?:jsx|tsx)$/,
+      exclude: /[\\/]node_modules[\\/]/,
+      babelLoaderOptions(opts) {
+        opts.plugins?.unshift("babel-plugin-react-compiler");
+      },
+    }),
+  ],
   source: { entry: { index: "./src/main.tsx" } },
   html: { template: "./index.html", title: "Sổ Hợp Tác" },
   // Lazy compilation + autoCodeSplitting của router → chunk route thiếu module ("reading 'call'") ở dev.
