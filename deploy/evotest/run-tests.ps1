@@ -80,7 +80,7 @@ if ($shard) {
     @(bun tools/scripts/src/test-e2e-par.ts --list @nf "--timings=$tj") | Set-Content -Encoding ascii $lj
     $plan = (@(bun tools/scripts/src/evotest-shard.ts plan --jobs $lj --free $freeSlots --cores $cores --step $Step) -join "") | ConvertFrom-Json
   } finally { Pop-Location; Remove-Item -Force $tj, $lj -ErrorAction SilentlyContinue }
-  Write-Host ("evotest: CHIA SLOT - {0} slot trong: int {1} (cpus {2}, workers {3}) + e2e {4} ngan (moi ngan {5} cpus, {6} viec cung luc), du kien ngan e2e cham nhat ~{7} s" -f $freeSlots, $plan.intShard, $plan.intCpus, $plan.intWorkers, $plan.e2eShards, $plan.e2eCpus, $plan.e2eJobs, $plan.estimateS)
+  Write-Host ("evotest: CHIA SLOT - {0} slot trong: int {1} (cpus {2}, workers {3}) + e2e {4} ngan (moi ngan {5} cpus, {6} viec cung luc), du kien ngan e2e cham nhat ~{7} s; tong dong thoi {8}/{9} (= loi x 1.3), viec du xep hang trong ngan" -f $freeSlots, $plan.intShard, $plan.intCpus, $plan.intWorkers, $plan.e2eShards, $plan.e2eCpus, $plan.e2eJobs, $plan.estimateS, $plan.total, $plan.budget)
   $script = $MyInvocation.MyCommand.Path
   $kids = New-Object System.Collections.ArrayList
   function Start-Kid([string]$label, [string[]]$extra) {

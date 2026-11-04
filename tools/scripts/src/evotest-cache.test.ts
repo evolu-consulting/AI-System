@@ -11,12 +11,16 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { patchBuildScripts } from "./evotest-cache";
 import { ensureCached, hashTree, withDirLock } from "./evotest-cache.lib";
 import {
   type BuildStat,
   buildEnvSubset,
   buildKey,
+  CACHED_BUILD,
   hashExcluded,
+  PLAIN_BUILD,
+  patchBuildScript,
   pkgDirOf,
   planEviction,
   srcId,
@@ -73,7 +77,14 @@ describe("buildEnvSubset / buildKey", () => {
 describe("srcId", () => {
   it("VERSION là commit sạch ⇒ c-<commit>, không băm nội dung", () => {
     let called = 0;
-    expect(srcId("abc1234\n", () => (called++, "x"))).toBe("c-abc1234");
+    expect(
+      srcId("abc1234\n", () =>
+        (() => {
+          called++;
+          return "x";
+        })(),
+      ),
+    ).toBe("c-abc1234");
     expect(called).toBe(0);
   });
   it("+dirty hoặc thiếu VERSION ⇒ h-<băm nội dung>", () => {
@@ -124,6 +135,43 @@ describe("pkgDirOf / summarizeStats", () => {
     ]);
     expect(out).toContain("2 hit, 1 miss, 1 chờ");
     expect(out).toContain("dựng 60.0 s");
+  });
+});
+
+describe("script build: no-op ngoài evotest", () => {
+  const ROOT = join(import.meta.dir, "../../..");
+  const WEB = ["admin-web", "chat-web", "community-web", "sohoptac-web", "studio-web"];
+  it("repo giữ nguyên `rsbuild build` ở 5 app web (prod Docker/local không đi qua cache)", () => {
+    for (const a of WEB) {
+      const j = JSON.parse(readFileSync(join(ROOT, "apps", a, "package.json"), "utf8")) as {
+        scripts: Record<string, string>;
+      };
+      expect(j.scripts.build).toBe(PLAIN_BUILD);
+    }
+  });
+  it("patchBuildScript chỉ đổi đúng `rsbuild build`", () => {
+    expect(patchBuildScript(PLAIN_BUILD)).toBe(CACHED_BUILD);
+    expect(patchBuildScript("tsc -b")).toBe("tsc -b");
+    expect(patchBuildScript(undefined)).toBeUndefined();
+  });
+  it("patchBuildScripts (chỉ chạy trong bản sao tạm của evotest): đổi app dùng rsbuild, giữ script khác, chạy lại không đổi", () => {
+    const r = tmp();
+    for (const [n, build] of [
+      ["a-web", PLAIN_BUILD],
+      ["b-api", "tsc -b"],
+    ] as const) {
+      mkdirSync(join(r, "apps", n), { recursive: true });
+      writeFileSync(
+        join(r, "apps", n, "package.json"),
+        JSON.stringify({ name: n, scripts: { build, test: "bun test" } }),
+      );
+    }
+    expect(patchBuildScripts(r)).toEqual(["apps/a-web/package.json"]);
+    const a = JSON.parse(readFileSync(join(r, "apps/a-web/package.json"), "utf8"));
+    const b = JSON.parse(readFileSync(join(r, "apps/b-api/package.json"), "utf8"));
+    expect(a.scripts).toEqual({ build: CACHED_BUILD, test: "bun test" });
+    expect(b.scripts.build).toBe("tsc -b");
+    expect(patchBuildScripts(r)).toEqual([]);
   });
 });
 

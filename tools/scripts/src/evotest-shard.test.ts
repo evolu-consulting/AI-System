@@ -3,7 +3,13 @@ import { describe, expect, it } from "bun:test";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { makespan, mergeTimings, planSlots, shardJobs } from "./evotest-shard.rules";
+import {
+  concurrencyBudget,
+  makespan,
+  mergeTimings,
+  planSlots,
+  shardJobs,
+} from "./evotest-shard.rules";
 
 const J = (o: Record<string, number>) => Object.entries(o).map(([name, cost]) => ({ name, cost }));
 
@@ -26,23 +32,46 @@ describe("shardJobs / makespan", () => {
   });
 });
 
-describe("planSlots", () => {
-  it("-Step all, 7 slot trống, 12 lõi: 1 slot int + 6 slot e2e; mỗi slot ≥ 2 lõi, việc cùng lúc = lõi", () => {
+function combos(): ["all" | "e2e", number, number, number][] {
+  const out: ["all" | "e2e", number, number, number][] = [];
+  for (const step of ["all", "e2e"] as const)
+    for (const free of [1, 2, 4, 8, 12])
+      for (const cores of [4, 8, 12, 24, 64])
+        for (const jobs of [1, 3, 24]) out.push([step, free, cores, jobs]);
+  return out;
+}
+
+function assertWithinBudget(p: ReturnType<typeof planSlots>, free: number, jobs: number): void {
+  expect(p.total).toBeLessThanOrEqual(Math.max(p.budget, 2));
+  expect(p.e2eShards).toBeGreaterThanOrEqual(1);
+  expect(p.e2eShards).toBeLessThanOrEqual(Math.max(1, jobs));
+  expect(p.e2eShards + (p.intShard ? 1 : 0)).toBeLessThanOrEqual(Math.max(free, 1));
+}
+describe("planSlots (ngân sách đồng thời = lõi × 1,3)", () => {
+  it("ngân sách: 12 lõi ⇒ 16; ít lõi vẫn ≥ 4", () => {
+    expect(concurrencyBudget(12)).toBe(16);
+    expect(concurrencyBudget(2)).toBe(4);
+  });
+  it("-Step all, 7 slot trống, 12 lõi: KHÔNG mở hết 6 ngăn e2e - tổng worker/việc ≤ ngân sách (11 ngăn × 8 worker ⇒ load 67 là lỗi)", () => {
     const p = planSlots({ step: "all", free: 7, cores: 12, jobs: 24 });
     expect(p.intShard).toBe(true);
-    expect(p.e2eShards).toBe(6);
-    expect(p.intCpus).toBeGreaterThanOrEqual(4);
-    expect(p.intWorkers).toBe(p.intCpus);
-    expect(p.e2eCpus).toBeGreaterThanOrEqual(2);
-    expect(p.e2eJobs).toBe(p.e2eCpus);
+    expect(p.total).toBeLessThanOrEqual(p.budget);
+    expect(p.total).toBe(p.intWorkers + p.e2eShards * p.e2eJobs);
+    expect(p.e2eShards).toBeLessThanOrEqual(5);
+    expect(p.e2eJobs).toBeGreaterThanOrEqual(2);
+    expect(p.e2eCpus).toBe(p.e2eJobs);
   });
-  it("-Step e2e dùng mọi slot trống nhưng không quá số việc; ít lõi ⇒ vẫn ≥ 2 lõi/slot", () => {
+  it("mọi tổ hợp slot trống/lõi/việc: tổng ≤ ngân sách (trừ sàn 2 việc/ngăn khi ngân sách quá nhỏ)", () => {
+    for (const [step, free, cores, jobs] of combos())
+      assertWithinBudget(planSlots({ step, free, cores, jobs }), free, jobs);
+  });
+  it("-Step e2e dùng tối đa số slot trống nhưng không quá số việc; không tách int", () => {
     expect(planSlots({ step: "e2e", free: 8, cores: 12, jobs: 3 }).e2eShards).toBe(3);
     const p = planSlots({ step: "e2e", free: 4, cores: 4, jobs: 20 });
-    expect(p.e2eCpus).toBe(2);
     expect(p.intShard).toBe(false);
+    expect(p.e2eJobs).toBeGreaterThanOrEqual(2);
   });
-  it("một slot trống ⇒ không tách int; ít slot hơn 2 thì -Step all vẫn chạy được (1 ngăn e2e)", () => {
+  it("một slot trống ⇒ không tách int; -Step all vẫn chạy được (1 ngăn e2e)", () => {
     const p = planSlots({ step: "all", free: 1, cores: 12, jobs: 10 });
     expect(p.intShard).toBe(false);
     expect(p.e2eShards).toBe(1);
@@ -54,7 +83,6 @@ describe("planSlots", () => {
     expect(p.intWorkers).toBeLessThanOrEqual(12);
   });
 });
-
 describe("mergeTimings", () => {
   it("lượt mới đè khoá trùng, giữ khoá khác, bỏ số hỏng", () => {
     expect(mergeTimings({ a: 1, b: 2 }, { b: 5, c: 3, d: Number.NaN })).toEqual({

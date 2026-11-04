@@ -34,6 +34,8 @@ bun install --frozen-lockfile >/out/setup.log 2>&1 || { echo "bun install lỗi"
 # tool-evotest-cache: dựng web MỘT lần mỗi (commit|băm nội dung + bun.lock + PUBLIC_*) vào /cache/build dùng chung mọi slot (webServer của e2e gọi
 # evotest-cache.ts build thay `bun run --filter … build`). EVO_SRC_ID tính một lần ở đây để mọi lượt dựng sau cùng một định danh mã nguồn.
 if [ -n "${EVO_BUILD_CACHE:-}" ]; then
+  # script `build` của 5 app web trong repo vẫn là `rsbuild build` (prod/local không đổi); chỉ bản sao tạm này được đổi sang lệnh qua cache.
+  bun tools/scripts/src/evotest-cache.ts patch-build-scripts >>/out/setup.log 2>&1
   export EVO_SRC_ID="$(bun tools/scripts/src/evotest-cache.ts src-id 2>>/out/setup.log)"
   echo "[evotest] build-cache: $EVO_BUILD_CACHE · nguồn ${EVO_SRC_ID:-?}"
 fi

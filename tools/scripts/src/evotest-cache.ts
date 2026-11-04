@@ -22,6 +22,7 @@ import {
   type BuildStat,
   buildKey,
   srcId as makeSrcId,
+  patchBuildScript,
   pkgDirOf,
   sha256,
   summarizeStats,
@@ -145,9 +146,33 @@ function status(): void {
   }
 }
 
+/**
+ * Chỉ chạy trong BẢN SAO tạm của evotest (in-container.sh, khi có EVO_BUILD_CACHE): đổi script `build` của các app web
+ * từ `rsbuild build` sang lệnh qua cache. Repo/prod Docker/local giữ `rsbuild build` nguyên (test: evotest-cache.test.ts).
+ * Trả danh sách file đã sửa.
+ */
+export function patchBuildScripts(root: string): string[] {
+  const changed: string[] = [];
+  const apps = join(root, "apps");
+  for (const n of existsSync(apps) ? readdirSync(apps) : []) {
+    const f = join(apps, n, "package.json");
+    if (!existsSync(f)) continue;
+    const j = JSON.parse(readFileSync(f, "utf8")) as { scripts?: Record<string, string> };
+    const next = patchBuildScript(j.scripts?.build);
+    if (!j.scripts || next === j.scripts.build) continue;
+    j.scripts.build = next as string;
+    writeFileSync(f, `${JSON.stringify(j, null, 2)}\n`);
+    changed.push(`apps/${n}/package.json`);
+  }
+  return changed;
+}
+
 const [cmd] = process.argv.slice(2);
 if (import.meta.main) {
-  if (cmd === "app-build") process.exit(await build());
+  if (cmd === "patch-build-scripts") {
+    const c = patchBuildScripts(process.cwd());
+    console.log(`[build-cache] patch-build-scripts: ${c.length} app (${c.join(", ")})`);
+  } else if (cmd === "app-build") process.exit(await build());
   else if (cmd === "src-id") console.log(computeSrcId(process.cwd()));
   else if (cmd === "report") report();
   else if (cmd === "status") status();

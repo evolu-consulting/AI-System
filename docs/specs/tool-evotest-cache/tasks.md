@@ -41,7 +41,7 @@ Không đổi mã sản phẩm, không sửa cấu hình Playwright/e2e/tests kh
 unit (khoá/ref/khoá thư mục/dựng một lần/kế hoạch xoá) + int bash thật (full_acquire, boot.sh full, cache_prune, băm migrations khớp `migrationsHash`) + đo trước/sau trên evotest.
 
 ## Quyết định trong lúc làm
-- Chặn qua script `build` của app thay vì sửa 23 cấu hình Playwright (điều phối: tránh file khoá/đóng băng).
+- Chặn cache dựng KHÔNG sửa cấu hình Playwright và KHÔNG sửa `package.json` của repo: `in-container.sh` chạy `evotest-cache.ts patch-build-scripts` trên bản sao tạm (prod Docker/local giữ `rsbuild build`, có test).`n- Chia slot theo ngân sách đồng thời lõi × 1,3 (int workers + ngăn e2e × việc cùng lúc); việc dư xếp hàng trong ngăn.
 - Khoá cache dùng nhịp tim (không PID) vì nhiều container (PID namespace khác nhau) cùng ghi `/cache`.
 - Biến URL/cổng (`HUB_URL`, `ADMIN_API_URL`…) không vào khoá (chỉ dùng lúc preview); `PUBLIC_*` có vào (rsbuild nhúng vào bundle).
 - Lượt toàn bộ = int|e2e|all không `-Filter` (kể cả không `-All`): mới đúng ý "một lượt giữ cả máy chủ".

@@ -61,6 +61,15 @@ export function pkgDirOf(
   return pkgs.find((p) => p.name === pkg)?.dir;
 }
 
+/** Script `build` của app web trong repo (KHÔNG đổi ở nhánh/prod/local) và bản đi qua cache chỉ được ghi vào BẢN SAO tạm trên evotest (`patch-build-scripts`). */
+export const PLAIN_BUILD = "rsbuild build";
+export const CACHED_BUILD = "bun ../../tools/scripts/src/evotest-cache.ts app-build";
+
+/** `rsbuild build` → lệnh qua cache; script khác (hoặc vắng) giữ nguyên. */
+export function patchBuildScript(build: string | undefined): string | undefined {
+  return build === PLAIN_BUILD ? CACHED_BUILD : build;
+}
+
 export type BuildStat = {
   pkg: string;
   result: "hit" | "miss" | "wait";
