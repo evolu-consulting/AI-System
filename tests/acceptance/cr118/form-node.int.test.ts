@@ -112,8 +112,19 @@ describe("CR-118 · node form", () => {
     const ok = { so_tien: 500, ghi_chu: "x" };
     expect((await submit("X", taskId, ok)).status).toBe(404); // tam: member acme, ngoài Group Kế toán
     expect((await submit("Db", taskId, ok)).status).toBe(404); // tadmin_beta: tenant khác
+    // Quyết thường (decision) trên task form ⇒ 409 TASK_KIND_MISMATCH (chỉ quyết qua form).
+    const d = await c.call("B", "POST", `/review-tasks/${taskId}/decision`, { result: "pass" });
+    expect({ s: d.status, code: d.json?.error?.code }).toEqual({
+      s: 409,
+      code: "TASK_KIND_MISMATCH",
+    });
+    expect((await submit("B", taskId, ok)).status).toBe(200);
+    await settled(c);
+    await waitStageStatus(c, runId, 0, "done");
     // Đối tác: cuc (thuộc Group) nhưng token user ngoài, run gắn gói contracts ⇒ không bao giờ làm bước.
-    await c.sql`update hub.process_runs set pack_key = 'contracts', pack_record_id = gen_random_uuid() where id = ${runId}`;
+    const r2 = await formRun();
+    await c.sql`update hub.process_runs set pack_key = 'contracts', pack_record_id = gen_random_uuid()
+      where id = ${r2.runId}`;
     const ext = await sign(c.k, PA.T, {
       claims: {
         tid: PA.T.tid,
@@ -123,20 +134,11 @@ describe("CR-118 · node form", () => {
         xorg: "a5a00000-0000-4000-8000-000000009001",
       },
     });
-    const p = await api(c.hub, ext, "POST", `/review-tasks/${taskId}/form`, { values: ok });
+    const p = await api(c.hub, ext, "POST", `/review-tasks/${r2.taskId}/form`, { values: ok });
     // 403 = chặn user ngoài ở tầng route (có sẵn); 404 = chặn của node form (`assertFormActor`, unit form-out.test).
     expect([403, 404]).toContain(p.status);
-    // Quyết thường (decision) trên task form ⇒ 409 TASK_KIND_MISMATCH (chỉ quyết qua form).
-    const d = await c.call("B", "POST", `/review-tasks/${taskId}/decision`, { result: "pass" });
-    expect({ s: d.status, code: d.json?.error?.code }).toEqual({
-      s: 409,
-      code: "TASK_KIND_MISMATCH",
-    });
-    await c.sql`update hub.process_runs set pack_key = null, pack_record_id = null where id = ${runId}`;
-    const res = await submit("B", taskId, ok);
-    expect(res.status).toBe(200);
-    await settled(c);
-    await waitStageStatus(c, runId, 0, "done");
+    const [t2] = await c.sql<Json[]>`select status from hub.review_tasks where id = ${r2.taskId}`;
+    expect(t2?.status).toBe("open");
   }, 60_000);
 
   it("giá trị sai ⇒ 422 FORM_VALUES_INVALID {paths}, task vẫn mở, output không đổi", async () => {
