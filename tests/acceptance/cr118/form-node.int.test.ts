@@ -124,7 +124,8 @@ describe("CR-118 · node form", () => {
       },
     });
     const p = await api(c.hub, ext, "POST", `/review-tasks/${taskId}/form`, { values: ok });
-    expect(p.status).toBe(404);
+    // 403 = chặn user ngoài ở tầng route (có sẵn); 404 = chặn của node form (`assertFormActor`, unit form-out.test).
+    expect([403, 404]).toContain(p.status);
     // Quyết thường (decision) trên task form ⇒ 409 TASK_KIND_MISMATCH (chỉ quyết qua form).
     const d = await c.call("B", "POST", `/review-tasks/${taskId}/decision`, { result: "pass" });
     expect({ s: d.status, code: d.json?.error?.code }).toEqual({
