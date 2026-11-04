@@ -16,7 +16,7 @@ const ROUTE = (tid: string, slot: string) => `/tenants/${enc(tid)}/process-routi
 
 /** Xem sơ đồ một quy trình trong tập gán (tenant_admin CHÍNH tenant; ngoài tập/tenant khác ⇒ 404). */
 const DEF = (tid: string, slot: string, defId: string) =>
-  `/hub-admin/tenants/${enc(tid)}/process-routing/${enc(slot)}/processes/${enc(defId)}`;
+  `${ROUTE(tid, slot)}/processes/${enc(defId)}`;
 
 export const appsKeys = {
   routingDef: (tid: string, slot: string, defId: string) =>

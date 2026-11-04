@@ -3,6 +3,7 @@
 // Hub routing + khe/thư viện giả bằng `page.route` (stack P-a chưa có hai quy trình đã xuất bản cùng khe); cần acme đang bật gói contracts.
 // VIẾT, CHƯA CHẠY (e2e chạy cuối đợt). Việc chọn quy trình thật khi launch: int hub `routing-launch.int.test.ts`.
 import { expect, type Page, test } from "@playwright/test";
+import { fakePacks } from "../../support/fake-packs";
 import { seedAdmin } from "../../support/helpers";
 import { ACME, ADMIN_URL, settle } from "../_pa-support";
 
@@ -81,6 +82,8 @@ test("platform gán quy trình vào tập của tenant và bỏ gán quy trình 
         next_cursor: null,
       }),
     );
+    // DB e2e của stack P-a không chạy migration gói ⇒ `/admin/tenants/:id/packs` trả 500 và tab Tính năng chỉ hiện lỗi: dùng backend gói giả chung.
+    await fakePacks(p, ACME, { enabled: true });
     await platformLogin(p);
     await p.goto(`${ADMIN_URL}/tenants/${ACME}?tab=features`);
     const details = p.getByTestId(`admin-routing-details-${SLOT}`);

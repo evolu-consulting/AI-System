@@ -182,7 +182,7 @@ test("sơ đồ xem được cho MỌI quy trình đã gán, nạp khi mở, 404
 }) => {
   const { tid } = await install(page, "tenant_admin");
   const hits: string[] = [];
-  await page.route(`**/hub-admin/tenants/${tid}/process-routing/${SLOT}/processes/*`, (r) => {
+  await page.route(`**/tenants/${tid}/process-routing/${SLOT}/processes/*`, (r) => {
     const id = r.request().url().split("/").pop() ?? "";
     hits.push(id);
     if (id === P_DEFAULT)
