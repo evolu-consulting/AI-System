@@ -20,9 +20,11 @@ const need = (name: string): string => {
   if (!v) throw new Error(`playwright.stack.config: thiếu ${name} (chạy \`bun run keys:dev\`)`);
   return v;
 };
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
 const SH = Number(process.env.E2E_PORT_SHIFT ?? 0);
 const P = { web: 3400 + SH, api: 3401 + SH, hub: 3402 + SH, ready: 3403 + SH } as const;
 const WEB = `http://localhost:${P.web}`;
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
 const EXTERNAL = process.env.CS_EXTERNAL === "1";
 
 // Workers thừa kế env của tiến trình cấu hình (`||=`: cấu hình nạp lại ở worker không đổi giá trị).
@@ -41,6 +43,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   outputDir: "../../test-results/community-stack",
   use: {
+    // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
     baseURL: process.env.COMMUNITY_URL,
     locale: "vi-VN",
     timezoneId: "Asia/Ho_Chi_Minh",
@@ -75,6 +78,7 @@ export default defineConfig({
             CS_HUB_PORT: String(P.hub),
             CS_READY_PORT: String(P.ready),
             CS_WEB_ORIGIN: WEB,
+            // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
             CS_REDIS_DB: process.env.CS_REDIS_DB ?? "13",
           },
         },

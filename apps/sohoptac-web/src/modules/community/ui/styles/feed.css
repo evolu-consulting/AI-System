@@ -243,6 +243,7 @@
   align-items: center;
   gap: 7px;
 }
+/* biome-ignore lint/style/noDescendingSpecificity: CSS mockup giữ nguyên thứ tự gốc (đổi thứ tự sẽ đổi hiển thị) */
 [data-mod="community"] .rcard h2 svg {
   color: var(--cm-ink-3);
 }
@@ -374,6 +375,7 @@
 }
 
 /* ---------- Dải deal ---------- */
+/* biome-ignore lint/style/noDescendingSpecificity: CSS mockup giữ nguyên thứ tự gốc (đổi thứ tự sẽ đổi hiển thị) */
 [data-mod="community"] .deal {
   display: flex;
   align-items: stretch;
@@ -442,6 +444,7 @@
 }
 
 /* ---------- Callout (gợi ý chủ quản + báo giá đã lưu) ---------- */
+/* biome-ignore lint/style/noDescendingSpecificity: CSS mockup giữ nguyên thứ tự gốc (đổi thứ tự sẽ đổi hiển thị) */
 [data-mod="community"] .callout {
   display: flex;
   gap: 11px;

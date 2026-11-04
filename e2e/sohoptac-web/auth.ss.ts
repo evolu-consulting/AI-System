@@ -12,11 +12,13 @@ const OWNER = "demo-owner";
 const PARTNER = "doitac-tanphat";
 const NEW_PW = "Ss-e2e-Pass-2026!";
 const ownerPw = (): string => {
+  // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
   const v = process.env.DEMO_OWNER_PW;
   if (!v) throw new Error("cần DEMO_OWNER_PW");
   return v;
 };
 function partnerPw(): string {
+  // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
   const file = process.env.SS_SEED_PW_FILE;
   if (!file) throw new Error("cần SS_SEED_PW_FILE");
   const pw = (JSON.parse(readFileSync(file, "utf8")) as { users?: Record<string, string> }).users?.[

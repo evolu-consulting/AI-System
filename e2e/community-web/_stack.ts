@@ -5,7 +5,9 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { type Browser, type BrowserContext, expect, type Page } from "@playwright/test";
 
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
 export const TENANT = process.env.COMMUNITY_TENANT ?? "demo";
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
 export const NEW_PW = process.env.CS_NEW_PW ?? "Cs-e2e-Pass-2026!";
 export type Who = "host" | "supplier" | "buyer";
 export const USERNAME: Record<Who, string> = {
@@ -23,9 +25,12 @@ function pwOf(who: Who): string {
   const env = process.env[`CS_PW_${u.toUpperCase().replace(/-/g, "_")}`];
   if (env) return env;
   if (who === "host") {
+    // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
     if (!process.env.DEMO_OWNER_PW) throw new Error("cần DEMO_OWNER_PW");
+    // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
     return process.env.DEMO_OWNER_PW;
   }
+  // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
   const file = process.env.COMMUNITY_SEED_PW_FILE;
   if (!file) throw new Error("cần COMMUNITY_SEED_PW_FILE (file --out của seed) hoặc CS_PW_<USER>");
   const pw = (JSON.parse(readFileSync(file, "utf8")) as { users?: Record<string, string> }).users?.[
@@ -70,6 +75,7 @@ export async function loginAs(page: Page, who: Who): Promise<void> {
 
 /** Deployed e2e (`CS_CRED_FILE`): sau lần đổi mật khẩu bắt buộc, ghi NEW_PW vào đúng file cred (không in). Dev/stack: không làm gì. */
 function persistNewPw(who: Who): void {
+  // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
   const file = process.env.CS_CRED_WRITEBACK;
   if (!file || who === "host") return;
   const j = JSON.parse(readFileSync(file, "utf8")) as { users?: Record<string, string> };
@@ -78,6 +84,7 @@ function persistNewPw(who: Who): void {
 }
 
 /** Chạy trên production (`CS_READONLY=1`): test không được tạo/sửa/xoá dữ liệu. */
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
 export const READONLY = process.env.CS_READONLY === "1";
 
 /** Một context riêng (cookie riêng) mỗi vai, đã đăng nhập. */
@@ -87,7 +94,9 @@ export async function openAs(
 ): Promise<{ ctx: BrowserContext; page: Page }> {
   const ctx = await browser.newContext({
     baseURL:
+      // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
       process.env.COMMUNITY_URL ??
+      // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
       `http://localhost:${3400 + Number(process.env.E2E_PORT_SHIFT ?? 0)}`,
   });
   const page = await ctx.newPage();

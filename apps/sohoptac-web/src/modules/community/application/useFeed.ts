@@ -36,7 +36,11 @@ export function useFeed(query: FeedQuery) {
   useEffect(() => {
     let live = true;
     api.listFeed(query).then(
-      (r) => live && (setData(r), setError(null)),
+      (r) => {
+        if (!live) return;
+        setData(r);
+        setError(null);
+      },
       (e) => live && setError(e instanceof Error ? e.message : t("community.feed.loadError")),
     );
     return () => {

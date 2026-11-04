@@ -31,7 +31,6 @@ function hostOf(): CommunityHost {
 
 export default function CommunityEntry() {
   const [boot] = use(ready);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: một lần khi vào module
   useEffect(redirectLegacyHash, []);
   return (
     <AppProvider boot={boot} host={hostOf()}>

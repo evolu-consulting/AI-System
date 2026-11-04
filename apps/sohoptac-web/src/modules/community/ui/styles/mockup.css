@@ -761,6 +761,7 @@
   background: #fdf0df;
   color: #8a4306;
 }
+/* biome-ignore lint/style/noDescendingSpecificity: CSS mockup giữ nguyên thứ tự gốc (đổi thứ tự sẽ đổi hiển thị) */
 [data-mod="community"] .match b {
   font-weight: 600;
 }
@@ -816,6 +817,7 @@
   padding: 8px 12px;
   max-width: 100%;
 }
+/* biome-ignore lint/style/noDescendingSpecificity: CSS mockup giữ nguyên thứ tự gốc (đổi thứ tự sẽ đổi hiển thị) */
 [data-mod="community"] .bubble b {
   font-size: 13px;
   display: block;
@@ -1030,11 +1032,13 @@
 [data-mod="community"] .hstat:last-child {
   border-right: 0;
 }
+/* biome-ignore lint/style/noDescendingSpecificity: CSS mockup giữ nguyên thứ tự gốc (đổi thứ tự sẽ đổi hiển thị) */
 [data-mod="community"] .hstat b {
   display: block;
   font-size: 22px;
   font-weight: 600;
 }
+/* biome-ignore lint/style/noDescendingSpecificity: CSS mockup giữ nguyên thứ tự gốc (đổi thứ tự sẽ đổi hiển thị) */
 [data-mod="community"] .hstat span {
   font-size: 12.5px;
   color: #6b6c80;

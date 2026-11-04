@@ -2,6 +2,7 @@
 // Chạy từ gốc repo: `bun tools/scripts/src/run-playwright.ts e2e/community-web/playwright.config.ts`.
 import { defineConfig, devices } from "@playwright/test";
 
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
 const PORT = Number(process.env.COMMUNITY_E2E_PORT ?? 3410);
 const URL = `http://localhost:${PORT}`;
 
