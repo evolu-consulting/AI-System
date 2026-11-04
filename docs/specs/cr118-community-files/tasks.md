@@ -39,7 +39,7 @@ Không web (composer ở `slice/cr118-shell`), không DLC, không gói khác. Kh
 - FileBox chưa cấu hình (`FILEBOX_URL/TOKEN` vắng) ⇒ `/files` 503 `FILES_UNAVAILABLE`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Đính kèm tệp vào bài (CR-118 §11.1)

@@ -25,6 +25,12 @@
 | `current/engine/thu-vien-quy-trinh.md` | Thư viện quy trình (CR-105): gán quy trình theo tenant cho khe `contracts.approval`, lọc mẫu chạy thử, backfill |
 | `current/admin/README.md` | Admin hiện hành (CR-112 nhập Phần A): tổng quan, NFR; kèm `tenant-user.md`, `nhom-doi-tac.md`, `ung-dung-quyen.md`, `catalog-quota-audit.md` |
 | `current/admin/ghi-chu.md` | Admin: công ty/user đối tác (ngắn) |
+| `current/admin/cau-hinh-app.md` | Admin: trang cấu hình app 5 tab, xem trước theo vai, sơ đồ khe (CR-118) |
+| `current/admin/nang-luc.md` | `GET /pack/me`, view năng lực công ty, `config.changed`, cache profile (CR-118) |
+| `current/admin/slot-flow-review-badge.md` | Huy hiệu bước duyệt trong sơ đồ khe `/apps` (CR-118) |
+| `current/sht/feature-gate-web.md` · `current/sht/home-default-app.md` | Web gộp: cờ OpenFeature; trang chủ theo `default_app` (CR-118) |
+| `current/engine/flow-runtime.md` · `current/engine/flow-web.md` | FlowRuntime của kit (contract, endpoint, khe `contracts.approval`); renderer flow + bước form phía web (CR-118) |
+| `current/web/web-hop-nhat.md` | Web hợp nhất `sohoptac-web`: một phiên, module lazy, `/pack/me`, đổi hướng cũ (CR-118) |
 | `specs/cr112-admin-config/README.md` | CR-112 cải tổ cấu hình ai-admin: spec master, ADM-FR-76..83, lát S1..S7 |
 | `adr/0033-app-roles-source-of-truth.md` | Vai theo app là nguồn quyền (`admin.app_roles` → Group) |
 | `specs/CR-118/spec.md` | CR-118 web nghiệp vụ hợp nhất + FeatureGate OpenFeature + flow runtime + trang app + năng lực: spec master, UW-FR-01..15, bảng lát |

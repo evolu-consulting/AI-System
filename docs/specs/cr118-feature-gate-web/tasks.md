@@ -30,7 +30,7 @@ Không sửa server/contracts, community-web, modules/community, DLC. Không nâ
 - SSE đọc riêng (không dùng `parseMeStreamProcessEvent`, nó bỏ khung lạ); nối lại giãn dần 1→30 s, 4xx (trừ 408/429) ⇒ dừng, focus/403 làm dự phòng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### ADDED sht/feature-gate-web.md
 #### Yêu cầu: Cờ tính năng của web gộp theo chuẩn OpenFeature

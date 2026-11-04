@@ -29,7 +29,7 @@ Không code, không test, không sửa `docs/current/**` (gộp cuối đợt do
 - React 19.2.9 (npm 2026-10-14) thay vì 19.3.x (latest) theo N1 "19.2.x ≥ 2 tuần".
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: COM-FR-31 Routing feed/profile theo đường dẫn (thay hash)

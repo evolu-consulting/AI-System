@@ -49,7 +49,7 @@ unit `routing.rules.test.ts`; int `routing.routes.int.test.ts`, `routing-launch.
 - Đổi quy trình theo lượt ghi đè def tenant `contracts-approval` (đồng bộ theo `source_ref`) — run cũ giữ snapshot riêng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Chọn quy trình theo phòng ban người khởi tạo

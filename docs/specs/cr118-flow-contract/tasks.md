@@ -36,7 +36,7 @@ Không web (lát `cr118-flow-web`), không executor `form` (lát `cr118-node-for
 - Test int đặt ở `tests/acceptance/CR118/` (dùng hạ tầng CF; `tsconfig` của hub-api không có lib DOM cho helper acceptance) ⇒ cần qc ghi lock.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### ADDED engine/flow-runtime.md
 #### Yêu cầu: Contract view model flow tại khe (UW-FR-10, UW-FR-12)

@@ -40,7 +40,7 @@ Không migration (giá trị lưu ở `process_outputs.fields` + `review_tasks.a
   (`cr118-flow-api` gọi `GateService.formSubmit`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Node form — người điền form ở một bước

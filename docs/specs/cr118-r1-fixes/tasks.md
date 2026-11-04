@@ -35,7 +35,7 @@ DLC, web UI, `PUT /admin/tenants/:id/default-app` (platform admin, có audit, hi
 - Rate limit trong tiến trình (mỗi instance), không Redis: rẻ, đủ chặn bấm liên tục; vượt ⇒ 429 RATE_LIMITED.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### MODIFIED admin/ung-dung-quyen.md
 #### Yêu cầu: Tenant bị chạm không bị rơi giữa hai lần nạp gộp

@@ -25,7 +25,7 @@ Không sửa server, community-web, DLC.
 - Huy hiệu `review` là cờ theo bước (không đổi registry): tenant view vẫn không hiện vì gần như mọi bước là duyệt.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### ADDED sht/home-default-app.md
 #### Yêu cầu: Trang chủ web gộp theo default_app

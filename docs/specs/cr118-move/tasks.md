@@ -36,7 +36,7 @@ phụ thuộc: cr118-spec
 - `~/*` của tsconfig.depcruise.json trỏ cả chat-web lẫn sohoptac-web ⇒ depcruise resolve nhầm alias sang chat-web khi trùng đường dẫn; các luật web-* khớp theo đường dẫn sohoptac-web nên không bị ảnh hưởng, rule 6 loại cạnh "aliased".
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 Không thay đổi hành vi (lý do: đổi tên thư mục/gói contracts-web → sohoptac-web + khung thư mục + luật depcruise chỉ là cấu trúc; nâng React 18.3.1 → 19.3.1 và bật React Compiler 1.0 là hạ tầng build, giao diện/luồng giữ nguyên — ảnh baseline e2e có thể lệch nhẹ do React 19, không recapture ở lát này)
 

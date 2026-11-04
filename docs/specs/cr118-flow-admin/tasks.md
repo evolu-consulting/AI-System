@@ -38,7 +38,7 @@ Không `DlcStageForm`/`SlotStageForm` (DLC của Rowan), không `features/apps`,
 - Draft giữ chuỗi nhập tay (`FormFieldDraft`), chuyển sang `FormField` khi gửi; giá trị hỏng đã bị chặn bởi validate trước đó.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Một định nghĩa trường form cho Hub, flow và editor

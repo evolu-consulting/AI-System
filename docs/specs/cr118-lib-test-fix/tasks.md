@@ -18,7 +18,7 @@ Lọc assertion library.routes theo khe test sở hữu (khe DLC 0070); approval
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 Không thay đổi hành vi (lý do: chỉ sửa test int library.routes / approval-engine-slot và ghi nợ kỹ thuật)
 

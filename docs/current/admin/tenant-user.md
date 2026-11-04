@@ -23,3 +23,19 @@ Vai hệ thống (ADM-BR-05): platform_admin (toàn hệ thống + Studio) · te
 ADR-0018: admin-api là nguồn đăng nhập duy nhất (JWT EdDSA, JWKS); SSO OIDC theo tenant (Google Workspace, Entra) ở GĐ2; MFA bắt buộc cho admin; Hub cấp token ngắn hạn cho tool MCP.
 SSO nội bộ (spec sso-switch): `POST /auth/sso/code` mã 32 byte sống 60 giây (SHA-256 trong Redis, dùng một lần); `POST /auth/sso/redeem` đổi mã lấy phiên app đích (cookie riêng `ai_rt_<app>`); URL đích chỉ từ cấu hình build (không open redirect); token gắn tid/sub/sid/app, sai công ty hoặc phiên nguồn đã logout ⇒ 401.
 identity-import (N5): chuyển user mgmt-app sang admin-api (CLI, dry-run, lô 500, idempotent); `auth.legacy` verify scrypt rồi rehash argon2id (`LEGACY_HASH_SUNSET`).
+
+## CR-118 · Delta gộp 2026-11-04 (đợt cr118-r1)
+Mục dưới đây thắng nội dung cũ cùng chủ đề ở trên (lát: cr118-spec, cr118-auth).
+
+#### Yêu cầu: Phiên riêng theo app (CR-053) — Community dùng chung phiên `contracts` (nguồn: cr118-spec)
+Cookie refresh vẫn `ai_rt_<app>` cho từng app web (admin, chat, studio, contracts); app `community` không còn web riêng nên không có cookie `ai_rt_community` ở web mới (`WEB_APPS` giữ `community` để tương thích, không dùng). Người dùng SHT không phải đăng nhập lại; đối tác đăng nhập lại một lần sau khi đổi host. Logic admin-api redeem SSO không đổi (X-App = app của mã).
+- Kịch bản: khi người dùng SHT mở `/community` thì dùng phiên `ai_rt_contracts`, không đăng nhập lại [test: thủ công — e2e cs ở lát cr118-e2e]
+- Kịch bản: khi redeem mã SSO của app `chat` bằng X-App `contracts` thì bị từ chối như cũ [test: thủ công — giữ int admin-api hiện có, không đổi (lát cr118-auth xác nhận)]
+
+#### Yêu cầu: Phiên riêng theo app (CR-053) — Community dùng chung phiên `contracts` (nguồn: cr118-auth)
+Web gộp chỉ có một phiên `X-App: contracts` (cookie `ai_rt_contracts`) cho cả SHT và Community; đổi mật khẩu bắt buộc và bước TOTP
+với `X-App: contracts` cấp đúng cookie `ai_rt_contracts`. Đăng xuất xoá đúng phiên đó (phiên app khác của cùng người còn nguyên).
+Logic admin-api không đổi.
+- Kịch bản: khi đối tác đổi mật khẩu bắt buộc qua web gộp thì nhận cookie `ai_rt_contracts` (không `ai_rt_community`) [test: apps/admin-api/src/modules/auth/auth.unified-web.int.test.ts » đối tác lần đầu qua web gộp]
+- Kịch bản: khi đăng xuất web gộp thì refresh `contracts` bị từ chối, phiên `chat` vẫn refresh được [test: apps/admin-api/src/modules/auth/auth.unified-web.int.test.ts » đăng xuất xoá một phiên]
+- Kịch bản: khi redeem mã SSO bằng `tenant_key` của công ty khác thì bị từ chối [test: apps/admin-api/src/modules/auth/auth.unified-web.int.test.ts » chéo tenant]

@@ -36,8 +36,8 @@ Mỗi tài khoản thuộc một công ty; quyền gắn với công ty (nhân v
 | Cần mua | chủ quản, người mua | sản phẩm, số lượng, khu vực, ngày cần | bài chủ quản: bạn bè được chọn; bài người mua: chỉ chủ quản |
 | Thông báo | chỉ chủ quản | nội dung | bạn bè được chọn |
 Không có loại "Cần giá" (Q3). Tạo bài: form ngắn + nội dung tự do + tối đa 10 ảnh, 2 video (Filebox). "Dán mô tả, AI điền form" = COULD cuối đợt (Câu 7).
-- Gộp C5: app `apps/community-web` (dev cổng 3400, prod `:18435` → host community) + contract `@ai/contracts/community`; đối tác vào bằng SSO app `community` (cookie `ai_rt_community`), không dùng phiên Sổ Hợp Tác (C3). Bản build production không chứa dữ liệu mẫu (`__COMMUNITY_MOCK__`, `check:bundle` báo lỗi).
-- **Đăng nhập (fix-community-login):** community-web có màn Đăng nhập riêng (Mã công ty / Tên đăng nhập / Mật khẩu; đổi mật khẩu lần đầu). `/sso` chưa có phiên ⇒ `/login?next=/sso?…` (chỉ đường dẫn cùng origin, không open redirect) ⇒ xin mã ⇒ đích = `target_url` catalog admin-api. Chủ quản phải thuộc Group `community-owner`, thiếu ⇒ 403 `PACK_FORBIDDEN`.
+- Gộp C5: app `apps/community-web` (dev cổng 3400, prod `:18435` → host community) + contract `@ai/contracts/community`; đối tác vào bằng SSO app `community` (cookie `ai_rt_community`), không dùng phiên Sổ Hợp Tác (C3). Bản build production không chứa dữ liệu mẫu (`__COMMUNITY_MOCK__`, `check:bundle` báo lỗi). **[Thay bởi CR-118: Community là module của web gộp `sohoptac-web`, đăng nhập/phiên `contracts` chung, không còn app/SSO/login riêng — xem mục "CR-118" cuối file.]**
+- **Đăng nhập (fix-community-login):** community-web có màn Đăng nhập riêng (Mã công ty / Tên đăng nhập / Mật khẩu; đổi mật khẩu lần đầu). `/sso` chưa có phiên ⇒ `/login?next=/sso?…` (chỉ đường dẫn cùng origin, không open redirect) ⇒ xin mã ⇒ đích = `target_url` catalog admin-api. Chủ quản phải thuộc Group `community-owner`, thiếu ⇒ 403 `PACK_FORBIDDEN`. **[Thay bởi CR-118: Community là module của web gộp `sohoptac-web`, đăng nhập/phiên `contracts` chung, không còn app/SSO/login riêng — xem mục "CR-118" cuối file.]**
 - **Bảng tin** là trang đầu: chủ quản thấy cung cầu tổng hợp từ mọi bạn bè; đối tác thấy bài chủ quản được chia sẻ + bài của mình.
 - Sửa: người đăng sửa mọi trường; hiện nhãn "đã sửa"; nếu chủ quản đã lưu báo giá từ bài ⇒ báo chủ quản (R27, mục 7).
 - Lưu trữ / bỏ lưu trữ: ẩn khỏi bảng tin người khác, giữ bình luận. Đánh dấu đã xong: Cần mua có hàng / Cần bán hết; tự lưu trữ.
@@ -133,3 +133,49 @@ pack guard (chỉ gói trong `EXTERNAL_PACKS={community}`, bỏ qua Group) · `c
 8. **Host community:** tên miền/DNS/TLS chưa có; `APP_URL_COMMUNITY` đặt khi deploy.
 9. **Hưng Thịnh:** ánh xạ `party_key` cho đối tác Hưng Thịnh chưa được xác nhận.
 10. Mở lại công ty đã vô hiệu có (C2); tự quản lý thành viên đối tác = GĐ2. Điều hướng "mở SHT" từ community-web sang contracts-web (phiên) chưa chốt. Mockup Community của người dùng chưa có.
+
+## CR-118 · Delta gộp 2026-11-04 (đợt cr118-r1)
+Mục dưới đây thắng nội dung cũ cùng chủ đề ở trên (lát: cr118-spec, cr118-auth, cr118-community-module, cr118-community-files).
+
+#### Yêu cầu: COM-FR-31 Routing feed/profile theo đường dẫn (thay hash) (nguồn: cr118-spec)
+Community chạy như module của web gộp `sohoptac-web`: Bảng tin `/community`, hồ sơ `/community/profile/<orgId>/<section>`, Cài đặt chung là dialog mở bằng `/community?settings=1`; đóng dialog giữ route nền. Link cũ dạng hash được ánh xạ một lần: `#/feed`→`/community`, `#/profile/<o>/<s>`→`/community/profile/<o>/<s>`, `#/settings`→`/community?settings=1`.
+- Kịch bản: khi mở link cũ `#/profile/<org>/<section>` thì vào đúng `/community/profile/<org>/<section>` [test: thủ công — unit legacy-hash + e2e ở lát cr118-community-module]
+- Kịch bản: khi chuyển giữa Community và Sổ Hợp Tác trong sidebar thì không tải lại trang (dấu `window` còn nguyên) [test: thủ công — e2e unified-nav ở lát cr118-e2e]
+
+#### Yêu cầu: COM-FR-43 Link sang Sổ Hợp Tác là link trong app, cách ly đối tác bằng route + chunk (nguồn: cr118-spec)
+4 link SHT là điều hướng nội bộ tới đường dẫn gốc của contracts (`/overview`, `/contracts/$id`, `/partners`, `/products`), không còn deep-link `?sec=` sang web khác. Đối tác: DOM không có nhóm SHT, gõ `/contracts` ⇒ về `/community`, 0 request tới chunk contracts và 0 lời gọi `/pack/contracts/*`; server `external-deny` giữ nguyên.
+- Kịch bản: khi chủ quản bấm link SHT trong Community thì điều hướng trong cùng app, không đổi host [test: thủ công — e2e unified-nav ở lát cr118-e2e]
+- Kịch bản: khi đối tác gõ `/contracts` thì về `/community` và không tải chunk contracts [test: thủ công — e2e partner-isolation ở lát cr118-e2e]
+
+#### Yêu cầu: Đăng nhập Community nằm trong web gộp (nguồn: cr118-spec)
+Login gộp (form contracts + đổi mật khẩu bắt buộc lần đầu + TOTP) thay màn đăng nhập riêng của community-web; path `/community*` không tự dội sang AI System (đối tác không có chat-web); path SHT giữ dội như nay. `community.<d>/*` trả 301 về `sohoptac.<d>/community`.
+- Kịch bản: khi đối tác lần đầu đăng nhập thì buộc đổi mật khẩu rồi vào `/community` [test: thủ công — unit login outcome + e2e ở lát cr118-auth]
+
+#### Đã bỏ: COM-FR-44 SSO hand-off Community → Sổ Hợp Tác (nguồn: cr118-spec)
+Lý do: cùng một web và một phiên `contracts` nên không còn hand-off giữa hai app; xoá `contracts-link.ts`, `api/session.ts`, `api/auth.ts` phía community-web. Endpoint `/auth/sso/code` + `/sso` giữ cho admin-web/chat-web vào app (catalog `community`: url `https://sohoptac.<d>/community`, `sso=false`).
+
+#### Yêu cầu: Đăng nhập Community nằm trong web gộp (nguồn: cr118-auth)
+Login gộp của `sohoptac-web` (`platform/auth`) có ba bước: mật khẩu → đổi mật khẩu bắt buộc (lần đầu) → mã TOTP (khi đã bật 2FA), rồi
+vào home theo quyền: đối tác → `/community`, người có Sổ Hợp Tác → `/overview` (hoặc `next` nội bộ nếu được mở). Path `/community*`
+không tự dội sang AI System; path SHT giữ dội như nay. Đối tác gõ path SHT ⇒ về `/community`, không render trang SHT.
+- Kịch bản: khi đối tác lần đầu đăng nhập thì buộc đổi mật khẩu rồi vào `/community` [test: e2e/sohoptac-web/auth.ss.ts » đối tác lần đầu: buộc đổi mật khẩu rồi vào /community, gõ /overview về /community]
+- Kịch bản: khi đăng nhập TOTP với X-App contracts thì cookie là `ai_rt_contracts` [test: apps/admin-api/src/modules/auth/auth.unified-web-totp.int.test.ts » TOTP: login ⇒ totp_required (chưa cookie) ⇒ verify ⇒ cookie ai_rt_contracts]
+- Kịch bản: khi trả lời đăng nhập là `totp_required` thì hiện bước nhập mã, mã đúng thì vào home theo quyền [test: apps/sohoptac-web/src/platform/auth/domain/login-machine.test.ts » password → change → TOTP → home theo vai]
+- Kịch bản: khi người dùng đã bật 2FA đăng nhập web gộp thì phải nhập mã TOTP mới có phiên `contracts` [test: e2e/sohoptac-web/auth.ss.ts » TOTP: đăng nhập phải qua bước mã]
+- Kịch bản: khi chưa có phiên mà mở `/community` thì vào `/login` của web gộp, không dội sang AI System [test: apps/sohoptac-web/src/platform/auth/domain/login-machine.test.ts » bouncesToSso]
+- Kịch bản: khi thành viên SHT đăng nhập thì vào `/overview` [test: e2e/sohoptac-web/auth.ss.ts » thành viên SHT: đăng nhập vào /overview, đăng xuất xoá phiên]
+
+#### Yêu cầu: COM-FR-31 Routing feed/profile theo đường dẫn `/community/*` (thay hash) (nguồn: cr118-community-module)
+Module Community khai báo route dưới `/community/*` dạng dữ liệu (manifest) và ánh xạ hash cũ bằng hàm thuần `mapLegacyHash`: `#/feed`→`/community`, `#/profile/<o>/<s>`→`/community/profile/<o>/<s>`, `#/settings`→`/community?settings=1`. Module chỉ nói chuyện với host qua cổng `RouterPort`; không đọc `location`.
+- Kịch bản: khi hash cũ `#/profile/<org>/<section>` thì `mapLegacyHash` trả `/community/profile/<org>/<section>` và `parsePath` đọc lại đúng route [test: apps/community-web/src/modules/community/domain/legacy-hash.test.ts » kết quả đọc lại được bằng parsePath]
+- Kịch bản: khi `#/settings` thì ra `/community?settings=1` (Bảng tin + hộp thoại Cài đặt) [test: apps/community-web/src/modules/community/domain/legacy-hash.test.ts » #/feed và #/settings ánh xạ về /community và ?settings=1]
+- Kịch bản: khi dựng cây route cho router của host thì mỗi route con Community được tạo đúng một lần dưới route cha, trang tải lười [test: apps/community-web/src/modules/community/manifest.test.ts » gọi createRoute một lần mỗi route với route cha của host, một component lười dùng chung]
+
+#### Yêu cầu: Đính kèm tệp vào bài (CR-118 §11.1) (nguồn: cr118-community-files)
+Người đăng tải tệp lên `POST /pack/community/files` (thân thô, header `X-Filename`), nhận `CommunityFile {id,name,mime,size}`, rồi
+gửi bài với media `{kind:"file", fileId}`. Loại/trần theo cấu hình upload hiện có; nội dung phải khớp đuôi.
+- Kịch bản: khi tải PDF thật thì 201, `mime` theo nội dung, tên đã làm sạch [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » [CR-118] PDF thật ⇒ 201 {id,name,mime,size}; mime theo nội dung]
+- Kịch bản: khi exe/html đội lốt .pdf, html đội lốt .txt hoặc đuôi lạ thì 415 [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » [CR-118] exe/html đội lốt .pdf, html đội lốt .txt, đuôi lạ ⇒ 415]
+- Kịch bản: khi tệp vượt `ATTACH_MAX_BYTES` thì 413; thiếu tên thì 400 [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » [CR-118] quá ATTACH_MAX_BYTES ⇒ 413; thiếu tên ⇒ 400]
+- Kịch bản: khi đăng bài kèm tệp của mình thì media mang fileId/name/size/mime; tệp của người khác hoặc thiếu fileId thì 400 [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » [CR-118] media kind=file mang fileId/name/size/mime; dùng fileId của người khác ⇒ 400]
+- Kịch bản: khi sniff tên/nội dung thì đội lốt, markup, file chạy được bị chặn [test: apps/hub-api/src/modules/packs/community/domain/file.rules.test.ts » đội lốt / chạy được / markup / đuôi lạ / rỗng ⇒ null]

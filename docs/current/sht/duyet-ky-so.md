@@ -85,3 +85,15 @@ Cài đặt: chọn mặc định (nhãn + mức pháp lý), công ty chỉ-đ�
 4. Chuông/inbox hub "cần duyệt" không gửi thêm cho Group "toàn quyền" (thẻ + Việc của tôi của gói đã có); mẫu đã lưu không tự đồng bộ khi đổi Group cấp 2 ở cài đặt tới lần lưu mẫu kế.
 5. Thẻ duyệt chưa có hành động "Thử lại" cho bước Dify lỗi (xử lý ở màn quy trình).
 6. Tên phòng ở thẻ duyệt cho người không phải admin dựa vào `GET /groups`; không resolve tên trưởng phòng.
+
+## CR-118 · Delta gộp 2026-11-04 (đợt cr118-r1)
+Mục dưới đây thắng nội dung cũ cùng chủ đề ở trên (lát: cr118-flow-web).
+
+#### Yêu cầu: Thẻ duyệt HĐ vẽ dòng thời gian qua FlowPanel, hành vi không đổi (nguồn: cr118-flow-web)
+Web gộp vẽ dòng thời gian các bước duyệt của HĐ bằng `<FlowPanel slot="contracts.approval">` (nguồn = thẻ duyệt đã tải, không thêm yêu cầu mạng);
+chữ, khung, `data-testid`/`data-status`, nhãn quá hạn/chuyển cấp/bỏ qua, dòng Ký số và nút "Gửi lại" y hệt trước. Lượt máy trạng thái cũ
+(`mode=machine`) đi qua renderer legacy (không dòng bước). Nút Duyệt/Trả lại/Từ chối và hộp lý do vẫn do thẻ duyệt lo.
+- Kịch bản: khi thẻ duyệt engine có bước (kể cả quá hạn tự tính, bỏ qua, chuyển cấp, Dify) thì dòng thời gian dựng từ FlowView trùng dòng thời gian cũ [test: apps/sohoptac-web/src/features/contract-approval/lib/flow-view.test.ts » dòng thời gian từ FlowView trùng timelineRows(steps) cũ (kể cả quá hạn tự tính, bỏ qua, chuyển cấp)]
+- Kịch bản: khi lượt chạy bằng máy cũ thì FlowPanel không vẽ dòng bước, chỉ đánh dấu legacy [test: apps/sohoptac-web/src/platform/flow/ui/flow-ui.test.tsx » lượt machine ⇒ LegacyMachineRenderer (không dòng bước)]
+- Kịch bản: khi thẻ có bước Ký số thì bước này nối cuối danh sách [test: apps/sohoptac-web/src/features/contract-approval/lib/flow-view.test.ts » slot/ref/state/phase + bước Ký số nối cuối · tasks rỗng (nút thẻ do useApprovalUi)]
+- Kịch bản: khi e2e thẻ duyệt hiện có chạy thì vẫn xanh [test: e2e/contracts-web/contract-flow.cw.ts » dòng thời gian: tên bước, tên phòng, trạng thái, hạn quá hạn]

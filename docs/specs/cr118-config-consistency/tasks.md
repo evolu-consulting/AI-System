@@ -37,7 +37,7 @@ phụ thuộc: cr118-capabilities (đã gộp)
 - Brand đọc lỗi ⇒ không nhớ (thử lại lần sau); đọc xen với invalidation (epoch) ⇒ không nhớ bản có thể cũ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### MODIFIED admin/ung-dung-quyen.md
 #### Yêu cầu: Ảnh năng lực của người dùng (`GET /pack/me`)

@@ -147,3 +147,13 @@ Bài P = bài chủ quản đăng, `audience` như ghi ở cột 3.
 5. Mockup Community chưa nhận: Phase A đặt các nhãn "đã sửa", "đã ẩn", "đối tác đã rời" trong dòng meta dưới tên người đăng (mục 0); chờ mockup xác nhận.
 6. HT-62: "bình luận của NCC trên bài chủ quản" có nút Lưu báo giá. Code (`PostCard.tsx`) chỉ bật trên bình luận của đối tác khi bài là Cần mua của chủ quản, khớp D12 (`nghiep-vu.md` §8). Chốt: giữ D12 hay mở rộng sang bài khác?
 7. HT-63 / `nghiep-vu.md` §8: nút "Xem" trên bài đã lưu chưa được code. Chốt: làm (nút mở form/link SP & Giá) hay bỏ khỏi nghiệp vụ?
+
+## CR-118 · Delta gộp 2026-11-04 (đợt cr118-r1)
+Mục dưới đây thắng nội dung cũ cùng chủ đề ở trên (lát: cr118-community-files).
+
+#### Yêu cầu: Tải tệp đính kèm theo quyền xem bài (CR-118 §11.1) (nguồn: cr118-community-files)
+`GET /pack/community/files/:id` trả byte khi người xem THẤY bài chứa tệp (cùng luật bảng tin, gồm đối tác theo audience) hoặc là
+người tải lên; còn lại 404 giống hệt. Luôn `attachment` (ảnh raster `inline`), `X-Content-Type-Options: nosniff`, CSP `sandbox`.
+- Kịch bản: khi thành viên cùng tenant hoặc đối tác trong audience tải thì 200 kèm attachment + nosniff [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » [CR-118] thành viên cùng tenant + đối tác trong audience tải được: attachment + nosniff]
+- Kịch bản: khi đối tác không thấy bài hoặc bài của đối tác khác thì 404 [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » [CR-118] đối tác không thấy bài ⇒ 404; bài đối tác khác ⇒ 404; chủ quản thấy bài đối tác]
+- Kịch bản: khi tenant khác hoặc tệp chưa gắn bài của người khác thì 404 [test: apps/hub-api/src/modules/packs/community/adapters/community-files.int.test.ts » [CR-118] tenant khác ⇒ 404; tệp chưa gắn bài của người khác ⇒ 404; id rác ⇒ 404]

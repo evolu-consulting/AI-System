@@ -16,3 +16,12 @@ Bảng: `features` (key, name/description jsonb, status on/off/beta, version), `
 - FR-53: mỗi lần lưu tăng `config_version` + NOTIFY `config_changed` (Hub nhận ≤ 5 giây).
 - Cách ly: entitlement = platform_admin; grant = tenant_admin trong tenant mình; có RLS.
 - Chỉ số `caps.contracts` (CR-110) tính từ quyền gói; đối tác luôn "không có quyền".
+
+## CR-118 · Delta gộp 2026-11-04 (đợt cr118-r1)
+Mục dưới đây thắng nội dung cũ cùng chủ đề ở trên (lát: cr118-tenant-settings).
+
+#### Yêu cầu: Gán quy trình cho tenant × khe (tập nhiều quy trình) và sửa luật chọn (nguồn: cr118-tenant-settings)
+Ở trang công ty và ngăn "Công ty" của trang app, mỗi khe có khối "Quy trình được gán & luật chọn theo phòng ban": platform_admin gán thêm quy trình đã
+xuất bản, bỏ gán (bị chặn khi còn luật dùng, nêu số luật bị ảnh hưởng) và sửa luật như tenant admin.
+- Kịch bản: platform gán thêm quy trình; bỏ gán quy trình đang được luật dùng ⇒ 409 nêu luật số bị ảnh hưởng [test: e2e/P-a/pf4/tenant-routing.pa.ts » platform gán quy trình vào tập của tenant và bỏ gán quy trình đang được luật dùng bị 409 nêu luật]
+- Kịch bản: số thứ tự luật bị ảnh hưởng lấy từ `details.rules` (priority + 1, bỏ trùng) [test: packages/web-kit/src/routing-rules.test.ts » IN_USE: số thứ tự luật = priority + 1, bỏ trùng, bỏ phần tử sai]

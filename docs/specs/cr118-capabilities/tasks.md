@@ -40,7 +40,7 @@ Read-model năng lực trong hub-api từ ConfigCache (intake CR-118 PHẦN A §
 - N3: đẩy trực tiếp tới phiên trên instance (mỗi instance tự LISTEN), không XADD Redis, không id SSE ⇒ không chiếm `Last-Event-ID`; gộp trong một microtask; trần 50.000 phiên/lần.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### ADDED docs/current/admin/nang-luc.md
 #### Yêu cầu: Ảnh năng lực của người dùng (`GET /pack/me`)

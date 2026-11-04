@@ -42,5 +42,8 @@ Viết tắt đường dẫn: `H` = `apps/hub-api/src/modules/packs/contracts`, 
 | Engine quy trình (CR-103) | [engine/flow-engine.md](engine/flow-engine.md) | Registry node, If, set, đổi node, canvas/drawer, showcase, route HUB_PROCESS_ROUTES, catalog tool |
 | | [engine/thu-vien-quy-trinh.md](engine/thu-vien-quy-trinh.md) | Thư viện quy trình (CR-105): khe, gán tenant, mặc định, xuất bản, nhân bản |
 | Admin (ngắn) | [admin/ghi-chu.md](admin/ghi-chu.md) | Người dùng ngoài / công ty đối tác, cổng admin-api cho đối tác |
+| | [admin/cau-hinh-app.md](admin/cau-hinh-app.md) · [admin/nang-luc.md](admin/nang-luc.md) · [admin/slot-flow-review-badge.md](admin/slot-flow-review-badge.md) | CR-118: trang cấu hình app, năng lực `/pack/me`, huy hiệu khe |
+| Web gộp (CR-118) | [web/web-hop-nhat.md](web/web-hop-nhat.md) · [sht/feature-gate-web.md](sht/feature-gate-web.md) · [sht/home-default-app.md](sht/home-default-app.md) | Một web, một phiên, FeatureGate OpenFeature, home theo default_app |
+| Engine flow (CR-118) | [engine/flow-runtime.md](engine/flow-runtime.md) · [engine/flow-web.md](engine/flow-web.md) | FlowRuntime của kit, renderer + form phía web |
 
 Khu vực khác (Agent Hub lõi, Worker, Chat) chưa có `current/`; dùng `docs/design/**` + CODEMAP tới khi có.

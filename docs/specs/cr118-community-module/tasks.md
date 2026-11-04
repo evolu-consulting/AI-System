@@ -38,7 +38,7 @@ Dời `apps/community-web/src` TẠI CHỖ sang hình module đích để lát `
 - Luật depcruise 1–6 áp lên module (lát move); `ui/styles` ngân sách CSS ≤ 15 KB gz (hiện cả app ~9.7 KB gz).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: COM-FR-31 Routing feed/profile theo đường dẫn `/community/*` (thay hash)

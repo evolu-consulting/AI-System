@@ -96,3 +96,38 @@ Lượt mở từ trang "Mẫu · chạy thử" (showcase, chạy mẫu) có `is
 - `fnr-fix-unfreeze` ghi tenant_admin ngoài Group duyệt gọi `decision` ⇒ 404, `fnr-unfreeze` ghi quyền quyết task "không đổi": chưa đối chiếu code `gates/` từng dòng.
 - Chưa kiểm production ngoài smoke 2026-10-29 (150tr ⇒ dừng "Giám đốc duyệt"; member `/process-defs` 403, `/me/process-inbox` 404).
 - `fix-pd2-e05`: danh sách đầy đủ tool lõi bị loại chỉ biết theo cờ `open` (không liệt kê tên từ code).
+
+## CR-118 · Delta gộp 2026-11-04 (đợt cr118-r1)
+Mục dưới đây thắng nội dung cũ cùng chủ đề ở trên (lát: cr118-r1-fixes, cr118-flow-admin, cr118-form-node).
+
+#### Yêu cầu: Trần tiền của form an toàn số nguyên (nguồn: cr118-r1-fixes)
+`FORM_MONEY_MAX` = 1e15 (≤ `Number.MAX_SAFE_INTEGER`).
+- Kịch bản: khi trường money có max > 1e15 thì schema từ chối [test: packages/contracts/src/hub-admin/process-form-money.test.ts » FORM_MONEY_MAX an toàn số nguyên]
+
+#### Yêu cầu: Một định nghĩa trường form cho Hub, flow và editor (nguồn: cr118-flow-admin)
+Trường của node `form` có MỘT định nghĩa (8 loại: text, textarea, number, money, date, select, checkbox, file_ref; ≤ 20 trường;
+nhãn/gợi ý văn bản thuần). Def của quy trình (executor `form`) và form trong view flow dùng đúng schema này; validator giá trị dựng
+từ form của snapshot giống luật Hub (money nguyên ≥ 0, file_ref là uuid, checkbox bắt buộc phải đánh dấu).
+- Kịch bản: khi hai nơi dùng cùng danh sách trường thì cùng chấp nhận/từ chối, kể cả khoá trùng và nhỏ nhất > lớn nhất [test: packages/contracts/src/flow/flow.test.ts » MỘT schema trường: flow dùng đúng FormFieldSchema của hub-admin (8 loại, money + file_ref)]
+- Kịch bản: khi kiểm giá trị theo form snapshot thì money sai/uuid sai/trường lạ bị từ chối [test: packages/contracts/src/flow/flow.test.ts » validator từ form snapshot: strict, giới hạn, bắt buộc]
+
+#### Yêu cầu: Editor trường của bước form và đồng bộ kết quả (nguồn: cr118-flow-admin)
+Editor quy trình (Canvas và Danh sách) cho thêm/xoá/đổi chỗ trường, chọn loại, nhãn, mã, gợi ý, bắt buộc, giới hạn và lựa chọn của
+select. `output.fields` của bước luôn được dựng lại từ trường form (key + kiểu) nên bước "Nếu"/bước sau đọc được và Hub không từ chối
+FORM_INVALID. Bước form luôn chờ người điền (Duyệt bởi Group), không Hành động thật. Lỗi nhập hiện ngay bằng tiếng Việt.
+- Kịch bản: khi thêm/xoá/đổi loại/đổi chỗ trường thì output.fields khớp trường form [test: apps/admin-web/src/features/processes/lib/form-fields.test.ts » output.fields khớp trường form (key + kiểu) sau khi thêm / xoá / đổi loại / đổi chỗ]
+- Kịch bản: khi nạp def có đủ 8 loại rồi gửi lại thì không mất gì [test: apps/admin-web/src/features/processes/lib/form-fields.test.ts » 8 loại trường đi vòng def → draft → input không mất gì]
+- Kịch bản: khi nhãn/mã/giới hạn/lựa chọn sai thì có câu lỗi tiếng Việt theo ô [test: apps/admin-web/src/features/processes/lib/form-fields.test.ts » giới hạn: độ dài, số, tiền, min > max]
+- Kịch bản: khi tạo bước form ở Canvas rồi Lưu và Bật thì Hub lưu trường và output.fields khớp, tải lại còn [test: e2e/fnr-showcase/form-editor.fnr.ts » Canvas: thêm bước form + trường ⇒ Lưu 200 ⇒ Bật ⇒ tải lại còn, output.fields khớp trường]
+- Kịch bản: khi sửa trường ở view Danh sách thì Lưu 200 và output.fields đồng bộ [test: e2e/fnr-showcase/form-editor.fnr.ts » Danh sách: sửa trường của bước form có sẵn ⇒ output.fields đồng bộ ⇒ Lưu 200]
+
+#### Yêu cầu: Node form — người điền form ở một bước (nguồn: cr118-form-node)
+Loại node `form` (họ work, produces = các trường form) chờ một thành viên Group của bước (luật như cổng kiểm) gửi giá trị
+cho tập trường cố định (≤ 20; text, textarea, number, money, date, select, checkbox, file_ref; không HTML/biểu thức). Hub kiểm
+theo form trong snapshot run, bỏ trường lạ, ghi field vào output stage và Đạt trong cùng transaction; If/bước sau đọc được.
+- Kịch bản: khi giá trị vượt giới hạn/ sai loại/ thiếu bắt buộc thì từ chối theo key trường [test: apps/hub-api/src/modules/processes/domain/form/form.rules.test.ts » giới hạn từng loại]
+- Kịch bản: khi người gửi ngoài Group, khác tenant hoặc là đối tác ở run gói contracts thì 404, thành viên Group thì 200 [test: tests/acceptance/CR118/form-node.int.test.ts » ma trận người làm: member ngoài Group / tenant khác / đối tác (run gói contracts) ⇒ 404, thành viên Group ⇒ 200]
+- Kịch bản: khi giá trị sai thì 422 FORM_VALUES_INVALID và task vẫn mở [test: tests/acceptance/CR118/form-node.int.test.ts » giá trị sai ⇒ 422 FORM_VALUES_INVALID {paths}, task vẫn mở, output không đổi]
+- Kịch bản: khi gửi hai lần cùng giá trị thì một kết quả, một audit, giá trị khác sau khi đóng thì 409 [test: tests/acceptance/CR118/form-node.int.test.ts » idempotent: gửi 2 lần cùng giá trị ⇒ 200 cả hai, một output, một audit, giá trị khác sau khi đóng ⇒ 409]
+- Kịch bản: khi bước sau là If trên field form thì rẽ theo giá trị đã gửi [test: tests/acceptance/CR118/form-node.int.test.ts » If bước sau đọc field form: so_tien > 100 ⇒ nhảy bước 3 (bước 2 skipped), run done]
+- Kịch bản: khi def đổi trường sau khi run bắt đầu thì run cũ vẫn kiểm theo snapshot [test: tests/acceptance/CR118/form-node.int.test.ts » snapshot: def sửa sau khi run bắt đầu (đổi trường) ⇒ run cũ vẫn kiểm theo form lúc bắt đầu]

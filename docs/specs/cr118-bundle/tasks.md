@@ -43,7 +43,7 @@ phụ thuộc: cr118-move
 - Không tách zod (360 KB thô, lõi parse) vì `@ai/contracts` cần ngay ở trang đầu (auth/pack-state/route validateSearch).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 Không thay đổi hành vi (lý do: chỉ đổi thời điểm tải mã (lazy chunk) và ngưỡng ngân sách bundle; giao diện/luồng giữ nguyên)
 

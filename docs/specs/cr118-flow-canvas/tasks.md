@@ -28,7 +28,7 @@ Ba cách vẽ sơ đồ quy trình (admin `ProcessCanvas`, sohoptac `FlowCanvas`
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### MODIFIED sht/cai-dat-va-quyen.md
 #### Yêu cầu: Sơ đồ quy trình duyệt đang dùng của tenant dùng gói sơ đồ chung (CR-106/108/113, UW-FR-14)

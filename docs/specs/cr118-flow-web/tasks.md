@@ -38,7 +38,7 @@ Thẻ duyệt HĐ vẽ dòng thời gian QUA `<FlowPanel slot="contracts.approva
 - e2e bước form: không dựng được fixture rẻ (cần quy trình engine có node `form` + cờ `HUB_FLOW_RUNTIME` bật cho hub của e2e) ⇒ chỉ unit + ghi chú.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Thẻ duyệt HĐ vẽ dòng thời gian qua FlowPanel, hành vi không đổi

@@ -39,7 +39,7 @@ suy từ `me.kind` (đối tác ⇒ chỉ community).
 - `/community` tạm là khung tối thiểu (tên + Đăng xuất) để guard/e2e chạy được; lát community-module thay component.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Đăng nhập Community nằm trong web gộp

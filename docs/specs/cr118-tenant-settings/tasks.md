@@ -42,7 +42,7 @@ unit `packages/web-kit/src/routing-rules.test.ts`; `apps/sohoptac-web/rsbuild.co
   TRONG worktree này, KHÔNG deploy. Dùng `/tenants` vì route luật nằm ở gốc hub; SPA không có route `/tenants`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### MODIFIED sht/cai-dat-va-quyen.md
 #### Yêu cầu: Cài đặt › Ứng dụng & quy trình (tenant tự sửa luật chọn quy trình)

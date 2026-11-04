@@ -37,7 +37,7 @@ quy trình (`TenantProcessSlots`) và một đường lưu (`useAppsTab` + `Apps
 - Toast lưu của tab Ứng dụng & Gói thêm câu "Công ty sẽ thấy thay đổi trong vòng 1 phút" (F1).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-04 (đợt cr118-r1)
 
 ### ADDED admin/cau-hinh-app.md
 #### Yêu cầu: Trang cấu hình app theo 5 tab (ADM-FR-84)
