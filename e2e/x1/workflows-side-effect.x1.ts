@@ -38,7 +38,7 @@ test("X1-AC10 · danh sách: columnheader 'Xác nhận'; workflow có cờ hiệ
   });
   await loginAdmin(page);
   await page.goto("/workflows");
-  const table = page.getByRole("table", { name: "Workflows" });
+  const table = page.getByRole("table", { name: "Workflow Dify (tool AI)" });
   await expect(table.getByRole("columnheader", { name: "Xác nhận" })).toBeVisible();
   const rowOf = (key: string) =>
     table.getByRole("row").filter({ hasText: new RegExp(`(?<![w-])${key}(?![w-])`) });

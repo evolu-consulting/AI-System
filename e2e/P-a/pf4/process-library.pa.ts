@@ -22,7 +22,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
   const p = await ctx.newPage();
   try {
     await platformLogin(p);
-    await p.getByRole("link", { name: "Quy trình", exact: true }).click();
+    await p.getByRole("link", { name: "Quy trình nghiệp vụ", exact: true }).click();
 
     // danh sách thư viện: khe "Dùng cho" nằm dưới tên (CR-105 UAT, bảng vừa 1440px) + huy hiệu mặc định; mẫu chạy thử nằm ở tab riêng
     await expect(p.getByRole("tab", { name: "Thư viện" })).toBeVisible();
@@ -155,7 +155,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     // ở trang editor có thêm link "Quy trình" trên đường dẫn ⇒ chọn đúng link ở thanh bên
     await p
       .getByRole("navigation", { name: "Điều hướng chính" })
-      .getByRole("link", { name: "Quy trình", exact: true })
+      .getByRole("link", { name: "Quy trình nghiệp vụ", exact: true })
       .click();
     await expect(table.getByRole("row").filter({ hasText: name }).first()).toBeVisible();
     await expect(table.getByRole("row").filter({ hasText: name }).first()).toContainText(
@@ -173,7 +173,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await expect(p.getByRole("heading", { level: 1 })).toHaveText("Nháp tạm e2e");
     await p
       .getByRole("navigation", { name: "Điều hướng chính" })
-      .getByRole("link", { name: "Quy trình", exact: true })
+      .getByRole("link", { name: "Quy trình nghiệp vụ", exact: true })
       .click();
     const tmp = table.getByRole("row").filter({ hasText: "Nháp tạm e2e" });
     await tmp.getByRole("button", { name: "Xoá" }).click();

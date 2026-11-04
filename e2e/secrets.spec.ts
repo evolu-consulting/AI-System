@@ -35,14 +35,16 @@ test("ADM-BR-14 · M2-AC01 · menu: admin thấy Secrets/Workflows/Commands/Feat
     await expect(nav(page).getByRole("link", { name, exact: true })).toBeVisible();
   }
   // CR-112 (nav.ts, nhóm NỀN TẢNG): "Workflows" là một liên kết trong sidebar (nhóm sổ xuống DLC-R15 không thuộc nhánh này).
-  await expect(nav(page).getByRole("link", { name: "Workflows", exact: true })).toBeVisible();
+  await expect(
+    nav(page).getByRole("link", { name: "Workflow Dify (tool AI)", exact: true }),
+  ).toBeVisible();
   const ctx = await browser.newContext({ locale: "vi-VN", timezoneId: "Asia/Ho_Chi_Minh" });
   try {
     const other = await ctx.newPage();
     const calls: string[] = [];
     other.on("request", (r) => calls.push(r.url()));
     await loginToShell(other, "acme", "binh", PW);
-    for (const name of ["Secrets", "Commands", "Features", "Workflows"]) {
+    for (const name of ["Secrets", "Commands", "Features", "Workflow Dify (tool AI)"]) {
       await expect(nav(other).getByRole("link", { name, exact: true })).toHaveCount(0);
     }
     await other.goto("/secrets");
