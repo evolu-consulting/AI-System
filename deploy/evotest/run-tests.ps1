@@ -5,8 +5,14 @@
 # -Probe "runs=3,size=small" (CR-116, chỉ -Step perf|py): bật PERF_PROBE=1 + PERF_PROBE_OPTS trong container; -Exclusive cũng dùng được với -Step py. Điều khiển bởi `bun run perf:probe` (docs/WORKFLOW.md "Đo perf").
 # git archive <Ref> (+ thay đổi chưa commit nếu -Dirty) -> scp -> remote.sh (build, chạy, dọn) -> log về .data/evotest/<giờ>/.
 # Thoát bằng mã test (0 xanh; 2 lỗi dựng/setup; 3 chờ slot quá 90 phút; 4 đĩa).
-param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,8)][int]$Slots = 8, [ValidateSet("", "cw")][string]$Capture = "", [switch]$Exclusive, [ValidateRange(1,600)][int]$ExclusiveTimeoutMin = 60, [string]$Probe = "")
+# tool-evotest-cache:
+#   LƯỢT TOÀN BỘ (-Step int|e2e|all KHÔNG -Filter): từ chối chạy (exit 5) khi slot khác còn bận, trừ khi -Force; trong lúc nó chạy giữ khoá .exclusive nên lượt khác xếp hàng (lock.sh full_acquire).
+#   -NoCache: tắt cache dựng web (/cache/build) + mẫu DB (dbtpl) cho lượt này (đo "trước", nghi cache sai).
+#   -CachePrune [-Keep N=5] [-MaxGb G=6]: chỉ dọn cache chung trên máy chủ (giữ N ref dùng gần nhất, trần dung lượng) rồi thoát. Remote.sh cũng tự dọn cuối mỗi lượt.
+param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,8)][int]$Slots = 8, [ValidateSet("", "cw")][string]$Capture = "", [switch]$Exclusive, [ValidateRange(1,600)][int]$ExclusiveTimeoutMin = 60, [string]$Probe = "", [switch]$Force, [switch]$NoCache, [switch]$CachePrune, [ValidateRange(1,50)][int]$Keep = 5, [ValidateRange(1,100)][int]$MaxGb = 6)
 $ErrorActionPreference = "Stop"
+$isFull = (($Step -in "int", "e2e", "all") -and -not $Filter -and -not $Exclusive)
+if ($Force -and -not $isFull) { Write-Host "evotest: -Force chỉ có nghĩa với lượt toàn bộ (int|e2e|all không -Filter); bỏ qua" }
 if ($Exclusive -and $Step -ne "perf" -and $Step -ne "py") { throw "-Exclusive chỉ dùng với -Step perf|py (đo hiệu năng cần máy yên)" }
 if ($Probe -and $Step -ne "perf" -and $Step -ne "py") { throw "-Probe chỉ dùng với -Step perf|py" }
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
@@ -18,8 +24,17 @@ $out = Join-Path $Repo ".data\evotest\$stamp-$Step"
 $tmp = Join-Path $env:TEMP "evotest-$stamp"
 $finished = $false
 
+if ($CachePrune) {
+  $cs = (Get-Content -Raw "$PSScriptRoot\cache.sh").Replace("`r`n", "`n"); $ct = Join-Path $env:TEMP "evotest-cache-$stamp.sh"
+  [IO.File]::WriteAllText($ct, $cs, (New-Object Text.UTF8Encoding $false))
+  try {
+    scp @ssh $ct "${Server}:/tmp/evotest-cache-$stamp.sh"
+    ssh @ssh $Server "R=`$HOME/workspace/evotest; C=`$R/cache; . /tmp/evotest-cache-$stamp.sh; cache_prune $Keep $MaxGb; unlink /tmp/evotest-cache-$stamp.sh" 2>&1
+  } finally { Remove-Item -Force $ct -ErrorAction SilentlyContinue }
+  return
+}
 if ($DryRun) {
-  Write-Host "commit $commit, bước $Step -> $Server ~/workspace/evotest/slots/sN (N = slot trống đầu tiên trong $Slots); log: $out"
+  Write-Host "commit $commit, bước $Step -> $Server ~/workspace/evotest/slots/sN (N = slot trống đầu tiên trong $Slots); log: $out$(if ($isFull) { '; LƯỢT TOÀN BỘ' + $(if ($Force) { ' (-Force)' } else { ' (từ chối nếu slot khác bận)' }) })"
   Write-Host "ssh: bash ~/workspace/evotest/boot.sh -> remote.sh $Step $commit (sau khi scp evotest-app.tgz + evotest-kit.tgz vào /tmp)"
   return
 }
@@ -33,6 +48,10 @@ try {
     $ramGb = [math]::Round((($p[2] -split '\s+')[1]) / 1MB, 1); $diskGb = [math]::Round((($p[3] -split '\s+')[3]) / 1MB, 0)
     $busy = @($p | Where-Object { $_ -like 'busy*' } | ForEach-Object { 's' + $_.Substring(4) })
     Write-Host ("evotest: máy chủ load {0}/{1} lõi, RAM trống {2} GB, đĩa trống {3} GB, slot bận {4}/{5} {6} (chi tiết: bun run res:check --server)" -f $load, $cores, $ramGb, $diskGb, $busy.Count, $Slots, ($busy -join ','))
+    if ($isFull -and $busy.Count -gt 0 -and -not $Force) {
+      Write-Host "evotest: LƯỢT TOÀN BỘ ($Step không -Filter) từ chối - slot đang bận: $($busy -join ','). Chạy lại khi rảnh (bun run res:check --server) hoặc thêm -Force."
+      exit 5
+    }
     if ($busy.Count -ge $Slots) { Write-Warning "evotest: mọi slot đều bận - lượt này sẽ xếp hàng (tối đa 90 phút)" }
     elseif ([double]$load -gt [double]$cores) { Write-Warning "evotest: máy chủ đang quá tải (load $load > $cores lõi)" }
   } else { Write-Host "evotest: không đọc được tải máy chủ (bỏ qua; boot.sh vẫn xếp hàng)" }
@@ -54,11 +73,11 @@ try {
     tar.exe -czf "$tmp\evotest-app-$stamp.tgz" -C $src .
   }
   # Bộ dựng/chạy lấy từ thư mục này (không phụ thuộc Ref có chứa deploy/evotest hay không); ép LF cho .sh
-  foreach ($f in "remote.sh", "in-container.sh", "boot.sh", "lock.sh") {
+  foreach ($f in "remote.sh", "in-container.sh", "boot.sh", "lock.sh", "cache.sh") {
     $t = [IO.File]::ReadAllText("$PSScriptRoot\$f").Replace("`r`n", "`n"); [IO.File]::WriteAllText("$tmp\$f", $t, (New-Object Text.UTF8Encoding $false))
   }
   Copy-Item "$PSScriptRoot\docker-compose.yml", "$PSScriptRoot\docker-compose.exclusive.yml", "$PSScriptRoot\Dockerfile" $tmp; Copy-Item -Recurse "$PSScriptRoot\pg-init" $tmp
-  tar.exe -czf "$tmp\evotest-kit-$stamp.tgz" -C $tmp docker-compose.yml docker-compose.exclusive.yml Dockerfile remote.sh in-container.sh pg-init
+  tar.exe -czf "$tmp\evotest-kit-$stamp.tgz" -C $tmp docker-compose.yml docker-compose.exclusive.yml Dockerfile remote.sh in-container.sh cache.sh pg-init
   ssh @ssh $Server "mkdir -p ~/workspace/evotest"
   scp @ssh "$tmp\evotest-app-$stamp.tgz" "$tmp\evotest-kit-$stamp.tgz" "${Server}:/tmp/"
   $t0 = Get-Date
@@ -66,7 +85,7 @@ try {
   # boot.sh scp lên /tmp (tránh lỗi PS 5.1 bỏ dấu nháy kép khi truyền đối số ssh); 2>&1 phía máy chủ để PS 5.1 không coi stderr là lỗi.
   scp @ssh "$tmp\boot.sh" "${Server}:/tmp/evotest-boot-$stamp.sh"
   scp @ssh "$tmp\lock.sh" "${Server}:/tmp/evotest-lock-$stamp.sh"
-  $boot = "EVO_LOCKLIB=/tmp/evotest-lock-$stamp.sh EVO_EXCLUSIVE='$(if ($Exclusive) { 1 })' EVO_EXCLUSIVE_TIMEOUT_S=$($ExclusiveTimeoutMin * 60) EVO_SLOTS=$Slots EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' EVO_PROBE='$Probe' bash /tmp/evotest-boot-$stamp.sh $Step $commit $stamp 2>&1; rc=`$?; unlink /tmp/evotest-boot-$stamp.sh; exit `$rc"
+  $boot = "EVO_LOCKLIB=/tmp/evotest-lock-$stamp.sh EVO_EXCLUSIVE='$(if ($Exclusive) { 1 })' EVO_FULL_RUN='$(if ($isFull) { 1 })' EVO_FORCE='$(if ($Force) { 1 })' EVO_NOCACHE='$(if ($NoCache) { 1 })' EVO_EXCLUSIVE_TIMEOUT_S=$($ExclusiveTimeoutMin * 60) EVO_SLOTS=$Slots EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' EVO_PROBE='$Probe' bash /tmp/evotest-boot-$stamp.sh $Step $commit $stamp 2>&1; rc=`$?; unlink /tmp/evotest-boot-$stamp.sh; exit `$rc"
   $finished = $false
   ssh @ssh $Server $boot | Tee-Object -FilePath "$out\console.log"
   $rc = $LASTEXITCODE

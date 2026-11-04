@@ -206,4 +206,50 @@ d("evotest boot.sh · -Exclusive", () => {
     expect(existsSync(join(R, ".exclusive"))).toBe(false);
     hold.kill();
   });
+
+  // tool-evotest-cache · lượt TOÀN BỘ (EVO_FULL_RUN=1)
+  it("full run: slot khác bận ⇒ exit 5 (từ chối), không để .exclusive; có EVO_FORCE ⇒ chạy", async () => {
+    const home = tmp();
+    const { R, log, start } = rig(home);
+    const hold = Bun.spawn(["sleep", "30"]);
+    mkdirSync(join(R, "slots/s2"), { recursive: true });
+    mkdirSync(join(R, "slots/s2/.lock"));
+    writeFileSync(join(R, "slots/s2/.lock/owner"), `${hold.pid} 0 c holder`);
+    const refused = start("full", "tagR", { EVO_FULL_RUN: "1", EVO_FULL_RECHECK_S: "0.05" });
+    expect(await refused.exited).toBe(5);
+    expect(await until(refused, "")).toContain("từ chối");
+    expect(existsSync(join(R, ".exclusive"))).toBe(false);
+    expect(existsSync(log)).toBe(false); // remote.sh không chạy
+    const forced = start("full", "tagFo", {
+      EVO_FULL_RUN: "1",
+      EVO_FORCE: "1",
+      EVO_FULL_RECHECK_S: "0.05",
+    });
+    expect(await forced.exited).toBe(0);
+    expect(await until(forced, "")).toContain("-Force");
+    expect(existsSync(join(R, ".exclusive"))).toBe(false); // nhả khi xong
+    hold.kill();
+  });
+
+  it("full run giữ máy: lượt thường xếp hàng, chạy SAU khi full xong; full không chờ slot rảnh khi không ai bận", async () => {
+    const home = tmp();
+    const { R, log, fifo, start } = rig(home);
+    const full = start("ex", "tagFull", { EVO_FULL_RUN: "1", EVO_FULL_RECHECK_S: "0.05" });
+    expect(await until(full, "TOÀN BỘ giữ máy chủ")).toContain("slot 1/4");
+    const own = readFileSync(join(R, ".exclusive/owner"), "utf8").trim().split(" ");
+    expect(own[4]).toBe("full");
+    const normal = start("normal", "tagN2", {});
+    expect(await until(normal, "xếp hàng")).toContain("TOÀN BỘ");
+    Bun.spawnSync(["bash", "-c", `echo go > "${fifo}"`]);
+    await Promise.all([until(full, ""), until(normal, "")]);
+    expect(await full.exited).toBe(0);
+    expect(await normal.exited).toBe(0);
+    expect(readFileSync(log, "utf8").trim().split("\n")).toEqual([
+      "ex",
+      "done-ex",
+      "normal",
+      "done-normal",
+    ]);
+    expect(existsSync(join(R, ".exclusive"))).toBe(false);
+  });
 });

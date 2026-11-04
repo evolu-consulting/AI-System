@@ -8,6 +8,8 @@
 STEP="$1"; COMMIT="$2"; TAG="$3"
 R="$HOME/workspace/evotest"; N="${EVO_SLOTS:-8}"
 EXCL="${EVO_EXCLUSIVE:-}"
+FULL="${EVO_FULL_RUN:-}"      # tool-evotest-cache: lượt toàn bộ (int|e2e|all không -Filter) - giữ .exclusive nhưng không chờ slot rảnh; EVO_FORCE=1 chạy dù slot bận
+HOLD=""; [ -n "$EXCL$FULL" ] && HOLD=1   # đang giữ .exclusive của chính mình ⇒ không tự xếp hàng sau nó
 # shellcheck source=lock.sh
 . "${EVO_LOCKLIB:?thiếu EVO_LOCKLIB}" || exit 2
 [ -n "$EVO_LOCKLIB" ] && unlink "$EVO_LOCKLIB" 2>/dev/null
@@ -17,26 +19,29 @@ L=""; CHILD=""
 cleanup() {
   if [ -n "$CHILD" ] && kill -0 "$CHILD" 2>/dev/null; then kill -TERM "$CHILD" 2>/dev/null; wait "$CHILD" 2>/dev/null; fi
   [ -n "$L" ] && rm -rf "$L"
-  [ -n "$EXCL" ] && ex_release "$TAG"
+  [ -n "$HOLD" ] && ex_release "$TAG"
 }
 trap cleanup EXIT
 trap 'exit 143' INT TERM HUP
 
 if [ -n "$EXCL" ]; then
   ex_acquire "$COMMIT" "$TAG" "${EVO_EXCLUSIVE_TIMEOUT_S:-3600}" || exit $?
+elif [ -n "$FULL" ]; then
+  full_acquire "$COMMIT" "$TAG" "$([ -n "${EVO_FORCE:-}" ] && echo 1 || echo 0)" "${EVO_EXCLUSIVE_TIMEOUT_S:-3600}" || exit $?
+  echo "evotest: lượt TOÀN BỘ giữ máy chủ (lượt thường xếp hàng tới khi xong)"
 fi
 
 SLOT=0; said=0; WAIT_END=$(( $(date +%s) + 5400 ))
 while [ "$SLOT" -eq 0 ]; do
-  if [ -z "$EXCL" ] && ex_held; then
-    [ "$said" -eq 0 ] && echo "evotest: có lượt perf -Exclusive đang giữ máy, xếp hàng... owner: $(cat "$EX/owner" 2>/dev/null)"; said=1
+  if [ -z "$HOLD" ] && ex_held; then
+    [ "$said" -eq 0 ] && echo "evotest: có lượt perf -Exclusive / lượt TOÀN BỘ đang giữ máy, xếp hàng... owner: $(cat "$EX/owner" 2>/dev/null)"; said=1
   else
     for i in $(seq 1 "$N"); do
       mkdir -p "$R/slots/s$i"
       if try_lock "$(lockof "$i")"; then SLOT=$i; break; fi
     done
     # Cửa sổ chạy đua: lượt exclusive có thể xuất hiện ngay sau khi kiểm - nhả slot và xếp hàng lại.
-    if [ "$SLOT" -ne 0 ] && [ -z "$EXCL" ] && ex_held; then rm -rf "$(lockof "$SLOT")"; SLOT=0; fi
+    if [ "$SLOT" -ne 0 ] && [ -z "$HOLD" ] && ex_held; then rm -rf "$(lockof "$SLOT")"; SLOT=0; fi
     [ "$SLOT" -ne 0 ] && break
     [ "$said" -eq 0 ] && echo "evotest: cả $N slot đều bận, xếp hàng... slot1 owner: $(cat "$(lockof 1)/owner" 2>/dev/null)"; said=1
   fi

@@ -9,6 +9,7 @@
 #     2. Lượt exclusive lấy .exclusive TRƯỚC (chặn lượt mới, không bị đói), rồi chờ mọi slot rảnh, rồi lấy slot của mình và kiểm lại các slot khác rảnh.
 #     3. Owner chết (kill -9, mất ssh) => khoá mồ côi, lượt sau gỡ. Hết hạn (EX_DEADLINE) => nhả .exclusive, mã 3.
 # Biến: R (gốc), N (số slot); tuỳ chọn EVO_POLL_S (mặc định 5), EVO_PROGRESS_S (30).
+# (tool-evotest-cache) Lượt toàn bộ (full run) cũng giữ `.exclusive` nhưng không chờ slot rảnh: xem full_acquire bên dưới.
 
 EX="$R/.exclusive"
 POLL="${EVO_POLL_S:-5}"
@@ -91,6 +92,37 @@ ex_acquire() {
   done
   ex_drain 0 || { ex_release "$2"; return 3; }
 }
+
+# tool-evotest-cache · LƯỢT TOÀN BỘ (full run: -Step int|e2e|all không -Filter, ~35–50 phút) dùng lại khoá `.exclusive`, owner có thêm trường 5 = `full`:
+#   - lượt thường xếp hàng khi .exclusive còn (đúng luật CR-115) ⇒ lượt toàn bộ giữ máy chủ không bị chen thêm lượt mới;
+#   - khác -Exclusive: KHÔNG chờ các slot khác rảnh; còn slot bận (lượt khác đang chạy) ⇒ TỪ CHỐI (exit 5) trừ khi force=1.
+# full_acquire <commit> <tag> <force 0|1> <timeout_s>: 0 giữ khoá; 3 hết hạn chờ lượt exclusive/full khác; 5 từ chối vì slot bận.
+full_acquire() {
+  local deadline now last=0 b o
+  deadline=$(( $(date +%s) + ${4:-3600} ))
+  while :; do
+    if mkdir "$EX" 2>/dev/null; then echo "$$ $(date +%s) $1 $2 full" > "$EX/owner"; break; fi
+    ex_held || continue
+    now=$(date +%s)
+    if [ "$now" -ge "$deadline" ]; then echo "evotest: lượt toàn bộ hết hạn chờ lượt khác ($(cat "$EX/owner" 2>/dev/null))"; return 3; fi
+    if [ $((now - last)) -ge "$PROGRESS_S" ]; then
+      o=$(cat "$EX/owner" 2>/dev/null); echo "evotest: lượt toàn bộ chờ lượt exclusive/full khác - owner: $o (còn $((deadline - now)) s)"; last=$now
+    fi
+    sleep "$POLL"
+  done
+  b=$(busy_list 0)
+  if [ -n "$b" ]; then
+    # một lượt thường vừa lấy slot trước khi .exclusive xuất hiện sẽ tự nhả sau khi kiểm lại (boot.sh) - đo lại một lần cho khỏi từ chối oan
+    sleep "$FULL_RECHECK_S"; b=$(busy_list 0)
+  fi
+  if [ -n "$b" ] && [ "${3:-0}" != 1 ]; then
+    echo "evotest: lượt TOÀN BỘ từ chối - slot còn bận: $b. Chạy lại khi rảnh (bun run res:check --server) hoặc thêm -Force."
+    ex_release "$2"; return 5
+  fi
+  [ -n "$b" ] && echo "evotest: -Force: lượt toàn bộ chạy khi slot còn bận: $b (các lượt đó vẫn chạy tiếp, máy chủ sẽ chậm)"
+  return 0
+}
+FULL_RECHECK_S="${EVO_FULL_RECHECK_S:-2}"
 
 # Ảnh chụp tải để ghi vào kết quả: "load1=… nproc=… mem_avail_mb=… slot_bận=…".
 snap() {

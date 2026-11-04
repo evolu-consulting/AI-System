@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "rsbuild dev",
-    "build": "rsbuild build",
+    "build": "bun ../../tools/scripts/src/evotest-cache.ts app-build",
     "preview": "rsbuild preview",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "test": "bun test src scripts rsbuild.config.test.ts",

@@ -31,6 +31,12 @@ git init -q . && git add -A >/dev/null 2>&1 || true   # keys:dev cần gốc rep
 bun -e "const f='package.json',p=JSON.parse(await Bun.file(f).text());delete p.scripts.postinstall;await Bun.write(f,JSON.stringify(p,null,2))"
 t0=$(date +%s)
 bun install --frozen-lockfile >/out/setup.log 2>&1 || { echo "bun install lỗi"; tail -n 40 /out/setup.log; exit 2; }
+# tool-evotest-cache: dựng web MỘT lần mỗi (commit|băm nội dung + bun.lock + PUBLIC_*) vào /cache/build dùng chung mọi slot (webServer của e2e gọi
+# evotest-cache.ts build thay `bun run --filter … build`). EVO_SRC_ID tính một lần ở đây để mọi lượt dựng sau cùng một định danh mã nguồn.
+if [ -n "${EVO_BUILD_CACHE:-}" ]; then
+  export EVO_SRC_ID="$(bun tools/scripts/src/evotest-cache.ts src-id 2>>/out/setup.log)"
+  echo "[evotest] build-cache: $EVO_BUILD_CACHE · nguồn ${EVO_SRC_ID:-?}"
+fi
 
 # EVO_CAPTURE=cw (run-tests.ps1 -Step e2e -Capture cw): chup baseline Linux cua e2e/contracts-web tu CHINH contracts-web (nav-v2:
 # khong con so voi mgmt-app), cung image/font voi lan so. Ra /out/baseline-linux; khong chay test khac.
@@ -118,6 +124,7 @@ elif [ "$EVO_STEP" = e2e ] && [ -n "$EVO_FILTER" ]; then FZ=--no-frozen; [ -n "$
   bun run test:all --no-python $FZ --only="$EVO_STEP"
 fi
 rc=$?
+[ -n "${EVO_BUILD_CACHE:-}" ] && bun tools/scripts/src/evotest-cache.ts report
 mkdir -p /out/logs
 [ -d .data ] && cp -r .data/. /out/logs/ 2>/dev/null
 exit $rc

@@ -10,6 +10,11 @@ DC=(docker compose -p "$PROJ" -f docker-compose.yml)
 [ -n "${EVO_EXCLUSIVE:-}" ] && DC+=(-f docker-compose.exclusive.yml)
 mkdir -p "$R/cache" "$D" && cd "$D" || exit 2
 export EVO_CACHE="$R/cache"
+C="$R/cache"
+# tool-evotest-cache: cache.sh (kit) = dọn cache + mẫu DB dùng chung; EVO_NOCACHE=1 (-NoCache) tắt cả cache dựng web lẫn mẫu DB.
+# shellcheck source=cache.sh
+. ./cache.sh || exit 2
+export EVO_BUILD_CACHE_ON="/cache/build"; [ -n "${EVO_NOCACHE:-}" ] && export EVO_BUILD_CACHE_ON=""
 
 # In "[evotest] exclusive-config <service>: cpus=… cpu_shares=… entrypoint=[…]" cho pg/redis/runner theo compose đã gộp (khớp exclusive.txt).
 exclusive_config() {
@@ -52,12 +57,16 @@ for s in $steps; do
   if [ -n "${EVO_EXCLUSIVE:-}" ]; then exclusive_config "${prof[@]}"   # cấu hình CPU thật compose dùng (vào exclusive.txt)
   else echo "[evotest] caps: slot thường (pg 1 CPU, runner nice 19, cpu_shares 128)"; fi
   "${DC[@]}" "${prof[@]}" build -q "$svc" >/dev/null || { echo "build lỗi"; rc=2; break; }
+  # mẫu DB đã migrate (chỉ bước int dùng template): nạp từ cache nếu có cho đúng băm migrations
+  [ "$s" = int ] && [ -z "${EVO_NOCACHE:-}" ] && { t1=$(date +%s); dbtpl_restore; echo "[evotest] dbtpl restore: $(( $(date +%s) - t1 )) s"; }
   t0=$(date +%s)
   "${DC[@]}" "${prof[@]}" run --rm "$svc"; r=$?
   echo "[evotest] $s: exit $r, $(( $(date +%s) - t0 )) s"
+  [ "$s" = int ] && [ -z "${EVO_NOCACHE:-}" ] && { t1=$(date +%s); dbtpl_save; echo "[evotest] dbtpl save: $(( $(date +%s) - t1 )) s"; }
   [ $r -ne 0 ] && rc=$r
   mkdir -p "out/$s"; [ -d out/logs ] && { cp -r out/logs/. "out/$s/"; rm -rf out/logs; }
   "${DC[@]}" --profile e2e --profile py down -v --remove-orphans >/dev/null 2>&1   # DB sạch cho bước sau
 done
+[ -z "${EVO_NOCACHE:-}" ] && cache_prune "${EVO_CACHE_KEEP:-5}" "${EVO_CACHE_MAX_GB:-6}" | tail -n 3   # giữ 5 ref / 6 GB (xem docs/WORKFLOW.md)
 tar czf "/tmp/evotest-out-$TAG.tgz" -C out . 2>/dev/null
 exit $rc

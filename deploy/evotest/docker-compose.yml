@@ -17,6 +17,8 @@ x-runner: &runner
     EVO_WORKERS: ${EVO_WORKERS:-}
     EVO_ALL: ${EVO_ALL:-}
     EVO_CAPTURE: ${EVO_CAPTURE:-}
+    # tool-evotest-cache: cache dựng web dùng chung mọi slot (cùng volume /cache với bun cache). `-NoCache` ⇒ EVO_BUILD_CACHE_ON rỗng ⇒ dựng như cũ.
+    EVO_BUILD_CACHE: ${EVO_BUILD_CACHE_ON-/cache/build}
   volumes:
     - ./app:/app
     - ${EVO_CACHE:-./cache}:/cache
