@@ -309,6 +309,7 @@ describe("HUB-FR-131 · 0029 idempotent", () => {
             where relnamespace = 'hub'::regnamespace and relkind = 'r' and relname like '%kh%'
           union all select conname || ':' || pg_get_constraintdef(oid) from pg_constraint
             where conrelid = 'hub.audit_log'::regclass and contype = 'c'
+              and conname <> 'hub_audit_log_action_check' -- các migration sau (0087…) định nghĩa lại hợp lệ; chạy lại 0029 đặt về danh sách cũ
           order by 1`
       ).map((r) => r.n);
     const before = await snap();
