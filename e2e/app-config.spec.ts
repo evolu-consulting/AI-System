@@ -143,9 +143,11 @@ test("CR-118 · F3 · Xem trước acme: đối tác không thấy nhóm Sổ H�
   await page.getByRole("radio", { name: "Thành viên" }).click();
   const member = page.getByTestId("preview-member");
   await expect(member.locator('li[data-visible="true"]').first()).toBeVisible();
+  // lý do hiện ở hành động bị ẩn VÀ ở khe quy trình (không chạy) ⇒ hai chỗ
   await expect(
-    member.getByText('Cần bật tính năng thêm "Duyệt hợp đồng bằng quy trình"'),
+    member.getByText('Cần bật tính năng thêm "Duyệt hợp đồng bằng quy trình"').first(),
   ).toBeVisible();
+  await expect(member.getByTestId("preview-slot-contracts.approval")).toContainText("Chưa chạy");
   await expect(member.getByText("Chỉ quản trị công ty thấy").first()).toBeVisible();
 });
 
