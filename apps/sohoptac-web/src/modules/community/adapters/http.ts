@@ -1,7 +1,7 @@
 // CR-102 · C3 · adapter HTTP thật: `/pack/community/*` của hub-api (proxy cùng origin), Bearer từ phiên contracts (web-kit:
 // token trong bộ nhớ, 401 ⇒ refresh cookie một lần). Hình dữ liệu = `@ai/contracts/community`; server quyết quyền xem.
 import type { FeedQuery } from "@ai/contracts/community";
-import { api } from "@ai/web-kit/http";
+import { api, apiResponse } from "@ai/web-kit/http";
 import type { CommunityApi } from "../application/ports";
 import { cancelRun, createConversation, sendAndStream } from "./dock";
 
@@ -27,6 +27,24 @@ export function createHttpApi(): CommunityApi {
     getViewer: () => api(`${BASE}/viewer`),
     getBrand: () => api(`${BASE}/brand`),
     listFeed: (q) => api(`${BASE}/feed`, { query: feedQueryString(q) }),
+    uploadFile: (file) =>
+      api(`${BASE}/files`, {
+        method: "POST",
+        rawBody: file,
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+          "X-Filename": enc(file.name),
+        },
+      }),
+    downloadFile: async (fileId, name) => {
+      const blob = await (await apiResponse(`${BASE}/files/${enc(fileId)}`)).blob();
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = name;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(href), 10_000);
+    },
     createPost: (input) => api(`${BASE}/posts`, { method: "POST", body: input }),
     updatePost: (id, input) => api(`${BASE}/posts/${enc(id)}`, { method: "PATCH", body: input }),
     postAction: async (id, input) =>

@@ -1,14 +1,25 @@
-// CR-118 · COM-FR-37 · tệp đính kèm bài đăng (thuần): loại theo MIME của tệp chọn, dung lượng hiển thị.
-// Hiện server chỉ lưu ảnh/video (nhãn + url http(s)); tệp khác (PDF…) chờ route FileBox của community ở server (lát F).
+// CR-118 · COM-FR-37 · tệp đính kèm bài đăng (thuần): đổi `CommunityFile` (server đã sniff MIME) ra mục media của bài,
+// ánh xạ lỗi upload ra khoá i18n, dung lượng hiển thị.
+import type { CommunityFile, MediaItem } from "@ai/contracts/community";
 
-import type { MediaItem } from "@ai/contracts/community";
-import { canAddMedia } from "./compose";
+/** Mục media từ tệp đã tải lên: ảnh (theo MIME server sniff) ⇒ `image`, còn lại ⇒ `file`. Gửi `{id,kind,label,fileId}`; server điền lại. */
+export const mediaItemOf = (f: CommunityFile): MediaItem => ({
+  id: f.id,
+  kind: f.mime.startsWith("image/") ? "image" : "file",
+  label: f.name,
+  fileId: f.id,
+  name: f.name,
+  size: f.size,
+  mime: f.mime,
+});
 
-export type AttachKind = "image" | "video" | "file";
-
-/** image/* ⇒ ảnh, video/* ⇒ video, còn lại ⇒ tệp. */
-export const attachKindOf = (mime: string): AttachKind =>
-  mime.startsWith("image/") ? "image" : mime.startsWith("video/") ? "video" : "file";
+/** Lỗi `POST /pack/community/files` ⇒ khoá i18n: 413 quá cỡ, 415 loại không cho phép, 503 chưa bật FileBox; khác ⇒ chung. */
+export function uploadErrorKey(status: number | undefined): string {
+  if (status === 413) return "community.composer.fileTooLarge";
+  if (status === 415) return "community.composer.fileTypeNotAllowed";
+  if (status === 503) return "community.composer.filesUnavailable";
+  return "community.composer.uploadFailed";
+}
 
 /** 1536 ⇒ "1,5 KB" (dấu thập phân theo `locale` của UI). */
 export function formatSize(bytes: number, locale = "vi-VN"): string {
@@ -22,23 +33,4 @@ export function formatSize(bytes: number, locale = "vi-VN"): string {
   const n =
     i === 0 ? String(Math.round(v)) : v.toLocaleString(locale, { maximumFractionDigits: 1 });
   return `${n} ${units[i]}`;
-}
-
-export type AttachNotice = "fileUnsupported" | "maxImages" | "maxVideos";
-
-/** Thêm các tệp chọn vào danh sách media (thuần): ảnh/video theo MIME còn chỗ ⇒ thêm; còn lại ⇒ ghi chú để UI báo. */
-export function attachFiles(
-  media: MediaItem[],
-  files: { name: string; type: string }[],
-  now: number,
-): { media: MediaItem[]; notices: AttachNotice[] } {
-  const notices: AttachNotice[] = [];
-  let out = media;
-  for (const f of files) {
-    const kind = attachKindOf(f.type);
-    if (kind === "file") notices.push("fileUnsupported");
-    else if (!canAddMedia(out, kind)) notices.push(kind === "image" ? "maxImages" : "maxVideos");
-    else out = [...out, { id: `${kind}-${now}-${out.length}`, kind, label: f.name }];
-  }
-  return { media: out, notices };
 }

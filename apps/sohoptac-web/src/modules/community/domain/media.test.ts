@@ -1,13 +1,35 @@
-// CR-118 · COM-FR-37 · loại media theo MIME và dung lượng hiển thị.
+// CR-118 · COM-FR-37 · mục media từ tệp đã tải, ánh xạ lỗi upload, dung lượng hiển thị.
 import { describe, expect, it } from "bun:test";
-import { attachFiles, attachKindOf, formatSize } from "./media";
+import { formatSize, mediaItemOf, uploadErrorKey } from "./media";
 
-describe("attachKindOf", () => {
-  it("image video và tệp khác theo MIME", () => {
-    expect(attachKindOf("image/png")).toBe("image");
-    expect(attachKindOf("video/mp4")).toBe("video");
-    expect(attachKindOf("application/pdf")).toBe("file");
-    expect(attachKindOf("")).toBe("file");
+const file = (mime: string) => ({
+  id: "9b1c1f7e-8c2a-4d6e-9c0a-3f1f0a1b2c3d",
+  name: "a.x",
+  mime,
+  size: 10,
+});
+
+describe("mediaItemOf", () => {
+  it("ảnh thành image, PDF và tệp khác thành file, giữ fileId tên cỡ mime", () => {
+    expect(mediaItemOf(file("image/png")).kind).toBe("image");
+    const pdf = mediaItemOf(file("application/pdf"));
+    expect(pdf).toMatchObject({
+      kind: "file",
+      fileId: file("").id,
+      label: "a.x",
+      name: "a.x",
+      size: 10,
+    });
+  });
+});
+
+describe("uploadErrorKey", () => {
+  it("413 415 503 có khoá riêng, còn lại là lỗi chung", () => {
+    expect(uploadErrorKey(413)).toBe("community.composer.fileTooLarge");
+    expect(uploadErrorKey(415)).toBe("community.composer.fileTypeNotAllowed");
+    expect(uploadErrorKey(503)).toBe("community.composer.filesUnavailable");
+    expect(uploadErrorKey(500)).toBe("community.composer.uploadFailed");
+    expect(uploadErrorKey(undefined)).toBe("community.composer.uploadFailed");
   });
 });
 
@@ -16,27 +38,5 @@ describe("formatSize", () => {
     expect(formatSize(512, "en-US")).toBe("512 B");
     expect(formatSize(1536, "en-US")).toBe("1.5 KB");
     expect(formatSize(5 * 1024 * 1024, "en-US")).toBe("5 MB");
-  });
-});
-
-describe("attachFiles", () => {
-  it("ảnh và video được thêm, PDF ghi chú chưa hỗ trợ, quá hạn mức ghi chú tối đa", () => {
-    const r = attachFiles(
-      [],
-      [
-        { name: "a.png", type: "image/png" },
-        { name: "b.pdf", type: "application/pdf" },
-      ],
-      1,
-    );
-    expect(r.media.map((m) => m.label)).toEqual(["a.png"]);
-    expect(r.notices).toEqual(["fileUnsupported"]);
-    const vids = attachFiles(
-      [],
-      Array.from({ length: 3 }, (_, i) => ({ name: `v${i}.mp4`, type: "video/mp4" })),
-      1,
-    );
-    expect(vids.media.length).toBe(2);
-    expect(vids.notices).toEqual(["maxVideos"]);
   });
 });

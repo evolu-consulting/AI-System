@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useApp } from "../application/ctx";
 import { draftFromFields } from "../domain/compose";
 import { dealStrip, expiryNote, initials, timeAgo, tone } from "../domain/format";
+import { formatSize } from "../domain/media";
 import { hintLines, saveButtonLabel, savedText } from "../domain/quote";
-import { t } from "../i18n";
+import { numLocale, t } from "../i18n";
 import { DraftFields } from "./DraftFields";
 import { Highlighted } from "./Highlighted";
 import {
   IconArchive,
+  IconAttach,
   IconBox,
   IconChat,
   IconCheck,
@@ -138,6 +140,8 @@ function EditForm({ p, onClose }: { p: PostView; onClose: () => void }) {
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: thẻ bài theo mockup: nhiều nhánh hiển thị có điều kiện, tách thêm sẽ chỉ chuyển prop
 export function PostCard({ post: p }: { post: PostView }) {
   const { api, bump, toast, isHostViewer } = useApp();
+  const download = (id: string, name: string) =>
+    api.downloadFile(id, name).catch(() => toast(t("community.post.downloadFailed")));
   const [menu, setMenu] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -268,18 +272,34 @@ export function PostCard({ post: p }: { post: PostView }) {
       )}
       {p.media.length > 0 && (
         <div className={`media n${Math.min(p.media.length, 3)}`}>
-          {p.media.map((m) => (
-            <div key={m.id} className={m.kind === "video" ? "mbox vid" : "mbox"}>
-              {m.kind === "video" ? (
-                <span className="play">
-                  <IconPlay />
-                </span>
-              ) : (
-                <IconImage size={26} />
-              )}
-              <span>{m.label}</span>
-            </div>
-          ))}
+          {p.media.map((m) =>
+            m.kind === "file" && m.fileId ? (
+              <button
+                key={m.id}
+                type="button"
+                className="mbox filecard"
+                data-testid="file-card"
+                title={t("community.post.download")}
+                onClick={() => void download(m.fileId as string, m.name ?? m.label)}
+              >
+                <IconAttach size={22} />
+                <span className="fname">{m.name ?? m.label}</span>
+                {m.size !== undefined && <i className="fsize">{formatSize(m.size, numLocale())}</i>}
+                <b className="fget">{t("community.post.download")}</b>
+              </button>
+            ) : (
+              <div key={m.id} className={m.kind === "video" ? "mbox vid" : "mbox"}>
+                {m.kind === "video" ? (
+                  <span className="play">
+                    <IconPlay />
+                  </span>
+                ) : (
+                  <IconImage size={26} />
+                )}
+                <span>{m.label}</span>
+              </div>
+            ),
+          )}
         </div>
       )}
       {isHostViewer && p.hostHint && (

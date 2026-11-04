@@ -3,6 +3,7 @@
 import type { ChatEvent, SendMessageRequest } from "@ai/contracts/chat";
 import type {
   CommunityBrand,
+  CommunityFile,
   CommunityNotification,
   CommunitySettings,
   CommunityViewer,
@@ -101,4 +102,8 @@ export interface CommunityApi {
   saveQuote(postId: string, input: QuoteInput): Promise<QuoteSaved>;
   /** `GET /pack/community/quote/match?q=` — SP khớp tên gõ + giá/tồn (chỉ chủ quản). */
   matchProduct(q: string): Promise<QuoteMatch>;
+  /** `POST /pack/community/files` (thân thô + `X-Filename` percent-encode): server quét MIME, giới hạn cỡ/loại; lỗi ném object có `status`. */
+  uploadFile(file: File): Promise<CommunityFile>;
+  /** `GET /pack/community/files/:fileId` — tải về (cần Bearer nên không dùng `<a href>` trần). */
+  downloadFile(fileId: string, name: string): Promise<void>;
 }

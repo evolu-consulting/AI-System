@@ -2,6 +2,7 @@
 
 import type { AudienceMode, PartnerOrg, PostType } from "@ai/contracts/community";
 import { useEffect, useRef, useState } from "react";
+import { uploadFiles } from "../application/attach";
 import { loadComposerOpen, saveComposerOpen } from "../application/composer-pref";
 import { useApp } from "../application/ctx";
 import {
@@ -15,9 +16,9 @@ import {
 import { type Draft, draftErrors, emptyDraft, toCreateInput } from "../domain/compose";
 import { DEMO_PRODUCTS } from "../domain/demo-products";
 import { initials } from "../domain/format";
-import { attachFiles } from "../domain/media";
+import { formatSize } from "../domain/media";
 import { defaultAudience } from "../domain/visibility";
-import { t } from "../i18n";
+import { numLocale, t } from "../i18n";
 import { DraftFields } from "./DraftFields";
 import {
   IconAttach,
@@ -113,6 +114,7 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
   const [prefill, setPrefill] = useState("");
   const [busy, setBusy] = useState(false);
   const [audOpen, setAudOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [open, setOpenState] = useState<boolean>(() => loadComposerOpen(viewer.userId) ?? false);
   const fileInput = useRef<HTMLInputElement>(null);
   const setOpen = (v: boolean) => {
@@ -157,13 +159,19 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
       setBusy(false);
     }
   };
-  // Gộp Ảnh + Video thành "Đính kèm": chọn nhiều tệp, loại theo MIME (logic thuần `attachFiles`). Tệp khác chờ route FileBox ở server.
-  const attach = (files: FileList | null) => {
+  // Gộp Ảnh + Video thành "Đính kèm": MỖI tệp tải lên `POST /pack/community/files` (server quét MIME, cỡ, loại); bài gửi
+  // `media:[{id,kind,label,fileId}]`. Quá hạn mức / lỗi upload ⇒ báo Việt hoá (`uploadFiles`).
+  const attach = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const r = attachFiles(draft.media, Array.from(files), Date.now());
-    for (const n of r.notices) toast(t(`community.composer.${n}`));
-    setDraft((d) => ({ ...d, media: r.media }));
-    if (fileInput.current) fileInput.current.value = "";
+    setUploading(true);
+    try {
+      const r = await uploadFiles(api, Array.from(files), draft.media);
+      for (const n of r.notices) toast(t(n));
+      setDraft((d) => ({ ...d, media: r.media }));
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = "";
+    }
   };
 
   if (!open) {
@@ -236,6 +244,9 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
               {draft.media.map((m) => (
                 <span className="attach" key={m.id}>
                   {m.label}
+                  {m.size !== undefined && (
+                    <i className="fsize">{formatSize(m.size, numLocale())}</i>
+                  )}
                   <button
                     type="button"
                     aria-label={t("community.composer.removeAttachment")}
@@ -287,12 +298,13 @@ export function Composer({ onPosted }: { onPosted?: () => void }) {
               multiple
               hidden
               data-testid="attach-input"
-              onChange={(e) => attach(e.target.files)}
+              onChange={(e) => void attach(e.target.files)}
             />
             <button
               type="button"
               className="ghost"
               data-testid="attach-btn"
+              disabled={uploading}
               onClick={() => fileInput.current?.click()}
             >
               <IconAttach size={16} />

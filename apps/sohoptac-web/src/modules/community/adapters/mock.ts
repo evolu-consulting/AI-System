@@ -19,6 +19,7 @@ import { applyMask, detectHits, type MaskContext } from "../domain/mask";
 import { canViewPost, defaultAudience } from "../domain/visibility";
 import { mockDockChat } from "./mock-chat";
 import { commentMutations } from "./mock-comments";
+import { fileMock } from "./mock-files";
 import { profileMock } from "./mock-profile";
 import { quoteEnvOf, quoteMock } from "./mock-quote";
 import { settingsMock } from "./mock-settings";
@@ -255,7 +256,14 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
         body: input.body,
         fields: input.fields as RawPost["fields"],
         cats: input.cats,
-        media: input.media.map((m) => ({ kind: m.kind, label: m.label })),
+        media: input.media.map((m) => ({
+          kind: m.kind,
+          label: m.label,
+          fileId: m.fileId,
+          name: m.name,
+          size: m.size,
+          mime: m.mime,
+        })),
         audience: input.audience ?? defaultAudience(input.type),
       };
       posts.unshift(p);
@@ -368,6 +376,7 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
     markRead: async (id) => {
       for (const n of notifs) if (n.to === notifyKey() && (!id || n.id === id)) n.unread = false;
     },
+    ...fileMock(),
     ...settingsMock(() => me.userId),
     chat: mockDockChat,
     ...quoteMock(quoteEnv),

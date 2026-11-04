@@ -140,7 +140,11 @@
       "videoN": "Video {{n}}",
       "maxImages": "Tối đa 10 ảnh",
       "maxVideos": "Tối đa 2 video",
-      "fileUnsupported": "Chưa hỗ trợ tệp này (hiện chỉ ảnh/video)",
+      "maxFiles": "Tối đa 10 tệp",
+      "fileTooLarge": "Tệp quá lớn, vui lòng chọn tệp nhỏ hơn",
+      "fileTypeNotAllowed": "Loại tệp này không được phép tải lên",
+      "filesUnavailable": "Chưa bật kho tệp, thử lại sau",
+      "uploadFailed": "Không tải được tệp lên",
       "attach": "Đính kèm",
       "collapse": "Thu gọn",
       "publish": "Đăng bài",
@@ -166,6 +170,8 @@
       "errNeededBy": "Chọn ngày cần"
     },
     "post": {
+      "download": "Tải về",
+      "downloadFailed": "Không tải được tệp",
       "options": "Tuỳ chọn bài đăng",
       "friends": "Bạn bè",
       "hostOnly": "Chỉ chủ quản",

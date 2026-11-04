@@ -140,7 +140,11 @@
       "videoN": "Video {{n}}",
       "maxImages": "Up to 10 photos",
       "maxVideos": "Up to 2 videos",
-      "fileUnsupported": "This file type is not supported yet (photos/videos only)",
+      "maxFiles": "Up to 10 files",
+      "fileTooLarge": "The file is too large, pick a smaller one",
+      "fileTypeNotAllowed": "This file type is not allowed",
+      "filesUnavailable": "File storage is not enabled, try again later",
+      "uploadFailed": "Could not upload the file",
       "attach": "Attach",
       "collapse": "Collapse",
       "publish": "Post",
@@ -166,6 +170,8 @@
       "errNeededBy": "Pick the needed-by date"
     },
     "post": {
+      "download": "Download",
+      "downloadFailed": "Could not download the file",
       "options": "Post options",
       "friends": "Friends",
       "hostOnly": "Host only",

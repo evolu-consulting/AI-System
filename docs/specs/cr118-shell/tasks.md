@@ -21,7 +21,7 @@ phụ thuộc: community-module (merged), move, capabilities (GET /pack/me)
 
 ## §11.1 Community UI (lát này, làn N)
 - Ô đăng bản tin: nút Thu gọn (`composer-collapse`) về một dòng gợi ý, bấm lại để mở; nhớ theo người dùng trong localStorage (`community.composer.open:<userId>`, chặn/lỗi ⇒ mặc định hiện hành là thu gọn). Thuần: `application/composer-pref.ts`.
-- Một nút "Đính kèm" thay Ảnh + Video; loại theo MIME (`domain/media.ts`). **Chưa làm: tải tệp bất kỳ (PDF…) qua FileBox** — server chỉ lưu ảnh/video (nhãn + url http(s), DB `community.media` CHECK kind IN image/video, `safeMedia` chặn url tương đối) và `/attachments` chỉ cho chủ tệp ⇒ cần lát F (migration pack-community cho kind `file` + route tải theo RLS `posts_visible`). UI báo "Chưa hỗ trợ tệp này".
+- Một nút "Đính kèm" thay Ảnh + Video: MỖI tệp tải lên `POST /pack/community/files` (raw body + `X-Filename` percent-encode → `CommunityFile{id,name,mime,size}`; server quét MIME/cỡ/loại), bài gửi `media:[{id,kind,label,fileId}]`; thẻ tệp trong bài: tên + dung lượng + "Tải về" (`GET /pack/community/files/:fileId`, kèm Bearer). Lỗi 413/415/503 báo tiếng Việt (`uploadErrorKey`). `MEDIA_LIMITS.file = 10`.
 - Dialog Cài đặt: lề sidebar trái đều (token `--cm-*`, `extras.css`). Mục "Sổ Hợp Tác" nằm TRONG dialog Cài đặt Community và chỉ hiện khi `caps.contracts` + `contractsUrl` (server); bấm mở hộp thoại Cài đặt Sổ Hợp Tác dùng chung tại chỗ (`host.openContractsSettings` → bus `openSettings`, `shell/ContractsSettingsHost.tsx` chỉ dựng khi `/pack/me` bật contracts) — không đổi URL ngoài `?settings=`.
 
 ## Không làm / Chạm
@@ -57,11 +57,11 @@ Hai bộ khoá `community.*` và `contracts.*` dùng chung một instance i18nex
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: COM-FR-27 Ô đăng bản tin thu gọn/mở và đính kèm gộp
-Ô đăng bản tin có nút thu gọn về một dòng gợi ý và mở lại, trạng thái nhớ theo người dùng; nút Ảnh và Video gộp thành "Đính kèm" nhận nhiều tệp, ảnh/video theo MIME, tệp loại khác báo chưa hỗ trợ.
+Ô đăng bản tin có nút thu gọn về một dòng gợi ý và mở lại, trạng thái nhớ theo người dùng; nút Ảnh và Video gộp thành "Đính kèm" nhận nhiều tệp tải lên FileBox (server quét MIME, cỡ, loại), tệp hiện thành thẻ có Tải về.
 - Kịch bản: khi người dùng thu gọn ô đăng rồi tải lại thì ô vẫn thu gọn [test: e2e/community-web/composer.cm.ts » ô đăng thu gọn và mở lại, trạng thái được nhớ sau khi tải lại]
-- Kịch bản: khi chọn ảnh và PDF bằng nút Đính kèm thì ảnh thành chip và PDF báo chưa hỗ trợ [test: e2e/community-web/composer.cm.ts » một nút Đính kèm thay Ảnh và Video: ảnh thành chip, PDF báo chưa hỗ trợ]
+- Kịch bản: khi chọn PDF bằng nút Đính kèm thì tệp được tải lên, đăng bài kèm thẻ tệp có tên, dung lượng và Tải về [test: e2e/community-web/composer.cm.ts » một nút Đính kèm thay Ảnh và Video: tải PDF lên, đăng bài và thấy thẻ tệp]
 - Kịch bản: khi lưu trạng thái ô đăng thì storage bị chặn không gây lỗi [test: apps/sohoptac-web/src/modules/community/application/composer-pref.test.ts » storage bị chặn thì không ném lỗi]
-- Kịch bản: khi nhận tệp thì loại được suy từ MIME [test: apps/sohoptac-web/src/modules/community/domain/media.test.ts » image video và tệp khác theo MIME]
+- Kịch bản: khi tải tệp lỗi 413 415 503 thì báo đúng thông điệp tiếng Việt [test: apps/sohoptac-web/src/modules/community/domain/media.test.ts » 413 415 503 có khoá riêng, còn lại là lỗi chung]
 
 #### Yêu cầu: COM-FR-41 Mục Sổ Hợp Tác nằm trong dialog Cài đặt Community
 Mục Sổ Hợp Tác hiển thị ngay trong dialog Cài đặt Community, chỉ khi module contracts bật và người dùng có quyền; mở mục không đổi URL ngoài `?settings=`.
