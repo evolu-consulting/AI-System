@@ -235,7 +235,7 @@ d("evotest boot.sh · -Exclusive", () => {
     const home = tmp();
     const { R, log, fifo, start } = rig(home);
     const full = start("ex", "tagFull", { EVO_FULL_RUN: "1", EVO_FULL_RECHECK_S: "0.05" });
-    expect(await until(full, "TOÀN BỘ giữ máy chủ")).toContain("slot 1/4");
+    expect(await until(full, "slot 1/4")).toContain("TOÀN BỘ giữ máy chủ");
     const own = readFileSync(join(R, ".exclusive/owner"), "utf8").trim().split(" ");
     expect(own[4]).toBe("full");
     const normal = start("normal", "tagN2", {});

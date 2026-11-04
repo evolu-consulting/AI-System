@@ -34,7 +34,7 @@ fi
 SLOT=0; said=0; WAIT_END=$(( $(date +%s) + 5400 ))
 while [ "$SLOT" -eq 0 ]; do
   if [ -z "$HOLD" ] && ex_held; then
-    [ "$said" -eq 0 ] && echo "evotest: có lượt perf -Exclusive / lượt TOÀN BỘ đang giữ máy, xếp hàng... owner: $(cat "$EX/owner" 2>/dev/null)"; said=1
+    [ "$said" -eq 0 ] && echo "evotest: có lượt perf -Exclusive đang giữ máy (hoặc lượt TOÀN BỘ), xếp hàng... owner: $(cat "$EX/owner" 2>/dev/null)"; said=1
   else
     for i in $(seq 1 "$N"); do
       mkdir -p "$R/slots/s$i"
