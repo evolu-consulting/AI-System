@@ -12,8 +12,8 @@ phụ thuộc: community-module (merged), move, capabilities (GET /pack/me)
 ## Làm
 - Module: bỏ phiên/đăng nhập riêng (Login, session, auth, contracts-link, login.css); host cấp `CommunityHost{router, logout, openContracts, contractsHref}` qua `manifest.configureCommunityHost`; `RouterPort` dựng bằng `createRouterPort(LowRouter)` trên router TanStack; manifest: route khung `/community` (component lười, giữ trạng thái) + 4 route con; `legacyRedirect` (hash cũ `/community#/…` → URL chuẩn).
 - i18n: module không tự init, chỉ `addResourceBundle` vào i18next chung (VI tĩnh, EN động); test `app/i18n-merge.test.ts` (hai gốc riêng, không trùng khoá). Thêm `contracts.nav.community`.
-- platform/features: `caps.ts` thuần (`canUse/hasModule`) + `use-caps.ts` (adapter tạm đọc `/pack/me`) + `index.ts` (cổng duy nhất); lát FeatureGate OpenFeature thay adapter, giữ cổng.
-- shell: `modules.ts`, `community-routes.ts` (guard: phiên chung + module bật), `community-host.ts`; nối `setAppsSource` (platform/auth) với `/pack/me.apps`; Sidebar contracts có mục Community khi `hasModule`.
+- platform/features: dùng FeatureGate đã merge (`useFeature("community")` cho mục nav, `useFeature("contracts")` cho cài đặt SHT); bỏ adapter caps riêng.
+- shell: `routes/community.tsx` (guard platform/auth) + `shell/CommunityRoute.tsx`, `shell/community-host.ts`, `shell/ContractsSettingsHost.tsx`; Sidebar contracts có mục Community khi `useFeature("community")`.
 - Build: `__COMMUNITY_MOCK__` define (PUBLIC_COMMUNITY_API=mock); `check:bundle` thêm ngân sách chunk `community` (JS ≤ 60 KB gz, CSS ≤ 15 KB gz). Hiện: JS 40 KB gz.
 - depcruise: luật web-mod/shell/domain/ui/features-port = error (test file được miễn ở domain-pure); ADR-0023 `ca-*` không áp `apps/sohoptac-web` (web-* thay).
 - Route `/community/*` là FILE route (`routes/community.tsx` + con rỗng `index`/`$`), component + module nạp lười để `check:bundle` xanh (161,9 KB); `createCommunityRoutes` (manifest) giữ cho router gộp mã-route, shell không dùng. Hash cũ chuyển ở chunk module (`ui/entry`).
@@ -29,7 +29,7 @@ phụ thuộc: community-module (merged), move, capabilities (GET /pack/me)
 - `deploy/*` (Dockerfile build `apps/community-web`, nginx 8085, edge 301) để lát deploy-kit; `scripts/dev-up.ps1` chỉ bỏ cổng 3400.
 
 ## Test tối thiểu
-unit: caps, router-port, manifest, scope CSS, i18n-merge, check-bundle community; typecheck + build sohoptac-web; e2e community-web (mock) + contracts-web một lần trên evotest.
+unit: router-port, manifest, scope CSS, i18n-merge, check-bundle community; typecheck + build sohoptac-web; e2e community-web (mock) + contracts-web một lần trên evotest.
 
 ## Quyết định trong lúc làm
 - `/community` nằm dưới gốc (không dưới `_authed`: PackFrame cổng gói contracts, đối tác không có) và tự guard.
@@ -45,7 +45,7 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: COM-FR-43 Link sang Sổ Hợp Tác là link trong app, cách ly đối tác bằng route + chunk
 Community chạy dưới `/community/*` của web gộp; mục Community trong sidebar Sổ Hợp Tác chỉ hiện khi `/pack/me` bật module `community`; link Sổ Hợp Tác trong Community là điều hướng nội bộ (không SSO, không đổi host). Đối tác (contracts tắt) chỉ thấy Community và trang chủ `/` đưa về `/community` (home theo quyền do platform/auth).
-- Kịch bản: khi người dùng là đối tác thì danh sách module hiện ra chỉ có Community [test: apps/sohoptac-web/src/platform/features/caps.test.ts » hasModule: đối tác chỉ thấy Community, nội bộ thấy cả hai]
+- Kịch bản: khi người dùng là đối tác thì đối tác vào thẳng Community và gõ đường dẫn Sổ Hợp Tác thì về `/community` [test: e2e/sohoptac-web/auth.ss.ts » đối tác lần đầu: buộc đổi mật khẩu rồi vào /community]
 - Kịch bản: khi shell dựng route Community thì module chỉ nạp khi vào route (chunk riêng) [test: apps/sohoptac-web/src/modules/community/manifest.test.ts » một route khung /community (component lười) + route con tương đối, gắn vào route cha của host]
 - Kịch bản: khi vào `/community#/profile/<o>/<s>` (hash cũ) thì chuyển về `/community/profile/<o>/<s>` [test: apps/sohoptac-web/src/modules/community/domain/legacy-hash.test.ts » kết quả đọc lại được bằng parsePath]
 

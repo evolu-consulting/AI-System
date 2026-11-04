@@ -2,9 +2,9 @@
 // thu thành cột biểu tượng 64 px (nút ở thanh trên); trạng thái nhớ theo trình duyệt (`nav:pinned`).
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { IconPartners } from "~/components/icons";
 import { appNameOf, nameOf, useBrand } from "~/features/settings/lib/brand";
 import { cn } from "~/lib/utils";
-import { IconPartners } from "~/components/icons";
 import { useFeature } from "~/platform/features";
 import { NAV, type NavItem, type Role } from "../lib/nav";
 import { BrandMark } from "./BrandMark";
