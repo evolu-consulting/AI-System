@@ -132,6 +132,6 @@ export type CommunityBlobs = {
   ): Promise<{ fileId: string; versionId: string | null }>;
   /** null = không còn ở kho. */
   get(tenantId: string, fileId: string): Promise<Uint8Array | null>;
-  /** Hoàn tác upload khi ghi DB lỗi (lỗi kho bỏ qua). */
+  /** Xoá byte (idempotent: đã không còn ⇒ xong). Kho lỗi ⇒ NÉM (upload hoàn tác bỏ qua; vòng dọn tệp giữ hàng làm lại). */
   drop(tenantId: string, fileId: string): Promise<void>;
 };

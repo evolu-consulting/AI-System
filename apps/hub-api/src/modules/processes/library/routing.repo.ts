@@ -10,6 +10,29 @@ export const assignedOf = (tx: Tx, tenantId: string, slot: string): Promise<Assi
     from hub.process_tenant_defs a join hub.process_defs d on d.id = a.def_id
     where a.tenant_id = ${tenantId} and a.slot = ${slot} order by d.name, a.def_id`);
 
+export type AssignedDefRow = {
+  def_id: string;
+  name: string;
+  rel_version: number | null;
+  stages: unknown[];
+  slot_body: unknown;
+};
+/** Sơ đồ MỘT def trong tập gán của tenant × khe: bản xuất bản đang dùng (chưa có ⇒ nháp). Không trong tập ⇒ null. Một câu. */
+export async function assignedDef(
+  tx: Tx,
+  tenantId: string,
+  slot: string,
+  defId: string,
+): Promise<AssignedDefRow | null> {
+  const [r] = await tx.execute<AssignedDefRow>(sql`select a.def_id::text as def_id,
+      coalesce(r.name, d.name) as name, r.rel_version, coalesce(r.stages, d.stages) as stages,
+      case when r.def_id is null then d.slot_body else r.slot_body end as slot_body
+    from hub.process_tenant_defs a join hub.process_defs d on d.id = a.def_id
+    left join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version
+    where a.tenant_id = ${tenantId} and a.slot = ${slot} and a.def_id = ${defId}`);
+  return r ?? null;
+}
+
 /** Chỉ id (không đọc `process_defs`) — dùng được ở scope user của tenant. */
 export async function assignedIds(tx: Tx, tenantId: string, slot: string): Promise<Set<string>> {
   const rows = await tx.execute<{

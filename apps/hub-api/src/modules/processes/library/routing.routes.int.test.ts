@@ -300,4 +300,31 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
       ),
     ).toBe("42501");
   });
+
+  it("xem sơ đồ quy trình đã gán: quyền + tập gán", async () => {
+    // Tập gán X lúc này: A, B (C đã bỏ gán ở ca đầu). Y chưa gán gì.
+    const ok = await call("A", "GET", PROC(X, lib.A));
+    const [rel] = await o`select stages, slot_body from hub.process_def_releases
+      where def_id = ${lib.A} and rel_version = 1`;
+    expect({ s: ok.status, j: ok.json }).toEqual({
+      s: 200,
+      j: {
+        def_id: lib.A,
+        slot: SLOT,
+        name: "QT A",
+        rel_version: 1,
+        stages: rel?.stages,
+        slot_body: rel?.slot_body,
+      },
+    });
+    expect(ok.json.stages.length).toBeGreaterThan(0);
+    expect((await call("P", "GET", PROC(X, lib.B))).status).toBe(200);
+    expect((await call("AY", "GET", PROC(X, lib.A))).status).toBe(404); // tenant khác
+    expect((await call("A", "GET", PROC(X, lib.C))).status).toBe(404); // chưa gán
+    expect((await call("P", "GET", PROC(Y, lib.A))).status).toBe(404); // chưa gán cho Y
+    expect((await call("A", "GET", PROC(X, DFLT))).status).toBe(404);
+    expect((await call("M", "GET", PROC(X, lib.A))).status).toBe(403);
+    // Ghi vẫn chỉ platform_admin.
+    expect((await call("A", "DELETE", PROC(X, lib.B))).status).toBe(403);
+  });
 });

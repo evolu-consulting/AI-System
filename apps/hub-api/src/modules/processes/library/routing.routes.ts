@@ -1,6 +1,6 @@
 // CR-118 §11.2 · route luật chọn quy trình + tập quy trình đã gán. Không logic. Cổng vai TRƯỚC parse/đọc DB:
 // - `/tenants/:tid/process-routing/:slot` GET/PUT: admin (member ⇒ 403); tenant_admin khác tenant ⇒ 404 (service chốt).
-// - `/tenants/:tid/process-routing/:slot/processes/:defId` PUT/DELETE: chỉ platform_admin.
+// - `/tenants/:tid/process-routing/:slot/processes/:defId` PUT/DELETE: chỉ platform_admin; GET (xem sơ đồ): như GET luật.
 import { PutProcessRoutingRequestSchema, SlotKeySchema } from "@ai/contracts/hub-admin";
 import type { Context, Hono } from "hono";
 import { requireAdminRole, requirePlatformAdmin } from "../../../lib/admin-role.middleware";
@@ -23,8 +23,12 @@ const BASE = "/tenants/:tid/process-routing/:slot";
 
 export function routingRoutes(r: Hono<AuthVars>, svc: RoutingService): void {
   r.use(BASE, requireAdminRole());
-  r.use(`${BASE}/processes/*`, requirePlatformAdmin());
+  r.use(`${BASE}/processes/*`, requireAdminRole());
+  r.on(["PUT", "DELETE"], `${BASE}/processes/*`, requirePlatformAdmin());
   r.get(BASE, async (c) => c.json(await svc.get(c.var.user, tidOf(c), slotOf(c))));
+  r.get(`${BASE}/processes/:defId`, async (c) =>
+    c.json(await svc.def(c.var.user, tidOf(c), slotOf(c), defOf(c))),
+  );
   r.put(BASE, async (c) => {
     const tid = tidOf(c);
     const slot = slotOf(c);

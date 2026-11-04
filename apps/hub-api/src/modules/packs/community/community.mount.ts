@@ -106,7 +106,7 @@ export function mountCommunity<E extends Env>(
   } = {},
 ): void {
   const { quotes, hostBook, brand, caps, blobs, ...sweep } = o;
-  startSweeper(db, view, sweep);
+  startSweeper(db, view, { ...sweep, ...(blobs ? { blobs } : {}) });
   const shtUrl = process.env.CONTRACTS_WEB_URL || "/";
   app.route(
     `${prefix}/${COMMUNITY_KEY}`,
@@ -135,7 +135,7 @@ async function communityTenants(view: PackAccessView): Promise<string[]> {
 function startSweeper(
   db: Db,
   view: PackAccessView,
-  o: { signal?: AbortSignal | undefined; worker?: boolean },
+  o: { signal?: AbortSignal | undefined; worker?: boolean; blobs?: CommunityBlobs },
 ) {
   const env = process.env.APP_ENV;
   const on =
@@ -151,6 +151,7 @@ function startSweeper(
     orgNames: (t, ids) => resolver.orgNames(t, ids),
     everyMs: Number.isInteger(every) && every >= 1000 ? every : 60_000,
     ...(o.signal ? { signal: o.signal } : {}),
+    ...(o.blobs ? { blobs: o.blobs } : {}), // CR-118: pha dọn tệp bài
     warn: (m, meta) => console.warn(m, meta),
   });
 }

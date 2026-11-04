@@ -6,6 +6,7 @@ import {
   HUB_ADMIN_ROUTING_ERRORS,
   type HubAdminRoutingErrorCode,
   type ProcessRouting,
+  type ProcessRoutingDefView,
   type PutProcessRoutingRequest,
 } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
@@ -82,6 +83,29 @@ export class RoutingService {
     scopeFor(u, tenantId);
     specOrThrow(slot);
     return this.#view(tenantId, slot);
+  }
+
+  /** Sơ đồ một quy trình trong tập gán (flow-canvas chế độ xem). Tenant khác / def ∉ tập ⇒ 404. Một câu SQL. */
+  async def(
+    u: AuthUser,
+    tenantId: string,
+    slot: string,
+    defId: string,
+  ): Promise<ProcessRoutingDefView> {
+    scopeFor(u, tenantId);
+    specOrThrow(slot);
+    const r = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
+      rt.assignedDef(tx, tenantId, slot, defId),
+    );
+    if (!r) throw appError("NOT_FOUND");
+    return {
+      def_id: r.def_id,
+      slot,
+      name: r.name,
+      rel_version: r.rel_version === null ? null : Number(r.rel_version),
+      stages: r.stages ?? [],
+      slot_body: r.slot_body,
+    };
   }
 
   #view(tenantId: string, slot: string): Promise<ProcessRouting> {

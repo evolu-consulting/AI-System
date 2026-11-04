@@ -5,7 +5,9 @@
 import type { Tx } from "@ai/db";
 import type { Notifier } from "../../kit/application/notify";
 import type { PackSystemUow } from "../../kit/application/ports";
+import type { CommunityBlobs } from "../application/pack-ports";
 import { digestDue } from "../domain/notify.rules";
+import { sweepFilesOnce } from "./files.sweep";
 import { deliver } from "./notify.events";
 import { archiveExpired, claimDigest, markExpiring, type SweptPost } from "./notify.repo";
 
@@ -138,13 +140,20 @@ export async function sweepCommunityOnce(
   return sum;
 }
 
-/** Vòng nền: một lượt mỗi `everyMs`, dừng theo `signal`. */
+/** Vòng nền: một lượt mỗi `everyMs`, dừng theo `signal`. CR-118: có `blobs` ⇒ thêm pha dọn tệp (`files.sweep.ts`). */
 export function startCommunitySweeper(
-  d: CommunitySweepDeps & { everyMs: number; signal?: AbortSignal },
+  d: CommunitySweepDeps & { everyMs: number; signal?: AbortSignal; blobs?: CommunityBlobs },
 ): void {
   const tick = async () => {
     if (d.signal?.aborted) return;
     await sweepCommunityOnce(d).catch(() => d.warn?.("community-sweep-failed", {}));
+    if (d.blobs && !d.signal?.aborted)
+      await sweepFilesOnce({
+        uow: d.uow,
+        tenants: d.tenants,
+        blobs: d.blobs,
+        ...(d.warn ? { warn: d.warn } : {}),
+      }).catch(() => d.warn?.("community-file-sweep-failed", {}));
     if (d.signal?.aborted) return;
     const t = setTimeout(tick, d.everyMs);
     (t as { unref?: () => void }).unref?.();

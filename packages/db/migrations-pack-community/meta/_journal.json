@@ -43,6 +43,13 @@
       "when": 1803200000000,
       "tag": "0006_post_files",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1803300000000,
+      "tag": "0007_files_sweep",
+      "breakpoints": true
     }
   ]
 }
