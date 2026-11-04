@@ -22,6 +22,10 @@
 - `-Step perf -Exclusive` (CR-115): khoá toàn máy `~/workspace/evotest/.exclusive` (luật ở `lock.sh`, sourced bởi `boot.sh`): chờ mọi slot rảnh (timeout, exit 3), lượt thường xếp hàng khi có khoá, nhả khi lỗi/Ctrl-C/kill; load/RAM đầu-cuối vào console + `exclusive.txt`. Test: `tools/scripts/src/evotest-lock.int.test.ts`. Lượt chạy từ nhánh CHƯA có `lock.sh` bỏ qua khoá này; `mgmt/run.ps1` chỉ khoá slot 1.
 - Đêm: `nightly.ps1` (Task Scheduler local) chạy `-Step all -Ref platform/gd0`, tóm tắt ở `.data/evotest/nightly-<ngày>.md`; không cron trên máy chủ.
 
+## Cache chung + lượt toàn bộ (tool-evotest-cache)
+- `~/workspace/evotest/cache` (volume `/cache` của mọi slot): `build/<khoá>/` = dist web dựng một lần mỗi (commit|băm nội dung + bun.lock + `PUBLIC_*`) qua `tools/scripts/src/evotest-cache.ts app-build` (script `build` của 5 app web); `dbtpl/<băm migrations>/` = mẫu DB đã migrate (`pg_dump -Fc` + role) do `cache.sh` lưu cuối bước int và nạp đầu bước int. Tự dọn cuối mỗi lượt (5 ref/pool, 6 GB); dọn tay `-CachePrune [-Keep N] [-MaxGb G]`; tắt cho một lượt `-NoCache`.
+- Lượt toàn bộ (`-Step int|e2e|all` không `-Filter`): từ chối exit 5 khi slot khác bận trừ `-Force`; giữ `.exclusive` (owner trường 5 `full`) nên lượt thường xếp hàng. Test: `evotest-lock.int.test.ts`, `evotest-cache.int.test.ts`.
+
 ## evotest-mgmt (I1 — bản sao mgmt-app có seed để kiểm importer)
 `powershell -File deploy/evotest/mgmt/run.ps1 [-Ref HEAD] [-MgmtRepo F:\workspace\mgmt-app]` — project Docker riêng `evotest-mgmt`
 (profile `mgmt`, `deploy/evotest/mgmt/docker-compose.yml`): opensearch 2.19.0 + neo4j 5.26.30-community + api build từ mã mgmt-app +
