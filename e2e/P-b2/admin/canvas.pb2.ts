@@ -231,7 +231,7 @@ test("ADM-FR-71 · E-PB2-12 · mẫu sdlc: chỉ xem — 2 câu thông báo; kh�
   await openDef(p, "pb2-canvas", DEF_CANVAS.name);
   await p
     .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("link", { name: "Quy trình", exact: true })
+    .getByRole("link", { name: "Quy trình nghiệp vụ", exact: true })
     .click();
   await p.getByRole("tab", { name: "Mẫu" }).click();
   await p
