@@ -102,7 +102,7 @@ test("CR-118 · editor form · Canvas: thêm bước form + trường ⇒ Lưu 2
   await p.goto(`${ADMIN_URL}/processes/${id}`);
   await expect(canvas(p)).toBeVisible();
 
-  await p.getByRole("button", { name: "Thêm giai đoạn" }).click();
+  await p.getByRole("button", { name: "Thêm giai đoạn", exact: true }).click();
   await panel(p).getByLabel("Tên giai đoạn").fill("Điền hồ sơ");
   await panel(p).getByRole("combobox", { name: "Người thực hiện" }).click();
   await p.getByRole("option", { name: "Người điền form" }).click();
