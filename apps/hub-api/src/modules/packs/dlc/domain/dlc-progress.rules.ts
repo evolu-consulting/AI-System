@@ -21,6 +21,8 @@ export type DlcProgress = {
   current: { id: string; title: string } | null;
   /** Run agent DLC mới nhất của hội thoại (bấm để mở thread). */
   agent: DlcAgentRun | null;
+  /** URL app vừa deploy thành công của lượt (bước deploy) ⇒ thẻ chat cho người dùng mở app; chưa deploy ⇒ null. */
+  app_url: string | null;
 };
 
 const ACTIVE_STEP = new Set(["running", "open", "failed"]);
@@ -36,6 +38,7 @@ export function dlcProgress(
   v: PackStepsView,
   queue: readonly QueueItem[],
   agent: DlcAgentRun | null,
+  deploy?: { ok: boolean; url: string | null } | null,
 ): DlcProgress {
   const open = v.steps.find((s) => ACTIVE_STEP.has(s.status));
   const tasks = queue.map((q) => ({
@@ -55,5 +58,6 @@ export function dlcProgress(
     done: tasks.filter((t) => DONE_TASK.has(t.status)).length,
     current: cur ? { id: cur.id, title: cur.title } : null,
     agent,
+    app_url: deploy?.ok && deploy.url ? deploy.url : null,
   };
 }

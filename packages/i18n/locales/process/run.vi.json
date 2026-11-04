@@ -143,6 +143,8 @@
     "decided": "Đã chọn: {{option}}"
   },
   "dlcProgress": {
+    "finished": "{{name}} đã xong",
+    "openApp": "Mở app: {{url}}",
     "running": "{{name}} đang chạy",
     "step": "Bước {{n}}/{{total}}: {{name}}",
     "done": "{{done}}/{{total}} việc xong",

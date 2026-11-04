@@ -85,6 +85,8 @@ export type DlcProgress = {
   done: number;
   current: { id: string; title: string } | null;
   agent: { agent: string; flow_id: string; status: string; started_at: string } | null;
+  /** URL app vừa deploy của lượt (bước deploy thành công), chưa có ⇒ null. */
+  app_url?: string | null;
 };
 
 export async function fetchDlcProgress(runId: string, signal?: AbortSignal): Promise<DlcProgress> {
