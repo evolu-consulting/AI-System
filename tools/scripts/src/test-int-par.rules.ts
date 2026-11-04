@@ -15,7 +15,7 @@ export type Timings = Record<string, number>;
 export type IntOpts = { workers: number; filters: string[] };
 
 /** Tối đa worker một lượt (ô 1..12 chia giữa các lượt chạy cùng lúc, xem `test-db-cli lease`). */
-export const MAX_WORKERS = 8;
+export const MAX_WORKERS = 12;
 
 export function defaultWorkers(cores: number): number {
   return Math.max(1, Math.min(6, Math.floor(cores / 2)));

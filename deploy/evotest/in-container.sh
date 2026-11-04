@@ -112,19 +112,33 @@ echo "[evotest] bun $(bun --version) · nproc $(nproc) · setup $(( $(date +%s) 
 # Đỏ đã biết (tests/known-red.json, còn hạn) in riêng, không tính vào mã thoát; đỏ MỚI/hết hạn vẫn làm bước đỏ.
 export TEST_QUARANTINE=1
 
+# tool-evotest-cache: thời lượng việc e2e dùng chung mọi slot/lượt (/cache/e2e-timings.json) → chia ngăn cho lượt toàn bộ + LPT trong slot.
+# Nạp vào .data/e2e-timings.json (test-e2e-par đọc/ghi) và giữ bản seed để cuối lượt chỉ gộp khoá lượt này đổi.
+if [ "$EVO_STEP" = e2e ] || [ "$EVO_STEP" = all ]; then
+  mkdir -p .data
+  if [ -f /cache/e2e-timings.json ]; then cp /cache/e2e-timings.json .data/e2e-timings.json; cp /cache/e2e-timings.json /tmp/e2e-timings.seed.json; fi
+fi
+
 # --no-python: Python/agent-runtime ngoài phạm vi runner này.
 # EVO_FILTER (chỉ int): tiền tố/đường dẫn file, chạy thẳng test:int:par (bỏ qua test:all) để chạy lại vài file.
 if [ "$EVO_STEP" = perf ]; then PERF=1 bun --env-file=.env.local --config=bunfig.perf.toml test --timeout 120000 ${EVO_FILTER:-tests/acceptance/HD4/perf/}   # đo hiệu năng, mặc định HD4
-elif [ "$EVO_STEP" = int ] && { [ -n "$EVO_FILTER" ] || [ -n "$EVO_WORKERS" ]; }; then bun run test:int:par ${EVO_WORKERS:+--workers=$EVO_WORKERS} $EVO_FILTER
+elif [ "$EVO_STEP" = int ] && { [ -n "$EVO_FILTER" ] || [ -n "$EVO_WORKERS" ]; }; then
+  FZ=--no-frozen; [ -n "${EVO_ALL:-}" ] && FZ=   # (chỉ có -Workers mà không -Filter = cả bộ int: vẫn bỏ module đóng băng như test:all)
+  bun run test:int:par ${EVO_WORKERS:+--workers=$EVO_WORKERS} $FZ $EVO_FILTER
 # EVO_FILTER (e2e): việc/cấu hình test:e2e:par, ngăn bằng dấu phẩy (vd "root,N1") - chạy lại vài việc e2e.
 # -All (EVO_ALL=1) cũng áp cho bộ lọc: chạy được việc của module đóng băng (vd P-a).
-elif [ "$EVO_STEP" = e2e ] && [ -n "$EVO_FILTER" ]; then FZ=--no-frozen; [ -n "${EVO_ALL:-}" ] && FZ=; bun tools/scripts/src/test-e2e-par.ts $FZ --only="$EVO_FILTER"; else
+elif [ "$EVO_STEP" = e2e ] && { [ -n "$EVO_FILTER" ] || [ -n "$EVO_JOBS" ]; }; then
+  FZ=--no-frozen; [ -n "${EVO_ALL:-}" ] && FZ=
+  # EVO_JOBS (run-tests.ps1 -Jobs / lượt chia slot): số việc e2e chạy cùng lúc trong slot (mặc định theo lõi cgroup = 2 khi runner 2 CPU)
+  bun tools/scripts/src/test-e2e-par.ts $FZ ${EVO_FILTER:+--only="$EVO_FILTER"} ${EVO_JOBS:+--jobs=$EVO_JOBS}
+else
   # F1 (CR-095): cổng hằng ngày bỏ suite module đóng băng; EVO_ALL=1 (run-tests.ps1 -All) chạy hết (kiểm tra hằng tháng).
   FZ=--no-frozen; [ -n "${EVO_ALL:-}" ] && FZ=
   bun run test:all --no-python $FZ --only="$EVO_STEP"
 fi
 rc=$?
 [ -n "${EVO_BUILD_CACHE:-}" ] && bun tools/scripts/src/evotest-cache.ts report
+[ "$EVO_STEP" = e2e ] && [ -f .data/e2e-timings.json ] && bun tools/scripts/src/evotest-shard.ts merge-timings .data/e2e-timings.json /cache/e2e-timings.json /tmp/e2e-timings.seed.json
 mkdir -p /out/logs
 [ -d .data ] && cp -r .data/. /out/logs/ 2>/dev/null
 exit $rc

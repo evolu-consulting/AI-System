@@ -9,9 +9,12 @@
 #   LƯỢT TOÀN BỘ (-Step int|e2e|all KHÔNG -Filter): từ chối chạy (exit 5) khi slot khác còn bận, trừ khi -Force; trong lúc nó chạy giữ khoá .exclusive nên lượt khác xếp hàng (lock.sh full_acquire).
 #   -NoCache: tắt cache dựng web (/cache/build) + mẫu DB (dbtpl) cho lượt này (đo "trước", nghi cache sai).
 #   -CachePrune [-Keep N=5] [-MaxGb G=6]: chỉ dọn cache chung trên máy chủ (giữ N ref dùng gần nhất, trần dung lượng) rồi thoát. Remote.sh cũng tự dọn cuối mỗi lượt.
-param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,8)][int]$Slots = 8, [ValidateSet("", "cw")][string]$Capture = "", [switch]$Exclusive, [ValidateRange(1,600)][int]$ExclusiveTimeoutMin = 60, [string]$Probe = "", [switch]$Force, [switch]$NoCache, [switch]$CachePrune, [ValidateRange(1,50)][int]$Keep = 5, [ValidateRange(1,100)][int]$MaxGb = 6)
+#   CHIA SLOT (lượt toàn bộ -Step e2e|all): thay vì chạy tuần tự trong MỘT slot, run-tests.ps1 tự chia: int (chỉ -Step all) một slot, việc e2e chia các slot trống còn lại (cân theo thời lượng đã đo
+#   ở ~/workspace/evotest/cache/e2e-timings.json), chạy SONG SONG bằng các tiến trình con (-InShard), rồi in MỘT bản tóm tắt gộp (thời lượng từng việc, 10 file int chậm nhất, mã thoát = ngăn xấu nhất; đỏ cũ known-red xử lý trong từng ngăn như trước).
+#   -NoShard: chạy một slot như cũ (giữ .exclusive). -Jobs N: số việc e2e cùng lúc trong slot; -Cpus N: CPU runner mỗi slot (mặc định 2; chia slot tự đặt theo lõi máy chủ). -Slots tối đa 12.
+param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,12)][int]$Slots = 8, [ValidateRange(0,9)][int]$Jobs = 0, [ValidateRange(0,8)][int]$Cpus = 0, [switch]$NoShard, [switch]$InShard, [string]$OutDir = "",[ValidateSet("", "cw")][string]$Capture = "", [switch]$Exclusive, [ValidateRange(1,600)][int]$ExclusiveTimeoutMin = 60, [string]$Probe = "", [switch]$Force, [switch]$NoCache, [switch]$CachePrune, [ValidateRange(1,50)][int]$Keep = 5, [ValidateRange(1,100)][int]$MaxGb = 6)
 $ErrorActionPreference = "Stop"
-$isFull = (($Step -in "int", "e2e", "all") -and -not $Filter -and -not $Exclusive)
+$isFull = (($Step -in "int", "e2e", "all") -and -not $Filter -and -not $Exclusive -and -not $InShard)
 if ($Force -and -not $isFull) { Write-Host "evotest: -Force chỉ có nghĩa với lượt toàn bộ (int|e2e|all không -Filter); bỏ qua" }
 if ($Exclusive -and $Step -ne "perf" -and $Step -ne "py") { throw "-Exclusive chỉ dùng với -Step perf|py (đo hiệu năng cần máy yên)" }
 if ($Probe -and $Step -ne "perf" -and $Step -ne "py") { throw "-Probe chỉ dùng với -Step perf|py" }
@@ -20,7 +23,7 @@ $Key = "F:\workspace\id_evoc_key"; $Server = "evoc@149.202.83.5"
 $ssh = @("-i", $Key, "-o", "BatchMode=yes")
 $commit = (git -C $Repo rev-parse --short $Ref).Trim() + $(if ($Dirty) { "+dirty" } else { "" })
 $stamp = (Get-Date -Format "yyyyMMdd-HHmmss") + "-" + $PID   # PID: các lượt cùng giây không đè thư mục tạm/file /tmp/log của nhau
-$out = Join-Path $Repo ".data\evotest\$stamp-$Step"
+$out = if ($OutDir) { $OutDir } else { Join-Path $Repo ".data\evotest\$stamp-$Step" }
 $tmp = Join-Path $env:TEMP "evotest-$stamp"
 $finished = $false
 
@@ -57,6 +60,69 @@ try {
   } else { Write-Host "evotest: không đọc được tải máy chủ (bỏ qua; boot.sh vẫn xếp hàng)" }
 } catch { Write-Host "evotest: không đọc được tải máy chủ ($($_.Exception.Message))" }
 $ErrorActionPreference = "Stop"
+
+# --- tool-evotest-cache: CHIA SLOT cho luot toan bo (-Step e2e|all khong -Filter) -------------------------------------------------
+# Cac tien trinh con la chinh script nay voi -InShard (khong con la "luot toan bo" nen khong tu choi/giu .exclusive) va -OutDir rieng.
+$freeSlots = if ($cores) { $Slots - @($busy | Where-Object { [int]$_.Substring(1) -le $Slots }).Count } else { 0 }
+$shard = ($isFull -and ($Step -eq "e2e" -or $Step -eq "all") -and -not $NoShard -and $cores -and $freeSlots -ge 2)
+if ($isFull -and ($Step -eq "e2e" -or $Step -eq "all") -and -not $shard -and -not $NoShard) { Write-Host "evotest: khong chia duoc slot (can >= 2 slot trong va doc duoc tai may chu) - chay trong 1 slot" }
+if ($isFull -and $Step -eq "int" -and $cores -and -not $Workers) {
+  # int day du trong 1 slot: workers = lõi (<= 8 lõi/slot), tránh mặc định 6 worker / 2 CPU
+  $Cpus = [math]::Min(8, [math]::Max(2, [int]$cores - 2)); $Workers = $Cpus
+}
+if ($shard) {
+  New-Item -ItemType Directory -Force $out | Out-Null
+  $tj = Join-Path $env:TEMP "evotest-timings-$stamp.json"; $lj = Join-Path $env:TEMP "evotest-jobs-$stamp.json"
+  Push-Location $Repo
+  try {
+    @(ssh @ssh $Server 'cat ~/workspace/evotest/cache/e2e-timings.json 2>/dev/null' 2>$null) | Set-Content -Encoding ascii $tj
+    $nf = if ($All) { @() } else { @("--no-frozen") }
+    @(bun tools/scripts/src/test-e2e-par.ts --list @nf "--timings=$tj") | Set-Content -Encoding ascii $lj
+    $plan = (@(bun tools/scripts/src/evotest-shard.ts plan --jobs $lj --free $freeSlots --cores $cores --step $Step) -join "") | ConvertFrom-Json
+  } finally { Pop-Location; Remove-Item -Force $tj, $lj -ErrorAction SilentlyContinue }
+  Write-Host ("evotest: CHIA SLOT - {0} slot trong: int {1} (cpus {2}, workers {3}) + e2e {4} ngan (moi ngan {5} cpus, {6} viec cung luc), du kien ngan e2e cham nhat ~{7} s" -f $freeSlots, $plan.intShard, $plan.intCpus, $plan.intWorkers, $plan.e2eShards, $plan.e2eCpus, $plan.e2eJobs, $plan.estimateS)
+  $script = $MyInvocation.MyCommand.Path
+  $kids = New-Object System.Collections.ArrayList
+  function Start-Kid([string]$label, [string[]]$extra) {
+    $d = Join-Path $out $label
+    $a = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $script, "-Ref", $Ref, "-Slots", "$Slots", "-InShard", "-OutDir", $d) + $extra
+    if ($Dirty) { $a += "-Dirty" }; if ($All) { $a += "-All" }; if ($NoCache) { $a += "-NoCache" }
+    $q = $a | ForEach-Object { '"' + $_ + '"' }
+    $p = Start-Process powershell -ArgumentList $q -NoNewWindow -PassThru -RedirectStandardOutput (Join-Path $out "$label.stdout.log") -RedirectStandardError (Join-Path $out "$label.stderr.log")
+    $null = $p.Handle
+    [void]$kids.Add([pscustomobject]@{ Label = $label; Proc = $p; Dir = $d; T0 = Get-Date; Secs = 0 })
+  }
+  $t0 = Get-Date
+  if ($plan.intShard) { Start-Kid "int" @("-Step", "int", "-Workers", "$($plan.intWorkers)", "-Cpus", "$($plan.intCpus)") }
+  $i = 0
+  foreach ($s in @($plan.shards)) { $i++; Start-Kid "e2e-$i" @("-Step", "e2e", "-Filter", $s.jobs, "-Jobs", "$($plan.e2eJobs)", "-Cpus", "$($plan.e2eCpus)") }
+  Write-Host ("evotest: da mo {0} ngan song song; log tung ngan: {1}\<ngan>\console.log" -f $kids.Count, $out)
+  $left = @($kids)
+  while ($left.Count) {
+    Start-Sleep -Seconds 15
+    foreach ($k in @($left)) {
+      if ($k.Proc.HasExited) { $k.Secs = [int]((Get-Date) - $k.T0).TotalSeconds; Write-Host ("evotest: ngan {0} xong, exit {1}, {2} s" -f $k.Label, $k.Proc.ExitCode, $k.Secs); $left = @($left | Where-Object { $_.Label -ne $k.Label }) }
+    }
+  }
+  $wall = [int]((Get-Date) - $t0).TotalSeconds
+  $worst = 0
+  $sum = New-Object System.Collections.ArrayList
+  [void]$sum.Add("evotest: TONG HOP chia slot - $($kids.Count) ngan, $wall s tong, tu choi/loi = ngan co exit != 0 (do cu known-red da duoc loai trong tung ngan)")
+  foreach ($k in $kids) {
+    $ex = [int]$k.Proc.ExitCode; if ($ex -gt $worst) { $worst = $ex }
+    [void]$sum.Add(("  {0} {1}: exit {2}, {3} s" -f $(if ($ex -eq 0) { "OK  " } else { "LOI " }), $k.Label, $ex, $k.Secs))
+    $cl = Join-Path $k.Dir "console.log"
+    if (Test-Path $cl) {
+      $lines = @(Get-Content $cl)
+      foreach ($l in $lines) { if ($l -match 'test:(int|e2e):par:|build-cache:|^\s+\S \S+: \d+ pass') { [void]$sum.Add("      $l") } }
+      for ($n = 0; $n -lt $lines.Count; $n++) { if ($lines[$n] -match 'ch.m nh.t:\s*$') { $hi = [math]::Min($n + 10, $lines.Count - 1); $lines[$n..$hi] | ForEach-Object { [void]$sum.Add("      $_") } } }
+      if ($ex -ne 0) { [void]$sum.Add("      --- 25 dong cuoi (ngan loi) ---"); $lines | Select-Object -Last 25 | ForEach-Object { [void]$sum.Add("      $_") } }
+    }
+  }
+  $sum | Tee-Object -FilePath (Join-Path $out "summary.txt") | ForEach-Object { Write-Host $_ }
+  exit $worst
+}
+
 New-Item -ItemType Directory -Force $tmp, $out | Out-Null
 try {
   git -C $Repo archive --format=tar.gz -o "$tmp\evotest-app-$stamp.tgz" $Ref
@@ -85,7 +151,7 @@ try {
   # boot.sh scp lên /tmp (tránh lỗi PS 5.1 bỏ dấu nháy kép khi truyền đối số ssh); 2>&1 phía máy chủ để PS 5.1 không coi stderr là lỗi.
   scp @ssh "$tmp\boot.sh" "${Server}:/tmp/evotest-boot-$stamp.sh"
   scp @ssh "$tmp\lock.sh" "${Server}:/tmp/evotest-lock-$stamp.sh"
-  $boot = "EVO_LOCKLIB=/tmp/evotest-lock-$stamp.sh EVO_EXCLUSIVE='$(if ($Exclusive) { 1 })' EVO_FULL_RUN='$(if ($isFull) { 1 })' EVO_FORCE='$(if ($Force) { 1 })' EVO_NOCACHE='$(if ($NoCache) { 1 })' EVO_EXCLUSIVE_TIMEOUT_S=$($ExclusiveTimeoutMin * 60) EVO_SLOTS=$Slots EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' EVO_PROBE='$Probe' bash /tmp/evotest-boot-$stamp.sh $Step $commit $stamp 2>&1; rc=`$?; unlink /tmp/evotest-boot-$stamp.sh; exit `$rc"
+  $boot = "EVO_LOCKLIB=/tmp/evotest-lock-$stamp.sh EVO_EXCLUSIVE='$(if ($Exclusive) { 1 })' EVO_FULL_RUN='$(if ($isFull) { 1 })' EVO_FORCE='$(if ($Force) { 1 })' EVO_NOCACHE='$(if ($NoCache) { 1 })' EVO_JOBS='$(if ($Jobs) { $Jobs })' EVO_RUNNER_CPUS='$(if ($Cpus) { $Cpus })' EVO_RUNNER_MEM='$(if ($Cpus) { [math]::Max(6, 2 * $Cpus).ToString() + 'g' })' EVO_PG_CPUS='$(if ($Cpus -ge 4) { 2 })' EVO_EXCLUSIVE_TIMEOUT_S=$($ExclusiveTimeoutMin * 60) EVO_SLOTS=$Slots EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' EVO_PROBE='$Probe' bash /tmp/evotest-boot-$stamp.sh $Step $commit $stamp 2>&1; rc=`$?; unlink /tmp/evotest-boot-$stamp.sh; exit `$rc"
   $finished = $false
   ssh @ssh $Server $boot | Tee-Object -FilePath "$out\console.log"
   $rc = $LASTEXITCODE

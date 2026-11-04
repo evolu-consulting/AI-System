@@ -78,7 +78,7 @@ describe("ADM-NFR-06 · test:int:par · chọn file, cờ", () => {
 });
 
 describe("ADM-NFR-06 · test:int:par · tham số dòng lệnh", () => {
-  it("parseIntArgs: mặc định min(6, cores/2), --workers=N, ngoài 1..8 → ném; tiền tố còn lại là bộ lọc", () => {
+  it("parseIntArgs: mặc định min(6, cores/2), --workers=N, ngoài 1..12 → ném; tiền tố còn lại là bộ lọc", () => {
     expect(defaultWorkers(12)).toBe(6);
     expect(defaultWorkers(4)).toBe(2);
     expect(defaultWorkers(1)).toBe(1);
@@ -87,7 +87,8 @@ describe("ADM-NFR-06 · test:int:par · tham số dòng lệnh", () => {
       filters: ["tests/acceptance/P-a"],
     });
     expect(() => parseIntArgs(["--workers=0"], 12)).toThrow();
-    expect(() => parseIntArgs(["--workers=9"], 12)).toThrow();
+    expect(parseIntArgs(["--workers=12"], 12).workers).toBe(12);
+    expect(() => parseIntArgs(["--workers=13"], 12)).toThrow();
     expect(() => parseIntArgs(["--workers=x"], 12)).toThrow();
   });
 });

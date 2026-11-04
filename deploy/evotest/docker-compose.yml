@@ -15,6 +15,7 @@ x-runner: &runner
     EVO_FILTER: ${EVO_FILTER:-}
     EVO_PROBE: ${EVO_PROBE:-}
     EVO_WORKERS: ${EVO_WORKERS:-}
+    EVO_JOBS: ${EVO_JOBS:-}
     EVO_ALL: ${EVO_ALL:-}
     EVO_CAPTURE: ${EVO_CAPTURE:-}
     # tool-evotest-cache: cache dựng web dùng chung mọi slot (cùng volume /cache với bun cache). `-NoCache` ⇒ EVO_BUILD_CACHE_ON rỗng ⇒ dựng như cũ.
@@ -28,8 +29,9 @@ x-runner: &runner
     pg: { condition: service_healthy }
     redis: { condition: service_healthy }
   entrypoint: ["nice", "-n", "19", "bash", "/in-container.sh"]
-  cpus: 2
-  mem_limit: 6g
+  # tool-evotest-cache: lượt toàn bộ chia slot (run-tests.ps1) nâng CPU/RAM mỗi slot theo lõi máy chủ; mặc định như cũ (2 CPU / 6 GB).
+  cpus: ${EVO_RUNNER_CPUS:-2}
+  mem_limit: ${EVO_RUNNER_MEM:-6g}
   cpu_shares: 128
   shm_size: 1g
   init: true
@@ -51,7 +53,7 @@ services:
       - ./pg-init:/docker-entrypoint-initdb.d:ro
     tmpfs:
       - /var/lib/postgresql/data:size=3g
-    cpus: 1
+    cpus: ${EVO_PG_CPUS:-1}
     mem_limit: 4g
     cpu_shares: 128
 

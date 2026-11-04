@@ -3,7 +3,7 @@
 // chia thành nhiều ca file). Không dừng ở việc đỏ đầu tiên. Log: `.data/e2e/<việc>/*.log`; thời lượng: `.data/e2e-timings.json`.
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { Glob } from "bun";
 import { installCleanup, leaseRedisDb, resolveLane } from "./e2e-lane";
 import { e2eDbTag, lanePortEnv } from "./e2e-lane.rules";
@@ -22,6 +22,7 @@ import {
   planJobs,
   type Report,
   type SpecInfo,
+  slowestJobs,
   summarize,
   unmatchedOnly,
 } from "./test-e2e-par.rules";
@@ -93,6 +94,9 @@ async function runJob(job: Job, ctx: Ctx, redisDb?: number) {
       lane,
     ),
     E2E_PAR: "1",
+    // fail-fast: stack (`e2e/**/_*.ts`) có tiến trình con thoát bất thường ⇒ stack thoát ngay với lý do (xem e2e-failfast.ts)
+    BUN_OPTIONS:
+      `${process.env.BUN_OPTIONS ?? ""} --preload ${join(import.meta.dir, "e2e-failfast.ts").replaceAll("\\", "/")}`.trim(),
   };
   const t0 = performance.now();
   const p = Bun.spawn(
@@ -179,13 +183,21 @@ async function ensureDbs(root: string, jobs: Job[], lane: number): Promise<void>
 async function main(): Promise<number> {
   const root = repoRoot();
   const args = parseE2eArgs(process.argv.slice(2));
-  const timings = readJson<Record<string, number>>(join(root, TIMINGS), {});
+  const timings = readJson<Record<string, number>>(
+    args.timings ? resolve(args.timings) : join(root, TIMINGS),
+    {},
+  );
   // F1 (CR-095): `--no-frozen` (cổng hằng ngày) bỏ cấu hình e2e của module đóng băng.
   const noFrozen = process.argv.includes("--no-frozen");
   const configs = (await findE2eConfigs(root)).filter((c) => !(noFrozen && isFrozenConfig(c)));
   const specs = await rootSpecs(root, timings);
   const plan = { configs, specs, rootShards: args.shards };
   const jobs = planJobs(plan, timings, args.only);
+  if (args.list) {
+    // chia việc cho nhiều slot evotest (deploy/evotest/run-tests.ps1 + evotest-shard.ts): chỉ in kế hoạch, không cần .env.local
+    console.log(JSON.stringify(jobs.map((j) => ({ name: j.name, cost: j.cost }))));
+    return 0;
+  }
   // `--only` gõ sai / việc bị bỏ (đóng băng): báo rõ thay vì chạy 0 việc rồi chết mù ở bước sau.
   const all = planJobs(plan, timings);
   const bad0 = unmatchedOnly(all, args.only);
@@ -209,6 +221,11 @@ async function main(): Promise<number> {
   await ensureDbs(root, jobs, lane);
   const done = await pool(jobs, n, { root, base, lane, pids });
   saveTimings(root, timings, done);
+  console.log(
+    `test:e2e:par: việc chậm nhất:\n${slowestJobs(done.map((d) => ({ name: d.job.name, ms: d.ms })))
+      .map((l) => `  ${l}`)
+      .join("\n")}`,
+  );
   const bad = done.filter((d) => d.code !== 0);
   for (const d of bad) for (const f of d.failed) console.log(`  [${d.job.name}] ✗ ${f}`);
   const sum = (k: "pass" | "fail") => done.reduce((a, d) => a + d[k], 0);

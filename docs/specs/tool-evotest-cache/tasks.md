@@ -20,7 +20,14 @@ Rút thời gian chạy đầy đủ trên evotest (int 34 phút, e2e 50 phút �
    (owner trường 5 = `full`) nên lượt thường xếp hàng. Dùng lại luật khoá CR-115 (`lock.sh full_acquire`, `boot.sh`).
 4. **Dọn cache.** `cache_prune` (cuối mỗi lượt + `run-tests.ps1 -CachePrune [-Keep 5] [-MaxGb 6]`): giữ N ref dùng gần nhất mỗi pool + trần dung lượng, không xoá mục mới sửa (< 10 phút).
 
+5. **Chia slot cho lượt toàn bộ (điều phối bổ sung).** `run-tests.ps1 -Step e2e|all` (không `-Filter`) chia: int một slot (workers = lõi), việc e2e cho các slot trống còn lại (LPT theo `cache/e2e-timings.json`),
+   chạy song song bằng tiến trình con `-InShard`, tóm tắt gộp. `-Jobs`/`-Cpus`/`-Slots ≤ 12`/`--workers ≤ 12`; `community-web` cổng riêng 3470.
+6. **Fail-fast stack e2e.** `tools/scripts/src/e2e-failfast.ts` (preload qua `BUN_OPTIONS` của `test-e2e-par`): stack `e2e/**/_*.ts` thoát ngay khi tiến trình con chết bất thường (không sửa file stack đã khoá).
+7. In cuối lượt: việc e2e chậm nhất + 10 file int chậm nhất.
+
 ## Làm
+- [x] chia slot: `evotest-shard.{rules,ts}` + `run-tests.ps1` + `in-container.sh` (thời lượng) + compose `EVO_RUNNER_CPUS/MEM`, `EVO_JOBS`
+- [x] `e2e-failfast.ts` + `test-e2e-par.ts --list/--timings`, `test-int-par.ts` top-10, `MAX_WORKERS 12`, META `community-web`
 - [x] `tools/scripts/src/evotest-cache.{rules,lib}.ts` + `evotest-cache.ts` (CLI) + `evotest-cache.test.ts` (unit)
 - [x] 5 `apps/*-web/package.json`: script `build`
 - [x] `deploy/evotest/{cache.sh,lock.sh,boot.sh,remote.sh,in-container.sh,docker-compose.yml,run-tests.ps1}`

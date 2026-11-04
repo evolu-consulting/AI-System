@@ -67,6 +67,8 @@ export const META: Record<string, Meta> = {
     cost: 90,
   },
   "e2e/contracts-web/playwright.config.ts": { cost: 22 },
+  // Mock thuần (không DB). Cổng web mặc định 3410 TRÙNG web của sohoptac-web stack (3410) ⇒ riêng 3470 để hai việc chạy cùng lúc trong một slot.
+  "e2e/community-web/playwright.config.ts": { env: { COMMUNITY_E2E_PORT: "3470" }, cost: 25 },
   "e2e/studio/playwright.config.ts": { cost: 101 },
   "e2e/x1/playwright.config.ts": { db: "x1", cost: 62 },
   "playwright.config.ts": { db: "root", redis: REDIS_URL("E2E_ROOT_REDIS_URL"), cost: 613 },
@@ -247,7 +249,14 @@ export function jobConcurrency(want: number | undefined, cores: number): number 
   return n;
 }
 
-export type E2eArgs = { jobs?: number; only?: string; shards: number };
+/** `list`: chỉ in kế hoạch việc (JSON `[{name,cost}]`) rồi thoát - dùng để chia việc cho nhiều slot evotest; `timings`: file thời lượng thay `.data/e2e-timings.json`. */
+export type E2eArgs = {
+  jobs?: number;
+  only?: string;
+  shards: number;
+  list?: boolean;
+  timings?: string;
+};
 
 export function parseE2eArgs(argv: readonly string[]): E2eArgs {
   const val = (k: string) => argv.find((a) => a.startsWith(`--${k}=`))?.slice(k.length + 3);
@@ -257,7 +266,17 @@ export function parseE2eArgs(argv: readonly string[]): E2eArgs {
     jobs: j === undefined ? undefined : Number(j),
     only: val("only"),
     shards: s ? Number(s) : 3,
+    ...(argv.includes("--list") ? { list: true } : {}),
+    ...(val("timings") ? { timings: val("timings") } : {}),
   };
+}
+
+/** Việc chậm nhất (mới → cũ) để in cuối lượt: `top` việc, mỗi dòng `tên  12.3 s`. */
+export function slowestJobs(done: readonly { name: string; ms: number }[], top = 10): string[] {
+  return [...done]
+    .sort((a, b) => b.ms - a.ms)
+    .slice(0, top)
+    .map((d) => `${d.name}  ${(d.ms / 1000).toFixed(1)} s`);
 }
 
 /** Tổng kết một việc từ báo cáo JSON của Playwright (`stats` + danh sách ca đỏ). */

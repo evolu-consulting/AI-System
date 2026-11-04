@@ -133,6 +133,21 @@ function saveTimings(root: string, runs: Run[], old: Timings): void {
   writeFileSync(join(root, TIMINGS), `${JSON.stringify(t, null, 2)}\n`);
 }
 
+/** 10 file int chậm nhất của lượt này (từ JUnit) - để biết file nào kéo dài cả lượt. */
+function printSlowest(root: string, runs: Run[]): void {
+  const cur: Timings = {};
+  for (const r of runs)
+    if (existsSync(join(root, r.junit)))
+      Object.assign(cur, parseJunit(readFileSync(join(root, r.junit), "utf8")));
+  const top = Object.entries(cur)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+  if (top.length)
+    console.log(
+      `test:int:par: 10 file chậm nhất:\n${top.map(([f, s]) => `  ${s.toFixed(1)} s  ${f}`).join("\n")}`,
+    );
+}
+
 /** `test-db-cli gc 32` tách rời tiến trình cha (không chờ): chỉ xoá DB `…_trash_<id>_test` (mỗi lượt tên riêng). */
 function gcInBackground(root: string): void {
   const p = Bun.spawn(
@@ -212,6 +227,7 @@ async function main(): Promise<number> {
   // này ⇒ 30–35 s cho 35–58 DB). TS1: chạy NỀN tách rời (không chặn kết quả); lượt sau không thấy khác biệt vì tên rác duy nhất.
   gcInBackground(root);
   saveTimings(root, runs, timings);
+  printSlowest(root, runs);
   let [pass, fail] = [0, 0];
   for (const r of runs) {
     const s = summarize(r);
