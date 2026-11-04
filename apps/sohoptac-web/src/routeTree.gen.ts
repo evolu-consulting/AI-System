@@ -24,6 +24,7 @@ import { Route as AuthedPartnersRouteImport } from './routes/_authed/partners'
 import { Route as AuthedPricesRouteImport } from './routes/_authed/prices'
 import { Route as AuthedProductsRouteImport } from './routes/_authed/products'
 import { Route as AuthedSourcingRouteImport } from './routes/_authed/sourcing'
+import { Route as CommunityIndexRouteImport } from './routes/community/index'
 import { Route as CommunitySplatRouteImport } from './routes/community/$'
 import { Route as AuthedCksIndexRouteImport } from './routes/_authed/cks/index'
 import { Route as AuthedCksIdRouteImport } from './routes/_authed/cks/$id'
@@ -111,6 +112,11 @@ const AuthedSourcingRoute = AuthedSourcingRouteImport.update({
   path: '/sourcing',
   getParentRoute: () => AuthedRoute,
 } as any)
+const CommunityIndexRoute = CommunityIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CommunityRoute,
+} as any)
 const CommunitySplatRoute = CommunitySplatRouteImport.update({
   id: '/$',
   path: '/$',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/products': typeof AuthedProductsRoute
   '/sourcing': typeof AuthedSourcingRoute
   '/community/$': typeof CommunitySplatRoute
+  '/community/': typeof CommunityIndexRoute
   '/cks/$id': typeof AuthedCksIdRoute
   '/contracts/$id': typeof AuthedContractsIdRoute
   '/contracts/new': typeof AuthedContractsNewRoute
@@ -202,7 +209,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/community': typeof CommunityRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/sso': typeof SsoRoute
@@ -216,6 +222,7 @@ export interface FileRoutesByTo {
   '/products': typeof AuthedProductsRoute
   '/sourcing': typeof AuthedSourcingRoute
   '/community/$': typeof CommunitySplatRoute
+  '/community': typeof CommunityIndexRoute
   '/cks/$id': typeof AuthedCksIdRoute
   '/contracts/$id': typeof AuthedContractsIdRoute
   '/contracts/new': typeof AuthedContractsNewRoute
@@ -246,6 +253,7 @@ export interface FileRoutesById {
   '/_authed/products': typeof AuthedProductsRoute
   '/_authed/sourcing': typeof AuthedSourcingRoute
   '/community/$': typeof CommunitySplatRoute
+  '/community/': typeof CommunityIndexRoute
   '/_authed/cks/$id': typeof AuthedCksIdRoute
   '/_authed/contracts/$id': typeof AuthedContractsIdRoute
   '/_authed/contracts/new': typeof AuthedContractsNewRoute
@@ -276,6 +284,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/sourcing'
     | '/community/$'
+    | '/community/'
     | '/cks/$id'
     | '/contracts/$id'
     | '/contracts/new'
@@ -290,7 +299,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/community'
     | '/login'
     | '/privacy'
     | '/sso'
@@ -304,6 +312,7 @@ export interface FileRouteTypes {
     | '/products'
     | '/sourcing'
     | '/community/$'
+    | '/community'
     | '/cks/$id'
     | '/contracts/$id'
     | '/contracts/new'
@@ -333,6 +342,7 @@ export interface FileRouteTypes {
     | '/_authed/products'
     | '/_authed/sourcing'
     | '/community/$'
+    | '/community/'
     | '/_authed/cks/$id'
     | '/_authed/contracts/$id'
     | '/_authed/contracts/new'
@@ -462,6 +472,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/sourcing'
       preLoaderRoute: typeof AuthedSourcingRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/community/': {
+      id: '/community/'
+      path: '/'
+      fullPath: '/community/'
+      preLoaderRoute: typeof CommunityIndexRouteImport
+      parentRoute: typeof CommunityRoute
     }
     '/community/$': {
       id: '/community/$'
@@ -599,10 +616,12 @@ const AuthedRouteWithChildren =
 
 interface CommunityRouteChildren {
   CommunitySplatRoute: typeof CommunitySplatRoute
+  CommunityIndexRoute: typeof CommunityIndexRoute
 }
 
 const CommunityRouteChildren: CommunityRouteChildren = {
   CommunitySplatRoute: CommunitySplatRoute,
+  CommunityIndexRoute: CommunityIndexRoute,
 }
 
 const CommunityRouteWithChildren = CommunityRoute._addFileChildren(

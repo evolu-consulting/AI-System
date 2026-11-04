@@ -5,12 +5,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CommunityRoute } from "~/shell/CommunityRoute";
 
-declare const __COMMUNITY_MOCK__: boolean | undefined;
-/** Mock (dev/e2e không backend): không phiên, không /pack/me. */
-const mock = typeof __COMMUNITY_MOCK__ !== "undefined" && __COMMUNITY_MOCK__;
-
 export const Route = createFileRoute("/community")({
   beforeLoad: async ({ location }) =>
-    mock ? undefined : (await import("~/features/auth/lib/guard")).requireSession(location),
+    (await import("~/features/auth/lib/guard")).requireSession(location),
   component: CommunityRoute,
 });

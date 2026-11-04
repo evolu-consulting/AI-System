@@ -26,12 +26,9 @@ export const communityRoutes: readonly CommunityRouteDef[] = CHILD_PATHS.map((p,
 /** Shell gọi một lần (router, đăng xuất, điều hướng sang Sổ Hợp Tác) trước khi route Community được dựng. */
 export const configureCommunityHost = (h: CommunityHostConfig): void => setCommunityHost(h);
 
-/** Trang của module: một chunk (Shell Bảng tin/Hồ sơ chọn theo route). Chờ gói dịch + API trước khi trả để không nháy. */
-export const loadCommunityPage: PageLoader = async () => {
-  const m = await import(/* webpackChunkName: "community" */ "./ui/entry");
-  await m.ready;
-  return m;
-};
+/** Trang của module: một chunk (Shell Bảng tin/Hồ sơ chọn theo route). Gói dịch + API nạp trong `ui/entry` (Suspense của shell chờ). */
+export const loadCommunityPage: PageLoader = () =>
+  import(/* webpackChunkName: "cm" */ "./ui/entry");
 
 export type RouteHost<Parent, Route, Component> = {
   parent: Parent;

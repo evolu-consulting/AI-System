@@ -7,13 +7,13 @@ export const CSS_BUDGET_BYTES = 25 * 1024;
 export const CHUNK_BUDGET_BYTES = 50 * 1024;
 /** CR-106: chunk `canvas*` (xyflow, lazy trong Cài đặt › Quy trình duyệt; như admin-web ADR-0013 #2): ngân sách riêng. */
 export const CANVAS_CHUNK_BUDGET_BYTES = 80 * 1024;
-/** CR-118: chunk `community*` (module Community, tải lười dưới /community/*): JS ≤ 60 KB gz, CSS ≤ 15 KB gz. */
+/** CR-118: chunk `cm*` (= community; tên ngắn để bundle đầu nhỏ hơn: module Community, tải lười dưới /community/*): JS ≤ 60 KB gz, CSS ≤ 15 KB gz. */
 export const COMMUNITY_CHUNK_BUDGET_BYTES = 60 * 1024;
 export const COMMUNITY_CSS_BUDGET_BYTES = 15 * 1024;
 export const chunkBudget = (name: string): number =>
   /^canvas[.\-_]/.test(name)
     ? CANVAS_CHUNK_BUDGET_BYTES
-    : /^community[.\-_]/.test(name)
+    : /^(community|cm)[.\-_]/.test(name)
       ? COMMUNITY_CHUNK_BUDGET_BYTES
       : CHUNK_BUDGET_BYTES;
 /** Chunk bất đồng bộ (route, lazy) do Rsbuild tách vào `static/js/async`. */
@@ -101,7 +101,7 @@ export function checkBundle(distDir: string): BundleReport {
   }
   const cmCssDir = join(distDir, "static", "css", "async");
   for (const f of existsSync(cmCssDir) ? readdirSync(cmCssDir) : []) {
-    if (!/^community[.\-_].*\.css$/.test(f)) continue;
+    if (!/^(community|cm)[.\-_].*\.css$/.test(f)) continue;
     const b = Bun.gzipSync(readFileSync(join(cmCssDir, f))).byteLength;
     if (b > COMMUNITY_CSS_BUDGET_BYTES)
       errors.push(`check:bundle css ${f} ${toKb(b)} KB > ${COMMUNITY_CSS_BUDGET_BYTES / 1024} KB`);

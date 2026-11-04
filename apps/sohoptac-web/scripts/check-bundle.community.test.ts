@@ -4,7 +4,7 @@ import { CHUNK_BUDGET_BYTES, COMMUNITY_CHUNK_BUDGET_BYTES, chunkBudget } from ".
 
 describe("chunkBudget community", () => {
   it("community.* = 60 KB; chunk thường = 50 KB", () => {
-    expect(chunkBudget("community.b956431293.js")).toBe(COMMUNITY_CHUNK_BUDGET_BYTES);
+    expect(chunkBudget("cm.b956431293.js")).toBe(COMMUNITY_CHUNK_BUDGET_BYTES);
     expect(COMMUNITY_CHUNK_BUDGET_BYTES).toBe(60 * 1024);
     expect(chunkBudget("abc.js")).toBe(CHUNK_BUDGET_BYTES);
   });
