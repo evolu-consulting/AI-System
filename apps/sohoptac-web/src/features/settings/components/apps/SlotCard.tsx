@@ -1,17 +1,25 @@
 // CR-118 §6 · §11.2 · một khe của công ty: quy trình platform đã gán (tên + phiên bản + sơ đồ chỉ đọc, nạp lười) và bộ sửa luật.
-// Sơ đồ: hub chỉ có đường đọc định nghĩa cho quy trình ĐANG DÙNG (`/pack/contracts/approval-flow`) ⇒ các quy trình còn lại chỉ hiện tên.
+// Sơ đồ: MỌI quy trình đã gán xem được (nạp khi mở: `GET /hub-admin/tenants/:tid/process-routing/:slot/processes/:defId`).
 import type { AssignedProcess } from "@ai/contracts/hub-admin";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDepartments, useRouting } from "../../hooks/use-apps-settings";
-import { useFlow } from "../../hooks/use-flow";
+import { useRoutingDef } from "../../hooks/use-routing-def";
 import { FlowCanvasLazy } from "../FlowCanvasLazy";
 import { RoutingEditor } from "./RoutingEditor";
 
-function ProcessItem({ p, current }: { p: AssignedProcess; current: boolean }) {
+function ProcessItem({
+  tenantId,
+  slot,
+  p,
+}: {
+  tenantId: string;
+  slot: string;
+  p: AssignedProcess;
+}) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const flow = useFlow(open && current);
+  const diagram = useRoutingDef(tenantId, slot, p.def_id, open);
   return (
     <li data-testid={`slot-process-${p.def_id}`} className="rounded-lg border border-rule p-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -19,27 +27,27 @@ function ProcessItem({ p, current }: { p: AssignedProcess; current: boolean }) {
         <span className="text-caption text-dim">
           {p.rel_version !== null ? `v${p.rel_version}` : t("contracts.settings.apps.noVersion")}
         </span>
-        {current ? (
-          <button
-            type="button"
-            className="ml-auto text-label text-act underline"
-            aria-expanded={open}
-            onClick={() => setOpen(!open)}
-          >
-            {t(`contracts.settings.apps.${open ? "hideDiagram" : "viewDiagram"}`)}
-          </button>
-        ) : (
-          <span className="ml-auto text-caption text-dim">
-            {t("contracts.settings.apps.diagramCurrentOnly")}
-          </span>
-        )}
+        <button
+          type="button"
+          data-testid={`slot-diagram-toggle-${p.def_id}`}
+          className="ml-auto text-label text-act underline"
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
+          {t(`contracts.settings.apps.${open ? "hideDiagram" : "viewDiagram"}`)}
+        </button>
       </div>
-      {open && flow.data && (
-        <FlowCanvasLazy steps={flow.data.steps} run={flow.data.steps.map(() => true)} />
+      {open && diagram.state === "loading" && (
+        <p role="status" className="mt-2 text-dim">
+          {t("contracts.common.loading")}
+        </p>
       )}
-      {open && flow.isError && (
-        <p role="alert" className="mt-2 text-late">
-          {t("contracts.flow.loadFail")}
+      {open && diagram.state === "ready" && (
+        <FlowCanvasLazy steps={diagram.steps} run={diagram.steps.map(() => true)} />
+      )}
+      {open && diagram.state === "unavailable" && (
+        <p role="alert" data-testid="slot-diagram-unavailable" className="mt-2 text-late">
+          {t("contracts.settings.apps.diagramUnavailable")}
         </p>
       )}
     </li>
@@ -50,7 +58,6 @@ export function SlotCard({ tenantId, slot }: { tenantId: string; slot: string })
   const { t } = useTranslation();
   const q = useRouting(tenantId, slot);
   const depts = useDepartments(true);
-  const flow = useFlow(true);
   const a = (k: string) => t(`contracts.settings.apps.${k}`);
   return (
     <section
@@ -79,7 +86,7 @@ export function SlotCard({ tenantId, slot }: { tenantId: string; slot: string })
         <>
           <ul className="mb-2 flex flex-col gap-2">
             {q.data.processes.map((p) => (
-              <ProcessItem key={p.def_id} p={p} current={flow.data?.defId === p.def_id} />
+              <ProcessItem key={p.def_id} tenantId={tenantId} slot={slot} p={p} />
             ))}
           </ul>
           <RoutingEditor

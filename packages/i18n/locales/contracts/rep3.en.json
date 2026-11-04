@@ -91,7 +91,7 @@
         "noVersion": "unpublished",
         "viewDiagram": "View diagram",
         "hideDiagram": "Hide diagram",
-        "diagramCurrentOnly": "The diagram is available while the process is in use",
+        "diagramUnavailable": "The diagram of this process cannot be viewed",
         "loadFail": "Could not load data.",
         "rules": "Process routing rules",
         "rulesLead": "The first matching rule wins (top to bottom); if none matches the default rule is used. Pick only among assigned processes.",

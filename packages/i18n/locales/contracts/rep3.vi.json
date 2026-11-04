@@ -91,7 +91,7 @@
         "noVersion": "chưa xuất bản",
         "viewDiagram": "Xem sơ đồ",
         "hideDiagram": "Ẩn sơ đồ",
-        "diagramCurrentOnly": "Sơ đồ chỉ xem được khi quy trình đang được dùng",
+        "diagramUnavailable": "Không xem được sơ đồ của quy trình này",
         "loadFail": "Không tải được dữ liệu.",
         "rules": "Luật chọn quy trình",
         "rulesLead": "Luật đầu tiên khớp thắng (xét từ trên xuống); không khớp thì dùng luật mặc định. Chỉ chọn trong số quy trình đã được gán.",

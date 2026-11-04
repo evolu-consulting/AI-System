@@ -176,3 +176,46 @@ test("thành viên không thấy mục 'Ứng dụng & quy trình'", async ({ pa
     await expect(dlg.getByRole("button", { name: /Ứng dụng & quy trình/ })).toHaveCount(0);
   }
 });
+
+test("sơ đồ xem được cho MỌI quy trình đã gán, nạp khi mở, 404 ⇒ báo không xem được", async ({
+  page,
+}) => {
+  const { tid } = await install(page, "tenant_admin");
+  const hits: string[] = [];
+  await page.route(`**/hub-admin/tenants/${tid}/process-routing/${SLOT}/processes/*`, (r) => {
+    const id = r.request().url().split("/").pop() ?? "";
+    hits.push(id);
+    if (id === P_DEFAULT)
+      return json(r, 404, { error: { code: "NOT_FOUND", message: "not found" } });
+    return json(r, 200, {
+      def_id: P_SALES,
+      slot: SLOT,
+      name: "Duyệt nhanh Kinh doanh",
+      rel_version: 2,
+      stages: [],
+      slot_body: {
+        steps: [
+          {
+            kind: "review",
+            key: "s1",
+            name: "Trưởng phòng duyệt",
+            department_group_key: "sales",
+            head_only: true,
+            due_h: 24,
+            remind_every_h: null,
+            when: null,
+          },
+        ],
+      },
+    });
+  });
+  const dlg = await open(page);
+  await expect(dlg.getByTestId(`slot-process-${P_SALES}`)).toBeVisible();
+  expect(hits).toEqual([]);
+  await dlg.getByTestId(`slot-diagram-toggle-${P_SALES}`).click();
+  await expect(dlg.getByTestId("flow-canvas")).toBeVisible();
+  await expect(dlg.getByTestId("flow-canvas")).toContainText("Trưởng phòng duyệt");
+  await dlg.getByTestId(`slot-diagram-toggle-${P_DEFAULT}`).click();
+  await expect(dlg.getByTestId("slot-diagram-unavailable")).toBeVisible();
+  expect(hits.sort()).toEqual([P_DEFAULT, P_SALES].sort());
+});
