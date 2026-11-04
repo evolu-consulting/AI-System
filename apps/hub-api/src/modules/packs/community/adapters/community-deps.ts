@@ -6,6 +6,7 @@ import type { ExternalOrgResolver } from "../../kit/application/ext-org.ports";
 import type { NotifyTxRepos } from "../../kit/application/notify";
 import type { PackUow } from "../../kit/application/ports";
 import type {
+  CommunityBlobs,
   CompanyBrandReader,
   ContractsCapReader,
   HostBookReader,
@@ -32,4 +33,6 @@ export type CommunityDeps = {
   caps?: ContractsCapReader | undefined;
   /** Gốc URL community-web (link về bài ở SP & Giá); vắng ⇒ không link. */
   webUrl?: string | undefined;
+  /** CR-118 §11.1: kho byte tệp bài (FileBox); vắng ⇒ `/files` 503. */
+  blobs?: CommunityBlobs | undefined;
 };

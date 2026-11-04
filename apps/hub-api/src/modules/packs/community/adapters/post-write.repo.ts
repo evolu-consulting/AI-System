@@ -5,7 +5,16 @@ import { sql } from "drizzle-orm";
 import type { Audience, PostType } from "../domain/audience.rules";
 import type { StoredContent } from "../domain/content.rules";
 
-export type MediaIn = { kind: "image" | "video"; label: string; url?: string | undefined };
+/** CR-118: `fileId` + `name/mime/size` chỉ do server điền (`files.repo.attachableFiles`), không lấy từ client. */
+export type MediaIn = {
+  kind: "image" | "video" | "file";
+  label: string;
+  url?: string | undefined;
+  fileId?: string | undefined;
+  name?: string | undefined;
+  mime?: string | undefined;
+  size?: number | undefined;
+};
 
 export type NewPost = {
   tenantId: string;
@@ -50,9 +59,9 @@ export async function replaceChildren(
     i as (insert into community.post_items (tenant_id, post_id, position, product, qty, price)
       select ${tenantId}::uuid, ${postId}::uuid, 0, ${product}, ${fieldsRaw.qty ?? ""}, ${fieldsRaw.price ?? null}::text
       where ${product} <> ''),
-    m as (insert into community.media (tenant_id, post_id, position, kind, label, url)
+    m as (insert into community.media (tenant_id, post_id, position, kind, label, url, file_id, name, mime, size_bytes)
       select ${tenantId}::uuid, ${postId}::uuid, (x.n - 1)::smallint, x.e ->> 'kind', coalesce(x.e ->> 'label', ''),
-        x.e ->> 'url'
+        x.e ->> 'url', (x.e ->> 'fileId')::uuid, x.e ->> 'name', x.e ->> 'mime', (x.e ->> 'size')::bigint
       from jsonb_array_elements(${JSON.stringify(media ?? [])}::jsonb) with ordinality as x(e, n)
       where ${media !== null}::boolean)
     select 1`);

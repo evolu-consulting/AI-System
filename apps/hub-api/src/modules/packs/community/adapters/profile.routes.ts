@@ -56,6 +56,9 @@ async function mediaJson(d: CommunityDeps, c: Context<PackGuardVars>, a: Access)
       kind: r.kind,
       label: r.label,
       ...(r.url ? { url: r.url } : {}),
+      ...(r.file_id
+        ? { fileId: r.file_id, name: r.name ?? "", size: r.size ?? 0, mime: r.mime ?? "" }
+        : {}),
       createdAt: new Date(r.created_at).toISOString(),
     })),
     ...(rows.length > q.limit && last ? { nextCursor: cursorFor(last) } : {}),

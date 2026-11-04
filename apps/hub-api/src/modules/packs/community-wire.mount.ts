@@ -4,6 +4,7 @@
 import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
 import type {
+  CommunityBlobs,
   CompanyBrandReader,
   ContractsCapReader,
   HostBookReader,
@@ -18,7 +19,9 @@ import { hostBookModule } from "./contracts/host-book.mount";
 import { supplierScores } from "./contracts/partners.mount";
 import { type PackAccessView, packAccessInput } from "./kit/adapters/pack-guard.middleware";
 import { createPackUow } from "./kit/adapters/pack-uow";
+import { orgForTenant } from "./kit/application/pack-files.ports";
 import { packActionsFor } from "./kit/domain/pack-access.rules";
+import { fileboxClients, type PackFb } from "./packs.filebox";
 
 const KEY = "contracts";
 
@@ -66,7 +69,24 @@ export function mountCommunityWired<E extends Env>(
   db: Db,
   view: PackAccessView,
   timeZoneOf: (tenantId: string) => Promise<string>,
-  o: { signal?: AbortSignal | undefined; worker?: boolean } = {},
+  o: { signal?: AbortSignal | undefined; worker?: boolean; fb?: PackFb | null } = {},
 ): void {
-  mountCommunity(app, prefix, db, view, { ...o, ...communityPorts(db, view, { timeZoneOf }) });
+  const { fb, ...rest } = o;
+  mountCommunity(app, prefix, db, view, {
+    ...rest,
+    ...communityPorts(db, view, { timeZoneOf }),
+    ...(fb ? { blobs: communityBlobs(fb) } : {}),
+  });
+}
+
+/** CR-118 §11.1 · kho byte tệp bài trên FileBox org `t_<tenant>` (cùng client gói `packs.filebox.ts`). */
+export function communityBlobs(fb: PackFb): CommunityBlobs {
+  const client = fileboxClients(fb);
+  return {
+    put: async (tenantId, name, bytes) => client(orgForTenant(tenantId)).postFile(name, bytes),
+    get: async (tenantId, fileId) => client(orgForTenant(tenantId)).getContent(fileId),
+    drop: async (tenantId, fileId) => {
+      await client(orgForTenant(tenantId)).deleteFile(fileId);
+    },
+  };
 }

@@ -14,7 +14,12 @@ export const ProfileMediaItemSchema = z.strictObject({
   id: z.string(),
   postId: z.string(),
   postType: z.enum(POST_TYPES),
-  kind: z.enum(["image", "video"]),
+  kind: z.enum(["image", "video", "file"]),
+  /** CR-118: tệp tải lên (tải về `GET /pack/community/files/:fileId`) + tên/cỡ/mime. */
+  fileId: z.string().optional(),
+  name: z.string().optional(),
+  size: z.number().int().nonnegative().optional(),
+  mime: z.string().optional(),
   /** Nhãn (đã che liên hệ như nội dung bài). */
   label: z.string(),
   /** http(s) — vắng khi đính kèm chưa có url. */

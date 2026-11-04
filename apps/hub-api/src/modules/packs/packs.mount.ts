@@ -129,7 +129,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
     }); // N4 Â· R1 pool riÃªng
   if (d.db) {
     mountCoreTools({ ...d, db: d.db }, view);
-    mountCommunityWired(app, PACK_PREFIX, d.db, view, tenantTz(d), { signal: d.signal }); // CR-102 · com-c3 · bảng tin chủ quản ↔ đối tác
+    mountCommunityWired(app, PACK_PREFIX, d.db, view, tenantTz(d), { signal: d.signal, fb }); // CR-102 · com-c3 · bảng tin chủ quản ↔ đối tác
     mountDlcWired({ ...d, db: d.db }); // dlc-engine · khe DLC + tool bước DLC (Agent Hub qua cầu `dlcAgents`)
     app.route(`${PACK_PREFIX}/${DLC_PACK}`, dlcRoutes(d.db, d.packRuns)); // dlc-chat-review · nội dung bước cho modal duyệt
     setChatUsageSink(chatUsageSink(d.db)); // M3 Â· usage chat (M2) â‡’ báº£ng usage chung cá»§a AI client

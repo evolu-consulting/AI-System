@@ -9,9 +9,14 @@ export type MediaRow = {
   id: string;
   post_id: string;
   post_type: "sell" | "buy" | "note";
-  kind: "image" | "video";
+  kind: "image" | "video" | "file";
   label: string;
   url: string | null;
+  /** CR-118: tệp tải lên (null với media url). */
+  file_id: string | null;
+  name: string | null;
+  mime: string | null;
+  size: number | null;
   position: number;
   created_at: string;
 };
@@ -31,6 +36,7 @@ export async function profileMedia(
   const at = cursor?.at ?? null;
   const rows = await tx.execute<MediaRow>(sql`
     select m.id, m.post_id, p.type as post_type, m.kind, m.label, m.url, m.position,
+      m.file_id::text as file_id, m.name, m.mime, m.size_bytes::int as size,
       to_json(p.created_at) #>> '{}' as created_at -- chuỗi ISO đủ micro giây: con trỏ so bằng chính xác
     from community.posts p
     join community.media m on m.post_id = p.id and m.tenant_id = p.tenant_id

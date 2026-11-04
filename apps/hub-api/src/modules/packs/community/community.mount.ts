@@ -11,6 +11,7 @@ import { createPackUow } from "../kit/adapters/pack-uow";
 import type { ExternalOrgResolver } from "../kit/application/ext-org.ports";
 import { COMMUNITY_KEY } from "./adapters/community-access";
 import type { CommunityDeps } from "./adapters/community-deps";
+import { filesRoutes } from "./adapters/files.routes";
 import type { CommunityEventDeps } from "./adapters/notify.events";
 import { communityEvents } from "./adapters/notify.events";
 import { startCommunitySweeper } from "./adapters/notify.sweep";
@@ -21,6 +22,7 @@ import { quoteRoutes } from "./adapters/quote.routes";
 import { stockMatchVia } from "./adapters/quote.service";
 import { threadsRoutes } from "./adapters/threads.routes";
 import type {
+  CommunityBlobs,
   CompanyBrandReader,
   ContractsCapReader,
   HostBookReader,
@@ -46,6 +48,8 @@ export function communityModule(
     brand?: CompanyBrandReader | undefined;
     caps?: ContractsCapReader | undefined;
     webUrl?: string | undefined;
+    /** CR-118 §11.1: kho byte tệp bài (vắng ⇒ `/files` 503). */
+    blobs?: CommunityBlobs | undefined;
     now?: () => Date;
   } = {},
 ): Hono<PackGuardVars> {
@@ -73,6 +77,7 @@ export function communityModule(
     brand: opts.brand,
     caps: opts.caps,
     webUrl: opts.webUrl,
+    blobs: opts.blobs,
   };
   const r = new Hono<PackGuardVars>();
   r.route("/", postsRoutes(d));
@@ -80,6 +85,7 @@ export function communityModule(
   r.route("/", orgRoutes(d));
   r.route("/", profileRoutes(d));
   r.route("/", quoteRoutes(d));
+  r.route("/", filesRoutes(d));
   return r;
 }
 
@@ -96,9 +102,10 @@ export function mountCommunity<E extends Env>(
     hostBook?: HostBookReader;
     brand?: CompanyBrandReader;
     caps?: ContractsCapReader;
+    blobs?: CommunityBlobs;
   } = {},
 ): void {
-  const { quotes, hostBook, brand, caps, ...sweep } = o;
+  const { quotes, hostBook, brand, caps, blobs, ...sweep } = o;
   startSweeper(db, view, sweep);
   const shtUrl = process.env.CONTRACTS_WEB_URL || "/";
   app.route(
@@ -109,6 +116,7 @@ export function mountCommunity<E extends Env>(
       ...(hostBook ? { hostBook } : {}),
       ...(brand ? { brand } : {}),
       ...(caps ? { caps } : {}),
+      ...(blobs ? { blobs } : {}),
       webUrl: process.env.COMMUNITY_WEB_URL || undefined,
     }),
   );

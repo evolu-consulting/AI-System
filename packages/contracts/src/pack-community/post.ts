@@ -40,14 +40,35 @@ export const POST_ACTIONS = [
 ] as const;
 export type PostAction = (typeof POST_ACTIONS)[number];
 
+/** CR-118 §11.1: `file` = tệp tải lên qua `POST /pack/community/files` (tải về: `GET /pack/community/files/:fileId`). */
+export const MEDIA_KINDS = ["image", "video", "file"] as const;
+export type MediaKind = (typeof MEDIA_KINDS)[number];
+
 export const MediaItemSchema = z.strictObject({
   id: z.string(),
-  kind: z.enum(["image", "video"]),
+  kind: z.enum(MEDIA_KINDS),
   label: z.string().max(200),
   url: z.string().max(2000).optional(),
+  /** CR-118: id `CommunityFile` (bắt buộc khi `kind=file`). Gửi lên: server tự điền `name/size/mime` + chỉnh `kind`
+   * theo nội dung đã sniff (ảnh ⇒ `image`, còn lại ⇒ `file`); `url` bị bỏ. Chỉ dùng tệp CHÍNH MÌNH tải lên hoặc đã trên bài này. */
+  fileId: z.uuid().optional(),
+  name: z.string().max(255).optional(),
+  size: z.number().int().nonnegative().optional(),
+  mime: z.string().max(128).optional(),
 });
 export type MediaItem = z.infer<typeof MediaItemSchema>;
-export const MEDIA_LIMITS = { image: 10, video: 2 } as const;
+export const MEDIA_LIMITS = { image: 10, video: 2, file: 10 } as const;
+
+/** CR-118 §11.1 · 201 của `POST /pack/community/files` (thân thô + header `X-Filename` percent-encoded; trần
+ * `ATTACH_MAX_BYTES`, loại `ATTACH_ALLOWED` — nội dung phải khớp đuôi: 413 `ATTACHMENT_TOO_LARGE`, 415
+ * `ATTACHMENT_TYPE_NOT_ALLOWED`). `mime` = theo nội dung đã sniff. */
+export const CommunityFileSchema = z.strictObject({
+  id: z.uuid(),
+  name: z.string().min(1).max(255),
+  mime: z.string().max(128),
+  size: z.number().int().nonnegative(),
+});
+export type CommunityFile = z.infer<typeof CommunityFileSchema>;
 
 /** Khoảng bị che (chỉ chủ quản nhận, dùng tô đậm raw). `field`: trường chứa khoảng này. */
 export const CONTACT_HIT_KINDS = ["phone", "email", "link", "taxId", "company"] as const;

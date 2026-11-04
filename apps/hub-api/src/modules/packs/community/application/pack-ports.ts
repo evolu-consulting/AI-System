@@ -122,3 +122,16 @@ export type CompanyBrandReader = {
 export type ContractsCapReader = {
   contracts(who: Pick<HostCaller, "tenantId" | "userId" | "userKind">): Promise<boolean>;
 };
+
+/** CR-118 §11.1 · kho byte tệp bài (FileBox org `t_<tenant>`, tiêm ở `packs/community-wire.mount.ts`). Vắng ⇒ `POST/GET /files` 503. */
+export type CommunityBlobs = {
+  put(
+    tenantId: string,
+    name: string,
+    bytes: Uint8Array,
+  ): Promise<{ fileId: string; versionId: string | null }>;
+  /** null = không còn ở kho. */
+  get(tenantId: string, fileId: string): Promise<Uint8Array | null>;
+  /** Hoàn tác upload khi ghi DB lỗi (lỗi kho bỏ qua). */
+  drop(tenantId: string, fileId: string): Promise<void>;
+};

@@ -21,8 +21,10 @@ import {
   postActions,
 } from "../domain/audience.rules";
 import { type Fields, storeComment, storeContent } from "../domain/content.rules";
+import { mediaKindOf } from "../domain/file.rules";
 import { priceChanged } from "../domain/notify.rules";
 import { type Access, otherOrgNames } from "./community-access";
+import { attachableFiles } from "./files.repo";
 import type { CommunityEvents } from "./notify.events";
 import { partnerRows } from "./org.repo";
 import { type FeedFilter, type FeedRaw, feedQuery, type PostRow, postById } from "./post.sql";
@@ -71,8 +73,32 @@ function allowedOn(st: StateRow | null, org: string | null): PostAction[] {
 function safeMedia(a: Access, media: readonly MediaIn[]): MediaIn[] {
   const others = otherOrgNames(a);
   return media.map((m) => {
+    const label = storeComment(m.label, others).masked.slice(0, 200);
+    if (m.fileId) return { kind: m.kind, label, fileId: m.fileId.toLowerCase() }; // CR-118: url bỏ, metadata server điền
+    if (m.kind === "file") throw appError("VALIDATION_ERROR");
     if (m.url !== undefined && !/^https?:\/\/\S+$/i.test(m.url)) throw appError("VALIDATION_ERROR");
-    return { ...m, label: storeComment(m.label, others).masked.slice(0, 200) };
+    return { kind: m.kind, label, ...(m.url !== undefined ? { url: m.url } : {}) };
+  });
+}
+
+/** CR-118 §11.1: gắn tệp — chỉ tệp CHÍNH MÌNH tải lên hoặc đã trên bài `postId` (MỘT câu theo tập, dưới RLS người xem).
+ * Metadata (tên/mime/cỡ) + `kind` lấy từ hàng `community.files` (đã sniff), không từ client. Thiếu ⇒ 400. */
+async function withFiles(
+  tx: Tx,
+  a: Access,
+  media: MediaIn[] | null,
+  postId: string | null,
+): Promise<MediaIn[] | null> {
+  const ids = [...new Set((media ?? []).flatMap((m) => (m.fileId ? [m.fileId] : [])))];
+  if (!media || ids.length === 0) return media;
+  const rows = await attachableFiles(tx, a.who.tenantId, ids, a.who.userId, postId);
+  const byId = new Map(rows.map((f) => [f.id, f]));
+  return media.map((m) => {
+    if (!m.fileId) return m;
+    const f = byId.get(m.fileId);
+    if (!f) throw appError("VALIDATION_ERROR");
+    const { name, mime, size } = f;
+    return { kind: mediaKindOf(mime), label: m.label, fileId: f.id, name, mime, size };
   });
 }
 
@@ -123,7 +149,7 @@ export async function create(
       tx,
       { tenantId: a.who.tenantId, postId: id },
       content.fields.raw,
-      safeMedia(a, input.media),
+      await withFiles(tx, a, safeMedia(a, input.media), null),
     );
     return postById(tx, id);
   });
@@ -165,7 +191,7 @@ export async function update(
       tx,
       { tenantId: a.who.tenantId, postId: id },
       content.fields.raw,
-      input.media ? safeMedia(a, input.media) : null,
+      await withFiles(tx, a, input.media ? safeMedia(a, input.media) : null, id),
     );
     const priceEdit =
       cur.type === "sell" && priceChanged(cur.fields_raw.price, content.fields.raw.price)

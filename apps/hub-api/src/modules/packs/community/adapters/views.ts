@@ -57,6 +57,9 @@ export function postView(a: Access, n: Names, r: PostRow, hint?: HostHint): Post
       kind: m.kind,
       label: m.label,
       ...(m.url ? { url: m.url } : {}),
+      ...(m.file_id
+        ? { fileId: m.file_id, name: m.name ?? "", size: Number(m.size ?? 0), mime: m.mime ?? "" }
+        : {}),
     })),
     commentCount: r.comments,
     actions: postActions(

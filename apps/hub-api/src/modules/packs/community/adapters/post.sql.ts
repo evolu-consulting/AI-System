@@ -3,6 +3,18 @@
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 
+/** Media của bài (CR-118: `file_id`/`name`/`mime`/`size` khi là tệp tải lên). */
+export type MediaJson = {
+  id: string;
+  kind: "image" | "video" | "file";
+  label: string;
+  url: string | null;
+  file_id: string | null;
+  name: string | null;
+  mime: string | null;
+  size: number | null;
+};
+
 export type PostRow = {
   id: string;
   type: "sell" | "buy" | "note";
@@ -20,7 +32,7 @@ export type PostRow = {
   hits: unknown[] | null;
   cats: string[];
   aud: { mode: string; cats: string[]; companies: string[] } | null;
-  media: { id: string; kind: "image" | "video"; label: string; url: string | null }[];
+  media: MediaJson[];
   comments: number;
   /** Chỉ chủ quản (host=true): dấu đã lưu báo giá + khoá đối tác SHT của bên đăng; đối tác: null. */
   quotes: QuoteMarkRow[] | null;
@@ -77,8 +89,8 @@ const itemJson: SQL = sql`json_build_object(
   'hits', case when (select packs.viewer_ext_org()) is null then v.hits end, 'cats', v.cats,
   'aud', case when (select packs.viewer_ext_org()) is null and v.author_org is null
     then json_build_object('mode', v.aud_mode, 'cats', v.aud_cats, 'companies', v.aud_orgs) end,
-  'media', coalesce((select json_agg(json_build_object('id', m.id, 'kind', m.kind, 'label', m.label, 'url', m.url)
-    order by m.position) from community.media m where m.post_id = v.id), '[]'::json),
+  'media', coalesce((select json_agg(json_build_object('id', m.id, 'kind', m.kind, 'label', m.label, 'url', m.url,
+      'file_id', m.file_id, 'name', m.name, 'mime', m.mime, 'size', m.size_bytes) order by m.position) from community.media m where m.post_id = v.id), '[]'::json),
   'comments', (select count(*)::int from community.comments c where c.post_id = v.id),
   'quotes', case when (select packs.viewer_ext_org()) is null then (select json_agg(json_build_object('item_idx', q.item_idx,
     'comment_id', q.comment_ref, 'comment_deleted', (q.comment_ref is not null and q.comment_id is null), 'by', q.saved_by_name, 'at', q.saved_at, 'product_id', q.product_id,
