@@ -1,4 +1,4 @@
-﻿// PK-FR-10 · TF1 · router file-based; cây route do @tanstack/router-plugin sinh vào routeTree.gen.ts.
+// PK-FR-10 · TF1 · router file-based; cây route do @tanstack/router-plugin sinh vào routeTree.gen.ts.
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "~/routeTree.gen";
 
