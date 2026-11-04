@@ -1,0 +1,21 @@
+/* CR-102 · C5 · theme community-web: CSS mockup `docs/design/community/mockup-main.dc.html` (mockup.css, màu nhấn → biến) + phần thêm của app.
+   Tailwind: chỉ theme + utilities (không preflight, để giữ nguyên reset của mockup). */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+/* Be Vietnam Pro như admin/chat/studio (người dùng chọn 2026-11-02), đủ 400/500/600/700, subset latin + vietnamese. */
+@import "@fontsource/be-vietnam-pro/latin-400.css";
+@import "@fontsource/be-vietnam-pro/latin-500.css";
+@import "@fontsource/be-vietnam-pro/latin-600.css";
+@import "@fontsource/be-vietnam-pro/latin-700.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-400.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-500.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-600.css";
+@import "@fontsource/be-vietnam-pro/vietnamese-700.css";
+@import "../modules/community/ui/styles/community.css";
+
+body {
+  margin: 0;
+  background: #f4f4f9;
+  /* Trang Dang nhap nam ngoai .app: thieu dong nay thi trinh duyet dung Times New Roman. */
+  font-family: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+}
