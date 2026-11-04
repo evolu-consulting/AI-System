@@ -1,5 +1,5 @@
 // CR-118 §6 · §11.2 · một khe của công ty: quy trình platform đã gán (tên + phiên bản + sơ đồ chỉ đọc, nạp lười) và bộ sửa luật.
-// Sơ đồ: MỌI quy trình đã gán xem được (nạp khi mở: `GET /hub-admin/tenants/:tid/process-routing/:slot/processes/:defId`).
+// Sơ đồ: MỌI quy trình đã gán xem được (nạp khi mở: `GET /tenants/:tid/process-routing/:slot/processes/:defId`).
 import type { AssignedProcess } from "@ai/contracts/hub-admin";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

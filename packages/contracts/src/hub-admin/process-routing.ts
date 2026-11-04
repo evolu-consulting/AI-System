@@ -1,7 +1,8 @@
+// (Các route này mount ở GỐC hub, KHÔNG có tiền tố /hub-admin.)
 // CR-118 §11.2 · luật chọn quy trình theo phòng ban + tập quy trình đã gán cho tenant × khe. Export lại qua `processes.ts`.
-// - platform_admin: `PUT|DELETE /hub-admin/tenants/:tid/process-routing/:slot/processes/:defId` (gán / bỏ gán vào tập).
-// - platform_admin + tenant_admin CHÍNH tenant: `GET|PUT /hub-admin/tenants/:tid/process-routing/:slot` (thay cả danh sách),
-//   `GET /hub-admin/tenants/:tid/process-routing/:slot/processes/:defId` (xem sơ đồ quy trình trong tập gán).
+// - platform_admin: `PUT|DELETE /tenants/:tid/process-routing/:slot/processes/:defId` (gán / bỏ gán vào tập).
+// - platform_admin + tenant_admin CHÍNH tenant: `GET|PUT /tenants/:tid/process-routing/:slot` (thay cả danh sách),
+//   `GET /tenants/:tid/process-routing/:slot/processes/:defId` (xem sơ đồ quy trình trong tập gán).
 import { z } from "zod";
 import { UuidSchema } from "../common";
 import { SlotKeySchema } from "./process-library";
@@ -75,7 +76,7 @@ export const ProcessRoutingSchema = z.strictObject({
 export type ProcessRouting = z.infer<typeof ProcessRoutingSchema>;
 
 /**
- * `GET /hub-admin/tenants/:tid/process-routing/:slot/processes/:defId` (platform_admin + tenant_admin CHÍNH tenant; def ∉ tập
+ * `GET /tenants/:tid/process-routing/:slot/processes/:defId` (platform_admin + tenant_admin CHÍNH tenant; def ∉ tập
  * gán / tenant khác ⇒ 404) — sơ đồ cho `@ai/flow-canvas` chế độ xem. `stages`/`slot_body` cùng hình `ProcessDef` (thư viện),
  * lấy từ bản xuất bản đang dùng. Def đã xoá ⇒ 404. Chưa xuất bản: tenant_admin ⇒ 404 (không lộ nháp của platform);
  * platform_admin ⇒ nháp (`rel_version` null).
