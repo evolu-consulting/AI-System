@@ -65,7 +65,8 @@ def build_output(
     if confirm is not None and payload.output == "agent_result":
         asked = _model_asked(final)
         if asked is not None:
-            return {"kind": "agent_result", "result": asked.model_dump(mode="json")}
+            dumped = asked.model_dump(mode="json", exclude_none=True)
+            return {"kind": "agent_result", "result": dumped}
         return forced_need_input(confirm)
     if payload.output == "text":
         text = final.text if final.text is not None else final.raw_json
@@ -76,4 +77,6 @@ def build_output(
         result = AgentResult.model_validate(final.structured)
     except ValidationError:
         return None
-    return {"kind": "agent_result", "result": result.model_dump(mode="json")}
+    # `text` của need_input là tuỳ chọn: vắng ⇒ bỏ khoá (zod không nhận `null`)
+    dumped = result.model_dump(mode="json", exclude_none=True)
+    return {"kind": "agent_result", "result": dumped}
