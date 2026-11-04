@@ -55,6 +55,40 @@
         "overdue": "Quá hạn",
         "remindedAt": "Đã nhắc lúc {{at}}"
       }
+    },
+    "flowPanel": {
+      "loading": "Đang tải quy trình...",
+      "error": "Không tải được quy trình.",
+      "retry": "Thử lại",
+      "system": "Tự động",
+      "overdue": "Quá hạn",
+      "late": "quá {{n}}h",
+      "left": "còn {{n}}h",
+      "escalatedTo": "Chuyển cấp tới {{name}}",
+      "decidedBy": "Người quyết: {{name}}",
+      "attention": "Cần xử lý",
+      "status": {
+        "pending": "Chưa tới",
+        "open": "Đang chờ",
+        "running": "Đang chạy",
+        "passed": "Đạt",
+        "skipped": "Bỏ qua",
+        "returned": "Đã trả lại",
+        "rejected": "Từ chối",
+        "failed": "Lỗi",
+        "needs_decision": "Cần quyết định"
+      },
+      "form": {
+        "submit": "Gửi",
+        "failed": "Không gửi được biểu mẫu. Thử lại.",
+        "error": {
+          "required": "Bắt buộc nhập.",
+          "tooLong": "Quá dài.",
+          "range": "Giá trị ngoài khoảng cho phép.",
+          "integer": "Nhập số nguyên.",
+          "invalid": "Giá trị không hợp lệ."
+        }
+      }
     }
   }
 }

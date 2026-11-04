@@ -1,6 +1,7 @@
 // HD-FR-51 · S03 · V2-F (HD-03 · mockup NITI `renderCList`): ô bảng — Hợp đồng (tên + số / phụ lục của), Đối tác, Loại, Giá trị, Hiệu lực,
 // Giai đoạn (+ bước hiện tại, đỏ khi quá hạn), Thao tác (Xem; Xoá ẩn tới V2-M). Thẻ điện thoại: một thẻ mỗi HĐ.
 import type { ContractListRow, ContractProgress, DealSource, DocType } from "@ai/contracts";
+import type { FlowSummaryItem } from "@ai/contracts/flow";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,6 +23,8 @@ export type RowCtx = {
   docs?: ReadonlyMap<string, DocType>;
   /** DOC-ui-gaps: nguồn giao dịch theo id hàng (`docs[].source`). */
   sources?: ReadonlyMap<string, DealSource | null>;
+  /** CR-118 · tóm tắt flow theo id HĐ (huy hiệu "Cần xử lý"); vắng khi runtime chưa bật. */
+  flow?: ReadonlyMap<string, FlowSummaryItem> | undefined;
   /** Vai quản lý (`useMe().owner`) ⇒ hiện nút Xoá. */
   owner?: boolean;
   /** Mở hộp xoá của HĐ `id`. */
@@ -82,7 +85,27 @@ export function DealTag({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   );
 }
 
+/** CR-118 · huy hiệu từ tóm tắt flow (chỉ khi cần xử lý; không có dữ liệu ⇒ không vẽ gì). */
+function AttentionTag({ id, ctx }: { id: string; ctx: RowCtx }) {
+  const { t } = useTranslation();
+  if (!ctx.flow?.get(id)?.attention) return null;
+  return (
+    <span data-testid="row-attention" className="mt-0.5 block">
+      <Tag tone="late">{t("contracts.flowPanel.attention")}</Tag>
+    </span>
+  );
+}
+
 export function StageCell({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
+  return (
+    <>
+      <StageTag r={r} ctx={ctx} />
+      <AttentionTag id={r.id} ctx={ctx} />
+    </>
+  );
+}
+
+function StageTag({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   const { t } = useTranslation();
   const v = stageView(r, ctx.progress.get(r.id));
   if (v.kind === "status") {

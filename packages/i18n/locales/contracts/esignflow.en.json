@@ -55,6 +55,40 @@
         "overdue": "Overdue",
         "remindedAt": "Reminded at {{at}}"
       }
+    },
+    "flowPanel": {
+      "loading": "Loading process...",
+      "error": "Could not load the process.",
+      "retry": "Retry",
+      "system": "Automatic",
+      "overdue": "Overdue",
+      "late": "{{n}}h overdue",
+      "left": "{{n}}h left",
+      "escalatedTo": "Escalated to {{name}}",
+      "decidedBy": "Decided by {{name}}",
+      "attention": "Needs attention",
+      "status": {
+        "pending": "Pending",
+        "open": "In progress",
+        "running": "Running",
+        "passed": "Passed",
+        "skipped": "Skipped",
+        "returned": "Returned",
+        "rejected": "Rejected",
+        "failed": "Failed",
+        "needs_decision": "Needs a decision"
+      },
+      "form": {
+        "submit": "Submit",
+        "failed": "Could not submit the form. Try again.",
+        "error": {
+          "required": "This field is required.",
+          "tooLong": "Too long.",
+          "range": "Value out of range.",
+          "integer": "Enter a whole number.",
+          "invalid": "Invalid value."
+        }
+      }
     }
   }
 }

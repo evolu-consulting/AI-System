@@ -30,6 +30,7 @@ import { DropOverlay, UploadPanel } from "../components/UploadPanel";
 import { UploadTypeGate } from "../components/UploadTypeDialog";
 import { useContractsList } from "../hooks/use-contracts-list";
 import { useDeleteDialog } from "../hooks/use-delete-dialog";
+import { useRowFlow } from "../hooks/use-row-flow";
 import { useUploadQueue } from "../hooks/use-upload-queue";
 import {
   type DateFilter,
@@ -96,8 +97,10 @@ export function ContractsListPage() {
     })),
   );
   const delDialog = useDeleteDialog();
+  const flow = useRowFlow(list.data?.items); // CR-118: huy hiệu "Cần xử lý", một yêu cầu cho cả trang
   const ctx: RowCtx = useMemo(
     () => ({
+      flow,
       parents: new Map((list.data?.parents ?? []).map((p) => [p.id, p.title])),
       progress: new Map((list.data?.progress ?? []).map((p) => [p.id, p])),
       docs: new Map((list.data?.docs ?? []).map((d) => [d.id, d.doc_type])),
@@ -105,7 +108,7 @@ export function ContractsListPage() {
       owner,
       onDelete: delDialog.open,
     }),
-    [list.data, owner, delDialog.open],
+    [list.data, flow, owner, delDialog.open],
   );
   const rows = useMemo(() => buildRows(list.data), [list.data]);
 
