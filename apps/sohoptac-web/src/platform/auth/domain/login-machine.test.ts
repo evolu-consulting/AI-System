@@ -67,6 +67,14 @@ describe("CR-118 · capsOf / homeFor (FeatureGate apps khi có, không thì theo
     expect(homeFor(capsOf(member, ["contracts", "community"], "chat"))).toBe("/overview");
     expect(homeFor(capsOf(member, ["contracts", "community"], null))).toBe("/overview");
   });
+  test("thành viên SHT (apps có cả hai) đăng nhập: home trống hoặc contracts ⇒ /overview; apps chỉ community ⇒ /community", () => {
+    for (const home of [null, "contracts"]) {
+      const caps = capsOf(member, ["contracts", "community"], home);
+      expect(landing(caps, undefined)).toBe("/overview");
+    }
+    // tenant chưa bật gói contracts (server: apps=[community], home=community) ⇒ Community, đúng thiết kế
+    expect(landing(capsOf(member, ["community"], "community"), undefined)).toBe("/community");
+  });
   test("home: có SHT ⇒ /overview, chỉ community ⇒ /community", () => {
     expect(homeFor({ contracts: true, community: true })).toBe("/overview");
     expect(homeFor({ contracts: false, community: true })).toBe("/community");
