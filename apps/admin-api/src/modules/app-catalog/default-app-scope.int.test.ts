@@ -1,5 +1,6 @@
 // CR-118 · cr118-r1-fixes #3 · PUT /me/default-app chỉ chạm MỘT tenant: bump `profile_version` + NOTIFY `profile_changed`
-// (kèm tenant_id) cùng transaction. Hạn mức nằm trong tiến trình (dùng chung giữa các file int cùng lô) ⇒ user riêng (lan, thu), `config_version` toàn cục giữ nguyên (mọi hub không phải nạp lại cả ảnh Admin); hạn mức 429.
+// (kèm tenant_id) cùng transaction, `config_version` toàn cục giữ nguyên (mọi hub không phải nạp lại cả ảnh Admin); hạn mức 429.
+// Hạn mức nằm trong tiến trình (dùng chung giữa các file int cùng lô) ⇒ user riêng của file này (lan, thu).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { PROFILE_CHANNEL, ProfileChangedPayloadSchema } from "@ai/contracts";
 import { createDb } from "@ai/db";
