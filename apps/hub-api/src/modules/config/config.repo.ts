@@ -27,6 +27,7 @@ import {
   tenantTimeZone,
   type UserState,
 } from "./config.rules";
+import { type HubSchemaCaps, hubSchemaCaps } from "./schema-caps";
 
 // jsonb validate ở biên (CONVENTIONS §5).
 const StepsSchema = z
@@ -46,8 +47,12 @@ export type Versions = { admin: number; hub: number; profile?: number };
 
 /** Ba số phiên bản cho vòng poll (`HUB_CONFIG_POLL_S`). */
 export async function readVersions(db: Db): Promise<Versions> {
+  const caps = await hubSchemaCaps(db);
   const [a] = await db.db
-    .select({ v: configMeta.configVersion, p: sql<number>`profile_version` })
+    .select({
+      v: configMeta.configVersion,
+      p: caps.profileVersion ? sql<number>`profile_version` : sql<number>`0`,
+    })
     .from(configMeta)
     .where(eq(configMeta.id, 1));
   const [h] = await db.db
@@ -104,7 +109,7 @@ export function splitOrchestratorRows(
 
 type Tx = Parameters<Parameters<Db["db"]["transaction"]>[0]>[0];
 
-async function readHubRows(tx: Tx) {
+async function readHubRows(tx: Tx, caps: HubSchemaCaps) {
   const [meta] = await tx
     .select({ v: hubConfigMeta.hubConfigVersion })
     .from(hubConfigMeta)
@@ -123,9 +128,12 @@ async function readHubRows(tx: Tx) {
       .select({ agentId: agentWorkflows.agentId, workflowId: agentWorkflows.workflowId })
       .from(agentWorkflows),
     // CR-118 · agent của gói (hub_api chỉ SELECT — packs 0009); đổi gói ⇒ `packs.grant_agents` bump version Hub.
-    pa: await tx.execute<{ pack_key: string; agent_key: string }>(
-      sql`select pack_key, agent_key from packs.pack_agents order by pack_key, agent_key`,
-    ),
+    // Vắng bảng/quyền (stack chỉ migrate Hub) ⇒ không agent gói (đóng an toàn; cảnh báo một lần ở `hubSchemaCaps`).
+    pa: caps.packAgents
+      ? await tx.execute<{ pack_key: string; agent_key: string }>(
+          sql`select pack_key, agent_key from packs.pack_agents order by pack_key, agent_key`,
+        )
+      : [],
   };
 }
 
@@ -150,10 +158,11 @@ function groupAgentWorkflows(
 }
 
 /** Ảnh Hub đọc trong một transaction REPEATABLE READ: `version` khớp đúng dữ liệu đi kèm. */
-export function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
+export async function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
+  const caps = await hubSchemaCaps(db);
   return db.db.transaction(
     async (tx) => {
-      const r = await readHubRows(tx);
+      const r = await readHubRows(tx, caps);
       return Object.freeze({
         version: r.version,
         providers: r.prov.map((p) => ({
@@ -200,6 +209,7 @@ export function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
  * (LEFT JOIN `admin.tenant_daily_limits`, cùng một câu) — ghi qua `configWrite` bump `config_version` ⇒ nạp lại.
  */
 export async function loadTenants(db: Db): Promise<TenantState[]> {
+  const caps = await hubSchemaCaps(db);
   const l = tenantDailyLimits;
   const rows = await db.db
     .select({
@@ -207,7 +217,7 @@ export async function loadTenants(db: Db): Promise<TenantState[]> {
       active: tenants.active,
       maxConcurrentSub: tenants.maxConcurrentSub,
       timezone: tenants.timezone,
-      defaultApp: tenants.defaultApp,
+      defaultApp: caps.tenantDefaultApp ? tenants.defaultApp : sql<string | null>`null::text`,
       uploads: l.uploadsDay,
       actions: l.actionsDay,
       aiTokens: l.aiTokensDay,
@@ -225,6 +235,7 @@ export async function loadTenants(db: Db): Promise<TenantState[]> {
 /** User theo id (kèm nhóm). Rỗng `ids` → []. Id không tồn tại → không có trong kết quả. */
 export async function loadUsers(db: Db, ids: readonly string[]): Promise<UserState[]> {
   if (ids.length === 0) return [];
+  const caps = await hubSchemaCaps(db);
   // N1 PK-NFR-01: MỘT câu (Group gộp bằng subquery tương quan) ⇒ user nguội = 1 câu SQL. Chỉ Group cùng tenant với user.
   const rows = await db.db
     .select({
@@ -233,7 +244,7 @@ export async function loadUsers(db: Db, ids: readonly string[]): Promise<UserSta
       active: users.active,
       lockedByTenant: users.lockedByTenant,
       locale: users.locale,
-      defaultApp: users.defaultApp,
+      defaultApp: caps.userDefaultApp ? users.defaultApp : sql<string | null>`null::text`,
       external: sql<boolean>`(${users.kind} = 'external')`,
       groupIds: sql<string[]>`coalesce((select array_agg(${groupMembers.groupId})::text[]
         from ${groupMembers} where ${groupMembers.userId} = ${users.id}
