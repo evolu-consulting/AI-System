@@ -6,16 +6,25 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { dirname, join, relative, resolve } from "node:path";
 import { Hono } from "hono";
 import { z } from "zod";
-import { deployRoutes } from "./deploy.routes";
+import { allocateDeploy, deployRoutes } from "./deploy.routes";
+import { deploySpecOf, type PortRange } from "./deploy-plan.rules";
 import { runInContainer } from "./exec";
 import { commitAll, ensureWorktree, initRepo, log, repoDir, withLock } from "./git";
 import { BRANCH_RE, body, HttpError, KEY_RE, now } from "./http";
 import { queueRoutes } from "./queue.routes";
 import { safeId, summary } from "./queue.rules";
-import type { Project, Store } from "./store";
+import { mergeTeam, type Project, type Store } from "./store";
 import { ticketRoutes } from "./tickets.routes";
 
-export type AppCfg = { store: Store; token: string; image: string; execMaxS: number };
+export type AppCfg = {
+  store: Store;
+  token: string;
+  image: string;
+  execMaxS: number;
+  /** Host công khai trong URL app đã deploy (vd IP máy chủ); dải cổng cấp cho app (`DLC_WS_APP_PORTS`). */
+  publicHost?: string;
+  appPorts?: PortRange;
+};
 
 const SKIP = new Set(["node_modules", ".git", ".venv", "__pycache__", "dist", "coverage"]);
 const digest = (s: string) => createHash("sha256").update(s).digest();
@@ -71,6 +80,19 @@ const SettingsSchema = z.object({
       url: z.string().max(300),
     })
     .optional(),
+  /** Cách chạy app do spec mô tả (`static` / `command`); workspace tự cấp cổng + URL (giữ cổng cũ nếu đã có). */
+  deploy_spec: z.record(z.string(), z.unknown()).optional(),
+  /** Đội domain của project (dev + `qc-<domain>`), đặt ở lượt New System, Enhancement / Bug Fix dùng lại. */
+  team: z
+    .array(
+      z.object({
+        domain: z.string().min(1).max(40),
+        name: z.string().max(120),
+        focus: z.string().max(8000),
+      }),
+    )
+    .max(30)
+    .optional(),
 });
 
 /** Tạo project (repo git nếu chưa có) hoặc cập nhật hội thoại / project KH gắn với nó. */
@@ -114,13 +136,18 @@ function projectRoutes(app: Hono, x: Ctx): void {
   app.put("/projects/:key/settings", async (c) => {
     const key = proj(c.req.param("key")).key;
     const b = await body(c, SettingsSchema);
+    const spec = b.deploy_spec ? deploySpecOf(b.deploy_spec) : null;
+    if (b.deploy_spec && !spec) throw new HttpError(400, "bad deploy_spec");
+    const planned = spec ? await allocateDeploy(x.cfg, key, spec) : undefined;
     const p = await store.update(key, (p) => {
       const project = {
         ...p,
         ...(b.test_command !== undefined && { test_command: b.test_command }),
         ...(b.stack !== undefined && { stack: b.stack }),
         ...(b.apps !== undefined && { apps: b.apps }),
+        ...(b.team !== undefined && { team: mergeTeam(p.team ?? [], b.team) }),
         ...(b.deploy !== undefined && { deploy: b.deploy }),
+        ...(planned && { deploy: planned }),
       };
       return { project, value: project };
     });
@@ -282,7 +309,7 @@ export function createApp(cfg: AppCfg) {
   execRoutes(app, x);
   specRoutes(app, x);
   queueRoutes(app, { store, image: cfg.image, execMaxS: cfg.execMaxS, proj });
-  deployRoutes(app, { store, image: cfg.image, execMaxS: cfg.execMaxS, proj });
+  deployRoutes(app, { store, image: cfg.image, execMaxS: cfg.execMaxS, proj, cfg });
   ticketRoutes(app, store);
   return app;
 }

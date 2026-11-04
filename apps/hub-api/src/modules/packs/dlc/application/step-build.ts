@@ -34,7 +34,13 @@ export async function setupStep(c: StepCtx): Promise<StepOut> {
   const spawned = await port.spawn(who, { project: p, template: DEV_TEMPLATE, agents: team.dev });
   if (team.qc.length) await port.spawn(who, { project: p, template: QC_TEMPLATE, agents: team.qc });
   const cmd = c.flow.state.testCommand ?? "npm test";
-  await c.d.ws.settings(p, { testCommand: cmd, stack: String(plan.stack ?? "").slice(0, 200) });
+  // Đội + cách chạy app lưu ở workspace: Enhancement / Bug Fix sau dùng lại domain agent, deploy có cổng + URL công khai.
+  await c.d.ws.settings(p, {
+    testCommand: cmd,
+    stack: String(plan.stack ?? "").slice(0, 200),
+    team: [...team.dev, ...team.qc],
+    ...(plan.deploy !== undefined && { deploySpec: plan.deploy }),
+  });
   const tag = need(c.flow.state.tag, "mã lượt (bước khởi tạo)");
   const tasks = tasksOf(
     plan.tasks,

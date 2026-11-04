@@ -44,10 +44,17 @@ export type DlcFlowsRepo = {
 export type DlcFlowBrief = Pick<DlcFlow, "id" | "mode" | "project" | "ticketId">;
 export type DlcOwnRepos = { flows: DlcFlowsRepo };
 
+/** Agent của đội project (domain dev hoặc `qc-<domain>`), lưu ở workspace từ lượt đầu (New System). */
+export type TeamMember = { domain: string; name: string; focus: string };
+
 export type ProjectView = {
   queue: QueueItem[];
   summary: Record<string, unknown>;
   log: string;
+  /** Đội domain đã chia cho project (rỗng ⇒ project chưa chạy setup lần nào). */
+  team: TeamMember[];
+  /** URL app đã deploy (cấu hình deploy của project), chưa có ⇒ null. */
+  url: string | null;
 };
 export type IntegrateResult = { ok: boolean; merged: boolean; item?: QueueItem | null };
 export type DeployResult = {
@@ -64,7 +71,11 @@ export type WorkspacePort = {
   setTicket(id: string, b: { status: "taken" | "done"; projectKey: string }): Promise<void>;
   specFiles(project: string): Promise<string>;
   putArtifact(project: string, name: string, content: string): Promise<void>;
-  settings(project: string, b: { testCommand: string; stack: string }): Promise<void>;
+  /** Lệnh test, stack, đội domain và cách chạy app (`deploySpec` do spec mô tả; workspace cấp cổng + URL). */
+  settings(
+    project: string,
+    b: { testCommand: string; stack: string; team?: TeamMember[]; deploySpec?: unknown },
+  ): Promise<void>;
   enqueue(project: string, items: QueueItem[]): Promise<void>;
   /** Việc kế của lượt (`prefix` = mã lượt); `busy` ⇒ lượt khác đang merge trên project, hỏi lại sau. */
   next(project: string, prefix: string): Promise<{ item: QueueItem | null; busy: boolean }>;

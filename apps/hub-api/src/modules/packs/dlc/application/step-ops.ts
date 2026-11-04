@@ -52,9 +52,10 @@ export async function deployStep(c: StepCtx): Promise<StepOut> {
   if (!r) return out(c, "skipped", `Project ${c.flow.project} chưa cấu hình deploy — bỏ qua`);
   await save(c, { deploy: { ok: r.ok, sha: r.sha, url: r.url, note: r.note.slice(-1500) } });
   if (!r.ok) fail(`deploy ${r.sha} lỗi: ${r.note.slice(-300)}`);
+  // URL app đứng đầu tóm tắt: thẻ lượt trong Chat hiện tóm tắt này ⇒ người dùng bấm mở app ngay.
   return out(
     c,
     "deployed",
-    `Đã deploy ${r.sha} (${r.tasks.length} việc)${r.url ? ` · ${r.url}` : ""}`,
+    `${r.url ? `App đang chạy: ${r.url} · ` : ""}đã deploy ${r.sha} (${r.tasks.length} việc)`,
   );
 }
