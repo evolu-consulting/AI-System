@@ -141,7 +141,9 @@ test("CR-118 · editor form · Canvas: thêm bước form + trường ⇒ Lưu 2
 
   // đổi chỗ: đưa trường 3 lên trước trường 2, rồi trả lại
   await panel(p).getByRole("button", { name: "Chuyển trường 3 lên" }).click();
-  await panel(p).getByRole("button", { name: "Chuyển trường 3 xuống" }).click();
+  await expect(panel(p).getByLabel("Nhãn trường 2")).toHaveValue("Ngày cần");
+  await panel(p).getByRole("button", { name: "Chuyển trường 2 xuống" }).click();
+  await expect(panel(p).getByLabel("Nhãn trường 2")).toHaveValue("Hình thức");
 
   const r = await save(p);
   expect(r.status, JSON.stringify(r.json).slice(0, 400)).toBe(200);
