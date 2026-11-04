@@ -121,6 +121,14 @@ function Row(p: {
           ))}
         </ul>
       )}
+      {r.unavailable && (
+        <p
+          data-testid={`admin-routing-rule-${i}-unavailable`}
+          className="w-fit rounded-full bg-destructive/10 px-2.5 py-0.5 text-caption font-semibold text-destructive"
+        >
+          {k(r.unavailable === "deleted" ? "unavailableDeleted" : "unavailableUnpublished")}
+        </p>
+      )}
       {p.bad && (
         <p role="alert" className="text-caption text-destructive">
           {k(`issue.${p.bad}`)}

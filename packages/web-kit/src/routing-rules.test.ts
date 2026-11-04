@@ -125,3 +125,37 @@ describe("ánh xạ lỗi", () => {
     expect(affectedRules({ rules: "x" })).toEqual([]);
   });
 });
+
+describe("cr118-routing-deleted · quy trình không chạy được", () => {
+  const server = (unavailable?: "deleted" | "unpublished") => ({
+    id: "r1",
+    priority: 0,
+    condition: { departmentIds: [D1] },
+    def_id: P1,
+    is_default: false,
+    ...(unavailable ? { unavailable } : {}),
+  });
+  test("fromServer mang cờ unavailable; vắng ⇒ không có khoá", () => {
+    expect(fromServer([server("deleted")])[0]?.unavailable).toBe("deleted");
+    expect("unavailable" in (fromServer([server()])[0] ?? {})).toBe(false);
+  });
+  test("ruleIssues: luật unavailable ⇒ mã 'unavailable' (chặn lưu); đổi quy trình thì hết", () => {
+    const [r] = fromServer([server("unpublished")]);
+    if (!r) throw new Error("no rule");
+    const assigned = new Set([P1, P2]);
+    const depts = new Set([D1]);
+    expect(ruleIssues([r], assigned, depts)).toEqual([{ key: "r1", code: "unavailable" }]);
+    const fixed = patchRule([r], "r1", { defId: P2 });
+    expect(fixed[0]?.unavailable).toBeUndefined();
+    expect(ruleIssues(fixed, assigned, depts)).toEqual([]);
+  });
+  test("toPutBody không gửi cờ unavailable", () => {
+    const [r] = fromServer([server("deleted")]);
+    expect(JSON.stringify(toPutBody(1, r ? [r] : []))).not.toContain("unavailable");
+  });
+  test("422 ROUTING_PROCESS_UNAVAILABLE ⇒ kind 'unavailable'", () => {
+    expect(routingErrorOf({ status: 422, code: "ROUTING_PROCESS_UNAVAILABLE" }).kind).toBe(
+      "unavailable",
+    );
+  });
+});

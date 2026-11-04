@@ -102,6 +102,14 @@ export function RuleRow(p: RuleRowProps) {
           {a("rule.remove")}
         </button>
       </div>
+      {p.rule.unavailable && (
+        <p
+          data-testid={`${id}-unavailable`}
+          className="col-span-full w-fit rounded-full border border-late px-2.5 py-0.5 text-caption font-semibold text-late"
+        >
+          {a(`rule.unavailable.${p.rule.unavailable}`)}
+        </p>
+      )}
       {p.issue && (
         <p role="alert" className="col-span-full text-caption text-late">
           {a(`issue.${p.issue}`)}

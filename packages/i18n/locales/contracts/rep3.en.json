@@ -114,16 +114,22 @@
           "defaultCond": "When no rule matches",
           "pickDepartments": "Pick departments",
           "noDepartments": "The company has no departments.",
-          "unassigned": "(process no longer assigned)"
+          "unassigned": "(process no longer assigned)",
+          "unavailable": {
+            "deleted": "Process was deleted",
+            "unpublished": "Process not published"
+          }
         },
         "issue": {
           "noDepartment": "Pick at least one department, or make it the default.",
           "notAssigned": "This process is no longer assigned to the company.",
+          "unavailable": "This rule's process cannot run: pick another process or remove the rule before saving.",
           "deptGone": "A department no longer exists."
         },
         "err": {
           "conflict": "Someone changed these rules before you. Reload, then edit again.",
           "notAssigned": "The process is not assigned to the company by the platform admin.",
+          "unavailable": "A rule uses a deleted or unpublished process, so it cannot be saved. Remove the rule or pick another process.",
           "deptInvalid": "A department does not belong to the company.",
           "rulesInvalid": "Invalid rules: each normal rule needs departments and only one default is allowed.",
           "inUse": "The process is used by rules.",

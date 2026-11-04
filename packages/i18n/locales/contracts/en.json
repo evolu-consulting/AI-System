@@ -562,6 +562,8 @@
             "FLOW_GROUP_MISSING_ANY": "A department of the flow no longer exists — add it, then press Reopen",
             "FLOW_INVALID": "the approval flow is broken; an admin must fix it, then press Reopen",
             "FLOW_MISSING": "no approval flow is published; an admin must assign one, then press Reopen",
+            "FLOW_ROUTE_NONE": "no process rule matches the starter's department and there is no default rule; a company admin must add a rule or set a default (Settings > Apps & processes), then press Reopen",
+            "FLOW_ROUTE_UNAVAILABLE": "the process chosen for this department was deleted or is not published; a company admin must fix the routing rules (Settings > Apps & processes), then press Reopen",
             "CANCELLED_BY_OWNER": "the approval run was cancelled; press Reopen to start a new one"
           }
         },

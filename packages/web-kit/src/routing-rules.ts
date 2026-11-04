@@ -11,6 +11,8 @@ export type RuleDraft = {
   departmentIds: string[];
   defId: string;
   isDefault: boolean;
+  /** cr118-routing-deleted · từ server: quy trình của luật bị xoá / chưa xuất bản ⇒ không lưu được cho tới khi sửa hoặc xoá luật. */
+  unavailable?: "deleted" | "unpublished";
 };
 
 let seq = 0;
@@ -18,7 +20,7 @@ export const newRuleKey = (): string => `n${++seq}`;
 
 type ServerRule = Pick<
   ProcessRoutingRule,
-  "id" | "priority" | "condition" | "def_id" | "is_default"
+  "id" | "priority" | "condition" | "def_id" | "is_default" | "unavailable"
 >;
 
 /** Phản hồi GET ⇒ bản nháp (theo `priority` tăng dần). */
@@ -30,6 +32,7 @@ export function fromServer(rules: readonly ServerRule[]): RuleDraft[] {
       departmentIds: [...(r.condition.departmentIds ?? [])],
       defId: r.def_id,
       isDefault: r.is_default,
+      ...(r.unavailable ? { unavailable: r.unavailable } : {}),
     }));
 }
 
@@ -74,7 +77,15 @@ export const patchRule = (
   list: readonly RuleDraft[],
   key: string,
   patch: Partial<Pick<RuleDraft, "departmentIds" | "defId">>,
-): RuleDraft[] => list.map((r) => (r.key === key ? { ...r, ...patch } : r));
+): RuleDraft[] =>
+  list.map((r) => {
+    if (r.key !== key) return r;
+    // Đổi sang quy trình khác ⇒ cờ "không chạy được" của quy trình cũ hết hiệu lực (server tính lại khi lưu).
+    const { unavailable: _gone, ...rest } = r;
+    return patch.defId !== undefined && patch.defId !== r.defId
+      ? { ...rest, ...patch }
+      : { ...r, ...patch };
+  });
 
 /** Chọn/bỏ "mặc định": chỉ MỘT luật mặc định; luật mặc định không có phòng ban. */
 export function setDefault(list: readonly RuleDraft[], key: string, on: boolean): RuleDraft[] {
@@ -116,7 +127,7 @@ export const sameRules = (a: readonly RuleDraft[], b: readonly RuleDraft[]): boo
     );
   });
 
-export type RuleIssueCode = "noDepartment" | "notAssigned" | "deptGone";
+export type RuleIssueCode = "noDepartment" | "notAssigned" | "deptGone" | "unavailable";
 export type RuleIssue = { key: string; code: RuleIssueCode };
 
 /** Kiểm trước khi lưu (server vẫn là nguồn thật): luật thường cần ≥ 1 phòng ban; quy trình/phòng ban phải còn hợp lệ. */
@@ -127,7 +138,8 @@ export function ruleIssues(
 ): RuleIssue[] {
   const out: RuleIssue[] = [];
   for (const r of list) {
-    if (!assigned.has(r.defId)) out.push({ key: r.key, code: "notAssigned" });
+    if (r.unavailable) out.push({ key: r.key, code: "unavailable" });
+    else if (!assigned.has(r.defId)) out.push({ key: r.key, code: "notAssigned" });
     if (r.isDefault) continue;
     if (r.departmentIds.length === 0) out.push({ key: r.key, code: "noDepartment" });
     else if (r.departmentIds.some((d) => !departments.has(d)))
@@ -139,6 +151,7 @@ export function ruleIssues(
 export type RoutingErrorKind =
   | "conflict"
   | "notAssigned"
+  | "unavailable"
   | "deptInvalid"
   | "rulesInvalid"
   | "inUse"
@@ -161,6 +174,8 @@ export function routingErrorOf(err: unknown): RoutingErrorSpec {
       return { kind: "conflict", rules };
     case "ROUTING_PROCESS_NOT_ASSIGNED":
       return { kind: "notAssigned", rules };
+    case "ROUTING_PROCESS_UNAVAILABLE":
+      return { kind: "unavailable", rules };
     case "ROUTING_DEPARTMENT_INVALID":
       return { kind: "deptInvalid", rules };
     case "ROUTING_RULES_INVALID":

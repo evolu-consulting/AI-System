@@ -586,6 +586,8 @@
         "defaultCond": "When no rule matches",
         "noDepartments": "The company has no departments.",
         "unassigned": "(process no longer assigned)",
+        "unavailableDeleted": "Process was deleted",
+        "unavailableUnpublished": "Process not published",
         "addRule": "Add rule",
         "save": "Save rules",
         "saved": "Routing rules saved",
@@ -594,11 +596,13 @@
         "issue": {
           "noDepartment": "Pick at least one department, or make it the default.",
           "notAssigned": "This process is no longer assigned.",
-          "deptGone": "A department no longer exists."
+          "deptGone": "A department no longer exists.",
+          "unavailable": "This rule's process cannot run: pick another process or remove the rule before saving."
         },
         "err": {
           "conflict": "Someone changed these rules before you. Reload, then edit again.",
           "notAssigned": "The process is not assigned to the company.",
+          "unavailable": "A rule uses a deleted or unpublished process, so it cannot be saved. Remove the rule or pick another process.",
           "deptInvalid": "A department does not belong to the company.",
           "rulesInvalid": "Invalid rules: normal rules need departments, only one default.",
           "inUse": "Cannot unassign: the process is used by rule(s) {rules}. Edit or remove those rules first.",

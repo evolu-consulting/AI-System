@@ -1,11 +1,18 @@
 // CR-107 · eng-card-ui: mã lý do của `ContractApproval.attention` → khoá i18n dễ hiểu (thuần, không React).
+// FLOW_ROUTE_NONE / FLOW_ROUTE_UNAVAILABLE: luật chọn quy trình (CR-118).
 // needs_decision: mã engine (`tool_failed`, `retry_exhausted`…). stalled: `FLOW_*`, `CANCELLED_BY_OWNER`, `ENGINE_RUN_*`.
 import type { ApprovalAttention } from "@ai/contracts";
 import { releaseNoteKey } from "./engine-card";
 
 const BASE = "contracts.approval.engine.attention.reason";
 const DECISION_KNOWN = new Set(["tool_failed", "retry_exhausted", "job_timeout"]);
-const STALLED_KNOWN = new Set(["FLOW_INVALID", "FLOW_MISSING", "CANCELLED_BY_OWNER"]);
+const STALLED_KNOWN = new Set([
+  "FLOW_INVALID",
+  "FLOW_MISSING",
+  "FLOW_ROUTE_NONE",
+  "FLOW_ROUTE_UNAVAILABLE",
+  "CANCELLED_BY_OWNER",
+]);
 const GROUP_PREFIX = "FLOW_GROUP_MISSING";
 
 export type AttentionText = { key: string; vars?: { keys: string } };

@@ -562,6 +562,8 @@
             "FLOW_GROUP_MISSING_ANY": "Một phòng ban của quy trình không còn — thêm phòng ban rồi bấm Mở lại",
             "FLOW_INVALID": "quy trình duyệt bị hỏng, cần quản trị viên sửa rồi bấm Mở lại",
             "FLOW_MISSING": "chưa có quy trình duyệt được xuất bản, cần quản trị viên gán rồi bấm Mở lại",
+            "FLOW_ROUTE_NONE": "không có luật chọn quy trình nào khớp phòng ban của người khởi tạo và chưa đặt luật mặc định — quản trị công ty cần thêm luật hoặc đặt mặc định (Cài đặt › Ứng dụng & quy trình), rồi bấm Mở lại",
+            "FLOW_ROUTE_UNAVAILABLE": "quy trình được chọn cho phòng ban này đã bị xoá hoặc chưa xuất bản — quản trị công ty cần sửa luật chọn quy trình (Cài đặt › Ứng dụng & quy trình), rồi bấm Mở lại",
             "CANCELLED_BY_OWNER": "lượt duyệt đã bị huỷ, bấm Mở lại để chạy lượt mới"
           }
         },

@@ -26,6 +26,14 @@ describe("attentionText", () => {
       `${B}.FLOW_GROUP_MISSING_ANY`,
     );
   });
+  test("stalled: FLOW_ROUTE_NONE / FLOW_ROUTE_UNAVAILABLE có câu riêng", () => {
+    expect(attentionText({ kind: "stalled", reason: "FLOW_ROUTE_NONE" }).key).toBe(
+      `${B}.FLOW_ROUTE_NONE`,
+    );
+    expect(attentionText({ kind: "stalled", reason: "FLOW_ROUTE_UNAVAILABLE" }).key).toBe(
+      `${B}.FLOW_ROUTE_UNAVAILABLE`,
+    );
+  });
   test("stalled: FLOW_INVALID / FLOW_MISSING / CANCELLED_BY_OWNER / ENGINE_RUN_* / null", () => {
     expect(attentionText({ kind: "stalled", reason: "FLOW_INVALID" }).key).toBe(
       `${B}.FLOW_INVALID`,
