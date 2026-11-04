@@ -194,7 +194,14 @@
       "security": "SECURITY",
       "system": "SYSTEM",
       "platform": "PLATFORM",
-      "companies": "COMPANIES"
+      "companies": "COMPANIES",
+      "automation": "Automation"
+    },
+    "automation": {
+      "workflowsNote": "Dify workflows are AI tools: commands and agents call them to get work done.",
+      "workflowsLink": "Need an approval flow? See Business processes →",
+      "processesNote": "Business processes are approval flows run by the hub (steps, reviewers, automatic progress).",
+      "processesLink": "Need an AI tool for a command? See Dify workflows →"
     },
     "companies": {
       "search": "Search companies",
@@ -215,8 +222,8 @@
     "skip": "Skip to content",
     "breadcrumb": "Breadcrumb",
     "commands": "Commands",
-    "workflows": "Workflows",
-    "processes": "Processes",
+    "workflows": "Dify workflows (AI tools)",
+    "processes": "Business processes",
     "processesNew": "New process",
     "sources": "Sources",
     "features": "Features",
@@ -1403,7 +1410,7 @@
   },
   "workflows": {
     "list": {
-      "title": "Workflows",
+      "title": "Dify workflows (AI tools)",
       "subtitle": "Shared catalog. Commands and agents both pick workflows from here. Declare first, attach later is fine.",
       "create": "+ Declare workflow",
       "search": "Search by name, key, description…"

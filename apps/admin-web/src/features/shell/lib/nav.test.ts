@@ -11,8 +11,8 @@ describe("ADM-FR-60 · menu theo role", () => {
       "apps",
       "features",
       "commands",
-      "workflows",
       "agents",
+      "workflows",
       "secrets",
       "system",
       "usage",
@@ -23,6 +23,7 @@ describe("ADM-FR-60 · menu theo role", () => {
     expect(navGroups("platform_admin").map((g) => g.labelKey)).toEqual([
       null,
       "nav.group.platform",
+      "nav.group.automation",
       "nav.group.companies",
       "nav.group.system",
     ]);
@@ -109,15 +110,17 @@ describe("P-a · mục Quy trình theo cờ engine", () => {
     expect(ids("tenant_admin")).not.toContain("sources");
   });
   test("engine on: Quy trình + Nguồn có ở Nền tảng (platform_admin, trước Agents) và nhóm Chức năng (tenant_admin)", () => {
-    const groupOf = { platform_admin: "nav.group.platform", tenant_admin: "nav.group.features" };
+    const groupOf = { platform_admin: "nav.group.automation", tenant_admin: "nav.group.features" };
     for (const role of ["platform_admin", "tenant_admin"] as const) {
       const g = navGroups(role, { processes: true }).find((x) => x.labelKey === groupOf[role]);
       expect(g?.items.map((i) => i.id)).toContain("processes");
       expect(g?.items.map((i) => i.id)).toContain("sources");
     }
-    const platform = navGroups("platform_admin", { processes: true }).flatMap((g) => g.items);
-    const order = platform.map((i) => i.id);
-    expect(order.indexOf("processes")).toBeLessThan(order.indexOf("agents"));
+    // adm-menu-automation: Workflow Dify + Quy trình cùng nhóm "Tự động hoá"
+    const auto = navGroups("platform_admin", { processes: true }).find(
+      (x) => x.labelKey === "nav.group.automation",
+    );
+    expect(auto?.items.map((i) => i.id).slice(0, 2)).toEqual(["workflows", "processes"]);
   });
   test("member không có mục nào dù cờ on; crumbs /processes*", () => {
     expect(navGroups("member", { processes: true })).toEqual([]);
