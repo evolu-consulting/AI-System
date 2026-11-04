@@ -12,10 +12,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCredentialList } from "../hooks/use-credential-list";
+import { CRED_NEW, CRED_NONE, credentialChoice } from "../lib/credential-choice";
 import { CredentialDialog } from "./CredentialDialog";
 
-const NONE = "__none__";
-const NEW = "__new__";
+const NONE = CRED_NONE;
+const NEW = CRED_NEW;
 
 type Props = {
   id: string;
@@ -44,8 +45,9 @@ export function CredentialField({ id, tenantId, value, onChange, error }: Props)
       : (selected?.name ?? t("process.sources.credential.gone"));
 
   const onValueChange = (v: string) => {
-    if (v === NEW) return setDialog(true);
-    onChange(v === NONE ? "" : v);
+    const c = credentialChoice(v);
+    if (c.kind === "new") setDialog(true);
+    else if (c.kind === "set") onChange(c.id);
   };
 
   return (
