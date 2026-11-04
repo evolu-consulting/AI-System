@@ -59,7 +59,12 @@ describe("CR-118 · perf năng lực (cache nóng)", () => {
     console.log(
       `CR-118 perf · n=${N} · p95 /health=${health.toFixed(3)} · /pack/me=${pMe.toFixed(3)} · 304=${p304.toFixed(3)} · capabilities=${pCaps.toFixed(3)} ms`,
     );
-    expect({ me: pMe <= 5, nm: p304 <= 2, caps: pCaps <= 20 }).toEqual({
+    // Ngưỡng là thời gian SERVER (D4): trừ nền /health cùng hub (khuôn PK-NFR-01) để tải máy/HTTP không lẫn vào; số thô vẫn in.
+    const net = (p: number) => Math.max(0, p - health);
+    console.log(
+      `CR-118 perf · thuần server (trừ /health) · /pack/me=${net(pMe).toFixed(3)} · 304=${net(p304).toFixed(3)} · capabilities=${net(pCaps).toFixed(3)} ms`,
+    );
+    expect({ me: net(pMe) <= 5, nm: net(p304) <= 2, caps: net(pCaps) <= 20 }).toEqual({
       me: true,
       nm: true,
       caps: true,
