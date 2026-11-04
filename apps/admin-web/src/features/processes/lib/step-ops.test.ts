@@ -11,6 +11,7 @@ import {
   removeStage,
   type Stepped,
   splitToNewStep,
+  swapStepColumns,
 } from "./step-ops";
 
 const mk = (uid: string, step: number, extra: Partial<Stepped> = {}): Stepped => ({
@@ -117,5 +118,26 @@ describe("addStageToStep / addStageAsNewStep / removeStage", () => {
     expect(view(out)).toEqual(["B@0", "C@0", "D@1"]);
     expect(out[2]?.backTo).toEqual([0]);
     expect(removeStage(base(), 1).length).toBe(3);
+  });
+});
+
+describe("swapStepColumns (Lên/Xuống của bước DLC)", () => {
+  const dlc = (): Stepped[] => [
+    mk("A", 0),
+    mk("B", 1),
+    mk("C", 2, { after: "review", backTo: [1] }),
+    mk("D", 3),
+  ];
+  test("đổi chỗ cả cột với cột kề, giữ thứ tự mảng theo bước", () => {
+    expect(view(swapStepColumns(dlc(), 3, -1))).toEqual(["A@0", "B@1", "D@2", "C@3"]);
+    expect(view(swapStepColumns(base(), 0, 1))).toEqual(["B@0", "C@0", "A@1", "D@2"]);
+  });
+  test("ngoài biên ⇒ không đổi; backTo đổi số theo cột, bỏ đích không còn đứng trước", () => {
+    expect(view(swapStepColumns(dlc(), 0, -1))).toEqual(view(dlc()));
+    expect(view(swapStepColumns(dlc(), 3, 1))).toEqual(view(dlc()));
+    const up = swapStepColumns(dlc(), 2, -1);
+    expect(up.find((s) => s.uid === "C")?.backTo).toEqual([]);
+    const down = swapStepColumns(dlc(), 2, 1);
+    expect(down.find((s) => s.uid === "C")?.backTo).toEqual([1]);
   });
 });

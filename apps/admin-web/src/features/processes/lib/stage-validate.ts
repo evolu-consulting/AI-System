@@ -10,6 +10,7 @@ import {
   STAGE_SECTIONS_MAX,
   STAGE_TEMPLATE_MAX,
   STAGE_TIMEOUT_S,
+  STAGE_TIMEOUT_S_HARD_MAX,
   STAGE_TOKEN_BUDGET,
 } from "@ai/contracts/hub-admin";
 import { isApply } from "./apply-form";
@@ -51,7 +52,8 @@ export function validateStage(
     e[at("instruction")] = `${P}tooLong`;
   validateOutput(s, at, e);
   if (s.answerer !== "starter" && s.answererId === "") e[at("answerer")] = `${P}answerer`;
-  if (!inRange(s.timeout, STAGE_TIMEOUT_S.min, STAGE_TIMEOUT_S.max))
-    e[at("timeout_s")] = `${P}timeout`;
+  // dlc-engine · bước DLC (build/verify chạy cả ngày) theo trần cứng của Hub; hạn sửa ở form DLC (`timeout_min`)
+  const maxS = s.slotRaw?.kind === "dlc" ? STAGE_TIMEOUT_S_HARD_MAX : STAGE_TIMEOUT_S.max;
+  if (!inRange(s.timeout, STAGE_TIMEOUT_S.min, maxS)) e[at("timeout_s")] = `${P}timeout`;
   if (!isApply(s) && !budgetOk(s.budget)) e[at("token_budget")] = `${P}budget`;
 }

@@ -63,8 +63,16 @@ function LibraryStepForm({
     onMove: (dir: -1 | 1) => ops.moveColumn(index, dir),
     onRemove: () => w.remove(index),
   };
+  // bước DLC mỗi bước một cột ⇒ Lên/Xuống đổi chỗ cả bước (đổi trong cột không có tác dụng)
   if (isDlcStep(sel))
-    return <DlcStageForm {...common} all={w.stages} agents={refs.agentKeys ?? []} />;
+    return (
+      <DlcStageForm
+        {...common}
+        onMove={(dir) => d.swapStep(index, dir)}
+        all={w.stages}
+        agents={refs.agentKeys ?? []}
+      />
+    );
   const mix = dlcDraftErrors(w.stages)[`stages.${index}.dlc.kind`];
   return (
     <>
