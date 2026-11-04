@@ -14,5 +14,8 @@ export const source = createPackMeSource({
 export const featureAppsSource = async (): Promise<readonly string[]> =>
   (await source.ensure()).apps;
 
+/** `/pack/me.home` (khoá gói) cho `platform/auth` (`setHomeSource`). */
+export const featureHomeSource = async (): Promise<string | null> => (await source.ensure()).home;
+
 /** API khác trả 403 (gói vừa tắt) ⇒ tải lại cờ. */
 export const reportForbidden = (): void => source.reportForbidden();

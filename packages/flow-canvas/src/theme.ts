@@ -9,6 +9,7 @@ export type FlowLabels = {
   finalize: string;
   locked: string;
   conditional: string;
+  review: string;
   esign: string;
   dify: string;
   // columns (editor)
@@ -29,6 +30,7 @@ export const DEFAULT_LABELS: FlowLabels = {
   finalize: "Finalize",
   locked: "Locked",
   conditional: "Conditional",
+  review: "Review",
   esign: "E-sign",
   dify: "Dify",
   stepTitle: (n) => `Step ${n}`,

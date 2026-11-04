@@ -11,11 +11,13 @@ import {
   moduleOf,
   session,
   setAppsSource,
+  setHomeSource,
 } from "~/platform/auth";
 import { bounceToSso } from "./sso";
 
 // CR-118: quyền mở module lấy từ `/pack/me.apps` (FeatureGate, nạp động để OpenFeature không vào bundle đầu); lỗi ⇒ `currentCaps` suy từ `me.kind`.
 setAppsSource(async () => (await import("~/platform/features")).featureAppsSource());
+setHomeSource(async () => (await import("~/platform/features")).featureHomeSource());
 
 type Loc = { href: string };
 

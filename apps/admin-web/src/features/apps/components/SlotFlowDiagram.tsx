@@ -26,6 +26,7 @@ export default function SlotFlowDiagram({ rows, who }: SlotFlowDiagramProps) {
       escalateGroup: null,
       approverCount: null,
       condition: r.condition,
+      showReviewBadge: true,
     }));
     return buildVerticalGraph(steps, t("appcfg.flow.skip"));
   }, [rows, who, t]);
@@ -35,6 +36,7 @@ export default function SlotFlowDiagram({ rows, who }: SlotFlowDiagramProps) {
       finalize: t("appcfg.flow.finalize"),
       locked: t("appcfg.flow.locked"),
       conditional: t("appcfg.flow.conditional"),
+      review: t("appcfg.flow.kind.review"),
       esign: t("appcfg.flow.kind.esign"),
       dify: t("appcfg.flow.kind.dify"),
     }),

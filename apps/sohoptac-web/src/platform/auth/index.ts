@@ -19,8 +19,8 @@ export {
 } from "./domain/login-machine";
 export { safeNext } from "./domain/next";
 export { type LoginFlow, useLoginFlow } from "./hooks/use-login-flow";
-export { currentCaps, setAppsSource } from "./lib/access";
+export { currentCaps, setAppsSource, setHomeSource } from "./lib/access";
 export { errorOf, type LoginMessage, newPasswordError } from "./lib/login-errors";
-export type { AppsSource, AuthPort } from "./port";
+export type { AppsSource, AuthPort, HomeSource } from "./port";
 export { CONTRACTS_APP, session } from "./session";
 export { ChangePasswordForm, TotpForm } from "./ui/StepForms";

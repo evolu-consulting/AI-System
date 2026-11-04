@@ -52,8 +52,12 @@ function Edges({
 
 function Pill({ kind }: { kind: StepBadge }) {
   const { labels, theme } = useFlowHost();
-  const label =
-    kind === "conditional" ? labels.conditional : kind === "esign" ? labels.esign : labels.dify;
+  const label = {
+    conditional: labels.conditional,
+    review: labels.review,
+    esign: labels.esign,
+    dify: labels.dify,
+  }[kind];
   return <span className={theme.pill}>{label}</span>;
 }
 

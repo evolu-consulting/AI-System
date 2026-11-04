@@ -55,6 +55,18 @@ describe("CR-118 · capsOf / homeFor (FeatureGate apps khi có, không thì theo
     expect(capsOf(member, ["community"])).toEqual({ contracts: false, community: true });
     expect(capsOf(member, ["contracts"])).toEqual({ contracts: true, community: false });
   });
+  test("home theo default_app của /pack/me: chỉ khi module đó mở được, không thì home cũ", () => {
+    const both = capsOf(member, ["contracts", "community"], "community");
+    expect(homeFor(both)).toBe("/community");
+    expect(landing(both, undefined)).toBe("/community");
+    expect(homeFor(capsOf(member, ["contracts", "community"], "contracts"))).toBe("/overview");
+    // default_app = contracts nhưng user không mở được ⇒ rơi về home cũ
+    expect(homeFor(capsOf(member, ["community"], "contracts"))).toBe("/community");
+    expect(homeFor(capsOf(partner, ["community"], "contracts"))).toBe("/community");
+    // khoá lạ / null ⇒ home cũ
+    expect(homeFor(capsOf(member, ["contracts", "community"], "chat"))).toBe("/overview");
+    expect(homeFor(capsOf(member, ["contracts", "community"], null))).toBe("/overview");
+  });
   test("home: có SHT ⇒ /overview, chỉ community ⇒ /community", () => {
     expect(homeFor({ contracts: true, community: true })).toBe("/overview");
     expect(homeFor({ contracts: false, community: true })).toBe("/community");

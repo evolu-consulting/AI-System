@@ -169,3 +169,23 @@ describe("flow-canvas · buildVerticalGraph", () => {
     ]);
   });
 });
+
+describe("huy hiệu loại bước duyệt (host bật showReviewBadge)", () => {
+  test("mặc định bước duyệt không có huy hiệu, bật cờ thì có review", () => {
+    expect(buildFlowCanvas([step("a")], L).nodes.find((n) => n.id === "a")?.data.badges).toEqual(
+      [],
+    );
+    const g = buildVerticalGraph(
+      [{ ...step("a"), condition: null, showReviewBadge: true }],
+      "skip",
+    );
+    expect(g.nodes.find((n) => n.id === "a")?.data.badges).toEqual(["review"]);
+  });
+  test("esign giữ huy hiệu riêng, cờ không thêm review cho loại khác", () => {
+    const g = buildVerticalGraph(
+      [{ ...step("e", { kind: "esign" }), condition: "x", showReviewBadge: true }],
+      "skip",
+    );
+    expect(g.nodes.find((n) => n.id === "e")?.data.badges).toEqual(["conditional", "esign"]);
+  });
+});

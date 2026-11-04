@@ -21,6 +21,8 @@ export type VerticalStepInput = {
   approverCount: number | null;
   escalateDefault?: boolean;
   escalateMissing?: boolean;
+  /** Host muốn hiện huy hiệu loại cho bước duyệt (`review`; mặc định ẩn vì gần như mọi bước là duyệt). Thẻ khe `/apps` bật. */
+  showReviewBadge?: boolean;
 };
 /** Bước đã ghép sẵn chữ điều kiện (host không dùng `FlowWhen`, vd thẻ khe `/apps`). */
 export type VerticalStep = Omit<VerticalStepInput, "when"> & { condition: string | null };
@@ -42,7 +44,7 @@ export const SKIP_OUT = "skip-out";
 export const SKIP_IN = "skip-in";
 
 export type CanvasKind = "start" | "step" | "finalize";
-export type StepBadge = "conditional" | "esign" | "dify";
+export type StepBadge = "conditional" | "review" | "esign" | "dify";
 
 export type StepInfo = {
   dueH: number | null;
@@ -124,11 +126,12 @@ function stepHeight(d: FlowNodeData): number {
   );
 }
 
-function badgesOf(kind: string, conditional: boolean): StepBadge[] {
+export function badgesOf(kind: string, conditional: boolean, showReview = false): StepBadge[] {
   const out: StepBadge[] = [];
   if (conditional) out.push("conditional");
   const kindBadge = stepKindSpec(kind).badge;
   if (kindBadge) out.push(kindBadge);
+  else if (showReview && kind === "review") out.push("review");
   return out;
 }
 
@@ -176,7 +179,7 @@ export function buildVerticalGraph(
       title: s.name,
       index: i + 1,
       department: s.department && s.department !== s.name ? s.department : null,
-      badges: badgesOf(s.kind, condition !== null),
+      badges: badgesOf(s.kind, condition !== null, s.showReviewBadge === true),
       condition,
       info: {
         dueH: s.dueH,

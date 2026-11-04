@@ -13,3 +13,5 @@ export interface AuthPort {
 
 /** App/module người dùng mở được (`/pack/me.apps` của FeatureGate). `null` = chưa có nguồn ⇒ suy từ `me.kind`. */
 export type AppsSource = () => Promise<readonly string[] | null>;
+/** Khoá gói trang chủ (`/pack/me.home`); `null` = không có ⇒ home theo quyền. */
+export type HomeSource = () => Promise<string | null>;

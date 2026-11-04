@@ -25,23 +25,32 @@ export function stepOf<U>(res: LoginReply<U>): LoginStep<U> {
   return { kind: "done", user: res.user };
 }
 
-export type AccessCaps = { contracts: boolean; community: boolean };
+/** `home` = khoá gói trang chủ server chọn (`/pack/me.home`: default_app user → công ty, chỉ gói user đọc được). */
+export type AccessCaps = { contracts: boolean; community: boolean; home?: string | null };
 export type WebModule = "contracts" | "community" | "public";
 
 export const HOME_CONTRACTS = "/overview";
 export const HOME_COMMUNITY = "/community";
 
 /** `apps` = id manifest module được hiện từ `/pack/me` (null = FeatureGate chưa nối / chưa tải). */
-export function capsOf(user: LoginUser | null, apps: readonly string[] | null): AccessCaps {
+export function capsOf(
+  user: LoginUser | null,
+  apps: readonly string[] | null,
+  home: string | null = null,
+): AccessCaps {
   const external = user?.kind === "external";
   if (!apps) return { contracts: !external, community: true };
   return {
     contracts: !external && apps.includes("contracts"),
     community: apps.includes("community"),
+    ...(home ? { home } : {}),
   };
 }
 
+/** Home theo `caps.home` (default_app) nếu module đó mở được; không thì cách cũ (SHT trước, rồi Community). */
 export function homeFor(caps: AccessCaps): string {
+  if (caps.home === "contracts" && caps.contracts) return HOME_CONTRACTS;
+  if (caps.home === "community" && caps.community) return HOME_COMMUNITY;
   return caps.contracts || !caps.community ? HOME_CONTRACTS : HOME_COMMUNITY;
 }
 
