@@ -22,6 +22,8 @@ evotest `-Step e2e -All -Filter P-a` một lần.
 - Test e2e đã khoá ⇒ cần relock.
 
 ## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
+
 Không thay đổi hành vi (lý do: sửa đường dẫn gọi sơ đồ và sửa e2e; hành vi đã mô tả ở cr118-tenant-settings)
 
 ## Việc còn lại
