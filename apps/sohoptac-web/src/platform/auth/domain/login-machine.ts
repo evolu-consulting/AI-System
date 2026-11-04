@@ -3,16 +3,23 @@
 //  · app mở được (`AccessCaps`): đối tác KHÔNG BAO GIỜ có SHT; nội bộ theo `apps` của FeatureGate (`/pack/me`), chưa có ⇒ cả hai
 //    (server pack guard / `external-deny` là nguồn thật, đây chỉ ẩn UI);
 //  · home theo quyền, path → module, có dội sang AI System không (`/community*` không dội — đối tác không có chat-web).
-import type { LoginResponse, Me } from "@ai/contracts/chat";
+// Lớp domain (ADR-0023): chỉ built-in — kiểu trả lời tự khai (khớp cấu trúc `LoginResponse` của @ai/contracts).
 import { safeNext } from "./next";
 
-export type LoginStep =
+/** Người dùng tối thiểu: `kind` vắng (server cũ) ⇒ nội bộ. */
+export type LoginUser = { kind?: string | undefined };
+export type LoginReply<U> =
+  | { status: "authenticated"; user: U }
+  | { status: "password_change_required"; change_token: string }
+  | { status: "totp_required"; totp_token: string };
+
+export type LoginStep<U = LoginUser> =
   | { kind: "login" }
   | { kind: "change"; token: string }
   | { kind: "totp"; token: string }
-  | { kind: "done"; user: Me };
+  | { kind: "done"; user: U };
 
-export function stepOf(res: LoginResponse): LoginStep {
+export function stepOf<U>(res: LoginReply<U>): LoginStep<U> {
   if (res.status === "password_change_required") return { kind: "change", token: res.change_token };
   if (res.status === "totp_required") return { kind: "totp", token: res.totp_token };
   return { kind: "done", user: res.user };
@@ -25,7 +32,7 @@ export const HOME_CONTRACTS = "/overview";
 export const HOME_COMMUNITY = "/community";
 
 /** `apps` = id manifest module được hiện từ `/pack/me` (null = FeatureGate chưa nối / chưa tải). */
-export function capsOf(user: Pick<Me, "kind"> | null, apps: readonly string[] | null): AccessCaps {
+export function capsOf(user: LoginUser | null, apps: readonly string[] | null): AccessCaps {
   const external = user?.kind === "external";
   if (!apps) return { contracts: !external, community: true };
   return {

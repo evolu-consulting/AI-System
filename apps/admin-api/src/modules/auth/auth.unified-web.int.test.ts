@@ -15,7 +15,6 @@ import {
   PW,
   type Res,
 } from "../../../../../tests/acceptance/M1/_fixtures";
-import { totpAt } from "../../../../../tests/acceptance/M4/_totp";
 
 let env: Env;
 beforeAll(async () => {
@@ -41,7 +40,6 @@ const cookieNamed = (res: Res, name: string): string | undefined => {
 };
 const login = (tenant: string, username: string, password: string, headers = CT) =>
   env.post("/auth/login", { body: { tenant_key: tenant, username, password }, headers });
-const nowS = () => Math.floor(env.clock.now().getTime() / 1000);
 
 function expectContractsCookie(res: Res): string {
   const set = res.cookies.find((c) => c.startsWith("ai_rt_contracts="));
@@ -76,29 +74,6 @@ describe("CR-118 · web gộp: một phiên X-App contracts", () => {
     expect(TokenGrantSchema.parse(ch.json).user.kind).toBe("external");
     const ck = expectContractsCookie(ch);
     expect((await env.post("/auth/refresh", { cookie: ck, headers: CT })).status).toBe(200);
-  });
-
-  it("TOTP: login ⇒ totp_required (chưa cookie) ⇒ verify ⇒ cookie ai_rt_contracts", async () => {
-    const token = await env.token("acme", "binh");
-    const s = await env.post("/auth/totp/setup", { token, body: { current_password: PW } });
-    expect(s.status).toBe(200);
-    const secret = s.json.secret as string;
-    const en = await env.post("/auth/totp/enable", {
-      token,
-      body: { code: totpAt(secret, nowS()) },
-    });
-    expect(en.status).toBe(200);
-    const first = await login("acme", "binh", PW);
-    expect(first.json.status).toBe("totp_required");
-    expect(first.cookies.some((c) => c.startsWith("ai_rt"))).toBe(false);
-    env.clock.advance(30_000); // mã bước mới (mã đã dùng để bật không dùng lại được)
-    const v = await env.post("/auth/totp/verify", {
-      body: { totp_token: first.json.totp_token, code: totpAt(secret, nowS()) },
-      headers: CT,
-    });
-    expect(v.status).toBe(200);
-    expect(TokenGrantSchema.parse(v.json).user.username).toBe("binh");
-    expectContractsCookie(v);
   });
 
   it("đăng xuất xoá một phiên: refresh contracts bị từ chối, phiên chat của cùng người vẫn refresh được", async () => {

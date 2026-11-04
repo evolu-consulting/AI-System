@@ -3,17 +3,12 @@
 import type { LoginRequest, LoginResponse, Me } from "@ai/contracts/chat";
 import { useState } from "react";
 import { adminApiAuth } from "../adapters/admin-api";
-import {
-  type AuthStage,
-  errorOf,
-  type LoginMessage,
-  newPasswordError,
-} from "../domain/login-errors";
 import { type LoginStep, stepOf } from "../domain/login-machine";
+import { type AuthStage, errorOf, type LoginMessage, newPasswordError } from "../lib/login-errors";
 import type { AuthPort } from "../port";
 
 export type LoginFlow = {
-  step: LoginStep;
+  step: LoginStep<Me>;
   busy: boolean;
   error: LoginMessage | null;
   submitLogin: (req: LoginRequest) => Promise<void>;
@@ -22,14 +17,15 @@ export type LoginFlow = {
   restart: () => void;
 };
 
-const LOGIN: LoginStep = { kind: "login" };
-const tokenOf = (s: LoginStep): string => (s.kind === "change" || s.kind === "totp" ? s.token : "");
+const LOGIN: LoginStep<Me> = { kind: "login" };
+const tokenOf = (s: LoginStep<Me>): string =>
+  s.kind === "change" || s.kind === "totp" ? s.token : "";
 
 export function useLoginFlow(
   onDone: (user: Me) => void | Promise<void>,
   port: AuthPort = adminApiAuth,
 ): LoginFlow {
-  const [step, setStep] = useState<LoginStep>(LOGIN);
+  const [step, setStep] = useState<LoginStep<Me>>(LOGIN);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<LoginMessage | null>(null);
 

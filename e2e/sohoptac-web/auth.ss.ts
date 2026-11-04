@@ -28,7 +28,9 @@ function partnerPw(): string {
 
 async function fillLogin(page: Page, user: string, pw: string): Promise<void> {
   const tenant = page.getByRole("textbox", { name: "Mã công ty" });
-  if (!(await tenant.isVisible())) await page.getByRole("button", { name: "Đổi công ty" }).click();
+  const change = page.getByRole("button", { name: "Đổi công ty" });
+  await expect(tenant.or(change)).toBeVisible(); // trang /login nạp lười: chờ form trước khi xem ô nào hiện
+  if (!(await tenant.isVisible())) await change.click();
   await tenant.fill(TENANT);
   await page.getByRole("textbox", { name: "Email" }).fill(user);
   await page.locator("input[name=password]").fill(pw);

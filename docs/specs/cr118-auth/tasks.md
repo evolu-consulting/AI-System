@@ -15,8 +15,8 @@ Guard: `/community*` cần phiên nhưng KHÔNG dội sang AI System; path SHT g
 
 ## Làm
 - `apps/sohoptac-web/src/platform/auth/`: `domain/login-machine.ts` (thuần: bước kế, home, quyền mở path, có dội SSO),
-  `domain/login-errors.ts` (lỗi → khoá i18n), `port.ts` (`AuthPort`, `AppsSource`), `adapters/admin-api.ts`,
-  `session.ts` (phiên duy nhất, dời từ `features/auth/lib/session.ts` — file cũ re-export), `application/use-login-flow.ts`,
+  `lib/login-errors.ts` (lỗi → khoá i18n), `lib/access.ts` (quyền phiên), `port.ts` (`AuthPort`, `AppsSource`), `adapters/admin-api.ts`,
+  `session.ts` (phiên duy nhất, dời từ `features/auth/lib/session.ts` — file cũ re-export), `hooks/use-login-flow.ts`,
   `ui/{ChangePasswordForm,TotpForm}.tsx`, `index.ts` (cổng duy nhất).
 - `features/auth`: LoginPage dùng `useLoginFlow` (3 bước); guard dùng `canOpen`/`homeFor`/`bouncesToSso`.
 - `routes/community.tsx`: khung tạm có guard phiên (TODO lát cr118-community-module thay component), `routes/index.tsx` home theo quyền.
@@ -28,11 +28,12 @@ Không endpoint mới, không migration, không sửa community-web (lát commun
 suy từ `me.kind` (đối tác ⇒ chỉ community).
 
 ## Test tối thiểu
-- unit `apps/sohoptac-web/src/platform/auth/domain/login-machine.test.ts`, `login-errors.test.ts`.
-- int `apps/admin-api/src/modules/auth/auth.unified-web.int.test.ts` (X-App contracts: đối tác đổi mật khẩu, TOTP, đăng xuất, chéo tenant).
+- unit `apps/sohoptac-web/src/platform/auth/domain/login-machine.test.ts`, `lib/login-errors.test.ts`, `features/auth/lib/guard.test.ts`.
+- int `apps/admin-api/src/modules/auth/auth.unified-web.int.test.ts` (X-App contracts: đối tác đổi mật khẩu, đăng xuất, chéo tenant) + `auth.unified-web-totp.int.test.ts` (TOTP).
 - e2e `e2e/sohoptac-web/auth.ss.ts` (stack thật, cấu hình `e2e/sohoptac-web/playwright.stack.config.ts`, chạy evotest một lần).
 
 ## Quyết định trong lúc làm
+- `platform/auth` không dùng tên lớp `application/` (luật depcruise ADR-0023 cấm react/@ai/contracts ở đó): hook ở `hooks/`, ánh xạ lỗi + quyền phiên ở `lib/`; `domain/` thuần (kiểu trả lời tự khai).
 - Nguồn "app mở được" = port `AppsSource` (lát feature-gate nối `/pack/me.apps`); mặc định suy từ `me.kind` để không phụ thuộc lát song song.
 - Đối tác gõ path SHT ⇒ redirect `/community` ở `beforeLoad` (trước khi tải chunk route) thay vì trang 403.
 - `/community` tạm là khung tối thiểu (tên + Đăng xuất) để guard/e2e chạy được; lát community-module thay component.
@@ -46,6 +47,7 @@ Login gộp của `sohoptac-web` (`platform/auth`) có ba bước: mật khẩu 
 vào home theo quyền: đối tác → `/community`, người có Sổ Hợp Tác → `/overview` (hoặc `next` nội bộ nếu được mở). Path `/community*`
 không tự dội sang AI System; path SHT giữ dội như nay. Đối tác gõ path SHT ⇒ về `/community`, không render trang SHT.
 - Kịch bản: khi đối tác lần đầu đăng nhập thì buộc đổi mật khẩu rồi vào `/community` [test: e2e/sohoptac-web/auth.ss.ts » đối tác lần đầu: buộc đổi mật khẩu rồi vào /community, gõ /overview về /community]
+- Kịch bản: khi đăng nhập TOTP với X-App contracts thì cookie là `ai_rt_contracts` [test: apps/admin-api/src/modules/auth/auth.unified-web-totp.int.test.ts » TOTP: login ⇒ totp_required (chưa cookie) ⇒ verify ⇒ cookie ai_rt_contracts]
 - Kịch bản: khi trả lời đăng nhập là `totp_required` thì hiện bước nhập mã, mã đúng thì vào home theo quyền [test: apps/sohoptac-web/src/platform/auth/domain/login-machine.test.ts » password → change → TOTP → home theo vai]
 - Kịch bản: khi người dùng đã bật 2FA đăng nhập web gộp thì phải nhập mã TOTP mới có phiên `contracts` [test: e2e/sohoptac-web/auth.ss.ts » TOTP: đăng nhập phải qua bước mã]
 - Kịch bản: khi chưa có phiên mà mở `/community` thì vào `/login` của web gộp, không dội sang AI System [test: apps/sohoptac-web/src/platform/auth/domain/login-machine.test.ts » bouncesToSso]

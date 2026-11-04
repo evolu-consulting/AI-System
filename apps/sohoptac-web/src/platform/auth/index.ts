@@ -3,9 +3,7 @@
 // TODO(cr118-community-module): màn đăng nhập riêng của community-web (`ui/Login.tsx`, `api/auth.ts`, `api/session.ts`) bỏ;
 // module community dùng phiên + `useLoginFlow`/`ChangePasswordForm`/`TotpForm` từ đây (không tạo phiên `community`).
 // TODO(cr118-feature-gate): nối `setAppsSource` với `/pack/me.apps`.
-export { currentCaps, setAppsSource } from "./application/access";
-export { type LoginFlow, useLoginFlow } from "./application/use-login-flow";
-export { errorOf, type LoginMessage, newPasswordError } from "./domain/login-errors";
+
 export {
   type AccessCaps,
   bouncesToSso,
@@ -20,6 +18,9 @@ export {
   stepOf,
 } from "./domain/login-machine";
 export { safeNext } from "./domain/next";
+export { type LoginFlow, useLoginFlow } from "./hooks/use-login-flow";
+export { currentCaps, setAppsSource } from "./lib/access";
+export { errorOf, type LoginMessage, newPasswordError } from "./lib/login-errors";
 export type { AppsSource, AuthPort } from "./port";
 export { CONTRACTS_APP, session } from "./session";
 export { ChangePasswordForm, TotpForm } from "./ui/StepForms";
