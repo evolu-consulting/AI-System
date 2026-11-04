@@ -7,26 +7,18 @@ migration: không
 phụ thuộc:
 ---
 ## Plan (ngắn)
-
-## Làm
-
-## Không làm / Chạm
+Tách e2e triển khai thành project `ro` (6 file, 13 test, 4 worker) và `rw` (13 file, 61 test, 1 worker), hai lượt nối tiếp trong `e2e-deployed.ps1`.
 
 ## Test tối thiểu
+`--list` từng project (ro 13/6, rw 61/13), typecheck. Không chạy prod.
 
-## Quyết định trong lúc làm
+## Việc cần qc relock
+`e2e/deployed/deployed.config.ts` (file e2e khoá). Không đổi spec nào.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-Xoá khối mẫu dưới đây rồi điền thật (kiểm bằng `bun run openspec:check`). Lát không đổi hành vi: thay bằng
-một dòng `Không thay đổi hành vi (lý do: …)`.
-```
-### MODIFIED sht/chung-tu.md
-#### Yêu cầu: <tên>
-<mô tả hành vi mới>
-- Kịch bản: khi … thì … [test: <path test> » <tiêu đề test>]  (hoặc [test: thủ công — <lý do>])
-(### ADDED <file mới>; ### REMOVED <file> + dòng "Lý do: …")
-```
+Không thay đổi hành vi (lý do: chỉ đổi cách chạy bộ e2e triển khai, không đổi sản phẩm).
 
 ## Việc còn lại
+Chạy thử trên prod do người dùng cho phép; cân nhắc làn `ai` (chat AI song song 2 worker) nếu cần nhanh hơn.
