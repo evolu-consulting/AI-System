@@ -61,7 +61,7 @@ describe("httpFlowRuntime", () => {
     expect([calls[0]?.method, calls[0]?.body]).toEqual(["POST", { values: { name: "A", qty: 2 } }]);
   });
 
-  test("summary ⇒ một POST cho cả lô · 404 (runtime tắt) ⇒ null và KHÔNG gọi lại ở lần sau", async () => {
+  test("summary ⇒ một POST cho cả lô · 404 (máy chủ cũ không có route) ⇒ null", async () => {
     json = { slot: "contracts.approval", items: [] };
     await httpFlowRuntime().summary("contracts.approval", ["a", "b", "c"]);
     expect(calls).toHaveLength(1);
@@ -71,8 +71,14 @@ describe("httpFlowRuntime", () => {
     const off = httpFlowRuntime();
     status = 404;
     expect(await off.summary("contracts.approval", ["a"])).toBeNull();
-    expect(await off.summary("contracts.approval", ["b"])).toBeNull();
-    expect(calls).toHaveLength(1); // đúng 1 yêu cầu 404; lần hai không đi mạng
+    expect(calls).toHaveLength(1);
+  });
+
+  test("cờ runtime tắt (/pack/me flags flow.runtime = false) ⇒ view/summary trả null, KHÔNG yêu cầu mạng nào (không 404 ở console)", async () => {
+    const rt = httpFlowRuntime(async () => false);
+    expect(await rt.summary("contracts.approval", ["a", "b"])).toBeNull();
+    expect(await rt.view("contracts.approval", "r1")).toBeNull();
+    expect(calls).toHaveLength(0);
   });
 
   test("summary rỗng ⇒ không gọi mạng", async () => {

@@ -66,6 +66,11 @@ describe("CR-118 · installedPacks / addonKeysOf", () => {
 });
 
 describe("CR-118 · UW-FR-04 · shellMe", () => {
+  it('cờ flow.runtime: mặc định tắt (false), bật theo đầu vào ⇒ web biết có gọi route "/flow/*" hay không', () => {
+    expect(shellMe(shell()).flags["flow.runtime"]).toBe(false);
+    expect(shellMe(shell({ flowRuntime: true })).flags["flow.runtime"]).toBe(true);
+  });
+
   it("packs + mức + flags phẳng + home = contracts khi đọc được", () => {
     const r = shellMe(shell());
     expect(r.packs.contracts).toEqual({

@@ -17,5 +17,12 @@ export const featureAppsSource = async (): Promise<readonly string[]> =>
 /** `/pack/me.home` (khoá gói) cho `platform/auth` (`setHomeSource`). */
 export const featureHomeSource = async (): Promise<string | null> => (await source.ensure()).home;
 
+/** Cờ phẳng của `/pack/me.flags` (ảnh đã nạp ở khởi động ⇒ không thêm yêu cầu mạng); vắng/lỗi tải ảnh ⇒ false. */
+export const featureFlag = (key: string): Promise<boolean> =>
+  source.ensure().then(
+    (me) => me.flags[key] === true,
+    () => false,
+  );
+
 /** API khác trả 403 (gói vừa tắt) ⇒ tải lại cờ. */
 export const reportForbidden = (): void => source.reportForbidden();

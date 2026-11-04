@@ -61,7 +61,12 @@ export type ShellInput = {
   externalPacks?: ReadonlySet<string>;
   /** `default_app` của user / công ty (admin-api, bump `config_version`); vắng ⇒ home theo quyền. */
   defaultApp?: { user: string | null; tenant: string | null };
+  /** Flow runtime của kit đang bật (`HUB_FLOW_RUNTIME=on`) ⇒ route `/pack/<k>/flow/*` có mặt; web chỉ gọi khi cờ này bật. */
+  flowRuntime?: boolean;
 };
+
+/** Khoá cờ phẳng trong `/pack/me.flags` báo flow runtime bật/tắt (không trùng `<gói>` hay `<gói>.<action>`). */
+export const FLOW_RUNTIME_FLAG = "flow.runtime";
 
 /** Trang chủ: default_app (user rồi công ty) nếu user đọc được gói đó; không thì theo quyền (contracts → community → đầu). */
 function homeOf(i: ShellInput, readable: ReadonlySet<string>, apps: readonly string[]) {
@@ -91,6 +96,7 @@ function shellPacks(i: ShellInput, flags: Record<string, boolean>) {
 export function shellMe(i: ShellInput): ShellMeResponse {
   const flags: Record<string, boolean> = {};
   const { packs, readable } = shellPacks(i, flags);
+  flags[FLOW_RUNTIME_FLAG] = i.flowRuntime === true;
   const addons: string[] = [];
   for (const a of i.addons) {
     const on = a.on && readable.has(a.pack);

@@ -10,6 +10,7 @@ import type { ConfigCache } from "../config/config.service";
 import { MeStreamConns } from "../me-stream/me-stream.session";
 import { externalFirewall } from "../packs/kit/adapters/external-firewall.middleware";
 import type { PackToolRegistry } from "../packs/kit/adapters/pack-tools.registry";
+import { flowRuntimeOn } from "../packs/kit/application/flow.ports";
 import { companyBrandModule, PACK_PREFIX } from "../packs/packs.mount";
 import { loadHubExtras } from "./capabilities.repo";
 import { capabilitiesAdminRoutes, shellMeRoutes } from "./capabilities.routes";
@@ -27,6 +28,8 @@ export type CapabilitiesMountDeps = {
   /** Có Redis ⇒ `/me/stream` được mount ⇒ đẩy `config.changed` tới phiên của instance. */
   redis?: Redis;
   signal?: AbortSignal;
+  /** Seam test của cờ flow runtime; vắng ⇒ env `HUB_FLOW_RUNTIME=on`. */
+  flowRuntime?: boolean | undefined;
 };
 
 export function mountCapabilities<E extends Env>(
@@ -42,6 +45,7 @@ export function mountCapabilities<E extends Env>(
     brand: (tid) => brand.brand(tid),
     tools: (p) => d.packTools?.listByPack(p) ?? [],
     onChange: (fn) => config.onChange(fn),
+    flowRuntime: flowRuntimeOn(d.flowRuntime), // cùng cờ với route flow của gói (web bỏ gọi `/flow/*` khi tắt)
   });
   const auth = requireAuth(d.jwtPublicKey);
   const firewall = externalFirewall();

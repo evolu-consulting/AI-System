@@ -43,6 +43,8 @@ export type CapsDeps = {
   onChange?: (fn: (c: { tenants: ReadonlySet<string> | null }) => void) => () => void;
   /** Trần số thân nhớ (user + tenant); vượt ⇒ xoá sạch rồi dựng lại (đơn giản, đủ chặn bộ nhớ). */
   memoMax?: number;
+  /** Cờ flow runtime (hằng theo tiến trình, đọc từ env một lần ở mount); vắng ⇒ tắt. */
+  flowRuntime?: boolean;
 };
 export type Who = {
   userId: string;
@@ -105,6 +107,7 @@ export class CapabilitiesService {
         addons,
         brand: brand.brand,
         defaultApp,
+        flowRuntime: this.#d.flowRuntime === true,
         externalPacks: new Set(
           packs.map((p) => p.key).filter((k) => externalPackActions(k).length > 0),
         ),
