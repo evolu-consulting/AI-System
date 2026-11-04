@@ -30,6 +30,7 @@ import { cancelEnd } from "../gates/gates.effects";
 import type * as g from "../gates/gates.repo";
 import { GateService } from "../gates/gates.service";
 import { resolveSlot } from "../library/slot-resolve.repo";
+import { routeSlot } from "../library/slot-route.repo";
 import { defSourceRef } from "../library/source-ref";
 import { openTaskFor, openTasksOf, stepsView, UUID } from "./pack-runs-view";
 import { StartService } from "./start.service";
@@ -131,8 +132,19 @@ async function ensureSlotDef(d: ProcessDeps, u: PackRunCaller, def: SlotDefReq):
  * CR-105 · run theo khe: def run đã chụp phải mang đúng `source_ref` ở đúng version (MỘT câu, cùng lúc ghi `process_name`/
  * `process_version` vào snapshot run). Lệch (def bị ghi chen giữa ensureDef và start) ⇒ huỷ run + ném.
  */
-async function stampSlotRun(d: ProcessDeps, tenantId: string, runId: string, s: PackRunSlot) {
-  const meta = JSON.stringify({ process_name: s.process_name, process_version: s.rel_version });
+export async function stampSlotRun(
+  d: ProcessDeps,
+  tenantId: string,
+  runId: string,
+  s: PackRunSlot,
+) {
+  // CR-118 §11.2 · def thư viện + luật đã khớp chốt vào snapshot lúc launch (đổi luật/gán sau không chạm run này).
+  const meta = JSON.stringify({
+    process_name: s.process_name,
+    process_version: s.rel_version,
+    ...(s.process_def_id ? { process_def_id: s.process_def_id } : {}),
+    ...(s.route_rule_id !== undefined ? { route_rule_id: s.route_rule_id } : {}),
+  });
   const ok = await withHubScope(d.db, SYS, (tx) =>
     tx.execute(sql`update hub.process_runs r set snapshot = r.snapshot || ${meta}::jsonb
       from hub.process_defs d where r.id = ${runId} and r.tenant_id = ${tenantId}
@@ -323,6 +335,7 @@ export function packRunsOf(d: ProcessDeps): PackRunsPort {
       return { runId: s.id, kick: () => d.launcher.kick(s.id) };
     },
     resolveSlot: (tenantId, slot) => resolveSlot(d.db, tenantId, slot),
+    routeSlot: (tenantId, slot, userId) => routeSlot(d.db, tenantId, slot, userId),
     sourceRefOf: defSourceRef,
     cancel: (u, runId) => cancelOwn(d, gates, u, runId),
     async outcomes(u, runIds) {

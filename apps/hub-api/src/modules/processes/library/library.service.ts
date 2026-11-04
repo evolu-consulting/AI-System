@@ -298,6 +298,15 @@ export class LibraryService {
     });
   }
 
+  /** CR-118 §11.2 · cùng kiểm của `assign` (tenant có, def đã xuất bản của khe, B2 Group theo tenant) — dùng cho gán vào tập. */
+  async assignable(tx: Tx, tenantId: string, slot: string, defId: string): Promise<lib.LibRow> {
+    specOrThrow(slot);
+    if (!(await asg.tenantOf(tx, tenantId))) throw notFound();
+    const def = await this.#publishedOf(tx, defId, slot);
+    await this.#b2(tx, def, { defId: null, asDefault: false, tenantIds: [tenantId] });
+    return def;
+  }
+
   async #tenantSlot(tenantId: string, slot: string): Promise<TenantProcessSlot> {
     const { items } = await this.tenantSlots(tenantId);
     return items.find((s) => s.slot === slot) as TenantProcessSlot;

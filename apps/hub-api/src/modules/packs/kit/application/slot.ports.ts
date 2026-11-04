@@ -60,3 +60,12 @@ export type ResolvedSlot = {
   /** CR-105 L4 · true ⇒ không có gán riêng, đang dùng mặc định của khe. */
   isDefault?: boolean;
 };
+
+/**
+ * CR-118 §11.2 · kết quả chọn quy trình theo luật của tenant × khe cho người khởi tạo. `ruleId` = luật đã khớp (null ⇒ tenant chưa
+ * có luật, dùng đường `resolveSlot` cũ). `blocked`: có luật mà không khớp + không mặc định (`route_none`) hoặc quy trình của luật
+ * không còn bản xuất bản (`route_unavailable`) ⇒ gói chặn khởi tạo.
+ */
+export type RoutedSlot =
+  | (ResolvedSlot & { ruleId: string | null })
+  | { blocked: "route_none" | "route_unavailable"; ruleId: string | null };

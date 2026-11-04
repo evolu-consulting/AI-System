@@ -2,7 +2,7 @@
 // `contracts.approval` cho tenant (`port.resolveSlot`: gán ⇒ mặc định ⇒ bản xuất bản — 1 SQL), phân giải mã Group ⇒ id theo tenant
 // (`groups.idsOf` — 1 SQL), rồi để `startEngineApproval` biên dịch + `ensureDef({sourceRef})` vào def tenant `contracts-approval`.
 // Lớp 2. Không có bản xuất bản nào ⇒ null (L1 rơi về đường cũ `readFlow`; L4 xoá).
-import { FLOW_INVALID, groupMissingReason } from "../domain/approval-engine.rules";
+import { FLOW_INVALID, FLOW_ROUTE_NONE, groupMissingReason } from "../domain/approval-engine.rules";
 import type { FlowStep } from "../domain/approval-flow.types";
 import {
   APPROVAL_SLOT,
@@ -18,7 +18,13 @@ import type {
 import type { FlowGroups } from "./approval-flow.usecase";
 
 /** Quy trình thư viện nguồn của mẫu đang chạy. */
-export type SlotSource = { defId: string; name: string; relVersion: number };
+export type SlotSource = {
+  defId: string;
+  name: string;
+  relVersion: number;
+  /** CR-118 §11.2 · luật đã khớp (null = tenant chưa có luật); vắng = tra không theo người khởi tạo. */
+  ruleId?: string | null;
+};
 /** Mẫu dựng từ khe: `version` = bản xuất bản (ghi vào lượt như `flow_version`). */
 export type SlotFlow = {
   version: number;
@@ -53,11 +59,18 @@ type Deps = { bridge: ApprovalEngineBridge; groups: Pick<FlowGroups, "idsOf"> };
 export async function slotFlowOf(
   d: Deps,
   tenantId: string,
+  starter?: string | null,
 ): Promise<SlotFlow | { invalid: string } | null> {
   const port = d.bridge.port;
   if (!port?.resolveSlot || !port.sourceRefOf) return null;
-  const r = await port.resolveSlot(tenantId, APPROVAL_SLOT);
+  // CR-118 §11.2 · có người khởi tạo + cổng hỗ trợ ⇒ chọn theo luật phòng ban (không luật ⇒ như resolveSlot).
+  const r =
+    starter && port.routeSlot
+      ? await port.routeSlot(tenantId, APPROVAL_SLOT, starter)
+      : await port.resolveSlot(tenantId, APPROVAL_SLOT);
   if (!r) return null;
+  if ("blocked" in r) return { invalid: FLOW_ROUTE_NONE };
+  const ruleId = "ruleId" in r ? (r.ruleId as string | null) : undefined;
   const body = slotBodyOf(r.slotBody);
   if (!body) return { invalid: FLOW_INVALID };
   const keys = slotGroupKeys(body);
@@ -66,7 +79,8 @@ export async function slotFlowOf(
   // CR-107 · thiếu mã Group ở tenant ⇒ lý do kèm mã thiếu (lượt kẹt chờ owner, KHÔNG về máy cũ).
   const missing = keys.filter((k) => !ids.has(k));
   if (!steps) return { invalid: missing.length ? groupMissingReason(missing) : FLOW_INVALID };
-  const source = { defId: r.defId, name: r.name, relVersion: r.relVersion };
+  const source: SlotSource = { defId: r.defId, name: r.name, relVersion: r.relVersion };
+  if (ruleId !== undefined) source.ruleId = ruleId;
   return { version: r.relVersion, steps, defVersion: r.relVersion, source };
 }
 
@@ -89,6 +103,8 @@ export function slotRunOf(
     source_ref: port.sourceRefOf(def),
     process_name: flow.source.name,
     rel_version: flow.source.relVersion,
+    process_def_id: flow.source.defId,
+    ...(flow.source.ruleId !== undefined ? { route_rule_id: flow.source.ruleId } : {}),
   };
   return { slot };
 }

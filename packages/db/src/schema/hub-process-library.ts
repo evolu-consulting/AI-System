@@ -1,7 +1,7 @@
 // CR-105 · thư viện quy trình + gán tenant × khe — kiểu Drizzle CHỈ để truy vấn có kiểu. DDL thật, CHECK (`slot` regex), FK
 // `ON DELETE RESTRICT`, index `assignments(def_id)`, RLS (gán: đọc T, ghi system; releases/khe: chỉ system) và REVOKE
 // UPDATE/DELETE trên releases ở `migrations-hub/0068_process_library.sql` (viết tay). Cột mới của `process_defs` ở `hub-processes.ts`.
-import { integer, jsonb, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { hub } from "./hub-readonly";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true });
@@ -13,6 +13,10 @@ export const LIB_AUDIT_ACTIONS = [
   "assign",
   "unassign",
   "set_default",
+  // CR-118 §11.2 (0087): gán/bỏ gán quy trình vào tập của tenant + lưu luật chọn quy trình.
+  "assign_process",
+  "unassign_process",
+  "set_routing",
 ] as const;
 
 /** Bản xuất bản BẤT BIẾN của def thư viện; quay lại = chụp bản cũ thành bản mới (số bản luôn tăng). */
@@ -51,3 +55,40 @@ export const processSlotAssignments = hub.table(
   },
   (t) => [primaryKey({ columns: [t.tenantId, t.slot] })],
 );
+
+/** CR-118 §11.2 · tập quy trình thư viện platform đã gán cho tenant (nhiều mỗi khe). DDL/RLS: `0087_process_routing.sql`. */
+export const processTenantDefs = hub.table(
+  "process_tenant_defs",
+  {
+    tenantId: uuid("tenant_id").notNull(),
+    defId: uuid("def_id").notNull(),
+    slot: text("slot").notNull(),
+    assignedBy: uuid("assigned_by"),
+    assignedAt: ts("assigned_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.tenantId, t.defId] })],
+);
+
+/** CR-118 §11.2 · đầu danh sách luật tenant × khe (`version` chống ghi đè đồng thời). */
+export const processRoutings = hub.table(
+  "process_routings",
+  {
+    tenantId: uuid("tenant_id").notNull(),
+    slot: text("slot").notNull(),
+    version: integer("version").notNull().default(1),
+    updatedBy: uuid("updated_by"),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.tenantId, t.slot] })],
+);
+
+/** CR-118 §11.2 · luật có thứ tự; `def_id` ∈ tập đã gán (FK); ≤ 1 `is_default` mỗi tenant × khe. */
+export const processRoutingRules = hub.table("process_routing_rules", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull(),
+  slot: text("slot").notNull(),
+  priority: integer("priority").notNull(),
+  condition: jsonb("condition").$type<{ departmentIds?: string[] }>().notNull(),
+  defId: uuid("def_id").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+});

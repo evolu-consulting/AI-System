@@ -4,7 +4,7 @@
 // contract-flow S1a · cầu v2: def gói (`ensureDef`), run gắn bản ghi gói (`ref`), quyết task (`act`, scope user ⇒ canAct/RLS
 // của engine), đọc dòng thời gian (`stepsView`) + lời gọi hệ thống lọc tenant tường minh.
 
-import type { ResolvedSlot } from "./slot.ports";
+import type { ResolvedSlot, RoutedSlot } from "./slot.ports";
 
 /** Người gọi = user của JWT (cấu trúc khớp `AuthUser`). */
 export type PackRunCaller = { userId: string; tenantId: string; role: string };
@@ -25,7 +25,14 @@ export type PackRunRequest = {
    *  vắng ⇒ origin none như cũ. Người bắt đầu phải là chủ hội thoại (engine kiểm như `POST /process-runs`). */
   conversation_id?: string;
 };
-export type PackRunSlot = { source_ref: string; process_name: string; rel_version: number };
+export type PackRunSlot = {
+  source_ref: string;
+  process_name: string;
+  rel_version: number;
+  /** CR-118 §11.2 · def thư viện đã chọn + luật đã khớp (null = không theo luật) — ghi vào snapshot run lúc launch. */
+  process_def_id?: string;
+  route_rule_id?: string | null;
+};
 /** CR-105 · `ensureDef` theo khe: so BẰNG `source_ref` (không so `pack_version` đơn điệu — đổi A→B có thể "lùi" số bản). */
 export type PackDefVersion = number | { sourceRef: string };
 
@@ -140,6 +147,8 @@ export type PackRunsPort = {
   ): Promise<"created" | "exists" | "synced">;
   /** CR-105 · quy trình đang chạy của khe cho tenant (gán ⇒ mặc định ⇒ bản xuất bản), MỘT câu scope system; không có ⇒ null. */
   resolveSlot(tenantId: string, slot: string): Promise<ResolvedSlot | null>;
+  /** CR-118 §11.2 · như `resolveSlot` + luật chọn quy trình theo phòng ban người khởi tạo (MỘT câu); không có luật ⇒ như cũ. */
+  routeSlot?(tenantId: string, slot: string, userId: string): Promise<RoutedSlot | null>;
   /** CR-105 · `source_ref` của def đã biên dịch (sha256 16 hex, thuần) — gói gửi lại ở `ensureDef`/`start.slot`. */
   sourceRefOf(def: Record<string, unknown>): string;
   /** S1a · quyết task duyệt mở của run trong scope USER người quyết (canAct/RLS/exclude_starter của engine; lỗi ném như

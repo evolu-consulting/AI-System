@@ -1,0 +1,74 @@
+// CR-118 §11.2 · luật chọn quy trình theo phòng ban + tập quy trình đã gán cho tenant × khe. Export lại qua `processes.ts`.
+// - platform_admin: `PUT|DELETE /hub-admin/tenants/:tid/process-routing/:slot/processes/:defId` (gán / bỏ gán vào tập).
+// - platform_admin + tenant_admin CHÍNH tenant: `GET|PUT /hub-admin/tenants/:tid/process-routing/:slot` (thay cả danh sách).
+import { z } from "zod";
+import { UuidSchema } from "../common";
+import { SlotKeySchema } from "./process-library";
+
+/** ≤ 50 luật mỗi tenant × khe (CHECK `process_routing_rules_prio_ck` 0..49, hub 0087). */
+export const ROUTING_RULES_MAX = 50;
+/** ≤ 100 phòng ban mỗi luật. */
+export const ROUTING_DEPTS_MAX = 100;
+
+export const HUB_ADMIN_ROUTING_ERRORS = {
+  /** Quy trình chưa được platform gán cho tenant × khe. */
+  ROUTING_PROCESS_NOT_ASSIGNED: 422,
+  /** Phòng ban không thuộc tenant. */
+  ROUTING_DEPARTMENT_INVALID: 422,
+  /** Luật lệch hình (luật thường không có phòng ban / > 1 mặc định). */
+  ROUTING_RULES_INVALID: 422,
+  /** Bỏ gán quy trình đang được luật dùng — `details.rules` = luật bị ảnh hưởng. */
+  ROUTING_PROCESS_IN_USE: 409,
+} as const;
+export type HubAdminRoutingErrorCode = keyof typeof HUB_ADMIN_ROUTING_ERRORS;
+
+/** Điều kiện bản đầu: phòng ban người khởi tạo (gồm phòng ban con). Mở rộng sau theo cùng cấu trúc. */
+export const RoutingConditionSchema = z.strictObject({
+  departmentIds: z.array(UuidSchema).max(ROUTING_DEPTS_MAX).optional(),
+});
+export type RoutingCondition = z.infer<typeof RoutingConditionSchema>;
+
+export const ProcessRoutingRuleInputSchema = z.strictObject({
+  condition: RoutingConditionSchema,
+  def_id: UuidSchema,
+  is_default: z.boolean().default(false),
+});
+export type ProcessRoutingRuleInput = z.infer<typeof ProcessRoutingRuleInputSchema>;
+
+/** PUT: thứ tự mảng = priority (0 = xét trước). `version` = version đọc ở GET (0 = chưa có luật) — lệch ⇒ 409. */
+export const PutProcessRoutingRequestSchema = z.strictObject({
+  version: z.number().int().min(0),
+  rules: z.array(ProcessRoutingRuleInputSchema).max(ROUTING_RULES_MAX),
+});
+export type PutProcessRoutingRequest = z.infer<typeof PutProcessRoutingRequestSchema>;
+
+export const ProcessRoutingRuleSchema = z.strictObject({
+  id: UuidSchema,
+  priority: z.number().int().min(0),
+  condition: RoutingConditionSchema,
+  def_id: UuidSchema,
+  is_default: z.boolean(),
+});
+export type ProcessRoutingRule = z.infer<typeof ProcessRoutingRuleSchema>;
+
+/** Quy trình đã gán cho tenant × khe (chỉ chọn được trong số này). */
+export const AssignedProcessSchema = z.strictObject({
+  def_id: UuidSchema,
+  name: z.string(),
+  rel_version: z.number().int().min(1).nullable(),
+});
+export type AssignedProcess = z.infer<typeof AssignedProcessSchema>;
+
+/** GET/PUT response. `version` 0 = chưa có luật (launch chạy đường gán/mặc định khe như cũ). */
+export const ProcessRoutingSchema = z.strictObject({
+  slot: SlotKeySchema,
+  version: z.number().int().min(0),
+  rules: z.array(ProcessRoutingRuleSchema),
+  processes: z.array(AssignedProcessSchema),
+});
+export type ProcessRouting = z.infer<typeof ProcessRoutingSchema>;
+
+/** `ROUTING_PROCESS_IN_USE` details. */
+export const RoutingProcessInUseDetailsSchema = z.strictObject({
+  rules: z.array(z.strictObject({ id: UuidSchema, priority: z.number().int() })),
+});

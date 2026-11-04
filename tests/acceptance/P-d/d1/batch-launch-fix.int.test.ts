@@ -236,7 +236,11 @@ function commitThenFail(real: Db): { db: Db; arm(): void; fired(): number } {
     get: (o, k) => (k === "transaction" ? transaction : bind(o, k)),
   });
   const db = new Proxy(real, { get: (o, k) => (k === "db" ? dbProxy : bind(o, k)) }) as Db;
-  return { db, arm: () => {
+  return {
+    db,
+    arm: () => {
       armed = true;
-    }, fired: () => fired };
+    },
+    fired: () => fired,
+  };
 }

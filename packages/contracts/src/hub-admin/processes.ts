@@ -69,6 +69,7 @@ export {
 } from "../chat/processes-entities";
 export * from "./autofix";
 export * from "./process-library";
+export * from "./process-routing";
 export * from "./process-steps";
 export * from "./process-tools";
 export * from "./process-ui";

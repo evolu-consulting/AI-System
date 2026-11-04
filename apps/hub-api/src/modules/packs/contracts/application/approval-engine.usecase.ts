@@ -129,13 +129,14 @@ export async function loadStart(
   id: string,
   ok: (st: EngineStartRow) => boolean = engineStartable,
 ) {
-  // CR-105 · tra khe theo tenant mỗi lần mở lượt (gán ⇒ mặc định ⇒ bản xuất bản).
-  const slot = await slotFlowOf(d, who.tenantId);
   const st = await d.uow.tenant(who, async (r) => {
     const s = await r.approvalEngine.startState(id);
     return s?.startedBy && ok(s) ? s : null;
   });
   if (!st) return null;
+  // CR-105 · tra khe theo tenant mỗi lần mở lượt (gán ⇒ mặc định ⇒ bản xuất bản). CR-118 §11.2 · theo luật phòng ban của
+  // NGƯỜI BẮT ĐẦU lượt (không phải người kích job / Đọc lại).
+  const slot = await slotFlowOf(d, who.tenantId, st.startedBy);
   // CR-107 · khe không có bản áp được ⇒ `FLOW_MISSING` (không còn đường máy 2 bước cũ).
   const flow: FlowOrInvalid = slot ?? { invalid: FLOW_MISSING };
   return { flow, starter: st.startedBy as string, st };

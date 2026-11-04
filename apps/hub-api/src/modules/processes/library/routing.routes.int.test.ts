@@ -1,0 +1,302 @@
+// CR-118 §11.2 · làn đầy đủ · viết TRƯỚC code phần quyền/tenant: route tập quy trình đã gán + luật chọn quy trình qua Hono thật
+// (`libraryRoutes`) trên DB thật (`hub_api`), user giả qua header. Kiểm trạng thái DB thật (hàng luật, tập gán, audit, version cấu
+// hình), không chỉ mã HTTP. Khe `contracts.approval` thật; def thư viện = bản sao def mặc định seed 0069 (đã xuất bản v1).
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import type { Role } from "@ai/contracts";
+import { withHubScope } from "@ai/db/hub-scope";
+import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
+import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
+import { urls } from "@ai/test-kit/env";
+import { sql } from "drizzle-orm";
+import { Hono } from "hono";
+import type { AuthVars } from "../../../lib/auth.middleware";
+import { connectDb, type Db } from "../../../lib/db";
+import { mapError } from "../../../lib/errors";
+import { approvalEngineTools } from "../../packs/contracts/adapters/approval-engine.tools";
+import { approvalSlotSpec } from "../../packs/contracts/approval.mount";
+import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/domain/approval-slot-default.rules";
+import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
+import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
+import type { ProcessDeps } from "../core/ports";
+import { libraryRoutes } from "./library.routes";
+
+const SLOT = "contracts.approval";
+const X = tenantId(1181);
+const Y = tenantId(1182);
+const DFLT = APPROVAL_DEFAULT_DEF.id;
+const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
+  P: { userId: userId(1180), tenantId: X, role: "platform_admin" },
+  A: { userId: userId(1181), tenantId: X, role: "tenant_admin" },
+  M: { userId: userId(1182), tenantId: X, role: "member" },
+  AY: { userId: userId(1183), tenantId: Y, role: "tenant_admin" },
+};
+// biome-ignore lint/suspicious/noExplicitAny: JSON response trong test
+type Json = Record<string, any>;
+type Res = { status: number; json: Json };
+
+let o: Sql;
+let db: Db;
+let app: Hono<AuthVars>;
+const lib = { A: "", B: "", C: "" };
+let dx: Map<string, string>;
+let dy: Map<string, string>;
+
+async function call(who: string, method: string, path: string, body?: unknown): Promise<Res> {
+  const r = await app.request(path, {
+    method,
+    headers: { "content-type": "application/json", "x-who": who },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  const text = await r.text();
+  return { status: r.status, json: text ? JSON.parse(text) : {} };
+}
+const R = (t: string) => `/tenants/${t}/process-routing/${SLOT}`;
+const PROC = (t: string, d: string) => `${R(t)}/processes/${d}`;
+
+/** Bản sao def mặc định (đã xuất bản v1, đủ nút hệ thống) — chỉ đổi id/key/tên. */
+async function libCopy(key: string, name: string): Promise<string> {
+  const [r] = await o<
+    { id: string }[]
+  >`insert into hub.process_defs (tenant_id, key, name, description, input_hint,
+      run_group_ids, stages, token_budget, enabled, sources, inputs, slot, slot_body, published_version)
+    select null, ${key}, ${name}, description, input_hint, run_group_ids, stages, token_budget, enabled, sources, inputs,
+      slot, slot_body, 1 from hub.process_defs where id = ${DFLT} returning id::text as id`;
+  const id = r?.id as string;
+  await o`insert into hub.process_def_releases (def_id, rel_version, name, stages, slot_body)
+    select ${id}, 1, ${name}, stages, slot_body from hub.process_def_releases
+    where def_id = ${DFLT} order by rel_version desc limit 1`;
+  return id;
+}
+async function depts(t: string, keys: string[]): Promise<Map<string, string>> {
+  const g = await groups(o, t, keys);
+  for (const k of keys)
+    await o`insert into admin.departments (tenant_id, group_id) values (${t}, ${g.get(k) as string})`;
+  return g;
+}
+const hubVersion = async () =>
+  Number((await o`select hub_config_version as v from hub.config_meta where id = 1`)[0]?.v);
+const rulesInDb = async (t: string) => [
+  ...(await o`select priority, def_id::text as d, is_default as f, condition as c from hub.process_routing_rules
+    where tenant_id = ${t} order by priority`),
+];
+
+beforeAll(async () => {
+  await cloneDb("full");
+  o = openOwner(2);
+  db = connectDb(urls().hubApi, 4);
+  await o`insert into admin.tenants (id, key, name) values (${X}, 't1181', 'Công ty X'), (${Y}, 't1182', 'Công ty Y')`;
+  await users(o, X, 3, { from: 1180 });
+  await users(o, Y, 1, { from: 1183 });
+  await groups(o, X, ["contracts-editor", "contracts-owner"]);
+  await groups(o, Y, ["contracts-editor", "contracts-owner"]);
+  dx = await depts(X, ["kinh-doanh", "van-hanh"]);
+  dy = await depts(Y, ["phong-y"]);
+  lib.A = await libCopy("rt-a", "QT A");
+  lib.B = await libCopy("rt-b", "QT B");
+  lib.C = await libCopy("rt-c", "QT C");
+  slotRegistry.register(approvalSlotSpec);
+  const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((t) => ({
+    key: t.name,
+    name: t.name,
+    description: t.description,
+    sideEffect: false,
+    action: t.action,
+    params: t.params,
+  }));
+  const packTools = {
+    has: (k: string) => tools.some((t) => t.key === k),
+    info: (k: string) => tools.find((t) => t.key === k),
+    enabled: async () => true,
+    available: async (_t: string, keys?: readonly string[]) =>
+      tools.filter((t) => !keys || keys.includes(t.key)),
+  } as unknown as PackToolCatalog;
+  app = new Hono<AuthVars>();
+  app.use("*", async (c, next) => {
+    c.set("user", WHO[c.req.header("x-who") ?? ""] as never);
+    await next();
+  });
+  app.onError((e, c) => {
+    const m = mapError(e);
+    if (m.status === 500) console.error(e);
+    return c.json(m.body, m.status);
+  });
+  app.route("/", libraryRoutes({ db, packTools, start: {} } as unknown as ProcessDeps));
+}, 180_000);
+afterAll(async () => {
+  await db?.close();
+  await o?.end({ timeout: 2 });
+});
+
+describe("CR-118 §11.2 · API luật chọn quy trình", () => {
+  it("platform_admin gán và bỏ gán quy trình", async () => {
+    for (const who of ["A", "M"]) expect((await call(who, "PUT", PROC(X, lib.A))).status).toBe(403);
+    expect((await call("P", "PUT", PROC(X, lib.A))).status).toBe(200);
+    const r = await call("P", "PUT", PROC(X, lib.B));
+    expect(r.json.processes.map((p: Json) => p.def_id).sort()).toEqual([lib.A, lib.B].sort());
+    const v0 = await hubVersion();
+    expect((await call("P", "PUT", PROC(X, lib.A))).status).toBe(200); // đã có ⇒ không bump
+    expect(await hubVersion()).toBe(v0);
+    // luật dùng A ⇒ bỏ gán A bị chặn kèm danh sách luật
+    const put = await call("P", "PUT", R(X), {
+      version: 0,
+      rules: [{ condition: { departmentIds: [dx.get("kinh-doanh")] }, def_id: lib.A }],
+    });
+    expect({ s: put.status, v: put.json.version }).toEqual({ s: 200, v: 1 });
+    const del = await call("P", "DELETE", PROC(X, lib.A));
+    expect({
+      s: del.status,
+      e: del.json.error?.code,
+      rules: del.json.error?.details?.rules,
+    }).toEqual({
+      s: 409,
+      e: "ROUTING_PROCESS_IN_USE",
+      rules: [{ id: put.json.rules[0].id, priority: 0 }],
+    });
+    expect((await call("P", "PUT", PROC(X, lib.C))).status).toBe(200);
+    expect((await call("P", "DELETE", PROC(X, lib.C))).status).toBe(204);
+    const left =
+      await o`select def_id::text as d from hub.process_tenant_defs where tenant_id = ${X} order by 1`;
+    expect(left.map((x) => x.d)).toEqual([lib.A, lib.B].sort());
+    const audits = await o`select action, count(*)::int as n from hub.audit_log
+      where tenant_id = ${X} and action in ('assign_process', 'unassign_process') group by action order by action`;
+    expect([...audits]).toEqual([
+      { action: "assign_process", n: 3 },
+      { action: "unassign_process", n: 1 },
+    ]);
+  });
+
+  it("tenant admin lưu luật", async () => {
+    const g = await call("A", "GET", R(X));
+    expect({ s: g.status, v: g.json.version, n: g.json.processes.length }).toEqual({
+      s: 200,
+      v: 1,
+      n: 2,
+    });
+    const v0 = await hubVersion();
+    const r = await call("A", "PUT", R(X), {
+      version: 1,
+      rules: [
+        { condition: { departmentIds: [dx.get("van-hanh")] }, def_id: lib.B },
+        { condition: { departmentIds: [dx.get("kinh-doanh")] }, def_id: lib.A },
+        { condition: { departmentIds: [dx.get("van-hanh")] }, def_id: lib.A, is_default: true },
+      ],
+    });
+    expect({ s: r.status, v: r.json.version }).toEqual({ s: 200, v: 2 });
+    expect(await rulesInDb(X)).toEqual([
+      { priority: 0, d: lib.B, f: false, c: { departmentIds: [dx.get("van-hanh")] } },
+      { priority: 1, d: lib.A, f: false, c: { departmentIds: [dx.get("kinh-doanh")] } },
+      { priority: 2, d: lib.A, f: true, c: {} },
+    ]);
+    expect(await hubVersion()).toBe(v0 + 1);
+    const [a] =
+      await o`select actor_role, before->>'version' as b, after->>'version' as af from hub.audit_log
+      where tenant_id = ${X} and action = 'set_routing' order by at desc limit 1`;
+    expect(a).toEqual({ actor_role: "tenant_admin", b: "1", af: "2" });
+  });
+
+  it("quy trình chưa gán ⇒ 422", async () => {
+    const r = await call("A", "PUT", R(X), {
+      version: 2,
+      rules: [{ condition: { departmentIds: [dx.get("van-hanh")] }, def_id: lib.C }],
+    });
+    expect({ s: r.status, e: r.json.error?.code }).toEqual({
+      s: 422,
+      e: "ROUTING_PROCESS_NOT_ASSIGNED",
+    });
+    const many = Array.from({ length: 51 }, () => ({
+      condition: { departmentIds: [dx.get("van-hanh")] },
+      def_id: lib.A,
+    }));
+    expect((await call("A", "PUT", R(X), { version: 2, rules: many })).status).toBe(422);
+    expect((await call("A", "GET", R(X))).json.version).toBe(2);
+  });
+
+  it("phòng ban tenant khác ⇒ 422", async () => {
+    const r = await call("A", "PUT", R(X), {
+      version: 2,
+      rules: [{ condition: { departmentIds: [dy.get("phong-y")] }, def_id: lib.A }],
+    });
+    expect({ s: r.status, e: r.json.error?.code, d: r.json.error?.details }).toEqual({
+      s: 422,
+      e: "ROUTING_DEPARTMENT_INVALID",
+      d: { department_ids: [dy.get("phong-y")] },
+    });
+    expect((await rulesInDb(X)).length).toBe(3);
+  });
+
+  it("tenant admin tenant khác ⇒ 404, member ⇒ 403", async () => {
+    const body = { version: 2, rules: [] };
+    expect((await call("AY", "GET", R(X))).status).toBe(404);
+    expect((await call("AY", "PUT", R(X), body)).status).toBe(404);
+    expect((await call("M", "GET", R(X))).status).toBe(403);
+    expect((await call("M", "PUT", R(X), body)).status).toBe(403);
+    expect((await rulesInDb(X)).length).toBe(3);
+  });
+
+  it("ghi đồng thời ⇒ 409", async () => {
+    const body = (d: string) => ({
+      version: 2,
+      rules: [{ condition: { departmentIds: [dx.get("kinh-doanh")] }, def_id: d }],
+    });
+    const [a, b] = await Promise.all([
+      call("A", "PUT", R(X), body(lib.A)),
+      call("P", "PUT", R(X), body(lib.B)),
+    ]);
+    expect([a.status, b.status].sort()).toEqual([200, 409]);
+    const lost = a.status === 409 ? a : b;
+    expect(lost.json.error).toEqual(
+      expect.objectContaining({ code: "VERSION_CONFLICT", details: { current_version: 3 } }),
+    );
+    expect((await rulesInDb(X)).length).toBe(1);
+  });
+
+  it("RLS chặn đọc chéo tenant", async () => {
+    const asY = { kind: "user" as const, tenantId: Y, userId: WHO.AY?.userId as string };
+    const seen = await withHubScope(db, asY, async (tx) => {
+      const n = async (t: string) =>
+        Number(
+          (
+            await tx.execute<{ n: number }>(
+              sql`select count(*)::int as n from ${sql.raw(t)} where tenant_id = ${X}`,
+            )
+          )[0]?.n,
+        );
+      return {
+        rules: await n("hub.process_routing_rules"),
+        heads: await n("hub.process_routings"),
+        assigned: await n("hub.process_tenant_defs"),
+      };
+    });
+    expect(seen).toEqual({ rules: 0, heads: 0, assigned: 0 });
+    const asX = { kind: "user" as const, tenantId: X, userId: WHO.A?.userId as string };
+    const own = await withHubScope(db, asX, (tx) =>
+      tx.execute<{ n: number }>(sql`select count(*)::int as n from hub.process_routing_rules`),
+    );
+    expect(own[0]?.n).toBe(1);
+    // Ghi chéo tenant ở scope user ⇒ RLS từ chối; tenant ghi tập gán ⇒ từ chối (chỉ system).
+    const err = (p: Promise<unknown>) =>
+      p
+        .then(() => "ok")
+        .catch((e) =>
+          String((e as { cause?: { code?: string } }).cause?.code ?? (e as { code?: string }).code),
+        );
+    expect(
+      await err(
+        withHubScope(db, asY, (tx) =>
+          tx.execute(
+            sql`insert into hub.process_routings (tenant_id, slot) values (${X}, ${SLOT})`,
+          ),
+        ),
+      ),
+    ).toBe("42501");
+    expect(
+      await err(
+        withHubScope(db, asX, (tx) =>
+          tx.execute(
+            sql`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${X}, ${lib.C}, ${SLOT})`,
+          ),
+        ),
+      ),
+    ).toBe("42501");
+  });
+});
