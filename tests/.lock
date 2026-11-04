@@ -572,6 +572,8 @@ d434e09c410726267a31ac21af6f154373050beee54f8e1e58c0ed25f67d2e3c  tests/acceptan
 f4e1e120afdcd75c76dcf9ca53ca42ded719c9c58779936343c7c700dcba14f1  tests/acceptance/CR-055/import.int.test.ts
 d397d82c125bf81bc2871d5b2a1aad5081f8da4289f4abc24a99d196c5440cab  tests/acceptance/CR118/approval-flow-runtime.int.test.ts
 4c128b43789651b6df543fad369caca5adce14a73261f7e682ef8b8176840a44  tests/acceptance/CR118/approval-flow-summary.perf.int.test.ts
+aff8fbafdade829813b2cba7420c706de9f862b5bd04a04c5a658ffa4b2e2061  tests/acceptance/CR118/capabilities.int.test.ts
+6920999ba5134855c884c00350332d2074af1e0b1dfe5ce580938e482c88bdb1  tests/acceptance/CR118/perf/capabilities.perf.int.test.ts
 cfe45e59f8e76936e83609632717125bbe9d987a02c6542a6be11653bc04b5af  tests/acceptance/D1/backfill.int.test.ts
 751acccc84963749b393ac43157c4d25ef92a4877d9c12594d9ffccf3e1a9b6b  tests/acceptance/DOC-deals/deals.int.test.ts
 bc8e69c50e73c89383503093af75d7395985e6e8fcf2a8f85aec8d321c5d0ab4  tests/acceptance/DOC-deals/migrate.int.test.ts
