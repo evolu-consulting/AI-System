@@ -42,6 +42,14 @@ describe("layoutSteps", () => {
     expect(ids).toContain("forward:j1>d");
     expect(ids).toContain("back:d>h1");
   });
+  test("dlc-step-library · `back: node` ⇒ cạnh quay lại tới giai đoạn đầu của cột đích (mặc định vẫn tới header)", () => {
+    const n = layoutSteps([st("a", 0), st("b", 1), st("c", 1), st("d", 2, [1, 0])], {
+      back: "node",
+    });
+    const back = n.edges.filter((e) => e.kind === "back").map((e) => `${e.source}>${e.target}`);
+    expect(back).toEqual(["d>b", "d>a"]);
+    expect(n.edges.find((e) => e.target === headerId(1) && e.kind === "back")).toBeUndefined();
+  });
   test("rỗng ⇒ không node; đích quay lại không hợp lệ bị bỏ", () => {
     expect(layoutSteps([])).toEqual({ nodes: [], edges: [], steps: 0 });
     expect(layoutSteps([st("a", 0, [0, 5])]).edges.filter((e) => e.kind === "back")).toEqual([]);
