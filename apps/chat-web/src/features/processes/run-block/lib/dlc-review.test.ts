@@ -1,7 +1,7 @@
 // platform/gd0_dlc_fix · luật duyệt DLC trong chat: chỉ run `dlc-*`, task review mở, Từ chối quay lại bước cấu hình gần nhất.
 import { expect, test } from "bun:test";
 import type { ProcessRunView, StageView } from "@ai/contracts/chat";
-import { dlcReviewTarget, isDlcProcess, rejectStepOf } from "./dlc-review";
+import { dlcDecisionTarget, dlcReviewTarget, isDlcProcess, rejectStepOf } from "./dlc-review";
 
 const stage = (idx: number, name: string, back: number[], out: string | null = null) =>
   ({
@@ -60,4 +60,30 @@ test("task của tôi thắng task mở chung; không có review mở ⇒ null",
   expect(dlcReviewTarget(view({ open_tasks: [] }))).toBeNull();
   expect(dlcReviewTarget(view({ access: "summary" }))).toBeNull();
   expect(dlcReviewTarget(undefined)).toBeNull();
+});
+
+test("needs_decision: chỉ run dlc-*, người được quyết, có lựa chọn ⇒ stage + options", () => {
+  const decision = {
+    reason: "interrupted",
+    stage_idx: 4,
+    options: ["add_attempt", "cancel"],
+    can_decide: true,
+  };
+  const r = dlcDecisionTarget(view({ status: "needs_decision", decision }));
+  expect(r).toEqual({ stageIdx: 4, options: ["add_attempt", "cancel"] });
+  expect(
+    dlcDecisionTarget(
+      view({ status: "needs_decision", decision: { ...decision, can_decide: false } }),
+    ),
+  ).toBeNull();
+  expect(dlcDecisionTarget(view({ status: "running", decision }))).toBeNull();
+  expect(
+    dlcDecisionTarget(
+      view({
+        status: "needs_decision",
+        decision,
+        process: { key: "leave", name: "x", version: 1 },
+      }),
+    ),
+  ).toBeNull();
 });

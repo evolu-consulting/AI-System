@@ -38,7 +38,10 @@ export type DlcFlowsRepo = {
   insert(f: DlcFlow): Promise<void>;
   /** Gộp nông `patch` vào `state` (MỘT câu `state || patch`). */
   patch(id: string, patch: DlcState): Promise<void>;
+  /** Các lượt DLC gắn một hội thoại Chat (mới nhất trước, ≤ `limit`) — tool `dlc-runs` của dlc-agent. */
+  byConversation(conversationId: string, limit: number): Promise<DlcFlowBrief[]>;
 };
+export type DlcFlowBrief = Pick<DlcFlow, "id" | "mode" | "project" | "ticketId">;
 export type DlcOwnRepos = { flows: DlcFlowsRepo };
 
 export type ProjectView = {

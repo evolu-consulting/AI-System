@@ -136,7 +136,10 @@
     "backTo": "Rejecting goes back to step: {{step}}",
     "approved": "Approved \"{{stage}}\", the process continues.",
     "rejected": "Rejected, going back to step \"{{step}}\".",
-    "section": "DLC processes waiting for review",
-    "waiting": "{{name}} is waiting for your review"
+    "section": "DLC processes that need you",
+    "waiting": "{{name}} is waiting for your review",
+    "stopped": "{{name}} has stopped: {{reason}}",
+    "retry": "Run the step again",
+    "decided": "Chosen: {{option}}"
   }
 }

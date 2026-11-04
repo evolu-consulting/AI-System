@@ -4,8 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ensureProcessLocale } from "~/app/i18n";
 import { processKeys } from "../../shared/keys";
+import { reasonKey, reasonParams } from "../../shared/lib/decision-reason";
 import { listConversationRuns } from "../api";
-import { DlcReviewButton, showDlcReview } from "./DlcReviewDialog";
+import { DlcDecisionActions } from "./DlcDecisionActions";
+import { DlcReviewButton, showDlcDecision, showDlcReview } from "./DlcReviewDialog";
 
 const POLL_MS = 15_000;
 
@@ -18,7 +20,7 @@ export function DlcConversationReview({ conversationId }: { conversationId: stri
     retry: false,
     refetchInterval: (q) => (q.state.status === "error" ? false : POLL_MS),
   });
-  const waiting = (runs.data?.items ?? []).filter(showDlcReview);
+  const waiting = (runs.data?.items ?? []).filter((r) => showDlcReview(r) || showDlcDecision(r));
   const locale = useQuery({
     queryKey: processKeys.locale(lng),
     queryFn: async () => {
@@ -37,10 +39,26 @@ export function DlcConversationReview({ conversationId }: { conversationId: stri
           data-run-id={run.id}
           className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card p-3"
         >
-          <span className="min-w-0 truncate text-sm text-foreground">
-            {t("process.run.dlcReview.waiting", { name: run.process.name })}
-          </span>
-          <DlcReviewButton run={run} />
+          {showDlcDecision(run) ? (
+            <>
+              <span className="min-w-0 text-sm text-foreground">
+                {t("process.run.dlcReview.stopped", {
+                  name: run.process.name,
+                  reason: run.decision_reason
+                    ? t(reasonKey(run.decision_reason), reasonParams(run.decision_reason))
+                    : "",
+                })}
+              </span>
+              <DlcDecisionActions runId={run.id} />
+            </>
+          ) : (
+            <>
+              <span className="min-w-0 truncate text-sm text-foreground">
+                {t("process.run.dlcReview.waiting", { name: run.process.name })}
+              </span>
+              <DlcReviewButton run={run} />
+            </>
+          )}
         </article>
       ))}
     </section>

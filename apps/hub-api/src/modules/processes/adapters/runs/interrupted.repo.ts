@@ -21,7 +21,7 @@ import { bindTx } from "../hub-uow";
 type SnapStage = {
   step?: number;
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
-  executor?: { kind: string };
+  executor?: { kind: string; tool_key?: string };
 };
 export type Head = { tenant_id: string; snapshot: { stages: SnapStage[] } };
 
@@ -81,10 +81,22 @@ async function openTx(
   if (stage?.status !== "running") return null;
   const idx = Number(stage.stage_idx);
   // D4 · job `aborted`/hub run huỷ mà run quy trình còn hoạt động (đã kiểm ở trên) ⇒ lỗi tạm, qua `decide`.
-  const agent = h.snapshot.stages[idx]?.executor?.kind === "agent";
-  const reason = agent ? await decide(bindTx(tx, h.tenant_id).repos) : "interrupted";
+  // dlc-resume · stage tool của GÓI không side_effect (vd `dlc-step`: chạy lại tiếp từ queue/nhánh) cũng là lỗi tạm ⇒ thử
+  // lại (backoff, trần `STAGE_RETRY_MAX`) thay vì dừng `needs_decision{interrupted}` khi máy chủ khởi động lại.
+  const retryable = isRetryableOnInterrupt(d, h.snapshot.stages[idx]?.executor);
+  const reason = retryable ? await decide(bindTx(tx, h.tenant_id).repos) : "interrupted";
   if (reason === null) return [];
   return openDecision(d, tx, { h, run, stage, idx, reason }, p.now);
+}
+
+/** Stage agent, hoặc stage tool của gói mà registry khai `side_effect: false` (tool workflow/không rõ ⇒ giữ quyết định). */
+export function isRetryableOnInterrupt(
+  d: Pick<ProcessDeps, "packTools">,
+  ex: SnapStage["executor"],
+): boolean {
+  if (ex?.kind === "agent") return true;
+  if (ex?.kind !== "tool" || !ex.tool_key) return false;
+  return d.packTools?.info(ex.tool_key)?.sideEffect === false;
 }
 
 type DecisionArgs = {

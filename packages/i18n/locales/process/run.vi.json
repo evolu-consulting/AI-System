@@ -136,7 +136,10 @@
     "backTo": "Từ chối sẽ quay lại bước: {{step}}",
     "approved": "Đã duyệt \"{{stage}}\", quy trình đi tiếp.",
     "rejected": "Đã từ chối, quay lại bước \"{{step}}\".",
-    "section": "Quy trình DLC chờ duyệt",
-    "waiting": "{{name}} đang chờ bạn duyệt"
+    "section": "Quy trình DLC cần bạn",
+    "waiting": "{{name}} đang chờ bạn duyệt",
+    "stopped": "{{name}} đang dừng: {{reason}}",
+    "retry": "Chạy lại bước",
+    "decided": "Đã chọn: {{option}}"
   }
 }

@@ -31,6 +31,10 @@ const Markdown = lazy(() => import("~/features/answer/components/Markdown"));
 export const showDlcReview = (run: ProcessRunSummary): boolean =>
   isDlcProcess(run.process.key) && run.status === "waiting_review";
 
+/** Run DLC dừng chờ người quyết (bước lỗi / gián đoạn): thẻ trên khung nhập hiện nút quyết. */
+export const showDlcDecision = (run: ProcessRunSummary): boolean =>
+  isDlcProcess(run.process.key) && run.status === "needs_decision";
+
 export function DlcReviewButton({ run }: { run: ProcessRunSummary }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);

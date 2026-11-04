@@ -76,7 +76,7 @@ export function mountDlc(d: DlcMountDeps): void {
   const ws = workspaceOf(d.workspace);
   const warn = (msg: string, meta: Record<string, unknown>) => logger.warn(msg, meta);
   const start = startDlcFlow({ runs: d.runs, ws, uow, warn });
-  for (const t of dlcTools({ uow, ws, hub: d.hub }, start)) d.tools.register(t);
+  for (const t of dlcTools({ uow, ws, hub: d.hub }, start, d.runs)) d.tools.register(t);
 }
 
 /** dlc-chat-review · route đọc của gói (`/pack/dlc/*`): nội dung đầy đủ của bước cho modal duyệt trong chat. */
