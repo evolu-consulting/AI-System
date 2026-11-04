@@ -79,6 +79,7 @@ import { createRefreshParties, type TaxRetryScheduler } from "./application/tax-
 import type { ExtractionStarter } from "./application/upload-contract.ports";
 import { approvalEngine, type EsignHooks, flowTemplateRoutes } from "./approval.mount";
 import { DEFAULT_TENANT_TZ, localDate } from "./domain/local-time.rules";
+import { contractsFlowRoutes } from "./flow.mount";
 
 const KEY = "contracts";
 
@@ -317,7 +318,7 @@ export function contractsAiModule(
     quota: flow.quota,
   });
   routes.route("/", reviewModule(view, uow, tz));
-  const approval = approvalModule(view, { ad, uow, flow });
+  const approval = approvalModule(view, { ad, uow, flow, db });
   return {
     starter,
     routes,
@@ -337,12 +338,14 @@ function approvalModule(
     ad: Parameters<typeof getApproval>[0];
     uow: PackUow<ApprovalFlowTxRepos>;
     flow: ContractsFlowDeps;
+    db: Db;
   },
 ) {
   const { ad, flow } = o;
+  const [get, act] = [getApproval(ad), actApproval(ad)];
   const approval = approvalRoutes(view, {
-    get: getApproval(ad),
-    act: actApproval(ad),
+    get,
+    act,
     reopen: reopenApproval(ad),
     retry: retryApproval(ad),
     cancelReopen: cancelReopenApproval(ad),
@@ -350,6 +353,8 @@ function approvalModule(
     saveSettings: saveApprovalSettings(ad),
   });
   approval.route("/", flowTemplateRoutes(view, o.uow, flow));
+  const fr = contractsFlowRoutes(o.db, view, { get, act }); // CR-118 · cờ HUB_FLOW_RUNTIME (mặc định tắt)
+  if (fr) approval.route("/", fr);
   return approval;
 }
 
