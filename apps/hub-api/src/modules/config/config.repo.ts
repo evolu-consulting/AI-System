@@ -41,19 +41,20 @@ const StepsSchema = z
 const NameSchema = z.object({ vi: z.string(), en: z.string() });
 const OptionsSchema = z.record(z.string(), z.unknown());
 
-export type Versions = { admin: number; hub: number };
+/** `profile` = `admin.config_meta.profile_version` (cr118-r1-fixes: default_app/brand theo tenant, admin 0034); vắng ⇒ 0. */
+export type Versions = { admin: number; hub: number; profile?: number };
 
-/** Hai số phiên bản cho vòng poll (`HUB_CONFIG_POLL_S`). */
+/** Ba số phiên bản cho vòng poll (`HUB_CONFIG_POLL_S`). */
 export async function readVersions(db: Db): Promise<Versions> {
   const [a] = await db.db
-    .select({ v: configMeta.configVersion })
+    .select({ v: configMeta.configVersion, p: sql<number>`profile_version` })
     .from(configMeta)
     .where(eq(configMeta.id, 1));
   const [h] = await db.db
     .select({ v: hubConfigMeta.hubConfigVersion })
     .from(hubConfigMeta)
     .where(eq(hubConfigMeta.id, 1));
-  return { admin: a?.v ?? 0, hub: h?.v ?? 0 };
+  return { admin: a?.v ?? 0, hub: h?.v ?? 0, profile: Number(a?.p ?? 0) };
 }
 
 type AgentRow = typeof agents.$inferSelect;

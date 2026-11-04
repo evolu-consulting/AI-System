@@ -1,11 +1,10 @@
 // portal-home · `GET /me/portal`, `PUT /me/default-app`, `PUT /me/tenant-default-app`. RLS lo cô lập tenant; ở đây chỉ ghi dòng của chính
 // người gọi (users.id = actor) và tenant của chính họ (tenants.id = actor.tenantId) — không nhận id từ client.
-import type { DefaultAppRequest, PortalResponse } from "@ai/contracts";
-import { type Tx, withConfigWrite, withScope } from "@ai/db";
+import { type DefaultAppRequest, type PortalResponse, PROFILE_CHANNEL } from "@ai/contracts";
+import { type Tx, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { type Actor, scopeOf } from "../../lib/auth-middleware";
-import { publishConfigChanged } from "../../lib/config/config-write";
-import { appError } from "../../lib/errors";
+import { AppError, appError } from "../../lib/errors";
 import { type AppCatalogCtx, openableIn, portalAppsIn } from "./app-catalog.service";
 import { canSetTenantDefault, effectiveDefaultApp } from "./portal.rules";
 
@@ -62,6 +61,7 @@ export async function setMyDefaultApp(
   actor: Actor,
   b: DefaultAppRequest,
 ): Promise<PortalResponse> {
+  takeDefaultAppToken(actor.userId);
   await assertOpenable(ctx, actor, b);
   await writeDefaultApp(ctx, actor, "user", (tx) =>
     tx.execute(sql`UPDATE admin.users SET default_app = ${b.app}
@@ -70,9 +70,26 @@ export async function setMyDefaultApp(
   return getPortal(ctx, actor);
 }
 
+/** cr118-r1-fixes #3 · hạn mức PUT /me/default-app: 10 lần/phút/user, trong tiến trình (mỗi instance; rẻ, đủ chặn bấm liên tục). */
+export const DEFAULT_APP_RATE = { max: 10, windowMs: 60_000 } as const;
+const recent = new Map<string, number[]>();
+function takeDefaultAppToken(userId: string, now = Date.now()): void {
+  const from = now - DEFAULT_APP_RATE.windowMs;
+  const hits = (recent.get(userId) ?? []).filter((t) => t > from);
+  if (hits.length >= DEFAULT_APP_RATE.max) {
+    const e = new AppError("RATE_LIMITED", 429, "Too many requests");
+    e.headers = { "retry-after": String(Math.max(1, Math.ceil(((hits[0] ?? now) - from) / 1000))) };
+    throw e;
+  }
+  hits.push(now);
+  if (recent.size >= 10_000 && !recent.has(userId)) recent.clear();
+  recent.set(userId, hits);
+}
+
 /**
- * CR-118 · default_app là cấu hình Hub đọc (home của `/pack/me`): đổi hàng ⇒ bump `config_version` CÙNG transaction + NOTIFY
- * `config_changed` kèm tenant_id sau commit. Không đổi (cùng giá trị) ⇒ không bump.
+ * CR-118 · default_app là cấu hình Hub đọc (home của `/pack/me`). cr118-r1-fixes #3: đổi hàng ⇒ bump `profile_version` (KHÔNG
+ * phải `config_version` toàn cục) + NOTIFY `profile_changed` kèm tenant_id CÙNG transaction (NOTIFY phát lúc commit) ⇒ Hub chỉ
+ * nạp lại lát tenant/user. Không đổi (cùng giá trị) ⇒ không bump.
  */
 export async function writeDefaultApp(
   ctx: AppCatalogCtx,
@@ -81,11 +98,20 @@ export async function writeDefaultApp(
   write: (tx: Tx) => Promise<unknown>,
   tenantId: string = actor.tenantId,
 ): Promise<void> {
-  const r = await withConfigWrite(ctx.db, scopeOf(actor), async (tx, ch) => {
+  await withScope(ctx.db, scopeOf(actor), async (tx) => {
     const rows = (await write(tx)) as unknown as unknown[];
-    if (rows.length > 0) ch.changed({ entity, tenantId });
+    if (rows.length > 0) await bumpProfile(tx, entity, tenantId);
   });
-  if (r.version !== null) await publishConfigChanged(ctx.db, r.version, r.events);
+}
+
+/** Câu CUỐI của transaction (khoá hàng `config_meta` giữ tới commit, cùng thứ hạng bump `config_version`). */
+async function bumpProfile(tx: Tx, entity: "user" | "tenant", tenantId: string): Promise<void> {
+  await tx.execute(sql`WITH b AS (
+      INSERT INTO admin.config_meta (id, config_version, profile_version, updated_at) VALUES (1, 0, 1, now())
+      ON CONFLICT (id) DO UPDATE SET profile_version = admin.config_meta.profile_version + 1, updated_at = now()
+      RETURNING profile_version)
+    SELECT pg_notify(${PROFILE_CHANNEL}, json_build_object('v', b.profile_version, 'entity', ${entity}::text,
+      'tenant_id', ${tenantId}::text)::text) FROM b`);
 }
 
 export async function setTenantDefaultApp(

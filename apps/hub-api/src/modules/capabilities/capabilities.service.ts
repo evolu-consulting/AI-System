@@ -34,7 +34,8 @@ export type BrandRow = {
 export type ToolInfoLite = { key: string; sideEffect: boolean; action?: PackAction };
 export type CapsDeps = {
   view: CapsView;
-  loadExtras: () => Promise<HubExtras>;
+  /** Phần Hub ngoài ảnh của MỘT tenant (lọc trong SQL, cr118-r1-fixes #2). */
+  loadExtras: (tenantId: string) => Promise<HubExtras>;
   /** Brand công ty (1 câu, cổng gói contracts); vắng ⇒ null. */
   brand?: (tenantId: string) => Promise<BrandRow | null>;
   tools?: (pack: string) => readonly ToolInfoLite[];
@@ -59,7 +60,11 @@ export class CapabilitiesService {
   #brands = new Map<string, BrandEntry>();
   #brandGen = 0;
   #brandEpoch = 0;
-  #extras: { hub: number; p: Promise<HubExtras> } | null = null;
+  /** Phần Hub theo tenant, cùng một version Hub (đổi version ⇒ bỏ hết). */
+  #extras: { hub: number; byTenant: Map<string, Promise<HubExtras>> } = {
+    hub: -1,
+    byTenant: new Map(),
+  };
   #memo = new Map<string, { stamp: string; out: Tagged }>();
   /** Huỷ đăng ký `onChange` (vòng đời = app; test gọi để dọn). */
   readonly close: () => void;
@@ -80,7 +85,8 @@ export class CapabilitiesService {
       user: user?.defaultApp ?? null,
       tenant: (await this.#d.view.tenant(u.tenantId))?.defaultApp ?? null,
     };
-    const stamp = `${versions.admin}.${versions.hub}.${brand.gen}.${u.role}.${external}`;
+    // default_app đổi không bump version Admin (cr118-r1-fixes #3) ⇒ nằm trong tem
+    const stamp = `${versions.admin}.${versions.hub}.${brand.gen}.${u.role}.${external}.${defaultApp.user}.${defaultApp.tenant}`;
     const key = `u:${u.userId}:${u.tenantId}`;
     const hit = this.#memo.get(key);
     if (hit?.stamp === stamp) return hit.out;
@@ -124,7 +130,7 @@ export class CapabilitiesService {
     await this.#d.view.adminSettled();
     if (!(await this.#d.view.tenant(tenantId))) return null;
     const [cat, snap] = await Promise.all([this.#d.view.catalog(), this.#d.view.snapshot()]);
-    const extras = await this.#extrasFor(snap.version);
+    const extras = await this.#extrasFor(snap.version, tenantId);
     const versions = { admin: cat.adminVersion, hub: snap.version };
     const stamp = `${versions.admin}.${versions.hub}`;
     const key = `t:${tenantId}`;
@@ -178,13 +184,17 @@ export class CapabilitiesService {
     return out;
   }
 
-  /** Phần Hub ngoài ảnh: một lần nạp mỗi version Hub (single-flight); lỗi ⇒ bỏ cache để lần sau thử lại. */
-  #extrasFor(hub: number): Promise<HubExtras> {
-    if (this.#extras?.hub === hub) return this.#extras.p;
-    const p = this.#d.loadExtras();
-    this.#extras = { hub, p };
+  /** Phần Hub ngoài ảnh: một lần nạp mỗi (version Hub, tenant) (single-flight); lỗi ⇒ bỏ cache để lần sau thử lại. */
+  #extrasFor(hub: number, tenantId: string): Promise<HubExtras> {
+    if (this.#extras.hub !== hub) this.#extras = { hub, byTenant: new Map() };
+    const m = this.#extras.byTenant;
+    const hit = m.get(tenantId);
+    if (hit) return hit;
+    const p = this.#d.loadExtras(tenantId);
+    if (m.size >= (this.#d.memoMax ?? MEMO_MAX)) m.clear();
+    m.set(tenantId, p);
     p.catch(() => {
-      if (this.#extras?.p === p) this.#extras = null;
+      if (m.get(tenantId) === p) m.delete(tenantId);
     });
     return p;
   }

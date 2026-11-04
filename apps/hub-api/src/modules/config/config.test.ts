@@ -1,6 +1,6 @@
 // HUB-FR-02, HUB-FR-03, HUB-BR-06, HUB-BR-08 · unit test cache cấu hình (nguồn giả, không DB) + luật thuần.
 import { describe, expect, test } from "bun:test";
-import { CONFIG_CHANNEL } from "@ai/contracts";
+import { CONFIG_CHANNEL, PROFILE_CHANNEL } from "@ai/contracts";
 import { HUB_CONFIG_CHANNEL } from "@ai/contracts/hub";
 import type { Logger } from "../../lib/logger";
 import type { CatalogRows } from "./catalog.rules";
@@ -164,11 +164,13 @@ describe("config.rules", () => {
 });
 
 describe("ConfigCache · NOTIFY", () => {
-  test("HUB-FR-02 · nạp đầu + LISTEN 2 kênh; config_changed → nạp lại admin (tenant khoá thấy ngay)", async () => {
+  test("HUB-FR-02 · nạp đầu + LISTEN 3 kênh; config_changed → nạp lại admin (tenant khoá thấy ngay)", async () => {
     const src = fakeSource();
     const c = startCache(src);
     expect(await c.accountUsable(T1, U1)).toBe(true);
-    expect([...src.listeners.keys()].sort()).toEqual([CONFIG_CHANNEL, HUB_CONFIG_CHANNEL].sort());
+    expect([...src.listeners.keys()].sort()).toEqual(
+      [CONFIG_CHANNEL, HUB_CONFIG_CHANNEL, PROFILE_CHANNEL].sort(),
+    );
     src.db.tenants = [{ id: T1, active: false, maxConcurrentSub: null }];
     src.db.admin = 2;
     src.emit(CONFIG_CHANNEL, JSON.stringify({ v: 2, entity: "tenant", tenant_id: T1 }));
@@ -251,7 +253,7 @@ describe("ConfigCache · poll", () => {
     const c = startCache(src, ac.signal);
     await c.ready();
     await tick();
-    expect(src.listeners.size).toBe(2);
+    expect(src.listeners.size).toBe(3);
     ac.abort();
     await tick();
     expect(src.listeners.size).toBe(0);

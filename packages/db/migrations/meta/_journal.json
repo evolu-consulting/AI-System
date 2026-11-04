@@ -239,6 +239,13 @@
       "when": 1801230000000,
       "tag": "0033_hub_reads_user_default_app",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1803100000000,
+      "tag": "0034_profile_version",
+      "breakpoints": true
     }
   ]
 }

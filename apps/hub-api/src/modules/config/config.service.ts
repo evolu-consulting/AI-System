@@ -1,13 +1,20 @@
 // HUB-FR-02, HUB-FR-03, HUB-BR-06 · cache cấu hình `admin` + `hub` của một instance (plan H1 §4 Cache, spec H1-R04, R15).
-// Nạp lại: LISTEN `config_changed` (không có tenant_id ⇒ nạp lại toàn bộ phần admin) + `hub_config_changed`, và poll
+// Nạp lại: LISTEN `config_changed` (không có tenant_id ⇒ nạp lại toàn bộ phần admin) + `hub_config_changed` + `profile_changed`
+// (chỉ lát tenant/user, cr118-r1-fixes), và poll
 // `config_version`/`hub_config_version` mỗi `pollS` giây (lưới an toàn khi mất NOTIFY). Admin chết ⇒ giữ cache cũ.
-import { CONFIG_CHANNEL, ConfigChangedPayloadSchema } from "@ai/contracts";
+import {
+  CONFIG_CHANNEL,
+  ConfigChangedPayloadSchema,
+  PROFILE_CHANNEL,
+  ProfileChangedPayloadSchema,
+} from "@ai/contracts";
 import { HUB_CONFIG_CHANNEL, HubConfigChangedPayloadSchema } from "@ai/contracts/hub";
 import type { Db } from "../../lib/db";
 import { safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import { loadCatalogRows } from "./catalog.repo";
 import { buildCatalog, type CatalogRows, type CatalogSnapshot } from "./catalog.rules";
+import { type Coalesced, coalesce } from "./coalesce";
 import {
   loadHubSnapshot,
   loadTenants,
@@ -51,30 +58,6 @@ type Waiter = { min: number; done: (v: number) => void };
 export type ConfigChange = { admin: number; hub: number; tenants: ReadonlySet<string> | null };
 export type ConfigCacheOptions = { pollS: number; log: Logger; signal?: AbortSignal };
 
-/** Gộp các lần gọi chồng nhau: đang chạy thì đánh dấu chạy lại một lần nữa sau khi xong. */
-type Coalesced = (() => Promise<void>) & { current(): Promise<void> | null };
-function coalesce(fn: () => Promise<void>): Coalesced {
-  let running: Promise<void> | null = null;
-  let again = false;
-  const call = () => {
-    if (running) {
-      again = true;
-      return running;
-    }
-    const loop = async (): Promise<void> => {
-      do {
-        again = false;
-        await fn();
-      } while (again);
-    };
-    running = loop().finally(() => {
-      running = null;
-    });
-    return running;
-  };
-  return Object.assign(call, { current: () => running });
-}
-
 export class ConfigCache {
   readonly #src: ConfigSource;
   readonly #opts: ConfigCacheOptions;
@@ -97,6 +80,9 @@ export class ConfigCache {
   readonly #listeners = new Set<(c: ConfigChange) => void>();
   /** Tenant bị chạm từ NOTIFY `config_changed` chờ lần nạp Admin kế; "all" = không rõ ⇒ mọi tenant. */
   #pendingTenants: Set<string> | "all" = new Set();
+  /** `profile_version` đã nạp (-1 = chưa); lượt kế cần nạp ĐẦY ĐỦ (catalog) hay chỉ lát profile. */
+  #profileVersion = -1;
+  #fullWanted = false;
   readonly reloadHub: () => Promise<void>;
   readonly reloadAdmin: () => Promise<void>;
   readonly #adminRun: Coalesced;
@@ -110,7 +96,10 @@ export class ConfigCache {
       if (prev !== undefined && prev !== this.#hub.version) this.#emit(null);
     });
     this.#adminRun = coalesce(() => this.#loadAdmin());
-    this.reloadAdmin = this.#adminRun;
+    this.reloadAdmin = () => {
+      this.#fullWanted = true;
+      return this.#adminRun();
+    };
   }
 
   /**
@@ -218,6 +207,8 @@ export class ConfigCache {
       const jobs: Promise<void>[] = [];
       if (v.hub !== (this.#hub?.version ?? -1)) jobs.push(this.reloadHub());
       if (v.admin !== this.#adminVersion) jobs.push(this.reloadAdmin());
+      else if ((v.profile ?? 0) !== this.#profileVersion && this.#profileVersion >= 0)
+        jobs.push(this.#adminRun());
       await Promise.all(jobs);
     } catch (err) {
       if (!this.#stopped) this.#opts.log.warn("config-poll-failed", safeErrorFields(err));
@@ -247,13 +238,35 @@ export class ConfigCache {
     }
   }
 
+  /**
+   * Một lượt của vòng nạp Admin (coalesce ⇒ không bao giờ chạy chồng, kể cả lát profile). Version Admin đổi / được yêu cầu
+   * đầy đủ ⇒ nạp đầy đủ; không thì chỉ lát tenant/user (cr118-r1-fixes #3). Tenant chạm từ NOTIFY luôn được phát, kể cả khi
+   * version không đổi (cr118-r1-fixes #1: NOTIFY tới giữa hai lần nạp gộp mà lần trước đã thấy version mới).
+   */
   async #loadAdmin(): Promise<void> {
     this.#adminGen++;
     const prevVersion = this.#adminVersion;
+    const prevProfile = this.#profileVersion;
+    let full = this.#fullWanted || prevVersion < 0;
+    this.#fullWanted = false;
     const touched = this.#pendingTenants;
     this.#pendingTenants = new Set();
     // Đọc phiên bản TRƯỚC dữ liệu: thay đổi xen giữa làm phiên bản mới hơn ⇒ vòng poll sau nạp lại, không bỏ sót.
-    const { admin } = await this.#src.readVersions();
+    const v = await this.#src.readVersions();
+    const { admin } = v;
+    if (admin !== prevVersion) full = true;
+    if (full) await this.#loadFull(admin);
+    else await this.#loadProfile(touched);
+    this.#profileVersion = v.profile ?? 0;
+    this.#adminVersion = admin;
+    this.#settleWaiters(admin);
+    if (prevVersion < 0) return;
+    const someTouched = touched === "all" || touched.size > 0;
+    if (someTouched || prevVersion !== admin || prevProfile !== this.#profileVersion)
+      this.#emit(touched === "all" || touched.size === 0 ? null : touched);
+  }
+
+  async #loadFull(admin: number): Promise<void> {
     const tenants = await this.#src.loadTenants();
     const users = await this.#src.loadUsers([...this.#users.keys()]);
     const { catalog, dropped } = buildCatalog(await this.#src.loadCatalog(admin));
@@ -261,10 +274,21 @@ export class ConfigCache {
     this.#catalog = catalog;
     this.#tenants = new Map(tenants.map((t) => [t.id, t]));
     this.#users = new Map(users.map((u) => [u.id, u]));
-    this.#adminVersion = admin;
-    this.#settleWaiters(admin);
-    if (prevVersion >= 0 && prevVersion !== admin)
-      this.#emit(touched === "all" || touched.size === 0 ? null : touched);
+  }
+
+  /** Lát profile: tenants + user đã cache của tenant bị chạm ("all"/rỗng = mọi user đã cache); không catalog. */
+  async #loadProfile(touched: Set<string> | "all"): Promise<void> {
+    const all = touched === "all" || touched.size === 0;
+    const ids = [...this.#users.values()]
+      .filter((u) => all || touched.has(u.tenantId))
+      .map((u) => u.id);
+    const tenants = await this.#src.loadTenants();
+    const users = ids.length > 0 ? await this.#src.loadUsers(ids) : [];
+    this.#tenants = new Map(tenants.map((t) => [t.id, t]));
+    const next = new Map(this.#users);
+    for (const id of ids) next.delete(id);
+    for (const u of users) next.set(u.id, u);
+    this.#users = next;
   }
 
   /**
@@ -302,6 +326,17 @@ export class ConfigCache {
     );
   };
 
+  /** cr118-r1-fixes #3 · default_app/brand của MỘT tenant: chỉ nạp lát profile (không catalog), không ép nạp đầy đủ. */
+  #onProfileChanged = (payload: string): void => {
+    const p = ProfileChangedPayloadSchema.safeParse(safeJson(payload));
+    if (!p.success) this.#opts.log.warn("profile-changed-invalid-payload");
+    if (p.success && this.#pendingTenants !== "all") this.#pendingTenants.add(p.data.tenant_id);
+    else this.#pendingTenants = "all";
+    this.#adminRun().catch((err) =>
+      this.#opts.log.warn("config-reload-failed", safeErrorFields(err)),
+    );
+  };
+
   #onHubChanged = (payload: string): void => {
     const p = HubConfigChangedPayloadSchema.safeParse(safeJson(payload));
     if (!p.success) this.#opts.log.warn("hub-config-changed-invalid-payload");
@@ -318,6 +353,7 @@ export class ConfigCache {
     try {
       subs.push(await this.#src.listen(CONFIG_CHANNEL, this.#onAdminChanged));
       subs.push(await this.#src.listen(HUB_CONFIG_CHANNEL, this.#onHubChanged));
+      subs.push(await this.#src.listen(PROFILE_CHANNEL, this.#onProfileChanged));
       this.#unlisten = subs;
       if (this.#stopped) await this.stop();
     } catch (err) {

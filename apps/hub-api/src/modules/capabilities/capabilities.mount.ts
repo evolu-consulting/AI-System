@@ -38,7 +38,7 @@ export function mountCapabilities<E extends Env>(
   const brand = companyBrandModule(db);
   const svc = new CapabilitiesService({
     view: config,
-    loadExtras: () => loadHubExtras(db),
+    loadExtras: (tid) => loadHubExtras(db, tid),
     brand: (tid) => brand.brand(tid),
     tools: (p) => d.packTools?.listByPack(p) ?? [],
     onChange: (fn) => config.onChange(fn),

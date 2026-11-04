@@ -463,6 +463,13 @@
       "when": 1801230000000,
       "tag": "0072_brand_bumps_config",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1803100000000,
+      "tag": "0073_brand_bumps_profile",
+      "breakpoints": true
     }
   ]
 }

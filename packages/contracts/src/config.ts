@@ -4,6 +4,18 @@ import { z } from "zod";
 import { UuidSchema } from "./common";
 
 export const CONFIG_CHANNEL = "config_changed";
+/**
+ * CR-118 · cr118-r1-fixes · đổi theo tenant/user không đụng catalog (`default_app` của user/công ty, brand công ty): bump
+ * `admin.config_meta.profile_version` + NOTIFY kênh này CÙNG transaction ⇒ Hub chỉ nạp lại lát tenant/user, không đổi
+ * `config_version` toàn cục.
+ */
+export const PROFILE_CHANNEL = "profile_changed";
+export const ProfileChangedPayloadSchema = z.object({
+  v: z.number().int().min(1),
+  entity: z.enum(["user", "tenant"]),
+  tenant_id: UuidSchema,
+});
+export type ProfileChangedPayload = z.infer<typeof ProfileChangedPayloadSchema>;
 /** Postgres giới hạn payload NOTIFY 8.000 byte. */
 export const CONFIG_PAYLOAD_MAX_BYTES = 8000;
 export const CONFIG_ENTITIES = [
