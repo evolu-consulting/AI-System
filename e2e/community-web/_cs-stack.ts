@@ -6,13 +6,12 @@
 // Dừng: SIGTERM/SIGINT.
 import { rmSync } from "node:fs";
 import { resolve } from "node:path";
-import { createDb, withScope } from "@ai/db";
+import { createDb } from "@ai/db";
 import { runHubMigrations } from "@ai/db/migrate-hub";
 import { runPackMigrations } from "@ai/db/migrate-packs";
-import { sql } from "drizzle-orm";
-import { enablePack } from "../../apps/admin-api/src/modules/packs/packs.service";
 import { runSeed } from "../../tools/scripts/src/seed-community-demo";
 import {
+  ensureContractsPack,
   ensureDemoTenant,
   ensureOwnerInGroup,
 } from "../../tools/scripts/src/seed-community-demo.dev-fixture";
@@ -71,20 +70,7 @@ async function prepare(): Promise<void> {
     console.log(`[cs] demo-owner ∈ community-owner: ${await ensureOwnerInGroup(db)}`);
     // CR-118: web gộp lấy `apps`/`home` từ /pack/me ⇒ tenant demo phải có gói contracts bật (thành viên SHT vào /overview).
     // Nhóm contracts-owner do enablePack tạo; demo-owner được thêm ở bước seed fixture bên dưới.
-    const [ids] = await withScope(
-      db,
-      { kind: "platform" },
-      async (tx) =>
-        (await tx.execute(sql`select t.id as tid, u.id as uid from admin.tenants t
-          join admin.users u on u.tenant_id = t.id and u.username = 'demo-owner'
-          where t.key = 'demo'`)) as unknown as { tid: string; uid: string }[],
-    );
-    if (!ids) throw new Error("[cs] thiếu tenant demo / demo-owner");
-    await enablePack(
-      { ctx: { db }, scope: { kind: "platform" }, actor: { userId: ids.uid } },
-      ids.tid,
-      "contracts",
-    );
+    console.log(`[cs] gói contracts cho demo: ${await ensureContractsPack(db)}`);
   } finally {
     await hubDb.close();
     await db.close();

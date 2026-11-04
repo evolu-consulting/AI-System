@@ -7,6 +7,7 @@ import { type Db, hashPassword, withConfigWrite, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { publishConfigChanged } from "../../../apps/admin-api/src/lib/config/config-write";
 import { membersAudit } from "../../../apps/admin-api/src/modules/groups/groups.service";
+import { enablePack } from "../../../apps/admin-api/src/modules/packs/packs.service";
 
 export const DEMO_TENANT = { key: "demo", name: "Demo Sổ Hợp Tác" } as const;
 export const DEMO_OWNER = {
@@ -142,4 +143,26 @@ export async function ensureOwnerInGroup(db: Db): Promise<"added" | "exists"> {
   );
   if (w.version !== null) await publishConfigChanged(db, w.version, w.events);
   return "added";
+}
+
+/**
+ * CR-118: bật gói `contracts` cho tenant demo (stack e2e web gộp: `/pack/me` của demo-owner phải có `apps` ⊇ contracts, nếu không
+ * web đưa về /community). enablePack tạo Group contracts-owner/editor; demo-owner vào nhóm ở bước `seed.tenant-fixtures` sau đó.
+ */
+export async function ensureContractsPack(db: Db): Promise<"enabled"> {
+  const [r] = await withScope(
+    db,
+    { kind: "platform" },
+    async (tx) =>
+      (await tx.execute(sql`select t.id as tid, u.id as uid from admin.tenants t
+        join admin.users u on u.tenant_id = t.id and u.username = ${DEMO_OWNER.username}
+        where t.key = ${DEMO_TENANT.key}`)) as unknown as { tid: string; uid: string }[],
+  );
+  if (!r) throw new Error("dev-fixture: thiếu tenant demo / demo-owner");
+  await enablePack(
+    { ctx: { db }, scope: { kind: "platform" }, actor: { userId: r.uid } },
+    r.tid,
+    "contracts",
+  );
+  return "enabled";
 }
