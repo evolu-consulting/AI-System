@@ -1,9 +1,10 @@
 // portal-home · `GET /me/portal`, `PUT /me/default-app`, `PUT /me/tenant-default-app`. RLS lo cô lập tenant; ở đây chỉ ghi dòng của chính
 // người gọi (users.id = actor) và tenant của chính họ (tenants.id = actor.tenantId) — không nhận id từ client.
 import type { DefaultAppRequest, PortalResponse } from "@ai/contracts";
-import { withScope } from "@ai/db";
+import { type Tx, withConfigWrite, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { type Actor, scopeOf } from "../../lib/auth-middleware";
+import { publishConfigChanged } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import { type AppCatalogCtx, openableIn, portalAppsIn } from "./app-catalog.service";
 import { canSetTenantDefault, effectiveDefaultApp } from "./portal.rules";
@@ -62,10 +63,29 @@ export async function setMyDefaultApp(
   b: DefaultAppRequest,
 ): Promise<PortalResponse> {
   await assertOpenable(ctx, actor, b);
-  await withScope(ctx.db, scopeOf(actor), (tx) =>
-    tx.execute(sql`UPDATE admin.users SET default_app = ${b.app} WHERE id = ${actor.userId}`),
+  await writeDefaultApp(ctx, actor, "user", (tx) =>
+    tx.execute(sql`UPDATE admin.users SET default_app = ${b.app}
+      WHERE id = ${actor.userId} AND default_app IS DISTINCT FROM ${b.app} RETURNING id`),
   );
   return getPortal(ctx, actor);
+}
+
+/**
+ * CR-118 · default_app là cấu hình Hub đọc (home của `/pack/me`): đổi hàng ⇒ bump `config_version` CÙNG transaction + NOTIFY
+ * `config_changed` kèm tenant_id sau commit. Không đổi (cùng giá trị) ⇒ không bump.
+ */
+export async function writeDefaultApp(
+  ctx: AppCatalogCtx,
+  actor: Actor,
+  entity: "user" | "tenant",
+  write: (tx: Tx) => Promise<unknown>,
+  tenantId: string = actor.tenantId,
+): Promise<void> {
+  const r = await withConfigWrite(ctx.db, scopeOf(actor), async (tx, ch) => {
+    const rows = (await write(tx)) as unknown as unknown[];
+    if (rows.length > 0) ch.changed({ entity, tenantId });
+  });
+  if (r.version !== null) await publishConfigChanged(ctx.db, r.version, r.events);
 }
 
 export async function setTenantDefaultApp(
@@ -75,8 +95,9 @@ export async function setTenantDefaultApp(
 ): Promise<PortalResponse> {
   if (!canSetTenantDefault(actor.role)) throw appError("FORBIDDEN");
   await assertOpenable(ctx, actor, b);
-  await withScope(ctx.db, scopeOf(actor), (tx) =>
-    tx.execute(sql`UPDATE admin.tenants SET default_app = ${b.app} WHERE id = ${actor.tenantId}`),
+  await writeDefaultApp(ctx, actor, "tenant", (tx) =>
+    tx.execute(sql`UPDATE admin.tenants SET default_app = ${b.app}
+      WHERE id = ${actor.tenantId} AND default_app IS DISTINCT FROM ${b.app} RETURNING id`),
   );
   return getPortal(ctx, actor);
 }

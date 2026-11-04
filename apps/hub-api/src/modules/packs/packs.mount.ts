@@ -64,7 +64,7 @@ import { PKDEMO_KEY, pkdemoModule } from "./pkdemo/pkdemo.mount";
 export { mountEsignWebhook } from "./contracts/esign.mount"; // app.ts gắn webhook trước JWT (không chạm nội bộ gói)
 
 export const PACK_PREFIX = "/pack";
-export { companyBrandModule, PACK_AGENTS } from "./contracts/shell.mount"; // CR-118 · brand + agent của gói cho view năng lực
+export { companyBrandModule } from "./contracts/shell.mount"; // CR-118 · brand công ty cho view năng lực
 
 /** Seam `AppDeps.packs` (test â†” hub-api). `filebox` dÃ nh cho T5f (FileBox `org` theo tenant). `contracts` váº¯ng â‡’ báº­t (HD1). */
 export type PacksDeps = {

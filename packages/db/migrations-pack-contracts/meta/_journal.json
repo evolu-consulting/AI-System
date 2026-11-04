@@ -456,6 +456,13 @@
       "when": 1800300000000,
       "tag": "0071_override_once",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1801230000000,
+      "tag": "0072_brand_bumps_config",
+      "breakpoints": true
     }
   ]
 }

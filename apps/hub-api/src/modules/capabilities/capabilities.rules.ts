@@ -59,7 +59,15 @@ export type ShellInput = {
   brand: ShellBrand | null;
   /** Gói mở cho đối tác (`EXTERNAL_PACKS`). */
   externalPacks?: ReadonlySet<string>;
+  /** `default_app` của user / công ty (admin-api, bump `config_version`); vắng ⇒ home theo quyền. */
+  defaultApp?: { user: string | null; tenant: string | null };
 };
+
+/** Trang chủ: default_app (user rồi công ty) nếu user đọc được gói đó; không thì theo quyền (contracts → community → đầu). */
+function homeOf(i: ShellInput, readable: ReadonlySet<string>, apps: readonly string[]) {
+  for (const k of [i.defaultApp?.user, i.defaultApp?.tenant]) if (k && readable.has(k)) return k;
+  return HOME_ORDER.find((k) => readable.has(k)) ?? apps[0] ?? null;
+}
 
 const DEFAULT_EXTERNAL: ReadonlySet<string> = new Set(["community"]);
 
@@ -102,7 +110,7 @@ export function shellMe(i: ShellInput): ShellMeResponse {
     addons,
     flags,
     brand: i.brand,
-    home: HOME_ORDER.find((k) => readable.has(k)) ?? apps[0] ?? null,
+    home: homeOf(i, readable, apps),
     apps,
   };
 }

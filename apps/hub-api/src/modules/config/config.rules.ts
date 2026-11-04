@@ -13,6 +13,8 @@ export type TenantState = {
   timezone?: string;
   /** tenant-quotas · hạn mức ngày riêng (`admin.tenant_daily_limits`); vắng/null từng ô ⇒ env. */
   dailyLimits?: TenantDailyLimits;
+  /** CR-118 · `admin.tenants.default_app` (admin-api ghi + bump `config_version`). */
+  defaultApp?: string | null;
 };
 
 export type TenantDailyLimits = {
@@ -43,6 +45,8 @@ export type UserState = {
   groupIds: ReadonlySet<string>;
   /** CR-102a · com-c2: `admin.users.kind='external'` (đối tác) — không agent, không Group, chỉ `EXTERNAL_PACKS`. Vắng ⇒ nội bộ. */
   external?: boolean;
+  /** CR-118 · `admin.users.default_app` (hub_ro: GRANT cột, admin 0033). */
+  defaultApp?: string | null;
 };
 
 export type ProviderConfig = {
@@ -108,6 +112,8 @@ export type ConfigSnapshot = Readonly<{
   orchestratorTenants: ReadonlyMap<string, OrchestratorConfig>;
   /** CR-054 · tenant id → agent mặc định (vắng tenant ⇒ hành vi cũ: Orchestrator, không cần grant). */
   tenantDefaults?: ReadonlyMap<string, TenantAgentDefaults>;
+  /** CR-118 · `packs.pack_agents`: gói → khoá agent của gói (hub_api chỉ SELECT, packs 0009). */
+  packAgents?: ReadonlyMap<string, readonly string[]>;
 }>;
 
 /** Workflow gắn agent (rỗng khi không có). */

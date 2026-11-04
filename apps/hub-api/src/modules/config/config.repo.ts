@@ -121,7 +121,19 @@ async function readHubRows(tx: Tx) {
     aw: await tx
       .select({ agentId: agentWorkflows.agentId, workflowId: agentWorkflows.workflowId })
       .from(agentWorkflows),
+    // CR-118 · agent của gói (hub_api chỉ SELECT — packs 0009); đổi gói ⇒ `packs.grant_agents` bump version Hub.
+    pa: await tx.execute<{ pack_key: string; agent_key: string }>(
+      sql`select pack_key, agent_key from packs.pack_agents order by pack_key, agent_key`,
+    ),
   };
+}
+
+function groupPackAgents(
+  rows: Iterable<{ pack_key: string; agent_key: string }>,
+): ReadonlyMap<string, readonly string[]> {
+  const m = new Map<string, string[]>();
+  for (const r of rows) m.set(r.pack_key, [...(m.get(r.pack_key) ?? []), r.agent_key]);
+  return m;
 }
 
 function groupAgentWorkflows(
@@ -165,6 +177,7 @@ export function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
           subject: g.subjectId,
         })),
         agentWorkflows: groupAgentWorkflows(r.aw),
+        packAgents: groupPackAgents(r.pa),
         tenantDefaults: new Map(
           r.td.map((d) => [
             d.tenantId,
@@ -193,6 +206,7 @@ export async function loadTenants(db: Db): Promise<TenantState[]> {
       active: tenants.active,
       maxConcurrentSub: tenants.maxConcurrentSub,
       timezone: tenants.timezone,
+      defaultApp: tenants.defaultApp,
       uploads: l.uploadsDay,
       actions: l.actionsDay,
       aiTokens: l.aiTokensDay,
@@ -218,6 +232,7 @@ export async function loadUsers(db: Db, ids: readonly string[]): Promise<UserSta
       active: users.active,
       lockedByTenant: users.lockedByTenant,
       locale: users.locale,
+      defaultApp: users.defaultApp,
       external: sql<boolean>`(${users.kind} = 'external')`,
       groupIds: sql<string[]>`coalesce((select array_agg(${groupMembers.groupId})::text[]
         from ${groupMembers} where ${groupMembers.userId} = ${users.id}

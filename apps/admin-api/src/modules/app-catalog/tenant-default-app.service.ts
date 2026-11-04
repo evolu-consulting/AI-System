@@ -1,11 +1,13 @@
 // tenant-default-app · platform_admin xem/đặt app mặc định của công ty BẤT KỲ (`/admin/tenants/:id/default-app`).
 // Cùng luật kiểm tra với `PUT /me/tenant-default-app` (khoá app phải có trong catalog); khác: không cần "mở được với người gọi"
-// vì platform_admin đặt hộ công ty khác. Ghi audit `update`/`tenant` (summary.op = default_app.set), không bump config_version.
+// vì platform_admin đặt hộ công ty khác. Ghi audit `update`/`tenant` (summary.op = default_app.set). CR-118: đổi ⇒ bump
+// `config_version` cùng transaction + NOTIFY `config_changed` (tenant_id) sau commit ⇒ Hub `/pack/me` home theo default_app.
 import type { DefaultAppRequest, TenantDefaultAppResponse } from "@ai/contracts";
-import { type Tx, withScope } from "@ai/db";
+import { type Tx, withConfigWrite, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { auditOf, recordAudit } from "../../lib/audit/audit.write";
 import { type Actor, scopeOf } from "../../lib/auth-middleware";
+import { publishConfigChanged } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";
 import * as repo from "./app-catalog.repo";
 import type { AppCatalogCtx } from "./app-catalog.service";
@@ -33,17 +35,18 @@ export function getTenantDefaultApp(
   }));
 }
 
-export function setTenantDefaultAppFor(
+export async function setTenantDefaultAppFor(
   ctx: AppCatalogCtx,
   actor: Actor,
   tenantId: string,
   b: DefaultAppRequest,
 ): Promise<TenantDefaultAppResponse> {
-  return withScope(ctx.db, scopeOf(actor), async (tx) => {
+  const r = await withConfigWrite(ctx.db, scopeOf(actor), async (tx, ch) => {
     const t = await readTenant(tx, tenantId, true);
     if (b.app !== null && !(await repo.findOne(tx, b.app))) throw appError("INVALID_REFERENCE");
     if (t.v === b.app) return { app: b.app };
     await tx.execute(sql`UPDATE admin.tenants SET default_app = ${b.app} WHERE id = ${t.id}`);
+    ch.changed({ entity: "tenant", tenantId: t.id });
     await recordAudit(tx, {
       ...auditOf("update", "tenant", {
         entityId: t.id,
@@ -57,4 +60,6 @@ export function setTenantDefaultAppFor(
     });
     return { app: b.app };
   });
+  if (r.version !== null) await publishConfigChanged(ctx.db, r.version, r.events);
+  return r.result;
 }

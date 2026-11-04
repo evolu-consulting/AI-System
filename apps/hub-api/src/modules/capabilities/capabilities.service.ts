@@ -1,6 +1,6 @@
 // CR-118 · UW-FR-04 · UW-FR-16..19 · D4 · read-model năng lực trên ConfigCache: `/pack/me` (lát cắt user) và capabilities
 // theo tenant. Nóng = 0 SQL: quyền/feature/agent từ ảnh cache; khe + flow độc lập nạp lại một lần mỗi version Hub (2 câu
-// cố định); brand (không bump version) giữ theo TTL. Thân đã dựng nhớ theo "tem" (version + brand + role) ⇒ 304 không dựng lại.
+// cố định); brand nhớ tới khi `onChange` báo tenant bị chạm (đổi brand bump `config_version` — cr118-config-consistency). Thân đã dựng nhớ theo "tem" (version + brand + role) ⇒ 304 không dựng lại.
 import {
   type ShellBrand,
   ShellMeResponseSchema,
@@ -38,9 +38,8 @@ export type CapsDeps = {
   /** Brand công ty (1 câu, cổng gói contracts); vắng ⇒ null. */
   brand?: (tenantId: string) => Promise<BrandRow | null>;
   tools?: (pack: string) => readonly ToolInfoLite[];
-  packAgents?: ReadonlyMap<string, readonly string[]>;
-  brandTtlMs?: number;
-  now?: () => number;
+  /** ConfigCache `onChange`: tenant bị chạm (brand, default_app…) ⇒ bỏ brand đã nhớ của tenant đó. */
+  onChange?: (fn: (c: { tenants: ReadonlySet<string> | null }) => void) => () => void;
   /** Trần số thân nhớ (user + tenant); vượt ⇒ xoá sạch rồi dựng lại (đơn giản, đủ chặn bộ nhớ). */
   memoMax?: number;
 };
@@ -52,19 +51,22 @@ export type Who = {
 };
 export type Tagged = { etag: string; body: string };
 
-const BRAND_TTL_MS = 60_000;
 const MEMO_MAX = 20_000;
-type BrandEntry = { at: number; brand: ShellBrand | null; gen: number };
+type BrandEntry = { brand: ShellBrand | null; gen: number };
 
 export class CapabilitiesService {
   readonly #d: CapsDeps;
   #brands = new Map<string, BrandEntry>();
   #brandGen = 0;
+  #brandEpoch = 0;
   #extras: { hub: number; p: Promise<HubExtras> } | null = null;
   #memo = new Map<string, { stamp: string; out: Tagged }>();
+  /** Huỷ đăng ký `onChange` (vòng đời = app; test gọi để dọn). */
+  readonly close: () => void;
 
   constructor(d: CapsDeps) {
     this.#d = d;
+    this.close = d.onChange?.((c) => this.#invalidate(c.tenants)) ?? (() => {});
   }
 
   async shellMe(u: Who): Promise<Tagged> {
@@ -74,6 +76,10 @@ export class CapabilitiesService {
     const versions = { admin: cat.adminVersion, hub: snap.version };
     const user = await this.#d.view.user(u.userId);
     const external = u.userKind === "external" || user?.external === true;
+    const defaultApp = {
+      user: user?.defaultApp ?? null,
+      tenant: (await this.#d.view.tenant(u.tenantId))?.defaultApp ?? null,
+    };
     const stamp = `${versions.admin}.${versions.hub}.${brand.gen}.${u.role}.${external}`;
     const key = `u:${u.userId}:${u.tenantId}`;
     const hit = this.#memo.get(key);
@@ -92,6 +98,7 @@ export class CapabilitiesService {
         packs: orderHome(packs),
         addons,
         brand: brand.brand,
+        defaultApp,
         externalPacks: new Set(
           packs.map((p) => p.key).filter((k) => externalPackActions(k).length > 0),
         ),
@@ -140,7 +147,7 @@ export class CapabilitiesService {
           .filter((e) => e.tenantId === tenantId && !e.revokedAt)
           .map((e) => e.agentId),
       ),
-      packAgents: this.#d.packAgents ?? new Map(),
+      packAgents: snap.packAgents ?? new Map(),
       tools: (p) =>
         (this.#d.tools?.(p) ?? []).map((x) => ({
           key: x.key,
@@ -182,19 +189,28 @@ export class CapabilitiesService {
     return p;
   }
 
+  /** Ảnh cấu hình đổi (brand/default_app bump `config_version` kèm `tenant_id`) ⇒ bỏ brand của tenant bị chạm; null = mọi tenant. */
+  #invalidate(tenants: ReadonlySet<string> | null): void {
+    this.#brandEpoch++;
+    if (tenants === null) this.#brands.clear();
+    else for (const t of tenants) this.#brands.delete(t);
+  }
+
+  /** Không TTL: giữ tới khi `onChange` báo tenant bị chạm. Lỗi đọc ⇒ không nhớ (lần sau thử lại), trả bản cũ hoặc null. */
   async #brand(tenantId: string): Promise<BrandEntry> {
-    const now = (this.#d.now ?? Date.now)();
     const hit = this.#brands.get(tenantId);
-    if (hit && now - hit.at < (this.#d.brandTtlMs ?? BRAND_TTL_MS)) return hit;
-    let brand: ShellBrand | null = hit?.brand ?? null;
+    if (hit) return hit;
+    const epoch = this.#brandEpoch;
+    let brand: ShellBrand | null;
     try {
       const r = (await this.#d.brand?.(tenantId)) ?? null;
       brand = r ? { name: r.name, app_name: r.appName, logo: r.logo, accent: r.accent } : null;
     } catch {
-      // brand là trang trí: lỗi đọc ⇒ giữ bản cũ (hoặc null), không làm hỏng /pack/me
+      return { brand: null, gen: 0 }; // brand là trang trí: lỗi đọc không làm hỏng /pack/me
     }
-    const same = hit && JSON.stringify(hit.brand) === JSON.stringify(brand);
-    const e = { at: now, brand, gen: same && hit ? hit.gen : ++this.#brandGen };
+    const e = { brand, gen: ++this.#brandGen };
+    // đổi xen giữa lúc đọc ⇒ không nhớ bản có thể cũ
+    if (epoch !== this.#brandEpoch) return e;
     if (this.#brands.size >= (this.#d.memoMax ?? MEMO_MAX)) this.#brands.clear();
     this.#brands.set(tenantId, e);
     return e;

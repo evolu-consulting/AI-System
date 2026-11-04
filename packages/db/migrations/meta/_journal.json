@@ -232,6 +232,13 @@
       "when": 1801220000000,
       "tag": "0032_app_roles_agents_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1801230000000,
+      "tag": "0033_hub_reads_user_default_app",
+      "breakpoints": true
     }
   ]
 }

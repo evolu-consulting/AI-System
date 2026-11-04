@@ -104,6 +104,15 @@ describe("CR-118 · UW-FR-04 · shellMe", () => {
     expect(r.home).toBeNull();
     expect(r.addons).toEqual([]);
   });
+  it("home theo default_app (user trước công ty) khi user đọc được gói đó, app không phải gói/không đọc được ⇒ theo quyền", () => {
+    const home = (o: Partial<ShellInput>) => shellMe(shell(o)).home;
+    expect(home({ defaultApp: { user: null, tenant: "community" } })).toBe("community");
+    expect(home({ defaultApp: { user: "contracts", tenant: "community" } })).toBe("contracts");
+    expect(home({ defaultApp: { user: "chat", tenant: "community" } })).toBe("community");
+    expect(home({ defaultApp: { user: "chat", tenant: "admin" } })).toBe("contracts");
+    const ext = { user: { id: U, tenantId: T, role: "member", external: true } };
+    expect(home({ ...ext, defaultApp: { user: null, tenant: "contracts" } })).toBe("community");
+  });
 });
 
 describe("CR-118 · ETag", () => {

@@ -1,7 +1,7 @@
 // CR-118 · lớp nối module năng lực: `GET /pack/me`, `GET /hub-admin/tenants/:id/capabilities` + N3 (đẩy `config.changed`
 // qua `/me/stream`). Gọi TRƯỚC `mountProtected` (app.ts) và tự gắn JWT + tường lửa đối tác cho đúng hai đường của mình (401
 // trước 404 cho cả `/hub-admin/*`). Tạo `MeStreamConns` dùng chung với `/me/stream` (X2a). Không migration (câu 23).
-// Chạm gói chỉ qua `packs.mount.ts` (brand công ty, agent của gói) và cổng `kit/` (registry tool).
+// Chạm gói chỉ qua `packs.mount.ts` (brand công ty) và cổng `kit/` (registry tool); agent của gói từ ảnh ConfigCache.
 import type { Env, Hono } from "hono";
 import { requireAuth } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
@@ -10,7 +10,7 @@ import type { ConfigCache } from "../config/config.service";
 import { MeStreamConns } from "../me-stream/me-stream.session";
 import { externalFirewall } from "../packs/kit/adapters/external-firewall.middleware";
 import type { PackToolRegistry } from "../packs/kit/adapters/pack-tools.registry";
-import { companyBrandModule, PACK_AGENTS, PACK_PREFIX } from "../packs/packs.mount";
+import { companyBrandModule, PACK_PREFIX } from "../packs/packs.mount";
 import { loadHubExtras } from "./capabilities.repo";
 import { capabilitiesAdminRoutes, shellMeRoutes } from "./capabilities.routes";
 import { CapabilitiesService } from "./capabilities.service";
@@ -41,7 +41,7 @@ export function mountCapabilities<E extends Env>(
     loadExtras: () => loadHubExtras(db),
     brand: (tid) => brand.brand(tid),
     tools: (p) => d.packTools?.listByPack(p) ?? [],
-    packAgents: PACK_AGENTS,
+    onChange: (fn) => config.onChange(fn),
   });
   const auth = requireAuth(d.jwtPublicKey);
   const firewall = externalFirewall();
