@@ -114,5 +114,6 @@ echo "--- kiem tra (qua host nginx + wildcard TLS):"
 for h in $HOSTS; do echo "curl -sSI -o /dev/null -w '$h.$BASE %{http_code}\\n' https://$h.$BASE/"; done
 echo "curl -sS https://ai-test-hub.$BASE/health ; echo ; curl -sS https://ai-test-hub.$BASE/auth-health ; echo"
 echo "curl -sSI https://sohoptac-test.$BASE/ | head -n1   # 200 = SPA contracts"
-echo "curl -sSI https://community-test.$BASE/ | head -n1   # 200 = SPA community (can DNS + cert cho ten nay - README Community)"
+echo "curl -sSI https://community-test.$BASE/ | head -n2   # 301 -> https://sohoptac-test.$BASE/community (host cu; CR-118)"
+echo "curl -sSI https://sohoptac-test.$BASE/community/profile/x/y | head -n1   # 200 = SPA fallback web gop"
 echo "(bat 4 host: nho chay 'S2_DOMAIN=$BASE' deploy/gen-env + build lai web de URL PUBLIC_* tro https; xem README)"

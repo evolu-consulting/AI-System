@@ -1,6 +1,20 @@
 // CR-102b · unit luật thuần Lưu báo giá + gợi ý (nguồn hợp lệ, lô một lần, gợi ý từ kết quả đọc).
 import { describe, expect, it } from "bun:test";
-import { hostHintOf, pageQuery, quoteSourceOk, toPortInput } from "./quote.rules";
+import { communityLink, hostHintOf, pageQuery, quoteSourceOk, toPortInput } from "./quote.rules";
+
+describe("communityLink (CR-118)", () => {
+  it("dùng đường dẫn /community, không còn #/feed; bỏ / cuối; rỗng ⇒ null", () => {
+    expect(communityLink("https://sohoptac.x.com/community")).toBe(
+      "https://sohoptac.x.com/community",
+    );
+    expect(communityLink("https://sohoptac.x.com/community/")).toBe(
+      "https://sohoptac.x.com/community",
+    );
+    expect(communityLink("https://sohoptac.x.com/community")).not.toContain("#");
+    expect(communityLink(undefined)).toBeNull();
+    expect(communityLink("  ")).toBeNull();
+  });
+});
 
 describe("quote.rules", () => {
   it("nguồn hợp lệ: bài Cần bán của đối tác; bình luận đối tác trên Cần mua của chủ quản", () => {

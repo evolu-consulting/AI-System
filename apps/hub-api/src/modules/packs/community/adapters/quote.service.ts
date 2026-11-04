@@ -11,6 +11,7 @@ import {
   type SupplierQuoteWriter,
 } from "../application/pack-ports";
 import {
+  communityLink,
   type HintPost,
   hostHintOf,
   pageQuery,
@@ -72,7 +73,7 @@ async function sourceOf(d: QuoteDeps, a: Access, postId: string, q: QuoteInput) 
     postId,
     supplierName: name,
     partyKey: src.party_key,
-    url: d.webUrl ? `${d.webUrl.replace(/\/$/, "")}/#/feed` : null,
+    url: communityLink(d.webUrl),
   });
 }
 

@@ -140,3 +140,12 @@ export function hostHintOf(
     inStock: prod.match !== null && prod.onHand !== null && Number(prod.onHand) > 0,
   };
 }
+
+/**
+ * CR-118: liên kết "mở trong Community" = `COMMUNITY_WEB_URL` (sau gộp web là `https://sohoptac.<d>/community`), KHÔNG còn
+ * `#/feed` (hash cũ). Env còn host cũ `community.<d>` thì 301 ở edge đưa về `/community`.
+ */
+export function communityLink(webUrl: string | undefined): string | null {
+  const u = (webUrl ?? "").trim().replace(/\/+$/, "");
+  return u === "" ? null : u;
+}

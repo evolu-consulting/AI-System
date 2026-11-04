@@ -99,7 +99,8 @@ services:
       APP_URL_CONTRACTS: ${S2_PUBLIC_CONTRACTS_URL:-}
       APP_URL_STUDIO: ${S2_PUBLIC_HUB_URL:-http://localhost:18434}/studio/
       APP_URL_ADMIN: ${S2_PUBLIC_ADMIN_URL:-http://localhost:18432}
-      APP_URL_COMMUNITY: ${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18435}
+      # CR-118: Community nằm trong web gộp ⇒ URL = <host sohoptac>/community (gen-env.sh đặt S2_PUBLIC_COMMUNITY_URL).
+      APP_URL_COMMUNITY: ${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18431/community}
     command: ["bun", "--env-file=/run/s2/app.env", "apps/admin-api/src/server.ts"]
     volumes:
       - ./.env:/run/s2/app.env:ro
@@ -118,7 +119,7 @@ services:
       # gd0_dlc_fix · bước DLC đang chờ người cũng tính 1 run của user ⇒ 2 làm nghẽn chat (429 TOO_MANY_RUNS); host chung = 5.
       HUB_MAX_CONCURRENT_RUNS: ${HUB_MAX_CONCURRENT_RUNS:-5}
       # community: liên kết "Mở cộng đồng"/thông báo + nút "Mở SHT"; vòng tự lưu trữ/nhắc hết hạn (tắt: COMMUNITY_SWEEP=off).
-      COMMUNITY_WEB_URL: ${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18435}
+      COMMUNITY_WEB_URL: ${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18431/community}
       CONTRACTS_WEB_URL: ${S2_PUBLIC_CONTRACTS_URL:-}
       COMMUNITY_SWEEP: ${COMMUNITY_SWEEP:-on}
       COMMUNITY_SWEEP_EVERY_MS: ${COMMUNITY_SWEEP_EVERY_MS:-60000}
@@ -240,7 +241,8 @@ services:
     cpus: 2
     mem_limit: 3g
 
-  # nginx: 5 bản build web + reverse proxy (mỗi web một cổng, chỉ 127.0.0.1). Mở public = bước sau (edge-proxy/host nginx).
+  # nginx: 3 bản build SPA (sohoptac-web gộp, admin-web, chat-web) + reverse proxy (mỗi web một cổng, chỉ 127.0.0.1); cổng 8085/18435 = 301 community.<d> cũ
+  # (CR-118). Mở public = bước sau (edge-proxy/host nginx).
   web:
     image: sohoptac2-web:latest
     build:

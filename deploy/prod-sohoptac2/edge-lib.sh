@@ -9,7 +9,7 @@ s2_names() {
     contracts) p=sohoptac; t=sohoptac-test ;;
     admin) p=ai-admin; t=ai-test-admin ;;
     hub) p=ai-hub; t=ai-test-hub ;;
-    community) p=community; t=community-test ;;   # ten CHUA chot (CR-102) - doi o day + gen-env.sh (P_CM/T_CM) + s2-app-urls.ts
+    community) p=community; t=community-test ;;   # CR-118: host CU, chi con 301 ve <sohoptac>/community (khop nginx.conf map $s2_main_origin)
     *) return 2 ;;
   esac
   case "$3" in
