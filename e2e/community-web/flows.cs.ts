@@ -4,11 +4,16 @@
 // (Không phụ thuộc thứ tự file: ca 3 tự đăng bài riêng rồi báo cáo/ẩn bài đó, không đụng bài mẫu dùng chung.)
 //  3. Đối tác báo cáo một bài của chủ quản (menu ⋯) ⇒ chủ quản vào "Báo cáo vi phạm", thấy tiêu đề bài + lý do ⇒ Ẩn bài.
 import { expect, test } from "@playwright/test";
+import { apiLogin, createPost } from "../_kit/api";
 import { assignProcessUi, loginPlatformAdminUi, openTenantAppsTab } from "../_kit/ui";
-import { openAs, postByTitle } from "./_stack";
+import { openAs, postByTitle, TENANT, USERNAME } from "./_stack";
 
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
 const ADMIN = process.env.CS_ADMIN_URL ?? "";
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
+const WEB = process.env.COMMUNITY_URL ?? "";
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
+const OWNER_PW = process.env.DEMO_OWNER_PW ?? "";
 const RUN = Date.now().toString(36);
 const TITLE = `Keo dan duyet ${RUN}`;
 const TENANT_NAME = "Demo Sổ Hợp Tác";
@@ -82,33 +87,17 @@ test("3 · đối tác báo cáo một bài ⇒ chủ quản Ẩn bài ở Báo 
   // Bài RIÊNG của ca này: chủ quản đăng thông báo (mọi bạn bè thấy) có mã chạy duy nhất; ca không đụng bài mẫu dùng chung.
   test.setTimeout(150_000);
   const NOTE = `Thông báo kiểm thử ${RUN}`;
-  const host0 = await openAs(browser, "host");
-  await host0.page.goto("/community");
-  await host0.page.getByTestId("composer").locator('[data-type="note"]').first().click();
-  await host0.page.locator("#draft-body").fill(NOTE);
-  // Chọn rõ đối tượng "tất cả" (chip đầu của ô Đối tượng): không chọn thì máy chủ dùng mặc định hẹp hơn, người mua không thấy.
-  await host0.page.locator(".cbar button[aria-expanded]").click();
-  await host0.page.locator(".audbox fieldset.chips button").first().click();
-  await host0.page.getByRole("button", { name: "Đăng bài" }).click();
-  await expect(postByTitle(host0.page, NOTE).first()).toBeVisible();
-  // Ca 1 bật duyệt bài: nếu bài của chủ quản cũng vào hàng chờ thì tự duyệt (không phụ thuộc cấu hình tenant).
-  const hostPostText = await postByTitle(host0.page, NOTE).first().innerText(); // chẩn đoán nếu người mua không thấy
-  await host0.page.getByTestId("nav-community-review").click();
-  const pending = host0.page.getByTestId("review-item").filter({ hasText: NOTE });
-  const approve = pending.getByTestId("review-approve");
-  // Hàng chờ có thể tới trễ (quy trình duyệt chạy nền): tải lại tới khi thấy nút Duyệt; không có thì bài không cần duyệt.
-  const needsReview = await expect(async () => {
-    await host0.page.reload();
-    await expect(approve).toBeVisible({ timeout: 4_000 });
-  })
-    .toPass({ timeout: 30_000 })
-    .then(
-      () => true,
-      () => false,
-    );
-  if (needsReview) await approve.click();
-  await host0.ctx.close();
-
+  // Đăng bằng API (audience "all" tường minh như seed): ca này kiểm luồng báo cáo, không kiểm ô soạn bài.
+  const hostApi = await apiLogin({
+    base: WEB,
+    tenantKey: TENANT,
+    username: USERNAME.host,
+    password: OWNER_PW,
+    app: "contracts",
+  });
+  await createPost(WEB, hostApi, { type: "note", body: NOTE });
+  const hostPostText = "(đăng bằng API)";
+  const needsReview = false;
   const buyer = await openAs(browser, "buyer");
   await buyer.page.goto("/community");
   const target = postByTitle(buyer.page, NOTE).first();

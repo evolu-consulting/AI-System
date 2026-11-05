@@ -197,3 +197,34 @@ export async function createIsolatedDept(
   });
   return { suffix, key, name, json };
 }
+
+/** Chủ quản đăng bài bằng API community (`POST /pack/community/posts`), audience tường minh (mặc định mọi bạn bè). Trả phản hồi gốc (có id). `base` = origin web (proxy `/pack`). */
+export async function createPost(
+  base: string,
+  s: Session,
+  input: {
+    type: "note" | "sell" | "buy";
+    title?: string;
+    body: string;
+    audience?: {
+      mode: "all" | "suppliers" | "buyers" | "cats";
+      cats?: string[];
+      companies?: string[];
+    };
+  },
+): Promise<{ id?: string }> {
+  const { json } = await call<{ id?: string }>(`${base}/pack/community/posts`, {
+    method: "POST",
+    token: s.token,
+    body: JSON.stringify({
+      type: input.type,
+      title: input.title ?? "",
+      body: input.body,
+      fields: {},
+      cats: [],
+      media: [],
+      audience: { mode: "all", cats: [], companies: [], ...input.audience },
+    }),
+  });
+  return json;
+}
