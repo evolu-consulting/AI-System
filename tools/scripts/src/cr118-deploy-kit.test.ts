@@ -56,9 +56,7 @@ describe("prod kit · web gộp", () => {
     expect(conf).not.toContain("http://$host:18431");
     expect(conf).toContain("default http://localhost:18431;");
     expect(conf).toContain("map $http_x_s2_main_origin $s2_main_origin");
-    expect(conf).toContain(
-      "~^https://(sohoptac|app)(-test)?\\.[a-z0-9.-]+$ $http_x_s2_main_origin;",
-    );
+    expect(conf).toContain("~^https://app(-test)?\\.[a-z0-9.-]+$ $http_x_s2_main_origin;");
     // biome-ignore lint/suspicious/noTemplateCurlyInString: chuỗi nginx map, không phải template JS
     expect(conf).toContain("~^(?<hh>127\\.0\\.0\\.1|localhost):(?<pre>\\d*)5$ http://$hh:${pre}1;");
     expect(edge).toContain("community.__BASE__ __MAIN_PROD__");
@@ -180,33 +178,32 @@ describe("stg-cr118 · cô lập khỏi prod", () => {
     }
   });
 
-  it("CR-119: host app[-test].<d> + cờ S2_APP_HOST_LIVE (301 chỉ khi =1, đích cố định, không từ Host client)", () => {
+  it("CR-119 (2026-11-05): app[-test].<d> là host web DUY NHẤT; không còn sohoptac[-test] / cờ S2_APP_HOST_LIVE; community 301 cố định → app", () => {
     const edge = read(`${PROD}/edge/sohoptac2.conf`);
     const lib = read(`${PROD}/edge-lib.sh`);
     const gen = read(`${PROD}/gen-env.sh`);
     const web = read(`${PROD}/nginx.conf`);
     expect(lib).toContain("app) p=app; t=app-test");
     expect(lib).toContain('s/__N_APP__/$(s2_names app "$2" "$3")/');
-    expect(lib).toContain("S2_APP_HOST_LIVE phai la 0|1");
-    expect(lib).toContain("lp='\"\"'"); // =0: map legacy rỗng ⇒ sohoptac.<d> vẫn phục vụ
+    expect(lib).not.toContain("contracts)");
+    expect(lib).not.toContain("S2_APP_HOST_LIVE=");
     expect(edge).toContain("server_name __N_APP__;");
-    expect(edge).toContain(
-      "sohoptac.__BASE__ __LEGACY_PROD__; sohoptac-test.__BASE__ __LEGACY_TEST__;",
-    );
-    expect(edge).toContain("return 301 $s2_legacy_to$request_uri;"); // giữ path
+    expect(edge).not.toContain("__N_CONTRACTS__");
+    expect(edge).not.toContain("__LEGACY_");
+    expect(edge).not.toMatch(/sohoptac(-test)?\.__BASE__/);
     expect(edge).toContain(
       "community.__BASE__ __MAIN_PROD__; community-test.__BASE__ __MAIN_TEST__;",
     );
     expect(edge).not.toMatch(/return 301 .*\$(host|http_host)/); // không phản chiếu Host client
-    expect(lib).toContain('mp="https://app.$2"'); // =1: đích community = app.<d>
-    expect(web).toContain(
-      "~^https://(sohoptac|app)(-test)?\\.[a-z0-9.-]+$ $http_x_s2_main_origin;",
-    );
-    expect(gen).toContain('A="${A_IN:-${A_OLD:-0}}"'); // mặc định 0
-    expect(gen).toContain('if [ "$A" = 1 ]; then if [ "$H" = prod ]; then U_C="$P_APP"');
-    expect(gen).toContain("$P_C,$P_APP,$P_A"); // CORS gồm cả hai host
-    expect(gen).toContain("$T_C,$T_APP,$T_A");
-    expect(read(`${PROD}/enable-domain.sh`)).toContain('HOSTS="ai-test sohoptac-test app-test');
-    expect(read(`${PROD}/deploy.ps1`)).toContain("S2_APP_HOST_LIVE=$AppHostLive");
+    expect(lib).toContain('mp="https://app.$2"'); // đích community = app.<d>
+    expect(web).toContain("~^https://app(-test)?\\.[a-z0-9.-]+$ $http_x_s2_main_origin;");
+    expect(web).not.toContain("(sohoptac|app)");
+    expect(gen).not.toMatch(/\$A\b|APP_HOST_LIVE"? "|P_APP|T_APP/); // chỉ còn lệnh xoá khoá cũ
+    expect(gen).toContain('T_C="https://app-test.$D"');
+    expect(gen).toContain('P_C="https://app.$D"');
+    expect(read(`${PROD}/enable-domain.sh`)).toContain('HOSTS="ai-test app-test ai-test-admin');
+    const dep = read(`${PROD}/deploy.ps1`);
+    expect(dep).not.toContain("AppHostLive");
+    expect(dep).not.toContain("S2_APP_HOST_LIVE");
   });
 });

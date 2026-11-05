@@ -7,14 +7,14 @@ import {
   request as playwrightRequest,
 } from "@playwright/test";
 
-// DEP_DOMAIN=evoluconsulting.com => chay qua https host thu nghiem (sohoptac-test./ai-test-admin./ai-test./ai-test-hub.<domain>) thay vi SSH tunnel;
+// DEP_DOMAIN=evoluconsulting.com => chay qua https host thu nghiem (app-test./ai-test-admin./ai-test./ai-test-hub.<domain>) thay vi SSH tunnel;
 // DEP_*_URL van thang. Khong dat gi => localhost:1843x (tunnel).
-// DEP_HOSTS=prod => sohoptac./ai-admin./ai./ai-hub.<domain>; test (mac dinh) => cac host -test.
+// DEP_HOSTS=prod => app./ai-admin./ai./ai-hub.<domain>; test (mac dinh) => cac host -test.
 const SFX = process.env.DEP_HOSTS?.trim() === "prod" ? "" : "-test";
 const dom = (sub: string, local: string) =>
   DOM ? `https://${sub.replace("@", SFX)}.${DOM}` : local;
 const DOM = process.env.DEP_DOMAIN?.trim();
-export const CW = process.env.DEP_CONTRACTS_URL ?? dom("sohoptac@", "http://localhost:18431");
+export const CW = process.env.DEP_CONTRACTS_URL ?? dom("app@", "http://localhost:18431");
 export const ADMIN = process.env.DEP_ADMIN_URL ?? dom("ai@-admin", "http://localhost:18432");
 export const CHAT = process.env.DEP_CHAT_URL ?? dom("ai@", "http://localhost:18433");
 export const HUB = process.env.DEP_HUB_URL ?? dom("ai@-hub", "http://localhost:18434");

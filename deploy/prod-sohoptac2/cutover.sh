@@ -7,7 +7,7 @@
 #      container app cu giu nguyen, khong dung toi)
 #   3. cai edge/sohoptac2.conf (server_name = ten prod + ten -test) thanh conf.d/sohoptac2.conf
 #   4. docker exec edge-proxy nginx -t ; OK moi reload ; loi => khoi phuc ban sao luu, reload khong can, exit 1.
-# # CR-119: S2_APP_HOST_LIVE=1 bash cutover.sh => sohoptac./community. 301 sang app.<d> (mac dinh 0: app.<d> chay song song, sohoptac.<d> khong doi).
+# CR-119 (2026-11-05): web gop chi o app.<d>; sohoptac.<d> khong con duoc dung; community.<d> = 301 co dinh -> app.<d>/community.
 # Tien quyet: da chay enable-domain.sh (noi mang + compose) va deploy.ps1 -Hosts prod (build lai web voi URL prod).
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -68,8 +68,8 @@ else
 fi
 
 echo "--- kiem tra:"
-for h in sohoptac app ai ai-admin ai-hub; do echo "curl -sSI -o /dev/null -w '$h.$BASE %{http_code}\\n' https://$h.$BASE/"; done
+for h in app ai ai-admin ai-hub; do echo "curl -sSI -o /dev/null -w '$h.$BASE %{http_code}\\n' https://$h.$BASE/"; done
 echo "curl -sS https://ai-hub.$BASE/health ; echo ; curl -sS https://ai-hub.$BASE/auth-health ; echo"
-echo "curl -sSI https://sohoptac.$BASE/ | head -n1   # 200 (S2_APP_HOST_LIVE=0) hoac 301 -> https://app.$BASE/ (=1)"
 echo "curl -sSI https://app.$BASE/ | head -n1   # 200 = web gop (CR-119; can DNS + cert cho app.$BASE)"
+echo "curl -sSI https://community.$BASE/ | head -n2   # 301 -> https://app.$BASE/community (moc go ~2026-12-05)"
 echo "Hoan tac: bash rollback-cutover.sh"

@@ -2,7 +2,7 @@
 # Lỗi 2 lượt liền ⇒ hiện cửa sổ báo (msg) + ghi log; hồi phục ⇒ báo một lần. Trạng thái giữa các lượt ở file .state cạnh log.
 #   powershell -NoProfile -File deploy\prod-sohoptac2\uptime-check.ps1
 param(
-  [string[]]$Hosts = @("sohoptac", "ai", "ai-admin"),
+  [string[]]$Hosts = @("app", "ai", "ai-admin"),
   [string]$Domain = "evoluconsulting.com",
   [string]$Log = "F:\workspace\tools\_logs\uptime.log"
 )

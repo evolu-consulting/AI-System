@@ -15,7 +15,7 @@ import {
 import { git, PROD_DIR, sshRead } from "./verify-lib";
 
 const DOMAIN = "evoluconsulting.com";
-const HOSTS = ["ai-admin", "ai", "sohoptac", "community"];
+const HOSTS = ["ai-admin", "ai", "app", "community"];
 const PSQL = "docker compose -p sohoptac2 exec -T pg psql -U s2_owner -d ai_system -X -At";
 
 // Chỉ đọc: head/psql select/logs. Chạy qua `bash -s`; không ghi file, không `up/down/exec` ngoài psql select.

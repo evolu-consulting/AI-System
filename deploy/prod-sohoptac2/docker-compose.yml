@@ -99,7 +99,7 @@ services:
       APP_URL_CONTRACTS: ${S2_PUBLIC_CONTRACTS_URL:-}
       APP_URL_STUDIO: ${S2_PUBLIC_HUB_URL:-http://localhost:18434}/studio/
       APP_URL_ADMIN: ${S2_PUBLIC_ADMIN_URL:-http://localhost:18432}
-      # CR-118: Community nằm trong web gộp ⇒ URL = <host sohoptac>/community (gen-env.sh đặt S2_PUBLIC_COMMUNITY_URL).
+      # CR-118: Community nằm trong web gộp ⇒ URL = <host app>/community (gen-env.sh đặt S2_PUBLIC_COMMUNITY_URL).
       APP_URL_COMMUNITY: ${S2_PUBLIC_COMMUNITY_URL:-http://localhost:18431/community}
     command: ["bun", "--env-file=/run/s2/app.env", "apps/admin-api/src/server.ts"]
     volumes:

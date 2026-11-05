@@ -35,7 +35,7 @@ Tài khoản: platform admin `admin` (mật khẩu ở `ADMIN.pw`), chủ quản
 2. Tắt Community ở Admin → Ứng dụng/năng lực ⇒ mục nav Community biến mất sau khi cấu hình đổi (SSE `config.changed`, ≤ vài giây).
 3. Đối tác: đăng nhập một lần, vào `/community`; gõ `/contracts` ⇒ bị chặn (không có SHT); `/community/profile/<org>/<section>` tải lại trực tiếp = 200 (history fallback).
 4. Hash cũ: mở `http://127.0.0.1:28531/community#/feed`, `#/profile/<o>/<s>`, `#/settings` ⇒ ánh xạ đúng.
-5. 301: `curl -sI -H 'Host: community.example.test' http://127.0.0.1:28535/` ⇒ `301`, `Location: https://sohoptac.example.test/community`; `/auth/`, `/pack/` trên 28535 vẫn proxy (tab cũ).
+5. 301: `curl -sI -H 'Host: community.example.test' http://127.0.0.1:28535/` ⇒ `301`, `Location: https://app.example.test/community`; `/auth/`, `/pack/` trên 28535 vẫn proxy (tab cũ).
 6. Link báo giá/thông báo từ hub dùng `/community` (không `#/feed`): `COMMUNITY_WEB_URL=http://127.0.0.1:28531/community`.
 Giới hạn: không HTTPS/domain ⇒ cookie `Secure`/SSO khác prod chỉ ảnh hưởng đúng kiểu đã có ở stg-sohoptac2 (APP_ENV=development).
 

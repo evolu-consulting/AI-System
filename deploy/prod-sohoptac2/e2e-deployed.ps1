@@ -6,7 +6,7 @@ param(
   [string]$Spec = "",
   [string]$User = "demo-owner",
   [string]$Domain = "",   # vd evoluconsulting.com: chay qua https host (DEP_DOMAIN), KHONG mo tunnel
-  [ValidateSet("test", "prod")][string]$Hosts = "test",   # DEP_HOSTS: prod = sohoptac./ai./ai-admin./ai-hub. (dung voi -Domain)
+  [ValidateSet("test", "prod")][string]$Hosts = "test",   # DEP_HOSTS: prod = app./ai./ai-admin./ai-hub. (dung voi -Domain)
   [string]$Key ="F:\workspace\id_evoc_key",
   [string]$Server = "evoc@149.202.83.5",
   [int]$RwDelay = 600   # giay: toi thieu tu luc bat dau ro+ai toi luc rw dang nhap (cua so gioi han IP 10 phut); 0 = khong cho

@@ -24,4 +24,4 @@ else
   s2_restore_confd "$cur" "$CONFD"; rm -rf "$cur"
   echo "rollback-cutover: nginx -t LOI sau khi khoi phuc - da dua conf.d ve trang thai truoc khi chay"; exit 1
 fi
-echo "curl -sSI https://sohoptac.${S2_BASE_DOMAIN:-evoluconsulting.com}/ | head -n1   # app cu"
+echo "curl -sSI https://app.${S2_BASE_DOMAIN:-evoluconsulting.com}/ | head -n1   # app cu"
