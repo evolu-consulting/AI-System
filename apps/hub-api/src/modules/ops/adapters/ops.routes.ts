@@ -2,6 +2,8 @@
 // `PROTECTED_PREFIXES`) → chỉ platform_admin (403, trước mọi parse/DB) → body (422 `OPS_SETTINGS_INVALID`). Không logic.
 import {
   OPS_ERRORS,
+  type OpsOverviewQuery,
+  OpsOverviewQuerySchema,
   type OpsSettings,
   type OpsSettingsResponse,
   OpsSettingsSchema,
@@ -13,6 +15,7 @@ import type { AuthVars } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
 import { readJson } from "../../../lib/http";
 import { OPS_MANUAL_GAP_MS, type OpsRoundDeps, runChecksNow } from "../application/ops.round";
+import { makeOverviewService } from "../application/overview.service";
 import type { OpsRepo, OpsState } from "./ops.repo";
 
 export const OPS_PREFIX = "/ops";
@@ -52,10 +55,22 @@ async function parseSettings(c: Parameters<typeof readJson>[0]): Promise<OpsSett
   );
 }
 
+/** Query sai/ngoài khoảng ⇒ mặc định (màn hình chủ không được hỏng vì tham số). */
+const overviewQuery = (raw: Record<string, string>): OpsOverviewQuery => {
+  const r = OpsOverviewQuerySchema.safeParse(raw);
+  return r.success ? r.data : OpsOverviewQuerySchema.parse({});
+};
+
 export function opsRoutes(d: OpsRoundDeps & { now?: () => Date }): Hono<AuthVars> {
   const now = d.now ?? (() => new Date());
+  const overview = makeOverviewService({
+    db: d.checkDeps.db,
+    now,
+    ...(d.checkDeps.statusDir ? { statusDir: d.checkDeps.statusDir } : {}),
+  });
   const r = new Hono<AuthVars>();
   r.use("*", requirePlatformAdmin());
+  r.get("/overview", async (c) => c.json(await overview.get(overviewQuery(c.req.query()))));
   r.get("/status", async (c) => c.json(await statusBody(d.repo)));
   r.post("/check", async (c) => {
     const out = await runChecksNow(d, now());
