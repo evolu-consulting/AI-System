@@ -194,6 +194,8 @@ export const processRuns = hub.table("process_runs", {
   packRecordId: uuid("pack_record_id"),
   /** CR-105 (0068) · lượt chạy thử từ "Mẫu · chạy thử" (danh sách lượt mặc định lọc `false`). */
   isTest: boolean("is_test").notNull().default(false),
+  /** CR-121 R-1 (0098) · "Chạy lại cả lượt": run gốc (unique một phần ⇒ một run gốc chỉ có một lần chạy lại). */
+  rerunOf: uuid("rerun_of"),
 });
 
 export const stageRuns = hub.table("stage_runs", {

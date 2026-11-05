@@ -295,7 +295,7 @@ export async function setRunBack(
   const lim = p.raiseLimit ? sql`back_limit + 1` : sql`back_limit`;
   await tx.execute(sql`update hub.process_runs set current_step = ${p.step},
       current_stage_idx = ${p.firstIdx}, back_limit = ${lim}, back_rounds = back_rounds + 1,
-      status = 'running', decision = null, updated_at = now()
+      status = 'running', decision = null, finished_at = null, updated_at = now()
     where id = ${runId} and tenant_id = ${p.tenantId}`);
 }
 

@@ -28,8 +28,9 @@ export type BackApply = {
   target: number;
   feedback: string;
   decidedBy: string;
-  /** Task review (hoặc decision) đã đóng — `process_back_events.task_id`, loại khỏi `superseded`. */
-  taskId: string;
+  /** Task review (hoặc decision) đã đóng — `process_back_events.task_id`, loại khỏi `superseded`. CR-121 · quản trị chạy lại
+   *  bước ⇒ null (không task; mọi task mở `superseded`). */
+  taskId: string | null;
   /** D8 · `add_attempt` ⇒ `back_limit + 1` cùng lúc `back_rounds + 1`. */
   raiseLimit: boolean;
 };

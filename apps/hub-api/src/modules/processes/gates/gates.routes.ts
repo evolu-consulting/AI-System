@@ -3,7 +3,10 @@
 import {
   CancelProcessRunRequestSchema,
   DecideProcessRunRequestSchema,
+  RerunProcessRunRequestSchema,
+  RerunStepRequestSchema,
   ReviewDecisionRequestSchema,
+  StopProcessRunRequestSchema,
 } from "@ai/contracts/chat";
 import { FormSubmitRequestSchema } from "@ai/contracts/hub-admin";
 import { Hono } from "hono";
@@ -12,9 +15,11 @@ import { parseJson } from "../../../lib/http";
 import type { ProcessDeps } from "../core/ports";
 import { tenantIdQuery } from "../runs/runs.routes";
 import { GateService } from "./gates.service";
+import { RunControlService } from "./run-control.service";
 
 export function gatesRoutes(d: ProcessDeps): Hono<AuthVars> {
   const svc = new GateService(d);
+  const ctl = new RunControlService(d);
   const r = new Hono<AuthVars>();
 
   r.post("/review-tasks/:id/decision", async (c) => {
@@ -36,6 +41,23 @@ export function gatesRoutes(d: ProcessDeps): Hono<AuthVars> {
   r.post("/process-runs/:id/decide", async (c) => {
     const body = await parseJson(c, DecideProcessRunRequestSchema);
     return c.json(await svc.decide(c.var.user, c.req.param("id"), body, tenantIdQuery(c)));
+  });
+
+  // CR-121 · R-1 · điều khiển lượt chạy (quản trị, lý do bắt buộc). Quyền/khoá/CAS ở `RunControlService`.
+  r.post("/process-runs/:id/stop", async (c) => {
+    const b = await parseJson(c, StopProcessRunRequestSchema);
+    return c.json(await ctl.stop(c.var.user, c.req.param("id"), b.reason, tenantIdQuery(c)));
+  });
+
+  r.post("/process-runs/:id/rerun-step", async (c) => {
+    const b = await parseJson(c, RerunStepRequestSchema);
+    return c.json(await ctl.rerunStep(c.var.user, c.req.param("id"), b, tenantIdQuery(c)));
+  });
+
+  r.post("/process-runs/:id/rerun", async (c) => {
+    const b = await parseJson(c, RerunProcessRunRequestSchema);
+    const out = await ctl.rerun(c.var.user, c.req.param("id"), b.reason);
+    return c.json(out.body, out.created ? 201 : 200);
   });
 
   return r;
