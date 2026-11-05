@@ -192,9 +192,19 @@ describe("CR-121 · hồ sơ công ty", () => {
       expect(row?.version).toBe(v);
       expect(row?.ceo_user_id).toBeNull();
       // Lớp DB: ghi thẳng user công ty khác vi phạm FK kép.
-      await expect(
-        env.owner`update admin.tenants set ceo_user_id = ${USER_ID.hoa} where id = ${ACME}`,
-      ).rejects.toThrow();
+      // (postgres.js Query là thenable lười: `expect(query).rejects` treo trên bun 1.3.14 ⇒ bọc async rồi bắt lỗi tường minh.)
+      let fkError: unknown = null;
+      try {
+        await guard(
+          "owner: ghi CEO công ty khác",
+          env.owner`update admin.tenants set ceo_user_id = ${USER_ID.hoa} where id = ${ACME}`.then(
+            (r) => r,
+          ),
+        );
+      } catch (e) {
+        fkError = e;
+      }
+      expect((fkError as { code?: string } | null)?.code).toBe("23503"); // foreign_key_violation
     },
     TEST_MS,
   );
