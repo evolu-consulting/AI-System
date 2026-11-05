@@ -45,7 +45,7 @@ async function launchNotify(d: LauncherDeps, tx: Tx, c: LaunchCtx): Promise<Kick
     kind: notifyKindOf(ex),
     title,
     body: renderNotify(ex.body, inputs, 2000),
-    dedupKey: notifyDedupKey(c.runId, c.stage.id, c.stage.attempt),
+    dedupKey: notifyDedupKey(c.runId, c.stage.id, c.stage.round, c.stage.attempt),
   });
   if (sent.recipients === 0)
     logger.warn("process-notify-no-recipients", { run_id: c.runId, stage_run_id: c.stage.id });

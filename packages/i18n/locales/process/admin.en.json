@@ -1285,7 +1285,7 @@
       }
     },
     "err": {
-      "packBound": "This run belongs to a package's approval process (e.g. contract approval), so the whole run cannot be rerun here. Reopen the process from the package's own screen.",
+      "packBound": "This run belongs to a package's approval process (e.g. contract approval), and has ended, so neither the run nor a step can be rerun here. Use \"Reopen process\" on the package's own screen.",
       "state": "The run's state has changed, so this action no longer applies. Reload the page and try again.",
       "forbidden": "You are not allowed to do this. Ask a platform admin or your company admin.",
       "notFound": "Run not found (it may have been deleted). Go back to the process list.",

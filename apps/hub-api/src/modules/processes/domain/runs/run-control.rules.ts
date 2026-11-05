@@ -28,8 +28,17 @@ const RERUNNABLE_STAGE: ReadonlySet<StageRunStatus> = new Set([
 /** Run đã dừng/hết hạn ⇒ không chạy lại bước (dùng "Chạy lại cả lượt"); xong/hỏng/đang chạy ⇒ được. */
 const RERUN_STEP_RUN_BLOCKED: ReadonlySet<ProcessRunStatus> = new Set(["cancelled", "expired"]);
 
-export function canRerunStep(run: ProcessRunStatus, stage: StageRunStatus | null): boolean {
-  if (RERUN_STEP_RUN_BLOCKED.has(run)) return false;
+/** CR-121 F-3 · run gắn bản ghi gói (vd duyệt HĐ) đã kết thúc ⇒ không chạy lại bước ở đây (HĐ đã duyệt sẽ có task mới / lượt kẹt
+ *  cộng "Mở lại" của gói ⇒ hai run sống) — dùng "Mở lại quy trình" của gói. Run gói CHƯA kết thúc vẫn chạy lại bước được. */
+export const rerunStepPackBlocked = (run: ProcessRunStatus, packBound: boolean): boolean =>
+  packBound && isTerminal(run);
+
+export function canRerunStep(
+  run: ProcessRunStatus,
+  stage: StageRunStatus | null,
+  packBound = false,
+): boolean {
+  if (RERUN_STEP_RUN_BLOCKED.has(run) || rerunStepPackBlocked(run, packBound)) return false;
   return stage !== null && RERUNNABLE_STAGE.has(stage);
 }
 

@@ -16,9 +16,15 @@ export const NOTIFY_KIND_MAIL = "process.notify_mail";
 export const notifyKindOf = (ex: Pick<NotifyExecutor, "channels">): string =>
   ex.channels.includes("email") ? NOTIFY_KIND_MAIL : NOTIFY_KIND_BELL;
 
-/** Khoá chống gửi trùng (run, stage run, lần thử): retry/sweep chạy lại cùng lần thử không chèn thêm (UNIQUE dedup). */
-export const notifyDedupKey = (runId: string, stageRunId: string, attempt: number): string =>
-  `pn:${runId}:${stageRunId}:${attempt}`;
+/** Khoá chống gửi trùng (run, stage run, vòng, lần thử): retry/sweep chạy lại cùng vòng + lần thử không chèn thêm (UNIQUE dedup).
+ *  CR-121 F-3 · có `round`: trả lại / chạy lại bước (`resetStage`) giữ id stage run, đặt `attempt = 1` nhưng tăng `round` ⇒ mỗi
+ *  vòng gửi đúng một lần (thiếu `round` thì vòng 2+ bị ON CONFLICT nuốt). */
+export const notifyDedupKey = (
+  runId: string,
+  stageRunId: string,
+  round: number,
+  attempt: number,
+): string => `pn:${runId}:${stageRunId}:${round}:${attempt}`;
 
 const VAR_RE = /\{([a-z][a-z0-9_-]{0,63})\}/g;
 /** `{khoá}` ⇒ giá trị input run; khoá không có ⇒ rỗng. Cắt trần sau khi thay. */

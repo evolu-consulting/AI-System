@@ -22,6 +22,7 @@ import {
   canStop,
   type RunControlOp,
   rerunStepFeedback,
+  rerunStepPackBlocked,
   roleAllows,
 } from "../domain/runs/run-control.rules";
 import type { StageRunStatus } from "../domain/types";
@@ -137,7 +138,10 @@ export class RunControlService {
       const s = await stageRowOf(tx, run.id, idx);
       const st = (s?.status ?? null) as StageRunStatus | null;
       // CAS theo trạng thái SAU khoá: lần bấm thứ hai thấy stage đã `queued` ⇒ 409, không chạy lại hai lần.
-      if (!canRerunStep(run.status as ProcessRunStatus, st))
+      const packBound = run.packKey != null;
+      if (rerunStepPackBlocked(run.status as ProcessRunStatus, packBound))
+        throw processError("PROCESS_RUN_STATE", { pack_bound: true });
+      if (!canRerunStep(run.status as ProcessRunStatus, st, packBound))
         throw processError("PROCESS_RUN_STATE");
       if (!canRaiseBackLimit(Number(run.backLimit))) throw processError("PROCESS_RUN_STATE");
       const recipients = await core.runRecipients(tx, run.id, run.tenantId);

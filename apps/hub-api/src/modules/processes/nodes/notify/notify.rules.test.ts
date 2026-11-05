@@ -38,8 +38,10 @@ describe("CR-121 D-6 · notify.rules", () => {
     expect(t).toEqual({ userIds: [S, U], groupKeys: ["giam-doc"] });
   });
   it("khoá chống trùng theo (run, stage run, lần thử); kind theo kênh", () => {
-    expect(notifyDedupKey("r", "s", 2)).toBe("pn:r:s:2");
-    expect(notifyDedupKey("r", "s", 2)).not.toBe(notifyDedupKey("r", "s", 3));
+    expect(notifyDedupKey("r", "s", 1, 2)).toBe("pn:r:s:1:2");
+    expect(notifyDedupKey("r", "s", 1, 2)).not.toBe(notifyDedupKey("r", "s", 1, 3));
+    // CR-121 F-3 · trả lại/chạy lại bước: attempt về 1 nhưng round tăng ⇒ khoá khác.
+    expect(notifyDedupKey("r", "s", 2, 1)).not.toBe(notifyDedupKey("r", "s", 1, 1));
     expect(notifyKindOf({ channels: ["bell"] })).toBe(NOTIFY_KIND_BELL);
     expect(notifyKindOf({ channels: ["bell", "email"] })).toBe(NOTIFY_KIND_MAIL);
   });

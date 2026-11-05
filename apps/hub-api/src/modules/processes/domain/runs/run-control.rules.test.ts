@@ -50,6 +50,10 @@ describe("CR-121 R-1 · run-control.rules", () => {
     expect(canRerunStep("running", null)).toBe(false);
     expect(canRerunStep("cancelled", "done")).toBe(false);
     expect(canRerunStep("expired", "done")).toBe(false);
+    // CR-121 F-3 · run gắn gói đã kết thúc ⇒ không; đang chạy ⇒ vẫn được.
+    expect(canRerunStep("done", "done", true)).toBe(false);
+    expect(canRerunStep("failed", "failed", true)).toBe(false);
+    expect(canRerunStep("running", "needs_decision", true)).toBe(true);
   });
 
   it("Chạy lại cả lượt: chỉ run đã kết thúc, không gắn gói", () => {

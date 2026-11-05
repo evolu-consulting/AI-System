@@ -1285,7 +1285,7 @@
       }
     },
     "err": {
-      "packBound": "Lượt này thuộc quy trình duyệt của một gói (vd. duyệt hợp đồng) nên không chạy lại cả lượt ở đây được. Hãy mở lại quy trình từ màn hình của gói.",
+      "packBound": "Lượt này thuộc quy trình duyệt của một gói (vd. duyệt hợp đồng) và đã kết thúc nên không chạy lại lượt hay chạy lại bước ở đây được. Hãy dùng \"Mở lại quy trình\" trên màn hình của gói.",
       "state": "Trạng thái lượt chạy đã đổi nên thao tác không còn hợp lệ. Tải lại trang rồi thử lại.",
       "forbidden": "Bạn không có quyền thao tác này. Nhờ quản trị nền tảng hoặc quản trị công ty thực hiện.",
       "notFound": "Không tìm thấy lượt chạy (có thể đã bị xoá). Quay lại danh sách quy trình.",
