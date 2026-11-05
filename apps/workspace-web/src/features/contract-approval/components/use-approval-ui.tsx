@@ -26,6 +26,7 @@ import { isDraftConfirm, movedToStep } from "../lib/moved-to";
 import { ApprovalButtons, ApprovalNote, ExtractedValue, ReasonForm } from "./ApprovalParts";
 import { ApprovalTimeline } from "./ApprovalTimeline";
 import { AttentionBanner } from "./AttentionBanner";
+import { EngineOffNote } from "./EngineOffNote";
 
 export type ApprovalUi = {
   buttons: ReactNode;
@@ -91,6 +92,7 @@ export function useApprovalUi(o: {
         </p>
       )}
       {ap.approval && <ApprovalTimeline id={o.id} a={ap.approval} />}
+      <EngineOffNote step={ap.approval?.step} mode={ap.approval?.mode} />
       {attention && (
         <AttentionBanner
           attention={attention}

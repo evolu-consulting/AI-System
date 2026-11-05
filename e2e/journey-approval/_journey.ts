@@ -94,8 +94,14 @@ export async function adminAssignAndRoute(page: Page, e: Env): Promise<void> {
     { process: PROC.buy, kind: "buy" },
     { process: PROC.sell, kind: "sell" },
   ];
-  if ((await box.getByTestId(/^admin-routing-rule-\d+$/).count()) >= want.length) return;
-  for (const [i, w] of want.entries()) {
+  const rules = box.getByTestId(/^admin-routing-rule-\d+$/);
+  const base = await rules.count(); // CR-120: dòng "Mặc định" của quy trình đang dùng đã có sẵn ở đầu danh sách
+  const done = await box
+    .getByTestId(/^admin-routing-rule-\d+-kind-buy$/)
+    .evaluateAll((els) => els.filter((e) => (e as HTMLInputElement).checked).length);
+  if (done > 0) return; // luật Mua đã đặt (chạy lại)
+  for (const [j, w] of want.entries()) {
+    const i = base + j;
     await box.getByTestId("admin-routing-add").click();
     const row = box.getByTestId(`admin-routing-rule-${i}`);
     const sel = row.getByTestId(`admin-routing-rule-${i}-process`);
