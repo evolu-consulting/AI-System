@@ -152,16 +152,22 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
     toDef: (s) => waitEventToDef(s.wait),
   },
   // CR-121 D-6/D-6b · node `notify`: người dùng thêm/sửa ở khe `contracts.approval` qua Form + Canvas thư viện (`library/FlowNotifyFields`,
-  // sửa vào `slot_body`; Hub dựng stage engine khi lưu). Trình sửa quy trình thường chưa có khối sửa ⇒ không nhãn ⇒ không hiện trong
-  // danh sách chọn; lưu lại ra executor rỗng thì hub từ chối NOTIFY_INVALID (không mất cấu hình âm thầm).
+  // sửa vào `slot_body`; Hub dựng stage engine khi lưu). Trình sửa thường: chọn được "Thông báo" với mặc định an toàn (xem toDef).
   notify: {
     kind: "notify",
     family: NODE_FAMILY_OF.notify,
-    labelKey: null,
+    labelKey: "process.admin.library.form.notifyStep",
     defaults: () => ({ executor: "notify" }),
     draftValue: "notify",
     draftExecutor: () => "notify",
-    toDef: () => ({ kind: "notify", to: [], channels: [], title: "", body: "" }),
+    // Trình sửa thường chưa có khối sửa riêng: gửi chuông cho người bắt đầu lượt, tiêu đề = tên bước (hợp lệ, không mất bước).
+    toDef: (s) => ({
+      kind: "notify",
+      to: [{ who: "starter" }],
+      channels: ["bell"],
+      title: s.name.trim() || "Thông báo",
+      body: "",
+    }),
   },
 };
 

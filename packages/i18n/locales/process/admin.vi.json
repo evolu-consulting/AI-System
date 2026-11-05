@@ -1186,6 +1186,9 @@
       "notify": "Thông báo",
       "wait_until": "Chờ tới"
     },
+    "warning": {
+      "NOTIFY_NO_RECIPIENT": "Không có người nhận"
+    },
     "kindHint": {
       "notify": "Bước Thông báo gửi vào chuông của người nhận (kèm email nếu có chọn). Nếu không có người nhận, bước vẫn xong và ghi cảnh báo trong kết quả bước.",
       "wait_until": "Bước Chờ tới giữ lượt chạy tới giờ hẹn rồi tự chạy tiếp. Thiếu ngày hẹn ở hợp đồng thì bước dừng chờ người quyết."

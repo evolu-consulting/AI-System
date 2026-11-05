@@ -110,6 +110,15 @@ export function RunFlow({ steps, selected, onSelect }: Props) {
                 {s.name}
               </span>
               <span className="text-caption">{stateText}</span>
+              {s.warning ? (
+                <span
+                  className="flex items-center gap-1 text-caption text-warning"
+                  data-testid="run-step-warning"
+                >
+                  <TriangleAlert aria-hidden />
+                  {t(`process.admin.runDetail.warning.${s.warning}`)}
+                </span>
+              ) : null}
             </button>
           </li>
         );

@@ -53,5 +53,10 @@ Sau khi bước duyệt trước bước Thông báo đạt, người nhận (ng
 bằng nhãn nghiệp vụ "Thông báo" / "Chờ tới".
 - Kịch bản: khi Giám đốc duyệt xong HĐ thì người tạo HĐ thấy thông báo đúng HĐ ở chuông [test: e2e/journey-approval/cr121-d6b-notify.spec.ts » 3 · người gửi duyệt thấy thông báo ở chuông sau khi Giám đốc duyệt, đúng mã/tên HĐ]
 
+#### Yêu cầu: Thẻ duyệt và chi tiết lượt chạy hiện đủ bước Thông báo / Chờ tới
+FlowView của thẻ duyệt chiếu cả bước Thông báo (bước hệ thống) và Chờ tới (chờ tới giờ hẹn); chi tiết lượt chạy đánh dấu cảnh báo `NOTIFY_NO_RECIPIENT` khi kết quả bước ghi không có người nhận.
+- Kịch bản: khi thẻ có bước Thông báo và Chờ tới thì FlowView có đủ hai bước với đúng loại và giờ hẹn [test: apps/hub-api/src/modules/packs/contracts/domain/approval-flow-view.rules.test.ts » notify ⇒ bước hệ thống; wait_until ⇒ bước chờ tới `due_at`; đủ bước như quy trình]
+- Kịch bản: khi bước Thông báo không có người nhận thì bước chi tiết lượt chạy mang cảnh báo [test: apps/hub-api/src/modules/processes/runs/run-detail.map.test.ts » không có người nhận ⇒ step.warning = NOTIFY_NO_RECIPIENT; có người nhận ⇒ không có cờ]
+
 ## Việc còn lại
 Điều phối chạy e2e `journey-approval` (job cuối đợt). Hub `approval-flow-view` chiếu bước notify/wait vào FlowView thẻ duyệt nếu cần hiện ở dòng thời gian thẻ (hiện workspace-web chỉ map khi có).

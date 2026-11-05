@@ -60,6 +60,7 @@ function toStep(s: StageRow, defs: SnapStageLite[], matched: ReadonlyMap<number,
     duration_ms: s.finished_at ? num(s.duration_ms) : null,
     conditions: conditionsOf(def?.after?.branch, matched.get(idx) ?? new Set<number>()),
     ...(note && { note }),
+    ...(s.warn_no_recipient === true && { warning: "NOTIFY_NO_RECIPIENT" as const }),
   };
   return step;
 }

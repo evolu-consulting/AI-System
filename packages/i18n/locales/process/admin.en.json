@@ -1186,6 +1186,9 @@
       "notify": "Notification",
       "wait_until": "Wait until"
     },
+    "warning": {
+      "NOTIFY_NO_RECIPIENT": "No recipients"
+    },
     "kindHint": {
       "notify": "A Notification step posts to each recipient's bell (and email if chosen). With no recipients the step still finishes and records a warning in its result.",
       "wait_until": "A Wait-until step holds the run until the due time, then continues on its own. If the contract has no such date the step stops for someone to decide."

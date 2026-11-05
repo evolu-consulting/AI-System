@@ -164,6 +164,12 @@ describe("CR-121 D-6 · node notify [R1]", () => {
     const runId = await startRun(c, "cr121-notify-empty", { inputs: RUN_INPUTS() });
     await waitStatus(c.sql, runId, "done");
     expect(await outputMd(runId, 0)).toContain("Cảnh báo: không có người nhận");
+    // CR-121 D-6b · cờ cảnh báo cho "Chi tiết lượt chạy" lấy từ CHÍNH kết quả bước (cùng điều kiện câu `readStages`)
+    const warn = await c.sql`
+      select exists (select 1 from hub.process_outputs o join hub.stage_runs s on s.id = o.stage_run_id
+        where s.process_run_id = ${runId} and s.stage_idx = 0
+          and position('Cảnh báo: không có người nhận' in o.content) > 0) as w`;
+    expect(warn[0]?.w).toBe(true);
     expect((await notesOf(runId)).length).toBe(0);
   }, 60_000);
 

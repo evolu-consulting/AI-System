@@ -460,7 +460,7 @@
           "name": "Background queue",
           "value": "{v} s",
           "detail": "{queued} jobs waiting · oldest waited {oldest} s",
-          "empty": ""
+          "empty": "Background queue not measured yet"
         },
         "dify": {
           "name": "AI service",
@@ -472,7 +472,7 @@
           "name": "Database",
           "value": "{v} ms",
           "detail": "Connections {conn} / {max}",
-          "empty": ""
+          "empty": "Database not measured yet"
         },
         "deploy": {
           "name": "Deployment",

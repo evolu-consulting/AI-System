@@ -73,6 +73,8 @@ export const RunDetailStepSchema = z.strictObject({
   conditions: z.array(RunConditionSchema).max(10),
   /** Câu dễ hiểu cho trạng thái lỗi/chờ/bỏ qua; vắng khi bước bình thường. */
   note: I18nTextSchema.optional(),
+  /** CR-121 D-6b · cảnh báo của bước (bước vẫn xong): `NOTIFY_NO_RECIPIENT` = bước Thông báo không có người nhận. */
+  warning: z.enum(["NOTIFY_NO_RECIPIENT"]).optional(),
 });
 export type RunDetailStep = z.infer<typeof RunDetailStepSchema>;
 

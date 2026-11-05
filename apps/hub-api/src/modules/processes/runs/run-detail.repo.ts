@@ -65,6 +65,8 @@ export type StageRow = {
   duration_ms: number | string | null;
   exec_vi: string | null;
   exec_en: string | null;
+  /** CR-121 D-6b · bước Thông báo ghi cảnh báo "không có người nhận" vào kết quả (chỉ tính khi bước là `notify`). */
+  warn_no_recipient?: boolean;
 };
 
 /** Tên agent/nhóm tra thẳng từ snapshot trong CÙNG câu (catalog không RLS) ⇒ không thêm câu theo số bước. */
@@ -79,7 +81,10 @@ export async function readStages(tx: Tx, runId: string, tenantId: string): Promi
     select s.stage_idx, s.status, s.attempt, s.attempt_limit, s.round, s.retry_count, s.last_error_code,
       ${iso("s.started_at")} as started_at, ${iso("s.finished_at")} as finished_at, ${iso("s.updated_at")} as updated_at,
       (extract(epoch from (s.finished_at - s.started_at)) * 1000)::bigint as duration_ms,
-      coalesce(ag.name->>'vi', tm.name->>'vi') as exec_vi, coalesce(ag.name->>'en', tm.name->>'en') as exec_en
+      coalesce(ag.name->>'vi', tm.name->>'vi') as exec_vi, coalesce(ag.name->>'en', tm.name->>'en') as exec_en,
+      (r.snapshot->'stages'->(s.stage_idx::int)->'executor'->>'kind' = 'notify' and exists (
+        select 1 from hub.process_outputs o where o.stage_run_id = s.id and o.tenant_id = s.tenant_id
+          and position('Cảnh báo: không có người nhận' in o.content) > 0)) as warn_no_recipient
     from hub.stage_runs s
     join hub.process_runs r on r.id = s.process_run_id and r.tenant_id = s.tenant_id
     ${EXEC_JOIN}

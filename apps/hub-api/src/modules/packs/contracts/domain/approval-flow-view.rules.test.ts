@@ -224,3 +224,24 @@ describe("CR-118 · FlowView từ thẻ duyệt (tương đương)", () => {
     });
   });
 });
+
+describe("CR-121 D-6b · bước Thông báo / Chờ tới trong FlowView của thẻ duyệt", () => {
+  test("notify ⇒ bước hệ thống; wait_until ⇒ bước chờ tới `due_at`; đủ bước như quy trình", () => {
+    const due = "2026-12-01T02:00:00.000Z";
+    const v = flowViewOfCard(
+      card({
+        steps: [
+          step(0, { status: "passed" }),
+          step(1, { kind: "notify", status: "passed", group_id: null, name: "Báo" }),
+          step(2, { kind: "wait_until", status: "open", group_id: null, due_at: due, name: "Chờ" }),
+        ],
+      }),
+      U(7),
+      null,
+    );
+    expect(FlowViewSchema.safeParse(v).success).toBe(true);
+    expect(v.steps.map((s) => s.kind)).toEqual(["review", "system", "wait"]);
+    const w = v.steps[2];
+    expect(w?.kind === "wait" ? w.until : null).toBe(due);
+  });
+});

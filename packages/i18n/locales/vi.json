@@ -460,7 +460,7 @@
           "name": "Hàng đợi nền",
           "value": "{v} giây",
           "detail": "{queued} việc đang chờ · chờ lâu nhất {oldest} giây",
-          "empty": ""
+          "empty": "Chưa đo được hàng đợi nền"
         },
         "dify": {
           "name": "Dịch vụ AI",
@@ -472,7 +472,7 @@
           "name": "Cơ sở dữ liệu",
           "value": "{v} ms",
           "detail": "Kết nối {conn} / {max}",
-          "empty": ""
+          "empty": "Chưa đo được cơ sở dữ liệu"
         },
         "deploy": {
           "name": "Triển khai",
