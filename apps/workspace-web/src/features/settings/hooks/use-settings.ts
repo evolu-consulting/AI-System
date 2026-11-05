@@ -25,7 +25,8 @@ export const brandOf = (c: {
 });
 
 /** Trong Shell: công ty đã lưu ⇒ kho nhận diện; màu/giao diện/tiêu đề tab áp ngay khi kho đổi (kể cả bản xem thử của hộp thoại). */
-export function useBrandSync(): void {
+/** `enabled=false` (CR-120): đối tác không có gói contracts ⇒ không gọi `/pack/contracts/company` (vẫn áp giao diện/tiêu đề). */
+export function useBrandSync(enabled = true): void {
   const { t } = useTranslation();
   const q = useQuery({
     queryKey: settingsKeys.company,

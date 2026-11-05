@@ -7,6 +7,7 @@ import { logout } from "~/features/auth/api";
 import { SettingsDialogLazy } from "~/features/settings/components/SettingsDialogLazy";
 import { useBrandSync } from "~/features/settings/hooks/use-settings";
 import { cn } from "~/lib/utils";
+import { useShellPacks } from "~/shell/use-shell-packs";
 import { AssistantDock, DockBody } from "../components/AssistantDock";
 import { BottomNav } from "../components/BottomNav";
 import { Header } from "../components/Header";
@@ -21,7 +22,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
   const { pathname } = useLocation();
   const layout = layoutOf(pathname);
   const dock = useDock();
-  useBrandSync();
+  useBrandSync(useShellPacks().contracts === true);
   const [pinned, setPinned] = useStoredBool(NAV_PINNED_KEY, true);
   const role = roleOf({ write, owner });
   const sheetName =
