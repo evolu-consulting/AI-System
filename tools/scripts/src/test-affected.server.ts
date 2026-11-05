@@ -12,7 +12,7 @@ import {
   serverBins,
 } from "./test-affected.server.rules";
 
-function freeSlots(root: string): number | null {
+export function freeSlots(root: string): number | null {
   const p = Bun.spawnSync(["bun", "tools/scripts/src/res-check.ts", "--server", "--json"], {
     cwd: root,
     stdout: "pipe",
@@ -88,7 +88,17 @@ export async function runServer(
   console.log(
     `test:affected: máy chủ ${free === null ? "không đo được slot (dùng 1)" : `${free} slot trống`} → ${bins.length} thùng song song`,
   );
-  const fl: Flags = { dirty: opts.dirty || dirtyTree(root), all: opts.frozen };
+  return runBins(root, bins, { dirty: opts.dirty || dirtyTree(root), all: opts.frozen });
+}
+
+/** Chạy các thùng đã chia sẵn (cổng đợt: `wave-plan.rules.ts`), song song. */
+export async function runBins(
+  root: string,
+  bins: readonly Bin[],
+  opts: { dirty?: boolean; all?: boolean } = {},
+): Promise<StepResult[]> {
+  mkdirSync(join(root, ".data/test-affected"), { recursive: true });
+  const fl: Flags = { dirty: opts.dirty ?? dirtyTree(root), all: opts.all ?? false };
   const done = await Promise.all(bins.map((b, i) => runBin(root, i + 1, b, fl)));
   return done.flat();
 }

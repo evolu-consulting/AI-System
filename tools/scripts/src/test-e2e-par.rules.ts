@@ -80,6 +80,8 @@ export const META: Record<string, Meta> = {
   "playwright.config.ts": { db: "root", redis: REDIS_URL("E2E_ROOT_REDIS_URL"), cost: 613 },
 };
 
+import { type Piece, parsePiece, pieceName, ROOT_CLOCK_PORT } from "./e2e-pieces.rules";
+
 export const norm = (p: string): string => p.replaceAll("\\", "/");
 
 export function fallbackMeta(config: string): Meta {
@@ -176,8 +178,53 @@ export function planJobs(p: Plan, timings: Readonly<Record<string, number>>, onl
   }
   // `only`: một hoặc nhiều (ngăn bằng dấu phẩy hoặc dấu cách) tên việc / tiền tố đường dẫn cấu hình.
   const wants = onlyWants(only);
-  const keep = (j: Job) => !wants.length || wants.some((w) => jobMatches(j, w));
-  return jobs.filter(keep).sort((a, b) => b.cost - a.cost || a.name.localeCompare(b.name));
+  const plain = wants.filter((w) => !parsePiece(w));
+  const keep = (j: Job) => !wants.length || plain.some((w) => jobMatches(j, w));
+  const pieces = wants.flatMap((w) => pieceJobs(p, timings, w));
+  return [...jobs.filter(keep), ...pieces].sort(
+    (a, b) => b.cost - a.cost || a.name.localeCompare(b.name),
+  );
+}
+
+/** Việc của một mảnh (`root@k=files` / `việc@i/n`, xem e2e-pieces.rules.ts); không phải mảnh hoặc không có cấu hình ⇒ []. */
+function pieceJobs(p: Plan, timings: Readonly<Record<string, number>>, tok: string): Job[] {
+  const pc = parsePiece(tok);
+  if (!pc) return [];
+  if (pc.kind === "root") return [rootPieceJob(pc, timings)];
+  const config = p.configs
+    .map(norm)
+    .find((c) => c !== "playwright.config.ts" && jobSlug(c) === pc.job);
+  if (!config) return [];
+  const meta = { ...(META[config] ?? fallbackMeta(config)) };
+  return [
+    {
+      name: pieceName(pc),
+      config,
+      files: [`--shard=${pc.i}/${pc.n}`],
+      meta,
+      cost: (timings[config] ?? meta.cost) / pc.n,
+    },
+  ];
+}
+
+/** Mảnh gốc `k`: DB `root`/`root<k>` + cổng 3000 / 3400+10k; mảnh `clock` dùng đồng hồ giả, DB và cổng riêng. */
+function rootPieceJob(
+  pc: Extract<Piece, { kind: "root" }>,
+  timings: Readonly<Record<string, number>>,
+): Job {
+  const meta = { ...(META["playwright.config.ts"] ?? fallbackMeta("playwright.config.ts")) };
+  const clock = pc.key === "clock";
+  const k = clock ? 0 : Number(pc.key);
+  const port = k === 0 ? ROOT_PORT0 : ROOT_PORT_BASE + k * ROOT_PORT_STEP;
+  return {
+    name: pieceName(pc),
+    config: "playwright.config.ts",
+    files: pc.files.map(specPattern),
+    meta: { ...meta, db: clock ? "root_clock" : k === 0 ? "root" : `root${k}` },
+    rootPort: clock ? ROOT_CLOCK_PORT : port,
+    ...(clock ? { clock: true } : {}),
+    cost: pc.files.reduce((a, f) => a + (timings[f] ?? 20), 0),
+  };
 }
 
 /** `--only=` → danh sách tên (ngăn bằng dấu phẩy và/hoặc khoảng trắng: `"root,N1"`, `"contracts-web P-a"`). */
@@ -203,7 +250,11 @@ export function unmatchedOnly(
   all: readonly Pick<Job, "name" | "config">[],
   only?: string,
 ): string[] {
-  return onlyWants(only).filter((w) => !all.some((j) => jobMatches(j, w)));
+  return onlyWants(only).filter((w) => {
+    const pc = parsePiece(w);
+    if (pc) return !all.some((j) => jobMatches(j, pc.kind === "root" ? "root" : pc.job));
+    return !all.some((j) => jobMatches(j, w));
+  });
 }
 
 import { laneDbEnv, portShift, shiftNumericEnv } from "./e2e-lane.rules";

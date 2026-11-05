@@ -92,20 +92,25 @@ function loadTimings(root: string): Timings {
   }
 }
 
-function saveTimings(root: string, runs: Run[], old: Timings): void {
-  const t = { ...old };
-  for (const r of runs)
+/** Thời lượng file lượt này: JUnit (cấp file thường = 0) bị đè bởi số đo header→header (`Run.fileMs`) khi > 0. */
+function currentTimings(root: string, runs: Run[]): Timings {
+  const cur: Timings = {};
+  for (const r of runs) {
     if (existsSync(join(root, r.junit)))
-      Object.assign(t, parseJunit(readFileSync(join(root, r.junit), "utf8")));
+      Object.assign(cur, parseJunit(readFileSync(join(root, r.junit), "utf8")));
+    for (const [f, ms] of Object.entries(r.fileMs ?? {})) if (ms > 0) cur[f] = ms / 1000;
+  }
+  return cur;
+}
+
+function saveTimings(root: string, runs: Run[], old: Timings): void {
+  const t = { ...old, ...currentTimings(root, runs) };
   writeFileSync(join(root, TIMINGS), `${JSON.stringify(t, null, 2)}\n`);
 }
 
-/** 10 file int chậm nhất của lượt này (từ JUnit) - để biết file nào kéo dài cả lượt. */
+/** 10 file int chậm nhất của lượt này - để biết file nào kéo dài cả lượt. */
 function printSlowest(root: string, runs: Run[]): void {
-  const cur: Timings = {};
-  for (const r of runs)
-    if (existsSync(join(root, r.junit)))
-      Object.assign(cur, parseJunit(readFileSync(join(root, r.junit), "utf8")));
+  const cur = currentTimings(root, runs);
   const top = Object.entries(cur)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);

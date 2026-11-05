@@ -78,6 +78,7 @@ export class HangWatch {
   private line(l: string, now: number): void {
     const h = HEADER.exec(l)?.[1];
     if (h) {
+      this.closeFile(now);
       const p = norm(h);
       this.cur = this.files.find((f) => f === p || f.endsWith(`/${p}`) || p.endsWith(`/${f}`)) ?? p;
       this.fileStart = now;
@@ -86,6 +87,20 @@ export class HangWatch {
     }
     const r = RESULT.exec(l)?.[1];
     if (r) this.lastTest = r;
+  }
+
+  /** Mili giây mỗi file: từ header của nó tới header file kế (JUnit của bun 1.3.14 ghi time=0 cho cấp file). Gọi `finish` khi lô xong. */
+  readonly fileMs = new Map<string, number>();
+
+  private closeFile(now: number): void {
+    if (this.cur)
+      this.fileMs.set(this.cur, (this.fileMs.get(this.cur) ?? 0) + (now - this.fileStart));
+  }
+
+  finish(now: number): Map<string, number> {
+    this.closeFile(now);
+    this.cur = null;
+    return this.fileMs;
   }
 
   /** Trả phán quyết nếu lô đang treo (im quá `idleS` hoặc file hiện tại chạy quá `fileS`); ngược lại null. */

@@ -185,24 +185,27 @@ const userKeyOf = (userId: string): UserKey | undefined =>
 export async function settleRuns(hub: HubX, sql: Sql, k: Keys): Promise<void> {
   const rows = await sql<{ id: string; user_id: string; owner: string | null }[]>`
     select id, user_id, owner from hub.runs where status = 'running'`;
+  // Chỉ chờ các run MÌNH huỷ được (hub này làm chủ + biết user): run của instance khác / user lạ không bao giờ tự hết
+  // `running`, chờ chúng là ngủ 5 s mỗi afterEach (CR-121 T-1, Luật 4c) ⇒ kết thúc SQL ngay.
+  const mine = rows.filter((r) => r.owner === hub.instanceId && userKeyOf(r.user_id));
   await Promise.all(
-    rows
-      .filter((r) => r.owner === hub.instanceId)
-      .map(async (r) => {
-        const who = userKeyOf(r.user_id);
-        if (who)
-          await call(hub, "POST", `/runs/${r.id}/cancel`, { token: await sign(k, USERS[who]) });
-      }),
+    mine.map(async (r) => {
+      const who = userKeyOf(r.user_id) as UserKey;
+      await call(hub, "POST", `/runs/${r.id}/cancel`, { token: await sign(k, USERS[who]) });
+    }),
   );
-  const ids = rows.map((r) => r.id);
-  const left = await waitFor(
-    () =>
-      sql<{ id: string }[]>`select id from hub.runs
-        where id = any(${sql.array(ids, 2950)}) and status = 'running'`,
-    (rs) => rs.length === 0,
-    5_000,
-  );
-  for (const r of left) await endSqlRun(sql, r.id);
+  const ids = mine.map((r) => r.id);
+  const left = ids.length
+    ? await waitFor(
+        () =>
+          sql<{ id: string }[]>`select id from hub.runs
+            where id = any(${sql.array(ids, 2950)}) and status = 'running'`,
+        (rs) => rs.length === 0,
+        5_000,
+      )
+    : [];
+  const rest = rows.filter((r) => !ids.includes(r.id));
+  for (const r of [...left, ...rest]) await endSqlRun(sql, r.id);
 }
 
 // ---------- lỗi định tuyến (plan-errors §1) ----------

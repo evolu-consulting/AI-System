@@ -23,6 +23,8 @@ export type Run = {
   junit: string;
   /** Có ⇒ lô bị watchdog kill; `rest` đã được `drain` đưa lại hàng đợi. */
   hung?: HangVerdict;
+  /** Mili giây mỗi file (header→header, gồm beforeAll); JUnit cấp file luôn 0 nên không dùng được cho chia việc. */
+  fileMs?: Record<string, number>;
 };
 
 export type ChunkOpts = {
@@ -93,11 +95,12 @@ export async function runChunk(
   } finally {
     if (timer) clearInterval(timer);
   }
+  const fileMs = Object.fromEntries(wd.finish(performance.now()));
   const mark = hung ? `\n${hangLine(hung)}\n` : "";
   const text = out.join("") + err.join("") + mark;
   appendFileSync(join(root, DATA, `int-${slot}.log`), `\n=== ${name}: ${files.join(" ")}\n${text}`);
   if (hung && code === 0) code = 137;
-  return { name, files: files.length, code, ms: performance.now() - t0, text, junit, hung };
+  return { name, files: files.length, code, ms: performance.now() - t0, text, junit, hung, fileMs };
 }
 
 /** Lấy lô từ hàng đợi tới khi hết; lô bị kill ⇒ file chưa chạy quay lại ĐẦU hàng đợi (mỗi vòng ít nhất bỏ file treo ⇒ luôn dừng). */

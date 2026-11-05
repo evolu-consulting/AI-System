@@ -2,7 +2,7 @@
 // (mỗi thùng = một chuỗi lệnh `run-tests.ps1` nối tiếp). Hàm thuần; `test-affected.server.ts` lo gọi ssh/pwsh.
 import { META } from "./test-e2e-par.rules";
 
-export type ServerCmd = { step: "int" | "e2e"; filter: string };
+export type ServerCmd = { step: "int" | "e2e"; filter: string; workers?: number };
 export type Bin = { cmds: ServerCmd[]; cost: number };
 
 /** Ước lượng giây mỗi file int (đo trung bình P-a+K1: 51 s / ~170 file, chia thêm cho song song worker). */
@@ -80,6 +80,7 @@ export function evotestArgs(cmd: ServerCmd, dirty: boolean, all = false): string
     cmd.step,
     "-Filter",
     cmd.filter,
+    ...(cmd.step === "int" && cmd.workers ? ["-Workers", String(cmd.workers)] : []),
     ...(dirty ? ["-Dirty"] : []),
     ...(all ? ["-All"] : []),
   ];
