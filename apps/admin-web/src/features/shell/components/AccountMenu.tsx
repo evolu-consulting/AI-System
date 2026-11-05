@@ -1,6 +1,7 @@
 // ADM-FR-01, ADM-FR-03, ADM-FR-08 · menu avatar: Đổi mật khẩu · Xác thực hai bước (không cho member, AC12) · Giao diện + Ngôn ngữ (PrefsPanel dùng chung) · Đăng xuất.
 import { PrefsPanel } from "@ai/web-kit/ui/PrefsPanel";
 import { Link } from "@tanstack/react-router";
+import { KeyRound, LogOut, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,24 +32,28 @@ export function AccountMenu() {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="font-normal">
-          <p className="truncate text-label font-medium text-foreground">{name}</p>
+      <DropdownMenuContent align="end" className="w-60">
+        <DropdownMenuLabel className="px-3 py-2 font-normal">
+          <p className="truncate text-label font-semibold text-foreground">{name}</p>
           <p className="truncate text-caption text-muted-foreground">{role}</p>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        <PrefsPanel />
         <DropdownMenuItem asChild>
-          <Link to="/account/password">{t("account.changePassword")}</Link>
+          <Link to="/account/password" className="gap-2.5">
+            <KeyRound size={16} aria-hidden /> {t("account.changePassword")}
+          </Link>
         </DropdownMenuItem>
         {role === "member" ? null : (
           <DropdownMenuItem asChild>
-            <Link to="/account/2fa">{t("account.twofa")}</Link>
+            <Link to="/account/2fa" className="gap-2.5">
+              <ShieldCheck size={16} aria-hidden /> {t("account.twofa")}
+            </Link>
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <PrefsPanel />
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => void signOut()}>{t("auth.logout")}</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => void signOut()} className="gap-2.5">
+          <LogOut size={16} aria-hidden /> {t("auth.logout")}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

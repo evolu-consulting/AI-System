@@ -337,7 +337,6 @@
     },
     "shell": {
       "navMain": "Main navigation",
-      "themeToggle": "Light/dark mode",
       "menuProfile": "My wall",
       "menuCommunitySettings": "General settings",
       "navBottom": "Navigation",

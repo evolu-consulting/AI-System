@@ -200,25 +200,34 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await expect(page.getByRole("dialog").or(page.getByRole("menu"))).toBeVisible();
   });
 
-  test("PK-FR-10 · giao diện: MỘT nút biểu tượng 'Chế độ sáng/tối' (aria-pressed) ở thanh trên đổi html[data-theme]; menu 'Tài khoản' không còn radio 'Giao diện' (CR-120)", async ({
+  test("PK-FR-10 · giao diện: menu 'Tài khoản' có nhóm 'Giao diện' CHỈ biểu tượng (radio Sáng / Tối / Theo máy, có tooltip) đổi html[data-theme]; 'Ngôn ngữ' VI | EN gọn (CR-120)", async ({
     page,
   }) => {
     await page.goto("/contracts/list");
     await expect(page.getByRole("button", { name: "Giao diện" })).toHaveCount(0);
-    const toggle = page.getByRole("button", { name: "Chế độ sáng/tối" });
-    await expect(toggle).toBeVisible();
-    // menu tài khoản: không còn nhóm radio "Giao diện" (chỉ còn Ngôn ngữ)
+    await expect(page.getByRole("button", { name: "Chế độ sáng/tối" })).toHaveCount(0); // không có nút sáng/tối riêng ở thanh trên
     await page.getByRole("button", { name: /Tài khoản/ }).click();
-    await expect(page.getByRole("radiogroup", { name: "Giao diện" })).toHaveCount(0);
-    await expect(page.getByRole("radiogroup", { name: "Ngôn ngữ" })).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(toggle).toHaveAttribute("aria-pressed", "false");
-    await toggle.click();
+    const theme = page.getByRole("radiogroup", { name: "Giao diện" });
+    await expect(theme.getByRole("radio")).toHaveCount(3);
+    for (const [name, tip] of [
+      ["Sáng", "Sáng"],
+      ["Tối", "Tối"],
+      ["Theo máy", "Theo máy"],
+    ] as const) {
+      const r = theme.getByRole("radio", { name, exact: true });
+      await expect(r).toHaveText(""); // chỉ biểu tượng, không chữ
+      await expect(r).toHaveAttribute("title", tip);
+    }
+    await theme.getByRole("radio", { name: "Tối", exact: true }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await expect(toggle).toHaveAttribute("aria-pressed", "true");
-    await toggle.click();
+    await expect(theme.getByRole("radio", { name: "Tối", exact: true })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await theme.getByRole("radio", { name: "Sáng", exact: true }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+    const lang = page.getByRole("radiogroup", { name: "Ngôn ngữ" });
+    await expect(lang.getByRole("radio")).toHaveText(["VI", "EN"]);
   });
 });
 

@@ -1,5 +1,6 @@
 // GAP-E #32/#30 · phần menu tài khoản: đổi mật khẩu + 2FA (trang của nền tảng qua SSO), Điều khoản + Bảo mật.
 import { Link } from "@tanstack/react-router";
+import { KeyRound, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
@@ -27,7 +28,7 @@ export function AccountLinks({ role, close }: { role: string | undefined; close:
         onClick={() => go("password")}
         className={ITEM}
       >
-        {t("contracts.gape.account.changePassword")}
+        <KeyRound size={18} aria-hidden="true" /> {t("contracts.gape.account.changePassword")}
       </button>
       {role !== "member" && (
         <button
@@ -37,7 +38,7 @@ export function AccountLinks({ role, close }: { role: string | undefined; close:
           onClick={() => go("twofa")}
           className={ITEM}
         >
-          {t("contracts.gape.account.twofa")}
+          <ShieldCheck size={18} aria-hidden="true" /> {t("contracts.gape.account.twofa")}
         </button>
       )}
     </>
@@ -47,7 +48,7 @@ export function AccountLinks({ role, close }: { role: string | undefined; close:
 export function LegalLinks({ close }: { close: () => void }) {
   const { t } = useTranslation();
   return (
-    <div className="flex gap-4 border-t border-rule-soft px-4 py-2 text-caption text-dim">
+    <div className="flex gap-4 px-4 pt-1 pb-2 text-caption text-dim">
       <Link to="/terms" role="menuitem" onClick={close} className="hover:text-ink">
         {t("contracts.gape.legal.terms")}
       </Link>

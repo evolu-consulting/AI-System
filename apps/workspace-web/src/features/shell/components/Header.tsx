@@ -10,7 +10,6 @@ import { useShellPacks } from "~/shell/use-shell-packs";
 import type { Role } from "../lib/nav";
 import { AppSwitcher } from "./AppSwitcher";
 import { BrandMark } from "./BrandMark";
-import { ThemeToggle } from "./ThemeToggle";
 import { type ShellUser, UserMenu } from "./UserMenu";
 
 const BTN = "grid h-10 w-10 place-items-center rounded-[10px] text-ink-2 hover:bg-sunk";
@@ -74,7 +73,6 @@ export function Header({
           className="flex items-center"
         />
         {packs.contracts && !inCommunity && <ConnectedBell />}
-        <ThemeToggle className={BTN} />
         {packs.contracts && (
           <button
             type="button"

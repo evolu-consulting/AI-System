@@ -83,7 +83,7 @@ test("MỘT khung (CR-120): Sổ Hợp Tác ↔ Community đổi trang trong app
   const sameShell = async () => {
     await expect(page.locator("header.top")).toHaveCount(0); // không còn khung riêng của Community
     await expect(nav.locator("a[target], .ext")).toHaveCount(0); // không link ngoài / biểu tượng ↗
-    await expect(page.getByRole("button", { name: "Chế độ sáng/tối" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Tài khoản" })).toBeVisible();
   };
   await nav.getByRole("link", { name: "Bảng tin" }).click(); // SHT → Community
   await expect(page).toHaveURL(/\/community$/);

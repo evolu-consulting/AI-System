@@ -31,6 +31,7 @@ export function useBrandSync(enabled = true): void {
   const q = useQuery({
     queryKey: settingsKeys.company,
     queryFn: ({ signal }) => fetchCompany(signal),
+    enabled,
     staleTime: 60_000,
     retry: false,
   });

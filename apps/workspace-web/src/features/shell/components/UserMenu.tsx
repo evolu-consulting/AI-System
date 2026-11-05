@@ -51,14 +51,13 @@ function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
   const extra = buildAccountEntries(MODULES, (p) => packs[p] === true);
   return (
     <>
-      <div className="border-b border-rule px-4 py-3">
-        <p className="text-body font-semibold">{name}</p>
-        {user.email && <p className="text-caption text-dim">{user.email}</p>}
-        <p className="mt-1 text-caption">
+      <div className="px-4 pt-3 pb-1.5">
+        <p className="truncate text-body font-semibold">{name}</p>
+        <p className="truncate text-caption text-dim">
           {company} · <span className="text-act">{t(`contracts.shell.role.${role}`)}</span>
         </p>
       </div>
-      <PrefsPanel hideTheme />
+      <PrefsPanel />
       <AccountLinks role={user.role} close={close} />
       {extra.map((e) => (
         <Link
@@ -96,6 +95,7 @@ function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
           </Link>
         </>
       )}
+      <hr className="mx-3 my-1 border-rule-soft" />
       <button
         type="button"
         role="menuitem"

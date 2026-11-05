@@ -71,7 +71,6 @@ test("topbar dùng chung: brand công ty chủ quản (kể cả đối tác), k
     const header = page.locator("header");
     await expect(header.getByRole("searchbox")).toBeVisible(); // ô tìm Community nằm trong thanh trên chung
     await expect(header.getByRole("button", { name: "Thông báo" })).toBeVisible();
-    await expect(header.getByRole("button", { name: "Chế độ sáng/tối" })).toBeVisible();
     await expect(header.locator(".navtab")).toHaveCount(0);
     await expect(header.locator('[aria-label="Cài đặt"]')).toHaveCount(0);
     await expect(header.getByRole("button", { name: "Đăng xuất" })).toHaveCount(0);
@@ -124,24 +123,28 @@ test("điều hướng trong app KHÔNG tải lại trang: Bảng tin ↔ Bài �
   );
 });
 
-test("công tắc sáng/tối: MỘT nút biểu tượng (aria-pressed) đổi html[data-theme], thay nhóm radio 'Giao diện'", async ({
+test("giao diện nằm TRONG menu tài khoản (chỉ biểu tượng Sáng/Tối/Theo máy, đổi html[data-theme]); không có nút sáng/tối riêng ở thanh trên", async ({
   page,
 }) => {
   await page.goto("/community");
-  const toggle = page.getByRole("button", { name: "Chế độ sáng/tối" });
-  await expect(toggle).toBeVisible();
-  await expect(page.getByRole("radiogroup", { name: "Giao diện" })).toHaveCount(0);
-  const before = await toggle.getAttribute("aria-pressed");
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-pressed", before === "true" ? "false" : "true");
-  await expect(page.locator("html")).toHaveAttribute(
-    "data-theme",
-    before === "true" ? "light" : "dark",
+  await expect(page.locator("header").getByRole("button", { name: "Chế độ sáng/tối" })).toHaveCount(
+    0,
   );
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-pressed", before ?? "false");
+  await page.getByRole("button", { name: "Tài khoản" }).click();
+  const theme = page.getByRole("radiogroup", { name: "Giao diện" });
+  await expect(theme.getByRole("radio")).toHaveCount(3);
+  const dark = theme.getByRole("radio", { name: "Tối", exact: true });
+  await expect(dark).toHaveText("");
+  await dark.click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(dark).toHaveAttribute("aria-checked", "true");
+  await theme.getByRole("radio", { name: "Sáng", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.getByRole("radiogroup", { name: "Ngôn ngữ" }).getByRole("radio")).toHaveText([
+    "VI",
+    "EN",
+  ]);
 });
-
 test("3 loại bài có màu KHÁC nhau (nhãn, viền thẻ, nút soạn nhanh, đếm tab): bán ≠ mua ≠ thông báo", async ({
   page,
 }) => {

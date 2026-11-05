@@ -13,13 +13,13 @@ Làm: một AppShell (features/shell: Sidebar/Header/BottomNav/UserMenu) cho m�
 `shell/modules.ts`), mỗi module khai nhóm (`groupLabelKey`/`order`/`nav`/`accountMenu`) với basePath = `/${key}`; mục là `<Link>` TanStack.
 `/community/*` chuyển vào `routes/_authed` (chung khung); cổng gói contracts chỉ bọc `/contracts/*` (`ContractsGate`) ⇒ đối tác chỉ thấy nhóm Community
 và KHÔNG gọi `/pack/contracts/me`. Community chỉ còn nội dung trang; ô tìm + chuông (+ persona mock) vào KHE thanh trên chung (`shell/topbar-slots`,
-portal). Công tắc sáng/tối = một nút biểu tượng (lucide Sun/Moon, aria-label "Chế độ sáng/tối", aria-pressed), lưu qua prefs-sync như cũ.
+portal). Giao diện sáng/tối nằm TRONG menu tài khoản (người dùng chốt lại): menu tối giản dùng chung admin-web + workspace-web — đầu menu = tên + vai, một hàng "Giao diện" = nhóm 3 nút chỉ biểu tượng (Sun/Moon/Monitor, tooltip + aria-label) và "Ngôn ngữ" VI | EN, mục có biểu tượng (KeyRound/ShieldCheck/Settings), Đăng xuất ở cuối; lưu qua prefs-sync như cũ.
 `--cm-*` ánh xạ sang token shell (màu literal → var(--card/--ink/--rule…), tối dùng được). 3 loại bài có token ngữ nghĩa `--type-sell|buy|note`
 (xanh lá / xanh dương / hổ phách, AA, có bản tối); cam thương hiệu chỉ cho nút chính.
 
 ## Làm
 - shared/kernel/module-manifest.ts (NavEntry, AccountEntry, groupLabelKey, order) · modules/{contracts,community}/manifest.ts · shell/{nav,modules,use-shell-packs,topbar-slots,dev-identity}.ts
-- features/shell/components/{Sidebar,Header,BottomNav,UserMenu,ThemeToggle}.tsx · web-kit PrefsPanel `hideTheme`
+- features/shell/components/{Sidebar,Header,BottomNav,UserMenu,AccountSection}.tsx · web-kit PrefsPanel (icon-only) · admin-web AccountMenu
 - routes/_authed/{contracts,community}.tsx (+ con) · pack-state/pages/{PackFrame,ContractsGate,ShellFeatured}.tsx · useMe `enabled`
 - modules/community: bỏ Sidebar/UserMenu/sidebar-state/nav model, TopBar → khe thanh trên, CSS (shell.css/mockup.css/accent.css/feed.css) theo token
 - e2e: community-web (shell.cm.ts, feed.cm.ts), N1 shell.n1.ts, workspace-web auth.ss.ts, contracts-web legacy-routes.cw.ts (+ baseline relock)
@@ -51,12 +51,11 @@ nhóm, basePath = `/${key}`); mọi mục là `<Link>` của router, không có 
 - Kịch bản: khi mở /community thì không còn header/sidebar riêng của Community, ô tìm và chuông nằm trong thanh trên chung [test: e2e/community-web/shell.cm.ts » MỘT khung: không còn header/sidebar riêng của Community]
 - Kịch bản: khi đối tác (không gói contracts) vào Community thì DOM không có nhóm/đường dẫn Sổ Hợp Tác và không có lời gọi /pack/contracts/ [test: e2e/workspace-web/auth.ss.ts » đối tác lần đầu: buộc đổi mật khẩu]
 
-#### Yêu cầu: Công tắc sáng/tối một nút biểu tượng (CR-120)
-Giao diện sáng/tối là một nút biểu tượng mặt trời/mặt trăng (aria-label "Chế độ sáng/tối", aria-pressed) ở thanh trên chung, lưu như cũ (prefs-sync);
-menu tài khoản không còn nhóm radio "Giao diện" (vẫn còn "Ngôn ngữ").
-- Kịch bản: khi bấm nút thì html[data-theme] đổi sáng ↔ tối và aria-pressed đổi theo [test: e2e/N1/shell.n1.ts » giao diện: MỘT nút biểu tượng]
-- Kịch bản: khi mở menu tài khoản thì không còn radiogroup "Giao diện" [test: e2e/community-web/shell.cm.ts » công tắc sáng/tối]
-
+#### Yêu cầu: Menu tài khoản tối giản, giao diện sáng/tối chỉ biểu tượng (CR-120)
+Menu tài khoản (admin-web và workspace-web dùng chung PrefsPanel): tên + vai gọn; một hàng "Giao diện" gồm 3 nút chỉ biểu tượng Sáng / Tối / Theo máy (tooltip + aria-label)
+và nhóm "Ngôn ngữ" VI | EN; mục Đổi mật khẩu / Xác thực hai bước có biểu tượng; Đăng xuất ở cuối, tách riêng. Lưu như cũ (prefs-sync); không có nút sáng/tối riêng ở thanh trên.
+- Kịch bản: khi bấm radio "Tối" trong menu thì html[data-theme] = dark, radio là biểu tượng không chữ có tooltip [test: e2e/N1/shell.n1.ts » giao diện: menu 'Tài khoản' có nhóm 'Giao diện' CHỈ biểu tượng]
+- Kịch bản: khi ở Community thì giao diện nằm trong cùng menu, thanh trên không có nút sáng/tối [test: e2e/community-web/shell.cm.ts » giao diện nằm TRONG menu tài khoản]
 #### Yêu cầu: Màu 3 loại bài Community khác nhau, token ngữ nghĩa (CR-120)
 Cần bán / Cần mua / Thông báo có token `--type-sell|buy|note` (+ soft/ink, bản tối, chữ trên nền soft đạt AA) dùng nhất quán ở nhãn bài, viền trái thẻ,
 nút soạn nhanh (biểu tượng) và số đếm tab; màu cam thương hiệu chỉ cho nút chính.
