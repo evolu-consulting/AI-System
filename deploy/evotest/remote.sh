@@ -42,8 +42,27 @@ cache_gb=$(du -s --block-size=1G "$R/cache" "$R"/slots/*/out 2>/dev/null | awk '
 [ "$cache_gb" -lt 15 ] || { echo "evotest chiếm $cache_gb GB (>=15) - xoá $R/cache rồi chạy lại"; exit 4; }
 
 rm -rf app out; mkdir app out
-tar xzf "/tmp/evotest-app-$TAG.tgz" -C app || { echo "giải nén mã nguồn lỗi"; exit 2; }
-unlink "/tmp/evotest-app-$TAG.tgz"; unlink "/tmp/evotest-kit-$TAG.tgz"
+# tool-evotest-fast: nguồn = ref trong mirror git trên máy chủ (client chỉ đẩy phần chênh lệch); thiếu EVO_SRC_REF (client cũ) ⇒ tgz như trước.
+# archive-exclude.txt (trong kit) = pathspec loại file nhị phân bằng chứng docs/** mà không test nào đọc (cùng danh sách client dùng khi dự phòng).
+M="$R/mirror.git"
+if [ -n "${EVO_SRC_REF:-}" ]; then
+  EXC=(); [ -f ./archive-exclude.txt ] && while IFS= read -r l; do [ -n "$l" ] && EXC+=("$l"); done < ./archive-exclude.txt
+  t1=$(date +%s)
+  git --git-dir="$M" archive --format=tar "$EVO_SRC_REF" -- . ${EXC[@]+"${EXC[@]}"} | tar x -C app || { echo "giải nén mã nguồn từ mirror lỗi ($EVO_SRC_REF)"; exit 2; }
+  echo "[evotest] mã nguồn từ mirror $EVO_SRC_REF: $(( $(date +%s) - t1 )) s"
+else
+  tar xzf "/tmp/evotest-app-$TAG.tgz" -C app || { echo "giải nén mã nguồn lỗi"; exit 2; }
+fi
+unlink "/tmp/evotest-app-$TAG.tgz" 2>/dev/null; unlink "/tmp/evotest-kit-$TAG.tgz" 2>/dev/null
+# dọn file tạm lượt cũ bị bỏ sót (out.tgz client không còn ssh unlink) + ref mirror quá 1 ngày (giữ ref mới nhất làm gốc thương lượng cho lần đẩy sau)
+find /tmp -maxdepth 1 -name 'evotest-out-*.tgz' -mmin +180 -delete 2>/dev/null
+if [ -d "$M" ]; then
+  cutoff=$(date -d '-1 day' +%Y%m%d-%H%M%S)
+  git --git-dir="$M" for-each-ref --format='%(refname)' refs/evotest 2>/dev/null | sort | head -n -1 | while read -r r; do
+    st="${r#refs/evotest/}"; [ "$st" \< "$cutoff" ] && git --git-dir="$M" update-ref -d "$r"
+  done
+  git --git-dir="$M" gc --auto --prune=1.day.ago -q 2>/dev/null
+fi
 echo "$COMMIT" > app/VERSION
 export EVO_CAPTURE="${EVO_CAPTURE:-}" EVO_ALL="${EVO_ALL:-}" EVO_WORKERS="${EVO_WORKERS:-}" EVO_FILTER="${EVO_FILTER:-}" EVO_PROBE="${EVO_PROBE:-}" EVO_UID=$(id -u) EVO_GID=$(id -g)
 echo "[evotest] slot $SLOT ($PROJ) · đĩa trống $free_gb GB · commit $COMMIT · bước $STEP"

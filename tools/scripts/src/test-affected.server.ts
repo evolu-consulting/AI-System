@@ -75,19 +75,20 @@ export async function runServer(
   root: string,
   plan: AffectedPlan,
   configs: readonly string[],
-  opts: { frozen: boolean } = { frozen: false },
+  opts: { frozen: boolean; e2eJobs?: readonly string[]; dirty?: boolean } = { frozen: false },
 ): Promise<StepResult[]> {
-  if (!plan.int.length && !plan.e2e.length) {
+  const jobs = [...new Set([...plan.jobs, ...(opts.e2eJobs ?? [])])];
+  if (!plan.int.length && !jobs.length) {
     console.log("test:affected: không có int/e2e để chạy trên máy chủ.");
     return [];
   }
   mkdirSync(join(root, ".data/test-affected"), { recursive: true });
   const free = freeSlots(root);
-  const bins = serverBins(plan.int, plan.jobs, configs, free ?? 1);
+  const bins = serverBins(plan.int, jobs, configs, free ?? 1);
   console.log(
     `test:affected: máy chủ ${free === null ? "không đo được slot (dùng 1)" : `${free} slot trống`} → ${bins.length} thùng song song`,
   );
-  const fl: Flags = { dirty: dirtyTree(root), all: opts.frozen };
+  const fl: Flags = { dirty: opts.dirty || dirtyTree(root), all: opts.frozen };
   const done = await Promise.all(bins.map((b, i) => runBin(root, i + 1, b, fl)));
   return done.flat();
 }

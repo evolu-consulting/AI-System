@@ -197,6 +197,12 @@ describe("TS1 · chọn test (int, gốc, nén dòng lệnh)", () => {
       e2e: "owner",
     });
     expect(parseAffectedArgs(["--no-e2e"]).e2e).toBe("none");
+    // tool-evotest-fast: verify:slice --e2e a,b -Dirty
+    expect(parseAffectedArgs(["--e2e-jobs=community-web, root", "--dirty"])).toMatchObject({
+      e2eJobs: ["community-web", "root"],
+      dirty: true,
+    });
+    expect(parseAffectedArgs([])).toMatchObject({ e2eJobs: [], dirty: false });
     expect(parseAffectedArgs(["--e2e=wide"]).e2e).toBe("wide");
     expect(() => parseAffectedArgs(["--e2e=x"])).toThrow();
   });

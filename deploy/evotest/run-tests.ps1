@@ -1,8 +1,12 @@
-# Chạy test:all trên máy chủ 149.202.83.5 trong project Docker RIÊNG "evotest" (xem README.md). Cần: ssh key, git, tar, scp.
+﻿# Chạy test:all trên máy chủ 149.202.83.5 trong project Docker RIÊNG "evotest" (xem README.md). Cần: ssh key, git, tar, scp.
 #   pwsh deploy/evotest/run-tests.ps1 [-Step int|e2e|unit|py|all] [-Ref HEAD] [-Dirty] [-All: gồm cả suite module đóng băng (F1, kiểm tra hằng tháng); mặc định bỏ] [-Filter "tests/a tests/b" (int/perf) | "root,N1" (e2e: việc test:e2e:par)] [-Workers N (int)]; -Step perf = PERF=1, mặc định HD4; -Step py = pytest agent-runtime (Linux, python3.12 + uv sync --frozen; -Filter = đường dẫn/biểu thức pytest tương đối apps/agent-runtime; không nằm trong all) [-DryRun]
 # -Exclusive (chỉ -Step perf, CR-115): chờ mọi slot rảnh (tối đa -ExclusiveTimeoutMin phút, mặc định 60; hết giờ => exit 3), giữ khoá toàn máy ~/workspace/evotest/.exclusive trong lúc đo (lượt khác xếp hàng),
 #   nhả khoá cả khi lỗi/Ctrl-C; load/RAM lúc bắt đầu + kết thúc in ra và ghi vào <log>\exclusive.txt. Luật khoá: deploy/evotest/lock.sh.
 # -Probe "runs=3,size=small" (CR-116, chỉ -Step perf|py): bật PERF_PROBE=1 + PERF_PROBE_OPTS trong container; -Exclusive cũng dùng được với -Step py. Điều khiển bởi `bun run perf:probe` (docs/WORKFLOW.md "Đo perf").
+# tool-evotest-fast: nguồn đi qua MIRROR GIT trên máy chủ (~/workspace/evotest/mirror.git): `git push <sha>:refs/evotest/<stamp>` chỉ gửi phần chênh lệch,
+#   remote.sh `git archive` ngay trên máy chủ (loại file nhị phân bằng chứng docs/** theo archive-exclude.txt). -Dirty = commit tạm (cây làm việc, index tạm) đẩy cùng đường;
+#   đẩy lỗi / -NoMirror => dự phòng: git archive local (cùng danh sách loại) -> tgz -> scp như cũ. Mặc định IN TÓM TẮT GỌN (<= 15 dòng: bước, thời gian từng pha, pass/fail, CHỈ đỏ MỚI, đường dẫn log);
+#   -Full = in cả log máy chủ. Log đầy đủ luôn ở <log>\console.log. -Step perf / -Exclusive / -Probe luôn in đầy đủ (perf-probe đọc console).
 # git archive <Ref> (+ thay đổi chưa commit nếu -Dirty) -> scp -> remote.sh (build, chạy, dọn) -> log về .data/evotest/<giờ>/.
 # Thoát bằng mã test (0 xanh; 2 lỗi dựng/setup; 3 chờ slot quá 90 phút; 4 đĩa).
 # tool-evotest-cache:
@@ -12,7 +16,7 @@
 #   CHIA SLOT (lượt toàn bộ -Step e2e|all): thay vì chạy tuần tự trong MỘT slot, run-tests.ps1 tự chia: int (chỉ -Step all) một slot, việc e2e chia các slot trống còn lại (cân theo thời lượng đã đo
 #   ở ~/workspace/evotest/cache/e2e-timings.json), chạy SONG SONG bằng các tiến trình con (-InShard), rồi in MỘT bản tóm tắt gộp (thời lượng từng việc, 10 file int chậm nhất, mã thoát = ngăn xấu nhất; đỏ cũ known-red xử lý trong từng ngăn như trước).
 #   -NoShard: chạy một slot như cũ (giữ .exclusive). -Jobs N: số việc e2e cùng lúc trong slot; -Cpus N: CPU runner mỗi slot (mặc định 2; chia slot tự đặt theo lõi máy chủ). -Slots tối đa 12.
-param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,12)][int]$Slots = 8, [ValidateRange(0,9)][int]$Jobs = 0, [ValidateRange(0,8)][int]$Cpus = 0, [switch]$NoShard, [switch]$InShard, [string]$OutDir = "",[ValidateSet("", "cw")][string]$Capture = "", [switch]$Exclusive, [ValidateRange(1,600)][int]$ExclusiveTimeoutMin = 60, [string]$Probe = "", [switch]$Force, [switch]$NoCache, [switch]$CachePrune, [ValidateRange(1,50)][int]$Keep = 5, [ValidateRange(1,100)][int]$MaxGb = 6)
+param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,12)][int]$Slots = 8, [ValidateRange(0,9)][int]$Jobs = 0, [ValidateRange(0,8)][int]$Cpus = 0, [switch]$NoShard, [switch]$InShard, [string]$OutDir = "",[ValidateSet("", "cw")][string]$Capture = "", [switch]$Exclusive, [ValidateRange(1,600)][int]$ExclusiveTimeoutMin = 60, [string]$Probe = "", [switch]$Force, [switch]$Full, [switch]$NoMirror, [switch]$NoCache, [switch]$CachePrune, [ValidateRange(1,50)][int]$Keep = 5, [ValidateRange(1,100)][int]$MaxGb = 6)
 $ErrorActionPreference = "Stop"
 $isFull = (($Step -in "int", "e2e", "all") -and -not $Filter -and -not $Exclusive -and -not $InShard)
 if ($Force -and -not $isFull) { Write-Host "evotest: -Force chỉ có nghĩa với lượt toàn bộ (int|e2e|all không -Filter); bỏ qua" }
@@ -26,6 +30,8 @@ $stamp = (Get-Date -Format "yyyyMMdd-HHmmss") + "-" + $PID   # PID: các lượt
 $out = if ($OutDir) { $OutDir } else { Join-Path $Repo ".data\evotest\$stamp-$Step" }
 $tmp = Join-Path $env:TEMP "evotest-$stamp"
 $finished = $false
+$sw = [Diagnostics.Stopwatch]::StartNew(); $ph = [ordered]@{}; $lastMark = 0.0
+function Mark([string]$n) { $now = $sw.Elapsed.TotalSeconds; $ph[$n] = [math]::Round($now - $script:lastMark, 1); $script:lastMark = $now }
 
 if ($CachePrune) {
   $cs = (Get-Content -Raw "$PSScriptRoot\cache.sh").Replace("`r`n", "`n"); $ct = Join-Path $env:TEMP "evotest-cache-$stamp.sh"
@@ -44,8 +50,9 @@ if ($DryRun) {
 # Tải máy chủ + slot trước khi dựng (chỉ in, không chặn; boot.sh vẫn tự xếp hàng). Chi tiết: bun run res:check --server
 $ErrorActionPreference = "Continue"
 try {
-  $probe ='cat /proc/loadavg; nproc; grep MemAvailable /proc/meminfo; df -Pk $HOME | tail -1; for i in $(seq 1 ' + $Slots + '); do if [ $i = 1 ]; then l=$HOME/workspace/evotest/.lock; else l=$HOME/workspace/evotest/slots/s$i/.lock; fi; if [ -d $l ]; then echo busy$i; else echo free$i; fi; done'
-  $p = @(ssh @ssh -o ConnectTimeout=8 $Server $probe 2>$null)
+  # tool-evotest-fast: cùng lượt ssh này tạo mirror git rỗng nếu chưa có (đẩy nguồn ở bước sau, không thêm vòng ssh)
+  $loadProbe ='M=$HOME/workspace/evotest/mirror.git; [ -d $M ] || { mkdir -p $HOME/workspace/evotest && git init -q --bare $M; }; git --git-dir=$M config receive.shallowUpdate true; cat /proc/loadavg; nproc; grep MemAvailable /proc/meminfo; df -Pk $HOME | tail -1; for i in $(seq 1 ' + $Slots + '); do if [ $i = 1 ]; then l=$HOME/workspace/evotest/.lock; else l=$HOME/workspace/evotest/slots/s$i/.lock; fi; if [ -d $l ]; then echo busy$i; else echo free$i; fi; done'
+  $p = @(ssh @ssh -o ConnectTimeout=8 $Server $loadProbe 2>$null)
   if ($LASTEXITCODE -eq 0 -and $p.Count -ge 4) {
     $load = ($p[0] -split ' ')[0]; $cores = $p[1]
     $ramGb = [math]::Round((($p[2] -split '\s+')[1]) / 1MB, 1); $diskGb = [math]::Round((($p[3] -split '\s+')[3]) / 1MB, 0)
@@ -119,52 +126,97 @@ if ($shard) {
       if ($ex -ne 0) { [void]$sum.Add("      --- 25 dong cuoi (ngan loi) ---"); $lines | Select-Object -Last 25 | ForEach-Object { [void]$sum.Add("      $_") } }
     }
   }
-  $sum | Tee-Object -FilePath (Join-Path $out "summary.txt") | ForEach-Object { Write-Host $_ }
+  $sum | Set-Content -Encoding utf8 (Join-Path $out "summary.txt")
+  if ($Full) { $sum | ForEach-Object { Write-Host $_ } }
+  else {
+    Push-Location $Repo
+    try { bun tools/scripts/src/evotest-summary.ts --step $Step --commit $commit --exit $worst --wall $wall --out $out; Write-Host "  (tom tat day du cac ngan: $out\summary.txt)" } finally { Pop-Location }
+  }
   exit $worst
 }
 
-New-Item -ItemType Directory -Force $tmp, $out | Out-Null
-try {
-  git -C $Repo archive --format=tar.gz -o "$tmp\evotest-app-$stamp.tgz" $Ref
-  if ($Dirty) {
-    # chồng thay đổi chưa commit (đã sửa + chưa theo dõi, trừ file bị ignore) lên bản archive; file đã xoá thì xoá khỏi bản sao
-    $src = "$tmp\src"; New-Item -ItemType Directory $src | Out-Null
-    tar.exe -xzf "$tmp\evotest-app-$stamp.tgz" -C $src
-    $changed = @(git -C $Repo -c core.quotepath=off ls-files -m -o --exclude-standard) + @(git -C $Repo -c core.quotepath=off diff --cached --name-only) | Sort-Object -Unique   # gồm cả file đã stage (F-02)
-    foreach ($f in $changed) {
-      $p = Join-Path $Repo $f
-      if (Test-Path -LiteralPath $p) { $t = Join-Path $src $f; New-Item -ItemType Directory -Force (Split-Path $t) | Out-Null; Copy-Item -LiteralPath $p $t -Force }
-      else { Remove-Item -LiteralPath (Join-Path $src $f) -Force -ErrorAction SilentlyContinue }
-    }
-    tar.exe -czf "$tmp\evotest-app-$stamp.tgz" -C $src .
+$Full = $Full -or $Step -eq "perf" -or [bool]$Exclusive -or [bool]$Probe   # perf-probe doc console => luon day du
+# Pathspec loai file nhi phan bang chung docs/** (khong test nao doc) - cung danh sach voi remote.sh (archive-exclude.txt)
+$excl = @(Get-Content "$PSScriptRoot\archive-exclude.txt" | Where-Object { $_.Trim() })
+# -Dirty: commit tam tu cay lam viec (index tam sao tu index that; .gitignore duoc ton trong, file xoa/moi/staged deu vao) - khong dung vao index/nhanh that
+function New-DirtyCommit {
+  $old = @{ I = $env:GIT_INDEX_FILE; N = $env:GIT_AUTHOR_NAME; E = $env:GIT_AUTHOR_EMAIL; CN = $env:GIT_COMMITTER_NAME; CE = $env:GIT_COMMITTER_EMAIL }
+  $ea = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+  try {
+    $idx = (git -C $Repo rev-parse --git-path index).Trim(); if (-not [IO.Path]::IsPathRooted($idx)) { $idx = Join-Path $Repo $idx }
+    $ti = Join-Path $tmp "dirty.index"; $env:GIT_INDEX_FILE = $ti
+    $head = (git -C $Repo rev-parse $Ref).Trim(); $cur = (git -C $Repo rev-parse HEAD).Trim()
+    if ($head -eq $cur -and (Test-Path $idx)) { Copy-Item $idx $ti -Force } else { git -C $Repo read-tree $Ref 2>$null | Out-Null }
+    git -C $Repo add -A 2>$null | Out-Null
+    $tree = (git -C $Repo write-tree).Trim()
+    $env:GIT_AUTHOR_NAME = "evotest"; $env:GIT_AUTHOR_EMAIL = "evotest@localhost"; $env:GIT_COMMITTER_NAME = "evotest"; $env:GIT_COMMITTER_EMAIL = "evotest@localhost"
+    $c = (git -C $Repo commit-tree $tree -p $head -m "evotest dirty $stamp").Trim()
+    if (-not $c) { throw "commit-tree loi" }
+    return $c
+  } finally {
+    $ErrorActionPreference = $ea
+    foreach ($kv in @(@("GIT_INDEX_FILE", "I"), @("GIT_AUTHOR_NAME", "N"), @("GIT_AUTHOR_EMAIL", "E"), @("GIT_COMMITTER_NAME", "CN"), @("GIT_COMMITTER_EMAIL", "CE"))) { [Environment]::SetEnvironmentVariable($kv[0], $old[$kv[1]]) }
   }
-  # Bộ dựng/chạy lấy từ thư mục này (không phụ thuộc Ref có chứa deploy/evotest hay không); ép LF cho .sh
+}
+
+New-Item -ItemType Directory -Force $tmp, $out | Out-Null
+$rc = 1
+try {
+  Mark "probe"
+  $srcSha = if ($Dirty) { New-DirtyCommit } else { (git -C $Repo rev-parse $Ref).Trim() }
+  # --- NGUON: day delta vao mirror git tren may chu; loi => du phong tgz ---
+  $srcRef = ""
+  if (-not $NoMirror) {
+    $ea = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    $oldGs = $env:GIT_SSH_COMMAND; $env:GIT_SSH_COMMAND = "ssh -i F:/workspace/id_evoc_key -o BatchMode=yes"
+    try {
+      $tryRef = "refs/evotest/$stamp"
+      $null = git -C $Repo push -q "${Server}:workspace/evotest/mirror.git" "${srcSha}:$tryRef" 2>&1
+      if ($LASTEXITCODE -eq 0) { $srcRef = $tryRef } else { Write-Host "evotest: day mirror loi (exit $LASTEXITCODE) - du phong tgz" }
+    } catch { Write-Host "evotest: day mirror loi ($($_.Exception.Message)) - du phong tgz" }
+    finally { $env:GIT_SSH_COMMAND = $oldGs; $ErrorActionPreference = $ea }
+  }
+  Mark "push"
+  # Bo dung/chay lay tu thu muc nay (khong phu thuoc Ref co chua deploy/evotest hay khong); ep LF cho .sh. MOT tgz kit (gom ca boot.sh, lock.sh) = MOT lan scp.
   foreach ($f in "remote.sh", "in-container.sh", "boot.sh", "lock.sh", "cache.sh") {
     $t = [IO.File]::ReadAllText("$PSScriptRoot\$f").Replace("`r`n", "`n"); [IO.File]::WriteAllText("$tmp\$f", $t, (New-Object Text.UTF8Encoding $false))
   }
-  Copy-Item "$PSScriptRoot\docker-compose.yml", "$PSScriptRoot\docker-compose.exclusive.yml", "$PSScriptRoot\Dockerfile" $tmp; Copy-Item -Recurse "$PSScriptRoot\pg-init" $tmp
-  tar.exe -czf "$tmp\evotest-kit-$stamp.tgz" -C $tmp docker-compose.yml docker-compose.exclusive.yml Dockerfile remote.sh in-container.sh cache.sh pg-init
-  ssh @ssh $Server "mkdir -p ~/workspace/evotest"
-  scp @ssh "$tmp\evotest-app-$stamp.tgz" "$tmp\evotest-kit-$stamp.tgz" "${Server}:/tmp/"
+  Copy-Item "$PSScriptRoot\docker-compose.yml", "$PSScriptRoot\docker-compose.exclusive.yml", "$PSScriptRoot\Dockerfile", "$PSScriptRoot\archive-exclude.txt" $tmp; Copy-Item -Recurse "$PSScriptRoot\pg-init" $tmp
+  tar.exe -czf "$tmp\evotest-kit-$stamp.tgz" -C $tmp docker-compose.yml docker-compose.exclusive.yml Dockerfile remote.sh in-container.sh cache.sh boot.sh lock.sh archive-exclude.txt pg-init
+  $up = @("$tmp\evotest-kit-$stamp.tgz")
+  if (-not $srcRef) {
+    # du phong: archive local (cung danh sach loai) - -Dirty dung commit tam nen khong can chong file
+    git -C $Repo archive --format=tar.gz -o "$tmp\evotest-app-$stamp.tgz" $srcSha -- . @excl
+    $up += "$tmp\evotest-app-$stamp.tgz"
+  }
+  Mark "prep"
+  scp -q @ssh @up "${Server}:/tmp/"
+  Mark "upload"
   $t0 = Get-Date
-  # Slot song song (mặc định 8, đổi bằng -Slots): boot.sh chọn slot trống đầu tiên (mkdir .lock nguyên tử, gỡ lock mồ côi), chỉ chờ khi mọi slot bận.
-  # boot.sh scp lên /tmp (tránh lỗi PS 5.1 bỏ dấu nháy kép khi truyền đối số ssh); 2>&1 phía máy chủ để PS 5.1 không coi stderr là lỗi.
-  scp @ssh "$tmp\boot.sh" "${Server}:/tmp/evotest-boot-$stamp.sh"
-  scp @ssh "$tmp\lock.sh" "${Server}:/tmp/evotest-lock-$stamp.sh"
-  $boot = "EVO_LOCKLIB=/tmp/evotest-lock-$stamp.sh EVO_EXCLUSIVE='$(if ($Exclusive) { 1 })' EVO_FULL_RUN='$(if ($isFull) { 1 })' EVO_FORCE='$(if ($Force) { 1 })' EVO_NOCACHE='$(if ($NoCache) { 1 })' EVO_JOBS='$(if ($Jobs) { $Jobs })' EVO_RUNNER_CPUS='$(if ($Cpus) { $Cpus })' EVO_RUNNER_MEM='$(if ($Cpus) { [math]::Max(6, 2 * $Cpus).ToString() + 'g' })' EVO_PG_CPUS='$(if ($Cpus -ge 4) { 2 })' EVO_EXCLUSIVE_TIMEOUT_S=$($ExclusiveTimeoutMin * 60) EVO_SLOTS=$Slots EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' EVO_PROBE='$Probe' bash /tmp/evotest-boot-$stamp.sh $Step $commit $stamp 2>&1; rc=`$?; unlink /tmp/evotest-boot-$stamp.sh; exit `$rc"
+  # Slot song song (mac dinh 8, doi bang -Slots): boot.sh chon slot trong dau tien (mkdir .lock nguyen tu, go lock mo coi), chi cho khi moi slot ban.
+  # boot.sh + lock.sh nam trong kit: MOT lenh ssh giai ra /tmp roi chay (tranh loi PS 5.1 bo dau nhay kep khi truyen doi so ssh); 2>&1 phia may chu de PS 5.1 khong coi stderr la loi.
+  $K = "/tmp/evotest-kit-$stamp.tgz"
+  $boot = "tar xzf $K -O boot.sh > /tmp/evotest-boot-$stamp.sh; tar xzf $K -O lock.sh > /tmp/evotest-lock-$stamp.sh; EVO_SRC_REF='$srcRef' EVO_LOCKLIB=/tmp/evotest-lock-$stamp.sh EVO_EXCLUSIVE='$(if ($Exclusive) { 1 })' EVO_FULL_RUN='$(if ($isFull) { 1 })' EVO_FORCE='$(if ($Force) { 1 })' EVO_NOCACHE='$(if ($NoCache) { 1 })' EVO_JOBS='$(if ($Jobs) { $Jobs })' EVO_RUNNER_CPUS='$(if ($Cpus) { $Cpus })' EVO_RUNNER_MEM='$(if ($Cpus) { [math]::Max(6, 2 * $Cpus).ToString() + 'g' })' EVO_PG_CPUS='$(if ($Cpus -ge 4) { 2 })' EVO_EXCLUSIVE_TIMEOUT_S=$($ExclusiveTimeoutMin * 60) EVO_SLOTS=$Slots EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' EVO_PROBE='$Probe' bash /tmp/evotest-boot-$stamp.sh $Step $commit $stamp 2>&1; rc=`$?; unlink /tmp/evotest-boot-$stamp.sh; exit `$rc"
   $finished = $false
-  ssh @ssh $Server $boot | Tee-Object -FilePath "$out\console.log"
+  ssh @ssh $Server $boot | ForEach-Object { if ($Full) { Write-Host $_ }; $_ } | Out-File -Encoding utf8 -FilePath "$out\console.log"
   $rc = $LASTEXITCODE
   $finished = $true
+  Mark "server"
   if ($Exclusive) {
     $ex = @(Select-String -Path "$out\console.log" -Pattern "exclusive-(start|end|config)" | ForEach-Object { $_.Line })
     $ex | Set-Content -Encoding utf8 "$out\exclusive.txt"
-    Write-Host "evotest: -Exclusive tải lúc đo (ghi ở $out\exclusive.txt):"; $ex | ForEach-Object { Write-Host "  $_" }
+    Write-Host "evotest: -Exclusive tai luc do (ghi o $out\exclusive.txt):"; $ex | ForEach-Object { Write-Host "  $_" }
   }
   $ErrorActionPreference = "Continue"
-  scp @ssh "${Server}:/tmp/evotest-out-$stamp.tgz" "$out\out.tgz"
-  if (Test-Path "$out\out.tgz") { tar.exe -xzf "$out\out.tgz" -C $out; ssh @ssh $Server "unlink /tmp/evotest-out-$stamp.tgz" }
-  Write-Host ("evotest: bước {0}, exit {1}, {2:N0} s, log đầy đủ: {3}" -f $Step, $rc, ((Get-Date) - $t0).TotalSeconds, $out)
+  scp -q @ssh "${Server}:/tmp/evotest-out-$stamp.tgz" "$out\out.tgz"   # remote.sh don out.tgz cu >3h (khong con ssh unlink rieng)
+  if (Test-Path "$out\out.tgz") { tar.exe -xzf "$out\out.tgz" -C $out }
+  Mark "fetch"
+  $wall = [int]$sw.Elapsed.TotalSeconds
+  $phs = ($ph.GetEnumerator() | ForEach-Object { "{0}={1}" -f $_.Key, $_.Value.ToString([Globalization.CultureInfo]::InvariantCulture) }) -join ","
+  Push-Location $Repo
+  try { bun tools/scripts/src/evotest-summary.ts --step $Step --commit $commit --exit $rc --wall $wall --phases $phs --out $out }
+  catch { Write-Host ("evotest: buoc {0}, exit {1}, {2} s, log: {3}" -f $Step, $rc, $wall, $out) }
+  finally { Pop-Location }
   exit $rc
 } finally {
   # Ctrl-C/lỗi khi đang chờ/đo: bảo boot.sh trên máy chủ (owner khoá .exclusive có tag = $stamp) tự dọn (trap TERM nhả khoá + dừng container).

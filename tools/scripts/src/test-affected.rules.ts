@@ -232,6 +232,10 @@ export type AffectedArgs = {
   frozen: boolean;
   /** Gồm test do người khác sở hữu (tests/external-owned.json; mặc định bỏ). */
   includeExternal: boolean;
+  /** tool-evotest-fast (`verify:slice --e2e a,b`): việc e2e thêm vào kế hoạch dù không dính diff. */
+  e2eJobs: string[];
+  /** `-Dirty` ép gửi cả thay đổi chưa commit (mặc định tự bật khi cây làm việc bẩn). */
+  dirty: boolean;
 };
 
 /** `--k=v` hoặc `--k v` (giá trị không bắt đầu bằng `--`). */
@@ -260,5 +264,10 @@ export function parseAffectedArgs(argv: readonly string[]): AffectedArgs {
     quarantine: !argv.includes("--no-quarantine"),
     frozen: argv.includes("--frozen"),
     includeExternal: argv.includes("--include-external"),
+    e2eJobs: (optionValue(argv, "e2e-jobs") ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+    dirty: argv.some((a) => /^--?dirty$/i.test(a)),
   };
 }

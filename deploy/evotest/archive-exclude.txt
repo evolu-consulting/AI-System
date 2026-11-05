@@ -1,0 +1,8 @@
+:(exclude,glob)docs/**/*.png
+:(exclude,glob)docs/**/*.jpg
+:(exclude,glob)docs/**/*.jpeg
+:(exclude,glob)docs/**/*.gif
+:(exclude,glob)docs/**/*.webm
+:(exclude,glob)docs/**/*.mp4
+:(exclude,glob)docs/**/*.zip
+:(exclude,glob)docs/**/*.pdf
