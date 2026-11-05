@@ -182,20 +182,29 @@ test("4 · công ty 1: HĐ 100 tr Mua bỏ qua bước Giám đốc — Kế to�
 test("5 · công ty 1: sửa giá trị HĐ đang chờ 600 → 100 tr ⇒ bước Giám đốc bị bỏ qua khi tới", async ({
   browser,
 }) => {
-  const { emp, id } = await submit(browser, EA, "a2", M600);
+  // HĐ 600 tr đang chờ nhân viên xác nhận; sau khi gửi duyệt giá trị bị khoá, nên sửa 600 → 100 tr TRƯỚC khi xác nhận (API nút "Lưu nháp")
+  const emp = await ctxPage(browser);
+  await loginCw(emp, EA, U.employee);
+  const id = await uploadAndOpen(emp, EA, `${RUN}a2`, M600);
   ids.aEdit = id;
-  await expect(stepOf(emp, KT)).toBeVisible({ timeout: 60_000 });
-  await expect(emp.locator('[data-approval-skip="will"]')).toHaveCount(0);
-
-  // Giá trị còn sửa được khi bước đầu (Kế toán) đang mở: nhân viên sửa 600 → 100 tr (cùng API nút "Lưu" ở màn HĐ)
   const me = await userApi(EA, U.employee);
-  const cur = (await getJson<{ version: number }>(me, pack(`/contracts/${id}`))).json;
-  const patch = await fetch(pack(`/contracts/${id}/fields`), {
-    method: "PATCH",
-    headers: { ...me.headers, "content-type": "application/json" },
-    body: JSON.stringify({ version: cur.version, fields: { total_value: M100 } }),
-  });
-  expect(patch.status, await patch.text()).toBe(200);
+  await expect
+    .poll(
+      async () => {
+        const cur = (await getJson<{ version: number }>(me, pack(`/contracts/${id}`))).json;
+        const patch = await fetch(pack(`/contracts/${id}/fields`), {
+          method: "PATCH",
+          headers: { ...me.headers, "content-type": "application/json" },
+          body: JSON.stringify({ version: cur.version, fields: { total_value: M100 } }),
+        });
+        return patch.status;
+      },
+      { message: "sửa giá trị khi HĐ chờ xác nhận" },
+    )
+    .toBe(200);
+  await emp.reload(); // form tải lại giá trị mới rồi mới xác nhận
+  await emp.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await expect(stepOf(emp, KT)).toBeVisible({ timeout: 60_000 });
 
   // Thẻ duyệt đổi theo giá trị HIỆN TẠI: Giám đốc sẽ bị bỏ qua
   const acc = await userApi(EA, U.accounting);
