@@ -89,7 +89,7 @@ test("thông báo, cài đặt và hồ sơ qua user-menu", async ({ page }) => 
   await page.getByRole("menuitem", { name: "Tường nhà" }).click();
   await expect(page.getByTestId("nav-group-contracts").getByRole("link").first()).toBeVisible(); // menu trái chung có nhóm Sổ Hợp Tác
   await page.getByRole("button", { name: "Tài khoản" }).click();
-  await page.getByRole("menuitem", { name: "Cài đặt chung" }).click();
+  await page.getByRole("menuitem", { name: "Cài đặt Community" }).click();
   await expect(page.getByRole("dialog", { name: "Cài đặt" })).toBeVisible(); // màu nhấn = thương hiệu công ty, không còn chọn màu cá nhân (COM-FR-39)
 });
 
@@ -110,3 +110,25 @@ test("bảng tin 2 cột: tab sticky, dải deal hiển thị giá chào, rail c
   await expect(org).toHaveAttribute("href", /\/community\/profile\//);
   await expect(org).toHaveAttribute("target", "_blank");
 });
+
+for (const scheme of ["light", "dark"] as const) {
+  test(`cr120-handson-fixes · thanh tab sticky không che dòng tác giả của bài đầu (${scheme})`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto("/community");
+    const first = page.getByTestId("post").first();
+    await expect(first).toBeVisible();
+    const head = first.locator(".ph").first();
+    await expect(head).toBeVisible();
+    const hit = await head.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { inside: !!top?.closest('[data-testid="post"]'), top: r.top };
+    });
+    expect(hit.inside).toBe(true);
+    // Không còn khoảng trống lớn phía trên composer: composer bbắt đầu gần mép trên vùng nội dung.
+    const comp = await page.getByTestId("composer").boundingBox();
+    expect(comp?.y ?? 9999).toBeLessThan(200);
+  });
+}

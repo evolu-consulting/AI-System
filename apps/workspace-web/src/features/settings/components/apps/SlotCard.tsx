@@ -75,11 +75,9 @@ export function SlotCard({ tenantId, slot }: { tenantId: string; slot: string })
     <section
       data-testid={`apps-slot-${slot}`}
       className="mb-4 rounded-xl border border-rule bg-panel p-4"
-      aria-label={slot}
+      aria-label={a("slotTitle")}
     >
-      <h3 className="mb-2 text-label font-semibold">
-        {t("contracts.settings.apps.slotTitle", { slot })}
-      </h3>
+      <h3 className="mb-2 text-label font-semibold">{a("slotTitle")}</h3>
       {q.isError && (
         <p role="alert" className="text-late">
           {a("loadFail")}{" "}
@@ -89,7 +87,12 @@ export function SlotCard({ tenantId, slot }: { tenantId: string; slot: string })
         </p>
       )}
       {q.isPending && <p className="text-dim">{t("contracts.common.loading")}</p>}
-      {q.data && q.data.processes.length === 0 && (
+      {cur?.off && (
+        <p data-testid="slot-off" className="text-body text-dim">
+          {a("slotOff")}
+        </p>
+      )}
+      {q.data && q.data.processes.length === 0 && !cur?.off && (
         <p data-testid="slot-none-assigned" className="text-body text-dim">
           {a("noneAssigned")}
         </p>

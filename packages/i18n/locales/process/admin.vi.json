@@ -21,7 +21,11 @@
       "off": "Tắt"
     },
     "purpose": {
-      "contractsApproval": "Duyệt hợp đồng"
+      "contractsApproval": "Duyệt hợp đồng",
+      "contractsIntake": "Tiếp nhận hợp đồng",
+      "communityModeration": "Duyệt bài đăng",
+      "communityJoin": "Đối tác xin tham gia",
+      "communityReport": "Báo cáo vi phạm"
     },
     "kind": {
       "buy": "mua",
@@ -35,6 +39,7 @@
       "deptsN": "{{n}} phòng ban",
       "current": "Quy trình mặc định, dùng khi không có luật nào khớp",
       "unused": "Đã gán nhưng chưa có luật chọn",
+      "off": "Đang tắt — chưa bật. Gán một quy trình cho công ty để bật.",
       "manual": "Chạy khi bấm Chạy"
     },
     "viewDiagram": "Xem sơ đồ",

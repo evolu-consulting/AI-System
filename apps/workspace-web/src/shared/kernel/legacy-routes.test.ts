@@ -3,6 +3,12 @@ import { describe, expect, test } from "bun:test";
 import { appKeyOf, basePathOf, isUnderApp, pathOf } from "./app-path";
 import { canonicalHref, LEGACY_EXACT, legacyTarget } from "./legacy-routes";
 
+describe("cr120-handson-fixes · route gốc của app không bị coi là id HĐ cũ", () => {
+  test.each(["login", "sso", "privacy", "terms"])("/contracts/%s giữ nguyên", (p) => {
+    expect(legacyTarget(`/contracts/${p}?sso=none&next=%2Fcontracts`)).toBeNull();
+  });
+});
+
 describe("legacyTarget · tuyến SHT cũ ở gốc → /contracts/…", () => {
   test.each([
     ["/overview", "/contracts"],

@@ -53,7 +53,7 @@ EN: Phân quyền > Kiểm tra quyền shows what a user can use and why not.
 ## Cấp quyền dùng Sổ Hợp Tác cho phòng ban
 1. Nền tảng phải mở gói Hợp đồng cho công ty (tab **Gói** / feature của tenant: do quản trị nền tảng làm). Chưa mở thì Sổ Hợp Tác báo "Gói Hợp đồng chưa được bật cho công ty bạn".
 2. Trong **Phân quyền** > **Ma trận**, cấp các feature của gói Hợp đồng cho group phòng ban (đọc để xem, ghi để sửa).
-3. Trong chính Sổ Hợp Tác, chọn phạm vi xem hợp đồng và phòng ban ở **Cài đặt** > **Thành viên & điểm đối tác** (xem hướng dẫn Sổ Hợp Tác).
+3. Trong chính Sổ Hợp Tác, chọn phạm vi xem hợp đồng và phòng ban ở **Cài đặt Sổ Hợp Tác** > **Thành viên & điểm đối tác** (xem hướng dẫn Sổ Hợp Tác).
 Người chưa được cấp thấy "Bạn chưa có quyền dùng gói Hợp đồng".
 
 EN: Platform enables the contracts pack for the tenant; admin grants its features to groups in Phân quyền.

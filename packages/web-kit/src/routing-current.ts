@@ -4,6 +4,8 @@ type RoutingLike = {
   processes: readonly { def_id: string }[];
   current_def_id?: string | null;
   current_def_name?: string | null;
+  /** false ⇒ khe opt-in chưa bật (hub trả); vắng ⇒ coi như bật (server cũ). */
+  active?: boolean;
 };
 
 export type RoutingCurrent = {
@@ -11,9 +13,12 @@ export type RoutingCurrent = {
   markId: string | null;
   /** Quy trình đang dùng KHÔNG nằm trong tập gán (mặc định khe chưa gán) ⇒ app hiện một dòng riêng. */
   outside: { defId: string; name: string } | null;
+  /** Khe opt-in đang TẮT (chưa luật, chưa gán) ⇒ app hiện "Đang tắt", không gắn "Đang dùng". */
+  off?: true;
 };
 
 export function routingCurrent(d: RoutingLike): RoutingCurrent {
+  if (d.active === false) return { markId: null, outside: null, off: true };
   const id = d.current_def_id ?? null;
   if (!id) return { markId: null, outside: null };
   if (d.processes.some((p) => p.def_id === id)) return { markId: id, outside: null };

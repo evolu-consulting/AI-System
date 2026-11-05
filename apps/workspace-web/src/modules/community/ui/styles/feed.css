@@ -38,7 +38,7 @@
 }
 [data-mod="community"] .rail {
   position: sticky;
-  top: 70px;
+  top: 16px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -108,7 +108,9 @@
 /* ---------- Thanh tab sticky liền khối ---------- */
 [data-mod="community"] .stickytop {
   position: sticky;
-  top: 60px;
+  /* cr120-handson-fixes: thanh shell nằm NGOÀI vùng cuộn của trang ⇒ offset 60px đẩy cả khối xuống (khoảng trống trên composer) và
+     đè thẻ bài đầu tiên. Dính sát mép vùng cuộn. */
+  top: 0;
   z-index: 25;
   background: var(--cm-feed-bg);
   padding-top: 10px;

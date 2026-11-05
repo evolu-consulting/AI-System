@@ -43,7 +43,7 @@ test("CR-113 · 1 · Cài đặt › Quy trình duyệt: 2 bước, hộp Luật
     .getByRole("button", { name: /tài khoản|account/i })
     .first()
     .click();
-  await page.getByRole("menuitem", { name: "Cài đặt", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Cài đặt Sổ Hợp Tác", exact: true }).click();
   const dlg = page.getByRole("dialog", { name: "Cài đặt" });
   await dlg.getByRole("button", { name: /Quy trình duyệt/ }).click();
   await expect(dlg.getByTestId("flow-current-title")).toContainText("Duyệt HĐ 2 cấp");
@@ -114,4 +114,27 @@ test("CR-113 · 4 · thomas.tran (Kế toán) Đạt bước 1 HĐ chờ: bướ
       { timeout: 30_000 },
     )
     .toBe("open");
+});
+
+test("cr120-handson-fixes · 1b · đăng nhập từ trang quay về của SSO (`/contracts/login?sso=none&next=/contracts`) ⇒ về /contracts, không phải /contracts/c/login", async ({
+  page,
+}) => {
+  await page.goto("/contracts/login?sso=none&next=%2Fcontracts");
+  await page.getByRole("textbox", { name: "Mã công ty" }).fill("evolu");
+  await page.getByRole("textbox", { name: "Email" }).fill("julian.bui");
+  await page.getByLabel("Mật khẩu", { exact: true }).fill(DEMO_PW);
+  await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
+  await expect(page).toHaveURL(/\/contracts\/?(\?.*)?$/);
+  await expect(page).not.toHaveURL(/\/contracts\/c\//);
+  await expect(page.getByRole("heading", { name: "Tổng quan" }).first()).toBeVisible();
+  await expect(page.getByText("Invalid request")).toHaveCount(0);
+});
+
+test("cr120-handson-fixes · 1c · mã hợp đồng sai ⇒ câu 'Không tìm thấy hợp đồng' đã dịch, không phải 'Invalid request'", async ({
+  page,
+}) => {
+  await login(page, "julian.bui");
+  await page.goto("/contracts/c/login");
+  await expect(page.getByText("Không tìm thấy hợp đồng")).toBeVisible();
+  await expect(page.getByText("Invalid request")).toHaveCount(0);
 });

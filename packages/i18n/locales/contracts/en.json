@@ -341,7 +341,8 @@
     "shell": {
       "navMain": "Main navigation",
       "menuProfile": "My wall",
-      "menuCommunitySettings": "General settings",
+      "menuCommunitySettings": "Community settings",
+      "menuContractsSettings": "Contracts Book settings",
       "navBottom": "Navigation",
       "navCollapse": "Collapse sidebar",
       "navExpand": "Expand sidebar",
@@ -642,6 +643,7 @@
       "saving": "Saving…",
       "saveDraft": "Save draft",
       "draftHint": "A draft is visible only to you — press Confirm and save to send it for approval",
+      "notFound": "Contract not found — go back to the list and pick another one.",
       "notVisible": "This contract has not been sent for approval yet, or you do not have access. Ask its creator to confirm it.",
       "savedDraft": "Draft saved. The contract is still awaiting confirmation — press Confirm to finish.",
       "saved": "Saved.",

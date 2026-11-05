@@ -4,8 +4,10 @@
 import { ESignSignerSchema } from "@ai/contracts";
 import type { Db, Tx } from "@ai/db";
 import { createPackUow } from "../kit/adapters/pack-uow";
+import { slotRegistry } from "../kit/adapters/slot-registry";
 import type { PackRunsBridge } from "../kit/application/pack-runs.ports";
 import type { PackToolDef } from "../kit/application/pack-tools.ports";
+import type { SlotSpec } from "../kit/application/slot.ports";
 import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { intakeTools } from "./adapters/intake.tools";
@@ -42,6 +44,19 @@ export function intakeWiring(
   };
 }
 
+/** cr120-handson-fixes · khe `contracts.intake` (luôn bật, def mặc định hub 0093) phải có trong registry để GET/PUT routing không 422
+ *  `SLOT_UNKNOWN`. Def của khe là quy trình thường (stages), không có `slot_body` ⇒ validate/compile rỗng. */
+export const intakeSlotSpec: SlotSpec = {
+  key: "contracts.intake",
+  label: "Sổ Hợp Tác · Tiếp nhận hợp đồng",
+  packKey: "contracts",
+  requiredInputs: ["contract-id"],
+  systemTools: [],
+  validate: () => [],
+  compile: (b) => (Array.isArray(b) ? b : []),
+  groupKeys: () => [],
+};
+
 /** Đăng ký tool bước vào registry tool gói + bắn `esign.completed` (qua cổng engine `packRuns`, gắn lười) khi phong bì ký xong. */
 export function mountIntake(
   d: {
@@ -51,6 +66,7 @@ export function mountIntake(
   },
   db: Db,
 ): void {
+  slotRegistry.register(intakeSlotSpec);
   const { tools, bindCompleted } = intakeWiring(db, d.esign);
   for (const t of tools) d.packTools?.register(t);
   bindCompleted(async (tenantId, contractId) => {

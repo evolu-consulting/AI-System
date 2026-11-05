@@ -2,7 +2,7 @@
 // (`libraryRoutes`) trên DB thật (`hub_api`), user giả qua header. Kiểm trạng thái DB thật (hàng luật, tập gán, audit, version cấu
 // hình), không chỉ mã HTTP. Khe `contracts.approval` thật; def thư viện = bản sao def mặc định seed 0069 (đã xuất bản v1).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import type { Role } from "@ai/contracts";
+import { APP_MANIFESTS, type Role } from "@ai/contracts";
 import { withHubScope } from "@ai/db/hub-scope";
 import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
@@ -12,9 +12,11 @@ import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
+import { communitySlotSpecs } from "../../packs/community/domain/flow-slots.rules";
 import { approvalEngineTools } from "../../packs/contracts/adapters/approval-engine.tools";
 import { approvalSlotSpec } from "../../packs/contracts/approval.mount";
 import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/domain/approval-slot-default.rules";
+import { intakeSlotSpec } from "../../packs/contracts/intake.mount";
 import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
 import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import type { ProcessDeps } from "../core/ports";
@@ -95,6 +97,8 @@ beforeAll(async () => {
   lib.B = await libCopy("rt-b", "QT B");
   lib.C = await libCopy("rt-c", "QT C");
   slotRegistry.register(approvalSlotSpec);
+  slotRegistry.register(intakeSlotSpec);
+  for (const s of communitySlotSpecs()) slotRegistry.register(s);
   const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((t) => ({
     key: t.name,
     name: t.name,
@@ -361,5 +365,18 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
       d: { reason: "no_condition", index: 0 },
     });
     expect((await rulesInDb(X)).length).toBe(3);
+  });
+
+  it("cr120-handson-fixes · GET routing của MỌI khe manifest khai báo ⇒ 200; khe opt-in tắt ⇒ active=false", async () => {
+    const slots = Object.values(APP_MANIFESTS).flatMap((m) => m.slots.map((s) => s.key));
+    expect(slots).toContain("contracts.intake");
+    for (const slot of slots) {
+      const r = await call("P", "GET", `/tenants/${X}/process-routing/${slot}`);
+      expect({ slot, status: r.status }).toEqual({ slot, status: 200 });
+      expect({ slot, active: r.json.active }).toEqual({
+        slot,
+        active: !slot.startsWith("community."),
+      });
+    }
   });
 });

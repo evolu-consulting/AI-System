@@ -11,6 +11,7 @@ import {
   groupByApp,
   NO_FILTER,
   ruleParts,
+  SLOT_PURPOSE,
   slotsOfCaps,
 } from "./flows-view";
 
@@ -148,5 +149,25 @@ describe("companyRows / lọc / nhóm", () => {
     const g = groupByApp(all);
     expect(g.map((x) => x.app)).toEqual(["contracts", "community", "general"]);
     expect(g[0]?.rows.map((r) => r.id)).toEqual(["a", "b"]); // Đang dùng trước
+  });
+});
+
+describe("cr120-handson-fixes · khe opt-in tắt", () => {
+  test("active=false ⇒ một dòng Đang tắt, không có dòng Đang dùng", () => {
+    const rows = assignedRows(
+      { slot: "community.post-moderation", app: "community" },
+      R({ processes: [], current_def_id: D1, current_def_name: "Mặc định", active: false }),
+    );
+    expect(rows.map((r) => [r.id, r.status, r.when.kind])).toEqual([[D1, "off", "off"]]);
+  });
+  test("mọi khe của manifest có tên việc (không lộ mã khe)", () => {
+    for (const s of [
+      "contracts.approval",
+      "contracts.intake",
+      "community.post-moderation",
+      "community.partner-join",
+      "community.report",
+    ])
+      expect(SLOT_PURPOSE[s]).toBeTruthy();
   });
 });

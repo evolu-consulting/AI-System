@@ -45,7 +45,7 @@ describe("buildShellNav", () => {
 });
 
 describe("buildAccountEntries", () => {
-  test("Community đóng góp Tường nhà + Cài đặt chung chỉ khi gói community bật", () => {
+  test("Community đóng góp Tường nhà + Cài đặt Community chỉ khi gói community bật", () => {
     expect(buildAccountEntries(MODULES, partner).map((e) => e.labelKey)).toEqual([
       "contracts.shell.menuProfile",
       "contracts.shell.menuCommunitySettings",

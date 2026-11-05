@@ -20,6 +20,7 @@ import type { ProcessDeps } from "../core/ports";
 import type { LibraryService } from "./library.service";
 import { specOrThrow } from "./library-draft";
 import * as rt from "./routing.repo";
+import { slotActive } from "./routing-active.rules";
 
 const MESSAGES: Record<HubAdminRoutingErrorCode, string> = {
   ROUTING_PROCESS_NOT_ASSIGNED: "Process is not assigned to the tenant",
@@ -152,6 +153,7 @@ export class RoutingService {
         })),
         current_def_id: current?.def_id ?? null,
         current_def_name: current?.name ?? null,
+        active: slotActive(specOrThrow(slot).optIn === true, rules.length, processes.length),
       };
     });
   }

@@ -84,6 +84,9 @@ export const ProcessRoutingSchema = z.strictObject({
    *  định khe; null = chưa có quy trình. Có thể nằm ngoài `processes` (mặc định khe chưa gán). Vắng ở server cũ. */
   current_def_id: UuidSchema.nullable().optional(),
   current_def_name: z.string().nullable().optional(),
+  /** cr120-handson-fixes · khe có đang chạy cho công ty không. Khe opt-in (`SlotSpec.optIn`) chỉ bật khi có luật HOẶC có quy trình
+   *  trong tập gán (cùng nguồn `moderationOn`); khe thường luôn true. false ⇒ UI hiện "Đang tắt", không hiện mặc định là "Đang dùng". */
+  active: z.boolean().optional(),
 });
 export type ProcessRouting = z.infer<typeof ProcessRoutingSchema>;
 

@@ -14,6 +14,11 @@ export const CONTRACTS_PAGES: ReadonlySet<string> = new Set([
   "settings",
   "notifications",
   "feedback",
+  // Route gốc của app (không phải id HĐ cũ): `/contracts/login?sso=none…` là form đăng nhập, KHÔNG được đổi thành `/contracts/c/login`.
+  "login",
+  "sso",
+  "privacy",
+  "terms",
 ]);
 
 type Exact = { to: string; drop?: true };

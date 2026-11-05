@@ -21,7 +21,11 @@
       "off": "Off"
     },
     "purpose": {
-      "contractsApproval": "Contract approval"
+      "contractsApproval": "Contract approval",
+      "contractsIntake": "Contract intake",
+      "communityModeration": "Post moderation",
+      "communityJoin": "Partner join requests",
+      "communityReport": "Violation reports"
     },
     "kind": {
       "buy": "purchase",
@@ -35,6 +39,7 @@
       "deptsN": "{{n}} departments",
       "current": "Default process, used when no rule matches",
       "unused": "Assigned but no rule selects it",
+      "off": "Off — not enabled yet. Assign a process to this company to turn it on.",
       "manual": "Runs when you press Run"
     },
     "viewDiagram": "View diagram",

@@ -39,19 +39,19 @@ EN: Account menu > "Cài đặt" with Công ty, Điểm uy tín, Điểm kinh do
 ## Cài đặt Công ty: tên, logo, pháp nhân, bước duyệt
 Phần **Công ty**: **Tên công ty**, **Tên ứng dụng**, **Logo** (PNG/JPG/SVG/WebP vuông tối đa 1 MB), **Màu chủ đạo**, **Giao diện**. Mục **Pháp nhân của mình**: nhập tên pháp nhân và mã số thuế (10 hoặc 13 số) để app biết hợp đồng là Mua hay Bán. Mục **Duyệt hợp đồng**: bật hoặc tắt **Bước duyệt hợp đồng**.
 
-EN: Cài đặt > Công ty: names, logo, own legal entities (tax IDs) and the approval step.
+EN: Cài đặt Sổ Hợp Tác > Công ty: names, logo, own legal entities (tax IDs) and the approval step.
 
 ## Cài đặt Điểm uy tín và Điểm kinh doanh
 - **Điểm uy tín**: chọn nhóm sản phẩm (Dịch vụ có hạn, Hàng hoá, Giới thiệu) và vai trò (Nhà cung cấp, Khách hàng...); tab **Tiêu chí** (bật tắt, **Trọng số**, **+ Thêm tiêu chí**), tab **Thời gian** (khoảng tính điểm, việc cũ tính nhẹ dần, trừ mỗi ngày trễ), tab **Loại việc**; mục **Mức & đánh giá** đặt ngưỡng TỐT / KHÁ và tỷ trọng đánh giá thủ công. Khung "Ảnh hưởng tới đối tác hiện có" cho biết bao nhiêu đối tác đổi mức nếu lưu.
 - **Điểm kinh doanh**: **Trọng số** (Tốc độ bán, Biên lãi, Xu hướng) và **Ngưỡng** cho đề xuất ở Sản phẩm & Giá.
 
-EN: Cài đặt > Điểm uy tín sets criteria, weights, time window and thresholds; Điểm kinh doanh drives product suggestions.
+EN: Cài đặt Sổ Hợp Tác > Điểm uy tín sets criteria, weights, time window and thresholds; Điểm kinh doanh drives product suggestions.
 
 ## Phạm vi xem hợp đồng: Thành viên và phòng ban
-Trong menu tài khoản chọn **Cài đặt**, rồi **Thành viên & điểm đối tác** (cần quyền quản trị công ty).
+Trong menu tài khoản chọn **Cài đặt Sổ Hợp Tác**, rồi **Thành viên & điểm đối tác** (cần quyền quản trị công ty).
 1. Mục **Phạm vi xem hợp đồng**: **Mọi người thấy toàn bộ hợp đồng** hoặc **Theo cơ cấu (người phụ trách, cấp dưới, phòng ban)**. Chế độ theo cơ cấu: Nhân viên và Chỉ xem chỉ thấy hợp đồng họ phụ trách, của cấp dưới và của phòng mình làm trưởng; Quản lý thấy tất cả.
 2. Bảng **Thành viên**: đặt **Cấp quản lý** cho từng người.
 3. Mục **Phòng ban**: nhập mã và tên ở **Phòng ban mới**, bấm **Tạo phòng ban**; chọn **Trưởng phòng**, **Thêm thành viên**; bỏ bằng **Gỡ khỏi phòng** hoặc **Bỏ phòng ban**.
 Thấy hợp đồng nào còn phụ thuộc quyền group được cấp ở Quản trị > Phân quyền.
 
-EN: Cài đặt > "Thành viên & điểm đối tác": choose the visibility mode and manage departments and managers.
+EN: Cài đặt Sổ Hợp Tác > "Thành viên & điểm đối tác": choose the visibility mode and manage departments and managers.

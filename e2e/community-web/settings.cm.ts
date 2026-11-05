@@ -6,7 +6,7 @@ const as = async (page: Page, id: string) => {
 };
 const open = async (page: Page) => {
   await page.getByRole("button", { name: "Tài khoản" }).click();
-  await page.getByRole("menuitem", { name: "Cài đặt chung" }).click();
+  await page.getByRole("menuitem", { name: "Cài đặt Community" }).click();
   await expect(page.getByRole("dialog", { name: "Cài đặt" })).toBeVisible();
 };
 

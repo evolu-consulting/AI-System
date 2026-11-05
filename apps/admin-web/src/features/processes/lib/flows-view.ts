@@ -19,6 +19,7 @@ export type FlowWhen =
   | { kind: "rules"; rules: RuleWhen[] }
   | { kind: "current" }
   | { kind: "unused" }
+  | { kind: "off" }
   | { kind: "manual" };
 
 export type FlowRow = {
@@ -76,6 +77,20 @@ export function assignedRows(ref: SlotRef, r: ProcessRouting): FlowRow[] {
       own: null,
     };
   });
+  // Khe opt-in chưa bật: mặc định của thư viện KHÔNG phải "Đang dùng" — hiện một dòng "Đang tắt" kèm cách bật (gán quy trình).
+  if (cur.off && r.current_def_id)
+    rows.push({
+      id: r.current_def_id,
+      app: ref.app,
+      name: r.current_def_name ?? "",
+      source: "platform",
+      status: "off",
+      slot: ref.slot,
+      version: null,
+      when: { kind: "off" },
+      outside: true,
+      own: null,
+    });
   if (cur.outside)
     rows.push({
       id: cur.outside.defId,
@@ -179,7 +194,11 @@ export function ruleParts(r: RuleWhen, deptName: (id: string) => string): RulePa
   };
 }
 
-/** Khe có tên việc dễ hiểu (i18n `process.admin.flows.purpose.<key>`); khe khác hiện đúng mã khe. */
+/** Khe có tên việc dễ hiểu (i18n `process.admin.flows.purpose.<key>`); khe chưa có tên ⇒ không hiện gì (Luật GỐC 3: không lộ mã khe). */
 export const SLOT_PURPOSE: Readonly<Record<string, string>> = {
   "contracts.approval": "contractsApproval",
+  "contracts.intake": "contractsIntake",
+  "community.post-moderation": "communityModeration",
+  "community.partner-join": "communityJoin",
+  "community.report": "communityReport",
 };

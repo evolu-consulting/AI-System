@@ -3,8 +3,9 @@
 import { PrefsPanel } from "@ai/web-kit/ui/PrefsPanel";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { FileText, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { IconLogout, IconSettings } from "~/components/icons";
+import { IconLogout } from "~/components/icons";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { nameOf, useBrand } from "~/features/settings/lib/brand";
 import { openSettings } from "~/features/settings/lib/bus";
@@ -83,7 +84,8 @@ function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
             }}
             className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-label hover:bg-sunk"
           >
-            <IconSettings width={18} height={18} /> {t("contracts.shell.settings")}
+            <FileText width={18} height={18} aria-hidden />{" "}
+            {t("contracts.shell.menuContractsSettings")}
           </button>
           <Link
             to="/contracts/settings"
@@ -91,7 +93,7 @@ function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
             onClick={close}
             className="flex items-center gap-2.5 px-4 py-2.5 text-label hover:bg-sunk"
           >
-            <IconSettings width={18} height={18} /> {t("contracts.settings.more")}
+            <Users width={18} height={18} aria-hidden /> {t("contracts.settings.more")}
           </Link>
         </>
       )}

@@ -21,4 +21,9 @@ describe("routingCurrent", () => {
     expect(routingCurrent({ processes: P })).toEqual(none);
     expect(routingCurrent({ processes: [], current_def_id: null })).toEqual(none);
   });
+  test("khe opt-in tắt (active=false) ⇒ off, không Đang dùng dù có mặc định", () => {
+    expect(
+      routingCurrent({ processes: [], current_def_id: "d", current_def_name: "M", active: false }),
+    ).toEqual({ markId: null, outside: null, off: true });
+  });
 });

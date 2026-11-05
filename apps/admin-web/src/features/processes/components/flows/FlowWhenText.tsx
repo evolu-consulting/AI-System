@@ -13,7 +13,7 @@ export function FlowWhenText({
 }) {
   const { t } = useTranslation();
   const purposeKey = row.slot ? SLOT_PURPOSE[row.slot] : undefined;
-  const purpose = purposeKey ? t(k(`purpose.${purposeKey}`)) : row.slot;
+  const purpose = purposeKey ? t(k(`purpose.${purposeKey}`)) : "";
   const w = row.when;
   const rule = (r: Extract<typeof w, { kind: "rules" }>["rules"][number]): string => {
     const p = ruleParts(r, deptName);

@@ -28,7 +28,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
       // user-menu + hộp thoại Cài đặt cũng sạch
       await page.getByRole("button", { name: "Tài khoản" }).click();
       expect(await page.locator("body").innerHTML()).not.toContain(SHT);
-      await page.getByRole("menuitem", { name: "Cài đặt chung" }).click();
+      await page.getByRole("menuitem", { name: "Cài đặt Community" }).click();
       await expect(page.getByRole("dialog", { name: "Cài đặt" })).toBeVisible();
       expect(await page.locator("body").innerHTML()).not.toContain(SHT);
       await page.keyboard.press("Escape");

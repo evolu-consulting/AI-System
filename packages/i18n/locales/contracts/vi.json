@@ -341,7 +341,8 @@
     "shell": {
       "navMain": "Điều hướng chính",
       "menuProfile": "Tường nhà",
-      "menuCommunitySettings": "Cài đặt chung",
+      "menuCommunitySettings": "Cài đặt Community",
+      "menuContractsSettings": "Cài đặt Sổ Hợp Tác",
       "navBottom": "Điều hướng",
       "navCollapse": "Thu gọn thanh bên",
       "navExpand": "Mở rộng thanh bên",
@@ -642,6 +643,7 @@
       "saving": "Đang lưu…",
       "saveDraft": "Lưu nháp",
       "draftHint": "Bản nháp chỉ bạn thấy — bấm Xác nhận và lưu để chuyển duyệt",
+      "notFound": "Không tìm thấy hợp đồng — quay lại danh sách để chọn hợp đồng khác.",
       "notVisible": "Hợp đồng chưa được gửi duyệt hoặc bạn không có quyền xem. Hãy nhờ người tạo xác nhận.",
       "savedDraft": "Đã lưu nháp. Hợp đồng vẫn chờ xác nhận — bấm Xác nhận để hoàn tất.",
       "saved": "Đã lưu.",

@@ -20,6 +20,12 @@ test('ADM-FR-65 · E-P15a · Adm: nav "Quy trình"; tab Mẫu ⇒ "Chép mẫu" 
     // CR-120: MỘT trang "Quy trình" (không còn tab); mẫu nằm trong "Tạo quy trình" › "Tạo từ mẫu".
     await expect(p.getByTestId("flows-list")).toBeVisible();
     await expect(p.getByRole("tab")).toHaveCount(0);
+    // cr120-handson-fixes · 4/6: mọi khe tải được (không "Không tải được một phần…") và không lộ mã khe (`community.x ·`).
+    await p.waitForLoadState("networkidle");
+    await expect(p.getByText("Không tải được một phần quy trình của công ty.")).toHaveCount(0);
+    await expect(p.getByTestId("flows-list")).not.toContainText(
+      /(community|contracts)\.[a-z-]+\s·/,
+    );
     await p.getByTestId("flows-create").click();
     const tpl = p.getByTestId("flows-template-sdlc");
     await expect(tpl).toBeVisible();

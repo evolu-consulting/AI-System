@@ -18,6 +18,7 @@ export function safeNext(raw: unknown): string | undefined {
   // Trình duyệt gỡ tab/CR/LF khi phân tích URL → `/\t/evil.com` thành `//evil.com`.
   if (hasControlChar(raw)) return undefined;
   if (raw === "/login" || raw.startsWith("/login?")) return undefined;
+  if (raw === "/contracts/login" || raw.startsWith("/contracts/login?")) return undefined;
   // CR-119 phần 2: `next` cũ (/overview, /contracts/<id>, /partners…) quy về URL chuẩn mới dưới /contracts.
   return canonicalHref(raw);
 }
