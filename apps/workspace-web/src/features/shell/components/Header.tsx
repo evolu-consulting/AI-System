@@ -1,11 +1,12 @@
 // PK-FR-10 · TF5 · nav-v2 · CR-120 · thanh trên 52 px DÙNG CHUNG mọi module: nút thu/mở thanh trái (desktop) hoặc nhận diện công ty (điện
 // thoại), KHE tìm kiếm của module đang mở (Community vẽ ô tìm vào đây), chuông (của module đang mở), công tắc sáng/tối, góp ý, tài khoản.
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { IconFeedback, IconSidebar } from "~/components/icons";
 import { ConnectedBell } from "~/features/notifications/components/ConnectedBell";
 import { nameOf, useBrand } from "~/features/settings/lib/brand";
 import { topbarSlots } from "~/shell/topbar-slots";
+import { searchOwner, useNavPath } from "~/shell/use-nav-path";
 import { useShellPacks } from "~/shell/use-shell-packs";
 import type { Role } from "../lib/nav";
 import { AppSwitcher } from "./AppSwitcher";
@@ -30,10 +31,11 @@ export function Header({
   onFeedback: () => void;
 }) {
   const { t } = useTranslation();
-  const { pathname } = useLocation();
+  const pathname = useNavPath();
   const brand = useBrand();
   const packs = useShellPacks();
   const inCommunity = pathname === "/community" || pathname.startsWith("/community/");
+  const owner = searchOwner(pathname); // module đích sở hữu khe tìm: nội dung của module cũ (còn vẽ tới khi trang đích tải xong) bị ẩn ngay
   const toggle = t(pinned ? "contracts.shell.navCollapse" : "contracts.shell.navExpand");
   return (
     <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-rule bg-panel px-5 max-md:px-3">
@@ -64,7 +66,8 @@ export function Header({
         ref={(el) => topbarSlots.set("search", el)}
         data-slot="topbar-search"
         data-testid="topbar-search"
-        className="flex min-w-0 flex-1 items-center gap-2"
+        data-owner={owner}
+        className="flex min-w-0 flex-1 items-center gap-2 data-[owner=contracts]:hidden"
       />
       <div data-testid="topbar-actions" className="flex items-center gap-1">
         {packs.contracts && (

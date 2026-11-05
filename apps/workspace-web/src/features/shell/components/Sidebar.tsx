@@ -1,7 +1,7 @@
 // PK-FR-10 · TF5 · nav-v2 · CR-120 · thanh trái CỦA MỘT AppShell: khối công ty (logo + tên), các nhóm menu SINH TỪ MANIFEST các module
 // (`shell/nav.ts`), tài khoản ở chân. Mọi mục là `<Link>` của TanStack (điều hướng trong app, không tải lại, không biểu tượng liên kết ngoài).
 // Ghim mở 224 px (mặc định) hoặc thu thành cột biểu tượng 64 px (nút ở thanh trên); trạng thái nhớ theo trình duyệt (`nav:pinned`).
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLinkProps } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { appNameOf, nameOf, useBrand } from "~/features/settings/lib/brand";
@@ -10,6 +10,7 @@ import type { NavEntry } from "~/shared/kernel/module-manifest";
 import { MODULES } from "~/shell/modules";
 import { activeEntry, buildShellNav, type ShellNavGroup } from "~/shell/nav";
 import { badgeText, useFlowCaps } from "~/shell/use-flow-caps";
+import { useNavPath } from "~/shell/use-nav-path";
 import { useShellPacks } from "~/shell/use-shell-packs";
 import type { Role } from "../lib/nav";
 import { BrandMark } from "./BrandMark";
@@ -62,11 +63,16 @@ function SideLink({
   count: number;
 }) {
   const { t } = useTranslation();
+  // `<Link>` tự đặt aria-current theo route ĐÃ COMMIT (trễ tới khi trang lười tải xong) ⇒ lấy props rồi ghi đè theo đường dẫn đích (một nguồn).
+  const linkProps = useLinkProps({
+    to: n.to as never,
+    activeOptions: { exact: n.exact === true },
+  }) as React.ComponentProps<"a">;
   return (
-    <Link
-      to={n.to as never}
-      activeOptions={{ exact: n.exact === true }}
+    <a
+      {...linkProps}
       aria-current={current ? "page" : undefined}
+      data-status={current ? "active" : undefined}
       data-testid={n.testId}
       data-nav-item={n.to}
       title={wide ? undefined : t(n.labelKey)}
@@ -78,7 +84,7 @@ function SideLink({
       </span>
       <span className={wide ? "" : "sr-only"}>{t(n.labelKey)}</span>
       {wide && <NavBadge count={count} className="ml-auto" />}
-    </Link>
+    </a>
   );
 }
 
@@ -136,7 +142,7 @@ export function Sidebar({
   onLogout: () => Promise<void>;
 }) {
   const { t } = useTranslation();
-  const { pathname } = useLocation();
+  const pathname = useNavPath();
   const packs = useShellPacks();
   const { hasCap, badgeOf } = useFlowCaps(
     packs.community === true || packs.contracts === true,

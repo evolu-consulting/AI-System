@@ -1,6 +1,6 @@
 // PK-FR-10 · TF5 · khung app trong `_authed`: sidebar · header · nội dung · khoang phải (trợ lý lazy) · thanh dưới (điện thoại) ·
 // nút nổi "Mở trợ lý AI" · sheet ở điện thoại. Layout từ mgmt-app Shell.tsx; quyền (`write`/`owner`) do PackFrame truyền vào.
-import { Outlet, useLocation } from "@tanstack/react-router";
+import { Outlet } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { IconRobot } from "~/components/icons";
 import { logout } from "~/features/auth/api";
@@ -8,6 +8,7 @@ import { SettingsDialogLazy } from "~/features/settings/components/SettingsDialo
 import { useBrandSync } from "~/features/settings/hooks/use-settings";
 import { cn } from "~/lib/utils";
 import { AssistantFab } from "~/shared/ui/AssistantFab";
+import { useNavPath } from "~/shell/use-nav-path";
 import { useShellPacks } from "~/shell/use-shell-packs";
 import { AssistantDock, DockBody } from "../components/AssistantDock";
 import { BottomNav } from "../components/BottomNav";
@@ -20,7 +21,7 @@ import { NAV_PINNED_KEY, useStoredBool } from "../lib/stored";
 
 export function Shell({ user, write, owner }: { user: ShellUser; write: boolean; owner: boolean }) {
   const { t } = useTranslation();
-  const { pathname } = useLocation();
+  const pathname = useNavPath();
   const layout = layoutOf(pathname);
   const dock = useDock();
   useBrandSync(useShellPacks().contracts === true);

@@ -20,6 +20,13 @@ test("Community → Sổ Hợp Tác: cùng một thanh trái (shell-sidebar), m�
     "page",
   );
   await side.locator('[data-nav-item="/contracts/list"]').click();
+  // CR-121 C-8 · ngay lúc bấm (trang đích còn tải lười): chỉ MỘT mục aria-current (mục đích) và khe tìm của Community đã ẩn
+  await expect(side.locator("[aria-current]")).toHaveCount(1);
+  await expect(side.locator('[data-nav-item="/contracts/list"]')).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(page.getByTestId("topbar-search")).toBeHidden();
   await expect(page).toHaveURL(/\/contracts/);
   const after = page.getByTestId("shell-sidebar");
   await expect(after).toHaveCount(1);
