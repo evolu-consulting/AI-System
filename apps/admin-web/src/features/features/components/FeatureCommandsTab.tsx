@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { pickLocalized } from "@/lib/localized";
 import { useCommandOptions } from "../hooks/use-feature-queries";
+import { uniqueIds } from "../lib/save-merge";
 import { type FeatureFormValues, removedOrphans } from "../lib/schemas";
 
 type Row = { id: string; name: string; description: string; others: number };
@@ -48,7 +49,8 @@ export function FeatureCommandsTab({ feature }: { feature: FeatureDetail | undef
   }
   const rows = ids.map((id) => byId.get(id)).filter((r): r is Row => !!r);
   const orphans = removedOrphans(initial, ids);
-  const change = (next: string[]) => setValue("command_ids", next, { shouldDirty: true });
+  const change = (next: string[]) =>
+    setValue("command_ids", uniqueIds(next), { shouldDirty: true });
 
   return (
     <div className="space-y-4">

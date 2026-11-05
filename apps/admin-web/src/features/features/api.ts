@@ -11,6 +11,7 @@ import type {
 import type { TenantListResponse } from "@ai/contracts/tenants";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
+import { newerDetail } from "./lib/save-merge";
 
 export const FEATURES_PAGE_SIZE = 50;
 
@@ -55,10 +56,18 @@ export function useFeatureList(params: FeatureListParams, enabled: boolean) {
 export const fetchFeatureDetail = (id: string) => api<FeatureDetail>(`/admin/features/${id}`);
 
 export function useFeature(id: string | undefined) {
+  const qc = useQueryClient();
   return useQuery({
     queryKey: FEATURE_KEYS.detail(id ?? ""),
     enabled: !!id,
-    queryFn: () => fetchFeatureDetail(id as string),
+    // Refetch cũ (sau lần lưu trước) về muộn không được thay bản mới hơn đã có trong cache (R4).
+    queryFn: async () => {
+      const fetched = await fetchFeatureDetail(id as string);
+      return newerDetail(
+        qc.getQueryData<FeatureDetail>(FEATURE_KEYS.detail(id as string)),
+        fetched,
+      );
+    },
   });
 }
 
@@ -97,7 +106,12 @@ export function useUpdateFeature() {
   return useMutation({
     mutationFn: ({ id, ...body }: { id: string } & FeatureUpdateRequest) =>
       api<FeatureDetail>(`/admin/features/${id}`, { method: "PATCH", body }),
-    onSuccess: () => invalidateCatalog(qc),
+    // Ghi bản server vừa trả vào cache NGAY và KHÔNG chờ refetch: mutateAsync xong ngay khi có phản hồi,
+    // form dựng lại theo đúng phản hồi này (không theo refetch về muộn).
+    onSuccess: (res, vars) => {
+      qc.setQueryData<FeatureDetail>(FEATURE_KEYS.detail(vars.id), (old) => newerDetail(old, res));
+      void invalidateCatalog(qc);
+    },
   });
 }
 

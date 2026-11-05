@@ -141,8 +141,6 @@ test("CR-055 · M2-AC04 · tab Commands: thêm /tom-tat lưu được; bỏ /kie
   );
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   expect((await saved).status()).toBe(200);
-  // Chờ lượt tải lại feature sau lưu xong rồi mới sửa tiếp: bản tải muộn không được đè nháp vừa sửa.
-  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Bỏ /kiemtra-hoadon khỏi feature" }).click();
   await expect(
     page.getByText("/kiemtra-hoadon sẽ không thuộc feature nào và biến khỏi menu"),
@@ -153,7 +151,6 @@ test("CR-055 · M2-AC04 · tab Commands: thêm /tom-tat lưu được; bỏ /kie
   );
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   expect((await orphaned).status()).toBe(200);
-  await page.waitForLoadState("networkidle");
   // Trả lại trạng thái cho các ca sau (serial, fixture dựng một lần).
   await page.getByRole("combobox", { name: "Thêm command" }).click();
   await page.getByRole("option", { name: /kiemtra-hoadon/ }).click();
