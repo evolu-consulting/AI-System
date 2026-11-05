@@ -110,24 +110,6 @@
   {
     "type": "dependency",
     "from": "apps/hub-api/src/modules/ops/adapters/checks/flow-coverage.check.ts",
-    "to": "apps/hub-api/src/modules/packs/contracts/domain/approval-engine.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/adapters/checks/flow-coverage.check.ts",
-    "to": "apps/hub-api/src/modules/packs/contracts/domain/approval-slot.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/adapters/checks/flow-coverage.check.ts",
     "to": "apps/hub-api/src/modules/packs/kit/adapters/slot-registry.ts",
     "rule": {
       "severity": "error",

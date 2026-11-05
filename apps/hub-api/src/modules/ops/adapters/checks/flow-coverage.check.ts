@@ -9,8 +9,7 @@
 
 import { packFeatureKey } from "@ai/contracts";
 import { sql } from "drizzle-orm";
-import { APPROVAL_PROCESS_KEY } from "../../../packs/contracts/domain/approval-flow.rules";
-import { APPROVAL_SLOT } from "../../../packs/contracts/domain/approval-slot.rules";
+import { APPROVAL_PROCESS_KEY, APPROVAL_SLOT } from "../../../packs/contracts/public";
 import { slotRegistry } from "../../../packs/kit/adapters/slot-registry";
 import type { OpsCheck, OpsCheckResult } from "../../application/ops.check";
 import { systemRead } from "./check-kit";
