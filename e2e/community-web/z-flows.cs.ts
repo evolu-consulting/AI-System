@@ -1,6 +1,7 @@
 // CR-120 · cr120-community-flow-ui · HÀNH TRÌNH THẬT (D5, không mock) trên stack community-web + ai-admin:
 //  1. Platform admin ở ai-admin gán quy trình "duyệt bài" cho công ty (đường thật, không bật cờ trong seed).
 //  2. Đối tác đăng bài ⇒ "Chờ duyệt" ở Bài đăng của tôi (kèm gợi ý sửa) ⇒ chủ quản thấy mục "Duyệt bài" ⇒ duyệt ⇒ bài hiện trên bảng tin.
+// (Tên z-: chạy SAU roles.cs.ts vì ca 3 ẩn bài mẫu "Lịch nghỉ lễ 20/11" và ca 2 bật duyệt bài cho công ty demo.)
 //  3. Đối tác báo cáo một bài của chủ quản (menu ⋯) ⇒ chủ quản vào "Báo cáo vi phạm", thấy tiêu đề bài + lý do ⇒ Ẩn bài.
 import { expect, type Page, test } from "@playwright/test";
 import { openAs, postByTitle } from "./_stack";
