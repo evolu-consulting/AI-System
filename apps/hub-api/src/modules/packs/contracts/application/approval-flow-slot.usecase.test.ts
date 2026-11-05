@@ -99,9 +99,12 @@ describe("CR-118 · approvalFlowSlot", () => {
     };
     expect([await count(0), await count(1), await count(100)]).toEqual([0, 1, 1]);
   });
-  test("cờ: mặc định TẮT; seam thắng env", () => {
-    expect(flowRuntimeOn(undefined, undefined)).toBe(false);
+  test("cờ: mặc định BẬT (CR-120), chỉ 'off' tắt; seam thắng env", () => {
+    expect(flowRuntimeOn(undefined, undefined)).toBe(true);
+    expect(flowRuntimeOn(undefined, "")).toBe(true);
     expect(flowRuntimeOn(undefined, "on")).toBe(true);
+    expect(flowRuntimeOn(undefined, "off")).toBe(false);
     expect(flowRuntimeOn(false, "on")).toBe(false);
+    expect(flowRuntimeOn(true, "off")).toBe(true);
   });
 });

@@ -2,8 +2,17 @@
 import { describe, expect, test } from "bun:test";
 import type { ContractApproval } from "@ai/contracts";
 import { ApiError } from "@ai/web-kit/http";
-import { approvalView, feedbackOk, showLinkDialog } from "./approval";
+import { approvalView, feedbackOk, flowActionOf, showLinkDialog } from "./approval";
 import { approvalErrorText } from "./approval-error";
+
+describe("CR-120 · flowActionOf (thân thẻ ⇒ FlowRuntime.act)", () => {
+  test("approve trống ⇒ {}; lý do ⇒ feedback; SP gắn ⇒ extension", () => {
+    const links = [{ item_id: "i1", product_id: "p1" }] as never;
+    expect(flowActionOf({ action: "approve" })).toEqual({});
+    expect(flowActionOf({ action: "return", feedback: "Thiếu" })).toEqual({ feedback: "Thiếu" });
+    expect(flowActionOf({ action: "approve", products: links })).toEqual({ extension: links });
+  });
+});
 
 const A = (o: Partial<ContractApproval>): ContractApproval => ({
   run_id: "11111111-1111-4111-8111-111111111111",

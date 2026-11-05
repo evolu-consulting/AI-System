@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import type { ApprovalCardStep, ContractApproval, ContractGroup } from "@ai/contracts";
 import { timelineRows } from "./engine-card";
-import { APPROVAL_SLOT, flowViewOfApproval, rowOfFlowStep } from "./flow-view";
+import { APPROVAL_SLOT, flowViewOfApproval, rowOfFlowStep, withGroupLabels } from "./flow-view";
 
 const G1 = "11111111-1111-4111-8111-111111111111";
 const G2 = "22222222-2222-4222-8222-222222222222";
@@ -139,5 +139,33 @@ describe("flowViewOfApproval → rowOfFlowStep", () => {
       NOW,
     );
     expect([v.run, v.state]).toEqual([null, "none"]);
+  });
+});
+
+describe("CR-120 · withGroupLabels (FlowView của hub)", () => {
+  // Hub chỉ gửi nhãn phòng khi chuyển cấp; bước thường label=null ⇒ điền tên phòng từ /groups như dòng thời gian cũ.
+  const hubView = () => {
+    const v = flowViewOfApproval(card(STEPS), "c1", GROUPS, NOW);
+    return {
+      ...v,
+      steps: v.steps.map((s, i) =>
+        s.assignee?.kind === "group"
+          ? { ...s, assignee: { ...s.assignee, label: i === 4 ? "Ban TGĐ" : null } }
+          : s,
+      ),
+    };
+  };
+  test("label null + id ⇒ tên phòng; nhãn chuyển cấp của hub giữ nguyên; dify không đổi", () => {
+    const v = withGroupLabels(hubView(), GROUPS);
+    const label = (i: number) => {
+      const a = v.steps[i]?.assignee;
+      return a?.kind === "group" ? a.label : a?.kind;
+    };
+    expect([label(0), label(2), label(3), label(4)]).toEqual(["Pháp chế", "system", "", "Ban TGĐ"]);
+    expect(v.tasks).toEqual(hubView().tasks);
+  });
+  test("chưa tải /groups ⇒ trả nguyên view", () => {
+    const v = hubView();
+    expect(withGroupLabels(v, [])).toBe(v);
   });
 });

@@ -353,7 +353,7 @@ function approvalModule(
     saveSettings: saveApprovalSettings(ad),
   });
   approval.route("/", flowTemplateRoutes(view, o.uow, flow));
-  const fr = contractsFlowRoutes(o.db, view, { get, act }); // CR-118 · cờ HUB_FLOW_RUNTIME (mặc định tắt)
+  const fr = contractsFlowRoutes(o.db, view, { get, act }); // CR-120 · mặc định bật; HUB_FLOW_RUNTIME=off = rollback
   if (fr) approval.route("/", fr);
   return approval;
 }

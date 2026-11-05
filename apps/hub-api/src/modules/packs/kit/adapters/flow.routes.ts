@@ -1,4 +1,4 @@
-// CR-118 · UW-FR-10/11/14 · ADR-0035 · route flow chung của kit, gắn dưới `/pack/<k>` (chỉ khi cờ `HUB_FLOW_RUNTIME=on`):
+// CR-118 · UW-FR-10/11/14 · ADR-0035 · route flow chung của kit, gắn dưới `/pack/<k>` (CR-120: mặc định bật, `HUB_FLOW_RUNTIME=off` ⇒ không gắn):
 //   GET  /flow/:slot/:ref                              → FlowView (packGuard `read`)
 //   POST /flow/:slot/:ref/tasks/:id/actions/:action    → { view } (packGuard `write`; quyền bước = canAct của engine/gói)
 //   POST /flow/:slot/summary {refs ≤ 100}              → FlowSummary (packGuard `read`; số SQL cố định mỗi lô)

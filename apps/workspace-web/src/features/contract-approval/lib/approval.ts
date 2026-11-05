@@ -1,6 +1,6 @@
 // HD-FR-36 · S05: luật hiển thị thẻ duyệt (thuần). "Xác nhận" (cấp 1, như mgmt-app `ContractPage.tsx:102`) / "Duyệt" (cấp 2) /
 // "Từ chối" / "Đọc lại" chỉ khi engine báo `can_act`; đang chờ bước mà người xem không quyết được ⇒ một dòng ghi chú.
-import type { ContractApproval } from "@ai/contracts";
+import type { ApprovalActionRequest, ContractApproval, FlowActionRequest } from "@ai/contracts";
 import { engineApprovalView } from "./engine-card";
 
 export type ApprovalView = {
@@ -55,6 +55,14 @@ export function approvalView(
  *  confirm-flow (người dùng 2026-10-23): "Đọc lại" (trích lại kèm lý do) ẩn — chỉ còn "AI đọc lại từ đầu" ở khối Quản lý. */
 export const overflowOf = (v: ApprovalView): "reject"[] =>
   v.confirm && v.reject ? ["reject"] : [];
+
+/** CR-120 · thân thẻ duyệt ⇒ đầu vào `FlowRuntime.act`: lý do = `feedback`, SP gắn (products-confirm) = `extension` của gói. */
+export function flowActionOf(b: ApprovalActionRequest): FlowActionRequest {
+  return {
+    ...(b.feedback !== undefined ? { feedback: b.feedback } : {}),
+    ...(b.products !== undefined ? { extension: b.products } : {}),
+  };
+}
 
 /** Kết quả một lần quyết bước duyệt (hook `useApproval.act`). */
 export type ActResult = { ok: true; step: string | null } | { ok: false; code: string | null };

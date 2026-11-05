@@ -107,6 +107,8 @@ function esignOf(e: NonNullable<ContractApproval["esign"]>): FlowStepView {
 }
 
 /**
+ * CR-120: CHỈ còn cho rollback (`HUB_FLOW_RUNTIME=off` ⇒ hub không có `/flow/*`, `useFlowView` trả null) — đường chính đọc FlowView
+ * của hub. CR-121 xoá cùng `legacy-act.ts`.
  * Thẻ duyệt ⇒ FlowView (chỉ phần hiển thị dòng bước). `tasks` rỗng: nút Duyệt/Trả lại/Từ chối của thẻ vẫn do `useApprovalUi` lo
  * (cần lưu ô trước, hộp gắn sản phẩm…), không đi qua FlowPanel.
  */
@@ -136,6 +138,22 @@ export function flowViewOfApproval(
     block_reason: card.block_reason ?? null,
     steps,
     tasks: [],
+  };
+}
+
+/**
+ * CR-120 · FlowView do hub chiếu (`GET /pack/contracts/flow/contracts.approval/:id`) chỉ mang nhãn phòng khi chuyển cấp ⇒ điền tên
+ * phòng từ `/groups` theo id (như dòng thời gian cũ). Chỉ trình bày: không đổi bước/trạng thái/task.
+ */
+export function withGroupLabels(v: FlowView, groups: readonly ContractGroup[]): FlowView {
+  if (groups.length === 0) return v;
+  return {
+    ...v,
+    steps: v.steps.map((s) =>
+      s.assignee?.kind === "group" && s.assignee.label === null && s.assignee.id
+        ? { ...s, assignee: { ...s.assignee, label: nameOf(groups, s.assignee.id) } }
+        : s,
+    ),
   };
 }
 

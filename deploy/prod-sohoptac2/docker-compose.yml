@@ -133,6 +133,8 @@ services:
       OPS_PUBLIC_URLS: "${OPS_PUBLIC_URLS:-}"
       # CR-114: cỡ pool `connectDb` (mặc định 10).
       HUB_DB_POOL_MAX: ${HUB_DB_POOL_MAX:-10}
+      # CR-120 · ADR-0036: flow runtime (`/pack/<k>/flow/*`, thẻ duyệt qua FlowRuntime.act) mặc định bật; `off` = rollback về approvals cũ.
+      HUB_FLOW_RUNTIME: ${HUB_FLOW_RUNTIME:-on}
     command: ["bun", "--env-file=/run/s2/app.env", "apps/hub-api/src/server.ts"]
     volumes:
       - ./.env:/run/s2/app.env:ro

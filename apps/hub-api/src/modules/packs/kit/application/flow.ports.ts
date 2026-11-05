@@ -68,6 +68,7 @@ export function flowRuntime(packKey: string, adapters: readonly FlowSlotAdapter[
   };
 }
 
-/** Cờ bật flow runtime: seam test ưu tiên, vắng ⇒ env `HUB_FLOW_RUNTIME=on`. Mặc định TẮT (route không gắn ⇒ 404). */
+/** Cờ flow runtime (CR-120 · ADR-0036 §5): seam test ưu tiên; mặc định BẬT, chỉ `HUB_FLOW_RUNTIME=off` tắt (rollback ⇒ route không
+ *  gắn ⇒ 404, web chuyển hành động về endpoint approvals cũ qua `/pack/me.flags["flow.runtime"]`). */
 export const flowRuntimeOn = (seam: boolean | undefined, env = process.env.HUB_FLOW_RUNTIME) =>
-  seam ?? env === "on";
+  seam ?? env !== "off";

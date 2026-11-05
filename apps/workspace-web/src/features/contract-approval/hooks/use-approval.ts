@@ -1,13 +1,14 @@
 // HD-FR-36 · S05: dữ liệu + thao tác thẻ duyệt. "Xác nhận" như mgmt-app (`ContractPage.tsx:71-85`): lưu ô đã đổi TRƯỚC rồi mới
 // quyết; xong ⇒ tải lại HĐ + trạng thái duyệt. Bước đang chạy (AI đọc / tool) ⇒ tải lại mỗi 2 s tới khi có bước người.
 // confirm-flow: một thao tác tại một thời điểm (chặn bấm đúp kể cả trước khi nút kịp vô hiệu); `act` trả kết quả có mã lỗi.
-import type { ApprovalActionRequest, ContractApproval } from "@ai/contracts";
+// CR-120: Duyệt/Trả lại/Từ chối (+ lý do, + SP gắn) đi `FlowRuntime.act` khe `contracts.approval`; FlowView tự tải lại khi thẻ đổi (`ApprovalTimeline`).
+import type { ApprovalActionRequest } from "@ai/contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { flowRuntime } from "~/platform/flow";
 import {
-  actApproval,
   approvalKey,
   cancelReopenApproval,
   fetchApproval,
@@ -15,9 +16,10 @@ import {
   retryApproval,
 } from "../api";
 import { advanceDelay } from "../lib/advance-wait";
-import type { ActResult } from "../lib/approval";
+import { type ActResult, flowActionOf } from "../lib/approval";
 import { approvalErrorText } from "../lib/approval-error";
 import { engineAdvancing } from "../lib/engine-card";
+import { APPROVAL_SLOT } from "../lib/flow-view";
 import { useApprovalPush } from "./use-approval-push";
 
 const RUNNING = new Set(["extract", "value", "finalize"]);
@@ -86,10 +88,17 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
     (await once(body.action, async (): Promise<ActResult> => {
       try {
         await before?.();
-        const out: ContractApproval = await actApproval(id, body);
+        // CR-120: hành động đi FlowRuntime.act (task đang mở của thẻ); runtime tắt ⇒ adapter tự về endpoint cũ (`legacy-act`).
+        const out = await flowRuntime.act(
+          APPROVAL_SLOT,
+          id,
+          q.data?.task_id ?? "",
+          body.action,
+          flowActionOf(body),
+        );
         setMsg(t(label ?? DONE_KEY[body.action]));
         await refresh();
-        return { ok: true, step: out?.step ?? null };
+        return { ok: true, step: out.view ? out.view.phase : out.phase };
       } catch (e) {
         setErr(approvalErrorText(e, t));
         return { ok: false, code: codeOf(e) };

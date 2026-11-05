@@ -28,7 +28,7 @@ export type CapabilitiesMountDeps = {
   /** Có Redis ⇒ `/me/stream` được mount ⇒ đẩy `config.changed` tới phiên của instance. */
   redis?: Redis;
   signal?: AbortSignal;
-  /** Seam test của cờ flow runtime; vắng ⇒ env `HUB_FLOW_RUNTIME=on`. */
+  /** Seam test của cờ flow runtime; vắng ⇒ env (mặc định bật, `HUB_FLOW_RUNTIME=off` tắt). */
   flowRuntime?: boolean | undefined;
 };
 

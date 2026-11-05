@@ -1,6 +1,6 @@
 // HD-FR-34 · HD-FR-36 · S05: trạng thái + quyết bước duyệt của HĐ (`/pack/contracts/contracts/:id/approval`). Bearer + refresh
 // do web-kit lo; lỗi (403 STARTER_CANNOT_REVIEW, 422 FEEDBACK_REQUIRED, 429 ACTION_QUOTA…) ném `ApiError` cho trang báo.
-import type { ApprovalActionRequest, ContractApproval, ContractGroup } from "@ai/contracts";
+import type { ContractApproval, ContractGroup } from "@ai/contracts";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/contracts";
@@ -11,12 +11,8 @@ export function fetchApproval(id: string, signal?: AbortSignal): Promise<Contrac
   return api<ContractApproval>(`${BASE}/${encodeURIComponent(id)}/approval`, { signal });
 }
 
-export function actApproval(id: string, body: ApprovalActionRequest): Promise<ContractApproval> {
-  return api<ContractApproval>(`${BASE}/${encodeURIComponent(id)}/approval`, {
-    method: "POST",
-    body,
-  });
-}
+// CR-120: Duyệt/Trả lại/Từ chối KHÔNG còn gọi thẳng `POST …/approval` — đi `FlowRuntime.act` (`~/platform/flow`); đường cũ chỉ còn
+// trong `platform/flow/adapters/legacy-act.ts` cho rollback `HUB_FLOW_RUNTIME=off`.
 
 /** fix-review · Mở lại quy trình (run engine kết thúc bất thường): owner/admin của gói. */
 export function reopenApproval(id: string): Promise<ContractApproval> {

@@ -81,6 +81,25 @@ describe("httpFlowRuntime", () => {
     expect(calls).toHaveLength(0);
   });
 
+  test("CR-120 rollback: cờ tắt ⇒ act đi endpoint approvals cũ (thân cũ, products từ extension), trả giai đoạn mới", async () => {
+    const rt = httpFlowRuntime(async () => false);
+    json = { step: "level2" };
+    const links = [{ item_id: U, product_id: U }];
+    const out = await rt.act("contracts.approval", "r1", U, "approve", { extension: links });
+    expect(out).toEqual({ view: null, phase: "level2" });
+    expect(tail(calls[0])).toBe("/pack/contracts/contracts/r1/approval");
+    expect([calls[0]?.method, calls[0]?.body]).toEqual([
+      "POST",
+      { action: "approve", products: links },
+    ]);
+    await rt.act("contracts.approval", "r1", U, "reject", { feedback: "Thiếu" });
+    expect(calls[1]?.body).toEqual({ action: "reject", feedback: "Thiếu" });
+    await expect(rt.act("community.report", "r1", U, "approve", {})).rejects.toBeInstanceOf(
+      ApiError,
+    );
+    expect(calls).toHaveLength(2);
+  });
+
   test("summary rỗng ⇒ không gọi mạng", async () => {
     expect(await httpFlowRuntime().summary("contracts.approval", [])).toBeNull();
     expect(calls).toHaveLength(0);
