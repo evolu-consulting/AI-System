@@ -35,6 +35,7 @@ export * from "./processes-api";
 export * from "./processes-autofix";
 export * from "./processes-entities";
 export * from "./processes-errors";
+export * from "./processes-run-log";
 export * from "./room-process";
 export * from "./rooms";
 export * from "./rules";

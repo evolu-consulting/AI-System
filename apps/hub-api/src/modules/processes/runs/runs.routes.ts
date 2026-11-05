@@ -6,11 +6,14 @@ import {
   CreateProcessRunRequestSchema,
   PROCESS_RUN_ID_HEADER,
   ProcessRunListQuerySchema,
+  RUN_DETAIL_STEPS_MAX,
 } from "@ai/contracts/chat";
 import { type Context, Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { parseJson, parseQuery } from "../../../lib/http";
+import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
+import { RunDetailService } from "./run-detail.service";
 import { StartService } from "./start.service";
 import { ViewService } from "./view.service";
 
@@ -24,6 +27,7 @@ export const tenantIdQuery = (c: Context<AuthVars>): string | undefined => {
 export function processRunsRoutes(d: ProcessDeps): Hono<AuthVars> {
   const svc = new StartService(d);
   const view = new ViewService(d);
+  const detail = new RunDetailService(d);
   const r = new Hono<AuthVars>();
 
   r.get("/processes", async (c) => c.json({ items: await svc.catalog(c.var.user) }));
@@ -43,6 +47,20 @@ export function processRunsRoutes(d: ProcessDeps): Hono<AuthVars> {
   r.get("/process-runs/:id", async (c) =>
     c.json(await view.get(c.var.user, c.req.param("id"), tenantIdQuery(c))),
   );
+
+  // CR-121 · R-2 · trang chi tiết lượt chạy (admin) + nhật ký một bước (mức basic/debug do vai quyết ở service).
+  const notFound = () => processError("PROCESS_NOT_FOUND", { suggestions: [] });
+  r.get("/process-runs/:id/detail", async (c) => {
+    if (!UuidSchema.safeParse(c.req.param("id")).success) throw notFound();
+    return c.json(await detail.detail(c.var.user, c.req.param("id"), tenantIdQuery(c)));
+  });
+
+  r.get("/process-runs/:id/stages/:idx/log", async (c) => {
+    const idx = Number(c.req.param("idx"));
+    if (!UuidSchema.safeParse(c.req.param("id")).success) throw notFound();
+    if (!Number.isInteger(idx) || idx < 0 || idx >= RUN_DETAIL_STEPS_MAX) throw notFound();
+    return c.json(await detail.stageLog(c.var.user, c.req.param("id"), idx, tenantIdQuery(c)));
+  });
 
   r.get("/process-runs/:id/outputs/:oid", async (c) =>
     c.json(await view.output(c.var.user, c.req.param("id"), c.req.param("oid"), tenantIdQuery(c))),
