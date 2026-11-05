@@ -38,9 +38,9 @@ Không đổi logic sản phẩm, không DLC, không -Exclusive, không đổi s
 
 ## Quyết định trong lúc làm
 
-- Mô hình dự kiến: int 1,6× nhanh hơn với 2 worker, e2e 2 làn, 35 s/lệnh — hằng số đo thô, lượt `verify:wave` kế sẽ ghi số đo thật vào cache và `--plan` tự chính xác dần.
-- Không tăng số worker/làn trong slot (ngân sách 1,3×lõi của evotest-shard đã gần đủ với 7–8 slot).
-- Mục tiêu ≤ 6 phút chưa đạt theo mô hình: dự kiến 8,0 phút (7 slot) / 7,3 phút (8 slot), trước 14,9 phút; phần còn lại là tổng khối lượng (int ≈ 1700 slot-giây + e2e ≈ 2900 việc-giây), cần giảm khối lượng (đỏ e2e có sẵn, test int ngủ) hoặc thêm slot.
+- Lượt đo thật `verify:wave` sau khi sửa (7 slot trống, 2026-11-06 00:10): wall **900 s** (trước 893 s) — KHÔNG cải thiện dù thùng đã cân (int 290–311 s, e2e 403–587 s). Mô hình đầu (int 2 worker ×1,6; e2e 2 làn; dự kiến 480 s) sai: máy chủ 12 lõi bị bão hoà khi 7 slot cùng chạy, tổng thời gian ca e2e tăng 2598 → 3988 s (+53%) và tổng giây-slot 4143 → 4998 (thêm ≈ 13 lần dựng stack do chia mảnh). Cân thùng không thêm CPU ⇒ không rút được wall.
+- Hệ quả: (a) int `-Workers 2` chỉ thêm tải, không nhanh hơn và sinh 3 đỏ mới phụ thuộc thời gian (M2/concurrency "< 900 ms mỗi vòng", H2a/async A37 quét orphan, V2-A/perf) ⇒ đặt lại 1 worker (`WAVE.intWorkers = 1`); (b) cache đã nạp số đo lúc tải cao, boot lấy trung bình mảnh, mảnh tối thiểu 70 s test; (c) `--plan` với cache mới dự kiến 15,8 phút (7 slot) / 14,1 phút (8 slot) — khớp thực tế 15 phút.
+- Muốn ≤ 6 phút phải giảm CPU: (1) tổng ca e2e ≈ 2600 s xanh (cần bớt dựng stack lặp lại mỗi việc: 18 việc × 25–50 s; gộp các việc nhỏ dùng chung stack), (2) int ≈ 1700 s (rls-packs 58 s, lock-order, migrate-hub, N1/migrate là công việc thật, không ngủ), (3) bớt ca đỏ có sẵn (≈ 35 đỏ mới/lượt tốn ≥ 8 s mỗi ca), hoặc thêm lõi cho máy chủ evotest. Đây là việc ngoài phạm vi lát hạ tầng chia slot.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
@@ -49,5 +49,6 @@ Không thay đổi hành vi (lý do: hạ tầng chạy test, không đổi hàn
 
 ## Việc còn lại
 
-- Chạy một lượt `bun run verify:wave` khi đủ slot trống để ghi số đo thật (cache tự cập nhật) và xác nhận số phút; chỉnh `WAVE.intSpeedup`/`pieceCapS` theo số đo.
+- Mục tiêu wall ≤ 6 phút / slot ≤ 5 phút CHƯA đạt (thật: 900 s, slot 290–587 s). Cần lát giảm CPU (xem Quyết định): gộp dựng stack e2e, bớt ca đỏ, hoặc thêm lõi.
+- Đỏ mới trong lượt đo (35): phần lớn là đỏ có sẵn của đợt (tenants/app-config/community sidebar/contracts-web scenes…) + 3 int phụ thuộc thời gian dưới tải (M2/concurrency, H2a/async A37, V2-A/perf) — chưa chạy lại riêng từng ca.
 - Các test int dài do công việc thật (rls-packs 58 s, command-file, migrate-hub, N1/migrate) chưa phải chờ ngủ: cần lát riêng nếu muốn giảm tiếp.

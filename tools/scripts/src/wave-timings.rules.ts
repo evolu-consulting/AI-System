@@ -70,17 +70,18 @@ export function mergeTimings(
 ): WaveTimings {
   const t: WaveTimings = { int: { ...old.int }, e2e: { ...old.e2e }, boot: { ...old.boot } };
   Object.assign(t.int, patch.int ?? {});
-  const byBase = new Map<string, { files: Record<string, number>; boot: number }>();
+  const byBase = new Map<string, { files: Record<string, number>; boot: number; n: number }>();
   for (const [name, v] of Object.entries(patch.jobs ?? {})) {
     const b = baseJobName(name);
-    const cur = byBase.get(b) ?? { files: {}, boot: 0 };
+    const cur = byBase.get(b) ?? { files: {}, boot: 0, n: 0 };
     for (const [f, s] of Object.entries(v.files)) cur.files[e2eKey(name, f)] = s;
-    cur.boot = Math.max(cur.boot, v.boot);
+    cur.boot += v.boot;
+    cur.n += 1;
     byBase.set(b, cur);
   }
   for (const [b, v] of byBase) {
     Object.assign(t.e2e, v.files);
-    t.boot[b] = v.boot;
+    t.boot[b] = Math.round(v.boot / Math.max(1, v.n)); // trung bình các mảnh (mảnh chạy lúc tải cao không kéo cả việc)
   }
   return t;
 }
