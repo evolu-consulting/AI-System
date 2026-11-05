@@ -86,6 +86,9 @@ test("3 · đối tác báo cáo một bài ⇒ chủ quản Ẩn bài ở Báo 
   await host0.page.goto("/community");
   await host0.page.getByTestId("composer").locator('[data-type="note"]').first().click();
   await host0.page.locator("#draft-body").fill(NOTE);
+  // Chọn rõ đối tượng "tất cả" (chip đầu của ô Đối tượng): không chọn thì máy chủ dùng mặc định hẹp hơn, người mua không thấy.
+  await host0.page.locator(".cbar button[aria-expanded]").click();
+  await host0.page.locator(".audbox fieldset.chips button").first().click();
   await host0.page.getByRole("button", { name: "Đăng bài" }).click();
   await expect(postByTitle(host0.page, NOTE).first()).toBeVisible();
   // Ca 1 bật duyệt bài: nếu bài của chủ quản cũng vào hàng chờ thì tự duyệt (không phụ thuộc cấu hình tenant).
