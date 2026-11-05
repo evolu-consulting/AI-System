@@ -32,7 +32,10 @@ câu nền đó trong `captureSql` — việc của test-kit, không phải củ
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-Không thay đổi hành vi (lý do: lát chỉ điều tra; không đổi code hay test, ca đỏ không do Q-4).
+Không thay đổi hành vi (lý do: chỉ đổi test-kit/test: V2-D/perf in văn bản các câu khi số câu lệch; hành vi sản phẩm không đổi).
+
+## Thử và bỏ: lọc theo tuyến đo
+Thử AsyncLocalStorage trong captureSql để chỉ đếm câu sinh từ đường đo: mất ngữ cảnh khi postgres.js gửi câu (12 ca sqlcount/perf khác đỏ vì thiếu câu) ⇒ đã gỡ. Chưa có cách lọc theo kết nối/tx an toàn (câu nền cũng mở tx cùng kiểu).
 
 ## Việc còn lại
-Bắt văn bản câu thừa nếu `V2-D/perf` đỏ lại trong wave (xem Quyết định).
+Khi `V2-D/perf` đỏ lại trong wave: log nay in văn bản từng câu (`queryTexts`) ⇒ lọc đúng câu nền đó trong `captureSql` (theo văn bản, không đếm-rồi-trừ).
