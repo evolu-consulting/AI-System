@@ -1,4 +1,4 @@
-// COM-FR-39 · Cá nhân: thông báo (lưu /pack/community/settings) + ngôn ngữ vi/en (lưu `community.lang`, như login/i18n).
+// COM-FR-39 · Cá nhân: thông báo (lưu /pack/community/settings, tự lưu) + ngôn ngữ vi/en (lưu `community.lang`, như login/i18n).
 import {
   type CommunitySettings,
   DEFAULT_SETTINGS,
@@ -7,6 +7,13 @@ import {
 } from "@ai/contracts/community";
 import { SUPPORTED_LOCALES } from "@ai/i18n/locales";
 import { useCallback, useEffect, useState } from "react";
+import {
+  SettingsGroup,
+  SettingsRow,
+  SettingsSection,
+  SettingsSeg,
+  SettingsSwitch,
+} from "~/shared/ui/settings-layout";
 import { useApp } from "../../application/ctx";
 import { currentLang, setLang, t } from "../../i18n";
 
@@ -34,61 +41,61 @@ export function NotifySection() {
   const cur = s ?? DEFAULT_SETTINGS;
   const kinds = NOTIFY_KINDS.filter((k) => isHostViewer || !HOST_ONLY.includes(k));
   return (
-    <>
-      <h2>{t("community.settings.sections.notify")}</h2>
-      <p className="lead">{t("community.settings.notify.lead")}</p>
+    <SettingsSection
+      title={t("community.settings.sections.notify")}
+      description={t("community.settings.notify.lead")}
+      autosaveNote={t("community.settings.autosave")}
+    >
       {failed && (
-        <div className="row" role="alert" data-testid="settings-load-error">
-          <div className="t">
-            <b>{t("community.settings.loadError")}</b>
-          </div>
-          <button type="button" className="btn" onClick={load}>
+        <div
+          role="alert"
+          data-testid="settings-load-error"
+          className="mb-4 flex items-center gap-3"
+        >
+          <b className="text-label">{t("community.settings.loadError")}</b>
+          <button type="button" className="text-label text-act underline" onClick={load}>
             {t("community.settings.retry")}
           </button>
         </div>
       )}
-      {s &&
-        kinds.map((k) => (
-          <div className="row" key={k}>
-            <div className="t">
-              <b>{t(`community.settings.notify.${k}`)}</b>
-              <span>{desc(k)}</span>
-            </div>
-            <button
-              type="button"
-              className="sw"
-              aria-pressed={cur.notify[k]}
-              aria-label={t(`community.settings.notify.${k}`)}
-              onClick={() => save({ notify: { ...cur.notify, [k]: !cur.notify[k] } })}
-            />
-          </div>
-        ))}
-    </>
+      {s && (
+        <SettingsGroup>
+          {kinds.map((k) => (
+            <SettingsRow key={k} label={t(`community.settings.notify.${k}`)} hint={desc(k)}>
+              <SettingsSwitch
+                checked={cur.notify[k]}
+                label={t(`community.settings.notify.${k}`)}
+                onChange={(v) => save({ notify: { ...cur.notify, [k]: v } })}
+              />
+            </SettingsRow>
+          ))}
+        </SettingsGroup>
+      )}
+    </SettingsSection>
   );
 }
 
 export function LangSection() {
   const [lang, setLangState] = useState(currentLang);
   return (
-    <>
-      <h2>{t("community.settings.sections.lang")}</h2>
-      <p className="lead">{t("community.settings.lang.lead")}</p>
-      <fieldset className="swatches" aria-label={t("community.settings.lang.aria")}>
-        {SUPPORTED_LOCALES.map((l) => (
-          <button
-            key={l}
-            type="button"
-            className={lang === l ? "btn on" : "btn"}
-            aria-pressed={lang === l}
-            onClick={() => {
+    <SettingsSection
+      title={t("community.settings.sections.lang")}
+      description={t("community.settings.lang.lead")}
+      autosaveNote={t("community.settings.autosave")}
+    >
+      <SettingsGroup>
+        <SettingsRow label={t("community.settings.lang.aria")}>
+          <SettingsSeg
+            label={t("community.settings.lang.aria")}
+            value={lang}
+            options={SUPPORTED_LOCALES.map((l) => [l, t(`community.settings.lang.${l}`)] as const)}
+            onChange={(l) => {
               setLangState(l);
               void setLang(l);
             }}
-          >
-            {t(`community.settings.lang.${l}`)}
-          </button>
-        ))}
-      </fieldset>
-    </>
+          />
+        </SettingsRow>
+      </SettingsGroup>
+    </SettingsSection>
   );
 }

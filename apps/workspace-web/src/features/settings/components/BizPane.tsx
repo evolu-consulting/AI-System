@@ -3,10 +3,10 @@
 import type { BizConfig, BizPreviewIn } from "@ai/contracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SettingsGroup, SettingsRow, SettingsSeg } from "~/shared/ui/settings-layout";
 import { useBizPreview } from "../hooks/use-settings";
 import { same } from "../lib/data";
 import { Thresholds } from "./BizThresholds";
-import { Panel, Row, Seg } from "./controls";
 import { TryBox, TryNum } from "./TryBox";
 
 type Sample = BizPreviewIn["sample"];
@@ -46,7 +46,7 @@ function BizTry({ cfg }: { cfg: BizConfig }) {
   return (
     <TryBox formula={[s("f1"), s("f2"), s("f3"), s("f4")]}>
       <div className="grid gap-2">
-        <Seg
+        <SettingsSeg
           label={s("s.kind")}
           value={x.kind}
           onChange={(kind) => setX({ ...x, kind })}
@@ -109,9 +109,9 @@ export function BizPane({
           {t("contracts.settings.resetCell")}
         </button>
       </div>
-      <Panel title={s("weights")}>
+      <SettingsGroup title={s("weights")}>
         {W.map((k) => (
-          <Row key={k} label={s(`w.${k}`)}>
+          <SettingsRow key={k} label={s(`w.${k}`)}>
             <div className="flex items-center gap-3">
               <input
                 type="range"
@@ -126,9 +126,9 @@ export function BizPane({
                 {Math.round((v.w[k] / tw) * 100)}%
               </span>
             </div>
-          </Row>
+          </SettingsRow>
         ))}
-      </Panel>
+      </SettingsGroup>
       <Thresholds v={v} set={set} />
       <BizTry cfg={v} />
     </>

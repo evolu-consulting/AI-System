@@ -1,7 +1,7 @@
 // V2-L · khung "Công thức & thử tính" (mockup `.trybox`): bên trái công thức, bên phải máy tính với số mẫu nhập tay. Không ghi gì.
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Panel } from "./controls";
+import { SettingsGroup } from "~/shared/ui/settings-layout";
 
 export function TryBox({
   formula,
@@ -14,7 +14,7 @@ export function TryBox({
 }) {
   const { t } = useTranslation();
   return (
-    <Panel title={t("contracts.settings.try.title")} sub={t("contracts.settings.try.sub")}>
+    <SettingsGroup title={t("contracts.settings.try.title")} sub={t("contracts.settings.try.sub")}>
       <div className="grid grid-cols-2 max-md:grid-cols-1">
         <div className="border-r border-rule-soft px-5 py-3.5 max-md:border-r-0">
           <p className="mb-1 text-micro font-semibold tracking-wide text-dim uppercase">
@@ -31,7 +31,7 @@ export function TryBox({
         <div className="min-w-0 px-5 py-3.5">{children}</div>
       </div>
       {extra}
-    </Panel>
+    </SettingsGroup>
   );
 }
 

@@ -2,8 +2,8 @@
 import type { RepPreviewIn } from "@ai/contracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SettingsGroup } from "~/shared/ui/settings-layout";
 import { useRepPreview } from "../hooks/use-rep";
-import { Panel } from "./controls";
 
 function useDebounced<T>(v: T, ms: number): T {
   const [d, setD] = useState(v);
@@ -22,13 +22,13 @@ export function ImpactBox({ body }: { body: RepPreviewIn | null }) {
     t(`contracts.settings.impact.${k}`, o);
   if (!body)
     return (
-      <Panel title={s("title")}>
+      <SettingsGroup title={s("title")}>
         <p className="px-5 py-3 text-caption text-dim">{s("none")}</p>
-      </Panel>
+      </SettingsGroup>
     );
   const ch = q.data?.changes ?? [];
   return (
-    <Panel title={s("title")} sub={s("sub")}>
+    <SettingsGroup title={s("title")} sub={s("sub")}>
       <div className="px-5 py-3 text-caption" aria-live="polite">
         {q.isPending && <span className="text-dim">{s("loading")}</span>}
         {q.isError && <span className="text-late">{s("error")}</span>}
@@ -49,6 +49,6 @@ export function ImpactBox({ body }: { body: RepPreviewIn | null }) {
           </p>
         ))}
       </div>
-    </Panel>
+    </SettingsGroup>
   );
 }

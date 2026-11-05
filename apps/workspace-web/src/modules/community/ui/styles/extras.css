@@ -116,25 +116,6 @@
   right: 8px;
   transform: rotate(180deg);
 }
-/* Dialog Cài đặt: lề trái đều cho nhóm + mục (cùng token --cm-*) */
-[data-mod="community"] .setdlg .wsside {
-  padding: 8px;
-  box-sizing: border-box;
-}
-[data-mod="community"] .setdlg .wsside .sidegroup {
-  padding: 6px 0;
-  border-bottom: 1px solid var(--cm-line-2);
-}
-[data-mod="community"] .setdlg .wsside .sidehead {
-  display: block;
-  padding: 6px 12px 4px;
-}
-[data-mod="community"] .setdlg .wsside .sidelink {
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 8px;
-  box-sizing: border-box;
-}
 [data-mod="community"] .attach .fsize,
 [data-mod="community"] .filecard .fsize {
   font-style: normal;

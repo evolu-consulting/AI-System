@@ -345,8 +345,8 @@
     "settings": {
       "navLabel": "Settings sections",
       "title": "Settings",
-      "close": "Close",
       "saved": "Settings saved",
+      "autosave": "Changes are saved as soon as you make them.",
       "loadError": "Couldn't load settings.",
       "retry": "Retry",
       "noPermTitle": "No permission",

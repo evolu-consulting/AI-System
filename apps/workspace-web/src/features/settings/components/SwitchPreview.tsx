@@ -3,7 +3,7 @@
 import type { RepLevel } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
 import { useSwitchPreview } from "~/features/partners/hooks/use-rep-v2e";
-import { Panel } from "./controls";
+import { SettingsGroup } from "~/shared/ui/settings-layout";
 
 export function SwitchPreview({ engine }: { engine: "hd8" | "v2e" }) {
   const { t } = useTranslation();
@@ -12,7 +12,7 @@ export function SwitchPreview({ engine }: { engine: "hd8" | "v2e" }) {
   const q = useSwitchPreview(true);
   const p = q.data;
   return (
-    <Panel title={s("title")} sub={s(engine === "hd8" ? "subHd8" : "subV2e")}>
+    <SettingsGroup title={s("title")} sub={s(engine === "hd8" ? "subHd8" : "subV2e")}>
       <div className="px-5 py-3 text-label" data-testid="switch-preview" aria-live="polite">
         {q.isLoading ? (
           <span className="text-dim">{s("loading")}</span>
@@ -38,6 +38,6 @@ export function SwitchPreview({ engine }: { engine: "hd8" | "v2e" }) {
           {s("note")}
         </p>
       </div>
-    </Panel>
+    </SettingsGroup>
   );
 }

@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { useCapabilities } from "../../hooks/use-apps-settings";
-import { flowEditorUrl } from "../../lib/editor-link";
 import { paneSlots } from "../../lib/app-slots";
+import { flowEditorUrl } from "../../lib/editor-link";
 import { SlotCard } from "./SlotCard";
 
 /** CR-120 · một trang Quy trình duy nhất ở ai-admin liệt kê MỌI quy trình công ty có; Cài đặt chỉ giữ bộ sửa luật chọn. */

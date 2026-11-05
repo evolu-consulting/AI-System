@@ -6,9 +6,10 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { scoringIssue, weightSum } from "~/features/partners/lib/partner-score";
+import { SettingsGroup, SettingsRow, SettingsSwitch } from "~/shared/ui/settings-layout";
 import { useSaveScoring, useScoring } from "../hooks/use-scoring";
 import { same } from "../lib/data";
-import { Num, Panel, Row, Switch } from "./controls";
+import { Num } from "./controls";
 import { ScoringHistory } from "./ScoringHistory";
 import { ScoringImpact } from "./ScoringImpact";
 
@@ -53,11 +54,11 @@ function Body({ role, cfg, owner }: { role: PartnerRole; cfg: ScoreConfigOut; ow
         {s("version", { n: cfg.version })}
         {cfg.updated_at ? ` · ${cfg.updated_at.slice(0, 10).split("-").reverse().join("/")}` : ""}
       </p>
-      <Panel title={s("critTitle")} sub={s("critSub")}>
+      <SettingsGroup title={s("critTitle")} sub={s("critSub")}>
         {criteria.map((c, i) => (
-          <Row key={c.key} label={c.label}>
+          <SettingsRow key={c.key} label={c.label}>
             <span className="flex items-center gap-3">
-              <Switch
+              <SettingsSwitch
                 checked={c.enabled}
                 label={s("use", { name: c.label })}
                 onChange={(v) => setCrit(i, { enabled: v })}
@@ -75,7 +76,7 @@ function Body({ role, cfg, owner }: { role: PartnerRole; cfg: ScoreConfigOut; ow
                 <span className="text-caption text-late">{s("manualClosed")}</span>
               )}
             </span>
-          </Row>
+          </SettingsRow>
         ))}
         <p
           className={`border-t border-rule-soft px-5 py-3 text-label ${sum === 100 ? "text-ok" : "text-late"}`}
@@ -83,9 +84,9 @@ function Body({ role, cfg, owner }: { role: PartnerRole; cfg: ScoreConfigOut; ow
         >
           {s("sum", { n: sum })}
         </p>
-      </Panel>
-      <Panel title={s("rulesTitle")}>
-        <Row label={s("goodFrom")} htmlFor="sc-good">
+      </SettingsGroup>
+      <SettingsGroup title={s("rulesTitle")}>
+        <SettingsRow label={s("goodFrom")} htmlFor="sc-good">
           <Num
             id="sc-good"
             value={rules.good_from}
@@ -94,8 +95,8 @@ function Body({ role, cfg, owner }: { role: PartnerRole; cfg: ScoreConfigOut; ow
             className="w-28"
             onChange={(v) => setRule("good_from", v)}
           />
-        </Row>
-        <Row label={s("fairFrom")} htmlFor="sc-fair">
+        </SettingsRow>
+        <SettingsRow label={s("fairFrom")} htmlFor="sc-fair">
           <Num
             id="sc-fair"
             value={rules.fair_from}
@@ -104,8 +105,8 @@ function Body({ role, cfg, owner }: { role: PartnerRole; cfg: ScoreConfigOut; ow
             className="w-28"
             onChange={(v) => setRule("fair_from", v)}
           />
-        </Row>
-        <Row label={s("minEvents")} htmlFor="sc-min">
+        </SettingsRow>
+        <SettingsRow label={s("minEvents")} htmlFor="sc-min">
           <Num
             id="sc-min"
             value={rules.min_events}
@@ -114,8 +115,8 @@ function Body({ role, cfg, owner }: { role: PartnerRole; cfg: ScoreConfigOut; ow
             className="w-28"
             onChange={(v) => setRule("min_events", v)}
           />
-        </Row>
-        <Row label={s("windowMonths")} htmlFor="sc-win">
+        </SettingsRow>
+        <SettingsRow label={s("windowMonths")} htmlFor="sc-win">
           <Num
             id="sc-win"
             value={rules.window_months}
@@ -125,10 +126,10 @@ function Body({ role, cfg, owner }: { role: PartnerRole; cfg: ScoreConfigOut; ow
             className="w-36"
             onChange={(v) => setRule("window_months", v)}
           />
-        </Row>
-        <Row label={s("recency")} htmlFor="sc-rec">
+        </SettingsRow>
+        <SettingsRow label={s("recency")} htmlFor="sc-rec">
           <span className="flex items-center gap-3">
-            <Switch
+            <SettingsSwitch
               checked={rules.recency_boost}
               label={s("recency")}
               onChange={(v) => setRule("recency_boost", v)}
@@ -143,15 +144,15 @@ function Body({ role, cfg, owner }: { role: PartnerRole; cfg: ScoreConfigOut; ow
               onChange={(v) => setRule("recency_months", v)}
             />
           </span>
-        </Row>
-        <Row label={s("manualAdjust")}>
-          <Switch
+        </SettingsRow>
+        <SettingsRow label={s("manualAdjust")}>
+          <SettingsSwitch
             checked={rules.manual_adjust}
             label={s("manualAdjust")}
             onChange={(v) => setRule("manual_adjust", v)}
           />
-        </Row>
-      </Panel>
+        </SettingsRow>
+      </SettingsGroup>
       {issue && (
         <p role="alert" className="mb-3 text-caption text-late">
           {s(`err.${issue}`)}

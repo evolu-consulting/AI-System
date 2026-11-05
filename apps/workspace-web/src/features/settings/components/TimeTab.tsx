@@ -2,9 +2,10 @@
 // kèm "thử tính" hệ số độ cũ của 3 việc mẫu.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SettingsGroup, SettingsRow, SettingsSeg } from "~/shared/ui/settings-layout";
 import type { Cell } from "../lib/rep-types";
 import { criterionFromJobs, decayAt } from "../lib/try-calc";
-import { Num, Panel, Row, Seg } from "./controls";
+import { Num } from "./controls";
 import { TryBox, TryNum } from "./TryBox";
 
 const DEFAULT_STEP = { months: [6, 12], factors: [1, 0.5, 0.2] };
@@ -33,17 +34,17 @@ export function TimeTab({ cell, set }: { cell: Cell; set: (c: Cell) => void }) {
   const plain = jobs.reduce((a, j) => a + j.score, 0) / jobs.length;
   return (
     <>
-      <Panel>
-        <Row label={s("window")}>
-          <Seg
+      <SettingsGroup>
+        <SettingsRow label={s("window")}>
+          <SettingsSeg
             label={s("window")}
             value={cell.window_months}
             onChange={(v) => set({ ...cell, window_months: v })}
             options={WINDOWS.map((m) => [m, s("months", { m })] as const)}
           />
-        </Row>
-        <Row label={s("decay")}>
-          <Seg
+        </SettingsRow>
+        <SettingsRow label={s("decay")}>
+          <SettingsSeg
             label={s("decay")}
             value={stepped ? "step" : "none"}
             onChange={(v) =>
@@ -54,9 +55,9 @@ export function TimeTab({ cell, set }: { cell: Cell; set: (c: Cell) => void }) {
               ["none", s("none")],
             ]}
           />
-        </Row>
+        </SettingsRow>
         {stepped && (
-          <Row label={s("ratio")}>
+          <SettingsRow label={s("ratio")}>
             <div className="grid gap-3 md:grid-cols-3">
               {factors.map((f, i) => (
                 <div key={band(i)}>
@@ -93,9 +94,9 @@ export function TimeTab({ cell, set }: { cell: Cell; set: (c: Cell) => void }) {
                 </div>
               ))}
             </div>
-          </Row>
+          </SettingsRow>
         )}
-        <Row label={s("late")} htmlFor="late-day">
+        <SettingsRow label={s("late")} htmlFor="late-day">
           <Num
             id="late-day"
             value={cell.late_per_day}
@@ -105,8 +106,8 @@ export function TimeTab({ cell, set }: { cell: Cell; set: (c: Cell) => void }) {
             className="max-w-60"
             onChange={(v) => set({ ...cell, late_per_day: v })}
           />
-        </Row>
-      </Panel>
+        </SettingsRow>
+      </SettingsGroup>
       <TryBox formula={[s("f1"), s("f2"), s("f3")]}>
         <table className="w-full text-caption">
           <thead>

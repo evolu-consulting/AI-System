@@ -28,12 +28,11 @@ test("Admin: mục Sổ Hợp Tác nằm trong dialog Cài đặt, không đổi
   await as(page, "an");
   await open(page);
   await expect(page.getByTestId("settings-group-sht")).toBeVisible();
-  await expect(page.getByTestId("settings-group-sht").locator(".sidehead")).toHaveAttribute(
-    "title",
-    "Áp dụng cho cả công ty",
-  );
   await expect(
-    page.getByTestId("settings-group-personal").locator(".sidehead"),
+    page.getByTestId("settings-group-sht").getByTestId("settings-group-head"),
+  ).toHaveAttribute("title", "Áp dụng cho cả công ty");
+  await expect(
+    page.getByTestId("settings-group-personal").getByTestId("settings-group-head"),
   ).not.toHaveAttribute("title", /.+/);
   for (const sec of ["co", "rep", "biz", "scout", "flow"]) {
     await page.getByTestId(`settings-nav-${sec}`).click();
@@ -53,6 +52,6 @@ test("ngôn ngữ: chọn English đổi nhãn và lưu ai.locale", async ({ pag
   await page.goto("/community");
   await open(page);
   await page.getByTestId("settings-nav-lang").click();
-  await page.getByRole("button", { name: "English" }).click();
+  await page.getByRole("radio", { name: "English" }).click();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("ai.locale"))).toBe("en");
 });

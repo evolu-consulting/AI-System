@@ -2,9 +2,10 @@
 // Trạng thái nâng lên `FlowLoaded` (`usePreview`) để canvas làm mờ bước bị bỏ qua (CR-106).
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SettingsGroup } from "~/shared/ui/settings-layout";
 import { type CurrentFlow, type DealKind, previewPath } from "../lib/current-flow";
 import { digitsOf, formatDigits, parseValue, QUICK_VALUES, runSummary } from "../lib/preview-value";
-import { FIELD, Panel } from "./controls";
+import { FIELD } from "./controls";
 
 export function usePreview(flow: CurrentFlow) {
   const [deal, setDeal] = useState<DealKind>("buy");
@@ -26,7 +27,7 @@ export function FlowPreview({
   const f = (k: string) => t(`contracts.flow.${k}`);
   const sum = runSummary(flow.steps, run);
   return (
-    <Panel title={f("previewTitle")}>
+    <SettingsGroup title={f("previewTitle")}>
       <p className="px-4 pt-4 font-medium" data-testid="flow-preview-summary">
         {t("contracts.flow.previewResult", { n: sum.n, m: sum.m, steps: sum.names.join(" → ") })}
       </p>
@@ -84,6 +85,6 @@ export function FlowPreview({
           </li>
         ))}
       </ol>
-    </Panel>
+    </SettingsGroup>
   );
 }

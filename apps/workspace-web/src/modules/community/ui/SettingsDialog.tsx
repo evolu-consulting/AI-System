@@ -1,6 +1,22 @@
 // COM-FR-31/38 · hộp thoại "Cài đặt chung": mở từ user-menu hoặc `#/settings`, KHÔNG phải route (đóng giữ nguyên trang nền).
-// Esc / bấm nền / nút đóng đóng. Nav 3 nhóm theo quyền (lib/settings-sections.ts): Cá nhân · Công ty · Sổ Hợp Tác (chỉ khi caps.contracts).
-import { useEffect, useMemo, useRef, useState } from "react";
+// Dùng bố cục Cài đặt chung của shell (shared/ui/settings-layout). Nav 3 nhóm theo quyền (domain/settings-sections.ts):
+// Cá nhân · Công ty · Sổ Hợp Tác (chỉ khi caps.contracts).
+import {
+  Bell,
+  Building2,
+  GitBranch,
+  Languages,
+  Palette,
+  Search,
+  Star,
+  TrendingUp,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  SettingsDialogFrame,
+  SettingsLayout,
+  type SettingsNavGroup,
+} from "~/shared/ui/settings-layout";
 import { useApp } from "../application/ctx";
 import {
   buildSettingsNav,
@@ -9,9 +25,19 @@ import {
   type SettingsSectionId,
 } from "../domain/settings-sections";
 import { t } from "../i18n";
-import { IconX } from "./icons";
 import { BrandSection, NoPermission, ShtSection } from "./settings/CompanySections";
 import { LangSection, NotifySection } from "./settings/PersonalSections";
+
+const ICON = {
+  notify: Bell,
+  lang: Languages,
+  brand: Palette,
+  co: Building2,
+  rep: Star,
+  biz: TrendingUp,
+  scout: Search,
+  flow: GitBranch,
+} as const;
 
 function Body({ section }: { section: SettingsSection | null }) {
   if (!section) return <NoPermission />;
@@ -21,102 +47,38 @@ function Body({ section }: { section: SettingsSection | null }) {
   return <BrandSection />;
 }
 
-function Nav({ sel, onPick }: { sel: SettingsSectionId; onPick: (s: SettingsSectionId) => void }) {
-  const { viewer } = useApp();
+export function SettingsDialog() {
+  const { settingsOpen, closeSettings, viewer } = useApp();
+  const [sel, setSel] = useState<SettingsSectionId>("notify");
   const { role, caps, contractsUrl } = viewer;
   const groups = useMemo(
     () => buildSettingsNav({ role, caps, contractsUrl }),
     [role, caps, contractsUrl],
   );
+  const navGroups: SettingsNavGroup[] = groups.map((g) => ({
+    id: g.id,
+    label: t(`community.settings.groups.${g.id}`),
+    title: g.companyWide ? t("community.settings.companyWide") : undefined,
+    items: g.sections.map((s) => ({
+      id: s.id,
+      label: t(`community.settings.sections.${s.id}`),
+      icon: ICON[s.id],
+    })),
+  }));
   return (
-    <>
-      <nav className="wsside" aria-label={t("community.settings.navLabel")}>
-        {groups.map((g) => (
-          <div className="sidegroup" key={g.id} data-testid={`settings-group-${g.id}`}>
-            <b
-              className="sidehead"
-              title={g.companyWide ? t("community.settings.companyWide") : undefined}
-            >
-              {t(`community.settings.groups.${g.id}`)}
-            </b>
-            {g.sections.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                className={sel === s.id ? "sidelink on" : "sidelink"}
-                aria-current={sel === s.id}
-                data-testid={`settings-nav-${s.id}`}
-                onClick={() => onPick(s.id)}
-              >
-                {t(`community.settings.sections.${s.id}`)}
-              </button>
-            ))}
-          </div>
-        ))}
-      </nav>
-      <main className="wsmain">
-        <div className="wscenter">
-          <section className="card setbody">
-            <Body section={findSection(groups, sel)} />
-          </section>
-        </div>
-      </main>
-    </>
-  );
-}
-
-export function SettingsDialog() {
-  const { settingsOpen, closeSettings } = useApp();
-  const [sel, setSel] = useState<SettingsSectionId>("notify");
-  const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!settingsOpen) return;
-    const prev = document.activeElement as HTMLElement | null;
-    box.current?.focus();
-    const key = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeSettings();
-    };
-    document.addEventListener("keydown", key);
-    return () => {
-      document.removeEventListener("keydown", key);
-      prev?.focus?.();
-    };
-  }, [settingsOpen, closeSettings]);
-  if (!settingsOpen) return null;
-  return (
-    <div className="dlg-scrim">
-      <button
-        type="button"
-        className="dlg-bg"
-        tabIndex={-1}
-        aria-label={t("community.settings.close")}
-        onClick={closeSettings}
-      />
-      <div
-        ref={box}
-        className="dlg setdlg"
-        role="dialog"
-        aria-modal="true"
-        aria-label={t("community.settings.title")}
-        tabIndex={-1}
+    <SettingsDialogFrame
+      open={settingsOpen}
+      onOpenChange={(o) => !o && closeSettings()}
+      title={t("community.settings.title")}
+    >
+      <SettingsLayout
+        navLabel={t("community.settings.navLabel")}
+        groups={navGroups}
+        active={sel}
+        onSelect={(id) => setSel(id as SettingsSectionId)}
       >
-        <header className="dlg-head">
-          <h2>{t("community.settings.title")}</h2>
-          <button
-            type="button"
-            className="iconbtn"
-            aria-label={t("community.settings.close")}
-            onClick={closeSettings}
-          >
-            <IconX size={18} />
-          </button>
-        </header>
-        <div className="dlg-body">
-          <div className="ws">
-            <Nav sel={sel} onPick={setSel} />
-          </div>
-        </div>
-      </div>
-    </div>
+        <Body section={findSection(groups, sel)} />
+      </SettingsLayout>
+    </SettingsDialogFrame>
   );
 }

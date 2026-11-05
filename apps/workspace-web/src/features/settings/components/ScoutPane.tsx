@@ -13,9 +13,9 @@ import {
   scoutIssue,
   toForm,
 } from "~/features/product-suppliers/lib/scout";
+import { SettingsGroup } from "~/shared/ui/settings-layout";
 import { useSaveScoutDefaults, useScoutDefaults } from "../hooks/use-scout-settings";
 import { saveErrorText } from "../lib/scout-ui";
-import { Panel } from "./controls";
 import { ScoutQuota } from "./ScoutQuota";
 
 function GroupEditor({ group, owner }: { group: PriceScoutGroup; owner: boolean }) {
@@ -28,7 +28,7 @@ function GroupEditor({ group, owner }: { group: PriceScoutGroup; owner: boolean 
   const issue = form ? scoutIssue(form) : null;
   const L = (k: string) => t(`contracts.scout.${k}`);
   return (
-    <Panel title={L(`group.${group}`)} sub={L("groupHint")}>
+    <SettingsGroup title={L(`group.${group}`)} sub={L("groupHint")}>
       <div className="p-5" data-testid={`scout-defaults-${group}`}>
         {form && (
           <ScoutFields
@@ -65,7 +65,7 @@ function GroupEditor({ group, owner }: { group: PriceScoutGroup; owner: boolean 
           </div>
         )}
       </div>
-    </Panel>
+    </SettingsGroup>
   );
 }
 

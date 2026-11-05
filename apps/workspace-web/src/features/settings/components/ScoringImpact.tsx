@@ -2,8 +2,8 @@
 import type { PartnerRole, ScoringDraft } from "@ai/contracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SettingsGroup } from "~/shared/ui/settings-layout";
 import { useScoringPreview } from "../hooks/use-scoring";
-import { Panel } from "./controls";
 
 export function ScoringImpact({ role, draft }: { role: PartnerRole; draft: ScoringDraft | null }) {
   const { t } = useTranslation();
@@ -17,7 +17,7 @@ export function ScoringImpact({ role, draft }: { role: PartnerRole; draft: Scori
   if (!draft) return null;
   const p = q.data;
   return (
-    <Panel title={s("impactTitle")}>
+    <SettingsGroup title={s("impactTitle")}>
       <div className="px-5 py-3 text-label" data-testid="score-impact" aria-live="polite">
         {q.isLoading || !debounced ? (
           <span className="text-dim">{s("impactLoading")}</span>
@@ -38,6 +38,6 @@ export function ScoringImpact({ role, draft }: { role: PartnerRole; draft: Scori
           </>
         )}
       </div>
-    </Panel>
+    </SettingsGroup>
   );
 }

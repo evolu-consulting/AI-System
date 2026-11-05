@@ -2,6 +2,7 @@
 // kèm "thử tính" điểm theo bản nháp. Điểm uy tín thật của đối tác đổi ra sao: `ImpactBox`.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SettingsGroup, SettingsSeg, SettingsSwitch } from "~/shared/ui/settings-layout";
 import { percentOf, slugKey } from "../lib/rep-data";
 import {
   type Cell,
@@ -11,7 +12,7 @@ import {
   type Milestone,
 } from "../lib/rep-types";
 import { levelOf, tryCriteria } from "../lib/try-calc";
-import { FIELD, Num, Panel, Seg, Switch } from "./controls";
+import { FIELD, Num } from "./controls";
 import { TryBox, TryNum } from "./TryBox";
 
 type Props = { cell: Cell; set: (c: Cell) => void; share: number; good: number; fair: number };
@@ -49,7 +50,7 @@ function CritRow({ x, pctValue, cell, set, patch }: RowProps) {
         <p className="text-caption text-dim">{x.custom ? s(`how.${x.kind}`) : s(`how.${x.key}`)}</p>
       </div>
       <div className="flex items-center gap-3">
-        <Switch
+        <SettingsSwitch
           checked={x.enabled}
           onChange={(v) => patch(x.key, { enabled: v })}
           label={s("use", { name: x.label })}
@@ -111,7 +112,7 @@ function AddForm({ cell, set, done }: { cell: Cell; set: (c: Cell) => void; done
         value={label}
         onChange={(e) => setLabel(e.target.value)}
       />
-      <Seg
+      <SettingsSeg
         label={s("newKind")}
         value={kind}
         onChange={setKind}
@@ -122,7 +123,7 @@ function AddForm({ cell, set, done }: { cell: Cell; set: (c: Cell) => void; done
         ]}
       />
       {kind === "ontime" && (
-        <Seg
+        <SettingsSeg
           label={s("newMilestone")}
           value={ms}
           onChange={setMs}
@@ -180,7 +181,7 @@ export function CritTab({ cell, set, share, good, fair }: Props) {
   );
   return (
     <>
-      <Panel
+      <SettingsGroup
         title={s("critTitle")}
         sub={`${cell.criteria.filter((x) => x.custom).length}/${MAX_CUSTOM}`}
         action={
@@ -198,7 +199,7 @@ export function CritTab({ cell, set, share, good, fair }: Props) {
           <CritRow key={x.key} x={x} pctValue={pct[x.key]} cell={cell} set={set} patch={patch} />
         ))}
         {adding && <AddForm cell={cell} set={set} done={() => setAdding(false)} />}
-      </Panel>
+      </SettingsGroup>
       <TryBox
         formula={[
           s("f.crit1"),

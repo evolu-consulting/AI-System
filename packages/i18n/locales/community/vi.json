@@ -345,8 +345,8 @@
     "settings": {
       "navLabel": "Mục cài đặt",
       "title": "Cài đặt",
-      "close": "Đóng",
       "saved": "Đã lưu cài đặt",
+      "autosave": "Thay đổi được lưu ngay khi bạn chọn.",
       "loadError": "Không tải được cài đặt.",
       "retry": "Thử lại",
       "noPermTitle": "Bạn chưa có quyền",

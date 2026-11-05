@@ -3,8 +3,9 @@
 import type { RepSettingsIn } from "@ai/contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SettingsGroup, SettingsRow, SettingsSwitch } from "~/shared/ui/settings-layout";
 import { levelOf, needsReason } from "../lib/try-calc";
-import { Num, Panel, Row, Switch } from "./controls";
+import { Num } from "./controls";
 import { TryBox, TryNum } from "./TryBox";
 
 export function CommonPane({
@@ -27,8 +28,8 @@ export function CommonPane({
   );
   return (
     <>
-      <Panel title={s("levels")}>
-        <Row label={s("good")} htmlFor="th-good">
+      <SettingsGroup title={s("levels")}>
+        <SettingsRow label={s("good")} htmlFor="th-good">
           <Num
             id="th-good"
             value={v.good_from}
@@ -37,8 +38,8 @@ export function CommonPane({
             className="max-w-48"
             onChange={(x) => set({ ...v, good_from: x })}
           />
-        </Row>
-        <Row label={s("fair")} htmlFor="th-fair">
+        </SettingsRow>
+        <SettingsRow label={s("fair")} htmlFor="th-fair">
           <Num
             id="th-fair"
             value={v.fair_from}
@@ -47,13 +48,13 @@ export function CommonPane({
             className="max-w-48"
             onChange={(x) => set({ ...v, fair_from: x })}
           />
-        </Row>
+        </SettingsRow>
         {v.fair_from >= v.good_from && (
           <p role="alert" className="px-5 pb-3 text-caption text-late">
             {s("order")}
           </p>
         )}
-        <Row label={s("minJobs")} htmlFor="min-jobs">
+        <SettingsRow label={s("minJobs")} htmlFor="min-jobs">
           <Num
             id="min-jobs"
             value={v.min_jobs}
@@ -63,12 +64,12 @@ export function CommonPane({
             className="max-w-48"
             onChange={(x) => set({ ...v, min_jobs: x })}
           />
-        </Row>
-      </Panel>
-      <Panel
+        </SettingsRow>
+      </SettingsGroup>
+      <SettingsGroup
         title={s("manual")}
         action={
-          <Switch
+          <SettingsSwitch
             checked={on}
             label={s("manual")}
             onChange={(x) => set({ ...v, manual_share: x ? 20 : 0 })}
@@ -76,7 +77,7 @@ export function CommonPane({
         }
       >
         <div className={on ? "" : "pointer-events-none opacity-50"}>
-          <Row label={s("share")} htmlFor="man-share">
+          <SettingsRow label={s("share")} htmlFor="man-share">
             <div className="flex items-center gap-3">
               <input
                 id="man-share"
@@ -90,8 +91,8 @@ export function CommonPane({
               />
               <span className="w-10 text-right tabular-nums">{v.manual_share}%</span>
             </div>
-          </Row>
-          <Row label={s("gap")} htmlFor="man-gap">
+          </SettingsRow>
+          <SettingsRow label={s("gap")} htmlFor="man-gap">
             <Num
               id="man-gap"
               value={v.reason_gap}
@@ -101,15 +102,15 @@ export function CommonPane({
               className="max-w-48"
               onChange={(x) => set({ ...v, reason_gap: x })}
             />
-          </Row>
+          </SettingsRow>
         </div>
-      </Panel>
-      <Panel title={s("lock")}>
-        <Row label={s("lockLabel")}>
+      </SettingsGroup>
+      <SettingsGroup title={s("lock")}>
+        <SettingsRow label={s("lockLabel")}>
           <span className="text-label">{s("monthly")}</span>
           <p className="text-caption text-dim">{s("lockHint")}</p>
-        </Row>
-      </Panel>
+        </SettingsRow>
+      </SettingsGroup>
       <TryBox
         formula={[
           s("f1"),

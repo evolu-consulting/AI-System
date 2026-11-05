@@ -47,31 +47,8 @@
   min-height: 0;
   overflow-y: auto;
 }
-/* màn Cài đặt hiện có nằm trong hộp thoại: thanh bên của nó không còn fixed */
-[data-mod="community"] .setdlg .ws {
-  display: flex;
-  min-height: 0;
-}
-[data-mod="community"] .setdlg .wsside {
-  position: static;
-  width: 220px;
-  height: auto;
-}
-[data-mod="community"] .setdlg .wsmain {
-  display: block;
-  padding: 20px;
-  max-width: none;
-}
 
 /* ---------- đáp ứng ---------- */
-@media (max-width: 780px) {
-  [data-mod="community"] .setdlg .ws {
-    flex-direction: column;
-  }
-  [data-mod="community"] .setdlg .wsside {
-    width: 100%;
-  }
-}
 @media (max-width: 640px) {
   [data-mod="community"] .cmslot .persona {
     display: none;

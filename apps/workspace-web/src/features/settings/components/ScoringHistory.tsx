@@ -2,8 +2,8 @@
 import type { PartnerRole } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
+import { SettingsGroup } from "~/shared/ui/settings-layout";
 import { useScoringHistory } from "../hooks/use-scoring";
-import { Panel } from "./controls";
 
 export function ScoringHistory({ role }: { role: PartnerRole }) {
   const { t } = useTranslation();
@@ -11,7 +11,7 @@ export function ScoringHistory({ role }: { role: PartnerRole }) {
   const q = useScoringHistory(role);
   const rows = q.data ?? [];
   return (
-    <Panel title={s("historyTitle")}>
+    <SettingsGroup title={s("historyTitle")}>
       {rows.length === 0 ? (
         <p className="px-5 py-3 text-label text-dim">{s("historyNone")}</p>
       ) : (
@@ -32,6 +32,6 @@ export function ScoringHistory({ role }: { role: PartnerRole }) {
           ))}
         </ul>
       )}
-    </Panel>
+    </SettingsGroup>
   );
 }

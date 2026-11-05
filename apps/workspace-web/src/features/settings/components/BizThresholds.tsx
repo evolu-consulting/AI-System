@@ -1,7 +1,8 @@
 // V2-L · CD-06: ngưỡng Mua thêm / Xả hàng / Đẩy mạnh / Cân nhắc dừng, bán sắp hết hạn của mục "Điểm kinh doanh".
 import type { BizConfig } from "@ai/contracts";
 import { useTranslation } from "react-i18next";
-import { Num, Panel, Row } from "./controls";
+import { SettingsGroup, SettingsRow } from "~/shared/ui/settings-layout";
+import { Num } from "./controls";
 
 export function Thresholds({ v, set }: { v: BizConfig; set: (c: BizConfig) => void }) {
   const { t } = useTranslation();
@@ -22,8 +23,8 @@ export function Thresholds({ v, set }: { v: BizConfig; set: (c: BizConfig) => vo
     </label>
   );
   return (
-    <Panel title={s("thresholds")}>
-      <Row label={<span className="font-semibold text-ok">{s("buy")}</span>}>
+    <SettingsGroup title={s("thresholds")}>
+      <SettingsRow label={<span className="font-semibold text-ok">{s("buy")}</span>}>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
             {lbl("buyDays", s("buyDays"))}
@@ -34,8 +35,8 @@ export function Thresholds({ v, set }: { v: BizConfig; set: (c: BizConfig) => vo
             {n("quotaBuy", 50, 500, "%")}
           </div>
         </div>
-      </Row>
-      <Row label={<span className="font-semibold text-late">{s("dump")}</span>}>
+      </SettingsRow>
+      <SettingsRow label={<span className="font-semibold text-late">{s("dump")}</span>}>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
             {lbl("dumpDays", s("dumpDays"))}
@@ -46,8 +47,8 @@ export function Thresholds({ v, set }: { v: BizConfig; set: (c: BizConfig) => vo
             {n("quotaDump", 10, 100, "%")}
           </div>
         </div>
-      </Row>
-      <Row label={s("free")}>
+      </SettingsRow>
+      <SettingsRow label={s("free")}>
         <div className="grid gap-3 md:grid-cols-2">
           <div>
             {lbl("hi", s("hi"))}
@@ -58,13 +59,13 @@ export function Thresholds({ v, set }: { v: BizConfig; set: (c: BizConfig) => vo
             {n("lo", 10, 70, s("pts"))}
           </div>
         </div>
-      </Row>
-      <Row label={s("vol")} htmlFor="biz-vol">
+      </SettingsRow>
+      <SettingsRow label={s("vol")} htmlFor="biz-vol">
         {n("vol", 1, 100000, s("orders"))}
-      </Row>
-      <Row label={s("soon")} htmlFor="biz-soon">
+      </SettingsRow>
+      <SettingsRow label={s("soon")} htmlFor="biz-soon">
         {n("soon", 1, 365, s("days"))}
-      </Row>
-    </Panel>
+      </SettingsRow>
+    </SettingsGroup>
   );
 }

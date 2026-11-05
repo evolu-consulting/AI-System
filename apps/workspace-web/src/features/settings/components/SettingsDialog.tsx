@@ -2,10 +2,24 @@
 // Điểm kinh doanh) cuộn riêng; mục khác mặc định có chấm cam. Chỉ chủ sở hữu (contracts-owner) sửa được; người khác xem (mọi ô khoá).
 // Bản nháp giữ khi đóng hộp thoại; tên/màu/giao diện nháp áp ngay lên sidebar, menu, nút (kho `brandStore`), đóng chưa lưu ⇒ trở về đã lưu.
 
+import {
+  Blocks,
+  Building2,
+  GitBranch,
+  type LucideIcon,
+  Search,
+  Star,
+  TrendingUp,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
-import { Dialog, DialogContent } from "~/components/ui/dialog";
+import {
+  SettingsDialogFrame,
+  SettingsLayout,
+  type SettingsNavGroup,
+  SettingsSection,
+} from "~/shared/ui/settings-layout";
 import { useCanSeeApps } from "../hooks/use-apps-settings";
 import { brandOf, useSaveSettings, useSettingsState } from "../hooks/use-settings";
 import { brandStore } from "../lib/brand";
@@ -16,11 +30,20 @@ import { BizPane } from "./BizPane";
 import { CompanyPane } from "./CompanyPane";
 import { Dot } from "./controls";
 import { SectionPanes } from "./SectionPanes";
-import { SettingsHeader } from "./SettingsHeader";
+import { SettingsActions } from "./SettingsHeader";
 
 /** Mục dùng bản nháp chung + nút Lưu chung (công ty, điểm kinh doanh); còn lại lưu riêng. */
 const isDraftSection = (s: SectionId) => s === "co" || s === "biz";
 const SECTIONS: readonly SectionId[] = ["co", "rep", "biz", "scout", "flow"];
+
+const SECTION_ICON: Record<SectionId, LucideIcon> = {
+  co: Building2,
+  rep: Star,
+  biz: TrendingUp,
+  scout: Search,
+  flow: GitBranch,
+  apps: Blocks,
+};
 
 /** CR-118 §11.2 · "Ứng dụng & quy trình" chỉ cho quản trị công ty + chủ gói. */
 const sectionsOf = (apps: boolean): readonly SectionId[] =>
@@ -107,13 +130,27 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
   }, [open]);
   const dot = (k: SectionId) => sectionChanged(k, vsDef);
 
+  const groups: SettingsNavGroup[] = [
+    {
+      id: "contracts",
+      items: sections.map((k) => ({
+        id: k,
+        label: s(`sec.${k}`),
+        hint: s(`sec.${k}Hint`),
+        icon: SECTION_ICON[k],
+        badge: dot(k) ? <Dot label={s("changed")} /> : undefined,
+      })),
+    },
+  ];
+
   return (
-    <Dialog open={open} onOpenChange={(o) => settingsBus.set(o)}>
-      <DialogContent
-        aria-describedby={undefined}
-        className="h-[min(860px,calc(100dvh-2.5rem))] grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-[1120px]"
-      >
-        <SettingsHeader
+    <SettingsDialogFrame
+      open={open}
+      onOpenChange={(o) => settingsBus.set(o)}
+      title={s("title")}
+      description={s("scope")}
+      actions={
+        <SettingsActions
           owner={owner}
           dirty={dirty}
           isDefault={!vsDef || !anyChanged(vsDef)}
@@ -124,57 +161,37 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
           onDiscard={() => saved && setDraft(structuredClone(saved))}
           onSave={() => void save()}
         />
-        <div className="grid min-h-0 grid-cols-[250px_minmax(0,1fr)] max-md:grid-cols-1 max-md:grid-rows-[auto_minmax(0,1fr)]">
-          <nav
-            aria-label={s("sections")}
-            className="flex flex-col gap-1 overflow-y-auto border-r border-rule p-3 max-md:flex-row max-md:overflow-x-auto max-md:border-r-0 max-md:border-b"
-          >
-            {sections.map((k) => (
-              <button
-                key={k}
-                type="button"
-                aria-current={sec === k}
-                onClick={() => setSec(k)}
-                className={`grid w-full grid-cols-[1fr_auto] items-start gap-2 rounded-[10px] border px-3 py-2.5 text-left ${sec === k ? "border-act-line bg-act-soft" : "border-transparent hover:bg-sunk"}`}
-              >
-                <span className="flex flex-col">
-                  <b className={`text-label ${sec === k ? "text-act" : ""}`}>{s(`sec.${k}`)}</b>
-                  <span className="text-caption font-normal text-dim max-md:hidden">
-                    {s(`sec.${k}Hint`)}
-                  </span>
-                </span>
-                {dot(k) && <Dot label={s("changed")} />}
-              </button>
-            ))}
-          </nav>
-          <div className="min-w-0 overflow-y-auto p-5" id="settings-scroll">
-            <LoadState loading={loading} error={error} retry={retry} />
-
-            <SectionPanes sec={sec} owner={owner} appsTenantId={apps.tenantId} />
-            {isDraftSection(sec) && draft && saved && defaults && (
-              <fieldset disabled={!owner || saving} className="min-w-0 border-0 p-0">
-                {sec === "co" && (
-                  <>
-                    <h2 className="mb-3 text-lg font-semibold">{s("sec.co")}</h2>
-                    <CompanyPane
-                      value={draft.company}
-                      tenantName={tenantName}
-                      set={(company) => setDraft({ ...draft, company })}
-                    />
-                  </>
-                )}
-                {sec === "biz" && (
-                  <BizPane
-                    value={draft.biz}
-                    defaults={defaults.biz}
-                    set={(biz) => setDraft({ ...draft, biz })}
-                  />
-                )}
-              </fieldset>
+      }
+    >
+      <SettingsLayout
+        navLabel={s("sections")}
+        groups={groups}
+        active={sec}
+        onSelect={(id) => setSec(id as SectionId)}
+      >
+        <LoadState loading={loading} error={error} retry={retry} />
+        <SectionPanes sec={sec} owner={owner} appsTenantId={apps.tenantId} />
+        {isDraftSection(sec) && draft && saved && defaults && (
+          <fieldset disabled={!owner || saving} className="min-w-0 border-0 p-0">
+            {sec === "co" && (
+              <SettingsSection title={s("sec.co")} description={s("sec.coHint")}>
+                <CompanyPane
+                  value={draft.company}
+                  tenantName={tenantName}
+                  set={(company) => setDraft({ ...draft, company })}
+                />
+              </SettingsSection>
             )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+            {sec === "biz" && (
+              <BizPane
+                value={draft.biz}
+                defaults={defaults.biz}
+                set={(biz) => setDraft({ ...draft, biz })}
+              />
+            )}
+          </fieldset>
+        )}
+      </SettingsLayout>
+    </SettingsDialogFrame>
   );
 }

@@ -1,9 +1,10 @@
 // V2-L · CD-04: tab "Loại việc" — danh mục việc ghi tay (HD-06) gắn vào tiêu chí của ô: tên, tiêu chí, điểm việc (0 = việc xấu đếm).
 // Danh mục dùng chung mọi ô (lưu một lần `PUT /reputation/config/job-types`); tab chỉ hiện các loại gắn với tiêu chí của ô này.
 import { useTranslation } from "react-i18next";
+import { SettingsGroup } from "~/shared/ui/settings-layout";
 import { slugKey } from "../lib/rep-data";
 import type { Cell, JobType } from "../lib/rep-types";
-import { FIELD, Num, Panel } from "./controls";
+import { FIELD, Num } from "./controls";
 
 export function TypesTab({
   cell,
@@ -28,7 +29,7 @@ export function TypesTab({
     set([...types, { key, name: s("newName"), criterion: keys[0] ?? "", score: 50 }]);
   };
   return (
-    <Panel
+    <SettingsGroup
       title={s("title")}
       sub={s("hint")}
       action={
@@ -85,6 +86,6 @@ export function TypesTab({
           </button>
         </div>
       ))}
-    </Panel>
+    </SettingsGroup>
   );
 }

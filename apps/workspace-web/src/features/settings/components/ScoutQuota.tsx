@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { parseCap } from "~/features/product-suppliers/lib/scout";
+import { SettingsGroup, SettingsRow } from "~/shared/ui/settings-layout";
 import { useSaveScoutQuota, useScoutQuota } from "../hooks/use-scout-settings";
 import { saveErrorText } from "../lib/scout-ui";
-import { FIELD, Panel, Row } from "./controls";
+import { FIELD } from "./controls";
 
 const KEYS = [
   "searches_month",
@@ -34,13 +35,13 @@ export function ScoutQuota({ owner }: { owner: boolean }) {
   const bad = Object.values(parsed).includes(undefined);
   const lim = d.usage.searches_limit;
   return (
-    <Panel title={L("quota.title")} sub={L("quota.hint")}>
+    <SettingsGroup title={L("quota.title")} sub={L("quota.hint")}>
       <p data-testid="scout-quota-usage" className="px-5 pt-3 text-caption text-dim">
         {L("usage", { used: d.usage.searches, limit: lim == null ? L("unlimited") : lim })} ·{" "}
         {L("quota.tokens", { n: d.usage.tokens })}
       </p>
       {keys.map((k) => (
-        <Row key={k} label={L(`quota.${k}`)} htmlFor={`scq-${k}`}>
+        <SettingsRow key={k} label={L(`quota.${k}`)} htmlFor={`scq-${k}`}>
           <input
             id={`scq-${k}`}
             data-testid={`scq-${k}`}
@@ -51,7 +52,7 @@ export function ScoutQuota({ owner }: { owner: boolean }) {
             placeholder={L("quota.empty")}
             onChange={(e) => setV({ ...v, [k]: e.target.value })}
           />
-        </Row>
+        </SettingsRow>
       ))}
       {bad && (
         <p role="alert" className="px-5 pb-2 text-caption text-late">
@@ -74,6 +75,6 @@ export function ScoutQuota({ owner }: { owner: boolean }) {
           {L("save")}
         </button>
       </div>
-    </Panel>
+    </SettingsGroup>
   );
 }

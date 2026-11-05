@@ -5,8 +5,14 @@ import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { BrandMark } from "~/features/shell/components/BrandMark";
+import {
+  SettingsGroup,
+  SettingsRow,
+  SettingsSeg,
+  SettingsSwitch,
+} from "~/shared/ui/settings-layout";
 import { ACCENTS } from "../lib/brand";
-import { FIELD, Panel, Row, Seg, Switch } from "./controls";
+import { FIELD } from "./controls";
 
 const lines = (v: string) =>
   v
@@ -36,8 +42,8 @@ export function CompanyPane({
   const badMst = c.own_tax_ids.filter((x) => !MST_RE.test(x));
   return (
     <>
-      <Panel>
-        <Row label={s("name")} htmlFor="co-name">
+      <SettingsGroup>
+        <SettingsRow label={s("name")} htmlFor="co-name">
           <input
             id="co-name"
             className={FIELD}
@@ -46,8 +52,8 @@ export function CompanyPane({
             placeholder={tenantName}
             onChange={(e) => set({ ...c, name: e.target.value || null })}
           />
-        </Row>
-        <Row label={s("app")} htmlFor="co-app">
+        </SettingsRow>
+        <SettingsRow label={s("app")} htmlFor="co-app">
           <input
             id="co-app"
             className={FIELD}
@@ -56,8 +62,8 @@ export function CompanyPane({
             placeholder={t("contracts.app.name")}
             onChange={(e) => set({ ...c, app_name: e.target.value || null })}
           />
-        </Row>
-        <Row label={s("logo")}>
+        </SettingsRow>
+        <SettingsRow label={s("logo")}>
           <div className="flex flex-wrap items-center gap-3">
             <BrandMark name={c.name ?? tenantName} logo={c.logo} className="h-14 w-14 text-2xl" />
             <input
@@ -89,8 +95,8 @@ export function CompanyPane({
             )}
             <p className="basis-full text-caption text-dim">{s("logoHint")}</p>
           </div>
-        </Row>
-        <Row label={s("accent")}>
+        </SettingsRow>
+        <SettingsRow label={s("accent")}>
           <div role="radiogroup" aria-label={s("accent")} className="flex flex-wrap gap-2">
             {COMPANY_ACCENTS.map((a) => (
               // biome-ignore lint/a11y/useSemanticElements: nút chọn màu dạng radio theo mockup
@@ -108,9 +114,9 @@ export function CompanyPane({
               </button>
             ))}
           </div>
-        </Row>
-        <Row label={s("theme")}>
-          <Seg
+        </SettingsRow>
+        <SettingsRow label={s("theme")}>
+          <SettingsSeg
             label={s("theme")}
             value={c.theme}
             onChange={(theme) => set({ ...c, theme })}
@@ -120,10 +126,10 @@ export function CompanyPane({
               ["dark", s("themeDark")],
             ]}
           />
-        </Row>
-      </Panel>
-      <Panel title={s("ownTitle")} sub={s("ownHint")}>
-        <Row label={s("ownNames")} htmlFor="co-own-names">
+        </SettingsRow>
+      </SettingsGroup>
+      <SettingsGroup title={s("ownTitle")} sub={s("ownHint")}>
+        <SettingsRow label={s("ownNames")} htmlFor="co-own-names">
           <textarea
             id="co-own-names"
             rows={3}
@@ -131,8 +137,8 @@ export function CompanyPane({
             value={c.own_names.join("\n")}
             onChange={(e) => set({ ...c, own_names: lines(e.target.value).slice(0, 10) })}
           />
-        </Row>
-        <Row label={s("ownTax")} htmlFor="co-own-tax">
+        </SettingsRow>
+        <SettingsRow label={s("ownTax")} htmlFor="co-own-tax">
           <textarea
             id="co-own-tax"
             rows={2}
@@ -145,12 +151,12 @@ export function CompanyPane({
               {s("taxBad", { list: badMst.join(", ") })}
             </p>
           )}
-        </Row>
-      </Panel>
-      <Panel title={s("approvalTitle")}>
-        <Row label={s("approval")}>
+        </SettingsRow>
+      </SettingsGroup>
+      <SettingsGroup title={s("approvalTitle")}>
+        <SettingsRow label={s("approval")}>
           <div className="flex items-center gap-3">
-            <Switch
+            <SettingsSwitch
               checked={c.approval_enabled}
               onChange={(v) => set({ ...c, approval_enabled: v })}
               label={s("approval")}
@@ -159,12 +165,12 @@ export function CompanyPane({
               {c.approval_enabled ? s("approvalOn") : s("approvalOff")}
             </span>
           </div>
-        </Row>
-      </Panel>
-      <Panel title={s("stockTitle")}>
-        <Row label={s("stockOver")}>
+        </SettingsRow>
+      </SettingsGroup>
+      <SettingsGroup title={s("stockTitle")}>
+        <SettingsRow label={s("stockOver")}>
           <div className="flex items-center gap-3">
-            <Switch
+            <SettingsSwitch
               checked={c.allow_negative_stock ?? false}
               onChange={(v) => set({ ...c, allow_negative_stock: v })}
               label={s("stockOver")}
@@ -173,10 +179,10 @@ export function CompanyPane({
               {c.allow_negative_stock ? s("stockOverOn") : s("stockOverOff")}
             </span>
           </div>
-        </Row>
-      </Panel>
-      <Panel title={t("contracts.legal.title")}>
-        <Row label={t("contracts.legal.threshold")} htmlFor="co-legal">
+        </SettingsRow>
+      </SettingsGroup>
+      <SettingsGroup title={t("contracts.legal.title")}>
+        <SettingsRow label={t("contracts.legal.threshold")} htmlFor="co-legal">
           <div className="flex flex-col gap-1">
             <input
               id="co-legal"
@@ -194,8 +200,8 @@ export function CompanyPane({
             />
             <span className="text-caption text-dim">{t("contracts.legal.thresholdHint")}</span>
           </div>
-        </Row>
-      </Panel>
+        </SettingsRow>
+      </SettingsGroup>
     </>
   );
 }
