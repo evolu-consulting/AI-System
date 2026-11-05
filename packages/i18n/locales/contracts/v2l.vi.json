@@ -290,7 +290,7 @@
         "FIRST_NOT_REVIEW": "Bước đầu phải là bước soạn và kiểm tra.",
         "whenEmpty": "Chọn loại hợp đồng hoặc giá trị, hoặc bỏ điều kiện.",
         "amountInvalid": "Số tiền phải là số không âm.",
-        "STEPS_MAX": "Tối đa 8 bước.",
+        "STEPS_MAX": "Tối đa 20 bước.",
         "KEY_DUP": "Mã bước bị trùng.",
         "AFTER_DIFY_CONDITIONAL": "Bước sau bước Dify không được có điều kiện.",
         "difyEmpty": "Chưa chọn quy trình Dify.",

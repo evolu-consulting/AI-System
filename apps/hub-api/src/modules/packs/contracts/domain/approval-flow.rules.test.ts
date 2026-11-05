@@ -216,8 +216,9 @@ describe("validateFlow", () => {
       { path: "steps.2.remind_every_h", rule: "REMIND_RANGE" },
     ]);
     expect(validateFlow([dify("d")]).map((i) => i.rule)).toEqual(["FIRST_NOT_REVIEW"]);
-    const nine = Array.from({ length: 9 }, (_, i) => review(`k${i}`, G.l1));
-    expect(validateFlow(nine).map((i) => i.rule)).toEqual(["STEPS_MAX"]);
+    const over = Array.from({ length: 21 }, (_, i) => review(`k${i}`, G.l1));
+    expect(validateFlow(over).map((i) => i.rule)).toEqual(["STEPS_MAX"]);
+    expect(validateFlow(over.slice(0, 20))).toEqual([]); // CR-121 D-1 · 20 bước hợp lệ
   });
 });
 

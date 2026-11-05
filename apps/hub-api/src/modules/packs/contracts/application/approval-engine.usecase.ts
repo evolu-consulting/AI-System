@@ -31,12 +31,15 @@ import {
   hasDifyStep,
   routeNext,
 } from "../domain/approval-flow.rules";
+import type { FlowStep } from "../domain/approval-flow.types";
+import { type FlowFacts, factNeedsOf } from "../domain/approval-flow-cond.rules";
 import { escalateOrder } from "../domain/approval-owner.rules";
 import type {
   ApprovalEngineBridge,
   ApprovalEnginePort,
   ApprovalEngineTxRepos,
   ApprovalEngineUow,
+  CreatorDepartments,
   EngineCaller,
   EngineRunRow,
   EngineStartRow,
@@ -54,7 +57,8 @@ import type { ProductLinksRepo } from "./product-links.usecase";
 export type ApprovalEngineDeps = {
   bridge: ApprovalEngineBridge;
   uow: ApprovalEngineUow;
-  groups: FlowGroups;
+  /** CR-121 D-1 · `creatorDepartments` (tuỳ chọn) nối kèm nguồn Group lúc mount; vắng ⇒ điều kiện phòng ban chưa có dữ liệu. */
+  groups: FlowGroups & { creatorDepartments?: CreatorDepartments | undefined };
   warn: (msg: string, meta: Record<string, unknown>) => void;
   /** esign-flow · sau khi ghi "Đã duyệt" (đã COMMIT): chạy bước Ký số của mẫu chụp. Vắng ⇒ không có bước ký tự động. */
   afterApproved?: ((tenantId: string, contractId: string) => Promise<unknown>) | undefined;
@@ -253,17 +257,50 @@ function target(ctx: EngineToolCtx, args: Readonly<Record<string, unknown>>) {
 const inRun = (row: EngineRunRow | null, id: string): row is EngineRunRow =>
   row !== null && row.contractId === id;
 
-/** Tool `contracts-route`: `next` = bước engine kế theo mẫu chụp + giá trị HIỆN TẠI của HĐ. */
-export function routeStep(d: Pick<ApprovalEngineDeps, "uow">) {
+/** CR-121 D-1 · nguồn dữ kiện mở rộng: `creatorDepartments` đi kèm `groups` (cùng nguồn Group của tenant, nối lúc mount). */
+type FactsDeps = Pick<ApprovalEngineDeps, "uow"> & {
+  groups?:
+    | (Partial<FlowGroups> & { creatorDepartments?: CreatorDepartments | undefined })
+    | undefined;
+};
+
+/** CR-121 D-1 · `new_partner` trong tx gói đang mở (MỘT câu, chỉ khi mẫu dùng; repo vắng ⇒ chưa có dữ liệu). */
+const partnerIn = async (r: ApprovalEngineTxRepos, id: string, steps: readonly FlowStep[]) =>
+  factNeedsOf(steps).partner && r.flowFacts ? r.flowFacts.newPartner(id) : null;
+
+/** CR-121 D-1 · phòng ban người bắt đầu lượt (= danh tính run của tool) + phòng cha; NGOÀI tx gói. Không cần / không nối ⇒ null. */
+async function departmentsOf(d: FactsDeps, who: PackWho, need: boolean) {
+  const f = d.groups?.creatorDepartments;
+  return need && f ? f(who.tenantId, who.userId) : null;
+}
+
+/** Dữ kiện đầy đủ theo giá trị HIỆN TẠI của HĐ (loại, giá trị từ hàng vừa đọc + phòng ban + đối tác mới). */
+const fullFacts = (
+  row: EngineRunRow,
+  depts: readonly string[] | null,
+  partner: boolean | null,
+): FlowFacts => ({
+  ...factsOf(row.deal, row.totalValue),
+  creator_departments: depts,
+  new_partner: partner,
+});
+
+/** Tool `contracts-route`: `next` = bước engine kế theo mẫu chụp + giá trị HIỆN TẠI của HĐ (CR-121 D-1 · + phòng ban người tạo,
+ *  đối tác mới — đọc lại MỖI lần rẽ ⇒ sửa HĐ giữa lượt rẽ đúng). Câu SQL: byRun (1) + new_partner (0/1) + phòng ban (0/1). */
+export function routeStep(d: FactsDeps) {
   return async (ctx: EngineToolCtx, args: Readonly<Record<string, unknown>>) => {
     const t = target(ctx, args);
-    const row = await d.uow.tenant(t.who, (r) => r.approvalEngine.byRun(t.run, { lock: false }));
-    if (!inRun(row, t.id) || row.approvalStatus !== "level1")
-      throw new PackToolBusinessError("contracts tool: contract not in run");
-    const steps = engineSteps(row.flowSteps); // esign-flow · bước Ký số không là stage engine
+    const got = await d.uow.tenant(t.who, async (r) => {
+      const row = await r.approvalEngine.byRun(t.run, { lock: false });
+      if (!inRun(row, t.id) || row.approvalStatus !== "level1") return null;
+      return { row, partner: await partnerIn(r, t.id, row.flowSteps) };
+    });
+    if (!got) throw new PackToolBusinessError("contracts tool: contract not in run");
+    const steps = engineSteps(got.row.flowSteps); // esign-flow · bước Ký số không là stage engine
     const from = routeFrom(args.from_step, steps.length);
     if (from === null) throw new PackToolBusinessError("contracts tool: bad from_step");
-    return { next: routeNext(steps, factsOf(row.deal, row.totalValue), from) };
+    const depts = await departmentsOf(d, t.who, factNeedsOf(steps).departments);
+    return { next: routeNext(steps, fullFacts(got.row, depts, got.partner), from) };
   };
 }
 
@@ -288,12 +325,13 @@ async function applyPendingLinks(
 async function finalizeInTx(
   r: ApprovalEngineTxRepos,
   t: Target,
-  o: { passed: readonly string[]; by: string | null },
+  o: { passed: readonly string[]; by: string | null; depts: readonly string[] | null },
 ): Promise<void> {
   const row = await r.approvalEngine.byRun(t.run, { lock: true });
   if (!inRun(row, t.id)) throw new PackToolBusinessError("contracts tool: contract not in run");
   if (row.approvalStatus === "done") return; // đã ghi ở lần gọi trước (tool chạy lại)
-  const facts = factsOf(row.deal, row.totalValue);
+  // CR-121 D-1 · `requiredSteps` theo CÙNG dữ kiện với lần rẽ (giá trị dưới khoá HĐ + đối tác mới cùng tx + phòng ban).
+  const facts = fullFacts(row, o.depts, await partnerIn(r, t.id, row.flowSteps));
   if (!o.by || !finalizeReady(engineSteps(row.flowSteps), facts, o.passed))
     throw new PackToolBusinessError("contracts tool: required steps not passed");
   if (!(await r.approvalEngine.finalize(t.id, row.approvalId, t.run, o.by)))
@@ -304,17 +342,20 @@ async function finalizeInTx(
 /** Tool `contracts-finalize`: kiểm lại dưới khoá HĐ, ghi "Đã duyệt" + gắn SP chờ trong CÙNG tx. Gọi lại sau khi đã ghi ⇒ ok.
  *  esign-flow · SAU commit: bước Ký số (nếu mẫu chụp có) tự gửi ký — idempotent (claim trên lượt), lỗi chỉ log, không làm hỏng tool. */
 export type FinalizeDeps = Pick<ApprovalEngineDeps, "uow" | "bridge" | "afterApproved"> &
-  Partial<Pick<ApprovalEngineDeps, "warn">>;
+  Partial<Pick<ApprovalEngineDeps, "warn">> &
+  FactsDeps;
 export function finalizeRun(d: FinalizeDeps) {
   return async (ctx: EngineToolCtx, args: Readonly<Record<string, unknown>>) => {
     const t = target(ctx, args);
     const port = d.bridge.port;
     if (!port) throw new PackToolBusinessError("contracts tool: engine off");
-    const [passed, by] = await Promise.all([
+    // CR-121 D-1 · phòng ban đọc SONG SONG với stage đã Đạt (mẫu chưa đọc ⇒ đọc khi nguồn có; không thêm độ trễ), ngoài tx khoá HĐ.
+    const [passed, by, depts] = await Promise.all([
       port.passedStages(t.who.tenantId, t.run),
       port.lastApprover(t.who.tenantId, t.run),
+      departmentsOf(d, t.who, true),
     ]);
-    await d.uow.tenant(t.who, (r) => finalizeInTx(r, t, { passed, by }));
+    await d.uow.tenant(t.who, (r) => finalizeInTx(r, t, { passed, by, depts }));
     if (d.afterApproved)
       await d
         .afterApproved(t.who.tenantId, t.id)

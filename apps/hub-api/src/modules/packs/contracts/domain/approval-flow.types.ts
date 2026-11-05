@@ -1,7 +1,7 @@
 // contract-flow S2 · ADR-0023: bản sao kiểu/hằng của DTO mẫu luồng duyệt (`@ai/contracts` pack-contracts/approval-flow.ts) cho lớp
 // 1–2 (domain chỉ import builtin). Khớp hai chiều kiểm ở `approval-flow.rules.test.ts` (hằng chạy, kiểu lúc typecheck).
 
-export const APPROVAL_FLOW_STEPS_MAX = 8;
+export const APPROVAL_FLOW_STEPS_MAX = 20;
 /** = `ESCALATE_AFTER_H` của engine. */
 export const APPROVAL_FLOW_DUE_H = { min: 4, max: 2160 } as const;
 /** = `REMIND_EVERY_H` của engine. */

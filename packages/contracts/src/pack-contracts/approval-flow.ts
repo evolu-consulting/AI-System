@@ -9,9 +9,9 @@ import { INPUT_NAME_RE, INPUT_SCHEMA_MAX, IsoDateTime, UuidSchema } from "../com
 import { GROUP_KEY_RE } from "../groups";
 import { CONTRACT_DEALS } from "./milestones";
 
-/** Tối đa 8 bước người dùng thấy (engine ≤ 10 stage: + `route` + `finalize`). CR-121 D-1 nâng 20 / engine 22 cùng migration
- *  nới CHECK hub (`process_defs_stages_ck`, `process_runs_step_ck`, `back_to_step`, `from_step`) — bất biến ở dưới giữ hai trần khớp. */
-export const APPROVAL_FLOW_STEPS_MAX = 8;
+/** CR-121 D-1 · tối đa 20 bước người dùng thấy (engine ≤ 22 stage: + `route` + `finalize`); migration hub 0095 nới CHECK
+ *  (`process_defs_stages_ck`, `process_runs_step_ck`, `back_to_step`, `from_step`, chỉ số stage) — bất biến ở dưới giữ hai trần khớp. */
+export const APPROVAL_FLOW_STEPS_MAX = 20;
 /** Stage hệ thống quy trình duyệt thêm ngoài bước người dùng: `route` + `finalize` (Ký số không là stage engine). */
 export const APPROVAL_FLOW_SYSTEM_STAGES = 2;
 export const APPROVAL_FLOW_CONDS_MAX = 6;

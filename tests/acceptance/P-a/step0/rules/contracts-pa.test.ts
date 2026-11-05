@@ -134,7 +134,7 @@ describe("R-K01–K03 · hằng + mã lỗi [plan-contract §1, §4]", () => {
       PROCESS_RUN_TTL_DAYS: 7,
       REMIND_AFTER_H: 24,
       PROCESS_INPUT_MAX: 8_000,
-      PROCESS_STAGES_MAX: 10,
+      PROCESS_STAGES_MAX: 22,
       FEEDBACK_MAX: 4_000,
       FORWARD_NOTE_MAX: 500,
       OPEN_TASKS_COUNT_MAX: 100,
@@ -320,7 +320,7 @@ describe("R-K04–K10 · schema [plan-contract §2–§5]", () => {
     expect(ok(list, { items: [item], open_count: 100, next_cursor: null })).toBe(true);
     expect(ok(list, { items: [item], open_count: 101, next_cursor: null })).toBe(false);
   });
-  it("HUB-FR-105 · R-K08 · zod body: input 8 001 / key 'Ab' fail; origin none ok; feedback 4 001 / note 501 fail; stages 0/11, real_action không kèm review fail", async () => {
+  it("HUB-FR-105 · R-K08 · zod body: input 8 001 / key 'Ab' fail; origin none ok; feedback 4 001 / note 501 fail; stages 0/23, real_action không kèm review fail", async () => {
     const c = await loadChat();
     const start = pick(c, [
       "CreateProcessRunRequestSchema",
@@ -366,7 +366,7 @@ describe("R-K04–K10 · schema [plan-contract §2–§5]", () => {
     });
     expect(ok(d, def([st(0)]))).toBe(true);
     expect(ok(d, def([]))).toBe(false);
-    expect(ok(d, def(Array.from({ length: 11 }, (_, i) => st(i))))).toBe(false);
+    expect(ok(d, def(Array.from({ length: 23 }, (_, i) => st(i))))).toBe(false); // CR-121 D-1 · trần 22
     expect(ok(d, def([st(0, { after: { kind: "auto" } }), st(1, { real_action: true })]))).toBe(
       false,
     );

@@ -42,6 +42,18 @@ const isGroup = (c: FlowCond | FlowCondGroup): c is FlowCondGroup => !("field" i
 const itemHolds = (c: FlowCond | FlowCondGroup, f: FlowFacts): boolean =>
   isGroup(c) ? whenHolds(c, f) : condHolds(c, f);
 
+/** CR-121 D-1 · dữ kiện mở rộng mà mẫu chụp CẦN đọc (không điều kiện nào dùng ⇒ 0 câu SQL thêm khi rẽ/kết thúc). */
+export type FactNeeds = { departments: boolean; partner: boolean };
+type HasWhen = { kind: string; when?: FlowWhen | null };
+const leaves = (w: FlowWhen | FlowCondGroup): FlowCond[] =>
+  w.conds.flatMap((c) => (isGroup(c) ? leaves(c) : [c]));
+export function factNeedsOf(steps: readonly HasWhen[]): FactNeeds {
+  const fields = new Set(
+    steps.flatMap((s) => (s.kind === "review" && s.when ? leaves(s.when) : [])).map((c) => c.field),
+  );
+  return { departments: fields.has("creator_department"), partner: fields.has("new_partner") };
+}
+
 /** AND/OR; phần tử là điều kiện lá hoặc nhóm lồng một cấp (`FlowCondGroup`). */
 export function whenHolds(w: FlowWhen | FlowCondGroup | null, f: FlowFacts): boolean {
   if (w === null) return true;

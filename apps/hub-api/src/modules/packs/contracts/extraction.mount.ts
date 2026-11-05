@@ -28,6 +28,7 @@ import { extractionRepo } from "./adapters/extraction.repo";
 import { extractionRoutes } from "./adapters/extraction.routes";
 import { type AgentTransport, createExtractionAgent } from "./adapters/extraction-agent";
 import { createExtractionVerifier } from "./adapters/extraction-verifier";
+import { flowFactsRepo, withCreatorDepartments } from "./adapters/flow-facts.repo";
 import {
   createInprocLimiter,
   INPROC_DEFAULT_CONCURRENCY,
@@ -214,6 +215,7 @@ const packUow = (db: Db) =>
     sweep: sweepRepo(tx, tid),
     review: reviewRepo(tx, tid),
     links: productLinksRepo(tx, tid),
+    flowFacts: flowFactsRepo(tx, tid), // CR-121 D-1
   }));
 
 /** Lượt trích (agent + kiểm trích dẫn + tra MST hẹn giờ) và handler job của hàng đợi. */
@@ -266,12 +268,9 @@ export function contractsAiModule(
   const uow = packTenantOnly(pack);
   // engine-flag-tenant · env `on` ⇒ cổng theo công ty; seam test `approvalEngine` ghi đè env, cổng chỉ khi `approvalEngineTenantGate`.
   const gate = d.approvalEngine === undefined || d.approvalEngineTenantGate === true;
-  const eng = approvalEngine(
-    { on: d.approvalEngine, hd2: d.transport !== undefined, gate },
-    flow,
-    uow,
-    view,
-  );
+  const engOpts = { on: d.approvalEngine, hd2: d.transport !== undefined, gate };
+  const engFlow = { ...flow, groups: withCreatorDepartments(flow.groups, db) }; // CR-121 D-1
+  const eng = approvalEngine(engOpts, engFlow, uow, view);
   const { handle, schedule } = extractionRunner(d, flow, pack, eng?.start);
   const ready = d.transport !== undefined || flow.ai.ready;
   const { jobs, reclaimOnce } = extractJobs(db, flow, handle, {

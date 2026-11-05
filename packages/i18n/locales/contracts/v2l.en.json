@@ -290,7 +290,7 @@
         "FIRST_NOT_REVIEW": "The first step must be draft and check.",
         "whenEmpty": "Choose a contract type or value, or remove the condition.",
         "amountInvalid": "Amount must be a non-negative number.",
-        "STEPS_MAX": "Maximum 8 steps.",
+        "STEPS_MAX": "Maximum 20 steps.",
         "KEY_DUP": "Duplicate step key.",
         "AFTER_DIFY_CONDITIONAL": "The step after a Dify step cannot have a condition.",
         "difyEmpty": "No Dify workflow selected.",

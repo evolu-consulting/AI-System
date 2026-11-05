@@ -188,9 +188,16 @@ export type ApprovalEngineRepo = {
   ): Promise<{ id: string; number: string | null; title: string | null }[]>;
 };
 
+/** CR-121 D-1 · dữ kiện "đối tác mới" của HĐ (MỘT câu, tx gói): chưa có khoá đối tác ⇒ null (chưa có dữ liệu). */
+export type FlowFactsRepo = { newPartner(contractId: string): Promise<boolean | null> };
+/** CR-121 D-1 · mã Group phòng ban của user + mọi phòng cha (MỘT câu, scope system hub, ngoài tx gói); không có ⇒ []. */
+export type CreatorDepartments = (tenantId: string, userId: string) => Promise<readonly string[]>;
+
 export type ApprovalEngineTxRepos = {
   approvalEngine: ApprovalEngineRepo;
   approvalFlow: ApprovalFlowRepo;
   links?: ProductLinksRepo;
+  /** CR-121 D-1 · vắng ⇒ `new_partner` chưa có dữ liệu (bước có điều kiện đó vẫn chạy). */
+  flowFacts?: FlowFactsRepo;
 } & KitTxRepos;
 export type ApprovalEngineUow = PackUow<ApprovalEngineTxRepos>;
