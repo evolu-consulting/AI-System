@@ -4,14 +4,12 @@
 // (Không phụ thuộc thứ tự file: ca 3 tự đăng bài riêng rồi báo cáo/ẩn bài đó, không đụng bài mẫu dùng chung.)
 //  3. Đối tác báo cáo một bài của chủ quản (menu ⋯) ⇒ chủ quản vào "Báo cáo vi phạm", thấy tiêu đề bài + lý do ⇒ Ẩn bài.
 import { expect, test } from "@playwright/test";
-import { apiLogin, createPost } from "../_kit/api";
+import { apiLogin, createPost, pageFetch } from "../_kit/api";
 import { assignProcessUi, loginPlatformAdminUi, openTenantAppsTab } from "../_kit/ui";
 import { openAs, postByTitle, TENANT, USERNAME } from "./_stack";
 
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
 const ADMIN = process.env.CS_ADMIN_URL ?? "";
-// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
-const WEB = process.env.COMMUNITY_URL ?? "";
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
 const OWNER_PW = process.env.DEMO_OWNER_PW ?? "";
 const RUN = Date.now().toString(36);
@@ -88,14 +86,17 @@ test("3 · đối tác báo cáo một bài ⇒ chủ quản Ẩn bài ở Báo 
   test.setTimeout(150_000);
   const NOTE = `Thông báo kiểm thử ${RUN}`;
   // Đăng bằng API (audience "all" tường minh như seed): ca này kiểm luồng báo cáo, không kiểm ô soạn bài.
+  const hostPage = await openAs(browser, "host"); // trang cùng origin: gọi API qua trình duyệt (Node không nối thẳng origin web)
   const hostApi = await apiLogin({
-    base: WEB,
+    fx: pageFetch(hostPage.page),
+    base: "",
     tenantKey: TENANT,
     username: USERNAME.host,
     password: OWNER_PW,
     app: "contracts",
   });
-  await createPost(WEB, hostApi, { type: "note", body: NOTE });
+  await createPost("", hostApi, { type: "note", body: NOTE });
+  await hostPage.ctx.close();
   const hostPostText = "(đăng bằng API)";
   const needsReview = false;
   const buyer = await openAs(browser, "buyer");

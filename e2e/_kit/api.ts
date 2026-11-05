@@ -1,4 +1,4 @@
-// e2e/_kit · helper cấp API (không qua giao diện) để DỰNG dữ liệu hành trình: đăng nhập, gán quy trình, đặt luật, bật tính năng,
+﻿// e2e/_kit · helper cấp API (không qua giao diện) để DỰNG dữ liệu hành trình: đăng nhập, gán quy trình, đặt luật, bật tính năng,
 // tạo tenant/user/phòng ban riêng. Chỉ dùng để chuẩn bị; bước người dùng nhìn thấy vẫn phải đi bằng UI (D5).
 // Dùng `fetch` chuẩn (Bun/Node ≥ 18), không cần trình duyệt. Mật khẩu/token không bao giờ được log.
 import type {
@@ -15,6 +15,8 @@ export type Session = {
   headers: Record<string, string>;
   /** Giá trị `Set-Cookie` của refresh (nếu API trả), để nạp vào context trình duyệt khi cần phiên cookie. */
   setCookie: string[];
+  /** fetch dùng cho các gọi sau (mặc định fetch toàn cục; `pageFetch` chạy trong trình duyệt). */
+  fx?: typeof fetch;
 };
 
 export type LoginArgs = {
@@ -25,15 +27,18 @@ export type LoginArgs = {
   password: string;
   /** Header `X-App` (mặc định "admin"; web hợp đồng dùng "contracts"). */
   app?: string;
+  /** fetch tuỳ chọn (vd `pageFetch(page)` khi API chỉ gọi được qua origin của trình duyệt). */
+  fx?: typeof fetch;
 };
 
 async function call<T>(
   url: string,
   init: RequestInit & { token?: string },
   ok: readonly number[] = [200, 201, 204],
+  fx: typeof fetch = fetch,
 ): Promise<{ status: number; json: T; raw: Response }> {
   const { token, headers, ...rest } = init;
-  const res = await fetch(url, {
+  const res = await fx(url, {
     ...rest,
     headers: {
       "content-type": "application/json",
@@ -53,21 +58,27 @@ async function call<T>(
 
 /** Đăng nhập bằng API: trả access token + header Bearer. `const s = await apiLogin({...}); fetch(url, {headers: s.headers})`. */
 export async function apiLogin(a: LoginArgs): Promise<Session> {
-  const { json, raw } = await call<{ access_token?: string }>(`${a.base}/auth/login`, {
-    method: "POST",
-    headers: { "X-App": a.app ?? "admin" },
-    body: JSON.stringify({
-      tenant_key: a.tenantKey,
-      username: a.username,
-      password: a.password,
-    }),
-  });
+  const { json, raw } = await call<{ access_token?: string }>(
+    `${a.base}/auth/login`,
+    {
+      method: "POST",
+      headers: { "X-App": a.app ?? "admin" },
+      body: JSON.stringify({
+        tenant_key: a.tenantKey,
+        username: a.username,
+        password: a.password,
+      }),
+    },
+    undefined,
+    a.fx,
+  );
   if (!json?.access_token) throw new Error("apiLogin: phản hồi không có access_token");
   const setCookie = raw.headers.getSetCookie?.() ?? [];
   return {
     token: json.access_token,
     headers: { authorization: `Bearer ${json.access_token}` },
     setCookie,
+    fx: a.fx,
   };
 }
 
@@ -213,18 +224,37 @@ export async function createPost(
     };
   },
 ): Promise<{ id?: string }> {
-  const { json } = await call<{ id?: string }>(`${base}/pack/community/posts`, {
-    method: "POST",
-    token: s.token,
-    body: JSON.stringify({
-      type: input.type,
-      title: input.title ?? "",
-      body: input.body,
-      fields: {},
-      cats: [],
-      media: [],
-      audience: { mode: "all", cats: [], companies: [], ...input.audience },
-    }),
-  });
+  const { json } = await call<{ id?: string }>(
+    `${base}/pack/community/posts`,
+    {
+      method: "POST",
+      token: s.token,
+      body: JSON.stringify({
+        type: input.type,
+        title: input.title ?? "",
+        body: input.body,
+        fields: {},
+        cats: [],
+        media: [],
+        audience: { mode: "all", cats: [], companies: [], ...input.audience },
+      }),
+    },
+    undefined,
+    s.fx,
+  );
   return json;
+}
+
+/** `fetch` chạy TRONG trang (cùng origin, qua proxy của web) — dùng khi Node không nối thẳng được tới origin web. `base` nên là "" (đường dẫn gốc). */
+export function pageFetch(page: import("@playwright/test").Page): typeof fetch {
+  return (async (url: string, init?: RequestInit) => {
+    const r = await page.evaluate(
+      async ([u, i]) => {
+        const res = await fetch(u as string, i as RequestInit);
+        return { status: res.status, text: await res.text() };
+      },
+      [url, init ?? {}] as const,
+    );
+    return new Response(r.text, { status: r.status });
+  }) as typeof fetch;
 }
