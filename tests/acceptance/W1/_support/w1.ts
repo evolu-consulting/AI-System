@@ -4,6 +4,7 @@ import { expect } from "bun:test";
 import { visibility } from "@ai/test-kit/builders";
 import {
   captureSql,
+  expectQueryCounts,
   getWith,
   insContract,
   jsonWith,
@@ -25,7 +26,20 @@ import {
 } from "../../HD7/_support/hd7";
 
 export type { CtxN1, Json, Res, Sql };
-export { call, captureSql, d, getWith, jsonWith, measure, ok, P, seqScansOf, startHd1, T };
+export {
+  call,
+  captureSql,
+  d,
+  expectQueryCounts,
+  getWith,
+  jsonWith,
+  measure,
+  ok,
+  P,
+  seqScansOf,
+  startHd1,
+  T,
+};
 
 export const BASE = "/pack/contracts";
 /** Cùng MỘT lệnh TRUNCATE: các bảng CKS tham chiếu nhau bằng FK (HD9 `CKS_TABLES`). */

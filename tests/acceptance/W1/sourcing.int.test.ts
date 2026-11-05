@@ -8,6 +8,7 @@ import {
   call,
   captureSql,
   d,
+  expectQueryCounts,
   type Json,
   P,
   priced,
@@ -400,11 +401,13 @@ describe("W1-NFR · số câu SQL cố định", () => {
     const miss = await captureSql(c, () => get()); // dữ liệu đổi ⇒ trượt: +3 (phạm vi + dấu vân tay + nạp)
     const big = await captureSql(c, () => get());
     expect(big.r.json.stats.lines).toBeGreaterThan(150);
-    expect([small.queries.length, miss.queries.length, big.queries.length]).toEqual([4, 7, 4]);
+    expectQueryCounts([small, miss, big], [4, 7, 4]);
     const put = await captureSql(c, () => choose(P.hoa, w.s1, 0, { contract_id: w.m2, line: 0 }));
-    expect([put.r.status, put.queries.length]).toEqual([200, 8]);
+    expect(put.r.status).toBe(200);
+    expectQueryCounts([put], [8]);
     const del = await captureSql(c, () => choose(P.hoa, w.s1, 0, { contract_id: null }));
-    expect([del.r.status, del.queries.length]).toEqual([200, 4]);
+    expect(del.r.status).toBe(200);
+    expectQueryCounts([del], [4]);
   });
 });
 

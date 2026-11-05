@@ -580,3 +580,17 @@ export async function jsonWith(
 /** Văn bản các câu đã chụp (gọn, để assert in ra câu thừa khi số câu lệch). */
 export const queryTexts = (queries: readonly Cap[]): string[] =>
   queries.map((q, i) => `${i + 1}. ${q.text.replace(/\s+/g, " ").slice(0, 140)}`);
+/** Kháº³ng Ä‘á»‹nh sá»‘ cÃ¢u SQL tá»«ng lÆ°á»£t chá»¥p (`captureSql`) khá»›p `expected`; lá»‡ch â‡’ bÃ¡o lá»—i KÃˆM vÄƒn báº£n má»i cÃ¢u cá»§a cÃ¡c lÆ°á»£t Ä‘á»ƒ tháº¥y ngay cÃ¢u thá»«a. */
+export function expectQueryCounts(
+  caps: readonly { queries: readonly Cap[] }[],
+  expected: readonly number[],
+): void {
+  const got = caps.map((c) => c.queries.length);
+  if (got.length === expected.length && got.every((n, i) => n === expected[i])) return;
+  const dump = caps.map(
+    (c, i) => `#${i} (${c.queries.length} cÃ¢u):\n  ${queryTexts(c.queries).join("\n  ")}`,
+  );
+  throw new Error(
+    `sá»‘ cÃ¢u SQL lá»‡ch: nháº­n ${JSON.stringify(got)}, mong ${JSON.stringify(expected)}\n${dump.join("\n")}`,
+  );
+}

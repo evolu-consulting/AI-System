@@ -11,6 +11,7 @@ import {
   call,
   captureSql,
   d,
+  expectQueryCounts,
   ids,
   myWork,
   P,
@@ -361,7 +362,7 @@ describe("W1-NFR · số câu SQL cố định", () => {
     const full = await captureSql(c, () => myWork(c, P.hoa));
     expect([empty.r.status, full.r.status]).toEqual([200, 200]);
     expect(full.r.json.items.length).toBeGreaterThan(60);
-    expect([empty.queries.length, full.queries.length]).toEqual([2, 2]);
+    expectQueryCounts([empty, full], [2, 2]);
   });
 });
 
@@ -585,6 +586,7 @@ describe("W1 · hẹn nhắc chung (GET/POST /followups)", () => {
       mk(P.hoa, { subject_kind: "contract", subject_id: k, at: when(1) }),
     );
     const b = await captureSql(c, () => call(c, P.hoa, "GET", "/followups"));
-    expect([a.r.status, a.queries.length, b.r.status, b.queries.length]).toEqual([201, 2, 200, 2]);
+    expect([a.r.status, b.r.status]).toEqual([201, 200]);
+    expectQueryCounts([a, b], [2, 2]);
   });
 });
