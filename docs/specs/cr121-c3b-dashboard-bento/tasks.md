@@ -27,7 +27,7 @@ Dữ liệu từ `GET /ops/overview` của Hub (`useOpsOverview`, làm mới 60 
 
 ## Quyết định trong lúc làm
 - **Link đích**: chỉ đặt link tới trang đã có (`/tenants`, `/workflows`, `/system`, `/usage`). `/runs` chưa có ⇒ ô "lượt chạy lỗi hoặc kẹt" hiện số, không link, câu phụ nói rõ.
-  Bộ lọc `?filter=…` truyền theo link nhưng trang đích hiện chưa đọc (xem Việc còn lại).
+  Link bỏ `?filter=…` vì trang đích chưa đọc bộ lọc (xem Việc còn lại).
 - Hub chưa cấu hình (`PUBLIC_HUB_URL` trống) ⇒ mọi ô báo lý do + cách khắc phục thay vì trống.
 - Chuỗi không đủ 2 điểm có số ⇒ không vẽ đường, ghi "chưa đủ dữ liệu"; tỷ lệ/p95 `null` ⇒ "—" + lý do (không hiện 0).
 - Ô cũ (Số run 24 giờ, Commands, Workflows, Tenant đang hoạt động, Tenant sắp vượt quota, Agent Forge "Sẽ có khi Agent Hub sẵn sàng") gỡ hẳn, không có doc current để REMOVED (D6). ở bản platform (thuộc nhật ký, đã có trang Nhật ký).
@@ -48,6 +48,6 @@ tenant_admin ở `/` chỉ thấy bản công ty; các ô vận hành toàn nề
 - Kịch bản: khi tenant_admin mở `/` thì không có ô "Lượt chạy 24 giờ", "Cần xử lý ngay", "Sức khoẻ hệ thống" [test: e2e/cr121-overview-bento.spec.ts » CR-121 · tenant_admin ở '/' chỉ thấy bản công ty, không có ô vận hành toàn nền tảng]
 
 ## Việc còn lại
-- Trang đích + bộ lọc cho link "Cần xử lý ngay": `/runs?filter=attention&hours=N` (chưa có trang ⇒ hiện số không link); `/tenants?filter=unrouted|near_quota|half_configured` và `/workflows?filter=failing` (trang có, chưa đọc `filter`).
+- Trang đích + bộ lọc cho link "Cần xử lý ngay": `/runs?filter=attention&hours=N` (chưa có trang ⇒ hiện số không link); `/tenants?filter=unrouted|near_quota|half_configured` và `/workflows?filter=failing`: trang có nhưng chưa đọc `filter`, link hiện chỉ tới trang; khi trang đọc được bộ lọc thì thêm lại query vào `resolveLink`.
 - Trang "Hệ thống" (`/system`) chưa có chi tiết cho từng ô sức khoẻ.
 - e2e chưa chạy (chạy một lần cuối đợt); e2e dùng fixture không có Hub thật nên chỉ kiểm "ô có nội dung"; ca có số liệu thật cần dữ liệu hub (lượt chạy/dify) — thêm khi có helper seed hub.

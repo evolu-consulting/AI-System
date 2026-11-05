@@ -58,10 +58,7 @@ describe("ops-overview", () => {
 
   test("resolveLink: chỉ link tới trang đã có, trang chưa có thì null", () => {
     expect(resolveLink("/runs?filter=attention&hours=4")).toBeNull();
-    expect(resolveLink("/tenants?filter=unrouted")).toEqual({
-      to: "/tenants",
-      search: { filter: "unrouted" },
-    });
+    expect(resolveLink("/tenants?filter=unrouted")).toEqual({ to: "/tenants" });
     expect(resolveLink("/system")).toEqual({ to: "/system" });
   });
 

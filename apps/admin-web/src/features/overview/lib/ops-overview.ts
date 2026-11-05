@@ -70,10 +70,10 @@ export type OpsLink = {
 const LINKABLE = new Set(["/tenants", "/workflows", "/system", "/usage"]);
 
 export function resolveLink(link: string): OpsLink | null {
-  const [path = "", query = ""] = link.split("?");
+  const [path = ""] = link.split("?");
   if (!LINKABLE.has(path)) return null;
-  const search = Object.fromEntries(new URLSearchParams(query));
-  return { to: path as OpsLink["to"], ...(Object.keys(search).length ? { search } : {}) };
+  // Bỏ `?filter=…`: trang đích chưa đọc bộ lọc nên link không hứa thứ không có (xem tasks.md "Việc còn lại").
+  return { to: path as OpsLink["to"] };
 }
 
 export type AttentionKey = keyof OpsOverview["attention"];
