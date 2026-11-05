@@ -69,7 +69,7 @@ export function Header({
         data-owner={owner}
         className="flex min-w-0 flex-1 items-center gap-2 data-[owner=contracts]:hidden"
       />
-      <div data-testid="topbar-actions" className="flex items-center gap-1">
+      <div data-testid="topbar-actions" className="ml-auto flex items-center gap-1">
         {packs.contracts && (
           <span data-testid="topbar-apps" className="flex items-center">
             <AppSwitcher role={user?.role} userId={user?.username} />

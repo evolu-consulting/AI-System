@@ -23,6 +23,7 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
   const { t } = useTranslation();
   const pathname = useNavPath();
   const layout = layoutOf(pathname);
+  const inCommunity = pathname === "/community" || pathname.startsWith("/community/");
   const dock = useDock();
   useBrandSync(useShellPacks().contracts === true);
   const [pinned, setPinned] = useStoredBool(NAV_PINNED_KEY, true);
@@ -75,13 +76,16 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
       </div>
       <BottomNav />
       <SettingsDialogLazy owner={owner} tenantName={user?.tenant.name ?? ""} />
-      <AssistantFab
-        onClick={dock.openAssistant}
-        label={t("contracts.shell.openAssistant")}
-        tooltip={t("contracts.shell.askAssistant")}
-        icon={<IconRobot width={24} height={24} />}
-        className={cn(dock.open && "lg:hidden", dock.sheet && "hidden")}
-      />
+      {/* Community có nút trợ lý riêng (ChatDock, cùng AssistantFab): chỉ MỘT nút nổi ở mỗi module */}
+      {!inCommunity && (
+        <AssistantFab
+          onClick={dock.openAssistant}
+          label={t("contracts.shell.openAssistant")}
+          tooltip={t("contracts.shell.askAssistant")}
+          icon={<IconRobot width={24} height={24} />}
+          className={cn(dock.open && "lg:hidden", dock.sheet && "hidden")}
+        />
+      )}
       {dock.sheet && (
         <div className="fixed inset-0 z-40 flex flex-col lg:hidden">
           <button

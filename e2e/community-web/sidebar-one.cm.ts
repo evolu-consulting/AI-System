@@ -1,9 +1,19 @@
 // CR-121 C-5 · thanh trái MỘT component: Community → Sổ Hợp Tác giữ nguyên cùng <nav data-testid="shell-sidebar">, mục đang chọn đúng.
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+import { asHub } from "../contracts-web/dataset";
+
+// Bản build mock Community không có phiên; sang Sổ Hợp Tác (`_authed`) cần phiên ⇒ giả `/auth/refresh` + `/pack/contracts/me` như e2e contracts-web
+// (không có thì router chuyển tới /login và thanh trái biến mất). Trang `/community*` không dùng phiên nên không đổi.
+async function signedIn(page: Page) {
+  const d = asHub("editor");
+  await page.route("**/auth/refresh", (r) => r.fulfill({ json: d.grant }));
+  await page.route("**/pack/contracts/me", (r) => r.fulfill({ json: d.packMe }));
+}
 
 test("Community → Sổ Hợp Tác: cùng một thanh trái (shell-sidebar), mục đang chọn đổi đúng, không có thanh trái thứ hai", async ({
   page,
 }) => {
+  await signedIn(page);
   await page.goto("/community");
   await page.getByLabel("Chọn nhân vật").selectOption("an");
   const side = page.getByTestId("shell-sidebar");
@@ -55,6 +65,7 @@ test("Menu: badge số cho Duyệt bài / Yêu cầu tham gia / Chờ tôi duy�
     { cap: "community.reports", count: 0 },
     { cap: "contracts.review", count: 2 },
   ];
+  await signedIn(page);
   await page.route("**/pack/nav", (r) => r.fulfill({ json: { items } }));
   await page.route("**/pack/contracts/my-work", (r) =>
     r.fulfill({ json: { followups: [], approvals: [] } }),
@@ -87,6 +98,7 @@ test("Menu: badge số cho Duyệt bài / Yêu cầu tham gia / Chờ tôi duy�
     r.fulfill({ json: { items: items.filter((i) => i.cap !== "contracts.review") } }),
   );
   await page.reload();
+  await expect(side.locator('[data-nav-item="/contracts/list"]')).toBeVisible(); // thanh trái đã dựng lại
   await expect(side.locator('[data-nav-item="/contracts/approvals"]')).toHaveCount(0);
 });
 
@@ -94,6 +106,7 @@ test("Menu: badge số cho Duyệt bài / Yêu cầu tham gia / Chờ tôi duy�
 test("Community và Sổ Hợp Tác: icon menu cùng cỡ, cụm nút Header cùng testid, nút trợ lý cùng testid", async ({
   page,
 }) => {
+  await signedIn(page);
   const iconBox = async () =>
     page
       .getByTestId("shell-sidebar")

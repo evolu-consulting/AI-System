@@ -136,22 +136,30 @@ test("CR-120 · Đạt đi FlowRuntime.act (đúng task đang mở), dòng thờ
     );
 });
 
-test("CR-120 rollback · cờ flow.runtime tắt ⇒ Đạt đi POST approvals cũ, không yêu cầu /flow/*", async ({
+test("CR-121 · cờ flow.runtime tắt ⇒ vẫn MỘT đường: Đạt đi route flow (không còn POST approvals cũ), không GET view", async ({
   page,
 }) => {
+  // CR-121 A-1 gỡ `legacy-act`: cờ tắt chỉ làm `view`/`summary` trả null (không gửi yêu cầu); hành động luôn đi FlowRuntime.act.
   const posts = await install(page, AT_STEP1(), "editor", false);
-  const flowCalls: string[] = [];
+  const oldActs: string[] = [];
+  const flowViews: string[] = [];
+  const flowActs: string[] = [];
   page.on("request", (r) => {
-    if (new URL(r.url()).pathname.includes("/flow/")) flowCalls.push(r.url());
+    const p = new URL(r.url()).pathname;
+    if (r.method() === "POST" && p.endsWith("/approval")) oldActs.push(p);
+    if (p.includes("/flow/")) (r.method() === "POST" ? flowActs : flowViews).push(p);
   });
   await page.goto(`/contracts/c/${contract.id}`);
   await expect(page.getByTestId("approval-step-1")).toContainText("Kế toán");
   await page.locator("[data-approval=pass]").click();
   await expect.poll(() => posts.length).toBe(1);
   expect(posts[0]).toEqual({ action: "approve" });
-  expect(flowCalls).toEqual([]);
+  expect(flowActs).toEqual([
+    `/pack/contracts/flow/contracts.approval/${contract.id}/tasks/${TASK}/actions/approve`,
+  ]);
+  expect(flowViews).toEqual([]);
+  expect(oldActs).toEqual([]);
 });
-
 test("Trả lại: cần góp ý, gửi action return", async ({ page }) => {
   const posts = await install(page, AT_STEP1());
   await page.goto(`/contracts/c/${contract.id}`);

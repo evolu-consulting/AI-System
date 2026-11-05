@@ -1,6 +1,6 @@
 // CR-120 · cr120-contracts-flow · khe `contracts.intake` trên UI contracts-web (backend giả `page.route`; chờ phần tử, không sleep):
 //  (1) màn xác nhận (tenant tắt duyệt) có gợi ý ngay cạnh "Lưu nháp": bản nháp chỉ bạn thấy;
-//  (2) "Xác nhận và lưu" ở thẻ duyệt engine ⇒ POST approve đúng MỘT lần (không có bước "Gửi duyệt" tay) và hiện "Đã chuyển: <bước kế>";
+//  (2) "Xác nhận và lưu" ở thẻ duyệt engine ⇒ POST approve (qua route flow) đúng MỘT lần (không có bước "Gửi duyệt" tay) và hiện "Đã chuyển: <bước kế>";
 //  (3) HĐ nháp / không quyền xem (hub 404 "Not found") ⇒ MỘT câu chung, không lộ HĐ có tồn tại.
 // VIẾT, CHƯA CHẠY trong lát (e2e chạy một lần ở cuối bằng evotest).
 import type { ApprovalCardStep, ContractApproval } from "@ai/contracts/pack-contracts";
@@ -9,6 +9,7 @@ import { asHub } from "./dataset";
 import { approvalAsHub } from "./dataset-approval";
 import { contract, contractAsHub } from "./dataset-contract";
 import { REVIEW_ID } from "./dataset-v2g";
+import { mockApprovalFlow } from "./flow-mock";
 import { installV2g } from "./v2g-support";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
@@ -75,20 +76,23 @@ test("Xác nhận và lưu (engine) ⇒ approve MỘT lần, hiện 'Đã chuy�
     step(1, "Phòng Kế toán duyệt", "pending"),
   ]);
   const posts: unknown[] = [];
-  await page.route("**/pack/contracts/contracts/**", (r) => {
-    const req = r.request();
-    const path = new URL(req.url()).pathname;
-    if (path.endsWith("/approval") && req.method() === "POST") {
-      posts.push(req.postDataJSON());
+  // CR-120/121: hành động đi route flow (một đường duy nhất); thẻ đọc lại qua GET `/approval`.
+  await mockApprovalFlow(page, {
+    card: () => state,
+    onAct: (body) => {
+      posts.push(body);
       state = engineCard(
         [step(0, "Xác nhận và lưu", "passed"), step(1, "Phòng Kế toán duyệt", "open")],
         { can_act: false },
       );
-      return json(r, 200, state);
-    }
-    if (path.endsWith("/approval")) return json(r, 200, state);
-    return json(r, 200, contractAsHub());
+      return state;
+    },
   });
+  await page.route("**/pack/contracts/contracts/**", (r) =>
+    new URL(r.request().url()).pathname.endsWith("/approval")
+      ? json(r, 200, state)
+      : json(r, 200, contractAsHub()),
+  );
   await page.goto(`/contracts/c/${contract.id}`);
   await expect(page.getByTestId("moved-to")).toHaveCount(0);
   await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
