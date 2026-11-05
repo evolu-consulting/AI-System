@@ -31,7 +31,8 @@ test("Community → Sổ Hợp Tác: cùng một thanh trái (shell-sidebar), m�
   );
   await side.locator('[data-nav-item="/contracts/list"]').click();
   // CR-121 C-8 · ngay lúc bấm (trang đích còn tải lười): chỉ MỘT mục aria-current (mục đích) và khe tìm của Community đã ẩn
-  await expect(side.locator("[aria-current]")).toHaveCount(1);
+  // chỉ tính MỤC MENU (`data-nav-item`): liên kết thương hiệu đầu thanh trái (`/contracts`) do router đặt aria-current theo tiền tố, không phải mục menu
+  await expect(side.locator("[data-nav-item][aria-current]")).toHaveCount(1);
   await expect(side.locator('[data-nav-item="/contracts/list"]')).toHaveAttribute(
     "aria-current",
     "page",
