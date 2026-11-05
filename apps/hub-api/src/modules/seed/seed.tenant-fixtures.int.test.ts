@@ -1,5 +1,5 @@
 // seed-refresh · fixture công ty evolu/demo của `hub:seed`: chỉ dev/test + HUB_SEED_FIXTURES; production ⇒ không đụng DB;
-// chạy 2 lần ⇒ cùng kết quả (idempotent). Bảo đảm: owner ∈ Group owner gói, feature engine, Kế toán 2 thành viên,
+// chạy 2 lần ⇒ cùng kết quả (idempotent). Bảo đảm: owner ∈ Group owner gói, (không cấp feature engine), Kế toán 2 thành viên,
 // locale vi, thương hiệu host, URL catalog (chỉ appEnv=development).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -76,9 +76,6 @@ async function setup(): Promise<void> {
     must_change_password: false,
   }));
   await sql`insert into admin.users ${sql(rows)}`;
-  await sql`insert into admin.features (key, name, description, icon, status)
-    values ('contracts-approval-engine', ${sql.json({ vi: "Duyệt HĐ bằng quy trình" })}, ${sql.json({ vi: "Engine" })}, 'workflow', 'on')
-    on conflict (key) do nothing`;
 }
 
 const members = async (tenant: string, group: string): Promise<string[]> =>
@@ -125,7 +122,7 @@ describe("seed-refresh · fixture công ty evolu/demo", () => {
   it("appEnv=test + fixtures ⇒ seed công ty nhưng KHÔNG điền URL catalog (chỉ development)", async () => {
     const before = await emptyUrls();
     await seed("test", true);
-    expect(await entitled()).toEqual(["demo", "evolu"]);
+    expect(await entitled()).toEqual([]); // CR-121 D-4 · không cấp feature engine
     expect(await emptyUrls()).toBe(before);
   });
 
@@ -140,7 +137,7 @@ describe("seed-refresh · fixture công ty evolu/demo", () => {
       expect(await members("evolu", g)).toEqual(["edgar.nguyen", "thomas.tran", "vio.ngo"]);
       expect(await members("demo", g)).toEqual([]); // demo giữ vai theo demo.yaml
     }
-    expect(await entitled()).toEqual(["demo", "evolu"]);
+    expect(await entitled()).toEqual([]); // CR-121 D-4 · gán quy trình là đủ, không cấp feature engine
     expect(await members("evolu", ACCOUNTING.key)).toEqual(["thomas.tran", "vio.ngo"]);
     expect(await members("demo", ACCOUNTING.key)).toEqual(["demo-editor", "demo-viewer"]);
     const grp =

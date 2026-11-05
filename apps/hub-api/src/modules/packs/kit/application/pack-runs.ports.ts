@@ -157,6 +157,8 @@ export type PackRunsPort = {
     userId: string,
     facts?: RouteSlotFacts,
   ): Promise<RoutedSlot | null>;
+  /** CR-121 D-4 · công ty đã gán quy trình riêng cho khe (có luật định tuyến không phải mặc định khe)? MỘT câu; vắng ⇒ coi như chưa gán. */
+  slotAssigned?(tenantId: string, slot: string): Promise<boolean>;
   /** CR-105 · `source_ref` của def đã biên dịch (sha256 16 hex, thuần) — gói gửi lại ở `ensureDef`/`start.slot`. */
   sourceRefOf(def: Record<string, unknown>): string;
   /** S1a · quyết task duyệt mở của run trong scope USER người quyết (canAct/RLS/exclude_starter của engine; lỗi ném như

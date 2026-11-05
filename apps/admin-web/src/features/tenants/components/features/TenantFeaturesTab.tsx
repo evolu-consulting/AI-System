@@ -93,13 +93,7 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange, onlyApp, onDr
                   onChange={a.change}
                   onLevel={a.changeLevel}
                   readOnly={readOnly}
-                  slots={
-                    readOnly
-                      ? null
-                      : (engine) => (
-                          <TenantProcessSlots tenant={tenant} app={card.app} engine={engine} />
-                        )
-                  }
+                  slots={readOnly ? null : <TenantProcessSlots tenant={tenant} app={card.app} />}
                   headerAction={
                     !onlyApp && !readOnly && getAppManifest(card.app) && card.mode === "levels" ? (
                       <Button variant="link" size="sm" className="h-auto p-0" asChild>

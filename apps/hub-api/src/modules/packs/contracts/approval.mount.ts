@@ -1,10 +1,6 @@
 // contract-flow S2/S3 · nối duyệt HĐ trên engine + mẫu luồng (tách khỏi `extraction.mount.ts` giữ trần 400 dòng).
 import { logger } from "../../../lib/logger";
-import {
-  type PackAccessView,
-  packAccessInput,
-  tenantFeatureOn,
-} from "../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, packAccessInput } from "../kit/adapters/pack-guard.middleware";
 import { slotRegistry } from "../kit/adapters/slot-registry";
 import type { PackUow, PackWho } from "../kit/application/ports";
 import type { SlotSpec } from "../kit/application/slot.ports";
@@ -27,7 +23,7 @@ import {
   readCurrentFlow,
 } from "./application/approval-flow.usecase";
 import { myApprovals } from "./application/mywork-approvals.usecase";
-import { ENGINE_FEATURE_KEY, engineAllowedForTenant } from "./domain/approval-engine.rules";
+import { engineAllowedForTenant } from "./domain/approval-engine.rules";
 import { FLOW_TOOL_KEYS } from "./domain/approval-flow.rules";
 import type { FlowDeal, FlowStep } from "./domain/approval-flow.types";
 import { previewPath } from "./domain/approval-flow-stages.rules";
@@ -59,7 +55,7 @@ export function approvalEngine(
   o: {
     on: boolean | undefined;
     hd2: boolean;
-    /** engine-flag-tenant · cổng theo công ty (feature `contracts-approval-engine`); false ⇒ không cổng (seam test `on`). */
+    /** CR-121 D-4 · cổng theo công ty = đã gán quy trình cho khe duyệt HĐ (không còn feature); false ⇒ không cổng (seam test `on`). */
     gate: boolean;
   },
   flow: FlowDeps,
@@ -69,11 +65,12 @@ export function approvalEngine(
   const env = process.env.CONTRACTS_APPROVAL_ENGINE;
   const on = o.on ?? env === "on";
   if (!on || !flow.engine || o.hd2) return null;
+  // CR-121 D-4 · cổng = công ty đã gán quy trình cho khe duyệt HĐ (MỘT câu `slotAssigned`, chỉ ở lúc mở lượt mới); không đọc feature.
   const gate = o.gate
     ? async (tenantId: string) =>
         engineAllowedForTenant({
           env: "on",
-          entitled: await tenantFeatureOn(view, ENGINE_FEATURE_KEY, tenantId),
+          assigned: (await flow.engine?.port?.slotAssigned?.(tenantId, APPROVAL_SLOT)) === true,
         })
     : undefined;
   const ed = {
@@ -88,16 +85,13 @@ export function approvalEngine(
     return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
   };
   const startRaw = startEngineApproval(ed);
-  // Mở lượt MỚI chỉ cho công ty có entitlement; không có ⇒ "machine" (máy 2 bước cũ). Lượt đã engine vẫn chạy nốt (tool/reopen không cổng).
+  // Mở lượt MỚI chỉ cho công ty đã gán quy trình; chưa gán ⇒ "machine" (máy 2 bước cũ). Lượt đã engine vẫn chạy nốt (tool/reopen không cổng).
   const start: typeof startRaw = gate
     ? async (who, id) => ((await gate(who.tenantId)) ? startRaw(who, id) : "machine")
     : startRaw;
-  // engine-off-note · lượt máy cũ của công ty CHƯA có entitlement: có quy trình riêng được gán/luật (luật không khớp = bị chặn cũng tính) ⇒ true.
-  const engineOff = async (who: PackWho, startedBy: string): Promise<boolean> => {
-    if (!gate || (await gate(who.tenantId))) return false;
-    const r = await flow.engine?.port?.routeSlot?.(who.tenantId, APPROVAL_SLOT, startedBy, {});
-    return r != null && ("blocked" in r || r.isDefault !== true);
-  };
+  // CR-121 D-4 · gán ⇒ engine chạy, nên không còn ca "đã gán mà không chạy" để báo (trước đây ghi chú vì thiếu feature). Giữ chữ ký cho
+  // `extraction.mount.ts` / `approval.usecase.ts` (ngoài lát này); phần A gỡ hẳn cờ `engine_off` cùng máy cũ.
+  const engineOff = async (_who: PackWho, _startedBy: string): Promise<boolean> => false;
   return {
     start,
     engineOff,

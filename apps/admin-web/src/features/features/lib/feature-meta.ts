@@ -49,6 +49,11 @@ export const FEATURE_META: Readonly<Record<string, FeatureMeta>> = {
 
 export const isRegistered = (key: string): boolean => key in FEATURE_META;
 
+/** CR-121 D-4 · feature KHÔNG hiện ở admin (không còn công tắc tay): `contracts-approval-engine` thôi là điều kiện — gán quy trình
+ *  cho khe duyệt hợp đồng là duyệt theo quy trình (Luật GỐC 3: không thao tác ẩn bắt buộc). Hàng DB còn đó (không migration xoá). */
+const HIDDEN_FEATURES: ReadonlySet<string> = new Set(["contracts-approval-engine"]);
+export const isHiddenFeature = (key: string): boolean => HIDDEN_FEATURES.has(key);
+
 /** Meta của key: registry → suy theo tiền tố app đã biết → "Khác". */
 export function metaOf(key: string): FeatureMeta {
   const hit = FEATURE_META[key];
@@ -66,10 +71,11 @@ export type AppGroup<T> = { app: AppId; items: T[] };
 const rank = (m: FeatureMeta): number =>
   m.level ? LEVELS.indexOf(m.level) + 1 : m.addon ? LEVELS.length + 1 : 0;
 
-/** Nhóm theo app (đúng thứ tự `APP_IDS`, bỏ nhóm rỗng); trong nhóm: cơ bản → Xem → Sửa → Quản trị → tính năng thêm → key. */
+/** Nhóm theo app (đúng thứ tự `APP_IDS`, bỏ nhóm rỗng, bỏ feature ẩn); trong nhóm: cơ bản → Xem → Sửa → Quản trị → tính năng thêm → key. */
 export function groupByApp<T extends { key: string }>(items: readonly T[]): AppGroup<T>[] {
   const buckets = new Map<AppId, T[]>();
   for (const it of items) {
+    if (isHiddenFeature(it.key)) continue;
     const app = metaOf(it.key).app;
     buckets.set(app, [...(buckets.get(app) ?? []), it]);
   }

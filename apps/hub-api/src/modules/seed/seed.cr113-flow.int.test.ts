@@ -70,9 +70,6 @@ async function setup(): Promise<void> {
     must_change_password: false,
   }));
   await sql`insert into admin.users ${sql(rows)}`;
-  await sql`insert into admin.features (key, name, description, icon, status)
-    values ('contracts-approval-engine', ${sql.json({ vi: "Duyệt HĐ bằng quy trình" })}, ${sql.json({ vi: "Engine" })}, 'workflow', 'on')
-    on conflict (key) do nothing`;
 }
 
 const members = async (group: string): Promise<string[]> =>

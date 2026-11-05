@@ -81,17 +81,15 @@ export function routeFrom(v: unknown, n: number): number | null {
   return typeof i === "number" && Number.isInteger(i) && i >= 0 && i < n ? i : null;
 }
 
-/** Mở run engine chỉ cho lượt `level1` còn chế độ máy, chưa gắn run. */
-/** Feature (admin.features) cấp theo công ty để HĐ của công ty đó duyệt trên engine. */
-export const ENGINE_FEATURE_KEY = "contracts-approval-engine";
-
-/** engine-flag-tenant · env `CONTRACTS_APPROVAL_ENGINE`: ≠ `on` (kể cả `off`/vắng) ⇒ tắt hết (công tắc khẩn); `on` ⇒ chỉ tenant
- *  có entitlement `contracts-approval-engine` còn hiệu lực. Lượt đã chạy engine không phụ thuộc hàm này (chạy nốt). */
+/** CR-121 D-4 · env `CONTRACTS_APPROVAL_ENGINE`: ≠ `on` (kể cả `off`/vắng) ⇒ tắt hết (công tắc khẩn của vận hành); `on` ⇒ chỉ công ty
+ *  ĐÃ gán quy trình riêng cho khe duyệt HĐ (luật định tuyến không phải mặc định khe — nguồn duy nhất, `slotAssigned`) chạy engine; chưa
+ *  gán ⇒ máy cũ (phần A dọn sau). KHÔNG còn phụ thuộc feature nào. Lượt đã chạy engine không phụ thuộc hàm này (chạy nốt). */
 export const engineAllowedForTenant = (i: {
   env: string | undefined;
-  entitled: boolean;
-}): boolean => i.env === "on" && i.entitled;
+  assigned: boolean;
+}): boolean => i.env === "on" && i.assigned;
 
+/** Mở run engine chỉ cho lượt `level1` còn chế độ máy, chưa gắn run. */
 export const engineStartable = (r: {
   approvalStatus: string | null;
   mode: string | null;

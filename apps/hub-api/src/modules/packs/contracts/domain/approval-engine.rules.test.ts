@@ -93,15 +93,15 @@ describe("ánh xạ stage ↔ bước", () => {
   });
 });
 
-describe("engine-flag-tenant · engineAllowedForTenant (env x entitlement)", () => {
-  it("chỉ env=on ∧ có entitlement; env off/vắng tắt hết", () => {
+describe("CR-121 D-4 · engineAllowedForTenant (env x đã gán quy trình, không feature)", () => {
+  it("chỉ env=on ∧ đã gán, chưa gán ⇒ máy cũ, env off/vắng tắt hết", () => {
     const cases: [string | undefined, boolean, boolean][] = [
       ["on", true, true],
       ["on", false, false],
       ["off", true, false],
       [undefined, true, false],
     ];
-    for (const [env, entitled, want] of cases)
-      expect(engineAllowedForTenant({ env, entitled })).toBe(want);
+    for (const [env, assigned, want] of cases)
+      expect(engineAllowedForTenant({ env, assigned })).toBe(want);
   });
 });

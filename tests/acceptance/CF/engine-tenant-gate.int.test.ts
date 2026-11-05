@@ -1,8 +1,12 @@
-// engine-flag-tenant · env CONTRACTS_APPROVAL_ENGINE=on + cổng theo công ty: tenant KHÔNG có entitlement `contracts-approval-engine`
-// ⇒ lượt level1 chạy máy 2 bước cũ; có entitlement còn hiệu lực ⇒ chạy engine; thu hồi ⇒ HĐ mới lại về máy cũ.
+// CR-121 D-4 · env CONTRACTS_APPROVAL_ENGINE=on + cổng theo công ty = ĐÃ GÁN quy trình cho khe duyệt HĐ (không còn feature
+// `contracts-approval-engine`): công ty chưa gán ⇒ lượt level1 chạy máy 2 bước cũ; gán ⇒ lượt MỚI chạy engine, KHÔNG cần bật gì khác;
+// bỏ gán ⇒ HĐ mới lại về máy cũ, lượt đã engine chạy nốt. Cổng đọc luật định tuyến (nguồn duy nhất), không đọc feature/entitlement.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { seedContract, toLevel1 } from "../HD3/_hd3";
-import { bumpConfig } from "../N1/_support/n1";
+import {
+  APPROVAL_SLOT,
+  compileSlotStages,
+} from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-slot.rules";
+import { groupId, seedContract, toLevel1 } from "../HD3/_hd3";
 import { type Json, T } from "../P-d/_support/pd";
 import { type CtxCf, startCf } from "./_cf";
 
@@ -17,25 +21,58 @@ afterAll(async () => {
 const modeOf = async (aid: string): Promise<unknown> =>
   ((await c.sql<Json[]>`select mode from contracts.approvals where id = ${aid}`)[0] as Json).mode;
 
-describe("engine-flag-tenant · cổng theo công ty", () => {
-  it("chưa có feature/entitlement ⇒ máy cũ; cấp ⇒ engine; thu hồi ⇒ máy cũ", async () => {
+/** Gán quy trình riêng cho khe duyệt HĐ của công ty (đúng đường Admin: tập gán + đầu luật + luật mặc định trỏ def riêng). */
+async function assign(): Promise<void> {
+  const [kO] = await c.sql<
+    { key: string }[]
+  >`select key from admin.groups where id = ${await groupId(c, "owner")}`;
+  const body = {
+    steps: [
+      {
+        kind: "review",
+        key: "kt",
+        name: "Kế toán duyệt",
+        department_group_id: null,
+        department_group_key: kO?.key,
+        head_only: false,
+        due_h: 48,
+        remind_every_h: null,
+        escalate_group_id: null,
+        exclude_starter: false,
+        when: null,
+      },
+    ],
+  };
+  const stages = compileSlotStages(body);
+  const [d] = await c.sql<
+    { id: string }[]
+  >`insert into hub.process_defs (tenant_id, key, name, stages, slot, slot_body, published_version)
+    values (null, 'cf-d4-assign', 'Quy trình riêng', ${JSON.stringify(stages)}::text::jsonb, ${APPROVAL_SLOT},
+      ${JSON.stringify(body)}::text::jsonb, 1) returning id::text as id`;
+  const id = d?.id as string;
+  await c.sql`insert into hub.process_def_releases (def_id, rel_version, name, stages, slot_body)
+    values (${id}, 1, 'Quy trình riêng', ${JSON.stringify(stages)}::text::jsonb, ${JSON.stringify(body)}::text::jsonb)`;
+  await c.sql`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${T.acme}, ${id}, ${APPROVAL_SLOT}) on conflict do nothing`;
+  await c.sql`insert into hub.process_routings (tenant_id, slot) values (${T.acme}, ${APPROVAL_SLOT}) on conflict do nothing`;
+  await c.sql`insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
+    values (${T.acme}, ${APPROVAL_SLOT}, 10, '{}'::jsonb, ${id}, false)`;
+}
+
+describe("CR-121 D-4 · gán quy trình ⇒ engine (không cần feature)", () => {
+  it("chưa gán ⇒ máy cũ, gán ⇒ engine (không có feature/entitlement nào), bỏ gán ⇒ máy cũ", async () => {
+    // Không có feature `contracts-approval-engine` ở bất kỳ bước nào của test.
+    expect(
+      (await c.sql`select 1 from admin.features where key = 'contracts-approval-engine'`).length,
+    ).toBe(0);
+
     const a = await toLevel1(c, await seedContract(c, 721), 10_000_000);
     expect(await modeOf(a.runId)).toBe("machine");
 
-    await c.sql`insert into admin.features (key, name, description, icon, status)
-      values ('contracts-approval-engine', '{"vi":"x"}'::jsonb, '{"vi":"x"}'::jsonb, 'workflow', 'on')
-      on conflict (key) do nothing`;
-    await c.sql`insert into admin.feature_entitlements (feature_id, tenant_id)
-      select id, ${T.acme} from admin.features where key = 'contracts-approval-engine'
-      on conflict (feature_id, tenant_id) do update set revoked_at = null`;
-    await bumpConfig(c.sql, T.acme);
+    await assign();
     const b = await toLevel1(c, await seedContract(c, 722), 10_000_000);
     expect(await modeOf(b.runId)).toBe("engine");
 
-    await c.sql`update admin.feature_entitlements set revoked_at = now()
-      where tenant_id = ${T.acme}
-        and feature_id = (select id from admin.features where key = 'contracts-approval-engine')`;
-    await bumpConfig(c.sql, T.acme);
+    await c.sql`delete from hub.process_routing_rules where tenant_id = ${T.acme} and slot = ${APPROVAL_SLOT}`;
     const d = await toLevel1(c, await seedContract(c, 723), 10_000_000);
     expect(await modeOf(d.runId)).toBe("machine");
     // Lượt đã chạy engine không bị cắt giữa chừng.

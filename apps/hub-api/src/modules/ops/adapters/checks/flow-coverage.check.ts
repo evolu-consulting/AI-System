@@ -9,7 +9,7 @@
 
 import { packFeatureKey } from "@ai/contracts";
 import { sql } from "drizzle-orm";
-import { ENGINE_FEATURE_KEY } from "../../../packs/contracts/domain/approval-engine.rules";
+import { APPROVAL_PROCESS_KEY } from "../../../packs/contracts/domain/approval-flow.rules";
 import { APPROVAL_SLOT } from "../../../packs/contracts/domain/approval-slot.rules";
 import { slotRegistry } from "../../../packs/kit/adapters/slot-registry";
 import type { OpsCheck, OpsCheckResult } from "../../application/ops.check";
@@ -21,8 +21,10 @@ export type CoverageAgg = {
   checked: number;
   gap_count: number;
   gaps: CoverageGap[];
-  /** Tên tenant có luật/quy trình `contracts.approval` nhưng KHÔNG có feature `contracts-approval-engine` còn hiệu lực. */
-  engine_off?: string[];
+  /** CR-121 D-4 · tên công ty còn lượt duyệt HĐ trên engine đang chạy nhưng khe `contracts.approval` KHÔNG còn quy trình gán nào (gỡ gán giữa chừng). */
+  unrouted?: string[];
+  /** CR-121 D-4 · tên công ty có quy trình đã gán nhưng không chạy được: quy trình của luật bị xoá/chưa xuất bản, hoặc run duyệt HĐ kẹt `needs_decision`. */
+  broken?: string[];
 };
 export type CoverageSlot = { slot: string; feature: string };
 
@@ -32,19 +34,38 @@ const NAMES_IN_MESSAGE = 5;
 const HINT =
   "Gán quy trình cho tenant ở admin › Quy trình nghiệp vụ (Được platform gán); tenant bật app được hub cấp mặc định khe khi khởi động / khi cấu hình đổi (ensureSlotDefaults) — kiểm mẫu khe đã xuất bản rồi kiểm lại.";
 
+const APPROVAL_FIX_HINT =
+  "Vào Admin › Công ty › Quy trình: gán (hoặc gán lại) quy trình cho khe Duyệt hợp đồng, xuất bản lại quy trình bị xoá, rồi mở lại các lượt duyệt kẹt.";
+
+const namesOf = (xs: readonly string[]): string =>
+  `${xs.slice(0, NAMES_IN_MESSAGE).join(", ")}${xs.length > NAMES_IN_MESSAGE ? ` và ${xs.length - NAMES_IN_MESSAGE} nữa` : ""}`;
+
+/** CR-121 D-4 · các đoạn thông điệp cho cấu hình duyệt HĐ nửa vời (rỗng ⇒ bỏ đoạn). */
+function approvalConfigParts(unrouted: readonly string[], broken: readonly string[]): string[] {
+  const parts: string[] = [];
+  if (unrouted.length > 0)
+    parts.push(
+      `${unrouted.length} công ty còn hợp đồng đang duyệt theo quy trình nhưng khe duyệt hợp đồng không còn quy trình gán: ${namesOf(unrouted)}`,
+    );
+  if (broken.length > 0)
+    parts.push(
+      `${broken.length} công ty có quy trình duyệt hợp đồng không chạy được (quy trình bị xoá/chưa xuất bản hoặc lượt duyệt kẹt): ${namesOf(broken)}`,
+    );
+  return parts;
+}
 /** Thuần. */
 export function evaluateFlowCoverage(a: CoverageAgg): OpsCheckResult {
-  const off = a.engine_off ?? [];
-  const value = { checked: a.checked, gap_count: a.gap_count, gaps: a.gaps, engine_off: off };
-  if (off.length > 0) {
-    const r = evaluateFlowCoverage({ ...a, engine_off: [] });
-    const shown = off.slice(0, NAMES_IN_MESSAGE).join(", ");
-    const more = off.length - NAMES_IN_MESSAGE;
+  const unrouted = a.unrouted ?? [];
+  const broken = a.broken ?? [];
+  const value = { checked: a.checked, gap_count: a.gap_count, gaps: a.gaps, unrouted, broken };
+  if (unrouted.length > 0 || broken.length > 0) {
+    const r = evaluateFlowCoverage({ ...a, unrouted: [], broken: [] });
+    const parts = approvalConfigParts(unrouted, broken);
     return {
       status: "crit",
       value,
-      message: `${off.length} tenant có quy trình duyệt HĐ nhưng chưa bật tính năng ${ENGINE_FEATURE_KEY} (HĐ sẽ không vào luồng duyệt): ${shown}${more > 0 ? ` và ${more} nữa` : ""}${r.status === "crit" ? ` · ${r.message}` : ""}`,
-      hint: `Bật ở Admin › Công ty › Tính năng (${ENGINE_FEATURE_KEY}) cho tenant. ${r.status === "crit" ? HINT : ""}`.trim(),
+      message: `${parts.join(" · ")}${r.status === "crit" ? ` · ${r.message}` : ""}`,
+      hint: `${APPROVAL_FIX_HINT} ${r.status === "crit" ? HINT : ""}`.trim(),
     };
   }
   if (a.gap_count === 0) {
@@ -99,17 +120,38 @@ export const flowCoverageQuery = (slots: readonly CoverageSlot[]) => sql`
                                order by g.tenant, g.slot)
               from (select * from m where not visible order by tenant, slot limit ${GAPS_SHOWN}) g), '[]'::jsonb) as gaps`;
 
-/** Tenant active có luật định tuyến hoặc quy trình đã gán cho `contracts.approval` mà thiếu entitlement engine còn hiệu lực. Một câu, theo tập. */
-export const engineOffQuery = () => sql`
-  select coalesce(jsonb_agg(n order by n), '[]'::jsonb) as engine_off from (
-    select coalesce(nullif(tn.name, ''), tn.key) as n from admin.tenants tn
-    where tn.active
-      and (exists (select 1 from hub.process_routing_rules r where r.tenant_id = tn.id and r.slot = ${APPROVAL_SLOT})
-        or exists (select 1 from hub.process_tenant_defs a join hub.process_defs d on d.id = a.def_id and d.deleted_at is null
-                   where a.tenant_id = tn.id and a.slot = ${APPROVAL_SLOT}))
-      and not exists (select 1 from admin.feature_entitlements en join admin.features f on f.id = en.feature_id
-                      where en.tenant_id = tn.id and en.revoked_at is null and f.key = ${ENGINE_FEATURE_KEY} and f.status <> 'off')
-  ) x`;
+const ACTIVE_RUN = sql`('running', 'waiting_review', 'waiting_answer', 'needs_decision')`;
+
+/**
+ * CR-121 D-4 · cấu hình duyệt HĐ nửa vời (gán ⇒ engine chạy, không còn feature). Một câu theo tập, hai danh sách tên công ty:
+ * - `unrouted`: còn run duyệt HĐ đang chạy (def tenant `contracts-approval`) mà khe không còn luật định tuyến nào (gỡ gán giữa chừng).
+ * - `broken`: có luật cho khe mà quy trình của luật đã xoá mềm / chưa xuất bản (HĐ mới bị chặn `FLOW_ROUTE_UNAVAILABLE`), hoặc có run
+ *   duyệt HĐ kẹt `needs_decision`.
+ * (Hub không đọc được `contracts.approvals` — cách ly gói — nên HĐ chờ duyệt chạy máy cũ của công ty chưa gán không đếm ở đây.)
+ */
+export const approvalConfigQuery = () => sql`
+  with ad as (
+    select d.id as def_id, d.tenant_id from hub.process_defs d
+    where d.key = ${APPROVAL_PROCESS_KEY} and d.source_ref is not null and d.tenant_id is not null),
+  un as (
+    select distinct ad.tenant_id from ad
+    where exists (select 1 from hub.process_runs r where r.tenant_id = ad.tenant_id and r.process_def_id = ad.def_id
+                  and r.status in ${ACTIVE_RUN})
+      and not exists (select 1 from hub.process_routing_rules x where x.tenant_id = ad.tenant_id and x.slot = ${APPROVAL_SLOT})),
+  bk as (
+    select r.tenant_id from hub.process_routing_rules r join hub.process_defs d on d.id = r.def_id
+    where r.slot = ${APPROVAL_SLOT} and (d.deleted_at is not null or d.published_version is null)
+    union
+    select ad.tenant_id from ad
+    where exists (select 1 from hub.process_runs r where r.tenant_id = ad.tenant_id and r.process_def_id = ad.def_id
+                  and r.status = 'needs_decision'))
+  select
+    coalesce((select jsonb_agg(n order by n) from (
+      select coalesce(nullif(tn.name, ''), tn.key) as n from admin.tenants tn
+      where tn.active and tn.id in (select tenant_id from un)) x), '[]'::jsonb) as unrouted,
+    coalesce((select jsonb_agg(n order by n) from (
+      select coalesce(nullif(tn.name, ''), tn.key) as n from admin.tenants tn
+      where tn.active and tn.id in (select tenant_id from bk)) y), '[]'::jsonb) as broken`;
 
 /** Khe cần kiểm: đã đăng ký (gói đã mount), bỏ `dlc.*` (Rowan) và khe opt-in (không có mặc định ⇒ chưa gán là bình thường). */
 export const coverageSlotsOf = (
@@ -133,11 +175,12 @@ export function makeFlowCoverageCheck(
       if (slots.length === 0) return evaluateFlowCoverage({ checked: 0, gap_count: 0, gaps: [] });
       const [r, e] = await systemRead(d.db, async (tx) => [
         (await tx.execute<CoverageAgg>(flowCoverageQuery(slots)))[0],
-        (await tx.execute<{ engine_off: string[] }>(engineOffQuery()))[0],
+        (await tx.execute<{ unrouted: string[]; broken: string[] }>(approvalConfigQuery()))[0],
       ]);
       return evaluateFlowCoverage({
         ...(r ?? { checked: 0, gap_count: 0, gaps: [] }),
-        engine_off: e?.engine_off ?? [],
+        unrouted: e?.unrouted ?? [],
+        broken: e?.broken ?? [],
       });
     },
   };

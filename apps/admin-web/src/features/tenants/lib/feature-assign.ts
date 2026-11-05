@@ -4,6 +4,7 @@ import {
   APPS,
   type AppId,
   groupByApp,
+  isHiddenFeature,
   LEVELS,
   type Level,
   metaOf,
@@ -104,7 +105,9 @@ export function setKey(draft: ReadonlySet<string>, key: string, on: boolean): Se
 /** Key đang được cấp (bỏ `core`: luôn có hiệu lực, không có hàng entitlement). */
 export function entitledKeys(features: readonly TenantFeature[]): Set<string> {
   return new Set(
-    features.filter((f) => f.entitled && metaOf(f.key).app !== "core").map((f) => f.key),
+    features
+      .filter((f) => f.entitled && metaOf(f.key).app !== "core" && !isHiddenFeature(f.key))
+      .map((f) => f.key),
   );
 }
 
@@ -113,7 +116,8 @@ export function diffEntitlements(
   features: readonly TenantFeature[],
   draft: ReadonlySet<string>,
 ): { grant: TenantFeature[]; revoke: TenantFeature[] } {
-  const own = features.filter((f) => metaOf(f.key).app !== "core");
+  // Feature ẩn không có trong draft ⇒ không bao giờ bị "thu hồi" khi lưu (CR-121 D-4).
+  const own = features.filter((f) => metaOf(f.key).app !== "core" && !isHiddenFeature(f.key));
   return {
     grant: own.filter((f) => !f.entitled && draft.has(f.key)),
     revoke: own.filter((f) => f.entitled && !draft.has(f.key)),

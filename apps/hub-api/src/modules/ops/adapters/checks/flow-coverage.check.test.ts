@@ -58,17 +58,28 @@ describe("flow_coverage · evaluateFlowCoverage", () => {
   });
 });
 
-describe("flow_coverage · feature engine duyệt", () => {
-  it("tenant có quy trình duyệt nhưng thiếu feature engine ⇒ crit nêu tên + khoá feature", () => {
-    const r = evaluateFlowCoverage(agg({ engine_off: ["NiTi"] }));
+describe("flow_coverage · cấu hình duyệt HĐ nửa vời (CR-121 D-4)", () => {
+  it("gỡ gán giữa chừng (còn lượt duyệt) ⇒ crit nêu tên công ty + cách sửa, không nhắc feature", () => {
+    const r = evaluateFlowCoverage(agg({ unrouted: ["NiTi"] }));
     expect(r.status).toBe("crit");
     expect(r.message).toContain("NiTi");
-    expect(r.message).toContain("contracts-approval-engine");
-    expect(r.hint).toContain("Tính năng");
+    expect(r.message).toContain("không còn quy trình gán");
+    expect(r.hint).toContain("Admin › Công ty › Quy trình");
+    expect(`${r.message} ${r.hint}`).not.toContain("contracts-approval-engine");
   });
 
-  it("engine_off rỗng ⇒ không ảnh hưởng", () => {
-    expect(evaluateFlowCoverage(agg({ engine_off: [] })).status).toBe("ok");
+  it("quy trình đã gán không chạy được / lượt kẹt ⇒ crit nêu tên", () => {
+    const r = evaluateFlowCoverage(agg({ broken: ["Demo"] }));
+    expect(r.status).toBe("crit");
+    expect(r.message).toContain("Demo");
+    expect(r.message).toContain("không chạy được");
+  });
+
+  it("danh sách rỗng ⇒ không ảnh hưởng; có cả lệch hiển thị ⇒ nối thông điệp", () => {
+    expect(evaluateFlowCoverage(agg({ unrouted: [], broken: [] })).status).toBe("ok");
+    const r = evaluateFlowCoverage(agg({ unrouted: ["A"], gap_count: 1, gaps: [gap("Demo")] }));
+    expect(r.message).toContain("Demo (contracts.approval)");
+    expect(r.hint).toContain("ensureSlotDefaults");
   });
 });
 

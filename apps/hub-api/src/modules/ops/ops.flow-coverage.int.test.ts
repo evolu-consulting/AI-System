@@ -1,4 +1,4 @@
-// CR-120 (part F) · int (DB test, role hub_api, scope system): check `flow_coverage` chạy một lượt ops-watch THẬT.
+﻿// CR-120 (part F) · int (DB test, role hub_api, scope system): check `flow_coverage` chạy một lượt ops-watch THẬT.
 // Tenant bật gói chạy bằng mẫu khe mà tập gán rỗng (đúng ca Demo) ⇒ crit kèm tên tenant + khe; tenant đã có `process_tenant_defs`
 // ⇒ không bị nêu; sau `ensureSlotDefaults` (cr120-single-source) ⇒ ok. Tenant không bật gói không bị kiểm.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -19,8 +19,8 @@ const DEMO = tenantId(1201); // chỉ gán cũ
 const GOOD = tenantId(1202); // đã có process_tenant_defs
 const DEAD = tenantId(1203); // process_tenant_defs trỏ def đã xoá mềm
 const OFF = tenantId(1204); // không bật gói
-const RULE = tenantId(1205); // chỉ có luật định tuyến, thiếu feature engine
-const NOENG = tenantId(1206); // có quy trình gán, thiếu feature engine
+const RULE = tenantId(1205); // CR-121 D-4 · luật trỏ quy trình đã xoá
+const NOENG = tenantId(1206); // CR-121 D-4 · còn run duyệt đang chạy mà hết luật
 
 let o: Sql;
 let db: Db;
@@ -58,12 +58,6 @@ beforeAll(async () => {
   await o`insert into admin.tenants (id, key, name) values (${DEMO}, 't1201', 'Demo'), (${GOOD}, 't1202', 'Tốt'),
     (${DEAD}, 't1203', 'Mồ côi'), (${OFF}, 't1204', 'Không gói')`;
   await enablePack(o, [DEMO, GOOD, DEAD], "contracts");
-  await o`insert into admin.features (key, name, description, icon, status)
-    values ('contracts-approval-engine', '{"vi":"Duyệt HĐ bằng quy trình"}'::jsonb, '{"vi":"x"}'::jsonb, 'workflow', 'on')
-    on conflict (key) do nothing`;
-  await o`insert into admin.feature_entitlements (feature_id, tenant_id)
-    select f.id, t from admin.features f, unnest(${[DEMO, GOOD, DEAD]}::uuid[]) t where f.key = 'contracts-approval-engine'
-    on conflict do nothing`;
   await o`insert into hub.process_slots (slot, default_def_id) values (${SLOT}, ${DFLT})
     on conflict (slot) do update set default_def_id = excluded.default_def_id`;
   // cr120-single-source · Demo: chưa có gì trong tập (gán cũ nay là VIEW chỉ đọc), chạy được nhờ mẫu khe.
@@ -100,23 +94,38 @@ describe("ops-watch · flow_coverage · int", () => {
     expect(r?.value.gap_count).toBe(0);
   });
 
-  it("tenant có luật/quy trình contracts.approval nhưng thiếu feature contracts-approval-engine ⇒ crit nêu tên, cấp feature ⇒ ok", async () => {
-    await o`insert into admin.tenants (id, key, name) values (${RULE}, 't1205', 'Chỉ luật')`;
-    await o`insert into admin.tenants (id, key, name) values (${NOENG}, 't1206', 'Thiếu engine')`;
-    await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${RULE}, ${DFLT}, ${SLOT})`;
+  it("CR-121 D-4 · luật trỏ quy trình đã xoá / còn lượt duyệt mà hết luật ⇒ crit nêu tên (không nhắc feature), sửa ⇒ ok", async () => {
+    await o`insert into admin.tenants (id, key, name) values (${RULE}, 't1205', 'Luật hỏng')`;
+    await o`insert into admin.tenants (id, key, name) values (${NOENG}, 't1206', 'Mất gán')`;
+    // RULE: luật mặc định trỏ def đã xoá mềm ⇒ HĐ mới bị chặn (route_unavailable).
+    const dead = await deadDef();
+    await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${RULE}, ${dead}, ${SLOT})`;
     await o`insert into hub.process_routings (tenant_id, slot) values (${RULE}, ${SLOT})`;
     await o`insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
-      values (${RULE}, ${SLOT}, 0, '{}'::jsonb, ${DFLT}, true)`;
+      values (${RULE}, ${SLOT}, 0, '{}'::jsonb, ${dead}, true)`;
+    // NOENG: còn run duyệt HĐ đang chạy trên def tenant `contracts-approval` nhưng khe không có luật nào.
     await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${NOENG}, ${DFLT}, ${SLOT})`;
+    const [tdef] = await o<
+      { id: string }[]
+    >`insert into hub.process_defs (tenant_id, key, name, description, input_hint,
+        run_group_ids, stages, token_budget, enabled, sources, inputs, source_ref, version)
+      select ${NOENG}, 'contracts-approval', name, description, input_hint, run_group_ids, stages, token_budget, enabled,
+        sources, inputs, 'cov-ref', 1 from hub.process_defs where id = ${DFLT} returning id::text as id`;
+    await o`insert into hub.process_runs (tenant_id, process_def_id, def_version, snapshot, started_by, origin_kind,
+        input, flow_id, expires_at)
+      values (${NOENG}, ${tdef?.id as string}, 1, '{}'::jsonb, gen_random_uuid(), 'admin', 'x', gen_random_uuid(),
+        now() + interval '1 day')`;
     await round(62);
     const r = await row();
     expect(r?.status).toBe("crit");
-    expect(r?.message).toContain("contracts-approval-engine");
-    expect(r?.message).toContain("Chỉ luật");
-    expect(r?.message).toContain("Thiếu engine");
+    expect(r?.message).toContain("Luật hỏng");
+    expect(r?.message).toContain("Mất gán");
+    expect(r?.message).not.toContain("contracts-approval-engine");
     expect(r?.message).not.toContain("Demo");
-    await o`insert into admin.feature_entitlements (feature_id, tenant_id)
-      select f.id, t from admin.features f, unnest(${[RULE, NOENG]}::uuid[]) t where f.key = 'contracts-approval-engine'`;
+    // Sửa: luật trỏ def sống; run kết thúc ⇒ ok.
+    await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${RULE}, ${DFLT}, ${SLOT}) on conflict do nothing`;
+    await o`update hub.process_routing_rules set def_id = ${DFLT} where tenant_id = ${RULE}`;
+    await o`delete from hub.process_runs where tenant_id = ${NOENG}`;
     await round(93);
     expect((await row())?.status).toBe("ok");
   });

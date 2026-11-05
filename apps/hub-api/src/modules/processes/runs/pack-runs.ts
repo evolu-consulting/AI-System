@@ -30,6 +30,7 @@ import type { ProcessRunStatus } from "../domain/types";
 import { cancelEnd } from "../gates/gates.effects";
 import type * as g from "../gates/gates.repo";
 import { GateService } from "../gates/gates.service";
+import { slotAssigned } from "../library/slot-assigned.repo";
 import { resolveSlot, resolveSlotDef } from "../library/slot-resolve.repo";
 import { routeSlot } from "../library/slot-route.repo";
 import { defSourceRef } from "../library/source-ref";
@@ -339,6 +340,7 @@ export function packRunsOf(d: ProcessDeps, sys?: Pick<SystemUow, "system">): Pac
     resolveSlot: (tenantId, slot) => resolveSlot(d.db, tenantId, slot),
     resolveSlotDef: (slot, key) => resolveSlotDef(d.db, slot, key),
     routeSlot: (tenantId, slot, userId, facts) => routeSlot(d.db, tenantId, slot, userId, facts),
+    slotAssigned: (tenantId, slot) => slotAssigned(d.db, tenantId, slot),
     sourceRefOf: defSourceRef,
     cancel: (u, runId) => cancelOwn(d, gates, u, runId),
     async outcomes(u, runIds) {

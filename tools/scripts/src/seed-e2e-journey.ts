@@ -1,5 +1,5 @@
 // e2e-journey-approval · tenant kiểm thử HÀNH TRÌNH duyệt hợp đồng (khoá `e2e-approval`): dựng ĐÚNG như seed-niti (onboardTenant + createUser +
-// vai gói + quy trình thư viện) nhưng KHÔNG gán quy trình / KHÔNG đặt luật chọn / KHÔNG cấp feature `contracts-approval-engine` —
+// vai gói + quy trình thư viện) nhưng KHÔNG gán quy trình / KHÔNG đặt luật chọn (CR-121 D-4: gán là đủ, không còn feature nào phải bật) —
 // platform admin làm ở ai-admin (đó là phần e2e kiểm). Dùng cho stack e2e (DB test) và e2e triển khai (`e2e/deployed/21-*`).
 // CHẠY LẠI ĐƯỢC. CHỈ chạm tenant có khoá bắt đầu `e2e-` (không bao giờ NiTi/Demo); mật khẩu cố định cho cả 4 tài khoản lấy từ env
 // `E2E_JOURNEY_PW` (không in, không ghi file; không phải đổi mật khẩu lần đầu).
@@ -135,7 +135,6 @@ export async function provisionJourneyTenant(
       apply: true,
       credFile,
       routing: false,
-      engine: false,
       ...(o.log ? { log: o.log } : {}),
     });
     await setJourneyPasswords(admin, JOURNEY_SPEC.tenantKey, o.pw);

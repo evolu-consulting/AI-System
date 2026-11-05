@@ -56,6 +56,8 @@ export type ApprovalEnginePort = {
     userId: string,
     facts?: RouteSlotFacts,
   ): Promise<RoutedSlot | null>;
+  /** CR-121 D-4 · công ty đã gán quy trình riêng cho khe (cổng mở lượt duyệt engine); vắng ⇒ chưa gán (máy cũ). */
+  slotAssigned?(tenantId: string, slot: string): Promise<boolean>;
   /** CR-105 · `source_ref` (sha256 16 hex) của def đã biên dịch — engine tính (lớp 1–2 gói không dùng `node:*`). */
   sourceRefOf?(def: Record<string, unknown>): string;
   /** Mở run (COMMIT, CHƯA kick) gắn `ref` (pack_ref); người gọi `kick()` sau khi gắn run vào HĐ. */

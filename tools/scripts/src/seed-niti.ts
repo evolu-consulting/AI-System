@@ -15,7 +15,6 @@ import type { OnboardSpec } from "../../../apps/admin-api/src/modules/tenant-onb
 import { onboardTenant } from "../../../apps/admin-api/src/modules/tenant-onboard/tenant-onboard.run";
 import { createUser } from "../../../apps/admin-api/src/modules/users/users.service";
 import { connectDb } from "../../../apps/hub-api/src/lib/db";
-import { ENGINE_FEATURE_KEY } from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-engine.rules";
 import { APPROVAL_DEFAULT_DEF } from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-slot-default.rules";
 import type { ProcessDeps } from "../../../apps/hub-api/src/modules/processes/core/ports";
 import { toProcessDef } from "../../../apps/hub-api/src/modules/processes/defs/defs.map";
@@ -25,7 +24,6 @@ import { LibraryService } from "../../../apps/hub-api/src/modules/processes/libr
 import { RoutingService } from "../../../apps/hub-api/src/modules/processes/library/routing.service";
 import { grantGroup } from "./seed-community-demo.grant";
 import { NITI_SPEC, type Person, type SeedSpec, SLOT } from "./seed-niti.data";
-import { ensureEngine } from "./seed-niti.engine";
 import {
   applyGuard,
   canon,
@@ -46,8 +44,6 @@ export type SeedOpts = {
   log?: (s: string) => void;
   /** false ⇒ chỉ dựng tenant + quy trình thư viện, KHÔNG gán/đặt luật chọn (platform admin làm ở ai-admin; e2e-journey-approval). Mặc định true. */
   routing?: boolean;
-  /** false ⇒ KHÔNG cấp feature `contracts-approval-engine` (platform admin bật ở ai-admin; e2e-journey-approval). Mặc định true. */
-  engine?: boolean;
 };
 type PState = "created" | "updated" | "same";
 export type SeedReport = {
@@ -57,8 +53,6 @@ export type SeedReport = {
   roleGrants: number;
   processes: { key: string; state: PState }[];
   routing: "set" | "same";
-  /** Feature công ty `contracts-approval-engine` (Admin › Công ty › Tính năng): thiếu ⇒ HĐ không vào luồng duyệt. */
-  engine: "granted" | "same";
   credFile: string | null;
 };
 
@@ -317,13 +311,11 @@ export async function runSeed(admin: Db, hub: Db, s: SeedSpec, o: SeedOpts): Pro
     roleGrants: 0,
     processes: [],
     routing: "set",
-    engine: "same",
     credFile: null,
   };
 
   if (!dry) await applyAdmin(admin, s, cur, actor, missing, o, res);
 
-  if (o.engine !== false) res.engine = await ensureEngine(admin, s.tenantKey, actor, dry);
   const defIds = new Map<string, string | null>();
   for (const p of s.processes) {
     const r = await ensureProcess(h, p, dry);
@@ -351,7 +343,6 @@ function summary(s: SeedSpec, r: SeedReport, dry: boolean): string {
     `  user mới: ${r.usersCreated.join(", ") || "(không)"}; đã có: ${r.usersExisting.join(", ") || "(không)"}${dry ? "" : `; gán vai gói mới: ${r.roleGrants}`}`,
     ...r.processes.map((p) => `  quy trình ${p.key}: ${p.state}`),
     `  luật chọn quy trình (${s.rules.length}, không mặc định): ${r.routing}`,
-    `  tính năng ${ENGINE_FEATURE_KEY}: ${r.engine === "granted" ? (dry ? "sẽ cấp" : "đã cấp") : "đã có"}`,
     r.credFile ? `  file mật khẩu tạm (không in nội dung): ${r.credFile}` : "",
   ];
   return l.filter(Boolean).join("\n");

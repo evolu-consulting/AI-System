@@ -60,47 +60,48 @@ describe("previewApp · Sổ Hợp Tác", () => {
   const sht = (...k: string[]) => set("contracts-read", ...k);
 
   test("đối tác không bao giờ thấy nhóm Sổ Hợp Tác (dù công ty bật Quản trị)", () => {
-    const p = previewApp(
-      CONTRACTS_MANIFEST,
-      sht("contracts-write", "contracts-admin", "contracts-approval-engine"),
-      [],
-      [],
-    );
+    const p = previewApp(CONTRACTS_MANIFEST, sht("contracts-write", "contracts-admin"), [], []);
     expect(p.partner.appVisible).toBe(false);
     expect(p.partner.nav.every((n) => n.reason?.code === "partner_never")).toBe(true);
     expect(p.partner.slots).toEqual([]);
   });
 
-  test("thiếu tính năng thêm: hành động duyệt theo quy trình ẩn, nêu tên dễ hiểu, khe không chạy", () => {
-    const p = previewApp(CONTRACTS_MANIFEST, sht("contracts-write"), [], []);
+  test("hành động cần tính năng thêm: thiếu ⇒ ẩn, nêu tên dễ hiểu (khung add-on còn dùng cho app khác)", () => {
+    const gated = {
+      ...CONTRACTS_MANIFEST,
+      nav: CONTRACTS_MANIFEST.nav.map((n) =>
+        n.key === "contracts"
+          ? {
+              ...n,
+              actions: n.actions?.map((a) =>
+                a.key === "approve-flow" ? { ...a, addon: "han-muc-duyet" } : a,
+              ),
+            }
+          : n,
+      ),
+    };
+    const p = previewApp(gated, sht("contracts-write"), [], []);
     const act = navOf(p.member).contracts?.actions.find((a) => a.key === "approve-flow");
     expect(act?.visible).toBe(false);
     expect(act?.reason).toEqual({
       code: "need_addon",
-      addon: "contracts-approval-engine",
-      label: "Duyệt hợp đồng bằng quy trình",
+      addon: "han-muc-duyet",
+      label: "Kiểm tra hạn mức duyệt",
     });
-    expect(p.member.slots[0]?.running).toBe(false);
   });
 
-  test("khe chạy khi đủ mức + tính năng thêm, kèm quy trình đang gán (bản nháp khác bản lưu cho kết quả khác)", () => {
+  test("CR-121 D-4 · duyệt theo quy trình KHÔNG cần tính năng thêm: đủ mức Sửa là hiện, khe chạy kèm quy trình đang gán", () => {
     const assign = [
       { slot: "contracts.approval", def_name: "Duyệt 3 phòng", rel_version: 2, is_default: false },
     ];
-    const saved = previewApp(CONTRACTS_MANIFEST, sht("contracts-write"), [], assign);
-    const draft = previewApp(
-      CONTRACTS_MANIFEST,
-      sht("contracts-write", "contracts-approval-engine"),
-      [],
-      assign,
-    );
-    expect(saved.company_admin.slots[0]?.running).toBe(false);
-    expect(draft.company_admin.slots[0]).toMatchObject({
+    const p = previewApp(CONTRACTS_MANIFEST, sht("contracts-write"), [], assign);
+    const act = navOf(p.member).contracts?.actions.find((a) => a.key === "approve-flow");
+    expect(act?.visible).toBe(true);
+    expect(p.company_admin.slots[0]).toMatchObject({
       running: true,
       process: { name: "Duyệt 3 phòng", version: 2, isDefault: false },
     });
   });
-
   test("thành viên: công ty đã có vai nhưng không vai nào đủ mức Sửa ⇒ ẩn mục Cài đặt/hành động ghi (no_role)", () => {
     const roles = [{ pack: "contracts", level: "read" as const }];
     const p = previewApp(CONTRACTS_MANIFEST, sht("contracts-write"), roles, []);

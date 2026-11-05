@@ -9,10 +9,8 @@ export const CONTRACTS_MANIFEST: AppManifest = {
     write: "contracts-write",
     admin: "contracts-admin",
   },
-  addons: [
-    { key: "contracts-approval-engine", label: "Duyệt hợp đồng bằng quy trình" },
-    { key: "han-muc-duyet", label: "Kiểm tra hạn mức duyệt" },
-  ],
+  // CR-121 D-4 · `contracts-approval-engine` không còn là add-on: gán quy trình cho khe duyệt là đủ (Luật GỐC 3 — không thao tác ẩn).
+  addons: [{ key: "han-muc-duyet", label: "Kiểm tra hạn mức duyệt" }],
   nav: [
     { key: "overview", labelKey: "contracts.nav.overview", label: "Tổng quan", level: "read" },
     {
@@ -24,12 +22,7 @@ export const CONTRACTS_MANIFEST: AppManifest = {
         { key: "view", label: "Xem hợp đồng", level: "read" },
         { key: "create", label: "Tạo và sửa hợp đồng", level: "write" },
         { key: "submit", label: "Gửi duyệt hợp đồng", level: "write" },
-        {
-          key: "approve-flow",
-          label: "Duyệt theo quy trình nhiều bước",
-          level: "write",
-          addon: "contracts-approval-engine",
-        },
+        { key: "approve-flow", label: "Duyệt theo quy trình nhiều bước", level: "write" },
       ],
     },
     { key: "partners", labelKey: "contracts.nav.partners", label: "Đối tác", level: "read" },
@@ -61,13 +54,13 @@ export const CONTRACTS_MANIFEST: AppManifest = {
       ],
     },
   ],
-  // CR-120 §2 · ADR-0036: `contracts.intake` LUÔN BẬT (người dùng 2026-11-05); `contracts.approval` theo add-on engine duyệt.
+  // CR-120 §2 · ADR-0036: `contracts.intake` LUÔN BẬT (người dùng 2026-11-05). CR-121 D-4: `contracts.approval` cũng không cần add-on —
+  // công ty được GÁN quy trình cho khe này thì duyệt theo quy trình (chưa gán ⇒ cách duyệt cũ, phần A dọn sau).
   slots: [
     {
       key: "contracts.approval",
       label: "Duyệt hợp đồng",
       level: "write",
-      addon: "contracts-approval-engine",
       purpose: "Duyệt hợp đồng qua các phòng ban theo luồng công ty cài đặt trước khi ký.",
       defaultDefKey: "hd-mac-dinh",
       allowedKinds: ["review", "dify", "esign", "form", "wait", "system"],

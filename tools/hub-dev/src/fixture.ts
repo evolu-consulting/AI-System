@@ -213,7 +213,6 @@ export async function ensureTenantPacks(
     await addPackMembers(api, String(hit.id), pack, groups, "owner", t.owners);
     await addPackMembers(api, String(hit.id), pack, groups, "editor", t.editors);
   }
-  for (const key of DEMO_FEATURES) await grantFeature(api, key, String(hit.id));
 }
 
 async function groupIdByKey(api: Api, tenantId: string, key: string): Promise<string> {
@@ -241,17 +240,6 @@ async function addPackMembers(
   const res = await call(api, "POST", `/admin/groups/${gid}/members`, { usernames });
   const missing = (res.not_found as string[] | undefined) ?? [];
   if (missing.length > 0) throw new Error(`${pack}-${role}: không thấy user ${missing.join(", ")}`);
-}
-
-/** Feature theo công ty bật cùng gói ở máy dev: duyệt HĐ trên engine (cần thêm env hub `CONTRACTS_APPROVAL_ENGINE=on`). */
-export const DEMO_FEATURES = ["contracts-approval-engine"] as const;
-
-/** Cấp entitlement (PUT idempotent, platform_admin) — như trang Features của Admin. */
-async function grantFeature(api: Api, key: string, tenantId: string): Promise<void> {
-  const list = await call(api, "GET", `/admin/features?q=${key}&limit=50`);
-  const f = (list.items as Json[]).find((x) => x.key === key);
-  if (!f) throw new Error(`không có feature ${key} (chưa db:migrate?)`);
-  await call(api, "PUT", `/admin/features/${String(f.id)}/entitlements/${tenantId}`);
 }
 
 /** Tạo tenant `evolu` + 4 user demo (idempotent), tất cả vào `beta-testers` để dùng được agent seed. */

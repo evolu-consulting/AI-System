@@ -12,8 +12,6 @@ import type { Tx } from "./seed.repo";
 
 /** Công ty fixture. Khoá khớp `tools/hub-dev/src/fixture.ts` (evolu) và `seed-community-demo.dev-fixture.ts` (demo). */
 export const FIXTURE_TENANTS = ["evolu", "demo"] as const;
-/** Feature bật duyệt HĐ trên engine (cần thêm env hub `CONTRACTS_APPROVAL_ENGINE=on`). */
-export const FIXTURE_FEATURES = ["contracts-approval-engine"] as const;
 const OWNER_GROUPS = ["contracts-owner", "community-owner"] as const;
 const EDITOR_GROUPS = ["contracts-editor", "community-editor"] as const;
 /** Chỉ evolu có user thường ⇒ editor của gói; `demo` giữ nguyên vai theo `deploy/tenants/demo.yaml`. */
@@ -47,7 +45,6 @@ export const DEV_APP_URLS: Record<string, string> = {
 export type TenantFixtureResult = {
   tenants: number;
   locale: number;
-  features: number;
   accountingGroups: number;
   accountingMembers: number;
   ownerMembers: number;
@@ -65,7 +62,6 @@ export async function writeTenantFixtures(tx: Tx, appEnv: string): Promise<Tenan
   const r: TenantFixtureResult = {
     tenants: t.length,
     locale: 0,
-    features: 0,
     accountingGroups: 0,
     accountingMembers: 0,
     ownerMembers: 0,
@@ -80,15 +76,8 @@ export async function writeTenantFixtures(tx: Tx, appEnv: string): Promise<Tenan
       await tx`update admin.users u set locale = 'vi' from admin.tenants tn
         where u.tenant_id = tn.id and tn.key = any(${keys}::text[]) and u.locale <> 'vi' returning u.id`
     ).length;
-    // 3: feature duyệt HĐ bằng engine cho cả hai công ty fixture (đã thu hồi ⇒ cấp lại).
-    r.features = (
-      await tx`insert into admin.feature_entitlements (feature_id, tenant_id)
-        select f.id, tn.id from admin.features f join admin.tenants tn on tn.key = any(${keys}::text[])
-        where f.key = any(${[...FIXTURE_FEATURES]}::text[])
-        on conflict (feature_id, tenant_id) do update set revoked_at = null, granted_at = now()
-          where admin.feature_entitlements.revoked_at is not null
-        returning feature_id`
-    ).length;
+    // 3: (CR-121 D-4) KHÔNG cấp feature `contracts-approval-engine` nữa — duyệt HĐ trên engine bật khi công ty được GÁN quy trình
+    // (xem `writeCr113Flow` bên dưới: evolu có quy trình + luật gán), không cần công tắc riêng.
     await writeAccounting(tx, r);
     await writePackRoles(tx, r);
     r.brands = await writeBrands(tx);

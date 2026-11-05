@@ -6,12 +6,6 @@ import { Switch } from "@/components/ui/switch";
 import { APPS } from "@/features/features/lib/feature-meta";
 import { useTr } from "@/lib/use-translate";
 import {
-  addonsWithoutEngine,
-  ENGINE_KEY,
-  type EngineToggle,
-  engineOf,
-} from "../../lib/engine-toggle";
-import {
   type AppLevel,
   activeAddons,
   availableLevels,
@@ -33,8 +27,7 @@ type Props = {
   /** Gói của app + số vai (tính theo mức đang chọn) + số công ty đối tác, khi app có gói. */
   meta?: Omit<ComponentProps<typeof AppCardMeta>, "app" | "level"> | null;
   /** CR-118: khối "Gán quy trình" của app nằm trong thẻ (cùng một component ở trang công ty và ngăn Công ty của trang app). */
-  /** Hàm ⇒ nhận công tắc "Duyệt theo quy trình" (feature `contracts-approval-engine`, bỏ khỏi "Tính năng thêm") để đặt trong khối Quy trình. */
-  slots?: ReactNode | ((engine: EngineToggle | null) => ReactNode);
+  slots?: ReactNode;
   /** CR-118: lối tắt ở đầu thẻ (vd "Mở cấu hình app"). */
   headerAction?: ReactNode;
 };
@@ -111,12 +104,6 @@ export function AppCard({
   const summary = useSummary(card, draft);
   const level = card.mode === "levels" ? detectLevel(card, draft) : null;
   const appOff = isAppOff(card, level, draft);
-  const engine =
-    typeof slots === "function"
-      ? engineOf(card.addons, draft, appOff || !!readOnly, (on) =>
-          onChange(setKey(draft, ENGINE_KEY, on)),
-        )
-      : null;
   return (
     <section
       aria-label={name}
@@ -153,14 +140,14 @@ export function AppCard({
         />
       ) : null}
       <AddonList
-        items={engine ? addonsWithoutEngine(card.addons) : card.addons}
+        items={card.addons}
         draft={draft}
         locked={appOff || !!readOnly}
         showAddonBadge={card.mode !== "list"}
         onToggle={(key, on) => onChange(setKey(draft, key, on))}
       />
       {meta ? <AppCardMeta {...meta} app={card.app} level={level?.level ?? "off"} /> : null}
-      {typeof slots === "function" ? slots(engine) : slots}
+      {slots}
     </section>
   );
 }

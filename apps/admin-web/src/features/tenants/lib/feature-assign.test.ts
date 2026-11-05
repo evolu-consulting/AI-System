@@ -50,10 +50,8 @@ describe("buildCards", () => {
       ["contracts", "levels"],
       ["other", "list"],
     ]);
-    expect(card("contracts").addons.map((f) => f.key)).toEqual([
-      "contracts-approval-engine",
-      "han-muc-duyet",
-    ]);
+    // CR-121 D-4 · `contracts-approval-engine` không còn trong danh mục hiển thị (gán quy trình là đủ).
+    expect(card("contracts").addons.map((f) => f.key)).toEqual(["han-muc-duyet"]);
     expect(card("chat").main?.key).toBe("chat-app");
   });
   test("catalog thiếu feature mức Sửa ⇒ chỉ chọn được Tắt/Xem", () => {
@@ -139,6 +137,14 @@ describe("diffEntitlements", () => {
     const d = diffEntitlements(feats, draft);
     expect(d.grant.map((f) => f.key).sort()).toEqual(["contracts-admin", "han-muc-duyet"]);
     expect(d.revoke.map((f) => f.key).sort()).toEqual(["chat-app"]);
+  });
+  test("CR-121 D-4 · feature ẩn (contracts-approval-engine) không vào entitledKeys và không bao giờ bị thu hồi/cấp khi lưu", () => {
+    const withHidden = catalog(["contracts-read", "contracts-approval-engine"]);
+    expect(entitledKeys(withHidden).has("contracts-approval-engine")).toBe(false);
+    const d = diffEntitlements(withHidden, entitledKeys(withHidden));
+    expect(d).toEqual({ grant: [], revoke: [] });
+    const off = diffEntitlements(withHidden, new Set<string>());
+    expect(off.revoke.map((f) => f.key)).toEqual(["contracts-read"]);
   });
   test("bộ không chuẩn: lưu không đổi mức vẫn ra diff chuẩn hoá (thêm read)", () => {
     const bad = catalog(["contracts-write"]);

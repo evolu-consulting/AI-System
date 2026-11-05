@@ -1,6 +1,6 @@
 // CR-111 · registry feature: suy app/mức/tính năng thêm từ key, nhóm theo app đúng thứ tự.
 import { describe, expect, test } from "bun:test";
-import { groupByApp, isRegistered, metaOf } from "./feature-meta";
+import { groupByApp, isHiddenFeature, isRegistered, metaOf } from "./feature-meta";
 
 const f = (key: string) => ({ key });
 
@@ -47,13 +47,19 @@ describe("groupByApp", () => {
       "contracts-read",
       "contracts-write",
       "contracts-admin",
-      "contracts-approval-engine",
       "han-muc-duyet",
     ]);
     expect(groups.find((g) => g.app === "other")?.items.map((i) => i.key)).toEqual([
       "bao-cao",
       "ke-toan",
     ]);
+  });
+  test("CR-121 D-4 · feature ẩn `contracts-approval-engine` không xuất hiện ở bất kỳ nhóm nào", () => {
+    expect(isHiddenFeature("contracts-approval-engine")).toBe(true);
+    expect(isHiddenFeature("han-muc-duyet")).toBe(false);
+    expect(groups.flatMap((g) => g.items.map((i) => i.key))).not.toContain(
+      "contracts-approval-engine",
+    );
   });
   test("danh sách rỗng ⇒ không nhóm", () => {
     expect(groupByApp([])).toEqual([]);
