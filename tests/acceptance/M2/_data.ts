@@ -361,6 +361,14 @@ export async function seedCatalog(sql: Sql, parts: CatalogParts): Promise<void> 
   await seedCommands(sql, parts.commands ?? []);
   if (parts.entitlements) await seedEntitlements(sql);
   if (parts.agents) {
+    // Stack e2e root nạp hub migrations (usage-analytics) ⇒ agent_workflows có FK tới hub.agents: dựng agent tối thiểu.
+    const [hubAgents] = await sql`select to_regclass('hub.agents') as r`;
+    if (hubAgents?.r) {
+      await sql`insert into hub.agents (id, key, name, description, runtime)
+        values (${ID.agent}, 'tro-ly-dich', '{"vi":"Trợ lý dịch","en":"Translation assistant"}'::jsonb,
+          'Trợ lý dịch văn bản (fixture e2e M2).', 'dify-workflow')
+        on conflict do nothing`;
+    }
     await sql`insert into hub.agent_workflows (agent_id, workflow_id)
       values (${ID.agent}, ${ID.workflow.translate})`;
   }
