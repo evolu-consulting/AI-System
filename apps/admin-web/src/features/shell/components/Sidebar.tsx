@@ -2,7 +2,7 @@
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/shared/IconButton";
 import { useSession } from "@/lib/auth/use-session";
 import { cn } from "@/lib/utils";
 import { SidebarNav } from "./SidebarNav";
@@ -82,9 +82,9 @@ export function Sidebar() {
             className="h-8 w-auto"
           />
         )}
-        <Button variant="ghost" size="icon-sm" aria-label={label} title={label} onClick={toggle}>
+        <IconButton label={label} onClick={toggle}>
           {collapsed ? <PanelLeftOpen aria-hidden /> : <PanelLeftClose aria-hidden />}
-        </Button>
+        </IconButton>
       </div>
       <SidebarNav collapsed={collapsed} />
       <UserFooter collapsed={collapsed} />

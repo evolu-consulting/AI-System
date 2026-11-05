@@ -11,8 +11,8 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Menu } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { IconButton } from "@/components/shared/IconButton";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { FALLBACK_URLS } from "@/lib/apps";
 import { session } from "@/lib/auth/session";
@@ -92,15 +92,9 @@ export function Topbar() {
     <TopShell
       start={
         <>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            aria-label={t("nav.openMenu")}
-            onClick={() => setOpen(true)}
-          >
+          <IconButton label={t("nav.openMenu")} className="lg:hidden" onClick={() => setOpen(true)}>
             <Menu aria-hidden />
-          </Button>
+          </IconButton>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetContent side="left" className="w-sidebar p-0">
               <SheetTitle className="sr-only">{t("nav.main")}</SheetTitle>

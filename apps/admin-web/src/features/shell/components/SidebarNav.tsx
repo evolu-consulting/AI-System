@@ -57,7 +57,7 @@ const ICONS: Record<NavId, LucideIcon> = {
 type Props = { collapsed?: boolean; onNavigate?: () => void };
 
 const LINK =
-  "flex h-9 items-center gap-3 rounded-md px-3 text-label font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none";
+  "flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-label font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none";
 
 function NavLink({
   item,

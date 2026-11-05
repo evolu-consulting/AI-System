@@ -3,7 +3,7 @@ import { PrefsPanel } from "@ai/web-kit/ui/PrefsPanel";
 import { Link } from "@tanstack/react-router";
 import { KeyRound, LogOut, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/shared/IconButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,14 +23,18 @@ export function AccountMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={t("account.menu")} className="rounded-full">
+        <IconButton
+          label={t("account.menu")}
+          className="size-9 rounded-full"
+          data-testid="account-menu"
+        >
           <span
             aria-hidden
-            className="grid size-8 place-items-center rounded-full bg-accent text-label font-semibold text-accent-foreground"
+            className="grid size-7 place-items-center rounded-full bg-primary text-caption font-semibold text-primary-foreground"
           >
             {name.charAt(0).toUpperCase()}
           </span>
-        </Button>
+        </IconButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
         <DropdownMenuLabel className="px-3 py-2 font-normal">
