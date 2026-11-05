@@ -55,6 +55,10 @@ Tool `contracts-route`/`contracts-finalize` xét điều kiện bước trên lo
 - Kịch bản: đọc dữ kiện không thấy dữ liệu tenant khác [test: apps/hub-api/src/modules/packs/contracts/adapters/flow-facts.repo.int.test.ts » chặn đọc chéo tenant]
 
 ## Việc còn lại
+- **CHẶN (đổi contract engine, ngoài D-1):** mẫu 20 bước biên dịch luật rẽ `next eq E(j) ⇒ goto` cho mọi đích xa ⇒ stage `route`/bước 1 cần
+  tới 19 luật > `BRANCH_RULES_MAX` = 10 (`packages/contracts/src/chat/processes.ts`, bản sao `processes/domain/branch/branch-def.rules.ts`,
+  admin-web `domain/branch-rules.ts`, test khoá `tests/acceptance/P-d/rules/d2/contracts-pd2.test.ts`). `ensureDef` 20 bước ⇒ ZodError.
+  Đề xuất: nâng `BRANCH_RULES_MAX` = 20 (= `APPROVAL_FLOW_STEPS_MAX`) ở cả 3 nơi + qc sửa test khoá. Int "trần 20 bước" đỏ tới khi xong.
 - Test khoá còn mã trần 10 (ngoài phạm vi lát, cần qc): `tests/acceptance/P-b2/rules/contracts-pb2.test.ts` (C-01/C-04/C-05/C-08/C-10),
   `tests/acceptance/P-b2/s0/defs.int.test.ts` (11 stage ⇒ lỗi), `apps/admin-web/src/features/processes/lib/step-ops.test.ts` ("tối đa 10").
 - Thẻ duyệt (`approval-engine-card.usecase.ts`) vẫn hiện bỏ qua theo loại/giá trị; điều kiện phòng/đối tác hiện "chạy" (D-2/D-3).

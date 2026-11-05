@@ -63,7 +63,7 @@ async function seed(i: number, steps: FlowStep[], value: number, supplier: strin
   await o`insert into contracts.approvals (id, tenant_id, contract_id, status, started_by, mode, engine_run_id, flow_steps)
     values (${aid}, ${T}, ${id}, 'level1', ${A}, 'engine', ${runs[i] as string}, ${o.json(steps as never)})`;
   await setFields(i, value, supplier);
-  await o`update contracts.contracts set status = 'needs_review', run_id = ${aid}, deal = 'buy' where id = ${id}`;
+  await o`update contracts.contracts set status = 'needs_review', run_id = ${aid}, deal = 'buy', direction = 'purchase' where id = ${id}`;
 }
 const setFields = (i: number, value: number, supplier: string | null) =>
   o`update contracts.contracts set fields = jsonb_build_object('total_value', jsonb_build_object('value', ${value}::bigint))
