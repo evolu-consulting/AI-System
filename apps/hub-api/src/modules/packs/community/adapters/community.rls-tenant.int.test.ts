@@ -155,5 +155,36 @@ defineRlsSuite({
           rnd(pk),
         ]),
     },
+    {
+      name: "join_requests",
+      seed: (o, t) =>
+        one(
+          o,
+          `insert into community.join_requests (tenant_id, requester_user_id, requester_org, company, contact, email)
+           values ($1, $2, $3, 'C', 'C', 'c@c.test') returning id::text as id`,
+          [t, who, crypto.randomUUID()],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          `insert into community.join_requests (id, tenant_id, requester_user_id, requester_org, company, contact, email)
+           values ($1, $2, $3, $4, 'C', 'C', 'c@c.test')`,
+          [rnd(pk), t, who, crypto.randomUUID()],
+        ),
+    },
+    {
+      name: "reports",
+      seed: (o, t) =>
+        one(
+          o,
+          `insert into community.reports (tenant_id, post_id, reporter_user_id, reason)
+           values ($1, $2, $3, 'r') returning id::text as id`,
+          [t, post.get(t), who],
+        ),
+      insert: (tx, t, pk) =>
+        tx.unsafe(
+          `insert into community.reports (id, tenant_id, post_id, reporter_user_id, reason) values ($1, $2, $3, $4, 'r')`,
+          [rnd(pk), t, post.get(t) as string, crypto.randomUUID()],
+        ),
+    },
   ],
 });

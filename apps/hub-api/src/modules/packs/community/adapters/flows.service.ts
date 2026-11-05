@@ -292,8 +292,11 @@ export const reportRows = (d: FlowDeps, a: Access, ids: readonly string[]) =>
     ? Promise.resolve([])
     : d.uow.tenant(a.who, ({ tx }) => repo.reportRows(tx, ids));
 
-export const reportList = (d: FlowDeps, a: Access, pendingOnly: boolean) =>
-  d.uow.tenant(a.who, ({ tx }) => repo.reportList(tx, pendingOnly && reviewer(a), 100));
+/** Chủ quản không phải admin ⇒ 403 (RLS cho chủ quản thấy mọi báo cáo ⇒ chặn ở đây); đối tác: chỉ báo cáo của mình (RLS). */
+export const reportList = (d: FlowDeps, a: Access, pendingOnly: boolean) => {
+  if (a.org === null && !reviewer(a)) throw new AppError("PACK_FORBIDDEN", 403, "Forbidden");
+  return d.uow.tenant(a.who, ({ tx }) => repo.reportList(tx, pendingOnly, 100));
+};
 
 export async function decideReport(
   d: FlowDeps,
