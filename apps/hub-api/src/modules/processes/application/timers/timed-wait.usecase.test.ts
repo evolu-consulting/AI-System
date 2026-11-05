@@ -57,7 +57,12 @@ describe("CR-120 · enterTimedWait", () => {
   });
 });
 
-function fakeSignal(o: { run?: string | null; waiting?: string[]; stage?: string }) {
+function fakeSignal(o: {
+  run?: string | null;
+  waiting?: string[];
+  stage?: string;
+  expected?: boolean;
+}) {
   const log: string[] = [];
   const r = {
     runs: {
@@ -69,6 +74,7 @@ function fakeSignal(o: { run?: string | null; waiting?: string[]; stage?: string
       },
     },
     runEvents: {
+      expected: async () => o.expected ?? true,
       record: async (_r: string, e: string) => void log.push(`record:${e}`),
       waitingStages: async () => o.waiting ?? [],
     },
@@ -101,6 +107,12 @@ describe("CR-120 · signalEvent", () => {
       "cancel:s4",
       "finish:s4",
     ]);
+  });
+
+  it("run không còn stage wait_event đúng khoá (đã qua / không có) ⇒ KHÔNG ghi sự kiện (tránh sự kiện cũ qua bước chờ sau)", async () => {
+    const { r, log } = fakeSignal({ expected: false, waiting: [] });
+    expect(await signalEvent(r, SIG)).toEqual({ kind: "ok", released: 0 });
+    expect(log).toEqual(["lock:run"]);
   });
 
   it("chưa tới bước chờ ⇒ chỉ ghi sự kiện (released 0)", async () => {

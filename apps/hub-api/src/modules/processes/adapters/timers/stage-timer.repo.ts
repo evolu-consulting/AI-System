@@ -145,9 +145,10 @@ async function waitMd(
   const { h, s, w, name } = x;
   const ex = h.snapshot.stages?.[s.stage_idx]?.executor;
   if (ex?.kind === "wait_event" && ex.event) {
-    // `signalEvent` ghi sự kiện TRƯỚC khi thả stage ⇒ có hàng = đã nhận; không có = hết hạn.
-    const got = await c.tx.execute(sql`select 1 from hub.process_run_events
-      where tenant_id = ${c.tenantId} and process_run_id = ${x.runId} and event = ${ex.event}`);
+    // `signalEvent` ghi sự kiện TRƯỚC khi thả stage ⇒ stage tiêu thụ sự kiện chưa dùng = đã nhận; không có = hết hạn.
+    const got = await c.tx.execute(sql`update hub.process_run_events set consumed_by = ${x.s.id}
+      where tenant_id = ${c.tenantId} and process_run_id = ${x.runId} and event = ${ex.event}
+        and consumed_by is null returning 1`);
     return waitOutputMd(
       name,
       got.length > 0

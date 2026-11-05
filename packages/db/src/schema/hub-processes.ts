@@ -390,4 +390,6 @@ export const processRunEvents = hub.table("process_run_events", {
   processRunId: uuid("process_run_id").notNull(),
   event: text("event").notNull(),
   receivedAt: ts("received_at").notNull(),
+  /** stage_run đã tiêu thụ sự kiện (null = chưa). */
+  consumedBy: uuid("consumed_by"),
 });

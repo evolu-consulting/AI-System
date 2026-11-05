@@ -14,6 +14,8 @@ export async function signalEvent(
 ): Promise<SignalOutcome> {
   const run = await r.runs.lock(i.runId);
   if (!run || isTerminal(run.status)) return { kind: "no_run" };
+  // Chỉ ghi khi run còn stage wait_event đúng khoá (đang chờ hoặc phía trước) — tránh rác + sự kiện cũ qua bước chờ sau.
+  if (!(await r.runEvents.expected(i.runId, i.event))) return { kind: "ok", released: 0 };
   await r.runEvents.record(i.runId, i.event, i.now);
   const stages = await r.runEvents.waitingStages(i.runId, i.event);
   let released = 0;

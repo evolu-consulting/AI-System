@@ -138,6 +138,14 @@ describe("CR-120 · wait_for / wait_event [G3][G4]", () => {
     expect((await openTimers(runId)).length).toBe(0);
     expect(await outputMd(runId, 2)).toContain("Đã nhận sự kiện esign.completed.");
     await runIs(runId, "done");
+    // Sự kiện được TIÊU THỤ bởi đúng stage chờ (lần vào bước chờ sau không qua ngay bằng sự kiện cũ).
+    const [ev] = await c.sql<{ by: string | null }[]>`select consumed_by::text as by
+      from hub.process_run_events where process_run_id = ${runId}`;
+    expect(ev?.by).not.toBeNull();
+    // Run đã kết thúc ⇒ bắn lại không ghi/thả gì.
+    expect(
+      await c.port.signalEvent(T.acme, { pack: "contracts", record_id: rec }, "esign.completed"),
+    ).toBe(0);
   }, 90_000);
 
   it("G4 · hết hạn 48 h không sự kiện ⇒ chạy tiếp, .md 'Hết hạn chờ'", async () => {

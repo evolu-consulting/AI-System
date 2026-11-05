@@ -86,9 +86,13 @@ export type StageTimerRepo = {
 };
 /** CR-120 · G4 · sự kiện run (`hub.process_run_events`) + stage `wait_event` đang chờ; mọi câu lọc `tenant_id`. */
 export type RunEventRepo = {
-  /** Ghi sự kiện đã tới (idempotent theo (run, event)). */
+  /** Run có stage `wait_event` đúng khoá đang chờ hoặc còn phía trước? (không ⇒ không ghi sự kiện). */
+  expected(runId: string, event: string): Promise<boolean>;
+  /** Ghi sự kiện đã tới (idempotent theo (run, event)); bắn lại sau khi đã tiêu thụ ⇒ nạp lại. */
   record(runId: string, event: string, now: Date): Promise<void>;
-  /** Sự kiện đã tới từ trước (gói bắn trước khi run tới bước chờ)? */
+  /** Stage `stageRunId` tiêu thụ sự kiện chưa tiêu thụ; `true` ⇒ có sự kiện (đã nhận), `false` ⇒ không (hết hạn). */
+  consume(runId: string, event: string, stageRunId: string): Promise<boolean>;
+  /** Sự kiện CHƯA tiêu thụ đã tới từ trước (gói bắn trước khi run tới bước chờ)? */
   has(runId: string, event: string): Promise<boolean>;
   /** Stage `waiting_timer` của run có executor `wait_event` đúng `event` (theo snapshot), idx tăng dần. */
   waitingStages(runId: string, event: string): Promise<string[]>;

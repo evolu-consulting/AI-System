@@ -1,6 +1,7 @@
 -- CR-120 · cr120-contracts-flow · hub 0093 contracts_intake_slot (when 1803900000000):
 -- (1) `hub.process_run_events` — sự kiện run cho node `wait_event` (G4): PK (run, event), FK kép tenant, RLS mẫu `process_timers`;
---     không UPDATE/DELETE (sự kiện đã tới là bất biến; xoá theo run qua CASCADE).
+--     `consumed_by` = stage_run đã tiêu thụ sự kiện (run quay lại bước chờ không qua ngay bằng sự kiện cũ; bắn lại ⇒ nạp lại);
+--     không DELETE (xoá theo run qua CASCADE).
 -- (2) Khe `contracts.intake` (luôn bật): def thư viện "Nhận hợp đồng (mặc định)" (stages = `contractsIntakeStages()`, khớp kiểm ở
 --     `contracts-intake.seed.test.ts`), bản phát hành v1, hàng `process_slots`. Id cố định + ON CONFLICT DO NOTHING ⇒ chạy lại vô hại;
 --     khe đã có mặc định (admin đổi) ⇒ giữ nguyên. Chỉ THÊM hàng/bảng; không mất dữ liệu.
@@ -9,6 +10,7 @@ CREATE TABLE IF NOT EXISTS hub.process_run_events (
   process_run_id uuid NOT NULL,
   event text NOT NULL,
   received_at timestamptz NOT NULL DEFAULT now(),
+  consumed_by uuid,
   CONSTRAINT process_run_events_pkey PRIMARY KEY (process_run_id, event),
   CONSTRAINT process_run_events_event_ck CHECK (event ~ '^[a-z][a-z0-9_.-]{1,63}$'),
   CONSTRAINT process_run_events_run_fk FOREIGN KEY (process_run_id, tenant_id)
@@ -30,7 +32,7 @@ BEGIN
 END
 $$;
 --> statement-breakpoint
-GRANT SELECT, INSERT ON hub.process_run_events TO hub_rw;
+GRANT SELECT, INSERT, UPDATE ON hub.process_run_events TO hub_rw;
 --> statement-breakpoint
 INSERT INTO hub.process_defs (id, tenant_id, key, name, description, input_hint, run_group_ids, stages, token_budget, enabled,
   sources, inputs, slot, slot_body, published_version)
