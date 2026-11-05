@@ -122,26 +122,59 @@ export async function setJourneyPasswords(
 }
 
 /** Dựng tenant hành trình (idempotent). Mật khẩu tạm của seed-niti đi vào file tạm rồi xoá — mật khẩu thật là `pw`. */
-export async function provisionJourneyTenant(
+export function provisionJourneyTenant(
   admin: Db,
   hub: Db,
   o: { pw: string; log?: (s: string) => void },
 ): Promise<SeedReport> {
-  const why = journeyGuard({ spec: JOURNEY_SPEC, pw: o.pw });
+  return provisionWith(admin, hub, JOURNEY_SPEC, o);
+}
+
+async function provisionWith(
+  admin: Db,
+  hub: Db,
+  spec: SeedSpec,
+  o: { pw: string; log?: (s: string) => void },
+): Promise<SeedReport> {
+  const why = journeyGuard({ spec, pw: o.pw });
   if (why) throw new Error(`seed-e2e-journey: từ chối — ${why}`);
   const credFile = join(tmpdir(), `e2e-journey-cred-${process.pid}-${Date.now()}.txt`);
   try {
-    const rep = await runSeed(admin, hub, JOURNEY_SPEC, {
+    const rep = await runSeed(admin, hub, spec, {
       apply: true,
       credFile,
       routing: false,
       ...(o.log ? { log: o.log } : {}),
     });
-    await setJourneyPasswords(admin, JOURNEY_SPEC.tenantKey, o.pw);
+    await setJourneyPasswords(admin, spec.tenantKey, o.pw);
     return rep;
   } finally {
     rmSync(credFile, { force: true });
   }
+}
+
+/**
+ * CR-121 D-5 · công ty MỚI cho hành trình 2 tenant: cùng phòng ban/người dùng như `e2e-approval` nhưng KHÔNG quy trình thư viện, KHÔNG
+ * luật, KHÔNG gán — platform admin làm hết trong spec. Khoá bắt buộc `e2e-…` (cùng guard).
+ */
+export function provisionExtraJourneyTenant(
+  admin: Db,
+  hub: Db,
+  o: { pw: string; key: string; name: string; log?: (s: string) => void },
+): Promise<SeedReport> {
+  return provisionWith(
+    admin,
+    hub,
+    {
+      ...JOURNEY_SPEC,
+      tenantKey: o.key,
+      tenantName: o.name,
+      emailDomain: `${o.key}.example.invalid`,
+      processes: [],
+      rules: [],
+    },
+    o,
+  );
 }
 
 async function main(argv: readonly string[]): Promise<void> {

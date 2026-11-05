@@ -142,6 +142,92 @@ export async function revokeFeature(
   );
 }
 
+/** Id tenant theo khoá (platform admin; `GET /admin/tenants`). Ném lỗi rõ khi không có. */
+export async function tenantIdByKey(admin: string, s: Session, key: string): Promise<string> {
+  const { json } = await call<{ items?: { id: string; key: string }[] }>(
+    `${admin}/admin/tenants?limit=200&q=${encodeURIComponent(key)}`,
+    { method: "GET", token: s.token },
+  );
+  const hit = json.items?.find((t) => t.key === key);
+  if (!hit) throw new Error(`tenantIdByKey: không thấy tenant "${key}"`);
+  return hit.id;
+}
+
+type DefShape = {
+  id: string;
+  version: number;
+  slot_body?: { steps?: Record<string, unknown>[] };
+} & Record<string, unknown>;
+const DEF_COPY_KEYS = [
+  "description",
+  "input_hint",
+  "run_group_ids",
+  "stages",
+  "token_budget",
+  "enabled",
+  "sources",
+  "inputs",
+  "ttl_days",
+] as const;
+const SLOT_APPROVAL = "contracts.approval";
+
+/**
+ * Platform admin: nhân bản quy trình thư viện (theo `fromKey`) thành bản mới `key`/`name`, sửa các bước (`editSteps` nhận mảng bước của khe
+ * duyệt, trả mảng mới) rồi XUẤT BẢN. Trả id quy trình thư viện mới. Giống thao tác ở trang Quy trình (Nhân bản → sửa → Xuất bản).
+ */
+export async function cloneAndPublishFlow(
+  hub: string,
+  s: Session,
+  o: {
+    fromKey: string;
+    key: string;
+    name: string;
+    editSteps?: (steps: Record<string, unknown>[]) => Record<string, unknown>[];
+  },
+): Promise<string> {
+  let from: { id: string; key: string } | undefined;
+  for (let cursor = ""; !from; ) {
+    const page = await call<{ items: { id: string; key: string }[]; next_cursor: string | null }>(
+      `${hub}/process-defs${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
+      { method: "GET", token: s.token },
+    );
+    from = page.json.items.find((d) => d.key === o.fromKey);
+    if (!page.json.next_cursor) break;
+    cursor = page.json.next_cursor;
+  }
+  if (!from) throw new Error(`cloneAndPublishFlow: không thấy quy trình thư viện "${o.fromKey}"`);
+  const cloned = await call<{ id: string }>(`${hub}/process-defs/${from.id}/clone`, {
+    method: "POST",
+    token: s.token,
+    body: JSON.stringify({ key: o.key, name: o.name }),
+  });
+  const id = cloned.json.id;
+  const cur = (await call<DefShape>(`${hub}/process-defs/${id}`, { method: "GET", token: s.token }))
+    .json;
+  const steps = o.editSteps
+    ? o.editSteps(cur.slot_body?.steps ?? [])
+    : (cur.slot_body?.steps ?? []);
+  const input = Object.fromEntries(DEF_COPY_KEYS.map((k) => [k, cur[k]]));
+  const put = await call<{ version: number }>(`${hub}/process-defs/${id}`, {
+    method: "PUT",
+    token: s.token,
+    body: JSON.stringify({
+      ...input,
+      key: o.key,
+      name: o.name,
+      slot: SLOT_APPROVAL,
+      slot_body: { steps },
+      version: cur.version,
+    }),
+  });
+  await call(`${hub}/process-defs/${id}/publish`, {
+    method: "POST",
+    token: s.token,
+    body: JSON.stringify({ version: put.json.version, note: "e2e" }),
+  });
+  return id;
+}
+
 export type IsolatedTenant = { suffix: string; key: string; name: string; json: unknown };
 
 /** Tạo tenant riêng của spec (key/tên có hậu tố duy nhất) cùng admin đầu tiên. Platform admin. `json` = phản hồi gốc (có id, mật khẩu tạm). */

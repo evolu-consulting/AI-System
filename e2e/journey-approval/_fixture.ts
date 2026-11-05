@@ -6,6 +6,8 @@
 export const TAG = "E2E-JOURNEY";
 
 export type ContractDoc = {
+  /** Giá trị hợp đồng (VND) ghi trong văn bản. */
+  total: number;
   text: string;
   title: string;
   supplier: string;
@@ -13,13 +15,14 @@ export type ContractDoc = {
 };
 
 /** HĐ MUA mẫu (tenant là Bên mua). `run` làm tiêu đề duy nhất mỗi lượt chạy. */
-export function buyContract(run: string): ContractDoc {
+export function buyContract(run: string, total = 11_500_000): ContractDoc {
+  const vnd = String(total).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   const line = {
     title: `Hợp đồng mua văn phòng phẩm số ${TAG}-${run}/HĐMB`,
     supplier: `Bên bán (Bên A): Công ty TNHH ${TAG} Bên Bán`,
     buyer: "Bên mua (Bên B): Công ty E2E Approval Journey",
     term: "Hiệu lực từ 01/10/2026 đến 30/09/2027.",
-    total: "Tổng giá trị hợp đồng: 11.500.000 đồng (đã gồm VAT 10%).",
+    total: `Tổng giá trị hợp đồng: ${vnd} đồng (đã gồm VAT 10%).`,
   };
   const text = [
     `# ${line.title}`,
@@ -41,7 +44,7 @@ export function buyContract(run: string): ContractDoc {
     "",
     "Bên B thanh toán 100% trong 15 ngày kể từ ngày nhận hàng.",
   ].join("\n");
-  return { text, title: line.title, supplier: `Công ty TNHH ${TAG} Bên Bán`, line };
+  return { total, text, title: line.title, supplier: `Công ty TNHH ${TAG} Bên Bán`, line };
 }
 
 const field = (value: unknown, quote: string) => ({ value, quote });
@@ -67,7 +70,7 @@ export function extractionFor(doc: ContractDoc): Record<string, unknown> {
       effective_date: none,
       auto_renew: none,
       notice_days: none,
-      total_value: field(11_500_000, doc.line.total),
+      total_value: field(doc.total, doc.line.total),
       vat_rate: none,
       vat_included: none,
       payment_terms: none,

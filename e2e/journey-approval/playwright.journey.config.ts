@@ -37,10 +37,14 @@ const DIST = process.env.E2E_DIST_DIR ?? "dist-e2e/ja";
 process.env.JA_CW_URL = CW;
 process.env.JA_ADMIN_URL = ADMIN;
 process.env.JA_USER_PW ||= `${randomBytes(12).toString("base64url")}-Aa1`;
+process.env.JA_API_URL = API;
+process.env.JA_HUB_URL = HUB;
+// CR-121 D-5: hậu tố duy nhất của 2 công ty mới (stack dựng, spec `cr121-d-journey` dùng).
+process.env.JA_D5_SUFFIX ||= randomBytes(3).toString("hex");
 
 export default defineConfig({
   testDir: ".",
-  testMatch: ["**/*.ja.ts", "**/cr121-editor*.spec.ts"],
+  testMatch: ["**/*.ja.ts", "**/cr121-editor*.spec.ts", "**/cr121-d-journey*.spec.ts"],
   workers: 1,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
@@ -84,6 +88,7 @@ export default defineConfig({
         JWT_KID: need("JWT_KID"),
         SECRET_MASTER_KEY: need("SECRET_MASTER_KEY"),
         JA_USER_PW: need("JA_USER_PW"),
+        JA_D5_SUFFIX: need("JA_D5_SUFFIX"),
         JA_API_PORT: String(P.api),
         JA_HUB_PORT: String(P.hub),
         JA_READY_PORT: String(P.ready),

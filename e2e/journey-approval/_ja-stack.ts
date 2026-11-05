@@ -11,7 +11,10 @@ import { runHubMigrations } from "@ai/db/migrate-hub";
 import { runPackMigrations } from "@ai/db/migrate-packs";
 import { connectDb } from "../../apps/hub-api/src/lib/db";
 import { startFbFake } from "../../tests/acceptance/FB1/_fbfake";
-import { provisionJourneyTenant } from "../../tools/scripts/src/seed-e2e-journey";
+import {
+  provisionExtraJourneyTenant,
+  provisionJourneyTenant,
+} from "../../tools/scripts/src/seed-e2e-journey";
 import { prepareDbWithRetry } from "../x1/_prepare";
 
 const REPO = resolve(import.meta.dir, "../..");
@@ -52,7 +55,8 @@ function writeFakeClaude(file: string): string {
   const src = `import { buyContract, extractionFor, TAG } from ${JSON.stringify(fixture)};
 const prompt = await Bun.stdin.text();
 const run = new RegExp(TAG + "-([a-z0-9]+)/HĐMB").exec(prompt)?.[1] ?? "x";
-const out = extractionFor(buyContract(run));
+const total = Number((/Tổng giá trị hợp đồng: ([\\d.]+) đồng/.exec(prompt)?.[1] ?? "11500000").replaceAll(".", ""));
+const out = extractionFor(buyContract(run, total));
 console.log(JSON.stringify({ type: "result", subtype: "success", is_error: false, result: JSON.stringify(out),
   usage: { input_tokens: 100, output_tokens: 50 } }));
 `;
@@ -137,6 +141,15 @@ async function main(): Promise<void> {
     console.log(
       `[ja] tenant e2e-approval: ${rep.tenant}; quy trình ${rep.processes.map((p) => `${p.key}=${p.state}`).join(", ")}`,
     );
+    // CR-121 D-5: hai công ty MỚI cho hành trình 2 tenant (chưa gán quy trình/luật nào; platform admin làm trong spec).
+    const sfx = process.env.JA_D5_SUFFIX;
+    if (sfx)
+      for (const k of ["a", "b"] as const)
+        await provisionExtraJourneyTenant(admin, hubDb, {
+          pw: env("JA_USER_PW"),
+          key: `e2e-d5${k}-${sfx}`,
+          name: `E2E D5${k.toUpperCase()} ${sfx}`,
+        });
   } finally {
     await admin.close();
     await hubDb.close();

@@ -1,5 +1,5 @@
 // e2e-journey-approval · bước dùng chung của hành trình duyệt HĐ (stack `approval.ja.ts` và triển khai `deployed/21-*`): đăng nhập hai web,
-// platform admin gán quy trình + luật + bật engine ở ai-admin, nhân viên tải HĐ, người duyệt bấm Đạt. Chỉ thao tác như người dùng thật (UI).
+// platform admin gán quy trình + luật ở ai-admin, nhân viên tải HĐ, người duyệt bấm Đạt. Chỉ thao tác như người dùng thật (UI).
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
 import { loginPlatformAdminUi, openTenantAppsTab, optionValue, safeReload } from "../_kit/ui";
 import { buyContract } from "./_fixture";
@@ -100,31 +100,14 @@ export async function openProcessBlock(page: Page, e: Env): Promise<Locator> {
   return processBlock(await openContractsCard(page, e));
 }
 
-/** Platform admin bật/tắt công tắc "Duyệt theo quy trình" trong khối Quy trình (lưu một lượt). */
-export async function adminSetEngine(page: Page, e: Env, on: boolean): Promise<void> {
-  const card = await openContractsCard(page, e);
-  const sw = processBlock(card).getByTestId("tenant-engine-switch");
-  await expect(sw).toBeVisible();
-  if (await sw.isDisabled()) {
-    // ứng dụng đang Tắt ⇒ công tắc khoá: chọn mức Quản trị trước (thao tác thật của admin)
-    await card.getByRole("radio", { name: "Quản trị" }).click();
-  }
-  if ((await sw.isChecked()) === on) return;
-  await sw.click();
-  await page.getByRole("button", { name: "Lưu", exact: true }).click();
-  await expect(toast(page, "Đã lưu tính năng cho")).toBeVisible();
-  // đọc lại từ máy chủ: công tắc phải đúng
-  await safeReload(page);
-  await page.getByRole("tab", { name: "Ứng dụng" }).click();
-  await expect(
-    processBlock(page.getByRole("region", { name: /Sổ Hợp Tác|Hợp đồng/ }).first()).getByTestId(
-      "tenant-engine-switch",
-    ),
-  ).toBeChecked({ checked: on });
-}
 /** Nhân viên tải HĐ mẫu lên bằng UI; chờ AI đọc xong (có nút "Xác nhận và lưu"). Trả id HĐ. */
-export async function uploadAndOpen(page: Page, e: Env, run: string): Promise<string> {
-  const doc = buyContract(run);
+export async function uploadAndOpen(
+  page: Page,
+  e: Env,
+  run: string,
+  total?: number,
+): Promise<string> {
+  const doc = buyContract(run, total);
   await page.goto(`${e.cw}/contracts/list`);
   await page.locator('input[type="file"]').setInputFiles({
     name: `hop-dong-mua-${run}.md`,
