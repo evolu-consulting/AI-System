@@ -26,6 +26,8 @@ type Props = {
   empty: ReactNode;
   onLock: TenantAction;
   onUnlock: TenantAction;
+  onOpen?: TenantAction;
+  activeId?: string | null;
 };
 
 const isPlatform = (t: Tenant) => t.key === "platform";
@@ -125,6 +127,8 @@ export function TenantTable({
   empty,
   onLock,
   onUnlock,
+  onOpen,
+  activeId,
 }: Props) {
   const { t } = useTranslation();
   const columns = useMemo(
@@ -142,6 +146,8 @@ export function TenantTable({
       error={error}
       onRetry={onRetry}
       empty={empty}
+      onRowClick={onOpen}
+      activeKey={activeId}
     />
   );
 }

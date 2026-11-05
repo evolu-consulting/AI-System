@@ -656,7 +656,13 @@
     "list": {
       "title": "Tenants",
       "subtitle": "Công ty khách hàng dùng nền tảng. Mỗi tenant có user, group và quota riêng.",
-      "create": "+ Tạo tenant"
+      "create": "Thêm công ty",
+      "what": "công ty"
+    },
+    "drawer": {
+      "kind": "Công ty",
+      "apps": "Ứng dụng đang bật",
+      "noApps": "Chưa bật ứng dụng nào"
     },
     "col": {
       "key": "Mã công ty",

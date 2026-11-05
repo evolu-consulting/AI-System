@@ -47,10 +47,12 @@ test("ADM-FR-60 · BR-05 · admin → /tenants: table 'Tenants' có hàng platfo
 
 test("ADM-FR-61 · M1-R10 · chip 'Đã khoá' lọc zeta; ô tìm 'glo' lọc globex", async ({ page }) => {
   await openTenants(page);
-  await page.getByRole("radio", { name: /^Đã khoá/ }).click();
+  await page.getByRole("button", { name: "Lọc" }).click();
+  await page.getByRole("menuitemradio", { name: /^Đã khoá/ }).click();
+  await page.keyboard.press("Escape");
   await expect(rowOf(page, "Tenants", "zeta")).toBeVisible();
   await expect(rowOf(page, "Tenants", "acme")).toHaveCount(0);
-  await page.getByRole("radio", { name: /^Tất cả/ }).click();
+  await page.getByRole("button", { name: /Bỏ lọc Trạng thái: Đã khoá/ }).click();
   await page.getByRole("searchbox").fill("glo");
   await expect(rowOf(page, "Tenants", "globex")).toBeVisible();
   await expect(rowOf(page, "Tenants", "acme")).toHaveCount(0);
@@ -71,7 +73,7 @@ test("ADM-FR-60 · M1-R17 · tạo tenant → dialog 'Đã tạo tenant initech'
   page,
 }) => {
   await openTenants(page);
-  await page.getByRole("link", { name: "+ Tạo tenant" }).click();
+  await page.getByRole("link", { name: "Thêm công ty" }).click();
   await fillNewTenant(page, "initech");
   await page.getByRole("button", { name: "Tạo tenant", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Đã tạo tenant initech" });
@@ -98,7 +100,7 @@ test("ADM-FR-60 · M1-R15 · tạo tenant với mã trùng 'acme' → 'Mã công
   page,
 }) => {
   await openTenants(page);
-  await page.getByRole("link", { name: "+ Tạo tenant" }).click();
+  await page.getByRole("link", { name: "Thêm công ty" }).click();
   await fillNewTenant(page, "acme");
   await page.getByRole("button", { name: "Tạo tenant", exact: true }).click();
   await expect(page.getByText("Mã công ty đã được dùng")).toBeVisible();

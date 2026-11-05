@@ -14,7 +14,7 @@ test("ADM-FR-01 · M1-AC08 · admin seed → Tenants → tạo tenant → mật 
   const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
   await expect(nav).toBeVisible();
   await nav.getByRole("link", { name: "CÔNG TY", exact: true }).click();
-  await page.getByRole("link", { name: "+ Tạo tenant" }).click();
+  await page.getByRole("link", { name: "Thêm công ty" }).click();
 
   await page.getByRole("textbox", { name: "Mã công ty" }).fill("umbrella");
   await page.getByRole("textbox", { name: "Tên công ty" }).fill("Umbrella Corp");

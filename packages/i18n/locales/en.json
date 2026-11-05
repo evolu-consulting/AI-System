@@ -656,7 +656,13 @@
     "list": {
       "title": "Tenants",
       "subtitle": "Customer companies on the platform. Each has its own users, groups and quota.",
-      "create": "+ New tenant"
+      "create": "Add company",
+      "what": "company"
+    },
+    "drawer": {
+      "kind": "Company",
+      "apps": "Apps enabled",
+      "noApps": "No apps enabled"
     },
     "col": {
       "key": "Company code",
