@@ -6,7 +6,7 @@ import { loginAdmin, loginToShell } from "../support/helpers";
 const NAV = "Tình trạng hệ thống";
 const h1 = (p: Page) => p.getByRole("heading", { level: 1, name: NAV });
 
-test('platform_admin: 8 thẻ check, bấm "Kiểm tra ngay" cập nhật lúc kiểm, bấm lại trong 1 phút thì đếm ngược', async ({
+test('platform_admin: 9 thẻ check, bấm "Kiểm tra ngay" cập nhật lúc kiểm, bấm lại trong 1 phút thì đếm ngược', async ({
   page,
 }) => {
   await loginAdmin(page);
@@ -23,6 +23,7 @@ test('platform_admin: 8 thẻ check, bấm "Kiểm tra ngay" cập nhật lúc k
     "Backup",
     "Đĩa server",
     "Hàng đợi / run kẹt",
+    "SLO / hồi quy",
   ])
     await expect(page.getByRole("article", { name: label })).toBeVisible();
 
@@ -51,6 +52,7 @@ test('platform_admin: 8 thẻ check, bấm "Kiểm tra ngay" cập nhật lúc k
   const text = (await import("node:fs")).readFileSync(file, "utf8");
   expect(text).toContain("GÓI CHẨN ĐOÁN");
   expect(text).toContain("DB / Redis");
+  expect(text).toContain("SLO / hồi quy");
   expect(text).toContain("Thời điểm");
 });
 

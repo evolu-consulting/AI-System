@@ -41,4 +41,14 @@ done
 [ $ok -eq 1 ] && echo "setup: admin-api + hub-api /health OK" || echo "setup: /health CHƯA lên — xem docker compose -p sohoptac2 logs"
 bash ./ops-host-status.sh || echo "setup: ops-host-status.sh loi (khong chan deploy)"
 bash ./ops-slo-status.sh || echo "setup: ops-slo-status.sh loi (khong chan deploy)"
+# CR-117: cron 30 phut cho ops-host-status.sh + ops-slo-status.sh (idempotent: da co ops-slo-status.sh trong crontab thi giu nguyen; chua co thi
+# thay dong ops-host-status.sh cu bang dong gop 2 lenh). Khong co crontab/loi ⇒ chi canh bao, khong chan deploy.
+if command -v crontab >/dev/null 2>&1; then
+  if crontab -l 2>/dev/null | grep -q "ops-slo-status.sh"; then
+    echo "setup: cron ops-slo-status.sh da co"
+  else
+    ( crontab -l 2>/dev/null | grep -v "ops-host-status.sh"; echo "*/30 * * * * cd $(pwd) && bash ops-host-status.sh >> ops-status/cron.log 2>&1; bash ops-slo-status.sh >> ops-status/cron.log 2>&1" ) | crontab - \
+      && echo "setup: da cai cron 30 phut (ops-host-status.sh + ops-slo-status.sh)" || echo "setup: cai cron loi (khong chan deploy)"
+  fi
+fi
 dc ps --format '{{.Service}}: {{.Status}}'

@@ -27,8 +27,9 @@ platform_admin, trang `/system` (thẻ + ngưỡng cấu hình + Gói chẩn đo
 ## Không làm / Chạm
 - Không migration, không sửa module đóng băng, không đụng DLC. Không UI mới (thẻ /system tự hiện check mới theo OPS_CHECK_KEYS; e2e
   `e2e/ops/system.ops.ts` không sửa — khoá, vẫn xanh vì chỉ kiểm 8 nhãn cũ).
-- Chưa có p95 theo route: nginx chưa ghi `$request_time`, hub-api không log thời gian request ⇒ SLO contracts.list "chưa có số đo" tới
-  khi có nguồn (host ghi `routes["contracts.list"]` vào slo.json là đủ, check đã đọc).
+- p95 theo route: nginx `web` ghi `rt=$request_time urt=$upstream_response_time` (log_format `main_rt`, giữ nguyên trường combined);
+  `ops-slo-status.sh` đẩy log qua `tools/scripts/src/slo-routes.ts` (service `tool`) ⇒ `slo.json.routes` (`contracts.list`, `contracts.approval`).
+  Cần deploy lại image `web` một lần; trước đó contracts.list "chưa có số đo". `setup.sh` tự cài cron 30 phút (idempotent).
 
 ## Test tối thiểu
 - unit: `bun test apps/hub-api/src/modules/ops` · int: evotest `-Step int -Filter apps/hub-api/src/modules/ops/ops.slo.int.test.ts`.
@@ -50,11 +51,13 @@ Lượt kiểm ops-watch (30 phút) có thêm check `slo`: đo contracts.list p9
 #### Yêu cầu: Tốc độ đốt ngân sách
 Mỗi SLO giữ lịch sử 48 lượt; đốt ngân sách nhanh (≥ 6 lần mức cho phép, đủ 6 mẫu) báo warn dù chuỗi liên tiếp ngắn.
 - Kịch bản: khi lịch sử có nhiều lượt xấu xen kẽ thì check warn kèm tốc độ đốt [test: apps/hub-api/src/modules/ops/domain/slo.rules.test.ts » chuỗi ngắn nhưng đốt ngân sách nhanh]
+#### Yêu cầu: p95 contracts.list từ access log nginx
+Access log `web` có `rt=`/`urt=`; p95 (ms) và số request của `GET /pack/contracts/contracts` (không tính 4xx/5xx, bỏ query) vào `slo.json` `routes["contracts.list"]` mỗi 30 phút.
+- Kịch bản: khi access log có 20 dòng contracts.list thì p95 = phần tử thứ 19 theo ms, dòng POST/5xx/route khác bị bỏ [test: tools/scripts/src/slo-routes.rules.test.ts » p95 contracts.list theo ms]
 #### Yêu cầu: Thiếu số đo không báo sai
 Số đo thiếu (không có slo.json, file cũ, ít hơn 50 dòng log, không có job/timer) là "chưa có số đo", không tính vào chuỗi; không SLO nào đo được thì check ở trạng thái `unknown`.
 - Kịch bản: khi slo.json cũ hoặc thiếu thì tỷ lệ lỗi log là null và check không ném lỗi [test: apps/hub-api/src/modules/ops/adapters/checks/slo.check.test.ts » quá ít dòng log / route ít request / file cũ / thiếu file; apps/hub-api/src/modules/ops/ops.slo.int.test.ts » không có slo.json]
 
 ## Việc còn lại
-- Nguồn p95 theo route (contracts.list): cần nginx `log_format` có `$request_time` hoặc log request ở hub-api, rồi `ops-slo-status.sh` ghi `routes`.
-- Chạy int trên evotest + cron `ops-slo-status.sh` trên server khi deploy (chỉ khi người dùng xác nhận).
+- Deploy lại image `web` + `setup.sh` trên server (cài cron, có `routes`) — chỉ khi người dùng xác nhận deploy. `nginx -t` đã xanh (nginx:stable-alpine, evotest).
 - Xoá worktree/nhánh `cr117-slo` (bản cũ) sau khi điều phối đồng ý.
