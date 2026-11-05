@@ -326,12 +326,7 @@
       "runsMonth": "Số run tháng này",
       "delta": "{sign}{pct}% so với tháng trước",
       "quota": "Quota tháng",
-      "noData": "Chưa có dữ liệu từ Agent Hub",
-      "activeTenants": "Tenant đang hoạt động",
-      "enabledCommands": "Commands đang bật",
-      "workflows": "Workflows",
-      "unattached": "{n} chưa gắn",
-      "runs24h": "Số run 24 giờ"
+      "noData": "Chưa có dữ liệu từ Agent Hub"
     },
     "quota": {
       "link": "Xem chi phí & quota",
@@ -350,29 +345,143 @@
       "link": "Xem nhật ký"
     },
     "platform": {
-      "subtitle": "Toàn bộ nền tảng · {n} tenant · cập nhật lúc {time}",
       "createTenant": "Tạo tenant",
       "createCommand": "Tạo command"
     },
-    "nearQuota": {
-      "title": "Tenant sắp hoặc đã vượt quota",
-      "empty": "Chưa tenant nào đặt quota.",
-      "ok": "Trong quota",
-      "col": {
-        "tenant": "Tenant",
-        "quota": "Quota tháng · run",
-        "status": "Trạng thái"
+    "ops": {
+      "subtitle": "Vận hành 24 giờ qua · cập nhật {time}",
+      "hubNotConfigured": "Chưa cấu hình địa chỉ Hub nên chưa lấy được số liệu vận hành. Liên hệ người triển khai để đặt PUBLIC_HUB_URL.",
+      "howCalc": "Cách tính: {name}",
+      "openDetail": "Xem chi tiết: {name}",
+      "trend7": "Xu hướng 7 ngày",
+      "trendEmpty": "Chưa đủ dữ liệu để vẽ xu hướng 7 ngày.",
+      "hourly": "Lượt theo giờ",
+      "hourlyChart": "Biểu đồ cột lượt chạy theo giờ, xong và lỗi",
+      "hourlyEmpty": "Chưa có lượt chạy nào trong 24 giờ qua nên chưa có cột nào.",
+      "hourTip": "{time}: xong {ok}, lỗi {error}",
+      "done": "Xong",
+      "failed": "Lỗi",
+      "ago24": "-24 giờ",
+      "now": "nay",
+      "unit": {
+        "runs": "lượt",
+        "minutes": "phút · 95% lượt",
+        "times": "lần",
+        "pctUsed": "% đã dùng"
+      },
+      "delta": {
+        "up": "Tăng {n} so với hôm qua",
+        "down": "Giảm {n} so với hôm qua",
+        "flat": "Không đổi so với hôm qua",
+        "none": "Chưa có số hôm qua để so sánh"
+      },
+      "runs": {
+        "running": "Đang chạy",
+        "failed": "Lỗi",
+        "needsDecision": "Cần quyết định",
+        "empty": "Chưa có lượt chạy nào trong 24 giờ qua. Gán quy trình cho công ty để việc bắt đầu chạy."
+      },
+      "kpi": {
+        "runs": {
+          "title": "Lượt chạy 24 giờ",
+          "tip": "Số lượt chạy quy trình bắt đầu trong 24 giờ qua, trên mọi công ty. Kèm số đang chạy, lỗi và cần quyết định ở thời điểm hiện tại."
+        },
+        "errorRate": {
+          "title": "Tỷ lệ lỗi",
+          "tip": "Số lượt chạy lỗi hoặc hết hạn chia cho số lượt kết thúc trong 24 giờ qua (lượt huỷ không tính). So với 24 giờ trước đó.",
+          "empty": "Chưa có lượt nào kết thúc trong 24 giờ qua nên chưa tính được tỷ lệ."
+        },
+        "p95": {
+          "title": "Thời gian xử lý",
+          "tip": "Thời gian từ lúc gửi đến lúc xong, tính cho 95% lượt chạy nhanh nhất (p95). Không tính thời gian chờ người duyệt.",
+          "empty": "Chưa có lượt nào xong trong 24 giờ qua nên chưa tính được thời gian."
+        },
+        "aiErrors": {
+          "title": "Lỗi công cụ AI 24 giờ",
+          "tip": "Số lần một công cụ AI báo lỗi trong 24 giờ qua, kể cả lần đã thử lại thành công."
+        },
+        "aiQuota": {
+          "title": "Hạn mức AI tháng này",
+          "tip": "Chi phí AI đã dùng trong tháng chia cho hạn mức USD đã đặt, cộng các công ty có đặt hạn mức USD.",
+          "empty": "Chưa công ty nào đặt hạn mức chi phí AI. Đặt hạn mức ở trang Chi phí & quota.",
+          "of": "{used} / {limit} hạn mức"
+        },
+        "companies": {
+          "title": "Công ty hoạt động 7 ngày",
+          "tip": "Công ty có ít nhất một lượt chạy quy trình hoặc dùng AI trong 7 ngày qua, so với tổng số công ty khách đang hoạt động.",
+          "unit": "/ {total} công ty",
+          "empty": "Chưa có công ty khách nào. Tạo công ty mới để bắt đầu."
+        }
+      },
+      "attention": {
+        "title": "Cần xử lý ngay",
+        "allClear": "Không có việc nào cần xử lý. Mọi thứ đang ổn.",
+        "stuck_runs": {
+          "title": "Lượt chạy lỗi hoặc kẹt quá {hours} giờ",
+          "sub": "Mở danh sách lượt chạy đã lọc",
+          "subNoLink": "Danh sách lượt chạy đã lọc chưa có trang; xem trong từng quy trình",
+          "ok": "Không có lượt chạy lỗi hoặc kẹt"
+        },
+        "unrouted_companies": {
+          "title": "Công ty có việc chưa gán quy trình",
+          "sub": "Việc sẽ không chạy cho tới khi gán quy trình",
+          "subNoLink": "Việc sẽ không chạy cho tới khi gán quy trình",
+          "ok": "Mọi công ty đã được gán quy trình"
+        },
+        "failing_ai_tools": {
+          "title": "Công cụ AI lỗi liên tục",
+          "sub": "Lỗi từ {streak} lần liên tiếp trở lên",
+          "subNoLink": "Lỗi từ {streak} lần liên tiếp trở lên",
+          "ok": "Không có công cụ AI lỗi liên tục"
+        },
+        "near_quota_companies": {
+          "title": "Công ty sắp hết hạn mức AI",
+          "sub": "Đã dùng từ {pct}% hạn mức tháng",
+          "subNoLink": "Đã dùng từ {pct}% hạn mức tháng",
+          "ok": "Không có công ty sắp hết hạn mức"
+        },
+        "half_configured": {
+          "title": "Công ty cấu hình chưa hoàn tất",
+          "sub": "Đã gán quy trình nhưng thiếu bước để chạy được",
+          "subNoLink": "Đã gán quy trình nhưng thiếu bước để chạy được",
+          "ok": "Không có cấu hình chưa hoàn tất"
+        }
+      },
+      "health": {
+        "title": "Sức khoẻ hệ thống",
+        "tip": "Chấm xanh: bình thường. Chấm vàng: chậm hoặc lỗi nhiều hơn mức thường. Chấm đỏ: đang hỏng. Bấm một ô để xem chi tiết.",
+        "level": {
+          "ok": "Bình thường",
+          "warn": "Cần chú ý",
+          "bad": "Đang lỗi",
+          "none": "Chưa có dữ liệu"
+        },
+        "queue": {
+          "name": "Hàng đợi nền",
+          "value": "{v} giây",
+          "detail": "{queued} việc đang chờ · chờ lâu nhất {oldest} giây",
+          "empty": ""
+        },
+        "dify": {
+          "name": "Dịch vụ AI",
+          "value": "{v}% lỗi",
+          "detail": "Lỗi 24 giờ: {errors} · nhiều nhất: {tool}",
+          "empty": "Chưa có lượt gọi nào trong 1 giờ qua"
+        },
+        "db": {
+          "name": "Cơ sở dữ liệu",
+          "value": "{v} ms",
+          "detail": "Kết nối {conn} / {max}",
+          "empty": ""
+        },
+        "deploy": {
+          "name": "Triển khai",
+          "value": "v{v}",
+          "detail": "Phiên bản đang chạy",
+          "empty": "Chưa ghi nhận phiên bản triển khai"
+        }
       }
-    },
-    "agentStudio": {
-      "title": "Agent Forge",
-      "body": "Agent, Coordinator, model và vận hành nằm ở Agent Forge. Agent chọn workflow từ catalog của Admin.",
-      "open": "Mở Agent Forge"
-    },
-    "topErrors": {
-      "title": "Command lỗi nhiều nhất 24 giờ"
-    },
-    "hubPending": "Sẽ có khi Agent Hub sẵn sàng."
+    }
   },
   "state": {
     "error": {

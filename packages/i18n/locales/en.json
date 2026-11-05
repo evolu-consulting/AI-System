@@ -326,12 +326,7 @@
       "runsMonth": "Runs this month",
       "delta": "{sign}{pct}% vs last month",
       "quota": "Monthly quota",
-      "noData": "No data from Agent Hub yet",
-      "activeTenants": "Active tenants",
-      "enabledCommands": "Enabled commands",
-      "workflows": "Workflows",
-      "unattached": "{n} unattached",
-      "runs24h": "Runs (24h)"
+      "noData": "No data from Agent Hub yet"
     },
     "quota": {
       "link": "View usage & quota",
@@ -350,29 +345,143 @@
       "link": "View audit log"
     },
     "platform": {
-      "subtitle": "Whole platform · {n} tenants · updated {time}",
       "createTenant": "New tenant",
       "createCommand": "New command"
     },
-    "nearQuota": {
-      "title": "Tenants near or over quota",
-      "empty": "No tenant has a quota yet.",
-      "ok": "Within quota",
-      "col": {
-        "tenant": "Tenant",
-        "quota": "Monthly quota · runs",
-        "status": "Status"
+    "ops": {
+      "subtitle": "Operations over the last 24 hours · updated {time}",
+      "hubNotConfigured": "The Hub address is not configured, so operations data is unavailable. Ask whoever deploys the system to set PUBLIC_HUB_URL.",
+      "howCalc": "How it is calculated: {name}",
+      "openDetail": "View details: {name}",
+      "trend7": "7-day trend",
+      "trendEmpty": "Not enough data for a 7-day trend yet.",
+      "hourly": "Runs per hour",
+      "hourlyChart": "Bar chart of runs per hour, done and failed",
+      "hourlyEmpty": "No runs in the last 24 hours, so there are no bars yet.",
+      "hourTip": "{time}: {ok} done, {error} failed",
+      "done": "Done",
+      "failed": "Failed",
+      "ago24": "-24 h",
+      "now": "now",
+      "unit": {
+        "runs": "runs",
+        "minutes": "min · 95% of runs",
+        "times": "times",
+        "pctUsed": "% used"
+      },
+      "delta": {
+        "up": "Up {n} vs yesterday",
+        "down": "Down {n} vs yesterday",
+        "flat": "Unchanged vs yesterday",
+        "none": "No yesterday figure to compare"
+      },
+      "runs": {
+        "running": "Running",
+        "failed": "Failed",
+        "needsDecision": "Needs a decision",
+        "empty": "No runs in the last 24 hours. Assign a process to a company so work starts running."
+      },
+      "kpi": {
+        "runs": {
+          "title": "Runs (24h)",
+          "tip": "Process runs started in the last 24 hours across all companies, plus how many are running, failed or need a decision right now."
+        },
+        "errorRate": {
+          "title": "Error rate",
+          "tip": "Failed or expired runs divided by runs that ended in the last 24 hours (cancelled runs are not counted). Compared with the previous 24 hours.",
+          "empty": "No run ended in the last 24 hours, so there is no rate yet."
+        },
+        "p95": {
+          "title": "Processing time",
+          "tip": "Time from submission to completion for the fastest 95% of runs (p95). Time waiting for a reviewer is excluded.",
+          "empty": "No run completed in the last 24 hours, so there is no time yet."
+        },
+        "aiErrors": {
+          "title": "AI tool errors (24h)",
+          "tip": "Times an AI tool reported an error in the last 24 hours, including attempts that later succeeded on retry."
+        },
+        "aiQuota": {
+          "title": "AI quota this month",
+          "tip": "AI cost used this month divided by the USD quota set, summed over companies that have a USD quota.",
+          "empty": "No company has an AI cost quota yet. Set one on the Usage & quota page.",
+          "of": "{used} / {limit} quota"
+        },
+        "companies": {
+          "title": "Active companies (7 days)",
+          "tip": "Companies with at least one process run or AI use in the last 7 days, out of all active customer companies.",
+          "unit": "/ {total} companies",
+          "empty": "No customer company yet. Create one to get started."
+        }
+      },
+      "attention": {
+        "title": "Needs attention",
+        "allClear": "Nothing needs attention. Everything looks fine.",
+        "stuck_runs": {
+          "title": "Runs failed or stuck for over {hours} h",
+          "sub": "Open the filtered run list",
+          "subNoLink": "The filtered run list has no page yet; check each process",
+          "ok": "No failed or stuck runs"
+        },
+        "unrouted_companies": {
+          "title": "Companies with work not assigned to a process",
+          "sub": "Work will not run until a process is assigned",
+          "subNoLink": "Work will not run until a process is assigned",
+          "ok": "Every company has a process assigned"
+        },
+        "failing_ai_tools": {
+          "title": "AI tools failing repeatedly",
+          "sub": "Failed {streak} times in a row or more",
+          "subNoLink": "Failed {streak} times in a row or more",
+          "ok": "No AI tool failing repeatedly"
+        },
+        "near_quota_companies": {
+          "title": "Companies close to their AI quota",
+          "sub": "Used {pct}% or more of the monthly quota",
+          "subNoLink": "Used {pct}% or more of the monthly quota",
+          "ok": "No company close to its quota"
+        },
+        "half_configured": {
+          "title": "Companies with incomplete setup",
+          "sub": "A process is assigned but a step is missing to run it",
+          "subNoLink": "A process is assigned but a step is missing to run it",
+          "ok": "No incomplete setup"
+        }
+      },
+      "health": {
+        "title": "System health",
+        "tip": "Green dot: normal. Amber dot: slower or more errors than usual. Red dot: broken. Select a tile for details.",
+        "level": {
+          "ok": "Normal",
+          "warn": "Needs attention",
+          "bad": "Failing",
+          "none": "No data yet"
+        },
+        "queue": {
+          "name": "Background queue",
+          "value": "{v} s",
+          "detail": "{queued} jobs waiting · oldest waited {oldest} s",
+          "empty": ""
+        },
+        "dify": {
+          "name": "AI service",
+          "value": "{v}% errors",
+          "detail": "24h errors: {errors} · worst tool: {tool}",
+          "empty": "No calls in the last hour"
+        },
+        "db": {
+          "name": "Database",
+          "value": "{v} ms",
+          "detail": "Connections {conn} / {max}",
+          "empty": ""
+        },
+        "deploy": {
+          "name": "Deployment",
+          "value": "v{v}",
+          "detail": "Running version",
+          "empty": "No deployed version recorded"
+        }
       }
-    },
-    "agentStudio": {
-      "title": "Agent Forge",
-      "body": "Agents, coordinators, models and operations live in Agent Forge. Agents pick workflows from the Admin catalog.",
-      "open": "Open Agent Forge"
-    },
-    "topErrors": {
-      "title": "Most failing commands (24h)"
-    },
-    "hubPending": "Available once Agent Hub is ready."
+    }
   },
   "state": {
     "error": {

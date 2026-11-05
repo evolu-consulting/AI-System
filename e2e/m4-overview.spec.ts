@@ -35,7 +35,7 @@ test("M4-R06 · E11 · admin cùng dữ liệu → không alert quota; binh khô
 }) => {
   await seedAcmeRuns(1000, 850);
   await loginAdmin(page);
-  await expect(region(page, "Tenant sắp hoặc đã vượt quota")).toBeVisible();
+  await expect(region(page, "Lượt chạy 24 giờ")).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "quota" })).toHaveCount(0);
   await page.getByRole("button", { name: "Tài khoản của bạn" }).click();
   await page.getByRole("menuitem", { name: "Đăng xuất" }).click();
@@ -59,20 +59,4 @@ test("ADM-FR-41 · E12 · binh '/': region Users đang hoạt động, Quota th�
   await expect(region(page, "Người dùng mới chưa đăng nhập")).toBeVisible();
   await expect(region(page, "Thay đổi gần đây")).toBeVisible();
   await expect(page.getByRole("link", { name: "Xem nhật ký" })).toBeVisible();
-});
-
-test("ADM-FR-41 · Q5 · M4-AC13 · E13 · admin '/': link Tạo tenant/Tạo command; 'Tenant sắp hoặc đã vượt quota' có acme; 'Sẽ có khi Agent Hub sẵn sàng.' ×2", async ({
-  page,
-}) => {
-  await seedAcmeRuns(1000, 850);
-  await loginAdmin(page);
-  await expect(page.getByRole("link", { name: "Tạo tenant" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Tạo command" })).toBeVisible();
-  await expect(region(page, "Tenant sắp hoặc đã vượt quota")).toContainText(/acme/i);
-  await expect(page.getByText("Sẽ có khi Agent Hub sẵn sàng.")).toHaveCount(2);
-});
-
-test("M4-AC13 · E13 · admin '/' khi chưa có usage → 'Số run 24 giờ' hiện '—'", async ({ page }) => {
-  await loginAdmin(page);
-  await expect(region(page, "Số run 24 giờ")).toContainText("—");
 });

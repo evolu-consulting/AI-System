@@ -1,29 +1,47 @@
-// ADM-FR-41, ADM-FR-42 · Tổng quan `/`: platform_admin → bản Main, tenant_admin → bản TenantOverview (plan-frontend §3.3). member đã bị chuyển sang /member.
+// ADM-FR-41, ADM-FR-42 · CR-121 C-3b · Tổng quan `/`: platform_admin → bento vận hành (Hub `/ops/overview`), tenant_admin → bản TenantOverview. member đã bị chuyển sang /member.
+import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
 import { formatClock } from "@/lib/format";
 import { loadError } from "@/lib/load-error";
-import { useOverview } from "../api";
-import { PlatformActions, PlatformOverview } from "../components/PlatformOverview";
+import { useOpsOverview, useOverview } from "../api";
+import { OpsBento } from "../components/ops/OpsBento";
 import { TenantOverview } from "../components/TenantOverview";
 
-type Data = ReturnType<typeof useOverview>["data"];
-
-function useDescription(platform: boolean, data: Data, updatedAt: number, tenantName: string) {
+function PlatformActions() {
   const { t } = useTranslation();
-  if (platform) {
-    const n = data?.kind === "platform" ? data.tenants_active : 0;
-    return t("overview.platform.subtitle", { n, time: formatClock(updatedAt || Date.now()) });
-  }
-  const tenant = data?.kind === "tenant" ? data.tenant.name : tenantName;
-  const month = data?.kind === "tenant" ? data.month.split("-").reverse().join("/") : "";
-  return t("overview.subtitle", { tenant, month });
+  return (
+    <>
+      <Button asChild variant="outline">
+        <Link to="/commands/new">{t("overview.platform.createCommand")}</Link>
+      </Button>
+      <Button asChild>
+        <Link to="/tenants/new">{t("overview.platform.createTenant")}</Link>
+      </Button>
+    </>
+  );
 }
 
-export function OverviewPage() {
+function PlatformPage() {
   const { t } = useTranslation();
-  const role = useSession((s) => s.me?.role);
+  const q = useOpsOverview(true);
+  const time = q.data ? formatClock(q.dataUpdatedAt) : "—";
+  return (
+    <>
+      <PageHeader
+        title={t("overview.title")}
+        description={t("overview.ops.subtitle", { time })}
+        actions={<PlatformActions />}
+      />
+      <OpsBento />
+    </>
+  );
+}
+
+function TenantPage() {
+  const { t } = useTranslation();
   const tenantName = useSession((s) => s.me?.tenant.name ?? "");
   const q = useOverview();
   const err = q.isError
@@ -32,29 +50,20 @@ export function OverviewPage() {
         onRetry: () => void q.refetch(),
       }
     : null;
-  const data = q.data;
-  const platform = role === "platform_admin";
-  const description = useDescription(platform, data, q.dataUpdatedAt, tenantName);
+  const data = q.data?.kind === "tenant" ? q.data : undefined;
+  const month = data ? data.month.split("-").reverse().join("/") : "";
   return (
     <>
       <PageHeader
         title={t("overview.title")}
-        description={description}
-        actions={platform ? <PlatformActions /> : undefined}
+        description={t("overview.subtitle", { tenant: data?.tenant.name ?? tenantName, month })}
       />
-      {platform ? (
-        <PlatformOverview
-          data={data?.kind === "platform" ? data : undefined}
-          loading={q.isPending}
-          error={err}
-        />
-      ) : (
-        <TenantOverview
-          data={data?.kind === "tenant" ? data : undefined}
-          loading={q.isPending}
-          error={err}
-        />
-      )}
+      <TenantOverview data={data} loading={q.isPending} error={err} />
     </>
   );
+}
+
+export function OverviewPage() {
+  const role = useSession((s) => s.me?.role);
+  return role === "platform_admin" ? <PlatformPage /> : <TenantPage />;
 }
