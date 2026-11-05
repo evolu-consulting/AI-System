@@ -33,11 +33,11 @@ import { useDeleteDialog } from "../hooks/use-delete-dialog";
 import { useRowFlow } from "../hooks/use-row-flow";
 import { useUploadQueue } from "../hooks/use-upload-queue";
 import {
-  type DateFilter,
+  applyDateAction,
+  type DateAction,
   dateFilterOf,
   isDateActive,
   parseDateSearch,
-  toDateSearch,
 } from "../lib/date-filter";
 import { buildRows, type DocFilter, parseDocFilter } from "../lib/doc-list";
 import { UPLOAD_ACCEPT } from "../lib/upload-queue";
@@ -76,11 +76,12 @@ export function ContractsListPage() {
       replace: true,
     });
   };
-  const setDate = (f: DateFilter) => {
+  // Gộp lên search HIỆN HÀNH của router (functional update), không lên bộ lọc đã vẽ ⇒ hai lựa chọn nhanh liền nhau không mất lựa chọn đầu.
+  const setDate = (a: DateAction) => {
     table.setPage(1);
     void nav({
       to: ".",
-      search: ((prev: object) => ({ ...prev, ...toDateSearch(f) })) as never,
+      search: ((prev: object) => applyDateAction(prev, a)) as never,
       replace: true,
     });
   };

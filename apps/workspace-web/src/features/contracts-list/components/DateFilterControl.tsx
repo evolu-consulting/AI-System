@@ -4,6 +4,7 @@ import { CONTRACT_DUE_PRESETS } from "@ai/contracts/light";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  type DateAction,
   type DateField,
   type DateFilter,
   DEFAULT_DATE_FIELD,
@@ -22,7 +23,8 @@ export function DateFilterControl({
   onChange,
 }: {
   value: DateFilter;
-  onChange: (f: DateFilter) => void;
+  /** Thao tác (không phải bộ lọc đầy đủ): trang gộp lên search hiện hành của URL. */
+  onChange: (a: DateAction) => void;
 }) {
   const { t } = useTranslation();
   // "Khoảng tuỳ chọn" chưa có ngày nào không biểu diễn được trên URL ⇒ giữ cờ mở ở state cục bộ, nếu không ô Từ/Đến ngày không bao giờ hiện.
@@ -31,16 +33,8 @@ export function DateFilterControl({
   const mode: Mode = urlMode === "" && rangeOpen ? "range" : urlMode;
   const setMode = (m: Mode) => {
     setRangeOpen(m === "range");
-    if (m === "") return onChange({ field: value.field });
-    if (m === "range")
-      return onChange({ field: value.field, from: value.from ?? "", to: value.to ?? "" });
-    onChange({ field: value.field, due: m });
+    onChange({ type: "mode", mode: m });
   };
-  const clean = (f: DateFilter): DateFilter => ({
-    field: f.field,
-    ...(f.from ? { from: f.from } : {}),
-    ...(f.to ? { to: f.to } : {}),
-  });
   return (
     <fieldset className="m-0 flex min-w-0 flex-wrap items-center gap-2 border-0 p-0">
       <legend className="sr-only">{t("contracts.list.date.label")}</legend>
@@ -48,7 +42,7 @@ export function DateFilterControl({
         aria-label={t("contracts.list.date.field")}
         className={SELECT}
         value={value.field ?? DEFAULT_DATE_FIELD}
-        onChange={(e) => onChange({ ...value, field: e.target.value as DateField })}
+        onChange={(e) => onChange({ type: "field", field: e.target.value as DateField })}
       >
         {FIELDS.map((k) => (
           <option key={k} value={k}>
@@ -78,7 +72,7 @@ export function DateFilterControl({
             className={SELECT}
             value={value.from ?? ""}
             max={value.to || undefined}
-            onChange={(e) => onChange(clean({ ...value, from: e.target.value }))}
+            onChange={(e) => onChange({ type: "from", value: e.target.value })}
           />
           <span className="text-dim">–</span>
           <input
@@ -87,7 +81,7 @@ export function DateFilterControl({
             className={SELECT}
             value={value.to ?? ""}
             min={value.from || undefined}
-            onChange={(e) => onChange(clean({ ...value, to: e.target.value }))}
+            onChange={(e) => onChange({ type: "to", value: e.target.value })}
           />
         </>
       )}

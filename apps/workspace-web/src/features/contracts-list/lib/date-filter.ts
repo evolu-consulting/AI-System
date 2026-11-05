@@ -65,3 +65,30 @@ export function dateParams(f: DateFilter): [string, string][] {
   }
   return out;
 }
+
+/** Một thao tác của ô lọc ngày. Gộp lên search HIỆN HÀNH của URL (`applyDateAction`), không lên bộ lọc đã vẽ ⇒ hai thao tác liên tiếp giữ cả hai. */
+export type DateAction =
+  | { type: "field"; field: DateField }
+  | { type: "mode"; mode: "" | DuePreset | "range" }
+  | { type: "from"; value: string }
+  | { type: "to"; value: string };
+
+/** Bộ lọc sau thao tác (thuần). */
+export function reduceDate(cur: DateFilter, a: DateAction): DateFilter {
+  const field = a.type === "field" ? a.field : cur.field;
+  if (a.type === "field") return { ...cur, field };
+  if (a.type === "mode") {
+    if (a.mode === "") return { field };
+    if (a.mode === "range") return { field, from: cur.from ?? "", to: cur.to ?? "" };
+    return { field, due: a.mode };
+  }
+  const from = a.type === "from" ? a.value : cur.from;
+  const to = a.type === "to" ? a.value : cur.to;
+  return { field, ...(from ? { from } : {}), ...(to ? { to } : {}) };
+}
+
+/** `prev` (search hiện hành của router) + thao tác ⇒ search mới: chỉ ghi đè bốn khoá của lọc ngày, giữ mọi khoá khác. */
+export function applyDateAction<S extends object>(prev: S, a: DateAction): S {
+  const cur = dateFilterOf(parseDateSearch(prev as Record<string, unknown>));
+  return { ...prev, ...toDateSearch(reduceDate(cur, a)) };
+}
