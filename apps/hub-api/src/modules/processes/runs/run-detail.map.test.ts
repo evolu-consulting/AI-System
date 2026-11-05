@@ -66,7 +66,7 @@ describe("toRunDetail · cảnh báo bước Thông báo (CR-121 D-6b)", () => {
       exec_en: null,
       warn_no_recipient: warn,
     }) as StageRow;
-  it("không có người nhận ⇒ step.warning = NOTIFY_NO_RECIPIENT; có người nhận ⇒ không có cờ", () => {
+  it("không có người nhận thì step.warning là NOTIFY_NO_RECIPIENT, có người nhận thì không có cờ", () => {
     expect(toRunDetail(head, [stage(true)], []).steps[0]?.warning).toBe("NOTIFY_NO_RECIPIENT");
     expect(toRunDetail(head, [stage(false)], []).steps[0]?.warning).toBeUndefined();
   });

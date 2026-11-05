@@ -226,7 +226,7 @@ describe("CR-118 · FlowView từ thẻ duyệt (tương đương)", () => {
 });
 
 describe("CR-121 D-6b · bước Thông báo / Chờ tới trong FlowView của thẻ duyệt", () => {
-  test("notify ⇒ bước hệ thống; wait_until ⇒ bước chờ tới `due_at`; đủ bước như quy trình", () => {
+  test("notify là bước hệ thống, wait_until là bước chờ tới giờ hẹn, đủ bước như quy trình", () => {
     const due = "2026-12-01T02:00:00.000Z";
     const v = flowViewOfCard(
       card({
