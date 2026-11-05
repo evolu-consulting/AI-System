@@ -64,10 +64,10 @@ module.exports = {
     {
       name: "ca-application-inward-only",
       comment:
-        "ADR-0023 (CR-088): lớp 2 `application/` chỉ import `domain/`, `application/`; cấm package npm, @ai/contracts, @ai/db, node:*/bun:*",
+        "ADR-0023 (CR-088): lớp 2 `application/` chỉ import `domain/`, `application/`; cấm package npm, @ai/contracts, @ai/db, node:*/bun:*; ngoại lệ CR-121 B-3: cửa `modules/**/public.ts` (ADR-0037)",
       severity: "error",
       from: { path: "(^|/)apps/.+/application/", pathNot: "\\.test\\.tsx?$|^apps/workspace-web/" },
-      to: { pathNot: "(^|/)apps/.+/(domain|application)/" },
+      to: { pathNot: "(^|/)apps/.+/(domain|application)/|(^|/)modules/.+/public\\.ts$" },
     },
     {
       name: "ca-inner-no-cross-module",
