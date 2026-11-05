@@ -1,6 +1,7 @@
-// e2e-journey-approval · bước dùng chung của hành trình duyệt HĐ (stack `approval.ja.ts` và triển khai `deployed/21-*`): đăng nhập hai web,
+﻿// e2e-journey-approval · bước dùng chung của hành trình duyệt HĐ (stack `approval.ja.ts` và triển khai `deployed/21-*`): đăng nhập hai web,
 // platform admin gán quy trình + luật + bật engine ở ai-admin, nhân viên tải HĐ, người duyệt bấm Đạt. Chỉ thao tác như người dùng thật (UI).
-import { expect, type Locator, type Page } from "@playwright/test";
+import { expect, type Locator, type Page, type Response } from "@playwright/test";
+import { loginPlatformAdminUi, openTenantAppsTab, optionValue, safeReload } from "../_kit/ui";
 import { buyContract } from "./_fixture";
 
 export type Env = {
@@ -40,25 +41,12 @@ export async function loginCw(page: Page, e: Env, user: string): Promise<void> {
 
 /** Đăng nhập ai-admin (admin-web) bằng platform admin. */
 export async function loginAdmin(page: Page, e: Env): Promise<void> {
-  await page.goto(`${e.admin}/login`);
-  await page.getByRole("textbox", { name: "Mã công ty" }).fill("platform");
-  await page.getByRole("textbox", { name: "Tên đăng nhập" }).fill(e.adminUser);
-  await page.getByLabel("Mật khẩu", { exact: true }).fill(e.adminPw);
-  await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Tổng quan" })).toBeVisible();
+  await loginPlatformAdminUi(page, e.admin, e.adminUser, e.adminPw);
 }
 
 /** Mở trang công ty › tab "Ứng dụng & Gói"; trả thẻ Sổ Hợp Tác. */
 async function openContractsCard(page: Page, e: Env): Promise<Locator> {
-  await page
-    .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("list", { name: "Danh sách công ty" })
-    .getByRole("link", { name: new RegExp(e.tenantName) })
-    .click();
-  await expect(
-    page.getByRole("heading", { level: 1, name: new RegExp(e.tenantName) }),
-  ).toBeVisible();
-  await page.getByRole("tab", { name: "Ứng dụng & Gói" }).click();
+  await openTenantAppsTab(page, e.tenantName);
   const card = page.getByRole("region", { name: /Sổ Hợp Tác|Hợp đồng/ }).first();
   await expect(card).toBeVisible();
   return card;
@@ -67,12 +55,6 @@ async function openContractsCard(page: Page, e: Env): Promise<Locator> {
 /** CR-120: khối Quy trình duy nhất của thẻ app (công tắc Duyệt theo quy trình + quy trình đã gán + luật), luôn mở. */
 export const processBlock = (card: Locator): Locator =>
   card.getByTestId("tenant-processes-contracts");
-
-async function optionValue(select: Locator, text: string): Promise<string> {
-  const v = await select.locator("option", { hasText: text }).first().getAttribute("value");
-  if (!v) throw new Error(`không có lựa chọn "${text}"`);
-  return v;
-}
 
 /** Platform admin: gán 2 quy trình cho công ty + 2 luật (Phòng Kinh doanh × Mua/Bán). Chạy lại được (đã đủ thì bỏ qua). */
 export async function adminAssignAndRoute(page: Page, e: Env): Promise<void> {
@@ -132,7 +114,7 @@ export async function adminSetEngine(page: Page, e: Env, on: boolean): Promise<v
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(toast(page, "Đã lưu tính năng cho")).toBeVisible();
   // đọc lại từ máy chủ: công tắc phải đúng
-  await page.reload();
+  await safeReload(page);
   await page.getByRole("tab", { name: "Ứng dụng & Gói" }).click();
   await expect(
     processBlock(page.getByRole("region", { name: /Sổ Hợp Tác|Hợp đồng/ }).first()).getByTestId(
@@ -171,14 +153,10 @@ export async function approveAs(
   stepName: string,
 ): Promise<void> {
   await loginCw(page, e, user);
-  // Mỗi lần tải trang, SPA tự `POST /auth/refresh` (xoay token). Tải lại khi lượt refresh trước CHƯA xong ⇒ phản hồi (Set-Cookie) bị
-  // huỷ, token cũ bị coi là "đã xoay" ⇒ 401 ⇒ về trang đăng nhập (lỗi của test, không phải của quyền xem). Nên luôn chờ trang nạp xong
-  // (thẻ duyệt đã trả về) trước khi tải lại.
-  const loaded = () =>
-    page.waitForResponse(
-      (r) => r.request().method() === "GET" && r.url().includes(`/contracts/${id}/approval`),
-      { timeout: 30_000 },
-    );
+  // Tải lại an toàn (kit): chờ `/auth/refresh` đang bay + thẻ duyệt đã trả về trước khi tải lại (xem e2e/_kit/ui.ts).
+  const isApproval = (r: Response) =>
+    r.request().method() === "GET" && r.url().includes(`/contracts/${id}/approval`);
+  const loaded = () => page.waitForResponse(isApproval, { timeout: 30_000 });
   const first = loaded();
   await page.goto(`${e.cw}/contracts/c/${id}`);
   await first;
@@ -186,9 +164,7 @@ export async function approveAs(
   let n = 0;
   await expect(async () => {
     if (n++ > 0) {
-      const again = loaded();
-      await page.reload();
-      await again;
+      await safeReload(page, { boot: isApproval });
     }
     await expect(stepOf(page, stepName)).toHaveAttribute("data-status", "open", { timeout: 4_000 });
     await expect(btn).toBeVisible({ timeout: 4_000 });
