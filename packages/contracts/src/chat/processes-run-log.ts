@@ -108,6 +108,15 @@ export const RunTimelineItemSchema = z.strictObject({
 });
 export type RunTimelineItem = z.infer<typeof RunTimelineItemSchema>;
 
+/** `kind` = loại nguồn (`contract` cho gói hợp đồng; gói khác ⇒ khoá gói); `app_key` = ứng dụng mở được bản ghi. */
+export const RunSourceSchema = z.strictObject({
+  kind: z.string().min(1).max(40),
+  id: UuidSchema,
+  label: z.string().min(1).max(200),
+  app_key: z.string().min(1).max(40),
+});
+export type RunSource = z.infer<typeof RunSourceSchema>;
+
 export const RunDetailSchema = z.strictObject({
   id: UuidSchema,
   tenant: z.strictObject({ id: UuidSchema, name: z.string().max(200) }),
@@ -128,6 +137,10 @@ export const RunDetailSchema = z.strictObject({
   started_at: IsoDateTime,
   finished_at: IsoDateTime.nullable(),
   is_test: z.boolean(),
+  /** CR-121 R-4 · nguồn gắn với lượt (vd hợp đồng của gói); `null` = lượt không gắn bản ghi gói. */
+  source: RunSourceSchema.nullable(),
+  /** CR-121 R-4 · id lượt MỚI nếu lượt này đã được "chạy lại cả lượt" (theo `rerun_of`); chưa ⇒ `null`. */
+  rerun_by: UuidSchema.nullable(),
   steps: z.array(RunDetailStepSchema).max(RUN_DETAIL_STEPS_MAX),
   timeline: z.array(RunTimelineItemSchema).max(RUN_DETAIL_TIMELINE_MAX),
 });

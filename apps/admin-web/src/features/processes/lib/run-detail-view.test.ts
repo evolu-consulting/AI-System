@@ -2,7 +2,9 @@
 import { describe, expect, it } from "bun:test";
 import { ApiError } from "@/lib/http";
 import {
+  canReopenUi,
   canRerunStepUi,
+  contractLink,
   controlErrorKey,
   formatDuration,
   hasDebugTab,
@@ -65,6 +67,22 @@ describe("lỗi + tiện ích", () => {
   it("tab Gỡ lỗi chỉ khi level=debug", () => {
     expect(hasDebugTab("debug")).toBe(true);
     expect(hasDebugTab("basic")).toBe(false);
+  });
+  it("R-4 · Mở lại quy trình: chỉ tenant_admin của đúng công ty, lượt gắn hợp đồng", () => {
+    const src = { kind: "contract" };
+    expect(canReopenUi("tenant_admin", src, "T1", "T1")).toBe(true);
+    expect(canReopenUi("tenant_admin", src, "T1", "T2")).toBe(false);
+    expect(canReopenUi("platform_admin", src, "T1", "T1")).toBe(false);
+    expect(canReopenUi("member", src, "T1", "T1")).toBe(false);
+    expect(canReopenUi("tenant_admin", null, "T1", "T1")).toBe(false);
+    expect(canReopenUi("tenant_admin", { kind: "pkdemo" }, "T1", "T1")).toBe(false);
+  });
+  it("R-4 · contractLink theo URL app; thiếu URL ⇒ null", () => {
+    expect(contractLink("https://ws.example.com/", "abc")).toBe(
+      "https://ws.example.com/contracts/c/abc",
+    );
+    expect(contractLink(undefined, "abc")).toBeNull();
+    expect(contractLink("  ", "abc")).toBeNull();
   });
   it("formatDuration", () => {
     expect(formatDuration(null)).toBe("—");

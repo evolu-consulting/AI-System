@@ -1,4 +1,4 @@
-// CR-121 · R-2 · int: trang chi tiết lượt chạy + nhật ký một bước. platform_admin thấy debug (mã lỗi, thông điệp gốc, payload
+﻿// CR-121 · R-2 · int: trang chi tiết lượt chạy + nhật ký một bước. platform_admin thấy debug (mã lỗi, thông điệp gốc, payload
 // job, kh_stage_usage); tenant admin cùng tenant chỉ basic (JSON KHÔNG chứa payload/error_message/mã lỗi, kể cả khi gửi
 // `?level=debug`); tenant khác ⇒ 404; member ⇒ 403. Số câu SQL cố định (chi tiết ≤ 4, nhật ký ≤ 3).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -192,6 +192,36 @@ describe("CR-121 R-2 · chi tiết lượt chạy", () => {
     const p = await c.call("P", "GET", `/process-runs/${runId}/detail${asP}`);
     expect(p.status).toBe(200);
     expect(RunDetailSchema.parse(p.json).id).toBe(runId);
+  });
+
+  it("R-4 · nguồn hợp đồng và lượt đã chạy lại", async () => {
+    const di = defInput({ key: "cr121-links", name: "Liên kết R4" });
+    const defId = "c1212000-0000-4000-8000-000000000002";
+    await insertDef(c.sql, { id: defId, tenantId: T.acme, input: di });
+    const def = { id: defId, key: "cr121-links", name: "Liên kết R4", stages: di.stages as Json[] };
+    const old = await insertRun(c.sql, { def, startedBy: PA.A, status: "done" });
+    const next = await insertRun(c.sql, { def, startedBy: PA.A, status: "running" });
+    const contractId = crypto.randomUUID();
+    await c.sql`update hub.process_runs set pack_key = 'contracts', pack_record_id = ${contractId}
+      where id = ${old.runId}`;
+    await c.sql`update hub.process_runs set rerun_of = ${old.runId} where id = ${next.runId}`;
+    const q = await countQueries(c.hub, () =>
+      c.call("Adm", "GET", `/process-runs/${old.runId}/detail`),
+    );
+    expect(q.n).toBeLessThanOrEqual(4);
+    const d = RunDetailSchema.parse(q.r.json);
+    expect(d.source).toEqual({
+      kind: "contract",
+      id: contractId,
+      label: `HĐ ${contractId.slice(0, 8)}`,
+      app_key: "contracts",
+    });
+    expect(d.rerun_by).toBe(next.runId);
+    const n = RunDetailSchema.parse(
+      (await c.call("Adm", "GET", `/process-runs/${next.runId}/detail`)).json,
+    );
+    expect(n.source).toBeNull();
+    expect(n.rerun_by).toBeNull();
   });
 
   it("chi tiết: tenant khác 404, member 403", async () => {

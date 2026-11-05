@@ -1149,6 +1149,7 @@
     "timeline": "Timeline",
     "timelineEmpty": "No events yet.",
     "openRelatedRun": "Open related run",
+    "rerunBy": "This run was rerun as a new run.",
     "copyId": "Copy run ID",
     "copied": "Run ID copied",
     "isTest": "Test run",
@@ -1217,6 +1218,13 @@
         "effect": "Creates a new run from the first step with the same process and inputs. This run is kept for comparison.",
         "confirm": "Rerun whole run",
         "done": "New run created"
+      },
+      "reopen": {
+        "button": "Reopen process",
+        "title": "Reopen the contract's process?",
+        "effect": "The contract is unlocked for editing and the approval process runs again when it is sent for approval. This run is kept for comparison.",
+        "confirm": "Reopen process",
+        "done": "The contract's process was reopened"
       },
       "rerun-step": {
         "button": "Rerun this step",

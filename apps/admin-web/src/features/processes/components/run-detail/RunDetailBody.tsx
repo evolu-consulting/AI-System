@@ -10,12 +10,19 @@ import { useRun } from "../../api";
 import type { ProcessTenant } from "../../hooks/use-process-tenant";
 import {
   type ControlRole,
+  canReopenUi,
   canRerunStepUi,
   controlErrorKey,
   isPackBoundError,
   runControls,
 } from "../../lib/run-detail-view";
-import { useRunControl, useRunDetail, useStageLog } from "../../run-detail-api";
+import {
+  useReopenContract,
+  useRunControl,
+  useRunDetail,
+  useSourceHref,
+  useStageLog,
+} from "../../run-detail-api";
 import { AutofixBlocks } from "../run/autofix/AutofixBlocks";
 import { OutputDialog, type OutputTarget } from "../run/OutputDialog";
 import { RunActions } from "../run/RunActions";
@@ -40,8 +47,10 @@ export function RunDetailBody({ runId, tenant }: Props) {
   const [packBound, setPackBound] = useState(false);
   const [output, setOutput] = useState<OutputTarget | null>(null);
   const [usageOpen, setUsageOpen] = useState(false);
+  const reopen = useReopenContract();
   const log = useStageLog(runId, sel, tenant.tenantId);
   const run = detail.data;
+  const sourceHref = useSourceHref(run?.source ?? null);
   if (!run) return null;
   const role = tenant.me?.role as ControlRole;
   const controls = runControls(run.status, role, packBound);
@@ -51,6 +60,15 @@ export function RunDetailBody({ runId, tenant }: Props) {
     if (!target) return;
     setError(null);
     try {
+      if (target.op === "reopen") {
+        await reopen.mutateAsync({
+          contractId: target.contractId,
+          reason: t(`process.admin.runDetail.ctl.reason.${reason}`),
+        });
+        notifySuccess(t("process.admin.runDetail.ctl.reopen.done"));
+        setTarget(null);
+        return;
+      }
       const out = await ctl.mutateAsync(
         target.op === "rerun-step"
           ? { op: "rerun-step", reason, stageIdx: target.idx }
@@ -81,6 +99,9 @@ export function RunDetailBody({ runId, tenant }: Props) {
         run={run}
         controls={controls}
         packBound={packBound}
+        sourceHref={sourceHref}
+        canReopen={canReopenUi(role, run.source, run.tenant.id, tenant.me?.tenant.id)}
+        onReopen={() => run.source && setTarget({ op: "reopen", contractId: run.source.id })}
         nowMs={Date.now()}
         onStop={() => setTarget({ op: "stop" })}
         onRerun={() => setTarget({ op: "rerun" })}
@@ -127,7 +148,7 @@ export function RunDetailBody({ runId, tenant }: Props) {
       />
       <ControlDialog
         target={target}
-        pending={ctl.isPending}
+        pending={ctl.isPending || reopen.isPending}
         error={error}
         onCancel={() => {
           setTarget(null);

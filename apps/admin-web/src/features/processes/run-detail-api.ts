@@ -5,13 +5,15 @@ import type {
   RerunStepRequest,
   RunControlReason,
   RunDetail,
+  RunSource,
   RunStageLog,
   StopProcessRunRequest,
 } from "@ai/contracts/chat";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchMyApps } from "@/features/shell/api";
 import { api } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";
-import { isRunEnded } from "./lib/run-detail-view";
+import { contractLink, isRunEnded } from "./lib/run-detail-view";
 
 const POLL_MS = 5000;
 const enc = encodeURIComponent;
@@ -46,6 +48,31 @@ export function useStageLog(id: string, idx: number | null, tenantId: string | u
       api<RunStageLog>(url(`/process-runs/${enc(id)}/stages/${idx ?? 0}/log`), {
         query: { tenant_id: tenantId },
       }),
+  });
+}
+
+/** URL app lấy từ `GET /me/apps` (cùng nguồn switcher); không có app ⇒ `null` (không hiện liên kết). */
+export function useSourceHref(source: RunSource | null): string | null {
+  const q = useQuery({
+    queryKey: ["process", "my-apps"] as const,
+    enabled: source?.kind === "contract",
+    staleTime: 5 * 60_000,
+    queryFn: fetchMyApps,
+  });
+  if (source?.kind !== "contract") return null;
+  return contractLink(q.data?.find((a) => a.key === source.app_key)?.url, source.id);
+}
+
+/** "Mở lại quy trình" của hợp đồng: API hiện có của gói (`reason` là câu chữ của lý do đã chọn). */
+export function useReopenContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (a: { contractId: string; reason: string }) =>
+      api<unknown>(url(`/pack/contracts/contracts/${enc(a.contractId)}/reopen`), {
+        method: "POST",
+        body: { reason: a.reason },
+      }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["process"] }),
   });
 }
 

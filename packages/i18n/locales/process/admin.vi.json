@@ -1149,6 +1149,7 @@
     "timeline": "Dòng thời gian",
     "timelineEmpty": "Chưa có sự kiện nào.",
     "openRelatedRun": "Mở lượt chạy liên quan",
+    "rerunBy": "Lượt này đã được chạy lại thành một lượt mới.",
     "copyId": "Sao chép mã lượt chạy",
     "copied": "Đã sao chép mã lượt chạy",
     "isTest": "Lượt chạy thử",
@@ -1217,6 +1218,13 @@
         "effect": "Tạo một lượt chạy mới từ bước đầu với cùng quy trình và đầu vào. Lượt này giữ nguyên để đối chiếu.",
         "confirm": "Chạy lại cả lượt",
         "done": "Đã tạo lượt chạy mới"
+      },
+      "reopen": {
+        "button": "Mở lại quy trình",
+        "title": "Mở lại quy trình của hợp đồng?",
+        "effect": "Hợp đồng được mở khoá để chỉnh sửa và quy trình duyệt chạy lại khi gửi duyệt. Lượt này giữ nguyên để đối chiếu.",
+        "confirm": "Mở lại quy trình",
+        "done": "Đã mở lại quy trình của hợp đồng"
       },
       "rerun-step": {
         "button": "Chạy lại bước này",

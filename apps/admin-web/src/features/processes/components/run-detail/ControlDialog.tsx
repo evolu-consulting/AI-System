@@ -17,6 +17,7 @@ import { CONTROL_REASONS } from "../../lib/run-detail-view";
 export type ControlTarget =
   | { op: "stop" }
   | { op: "rerun" }
+  | { op: "reopen"; contractId: string }
   | { op: "rerun-step"; idx: number; name: string };
 
 type Props = {

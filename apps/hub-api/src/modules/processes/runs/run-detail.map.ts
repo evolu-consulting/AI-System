@@ -88,6 +88,15 @@ const matchedRules = (events: readonly TlEvent[]): Map<number, Set<number>> => {
   return m;
 };
 
+/** Nguồn gắn lượt từ `pack_key`/`pack_record_id`. Hub không đọc bảng gói ⇒ nhãn = "HĐ <8 ký tự đầu của id>" (hợp đồng) / khoá gói. */
+export function sourceOf(packKey: string | null, recordId: string | null): RunDetail["source"] {
+  if (!packKey || !recordId) return null;
+  const short = recordId.slice(0, 8);
+  return packKey === "contracts"
+    ? { kind: "contract", id: recordId, label: `HĐ ${short}`, app_key: packKey }
+    : { kind: packKey, id: recordId, label: `${packKey} ${short}`, app_key: packKey };
+}
+
 export function toRunDetail(
   h: HeadRow,
   stages: readonly StageRow[],
@@ -133,6 +142,8 @@ export function toRunDetail(
     started_at: h.started_at,
     finished_at: h.finished_at,
     is_test: h.is_test,
+    source: sourceOf(h.pack_key, h.pack_record_id),
+    rerun_by: h.rerun_by,
     steps,
     timeline: buildTimeline(
       {

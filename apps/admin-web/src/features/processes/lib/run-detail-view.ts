@@ -42,6 +42,22 @@ export function runControls(status: string, role: ControlRole, packBound: boolea
   };
 }
 
+/** "Mở lại quy trình": lượt gắn hợp đồng + tenant_admin của chính công ty đó (API gói chạy theo tenant của người gọi; platform_admin không có tenant gói). */
+export function canReopenUi(
+  role: ControlRole,
+  source: { kind: string } | null,
+  runTenantId: string,
+  myTenantId: string | undefined,
+): boolean {
+  return role === "tenant_admin" && source?.kind === "contract" && runTenantId === myTenantId;
+}
+
+/** Liên kết tới hợp đồng ở app phục vụ (`/contracts/c/:id`); chưa biết URL app ⇒ `null`. */
+export function contractLink(appUrl: string | undefined, id: string): string | null {
+  const base = (appUrl ?? "").trim().replace(/\/+$/, "");
+  return base ? `${base}/contracts/c/${encodeURIComponent(id)}` : null;
+}
+
 const RERUNNABLE_STEP = new Set(["done", "failed", "needs_decision", "waiting_timer"]);
 
 /** Chạy lại bước: chỉ platform_admin; bước lỗi/xong; lượt chưa bị dừng/hết hạn. */
