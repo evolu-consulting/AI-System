@@ -494,8 +494,8 @@ f1ad28f6a89916884619a58b896029fa076d5ac792b514606a632db85f9a6e1a  e2e/fnr-showca
 c776e661a6badea8fc88dd7e3e0d50a80ab39d07760fe465f8c516abbbe8ff70  e2e/journey-approval/_journey.ts
 519b2ef8ba5527642a883c6803a30ae85b59b040574b343ce96bc154c37a1b3d  e2e/journey-approval/approval.ja.ts
 eb03cd0e15557137aa15e6ccf577bb84a4afad1b30ba70b0f02c52f74a7d7c3b  e2e/journey-approval/cr121-d-journey.spec.ts
-31263351709c3013d571c4ccf886bbaf0d4f37f07b706dc72e43fbf7d0668171  e2e/journey-approval/cr121-d6b-notify.spec.ts
-3de6110090cf171a68ccd9525ae2fe2295e8d46c59960864503c615d8c6af2cd  e2e/journey-approval/cr121-editor.spec.ts
+e6522cc4ef0b06fa1c1cc0e82285f49f5c464e9f2cd34fc5e4c52c15814e3e13  e2e/journey-approval/cr121-d6b-notify.spec.ts
+405ca45f0e5360ef2bd2dadf8287e479a21ac3ac162b7ac7df44e6ed2eeccf47  e2e/journey-approval/cr121-editor.spec.ts
 68a220fb199849eee74c1e48cfce55002cc15274737774bcb39c80fac1f0a878  e2e/journey-approval/playwright.journey.config.ts
 4e471120bb500260af668c3a0ac117fecfcd80bf1046ddb6764be82b9ac4e606  e2e/journey-approval/refresh-reload.ja.ts
 f354166f3f59a9ecd116e2bddc120922f7a9c4371676b95c982baecbf0cf13e2  e2e/m1-flow.spec.ts
@@ -614,6 +614,7 @@ c192fe2d0c2c86cf948f2128762b533def4ab1105e07393804ec785c8db71298  tests/acceptan
 f4e1e120afdcd75c76dcf9ca53ca42ded719c9c58779936343c7c700dcba14f1  tests/acceptance/CR-055/import.int.test.ts
 284df29ea2a75727855dc25776364905e22261046705289179f14fdee0e828eb  tests/acceptance/CR-120/timed-wait.int.test.ts
 81898fcb81203e4802d2d5c27f35a07aec7c89fe25bf3d0e17fb94d1f4dfc7f1  tests/acceptance/CR-121/notify-node.int.test.ts
+a6d614a42c87e2f7d11dba99d77a9814d909af996e37e57e8c62faafb7a68dfb  tests/acceptance/CR-121/notify-vars.int.test.ts
 fc81c8d8b4e3266f8bc0ef1f7dd4123a30b2c05fcd037606442025bfecd91870  tests/acceptance/CR-121/platform-reopen-engine.int.test.ts
 fb5d8256d582b66206152c188cddf4aea015963d26a08c11c2ea2ad7afe65076  tests/acceptance/CR-121/platform-reopen.int.test.ts
 9e57bffe222dc2f0df2e83dd038874e415854e1a5e0c71745ff7be9435f3c12b  tests/acceptance/CR-121/run-control.int.test.ts

@@ -117,7 +117,9 @@ describe("CR-121 F-5 · input run theo HĐ đã xác nhận [R1]", () => {
     await waitStatus(c.sql, s.runId, "done");
     const notes = await c.sql<Json[]>`select user_id::text as u, title from hub.notifications
       where dedup_key like ${`pn:${s.runId}:%`}`;
-    expect(notes).toEqual([{ u: PA.A.id, title: "Đã duyệt HĐ HD-09 · Mua máy chủ" }]);
+    expect(notes.map((n) => ({ u: n.u, title: n.title }))).toEqual([
+      { u: PA.A.id, title: "Đã duyệt HĐ HD-09 · Mua máy chủ" },
+    ]);
     // Run đã kết thúc ⇒ không cập nhật nữa.
     expect(await port.updateInputs({ ...ref, version: 3 }, patch)).toBe(false);
   }, 60_000);

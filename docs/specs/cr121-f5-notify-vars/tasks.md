@@ -23,7 +23,9 @@ Không đổi UI. Quy trình không có bước Dify/Thông báo/Chờ tới th�
 ## Test tối thiểu
 - unit `approval-run-inputs.rules.test.ts`.
 - int `tests/acceptance/CR-121/notify-vars.int.test.ts` (đỏ trước khi sửa, xanh sau).
-- e2e `journey-approval-journey` chạy 1 lượt.
+- e2e `journey-approval-journey` đã chạy 1 lượt (d79d45d0): 15 pass, 1 đỏ ở `cr121-d6b-notify` ca 1. Lỗi là strict-mode `Nhân bản`
+  (bấm khi chưa rời danh sách), nên ca 2 và ca 3 bị bỏ qua và chưa xác nhận được ca 3 trên e2e. Đã sửa test ở cả `cr121-d6b-notify` và
+  `cr121-editor`: chờ URL chi tiết và đúng 1 nút rồi mới bấm, không nới assert. Chưa chạy lại vì đã hết 3 lượt evotest.
 
 ## Quyết định trong lúc làm
 - Không chọn (b) `recordLabelRegistry`: nó mở tx gói riêng (`createPackUow`) ngay trong tx khoá run, vi phạm Luật 4c, và chỉ có nhãn, không có giá trị/ngày.

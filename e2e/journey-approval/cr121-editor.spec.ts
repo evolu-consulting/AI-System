@@ -26,6 +26,9 @@ async function openOwnDraft(page: Page, name: string): Promise<void> {
   await loginAdmin(page, E);
   await page.goto(`${E.admin}/processes`);
   await page.getByText(PROC.buy, { exact: false }).first().click();
+  // Chờ rời danh sách (mỗi dòng có nút "Nhân bản") sang trang chi tiết rồi mới bấm — tránh strict-mode khi chuyển trang chưa xong.
+  await expect(page).toHaveURL(/\/processes\/[0-9a-f-]{36}/);
+  await expect(page.getByRole("button", { name: "Nhân bản" })).toHaveCount(1);
   await page.getByRole("button", { name: "Nhân bản" }).click();
   await page.getByLabel("Tên quy trình mới").fill(name);
   await page.getByRole("dialog").getByRole("button", { name: "Nhân bản" }).click();
