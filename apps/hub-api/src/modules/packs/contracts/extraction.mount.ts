@@ -288,6 +288,7 @@ export function contractsAiModule(
     ...(eng
       ? {
           engine: eng.start,
+          engineOff: eng.engineOff,
           reopen: eng.reopen,
           retry: eng.retry,
           cancelReopen: eng.cancelReopen,

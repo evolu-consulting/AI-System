@@ -14,6 +14,7 @@ import {
   resolveSlotSteps,
   slotBodyOf,
   slotGroupKeys,
+  withConfirmStep,
 } from "../domain/approval-slot.rules";
 import type {
   ApprovalEngineBridge,
@@ -91,8 +92,9 @@ export async function slotFlowOf(
   if ("blocked" in r)
     return { invalid: r.blocked === "route_none" ? FLOW_ROUTE_NONE : FLOW_ROUTE_UNAVAILABLE };
   const ruleId = "ruleId" in r ? (r.ruleId as string | null) : undefined;
-  const body = slotBodyOf(r.slotBody);
-  if (!body) return { invalid: FLOW_INVALID };
+  const raw = slotBodyOf(r.slotBody);
+  if (!raw) return { invalid: FLOW_INVALID };
+  const body = withConfirmStep(raw); // người tải HĐ lên xác nhận trước; quy trình chỉ khai các bước duyệt
   const keys = slotGroupKeys(body);
   const ids = keys.length > 0 ? await d.groups.idsOf(tenantId, keys) : new Map<string, string>();
   const steps = resolveSlotSteps(body, ids);

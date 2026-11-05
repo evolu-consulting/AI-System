@@ -2,6 +2,7 @@
 // ban theo MÃ (`department_group_key`, `escalate_group_key`, `company_signer.department_group_key`; `*_group_id` = null) — def thư viện
 // dùng chung nhiều tenant không được chứa id Group của tenant nào. Lúc mở lượt: mã ⇒ id theo tenant (`resolveSlotSteps`; thiếu
 // mã ⇒ null ⇒ máy cũ), rồi `compileDef` như mẫu tenant. Thuần, lớp 1 (chỉ builtin).
+import { APPROVAL_DEFAULTS } from "./approval-def.rules";
 import { compileDef, validateFlow } from "./approval-flow.rules";
 import type {
   ApprovalFlowIssue,
@@ -33,6 +34,37 @@ export function slotBodyOf(x: unknown): SlotFlowBody | null {
   return ok ? (x as unknown as SlotFlowBody) : null;
 }
 
+/** Khoá bước "Xác nhận và lưu" do gói tự thêm đầu quy trình (người tải HĐ lên xác nhận, KHÔNG phải bước của quy trình). */
+export const CONFIRM_STEP_KEY = "confirm";
+
+/**
+ * Lúc mở lượt: quy trình thư viện chỉ khai các bước DUYỆT (vd Kế toán → Giám đốc). "Xác nhận và lưu" thuộc người tải HĐ lên (mọi người có
+ * quyền sửa = nhóm `contracts-editor`) nên gói thêm bước xác nhận ở đầu lượt chạy; bước đầu của quy trình đã là nhóm sửa (vd quy trình
+ * mặc định, bản nhân bản của nó) ⇒ đó đã là bước xác nhận, giữ nguyên (không có hai bước xác nhận).
+ */
+export function withConfirmStep(
+  body: SlotFlowBody,
+  editorKey: string = APPROVAL_DEFAULTS.level1GroupKey,
+): SlotFlowBody {
+  const first = body.steps[0];
+  if (first?.kind === "review" && first.department_group_key === editorKey) return body;
+  if (body.steps.some((s) => s.key === CONFIRM_STEP_KEY)) return body;
+  const confirm = {
+    kind: "review",
+    key: CONFIRM_STEP_KEY,
+    name: "Xác nhận hợp đồng",
+    department_group_id: null,
+    department_group_key: editorKey,
+    head_only: false,
+    due_h: 48,
+    remind_every_h: null,
+    escalate_group_id: null,
+    escalate_group_key: null,
+    exclude_starter: false,
+    when: null,
+  } as unknown as SlotFlowStep;
+  return { steps: [confirm, ...body.steps] };
+}
 /** Mã Group mà body tham chiếu (duyệt + chuyển cấp + phòng người ký), không trùng. */
 export function slotGroupKeys(body: SlotFlowBody): string[] {
   const keys = new Set<string>();

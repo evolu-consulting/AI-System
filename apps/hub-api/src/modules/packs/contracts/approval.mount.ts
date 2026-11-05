@@ -91,8 +91,15 @@ export function approvalEngine(
   const start: typeof startRaw = gate
     ? async (who, id) => ((await gate(who.tenantId)) ? startRaw(who, id) : "machine")
     : startRaw;
+  // engine-off-note · lượt máy cũ của công ty CHƯA có entitlement: có quy trình riêng được gán/luật (luật không khớp = bị chặn cũng tính) ⇒ true.
+  const engineOff = async (who: PackWho, startedBy: string): Promise<boolean> => {
+    if (!gate || (await gate(who.tenantId))) return false;
+    const r = await flow.engine?.port?.routeSlot?.(who.tenantId, APPROVAL_SLOT, startedBy, {});
+    return r != null && ("blocked" in r || r.isDefault !== true);
+  };
   return {
     start,
+    engineOff,
     reopen: reopenEngineApproval(ed),
     retry: retryEngineApproval(ed), // CR-107
     cancelReopen: cancelReopenEngineApproval(ed),

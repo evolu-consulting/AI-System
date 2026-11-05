@@ -92,7 +92,7 @@ export function useApprovalUi(o: {
         </p>
       )}
       {ap.approval && <ApprovalTimeline id={o.id} a={ap.approval} />}
-      <EngineOffNote step={ap.approval?.step} mode={ap.approval?.mode} />
+      <EngineOffNote off={ap.approval?.engine_off === true} />
       {attention && (
         <AttentionBanner
           attention={attention}
