@@ -1,4 +1,4 @@
-﻿---
+---
 id: cr121-d
 cr: CR-121 (phần D — Quy trình đủ mạnh, chạy chắc)
 trạng thái: D-0 xong (ranh giới); D-1..D-5 chờ
