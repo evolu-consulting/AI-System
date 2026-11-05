@@ -1,4 +1,4 @@
-# Dựng toàn bộ AI System trên máy dev bằng một lệnh: lõi (admin-api, hub-api) + 5 web (ai-admin, chat, studio,
+﻿# Dựng toàn bộ AI System trên máy dev bằng một lệnh: lõi (admin-api, hub-api) + 5 web (ai-admin, chat, studio,
 # Sổ Hợp Tác, Community). Chạy lại an toàn: bước nào đã xong thì bỏ qua. Log + PID ở .data\dev-up\. Tắt: scripts\dev-down.ps1.
 #   scripts\dev-up.ps1              Postgres/Redis: dùng cái đang chạy, không có thì docker compose (hoặc dev-db.ps1)
 #   scripts\dev-up.ps1 -Only core   chỉ admin-api + hub-api
