@@ -21,7 +21,12 @@ describe("seed-e2e-journey · luật thuần", () => {
     expect(journeyGuard({ spec: { ...JOURNEY_SPEC, tenantKey: "demo" }, pw: PW })).not.toBeNull();
     const badProc = {
       ...JOURNEY_SPEC,
-      processes: [{ ...(JOURNEY_SPEC.processes[0] as never), key: "niti-mua-kd" }],
+      processes: [
+        {
+          ...(JOURNEY_SPEC.processes[0] as (typeof JOURNEY_SPEC.processes)[number]),
+          key: "niti-mua-kd",
+        },
+      ],
     };
     expect(journeyGuard({ spec: badProc, pw: PW })).toContain("niti-mua-kd");
     expect(journeyGuard({ spec: JOURNEY_SPEC, pw: "x" })).toContain("E2E_JOURNEY_PW");
