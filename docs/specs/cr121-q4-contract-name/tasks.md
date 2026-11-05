@@ -36,9 +36,8 @@ Cột `contracts.title` là tên file lúc tải lên; tên HĐ thật ở `fiel
 - e2e: không đổi (không spec nào dựa vào tên file HĐ), không chạy.
 
 ## Quyết định trong lúc làm
-- Biểu thức cũ `coalesce(fields.title, number, title)` (mywork, followups, todo, service-customers, ledger) mất nhánh `number` giữa chừng:
-  thiếu tên thật ⇒ ra tên file thay vì số HĐ. Chấp nhận để có MỘT định nghĩa; số HĐ vẫn có cột/nhãn riêng (`number`, `contractLabelSql`).
-- Tên mã-trước (`coalesce(number, title)` của thông báo ký số, `contract_number` sổ cái) giữ ý nghĩa, nhánh dự phòng nay là tên thật.
+- Biểu thức cũ `coalesce(fields.title, number, title)` (mywork, followups, todo, service-customers, ledger) giữ nhánh `number` (test W1/HD7 dựa vào) ⇒ gom thành `contractLabelSql`, không rơi về tên file khi đã có mã HĐ.
+- Mã-trước (`coalesce(number, title)` của thông báo ký số, `contract_number` sổ cái) = `contractCodeSql`, nhánh dự phòng nay là tên thật.
 - Số câu SQL không đổi; sắp xếp `title` nay trên biểu thức (tập đã lọc, trước khi cắt trang như cũ).
 
 ## Delta (so với docs/current)
