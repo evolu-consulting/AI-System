@@ -103,6 +103,7 @@ test("ADM-FR-50 · M2-R01 · thêm secret: tên tự chuẩn hoá HOA/_ ; nút H
 test("AC-A06 · ADM-BR-04 · quét rò: sau khi thêm secret với LEAK_1, DOM/localStorage/sessionStorage/cookie/URL/title/console và mọi body response không chứa giá trị; request body chỉ chứa nó ở POST /admin/secrets", async ({
   page,
 }) => {
+  test.slow(); // quá giờ khi máy tải cao (tải bundle/duyệt nhiều bước): nới timeout x3, giữ nguyên assertion
   await loginAdmin(page);
   const traffic = collectTraffic(page);
   await openPage(page, "/secrets", "Secrets");

@@ -130,16 +130,16 @@ export async function openPage(page: Page, path: string, heading: string) {
 }
 
 /**
- * DLC-R15 · menu "Workflows" là nhóm sổ xuống (Workflow Steps · Workflow Process): mở nhóm nếu đang đóng, bấm
- * "Workflow Process" → /workflows, tiêu đề "Workflow Process".
+ * CR-112 (nav.ts, nhóm TỰ ĐỘNG HOÁ): "Workflow Dify (tool AI)" là một liên kết trong sidebar → /workflows,
+ * tiêu đề h1 cùng tên (thay nhóm sổ xuống DLC-R15 "Workflow Process").
  */
 export async function openWorkflowProcessFromNav(page: Page) {
   const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
-  const group = nav.getByRole("button", { name: "Workflows", exact: true });
-  if ((await group.getAttribute("aria-expanded")) !== "true") await group.click();
-  await nav.getByRole("link", { name: "Workflow Process", exact: true }).click();
+  await nav.getByRole("link", { name: "Workflow Dify (tool AI)", exact: true }).click();
   await expect(page).toHaveURL(/\/workflows$/);
-  await expect(page.getByRole("heading", { level: 1, name: "Workflow Process" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Workflow Dify (tool AI)" }),
+  ).toBeVisible();
 }
 
 export type Traffic = {

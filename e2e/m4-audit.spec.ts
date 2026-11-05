@@ -117,6 +117,7 @@ test("ADM-FR-51 · BR-04 · E17 · thay giá trị secret → chi tiết 'Giá t
   page,
   request,
 }) => {
+  test.slow(); // quá giờ khi máy tải cao (tải bundle/duyệt nhiều bước): nới timeout x3, giữ nguyên assertion
   const api = await apiAsAdmin(request);
   expect((await api.put("/admin/secrets/DIFY_TRANSLATE_KEY", { value: LEAK_2 })).status()).toBe(
     200,

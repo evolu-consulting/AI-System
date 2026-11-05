@@ -71,7 +71,7 @@ test("ADM-FR-55 · M3-AC08 · workflow danh sách: bật report-export khi ngư�
   request,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Process");
+  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
   const row = page
     .getByRole("table", { name: "Workflow Dify (tool AI)" })
     .getByRole("row")

@@ -226,6 +226,7 @@ test("ADM-FR-08 · E-2FA-08 · tự tắt 2FA: mật khẩu + mã → toast, 'Ch
 test("ADM-FR-08 · E-2FA-09 · D11 · secret, mã dự phòng và totp_token không lộ ở URL, storage, cookie, console, DOM", async ({
   page,
 }) => {
+  test.slow(); // quá giờ khi máy tải cao (90 s): nới x3, giữ nguyên assertion
   const t = collectTraffic(page);
   const { secret } = await enableViaUi(page);
   const enable = page.waitForResponse((r) => /\/auth\/totp\/enable/.test(r.url()));

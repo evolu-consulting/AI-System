@@ -2,6 +2,7 @@
 // Chạy bằng bun: `bun e2e/support/prepare-db.ts` (đầy đủ, đầu phiên) hoặc `--reset-only` (chỉ dữ liệu, giữa các file spec).
 // Bắt buộc DB tên kết thúc `_test` (resetTestDb kiểm). Mật khẩu admin seed đọc từ SEED_ADMIN_PASSWORD (không hard-code).
 import { runMigrations } from "@ai/db";
+import { runHubMigrations } from "@ai/db/migrate-hub";
 import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";
 import { insertBulk, insertFixture, makeHashes } from "../../tests/acceptance/M1/_data";
@@ -48,6 +49,8 @@ async function main(): Promise<void> {
   if (!resetOnly) {
     await resetTestDb(url);
     await runMigrations({ url, appEnv: "development" });
+    // usage-analytics (hub 0049: usage_logs.app/outcome/feature + usage_daily): cùng trình tự với các stack e2e P-a/P-b/chat.
+    await runHubMigrations({ url, appEnv: "test" });
   }
   const sql = postgres(url, { max: 1, onnotice: () => {} });
   try {

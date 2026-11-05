@@ -31,7 +31,7 @@ test("ADM-FR-14 · M2-R26 · /workflows: heading, bảng, chip Tất cả 5 / B�
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Process");
+  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
   await expect(page.getByRole("table", { name: "Workflow Dify (tool AI)" })).toBeVisible();
   await expect(page.getByRole("button", { name: "+ Thêm workflow" })).toBeVisible();
   for (const [label, n] of [
@@ -61,7 +61,7 @@ test("ADM-FR-10 · M2-AC07 · form khai báo: mô tả 19 ký tự → lỗi, 20
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Process");
+  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
   await page.getByRole("button", { name: "+ Thêm workflow" }).click();
   await page.getByRole("menuitem", { name: /^Workflow Dify/ }).click();
   await expect(page).toHaveURL(/\/workflows\/new$/);
@@ -116,7 +116,7 @@ test("ADM-FR-14 · AC-A13 · khai báo workflow không gắn command/agent: lưu
   expect((await saved).status()).toBe(201);
   await expect(page).toHaveURL(/\/workflows\/[0-9a-f-]{36}$/);
   await expect(page.getByText("Chưa gắn").first()).toBeVisible();
-  await openPage(page, "/workflows", "Workflow Process");
+  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
   await expect(wfRow(page, "report-tax-2")).toContainText("Chưa gắn");
 });
 
@@ -187,7 +187,7 @@ test("ADM-FR-13 · AC-A05 · xoá translate (command /dich + agent …02a1): ale
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Process");
+  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
   await rowMenu(page, "translate", "Xoá");
   const dialog = page.getByRole("alertdialog", { name: /Không xoá được translate/ });
   await expect(dialog).toBeVisible();
@@ -213,7 +213,7 @@ test("ADM-FR-13 · M2-R11 · xoá workflow không dùng (report-tax): alertdialo
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Process");
+  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
   await rowMenu(page, "report-tax", "Xoá");
   const dialog = page.getByRole("alertdialog", { name: "Xoá report-tax?" });
   await expect(dialog).toBeVisible();
@@ -233,7 +233,7 @@ test("ADM-FR-13 · M2-AC06 · tắt translate khi còn command bật/agent → d
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Process");
+  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
   await rowMenu(page, "translate", "Tắt");
   const blocked = page.getByRole("alertdialog", { name: /Không tắt được translate/ });
   await expect(blocked).toBeVisible();

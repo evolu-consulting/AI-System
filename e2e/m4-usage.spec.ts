@@ -36,7 +36,7 @@ test("ADM-FR-42 · E5 · platform_admin: link 'Chi phí & quota' → combobox Te
   await expect(table.getByRole("cell", { name: /globex/ }).first()).toBeVisible();
 });
 
-test("M4-R08 · M4-AC03 · E6 · tenant_admin binh: /usage không có combobox Tenant, region 'Chi phí thật'/'Biên'; response không chứa cost_usd", async ({
+test("M4-R08 · M4-AC03 · E6 · tenant_admin binh (tenant-admin-scope): /usage chỉ 'Số run'/'Token', không combobox Tenant, không region 'Số thu'/'Chi phí thật'/'Biên'; response không chứa cost_usd", async ({
   page,
 }) => {
   await seedTwoTenants();
@@ -47,48 +47,73 @@ test("M4-R08 · M4-AC03 · E6 · tenant_admin binh: /usage không có combobox T
   await page.goto("/usage");
   const body = await (await resp).text();
   await expect(page.getByRole("heading", { level: 1, name: "Chi phí & quota" })).toBeVisible();
-  await expect(region(page, "Số thu")).toBeVisible();
+  await expect(region(page, "Số run")).toBeVisible();
+  await expect(region(page, "Token")).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Tenant" })).toHaveCount(0);
+  await expect(region(page, "Số thu")).toHaveCount(0);
   await expect(region(page, "Chi phí thật")).toHaveCount(0);
   await expect(region(page, "Biên")).toHaveCount(0);
   expect(body).not.toContain("cost_usd");
   expect(body).not.toContain("margin_usd");
+  expect(body).not.toContain("billable_usd");
 });
 
-test("M4-R07 · M4-R08 · E7 · region 'Top feature theo số thu': 'Không theo feature', 'Chưa định giá', badge 'Vượt quota'", async ({
+test("M4-R07 · M4-R08 · E7 · region 'Top feature theo số thu': platform_admin thấy 'Không theo feature', 'Chưa định giá', badge 'Vượt quota'; tenant_admin binh chỉ thấy 'Không theo feature' (không tiền)", async ({
   page,
+  browser,
 }) => {
   await withOwner(async (sql) => {
     await insertUsage(sql, 4, { tenant: ACME });
     await insertUsage(sql, 3, { tenant: ACME, feature: ID.feature.dichThuat, billable: null });
     await insertUsage(sql, 2, { tenant: ACME, feature: KT, overage: true });
   });
-  await loginAs(page, "acme", "binh");
+  await loginAdmin(page);
   await page.goto("/usage");
   const top = region(page, "Top feature theo số thu");
   await expect(top).toBeVisible();
   await expect(top).toContainText("Không theo feature");
   await expect(top).toContainText("Chưa định giá");
   await expect(top).toContainText("Vượt quota");
+  const ctx = await browser.newContext({ locale: "vi-VN" });
+  try {
+    const other = await ctx.newPage();
+    await loginAs(other, "acme", "binh");
+    await other.goto("/usage");
+    const topBinh = region(other, "Top feature theo số thu");
+    await expect(topBinh).toContainText("Không theo feature");
+    await expect(topBinh).not.toContainText("Chưa định giá");
+    await expect(topBinh).not.toContainText("Vượt quota");
+  } finally {
+    await ctx.close();
+  }
 });
 
-test("ADM-FR-42 · E8 · 'Xuất CSV' của binh → tải usage-acme-….csv, bắt đầu BOM, không cột cost_usd", async ({
+test("ADM-FR-42 · E8 · 'Xuất CSV': platform_admin tải usage-….csv, bắt đầu BOM, có billable_usd; tenant_admin binh không có nút (CSV chỉ platform_admin)", async ({
   page,
+  browser,
 }) => {
   await withOwner(async (sql) => insertUsage(sql, 3, { tenant: ACME, feature: KT }));
-  await loginAs(page, "acme", "binh");
+  await loginAdmin(page);
   await page.goto("/usage");
   await expect(region(page, "Số run")).toBeVisible();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Xuất CSV" }).click();
   const file = await download;
-  expect(file.suggestedFilename()).toMatch(/^usage-acme-.+\.csv$/);
+  expect(file.suggestedFilename()).toMatch(/^usage-.+\.csv$/);
   const text = await readFile((await file.path()) as string, "utf8");
   expect(text.charCodeAt(0)).toBe(0xfeff);
   expect(text).toContain("billable_usd");
-  expect(text).not.toContain("cost_usd");
+  const ctx = await browser.newContext({ locale: "vi-VN" });
+  try {
+    const other = await ctx.newPage();
+    await loginAs(other, "acme", "binh");
+    await other.goto("/usage");
+    await expect(region(other, "Số run")).toBeVisible();
+    await expect(other.getByRole("button", { name: "Xuất CSV" })).toHaveCount(0);
+  } finally {
+    await ctx.close();
+  }
 });
-
 test("M4-R09 · M4-AC13 · E9 · usage rỗng → KPI '—', hover → tooltip 'Chưa có dữ liệu từ Agent Hub'; không ErrorState", async ({
   page,
 }) => {

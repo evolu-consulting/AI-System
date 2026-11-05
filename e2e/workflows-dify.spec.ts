@@ -22,7 +22,7 @@ test("dify-workflows · menu hàng có 'Mở trong Dify' (target _blank, noopene
     await route.fulfill({ response: res, json: body });
   });
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Process");
+  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
   const row = page.getByRole("table", { name: "Workflow Dify (tool AI)" }).getByRole("row").nth(1);
   await row.getByRole("button", { name: "Thao tác khác" }).click();
   const link = page.getByRole("menuitem", { name: "Mở trong Dify" });
@@ -49,14 +49,14 @@ test("dify-workflows · tab 'Lịch sử chạy': bảng lượt chạy (trạng
     dify_conversation_id: null,
     dify_url: `${CONSOLE}/logs`,
   });
-  await page.route(new RegExp(`/admin/workflows/${ID.workflow}/runs`), async (route) => {
+  await page.route(new RegExp(`/admin/workflows/${ID.workflow.translate}/runs`), async (route) => {
     seen.push(route.request().url());
     await route.fulfill({
       json: { items: [item(1, "ok"), item(2, "failed")], total: 45, available: true },
     });
   });
   await loginAdmin(page);
-  await page.goto(`/workflows/${ID.workflow}?tab=runs`);
+  await page.goto(`/workflows/${ID.workflow.translate}?tab=runs`);
   const table = page.getByRole("table", { name: "Lịch sử chạy" });
   await expect(table.getByRole("row")).toHaveCount(3);
   await expect(table).toContainText("HTTP 500 boom");
