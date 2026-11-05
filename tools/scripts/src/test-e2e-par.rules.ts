@@ -66,6 +66,12 @@ export const META: Record<string, Meta> = {
     redis: REDIS_DB("PMC_REDIS_DB"),
     cost: 90,
   },
+  // e2e-journey-approval: hành trình duyệt HĐ không mock (admin-web + workspace-web + admin-api + hub-api, CLI Claude giả).
+  "e2e/journey-approval/playwright.journey.config.ts": {
+    db: "ja",
+    redis: REDIS_DB("JA_REDIS_DB"),
+    cost: 150,
+  },
   "e2e/contracts-web/playwright.config.ts": { cost: 22 },
   // Mock thuần (không DB). Cổng web mặc định 3410 TRÙNG web của workspace-web stack (3410) ⇒ riêng 3470 để hai việc chạy cùng lúc trong một slot.
   "e2e/community-web/playwright.config.ts": { env: { COMMUNITY_E2E_PORT: "3470" }, cost: 25 },

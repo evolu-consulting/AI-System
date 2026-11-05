@@ -15,12 +15,8 @@ import type { OnboardSpec } from "../../../apps/admin-api/src/modules/tenant-onb
 import { onboardTenant } from "../../../apps/admin-api/src/modules/tenant-onboard/tenant-onboard.run";
 import { createUser } from "../../../apps/admin-api/src/modules/users/users.service";
 import { connectDb } from "../../../apps/hub-api/src/lib/db";
-import { approvalEngineTools } from "../../../apps/hub-api/src/modules/packs/contracts/adapters/approval-engine.tools";
-import { approvalSlotSpec } from "../../../apps/hub-api/src/modules/packs/contracts/approval.mount";
 import { ENGINE_FEATURE_KEY } from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-engine.rules";
 import { APPROVAL_DEFAULT_DEF } from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-slot-default.rules";
-import { slotRegistry } from "../../../apps/hub-api/src/modules/packs/kit/adapters/slot-registry";
-import type { PackToolCatalog } from "../../../apps/hub-api/src/modules/packs/kit/application/pack-tools.ports";
 import type { ProcessDeps } from "../../../apps/hub-api/src/modules/processes/core/ports";
 import { toProcessDef } from "../../../apps/hub-api/src/modules/processes/defs/defs.map";
 import { readDef } from "../../../apps/hub-api/src/modules/processes/defs/defs.repo";
@@ -41,9 +37,18 @@ import {
   slotBodyOf,
   tenantShape,
 } from "./seed-niti.rules";
+import { approvalPackTools } from "./seed-niti.tools";
 
 type AuthUser = { userId: string; tenantId: string; role: "platform_admin" };
-export type SeedOpts = { apply: boolean; credFile: string; log?: (s: string) => void };
+export type SeedOpts = {
+  apply: boolean;
+  credFile: string;
+  log?: (s: string) => void;
+  /** false ⇒ chỉ dựng tenant + quy trình thư viện, KHÔNG gán/đặt luật chọn (platform admin làm ở ai-admin; e2e-journey-approval). Mặc định true. */
+  routing?: boolean;
+  /** false ⇒ KHÔNG cấp feature `contracts-approval-engine` (platform admin bật ở ai-admin; e2e-journey-approval). Mặc định true. */
+  engine?: boolean;
+};
 type PState = "created" | "updated" | "same";
 export type SeedReport = {
   tenant: "created" | "exists";
@@ -109,26 +114,6 @@ function appendCred(file: string, line: string): void {
   } catch {
     /* hệ tệp không hỗ trợ quyền POSIX */
   }
-}
-
-/** Khe `contracts.approval` thật + catalog tool hệ thống của engine duyệt (như test thư viện; script không chạy qua app.ts). */
-export function approvalPackTools(): PackToolCatalog {
-  slotRegistry.register(approvalSlotSpec);
-  const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((t) => ({
-    key: t.name,
-    name: t.name,
-    description: t.description,
-    sideEffect: false,
-    action: t.action,
-    params: t.params,
-  }));
-  return {
-    has: (k: string) => tools.some((t) => t.key === k),
-    info: (k: string) => tools.find((t) => t.key === k),
-    enabled: async () => true,
-    available: async (_t: string, keys?: readonly string[]) =>
-      tools.filter((t) => !keys || keys.includes(t.key)),
-  } as unknown as PackToolCatalog;
 }
 
 type Hubs = {
@@ -338,7 +323,7 @@ export async function runSeed(admin: Db, hub: Db, s: SeedSpec, o: SeedOpts): Pro
 
   if (!dry) await applyAdmin(admin, s, cur, actor, missing, o, res);
 
-  res.engine = await ensureEngine(admin, s.tenantKey, actor, dry);
+  if (o.engine !== false) res.engine = await ensureEngine(admin, s.tenantKey, actor, dry);
   const defIds = new Map<string, string | null>();
   for (const p of s.processes) {
     const r = await ensureProcess(h, p, dry);
@@ -348,9 +333,12 @@ export async function runSeed(admin: Db, hub: Db, s: SeedSpec, o: SeedOpts): Pro
   const tenantId = (
     await rows<{ id: string }>(admin, sql`select id from admin.tenants where key = ${s.tenantKey}`)
   )[0]?.id;
-  res.routing = tenantId
-    ? await ensureRouting(h, s, tenantId, defIds, await deptIds(admin, tenantId), dry)
-    : "set";
+  res.routing =
+    o.routing === false
+      ? "same"
+      : tenantId
+        ? await ensureRouting(h, s, tenantId, defIds, await deptIds(admin, tenantId), dry)
+        : "set";
   log(summary(s, res, dry));
   return res;
 }
