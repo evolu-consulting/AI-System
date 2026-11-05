@@ -36,9 +36,7 @@ Không thay đổi hành vi (lý do: lát chỉ thêm tool seed tenant `e2e-` v�
 
 ## Việc còn lại
 
-- CHẶN ca 2 và 4 (hạ tầng stack, không phải lỗi sản phẩm): upload HĐ cần FileBox (HTTP, `FILEBOX_URL/TOKEN`, `HUB_ATTACH_DRIVER=filebox`); `HUB_ATTACH_DRIVER=local` không đủ (hub trả 503 FILE_STORAGE_UNAVAILABLE). Cần FileBox giả trong `_ja-stack.ts` (khuôn tests/acceptance/FB1) rồi chạy lại job `journey-approval`.
-- Kết quả evotest (b6d8a60e): ca 1 (gán 2 quy trình + 2 luật qua ai-admin) và ca 3 (bật switch engine qua ai-admin) XANH; ca 1b ĐỎ = lỗ hổng sản phẩm (ai-admin /apps/contracts không cảnh báo `flowNeedsAddon` dù tenant có quy trình gán + luật mà chưa có engine; chỉ hiện cảnh báo thiếu địa chỉ app).
-- Lỗi nhỏ thấy được: ô 'Đang dùng (mặc định của khe)' hiện nguyên `{{name}}` (nội suy i18n hỏng) ở khối quy trình gán của ai-admin.
-
-- Sửa sản phẩm theo ca 2 của `approval.ja.ts` nếu đỏ (hiện lý do khi tenant có quy trình gán/luật nhưng chưa có feature engine).
+Kết quả evotest d6793c16 (rebase trên gd0 b1b1d3ab): ca 1 (gán 2 quy trình + 2 luật), 1b (khối Quy trình nêu "Đang tắt … không chạy"), 3 (bật công tắc "Duyệt theo quy trình") XANH. Đã làm trong lát (UI): ghi chú `tenant-engine-off-note` ở khối Quy trình ai-admin, sửa `{{name}}` → `{name}` (i18n), `EngineOffNote` ở thẻ duyệt workspace-web, FileBox giả trong stack.
+- ĐỎ ca 4 (lỗ hổng/lệch thiết kế): engine bật, quy trình Mua = Kế toán → Giám đốc ⇒ nhân viên KD tải HĐ KHÔNG có nút "Xác nhận và lưu" ("Bước này chỉ trưởng phòng duyệt được"): bước 0 của quy trình thư viện chính là bước xác nhận và thuộc trưởng phòng Kế toán. Cần chốt: người tải xác nhận trước (thêm bước soạn) hay trưởng Kế toán vừa xác nhận vừa duyệt; hiện hành trình "nhân viên xác nhận → KT duyệt → BGĐ duyệt" không đi được.
+- ĐỎ ca 2: engine tắt, nhân viên xác nhận xong thì HĐ thành "Xác nhận xong" (máy cũ) và trang không còn thẻ duyệt ⇒ `EngineOffNote` (chỉ hiện khi còn thẻ duyệt) không hiện; cần hub trả cờ "công ty có quy trình gán nhưng engine tắt" trên chi tiết HĐ hoặc ghi vào dòng thời gian.
 - Chạy `deployed/21-approval-journey.rw.deployed.ts` qua runner sau khi `seed-e2e-journey.ts` chạy trên máy chủ (cần `E2E_JOURNEY_PW`, `ADMIN_PW`).
