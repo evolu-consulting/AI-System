@@ -384,6 +384,7 @@ a64b035937926c58f31343fe053f9bfa802e8075945ff79c3aa3e0e61a610a37  e2e/contracts-
 0ac48d9222756af7a528a8dd5585e50f70e134444726c80ba46c83d4fca92ba8  e2e/contracts-web/baseline/win32/v2f-detail-mobile.png
 b6f033a32a5a9100692b9e940474d0e1a99bec1a494c78a0e862d2ecc7eb0844  e2e/contracts-web/bell.cw.ts
 f5729bad4e2686ed8f8168d0e96b2964aafe47a765d5a83b134aec1a79369b5a  e2e/contracts-web/contract-flow.cw.ts
+185bcc7a7f36a77eeb3ca9bcadc00df0bc1bc5056b044d688581a80254d879b3  e2e/contracts-web/cr120-intake-flow.cw.ts
 f52191026f2d31acac0b18d8b53ed7cf35b6296f95f288ce7bbbe97066ae3b5d  e2e/contracts-web/dataset-approval.ts
 79bb89a541d5b98d6fce798e0496a526a1ae38aee89145d11a2eb6346601f7d9  e2e/contracts-web/dataset-contract.ts
 31ef35706c3a9140005f17744224ade06b3c354dd16b3b34c4f6abb75cadfb0d  e2e/contracts-web/dataset-list.ts
@@ -584,6 +585,7 @@ f857603f22fa521cdd7a58f936b351583f33e4a8a128f8d7b19371fd76ef35a1  tests/acceptan
 1a2be0fae07051da5312f190499a49c8bc204a6fab931ed0b79e6dfe99913d55  tests/acceptance/CR-055/access.test.ts
 d434e09c410726267a31ac21af6f154373050beee54f8e1e58c0ed25f67d2e3c  tests/acceptance/CR-055/commands-features.int.test.ts
 f4e1e120afdcd75c76dcf9ca53ca42ded719c9c58779936343c7c700dcba14f1  tests/acceptance/CR-055/import.int.test.ts
+284df29ea2a75727855dc25776364905e22261046705289179f14fdee0e828eb  tests/acceptance/CR-120/timed-wait.int.test.ts
 d397d82c125bf81bc2871d5b2a1aad5081f8da4289f4abc24a99d196c5440cab  tests/acceptance/CR118/approval-flow-runtime.int.test.ts
 4c128b43789651b6df543fad369caca5adce14a73261f7e682ef8b8176840a44  tests/acceptance/CR118/approval-flow-summary.perf.int.test.ts
 aff8fbafdade829813b2cba7420c706de9f862b5bd04a04c5a658ffa4b2e2061  tests/acceptance/CR118/capabilities.int.test.ts
