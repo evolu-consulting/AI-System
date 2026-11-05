@@ -83,8 +83,10 @@ if ($shard) {
   Push-Location $Repo
   try {
     @(ssh @ssh $Server 'cat ~/workspace/evotest/cache/e2e-timings.json 2>/dev/null' 2>$null) | Set-Content -Encoding ascii $tj
-    $nf = if ($All) { @() } else { @("--no-frozen") }
-    @(bun tools/scripts/src/test-e2e-par.ts --list @nf "--timings=$tj") | Set-Content -Encoding ascii $lj
+    # KHONG gan mang 1 phan tu tu bieu thuc if roi splat: PS 5.1 mo thanh string, splat ra TUNG KY TU ("-","-","n"...) => co --no-frozen bi mat, job dong bang lot vao ngan
+    $listArgs = @("tools/scripts/src/test-e2e-par.ts", "--list", "--timings=$tj")
+    if (-not $All) { $listArgs += "--no-frozen" }
+    @(bun @listArgs) | Set-Content -Encoding ascii $lj
     $plan = (@(bun tools/scripts/src/evotest-shard.ts plan --jobs $lj --free $freeSlots --cores $cores --step $Step) -join "") | ConvertFrom-Json
   } finally { Pop-Location; Remove-Item -Force $tj, $lj -ErrorAction SilentlyContinue }
   Write-Host ("evotest: CHIA SLOT - {0} slot trong: int {1} (cpus {2}, workers {3}) + e2e {4} ngan (moi ngan {5} cpus, {6} viec cung luc), du kien ngan e2e cham nhat ~{7} s; tong dong thoi {8}/{9} (= loi x 1.3), viec du xep hang trong ngan" -f $freeSlots, $plan.intShard, $plan.intCpus, $plan.intWorkers, $plan.e2eShards, $plan.e2eCpus, $plan.e2eJobs, $plan.estimateS, $plan.total, $plan.budget)

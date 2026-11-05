@@ -10,6 +10,7 @@ import {
   planSlots,
   shardJobs,
 } from "./evotest-shard.rules";
+import { FROZEN_E2E_CONFIGS, selectE2eConfigs } from "./frozen.rules";
 
 const J = (o: Record<string, number>) => Object.entries(o).map(([name, cost]) => ({ name, cost }));
 
@@ -107,5 +108,22 @@ describe("merge-timings CLI", () => {
     ]);
     expect(await p.exited).toBe(0);
     expect(JSON.parse(readFileSync(join(d, "dst.json"), "utf8"))).toEqual({ a: 1, b: 9, c: 3 });
+  });
+});
+
+describe("chọn việc e2e cho kế hoạch chia slot (tool-sharder-frozen)", () => {
+  const live = ["e2e/contracts-web/playwright.config.ts", "e2e/chat/playwright.config.ts"];
+  const all = [...live, ...FROZEN_E2E_CONFIGS];
+  it("không -All: bỏ mọi cấu hình đóng băng (vd chat-x2b2), giữ cấu hình đang dùng", () => {
+    expect(selectE2eConfigs(all, false)).toEqual(live);
+  });
+  it("-All: giữ nguyên tất cả, đúng thứ tự", () => {
+    expect(selectE2eConfigs(all, true)).toEqual(all);
+  });
+  it("run-tests.ps1 truyền --no-frozen cho --list bằng mảng (không splat chuỗi 1 phần tử ra từng ký tự)", () => {
+    const ps = readFileSync(join(import.meta.dir, "../../../deploy/evotest/run-tests.ps1"), "utf8");
+    expect(ps).toMatch(/if \(-not \$All\) \{ \$listArgs \+= "--no-frozen" \}/);
+    expect(ps).toMatch(/bun @listArgs/);
+    expect(ps).not.toMatch(/\$nf\s*=\s*if/); // PS 5.1 mở mảng 1 phần tử thành string ⇒ `@nf` bị tách ký tự
   });
 });

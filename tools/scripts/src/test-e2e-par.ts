@@ -7,7 +7,7 @@ import { join, resolve } from "node:path";
 import { Glob } from "bun";
 import { installCleanup, leaseRedisDb, resolveLane } from "./e2e-lane";
 import { e2eDbTag, lanePortEnv } from "./e2e-lane.rules";
-import { isFrozenConfig } from "./frozen.rules";
+import { selectE2eConfigs } from "./frozen.rules";
 import { reportReds } from "./known-red";
 import { quarantineOn } from "./known-red.rules";
 import { repoRoot } from "./lib/git";
@@ -189,7 +189,7 @@ async function main(): Promise<number> {
   );
   // F1 (CR-095): `--no-frozen` (cổng hằng ngày) bỏ cấu hình e2e của module đóng băng.
   const noFrozen = process.argv.includes("--no-frozen");
-  const configs = (await findE2eConfigs(root)).filter((c) => !(noFrozen && isFrozenConfig(c)));
+  const configs = selectE2eConfigs(await findE2eConfigs(root), !noFrozen);
   const specs = await rootSpecs(root, timings);
   const plan = { configs, specs, rootShards: args.shards };
   const jobs = planJobs(plan, timings, args.only);

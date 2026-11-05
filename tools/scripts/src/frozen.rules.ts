@@ -30,6 +30,11 @@ export const FROZEN_E2E_CONFIGS: readonly string[] = [
   "e2e/chat/playwright.x2b2.config.ts",
 ];
 
+/** Chọn cấu hình e2e đưa vào kế hoạch việc (nguồn chung cho `test:e2e:par`, chế độ 1 slot lẫn chia slot): bỏ module đóng băng trừ khi `all` (-All). */
+export function selectE2eConfigs(configs: readonly string[], all: boolean): string[] {
+  return configs.filter((c) => all || !isFrozenConfig(c));
+}
+
 /** Glob tối giản, thuần (không phụ thuộc `bun`): hỗ trợ `**`, `*`, `?`, `{a,b}`. */
 export function globToRegExp(glob: string): RegExp {
   const re = glob
