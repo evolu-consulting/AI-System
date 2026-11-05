@@ -7,6 +7,7 @@ import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../src/lib/db";
 import { APPROVAL_DEFAULT_DEF } from "../src/modules/packs/contracts/domain/approval-slot-default.rules";
 import { resolveSlot } from "../src/modules/processes/library/slot-resolve.repo";
+import { setSlotDefault } from "../src/test-support/slot-default";
 import { backfill } from "./process-library-backfill";
 
 const SLOT = "contracts.approval";
@@ -49,7 +50,7 @@ beforeAll(async () => {
   await o`insert into contracts.approval_settings (tenant_id) values (${T.dflt})`;
   // Đã gán khe trước (admin/onboarding) + có mẫu riêng ⇒ backfill giữ gán, không tạo def.
   await o`insert into contracts.approval_settings (tenant_id, threshold) values (${T.asg}, 1)`;
-  await o`insert into hub.process_slot_assignments (tenant_id, slot, def_id) values (${T.asg}, ${SLOT}, ${APPROVAL_DEFAULT_DEF.id})`;
+  await setSlotDefault(o, T.asg, SLOT, APPROVAL_DEFAULT_DEF.id); // CR-120 · gán = luật mặc định
 }, 180_000);
 afterAll(async () => {
   await db?.close();

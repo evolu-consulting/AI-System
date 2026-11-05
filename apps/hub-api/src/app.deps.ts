@@ -89,4 +89,7 @@ export type AppDeps = {
   notify?: NotifyDeps;
   /** CR-104 · ops-watch (`modules/ops/ops.mount.ts`): route `/ops/*` luôn mở khi có db; vòng nền chỉ khi `watch`. */
   ops?: OpsDeps;
+  /** CR-120 · cấp phát mặc định khe (`ensureSlotDefaults`) lúc boot + khi cấu hình đổi. Chỉ `server.ts` bật (test in-process
+   *  không tự ghi luật vào DB test); vắng ⇒ tắt. */
+  slotDefaults?: boolean;
 } & ProcessSeams;

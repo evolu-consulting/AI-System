@@ -84,7 +84,8 @@ async function plan(sql: Sql, rep: BackfillReport): Promise<Plan[]> {
     Cand[]
   >`select t.id::text as id, t.key, t.name, f.steps, s.threshold::text as threshold,
       s.level1_group_key as l1, s.level2_group_key as l2,
-      exists (select 1 from hub.process_slot_assignments a where a.tenant_id = t.id and a.slot = ${APPROVAL_SLOT}) as assigned
+      exists (select 1 from hub.process_routing_rules a where a.tenant_id = t.id and a.slot = ${APPROVAL_SLOT}
+        and a.is_default) as assigned
     from admin.tenants t left join contracts.approval_flows f on f.tenant_id = t.id
       left join contracts.approval_settings s on s.tenant_id = t.id
     where f.tenant_id is not null or s.tenant_id is not null order by t.key`;
@@ -139,7 +140,7 @@ async function plan(sql: Sql, rep: BackfillReport): Promise<Plan[]> {
   return out;
 }
 
-/** Ghi theo tập (3 câu): def thư viện (xuất bản v1) ← mô tả/input của def mặc định, bản v1, gán (đã có gán ⇒ giữ). */
+/** Ghi theo tập (5 câu): def thư viện (xuất bản v1) ← mô tả/input của def mặc định, bản v1, gán (đã có gán ⇒ giữ). */
 async function write(sql: Sql, rows: Plan[]): Promise<void> {
   const data = JSON.stringify(
     rows.map((p) => ({
@@ -161,11 +162,17 @@ async function write(sql: Sql, rows: Plan[]): Promise<void> {
       select d.id, 1, d.name, d.stages, d.slot_body, 'backfill CR-105'
       from hub.process_defs d join jsonb_to_recordset(${data}::text::jsonb) as x(key text) on x.key = d.key
       where d.tenant_id is null and d.deleted_at is null`;
-    await tx`insert into hub.process_slot_assignments (tenant_id, slot, def_id)
-      select x.tid, ${APPROVAL_SLOT}, d.id
+    // CR-120 · gán = luật `is_default` (nguồn duy nhất): tập gán + đầu luật + luật mặc định (đã có ⇒ giữ).
+    const pick = tx`select x.tid as tenant_id, ${APPROVAL_SLOT}::text as slot, d.id as def_id
       from jsonb_to_recordset(${data}::text::jsonb) as x(key text, tid uuid)
-        join hub.process_defs d on d.key = x.key and d.tenant_id is null and d.deleted_at is null
-      on conflict (tenant_id, slot) do nothing`;
+        join hub.process_defs d on d.key = x.key and d.tenant_id is null and d.deleted_at is null`;
+    await tx`insert into hub.process_tenant_defs (tenant_id, def_id, slot) select tenant_id, def_id, slot from (${pick}) p
+      on conflict do nothing`;
+    await tx`insert into hub.process_routings (tenant_id, slot) select tenant_id, slot from (${pick}) p
+      on conflict do nothing`;
+    await tx`insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
+      select tenant_id, slot, 49, '{}'::jsonb, def_id, true from (${pick}) p
+      on conflict do nothing`;
   });
 }
 

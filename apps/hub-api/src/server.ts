@@ -214,6 +214,7 @@ async function main(): Promise<void> {
       // R1 · pool riêng của module tri thức (đóng theo `signal`)
       packs: { knowledgeDsn: env.KNOWLEDGE_DATABASE_URL ?? env.HUB_DATABASE_URL },
       signal: stop.signal,
+      slotDefaults: true, // CR-120 · ensureSlotDefaults lúc boot + khi cấu hình đổi
       onProcessHandles: (h) => {
         processes = h;
       },

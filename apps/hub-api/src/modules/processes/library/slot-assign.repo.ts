@@ -90,21 +90,31 @@ export async function tenantOf(
   return r ?? null;
 }
 
-/** Gán (thay thế) — trả def cũ (null = trước đó chạy mặc định). hub-routing-backfill: cùng câu thêm def vào tập gán CR-118
- *  (`process_tenant_defs`, có sẵn ⇒ giữ) để màn luật chọn quy trình thấy quy trình đang dùng. */
+/**
+ * Gán (thay thế) — trả def cũ của luật mặc định (null = trước đó chưa có). CR-120 · ADR-0036: ghi NGUỒN DUY NHẤT trong tx của
+ * người gọi — tập gán (`process_tenant_defs`, có sẵn ⇒ giữ) + đầu luật (`version` + 1 ⇒ màn luật đang mở nhận 409) + luật
+ * `is_default` (có ⇒ đổi def, không ⇒ chèn ở priority trống cao nhất ≤ 49). Bốn câu cố định.
+ */
 export async function upsertAssignment(
   tx: Tx,
   w: { tenantId: string; slot: string; defId: string; actorId: string },
 ): Promise<string | null> {
-  // Hai câu: khoá + đọc def cũ TRƯỚC (FOR UPDATE trong CTE cùng câu với upsert bỏ qua hàng vừa sửa ⇒ `prev` luôn null).
+  // Khoá đầu luật trước (ghi tuần tự với PUT luật), rồi đọc def cũ.
+  await tx.execute(sql`insert into hub.process_routings (tenant_id, slot, version, updated_by)
+    values (${w.tenantId}, ${w.slot}, 1, ${w.actorId})
+    on conflict (tenant_id, slot) do update set version = hub.process_routings.version + 1,
+      updated_by = excluded.updated_by, updated_at = now()`);
   const [old] = await tx.execute<{ prev: string }>(sql`select def_id::text as prev
-    from hub.process_slot_assignments where tenant_id = ${w.tenantId} and slot = ${w.slot} for update`);
-  await tx.execute(sql`with up as (insert into hub.process_slot_assignments (tenant_id, slot, def_id, assigned_by)
-      values (${w.tenantId}, ${w.slot}, ${w.defId}, ${w.actorId})
-      on conflict (tenant_id, slot) do update set def_id = excluded.def_id, assigned_by = excluded.assigned_by,
-        assigned_at = now() returning 1)
-    insert into hub.process_tenant_defs (tenant_id, def_id, slot, assigned_by)
-      values (${w.tenantId}, ${w.defId}, ${w.slot}, ${w.actorId}) on conflict do nothing`);
+    from hub.process_routing_rules where tenant_id = ${w.tenantId} and slot = ${w.slot} and is_default`);
+  await tx.execute(sql`insert into hub.process_tenant_defs (tenant_id, def_id, slot, assigned_by)
+    values (${w.tenantId}, ${w.defId}, ${w.slot}, ${w.actorId}) on conflict do nothing`);
+  await tx.execute(sql`with u as (update hub.process_routing_rules set def_id = ${w.defId}::uuid
+      where tenant_id = ${w.tenantId} and slot = ${w.slot} and is_default returning 1)
+    insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
+    select ${w.tenantId}::uuid, ${w.slot}, p, '{}'::jsonb, ${w.defId}::uuid, true
+    from (select max(g) as p from generate_series(0, 49) g where not exists (select 1 from hub.process_routing_rules x
+      where x.tenant_id = ${w.tenantId} and x.slot = ${w.slot} and x.priority = g)) f
+    where f.p is not null and not exists (select 1 from u)`);
   return old?.prev ?? null;
 }
 
@@ -126,8 +136,13 @@ export async function deleteAssignment(
   tenantId: string,
   slot: string,
 ): Promise<string | null> {
-  const [r] = await tx.execute<{ def_id: string }>(sql`delete from hub.process_slot_assignments
-    where tenant_id = ${tenantId} and slot = ${slot} returning def_id::text as def_id`);
+  // CR-120 · bỏ gán = xoá luật `is_default` (tenant về mẫu khe; `ensureSlotDefaults` cấp lại đúng mẫu khi không còn luật nào).
+  // Đầu luật `version` + 1 (màn luật đang mở nhận 409). Hai câu.
+  const [r] = await tx.execute<{ def_id: string }>(sql`delete from hub.process_routing_rules
+    where tenant_id = ${tenantId} and slot = ${slot} and is_default returning def_id::text as def_id`);
+  if (r)
+    await tx.execute(sql`update hub.process_routings set version = version + 1, updated_at = now()
+      where tenant_id = ${tenantId} and slot = ${slot}`);
   return r?.def_id ?? null;
 }
 
@@ -165,7 +180,8 @@ export type TenantSlotRow = {
   rel_version: number | null;
   is_default: boolean;
 };
-/** Khe của tenant: gán ⇒ def đó, không ⇒ mặc định khe; `slots` = khe đã đăng ký (gồm khe chưa có mặc định). */
+/** Khe của tenant: luật mặc định (CR-120, nguồn duy nhất) ⇒ def đó, không ⇒ mẫu khe; `is_default` = đang chạy đúng mẫu khe;
+ *  `slots` = khe đã đăng ký (gồm khe chưa có mặc định). */
 export const tenantSlotRows = (
   tx: Tx,
   tenantId: string,
@@ -173,10 +189,10 @@ export const tenantSlotRows = (
 ): Promise<TenantSlotRow[]> =>
   tx.execute<TenantSlotRow>(sql`with k as (
       select slot from hub.process_slots union select unnest(${arr(slots, "text")})
-      union select slot from hub.process_slot_assignments where tenant_id = ${tenantId})
+      union select slot from hub.process_routing_rules where tenant_id = ${tenantId} and is_default)
     select k.slot, d.id::text as def_id, d.name as def_name, d.published_version as rel_version,
-      (a.def_id is null) as is_default
-    from k left join hub.process_slot_assignments a on a.tenant_id = ${tenantId} and a.slot = k.slot
+      (a.def_id is null or coalesce(a.def_id = s.default_def_id, false)) as is_default
+    from k left join hub.process_routing_rules a on a.tenant_id = ${tenantId} and a.slot = k.slot and a.is_default
       left join hub.process_slots s on s.slot = k.slot
       left join hub.process_defs d on d.id = coalesce(a.def_id, s.default_def_id) and d.deleted_at is null
     order by k.slot`);

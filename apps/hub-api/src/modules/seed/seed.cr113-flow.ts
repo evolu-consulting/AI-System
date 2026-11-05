@@ -108,16 +108,24 @@ export async function writeCr113Flow(tx: Tx): Promise<Cr113FlowResult> {
       where exists (select 1 from hub.process_defs where id = ${CR113_DEF.id})
       on conflict do nothing returning rel_version`
   ).length;
+  // CR-120 · cr120-single-source · gán = luật `is_default` (nguồn duy nhất; bảng gán cũ nay là VIEW chỉ đọc). Tenant × khe đã có
+  // luật mặc định khác mẫu khe ⇒ giữ (như `on conflict do nothing` cũ; mặc định = mẫu do `ensureSlotDefaults` cấp ⇒ thay). Một câu: tập gán + đầu luật + luật mặc định priority 49.
   r.flowAssignments = (
-    await tx`insert into hub.process_slot_assignments (tenant_id, slot, def_id, assigned_by)
-      select ${t.id}, ${SLOT}, ${CR113_DEF.id}, ${actor.id}
-      where exists (select 1 from hub.process_defs where id = ${CR113_DEF.id})
-      on conflict (tenant_id, slot) do nothing returning slot`
+    await tx`with d as (
+        select ${t.id}::uuid as tenant_id, ${SLOT}::text as slot, ${CR113_DEF.id}::uuid as def_id
+        where exists (select 1 from hub.process_defs where id = ${CR113_DEF.id})
+          and not exists (select 1 from hub.process_routing_rules x
+            where x.tenant_id = ${t.id} and x.slot = ${SLOT} and (x.priority = 49 and not x.is_default
+              or x.is_default and x.def_id is distinct from (select s.default_def_id from hub.process_slots s
+                where s.slot = ${SLOT})))),
+      a as (insert into hub.process_tenant_defs (tenant_id, def_id, slot, assigned_by)
+        select tenant_id, def_id, slot, ${actor.id} from d on conflict do nothing),
+      h as (insert into hub.process_routings (tenant_id, slot, updated_by)
+        select tenant_id, slot, ${actor.id} from d on conflict do nothing)
+      insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
+      select tenant_id, slot, 49, '{}'::jsonb, def_id, true from d
+      on conflict (tenant_id, slot) where is_default do update set def_id = excluded.def_id returning slot`
   ).length;
-  // hub-routing-backfill · gán cũ đang có cũng vào tập gán CR-118 (màn luật chọn quy trình thấy nó); có sẵn ⇒ giữ.
-  await tx`insert into hub.process_tenant_defs (tenant_id, def_id, slot, assigned_by)
-    select a.tenant_id, a.def_id, a.slot, ${actor.id} from hub.process_slot_assignments a
-    where a.tenant_id = ${t.id} and a.slot = ${SLOT} on conflict do nothing`;
   await bumpIfChanged(tx, r, t.id as string);
   return r;
 }

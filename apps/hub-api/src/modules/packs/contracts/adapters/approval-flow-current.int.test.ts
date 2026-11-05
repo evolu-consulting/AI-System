@@ -10,6 +10,7 @@ import { Hono } from "hono";
 import { connectDb, type Db } from "../../../../lib/db";
 import { mapError } from "../../../../lib/errors";
 import { packRunsPortForTest } from "../../../../test-support/pack-runs-port";
+import { setSlotDefault } from "../../../../test-support/slot-default";
 import { packGroups } from "../../kit/adapters/pack-groups";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import type { PackToolCatalog } from "../../kit/application/pack-tools.ports";
@@ -142,8 +143,7 @@ beforeAll(async () => {
   defs.special = await libDef("pl-cur-special", "Quy trình riêng", BODY.special);
   await o`insert into hub.process_slots (slot, default_def_id) values (${APPROVAL_SLOT}, ${defs.dflt})
     on conflict (slot) do update set default_def_id = excluded.default_def_id`;
-  await o`insert into hub.process_slot_assignments (tenant_id, slot, def_id)
-    values (${A}, ${APPROVAL_SLOT}, ${defs.special})`;
+  await setSlotDefault(o, A, APPROVAL_SLOT, defs.special); // CR-120 · gán = luật mặc định
   packDb = createDb(urls().hubApi, { max: 3 });
   hubDb = connectDb(urls().hubApi, 2);
 }, 120_000);

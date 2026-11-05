@@ -533,6 +533,20 @@
       "when": 1803500000000,
       "tag": "0089_routing_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1803600000000,
+      "tag": "0090_slot_default_rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1803700000000,
+      "tag": "0091_slot_assign_view",
+      "breakpoints": true
     }
   ]
 }

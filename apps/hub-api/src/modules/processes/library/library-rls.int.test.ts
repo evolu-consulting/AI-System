@@ -5,6 +5,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { tenantId, userId } from "@ai/test-kit/builders";
 import { cloneDb, type HubScopeArg, inHub, openOwner, pgCode, type Sql } from "@ai/test-kit/db";
+import { setSlotDefault } from "../../../test-support/slot-default";
 
 const T = { a: tenantId(1051), b: tenantId(1052) };
 const U = { a: userId(1051), b: userId(1052) };
@@ -56,8 +57,9 @@ beforeAll(async () => {
     values (${ids.libA}, 1, 'A', ${STAGES}::text::jsonb), (${ids.libB}, 1, 'B', ${STAGES}::text::jsonb)`;
   await o`insert into hub.process_slots (slot, default_def_id) values (${SLOT}, ${ids.libA})
     on conflict (slot) do update set default_def_id = excluded.default_def_id`;
-  await o`insert into hub.process_slot_assignments (tenant_id, slot, def_id)
-    values (${T.a}, ${SLOT}, ${ids.libA}), (${T.b}, ${SLOT}, ${ids.libB})`;
+  // cr120-single-source · gán = luật mặc định (bảng gán cũ nay là VIEW chỉ đọc dẫn xuất từ luật, security_invoker).
+  await setSlotDefault(o, T.a, SLOT, ids.libA);
+  await setSlotDefault(o, T.b, SLOT, ids.libB);
 }, 300_000);
 afterAll(async () => {
   await o?.end({ timeout: 2 });
@@ -97,6 +99,7 @@ describe("CR-105 · RLS thư viện quy trình", () => {
       slotSys: 1,
     });
     // Ghi chỉ scope system: tenant không tự gán / đổi gán / xoá gán (kể cả hàng của chính mình), không chạm release/khe.
+    // CR-120: bảng gán cũ là VIEW chỉ đọc ⇒ mọi ghi qua nó 42501 (không cấp quyền ghi), kể cả scope system.
     const asgIns = `insert into hub.process_slot_assignments (tenant_id, slot, def_id) values ($1, 'x.y', $2)`;
     const writes = {
       insOwn: await write(user("a"), asgIns, [T.a, ids.libB]),
@@ -108,6 +111,7 @@ describe("CR-105 · RLS thư viện quy trình", () => {
         "delete from hub.process_slot_assignments where tenant_id = $1",
         [T.a],
       ),
+      insSys: await write(sys, asgIns, [T.a, ids.libB]),
       relIns: await write(
         user("a"),
         "insert into hub.process_def_releases (def_id, rel_version, name, stages) values ($1, 9, 'x', '[{}]')",
@@ -122,8 +126,9 @@ describe("CR-105 · RLS thư viện quy trình", () => {
     };
     expect(writes).toEqual({
       insOwn: "42501",
-      updOwn: "0",
-      delCross: "0",
+      updOwn: "42501",
+      delCross: "42501",
+      insSys: "42501",
       relIns: "42501",
       slotUpd: "0",
       relUpdSys: "42501",

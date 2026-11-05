@@ -1,9 +1,8 @@
-// hub-routing-backfill · viết TRƯỚC code: tenant gán theo đường cũ (`process_slot_assignments`, CR-105/CR-113) phải hiện trong
-// tập quy trình CR-118 (`process_tenant_defs`). (1) hub 0089 backfill: chạy lại vô hại, tenant khác không đổi, RLS theo tenant.
+// hub-routing-backfill · viết TRƯỚC code: tenant gán theo đường cũ phải hiện trong tập quy trình CR-118 (`process_tenant_defs`).
+// (1) RLS theo tenant (0089/0090/0091 trên DB có gán cũ: `slot-single-source.int.test.ts`; cr120: gán cũ = luật mặc định).
 // (2) PUT/DELETE `/tenants/:tid/process-slots/:slot` đồng bộ tập gán (bỏ gán giữ lại khi luật còn dùng). (3) GET routing trả
 // `current_def_id` = quy trình chạy khi không có luật (gán cũ, không có ⇒ mặc định khe). Kiểm trạng thái DB thật.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { readFileSync } from "node:fs";
 import type { Role } from "@ai/contracts";
 import { withHubScope } from "@ai/db/hub-scope";
 import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
@@ -14,6 +13,7 @@ import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
+import { setSlotDefault } from "../../../test-support/slot-default";
 import { approvalSlotSpec } from "../../packs/contracts/approval.mount";
 import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/domain/approval-slot-default.rules";
 import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
@@ -63,24 +63,10 @@ async function libCopy(key: string, name: string): Promise<string> {
   return id;
 }
 
-const MIGRATION = readFileSync(
-  new globalThis.URL(
-    "../../../../../../packages/db/migrations-hub/0089_routing_backfill.sql",
-    import.meta.url,
-  ),
-  "utf8",
-);
-async function runBackfill() {
-  for (const stmt of MIGRATION.split("--> statement-breakpoint"))
-    if (stmt.trim()) await o.unsafe(stmt);
-}
 const setOf = async (t: string) => [
   ...(await o`select def_id::text as d, slot, assigned_by from hub.process_tenant_defs
     where tenant_id = ${t} order by def_id`),
 ];
-const ruleCount = async () =>
-  Number((await o`select count(*)::int as n from hub.process_routing_rules`)[0]?.n);
-
 beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
@@ -112,26 +98,14 @@ afterAll(async () => {
   await o?.end({ timeout: 2 });
 });
 
-describe("hub-routing-backfill · hub 0089 backfill tập gán từ gán cũ", () => {
-  it("tenant gán cũ vào tập (assigned_by system), chạy lại vô hại, tenant khác giữ nguyên, RLS theo tenant", async () => {
-    // X: chỉ gán cũ (như Demo trước CR-118). Y: gán cũ B + đã có C trong tập.
-    await o`insert into hub.process_slot_assignments (tenant_id, slot, def_id) values (${X}, ${SLOT}, ${lib.A}),
-      (${Y}, ${SLOT}, ${lib.B})`;
+describe("hub-routing-backfill · tập gán từ gán cũ (cr120-single-source: gán cũ = luật mặc định)", () => {
+  it("seed: X gán A; Y gán B + đã có C trong tập (0089/0090 chạy trên DB thật kiểm ở slot-single-source.int.test.ts)", async () => {
+    await setSlotDefault(o, X, SLOT, lib.A);
+    await setSlotDefault(o, Y, SLOT, lib.B);
     await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot, assigned_by)
       values (${Y}, ${lib.C}, ${SLOT}, ${userId(1190)})`;
-    const rules0 = await ruleCount();
-    await runBackfill();
-    expect(await setOf(X)).toEqual([{ d: lib.A, slot: SLOT, assigned_by: null }]);
-    const y = await setOf(Y);
-    expect(y.map((r) => r.d).sort()).toEqual([lib.B, lib.C].sort());
-    expect(y.find((r) => r.d === lib.C)?.assigned_by).toBe(userId(1190)); // hàng có sẵn không bị đè
+    expect((await setOf(X)).map((r) => r.d)).toEqual([lib.A]);
     expect(await setOf(Z)).toEqual([]);
-    expect(await ruleCount()).toBe(rules0); // không tạo luật
-    const n = async () =>
-      Number((await o`select count(*)::int as n from hub.process_tenant_defs`)[0]?.n);
-    const before = await n();
-    await runBackfill();
-    expect(await n()).toBe(before);
     // RLS: scope user của X chỉ thấy hàng của X.
     const seen = await withHubScope(db, { kind: "user", tenantId: X, userId: userId(1190) }, (tx) =>
       tx.execute<{ t: string }>(
@@ -140,7 +114,6 @@ describe("hub-routing-backfill · hub 0089 backfill tập gán từ gán cũ", (
     );
     expect(seen.map((r) => r.t)).toEqual([X]);
   });
-
   it("GET routing: tenant gán cũ thấy quy trình + current_def_id, chưa gán ⇒ mặc định khe", async () => {
     const x = await call("P", "GET", ROUTING(X));
     expect(x.status).toBe(200);
@@ -163,15 +136,22 @@ describe("hub-routing-backfill · gán cũ đồng bộ tập gán", () => {
     // thay B → C: B không có luật ⇒ ra khỏi tập
     expect((await call("P", "PUT", LEGACY(Z), { def_id: lib.C })).status).toBe(200);
     expect((await setOf(Z)).map((r) => r.d)).toEqual([lib.C]);
-    // luật mặc định dùng C ⇒ bỏ gán cũ vẫn giữ C trong tập (FK luật), launch không luật ⇒ mặc định khe
+    // CR-120 · gán cũ = luật mặc định: PUT cũ đã ghi luật `is_default` C (đầu luật version tăng ⇒ PUT luật phải đọc version mới).
+    g = await call("AZ", "GET", ROUTING(Z));
+    expect(g.json.rules.map((r: Json) => [r.def_id, r.is_default])).toEqual([[lib.C, true]]);
+    // luật phòng ban dùng C ⇒ bỏ gán cũ (xoá luật mặc định) vẫn giữ C trong tập (FK luật), không luật khớp ⇒ mẫu khe
     const put = await call("AZ", "PUT", ROUTING(Z), {
-      version: 0,
-      rules: [{ condition: {}, def_id: lib.C, is_default: true }],
+      version: g.json.version,
+      rules: [
+        { condition: { contractKinds: ["k"] }, def_id: lib.C, is_default: false },
+        { condition: {}, def_id: lib.C, is_default: true },
+      ],
     });
     expect(put.status).toBe(200);
     expect((await call("P", "DELETE", LEGACY(Z))).status).toBe(204);
     expect((await setOf(Z)).map((r) => r.d)).toEqual([lib.C]);
     g = await call("AZ", "GET", ROUTING(Z));
+    expect(g.json.rules.map((r: Json) => r.is_default)).toEqual([false]);
     expect(g.json.current_def_id).toBe(DFLT);
     expect(
       (await o`select 1 from hub.process_slot_assignments where tenant_id = ${Z}`).length,

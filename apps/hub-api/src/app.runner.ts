@@ -10,7 +10,7 @@ import { anthropicTurnStreamer } from "./lib/ai-client/anthropic.provider";
 import { envTokensPerMin, redisTokenBucket } from "./lib/ai-client/token-bucket";
 import { pgUsageStore } from "./lib/ai-client/usage.pg";
 import type { Db } from "./lib/db";
-import type { Logger } from "./lib/logger";
+import { type Logger, logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
 import { HookRunner } from "./modules/agent-hooks/hook-runner";
 import { HookedRunner } from "./modules/agent-hooks/hooked-runner";
@@ -25,7 +25,9 @@ import type { KhRuntime } from "./modules/kh/kh.mount";
 import type { ChatToolTokens } from "./modules/mcp/chat-token";
 import { directDriver } from "./modules/mention/direct-driver";
 import { orchestratorDriver } from "./modules/orchestrator/orchestrator.service";
+import { slotRegistry } from "./modules/packs/kit/adapters/slot-registry";
 import type { PackToolCatalog } from "./modules/packs/kit/application/pack-tools.ports";
+import { startSlotDefaults } from "./modules/processes/library/slot-defaults";
 import { closeDirectStep, openDirectStep } from "./modules/runner/direct/direct-sdk.repo";
 import { DirectSdkRunner } from "./modules/runner/direct/direct-sdk-runner";
 import { type AgentRunner, JobAgentRunner } from "./modules/runner/job/job-agent-runner";
@@ -207,4 +209,14 @@ export function startRunLoops(d: {
   startLeaseLoop(d);
   startLeaseSweeper(d);
   startOrphanSweep(d);
+}
+
+/** CR-120 · tenant bật app ⇒ có mặc định cho mọi khe (boot + mỗi lần cấu hình đổi); chỉ khi `server.ts` bật `slotDefaults`. */
+export function slotDefaultsOf(
+  deps: { db?: Db; slotDefaults?: boolean; signal?: AbortSignal },
+  config: ConfigCache | undefined,
+): void {
+  if (!deps.db || !config || !deps.slotDefaults) return;
+  const list = () => slotRegistry.list();
+  void startSlotDefaults({ db: deps.db, config, list, log: logger, signal: deps.signal });
 }

@@ -1,7 +1,8 @@
 // CR-118 §11.2 · chọn quy trình của khe cho NGƯỜI KHỞI TẠO lúc launch — MỘT câu SQL cố định scope system (Luật 4c): luật của
 // tenant × khe (PK/UNIQUE tenant, slot) + phòng ban người khởi tạo và mọi tổ tiên (CTE đệ quy trên `admin.departments`; chỉ chạy
 // khi có luật) + bản xuất bản hiện hành của các def ứng viên + kết quả `RESOLVE_SLOT_SQL` cũ. Chọn bằng `pickProcess` (thuần).
-// Không có luật ⇒ y hệt `resolveSlot` (ruleId null). `resolveSlot` giữ nguyên (DLC + GET /approval-flow).
+// Không có luật ⇒ y hệt `resolveSlot` (ruleId null). `resolveSlot` (DLC + GET /approval-flow) — CR-120: cả hai chỉ đọc luật
+// (nguồn duy nhất) + mẫu khe, không đọc `process_slot_assignments`.
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { Db } from "../../../lib/db";
@@ -81,7 +82,8 @@ export async function routeSlot(
     name: c.name,
     relVersion: Number(c.rel),
     slotBody: c.body,
-    isDefault: false,
+    // CR-120 · luật mặc định trỏ đúng mẫu khe ⇒ vẫn là "mặc định" (cùng cờ `RESOLVE_SLOT_SQL`).
+    isDefault: p.rule.isDefault && r.def_id === p.rule.defId && r.is_default === true,
     ruleId: p.rule.id,
   };
 }

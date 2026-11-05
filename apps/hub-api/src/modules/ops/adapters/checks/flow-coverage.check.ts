@@ -3,8 +3,9 @@
 // việc gán của nó nằm ở bảng cũ `process_slot_assignments`.
 // Với MỖI (tenant bật gói của khe, khe quy trình đã đăng ký — trừ `dlc.*`, của Rowan): phải có quy trình trong danh sách tenant thấy
 // (đúng thứ `GET .../routing` trả `processes`: hàng `process_tenant_defs` mà def chưa xoá mềm). Thiếu ⇒ crit kèm tên tenant + khe.
-// "Hiệu lực" = luật định tuyến ∨ quy trình đã gán ∨ mặc định khe ∨ gán cũ; danh sách thấy được rỗng nhưng vẫn có đường chạy (mặc định
-// khe / gán cũ) là đúng ca Demo ⇒ cũng crit (chạy được mà tenant không xem/sửa được). Một câu SQL tập hợp (Luật 4c), không ngưỡng.
+// "Hiệu lực" = luật định tuyến ∨ mẫu khe (cr120-single-source: gán cũ nay là VIEW dẫn xuất từ luật ⇒ không đọc riêng); danh sách
+// thấy được rỗng nhưng vẫn có đường chạy (mẫu khe — tenant chưa được `ensureSlotDefaults` cấp) là đúng ca Demo ⇒ cũng crit (chạy được
+// mà tenant không xem/sửa được). Một câu SQL tập hợp (Luật 4c), không ngưỡng.
 
 import { packFeatureKey } from "@ai/contracts";
 import { sql } from "drizzle-orm";
@@ -29,7 +30,7 @@ export const GAPS_SHOWN = 20;
 const NAMES_IN_MESSAGE = 5;
 
 const HINT =
-  "Gán quy trình cho tenant ở admin › Quy trình nghiệp vụ (Được platform gán); dữ liệu cũ ở process_slot_assignments cần chép sang process_tenant_defs (backfill) rồi kiểm lại.";
+  "Gán quy trình cho tenant ở admin › Quy trình nghiệp vụ (Được platform gán); tenant bật app được hub cấp mặc định khe khi khởi động / khi cấu hình đổi (ensureSlotDefaults) — kiểm mẫu khe đã xuất bản rồi kiểm lại.";
 
 /** Thuần. */
 export function evaluateFlowCoverage(a: CoverageAgg): OpsCheckResult {
@@ -88,10 +89,8 @@ export const flowCoverageQuery = (slots: readonly CoverageSlot[]) => sql`
               where a.tenant_id = t.tenant_id and a.slot = t.slot) as visible,
       (exists (select 1 from hub.process_routing_rules r where r.tenant_id = t.tenant_id and r.slot = t.slot)
         or exists (select 1 from hub.process_slots ps
-                   join hub.process_defs d on d.id = ps.default_def_id and d.deleted_at is null where ps.slot = t.slot)
-        or exists (select 1 from hub.process_slot_assignments l
-                   join hub.process_defs d on d.id = l.def_id and d.deleted_at is null
-                   where l.tenant_id = t.tenant_id and l.slot = t.slot)) as effective
+                   join hub.process_defs d on d.id = ps.default_def_id and d.deleted_at is null where ps.slot = t.slot))
+        as effective
     from t)
   select
     (select count(*) from m)::int as checked,

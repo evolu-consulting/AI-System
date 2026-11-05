@@ -23,7 +23,7 @@ import { mountH3b } from "./app.h3b";
 import { mountH4a } from "./app.h4a";
 import { mountMcp, sharedWorkflowInvoker } from "./app.mcp";
 import { withPackBridges } from "./app.n2";
-import { processAgentRunner, runDrivers, startRunLoops } from "./app.runner";
+import { processAgentRunner, runDrivers, slotDefaultsOf, startRunLoops } from "./app.runner";
 import {
   mountRoomAgents,
   mountX2a,
@@ -243,9 +243,7 @@ function mountDbRoutes(app: Hono<AppVars>, deps: AppDeps & { db: Db }, config?: 
 
 /**
  * JWT ở gốc `PROTECTED_PREFIXES` (`/x/*` của Hono khớp cả `/x`) + route E5–E14. Vắng `db` (test khung) ⇒ không mount;
- * E12–E14 cần thêm `redis` + cache cấu hình. B6: kèm `/internal/jobs/:job_id/dify-credential` (ngoài `PROTECTED_PREFIXES`,
- * không JWT — token job).
- */
+ * E12–E14 cần thêm `redis` + cache cấu hình. B6: kèm `/internal/jobs/:job_id/dify-credential` (ngoài PREFIXES, token job). */
 function mountProtected(app: Hono<AppVars>, deps: AppDeps, config?: ConfigCache) {
   const auth = requireAuth(deps.jwtPublicKey);
   for (const p of PROTECTED_PREFIXES) app.use(`${p}/*`, auth);
@@ -374,6 +372,7 @@ export function createApp(cfg: AppConfig, depsIn: AppDeps = {}): Hono<AppVars> {
   const { meConns } = mountCapabilities(app, { ...deps, config }); // CR-118 · tự gắn JWT; vắng db ⇒ không mount
   const kh = mountProtected(app, { ...deps, meConns }, config);
   if (config) mountPacks(app, { ...deps, config, esign }); // N1 · `/pack/:k/me` + route gói (pkdemo)
+  slotDefaultsOf(deps, config); // CR-120 · sau khi gói đã đăng ký khe
   if (deps.db) {
     mountNotify(app, { ...deps, db: deps.db, log: logger }); // N3
     mountOps(app, { ...deps, db: deps.db, log: logger }); // CR-104 · ops-watch (không phụ thuộc module đóng băng)

@@ -1,6 +1,6 @@
 // CR-120 (part F) · int (DB test, role hub_api, scope system): check `flow_coverage` chạy một lượt ops-watch THẬT.
-// Tenant bật gói mà việc gán chỉ nằm ở bảng cũ `process_slot_assignments` (đúng ca Demo) ⇒ crit kèm tên tenant + khe; tenant đã có
-// `process_tenant_defs` ⇒ không bị nêu; sau khi chép sang bảng mới (backfill) ⇒ ok. Tenant không bật gói không bị kiểm.
+// Tenant bật gói chạy bằng mẫu khe mà tập gán rỗng (đúng ca Demo) ⇒ crit kèm tên tenant + khe; tenant đã có `process_tenant_defs`
+// ⇒ không bị nêu; sau `ensureSlotDefaults` (cr120-single-source) ⇒ ok. Tenant không bật gói không bị kiểm.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { enablePack, tenantId } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
@@ -8,6 +8,7 @@ import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../lib/db";
 import { approvalSlotSpec } from "../packs/contracts/approval.mount";
 import { APPROVAL_DEFAULT_DEF } from "../packs/contracts/domain/approval-slot-default.rules";
+import { ensureSlotDefaults } from "../processes/library/slot-defaults";
 import { makeFlowCoverageCheck } from "./adapters/checks/flow-coverage.check";
 import { runChecksOnce } from "./application/ops.round";
 import { opsRoundDeps } from "./ops.mount";
@@ -65,7 +66,7 @@ beforeAll(async () => {
     on conflict do nothing`;
   await o`insert into hub.process_slots (slot, default_def_id) values (${SLOT}, ${DFLT})
     on conflict (slot) do update set default_def_id = excluded.default_def_id`;
-  await o`insert into hub.process_slot_assignments (tenant_id, slot, def_id) values (${DEMO}, ${SLOT}, ${DFLT})`;
+  // cr120-single-source · Demo: chưa có gì trong tập (gán cũ nay là VIEW chỉ đọc), chạy được nhờ mẫu khe.
   await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${GOOD}, ${DFLT}, ${SLOT})`;
   await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${DEAD}, ${await deadDef()}, ${SLOT})`;
 }, 120_000);
@@ -87,9 +88,10 @@ describe("ops-watch · flow_coverage · int", () => {
     expect(r?.value.gap_count).toBe(2);
   });
 
-  it("sau backfill (chép gán cũ sang process_tenant_defs) và gán lại def sống ⇒ ok", async () => {
-    await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot)
-      select tenant_id, def_id, slot from hub.process_slot_assignments on conflict (tenant_id, def_id) do nothing`;
+  it("sau ensureSlotDefaults (cấp mẫu khe cho tenant bật app) và gán lại def sống ⇒ ok", async () => {
+    expect(await ensureSlotDefaults(db, [{ slot: SLOT, feature: "contracts-read" }], [DEMO])).toBe(
+      1,
+    );
     await o`delete from hub.process_tenant_defs where tenant_id = ${DEAD}`;
     await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${DEAD}, ${DFLT}, ${SLOT})`;
     await round(31);

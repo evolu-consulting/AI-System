@@ -39,7 +39,7 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Tập quy trình đã gán gồm cả gán theo đường cũ
 Tenant gán quy trình qua `process_slot_assignments` (trước CR-118) có quy trình đó trong tập gán; đường gán cũ giữ hai bảng khớp nhau.
-- Kịch bản: khi chạy hub 0089 trên tenant chỉ có gán cũ thì tập gán có def đó (assigned_by NULL), chạy lại không đổi, tenant khác không đổi, scope user chỉ thấy tenant mình [test: apps/hub-api/src/modules/processes/library/routing-backfill.int.test.ts » tenant gán cũ vào tập (assigned_by system), chạy lại vô hại, tenant khác giữ nguyên, RLS theo tenant]
+- Kịch bản: khi chạy hub 0089 trên tenant chỉ có gán cũ thì tập gán có def đó (assigned_by NULL), chạy lại không đổi, tenant khác không đổi, scope user chỉ thấy tenant mình [test: apps/hub-api/src/modules/processes/library/slot-single-source.int.test.ts » ensureSlotDefaults (boot) cấp đúng tenant bật app chưa có luật, chạy lại vô hại] (cr120-single-source: bảng gán cũ thành VIEW ⇒ ca 0089 chạy trong int của 0090/0091)
 - Kịch bản: khi platform_admin gán/thay/bỏ gán qua `/tenants/:tid/process-slots/:slot` thì GET routing thấy def mới, def cũ bị bỏ trừ khi luật còn dùng [test: apps/hub-api/src/modules/processes/library/routing-backfill.int.test.ts » PUT gán cũ ⇒ hiện trong routing, thay ⇒ bỏ def cũ khỏi tập, DELETE giữ def khi luật còn dùng]
 - Kịch bản: khi launch không có luật thì vẫn chạy quy trình gán cũ / mặc định khe như trước [test: apps/hub-api/src/modules/packs/contracts/application/approval-engine-slot.int.test.ts » X gán A, Y gán B chạy đúng quy trình]
 

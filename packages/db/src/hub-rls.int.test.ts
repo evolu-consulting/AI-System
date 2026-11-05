@@ -172,8 +172,9 @@ const LATER_POLICY_TABLES = [
   "notify_prefs",
   "push_subscriptions",
   // CR-105 (0068): gán tenant × khe (đọc T + ghi system = 2 policy), bản phát hành + khe (chỉ system, 1 policy mỗi bảng).
-  "process_slot_assignments",
-  "process_slot_assignments",
+  // CR-120 (0091): bảng gán đổi tên `_legacy` (giữ policy); tên cũ là VIEW security_invoker (không RLS riêng).
+  "process_slot_assignments_legacy",
+  "process_slot_assignments_legacy",
   "process_def_releases",
   "process_slots",
   // CR-114 (0084): kho artifact + nối run ↔ artifact — RLS tenant (system hoặc user đúng tenant), 1 policy mỗi bảng, chỉ hub_rw.

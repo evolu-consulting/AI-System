@@ -8,6 +8,7 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../../lib/db";
 import { packRunsPortForTest } from "../../../../test-support/pack-runs-port";
+import { setSlotDefault } from "../../../../test-support/slot-default";
 import type { PackToolCatalog } from "../../kit/application/pack-tools.ports";
 import { approvalEngineTools } from "../adapters/approval-engine.tools";
 import { APPROVAL_PROCESS_KEY } from "../domain/approval-flow.rules";
@@ -197,8 +198,8 @@ beforeAll(async () => {
   origDefault = { present: prev.length > 0, def: (prev[0]?.d as string | undefined) ?? null };
   await o`insert into hub.process_slots (slot, default_def_id) values (${APPROVAL_SLOT}, ${lib.D})
     on conflict (slot) do update set default_def_id = excluded.default_def_id`;
-  await o`insert into hub.process_slot_assignments (tenant_id, slot, def_id)
-    values (${X}, ${APPROVAL_SLOT}, ${lib.A}), (${Y}, ${APPROVAL_SLOT}, ${lib.B})`;
+  await setSlotDefault(o, X, APPROVAL_SLOT, lib.A); // CR-120 · gán = luật mặc định
+  await setSlotDefault(o, Y, APPROVAL_SLOT, lib.B);
   const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((t) => ({
     key: t.name,
     name: t.name,
@@ -262,7 +263,7 @@ describe("CR-105 · engine mở lượt theo khe contracts.approval", () => {
     const v1 = (await tenantDef(X))?.version;
     const r1 = structuredClone(runs.get(first.a.run as string) as Run);
     const steps1 = structuredClone(first.a.steps);
-    await o`update hub.process_slot_assignments set def_id = ${lib.B} where tenant_id = ${X}`;
+    await setSlotDefault(o, X, APPROVAL_SLOT, lib.B);
     const second = await open(X, 4);
     const third = await open(X, 5); // B lần 2 ⇒ source_ref bằng ⇒ không ghi def
     const gx = gid[X] as Map<string, string>;

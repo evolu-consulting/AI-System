@@ -1,5 +1,5 @@
 // CR-105 · L1 · design §3.1 · Luật 4c: tra quy trình của khe cho tenant lúc mở lượt — MỘT câu SQL cố định, scope system, tenant
-// từ ngữ cảnh gói (không từ client): gán (PK tenant, slot) ⇒ không có ⇒ mặc định khe (PK slot) ⇒ bản xuất bản hiện hành (PK
+// từ ngữ cảnh gói (không từ client): luật mặc định (CR-120, index tenant, slot) ⇒ không có ⇒ mẫu khe (PK slot) ⇒ bản xuất bản hiện hành (PK
 // def_id, rel_version). Mọi lookup theo PK ⇒ p95 không phụ thuộc số tenant/release (perf: `slot-resolve.perf.int.test.ts`).
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
@@ -18,11 +18,18 @@ type Row = {
   is_default: boolean;
 };
 
-/** Câu tra (xuất để perf test đo đúng câu chạy thật). Def đã xoá mềm / chưa xuất bản / khác khe ⇒ không hàng. */
+/**
+ * Câu tra (xuất để perf test đo đúng câu chạy thật). Def đã xoá mềm / chưa xuất bản / khác khe ⇒ không hàng.
+ * CR-120 · ADR-0036 · một nguồn: luật `is_default` của tenant × khe (index một-mặc-định) ⇒ không có ⇒ mẫu cấp phát của khe
+ * (`process_slots.default_def_id`, cho tenant chưa được `ensureSlotDefaults` cấp — giữ hành vi cũ). KHÔNG đọc `process_slot_assignments`.
+ * `is_default` = def hiệu lực là mặc định của khe (không luật, hoặc luật mặc định trỏ đúng mẫu).
+ */
 export const RESOLVE_SLOT_SQL = (tenantId: string, slot: string) => sql`
-  select d.id as def_id, r.name, r.rel_version, r.slot_body, (x.a_id is null) as is_default
+  select d.id as def_id, r.name, r.rel_version, r.slot_body,
+    (x.a_id is null or coalesce(x.a_id = x.s_id, false)) as is_default
   from (select
-          (select a.def_id from hub.process_slot_assignments a where a.tenant_id = ${tenantId}::uuid and a.slot = ${slot}) as a_id,
+          (select a.def_id from hub.process_routing_rules a
+            where a.tenant_id = ${tenantId}::uuid and a.slot = ${slot} and a.is_default) as a_id,
           (select s.default_def_id from hub.process_slots s where s.slot = ${slot}) as s_id) x
   join hub.process_defs d on d.id = coalesce(x.a_id, x.s_id) and d.deleted_at is null and d.slot = ${slot}
   join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version`;

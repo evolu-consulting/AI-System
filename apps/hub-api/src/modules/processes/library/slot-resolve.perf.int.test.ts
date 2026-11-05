@@ -44,10 +44,19 @@ beforeAll(async () => {
   );
   await o.unsafe(`insert into admin.tenants (id, key, name)
     select ${ten("i")}, 'plp' || i, 'T' || i from generate_series(1, ${N_TENANT}) i`);
-  // Tenant chẵn có gán (def 1..50 vòng), lẻ chạy mặc định.
+  // Tenant chẵn (không chia hết cho 3) có gán (def 1..50 vòng) — CR-120: gán = luật mặc định (nguồn duy nhất); lẻ chạy mẫu khe.
+  const t2 = `from generate_series(2, ${N_TENANT}, 2) i where i % 3 <> 0`;
   await o.unsafe(
-    `insert into hub.process_slot_assignments (tenant_id, slot, def_id)
-    select ${ten("i")}, $1, ${def("(i % 50) + 1")} from generate_series(2, ${N_TENANT}, 2) i`,
+    `insert into hub.process_tenant_defs (tenant_id, def_id, slot) select ${ten("i")}, ${def("(i % 50) + 1")}, $1 ${t2}`,
+    [SLOT],
+  );
+  await o.unsafe(
+    `insert into hub.process_routings (tenant_id, slot) select ${ten("i")}, $1 ${t2}`,
+    [SLOT],
+  );
+  await o.unsafe(
+    `insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
+    select ${ten("i")}, $1, 49, '{}'::jsonb, ${def("(i % 50) + 1")}, true ${t2}`,
     [SLOT],
   );
   // CR-118 §11.2 · tenant chia hết cho 3: tập gán 2 def + 10 luật phòng ban (phòng ngẫu nhiên, không ai khớp) + 1 mặc định.
