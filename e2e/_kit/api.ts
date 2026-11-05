@@ -260,43 +260,15 @@ export function pageFetch(page: import("@playwright/test").Page): typeof fetch {
 }
 
 /**
- * Chủ quản duyệt bài trong hàng chờ (cùng API trang "Duyệt bài": `GET /pack/community/moderation/queue` rồi `POST .../:id/decide`).
- * Bật duyệt bài ⇒ bài của chính chủ quản cũng vào hàng chờ. Hàng chờ xuất hiện trễ (quy trình duyệt chạy nền) nên chờ tới `timeoutMs`.
- * `contains` = đoạn chữ nhận ra bài (nội dung/tiêu đề). Ví dụ: `await approvePost("", hostSession, NOTE);`
+ * Chủ quản duyệt một bài theo id (cùng API nút "Duyệt" ở trang "Duyệt bài": `POST /pack/community/moderation/:id/decide`).
+ * Bật duyệt bài ⇒ bài của chính chủ quản cũng phải duyệt. Không chờ hàng chờ: `taskId` vắng ⇒ server dùng lượt duyệt đang mở
+ * (mở ngay trong transaction đăng bài). Ví dụ: `const p = await createPost(...); await approvePost("", host, p.id!);`
  */
-export async function approvePost(
-  base: string,
-  s: Session,
-  contains: string,
-  timeoutMs = 60_000,
-): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    const q = await call<{ items: { id: string; taskId?: string | null }[] }>(
-      `${base}/pack/community/moderation/queue`,
-      { method: "GET", token: s.token },
-      undefined,
-      s.fx,
-    );
-    const hit = q.json.items.find((m) => JSON.stringify(m).includes(contains));
-    if (hit) {
-      await call(
-        `${base}/pack/community/moderation/${encodeURIComponent(hit.id)}/decide`,
-        {
-          method: "POST",
-          token: s.token,
-          body: JSON.stringify({
-            action: "approve",
-            ...(hit.taskId ? { taskId: hit.taskId } : {}),
-          }),
-        },
-        undefined,
-        s.fx,
-      );
-      return;
-    }
-    if (Date.now() > deadline)
-      throw new Error(`approvePost: bài "${contains}" không vào hàng chờ duyệt`);
-    await new Promise((r) => setTimeout(r, 500)); // đợi quy trình nền tạo việc duyệt (không có tín hiệu để chờ)
-  }
+export async function approvePost(base: string, s: Session, postId: string): Promise<void> {
+  await call(
+    `${base}/pack/community/moderation/${encodeURIComponent(postId)}/decide`,
+    { method: "POST", token: s.token, body: JSON.stringify({ action: "approve" }) },
+    undefined,
+    s.fx,
+  );
 }

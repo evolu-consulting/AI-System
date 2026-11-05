@@ -95,8 +95,9 @@ test("3 · đối tác báo cáo một bài ⇒ chủ quản Ẩn bài ở Báo 
     password: OWNER_PW,
     app: "contracts",
   });
-  await createPost("", hostApi, { type: "note", body: NOTE });
-  await approvePost("", hostApi, NOTE); // bật duyệt bài ⇒ bài của chủ quản cũng phải duyệt
+  const note = await createPost("", hostApi, { type: "note", body: NOTE });
+  expect(note.id, "createPost phải trả id bài").toBeTruthy();
+  await approvePost("", hostApi, note.id as string); // bật duyệt bài ⇒ bài của chủ quản cũng phải duyệt
   await hostPage.ctx.close();
   const hostPostText = "(đăng bằng API)";
   const needsReview = true;
