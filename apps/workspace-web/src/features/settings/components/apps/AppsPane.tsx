@@ -2,6 +2,7 @@
 // quy trình theo phòng ban (ngoại lệ DUY NHẤT cho "chỉ xem": tenant admin sửa luật, không gán/sửa nội dung quy trình).
 import { useTranslation } from "react-i18next";
 import { useCapabilities } from "../../hooks/use-apps-settings";
+import { paneSlots } from "../../lib/app-slots";
 import { SlotCard } from "./SlotCard";
 
 export default function AppsPane({ tenantId }: { tenantId: string }) {
@@ -34,8 +35,28 @@ export default function AppsPane({ tenantId }: { tenantId: string }) {
               ? a("noAddons")
               : app.addons.map((o) => `${o.key}: ${a(o.on ? "addonOn" : "addonOff")}`).join(" · ")}
           </p>
-          {app.slots.map((s) => (
-            <SlotCard key={s.slot} tenantId={tenantId} slot={s.slot} />
+          {paneSlots(app.key, app.slots).map((s) => (
+            <div key={s.key} data-testid={`apps-slot-row-${s.key}`}>
+              {s.decl && (
+                <p
+                  className="mb-1 text-caption text-dim"
+                  data-testid={`apps-slot-purpose-${s.key}`}
+                >
+                  <b className="text-label">{s.decl.label}</b> · {s.decl.purpose}
+                </p>
+              )}
+              {s.present ? (
+                <SlotCard tenantId={tenantId} slot={s.key} />
+              ) : (
+                <p
+                  role="alert"
+                  className="mb-4 text-late"
+                  data-testid={`apps-slot-missing-${s.key}`}
+                >
+                  {a("slotMissing")}
+                </p>
+              )}
+            </div>
           ))}
         </section>
       ))}

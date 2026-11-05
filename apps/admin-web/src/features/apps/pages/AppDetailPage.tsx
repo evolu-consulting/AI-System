@@ -143,7 +143,11 @@ function Content({ appKey, tab, onTab }: Props) {
           <FeaturesTab appId={appId} />
         </TabsContent>
         <TabsContent value="processes" className="pt-4">
-          <ProcessesTab data={processes} onOpenCompanies={() => onTab("companies")} />
+          <ProcessesTab
+            data={processes}
+            decls={manifest?.slots}
+            onOpenCompanies={() => onTab("companies")}
+          />
         </TabsContent>
         <TabsContent value="companies" forceMount className="pt-4 data-[state=inactive]:hidden">
           {appId ? (

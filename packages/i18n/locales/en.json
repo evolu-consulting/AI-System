@@ -579,6 +579,7 @@
         "noneAssigned": "No process assigned: the company cannot see, pick or run one in this slot.",
         "inUse": "In use",
         "inUseOutside": "In use (slot default): {{name}}",
+        "slotMissing": "This slot has no process for the company yet. Ask the platform admin to assign the default process.",
         "unassign": "Unassign",
         "addPick": "Library process",
         "addPlaceholder": "Pick a published process to assign",
@@ -2917,6 +2918,10 @@
     "processes": {
       "noHub": "The Hub address is not configured, so flows cannot be shown.",
       "noSlots": "This app has no flow slots. A slot is a place where the app lets you plug in a flow, for example \"Contract approval\".",
+      "alwaysOn": "Always on",
+      "needsAddon": "Needs add-on {{addon}}",
+      "trigger": "Starts when: {{trigger}}",
+      "slotMissing": "This slot is not on the hub yet (missing a published default flow \"{{def}}\"). Companies that turn on the app will have no flow here.",
       "intro": "Each slot has a default flow. For a company that needs its own, duplicate, edit, then assign it in the Companies tab. Running items keep the old version; new items use the new one.",
       "default": "Default",
       "noDefault": "None",

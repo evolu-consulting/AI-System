@@ -1,5 +1,6 @@
 // CR-118 · cr118-app-config · thẻ MỘT khe quy trình của app: quy trình mặc định (+ phiên bản), đổi mặc định, nhân bản để sửa, quy trình khác của khe,
 // công ty đang dùng. Sửa luôn mở ProcessEditorPage (/processes/$id — editor duy nhất, CR-105: nháp → xuất bản → tác động).
+import type { AppSlotDecl } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -17,15 +18,18 @@ import {
 import { processErrorSpec } from "@/features/processes/lib/errors";
 import { setSlotDefault, useLibraryRefresh } from "@/features/processes/library-api";
 import type { SlotView } from "../hooks/use-app-processes";
+import { SlotDeclInfo } from "./SlotDeclInfo";
 import { SlotFlowView } from "./SlotFlowView";
 
 type Props = {
   view: SlotView;
+  /** CR-120 · khai báo khe từ manifest (mục đích, sự kiện, luôn bật/add-on). */
+  decl?: AppSlotDecl | null;
   onClone: (src: { id: string; name: string }) => void;
   onOpenCompanies: () => void;
 };
 
-export function SlotCard({ view, onClone, onOpenCompanies }: Props) {
+export function SlotCard({ view, decl, onClone, onOpenCompanies }: Props) {
   const { t } = useTranslation();
   const refresh = useLibraryRefresh();
   const [pick, setPick] = useState("");
@@ -58,6 +62,7 @@ export function SlotCard({ view, onClone, onOpenCompanies }: Props) {
         <h3 className="text-h3 font-semibold">{slot.label}</h3>
         <p className="font-mono text-caption text-muted-foreground">{slot.slot}</p>
       </header>
+      {decl ? <SlotDeclInfo decl={decl} /> : null}
       <div className="flex flex-wrap items-center gap-2 text-body">
         <span className="text-muted-foreground">{t("appcfg.processes.default")}:</span>
         <span className="font-medium">
