@@ -592,6 +592,7 @@
       "done": {
         "confirm": "Đã lưu và xác nhận hợp đồng.",
         "toLevel2": "Đã xác nhận — chờ Ban giám đốc duyệt",
+        "movedTo": "Đã chuyển: {{step}}",
         "approve": "Đã duyệt hợp đồng.",
         "reject": "Đã từ chối hợp đồng.",
         "redo": "Đã gửi đọc lại hợp đồng.",
@@ -628,6 +629,8 @@
       },
       "saving": "Đang lưu…",
       "saveDraft": "Lưu nháp",
+      "draftHint": "Bản nháp chỉ bạn thấy — bấm Xác nhận và lưu để chuyển duyệt",
+      "notVisible": "Hợp đồng chưa được gửi duyệt hoặc bạn không có quyền xem. Hãy nhờ người tạo xác nhận.",
       "savedDraft": "Đã lưu nháp. Hợp đồng vẫn chờ xác nhận — bấm Xác nhận để hoàn tất.",
       "saved": "Đã lưu.",
       "failedTitle": "Không đọc được hợp đồng này.",

@@ -37,6 +37,7 @@ import { OriginalFileHost } from "../components/OriginalFileDialog";
 import { ExtractFailed, SaveNotice } from "../components/ReviewParts";
 import { useInfoForm } from "../hooks/use-info-form";
 import { headRule } from "../lib/head-rule";
+import { detailErrorKey } from "../lib/load-error";
 import { leadKey, saveLabelKey } from "../lib/review";
 
 const READING_REFRESH_MS = 2000;
@@ -64,14 +65,22 @@ function SaveButton({ info, ap, confirm }: { info: Info; ap: Approval; confirm: 
   const { t } = useTranslation();
   const idle = t(saveLabelKey(confirm));
   return (
-    <button
-      type="button"
-      className="btn btn-primary btn-sm"
-      disabled={info.busy || ap.busy || (!confirm && !info.dirty)}
-      onClick={() => void info.save()}
-    >
-      {info.busy ? t("contracts.review.saving") : idle}
-    </button>
+    <>
+      {/* CR-120 · bản nháp chỉ người tạo thấy ⇒ nói rõ cách chuyển duyệt (không có "Gửi duyệt" tay). */}
+      {confirm && (
+        <span data-testid="draft-hint" className="text-caption text-muted-foreground max-sm:hidden">
+          {t("contracts.review.draftHint")}
+        </span>
+      )}
+      <button
+        type="button"
+        className="btn btn-primary btn-sm"
+        disabled={info.busy || ap.busy || (!confirm && !info.dirty)}
+        onClick={() => void info.save()}
+      >
+        {info.busy ? t("contracts.review.saving") : idle}
+      </button>
+    </>
   );
 }
 
@@ -213,6 +222,7 @@ function ContractBody({
 }
 
 export function ContractReviewPage({ id }: { id: string }) {
+  const { t } = useTranslation();
   const { write, owner } = useMe();
   const q = useQuery({
     queryKey: contractKey(id),
@@ -230,6 +240,13 @@ export function ContractReviewPage({ id }: { id: string }) {
     extracted: extractedOf(q.data),
   });
   if (q.isLoading) return <Loading />;
+  const hidden = detailErrorKey(q.error);
+  if (hidden)
+    return (
+      <div data-testid="contract-not-visible">
+        <ErrorLine error={new Error(t(hidden))} />
+      </div>
+    );
   if (q.error || !q.data || !info.f) return <ErrorLine error={q.error} />;
   return <ContractBody id={id} c={q.data} info={{ ...info, f: info.f }} ap={ap} />;
 }

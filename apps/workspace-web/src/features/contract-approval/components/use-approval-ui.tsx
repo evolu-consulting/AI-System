@@ -3,7 +3,7 @@
 // products-confirm: "Xác nhận"/"Duyệt" mà máy chủ báo sẽ xác nhận HĐ (`finalizes_on_approve`) ⇒ (lưu ô đã đổi) ⇒ hộp "Gắn sản phẩm"
 // ⇒ gửi lựa chọn cùng `approve`. Bước chỉ chuyển cấp 2 / HĐ không có dòng hàng ⇒ duyệt thẳng như trước.
 import type { ProductLink } from "@ai/contracts";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { fetchProducts } from "~/features/contract-form/api";
@@ -22,6 +22,7 @@ import {
   showLinkDialog,
 } from "../lib/approval";
 import { releaseNoteKey } from "../lib/engine-card";
+import { isDraftConfirm, movedToStep } from "../lib/moved-to";
 import { ApprovalButtons, ApprovalNote, ExtractedValue, ReasonForm } from "./ApprovalParts";
 import { ApprovalTimeline } from "./ApprovalTimeline";
 import { AttentionBanner } from "./AttentionBanner";
@@ -56,7 +57,12 @@ export function useApprovalUi(o: {
   // confirm-flow: "Đọc lại" (trích lại kèm lý do) ẩn theo người dùng 2026-10-23 ⇒ hộp lý do chỉ còn "Từ chối".
   const [ask, setAsk] = useState<"reject" | "return" | null>(null);
   const v = approvalView(ap.approval, { write: o.write, hasSource: o.hasSource });
-  const { link, setLink, approve, confirmLinks } = useConfirmFlow(o.id, ap);
+  const [confirmed, setConfirmed] = useState(false);
+  const { link, setLink, approve, confirmLinks } = useConfirmFlow(o.id, ap, () =>
+    setConfirmed(true),
+  );
+  // CR-120 · sau "Xác nhận và lưu" cho biết HĐ đã chuyển tới bước nào (engine tự mở bước kế theo luật; không có "Gửi duyệt" tay).
+  const movedTo = confirmed ? movedToStep(ap.approval) : null;
   const buttons = (
     <ApprovalButtons
       v={v}
@@ -79,6 +85,11 @@ export function useApprovalUi(o: {
       : v.note;
   const section = (
     <>
+      {movedTo && (
+        <p role="status" data-testid="moved-to" className="mb-3 text-label font-medium text-ok">
+          {t("contracts.approval.done.movedTo", { step: movedTo })}
+        </p>
+      )}
       {ap.approval && <ApprovalTimeline id={o.id} a={ap.approval} />}
       {attention && (
         <AttentionBanner
@@ -134,12 +145,14 @@ export function useApprovalUi(o: {
 }
 
 /** "Xác nhận và lưu" / "Duyệt" ⇒ (lưu ô đã đổi) ⇒ (hộp "Gắn sản phẩm") ⇒ `approve`; kết quả đóng hộp + tải lại + báo. */
-function useConfirmFlow(id: string, ap: ReturnType<typeof useApproval>) {
+function useConfirmFlow(id: string, ap: ReturnType<typeof useApproval>, onConfirmed: () => void) {
   const { t } = useTranslation();
   const [link, setLink] = useState<LinkStep | null>(null);
   /** Kết quả "Xác nhận"/"Duyệt" ⇒ đóng hộp, tải lại, báo (cấp 2 ⇒ chờ BGĐ; bước đã đổi ⇒ câu rõ ràng). */
+  const draft = useRef(false);
   const settle = async (r: ActResult) => {
     const next = afterConfirm(r);
+    if (r.ok && draft.current) onConfirmed();
     if (next.close) setLink(null);
     if (next.toast) {
       ap.setMsg(t(next.toast));
@@ -151,6 +164,7 @@ function useConfirmFlow(id: string, ap: ReturnType<typeof useApproval>) {
     }
   };
   const approve = async (before: (() => Promise<void>) | undefined, label?: string) => {
+    draft.current = isDraftConfirm(ap.approval); // bước soạn ⇒ xác nhận xong báo bước kế
     // Bước này chưa xác nhận HĐ (cấp 1 ⇒ cấp 2) ⇒ duyệt thẳng, không hộp; người duyệt cấp 2 sẽ thấy hộp.
     if (!showLinkDialog(ap.approval, 1))
       return settle(await ap.act({ action: "approve" }, before, label));

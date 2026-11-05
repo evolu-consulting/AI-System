@@ -592,6 +592,7 @@
       "done": {
         "confirm": "Contract saved and confirmed.",
         "toLevel2": "Confirmed — waiting for the Board of Directors to approve",
+        "movedTo": "Moved on: {{step}}",
         "approve": "Contract approved.",
         "reject": "Contract rejected.",
         "redo": "Contract sent to be read again.",
@@ -628,6 +629,8 @@
       },
       "saving": "Saving…",
       "saveDraft": "Save draft",
+      "draftHint": "A draft is visible only to you — press Confirm and save to send it for approval",
+      "notVisible": "This contract has not been sent for approval yet, or you do not have access. Ask its creator to confirm it.",
       "savedDraft": "Draft saved. The contract is still awaiting confirmation — press Confirm to finish.",
       "saved": "Saved.",
       "failedTitle": "This contract could not be read.",
