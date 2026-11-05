@@ -6,13 +6,7 @@
 // 100 tr (Mua) ⇒ đúng bước chạy/bỏ qua theo quy trình của công ty đó; sửa giá trị HĐ đang chờ 600 → 100 tr ⇒ bước Giám đốc bị bỏ qua khi tới;
 // trang "Chi tiết lượt chạy" (admin) hiện đúng bước + nhật ký; công ty 1 không thấy dữ liệu công ty 2.
 import { expect, type Page, test } from "@playwright/test";
-import {
-  apiLogin,
-  cloneAndPublishFlow,
-  type Session,
-  setRoutingRules,
-  tenantIdByKey,
-} from "../_kit/api";
+import { apiLogin, cloneAndPublishFlow, type Session } from "../_kit/api";
 import { assignProcessUi } from "../_kit/ui";
 import {
   approveAs,
@@ -157,20 +151,6 @@ test("2 · platform admin gán A cho công ty 1, B cho công ty 2 (không công 
     await expect(blk.getByTestId("tenant-engine-switch")).toHaveCount(0);
     await assignProcessUi(blk.getByTestId(`admin-assigned-${SLOT}`), name);
   }
-  // Luật chọn quy trình của công ty = quy trình vừa gán làm mặc định (đúng bước platform admin làm ở "Luật chọn quy trình").
-  const s = await apiLogin({
-    base: API,
-    tenantKey: "platform",
-    username: base.adminUser,
-    password: base.adminPw,
-  });
-  for (const [e, def] of [
-    [EA, ids.defA],
-    [EB, ids.defB],
-  ] as const)
-    await setRoutingRules(HUB, s, await tenantIdByKey(API, s, e.tenantKey), SLOT, [
-      { condition: {}, def_id: def as string, is_default: true },
-    ]);
 });
 
 test("3 · công ty 1: HĐ 600 tr Mua đi qua Kế toán rồi Giám đốc, duyệt xong là khoá", async ({
@@ -277,9 +257,9 @@ test("8 · công ty 1 không thấy dữ liệu công ty 2", async () => {
   const a = await userApi(EA, U.employee);
   for (const k of ["b6", "b1"]) {
     const r = await getJson<unknown>(a, pack(`/contracts/${ids[k]}`));
-    expect(r.status, `HĐ công ty 2 (${k}) lộ cho công ty 1`).toBeGreaterThanOrEqual(400);
+    expect(r.status, `HĐ công ty 2 (${k}) lộ cho công ty 1`).toBe(404);
     const c = await getJson<unknown>(a, pack(`/contracts/${ids[k]}/approval`));
-    expect(c.status).toBeGreaterThanOrEqual(400);
+    expect(c.status).toBe(404);
   }
   const list = await getJson<{ items?: { id: string }[] }>(a, pack("/contracts?limit=100"));
   expect(list.status).toBe(200);

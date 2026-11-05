@@ -25,7 +25,7 @@ Không đổi code sản phẩm. Chạm `tools/scripts/src/seed-e2e-journey.ts` 
 
 ## Quyết định trong lúc làm
 - Giá trị HĐ chỉ sửa được khi bước đầu của luồng đang mở (luật cũ HD3 S1) ⇒ ca "sửa 600 → 100" sửa lúc Kế toán đang mở, không cần Trả lại.
-- Gán ở UI chỉ thêm quy trình vào tập của công ty; engine chạy khi luật chọn quy trình không phải mặc định của khe ⇒ spec đặt luật mặc định = quy trình vừa gán (API `setRoutingRules`).
+- Hành trình chỉ gán qua UI (không workaround luật); chờ lát F-1 (gán ⇒ luật mặc định = quy trình đã gán) rồi mới chạy lại.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
