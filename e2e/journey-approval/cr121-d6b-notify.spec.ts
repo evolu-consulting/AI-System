@@ -120,7 +120,18 @@ test("3 · người gửi duyệt thấy thông báo ở chuông sau khi Giám �
   const emp = await ctx();
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, RUN);
+  // Chờ bước xác nhận của lượt duyệt ĐÃ MỞ (engine mở task bất đồng bộ sau khi AI đọc xong) rồi mới bấm: bấm sớm thì thẻ còn chưa có
+  // task ⇒ client báo "Bước duyệt đã thay đổi" và không quyết (lỗi chập chờn F-5).
+  await expect(async () => {
+    await emp.reload();
+    await expect(stepOf(emp, "Xác nhận hợp đồng")).toHaveAttribute("data-status", "open", {
+      timeout: 4_000,
+    });
+  }).toPass({ timeout: 60_000 });
   await emp.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await expect(stepOf(emp, "Xác nhận hợp đồng")).toHaveAttribute("data-status", "passed", {
+    timeout: 30_000,
+  });
   await expect(stepOf(emp, GD)).toBeVisible({ timeout: 60_000 });
   // chưa duyệt ⇒ chưa có thông báo của bước Thông báo
   await approveAs(await ctx(), E, U.director, id, GD);
