@@ -44,6 +44,18 @@ describe("buildShellNav", () => {
   });
 });
 
+describe("một khung: mọi mục của mọi module cùng dạng (CR-121 C-5)", () => {
+  test("mỗi mục có icon + nhãn i18n `contracts.nav.*` (không mã màu/nhãn cứng); nhóm có nhãn nhóm", () => {
+    for (const g of buildShellNav(MODULES, member)) {
+      expect(g.labelKey.startsWith("contracts.nav.group.")).toBe(true);
+      for (const n of g.items) {
+        expect(typeof n.icon === "function" || typeof n.icon === "object").toBe(true);
+        expect(n.labelKey.startsWith("contracts.nav.")).toBe(true);
+      }
+    }
+  });
+});
+
 describe("buildAccountEntries", () => {
   test("Community đóng góp Tường nhà + Cài đặt Community chỉ khi gói community bật", () => {
     expect(buildAccountEntries(MODULES, partner).map((e) => e.labelKey)).toEqual([

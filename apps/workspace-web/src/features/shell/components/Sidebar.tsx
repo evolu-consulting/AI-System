@@ -23,6 +23,7 @@ function SideLink({ n, wide, current }: { n: NavEntry; wide: boolean; current: b
       activeOptions={{ exact: n.exact === true }}
       aria-current={current ? "page" : undefined}
       data-testid={n.testId}
+      data-nav-item={n.to}
       title={wide ? undefined : t(n.labelKey)}
       className="flex h-11 items-center gap-3 overflow-hidden rounded-[10px] px-3 text-body whitespace-nowrap text-ink-2 transition-colors hover:bg-sunk aria-[current=page]:bg-act-soft aria-[current=page]:font-semibold aria-[current=page]:text-act"
     >
@@ -97,6 +98,7 @@ export function Sidebar({
   return (
     <nav
       aria-label={t("contracts.shell.navMain")}
+      data-testid="shell-sidebar"
       className={cn(
         "z-30 flex h-dvh shrink-0 flex-col gap-1 border-r border-rule bg-panel px-2.5 py-3 transition-[width] duration-150 max-md:hidden",
         pinned ? "w-56" : "w-16",

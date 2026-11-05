@@ -184,41 +184,5 @@ export const IconTypeNote = (p: P) =>
     p,
   );
 
-// CR-110 · lớp vỏ (Sidebar / user-menu / burger).
-export const IconMenu = (p: P) => svg(<path d="M3 6h18M3 12h18M3 18h18" />, p);
+// IconChevron dùng cho Composer; icon lớp vỏ (menu/user/logout/doc/dashboard) ở `~/components/icons` (CR-121 C-5, một bộ icon).
 export const IconChevron = (p: P) => svg(<path d="m6 9 6 6 6-6" />, { size: 14, ...p });
-export const IconDashboard = (p: P) =>
-  svg(
-    <>
-      <rect x="3" y="3" width="7" height="9" />
-      <rect x="14" y="3" width="7" height="5" />
-      <rect x="14" y="12" width="7" height="9" />
-      <rect x="3" y="16" width="7" height="5" />
-    </>,
-    p,
-  );
-export const IconDoc = (p: P) =>
-  svg(
-    <>
-      <path d="M14 3v4a1 1 0 0 0 1 1h4" />
-      <path d="M5 3h9l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
-    </>,
-    p,
-  );
-export const IconUser = (p: P) =>
-  svg(
-    <>
-      <path d="M4 21a8 8 0 0 1 16 0" />
-      <circle cx="12" cy="7" r="4" />
-    </>,
-    p,
-  );
-export const IconLogout = (p: P) =>
-  svg(
-    <>
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <path d="m16 17 5-5-5-5" />
-      <path d="M21 12H9" />
-    </>,
-    p,
-  );
