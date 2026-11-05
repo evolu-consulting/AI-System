@@ -23,7 +23,7 @@ $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $tmp = Join-Path $env:TEMP "sohoptac2-$stamp"
 if ($Domain -and $Domain -ne "none" -and $Domain -notmatch '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$') { throw "-Domain khong hop le: $Domain" }
 $envDomain = $(if ($Domain) { "S2_DOMAIN=$Domain " } else { "" }) + $(if ($Hosts) { "S2_HOSTS=$Hosts " } else { "" })
-$kit = @("docker-compose.yml", "Dockerfile", "nginx.conf", "gen-env.sh", "filebox-env.sh", "setup.sh", "backup.sh", "ops-host-status.sh", "restore-test.sh", "smoke-ai.ts", "env.template", "README.md", "enable-domain.sh", "disable-domain.sh", "cutover.sh", "rollback-cutover.sh", "edge-lib.sh", "edge/sohoptac2.conf")
+$kit = @("docker-compose.yml", "Dockerfile", "nginx.conf", "gen-env.sh", "filebox-env.sh", "setup.sh", "backup.sh", "ops-host-status.sh", "ops-slo-status.sh", "restore-test.sh", "smoke-ai.ts", "env.template", "README.md", "enable-domain.sh", "disable-domain.sh", "cutover.sh", "rollback-cutover.sh", "edge-lib.sh", "edge/sohoptac2.conf")
 
 # Ban dang chay (dong dau VERSION, "<commit> (<ref>)") phai la to tien cua $Ref: deploy nhanh khac len prod roi deploy $Ref se mat
 # tinh nang/migration cua nhanh kia (su co 0064_agent_hooks). Han che: VERSION do ban deploy.ps1 cu ghi TRUOC khi build/migrate,

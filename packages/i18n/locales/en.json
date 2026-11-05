@@ -1257,7 +1257,8 @@
       "tls": "TLS certificates",
       "backup": "Backup",
       "disk": "Server disk",
-      "stuck": "Queue / stuck runs"
+      "stuck": "Queue / stuck runs",
+      "slo": "SLO / regressions"
     },
     "history": {
       "title": "History (last 50 events)",
@@ -1273,7 +1274,8 @@
       "count": "count",
       "days": "days",
       "hours": "hours",
-      "fails": "failures"
+      "fails": "failures",
+      "runs": "consecutive runs"
     },
     "config": {
       "title": "Settings",

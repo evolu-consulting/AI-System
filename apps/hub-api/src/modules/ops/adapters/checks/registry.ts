@@ -6,6 +6,7 @@ import { diskCheck } from "./disk.check";
 import { providerCheck } from "./provider.check";
 import { publicHostsCheck } from "./public-hosts.check";
 import { runsFailedCheck } from "./runs-failed.check";
+import { sloCheck } from "./slo.check";
 import { stuckCheck } from "./stuck.check";
 import { tlsCheck } from "./tls.check";
 
@@ -18,4 +19,5 @@ export const OPS_CHECKS: readonly OpsCheck[] = [
   backupCheck,
   diskCheck,
   stuckCheck,
+  sloCheck,
 ];

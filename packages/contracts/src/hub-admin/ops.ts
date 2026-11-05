@@ -8,7 +8,7 @@ export const OPS_STATUSES = ["ok", "warn", "crit", "unknown"] as const;
 export const OpsStatusSchema = z.enum(OPS_STATUSES);
 export type OpsStatus = z.infer<typeof OpsStatusSchema>;
 
-/** 8 check v1 (bảng ở proposal §2). */
+/** 8 check v1 (bảng ở proposal §2) + `slo` (CR-117: SLO + phát hiện hồi quy). */
 export const OPS_CHECK_KEYS = [
   "provider",
   "runs_failed",
@@ -18,11 +18,12 @@ export const OPS_CHECK_KEYS = [
   "backup",
   "disk",
   "stuck",
+  "slo",
 ] as const;
 export const OpsCheckKeySchema = z.enum(OPS_CHECK_KEYS);
 export type OpsCheckKey = z.infer<typeof OpsCheckKeySchema>;
 
-export const OPS_UNITS = ["min", "pct", "count", "days", "hours", "fails"] as const;
+export const OPS_UNITS = ["min", "pct", "count", "days", "hours", "fails", "runs"] as const;
 export type OpsUnit = (typeof OPS_UNITS)[number];
 export type OpsRange = { min: number; max: number; default: number };
 /**
@@ -103,6 +104,14 @@ export const OPS_CHECK_META: Readonly<Record<OpsCheckKey, OpsCheckMeta>> = {
     crit: { min: 0, max: 1000, default: 5 },
     order: "asc",
     note: "số job orphaned / run quy trình running quá timeout trong 1 giờ (> N)",
+  },
+  slo: {
+    label: "SLO / hồi quy",
+    unit: "runs",
+    warn: { min: 1, max: 48, default: 2 },
+    crit: { min: 1, max: 48, default: 4 },
+    order: "asc",
+    note: "số lượt kiểm LIÊN TIẾP vi phạm một SLO (contracts.list p95, chat dispatch p50, timer PD-P01, tỷ lệ lỗi log)",
   },
 };
 

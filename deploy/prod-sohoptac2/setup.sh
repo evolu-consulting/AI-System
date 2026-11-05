@@ -40,4 +40,5 @@ for i in $(seq 1 60); do
 done
 [ $ok -eq 1 ] && echo "setup: admin-api + hub-api /health OK" || echo "setup: /health CHƯA lên — xem docker compose -p sohoptac2 logs"
 bash ./ops-host-status.sh || echo "setup: ops-host-status.sh loi (khong chan deploy)"
+bash ./ops-slo-status.sh || echo "setup: ops-slo-status.sh loi (khong chan deploy)"
 dc ps --format '{{.Service}}: {{.Status}}'

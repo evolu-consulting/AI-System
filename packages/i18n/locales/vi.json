@@ -1257,7 +1257,8 @@
       "tls": "Chứng chỉ TLS",
       "backup": "Backup",
       "disk": "Đĩa server",
-      "stuck": "Hàng đợi / run kẹt"
+      "stuck": "Hàng đợi / run kẹt",
+      "slo": "SLO / hồi quy"
     },
     "history": {
       "title": "Lịch sử (50 sự kiện gần nhất)",
@@ -1273,7 +1274,8 @@
       "count": "lần",
       "days": "ngày",
       "hours": "giờ",
-      "fails": "lần lỗi"
+      "fails": "lần lỗi",
+      "runs": "lượt kiểm liên tiếp"
     },
     "config": {
       "title": "Cấu hình",

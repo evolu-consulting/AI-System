@@ -33,3 +33,17 @@ export const OpsHostStatusSchema = z.object({
   every_min: z.number().int().min(1).max(1440).optional(),
 });
 export type OpsHostStatus = z.infer<typeof OpsHostStatusSchema>;
+
+/**
+ * `<statusDir>/slo.json` (CR-117) — `ops-slo-status.sh` (cron host) đếm log docker trong `window_min` phút gần nhất; `routes` là
+ * độ trễ theo route nếu host có nguồn (tên route → mẫu, p95 ms). Thiếu `routes`/route ⇒ SLO đó "chưa có dữ liệu".
+ */
+export const OpsSloStatusSchema = z.object({
+  at: Iso,
+  window_min: z.number().int().min(1).max(1440),
+  log: z.object({ lines: z.number().int().min(0), errors: z.number().int().min(0) }),
+  routes: z
+    .record(z.string().max(80), z.object({ n: z.number().int().min(0), p95_ms: z.number().min(0) }))
+    .optional(),
+});
+export type OpsSloStatus = z.infer<typeof OpsSloStatusSchema>;
