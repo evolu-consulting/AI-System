@@ -1,6 +1,7 @@
 // CR-120 · cr120-community-flows · cổng hub cho 3 khe Community (gói không đọc bảng hub — D-06; nối ở đây như `community-wire`):
-//   moderationOn(tenant) — khe `community.post-moderation` đã được cấp cho tenant (luật `process_routings` hoặc tập gán
-//     `process_tenant_defs`, hoặc gán cũ) ⇒ bài mới vào duyệt. MỘT câu theo PK/index, scope system.
+//   moderationOn(tenant) — khe `community.post-moderation` do platform admin GÁN (OPT-IN): có luật định tuyến thật HOẶC quy trình trong
+//     tập gán (`process_tenant_defs` — đúng thứ màn "Được platform gán" ghi) ⇒ bài mới vào duyệt. KHÔNG xét đầu luật rỗng (cấp tự
+//     động cũ) và view gán cũ (D6). Hub không còn tự cấp khe này (SlotSpec.optIn). MỘT câu theo PK/index, scope system.
 //   tenantAdmin(who)     — `admin.users.role = 'tenant_admin'` (cột hub_ro 0002), MỘT câu.
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -27,8 +28,10 @@ export function communityFlowPorts(db: Db, agents: AgentCaller | undefined): Com
     agents,
     moderationOn: async (tenantId) => {
       const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
-        tx.execute<{ on: boolean }>(sql`select exists (select 1 from hub.process_routing_rules x
-            where x.tenant_id = ${tenantId}::uuid and x.slot = ${SLOT_MODERATION}) as on`),
+        tx.execute<{ on: boolean }>(sql`select (
+            exists (select 1 from hub.process_routing_rules x where x.tenant_id = ${tenantId}::uuid and x.slot = ${SLOT_MODERATION})
+            or exists (select 1 from hub.process_tenant_defs x where x.tenant_id = ${tenantId}::uuid and x.slot = ${SLOT_MODERATION})
+          ) as on`),
       );
       return r?.on === true;
     },

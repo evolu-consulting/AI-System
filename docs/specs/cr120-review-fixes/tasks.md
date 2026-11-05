@@ -40,6 +40,8 @@ Không có đường nóng mới. Backfill 0094 = 2 câu DELETE theo tập (khô
 - e2e: community-web-stack chạy lại một lần (mặc định duyệt bài đổi).
 
 ## Quyết định trong lúc làm
+- LỆCH so với brief: moderationOn giữ thêm process_tenant_defs (tập gán). Lý do: e2e hành trình thật (z-flows ca 1) gán quy trình bằng màn "Được platform gán" chỉ ghi process_tenant_defs; chỉ xét luật thì gán xong mà duyệt bài vẫn tắt (thao tác ẩn — Luật GỐC 3). Tập gán do cấp tự động (assigned_by NULL) đã bị 0094 gỡ nên không còn bật ngầm.
+- E2e ca 1 trước đây KHÔNG chạy nhánh gán thật (mặc định tự cấp ⇒ đã có sẵn): phát hiện khe Community khai Group `community-admin` (khoá QUYỀN, không phải mã Group) ⇒ B2 chặn mọi lần gán. groupKeys của 3 khe Community = [] (người duyệt do gói quyết).
 - Nhận diện luật "do cấp tự động" cho backfill: đầu luật tenant × khe còn nguyên updated_by IS NULL AND version = 1 (mọi đường admin gán/sửa luật ghi updated_by +
   tăng ersion), luật duy nhất là is_default priority 49, và tập gán ssigned_by IS NULL. Mọi dấu hiệu admin ⇒ giữ. Luật priority 49 KHÔNG đủ để nhận diện
   (admin gán cũng chèn ở priority trống cao nhất = 49).
@@ -60,6 +62,7 @@ Sửa tiêu đề/nội dung/tệp bài đang chờ duyệt (hoặc đã gắn c
 Công ty bật Community KHÔNG tự có duyệt bài: chỉ khi platform admin gán quy trình cho khe (luật thật). Bỏ gán ⇒ tắt và hub không cấp lại. Migration gỡ luật do cấp
 tự động trước đây, giữ thứ admin đã gán/sửa. Gán khi đã đủ 50 luật ⇒ 409 rõ ràng.
 - Kịch bản: khi công ty mới bật Community thì duyệt bài tắt, gán thì bật, bỏ gán thì tắt và không bị cấp lại [test: apps/hub-api/src/modules/packs/community-optin.int.test.ts » tenant mới bật Community ⇒ không cấp mặc định ⇒ moderation tắt, gán ⇒ bật, bỏ gán ⇒ tắt và không bị cấp lại]
+- Kịch bản: khi gán vào tập (màn Được platform gán) thì duyệt bài bật, gỡ khỏi tập thì tắt [test: apps/hub-api/src/modules/packs/community-optin.int.test.ts » gán vào tập (đường màn Được platform gán, chưa có luật) ⇒ bật, gỡ khỏi tập ⇒ tắt]
 - Kịch bản: khi backfill 0094 chạy thì gỡ luật tự cấp và giữ luật admin, chạy lại vô hại [test: apps/hub-api/src/modules/packs/community-optin.int.test.ts » backfill 0094: gỡ luật do cấp tự động, GIỮ luật admin gán/sửa, chạy lại vô hại]
 - Kịch bản: khi gán lúc 50 luật đã đầy thì 409 và không đổi gì [test: apps/hub-api/src/modules/packs/community-optin.int.test.ts » gán khi 50 luật đã đầy ⇒ 409 ROUTING_RULES_FULL, không đổi gì (tx hoàn tác)]
 - Kịch bản: khi khe là opt-in thì không bị cấp mặc định và không bị đòi quy trình hiển thị [test: apps/hub-api/src/modules/processes/slot-optin.test.ts » defaultSlotsOf: bỏ dlc.* và khe Community (opt-in), giữ khe thường]

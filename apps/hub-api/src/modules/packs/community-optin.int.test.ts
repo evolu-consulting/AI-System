@@ -9,7 +9,12 @@ import { enablePack, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { AppError } from "../../lib/errors";
-import { deleteAssignment, upsertAssignment } from "../processes/library/slot-assign.repo";
+import { insertAssigned } from "../processes/library/routing.repo";
+import {
+  deleteAssignment,
+  releaseFromSet,
+  upsertAssignment,
+} from "../processes/library/slot-assign.repo";
 import { defaultSlotsOf, ensureSlotDefaults } from "../processes/library/slot-defaults";
 import { SLOT_MODERATION } from "./community/domain/flow.rules";
 import { communitySlotSpecs } from "./community/domain/flow-slots.rules";
@@ -88,12 +93,29 @@ describe("duyệt bài opt-in [CR-120]", () => {
       upsertAssignment(tx, { tenantId: t, slot: SLOT_MODERATION, defId, actorId: actor }),
     );
     expect(await on(t)).toBe(true);
-    await sys((tx) => deleteAssignment(tx, t, SLOT_MODERATION));
+    await sys(async (tx) => {
+      const prev = await deleteAssignment(tx, t, SLOT_MODERATION);
+      if (prev) await releaseFromSet(tx, { tenantId: t, slot: SLOT_MODERATION, defId: prev });
+    });
     await ensureSlotDefaults(
       db,
       defaultSlotsOf(() => specs),
       [t],
     );
+    expect(await on(t)).toBe(false);
+  });
+
+  it("gán vào tập (đường màn Được platform gán, chưa có luật) ⇒ bật, gỡ khỏi tập ⇒ tắt", async () => {
+    const t = T[1] as string;
+    await sql`delete from hub.process_routing_rules where tenant_id = ${t}::uuid and slot = ${SLOT_MODERATION}`;
+    await sql`delete from hub.process_routings where tenant_id = ${t}::uuid and slot = ${SLOT_MODERATION}`;
+    await sql`delete from hub.process_tenant_defs where tenant_id = ${t}::uuid and slot = ${SLOT_MODERATION}`;
+    expect(await on(t)).toBe(false);
+    await sys((tx) =>
+      insertAssigned(tx, { tenantId: t, slot: SLOT_MODERATION, defId, actorId: actor }),
+    );
+    expect(await on(t)).toBe(true);
+    await sql`delete from hub.process_tenant_defs where tenant_id = ${t}::uuid and slot = ${SLOT_MODERATION}`;
     expect(await on(t)).toBe(false);
   });
 
