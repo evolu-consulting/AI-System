@@ -107,9 +107,9 @@ describe("addStageToStep / addStageAsNewStep / removeStage", () => {
     expect(out[4]?.backTo).toEqual([0, 2]);
     expect(view(ok(insertStepAfter([], -1, mk("N", 0))))).toEqual(["N@0"]);
   });
-  test("tối đa 10 giai đoạn", () => {
-    const ten = Array.from({ length: 10 }, (_, i) => mk(`s${i}`, i));
-    expect(addStageAsNewStep(ten, mk("x", 0))).toEqual({
+  test("tối đa 22 giai đoạn", () => {
+    const full = Array.from({ length: 22 }, (_, i) => mk(`s${i}`, i));
+    expect(addStageAsNewStep(full, mk("x", 0))).toEqual({
       error: "process.admin.canvas.err.stagesMax",
     });
   });

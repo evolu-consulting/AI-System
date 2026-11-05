@@ -2,7 +2,7 @@
 // trường, stage đứng một mình trong bước, cạnh rẽ nhánh cho canvas. Thuần, built-in (ADR-0023).
 // Hằng khai lại (ADR-0023: domain không import @ai/contracts); parity ở `lib/domain-contract.test.ts`.
 export const BRANCH_OPS = ["eq", "ne", "lt", "le", "gt", "ge"] as const;
-export const BRANCH_RULES_MAX = 10;
+export const BRANCH_RULES_MAX = 20;
 export type BranchOp = (typeof BRANCH_OPS)[number];
 export type BranchFieldType = "number" | "string" | "date";
 

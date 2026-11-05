@@ -99,9 +99,9 @@ const omit = (o: Json, k: string): Json => {
 };
 
 describe("C · hằng [HUB-FR-104][HUB-FR-136]", () => {
-  it("HUB-FR-104 · C-01 · PROCESS_STEP_MAX 9, …_STAGES_MAX 3, BACK_ROUNDS_MAX 3, BACK_EVENTS_MAX 20, HANDOFF_* ; hub-admin re-export", () => {
+  it("HUB-FR-104 · C-01 · PROCESS_STEP_MAX 21, …_STAGES_MAX 3, BACK_ROUNDS_MAX 3, BACK_EVENTS_MAX 20, HANDOFF_* ; hub-admin re-export", () => {
     const want = {
-      PROCESS_STEP_MAX: 9,
+      PROCESS_STEP_MAX: 21,
       PROCESS_STEP_STAGES_MAX: 3,
       PROCESS_BACK_ROUNDS_MAX: 3,
       BACK_EVENTS_MAX: 20,
@@ -131,8 +131,8 @@ describe("C · hằng [HUB-FR-104][HUB-FR-136]", () => {
 });
 
 describe("C · schema def [HUB-FR-104][AC-PB2-04]", () => {
-  it("HUB-FR-104 · C-04 · ProcessStepSchema: −1, 10, 1.5 lỗi; 0, 9 ok", () => {
-    expect([-1, 10, 1.5, 0, 9].map((v) => ok(c, "ProcessStepSchema", v))).toEqual([
+  it("HUB-FR-104 · C-04 · ProcessStepSchema: −1, 22, 1.5 lỗi; 0, 21 ok", () => {
+    expect([-1, 22, 1.5, 0, 21].map((v) => ok(c, "ProcessStepSchema", v))).toEqual([
       false,
       false,
       false,
@@ -140,17 +140,15 @@ describe("C · schema def [HUB-FR-104][AC-PB2-04]", () => {
       true,
     ]);
   });
-  it("HUB-FR-104 · C-05 · ProcessStageDefSchema: có/không `step` ok; review không back_to_steps ⇒ []; 10 phần tử lỗi", () => {
+  it("HUB-FR-104 · C-05 · ProcessStageDefSchema: có/không `step` ok; review không back_to_steps ⇒ []; 22 phần tử lỗi", () => {
     const s = schema(h, "ProcessStageDefSchema") as Z & { parse: (v: unknown) => Json };
     expect(s.safeParse(st({ key: "a", review: null })).success).toBe(true);
     expect(s.safeParse(st({ key: "a", step: 0, review: null })).success).toBe(true);
-    expect(s.safeParse(st({ key: "a", step: 9, review: null })).success).toBe(true);
+    expect(s.safeParse(st({ key: "a", step: 21, review: null })).success).toBe(true);
     const parsed = s.parse(st({ key: "a", step: 1, review: null }));
     expect(parsed.after.back_to_steps).toEqual([]);
-    expect(
-      s.safeParse(st({ key: "a", step: 9, review: null, back: [0, 1, 2, 3, 4, 5, 6, 7, 8, 0] }))
-        .success,
-    ).toBe(false);
+    const back = [...Array.from({ length: 21 }, (_, i) => i), 0]; // CR-121 D-1 · 22 phần tử > PROCESS_STEP_MAX 21
+    expect(s.safeParse(st({ key: "a", step: 21, review: null, back })).success).toBe(false);
   });
   it("AC-PB2-04 · C-06 · ProcessDefInputSchema: 4 stage cùng bước ⇒ lỗi, issue path stages.3.step", () => {
     const stages = ["a", "b", "c", "d"].map((k) => st({ key: k, step: 0, review: null }));
@@ -189,12 +187,12 @@ describe("C · schema def [HUB-FR-104][AC-PB2-04]", () => {
 });
 
 describe("C · schema API/view [HUB-FR-113][HUB-FR-118]", () => {
-  it("HUB-FR-118 · C-08 · ReviewDecisionRequest + back_to_step (0…9); DecideProcessRunRequest + stage_idx", () => {
+  it("HUB-FR-118 · C-08 · ReviewDecisionRequest + back_to_step (0…21); DecideProcessRunRequest + stage_idx", () => {
     expect(
       ok(c, "ReviewDecisionRequestSchema", { result: "fail", feedback: "x", back_to_step: 1 }),
     ).toBe(true);
     expect(
-      ok(c, "ReviewDecisionRequestSchema", { result: "fail", feedback: "x", back_to_step: 10 }),
+      ok(c, "ReviewDecisionRequestSchema", { result: "fail", feedback: "x", back_to_step: 22 }),
     ).toBe(false);
     expect(ok(c, "ReviewDecisionRequestSchema", { result: "pass" })).toBe(true);
     expect(ok(c, "DecideProcessRunRequestSchema", { option: "add_attempt", stage_idx: 2 })).toBe(
@@ -209,12 +207,12 @@ describe("C · schema API/view [HUB-FR-113][HUB-FR-118]", () => {
     expect(ok(c, "BackEventSchema", backEvent({ feedback: "x".repeat(4001) }))).toBe(false);
     expect(ok(c, "BackEventSchema", backEvent({ extra: 1 }))).toBe(false);
   });
-  it("HUB-FR-104 · C-10 · ProcessRunSummary bắt buộc current_step/step_count; step_count 0/11 lỗi", () => {
+  it("HUB-FR-104 · C-10 · ProcessRunSummary bắt buộc current_step/step_count; step_count 0/23 lỗi", () => {
     expect(ok(c, "ProcessRunSummarySchema", summary())).toBe(true);
     expect(ok(c, "ProcessRunSummarySchema", omit(summary(), "current_step"))).toBe(false);
     expect(ok(c, "ProcessRunSummarySchema", omit(summary(), "step_count"))).toBe(false);
     expect(ok(c, "ProcessRunSummarySchema", summary({ step_count: 0 }))).toBe(false);
-    expect(ok(c, "ProcessRunSummarySchema", summary({ step_count: 11 }))).toBe(false);
+    expect(ok(c, "ProcessRunSummarySchema", summary({ step_count: 23 }))).toBe(false);
   });
   it("HUB-FR-113 · C-11 · StageView bắt buộc step/round≥1/back_to_steps; FullView bắt buộc back_*; TaskView không có back_events", () => {
     expect(ok(c, "StageViewSchema", stageView())).toBe(true);

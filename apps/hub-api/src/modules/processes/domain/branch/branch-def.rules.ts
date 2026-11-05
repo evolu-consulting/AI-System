@@ -3,7 +3,7 @@
 import { isCalendarDate } from "../runs/start-inputs.rules";
 
 /** Trần số luật một stage (= `BRANCH_RULES_MAX` contract). */
-export const BRANCH_RULES_MAX = 10;
+export const BRANCH_RULES_MAX = 20;
 export const BRANCH_OPS = ["eq", "ne", "lt", "le", "gt", "ge"] as const;
 export type BranchOp = (typeof BRANCH_OPS)[number];
 /** `gotoStep` 0-based (= `goto_step` contract). */

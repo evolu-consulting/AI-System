@@ -206,8 +206,8 @@ describe("PD2-U10…U11 · branchStageIssues [plan-addendum A2]", () => {
   it("AC-H45 · PD2-U10 · tong_tien gt 20000000 ⇒ goto 3 ở stage bước 1 đứng một mình ⇒ []", () => {
     expect(branchIssues(branchDef([RULE]))).toEqual([]);
   });
-  it("AC-H45 · PD2-U11 · 11 luật / stage cùng bước với stage khác ⇒ stages.1.after.branch", () => {
-    expect(branchIssues(branchDef(Array.from({ length: 11 }, () => RULE)))).toContainEqual(
+  it("AC-H45 · PD2-U11 · 21 luật / stage cùng bước với stage khác ⇒ stages.1.after.branch", () => {
+    expect(branchIssues(branchDef(Array.from({ length: 21 }, () => RULE)))).toContainEqual(
       B("stages.1.after.branch"),
     );
     expect(branchIssues(branchDef([RULE], {}, [stg("s1b", 1)]))).toContainEqual(

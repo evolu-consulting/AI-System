@@ -57,13 +57,13 @@ describe("PD2-C01 · enum nối cuối [plan-contract §6]", () => {
 });
 
 describe("PD2-C02 · hằng P-d2 [plan-contract §6]", () => {
-  it("AC-H44 · PD2-C02 · TOOL_ARGS_MAX 20, TOOL_RESULT_MAX_BYTES 65536, BRANCH_RULES_MAX 10, BRANCH_OPS 6 op", () => {
+  it("AC-H44 · PD2-C02 · TOOL_ARGS_MAX 20, TOOL_RESULT_MAX_BYTES 65536, BRANCH_RULES_MAX 20, BRANCH_OPS 6 op", () => {
     expect({
       a: chat.TOOL_ARGS_MAX,
       b: chat.TOOL_RESULT_MAX_BYTES,
       c: chat.BRANCH_RULES_MAX,
       d: chat.BRANCH_OPS,
-    }).toEqual({ a: 20, b: 65_536, c: 10, d: ["eq", "ne", "lt", "le", "gt", "ge"] });
+    }).toEqual({ a: 20, b: 65_536, c: 20, d: ["eq", "ne", "lt", "le", "gt", "ge"] });
   });
 });
 
@@ -85,14 +85,14 @@ describe("PD2-C03 · executor tool + after.branch [plan-contract §6]", () => {
     expect(ok(s, toolStage(many))).toBe(false);
     expect(ok(s, toolStage({ "1sai-ten": { from: "const", value: 1 } }))).toBe(false);
   });
-  it("AC-H45 · PD2-C03 · after.branch mặc định [] ở review và auto; 10 luật ok, 11 lỗi; op 'in' lỗi", () => {
+  it("AC-H45 · PD2-C03 · after.branch mặc định [] ở review và auto; 20 luật ok, 21 lỗi; op 'in' lỗi", () => {
     const s = schemaOf(ha, "ProcessStageDefSchema");
     const rev = s.safeParse(agentDef());
     const auto = s.safeParse(agentDef({ after: { kind: "auto" } }));
     expect([rev.data?.after?.branch, auto.data?.after?.branch]).toEqual([[], []]);
     const br = (n: number, r: unknown = RULE) =>
       agentDef({ after: { kind: "auto", branch: Array.from({ length: n }, () => r) } });
-    expect([ok(s, br(10)), ok(s, br(11)), ok(s, br(1, { ...RULE, op: "in" }))]).toEqual([
+    expect([ok(s, br(20)), ok(s, br(21)), ok(s, br(1, { ...RULE, op: "in" }))]).toEqual([
       true,
       false,
       false,
@@ -105,7 +105,7 @@ describe("PD2-C03 · executor tool + after.branch [plan-contract §6]", () => {
 });
 
 describe("PD2-C04 · part branch [plan-contract §6]", () => {
-  it("AC-H45 · PD2-C04 · RoomProcessPartSchema branch {process_run_id, stage_idx, to_step, rule}; rule 0/11 lỗi", () => {
+  it("AC-H45 · PD2-C04 · RoomProcessPartSchema branch {process_run_id, stage_idx, to_step, rule}; rule 0/21 lỗi", () => {
     const s = schemaOf(chat, "RoomProcessPartSchema");
     const p = (rule: number) => ({
       kind: "branch",
@@ -114,7 +114,7 @@ describe("PD2-C04 · part branch [plan-contract §6]", () => {
       to_step: 3,
       rule,
     });
-    expect([ok(s, p(1)), ok(s, p(10)), ok(s, p(0)), ok(s, p(11))]).toEqual([
+    expect([ok(s, p(1)), ok(s, p(20)), ok(s, p(0)), ok(s, p(21))]).toEqual([
       true,
       true,
       false,

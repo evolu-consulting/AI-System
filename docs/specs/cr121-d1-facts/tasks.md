@@ -28,7 +28,11 @@ UI, preview (D-2), kiểm xuất bản (D-2), gán bật engine (D-4), e2e. Nố
 - int: `adapters/flow-facts.repo.int.test.ts` (rẽ sau sửa giá trị, phòng con, đối tác mới, chặn chéo tenant, def 20 bước + CHECK 0095).
 
 ## Quyết định trong lúc làm
-- "Người tạo" = người bắt đầu lượt (= danh tính run của tool, cùng nghĩa luật chọn quy trình CR-118 §11.2).
+- "Phòng ban người tạo" = phòng của **người bắt đầu lượt duyệt** (`approvals.started_by` = danh tính run của tool), KHÔNG phải
+  `contracts.created_by`. Hai người khác nhau khi HĐ do người A tạo mà người B gửi duyệt (vd nhập hộ). Lý do: (1) luật chọn quy trình
+  theo phòng ban (CR-118 §11.2, `routeSlot`) đã dùng người bắt đầu lượt — một khái niệm "phòng ban người tạo" phải cùng một người ở cả
+  chọn quy trình lẫn điều kiện bước (Luật GỐC 1); (2) lượt mở lại/Đọc lại giữ `started_by` nên kết quả rẽ ổn định; (3) 0 câu SQL thêm để
+  biết người (đã có trong ngữ cảnh run). Đổi sang người tạo HĐ ⇒ đổi cả `routeSlot` (lát riêng). Nhãn UI (D-3) nên ghi "người gửi duyệt".
 - "HĐ đã duyệt" cho `new_partner` = `confirmed_at is not null`, `kind = 'contract'`, cùng `partner_key`; HĐ chưa có khoá đối tác ⇒ null.
 - Role gói `contracts_rw` không đọc `admin.*`, `hub_api` không đọc `contracts.*` ⇒ hai nguồn, mỗi nguồn ≤ 1 câu, chỉ khi mẫu dùng tới.
   Phòng ban đọc NGOÀI tx gói (không giữ hai kết nối). Finalize đọc phòng ban song song với `passedStages` (không thêm độ trễ).
@@ -55,10 +59,7 @@ Tool `contracts-route`/`contracts-finalize` xét điều kiện bước trên lo
 - Kịch bản: đọc dữ kiện không thấy dữ liệu tenant khác [test: apps/hub-api/src/modules/packs/contracts/adapters/flow-facts.repo.int.test.ts » chặn đọc chéo tenant]
 
 ## Việc còn lại
-- **CHẶN (đổi contract engine, ngoài D-1):** mẫu 20 bước biên dịch luật rẽ `next eq E(j) ⇒ goto` cho mọi đích xa ⇒ stage `route`/bước 1 cần
-  tới 19 luật > `BRANCH_RULES_MAX` = 10 (`packages/contracts/src/chat/processes.ts`, bản sao `processes/domain/branch/branch-def.rules.ts`,
-  admin-web `domain/branch-rules.ts`, test khoá `tests/acceptance/P-d/rules/d2/contracts-pd2.test.ts`). `ensureDef` 20 bước ⇒ ZodError.
-  Đề xuất: nâng `BRANCH_RULES_MAX` = 20 (= `APPROVAL_FLOW_STEPS_MAX`) ở cả 3 nơi + qc sửa test khoá. Int "trần 20 bước" đỏ tới khi xong.
-- Test khoá còn mã trần 10 (ngoài phạm vi lát, cần qc): `tests/acceptance/P-b2/rules/contracts-pb2.test.ts` (C-01/C-04/C-05/C-08/C-10),
-  `tests/acceptance/P-b2/s0/defs.int.test.ts` (11 stage ⇒ lỗi), `apps/admin-web/src/features/processes/lib/step-ops.test.ts` ("tối đa 10").
+- (Đã xử, điều phối duyệt) `BRANCH_RULES_MAX` 10 ⇒ 20 ở contracts, hub `branch-def.rules.ts`, admin-web `branch-rules.ts` (mẫu 20 bước
+  cần tới 19 luật rẽ mỗi stage); test khoá sửa phần hằng: `P-d/rules/d2/{contracts-pd2,def-issues}.test.ts`,
+  `P-b2/rules/contracts-pb2.test.ts`, admin-web `step-ops.test.ts`.
 - Thẻ duyệt (`approval-engine-card.usecase.ts`) vẫn hiện bỏ qua theo loại/giá trị; điều kiện phòng/đối tác hiện "chạy" (D-2/D-3).

@@ -261,6 +261,7 @@ export const TtlDaysSchema = z
 export const TOOL_ARGS_MAX = 20;
 /** Trần byte kết quả tool (kiểm trên byte trước `JSON.parse` — D2-17). */
 export const TOOL_RESULT_MAX_BYTES = 65_536;
-export const BRANCH_RULES_MAX = 10;
+/** CR-121 D-1 · 20: stage rẽ của quy trình duyệt HĐ 20 bước cần tới 19 luật (`next eq E(j)` cho mọi đích xa). */
+export const BRANCH_RULES_MAX = 20;
 export const BRANCH_OPS = ["eq", "ne", "lt", "le", "gt", "ge"] as const;
 export type BranchOp = (typeof BRANCH_OPS)[number];
