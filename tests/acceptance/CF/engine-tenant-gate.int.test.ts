@@ -60,10 +60,13 @@ async function assign(): Promise<void> {
 
 describe("CR-121 D-4 · gán quy trình ⇒ engine (không cần feature)", () => {
   it("chưa gán ⇒ máy cũ, gán ⇒ engine (không có feature/entitlement nào), bỏ gán ⇒ máy cũ", async () => {
-    // Không có feature `contracts-approval-engine` ở bất kỳ bước nào của test.
-    expect(
-      (await c.sql`select 1 from admin.features where key = 'contracts-approval-engine'`).length,
-    ).toBe(0);
+    // Công ty KHÔNG có entitlement `contracts-approval-engine` ở bất kỳ bước nào của test.
+    const noEntitlement = async () =>
+      (
+        await c.sql`select 1 from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
+          where e.tenant_id = ${T.acme} and f.key = 'contracts-approval-engine' and e.revoked_at is null`
+      ).length;
+    expect(await noEntitlement()).toBe(0);
 
     const a = await toLevel1(c, await seedContract(c, 721), 10_000_000);
     expect(await modeOf(a.runId)).toBe("machine");
@@ -77,5 +80,6 @@ describe("CR-121 D-4 · gán quy trình ⇒ engine (không cần feature)", () =
     expect(await modeOf(d.runId)).toBe("machine");
     // Lượt đã chạy engine không bị cắt giữa chừng.
     expect(await modeOf(b.runId)).toBe("engine");
+    expect(await noEntitlement()).toBe(0);
   }, 90_000);
 });

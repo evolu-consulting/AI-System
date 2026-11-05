@@ -110,11 +110,20 @@ describe("ops-watch · flow_coverage · int", () => {
     >`insert into hub.process_defs (tenant_id, key, name, description, input_hint,
         run_group_ids, stages, token_budget, enabled, sources, inputs, source_ref, version)
       select ${NOENG}, 'contracts-approval', name, description, input_hint, run_group_ids, stages, token_budget, enabled,
-        sources, inputs, 'cov-ref', 1 from hub.process_defs where id = ${DFLT} returning id::text as id`;
+        sources, inputs, '0123456789abcdef', 1 from hub.process_defs where id = ${DFLT} returning id::text as id`;
+    const [u] = await o<
+      { id: string }[]
+    >`insert into admin.users (tenant_id, username, email, password_hash,
+        display_name, role, locale, must_change_password)
+      values (${NOENG}, 'cov-user', 'cov-user@example.invalid', 'x', 'cov-user', 'member', 'vi', false) returning id::text as id`;
+    const [cv] = await o<
+      { id: string }[]
+    >`insert into hub.conversations (tenant_id, user_id, title, title_norm)
+      values (${NOENG}, ${u?.id as string}, 'c', 'c') returning id::text as id`;
     await o`insert into hub.process_runs (tenant_id, process_def_id, def_version, snapshot, started_by, origin_kind,
-        input, flow_id, expires_at)
-      values (${NOENG}, ${tdef?.id as string}, 1, '{}'::jsonb, gen_random_uuid(), 'admin', 'x', gen_random_uuid(),
-        now() + interval '1 day')`;
+        input, conversation_id, flow_id, expires_at)
+      values (${NOENG}, ${tdef?.id as string}, 1, '{}'::jsonb, ${u?.id as string}, 'admin', 'x', ${cv?.id as string},
+        gen_random_uuid(), now() + interval '1 day')`;
     await round(62);
     const r = await row();
     expect(r?.status).toBe("crit");
