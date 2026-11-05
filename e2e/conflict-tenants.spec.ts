@@ -57,7 +57,9 @@ test("ADM-FR-55 · M3-AC08 · tenant: Tải bản mới → toast, form hiện m
 }) => {
   const { latest, name } = await conflictOnAcme(page, request);
   await reloadLatest(page, latest);
-  await expect(name).toHaveValue("Acme Corp");
+  // CR-121: sau "Tải bản mới" ô tên sửa tại chỗ đóng và hiện tên mới nhất (không còn ô nhập mở sẵn)
+  await expect(page.getByTestId("field-tp-name")).toContainText("Acme Corp");
+  await expect(name).toHaveCount(0);
   expect(await dbValue("tenants", TENANT_ID.acme, "max_concurrent_sub")).toBe(7);
   expect(await versionOf("tenants", TENANT_ID.acme)).toBe(latest);
 });

@@ -55,6 +55,9 @@ test("CR-121 · /tenants lọc Ứng dụng Sổ Hợp Tác chỉ còn công ty 
   const withApp = `q1on-${sfx}`;
   const without = `q1off-${sfx}`;
   await withOwner(async (sql) => {
+    // fixture e2e không có sẵn feature contracts-read (app-config.spec tự thêm): spec tự tạo phần của mình
+    await sql`insert into admin.features (key, name, status)
+      values ('contracts-read', ${sql.json({ vi: "contracts-read" })}, 'on') on conflict (key) do nothing`;
     await sql`insert into admin.tenants (key, name) values (${withApp}, ${`Q1 có app ${sfx}`}), (${without}, ${`Q1 không app ${sfx}`})`;
     await sql`insert into admin.feature_entitlements (feature_id, tenant_id)
       select f.id, t.id from admin.features f, admin.tenants t where f.key = 'contracts-read' and t.key = ${withApp}`;

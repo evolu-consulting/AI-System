@@ -45,6 +45,11 @@ export function DetailDrawer({
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
         showCloseButton={false}
+        // Không tự focus nút Đóng: tooltip của nó mở theo focus và là lớp trên cùng ⇒ Esc đầu tiên chỉ tắt tooltip (cần Esc lần 2 mới đóng ngăn).
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          (e.target as HTMLElement | null)?.focus();
+        }}
         className="w-full max-w-full gap-0 overflow-y-auto bg-card p-0 sm:max-w-[420px]"
       >
         <div className="flex min-w-0 flex-col gap-5 px-5 pt-4 pb-6">
