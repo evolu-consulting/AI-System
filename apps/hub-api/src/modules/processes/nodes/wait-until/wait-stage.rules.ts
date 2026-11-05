@@ -10,7 +10,13 @@ type Stage = ProcessDefInput["stages"][number];
 export const WAIT_STAGE_TEMPLATE = `# {name}\n\n## ${HANDOFF_SECTION}\n`;
 
 export function ensureWaitStage<S extends Stage>(s: S): S {
-  if (s.executor.kind !== "wait_until") return s;
+  // CR-120 · `wait_for` / `wait_event` ép trường y hệt (Hub tự chờ, output do Hub sinh).
+  if (
+    s.executor.kind !== "wait_until" &&
+    s.executor.kind !== "wait_for" &&
+    s.executor.kind !== "wait_event"
+  )
+    return s;
   return {
     ...s,
     output: {

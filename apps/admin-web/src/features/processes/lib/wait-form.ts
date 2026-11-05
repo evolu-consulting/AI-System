@@ -14,6 +14,7 @@ import { type DateSource, dateSources, parseSourceValue, waitIssues } from "../d
 import { emptyAutofix } from "./autofix-form";
 import type { EscalateDraft, StageDraft, WaitDraft } from "./draft-types";
 import type { InputDraft } from "./sources-form";
+import { timedWaitErrors } from "./timed-wait-form";
 
 type Errors = Record<string, string>;
 type WaitExecutor = Extract<ProcessStageDef["executor"], { kind: "wait_until" }>;
@@ -27,6 +28,13 @@ export const emptyWait = (): WaitDraft => ({ source: "", offset: "0", time: "09:
 export const emptyEscalate = (): EscalateDraft => ({ on: false, afterH: "24", groupId: "" });
 
 export const isWait = (s: Pick<StageDraft, "executor">): boolean => s.executor === WAIT_EXECUTOR;
+/** CR-120 · `wait_for` / `wait_event` (Hub tự chờ bằng hẹn giờ; cùng khuôn ép trường với `wait_until`). */
+export const WAIT_FOR_EXECUTOR = "wait_for";
+export const WAIT_EVENT_EXECUTOR = "wait_event";
+export const isWaitFamily = (s: Pick<StageDraft, "executor">): boolean =>
+  s.executor === WAIT_EXECUTOR ||
+  s.executor === WAIT_FOR_EXECUTOR ||
+  s.executor === WAIT_EVENT_EXECUTOR;
 
 /** Chọn "Chờ tới ngày": tự chạy tiếp, không hành động thật, không quay lại (cố định). */
 export const WAIT_PATCH: Partial<StageDraft> = {
@@ -39,10 +47,11 @@ export const WAIT_PATCH: Partial<StageDraft> = {
 
 /** Bản dùng để gửi/validate: xoá ô ẩn; Hub ép lại output/answerer/token_budget/timeout_s (plan §2, §14 G3). */
 export function normalizeWait(s: StageDraft): StageDraft {
-  if (!isWait(s)) return s;
+  if (!isWaitFamily(s)) return s;
   return {
     ...s,
     ...WAIT_PATCH,
+    executor: s.executor,
     instruction: "",
     filename: `${s.key}.md`,
     template: `# ${s.name.trim()}\n\n## ${WAIT_HANDOFF_SECTION}\n`,
@@ -117,6 +126,7 @@ export function validateWaitPart(
   stages.forEach((s, i) => {
     const at = (f: string) => `stages.${i}.${f}`;
     if (isWait(s)) validateWaitStage(s, at, dateSources(inputs, stages, s.step), e);
+    else if (isWaitFamily(s)) timedWaitErrors(s, i, e);
     else if (s.after === "review") validateGateStage(s, at, e);
   });
 }

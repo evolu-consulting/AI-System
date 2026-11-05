@@ -11,8 +11,23 @@ import type { StageDraft } from "../lib/draft-types";
 import { draftsToFields, FORM_EXECUTOR, FORM_PATCH, fieldToDraft } from "../lib/form-fields";
 import { draftToIf, IF_EXECUTOR, IF_PATCH, ifToDraft } from "../lib/if-form";
 import { SET_EXECUTOR, SET_PATCH, setFromDef, setToDef } from "../lib/set-form";
+import {
+  WAIT_EVENT_PATCH,
+  WAIT_FOR_PATCH,
+  waitEventFromDef,
+  waitEventToDef,
+  waitForFromDef,
+  waitForToDef,
+} from "../lib/timed-wait-form";
 import { TOOL_EXECUTOR, TOOL_PATCH, toolFromDef, toolToDef } from "../lib/tool-form";
-import { WAIT_EXECUTOR, WAIT_PATCH, waitFromDef, waitToDef } from "../lib/wait-form";
+import {
+  WAIT_EVENT_EXECUTOR,
+  WAIT_EXECUTOR,
+  WAIT_FOR_EXECUTOR,
+  WAIT_PATCH,
+  waitFromDef,
+  waitToDef,
+} from "../lib/wait-form";
 
 type Executor = ProcessStageDef["executor"];
 type Ex<K extends ExecutorKind> = Extract<Executor, { kind: K }>;
@@ -114,6 +129,27 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
     draftExecutor: () => FORM_EXECUTOR,
     fromDef: (ex) => ({ formFields: ex.fields.map(fieldToDraft) }),
     toDef: (s) => ({ kind: "form", fields: draftsToFields(s.formFields ?? []) }),
+  },
+  // CR-120 · G3/G4 · chờ N giờ / chờ sự kiện: khối nhập ở `StageTimedWait`.
+  wait_for: {
+    kind: "wait_for",
+    family: NODE_FAMILY_OF.wait_for,
+    labelKey: "process.admin.editor.stage.kind.waitFor",
+    defaults: () => ({ ...WAIT_FOR_PATCH }),
+    draftValue: WAIT_FOR_EXECUTOR,
+    draftExecutor: () => WAIT_FOR_EXECUTOR,
+    fromDef: (ex) => ({ wait: waitForFromDef(ex) }),
+    toDef: (s) => waitForToDef(s.wait),
+  },
+  wait_event: {
+    kind: "wait_event",
+    family: NODE_FAMILY_OF.wait_event,
+    labelKey: "process.admin.editor.stage.kind.waitEvent",
+    defaults: () => ({ ...WAIT_EVENT_PATCH }),
+    draftValue: WAIT_EVENT_EXECUTOR,
+    draftExecutor: () => WAIT_EVENT_EXECUTOR,
+    fromDef: (ex) => ({ wait: waitEventFromDef(ex) }),
+    toDef: (s) => waitEventToDef(s.wait),
   },
 };
 

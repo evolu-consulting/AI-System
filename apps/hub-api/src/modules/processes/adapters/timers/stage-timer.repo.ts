@@ -22,7 +22,9 @@ type Head = {
   status: string;
   current_stage_idx: number;
   current_step: number;
-  snapshot: SnapshotStages & { stages?: { name?: string; step?: number }[] };
+  snapshot: SnapshotStages & {
+    stages?: { name?: string; step?: number; executor?: { kind?: string; event?: string } }[];
+  };
 };
 type StageRow = { id: string; stage_idx: number; attempt: number; round: number };
 type Ctx = {
@@ -116,15 +118,7 @@ async function finishWait(
   const s = await stageOf(c.tx, c.tenantId, runId, stageRunId);
   if (!h || !s) return;
   const name = h.snapshot.stages?.[s.stage_idx]?.name ?? "";
-  // `due_at` có thể đã bị lùi (#4) ⇒ output in mốc cấu hình gốc, không in giờ đã lùi.
-  const target = await waitOriginalDue(c.tx, c.tenantId, {
-    runId,
-    snapshot: h.snapshot,
-    stageIdx: s.stage_idx,
-    timezone: w.timezone,
-    dueAt: w.dueAt,
-  });
-  const md = waitOutputMd(name, waitedText(target, w.timezone));
+  const md = await waitMd(c, { runId, h, s, w, name });
   const outputId = await insertOutput(c.tx, { tenantId: c.tenantId, runId, stage: s, md });
   const step = await persistStage(c.tx, {
     runId,
@@ -135,6 +129,41 @@ async function finishWait(
     outputId,
   });
   await emitAfterWait(c, runId, step);
+}
+
+/** CR-120 · .md của stage chờ: `wait_event` ⇒ "Đã nhận sự kiện" / "Hết hạn chờ" (không in mốc giờ); còn lại "Đã chờ tới …". */
+async function waitMd(
+  c: Ctx,
+  x: {
+    runId: string;
+    h: Head;
+    s: StageRow;
+    w: { dueAt: Date; timezone: string };
+    name: string;
+  },
+): Promise<string> {
+  const { h, s, w, name } = x;
+  const ex = h.snapshot.stages?.[s.stage_idx]?.executor;
+  if (ex?.kind === "wait_event" && ex.event) {
+    // `signalEvent` ghi sự kiện TRƯỚC khi thả stage ⇒ có hàng = đã nhận; không có = hết hạn.
+    const got = await c.tx.execute(sql`select 1 from hub.process_run_events
+      where tenant_id = ${c.tenantId} and process_run_id = ${x.runId} and event = ${ex.event}`);
+    return waitOutputMd(
+      name,
+      got.length > 0
+        ? `Đã nhận sự kiện ${ex.event}.`
+        : `Hết hạn chờ sự kiện ${ex.event}; chạy tiếp.`,
+    );
+  }
+  // `due_at` có thể đã bị lùi (#4) ⇒ output in mốc cấu hình gốc, không in giờ đã lùi.
+  const target = await waitOriginalDue(c.tx, c.tenantId, {
+    runId: x.runId,
+    snapshot: h.snapshot,
+    stageIdx: s.stage_idx,
+    timezone: w.timezone,
+    dueAt: w.dueAt,
+  });
+  return waitOutputMd(name, waitedText(target, w.timezone));
 }
 
 type WaitStep = Awaited<ReturnType<typeof persistStage>>;

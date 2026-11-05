@@ -13,7 +13,9 @@ export type Executor =
   | { kind: "wait_until" }
   | { kind: "tool"; tool_key: string }
   | { kind: "set" }
-  | { kind: "form" }; // CR-118
+  | { kind: "form" } // CR-118
+  | { kind: "wait_for" } // CR-120 · G3
+  | { kind: "wait_event" }; // CR-120 · G4
 
 type NameRow = { id: string; key: string; vi: string | null; en: string | null };
 
@@ -59,19 +61,29 @@ export const FORM_EXECUTOR_REF: ExecutorRef = {
   key: "form",
   name: { vi: "Người điền form", en: "Fill in a form" },
 };
+/** CR-120 · G3 · stage `wait_for` (chờ N giờ). */
+export const WAIT_FOR_EXECUTOR_REF: ExecutorRef = {
+  kind: "wait_for",
+  key: "wait_for",
+  name: { vi: "Chờ N giờ", en: "Wait for hours" },
+};
+/** CR-120 · G4 · stage `wait_event` (chờ sự kiện). */
+export const WAIT_EVENT_EXECUTOR_REF: ExecutorRef = {
+  kind: "wait_event",
+  key: "wait_event",
+  name: { vi: "Chờ sự kiện", en: "Wait for event" },
+};
 /** ExecutorRef cố định của stage Hub tự chạy; agent/team ⇒ null (tra catalog). */
+const FIXED_REFS: Readonly<Record<string, ExecutorRef>> = {
+  apply: APPLY_EXECUTOR_REF,
+  wait_until: WAIT_UNTIL_EXECUTOR_REF,
+  set: SET_EXECUTOR_REF,
+  form: FORM_EXECUTOR_REF,
+  wait_for: WAIT_FOR_EXECUTOR_REF,
+  wait_event: WAIT_EVENT_EXECUTOR_REF,
+};
 const fixedRef = (e: Executor): ExecutorRef | null =>
-  e.kind === "apply"
-    ? APPLY_EXECUTOR_REF
-    : e.kind === "wait_until"
-      ? WAIT_UNTIL_EXECUTOR_REF
-      : e.kind === "tool"
-        ? toolRef(e.tool_key)
-        : e.kind === "set"
-          ? SET_EXECUTOR_REF
-          : e.kind === "form"
-            ? FORM_EXECUTOR_REF
-            : null;
+  e.kind === "tool" ? toolRef(e.tool_key) : (FIXED_REFS[e.kind] ?? null);
 const idsArr = (ids: readonly string[]) => sql.raw(`'{${ids.join(",")}}'::uuid[]`);
 
 /** ExecutorRef từ hàng catalog (vi/en → key → id); key giữ id như cũ để FE khớp. */

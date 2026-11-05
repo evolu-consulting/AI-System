@@ -82,6 +82,8 @@ export type ESignModule = ESignUsecase & {
   /** esign-flow-fix · gắn kiểm quyền ghi gói của người ký công ty (cần cổng quyền của `packs.mount`). */
   bindWriters(w: Writers): void;
   bindView(view: PackAccessView): void;
+  /** CR-120 · G6 · phong bì ký XONG ⇒ gọi hook (gói bắn sự kiện `esign.completed` cho run khe `contracts.intake`); lỗi hook không làm hỏng đồng bộ. */
+  bindCompleted(fn: (tenantId: string, contractId: string) => Promise<unknown>): void;
   /** esign-sweep · bật vòng nền bước Ký số (một lần; tắt ngoài dev/prod hoặc `CONTRACTS_ESIGN_SWEEP=off`). */
   startSweep(view: PackAccessView): void;
 };
@@ -92,6 +94,7 @@ export function esignModule(
 ): ESignModule {
   const uow = createPackUow(db, "contracts", repos);
   let flow: EsignFlow | null = null;
+  let completed: ((tenantId: string, contractId: string) => Promise<unknown>) | null = null;
   const providers = registryOf(d.esign);
   const u = esignUsecase({
     providers,
@@ -110,7 +113,16 @@ export function esignModule(
       // esign-anchor-fix · xem trước (quyền read) dùng worker/hàng chờ RIÊNG ⇒ gọi dồn không làm lần gửi thật bị PDF_BUSY.
       previewPdf: lazyPdf(1),
     }),
-    onStatus: async (tid, id, st) => flow?.onStatus(tid, id, st),
+    onStatus: async (tid, id, st) => {
+      await flow?.onStatus(tid, id, st);
+      if (st === "completed")
+        await completed?.(tid, id).catch((e: unknown) =>
+          logger.warn("esign-completed-hook-failed", {
+            contract_id: id,
+            error: e instanceof Error ? e.name : "unknown",
+          }),
+        );
+    },
     warn: (m, meta) => logger.warn(m, meta),
   });
   // esign-flow-fix · quyền ghi gói của người ký (cổng quyền cần cache cấu hình ⇒ gắn sau ở `packs.mount`).
@@ -138,6 +150,9 @@ export function esignModule(
     ...u,
     flow,
     bindWriters,
+    bindCompleted: (fn) => {
+      completed = fn;
+    },
     bindView: (v) => bindWriters(packWriters(db, v, "contracts")),
     startSweep: esignSweepStarter(db, d.signal, esignSyncOf(db, providers, u)),
   };

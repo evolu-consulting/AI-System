@@ -198,6 +198,8 @@ export type PackRunsPort = {
     before: Date,
     limit: number,
   ): Promise<PackOpenRun[]>;
+  /** CR-120 · G4 · bắn sự kiện `event` cho run CHƯA kết thúc gắn bản ghi gói `ref` (scope system, lọc tenant): ghi sự kiện + thả stage `wait_event` đang chờ. Trả số stage đã thả (0 = chỉ ghi, run chưa tới bước chờ / không có run). */
+  signalEvent(tenantId: string, ref: PackRunRef, event: string): Promise<number>;
 };
 
 /** Cầu nối dựng ở `app.ts`, engine gắn khi mount (khuôn `ResolveBridge`). */

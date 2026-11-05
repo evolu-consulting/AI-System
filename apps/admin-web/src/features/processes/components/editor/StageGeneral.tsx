@@ -6,7 +6,7 @@ import { applyKeyOnly, isApply } from "../../lib/apply-form";
 import { isForm } from "../../lib/form-fields";
 import { swapCheck } from "../../lib/swap-guard";
 import { isTool } from "../../lib/tool-form";
-import { isWait } from "../../lib/wait-form";
+import { isWaitFamily } from "../../lib/wait-form";
 import { draftKindOf, FE_NODES, feNodeOf } from "../../nodes/registry";
 import { type Option, SelectField, TextField } from "./Fields";
 import type { StageFormProps } from "./stage-form-props";
@@ -85,7 +85,7 @@ export function StageGeneral(p: StageFormProps) {
         options={executors}
         onChange={(v) => onChange(swapPatch(v))}
       />
-      {isApply(stage) || isWait(stage) || isTool(stage) ? null : (
+      {isApply(stage) || isWaitFamily(stage) || isTool(stage) ? null : (
         <TextField
           id={`${stage.uid}-instr`}
           label={t("process.admin.editor.stage.instruction")}

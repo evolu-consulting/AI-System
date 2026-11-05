@@ -5,7 +5,16 @@ import type { AutofixDraft } from "./autofix-form";
 import type { InputDraft, StageSourceDraft } from "./sources-form";
 
 /** P-d1 · khối "Chờ tới ngày": nguồn ngày (`input:<key>` | `field:<stage_key>:<field>`), chênh (ngày, chữ), giờ `HH:mm`. */
-export type WaitDraft = { source: string; offset: string; time: string };
+export type WaitDraft = {
+  source: string;
+  offset: string;
+  time: string;
+  /** CR-120 · G3 · `wait_for`: số giờ chờ (chữ). */
+  hours?: string;
+  /** CR-120 · G4 · `wait_event`: khoá sự kiện + hạn (giờ, chữ). */
+  event?: string;
+  timeoutH?: string;
+};
 export type EscalateDraft = { on: boolean; afterH: string; groupId: string };
 
 /** P-d2 · nguồn một tham số tool: `from` rỗng = chưa chọn; `value` = giá trị cố định | khoá input | `<stage_key>:<field>`. */

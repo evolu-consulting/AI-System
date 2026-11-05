@@ -154,6 +154,9 @@ export const EXECUTOR_KINDS = [
   "if",
   // CR-118 · node `form` (người điền form, cuối).
   "form",
+  // CR-120 · G3/G4 · chờ N giờ / chờ sự kiện (hẹn giờ dùng lại loại hẹn `wait_until`).
+  "wait_for",
+  "wait_event",
 ] as const;
 export const STEP_ROLES = ["agent", "plan", "member"] as const;
 

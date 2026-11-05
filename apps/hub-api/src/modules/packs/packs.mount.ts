@@ -156,7 +156,7 @@ function mountContracts<E extends Env>(
   mountContractsCore(app, cx);
   mountContractsMore(app, cx);
   mountAssistantTools(d.db, d.packTools, { timeZoneOf: tenantTz(d), view }); // M2-chat Â· tool Ä‘á»c cá»§a trá»£ lÃ½
-  mountContractsContext(d.db, d.packTools); // one-agent Â· nhÃ£n HÄ/Ä‘á»‘i tÃ¡c Ä‘ang xem (khá»‘i ngá»¯ cáº£nh dock)
+  mountContractsContext(d.db, d.packTools, d); // + CR-120 khe contracts.intake (tool bước, esign.completed) // one-agent Â· nhÃ£n HÄ/Ä‘á»‘i tÃ¡c Ä‘ang xem (khá»‘i ngá»¯ cáº£nh dock)
 }
 
 type ContractsCtx = ReturnType<typeof contractsCtx>;

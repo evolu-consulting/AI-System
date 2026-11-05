@@ -3,7 +3,9 @@
 import type { Db } from "@ai/db";
 import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
 import type { ContextSource } from "../kit/application/context.ports";
+import type { PackToolDef } from "../kit/application/pack-tools.ports";
 import { type ContractLabelRow, contextLabelRepo } from "./adapters/context-label.repo";
+import { mountIntake } from "./intake.mount";
 
 /** `Hợp đồng "<tên>" (số …, hết hạn …)` — phần thiếu bỏ. */
 export function contractLabel(r: ContractLabelRow): string {
@@ -35,7 +37,9 @@ export function contractsContextSource(db: Db): ContextSource {
 /** Gọi từ `mountPacks` khi app có registry tool gói. */
 export function mountContractsContext(
   db: Db,
-  reg: { registerContext(s: ContextSource): void } | undefined,
+  reg: { registerContext(s: ContextSource): void; register(t: PackToolDef): void } | undefined,
+  intake?: Parameters<typeof mountIntake>[0],
 ): void {
   reg?.registerContext(contractsContextSource(db));
+  if (intake) mountIntake({ ...intake, packTools: reg }, db); // CR-120 · khe contracts.intake
 }

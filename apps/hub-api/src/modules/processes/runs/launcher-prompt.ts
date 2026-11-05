@@ -37,7 +37,9 @@ export type SnapStage = {
     | { kind: "tool"; tool_key: string } // P-d2 · Hub gọi tool (`tool-launch`)
     | { kind: "set"; values: SetValueDef[] } // CR-103 · R4 · node `set` (nodes/set)
     | { kind: "if" } // CR-103 · node If (đánh giá ở `settleStep`; điều kiện đọc từ snapshot ở `step.repo`)
-    | { kind: "form"; fields: unknown[] }; // CR-118 · node `form` (kiểm giá trị ở `gates/form-out`)
+    | { kind: "form"; fields: unknown[] } // CR-118 · node `form` (kiểm giá trị ở `gates/form-out`)
+    | { kind: "wait_for"; hours: number } // CR-120 · G3
+    | { kind: "wait_event"; event: string; timeout_h: number }; // CR-120 · G4
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
   output: { filename: string; required_sections?: string[] };
   real_action: boolean;

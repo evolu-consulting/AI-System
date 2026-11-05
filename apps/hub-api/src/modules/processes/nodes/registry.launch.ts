@@ -9,6 +9,8 @@ import { ifLauncher } from "./if/launch";
 import { setLauncher } from "./set/launch";
 import { teamLauncher } from "./team/launch";
 import { toolLauncher } from "./tool/launch";
+import { waitEventLauncher } from "./wait-event/launch";
+import { waitForLauncher } from "./wait-for/launch";
 import { waitUntilLauncher } from "./wait-until/launch";
 
 /** Mọi loại trong union contract PHẢI có launcher (thiếu ⇒ lỗi typecheck). */
@@ -21,6 +23,8 @@ export const NODE_LAUNCHERS: Readonly<Record<ExecutorKind, NodeLauncher>> = {
   set: setLauncher,
   if: ifLauncher,
   form: formLauncher,
+  wait_for: waitForLauncher,
+  wait_event: waitEventLauncher,
 };
 
 export const nodeLauncherOf = (kind: ExecutorKind): NodeLauncher => NODE_LAUNCHERS[kind];

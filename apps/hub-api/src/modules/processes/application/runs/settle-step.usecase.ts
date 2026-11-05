@@ -25,6 +25,8 @@ export type StepOutcome = {
   stageIdx: number;
 };
 export type StepRepos = { steps: StepRepo; clock: Clock };
+/** CR-120 · loại node chờ bằng hẹn giờ `wait_until` (ngày / N giờ / sự kiện + hạn). */
+const WAIT_KINDS: ReadonlySet<string> = new Set(["wait_until", "wait_for", "wait_event"]);
 
 /** CR-103 · node If: Đúng ⇒ luật 1 (`then_step`); Sai + có `else_step` ⇒ luật 2; Sai không `else_step` ⇒ null (bước kế). */
 async function ifTargetOf(
@@ -103,7 +105,9 @@ export async function settleStep(r: StepRepos, runId: string): Promise<StepOutco
     return { kind: "finish", status: "done", step, stageIdx: first };
   }
   // PD-R15 · loại hẹn suy từ executor (stage `wait_until` không bao giờ thử lại; stage khác không hẹn `wait_until`).
-  const kindOf = (i: number) => (load.executorKinds[i] === "wait_until" ? "wait_until" : "retry");
+  // CR-120 · `wait_for`/`wait_event` dùng cùng loại hẹn `wait_until` (không bao giờ thử lại).
+  const kindOf = (i: number) =>
+    WAIT_KINDS.has(load.executorKinds[i] ?? "") ? "wait_until" : "retry";
   const agg = runStatusOf(
     stageIdxsOfStep(steps, step).map((i) => statusForRun(statuses.get(i) ?? "pending", kindOf(i))),
   );

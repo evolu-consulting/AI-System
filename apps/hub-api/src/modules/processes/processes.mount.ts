@@ -138,7 +138,7 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
   const d: ProcessDeps = { ...core, start: conversationStart(core) };
   // PB-R05 · nhận report resolve từ module nguồn (đã mount trước): ghim `pinned_sources`/`needs_decision` + kick.
   if (m.resolveBridge) m.resolveBridge.onReport = (r) => applyResolveReport(d, r);
-  if (m.packRuns) m.packRuns.port = packRunsOf(d); // N2-FR-01
+  if (m.packRuns) m.packRuns.port = packRunsOf(d, systemOnly(uow)); // N2-FR-01
   mountRoutes(app, d, m.publicRoutes ?? "all");
   app.route("/internal", libraryInternalRoutes(d, m.internalToken)); // CR-105 · L5 · token dịch vụ, không JWT
   const bg: ProcessBgDeps = {

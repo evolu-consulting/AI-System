@@ -84,6 +84,15 @@ export type StageTimerRepo = {
     w: { dueAt: Date; timezone: string },
   ): Promise<void>;
 };
+/** CR-120 · G4 · sự kiện run (`hub.process_run_events`) + stage `wait_event` đang chờ; mọi câu lọc `tenant_id`. */
+export type RunEventRepo = {
+  /** Ghi sự kiện đã tới (idempotent theo (run, event)). */
+  record(runId: string, event: string, now: Date): Promise<void>;
+  /** Sự kiện đã tới từ trước (gói bắn trước khi run tới bước chờ)? */
+  has(runId: string, event: string): Promise<boolean>;
+  /** Stage `waiting_timer` của run có executor `wait_event` đúng `event` (theo snapshot), idx tăng dần. */
+  waitingStages(runId: string, event: string): Promise<string[]>;
+};
 /** T7 · bộ đếm thử lại của `stage_runs` (PD-R03/R06) — mọi câu lọc `(id, tenant_id)`. */
 export type RetryRepo = {
   /** `null` ⇒ không thấy stage (tenant khác / đã xoá). */
@@ -159,6 +168,8 @@ export type TxRepos = {
   runs: RunRepo;
   timers: TimerRepo;
   stageTimers: StageTimerRepo;
+  /** CR-120 · G4 · sự kiện run + stage chờ sự kiện. */
+  runEvents: RunEventRepo;
   retry: RetryRepo;
   sideEffect: SideEffectProbe;
   team: TeamRunRepo;

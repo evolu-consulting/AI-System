@@ -20,6 +20,7 @@ import type {
   PackWorkflow,
 } from "../../packs/kit/application/pack-runs.ports";
 import { availableToolRows, paramsOf } from "../adapters/tools/tool-switch.repo";
+import type { SystemUow } from "../application/ports";
 import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";
 import type { ProcessDeps } from "../core/ports";
@@ -33,6 +34,7 @@ import { resolveSlot, resolveSlotDef } from "../library/slot-resolve.repo";
 import { routeSlot } from "../library/slot-route.repo";
 import { defSourceRef } from "../library/source-ref";
 import { openTaskFor, openTasksOf, stepsView, UUID } from "./pack-runs-view";
+import { signalPackEvent } from "./pack-signal";
 import { StartService } from "./start.service";
 
 const asUser = (u: PackRunCaller): AuthUser => u as AuthUser;
@@ -308,7 +310,7 @@ function sysReads(d: ProcessDeps) {
   };
 }
 
-export function packRunsOf(d: ProcessDeps): PackRunsPort {
+export function packRunsOf(d: ProcessDeps, sys?: Pick<SystemUow, "system">): PackRunsPort {
   const start = new StartService(d);
   const gates = new GateService(d);
   return {
@@ -374,6 +376,7 @@ export function packRunsOf(d: ProcessDeps): PackRunsPort {
       return "ok";
     },
     cancelSys: (tenantId, runId) => cancelSys(d, tenantId, runId),
+    signalEvent: (tenantId, ref, event) => signalPackEvent(d, sys, { tenantId, ref, event }),
     retryDecision: (u, runId) => retryDecision(d, gates, u, runId),
     ...sysReads(d),
     stepsView: (u, runId) => stepsView(d, u, runId),

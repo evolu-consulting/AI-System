@@ -547,6 +547,13 @@
       "when": 1803700000000,
       "tag": "0091_slot_assign_view",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1803900000000,
+      "tag": "0093_contracts_intake_slot",
+      "breakpoints": true
     }
   ]
 }

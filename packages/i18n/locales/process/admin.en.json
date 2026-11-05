@@ -91,7 +91,17 @@
         "tool": "Call tool",
         "set": "Set values",
         "if": "If (true/false branch)",
-        "form": "Person fills a form"
+        "form": "Person fills a form",
+        "waitFor": "Wait N hours",
+        "waitEvent": "Wait for event"
+      },
+      "timedWait": {
+        "hours": "Hours to wait",
+        "event": "Event key",
+        "eventHint": "The app fires this event (e.g. esign.completed) to continue the step.",
+        "timeoutH": "Expires after (hours)",
+        "timeoutHint": "If the event never arrives the step continues and records \"Wait expired\".",
+        "err": "Invalid value."
       },
       "swap": {
         "family": "Different node family — can't switch to this type.",

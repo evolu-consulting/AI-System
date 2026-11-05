@@ -7,7 +7,7 @@ import { isForm } from "../../lib/form-fields";
 import { isIf } from "../../lib/if-form";
 import { isSet } from "../../lib/set-form";
 import { isTool } from "../../lib/tool-form";
-import { isWait } from "../../lib/wait-form";
+import { isWait, isWaitFamily } from "../../lib/wait-form";
 import { StageActions } from "./StageActions";
 import { StageAdminModeNotice } from "./StageAdminModeNotice";
 import { StageAnswerer } from "./StageAnswerer";
@@ -24,6 +24,7 @@ import { StageRemind } from "./StageRemind";
 import { StageSet } from "./StageSet";
 import { StageSourcesField } from "./StageSourcesField";
 import { StageStepFields } from "./StageStepFields";
+import { StageTimedWait } from "./StageTimedWait";
 import { StageWait } from "./StageWait";
 import type { StageFormProps } from "./stage-form-props";
 
@@ -122,6 +123,8 @@ export function StageForm(p: StageFormProps) {
       <StageStepFields {...p} />
       {isWait(stage) ? (
         <StageWait {...p} />
+      ) : isWaitFamily(stage) ? (
+        <StageTimedWait {...p} />
       ) : isIf(stage) ? (
         <StageIfForm {...p} />
       ) : (

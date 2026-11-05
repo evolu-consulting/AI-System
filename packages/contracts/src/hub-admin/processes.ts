@@ -38,7 +38,11 @@ import {
   ToolExecutorSchema,
 } from "./process-tools";
 import { StageUiSchema } from "./process-ui";
-import { WaitUntilExecutorSchema } from "./process-wait";
+import {
+  WaitEventExecutorSchema,
+  WaitForExecutorSchema,
+  WaitUntilExecutorSchema,
+} from "./process-wait";
 import {
   BranchSchema,
   DEF_INPUTS_MAX,
@@ -159,6 +163,9 @@ export const ProcessStageDefSchema = z.strictObject({
     IfExecutorSchema,
     /** CR-118 · node `form` (người điền form; luật `formDefIssues`). */
     FormExecutorSchema,
+    /** CR-120 · G3/G4 · chờ N giờ / chờ sự kiện (luật `waitNodeIssues`, hub nodes/wait-for · wait-event). */
+    WaitForExecutorSchema,
+    WaitEventExecutorSchema,
   ]),
   instruction: z.string().max(STAGE_INSTRUCTION_MAX),
   output: z.strictObject({

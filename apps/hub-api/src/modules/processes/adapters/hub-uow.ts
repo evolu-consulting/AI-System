@@ -35,6 +35,7 @@ import { retryRepo } from "./runs/retry.repo";
 import { runRepo } from "./runs/run.repo";
 import { sideEffectProbe } from "./runs/side-effect.repo";
 import { teamRunRepo } from "./runs/team-run.repo";
+import { runEventRepo } from "./timers/run-event.repo";
 import { type RunFinishedNotifier, stageTimerRepo } from "./timers/stage-timer.repo";
 import { timerRepo } from "./timers/timers.repo";
 
@@ -72,6 +73,7 @@ function txRepos(
     runs: runRepo(tx, tenantId),
     timers: timerRepo(tx, tenantId),
     stageTimers: stageTimerRepo(tx, tenantId, outbox, notifier, opts.defer),
+    runEvents: runEventRepo(tx, tenantId),
     retry: retryRepo(tx, tenantId),
     sideEffect: sideEffectProbe(tx, tenantId),
     team: teamRunRepo(tx, tenantId),

@@ -383,3 +383,11 @@ export const processTimers = hub.table("process_timers", {
   idempotencyKey: text("idempotency_key").notNull(),
   createdAt: createdAt(),
 });
+
+/** CR-120 · G4 · sự kiện run (gói bắn qua `PackRunsPort.signalEvent`): PK (run, event); migration hub 0093. */
+export const processRunEvents = hub.table("process_run_events", {
+  tenantId: tenantId(),
+  processRunId: uuid("process_run_id").notNull(),
+  event: text("event").notNull(),
+  receivedAt: ts("received_at").notNull(),
+});

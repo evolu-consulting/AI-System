@@ -10,6 +10,8 @@ import { setNode } from "./set/node";
 import { teamNode } from "./team/node";
 import { toolNode } from "./tool/node";
 import type { DefIssue, DefStage, NodeSpec } from "./types";
+import { waitEventNode } from "./wait-event/node";
+import { waitForNode } from "./wait-for/node";
 import { waitUntilNode } from "./wait-until/node";
 
 /** Mọi loại trong union contract PHẢI có mặt (thiếu ⇒ lỗi typecheck). */
@@ -22,6 +24,8 @@ export const NODES: { readonly [K in ExecutorKind]: NodeSpec<K> } = {
   set: setNode,
   if: ifNode,
   form: formNode,
+  wait_for: waitForNode,
+  wait_event: waitEventNode,
 };
 
 /** Thứ tự cố định (= `EXECUTOR_KINDS`): quyết thứ tự lỗi `defIssues` (team trước tool như cũ). */
@@ -34,6 +38,8 @@ const NODE_LIST: readonly NodeSpec[] = [
   NODES.set,
   NODES.if,
   NODES.form,
+  NODES.wait_for,
+  NODES.wait_event,
 ] as NodeSpec[];
 
 /** Loại lạ (snapshot cũ/hỏng) ⇒ undefined. */
