@@ -11,7 +11,7 @@ export function reopenRepo(tx: Tx, tenantId: string): { reopen: ReopenRepo } {
   const t = tenantId;
   return {
     reopen: {
-      reopen: async (id, reason, actor, admin): Promise<ReopenRepoOut> => {
+      reopen: async (id, reason, actor, admin, byPlatform = false): Promise<ReopenRepoOut> => {
         const [r] = await tx.execute<{
           found: boolean;
           locked: boolean;
@@ -20,14 +20,17 @@ export function reopenRepo(tx: Tx, tenantId: string): { reopen: ReopenRepo } {
           owner: string | null;
         }>(sql`with
           -- CR-097 K2: chuỗi đang có nháp cập nhật ⇒ không mở lại bản hiện hành (bỏ nháp trước); bản đã bị thay ⇒ trigger 0049 (409).
+          -- CR-121 Q-3: platform_admin không thuộc công ty ⇒ người bắt đầu lượt duyệt mới = người phụ trách / người tạo HĐ (không phải actor).
           c as (select k.id, k.status, k.locked_at is not null as locked, k.owner_user_id::text as owner,
+              case when ${byPlatform}::boolean then coalesce(k.owner_user_id, k.created_by, ${actor}::uuid)
+                else ${actor}::uuid end as starter,
               (${admin}::boolean or k.owner_user_id is not distinct from ${actor}::uuid) as allowed,
               exists (select 1 from contracts.contracts v
               where v.tenant_id = k.tenant_id and v.root_id = k.root_id and v.version_no > k.version_no
                 and v.superseded_at is null) as draft
             from contracts.contracts k where k.id = ${id}::uuid and k.tenant_id = ${t}::uuid for update of k),
           a as (insert into contracts.approvals (tenant_id, contract_id, status, started_by)
-            select ${t}::uuid, c.id, 'level1', ${actor}::uuid from c
+            select ${t}::uuid, c.id, 'level1', c.starter from c
             where c.allowed and c.locked and not c.draft and contracts.approval_on() and not exists (
               select 1 from contracts.approvals x
               where x.tenant_id = ${t}::uuid and x.contract_id = c.id and x.status in ('extracting', 'level1', 'level2'))
@@ -39,7 +42,9 @@ export function reopenRepo(tx: Tx, tenantId: string): { reopen: ReopenRepo } {
             returning k.id, k.version, c.status as prev),
           e as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
             select ${t}::uuid, u.id, 'reopened', ${actor}::uuid, jsonb_build_object('reason', ${reason}::text,
-              'from_status', u.prev, 'run_id', (select a.id::text from a)) from u
+              'from_status', u.prev, 'run_id', (select a.id::text from a))
+              || case when ${byPlatform}::boolean then '{"by_platform": true, "actor_role": "platform_admin"}'::jsonb
+                 else '{}'::jsonb end from u
             union all
             select ${t}::uuid, a.contract_id, 'approval_started', ${actor}::uuid,
               jsonb_build_object('run_id', a.id::text, 'reopened', true) from a)

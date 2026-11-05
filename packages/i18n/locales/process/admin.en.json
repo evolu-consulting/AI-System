@@ -1224,7 +1224,10 @@
         "title": "Reopen the contract's process?",
         "effect": "The contract is unlocked for editing and the approval process runs again when it is sent for approval. This run is kept for comparison.",
         "confirm": "Reopen process",
-        "done": "The contract's process was reopened"
+        "done": "The contract's process was reopened",
+        "platformReasonLabel": "Reason for reopening (required)",
+        "platformReasonHint": "You are reopening on behalf of this company. Enter a reason (up to 500 characters) — the reason and your name are recorded in the contract history.",
+        "platformReasonCount": "{{n}}/500"
       },
       "rerun-step": {
         "button": "Rerun this step",

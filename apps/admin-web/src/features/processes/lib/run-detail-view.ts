@@ -42,14 +42,16 @@ export function runControls(status: string, role: ControlRole, packBound: boolea
   };
 }
 
-/** "Mở lại quy trình": lượt gắn hợp đồng + tenant_admin của chính công ty đó (API gói chạy theo tenant của người gọi; platform_admin không có tenant gói). */
+/** "Mở lại quy trình": lượt gắn hợp đồng + (tenant_admin của chính công ty đó, hoặc platform_admin của MỌI công ty — CR-121 Q-3:
+ *  API gói nhận `?tenant_id` + lý do tự nhập; server kiểm vai và ghi audit). */
 export function canReopenUi(
   role: ControlRole,
   source: { kind: string } | null,
   runTenantId: string,
   myTenantId: string | undefined,
 ): boolean {
-  return role === "tenant_admin" && source?.kind === "contract" && runTenantId === myTenantId;
+  if (source?.kind !== "contract") return false;
+  return role === "platform_admin" || (role === "tenant_admin" && runTenantId === myTenantId);
 }
 
 /** Liên kết tới hợp đồng ở app phục vụ (`/contracts/c/:id`); chưa biết URL app ⇒ `null`. */

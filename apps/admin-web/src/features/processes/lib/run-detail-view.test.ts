@@ -68,11 +68,15 @@ describe("lỗi + tiện ích", () => {
     expect(hasDebugTab("debug")).toBe(true);
     expect(hasDebugTab("basic")).toBe(false);
   });
-  it("R-4 · Mở lại quy trình: chỉ tenant_admin của đúng công ty, lượt gắn hợp đồng", () => {
+  it("R-4 · Q-3 · Mở lại quy trình: tenant_admin của đúng công ty HOẶC platform_admin (mọi công ty), lượt gắn hợp đồng", () => {
     const src = { kind: "contract" };
     expect(canReopenUi("tenant_admin", src, "T1", "T1")).toBe(true);
     expect(canReopenUi("tenant_admin", src, "T1", "T2")).toBe(false);
-    expect(canReopenUi("platform_admin", src, "T1", "T1")).toBe(false);
+    // CR-121 Q-3: platform_admin mở lại được lượt gắn hợp đồng của MỌI công ty (không cần cùng tenant).
+    expect(canReopenUi("platform_admin", src, "T1", "T1")).toBe(true);
+    expect(canReopenUi("platform_admin", src, "T1", undefined)).toBe(true);
+    expect(canReopenUi("platform_admin", null, "T1", undefined)).toBe(false);
+    expect(canReopenUi("platform_admin", { kind: "pkdemo" }, "T1", undefined)).toBe(false);
     expect(canReopenUi("member", src, "T1", "T1")).toBe(false);
     expect(canReopenUi("tenant_admin", null, "T1", "T1")).toBe(false);
     expect(canReopenUi("tenant_admin", { kind: "pkdemo" }, "T1", "T1")).toBe(false);

@@ -1,7 +1,10 @@
 // CR-121 · R-3 · hành trình thật (stack P-b2: Hub thật + Runtime giả): quản trị mở "Chi tiết lượt chạy", bấm bước xem nhật ký,
 // dừng lượt có lý do. Dữ liệu: run seed (a) của phòng riêng của spec; không bật/ẩn gì dùng chung. Đuôi `.k1.ts` (config K1, project admin).
+
+import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { adminLogin, DEF_PAR, mkRoom, seedPb2Run, settle } from "../../P-b2/_pb2-support";
+import { platformLogin } from "../../P-b/_pb-support";
+import { adminLogin, DEF_PAR, mkRoom, seedPb2Run, settle, withSql } from "../../P-b2/_pb2-support";
 
 test.afterEach(() => settle());
 
@@ -45,4 +48,33 @@ test("CR-121 R-3 · dừng lượt: thẻ xác nhận bắt buộc chọn lý do
   await expect(dlg).toHaveCount(0);
   await expect(page.getByTestId("run-status-text")).toContainText(/dừng|huỷ/i);
   await expect(page.getByRole("button", { name: "Dừng lượt chạy" })).toHaveCount(0);
+});
+
+test("CR-121 Q-3 · platform_admin mở lượt chạy gắn hợp đồng của công ty acme ⇒ thấy nút 'Mở lại quy trình', thẻ bắt buộc nhập lý do (≤ 500) mới cho xác nhận", async ({
+  page,
+}) => {
+  const room = await mkRoom("EC121-RUN3");
+  const r = await seedPb2Run(room.id, "a");
+  // Lượt của run seed gắn vào một hợp đồng (nguồn `contract`) — dữ liệu riêng của spec, không đụng run dùng chung.
+  await withSql(
+    (sql) =>
+      sql`update hub.process_runs set pack_key = 'contracts', pack_record_id = ${randomUUID()} where id = ${r.runId}`,
+  );
+  await page.addInitScript(() => sessionStorage.setItem("ai.process.tenant", "acme"));
+  await platformLogin(page);
+  await page.goto(`/processes/${DEF_PAR.id}/runs/${r.runId}`);
+  const reopen = page.getByTestId("run-reopen");
+  await expect(reopen).toBeVisible();
+  await expect(reopen).toHaveText("Mở lại quy trình");
+  await reopen.click();
+  const dlg = page.getByRole("dialog", { name: "Mở lại quy trình của hợp đồng?" });
+  const confirm = dlg.getByTestId("control-confirm");
+  await expect(confirm).toBeDisabled();
+  const reason = dlg.getByRole("textbox", { name: "Lý do mở lại (bắt buộc)" });
+  await reason.fill("   ");
+  await expect(confirm).toBeDisabled();
+  await reason.fill("x".repeat(501));
+  await expect(confirm).toBeDisabled();
+  await reason.fill("Khách yêu cầu sửa điều khoản thanh toán");
+  await expect(confirm).toBeEnabled();
 });

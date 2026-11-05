@@ -54,7 +54,7 @@ e690de485115d555f63a6844ee32f4fc0f98b00aede5080736412bb5862eb385  apps/agent-run
 894c22fde65ab44f6560c6b999b50479ee21f6d05a50e5897da022ce5f1e7d72  apps/agent-runtime/tests/support/mcp_mock.py
 4837cabf617311e8c477497c623e74158d784cbc55cab57209ca6b8dac50c12b  apps/agent-runtime/tests/support/test_dify_mock.py
 aac308a156684fef9ca086a76da25c516130c9b66a9bb2a600cbeffe8bc7cdbe  apps/agent-runtime/tests/support/test_mcp_mock.py
-bc7d8d48f97aa47214e44b8204f99c2c723d4b306bca7912cc0e0a5af01991cb  e2e/K1/admin/cr121-run.k1.ts
+8c7148e1cb53e5b9986907ee640cc116dda5f57146cea95bca10530ac5ddd8d1  e2e/K1/admin/cr121-run.k1.ts
 dc0e0e404d6d7f41c1d91ea2f90d36d92a3e599a12afa55f8cd6db72fc6b1864  e2e/K1/admin/notice.k1.ts
 eaa63d37a3bcb1506bb1048467a0c065ee1c5b71956ad18abdc15d2240e9cd2b  e2e/K1/chat/notice.k1.ts
 dd825133ab18bc62f767467ce64746ab8d307810a3d2a2678f31319cea9dcd7f  e2e/K1/playwright.k1.config.ts
@@ -611,6 +611,7 @@ f857603f22fa521cdd7a58f936b351583f33e4a8a128f8d7b19371fd76ef35a1  tests/acceptan
 c192fe2d0c2c86cf948f2128762b533def4ab1105e07393804ec785c8db71298  tests/acceptance/CR-055/commands-features.int.test.ts
 f4e1e120afdcd75c76dcf9ca53ca42ded719c9c58779936343c7c700dcba14f1  tests/acceptance/CR-055/import.int.test.ts
 284df29ea2a75727855dc25776364905e22261046705289179f14fdee0e828eb  tests/acceptance/CR-120/timed-wait.int.test.ts
+4095cd17e8b856df7d8ed653b8bf6216b21342d2c061806febe2bc27d7dc9145  tests/acceptance/CR-121/platform-reopen.int.test.ts
 9e57bffe222dc2f0df2e83dd038874e415854e1a5e0c71745ff7be9435f3c12b  tests/acceptance/CR-121/run-control.int.test.ts
 eb179f9d87593c358e90884922b33f8aafad54547753808c07e4d14557d6061b  tests/acceptance/CR118/approval-flow-runtime.int.test.ts
 4c128b43789651b6df543fad369caca5adce14a73261f7e682ef8b8176840a44  tests/acceptance/CR118/approval-flow-summary.perf.int.test.ts

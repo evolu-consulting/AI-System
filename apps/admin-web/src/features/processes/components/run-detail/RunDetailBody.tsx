@@ -56,33 +56,41 @@ export function RunDetailBody({ runId, tenant }: Props) {
   const controls = runControls(run.status, role, packBound);
   const step = sel === null ? undefined : run.steps.find((s) => s.idx === sel);
 
-  const confirm = async (reason: RunControlReason) => {
+  const isPlatform = role === "platform_admin";
+  const doReopen = async (contractId: string, reason: RunControlReason, text?: string) => {
+    await reopen.mutateAsync({
+      contractId,
+      reason: text ?? t(`process.admin.runDetail.ctl.reason.${reason}`),
+      ...(isPlatform ? { platformTenantId: run.tenant.id } : {}),
+    });
+    notifySuccess(t("process.admin.runDetail.ctl.reopen.done"));
+    setTarget(null);
+  };
+  const doControl = async (
+    tg: Exclude<ControlTarget, { op: "reopen" }>,
+    reason: RunControlReason,
+  ) => {
+    const out = await ctl.mutateAsync(
+      tg.op === "rerun-step"
+        ? { op: "rerun-step", reason, stageIdx: tg.idx }
+        : { op: tg.op, reason },
+    );
+    notifySuccess(t(`process.admin.runDetail.ctl.${tg.op}.done`));
+    const newId = (out as { id?: unknown } | null)?.id;
+    setTarget(null);
+    setSel(null);
+    if (tg.op === "rerun" && typeof newId === "string" && newId !== runId)
+      void navigate({
+        to: "/processes/$processId/runs/$runId",
+        params: { processId: run.process.key, runId: newId },
+      });
+  };
+  const confirm = async (reason: RunControlReason, text?: string) => {
     if (!target) return;
     setError(null);
     try {
-      if (target.op === "reopen") {
-        await reopen.mutateAsync({
-          contractId: target.contractId,
-          reason: t(`process.admin.runDetail.ctl.reason.${reason}`),
-        });
-        notifySuccess(t("process.admin.runDetail.ctl.reopen.done"));
-        setTarget(null);
-        return;
-      }
-      const out = await ctl.mutateAsync(
-        target.op === "rerun-step"
-          ? { op: "rerun-step", reason, stageIdx: target.idx }
-          : { op: target.op, reason },
-      );
-      notifySuccess(t(`process.admin.runDetail.ctl.${target.op}.done`));
-      const newId = (out as { id?: unknown } | null)?.id;
-      setTarget(null);
-      setSel(null);
-      if (target.op === "rerun" && typeof newId === "string" && newId !== runId)
-        void navigate({
-          to: "/processes/$processId/runs/$runId",
-          params: { processId: run.process.key, runId: newId },
-        });
+      if (target.op === "reopen") await doReopen(target.contractId, reason, text);
+      else await doControl(target, reason);
     } catch (err) {
       if (target.op === "rerun" && isPackBoundError(err)) {
         setPackBound(true); // lượt gắn gói: không chạy lại cả lượt được (mở lại ở gói hợp đồng)
@@ -150,11 +158,12 @@ export function RunDetailBody({ runId, tenant }: Props) {
         target={target}
         pending={ctl.isPending || reopen.isPending}
         error={error}
+        freeReason={isPlatform}
         onCancel={() => {
           setTarget(null);
           setError(null);
         }}
-        onConfirm={(r) => void confirm(r)}
+        onConfirm={(r, text) => void confirm(r, text)}
       />
       <OutputDialog
         runId={runId}

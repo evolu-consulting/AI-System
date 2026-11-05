@@ -6,6 +6,7 @@ import {
   ApprovalSettingsPatchSchema,
   CONTRACT_APPROVAL_ERRORS,
   CONTRACT_ERRORS,
+  ReopenRequestSchema,
 } from "@ai/contracts/pack-contracts";
 import { Hono } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
@@ -17,6 +18,8 @@ import {
   type PackAccessView,
   type PackGuardVars,
   packGuard,
+  packGuardOrPlatform,
+  requestWho,
 } from "../../kit/adapters/pack-guard.middleware";
 import type {
   ApprovalAction,
@@ -28,6 +31,7 @@ import type {
   retryApproval,
   saveApprovalSettings,
 } from "../application/approval.usecase";
+import type { RecordPlatformOp } from "../application/reopen-contract.usecase";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
 import type { ApprovalErrorCode } from "../domain/approval-machine.rules";
 
@@ -40,6 +44,8 @@ export type ApprovalRoutesDeps = {
   cancelReopen: ReturnType<typeof cancelReopenApproval>;
   readSettings: ReturnType<typeof readApprovalSettings>;
   saveSettings: ReturnType<typeof saveApprovalSettings>;
+  /** CR-121 Q-3: audit thao tác của platform_admin (vắng ⇒ platform_admin bị từ chối ở 3 route trên). */
+  audit?: RecordPlatformOp;
 };
 
 const who = (u: AuthUser) => ({ userId: u.userId, tenantId: u.tenantId });
@@ -104,15 +110,24 @@ export function approvalRoutes(view: PackAccessView, d: ApprovalRoutesDeps): Hon
   });
   // fix-review · Mở lại quy trình (run kết thúc bất thường / CR-107 lượt kẹt chưa có run): owner/admin của gói; KHÔNG về máy cũ.
   // CR-107 · Thử lại (run `needs_decision` ⇒ `add_attempt`) + Huỷ & mở lại: cùng quyền `admin` gói, cùng bảng mã lỗi.
+  // CR-121 Q-3: platform_admin dùng CHÍNH các route này cho công ty đích (`?tenant_id` bắt buộc, body `{reason}` ≤ 500 bắt buộc,
+  // audit `platform_approval_op` SAU khi thao tác thành công); chưa nối `audit` ⇒ 403 (fail-closed). Vai khác: như cũ, không đọc thân.
   const ops = [
     ["reopen", d.reopen],
     ["retry", d.retry],
     ["cancel-reopen", d.cancelReopen],
   ] as const;
+  const adminOrPlatform = packGuardOrPlatform(view, KEY, "admin");
   for (const [path, op] of ops)
-    r.post(`/contracts/:id/approval/${path}`, admin, async (c) => {
+    r.post(`/contracts/:id/approval/${path}`, adminOrPlatform, async (c) => {
       const id = parseWith(z.uuid(), c.req.param("id"));
-      return c.json(ownerOut(await op(who(c.get("user")), id)));
+      const w = requestWho(c);
+      if (!w.platform) return c.json(ownerOut(await op(who(c.get("user")), id)));
+      if (!d.audit) throw appError("FORBIDDEN");
+      const { reason } = parseWith(ReopenRequestSchema, await readJson(c));
+      const out = ownerOut(await op(w, id));
+      await d.audit(w, id, path, reason);
+      return c.json(out);
     });
   r.get("/approval-settings", read, async (c) =>
     c.json(settingsOut(await d.readSettings(who(c.get("user"))))),

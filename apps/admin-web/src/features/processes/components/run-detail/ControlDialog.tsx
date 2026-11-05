@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { CONTROL_REASONS } from "../../lib/run-detail-view";
 
@@ -26,16 +27,38 @@ type Props = {
   /** Câu lỗi dễ hiểu của lần gọi trước (hiện trong thẻ, không đóng thẻ). */
   error: string | null;
   onCancel: () => void;
-  onConfirm: (reason: RunControlReason) => void;
+  /** Lý do tự nhập (bắt buộc, ≤ 500 ký tự) thay cho chip — platform_admin mở lại thay công ty. Gửi kèm `text` đã cắt khoảng trắng. */
+  freeReason?: boolean;
+  onConfirm: (reason: RunControlReason, text?: string) => void;
 };
 
-export function ControlDialog({ target, pending, error, onCancel, onConfirm }: Props) {
+export const FREE_REASON_MAX = 500;
+/** Lý do tự nhập hợp lệ: sau trim 1..500 ký tự (code point, khớp luật server). */
+export const freeReasonOk = (s: string): boolean => {
+  const n = Array.from(s.trim()).length;
+  return n >= 1 && n <= FREE_REASON_MAX;
+};
+
+export function ControlDialog({
+  target,
+  pending,
+  error,
+  freeReason = false,
+  onCancel,
+  onConfirm,
+}: Props) {
   const { t } = useTranslation();
   const [reason, setReason] = useState<RunControlReason | null>(null);
+  const [text, setText] = useState("");
   const op = target?.op ?? "stop";
   // Mỗi lần mở thẻ mới ⇒ chọn lại lý do (không mang lý do cũ sang thao tác khác).
   // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ đặt lại khi đổi mục tiêu
-  useEffect(() => setReason(null), [target?.op, target && "idx" in target ? target.idx : -1]);
+  useEffect(() => {
+    setReason(null);
+    setText("");
+  }, [target?.op, target && "idx" in target ? target.idx : -1]);
+  const free = freeReason && op === "reopen";
+  const ready = free ? freeReasonOk(text) : reason !== null;
   const name = target && "name" in target ? target.name : "";
   return (
     <Dialog open={target !== null} onOpenChange={(o) => !o && !pending && onCancel()}>
@@ -46,7 +69,29 @@ export function ControlDialog({ target, pending, error, onCancel, onConfirm }: P
             {t(`process.admin.runDetail.ctl.${op}.effect`, { name })}
           </DialogDescription>
         </DialogHeader>
+        {free && (
+          <div className="space-y-1">
+            <label htmlFor="control-free-reason" className="text-label font-semibold">
+              {t("process.admin.runDetail.ctl.reopen.platformReasonLabel")}
+            </label>
+            <Textarea
+              id="control-free-reason"
+              data-testid="run-reopen-reason"
+              value={text}
+              rows={3}
+              onChange={(e) => setText(e.target.value)}
+              aria-invalid={Array.from(text.trim()).length > FREE_REASON_MAX}
+            />
+            <p className="text-caption text-muted-foreground">
+              {t("process.admin.runDetail.ctl.reopen.platformReasonHint")}{" "}
+              {t("process.admin.runDetail.ctl.reopen.platformReasonCount", {
+                n: Array.from(text.trim()).length,
+              })}
+            </p>
+          </div>
+        )}
         <div
+          hidden={free}
           role="radiogroup"
           aria-label={t("process.admin.runDetail.ctl.reasonLabel")}
           className="flex flex-wrap gap-2"
@@ -70,7 +115,7 @@ export function ControlDialog({ target, pending, error, onCancel, onConfirm }: P
             </button>
           ))}
         </div>
-        {reason === null && (
+        {!free && reason === null && (
           <p className="text-caption text-muted-foreground">
             {t("process.admin.runDetail.ctl.reasonHint")}
           </p>
@@ -86,8 +131,12 @@ export function ControlDialog({ target, pending, error, onCancel, onConfirm }: P
           </Button>
           <Button
             variant={op === "stop" ? "destructive" : "default"}
-            disabled={reason === null || pending}
-            onClick={() => reason && onConfirm(reason)}
+            disabled={!ready || pending}
+            data-testid="control-confirm"
+            onClick={() => {
+              if (free) onConfirm("other", text.trim());
+              else if (reason) onConfirm(reason);
+            }}
           >
             {t(`process.admin.runDetail.ctl.${op}.confirm`)}
           </Button>

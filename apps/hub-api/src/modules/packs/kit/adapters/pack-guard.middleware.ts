@@ -3,7 +3,7 @@
 // `PackAccessView` (ConfigCache thoả sẵn), lớp 4 nối vào. Chỉ mục `featureKey → feature` dựng một lần mỗi ảnh catalog.
 // Grant user lẻ (`grantUsers`) bị bỏ qua với mã gói (D-11 / Q9).
 import { PACK_ACTIONS, type PackAction, packFeatureKey } from "@ai/contracts/packs";
-import type { MiddlewareHandler } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import type { AuthUser } from "../../../../lib/auth.middleware";
 import { AppError } from "../../../../lib/errors";
 import { externalPackActions } from "../domain/external-access.rules";
@@ -30,7 +30,8 @@ export type PackAccessView = {
     id: string,
   ): Promise<{ tenantId: string; groupIds: ReadonlySet<string>; external?: boolean } | undefined>;
 };
-export type PackGuardVars = { Variables: { user: AuthUser } };
+/** `platformTenant`: CHỈ do `packGuardOrPlatform` đặt (platform_admin + `?tenant_id` đã kiểm gói bật). */
+export type PackGuardVars = { Variables: { user: AuthUser; platformTenant?: string } };
 
 // Hai định nghĩa (contract ↔ lớp 1) phải trùng; lệch ⇒ lỗi biên dịch ở đây.
 const SAME: readonly RulesAction[] = PACK_ACTIONS satisfies readonly PackAction[];
@@ -123,4 +124,42 @@ export function packGuard(
     if (r !== "ok") throw new AppError(r, 403, MESSAGES[r]);
     await next();
   };
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * CR-121 Q-3 · như `packGuard` nhưng platform_admin (vai từ JWT, không từ query) đi đường riêng: bắt buộc `?tenant_id` (uuid, 400)
+ * của công ty đích, gói phải đang bật cho công ty đó (cache cấu hình, 0 SQL; không bật ⇒ 403 `PACK_DISABLED`), rồi đặt
+ * `platformTenant`. Vai khác: đúng `packGuard` (query `tenant_id` bị bỏ qua ⇒ tenant_admin công ty khác không chạm được tenant này).
+ * Chỉ dùng cho thao tác "mở lại" (route tự bắt lý do + audit); KHÔNG cấp quyền nào khác cho platform_admin.
+ */
+export function packGuardOrPlatform(
+  view: PackAccessView,
+  packKey: string,
+  action: PackAction,
+): MiddlewareHandler<PackGuardVars> {
+  const tenantGuard = packGuard(view, packKey, action);
+  return async (c, next) => {
+    if (c.get("user").role !== "platform_admin") return tenantGuard(c, next);
+    const tid = c.req.query("tenant_id") ?? "";
+    if (!UUID_RE.test(tid)) throw new AppError("TENANT_REQUIRED", 400, "tenant_id is required");
+    if (!(await packEnabled(view, packKey, tid)))
+      throw new AppError("PACK_DISABLED", 403, MESSAGES.PACK_DISABLED);
+    c.set("platformTenant", tid);
+    await next();
+  };
+}
+
+/** `PackWho` của request: platform ⇒ tenant đích + `platform: true`; còn lại tenant/user của token. */
+export function requestWho(c: Context<PackGuardVars>): {
+  tenantId: string;
+  userId: string;
+  platform?: boolean;
+} {
+  const u = c.get("user");
+  const pt = u.role === "platform_admin" ? c.get("platformTenant") : undefined;
+  return pt
+    ? { tenantId: pt, userId: u.userId, platform: true }
+    : { tenantId: u.tenantId, userId: u.userId };
 }

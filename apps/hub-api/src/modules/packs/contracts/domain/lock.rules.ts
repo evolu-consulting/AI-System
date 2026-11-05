@@ -19,9 +19,22 @@ export function lockVerdict(i: { locked: boolean; changed: readonly string[] }):
 
 export type ReopenVerdict = "ok" | "not_locked" | "forbidden";
 
-/** CR-101a (Câu 6): người mở lại được = owner gói HOẶC người phụ trách HĐ. */
-export const canReopen = (i: { admin: boolean; actor: string; owner: string | null }): boolean =>
-  i.admin || (i.owner !== null && i.owner === i.actor);
+/** CR-101a (Câu 6): người mở lại được = owner gói HOẶC người phụ trách HĐ.
+ *  CR-121 Q-3: HOẶC platform_admin (vai từ JWT; mở thay cho công ty — route đã ép `?tenant_id` + lý do + audit). Chỉ mở lại,
+ *  không cấp thêm quyền nào khác. */
+export const canReopen = (i: {
+  admin: boolean;
+  actor: string;
+  owner: string | null;
+  platform?: boolean;
+}): boolean => i.admin || i.platform === true || (i.owner !== null && i.owner === i.actor);
+
+export const REOPEN_REASON_MAX_LEN = 500;
+/** Lý do mở lại hợp lệ: sau trim 1..500 ký tự (đếm code point). */
+export const reopenReasonOk = (reason: string): boolean => {
+  const n = Array.from(reason.trim()).length;
+  return n >= 1 && n <= REOPEN_REASON_MAX_LEN;
+};
 
 /** Không có quyền ⇒ `forbidden` (trước mọi kiểm khác); chỉ HĐ đang khoá mới mở lại được (lý do do schema). */
 export const reopenVerdict = (i: { locked: boolean; allowed?: boolean }): ReopenVerdict => {

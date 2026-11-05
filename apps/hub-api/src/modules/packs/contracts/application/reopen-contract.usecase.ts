@@ -6,19 +6,27 @@
 // HĐ không thấy / tenant khác ⇒ 404. MỘT tx, 2 câu cố định.
 import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type { PackUow, PackWho } from "../../kit/application/ports";
-import { canReopen, reopenVerdict } from "../domain/lock.rules";
+import { canReopen, reopenReasonOk, reopenVerdict } from "../domain/lock.rules";
 
 export type ReopenOutcome =
   | { kind: "ok"; version: number }
   | { kind: "not_found" }
   | { kind: "forbidden" }
   | { kind: "not_locked" }
-  | { kind: "draft_exists" };
+  | { kind: "draft_exists" }
+  | { kind: "reason_invalid" };
 
 export type ReopenRepo = {
   /** MỘT câu (CTE): khoá hàng FOR UPDATE ⇒ (nếu đang khoá và `admin` ∨ người phụ trách) mở lượt duyệt khi tenant bật duyệt +
-   *  UPDATE + event `reopened`. */
-  reopen(id: string, reason: string, actor: string, admin: boolean): Promise<ReopenRepoOut>;
+   *  UPDATE + event `reopened` (CR-121 Q-3: `byPlatform` ⇒ event ghi thêm `by_platform: true`). Đua/bấm 2 lần: khoá hàng + điều
+   *  kiện `locked` trong cùng câu ⇒ chỉ một lần ra "ok", lần sau "not_locked". */
+  reopen(
+    id: string,
+    reason: string,
+    actor: string,
+    admin: boolean,
+    byPlatform?: boolean,
+  ): Promise<ReopenRepoOut>;
 };
 export type ReopenRepoOut = {
   found: boolean;
@@ -34,20 +42,59 @@ export type ReopenContract = (
   who: PackWho,
   id: string,
   reason: string,
-  o?: { admin: boolean },
+  /** `role` = vai trong JWT (route truyền; use case tự kiểm). */
+  o?: { admin: boolean; role?: string },
 ) => Promise<ReopenOutcome>;
+
+/** CR-121 Q-3: platform_admin chỉ hợp lệ khi route đã đặt tenant đích (`who.platform`); vai khác mà đòi `platform` ⇒ bỏ cờ. */
+const isPlatform = (who: PackWho, o: { role?: string }) =>
+  o.role === "platform_admin" && who.platform === true;
+
+/** Kết quả repo + quyền ⇒ kết quả use case (thuần). Không được phép ⇒ `forbidden` TRƯỚC mọi kiểm khác. */
+function outcomeOf(out: ReopenRepoOut, allowed: boolean): ReopenOutcome {
+  const v = reopenVerdict({ locked: out.locked, allowed });
+  if (v === "forbidden") return { kind: "forbidden" };
+  if (out.draft && out.locked) return { kind: "draft_exists" };
+  if (v === "not_locked" || out.version === null) return { kind: "not_locked" };
+  return { kind: "ok", version: out.version };
+}
 
 export const reopenContract =
   (d: { uow: PackUow<KitTxRepos & { reopen: ReopenRepo }> }): ReopenContract =>
-  (who, id, reason, o = { admin: false }) =>
-    d.uow.tenant(who, async (r): Promise<ReopenOutcome> => {
-      const out = await r.reopen.reopen(id, reason, who.userId, o.admin);
+  async (who, id, reason, o = { admin: false }) => {
+    const platform = isPlatform(who, o);
+    // Platform_admin phải có lý do (≤ 500); vai khác giữ luật cũ (schema route chặn lý do rỗng).
+    if (platform && !reopenReasonOk(reason)) return { kind: "reason_invalid" };
+    // Cờ `platform` của `who` mà vai không phải platform_admin ⇒ không tin (mở tx theo user như thường).
+    const scoped: PackWho = platform ? who : { ...who, platform: false };
+    return d.uow.tenant(scoped, async (r): Promise<ReopenOutcome> => {
+      const args = [id, reason.trim(), who.userId, o.admin || platform, platform] as const;
+      const out = await r.reopen.reopen(...args);
       if (!out.found) return { kind: "not_found" };
-      const allowed = canReopen({ admin: o.admin, actor: who.userId, owner: out.owner ?? null });
-      const v = reopenVerdict({ locked: out.locked, allowed });
-      if (v === "forbidden") return { kind: "forbidden" };
-      if (out.draft && out.locked) return { kind: "draft_exists" };
-      if (v === "not_locked" || out.version === null) return { kind: "not_locked" };
-      await r.outbox.enqueue([{ entity: "contract", entity_id: id, op: "upsert" }]);
-      return { kind: "ok", version: out.version };
+      const owner = out.owner ?? null;
+      const res = outcomeOf(out, canReopen({ admin: o.admin, platform, actor: who.userId, owner }));
+      if (res.kind === "ok")
+        await r.outbox.enqueue([{ entity: "contract", entity_id: id, op: "upsert" }]);
+      return res;
     });
+  };
+
+// CR-121 Q-3 · audit thao tác của platform_admin trên lượt duyệt engine của một công ty: một dòng `contract_events`
+// (type `platform_approval_op`; actor, tenant, HĐ, lý do, thao tác) trong lịch sử HĐ của công ty. Ghi dưới scope tenant đích.
+export type PlatformApprovalOp = "reopen" | "retry" | "cancel-reopen";
+
+export type PlatformAuditRepo = {
+  record(c: { id: string; actor: string; op: PlatformApprovalOp; reason: string }): Promise<void>;
+};
+
+export type RecordPlatformOp = (
+  who: PackWho,
+  id: string,
+  op: PlatformApprovalOp,
+  reason: string,
+) => Promise<void>;
+
+export const recordPlatformOp =
+  (d: { uow: PackUow<{ audit: PlatformAuditRepo }> }): RecordPlatformOp =>
+  (who, id, op, reason) =>
+    d.uow.tenant(who, (r) => r.audit.record({ id, actor: who.userId, op, reason }));

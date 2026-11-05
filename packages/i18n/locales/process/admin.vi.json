@@ -1224,7 +1224,10 @@
         "title": "Mở lại quy trình của hợp đồng?",
         "effect": "Hợp đồng được mở khoá để chỉnh sửa và quy trình duyệt chạy lại khi gửi duyệt. Lượt này giữ nguyên để đối chiếu.",
         "confirm": "Mở lại quy trình",
-        "done": "Đã mở lại quy trình của hợp đồng"
+        "done": "Đã mở lại quy trình của hợp đồng",
+        "platformReasonLabel": "Lý do mở lại (bắt buộc)",
+        "platformReasonHint": "Bạn đang mở lại thay cho công ty này. Nhập lý do (tối đa 500 ký tự) — lý do và tên bạn được ghi vào lịch sử hợp đồng.",
+        "platformReasonCount": "{{n}}/500"
       },
       "rerun-step": {
         "button": "Chạy lại bước này",

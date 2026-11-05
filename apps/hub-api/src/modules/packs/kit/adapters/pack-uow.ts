@@ -29,8 +29,11 @@ export function createPackUow<R>(
   });
   return {
     tenant: (who, fn) =>
-      withPackScope(db, { packKey, tenantId: who.tenantId, userId: who.userId }, (tx) =>
-        fn(all(tx, who.tenantId)),
+      withPackScope(
+        db,
+        // CR-121 Q-3: `who.platform` ⇒ scope tenant đích, không user (route chỉ đặt cờ sau khi kiểm vai platform_admin từ JWT).
+        { packKey, tenantId: who.tenantId, userId: who.platform === true ? null : who.userId },
+        (tx) => fn(all(tx, who.tenantId)),
       ),
     system: (tenantId, fn) =>
       withPackScope(db, { packKey, tenantId, userId: null }, (tx) => fn(all(tx, tenantId))),

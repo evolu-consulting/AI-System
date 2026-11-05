@@ -1,7 +1,13 @@
 // CR-097 K1 · HD-FR-100 (khoá cứng sau xác nhận) · HD-FR-104 (owner mở lại có lý do): luật thuần — viết TRƯỚC code.
 import { describe, expect, test } from "bun:test";
 import { CONTRACT_FIELD_KEYS } from "./fields.rules";
-import { canReopen, LOCK_EDITABLE_FIELDS, lockVerdict, reopenVerdict } from "./lock.rules";
+import {
+  canReopen,
+  LOCK_EDITABLE_FIELDS,
+  lockVerdict,
+  reopenReasonOk,
+  reopenVerdict,
+} from "./lock.rules";
 
 describe("HD-FR-100 · lockVerdict", () => {
   test("HĐ chưa khoá ⇒ mọi trường ok (luật duyệt cũ quyết tiếp)", () => {
@@ -68,5 +74,23 @@ describe("CR-101a · canReopen (người phụ trách hoặc owner gói)", () =>
     expect(canReopen({ admin: false, actor: u, owner: u })).toBe(true);
     expect(canReopen({ admin: false, actor: u, owner: "u2" })).toBe(false);
     expect(canReopen({ admin: false, actor: u, owner: null })).toBe(false);
+  });
+  test("CR-121 Q-3 · platform_admin mở lại được dù không phụ trách / không owner gói, cờ false/vắng không cấp quyền", () => {
+    const u = "u1";
+    expect(canReopen({ admin: false, platform: true, actor: u, owner: "u2" })).toBe(true);
+    expect(canReopen({ admin: false, platform: true, actor: u, owner: null })).toBe(true);
+    expect(canReopen({ admin: false, platform: false, actor: u, owner: "u2" })).toBe(false);
+    expect(canReopen({ admin: false, actor: u, owner: "u2" })).toBe(false);
+  });
+});
+
+describe("CR-121 Q-3 · reopenReasonOk (lý do platform_admin 1..500)", () => {
+  test("rỗng/khoảng trắng ⇒ sai; 500 ⇒ đúng; 501 ⇒ sai; đếm code point", () => {
+    expect(reopenReasonOk("")).toBe(false);
+    expect(reopenReasonOk("   \n")).toBe(false);
+    expect(reopenReasonOk("a")).toBe(true);
+    expect(reopenReasonOk("a".repeat(500))).toBe(true);
+    expect(reopenReasonOk("a".repeat(501))).toBe(false);
+    expect(reopenReasonOk("😀".repeat(500))).toBe(true);
   });
 });

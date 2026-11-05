@@ -67,9 +67,11 @@ export function useSourceHref(source: RunSource | null): string | null {
 export function useReopenContract() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (a: { contractId: string; reason: string }) =>
+    mutationFn: (a: { contractId: string; reason: string; platformTenantId?: string }) =>
       api<unknown>(url(`/pack/contracts/contracts/${enc(a.contractId)}/reopen`), {
         method: "POST",
+        // platform_admin: công ty đích (server bỏ qua `tenant_id` với vai khác).
+        query: { tenant_id: a.platformTenantId },
         body: { reason: a.reason },
       }),
     onSettled: () => qc.invalidateQueries({ queryKey: ["process"] }),

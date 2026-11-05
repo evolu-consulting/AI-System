@@ -11,6 +11,9 @@ export type PackWho = {
   userId: string;
   userKind?: "internal" | "external";
   extOrgId?: string | null;
+  /** CR-121 Q-3: platform_admin thao tác thay cho công ty `tenantId` (vai đã kiểm ở route từ JWT + `?tenant_id`). `PackUow` mở tx
+   *  của tenant đích KHÔNG gắn người dùng (như vòng nền) — không bị luật thấy theo người chặn; `userId` vẫn là actor ghi log. */
+  platform?: boolean;
 };
 
 /** Request người dùng: một tx RLS theo tenant của token; repo `R` dựng trong tx đó. */

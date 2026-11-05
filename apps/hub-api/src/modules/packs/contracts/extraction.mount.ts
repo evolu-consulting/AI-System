@@ -34,6 +34,7 @@ import {
   INPROC_DEFAULT_CONCURRENCY,
   type InprocLimiter,
 } from "./adapters/inproc-limit";
+import { platformAuditRepo } from "./adapters/platform-audit.repo";
 import { productLinksRepo } from "./adapters/product-links.repo";
 import { reviewRepo } from "./adapters/review.repo";
 import { reviewRoutes } from "./adapters/review.routes";
@@ -72,6 +73,7 @@ import {
   linkContractProducts,
   type ProductLinksTxRepos,
 } from "./application/product-links.usecase";
+import { recordPlatformOp } from "./application/reopen-contract.usecase";
 import { requestExtract } from "./application/request-extract.usecase";
 import type { ReviewTxRepos } from "./application/review.ports";
 import { attachProduct, reviewSave } from "./application/review.usecase";
@@ -348,6 +350,7 @@ function approvalModule(
     cancelReopen: cancelReopenApproval(ad),
     readSettings: readApprovalSettings(ad),
     saveSettings: saveApprovalSettings(ad),
+    audit: recordPlatformOp({ uow: packTenantOnly(createPackUow(o.db, KEY, platformAuditRepo)) }),
   });
   approval.route("/", flowTemplateRoutes(view, o.uow, flow));
   const fr = contractsFlowRoutes(o.db, view, { get, act }); // CR-120 · mặc định bật; HUB_FLOW_RUNTIME=off = tắt route (404, không còn rollback web)
