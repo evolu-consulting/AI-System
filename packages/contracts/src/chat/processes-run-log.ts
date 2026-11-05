@@ -91,7 +91,6 @@ export const RUN_TIMELINE_KINDS = [
   "review",
   "back",
   "stopped",
-  "resumed",
   "rerun",
   "finished",
 ] as const;
@@ -104,6 +103,8 @@ export const RunTimelineItemSchema = z.strictObject({
   stage_idx: Int0.nullable(),
   actor: PersonSchema.nullable(),
   text: I18nTextSchema,
+  /** Chỉ `rerun` cả lượt: lượt gốc đã được chạy lại (`rerun_of`) để UI làm liên kết; còn lại `null`. */
+  ref_run_id: UuidSchema.nullable(),
 });
 export type RunTimelineItem = z.infer<typeof RunTimelineItemSchema>;
 

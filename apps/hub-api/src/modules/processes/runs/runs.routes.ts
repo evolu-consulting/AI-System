@@ -10,6 +10,7 @@ import {
 } from "@ai/contracts/chat";
 import { type Context, Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
+import { AppError } from "../../../lib/errors";
 import { parseJson, parseQuery } from "../../../lib/http";
 import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
@@ -22,6 +23,17 @@ import { ViewService } from "./view.service";
 export const tenantIdQuery = (c: Context<AuthVars>): string | undefined => {
   const t = c.req.query("tenant_id");
   return t && UuidSchema.safeParse(t).success ? t : undefined;
+};
+
+/** Như `tenantIdQuery` nhưng `?tenant_id` sai định dạng ⇒ 422 câu rõ (trang chi tiết admin không bỏ qua im lặng). */
+const strictTenantId = (c: Context<AuthVars>): string | undefined => {
+  const t = c.req.query("tenant_id");
+  if (t === undefined) return undefined;
+  if (!UuidSchema.safeParse(t).success)
+    throw new AppError("TENANT_ID_INVALID", 422, "tenant_id must be a valid UUID", {
+      field: "tenant_id",
+    });
+  return t;
 };
 
 export function processRunsRoutes(d: ProcessDeps): Hono<AuthVars> {
@@ -52,14 +64,14 @@ export function processRunsRoutes(d: ProcessDeps): Hono<AuthVars> {
   const notFound = () => processError("PROCESS_NOT_FOUND", { suggestions: [] });
   r.get("/process-runs/:id/detail", async (c) => {
     if (!UuidSchema.safeParse(c.req.param("id")).success) throw notFound();
-    return c.json(await detail.detail(c.var.user, c.req.param("id"), tenantIdQuery(c)));
+    return c.json(await detail.detail(c.var.user, c.req.param("id"), strictTenantId(c)));
   });
 
   r.get("/process-runs/:id/stages/:idx/log", async (c) => {
     const idx = Number(c.req.param("idx"));
     if (!UuidSchema.safeParse(c.req.param("id")).success) throw notFound();
     if (!Number.isInteger(idx) || idx < 0 || idx >= RUN_DETAIL_STEPS_MAX) throw notFound();
-    return c.json(await detail.stageLog(c.var.user, c.req.param("id"), idx, tenantIdQuery(c)));
+    return c.json(await detail.stageLog(c.var.user, c.req.param("id"), idx, strictTenantId(c)));
   });
 
   r.get("/process-runs/:id/outputs/:oid", async (c) =>

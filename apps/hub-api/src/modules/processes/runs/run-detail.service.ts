@@ -70,7 +70,7 @@ export class RunDetailService {
           hubConfigVersion: null,
           before: null,
           after: null,
-          summary: {},
+          summary: { stage_idx: stageIdx, level },
         });
       return r;
     });

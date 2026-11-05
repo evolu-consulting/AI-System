@@ -1,7 +1,7 @@
 // CR-121 · R-2 · dựng dòng thời gian lượt chạy từ (a) hàng run/stage và (b) các sự kiện đã gom bằng MỘT câu union
 // (task mở/nhắc/chuyển cấp/đóng, hẹn thử lại, quay lại, audit rẽ nhánh/huỷ/dừng/chạy lại). Thuần, lớp 1 (không I/O).
 import type { RunTimelineKind } from "@ai/contracts/chat";
-import { friendlyError, type I18n, resultText } from "./run-log-text.rules";
+import { controlReasonText, friendlyError, type I18n, resultText } from "./run-log-text.rules";
 
 export type TlPerson = { id: string; display_name: string };
 export type TlRun = {
@@ -32,15 +32,17 @@ export type TlEvent = {
     | "audit";
   at: string;
   stageIdx: number | null;
-  /** task_*: loại task (review/ask/decision) · audit: action. */
+  /** task_*: loại task (review/ask/decision) · audit: `summary.op` (stop/rerun_step/rerun) hoặc action (branch/cancel). */
   sub: string | null;
-  /** task_close: kết quả. */
+  /** task_close: kết quả · audit dừng/chạy lại: lý do (`RUN_CONTROL_REASONS`). */
   sub2: string | null;
   actor: TlPerson | null;
   /** task_remind: lần nhắc · back: bước đích · audit branch: luật khớp. */
   a: number | null;
   /** back: vòng sau khi quay lại · audit branch: bước đích. */
   b: number | null;
+  /** audit `rerun` cả lượt: id lượt gốc (`summary.rerun_of`). */
+  ref: string | null;
 };
 export type TlItem = {
   at: string;
@@ -48,6 +50,7 @@ export type TlItem = {
   stageIdx: number | null;
   actor: TlPerson | null;
   text: I18n;
+  refRunId?: string | null;
 };
 
 export const TIMELINE_MAX = 200;
@@ -67,9 +70,8 @@ const ORDER: Readonly<Record<RunTimelineKind, number>> = {
   step_done: 11,
   step_skipped: 12,
   stopped: 13,
-  resumed: 14,
-  rerun: 15,
-  finished: 16,
+  rerun: 14,
+  finished: 15,
 };
 
 const FINISH_TEXT: Readonly<Record<string, I18n>> = {
@@ -89,26 +91,43 @@ const ASK_OF: Readonly<Record<string, I18n>> = {
 type Made = readonly [RunTimelineKind, string, string] | null;
 const q = (n: string) => `"${n}"`;
 
-function auditMade(e: TlEvent, n: string): Made {
+/** Hậu tố "bởi <người> · lý do: <lý do>" cho dừng/chạy lại (R-1 ghi người + lý do vào audit). */
+function byReason(e: TlEvent): I18n {
+  const r = controlReasonText(e.sub2);
+  const who = e.actor?.display_name;
+  return {
+    vi: `${who ? ` bởi ${who}` : ""}${r ? ` · lý do: ${r.vi}` : ""}`,
+    en: `${who ? ` by ${who}` : ""}${r ? ` · reason: ${r.en}` : ""}`,
+  };
+}
+
+function controlMade(e: TlEvent, n: string): Made {
+  const s = byReason(e);
   switch (e.sub) {
-    case "branch":
-      return [
-        "branch",
-        `Rẽ nhánh theo luật ${e.a ?? "?"}: nhảy tới bước ${(e.b ?? 0) + 1} — bước ${q(n)}`,
-        `Branched by rule ${e.a ?? "?"}: jumped to step ${(e.b ?? 0) + 1} — step ${q(n)}`,
-      ];
-    case "cancel":
     case "stop":
-      return ["stopped", "Lượt chạy đã bị dừng", "The run was stopped"];
-    case "resume":
-      return ["resumed", "Lượt chạy được tiếp tục", "The run was resumed"];
+    case "cancel": // `cancel` không có `op` = đường huỷ cũ (không lý do)
+      return ["stopped", `Dừng${s.vi}`, `Stopped${s.en}`];
+    case "rerun_step":
+      return [
+        "rerun",
+        `Chạy lại từ bước ${(e.stageIdx ?? 0) + 1} ${q(n)}${s.vi}`,
+        `Rerun from step ${(e.stageIdx ?? 0) + 1} ${q(n)}${s.en}`,
+      ];
     case "rerun":
-      return ["rerun", "Lượt chạy được chạy lại", "The run was run again"];
+      return ["rerun", `Chạy lại cả lượt${s.vi}`, `Rerun of the whole run${s.en}`];
     default:
       return null;
   }
 }
 
+function auditMade(e: TlEvent, n: string): Made {
+  if (e.sub !== "branch") return controlMade(e, n);
+  return [
+    "branch",
+    `Rẽ nhánh theo luật ${e.a ?? "?"}: nhảy tới bước ${(e.b ?? 0) + 1} — bước ${q(n)}`,
+    `Branched by rule ${e.a ?? "?"}: jumped to step ${(e.b ?? 0) + 1} — step ${q(n)}`,
+  ];
+}
 function closeMade(e: TlEvent, n: string): Made {
   const r = resultText(e.sub2);
   const who = e.actor ? ` (${e.actor.display_name})` : "";
@@ -156,9 +175,15 @@ const MADE: Readonly<Record<TlEvent["src"], (e: TlEvent, n: string) => Made>> = 
 
 function eventItem(e: TlEvent, name: (i: number | null) => string): TlItem | null {
   const m = MADE[e.src](e, name(e.stageIdx));
-  return m
-    ? { at: e.at, stageIdx: e.stageIdx, actor: e.actor, kind: m[0], text: { vi: m[1], en: m[2] } }
-    : null;
+  if (!m) return null;
+  return {
+    at: e.at,
+    stageIdx: e.stageIdx,
+    actor: e.actor,
+    kind: m[0],
+    text: { vi: m[1], en: m[2] },
+    refRunId: e.src === "audit" && e.sub === "rerun" ? e.ref : null,
+  };
 }
 
 function stageItems(s: TlStage): TlItem[] {

@@ -24,8 +24,9 @@ API dữ liệu cho trang chi tiết lượt chạy (mockup `Tpl-Run.dc.html`); 
 ## Không làm / Chạm
 - Không UI, không dừng/chạy lại (R-1), không migration, không sửa `gates.routes.ts`.
 - Debug đọc `hub.runs`/`hub.jobs` (RLS theo chủ run) bằng scope `system` SAU khi đã kiểm vai platform_admin + run thuộc tenant.
-- Hạn chế: tên action audit cho dừng/chạy lại do R-1 đặt — hiện nhận `cancel`, `stop`, `resume`, `rerun`; đổi tên ⇒ cập nhật
-  `readEvents` (1 chỗ).
+- Audit dừng/chạy lại của R-1: action `cancel`/`start` + `summary.op` = `stop`|`rerun_step`|`rerun` (người + lý do + `rerun_of`);
+  `start` không có `op` (khởi đầu run) bị loại ngay trong SQL. Debug che secret (`run-redact.rules.ts`) và audit `view` ghi
+  `{stage_idx, level}`. `?tenant_id` sai định dạng ⇒ 422 (không bỏ qua im lặng). Không có vai `tenant_owner` trong hệ thống nên không xử lý.
 
 ## Test tối thiểu
 - unit: `domain/runs/run-log-text.rules.test.ts`, `domain/runs/run-timeline.rules.test.ts`.
@@ -60,6 +61,18 @@ bao giờ nhận payload/error_message/mã lỗi, kể cả khi gửi tham số 
 - Kịch bản: khi mã lỗi lạ hoặc vắng thì hiển thị "Bước … chưa chạy được, hệ thống đang thử lại" [test: apps/hub-api/src/modules/processes/domain/runs/run-log-text.rules.test.ts » mã lạ / vắng ⇒ câu mặc định 'chưa chạy được, hệ thống đang thử lại']
 - Kịch bản: khi vai là tenant_admin hoặc member thì mức nhật ký là basic, chỉ platform_admin là debug [test: apps/hub-api/src/modules/processes/domain/runs/run-log-text.rules.test.ts » mức nhật ký theo vai: chỉ platform_admin là debug]
 
+#### Yêu cầu: Dừng / chạy lại hiện trên dòng thời gian (CR-121 R-2)
+Mỗi thao tác của R-1 (dừng, chạy lại từ bước, chạy lại cả lượt) hiện trên dòng thời gian cùng người làm và lý do; chạy lại cả lượt kèm liên kết tới lượt gốc.
+- Kịch bản: khi lượt bị dừng thì timeline ghi "Dừng bởi … · lý do …" [test: apps/hub-api/src/modules/processes/domain/runs/run-timeline.rules.test.ts » op stop ⇒ Dừng bởi … · lý do …, kind stopped]
+- Kịch bản: khi chạy lại từ một bước thì timeline ghi "Chạy lại từ bước n" [test: apps/hub-api/src/modules/processes/domain/runs/run-timeline.rules.test.ts » op rerun_step ⇒ Chạy lại từ bước n theo stage_idx, kèm người + lý do]
+- Kịch bản: khi chạy lại cả lượt thì timeline ghi "Chạy lại cả lượt" và có liên kết lượt gốc [test: apps/hub-api/src/modules/processes/domain/runs/run-timeline.rules.test.ts » op rerun ⇒ Chạy lại cả lượt + liên kết lượt gốc (rerun_of)]
+- Kịch bản: khi audit thật có cả ba thao tác thì chi tiết lượt chạy trả đủ [test: apps/hub-api/src/modules/processes/runs/run-detail.int.test.ts » header + bước + dòng thời gian cho tenant admin và platform_admin]
+
+#### Yêu cầu: Debug che secret và báo sai tenant_id (CR-121 R-2)
+Dữ liệu debug (payload job, thông điệp lỗi gốc, nội dung đầu ra) được che khoá/chuỗi nhạy cảm trước khi trả; `?tenant_id` sai định dạng nhận 422 rõ ràng thay vì bị bỏ qua.
+- Kịch bản: khi payload có khoá api_key/token/password/authorization/cookie hoặc chuỗi Bearer thì trả "***" [test: apps/hub-api/src/modules/processes/domain/runs/run-redact.rules.test.ts » khoá nhạy cảm ⇒ *** ở mọi độ sâu (object lồng, mảng), không phân biệt hoa/thường]
+- Kịch bản: khi platform_admin mở debug thì payload job bị che secret và audit view ghi stage_idx + level [test: apps/hub-api/src/modules/processes/runs/run-detail.int.test.ts » platform_admin ⇒ debug: mã lỗi, thông điệp gốc, các lần thử, payload job, số truy vấn KH]
+- Kịch bản: khi tenant_id sai định dạng thì trả 422 [test: apps/hub-api/src/modules/processes/runs/run-detail.int.test.ts » tenant_id sai định dạng ⇒ 422 câu rõ, không bỏ qua im lặng]
+
 ## Việc còn lại
 - UI trang chi tiết lượt chạy (lát sau) dùng `RunDetailSchema` / `RunStageLogSchema`.
-- Nếu R-1 đặt tên action audit khác `stop`/`resume`/`rerun`: sửa danh sách trong `readEvents` + `auditMade`.

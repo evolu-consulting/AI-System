@@ -17,6 +17,7 @@ import {
   stepNote,
   stepStateOf,
 } from "../domain/runs/run-log-text.rules";
+import { redactJson, redactText } from "../domain/runs/run-redact.rules";
 import {
   buildTimeline,
   conditionsOf,
@@ -63,6 +64,18 @@ function toStep(s: StageRow, defs: SnapStageLite[], matched: ReadonlyMap<number,
   return step;
 }
 
+type DebugAttempt = DebugRow["attempts"][number];
+const redactOpt = (s: string | null) => (s === null ? null : redactText(s));
+/** Che secret trong thông điệp lỗi gốc + payload job (khoá nhạy cảm, Bearer…) trước khi trả debug. */
+const redactAttempt = (a: DebugAttempt): DebugAttempt => ({
+  ...a,
+  error_message: redactOpt(a.error_message),
+  jobs: a.jobs.map((j) => ({
+    ...j,
+    error_message: redactOpt(j.error_message),
+    payload: redactJson(j.payload),
+  })),
+});
 /** Luật rẽ nhánh đã khớp theo stage (từ audit `branch`). */
 const matchedRules = (events: readonly TlEvent[]): Map<number, Set<number>> => {
   const m = new Map<number, Set<number>>();
@@ -137,6 +150,7 @@ export function toRunDetail(
       stage_idx: t.stageIdx,
       actor: t.actor,
       text: t.text,
+      ref_run_id: t.refRunId ?? null,
     })),
   };
 }
@@ -195,13 +209,13 @@ export function toStageLog(row: LogRow, level: LogLevel, debug?: DebugRow): RunS
       round: Number(o.round),
       template_ok: o.template_ok,
       created_at: o.created_at,
-      ...(dbg && o.content !== null && { content: o.content }),
+      ...(dbg && o.content !== null && { content: redactText(o.content) }),
     })),
     ...(dbg &&
       debug && {
         debug: {
           last_error_code: row.last_error_code,
-          attempts: debug.attempts,
+          attempts: debug.attempts.map(redactAttempt),
           retries: debug.retries,
           kh_queries: debug.kh_queries === null ? null : Number(debug.kh_queries),
           kh_warning: debug.kh_warning,

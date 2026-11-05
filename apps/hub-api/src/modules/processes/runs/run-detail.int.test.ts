@@ -19,6 +19,7 @@ const DEF = "c1212000-0000-4000-8000-000000000001";
 const SECRET_MSG = "SECRET-RUN-MSG-7f3a";
 const SECRET_JOB = "SECRET-JOB-MSG-7f3a";
 const SECRET_PAYLOAD = "SECRET-PAYLOAD-7f3a";
+const OLD_RUN = "c1212000-0000-4000-8000-0000000000aa";
 const OUT_TEXT = "SECRET-OUTPUT-7f3a";
 const COMMENT = "Cần sửa số tiền ở mục 2";
 
@@ -67,8 +68,15 @@ beforeAll(async () => {
   await c.sql`insert into hub.jobs (id, tenant_id, user_id, run_id, step_id, conversation_id, agent_id, type,
       provider_key, payload, status, attempts, error_code, error_reason, error_message, started_at, finished_at)
     values (${jid}, ${T.acme}, ${PA.A.id}, ${rid}, ${crypto.randomUUID()}, ${run.convId}, ${AGB.hoadon},
-      'agent.cli', 'claude-sub', ${c.sql.json({ prompt: SECRET_PAYLOAD })}, 'failed', 2, 'TIMEOUT', 'timeout',
+      'agent.cli', 'claude-sub', ${c.sql.json({ prompt: SECRET_PAYLOAD, api_key: "sk-live-123" })}, 'failed', 2, 'TIMEOUT', 'timeout',
       ${SECRET_JOB}, now(), now())`;
+  // R-1 · audit dừng / chạy lại từ bước / chạy lại cả lượt (action cancel|start + summary.op).
+  const au = (action: string, summary: Json) =>
+    c.sql`insert into hub.audit_log (tenant_id, actor_id, actor_role, action, entity, entity_id, entity_name, summary)
+      values (${T.acme}, ${PA.B.id}, 'tenant_admin', ${action}, 'process_run', ${runId}, 'Hoá đơn R2', ${c.sql.json(summary)})`;
+  await au("cancel", { op: "stop", reason: "needs_edit", stage_idx: 0 });
+  await au("start", { op: "rerun_step", reason: "bad_data", stage_idx: 0 });
+  await au("start", { op: "rerun", reason: "other", rerun_of: OLD_RUN });
   await c.sql`insert into hub.kh_stage_usage (stage_run_id, attempt, round, tenant_id, queries)
     values (${stageRunId}, 1, 1, ${T.acme}, 4)`;
 }, 120_000);
@@ -90,10 +98,14 @@ describe("CR-121 R-2 · nhật ký một bước", () => {
     const att = log.debug?.attempts[0];
     expect(att?.error_message).toBe(SECRET_MSG);
     expect(att?.jobs[0]?.error_message).toBe(SECRET_JOB);
-    expect(att?.jobs[0]?.payload).toEqual({ prompt: SECRET_PAYLOAD });
+    expect(att?.jobs[0]?.payload).toEqual({ prompt: SECRET_PAYLOAD, api_key: "***" }); // secret bị che
+    expect(r.text).not.toContain("sk-live-123");
     expect(att?.jobs[0]?.attempts).toBe(2);
     expect(log.tasks[0]?.comment).toBe(COMMENT);
     expect(log.outputs[0]?.content).toBe(OUT_TEXT);
+    const [aud] = await c.sql<{ summary: { stage_idx: number; level: string } }[]>`select summary
+      from hub.audit_log where entity = 'process_run' and entity_id = ${runId} and action = 'view'`;
+    expect(aud?.summary).toEqual({ stage_idx: 0, level: "debug" });
   });
 
   it("tenant admin cùng tenant ⇒ basic: có người xử lý/kết quả/bình luận/lỗi dễ hiểu, KHÔNG payload/error_message/mã lỗi", async () => {
@@ -127,6 +139,14 @@ describe("CR-121 R-2 · nhật ký một bước", () => {
     expect((await c.call("Adm", "GET", "/process-runs/not-a-uuid/stages/0/log")).status).toBe(404);
   });
 
+  it("tenant_id sai định dạng ⇒ 422 câu rõ, không bỏ qua im lặng", async () => {
+    for (const path of [logPath("?tenant_id=abc"), `/process-runs/${runId}/detail?tenant_id=abc`]) {
+      const r = await c.call("P", "GET", path);
+      expect(r.status).toBe(422);
+      expect(r.text).toContain("tenant_id must be a valid UUID");
+    }
+  });
+
   it("nhật ký ≤ 3 câu SQL (debug) và ≤ 2 (basic)", async () => {
     const dbg = await countQueries(c.hub, () => c.call("P", "GET", logPath(asP)));
     expect(dbg.r.status).toBe(200);
@@ -158,6 +178,17 @@ describe("CR-121 R-2 · chi tiết lượt chạy", () => {
     expect(d.timeline.map((t) => t.kind)).toContain("error");
     expect(r.text).not.toContain("TIMEOUT");
     expect(r.text).not.toContain("SECRET-");
+    // R-1: dừng / chạy lại từ bước / chạy lại cả lượt hiện trong dòng thời gian cùng người + lý do
+    const stop = d.timeline.find((t) => t.kind === "stopped");
+    expect(stop?.text.vi).toBe(`Dừng bởi ${PA.B.display_name} · lý do: cần chỉnh sửa`);
+    const reruns = d.timeline.filter((t) => t.kind === "rerun");
+    expect(reruns.map((t) => t.text.vi)).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Chạy lại từ bước 1"),
+        expect.stringContaining("Chạy lại cả lượt"),
+      ]),
+    );
+    expect(reruns.find((t) => t.ref_run_id)?.ref_run_id).toBe(OLD_RUN);
     const p = await c.call("P", "GET", `/process-runs/${runId}/detail${asP}`);
     expect(p.status).toBe(200);
     expect(RunDetailSchema.parse(p.json).id).toBe(runId);

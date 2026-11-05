@@ -34,6 +34,7 @@ const ev = (o: Partial<TlEvent> & Pick<TlEvent, "src" | "at">): TlEvent => ({
   actor: null,
   a: null,
   b: null,
+  ref: null,
   ...o,
 });
 
@@ -60,9 +61,9 @@ describe("buildTimeline", () => {
       ev({ src: "task_close", at: T(8), sub: "review", sub2: "reject", actor: who }),
       ev({ src: "audit", at: T(9), sub: "branch", a: 2, b: 3 }),
       ev({ src: "back", at: T(10), a: 0, b: 2, actor: who }),
-      ev({ src: "audit", at: T(11), sub: "cancel", actor: who }),
-      ev({ src: "audit", at: T(12), sub: "resume" }),
-      ev({ src: "audit", at: T(13), sub: "rerun" }),
+      ev({ src: "audit", at: T(11), sub: "stop", sub2: "needs_edit", actor: who }),
+      ev({ src: "audit", at: T(12), sub: "rerun_step", sub2: "bad_data", actor: who, stageIdx: 0 }),
+      ev({ src: "audit", at: T(13), sub: "rerun", sub2: "other", ref: "run-goc" }),
       ev({ src: "audit", at: T(14), sub: "view" }), // không thuộc dòng thời gian
     ];
     const tl = buildTimeline(run, [stage(0)], events);
@@ -78,7 +79,7 @@ describe("buildTimeline", () => {
       "branch",
       "back",
       "stopped",
-      "resumed",
+      "rerun",
       "rerun",
     ]);
     expect(tl.find((t) => t.kind === "reminder")?.text.vi).toContain("lần 2");
@@ -123,5 +124,43 @@ describe("conditionsOf", () => {
   });
   it("không phải mảng ⇒ rỗng", () => {
     expect(conditionsOf(undefined, new Set())).toEqual([]);
+  });
+});
+
+describe("audit dừng / chạy lại của R-1 (summary.op)", () => {
+  const one = (e: Partial<TlEvent>) =>
+    buildTimeline(run, [stage(2, { name: "Ghi sổ" })], [ev({ src: "audit", at: T(5), ...e })]).find(
+      (t) => t.kind !== "started",
+    );
+
+  it("op stop ⇒ Dừng bởi … · lý do …, kind stopped", () => {
+    const t = one({ sub: "stop", sub2: "needs_edit", actor: who, stageIdx: 2 });
+    expect(t?.kind).toBe("stopped");
+    expect(t?.text.vi).toBe("Dừng bởi Lan · lý do: cần chỉnh sửa");
+    expect(t?.text.en).toBe("Stopped by Lan · reason: needs editing");
+    expect(t?.refRunId ?? null).toBeNull();
+  });
+
+  it("action cancel cũ (không op, không lý do) ⇒ vẫn là 'Dừng'", () => {
+    expect(one({ sub: "cancel", actor: who })?.text.vi).toBe("Dừng bởi Lan");
+  });
+
+  it("op rerun_step ⇒ Chạy lại từ bước n theo stage_idx, kèm người + lý do", () => {
+    const t = one({ sub: "rerun_step", sub2: "bad_data", actor: who, stageIdx: 2 });
+    expect(t?.kind).toBe("rerun");
+    expect(t?.text.vi).toBe('Chạy lại từ bước 3 "Ghi sổ" bởi Lan · lý do: dữ liệu sai');
+    expect(t?.text.en).toContain("Rerun from step 3");
+  });
+
+  it("op rerun ⇒ Chạy lại cả lượt + liên kết lượt gốc (rerun_of)", () => {
+    const t = one({ sub: "rerun", sub2: "other", actor: who, ref: "run-goc", stageIdx: null });
+    expect(t?.kind).toBe("rerun");
+    expect(t?.text.vi).toBe("Chạy lại cả lượt bởi Lan · lý do: lý do khác");
+    expect(t?.refRunId).toBe("run-goc");
+  });
+
+  it("lý do lạ/vắng và không có người ⇒ không in 'undefined'", () => {
+    const t = one({ sub: "stop", sub2: "weird" });
+    expect(t?.text.vi).toBe("Dừng");
   });
 });

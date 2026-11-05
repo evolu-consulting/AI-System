@@ -91,45 +91,46 @@ type EventRow = {
   actor_name: string | null;
   a: number | null;
   b: number | null;
+  ref: string | null;
 };
 
 /** Sự kiện dòng thời gian: task (mở/nhắc/chuyển cấp/đóng), hẹn thử lại, quay lại, audit — MỘT câu union (≤ 200). */
 export async function readEvents(tx: Tx, runId: string, tenantId: string): Promise<TlEvent[]> {
   const rows = await tx.execute<EventRow>(sql`
-    select e.src, ${iso("e.at_ts")} as at, e.stage_idx, e.sub, e.sub2, e.actor_id, e.actor_name, e.a, e.b
+    select e.src, ${iso("e.at_ts")} as at, e.stage_idx, e.sub, e.sub2, e.actor_id, e.actor_name, e.a, e.b, e.ref
     from (
       select 'task_open' as src, s.stage_idx::int as stage_idx, t.kind as sub, null::text as sub2, null::uuid as actor_id,
-        null::text as actor_name, null::int as a, null::int as b, t.created_at as at_ts
+        null::text as actor_name, null::int as a, null::int as b, null::text as ref, t.created_at as at_ts
       from hub.review_tasks t join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
       where t.process_run_id = ${runId} and t.tenant_id = ${tenantId}
       union all
-      select 'task_remind', s.stage_idx::int, t.kind, null, null, null, t.remind_count::int, null, t.reminded_at
+      select 'task_remind', s.stage_idx::int, t.kind, null, null, null, t.remind_count::int, null, null, t.reminded_at
       from hub.review_tasks t join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
       where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.reminded_at is not null
       union all
-      select 'task_escalate', s.stage_idx::int, t.kind, null, null, null, null, null, t.escalated_at
+      select 'task_escalate', s.stage_idx::int, t.kind, null, null, null, null, null, null, t.escalated_at
       from hub.review_tasks t join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
       where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.escalated_at is not null
       union all
-      select 'task_close', s.stage_idx::int, t.kind, t.result, t.decided_by, u.display_name, null, null, t.decided_at
+      select 'task_close', s.stage_idx::int, t.kind, t.result, t.decided_by, u.display_name, null, null, null, t.decided_at
       from hub.review_tasks t join hub.stage_runs s on s.id = t.stage_run_id and s.tenant_id = t.tenant_id
       left join admin.users u on u.id = t.decided_by and u.tenant_id = t.tenant_id
       where t.process_run_id = ${runId} and t.tenant_id = ${tenantId} and t.status = 'closed' and t.decided_at is not null
       union all
-      select 'timer_retry', s.stage_idx::int, null, null, null, null, null, null, tm.created_at
+      select 'timer_retry', s.stage_idx::int, null, null, null, null, null, null, null, tm.created_at
       from hub.process_timers tm join hub.stage_runs s on s.id = tm.stage_run_id and s.tenant_id = tm.tenant_id
       where tm.process_run_id = ${runId} and tm.tenant_id = ${tenantId} and tm.kind = 'retry'
       union all
-      select 'back', b.from_stage_idx::int, null, null, b.decided_by, u.display_name, b.to_step::int, b.round_after::int,
+      select 'back', b.from_stage_idx::int, null, null, b.decided_by, u.display_name, b.to_step::int, b.round_after::int, null,
         b.created_at
       from hub.process_back_events b left join admin.users u on u.id = b.decided_by and u.tenant_id = b.tenant_id
       where b.process_run_id = ${runId} and b.tenant_id = ${tenantId}
       union all
-      select 'audit', (a.summary->>'stage_idx')::int, a.action, null, a.actor_id, u.display_name,
-        (a.summary->>'rule')::int, (a.summary->>'to_step')::int, a.at
+      select 'audit', (a.summary->>'stage_idx')::int, coalesce(a.summary->>'op', a.action), a.summary->>'reason',
+        a.actor_id, u.display_name, (a.summary->>'rule')::int, (a.summary->>'to_step')::int, a.summary->>'rerun_of', a.at
       from hub.audit_log a left join admin.users u on u.id = a.actor_id and u.tenant_id = a.tenant_id
       where a.entity = 'process_run' and a.entity_id = ${runId} and a.tenant_id = ${tenantId}
-        and a.action in ('branch', 'cancel', 'stop', 'resume', 'rerun')
+        and a.action in ('branch', 'cancel', 'start') and (a.action <> 'start' or a.summary->>'op' is not null)
     ) e
     order by e.at_ts, e.src limit 200`);
   return rows.map((r) => ({
@@ -141,6 +142,7 @@ export async function readEvents(tx: Tx, runId: string, tenantId: string): Promi
     actor: r.actor_id ? { id: r.actor_id, display_name: r.actor_name ?? r.actor_id } : null,
     a: r.a === null ? null : Number(r.a),
     b: r.b === null ? null : Number(r.b),
+    ref: r.ref,
   }));
 }
 

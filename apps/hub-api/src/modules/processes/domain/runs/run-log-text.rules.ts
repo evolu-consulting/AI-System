@@ -232,6 +232,16 @@ export function stepNote(s: {
   return WAIT_NOTE[s.raw];
 }
 
+/** Lý do dừng/chạy lại của admin (`RUN_CONTROL_REASONS`); mã lạ/vắng ⇒ null. */
+const CONTROL_REASON: Readonly<Record<string, I18n>> = {
+  sent_by_mistake: { vi: "gửi nhầm", en: "sent by mistake" },
+  needs_edit: { vi: "cần chỉnh sửa", en: "needs editing" },
+  bad_data: { vi: "dữ liệu sai", en: "bad data" },
+  other: { vi: "lý do khác", en: "other reason" },
+};
+export const controlReasonText = (reason: string | null): I18n | null =>
+  reason ? (CONTROL_REASON[reason] ?? null) : null;
+
 const RESULT_TEXT: Readonly<Record<string, I18n>> = {
   pass: { vi: "Đã duyệt — đạt", en: "Approved" },
   fail: { vi: "Chưa đạt — cần làm lại", en: "Not approved — needs rework" },
