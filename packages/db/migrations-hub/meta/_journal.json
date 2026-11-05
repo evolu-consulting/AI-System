@@ -554,6 +554,13 @@
       "when": 1803900000000,
       "tag": "0093_contracts_intake_slot",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1804000000000,
+      "tag": "0092_community_slots",
+      "breakpoints": true
     }
   ]
 }

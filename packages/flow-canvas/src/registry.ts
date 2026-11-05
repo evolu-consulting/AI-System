@@ -13,6 +13,7 @@ export const STEP_KINDS: { readonly [K in FlowStepKind]: StepKindSpec } = {
   form: { badge: null },
   wait: { badge: null },
   system: { badge: null },
+  agent: { badge: null }, // CR-120 G1
 };
 
 /** Loại không có trong contract (DLC…): vẽ chung. */

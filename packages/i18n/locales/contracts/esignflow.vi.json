@@ -61,6 +61,7 @@
       "error": "Không tải được quy trình.",
       "retry": "Thử lại",
       "system": "Tự động",
+      "agentResult": "Kết quả agent",
       "overdue": "Quá hạn",
       "late": "quá {{n}}h",
       "left": "còn {{n}}h",

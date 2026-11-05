@@ -134,7 +134,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
       signal: d.signal,
       fb,
       redis: d.redis,
-      uploadsLimitOf: async (tid) => (await tenantLimits(d)(tid))?.uploads ?? null,
+      limitsOf: tenantLimits(d), // tệp/ngày + (CR-120) trần token agent screen/triage
     }); // CR-102 · com-c3 · bảng tin chủ quản ↔ đối tác
     mountDlcWired({ ...d, db: d.db }); // dlc-engine · khe DLC + tool bước DLC (Agent Hub qua cầu `dlcAgents`)
     app.route(`${PACK_PREFIX}/${DLC_PACK}`, dlcRoutes(d.db, d.packRuns)); // dlc-chat-review · nội dung bước cho modal duyệt

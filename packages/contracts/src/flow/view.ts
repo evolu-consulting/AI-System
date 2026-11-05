@@ -15,8 +15,16 @@ const Text = (max: number) => z.string().max(max);
 /** Mốc giờ ISO do server tạo (chuỗi ≤ 40, có thể kèm offset). */
 const At = z.string().min(10).max(40);
 
-/** Loại bước (loại gói hiện có review/dify/esign + `form` mới + wait/system của engine). */
-export const FLOW_STEP_KINDS = ["review", "dify", "esign", "form", "wait", "system"] as const;
+/** Loại bước (loại gói hiện có review/dify/esign + `form` mới + wait/system của engine; CR-120 G1: `agent` = executor agent/team). */
+export const FLOW_STEP_KINDS = [
+  "review",
+  "dify",
+  "esign",
+  "form",
+  "wait",
+  "system",
+  "agent",
+] as const;
 export type FlowStepKind = (typeof FLOW_STEP_KINDS)[number];
 export const FLOW_STEP_STATUSES = [
   "pending",
@@ -85,6 +93,12 @@ export const FlowStepViewSchema = z.discriminatedUnion("kind", [
   z.strictObject({ ...StepBase, kind: z.literal("form"), form: FlowFormSchema }),
   z.strictObject({ ...StepBase, kind: z.literal("wait"), until: At.nullable() }),
   z.strictObject({ ...StepBase, kind: z.literal("system") }),
+  /** CR-120 G1 · bước agent: khoá agent Hub + tóm tắt kết quả (text thuần, đã lọc ở server; null khi chưa chạy/lỗi). */
+  z.strictObject({
+    ...StepBase,
+    kind: z.literal("agent"),
+    agent: z.strictObject({ key: Key, summary: Text(400).nullable() }),
+  }),
 ]);
 export type FlowStepView = z.infer<typeof FlowStepViewSchema>;
 export type FlowStepViewOf<K extends FlowStepKind> = Extract<FlowStepView, { kind: K }>;

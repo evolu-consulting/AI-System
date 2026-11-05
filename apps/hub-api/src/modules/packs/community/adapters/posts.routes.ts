@@ -83,7 +83,7 @@ export function postsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const a = await access(c, "write");
     const input = parseWith(CreatePostInputSchema, await readJson(c));
     if (a.org !== null && input.audience) throw audienceNotAllowed();
-    const { row, contactDetected } = await posts.create(d.uow, a, input, d.events);
+    const { row, contactDetected } = await posts.create(d.uow, a, input, d.events, d.flows);
     if (contactDetected) c.header("X-Contact-Detected", "1"); // HT-54: nhắc người đăng, không chặn
     return c.json(postView(a, namesOf(a), row), 201);
   });

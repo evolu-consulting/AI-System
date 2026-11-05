@@ -25,6 +25,7 @@ import { mediaKindOf } from "../domain/file.rules";
 import { priceChanged } from "../domain/notify.rules";
 import { type Access, otherOrgNames } from "./community-access";
 import { attachableFiles } from "./files.repo";
+import { type FlowDeps, moderationEnabled, openModeration, startScreen } from "./flows.service";
 import type { CommunityEvents } from "./notify.events";
 import { partnerRows } from "./org.repo";
 import { type FeedFilter, type FeedRaw, feedQuery, type PostRow, postById } from "./post.sql";
@@ -122,6 +123,7 @@ export async function create(
   a: Access,
   input: CreatePostInput,
   events?: CommunityEvents,
+  flows?: FlowDeps,
 ): Promise<{ row: PostRow; contactDetected: boolean }> {
   const audience =
     a.org === null ? (checkAudience(a, input.audience) ?? defaultAudience(input.type)) : null;
@@ -129,6 +131,7 @@ export async function create(
     { title: input.title, body: input.body, fields: input.fields as Fields },
     otherOrgNames(a),
   );
+  const moderated = await moderationEnabled(flows, a.who.tenantId);
   const row = await uow.tenant(a.who, async ({ tx }) => {
     if (a.org !== null) {
       const me = (await partnerRows(tx)).find((p) => p.ext_org_id === a.org);
@@ -151,9 +154,15 @@ export async function create(
       content.fields.raw,
       await withFiles(tx, a, safeMedia(a, input.media), null),
     );
+    // CR-120: khe duyệt bài có def ⇒ mở lượt trong CÙNG tx (bài ẩn với người khác tới khi duyệt)
+    if (moderated) await openModeration(tx, id);
     return postById(tx, id);
   });
   const post = found(row);
+  if (moderated && flows) {
+    startScreen(flows, a.who, post.id); // agent `screen` chạy nền; chuông bài mới phát khi được duyệt
+    return { row: post, contactDetected: content.contactDetected };
+  }
   // review Cao-1: chuông phát SAU commit (không giữ kết nối tx trong lúc hỏi chủ quản / sổ SHT)
   await events?.emitNewPost({
     tenantId: a.who.tenantId,

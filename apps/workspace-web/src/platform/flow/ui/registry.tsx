@@ -15,6 +15,7 @@ export const RENDERERS: StepRenderers = {
   wait: lazy(Default),
   system: lazy(Default),
   form: lazy(() => import("./FormStep")),
+  agent: lazy(() => import("./AgentStep")), // CR-120 G1
 };
 
 /** Renderer của loại `kind` (override của khe > registry > GenericStep cho loại lạ). */

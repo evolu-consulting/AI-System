@@ -13,6 +13,7 @@ import type {
   HostBookReader,
   SupplierQuoteWriter,
 } from "../application/pack-ports";
+import type { FlowDeps } from "./flows.service";
 import type { CommunityEvents } from "./notify.events";
 
 export type CommunityDeps = {
@@ -40,4 +41,6 @@ export type CommunityDeps = {
   gate?: CommunityUploadGate | undefined;
   /** Trần upload đọc thân đồng thời mỗi tiến trình (vắng ⇒ `UPLOADS_INFLIGHT`). */
   uploadsInflight?: number | undefined;
+  /** CR-120: 3 khe Community (duyệt bài, đối tác xin tham gia, báo cáo vi phạm). */
+  flows?: FlowDeps | undefined;
 };

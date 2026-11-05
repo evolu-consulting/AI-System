@@ -4,6 +4,7 @@
 import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
 import type { Redis } from "ioredis";
+import type { TenantLimitsOf } from "../../lib/ai-client/ai-client.env";
 import type {
   CommunityBlobs,
   CompanyBrandReader,
@@ -12,6 +13,7 @@ import type {
   SupplierQuoteWriter,
 } from "./community/application/pack-ports";
 import { mountCommunity } from "./community/community.mount";
+import { communityAgents, communityFlowPorts } from "./community-flow.mount";
 import { communityUploadGate } from "./community-quota.mount";
 import { productsRepo } from "./contracts/adapters/products.repo";
 import { supplierQuoteRepo } from "./contracts/adapters/supplier-quote.repo";
@@ -26,6 +28,12 @@ import { packActionsFor } from "./kit/domain/pack-access.rules";
 import { fileboxClients, type PackFb } from "./packs.filebox";
 
 const KEY = "contracts";
+
+type CommunityLimitsOf = (
+  tenantId: string,
+) => Promise<
+  (NonNullable<Awaited<ReturnType<TenantLimitsOf>>> & { uploads?: number | null }) | undefined
+>;
 
 export type CommunityPorts = {
   quotes: SupplierQuoteWriter;
@@ -77,20 +85,25 @@ export function mountCommunityWired<E extends Env>(
     fb?: PackFb | null;
     /** cr118-files-quota: bộ đếm lượt tải tệp (vắng ⇒ `/files` 503 `UPLOAD_QUOTA_UNAVAILABLE`, như contracts). */
     redis?: Redis | undefined;
-    uploadsLimitOf?: (tenantId: string) => Promise<number | null>;
+    /** Trần riêng của tenant: `uploads` (tệp/ngày) + trần token AI (CR-120: agent `screen`/`triage`; vắng ⇒ không agent ⇒ duyệt tay). */
+    limitsOf?: CommunityLimitsOf | undefined;
   } = {},
 ): void {
-  const { fb, redis, uploadsLimitOf, ...rest } = o;
+  const { fb, redis, limitsOf, ...rest } = o;
   const gate = communityUploadGate({
     redis,
     timeZoneOf,
-    ...(uploadsLimitOf ? { tenantLimitOf: uploadsLimitOf } : {}),
+    ...(limitsOf
+      ? { tenantLimitOf: async (tid: string) => (await limitsOf(tid))?.uploads ?? null }
+      : {}),
   });
+  const agents = limitsOf ? communityAgents(db, limitsOf, redis) : undefined;
   mountCommunity(app, prefix, db, view, {
     ...rest,
     ...communityPorts(db, view, { timeZoneOf }),
     ...(fb ? { blobs: communityBlobs(fb) } : {}),
     gate,
+    flows: communityFlowPorts(db, agents),
   });
 }
 

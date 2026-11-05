@@ -106,6 +106,9 @@ export async function feedQuery(tx: Tx, tenantId: string, f: FeedFilter): Promis
   const rows = await tx.execute<{ r: FeedRaw }>(sql`
     with vis as (
       select p.*, ${shown} from community.posts p where p.tenant_id = ${tenantId}::uuid
+        -- CR-120: bài chờ/bị từ chối duyệt chỉ người đăng thấy trên bảng tin (người duyệt dùng hàng đợi)
+        and (p.moderation in ('none', 'approved')
+          or p.author_user_id = nullif(current_setting('app.user_id', true), '')::uuid)
     ), base as (
       select * from vis v
       where (not ${f.mine}::boolean or v.author_org is not distinct from ${f.org}::uuid)

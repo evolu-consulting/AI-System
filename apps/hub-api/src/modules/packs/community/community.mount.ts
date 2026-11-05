@@ -4,14 +4,21 @@ import { packFeatureKey } from "@ai/contracts";
 import type { Db } from "@ai/db";
 import { type Env, Hono } from "hono";
 import { pgExternalOrgResolver } from "../kit/adapters/ext-org.pg";
+import { flowRoutes } from "../kit/adapters/flow.routes";
 import { packBell } from "../kit/adapters/pack-bell";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { packHosts } from "../kit/adapters/pack-hosts";
 import { createPackUow } from "../kit/adapters/pack-uow";
+import { slotRegistry } from "../kit/adapters/slot-registry";
 import type { ExternalOrgResolver } from "../kit/application/ext-org.ports";
+import { flowRuntime, flowRuntimeOn } from "../kit/application/flow.ports";
+import type { PackWho } from "../kit/application/ports";
 import { COMMUNITY_KEY } from "./adapters/community-access";
 import type { CommunityDeps } from "./adapters/community-deps";
 import { filesRoutes } from "./adapters/files.routes";
+import { communityFlowSlots } from "./adapters/flow-slots";
+import { flowsRoutes } from "./adapters/flows.routes";
+import type { FlowAgents, FlowDeps } from "./adapters/flows.service";
 import type { CommunityEventDeps } from "./adapters/notify.events";
 import { communityEvents } from "./adapters/notify.events";
 import { startCommunitySweeper } from "./adapters/notify.sweep";
@@ -29,6 +36,7 @@ import type {
   HostBookReader,
   SupplierQuoteWriter,
 } from "./application/pack-ports";
+import { communitySlotSpecs } from "./domain/flow-slots.rules";
 
 export { COMMUNITY_KEY };
 
@@ -55,6 +63,8 @@ export function communityModule(
     gate?: CommunityUploadGate | undefined;
     uploadsInflight?: number | undefined;
     now?: () => Date;
+    /** CR-120: cổng 3 khe (agent Hub, khe duyệt bài bật cho tenant, tenant admin, cờ flow runtime, seam việc nền). */
+    flows?: CommunityFlowOpts | undefined;
   } = {},
 ): Hono<PackGuardVars> {
   const uow = createPackUow(db, COMMUNITY_KEY, (tx) => ({ tx }));
@@ -69,11 +79,33 @@ export function communityModule(
     ...(opts.now ? { now: opts.now } : {}),
     warn: (m, meta) => console.warn(m, meta),
   });
+  const fo = opts.flows ?? {};
+  const flows: FlowDeps = {
+    uow,
+    sys: uow,
+    agents: fo.agents,
+    moderationOn: fo.moderationOn,
+    background: fo.background,
+    warn: (m, meta) => console.warn(m, meta),
+    onApproved: async (p, tenantId) => {
+      await events.emitNewPost({
+        tenantId,
+        postId: p.id,
+        type: p.type,
+        authorOrg: p.author_org,
+        authorUserId: p.author_user_id,
+        actorName: p.author_name,
+        titleMasked: p.title_masked,
+        ...(p.product ? { product: p.product } : {}),
+      });
+    },
+  };
   const d: CommunityDeps = {
     view,
     resolver,
     uow,
     events,
+    flows,
     bell: packBell(db, COMMUNITY_KEY),
     shtUrl: opts.shtUrl ?? "/",
     quotes: opts.quotes,
@@ -92,8 +124,24 @@ export function communityModule(
   r.route("/", profileRoutes(d));
   r.route("/", quoteRoutes(d));
   r.route("/", filesRoutes(d));
+  r.route("/", flowsRoutes(d, flows));
+  // CR-120 · ADR-0035/0036: SlotSpec + FlowSlotAdapter của 3 khe (khoá = key khe); route flow kit sau cờ runtime.
+  for (const s of communitySlotSpecs()) slotRegistry.register(s);
+  if (flowRuntimeOn(fo.runtimeOn)) {
+    const slots = communityFlowSlots(flows, { view, resolver, tenantAdmin: fo.tenantAdmin });
+    r.route("/", flowRoutes(view, COMMUNITY_KEY, flowRuntime(COMMUNITY_KEY, slots)));
+  }
   return r;
 }
+
+export type CommunityFlowOpts = {
+  agents?: FlowAgents | undefined;
+  moderationOn?: ((tenantId: string) => Promise<boolean>) | undefined;
+  tenantAdmin?: ((who: PackWho) => Promise<boolean>) | undefined;
+  background?: ((p: Promise<unknown>) => void) | undefined;
+  /** Seam test của cờ `HUB_FLOW_RUNTIME` (vắng ⇒ env). */
+  runtimeOn?: boolean | undefined;
+};
 
 /** Gắn dưới `<prefix>/community`; "Mở SHT" = `CONTRACTS_WEB_URL` (vắng ⇒ "/"). */
 export function mountCommunity<E extends Env>(
@@ -110,9 +158,10 @@ export function mountCommunity<E extends Env>(
     caps?: ContractsCapReader;
     blobs?: CommunityBlobs;
     gate?: CommunityUploadGate;
+    flows?: CommunityFlowOpts;
   } = {},
 ): void {
-  const { quotes, hostBook, brand, caps, blobs, gate, ...sweep } = o;
+  const { quotes, hostBook, brand, caps, blobs, gate, flows, ...sweep } = o;
   startSweeper(db, view, { ...sweep, ...(blobs ? { blobs } : {}) });
   const shtUrl = process.env.CONTRACTS_WEB_URL || "/";
   app.route(
@@ -125,6 +174,7 @@ export function mountCommunity<E extends Env>(
       ...(caps ? { caps } : {}),
       ...(blobs ? { blobs } : {}),
       ...(gate ? { gate } : {}),
+      ...(flows ? { flows } : {}),
       webUrl: process.env.COMMUNITY_WEB_URL || undefined,
     }),
   );

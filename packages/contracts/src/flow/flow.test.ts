@@ -76,6 +76,13 @@ const VIEW: FlowView = {
     { ...base, kind: "form", key: "f", name: "Bổ sung", form: FORM },
     { ...base, kind: "wait", key: "w", name: "Chờ", until: null },
     { ...base, kind: "system", key: "x", name: "Hệ thống" },
+    {
+      ...base,
+      kind: "agent",
+      key: "a",
+      name: "Agent",
+      agent: { key: "community-screen", summary: null },
+    },
   ],
   tasks: [
     {
@@ -211,6 +218,7 @@ describe("CR-118 contract flow", () => {
       form: (s) => String(s.form.fields.length),
       wait: (s) => String(s.until),
       system: (s) => s.kind,
+      agent: (s) => s.agent.key,
     };
     // @ts-expect-error — thiếu `form` phải là lỗi typecheck
     const missing: FlowStepRenderers<string> = {
@@ -219,8 +227,9 @@ describe("CR-118 contract flow", () => {
       esign: r.esign,
       wait: r.wait,
       system: r.system,
+      agent: r.agent,
     };
     expect(Object.keys(r).sort()).toEqual([...FLOW_STEP_KINDS].sort());
-    expect(Object.keys(missing)).toHaveLength(5);
+    expect(Object.keys(missing)).toHaveLength(6);
   });
 });
