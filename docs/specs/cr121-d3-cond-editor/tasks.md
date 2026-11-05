@@ -36,7 +36,7 @@ Trạng thái gộp: chưa gộp
 Mỗi bước (trừ bước đầu) có "Chỉ chạy khi": chọn trường trong danh mục của khe, toán tử theo kiểu trường, giá trị; nhiều điều kiện ghép và/hoặc, nhóm lồng một cấp; trống = "Luôn chạy". Điều kiện thiếu giá trị (vd chưa chọn phòng ban) chặn lưu và hiện lỗi ở thanh trạng thái, bấm lỗi nhảy tới bước.
 - Kịch bản: thêm Giá trị ≥ 500tr và Loại = Mua rồi nhóm "(phòng KD và ≥ 500tr) hoặc đối tác mới" ⇒ lưu, mở lại y nguyên [test: apps/admin-web/src/features/processes/lib/flow-when.test.ts » nhóm: (phòng KD và ≥ 500tr) hoặc đối tác mới]
 - Kịch bản: điều kiện phòng ban chưa chọn phòng ⇒ chặn ở bước đó [test: apps/admin-web/src/features/processes/lib/flow-form.test.ts » điều kiện phòng ban chưa chọn phòng ⇒ chặn (condValueEmpty) ở bước 2]
-- Kịch bản: lỗi xuất bản Hub (bước, trường, câu sửa) hiện ở thanh trạng thái và trỏ tới đúng bước [test: apps/admin-web/src/features/processes/lib/publish-issues.test.ts » dạng chuẩn {step,field,fix}: theo mã bước hoặc số thứ tự]
+- Kịch bản: lỗi xuất bản Hub (bước, trường, câu sửa) hiện ở thanh trạng thái và trỏ tới đúng bước [test: apps/admin-web/src/features/processes/lib/publish-issues.test.ts » dạng chuẩn {step,field,message}: theo mã bước hoặc số thứ tự]
 - Kịch bản: thêm điều kiện, xuất bản bị chặn khi thiếu phòng ban [test: e2e/journey-approval/cr121-editor.spec.ts » thiếu phòng ban ⇒ chặn: báo lỗi ở thanh trạng thái, bấm nhảy tới bước, không cho lưu/xuất bản]
 
 ## Việc còn lại
