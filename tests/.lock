@@ -413,7 +413,7 @@ d06163fa2354ff772fec46a89f282ff7263c7cdf9cd313a57d5dee7d130455d4  e2e/contracts-
 345ff5ca932bb5c13edd7164be2d372767bc390e49d984b75a7c11a150936c57  e2e/contracts-web/k2-versions.cw.ts
 340dd4219c80cd1747fb8b3b428b1d47befdecd4b990de4e6bdd6c6f7f0967bc  e2e/contracts-web/k3a-lock.cw.ts
 25f4125f6b3e151b2a5b71aee883c8ec71857ea66d6ac92a8eabd1720bac5c57  e2e/contracts-web/k4-reopen.cw.ts
-69a6d84a3d1b265676b0666a08d4ad33b9d6d066be4b18b2ea6a7cf9732caa8a  e2e/contracts-web/legacy-routes.cw.ts
+2b0f56de30e71584d53b5c5d4039076767bb860d2234fef95705b5bf33e06ced  e2e/contracts-web/legacy-routes.cw.ts
 77dcfe66cc073dd5d84ed343aa417fe0f42e5b915e65a262a6ebfe5ba328ccf3  e2e/contracts-web/ms-impact.cw.ts
 1c02dd571fc939e919a6e8118375c81b1021afda611bd5085fee682f1b1b2c6e  e2e/contracts-web/org-visibility.cw.ts
 fa09946f34d9262ec402fdf2d31b8da2feec6b26104c3accc2cf21d0e36ab546  e2e/contracts-web/overview.cw.ts
@@ -492,7 +492,7 @@ df9a6c6dae98bbf46b5d90111c377f0f3c67b0a3ce7059c3e887a3f6a4fbdd4d  e2e/ops/system
 585553890a7d9dd632f4b340de1ed9387af36f69a40b4ffb6a29f7b3143ba5d9  e2e/pm-checklist/playwright.pm.config.ts
 893ae4c95b2b5ba6b0c9bca5f53135af3e061361c751f4320658820488a05ac6  e2e/secrets.spec.ts
 4d981c522670bcef4dda52aa84f2b194dccff6ae435d90e202cf77052ba5fdd9  e2e/smoke.spec.ts
-32c26c6ede21c6b3e76330893f63ad14e52d568336380ab8a1fb7924b8c59663  e2e/stg/smoke.stg.ts
+283b8eaedc2f1331368e9b6df36ebf20f901fee4300a895b0deb7449a6c17ffc  e2e/stg/smoke.stg.ts
 0305b4c17114edb3996edc41314c1295b16c96ebd386cc90fdeeb497392620eb  e2e/stg/stg.config.ts
 1c58186617ce55927574791a92404444803aeaac4f7bd2b86ef31c91469708b3  e2e/stg/uat-cr118.config.ts
 98201e9eb76f2ff97aa59ccaa380c6828d0cf8d7b8cbcebb9df4b249df63d521  e2e/stg/uat-cr118.stg.ts

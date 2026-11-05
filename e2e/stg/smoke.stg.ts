@@ -119,7 +119,7 @@ test.describe("stg · community-web", () => {
     const html = (await partner.page.content()).replaceAll("Demo Sổ Hợp Tác", "");
     expect(html.includes("Sổ Hợp Tác"), "DOM đối tác còn nhắc Sổ Hợp Tác").toBe(false);
     expect(
-      html.includes("/overview") || html.includes("sht-link"),
+      html.includes('href="/contracts') || html.includes("sht-link"),
       "DOM đối tác còn link Sổ Hợp Tác",
     ).toBe(false);
     await partner.ctx.close();
