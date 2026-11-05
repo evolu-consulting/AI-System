@@ -39,6 +39,8 @@ test.describe("Gap #10 · lọc ngày", () => {
     });
     await page.goto("/contracts/list");
     await page.getByLabel("Cột ngày").selectOption("action_deadline");
+    // trạng thái lọc nằm trên URL: chờ URL nhận cột mới rồi mới chọn cửa sổ (chọn ngay thì ô cửa sổ còn giữ cột cũ và ghi đè `dfield`)
+    await expect(page).toHaveURL(/dfield=action_deadline/);
     await page.getByLabel("Khoảng thời gian").selectOption("overdue");
     await expect.poll(() => queries.at(-1)?.get("due")).toBe("overdue");
     expect(queries.at(-1)?.get("date_field")).toBe("action_deadline");
