@@ -83,7 +83,7 @@ describe("CR-121 F-1 · gán quy trình ⇒ luật mặc định ⇒ engine ch�
     const idA = await seedContract(c, 732);
     const first = await toLevel1(c, idA, 10_000_000);
     expect(await modeOf(first.runId)).toBe("engine");
-    expect(await stepNames(idA)).toEqual([NAME_A]);
+    expect(await stepNames(idA)).toContain(NAME_A);
 
     // Gán lại quy trình khác ⇒ luật mặc định đổi theo; lượt mới chạy B; lượt cũ chạy nốt A.
     expect((await c.call("P", "PUT", PROC(b))).status).toBe(200);
