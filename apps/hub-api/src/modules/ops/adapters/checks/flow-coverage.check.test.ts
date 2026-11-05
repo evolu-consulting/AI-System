@@ -58,6 +58,20 @@ describe("flow_coverage · evaluateFlowCoverage", () => {
   });
 });
 
+describe("flow_coverage · feature engine duyệt", () => {
+  it("tenant có quy trình duyệt nhưng thiếu feature engine ⇒ crit nêu tên + khoá feature", () => {
+    const r = evaluateFlowCoverage(agg({ engine_off: ["NiTi"] }));
+    expect(r.status).toBe("crit");
+    expect(r.message).toContain("NiTi");
+    expect(r.message).toContain("contracts-approval-engine");
+    expect(r.hint).toContain("Tính năng");
+  });
+
+  it("engine_off rỗng ⇒ không ảnh hưởng", () => {
+    expect(evaluateFlowCoverage(agg({ engine_off: [] })).status).toBe("ok");
+  });
+});
+
 describe("flow_coverage · khe cần kiểm", () => {
   it("bỏ khe dlc.*, feature = <gói>-read", () => {
     const slots = coverageSlotsOf(() => [

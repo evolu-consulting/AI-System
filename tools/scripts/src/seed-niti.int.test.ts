@@ -1,4 +1,4 @@
-﻿// tool-seed-niti · int (DB thật): chạy thử KHÔNG ghi gì; --apply tạo đủ (tenant, gói, phòng ban, user, vai, quy trình xuất bản + gán,
+// tool-seed-niti · int (DB thật): chạy thử KHÔNG ghi gì; --apply tạo đủ (tenant, gói, phòng ban, user, vai, quy trình xuất bản + gán,
 // luật chọn quy trình theo phòng ban × loại HĐ); chạy lại = không đổi; mật khẩu chỉ ở file, không ở log; tenant lệch hình ⇒ từ chối.
 // Dùng SeedSpec giả (KHÔNG dữ liệu khách thật).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -127,6 +127,8 @@ describe("seed-niti", () => {
     const r = await runSeed(admin, hub, SPEC, opts(false));
     expect(await snap()).toBe(before);
     expect(r.tenant).toBe("created");
+    expect(r.engine).toBe("granted");
+    expect(logs.join("\n")).toContain("sẽ cấp");
     expect(r.usersCreated).toHaveLength(4);
     expect(() => readFileSync(cred)).toThrow();
   });
@@ -159,6 +161,13 @@ describe("seed-niti", () => {
     expect(rules).toHaveLength(2);
     expect(rules.map((x) => x.condition.contractKinds)).toEqual([["buy"], ["sell"]]);
     expect(rules.some((x) => x.is_default)).toBe(false);
+    expect(r.engine).toBe("granted");
+    expect(
+      (
+        await o`select count(*)::int n from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
+          where e.tenant_id = ${t} and f.key = 'contracts-approval-engine' and e.revoked_at is null`
+      )[0]?.n,
+    ).toBe(1);
     const text = readFileSync(cred, "utf8");
     const pws = text
       .trim()
@@ -175,6 +184,7 @@ describe("seed-niti", () => {
     expect(r.usersCreated).toEqual([]);
     expect(r.processes.map((p) => p.state)).toEqual(["same", "same"]);
     expect(r.routing).toBe("same");
+    expect(r.engine).toBe("same");
     expect(r.credFile).toBeNull();
     expect(await snap()).toBe(before);
     expect(readFileSync(cred, "utf8")).toBe(file);

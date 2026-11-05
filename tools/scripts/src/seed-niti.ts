@@ -1,4 +1,4 @@
-﻿// tool-seed-niti · nạp tenant thật "NiTi Group": tenant + gói (Sổ Hợp Tác, Community; Admin theo vai tenant_admin) + phòng ban +
+// tool-seed-niti · nạp tenant thật "NiTi Group": tenant + gói (Sổ Hợp Tác, Community; Admin theo vai tenant_admin) + phòng ban +
 // người dùng + vai gói + 3 quy trình duyệt HĐ (thư viện, xuất bản, gán tenant) + luật chọn quy trình theo phòng ban × loại HĐ.
 // CHẠY LẠI ĐƯỢC (không đổi ⇒ không ghi). Mặc định chạy thử (chỉ đọc); `--apply` mới ghi. Đi qua CHÍNH service của admin-api/hub-api
 // (onboardTenant, createUser, grantGroup, DefsService/LibraryService/RoutingService) ⇒ RLS, audit, config_changed đúng.
@@ -17,6 +17,7 @@ import { createUser } from "../../../apps/admin-api/src/modules/users/users.serv
 import { connectDb } from "../../../apps/hub-api/src/lib/db";
 import { approvalEngineTools } from "../../../apps/hub-api/src/modules/packs/contracts/adapters/approval-engine.tools";
 import { approvalSlotSpec } from "../../../apps/hub-api/src/modules/packs/contracts/approval.mount";
+import { ENGINE_FEATURE_KEY } from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-engine.rules";
 import { APPROVAL_DEFAULT_DEF } from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-slot-default.rules";
 import { slotRegistry } from "../../../apps/hub-api/src/modules/packs/kit/adapters/slot-registry";
 import type { PackToolCatalog } from "../../../apps/hub-api/src/modules/packs/kit/application/pack-tools.ports";
@@ -28,6 +29,7 @@ import { LibraryService } from "../../../apps/hub-api/src/modules/processes/libr
 import { RoutingService } from "../../../apps/hub-api/src/modules/processes/library/routing.service";
 import { grantGroup } from "./seed-community-demo.grant";
 import { NITI_SPEC, type Person, type SeedSpec, SLOT } from "./seed-niti.data";
+import { ensureEngine } from "./seed-niti.engine";
 import {
   applyGuard,
   canon,
@@ -50,6 +52,8 @@ export type SeedReport = {
   roleGrants: number;
   processes: { key: string; state: PState }[];
   routing: "set" | "same";
+  /** Feature công ty `contracts-approval-engine` (Admin › Công ty › Tính năng): thiếu ⇒ HĐ không vào luồng duyệt. */
+  engine: "granted" | "same";
   credFile: string | null;
 };
 
@@ -328,11 +332,13 @@ export async function runSeed(admin: Db, hub: Db, s: SeedSpec, o: SeedOpts): Pro
     roleGrants: 0,
     processes: [],
     routing: "set",
+    engine: "same",
     credFile: null,
   };
 
   if (!dry) await applyAdmin(admin, s, cur, actor, missing, o, res);
 
+  res.engine = await ensureEngine(admin, s.tenantKey, actor, dry);
   const defIds = new Map<string, string | null>();
   for (const p of s.processes) {
     const r = await ensureProcess(h, p, dry);
@@ -357,6 +363,7 @@ function summary(s: SeedSpec, r: SeedReport, dry: boolean): string {
     `  user mới: ${r.usersCreated.join(", ") || "(không)"}; đã có: ${r.usersExisting.join(", ") || "(không)"}${dry ? "" : `; gán vai gói mới: ${r.roleGrants}`}`,
     ...r.processes.map((p) => `  quy trình ${p.key}: ${p.state}`),
     `  luật chọn quy trình (${s.rules.length}, không mặc định): ${r.routing}`,
+    `  tính năng ${ENGINE_FEATURE_KEY}: ${r.engine === "granted" ? (dry ? "sẽ cấp" : "đã cấp") : "đã có"}`,
     r.credFile ? `  file mật khẩu tạm (không in nội dung): ${r.credFile}` : "",
   ];
   return l.filter(Boolean).join("\n");

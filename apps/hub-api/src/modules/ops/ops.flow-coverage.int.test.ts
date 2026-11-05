@@ -18,6 +18,8 @@ const DEMO = tenantId(1201); // chỉ gán cũ
 const GOOD = tenantId(1202); // đã có process_tenant_defs
 const DEAD = tenantId(1203); // process_tenant_defs trỏ def đã xoá mềm
 const OFF = tenantId(1204); // không bật gói
+const RULE = tenantId(1205); // chỉ có luật định tuyến, thiếu feature engine
+const NOENG = tenantId(1206); // có quy trình gán, thiếu feature engine
 
 let o: Sql;
 let db: Db;
@@ -55,6 +57,12 @@ beforeAll(async () => {
   await o`insert into admin.tenants (id, key, name) values (${DEMO}, 't1201', 'Demo'), (${GOOD}, 't1202', 'Tốt'),
     (${DEAD}, 't1203', 'Mồ côi'), (${OFF}, 't1204', 'Không gói')`;
   await enablePack(o, [DEMO, GOOD, DEAD], "contracts");
+  await o`insert into admin.features (key, name, description, icon, status)
+    values ('contracts-approval-engine', '{"vi":"Duyệt HĐ bằng quy trình"}'::jsonb, '{"vi":"x"}'::jsonb, 'workflow', 'on')
+    on conflict (key) do nothing`;
+  await o`insert into admin.feature_entitlements (feature_id, tenant_id)
+    select f.id, t from admin.features f, unnest(${[DEMO, GOOD, DEAD]}::uuid[]) t where f.key = 'contracts-approval-engine'
+    on conflict do nothing`;
   await o`insert into hub.process_slots (slot, default_def_id) values (${SLOT}, ${DFLT})
     on conflict (slot) do update set default_def_id = excluded.default_def_id`;
   await o`insert into hub.process_slot_assignments (tenant_id, slot, def_id) values (${DEMO}, ${SLOT}, ${DFLT})`;
@@ -88,5 +96,24 @@ describe("ops-watch · flow_coverage · int", () => {
     const r = await row();
     expect(r?.status).toBe("ok");
     expect(r?.value.gap_count).toBe(0);
+  });
+
+  it("tenant có luật/quy trình contracts.approval nhưng thiếu feature contracts-approval-engine ⇒ crit nêu tên, cấp feature ⇒ ok", async () => {
+    await o`insert into admin.tenants (id, key, name) values (${RULE}, 't1205', 'Chỉ luật')`;
+    await o`insert into admin.tenants (id, key, name) values (${NOENG}, 't1206', 'Thiếu engine')`;
+    await o`insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
+      values (${RULE}, ${SLOT}, 0, '{}'::jsonb, ${DFLT}, true)`;
+    await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${NOENG}, ${DFLT}, ${SLOT})`;
+    await round(62);
+    const r = await row();
+    expect(r?.status).toBe("crit");
+    expect(r?.message).toContain("contracts-approval-engine");
+    expect(r?.message).toContain("Chỉ luật");
+    expect(r?.message).toContain("Thiếu engine");
+    expect(r?.message).not.toContain("Demo");
+    await o`insert into admin.feature_entitlements (feature_id, tenant_id)
+      select f.id, t from admin.features f, unnest(${[RULE, NOENG]}::uuid[]) t where f.key = 'contracts-approval-engine'`;
+    await round(93);
+    expect((await row())?.status).toBe("ok");
   });
 });
