@@ -57,7 +57,7 @@ test("HD4-AC08 · S05 · HĐ đã duyệt: hạn chót + còn 20 ngày; chọn �
   page,
 }) => {
   const sent = await install(page, "expiring");
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   const panel = page.getByTestId("deadline-panel");
   await expect(panel).toContainText("Hạn chót hành động");
   await expect(panel).toContainText(iso(20).split("-").reverse().join("/"));
@@ -75,7 +75,7 @@ test("HD4-AC08 · S05 · HĐ đã duyệt: hạn chót + còn 20 ngày; chọn �
 
 test("HD4-AC08 · S05 · HĐ chờ kiểm (needs_review) ⇒ không có thẻ hạn chót", async ({ page }) => {
   await install(page, "needs_review");
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   await expect(page.getByLabel("Giá trị")).toBeVisible();
   await expect(page.getByTestId("deadline-panel")).toHaveCount(0);
 });

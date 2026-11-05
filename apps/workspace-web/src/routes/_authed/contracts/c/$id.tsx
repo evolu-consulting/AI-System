@@ -7,4 +7,4 @@ function ContractRoute() {
   return <ContractReviewPage id={id} />;
 }
 
-export const Route = createFileRoute("/_authed/contracts/$id")({ component: ContractRoute });
+export const Route = createFileRoute("/_authed/contracts/c/$id")({ component: ContractRoute });

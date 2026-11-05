@@ -20,7 +20,7 @@ export function AttentionBlock() {
         title={t("contracts.rep3.attention.title")}
         meta={t("contracts.rep3.attention.lead")}
         aside={
-          <Link to="/partners" className="font-medium text-act hover:underline">
+          <Link to="/contracts/partners" className="font-medium text-act hover:underline">
             {t("contracts.overview.partners.all")}
           </Link>
         }
@@ -40,7 +40,7 @@ export function AttentionBlock() {
             >
               <span className="min-w-0 flex-1">
                 <Link
-                  to="/partners"
+                  to="/contracts/partners"
                   search={{ party: p.party, role: p.role }}
                   className="block truncate text-body font-semibold hover:text-act hover:underline"
                 >

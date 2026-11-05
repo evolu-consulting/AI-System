@@ -156,7 +156,7 @@ async function install(page: Page): Promise<Fake> {
 /** Đăng nhập lại bằng người khác (backend giả đổi người; tải lại trang ⇒ `/auth/refresh` trả người mới) rồi mở danh sách HĐ. */
 async function listAs(page: Page, f: Fake, who: Who): Promise<string[]> {
   f.who = who;
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await expect(
     page.getByRole("heading", { name: "Hợp đồng & giao dịch", exact: true }).first(),
   ).toBeVisible();
@@ -174,7 +174,7 @@ test("M1D · /settings chuyển thẳng tới 'Thành viên & phòng ban' (/sett
 }) => {
   await install(page);
   await page.goto("/settings");
-  await expect(page).toHaveURL(/\/settings\/members$/);
+  await expect(page).toHaveURL(/\/contracts\/settings\/members$/);
   await expect(page.getByRole("heading", { name: "Thành viên & phòng ban" })).toBeVisible();
 });
 
@@ -188,7 +188,7 @@ test("M1D · đổi cơ cấu ở /settings/members ⇒ danh sách HĐ của qu�
 
   // Chủ sở hữu: chế độ org, Bình quản lý Chi, phòng "Kinh doanh" (mã kd) do Dũng làm trưởng, Bình là thành viên.
   f.who = "lan";
-  await page.goto("/settings/members");
+  await page.goto("/contracts/settings/members");
   await page.getByLabel("Phạm vi xem hợp đồng").selectOption("org");
   await expect.poll(() => f.mode).toBe("org");
   await page.getByLabel("Cấp quản lý · Chi Lê").selectOption({ label: "Bình Trần" });
@@ -213,7 +213,7 @@ test("M1D · đổi cơ cấu ở /settings/members ⇒ danh sách HĐ của qu�
 
   // Bỏ quản lý của Chi ⇒ Bình mất HĐ của Chi, chỉ còn HĐ của mình.
   f.who = "lan";
-  await page.goto("/settings/members");
+  await page.goto("/contracts/settings/members");
   await page.getByLabel("Cấp quản lý · Chi Lê").selectOption({ label: "—" });
   await expect.poll(() => f.managers.get(USERS.chi.id)).toBeNull();
   expect(await listAs(page, f, "binh")).toEqual([VAN_CHUYEN]);

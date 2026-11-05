@@ -51,7 +51,7 @@ for (const stage of ["settle", "patch"] as const) {
         r.request().method() === "PATCH" ? stock409(r) : r.fallback(),
       );
     }
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await node(page, "Giao đợt 2").getByRole("button", { name: "Xác nhận xong" }).click();
     const box = page.getByTestId("confirm-box");
     const qty = box.getByLabel("Giao đợt này · Chữ ký số");

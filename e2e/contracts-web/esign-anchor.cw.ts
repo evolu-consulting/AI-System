@@ -60,7 +60,7 @@ test("Cài đặt: danh sách cụm Bên A/B, owner sửa ⇒ PUT /esign/anchors
     }
     return json(r, DEF);
   });
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await page
     .getByRole("button", { name: /tài khoản|account/i })
     .first()
@@ -99,7 +99,7 @@ test("Gửi ký: hiện 'Vị trí ký: trong văn bản' theo xem trước củ
   await page.route(`**/pack/contracts/contracts/${ACTIVE_ID}/esign/placement`, (r) =>
     json(r, { placement: "text" }),
   );
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByTestId("esign-panel").getByTestId("esign-send").click();
   const dlg = page.getByRole("dialog", { name: "Gửi hợp đồng đi ký số" });
   await expect(dlg.getByTestId("esign-placement")).toHaveText("Vị trí ký: trong văn bản");

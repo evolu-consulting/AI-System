@@ -41,7 +41,7 @@ test.describe("đợt giao theo %", () => {
     page,
   }) => {
     const sent = await installV2f(page);
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await page.getByRole("button", { name: "+ Thêm mốc" }).click();
     const dlg = page.getByRole("dialog", { name: "Thêm mốc" });
     await dlg.getByLabel(/^Tên mốc/).fill("Giao đợt 1");
@@ -81,7 +81,7 @@ test.describe("đợt giao theo %", () => {
         }),
       );
     });
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await node(page, "Giao đợt 2").getByRole("button", { name: "Xác nhận xong" }).click();
     const box = page.getByTestId("confirm-box");
     const qty = box.getByLabel("Giao đợt này · Chữ ký số");
@@ -142,7 +142,7 @@ test("Cài đặt › Công ty: công tắc «Cho phép giao vượt tồn kho»
   await page.route(`**${P}/business/config`, (r) =>
     r.fulfill(json({ config: BIZ, defaults: BIZ, version: 0, updated_at: null })),
   );
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await page
     .getByRole("button", { name: /tài khoản|account/i })
     .first()

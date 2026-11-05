@@ -26,28 +26,28 @@ describe("M2-chat · chat.rules", () => {
   });
 
   test("one-agent · ngữ cảnh dock: HĐ (uuid), đối tác (?party=), màn hình khác; id sai dạng bỏ", () => {
-    expect(dockContext(`/contracts/${R}`, "")).toEqual({
+    expect(dockContext(`/contracts/c/${R}`, "")).toEqual({
       surface: "contracts",
-      route: `/contracts/${R}`,
+      route: `/contracts/c/${R}`,
       entity: { kind: "contract", id: R },
     });
-    expect(dockContext("/partners", "?party=mst%3A0101&tab=review")).toEqual({
+    expect(dockContext("/contracts/partners", "?party=mst%3A0101&tab=review")).toEqual({
       surface: "contracts",
-      route: "/partners",
+      route: "/contracts/partners",
       entity: { kind: "partner", id: "mst:0101" },
     });
-    expect(dockContext("/contracts/new", "")).toEqual({
+    expect(dockContext("/contracts/c/new", "")).toEqual({
       surface: "contracts",
-      route: "/contracts/new",
+      route: "/contracts/c/new",
     });
-    expect(buildRequest("x", null, null, { surface: "contracts", route: "/my-work" })).toEqual({
+    expect(buildRequest("x", null, null, { surface: "contracts", route: "/contracts" })).toEqual({
       content: "@assistant x",
-      context: { surface: "contracts", route: "/my-work" },
+      context: { surface: "contracts", route: "/contracts" },
     });
   });
 
   test("gap-a2 · hỏi về HĐ: dặn đi trước câu hỏi, vẫn tag @assistant + ngữ cảnh HĐ", () => {
-    const dock = dockContext(`/contracts/${R}`, "");
+    const dock = dockContext(`/contracts/c/${R}`, "");
     const r = buildRequest(" Phạt chậm giao? ", null, null, dock, CONTRACT_QA_INSTRUCTION);
     expect(r.content).toBe(`@assistant ${CONTRACT_QA_INSTRUCTION}\n\nCâu hỏi: Phạt chậm giao?`);
     expect(r.context?.entity).toEqual({ kind: "contract", id: R });

@@ -28,7 +28,7 @@ export function UploadVersionPanel({
       onClose();
       setFile(null);
       await qc.invalidateQueries();
-      await nav({ to: "/contracts/$id", params: { id: r.id } });
+      await nav({ to: "/contracts/c/$id", params: { id: r.id } });
     },
   });
   if (!open) return null;

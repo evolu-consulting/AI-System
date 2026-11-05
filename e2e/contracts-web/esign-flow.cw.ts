@@ -60,7 +60,7 @@ async function install(page: Page) {
 }
 
 async function open(page: Page) {
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await page
     .getByRole("button", { name: /tài khoản|account/i })
     .first()
@@ -153,7 +153,7 @@ test("thẻ duyệt: bước Ký số đã gửi quá hạn ⇒ Hạn ký + nhã
       reminded_at: "2026-10-22T00:00:00.000Z",
     }),
   );
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   const row = page.getByTestId("approval-step-esign");
   await expect(row).toHaveAttribute("data-status", "sent");
   await expect(row.locator("[data-esign=due-at]")).toContainText("Hạn ký:");
@@ -166,7 +166,7 @@ test("thẻ duyệt: bước Ký số chưa quá hạn, chưa nhắc ⇒ chỉ H
     page,
     SIGN_CARD({ due_at: "2099-01-01T00:00:00.000Z", overdue: false, reminded_at: null }),
   );
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   const row = page.getByTestId("approval-step-esign");
   await expect(row.locator("[data-esign=due-at]")).toBeVisible();
   await expect(row.locator("[data-esign=overdue]")).toHaveCount(0);

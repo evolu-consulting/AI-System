@@ -111,23 +111,23 @@ export function todoWhen(
 }
 
 export type TodoTarget =
-  | { to: "/contracts/$id"; id: string }
-  | { to: "/products"; sp: string; ht?: string }
-  | { to: "/partners"; party?: string }
+  | { to: "/contracts/c/$id"; id: string }
+  | { to: "/contracts/products"; sp: string; ht?: string }
+  | { to: "/contracts/partners"; party?: string }
   | null;
 
 /** Bấm một việc ⇒ mở đúng chỗ: SP (khách/hoa hồng/gia hạn có SP), đối tác (đánh giá), còn lại HĐ. */
 export function todoTarget(i: TodoItem): TodoTarget {
-  if (i.kind === "rating_quarter") return { to: "/partners" };
+  if (i.kind === "rating_quarter") return { to: "/contracts/partners" };
   if (i.kind === "rating")
-    return { to: "/partners", ...(i.party_key ? { party: i.party_key } : {}) };
+    return { to: "/contracts/partners", ...(i.party_key ? { party: i.party_key } : {}) };
   if (i.kind === "customers_expiring" && i.product_id)
-    return { to: "/products", sp: i.product_id, ht: "users" };
+    return { to: "/contracts/products", sp: i.product_id, ht: "users" };
   if (i.kind === "market_price" && i.product_id)
-    return { to: "/products", sp: i.product_id, ht: "suppliers" };
+    return { to: "/contracts/products", sp: i.product_id, ht: "suppliers" };
   if ((i.kind === "commission" || i.kind === "renewal_contact") && i.product_id)
-    return { to: "/products", sp: i.product_id };
-  return i.contract_id ? { to: "/contracts/$id", id: i.contract_id } : null;
+    return { to: "/contracts/products", sp: i.product_id };
+  return i.contract_id ? { to: "/contracts/c/$id", id: i.contract_id } : null;
 }
 
 /** Việc có thể "Đã xong"? Chỉ Liên hệ mời gia hạn (đóng hẹn nhắc); còn lại chỉ "Bỏ qua". */

@@ -67,7 +67,7 @@ function Breakdown({ party, role }: { party: string; role: PartnerRole }) {
       <p className="text-[13px] text-dim">
         {L("howPre")}{" "}
         <Link
-          to="/settings/scoring"
+          to="/contracts/partners"
           className="font-semibold text-act underline underline-offset-2"
         >
           {L("howLink")}

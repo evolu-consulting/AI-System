@@ -21,7 +21,7 @@ test("HĐ khoá tuyệt đối: mọi ô (cả notice_days) chỉ đọc, ẩn L
   page,
 }) => {
   await installV2f(page, { role: "editor", contract: () => locked({ owner_user_id: OTHER }) });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   const banner = page.getByTestId("banner-locked");
   await expect(banner).toContainText("Đã xác nhận — đã khoá");
   await expect(page.getByTestId("lock-badge")).toBeVisible();
@@ -77,7 +77,7 @@ test("mở lại (tenant tắt duyệt): «Xác nhận và lưu» hiện ⇒ b�
       }),
     });
   });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByRole("button", { name: "Lưu nháp", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
   // atomic-confirm: HĐ có dòng ⇒ hộp "Gắn sản phẩm" ⇒ MỘT POST /review mang `products` (không gọi /product-links sau khoá).
@@ -90,7 +90,7 @@ test("mở lại (tenant tắt duyệt): «Xác nhận và lưu» hiện ⇒ b�
 
 test("HĐ khoá, editor không phụ trách, không phải owner: không thấy «Mở lại»", async ({ page }) => {
   await installV2f(page, { role: "editor", contract: () => locked({ owner_user_id: OTHER }) });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("banner-locked")).toBeVisible();
   await expect(page.getByText("Mở lại để sửa lỗi trích xuất")).toHaveCount(0);
 });
@@ -103,7 +103,7 @@ test("owner: «Mở lại» ⇒ hộp thoại bắt buộc lý do ⇒ POST /reop
     role: "owner",
     contract: () => (reopened ? activeContract({ status: "needs_review" }) : locked()),
   });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByText("Mở lại để sửa lỗi trích xuất").click();
   const dlg = page.getByRole("dialog", { name: "Mở lại hợp đồng" });
   const ok = dlg.getByTestId("reopen-confirm");
@@ -122,7 +122,7 @@ test("owner: «Mở lại» ⇒ hộp thoại bắt buộc lý do ⇒ POST /reop
 
 test("HĐ chờ duyệt: banner «Chưa xác nhận», không khoá ô", async ({ page }) => {
   await installV2f(page, { contract: () => activeContract({ status: "needs_review" }) });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("banner-pending")).toContainText("Chưa xác nhận");
   await expect(page.getByTestId("banner-locked")).toHaveCount(0);
   await expect(page.getByLabel("Giá trị")).toBeEnabled();
@@ -130,13 +130,13 @@ test("HĐ chờ duyệt: banner «Chưa xác nhận», không khoá ô", async (
 
 test("HĐ không có văn bản: nhãn «Chưa có văn bản»", async ({ page }) => {
   await installV2f(page, { contract: () => activeContract({ has_document: false }) });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("no-document")).toHaveText("Chưa có văn bản");
 });
 
 test("danh sách: không còn «Thêm thủ công»; hàng đã xác nhận có 🔒", async ({ page }) => {
   await installV2f(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await expect(page.getByRole("button", { name: "Upload hợp đồng" })).toBeVisible();
   await expect(page.getByText("Thêm thủ công")).toHaveCount(0);
   await expect(page.getByTestId("row-lock").first()).toBeVisible();

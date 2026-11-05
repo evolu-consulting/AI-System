@@ -57,8 +57,8 @@ describe("cấu hình phiên contracts-web", () => {
 describe("requireSession", () => {
   test("PK-FR-10 · refresh ok → vào được, chỉ gọi refresh một lần, gửi X-App: contracts", async () => {
     mockRefresh(true);
-    expect(await caught(requireSession({ href: "/contracts" }))).toBeNull();
-    expect(await caught(requireSession({ href: "/partners" }))).toBeNull();
+    expect(await caught(requireSession({ href: "/contracts/list" }))).toBeNull();
+    expect(await caught(requireSession({ href: "/contracts/partners" }))).toBeNull();
     // CR-118: `/pack/me` (nguồn quyền app của FeatureGate) không tính vào số lần refresh.
     expect(calls.filter((c) => c.url !== "/pack/me")).toEqual([
       { url: "/auth/refresh", app: "contracts" },
@@ -108,7 +108,7 @@ describe("redirectIfAuthed", () => {
     mockRefresh(true);
     const e = await caught(redirectIfAuthed());
     expect(isRedirect(e)).toBe(true);
-    expect((e as { options: { href: string } }).options.href).toBe("/overview");
+    expect((e as { options: { href: string } }).options.href).toBe("/contracts");
   });
   test("PK-FR-10 · sau đăng xuất → ở lại /login, vùng _authed lại đòi đăng nhập", async () => {
     mockRefresh(true);
@@ -116,6 +116,6 @@ describe("redirectIfAuthed", () => {
     globalThis.fetch = (async () => new Response(null, { status: 204 })) as unknown as typeof fetch;
     await session.logout();
     expect(await caught(redirectIfAuthed())).toBeNull();
-    expect(isRedirect(await caught(requireSession({ href: "/contracts" })))).toBe(true);
+    expect(isRedirect(await caught(requireSession({ href: "/contracts/list" })))).toBe(true);
   });
 });

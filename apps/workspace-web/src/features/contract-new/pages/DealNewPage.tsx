@@ -62,7 +62,7 @@ export function DealNewPage({ frameId }: { frameId?: string }) {
     void form.submit();
   };
   const back = (
-    <Link to="/contracts" search={{ type: "deal" }} className="hover:underline">
+    <Link to="/contracts/list" search={{ type: "deal" }} className="hover:underline">
       {t("contracts.doclist.back")}
     </Link>
   );
@@ -74,7 +74,7 @@ export function DealNewPage({ frameId }: { frameId?: string }) {
           title={t("contracts.doclist.savedTitle")}
           cancel={null}
           save={
-            <Link to="/contracts/$id" params={{ id: saved.id }} className="btn btn-primary">
+            <Link to="/contracts/c/$id" params={{ id: saved.id }} className="btn btn-primary">
               {t("contracts.doclist.openDeal")}
             </Link>
           }
@@ -102,7 +102,7 @@ export function DealNewPage({ frameId }: { frameId?: string }) {
         crumb={back}
         title={t("contracts.doclist.newDealTitle")}
         cancel={
-          <Link to="/contracts" className="btn btn-quiet">
+          <Link to="/contracts/list" className="btn btn-quiet">
             {t("contracts.common.cancel")}
           </Link>
         }

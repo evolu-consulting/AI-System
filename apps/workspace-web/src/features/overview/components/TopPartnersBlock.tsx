@@ -23,7 +23,7 @@ function Col({ kind, rows }: { kind: PartnerRole; rows: ScoreRow[] }) {
         rows.map((p) => (
           <Link
             key={p.party}
-            to="/partners"
+            to="/contracts/partners"
             search={{ party: p.party, role: p.role }}
             className="flex items-center gap-2 rounded-md px-1.5 py-1.5 hover:bg-sunk"
           >

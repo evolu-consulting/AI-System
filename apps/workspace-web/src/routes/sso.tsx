@@ -36,17 +36,17 @@ function SsoLanding() {
     const { code, next } = parseSsoFragment(window.location.hash);
     if (!code && app) {
       void handOff(app, startNext ?? "/").then((url) =>
-        window.location.replace(url ?? "/overview"),
+        window.location.replace(url ?? "/contracts"),
       );
       return;
     }
     window.history.replaceState(null, "", window.location.pathname);
-    const target = safeNext(next) ?? "/overview";
+    const target = safeNext(next) ?? "/contracts";
     const tenant = (import.meta.env.PUBLIC_TENANT_KEY ?? "").trim() || undefined;
     const go = async () => {
       if (!code) throw new Error("no code");
       await redeemSso(code, tenant);
-      router.history.replace(target === "/" ? "/overview" : target);
+      router.history.replace(target === "/" ? "/contracts" : target);
     };
     go().catch(() => router.navigate({ to: "/login", search: { next: target }, replace: true }));
   }, [router, app, startNext]);

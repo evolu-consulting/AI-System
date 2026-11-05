@@ -28,7 +28,7 @@ test("trang HĐ không còn nút «Văn bản gốc», khoang văn bản gốc, 
   await page.route(`**/pack/contracts/contracts/${REVIEW_ID}/source`, (r) =>
     r.fulfill({ status: 200, contentType: "text/markdown; charset=utf-8", body: SOURCE }),
   );
-  await page.goto(`/contracts/${REVIEW_ID}`);
+  await page.goto(`/contracts/c/${REVIEW_ID}`);
   await expect(page.getByTestId("ai-milestones")).toBeVisible();
   await expect(page.getByRole("button", { name: "Văn bản gốc" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Xem đoạn này trong văn bản gốc" })).toHaveCount(0);
@@ -55,7 +55,7 @@ test.skip("Hỏi về hợp đồng này ⇒ POST tin tới @assistant kèm ng�
     }
     return r.fallback();
   });
-  await page.goto(`/contracts/${REVIEW_ID}`);
+  await page.goto(`/contracts/c/${REVIEW_ID}`);
   const box = page.getByTestId("ask-contract").getByRole("textbox");
   await box.fill("Phạt chậm giao hàng thế nào?");
   await box.press("Enter");

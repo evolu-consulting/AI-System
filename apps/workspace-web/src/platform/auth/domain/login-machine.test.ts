@@ -25,19 +25,22 @@ describe("CR-118 · password → change → TOTP → home theo vai", () => {
     expect(landing(capsOf(s2.user, null), undefined)).toBe("/community");
   });
 
-  test("thành viên có 2FA: TOTP ⇒ phiên ⇒ /overview; next nội bộ được giữ", () => {
+  test("thành viên có 2FA: TOTP ⇒ phiên ⇒ /contracts; next nội bộ được giữ", () => {
     expect(stepOf(totp).kind).toBe("totp");
     const caps = capsOf(member, null);
-    expect(landing(caps, undefined)).toBe("/overview");
-    expect(landing(caps, "/partners?tab=a")).toBe("/partners?tab=a");
+    expect(landing(caps, undefined)).toBe("/contracts");
+    expect(landing(caps, "/contracts/partners?tab=a")).toBe("/contracts/partners?tab=a");
+    // CR-119 p2: next cũ (bookmark/email) quy về URL chuẩn mới
+    expect(landing(caps, "/partners?tab=a")).toBe("/contracts/partners?tab=a");
+    expect(landing(caps, "/contracts/abc")).toBe("/contracts/c/abc");
     expect(landing(caps, "/community/profile/o1/info")).toBe("/community/profile/o1/info");
   });
 
   test("next không mở được / không an toàn ⇒ home", () => {
     const p = capsOf(partner, null);
     expect(landing(p, "/contracts/abc")).toBe("/community");
-    expect(landing(capsOf(member, null), "//evil.com")).toBe("/overview");
-    expect(landing(capsOf(member, null), "/login?next=/x")).toBe("/overview");
+    expect(landing(capsOf(member, null), "//evil.com")).toBe("/contracts");
+    expect(landing(capsOf(member, null), "/login?next=/x")).toBe("/contracts");
   });
 });
 
@@ -59,26 +62,26 @@ describe("CR-118 · capsOf / homeFor (FeatureGate apps khi có, không thì theo
     const both = capsOf(member, ["contracts", "community"], "community");
     expect(homeFor(both)).toBe("/community");
     expect(landing(both, undefined)).toBe("/community");
-    expect(homeFor(capsOf(member, ["contracts", "community"], "contracts"))).toBe("/overview");
+    expect(homeFor(capsOf(member, ["contracts", "community"], "contracts"))).toBe("/contracts");
     // default_app = contracts nhưng user không mở được ⇒ rơi về home cũ
     expect(homeFor(capsOf(member, ["community"], "contracts"))).toBe("/community");
     expect(homeFor(capsOf(partner, ["community"], "contracts"))).toBe("/community");
     // khoá lạ / null ⇒ home cũ
-    expect(homeFor(capsOf(member, ["contracts", "community"], "chat"))).toBe("/overview");
-    expect(homeFor(capsOf(member, ["contracts", "community"], null))).toBe("/overview");
+    expect(homeFor(capsOf(member, ["contracts", "community"], "chat"))).toBe("/contracts");
+    expect(homeFor(capsOf(member, ["contracts", "community"], null))).toBe("/contracts");
   });
-  test("thành viên SHT (apps có cả hai) đăng nhập: home trống hoặc contracts ⇒ /overview; apps chỉ community ⇒ /community", () => {
+  test("thành viên SHT (apps có cả hai) đăng nhập: home trống hoặc contracts ⇒ /contracts; apps chỉ community ⇒ /community", () => {
     for (const home of [null, "contracts"]) {
       const caps = capsOf(member, ["contracts", "community"], home);
-      expect(landing(caps, undefined)).toBe("/overview");
+      expect(landing(caps, undefined)).toBe("/contracts");
     }
     // tenant chưa bật gói contracts (server: apps=[community], home=community) ⇒ Community, đúng thiết kế
     expect(landing(capsOf(member, ["community"], "community"), undefined)).toBe("/community");
   });
-  test("home: có SHT ⇒ /overview, chỉ community ⇒ /community", () => {
-    expect(homeFor({ contracts: true, community: true })).toBe("/overview");
+  test("home: có SHT ⇒ /contracts, chỉ community ⇒ /community", () => {
+    expect(homeFor({ contracts: true, community: true })).toBe("/contracts");
     expect(homeFor({ contracts: false, community: true })).toBe("/community");
-    expect(homeFor({ contracts: true, community: false })).toBe("/overview");
+    expect(homeFor({ contracts: true, community: false })).toBe("/contracts");
   });
 });
 
@@ -87,16 +90,24 @@ describe("CR-118 · moduleOf / canOpen (đối tác cách ly ở mức route)", 
     expect(moduleOf("/community")).toBe("community");
     expect(moduleOf("/community?settings=1")).toBe("community");
     expect(moduleOf("/community/profile/o/s")).toBe("community");
-    expect(moduleOf("/communityx")).toBe("contracts");
-    expect(moduleOf("/overview")).toBe("contracts");
-    expect(moduleOf("/contracts/1#x")).toBe("contracts");
+    expect(moduleOf("/communityx")).toBe("communityx"); // khoá lạ ⇒ canOpen=false (fail-closed)
+    expect(moduleOf("/contracts")).toBe("contracts");
+    expect(moduleOf("/contracts/c/1#x")).toBe("contracts");
+    expect(moduleOf("/contracts")).toBe("contracts");
     for (const p of ["/", "/login", "/sso", "/privacy", "/terms", "/login?next=/a"])
       expect(moduleOf(p)).toBe("public");
   });
   test("đối tác: mở /community, không mở path SHT", () => {
     const p = capsOf(partner, null);
     expect(canOpen("/community", p)).toBe(true);
-    for (const path of ["/overview", "/contracts", "/partners", "/settings/members", "/products"])
+    for (const path of [
+      "/contracts",
+      "/contracts/list",
+      "/contracts/partners",
+      "/contracts/settings/members",
+      "/contracts/products",
+      "/future-app",
+    ])
       expect(canOpen(path, p)).toBe(false);
     expect(canOpen("/privacy", p)).toBe(true);
   });
@@ -107,8 +118,8 @@ describe("CR-118 · moduleOf / canOpen (đối tác cách ly ở mức route)", 
 
 describe("CR-118 · bouncesToSso: /community* không dội sang AI System, SHT giữ dội", () => {
   test("SHT dội; community và trang công khai không", () => {
-    expect(bouncesToSso("/overview")).toBe(true);
-    expect(bouncesToSso("/contracts/abc?tab=1")).toBe(true);
+    expect(bouncesToSso("/contracts")).toBe(true);
+    expect(bouncesToSso("/contracts/c/abc?tab=1")).toBe(true);
     expect(bouncesToSso("/community")).toBe(false);
     expect(bouncesToSso("/community/profile/o/s")).toBe(false);
     expect(bouncesToSso("/login")).toBe(false);

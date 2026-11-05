@@ -61,6 +61,7 @@ export function createCommunityRoutes<Parent, Route, Component>(
 
 export const communityManifest = {
   key: COMMUNITY_PACK,
+  basePath: COMMUNITY_BASE,
   base: COMMUNITY_BASE,
   home: COMMUNITY_BASE,
   requires: { pack: COMMUNITY_PACK, action: "read" as const },

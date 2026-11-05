@@ -30,6 +30,7 @@ describe("communityRoutes", () => {
     expect(parsePath(mapLegacyHash("#/feed") ?? "").route.name).toBe("feed");
     expect(communityManifest.base).toBe("/community");
     expect(communityManifest.key).toBe("community");
+    expect(communityManifest.basePath).toBe(`/${communityManifest.key}`); // CR-119 p2: basePath = /${key}
   });
 });
 

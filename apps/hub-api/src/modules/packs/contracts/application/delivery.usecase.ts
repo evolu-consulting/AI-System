@@ -134,7 +134,7 @@ function deliveryNotice(
     user_id: L.owner,
     kind: "contract.delivery",
     ...text,
-    link: `/contracts/${L.contract_id}`,
+    link: `/contracts/c/${L.contract_id}`,
     dedup_key: `delivery:${milestoneId}`,
   };
 }

@@ -141,7 +141,7 @@ test("danh sách: một trang (V2-O gộp tab), mặc định nhóm Tất cả, 
   page,
 }) => {
   await install(page);
-  await page.goto("/products");
+  await page.goto("/contracts/products");
   await expect(page.getByRole("tablist", { name: "Nhóm sản phẩm" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Tất cả · 3" })).toHaveAttribute(
     "aria-selected",
@@ -163,7 +163,7 @@ test("danh sách: một trang (V2-O gộp tab), mặc định nhóm Tất cả, 
 
 test("hàng: nắm giữ (gói kèm hạn), đã bán, điểm + đề xuất; tab Hàng hoá lọc", async ({ page }) => {
   await install(page);
-  await page.goto("/products");
+  await page.goto("/contracts/products");
   const svc = page.locator("main tbody tr", { hasText: "Chứng thư số 1 năm" });
   await expect(svc.locator("td").nth(2)).toContainText("40 suất");
   await expect(svc.locator("td").nth(2)).toContainText("hết hạn 31/12/2026");
@@ -181,7 +181,7 @@ test("chi tiết: tóm tắt + 3 thanh; Lịch sử mua bán (lô chênh giá, b
   page,
 }) => {
   await install(page);
-  await page.goto("/products");
+  await page.goto("/contracts/products");
   await page.locator("main tbody tr", { hasText: "Băng keo trong" }).locator("td").first().click();
   await expect(page).toHaveURL(new RegExp(`sp=${GOODS}`));
   await expect(page.getByRole("heading", { name: "Băng keo trong" })).toBeVisible();

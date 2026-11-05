@@ -24,12 +24,12 @@ describe("one-agent · surfaceNote", () => {
     const l = fakeLabeler();
     const ctx = {
       surface: "contracts" as const,
-      route: `/contracts/${SEEN}`,
+      route: `/contracts/c/${SEEN}`,
       entity: { kind: "contract" as const, id: SEEN },
     };
     const n = await surfaceNote(l, WHO, ctx, "contracts");
     expect(n).toContain("Sổ Hợp Tác");
-    expect(n).toContain(`Màn hình đang mở: /contracts/${SEEN}`);
+    expect(n).toContain(`Màn hình đang mở: /contracts/c/${SEEN}`);
     expect(n).toContain(
       `Đang xem: Hợp đồng "Cung cấp gạo" (số HĐ-01, hết hạn 2026-12-31) — id ${SEEN}`,
     );

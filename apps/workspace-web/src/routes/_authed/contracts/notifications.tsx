@@ -8,4 +8,6 @@ function NotificationsRoute() {
   return <NotificationsPage onNavigate={(href) => void navigate(splitHref(href) as { to: "/" })} />;
 }
 
-export const Route = createFileRoute("/_authed/notifications")({ component: NotificationsRoute });
+export const Route = createFileRoute("/_authed/contracts/notifications")({
+  component: NotificationsRoute,
+});

@@ -19,7 +19,7 @@ test.describe("Thông tin", () => {
     page,
   }) => {
     const sent = await installV2f(page);
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await expect(page.getByRole("radio", { name: /^Mua/ })).toHaveAttribute("aria-checked", "true");
     await expect(page.getByRole("radio", { name: /^Bán/ })).toBeDisabled();
     await expect(page.getByText("Loại hợp đồng không đổi được sau khi lưu")).toBeVisible();
@@ -44,7 +44,7 @@ test.describe("Dòng thời gian", () => {
     page,
   }) => {
     await installV2f(page);
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     const t = timeline(page);
     await expect(t.getByTestId("stage-now")).toHaveText("Đang ở: Giao đợt 2");
     await expect(t).toContainText("2/4 mốc");
@@ -63,7 +63,7 @@ test.describe("Dòng thời gian", () => {
 
   test("bút sửa chỉ ở mốc chưa xác nhận; mốc đã xác nhận giữ nguyên", async ({ page }) => {
     await installV2f(page);
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await expect(node(page, "Giao đợt 2").getByRole("button", { name: /^Sửa mốc/ })).toBeVisible();
     await expect(
       node(page, "Thanh toán 50% còn lại").getByRole("button", { name: /^Sửa mốc/ }),
@@ -81,7 +81,7 @@ test.describe("Dòng thời gian", () => {
     page,
   }) => {
     const sent = await installV2f(page);
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await page.getByRole("button", { name: "+ Thêm mốc" }).click();
     const dlg = page.getByRole("dialog", { name: "Thêm mốc" });
     await expect(dlg.getByLabel("Loại mốc")).toHaveValue("delivery");
@@ -114,7 +114,7 @@ test.describe("Dòng thời gian", () => {
     page,
   }) => {
     await installV2f(page);
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await page.getByRole("button", { name: "+ Thêm mốc" }).click();
     const dlg = page.getByRole("dialog", { name: "Thêm mốc" });
     await expect(dlg.getByLabel("Số lượng giao")).toBeVisible();
@@ -126,7 +126,7 @@ test.describe("Dòng thời gian", () => {
 
   test("sửa mốc ⇒ PATCH /milestones/:id; «Xoá mốc» ⇒ DELETE", async ({ page }) => {
     const sent = await installV2f(page);
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await node(page, "Thanh toán 50% còn lại")
       .getByRole("button", { name: /^Sửa mốc/ })
       .click();
@@ -155,7 +155,7 @@ test.describe("Dòng thời gian", () => {
     page,
   }) => {
     const sent = await installV2f(page);
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await node(page, "Giao đợt 2").getByRole("button", { name: "Xác nhận xong" }).click();
     const box = page.getByTestId("confirm-box");
     await expect(box.getByLabel("Ngày hoàn thành")).toHaveValue("2026-10-18");
@@ -174,7 +174,7 @@ test.describe("Dòng thời gian", () => {
     page,
   }) => {
     const sent = await installV2f(page);
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await node(page, "Giao đợt 2").getByRole("button", { name: "Xác nhận xong" }).click();
     const box = page.getByTestId("confirm-box");
     await box.getByLabel("Ngày hoàn thành").fill("2026-10-09");
@@ -187,7 +187,7 @@ test.describe("Dòng thời gian", () => {
 
   test("viewer: xem được, không có «+ Thêm mốc», bút sửa, «Xác nhận xong»", async ({ page }) => {
     await installV2f(page, { role: "viewer" });
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await expect(timeline(page)).toContainText("Giao đợt 2");
     await expect(page.getByRole("button", { name: "+ Thêm mốc" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Sửa mốc/ })).toHaveCount(0);
@@ -203,7 +203,7 @@ test.describe("Sản phẩm + Tóm tắt", () => {
   ] as const)
     test(`nhãn kho theo loại: ${deal} ⇒ ${label}`, async ({ page }) => {
       await installV2f(page, { contract: () => activeContract({ deal }) });
-      await page.goto(`/contracts/${ACTIVE_ID}`);
+      await page.goto(`/contracts/c/${ACTIVE_ID}`);
       const panel = page.locator("section", { hasText: "Dòng trên hợp đồng" });
       await expect(panel.getByText(label, { exact: true })).toBeVisible();
     });
@@ -212,7 +212,7 @@ test.describe("Sản phẩm + Tóm tắt", () => {
     page,
   }) => {
     await installV2f(page);
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await expect(page.getByTestId("products-total")).toHaveText("168.500.000");
     const s = page.getByTestId("summary");
     await expect(s).toContainText("Mua");
@@ -227,7 +227,7 @@ test.describe("Sản phẩm + Tóm tắt", () => {
     await installV2f(page, {
       contract: () => ({ ...contractAsHub("needs_review"), id: ACTIVE_ID }),
     });
-    await page.goto(`/contracts/${ACTIVE_ID}`);
+    await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await expect(page.getByRole("heading", { name: "Thông tin hợp đồng" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Dòng thời gian" })).toHaveCount(0);
     // Bước xác nhận dùng thanh Huỷ/Lưu dính như form nhập tay.

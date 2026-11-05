@@ -5,12 +5,12 @@ import { expect, test } from "@playwright/test";
 import { installBackend } from "./_support";
 
 test.describe("PK-FR-10 · đăng nhập contracts-web (S01)", () => {
-  test("PK-FR-10 · chưa có phiên: vào /contracts ⇒ chuyển /login?next=%2Fcontracts, có heading và form", async ({
+  test("PK-FR-10 · chưa có phiên: vào /contracts/list ⇒ chuyển /login?next=%2Fcontracts%2Flist, có heading và form", async ({
     page,
   }) => {
     await installBackend(page, { session: false });
-    await page.goto("/contracts");
-    await expect(page).toHaveURL(/\/login\?next=%2Fcontracts$/);
+    await page.goto("/contracts/list");
+    await expect(page).toHaveURL(/\/login\?next=%2Fcontracts%2Flist$/);
     await expect(page.getByRole("heading", { name: "Đăng nhập" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Email" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Mật khẩu" })).toBeVisible();
@@ -25,7 +25,7 @@ test.describe("PK-FR-10 · đăng nhập contracts-web (S01)", () => {
     await page.getByRole("textbox", { name: "Email" }).fill("lan");
     await page.getByRole("textbox", { name: "Mật khẩu" }).fill("Mat-khau-dung-1");
     await page.getByRole("button", { name: "Đăng nhập" }).click();
-    await expect(page).toHaveURL(/\/partners$/);
+    await expect(page).toHaveURL(/\/contracts\/partners$/);
     await expect(page.getByRole("navigation", { name: "Điều hướng chính" })).toBeVisible();
     expect(be.logins()).toEqual([
       { tenant_key: "acme", username: "lan", password: "Mat-khau-dung-1" },
@@ -71,7 +71,7 @@ test.describe("PK-FR-10 · đăng nhập contracts-web (S01)", () => {
   }) => {
     await installBackend(page, { session: true });
     await page.goto("/login");
-    await expect(page).toHaveURL(/\/overview$/);
+    await expect(page).toHaveURL(/\/contracts$/);
     await expect(page.getByRole("heading", { name: "Đăng nhập" })).toHaveCount(0);
   });
 
@@ -79,11 +79,11 @@ test.describe("PK-FR-10 · đăng nhập contracts-web (S01)", () => {
     page,
   }) => {
     const be = await installBackend(page, { session: true });
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await expect(page.getByRole("navigation", { name: "Điều hướng chính" })).toBeVisible();
     be.setPack("unauthorized");
     await page.reload();
-    await expect(page).toHaveURL(/\/login\?next=%2Fcontracts$/);
+    await expect(page).toHaveURL(/\/login\?next=%2Fcontracts%2Flist$/);
   });
 
   test("PK-FR-10 · ngôn ngữ: giao diện đăng nhập có bản EN (locale 'en' ⇒ heading 'Sign in')", async ({

@@ -21,7 +21,7 @@ import {
 
 const RUN = Date.now().toString(36);
 const P = "/pack/contracts";
-const UUID = /\/contracts\/([0-9a-f-]{36})/;
+const UUID = /\/contracts\/c\/([0-9a-f-]{36})/;
 const SHT_TENANT = process.env.DEMO_SHT_TENANT ?? "";
 const SHT_USER = process.env.DEMO_SHT_USER ?? "";
 
@@ -136,7 +136,7 @@ async function restoreApproval(): Promise<void> {
 }
 /** Tải HĐ mẫu lên bằng giao diện (như người dùng), chờ AI đọc xong (needs_review); đăng ký dọn. */
 async function uploadContract(name: string): Promise<string> {
-  await page.goto(`${CW}/contracts`);
+  await page.goto(`${CW}/contracts/list`);
   await settle(page);
   await page.locator('input[type="file"]').setInputFiles({
     name,
@@ -180,7 +180,7 @@ test.afterAll(async () => {
 test.describe("15 lỗi người dùng báo", () => {
   test("[lỗi: Huỷ không làm gì] tải HĐ mới lên, chờ AI đọc xong, bấm «Huỷ» ⇒ về danh sách", async () => {
     test.setTimeout(420_000);
-    await page.goto(`${CW}/contracts`);
+    await page.goto(`${CW}/contracts/list`);
     await settle(page);
     await page.locator('input[type="file"]').setInputFiles({
       name: `${TAG}-hop-dong-${RUN}.md`,
@@ -199,7 +199,7 @@ test.describe("15 lỗi người dùng báo", () => {
     await expect(page.getByTestId("banner-pending")).toBeVisible({ timeout: 60_000 });
     // Chưa sửa gì ⇒ Huỷ về danh sách (lỗi gốc: bấm không có phản ứng).
     await page.getByRole("button", { name: "Huỷ", exact: true }).click();
-    await expect(page).toHaveURL(/\/contracts$/);
+    await expect(page).toHaveURL(/\/contracts\/list$/);
   });
 
   test("[lỗi: SP trống sau xác nhận] 2b · đường bật duyệt: Xác nhận và lưu của thẻ duyệt ⇒ hộp «Gắn sản phẩm» ⇒ Xác nhận ⇒ HĐ khoá + có SP", async () => {
@@ -207,7 +207,7 @@ test.describe("15 lỗi người dùng báo", () => {
     await setApproval(true); // bật duyệt cho tenant demo; luôn khôi phục ở finally (và afterAll)
     try {
       const id2 = await uploadContract(`${TAG}-bat-duyet-${RUN}.md`);
-      await page.goto(`${CW}/contracts/${id2}`);
+      await page.goto(`${CW}/contracts/c/${id2}`);
       await settle(page);
       const ap = (await (
         await api.get(`${P}/contracts/${id2}/approval`, { headers: auth })
@@ -280,7 +280,7 @@ test.describe("15 lỗi người dùng báo", () => {
 
   test("[lỗi: «lưu rồi thì không cho chỉnh»] HĐ đã khoá: trường không sửa được, không còn Lưu nháp / Lưu thay đổi", async () => {
     test.skip(itemIds.length === 0, "HĐ chưa được xác nhận/khoá ở test trước");
-    await page.goto(`${CW}/contracts/${cid}`);
+    await page.goto(`${CW}/contracts/c/${cid}`);
     await settle(page);
     await expect(page.getByTestId("banner-locked")).toBeVisible();
     await expect(page.locator("input[name=number]")).toBeDisabled();
@@ -292,7 +292,7 @@ test.describe("15 lỗi người dùng báo", () => {
 
   test("[lỗi: chi tiết còn nút Xoá / Văn bản gốc / Nguồn hàng & lãi / Đọc lại] trang chi tiết đã bỏ các khối đó; danh sách có thùng rác xoá HĐ", async () => {
     test.skip(itemIds.length === 0, "HĐ chưa được xác nhận/khoá ở test trước");
-    await page.goto(`${CW}/contracts/${cid}`);
+    await page.goto(`${CW}/contracts/c/${cid}`);
     await settle(page);
     await expect(page.getByTestId("delete-contract")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Xoá hợp đồng$/ })).toHaveCount(0);
@@ -301,12 +301,12 @@ test.describe("15 lỗi người dùng báo", () => {
       expect(body, `trang chi tiết không còn «${gone}»`).not.toContain(gone);
     await expect(page.getByRole("button", { name: "Đọc lại" })).toHaveCount(0);
     // Danh sách: hàng HĐ test có biểu tượng thùng rác (không còn nút Xoá ở chi tiết).
-    await page.goto(`${CW}/contracts`);
+    await page.goto(`${CW}/contracts/list`);
     await settle(page);
     await page.getByPlaceholder(/Tìm/).first().fill(TAG);
     const row = page
       .locator("table tbody tr")
-      .filter({ has: page.locator(`a[href="/contracts/${cid}"]`) });
+      .filter({ has: page.locator(`a[href="/contracts/c/${cid}"]`) });
     await expect(row).toHaveCount(1);
     await expect(row.getByTestId("row-delete")).toBeVisible();
     await expect(row.getByTestId("row-delete")).toBeEnabled();
@@ -335,12 +335,12 @@ test.describe("15 lỗi người dùng báo", () => {
     expect(del.status()).toBe(409);
     expect(JSON.stringify(await del.json())).toContain("CONTRACT_HAS_VERSIONS");
     // UI: hàng nào của chuỗi hiện trong danh sách và có nhiều phiên bản ⇒ thùng rác bị khoá kèm tooltip.
-    await page.goto(`${CW}/contracts`);
+    await page.goto(`${CW}/contracts/list`);
     await settle(page);
     await page.getByPlaceholder(/Tìm/).first().fill(TAG);
     const rows = page
       .locator("table tbody tr")
-      .filter({ has: page.locator(`a[href="/contracts/${cid}"], a[href="/contracts/${v2}"]`) });
+      .filter({ has: page.locator(`a[href="/contracts/c/${cid}"], a[href="/contracts/c/${v2}"]`) });
     await expect(rows.first()).toBeVisible();
     const trash = rows.first().getByTestId("row-delete");
     await expect(trash).toBeDisabled();
@@ -363,17 +363,17 @@ test.describe("15 lỗi người dùng báo", () => {
     const one = ((await up.json()) as { id: string }).id;
     toClean.push(one);
     await waitRead(one);
-    await page.goto(`${CW}/contracts`);
+    await page.goto(`${CW}/contracts/list`);
     await settle(page);
     await page.getByPlaceholder(/Tìm/).first().fill(TAG);
     const row = page
       .locator("table tbody tr")
-      .filter({ has: page.locator(`a[href="/contracts/${one}"]`) });
+      .filter({ has: page.locator(`a[href="/contracts/c/${one}"]`) });
     await expect(row).toHaveCount(1);
     await expect(row.getByTestId("row-delete")).toBeEnabled();
     await row.getByTestId("row-delete").click();
     await page.getByTestId("delete-confirm").click();
-    await expect(page.locator(`a[href="/contracts/${one}"]`)).toHaveCount(0, { timeout: 30_000 });
+    await expect(page.locator(`a[href="/contracts/c/${one}"]`)).toHaveCount(0, { timeout: 30_000 });
     expect((await api.get(`${P}/contracts/${one}`, { headers: auth })).status()).toBe(404);
   });
 
@@ -385,7 +385,7 @@ test.describe("15 lỗi người dùng báo", () => {
 
 test.describe("15 lỗi người dùng báo (không cần HĐ tải lên)", () => {
   test("[lỗi: giá nhà cung cấp/lãi không hiện] tab «Nhà cung cấp & giá» của Sản phẩm & Giá hiện so sánh giá NCC và «Giá bán & lãi»", async () => {
-    await page.goto(`${CW}/products`);
+    await page.goto(`${CW}/contracts/products`);
     await settle(page);
     const hrefs = (
       await page
@@ -438,7 +438,7 @@ test.describe("15 lỗi người dùng báo (không cần HĐ tải lên)", () =
     );
     const gr = await api.get(`${P}/groups`, { headers: auth });
     const groups = (gr.status() === 200 ? await gr.json() : []) as { id: string; name: string }[];
-    await page.goto(`${CW}/overview`);
+    await page.goto(`${CW}/contracts`);
     await settle(page);
     await page.getByRole("button", { name: "Tài khoản" }).first().click();
     await page.getByRole("menuitem", { name: "Cài đặt", exact: true }).click();
@@ -496,7 +496,7 @@ test.describe("15 lỗi người dùng báo · đường tắt duyệt", () => {
       const idA = await uploadContract(`${TAG}-tat-duyet-${RUN}.md`);
       cid = idA;
       cidTitle = (await getDetail(idA)).title;
-      await page.goto(`${CW}/contracts/${cid}`);
+      await page.goto(`${CW}/contracts/c/${cid}`);
       await settle(page);
       // Nút của trang (testid confirm-save, khi không có lượt duyệt) hoặc của thẻ duyệt cấp 1 (lượt máy cũ vẫn mở khi tenant tắt duyệt).
       const confirm = page

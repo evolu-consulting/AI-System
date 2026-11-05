@@ -16,7 +16,7 @@ const review = (sent: Sent[]) => sent.filter((s) => s.path.endsWith("/review"));
 
 async function openReview(page: Page, init: Parameters<typeof installV2g>[1] = {}) {
   const ctx = await installV2g(page, init);
-  await page.goto(`/contracts/${REVIEW_ID}`);
+  await page.goto(`/contracts/c/${REVIEW_ID}`);
   await expect(page.getByTestId("review-items")).toBeVisible();
   // Gợi ý SP đến muộn: dòng 1 ("USB") được chọn sẵn theo quy tắc nhận diện, dòng 2 đề xuất tạo mới.
   await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue(P_USB.id);
@@ -121,7 +121,7 @@ test("Hủy = bỏ chỉnh sửa, KHÔNG gửi yêu cầu ghi nào", async ({ pa
 test("Huỷ khi chưa sửa gì ⇒ về danh sách hợp đồng (không gửi gì, giữ nháp)", async ({ page }) => {
   const { sent } = await openReview(page);
   await page.getByRole("button", { name: "Huỷ" }).click();
-  await expect(page).toHaveURL(/\/contracts$/);
+  await expect(page).toHaveURL(/\/contracts\/list$/);
   expect(writes(sent)).toEqual([]);
 });
 
@@ -165,7 +165,7 @@ test("chi tiết đã lưu: gắn lại SP cho dòng (PUT) + 409 ITEM_LOCKED bá
   page,
 }) => {
   const { sent, st } = await installV2g(page);
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByLabel("Gắn dòng 1 với sản phẩm").selectOption(P_TOKEN.id);
   await expect.poll(() => writes(sent).filter((s) => s.method === "PUT").length).toBe(1);
   expect(writes(sent).find((s) => s.method === "PUT")).toEqual({
@@ -180,7 +180,7 @@ test("chi tiết đã lưu: gắn lại SP cho dòng (PUT) + 409 ITEM_LOCKED bá
 
 test("Tóm tắt hiện các mục AI viết; mục trống (Thưởng) bị ẩn", async ({ page }) => {
   await installV2g(page);
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   const s = page.getByTestId("ai-summary");
   await expect(s.getByTestId("ai-sum-main")).toContainText("Hợp đồng bán bao bì");
   await expect(s.getByTestId("ai-sum-aiSumDeadlines")).toContainText("Giao đợt 1 trước 01/03/2026");

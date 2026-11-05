@@ -49,7 +49,7 @@ const SCENES: Scene[] = [
   ...(["light", "dark"] as const).map(
     (theme): Scene => ({
       name: `p02-partners-${theme}`,
-      path: "/partners",
+      path: "/contracts/partners",
       size: D,
       theme,
       text: ["main"],
@@ -59,7 +59,7 @@ const SCENES: Scene[] = [
   ),
   {
     name: "p02-partners-mobile",
-    path: "/partners",
+    path: "/contracts/partners",
     size: M,
     theme: "light",
     text: ["main"],
@@ -68,7 +68,7 @@ const SCENES: Scene[] = [
   },
   {
     name: "p02-partners-log",
-    path: "/partners",
+    path: "/contracts/partners",
     size: D,
     theme: "light",
     text: ["main"],
@@ -78,7 +78,7 @@ const SCENES: Scene[] = [
   },
   {
     name: "s05-contract-log",
-    path: `/contracts/${contract.id}`,
+    path: `/contracts/c/${contract.id}`,
     size: D,
     theme: "light",
     text: [LOG_PANEL],

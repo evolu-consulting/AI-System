@@ -110,13 +110,13 @@ test("chủ quản/quản trị: Community ↔ SHT không tải lại trang; Cà
   await login(page, "demo-owner", [OWNER_PW]);
   await page.evaluate(() => ((window as unknown as { __mark: string }).__mark = "m1"));
   await page.getByTestId("sht-link").first().click();
-  await expect(page).toHaveURL(/\/overview/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/\/contracts$/, { timeout: 30_000 });
   await expect(page.getByTestId("nav-community")).toBeVisible({ timeout: 30_000 });
   await page.getByTestId("nav-community").click();
   await expect(page).toHaveURL(/\/community/);
   await expect(page.getByTestId("composer")).toBeVisible({ timeout: 30_000 });
   expect(await page.evaluate(() => (window as unknown as { __mark?: string }).__mark)).toBe("m1");
-  await page.goto("/settings?sec=apps");
+  await page.goto("/contracts/settings?sec=apps");
   await expect(page.getByTestId("apps-pane")).toBeVisible({ timeout: 30_000 });
 });
 
@@ -192,7 +192,7 @@ test("thành viên SHT: Community ↔ SHT không tải lại", async ({ page }) 
   await login(page, MEMBER, [memberPw, NEW_PW]);
   await page.evaluate(() => ((window as unknown as { __mark: string }).__mark = "m3"));
   await page.getByTestId("sht-link").first().click();
-  await expect(page).toHaveURL(/\/overview/, { timeout: 30_000 });
+  await expect(page).toHaveURL(/\/contracts$/, { timeout: 30_000 });
   await page.getByTestId("nav-community").click();
   await expect(page).toHaveURL(/\/community/);
   expect(await page.evaluate(() => (window as unknown as { __mark?: string }).__mark)).toBe("m3");
@@ -202,8 +202,8 @@ test("đối tác: vào /community, gõ /contracts bị chặn (không có SHT)"
   const u = "doitac-tanphat";
   await login(page, u, [partnerPw(u), NEW_PW]);
   await expect(page.getByTestId("sht-link")).toHaveCount(0);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await expect(page).toHaveURL(/\/community/, { timeout: 30_000 });
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await expect(page).toHaveURL(/\/community/, { timeout: 30_000 });
 });

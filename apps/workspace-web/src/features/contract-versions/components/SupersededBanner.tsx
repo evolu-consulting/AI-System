@@ -28,7 +28,7 @@ export function SupersededBanner({
           type="button"
           className="btn btn-primary btn-sm ml-auto"
           data-testid="open-current"
-          onClick={() => void nav({ to: "/contracts/$id", params: { id: currentId } })}
+          onClick={() => void nav({ to: "/contracts/c/$id", params: { id: currentId } })}
         >
           {t("contracts.versions.openCurrent")}
         </button>

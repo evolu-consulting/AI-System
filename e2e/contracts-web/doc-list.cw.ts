@@ -78,7 +78,7 @@ async function installList(page: Page): Promise<URLSearchParams[]> {
 test("mặc định: nest=1, 3 loại có nhãn, con thụt ngay dưới HĐ nguyên tắc", async ({ page }) => {
   await installV2f(page);
   const reqs = await installList(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   const rows = page.locator("main tbody tr");
   await expect(rows).toHaveCount(4);
   await expect(rows.nth(0)).toContainText(FRAME?.title ?? "");
@@ -99,7 +99,7 @@ test("bộ lọc loại hiện số mỗi loại; chọn Giao dịch ⇒ doc_typ
 }) => {
   await installV2f(page);
   const reqs = await installList(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   const bar = page.getByTestId("doc-type-filter");
   await expect(bar.getByRole("radio", { name: /^Tất cả\s*12$/ })).toHaveAttribute(
     "aria-checked",
@@ -108,7 +108,7 @@ test("bộ lọc loại hiện số mỗi loại; chọn Giao dịch ⇒ doc_typ
   await expect(bar.getByRole("radio", { name: /^HĐ nguyên tắc\s*1$/ })).toBeVisible();
   await expect(bar.getByRole("radio", { name: /^HĐ kinh tế\s*4$/ })).toBeVisible();
   await bar.getByRole("radio", { name: /^Giao dịch\s*7$/ }).click();
-  await expect(page).toHaveURL(/\/contracts\?type=deal/);
+  await expect(page).toHaveURL(/\/contracts\/list\?type=deal/);
   await expect(page.locator("main tbody tr")).toHaveCount(1);
   const last = reqs.filter((q) => q.get("page_size") === "20").at(-1);
   expect(last?.getAll("doc_type")).toEqual(["deal"]);
@@ -120,7 +120,7 @@ test("mở thẳng ?type=framework ⇒ chọn sẵn bộ lọc, gửi doc_type=f
 }) => {
   await installV2f(page);
   const reqs = await installList(page);
-  await page.goto("/contracts?type=framework");
+  await page.goto("/contracts/list?type=framework");
   await expect(
     page.getByTestId("doc-type-filter").getByRole("radio", { name: /^HĐ nguyên tắc/ }),
   ).toHaveAttribute("aria-checked", "true");
@@ -135,7 +135,7 @@ test("HĐ NT phiên bản 2 (id ≠ root_id): con vẫn thụt dưới cha, khô
 }) => {
   await installV2f(page);
   await installList(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await expect(page.getByTestId("child-row")).toHaveCount(1);
   await expect(page.getByTestId("child-orphan")).toHaveCount(0);
 });
@@ -143,9 +143,9 @@ test("HĐ NT phiên bản 2 (id ≠ root_id): con vẫn thụt dưới cha, khô
 test("cột «Nguồn» chỉ hiện khi lọc Giao dịch; hiện tên nguồn từ docs.source", async ({ page }) => {
   await installV2f(page);
   await installList(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await expect(page.locator("main thead th", { hasText: "Nguồn" })).toHaveCount(0);
-  await page.goto("/contracts?type=deal");
+  await page.goto("/contracts/list?type=deal");
   await expect(page.locator("main thead th", { hasText: "Nguồn" })).toHaveCount(1);
   await expect(page.getByTestId("source-cell")).toHaveText("Hoá đơn");
 });
@@ -166,7 +166,7 @@ async function postedForm(page: Page, pick: () => Promise<void>): Promise<string
       });
     },
   );
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await page
     .locator(`input[type="file"]`)
     .setInputFiles([
@@ -215,7 +215,7 @@ test("tải lên: hạn mức không phải số ⇒ báo lỗi, không gửi; H
       return r.fallback();
     },
   );
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await page
     .locator(`input[type="file"]`)
     .setInputFiles([
@@ -234,12 +234,12 @@ test("tải lên: hạn mức không phải số ⇒ báo lỗi, không gửi; H
 test("nút «Thêm giao dịch» mở form Giao dịch; menu còn 4 mục", async ({ page }) => {
   await installV2f(page);
   await installList(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   const nav = page.getByRole("navigation").first();
   await expect(nav.getByRole("link", { name: "Hợp đồng & giao dịch" })).toBeVisible();
   await expect(page.getByRole("link", { name: /^Giao dịch$/ })).toHaveCount(0);
   await page.getByTestId("add-deal").click();
-  await expect(page).toHaveURL(/\/contracts\/new\?type=deal/);
+  await expect(page).toHaveURL(/\/contracts\/c\/new\?type=deal/);
   await expect(page.getByLabel(/^Tên giao dịch/)).toBeVisible();
 });
 
@@ -247,7 +247,7 @@ test("/transactions chuyển hướng sang danh sách lọc Giao dịch", async 
   await installV2f(page);
   await installList(page);
   await page.goto("/transactions");
-  await expect(page).toHaveURL(/\/contracts\?type=deal/);
+  await expect(page).toHaveURL(/\/contracts\/list\?type=deal/);
   await expect(
     page.getByTestId("doc-type-filter").getByRole("radio", { name: /^Giao dịch/ }),
   ).toHaveAttribute("aria-checked", "true");

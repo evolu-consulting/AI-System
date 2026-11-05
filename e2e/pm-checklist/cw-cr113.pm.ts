@@ -21,7 +21,7 @@ async function login(page: Page, username: string) {
   await expect(page).not.toHaveURL(/\/login/);
 }
 async function openContract(page: Page, n: number, title: string) {
-  await page.goto(`/contracts/${ID(n)}`);
+  await page.goto(`/contracts/c/${ID(n)}`);
   await expect(page.getByText(title, { exact: false }).first()).toBeVisible();
   await expect(page.getByTestId("approval-step-0")).toBeVisible();
 }
@@ -38,7 +38,7 @@ test("CR-113 · 1 · Cài đặt › Quy trình duyệt: 2 bước, hộp Luật
   page,
 }) => {
   await login(page, "julian.bui");
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await page
     .getByRole("button", { name: /tài khoản|account/i })
     .first()

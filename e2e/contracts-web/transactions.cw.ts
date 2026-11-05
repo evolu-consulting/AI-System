@@ -79,7 +79,7 @@ test("form Giao dịch: nhãn riêng, không có ô chỉ của HĐ (kết thúc
   page,
 }) => {
   await install(page);
-  await page.goto("/contracts/new?type=deal");
+  await page.goto("/contracts/c/new?type=deal");
   await expect(page.getByLabel(/^Tên giao dịch/)).toBeVisible();
   await expect(page.getByLabel("Số chứng từ")).toBeVisible();
   await expect(page.getByLabel(/^Ngày giao dịch/)).toBeVisible();
@@ -93,11 +93,11 @@ test("lưu: POST /contracts/deals với deal + source + settled_now, xong mở g
   page,
 }) => {
   const sent = await install(page);
-  await page.goto("/contracts/new?type=deal");
+  await page.goto("/contracts/c/new?type=deal");
   await fillDeal(page);
   await page.getByLabel(/^Đã giao \/ đã thanh toán ngay/).check();
   await page.getByRole("button", { name: "Lưu giao dịch" }).click();
-  await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+  await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
   expect(deals(sent)?.body).toMatchObject({
     deal: "buy",
     source: "invoice",
@@ -114,10 +114,10 @@ test("lưu: POST /contracts/deals với deal + source + settled_now, xong mở g
 
 test("không tích «đã giao» ⇒ không gửi settled_now", async ({ page }) => {
   const sent = await install(page);
-  await page.goto("/contracts/new?type=deal");
+  await page.goto("/contracts/c/new?type=deal");
   await fillDeal(page, "verbal");
   await page.getByRole("button", { name: "Lưu giao dịch" }).click();
-  await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+  await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
   const body = deals(sent)?.body as Record<string, unknown>;
   expect(body.source).toBe("verbal");
   expect("settled_now" in body).toBe(false);
@@ -125,7 +125,7 @@ test("không tích «đã giao» ⇒ không gửi settled_now", async ({ page })
 
 test("thiếu nguồn ⇒ chặn lưu, báo, viền đỏ; không gửi", async ({ page }) => {
   const sent = await install(page);
-  await page.goto("/contracts/new?type=deal");
+  await page.goto("/contracts/c/new?type=deal");
   await fillDeal(page, null);
   await page.getByRole("button", { name: "Lưu giao dịch" }).click();
   await expect(page.getByRole("alert")).toHaveText("Chọn nguồn giao dịch.");
@@ -137,14 +137,14 @@ test("xác nhận ngay dừng giữa chừng (settle_error) ⇒ ở lại báo l
   page,
 }) => {
   await install(page, "STOCK_INSUFFICIENT");
-  await page.goto("/contracts/new?type=deal");
+  await page.goto("/contracts/c/new?type=deal");
   await fillDeal(page);
   await page.getByLabel(/^Đã giao \/ đã thanh toán ngay/).check();
   await page.getByRole("button", { name: "Lưu giao dịch" }).click();
   const err = page.getByTestId("settle-error");
   await expect(err).toContainText("Giao dịch đã được lưu");
   await expect(err).toContainText("Không đủ tồn kho");
-  await expect(page).toHaveURL(/\/contracts\/new/);
+  await expect(page).toHaveURL(/\/contracts\/c\/new/);
   await expect(page.getByRole("link", { name: "Mở giao dịch" })).toHaveAttribute(
     "href",
     `/contracts/${NEW_ID}`,
@@ -153,13 +153,13 @@ test("xác nhận ngay dừng giữa chừng (settle_error) ⇒ ở lại báo l
 
 test("?frame=<id> điền sẵn HĐ nguyên tắc; lưu xong gắn qua POST /attach", async ({ page }) => {
   const sent = await install(page);
-  await page.goto(`/contracts/new?type=deal&frame=${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/new?type=deal&frame=${ACTIVE_ID}`);
   const picked = page.getByTestId("frame-picked");
   await expect(picked).toBeVisible();
   await expect(picked).not.toHaveText("");
   await fillDeal(page);
   await page.getByRole("button", { name: "Lưu giao dịch" }).click();
-  await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+  await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
   const attach = sent.find((s) => s.path.endsWith(`/${ACTIVE_ID}/attach`));
   expect(attach?.body).toEqual({ ids: [NEW_ID] });
 });
@@ -167,16 +167,16 @@ test("?frame=<id> điền sẵn HĐ nguyên tắc; lưu xong gắn qua POST /att
 test("/transactions/new và /transactions/<id> chuyển hướng", async ({ page }) => {
   await install(page);
   await page.goto("/transactions/new");
-  await expect(page).toHaveURL(/\/contracts\/new\?type=deal/);
+  await expect(page).toHaveURL(/\/contracts\/c\/new\?type=deal/);
   await page.goto(`/transactions/${ACTIVE_ID}`);
-  await expect(page).toHaveURL(new RegExp(`/contracts/${ACTIVE_ID}$`));
+  await expect(page).toHaveURL(new RegExp(`/contracts/c/${ACTIVE_ID}$`));
 });
 
 test("cảnh báo pháp lý (Câu 8): đứng riêng, giá trị ≥ ngưỡng, còn mốc mở ⇒ cảnh báo, không chặn lưu; có HĐ NT / đã giao ngay ⇒ không", async ({
   page,
 }) => {
   const sent = await install(page);
-  await page.goto("/contracts/new?type=deal");
+  await page.goto("/contracts/c/new?type=deal");
   await fillDeal(page);
   const warn = page.getByTestId("legal-warning");
   await expect(warn).toHaveCount(0); // 1.500.000 < 5.000.000
@@ -187,13 +187,13 @@ test("cảnh báo pháp lý (Câu 8): đứng riêng, giá trị ≥ ngưỡng, 
   await page.getByLabel(/^Đã giao \/ đã thanh toán ngay/).uncheck();
   await expect(warn).toBeVisible();
   await page.getByRole("button", { name: "Lưu giao dịch" }).click(); // chỉ cảnh báo, không chặn
-  await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+  await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
   expect(deals(sent)?.body).toMatchObject({ total_value: 6_000_000 });
 });
 
 test("cảnh báo pháp lý không áp khi giao dịch thuộc HĐ nguyên tắc (?frame=)", async ({ page }) => {
   await install(page);
-  await page.goto(`/contracts/new?type=deal&frame=${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/new?type=deal&frame=${ACTIVE_ID}`);
   await fillDeal(page);
   await page.getByLabel("Giá trị").fill("6000000");
   await expect(page.getByTestId("legal-warning")).toHaveCount(0);

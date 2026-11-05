@@ -37,7 +37,7 @@ test.describe("Gap #10 · lọc ngày", () => {
       queries.push(new URL(r.request().url()).searchParams);
       return json(r, listAsHub());
     });
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await page.getByLabel("Cột ngày").selectOption("action_deadline");
     await page.getByLabel("Khoảng thời gian").selectOption("overdue");
     await expect.poll(() => queries.at(-1)?.get("due")).toBe("overdue");
@@ -75,7 +75,7 @@ test.describe("Gap #8 · xuất danh sách", () => {
         body: Buffer.from("PK"),
       });
     });
-    await page.goto("/contracts?due=30");
+    await page.goto("/contracts/list?due=30");
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: "Xuất", exact: true }).click();
     await page.getByRole("menuitem", { name: "Xuất Excel" }).click();
@@ -110,7 +110,7 @@ test.describe("Gap #9 · tải lên nhiều tệp", () => {
         );
       },
     );
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await page.locator('input[type="file"]').setInputFiles([
       { name: "hd.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 x") },
       { name: "hd.md", mimeType: "text/markdown", buffer: Buffer.from("# Điều 1") },
@@ -121,7 +121,7 @@ test.describe("Gap #9 · tải lên nhiều tệp", () => {
     await expect(panel.getByText("Chỉ nhận PDF, DOCX, PNG, JPG hoặc Markdown")).toBeVisible();
     await expect(panel.locator('li[data-state="done"]')).toHaveCount(2);
     expect(posted).toEqual(["pdf", "md"]);
-    await expect(page).toHaveURL(/\/contracts$/); // nhiều tệp ⇒ ở lại danh sách
+    await expect(page).toHaveURL(/\/contracts\/list$/); // nhiều tệp ⇒ ở lại danh sách
   });
 
   test("hết lượt (429 UPLOAD_QUOTA) ⇒ popup một lần, dừng hàng đợi: không POST tệp sau, mọi tệp lỗi không có Thử lại", async ({
@@ -148,7 +148,7 @@ test.describe("Gap #9 · tải lên nhiều tệp", () => {
         );
       },
     );
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await page.locator('input[type="file"]').setInputFiles([
       { name: "a.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 a") },
       { name: "b.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 b") },

@@ -113,7 +113,7 @@ describe("HD4-FR-07 · nội dung", () => {
     expect(m.title).toBe("Hợp đồng HĐ-1 — hạn chót hành động 06/10/2026");
     expect(m.body).toContain("với Công ty A cần được xử lý (còn 5 ngày)");
     expect(m.body).toContain("Giá trị: 1.500.000.000 đ");
-    expect(m.link).toBe("/contracts/c1");
+    expect(m.link).toBe("/contracts/c/c1");
     expect(partnerOf({ direction: "sale", seller: "A", buyer: "B" })).toBe("B");
     expect(partnerOf({ direction: null, seller: "A", buyer: null })).toBe("A → —");
     const long = messageOf({ ...base, number: "x".repeat(2000), seller: "y".repeat(3000) }, 0);

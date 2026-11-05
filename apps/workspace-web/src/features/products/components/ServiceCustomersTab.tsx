@@ -45,7 +45,7 @@ function Row({ productId, c }: { productId: string; c: ServiceCustomer }) {
       <td className={TD}>
         <b className="font-medium">{c.customer_name ?? "—"}</b>
         <div className="text-[12.5px] text-dim">
-          <Link to="/contracts/$id" params={{ id: c.contract_id }} className="hover:underline">
+          <Link to="/contracts/c/$id" params={{ id: c.contract_id }} className="hover:underline">
             {c.contract_number ?? c.contract_title ?? t("contracts.svc.contract")}
           </Link>
           {c.renewals > 0 && <> · {t("contracts.svc.renewals", { n: c.renewals })}</>}

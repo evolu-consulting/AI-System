@@ -53,7 +53,7 @@ test.describe("10 góp ý + hợp đồng gốc", () => {
       await sheet.getByRole("button", { name: "Lưu" }).click();
       await expect(page.getByRole("row", { name: new RegExp(MSG) })).toContainText("Đang xử lý");
 
-      await page.goto(`${CW}/overview`);
+      await page.goto(`${CW}/contracts`);
       await settle(page);
       await page.getByRole("button", { name: "Góp ý về app" }).click();
       await page.getByRole("button", { name: "Đã gửi" }).click();
@@ -66,7 +66,7 @@ test.describe("10 góp ý + hợp đồng gốc", () => {
   test("HĐ demo có tệp gốc: «Xem hợp đồng gốc» mở khung PDF + nút tải", async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem("ai.locale", "vi"));
     await login(page, CW);
-    await page.goto(`${CW}/contracts`);
+    await page.goto(`${CW}/contracts/list`);
     await settle(page);
     await page.getByRole("link", { name: /NCCA/ }).first().click();
     await page.getByRole("link", { name: /Xem hợp đồng gốc/ }).click();

@@ -60,7 +60,7 @@ test("tải bản cập nhật từ HĐ đã khoá ⇒ POST multipart ⇒ mở n
   await page.route(`**/pack/contracts/contracts/${V2_ID}`, (r) =>
     json(r, 200, { ...v1(false), id: V2_ID, status: "needs_review", version_no: 2 }),
   );
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByTestId("update-version").click();
   const dlg = page.getByTestId("upload-version");
   await expect(page.getByTestId("upload-version-signed")).toContainText("văn bản đã ký");
@@ -70,7 +70,7 @@ test("tải bản cập nhật từ HĐ đã khoá ⇒ POST multipart ⇒ mở n
     buffer: Buffer.from("%PDF-1.4 v2"),
   });
   await dlg.getByTestId("upload-version-submit").click();
-  await expect(page).toHaveURL(new RegExp(`/contracts/${V2_ID}$`));
+  await expect(page).toHaveURL(new RegExp(`/contracts/c/${V2_ID}$`));
   expect(posts).toHaveLength(1);
   expect(posts[0]).toContain("multipart/form-data");
 });
@@ -80,7 +80,7 @@ test("lỗi VERSION_DRAFT_EXISTS ⇒ thông báo tiếng Việt", async ({ page 
   await page.route(`**/pack/contracts/contracts/${ACTIVE_ID}/versions`, (r) =>
     json(r, 409, { error: { code: "VERSION_DRAFT_EXISTS", message: "x" } }),
   );
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByTestId("update-version").click();
   await page.getByTestId("upload-version-file").setInputFiles({
     name: "hd-v2.pdf",
@@ -102,7 +102,7 @@ test("bản bị thay: banner + chỉ đọc + khối phiên bản + so sánh", 
       changes: [{ key: "total_value", a: 245_000_000, b: 300_000_000 }],
     }),
   );
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("superseded-banner")).toContainText("Đã thay thế bởi Phiên bản 2");
   await expect(page.getByTestId("open-current")).toBeVisible();
   await expect(page.getByTestId("update-version")).toBeDisabled();
@@ -123,6 +123,6 @@ test("danh sách: badge v2 khi có nhiều phiên bản", async ({ page }) => {
       return json(r, 200, list);
     },
   );
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await expect(page.getByTestId("version-badge").first()).toHaveText("v2");
 });

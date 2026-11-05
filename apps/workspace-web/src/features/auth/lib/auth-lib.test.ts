@@ -5,8 +5,14 @@ import { knownTenant, normalizeLoginId } from "./tenant";
 
 describe("safeNext", () => {
   test("PK-FR-10 · nhận đường nội bộ, giữ query", () => {
-    expect(safeNext("/partners")).toBe("/partners");
-    expect(safeNext("/contracts/abc?tab=log")).toBe("/contracts/abc?tab=log");
+    expect(safeNext("/contracts/partners")).toBe("/contracts/partners");
+    expect(safeNext("/contracts/c/abc?tab=log")).toBe("/contracts/c/abc?tab=log");
+  });
+  test("CR-119 p2 · next cũ (SHT ở gốc) quy về URL chuẩn mới dưới /contracts", () => {
+    expect(safeNext("/overview")).toBe("/contracts");
+    expect(safeNext("/contracts/abc?tab=log")).toBe("/contracts/c/abc?tab=log");
+    expect(safeNext("/partners?party=x")).toBe("/contracts/partners?party=x");
+    expect(safeNext("/contracts?status=active")).toBe("/contracts/list?status=active");
   });
   test("PK-FR-10 · chặn open redirect, ký tự điều khiển, quay lại /login", () => {
     for (const bad of [

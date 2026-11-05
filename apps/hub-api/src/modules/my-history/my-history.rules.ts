@@ -150,15 +150,16 @@ export function mergeActivity<T extends ActivityLike>(lists: readonly T[][], lim
     .map((e) => e.x);
 }
 
-/** Đường dẫn Sổ Hợp Tác (contracts-web): HĐ ⇒ `/contracts/<id>`; đối tác ⇒ `/partners?party=<khoá>`; khác ⇒ null. */
+/** Đường dẫn Sổ Hợp Tác (CR-119 p2: dưới `/contracts`): HĐ ⇒ `/contracts/c/<id>`; đối tác ⇒ `/contracts/partners?party=<khoá>`; khác ⇒ null. */
 export function recordLink(
   object: string,
   refId: string | null,
   party: string | null,
 ): string | null {
-  if (object === "contract" && refId) return `/contracts/${refId}`;
-  if (object === "partner" && party) return `/partners?party=${encodeURIComponent(party)}`;
-  if (object === "partner" && refId) return `/contracts/${refId}`;
+  if (object === "contract" && refId) return `/contracts/c/${refId}`;
+  if (object === "partner" && party)
+    return `/contracts/partners?party=${encodeURIComponent(party)}`;
+  if (object === "partner" && refId) return `/contracts/c/${refId}`;
   return null;
 }
 

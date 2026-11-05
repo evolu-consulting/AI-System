@@ -148,15 +148,15 @@ describe("esign-sweep · vòng nền bước Ký số", () => {
     expect(b1.filter((b) => b.tenant_id === T2).map((b) => b.user_id)).toEqual([S2]);
     expect(b1.filter((b) => b.tenant_id === T1).map((b) => [b.user_id, b.link])).toEqual(
       expect.arrayContaining([
-        [O, `/contracts/${k[0]}`],
-        [S, `/contracts/${k[1]}`],
-        [S, `/contracts/${k[3]}`],
-        [S, `/contracts/${k[8]}`],
+        [O, `/contracts/c/${k[0]}`],
+        [S, `/contracts/c/${k[1]}`],
+        [S, `/contracts/c/${k[3]}`],
+        [S, `/contracts/c/${k[8]}`],
       ]),
     );
     // (a) công ty đã ký / (b) chưa tới lượt ⇒ người phụ trách "chờ đối tác", không chuông người ký công ty
     for (const cid of [k[6], k[7]]) {
-      const mine = b1.filter((b) => b.link === `/contracts/${cid}`);
+      const mine = b1.filter((b) => b.link === `/contracts/c/${cid}`);
       expect(mine.map((b) => [b.user_id, b.title.endsWith("đang chờ đối tác ký")])).toEqual([
         [O, true],
       ]);
@@ -178,7 +178,7 @@ describe("esign-sweep · vòng nền bước Ký số", () => {
     const esc = (await bells()).filter((b) => b.title.endsWith("quá hạn"));
     expect(
       esc
-        .filter((b) => b.link === `/contracts/${k[1]}`)
+        .filter((b) => b.link === `/contracts/c/${k[1]}`)
         .map((b) => b.user_id)
         .sort(),
     ).toEqual([O, B].sort());

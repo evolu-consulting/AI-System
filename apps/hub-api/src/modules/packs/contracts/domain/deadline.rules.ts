@@ -146,5 +146,5 @@ export function messageOf(
       `Tự động gia hạn: ${auto}. Giá trị: ${money(c.value)}.`,
     2000,
   );
-  return { title, body, link: `/contracts/${c.id}` };
+  return { title, body, link: `/contracts/c/${c.id}` };
 }

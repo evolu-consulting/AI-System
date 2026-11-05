@@ -134,13 +134,13 @@ function useSubmit(
         await qc.invalidateQueries();
         toast(t("contracts.doclist.saved"));
         if (s.settleError || s.attachError) return setSaved(s);
-        return void (await nav({ to: "/contracts/$id", params: { id: s.id } }));
+        return void (await nav({ to: "/contracts/c/$id", params: { id: s.id } }));
       }
       const rec = await createManualContract(toRequest(f, readNumbers(f), productIdsOf(f)));
       await linkNewFormLines(rec.id, rec.status, f.items);
       await qc.invalidateQueries();
       toast(t("contracts.cform.saved"));
-      await nav({ to: "/contracts/$id", params: { id: rec.id } });
+      await nav({ to: "/contracts/c/$id", params: { id: rec.id } });
     } catch (x) {
       setErr(saveErrorText(x, t));
     } finally {

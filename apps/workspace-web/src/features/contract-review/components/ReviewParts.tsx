@@ -84,7 +84,7 @@ export function ExtractFailed({
         {write && <ReextractButton id={id} retry />}
         {file && <FileLink file={file} />}
 
-        <Link to="/contracts/new" className="btn btn-primary">
+        <Link to="/contracts/c/new" className="btn btn-primary">
           {t("contracts.review.manual")}
         </Link>
       </div>

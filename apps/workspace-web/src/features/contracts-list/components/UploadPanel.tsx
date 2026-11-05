@@ -85,7 +85,7 @@ function Row({ item, onRetry }: { item: UploadItem; onRetry: (key: number) => vo
         </span>
         {item.state === "done" && item.id && (
           <Link
-            to="/contracts/$id"
+            to="/contracts/c/$id"
             params={{ id: item.id }}
             className="shrink-0 text-act hover:underline"
           >

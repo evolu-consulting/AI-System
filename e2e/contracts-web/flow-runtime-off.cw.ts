@@ -64,7 +64,7 @@ test.describe("CR-118 · cờ flow runtime ở danh sách HĐ", () => {
     await page.route("**/pack/contracts/flow/**", (r) =>
       json(r, { error: { code: "NOT_FOUND" } }, 404),
     );
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await expect(page.getByText("Hợp đồng cung cấp gia vị").first()).toBeVisible();
     await page.waitForLoadState("networkidle");
     expect(flowCalls).toEqual([]);
@@ -81,7 +81,7 @@ test.describe("CR-118 · cờ flow runtime ở danh sách HĐ", () => {
     await page.route("**/pack/contracts/flow/**", (r) =>
       json(r, { slot: "contracts.approval", items: [] }),
     );
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await expect(page.getByText("Hợp đồng cung cấp gia vị").first()).toBeVisible();
     await summary;
   });

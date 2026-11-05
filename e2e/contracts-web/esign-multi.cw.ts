@@ -76,7 +76,7 @@ test("Cài đặt: hiện 2 nhà cung cấp (pháp lý / không) và đổi mặ
     }
     return json(r, settings([DOCUSIGN, SELFSIGN, MISA], "docusign"));
   });
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await page
     .getByRole("button", { name: /tài khoản|account/i })
     .first()
@@ -104,7 +104,7 @@ async function openSend(page: Page, providers: unknown[], def: string) {
     }
     return json(r, base(providers, def));
   });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByTestId("esign-panel").getByTestId("esign-send").click();
   return { posts, dlg: page.getByRole("dialog", { name: "Gửi hợp đồng đi ký số" }) };
 }

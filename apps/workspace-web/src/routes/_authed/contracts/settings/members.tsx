@@ -2,6 +2,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { OrgPage } from "~/features/org/pages/OrgPage";
 
-export const Route = createFileRoute("/_authed/settings/members")({
+export const Route = createFileRoute("/_authed/contracts/settings/members")({
   component: OrgPage,
 });

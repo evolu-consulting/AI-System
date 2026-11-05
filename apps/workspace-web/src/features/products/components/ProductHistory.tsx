@@ -74,7 +74,7 @@ function Sales({ sales }: { sales: BizDetailOut["sales"] }) {
             <td className={td}>{viDate(s.on)}</td>
             <td className={td}>
               <Link
-                to="/contracts/$id"
+                to="/contracts/c/$id"
                 params={{ id: s.contract_id }}
                 className="text-act hover:underline"
               >

@@ -120,7 +120,10 @@ export function ProductDetail({ id, ht }: { id: string; ht: string | undefined }
   const slot = slotsFor(g).find((s) => s.key === cur.key);
   return (
     <div>
-      <Link to="/products" className="mb-3 inline-block text-[13px] text-act hover:underline">
+      <Link
+        to="/contracts/products"
+        className="mb-3 inline-block text-[13px] text-act hover:underline"
+      >
         {t("contracts.catalog.back")}
       </Link>
       <Summary d={d} />
@@ -129,7 +132,7 @@ export function ProductDetail({ id, ht }: { id: string; ht: string | undefined }
           {tabs.map((x) => (
             <Link
               key={x.key}
-              to="/products"
+              to="/contracts/products"
               search={{ sp: id, ...(x.key === first?.key ? {} : { ht: x.key }) }}
               role="tab"
               aria-selected={cur.key === x.key}

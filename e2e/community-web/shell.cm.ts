@@ -7,7 +7,7 @@ const as = async (page: Page, id: string) => {
   await page.getByLabel("Chọn nhân vật").selectOption(id);
 };
 const SHT = "Sổ Hợp Tác";
-const SHT_PATHS = ["/overview", "/contracts", "/partners", "/products"];
+const SHT_PATHS = ["/contracts", "/contracts/list", "/contracts/partners", "/contracts/products"];
 
 test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
   for (const [id, label] of [

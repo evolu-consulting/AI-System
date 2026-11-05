@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { parsePartnersSearch } from "~/features/partners/lib/partner-v2";
 import { PartnersRoutePage } from "~/features/partners/pages/PartnersRoutePage";
 
-export const Route = createFileRoute("/_authed/partners")({
+export const Route = createFileRoute("/_authed/contracts/partners")({
   validateSearch: parsePartnersSearch,
   component: PartnersRoutePage,
 });

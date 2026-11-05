@@ -10,14 +10,15 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const ROUTE_MAX = 200;
 const PARTY_MAX = 300;
 
-/** Ngữ cảnh dock từ URL: `/contracts/<uuid>` ⇒ HĐ; `/partners?party=<khoá>` ⇒ đối tác; còn lại chỉ màn hình. */
+/** Ngữ cảnh dock từ URL: `/contracts/c/<uuid>` ⇒ HĐ; `/contracts/partners?party=<khoá>` ⇒ đối tác; còn lại chỉ màn hình. */
 export function dockContext(pathname: string, search: string): MessageContext {
   const route = pathname.startsWith("/") ? pathname.slice(0, ROUTE_MAX) : "/";
   const ctx: MessageContext = { surface: "contracts" };
   if (/^\/[^\s<>]*$/.test(route)) ctx.route = route;
-  const id = /^\/contracts\/([^/]+)\/?$/.exec(pathname)?.[1];
+  const id = /^\/contracts\/c\/([^/]+)\/?$/.exec(pathname)?.[1];
   if (id && UUID_RE.test(id)) return { ...ctx, entity: { kind: "contract", id } };
-  const party = pathname === "/partners" ? new URLSearchParams(search).get("party") : null;
+  const party =
+    pathname === "/contracts/partners" ? new URLSearchParams(search).get("party") : null;
   if (party && party.length <= PARTY_MAX) return { ...ctx, entity: { kind: "partner", id: party } };
   return ctx;
 }

@@ -53,21 +53,25 @@ function Target({ i }: { i: TodoItem }) {
   const to = todoTarget(i);
   const cls = "flex min-w-0 flex-1 items-center gap-3 text-left";
   const body = <Body i={i} />;
-  if (to?.to === "/contracts/$id")
+  if (to?.to === "/contracts/c/$id")
     return (
-      <Link to="/contracts/$id" params={{ id: to.id }} className={cls}>
+      <Link to="/contracts/c/$id" params={{ id: to.id }} className={cls}>
         {body}
       </Link>
     );
-  if (to?.to === "/products")
+  if (to?.to === "/contracts/products")
     return (
-      <Link to="/products" search={{ sp: to.sp, ...(to.ht ? { ht: to.ht } : {}) }} className={cls}>
+      <Link
+        to="/contracts/products"
+        search={{ sp: to.sp, ...(to.ht ? { ht: to.ht } : {}) }}
+        className={cls}
+      >
         {body}
       </Link>
     );
-  if (to?.to === "/partners")
+  if (to?.to === "/contracts/partners")
     return (
-      <Link to="/partners" search={to.party ? { party: to.party } : {}} className={cls}>
+      <Link to="/contracts/partners" search={to.party ? { party: to.party } : {}} className={cls}>
         {body}
       </Link>
     );

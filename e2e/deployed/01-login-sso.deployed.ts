@@ -94,7 +94,7 @@ test.describe("01 đăng nhập + SSO", () => {
     await login(page, CW);
     const errs = watchConsole(page);
     await settle(page);
-    await expect(page).toHaveURL(/\/overview/);
+    await expect(page).toHaveURL(/\/contracts$/);
     await expect(page.getByRole("heading", { name: "Tổng quan" })).toBeVisible();
     expect(errs.list).toEqual([]);
   });

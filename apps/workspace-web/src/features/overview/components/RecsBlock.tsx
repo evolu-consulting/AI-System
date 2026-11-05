@@ -36,7 +36,7 @@ export function RecsBlock() {
                 c.rows.map((p) => (
                   <Link
                     key={p.id}
-                    to="/products"
+                    to="/contracts/products"
                     search={{ sp: p.id }}
                     className="flex items-center gap-2 rounded-md px-1.5 py-1.5 hover:bg-sunk"
                   >

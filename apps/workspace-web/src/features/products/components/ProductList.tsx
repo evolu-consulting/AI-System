@@ -74,7 +74,7 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
           {CATALOG_TABS.map((k) => (
             <Link
               key={k}
-              to="/products"
+              to="/contracts/products"
               search={k === "all" ? {} : { g: k }}
               role="tab"
               aria-selected={tab === k}
@@ -126,11 +126,13 @@ export function ProductList({ tab }: { tab: CatalogTab }) {
                   <tr
                     key={p.id}
                     className="cursor-pointer border-b border-rule-soft last:border-0 hover:bg-sunk"
-                    onClick={() => void navigate({ to: "/products", search: { sp: p.id } })}
+                    onClick={() =>
+                      void navigate({ to: "/contracts/products", search: { sp: p.id } })
+                    }
                   >
                     <td className="px-4 py-3 font-medium">
                       <Link
-                        to="/products"
+                        to="/contracts/products"
                         search={{ sp: p.id }}
                         onClick={(e) => e.stopPropagation()}
                       >

@@ -81,7 +81,7 @@ test("lọc theo hạn + Nhắc gia hạn ⇒ việc vào Cần xử lý, hàng 
       title: "Liên hệ Khách Sắp mời gia hạn Chữ ký số 1 năm",
     });
   });
-  await page.goto(`/products?sp=${PID}&ht=users`);
+  await page.goto(`/contracts/products?sp=${PID}&ht=users`);
   await expect(page.getByRole("tab", { name: "Khách đang dùng" })).toHaveAttribute(
     "aria-selected",
     "true",

@@ -49,7 +49,7 @@ type Run = <T>(fn: (r: R) => Promise<T>) => Promise<T>;
 
 const FINAL = new Set<ESignStatus>(["completed", "declined", "voided"]);
 const baseName = (n: string) => n.replace(/\.pdf$/i, "").slice(0, 150);
-const RETURN_PATH = (id: string) => new RegExp(`/contracts/${id}/?$`);
+const RETURN_PATH = (id: string) => new RegExp(`/contracts/(?:c/)?${id}/?$`); // CR-119 p2: /contracts/c/<id> (+ dạng cũ)
 
 export function esignUsecase(d: ESignDeps) {
   /** Adapter khả dụng của khoá (cần FileBox) hoặc null. */

@@ -40,7 +40,7 @@ export function PartnerHeader({
     <>
       <PageHead
         crumb={
-          <Link to="/partners" className="font-medium text-act hover:underline">
+          <Link to="/contracts/partners" className="font-medium text-act hover:underline">
             ← {L("title")}
           </Link>
         }

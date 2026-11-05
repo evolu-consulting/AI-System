@@ -131,7 +131,7 @@ test.describe("stg · contracts-web", () => {
     const { ctx, page } = await newPage(browser);
     await login(page, URLS.cw, "demo", "demo-owner", OWNER_PW);
     await shot(page, "04-contracts-after-login");
-    await page.goto(`${URLS.cw}/settings?sec=flow`);
+    await page.goto(`${URLS.cw}/contracts/settings?sec=flow`);
     const dlg = page.getByRole("dialog");
     await expect(dlg).toBeVisible();
     await shot(page, "05-contracts-settings-flow");

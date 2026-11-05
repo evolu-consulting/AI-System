@@ -122,19 +122,19 @@ describe("V2-N · định dạng & suy diễn (todo)", () => {
   test("todoTarget: SP / đối tác / HĐ; chỉ gia hạn có Đã xong", () => {
     expect(
       todoTarget(todo({ kind: "customers_expiring", product_id: "p1", contract_id: "c1" })),
-    ).toEqual({ to: "/products", sp: "p1", ht: "users" });
+    ).toEqual({ to: "/contracts/products", sp: "p1", ht: "users" });
     expect(todoTarget(todo({ kind: "market_price", product_id: "p1" }))).toEqual({
-      to: "/products",
+      to: "/contracts/products",
       sp: "p1",
       ht: "suppliers",
     });
     expect(todoTarget(todo({ kind: "rating", party_key: "acme", contract_id: "c1" }))).toEqual({
-      to: "/partners",
+      to: "/contracts/partners",
       party: "acme",
     });
-    expect(todoTarget(todo({ kind: "rating_quarter" }))).toEqual({ to: "/partners" });
+    expect(todoTarget(todo({ kind: "rating_quarter" }))).toEqual({ to: "/contracts/partners" });
     expect(todoTarget(todo({ kind: "overdue", contract_id: "c1" }))).toEqual({
-      to: "/contracts/$id",
+      to: "/contracts/c/$id",
       id: "c1",
     });
     expect(todoTarget(todo({ kind: "overdue" }))).toBeNull();

@@ -42,7 +42,7 @@ test("owner: xem trước tác động rồi xoá hẳn ⇒ một DELETE", async
     deletes.push(r.request().postData() ?? "");
     return json(r, 200, { deleted: true, audit_id: "1", impact: {} });
   });
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await page.locator(`[data-testid="row-delete"]`).first().click();
   const list = page.getByTestId("delete-impact");
   await expect(list).toContainText("Hàng A");
@@ -52,7 +52,7 @@ test("owner: xem trước tác động rồi xoá hẳn ⇒ một DELETE", async
   await expect(orphans.getByRole("checkbox", { name: "Dịch vụ C" })).not.toBeChecked();
   await orphans.getByRole("checkbox", { name: "Dịch vụ B" }).check();
   await page.getByTestId("delete-confirm").click();
-  await expect(page).toHaveURL(/\/contracts$/);
+  await expect(page).toHaveURL(/\/contracts\/list$/);
   await expect(page.getByTestId("delete-confirm")).toHaveCount(0);
   expect(deletes.map((b) => JSON.parse(b))).toEqual([
     { remove_products: ["00000000-0000-4000-8000-0000000000b1"] },
@@ -72,7 +72,7 @@ const listRoute = (page: import("@playwright/test").Page, versions = 1) =>
 test("owner: danh sách có mắt + thùng rác, không viền", async ({ page }) => {
   await installV2f(page, { role: "owner" });
   await listRoute(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await expect(page.getByTestId("row-view").first()).toBeVisible();
   await expect(page.getByTestId("row-delete").first()).toBeEnabled();
   await expect(page.getByTestId("row-view").first()).toHaveCSS("border-top-width", "0px");
@@ -81,7 +81,7 @@ test("owner: danh sách có mắt + thùng rác, không viền", async ({ page }
 test("editor: danh sách chỉ có mắt, không thùng rác", async ({ page }) => {
   await installV2f(page, { role: "editor" });
   await listRoute(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await expect(page.getByTestId("row-view").first()).toBeVisible();
   await expect(page.getByTestId("row-delete")).toHaveCount(0);
 });
@@ -89,7 +89,7 @@ test("editor: danh sách chỉ có mắt, không thùng rác", async ({ page }) 
 test("owner: nhiều phiên bản ⇒ thùng rác khoá kèm lý do", async ({ page }) => {
   await installV2f(page, { role: "owner" });
   await listRoute(page, 2);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   const first = page.getByTestId("row-delete").first();
   await expect(first).toBeDisabled();
   await expect(first).toHaveAttribute("title", /nhiều phiên bản/);
@@ -97,7 +97,7 @@ test("owner: nhiều phiên bản ⇒ thùng rác khoá kèm lý do", async ({ p
 
 test("trang chi tiết: editor không có nút xoá", async ({ page }) => {
   await installV2f(page, { role: "editor" });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByRole("heading").first()).toBeVisible();
   await expect(page.getByTestId("delete-contract")).toHaveCount(0);
 });

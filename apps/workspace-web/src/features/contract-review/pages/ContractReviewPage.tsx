@@ -140,7 +140,7 @@ function ContractBody({
             file={file}
             canSave={canSave}
             onCancel={() =>
-              rule.cancel === "reset" ? info.reset() : void nav({ to: "/contracts" })
+              rule.cancel === "reset" ? info.reset() : void nav({ to: "/contracts/list" })
             }
             saveButton={rule.draftSave ? saveButton : null}
             confirmButton={confirmButton}

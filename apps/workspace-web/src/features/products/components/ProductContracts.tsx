@@ -32,7 +32,7 @@ export function ProductContracts({ id }: { id: string }) {
             <tr key={c.id} className="border-b border-rule-soft last:border-0">
               <td className="px-4 py-2.5">
                 <Link
-                  to="/contracts/$id"
+                  to="/contracts/c/$id"
                   params={{ id: c.id }}
                   className="font-medium text-act hover:underline"
                 >

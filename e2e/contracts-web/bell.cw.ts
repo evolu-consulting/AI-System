@@ -46,7 +46,7 @@ function notifyRoutes(api: Api): Record<string, (r: Route) => Promise<void>> {
         : json(r, 200, {
             items: [
               item(ID2, 2, "Giá nguyên liệu thay đổi", api.unread < 2, null),
-              item(ID1, 1, "Hợp đồng sắp hết hạn", api.unread < 1, "/contracts"),
+              item(ID1, 1, "Hợp đồng sắp hết hạn", api.unread < 1, "/contracts/list"),
             ],
             unread: api.unread,
             next_before: null,
@@ -95,7 +95,7 @@ test("N3-FR-09 · chuông hiện số chưa đọc và danh sách; mục chưa �
   page,
 }) => {
   await install(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await expect(bell(page)).toHaveAttribute("aria-label", "Thông báo, 2 chưa đọc");
   await expect(bell(page)).toContainText("2");
   await bell(page).click();
@@ -107,7 +107,7 @@ test("N3-FR-09 · chuông hiện số chưa đọc và danh sách; mục chưa �
 
 test("N3-FR-09 · 'Đánh dấu tất cả đã đọc' gọi API và xóa số chưa đọc", async ({ page }) => {
   const api = await install(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await bell(page).click();
   await page.getByRole("button", { name: "Đánh dấu tất cả đã đọc" }).click();
   await expect(bell(page)).toHaveAttribute("aria-label", "Thông báo");
@@ -118,10 +118,10 @@ test("N3-FR-09 · bấm một thông báo có liên kết ⇒ đánh dấu đã 
   page,
 }) => {
   const api = await install(page);
-  await page.goto("/partners");
+  await page.goto("/contracts/partners");
   await bell(page).click();
   await page.getByRole("link", { name: /Hợp đồng sắp hết hạn/ }).click();
-  await expect(page).toHaveURL(/\/contracts$/);
+  await expect(page).toHaveURL(/\/contracts\/list$/);
   expect(api.posts).toEqual([{ ids: [ID1] }]);
 });
 
@@ -130,12 +130,12 @@ test("gap-c #13 · chân chuông luôn có 'Xem tất cả' + 'Cài đặt thôn
 }) => {
   const api = await install(page, 0);
   api.failList = true; // chuông rỗng vẫn phải với tới được form tùy chọn
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await bell(page).click();
   const dialog = page.getByRole("dialog", { name: /Thông báo/ });
   await expect(dialog.getByRole("link", { name: "Cài đặt thông báo" })).toBeVisible();
   await dialog.getByRole("link", { name: "Xem tất cả" }).click();
-  await expect(page).toHaveURL(/\/notifications$/);
+  await expect(page).toHaveURL(/\/contracts\/notifications$/);
   await expect(page.getByRole("heading", { name: "Thông báo", level: 1 })).toBeVisible();
 });
 
@@ -143,7 +143,7 @@ test("gap-c #13/#11 · trang /notifications: tắt email ⇒ PUT đúng body; b�
   page,
 }) => {
   const api = await install(page);
-  await page.goto("/notifications");
+  await page.goto("/contracts/notifications");
   const email = page.getByRole("checkbox", { name: "Email" });
   await expect(email).toBeChecked();
   const put = page.waitForRequest(
@@ -169,7 +169,7 @@ test("gap-c #12 · thông báo đẩy chỉ đăng ký khi người dùng tick (
       },
     });
   });
-  await page.goto("/notifications");
+  await page.goto("/contracts/notifications");
   await expect(page.getByRole("checkbox", { name: "Email" })).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { __perm: number }).__perm)).toBe(0);
   await page.getByRole("checkbox", { name: "Thông báo đẩy trên trình duyệt" }).click();
@@ -180,7 +180,7 @@ test("N3-FR-09 · API thông báo lỗi 500 ⇒ chuông vẫn dùng được, hi
 }) => {
   const api = await install(page, 0);
   api.failList = true;
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await bell(page).click();
   await expect(page.getByText("Chưa có thông báo nào.")).toBeVisible();
   await expect(bell(page)).toHaveAttribute("aria-label", "Thông báo");

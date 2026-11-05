@@ -26,7 +26,7 @@ test("editor phụ trách: «Mở lại» ⇒ lý do bắt buộc ⇒ POST /reop
     role: "editor",
     contract: () => (reopened ? activeContract({ status: "needs_review" }) : locked()),
   });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByTestId("reopen-link").click();
   const dlg = page.getByRole("dialog", { name: "Mở lại hợp đồng" });
   await expect(dlg.getByTestId("reopen-confirm")).toBeDisabled();
@@ -50,7 +50,7 @@ test("server từ chối mở lại (403 REOPEN_FORBIDDEN) ⇒ câu lỗi, HĐ v
       body: JSON.stringify({ error: { code: "REOPEN_FORBIDDEN", message: "Forbidden" } }),
     }),
   );
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByTestId("reopen-link").click();
   const dlg = page.getByRole("dialog", { name: "Mở lại hợp đồng" });
   await dlg.getByLabel(/^Lý do mở lại/).fill("thử");
@@ -76,7 +76,7 @@ test("phiên bản v2 Chờ duyệt: số điền sẵn «số gốc-SĐ1» hi�
       },
     }),
   });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   const num = page.getByLabel("Số hợp đồng");
   await expect(num).toHaveValue("HĐ-7-SĐ1");
   await expect(num).toBeEnabled();

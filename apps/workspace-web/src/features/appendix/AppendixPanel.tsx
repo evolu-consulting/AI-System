@@ -66,7 +66,7 @@ export function AppendixPanel({ c }: { c: ContractDetail; write?: boolean }) {
         {c.parent && (
           <p className="mt-2 text-sm">
             {t("contracts.appendix.parentOf")}{" "}
-            <Link to="/contracts/$id" params={{ id: c.parent.id }} className={LINK}>
+            <Link to="/contracts/c/$id" params={{ id: c.parent.id }} className={LINK}>
               {c.parent.title}
             </Link>
           </p>
@@ -75,7 +75,7 @@ export function AppendixPanel({ c }: { c: ContractDetail; write?: boolean }) {
           <ul className="mt-2 flex flex-col gap-1 text-sm">
             {c.appendices.map((a) => (
               <li key={a.id}>
-                <Link to="/contracts/$id" params={{ id: a.id }} className={LINK}>
+                <Link to="/contracts/c/$id" params={{ id: a.id }} className={LINK}>
                   {a.title}
                 </Link>
                 <span className="ml-2 text-label text-dim">

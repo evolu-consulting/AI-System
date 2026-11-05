@@ -105,8 +105,8 @@ describe("gộp + link", () => {
   it("link chat / HĐ / đối tác; chi tiết gọn", () => {
     expect(chatLink({ conversation_id: "c1", flow_id: "f1", room_id: null })).toBe("/c/c1?flow=f1");
     expect(chatLink({ conversation_id: "c1", flow_id: "f1", room_id: "r1" })).toBe("/rooms/r1");
-    expect(recordLink("contract", "id1", null)).toBe("/contracts/id1");
-    expect(recordLink("partner", null, "tax:0101")).toBe("/partners?party=tax%3A0101");
+    expect(recordLink("contract", "id1", null)).toBe("/contracts/c/id1");
+    expect(recordLink("partner", null, "tax:0101")).toBe("/contracts/partners?party=tax%3A0101");
     expect(recordLink("system", null, null)).toBeNull();
     expect(compactDetail({})).toBeUndefined();
     expect(compactDetail({ a: "x".repeat(400) })?.length).toBe(300);

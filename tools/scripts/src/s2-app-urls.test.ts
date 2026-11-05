@@ -13,7 +13,7 @@ describe("s2-app-urls", () => {
     ]);
     expect(plan.map((c) => [c.key, c.to])).toEqual([
       ["chat", "https://ai-test.evoluconsulting.com"],
-      ["contracts", "https://app-test.evoluconsulting.com"],
+      ["contracts", "https://app-test.evoluconsulting.com/contracts"],
       ["studio", "https://ai-test-hub.evoluconsulting.com/studio/"],
       ["community", "https://app-test.evoluconsulting.com/community"],
     ]);
@@ -35,7 +35,7 @@ describe("s2-app-urls", () => {
     );
     expect(plan.map((c) => [c.key, c.to])).toEqual([
       ["chat", "https://ai.evoluconsulting.com"],
-      ["contracts", "https://app.evoluconsulting.com"],
+      ["contracts", "https://app.evoluconsulting.com/contracts"],
       ["studio", "https://ai-hub.evoluconsulting.com/studio/"],
       ["community", "https://app.evoluconsulting.com/community"],
     ]);
@@ -72,7 +72,7 @@ describe("s2-app-urls", () => {
   });
   it("CR-119: catalog contracts/community -> app[-test].<d> vô điều kiện (path giữ), thay cả hàng sohoptac cũ, idempotent", () => {
     expect(targetUrls("evoluconsulting.com", "prod")).toMatchObject({
-      contracts: "https://app.evoluconsulting.com",
+      contracts: "https://app.evoluconsulting.com/contracts",
       community: "https://app.evoluconsulting.com/community",
       chat: "https://ai.evoluconsulting.com",
     });
@@ -83,7 +83,7 @@ describe("s2-app-urls", () => {
     ];
     const plan = planUrlChanges("evoluconsulting.com", rows, "prod");
     expect(plan.map((c) => [c.key, c.to])).toEqual([
-      ["contracts", "https://app.evoluconsulting.com"],
+      ["contracts", "https://app.evoluconsulting.com/contracts"],
       ["community", "https://app.evoluconsulting.com/community"],
     ]);
     const after = plan.map((c) => ({ key: c.key, url: c.to }));
@@ -95,8 +95,26 @@ describe("s2-app-urls", () => {
         [{ key: "contracts", url: "https://sohoptac-test.evoluconsulting.com" }],
         "prod",
       ).map((c) => c.to),
-    ).toEqual(["https://app.evoluconsulting.com"]);
-    expect(targetUrls("x.com", "test").contracts).toBe("https://app-test.x.com");
+    ).toEqual(["https://app.evoluconsulting.com/contracts"]);
+    expect(targetUrls("x.com", "test").contracts).toBe("https://app-test.x.com/contracts");
+  });
+  it("CR-119 p2: hàng contracts còn là gốc app[-test].<d> (CR-119 p1) -> thêm /contracts; idempotent; không đụng hàng khác", () => {
+    const rows = [
+      { key: "contracts", url: "https://app.evoluconsulting.com" },
+      { key: "community", url: "https://app.evoluconsulting.com/community" },
+      { key: "admin", url: "https://app.evoluconsulting.com" },
+    ];
+    const plan = planUrlChanges("evoluconsulting.com", rows, "prod");
+    expect(plan.map((c) => [c.key, c.to])).toEqual([
+      ["contracts", "https://app.evoluconsulting.com/contracts"],
+    ]);
+    expect(
+      planUrlChanges(
+        "evoluconsulting.com",
+        [{ key: "contracts", url: "https://app.evoluconsulting.com/contracts" }],
+        "prod",
+      ),
+    ).toEqual([]);
   });
   it("từ chối base-domain sai", () => {
     expect(() => targetUrls("x/../y")).toThrow();

@@ -50,7 +50,7 @@ export function CriterionJobs({
                   <>
                     {" · "}
                     <Link
-                      to="/contracts/$id"
+                      to="/contracts/c/$id"
                       params={{ id: i.contract_id }}
                       className="text-act hover:underline"
                     >

@@ -32,7 +32,7 @@ export function Header({
   const toggle = t(pinned ? "contracts.shell.navCollapse" : "contracts.shell.navExpand");
   return (
     <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-rule bg-panel px-5 max-md:px-3">
-      <Link to="/overview" className="flex items-center gap-2 md:hidden">
+      <Link to="/contracts" className="flex items-center gap-2 md:hidden">
         <BrandMark
           name={nameOf(brand, user?.tenant.name)}
           logo={brand.logo}

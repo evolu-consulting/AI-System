@@ -5,7 +5,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { openSettings } from "~/features/settings/lib/bus";
 import { sectionFromKey } from "~/features/settings/lib/section-key";
 
-export const Route = createFileRoute("/_authed/settings/")({
+export const Route = createFileRoute("/_authed/contracts/settings/")({
   validateSearch: (search: Record<string, unknown>): { sec?: string } => ({
     sec: typeof search.sec === "string" && search.sec !== "" ? search.sec : undefined,
   }),
@@ -13,8 +13,8 @@ export const Route = createFileRoute("/_authed/settings/")({
     const sec = sectionFromKey(search.sec);
     if (sec) {
       openSettings(sec);
-      throw redirect({ to: "/overview", replace: true });
+      throw redirect({ to: "/contracts", replace: true });
     }
-    throw redirect({ to: "/settings/members", replace: true });
+    throw redirect({ to: "/contracts/settings/members", replace: true });
   },
 });

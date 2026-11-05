@@ -41,7 +41,7 @@ test.afterAll(async () => {
 
 test.describe("02 contracts-web", () => {
   test("Tổng quan: khối Cần xử lý + Hợp đồng + Đối tác cần xem lại có dữ liệu", async () => {
-    await go("/overview");
+    await go("/contracts");
     for (const h of ["Tổng quan", "Cần xử lý", "Hợp đồng"])
       await expect(page.getByRole("heading", { name: h }).first()).toBeVisible();
     // CR-101b: khối đối tác theo engine uy tín — HD8 "Đối tác cần xem lại", V2-E "Cần chú ý" (TQ-04).
@@ -49,18 +49,18 @@ test.describe("02 contracts-web", () => {
       page.getByRole("heading", { name: /^(Đối tác cần xem lại|Cần chú ý)$/ }).first(),
     ).toBeVisible();
     expect(await bodyText(page)).toMatch(/\d+ việc/);
-    await expect(page.locator("main a[href^='/contracts/']").first()).toBeVisible();
+    await expect(page.locator("main a[href^='/contracts/c/']").first()).toBeVisible();
     expect(errs.list).toEqual([]);
   });
 
   test("Tổng quan: 'Xem tất cả hợp đồng' sang danh sách hợp đồng", async () => {
-    await go("/overview");
+    await go("/contracts");
     await page.getByRole("link", { name: /Xem tất cả hợp đồng/ }).click();
-    await expect(page).toHaveURL(/\/contracts$/);
+    await expect(page).toHaveURL(/\/contracts\/list$/);
   });
 
   test("Cần xử lý (khối trong Tổng quan): có việc, hành động chọn kết quả hiện, không đổi dữ liệu", async () => {
-    await go("/overview");
+    await go("/contracts");
     // Có việc (quá hạn hoặc sắp tới hạn) — dữ liệu demo trôi theo ngày / PM bấm Bỏ qua nên không bắt buộc phải có việc quá hạn.
     expect(await bodyText(page)).toMatch(/quá hạn|Trễ \d+ ngày|còn \d+ ngày/);
     // V2-N: mỗi việc chỉ còn nút Bỏ qua (hoặc Đã xong cho "Liên hệ mời gia hạn"); Hẹn nhắc nằm ở trang Việc của tôi cũ.
@@ -71,7 +71,7 @@ test.describe("02 contracts-web", () => {
   });
 
   test("Hợp đồng: danh sách có dòng, tìm kiếm thu hẹp, mở Lọc", async () => {
-    await go("/contracts");
+    await go("/contracts/list");
     const rows = page.locator("table tbody tr");
     await expect(rows.first()).toBeVisible();
     const total = await rows.count();
@@ -86,9 +86,9 @@ test.describe("02 contracts-web", () => {
   });
 
   test("Hợp đồng: mở chi tiết một hợp đồng (thông tin + sản phẩm + dòng thời gian)", async () => {
-    await go("/contracts");
+    await go("/contracts/list");
     await page.locator("table tbody tr").first().getByRole("link", { name: "Xem" }).click();
-    await expect(page).toHaveURL(/\/contracts\/[0-9a-f-]{36}/);
+    await expect(page).toHaveURL(/\/contracts\/c\/[0-9a-f-]{36}/);
     for (const h of ["Thông tin hợp đồng", "Sản phẩm"])
       await expect(page.getByRole("heading", { name: h })).toBeVisible();
     expect(errs.list).toEqual([]);
@@ -96,24 +96,24 @@ test.describe("02 contracts-web", () => {
 
   // CR-097 K1/K3a: HĐ chỉ từ văn bản đã ký (không còn "Thêm thủ công"); HĐ đã xác nhận bị khoá. Không ghi dữ liệu.
   test("Hợp đồng: không còn Thêm thủ công; /contracts/new chỉ cho tải lên văn bản", async () => {
-    await go("/contracts");
+    await go("/contracts/list");
     await expect(page.getByText("Thêm thủ công")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /Upload hợp đồng/ }).first()).toBeVisible();
-    await go("/contracts/new");
+    await go("/contracts/c/new");
     expect(await bodyText(page)).toContain("Hợp đồng phải tải lên từ văn bản đã ký");
     await expect(page.locator("input[name=title]")).toHaveCount(0);
     expect(errs.list).toEqual([]);
   });
 
   test("Hợp đồng đã xác nhận: banner khoá, ô pháp lý chỉ đọc, có Tải bản cập nhật + Mở lại (chủ sở hữu)", async () => {
-    await go("/contracts");
+    await go("/contracts/list");
     await page
       .locator("table tbody tr")
       .filter({ has: page.getByTestId("row-lock") })
       .first()
       .getByRole("link", { name: /Xem/ })
       .click();
-    await expect(page).toHaveURL(/\/contracts\/[0-9a-f-]{36}/);
+    await expect(page).toHaveURL(/\/contracts\/c\/[0-9a-f-]{36}/);
     await expect(page.getByTestId("banner-locked")).toContainText("Đã xác nhận — đã khoá");
     await expect(page.locator("input[name=number]")).toBeDisabled();
     await expect(page.getByTestId("update-version")).toBeVisible();
@@ -122,7 +122,7 @@ test.describe("02 contracts-web", () => {
   });
 
   test("Đối tác: danh sách điểm uy tín có dữ liệu, mở chi tiết", async () => {
-    await go("/partners");
+    await go("/contracts/partners");
     await expect(page.getByRole("heading", { name: "Đối tác" })).toBeVisible();
     expect(await bodyText(page)).toMatch(/\d+ kết quả/);
     expect(await bodyText(page)).toMatch(/Hưng Thịnh|Hưng Phát|Bình An/);
@@ -130,7 +130,7 @@ test.describe("02 contracts-web", () => {
   });
 
   test("Đối tác: bấm tên mở chi tiết, 3 tab Tổng quan · Hợp đồng · Sổ việc & ghi chú (U3)", async () => {
-    await go("/partners");
+    await go("/contracts/partners");
     await page.getByRole("link", { name: "Hưng Thịnh" }).first().click();
     await expect(page).toHaveURL(/party=/);
     const tabs = page.getByRole("tablist", { name: "Thông tin đối tác" });
@@ -141,7 +141,7 @@ test.describe("02 contracts-web", () => {
     );
     await tabs.getByRole("tab", { name: /^Hợp đồng · \d+$/ }).click();
     await expect(page).toHaveURL(/tab=contracts/);
-    await expect(page.locator("main a[href^='/contracts/']").first()).toBeVisible();
+    await expect(page.locator("main a[href^='/contracts/c/']").first()).toBeVisible();
     await tabs.getByRole("tab", { name: /Sổ việc/ }).click();
     await expect(page).toHaveURL(/tab=review/);
     await expect(tabs.getByRole("tab", { name: /Sổ việc/ })).toHaveAttribute(
@@ -152,7 +152,7 @@ test.describe("02 contracts-web", () => {
   });
 
   test("Đối tác: đầu trang chi tiết hiện điện thoại + liên hệ (bộ mẫu v2) và sửa được", async () => {
-    await go("/partners");
+    await go("/contracts/partners");
     await page.getByRole("link", { name: "Hưng Thịnh" }).first().click();
     await expect(page).toHaveURL(/party=/);
     const lead = page.locator("main").getByText(/MST/).first();
@@ -180,7 +180,7 @@ test.describe("02 contracts-web", () => {
   });
 
   test("Đối tác: dải 'Uy tín của mình' (C10) trên danh sách", async () => {
-    await go("/partners");
+    await go("/contracts/partners");
     const box = page.getByRole("region", { name: "Uy tín của mình" });
     await expect(box).toBeVisible();
     await expect(box).toContainText(/việc của mình/);
@@ -189,7 +189,7 @@ test.describe("02 contracts-web", () => {
   });
 
   test("Nút Ứng dụng: về Chat AI không đăng nhập lại", async () => {
-    await go("/overview");
+    await go("/contracts");
     await page.getByRole("button", { name: "Ứng dụng" }).click();
     // app hiện tại (Sổ Hợp Tác) hiện trong danh sách nhưng không bấm được
     await expect(page.getByRole("menuitem", { name: /Sổ Hợp Tác/ })).toHaveAttribute(
@@ -203,10 +203,10 @@ test.describe("02 contracts-web", () => {
     await expect(page).not.toHaveURL(/\/login/);
     await expect(page.getByLabel(/Mật khẩu|Password/)).toHaveCount(0);
     // trở lại Sổ Hợp Tác để các test sau chạy tiếp trên cùng trang
-    await go("/overview");
+    await go("/contracts");
   });
   test("Sản phẩm & Giá: chi tiết sản phẩm dịch vụ có tab Lịch sử · NCC & giá · Khách đang dùng · Hợp đồng", async () => {
-    await go("/products?g=service");
+    await go("/contracts/products?g=service");
     const first = page.locator("main a[href*='sp=']").first();
     await expect(first).toBeVisible();
     await first.click();
@@ -229,7 +229,7 @@ test.describe("02 contracts-web", () => {
   });
 
   test("Sản phẩm & Giá: danh sách sản phẩm có dữ liệu (sau khi nạp bộ mẫu v2)", async () => {
-    await go("/products");
+    await go("/contracts/products");
     await expect(page.getByRole("heading", { name: "Sản phẩm & Giá" })).toBeVisible();
     expect(await bodyText(page)).not.toMatch(/Chưa có sản phẩm/);
     expect(await bodyText(page)).toMatch(/Chữ ký số|Băng keo|Thùng phi/);
@@ -238,11 +238,11 @@ test.describe("02 contracts-web", () => {
 
   test("Tuyến cũ (/prices /cks /sourcing /settings /settings/scoring) chuyển hướng, không 404", async () => {
     for (const [from, to] of [
-      ["/prices", /\/products$/],
-      ["/cks", /\/products$/],
-      ["/sourcing", /\/products$/],
-      ["/settings", /\/settings\/members$/],
-      ["/settings/scoring", /\/partners$/],
+      ["/prices", /\/contracts\/products$/],
+      ["/cks", /\/contracts\/products$/],
+      ["/sourcing", /\/contracts\/products$/],
+      ["/settings", /\/contracts\/settings\/members$/],
+      ["/settings/scoring", /\/contracts\/partners$/],
     ] as const) {
       await go(from);
       await expect(page).toHaveURL(to);
@@ -251,7 +251,13 @@ test.describe("02 contracts-web", () => {
 
   test("Cài đặt: không lộ khoá i18n thô (contracts.xxx.yyy) ở các trang chính", async () => {
     const bad: string[] = [];
-    for (const p of ["/overview", "/contracts", "/partners", "/products", "/settings/members"]) {
+    for (const p of [
+      "/contracts",
+      "/contracts/list",
+      "/contracts/partners",
+      "/contracts/products",
+      "/contracts/settings/members",
+    ]) {
       await go(p);
       const m = (await bodyText(page)).match(RAW_KEY);
       if (m) bad.push(`${p}: ${m[0]}`);
@@ -260,7 +266,7 @@ test.describe("02 contracts-web", () => {
   });
 
   test("Cài đặt mở dạng hộp thoại từ menu tài khoản", async () => {
-    await go("/overview");
+    await go("/contracts");
     await page.getByRole("button", { name: "Tài khoản" }).first().click();
     await page.getByRole("menuitem", { name: "Cài đặt", exact: true }).click();
     const dlg = page.getByRole("dialog");
@@ -280,7 +286,7 @@ test.describe("02 contracts-web", () => {
   });
 
   test("Cài đặt › Thành viên & phòng ban: tạo phòng ban E2E-DEPLOY, rồi xoá (dọn)", async () => {
-    await go("/settings/members");
+    await go("/contracts/settings/members");
     const stamp = Date.now().toString(36);
     const title = `${TAG} ${stamp}`;
     const form = page.locator("form").filter({ hasText: "Phòng ban mới" });

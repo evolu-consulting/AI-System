@@ -81,7 +81,7 @@ test("editor: Gửi ký với người ký đã sửa ⇒ Đang chờ ký ⇒ L�
     };
     return json(r, state);
   });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   const panel = page.getByTestId("esign-panel");
   await panel.getByTestId("esign-send").click();
   const dlg = page.getByRole("dialog", { name: "Gửi hợp đồng đi ký số" });
@@ -111,7 +111,7 @@ test("chưa cấu hình nhà cung cấp ⇒ «Chưa cấu hình ký số», khô
   await page.route(ES, (r) =>
     json(r, { ...base, configured: false, enabled: false, provider: null }),
   );
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("esign-hint")).toHaveText("Chưa cấu hình ký số");
   await expect(page.getByTestId("esign-send")).toHaveCount(0);
 });
@@ -132,7 +132,7 @@ test("ký thử đã ký ⇒ nhãn «Ký thử – không có giá trị pháp l
     }),
   };
   await page.route(ES, (r) => json(r, state));
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("esign-demo")).toHaveText("Ký thử – không có giá trị pháp lý");
   state = { ...base, envelope: env("declined", { reason: "Sai đơn giá" }) };
   await page.reload();

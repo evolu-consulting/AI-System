@@ -42,7 +42,7 @@ function SourceLabel({ r }: { r: SupplierPriceRow }) {
     return (
       <>
         <Link
-          to="/contracts/$id"
+          to="/contracts/c/$id"
           params={{ id: r.contract_id }}
           className="link"
           data-testid="psup-contract-link"

@@ -27,7 +27,7 @@ export function ApprovalTasksBlock() {
             className="border-b border-rule-soft last:border-b-0"
           >
             <Link
-              to="/contracts/$id"
+              to="/contracts/c/$id"
               params={{ id: r.contractId }}
               className="flex min-w-0 items-center gap-3 px-5 py-3 max-sm:px-4"
             >

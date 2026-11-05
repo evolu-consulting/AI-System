@@ -28,7 +28,7 @@ export function ContractsBlock({ today }: { today?: string }) {
         title={t("contracts.overview.contracts.title")}
         meta={facets.data && t("contracts.overview.contracts.count", { n: total })}
         aside={
-          <Link to="/contracts" className="font-medium text-act hover:underline">
+          <Link to="/contracts/list" className="font-medium text-act hover:underline">
             {t("contracts.overview.contracts.all")}
           </Link>
         }
@@ -46,7 +46,7 @@ export function ContractsBlock({ today }: { today?: string }) {
             {CONTRACT_GROUPS.map((g) => (
               <li key={g} className="contents">
                 <Link
-                  to="/contracts"
+                  to="/contracts/list"
                   data-group={g}
                   className={cn(
                     "flex flex-col items-start gap-0.5 rounded-xl border border-rule bg-panel px-3 py-2.5 transition-colors",
@@ -84,7 +84,7 @@ export function ContractsBlock({ today }: { today?: string }) {
                 >
                   <span className="min-w-0">
                     <Link
-                      to="/contracts/$id"
+                      to="/contracts/c/$id"
                       params={{ id: r.id }}
                       className="block truncate text-body font-semibold hover:underline"
                     >

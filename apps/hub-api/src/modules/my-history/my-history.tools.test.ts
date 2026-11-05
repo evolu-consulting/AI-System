@@ -105,7 +105,7 @@ describe("my-history tools", () => {
     const r = (await tool("my-activity").run(ctx, { contract: "2023/12-MP" })) as {
       records: { link: string; events: { by: string }[] }[];
     };
-    expect(r.records[0]?.link).toBe("/contracts/c1");
+    expect(r.records[0]?.link).toBe("/contracts/c/c1");
     expect(r.records[0]?.events[0]?.by).toBe("Trưởng phòng");
   });
 });

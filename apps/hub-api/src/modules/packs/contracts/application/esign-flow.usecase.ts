@@ -84,7 +84,7 @@ const bell = (user: string, id: string, title: string, body?: string): NotifyInp
   kind: "contract.esign",
   title: title.slice(0, 200),
   ...(body ? { body } : {}),
-  link: `/contracts/${id}`,
+  link: `/contracts/c/${id}`,
 });
 const needsBell = (owner: string, id: string, label: string, why: EsignReason) =>
   bell(

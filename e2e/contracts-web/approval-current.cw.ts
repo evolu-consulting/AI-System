@@ -68,7 +68,7 @@ async function install(page: Page, role: "tenant_admin" | "platform_admin") {
 }
 
 async function open(page: Page) {
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await page
     .getByRole("button", { name: /tài khoản|account/i })
     .first()

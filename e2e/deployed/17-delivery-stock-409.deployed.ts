@@ -40,7 +40,7 @@ test("[lỗi: 409 nghiệp vụ hiện «Dữ liệu vừa được cập nhật
   await page.route(`**${P}/obligations/*/settle`, (r) =>
     r.fulfill(json({ error: { code: "STOCK_INSUFFICIENT", message: MSG } }, 409)),
   );
-  await page.goto(`${CW}/contracts/${ACTIVE_ID}`);
+  await page.goto(`${CW}/contracts/c/${ACTIVE_ID}`);
   await page
     .locator('li[data-node="milestone"]', { hasText: "Giao đợt 2" })
     .getByRole("button", { name: "Xác nhận xong" })

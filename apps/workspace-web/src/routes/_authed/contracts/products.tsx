@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { parseProductsSearch } from "~/features/products/lib/tabs";
 import { ProductsPage } from "~/features/products/pages/ProductsPage";
 
-export const Route = createFileRoute("/_authed/products")({
+export const Route = createFileRoute("/_authed/contracts/products")({
   validateSearch: parseProductsSearch,
   component: ProductsPage,
 });

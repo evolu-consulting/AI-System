@@ -170,7 +170,7 @@ export function cell(key: ColumnKey, r: ContractListRow, ctx: RowCtx): ReactNode
       return (
         <td className="max-w-[260px] px-3 py-3 pl-5">
           <Link
-            to="/contracts/$id"
+            to="/contracts/c/$id"
             params={{ id: r.id }}
             className="block truncate font-semibold"
             title={r.title}
@@ -228,7 +228,7 @@ function RowActions({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   return (
     <span className="inline-flex items-center gap-1">
       <Link
-        to="/contracts/$id"
+        to="/contracts/c/$id"
         params={{ id: r.id }}
         className="btn-icon-ghost"
         aria-label={t("contracts.list.viewContract")}
@@ -295,7 +295,7 @@ export function MobileCard({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
   return (
     <li className="relative border-b border-rule-soft last:border-0">
       <Link
-        to="/contracts/$id"
+        to="/contracts/c/$id"
         params={{ id: r.id }}
         className="flex flex-col gap-1.5 px-4 py-3.5 hover:bg-sunk"
       >

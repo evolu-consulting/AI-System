@@ -29,7 +29,7 @@ export function AddProductDialog({ dlg }: { dlg: RefObject<HTMLDialogElement | n
     create.mutate(body, {
       onSuccess: (p) => {
         close();
-        void nav({ to: "/products", search: { sp: p.id } });
+        void nav({ to: "/contracts/products", search: { sp: p.id } });
       },
       onError: (e) => {
         const code = knownCatalogError(e);

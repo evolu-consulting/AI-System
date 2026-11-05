@@ -58,7 +58,7 @@ test("HD-FR-36 · cấp 1 · Xác nhận: PATCH ô đã đổi rồi POST approv
   page,
 }) => {
   const sent = await install(page, approvalAsHub("level1"));
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   // review m8 · cấp 1 hiện rõ giá trị AI đọc + trích dẫn để người xác nhận đối chiếu (kiểm soát chèn văn bản).
   const ex = page.locator("[data-approval=extracted]");
   await expect(ex).toContainText("Giá trị AI đọc được");
@@ -87,7 +87,7 @@ test("HD-FR-34 · cấp 2 · Duyệt ⇒ POST approve; người bắt đầu ⇒
       error: { code: "STARTER_CANNOT_REVIEW", message: "The run starter cannot review this stage" },
     },
   }));
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   await expect(page.getByRole("button", { name: "Xác nhận" })).toHaveCount(0);
   await page.getByRole("button", { name: "Duyệt" }).click();
   await expect(page.getByRole("alert")).toHaveText(
@@ -103,7 +103,7 @@ test("HD-FR-34 · Từ chối: thiếu lý do ⇒ báo, không gửi; có lý do
     status: 200,
     body: approvalAsHub("rejected", { feedback: "Sai đối tác" }),
   }));
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   // ux-excel E4: "Từ chối" nằm trong menu ⋯.
   await page.getByRole("button", { name: "Thêm thao tác" }).click();
   await page.getByRole("menuitem", { name: "Từ chối" }).click();
@@ -123,7 +123,7 @@ test("HD-FR-36 · không quyết được cấp 2 ⇒ ghi chú chờ, không nú
   page,
 }) => {
   await install(page, approvalAsHub("level2", { can_act: false }));
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   await expect(
     page.getByText("Đang chờ Ban giám đốc duyệt (bạn không thể duyệt bước này)."),
   ).toBeVisible();

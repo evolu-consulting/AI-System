@@ -13,7 +13,7 @@ test.describe("PK-FR-05 · trạng thái gói trên contracts-web", () => {
   }) => {
     const be = await installBackend(page, { session: true });
     be.setPack({ enabled: true, actions: [] });
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await expect(page.getByRole("heading", { name: FORBIDDEN_VI })).toBeVisible();
     await expect(page.getByRole("link", { name: "Đối tác" })).toHaveCount(0);
   });
@@ -21,7 +21,7 @@ test.describe("PK-FR-05 · trạng thái gói trên contracts-web", () => {
   test("PK-AC06 · PACK_DISABLED (gói chưa bật cho công ty) ⇒ heading riêng", async ({ page }) => {
     const be = await installBackend(page, { session: true });
     be.setPack({ enabled: false, actions: [] });
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await expect(page.getByRole("heading", { name: DISABLED_VI })).toBeVisible();
     await expect(page.getByRole("heading", { name: FORBIDDEN_VI })).toHaveCount(0);
   });
@@ -31,7 +31,7 @@ test.describe("PK-FR-05 · trạng thái gói trên contracts-web", () => {
     // prefs-sync: ngôn ngữ lấy từ /auth/me (server) trước localStorage ⇒ mock phiên trả locale en.
     const be = await installBackend(page, { session: true, locale: "en" });
     be.setPack({ enabled: true, actions: [] });
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await expect(
       page.getByRole("heading", { name: "You don't have access to the Contracts pack" }),
     ).toBeVisible();
@@ -47,7 +47,7 @@ test.describe("PK-FR-05 · trạng thái gói trên contracts-web", () => {
       page,
     }) => {
       const be = await installBackend(page, { session: true, role });
-      await page.goto("/contracts");
+      await page.goto("/contracts/list");
       await expect(
         page
           .getByRole("navigation", { name: "Điều hướng chính" })
@@ -66,7 +66,7 @@ test.describe("PK-FR-10 · trạng thái tải / lỗi", () => {
   }) => {
     const be = await installBackend(page, { session: true });
     const h = be.hold();
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await expect(page.getByRole("status", { name: "Đang tải…" })).toBeVisible();
     h.release();
     await expect(page.getByRole("status", { name: "Đang tải…" })).toHaveCount(0);
@@ -78,7 +78,7 @@ test.describe("PK-FR-10 · trạng thái tải / lỗi", () => {
   }) => {
     const be = await installBackend(page, { session: true });
     be.setPack("network");
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await expect(page.getByRole("alert")).toBeVisible();
     const retry = page.getByRole("button", { name: "Thử lại" });
     await expect(retry).toBeVisible();
@@ -92,7 +92,7 @@ test.describe("PK-FR-10 · trạng thái tải / lỗi", () => {
     page,
   }) => {
     await installBackend(page, { session: true, role: "viewer" });
-    await page.goto("/partners");
+    await page.goto("/contracts/partners");
     const main = page.getByRole("main");
     await expect(main).toBeVisible();
     await expect(main).not.toBeEmpty();

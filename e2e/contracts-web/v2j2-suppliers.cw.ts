@@ -192,7 +192,7 @@ async function open(page: Page, overview: SupplierOverviewOut = OVERVIEW): Promi
       return json(r, 200, overview);
     },
   );
-  await page.goto(`/products?sp=${PID}&ht=suppliers`);
+  await page.goto(`/contracts/products?sp=${PID}&ht=suppliers`);
   return sent;
 }
 

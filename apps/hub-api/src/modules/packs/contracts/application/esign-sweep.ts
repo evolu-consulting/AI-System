@@ -61,7 +61,7 @@ const bell = (user: string, id: string, title: string, body: string): NotifyInpu
   kind: "contract.esign",
   title: title.slice(0, 200),
   body,
-  link: `/contracts/${id}`,
+  link: `/contracts/c/${id}`,
 });
 
 /** Chuông nhắc (khi `remind`): tới lượt công ty ⇒ người ký; chờ đối tác ⇒ người phụ trách; thiếu người nhận ⇒ không chuông. */

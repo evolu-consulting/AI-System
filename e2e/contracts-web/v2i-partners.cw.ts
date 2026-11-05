@@ -185,7 +185,7 @@ async function install(page: Page, o: Opts = {}): Promise<Sent[]> {
 }
 
 async function openDetail(page: Page, query = "") {
-  await page.goto(`/partners?party=${encodeURIComponent(A)}${query}`);
+  await page.goto(`/contracts/partners?party=${encodeURIComponent(A)}${query}`);
   await page.getByRole("heading", { name: "NCC Minh An" }).waitFor();
 }
 
@@ -217,7 +217,7 @@ test("R36 · danh sách: đối tác MỚI hiện điểm tạm kèm «MỚI · 
   page,
 }) => {
   const sent = await install(page, { rows: [ROW, NEW_ROW] });
-  await page.goto("/partners");
+  await page.goto("/contracts/partners");
   const row = page
     .getByTestId("partner-list")
     .getByRole("listitem")
@@ -240,7 +240,7 @@ test("R39 · danh sách: cờ đỏ hiện nhãn Gian lận kể cả khi điể
   page,
 }) => {
   await install(page, { rows: [FLAG_ROW, { ...NEW_ROW }] });
-  await page.goto("/partners");
+  await page.goto("/contracts/partners");
   const flagged = page
     .getByTestId("partner-list")
     .getByRole("listitem")

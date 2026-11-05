@@ -331,7 +331,7 @@ function hd8Scoring(role: string) {
 }
 
 const openSettings = async (page: Page) => {
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await page
     .getByRole("button", { name: /tài khoản|account/i })
     .first()
@@ -350,7 +350,7 @@ test("hd8 · danh sách đọc /partners: không gọi /reputation/partners, kh�
   page,
 }) => {
   const { asked } = await install(page, "hd8");
-  await page.goto("/partners");
+  await page.goto("/contracts/partners");
   await expect(page.getByTestId("partner-list")).toContainText("KHÁ");
   await expect(page.getByRole("button", { name: "Bên trả hoa hồng" })).toHaveCount(0);
   expect(asked.includes("/reputation/partners")).toBe(false);
@@ -360,7 +360,7 @@ test("v2e · danh sách đọc /reputation/partners: mức theo ngưỡng, MỚI
   page,
 }) => {
   const { asked } = await install(page, "v2e");
-  await page.goto("/partners");
+  await page.goto("/contracts/partners");
   const list = page.getByTestId("partner-list");
   const flagged = list.getByRole("listitem").filter({ hasText: "NCC Minh An" });
   await expect(flagged.getByTestId("red-flag")).toContainText("Gian lận");
@@ -378,7 +378,7 @@ test("v2e · chi tiết: bảng Góp theo nhóm, các bước tới điểm cu�
   page,
 }) => {
   const { asked } = await install(page, "v2e");
-  await page.goto(`/partners?party=${encodeURIComponent(A)}`);
+  await page.goto(`/contracts/partners?party=${encodeURIComponent(A)}`);
   await page.getByRole("heading", { name: "NCC Minh An" }).waitFor();
   await expect(page.getByText("Điểm dữ liệu").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Giao đúng hạn" })).toBeVisible();
@@ -396,7 +396,7 @@ test("v2e · chi tiết: bảng Góp theo nhóm, các bước tới điểm cu�
 
 test("v2e · tab Đánh giá & ghi chú có đánh giá sao từng tiêu chí", async ({ page }) => {
   await install(page, "v2e");
-  await page.goto(`/partners?party=${encodeURIComponent(A)}&tab=review`);
+  await page.goto(`/contracts/partners?party=${encodeURIComponent(A)}&tab=review`);
   await expect(page.getByRole("heading", { name: "Đánh giá thủ công" })).toBeVisible();
 });
 
@@ -410,7 +410,7 @@ test("hd8 · chi tiết: bảng tiêu chí từ /partners/score, không biểu �
       breakdown: { on_time: { label: "Giao đúng hạn", value: 80, detail: "4/5 đợt" } },
     }),
   );
-  await page.goto(`/partners?party=${encodeURIComponent(A)}`);
+  await page.goto(`/contracts/partners?party=${encodeURIComponent(A)}`);
   await page.getByRole("heading", { name: "NCC Minh An" }).waitFor();
   await expect(page.getByText("4/5 đợt")).toBeVisible();
   await expect(page.getByTestId("threshold-good")).toHaveCount(0);
@@ -483,7 +483,7 @@ test("hd8 · Tổng quan: «Đối tác cần xem lại» (đọc /partners), kh
   page,
 }) => {
   const { asked } = await install(page, "hd8", "owner", true);
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await expect(page.getByText("Đối tác cần xem lại")).toBeVisible();
   await expect(page.getByTestId("attention-partners")).toHaveCount(0);
   expect(asked.includes("/reputation/attention")).toBe(false);
@@ -493,7 +493,7 @@ test("v2e · Tổng quan: khối «Cần chú ý» từ /reputation/attention �
   page,
 }) => {
   const { asked } = await install(page, "v2e");
-  await page.goto("/overview");
+  await page.goto("/contracts");
   const block = page.getByTestId("attention-partners");
   await expect(block.getByRole("listitem")).toHaveCount(2);
   await expect(block.getByRole("listitem").first().getByTestId("red-flag")).toContainText(

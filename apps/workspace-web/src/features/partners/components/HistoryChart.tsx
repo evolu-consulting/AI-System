@@ -107,7 +107,7 @@ export function HistoryChart({
           {RANGES.map((r) => (
             <Link
               key={r}
-              to="/partners"
+              to="/contracts/partners"
               search={{ party, role, ...(r === 12 ? {} : { range: r }) }}
               role="tab"
               aria-selected={range === r}

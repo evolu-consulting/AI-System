@@ -50,7 +50,7 @@ test("HD-FR-26 · S05 · Lưu nháp gửi PATCH chỉ ô đã đổi + version, 
   page,
 }) => {
   const sent = await install(page);
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   const value = page.getByLabel("Giá trị");
   await value.fill("250.000.000");
   await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
@@ -71,7 +71,7 @@ test.skip("HD-FR-26 · S04 · nhập tay: POST /manual đúng thân (loại Bán
   page,
 }) => {
   const sent = await installV2f(page);
-  await page.goto("/contracts/new");
+  await page.goto("/contracts/c/new");
   await page.getByRole("radio", { name: /^Bán/ }).click();
   await page.getByLabel("Tên hợp đồng").fill("Cung cấp token 2027");
   await page.getByLabel(/^Khách hàng/).fill("Công ty TNHH Gạo Ngon");
@@ -83,7 +83,7 @@ test.skip("HD-FR-26 · S04 · nhập tay: POST /manual đúng thân (loại Bán
   await page.getByLabel("Tên hàng").blur();
   await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue(P_TOKEN.id);
   await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
-  await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+  await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
   expect(sent[0]).toEqual({
     method: "POST",
     path: "/pack/contracts/contracts/manual",
@@ -109,7 +109,7 @@ test.skip("HD-FR-26 · S04 · nhập tay: POST /manual đúng thân (loại Bán
 
 test.skip("HD-FR-26 · S04 · số không đọc được ⇒ báo tên ô, không gửi", async ({ page }) => {
   const sent = await installV2f(page);
-  await page.goto("/contracts/new");
+  await page.goto("/contracts/c/new");
   await page.getByLabel("Tên hợp đồng").fill("HĐ");
   await page.getByLabel(/^Nhà cung cấp/).fill("A");
   await page.getByLabel("Tên hàng").fill("Gạo");
@@ -134,7 +134,7 @@ test("HD2 #220 · S05 · «Xem hợp đồng gốc» xin link qua API (Bearer) r
       body: "%PDF-1.4",
     }),
   );
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   const linkReq = page.waitForRequest((q) =>
     q.url().endsWith(`/contracts/${contract.id}/file-link`),
   );

@@ -26,7 +26,7 @@ export function RoleSeg({
       {roles.map((r) => (
         <Link
           key={r}
-          to="/partners"
+          to="/contracts/partners"
           search={{
             party,
             role: r,

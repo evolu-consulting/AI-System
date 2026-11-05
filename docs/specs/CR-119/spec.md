@@ -23,7 +23,20 @@ Admin (`ai-admin`), Chat (`ai`), Hub/Studio (`ai-hub`) giữ nguyên. Đường 
 
 ## 3. Chuyển đổi
 Runbook: deploy/prod-sohoptac2/README.md mục "Deploy CR-119". Tóm tắt: A tạo DNS pp/pp-test + mở rộng cert; B deploy kit, cutover.sh, s2-app-urls.ts --apply. Rollback = deploy lại ref trước CR-119 + đặt tay 2 hàng catalog (301 max-age=86400).
-Sau đó (CR riêng): đưa SHT về tiền tố `/contracts` (app.<d>/contracts) để mọi app đối xứng; `app.<d>/` thành trang chọn app. Chưa làm trong CR-119.
+Phần 2 (đưa SHT về tiền tố `/contracts`, mọi app đối xứng) xem §5; `app.<d>/` thành trang chọn app vẫn là CR riêng.
 
 ## 4. Không làm
 Không đổi đường dẫn SPA, không đổi cổng/compose, không đổi mã app, không migration; DNS/cert do người dùng làm.
+
+## 5. Phần 2 (2026-11-05): Sổ Hợp Tác dưới tiền tố `/contracts`
+**Chuẩn:** mọi app của web gộp ở `app.<d>/<app-key>/…`, `app-key` = khoá catalog (`contracts`, `community`; app mới chỉ khai khoá). `/` = đăng nhập / chuyển về home của app mặc định; `/login`, `/sso`, `/privacy`, `/terms` ngoài mọi app.
+
+| Mục | Mô tả |
+|---|---|
+| UW-DEP-07 bảng route | `/overview` → `/contracts` (Tổng quan, home) · danh sách `/contracts` → `/contracts/list` · `/contracts/:id` → `/contracts/c/:id` (+ con; `new` → `/contracts/c/new`) · `/partners*` → `/contracts/partners*` · `/products*` → `/contracts/products*` · `/notifications` (trang) → `/contracts/notifications` · `/settings*` → `/contracts/settings*` · `/feedback` → `/contracts/feedback`. Community giữ `/community`. Tuyến đã gộp trước đó (`/my-work`, `/prices`, `/sourcing`, `/cks*`, `/transactions*`, `/settings/scoring`) chuyển thẳng tới đích cuối dưới `/contracts`. |
+| UW-DEP-08 URL cũ còn chạy | Một bảng `shared/kernel/legacy-routes.ts` + root `beforeLoad` chuyển hướng phía client (giữ `?query#hash`), cũng áp cho `?next=` (`safeNext`/`landing`) ⇒ bookmark, email duyệt, thông báo đã lưu vẫn mở đúng trang. Mơ hồ duy nhất: `/contracts` TRẦN (không query/hash) trước là danh sách, nay là Tổng quan (đứng yên); có query/hash ⇒ `/contracts/list`. `/contracts/<id>` cũ ⇒ `/contracts/c/<id>`. |
+| UW-DEP-09 tổng quát theo khoá | manifest module có `basePath = /${key}`; nav, `homeFor`, `moduleOf/canOpen`, `landing`, `safeNext` suy từ khoá (đường lạ ⇒ khoá lạ ⇒ không mở được, fail-closed). Home SHT = `/contracts`, Community = `/community`. |
+| UW-DEP-10 link do server dựng | hub: chuông/email/Cần xử lý (hạn HĐ, ký số, giao nhắc, nhắc theo dõi), `recordLink` của trợ lý ⇒ `/contracts/c/<id>`, `/contracts/partners?party=…`, `/contracts`. `return_url` ký số nhận cả `/contracts/c/<id>` lẫn dạng cũ. Catalog `contracts` = `https://app[-test].<d>/contracts` (`s2-app-urls.ts` đổi cả hàng còn là gốc `app[-test].<d>`); `APP_URL_CONTRACTS`/`PUBLIC_CONTRACTS_WEB_URL` = `<gốc>/contracts`; `CONTRACTS_WEB_URL` (link "Mở SHT" của Community), `HUB_NOTIFY_BASE_URL`, CORS, `OPS_PUBLIC_URLS` vẫn là gốc host (đường dẫn nối sau). |
+| UW-DEP-11 proxy/nginx | `/contracts/*` là route SPA, KHÔNG phải API (API hợp đồng = `/pack/contracts/*`): proxy dev rsbuild và nginx `web:8081` không có khoá/location nào khớp `/contracts/*` ⇒ rơi vào `try_files … /index.html`. `/notifications` vẫn vừa API vừa route SPA cũ (GET html ⇒ index.html ⇒ legacy → `/contracts/notifications`). Test chặn va chạm. |
+
+Không đổi: API, cổng, DB, migration, cookie `Path=/auth`, ngân sách bundle. Rollback: deploy lại ref trước + đặt tay catalog `contracts` = gốc host.

@@ -35,7 +35,7 @@ function ContractRow({ c }: { c: PartnerContractRow }) {
         )}
       </td>
       <td className="pr-5 text-right">
-        <Link to="/contracts/$id" params={{ id: c.id }} className="btn btn-quiet h-8 text-[13px]">
+        <Link to="/contracts/c/$id" params={{ id: c.id }} className="btn btn-quiet h-8 text-[13px]">
           {L("view")}
         </Link>
       </td>

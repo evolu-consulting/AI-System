@@ -14,7 +14,7 @@ x-public-args: &public
   PUBLIC_ADMIN_WEB_URL: http://127.0.0.1:${S2_PORT_ADMIN:?run gen-env.sh}
   PUBLIC_CHAT_WEB_URL: http://127.0.0.1:${S2_PORT_CHAT}
   PUBLIC_AUTH_URL: ""
-  PUBLIC_CONTRACTS_WEB_URL: http://127.0.0.1:${S2_PORT_CONTRACTS:?run gen-env.sh}
+  PUBLIC_CONTRACTS_WEB_URL: http://127.0.0.1:${S2_PORT_CONTRACTS:?run gen-env.sh}/contracts
   PUBLIC_SSO_URL: http://127.0.0.1:${S2_PORT_CHAT}
   PUBLIC_APP_VERSION: cr118
 
@@ -66,7 +66,7 @@ services:
     environment:
       HOME: /tmp
       APP_URL_CHAT: ${S2_PUBLIC_CHAT_URL}
-      APP_URL_CONTRACTS: ${S2_PUBLIC_CONTRACTS_URL}
+      APP_URL_CONTRACTS: ${S2_PUBLIC_CONTRACTS_URL}/contracts
       APP_URL_STUDIO: ${S2_PUBLIC_HUB_URL}/studio/
       APP_URL_ADMIN: ${S2_PUBLIC_ADMIN_URL}
       APP_URL_COMMUNITY: ${S2_PUBLIC_COMMUNITY_URL}

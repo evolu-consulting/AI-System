@@ -26,7 +26,7 @@ export function PartnerTabs({
       {TABS.map((k) => (
         <Link
           key={k}
-          to="/partners"
+          to="/contracts/partners"
           search={{ party, ...(role ? { role } : {}), ...(k === "overview" ? {} : { tab: k }) }}
           role="tab"
           id={`partner-tab-${k}`}

@@ -86,7 +86,7 @@ export function ContractsListPage() {
   };
   // DOC-ui-gaps: tệp vừa chọn/thả chờ chọn loại chứng từ rồi mới vào hàng đợi.
   const [pending, setPending] = useState<File[] | null>(null);
-  const queue = useUploadQueue((id) => void nav({ to: "/contracts/$id", params: { id } }));
+  const queue = useUploadQueue((id) => void nav({ to: "/contracts/c/$id", params: { id } }));
   const keys = columnKeysOf(docType);
   const cols = useColumns(
     "contracts-v2",
@@ -163,7 +163,7 @@ export function ContractsListPage() {
                   }}
                 />
                 <Link
-                  to="/contracts/new"
+                  to="/contracts/c/new"
                   search={{ type: "deal" }}
                   className="btn btn-quiet btn-sm"
                   data-testid="add-deal"
@@ -250,7 +250,7 @@ export function ContractsListPage() {
                       <tr
                         key={x.item.id}
                         onClick={() =>
-                          void nav({ to: "/contracts/$id", params: { id: x.item.id } })
+                          void nav({ to: "/contracts/c/$id", params: { id: x.item.id } })
                         }
                         className="cursor-pointer border-b border-rule-soft align-top last:border-0 hover:bg-sunk"
                       >
@@ -264,7 +264,7 @@ export function ContractsListPage() {
                         key={`c-${x.child.id}`}
                         data-testid="child-row"
                         onClick={() =>
-                          void nav({ to: "/contracts/$id", params: { id: x.child.id } })
+                          void nav({ to: "/contracts/c/$id", params: { id: x.child.id } })
                         }
                         className="cursor-pointer border-b border-rule-soft bg-sunk/40 align-top last:border-0 hover:bg-sunk"
                       >

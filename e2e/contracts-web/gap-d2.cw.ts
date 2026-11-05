@@ -119,7 +119,7 @@ async function open(page: Page, url: string, extra: Record<string, unknown> = {}
 test("#24 · nhiều người liên hệ: hiện danh sách, thêm người, lưu thay cả danh sách", async ({
   page,
 }) => {
-  const sent = await open(page, `/partners?party=${encodeURIComponent(A)}`);
+  const sent = await open(page, `/contracts/partners?party=${encodeURIComponent(A)}`);
   const list = page.getByRole("list", { name: "Điện thoại và người liên hệ" });
   await expect(list).toContainText("Chị Lan");
   await expect(list).toContainText("Phụ trách bên mình: Hoa");
@@ -155,7 +155,7 @@ test("#24 · nhiều người liên hệ: hiện danh sách, thêm người, lư
 test("#23 · Thêm công ty: gõ MST ⇒ chỉ gửi MST, hiện tên/địa chỉ theo Cục Thuế", async ({
   page,
 }) => {
-  const sent = await open(page, "/partners");
+  const sent = await open(page, "/contracts/partners");
   await page.getByRole("button", { name: "Thêm công ty" }).click();
   await page.getByLabel("Mã số thuế").fill("0312345678");
   await page.getByRole("button", { name: "Tra Cục Thuế và thêm" }).click();

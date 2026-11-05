@@ -68,7 +68,7 @@ export function FrameDiary({
             >
               <span className="w-24 shrink-0 text-dim">{n.date ? viDate(n.date) : "—"}</span>
               <Link
-                to="/contracts/$id"
+                to="/contracts/c/$id"
                 params={{ id: n.child.id }}
                 className="min-w-0 flex-1 truncate font-medium hover:underline"
               >

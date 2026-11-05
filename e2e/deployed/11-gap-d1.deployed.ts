@@ -21,7 +21,7 @@ test.afterAll(async () => {
 test.describe("11 gap-d1", () => {
   test("thêm SP tay → nhập lô → cách lấy hàng → nhận diện → nhập giá tay", async () => {
     test.setTimeout(180_000);
-    await page.goto(`${CW}/products`);
+    await page.goto(`${CW}/contracts/products`);
     await settle(page);
     await page.getByTestId("gd1-add-product").click();
     await page.getByTestId("gd1-p-name").fill(`${TAG} Cáp mạng ${RUN}`);

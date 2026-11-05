@@ -15,12 +15,12 @@ export function NewContractPage() {
   const { write } = useMe();
   const nav = useNavigate();
   const file = useRef<HTMLInputElement>(null);
-  const queue = useUploadQueue((id) => void nav({ to: "/contracts/$id", params: { id } }));
+  const queue = useUploadQueue((id) => void nav({ to: "/contracts/c/$id", params: { id } }));
   return (
     <div className="text-base leading-[1.55]">
       <PageHead
         crumb={
-          <Link to="/contracts" className="hover:underline">
+          <Link to="/contracts/list" className="hover:underline">
             {t("contracts.review.back")}
           </Link>
         }

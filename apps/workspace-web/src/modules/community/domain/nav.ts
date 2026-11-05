@@ -15,10 +15,11 @@ export type NavInput = {
 
 /** Đường dẫn contracts-web của 4 mục Sổ Hợp Tác (mockup hợp nhất). */
 export const SHT_PATHS = {
-  overview: "/overview",
-  contracts: "/contracts",
-  partners: "/partners",
-  products: "/products",
+  // CR-119 phần 2: SHT dưới `/contracts` (module không import module khác ⇒ chuỗi, khớp manifest contracts basePath).
+  overview: "/contracts",
+  contracts: "/contracts/list",
+  partners: "/contracts/partners",
+  products: "/contracts/products",
 } as const;
 
 export const hasContractsGroup = (v: Pick<NavInput, "caps" | "contractsUrl">): boolean =>

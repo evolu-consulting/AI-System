@@ -51,7 +51,7 @@ export function Sidebar({
       )}
     >
       <Link
-        to="/overview"
+        to="/contracts"
         className="mb-2 flex h-10 items-center gap-2.5 overflow-hidden px-1.5"
         title={app}
         aria-label={app}

@@ -26,7 +26,7 @@ type Props = {
 export function ContractHead(p: Props) {
   const { t } = useTranslation();
   const crumb = (
-    <Link to="/contracts" className="hover:underline">
+    <Link to="/contracts/list" className="hover:underline">
       {t("contracts.review.back")}
     </Link>
   );

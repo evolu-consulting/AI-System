@@ -54,7 +54,7 @@ function ChildRow({
   return (
     <tr className="border-t border-rule-soft" data-testid="frame-child">
       <td className="px-4 py-2.5 first:pl-5">
-        <Link to="/contracts/$id" params={{ id: ch.id }} className="font-medium hover:underline">
+        <Link to="/contracts/c/$id" params={{ id: ch.id }} className="font-medium hover:underline">
           {ch.title}
         </Link>
         {ch.number && <span className="ml-2 text-dim">{ch.number}</span>}
@@ -98,10 +98,10 @@ function AddMenu({ id, onAttach }: { id: string; onAttach: () => void }) {
     <details className="relative ml-auto" data-testid="frame-add-menu">
       <summary className="btn btn-outline btn-sm cursor-pointer list-none">{L("add")}</summary>
       <div className="absolute right-0 z-10 mt-1 w-64 rounded-lg border border-rule bg-panel py-1 shadow-lg">
-        <a className={item} href={`/contracts/new?frame=${id}&type=contract`}>
+        <a className={item} href={`/contracts/c/new?frame=${id}&type=contract`}>
           {L("addContract")}
         </a>
-        <a className={item} href={`/contracts/new?frame=${id}&type=deal`}>
+        <a className={item} href={`/contracts/c/new?frame=${id}&type=deal`}>
           {L("addDeal")}
         </a>
         <button type="button" className={item} data-testid="frame-attach-open" onClick={onAttach}>

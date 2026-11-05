@@ -44,7 +44,7 @@ export function VersionsBlock({
                 <button
                   type="button"
                   className="btn btn-outline btn-sm"
-                  onClick={() => void nav({ to: "/contracts/$id", params: { id: v.id } })}
+                  onClick={() => void nav({ to: "/contracts/c/$id", params: { id: v.id } })}
                 >
                   {t("contracts.versions.view")}
                 </button>

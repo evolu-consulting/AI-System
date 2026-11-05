@@ -40,7 +40,7 @@ export function followupSendRepo(tx: Tx, tenantId: string): FollowupSendRepo {
             'kind', 'contract.followup', 'title', left(coalesce(nullif(btrim(up.title), ''), 'Hẹn nhắc'), 200),
             'body', left(trim(both E'\n' from coalesce(up.note, '') || E'\nĐã hẹn nhắc lúc '
               || to_char(up.due_at at time zone ${tz}::text, 'HH24:MI DD/MM') || '.'), 2000),
-            'link', case when up.contract_id is null then '/my-work' else '/contracts/' || up.contract_id end,
+            'link', case when up.contract_id is null then '/contracts' else '/contracts/c/' || up.contract_id end,
             'dedup_key', 'followup:' || up.id || ':' || to_char(up.due_at at time zone 'UTC', 'YYYYMMDDHH24MI'))) from up),
             '[]'::jsonb)) as notified`);
       return { claimed: r?.claimed ?? 0, notified: r?.notified ?? 0 };

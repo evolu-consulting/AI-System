@@ -39,7 +39,7 @@ test.describe("HD-FR-51 · danh sách phía server", () => {
         return json(r, listAsHub());
       },
     );
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await expect(page.getByText("Hợp đồng cung cấp gia vị").first()).toBeVisible();
     expect(queries[0]?.get("page")).toBe("1");
     await page.getByRole("button", { name: "Lọc", exact: true }).click();
@@ -71,7 +71,7 @@ test.describe("HD-FR-51 · danh sách phía server", () => {
           parents: [{ id: parent?.id, title: parent?.title, number: parent?.number }],
         }),
     );
-    await page.goto("/contracts");
+    await page.goto("/contracts/list");
     await expect(
       page.getByText("PL01 · Phụ lục của Hợp đồng mua bán bao bì 2026").first(),
     ).toBeVisible();
@@ -144,7 +144,7 @@ test.describe
           ],
         }),
       );
-      await page.goto(`/contracts/${contract.id}`);
+      await page.goto(`/contracts/c/${contract.id}`);
       const panel = page.locator("[data-hd5=appendix]");
       await expect(panel.getByRole("link", { name: "Phụ lục 01" }).first()).toBeVisible();
       await expect(panel.getByText("hiệu lực từ 01/07/2026")).toBeVisible();
@@ -157,7 +157,7 @@ test.describe
       page,
     }) => {
       await install(page);
-      await page.goto(`/contracts/${contract.id}`);
+      await page.goto(`/contracts/c/${contract.id}`);
       const panel = page.locator("[data-hd5=appendix]");
       await expect(panel.getByTestId("appendix-readonly")).toBeVisible();
       await expect(page.getByRole("button", { name: /Gắn làm phụ lục/ })).toHaveCount(0);

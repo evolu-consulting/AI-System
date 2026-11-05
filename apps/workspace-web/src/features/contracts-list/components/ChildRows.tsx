@@ -48,7 +48,7 @@ export function ChildRowCells({
             return (
               <td key={k} className="max-w-[260px] px-3 py-2.5 pl-5">
                 <Link
-                  to="/contracts/$id"
+                  to="/contracts/c/$id"
                   params={{ id: child.id }}
                   className={cn("block truncate", orphan ? "font-semibold" : "pl-6")}
                   title={child.title}
@@ -93,7 +93,7 @@ export function ChildRowCells({
       })}
       <td className="px-3 py-2.5 pr-5 text-right whitespace-nowrap">
         <Link
-          to="/contracts/$id"
+          to="/contracts/c/$id"
           params={{ id: child.id }}
           className="btn-icon-ghost"
           aria-label={t("contracts.list.viewContract")}
@@ -113,7 +113,7 @@ export function ChildCard({ child, orphan }: { child: ListFrameChild; orphan: bo
   return (
     <li className="border-b border-rule-soft last:border-0">
       <Link
-        to="/contracts/$id"
+        to="/contracts/c/$id"
         params={{ id: child.id }}
         className={cn("flex flex-col gap-1 py-3 pr-4 hover:bg-sunk", orphan ? "pl-4" : "pl-9")}
       >

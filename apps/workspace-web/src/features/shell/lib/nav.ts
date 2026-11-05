@@ -1,21 +1,28 @@
 // PK-FR-10 · TF5 · nav-v2 (người dùng chốt 2026-10-20): 4 mục menu — Tổng quan · Hợp đồng · Đối tác · Sản phẩm & Giá — theo mockup NITI;
-// vai suy từ quyền gói (`write`/`owner`). Tuyến cũ (/my-work, /prices, /cks, /sourcing) chuyển hướng vào Tổng quan / Sản phẩm & Giá.
+// vai suy từ quyền gói (`write`/`owner`). CR-119 p2: mọi đường dẫn dưới `/contracts`; tuyến cũ chuyển hướng bằng shared/kernel/legacy-routes.
 import type { ComponentType, SVGProps } from "react";
 import { IconBox, IconContract, IconOverview, IconPartners } from "~/components/icons";
+import { basePathOf } from "~/shared/kernel/app-path";
+
+/** CR-119 phần 2: SHT dưới `/contracts` (basePath = `/${key}`). */
+const B = basePathOf("contracts");
 
 export type NavItem = {
-  to: "/overview" | "/contracts" | "/partners" | "/products";
+  to: "/contracts" | "/contracts/list" | "/contracts/partners" | "/contracts/products";
   labelKey: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
+  /** Chỉ sáng khi path đúng bằng `to` (Tổng quan = gốc app, mọi trang khác nằm dưới nó). */
+  exact?: true;
+  /** Tiền tố con cũng thuộc mục này (chi tiết `/contracts/c/<id>` → "Hợp đồng"). */
+  also?: readonly string[];
 };
 
 export const NAV: readonly NavItem[] = [
-  { to: "/overview", labelKey: "contracts.nav.overview", icon: IconOverview },
-  { to: "/contracts", labelKey: "contracts.nav.contracts", icon: IconContract },
-  { to: "/partners", labelKey: "contracts.nav.partners", icon: IconPartners },
-  { to: "/products", labelKey: "contracts.nav.products", icon: IconBox },
+  { to: B, labelKey: "contracts.nav.overview", icon: IconOverview, exact: true },
+  { to: `${B}/list`, labelKey: "contracts.nav.contracts", icon: IconContract, also: [`${B}/c`] },
+  { to: `${B}/partners`, labelKey: "contracts.nav.partners", icon: IconPartners },
+  { to: `${B}/products`, labelKey: "contracts.nav.products", icon: IconBox },
 ];
-
 export type Role = "owner" | "editor" | "viewer";
 
 export const roleOf = (p: { write: boolean; owner: boolean }): Role =>
@@ -28,30 +35,21 @@ export const isCompanyAdmin = (tenantRole: string | undefined): boolean =>
 export const canSeeSettings = (r: Role, tenantRole?: string): boolean =>
   r !== "viewer" || isCompanyAdmin(tenantRole);
 
-/** Tuyến cũ vẫn còn làm chuyển hướng (và `/cks/$id`, chi tiết khách) → mục menu chứa nó. */
-const LEGACY: readonly [prefix: string, to: NavItem["to"]][] = [
-  ["/cks", "/products"],
-  ["/prices", "/products"],
-  ["/sourcing", "/products"],
-  ["/my-work", "/overview"],
-  // DOC-ui-list: Giao dịch gộp vào "Hợp đồng & giao dịch" (`/transactions*` chuyển hướng sang danh sách lọc Giao dịch).
-  ["/transactions", "/contracts"],
-];
-
 const under = (pathname: string, prefix: string): boolean =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
-/** Mục menu đang chọn theo đường dẫn (`/cks/123` → Sản phẩm & Giá). */
+/** Mục menu đang chọn theo đường dẫn (`/contracts/c/123` → Hợp đồng). Tuyến SHT cũ ở gốc đã được chuyển hướng (shared/kernel/legacy-routes). */
 export function activeNav(pathname: string): NavItem | undefined {
-  const hit = NAV.find((n) => under(pathname, n.to));
-  if (hit) return hit;
-  const to = LEGACY.find(([p]) => under(pathname, p))?.[1];
-  return NAV.find((n) => n.to === to);
+  return NAV.find((n) =>
+    n.exact
+      ? pathname === n.to
+      : under(pathname, n.to) || (n.also ?? []).some((a) => under(pathname, a)),
+  );
 }
 
 /** Bố cục vùng nội dung: danh sách đầy cột (`board`, rộng 1600 px, tự giữ cuộn từ md), Tổng quan (`wide`), còn lại `reading`. */
 export type PageLayout = "board" | "wide" | "reading";
 export function layoutOf(pathname: string): PageLayout {
-  if (pathname === "/overview") return "wide";
-  return ["/contracts", "/partners", "/products"].includes(pathname) ? "board" : "reading";
+  if (pathname === B) return "wide";
+  return [`${B}/list`, `${B}/partners`, `${B}/products`].includes(pathname) ? "board" : "reading";
 }

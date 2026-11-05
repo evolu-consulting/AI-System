@@ -6,6 +6,8 @@
 // cũ `community[-test].<d>` cũng được đổi. Staging/UAT (không domain): `--community-url http://127.0.0.1:28531/community --apply` chỉ chỉnh hàng community.
 // CR-119 (quyết định 2026-11-05): web gộp CHỈ ở pp[-test].<d> — contracts → https://app[-test].<d>, community → https://app[-test].<d>/community;
 // hàng còn host sohoptac[-test].<d> cũng được đổi (idempotent). Chạy SAU khi DNS + cert của app.<d> sẵn sàng.
+// CR-119 phần 2: SHT dưới tiền tố app — contracts → https://app[-test].<d>/contracts (khoá catalog = tiền tố); hàng contracts còn là gốc
+// `https://app[-test].<d>` (CR-119 p1 đã áp) cũng được đổi. `app.<d>/` thành trang chọn app (CR sau).
 import postgres from "postgres";
 
 export type CatalogRow = { key: string; url: string; sso?: boolean };
@@ -18,6 +20,8 @@ const TESTHOST =
 const LEGACY_COMMUNITY = /^https:\/\/community(-test)?\.[a-z0-9.-]+(\/|$)/i;
 /** CR-119: host chính cũ `sohoptac[-test].<d>` — thay bằng `app[-test].<d>`. */
 const SOHOPTAC_HOST = /^https:\/\/sohoptac(-test)?\.[a-z0-9.-]+(\/|$)/i;
+/** CR-119 p2: hàng contracts còn là gốc host web gộp (chưa có tiền tố `/contracts`). */
+const APP_ROOT = /^https:\/\/app(-test)?\.[a-z0-9.-]+\/?$/i;
 const BASE = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/;
 export type Hosts = "test" | "prod";
 
@@ -28,7 +32,7 @@ export function targetUrls(base: string, hosts: Hosts = "test"): Record<string, 
   const app = `https://app${sfx}.${base}`;
   return {
     chat: `https://ai${sfx}.${base}`,
-    contracts: app,
+    contracts: `${app}/contracts`, // CR-119 p2: tiền tố app = khoá catalog
     studio: `https://ai${sfx}-hub.${base}/studio/`,
     admin: `https://ai${sfx}-admin.${base}`,
     community: `${app}/community`, // community.<d> chi con 301 (edge-lib.sh)
@@ -46,7 +50,8 @@ export function planUrlChanges(
     LOCAL.test(r.url) ||
     (r.key === "community" && LEGACY_COMMUNITY.test(r.url)) ||
     (hosts === "prod" && TESTHOST.test(r.url)) ||
-    ((r.key === "contracts" || r.key === "community") && SOHOPTAC_HOST.test(r.url));
+    ((r.key === "contracts" || r.key === "community") && SOHOPTAC_HOST.test(r.url)) ||
+    (r.key === "contracts" && APP_ROOT.test(r.url));
   return rows.flatMap((r) =>
     t[r.key] !== undefined && old(r) && r.url !== t[r.key]
       ? [{ key: r.key, from: r.url, to: t[r.key] as string }]
@@ -110,7 +115,8 @@ async function main(): Promise<void> {
         or a.url ~* '^https?://(localhost|127\\.0\\.0\\.1|\\[::1\\])(:[0-9]+)?(/|$)'
         or (a.key = 'community' and a.url ~* '^https://community(-test)?\\.')
         or (${o.hosts === "prod"} and a.url ~* '^https://(ai-test|ai-test-admin|ai-test-hub|community-test)\\.')
-        or (a.key in ('contracts', 'community') and a.url ~* '^https://sohoptac(-test)?\\.'))`;
+        or (a.key in ('contracts', 'community') and a.url ~* '^https://sohoptac(-test)?\\.')
+        or (a.key = 'contracts' and a.url ~* '^https://app(-test)?\\.[a-z0-9.-]+/?$'))`;
     const s = await sql`
       update admin.app_catalog set sso = false, version = version + 1, updated_at = now()
       where key = 'community' and sso`;

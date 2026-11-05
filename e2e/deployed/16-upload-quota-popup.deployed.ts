@@ -25,7 +25,7 @@ test("[popup hết lượt] 429 UPLOAD_QUOTA ⇒ popup một lần, dừng hàng
       });
     },
   );
-  await page.goto(`${CW}/contracts`);
+  await page.goto(`${CW}/contracts/list`);
   await settle(page);
   await page.locator('input[type="file"]').setInputFiles([
     { name: `${TAG}-a.pdf`, mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 a") },

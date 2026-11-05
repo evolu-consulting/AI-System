@@ -4,6 +4,7 @@
 //    (server pack guard / `external-deny` là nguồn thật, đây chỉ ẩn UI);
 //  · home theo quyền, path → module, có dội sang AI System không (`/community*` không dội — đối tác không có chat-web).
 // Lớp domain (ADR-0023): chỉ built-in — kiểu trả lời tự khai (khớp cấu trúc `LoginResponse` của @ai/contracts).
+import { appKeyOf, basePathOf } from "~/shared/kernel/app-path";
 import { safeNext } from "./next";
 
 /** Người dùng tối thiểu: `kind` vắng (server cũ) ⇒ nội bộ. */
@@ -27,10 +28,15 @@ export function stepOf<U>(res: LoginReply<U>): LoginStep<U> {
 
 /** `home` = khoá gói trang chủ server chọn (`/pack/me.home`: default_app user → công ty, chỉ gói user đọc được). */
 export type AccessCaps = { contracts: boolean; community: boolean; home?: string | null };
-export type WebModule = "contracts" | "community" | "public";
+/** Khoá app (= `AppManifest.key` = khoá catalog) hoặc "public" (trang công khai / không thuộc app nào). */
+export type WebModule = string;
 
-export const HOME_CONTRACTS = "/overview";
-export const HOME_COMMUNITY = "/community";
+/** CR-119 phần 2: home của mỗi app = gốc `/${key}` (manifest `basePath`); app mới chỉ cần khai khoá. */
+export const HOME_CONTRACTS = basePathOf("contracts");
+export const HOME_COMMUNITY = basePathOf("community");
+
+const isOpen = (caps: AccessCaps, appKey: string): boolean =>
+  (caps as unknown as Record<string, unknown>)[appKey] === true;
 
 /** `apps` = id manifest module được hiện từ `/pack/me` (null = FeatureGate chưa nối / chưa tải). */
 export function capsOf(
@@ -49,26 +55,21 @@ export function capsOf(
 
 /** Home theo `caps.home` (default_app) nếu module đó mở được; không thì cách cũ (SHT trước, rồi Community). */
 export function homeFor(caps: AccessCaps): string {
-  if (caps.home === "contracts" && caps.contracts) return HOME_CONTRACTS;
-  if (caps.home === "community" && caps.community) return HOME_COMMUNITY;
+  if (caps.home && isOpen(caps, caps.home)) return basePathOf(caps.home);
   return caps.contracts || !caps.community ? HOME_CONTRACTS : HOME_COMMUNITY;
 }
 
-const PUBLIC = new Set(["/", "/login", "/sso", "/privacy", "/terms"]);
-
+/** App của path (`/contracts/c/1` → `contracts`); trang công khai / không thuộc app → "public". Path lạ ⇒ khoá lạ ⇒ canOpen=false (fail-closed). */
 export function moduleOf(href: string): WebModule {
-  const path = href.split(/[?#]/, 1)[0] || "/";
-  if (PUBLIC.has(path)) return "public";
-  if (path === "/community" || path.startsWith("/community/")) return "community";
-  return "contracts";
+  return appKeyOf(href) ?? "public";
 }
 
 export function canOpen(href: string, caps: AccessCaps): boolean {
   const m = moduleOf(href);
-  return m === "public" || caps[m];
+  return m === "public" || isOpen(caps, m);
 }
 
-/** Đích sau đăng nhập: `next` nội bộ an toàn VÀ mở được, không thì home theo quyền. */
+/** Đích sau đăng nhập: `next` nội bộ an toàn (đã quy về URL chuẩn mới) VÀ mở được, không thì home theo quyền. */
 export function landing(caps: AccessCaps, next: unknown): string {
   const n = safeNext(next);
   return n && n !== "/" && canOpen(n, caps) ? n : homeFor(caps);

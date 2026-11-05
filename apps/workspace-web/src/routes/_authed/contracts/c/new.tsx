@@ -16,7 +16,7 @@ function NewRoute() {
   );
 }
 
-export const Route = createFileRoute("/_authed/contracts/new")({
+export const Route = createFileRoute("/_authed/contracts/c/new")({
   validateSearch: (s: Record<string, unknown>): NewSearch => ({
     ...(s.type === "deal" || s.type === "contract" ? { type: s.type } : {}),
     ...(typeof s.frame === "string" && UUID.test(s.frame) ? { frame: s.frame } : {}),

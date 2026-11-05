@@ -1,4 +1,5 @@
 // PK-FR-10 · TF4 · CR-118 · tham số `next` của /login: chỉ nhận đường dẫn tương đối nội bộ (chống open redirect; như chat-web).
+import { canonicalHref } from "~/shared/kernel/legacy-routes";
 
 function hasControlChar(s: string): boolean {
   for (const ch of s) {
@@ -17,5 +18,6 @@ export function safeNext(raw: unknown): string | undefined {
   // Trình duyệt gỡ tab/CR/LF khi phân tích URL → `/\t/evil.com` thành `//evil.com`.
   if (hasControlChar(raw)) return undefined;
   if (raw === "/login" || raw.startsWith("/login?")) return undefined;
-  return raw;
+  // CR-119 phần 2: `next` cũ (/overview, /contracts/<id>, /partners…) quy về URL chuẩn mới dưới /contracts.
+  return canonicalHref(raw);
 }

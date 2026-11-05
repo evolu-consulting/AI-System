@@ -18,7 +18,7 @@ function FrameRef({ doc }: { doc: ContractDetail["doc"] }) {
     <span>
       · {t("contracts.docframe.belongs")}{" "}
       <Link
-        to="/contracts/$id"
+        to="/contracts/c/$id"
         params={{ id: link.id }}
         className="font-medium text-act hover:underline"
         data-testid="frame-ref"

@@ -52,7 +52,7 @@ async function open(page: Page, role: Role, over: Record<string, unknown> = {}) 
       ],
     }),
   );
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   return sent;
 }
 

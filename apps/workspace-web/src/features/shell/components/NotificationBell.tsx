@@ -66,10 +66,10 @@ export function NotificationBell({
           )}
           {/* gap-c #13: chân luôn có — danh sách đầy đủ + form tùy chọn (kể cả khi chưa có thông báo). */}
           <div className="flex items-center justify-between border-t border-rule px-4 py-3 text-micro font-medium">
-            <Link to="/notifications" className="text-act hover:underline">
+            <Link to="/contracts/notifications" className="text-act hover:underline">
               {t("contracts.shell.notificationsViewAll")}
             </Link>
-            <Link to="/notifications" hash="prefs" className="text-act hover:underline">
+            <Link to="/contracts/notifications" hash="prefs" className="text-act hover:underline">
               {t("contracts.shell.notificationsSettings")}
             </Link>
           </div>

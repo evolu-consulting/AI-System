@@ -111,7 +111,7 @@ async function install(page: Page, role: "tenant_admin" | "member") {
 }
 
 async function open(page: Page) {
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await page
     .getByRole("button", { name: /tài khoản|account/i })
     .first()
@@ -199,7 +199,7 @@ test("409: báo 'đã có người sửa', giữ bản nháp, Tải lại lấy 
 
 test("thành viên không thấy mục 'Ứng dụng & quy trình'", async ({ page }) => {
   await install(page, "member");
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await page
     .getByRole("button", { name: /tài khoản|account/i })
     .first()

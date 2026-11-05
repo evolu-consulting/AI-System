@@ -37,11 +37,26 @@ describe("rsbuild.config (D-18)", () => {
     expect(n?.bypass({ method: "PUT", headers: { accept: "text/html" } })).toBeNull();
   });
 
-  test("route SPA (/contracts, /partners…) không bị proxy", () => {
+  test("CR-119 p2 · route SPA dưới /contracts (và /community, /login, /sso) không trùng khoá proxy API (`/pack/contracts/*` mới là API)", () => {
     const keys = Object.keys(config.server?.proxy ?? {});
-    for (const spa of ["/contracts", "/partners", "/prices", "/cks", "/settings", "/login"]) {
-      expect(keys.some((k) => spa.startsWith(k))).toBe(false);
-    }
+    const spa = [
+      "/contracts",
+      "/contracts/list",
+      "/contracts/c/abc",
+      "/contracts/c/new",
+      "/contracts/partners",
+      "/contracts/products",
+      "/contracts/settings/members",
+      "/contracts/notifications",
+      "/community",
+      "/community/profile/o1/info",
+      "/login",
+      "/sso",
+    ];
+    for (const path of spa)
+      expect(keys.some((k) => path === k || path.startsWith(`${k}/`))).toBe(false);
+    // API hợp đồng nằm dưới /pack ⇒ đúng khoá proxy, không phải route SPA
+    expect(keys.some((k) => "/pack/contracts/overview".startsWith(`${k}/`))).toBe(true);
   });
 
   test("cổng 3300 cố định (e2e N1 ghi đè bằng --port)", () => {

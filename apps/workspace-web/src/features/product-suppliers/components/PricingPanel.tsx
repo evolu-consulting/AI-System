@@ -49,7 +49,7 @@ export function PricingPanel({ pricing }: { pricing: ProductPricing }) {
                   </td>
                   <td className="border-t border-rule-soft px-4 py-2.5 text-sm">
                     <Link
-                      to="/contracts/$id"
+                      to="/contracts/c/$id"
                       params={{ id: s.contract_id }}
                       className="text-act hover:underline"
                     >

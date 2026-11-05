@@ -7,7 +7,7 @@ function FeedbackRoute() {
   useEffect(() => {
     window.dispatchEvent(new Event(FEEDBACK_OPEN));
   }, []);
-  return <Navigate to="/contracts" replace />;
+  return <Navigate to="/contracts/list" replace />;
 }
 
-export const Route = createFileRoute("/_authed/feedback")({ component: FeedbackRoute });
+export const Route = createFileRoute("/_authed/contracts/feedback")({ component: FeedbackRoute });

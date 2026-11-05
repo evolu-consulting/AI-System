@@ -127,7 +127,7 @@ async function install(page: Page, role: Role) {
   return sent;
 }
 const open = async (page: Page) => {
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await page
     .getByRole("button", { name: /tài khoản|account/i })
     .first()
@@ -255,13 +255,13 @@ test("CR-110: /settings?sec=biz mở thẳng hộp thoại ở mục Điểm kin
   page,
 }) => {
   await install(page, "owner");
-  await page.goto("/settings?sec=biz");
+  await page.goto("/contracts/settings?sec=biz");
   const dlg = page.getByRole("dialog", { name: "Cài đặt" });
   await expect(dlg.getByRole("button", { name: /Điểm kinh doanh/ }).first()).toHaveAttribute(
     "aria-current",
     "true",
   );
-  await page.goto("/settings?sec=khong-co");
+  await page.goto("/contracts/settings?sec=khong-co");
   await expect(
     page
       .getByRole("dialog", { name: "Cài đặt" })

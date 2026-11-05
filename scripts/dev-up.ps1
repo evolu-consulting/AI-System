@@ -85,7 +85,7 @@ $coreEnv = @{ HUB_DEV_RUNTIME = "none"; HUB_SEED_FIXTURES = "1"
   CONTRACTS_APPROVAL_ENGINE = "on"
   # catalog ứng dụng (switcher "Ứng dụng", link "Đặt trong Sổ Hợp Tác" của Agents): admin-api điền URL còn rỗng từ APP_URL_*
   APP_URL_ADMIN = "http://localhost:3000"; APP_URL_CHAT = "http://localhost:3100"; APP_URL_STUDIO = "http://localhost:3200"
-  APP_URL_CONTRACTS = "http://localhost:3300"; APP_URL_COMMUNITY = "http://localhost:3400" }
+  APP_URL_CONTRACTS = "http://localhost:3300/contracts"; APP_URL_COMMUNITY = "http://localhost:3400" }
 if ($DbName -ne "ai_system") {
   foreach ($line in Get-Content (Join-Path $repo ".env.local") -Encoding UTF8) {
     if ($line -match '^\s*((ADMIN_API_|HUB_|AGENT_RT_)?DATABASE_URL)\s*=\s*(\S+/)ai_system\s*$') { $coreEnv[$matches[1]] = "$($matches[3])$DbName" }
@@ -168,7 +168,7 @@ if ($Only -eq "all") {
   $common["PUBLIC_CHAT_WEB_URL"] = "http://localhost:3100"
   $common["PUBLIC_STUDIO_URL"] = "http://localhost:3200"
   # mỗi app một origin như prod (host riêng): link chuyển app + SSO qua chat-web (prod: PUBLIC_SSO_URL = host chat)
-  $common["PUBLIC_CONTRACTS_WEB_URL"] = "http://localhost:3300"
+  $common["PUBLIC_CONTRACTS_WEB_URL"] = "http://localhost:3300/contracts"
   $common["PUBLIC_SSO_URL"] = "http://localhost:3100"
   if (-not $common.ContainsKey("PUBLIC_COMMUNITY_API")) { $common["PUBLIC_COMMUNITY_API"] = "http" }
   $common["PUBLIC_FROZEN_MODULES"] = "on"
@@ -184,7 +184,7 @@ if ($Only -eq "all") {
 if ($Only -eq "all") {
   "  chat          http://localhost:3100"
   "  studio        http://localhost:3200"
-  "  Sổ Hợp Tác    http://localhost:3300"
+  "  Sổ Hợp Tác    http://localhost:3300/contracts"
   "  Community     http://localhost:3400"
 }
 "  admin-api     http://localhost:3001   hub-api http://localhost:4000"

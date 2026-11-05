@@ -50,7 +50,7 @@ test("xác nhận mốc trễ: tác động theo lỗi đang chọn (đối tác
       }),
     });
   });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await node(page, "Giao đợt 2").getByRole("button", { name: "Xác nhận xong" }).click();
   const box = page.getByTestId("confirm-box");
   await expect(box.getByTestId("impact-rep")).toContainText("88 TỐT → 72 KHÁ");
@@ -85,7 +85,7 @@ test("dòng thời gian: mốc đã xác nhận đọc delta máy chủ «a → 
       };
     },
   });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(node(page, "Giao đợt 1").locator("[data-points]")).toHaveText("90 → 84");
   const legal = page.getByTestId("legal-warning");
   await expect(legal).toContainText("Pháp lý");

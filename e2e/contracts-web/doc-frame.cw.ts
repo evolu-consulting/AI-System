@@ -66,7 +66,7 @@ test("HĐ nguyên tắc: nhãn loại, khối chứng từ con, % hạn mức, c
   page,
 }) => {
   await installV2f(page, { role: "editor", contract: () => framework() });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("doc-type-tag")).toHaveText("Hợp đồng nguyên tắc");
   const panel = page.getByTestId("frame-panel");
   await expect(panel).toBeVisible();
@@ -84,7 +84,7 @@ test("HĐ nguyên tắc: nhãn loại, khối chứng từ con, % hạn mức, c
 
 test("HĐ nguyên tắc: hộp thêm mốc chỉ có Nhắc gia hạn + Khác", async ({ page }) => {
   await installV2f(page, { role: "editor", contract: () => framework() });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByTestId("frame-add-milestone").click();
   const kinds = page.getByRole("dialog").locator("#ms-kind option");
   await expect(kinds).toHaveCount(2);
@@ -130,7 +130,7 @@ test("gắn chứng từ có sẵn: chọn ⇒ POST /attach {ids}; lệch đối
     });
     return r.fulfill(json(200, { id: CH(1), detached: true }));
   });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByTestId("frame-add-menu").locator("summary").click();
   await page.getByTestId("frame-attach-open").click();
   await page.getByLabel("HĐ lẻ").check();
@@ -167,12 +167,12 @@ test("chứng từ con: liên kết «thuộc HĐ nguyên tắc»; không quyề
     role: "editor",
     contract: () => base({ id: CH(9), title: "Khung 2026", number: "NT-1" }),
   });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("frame-ref")).toContainText("Khung 2026");
   await expect(page.getByTestId("doc-file-line")).toContainText("File ký:");
   await page.unrouteAll({ behavior: "ignoreErrors" });
   await installV2f(page, { role: "editor", contract: () => base({ restricted: true }) });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("frame-ref-restricted")).toHaveText(
     "· HĐ nguyên tắc (không có quyền xem)",
   );
@@ -225,7 +225,7 @@ test("giao dịch: Nâng thành hợp đồng ⇒ cần file + số; multipart /
       json(200, { id: ACTIVE_ID, doc_type: "contract", locked: true, version: 5, file_id: CH(5) }),
     );
   });
-  await page.goto(`/contracts/${ACTIVE_ID}`);
+  await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByTestId("doc-type-tag")).toHaveText("Giao dịch");
   await expect(page.getByTestId("edit-log")).toContainText("Giá trị");
   await page.getByTestId("promote-open").click();

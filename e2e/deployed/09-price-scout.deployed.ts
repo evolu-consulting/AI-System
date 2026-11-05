@@ -26,7 +26,7 @@ const usedOf = async (): Promise<number> => {
 test.describe("09 price-scout", () => {
   test("cấu hình dò giá SP demo ⇒ dò ⇒ kết quả + bộ đếm lượt", async () => {
     test.setTimeout(300_000);
-    await page.goto(`${CW}/products`);
+    await page.goto(`${CW}/contracts/products`);
     await settle(page);
     await page.getByRole("row").nth(1).click();
     await page.getByRole("tab", { name: /Nhà cung cấp & giá/ }).click();

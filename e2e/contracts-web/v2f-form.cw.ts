@@ -28,7 +28,7 @@ test.describe
   .skip("thanh Huỷ/Lưu dính + 3 ô loại", () => {
     test("cuộn xuống cuối trang, thanh Huỷ/Lưu vẫn ở đỉnh khung nhìn", async ({ page }) => {
       await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       const bar = page.getByTestId("form-bar");
       await expect(bar.getByRole("button", { name: "Lưu hợp đồng" })).toBeVisible();
       await page.getByRole("button", { name: "+ Thêm dòng" }).click();
@@ -45,7 +45,7 @@ test.describe
 
     test("đổi loại: nhãn đối tác + nhãn kho + ô hoa hồng đi theo loại", async ({ page }) => {
       await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       const tag = (t: string) => page.locator("main").getByText(t, { exact: true });
       await expect(page.getByRole("radio", { name: /^Mua/ })).toHaveAttribute(
         "aria-checked",
@@ -69,7 +69,7 @@ test.describe
   .skip("ô bắt buộc", () => {
     test("lưu form rỗng ⇒ viền đỏ ô thiếu, báo tên ô, không gửi", async ({ page }) => {
       const sent = await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
       for (const l of [/^Tên hợp đồng/, /^Nhà cung cấp/, /^Hiệu lực từ/])
         await expect(page.getByLabel(l)).toHaveAttribute("aria-invalid", "true");
@@ -83,7 +83,7 @@ test.describe
 
     test("Giới thiệu thiếu % hoa hồng ⇒ viền đỏ ô hoa hồng", async ({ page }) => {
       const sent = await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       await page.getByRole("radio", { name: /^Giới thiệu/ }).click();
       await fillHead(page, /^Bên trả hoa hồng/);
       await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
@@ -93,7 +93,7 @@ test.describe
 
     test("dòng có tên mà chưa gắn sản phẩm ⇒ chặn lưu, báo dòng", async ({ page }) => {
       const sent = await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       await fillHead(page);
       await line(page, 0).name.fill("Ổ cứng ngoài");
       await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
@@ -111,7 +111,7 @@ test.describe
       page,
     }) => {
       await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       const partner = page.getByLabel(/^Nhà cung cấp/);
       await partner.fill("Công ty TNHH Bao Bì Phương Nam");
       const score = page.getByTestId("partner-score");
@@ -132,7 +132,7 @@ test.describe
       page,
     }) => {
       await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       const l = line(page, 0);
       await l.name.fill("USB Token trắng");
       await l.qty.fill("50");
@@ -145,7 +145,7 @@ test.describe
 
     test("Bán: SL lớn hơn tồn ⇒ «Bán vượt tồn»; SL nhỏ hơn thì hết cảnh báo", async ({ page }) => {
       await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       await page.getByRole("radio", { name: /^Bán/ }).click();
       const l = line(page, 0);
       await l.name.fill("USB Token trắng");
@@ -162,7 +162,7 @@ test.describe
       page,
     }) => {
       await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       await page.getByRole("radio", { name: /^Bán/ }).click();
       const l = line(page, 0);
       await l.name.fill("Chữ ký số 1 năm");
@@ -183,7 +183,7 @@ test.describe
   .skip("giá trị tự cộng", () => {
     test("để trống ⇒ placeholder + gửi tổng các dòng; gõ tay thì thắng", async ({ page }) => {
       const sent = await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       await fillHead(page);
       const a = line(page, 0);
       await a.name.fill("USB Token trắng");
@@ -202,13 +202,13 @@ test.describe
         "Tự tính: 10.250.000",
       );
       await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
-      await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+      await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
       expect(manual(sent)?.body).toMatchObject({ deal: "buy", total_value: 10_250_000 });
     });
 
     test("giá trị gõ tay thắng tổng các dòng", async ({ page }) => {
       const sent = await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       await fillHead(page);
       const a = line(page, 0);
       await a.name.fill("USB Token trắng");
@@ -217,7 +217,7 @@ test.describe
       await a.name.blur();
       await page.getByLabel("Giá trị").fill("91.500.000");
       await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
-      await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+      await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
       expect(manual(sent)?.body).toMatchObject({ total_value: 91_500_000 });
     });
   });
@@ -228,7 +228,7 @@ test.describe
       page,
     }) => {
       const sent = await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       await page.getByRole("radio", { name: /^Bán/ }).click();
       await page.getByLabel("Tên hợp đồng").fill("Bán chữ ký số Q4");
       await page.getByLabel(/^Khách hàng/).fill("Công ty Hoàn Toàn Mới");
@@ -241,7 +241,7 @@ test.describe
       await l.name.blur();
       await expect(l.pick).toHaveValue(P_SIGN.id);
       await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
-      await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+      await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
       expect(manual(sent)).toEqual({
         method: "POST",
         path: "/pack/contracts/contracts/manual",
@@ -278,7 +278,7 @@ test.describe
       page,
     }) => {
       const sent = await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       await fillHead(page);
       const l = line(page, 0);
       await l.name.fill("Ổ cứng ngoài 1TB");
@@ -290,7 +290,7 @@ test.describe
       await expect(page.getByLabel("Tên sản phẩm mới dòng 1")).toHaveValue("Ổ cứng ngoài 1TB");
       await page.getByLabel("Nhóm sản phẩm dòng 1").selectOption("goods");
       await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
-      await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+      await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
       expect(sent.filter((s) => s.path === "/pack/contracts/products")).toEqual([]);
       expect(sent.filter((s) => s.path.endsWith("/product-links"))).toEqual([]);
       const body = manual(sent)?.body as { items: { name: string; product_id?: string | null }[] };
@@ -301,7 +301,7 @@ test.describe
 
     test("Giới thiệu: gửi hoa hồng %, không gửi giá trị", async ({ page }) => {
       const sent = await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       await page.getByRole("radio", { name: /^Giới thiệu/ }).click();
       await fillHead(page, /^Bên trả hoa hồng/);
       await page.getByLabel(/^% hoa hồng/).fill("8,5");
@@ -310,7 +310,7 @@ test.describe
       await l.name.blur();
       await page.getByLabel("Gắn dòng 1 với sản phẩm").selectOption({ label: "Bảo hiểm xe" });
       await page.getByRole("button", { name: "Lưu hợp đồng" }).click();
-      await expect(page).toHaveURL(new RegExp(`/contracts/${NEW_ID}$`));
+      await expect(page).toHaveURL(new RegExp(`/contracts/c/${NEW_ID}$`));
       expect(manual(sent)?.body).toMatchObject({
         deal: "referral",
         commission_pct: 8.5,
@@ -321,7 +321,7 @@ test.describe
 
     test("số không đọc được ⇒ báo tên ô, không gửi", async ({ page }) => {
       const sent = await installV2f(page);
-      await page.goto("/contracts/new");
+      await page.goto("/contracts/c/new");
       await fillHead(page);
       const l = line(page, 0);
       await l.name.fill("USB Token trắng");
@@ -339,7 +339,7 @@ test("CR-097 K3a · /contracts/new chỉ báo phải tải lên từ văn bản 
   page,
 }) => {
   await installV2f(page);
-  await page.goto("/contracts/new");
+  await page.goto("/contracts/c/new");
   await expect(page.getByText("Hợp đồng phải tải lên từ văn bản đã ký")).toBeVisible();
   await expect(page.getByRole("button", { name: "Upload hợp đồng" })).toBeVisible();
   await expect(page.getByLabel("Tên hợp đồng")).toHaveCount(0);

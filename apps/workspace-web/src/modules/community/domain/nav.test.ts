@@ -54,8 +54,10 @@ describe("buildNav — nhóm Sổ Hợp Tác theo caps (I1/I3)", () => {
 
 describe("contractsHref / isActive", () => {
   it("ghép gốc + đường dẫn, bỏ `/` thừa", () => {
-    expect(contractsHref("https://sht.example/", "/overview")).toBe("https://sht.example/overview");
-    expect(contractsHref("/", "/partners")).toBe("/partners");
+    expect(contractsHref("https://sht.example/", "/contracts")).toBe(
+      "https://sht.example/contracts",
+    );
+    expect(contractsHref("/", "/contracts/partners")).toBe("/contracts/partners");
   });
   it("Bảng tin sáng ở feed; Bài đăng của tôi sáng ở hồ sơ mình (không ở hồ sơ đối tác); link ngoài không bao giờ sáng", () => {
     const [feed, mine] = buildNav(base)[0]?.items ?? [];

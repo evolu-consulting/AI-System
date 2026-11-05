@@ -82,7 +82,7 @@ async function install(page: Page, state: ContractApproval, role: Role = "editor
 
 test("dòng thời gian: tên bước, tên phòng, trạng thái, hạn quá hạn", async ({ page }) => {
   await install(page, AT_STEP1({}, { due_at: "2020-01-01T00:00:00.000Z" }));
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   const tl = page.locator("[data-approval=timeline]");
   await expect(tl.getByTestId("approval-step-0")).toContainText("Soạn & kiểm tra");
   await expect(tl.getByTestId("approval-step-0")).toContainText("Đã đạt");
@@ -95,7 +95,7 @@ test("luồng 2 bước: bước 1 bấm Đạt ⇒ POST approve (không kèm pr
   page,
 }) => {
   const posts = await install(page, AT_STEP1());
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   await page.locator("[data-approval=pass]").click();
   await expect.poll(() => posts.length).toBe(1);
   expect(posts[0]).toEqual({ action: "approve" });
@@ -103,7 +103,7 @@ test("luồng 2 bước: bước 1 bấm Đạt ⇒ POST approve (không kèm pr
 
 test("Trả lại: cần góp ý, gửi action return", async ({ page }) => {
   const posts = await install(page, AT_STEP1());
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   await page.locator("[data-approval=return]").click();
   const form = page.locator("[data-approval=reason]");
   await form.getByRole("button", { name: "Trả lại" }).click();
@@ -117,7 +117,7 @@ test("Trả lại: cần góp ý, gửi action return", async ({ page }) => {
 
 test("Từ chối: bắt buộc lý do, gửi action reject", async ({ page }) => {
   const posts = await install(page, AT_STEP1());
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   await page.locator("[data-approval=reject]").click();
   const form = page.locator("[data-approval=reason]");
   await form.getByRole("button", { name: "Từ chối" }).click();
@@ -135,7 +135,7 @@ test("bước chỉ trưởng phòng, người xem không phải trưởng phòn
     page,
     AT_STEP1({ can_act: false, block_reason: "not_reviewer" }, { head_only: true }),
   );
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   await expect(page.locator("[data-approval=timeline]")).toContainText("chỉ trưởng phòng");
   await expect(page.locator("[data-approval=note]")).toContainText("chỉ trưởng phòng duyệt");
   await expect(page.locator("[data-approval=pass]")).toHaveCount(0);
@@ -157,7 +157,7 @@ test("run engine ENGINE_RUN_FAILED: nói rõ lý do, owner có nút Mở lại q
   page,
 }) => {
   await install(page, STALLED(), "owner");
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   await expect(page.locator("[data-approval=note]")).toContainText("gặp lỗi");
   await expect(page.locator("[data-approval=reopen]")).toHaveText("Mở lại quy trình");
 });
@@ -166,7 +166,7 @@ test("run engine ENGINE_RUN_FAILED: người không phải owner chỉ thấy l�
   page,
 }) => {
   await install(page, STALLED(), "editor");
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   await expect(page.locator("[data-approval=note]")).toContainText("gặp lỗi");
   await expect(page.locator("[data-approval=reopen]")).toHaveCount(0);
 });
@@ -181,7 +181,7 @@ const NEEDS_DECISION = () =>
 
 test("CR-107 needs_decision: banner và nút theo quyền", async ({ page }) => {
   await install(page, NEEDS_DECISION(), "owner");
-  await page.goto(`/contracts/${contract.id}`);
+  await page.goto(`/contracts/c/${contract.id}`);
   const banner = page.locator("[data-approval=attention]");
   await expect(banner).toContainText("Quy trình đang dừng");
   await expect(page.locator("[data-approval=retry]")).toHaveText("Thử lại");
@@ -206,7 +206,7 @@ for (const [role, shown] of [
     await page.route("**/auth/refresh", (r) =>
       json(r, 200, { ...d.grant, user: { ...d.grant.user, role } }),
     );
-    await page.goto(`/contracts/${contract.id}`);
+    await page.goto(`/contracts/c/${contract.id}`);
     await expect(page.getByTestId("approval-step-1")).toContainText("Kế toán");
     await expect(page.getByTestId("approval-edit-flow")).toHaveCount(shown ? 1 : 0);
     await expect(page.getByRole("dialog", { name: "Cài đặt" })).toHaveCount(0);

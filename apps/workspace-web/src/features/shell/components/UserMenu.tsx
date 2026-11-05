@@ -68,7 +68,7 @@ function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
             <IconSettings width={18} height={18} /> {t("contracts.shell.settings")}
           </button>
           <Link
-            to="/settings"
+            to="/contracts/settings"
             role="menuitem"
             onClick={close}
             className="flex items-center gap-2.5 px-4 py-2.5 text-label hover:bg-sunk"

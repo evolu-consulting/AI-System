@@ -24,7 +24,7 @@ export function useDeleteContract(id: string, open: boolean, close: () => void, 
       toast(t("contracts.del.done"));
       close();
       await qc.invalidateQueries();
-      if (goList) await nav({ to: "/contracts" });
+      if (goList) await nav({ to: "/contracts/list" });
     },
     onError: (e) =>
       toast(

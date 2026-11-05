@@ -97,10 +97,10 @@ describe("esign-sweep · esignSweepBells", () => {
       new Map([["g", ["own", "boss"]]]),
     );
     expect(b.map((x) => [x.user_id, x.link, x.title])).toEqual([
-      ["own", "/contracts/k1", "Ký số HĐ HĐ-1 cần quyết"],
-      ["sig", "/contracts/k2", "Nhắc ký số HĐ HĐ-1"],
-      ["own", "/contracts/k3", "Ký số HĐ HĐ-1 quá hạn"],
-      ["boss", "/contracts/k3", "Ký số HĐ HĐ-1 quá hạn"],
+      ["own", "/contracts/c/k1", "Ký số HĐ HĐ-1 cần quyết"],
+      ["sig", "/contracts/c/k2", "Nhắc ký số HĐ HĐ-1"],
+      ["own", "/contracts/c/k3", "Ký số HĐ HĐ-1 quá hạn"],
+      ["boss", "/contracts/c/k3", "Ký số HĐ HĐ-1 quá hạn"],
     ]);
   });
   it("nhắc khi chờ đối tác ⇒ người phụ trách, không chuông người ký", () => {

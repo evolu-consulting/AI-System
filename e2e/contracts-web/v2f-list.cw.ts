@@ -12,7 +12,7 @@ test("chỉ nút Upload (không còn Thêm thủ công) + cột theo mockup; kh�
   page,
 }) => {
   await installV2f(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await expect(page.getByRole("link", { name: "Thêm thủ công" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Upload hợp đồng" })).toBeVisible();
   const heads = page.locator("main thead th");
@@ -33,7 +33,7 @@ test("hàng: tên + số, đối tác theo loại (Mua ⇒ bên bán), loại, g
   page,
 }) => {
   await installV2f(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   const row = page.locator("main tbody tr", { hasText: first?.title });
   await expect(row.locator("td").nth(0)).toContainText("01/2026/HĐMB-PN");
   await expect(row.locator("td").nth(1)).toHaveText("Bao Bì Phương Nam");
@@ -70,22 +70,22 @@ test("yêu cầu danh sách kèm include=progress", async ({ page }) => {
       });
     },
   );
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await expect(page.getByText(first?.title ?? "").first()).toBeVisible();
   expect(reqs[0]?.get("include")).toBe("progress");
 });
 
 test("bấm hàng hoặc «Xem» mở hợp đồng", async ({ page }) => {
   await installV2f(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await page.locator("main tbody tr", { hasText: first?.title }).locator("td").nth(3).click();
-  await expect(page).toHaveURL(new RegExp(`/contracts/${first?.id}$`));
+  await expect(page).toHaveURL(new RegExp(`/contracts/c/${first?.id}$`));
   await page.goBack();
   await page
     .locator("main tbody tr", { hasText: "Hợp đồng vận chuyển quý 4" })
     .getByRole("link", { name: /^Xem/ })
     .click();
-  await expect(page).toHaveURL(/\/contracts\/c1000000-0000-4000-8000-000000000013$/);
+  await expect(page).toHaveURL(/\/contracts\/c\/c1000000-0000-4000-8000-000000000013$/);
 });
 
 test("«Upload hợp đồng» chọn file ⇒ POST multipart rồi mở HĐ vừa tải", async ({ page }) => {
@@ -109,7 +109,7 @@ test("«Upload hợp đồng» chọn file ⇒ POST multipart rồi mở HĐ v�
       return r.fallback();
     },
   );
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   const chooser = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Upload hợp đồng" }).click();
   await (await chooser).setFiles({
@@ -118,13 +118,13 @@ test("«Upload hợp đồng» chọn file ⇒ POST multipart rồi mở HĐ v�
     buffer: Buffer.from("%PDF-1.4"),
   });
   await page.getByTestId("upload-confirm").click(); // DOC-ui-gaps: chọn loại chứng từ (mặc định HĐ kinh tế)
-  await expect(page).toHaveURL(/\/contracts\/c1000000-0000-4000-8000-0000000000b2$/);
+  await expect(page).toHaveURL(/\/contracts\/c\/c1000000-0000-4000-8000-0000000000b2$/);
   expect(uploaded).toBe(true);
 });
 
 test("viewer: không có nút thêm", async ({ page }) => {
   await installV2f(page, { role: "viewer" });
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await expect(page.getByText(first?.title ?? "").first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Thêm thủ công" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Upload hợp đồng" })).toHaveCount(0);

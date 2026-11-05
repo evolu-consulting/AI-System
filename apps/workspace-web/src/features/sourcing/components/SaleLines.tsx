@@ -57,7 +57,7 @@ function SourceCell({
         <span className="mt-1 block text-dim">
           {s.supplier.name ?? "—"} ·{" "}
           <Link
-            to="/contracts/$id"
+            to="/contracts/c/$id"
             params={{ id: s.contract_id }}
             className="text-act hover:underline"
           >
@@ -122,7 +122,7 @@ export function SaleLines({
               {showContract && (
                 <td className={`${td} text-[13px]`}>
                   <Link
-                    to="/contracts/$id"
+                    to="/contracts/c/$id"
                     params={{ id: r.contract_id }}
                     className="font-mono font-medium text-act hover:underline"
                   >

@@ -49,7 +49,7 @@ export async function requireSession(location: Loc): Promise<void> {
 export async function homeRedirect(): Promise<never> {
   const status = await session.ensure();
   const authed = status === "authed" && Boolean(session.getState().me);
-  throw redirect({ href: authed ? homeFor(await currentCaps()) : "/overview", replace: true });
+  throw redirect({ href: authed ? homeFor(await currentCaps()) : "/contracts", replace: true });
 }
 
 export async function redirectIfAuthed(): Promise<void> {

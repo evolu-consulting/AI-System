@@ -46,10 +46,10 @@ const refreshStatus = (page: Page) =>
   });
 
 test("thành viên SHT: đăng nhập vào /overview, đăng xuất xoá phiên", async ({ page }) => {
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await expect(page).toHaveURL(/\/login\?/);
   await fillLogin(page, OWNER, ownerPw());
-  await expect(page).toHaveURL(/\/overview$/);
+  await expect(page).toHaveURL(/\/contracts$/);
   expect(await refreshStatus(page)).toBe(200);
   // đăng xuất qua phiên chung (cùng một cookie ai_rt_contracts cho cả SHT và Community)
   await page.goto("/community");
@@ -58,7 +58,7 @@ test("thành viên SHT: đăng nhập vào /overview, đăng xuất xoá phiên"
   await page.getByRole("menuitem", { name: "Đăng xuất" }).click();
   await expect(page).toHaveURL(/\/login/);
   expect(await refreshStatus(page)).toBe(401);
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await expect(page).toHaveURL(/\/login\?/);
 });
 
@@ -95,5 +95,5 @@ test("TOTP: đăng nhập phải qua bước mã", async ({ page, request }) => 
   await waitNextStep();
   await page.getByRole("textbox", { name: "Mã xác thực" }).fill(codeFor(secret, 0));
   await page.getByRole("button", { name: "Xác nhận" }).click();
-  await expect(page).toHaveURL(/\/overview$/);
+  await expect(page).toHaveURL(/\/contracts$/);
 });

@@ -27,7 +27,12 @@ describe("vai theo quyền gói", () => {
 
 describe("menu (nav-v2)", () => {
   test("đúng 4 mục, đúng thứ tự: Tổng quan · Hợp đồng & giao dịch · Đối tác · Sản phẩm & Giá", () => {
-    expect(NAV.map((n) => n.to)).toEqual(["/overview", "/contracts", "/partners", "/products"]);
+    expect(NAV.map((n) => n.to)).toEqual([
+      "/contracts",
+      "/contracts/list",
+      "/contracts/partners",
+      "/contracts/products",
+    ]);
     expect(NAV.map((n) => n.labelKey)).toEqual([
       "contracts.nav.overview",
       "contracts.nav.contracts",
@@ -36,24 +41,24 @@ describe("menu (nav-v2)", () => {
     ]);
   });
   test("mục đang chọn theo tiền tố đường dẫn, không khớp nửa chữ", () => {
-    expect(activeNav("/contracts/new")?.to).toBe("/contracts");
-    expect(activeNav("/products")?.to).toBe("/products");
+    expect(activeNav("/contracts/c/new")?.to).toBe("/contracts/list");
+    expect(activeNav("/contracts/products")?.to).toBe("/contracts/products");
     expect(activeNav("/contractsX")).toBeUndefined();
-    expect(activeNav("/settings")).toBeUndefined();
+    expect(activeNav("/contracts/settings")).toBeUndefined();
   });
-  test("tuyến cũ và chi tiết khách rơi về mục chứa chúng", () => {
-    expect(activeNav("/cks/123")?.to).toBe("/products");
-    expect(activeNav("/prices")?.to).toBe("/products");
-    expect(activeNav("/sourcing")?.to).toBe("/products");
-    expect(activeNav("/my-work")?.to).toBe("/overview");
-    expect(activeNav("/transactions/abc")?.to).toBe("/contracts");
+  test("Tổng quan chỉ sáng ở gốc /contracts; chi tiết /contracts/c/<id> thuộc mục Hợp đồng", () => {
+    expect(activeNav("/contracts")?.to).toBe("/contracts");
+    expect(activeNav("/contracts/c/abc")?.to).toBe("/contracts/list");
+    expect(activeNav("/contracts/list")?.to).toBe("/contracts/list");
+    expect(activeNav("/contracts/partners")?.to).toBe("/contracts/partners");
+    expect(activeNav("/contracts/notifications")).toBeUndefined();
   });
   test("bố cục: Tổng quan rộng; danh sách đầy cột; còn lại đọc", () => {
-    expect(layoutOf("/overview")).toBe("wide");
-    expect(layoutOf("/contracts")).toBe("board");
-    expect(layoutOf("/partners")).toBe("board");
-    expect(layoutOf("/products")).toBe("board");
-    expect(layoutOf("/contracts/new")).toBe("reading");
+    expect(layoutOf("/contracts")).toBe("wide");
+    expect(layoutOf("/contracts/list")).toBe("board");
+    expect(layoutOf("/contracts/partners")).toBe("board");
+    expect(layoutOf("/contracts/products")).toBe("board");
+    expect(layoutOf("/contracts/c/new")).toBe("reading");
   });
 });
 

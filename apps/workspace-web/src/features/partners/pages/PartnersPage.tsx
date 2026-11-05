@@ -51,7 +51,7 @@ function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: b
         </span>
         <span className="min-w-0 flex-1 basis-56">
           <Link
-            to="/partners"
+            to="/contracts/partners"
             search={{ party: p.party }}
             className="block truncate font-semibold text-ink hover:text-act hover:underline"
           >
@@ -75,7 +75,7 @@ function Row({ p, open, setOpen }: { p: PartyItem; open: boolean; setOpen: (v: b
             </button>
           )}
           <Link
-            to="/partners"
+            to="/contracts/partners"
             search={{ party: p.party }}
             className="btn btn-quiet h-9 text-[13px]"
           >
@@ -186,7 +186,7 @@ export function PartnersPage() {
       <p className="mt-4 text-[13px] text-dim">
         {L("foot")}{" "}
         <Link
-          to="/settings/scoring"
+          to="/contracts/partners"
           className="font-semibold text-act underline underline-offset-2"
         >
           {L("howLink")}

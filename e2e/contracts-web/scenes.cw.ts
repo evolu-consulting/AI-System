@@ -89,7 +89,7 @@ const HD2_SCENES: Scene[] = [
     (theme): Scene => ({
       name: `s05-review-${theme}`,
       signedIn: true,
-      path: `/contracts/${contract.id}`,
+      path: `/contracts/c/${contract.id}`,
       size: D,
       theme,
       text: ["main"],
@@ -101,7 +101,7 @@ const HD2_SCENES: Scene[] = [
   {
     name: "s05-review-mobile",
     signedIn: true,
-    path: `/contracts/${contract.id}`,
+    path: `/contracts/c/${contract.id}`,
     size: M,
     theme: "light",
     text: ["main"],
@@ -112,7 +112,7 @@ const HD2_SCENES: Scene[] = [
   {
     name: "s05-failed-light",
     signedIn: true,
-    path: `/contracts/${FAILED_ID}`,
+    path: `/contracts/c/${FAILED_ID}`,
     size: D,
     theme: "light",
     text: ["main"],
@@ -128,7 +128,7 @@ const HD2_SCENES: Scene[] = [
     (theme): Scene => ({
       name: `s04-new-${theme}`,
       signedIn: true,
-      path: "/contracts/new",
+      path: "/contracts/c/new",
       size: D,
       theme,
       text: ["main"],
@@ -140,7 +140,7 @@ const HD2_SCENES: Scene[] = [
   {
     name: "s04-new-mobile",
     signedIn: true,
-    path: "/contracts/new",
+    path: "/contracts/c/new",
     size: M,
     theme: "light",
     text: ["main"],
@@ -164,7 +164,7 @@ const V2F_SCENES: Scene[] = [
     (theme): Scene => ({
       name: `v2f-detail-${theme}`,
       signedIn: true,
-      path: `/contracts/${ACTIVE_ID}`,
+      path: `/contracts/c/${ACTIVE_ID}`,
       size: D,
       theme,
       text: ["main"],
@@ -176,7 +176,7 @@ const V2F_SCENES: Scene[] = [
   {
     name: "v2f-detail-mobile",
     signedIn: true,
-    path: `/contracts/${ACTIVE_ID}`,
+    path: `/contracts/c/${ACTIVE_ID}`,
     size: M,
     theme: "light",
     text: ["main"],
@@ -187,7 +187,7 @@ const V2F_SCENES: Scene[] = [
   {
     name: "v2f-detail-confirm-box",
     signedIn: true,
-    path: `/contracts/${ACTIVE_ID}`,
+    path: `/contracts/c/${ACTIVE_ID}`,
     size: D,
     theme: "light",
     text: ["main"],
@@ -219,7 +219,7 @@ const OVERVIEW_SCENES: Scene[] = [
     (theme): Scene => ({
       name: `overview-${theme}`,
       signedIn: true,
-      path: "/overview",
+      path: "/contracts",
       size: D,
       theme,
       text: ["main"],
@@ -231,7 +231,7 @@ const OVERVIEW_SCENES: Scene[] = [
   {
     name: "overview-mobile",
     signedIn: true,
-    path: "/overview",
+    path: "/contracts",
     size: M,
     theme: "light",
     text: ["main"],
@@ -242,7 +242,7 @@ const OVERVIEW_SCENES: Scene[] = [
   {
     name: "overview-work-expanded",
     signedIn: true,
-    path: "/overview",
+    path: "/contracts",
     size: D,
     theme: "light",
     text: ["main"],
@@ -270,7 +270,7 @@ const HD5_SCENES: Scene[] = [
     (theme): Scene => ({
       name: `s03-list-${theme}`,
       signedIn: true,
-      path: "/contracts",
+      path: "/contracts/list",
       size: D,
       theme,
       text: ["main"],
@@ -282,7 +282,7 @@ const HD5_SCENES: Scene[] = [
   {
     name: "s03-list-mobile",
     signedIn: true,
-    path: "/contracts",
+    path: "/contracts/list",
     size: M,
     theme: "light",
     text: ["main"],
@@ -321,7 +321,7 @@ const SCENES: Scene[] = [
     (theme): Scene => ({
       name: `shell-${theme}`,
       signedIn: true,
-      path: "/contracts",
+      path: "/contracts/list",
       size: D,
       theme,
       text: [NAV, "header"],
@@ -334,7 +334,7 @@ const SCENES: Scene[] = [
     // nav-v2: sidebar ghim mở 224 px là mặc định (cảnh `shell-*`); nút ở thanh trên thu về cột biểu tượng 64 px.
     name: "shell-sidebar-collapsed",
     signedIn: true,
-    path: "/contracts",
+    path: "/contracts/list",
     size: D,
     theme: "light",
     text: [NAV, "header"],
@@ -350,7 +350,7 @@ const SCENES: Scene[] = [
     // nav-v2: menu avatar ở chân sidebar (Cài đặt · Đăng xuất · Giao diện).
     name: "shell-account-menu",
     signedIn: true,
-    path: "/contracts",
+    path: "/contracts/list",
     size: D,
     theme: "light",
     text: [NAV, "header"],
@@ -365,7 +365,7 @@ const SCENES: Scene[] = [
   {
     name: "shell-mobile",
     signedIn: true,
-    path: "/contracts",
+    path: "/contracts/list",
     size: M,
     theme: "light",
     text: ["header", 'nav[aria-label="Điều hướng"]'],
@@ -377,7 +377,7 @@ const SCENES: Scene[] = [
     (theme): Scene => ({
       name: `s16-bell-${theme}`,
       signedIn: true,
-      path: "/contracts",
+      path: "/contracts/list",
       size: D,
       theme,
       text: ["header"],

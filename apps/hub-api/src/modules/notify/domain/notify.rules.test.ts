@@ -26,7 +26,7 @@ const claimed = (o: Partial<Claimed> = {}): Claimed => ({
   kind: "demo.note",
   title: "Hết hạn\r\nBcc: x@evil.test",
   body: "Nội dung",
-  link: "/contracts/1",
+  link: "/contracts/c/1",
   email: "lan@example.test",
   displayName: "Lan\nNguyen",
   locale: "vi",
@@ -84,7 +84,7 @@ describe("emailOf · chống chèn header", () => {
     expect(m.subject).toBe("Hết hạn Bcc: x@evil.test");
     expect(m.subject).not.toMatch(/[\r\n]/);
     expect(m.toName).toBe("Lan Nguyen");
-    expect(m.text).toBe("Nội dung\n\nhttps://app.example/contracts/1");
+    expect(m.text).toBe("Nội dung\n\nhttps://app.example/contracts/c/1");
     expect(m.idempotencyKey).toBe("n3-42");
   });
   test("không link ⇒ chỉ nội dung", () => {

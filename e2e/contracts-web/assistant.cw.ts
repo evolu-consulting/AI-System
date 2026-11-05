@@ -68,7 +68,7 @@ test("M2-chat · mở trợ lý, hỏi ⇒ hội thoại Hub + tin @assistant k�
   page,
 }) => {
   const api = await install(page);
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await page.getByRole("button", { name: "Mở trợ lý AI" }).click();
   const p = panel(page);
   await expect(p.getByText("Hợp đồng nào sắp hết hạn trong 60 ngày?")).toBeVisible();
@@ -99,7 +99,7 @@ test("M2-chat · Hub không cho dùng agent (404 AGENT_NOT_FOUND) ⇒ câu 'chư
   page,
 }) => {
   await install(page, { forbidden: true });
-  await page.goto("/contracts");
+  await page.goto("/contracts/list");
   await page.getByRole("button", { name: "Mở trợ lý AI" }).click();
   const box = panel(page).getByRole("textbox", { name: "Câu hỏi cho trợ lý" });
   await box.fill("Xin chào");

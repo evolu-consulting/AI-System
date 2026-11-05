@@ -79,7 +79,7 @@ test("«/» ⇒ /overview: H1 Tổng quan, ngày theo máy chủ, mục menu «T
 }) => {
   await install(page);
   await page.goto("/");
-  await expect(page).toHaveURL(/\/overview$/);
+  await expect(page).toHaveURL(/\/contracts$/);
   const main = page.getByRole("main");
   await expect(main.getByRole("heading", { name: "Tổng quan", level: 1 })).toBeVisible();
   await expect(main.getByText("Hôm nay 18/10/2026")).toBeVisible();
@@ -94,7 +94,7 @@ test("4 con số: doanh thu/hoa hồng thực nhận + % dự kiến + so kỳ t
   page,
 }) => {
   await install(page);
-  await page.goto("/overview");
+  await page.goto("/contracts");
   const kpis = page.getByTestId("kpis");
   await expect(kpis).toContainText("Doanh thu thực nhận");
   await expect(kpis).toContainText("118,0 tr");
@@ -111,7 +111,7 @@ test("4 con số: doanh thu/hoa hồng thực nhận + % dự kiến + so kỳ t
 
 test("chọn kỳ: Quý này ⇒ gọi lại /overview?period=quarter", async ({ page }) => {
   await install(page);
-  await page.goto("/overview");
+  await page.goto("/contracts");
   const req = page.waitForRequest((r) => r.url().includes("/overview?period=quarter"));
   await page.locator('[data-period="quarter"]').click();
   await req;
@@ -120,7 +120,7 @@ test("chọn kỳ: Quý này ⇒ gọi lại /overview?period=quarter", async ({
 
 test("«Theo nhóm sản phẩm»: 3 nhóm, mỗi nhóm 12 cột tháng", async ({ page }) => {
   await install(page);
-  await page.goto("/overview");
+  await page.goto("/contracts");
   const groups = page.getByTestId("groups");
   for (const g of ["service", "goods", "referral"]) {
     await expect(groups.locator(`[data-group="${g}"] [role="img"] > span`)).toHaveCount(12);
@@ -132,7 +132,7 @@ test("«Sản phẩm: nên làm gì»: 3 cột theo đề xuất, SP chưa có �
   page,
 }) => {
   await install(page);
-  await page.goto("/overview");
+  await page.goto("/contracts");
   const recs = page.getByTestId("recs");
   await expect(recs.locator('[data-col="buy"]')).toContainText("Chữ ký số 1 năm");
   await expect(recs.locator('[data-col="buy"]')).toContainText("Token USB");
@@ -149,7 +149,7 @@ test("«Cần xử lý»: Bỏ qua gửi khoá việc (POST /my-work/todo/dismis
 }) => {
   const dismissed: unknown[] = [];
   await install(page, { dismissed });
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await page
     .getByTestId("todo-row")
     .first()
@@ -162,7 +162,7 @@ test("«Cần xử lý»: 8 việc ⇒ hiện 6 + «Xem thêm 2 việc»; mở r
   page,
 }) => {
   await install(page);
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await expect(page.getByText("8 việc · 2 quá hạn")).toBeVisible();
   await expect(page.getByTestId("todo-row")).toHaveCount(6);
   await expect(page.getByTestId("todo-row").first()).toContainText("Thu tiền Khách An");
@@ -176,7 +176,7 @@ test("«Cần xử lý»: 8 việc ⇒ hiện 6 + «Xem thêm 2 việc»; mở r
 
 test("«Cần xử lý»: đúng 6 việc ⇒ không có «Xem thêm»", async ({ page }) => {
   await install(page, { work: TODO.slice(0, 6) });
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await expect(page.getByTestId("todo-row")).toHaveCount(6);
   await expect(page.getByRole("button", { name: /^Xem thêm/ })).toHaveCount(0);
 });
@@ -185,7 +185,7 @@ test("«Hợp đồng»: 3 hợp đồng theo nhóm (chờ xác nhận 1 · đan
   page,
 }) => {
   await install(page);
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await expect(page.getByText("3 hợp đồng")).toBeVisible();
   const tile = (g: string) => page.locator(`[data-group="${g}"]`);
   await expect(tile("pending")).toContainText("1");
@@ -197,22 +197,22 @@ test("«Hợp đồng»: 3 hợp đồng theo nhóm (chờ xác nhận 1 · đan
   await expect(soon).toContainText("Hợp đồng vận chuyển quý 4");
   await expect(soon).toContainText("33 ngày");
   await soon.getByRole("link", { name: "Hợp đồng vận chuyển quý 4" }).click();
-  await expect(page).toHaveURL(/\/contracts\/c1000000-0000-4000-8000-000000000013$/);
+  await expect(page).toHaveURL(/\/contracts\/c\/c1000000-0000-4000-8000-000000000013$/);
 });
 
 test("«Hợp đồng»: không có HĐ sắp hết hiệu lực ⇒ thông báo; «Xem tất cả hợp đồng» ⇒ /contracts", async ({
   page,
 }) => {
   await install(page, { expiring: false });
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await expect(page.getByText("Không có hợp đồng sắp hết hiệu lực.")).toBeVisible();
   await page.getByRole("link", { name: "Xem tất cả hợp đồng" }).click();
-  await expect(page).toHaveURL(/\/contracts$/);
+  await expect(page).toHaveURL(/\/contracts\/list$/);
 });
 
 test("«Đối tác cần xem lại»: đối tác mức CHÚ Ý; mức khác không hiện", async ({ page }) => {
   await install(page);
-  await page.goto("/overview");
+  await page.goto("/contracts");
   const list = page.getByTestId("review-partners");
   await expect(list).toContainText("Bếp Việt");
   await expect(list).toContainText("CHÚ Ý");
@@ -225,7 +225,7 @@ test("«Đối tác cần xem lại»: API không trả đối tác nào (không
   page,
 }) => {
   await install(page, { partners: [] });
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await expect(page.getByText("Không có đối tác nào có cờ đỏ hoặc ở mức CHÚ Ý.")).toBeVisible();
   await expect(page.getByTestId("review-partners")).toHaveCount(0);
 });
@@ -268,7 +268,7 @@ test("U3 · «Đối tác cần xem lại»: cờ đỏ hiện kể cả điểm
       P("Eps Tốt", "customer"),
     ],
   });
-  await page.goto("/overview");
+  await page.goto("/contracts");
   const list = page.getByTestId("review-partners");
   const items = list.getByRole("listitem");
   await expect(items).toHaveCount(2);
@@ -278,11 +278,11 @@ test("U3 · «Đối tác cần xem lại»: cờ đỏ hiện kể cả điểm
   await expect(list).not.toContainText("Delta Mới");
   await expect(list).not.toContainText("Eps Tốt");
   await items.first().getByRole("link", { name: "Gamma Gian Lận" }).click();
-  await expect(page).toHaveURL(/\/partners\?party=name%3Agamma/);
+  await expect(page).toHaveURL(/\/contracts\/partners\?party=name%3Agamma/);
 });
 test("người xem (viewer): thấy cùng dữ liệu API trả, không có nút ghi sổ/HĐ", async ({ page }) => {
   await install(page, { role: "viewer" });
-  await page.goto("/overview");
+  await page.goto("/contracts");
   await expect(page.getByTestId("todo-row")).toHaveCount(6);
   await expect(page.getByRole("button", { name: "Đã thu" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Đã trả" })).toHaveCount(0);
@@ -294,7 +294,7 @@ test.describe("điện thoại (390×844)", () => {
   // CR-097 G2 thêm «Giao dịch» vào menu ⇒ thanh dưới 5 mục (5 cột vừa 390 px, không cần drawer «Thêm»).
   test("Tổng quan không cuộn ngang; thanh dưới đúng 5 mục, «Tổng quan» sáng", async ({ page }) => {
     await install(page);
-    await page.goto("/overview");
+    await page.goto("/contracts");
     await expect(page.getByTestId("review-partners")).toBeVisible();
     const over = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
