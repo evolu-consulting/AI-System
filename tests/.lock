@@ -643,7 +643,7 @@ d21b78e405967c9ecf05f4bcd81248925c836a508b390d0c12a4c8a9093cfe73  tests/acceptan
 28f4affff8ae4e7893e2731b27aac75dd1869c53ff84ff168aecfe1ee9092b38  tests/acceptance/H1/auth.int.test.ts
 8fea8089c7511a17adeae693ed736bc6154c7df3af6fd58415f01002b7fc035d  tests/acceptance/H1/cancel.int.test.ts
 be2f8ad04502c7283f16b109bc07232b114c01341deb2ff9b02a65e80c80d975  tests/acceptance/H1/concurrency.int.test.ts
-747ef43282a0ea5d4d541eccf2782e2fa58eee3c8973ae6cb7cf0cf3b1803130  tests/acceptance/H1/db.int.test.ts
+7c63eb07dd7672fd70de5359e6cff28067e61001db6b610336be7df97522cc91  tests/acceptance/H1/db.int.test.ts
 601e47249361fffb6b18401f8e8a554780febfe40926837690911157b8beaf6c  tests/acceptance/H1/isolation.int.test.ts
 5704402b3db11b6397956d83f4a0b58b3b0b6eedfe0723a46cbe8d6bc0a24411  tests/acceptance/H1/lease.int.test.ts
 e23b4684485c1df04ba9f13882b97d2345cbae3a4bfc265cbfc513bc44a5bcbe  tests/acceptance/H1/log.int.test.ts
@@ -702,7 +702,7 @@ f40501ff6d2859a74390a08172d3595fc3b2ff7937dfb6b1ad84a73225caa514  tests/acceptan
 4f6a6b1e7bba4fa4d5644d4fffe553b33d0423af5c66eb18eb99ec86721c6dcd  tests/acceptance/H2b/direct.int.test.ts
 828604923aae90f626095c3fc89b73eb496c3356f03e7f3c0daaf5ba70070652  tests/acceptance/H2b/hubdev/fixture.hubdev.test.ts
 32613e8541026709a249af4da7a1880230df8b5ac05586d21e280b46153d770f  tests/acceptance/H2b/mention.int.test.ts
-1a0693d082f5203cd2a2d2a1440fa5085d9c4db96413c509a9a7582f43211aac  tests/acceptance/H2b/orchestrator-tenant.int.test.ts
+d6333b55a37b58385bb1248c5433c21ddc7c1c0e511c5c1a8204a95b565d9cae  tests/acceptance/H2b/orchestrator-tenant.int.test.ts
 d3d628899791d1c4f531302e23811c5a5177b5a0d7a8823c26440a2b536ab48a  tests/acceptance/H2b/perf.perf.int.test.ts
 e4e515a6658568d5cfdc0bbc30f0c81693b2bdc319b1c095debef7d100ab9328  tests/acceptance/H2b/refused.int.test.ts
 818d46df16f4f97e7bcfbc8b1c7989cb32c1e0129b4c7964198cb17cd84c3b2c  tests/acceptance/H2b/rules/_access.ts
@@ -863,9 +863,9 @@ c5742abdaed1985f2a3cc623bf0aeba7015274f930ee2223a03312d327247700  tests/acceptan
 53a2442e869332b7d5072f79c7c2d64718d82f9e3e2b5c5919aa7fba21714ae7  tests/acceptance/HD4/_support/hd4.ts
 0b25d66f4105ea4e8a49581ca30c35f7c167bcc40f4fd5c11e7ee807bbf46c4e  tests/acceptance/HD4/handled.int.test.ts
 0af5eb615d27b75632516d5a9227df76f238d01282aee5ed9f944c274e32df5b  tests/acceptance/HD4/job-role.int.test.ts
-6a6fc434cf78ef4ec97188c6c9870feab3ab620d82d557cdc7f17c66560aac87  tests/acceptance/HD4/locks.int.test.ts
+013dc14ab967186788529563b349bb7745b4d540317fafb2ab4e4f45d16b02e7  tests/acceptance/HD4/locks.int.test.ts
 9fc396d672bcdfc4cd07fd4514eca8f590ca85116c51eedf4eaa9f50f852dde9  tests/acceptance/HD4/perf/remind.perf.int.test.ts
-1ffde379e601b0a3c5a4fbc9460264f230f2e890ad035fe199ee79047686bb16  tests/acceptance/HD4/remind.int.test.ts
+7595481a33d42e726bcbe9b55eff32520072b9d024fd5bfd201572e63dd8bad2  tests/acceptance/HD4/remind.int.test.ts
 05800f80f4a7dda93add3f147e26044929b3b1c52c018171544a12d0899bb9c2  tests/acceptance/HD5/hd5.int.test.ts
 26994b140cb6bbcf1c442b92e7e2f5ea97ace8288732f97178bd0d0d1e7166d4  tests/acceptance/HD5/perf/hd5.perf.int.test.ts
 53218da3a569dbefba31fd97d8616de76ac318da47a7dad8bc51b007b080b35e  tests/acceptance/HD7/_support/hd7.ts
@@ -1377,7 +1377,7 @@ abd0154d249e37176b6c0bc7a5bb0e368c69da14f914d21e0aafa6897b705c3e  tests/acceptan
 b9317b3773a452f3998c04896615e082152400609e1631bdd9ce2398bf4d0894  tests/acceptance/W1/sourcing.int.test.ts
 1bdbf537032fcd686de440c8f64954c6c47e1fc67bb75c9ba653dd984e8a5783  tests/acceptance/W1/unconfirmed.int.test.ts
 31c0d71280a2fe91f85c096640ab796091908c500b551b253a4e82200fc5a7fd  tests/acceptance/W1B/cache.int.test.ts
-1e6d3a252ca3db5e4c4e71806cebdaaf45e84c067296c01084cc914e3ad0bf29  tests/acceptance/W1B/send.int.test.ts
+38c8a78c744c6ed871c710591aabf4655769784dbb7e04349f2e76b992e09e08  tests/acceptance/W1B/send.int.test.ts
 880673bcfa598d77984d040c64d405e8acf30ae6793e18fef4f35a8a5f6b50b1  tests/acceptance/X1/_modules.ts
 a3c8834cd8d0f154ff5eccb812ec7435fff0849a9d997ac2b8aea469ac177706  tests/acceptance/X1/_x1.ts
 034f5a531f2f8f47f362556105db1077bad03d4c0062cea0fffa66ae54ed2c87  tests/acceptance/X1/bundle-secret.test.ts
@@ -1464,7 +1464,7 @@ a5834174c7ceb1028e121b8163d02345d1828eb26c6eb0be716b442e3178245e  tests/acceptan
 8e877ab60b14fff18ac51b41b03c29cccdd7b848c8a225ac00147848fe7f0296  tests/acceptance/esign-flow/approver-guard.int.test.ts
 7989a7ccce5faa87bc98ea829ec05fcacbb3da24207b4e13d9239c6b0c019b5f  tests/acceptance/esign-flow/approver-user.int.test.ts
 e8b60129c372e94524d276af29eff4f8c7a1c3ed078a1e40a7c0f4e9c5c3fa8f  tests/acceptance/esign-flow/esign-flow-fix.int.test.ts
-76dfdf61b7165991249a4618ca68668ab503a20c24344b3a964dcda9f0a3911e  tests/acceptance/esign-flow/esign-flow.int.test.ts
+685a9574ebb1abc095abccb812ff9a0d606b963b5a60ba696107c0f179ab5f2a  tests/acceptance/esign-flow/esign-flow.int.test.ts
 301761a7fbda73ec8cee96f402a35af0c0e9f71f6020f8c9a83820f4a49b8b7d  tests/acceptance/esign-multi/esign-multi.int.test.ts
 303e3661faed08c210267470990d89e1d27e12de6d8b2e38d84d8d509e3e7ca4  tests/acceptance/fnr-canvas/ui-roundtrip.int.test.ts
 760eaa6149af166557e63d4594615bab590b06162dd276eb5ef54ba0edfb8761  tests/acceptance/fnr-showcase/set.int.test.ts
@@ -1472,7 +1472,7 @@ e258f73ec12973f006b691a7c7e29c098f2f9c37dd6f12dc8914914f7edc4481  tests/acceptan
 b115745687d389ceff77b54aa7c52db3b53961dccd6a6e37ca71dcbd019a689d  tests/acceptance/gap-c/notify-prefs.int.test.ts
 16d415d9f736f2ee700077f4a8dc6e8f9e90fa995449d65920427c25ab0688af  tests/acceptance/gap-d1/gap-d1.int.test.ts
 3af81b2d0ac3e498d4b444e575105e5f5c97de49711888a2e5fa8fe19b739c9c  tests/acceptance/my-activity/chat-history.perf.int.test.ts
-c49712e02dea1cb8e2a98ef9460288a3810cdbcb335d075160ff2a1ab0791566  tests/acceptance/my-activity/isolation.int.test.ts
+5dc5f8fde72afa2ef7b1d340ae5b71fdbc4a5f68381051eb7c8a77a5d82ed358  tests/acceptance/my-activity/isolation.int.test.ts
 31929b05adda20493a94244bb36c46a4a5989667e523e6b49f9bd9cd52e32aec  tests/acceptance/one-agent/context-migration.int.test.ts
 c0f13f1a95b995d08d38759719f5e0b90c019a7e198536dbe042e804b8c8f0ce  tests/acceptance/one-agent/dock-alias.int.test.ts
 617188aefd612df5b4541939a67720d3688c3691be68a81d0743a9c9d648a186  tests/acceptance/price-scout/perf/due-pick.perf.int.test.ts

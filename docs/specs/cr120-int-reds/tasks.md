@@ -18,7 +18,7 @@ Run int đầy đủ CR-120 (gd0 1d195a82): 4184 xanh, 24 đỏ (22 mới). Phâ
 | contracts approval-engine-slot.int (5 ca) | b | CR-120 gói thêm bước "Xác nhận hợp đồng" (`withConfirmStep`, nhóm `contracts-editor`) đầu lượt ⇒ tenant test phải có Group này (thiếu ⇒ lượt kẹt `FLOW_GROUP_MISSING:contracts-editor,…`) và danh sách Group duyệt có thêm bước đầu. Test tạo Group `contracts-editor` và kỳ vọng `[editor, …]`. |
 | tests/acceptance/esign-flow int (2 ca) | b | Liên kết chuông HĐ đổi sang `/contracts/c/<id>` (CR-119 p2). Test lọc theo link mới. |
 | tests/acceptance/W1B/send.int, my-activity/isolation.int, HD4/remind.int (2 ca), HD4/locks.int | b | Cùng lý do: link HĐ `/contracts/c/<id>`. HD4/locks: ca đua + mồ côi hết giờ 30 s là hệ quả dây chuyền của ca đầu (khoá giữ mở khi `expect` lỗi); đỏ cả ở base. |
-| tests/acceptance/H2b/orchestrator-tenant.int A65 | chưa rõ | Xanh ở base; ở HEAD `server.ts` thoát mã 1 lúc khởi động. Test nay in stdout/stderr của server khi thoát sớm để chẩn đoán (xem Quyết định). |
+| tests/acceptance/H2b/orchestrator-tenant.int A65 | c (chập chờn theo tải) | Đỏ khi máy chủ evotest load 24/12 lõi (server.ts chưa kịp lên trong 10 s / thoát), XANH khi load 3/12 ở cùng HEAD (lượt xác nhận). Test nay in stdout/stderr của server khi thoát sớm để lần sau thấy nguyên nhân thật. |
 
 ## Không làm / Chạm
 Không đụng đường dẫn DLC. Không đổi mã sản phẩm ngoài 3 migration hub cũ (chỉ thêm guard chạy lại).
