@@ -24,7 +24,8 @@ const STARTER = { [X]: userId(1061), [Y]: userId(1062), [Z]: userId(1063) } as R
   string,
   string
 >;
-const EDITOR = "contracts-editor"; // CR-120: gói tự thêm bước "Xác nhận hợp đồng" (nhóm sửa) đầu lượt ⇒ tenant phải có Group này\nconst KEYS = [EDITOR, "ke-toan", "giam-doc", "phap-che"];
+const EDITOR = "contracts-editor"; // CR-120: gói tự thêm bước "Xác nhận hợp đồng" (nhóm sửa) đầu lượt ⇒ tenant phải có Group này
+const KEYS = [EDITOR, "ke-toan", "giam-doc", "phap-che"];
 
 let o: Sql;
 let db: Db;
