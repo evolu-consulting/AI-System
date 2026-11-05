@@ -1,5 +1,5 @@
 {
-  "text": "A Acme Corp Sổ Hợp Tác SỔ HỢP TÁC Tổng quan Hợp đồng & giao dịch Đối tác Sản phẩm & Giá LN Lan Nguyễn Acme Corp · Nhân viên Lan Nguyễn lan@acme.test Acme Corp · Nhân viên Ngôn ngữ VI EN Đổi mật khẩu Cài đặt Thành viên & điểm đối tác Đăng xuất Điều khoản sử dụng Chính sách bảo mật |",
+  "text": "A Acme Corp Sổ Hợp Tác SỔ HỢP TÁC Tổng quan Hợp đồng & giao dịch Đối tác Sản phẩm & Giá LN Lan Nguyễn Acme Corp · Nhân viên Lan Nguyễn Acme Corp · Nhân viên VI EN Đổi mật khẩu Cài đặt Thành viên & điểm đối tác Đăng xuất Điều khoản sử dụng Chính sách bảo mật |",
   "boxes": {
     "sidebar": {
       "x": 0,
@@ -14,7 +14,7 @@
       "h": 52
     },
     "bell": {
-      "x": 1296,
+      "x": 1340,
       "y": 3.5,
       "w": 36,
       "h": 44
@@ -39,9 +39,9 @@
     },
     "menu": {
       "x": 221,
-      "y": 564,
+      "y": 593,
       "w": 300,
-      "h": 324
+      "h": 295
     }
   }
 }
