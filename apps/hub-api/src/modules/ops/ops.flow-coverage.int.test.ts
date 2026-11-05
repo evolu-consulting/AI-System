@@ -102,6 +102,7 @@ describe("ops-watch · flow_coverage · int", () => {
     await o`insert into admin.tenants (id, key, name) values (${RULE}, 't1205', 'Chỉ luật')`;
     await o`insert into admin.tenants (id, key, name) values (${NOENG}, 't1206', 'Thiếu engine')`;
     await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${RULE}, ${DFLT}, ${SLOT})`;
+    await o`insert into hub.process_routings (tenant_id, slot) values (${RULE}, ${SLOT})`;
     await o`insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
       values (${RULE}, ${SLOT}, 0, '{}'::jsonb, ${DFLT}, true)`;
     await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${NOENG}, ${DFLT}, ${SLOT})`;
