@@ -1,5 +1,5 @@
 // ADM-FR-60 · bảng Tenants: mã công ty (mono, link), tên, users, slot, trạng thái, menu `⋯` (Mở / Khoá / Mở khoá).
-import type { Tenant } from "@ai/contracts";
+import type { Tenant } from "@ai/contracts/tenants";
 import { Link } from "@tanstack/react-router";
 import { MoreHorizontal } from "lucide-react";
 import { type ReactNode, useMemo } from "react";

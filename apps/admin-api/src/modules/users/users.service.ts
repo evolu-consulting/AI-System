@@ -2,15 +2,15 @@
 // Hành động ghi = một `configWrite` (transaction + scope + bump/NOTIFY sau commit, plan M3 §5.1–5.2), hành động đọc = một
 // withScope theo scope của actor; repo vẫn lọc tenant_id (tenant_admin luôn tenant mình).
 import { randomBytes } from "node:crypto";
+import type { Locale } from "@ai/contracts/common";
 import type {
-  Locale,
   User,
   UserCreateRequest,
   UserCreateResponse,
   UserListQuery,
   UserListResponse,
   UserUpdateRequest,
-} from "@ai/contracts";
+} from "@ai/contracts/users";
 import {
   type AuditActionValue,
   type Db,

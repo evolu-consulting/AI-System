@@ -1,5 +1,5 @@
 // V2-L · CD-06: ngưỡng Mua thêm / Xả hàng / Đẩy mạnh / Cân nhắc dừng, bán sắp hết hạn của mục "Điểm kinh doanh".
-import type { BizConfig } from "@ai/contracts";
+import type { BizConfig } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { SettingsGroup, SettingsRow } from "~/shared/ui/settings-layout";
 import { Num } from "./controls";

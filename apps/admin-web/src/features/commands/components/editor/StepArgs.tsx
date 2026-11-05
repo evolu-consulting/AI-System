@@ -1,5 +1,5 @@
 // ADM-FR-20 · bước 3 "Người dùng gõ gì": tham số lệnh (≤ 20, ↑↓), cú pháp xem trước.
-import { ARGS_MAX } from "@ai/contracts";
+import { ARGS_MAX } from "@ai/contracts/common";
 import { useCallback } from "react";
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";

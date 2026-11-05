@@ -1,5 +1,5 @@
 // ADM-FR-55 · M3-R20 · PATCH tenant kèm version, 409 → ConflictDialog (tenant không có updated_by → câu không {user}, A4).
-import type { TenantUpdateRequest } from "@ai/contracts";
+import type { TenantUpdateRequest } from "@ai/contracts/tenants";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
 import type { ConflictCurrent } from "@/lib/conflict";
 import { useUpdateTenant } from "../api";

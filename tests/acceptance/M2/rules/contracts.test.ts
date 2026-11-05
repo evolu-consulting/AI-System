@@ -3,42 +3,50 @@
 import { describe, expect, it } from "bun:test";
 import * as C from "@ai/contracts";
 import {
-  API_ERRORS,
   ArgsSchema,
-  CATALOG_KEY_RE,
   CommandCreateRequestSchema,
   CommandListCountsSchema,
   CommandNameSchema,
   CommandOutputSchema,
   CommandSchema,
   CommandUpdateRequestSchema,
-  FeatureCreateRequestSchema,
-  FeatureDetailSchema,
-  FeatureListCountsSchema,
-  FeatureUpdateRequestSchema,
   InputMapEntrySchema,
-  InputMapInvalidDetailsSchema,
   InputMapSchema,
   InputMapWarningSchema,
-  InputSchemaSchema,
+} from "@ai/contracts/commands";
+import {
+  API_ERRORS,
+  CATALOG_KEY_RE,
+  InputMapInvalidDetailsSchema,
   InvalidReferenceDetailsSchema,
   listResponseSchema,
   pageResponseSchema,
   SchemaBreaksCommandsDetailsSchema,
+  WorkflowInUseDetailsSchema,
+} from "@ai/contracts/common";
+import {
+  FeatureCreateRequestSchema,
+  FeatureDetailSchema,
+  FeatureListCountsSchema,
+  FeatureUpdateRequestSchema,
+} from "@ai/contracts/features";
+import {
   SecretCreateRequestSchema,
   SecretListCountsSchema,
   SecretNoteRequestSchema,
   SecretReplaceRequestSchema,
   SecretSchema,
-  versionConflictDetailsSchema,
+} from "@ai/contracts/secrets";
+import { versionConflictDetailsSchema } from "@ai/contracts/version-conflict";
+import {
+  InputSchemaSchema,
   WorkflowCreateRequestSchema,
-  WorkflowInUseDetailsSchema,
   WorkflowListCountsSchema,
   WorkflowListQuerySchema,
   WorkflowSchema,
   WorkflowUpdateRequestSchema,
   WorkflowUsagesSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/workflows";
 
 const ok = (r: { success: boolean }) => r.success;
 const U1 = "01900000-0000-7000-8000-000000000201";

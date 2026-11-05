@@ -1,6 +1,6 @@
 // W1 · "Mua hàng": luật thuần của màn.
 import { describe, expect, test } from "bun:test";
-import type { SaleLine, SourceRef } from "@ai/contracts";
+import type { SaleLine, SourceRef } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { parseRef, refKey, selectValue, sourcingErrorText } from "./sourcing";
 

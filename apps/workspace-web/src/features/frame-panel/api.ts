@@ -1,5 +1,5 @@
 // CR-101 DOC-ui-frame · R42: gắn / gỡ chứng từ con của HĐ nguyên tắc. Bearer + refresh do web-kit lo.
-import type { AttachDocsResponse, ContractListResponse } from "@ai/contracts";
+import type { AttachDocsResponse, ContractListResponse } from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/contracts";

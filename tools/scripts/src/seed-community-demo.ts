@@ -10,7 +10,8 @@
 // (vai hub_api, RLS gói); vắng thì dùng DATABASE_URL (chỉ chạy được khi vai đó SET ROLE được, vd chủ migration).
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { ExternalOrgListQuerySchema, UserListQuerySchema } from "@ai/contracts";
+import { ExternalOrgListQuerySchema } from "@ai/contracts/external-orgs";
+import { UserListQuerySchema } from "@ai/contracts/users";
 import { createDb, type Db, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import {

@@ -3,7 +3,7 @@
 //  (2) "Xác nhận và lưu" ở thẻ duyệt engine ⇒ POST approve đúng MỘT lần (không có bước "Gửi duyệt" tay) và hiện "Đã chuyển: <bước kế>";
 //  (3) HĐ nháp / không quyền xem (hub 404 "Not found") ⇒ MỘT câu chung, không lộ HĐ có tồn tại.
 // VIẾT, CHƯA CHẠY trong lát (e2e chạy một lần ở cuối bằng evotest).
-import type { ApprovalCardStep, ContractApproval } from "@ai/contracts";
+import type { ApprovalCardStep, ContractApproval } from "@ai/contracts/pack-contracts";
 import { expect, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
 import { approvalAsHub } from "./dataset-approval";

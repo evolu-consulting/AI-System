@@ -1,5 +1,5 @@
 // ADM-FR-10, ADM-FR-11, ADM-FR-14, ADM-FR-15 · editor Workflow (/workflows/new, /workflows/$id): 4 tab, Info + Input chung một form và nút Lưu.
-import type { Workflow } from "@ai/contracts";
+import type { Workflow } from "@ai/contracts/workflows";
 import { FormProvider } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";

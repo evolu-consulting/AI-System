@@ -1,6 +1,6 @@
 // gap-a1 #7 · #16 · #5: khối "Quản lý" trên trang chi tiết — "Giao cho" (người phụ trách; chỉ thành viên có quyền xem gói), hoa hồng %
 // của HĐ Giới thiệu (sửa được sau khi lưu), "AI đọc lại từ đầu" khi HĐ còn chờ xác nhận. Chỉ vai có quyền ghi thấy ô sửa.
-import type { ContractDetail } from "@ai/contracts";
+import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";

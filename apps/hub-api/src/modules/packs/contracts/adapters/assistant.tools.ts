@@ -10,7 +10,7 @@ import {
   ContractListQuerySchema,
   ObligationsQuerySchema,
   PAYMENT_FILTERS,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { z } from "zod";
 import type {
   PackToolArgs,

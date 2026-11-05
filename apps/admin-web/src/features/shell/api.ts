@@ -1,10 +1,9 @@
 // ADM-FR-41 · M4-R06 · gọi GET /admin/quota-banner (banner dưới topbar của tenant_admin).
-import {
-  MY_APPS_PATH,
-  type MyAppsResponse,
-  type QuotaBannerResponse,
-  type SsoCodeResponse,
-} from "@ai/contracts";
+
+import type { MyAppsResponse } from "@ai/contracts/app-catalog";
+import type { SsoCodeResponse } from "@ai/contracts/auth";
+import { MY_APPS_PATH } from "@ai/contracts/light";
+import type { QuotaBannerResponse } from "@ai/contracts/quotas";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 

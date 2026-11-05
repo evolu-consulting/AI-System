@@ -1,5 +1,5 @@
 // ADM-FR-62 · ADM-FR-37 · 3 tab của editor Group: Thành viên · Feature · Agent. Tab nằm trên URL (`?tab=`); nội dung tab Thành viên/Feature do FE2c/FE2d nối.
-import type { Group } from "@ai/contracts";
+import type { Group } from "@ai/contracts/groups";
 import { lazy, type ReactNode, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";

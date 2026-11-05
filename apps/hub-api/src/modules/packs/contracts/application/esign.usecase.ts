@@ -2,7 +2,7 @@
 // duyệt xong/khoá + PDF; nhà cung cấp chỉ định hoặc mặc định công ty), xem trạng thái, "Ký ngay" (embedded, chỉ người ký công ty),
 // làm mới, huỷ, webhook + đồng bộ nền esign-sweep2 (map envelope ⇒ tenant qua bảng), lưu "Bản đã ký" vào FileBox idempotent. Lệnh sau
 // gửi dùng `provider` LƯU trên envelope. Gọi mạng NGOÀI tx. Thiếu cấu hình ⇒ tắt (409, không 500).
-import type { ESignSettingsOut, ESignSignerIn, ESignStateOut } from "@ai/contracts";
+import type { ESignSettingsOut, ESignSignerIn, ESignStateOut } from "@ai/contracts/pack-contracts";
 import type { PackSystemUow, PackUow, PackWho } from "../../kit/application/ports";
 import { defaultSigners, type ESignStatus, isOpen, mapEnvelopeStatus } from "../domain/esign.rules";
 import {

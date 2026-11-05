@@ -1,5 +1,5 @@
 // ADM-FR-52 · M4-AC08 · ConfirmDialog vừa "Khôi phục {name} về trạng thái trước v{n}?" (ms §7.2). Không fetch: việc gọi API do `onConfirm`.
-import type { AuditItem } from "@ai/contracts";
+import type { AuditItem } from "@ai/contracts/audit";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { restoreParams } from "../lib/restore";

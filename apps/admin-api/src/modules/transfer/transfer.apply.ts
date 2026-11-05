@@ -1,7 +1,7 @@
 // ADM-FR-54 · M4-R14 · M4-R15 · M4-AC10 · Import áp dụng (plan-cd §3.3, §8.3–8.4): một tx `configWrite({expectBase})`,
 // một audit `import`/`config`, một NOTIFY sau commit; không xoá. Config đổi sau dry-run → 409 `VERSION_CONFLICT {current}`.
 // Không nhận giá trị secret qua file: secret mới chỉ từ `secrets` của request (đúng tập `missing_secrets`).
-import type { ConfigFile, ImportItem, ImportRequest, ImportResult } from "@ai/contracts";
+import type { ConfigFile, ImportItem, ImportRequest, ImportResult } from "@ai/contracts/transfer";
 import { type ConfigSink, ConfigVersionMoved, readConfigVersion, type Tx, withScope } from "@ai/db";
 import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";

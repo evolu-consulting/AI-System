@@ -1,6 +1,6 @@
 // V2-N · 4 con số của Tổng quan (mockup NITI `kpiPanel`) + chọn kỳ: Doanh thu / Hoa hồng (thực nhận, % dự kiến, chưa thu/nhận, % so kỳ trước),
 // Lãi gộp (biên %), Hàng đang giữ. Dữ liệu `GET /overview?period=`; người dùng chỉ thấy phần của HĐ mình được xem (API tự lọc).
-import type { OverviewFigure, OverviewOut, OverviewPeriod } from "@ai/contracts";
+import type { OverviewFigure, OverviewOut, OverviewPeriod } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { changeView, moneyShort, pctOf } from "../lib/overview";

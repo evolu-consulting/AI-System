@@ -1,6 +1,6 @@
 // V2-A · HD-11: cổng repo mốc HĐ (lớp 2 — chỉ kiểu). Mỗi hàm = MỘT câu SQL trong tx `PackUow` (RLS tenant). Thứ tự khoá như
 // HD7 D7-15: hàng HĐ (`FOR NO KEY UPDATE`) TRƯỚC hàng mốc (`FOR UPDATE`).
-import type { RepDelta } from "@ai/contracts";
+import type { RepDelta } from "@ai/contracts/pack-contracts";
 import type { DbKind, Deal, Fault, Owner } from "../domain/milestones.rules";
 import type { DeliveryRepo } from "./delivery.ports";
 

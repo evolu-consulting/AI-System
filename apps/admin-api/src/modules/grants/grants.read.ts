@@ -1,14 +1,14 @@
 // ADM-FR-32, ADM-BR-12 · đọc grant (list + một hàng) và map sang contract `Grant` (spec M3 §3). Chỉ đọc, không khoá.
 // `entitled` tính lúc đọc từ `feature_entitlements.revoked_at IS NULL` (không có cột "đã tính sẵn", M3-R10).
+
 import {
-  BETA_GROUP_KEY,
   CORE_FEATURE_KEY,
   FEATURE_NAME_MAX,
   type FeatureStatus,
-  GROUP_NAME_MAX,
-  type Grant,
   LocalizedTextSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/common";
+import type { Grant } from "@ai/contracts/grants";
+import { BETA_GROUP_KEY, GROUP_NAME_MAX } from "@ai/contracts/groups";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { likeArg } from "../../lib/sql";

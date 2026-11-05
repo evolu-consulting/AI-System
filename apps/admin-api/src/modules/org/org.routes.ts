@@ -1,6 +1,10 @@
 // M1D-FR-02 · M1D-FR-03 · `/admin/org*`: cơ cấu tổ chức (quản lý + phòng ban). platform_admin + tenant_admin; member → 403
 // trước khi tra thực thể hay parse body (như `/admin/groups`).
-import { DepartmentSetRequestSchema, ManagerSetRequestSchema, OrgQuerySchema } from "@ai/contracts";
+import {
+  DepartmentSetRequestSchema,
+  ManagerSetRequestSchema,
+  OrgQuerySchema,
+} from "@ai/contracts/org";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";

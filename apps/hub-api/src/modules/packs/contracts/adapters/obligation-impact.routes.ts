@@ -1,7 +1,7 @@
 // MS-impact · CR-101b: `GET /pack/contracts/obligations/:id/impact?fault=&actual_on=` — xem trước tác động khi xác nhận mốc (CHỈ ĐỌC).
 // Guard `read` TRƯỚC đọc tham số; `:id` sai dạng ⇒ 400; tham số lạ ⇒ 400 (strict); tenant khác / HĐ không thấy ⇒ 404; đợt đã xong ⇒
 // 409 `OBLIGATION_DONE`.
-import { LEDGER_ERRORS, ObligationImpactQuerySchema } from "@ai/contracts";
+import { LEDGER_ERRORS, ObligationImpactQuerySchema } from "@ai/contracts/pack-contracts";
 import { Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";

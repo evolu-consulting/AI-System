@@ -1,6 +1,6 @@
 // REP-v3-ui · V2-E (BA v2.0 §5.1) · luật thuần hiển thị điểm vai × nhóm SP khi `engine = v2e`: cột "Góp", các bước tới điểm cuối,
 // biểu đồ 3/6/12 tháng + ngưỡng, đánh giá sao cần lý do. (Khôi phục từ V2-I, bỏ phần dùng chung đã có ở `partner-v2.ts`.)
-import type { RepCellOut, RepCriterionOut, RepHistory } from "@ai/contracts";
+import type { RepCellOut, RepCriterionOut, RepHistory } from "@ai/contracts/pack-contracts";
 
 export { RANGES, type Range } from "./partner-v2";
 // ---------- bảng tính điểm (DT-02) ----------

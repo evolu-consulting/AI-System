@@ -1,6 +1,10 @@
 // trello-config-ui · nghiệp vụ cấu hình Trello (platform_admin). Giá trị key/token chỉ sống trong bộ nhớ tới khi mã hoá xong;
 // không bao giờ trả về, log hay ghi audit. Thứ tự dùng khi gửi góp ý: hàng DB (giải mã được) ⇒ env `TRELLO_*` như cũ.
-import type { TrelloCheckResponse, TrelloConfigSaveRequest, TrelloConfigView } from "@ai/contracts";
+import type {
+  TrelloCheckResponse,
+  TrelloConfigSaveRequest,
+  TrelloConfigView,
+} from "@ai/contracts/trello-config";
 import { type Db, type Tx, withScope } from "@ai/db";
 import { auditOf, recordAudit } from "../../lib/audit/audit.write";
 import type { Actor } from "../../lib/auth-middleware";

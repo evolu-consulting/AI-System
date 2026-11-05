@@ -1,6 +1,6 @@
 // trello-config-ui · luật thuần cấu hình Trello: thứ tự DB ⇒ env, view che secret, mã hoá theo trường bằng `sealBytes`
 // có sẵn (AAD `admin.trello_config:<field>:<key_version>`, tách miền với `admin.secrets:`/`admin.user_totp:`). Không I/O.
-import type { TrelloConfigView } from "@ai/contracts";
+import type { TrelloConfigView } from "@ai/contracts/trello-config";
 import { openBytes, type SealedBytes, type SecretKey, sealBytes } from "../../lib/secret-crypto";
 import { secretLast4 } from "../secrets/secrets.rules";
 import type { TrelloConfig } from "./feedback.trello";

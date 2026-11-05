@@ -1,6 +1,6 @@
 // ADM-FR-23 · X1 F4 · kết quả "Chạy thử" (plan-frontend §2.2): dòng "{ms} ms · {in}+{out} token", tab Kết quả · Raw · Các bước;
 // `ok:false` → Alert 1 dòng + "Chi tiết từ Dify" (ẩn khi `detail` null). Không thêm lib markdown: `<pre>` xuống dòng.
-import type { CommandTestResponse } from "@ai/contracts";
+import type { CommandTestResponse } from "@ai/contracts/command-test";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Alert, AlertDescription } from "@/components/ui/alert";

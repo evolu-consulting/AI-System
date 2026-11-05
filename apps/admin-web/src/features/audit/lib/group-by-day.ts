@@ -1,5 +1,5 @@
 // ADM-FR-51 · nhóm dòng nhật ký theo ngày địa phương (Hôm nay / Hôm qua / dd/MM/yyyy); thứ tự giữ nguyên.
-import type { AuditItem } from "@ai/contracts";
+import type { AuditItem } from "@ai/contracts/audit";
 
 export type DayGroup = { day: string; items: AuditItem[] };
 

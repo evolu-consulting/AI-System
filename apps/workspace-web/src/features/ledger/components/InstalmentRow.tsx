@@ -1,6 +1,6 @@
 // HD7-FR-04…06 · HD7-FR-12 · một đợt chưa xong — port `PartnerLog.tsx:125-175`: Đã thu/Đã trả (ngày trả, trễ N ngày), Đã nhắc,
 // Khách hẹn lại (ngày hẹn > hạn). Hạn đã qua tô đỏ.
-import type { Obligation } from "@ai/contracts";
+import type { Obligation } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";

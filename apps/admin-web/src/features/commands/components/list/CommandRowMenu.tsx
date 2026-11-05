@@ -1,5 +1,5 @@
 // ADM-FR-20 · menu `⋯` của một command: Sửa · Nhân bản · Bật/Tắt · Xoá (không có Lịch sử: M4, không có Chạy thử: FR-23 là M5).
-import type { CommandListItem } from "@ai/contracts";
+import type { CommandListItem } from "@ai/contracts/commands";
 import { Link } from "@tanstack/react-router";
 import { MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";

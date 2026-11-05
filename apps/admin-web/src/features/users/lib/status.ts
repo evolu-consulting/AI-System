@@ -1,5 +1,5 @@
 // ADM-FR-04, ADM-FR-05 · trạng thái hiển thị của một user trong bảng (hàm thuần).
-import type { User } from "@ai/contracts";
+import type { User } from "@ai/contracts/users";
 
 export type UserActionKind = "lock" | "unlock" | "reset" | "logoutAll" | "disable2fa";
 

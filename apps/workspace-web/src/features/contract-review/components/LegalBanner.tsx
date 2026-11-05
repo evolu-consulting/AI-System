@@ -1,6 +1,6 @@
 // CR-101 DOC-legal (Câu 8) · MS-impact phụ: cảnh báo "Pháp lý" của giao dịch đứng riêng giá trị lớn còn mốc thu/trả mở. CHỈ cảnh báo
 // (không chặn lưu/xác nhận), luôn kèm dòng "cần kế toán xác nhận". Dữ liệu `legal_warning` của chi tiết (null/vắng ⇒ không hiện).
-import type { ContractDetail } from "@ai/contracts";
+import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 

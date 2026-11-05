@@ -2,7 +2,7 @@
 // AC-A03 (phía Admin), tên/alias chung không gian tên, workflow, feature, thứ tự kiểm
 // (test-plan C; M2-AC03/04/06; M2-R13…R19). Đọc/danh sách/version/xoá: commands-read.int.test.ts.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { CommandSchema } from "@ai/contracts";
+import { CommandSchema } from "@ai/contracts/commands";
 import { ALL_CATALOG, type CatalogParts, ID } from "./_data";
 import { createM2Env, expectErr, type Json, type M2Env, type Res } from "./_fixtures";
 

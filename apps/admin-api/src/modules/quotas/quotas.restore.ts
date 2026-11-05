@@ -1,7 +1,7 @@
 // ADM-FR-52 · M4-R13 · Q9 · khôi phục bộ quota của tenant từ snapshot audit (plan M4 §4.4): thay cả bộ như PUT với
 // `version` = version tenant sau thay đổi được khôi phục; dòng của feature đã xoá bị bỏ. Khoá: đúng chuỗi Quota PUT
 // (§6). Evaluator chạy sau commit do nơi gọi (`evaluateLater`).
-import { QuotaSetRequestSchema } from "@ai/contracts";
+import { QuotaSetRequestSchema } from "@ai/contracts/quotas";
 import type { ConfigSink, Tx } from "@ai/db";
 import {
   existingIds,

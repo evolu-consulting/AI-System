@@ -1,6 +1,6 @@
 // HUB-FR-01, 74 · HUB-H1-AC-09 · H1-R02 · verifyAccessToken của Hub (test-plan H1 §4 R11–R13; plan §6.4).
 import { beforeAll, describe, expect, it } from "bun:test";
-import { ROLES, type Role } from "@ai/contracts";
+import { ROLES, type Role } from "@ai/contracts/common";
 import { exportSPKI, generateKeyPair, SignJWT } from "jose";
 import { type JwtKeys, signAccessToken } from "../../../../apps/admin-api/src/lib/jwt";
 import { verifyAccessToken } from "../../../../apps/hub-api/src/lib/jwt";

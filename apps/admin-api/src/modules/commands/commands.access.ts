@@ -1,12 +1,9 @@
 // ADM-FR-24 (phần tenant, CR-013), ADM-BR-10, ADM-BR-12 · tab "Ai dùng được" (spec M2 §3, M2-R23): tenant có ≥ 1 feature
 // của command đang hiệu lực (`on|beta`, và `core` hoặc entitlement chưa thu hồi). Một câu cho cả trang (json_agg,
 // count(*) over()). M3-R14: thêm cặp group–feature + visible_user_count qua access.service (cùng luật SQL tham chiếu).
-import {
-  CORE_FEATURE_KEY,
-  type CommandAccessResponse,
-  FEATURE_NAME_MAX,
-  LocalizedTextSchema,
-} from "@ai/contracts";
+
+import type { CommandAccessResponse } from "@ai/contracts/commands";
+import { CORE_FEATURE_KEY, FEATURE_NAME_MAX, LocalizedTextSchema } from "@ai/contracts/common";
 import { type Tx, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { appError } from "../../lib/errors";

@@ -1,6 +1,6 @@
 // V2-H · SP-03 (mockup NITI `custPanel`): tab "Khách đang dùng" — lọc Tất cả / Hết hạn / Sắp hết hạn / Còn hạn (kèm số), bảng khách
 // + hạn dùng + trạng thái, "Nhắc gia hạn" (khách hết / sắp hết hạn) ⇒ việc "Liên hệ mời gia hạn" vào Cần xử lý của mình.
-import type { ServiceCustomer, ServiceCustomersOut } from "@ai/contracts";
+import type { ServiceCustomer, ServiceCustomersOut } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

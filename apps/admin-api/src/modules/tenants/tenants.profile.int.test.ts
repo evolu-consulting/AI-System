@@ -1,7 +1,7 @@
 // CR-121 · GET/PATCH /admin/tenants/:id/profile qua HTTP thật (app + DB, RLS thật).
 // Đường chính + chặn đọc/sửa chéo tenant + CEO không phải thành viên ⇒ 422 + GET ≤ 2 câu SQL dữ liệu.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { TenantCompanyProfileSchema } from "@ai/contracts";
+import { TenantCompanyProfileSchema } from "@ai/contracts/tenants";
 import { createDb } from "@ai/db";
 import { setProbe, sqlCounters } from "@ai/db/probe";
 import {

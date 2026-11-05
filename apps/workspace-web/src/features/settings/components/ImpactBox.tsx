@@ -1,5 +1,5 @@
 // V2-L · "thử tính" trên dữ liệu thật: `POST /reputation/config/preview` (không ghi) — bao nhiêu đối tác đổi điểm/mức nếu lưu bản nháp.
-import type { RepPreviewIn } from "@ai/contracts";
+import type { RepPreviewIn } from "@ai/contracts/pack-contracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsGroup } from "~/shared/ui/settings-layout";

@@ -1,5 +1,5 @@
 // ADM-FR-13 · AC-A05 · hộp thoại chặn xoá/tắt workflow: liệt kê command và agent đang dùng (lấy từ `details` của 409).
-import type { AgentRef, UsageCommand } from "@ai/contracts";
+import type { AgentRef, UsageCommand } from "@ai/contracts/common";
 import { useTranslation } from "react-i18next";
 import { BlockedDialog } from "@/components/shared/BlockedDialog";
 import { DependencyList } from "@/components/shared/DependencyList";

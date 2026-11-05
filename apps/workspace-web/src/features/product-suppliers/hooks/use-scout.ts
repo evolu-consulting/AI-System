@@ -1,5 +1,5 @@
 // price-scout · truy vấn/ghi cấu hình dò giá của một sản phẩm (đọc, lưu ghi đè, về mặc định nhóm).
-import type { PriceScoutOverride } from "@ai/contracts";
+import type { PriceScoutOverride } from "@ai/contracts/pack-contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProductScout, saveProductScout, supplierKeys } from "../api";
 

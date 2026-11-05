@@ -1,5 +1,5 @@
 // Gap #9 · luật thuần của hàng đợi tải lên: loại tệp (cả .md), 20 MB/tệp, trạng thái từng tệp. Máy chủ vẫn kiểm lại bằng nội dung.
-import { CONTRACT_UPLOAD_MAX_BYTES } from "@ai/contracts";
+import { CONTRACT_UPLOAD_MAX_BYTES } from "@ai/contracts/pack-contracts";
 
 export const UPLOAD_EXTS = [".pdf", ".docx", ".png", ".jpg", ".jpeg", ".md", ".markdown"] as const;
 export const UPLOAD_ACCEPT = UPLOAD_EXTS.join(",");

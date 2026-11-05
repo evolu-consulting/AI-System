@@ -1,6 +1,6 @@
 // ADM-FR-30 · M2-R21 (CR-055) · hộp thoại xoá feature: xác nhận nặng (gõ key); có command chỉ thuộc feature này →
 // cảnh báo liệt kê chúng (sẽ thành "chưa gắn feature"), không chặn.
-import type { FeatureListItem } from "@ai/contracts";
+import type { FeatureListItem } from "@ai/contracts/features";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { CommandRef } from "../lib/exclusive";

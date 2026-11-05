@@ -1,6 +1,11 @@
 // CR-101 DOC-ui-frame · R44–R47: luật hiển thị thuần của HĐ nguyên tắc — % hạn mức, giai đoạn, diễn biến xen chứng từ con + mốc, lọc loại
 // mốc cho HĐ NT, ứng viên "Gắn chứng từ có sẵn", câu lỗi 422/409 bằng tiếng Việt. Không I/O.
-import type { ContractDoc, ContractListResponse, FrameChild, Milestone } from "@ai/contracts";
+import type {
+  ContractDoc,
+  ContractListResponse,
+  FrameChild,
+  Milestone,
+} from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { KINDS, type MilestoneKind } from "~/features/contract-milestones/lib/timeline";
 

@@ -1,6 +1,6 @@
 ﻿// feedback · unit adapter Trello: dựng thẻ (name/desc), bỏ qua khi thiếu env, lỗi không ném, không lộ key/token.
 import { describe, expect, it } from "bun:test";
-import type { FeedbackItem } from "@ai/contracts";
+import type { FeedbackItem } from "@ai/contracts/feedback";
 import {
   cardDesc,
   cardName,

@@ -1,5 +1,5 @@
 // ADM-FR-36 · M3-R12 · hiển thị danh sách lý do (mỗi lý do một dòng riêng) kèm hành động gợi ý; chế độ chỉ đọc không có hành động.
-import type { FeatureMini } from "@ai/contracts";
+import type { FeatureMini } from "@ai/contracts/access";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";

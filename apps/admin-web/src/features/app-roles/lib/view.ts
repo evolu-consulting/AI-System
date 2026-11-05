@@ -1,5 +1,5 @@
 // CR-112 · ADM-FR-80, ADM-FR-82 · "vai như đang hiển thị" = bản đã tải + thay đổi chưa lưu (hàm thuần).
-import type { AppRole, AppRoleLevel } from "@ai/contracts";
+import type { AppRole, AppRoleLevel } from "@ai/contracts/app-roles";
 import { roleIsEffective } from "./effective";
 import { isMember, memberCountAfter, type Staged } from "./staging";
 

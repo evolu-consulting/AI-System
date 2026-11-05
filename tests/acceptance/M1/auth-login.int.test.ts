@@ -4,8 +4,8 @@ import {
   LoginResponseSchema,
   PasswordChangeRequiredSchema,
   TokenGrantSchema,
-  ValidationErrorDetailsSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/auth";
+import { ValidationErrorDetailsSchema } from "@ai/contracts/common";
 import { importSPKI, jwtVerify } from "jose";
 import {
   createEnv,

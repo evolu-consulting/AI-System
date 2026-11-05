@@ -5,7 +5,7 @@ import {
   IMPORT_MAX_BYTES,
   ImportQuerySchema,
   ImportRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/transfer";
 import { type Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";

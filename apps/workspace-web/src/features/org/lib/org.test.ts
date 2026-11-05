@@ -1,6 +1,6 @@
 // M1D-FR-02 · ứng viên cấp quản lý loại chính mình và cấp dưới mọi tầng (tránh vòng); dữ liệu có vòng không treo.
 import { describe, expect, test } from "bun:test";
-import type { OrgMember } from "@ai/contracts";
+import type { OrgMember } from "@ai/contracts/org";
 import { managerOptions, reportsOf } from "./org";
 
 const m = (id: string, manager: string | null): OrgMember => ({

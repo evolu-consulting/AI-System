@@ -1,7 +1,7 @@
 // ADM-FR-31, ADM-BR-12 · entitlement feature ↔ tenant (spec M2 §3, M2-R22). Thu hồi = `revoked_at` (giữ hàng);
 // `core` tự hiệu lực mọi tenant nên không có hàng (PUT/DELETE → CORE_FEATURE_PROTECTED, GET → rỗng).
 // Khoá feature FOR SHARE (chặn xoá feature song song); tenant chỉ bị FK KEY SHARE. Không tăng version feature.
-import type { Entitlement, EntitlementListResponse } from "@ai/contracts";
+import type { Entitlement, EntitlementListResponse } from "@ai/contracts/features";
 import { type AuditInput, type Tx, withScope } from "@ai/db";
 import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";

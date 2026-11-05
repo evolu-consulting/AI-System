@@ -1,6 +1,6 @@
 // ADM-FR-42 · usage-analytics · thẻ KPI: token vào/ra, chi phí ước tính (chỉ platform — server xoá cho tenant_admin), lượt
 // gọi AI, run, độ trễ TB, tỉ lệ lỗi; mỗi thẻ so với kỳ liền trước cùng số ngày.
-import type { UsageAnalytics, UsageAnalyticsKpi } from "@ai/contracts";
+import type { UsageAnalytics, UsageAnalyticsKpi } from "@ai/contracts/usage-analytics";
 import { useTranslation } from "react-i18next";
 import { KpiCard } from "@/components/shared/kpi/KpiCard";
 import { formatCount, formatUsd } from "@/lib/quota-format";

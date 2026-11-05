@@ -1,6 +1,7 @@
 // ADM-FR-01, ADM-FR-06, ADM-NFR-01 · JWT EdDSA (spec M1 §3 "Token", M1-R02): access token + change_token.
 // Hai loại tách bằng `aud` nên không dùng lẫn được. iat/exp theo giờ thật (plan §10 G7).
-import { type Role, type UserKind, UuidSchema } from "@ai/contracts";
+import { type Role, UuidSchema } from "@ai/contracts/common";
+import type { UserKind } from "@ai/contracts/user-kind";
 import { importPKCS8, importSPKI, jwtVerify, SignJWT } from "jose";
 
 export type JwtKeys = { privateKey: CryptoKey; publicKey: CryptoKey; kid: string };

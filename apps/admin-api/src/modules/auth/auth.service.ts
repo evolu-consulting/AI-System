@@ -1,13 +1,9 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-03, ADM-FR-07, ADM-NFR-01 · đăng nhập, refresh xoay vòng, đăng xuất (plan M1 §5).
 // Không biết HTTP: route quyết định cookie/body. Mỗi bước có DB = một withScope.
-import type {
-  Locale,
-  LoginRequest,
-  Me,
-  PasswordChangeRequired,
-  Theme,
-  TotpRequired,
-} from "@ai/contracts";
+
+import type { LoginRequest, Me, PasswordChangeRequired } from "@ai/contracts/auth";
+import type { Locale, Theme } from "@ai/contracts/common";
+import type { TotpRequired } from "@ai/contracts/totp";
 import { hashPassword, NIL_SCOPE, setScope, type Tx, verifyPassword, withScope } from "@ai/db";
 import { auditOf, recordAudit } from "../../lib/audit/audit.write";
 import { appError } from "../../lib/errors";

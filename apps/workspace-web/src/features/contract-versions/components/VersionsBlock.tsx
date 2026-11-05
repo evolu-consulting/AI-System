@@ -1,5 +1,5 @@
 ﻿// CR-097 K3b: khối "Phiên bản hợp đồng" — v1..vN, mỗi dòng: biểu tượng trạng thái, số HĐ, hiệu lực, giá trị, nút "Xem".
-import type { ContractVersionRef } from "@ai/contracts";
+import type { ContractVersionRef } from "@ai/contracts/pack-contracts";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";

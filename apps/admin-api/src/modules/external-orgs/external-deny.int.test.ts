@@ -2,7 +2,8 @@
 // của mình đã lọc, mã SSO chỉ Community); không làm quản lý / trưởng phòng (API 422 + trigger 0029 ở cả hai cột); vô hiệu
 // công ty audit từng user; mở lại công ty; tenant `platform` không có đối tác.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { ExternalOrgSchema, UserCreateResponseSchema } from "@ai/contracts";
+import { ExternalOrgSchema } from "@ai/contracts/external-orgs";
+import { UserCreateResponseSchema } from "@ai/contracts/users";
 import {
   createEnv,
   type Env,

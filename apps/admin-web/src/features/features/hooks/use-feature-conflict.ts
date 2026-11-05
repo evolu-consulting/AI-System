@@ -1,6 +1,6 @@
 // ADM-FR-55 · M3-R20 · TECH-DEBT #14 · lưu editor Feature (PATCH kèm version), 409 → ConflictDialog (câu có {user}, A4).
 // Version cho lần lưu kế tiếp lấy từ phản hồi lưu; `Tải bản mới` gọi `onReload` (nạp lại rồi dựng lại form).
-import type { FeatureDetail, FeatureUpdateRequest } from "@ai/contracts";
+import type { FeatureDetail, FeatureUpdateRequest } from "@ai/contracts/features";
 import { useRef } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useTranslation } from "react-i18next";

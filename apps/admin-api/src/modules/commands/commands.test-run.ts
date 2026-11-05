@@ -1,6 +1,6 @@
 // ADM-FR-23 · "Chạy thử" bản nháp lệnh (plan X1 §2.2): precheck (bước 3–6) → Hub `/internal/test-run` → ánh xạ 8a–8f.
 // Không ghi DB, không audit. Log một dòng `command-test` — không log text/output/header/token.
-import { COMMAND_TEST_ERRORS, type CommandTestRequest } from "@ai/contracts";
+import { COMMAND_TEST_ERRORS, type CommandTestRequest } from "@ai/contracts/command-test";
 import { withScope } from "@ai/db";
 import { AppError } from "../../lib/errors";
 import { logger } from "../../lib/logger";

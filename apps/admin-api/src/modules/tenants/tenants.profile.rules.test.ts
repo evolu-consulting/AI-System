@@ -1,6 +1,6 @@
 // CR-121 · hồ sơ công ty: luật thuần (changedProfileFields, leaderIdsToCheck) + kiểm email/SĐT/MST/quy mô ở contract.
 import { describe, expect, test } from "bun:test";
-import { TenantProfileUpdateRequestSchema as Req } from "@ai/contracts";
+import { TenantProfileUpdateRequestSchema as Req } from "@ai/contracts/tenants";
 import { profileSame, splitProfile } from "../tenant-onboard/domain/onboard.rules";
 import { changedProfileFields, leaderIdsToCheck, type ProfileCols } from "./tenants.rules";
 

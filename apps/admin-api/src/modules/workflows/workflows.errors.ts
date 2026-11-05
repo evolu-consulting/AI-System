@@ -1,5 +1,5 @@
 // ADM-FR-10, ADM-FR-13 · mã lỗi của module workflows (bảng mã: API_ERRORS, spec M2 §3) + dịch 23505 (plan §7).
-import type { ErrorCode } from "@ai/contracts";
+import type { ErrorCode } from "@ai/contracts/common";
 import { appError } from "../../lib/errors";
 import { uniqueViolation } from "../../lib/pg-errors";
 

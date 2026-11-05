@@ -1,6 +1,6 @@
 // price-scout · ô nhập "Cấu hình dò giá" dùng chung (tab NCC & giá của SP + Cài đặt › Dò giá thị trường). Chỉ trình bày: nhận form chuỗi,
 // báo thay đổi lên trên; `inherited` (tuỳ chọn) ⇒ hiện nhãn "theo mặc định nhóm" cạnh ô đang trùng mặc định.
-import type { PriceScoutConfig } from "@ai/contracts";
+import type { PriceScoutConfig } from "@ai/contracts/pack-contracts";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { LIST_MAX, type ScoutForm } from "../lib/scout";

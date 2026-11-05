@@ -1,5 +1,5 @@
 // ADM-FR-32 · M3-R07, R08, R09 · tab Feature của group: hàng từ ma trận (một cột) và kế hoạch batch (hàm thuần).
-import type { GrantKey, GrantMatrix, MatrixRowState } from "@ai/contracts";
+import type { GrantKey, GrantMatrix, MatrixRowState } from "@ai/contracts/grants";
 
 export type GrantRow = {
   id: string;

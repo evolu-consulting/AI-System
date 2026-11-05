@@ -15,7 +15,7 @@ import {
   OUTPUT_RENDERS,
   TIMEOUT_MAX_S,
   TIMEOUT_MIN_S,
-} from "@ai/contracts";
+} from "@ai/contracts/common";
 import { z } from "zod";
 
 export type LocalizedValue = { vi: string; en: string };

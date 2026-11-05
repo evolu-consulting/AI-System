@@ -1,6 +1,6 @@
 // MS-impact · CR-101b (R18, R19, R34): khối "Tác động khi xác nhận" trong hộp xác nhận mốc — số THẬT do máy chủ tính (không ước lượng ở
 // client): uy tín đối tác trước → sau (engine hiện hành), kho theo thành phần, còn phải thu/trả của HĐ. Lỗi/đang tính không chặn nút xác nhận.
-import type { ObligationImpact, RepPoint } from "@ai/contracts";
+import type { ObligationImpact, RepPoint } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";

@@ -1,5 +1,5 @@
 ﻿// CR-097 K3b: logic thuần của khối "Phiên bản hợp đồng" — loại dòng, điều kiện nút, số phiên bản thay thế, dòng so sánh, lỗi.
-import type { ContractVersionRef } from "@ai/contracts";
+import type { ContractVersionRef } from "@ai/contracts/pack-contracts";
 
 export type VersionKind = "superseded" | "draft" | "current";
 export const KIND_ICON: Record<VersionKind, string> = {

@@ -1,8 +1,6 @@
 // ADM-FR-62 · gọi API /admin/groups* (nơi duy nhất của feature groups) dưới dạng hook TanStack Query.
+import type { GrantBatchRequest, GrantBatchResponse, GrantMatrix } from "@ai/contracts/grants";
 import type {
-  GrantBatchRequest,
-  GrantBatchResponse,
-  GrantMatrix,
   Group,
   GroupCreateRequest,
   GroupListItem,
@@ -11,7 +9,7 @@ import type {
   GroupMembersAddRequest,
   GroupMembersAddResponse,
   GroupUpdateRequest,
-} from "@ai/contracts";
+} from "@ai/contracts/groups";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 

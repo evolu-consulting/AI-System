@@ -5,7 +5,7 @@ import type {
   TenantDepartment,
   TenantPerson,
   TenantProfileUpdateRequest,
-} from "@ai/contracts";
+} from "@ai/contracts/tenants";
 import { type DbScope, type Tx, withScope } from "@ai/db";
 import { configWrite } from "../../lib/config/config-write";
 import { appError, tenantProfileError } from "../../lib/errors";

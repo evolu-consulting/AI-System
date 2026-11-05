@@ -5,7 +5,7 @@ import {
   type ConfigChangedPayload,
   ConfigChangedPayloadSchema,
   type ConfigEvent,
-} from "@ai/contracts";
+} from "@ai/contracts/config";
 import {
   type ConfigSink,
   createDb,

@@ -1,5 +1,5 @@
 // feedback · truy vấn admin.feedback / feedback_files (RLS admin_rw: xem migration 0017). Mỗi hàm một câu SQL cố định.
-import type { FeedbackItem, FeedbackListQuery, FeedbackStatus } from "@ai/contracts";
+import type { FeedbackItem, FeedbackListQuery, FeedbackStatus } from "@ai/contracts/feedback";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { DecodedFile } from "./feedback.rules";

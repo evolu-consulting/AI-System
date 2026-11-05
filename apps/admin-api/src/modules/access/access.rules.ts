@@ -1,6 +1,6 @@
 // ADM-FR-36, ADM-BR-11, ADM-BR-12 · hiệu lực quyền dạng hàm thuần (plan M3 §4; M3-R11, R12). Chuẩn tham chiếu cho
 // `effective-access` và test chéo với SQL của Hub (plan §3.2). Không import I/O.
-import { CORE_FEATURE_KEY, type FeatureStatus } from "@ai/contracts";
+import { CORE_FEATURE_KEY, type FeatureStatus } from "@ai/contracts/common";
 
 export type AccessUser = {
   id: string;

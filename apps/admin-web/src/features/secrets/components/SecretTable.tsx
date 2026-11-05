@@ -1,5 +1,5 @@
 // ADM-FR-50 · bảng Secrets: tên (mono), `•••• last4`, ghi chú, đang được dùng bởi, cập nhật, menu `⋯`. Không có hành động xem/copy giá trị.
-import type { Secret } from "@ai/contracts";
+import type { Secret } from "@ai/contracts/secrets";
 import { Link } from "@tanstack/react-router";
 import { MoreHorizontal } from "lucide-react";
 import { type ReactNode, useMemo } from "react";

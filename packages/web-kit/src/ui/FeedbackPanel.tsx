@@ -1,6 +1,6 @@
 // feedback · khung "Góp ý về app" dùng chung 4 web: gửi (loại, nội dung, ảnh/tệp; trang + app + phiên bản tự gắn) và xem góp ý đã gửi
 // kèm trạng thái + phản hồi của admin. Không phụ thuộc Tailwind: style nội tuyến + biến màu của app (có giá trị dự phòng).
-import type { FeedbackItem, FeedbackKind } from "@ai/contracts";
+import type { FeedbackItem, FeedbackKind } from "@ai/contracts/feedback";
 import {
   type CSSProperties,
   type ReactElement,

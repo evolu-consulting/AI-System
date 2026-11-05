@@ -1,7 +1,7 @@
 // HD-FR-21 · HD-FR-24 · HD-FR-25 · HUB-BR-31: adapter agent (parse strict, nonce mới mỗi lần, lỗi ⇒ mã) + hàng đợi trích
 // (không chặn, bỏ trùng, đồng thời ≤ N, chờ bằng `idle()`) + tra MST HTTP qua transport giả (cache, 429 nghỉ, không ném).
 import { describe, expect, it } from "bun:test";
-import { ExtractionOutputSchema } from "@ai/contracts";
+import { ExtractionOutputSchema } from "@ai/contracts/pack-contracts";
 import { createTaxRegistry, type TaxFetch, taxBaseUrl } from "../../../../lib/tax-registry.http";
 import { createExtractionQueue } from "../application/extraction-queue";
 import { requestExtract } from "../application/request-extract.usecase";

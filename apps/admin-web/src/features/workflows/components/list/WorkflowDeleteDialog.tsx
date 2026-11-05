@@ -1,5 +1,5 @@
 // ADM-FR-13 · M2-R11 · xác nhận xoá workflow chưa gắn: mức nặng, gõ lại key mới bật nút "Xoá workflow".
-import type { WorkflowListItem } from "@ai/contracts";
+import type { WorkflowListItem } from "@ai/contracts/workflows";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 

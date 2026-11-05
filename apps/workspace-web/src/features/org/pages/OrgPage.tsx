@@ -1,6 +1,6 @@
 // M1D-FR-02 · M1D-FR-03 · M1D-FR-04 · Cài đặt › Thành viên & phòng ban (theo màn "Thành viên" của mgmt-app): chế độ thấy, cấp quản
 // lý mỗi người, phòng ban (trưởng phòng + thành viên). Ghi qua admin-api (tenant_admin) + hub-api (owner gói); 403 ⇒ chỉ đọc lời nhắc.
-import type { OrgResponse } from "@ai/contracts";
+import type { OrgResponse } from "@ai/contracts/org";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

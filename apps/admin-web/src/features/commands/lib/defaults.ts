@@ -1,10 +1,6 @@
 // ADM-FR-20 · M2-R15 · giá trị mặc định của form command, chuyển Command ↔ form, và body POST/PATCH.
-import {
-  type Command,
-  type CommandCreateRequest,
-  type CommandMode,
-  TIMEOUT_DEFAULT_S,
-} from "@ai/contracts";
+import type { Command, CommandCreateRequest } from "@ai/contracts/commands";
+import { type CommandMode, TIMEOUT_DEFAULT_S } from "@ai/contracts/common";
 import { hasSource } from "./input-map";
 import type { ArgValues, CommandFormValues, LocalizedValue, MapEntryValues } from "./schemas";
 

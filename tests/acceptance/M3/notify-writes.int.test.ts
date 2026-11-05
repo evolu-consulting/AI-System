@@ -2,7 +2,7 @@
 // và ĐÚNG MỘT NOTIFY `config_changed` (đúng entity, tenant_id) — 33 thao tác (test-plan I-N, N-A). Kiểm bằng listener LISTEN
 // riêng (đóng vai Hub) + sentinel (không sleep). Mỗi `it` tự reset dữ liệu; không `it` nào đọc kết quả của `it` khác.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import type { ConfigEntity } from "@ai/contracts";
+import type { ConfigEntity } from "@ai/contracts/config";
 import {
   callerOf,
   createM3Env,

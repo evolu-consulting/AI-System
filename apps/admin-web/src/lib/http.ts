@@ -1,5 +1,5 @@
 // ADM-FR-01 · fetch wrapper: JSON, ApiError, gắn Bearer, 401 UNAUTHORIZED → refresh rồi thử lại đúng 1 lần.
-import type { ErrorCode } from "@ai/contracts";
+import type { ErrorCode } from "@ai/contracts/common";
 
 /** CR-053 · = `X_APP_HEADER` (`@ai/contracts` auth): app báo mình khi gọi `/auth/*` (không kéo contract vào bundle). */
 const X_APP_HEADER = "X-App";

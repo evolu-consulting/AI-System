@@ -1,6 +1,7 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-03, ADM-FR-06, ADM-NFR-07 · truy vấn auth. Luôn chạy trong withScope (RLS)
 // và vẫn lọc tenant_id tường minh. Thời gian của token dùng now() của DB (plan §10 G7).
-import type { Locale, Role, Theme, UserKind } from "@ai/contracts";
+import type { Locale, Role, Theme } from "@ai/contracts/common";
+import type { UserKind } from "@ai/contracts/user-kind";
 import { refreshTokens, type Tx, tenants, userBackupCodes, users, userTotp } from "@ai/db";
 import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import type { LockState, RevokeReason } from "./auth.rules";

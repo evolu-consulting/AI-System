@@ -1,6 +1,6 @@
 // ADM-FR-37 · CR-043 · tab Agent của group (plan-frontend §2.3): bảng agent từ Hub + công tắc "Cấp {agent} cho {group}".
 
-import type { Group } from "@ai/contracts";
+import type { Group } from "@ai/contracts/groups";
 import type { AgentGrantListItem } from "@ai/contracts/hub-admin";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";

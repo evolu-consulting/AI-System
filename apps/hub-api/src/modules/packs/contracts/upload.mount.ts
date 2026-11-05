@@ -5,7 +5,7 @@ import {
   CONTRACT_UPLOAD_GLOBAL_DAILY,
   CONTRACT_UPLOAD_MAX_BYTES,
   CONTRACT_UPLOAD_TENANT_DAILY,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import type { Redis } from "ioredis";

@@ -1,6 +1,11 @@
 // V2-F · HD-03 · mockup `renderCList`: suy các ô của một dòng danh sách từ `ContractListRow` + `progress` (V2-A) — đối tác theo loại HĐ,
 // loại (Mua/Bán/Giới thiệu), hiệu lực, giai đoạn + bước hiện tại (đỏ khi quá hạn). Thuần.
-import type { ContractDeal, ContractListRow, ContractProgress, ContractStage } from "@ai/contracts";
+import type {
+  ContractDeal,
+  ContractListRow,
+  ContractProgress,
+  ContractStage,
+} from "@ai/contracts/pack-contracts";
 import { DEAL_TONE, STAGE_TONE } from "~/features/contract-form/lib/deal";
 
 export { DEAL_TONE, STAGE_TONE };

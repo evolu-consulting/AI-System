@@ -1,5 +1,5 @@
 // ADM-FR-51 · một dòng nhật ký: giờ · avatar chữ · câu mô tả · badge loại · chip version · nút "Xem thay đổi".
-import type { AuditItem } from "@ai/contracts";
+import type { AuditItem } from "@ai/contracts/audit";
 import { useNavigate } from "@tanstack/react-router";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";

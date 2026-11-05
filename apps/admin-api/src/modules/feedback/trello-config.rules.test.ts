@@ -2,7 +2,7 @@
 // "Kiểm tra kết nối" chỉ GET list (không tạo thẻ, key/token không nằm trong URL).
 import { describe, expect, it } from "bun:test";
 import { randomBytes } from "node:crypto";
-import { TrelloConfigSaveRequestSchema } from "@ai/contracts";
+import { TrelloConfigSaveRequestSchema } from "@ai/contracts/trello-config";
 import type { Db } from "@ai/db";
 import type { Actor } from "../../lib/auth-middleware";
 import { AppError } from "../../lib/errors";

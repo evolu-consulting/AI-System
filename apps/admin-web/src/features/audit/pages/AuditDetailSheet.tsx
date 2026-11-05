@@ -1,5 +1,5 @@
 // ADM-FR-51 · ADM-FR-52 · Q8 · M4-AC07 · AC08 · chi tiết một dòng nhật ký: Sheet 640 px ở route con `/audit/$auditId` (plan-frontend D8); nút "Khôi phục bản trước" chỉ khi `restorable`.
-import type { AuditItem } from "@ai/contracts";
+import type { AuditItem } from "@ai/contracts/audit";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { RotateCcw } from "lucide-react";
 import { useState } from "react";

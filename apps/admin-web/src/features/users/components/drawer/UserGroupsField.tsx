@@ -1,5 +1,5 @@
 // ADM-FR-62 · A11 · ô Groups trong drawer sửa user: CHỈ ĐỌC (`list "Groups"`, chip link tới /groups/<id>); sửa thành viên ở trang Group.
-import type { GroupRef } from "@ai/contracts";
+import type { GroupRef } from "@ai/contracts/groups";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { pickLocalized } from "@/lib/localized";

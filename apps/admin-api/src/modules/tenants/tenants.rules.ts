@@ -1,5 +1,5 @@
 // ADM-FR-60, ADM-FR-61 · luật tenants dạng hàm thuần (plan M1 §4).
-import type { ErrorCode, Role } from "@ai/contracts";
+import type { ErrorCode, Role } from "@ai/contracts/common";
 
 export const PLATFORM_TENANT_KEY = "platform";
 

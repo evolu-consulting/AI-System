@@ -10,7 +10,7 @@ import {
   OwnerAssignRequestSchema,
   ReopenRequestSchema,
   VERSION_ERRORS,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";

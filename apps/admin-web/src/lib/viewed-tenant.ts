@@ -1,6 +1,6 @@
 // ADM-FR-62 · plan-frontend D8 · tenant đang xem: tenant_admin cố định; platform chọn qua URL `?tenant=<mã>` (mã lạ → `unknown`).
 // Nhận danh sách tenant làm tham số (hook chỉ phụ thuộc dữ liệu, không import api): mỗi feature tự gọi `useTenantOptions`.
-import type { Me } from "@ai/contracts";
+import type { Me } from "@ai/contracts/auth";
 
 export type TenantOptionData = { id: string; key: string };
 export type TenantOptionsQuery = { data?: TenantOptionData[] };

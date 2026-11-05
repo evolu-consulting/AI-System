@@ -1,6 +1,6 @@
 // CR-107 · eng-card-ui: backoff lưới an toàn + lọc sự kiện push theo run.
 import { describe, expect, test } from "bun:test";
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { isFatalStreamError } from "../stream/process-stream";
 import { advanceDelay, eventConcernsRun, shouldListen } from "./advance-wait";

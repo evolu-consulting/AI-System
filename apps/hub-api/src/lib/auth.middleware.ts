@@ -1,7 +1,7 @@
 // HUB-FR-01, HUB-FR-88 · H1-R02, H1-R04 · middleware xác thực Bearer của hub-api (plan §4 "Middleware").
 // Token hỏng/hết hạn/thiếu, tenant/user không dùng được theo cache cấu hình → 401 AUTH_EXPIRED (contract chat).
 // Không đọc DB mỗi request: trạng thái khoá lấy từ ConfigCache (B3), đổi trong ≤ 5 s nhờ LISTEN `config_changed`.
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import type { Context, MiddlewareHandler } from "hono";
 import type { ConfigCache } from "../modules/config/config.service";
 import { appError } from "./errors";

@@ -1,6 +1,6 @@
 // ADM-FR-42 · usage-analytics · `GET /admin/usage/analytics`, `/admin/usage/records`, `/admin/usage/records.csv`,
 // `/admin/usage/runs/:id` (mount ở `/admin`, guard theo route như `usage.routes`): chỉ platform_admin; tenant_admin/member 403.
-import { UsageAnalyticsQuerySchema, UsageRecordsQuerySchema } from "@ai/contracts";
+import { UsageAnalyticsQuerySchema, UsageRecordsQuerySchema } from "@ai/contracts/usage-analytics";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseQuery } from "../../lib/http";

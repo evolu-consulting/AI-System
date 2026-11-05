@@ -1,6 +1,6 @@
 // V2-A · §5.4a · KN-04: hàng mốc (json của Postgres) → DTO `@ai/contracts` `Milestone` (loại BA, số tiền tính, đã xác nhận) +
 // giai đoạn / bước hiện tại. Thuần: không đọc DB; NUMERIC/bigint về chuỗi hoặc số ⇒ `Number` (tiền ≤ 10¹⁵ an toàn).
-import type { ContractProgress, Milestone } from "@ai/contracts";
+import type { ContractProgress, Milestone } from "@ai/contracts/pack-contracts";
 import type { MilestoneRow, MilestoneWritten } from "../application/milestones.ports";
 import { type ProgressRaw, toProgress as progressOf } from "../application/progress";
 import {

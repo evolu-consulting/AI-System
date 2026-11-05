@@ -2,7 +2,7 @@
 // + route nghiá»‡p vá»¥ tá»«ng gÃ³i dÆ°á»›i `/pack/<k>`. Chá»— DUY NHáº¤T ná»‘i `modules/config` (ConfigCache thoáº£ cá»•ng `PackAccessView`) vÃ o
 // module gÃ³i. JWT á»Ÿ gá»‘c: `PACK_PREFIX` náº±m trong `PROTECTED_PREFIXES` cá»§a `app.ts` (401 trÆ°á»›c 404). GÃ³i `pkdemo` (D-08) chá»‰
 // ngoÃ i production: `deps.packs.pkdemo` Æ°u tiÃªn, váº¯ng â‡’ `pkdemoEnabled(appEnv)` (review m-04: chá»‰ khi khai bÃ¡o rÃµ dev/test).
-import { packFeatureKey } from "@ai/contracts";
+import { packFeatureKey } from "@ai/contracts/packs";
 import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
 import { createAgentCaller } from "../../lib/ai-client/agent-call";

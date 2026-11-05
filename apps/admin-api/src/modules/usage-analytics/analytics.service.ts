@@ -11,7 +11,7 @@ import {
   type UsageBreakdownRow,
   type UsageGrain,
   type UsageTreeRow,
-} from "@ai/contracts";
+} from "@ai/contracts/usage-analytics";
 import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import type { Actor } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";

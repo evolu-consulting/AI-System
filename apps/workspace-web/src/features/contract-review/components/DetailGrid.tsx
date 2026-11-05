@@ -1,6 +1,6 @@
 // V2-F · HD-04 · mockup `renderCDetail`: lưới hai cột của trang HĐ — [Thông tin · Sản phẩm] | [Dòng thời gian mốc · Tóm tắt].
 // V2-G: bước xác nhận sau AI đọc — Sản phẩm = dòng sửa được kèm gợi ý SP; cột phải hiện mốc AI tìm thấy (giữ/bỏ) thay cho dòng thời gian.
-import type { ContractDetail } from "@ai/contracts";
+import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import type { ReactNode } from "react";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import type { FormState, TextKey } from "~/features/contract-form/lib/form-model";

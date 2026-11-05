@@ -8,8 +8,8 @@ import {
   OVERVIEW_UNAVAILABLE,
   type OverviewResponse,
   OverviewResponseSchema,
-  type QuotaStatus,
-} from "@ai/contracts";
+} from "@ai/contracts/overview";
+import type { QuotaStatus } from "@ai/contracts/quotas";
 import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import type { Actor } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";

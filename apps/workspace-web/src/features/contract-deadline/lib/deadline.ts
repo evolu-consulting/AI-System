@@ -1,5 +1,5 @@
 // HD4-FR-02 · HD4-AC08: luật trình bày thẻ hạn chót (port cm-web `ui.tsx:92-105` `Deadline`). Thuần, `today` truyền vào.
-import type { ContractDetail } from "@ai/contracts";
+import type { ContractDetail } from "@ai/contracts/pack-contracts";
 
 export const HANDLED_OUTCOMES = ["renewed", "not_renewed", "negotiating", "replaced"] as const;
 export type Outcome = (typeof HANDLED_OUTCOMES)[number];

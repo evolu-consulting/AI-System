@@ -1,5 +1,8 @@
 // ADM-FR-10, ADM-FR-11, ADM-FR-13, ADM-FR-14, ADM-FR-15 · luật thuần workflows (plan M2 §4). Không import I/O.
-import type { ErrorCode, InputMap, WorkflowInput } from "@ai/contracts";
+
+import type { InputMap } from "@ai/contracts/commands";
+import type { ErrorCode } from "@ai/contracts/common";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import { sameJson } from "../../lib/json";
 
 export type RuleError = { code: ErrorCode; details?: unknown };

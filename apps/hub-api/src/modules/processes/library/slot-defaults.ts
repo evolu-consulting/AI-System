@@ -4,7 +4,7 @@
 // luật (tenant admin đặt, kể cả không có mặc định) giữ nguyên — không đè lựa chọn của tenant. MỘT câu theo tập cho mọi khe (khe +
 // tenant qua tham số JSON), idempotent (điều kiện "chưa có luật" + ON CONFLICT DO NOTHING ⇒ nhiều instance chạy cùng lúc vô hại).
 // Def hiệu lực không đổi: trước khi cấp, `RESOLVE_SLOT_SQL` đã rơi về đúng mẫu khe. Chạy lúc boot + mỗi lần ảnh cấu hình đổi.
-import { packFeatureKey } from "@ai/contracts";
+import { packFeatureKey } from "@ai/contracts/packs";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { Db } from "../../../lib/db";

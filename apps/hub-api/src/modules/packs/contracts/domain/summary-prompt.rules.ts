@@ -1,6 +1,6 @@
 // gap-a1 #17 · lời nhắc "Tạo tóm tắt bằng AI": văn bản HĐ là DỮ LIỆU KHÔNG TIN CẬY trong thẻ có nonce (như `extract-prompt.rules`),
 // đầu ra một object JSON `{main, deadlines, penalties, bonuses, clauses}`. Thuần.
-import { type AiSummary, AiSummarySchema } from "@ai/contracts";
+import { type AiSummary, AiSummarySchema } from "@ai/contracts/pack-contracts";
 import { clipSource } from "./extract-prompt.rules";
 
 export const SUMMARY_MAX_CHARS = 120_000;

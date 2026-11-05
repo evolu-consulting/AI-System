@@ -1,6 +1,6 @@
 // V2-I · thanh tab của trang chi tiết đối tác (liên kết `?tab=`, giữ vai): Tổng quan · Hợp đồng · n · Đánh giá & ghi chú.
 
-import type { RepRole } from "@ai/contracts";
+import type { RepRole } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { TABS, type Tab } from "../lib/partner-v2";

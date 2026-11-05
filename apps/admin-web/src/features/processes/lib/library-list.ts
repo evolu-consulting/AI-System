@@ -1,6 +1,6 @@
 // CR-105 · UX: ánh xạ thuần cho danh sách thư viện — trạng thái, "đang dùng" bằng chữ, sắp xếp (mặc định ghim đầu), khoá sinh từ tên,
 // xoá được bản nháp, mô tả điều kiện bước bằng lời. Không React / không API.
-import type { FlowWhen } from "@ai/contracts";
+import type { FlowWhen } from "@ai/contracts/pack-contracts";
 import type { LibraryListItem } from "../library-api";
 
 /** Mục danh sách (có `has_unpublished_changes` từ Hub: nháp khác bản xuất bản). */

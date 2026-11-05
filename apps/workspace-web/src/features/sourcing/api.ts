@@ -1,5 +1,5 @@
 // W1 · "Mua hàng": `GET /pack/contracts/sourcing` (trang tính ở máy chủ) + `PUT /pack/contracts/sourcing/:contractId/:line` (đổi nguồn).
-import type { SourcingOut } from "@ai/contracts";
+import type { SourcingOut } from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/sourcing";

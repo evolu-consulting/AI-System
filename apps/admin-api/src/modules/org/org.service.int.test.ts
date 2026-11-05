@@ -1,7 +1,7 @@
 // M1D-FR-02 · M1D-FR-03 · org.service gọi trực tiếp (role admin_api, scope tenant): gán/bỏ quản lý (closure), vòng ⇒
 // VALIDATION_ERROR `manager_cycle`, quản lý/trưởng phòng ngoài tenant ⇒ NOT_FOUND, đánh dấu phòng ban + đọc cơ cấu một lần.
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
-import type { ErrorCode } from "@ai/contracts";
+import type { ErrorCode } from "@ai/contracts/common";
 import { createDb, runMigrations } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";

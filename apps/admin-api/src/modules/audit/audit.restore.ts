@@ -2,7 +2,7 @@
 // đọc dòng audit (scope platform) → `canRestore` → adapter `<m>.restore.ts` chạy lõi PATCH/POST/PUT của module trong
 // cùng tx. Sink bọc lại: hàng audit lõi ghi thành `restore` (`restored_from`, `restored_version`, snapshot) với id đặt
 // trước để trả `audit_id`; sự kiện giữ nguyên (1 NOTIFY của entity gốc sau commit). Khoá: đúng chuỗi của module (§6).
-import type { AuditEntity, AuditRestoreResponse } from "@ai/contracts";
+import type { AuditEntity, AuditRestoreResponse } from "@ai/contracts/audit";
 import type { AuditInput, ConfigSink, DbScope, Tx } from "@ai/db";
 import type { Actor } from "../../lib/auth-middleware";
 import { configWrite } from "../../lib/config/config-write";

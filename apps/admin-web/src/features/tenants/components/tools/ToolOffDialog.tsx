@@ -1,5 +1,5 @@
 // ADM-FR-73 · P-d2 (plan-frontend-d2 §12): hộp xác nhận tắt tool — `alertdialog "Tắt tool {name}?"` (huỷ ⇒ công tắc giữ nguyên).
-import type { TenantWorkflowTool } from "@ai/contracts";
+import type { TenantWorkflowTool } from "@ai/contracts/workflow-tools";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 

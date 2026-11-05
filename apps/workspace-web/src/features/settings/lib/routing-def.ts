@@ -1,6 +1,6 @@
 // CR-118 · cr118-routing-diagram · `slot_body` của quy trình đã gán (GET .../process-routing/:slot/processes/:defId) ⇒ bước cho
 // canvas chỉ đọc (`CurrentStep`). Cùng hình `slot_body` với admin-web (`{steps:[…]}` hoặc mảng trần; phòng ban theo MÃ nhóm).
-import type { FlowWhen } from "@ai/contracts";
+import type { FlowWhen } from "@ai/contracts/pack-contracts";
 import type { CurrentStep } from "./current-flow";
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;

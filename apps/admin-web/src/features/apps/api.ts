@@ -4,8 +4,8 @@ import type {
   AppCatalogListResponse,
   AppCreateRequest,
   AppUpdateRequest,
-  EntitlementListResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/app-catalog";
+import type { EntitlementListResponse } from "@ai/contracts/features";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 

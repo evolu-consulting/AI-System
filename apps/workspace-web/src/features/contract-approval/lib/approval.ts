@@ -1,6 +1,8 @@
 // HD-FR-36 · S05: luật hiển thị thẻ duyệt (thuần). "Xác nhận" (cấp 1, như mgmt-app `ContractPage.tsx:102`) / "Duyệt" (cấp 2) /
 // "Từ chối" / "Đọc lại" chỉ khi engine báo `can_act`; đang chờ bước mà người xem không quyết được ⇒ một dòng ghi chú.
-import type { ApprovalActionRequest, ContractApproval, FlowActionRequest } from "@ai/contracts";
+
+import type { FlowActionRequest } from "@ai/contracts/flow";
+import type { ApprovalActionRequest, ContractApproval } from "@ai/contracts/pack-contracts";
 import { engineApprovalView } from "./engine-card";
 
 export type ApprovalView = {

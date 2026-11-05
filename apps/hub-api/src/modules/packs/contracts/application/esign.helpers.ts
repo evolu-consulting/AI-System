@@ -6,7 +6,7 @@ import type {
   ESignSettingsOut,
   ESignSignerIn,
   ESignStatus,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { effectiveDefault, metaOf } from "../domain/esign.providers";
 import { isOpen } from "../domain/esign.rules";
 import type {

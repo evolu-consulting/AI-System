@@ -1,7 +1,8 @@
 // dify-workflows · int HTTP: GET /admin/workflows/:id/runs chỉ platform_admin (tenant_admin 403, chưa đăng nhập 401, trước khi
 // parse); platform_admin → 200 đúng schema (DB mẫu Admin chưa có bảng Hub ⇒ available=false, không 500); PATCH/GET dify_app_id.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { DifyRunsResponseSchema, WorkflowSchema } from "@ai/contracts";
+import { DifyRunsResponseSchema } from "@ai/contracts/workflow-runs";
+import { WorkflowSchema } from "@ai/contracts/workflows";
 import { ALL_CATALOG, ID } from "../../../../../tests/acceptance/M2/_data";
 import { createM2Env, expectErr, type M2Env } from "../../../../../tests/acceptance/M2/_fixtures";
 

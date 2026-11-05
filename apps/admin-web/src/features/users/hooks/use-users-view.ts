@@ -1,5 +1,5 @@
 // ADM-FR-04 · ADM-FR-62 · dữ liệu của trang Users: tenant đang xem (platform chọn qua URL, tenant_admin cố định), bộ lọc Group, danh sách.
-import type { Me } from "@ai/contracts";
+import type { Me } from "@ai/contracts/auth";
 import { getRouteApi } from "@tanstack/react-router";
 import { useWorkspaceView } from "@/features/tenants/lib/use-workspace-view";
 import { ApiError } from "@/lib/http";

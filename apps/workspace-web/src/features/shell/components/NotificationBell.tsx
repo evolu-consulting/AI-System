@@ -1,6 +1,6 @@
 // PK-FR-10 · TF5 · N3-FR-09 · S16 chuông thông báo: khung trình bày thuần (không gọi API). Rỗng ⇒ đúng khung N1 (baseline khoá);
 // có thông báo ⇒ danh sách, "đánh dấu tất cả"; chân luôn có "Xem tất cả" + "Cài đặt thông báo" (trang /notifications). Dữ liệu do `features/notifications` truyền vào.
-import type { Notification } from "@ai/contracts";
+import type { Notification } from "@ai/contracts/notify";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { IconBell } from "~/components/icons";

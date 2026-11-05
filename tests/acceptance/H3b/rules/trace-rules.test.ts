@@ -2,7 +2,7 @@
 // nhánh trước scope system), `redactTraceDetail` (khoá/giá trị nhạy cảm, độ sâu, kích thước, view own/platform — PL15,
 // PL16, G4, G5), `stepMs`.
 import { describe, expect, it } from "bun:test";
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import { MASK } from "@ai/contracts/hub-admin";
 import {
   redactTraceDetail,

@@ -1,5 +1,6 @@
 // ADM-FR-42, ADM-BR-09 · M4-R01, R07, R08 · hàm thuần báo cáo usage (plan-rules §A5). Không biết DB/HTTP.
-import { type Role, USAGE_MAX_DAYS } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
+import { USAGE_MAX_DAYS } from "@ai/contracts/usage";
 import { QUOTA_TZ_OFFSET_MIN } from "../quotas/quotas.rules";
 
 const DAY_MS = 86_400_000;

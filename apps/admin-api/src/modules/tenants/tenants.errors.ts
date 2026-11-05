@@ -1,5 +1,5 @@
 // ADM-FR-60, ADM-FR-61 · mã lỗi của module tenants (bảng mã: API_ERRORS, spec M1 §3).
-import type { ErrorCode } from "@ai/contracts";
+import type { ErrorCode } from "@ai/contracts/common";
 
 export const TENANTS_ERROR_CODES = [
   "VALIDATION_ERROR",

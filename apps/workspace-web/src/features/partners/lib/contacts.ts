@@ -1,5 +1,5 @@
 // GAP-D2 · #24: luật thuần của form "Người liên hệ" — dòng nháp ↔ thân PUT (bỏ dòng trống, tên bắt buộc khi dòng có chữ, ≤ 20 người).
-import type { PartnerContactPerson } from "@ai/contracts";
+import type { PartnerContactPerson } from "@ai/contracts/pack-contracts";
 import type { PartnerContactDraft } from "../api";
 
 export const CONTACTS_MAX = 20;

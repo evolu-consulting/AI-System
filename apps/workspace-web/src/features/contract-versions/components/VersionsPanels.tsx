@@ -1,5 +1,5 @@
 // CR-097 K3b: banner "đã thay thế" + khối phiên bản + so sánh trên màn chi tiết (khối chỉ hiện khi chuỗi có ≥ 2 phiên bản).
-import type { ContractVersionRef } from "@ai/contracts";
+import type { ContractVersionRef } from "@ai/contracts/pack-contracts";
 import { SupersededBanner } from "./SupersededBanner";
 import { VersionDiff } from "./VersionDiff";
 import { VersionsBlock } from "./VersionsBlock";

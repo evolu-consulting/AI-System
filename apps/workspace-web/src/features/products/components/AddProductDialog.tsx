@@ -1,5 +1,5 @@
 // gap-d1 #18 · "Thêm sản phẩm" tay (tên, nhóm, đơn vị, quy cách) ⇒ `POST /products`; xong mở chi tiết SP vừa tạo.
-import type { ProductGroup } from "@ai/contracts";
+import type { ProductGroup } from "@ai/contracts/pack-contracts";
 import { useNavigate } from "@tanstack/react-router";
 import { type RefObject, useState } from "react";
 import { useTranslation } from "react-i18next";

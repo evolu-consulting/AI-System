@@ -10,7 +10,7 @@ import {
   RatingRequestSchema,
   ScoringDraftSchema,
   ScoringRoleSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";

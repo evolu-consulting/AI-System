@@ -1,6 +1,6 @@
 // V2-L · CD-01: `GET|PUT /pack/contracts/company`. Đọc: quyền đọc gói (sidebar/menu của mọi người dùng); ghi: chỉ quản lý (Q3,
 // `contracts-owner`). Guard gói TRƯỚC đọc thân (viewer ghi ⇒ 403, 0 SQL); thân sai ⇒ 400; luật sai (trùng MST…) ⇒ 422.
-import { COMPANY_ERRORS, CompanySchema } from "@ai/contracts";
+import { COMPANY_ERRORS, CompanySchema } from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { AppError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";

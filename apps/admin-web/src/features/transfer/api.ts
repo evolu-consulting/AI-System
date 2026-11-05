@@ -5,7 +5,7 @@ import type {
   ImportRequest,
   ImportResult,
   TransferType,
-} from "@ai/contracts";
+} from "@ai/contracts/transfer";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { downloadFile } from "@/lib/download";
 import { api } from "@/lib/http";

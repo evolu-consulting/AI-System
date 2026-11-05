@@ -1,6 +1,6 @@
 // V2-H · luật thuần tab "Khách đang dùng".
 import { describe, expect, it } from "bun:test";
-import type { ServiceCustomer } from "@ai/contracts";
+import type { ServiceCustomer } from "@ai/contracts/pack-contracts";
 import { canRemind, daysLabel, filterCustomers } from "./customers";
 
 const c = (id: string, status: ServiceCustomer["status"]): ServiceCustomer => ({

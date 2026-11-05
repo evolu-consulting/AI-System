@@ -2,7 +2,8 @@
 // `HUB_INTERNAL_TOKEN` sinh lúc chạy) + Hub stub `Bun.serve` ghi request (plan §2.2 bước 1–8g, §7 QE; test-plan §2 AC11 I).
 // DB qc (createM2Env: M1 + catalog M2). Quét mọi response + stdout/stderr admin-api: không lộ token (thô/base64/hex).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { API_ERRORS, ErrorResponseSchema } from "@ai/contracts";
+import { API_ERRORS } from "@ai/contracts/common";
+import { ErrorResponseSchema } from "@ai/contracts/errors";
 import { TestRunResponseSchema } from "@ai/contracts/hub-internal";
 import { ALL_CATALOG, ID } from "../M2/_data";
 import { ADMIN_API_URL, createM2Env, type M2Env, PW, SEED_PW, USER_ID } from "../M2/_fixtures";

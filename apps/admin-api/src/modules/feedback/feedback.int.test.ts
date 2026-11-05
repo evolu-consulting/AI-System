@@ -1,6 +1,6 @@
 // feedback · int: gửi/xem của mình, cách ly user + tenant (RLS 0017), tenant_admin chỉ tenant mình, platform_admin thấy hết, trả lời hiện cho user.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { FeedbackItemSchema, FeedbackListResponseSchema } from "@ai/contracts";
+import { FeedbackItemSchema, FeedbackListResponseSchema } from "@ai/contracts/feedback";
 import { createEnv, type Env } from "../../../../../tests/acceptance/M1/_fixtures";
 
 let env: Env;

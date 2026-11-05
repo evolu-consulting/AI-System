@@ -1,6 +1,6 @@
 // CR-102 · com-c3 · nối gói `community` (lớp 4): `PackUow` (role `community_rw`, RLS người xem theo `packs.viewer_ext_org()`)
 // + cổng kit `ExternalOrgResolver` (danh bạ) + route `/pack/community/*`. `packs.mount.ts` gọi `mountCommunity`.
-import { packFeatureKey } from "@ai/contracts";
+import { packFeatureKey } from "@ai/contracts/packs";
 import type { Db } from "@ai/db";
 import { type Env, Hono } from "hono";
 import { pgExternalOrgResolver } from "../kit/adapters/ext-org.pg";

@@ -1,6 +1,6 @@
 // atomic-confirm (người dùng 2026-10-24): tenant TẮT duyệt — "Xác nhận và lưu" = ghi nháp (không khoá) ⇒ hộp "Gắn sản phẩm" (HĐ có
 // dòng) ⇒ MỘT `POST /review` mang `products`: xác nhận + khoá + gắn/tạo SP trong cùng tx. Không còn gọi product-links sau khi khoá.
-import type { ProductLink, ReviewSaveRequest } from "@ai/contracts";
+import type { ProductLink, ReviewSaveRequest } from "@ai/contracts/pack-contracts";
 import { afterConfirm } from "~/features/contract-approval/lib/approval";
 
 /** Thân lệnh xác nhận: chỉ `version` (+ `products` khi có lựa chọn) — trường/dòng đã ghi ở bước nháp. */

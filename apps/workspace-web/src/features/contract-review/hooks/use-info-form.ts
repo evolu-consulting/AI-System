@@ -2,7 +2,7 @@
 // - Thường: bản nháp "Thông tin" từ chi tiết, chỉ PATCH ô đã đổi (khoá `version`).
 // - Bước xác nhận sau khi AI đọc (`needs_review`): form dùng chung điền sẵn + dòng hàng AI đọc (kèm gợi ý SP) + mốc AI tìm thấy; "Lưu" = MỘT
 //   `POST /review` (trường, loại HĐ, dòng, mốc); "Hủy" = trả về giá trị đã đọc, KHÔNG gửi gì. "Xác nhận" (HD3) lưu trước rồi quyết cấp 1.
-import type { ContractDeal, ContractDetail } from "@ai/contracts";
+import type { ContractDeal, ContractDetail } from "@ai/contracts/pack-contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   type Dispatch,

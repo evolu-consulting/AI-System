@@ -9,9 +9,9 @@ import type {
   CommandListQuery,
   CommandListResponse,
   CommandUpdateRequest,
-  FeatureRef,
-  WorkflowInput,
-} from "@ai/contracts";
+} from "@ai/contracts/commands";
+import type { FeatureRef } from "@ai/contracts/features";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import {
   type AuditActionValue,
   type AuditInput,

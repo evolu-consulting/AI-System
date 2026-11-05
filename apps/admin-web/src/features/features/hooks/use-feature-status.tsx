@@ -1,5 +1,5 @@
 // ADM-FR-33 · đổi trạng thái feature ở danh sách: Bật/Beta áp dụng ngay, Tắt qua hộp xác nhận (kill switch mức vừa).
-import type { FeatureListItem } from "@ai/contracts";
+import type { FeatureListItem } from "@ai/contracts/features";
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";

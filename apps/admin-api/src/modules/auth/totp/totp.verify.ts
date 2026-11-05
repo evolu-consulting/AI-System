@@ -1,7 +1,7 @@
 // ADM-FR-08 · ADM-FR-07 · M4-R16 · M4-AC11 · bước 2 đăng nhập `POST /auth/totp/verify` (plan-cd §4.2, §7 hàng Verify).
 // Khoá users NKU (hạng 2) → user_totp NKU (hạng 2b). Mã sai: tx TRẢ "wrong" để commit bộ đếm rồi mới ném 401.
 // Không log totp_token / mã. Không ghi audit (Q6).
-import type { TotpVerifyRequest } from "@ai/contracts";
+import type { TotpVerifyRequest } from "@ai/contracts/totp";
 import { type Tx, withScope } from "@ai/db";
 import { appError } from "../../../lib/errors";
 import { type TotpClaims, verifyTotpToken } from "../../../lib/jwt";

@@ -1,7 +1,7 @@
 // HD-FR-36 · HD-FR-34 · S05 · Luật 4b: thẻ duyệt của contracts-web (backend giả `page.route`, không AI thật). "Xác nhận" (cấp 1)
 // lưu ô đã đổi TRƯỚC rồi quyết như mgmt-app; "Duyệt" (cấp 2); "Từ chối" bắt buộc lý do; người không quyết được thấy ghi chú, không
 // thấy nút; lỗi engine (người bắt đầu) hiện câu riêng. Chỉ chạy ở chế độ so (contracts-web).
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { expect, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
 import { APPROVAL_TASK, approvalAsHub } from "./dataset-approval";

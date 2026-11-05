@@ -1,7 +1,7 @@
 // ADM-FR-24 · M3-R14 · contract `CommandAccessItem` có `groups`, `group_count`, `visible_user_count`
 // (spec M3 §3 "Commands"; test-plan R1c). Xanh ở T6 (commands.ts đổi ở T6). Trước đó đỏ vì chưa có code.
 import { describe, expect, it } from "bun:test";
-import { CommandAccessItemSchema } from "@ai/contracts";
+import { CommandAccessItemSchema } from "@ai/contracts/commands";
 
 const U = (n: number) => `01900000-0000-7000-8000-${String(n).padStart(12, "0")}`;
 const feat = { id: U(9), key: "ke-toan", name: { vi: "Kế toán" } };

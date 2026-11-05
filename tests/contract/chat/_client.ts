@@ -4,7 +4,6 @@
 // (để "đỏ đúng lý do" đọc được ngay: route chưa có → 401/404).
 
 import { expect } from "bun:test";
-import { API_ERRORS } from "@ai/contracts";
 import {
   CHAT_API_ERRORS,
   type ChatErrorCode,
@@ -19,6 +18,7 @@ import {
   TokenGrantSchema,
   toChatEvent,
 } from "@ai/contracts/chat";
+import { API_ERRORS } from "@ai/contracts/common";
 import { AUTH_URL, type ContractUser, HUB_URL } from "./_env";
 
 export type Session = { access: string; cookie: string; grant: TokenGrant };

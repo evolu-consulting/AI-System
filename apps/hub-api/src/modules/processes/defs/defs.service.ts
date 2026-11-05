@@ -2,7 +2,6 @@
 // Ghi qua `withConfigWrite` (D17: scope system, khoá `config_meta` trước ⇒ key không race, version 409, audit, NOTIFY);
 // đọc: tx system read only. Phạm vi tenant (`DefScope`) chốt một lần ở route; mọi câu repo lọc theo nó.
 
-import { TENANT_TZ_DEFAULT } from "@ai/contracts";
 import type {
   AgentTeamListResponse,
   CopyProcessDefRequest,
@@ -14,6 +13,7 @@ import type {
   ProcessInputValue,
   ProcessRunSummary,
 } from "@ai/contracts/hub-admin";
+import { TENANT_TZ_DEFAULT } from "@ai/contracts/tenants";
 import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../../lib/auth.middleware";

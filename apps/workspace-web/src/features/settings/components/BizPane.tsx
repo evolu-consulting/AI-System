@@ -1,6 +1,6 @@
 // V2-L · CD-06: mục "Điểm kinh doanh" — trọng số (tốc độ bán · biên lãi · xu hướng), ngưỡng Mua thêm / Xả hàng / Đẩy mạnh / Cân nhắc
 // dừng, mục tiêu bán, báo sắp hết hạn; "thử tính" gọi `POST /business/config/preview` (server dùng đúng hàm chấm điểm).
-import type { BizConfig, BizPreviewIn } from "@ai/contracts";
+import type { BizConfig, BizPreviewIn } from "@ai/contracts/pack-contracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsGroup, SettingsRow, SettingsSeg } from "~/shared/ui/settings-layout";

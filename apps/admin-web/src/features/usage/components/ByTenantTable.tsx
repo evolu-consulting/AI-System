@@ -1,5 +1,5 @@
 // ADM-FR-42 · M4-R06, R08 · bảng "Theo tenant" (platform_admin, Tất cả tenant): số run, token, số thu, chi phí thật, mức quota; tên tenant link tới tab Quota.
-import type { UsageReportPlatform } from "@ai/contracts";
+import type { UsageReportPlatform } from "@ai/contracts/usage";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";

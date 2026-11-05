@@ -1,5 +1,5 @@
 // U3 · tab "Ghi chú & sổ việc": ghi chú về đối tác + sổ việc đã ghi (HD7 `PartnerLog`, gồm cờ đỏ). Điểm không còn ô sao/chấm tay (R41).
-import type { PartnerRole, RepRole } from "@ai/contracts";
+import type { PartnerRole, RepRole } from "@ai/contracts/pack-contracts";
 import { PartnerLog } from "~/features/ledger/components/PartnerLog";
 import { NotesPanel } from "./NotesPanel";
 

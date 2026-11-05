@@ -1,6 +1,6 @@
 // ADM-FR-54 · M4-R14 · luật export thuần: sắp theo code unit, chuẩn hoá tập, secret chỉ từ workflow export, diffOp.
 import { describe, expect, test } from "bun:test";
-import type { FeatureEl, TenantEl, WorkflowEl } from "@ai/contracts";
+import type { FeatureEl, TenantEl, WorkflowEl } from "@ai/contracts/transfer";
 import {
   buildExportFile,
   canonicalJson,

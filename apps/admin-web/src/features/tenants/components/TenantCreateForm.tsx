@@ -1,5 +1,5 @@
 // ADM-FR-60 · form tạo tenant (canvas TenantCreate): card Công ty + card Tenant admin đầu tiên, một nút "Tạo tenant" cuối trang.
-import { TENANT_TZ_DEFAULT } from "@ai/contracts";
+import { TENANT_TZ_DEFAULT } from "@ai/contracts/tenants";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";

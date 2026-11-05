@@ -1,7 +1,7 @@
 // CR-112 · ADM-FR-78 · tab "Ứng dụng & Gói" của chi tiết công ty (hợp nhất Feature CR-111 + Gói): mỗi app một thẻ chọn mức
 // Tắt/Xem/Sửa/Quản trị — mức điều khiển CẢ gói (bật/tắt) lẫn entitlement; lưu một lượt, một hộp xác nhận. Chỉ platform_admin sửa
 // (tenant_admin: xem). Nạp lười. (Giữ tên/đường dẫn file cũ để workspace không phải đổi dòng import.)
-import { getAppManifest } from "@ai/contracts";
+import { getAppManifest } from "@ai/contracts/app-manifest";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";

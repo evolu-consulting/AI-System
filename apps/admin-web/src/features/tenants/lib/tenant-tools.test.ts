@@ -1,6 +1,6 @@
 // ADM-FR-73 · AC-A15 · P-d2 · T20-FE: lọc client của tab "Tool quy trình" + nhãn "Bật bởi".
 import { describe, expect, test } from "bun:test";
-import type { TenantWorkflowTool } from "@ai/contracts";
+import type { TenantWorkflowTool } from "@ai/contracts/workflow-tools";
 import { grantedLabel } from "../components/tools/ToolRow";
 import { filterTools } from "../hooks/use-tenant-tools";
 

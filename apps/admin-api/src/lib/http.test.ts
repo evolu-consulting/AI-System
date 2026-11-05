@@ -1,6 +1,6 @@
 // ADM-FR-01 · parse ở biên: VALIDATION_ERROR có issues, JSON hỏng, uuid sai → 404, X-Client đúng chuỗi.
 import { describe, expect, test } from "bun:test";
-import type { ErrorResponse } from "@ai/contracts";
+import type { ErrorResponse } from "@ai/contracts/errors";
 import { Hono } from "hono";
 import { z } from "zod";
 import { AppError, toErrorBody } from "./errors";

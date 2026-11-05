@@ -1,6 +1,6 @@
 // V2-F · HD-10 · BA 5.6: ô đối tác (nhãn theo loại HĐ) + trạng thái gợi ý từ `GET /partners/lookup` (V2-C): điểm uy tín theo vai,
 // "Đã có · thêm vai trò …", "Mới", hoặc "Đối tác mới · sẽ tạo khi lưu". Gõ ≥ 2 ký tự mới tra (debounce, không tra từng phím).
-import type { ContractDeal, PartnerLookup } from "@ai/contracts";
+import type { ContractDeal, PartnerLookup } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { Tag } from "~/components/shared/tag";
 import { cn } from "~/lib/utils";

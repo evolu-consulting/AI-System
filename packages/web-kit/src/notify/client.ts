@@ -10,7 +10,7 @@ import type {
   PushKey,
   PushSubscriptionBody,
   PushTestResult,
-} from "@ai/contracts";
+} from "@ai/contracts/notify";
 import { api, type RequestOptions } from "../http";
 
 export type { NotificationList, NotifyPrefs, NotifyPrefsView };

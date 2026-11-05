@@ -1,5 +1,5 @@
 // ADM-FR-13, ADM-FR-15 · AC-A05 · dựng nhóm DependencyList (Command/Agent) từ `usages` hoặc `details` của WORKFLOW_IN_USE.
-import type { AgentRef, UsageCommand } from "@ai/contracts";
+import type { AgentRef, UsageCommand } from "@ai/contracts/common";
 import { agentTail, type DependencySection } from "@/components/shared/DependencyList";
 import type { Translate } from "@/lib/format";
 

@@ -1,5 +1,5 @@
 // ADM-FR-30 · ADM-BR-10 · tab "Thông tin": key (khoá sau khi lưu), tên + mô tả VI/EN, icon, trạng thái (`core` khoá).
-import { FEATURE_STATUSES } from "@ai/contracts";
+import { FEATURE_STATUSES } from "@ai/contracts/common";
 import { Controller, useFormContext } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";

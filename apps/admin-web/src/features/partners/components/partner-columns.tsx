@@ -1,5 +1,5 @@
 // ADM-FR-74 · cột bảng công ty đối tác: tên (mở danh sách tài khoản), số tài khoản (hoạt động/tổng), trạng thái, menu `⋯`.
-import type { ExternalOrg } from "@ai/contracts";
+import type { ExternalOrg } from "@ai/contracts/external-orgs";
 import type { TFunction } from "i18next";
 import { MoreHorizontal } from "lucide-react";
 import type { Column } from "@/components/shared/DataTable";

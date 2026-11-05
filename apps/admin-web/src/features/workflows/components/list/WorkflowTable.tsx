@@ -1,5 +1,5 @@
 // ADM-FR-14 · bảng Workflows: tên + key (mono), loại, "Đang được dùng bởi" (Popover) hoặc "Chưa gắn", trạng thái, menu `⋯`.
-import type { WorkflowListItem } from "@ai/contracts";
+import type { WorkflowListItem } from "@ai/contracts/workflows";
 import { Link } from "@tanstack/react-router";
 import type { TFunction } from "i18next";
 import { type ReactNode, useMemo } from "react";

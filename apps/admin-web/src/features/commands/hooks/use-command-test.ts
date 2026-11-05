@@ -1,6 +1,6 @@
 // ADM-FR-23 · X1 F4 · trạng thái "Chạy thử": gọi, huỷ ("Dừng" = abort fetch), 409 `SIDE_EFFECT_CONFIRM_REQUIRED` → hộp xác nhận
 // rồi gửi lại cùng body kèm `confirm_side_effect:true`. Không TanStack mutation: cần huỷ được và không cache kết quả.
-import type { CommandTestRequest, CommandTestResponse } from "@ai/contracts";
+import type { CommandTestRequest, CommandTestResponse } from "@ai/contracts/command-test";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/http";
 import { runCommandTest } from "../api";

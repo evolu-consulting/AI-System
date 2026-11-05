@@ -1,5 +1,5 @@
 // ADM-FR-32 · ADM-FR-36 · F4 "Cấp {feature} cho group…": chọn group (group của user xếp đầu) → MỘT batch `add` → làm mới quyền hiệu lực.
-import type { FeatureMini } from "@ai/contracts";
+import type { FeatureMini } from "@ai/contracts/access";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifyInfo, notifySuccess } from "@/components/shared/toast";

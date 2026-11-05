@@ -1,6 +1,6 @@
 // V2-I · DT-01 · DT-07 · đầu trang chi tiết đối tác (mockup NITI): tên, vai, MST · điện thoại · liên hệ, điểm từng vai và nút
 // "Tìm trên internet" (chỉ chạy khi bấm; kết quả hiện ngay dưới đầu trang, mỗi dòng lưu được vào ghi chú).
-import type { PartnerProfile, RepRole } from "@ai/contracts";
+import type { PartnerProfile, RepRole } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

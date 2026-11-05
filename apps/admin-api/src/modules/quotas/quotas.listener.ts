@@ -1,6 +1,6 @@
 // ADM-FR-41 · Q2b · LISTEN `quota_threshold` (plan M4 §5.2, plan-contract §2.5): Hub NOTIFY `{tenant_id}` khi ghi usage →
 // gộp theo tenant trong 2 s rồi chạy evaluator. Payload sai → log warn, bỏ qua (tiến trình sống tiếp).
-import { QUOTA_THRESHOLD_CHANNEL, QuotaThresholdPayloadSchema } from "@ai/contracts";
+import { QUOTA_THRESHOLD_CHANNEL, QuotaThresholdPayloadSchema } from "@ai/contracts/quotas";
 import { logger } from "../../lib/logger";
 import { safeErrorFields } from "../../lib/pg-errors";
 import { type EvaluatorCtx, evaluateTenant } from "./quotas.evaluator";

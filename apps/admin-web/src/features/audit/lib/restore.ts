@@ -1,5 +1,5 @@
 // ADM-FR-52 · M4-AC08 · M4-R13 · câu của luồng "Khôi phục bản trước": tiêu đề xác nhận và lỗi 409/400 → key i18n (plan-frontend §3.4, §8).
-import type { AuditEntity, AuditItem } from "@ai/contracts";
+import type { AuditEntity, AuditItem } from "@ai/contracts/audit";
 import { entityKey } from "@/lib/audit-sentence";
 import type { MessageSpec } from "@/lib/errors";
 import type { Translate } from "@/lib/format";

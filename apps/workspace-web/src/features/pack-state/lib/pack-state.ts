@@ -1,6 +1,6 @@
 // PK-FR-05 · PK-FR-10 · TF4 · trạng thái gói từ `GET /pack/contracts/me` (T5b: 200 cả khi chưa bật/không quyền) và phân loại
 // lỗi khung (plan-frontend §1 "Quyền", "Trạng thái"): viewer = `read`; editor = có `write`; owner = có `admin`.
-import type { PackMeResponse } from "@ai/contracts";
+import type { PackMeResponse } from "@ai/contracts/packs";
 
 export const PACK_KEY = "contracts";
 /** Khoá Query của `/me` (dùng chung guard, ẩn nút, và làm mới khi API khác báo PACK_*). */

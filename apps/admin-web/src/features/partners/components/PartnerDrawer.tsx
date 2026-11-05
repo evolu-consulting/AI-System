@@ -1,5 +1,5 @@
 // ADM-FR-75 · drawer tài khoản của một công ty đối tác (`?org=`): danh sách, `+ Thêm tài khoản` (ẩn khi công ty đã vô hiệu), menu từng tài khoản.
-import type { User } from "@ai/contracts";
+import type { User } from "@ai/contracts/users";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "@/components/shared/DataTable";

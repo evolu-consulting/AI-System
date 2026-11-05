@@ -1,7 +1,7 @@
 // L1 (TECH-DEBT #224) · ánh xạ kết quả bộ đếm ⇒ lỗi HTTP: 429 RATE_LIMITED (+Retry-After), 423 TEMP_LOCKED, Redis lỗi ⇒ 503.
 // L1c (A-3): lượt giữ chỗ — `busy` ⇒ 429; fail/ok kết thúc lượt, release chỉ nhả khi lượt chưa kết thúc.
 import { describe, expect, test } from "bun:test";
-import { AUTH_LIMIT_ERRORS, RateLimitedDetailsSchema } from "@ai/contracts";
+import { AUTH_LIMIT_ERRORS, RateLimitedDetailsSchema } from "@ai/contracts/auth-limit";
 import type { Db } from "@ai/db";
 import { AppError } from "../../../lib/errors";
 import { Semaphore } from "../../../lib/semaphore";

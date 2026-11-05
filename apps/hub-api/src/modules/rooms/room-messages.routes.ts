@@ -3,7 +3,6 @@
 // (middleware gốc) → `:id` không uuid ⇒ 404 → không phải thành viên ⇒ 404 (`svc.access` TRƯỚC khi parse) → body/query 400.
 // Parse bằng contract chat → service → response. Không logic.
 
-import { UuidSchema } from "@ai/contracts";
 import {
   FLOW_ID_HEADER,
   MarkRoomFlowReadRequestSchema,
@@ -13,6 +12,7 @@ import {
   RUN_ID_HEADER,
   SendRoomMessageRequestSchema,
 } from "@ai/contracts/chat";
+import { UuidSchema } from "@ai/contracts/common";
 import { Hono } from "hono";
 import type { AuthVars } from "../../lib/auth.middleware";
 import { appError } from "../../lib/errors";

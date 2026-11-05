@@ -1,6 +1,6 @@
 // V2-F · HD-09 · C12: form của HĐ đã lưu ↔ `fields` + PATCH; gợi ý/tồn kho/gợi ý SP của form.
 import { describe, expect, it } from "bun:test";
-import type { ProductMatchOut, ProductOut } from "@ai/contracts";
+import type { ProductMatchOut, ProductOut } from "@ai/contracts/pack-contracts";
 import { badgesOf, fieldKeyOf, formOfDetail, patchOfForm } from "./detail-form";
 import { NEW_PRODUCT } from "./form-model";
 import { stockHint } from "./stock";

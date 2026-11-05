@@ -1,5 +1,5 @@
 // ADM-FR-04, ADM-FR-05, ADM-FR-63, ADM-BR-08 · mã lỗi của module users (bảng mã: API_ERRORS, spec M1 §3).
-import type { ErrorCode } from "@ai/contracts";
+import type { ErrorCode } from "@ai/contracts/common";
 
 export const USERS_ERROR_CODES = [
   "VALIDATION_ERROR",

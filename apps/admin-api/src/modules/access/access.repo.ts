@@ -1,6 +1,6 @@
 // ADM-FR-36, ADM-BR-11, ADM-FR-24 · đọc dữ liệu tính hiệu lực (spec M3 §3, plan §3.2, §5.6). Chỉ đọc, không khoá;
 // luôn trong withScope (RLS) và lọc tenant tường minh. Không N+1: mỗi hàm một câu.
-import { CORE_FEATURE_KEY, type FeatureStatus } from "@ai/contracts";
+import { CORE_FEATURE_KEY, type FeatureStatus } from "@ai/contracts/common";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { pgArray } from "../../lib/sql";

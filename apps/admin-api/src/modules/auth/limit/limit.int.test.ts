@@ -3,7 +3,7 @@
 // Đồng hồ giả (`now`) cho cả DB lẫn Redis; mỗi app một tiền tố khoá Redis riêng.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { generateKeyPairSync, randomBytes } from "node:crypto";
-import { RateLimitedDetailsSchema } from "@ai/contracts";
+import { RateLimitedDetailsSchema } from "@ai/contracts/auth-limit";
 import { createDb, hashPassword, runMigrations } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";

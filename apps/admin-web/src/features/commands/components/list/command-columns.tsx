@@ -1,5 +1,5 @@
 // ADM-FR-20 · cột của bảng Commands: `/tên` + alias, mô tả (+ "EN thiếu"), workflow (+ badge Tắt), feature (chip link; rỗng → badge "Chưa gắn feature", CR-055), chế độ, công tắc, cập nhật, `⋯`.
-import type { CommandListItem } from "@ai/contracts";
+import type { CommandListItem } from "@ai/contracts/commands";
 import { Link } from "@tanstack/react-router";
 import type { Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";

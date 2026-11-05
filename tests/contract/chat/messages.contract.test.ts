@@ -2,7 +2,6 @@
 // test-plan §4 messages).
 
 import { describe, expect, it } from "bun:test";
-import { UuidSchema } from "@ai/contracts";
 import {
   CHAT_CONTENT_MAX,
   CHAT_SCN_PREFIX,
@@ -18,6 +17,7 @@ import {
   RUN_ID_HEADER,
   RunSchema,
 } from "@ai/contracts/chat";
+import { UuidSchema } from "@ai/contracts/common";
 import {
   call,
   expectChatError,

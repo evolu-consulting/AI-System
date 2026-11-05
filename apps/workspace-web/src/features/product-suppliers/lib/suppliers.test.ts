@@ -1,6 +1,6 @@
 // V2-J2 · luật hiển thị thuần của tab NCC & giá.
 import { describe, expect, it } from "bun:test";
-import type { SupplierPriceRow, SupplierSearchItem } from "@ai/contracts";
+import type { SupplierPriceRow, SupplierSearchItem } from "@ai/contracts/pack-contracts";
 import { hasRenew, isOld, rowsOfKind, supplierTabVisible, toSaveItems } from "./suppliers";
 
 const row = (kind: "new" | "renew"): SupplierPriceRow => ({

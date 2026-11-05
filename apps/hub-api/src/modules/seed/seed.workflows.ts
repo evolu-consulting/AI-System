@@ -1,7 +1,8 @@
 // HUB-FR-23, HUB-FR-89 · H2a-R14 · luật seed H2a (plan-db §4), thuần: `runtime_options` agent `dify-*`, đối chiếu
 // `admin.workflows` (thiếu → bỏ dòng + cảnh báo; sai `app_type` / `difyAgentInput` = null → lỗi seed, exit 1).
-import type { WorkflowInput } from "@ai/contracts";
+
 import type { DifyAppType } from "@ai/contracts/hub";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import { difyAgentInput } from "../dify/dify.rules";
 import {
   DIFY_RUNTIMES,

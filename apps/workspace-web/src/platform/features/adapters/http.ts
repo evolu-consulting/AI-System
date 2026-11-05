@@ -3,7 +3,7 @@ import {
   ME_STREAM_CONFIG_CHANGED,
   type ShellMeResponse,
   ShellMeResponseSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/capabilities";
 import { createSseParser } from "@ai/contracts/chat";
 import { ApiError, apiResponse } from "@ai/web-kit/http";
 import type { ConfigListener, PackMeFetch } from "../lib/pack-me-source";

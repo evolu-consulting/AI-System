@@ -1,6 +1,6 @@
 // V2-M · dòng tác động hộp xác nhận xoá HĐ.
 import { describe, expect, test } from "bun:test";
-import type { DeleteImpact } from "@ai/contracts";
+import type { DeleteImpact } from "@ai/contracts/pack-contracts";
 import { blockedReason, impactLines, pickedProducts } from "./impact";
 
 const base: DeleteImpact = {

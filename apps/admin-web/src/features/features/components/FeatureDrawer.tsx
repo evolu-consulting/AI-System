@@ -1,5 +1,5 @@
 // CR-121 C-1b · ngăn tóm tắt một Feature (mở khi bấm hàng); chi tiết đầy đủ ở trang /features/$featureId.
-import type { FeatureListItem } from "@ai/contracts";
+import type { FeatureListItem } from "@ai/contracts/features";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { DetailDrawer } from "@/components/shared/list/DetailDrawer";

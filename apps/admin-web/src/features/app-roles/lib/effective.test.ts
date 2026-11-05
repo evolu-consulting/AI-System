@@ -1,6 +1,6 @@
 // CR-112 · ADM-FR-82 · ADM-BR-16 · quyền thực tế theo app: mức cao nhất trong các vai hiệu lực; Kiểm tra quyền tách vai / ngoài vai.
 import { describe, expect, test } from "bun:test";
-import type { EffectiveAccess } from "@ai/contracts";
+import type { EffectiveAccess } from "@ai/contracts/access";
 import { explainPacks, levelsFromRoles } from "./effective";
 
 describe("levelsFromRoles", () => {

@@ -1,6 +1,7 @@
 // HUB-FR-10, HUB-FR-12, HUB-FR-50 · helper test hàm thuần H2a (test-plan §4, cases §1, §7): dựng input/arg/workflow/
 // command catalog hợp contract. Chỉ dữ liệu, không I/O.
-import type { CommandArg, InputMap, WorkflowInput } from "@ai/contracts";
+import type { CommandArg, InputMap } from "@ai/contracts/commands";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import type {
   CatalogCommand,
   CatalogWorkflow,

@@ -1,5 +1,5 @@
 // N3-FR-09 · gọi `/notifications*` của hub-api (proxy cùng origin, D-18) — Bearer + refresh 1 lần do web-kit lo.
-import type { MarkReadBody, MarkReadResult, NotificationList } from "@ai/contracts";
+import type { MarkReadBody, MarkReadResult, NotificationList } from "@ai/contracts/notify";
 import { api } from "@ai/web-kit/http";
 
 const PAGE = 20;

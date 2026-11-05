@@ -5,7 +5,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { WorkflowSchema } from "@ai/contracts";
+import { WorkflowSchema } from "@ai/contracts/workflows";
 import {
   auditMark,
   auditSince,

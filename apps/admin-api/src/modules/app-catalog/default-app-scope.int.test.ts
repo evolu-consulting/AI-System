@@ -2,7 +2,7 @@
 // (kèm tenant_id) cùng transaction, `config_version` toàn cục giữ nguyên (mọi hub không phải nạp lại cả ảnh Admin); hạn mức 429.
 // Hạn mức nằm trong tiến trình (dùng chung giữa các file int cùng lô) ⇒ user riêng của file này (lan, thu).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { PROFILE_CHANNEL, ProfileChangedPayloadSchema } from "@ai/contracts";
+import { PROFILE_CHANNEL, ProfileChangedPayloadSchema } from "@ai/contracts/config";
 import { createDb } from "@ai/db";
 import { TENANT_ID } from "../../../../../tests/acceptance/M1/_data";
 import { ADMIN_API_URL, createEnv, type Env } from "../../../../../tests/acceptance/M1/_fixtures";

@@ -8,7 +8,7 @@ import {
   CONTRACT_ITEMS_MAX,
   CONTRACT_VERSIONS_MAX,
   MILESTONES_MAX,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type {

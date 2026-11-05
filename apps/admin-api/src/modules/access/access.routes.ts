@@ -1,6 +1,6 @@
 // ADM-FR-36, ADM-BR-05, ADM-BR-09 · GET /admin/users/:id/effective-access (spec M3 §3). Mount ở `/admin/users` TRƯỚC
 // router users; auth gắn theo route (không `use("*")`) để không chạy hai lần cho mọi request /admin/users.
-import { EffectiveAccessQuerySchema } from "@ai/contracts";
+import { EffectiveAccessQuerySchema } from "@ai/contracts/access";
 import { Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseQuery } from "../../lib/http";

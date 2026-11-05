@@ -1,6 +1,11 @@
 // products-confirm · BA 5.5: hộp "Gắn sản phẩm" lúc xác nhận HĐ — liệt kê dòng HĐ; mỗi dòng "dùng SP có sẵn" (SP trùng tên, tốt nhất
 // chọn sẵn) hoặc "tạo SP mới" (mặc định khi không có SP trùng). Xác nhận ⇒ `onConfirm(links)`; SP chỉ được tạo/gắn sau bước này.
-import type { ContractDeal, ContractItem, ProductLink, ProductOut } from "@ai/contracts";
+import type {
+  ContractDeal,
+  ContractItem,
+  ProductLink,
+  ProductOut,
+} from "@ai/contracts/pack-contracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {

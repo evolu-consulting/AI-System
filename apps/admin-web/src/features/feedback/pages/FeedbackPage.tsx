@@ -1,6 +1,6 @@
 // feedback · /feedback (tenant_admin + platform_admin): danh sách góp ý của người dùng, lọc theo tenant (chỉ platform) · app · loại · trạng thái;
 // mở một dòng để đổi trạng thái (mới/đang xử lý/xong) và trả lời. Không gửi email.
-import { FEEDBACK_KINDS, FEEDBACK_STATUSES, type FeedbackItem } from "@ai/contracts";
+import { FEEDBACK_KINDS, FEEDBACK_STATUSES, type FeedbackItem } from "@ai/contracts/feedback";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";

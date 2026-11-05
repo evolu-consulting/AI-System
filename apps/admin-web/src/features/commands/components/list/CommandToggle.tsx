@@ -1,6 +1,6 @@
 // ADM-FR-20 · ADM-BR-06 · công tắc bật/tắt command ở danh sách; workflow tắt → khoá kèm tooltip "Bật workflow {key} trước".
 // Khoá bằng `aria-disabled` (không dùng `disabled`) để tooltip vẫn nhận hover/focus và công tắc vẫn dùng được bàn phím để đọc lý do.
-import type { CommandListItem } from "@ai/contracts";
+import type { CommandListItem } from "@ai/contracts/commands";
 import { useTranslation } from "react-i18next";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";

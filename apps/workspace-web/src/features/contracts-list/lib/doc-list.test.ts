@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ContractListResponse } from "@ai/contracts";
+import type { ContractListResponse } from "@ai/contracts/pack-contracts";
 import { buildRows, countQuery, docTypeParams, parseDocFilter } from "./doc-list";
 import { exportQueryString, type ListParams, listQueryString } from "./list-model";
 

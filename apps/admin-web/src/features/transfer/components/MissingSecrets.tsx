@@ -1,5 +1,7 @@
 // ADM-FR-54 · ADM-BR-04 · M4-AC10 · "Cần tạo secret": mỗi secret thiếu một ô password; giá trị chỉ ở state (D11), không lưu đâu khác.
-import { type MissingSecret, SECRET_VALUE_MAX } from "@ai/contracts";
+
+import { SECRET_VALUE_MAX } from "@ai/contracts/common";
+import type { MissingSecret } from "@ai/contracts/transfer";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 

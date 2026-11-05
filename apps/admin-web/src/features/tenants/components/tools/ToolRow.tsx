@@ -1,5 +1,5 @@
 // ADM-FR-73 · P-d2 (plan-frontend-d2 §12; mockup 02 C1–C5): cột của bảng "Tool quy trình" — Tên · Ký hiệu · Ghi chú · Bật bởi · công tắc.
-import type { TenantWorkflowTool } from "@ai/contracts";
+import type { TenantWorkflowTool } from "@ai/contracts/workflow-tools";
 import type { Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Switch } from "@/components/ui/switch";

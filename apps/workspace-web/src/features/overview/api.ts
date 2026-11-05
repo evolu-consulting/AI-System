@@ -1,5 +1,11 @@
 // V2-N · Tổng quan: `GET /overview?period=` (4 con số + 12 cột/nhóm), `GET /my-work/todo` (Cần xử lý 8 nguồn), `POST /my-work/todo/dismiss`.
-import type { MyWorkOut, OverviewOut, OverviewPeriod, TodoAction, TodoOut } from "@ai/contracts";
+import type {
+  MyWorkOut,
+  OverviewOut,
+  OverviewPeriod,
+  TodoAction,
+  TodoOut,
+} from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts";

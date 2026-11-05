@@ -1,6 +1,6 @@
 // ADM-FR-55 · M3-R20 · PATCH user kèm version, 409 → ConflictDialog (user không có updated_by → câu không {user}, A4).
 // Khoá/mở khoá không nhận version nên không đi qua hook này (test-plan G5).
-import type { UserUpdateRequest } from "@ai/contracts";
+import type { UserUpdateRequest } from "@ai/contracts/users";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
 import type { ConflictCurrent } from "@/lib/conflict";
 import { useUpdateUser } from "../api";

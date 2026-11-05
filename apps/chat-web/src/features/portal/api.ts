@@ -5,8 +5,8 @@ import {
   PORTAL_PATH,
   type PortalResponse,
   TENANT_DEFAULT_APP_PATH,
-  type TodoOut,
-} from "@ai/contracts";
+} from "@ai/contracts/app-catalog";
+import type { TodoOut } from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 export const fetchPortal = (signal?: AbortSignal) => api<PortalResponse>(PORTAL_PATH, { signal });

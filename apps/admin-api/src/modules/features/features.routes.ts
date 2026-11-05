@@ -1,10 +1,11 @@
 // ADM-FR-30, ADM-FR-31, ADM-FR-33, ADM-FR-34 · /admin/features* + entitlement (spec M2 §3). Chỉ platform_admin.
+
+import { ListQueryBase } from "@ai/contracts/common";
 import {
   FeatureCreateRequestSchema,
   FeatureListQuerySchema,
   FeatureUpdateRequestSchema,
-  ListQueryBase,
-} from "@ai/contracts";
+} from "@ai/contracts/features";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";

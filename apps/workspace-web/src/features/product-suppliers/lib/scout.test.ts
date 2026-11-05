@@ -1,6 +1,6 @@
 // price-scout · test luật thuần của cấu hình dò giá.
 import { describe, expect, test } from "bun:test";
-import { PRICE_SCOUT_DEFAULT } from "@ai/contracts";
+import { PRICE_SCOUT_DEFAULT } from "@ai/contracts/pack-contracts";
 import {
   fromForm,
   inheritedKeys,

@@ -1,7 +1,7 @@
 // REP-v3-ui · V2-E (BA v2.0 §5.1) · hình dữ liệu cấu hình điểm uy tín khi `engine = v2e`: 5 ô (nhóm SP × vai) + "Mức & đánh giá" + Loại việc.
 // Kiểu theo `GET /pack/contracts/reputation/config`; thân PUT strict nên có hàm chuyển riêng ở `rep-data.ts`. Lưu riêng ở `RepPane`
 // (không nằm trong bản nháp chung của hộp thoại Cài đặt).
-import type { RepEngine, RepJobTypesIn, RepSettingsIn } from "@ai/contracts";
+import type { RepEngine, RepJobTypesIn, RepSettingsIn } from "@ai/contracts/pack-contracts";
 
 export const CELL_KEYS = [
   "service:supplier",

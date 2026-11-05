@@ -1,5 +1,5 @@
 // portal-home · luật thuần của trang chủ AI System: nơi đăng nhập hạ cánh (app mặc định) và con số trên thẻ app. Không I/O.
-import type { MeApp, PortalResponse } from "@ai/contracts";
+import type { MeApp, PortalResponse } from "@ai/contracts/app-catalog";
 import { HOME_KEY } from "./apps";
 
 export type Landing = { kind: "portal" } | { kind: "chat" } | { kind: "app"; app: MeApp };

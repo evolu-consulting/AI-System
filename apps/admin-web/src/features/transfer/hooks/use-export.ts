@@ -1,5 +1,5 @@
 // ADM-FR-54 · trạng thái tab Export: chọn loại (mặc định tất cả), tên file, tải + toast.
-import { TRANSFER_TYPES, type TransferType } from "@ai/contracts";
+import { TRANSFER_TYPES, type TransferType } from "@ai/contracts/transfer";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";

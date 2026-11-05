@@ -2,13 +2,9 @@
 // Viết TRƯỚC code (làn đầy đủ): quyền (member 403, tenant khác 404), user ngoài không vào Group (422), không lên
 // tenant_admin, vô hiệu không mở lại, JWT + /auth/me mang kind/ext_org_id, token cũ không claim vẫn dùng được.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import {
-  ExternalOrgListResponseSchema,
-  ExternalOrgSchema,
-  MeSchema,
-  UserCreateResponseSchema,
-  UserListResponseSchema,
-} from "@ai/contracts";
+import { MeSchema } from "@ai/contracts/auth";
+import { ExternalOrgListResponseSchema, ExternalOrgSchema } from "@ai/contracts/external-orgs";
+import { UserCreateResponseSchema, UserListResponseSchema } from "@ai/contracts/users";
 import {
   createEnv,
   decode,

@@ -3,12 +3,12 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test"
 import {
   API_ERRORS,
   type ErrorCode,
-  ErrorResponseSchema,
   LastAdminDetailsSchema,
   TempLockedDetailsSchema,
   ValidationErrorDetailsSchema,
-  versionConflictDetailsSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/common";
+import { ErrorResponseSchema } from "@ai/contracts/errors";
+import { versionConflictDetailsSchema } from "@ai/contracts/version-conflict";
 import { createDb } from "@ai/db";
 import {
   ADMIN_API_URL,

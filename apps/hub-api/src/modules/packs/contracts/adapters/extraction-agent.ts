@@ -1,7 +1,7 @@
 // HD-FR-21 · HUB-BR-31 · D2-01: adapter `ExtractionAgent` — dựng lời nhắc có rào (domain `buildExtractPrompt`, nonce ngẫu
 // nhiên mỗi lần), gửi qua `AgentTransport` (agent Claude chạy trong Agent Hub; N2/HD3 tiêm transport run Hub), parse đầu ra
 // STRICT (`ExtractionOutputSchema`: khoá lạ/kiểu sai ⇒ `INVALID_OUTPUT`, không ghi gì). Không bao giờ ném.
-import { ExtractionOutputSchema } from "@ai/contracts";
+import { ExtractionOutputSchema } from "@ai/contracts/pack-contracts";
 import { z } from "zod";
 import type { PackWho } from "../../kit/application/ports";
 import type {

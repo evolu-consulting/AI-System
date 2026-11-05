@@ -1,7 +1,7 @@
 // cf-esign-docusign · repo ký số trong tx `PackUow` (role `contracts_rw`, RLS tenant + M1 của `contracts`): HĐ + tệp + đối tác (vai
 // `partner_role_of` + liên hệ đầu tiên có email), envelope mới nhất, cờ bật ở `approval_settings`. Lọc `tenant_id` tường minh ngoài
 // RLS. `tenantOfEnvelope`: role `contracts_job` (chỉ đọc tenant_id, envelope_id) — map webhook ⇒ tenant.
-import type { ESignStatus } from "@ai/contracts";
+import type { ESignStatus } from "@ai/contracts/pack-contracts";
 import type { Db, Tx } from "@ai/db";
 import { withPackJobScope } from "@ai/db/pack-scope";
 import { sql } from "drizzle-orm";

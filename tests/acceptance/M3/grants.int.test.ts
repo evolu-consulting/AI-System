@@ -2,7 +2,7 @@
 // Dữ liệu chéo module (entitlement, thành viên) dựng bằng owner SQL; kiểm hiệu lực bằng SQL tham chiếu `hub_ro`
 // (không dùng effective-access vì route đó chỉ có từ T6). Mỗi `it` tự dựng lại dữ liệu (beforeEach reset).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { GrantListResponseSchema, GrantSchema } from "@ai/contracts";
+import { GrantListResponseSchema, GrantSchema } from "@ai/contracts/grants";
 import {
   betaId,
   callerOf,

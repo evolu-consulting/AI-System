@@ -1,6 +1,6 @@
 // ADM-FR-42, ADM-BR-09 · /admin/usage, /admin/usage.csv (plan-contract §2.2). /usage: platform_admin + tenant_admin (bản rút gọn, không tiền); /usage.csv: chỉ platform_admin. member → 403
 // trước khi parse. tenant_admin: tenant khác → 404.
-import { UsageQuerySchema } from "@ai/contracts";
+import { UsageQuerySchema } from "@ai/contracts/usage";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseQuery } from "../../lib/http";

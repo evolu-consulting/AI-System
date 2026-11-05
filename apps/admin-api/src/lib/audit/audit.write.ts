@@ -1,6 +1,6 @@
 // ADM-FR-51 · M4-R10 · dựng hàng audit (`auditOf`) và ghi audit cho transaction không bump `config_version`
 // (`recordAudit`: users reset-password, 2FA). Plan M4 §4.1, plan-cd §4.4.
-import type { AuditEntity } from "@ai/contracts";
+import type { AuditEntity } from "@ai/contracts/audit";
 import {
   type AuditActionValue,
   type AuditInput,

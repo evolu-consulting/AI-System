@@ -1,5 +1,7 @@
 // ADM-FR-62, ADM-FR-55 · luật groups dạng hàm thuần (plan M3 §4; M3-R01…R05). Không import I/O.
-import { BETA_GROUP_KEY, type ErrorCode, USERNAME_RE } from "@ai/contracts";
+
+import { type ErrorCode, USERNAME_RE } from "@ai/contracts/common";
+import { BETA_GROUP_KEY } from "@ai/contracts/groups";
 
 export { BETA_GROUP_KEY };
 export type RuleError = { code: ErrorCode; details?: unknown };

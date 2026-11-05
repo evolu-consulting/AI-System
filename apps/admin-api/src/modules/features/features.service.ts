@@ -1,16 +1,15 @@
 // ADM-FR-30, ADM-FR-33, ADM-FR-34, ADM-BR-10 · nghiệp vụ features (plan M2 §5 "Features", §5.1). Không biết HTTP.
 // Mỗi hành động = một withScope platform; callback chỉ làm việc DB (TECH-DEBT #13). Khoá: commands (id tăng) →
 // feature, chỉ FOR NO KEY UPDATE. Xoá feature KHÔNG tăng version command (readiness lần 2 #2).
-import {
-  COMMAND_DESC_MAX,
-  type FeatureCreateRequest,
-  type FeatureDetail,
-  type FeatureListItem,
-  type FeatureListQuery,
-  type FeatureListResponse,
-  type FeatureUpdateRequest,
-  LocalizedTextSchema,
-} from "@ai/contracts";
+import { COMMAND_DESC_MAX, LocalizedTextSchema } from "@ai/contracts/common";
+import type {
+  FeatureCreateRequest,
+  FeatureDetail,
+  FeatureListItem,
+  FeatureListQuery,
+  FeatureListResponse,
+  FeatureUpdateRequest,
+} from "@ai/contracts/features";
 import {
   type AuditActionValue,
   type AuditInput,

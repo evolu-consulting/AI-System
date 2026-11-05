@@ -1,6 +1,6 @@
 // HUB-FR-146 · AC-H44 · D2-15/D2-30 · plan-d2 §4, §8, §10 S2/S9/S10: đọc `loadCall` của `ToolStageRepo` (MỘT câu SQL) và
 // ánh xạ hàng → `ToolCallLoad`; tách khỏi `tool-stage.repo.ts` để giữ trần 200 dòng adapter (PD-A03).
-import { InputSchemaSchema } from "@ai/contracts";
+import { InputSchemaSchema } from "@ai/contracts/workflows";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { ToolCallLoad } from "../../application/tools/tool.ports";

@@ -1,7 +1,7 @@
 // ADM-FR-35 · M3-R09 · hàng tiêu đề lưới (dính trên): góc "Feature" + tên group kèm ô tick cả cột; chỉ dựng các cột trong cửa sổ.
 // biome-ignore-all lint/a11y/useSemanticElements: lưới ảo hoá (cửa sổ hoá hai chiều) không dùng được <table>/<input>; role đặt đúng theo WAI-ARIA grid/checkbox
 // biome-ignore-all lint/a11y/useFocusableInteractive: row/gridcell không tương tác; phím điều hướng nằm ở ô checkbox bên trong (roving tabindex)
-import type { MatrixGroup } from "@ai/contracts";
+import type { MatrixGroup } from "@ai/contracts/grants";
 import { useTranslation } from "react-i18next";
 import { pickLocalized } from "@/lib/localized";
 import { GRID, type Range } from "../../lib/grid-window";

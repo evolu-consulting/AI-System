@@ -1,5 +1,5 @@
 // CR-097 K3a · HD-FR-100 · HD-FR-104: luật thuần màn HĐ theo khoá — banner nào hiện, ô nào sửa được, ai được mở lại. Thuần.
-import type { ContractDetail } from "@ai/contracts";
+import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import type { TextKey } from "~/features/contract-form/lib/form-model";
 
 export type LockBanner = "locked" | "pending" | null;

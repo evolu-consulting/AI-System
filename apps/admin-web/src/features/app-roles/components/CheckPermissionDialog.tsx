@@ -1,6 +1,7 @@
 // CR-112 · ADM-FR-82 (AC5) · ADM-FR-36 · "Kiểm tra quyền" của một người: mức thực tế theo từng app + nguồn (vai / "quyền ngoài vai" từ
 // Group phòng ban / gán lẻ). Dựng từ `GET /admin/users/:id/effective-access` (đã có), không có API tính riêng.
-import type { AppRole, User } from "@ai/contracts";
+import type { AppRole } from "@ai/contracts/app-roles";
+import type { User } from "@ai/contracts/users";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/states/EmptyState";

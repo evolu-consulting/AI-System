@@ -1,6 +1,6 @@
 // V2-I · DT-01 · S-p02 `/partners` v2 — mockup NITI: mỗi đối tác một dòng (tên, các vai, điểm từng vai, số hợp đồng), tìm + lọc vai /
 // "Cần chú ý"; bấm tên mở trang chi tiết. Điểm từ engine HD8 `GET /partners` (CR-097a): huy hiệu MỚI · tạm tính + cờ đỏ (U3); "+ Ghi việc" (sổ HD7) giữ lại.
-import type { PartnerRole, RepRole } from "@ai/contracts";
+import type { PartnerRole, RepRole } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";

@@ -1,5 +1,5 @@
 // ADM-FR-32 · M3-R07, R08 · tab Feature của group: nạp cột của group, chế độ Sửa (nháp tick), lưu MỘT batch.
-import type { Group } from "@ai/contracts";
+import type { Group } from "@ai/contracts/groups";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";

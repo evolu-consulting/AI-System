@@ -1,6 +1,6 @@
 // ADM-FR-42 · usage-analytics · luật thuần của phân tích token (không biết DB/HTTP): tier model, xô thời gian (ngày/tuần/
 // tháng, ngày VN), tách kết quả GROUPING SETS theo chiều, cộng tier, con trỏ phân trang bản ghi, KPI.
-import type { UsageBreakdownRow, UsageGrain } from "@ai/contracts";
+import type { UsageBreakdownRow, UsageGrain } from "@ai/contracts/usage-analytics";
 
 /** Tier của model theo tên (`claude-opus-5-5` → opus); model lạ → other; null → unknown. */
 export function modelTier(model: string | null): string {

@@ -1,6 +1,6 @@
 // V2-F · HD-04 · mockup `summaryBody`: khối "Tóm tắt hợp đồng" — các điểm chính suy từ dữ liệu đã lưu (loại, đối tác, giá trị, hiệu lực, tiến độ,
 // bước hiện tại + hạn) kèm lưu ý do agent đọc (cảnh báo). Chưa có tóm tắt viết bằng AI (V2-G) nên không bịa câu chữ.
-import type { AiSummary as AiSummaryT, ContractDetail } from "@ai/contracts";
+import type { AiSummary as AiSummaryT, ContractDetail } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { useGenerateSummary } from "../hooks/use-manage";

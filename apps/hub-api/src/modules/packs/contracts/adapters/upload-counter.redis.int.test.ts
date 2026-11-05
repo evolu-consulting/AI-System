@@ -1,7 +1,7 @@
 // tenant-quotas-fix · Redis thật: Admin "Đặt lại hôm nay" (SET 0 KEEPTTL) xen giữa lượt giữ (INCR) và lượt hoàn (DECR) ⇒ bộ
 // đếm về 0, không âm, vẫn giữ TTL; hoàn bình thường vẫn trừ đúng.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { dailyCounterKey } from "@ai/contracts";
+import { dailyCounterKey } from "@ai/contracts/daily-limits";
 import { REDIS_TEST_URL } from "../../../../../../../tests/acceptance/H1/_fixtures";
 import { createRedis, type Redis } from "../../../../lib/redis";
 import { QUOTA_TTL_S, redisUploadCounter } from "./upload-counter.redis";

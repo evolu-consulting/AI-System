@@ -1,6 +1,6 @@
 // CR-120 · FLOW-FR-01 · kiểm khe manifest ↔ SlotSpec/FlowSlotAdapter lúc mount.
 import { describe, expect, test } from "bun:test";
-import { CONTRACTS_MANIFEST } from "@ai/contracts";
+import { CONTRACTS_MANIFEST } from "@ai/contracts/app-manifest";
 import { slotContractGaps } from "./slot-contract.rules";
 
 describe("FLOW-FR-01 · slotContractGaps", () => {

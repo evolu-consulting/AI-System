@@ -1,6 +1,6 @@
 // ADM-FR-73 · mapper khớp `TenantWorkflowToolSchema`; audit grant/revoke before/after `{on}` (plan-d2 §6).
 import { describe, expect, it } from "bun:test";
-import { TenantWorkflowToolSchema } from "@ai/contracts";
+import { TenantWorkflowToolSchema } from "@ai/contracts/workflow-tools";
 import { toolAudit, toTenantWorkflowTool } from "./workflow-tools.mapper";
 
 const V = {

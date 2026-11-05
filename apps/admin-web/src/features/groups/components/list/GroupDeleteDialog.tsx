@@ -1,5 +1,5 @@
 // ADM-FR-62 · M3-R04 · hộp thoại xoá group mức nặng: nêu số thành viên/feature, gõ lại key để bật nút.
-import type { GroupListItem } from "@ai/contracts";
+import type { GroupListItem } from "@ai/contracts/groups";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { pickLocalized } from "@/lib/localized";

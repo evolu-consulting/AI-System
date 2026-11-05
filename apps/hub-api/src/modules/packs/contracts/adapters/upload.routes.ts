@@ -11,7 +11,7 @@ import {
   UploadContractFormSchema,
   UploadDocFormSchema,
   VERSION_ERRORS,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";

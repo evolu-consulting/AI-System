@@ -1,7 +1,7 @@
 // ADM-FR-62 · M3-R13 · contract `User` có `groups`/`group_count` + `?group=` (spec M3 §3 "Users"; test-plan R1b).
 // Xanh ở T4 (users.ts đổi ở T4). Trước đó đỏ vì chưa có code.
 import { describe, expect, it } from "bun:test";
-import { UserListQuerySchema, UserSchema, UserUpdateRequestSchema } from "@ai/contracts";
+import { UserListQuerySchema, UserSchema, UserUpdateRequestSchema } from "@ai/contracts/users";
 
 const U = (n: number) => `01900000-0000-7000-8000-${String(n).padStart(12, "0")}`;
 const baseUser = {

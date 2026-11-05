@@ -1,6 +1,6 @@
 // V2-F · HD-03: ô của dòng danh sách — loại, đối tác theo loại, giai đoạn + bước hiện tại (đỏ khi quá hạn); tóm tắt chi tiết.
 import { describe, expect, it } from "bun:test";
-import type { ContractProgress } from "@ai/contracts";
+import type { ContractProgress } from "@ai/contracts/pack-contracts";
 import { summaryRows } from "../../contract-review/lib/summary";
 import { dealOfRow, partnerOfRow, stageView } from "./row-view";
 

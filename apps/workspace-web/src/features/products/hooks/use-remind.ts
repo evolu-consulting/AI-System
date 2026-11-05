@@ -1,5 +1,5 @@
 // V2-H · "Nhắc gia hạn": tạo việc "Liên hệ mời gia hạn" trong Cần xử lý của mình, rồi làm mới tab khách + Cần xử lý.
-import type { ServiceCustomer } from "@ai/contracts";
+import type { ServiceCustomer } from "@ai/contracts/pack-contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";

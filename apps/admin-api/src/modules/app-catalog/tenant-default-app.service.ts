@@ -2,7 +2,7 @@
 // Cùng luật kiểm tra với `PUT /me/tenant-default-app` (khoá app phải có trong catalog); khác: không cần "mở được với người gọi"
 // vì platform_admin đặt hộ công ty khác. Ghi audit `update`/`tenant` (summary.op = default_app.set). CR-118: đổi ⇒ bump
 // `config_version` cùng transaction + NOTIFY `config_changed` (tenant_id) sau commit ⇒ Hub `/pack/me` home theo default_app.
-import type { DefaultAppRequest, TenantDefaultAppResponse } from "@ai/contracts";
+import type { DefaultAppRequest, TenantDefaultAppResponse } from "@ai/contracts/app-catalog";
 import { type Tx, withConfigWrite, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { auditOf, recordAudit } from "../../lib/audit/audit.write";

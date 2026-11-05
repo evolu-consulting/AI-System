@@ -1,5 +1,5 @@
 // ADM-FR-54 · M4-AC09 · chip đếm Thêm / Sửa / Không đổi = nút lọc `aria-pressed` (plan-frontend §3.5 Import 2).
-import type { ImportSummary as Summary } from "@ai/contracts";
+import type { ImportSummary as Summary } from "@ai/contracts/transfer";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 

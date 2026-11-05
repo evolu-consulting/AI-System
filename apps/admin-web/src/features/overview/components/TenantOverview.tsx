@@ -1,5 +1,5 @@
 // ADM-FR-41 · M4-R06, R09 · Tổng quan tenant_admin (ms §1, artboard TenantOverview): 4 KPI, người dùng mới chưa đăng nhập, thay đổi gần đây.
-import type { OverviewResponse } from "@ai/contracts";
+import type { OverviewResponse } from "@ai/contracts/overview";
 import { useTranslation } from "react-i18next";
 import { KpiCard } from "@/components/shared/kpi/KpiCard";
 import type { LoadError } from "@/lib/load-error";

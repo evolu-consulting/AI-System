@@ -2,7 +2,7 @@
 // người duyệt / thiếu lý do ⇒ không trừ); AI chưa sẵn sàng ⇒ `unavailable` (503) trước khi ghi, không trừ quota, không xếp job;
 // feedback chứa ký tự điều khiển (NUL) bị schema chặn ở biên.
 import { describe, expect, test } from "bun:test";
-import { ApprovalActionRequestSchema } from "@ai/contracts";
+import { ApprovalActionRequestSchema } from "@ai/contracts/pack-contracts";
 import { APPROVAL_DEFAULTS } from "../domain/approval-def.rules";
 import type { ApprovalTxRepos, ApprovalUow } from "./approval.ports";
 import { type ApprovalDeps, actApproval, type ExtractJob } from "./approval.usecase";

@@ -1,7 +1,7 @@
 // ADM-FR-02, ADM-FR-03 · CR-053 · N1 PK-FR-10: contracts-web (`X-App: contracts`) có phiên riêng `ai_rt_contracts` —
 // đăng nhập/đăng xuất contracts không ảnh hưởng phiên chat/admin và ngược lại (khuôn tests/acceptance/CR-053).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { TokenGrantSchema } from "@ai/contracts";
+import { TokenGrantSchema } from "@ai/contracts/auth";
 import {
   createEnv,
   type Env,

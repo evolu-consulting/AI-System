@@ -1,8 +1,9 @@
 // HUB-FR-97 · HUB-FR-98 · thành viên phòng: thêm/bớt/rời/chuyển chủ/ẩn DM (X2a plan §3; plan-db §5, §6; spec R07–R11, R20).
 // Thêm/bớt/rời/chuyển chủ: `lockFor` khoá hàng `rooms` TRƯỚC rồi kiểm lại quyền + đọc thành viên dưới khoá ⇒ giới hạn 50
 // đúng dưới tranh chấp, người nhận sự kiện nhất quán (R20). Ẩn DM cũng khoá phòng trước, chỉ ghi hàng mình. Phát sau commit.
-import { UuidSchema } from "@ai/contracts";
+
 import { ROOM_MEMBERS_MAX, type RoomDetail } from "@ai/contracts/chat";
+import { UuidSchema } from "@ai/contracts/common";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { validationError } from "../../../lib/http";

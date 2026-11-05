@@ -1,5 +1,5 @@
 // cf-esign-docusign · luật thuần khối "Ký số" ở chi tiết HĐ: chế độ hiển thị + nút được bấm theo trạng thái + quyền.
-import type { ESignProviderOut, ESignStateOut } from "@ai/contracts";
+import type { ESignProviderOut, ESignStateOut } from "@ai/contracts/pack-contracts";
 
 export type EsignMode =
   | "hidden"

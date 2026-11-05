@@ -1,5 +1,6 @@
 // CR-121 · CEO / Giám đốc: chọn từ thành viên nội bộ đang hoạt động của công ty (sửa tại chỗ: bấm tên ⇒ chọn + Lưu/Huỷ).
-import type { TenantPerson, User } from "@ai/contracts";
+import type { TenantPerson } from "@ai/contracts/tenants";
+import type { User } from "@ai/contracts/users";
 import { Check, Pencil, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

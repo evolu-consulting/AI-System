@@ -1,6 +1,6 @@
 // cf-esign-docusign · hộp "Gửi ký": người ký công ty = chính tài khoản đang đăng nhập (chỉ đọc), đối tác sửa được; ký tuần tự.
 // esign-multi · dropdown nhà cung cấp (chỉ khi > 1 khả dụng); gửi `provider` khi chọn.
-import type { ESignProviderOut, ESignSignerIn } from "@ai/contracts";
+import type { ESignProviderOut, ESignSignerIn } from "@ai/contracts/pack-contracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {

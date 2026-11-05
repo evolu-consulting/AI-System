@@ -1,5 +1,5 @@
 // ADM-FR-31 · cấp (PUT) và thu hồi (DELETE) entitlement; thu hồi có Hoàn tác 5 s = cấp lại (cùng hàng, M2-AC05).
-import type { Entitlement, FeatureDetail } from "@ai/contracts";
+import type { Entitlement, FeatureDetail } from "@ai/contracts/features";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";

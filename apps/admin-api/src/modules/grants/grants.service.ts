@@ -6,7 +6,7 @@ import type {
   GrantDeleteQuery,
   GrantListQuery,
   GrantListResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/grants";
 import { type AuditInput, type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";

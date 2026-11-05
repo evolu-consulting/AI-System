@@ -1,5 +1,5 @@
 // ADM-FR-54 · M4-AC09 · một loại thực thể trong bản xem trước (Accordion): mỗi mục có khoá, nhãn Thêm/Sửa, "Xem thay đổi" → DiffTable.
-import type { ImportItem, ImportItemType } from "@ai/contracts";
+import type { ImportItem, ImportItemType } from "@ai/contracts/transfer";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DiffTable } from "@/components/shared/diff/DiffTable";

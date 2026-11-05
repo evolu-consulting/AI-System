@@ -1,6 +1,6 @@
 // V2-I · U3 · huy hiệu điểm đối tác theo engine HD8: TỐT/KHÁ/CHÚ Ý (xanh/xám/cam), "MỚI · tạm tính" (điểm tạm, nét đứt) khi chưa đủ số việc,
 // "–" khi chưa có việc nào; nhãn vai bên dưới. Cờ đỏ tách khỏi điểm: `RedFlagTag`.
-import type { PartnerRow, RepRole } from "@ai/contracts";
+import type { PartnerRow, RepRole } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { type Badge, badgeOf } from "../lib/partner-score";
 import { ScoreBadge } from "./ScoreBadge";

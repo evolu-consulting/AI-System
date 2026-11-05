@@ -1,6 +1,6 @@
 // V2-N · "Cần xử lý" của Tổng quan (mockup NITI `todoPanel`): 8 nguồn từ `GET /my-work/todo`, 6 việc đầu + "Xem thêm", mỗi việc có Bỏ qua
 // (và Đã xong với "Liên hệ mời gia hạn"). Bấm việc ⇒ mở HĐ / SP / đối tác. Chỉ việc người dùng THẤY (API tự lọc).
-import type { TodoItem } from "@ai/contracts";
+import type { TodoItem } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { Check, X } from "lucide-react";
 import { useState } from "react";

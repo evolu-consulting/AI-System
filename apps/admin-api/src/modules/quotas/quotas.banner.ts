@@ -1,7 +1,7 @@
 // ADM-FR-41 · M4-R06 · `GET /admin/quota-banner` (plan-contract §2.1): tính trực tiếp từ `evaluateQuota` (không đọc
 // `quota_alerts`). platform_admin → `{banner:null}`; tenant_admin → quota có pct cao nhất của tenant mình (scope RLS +
 // lọc `tenant_id`); member → 403. tenant_admin còn kích evaluator nền (chặn lặp 60 s/tenant).
-import type { QuotaBannerResponse } from "@ai/contracts";
+import type { QuotaBannerResponse } from "@ai/contracts/quotas";
 import { withScope } from "@ai/db";
 import { Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";

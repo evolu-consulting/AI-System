@@ -1,5 +1,5 @@
 ﻿import { describe, expect, test } from "bun:test";
-import type { ContractVersionRef } from "@ai/contracts";
+import type { ContractVersionRef } from "@ai/contracts/pack-contracts";
 import {
   canUploadUpdate,
   defaultPair,

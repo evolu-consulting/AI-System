@@ -1,6 +1,6 @@
 // feedback · gọi `/auth/feedback*` (mọi web proxy `/auth` tới admin-api). Mỗi web có client HTTP riêng (admin/studio chép bản của mình),
 // nên khung nhận `transport`; mặc định dùng `http.ts` của web-kit (chat, contracts). Tệp đính kèm tải bằng Bearer rồi hiện qua blob URL.
-import type { FeedbackCreateRequest, FeedbackItem } from "@ai/contracts";
+import type { FeedbackCreateRequest, FeedbackItem } from "@ai/contracts/feedback";
 import { api, apiResponse } from "../http";
 
 const BASE = "/auth/feedback";

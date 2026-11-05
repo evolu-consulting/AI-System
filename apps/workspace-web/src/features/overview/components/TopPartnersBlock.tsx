@@ -1,6 +1,6 @@
 // V2-N · "Giao dịch nhiều nhất" (mockup `partnerPanel.top`): top 3 nhà cung cấp + top 3 khách hàng theo số việc đã ghi (engine HD8 `GET /partners`),
 // kèm điểm uy tín. (Mockup xếp theo giá trị HĐ; API chưa trả giá trị nên dùng số việc.)
-import type { PartnerRole } from "@ai/contracts";
+import type { PartnerRole } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";

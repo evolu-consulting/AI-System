@@ -2,7 +2,7 @@
 // mã contract: khoá lạ trong `fields` ⇒ 422 `FIELD_UNKNOWN {keys}` (ưu tiên khi lẫn sai kiểu), sai kiểu/miền một khoá ⇒ 422
 // `FIELD_INVALID {key}`, còn lại (thiếu/sai `version`, `fields` rỗng/không phải object, khoá thừa ở gốc như `tenant_id`) ⇒ 400
 // `VALIDATION_ERROR`. Kết quả use case → 200 / 404 `NOT_FOUND` / 409 `CONTRACT_STALE {current:{version}, updated_at}`.
-import { CONTRACT_ERRORS, PatchFieldsRequestSchema } from "@ai/contracts";
+import { CONTRACT_ERRORS, PatchFieldsRequestSchema } from "@ai/contracts/pack-contracts";
 import type { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith } from "../../../../lib/http";

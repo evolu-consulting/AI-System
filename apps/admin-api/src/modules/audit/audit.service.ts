@@ -7,7 +7,7 @@ import {
   type AuditListResponse,
   type AuditSummary,
   AuditSummarySchema,
-} from "@ai/contracts";
+} from "@ai/contracts/audit";
 import { type Db, type DbScope, withScope } from "@ai/db";
 import type { Actor } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";

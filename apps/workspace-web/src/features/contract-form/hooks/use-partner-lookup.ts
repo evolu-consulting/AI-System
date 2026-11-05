@@ -1,5 +1,5 @@
 // V2-F · HD-10 · BA 5.6: tra đối tác `GET /partners/lookup` (V2-C), debounce — gõ ≥ 2 ký tự mới tra.
-import type { ContractDeal } from "@ai/contracts";
+import type { ContractDeal } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { lookupKey, lookupPartner } from "../api";

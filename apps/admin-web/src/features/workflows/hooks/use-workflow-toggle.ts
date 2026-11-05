@@ -1,6 +1,6 @@
 // ADM-FR-13 · AC-A06 · ADM-FR-55 · bật/tắt workflow ở danh sách; tắt khi còn command bật/agent → 409 → hộp thoại chặn;
 // 409 VERSION_CONFLICT → ConflictDialog với `mine = {enabled}` (plan-frontend D6).
-import type { Workflow, WorkflowListItem } from "@ai/contracts";
+import type { Workflow, WorkflowListItem } from "@ai/contracts/workflows";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";

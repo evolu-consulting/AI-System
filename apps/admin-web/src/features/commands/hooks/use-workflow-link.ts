@@ -1,5 +1,5 @@
 // ADM-FR-20 · bước 2 → 4 · gắn command với workflow: nạp input schema, điền sẵn output field, gộp input map khi đổi workflow (ui-admin 7.4).
-import type { Workflow } from "@ai/contracts";
+import type { Workflow } from "@ai/contracts/workflows";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type UseFormReturn, useWatch } from "react-hook-form";

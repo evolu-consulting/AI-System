@@ -6,7 +6,7 @@ import {
   NotifyPrefsSchema,
   PushSubscriptionBodySchema,
   PushUnsubscribeBodySchema,
-} from "@ai/contracts";
+} from "@ai/contracts/notify";
 import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { parseJson, parseQuery } from "../../../lib/http";

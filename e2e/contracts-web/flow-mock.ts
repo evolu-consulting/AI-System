@@ -3,7 +3,7 @@
 //   POST /pack/contracts/flow/contracts.approval/:id/tasks/:t/actions/:a → `onAct(thân cũ {action, feedback?, products?}, task)`
 //   POST /pack/contracts/flow/contracts.approval/summary                → không huy hiệu
 // Ghi hành động theo THÂN CŨ (extension ⇒ products) để kịch bản cũ giữ nguyên khẳng định; kèm `task` để kiểm task đang mở.
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import type { Page, Route } from "@playwright/test";
 import { flowViewOfCard } from "../../apps/hub-api/src/modules/packs/contracts/domain/approval-flow-view.rules";
 

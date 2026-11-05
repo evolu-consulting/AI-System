@@ -1,5 +1,5 @@
 // ADM-FR-41, ADM-FR-42 · card "Thay đổi gần đây": ≤ 8 dòng audit, câu từ `auditSentence` + giờ.
-import type { AuditItem } from "@ai/contracts";
+import type { AuditItem } from "@ai/contracts/audit";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";

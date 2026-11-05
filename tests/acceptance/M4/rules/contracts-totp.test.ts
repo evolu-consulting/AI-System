@@ -2,7 +2,8 @@
 // (`LoginResponseSchema`, `MeSchema`), `users.ts` (`UserSchema`). Xanh ở T9d (schema tạo dần ở T9b–T9d).
 // Tên schema request verify: `TotpVerifyRequestSchema` (plan-cd chưa đặt tên — xem test-plan-cd §10 "Cần bổ sung").
 import { describe, expect, it } from "bun:test";
-import { LoginResponseSchema, MeSchema, UserSchema } from "@ai/contracts";
+import { LoginResponseSchema, MeSchema } from "@ai/contracts/auth";
+import { UserSchema } from "@ai/contracts/users";
 import { loadTotpContract } from "../_cd-modules";
 
 const ok = (r: { success: boolean }) => r.success;

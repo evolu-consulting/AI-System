@@ -1,7 +1,7 @@
 // niti-onboard · kênh liên hệ KHÁC của công ty (website, Zalo, điện thoại phụ) ⇒ các dòng (khoá nhãn i18n `tenants.profile.*`, giá trị)
 // có giá trị, thứ tự cố định. Thuần. CR-121: tên pháp lý/địa chỉ/MST/email/SĐT chính nay là cột nhập tay ở tab Hồ sơ (một nguồn),
 // không đọc lại từ jsonb `profile` nữa.
-import type { TenantDetail } from "@ai/contracts";
+import type { TenantDetail } from "@ai/contracts/tenants";
 
 type Profile = NonNullable<TenantDetail["profile"]>;
 export type ProfileKey = "websites" | "zalo" | "phones";

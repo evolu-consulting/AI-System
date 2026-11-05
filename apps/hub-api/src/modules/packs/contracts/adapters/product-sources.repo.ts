@@ -1,6 +1,6 @@
 // gap-d1 #19 · câu SQL "Cách lấy hàng" của SP. Tx do `PackUow` mở (RLS tenant + M1); lọc `tenant_id` tường minh. Mỗi lệnh = MỘT câu văn
 // bản cố định (JSON dựng trong SQL) — số câu không phụ thuộc số NCC (Luật 4c). Tỉ trọng mua đọc từ sổ kho của THÀNH PHẦN CHÍNH.
-import type { ProductSourceCreate, ProductSourceOut } from "@ai/contracts";
+import type { ProductSourceCreate, ProductSourceOut } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { SourcesRepo } from "../application/product-sources.usecase";

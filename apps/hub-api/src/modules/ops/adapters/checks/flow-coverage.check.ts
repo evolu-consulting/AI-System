@@ -7,7 +7,7 @@
 // thấy được rỗng nhưng vẫn có đường chạy (mẫu khe — tenant chưa được `ensureSlotDefaults` cấp) là đúng ca Demo ⇒ cũng crit (chạy được
 // mà tenant không xem/sửa được). Một câu SQL tập hợp (Luật 4c), không ngưỡng.
 
-import { packFeatureKey } from "@ai/contracts";
+import { packFeatureKey } from "@ai/contracts/packs";
 import { sql } from "drizzle-orm";
 import { APPROVAL_PROCESS_KEY, APPROVAL_SLOT } from "../../../packs/contracts/public";
 import { slotRegistry } from "../../../packs/kit/adapters/slot-registry";

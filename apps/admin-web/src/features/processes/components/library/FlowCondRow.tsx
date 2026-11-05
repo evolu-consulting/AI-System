@@ -1,7 +1,8 @@
 // CR-121 D-3: một dòng điều kiện lá của trình dựng "Chỉ chạy khi": [trường] [toán tử theo kiểu] [giá trị] [xoá].
 // Giá trị theo kiểu trường: số tiền (số nguyên VND) / chọn loại (nhiều) / chọn phòng ban theo mã (nhiều) / có-không.
-import type { FlowCond } from "@ai/contracts";
+
 import type { SlotFieldDto } from "@ai/contracts/hub-admin";
+import type { FlowCond } from "@ai/contracts/pack-contracts";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";

@@ -1,7 +1,7 @@
 // ADM-FR-23 · X1 F4 · lỗi "Chạy thử" → câu plan-frontend-copy.md; key tồn tại ở vi/en.
 
 import { describe, expect, test } from "bun:test";
-import { COMMAND_TEST_ERROR_CODES } from "@ai/contracts";
+import { COMMAND_TEST_ERROR_CODES } from "@ai/contracts/command-test";
 import en from "../../../../packages/i18n/locales/en.json";
 import vi from "../../../../packages/i18n/locales/vi.json";
 import { describeCommandTestError, validationIssues } from "./errors";

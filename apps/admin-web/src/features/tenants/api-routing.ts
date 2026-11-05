@@ -1,7 +1,8 @@
 ﻿// CR-118 §11.2 · client Hub của "quy trình được gán + luật chọn theo phòng ban" của MỘT tenant × khe. Hợp đồng:
-// `@ai/contracts/hub-admin` (process-routing). Gán/bỏ gán: chỉ platform_admin; GET/PUT luật: platform_admin (trang này).
-import type { OrgResponse, TenantCapabilitiesResponse } from "@ai/contracts";
+import type { TenantCapabilitiesResponse } from "@ai/contracts/capabilities";
 import type { ProcessRouting, PutProcessRoutingRequest } from "@ai/contracts/hub-admin";
+// `@ai/contracts/hub-admin` (process-routing). Gán/bỏ gán: chỉ platform_admin; GET/PUT luật: platform_admin (trang này).
+import type { OrgResponse } from "@ai/contracts/org";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";

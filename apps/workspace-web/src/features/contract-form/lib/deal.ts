@@ -1,5 +1,5 @@
 // V2-F · HD-01 · BA §2/§3.1: loại hợp đồng Mua / Bán / Giới thiệu — nhãn đối tác + nhãn kho đi theo loại. Thuần.
-import type { ContractDeal, ContractStage } from "@ai/contracts";
+import type { ContractDeal, ContractStage } from "@ai/contracts/pack-contracts";
 import type { TagTone } from "~/components/shared/tag";
 
 export const DEALS: readonly ContractDeal[] = ["buy", "sell", "referral"] as const;

@@ -2,7 +2,7 @@
 // libraryRoutes) trên DB thật (`hub_api`, scope system), user giả qua header. Khe `contracts.approval` thật (test-support) + def mặc
 // định seed ở hub 0069. Kiểm trạng thái DB thật (hàng gán, bản phát hành, audit), không chỉ mã HTTP.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";

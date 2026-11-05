@@ -1,6 +1,6 @@
 // V2-F · HD-11 · luật thuần của hộp "Thêm / Sửa mốc": bản nháp ↔ thân API. SL chỉ cho Giao hàng; số tiền chỉ cho Thu tiền / Thanh toán /
 // Nhận hoa hồng (đổi loại ⇒ xoá ô không còn hợp lệ). Số đọc kiểu Việt ("1,5", "118.000.000").
-import type { ContractDeal, Milestone } from "@ai/contracts";
+import type { ContractDeal, Milestone } from "@ai/contracts/pack-contracts";
 import { parseMoney, parseQty } from "~/components/shared/format";
 import { defaultOwner, type MilestoneKind, MONEY_KINDS } from "./timeline";
 

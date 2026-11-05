@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { UserCreateRequestSchema, UsernameSchema } from "@ai/contracts";
+import { UsernameSchema } from "@ai/contracts/common";
+import { UserCreateRequestSchema } from "@ai/contracts/users";
 import { emailToValue, userCreateSchema, userEditSchema } from "./schemas";
 
 const valid = {

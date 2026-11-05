@@ -10,7 +10,7 @@ import {
   type ImportPreview,
   type ImportRequest,
   TRANSFER_TYPES,
-} from "@ai/contracts";
+} from "@ai/contracts/transfer";
 import { readConfigVersion, type Tx, withScope } from "@ai/db";
 import { parse, YAMLError } from "yaml";
 import { appError } from "../../lib/errors";

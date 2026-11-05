@@ -1,7 +1,7 @@
 // ADM-FR-35 · M3-R09 · một hàng feature của lưới: nhãn dính trái (ô tick cả hàng, tên, nhãn trạng thái, command) + các ô trong cửa sổ cột.
 // biome-ignore-all lint/a11y/useSemanticElements: lưới ảo hoá (cửa sổ hoá hai chiều) không dùng được <table>/<input>; role đặt đúng theo WAI-ARIA grid/checkbox
 // biome-ignore-all lint/a11y/useFocusableInteractive: row/gridcell không tương tác; phím điều hướng nằm ở ô checkbox bên trong (roving tabindex)
-import type { MatrixFeature, MatrixGroup } from "@ai/contracts";
+import type { MatrixFeature, MatrixGroup } from "@ai/contracts/grants";
 import { memo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";

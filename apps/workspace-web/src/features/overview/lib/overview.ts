@@ -8,7 +8,7 @@ import type {
   OverviewGroupRow,
   OverviewPeriod,
   TodoItem,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 
 /** "Cần xử lý" hiện tối đa bấy nhiêu việc, phần còn lại sau "Xem thêm". */
 export const WORK_PREVIEW = 6;

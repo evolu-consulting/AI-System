@@ -1,13 +1,7 @@
 // niti-onboard · kiểm đầu vào file khai báo onboarding (zod) — lớp adapter; luật thuần ở `domain/onboard.rules.ts` (ADR-0023).
-import {
-  EmailSchema,
-  PackKeySchema,
-  TENANT_TZ_DEFAULT,
-  TenantKeySchema,
-  TenantNameSchema,
-  TenantProfileSchema,
-  TimezoneInputSchema,
-} from "@ai/contracts";
+import { EmailSchema, TenantKeySchema, TenantNameSchema } from "@ai/contracts/common";
+import { PackKeySchema } from "@ai/contracts/packs";
+import { TENANT_TZ_DEFAULT, TenantProfileSchema, TimezoneInputSchema } from "@ai/contracts/tenants";
 import { z } from "zod";
 import type { OnboardSpec } from "../domain/onboard.rules";
 

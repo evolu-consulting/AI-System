@@ -3,7 +3,7 @@
 // CR-118: vẽ qua `<FlowPanel slot="contracts.approval">`; giữ nguyên khung, chữ, data-testid; lượt `machine` qua LegacyMachineRenderer.
 // CR-120: FlowView ĐỌC TỪ HUB (`GET /pack/contracts/flow/contracts.approval/:id`), không dựng ở web; thẻ đổi (poll/push/sau hành
 // động) ⇒ tải lại view. Runtime tắt (rollback) ⇒ view null ⇒ phép chiếu cũ trên thẻ đã tải (CR-121 xoá).
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";

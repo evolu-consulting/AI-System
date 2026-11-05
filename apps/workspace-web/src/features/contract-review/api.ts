@@ -13,7 +13,7 @@ import type {
   ReviewSaveRequest,
   ReviewSaveResponse,
   SummaryResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/contracts";

@@ -5,7 +5,7 @@ import {
   SecretListQuerySchema,
   SecretNoteRequestSchema,
   SecretReplaceRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/secrets";
 import { type Context, Hono } from "hono";
 import type { z } from "zod";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";

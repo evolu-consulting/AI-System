@@ -1,6 +1,6 @@
 // V2-I · DT-02 · BA §5.1: bảng tính điểm của một nhóm — Tiêu chí · Điểm · Trọng số · Góp · Dữ liệu. Bấm một tiêu chí ⇒ liệt kê các việc
 // góp điểm của nó (`items` của `/reputation/partner`). Tiêu chí chưa có dữ liệu bị bỏ khỏi điểm (Góp "—") và trọng số chia lại.
-import type { RepCellOut, RepDetailItem } from "@ai/contracts";
+import type { RepCellOut, RepDetailItem } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "~/lib/utils";

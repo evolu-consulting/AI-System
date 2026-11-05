@@ -5,7 +5,7 @@ import {
   type DailyLimitKind,
   type DailyLimitsPut,
   type DailyLimitsResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/daily-limits";
 
 export type DailyDraft = Record<DailyLimitKind, string>;
 

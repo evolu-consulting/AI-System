@@ -1,6 +1,6 @@
 // esign-flow · dòng "Ký số" cuối tiến trình duyệt: chờ duyệt xong / đang gửi / đã gửi chờ ký / đã ký xong / cần quyết (lý do) +
 // "Gửi lại" cho người phụ trách HĐ khi cần quyết (hoặc mở lại HĐ ở trang chi tiết). esign-sweep2 · "Hạn ký", nhãn "Quá hạn", "Đã nhắc lúc".
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";

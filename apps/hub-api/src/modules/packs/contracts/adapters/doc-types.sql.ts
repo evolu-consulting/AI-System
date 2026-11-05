@@ -1,5 +1,5 @@
 // CR-101 DOC-model: mảnh SQL chứng từ dùng trong câu danh sách / chi tiết của `contracts.repo.ts` (văn bản cố định, không thêm câu).
-import { FRAME_CHILDREN_MAX } from "@ai/contracts";
+import { FRAME_CHILDREN_MAX } from "@ai/contracts/pack-contracts";
 import { sql } from "drizzle-orm";
 
 /** Bản hiện hành của chuỗi bí danh `x`: chưa bị thay và không phải nháp mở (v≥2 chưa khoá). */

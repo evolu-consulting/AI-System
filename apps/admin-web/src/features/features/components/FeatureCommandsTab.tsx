@@ -1,5 +1,5 @@
 // ADM-FR-30 · ADM-BR-10 · M2-R19 · tab "Commands": bảng command của feature (nháp), "Thêm command", cảnh báo command sẽ mồ côi.
-import type { FeatureDetail } from "@ai/contracts";
+import type { FeatureDetail } from "@ai/contracts/features";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";

@@ -1,6 +1,6 @@
 // CR-120 · FLOW-FR-03 · /apps tab Quy trình: khe theo manifest + khe hub ngoài manifest.
 import { describe, expect, test } from "bun:test";
-import { CONTRACTS_MANIFEST } from "@ai/contracts";
+import { CONTRACTS_MANIFEST } from "@ai/contracts/app-manifest";
 import { slotRows } from "./slot-rows";
 
 describe("FLOW-FR-03 · slotRows", () => {

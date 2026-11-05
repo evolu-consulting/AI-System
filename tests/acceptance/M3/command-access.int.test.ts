@@ -2,7 +2,7 @@
 // Số liệu: test-plan §3. Trường mới đọc qua `newField` (typecheck xanh trước T6); `CommandAccessResponseSchema.parse` kiểm
 // strict lúc chạy. Mỗi `it` tự dựng lại dữ liệu (beforeEach reset).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { CommandAccessResponseSchema } from "@ai/contracts";
+import { CommandAccessResponseSchema } from "@ai/contracts/commands";
 import {
   callerOf,
   createM3Env,

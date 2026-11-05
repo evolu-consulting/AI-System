@@ -1,7 +1,11 @@
 // V2-K · TQ-01/TQ-02: `GET /pack/contracts/overview?period=month|quarter|12m` (Tổng quan: 4 con số + theo nhóm), `GET /my-work/todo`
 // (Cần xử lý 8 nguồn), `POST /my-work/todo/dismiss` { key, action: skip|done } — quyền `read` (việc ẩn là của riêng người bấm, như hẹn
 // nhắc W1). Guard TRƯỚC đọc thân; query/thân strict; khoá sai dạng ⇒ 400; hẹn nhắc không phải của mình ⇒ 404.
-import { OverviewQuerySchema, TodoDismissSchema, TodoQuerySchema } from "@ai/contracts";
+import {
+  OverviewQuerySchema,
+  TodoDismissSchema,
+  TodoQuerySchema,
+} from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { appError } from "../../../../lib/errors";
 import { parseQuery, parseWith, readJson } from "../../../../lib/http";

@@ -1,5 +1,5 @@
 // ADM-FR-14, ADM-FR-15 · cột "Đang được dùng bởi": `2 command · 1 agent` mở Popover (usages nạp lười); không dùng → badge "Chưa gắn".
-import type { WorkflowListItem } from "@ai/contracts";
+import type { WorkflowListItem } from "@ai/contracts/workflows";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DependencyList } from "@/components/shared/DependencyList";

@@ -1,5 +1,5 @@
 // U3 · R46 · lịch sử đổi cách tính điểm (`GET /scoring/:role/history`): phiên bản, ngày, người lưu, tóm tắt thay đổi.
-import type { PartnerRole } from "@ai/contracts";
+import type { PartnerRole } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { SettingsGroup } from "~/shared/ui/settings-layout";

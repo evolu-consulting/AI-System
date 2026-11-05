@@ -5,7 +5,7 @@ import {
   TotpDisableRequestSchema,
   TotpEnableRequestSchema,
   TotpSetupRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/totp";
 import { Hono, type MiddlewareHandler } from "hono";
 import {
   type AppVars,

@@ -8,7 +8,7 @@ import type {
   QuotaEntry,
   TenantEl,
   TransferType,
-} from "@ai/contracts";
+} from "@ai/contracts/transfer";
 
 type SecretName = string;
 /** Snapshot DB ở dạng phần tử file; `secrets` = mọi tên secret đang có (không giá trị). */

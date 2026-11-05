@@ -1,6 +1,6 @@
 // HD7-FR-12 · S05: khối "Ghi việc với {tên} · khách hàng/nhà cung cấp" cuối trang HĐ đã duyệt — port `ContractPage.tsx:163-181`.
 // HĐ chưa biết đối tác ⇒ không hiện.
-import type { ContractStatus } from "@ai/contracts";
+import type { ContractStatus } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";

@@ -1,5 +1,5 @@
 // V2-I · DT-05 · ghi chú về đối tác: người viết + ngày, thêm / xoá (người viết hoặc quản lý). Dòng lưu từ "Tìm trên internet" có nhãn nguồn.
-import type { PartnerNote } from "@ai/contracts";
+import type { PartnerNote } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { confirmDialog } from "~/components/shared/dialog-bus";

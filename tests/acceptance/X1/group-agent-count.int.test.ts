@@ -2,7 +2,7 @@
 // DB qc (createM3Env; bảng stub `hub.agent_grants` của migrations-dev, admin_rw có SELECT). Grant dựng bằng owner SQL.
 // Mỗi `it` tự dựng lại dữ liệu (beforeEach reset3 + xoá grant).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { GroupListResponseSchema, GroupSchema } from "@ai/contracts";
+import { GroupListResponseSchema, GroupSchema } from "@ai/contracts/groups";
 import { callerOf, createM3Env, ID3, type M3Env, TENANT_ID, USER_ID } from "../M3/_fixtures";
 
 let env: M3Env;

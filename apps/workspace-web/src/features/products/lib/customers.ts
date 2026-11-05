@@ -1,6 +1,6 @@
 // V2-H · tab "Khách đang dùng" (mockup NITI `custPanel`): nút lọc Tất cả / Hết hạn / Sắp hết hạn / Còn hạn kèm số, nhãn hạn
 // "còn n ngày" / "đã hết n ngày", sắc thái trạng thái, khi nào hiện "Nhắc gia hạn". Thuần (máy chủ đã phân loại + sắp xếp).
-import type { ServiceCustomer, ServiceCustomerStatus } from "@ai/contracts";
+import type { ServiceCustomer, ServiceCustomerStatus } from "@ai/contracts/pack-contracts";
 import type { TagTone } from "~/components/shared/tag";
 
 export type CustomerFilter = ServiceCustomerStatus | "all";

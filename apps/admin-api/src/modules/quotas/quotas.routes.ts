@@ -1,6 +1,6 @@
 // ADM-FR-40 · /admin/tenants/:id/quotas (plan-contract §2.1). GET: platform_admin; tenant_admin chỉ tenant mình (tenant
 // khác → 404 như không tồn tại, RLS là lớp thứ hai). PUT: chỉ platform_admin. Mount TRƯỚC tenantsRoutes (chỉ-platform).
-import { QuotaSetRequestSchema } from "@ai/contracts";
+import { QuotaSetRequestSchema } from "@ai/contracts/quotas";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson } from "../../lib/http";

@@ -1,7 +1,7 @@
 // HUB-FR-72 · H4a-R14 · phiên Studio: token chỉ trong bộ nhớ; tải trang refresh cookie 1 lần; 401 giữa chừng → refresh 1 lần,
 // hỏng → `expired`; đăng xuất xoá phiên. (plan-frontend D5)
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
-import type { TokenGrant } from "@ai/contracts";
+import type { TokenGrant } from "@ai/contracts/auth";
 import { api } from "../http";
 import { canRefresh, session } from "./session";
 

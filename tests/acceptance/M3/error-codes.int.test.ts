@@ -4,10 +4,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test"
 import {
   API_ERRORS,
   type ErrorCode,
-  GroupVersionConflictDetailsSchema,
   InvalidReferenceDetailsSchema,
   NotEntitledDetailsSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/common";
+import { GroupVersionConflictDetailsSchema } from "@ai/contracts/version-conflict";
 import {
   betaId,
   callerOf,

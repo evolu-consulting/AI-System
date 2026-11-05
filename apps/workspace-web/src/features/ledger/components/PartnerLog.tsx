@@ -1,7 +1,7 @@
 // HD7-FR-04…08 · HD7-FR-12 · "+ Ghi việc" với một đối tác — port `mgmt-app/web/src/pages/partners/PartnerLog.tsx:46-121`: lịch
 // thanh toán (các đợt chưa xong), ghi việc khác, sổ đối tác "Đã ghi gần đây" (gồm dòng Quá hạn do hệ thống ghi, gạch dòng đã huỷ).
 // Trên trang HĐ (`contractId`) chỉ đợt của HĐ đó. Viewer không thấy nút ghi.
-import type { PartnerEvent, PartnerRole } from "@ai/contracts";
+import type { PartnerEvent, PartnerRole } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { ErrorLine, Loading } from "~/components/shared/states";

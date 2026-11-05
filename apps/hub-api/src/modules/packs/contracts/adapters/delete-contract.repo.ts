@@ -1,7 +1,7 @@
 // V2-M · xoá HĐ: câu SQL văn bản cố định, lọc `tenant_id` tường minh ngoài RLS. Xem trước = MỘT câu (HĐ + phụ lục); xoá =
 // `contracts.delete_contract` (SECURITY INVOKER, migration 0035) + `reverseContractStock` (đảo kho). HĐ không thấy (M1) / tenant
 // khác ⇒ null (404).
-import type { DeleteImpact } from "@ai/contracts";
+import type { DeleteImpact } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { DeleteContractRepo } from "../application/delete-contract.usecase";

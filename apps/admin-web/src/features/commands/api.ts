@@ -1,17 +1,16 @@
 // ADM-FR-20, ADM-FR-21, ADM-FR-22, ADM-FR-24 · gọi API /admin/commands* (nơi duy nhất) dưới dạng hook TanStack Query.
 // Danh sách chọn Feature/Workflow (≤ 200) cũng gọi ở đây vì chỉ Commands dùng.
+
+import type { CommandTestRequest, CommandTestResponse } from "@ai/contracts/command-test";
 import type {
   Command,
   CommandAccessResponse,
   CommandCreateRequest,
   CommandListResponse,
-  CommandTestRequest,
-  CommandTestResponse,
   CommandUpdateRequest,
-  FeatureListResponse,
-  Workflow,
-  WorkflowListResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/commands";
+import type { FeatureListResponse } from "@ai/contracts/features";
+import type { Workflow, WorkflowListResponse } from "@ai/contracts/workflows";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 

@@ -3,7 +3,7 @@
 // mang `unavailable` (UI hiện lý do), PUT chọn def đó ⇒ 422 `ROUTING_PROCESS_UNAVAILABLE`, launch ⇒ `FLOW_ROUTE_UNAVAILABLE`.
 // Hono thật + DB thật (`hub_api`), user giả qua header.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import { groups, members, tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";

@@ -4,7 +4,7 @@
 //                                  `side_effect: true` ⇒ stage `real_action` (người duyệt bước trước cấp phép). Hoàn tất ký → hook gói bắn `esign.completed`.
 //   contracts-obligation-remind  — chuông nhắc nghĩa vụ cho người bắt đầu run (idempotent theo HĐ).
 // Chỉ chạm HĐ mà người bắt đầu thấy được (RLS `PackUow.tenant`); tenant khác ⇒ không thấy. Không log nội dung HĐ.
-import type { ESignSignerIn } from "@ai/contracts";
+import type { ESignSignerIn } from "@ai/contracts/pack-contracts";
 import type { NotifyTxRepos } from "../../kit/application/notify";
 import type {
   PackToolArgs,

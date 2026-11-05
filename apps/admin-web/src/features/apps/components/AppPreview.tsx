@@ -1,6 +1,6 @@
 // CR-118 · cr118-app-config · "Xem trước": chọn công ty (tuỳ chọn) · vai · bản đang lưu/bản nháp, rồi hiện PreviewPanel. Dùng ở tab Xem trước
 // (chọn công ty) và trong ngăn của tab Công ty (công ty đã chọn, có bản nháp chưa lưu).
-import { type AppManifest, PREVIEW_ROLES, type PreviewRole } from "@ai/contracts";
+import { type AppManifest, PREVIEW_ROLES, type PreviewRole } from "@ai/contracts/app-manifest";
 import { useTranslation } from "react-i18next";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";

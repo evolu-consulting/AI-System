@@ -1,6 +1,6 @@
 // CR-101 DOC-model: phần `doc` của chi tiết HĐ (json SQL → DTO). Thuần. HĐ NT ⇒ tổng hợp (giai đoạn theo hiệu lực, giá trị = Σ con,
 // % hạn mức) + con (cảnh báo ngày ngoài hiệu lực); con ⇒ tham chiếu cha hoặc `{restricted:true}` khi RLS không cho thấy cha.
-import type { ContractDoc, DocType, FrameRef } from "@ai/contracts";
+import type { ContractDoc, DocType, FrameRef } from "@ai/contracts/pack-contracts";
 import { dateOutsideFrame, frameSummary } from "../domain/doc-types.rules";
 
 export type DocRaw = {

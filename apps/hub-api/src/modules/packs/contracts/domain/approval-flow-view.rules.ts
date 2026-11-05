@@ -1,8 +1,8 @@
 // CR-118 · UW-FR-10/13 · ADR-0035 · luật thuần: thẻ duyệt HĐ hôm nay (`ContractApproval`, cả `mode=engine` lẫn máy cũ) ⇒
 // `FlowView` của khe `contracts.approval`. CHỈ chiếu dữ liệu đã có (không thêm quyết định): bước/trạng thái/hạn/người quyết giữ
 // y hệt thẻ; hành động suy từ `can_act` + `task_id` + `finalizes_on_approve` (luật quyền vẫn ở engine/máy trạng thái). Lớp 1.
+
 import type {
-  ContractApproval,
   FlowActionDef,
   FlowSkipCondSchema,
   FlowState,
@@ -11,7 +11,8 @@ import type {
   FlowSummaryItem,
   FlowTask,
   FlowView,
-} from "@ai/contracts";
+} from "@ai/contracts/flow";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import type { z } from "zod";
 
 export const APPROVAL_FLOW_SLOT = "contracts.approval";

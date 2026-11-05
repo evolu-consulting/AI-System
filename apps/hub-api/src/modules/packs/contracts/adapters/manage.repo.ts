@@ -1,7 +1,7 @@
 // gap-a1 · SQL trang chi tiết HĐ trong tx `PackUow` (role `contracts_rw`, RLS FORCE + luật thấy M1 theo `app.user_id`): lịch sử (dùng lại
 // `activityRepo.record`), giao người phụ trách, sửa hoa hồng %, lưu tóm tắt AI. Mỗi thao tác ≤ 3 câu SQL cố định; HĐ không thấy / tenant
 // khác ⇒ như không có.
-import type { HistoryItem } from "@ai/contracts";
+import type { HistoryItem } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { ManageRepo, SummarySource } from "../application/manage.usecase";

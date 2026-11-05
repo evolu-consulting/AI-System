@@ -1,7 +1,7 @@
 // ADM-FR-35, ADM-BR-12 · GET /admin/grants/matrix (M3-R09; test-plan I-MX). Số liệu: test-plan §3.
 // Mỗi `it` tự dựng lại dữ liệu (beforeEach reset), kể cả ca chỉ đọc: không `it` nào phụ thuộc `it` khác.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { GrantMatrixSchema } from "@ai/contracts";
+import { GrantMatrixSchema } from "@ai/contracts/grants";
 import {
   betaId,
   callerOf,

@@ -1,6 +1,6 @@
 // ADM-FR-52 · M4-R13 · Q7 · đồ nghề chung cho adapter khôi phục `<m>.restore.ts` (plan M4 §4.4): dựng lại request từ
 // snapshot `before` (qua zod request schema của module), kiểm `restoreCheck`, dịch lỗi trùng tên / tham chiếu mất.
-import type { AuditAction, AuditEntity } from "@ai/contracts";
+import type { AuditAction, AuditEntity } from "@ai/contracts/audit";
 import { commands, features, secrets, type Tx, workflows } from "@ai/db";
 import { inArray } from "drizzle-orm";
 import type { z } from "zod";

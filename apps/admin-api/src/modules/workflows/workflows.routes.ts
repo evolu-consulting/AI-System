@@ -1,11 +1,11 @@
 // ADM-FR-10, ADM-FR-11, ADM-FR-13, ADM-FR-14, ADM-FR-15 · /admin/workflows* (spec M2 §3). Chỉ platform_admin.
 // Không có route grant/quyền (BR-13), "Kiểm tra kết nối" hay "Lấy schema từ Dify" (A8).
+import { DifyRunsQuerySchema } from "@ai/contracts/workflow-runs";
 import {
-  DifyRunsQuerySchema,
   WorkflowCreateRequestSchema,
   WorkflowListQuerySchema,
   WorkflowUpdateRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/workflows";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";

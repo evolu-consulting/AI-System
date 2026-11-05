@@ -1,7 +1,7 @@
 // CR-118 N3 · UW-FR-05 · ảnh cấu hình đổi (LISTEN `config_changed`/`hub_config_changed` → ConfigCache nạp xong) ⇒ đẩy
 // `event: config.changed` tới phiên `/me/stream` đang mở trên instance này của tenant bị chạm (null = mọi tenant). Gộp các
 // lần đổi trong cùng một lượt microtask thành một frame; web refetch `/pack/me` (ETag ⇒ 304 nếu lát cắt của user không đổi).
-import { ME_STREAM_CONFIG_CHANGED } from "@ai/contracts";
+import { ME_STREAM_CONFIG_CHANGED } from "@ai/contracts/capabilities";
 import type { ConfigChange } from "../config/config.service";
 
 type ChangeSource = { onChange(fn: (c: ConfigChange) => void): () => void };

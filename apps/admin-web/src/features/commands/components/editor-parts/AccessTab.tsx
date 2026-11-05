@@ -1,5 +1,5 @@
 // ADM-FR-24 · M2-R23, M3-R14 · tab "Ai dùng được": bảng tenant dùng được command + group được cấp + số user thấy thật.
-import type { CommandAccessItem } from "@ai/contracts";
+import type { CommandAccessItem } from "@ai/contracts/commands";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";

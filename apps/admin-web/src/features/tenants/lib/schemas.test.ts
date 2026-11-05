@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { TenantCreateRequestSchema, TenantKeySchema, UsernameSchema } from "@ai/contracts";
+import { TenantKeySchema, UsernameSchema } from "@ai/contracts/common";
+import { TenantCreateRequestSchema } from "@ai/contracts/tenants";
 import { slotsToValue, tenantCreateSchema, tenantInfoSchema } from "./schemas";
 
 const TZ = "Asia/Ho_Chi_Minh";

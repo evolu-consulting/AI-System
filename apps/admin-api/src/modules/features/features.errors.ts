@@ -1,5 +1,5 @@
 // ADM-FR-30, ADM-FR-31 · mã lỗi của module features (bảng mã: API_ERRORS, spec M2 §3) + dịch 23505 (plan §7).
-import type { ErrorCode } from "@ai/contracts";
+import type { ErrorCode } from "@ai/contracts/common";
 import { appError } from "../../lib/errors";
 import { uniqueViolation } from "../../lib/pg-errors";
 

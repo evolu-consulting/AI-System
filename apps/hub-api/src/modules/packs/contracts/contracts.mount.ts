@@ -2,7 +2,7 @@
 // route. `packs.mount.ts` quyết có mount (`deps.packs.contracts`, vắng ⇒ bật) và gắn dưới `/pack/contracts`; client FileBox
 // theo org (`t_<tenant>`) do `packs.mount.ts` tiêm (vắng ⇒ `/file` của HĐ có tệp ⇒ 5xx, fail-closed).
 
-import { CONTRACT_EXPORT_MAX_ROWS } from "@ai/contracts";
+import { CONTRACT_EXPORT_MAX_ROWS } from "@ai/contracts/pack-contracts";
 import type { Db } from "@ai/db";
 import { probe } from "@ai/db/probe";
 import type { Hono } from "hono";

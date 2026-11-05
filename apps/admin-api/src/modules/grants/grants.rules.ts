@@ -1,5 +1,6 @@
 // ADM-FR-32, ADM-FR-35, ADM-BR-12 · luật grant dạng hàm thuần (plan M3 §4; M3-R07…R09). Không import I/O.
-import { CORE_FEATURE_KEY, type ErrorCode, type MatrixRowState } from "@ai/contracts";
+import { CORE_FEATURE_KEY, type ErrorCode } from "@ai/contracts/common";
+import type { MatrixRowState } from "@ai/contracts/grants";
 
 export type RuleError = { code: ErrorCode; details?: unknown };
 export type PairKey = { featureId: string; groupId: string };

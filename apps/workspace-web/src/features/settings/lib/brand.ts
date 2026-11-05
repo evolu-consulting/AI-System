@@ -1,7 +1,7 @@
 // V2-L · CD-01: nhận diện công ty áp lên cả app — 6 màu chủ đạo (bảng của mockup NITI), giao diện, tên + logo. Kho nhỏ (useSyncExternalStore):
 // `saved` = đã lưu ở server; `preview` = bản nháp của hộp thoại đang mở (đổi tên/màu/giao diện là sidebar, menu, nút đổi NGAY; đóng
 // hộp thoại mà chưa lưu ⇒ trở về `saved`). Thuần ngoài phần DOM (`applyBrandDom`).
-import type { CompanyAccent, CompanyTheme } from "@ai/contracts";
+import type { CompanyAccent, CompanyTheme } from "@ai/contracts/pack-contracts";
 import { useSyncExternalStore } from "react";
 
 export type Brand = {

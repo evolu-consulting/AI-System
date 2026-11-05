@@ -1,5 +1,5 @@
 // ADM-FR-30, ADM-FR-31, ADM-FR-33, ADM-FR-34, ADM-BR-10, ADM-BR-12 · luật thuần features (plan M2 §4). Không import I/O.
-import { CORE_FEATURE_KEY as CORE, type ErrorCode, type FeatureStatus } from "@ai/contracts";
+import { CORE_FEATURE_KEY as CORE, type ErrorCode, type FeatureStatus } from "@ai/contracts/common";
 import { sameIdSet, sameJson } from "../../lib/json";
 
 export type RuleError = { code: ErrorCode; details?: unknown };

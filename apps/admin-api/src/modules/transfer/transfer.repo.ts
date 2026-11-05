@@ -1,7 +1,7 @@
 // ADM-FR-54 · M4-R14 · AC-A06 · đọc snapshot cấu hình ở dạng phần tử file (plan-cd §3.2, §8.1). Chỉ đọc; người gọi mở
 // tx `repeatable read, read only` (một snapshot). Secret: chỉ cột `name` (admin_rw không có quyền ciphertext/iv).
 // Bỏ tenant `platform`; grant chỉ cho group. `FROM` dùng chung cho SELECT và COUNT → meta đếm đúng tập export.
-import type { ConfigFileBody, TransferType } from "@ai/contracts";
+import type { ConfigFileBody, TransferType } from "@ai/contracts/transfer";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { validationError } from "../../lib/http";

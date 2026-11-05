@@ -1,6 +1,6 @@
 // Khối "Giá bán & lãi" của tab "Nhà cung cấp & giá": giá bán gần đây từ HĐ bán đã xác nhận, giá vốn tham chiếu, lãi/đơn vị.
 // Số liệu do máy chủ tính (`SupplierOverviewOut.pricing`); không có nguồn mua ⇒ gợi ý "dịch vụ tự làm?".
-import type { ProductPricing } from "@ai/contracts";
+import type { ProductPricing } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";

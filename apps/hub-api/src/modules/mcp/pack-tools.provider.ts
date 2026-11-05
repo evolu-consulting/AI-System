@@ -1,7 +1,7 @@
 // N2-FR-03 · N2-D03 · N2-AC09 · ngoại lệ CR-087 của HUB-BR-12: tool của gói trong `/mcp` (không bọc Dify). Liệt kê/gọi khi
 // khoá ∈ `payload.mcp.tools` của job ∧ gói bật cho tenant ∧ user của job có quyền `read` gói ∧ tool KHÔNG side_effect (gói
 // không có cổng xác nhận ⇒ hành động thật chỉ qua stage `real_action` sau duyệt). Chạy bằng danh tính user + tenant của job.
-import type { WorkflowInput } from "@ai/contracts";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import type { PackToolArgs, PackToolCatalog } from "../packs/kit/application/pack-tools.ports";
 import {
   type McpToolDef,

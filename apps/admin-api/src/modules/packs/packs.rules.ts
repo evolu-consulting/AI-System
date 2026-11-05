@@ -9,7 +9,7 @@ import {
   type PackState,
   packFeatureKey,
   packGroupKey,
-} from "@ai/contracts";
+} from "@ai/contracts/packs";
 
 /** Nhãn hiển thị của gói (chỉ tên hiển thị; khoá nội bộ không đổi). Gói lạ ⇒ dùng chính khoá gói. */
 const PACK_LABEL: Record<string, { vi: string; en: string }> = {

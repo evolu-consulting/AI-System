@@ -1,6 +1,6 @@
 // HUB-FR-68 · PC2-R10 · validate form khoá nguồn phía client. Thông điệp là KEY i18n (`process.sources.credential.err.*`);
 // luật khớp contract H4b-1 (`HUB_SECRET_NAME_RE`, giá trị 8–2048 đơn vị UTF-16 KHÔNG trim). Hàm thuần, test cạnh file.
-import { SECRET_VALUE_MAX, SECRET_VALUE_MIN } from "@ai/contracts";
+import { SECRET_VALUE_MAX, SECRET_VALUE_MIN } from "@ai/contracts/common";
 import { HUB_SECRET_NAME_RE } from "@ai/contracts/hub-admin";
 
 const P = "process.sources.credential.err";

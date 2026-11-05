@@ -1,6 +1,6 @@
 // ADM-FR-35 · M3-R08, R09 · ma trận: ô tick theo trạng thái hàng, nháp chênh lệch, tick hàng/cột (tri-state), batch ≤ 200.
 import { describe, expect, test } from "bun:test";
-import type { MatrixFeature, MatrixGroup } from "@ai/contracts";
+import type { MatrixFeature, MatrixGroup } from "@ai/contracts/grants";
 import {
   cellChecked,
   cellKey,

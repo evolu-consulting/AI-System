@@ -1,6 +1,6 @@
 // GAP-D2 · #23: hộp "Thêm công ty" ở trang Đối tác — gõ MST ⇒ máy chủ tra Cục Thuế (CHỈ gửi MST) rồi lưu vào danh bạ công ty; hiện
 // tên/địa chỉ/trạng thái theo Cục Thuế. Cục Thuế chưa tra được ⇒ mời nhập tên (và địa chỉ) để lưu trước, sau tra lại được.
-import type { Company } from "@ai/contracts";
+import type { Company } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

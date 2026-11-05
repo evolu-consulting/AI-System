@@ -1,7 +1,8 @@
 // ADM-FR-01, ADM-BR-05, ADM-BR-09, ADM-NFR-07 · xác thực Bearer + scope RLS (plan M1 §5 "Middleware").
 // Đọc lại user từ DB mỗi request: khoá/hạ role có hiệu lực ngay ở Admin. Scope `platform` chỉ khi role trong DB
 // là platform_admin VÀ thuộc tenant `platform` — claim `role` trong token không bao giờ được tin.
-import type { Role, UserKind } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
+import type { UserKind } from "@ai/contracts/user-kind";
 import { type Db, type DbScope, tenants, users, withScope } from "@ai/db";
 import { and, eq } from "drizzle-orm";
 import type { Context, MiddlewareHandler } from "hono";

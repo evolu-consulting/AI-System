@@ -7,7 +7,7 @@ import {
   TRANSFER_TYPES,
   type TransferType,
   type WorkflowEl,
-} from "@ai/contracts";
+} from "@ai/contracts/transfer";
 import { type Snapshot, sortedEls, sortStrs } from "./transfer.norm";
 
 export {

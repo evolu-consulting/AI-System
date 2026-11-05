@@ -6,7 +6,7 @@ import type {
   ProductGroup,
   ProductLink,
   ProductOut,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { type LineState, NEW_PRODUCT, named } from "~/features/contract-form/lib/form-model";
 
 export type LinkChoice = {

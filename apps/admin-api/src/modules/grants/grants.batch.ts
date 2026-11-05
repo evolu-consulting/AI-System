@@ -3,7 +3,7 @@
 // SHARE → lock pass mọi cặp (thêm ∪ bớt) → xoá theo TOÀN BỘ `remove` → chèn `add ∖ existing` sắp `comparePairs` → config_meta.
 // Không early-return sau lock pass (readiness M3 lần 2): số đếm lấy từ `returning`, đúng cả khi hàng vừa được tx khác
 // commit trong lúc chờ khoá (READ COMMITTED).
-import type { GrantBatchRequest, GrantBatchResponse, GrantKey } from "@ai/contracts";
+import type { GrantBatchRequest, GrantBatchResponse, GrantKey } from "@ai/contracts/grants";
 import type { Tx } from "@ai/db";
 import { configWrite } from "../../lib/config/config-write";
 import { appError } from "../../lib/errors";

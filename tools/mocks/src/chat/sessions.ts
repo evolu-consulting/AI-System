@@ -2,7 +2,7 @@
 // Access = JWT EdDSA (jose), cặp khoá Ed25519 sinh khi tạo; claims như Admin + `jti` = số thứ tự cấp.
 // Thu hồi access theo MỐC SỐ THỨ TỰ (không theo `iat` giây): token cấp cùng giây trước/sau mốc vẫn phân biệt được.
 import { randomBytes, randomUUID } from "node:crypto";
-import { ACCESS_TOKEN_EXPIRES_IN } from "@ai/contracts";
+import { ACCESS_TOKEN_EXPIRES_IN } from "@ai/contracts/auth";
 import { generateKeyPair, jwtVerify, SignJWT } from "jose";
 
 const ALG = "EdDSA";

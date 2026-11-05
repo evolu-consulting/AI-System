@@ -1,6 +1,6 @@
 // V2-F · BA 5.5b: kết quả gợi ý SP của một dòng HĐ (`POST /products/match`) → phần sửa dòng: gợi ý đầu tiên (kèm thành phần), hoặc đề xuất
 // tạo SP mới từ tên dòng; không gợi ý gì ⇒ null (người dùng tự chọn). Thuần.
-import type { ContractDeal, ProductMatchOut } from "@ai/contracts";
+import type { ContractDeal, ProductMatchOut } from "@ai/contracts/pack-contracts";
 import { type LineState, NEW_PRODUCT } from "./form-model";
 
 export function suggestionPatch(r: ProductMatchOut, deal: ContractDeal): Partial<LineState> | null {

@@ -1,8 +1,9 @@
 // HUB-FR-44 · HUB-FR-75 · H2c-R01, R13 · `POST /attachments` (thân thô + `X-Filename`), `GET /attachments/:id`,
 // `GET /attachments/:id/content` (plan §2.4). JWT ở gốc (`PROTECTED_PREFIXES`, 401 trước 404). Route mỏng: đọc header/
 // tham số → service. `:id` không phải uuid ⇒ 404 giống hệt id không có.
-import { UuidSchema } from "@ai/contracts";
+
 import { FILENAME_HEADER } from "@ai/contracts/chat";
+import { UuidSchema } from "@ai/contracts/common";
 import { type Context, Hono } from "hono";
 import type { AuthVars } from "../../lib/auth.middleware";
 import { blobResponse } from "../../lib/blob-body";

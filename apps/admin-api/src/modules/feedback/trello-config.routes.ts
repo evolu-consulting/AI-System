@@ -1,6 +1,6 @@
 // trello-config-ui · `/admin/integrations/trello*` — chỉ platform_admin (kiểm role trước khi đọc body).
 // Lỗi VALIDATION_ERROR dùng message tĩnh theo `code` (như /admin/secrets): không bao giờ echo input (có thể là key/token).
-import { TrelloConfigSaveRequestSchema } from "@ai/contracts";
+import { TrelloConfigSaveRequestSchema } from "@ai/contracts/trello-config";
 import { Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { readJson, validationError } from "../../lib/http";

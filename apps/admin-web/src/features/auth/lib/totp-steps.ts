@@ -1,6 +1,6 @@
 // ADM-FR-08 · M4-R16 · plan-frontend §3.6 · máy trạng thái trang 2FA: idle → reauth → scan → verify → backup → idle.
 // Secret và mã dự phòng chỉ nằm trong state này (bộ nhớ, D11); về `idle` là xoá.
-import type { TotpSetupResponse } from "@ai/contracts";
+import type { TotpSetupResponse } from "@ai/contracts/totp";
 
 export type TotpSetup = Pick<TotpSetupResponse, "secret" | "otpauth_url" | "qr_svg">;
 

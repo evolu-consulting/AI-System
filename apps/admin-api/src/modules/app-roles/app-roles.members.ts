@@ -1,7 +1,7 @@
 // CR-112 · ADM-FR-82 · ADM-BR-16: gán/gỡ người vào vai = thành viên Group của vai. Đối tác (user `external`) không bao giờ vào
 // vai — có một người ngoài trong lô ⇒ 422 EXTERNAL_USER_NOT_ALLOWED cả lô (trigger 0028 là lưới cuối). Vai/tenant khác ⇒ 404.
 // Khoá: vai FOR SHARE → chèn group_members theo user_id tăng → config_meta (cùng thứ tự groups.members).
-import type { AppRoleMembersAddRequest, AppRoleMembersAddResponse } from "@ai/contracts";
+import type { AppRoleMembersAddRequest, AppRoleMembersAddResponse } from "@ai/contracts/app-roles";
 import { sql } from "drizzle-orm";
 import { configWrite } from "../../lib/config/config-write";
 import { appError, extOrgError } from "../../lib/errors";

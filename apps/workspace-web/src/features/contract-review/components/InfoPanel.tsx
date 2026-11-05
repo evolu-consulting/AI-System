@@ -2,7 +2,7 @@
 // (không đổi sau khi lưu), hoa hồng khóa; ô agent chưa chắc có nhãn + trích dẫn. Ở bước xác nhận Lưu/Hủy nằm trên thanh dính, còn lại có
 // nút "Lưu thay đổi" ngay đầu khối.
 // V2-G: bước xác nhận sau AI đọc (`confirm`) — loại HĐ + hoa hồng sửa được, ô AI chưa chắc (và loại HĐ) tô vàng, ô bắt buộc viền đỏ.
-import type { ContractDeal, ContractDetail } from "@ai/contracts";
+import type { ContractDeal, ContractDetail } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { DealTiles } from "~/features/contract-form/components/DealTiles";

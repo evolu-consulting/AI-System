@@ -3,7 +3,8 @@
 
 import { expect } from "bun:test";
 import { createHash, generateKeyPairSync } from "node:crypto";
-import { API_ERRORS, type ErrorCode, ErrorResponseSchema } from "@ai/contracts";
+import { API_ERRORS, type ErrorCode } from "@ai/contracts/common";
+import { ErrorResponseSchema } from "@ai/contracts/errors";
 import { createDb, type Db } from "@ai/db";
 import { cloneMigratedTestDb, migrateAdminTest } from "@ai/db/test-db";
 import { decodeJwt, decodeProtectedHeader, importPKCS8, SignJWT } from "jose";

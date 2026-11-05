@@ -5,7 +5,7 @@ import {
   ExtractionOutputSchema,
   ItemProductRequestSchema,
   ReviewSaveRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { buildExtractPrompt } from "../domain/extract-prompt.rules";
 import { extractionSchemaText, parseExtraction } from "./extraction-agent";
 

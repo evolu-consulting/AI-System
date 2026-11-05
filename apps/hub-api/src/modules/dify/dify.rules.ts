@@ -1,7 +1,8 @@
 // HUB-FR-89, HUB-FR-90 · H2a-R09–R11, R14, R15, R17, R20 · luật thuần client Dify (plan-rules, plan-errors §2).
 // Bảng lỗi dùng chung với Runtime Python (RT3).
-import type { WorkflowInput } from "@ai/contracts";
+
 import type { DifyAppType } from "@ai/contracts/hub";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import type { WorkflowInputValue } from "../commands/catalog.types";
 
 export type DifyRunBodyInput = {

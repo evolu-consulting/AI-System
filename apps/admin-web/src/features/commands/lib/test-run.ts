@@ -1,5 +1,5 @@
 // ADM-FR-23 · X1 F4 · body "Chạy thử" từ BẢN NHÁP form (không lưu): `command` = phần chạy được của lệnh, ngữ cảnh tuỳ chọn.
-import type { CommandTestRequest } from "@ai/contracts";
+import type { CommandTestRequest } from "@ai/contracts/command-test";
 import { TEST_RUN_TEXT_MAX } from "@ai/contracts/hub-internal";
 import { toRequestBody } from "./defaults";
 import type { CommandFormValues } from "./schemas";

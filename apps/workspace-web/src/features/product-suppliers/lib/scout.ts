@@ -1,6 +1,10 @@
 // price-scout · luật thuần của "Cấu hình dò giá" (không React): form chuỗi ⇄ cấu hình, danh sách phân tách bằng dấu phẩy/xuống dòng,
 // phần ghi đè so với mặc định nhóm, nhãn lượt dò đã dùng. Dùng chung tab NCC & giá của SP và mục Cài đặt › Dò giá thị trường.
-import type { PriceScoutConfig, PriceScoutOverride, PriceScoutUsage } from "@ai/contracts";
+import type {
+  PriceScoutConfig,
+  PriceScoutOverride,
+  PriceScoutUsage,
+} from "@ai/contracts/pack-contracts";
 
 export const LIST_MAX = 10;
 export const LIST_KEYS = [

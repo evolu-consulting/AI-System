@@ -1,5 +1,5 @@
 // ADM-FR-54 · M4-R14 · M4-R15 · M4-AC09/10 · tab Import (ms §8, artboard ImportPreview): Chọn file → Xem trước → Áp dụng.
-import { IMPORT_ITEM_TYPES, type ImportItem } from "@ai/contracts";
+import { IMPORT_ITEM_TYPES, type ImportItem } from "@ai/contracts/transfer";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";

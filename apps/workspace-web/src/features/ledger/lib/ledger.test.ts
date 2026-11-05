@@ -1,6 +1,6 @@
 // HD7-FR-12 · câu đọc dòng sổ như mgmt `PartnerLog.tsx::said` (dùng chuỗi vi thật), dòng quá hạn đã xử lý, 15 dòng gần nhất.
 import { describe, expect, test } from "bun:test";
-import type { PartnerEvent } from "@ai/contracts";
+import type { PartnerEvent } from "@ai/contracts/pack-contracts";
 import vi from "../../../../../../packages/i18n/locales/contracts/ledger.vi.json";
 import { answeredSet, lateBy, otherKinds, recentOf, said, voidable } from "./ledger";
 

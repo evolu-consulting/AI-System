@@ -1,6 +1,10 @@
 // HD-FR-07 · D-10: mapper hàng SQL → DTO (bigint chuỗi → số, giờ → ISO UTC, facet cắt ở trần + `truncated`) + literal mảng.
 import { describe, expect, it } from "bun:test";
-import { ContractDetailSchema, ContractFacetsSchema, ContractListRowSchema } from "@ai/contracts";
+import {
+  ContractDetailSchema,
+  ContractFacetsSchema,
+  ContractListRowSchema,
+} from "@ai/contracts/pack-contracts";
 import {
   type DetailRaw,
   type FacetsRaw,

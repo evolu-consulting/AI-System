@@ -1,6 +1,6 @@
 ﻿// tenant-owner · luật thuần của script tenant-owner-setup: đọc tham số, kế hoạch → dòng in, nội dung file thông tin đăng nhập.
 // Không đụng DB/file. Mật khẩu chỉ xuất hiện trong `credentialsText` (ghi ra file 600), không bao giờ trong dòng in.
-import { DisplayNameSchema, TenantKeySchema, UsernameSchema } from "@ai/contracts";
+import { DisplayNameSchema, TenantKeySchema, UsernameSchema } from "@ai/contracts/common";
 
 /** Tenant không bao giờ được tạo chủ bằng script này. */
 export const REFUSED_TENANTS: readonly string[] = ["platform", "demo"];

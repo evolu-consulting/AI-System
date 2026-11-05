@@ -1,7 +1,7 @@
 // HUB-FR-40 · H1-R03 · parse request ở biên bằng zod (C1 plan §2.4): VALIDATION_ERROR có `details.issues`;
 // `:id` không phải uuid → NOT_FOUND giống hệt id không tồn tại; `tenant_id`/`user_id` trong query bị bỏ (A7).
 // Cùng cách làm `apps/admin-api/src/lib/http.ts` (chép, không import chéo app).
-import { UuidSchema } from "@ai/contracts";
+import { UuidSchema } from "@ai/contracts/common";
 import type { Context } from "hono";
 import type { z } from "zod";
 import { appError } from "./errors";

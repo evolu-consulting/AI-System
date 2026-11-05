@@ -1,11 +1,7 @@
 // ADM-FR-10, ADM-FR-14, ADM-FR-15 · truy vấn admin.workflows (catalog toàn hệ thống, scope platform). Đếm command/agent
 // bằng subquery trong một câu cho cả trang (spec M2 §6). Từ `secrets` chỉ đọc `id`, `name` (quyền cột 0004).
-import {
-  type InputMap,
-  InputMapSchema,
-  InputSchemaSchema,
-  type WorkflowInput,
-} from "@ai/contracts";
+import { type InputMap, InputMapSchema } from "@ai/contracts/commands";
+import { InputSchemaSchema, type WorkflowInput } from "@ai/contracts/workflows";
 import { commands, secrets, type Tx, workflows } from "@ai/db";
 import { and, asc, count, eq, ilike, or, type SQL, sql } from "drizzle-orm";
 import { likeArg, outer, usernameOf } from "../../lib/sql";

@@ -1,14 +1,14 @@
 // ADM-FR-30, ADM-FR-33, ADM-FR-34 · gọi API /admin/features* (nơi duy nhất) dưới dạng hook TanStack Query.
+import type { CommandListResponse } from "@ai/contracts/commands";
 import type {
-  CommandListResponse,
   Entitlement,
   EntitlementListResponse,
   FeatureCreateRequest,
   FeatureDetail,
   FeatureListResponse,
   FeatureUpdateRequest,
-  TenantListResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/features";
+import type { TenantListResponse } from "@ai/contracts/tenants";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 

@@ -1,6 +1,6 @@
 // products-confirm · BA 5.5: lựa chọn ban đầu của hộp "Gắn sản phẩm" + thân gửi + khớp dòng form ↔ dòng đã lưu.
 import { describe, expect, test } from "bun:test";
-import type { ContractItem, ProductOut } from "@ai/contracts";
+import type { ContractItem, ProductOut } from "@ai/contracts/pack-contracts";
 import { EMPTY_LINE, NEW_PRODUCT } from "~/features/contract-form/lib/form-model";
 import { candidatesOf, incomplete, initialChoices, newLinksOfForm, toLinks } from "./links";
 

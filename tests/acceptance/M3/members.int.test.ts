@@ -1,7 +1,7 @@
 // ADM-FR-62, ADM-BR-09 · API thành viên group (M3-AC02; M3-R03, R05, R23; test-plan I-M).
 // Mỗi `it` tự dựng lại dữ liệu (beforeEach reset); không `it` nào đọc kết quả của `it` khác.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { GroupMemberListResponseSchema, GroupMembersAddResponseSchema } from "@ai/contracts";
+import { GroupMemberListResponseSchema, GroupMembersAddResponseSchema } from "@ai/contracts/groups";
 import {
   betaId,
   callerOf,

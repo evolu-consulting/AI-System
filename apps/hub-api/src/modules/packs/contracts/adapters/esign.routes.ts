@@ -15,7 +15,7 @@ import {
   ESignSettingsSchema,
   ESignSignUrlSchema,
   ESignVoidSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";

@@ -1,6 +1,6 @@
 // ADM-NFR-06 · seed idempotent (spec M1 §4, M1-R20/R21): tenant `platform`, feature `core`, platform_admin đầu tiên.
 // CLI: `bun run db:seed` (owner DATABASE_URL). Lỗi chỉ nêu tên biến, không in giá trị.
-import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN, USERNAME_RE } from "@ai/contracts";
+import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN, USERNAME_RE } from "@ai/contracts/common";
 import postgres from "postgres";
 import { z } from "zod";
 import { AppEnvSchema } from "./env";

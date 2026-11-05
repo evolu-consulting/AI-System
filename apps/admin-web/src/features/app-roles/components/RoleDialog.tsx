@@ -1,5 +1,5 @@
 // CR-112 · ADM-FR-80 · hộp thoại "Tạo vai" / "Sửa vai" (tên + mức). Chỉ ghi vào bản nháp; lưu thật ở nút Lưu của trang.
-import type { AppRoleLevel } from "@ai/contracts";
+import type { AppRoleLevel } from "@ai/contracts/app-roles";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";

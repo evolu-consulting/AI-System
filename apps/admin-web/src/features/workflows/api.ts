@@ -1,14 +1,14 @@
 // ADM-FR-10, ADM-FR-13, ADM-FR-14, ADM-FR-15 · gọi API /admin/workflows* (nơi duy nhất) dưới dạng hook TanStack Query.
+
+import type { SecretListResponse } from "@ai/contracts/secrets";
+import type { DifyRunsQuery, DifyRunsResponse } from "@ai/contracts/workflow-runs";
 import type {
-  DifyRunsQuery,
-  DifyRunsResponse,
-  SecretListResponse,
   Workflow,
   WorkflowCreateRequest,
   WorkflowListResponse,
   WorkflowUpdateRequest,
   WorkflowUsages,
-} from "@ai/contracts";
+} from "@ai/contracts/workflows";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 

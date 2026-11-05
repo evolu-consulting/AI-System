@@ -1,5 +1,5 @@
 // W1 · "Mua hàng": dữ liệu + thao tác cho component (T-DEP-5: component chỉ trình bày, gọi API qua hook).
-import type { SaleLine, SourceRef } from "@ai/contracts";
+import type { SaleLine, SourceRef } from "@ai/contracts/pack-contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { chooseSource, fetchSourcing, type SourcingParams, sourcingKeys } from "../api";
 import { parseRef } from "../lib/sourcing";

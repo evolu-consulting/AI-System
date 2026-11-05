@@ -4,7 +4,7 @@ import {
   UserCreateRequestSchema,
   UserListQuerySchema,
   UserUpdateRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/users";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";

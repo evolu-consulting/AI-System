@@ -3,7 +3,7 @@
 //  - `v2e`: 5 ô nhóm SP × vai + Mức & đánh giá (`ScoringV2EPane`); ẩn cấu hình điểm HD8 và chỉnh tay ±10 (máy chủ trả 410).
 // Quản lý (`owner`) thấy thêm màn xem trước "N đối tác đổi mức" (chỉ đọc). Chỉ chủ sở hữu (contracts-owner) lưu được.
 
-import type { PartnerRole } from "@ai/contracts";
+import type { PartnerRole } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useEngine } from "~/features/partners/hooks/use-rep-v2e";

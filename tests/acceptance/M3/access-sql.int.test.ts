@@ -4,7 +4,7 @@
 // locked_by_tenant × tenant.active × command.enabled × workflow.enabled = 32 (feature on + entitled + grant group).
 // Chỉ đọc sau khi dựng một lần (beforeAll). Test-plan I-SQL; M3-AC04.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { EffectiveAccessSchema } from "@ai/contracts";
+import { EffectiveAccessSchema } from "@ai/contracts/access";
 import { callerOf, createM3Env, hubVisible, ID, type M3Env } from "./_fixtures";
 import { loadAccessRules } from "./_modules";
 

@@ -1,5 +1,9 @@
 // app-catalog · hộp thoại Thêm/Sửa ứng dụng (state điều khiển thuần; lỗi 409/400 từ server hiện dưới form).
-import { APP_AUDIENCES, type AppCatalogItem, type AppCreateRequest } from "@ai/contracts";
+import {
+  APP_AUDIENCES,
+  type AppCatalogItem,
+  type AppCreateRequest,
+} from "@ai/contracts/app-catalog";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";

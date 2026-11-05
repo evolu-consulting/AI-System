@@ -1,7 +1,7 @@
 // esign-sweep2 · luật thuần ô bước Ký số trên thẻ: hạn ký = `esign_at + due_h` (chỉ khi đã gửi chờ ký), quá hạn theo giờ server,
 // "đã nhắc" chỉ tính lần nhắc của lần gửi hiện tại; schema thẻ nhận trường mới (tuỳ chọn).
 import { describe, expect, it } from "bun:test";
-import { ContractApprovalSchema } from "@ai/contracts";
+import { ContractApprovalSchema } from "@ai/contracts/pack-contracts";
 import type { FlowEsignStep } from "./approval-flow.types";
 import { esignCard, esignDue } from "./approval-flow-esign.rules";
 

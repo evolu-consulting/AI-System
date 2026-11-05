@@ -1,7 +1,7 @@
 // ADM-FR-24, ADM-BR-10, ADM-BR-12 · GET /admin/commands/:id/access — tab "Ai dùng được", phần tenant
 // (test-plan A; M2-R22, M2-R23, M2-R24). Dữ liệu: fixture đầy đủ (test-plan §3).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { CommandAccessResponseSchema } from "@ai/contracts";
+import { CommandAccessResponseSchema } from "@ai/contracts/commands";
 import { ALL_CATALOG, ID } from "./_data";
 import { createM2Env, expectErr, type Json, type M2Env, type Res, TENANT_ID } from "./_fixtures";
 

@@ -1,5 +1,5 @@
 // CR-118 · cr118-app-config · tab "Quy trình" của app: mỗi khe một thẻ (SlotCard). Dùng thư viện CR-105; chỉnh sửa mở trình soạn quy trình duy nhất.
-import type { AppSlotDecl } from "@ai/contracts";
+import type { AppSlotDecl } from "@ai/contracts/app-manifest";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { EmptyState } from "@/components/shared/states/EmptyState";

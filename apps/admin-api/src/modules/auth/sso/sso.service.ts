@@ -2,7 +2,7 @@
 // mới riêng của app đích (cookie `ai_rt_<app>`). Mọi lỗi đổi mã = UNAUTHORIZED (không lộ lý do: hết hạn / dùng lại /
 // sai app / sai công ty / phiên nguồn đã thu hồi / tài khoản bị khoá đều như nhau).
 import { createHash, randomBytes } from "node:crypto";
-import { SSO_CODE_TTL_S, type SsoCodeResponse, type WebApp } from "@ai/contracts";
+import { SSO_CODE_TTL_S, type SsoCodeResponse, type WebApp } from "@ai/contracts/auth";
 import { refreshTokens, type Tx, withScope } from "@ai/db";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import type { Actor } from "../../../lib/auth-middleware";

@@ -1,5 +1,5 @@
 // V2-I · truy vấn/ghi uy tín đối tác (chi tiết · cấu hình · đánh giá · lịch sử · hợp đồng · ghi chú · liên hệ · tìm internet).
-import type { PartnerWebLine } from "@ai/contracts";
+import type { PartnerWebLine } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {

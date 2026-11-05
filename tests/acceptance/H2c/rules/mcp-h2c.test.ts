@@ -1,8 +1,8 @@
 // HUB-FR-50 · H2c-R23 · P12 · K10 · MCP với file: mcpToolsFor(hasFiles), toolInputSchema(withFiles), fileArg,
 // TOOL_FILE_TEXT (test-plan H2c §1, cases §1.6 R35–R38; chữ ký plan-rules §5).
 import { describe, expect, it } from "bun:test";
-import type { WorkflowInput } from "@ai/contracts";
 import type { JobAttachment } from "@ai/contracts/hub";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import {
   fileArg,
   type McpToolsInput,

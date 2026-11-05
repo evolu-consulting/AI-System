@@ -1,6 +1,6 @@
 // sso-switch · `/sso#code=…&next=…`: mã một lần từ AI System (app switcher của chat-web) ⇒ phiên admin riêng (cookie
 // `ai_rt_admin`) ⇒ `next` hoặc trang chủ. Mã hỏng/hết hạn ⇒ form đăng nhập. Fragment xoá khỏi thanh địa chỉ ngay khi đọc.
-import type { TokenGrant } from "@ai/contracts";
+import type { TokenGrant } from "@ai/contracts/auth";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";

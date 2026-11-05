@@ -1,5 +1,5 @@
 // ADM-NFR-06, ADM-NFR-07, ADM-NFR-01, ADM-FR-50, ADM-FR-23 · env của admin-api (spec M0 §7, M1 §7, M2 §4). Lỗi chỉ nêu tên biến.
-import { dropEmptyEnv } from "@ai/contracts";
+import { dropEmptyEnv } from "@ai/contracts/env-source";
 import { z } from "zod";
 import { isMasterKeyB64 } from "../lib/secret-crypto";
 

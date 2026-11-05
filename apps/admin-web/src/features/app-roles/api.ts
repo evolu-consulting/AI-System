@@ -4,8 +4,8 @@ import type {
   AppRole,
   AppRoleListResponse,
   AppRoleMembersAddResponse,
-  UserListResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/app-roles";
+import type { UserListResponse } from "@ai/contracts/users";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 import type { OpsApi } from "./lib/staging";

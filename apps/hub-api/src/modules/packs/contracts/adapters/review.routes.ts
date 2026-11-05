@@ -11,7 +11,7 @@ import {
   PRODUCT_LINK_ERRORS,
   ProductLinksRequestSchema,
   ReviewSaveRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";

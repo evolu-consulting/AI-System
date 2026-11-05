@@ -1,5 +1,5 @@
 // CR-101 DOC-ui-frame · R10: nâng giao dịch thành hợp đồng + lịch sử sửa. Bearer + refresh do web-kit lo.
-import type { EditLogResponse, PromoteResponse } from "@ai/contracts";
+import type { EditLogResponse, PromoteResponse } from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/contracts";

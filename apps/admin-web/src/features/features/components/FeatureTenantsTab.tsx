@@ -1,5 +1,5 @@
 // ADM-FR-31 · M2-R22 · tab "Tenant": entitlement của feature (lưu ngay từng thao tác), cấp / thu hồi (Hoàn tác 5 s); `core` = "Mọi tenant".
-import type { Entitlement, FeatureDetail } from "@ai/contracts";
+import type { Entitlement, FeatureDetail } from "@ai/contracts/features";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";

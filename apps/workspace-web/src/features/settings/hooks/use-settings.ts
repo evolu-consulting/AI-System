@@ -1,5 +1,5 @@
 // V2-L · nạp 2 nguồn cài đặt (công ty · điểm kinh doanh) thành một trạng thái (đã lưu + mặc định) và áp nhận diện công ty lên cả app.
-import type { BizPreviewIn } from "@ai/contracts";
+import type { BizPreviewIn } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";

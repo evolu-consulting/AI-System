@@ -1,7 +1,7 @@
 // admin-sso-bounce · tái hiện: link "Cấu hình trong Sổ Hợp Tác" (màn Agents) mở thẳng URL app ⇒ Sổ Hợp Tác không có phiên ⇒ form
 // đăng nhập. Link phải mang mã SSO một lần như app switcher.
 import { describe, expect, test } from "bun:test";
-import type { MeApp } from "@ai/contracts";
+import type { MeApp } from "@ai/contracts/app-catalog";
 import { appOpenUrl } from "./open-app";
 
 const SO: MeApp = {

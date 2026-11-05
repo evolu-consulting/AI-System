@@ -1,6 +1,6 @@
 // ADM-FR-73 · AC-A15 · P-d2 (plan-frontend-d2 §12; mockup 02 C1–C5): tab "Tool quy trình" của chi tiết tenant — bật/tắt workflow nào
 // công ty gọi được ở giai đoạn "Gọi tool". Tab không có form ⇒ không UnsavedGuard. Nạp lười từ `TenantDetailPage`.
-import type { TenantDetail } from "@ai/contracts";
+import type { TenantDetail } from "@ai/contracts/tenants";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";

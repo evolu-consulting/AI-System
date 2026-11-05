@@ -1,6 +1,6 @@
 // V2-F · HD-01 · 5.5a · mockup `itemsEditor` (bản 2 hàng): bảng dòng hàng — tên trên HĐ, SL, đơn vị, đơn giá, thành tiền; dưới mỗi dòng
 // là chọn SP danh mục (`ProductPicker`). Gõ xong tên mà chưa chọn SP ⇒ gợi ý qua `POST /products/match` (V2-B).
-import type { ContractDeal, ProductOut } from "@ai/contracts";
+import type { ContractDeal, ProductOut } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import { useProductSuggest } from "../hooks/use-product-suggest";

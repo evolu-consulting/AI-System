@@ -1,5 +1,5 @@
 // ADM-FR-04 · hàng bộ lọc Users: chip trạng thái có số, Role, chip "Chưa đăng nhập", ô tìm. Mọi giá trị nằm trên URL.
-import type { ListCounts } from "@ai/contracts";
+import type { ListCounts } from "@ai/contracts/common";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FilterChips } from "@/components/shared/form/FilterChips";

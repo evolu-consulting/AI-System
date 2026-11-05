@@ -1,6 +1,6 @@
 // HD8-FR-03 · HD8-FR-04 · HD8-FR-05: câu GHI + đọc cấu hình của đối tác / điểm uy tín / báo giá — mỗi hàm MỘT câu văn bản cố định,
 // lọc `tenant_id` tường minh ngoài RLS. Đọc chấm điểm (một câu lớn) ở `partners-data.repo.ts`.
-import type { QuoteCreate } from "@ai/contracts";
+import type { QuoteCreate } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { PartyEv } from "../domain/partners.rules";

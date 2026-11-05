@@ -1,7 +1,7 @@
 // CR-118 · cr118-r1-fixes #3 · trigger brand công ty (pack-contracts 0073): đổi brand ⇒ `profile_version` +1 + NOTIFY
 // `profile_changed` (entity tenant, tenant_id) cùng transaction; `config_version` toàn cục giữ nguyên; cột khác ⇒ không bump.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { PROFILE_CHANNEL, ProfileChangedPayloadSchema } from "@ai/contracts";
+import { PROFILE_CHANNEL, ProfileChangedPayloadSchema } from "@ai/contracts/config";
 import { tenants } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 

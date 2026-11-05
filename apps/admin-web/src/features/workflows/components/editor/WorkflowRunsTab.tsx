@@ -1,6 +1,6 @@
 // dify-workflows · tab "Lịch sử chạy" của workflow (platform_admin): lọc tenant/trạng thái/ngày, bảng lượt chạy Dify, phân trang
 // server. Nạp khi mở tab. Không hiện inputs/app-key; thông báo lỗi do Hub đã che secret.
-import { DIFY_RUN_STATUSES } from "@ai/contracts";
+import { DIFY_RUN_STATUSES } from "@ai/contracts/workflow-runs";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pagination } from "@/components/shared/Pagination";

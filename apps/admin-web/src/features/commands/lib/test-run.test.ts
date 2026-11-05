@@ -1,7 +1,7 @@
 // ADM-FR-23 · X1 F4 · body "Chạy thử" từ bản nháp: chỉ phần chạy được, bỏ trường rỗng, confirm_side_effect khi xác nhận.
 
 import { describe, expect, test } from "bun:test";
-import { CommandTestRequestSchema } from "@ai/contracts";
+import { CommandTestRequestSchema } from "@ai/contracts/command-test";
 import { emptyCommandForm } from "./defaults";
 import type { CommandFormValues } from "./schemas";
 import { buildTestBody, emptyTestInput, pageUrlValid } from "./test-run";

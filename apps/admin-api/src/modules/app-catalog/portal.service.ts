@@ -1,6 +1,7 @@
 // portal-home · `GET /me/portal`, `PUT /me/default-app`, `PUT /me/tenant-default-app`. RLS lo cô lập tenant; ở đây chỉ ghi dòng của chính
 // người gọi (users.id = actor) và tenant của chính họ (tenants.id = actor.tenantId) — không nhận id từ client.
-import { type DefaultAppRequest, type PortalResponse, PROFILE_CHANNEL } from "@ai/contracts";
+import type { DefaultAppRequest, PortalResponse } from "@ai/contracts/app-catalog";
+import { PROFILE_CHANNEL } from "@ai/contracts/config";
 import { type Tx, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { type Actor, scopeOf } from "../../lib/auth-middleware";

@@ -1,7 +1,7 @@
 // CR-121 D-0 · danh mục khe `contracts.approval` (trường điều kiện + node) và luật điều kiện mở rộng: điều kiện cũ giữ nghĩa,
 // trường trống ⇒ bước vẫn chạy, nhóm lồng một cấp.
 import { describe, expect, it } from "bun:test";
-import { CONTRACT_DEALS, FLOW_COND_FIELDS } from "@ai/contracts";
+import { CONTRACT_DEALS, FLOW_COND_FIELDS } from "@ai/contracts/pack-contracts";
 import { slotFields, slotNodes } from "../../kit/application/slot.ports";
 import { approvalSlotSpec } from "../approval.mount";
 import { condHasData, condHolds, type FlowFacts, whenHolds } from "./approval-flow.rules";

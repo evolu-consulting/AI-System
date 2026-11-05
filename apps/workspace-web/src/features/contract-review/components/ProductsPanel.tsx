@@ -1,7 +1,7 @@
 // V2-F · HD-04 · BA 5.7 · mockup `itemsView`: khối "Sản phẩm" của HĐ đã lưu — nhãn Nhập kho (Mua) / Xuất kho (Bán) / Không ảnh hưởng kho
 // (Giới thiệu), bảng dòng + thành tiền + tổng.
 // V2-G: mỗi dòng có chọn SP danh mục (gắn / gắn lại) → `PUT /contracts/:id/items/:itemId/product`; dòng đã phát sinh kho ⇒ 409 `ITEM_LOCKED`.
-import type { ContractDeal, ContractItem } from "@ai/contracts";
+import type { ContractDeal, ContractItem } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";

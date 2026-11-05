@@ -1,6 +1,8 @@
 // ADM-FR-54 · ADM-BR-04 · M4-R15 · bước 3 của Import: giá trị secret còn thiếu (chỉ state, D11) → xác nhận → áp dụng.
 // 409 (cấu hình đổi sau xem trước) → đóng hộp thoại, chạy lại dry-run, báo `transfer.import.stale` (plan-frontend §8).
-import { type ImportRequest, SecretValueSchema } from "@ai/contracts";
+
+import { SecretValueSchema } from "@ai/contracts/secrets";
+import type { ImportRequest } from "@ai/contracts/transfer";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";

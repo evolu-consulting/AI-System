@@ -1,6 +1,6 @@
 // CR-107 · eng-card-ui: thẻ duyệt nghe `/me/stream` (`process.updated` / `review_task.created` của đúng run) ⇒ tải lại thẻ.
 // Mở một kết nối khi lượt engine cấp 1 có run; đóng khi rời trang / hết điều kiện. Run mới (Huỷ & mở lại) đổi `run_id` ⇒ lọc theo ref.
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { useEffect, useRef } from "react";
 import { eventConcernsRun, shouldListen } from "../lib/advance-wait";
 import { listenProcessEvents } from "../stream/process-stream";

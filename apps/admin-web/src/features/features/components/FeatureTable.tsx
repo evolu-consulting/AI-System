@@ -1,5 +1,5 @@
 // ADM-FR-30 · CR-111 · danh mục Feature nhóm theo app: mỗi nhóm một khung (tên dễ hiểu + mô tả, key mono mờ bên phải), badge "Mặc định" / "Tính năng thêm".
-import type { FeatureListItem } from "@ai/contracts";
+import type { FeatureListItem } from "@ai/contracts/features";
 import { type ReactNode, useMemo } from "react";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";

@@ -1,11 +1,10 @@
 ﻿// CR-121 · hồ sơ công ty: kiểm từng ô khi sửa tại chỗ (thuần). Lỗi là KHOÁ i18n; ô trống = xoá giá trị (trừ tên công ty).
+import { EMAIL_MAX, NAME_MAX } from "@ai/contracts/common";
 import {
-  EMAIL_MAX,
-  NAME_MAX,
   TENANT_PROFILE_PHONE_RE,
   TENANT_PROFILE_TAX_CODE_RE,
   TENANT_STAFF_SIZE_MAX,
-} from "@ai/contracts";
+} from "@ai/contracts/tenants";
 import { z } from "zod";
 
 export type ProfileTextField =

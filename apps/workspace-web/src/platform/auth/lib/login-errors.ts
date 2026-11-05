@@ -1,6 +1,6 @@
 // CR-118 · cr118-auth · lỗi từng bước login gộp → câu báo (khoá i18n + tham số). Gộp luật L1b của contracts-web với bước đổi
 // mật khẩu bắt buộc / TOTP của community-web (com-fix-community-login). Sai thông tin luôn là một câu chung.
-import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts";
+import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts/common";
 import { lockUntilClock, retryMinutes } from "@ai/web-kit/auth-limit";
 import { ApiError } from "@ai/web-kit/http";
 

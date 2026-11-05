@@ -1,6 +1,6 @@
 // CR-101 DOC-ui-frame · R44 · R45 · R47: khối "Chứng từ con" của HĐ nguyên tắc (full chiều ngang, trên cùng) — giai đoạn, giá trị = Σ con,
 // hạn mức + % đã dùng, danh sách con (cảnh báo ngày ngoài hiệu lực — không chặn), gỡ liên kết, menu "Thêm vào diễn biến".
-import type { ContractDetail, FrameChild } from "@ai/contracts";
+import type { ContractDetail, FrameChild } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

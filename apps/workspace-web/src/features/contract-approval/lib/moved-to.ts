@@ -1,6 +1,6 @@
 // CR-120 · sau "Xác nhận và lưu" thẻ duyệt cho biết HĐ đã chuyển tới bước nào (không có bước "Gửi duyệt" thủ công: xác nhận bước 0 ⇒
 // engine tự mở bước kế theo luật định tuyến). Thuần.
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { openStepOf } from "./engine-card";
 
 /** Tên bước đang mở SAU bước soạn (idx ≥ 1) — ví dụ "Phòng Kế toán duyệt"; chưa mở / còn ở bước soạn ⇒ null. */

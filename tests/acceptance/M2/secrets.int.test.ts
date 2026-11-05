@@ -1,7 +1,7 @@
 // ADM-FR-50, ADM-BR-04, ADM-BR-14, ADM-NFR-01 · API /admin/secrets (test-plan S; AC-A06; M2-AC02; M2-R01…R06).
 // Workflow tham chiếu dựng bằng owner SQL (T3: chưa có module workflows).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { SecretListResponseSchema, SecretSchema } from "@ai/contracts";
+import { SecretListResponseSchema, SecretSchema } from "@ai/contracts/secrets";
 import postgres from "postgres";
 import { newMasterKeyB64, openIndependent } from "./_crypto";
 import { LEAK_1, LEAK_2, LEAK_EMOJI, LEAK_SHORT, leakForms } from "./_data";

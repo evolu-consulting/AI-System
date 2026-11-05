@@ -1,6 +1,10 @@
 // U3 · R39 · UT-FR-13: cờ đỏ của đối tác — danh sách việc nghiêm trọng (Không giao / Gian lận), nút "Báo cờ đỏ" (quyền ghi, lý do bắt buộc)
 // qua `POST /partner-events`, nút "Gỡ cờ" (chỉ quản lý, lý do bắt buộc) qua `POST /partner-events/:id/void`. Cờ không đổi điểm.
-import { type PartnerEvent, type PartnerRole, SEVERE_EVENT_TYPES } from "@ai/contracts";
+import {
+  type PartnerEvent,
+  type PartnerRole,
+  SEVERE_EVENT_TYPES,
+} from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

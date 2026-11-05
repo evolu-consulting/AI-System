@@ -1,5 +1,5 @@
 // ADM-FR-42 · M4-R02, R06 · card "Quota tháng" (một tenant / tenant_admin): QuotaBar Run · Token · USD cho cả tenant, rồi từng feature có quota.
-import type { QuotaStatus } from "@ai/contracts";
+import type { QuotaStatus } from "@ai/contracts/quotas";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";
 import { QuotaBar } from "@/components/shared/quota/QuotaBar";

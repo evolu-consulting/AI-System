@@ -1,6 +1,6 @@
 // CR-120 §2 · FLOW-FR-03 · tab "Quy trình" liệt kê MỌI khe app khai báo trong manifest (kể cả khe hub chưa có hàng `process_slots`
 // ⇒ cảnh báo thiếu), rồi tới khe hub có mà manifest không khai báo. Thứ tự: theo manifest.
-import type { AppSlotDecl } from "@ai/contracts";
+import type { AppSlotDecl } from "@ai/contracts/app-manifest";
 
 export type SlotRow<V> = { key: string; decl: AppSlotDecl | null; view: V | null };
 

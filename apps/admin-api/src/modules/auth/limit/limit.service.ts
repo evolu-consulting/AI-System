@@ -1,7 +1,7 @@
 // L1 (TECH-DEBT #224) · ADM-FR-07 · giới hạn đăng nhập: IP (429), tài khoản (423 TEMP_LOCKED như M1, cả tài khoản không
 // tồn tại), trần CPU băm mật khẩu (semaphore ⇒ 503). Redis lỗi ⇒ 503 AUTH_UNAVAILABLE (đóng an toàn, khuyến nghị
 // của security N5/N5b L1). Khoá mới của tài khoản CÓ THẬT ghi audit (`summary.op = login_lockout`, actor = hệ thống).
-import { AUTH_LIMIT_ERRORS, type AuthLimitErrorCode } from "@ai/contracts";
+import { AUTH_LIMIT_ERRORS, type AuthLimitErrorCode } from "@ai/contracts/auth-limit";
 import { type Db, type Tx, withScope } from "@ai/db";
 import { auditOf, recordAudit } from "../../../lib/audit/audit.write";
 import { AppError, isAppError } from "../../../lib/errors";

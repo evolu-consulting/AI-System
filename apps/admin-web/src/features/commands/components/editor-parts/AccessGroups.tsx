@@ -1,5 +1,5 @@
 // ADM-FR-24 · M3-R14 · cột "Group được cấp" của tab Ai dùng được: tối đa 3 chip "tên group · feature" + "+n group nữa"; trống → "Chưa group nào được cấp".
-import type { CommandAccessItem } from "@ai/contracts";
+import type { CommandAccessItem } from "@ai/contracts/commands";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { pickLocalized } from "@/lib/localized";

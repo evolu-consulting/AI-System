@@ -1,5 +1,5 @@
 // HUB-FR-78 · H3b-R01/R02/R04 · luật thuần của API cấp quyền agent (plan H3b §4.1).
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 
 /** H3b-R01/R02 · quyết tenant đích một lần (chưa kiểm tồn tại — service làm với platform_admin). */
 export type TargetTenant =

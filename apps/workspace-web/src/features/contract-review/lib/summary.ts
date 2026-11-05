@@ -1,5 +1,5 @@
 // V2-F · HD-04: các điểm chính của khối "Tóm tắt hợp đồng", suy từ dữ liệu đã lưu (không bịa câu chữ). Thuần.
-import type { ContractDetail } from "@ai/contracts";
+import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import { viDate, vnd } from "~/components/shared/format";
 import { dealOf } from "~/features/contract-form/lib/deal";
 import { progressOf } from "~/features/contract-milestones/lib/timeline";

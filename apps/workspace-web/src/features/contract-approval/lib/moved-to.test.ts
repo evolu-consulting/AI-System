@@ -1,6 +1,6 @@
 // CR-120 · "Đã chuyển: <bước>" sau Xác nhận và lưu (thuần).
 import { describe, expect, test } from "bun:test";
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { isDraftConfirm, movedToStep } from "./moved-to";
 
 const step = (idx: number, name: string, status: string) => ({ idx, name, status });

@@ -1,6 +1,12 @@
 // ADM-FR-54 · M4-R14 · planImport + parse yaml: chuẩn hoá quota, merge tenant (chỉ thêm), cắt lỗi, luật core/tên, yaml.
 import { describe, expect, test } from "bun:test";
-import type { CommandEl, ConfigFile, FeatureEl, TenantEl, WorkflowEl } from "@ai/contracts";
+import type {
+  CommandEl,
+  ConfigFile,
+  FeatureEl,
+  TenantEl,
+  WorkflowEl,
+} from "@ai/contracts/transfer";
 import { checkImportSize, parseConfigText } from "./transfer.import";
 import { Errs, formatPath } from "./transfer.import-ctx";
 import { mergeTenant, normQuota, planImport } from "./transfer.plan";

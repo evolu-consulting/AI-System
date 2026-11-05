@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { NewPasswordSchema } from "@ai/contracts";
+import { NewPasswordSchema } from "@ai/contracts/common";
 import {
   forcedPasswordSchema,
   loginSchema,

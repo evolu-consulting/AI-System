@@ -2,12 +2,9 @@
 // sẵn, không đổi — test xác nhận: đối tác đổi mật khẩu bắt buộc ⇒ cookie `ai_rt_contracts` (không `ai_rt_community`); bước TOTP
 // với X-App contracts ⇒ cookie contracts; đăng xuất xoá đúng một phiên (chat còn); chéo tenant bị từ chối.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import {
-  ExternalOrgSchema,
-  SsoCodeResponseSchema,
-  TokenGrantSchema,
-  UserCreateResponseSchema,
-} from "@ai/contracts";
+import { SsoCodeResponseSchema, TokenGrantSchema } from "@ai/contracts/auth";
+import { ExternalOrgSchema } from "@ai/contracts/external-orgs";
+import { UserCreateResponseSchema } from "@ai/contracts/users";
 import {
   createEnv,
   type Env,

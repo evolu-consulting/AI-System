@@ -1,6 +1,6 @@
 // ADM-FR-36 · M3-R11, R12 · explain.ts: lý do hiệu lực/không hiệu lực, hành động gợi ý, lọc command.
 import { describe, expect, test } from "bun:test";
-import type { EffectiveCommand, EffectiveFeature, FeatureMini } from "@ai/contracts";
+import type { EffectiveCommand, EffectiveFeature, FeatureMini } from "@ai/contracts/access";
 import {
   featureProblem,
   filterCommands,

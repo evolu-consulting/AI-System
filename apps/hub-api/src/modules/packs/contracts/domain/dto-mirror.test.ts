@@ -16,7 +16,7 @@ import {
   TODO_KINDS as C_TODO_KINDS,
   TODO_MAX as C_TODO_MAX,
   TODO_SOURCE_MAX as C_TODO_SRC,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import type * as BZ from "./business.types";
 import type * as CO from "./companies.types";
 import type * as DL from "./delivery.types";

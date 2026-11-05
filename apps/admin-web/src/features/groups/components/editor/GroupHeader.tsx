@@ -1,5 +1,5 @@
 // ADM-FR-62 · M3-R02 · đầu editor Group: tên, "{tenant} · {mã}", tóm tắt, nhãn beta; nút `Đổi tên` và menu `⋯` (Xoá, không có ở beta-testers).
-import type { Group } from "@ai/contracts";
+import type { Group } from "@ai/contracts/groups";
 import { MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";

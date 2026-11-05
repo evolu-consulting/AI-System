@@ -1,7 +1,7 @@
 // X1 F4 · HUB-FR-95 · `side_effect` ở form workflow: mặc định false, form ↔ body, response cũ thiếu trường ⇒ false.
 
 import { describe, expect, test } from "bun:test";
-import type { Workflow } from "@ai/contracts";
+import type { Workflow } from "@ai/contracts/workflows";
 import { emptyWorkflowForm, toFormValues, toRequestBody, workflowSchema } from "./schemas";
 
 const wf = (over: Partial<Workflow> = {}): Workflow =>

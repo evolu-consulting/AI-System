@@ -1,6 +1,6 @@
 // V2-B · BA §2 / §5.5: kế hoạch SP mới (thành phần + cách lấy hàng theo nhóm) và gợi ý SP cho dòng HĐ.
 import { describe, expect, it } from "bun:test";
-import type { ProductOut } from "@ai/contracts";
+import type { ProductOut } from "@ai/contracts/pack-contracts";
 import { matchLine, overlap, pickComponent, productPlan } from "./products.rules";
 
 const comp = (

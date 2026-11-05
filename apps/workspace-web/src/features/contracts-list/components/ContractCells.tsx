@@ -1,7 +1,13 @@
 // HD-FR-51 · S03 · V2-F (HD-03 · mockup NITI `renderCList`): ô bảng — Hợp đồng (tên + số / phụ lục của), Đối tác, Loại, Giá trị, Hiệu lực,
 // Giai đoạn (+ bước hiện tại, đỏ khi quá hạn), Thao tác (Xem; Xoá ẩn tới V2-M). Thẻ điện thoại: một thẻ mỗi HĐ.
-import type { ContractListRow, ContractProgress, DealSource, DocType } from "@ai/contracts";
+
 import type { FlowSummaryItem } from "@ai/contracts/flow";
+import type {
+  ContractListRow,
+  ContractProgress,
+  DealSource,
+  DocType,
+} from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";

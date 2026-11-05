@@ -1,6 +1,6 @@
 // CR-118 · cr118-auth · lỗi từng bước login gộp → khoá i18n (gộp luật contracts-web L1b + community-web đổi mật khẩu/TOTP).
 import { describe, expect, test } from "bun:test";
-import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts";
+import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts/common";
 import { ApiError } from "@ai/web-kit/http";
 import { errorOf, newPasswordError } from "./login-errors";
 

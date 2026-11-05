@@ -1,6 +1,6 @@
 // CR-112 · ADM-FR-79 · thân bước 2-4 của wizard: tái dùng nguyên tab Ứng dụng & Gói, khối vai (RolesPanel) và tóm tắt Tổng quan;
 // không có endpoint riêng cho wizard. Bước 2/3 có bản nháp riêng ⇒ nút "Tiếp tục" khoá tới khi lưu xong (không mất nháp âm thầm).
-import type { TenantDetail } from "@ai/contracts";
+import type { TenantDetail } from "@ai/contracts/tenants";
 import { Link } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";

@@ -3,7 +3,7 @@
 // cùng task KHÔNG quyết bước kế (idempotent, kiểm trong use case); quyền như đường cũ; đối tác / tenant khác bị chặn, không đổi
 // trạng thái. Rollback `HUB_FLOW_RUNTIME=off` ⇒ `/flow/*` 404, cờ tắt, endpoint approvals cũ vẫn quyết được.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { FlowViewSchema } from "@ai/contracts";
+import { FlowViewSchema } from "@ai/contracts/flow";
 import { type CtxCf, startCf } from "../CF/_cf";
 import { sign } from "../H1/_fixtures";
 import { seedContract, toLevel1 } from "../HD3/_hd3";

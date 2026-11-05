@@ -1,5 +1,6 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-03 · phiên đăng nhập: access token CHỈ trong bộ nhớ (D5), refresh bằng cookie httpOnly.
-import type { LoginRequest, LoginResponse, Me, TokenGrant, TotpVerifyRequest } from "@ai/contracts";
+import type { LoginRequest, LoginResponse, Me, TokenGrant } from "@ai/contracts/auth";
+import type { TotpVerifyRequest } from "@ai/contracts/totp";
 import { ApiError, api, sendPublic, setAuthHooks } from "../http";
 import { type AuthMessage, createAuthChannel } from "./auth-channel";
 import { createRefresher, type RefreshResult } from "./refresh-lock";

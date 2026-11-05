@@ -1,6 +1,6 @@
 // REP-v3-ui · V2-E · luật thuần hiển thị điểm vai × nhóm SP: Góp, bước tới điểm cuối, biểu đồ 3/6/12 tháng + ngưỡng 85/70, sao cần lý do.
 import { describe, expect, test } from "bun:test";
-import type { RepCellOut, RepCriterionOut, RepHistory } from "@ai/contracts";
+import type { RepCellOut, RepCriterionOut, RepHistory } from "@ai/contracts/pack-contracts";
 import {
   chartOf,
   criterionLines,

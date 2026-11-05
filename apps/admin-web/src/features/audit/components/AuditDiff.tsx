@@ -1,5 +1,5 @@
 // ADM-FR-51 · BR-04 · diff của một dòng nhật ký: update Trước/Sau (có chữ "đã đổi"), create chỉ Sau, delete chỉ Trước, secret chỉ "Giá trị: đã thay đổi".
-import type { AuditDetail } from "@ai/contracts";
+import type { AuditDetail } from "@ai/contracts/audit";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { type DiffMode, DiffTable } from "@/components/shared/diff/DiffTable";

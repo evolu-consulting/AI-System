@@ -2,7 +2,7 @@
 // giao dịch đứng riêng (không thuộc HĐ NT), tổng giá trị ≥ ngưỡng `legal_warn_threshold` (GET /company), còn mốc thu/trả chưa xong.
 // Mốc mặc định của giao dịch mới còn mở trừ khi tích "đã giao / đã thanh toán ngay". Chỉ cảnh báo, không chặn. Ngưỡng 0 = tắt.
 // Giới thiệu: giá trị = hoa hồng cố định (hoa hồng % chưa có cơ sở trong form ⇒ không cảnh báo, như máy chủ khi value null).
-import type { ContractDeal } from "@ai/contracts";
+import type { ContractDeal } from "@ai/contracts/pack-contracts";
 
 export type LegalPreInput = {
   threshold: number | undefined;

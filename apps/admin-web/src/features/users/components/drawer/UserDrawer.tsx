@@ -1,5 +1,5 @@
 // ADM-FR-04, ADM-FR-63 · drawer 520px tạo/sửa user (URL `?drawer=new|edit&user=`); sau khi tạo hiện khối mật khẩu tạm.
-import type { User } from "@ai/contracts";
+import type { User } from "@ai/contracts/users";
 import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";

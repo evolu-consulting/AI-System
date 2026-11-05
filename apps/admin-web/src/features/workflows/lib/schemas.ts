@@ -13,10 +13,8 @@ import {
   SELECT_OPTIONS_MAX,
   WORKFLOW_DESC_MAX,
   WORKFLOW_DESC_MIN,
-  type Workflow,
-  type WorkflowCreateRequest,
-  type WorkflowInput,
-} from "@ai/contracts";
+} from "@ai/contracts/common";
+import type { Workflow, WorkflowCreateRequest, WorkflowInput } from "@ai/contracts/workflows";
 import { z } from "zod";
 
 export type ParamValues = {

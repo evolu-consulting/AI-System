@@ -10,7 +10,7 @@ import type {
   TenantListQuery,
   TenantListResponse,
   TenantUpdateRequest,
-} from "@ai/contracts";
+} from "@ai/contracts/tenants";
 import {
   type AuditActionValue,
   type AuditInput,

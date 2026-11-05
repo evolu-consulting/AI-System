@@ -1,6 +1,6 @@
 // delivery-opts · bảng "Giao đợt này" trong hộp xác nhận mốc giao: SL mỗi dòng đã tính sẵn (theo % của mốc, đợt cuối lấy phần còn lại)
 // và sửa được trước khi xác nhận; HĐ Bán thiếu kho ⇒ cảnh báo (cài đặt cho phép giao vượt tồn) hoặc báo không đủ tồn.
-import type { ContractDeal, DeliveryView, StockCheckOut } from "@ai/contracts";
+import type { ContractDeal, DeliveryView, StockCheckOut } from "@ai/contracts/pack-contracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { deliveryReads } from "../hooks/use-milestone-writes";

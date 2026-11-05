@@ -1,5 +1,5 @@
 // ADM-FR-08 · ADM-BR-09 · M4-R16 · luật thuần 2FA (plan-cd §6, §7). Không import I/O.
-import type { ErrorCode, Role } from "@ai/contracts";
+import type { ErrorCode, Role } from "@ai/contracts/common";
 
 export type RuleError = { code: ErrorCode; details?: unknown };
 export type Actor = { userId: string; tenantId: string; role: Role };

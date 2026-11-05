@@ -1,7 +1,7 @@
 // CR-120 · cr120-contracts-flow · nối khe `contracts.intake`: tool bước (`adapters/intake.tools.ts`) trên `PackUow` của gói + hook
 // "ký xong" của use case ký số. Tách khỏi `packs.mount.ts`/`esign.mount.ts` (trần 400 dòng). Không esign (vắng module) ⇒ tool gửi ký ném lỗi
 // rõ ràng (stage `tool_failed`), tool đọc/nhắc vẫn chạy.
-import { ESignSignerSchema } from "@ai/contracts";
+import { ESignSignerSchema } from "@ai/contracts/pack-contracts";
 import type { Db, Tx } from "@ai/db";
 import { createPackUow } from "../kit/adapters/pack-uow";
 import { slotRegistry } from "../kit/adapters/slot-registry";

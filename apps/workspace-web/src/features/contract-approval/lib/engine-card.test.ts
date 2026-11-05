@@ -1,6 +1,6 @@
 // contract-flow S4 · unit: luật nút/ghi chú thẻ engine, dòng thời gian, nhãn lý do `ENGINE_RUN_*`.
 import { describe, expect, test } from "bun:test";
-import type { ApprovalCardStep, ContractApproval } from "@ai/contracts";
+import type { ApprovalCardStep, ContractApproval } from "@ai/contracts/pack-contracts";
 import { approvalView } from "./approval";
 import {
   engineAdvancing,

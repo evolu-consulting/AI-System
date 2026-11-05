@@ -1,6 +1,6 @@
 // ADM-FR-73 · AC-A15 · P-d2 (plan-frontend-d2 §12): tab "Tool quy trình" — danh sách + bật (PUT, không hỏi) / tắt (hỏi xác nhận, DELETE).
 // Công tắc không optimistic: chờ server rồi làm mới; 404 ⇒ "không còn trong catalog" + tải lại; lỗi khác ⇒ toast, công tắc về cũ.
-import type { TenantWorkflowTool } from "@ai/contracts";
+import type { TenantWorkflowTool } from "@ai/contracts/workflow-tools";
 import { useState } from "react";
 import { notifyError, notifyInfo, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";

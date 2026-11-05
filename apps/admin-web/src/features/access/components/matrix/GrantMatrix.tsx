@@ -1,7 +1,7 @@
 // ADM-FR-35 · ADM-FR-32 · M3-R08, R09 · lưới feature × group: cuộn hai chiều, cột đầu và hàng tiêu đề dính, cửa sổ hoá (≤ ~240 ô trong DOM).
 // biome-ignore-all lint/a11y/useSemanticElements: lưới ảo hoá (cửa sổ hoá hai chiều) không dùng được <table>/<input>; role đặt đúng theo WAI-ARIA grid/checkbox
 // biome-ignore-all lint/a11y/noStaticElementInteractions: onKeyDown ở vùng cuộn của role=grid để điều hướng ô bằng mũi tên (ủy quyền sự kiện từ ô checkbox)
-import type { MatrixFeature, MatrixGroup } from "@ai/contracts";
+import type { MatrixFeature, MatrixGroup } from "@ai/contracts/grants";
 import type { FocusEvent } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

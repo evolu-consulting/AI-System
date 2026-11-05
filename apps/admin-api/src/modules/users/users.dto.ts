@@ -1,12 +1,9 @@
 // ADM-FR-04, ADM-FR-62, ADM-FR-08 · CR-102a · hàng users → DTO `User`, hàng audit `user`, dịch 23505 (tách khỏi
 // users.service để giữ file ≤ 400 dòng khi thêm user ngoài; users.service re-export nên điểm gọi cũ không đổi).
-import {
-  BETA_GROUP_KEY,
-  GROUP_NAME_MAX,
-  type GroupRef,
-  LocalizedTextSchema,
-  type User,
-} from "@ai/contracts";
+
+import { LocalizedTextSchema } from "@ai/contracts/common";
+import { BETA_GROUP_KEY, GROUP_NAME_MAX, type GroupRef } from "@ai/contracts/groups";
+import type { User } from "@ai/contracts/users";
 import type { AuditActionValue, AuditInput } from "@ai/db";
 import { z } from "zod";
 import { auditOf } from "../../lib/audit/audit.write";

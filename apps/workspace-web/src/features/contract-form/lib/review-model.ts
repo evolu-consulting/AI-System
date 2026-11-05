@@ -6,7 +6,7 @@ import type {
   ContractItem,
   ReviewMilestone,
   ReviewSaveRequest,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { dealOf } from "./deal";
 import { fieldKeyOf, formOfDetail, patchOfForm } from "./detail-form";
 import { type FormState, type LineState, type Numbers, named, type TextKey } from "./form-model";

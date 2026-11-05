@@ -1,5 +1,5 @@
 // W1 · bảng dòng đang bán: nguồn mua (chọn tay nếu có quyền ghi), giá mua, lãi, rủi ro (port cm-web `sourcing/Lines.tsx`).
-import type { SaleLine, SourceRef } from "@ai/contracts";
+import type { SaleLine, SourceRef } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";

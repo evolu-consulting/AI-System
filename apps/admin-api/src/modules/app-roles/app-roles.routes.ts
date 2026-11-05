@@ -6,7 +6,7 @@ import {
   AppRoleListQuerySchema,
   AppRoleMembersAddRequestSchema,
   AppRoleUpdateRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/app-roles";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";

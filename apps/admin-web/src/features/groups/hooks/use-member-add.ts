@@ -1,5 +1,5 @@
 // ADM-FR-62 · M3-R03 · thêm từng người vào group: tìm user trong tenant (debounce 300 ms) rồi POST {usernames:[x]}.
-import type { Group } from "@ai/contracts";
+import type { Group } from "@ai/contracts/groups";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";

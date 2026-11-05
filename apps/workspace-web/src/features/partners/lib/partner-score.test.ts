@@ -1,6 +1,11 @@
 // U3 · R36 · R39 · R44–R46: mức/huy hiệu (MỚI · tạm tính), cờ đỏ tách khỏi điểm, gộp vai, "cần xem lại", top, kiểm sơ bộ cách tính.
 import { describe, expect, test } from "bun:test";
-import type { PartnerRole, PartnerRow, RepAttentionRow, RepPartnerRow } from "@ai/contracts";
+import type {
+  PartnerRole,
+  PartnerRow,
+  RepAttentionRow,
+  RepPartnerRow,
+} from "@ai/contracts/pack-contracts";
 import {
   badgeOf,
   flagsOf,

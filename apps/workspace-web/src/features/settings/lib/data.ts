@@ -1,6 +1,6 @@
 // V2-L · bản nháp ↔ API (thuần): dựng trạng thái từ 2 nguồn, so với mặc định (chấm cam) và với bản đã lưu (nút Lưu/Bỏ thay đổi), kiểm sơ bộ
 // trước khi gửi.
-import { type BizConfigOut, type CompanyOut, MST_RE } from "@ai/contracts";
+import { type BizConfigOut, type CompanyOut, MST_RE } from "@ai/contracts/pack-contracts";
 import type { SettingsState } from "./types";
 
 /** Hai nguồn API ⇒ trạng thái đã lưu + mặc định (cùng hình) của hộp thoại. */

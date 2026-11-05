@@ -1,6 +1,6 @@
 // CR-097 K2 · UC-04: `GET /contracts/:id/versions/diff?a=&b=` (read) — so sánh trường pháp lý hai phiên bản cùng chuỗi. Repo MỘT câu
 // trong tx `PackUow` (role `contracts_rw`, RLS FORCE + luật thấy) + `tenant_id` tường minh. Bản không thấy / khác chuỗi ⇒ 404.
-import { VersionDiffQuerySchema } from "@ai/contracts";
+import { VersionDiffQuerySchema } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";

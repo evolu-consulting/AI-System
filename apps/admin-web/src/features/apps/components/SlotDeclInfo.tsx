@@ -1,6 +1,6 @@
 // CR-120 §2 · FLOW-FR-03 · khai báo khe từ manifest app (mục đích, sự kiện mở lượt, luôn bật / cần add-on) + thẻ cảnh báo khi hub
 // chưa có khe (chưa seed `process_slots` + def mặc định).
-import type { AppSlotDecl } from "@ai/contracts";
+import type { AppSlotDecl } from "@ai/contracts/app-manifest";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 

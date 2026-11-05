@@ -1,7 +1,7 @@
 // CR-105 L5 · int: yaml `approval_process` => slot assignment, through the real HTTP adapter against the real hub library
 // routes (in-process Hono app, hub_api role) on a real DB. State checks: default routing rule (hub.process_routing_rules), tenant row.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import { Hono } from "hono";
 import { HUB_API_URL, T } from "../../../../../../tests/acceptance/H1/_fixtures";
 import { type CtxI1, startI1 } from "../../../../../../tests/acceptance/I1/_support/i1";

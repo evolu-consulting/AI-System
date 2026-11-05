@@ -1,6 +1,6 @@
 // CR-118 · cr118-flow-web · renderer của khe `contracts.approval` cho FlowPanel: dòng review/dify = dòng thời gian cũ (cùng chữ, cùng
 // data-testid/data-status), esign = `EsignStepRow` cũ. Hai loại này thay renderer mặc định của registry (`StepOverrides`).
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import type { StepOverrides, StepProps } from "~/platform/flow";
 import { hoursLeft, skipReason, type TimelineRow } from "../lib/engine-card";

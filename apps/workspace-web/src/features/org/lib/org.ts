@@ -1,6 +1,6 @@
 // M1D-FR-02 · luật thuần màn cơ cấu: ứng viên cấp quản lý của một người = mọi thành viên trừ chính họ và cấp dưới mọi tầng
 // (chọn cấp dưới làm quản lý = vòng; DB cũng chặn — `user_managers_cycle_ck`).
-import type { OrgMember } from "@ai/contracts";
+import type { OrgMember } from "@ai/contracts/org";
 
 /** Cấp dưới mọi tầng của `userId` (không gồm chính họ); chịu được dữ liệu có vòng. */
 export function reportsOf(members: readonly OrgMember[], userId: string): Set<string> {

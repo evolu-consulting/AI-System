@@ -1,5 +1,5 @@
 // ADM-FR-50, ADM-BR-04 · luật thuần secrets (plan M2 §4). Không import I/O.
-import type { ErrorCode } from "@ai/contracts";
+import type { ErrorCode } from "@ai/contracts/common";
 
 export type RuleError = { code: ErrorCode; details?: unknown };
 

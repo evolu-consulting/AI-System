@@ -1,6 +1,6 @@
 ﻿// HUB-FR-144 · review T12 #6: múi giờ tenant hỏng/thiếu ⇒ mặc định + warn chỉ có tenantId.
 import { describe, expect, it } from "bun:test";
-import { TENANT_TZ_DEFAULT } from "@ai/contracts";
+import { TENANT_TZ_DEFAULT } from "@ai/contracts/tenants";
 import type { Tx } from "@ai/db";
 import { tenantTzRepo } from "./tenant-tz.repo";
 

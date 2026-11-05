@@ -1,6 +1,6 @@
 // V2-F · HD-04/HD-11 · BA §3.1 · mockup `timelineV2`: dòng thời gian mốc — các nút (Ký HĐ → mốc theo hạn → Hết hiệu lực), trạng thái từng mốc
 // (xong đúng hạn / xong trễ / bước hiện tại / quá hạn / sắp tới), tiến độ n/m. Ngày là chuỗi ISO `YYYY-MM-DD`. Thuần.
-import type { ContractDeal, Milestone } from "@ai/contracts";
+import type { ContractDeal, Milestone } from "@ai/contracts/pack-contracts";
 
 export type MilestoneKind = Milestone["kind"];
 export type MilestoneState = "done" | "late" | "cur" | "over" | "up";

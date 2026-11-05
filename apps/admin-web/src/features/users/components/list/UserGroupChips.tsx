@@ -1,5 +1,5 @@
 // ADM-FR-62 · M3-R13 · cột Groups của bảng Users: tối đa 2 chip (tên group) + chip "+n" (tooltip liệt kê phần còn lại); trống → "—".
-import type { GroupRef } from "@ai/contracts";
+import type { GroupRef } from "@ai/contracts/groups";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { pickLocalized } from "@/lib/localized";

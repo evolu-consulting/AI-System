@@ -1,8 +1,8 @@
 // ADM-FR-42, ADM-BR-09 · M4-R03, R07–R09 · báo cáo chi phí & usage (plan-contract §2.2, plan §5.4). Không biết HTTP.
 // Một withScope (repeatable read, read only). Dựng bản Platform rồi `stripCost` cho tenant_admin và parse đúng schema
 // role (strict) trước khi trả → tenant_admin không bao giờ thấy cost_usd/margin_usd/tenants (M4-AC03).
+import type { Role } from "@ai/contracts/common";
 import {
-  type Role,
   USAGE_TENANTS_MAX,
   USAGE_TOP_MAX,
   type UsageKpi,
@@ -11,7 +11,7 @@ import {
   UsageReportPlatformSchema,
   type UsageReportTenant,
   UsageReportTenantSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/usage";
 import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import type { Actor } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";

@@ -15,7 +15,7 @@ import {
   RepRatingSchema,
   RepRoleSchema,
   RepSettingsSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import type { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";

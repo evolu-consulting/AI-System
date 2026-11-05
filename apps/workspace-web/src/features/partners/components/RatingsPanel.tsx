@@ -1,6 +1,12 @@
 // V2-I · DT-04 · BA §5.1i: đánh giá thủ công 1–5 sao từng tiêu chí (trộn vào điểm với tỷ trọng s). Lệch hơn `reason_gap` điểm so với dữ
 // liệu ⇒ bắt nhập lý do (máy chủ kiểm lại, 422). Mỗi tiêu chí lưu riêng; dưới là lịch sử đánh giá (mới nhất trước).
-import type { RepCellOut, RepCriterionOut, RepGroup, RepRatingRow, RepRole } from "@ai/contracts";
+import type {
+  RepCellOut,
+  RepCriterionOut,
+  RepGroup,
+  RepRatingRow,
+  RepRole,
+} from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";

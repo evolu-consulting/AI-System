@@ -1,6 +1,6 @@
 // CR-112 · ADM-FR-80, ADM-FR-82 · thay đổi CHƯA LƯU của màn Phân quyền (hàm thuần, bất biến): tạo/đổi tên/đổi mức/xoá vai, gán và
 // gỡ người. Một nút Lưu chạy `buildOps` tuần tự qua `runOps` (tạo ⇒ sửa ⇒ gán/gỡ ⇒ xoá). Chỉ lưu CHÊNH LỆCH so với bản đã tải.
-import type { AppRole, AppRoleLevel } from "@ai/contracts";
+import type { AppRole, AppRoleLevel } from "@ai/contracts/app-roles";
 
 export type NewRole = { tempId: string; pack: string; name: string; level: AppRoleLevel };
 export type RoleEdit = { name?: string; level?: AppRoleLevel };

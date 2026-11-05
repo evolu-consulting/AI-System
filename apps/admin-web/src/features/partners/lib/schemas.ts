@@ -1,5 +1,6 @@
 // ADM-FR-74, ADM-FR-75 · schema form công ty / tài khoản đối tác; hằng số từ @ai/contracts, thông điệp là KEY i18n.
-import { DISPLAY_NAME_MAX, EMAIL_MAX, EXTERNAL_ORG_NAME_MAX, USERNAME_RE } from "@ai/contracts";
+import { DISPLAY_NAME_MAX, EMAIL_MAX, USERNAME_RE } from "@ai/contracts/common";
+import { EXTERNAL_ORG_NAME_MAX } from "@ai/contracts/external-orgs";
 import { z } from "zod";
 
 export const partnerNameSchema = z.object({

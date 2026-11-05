@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { Me } from "@ai/contracts";
+import type { Me } from "@ai/contracts/auth";
 import { ApiError } from "../http";
 import {
   createRefresher,

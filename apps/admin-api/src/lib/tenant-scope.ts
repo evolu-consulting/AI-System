@@ -1,7 +1,7 @@
 // CR-112 · ADM-FR-81 · phạm vi workspace công ty `/admin/tenants/:id*` — MỘT chỗ cho mọi route theo tenant.
 // Thứ tự kiểm (bảng route ở docs/specs/cr112-tenant-scope/tasks.md): đăng nhập (401) → vai quản trị (member/đối tác ⇒ 403)
 // → tenant_admin chỉ tenant mình (tenant khác ⇒ 404, không lộ tồn tại) → route chỉ-platform kiểm tiếp bằng requireRole (403).
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import type { Context, MiddlewareHandler } from "hono";
 import { type AppVars, type AuthDeps, requireAuth } from "./auth-middleware";
 import { appError } from "./errors";

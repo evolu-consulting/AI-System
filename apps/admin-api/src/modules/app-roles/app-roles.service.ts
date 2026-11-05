@@ -9,11 +9,9 @@ import {
   type AppRoleListQuery,
   type AppRoleListResponse,
   type AppRoleUpdateRequest,
-  GroupNameSchema,
-  PACK_ACTIONS,
-  PACK_ROLES,
-  packFeatureKey,
-} from "@ai/contracts";
+} from "@ai/contracts/app-roles";
+import { GroupNameSchema } from "@ai/contracts/groups";
+import { PACK_ACTIONS, PACK_ROLES, packFeatureKey } from "@ai/contracts/packs";
 import {
   type AuditActionValue,
   type AuditInput,

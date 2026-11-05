@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { FlowWhen } from "@ai/contracts";
+import type { FlowWhen } from "@ai/contracts/pack-contracts";
 import {
   flowReducer,
   groupKeysOf,

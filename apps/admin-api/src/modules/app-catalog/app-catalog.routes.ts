@@ -4,7 +4,7 @@ import {
   AppKeySchema,
   AppUpdateRequestSchema,
   DefaultAppRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/app-catalog";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";

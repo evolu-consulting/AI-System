@@ -1,7 +1,7 @@
 // V2-J2 · câu SQL tab "Nhà cung cấp & giá". Tx do `PackUow` mở (RLS tenant + M1); lọc `tenant_id` tường minh. Mỗi lệnh = MỘT câu
 // văn bản cố định (JSON dựng trong SQL, dữ liệu qua tham số) — số câu không phụ thuộc số NCC/dòng giá (Luật 4c). Giá nhập đọc từ sổ
 // kho (`stock_moves`, luật thấy HĐ của M1) cho THÀNH PHẦN CHÍNH của SP (thành phần đầu có cách lấy hàng ≠ `none`).
-import type { SupplierPriceInput } from "@ai/contracts";
+import type { SupplierPriceInput } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { SuppliersRepo } from "../application/supplier-prices.usecase";

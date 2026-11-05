@@ -1,5 +1,5 @@
 // CR-112 · tab Tổng quan (COULD) + bước Xem lại của wizard · tóm tắt chỉ đọc: số người dùng, app đang bật, số vai, quota tháng (run/token).
-import type { TenantDetail } from "@ai/contracts";
+import type { TenantDetail } from "@ai/contracts/tenants";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { QuotaBar } from "@/components/shared/quota/QuotaBar";

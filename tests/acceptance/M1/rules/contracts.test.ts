@@ -1,27 +1,30 @@
 // ADM-FR-01, ADM-FR-04, ADM-FR-60 · hằng, bảng mã lỗi và schema contract M1 (spec §3). Chỉ cần @ai/contracts.
 import { describe, expect, it } from "bun:test";
 import {
-  API_ERRORS,
   ChangePasswordRequestSchema,
+  LoginRequestSchema,
+  LoginResponseSchema,
+} from "@ai/contracts/auth";
+import {
+  API_ERRORS,
   COMPANY_KEY_RE,
   DISPLAY_NAME_MAX,
   EMAIL_MAX,
   LIST_LIMIT_DEFAULT,
   LIST_LIMIT_MAX,
   LOCALES,
-  LoginRequestSchema,
-  LoginResponseSchema,
   PASSWORD_MAX_LEN,
   PASSWORD_MIN_LEN,
   ROLES,
   TEMP_PASSWORD_LEN,
+  USERNAME_RE,
+} from "@ai/contracts/common";
+import {
   TenantCreateRequestSchema,
   TenantListQuerySchema,
   TenantUpdateRequestSchema,
-  USERNAME_RE,
-  UserListQuerySchema,
-  UserUpdateRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/tenants";
+import { UserListQuerySchema, UserUpdateRequestSchema } from "@ai/contracts/users";
 
 const ok = (r: { success: boolean }) => r.success;
 

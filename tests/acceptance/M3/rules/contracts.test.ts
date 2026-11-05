@@ -5,25 +5,37 @@ import {
   ACCESS_COMMANDS_MAX,
   ACCESS_REASONS,
   AccessReasonSchema,
-  API_ERRORS,
-  BETA_GROUP_KEY,
   COMMAND_MISSING,
-  CONFIG_CHANNEL,
-  CONFIG_ENTITIES,
   EffectiveAccessQuerySchema,
   EffectiveAccessSchema,
   FEATURE_MISSING,
+  USER_BLOCKERS,
+} from "@ai/contracts/access";
+import {
+  API_ERRORS,
+  InvalidReferenceDetailsSchema,
+  NotEntitledDetailsSchema,
+  REFERENCE_FIELDS,
+} from "@ai/contracts/common";
+import { CONFIG_CHANNEL, CONFIG_ENTITIES } from "@ai/contracts/config";
+import {
   GRANT_BATCH_MAX,
-  GROUP_DESC_MAX,
-  GROUP_KEY_RE,
-  GROUP_NAME_MAX,
-  GROUP_PASTE_MAX,
   GrantBatchRequestSchema,
   GrantCreateRequestSchema,
   GrantDeleteQuerySchema,
   GrantMatrixQuerySchema,
   GrantMatrixSchema,
   GrantSchema,
+  MATRIX_COMMAND_NAMES_MAX,
+  MATRIX_GROUPS_MAX,
+  MATRIX_ROW_STATES,
+} from "@ai/contracts/grants";
+import {
+  BETA_GROUP_KEY,
+  GROUP_DESC_MAX,
+  GROUP_KEY_RE,
+  GROUP_NAME_MAX,
+  GROUP_PASTE_MAX,
   GroupCreateRequestSchema,
   GroupKeySchema,
   GroupListQuerySchema,
@@ -32,19 +44,12 @@ import {
   GroupMembersAddRequestSchema,
   GroupMembersAddResponseSchema,
   GroupUpdateRequestSchema,
-  GroupVersionConflictDetailsSchema,
-  InvalidReferenceDetailsSchema,
-  MATRIX_COMMAND_NAMES_MAX,
-  MATRIX_GROUPS_MAX,
-  MATRIX_ROW_STATES,
-  NotEntitledDetailsSchema,
   OTHER_GROUPS_MAX,
   parseUsernameList,
-  REFERENCE_FIELDS,
-  USER_BLOCKERS,
   USER_GROUPS_MAX,
   USERNAME_INPUT_MAX,
-} from "@ai/contracts";
+} from "@ai/contracts/groups";
+import { GroupVersionConflictDetailsSchema } from "@ai/contracts/version-conflict";
 
 const ok = (r: { success: boolean }) => r.success;
 const U = (n: number) => `01900000-0000-7000-8000-${String(n).padStart(12, "0")}`;

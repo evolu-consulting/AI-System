@@ -1,6 +1,8 @@
 // ADM-FR-40, ADM-FR-41 · M4-R01–R06 · hàm thuần quota (plan-rules §A4, plan §5.1). Không I/O.
 // Tiền so bằng số nguyên micro-USD (`BigInt`), không `parseFloat`.
-import type { QuotaItemInput, Role } from "@ai/contracts";
+
+import type { Role } from "@ai/contracts/common";
+import type { QuotaItemInput } from "@ai/contracts/quotas";
 
 /** tenant_admin: bỏ giới hạn/mức dùng bằng tiền khỏi một dòng QuotaStatus (giữ lượt, token, %, mức). */
 export function stripQuotaMoney<T extends { used: object }>(

@@ -2,7 +2,7 @@
 // `ATTACH_MAX_BYTES`) + `GET /files/:id` chỉ cho người XEM ĐƯỢC BÀI chứa tệp (cùng luật `posts_visible`, gồm đối tác) hoặc chính
 // người tải lên; còn lại 404 giống hệt. Test viết TRƯỚC code (Luật 1b: RLS/cách ly).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { ATTACH_MAX_BYTES } from "@ai/contracts";
+import { ATTACH_MAX_BYTES } from "@ai/contracts/attach";
 import { CommunityFileSchema, PostViewSchema } from "@ai/contracts/community";
 import { createDb, type Db } from "@ai/db";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";

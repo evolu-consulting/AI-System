@@ -1,6 +1,6 @@
 // com-c7 · CR-102b · R20–R22: nhãn trạng thái giá đã lưu ("Đã hết hạn" / "Đã thay" / "Đã gỡ"), nhãn VAT, và lịch sử giá đã thay/gỡ
 // (thu gọn dưới bảng so sánh — không phải màn mới).
-import type { SupplierPriceRow } from "@ai/contracts";
+import type { SupplierPriceRow } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 

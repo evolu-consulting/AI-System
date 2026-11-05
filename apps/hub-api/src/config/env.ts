@@ -1,7 +1,7 @@
 // HUB-NFR-04 · env của hub-api (plan H1 §7), validate bằng zod. Lỗi chỉ nêu tên biến, không in giá trị.
 import { hostname } from "node:os";
 import { isAbsolute } from "node:path";
-import { dropEmptyEnv } from "@ai/contracts";
+import { dropEmptyEnv } from "@ai/contracts/env-source";
 import { z } from "zod";
 import { isMasterKeyB64 } from "../lib/secret-crypto";
 import { PROCESS_ROUTE_MODES } from "../modules/processes/routes-mode";

@@ -8,7 +8,7 @@ import type {
   ShellBrand,
   ShellMeResponse,
   TenantCapabilitiesResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/capabilities";
 
 export type PackAction = "read" | "write" | "admin";
 const LEVELS: readonly PackAction[] = ["read", "write", "admin"];

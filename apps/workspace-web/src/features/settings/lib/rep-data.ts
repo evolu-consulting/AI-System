@@ -1,7 +1,7 @@
 // REP-v3-ui · V2-E · cấu hình điểm uy tín ↔ API (thuần): dựng trạng thái từ `GET /reputation/config`, chuẩn hoá trọng số về tổng 100 (server đòi
 // đúng 100), so với mặc định (chấm cam) và với bản đã lưu (nút Lưu/Bỏ thay đổi), kiểm sơ bộ trước khi gửi. Thân PUT strict ⇒ bỏ trường chỉ-đọc
 // (`custom`, `ord`).
-import type { RepCellConfigIn, RepJobTypesIn } from "@ai/contracts";
+import type { RepCellConfigIn, RepJobTypesIn } from "@ai/contracts/pack-contracts";
 import { same } from "./data";
 import {
   CELL_KEYS,

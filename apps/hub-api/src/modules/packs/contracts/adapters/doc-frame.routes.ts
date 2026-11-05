@@ -1,7 +1,7 @@
 // CR-101 DOC-model · R30 API · R42 API: `POST /contracts/:id/attach` (`:id` = HĐ NT, thân `{ids}`) gắn chứng từ có sẵn; `DELETE
 // /contracts/:id/frame` (`:id` = con) gỡ liên kết. Quyền `write`; HĐ NT không thấy / tenant khác ⇒ 404; con không thấy / không hợp lệ
 // ⇒ 422 FRAME_INVALID; lệch đối tác/hướng ⇒ 422 FRAME_PARTNER_MISMATCH (R43).
-import { AttachDocsRequestSchema, DOC_ERRORS } from "@ai/contracts";
+import { AttachDocsRequestSchema, DOC_ERRORS } from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";

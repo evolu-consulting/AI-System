@@ -1,6 +1,6 @@
 // HUB-FR-72 · H4a-R14 · phiên Studio (mẫu chat-web, copy-then-own): access token CHỈ trong bộ nhớ; tải trang → refresh
 // bằng cookie `ai_rt` một lần (D5); 401 giữa chừng → refresh 1 lần (single-flight + Web Locks), hỏng → sự kiện `expired`.
-import type { TokenGrant } from "@ai/contracts";
+import type { TokenGrant } from "@ai/contracts/auth";
 import { AUTH_BASE } from "../env";
 import { ApiError, sendPublic, setAuthHooks } from "../http";
 

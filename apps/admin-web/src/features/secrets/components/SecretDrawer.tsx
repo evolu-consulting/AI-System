@@ -1,5 +1,5 @@
 // ADM-FR-50 · M2-R04 · drawer 520px: Thêm secret / Thay giá trị / Sửa ghi chú (URL `?drawer=new|replace|note&secret=`).
-import type { Secret } from "@ai/contracts";
+import type { Secret } from "@ai/contracts/secrets";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";

@@ -1,7 +1,7 @@
 // price-scout · Cài đặt › "Dò giá thị trường": (a) mặc định cho nhóm Dịch vụ có hạn / Hàng hoá (SP chưa tuỳ chỉnh thì theo), (b) trần lượt dò
 // & token mỗi tháng của công ty (+ ô platform chỉ khi `can_override`). Lưu riêng từng khối (không theo nút Lưu cài đặt); chỉ quản lý lưu được
 // — người khác bấm Lưu nhận 403 ⇒ báo "không có quyền".
-import type { PriceScoutGroup } from "@ai/contracts";
+import type { PriceScoutGroup } from "@ai/contracts/pack-contracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";

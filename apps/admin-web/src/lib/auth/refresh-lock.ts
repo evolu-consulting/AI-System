@@ -1,5 +1,5 @@
 // ADM-FR-01, ADM-FR-02 · refresh token xoay vòng: single-flight trong tab + Web Locks liên tab + dùng lại token broadcast (plan-frontend §3.3, M1-R07).
-import type { Me } from "@ai/contracts";
+import type { Me } from "@ai/contracts/auth";
 import { ApiError } from "../http";
 
 export const REFRESH_LOCK_NAME = "ai-admin-refresh";

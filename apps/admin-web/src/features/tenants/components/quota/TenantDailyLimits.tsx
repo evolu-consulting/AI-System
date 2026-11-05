@@ -1,6 +1,6 @@
 // tenant-quotas · thẻ "Hạn mức theo ngày" trong tab Quota của công ty (platform_admin): 3 ô (trống = mặc định hệ thống),
 // "hôm nay đã dùng X / Y", nút "Đặt lại hôm nay" từng loại (xác nhận; ghi nhật ký ở server). Form riêng, lưu riêng.
-import { DAILY_LIMIT_KINDS, type DailyLimitItem } from "@ai/contracts";
+import { DAILY_LIMIT_KINDS, type DailyLimitItem } from "@ai/contracts/daily-limits";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/states/ErrorState";

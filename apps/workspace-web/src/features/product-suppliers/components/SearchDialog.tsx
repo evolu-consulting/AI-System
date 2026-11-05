@@ -1,6 +1,6 @@
 // V2-J2 · SP-05: "Tìm giá trên thị trường". AI tìm web CHỈ khi người dùng bấm "Tìm" (hộp thoại nói rõ chỉ gửi tên sản phẩm); kết quả
 // là gợi ý chưa lưu — người dùng tick dòng cần rồi "Lưu vào bảng so sánh". Thay `/cks/scans`.
-import type { SupplierSearchOut } from "@ai/contracts";
+import type { SupplierSearchOut } from "@ai/contracts/pack-contracts";
 import { type RefObject, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";

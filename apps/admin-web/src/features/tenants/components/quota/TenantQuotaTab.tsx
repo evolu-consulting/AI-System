@@ -1,6 +1,6 @@
 // ADM-FR-40 · M4-AC02 · Q9 · tab Quota của tenant: bảng Cả tenant + từng feature, ô số (trống = Không giới hạn), thanh lưu dính đáy.
 // Info và Quota dùng chung `version` tenant (D7): `tenant.version` luôn là bản mới nhất, lưu tab nào cũng cập nhật cache chung.
-import type { TenantDetail } from "@ai/contracts";
+import type { TenantDetail } from "@ai/contracts/tenants";
 import { useTranslation } from "react-i18next";
 import { useOnline } from "@/components/shared/ConnectionBanner";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";

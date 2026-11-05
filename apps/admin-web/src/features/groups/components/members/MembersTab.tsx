@@ -1,5 +1,5 @@
 // ADM-FR-62 · M3-R03 · tab Thành viên: thêm từng người (combobox), ô tìm, bảng phân trang 50, dán danh sách.
-import type { Group } from "@ai/contracts";
+import type { Group } from "@ai/contracts/groups";
 import { useTranslation } from "react-i18next";
 import { SearchBox } from "@/components/shared/form/SearchBox";
 import { Pagination } from "@/components/shared/Pagination";

@@ -1,6 +1,6 @@
 // HD-FR-34 · HD-FR-36 · S05: trạng thái + quyết bước duyệt của HĐ (`/pack/contracts/contracts/:id/approval`). Bearer + refresh
 // do web-kit lo; lỗi (403 STARTER_CANNOT_REVIEW, 422 FEEDBACK_REQUIRED, 429 ACTION_QUOTA…) ném `ApiError` cho trang báo.
-import type { ContractApproval, ContractGroup } from "@ai/contracts";
+import type { ContractApproval, ContractGroup } from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/contracts";

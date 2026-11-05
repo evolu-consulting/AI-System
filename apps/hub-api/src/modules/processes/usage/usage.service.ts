@@ -3,8 +3,8 @@
 // lộ tồn tại, kể cả tenant khác). (2) scope `system` ⇒ đọc usage (run_steps RLS chủ run). `task` ⇒ `detail=summary` (chỉ
 // tổng, không chi tiết lần gọi). Lộ usage của tenant/người khác = hard stop ⇒ chặn ngay ở bước (1).
 
-import { UuidSchema } from "@ai/contracts";
 import type { ProcessRunUsage } from "@ai/contracts/chat";
+import { UuidSchema } from "@ai/contracts/common";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";

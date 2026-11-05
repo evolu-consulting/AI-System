@@ -2,7 +2,8 @@
 // (`libraryRoutes`) trên DB thật (`hub_api`), user giả qua header. Kiểm trạng thái DB thật (hàng luật, tập gán, audit, version cấu
 // hình), không chỉ mã HTTP. Khe `contracts.approval` thật; def thư viện = bản sao def mặc định seed 0069 (đã xuất bản v1).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { APP_MANIFESTS, type Role } from "@ai/contracts";
+import { APP_MANIFESTS } from "@ai/contracts/app-manifest";
+import type { Role } from "@ai/contracts/common";
 import { withHubScope } from "@ai/db/hub-scope";
 import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";

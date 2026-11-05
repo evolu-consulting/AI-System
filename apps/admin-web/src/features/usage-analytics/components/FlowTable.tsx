@@ -1,6 +1,6 @@
 // ADM-FR-42 · usage-analytics · bảng "Token đổ vào đâu": app → agent (hoặc tính năng khi gọi AI trực tiếp) → model, kèm %,
 // lượt gọi, lỗi, chi phí. Nhóm theo app (dòng tổng app in đậm), trong app giảm dần theo token.
-import type { UsageTreeRow } from "@ai/contracts";
+import type { UsageTreeRow } from "@ai/contracts/usage-analytics";
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";

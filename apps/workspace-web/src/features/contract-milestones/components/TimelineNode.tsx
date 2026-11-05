@@ -1,6 +1,6 @@
 // V2-F · HD-04 · mockup `.tl2 li`: một nút của dòng thời gian — chấm trạng thái, tên + nhãn (Mình / đối tác, Lỗi, Bước hiện tại), dòng phụ
 // (xong đúng hạn/sớm/trễ, hạn + quá hạn/còn n ngày, SL, số tiền), nút "Xác nhận xong" ở bước hiện tại, bút sửa ở mốc chưa xác nhận.
-import type { Milestone } from "@ai/contracts";
+import type { Milestone } from "@ai/contracts/pack-contracts";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";

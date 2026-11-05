@@ -1,6 +1,6 @@
 // delivery-opts · luật thuần của bảng "Giao đợt này" trong hộp xác nhận mốc giao: bản nháp SL từng dòng (chuỗi kiểu Việt) ↔ thân
 // `PATCH /milestones/:id { items }`, nhận biết có sửa so với SL máy tính sẵn, và câu liệt kê thành phần thiếu kho.
-import type { DeliveryView, StockCheckOut } from "@ai/contracts";
+import type { DeliveryView, StockCheckOut } from "@ai/contracts/pack-contracts";
 import { parseQty } from "~/components/shared/format";
 
 export type LineDraft = {

@@ -1,7 +1,7 @@
 // CR-118 · cr118-community-files · §11.1: service tệp bài (T-DEP-1: route chỉ gọi service). Upload: sniff theo nội dung
 // (`ATTACH_ALLOWED`) → byte lên FileBox NGOÀI tx → MỘT câu ghi hàng (lỗi ⇒ xoá byte). Tải: MỘT câu đọc hàng dưới RLS người xem
 // (`files_visible`) → byte từ kho NGOÀI tx. Không thấy ⇒ `NOT_FOUND` (giống hệt mọi lý do).
-import { ATTACH_ALLOWED, ATTACH_MAX_BYTES } from "@ai/contracts";
+import { ATTACH_ALLOWED, ATTACH_MAX_BYTES } from "@ai/contracts/attach";
 import type { CommunityFile } from "@ai/contracts/community";
 import type { Tx } from "@ai/db";
 import { AppError, appError } from "../../../../lib/errors";

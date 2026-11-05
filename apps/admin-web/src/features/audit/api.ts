@@ -5,7 +5,7 @@ import type {
   AuditEntity,
   AuditListResponse,
   AuditRestoreResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/audit";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 

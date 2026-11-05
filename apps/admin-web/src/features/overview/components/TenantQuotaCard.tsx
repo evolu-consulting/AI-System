@@ -1,5 +1,5 @@
 // ADM-FR-41 · M4-R06 · card "Quota tháng": QuotaBar cả tenant (Run/Token/USD) + link "Xem chi phí & quota". Giới hạn trống → "Không giới hạn".
-import type { QuotaStatus } from "@ai/contracts";
+import type { QuotaStatus } from "@ai/contracts/quotas";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";

@@ -1,12 +1,8 @@
 // HUB-FR-10, HUB-FR-12, HUB-FR-89 · kiểu catalog Admin trong cache Hub (plan H2a §4, plan-rules). Chỉ kiểu, không I/O.
-import type {
-  CommandArg,
-  CommandOutput,
-  InputMap,
-  LocalizedText,
-  WorkflowInput,
-} from "@ai/contracts";
+import type { CommandArg, CommandOutput, InputMap } from "@ai/contracts/commands";
+import type { LocalizedText } from "@ai/contracts/common";
 import type { DifyAppType, DifyFileInput } from "@ai/contracts/hub";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 
 /** H2c P13 · `DifyFileInput` chỉ do driver điền sau upload (B7), không bao giờ từ tham số/MCP. */
 export type WorkflowInputValue = string | number | boolean | DifyFileInput;

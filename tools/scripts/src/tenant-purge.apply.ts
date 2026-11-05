@@ -2,7 +2,7 @@
 // bị xoá (append-only audit, guard read-only; DDL nằm trong transaction ⇒ lỗi = hoàn tác hết), đặt NULL FK vòng, xoá con trước cha,
 // bật lại trigger, kiểm còn 0 hàng, bump config_version (+ profile_version, hub_config_version nếu có) + pg_notify (gửi lúc commit),
 // ghi một hàng audit platform (tenant_id NULL).
-import { CONFIG_CHANNEL, PROFILE_CHANNEL } from "@ai/contracts";
+import { CONFIG_CHANNEL, PROFILE_CHANNEL } from "@ai/contracts/config";
 import { HUB_CONFIG_CHANNEL, HUB_CONTRACT_VERSION } from "@ai/contracts/hub";
 import type postgres from "postgres";
 import { countRows, type Sql } from "./tenant-purge.db";

@@ -1,6 +1,6 @@
 // HD-FR-36 · S05: luật hiển thị thẻ duyệt + câu lỗi (không lộ thông điệp máy chủ).
 import { describe, expect, test } from "bun:test";
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { approvalView, feedbackOk, flowActionOf, showLinkDialog } from "./approval";
 import { approvalErrorText } from "./approval-error";

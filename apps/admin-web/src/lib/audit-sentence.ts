@@ -1,5 +1,5 @@
 // ADM-FR-51, ADM-FR-41 · câu mô tả một dòng nhật ký ("admin đã sửa command /dich"); hàm thuần dùng chung Tổng quan + Nhật ký (plan-frontend D13).
-import type { AuditItem } from "@ai/contracts";
+import type { AuditItem } from "@ai/contracts/audit";
 import type { Translate } from "./format";
 
 /** `user_totp` → key `twofa`; còn lại key trùng giá trị. */

@@ -1,6 +1,6 @@
 // REP-v3-ui · V2-E · truy vấn/ghi cấu hình điểm uy tín: nạp `GET /reputation/config`, thử tính trên dữ liệu thật, lưu phần đã đổi.
 
-import type { RepPreviewIn } from "@ai/contracts";
+import type { RepPreviewIn } from "@ai/contracts/pack-contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchRepFull, previewRep, repKeys, saveRepChanged } from "../api-rep";
 import { buildRep, type RepChanged } from "../lib/rep-data";

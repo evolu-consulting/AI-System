@@ -1,5 +1,5 @@
 // products-confirm: gắn/tạo SP cho dòng HĐ đã xác nhận (`POST /contracts/:id/product-links`, quyền ghi).
-import type { ProductLink, ProductLinksResult } from "@ai/contracts";
+import type { ProductLink, ProductLinksResult } from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 import type { LineState } from "~/features/contract-form/lib/form-model";
 import { fetchContract } from "~/features/contract-review/api";

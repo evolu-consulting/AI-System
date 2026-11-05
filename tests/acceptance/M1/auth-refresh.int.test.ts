@@ -1,6 +1,6 @@
 // ADM-FR-02, ADM-FR-03, ADM-FR-05 · POST /auth/refresh, /auth/logout (test-plan A2; AC-A02, M1-AC04; M1-R07/R08/R09).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { TokenGrantSchema } from "@ai/contracts";
+import { TokenGrantSchema } from "@ai/contracts/auth";
 import {
   clearsCookie,
   cookieOf,

@@ -2,7 +2,7 @@
 // CR-120 · tối giản: MỘT hàng — Giao diện = nhóm 3 nút CHỈ biểu tượng (Mặt trời / Mặt trăng / Theo máy, có tooltip + aria-label, không chữ),
 // Ngôn ngữ = nhóm VI | EN gọn cùng kiểu. Không viền/ô hộp; nền chip theo token của app (shell/admin/chat/studio), tối dùng được.
 // Vai trò a11y giữ nguyên (radiogroup "Giao diện"/"Ngôn ngữ" + radio "Sáng"/"Tối"/"Theo máy", "VI"/"EN").
-import type { Locale, Theme } from "@ai/contracts";
+import type { Locale, Theme } from "@ai/contracts/common";
 import { type CSSProperties, type ReactElement, useSyncExternalStore } from "react";
 import { type Prefs, prefs } from "../prefs/prefs";
 

@@ -3,7 +3,7 @@
 // `packs.grant_agents` khoá + bump `hub.config_meta`, NOTIFY `hub_config_changed` trong tx) · đọc lại Group · bump + audit
 // (chỉ khi có đổi — bất biến M3-R15/M4 sự kiện ⇔ audit) · NOTIFY `config_changed` sau commit. Tắt = thu hồi 3 entitlement,
 // giữ Group/grant. Audit dùng enum M4 sẵn có (`grant`/`revoke` · entity `entitlement`, summary `op: pack.enable|disable`).
-import type { PackAction, PackListResponse, PackState } from "@ai/contracts";
+import type { PackAction, PackListResponse, PackState } from "@ai/contracts/packs";
 import { type AuditInput, type DbScope, type Tx, withScope } from "@ai/db";
 import { auditOf } from "../../lib/audit/audit.write";
 import { type ConfigCall, configWrite } from "../../lib/config/config-write";

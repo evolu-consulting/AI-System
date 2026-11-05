@@ -1,6 +1,6 @@
 // nav-v2 · /overview "Tổng quan" (mockup NITI): đầu trang chọn kỳ (Tháng này / Quý này / 12 tháng) + 4 con số (V2-K `GET /overview`); hai cột:
 // trái Cần xử lý (V2-K `GET /my-work/todo`) · Theo nhóm SP · Đối tác cần xem lại; phải Hợp đồng · SP nên làm gì (V2-J1) · Giao dịch nhiều nhất (V2-E).
-import type { OverviewPeriod } from "@ai/contracts";
+import type { OverviewPeriod } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

@@ -1,6 +1,6 @@
 // ADM-FR-01, ADM-FR-08 · TECH-DEBT #31: đăng nhập lại khi phiên hết hạn với user đã bật 2FA (relogin → totp_required → verifyTotp).
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import type { Me, TokenGrant } from "@ai/contracts";
+import type { Me, TokenGrant } from "@ai/contracts/auth";
 import { api } from "../http";
 import { session } from "./session";
 

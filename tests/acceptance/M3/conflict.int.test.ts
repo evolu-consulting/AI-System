@@ -2,13 +2,11 @@
 // cả 6 thực thể (user/tenant từ M4-R17 · CR-016; trước M4 vắng — câu R21); Ghi đè = gửi lại với version = current.version
 // (M3-R18, R20, R21; test-plan I-C). Mỗi `it` tự dựng lại dữ liệu; không `it` nào đọc kết quả của `it` khác.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import {
-  CommandSchema,
-  FeatureDetailSchema,
-  GroupSchema,
-  UserSchema,
-  WorkflowSchema,
-} from "@ai/contracts";
+import { CommandSchema } from "@ai/contracts/commands";
+import { FeatureDetailSchema } from "@ai/contracts/features";
+import { GroupSchema } from "@ai/contracts/groups";
+import { UserSchema } from "@ai/contracts/users";
+import { WorkflowSchema } from "@ai/contracts/workflows";
 import {
   callerOf,
   createM3Env,

@@ -1,8 +1,8 @@
 // HUB-FR-60, HUB-FR-61, HUB-FR-62, HUB-FR-23 · schema zod của seed yaml Hub (plan H1 §3.1, §3.6; H2a plan-db §4).
 // strictObject: trường lạ (vd `secret`) bị từ chối — yaml không được chứa secret/app-key (H1-R16).
 
-import { USERNAME_RE } from "@ai/contracts";
 import { PROCESS_STEP_MAX, ProcessStepSchema } from "@ai/contracts/chat";
+import { USERNAME_RE } from "@ai/contracts/common";
 import { AgentKeySchema, ProfileStepSchema, WorkflowKeySchema } from "@ai/contracts/hub";
 import { SourceKeySchema, StageAutofixSchema, StageSourceSchema } from "@ai/contracts/hub-admin";
 import { z } from "zod";

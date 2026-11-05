@@ -1,6 +1,6 @@
 // REP-v3-ui · engine V2-E · DT-02/03 · tab Tổng quan: bảng tính điểm từng nhóm (bấm tiêu chí ⇒ các việc), các bước tới điểm cuối,
 // biểu đồ 3/6/12 tháng (đường ngưỡng TỐT/KHÁ, lịch sử chốt tháng), cờ đỏ giữ nguyên.
-import type { PartnerRole, RepRole } from "@ai/contracts";
+import type { PartnerRole, RepRole } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { isNotFound } from "../hooks/use-partner-rep";

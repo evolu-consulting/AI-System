@@ -1,6 +1,6 @@
 // HD-FR-51 · S03 · port `ContractsPage.tsx:20-58` (nhãn trạng thái, tên rút gọn, người ký) + dựng truy vấn phía server từ bộ lọc
 // của `useTable`. Thuần: không React, không fetch. Tuỳ chọn lọc lấy từ facets (cả tenant), không từ trang hiện tại.
-import type { ContractFacets, ContractStatus } from "@ai/contracts";
+import type { ContractFacets, ContractStatus } from "@ai/contracts/pack-contracts";
 import type { Cond } from "~/features/table";
 import { type DateFilter, dateParams } from "./date-filter";
 import { type DocFilter, docTypeParams } from "./doc-list";

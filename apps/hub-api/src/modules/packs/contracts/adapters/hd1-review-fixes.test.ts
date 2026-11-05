@@ -5,9 +5,9 @@ import { describe, expect, test } from "bun:test";
 import {
   CONTRACT_FILE_MIME,
   ContractListQuerySchema,
-  packFeatureKey,
   UploadContractFormSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
+import { packFeatureKey } from "@ai/contracts/packs";
 import { Hono } from "hono";
 import { mapError } from "../../../../lib/errors";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";

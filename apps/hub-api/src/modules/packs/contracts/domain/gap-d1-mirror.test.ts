@@ -1,7 +1,7 @@
 // gap-d1 · ADR-0023: bản sao kiểu DTO mới ở domain khớp `@ai/contracts` (kiểu: lúc typecheck; hằng số: chạy).
 import { describe, expect, it } from "bun:test";
 import type * as C from "@ai/contracts";
-import { QUOTE_MAX_BYTES as C_QUOTE_MAX } from "@ai/contracts";
+import { QUOTE_MAX_BYTES as C_QUOTE_MAX } from "@ai/contracts/pack-contracts";
 import type * as PS from "./product-sources.types";
 import type * as PD from "./products.types";
 import type * as SP from "./supplier-prices.types";

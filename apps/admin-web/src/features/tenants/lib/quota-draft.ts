@@ -1,12 +1,12 @@
 // ADM-FR-40 · M4-R02 · bản nháp quota của tab Quota: chuỗi ô nhập ↔ payload PUT; validate khớp contract (QuotaItemInputSchema).
 // Hàm thuần; thông điệp là KEY i18n.
+import type { LocalizedText } from "@ai/contracts/common";
 import {
-  type LocalizedText,
   QUOTA_MAX_RUNS,
   QUOTA_MAX_TOKENS,
   type QuotaItemInput,
   type QuotaSetResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/quotas";
 import { pickLocalized } from "@/lib/localized";
 
 export type QuotaField = "runs" | "tokens" | "usd";

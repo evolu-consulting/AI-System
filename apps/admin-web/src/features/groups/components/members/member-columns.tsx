@@ -1,5 +1,5 @@
 // ADM-FR-62 · M3-R03 · cột bảng thành viên: người dùng (tên + username mono), group khác (chip key), đăng nhập cuối, bỏ khỏi group.
-import type { GroupMember } from "@ai/contracts";
+import type { GroupMember } from "@ai/contracts/groups";
 import type { TFunction } from "i18next";
 import { X } from "lucide-react";
 import type { Column } from "@/components/shared/DataTable";

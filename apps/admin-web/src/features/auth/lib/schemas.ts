@@ -1,5 +1,7 @@
 // ADM-FR-01, ADM-FR-06 · schema form auth; hằng số lấy từ @ai/contracts, thông điệp là KEY i18n (resolve khi render).
-import { BackupCodeSchema, PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts";
+
+import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts/common";
+import { BackupCodeSchema } from "@ai/contracts/totp";
 import { z } from "zod";
 
 export const loginSchema = z.object({

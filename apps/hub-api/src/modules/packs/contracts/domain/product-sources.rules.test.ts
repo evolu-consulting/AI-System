@@ -1,6 +1,6 @@
 // gap-d1 #19 · bảng rủi ro phụ thuộc NCC của SP (BA KN-09).
 import { describe, expect, it } from "bun:test";
-import type { ProductSourceOut } from "@ai/contracts";
+import type { ProductSourceOut } from "@ai/contracts/pack-contracts";
 import { dependencyRisk, levelOf } from "./product-sources.rules";
 
 const src = (name: string, lead: number | null = null): ProductSourceOut => ({

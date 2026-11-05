@@ -1,7 +1,7 @@
 // ADM-FR-08 · M4-R10 · M4-R16 · M4-AC11 · bật/tắt 2FA và tạo lại mã dự phòng (plan-cd §4.2, §4.4, §7).
 // Không log secret / otpauth_url / qr_svg / mã. Sai mã khi đã bật → tx TRẢ "wrong" để commit bộ đếm rồi mới ném.
 import { randomBytes } from "node:crypto";
-import type { BackupCodesResponse, TotpSetupResponse } from "@ai/contracts";
+import type { BackupCodesResponse, TotpSetupResponse } from "@ai/contracts/totp";
 import { type Tx, verifyPassword, withScope } from "@ai/db";
 import QRCode from "qrcode";
 import { auditOf, recordAudit } from "../../../lib/audit/audit.write";

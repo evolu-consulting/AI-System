@@ -1,5 +1,5 @@
 // app-catalog · /apps (chỉ platform_admin): bảng danh mục app web + thêm/sửa/xoá. Bật/tắt nhanh ngay trên bảng.
-import type { AppCatalogItem, AppCreateRequest } from "@ai/contracts";
+import type { AppCatalogItem, AppCreateRequest } from "@ai/contracts/app-catalog";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";

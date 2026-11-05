@@ -8,11 +8,13 @@ import type {
   ExternalOrgListQuery,
   ExternalOrgListResponse,
   ExternalUserCreateRequest,
+} from "@ai/contracts/external-orgs";
+import type {
   User,
   UserCreateResponse,
   UserListQuery,
   UserListResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/users";
 import { type Tx, withScope } from "@ai/db";
 import { auditOf } from "../../lib/audit/audit.write";
 import { type ConfigSink, configWrite } from "../../lib/config/config-write";

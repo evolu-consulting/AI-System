@@ -1,6 +1,6 @@
 // ADM-FR-53 · ghi cấu hình + NOTIFY `config_changed` SAU commit (spec M3 §3, M3-R15/R16, plan §5.2, TECH-DEBT #13).
 // Một request = đúng một `configWrite` (helper nội bộ nhận `(tx, ch)`, không lồng withScope/configWrite).
-import { CONFIG_CHANNEL, type ConfigEvent, configChangedPayload } from "@ai/contracts";
+import { CONFIG_CHANNEL, type ConfigEvent, configChangedPayload } from "@ai/contracts/config";
 import { type ConfigSink, type Db, type DbScope, type Tx, withConfigWrite } from "@ai/db";
 import { logger } from "../logger";
 import { safeErrorFields } from "../pg-errors";

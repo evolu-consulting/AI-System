@@ -1,5 +1,5 @@
 // feedback · luật thuần: giải mã tệp đính kèm base64 (≤ 2 MB), đối chiếu loại khai báo với chữ ký byte (không tin `mime` của client).
-import { FEEDBACK_FILE_BYTES_MAX, type FeedbackCreateParsed } from "@ai/contracts";
+import { FEEDBACK_FILE_BYTES_MAX, type FeedbackCreateParsed } from "@ai/contracts/feedback";
 
 export type DecodedFile = { name: string; mime: string; bytes: Buffer };
 

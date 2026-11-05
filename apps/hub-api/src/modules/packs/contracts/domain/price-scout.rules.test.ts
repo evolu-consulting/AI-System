@@ -2,7 +2,7 @@
 // VAT, cảnh báo; bản sao DTO khớp @ai/contracts.
 import { describe, expect, it } from "bun:test";
 import type * as C from "@ai/contracts";
-import { PRICE_SCOUT_DEFAULT as C_DEFAULT } from "@ai/contracts";
+import { PRICE_SCOUT_DEFAULT as C_DEFAULT } from "@ai/contracts/pack-contracts";
 import {
   effectiveConfig,
   groupDefaults,

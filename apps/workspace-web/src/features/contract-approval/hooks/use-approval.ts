@@ -2,7 +2,7 @@
 // quyết; xong ⇒ tải lại HĐ + trạng thái duyệt. Bước đang chạy (AI đọc / tool) ⇒ tải lại mỗi 2 s tới khi có bước người.
 // confirm-flow: một thao tác tại một thời điểm (chặn bấm đúp kể cả trước khi nút kịp vô hiệu); `act` trả kết quả có mã lỗi.
 // CR-120: Duyệt/Trả lại/Từ chối (+ lý do, + SP gắn) đi `FlowRuntime.act` khe `contracts.approval`; FlowView tự tải lại khi thẻ đổi (`ApprovalTimeline`).
-import type { ApprovalActionRequest } from "@ai/contracts";
+import type { ApprovalActionRequest } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";

@@ -1,6 +1,6 @@
 // CR-118 · cr118-app-config · xem trước "công ty này sẽ thấy gì": nạp feature đã lưu + vai + quy trình đang gán của MỘT công ty rồi gọi luật thuần
 // `previewApp` (@ai/contracts, cùng luật với shell web gộp). Bản nháp = tập key feature chưa lưu do thẻ app đang giữ.
-import { type AppManifest, type PreviewSlotAssign, previewApp } from "@ai/contracts";
+import { type AppManifest, type PreviewSlotAssign, previewApp } from "@ai/contracts/app-manifest";
 import { useMemo } from "react";
 import { useTenantSlots } from "@/features/processes/library-api";
 import { useTenantFeatureStates } from "@/features/tenants/api";

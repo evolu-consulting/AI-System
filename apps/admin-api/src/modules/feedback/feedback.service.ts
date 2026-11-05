@@ -6,7 +6,7 @@ import type {
   FeedbackListQuery,
   FeedbackListResponse,
   FeedbackUpdateRequest,
-} from "@ai/contracts";
+} from "@ai/contracts/feedback";
 import { type Db, type Tx, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { type Actor, scopeOf } from "../../lib/auth-middleware";

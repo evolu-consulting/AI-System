@@ -1,6 +1,6 @@
 // CR-120 §2 · FLOW-FR-03 · Cài đặt › Ứng dụng & quy trình: MỌI khe app khai báo trong manifest (kể cả khe công ty chưa có — cảnh báo),
 // rồi tới khe năng lực có mà manifest không khai báo. `present` = năng lực (hub) có khe này cho công ty.
-import { type AppSlotDecl, getAppManifest } from "@ai/contracts";
+import { type AppSlotDecl, getAppManifest } from "@ai/contracts/app-manifest";
 
 export type PaneSlot = { key: string; decl: AppSlotDecl | null; present: boolean };
 

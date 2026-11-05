@@ -1,6 +1,6 @@
 // ADM-FR-42 · usage-analytics · hàm thuần của màn Phân tích token: khoảng ngày theo preset (giờ VN), xoay chuỗi thời gian
 // thành ma trận xô × app (biểu đồ cột chồng), màu theo app, % thay đổi, tỉ lệ lỗi. Không đọc i18n/DOM — test được.
-import type { UsageAnalytics, UsageGrain } from "@ai/contracts";
+import type { UsageAnalytics, UsageGrain } from "@ai/contracts/usage-analytics";
 
 export const PRESETS = ["7d", "30d", "90d", "month", "prevMonth"] as const;
 export type Preset = (typeof PRESETS)[number];

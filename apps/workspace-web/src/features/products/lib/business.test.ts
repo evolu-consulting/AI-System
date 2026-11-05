@@ -1,6 +1,6 @@
 // V2-J1 · tab nhóm, "đang nắm giữ", màu thanh điểm của danh sách Sản phẩm.
 import { describe, expect, test } from "bun:test";
-import type { BizProductRow } from "@ai/contracts";
+import type { BizProductRow } from "@ai/contracts/pack-contracts";
 import { barTone, catalogTabOf, filterTab, heldView, qtyText } from "./business";
 
 const row = (o: Partial<BizProductRow>): BizProductRow => ({

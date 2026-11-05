@@ -1,6 +1,6 @@
 // ADM-FR-68 · PB-R21 · bảng Nguồn: Ký hiệu · Loại · Mô tả · Đích · Dùng bởi · Trạng thái + menu `⋯`.
 // Cột Đích: `path` chỉ in cho platform_admin qua `localPathOf` (tenant_admin luôn thấy "Ẩn…"); không đưa path vào title/aria của dòng tenant.
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import type { SourceView } from "@ai/contracts/hub-admin";
 import { MoreHorizontal } from "lucide-react";
 import { type ReactNode, useMemo } from "react";

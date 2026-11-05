@@ -1,7 +1,7 @@
 // HD-FR-52 · N1 Q8 · HD5 plan: danh bạ thành viên gói `GET /members` → `{items:[{id,name}]}` (người dùng dùng được của CÙNG tenant
 // token, gồm chính mình) để hiện tên người phụ trách. Đọc `admin.users` cột `hub_ro` như `directory` (một câu, lọc tenant tường minh).
 // Quyền `read` của gói. Không lộ username/email.
-import { MEMBERS_MAX, type MembersResponse } from "@ai/contracts";
+import { MEMBERS_MAX, type MembersResponse } from "@ai/contracts/pack-contracts";
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";

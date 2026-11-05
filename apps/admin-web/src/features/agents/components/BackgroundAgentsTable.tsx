@@ -1,7 +1,7 @@
 // agents-background · mục "Agent chạy nền của app": agent không chat được (cờ `surface = background` của Hub) chạy thay cho một app /
 // tính năng. Cột: Agent · Phục vụ · Model·bậc · Chạy bằng · Bật cho công ty · Dùng tháng này · Trần tháng · Thao tác.
 // Không có "Cấp quyền" / "Đặt mặc định" (không cấp quyền, không @mention).
-import type { MeApp } from "@ai/contracts";
+import type { MeApp } from "@ai/contracts/app-catalog";
 import type { AgentSettingsItem } from "@ai/contracts/hub-admin";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";

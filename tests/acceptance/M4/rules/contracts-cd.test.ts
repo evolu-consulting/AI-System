@@ -1,7 +1,7 @@
 // ADM-FR-54 · ADM-BR-04 · ADM-FR-08 · contract khối C (`packages/contracts/src/transfer.ts`, plan-cd §3) + đếm
 // `API_ERRORS` (D-K04, plan-cd §4.3). Xanh ở T7. Schema D (totp) ở `contracts-totp.test.ts` (xanh T9d).
 import { describe, expect, it } from "bun:test";
-import { API_ERRORS } from "@ai/contracts";
+import { API_ERRORS } from "@ai/contracts/common";
 import { loadTransferContract } from "../_cd-modules";
 import { fileOf, ruleSnapshot } from "../_transfer-data";
 

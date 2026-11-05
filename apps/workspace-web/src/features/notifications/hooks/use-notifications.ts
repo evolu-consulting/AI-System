@@ -1,6 +1,6 @@
 // N3-FR-09 · dữ liệu chuông: danh sách + số chưa đọc + tùy chọn kênh. Lỗi mạng/5xx ⇒ chuông rỗng (không toast: đây là phụ trợ,
 // không được làm phiền); 401 do web-kit xử lý (refresh/đăng xuất). Làm tươi: khi cửa sổ lấy lại focus, khi mở chuông, mỗi 60 s.
-import type { NotificationList } from "@ai/contracts";
+import type { NotificationList } from "@ai/contracts/notify";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchNotifications, markRead } from "../api";
 

@@ -2,7 +2,7 @@
 // plan §3.2), chưa cần NOTIFY (M3-R17, R19 (2); test-plan I-HV). "menu /" và CMD_NOT_FOUND là của Hub (M5), không kiểm ở đây.
 // Mỗi `it` tự dựng lại dữ liệu (beforeEach reset); ca cần tự cấp qua API dùng `grants: []`.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { EffectiveAccessSchema } from "@ai/contracts";
+import { EffectiveAccessSchema } from "@ai/contracts/access";
 import {
   betaId,
   callerOf,

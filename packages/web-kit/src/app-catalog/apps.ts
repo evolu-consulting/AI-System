@@ -1,6 +1,6 @@
 // app-catalog · luật thuần phía web của switcher "Ứng dụng": nguồn là `GET /me/apps` (admin-api đã lọc theo quyền).
 // Env build chỉ là DỰ PHÒNG khi API lỗi (`fallbackApps`) — danh sách thật do Admin quản lý, thêm app không cần build lại.
-import type { MeApp } from "@ai/contracts";
+import type { MeApp } from "@ai/contracts/app-catalog";
 
 export type { MeApp };
 

@@ -3,7 +3,8 @@
 // Nạp động (P7) ⇒ đỏ "Cannot find module" tới khi B2 xong.
 import { describe, expect, it } from "bun:test";
 import { randomBytes } from "node:crypto";
-import { API_ERRORS, ErrorResponseSchema } from "@ai/contracts";
+import { API_ERRORS } from "@ai/contracts/common";
+import { ErrorResponseSchema } from "@ai/contracts/errors";
 import { TestRunResponseSchema } from "@ai/contracts/hub-internal";
 import { type Loose, loadCommandTestContract, loadCommandTestRules } from "../_modules";
 

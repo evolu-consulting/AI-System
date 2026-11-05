@@ -1,6 +1,6 @@
 // HD-FR-54 · HD-FR-55 · S05 (không có trong mgmt-app web ⇒ lệch có chủ ý, ẩn ở so ảnh: `data-hd5`): HĐ gốc / các phụ lục /
 // bảng giá hiện hành sau khi áp phụ lục. CR-101a: bỏ gắn/gỡ phụ lục (chỉ đọc).
-import type { ContractDetail } from "@ai/contracts";
+import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";

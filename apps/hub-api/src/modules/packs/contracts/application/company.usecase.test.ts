@@ -1,6 +1,11 @@
 // V2-L · luật thuần của cài đặt công ty (trùng MST/tên, logo ≤ 1 MB, màu/giao diện) + "thử tính" điểm kinh doanh theo số mẫu.
 import { describe, expect, it } from "bun:test";
-import { BizPreviewSchema, COMPANY_LOGO_MAX_BYTES, CompanySchema, logoBytes } from "@ai/contracts";
+import {
+  BizPreviewSchema,
+  COMPANY_LOGO_MAX_BYTES,
+  CompanySchema,
+  logoBytes,
+} from "@ai/contracts/pack-contracts";
 import { DEFAULT_BIZ } from "../domain/business-score.rules";
 import { businessUsecase } from "./business.usecase";
 import { companyProblem } from "./company.usecase";

@@ -1,6 +1,6 @@
 // ADM-FR-37 · CR-043 · tab Agent của group: mọi agent của tenant + công tắc cấp/thu hồi (lạc quan, lỗi → hoàn lại + toast).
 
-import type { Group } from "@ai/contracts";
+import type { Group } from "@ai/contracts/groups";
 import type { AgentGrantListItem } from "@ai/contracts/hub-admin";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";

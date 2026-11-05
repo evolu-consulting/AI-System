@@ -1,15 +1,11 @@
 // HUB-FR-10, HUB-FR-76, HUB-FR-95, HUB-BR-06, HUB-BR-19 · H2a P5, P14, Q4 · X1 plan §2.3 · catalog Admin trong cache Hub (`CatalogSnapshot`
 // bất biến, plan H2a §3–§4) + đầu vào quyền command theo user. Thuần: jsonb validate bằng zod ở biên (CONVENTIONS §5),
 // hàng hỏng bị bỏ (không làm hỏng cả catalog), người gọi log.
-import {
-  ARG_NAME_RE,
-  ArgFallbackSchema,
-  BETA_GROUP_KEY,
-  CommandOutputSchema,
-  type FeatureStatus,
-  InputMapSchema,
-  InputSchemaSchema,
-} from "@ai/contracts";
+
+import { CommandOutputSchema, InputMapSchema } from "@ai/contracts/commands";
+import { ARG_NAME_RE, ArgFallbackSchema, type FeatureStatus } from "@ai/contracts/common";
+import { BETA_GROUP_KEY } from "@ai/contracts/groups";
+import { InputSchemaSchema } from "@ai/contracts/workflows";
 import { z } from "zod";
 import type { CatalogCommand, CatalogWorkflow } from "../commands/catalog.types";
 import { type CommandAccessInput, usableCommands } from "../commands/command-access.rules";

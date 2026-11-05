@@ -1,6 +1,6 @@
 // ADM-FR-55 · M3-R20 · TECH-DEBT #14 · lưu editor Command (PATCH kèm version), 409 → ConflictDialog (câu có {user}, A4).
 // Version cho lần lưu kế tiếp lấy từ phản hồi lưu; form `reset` khi lưu xong (giữ phần vừa gõ thêm) hoặc `Tải bản mới`.
-import type { Command } from "@ai/contracts";
+import type { Command } from "@ai/contracts/commands";
 import { useRef } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useTranslation } from "react-i18next";

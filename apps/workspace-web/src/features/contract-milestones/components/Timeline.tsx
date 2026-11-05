@@ -1,6 +1,6 @@
 // V2-F · HD-04/HD-11 · mockup `timelineV2`: khối "Dòng thời gian" — tiến độ n/m mốc, các nút Ký HĐ → mốc → Hết hiệu lực, bước hiện tại được
 // đánh dấu + nút "Xác nhận xong", bút sửa trên mốc CHƯA xác nhận, "+ Thêm mốc". Viewer (không quyền ghi) chỉ xem.
-import type { ContractDetail, Milestone } from "@ai/contracts";
+import type { ContractDetail, Milestone } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";

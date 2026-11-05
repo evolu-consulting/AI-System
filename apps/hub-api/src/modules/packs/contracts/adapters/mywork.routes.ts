@@ -7,7 +7,7 @@ import {
   FollowupsQuerySchema,
   MyWorkQuerySchema,
   SnoozeRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { appError } from "../../../../lib/errors";

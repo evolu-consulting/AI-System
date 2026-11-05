@@ -1,6 +1,6 @@
 // V2-G · HD-04: dòng SP của HĐ đã lưu — giữ lựa chọn SP cục bộ, lưu ngay khi đổi (`PUT /contracts/:id/items/:itemId/product`);
 // lỗi ⇒ trả về giá trị đã lưu; 409 `ITEM_LOCKED` ⇒ câu riêng.
-import type { ContractItem } from "@ai/contracts";
+import type { ContractItem } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";

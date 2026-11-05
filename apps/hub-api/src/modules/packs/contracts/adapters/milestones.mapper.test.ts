@@ -1,7 +1,7 @@
 // V2-A · KN-04 · 5.4a: mapper mốc — DTO khớp `MilestoneSchema`/`ContractDetailSchema`; giai đoạn từ tóm tắt SQL của danh sách
 // (`toProgress`) ≡ giai đoạn từ dãy mốc của chi tiết (`stageOf`) trên cùng dữ liệu.
 import { describe, expect, it } from "bun:test";
-import { ContractProgressSchema, MilestoneSchema } from "@ai/contracts";
+import { ContractProgressSchema, MilestoneSchema } from "@ai/contracts/pack-contracts";
 import type { MilestoneRow } from "../application/milestones.ports";
 import { milestonesView, toProgress } from "./milestones.mapper";
 

@@ -1,6 +1,6 @@
 // ADM-FR-20, ADM-FR-21, ADM-FR-22, ADM-FR-23, ADM-FR-24 · editor Command (/commands/new, /commands/$id): 5 bước trong tab "Cấu hình"
 // + tab "Ai dùng được" + panel "Chạy thử" (X1 F4: cột phải ≥ 1024px, tab khi hẹp hơn).
-import type { Command } from "@ai/contracts";
+import type { Command } from "@ai/contracts/commands";
 import { useRouter } from "@tanstack/react-router";
 import { lazy, Suspense, useState } from "react";
 import { FormProvider } from "react-hook-form";

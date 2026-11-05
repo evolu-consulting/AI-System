@@ -1,6 +1,6 @@
 // HD4-FR-06 · HD4-AC08 · S05: thẻ "Hạn chót hành động" + "Ghi nhận xử lý" (port cm-web `contracts/[id]/page.tsx:324-341`).
 // Chỉ HĐ đã duyệt; người có quyền ghi chọn kết quả ⇒ POST rồi tải lại chi tiết. Bản SPA `web/` của mgmt-app không có thẻ này.
-import type { ContractDetail } from "@ai/contracts";
+import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { useRecordHandled } from "../hooks/use-record-handled";

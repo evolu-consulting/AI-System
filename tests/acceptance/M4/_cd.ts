@@ -3,7 +3,7 @@
 // Không chứa `it(...)`. Truy vấn bảng M4 (audit_log, user_totp…) chịu được bảng chưa có để ca đỏ ở route/expect,
 // không đỏ ở dựng dữ liệu (CONVENTIONS §2 Test "Bẫy đã gặp").
 import { expect } from "bun:test";
-import { API_ERRORS } from "@ai/contracts";
+import { API_ERRORS } from "@ai/contracts/common";
 import type { M3Env, Res } from "../M3/_fixtures";
 import { stepOf, totpAt } from "./_totp";
 

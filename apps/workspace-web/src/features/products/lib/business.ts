@@ -1,5 +1,5 @@
 // V2-J1 · "Sản phẩm" của trang Sản phẩm & Giá: tab nhóm, sắc thái đề xuất/điểm, chữ "đang nắm giữ" — thuần (không React).
-import type { BizProductRow, BizSuggestion, ProductGroup } from "@ai/contracts";
+import type { BizProductRow, BizSuggestion, ProductGroup } from "@ai/contracts/pack-contracts";
 import type { TagTone } from "~/components/shared/tag";
 
 export const CATALOG_TABS = ["all", "service", "goods", "referral"] as const;

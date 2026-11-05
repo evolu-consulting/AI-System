@@ -1,5 +1,5 @@
 // ADM-FR-21, ADM-FR-22 · AC-A03 · một dòng input map: tên input (mono, `*` nếu bắt buộc, kiểu) · nguồn (8) · tham số / giá trị cố định.
-import { MAP_SOURCES } from "@ai/contracts";
+import { MAP_SOURCES } from "@ai/contracts/common";
 import { TriangleAlert } from "lucide-react";
 import { memo } from "react";
 import { Controller, useFormContext } from "react-hook-form";

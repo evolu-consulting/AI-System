@@ -8,7 +8,7 @@ import {
   type GroupMembersAddRequest,
   type GroupMembersAddResponse,
   OTHER_GROUPS_MAX,
-} from "@ai/contracts";
+} from "@ai/contracts/groups";
 import { type Tx, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { configWrite } from "../../lib/config/config-write";

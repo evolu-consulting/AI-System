@@ -1,5 +1,5 @@
 // ADM-FR-35 · M3-R08 · thanh trên ma trận: "{n} thay đổi chưa lưu" (status) · Huỷ · Lưu; quá 200 thao tác → chặn Lưu kèm câu giải thích.
-import { GRANT_BATCH_MAX } from "@ai/contracts";
+import { GRANT_BATCH_MAX } from "@ai/contracts/grants";
 import { useTranslation } from "react-i18next";
 import { useOnline } from "@/components/shared/ConnectionBanner";
 import { Button } from "@/components/ui/button";

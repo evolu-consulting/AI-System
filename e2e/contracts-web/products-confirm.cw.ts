@@ -1,7 +1,7 @@
 // products-confirm · BA 5.5 (khách 2026-10-22) · Luật 4b: hộp "Gắn sản phẩm" chỉ mở khi bước duyệt sẽ XÁC NHẬN HĐ (máy chủ báo
 // `finalizes_on_approve`); SP trùng tên được chọn sẵn, đổi một dòng sang "Tạo sản phẩm mới" ⇒ thân `approve` mang `products`. Cấp 1 sẽ
 // chuyển cấp 2 ⇒ không hộp, `approve` không kèm SP. Backend giả `page.route`; chờ phần tử, không sleep.
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { expect, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
 import { approvalAsHub } from "./dataset-approval";

@@ -4,7 +4,10 @@
 // `dailyLimits.uploads` (cùng con số với contracts) ∨ env `COMMUNITY_UPLOADS_TENANT_DAY`; toàn hệ thống = env
 // `COMMUNITY_UPLOADS_GLOBAL_DAY`; theo người/phút = env `COMMUNITY_UPLOADS_USER_MIN` (Redis cửa sổ một phút, như
 // `link-check-limit.redis.ts`). Redis vắng/lỗi ⇒ 503 (đóng an toàn, D-17).
-import { CONTRACT_UPLOAD_GLOBAL_DAILY, CONTRACT_UPLOAD_TENANT_DAILY } from "@ai/contracts";
+import {
+  CONTRACT_UPLOAD_GLOBAL_DAILY,
+  CONTRACT_UPLOAD_TENANT_DAILY,
+} from "@ai/contracts/pack-contracts";
 import type { Redis } from "ioredis";
 import { AppError } from "../../lib/errors";
 import type { CommunityUploadGate } from "./community/application/pack-ports";

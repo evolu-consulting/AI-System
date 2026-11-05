@@ -1,5 +1,5 @@
 // app-catalog · truy vấn admin.app_catalog (catalog toàn hệ thống, ≤ vài chục hàng): mỗi hàm một câu SQL cố định.
-import type { AppAudience, AppCreateRequest, AppUpdateRequest } from "@ai/contracts";
+import type { AppAudience, AppCreateRequest, AppUpdateRequest } from "@ai/contracts/app-catalog";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { CatalogRow } from "./app-catalog.rules";

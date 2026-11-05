@@ -1,5 +1,5 @@
 // ADM-FR-11 · M2-R08 · một dòng tham số input schema: tên (mono) · kiểu · bắt buộc · mô tả · lựa chọn (select) · ↑ ↓ · xoá.
-import { INPUT_TYPES } from "@ai/contracts";
+import { INPUT_TYPES } from "@ai/contracts/common";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { memo } from "react";
 import { Controller, useFormContext, useWatch } from "react-hook-form";

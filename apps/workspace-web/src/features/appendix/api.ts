@@ -4,7 +4,7 @@ import type {
   ContractListResponse,
   ContractPricesResponse,
   ParentSuggestionsResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/contracts";

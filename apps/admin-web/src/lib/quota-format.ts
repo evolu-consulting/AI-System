@@ -1,6 +1,6 @@
 // ADM-FR-40, ADM-FR-41, ADM-FR-42 · M4-R02, R06 · định dạng và mức quota dùng chung (QuotaBar, QuotaBanner, bảng Tenants/Usage).
 // Hàm thuần: `locale` truyền vào (không đọc i18n) để test được.
-import type { QuotaLevel } from "@ai/contracts";
+import type { QuotaLevel } from "@ai/contracts/quotas";
 
 export type QuotaKind = "runs" | "tokens" | "usd";
 

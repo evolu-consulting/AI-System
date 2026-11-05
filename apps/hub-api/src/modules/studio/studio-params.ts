@@ -1,6 +1,6 @@
 // HUB-FR-66 · HUB-FR-67 · HUB-FR-78 · spec H4b2 §3 (cuối C) · path param `:id`/`:agent_id`/`:tenant_id` của route Models +
 // Quyền agent không phải uuid ⇒ 400 `VALIDATION_ERROR` (khác `parseIdParam` của H4a: 404). Route H4a giữ nguyên.
-import { UuidSchema } from "@ai/contracts";
+import { UuidSchema } from "@ai/contracts/common";
 import type { Context, MiddlewareHandler } from "hono";
 import { validationError } from "../../lib/http";
 

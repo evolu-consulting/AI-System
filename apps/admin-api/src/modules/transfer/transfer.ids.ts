@@ -11,7 +11,7 @@ import type {
   QuotaEntry,
   TenantEl,
   WorkflowEl,
-} from "@ai/contracts";
+} from "@ai/contracts/transfer";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { pgArray } from "../../lib/sql";

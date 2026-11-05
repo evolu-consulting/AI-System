@@ -1,5 +1,5 @@
 // ADM-FR-74 · hành động trên công ty đối tác: thêm, đổi tên (hộp thoại tên), vô hiệu (xác nhận, không hoàn tác).
-import type { ExternalOrg } from "@ai/contracts";
+import type { ExternalOrg } from "@ai/contracts/external-orgs";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";

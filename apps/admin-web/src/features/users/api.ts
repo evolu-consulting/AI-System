@@ -6,7 +6,7 @@ import type {
   UserCreateResponse,
   UserListResponse,
   UserUpdateRequest,
-} from "@ai/contracts";
+} from "@ai/contracts/users";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 import { lookupStep } from "./lookup-user";

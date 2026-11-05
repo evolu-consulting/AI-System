@@ -1,5 +1,5 @@
 // ADM-FR-35 · M3-R13 · tab Phân quyền của workspace công ty: tab con + user trên URL (`?tab=access&view=roles|matrix|check&user=`); tenant theo workspace (CR-112).
-import type { Me } from "@ai/contracts";
+import type { Me } from "@ai/contracts/auth";
 import { getRouteApi } from "@tanstack/react-router";
 import { useWorkspaceView } from "@/features/tenants/lib/use-workspace-view";
 

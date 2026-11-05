@@ -1,7 +1,7 @@
 // products-confirm · BA 5.5: gắn/tạo SP cho dòng HĐ — CHỈ khi HĐ đã xác nhận (không còn chờ xác nhận / đang đọc / lỗi / từ chối).
 // MỘT câu (set-based, văn bản cố định, lô qua một tham số JSON): SP mới (trùng tên ⇒ dùng SP có sẵn cùng tên) + thành phần mặc định
 // (`created_from_contract_id` = HĐ) → gắn dòng HĐ → sự kiện `item_product_set`. HĐ đã có dòng kho ⇒ khoá (không đổi gì).
-import type { ProductLink } from "@ai/contracts";
+import type { ProductLink } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { ProductLinksRepo } from "../application/product-links.usecase";

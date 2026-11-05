@@ -4,10 +4,10 @@
 import {
   CORE_FEATURE_KEY,
   FEATURE_NAME_MAX,
-  type FeatureRef,
   type FeatureStatus,
   LocalizedTextSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/common";
+import type { FeatureRef } from "@ai/contracts/features";
 import { commands, featureCommands, features, type Tx } from "@ai/db";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 

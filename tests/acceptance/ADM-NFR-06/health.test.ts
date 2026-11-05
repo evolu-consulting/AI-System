@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { ErrorResponseSchema, HealthResponseSchema } from "@ai/contracts";
+import { ErrorResponseSchema } from "@ai/contracts/errors";
+import { HealthResponseSchema } from "@ai/contracts/health";
 import pkg from "../../../apps/admin-api/package.json";
 import { createApp } from "../../../apps/admin-api/src/app";
 

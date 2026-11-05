@@ -1,7 +1,7 @@
 // DOC-ui-gaps · mục 3 DOC-ui-list: loại chứng từ chọn khi tải lên — HĐ kinh tế (có thể thuộc một HĐ nguyên tắc) hoặc HĐ nguyên tắc (hạn mức
 // tuỳ chọn + cách đặt hàng). Giao dịch không tải lên bằng tệp (nhập tay ở `/contracts/new?type=deal`, gắn file = nâng thành HĐ).
 // Thuần: dựng trường multipart `POST /contracts` (`UploadDocFormSchema`), không React.
-import { ORDER_TERMS_MAX } from "@ai/contracts";
+import { ORDER_TERMS_MAX } from "@ai/contracts/pack-contracts";
 import { parseMoney } from "~/components/shared/format";
 
 export const UPLOAD_DOC_TYPES = ["contract", "framework"] as const;

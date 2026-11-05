@@ -1,8 +1,14 @@
 // CR-121 D-3: logic thuần của trình dựng điều kiện bước "Chỉ chạy khi" (thay `whenParts`/`buildWhen` cũ — chỉ còn MỘT control).
 // `FlowWhen` = nhóm và/hoặc một cấp: phần tử là điều kiện lá (`{field,…}`) hoặc nhóm lồng (`{op,conds}`). Trường + toán tử + giá trị
 // theo `fields` của khe (Hub trả kèm danh sách khe); kiểu trường quyết hình điều kiện: số → `{op,value}`, enum/phòng ban → `{in}`, có-không → `{is}`.
-import { type FlowCond, type FlowCondGroup, type FlowWhen, isFlowCondGroup } from "@ai/contracts";
+
 import type { SlotFieldDto } from "@ai/contracts/hub-admin";
+import {
+  type FlowCond,
+  type FlowCondGroup,
+  type FlowWhen,
+  isFlowCondGroup,
+} from "@ai/contracts/pack-contracts";
 import type { DealKind } from "../library-api";
 
 export type ValueOp = "ge" | "gt" | "le" | "lt";

@@ -1,7 +1,8 @@
 // N3-FR-01 · N3-NFR-02 · `Notifier` trên hàm `notify.enqueue(source, lô jsonb)` (SECURITY DEFINER, migrations-hub/0040). Role gói
 // `<k>_rw` chỉ có EXECUTE hàm này — không đọc/ghi bảng thông báo. Tenant lấy từ `app.tenant_id` của tx (`withPackScope`).
 // SQL văn bản cố định, lô qua MỘT tham số jsonb, 0 câu khi lô rỗng.
-import { type NotifyInput as ContractInput, PackKeySchema } from "@ai/contracts";
+import type { NotifyInput as ContractInput } from "@ai/contracts/notify";
+import { PackKeySchema } from "@ai/contracts/packs";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { Notifier, NotifyInput } from "../application/notify";

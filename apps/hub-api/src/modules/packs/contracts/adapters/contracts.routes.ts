@@ -1,7 +1,7 @@
 // HD-FR-07 · HD-AC01 · HD-AC09 · D-03 · D-10 · D-13 · HD1 plan §2: route đọc gói hợp đồng (mount dưới `/pack/contracts`, sau
 // `requireAuth`). Guard `read` TRƯỚC kiểm tham số (403 trước 400, 0 SQL). Query lặp (`?status=a&status=b`) ⇒ mảng; khoá phạm vi
 // (`tenant_id`/`user_id`) bị bỏ — tenant/user chỉ từ token. `/contracts/facets` khai trước mọi `/contracts/:id` (T8).
-import { ContractExportQuerySchema, ContractListQuerySchema } from "@ai/contracts";
+import { ContractExportQuerySchema, ContractListQuerySchema } from "@ai/contracts/pack-contracts";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";

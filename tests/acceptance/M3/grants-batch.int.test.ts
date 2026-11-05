@@ -1,7 +1,7 @@
 // ADM-FR-32, ADM-FR-35 · PUT /admin/grants/batch: một transaction, ≤ 200 thao tác, toàn phần hoặc không có gì
 // (M3-AC03; M3-R08; test-plan I-GB). Kiểm hiệu lực bằng SQL tham chiếu `hub_ro`. Mỗi `it` tự dựng lại dữ liệu.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { GrantBatchResponseSchema } from "@ai/contracts";
+import { GrantBatchResponseSchema } from "@ai/contracts/grants";
 import {
   betaId,
   callerOf,

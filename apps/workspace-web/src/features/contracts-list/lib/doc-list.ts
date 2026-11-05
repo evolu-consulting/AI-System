@@ -1,6 +1,6 @@
 // DOC-ui-list · R31/R32/R33/R51: luật thuần của danh sách "Hợp đồng & giao dịch" — bộ lọc loại chứng từ (Tất cả / HĐ nguyên tắc /
 // HĐ kinh tế / Giao dịch), tham số API (`nest=1`, `doc_type`), dựng hàng hiển thị (con thụt dưới HĐ NT). Không React, không fetch.
-import type { ContractListResponse, DocType } from "@ai/contracts";
+import type { ContractListResponse, DocType } from "@ai/contracts/pack-contracts";
 
 export const DOC_FILTERS = ["all", "framework", "contract", "deal"] as const;
 export type DocFilter = (typeof DOC_FILTERS)[number];

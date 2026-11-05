@@ -1,5 +1,5 @@
 // CR-112 · ADM-FR-82 · ô "Vai theo ứng dụng" của một người: chip vai (gỡ được) + chọn "Gán vào vai…" (ghi vào bản nháp).
-import type { User } from "@ai/contracts";
+import type { User } from "@ai/contracts/users";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";

@@ -1,6 +1,6 @@
 // ADM-FR-62 · M3-R03 · D12 · dán danh sách username: tách bằng parseUsernameList của contract, tối đa 500, thêm một phần;
 // sau khi gửi ô dán chỉ còn các username `not_found` để sửa tại chỗ.
-import { GROUP_PASTE_MAX, type Group, parseUsernameList } from "@ai/contracts";
+import { GROUP_PASTE_MAX, type Group, parseUsernameList } from "@ai/contracts/groups";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";

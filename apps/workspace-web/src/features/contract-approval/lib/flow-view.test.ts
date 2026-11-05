@@ -1,6 +1,10 @@
 // CR-118 · cr118-flow-web · thẻ duyệt ⇒ FlowView ⇒ dòng thời gian: kết quả PHẢI trùng `timelineRows` cũ (hành vi y hệt).
 import { describe, expect, test } from "bun:test";
-import type { ApprovalCardStep, ContractApproval, ContractGroup } from "@ai/contracts";
+import type {
+  ApprovalCardStep,
+  ContractApproval,
+  ContractGroup,
+} from "@ai/contracts/pack-contracts";
 import { timelineRows } from "./engine-card";
 import { APPROVAL_SLOT, flowViewOfApproval, rowOfFlowStep, withGroupLabels } from "./flow-view";
 

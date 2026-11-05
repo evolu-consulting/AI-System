@@ -7,7 +7,7 @@ import type {
   SecretListQuery,
   SecretListResponse,
   SecretNoteRequest,
-} from "@ai/contracts";
+} from "@ai/contracts/secrets";
 import {
   type AuditActionValue,
   type AuditInput,

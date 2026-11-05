@@ -1,5 +1,5 @@
 // ADM-FR-42 · M4-R09 · Q5 · Tổng quan platform_admin (artboard Main): 5 KPI, tenant sắp vượt quota, card Hub "—", thay đổi gần đây.
-import type { OverviewResponse } from "@ai/contracts";
+import type { OverviewResponse } from "@ai/contracts/overview";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { KpiCard } from "@/components/shared/kpi/KpiCard";

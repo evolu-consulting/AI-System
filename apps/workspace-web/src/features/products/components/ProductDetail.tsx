@@ -1,6 +1,6 @@
 // V2-J1 · SP-02/07: chi tiết sản phẩm — tóm tắt (đang nắm giữ, đã bán 12 tháng, điểm + đề xuất + lý do, 3 thanh yếu tố) và các tab:
 // Lịch sử mua bán · (chỗ gắn của V2-H "Khách đang dùng", V2-J2 "NCC & giá": `lib/slots.ts`) · Hợp đồng · n. Tab trong URL `?ht=`.
-import type { BizDetailOut, BizFactor } from "@ai/contracts";
+import type { BizDetailOut, BizFactor } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";

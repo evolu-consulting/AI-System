@@ -1,5 +1,5 @@
 // gap-d1 #21 · "Nhập giá tay": NCC + giá chưa VAT (+ loại, đơn vị, ngày, ghi chú) ⇒ lưu vào bảng so sánh với nguồn "Nhập tay".
-import type { SupplierPriceKind } from "@ai/contracts";
+import type { SupplierPriceKind } from "@ai/contracts/pack-contracts";
 import { type RefObject, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FIELD, Field } from "~/features/products/components/Field";

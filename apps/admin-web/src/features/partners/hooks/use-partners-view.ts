@@ -1,5 +1,5 @@
 // ADM-FR-74 · dữ liệu của trang Đối tác: tenant đang xem (platform chọn qua URL, tenant_admin cố định) + danh sách công ty.
-import type { Me } from "@ai/contracts";
+import type { Me } from "@ai/contracts/auth";
 import { getRouteApi } from "@tanstack/react-router";
 import { useWorkspaceView } from "@/features/tenants/lib/use-workspace-view";
 import { ApiError } from "@/lib/http";

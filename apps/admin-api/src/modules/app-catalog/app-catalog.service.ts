@@ -7,7 +7,7 @@ import type {
   AppUpdateRequest,
   MeApp,
   MyAppsResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/app-catalog";
 import { type Db, type Tx, withScope } from "@ai/db";
 import { type Actor, scopeOf } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";

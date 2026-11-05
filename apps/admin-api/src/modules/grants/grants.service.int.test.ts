@@ -2,7 +2,7 @@
 // batch song song hai chiều (thêm X bớt Y ∥ thêm Y bớt X) không deadlock; ma trận một snapshot khi group tạo/xoá xen giữa
 // câu cột và câu hàng. Ca xen kẽ khoá tất định ở lib/lock-order.int.test.ts.
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
-import { GrantMatrixQuerySchema } from "@ai/contracts";
+import { GrantMatrixQuerySchema } from "@ai/contracts/grants";
 import { createDb, runMigrations } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";

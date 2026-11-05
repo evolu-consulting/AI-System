@@ -5,10 +5,12 @@ import type {
   FeedbackListResponse,
   FeedbackStatus,
   FeedbackUpdateRequest,
+} from "@ai/contracts/feedback";
+import type {
   TrelloCheckResponse,
   TrelloConfigSaveRequest,
   TrelloConfigView,
-} from "@ai/contracts";
+} from "@ai/contracts/trello-config";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, apiResponse } from "@/lib/http";
 

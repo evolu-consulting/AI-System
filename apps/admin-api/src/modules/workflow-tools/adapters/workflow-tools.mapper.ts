@@ -1,5 +1,5 @@
 // ADM-FR-73 · TT-R03 · view lớp 2 ⇒ contract `TenantWorkflowTool` + audit `workflow` grant/revoke before/after `{on}`.
-import type { TenantWorkflowTool } from "@ai/contracts";
+import type { TenantWorkflowTool } from "@ai/contracts/workflow-tools";
 import type { AuditInput } from "@ai/db";
 import { auditOf } from "../../../lib/audit/audit.write";
 import type { ToolAudit, ToolView } from "../application";

@@ -2,21 +2,21 @@
 // FEATURE_HAS_EXCLUSIVE_COMMANDS).
 // 22 mã M1 do tests/acceptance/M1/error-codes.int.test.ts phụ trách.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
+import { CommandSchema } from "@ai/contracts/commands";
 import {
   API_ERRORS,
   CommandNameTakenDetailsSchema,
-  CommandSchema,
-  ErrorResponseSchema,
-  FeatureDetailSchema,
   InputMapInvalidDetailsSchema,
   InvalidReferenceDetailsSchema,
   SchemaBreaksCommandsDetailsSchema,
   SecretInUseDetailsSchema,
-  versionConflictDetailsSchema,
   WorkflowDisabledDetailsSchema,
   WorkflowInUseDetailsSchema,
-  WorkflowSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/common";
+import { ErrorResponseSchema } from "@ai/contracts/errors";
+import { FeatureDetailSchema } from "@ai/contracts/features";
+import { versionConflictDetailsSchema } from "@ai/contracts/version-conflict";
+import { WorkflowSchema } from "@ai/contracts/workflows";
 import { ALL_CATALOG, ID } from "./_data";
 import { createM2Env, expectErr, type M2Env, type Res } from "./_fixtures";
 

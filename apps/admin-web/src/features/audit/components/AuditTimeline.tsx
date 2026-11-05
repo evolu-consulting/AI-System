@@ -1,5 +1,5 @@
 // ADM-FR-51 · M4-R12 · danh sách nhóm theo ngày + "Tải thêm"; trạng thái đang tải / rỗng / lỗi.
-import type { AuditItem } from "@ai/contracts";
+import type { AuditItem } from "@ai/contracts/audit";
 import { History } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";

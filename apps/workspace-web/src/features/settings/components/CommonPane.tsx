@@ -1,6 +1,6 @@
 // V2-L · CD-05: "Mức & đánh giá" — ngưỡng TỐT/KHÁ, số việc tối thiểu, đánh giá thủ công (tỷ trọng, lệch bao nhiêu thì bắt ghi lý do),
 // chốt điểm hằng tháng (chỉ tháng); kèm "thử tính". "Nhắc đánh giá khi" chưa lưu (V2-K).
-import type { RepSettingsIn } from "@ai/contracts";
+import type { RepSettingsIn } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsGroup, SettingsRow, SettingsSwitch } from "~/shared/ui/settings-layout";

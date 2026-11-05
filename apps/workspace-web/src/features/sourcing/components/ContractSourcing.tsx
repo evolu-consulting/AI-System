@@ -1,6 +1,6 @@
 // W1 · thẻ "Nguồn hàng & lãi" trên trang chi tiết HĐ (port cm-web `sourcing/Contract.tsx`): HĐ bán ⇒ mỗi dòng mua từ đâu và lãi;
 // HĐ mua ⇒ các dòng bán đang mua từ HĐ này. Không có dòng nào ⇒ không hiện gì. Đổi nguồn chỉ trên HĐ bán và cần quyền ghi.
-import type { ContractDetail } from "@ai/contracts";
+import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { showsDeadline } from "~/features/contract-deadline/lib/deadline";

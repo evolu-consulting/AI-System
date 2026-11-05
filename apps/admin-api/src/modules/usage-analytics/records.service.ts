@@ -8,7 +8,7 @@ import {
   UsageRecordsSchema,
   type UsageRun,
   UsageRunSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/usage-analytics";
 import type { Tx } from "@ai/db";
 import { appError } from "../../lib/errors";
 import { validationError } from "../../lib/http";

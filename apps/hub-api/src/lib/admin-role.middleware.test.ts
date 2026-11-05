@@ -1,6 +1,6 @@
 // HUB-FR-78, HUB-FR-87, HUB-FR-72 · unit B1 H3b + B3 H4a: `requireAdminRole` (R01, PL8), `requirePlatformAdmin` + 5 mã `HUB_ADMIN_ERRORS` trong map lỗi Hub.
 import { describe, expect, test } from "bun:test";
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import { HUB_ADMIN_ERRORS } from "@ai/contracts/hub-admin";
 import { Hono } from "hono";
 import { isStudioRole, requireAdminRole, requirePlatformAdmin } from "./admin-role.middleware";

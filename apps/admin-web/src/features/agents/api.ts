@@ -1,12 +1,13 @@
 // HUB-FR-77 · HUB-FR-78 · CR-054 · gọi Hub `/agent-settings*`, `/agent-grants` và Admin `/admin/users` cho màn Agents (nơi duy nhất).
 // `tenantId` chỉ truyền khi người dùng là platform_admin (tenant_admin: Hub/Admin tự lấy tenant từ JWT).
-import type { GroupListResponse, UserListResponse } from "@ai/contracts";
+import type { GroupListResponse } from "@ai/contracts/groups";
 import type {
   AgentDefaults,
   AgentGrantListResponse,
   AgentSettingsResponse,
   AgentSettingsWriteResponse,
 } from "@ai/contracts/hub-admin";
+import type { UserListResponse } from "@ai/contracts/users";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { HUB_KEYS } from "@/features/hub/api";
 import { fetchMyApps } from "@/features/shell/api";

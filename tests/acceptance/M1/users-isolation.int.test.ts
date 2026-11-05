@@ -1,7 +1,7 @@
 // ADM-BR-09, ADM-BR-08, ADM-BR-05, ADM-FR-04 · cách ly tenant, không tự khoá/hạ + còn ≥ 1 admin, 3 role
 // (test-plan A5, nhóm AC-A09 / BR-08 / BR-05; AC-A09, M1-AC05, M1-AC07).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { UserSchema } from "@ai/contracts";
+import { UserSchema } from "@ai/contracts/users";
 import {
   createEnv,
   type Env,

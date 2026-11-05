@@ -1,5 +1,5 @@
 // U3 · R45/R46 · truy vấn/ghi cách tính điểm đối tác (engine HD8): `/scoring/:role` (đọc · lịch sử · xem trước · lưu = version+1).
-import type { PartnerRole, ScoringDraft } from "@ai/contracts";
+import type { PartnerRole, ScoringDraft } from "@ai/contracts/pack-contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchScoring,

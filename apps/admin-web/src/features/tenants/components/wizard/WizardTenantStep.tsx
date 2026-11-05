@@ -1,5 +1,5 @@
 // CR-112 · ADM-FR-79 · khung bước 2-4 của wizard (công ty đã tồn tại): tải công ty, thân bước, nút Quay lại / Tiếp tục / Bỏ qua / Hoàn tất / Thoát.
-import type { TenantDetail } from "@ai/contracts";
+import type { TenantDetail } from "@ai/contracts/tenants";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorState } from "@/components/shared/states/ErrorState";

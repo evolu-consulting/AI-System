@@ -3,7 +3,8 @@
 // bằng owner. Module sản phẩm (secret-crypto, app, jwt) nạp LƯỜI trong hàm dựng app (không nạp lúc import) để các file
 // chỉ cần DB (D1/D2) xanh ngay ở T2.
 import { expect } from "bun:test";
-import { API_ERRORS, type ErrorCode, ErrorResponseSchema } from "@ai/contracts";
+import { API_ERRORS, type ErrorCode } from "@ai/contracts/common";
+import { ErrorResponseSchema } from "@ai/contracts/errors";
 import { createDb, type Db } from "@ai/db";
 import { cloneMigratedTestDb, migrateAdminTest } from "@ai/db/test-db";
 import postgres from "postgres";

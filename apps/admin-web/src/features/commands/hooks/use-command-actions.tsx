@@ -1,5 +1,5 @@
 // ADM-FR-20 · hành động trên một command ở danh sách: bật/tắt (use-command-toggle) và xoá gõ tên.
-import type { CommandListItem } from "@ai/contracts";
+import type { CommandListItem } from "@ai/contracts/commands";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";

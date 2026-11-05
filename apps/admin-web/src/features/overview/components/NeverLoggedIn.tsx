@@ -1,5 +1,5 @@
 // ADM-FR-41 · card "Người dùng mới chưa đăng nhập": ≤ 5 user + "Reset mật khẩu" (mở drawer Users) + "Xem tất cả".
-import type { OverviewResponse } from "@ai/contracts";
+import type { OverviewResponse } from "@ai/contracts/overview";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";

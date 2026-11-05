@@ -1,6 +1,6 @@
 // HUB-FR-144 · ADM-FR-72 · TZ-R04 · plan §4.6 bước 2 · `TenantTzReader` gắn tx + `tenantId` của hàng run đã khoá: đọc
 // `admin.tenants.timezone` (quyền `hub_ro` sẵn có) TRONG tx lưu hẹn, lọc tenant tường minh. Không hàng ⇒ mặc định + warn.
-import { TENANT_TZ_DEFAULT } from "@ai/contracts";
+import { TENANT_TZ_DEFAULT } from "@ai/contracts/tenants";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { Logger } from "../../application/ports";

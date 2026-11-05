@@ -1,7 +1,7 @@
 // sso-switch · đăng nhập AI System (chat) một lần ⇒ sang contracts-web bằng mã một lần: đường chính, mã hết hạn / dùng lại /
 // sai app bị từ chối, mã của công ty này không mở phiên ở web gắn công ty khác.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { SsoCodeResponseSchema, TokenGrantSchema } from "@ai/contracts";
+import { SsoCodeResponseSchema, TokenGrantSchema } from "@ai/contracts/auth";
 import { createDb, type Db } from "@ai/db";
 import {
   ADMIN_API_URL,

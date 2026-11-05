@@ -2,7 +2,7 @@
 // feature_ids [] → 201/200; xoá feature có command độc quyền → 204, command còn với feature_ids []; core vẫn
 // CORE_FEATURE_PROTECTED; tab "Ai dùng được" của command chưa gắn feature rỗng.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { CommandSchema } from "@ai/contracts";
+import { CommandSchema } from "@ai/contracts/commands";
 import { ALL_CATALOG, ID } from "../M2/_data";
 import { createM2Env, expectErr, type M2Env, type Res } from "../M2/_fixtures";
 

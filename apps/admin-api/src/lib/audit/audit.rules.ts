@@ -1,6 +1,6 @@
 // ADM-FR-51, ADM-BR-04 · M4-R10 · snapshot audit thuần (plan M4 §4.1, plan-rules §A1): allowlist theo entity, chặn khoá
 // cấm ở cấp 1. Không I/O. Đổi allowlist = đổi contract (backend-lead).
-import type { AuditEntity } from "@ai/contracts";
+import type { AuditEntity } from "@ai/contracts/audit";
 
 type Dto = Readonly<Record<string, unknown>>;
 

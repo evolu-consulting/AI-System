@@ -8,7 +8,7 @@ import {
   type ImportSummary,
   type MissingSecret,
   type TransferType,
-} from "@ai/contracts";
+} from "@ai/contracts/transfer";
 import { PLATFORM_TENANT_KEY } from "../tenants/tenants.rules";
 
 export type El<T extends TransferType> = NonNullable<ConfigFileBody[T]>[number];

@@ -1,7 +1,7 @@
 // ADM-FR-44 · ui 7.2 · truy vấn đếm cho Tổng quan (plan §5.5). Bảng admin.* qua RLS + lọc `tenant_id` tường minh;
 // `hub.usage_logs` KHÔNG RLS → câu tenant luôn `tenant_id = $t` (dùng `usage.repo`), câu platform chỉ chạy cho
 // platform_admin. Index: `users_tenant_role_active_idx` (≤ 5.000 hàng/tenant), `usage_logs (at)` cho runs_24h.
-import type { AuditAction, AuditEntity } from "@ai/contracts";
+import type { AuditAction, AuditEntity } from "@ai/contracts/audit";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 

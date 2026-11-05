@@ -3,7 +3,7 @@
 // (Bắt đầu → từng bước theo thứ tự → "Ghi Đã duyệt"). Bố cục dọc, khoảng cách cố định, không dagre.
 // Không import runtime của @xyflow (chỉ kiểu) để test bun chạy nhanh, không kéo thư viện vào chunk chính.
 
-import type { FlowCond, FlowCondGroup, FlowWhen } from "@ai/contracts";
+import type { FlowCond, FlowCondGroup, FlowWhen } from "@ai/contracts/pack-contracts";
 import type { Edge, Node } from "@xyflow/react";
 import { stepKindSpec } from "../registry";
 

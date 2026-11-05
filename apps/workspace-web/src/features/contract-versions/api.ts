@@ -1,5 +1,5 @@
 ﻿// CR-097 K3b: tải bản cập nhật (phiên bản mới) + danh sách phiên bản + so sánh. Bearer + refresh do web-kit lo.
-import type { UploadVersionResponse, VersionDiffResponse } from "@ai/contracts";
+import type { UploadVersionResponse, VersionDiffResponse } from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/contracts";

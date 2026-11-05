@@ -1,6 +1,7 @@
 // ADM-FR-20, ADM-FR-22 · AC-A03 · form editor Command: dựng giá trị ban đầu (mới / sửa / nhân bản), lưu (POST/PATCH kèm version),
 // chặn gửi khi thiếu input bắt buộc, ánh xạ lỗi server vào đúng chỗ.
-import type { Command, Workflow } from "@ai/contracts";
+import type { Command } from "@ai/contracts/commands";
+import type { Workflow } from "@ai/contracts/workflows";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";

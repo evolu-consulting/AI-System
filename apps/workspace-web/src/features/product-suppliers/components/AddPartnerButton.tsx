@@ -1,6 +1,6 @@
 // gap-d1 #22 · "Thêm vào Đối tác" trên một dòng giá NCC: `POST /companies` (tên; MST khi khoá đối tác là `tax:<MST>`). Đã có ⇒ coi như xong.
 
-import type { SupplierPriceRow } from "@ai/contracts";
+import type { SupplierPriceRow } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";

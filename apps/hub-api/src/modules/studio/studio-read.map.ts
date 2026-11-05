@@ -1,6 +1,7 @@
 // HUB-FR-72 · HUB-FR-64 · H4a-R04, R13 · plan §2.5 · hàng DB → item catalog Studio (hàm thuần, test cạnh file).
-import { InputSchemaSchema } from "@ai/contracts";
+
 import type { ProviderItemSchema, WorkflowItemSchema } from "@ai/contracts/studio";
+import { InputSchemaSchema } from "@ai/contracts/workflows";
 import type { z } from "zod";
 import { difyAgentInput } from "../dify/dify.rules";
 

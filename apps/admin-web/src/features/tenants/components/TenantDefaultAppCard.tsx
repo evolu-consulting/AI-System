@@ -5,7 +5,7 @@ import type {
   AppCatalogListResponse,
   DefaultAppRequest,
   TenantDefaultAppResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/app-catalog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";

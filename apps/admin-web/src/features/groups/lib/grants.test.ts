@@ -1,6 +1,6 @@
 // ADM-FR-32 · M3-R08, R09 · toRows/viewRows/planBatch: hàng core, entitled, revoked (khoá), none (ẩn); batch chỉ gồm thay đổi.
 import { describe, expect, test } from "bun:test";
-import type { GrantMatrix } from "@ai/contracts";
+import type { GrantMatrix } from "@ai/contracts/grants";
 import { type GrantRow, planBatch, toRows, viewRows } from "./grants";
 
 const G = "g1";

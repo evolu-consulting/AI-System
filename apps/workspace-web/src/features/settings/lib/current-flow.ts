@@ -6,7 +6,7 @@ import {
   type FlowCond,
   type FlowCondGroup,
   type FlowWhen,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 
 export type DealKind = "buy" | "sell" | "referral";
 export type CurrentStep = {

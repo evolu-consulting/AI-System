@@ -5,8 +5,8 @@ import {
   EntitlementSchema,
   FeatureDetailSchema,
   FeatureListResponseSchema,
-  versionConflictDetailsSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/features";
+import { versionConflictDetailsSchema } from "@ai/contracts/version-conflict";
 import { ALL_CATALOG, ID } from "./_data";
 import { createM2Env, expectErr, type Json, type M2Env, type Res, TENANT_ID } from "./_fixtures";
 

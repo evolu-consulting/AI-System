@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { FrameChild, Milestone } from "@ai/contracts";
+import type { FrameChild, Milestone } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import {
   attachCandidates,

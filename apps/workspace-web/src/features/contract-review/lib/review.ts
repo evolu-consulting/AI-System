@@ -1,6 +1,6 @@
 // HD-FR-26 · S05 · D-02: luật thuần màn HĐ — cảnh báo của luật (`warnings` của chi tiết là `unknown[]` ở contract đọc) và dòng phụ dưới tiêu đề.
 // V2-F: ô thông tin ↔ `fields` chuyển sang `contract-form/lib/detail-form.ts`.
-import type { ContractDetail, ContractWarning } from "@ai/contracts";
+import type { ContractDetail, ContractWarning } from "@ai/contracts/pack-contracts";
 
 /** `warnings` của chi tiết là `unknown[]` ở contract đọc (HD1) — lấy phần có `message` chuỗi. */
 export function warningsOf(c: Pick<ContractDetail, "warnings">): ContractWarning[] {

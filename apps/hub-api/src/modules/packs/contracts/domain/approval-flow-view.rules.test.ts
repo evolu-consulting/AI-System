@@ -1,12 +1,8 @@
 // CR-118 · UW-FR-13 · tương đương: FlowView từ adapter == dữ liệu thẻ duyệt hôm nay (khuôn thẻ CF: engine 2 bước, Dify, Ký số,
 // duyệt cuối gắn SP, lượt kẹt, máy cũ). Mọi trường thẻ có mặt ở FlowView, không thêm quyết định mới.
 import { describe, expect, test } from "bun:test";
-import {
-  type ContractApproval,
-  ContractApprovalSchema,
-  type FlowView,
-  FlowViewSchema,
-} from "@ai/contracts";
+import { type FlowView, FlowViewSchema } from "@ai/contracts/flow";
+import { type ContractApproval, ContractApprovalSchema } from "@ai/contracts/pack-contracts";
 import { flowViewOfCard, summaryItemOf } from "./approval-flow-view.rules";
 
 const U = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;

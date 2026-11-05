@@ -2,7 +2,7 @@
 // chỉ lượt của workflow được hỏi, phân trang + total, lọc tenant/status/ngày, link Dify (DIFY_CONSOLE_URL), console_url ở list,
 // usage lọc theo workflow. Chặn tenant_admin: 403 qua HTTP ở `workflows.runs.http.int.test.ts`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { DifyRunsResponseSchema } from "@ai/contracts";
+import { DifyRunsResponseSchema } from "@ai/contracts/workflow-runs";
 import { createDb, type Db } from "@ai/db";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls, withCreds } from "@ai/test-kit/env";

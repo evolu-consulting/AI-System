@@ -1,5 +1,5 @@
 // contract-flow S4: HĐ chờ tôi duyệt (`GET /my-work` → `approvals[]`) — luật hiển thị thuần.
-import type { MyWorkApproval } from "@ai/contracts";
+import type { MyWorkApproval } from "@ai/contracts/pack-contracts";
 
 export type ApprovalRow = {
   taskId: string;

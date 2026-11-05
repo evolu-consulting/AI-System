@@ -5,10 +5,12 @@ import {
   FEATURE_ICON_RE,
   FEATURE_NAME_MAX,
   FEATURE_STATUSES,
-  type FeatureCreateRequest,
-  type FeatureDetail,
-  type FeatureUpdateRequest,
-} from "@ai/contracts";
+} from "@ai/contracts/common";
+import type {
+  FeatureCreateRequest,
+  FeatureDetail,
+  FeatureUpdateRequest,
+} from "@ai/contracts/features";
 import { z } from "zod";
 
 export type LocalizedValue = { vi: string; en: string };

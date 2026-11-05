@@ -8,7 +8,7 @@
 import { rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts";
+import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts/common";
 import { createDb, type Db, hashPassword, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { connectDb } from "../../../apps/hub-api/src/lib/db";

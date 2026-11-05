@@ -1,7 +1,12 @@
 // ADM-FR-40, ADM-FR-51 · M4-R02, R03, R10 · Q9 · quota tháng của tenant (plan-contract §2.1, plan §4.2, §6 Quota PUT).
 // GET: bộ quota + mức dùng tháng VN. PUT: thay cả bộ theo `version` tenant; no-op (bộ normalize bằng bộ cũ) → không
 // bump/audit/NOTIFY/evaluate; đổi thật → tenant version+1, `updated_by`, audit snapshot, sau commit evaluator chạy nền.
-import type { QuotaItemInput, QuotaSetRequest, QuotaSetResponse, QuotaStatus } from "@ai/contracts";
+import type {
+  QuotaItemInput,
+  QuotaSetRequest,
+  QuotaSetResponse,
+  QuotaStatus,
+} from "@ai/contracts/quotas";
 import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import type { InTx } from "../../lib/audit/audit.write";
 import { auditOf } from "../../lib/audit/audit.write";

@@ -1,5 +1,5 @@
 // price-scout · dòng trạng thái của "Cấu hình dò giá": lượt dò đã dùng tháng này, lần dò gần nhất / kế tiếp.
-import type { PriceScoutProductOut, PriceScoutUsage } from "@ai/contracts";
+import type { PriceScoutProductOut, PriceScoutUsage } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { usageView } from "../lib/scout";

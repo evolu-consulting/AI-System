@@ -3,11 +3,13 @@ import type {
   ExternalOrg,
   ExternalOrgListResponse,
   ExternalUserCreateRequest,
+} from "@ai/contracts/external-orgs";
+import type {
   TempPasswordResponse,
   User,
   UserCreateResponse,
   UserListResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/users";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 

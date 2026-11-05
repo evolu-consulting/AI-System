@@ -1,5 +1,5 @@
 // V2-F · BA 5.7e: tồn hiện có dưới dòng HĐ + cảnh báo "Bán vượt tồn" (chỉ HĐ Bán, thành phần giữ hàng). Thuần.
-import type { ContractDeal, ProductOut } from "@ai/contracts";
+import type { ContractDeal, ProductOut } from "@ai/contracts/pack-contracts";
 import { parseQty } from "~/components/shared/format";
 
 export type StockHint = { onHand: number; unit: string | null; short: boolean } | null;

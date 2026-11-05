@@ -1,5 +1,5 @@
 // ADM-FR-62 · dữ liệu của trang Groups: tenant đang xem (platform chọn qua URL) + danh sách (D9: chưa chọn tenant → không gọi API).
-import type { Me } from "@ai/contracts";
+import type { Me } from "@ai/contracts/auth";
 import { getRouteApi } from "@tanstack/react-router";
 import { useWorkspaceView } from "@/features/tenants/lib/use-workspace-view";
 import { ApiError } from "@/lib/http";

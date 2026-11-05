@@ -1,6 +1,6 @@
 // U3 · REP-v3-ui · điểm đối tác theo engine hiện hành (`GET /reputation/config` → `engine`): HD8 đọc `GET /partners` (hai vai), V2-E đọc
 // `GET /reputation/partners` (vai × nhóm SP, gồm bên trả hoa hồng, kèm cờ đỏ). Cả hai về cùng dòng `ScoreRow` cho danh sách/Tổng quan.
-import type { PartnerRole, RepEngine } from "@ai/contracts";
+import type { PartnerRole, RepEngine } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { fetchPartnerScore, fetchPartners, partnerKeys } from "../api";

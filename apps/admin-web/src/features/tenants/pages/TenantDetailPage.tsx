@@ -1,5 +1,5 @@
 // ADM-FR-60, ADM-FR-61, ADM-FR-76 · workspace công ty /tenants/$tenantId (mẫu B): header (tên, badge, khoá/mở khoá) + tab theo `lib/workspace-tabs.ts`.
-import type { TenantDetail } from "@ai/contracts";
+import type { TenantDetail } from "@ai/contracts/tenants";
 import { getRouteApi, useRouter } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";

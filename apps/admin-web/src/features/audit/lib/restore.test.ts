@@ -1,7 +1,7 @@
 // ADM-FR-52 · M4-R13 · test câu khôi phục (tiêu đề, lỗi 409/400).
 
 import { describe, expect, test } from "bun:test";
-import type { AuditItem } from "@ai/contracts";
+import type { AuditItem } from "@ai/contracts/audit";
 import { ApiError } from "@/lib/http";
 import { displayName, restoreErrorSpec, restoreParams } from "./restore";
 

@@ -1,5 +1,5 @@
 // HUB-FR-78 · ADM-FR-37 · H3b-R11 · ánh xạ hàng DB → contract `@ai/contracts/hub-admin` (plan H3b §2.2). Thuần, không I/O.
-import { BETA_GROUP_KEY } from "@ai/contracts";
+import { BETA_GROUP_KEY } from "@ai/contracts/groups";
 import {
   AGENT_GRANTS_PER_AGENT_MAX,
   type AgentGrantListItem,

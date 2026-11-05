@@ -1,5 +1,5 @@
 // REP-v3-ui · engine V2-E · DT-04/05 · tab "Đánh giá & ghi chú": đánh giá sao từng tiêu chí (theo vai) + lịch sử đánh giá + ghi chú về đối tác.
-import type { RepRole } from "@ai/contracts";
+import type { RepRole } from "@ai/contracts/pack-contracts";
 import type { Range } from "../lib/partner-v2";
 import { NotesPanel } from "./NotesPanel";
 import { RatingsPanel } from "./RatingsPanel";

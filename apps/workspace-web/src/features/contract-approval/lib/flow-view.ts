@@ -2,16 +2,19 @@
 // `FlowStepView` ⇒ `TimelineRow` (dòng thời gian cũ). Thuần. Phản chiếu phép chiếu của hub (`approval-flow-view.rules.ts`) nhưng
 // chạy Ở WEB trên dữ liệu thẻ đã tải: hành vi y hệt thẻ cũ, KHÔNG phụ thuộc cờ HUB_FLOW_RUNTIME và không thêm yêu cầu mạng.
 // Khác hub: nhãn phòng lấy từ `/groups` (tên phòng ban đầu của bước) và `overdue` suy theo `now` khi hub cũ không gửi.
+
+import type {
+  FlowSkipCondSchema,
+  FlowStepStatus,
+  FlowStepView,
+  FlowView,
+} from "@ai/contracts/flow";
 import type {
   ApprovalCardStep,
   ContractApproval,
   ContractGroup,
   FlowCond,
-  FlowSkipCondSchema,
-  FlowStepStatus,
-  FlowStepView,
-  FlowView,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import type { z } from "zod";
 import type { TimelineRow } from "./engine-card";
 

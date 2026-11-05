@@ -1,7 +1,8 @@
 // HUB-FR-12 · H2a-R06 · buildInputs, appNeedsQuery (test-plan H2a §4 R15–R26, cases §1.2; chữ ký plan-rules).
 import { describe, expect, it } from "bun:test";
-import type { CommandArg, InputMap, WorkflowInput } from "@ai/contracts";
 import type { MessageContext } from "@ai/contracts/chat";
+import type { CommandArg, InputMap } from "@ai/contracts/commands";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import {
   appNeedsQuery,
   type BuildInputsInput,

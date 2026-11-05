@@ -1,6 +1,6 @@
 // ADM-FR-42 · usage-analytics · một breakdown "token đổ vào đâu" dạng thanh ngang: nhãn, thanh tỉ lệ, token, % tổng, lượt
 // gọi, chi phí (khi có). Bấm một dòng ⇒ lọc theo khoá đó (nếu chiều lọc được).
-import type { UsageBreakdownRow } from "@ai/contracts";
+import type { UsageBreakdownRow } from "@ai/contracts/usage-analytics";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";
 import { formatCount, formatUsd } from "@/lib/quota-format";

@@ -1,7 +1,11 @@
 // V2-M · HD-07 · C7: `GET /contracts/:id/delete-preview` (hộp xác nhận liệt kê tác động) và `DELETE /contracts/:id` (xoá hẳn, một tx).
 // CHỈ quyền `admin` (vai contracts-owner): guard TRƯỚC đọc tham số ⇒ editor/viewer 403; id sai dạng 400; HĐ không có / tenant khác /
 // không thấy ⇒ 404; còn phụ lục / gắn CKS / kho không đảo được ⇒ 409 (không xoá gì).
-import { DELETE_CONTRACT_ERRORS, DeleteContractRequestSchema, VERSION_ERRORS } from "@ai/contracts";
+import {
+  DELETE_CONTRACT_ERRORS,
+  DeleteContractRequestSchema,
+  VERSION_ERRORS,
+} from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";

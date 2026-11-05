@@ -1,5 +1,5 @@
 // V2-M · HD-07 · C7: xem trước tác động + xoá hẳn một hợp đồng (chỉ vai quản lý). Bearer + refresh do web-kit lo.
-import type { DeleteImpact, DeleteResult } from "@ai/contracts";
+import type { DeleteImpact, DeleteResult } from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 const BASE = "/pack/contracts/contracts";

@@ -2,7 +2,7 @@
 // số hàng), lọc `tenant_id` tường minh ngoài RLS. Hàng của HĐ người dùng KHÔNG thấy (luật thấy M1: RLS RESTRICTIVE trên `contracts`,
 // `obligations`, `cks_renewals`) không bao giờ vào kết quả: `obligations` tự lọc theo HĐ; `contracts` lọc trực tiếp; nhắc hạn và hẹn
 // nhắc gia hạn nối với bảng đã lọc. "Của tôi" = `app.user_id` của tx (đặt từ token, không bao giờ từ client).
-import { MYWORK_SOURCE_MAX } from "@ai/contracts";
+import { MYWORK_SOURCE_MAX } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { MyWorkRepo } from "../application/mywork.usecase";

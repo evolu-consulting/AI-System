@@ -3,7 +3,9 @@
 // bị buộc đổi mật khẩu (C2 cho phép) ⇒ phiên community; đối tác vẫn 403 ngoài danh sách C2; đích SSO chỉ là URL catalog
 // (không nhận URL từ người gọi; đổi mã từ origin lạ ⇒ 401).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { ExternalOrgSchema, TokenGrantSchema, UserCreateResponseSchema } from "@ai/contracts";
+import { TokenGrantSchema } from "@ai/contracts/auth";
+import { ExternalOrgSchema } from "@ai/contracts/external-orgs";
+import { UserCreateResponseSchema } from "@ai/contracts/users";
 import {
   createEnv,
   type Env,

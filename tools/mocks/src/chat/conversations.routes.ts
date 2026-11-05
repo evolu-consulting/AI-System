@@ -1,7 +1,7 @@
 // C1-R09, CHAT-AC-05, 09, 18–23, 31 · E5–E11 hội thoại / flow / đọc tin (plan C1 §2.4, §2.6).
 // Thứ tự kiểm: auth (middleware Bearer) → path uuid (404) → sở hữu (404) → body/query (400).
 // Id của user/tenant khác, đã xoá, hay không phải uuid đều 404 `NOT_FOUND` như nhau (không 403, không lộ dữ liệu).
-import { UuidSchema } from "@ai/contracts";
+
 import {
   ConversationCreateRequestSchema,
   ConversationListQuerySchema,
@@ -9,6 +9,7 @@ import {
   FlowListQuerySchema,
   MessageListQuerySchema,
 } from "@ai/contracts/chat";
+import { UuidSchema } from "@ai/contracts/common";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import type { z } from "zod";

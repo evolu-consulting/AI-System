@@ -1,5 +1,5 @@
 // portal-home · thẻ app: biểu tượng, tên, mô tả, 1–2 con số (nếu có), mở app (chuyển phiên SSO; Chat AI cùng origin mở thẳng).
-import type { MeApp } from "@ai/contracts";
+import type { MeApp } from "@ai/contracts/app-catalog";
 import { appDescription, appLabel, entryNext, entryUrl } from "@ai/web-kit/app-catalog/apps";
 import type { TileNumber } from "@ai/web-kit/app-catalog/portal";
 import { handOffUrl } from "@ai/web-kit/auth/sso";

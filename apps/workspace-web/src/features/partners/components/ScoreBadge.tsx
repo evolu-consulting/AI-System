@@ -1,5 +1,5 @@
 // HD8-FR-01 · huy hiệu điểm — port `mgmt-app/web/src/components/ui.tsx:124-141` (khung 54×48, màu theo mức, chưa có điểm ⇒ "–").
-import type { ScoreBand } from "@ai/contracts";
+import type { ScoreBand } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 
 const CLS: Record<ScoreBand, string> = {

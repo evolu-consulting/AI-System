@@ -1,7 +1,7 @@
 // HD7-FR-03…08 · HD7 plan §2 · D7-02 · D7-15 · D7-16: câu GHI của sổ thanh toán. Tx do `PackUow` mở (RLS tenant); lọc
 // `tenant_id` tường minh ngoài RLS. Khoá: hàng HĐ (`FOR NO KEY UPDATE`, như HD4 D4-12) rồi hàng đợt (`FOR UPDATE`) — hai câu riêng để
 // thứ tự khoá được bảo đảm. Mỗi lệnh ghi = MỘT CTE (đợt + sổ đối tác + nhật ký HĐ); số câu không phụ thuộc số đợt.
-import type { Obligation, PartnerEvent } from "@ai/contracts";
+import type { Obligation, PartnerEvent } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { LedgerWriteRepo, LockedObligation } from "../application/ledger.ports";

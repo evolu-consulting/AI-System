@@ -1,5 +1,5 @@
 // ADM-FR-53 · helper cho các file notify-* và concurrency (test-plan §1 "kỹ thuật sentinel"). Không chứa `it(...)`.
-import { type ConfigChangedPayload, ConfigChangedPayloadSchema } from "@ai/contracts";
+import { type ConfigChangedPayload, ConfigChangedPayloadSchema } from "@ai/contracts/config";
 import postgres from "postgres";
 import { OWNER_URL } from "../M1/_fixtures";
 import { num } from "./_data";

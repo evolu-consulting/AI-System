@@ -1,5 +1,5 @@
 // ADM-FR-32 · ADM-FR-36 · F4 · hộp thoại "Cấp {feature} cho group": chọn group (group của user xếp đầu) → Cấp (một batch).
-import type { FeatureMini } from "@ai/contracts";
+import type { FeatureMini } from "@ai/contracts/access";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {

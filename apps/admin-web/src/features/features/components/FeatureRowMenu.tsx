@@ -1,5 +1,5 @@
 // ADM-FR-30, ADM-FR-33 · menu `⋯` của một feature: Sửa · Bật · Chuyển sang Beta · Tắt · Xoá (`core` chỉ có Sửa).
-import type { FeatureListItem } from "@ai/contracts";
+import type { FeatureListItem } from "@ai/contracts/features";
 import { Link } from "@tanstack/react-router";
 import { MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";

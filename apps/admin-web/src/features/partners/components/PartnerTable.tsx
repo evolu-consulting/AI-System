@@ -1,5 +1,5 @@
 // ADM-FR-74 · bảng công ty đối tác (`table "Đối tác"`): skeleton, rỗng, lỗi tải.
-import type { ExternalOrg } from "@ai/contracts";
+import type { ExternalOrg } from "@ai/contracts/external-orgs";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "@/components/shared/DataTable";

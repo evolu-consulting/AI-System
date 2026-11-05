@@ -1,5 +1,5 @@
 // V2-F · HD-01 · mockup `.kindpick`: ba ô chọn loại hợp đồng Mua / Bán / Giới thiệu (radiogroup). `locked` ⇒ không đổi được (HĐ đã lưu, HD-09).
-import type { ContractDeal } from "@ai/contracts";
+import type { ContractDeal } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { SegButton } from "~/components/shared/seg-button";
 import { cn } from "~/lib/utils";

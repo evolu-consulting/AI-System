@@ -1,6 +1,7 @@
 // ADM-FR-20, ADM-FR-21, ADM-FR-22 · AC-A03 · M2-R16, R17 · luật thuần của input map: gộp khi đổi workflow, kiểm thiếu/lạ, cảnh báo sai kiểu.
 // Cùng luật với module rules của admin-api commands (server vẫn là nguồn quyết định, FE chỉ chặn sớm).
-import type { InputType, MapSource, WorkflowInput } from "@ai/contracts";
+import type { InputType, MapSource } from "@ai/contracts/common";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import type { ArgValues, MapEntryValues } from "./schemas";
 
 export type MapValues = Record<string, MapEntryValues>;

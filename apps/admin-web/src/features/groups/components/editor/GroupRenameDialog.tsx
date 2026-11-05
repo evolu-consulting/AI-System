@@ -1,5 +1,5 @@
 // ADM-FR-62 · ADM-FR-55 · hộp thoại "Đổi tên group": chỉ Tên (VI/EN) và Mô tả; 409 → ConflictDialog.
-import type { Group } from "@ai/contracts";
+import type { Group } from "@ai/contracts/groups";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FormProvider, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";

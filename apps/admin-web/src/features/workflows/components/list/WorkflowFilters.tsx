@@ -1,5 +1,5 @@
 // ADM-FR-14 · hàng lọc Workflows: chip trạng thái có số (Tất cả/Bật/Tắt/Chưa gắn), chip "Secret: NAME ✕", ô tìm.
-import type { WorkflowListCounts } from "@ai/contracts";
+import type { WorkflowListCounts } from "@ai/contracts/workflows";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { FilterChips } from "@/components/shared/form/FilterChips";

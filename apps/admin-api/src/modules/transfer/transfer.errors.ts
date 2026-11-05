@@ -1,5 +1,5 @@
 // ADM-FR-54 · mã lỗi của module transfer (bảng mã: API_ERRORS, plan-cd §3.3, §4.3) + đổi `ConfigVersionMoved` → 409.
-import type { ErrorCode } from "@ai/contracts";
+import type { ErrorCode } from "@ai/contracts/common";
 import { ConfigVersionMoved } from "@ai/db";
 import { appError } from "../../lib/errors";
 

@@ -1,5 +1,5 @@
 // N3-FR-09 · danh sách thông báo trong chuông: chưa đọc in đậm + chấm; bấm vào ⇒ đánh dấu đã đọc và đi tới liên kết (đường dẫn trong app).
-import type { Notification } from "@ai/contracts";
+import type { Notification } from "@ai/contracts/notify";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";

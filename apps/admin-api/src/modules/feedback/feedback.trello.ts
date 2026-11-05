@@ -1,6 +1,6 @@
 ﻿// feedback · adapter Trello (app cũ mgmt-app đẩy mỗi góp ý thành một thẻ trong list "Mới"). Chạy SAU khi góp ý đã commit,
 // không chặn người dùng, lỗi chỉ log cảnh báo (không có key/token). Thiếu cấu hình ⇒ bỏ qua. Key/token nằm trong body, không trong URL.
-import type { FeedbackItem } from "@ai/contracts";
+import type { FeedbackItem } from "@ai/contracts/feedback";
 import { logger } from "../../lib/logger";
 import type { DecodedFile } from "./feedback.rules";
 

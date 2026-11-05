@@ -1,6 +1,6 @@
 // V2-J2 · SP-06: "Đánh giá nhà cung cấp" — mua nhiều hay ít, giá, uy tín ⇒ 4 gợi ý (Hợp tác tiếp / Duy trì nguồn phụ / Tìm nguồn
 // thay thế / Có thể mua thử); chưa đủ cơ sở ⇒ "Tham khảo" (mockup-niti `supEvalPanel`).
-import type { SupplierAdvice, SupplierOverviewOut } from "@ai/contracts";
+import type { SupplierAdvice, SupplierOverviewOut } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";

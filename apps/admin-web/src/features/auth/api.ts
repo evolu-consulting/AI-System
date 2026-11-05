@@ -1,13 +1,11 @@
 // ADM-FR-01, ADM-FR-03, ADM-FR-06, ADM-FR-08 · gọi API /auth/* (nơi duy nhất ngoài lib/session).
+
+import type { LoginRequest, LoginResponse, Me, TokenGrant } from "@ai/contracts/auth";
 import type {
   BackupCodesResponse,
-  LoginRequest,
-  LoginResponse,
-  Me,
-  TokenGrant,
   TotpDisableRequest,
   TotpSetupResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/totp";
 import { session, type TotpVerifyResponse } from "@/lib/auth/session";
 import { ApiError, api, sendPublic } from "@/lib/http";
 

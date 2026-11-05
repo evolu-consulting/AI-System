@@ -2,7 +2,7 @@
 // tenant, mọi câu luôn có `tenant_id = $t` tường minh (service bảo đảm tenant_admin luôn có tenant). Index:
 // `usage_logs_tenant_at_idx` (tenant, at) / `usage_logs_tenant_feature_at_idx` khi lọc feature / `usage_logs (at)` khi
 // platform không chọn tenant. Run = `run_id` khác nhau (NULL không tính); token = input + output; USD theo billable.
-import type { LocalizedText } from "@ai/contracts";
+import type { LocalizedText } from "@ai/contracts/common";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { pgArray } from "../../lib/sql";

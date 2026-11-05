@@ -1,7 +1,8 @@
 // ADM-FR-40 · M4-R02, R03 · truy vấn tenant_quotas + mức dùng tháng (luôn trong withScope/configWrite → RLS, và lọc
 // `tenant_id` tường minh; `hub.usage_logs` không RLS). Thứ tự khoá PUT (plan M4 §6): tenant NKU (1) → features SHARE id
 // tăng (8) → delete + insert tenant_quotas (11a) → UPDATE tenants (1, đã giữ) → config_meta (14) → audit (15).
-import type { LocalizedText, QuotaItemInput } from "@ai/contracts";
+import type { LocalizedText } from "@ai/contracts/common";
+import type { QuotaItemInput } from "@ai/contracts/quotas";
 import { type Tx, tenantQuotas } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { pgArray } from "../../lib/sql";

@@ -6,7 +6,7 @@ import type {
   SupplierPriceKind,
   SupplierPriceRow,
   SupplierSearchItem,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { moneyOf } from "../../products/lib/catalog";
 
 /** Tab "Nhà cung cấp & giá" không hiện cho SP nhóm Giới thiệu (BA SP-04). Slot tab của trang chi tiết (V2-J1) dùng hàm này. */

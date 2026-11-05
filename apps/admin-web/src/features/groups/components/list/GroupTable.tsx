@@ -1,5 +1,5 @@
 // ADM-FR-62 · bảng Groups (mẫu A): `table "Groups"`, skeleton, rỗng, lỗi tải.
-import type { GroupListItem } from "@ai/contracts";
+import type { GroupListItem } from "@ai/contracts/groups";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "@/components/shared/DataTable";

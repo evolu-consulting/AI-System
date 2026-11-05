@@ -1,5 +1,9 @@
 // V2-J2 · SP-04: "So sánh giá nhà cung cấp" — Mua mới / Gia hạn, giá vốn BQ của mình, nguồn giá, uy tín, ngày (mockup-niti `cmpPanel`).
-import type { SupplierOverviewOut, SupplierPriceKind, SupplierPriceRow } from "@ai/contracts";
+import type {
+  SupplierOverviewOut,
+  SupplierPriceKind,
+  SupplierPriceRow,
+} from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

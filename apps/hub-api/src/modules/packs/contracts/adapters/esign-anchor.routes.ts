@@ -2,7 +2,7 @@
 //   GET /esign/anchors                    {a[], b[], is_default}
 //   PUT /esign/anchors                    {a[], b[]} (mỗi bên 1–8 cụm, 2–60 ký tự)
 //   GET /contracts/:id/esign/placement    {placement: "text" | "page"} (người ký mặc định công ty + đối tác)
-import { ESignAnchorsSchema } from "@ai/contracts";
+import { ESignAnchorsSchema } from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";

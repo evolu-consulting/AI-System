@@ -1,7 +1,7 @@
 // CR-120 · "Một trang Quy trình": gộp mọi quy trình công ty đang có thành MỘT danh sách phẳng rồi nhóm theo app.
 // Nguồn: (1) quy trình platform gán theo từng khe (GET routing: tập gán + luật + current_def_id), (2) quy trình công ty tự tạo
 // (danh sách tenant). Logic THUẦN (không React / không API): dựng dòng, câu "khi nào chạy", lọc chip, nhóm theo app.
-import type { TenantCapabilitiesResponse } from "@ai/contracts";
+import type { TenantCapabilitiesResponse } from "@ai/contracts/capabilities";
 import type { ProcessRouting, RoutingContractKind } from "@ai/contracts/hub-admin";
 import { routingCurrent } from "@ai/web-kit/routing-current";
 import type { LibraryListItem } from "../library-api";

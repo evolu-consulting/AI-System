@@ -1,6 +1,6 @@
 // V2-J1 · SP-01: danh sách sản phẩm — tab Tất cả / Dịch vụ có hạn / Hàng hoá / Giới thiệu (số lượng mỗi tab), cột Tên · Loại · Đang nắm
 // giữ · Đã bán · Điểm kinh doanh (+ đề xuất). Một yêu cầu lấy cả danh sách; tab lọc phía trình duyệt. Bấm hàng mở chi tiết (`?sp=`).
-import type { BizProductRow } from "@ai/contracts";
+import type { BizProductRow } from "@ai/contracts/pack-contracts";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";

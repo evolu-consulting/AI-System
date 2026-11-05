@@ -4,7 +4,7 @@ import type {
   ESignSettingsOut,
   ESignSignerIn,
   ESignStateOut,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 const base = (id: string) => `/pack/contracts/contracts/${encodeURIComponent(id)}/esign`;

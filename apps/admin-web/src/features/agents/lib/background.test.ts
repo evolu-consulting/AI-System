@@ -1,7 +1,7 @@
 // agents-background · helper thuần mục "Agent chạy nền của app".
 import { describe, expect, it } from "bun:test";
-import type { UsageAnalytics } from "@ai/contracts";
 import type { AgentSettingsItem } from "@ai/contracts/hub-admin";
+import type { UsageAnalytics } from "@ai/contracts/usage-analytics";
 import { splitBySurface, studioAgentUrl, usageByAgent } from "./background";
 
 const item = (key: string, surface: "chat" | "background") =>

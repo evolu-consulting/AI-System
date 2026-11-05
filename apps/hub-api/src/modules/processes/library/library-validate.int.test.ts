@@ -1,7 +1,7 @@
 // CR-121 D-2 · int: xuất bản / gán quy trình thư viện ⇒ 422 kèm danh sách {bước, trường, câu tiếng Việt/Anh nói cách sửa}.
 // Qua Hono thật + DB thật như `library.routes.int.test.ts` (khe `contracts.approval` thật).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";

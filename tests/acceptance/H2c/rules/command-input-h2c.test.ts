@@ -1,7 +1,8 @@
 // HUB-FR-12 · ADM-FR-21 · H2c-R20 · K10 · buildInputs + nguồn `attachment` (test-plan H2c §1, cases §1.5 R31–R34;
 // chữ ký plan-rules §5).
 import { describe, expect, it } from "bun:test";
-import type { CommandArg, InputMap, WorkflowInput } from "@ai/contracts";
+import type { CommandArg, InputMap } from "@ai/contracts/commands";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import {
   type BuildInputsInput,
   buildInputs,

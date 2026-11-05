@@ -1,5 +1,5 @@
 // ADM-FR-36 · M3-R12, R13 · tab Kiểm tra quyền (F4): chọn người dùng, tìm command, AccessExplainer + hành động gợi ý.
-import type { FeatureMini } from "@ai/contracts";
+import type { FeatureMini } from "@ai/contracts/access";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AccessExplainer } from "@/components/shared/access/AccessExplainer";

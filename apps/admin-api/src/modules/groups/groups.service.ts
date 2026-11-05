@@ -1,7 +1,8 @@
 // ADM-FR-62, ADM-FR-55, ADM-BR-09 · nghiệp vụ groups (spec M3 §3, M3-R01…R06, R23; plan §5.4). Không biết HTTP.
 // Ghi qua `configWrite` (một request = một transaction + bump + NOTIFY sau commit). Khoá: group NKU (PATCH/DELETE), hạng 3.
+import { APP_ROLE_ERRORS } from "@ai/contracts/app-roles";
+import { LocalizedTextSchema } from "@ai/contracts/common";
 import {
-  APP_ROLE_ERRORS,
   BETA_GROUP_KEY,
   GROUP_NAME_MAX,
   type Group,
@@ -11,8 +12,7 @@ import {
   type GroupListResponse,
   type GroupRef,
   type GroupUpdateRequest,
-  LocalizedTextSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/groups";
 import {
   type AuditActionValue,
   type AuditInput,

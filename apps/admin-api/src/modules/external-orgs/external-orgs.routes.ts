@@ -1,13 +1,14 @@
 // CR-102a · ADM-FR-75 · /admin/external-orgs* (com-c1-ext-identity). platform_admin + tenant_admin; member → 403 trước khi
 // tra thực thể hay parse body. Khoá/mở khoá/reset mật khẩu user ngoài dùng lại /admin/users/:id/*.
+
+import { UuidSchema } from "@ai/contracts/common";
 import {
   ExternalOrgCreateRequestSchema,
   ExternalOrgListQuerySchema,
   ExternalOrgUpdateRequestSchema,
   ExternalUserCreateRequestSchema,
-  UserListQuerySchema,
-  UuidSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/external-orgs";
+import { UserListQuerySchema } from "@ai/contracts/users";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { appError } from "../../lib/errors";

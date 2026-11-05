@@ -1,6 +1,6 @@
 // CR-118 · cr118-feature-gate-web · nguồn `/pack/me`: 304 không báo, refetch khi sự kiện/nối lại/focus, 403, provider OpenFeature.
 import { describe, expect, test } from "bun:test";
-import type { ShellMeResponse } from "@ai/contracts";
+import type { ShellMeResponse } from "@ai/contracts/capabilities";
 import { ErrorCode, ProviderEvents } from "@openfeature/web-sdk";
 import {
   createPackMeSource,

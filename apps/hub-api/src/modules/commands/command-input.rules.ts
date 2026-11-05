@@ -1,7 +1,9 @@
 // HUB-FR-12 · H2a-R06 · dựng `inputs` Dify từ `input_map` + kiểm kiểu (plan-rules). Thuần.
-import type { CommandArg, InputMap, InputMapEntry, WorkflowInput } from "@ai/contracts";
+
 import type { MessageContext } from "@ai/contracts/chat";
+import type { CommandArg, InputMap, InputMapEntry } from "@ai/contracts/commands";
 import type { DifyAppType } from "@ai/contracts/hub";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import type { WorkflowInputValue } from "./catalog.types";
 
 export type BuildInputsInput = {

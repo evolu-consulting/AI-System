@@ -1,6 +1,6 @@
 // M1D-FR-02 · M1D-FR-03 · M1D-FR-04: cơ cấu tổ chức — `/admin/org*` + `/admin/groups*` (admin-api, proxy cùng origin) và chế độ
 // thấy `/pack/contracts/visibility` (hub-api). Hình dữ liệu = `@ai/contracts` (org.ts).
-import type { OrgResponse } from "@ai/contracts";
+import type { OrgResponse } from "@ai/contracts/org";
 import { api } from "@ai/web-kit/http";
 
 export type VisibilityMode = "tenant" | "org";

@@ -5,7 +5,7 @@ import {
   GROUP_NAME_MAX,
   type Group,
   type GroupCreateRequest,
-} from "@ai/contracts";
+} from "@ai/contracts/groups";
 import { z } from "zod";
 import { foldKeyInput } from "@/lib/normalize";
 

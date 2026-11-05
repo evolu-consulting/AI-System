@@ -6,7 +6,7 @@ import {
   TenantListQuerySchema,
   TenantProfileUpdateRequestSchema,
   TenantUpdateRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/tenants";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";

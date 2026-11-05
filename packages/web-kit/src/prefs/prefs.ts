@@ -1,7 +1,7 @@
 // prefs-sync · giao diện (sáng/tối/theo máy) + ngôn ngữ theo NGƯỜI DÙNG, dùng chung 4 web (Chat, Sổ Hợp Tác, Quản trị, Studio).
 // Nguồn thật ở server (`admin.users.locale/theme`, trả trong `/auth/me`); localStorage chỉ là bản nhớ đệm để vẽ ngay không nháy.
 // Thứ tự: /me → localStorage → mặc định (vi + light). Mỗi lần đổi ở bất kỳ app nào: áp ngay, ghi localStorage, rồi PATCH /auth/me.
-import type { Locale, Theme } from "@ai/contracts";
+import type { Locale, Theme } from "@ai/contracts/common";
 
 export type Prefs = { locale: Locale; theme: Theme };
 

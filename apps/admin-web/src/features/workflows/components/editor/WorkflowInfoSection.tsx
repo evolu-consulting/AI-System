@@ -1,5 +1,5 @@
 // ADM-FR-10, ADM-FR-14 · tab "Thông tin": key (khoá sau khi lưu), tên, loại, secret, Base URL, output field, mô tả, công tắc Bật, `side_effect` (X1).
-import { APP_TYPES } from "@ai/contracts";
+import { APP_TYPES } from "@ai/contracts/common";
 import { Controller, useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";

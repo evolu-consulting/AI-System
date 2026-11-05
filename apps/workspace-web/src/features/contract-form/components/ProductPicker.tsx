@@ -1,6 +1,6 @@
 // V2-F · BA 5.5a/5.5c/5.5f/5.7e · mockup `linkRow`: dưới mỗi dòng HĐ — chọn "Sản phẩm trong danh mục" (hoặc tạo mới), chọn thành phần
 // khi SP có nhiều thành phần, nhãn gợi ý, tồn hiện có và cảnh báo "Bán vượt tồn" (chỉ HĐ Bán).
-import type { ContractDeal, ProductGroup, ProductOut } from "@ai/contracts";
+import type { ContractDeal, ProductGroup, ProductOut } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { Tag } from "~/components/shared/tag";
 import { cn } from "~/lib/utils";

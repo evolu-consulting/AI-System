@@ -1,5 +1,7 @@
 // ADM-FR-04, ADM-FR-05, ADM-FR-63, ADM-NFR-07, ADM-FR-62 · truy vấn users (M3: `groups`/`group_count`, `?group`). Luôn trong withScope (RLS) và lọc tenant_id tường minh.
-import { type Locale, type Role, USER_GROUPS_MAX, type UserKind } from "@ai/contracts";
+import type { Locale, Role } from "@ai/contracts/common";
+import { USER_GROUPS_MAX } from "@ai/contracts/groups";
+import type { UserKind } from "@ai/contracts/user-kind";
 import { type Tx, tenants, users } from "@ai/db";
 import { and, asc, eq, ilike, isNull, ne, or, type SQL, sql } from "drizzle-orm";
 import { likeArg, outer, pgArray } from "../../lib/sql";

@@ -1,5 +1,5 @@
 // ADM-FR-62 · M3-R03 · bảng thành viên (`table "Thành viên"`): skeleton, rỗng, lỗi tải.
-import type { GroupMember } from "@ai/contracts";
+import type { GroupMember } from "@ai/contracts/groups";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "@/components/shared/DataTable";

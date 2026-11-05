@@ -7,7 +7,7 @@ import type {
   ContractListResponse,
   MembersResponse,
   UploadContractResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { api, apiResponse } from "@ai/web-kit/http";
 import type { ExportFile } from "./lib/export-file";
 import { metaFields, type UploadMeta } from "./lib/upload-meta";

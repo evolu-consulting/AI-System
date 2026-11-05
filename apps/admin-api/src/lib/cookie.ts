@@ -1,7 +1,7 @@
 // ADM-FR-02, ADM-NFR-01 · cookie refresh token của web (spec M1 §3): `ai_rt`, HttpOnly, SameSite=Strict, Path=/auth,
 // Max-Age 30 ngày, Secure khi production. Extension không bao giờ nhận cookie. CR-053: app web báo `X-App` ⇒ cookie
 // riêng `ai_rt_<app>` (đăng nhập/đăng xuất một app không ảnh hưởng app khác).
-import { refreshCookieName, type WebApp } from "@ai/contracts";
+import { refreshCookieName, type WebApp } from "@ai/contracts/auth";
 import type { Context } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 

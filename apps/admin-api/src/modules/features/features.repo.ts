@@ -8,7 +8,7 @@ import {
   type FeatureStatus,
   LocalizedOptionalSchema,
   LocalizedTextSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/common";
 import { featureCommands, featureEntitlements, features, type Tx, tenants, users } from "@ai/db";
 import { and, asc, desc, eq, ilike, isNull, or, type SQL, sql } from "drizzle-orm";
 import { likeArg, outer, usernameOf } from "../../lib/sql";

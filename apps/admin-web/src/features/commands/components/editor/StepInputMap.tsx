@@ -1,5 +1,5 @@
 // ADM-FR-21, ADM-FR-22 · AC-A03 · bước 4 "Đưa vào workflow": một dòng cho mỗi input của workflow, chặn lưu khi thiếu input bắt buộc.
-import type { Workflow } from "@ai/contracts";
+import type { Workflow } from "@ai/contracts/workflows";
 import { useMemo } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";

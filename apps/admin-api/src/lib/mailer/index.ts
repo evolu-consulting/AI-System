@@ -1,6 +1,6 @@
 // ADM-FR-41 (mail cảnh báo quota R05), ADM-FR-08 · Mailer dùng chung (plan-cd §9, ADR-0005).
 // Chỉ file này import nodemailer. Không retry; gửi sau commit là việc bên gọi. Log không chứa địa chỉ/nội dung.
-import { EmailSchema } from "@ai/contracts";
+import { EmailSchema } from "@ai/contracts/common";
 import nodemailer from "nodemailer";
 import type { Env } from "../../config/env";
 import { logger } from "../logger";

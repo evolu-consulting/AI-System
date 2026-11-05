@@ -1,5 +1,5 @@
 // ADM-FR-42 · M4-R08 · gọi GET /admin/usage và /admin/usage.csv (nơi duy nhất của feature usage).
-import type { WorkflowListResponse } from "@ai/contracts";
+import type { WorkflowListResponse } from "@ai/contracts/workflows";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { downloadFile } from "@/lib/download";
 import { api } from "@/lib/http";

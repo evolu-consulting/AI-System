@@ -1,7 +1,7 @@
 // V2-H · `GET /products/:id/customers?status=` (quyền `read`), `POST /products/:id/customers/:customerId/remind` (quyền `read`: việc
 // của riêng người bấm, như hẹn nhắc W1), `GET /business-settings` (`read`), `PUT /business-settings` (`admin` — Q3: chỉ quản lý chỉnh
 // Cài đặt). Guard TRƯỚC đọc thân/tham số; id sai dạng ⇒ 400; SP / khách không có hoặc không thấy ⇒ 404; thân/query strict.
-import { BusinessSettingsSchema, ServiceCustomersQuerySchema } from "@ai/contracts";
+import { BusinessSettingsSchema, ServiceCustomersQuerySchema } from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { appError } from "../../../../lib/errors";

@@ -1,12 +1,12 @@
 // ADM-FR-10, ADM-FR-11, ADM-FR-13, ADM-FR-14, ADM-FR-15, ADM-BR-06, ADM-BR-13 · API /admin/workflows
 // (test-plan W; AC-A05, AC-A13, M2-AC06/07/08; M2-R07…R12, R18, R25). Command, agent, secret dựng bằng owner SQL.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
+import { versionConflictDetailsSchema } from "@ai/contracts/version-conflict";
 import {
-  versionConflictDetailsSchema,
   WorkflowListResponseSchema,
   WorkflowSchema,
   WorkflowUsagesSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/workflows";
 import { ALL_CATALOG, ID, LEAK_1, leakForms } from "./_data";
 import { apiSecret, createM2Env, expectErr, type Json, type M2Env, type Res } from "./_fixtures";
 

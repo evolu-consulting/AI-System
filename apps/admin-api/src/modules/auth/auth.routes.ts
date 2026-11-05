@@ -7,8 +7,8 @@ import {
   LogoutRequestSchema,
   RefreshRequestSchema,
   type TokenGrant,
-  TotpVerifyRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/auth";
+import { TotpVerifyRequestSchema } from "@ai/contracts/totp";
 import { type Context, Hono } from "hono";
 import { clientIp } from "../../lib/client-ip";
 import { clearRefreshCookie, readRefreshCookie, setRefreshCookie } from "../../lib/cookie";

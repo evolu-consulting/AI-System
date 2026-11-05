@@ -1,5 +1,8 @@
 // HUB-FR-72 · H4a-R02 · `GET /studio/api/me`: kiểm role sau đăng nhập (403 ⇒ /forbidden) + badge `hub config vN`.
-import { MY_APPS_PATH, type MyAppsResponse, type SsoCodeResponse } from "@ai/contracts";
+
+import type { MyAppsResponse } from "@ai/contracts/app-catalog";
+import type { SsoCodeResponse } from "@ai/contracts/auth";
+import { MY_APPS_PATH } from "@ai/contracts/light";
 import type { Me } from "@ai/contracts/studio";
 import { queryOptions } from "@tanstack/react-query";
 import { api } from "#/lib/http";

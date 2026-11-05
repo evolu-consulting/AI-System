@@ -1,6 +1,6 @@
 // ADM-FR-53 · `config_version` trong transaction ghi cấu hình (spec M3 §3, M3-R15, plan §5.2). Chỉ làm việc DB: phát
 // NOTIFY là việc của người gọi SAU khi hàm này trả (đã commit) — xem admin-api `lib/config/config-write.ts`.
-import type { ConfigEvent } from "@ai/contracts";
+import type { ConfigEvent } from "@ai/contracts/config";
 import { sql } from "drizzle-orm";
 import { type AuditInput, insertAuditRows } from "./audit-log";
 import type { Db } from "./client";

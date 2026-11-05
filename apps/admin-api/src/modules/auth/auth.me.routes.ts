@@ -1,5 +1,5 @@
 // ADM-FR-01, ADM-FR-06 · GET/PATCH /auth/me và đổi mật khẩu tự đổi (Bearer, mọi role) — spec M1 §3.
-import { MeUpdateRequestSchema } from "@ai/contracts";
+import { MeUpdateRequestSchema } from "@ai/contracts/auth";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, authenticate, requireAuth } from "../../lib/auth-middleware";
 import { parseJson } from "../../lib/http";

@@ -1,5 +1,5 @@
 // ADM-FR-54 · M4-R14 · kiểm file import ở client trước khi gửi (plan-frontend §3.5, §5): đuôi .yaml/.yml, ≤ 1 MB.
-import { IMPORT_MAX_BYTES } from "@ai/contracts";
+import { IMPORT_MAX_BYTES } from "@ai/contracts/transfer";
 
 export type ImportFileProblem = "wrongType" | "tooLarge";
 

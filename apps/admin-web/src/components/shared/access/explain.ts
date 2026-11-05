@@ -5,8 +5,8 @@ import type {
   EffectiveCommand,
   EffectiveFeature,
   FeatureMini,
-  GrantFeatureRef,
-} from "@ai/contracts";
+} from "@ai/contracts/access";
+import type { GrantFeatureRef } from "@ai/contracts/grants";
 import { type LocalizedText, pickLocalized } from "@/lib/localized";
 import { foldKeyInput } from "@/lib/normalize";
 

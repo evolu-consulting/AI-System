@@ -1,12 +1,9 @@
 // ADM-FR-62, ADM-FR-55, ADM-BR-09 · API /admin/groups (M3-AC01; M3-R01, R02, R04, R05, R06, R23; test-plan I-G).
 // Mỗi `it` tự dựng lại dữ liệu (beforeEach reset); không `it` nào đọc kết quả của `it` khác.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import {
-  GroupListResponseSchema,
-  GroupSchema,
-  GroupVersionConflictDetailsSchema,
-  TenantCreateResponseSchema,
-} from "@ai/contracts";
+import { GroupListResponseSchema, GroupSchema } from "@ai/contracts/groups";
+import { TenantCreateResponseSchema } from "@ai/contracts/tenants";
+import { GroupVersionConflictDetailsSchema } from "@ai/contracts/version-conflict";
 import {
   betaId,
   callerOf,

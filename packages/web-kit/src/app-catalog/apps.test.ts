@@ -1,6 +1,6 @@
 // app-catalog · lọc/nhãn/link của switcher (thuần).
 import { describe, expect, it } from "bun:test";
-import type { MeApp } from "@ai/contracts";
+import type { MeApp } from "@ai/contracts/app-catalog";
 import { appDescription, appLabel, fallbackApps, otherApps, withCurrent } from "./apps";
 
 const urls = {

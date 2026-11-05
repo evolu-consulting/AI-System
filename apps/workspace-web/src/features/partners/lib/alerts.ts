@@ -1,7 +1,7 @@
 // GAP-D2 · #27 · BA v2 (mockup `spark` + "Cảnh báo bất thường"): đường xu hướng 6 tháng + luật cảnh báo bất thường của một đối tác.
 // Thuần, tính trên dữ liệu đã có (lịch sử điểm + việc góp điểm): (1) điểm tụt mạnh so với tháng trước; (2) tỷ lệ trễ hạn tăng đột
 // ngột trong 30 ngày gần nhất so với 90 ngày trước đó (chỉ tính mốc đối tác chịu lỗi hoặc chưa rõ lỗi; lỗi của mình không tính).
-import type { RepDetailItem } from "@ai/contracts";
+import type { RepDetailItem } from "@ai/contracts/pack-contracts";
 import type { ChartPoint } from "./partner-v2e";
 
 /** Điểm tụt từ tháng trước sang tháng này đạt ngưỡng này ⇒ cảnh báo. */

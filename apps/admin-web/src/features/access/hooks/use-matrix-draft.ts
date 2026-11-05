@@ -1,5 +1,5 @@
 // ADM-FR-35 · M3-R08 · nháp ma trận: Map chênh lệch so với bản đã lưu; tick ô/hàng/cột, đếm thay đổi, huỷ.
-import type { MatrixFeature, MatrixGroup } from "@ai/contracts";
+import type { MatrixFeature, MatrixGroup } from "@ai/contracts/grants";
 import { useCallback, useMemo, useState } from "react";
 import {
   countChanges,

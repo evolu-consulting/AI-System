@@ -1,6 +1,6 @@
 // PK-FR-05 · D-05 · N1 plan §2 (readiness #1, #7): `/admin/tenants/:tenant_id/packs[/:pack_key]`, chỉ platform_admin (không
 // token ⇒ 401, sai vai ⇒ 403). Khoá sai dạng/bị cấm ⇒ 400 VALIDATION_ERROR (trước khi chạm DB); tenant_id không phải uuid ⇒ 404.
-import { PackEnableQuerySchema, PackKeySchema } from "@ai/contracts";
+import { PackEnableQuerySchema, PackKeySchema } from "@ai/contracts/packs";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseQuery, parseWith } from "../../lib/http";

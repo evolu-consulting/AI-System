@@ -1,5 +1,5 @@
 // ADM-FR-20, ADM-BR-01 · mã lỗi của module commands (bảng mã: API_ERRORS, spec M2 §3) + nhận diện 23505 tên (plan §7).
-import type { ErrorCode } from "@ai/contracts";
+import type { ErrorCode } from "@ai/contracts/common";
 import { uniqueViolation } from "../../lib/pg-errors";
 
 export const COMMANDS_ERROR_CODES = [

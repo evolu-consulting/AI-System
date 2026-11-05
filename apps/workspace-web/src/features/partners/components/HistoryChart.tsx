@@ -1,6 +1,6 @@
 // V2-I · DT-03 · biểu đồ diễn biến điểm 3 / 6 / 12 tháng: điểm các tháng đã chốt + hiện tại, hai đường ngưỡng KHÁ / TỐT (ngưỡng đang cấu
 // hình). SVG thuần theo mockup NITI (`chartSVG`); rê chuột / bàn phím không cần — mỗi điểm có `<title>`.
-import type { RepHistory, RepRole } from "@ai/contracts";
+import type { RepHistory, RepRole } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";

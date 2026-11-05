@@ -1,5 +1,5 @@
 // ADM-BR-01 · M2-R13 · ô Alias: nhập rồi `Thêm alias` (hoặc Enter); chip `Bỏ alias {name}`; ≤ 5, không trùng, không trùng command khác.
-import { ALIASES_MAX, CATALOG_KEY_RE } from "@ai/contracts";
+import { ALIASES_MAX, CATALOG_KEY_RE } from "@ai/contracts/common";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";

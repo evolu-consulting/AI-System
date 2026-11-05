@@ -4,8 +4,8 @@ import type {
   LoginResponse,
   PasswordChangeRequired,
   TokenGrant,
-  TotpVerifyRequest,
-} from "@ai/contracts";
+} from "@ai/contracts/auth";
+import type { TotpVerifyRequest } from "@ai/contracts/totp";
 import { session } from "#/lib/auth/session";
 import { sendPublic } from "#/lib/http";
 

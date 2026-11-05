@@ -1,5 +1,5 @@
 // gap-d1 #21/#22 · tải báo giá lên (đọc → chưa lưu → lưu làm giá tham khảo), nhập giá tay, thêm NCC vào Đối tác.
-import type { QuoteReadOut, SupplierPriceInput } from "@ai/contracts";
+import type { QuoteReadOut, SupplierPriceInput } from "@ai/contracts/pack-contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { addCompany, readQuote, saveSupplierPrices, supplierKeys } from "../api";
 import { toSaveItems } from "../lib/suppliers";

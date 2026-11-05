@@ -1,6 +1,6 @@
 // ADM-FR-42 · usage-analytics · bảng bản ghi usage thô (cùng bộ lọc): thời điểm, tenant, user, app, tính năng, agent, model,
 // kết quả, token vào/ra, độ trễ, chi phí (platform). Trước/Sau (keyset), xuất CSV, bấm run ⇒ chi tiết run. Chỉ trình bày.
-import type { UsageRecord } from "@ai/contracts";
+import type { UsageRecord } from "@ai/contracts/usage-analytics";
 import { Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";

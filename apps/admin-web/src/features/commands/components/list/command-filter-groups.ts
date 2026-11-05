@@ -1,5 +1,5 @@
 // CR-121 C-1b · nhóm lọc của /commands: Trạng thái (Bật/Tắt, có số), Feature, Workflow — mỗi nhóm đúng một control trong phễu.
-import type { CommandListCounts } from "@ai/contracts";
+import type { CommandListCounts } from "@ai/contracts/commands";
 import { useTranslation } from "react-i18next";
 import type { FilterGroup } from "@/components/shared/list/list-filter";
 import { pickLocalized } from "@/lib/localized";

@@ -1,6 +1,6 @@
 // HD7-FR-08 · HD7-FR-12 · "Ghi việc khác" — port `PartnerLog.tsx:177-208`: giao hàng (NCC, số ngày trễ), khiếu nại (bắt buộc nội
 // dung), giữ/lỡ hẹn; ngày ≤ hôm nay; ghi xong xoá ghi chú + số ngày trễ.
-import type { PartnerRole } from "@ai/contracts";
+import type { PartnerRole } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLedgerWrites } from "../hooks/use-ledger";

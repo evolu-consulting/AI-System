@@ -1,5 +1,5 @@
 // M1D-FR-03 · phòng ban: tạo (Group + đánh dấu), trưởng phòng, thêm/gỡ thành viên, bỏ phòng ban (Group giữ nguyên).
-import type { OrgResponse } from "@ai/contracts";
+import type { OrgResponse } from "@ai/contracts/org";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {

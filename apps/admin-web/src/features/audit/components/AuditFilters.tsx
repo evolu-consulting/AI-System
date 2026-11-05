@@ -1,5 +1,5 @@
 // ADM-FR-51 · M4-R12 · thanh lọc Nhật ký: Tenant (platform) · Loại · Hành động · Người thực hiện · Thời gian · tìm theo tên.
-import { AUDIT_ACTIONS, type AuditAction, type AuditEntity } from "@ai/contracts";
+import { AUDIT_ACTIONS, type AuditAction, type AuditEntity } from "@ai/contracts/audit";
 import { useTranslation } from "react-i18next";
 import { PeriodFilter } from "@/components/shared/form/PeriodFilter";
 import type { Period } from "@/components/shared/form/period";

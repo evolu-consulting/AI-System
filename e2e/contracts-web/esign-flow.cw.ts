@@ -1,7 +1,7 @@
 // esign-flow · CR-105: Cài đặt › Quy trình duyệt chỉ ĐỌC quy trình thư viện đang dùng (có bước Ký số là nút đuôi); việc soạn
 // bước Ký số/người ký chuyển sang admin-web (e2e/P-a/pf4/process-library.pa.ts). Backend giả `page.route`.
 // esign-sweep2 · thẻ duyệt: bước Ký số đã gửi hiện "Hạn ký", nhãn "Quá hạn" và "Đã nhắc lúc" (VIẾT, CHƯA CHẠY — e2e chạy cuối đợt).
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { expect, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
 import { contract, contractAsHub } from "./dataset-contract";

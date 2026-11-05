@@ -1,7 +1,7 @@
 // V2-G · HD-02/HD-08 · §4.2 "Upload và xác nhận" · C3 · C12: "Lưu" ở màn xác nhận (MỘT tx: khoá HĐ → kiểm `version` → luật thuần
 // `planReview` → ghi trường + loại + dòng hàng + mốc → outbox) và gắn lại SP cho dòng HĐ đã lưu (một tx, một CTE). "Hủy" không có
 // lệnh: màn hình bỏ bản nháp, không gọi API. Tenant tắt duyệt ⇒ lưu = `active` ngay (V2-A để ngỏ); bật duyệt ⇒ vẫn `needs_review`.
-import type { ProductLink } from "@ai/contracts";
+import type { ProductLink } from "@ai/contracts/pack-contracts";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { ContractFieldKey, FieldValue } from "../domain/fields.rules";
 import type { Deal } from "../domain/milestones.rules";

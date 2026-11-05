@@ -2,8 +2,13 @@
 // lọc `tenant_id` tường minh ngoài RLS. Bảng Thanh toán = `payments.board`: tổng (NUMERIC ⇒ chuỗi) trên mọi đợt tiền đang mở, không
 // theo bộ lọc; hàng ≤ 500 theo (`due_date`, `id`) — `days_late` giảm dần ≡ hạn tăng dần — hoặc `done_at` giảm dần (60 ngày).
 // HĐ không xoá được (D-08) nên tổng/đếm không cần join HĐ; chi tiết HĐ chỉ join cho ≤ 500 hàng trả về.
-import type { ContractPartner, Obligation, PartnerEvent, PaymentsOut } from "@ai/contracts";
-import { LEDGER_LIST_MAX } from "@ai/contracts";
+import type {
+  ContractPartner,
+  Obligation,
+  PartnerEvent,
+  PaymentsOut,
+} from "@ai/contracts/pack-contracts";
+import { LEDGER_LIST_MAX } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { LedgerReadRepo } from "../application/ledger.ports";

@@ -1,6 +1,6 @@
 // ADM-FR-51, ADM-FR-52, ADM-BR-09 · /admin/audit* (plan-contract §2.4). platform_admin + tenant_admin; member → 403
 // trước khi parse/tra. Restore chỉ platform_admin (Q8: tenant_admin 403 trước khi tra).
-import { AuditListQuerySchema, AuditRestoreRequestSchema } from "@ai/contracts";
+import { AuditListQuerySchema, AuditRestoreRequestSchema } from "@ai/contracts/audit";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";

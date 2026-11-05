@@ -1,7 +1,7 @@
 // ADM-FR-37 · H3b-R01, R02 · HUB-H3b-AC-01 · test-plan-cases H3b §1.1 R01–R07: `targetTenant` quyết tenant đích một lần
 // (member 403, tenant_admin chỉ tenant mình, platform_admin bắt buộc `tenant_id`; role lạ ⇒ FORBIDDEN).
 import { describe, expect, it } from "bun:test";
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import {
   type TargetTenant,
   targetTenant,

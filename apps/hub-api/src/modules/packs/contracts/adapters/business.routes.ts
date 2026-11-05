@@ -1,7 +1,12 @@
 // V2-J1 · SP-01/02/07 · CD-06: route điểm kinh doanh dưới `/pack/contracts/business`: `GET /products` (danh sách + điểm + đề xuất),
 // `GET /products/:id` (tóm tắt + lịch sử mua bán), `GET /products/:id/contracts`, `GET /config` (quyền đọc), `PUT /config` (chỉ quản lý).
 // Guard quyền gói TRƯỚC đọc thân (viewer ghi ⇒ 403); id sai dạng ⇒ 400; không có / tenant khác ⇒ 404; ngưỡng sai ⇒ 422 `BUSINESS_INVALID`.
-import { BIZ_ERRORS, BizConfigSchema, BizListQuerySchema, BizPreviewSchema } from "@ai/contracts";
+import {
+  BIZ_ERRORS,
+  BizConfigSchema,
+  BizListQuerySchema,
+  BizPreviewSchema,
+} from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";

@@ -1,6 +1,6 @@
 // CR-112 · ADM-FR-80, ADM-FR-82 · thay đổi chưa lưu của Phân quyền (diff, thứ tự thao tác) + chạy lô và xử lý lỗi 409.
 import { describe, expect, test } from "bun:test";
-import type { AppRole } from "@ai/contracts";
+import type { AppRole } from "@ai/contracts/app-roles";
 import { ApiError } from "@/lib/http";
 import { describeRoleError, isVersionConflict } from "./errors";
 import {

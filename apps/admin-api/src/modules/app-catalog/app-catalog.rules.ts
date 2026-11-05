@@ -1,5 +1,5 @@
 // app-catalog · luật thuần: app nào người gọi được mở (vai + feature hiệu lực) và đích SSO hợp lệ. Không I/O.
-import type { AppAudience } from "@ai/contracts";
+import type { AppAudience } from "@ai/contracts/app-catalog";
 
 export type CatalogRow = {
   key: string;

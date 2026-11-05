@@ -1,5 +1,5 @@
 // app-catalog · cầu nối cho component (component không import `api.ts` trực tiếp — T-DEP-5): dữ liệu switcher dùng chung.
-import type { MeApp } from "@ai/contracts";
+import type { MeApp } from "@ai/contracts/app-catalog";
 import { session } from "@/lib/auth/session";
 import { requestSsoGrant } from "../api";
 import { appOpenUrl } from "../lib/open-app";

@@ -1,5 +1,5 @@
 // ADM-FR-20 · bước 3 · một dòng tham số lệnh: tên · mô tả VI/EN · mặc định · "Nếu trống lấy" · nuốt phần còn lại · ↑ ↓ · xoá.
-import { ARG_FALLBACKS } from "@ai/contracts";
+import { ARG_FALLBACKS } from "@ai/contracts/common";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { memo } from "react";
 import { Controller, useFormContext } from "react-hook-form";

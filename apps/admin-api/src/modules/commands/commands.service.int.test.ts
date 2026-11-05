@@ -1,7 +1,7 @@
 // ADM-FR-20, ADM-FR-22, ADM-FR-24, ADM-BR-01 · service commands trên DB thật (role admin_api): trùng tên/alias, song song
 // cùng tên, input map, WORKFLOW_DISABLED, mặc định core, access.
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
-import type { CommandCreateRequest } from "@ai/contracts";
+import type { CommandCreateRequest } from "@ai/contracts/commands";
 import { createDb, runMigrations } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";

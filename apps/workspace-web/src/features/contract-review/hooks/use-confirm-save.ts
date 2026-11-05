@@ -1,6 +1,6 @@
 // atomic-confirm (người dùng 2026-10-24): "Xác nhận và lưu" khi tenant TẮT duyệt — giống thẻ duyệt (bật duyệt): ghi nháp (HĐ chưa
 // khoá) ⇒ hộp "Gắn sản phẩm" (HĐ có dòng) ⇒ MỘT `POST /review` {version, products}: xác nhận + khoá + gắn/tạo SP trong cùng tx.
-import type { ProductLink } from "@ai/contracts";
+import type { ProductLink } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";

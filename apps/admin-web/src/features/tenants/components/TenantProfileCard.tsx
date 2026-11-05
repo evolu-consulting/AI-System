@@ -1,5 +1,5 @@
 // niti-onboard · hồ sơ công ty của tenant (admin 0015), chỉ đọc — ghi bằng công cụ onboarding (deploy/tenants/*.yaml).
-import type { TenantDetail } from "@ai/contracts";
+import type { TenantDetail } from "@ai/contracts/tenants";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { profileLines } from "../lib/profile";

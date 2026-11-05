@@ -1,6 +1,6 @@
 // ADM-FR-51 · test nhóm theo ngày và nhãn ngày.
 import { describe, expect, test } from "bun:test";
-import type { AuditItem } from "@ai/contracts";
+import type { AuditItem } from "@ai/contracts/audit";
 import { dayLabel, groupByDay } from "./group-by-day";
 
 const at = (h: number, d = 3) => new Date(2026, 9, d, h, 0).toISOString();

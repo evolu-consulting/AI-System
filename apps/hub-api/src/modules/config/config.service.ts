@@ -7,7 +7,7 @@ import {
   ConfigChangedPayloadSchema,
   PROFILE_CHANNEL,
   ProfileChangedPayloadSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/config";
 import { HUB_CONFIG_CHANNEL, HubConfigChangedPayloadSchema } from "@ai/contracts/hub";
 import type { Db } from "../../lib/db";
 import { safeErrorFields } from "../../lib/errors";

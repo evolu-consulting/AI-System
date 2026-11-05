@@ -6,7 +6,7 @@ import {
   LOCK_ERRORS,
   ManualContractRequestSchema,
   PRODUCT_ERRORS,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";

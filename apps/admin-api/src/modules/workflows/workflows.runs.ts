@@ -2,7 +2,7 @@
 // Nguồn: `hub.dify_runs` (Hub ghi mỗi lời gọi Dify cùng usage). Bảng Hub KHÔNG RLS ⇒ mọi câu lọc `workflow_id` tường minh;
 // Hub chưa migrate (không đọc được bảng) ⇒ `available:false`, items rỗng. Một câu SQL cố định/trang (CTE trang → tên tenant/user
 // theo PK, không join bảng có RLS). Không trả inputs/app-key; thông báo lỗi do Hub đã che secret.
-import type { DifyRun, DifyRunsQuery, DifyRunsResponse } from "@ai/contracts";
+import type { DifyRun, DifyRunsQuery, DifyRunsResponse } from "@ai/contracts/workflow-runs";
 import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { appError } from "../../lib/errors";

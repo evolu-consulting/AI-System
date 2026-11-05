@@ -1,7 +1,7 @@
 // esign-anchor-fix · unit: xem trước dùng converter RIÊNG (bận ⇒ "unknown", lần gửi vẫn đọc được bằng converter của nó); chữ trích
 // cache theo (tenant, file_id) ⇒ gọi dồn không tải/đọc PDF lại; schema cụm chặn ký tự điều khiển.
 import { describe, expect, it } from "bun:test";
-import { ESignAnchorsSchema } from "@ai/contracts";
+import { ESignAnchorsSchema } from "@ai/contracts/pack-contracts";
 import type { PdfResult } from "../../kit/domain/pdf.rules";
 import { type ESignAnchorSource, esignAnchors } from "./esign-anchor.usecase";
 

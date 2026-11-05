@@ -1,8 +1,9 @@
 // CR-107 · eng-card-ui: chờ engine chuyển bước = ĐẨY (`/me/stream`) là chính; tải lại lưới an toàn chỉ khi đang chuyển bước và
 // KHÔNG có `attention`, giãn dần 2·4·8·16 s rồi giữ 30 s (review CR-107: bỏ trần 10 lần — push bị chặn/đứt hẳn vẫn còn lưới;
 // react-query không poll khi tab ẩn). Thuần để test không cần đồng hồ.
-import type { ContractApproval } from "@ai/contracts";
+
 import type { MeStreamProcessEvent } from "@ai/contracts/chat";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 
 export const ADVANCE_FIRST_MS = 2000;
 export const ADVANCE_CAP_MS = 30_000;

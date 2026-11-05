@@ -1,5 +1,5 @@
 // portal-home · mỗi nguồn một query độc lập, không retry: một thẻ lỗi không chặn trang (fail-soft, số chỉ ẩn đi).
-import type { MeApp } from "@ai/contracts";
+import type { MeApp } from "@ai/contracts/app-catalog";
 import {
   adminNumbers,
   contractsNumbers,

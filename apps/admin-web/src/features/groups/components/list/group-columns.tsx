@@ -1,5 +1,5 @@
 // ADM-FR-62 · cột bảng Groups: Group (tên link + key mono, beta có "Có sẵn" + gợi ý), Thành viên, Feature, Agent ("—" tới M5), `⋯`.
-import type { GroupListItem } from "@ai/contracts";
+import type { GroupListItem } from "@ai/contracts/groups";
 import { Link } from "@tanstack/react-router";
 import type { TFunction } from "i18next";
 import type { Column } from "@/components/shared/DataTable";

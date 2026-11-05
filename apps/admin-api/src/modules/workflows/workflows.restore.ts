@@ -1,7 +1,7 @@
 // ADM-FR-52 · M4-R13 · khôi phục workflow từ snapshot audit (plan M4 §4.4): cập nhật như PATCH (version = bản được
 // khôi phục) hoặc chèn lại cùng id như POST; secret mất → RESTORE_REF_MISSING; key trùng → NAME_TAKEN. Luật module
 // (WORKFLOW_IN_USE, SCHEMA_BREAKS_COMMANDS…) chạy lại trong lõi. Khoá: đúng chuỗi PATCH/POST (M3 §6.2).
-import { WorkflowCreateRequestSchema, WorkflowUpdateRequestSchema } from "@ai/contracts";
+import { WorkflowCreateRequestSchema, WorkflowUpdateRequestSchema } from "@ai/contracts/workflows";
 import type { ConfigSink, Tx } from "@ai/db";
 import {
   existingIds,

@@ -1,6 +1,6 @@
 // ADM-FR-20 · CR-055 · xác nhận xoá command: mức nặng, gõ lại tên; nói rõ command là danh mục chung — xoá là mất ở MỌI
 // công ty — và chỉ cách bỏ khỏi một công ty (bỏ feature khỏi command / thu hồi feature của công ty).
-import type { CommandListItem } from "@ai/contracts";
+import type { CommandListItem } from "@ai/contracts/commands";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { pickLocalized } from "@/lib/localized";

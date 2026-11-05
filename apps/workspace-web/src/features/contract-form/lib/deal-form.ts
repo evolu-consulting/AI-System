@@ -1,7 +1,7 @@
 // DOC-ui-list · R5–R10, Câu 3, 4: luật thuần của form Giao dịch — nguồn, ô "đã giao / đã thanh toán ngay", thân `POST /contracts/deals`,
 // câu báo khi "xác nhận ngay" dừng giữa chừng (`settle_error`). Không React, không fetch.
-import type { DealCreateRequest, DealSource } from "@ai/contracts";
-import { DEAL_SOURCES } from "@ai/contracts";
+import type { DealCreateRequest, DealSource } from "@ai/contracts/pack-contracts";
+import { DEAL_SOURCES } from "@ai/contracts/pack-contracts";
 import { type FormState, type Numbers, toRequest } from "./form-model";
 
 export type { DealSource };

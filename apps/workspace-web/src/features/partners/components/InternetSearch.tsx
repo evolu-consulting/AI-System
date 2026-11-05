@@ -1,6 +1,6 @@
 // V2-I · DT-07 · intake Q8 · "Tìm trên internet": chỉ chạy khi người dùng bấm (nút ở đầu trang chi tiết); máy chủ chỉ gửi tên + MST
 // cho AI có tìm web qua gói. Kết quả là vài dòng chữ thuần; mỗi dòng có "Lưu vào ghi chú" (nguồn `internet`).
-import type { PartnerWebLine } from "@ai/contracts";
+import type { PartnerWebLine } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";

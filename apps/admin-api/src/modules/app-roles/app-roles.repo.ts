@@ -1,12 +1,7 @@
 // CR-112 · ADM-FR-80/81/82 · truy vấn `admin.app_roles` (RLS admin_rw: scope tenant chỉ thấy tenant mình). Mỗi thao tác một số
 // câu cố định; dữ liệu lô qua một tham số JSON (Luật 4c).
-import {
-  APP_ROLES_MAX,
-  type AppRoleLevel,
-  DEFAULT_ROLE_LEVEL,
-  PACK_ROLES,
-  packGroupKey,
-} from "@ai/contracts";
+import { APP_ROLES_MAX, type AppRoleLevel, DEFAULT_ROLE_LEVEL } from "@ai/contracts/app-roles";
+import { PACK_ROLES, packGroupKey } from "@ai/contracts/packs";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 

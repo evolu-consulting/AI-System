@@ -1,9 +1,10 @@
 // ADM-FR-10, ADM-FR-11, ADM-FR-13, ADM-FR-14, ADM-FR-15 · nghiệp vụ workflows (plan M2 §5 "Workflows", §5.1).
 // Không biết HTTP; callback withScope chỉ làm việc DB (TECH-DEBT #13). Khoá: workflow NKU → secret SHARE (khi đổi).
 // Thứ tự kiểm PATCH (spec §3): 404 → version → không đổi gì → INVALID_REFERENCE → WORKFLOW_IN_USE → SCHEMA_BREAKS_COMMANDS.
+
+import { USAGES_MAX } from "@ai/contracts/common";
 import {
   InputSchemaSchema,
-  USAGES_MAX,
   type Workflow,
   type WorkflowCreateRequest,
   type WorkflowInput,
@@ -12,7 +13,7 @@ import {
   type WorkflowListResponse,
   type WorkflowUpdateRequest,
   type WorkflowUsages,
-} from "@ai/contracts";
+} from "@ai/contracts/workflows";
 import {
   type AuditActionValue,
   type AuditInput,

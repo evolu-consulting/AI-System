@@ -1,14 +1,8 @@
 // ADM-FR-20, ADM-FR-21, ADM-FR-22, ADM-BR-01, ADM-BR-02, ADM-BR-06, ADM-BR-10 · luật thuần commands (plan M2 §4).
 // Không import I/O.
-import {
-  type CommandArg,
-  type CommandMode,
-  type ErrorCode,
-  type InputMap,
-  type InputMapWarning,
-  TIMEOUT_DEFAULT_S,
-  type WorkflowInput,
-} from "@ai/contracts";
+import type { CommandArg, InputMap, InputMapWarning } from "@ai/contracts/commands";
+import { type CommandMode, type ErrorCode, TIMEOUT_DEFAULT_S } from "@ai/contracts/common";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import { sameIdSet, sameJson } from "../../lib/json";
 import { inputMapGaps } from "../workflows/workflows.rules";
 

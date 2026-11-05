@@ -2,7 +2,7 @@
 // giống byte); tenant_admin thực thể tenant khác → 404; route không có → 404 (M3-R06; test-plan I-X).
 // Mỗi `it` tự dựng lại dữ liệu (beforeEach reset). Ca chỉ GET/lỗi nên không ghi, nhưng vẫn reset để độc lập.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { ErrorResponseSchema } from "@ai/contracts";
+import { ErrorResponseSchema } from "@ai/contracts/errors";
 import {
   callerOf,
   createM3Env,

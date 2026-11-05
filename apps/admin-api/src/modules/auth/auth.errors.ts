@@ -1,5 +1,5 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-06, ADM-FR-07 · mã lỗi của module auth (bảng mã: API_ERRORS, spec M1 §3).
-import type { ErrorCode } from "@ai/contracts";
+import type { ErrorCode } from "@ai/contracts/common";
 import { appError } from "../../lib/errors";
 
 export const AUTH_ERROR_CODES = [

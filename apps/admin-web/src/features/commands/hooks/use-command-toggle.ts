@@ -1,6 +1,6 @@
 // ADM-FR-20 · ADM-BR-06 · ADM-FR-55 · bật/tắt command ở danh sách: lạc quan theo hàng, tắt có Hoàn tác 5 s (= bật lại bằng
 // version mới); 409 VERSION_CONFLICT → ConflictDialog với `mine = {enabled}` (plan-frontend D6).
-import type { Command, CommandListItem } from "@ai/contracts";
+import type { Command, CommandListItem } from "@ai/contracts/commands";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";

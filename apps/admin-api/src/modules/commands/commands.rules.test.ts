@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { WorkflowInput } from "@ai/contracts";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import {
   changedCommandFields,
   checkCommandEnable,

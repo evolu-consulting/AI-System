@@ -12,7 +12,7 @@ import {
   effectiveDailyLimit,
   envDailyLimit,
   tenantLocalDay,
-} from "@ai/contracts";
+} from "@ai/contracts/daily-limits";
 import { withScope } from "@ai/db";
 import { auditOf, recordAudit } from "../../lib/audit/audit.write";
 import { type ConfigCall, configWrite } from "../../lib/config/config-write";

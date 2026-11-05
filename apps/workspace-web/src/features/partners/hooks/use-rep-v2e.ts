@@ -1,6 +1,6 @@
 // REP-v3-ui · truy vấn/ghi uy tín theo engine V2-E (BA v2.0 §5.1): cờ `engine` (`GET /reputation/config`), bảng điểm vai × nhóm SP, chi tiết,
 // lịch sử chốt tháng, đánh giá sao, "Cần chú ý" (TQ-04), xem trước đổi mức (quản lý). Chỉ bật các truy vấn V2-E khi `engine = v2e`.
-import type { RepEngine, RepRatingIn, RepRole } from "@ai/contracts";
+import type { RepEngine, RepRatingIn, RepRole } from "@ai/contracts/pack-contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchRepAttention,

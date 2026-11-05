@@ -2,7 +2,7 @@
 // Không có bước đổi mật khẩu / 2FA: `password_change_required` / `totp_required` trả về cho trang đăng nhập của app.
 // N1 TF3: chuyển từ chat-web sang web-kit; tên app/kênh/khoá + việc dọn khi hết phiên do app truyền (`createSession`).
 
-import type { MyAppsResponse } from "@ai/contracts";
+import type { MyAppsResponse } from "@ai/contracts/app-catalog";
 import type { LoginRequest, LoginResponse, Me, TokenGrant } from "@ai/contracts/chat";
 import { MY_APPS_PATH } from "@ai/contracts/light";
 import { ApiError, api, sendPublic, setAppName, setAuthHooks } from "../http";

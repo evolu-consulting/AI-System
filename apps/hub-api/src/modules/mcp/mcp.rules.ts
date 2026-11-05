@@ -1,8 +1,9 @@
 // HUB-FR-50, HUB-FR-95, WRK-FR-13 · H2a-R18–R20, P7 · luật thuần MCP `/mcp` (plan §6, plan-rules): JSON-RPC 2.0,
 // thương lượng phiên bản, danh sách tool theo agent ∩ enabled ∩ payload, kiểm tham số tool, timeout tool.
-import type { WorkflowInput } from "@ai/contracts";
+
 import type { JobAttachment } from "@ai/contracts/hub";
 import { MCP_PROTOCOL_VERSIONS } from "@ai/contracts/hub-internal";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import type { CatalogWorkflow, WorkflowInputValue } from "../commands/catalog.types";
 import { appNeedsQuery } from "../commands/command-input.rules";
 

@@ -6,7 +6,7 @@ import {
   GrantDeleteQuerySchema,
   GrantListQuerySchema,
   GrantMatrixQuerySchema,
-} from "@ai/contracts";
+} from "@ai/contracts/grants";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseJson, parseQuery } from "../../lib/http";

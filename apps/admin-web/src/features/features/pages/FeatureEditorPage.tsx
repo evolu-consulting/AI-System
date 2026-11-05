@@ -1,5 +1,5 @@
 // ADM-FR-30, ADM-FR-31, ADM-BR-10 · editor Feature (/features/new, /features/$id): tab Thông tin, Commands, Tenant + thanh lưu.
-import type { FeatureDetail } from "@ai/contracts";
+import type { FeatureDetail } from "@ai/contracts/features";
 import { useState } from "react";
 import { FormProvider } from "react-hook-form";
 import { useTranslation } from "react-i18next";

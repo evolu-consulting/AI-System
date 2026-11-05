@@ -1,6 +1,6 @@
 // U3 · R44 · tab Tổng quan (engine HD8): huy hiệu theo vai (MỚI · tạm tính), lý do một dòng, bảng điểm từng tiêu chí (`/partners/score`),
 // link "Cách tính điểm"; bên phải khối cờ đỏ (báo / gỡ).
-import type { PartnerRole } from "@ai/contracts";
+import type { PartnerRole } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";

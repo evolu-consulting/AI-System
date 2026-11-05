@@ -1,6 +1,6 @@
 // gap-a1 · use case trang chi tiết HĐ (lớp 2): lịch sử, giao người phụ trách, sửa hoa hồng %, tóm tắt bằng AI. Quyền `write` do route
 // chặn trước; ở đây chỉ luật nghiệp vụ. AI gọi NGOÀI tx (không giữ khoá trong lúc chờ model).
-import type { AiSummary, HistoryItem } from "@ai/contracts";
+import type { AiSummary, HistoryItem } from "@ai/contracts/pack-contracts";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import {
   buildSummaryPrompt,

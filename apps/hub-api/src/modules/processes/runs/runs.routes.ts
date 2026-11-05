@@ -1,13 +1,14 @@
 // HUB-FR-105 · HUB-FR-113 · ADM-FR-67 · PF1 · `GET /processes`, `POST /process-runs`, `GET /process-runs`,
 // `GET /process-runs/:id` + `/outputs/:oid` (plan §9, plan-contract §3). Mount sẵn ở `processes.mount.ts`.
 // cancel/decide/review-decision ⇒ B6a (`gates/**`).
-import { UuidSchema } from "@ai/contracts";
+
 import {
   CreateProcessRunRequestSchema,
   PROCESS_RUN_ID_HEADER,
   ProcessRunListQuerySchema,
   RUN_DETAIL_STEPS_MAX,
 } from "@ai/contracts/chat";
+import { UuidSchema } from "@ai/contracts/common";
 import { type Context, Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";

@@ -1,5 +1,5 @@
 // CR-112 · ADM-FR-80 · nhãn mức Quản trị/Sửa/Xem (+ "không hiệu lực" khi vai vượt trần công ty, ADM-BR-12).
-import type { AppRoleLevel } from "@ai/contracts";
+import type { AppRoleLevel } from "@ai/contracts/app-roles";
 import { useTranslation } from "react-i18next";
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge";
 import { LEVEL_KEY } from "../lib/levels";

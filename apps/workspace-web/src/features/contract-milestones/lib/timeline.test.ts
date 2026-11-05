@@ -1,6 +1,6 @@
 // V2-F · HD-04/HD-11: luật thuần dòng thời gian mốc + hộp Thêm/Sửa mốc.
 import { describe, expect, it } from "bun:test";
-import type { Milestone } from "@ai/contracts";
+import type { Milestone } from "@ai/contracts/pack-contracts";
 import { bodyOf, newDraft, withKind } from "./milestone-form";
 import {
   buildTimeline,

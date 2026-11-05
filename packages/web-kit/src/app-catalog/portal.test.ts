@@ -1,6 +1,6 @@
 // portal-home · luật thuần: nơi hạ cánh sau đăng nhập, ánh xạ con số thẻ.
 import { describe, expect, it } from "bun:test";
-import type { MeApp } from "@ai/contracts";
+import type { MeApp } from "@ai/contracts/app-catalog";
 import { entryNext, entryUrl } from "./apps";
 import {
   adminNumbers,

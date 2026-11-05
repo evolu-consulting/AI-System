@@ -1,5 +1,5 @@
 // ADM-FR-04, ADM-FR-63 · schema form user; hằng số từ @ai/contracts, thông điệp là KEY i18n.
-import { DISPLAY_NAME_MAX, EMAIL_MAX, USERNAME_RE } from "@ai/contracts";
+import { DISPLAY_NAME_MAX, EMAIL_MAX, USERNAME_RE } from "@ai/contracts/common";
 import { z } from "zod";
 
 const roleField = z.enum(["member", "tenant_admin", "platform_admin"]);

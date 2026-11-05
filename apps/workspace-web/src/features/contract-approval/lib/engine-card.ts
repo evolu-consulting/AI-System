@@ -1,7 +1,12 @@
 // contract-flow S4: luật hiển thị thẻ duyệt khi lượt chạy trên engine (`mode = 'engine'`) — thuần, không React.
 // Nút: bước soạn (idx 0) = "Xác nhận và lưu" như máy cũ; bước ≥ 1 = Đạt / Trả lại / Từ chối. Dòng thời gian = `steps[]` + tên phòng
 // (`GET /pack/contracts/groups`). Lượt bị trả về máy cũ do engine hỏng/hết hạn mang lý do `ENGINE_RUN_<STATUS>` trong `feedback`.
-import type { ApprovalCardStep, ContractApproval, ContractGroup, FlowCond } from "@ai/contracts";
+import type {
+  ApprovalCardStep,
+  ContractApproval,
+  ContractGroup,
+  FlowCond,
+} from "@ai/contracts/pack-contracts";
 import type { ApprovalView } from "./approval";
 
 const NONE: ApprovalView = {

@@ -2,7 +2,7 @@
 // (xác nhận ngay khi lưu), lịch sử sửa (`contract_edit_log`), lớp tương thích `/transactions` (đọc). Mỗi hàm MỘT câu văn bản cố định,
 // `tenant_id` tường minh ngoài RLS (role `contracts_rw`, RLS FORCE + M1).
 
-import type { TransactionListQuery } from "@ai/contracts";
+import type { TransactionListQuery } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { PromoteRepo, PromoteRow } from "../application/promote-contract.usecase";

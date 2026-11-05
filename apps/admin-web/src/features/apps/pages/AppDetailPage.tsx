@@ -1,7 +1,8 @@
 // CR-118 · cr118-app-config · /apps/$appKey (chỉ platform_admin): trang cấu hình MỘT app — "app này bật cho ai, chạy quy trình nào".
 // 5 tab: Tổng quan · Tính năng · Quy trình · Công ty · Xem trước. Dùng lại AppCard/AppsSaveBar/TenantProcessSlots (một đường lưu với trang công ty),
 // FeatureTable, thư viện quy trình CR-105 và ProcessEditorPage. Bản nháp chưa lưu của ngăn "Công ty" được giữ khi chuyển sang tab "Xem trước".
-import { type AppCreateRequest, getAppManifest, type PreviewRole } from "@ai/contracts";
+import type { AppCreateRequest } from "@ai/contracts/app-catalog";
+import { getAppManifest, type PreviewRole } from "@ai/contracts/app-manifest";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";

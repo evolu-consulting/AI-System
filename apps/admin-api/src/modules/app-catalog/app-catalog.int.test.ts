@@ -1,6 +1,6 @@
 // app-catalog · `GET /me/apps` lọc theo vai + gói (entitlement/grant), cô lập tenant; CRUD `/admin/apps` chỉ platform_admin.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { MyAppsResponseSchema } from "@ai/contracts";
+import { MyAppsResponseSchema } from "@ai/contracts/app-catalog";
 import { createDb, type Db } from "@ai/db";
 import { TENANT_ID, USER_ID } from "../../../../../tests/acceptance/M1/_data";
 import {

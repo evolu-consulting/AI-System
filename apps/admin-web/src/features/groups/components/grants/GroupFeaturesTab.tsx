@@ -1,5 +1,5 @@
 // ADM-FR-32 · M3-R07, R08 · tab Feature của group: xem (Sửa) ↔ chế độ Sửa (Lưu · Huỷ); lưu qua MỘT batch, không đổi gì thì Lưu khoá.
-import type { Group } from "@ai/contracts";
+import type { Group } from "@ai/contracts/groups";
 import { useTranslation } from "react-i18next";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";

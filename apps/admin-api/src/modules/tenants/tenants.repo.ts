@@ -1,5 +1,5 @@
 // ADM-FR-60, ADM-FR-61, ADM-NFR-07 · truy vấn tenants (scope platform; RLS vẫn áp).
-import type { EntityStatus } from "@ai/contracts";
+import type { EntityStatus } from "@ai/contracts/common";
 import { type Tx, tenants, users } from "@ai/db";
 import { and, asc, eq, ilike, or, type SQL, sql } from "drizzle-orm";
 import { likeArg } from "../../lib/sql";

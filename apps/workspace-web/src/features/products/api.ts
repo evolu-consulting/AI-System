@@ -8,7 +8,7 @@ import type {
   BusinessSettings,
   RenewalRemindOut,
   ServiceCustomersOut,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 const PACK = "/pack/contracts";

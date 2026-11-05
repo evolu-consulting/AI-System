@@ -1,5 +1,5 @@
 // HUB-FR-95 · H2a-R21, R22 · xác nhận workflow `side_effect` (plan-db §3, plan-errors §5, plan §2.3). Thuần.
-import type { Locale } from "@ai/contracts";
+import type { Locale } from "@ai/contracts/common";
 import type { ToolConfirmationRequired } from "@ai/contracts/hub-internal";
 import type { ToolResult } from "./mcp.rules";
 

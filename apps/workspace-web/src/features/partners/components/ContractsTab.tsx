@@ -1,6 +1,6 @@
 // V2-I · DT-06 · tab "Hợp đồng · n": HĐ đã xác nhận của đối tác, lọc theo giai đoạn Chưa bắt đầu / Đang thực hiện / Đã xong
 // (giai đoạn do máy chủ suy từ mốc — cùng luật danh sách HĐ).
-import type { PartnerContractRow } from "@ai/contracts";
+import type { PartnerContractRow } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

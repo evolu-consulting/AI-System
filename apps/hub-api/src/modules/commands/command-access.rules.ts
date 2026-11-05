@@ -1,7 +1,7 @@
 // HUB-FR-76, HUB-BR-06 · H2a P5, Q4 · lệnh user dùng được = `visible` của `computeEffectiveAccess` Admin
 // (`apps/admin-api/src/modules/access/access.rules.ts`). CHÉP kiểu đầu vào, không import chéo app; test đối chiếu
 // `tests/acceptance/H2a/rules/access-parity.test.ts`. Nợ: gộp `packages/access` khi combine.
-import { CORE_FEATURE_KEY, type FeatureStatus } from "@ai/contracts";
+import { CORE_FEATURE_KEY, type FeatureStatus } from "@ai/contracts/common";
 
 export type AccessUser = {
   id: string;

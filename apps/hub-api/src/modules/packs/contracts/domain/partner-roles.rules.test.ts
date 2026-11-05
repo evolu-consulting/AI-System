@@ -1,6 +1,6 @@
 // V2-C · BA 5.6b/d · HD-10: luật thuần vai đối tác.
 import { describe, expect, it } from "bun:test";
-import { NEW_PARTNER_LABEL } from "@ai/contracts";
+import { NEW_PARTNER_LABEL } from "@ai/contracts/pack-contracts";
 import { isNewRole, lookupKey, lookupResult, ROLE_OF_DEAL } from "./partner-roles.rules";
 
 describe("V2-C partner-roles.rules", () => {

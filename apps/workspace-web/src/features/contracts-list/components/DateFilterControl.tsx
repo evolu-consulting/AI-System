@@ -1,6 +1,6 @@
 // Gap #10 · lọc ngày trong thanh công cụ: cột (hiệu lực đến | hạn chót) + cửa sổ (quá hạn, 30/60/90 ngày, khoảng tuỳ chọn). Trạng thái do
 // trang giữ trên URL; component chỉ hiển thị và gọi `onChange`.
-import { CONTRACT_DUE_PRESETS } from "@ai/contracts";
+import { CONTRACT_DUE_PRESETS } from "@ai/contracts/light";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {

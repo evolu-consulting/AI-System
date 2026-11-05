@@ -1,7 +1,7 @@
 // ADM-FR-35 · ADM-FR-32 · M3-R08, R09 · mô hình ma trận feature × group (hàm thuần): ô tick, nháp chênh lệch, tick hàng/cột, batch.
 // Nháp là Map `featureId:groupId → giá trị mong muốn`, chỉ chứa ô KHÁC bản đã lưu (bật rồi tắt lại cùng ô → xoá khỏi nháp).
-import type { GrantKey, MatrixFeature, MatrixGroup } from "@ai/contracts";
-import { GRANT_BATCH_MAX } from "@ai/contracts";
+import type { GrantKey, MatrixFeature, MatrixGroup } from "@ai/contracts/grants";
+import { GRANT_BATCH_MAX } from "@ai/contracts/grants";
 
 export type Draft = ReadonlyMap<string, boolean>;
 export type MatrixModel = {

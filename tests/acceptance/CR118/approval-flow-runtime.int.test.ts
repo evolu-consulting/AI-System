@@ -2,7 +2,7 @@
 // `HUB_FLOW_RUNTIME=on`: GET FlowView == chiếu của thẻ duyệt hôm nay (cùng người xem), hành động qua flow = hành động thẻ (bước kế
 // mở), task cũ ⇒ 409; summary lô 100 chỉ trả HĐ thấy được (tenant khác vắng); tenant khác + đối tác (user ngoài) bị chặn.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { FlowSummarySchema, FlowViewSchema } from "@ai/contracts";
+import { FlowSummarySchema, FlowViewSchema } from "@ai/contracts/flow";
 import { flowViewOfCard } from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-flow-view.rules";
 import { type CtxCf, startCf } from "../CF/_cf";
 import { sign } from "../H1/_fixtures";

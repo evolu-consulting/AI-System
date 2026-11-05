@@ -1,6 +1,6 @@
 // dify-workflows · bảng lượt chạy Dify: thời gian, tenant, người dùng, kích hoạt, trạng thái, thời lượng, token, lỗi, mã Dify
 // (+ link "Xem chi tiết trong Dify" khi có DIFY_CONSOLE_URL). Mã Dify chỉ để đối chiếu, không chứa bí mật.
-import type { DifyRun } from "@ai/contracts";
+import type { DifyRun } from "@ai/contracts/workflow-runs";
 import { ExternalLink } from "lucide-react";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";

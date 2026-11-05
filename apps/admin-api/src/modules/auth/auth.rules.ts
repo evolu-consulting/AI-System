@@ -1,6 +1,6 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-06, ADM-FR-07, ADM-NFR-01 · luật auth dạng hàm thuần (plan M1 §4).
 // Không import I/O: thời gian và nguồn ngẫu nhiên truyền vào.
-import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN, TEMP_PASSWORD_LEN } from "@ai/contracts";
+import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN, TEMP_PASSWORD_LEN } from "@ai/contracts/common";
 
 export const MAX_LOGIN_ATTEMPTS = 5;
 export const TEMP_LOCK_MS = 15 * 60_000;

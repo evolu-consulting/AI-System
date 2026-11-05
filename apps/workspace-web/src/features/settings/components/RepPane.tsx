@@ -1,6 +1,6 @@
 // REP-v3-ui · V2-E (khi `engine = v2e`) · CD-02..05: mục "Điểm uy tín" — chọn ô (nhóm SP × vai) hoặc "Mức & đánh giá" ở thanh phụ, mỗi ô có 3 tab Tiêu chí · Thời gian ·
 // Loại việc; ô khác mặc định có chấm cam; "Về mặc định" đưa ô về BA.
-import type { RepPreviewIn } from "@ai/contracts";
+import type { RepPreviewIn } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { same } from "../lib/data";
 import { cellBody, cellIssue, normCell } from "../lib/rep-data";

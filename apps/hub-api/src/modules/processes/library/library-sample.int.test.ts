@@ -1,7 +1,7 @@
 // CR-105 · lọc mẫu · int `GET /process-defs`: danh sách chính = def thư viện (khe) + def của gói; "Mẫu · chạy thử" (`kind=sample`) =
 // mẫu toàn nền tảng + def tenant KHÔNG khe, KHÔNG của gói (vd flow-showcase, bản "Chép mẫu"). Route Hono thật + DB thật.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import { tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";

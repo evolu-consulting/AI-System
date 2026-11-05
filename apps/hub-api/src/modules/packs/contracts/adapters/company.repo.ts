@@ -1,6 +1,6 @@
 // V2-L · CD-01 · V2-A (cờ duyệt): cài đặt công ty — nhận diện (tên, tên ứng dụng, logo, màu, giao diện), tên/MST của chính công ty và
 // cờ duyệt hợp đồng. Mỗi hàm MỘT câu, văn bản cố định (dữ liệu qua tham số). Tx `PackUow` (role `contracts_rw`, RLS FORCE).
-import type { CompanyIn } from "@ai/contracts";
+import type { CompanyIn } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { ApprovalFlag, StoredCompany } from "../application/companies.ports";

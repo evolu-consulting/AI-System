@@ -1,5 +1,5 @@
 // ADM-FR-50 · /secrets (canvas Secrets): chip có số, ô tìm, bảng phân trang server 50 dòng, drawer Thêm/Thay giá trị/Sửa ghi chú, xoá.
-import type { Secret } from "@ai/contracts";
+import type { Secret } from "@ai/contracts/secrets";
 import { getRouteApi } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";

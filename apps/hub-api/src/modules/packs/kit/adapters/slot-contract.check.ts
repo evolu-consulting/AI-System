@@ -1,6 +1,6 @@
 // CR-120 §2 · ADR-0036 · kiểm lúc khởi động: khe manifest thiếu `SlotSpec`/`FlowSlotAdapter` ⇒ log error (không chặn boot). Adapter
 // đăng ký khoá khe vào `flowAdapterSlots` lúc dựng runtime của gói (vd `contracts/flow.mount.ts`).
-import { APP_MANIFESTS } from "@ai/contracts";
+import { APP_MANIFESTS } from "@ai/contracts/app-manifest";
 import { logger } from "../../../../lib/logger";
 import { flowRuntimeOn } from "../application/flow.ports";
 import { type SlotContractGap, slotContractGaps } from "../domain/slot-contract.rules";

@@ -6,7 +6,7 @@ import type {
   BizScore,
   CompanyIn,
   CompanyOut,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 import type { Changed } from "./lib/data";
 import type { SettingsData } from "./lib/types";

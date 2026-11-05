@@ -2,7 +2,7 @@
 // chạy khi bấm "Tìm" (hộp thoại nói rõ chỉ gửi tên SP), tick dòng rồi lưu = MỘT POST /supplier-prices, gợi ý hợp tác. Backend giả `page.route`
 // (không AI thật). Viết sẵn, CHƯA chạy (e2e chạy một lần cuối đợt — Luật 0b). Chờ phần tử/yêu cầu, không sleep.
 
-import type { SupplierOverviewOut } from "@ai/contracts";
+import type { SupplierOverviewOut } from "@ai/contracts/pack-contracts";
 import { expect, type Page, type Route, test } from "@playwright/test";
 import { installV2f, type Sent } from "./v2f-support";
 

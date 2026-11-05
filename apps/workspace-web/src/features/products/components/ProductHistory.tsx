@@ -1,5 +1,5 @@
 // V2-J1 · SP-02: tab "Lịch sử mua bán" — Mua: lô (giá nhập, chênh so lần trước, còn lại); Bán: giá bán, giá vốn, lãi. Dữ liệu từ chi tiết SP.
-import type { BizDetailOut } from "@ai/contracts";
+import type { BizDetailOut } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

@@ -1,7 +1,7 @@
 // esign-anchor · use case vị trí ô ký: danh sách cụm theo công ty (xem/sửa), chọn vị trí cho một lần gửi ký (văn bản HĐ ⇒ anchor
 // văn bản; không ⇒ trang ký cuối), xem trước vị trí cho hộp Gửi ký. Nguồn chữ của file HIỆN HÀNH: `source_text` (trích lúc tải lên
 // từ chính tệp) ⇒ không có thì lớp chữ của PDF (bytes đang gửi). Lỗi đọc chữ ⇒ trang ký cuối (không chặn gửi ký). Không log nội dung.
-import type { ESignAnchorsIn, ESignAnchorsOut, ESignPlacement } from "@ai/contracts";
+import type { ESignAnchorsIn, ESignAnchorsOut, ESignPlacement } from "@ai/contracts/pack-contracts";
 import type { PackUow, PackWho } from "../../kit/application/ports";
 import type { PdfConverter } from "../../kit/domain/pdf.rules";
 import {

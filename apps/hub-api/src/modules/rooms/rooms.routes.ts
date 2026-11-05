@@ -3,7 +3,6 @@
 // (middleware gốc) → `:id` không uuid ⇒ 404 `ROOM_NOT_FOUND` → không phải thành viên ⇒ 404 → DM 409 → chủ 403 → body 400
 // (`svc.access` TRƯỚC khi parse). Parse bằng contract chat → service → response. Không logic.
 
-import { UuidSchema } from "@ai/contracts";
 import {
   AddRoomMembersRequestSchema,
   CreateRoomRequestSchema,
@@ -11,6 +10,7 @@ import {
   RoomListQuerySchema,
   TransferRoomRequestSchema,
 } from "@ai/contracts/chat";
+import { UuidSchema } from "@ai/contracts/common";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import type { AuthVars } from "../../lib/auth.middleware";

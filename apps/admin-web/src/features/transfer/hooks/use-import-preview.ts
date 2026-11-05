@@ -1,5 +1,5 @@
 // ADM-FR-54 · M4-R14 · bước 1–2 của Import: kiểm file ở client → đọc nội dung (chỉ trong bộ nhớ, D11) → dry-run.
-import type { ImportError, ImportPreview } from "@ai/contracts";
+import type { ImportError, ImportPreview } from "@ai/contracts/transfer";
 import { useCallback, useState } from "react";
 import { ApiError } from "@/lib/http";
 import { useImportDryRun } from "../api";

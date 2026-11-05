@@ -2,7 +2,7 @@
 // CR-055: command không thuộc feature nào được phép (bỏ kiểm BR-10 khi import).
 // Luật module gọi qua rules thuần của module đó (commands, workflows), không qua repo. Chỉ mục đổi mới bị kiểm luật;
 // mục không đổi chỉ kiểm tham chiếu. Đường dẫn lỗi theo chỉ số trong file (`raw`).
-import { CORE_FEATURE_KEY } from "@ai/contracts";
+import { CORE_FEATURE_KEY } from "@ai/contracts/common";
 import {
   checkCommandEnable,
   checkInputMap,

@@ -1,5 +1,6 @@
 // ADM-FR-10, ADM-FR-14, ADM-FR-22 · form editor Workflow: lưu (POST/PATCH kèm version) và ánh xạ lỗi server vào đúng chỗ.
-import type { SchemaBreaksCommandsDetails, Workflow } from "@ai/contracts";
+import type { SchemaBreaksCommandsDetails } from "@ai/contracts/common";
+import type { Workflow } from "@ai/contracts/workflows";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";

@@ -1,12 +1,13 @@
 // ADM-FR-20, ADM-FR-21, ADM-FR-22, ADM-FR-23, ADM-FR-24 · /admin/commands* (spec M2 §3, X1 §2.2). Chỉ platform_admin.
 // `POST /test` chạy thử bản nháp (không id) qua Hub. Nhân bản = GET rồi POST (ui-admin 7.4), không endpoint riêng.
+
+import { CommandTestRequestSchema } from "@ai/contracts/command-test";
 import {
   CommandCreateRequestSchema,
   CommandListQuerySchema,
-  CommandTestRequestSchema,
   CommandUpdateRequestSchema,
-  ListQueryBase,
-} from "@ai/contracts";
+} from "@ai/contracts/commands";
+import { ListQueryBase } from "@ai/contracts/common";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";

@@ -1,6 +1,6 @@
 // HUB-FR-02, HUB-FR-03, HUB-BR-06, HUB-BR-08 · unit test cache cấu hình (nguồn giả, không DB) + luật thuần.
 import { describe, expect, test } from "bun:test";
-import { CONFIG_CHANNEL, PROFILE_CHANNEL } from "@ai/contracts";
+import { CONFIG_CHANNEL, PROFILE_CHANNEL } from "@ai/contracts/config";
 import { HUB_CONFIG_CHANNEL } from "@ai/contracts/hub";
 import type { Logger } from "../../lib/logger";
 import type { CatalogRows } from "./catalog.rules";

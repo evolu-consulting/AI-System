@@ -1,5 +1,5 @@
 // CR-112 · ADM-FR-76/77 · mục "Công ty" của sidebar: platform_admin thấy mọi công ty (lọc theo ô tìm); tenant_admin chỉ công ty mình, không có ô tìm.
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 
 export type CompanyEntry = { id: string; key: string; name: string; locked: boolean };
 type ListItem = { id: string; key: string; name: string; status: string };

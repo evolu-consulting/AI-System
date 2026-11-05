@@ -1,5 +1,5 @@
 // ADM-FR-60 · tab Thông tin: mã công ty readOnly, tên, slot; thanh lưu dính đáy khi có thay đổi (Ctrl+S lưu).
-import { TENANT_PROCESS_RUNS_MAX, type TenantDetail } from "@ai/contracts";
+import { TENANT_PROCESS_RUNS_MAX, type TenantDetail } from "@ai/contracts/tenants";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";

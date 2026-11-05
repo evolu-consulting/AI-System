@@ -1,6 +1,7 @@
 // HUB-FR-11, HUB-BR-01 · H2a-R01, R05 · tách tin thường / lệnh `/`, tách token, gán tham số (plan-rules). Thuần.
-import type { CommandArg } from "@ai/contracts";
+
 import type { MessageContext } from "@ai/contracts/chat";
+import type { CommandArg } from "@ai/contracts/commands";
 
 export type ClassifiedMessage =
   | { kind: "text"; content: string }

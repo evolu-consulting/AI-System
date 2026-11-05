@@ -1,12 +1,12 @@
 // ADM-FR-35 · ADM-FR-36 · gọi API ma trận grant / batch (nơi duy nhất của feature access) dưới dạng hook TanStack Query.
+import type { EffectiveAccess } from "@ai/contracts/access";
 import type {
-  EffectiveAccess,
   GrantBatchRequest,
   GrantBatchResponse,
   GrantMatrix,
   MatrixFeature,
-} from "@ai/contracts";
-import { MATRIX_GROUPS_MAX } from "@ai/contracts";
+} from "@ai/contracts/grants";
+import { MATRIX_GROUPS_MAX } from "@ai/contracts/grants";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 

@@ -1,6 +1,6 @@
 // tenant-quotas · /admin/tenants/:id/daily-limits[/:kind/reset]. Chỉ platform_admin (không token ⇒ 401, sai vai ⇒ 403).
 // Middleware gắn theo đường dẫn riêng (không `*`) để không chặn các route `/admin/tenants/*` khác.
-import { DailyLimitKindSchema, DailyLimitsPutSchema } from "@ai/contracts";
+import { DailyLimitKindSchema, DailyLimitsPutSchema } from "@ai/contracts/daily-limits";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseWith } from "../../lib/http";

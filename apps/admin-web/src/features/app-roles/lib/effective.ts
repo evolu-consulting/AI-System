@@ -2,14 +2,9 @@
 // (1) `levelsFromRoles`: bảng gán người — mức cao nhất trong các vai (đã tính thay đổi chưa lưu), vai vượt trần không tính.
 // (2) `explainPacks`: Kiểm tra quyền — dựng từ `GET /admin/users/:id/effective-access` (feature `<k'>-read|write|admin` + group cấp):
 //     mỗi nguồn là một vai (theo `group_id`), "quyền ngoài vai" (Group phòng ban/Group thường) hoặc gán lẻ cho user.
-import {
-  type AccessReason,
-  type AppRoleLevel,
-  type EffectiveAccess,
-  levelRank,
-  PACK_ACTIONS,
-  packFeatureKey,
-} from "@ai/contracts";
+import type { AccessReason, EffectiveAccess } from "@ai/contracts/access";
+import { type AppRoleLevel, levelRank } from "@ai/contracts/app-roles";
+import { PACK_ACTIONS, packFeatureKey } from "@ai/contracts/packs";
 import { maxLevel } from "./levels";
 
 export type LevelRole = { pack: string; level: AppRoleLevel; ceiling: AppRoleLevel | null };

@@ -1,5 +1,5 @@
 // ADM-FR-22 · AC-A08 · M2-R18 · lưu bị chặn vì đổi input làm hỏng command đang dùng: Alert đỏ + danh sách command (thiếu/không còn biến nào).
-import type { SchemaBreaksCommandsDetails } from "@ai/contracts";
+import type { SchemaBreaksCommandsDetails } from "@ai/contracts/common";
 import { useTranslation } from "react-i18next";
 import { DependencyList } from "@/components/shared/DependencyList";
 import { Alert, AlertDescription } from "@/components/ui/alert";

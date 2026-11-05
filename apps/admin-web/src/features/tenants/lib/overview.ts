@@ -1,5 +1,5 @@
 // CR-112 · ADM-FR-79 (bước Xem lại) · tab Tổng quan (COULD) · luật thuần tóm tắt công ty: app đang bật + mức, quota tháng (chỉ run/token).
-import type { QuotaStatus } from "@ai/contracts";
+import type { QuotaStatus } from "@ai/contracts/quotas";
 import type { AppId } from "@/features/features/lib/feature-meta";
 import { type AppCard, type AppLevel, detectLevel } from "./feature-assign";
 

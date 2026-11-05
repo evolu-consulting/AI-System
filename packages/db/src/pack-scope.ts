@@ -1,7 +1,7 @@
 // PK-FR-03 · PK-FR-09 · D-06 · N1 plan §4: transaction của module gói trên pool `hub_api` sẵn có (không pool mới). Câu đầu
 // DUY NHẤT đặt role gói `<k>_rw` + `app.tenant_id` + `app.user_id` + `app.user_kind` (CR-102a) (transaction-local ⇒ hết tx role trở lại `hub_api`, không rò
 // sang request sau). Kiểm khoá gói (`PackKeySchema`) và tenant (uuid) TRƯỚC khi mở tx. Thử lại 40P01/40001 như `withHubScope`.
-import { PackKeySchema } from "@ai/contracts";
+import { PackKeySchema } from "@ai/contracts/packs";
 import { sql } from "drizzle-orm";
 import type { PgTransactionConfig } from "drizzle-orm/pg-core";
 import type { Db } from "./client";

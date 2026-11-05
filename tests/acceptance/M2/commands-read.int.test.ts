@@ -1,12 +1,9 @@
 // ADM-FR-20, ADM-BR-06, ADM-BR-10, AC-A06 · API /admin/commands: đọc, danh sách, version hai phía, tham số, xoá,
 // nhân bản (test-plan C; M2-R15, R25, R26). Tạo/validate/tên/workflow/feature: commands.int.test.ts.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import {
-  CommandListResponseSchema,
-  CommandSchema,
-  FeatureDetailSchema,
-  versionConflictDetailsSchema,
-} from "@ai/contracts";
+import { CommandListResponseSchema, CommandSchema } from "@ai/contracts/commands";
+import { FeatureDetailSchema } from "@ai/contracts/features";
+import { versionConflictDetailsSchema } from "@ai/contracts/version-conflict";
 import { ALL_CATALOG, ID, LEAK_1, leakForms } from "./_data";
 import { apiSecret, createM2Env, expectErr, type Json, type M2Env, type Res } from "./_fixtures";
 

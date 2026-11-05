@@ -1,7 +1,7 @@
 // CR-118 §6 · §11.2 · "Ứng dụng & quy trình" trong Cài đặt: năng lực của công ty (chỉ đọc) + luật chọn quy trình theo phòng ban.
 // `GET /hub-admin/tenants/:tid/capabilities` (tenant_admin: tenant mình, chỉ đọc) và `GET|PUT /tenants/:tid/process-routing/:slot`
 // (tenant_admin: tenant mình). Cùng origin: nginx/dev proxy chuyển `/hub-admin` + `/tenants` sang hub-api. Không gán quy trình ở đây (platform).
-import type { TenantCapabilitiesResponse } from "@ai/contracts";
+import type { TenantCapabilitiesResponse } from "@ai/contracts/capabilities";
 import type {
   ProcessRouting,
   ProcessRoutingDefView,

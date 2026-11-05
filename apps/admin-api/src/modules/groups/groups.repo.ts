@@ -1,6 +1,6 @@
 // ADM-FR-62, ADM-FR-55, ADM-NFR-07 · truy vấn groups (luôn trong withScope/configWrite → RLS, và lọc tenant_id tường minh).
 // Khoá: chỉ FOR NO KEY UPDATE (PATCH/DELETE) và FOR SHARE (thành viên, grant) — hạng 3 của thứ tự toàn cục (plan M3 §6).
-import { BETA_GROUP_KEY } from "@ai/contracts";
+import { BETA_GROUP_KEY } from "@ai/contracts/groups";
 import { groups, type Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { likeArg } from "../../lib/sql";

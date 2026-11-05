@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { API_ERRORS } from "@ai/contracts";
+import { API_ERRORS } from "@ai/contracts/common";
 import { HUB_ADMIN_ERROR_CODES } from "@ai/contracts/hub-admin";
 import {
   describeError,

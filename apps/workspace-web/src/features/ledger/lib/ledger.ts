@@ -1,6 +1,10 @@
 // HD7-FR-12 · luật thuần của khối "Ghi việc" — port `mgmt-app/web/src/pages/partners/PartnerLog.tsx:14-41,70-75`: câu đọc một dòng
 // sổ (`said`), dòng "Quá hạn" đã được trả lời, 15 dòng gần nhất, việc khác theo vai, số ngày trễ khi ghi.
-import { type PartnerEvent, type PartnerRole, SEVERE_EVENT_TYPES } from "@ai/contracts";
+import {
+  type PartnerEvent,
+  type PartnerRole,
+  SEVERE_EVENT_TYPES,
+} from "@ai/contracts/pack-contracts";
 import { vnd } from "~/components/shared/format";
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
 

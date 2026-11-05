@@ -1,7 +1,6 @@
 // CHAT-AC-01..04, CHAT-AC-31 · `/auth/*` (E1–E3) đúng dạng Admin + middleware Bearer của kênh chat (plan C1 §2.4, §3.4, Q-401).
 import {
   ACCESS_TOKEN_EXPIRES_IN,
-  API_ERRORS,
   LoginRequestSchema,
   LogoutRequestSchema,
   REFRESH_COOKIE,
@@ -9,7 +8,8 @@ import {
   type TokenGrant,
   X_CLIENT_EXTENSION,
   X_CLIENT_HEADER,
-} from "@ai/contracts";
+} from "@ai/contracts/auth";
+import { API_ERRORS } from "@ai/contracts/common";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";

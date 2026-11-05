@@ -3,12 +3,11 @@ import {
   COMPANY_KEY_RE,
   DISPLAY_NAME_MAX,
   EMAIL_MAX,
-  isSupportedTimeZone,
   MAX_CONCURRENT_SUB_MAX,
   NAME_MAX,
-  TENANT_PROCESS_RUNS_MAX,
   USERNAME_RE,
-} from "@ai/contracts";
+} from "@ai/contracts/common";
+import { isSupportedTimeZone, TENANT_PROCESS_RUNS_MAX } from "@ai/contracts/tenants";
 import { z } from "zod";
 
 /** Ô số lượng slot: trống = không giới hạn (null); còn lại số nguyên 1…MAX. */

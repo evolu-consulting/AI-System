@@ -1,6 +1,11 @@
 // V2-L · CD-01: mục "Công ty" — tên, tên ứng dụng, logo ≤ 1 MB, màu chủ đạo (6), giao diện; tên + MST của chính công ty (V2-G đoán
 // Mua/Bán); cờ duyệt hợp đồng (V2-A). Sửa là sidebar/menu/nút đổi ngay (bản xem thử ở `brandStore`).
-import { COMPANY_ACCENTS, COMPANY_LOGO_MAX_BYTES, type CompanyIn, MST_RE } from "@ai/contracts";
+import {
+  COMPANY_ACCENTS,
+  COMPANY_LOGO_MAX_BYTES,
+  type CompanyIn,
+  MST_RE,
+} from "@ai/contracts/pack-contracts";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";

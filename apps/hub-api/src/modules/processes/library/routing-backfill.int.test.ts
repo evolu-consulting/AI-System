@@ -3,7 +3,7 @@
 // (2) PUT/DELETE `/tenants/:tid/process-slots/:slot` đồng bộ tập gán (bỏ gán giữ lại khi luật còn dùng). (3) GET routing trả
 // `current_def_id` = quy trình chạy khi không có luật (gán cũ, không có ⇒ mặc định khe). Kiểm trạng thái DB thật.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import { withHubScope } from "@ai/db/hub-scope";
 import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";

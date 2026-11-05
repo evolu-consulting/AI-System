@@ -1,7 +1,7 @@
 // V2-F · HD-09 · BA 5.5/C12: form của HĐ ĐÃ LƯU (xác nhận sau upload / sửa ở trang chi tiết) ↔ trường `fields` của HĐ + PATCH.
 // Đối tác nằm ở bên bán khi Mua, bên mua khi Bán/Giới thiệu (V2-A); người ký theo phía tương ứng. Loại HĐ và hoa hồng không PATCH được
 // (DB khoá `deal`; hoa hồng sửa sau lưu là việc sau) ⇒ khoá ô. Dòng SP khoá sau lưu (C12). Thuần.
-import type { ContractDeal, ContractDetail, ContractFieldKey } from "@ai/contracts";
+import type { ContractDeal, ContractDetail, ContractFieldKey } from "@ai/contracts/pack-contracts";
 import type { FieldBadge } from "../components/FieldsGrid";
 import { dealOf, partnerIsSupplier } from "./deal";
 import { EMPTY_FORM, type FormState, type TextKey } from "./form-model";

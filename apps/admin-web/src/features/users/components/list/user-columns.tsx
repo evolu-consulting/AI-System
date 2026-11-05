@@ -1,5 +1,5 @@
 // ADM-FR-04 · ADM-FR-62 · cột bảng Users: tên đăng nhập (mono, "(bạn)"), [Tenant], tên hiển thị, role, Groups, đăng nhập gần nhất, trạng thái, menu `⋯`.
-import type { User } from "@ai/contracts";
+import type { User } from "@ai/contracts/users";
 import type { TFunction } from "i18next";
 import { MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";

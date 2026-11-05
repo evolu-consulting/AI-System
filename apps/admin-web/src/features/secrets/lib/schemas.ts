@@ -1,5 +1,10 @@
 // ADM-FR-50 · M2-R01 · schema form secret; hằng số từ @ai/contracts, thông điệp là KEY i18n (plan-frontend §4).
-import { SECRET_NAME_RE, SECRET_NOTE_MAX, SECRET_VALUE_MAX, SECRET_VALUE_MIN } from "@ai/contracts";
+import {
+  SECRET_NAME_RE,
+  SECRET_NOTE_MAX,
+  SECRET_VALUE_MAX,
+  SECRET_VALUE_MIN,
+} from "@ai/contracts/common";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Resolver } from "react-hook-form";
 import { z } from "zod";

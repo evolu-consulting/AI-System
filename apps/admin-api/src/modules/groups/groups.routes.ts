@@ -6,7 +6,7 @@ import {
   GroupMemberListQuerySchema,
   GroupMembersAddRequestSchema,
   GroupUpdateRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/groups";
 import { type Context, Hono } from "hono";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";

@@ -1,5 +1,5 @@
 // ADM-FR-13, ADM-FR-14 · menu `⋯` của một workflow: Sửa · Bật/Tắt · Tạo command · Xoá.
-import type { WorkflowListItem } from "@ai/contracts";
+import type { WorkflowListItem } from "@ai/contracts/workflows";
 import { Link } from "@tanstack/react-router";
 import { ExternalLink, MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";

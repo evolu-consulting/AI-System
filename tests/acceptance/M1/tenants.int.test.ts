@@ -5,8 +5,8 @@ import {
   TenantDetailSchema,
   TenantListResponseSchema,
   TenantSchema,
-  versionConflictDetailsSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/tenants";
+import { versionConflictDetailsSchema } from "@ai/contracts/version-conflict";
 import { createEnv, type Env, expectErr, PW, TENANT_ID, UNKNOWN_ID, USER_ID } from "./_fixtures";
 
 let env: Env;

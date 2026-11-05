@@ -1,11 +1,7 @@
 // ADM-FR-23 · luật thuần "Chạy thử" (plan X1 §2.2): kiểm trước khi gọi Hub (bước 3–6) và ánh xạ phản hồi Hub (8a–8f).
 // Không I/O. Không bao giờ chép message/details của Hub ở nhánh 401/5xx/mạng (có thể chứa header/token).
-import {
-  type COMMAND_TEST_ERRORS,
-  CommandTestResponseSchema,
-  type ErrorResponse,
-  ErrorResponseSchema,
-} from "@ai/contracts";
+import { type COMMAND_TEST_ERRORS, CommandTestResponseSchema } from "@ai/contracts/command-test";
+import { type ErrorResponse, ErrorResponseSchema } from "@ai/contracts/errors";
 
 export type PrecheckInput = {
   hubConfigured: boolean;

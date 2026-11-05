@@ -1,6 +1,6 @@
 // ADM-FR-30 · M2-R21 (CR-055) · xoá feature ở danh sách: gõ key để xoá; command chỉ thuộc feature này được liệt kê
 // làm cảnh báo (sẽ thành "chưa gắn feature"), không chặn.
-import type { FeatureListItem } from "@ai/contracts";
+import type { FeatureListItem } from "@ai/contracts/features";
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";

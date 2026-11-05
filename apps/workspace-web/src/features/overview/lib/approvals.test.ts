@@ -1,6 +1,6 @@
 // contract-flow S4 · unit: danh sách "Chờ tôi duyệt" (tên HĐ, sắp theo hạn, quá hạn).
 import { describe, expect, test } from "bun:test";
-import type { MyWorkApproval } from "@ai/contracts";
+import type { MyWorkApproval } from "@ai/contracts/pack-contracts";
 import { approvalRows, approvalTitle } from "./approvals";
 
 const A = (o: Partial<MyWorkApproval>): MyWorkApproval => ({

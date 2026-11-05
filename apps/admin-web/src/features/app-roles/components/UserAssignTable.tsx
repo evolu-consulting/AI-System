@@ -1,6 +1,6 @@
 // CR-112 · ADM-FR-82 · bảng gán người dùng nội bộ vào vai: Người dùng | Vai hệ thống | Vai theo ứng dụng | Quyền thực tế | Kiểm tra quyền.
 // Đối tác không có trong bảng (`kind=internal`, ADM-BR-16). Gán/gỡ ghi vào bản nháp; quyền thực tế tính lại theo nháp.
-import type { User } from "@ai/contracts";
+import type { User } from "@ai/contracts/users";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SearchBox } from "@/components/shared/form/SearchBox";

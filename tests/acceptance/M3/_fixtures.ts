@@ -2,7 +2,7 @@
 // và/hoặc `Db` tuỳ biến, listener NOTIFY (đóng vai Hub), reset có dữ liệu quyền. Không chứa `it(...)`.
 // Module sản phẩm nạp LƯỜI trong hàm dựng app. Request API luôn qua role admin_api; dựng dữ liệu bằng owner.
 import { expect } from "bun:test";
-import { ConfigChangedPayloadSchema } from "@ai/contracts";
+import { ConfigChangedPayloadSchema } from "@ai/contracts/config";
 import { createDb, type Db } from "@ai/db";
 import postgres from "postgres";
 import { makeHashes } from "../M1/_data";

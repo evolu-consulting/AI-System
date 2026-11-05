@@ -1,5 +1,10 @@
 // V2-I · U3 · luật thuần của Đối tác UI: tham số URL, lọc HĐ theo giai đoạn, ghi chú từ kết quả internet. Điểm/cờ đỏ: `partner-score.ts`.
-import type { PartnerContractRow, PartnerRole, PartnerWebLine, RepRole } from "@ai/contracts";
+import type {
+  PartnerContractRow,
+  PartnerRole,
+  PartnerWebLine,
+  RepRole,
+} from "@ai/contracts/pack-contracts";
 
 /** Hai vai có điểm (engine HD8). Vai "bên trả hoa hồng" tính như Khách hàng (CR-097 Q3). */
 export const ROLES: readonly PartnerRole[] = ["supplier", "customer"];

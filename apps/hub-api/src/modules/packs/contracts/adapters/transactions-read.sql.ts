@@ -2,7 +2,7 @@
 // ⇒ map hàng `contracts` (bản hiện hành, Mua/Bán) sang hình DTO G1 (`TransactionSummary`/`TransactionDetail`). Mỗi hàm MỘT câu văn bản
 // cố định, lọc `tenant_id` tường minh ngoài RLS (Luật 4c); danh sách đi index một phần `contracts_deal_idx`.
 // Trạng thái: `rejected` (huỷ khi chuyển G1) ⇒ `cancelled`, còn lại ⇒ `posted` (`deal.rules.ts::legacyStatus`). `rev` = 0.
-import type { TransactionListQuery } from "@ai/contracts";
+import type { TransactionListQuery } from "@ai/contracts/pack-contracts";
 import { sql } from "drizzle-orm";
 
 const PARTNER = `case c.direction when 'purchase' then c.seller else c.buyer end`;

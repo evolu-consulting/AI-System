@@ -1,6 +1,6 @@
 // HD-FR-95 · BR-9 · D9-16: `POST /pack/contracts/cks/signed-docs/upload` (multipart `files`). Guard `write` TRƯỚC đọc thân; thân
 // > 64 MB ⇒ 413 sớm theo `Content-Length` (chunked ⇒ `bodyLimit` đếm); > 50 tệp ⇒ 413; tệp > 20 MB / sai đuôi ⇒ `unreadable`.
-import { CKS_UPLOAD_BODY_MAX_BYTES, CKS_UPLOAD_MAX_FILES } from "@ai/contracts";
+import { CKS_UPLOAD_BODY_MAX_BYTES, CKS_UPLOAD_MAX_FILES } from "@ai/contracts/pack-contracts";
 import type { Hono, MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { AppError, appError } from "../../../../../lib/errors";

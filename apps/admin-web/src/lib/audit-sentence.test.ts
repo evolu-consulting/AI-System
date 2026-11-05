@@ -1,6 +1,6 @@
 // ADM-FR-51, ADM-FR-41 · câu nhật ký: chọn key theo (entity, action, summary).
 import { describe, expect, test } from "bun:test";
-import type { AuditItem } from "@ai/contracts";
+import type { AuditItem } from "@ai/contracts/audit";
 import { auditSentence } from "./audit-sentence";
 
 const t = (key: string, p?: Record<string, string | number>) =>

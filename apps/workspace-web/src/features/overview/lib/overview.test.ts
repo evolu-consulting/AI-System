@@ -1,6 +1,6 @@
 // nav-v2 · Tổng quan: luật thuần — nhóm trạng thái, số ngày còn lại, đối tác CHÚ Ý.
 import { describe, expect, test } from "bun:test";
-import type { BizProductRow, ContractFacets, TodoItem } from "@ai/contracts";
+import type { BizProductRow, ContractFacets, TodoItem } from "@ai/contracts/pack-contracts";
 import {
   barHeights,
   changeView,

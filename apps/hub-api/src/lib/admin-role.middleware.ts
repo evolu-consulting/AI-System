@@ -1,6 +1,6 @@
 // HUB-FR-78, HUB-FR-87, HUB-FR-72 · H3b-R01, H4a-R01 · PL8 · chặn role không đủ quyền (`/agent-grants*`, `/studio/api/*`): 403
 // FORBIDDEN trước mọi parse body/query và trước mọi đọc DB. Đặt SAU `requireAuth` (cần `c.var.user`).
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import type { MiddlewareHandler } from "hono";
 import type { AuthVars } from "./auth.middleware";
 import { appError } from "./errors";

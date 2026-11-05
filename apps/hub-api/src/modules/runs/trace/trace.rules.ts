@@ -1,5 +1,5 @@
 // HUB-FR-52 · H3b-R17/R18 · quyền xem trace và che `detail` (plan H3b §4.3).
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import { MASK } from "@ai/contracts/hub-admin";
 
 /** H3b-R17 · quyết TRƯỚC khi mở scope system. `ownRun` = đã tìm thấy run bằng scope user {tid, sub}. */

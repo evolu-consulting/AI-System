@@ -1,6 +1,6 @@
 // HD-FR-51 · S03: nhãn/tên rút gọn, lựa chọn lọc từ facets, truy vấn server từ bộ lọc.
 import { describe, expect, test } from "bun:test";
-import type { ContractFacets } from "@ai/contracts";
+import type { ContractFacets } from "@ai/contracts/pack-contracts";
 import vi from "../../../../../../packages/i18n/locales/contracts/gape.vi.json";
 import { exportQueryString, filterMaps, listQueryString, personOf, shortName } from "./list-model";
 

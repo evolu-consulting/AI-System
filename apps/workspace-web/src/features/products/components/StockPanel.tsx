@@ -1,6 +1,6 @@
 // gap-d1 #18 · tab "Kho & lô" của chi tiết SP: thành phần (tồn, giá vốn BQ), các lô, và "Nhập lô" tay (SL, đơn giá, ngày, NCC; gói suất có hạn).
 // Luật kho V2-B/V2-D giữ nguyên (BQ gia quyền, xuất FIFO) — máy chủ tính; ô xem trước chỉ là ước tính.
-import type { ProductComponentOut } from "@ai/contracts";
+import type { ProductComponentOut } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";

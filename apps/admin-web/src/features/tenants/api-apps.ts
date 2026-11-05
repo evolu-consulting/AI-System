@@ -1,5 +1,5 @@
 // CR-112 · ADM-FR-78 · dữ liệu phụ của tab "Ứng dụng & Gói": vai theo app của công ty (đếm vai "không hiệu lực").
-import type { AppRoleListResponse } from "@ai/contracts";
+import type { AppRoleListResponse } from "@ai/contracts/app-roles";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 

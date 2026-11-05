@@ -1,5 +1,5 @@
 // ADM-FR-40 · M4-AC02 · Q9 · lưu quota cả bộ kèm `version` tenant; 409 → ConflictDialog (entity tenant), `Ghi đè` gửi lại cùng bộ.
-import type { QuotaItemInput, QuotaSetResponse } from "@ai/contracts";
+import type { QuotaItemInput, QuotaSetResponse } from "@ai/contracts/quotas";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
 import type { ConflictCurrent } from "@/lib/conflict";
 import { useSetTenantQuotas } from "../api";

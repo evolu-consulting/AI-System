@@ -10,7 +10,7 @@ import type {
   ImportItem,
   TenantEl,
   WorkflowEl,
-} from "@ai/contracts";
+} from "@ai/contracts/transfer";
 import {
   type ConfigSink,
   commandNames,

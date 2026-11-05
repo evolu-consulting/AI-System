@@ -1,6 +1,6 @@
 // REP-v3-ui · V2-E · gọi API cấu hình uy tín (`/pack/contracts/reputation/config*`): đọc, thử tính (không ghi), lưu từng phần đã đổi.
 // Chỉ dùng khi `engine = v2e` (HD8: ghi trả 410 — `PUT /scoring/:role` thay thế, xem `ScoringPane`).
-import type { RepPreviewIn } from "@ai/contracts";
+import type { RepPreviewIn } from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 import { cellBody, jobTypesBody, type RepChanged } from "./lib/rep-data";
 import type { CellKey, RepConfigFull, RepData } from "./lib/rep-types";

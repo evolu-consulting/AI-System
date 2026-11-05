@@ -1,5 +1,5 @@
 // ADM-FR-04 · bảng Users (`table "Users"`): skeleton, rỗng, lỗi tải; cột ở user-columns.tsx.
-import type { User } from "@ai/contracts";
+import type { User } from "@ai/contracts/users";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "@/components/shared/DataTable";

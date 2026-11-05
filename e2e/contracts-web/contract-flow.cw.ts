@@ -2,7 +2,7 @@
 // lối vào chỉnh quy trình chỉ cho platform_admin (CR-105, form đã bỏ). Backend giả `page.route`; chờ phần tử, không sleep.
 // CR-120: hành động qua `/pack/contracts/flow/contracts.approval/…/actions/…`, dòng thời gian từ FlowView (`flow-mock.ts`).
 // VIẾT, CHƯA CHẠY (e2e chạy một lần cuối đợt).
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { expect, type Page, test } from "@playwright/test";
 import { asHub, type Role } from "./dataset";
 import { contract, contractAsHub } from "./dataset-contract";

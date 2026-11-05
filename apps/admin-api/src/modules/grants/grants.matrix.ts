@@ -5,11 +5,13 @@ import {
   CORE_FEATURE_KEY,
   FEATURE_NAME_MAX,
   type FeatureStatus,
+  LocalizedTextSchema,
+} from "@ai/contracts/common";
+import {
   type GrantMatrix,
   type GrantMatrixQuery,
-  LocalizedTextSchema,
   MATRIX_COMMAND_NAMES_MAX,
-} from "@ai/contracts";
+} from "@ai/contracts/grants";
 import { type Tx, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { appError } from "../../lib/errors";

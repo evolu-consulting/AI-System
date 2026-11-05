@@ -1,6 +1,6 @@
 // HD4-FR-06 · HD4-AC06 · plan §3: `POST /pack/contracts/contracts/:id/handled` (editor). Guard `write` TRƯỚC đọc thân (viewer ⇒ 403,
 // 0 SQL); `:id` sai dạng ⇒ 400; thân strict, outcome/khoá lạ ⇒ 400 VALIDATION_ERROR (D4-10); tenant khác ⇒ 404; chưa duyệt/phụ lục ⇒ 409.
-import { CONTRACT_ERRORS, HandledRequestSchema } from "@ai/contracts";
+import { CONTRACT_ERRORS, HandledRequestSchema } from "@ai/contracts/pack-contracts";
 import { Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";

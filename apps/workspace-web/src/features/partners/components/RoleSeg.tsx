@@ -1,5 +1,5 @@
 // V2-I · chọn vai trên trang chi tiết (đối tác nhiều vai): liên kết đổi `?role=` — giữ tab và khoảng biểu đồ.
-import type { RepRole } from "@ai/contracts";
+import type { RepRole } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import type { Range, Tab } from "../lib/partner-v2";

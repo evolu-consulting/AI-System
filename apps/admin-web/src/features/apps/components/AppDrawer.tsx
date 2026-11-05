@@ -1,5 +1,5 @@
 // CR-121 C-1b · ngăn tóm tắt một Ứng dụng (mở khi bấm hàng); chi tiết đầy đủ ở trang /apps/$appKey.
-import type { AppCatalogItem } from "@ai/contracts";
+import type { AppCatalogItem } from "@ai/contracts/app-catalog";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { DetailDrawer } from "@/components/shared/list/DetailDrawer";

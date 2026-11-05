@@ -1,5 +1,5 @@
 // CR-112 · tenant đang xem của tab nhúng trong workspace công ty (thay `?tenant=` + danh sách tenant của các màn cũ).
-import type { Me } from "@ai/contracts";
+import type { Me } from "@ai/contracts/auth";
 import { resolveWorkspaceTenant } from "@/lib/viewed-tenant";
 import { useWorkspaceTenant } from "./workspace-context";
 

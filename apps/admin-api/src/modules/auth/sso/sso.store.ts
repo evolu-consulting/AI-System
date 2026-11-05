@@ -1,7 +1,7 @@
 // sso-switch · kho mã chuyển phiên (một lần, 60 giây). Khoá = SHA-256 của mã (mã thô không nằm trong kho).
 // Production: Redis (`SET … PX` + `GETDEL` nguyên tử ⇒ hai request cùng mã chỉ một bên lấy được). Không Redis (dev/test
 // in-process): Map trong bộ nhớ của tiến trình — cùng ngữ nghĩa lấy-là-xoá.
-import type { WebApp } from "@ai/contracts";
+import type { WebApp } from "@ai/contracts/auth";
 import type { Redis } from "../../../lib/redis";
 
 export type SsoEntry = {

@@ -2,7 +2,7 @@
 // (`audit_log_select`) + điều kiện `tenant_id` tường minh. Phân trang keyset `seq < cursor order by seq desc limit n+1`
 // — index `audit_log_tenant_seq_idx` (lọc tenant), `audit_log_entity_seq_idx` (entity/entity_id),
 // `audit_log_actor_seq_idx` (actor), `audit_log_seq_uq` (all/system).
-import type { AuditAction, AuditEntity } from "@ai/contracts";
+import type { AuditAction, AuditEntity } from "@ai/contracts/audit";
 import { auditLog, type Tx, tenants } from "@ai/db";
 import { and, desc, eq, gte, ilike, inArray, isNull, lt, type SQL, sql } from "drizzle-orm";
 import { likeArg, outer } from "../../lib/sql";

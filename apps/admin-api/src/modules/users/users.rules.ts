@@ -1,5 +1,5 @@
 // ADM-FR-04, ADM-FR-05, ADM-FR-63, ADM-BR-05, ADM-BR-08, ADM-BR-09 · luật users dạng hàm thuần (plan M1 §4).
-import type { ErrorCode } from "@ai/contracts";
+import type { ErrorCode } from "@ai/contracts/common";
 
 export type Role = "platform_admin" | "tenant_admin" | "member";
 export type Actor = { userId: string; tenantId: string; role: Role };

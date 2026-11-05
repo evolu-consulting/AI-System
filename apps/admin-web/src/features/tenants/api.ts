@@ -3,12 +3,11 @@ import type {
   DailyLimitKind,
   DailyLimitsPut,
   DailyLimitsResponse,
-  GrantMatrix,
-  PackAction,
-  PackListResponse,
-  PackState,
-  QuotaSetRequest,
-  QuotaSetResponse,
+} from "@ai/contracts/daily-limits";
+import type { GrantMatrix } from "@ai/contracts/grants";
+import type { PackAction, PackListResponse, PackState } from "@ai/contracts/packs";
+import type { QuotaSetRequest, QuotaSetResponse } from "@ai/contracts/quotas";
+import type {
   TenantCompanyProfile,
   TenantCreateRequest,
   TenantCreateResponse,
@@ -16,9 +15,9 @@ import type {
   TenantListResponse,
   TenantProfileUpdateRequest,
   TenantUpdateRequest,
-  TenantWorkflowToolList,
-  UserListResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/tenants";
+import type { UserListResponse } from "@ai/contracts/users";
+import type { TenantWorkflowToolList } from "@ai/contracts/workflow-tools";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 import type { TenantFeature } from "./lib/feature-assign";

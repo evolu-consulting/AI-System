@@ -1,6 +1,6 @@
 // REP-v3-ui · màn xem trước cho quản lý: "N đối tác đổi mức nếu chuyển sang điểm vai × nhóm SP (V2-E)" — `GET /reputation/switch-preview`.
 // CHỈ ĐỌC (máy chủ không ghi gì). Bật/tắt engine là cờ `REPUTATION_ENGINE` do quản trị hệ thống đặt, không làm trên màn hình này.
-import type { RepLevel } from "@ai/contracts";
+import type { RepLevel } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { useSwitchPreview } from "~/features/partners/hooks/use-rep-v2e";
 import { SettingsGroup } from "~/shared/ui/settings-layout";

@@ -1,7 +1,7 @@
 // ADM-FR-01, ADM-FR-02, ADM-NFR-01 · phát phiên: refresh token ngẫu nhiên 32 byte (DB chỉ lưu SHA-256),
 // access token EdDSA có `sid` = family_id, và body TokenGrant.
 import { createHash, randomBytes } from "node:crypto";
-import type { Me, TokenGrant } from "@ai/contracts";
+import type { Me, TokenGrant } from "@ai/contracts/auth";
 import type { Db, Tx } from "@ai/db";
 import type { ClientKind } from "../../lib/http";
 import type { JwtKeys } from "../../lib/jwt";

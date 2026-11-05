@@ -1,7 +1,7 @@
 // products-confirm (unit, repo giả): lựa chọn "Gắn sản phẩm" gửi kèm `approve` chỉ được áp khi bước này làm HĐ thành "đã xác nhận"
 // (finalize thành công) — trong CÙNG tx; chuyển cấp 2 / không có lựa chọn ⇒ không gắn/tạo SP.
 import { describe, expect, test } from "bun:test";
-import type { ProductLink } from "@ai/contracts";
+import type { ProductLink } from "@ai/contracts/pack-contracts";
 import { APPROVAL_DEFAULTS } from "../domain/approval-def.rules";
 import type { ApprovalTxRepos, ApprovalUow } from "./approval.ports";
 import { type ApprovalDeps, actApproval } from "./approval.usecase";

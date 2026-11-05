@@ -6,7 +6,7 @@ import {
   CreateCategoryRequestSchema,
   IsoDateSchema,
   LOCK_ERRORS,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";

@@ -1,7 +1,8 @@
 // agents-background · helper thuần của mục "Agent chạy nền của app" (màn Agents): tách theo cờ `surface` của Hub (dữ liệu, không
 // khoá cứng key), gộp usage tháng theo agent, dựng link Studio. Không đọc i18n/DOM — test được.
-import type { UsageAnalytics } from "@ai/contracts";
+
 import type { AgentSettingsItem } from "@ai/contracts/hub-admin";
+import type { UsageAnalytics } from "@ai/contracts/usage-analytics";
 
 export const isBackground = (a: Pick<AgentSettingsItem, "surface">): boolean =>
   a.surface === "background";

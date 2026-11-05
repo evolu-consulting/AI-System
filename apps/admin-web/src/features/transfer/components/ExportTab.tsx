@@ -1,5 +1,5 @@
 // ADM-FR-54 · tab Export (ms §8): 6 checkbox có số đếm từ /export/meta + "Chọn tất cả" tri-state + nút Tải file.
-import { TRANSFER_TYPES } from "@ai/contracts";
+import { TRANSFER_TYPES } from "@ai/contracts/transfer";
 import { Download } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ErrorState } from "@/components/shared/states/ErrorState";

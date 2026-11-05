@@ -1,6 +1,6 @@
 // W1 · "Việc của tôi": luật thuần gom bốn nguồn → danh sách có mức độ gấp (port `digest.py`: `_late`, sắp xếp `build`).
 import { describe, expect, it } from "bun:test";
-import { MYWORK_MAX, MYWORK_SOURCE_MAX } from "@ai/contracts";
+import { MYWORK_MAX, MYWORK_SOURCE_MAX } from "@ai/contracts/pack-contracts";
 import {
   buildMyWork,
   compareItems,

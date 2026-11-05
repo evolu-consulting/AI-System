@@ -1,6 +1,6 @@
 // V2-I · U3 · luật thuần Đối tác UI: URL, lọc HĐ theo giai đoạn, ghi chú từ tìm internet.
 import { describe, expect, test } from "bun:test";
-import type { PartnerContractRow } from "@ai/contracts";
+import type { PartnerContractRow } from "@ai/contracts/pack-contracts";
 import { byStage, noteOfLine, parsePartnersSearch, rolesOf, stageCounts } from "./partner-v2";
 
 describe("V2-I URL", () => {

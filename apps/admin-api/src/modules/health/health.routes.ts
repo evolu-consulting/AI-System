@@ -1,5 +1,5 @@
 // ADM-NFR-06 · GET /health (spec M0 §3.1).
-import { HealthResponseSchema } from "@ai/contracts";
+import { HealthResponseSchema } from "@ai/contracts/health";
 import { Hono } from "hono";
 
 export function healthRoutes(cfg: { version: string }): Hono {

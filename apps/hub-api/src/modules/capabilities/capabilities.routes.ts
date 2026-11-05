@@ -2,7 +2,7 @@
 // `PROTECTED_PREFIXES`). `GET /pack/me`: mọi user đăng nhập (đối tác chỉ thấy gói mở cho đối tác). `GET /hub-admin/tenants/
 // :id/capabilities`: platform_admin mọi tenant; tenant_admin chỉ tenant mình (chỉ đọc); member ⇒ 403 trước mọi đọc; đối tác
 // bị tường lửa chặn 403. ETag/If-None-Match ⇒ 304; Cache-Control private, no-cache.
-import { UuidSchema } from "@ai/contracts";
+import { UuidSchema } from "@ai/contracts/common";
 import { type Context, Hono } from "hono";
 import { requireAdminRole } from "../../lib/admin-role.middleware";
 import type { AuthVars } from "../../lib/auth.middleware";

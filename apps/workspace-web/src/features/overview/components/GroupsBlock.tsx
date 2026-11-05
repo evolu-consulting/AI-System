@@ -1,5 +1,5 @@
 // V2-N · "Theo nhóm sản phẩm" (mockup `revChart`): mỗi nhóm một hàng — tổng kỳ, % so kỳ trước, 12 cột tháng (N tháng cuối của kỳ đậm).
-import type { OverviewOut } from "@ai/contracts";
+import type { OverviewOut } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
 import { barHeights, GROUP_ORDER, inPeriod, moneyShort, monthLabel } from "../lib/overview";

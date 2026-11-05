@@ -1,7 +1,7 @@
 // ADM-FR-02, ADM-FR-03 · CR-053: mỗi app web một phiên — `X-App: admin|chat|studio` ⇒ cookie `ai_rt_<app>`; đăng nhập
 // app này không cho app kia refresh; đăng xuất app này không xoá phiên app kia; vắng/lạ `X-App` ⇒ cookie `ai_rt` như cũ.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { TokenGrantSchema } from "@ai/contracts";
+import { TokenGrantSchema } from "@ai/contracts/auth";
 import { createEnv, type Env, expectErr, PW, type Res } from "../M1/_fixtures";
 
 let env: Env;

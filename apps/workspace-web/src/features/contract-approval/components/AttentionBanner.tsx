@@ -1,6 +1,6 @@
 // CR-107 · eng-card-ui: banner khi lượt engine cần người xử lý (`attention`): lý do dễ hiểu + từ lúc nào; owner/admin gói có
 // Thử lại / Huỷ & mở lại (hộp xác nhận) hoặc Mở lại quy trình; người khác chỉ thấy "báo chủ hợp đồng".
-import type { ApprovalAttention } from "@ai/contracts";
+import type { ApprovalAttention } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { attentionActions, attentionText } from "../lib/attention";

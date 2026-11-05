@@ -1,5 +1,5 @@
 // V2-F · HD-01 · 5.5a: gợi ý SP danh mục cho dòng hàng qua `POST /products/match` (V2-B). Lỗi mạng ⇒ null (gợi ý là phụ).
-import type { ContractDeal } from "@ai/contracts";
+import type { ContractDeal } from "@ai/contracts/pack-contracts";
 import { matchProduct } from "../api";
 import type { LineState } from "../lib/form-model";
 import { suggestionPatch } from "../lib/suggest";

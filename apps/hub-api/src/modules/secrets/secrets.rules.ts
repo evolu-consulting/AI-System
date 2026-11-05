@@ -1,6 +1,6 @@
 // HUB-FR-68 · HUB-FR-69 · HUB-BR-15 · CR-060 · Q1, Q7 · plan H4b-1 §2.1, D13, D17: luật thuần secrets (không I/O) —
 // phạm vi theo loại, quyền theo route, tenant đích route tenant, snapshot audit không giá trị, entity_name, cursor.
-import { type Role, UuidSchema } from "@ai/contracts";
+import { type Role, UuidSchema } from "@ai/contracts/common";
 import { HUB_SECRET_KINDS, type HubSecretKind } from "@ai/contracts/hub-admin";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { appError } from "../../lib/errors";

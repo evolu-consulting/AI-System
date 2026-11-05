@@ -2,7 +2,7 @@
 // Tính trên ẢNH CACHE (`ConfigCache`) bằng `effectiveAgents` — cùng điều kiện với menu `GET /agents` (R12, một sự thật).
 // Cache được kéo theo kịp `hub_config_version` của DB trước khi tính (đọc ngay sau POST thấy grant — read-your-writes);
 // DB chỉ đọc version (+ TENANT_EXISTS cho platform_admin) và GROUP_REFS. Chỉ đọc: không khoá, không audit (R15).
-import { BETA_GROUP_KEY } from "@ai/contracts";
+import { BETA_GROUP_KEY } from "@ai/contracts/groups";
 import {
   AGENT_GRANTS_AGENTS_MAX,
   type AgentAccessReason,

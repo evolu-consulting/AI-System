@@ -1,5 +1,5 @@
 // ADM-FR-20 · bảng Commands (cột dựng ở lib/command-columns).
-import type { CommandListItem } from "@ai/contracts";
+import type { CommandListItem } from "@ai/contracts/commands";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DataTable } from "@/components/shared/DataTable";

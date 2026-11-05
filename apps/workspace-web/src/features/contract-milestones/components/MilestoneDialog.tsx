@@ -1,6 +1,6 @@
 // V2-F · HD-11 · mockup `openMsEd`: hộp "Thêm mốc" / "Sửa mốc" — loại mốc (7 loại), hạn, tên, việc của ai, SL (chỉ Giao hàng), số tiền
 // (chỉ Thu tiền / Thanh toán / Nhận hoa hồng). Sửa/xoá chỉ cho mốc CHƯA xác nhận (mốc đã xác nhận giữ nguyên để không đổi điểm đã tính).
-import type { ContractDeal, Milestone } from "@ai/contracts";
+import type { ContractDeal, Milestone } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PillRadio } from "~/components/shared/seg-button";

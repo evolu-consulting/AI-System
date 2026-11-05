@@ -1,7 +1,7 @@
 // V2-F · HD-04 · mockup `confirmBox`: "Xác nhận xong" hỏi NGÀY thực tế; mốc trễ hạn (ngày thực tế > hạn) hỏi thêm LỖI của ai
 // (đối tác / mình / chưa rõ) — chỉ lỗi đối tác trừ điểm (V2-E). Gửi `POST /obligations/:id/settle`. MS-impact: khối tác động thật
 // (`GET /obligations/:id/impact`) theo ngày + lỗi đang chọn.
-import type { ContractDeal, Milestone } from "@ai/contracts";
+import type { ContractDeal, Milestone } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PillRadio } from "~/components/shared/seg-button";

@@ -1,6 +1,6 @@
 // gap-d1 #21 · "Tải báo giá lên": chọn tệp PDF/văn bản ⇒ AI đọc (chỉ khi bấm "Đọc báo giá"; tệp gửi để đọc, không lưu) ⇒ dòng giá CHƯA
 // LƯU, người dùng tick dòng cần rồi "Lưu làm giá tham khảo" (nguồn Báo giá).
-import type { QuoteReadOut } from "@ai/contracts";
+import type { QuoteReadOut } from "@ai/contracts/pack-contracts";
 import { type RefObject, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";

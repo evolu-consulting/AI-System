@@ -1,6 +1,6 @@
 // HUB-FR-23 · H2a-R11, R14 · unit luật agent `dify-*` (plan H2a §5.4): chọn workflow, task → input, kết cục bước.
 import { describe, expect, it } from "bun:test";
-import type { WorkflowInput } from "@ai/contracts";
+import type { WorkflowInput } from "@ai/contracts/workflows";
 import type { CatalogWorkflow } from "../../commands/catalog.types";
 import type { DifyRunOutcome } from "../dify.client";
 import {

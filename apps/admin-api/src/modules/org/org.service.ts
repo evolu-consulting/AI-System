@@ -6,7 +6,7 @@ import {
   type ManagerSetRequest,
   ORG_MEMBERS_MAX,
   type OrgResponse,
-} from "@ai/contracts";
+} from "@ai/contracts/org";
 import { type Db, type DbScope, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { auditOf } from "../../lib/audit/audit.write";

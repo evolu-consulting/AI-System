@@ -2,7 +2,7 @@
 // khi user nguội — `user()` đọc DB một lần). Không import `modules/config` (luật `pack-no-hub-modules`): nhận cổng cấu trúc
 // `PackAccessView` (ConfigCache thoả sẵn), lớp 4 nối vào. Chỉ mục `featureKey → feature` dựng một lần mỗi ảnh catalog.
 // Grant user lẻ (`grantUsers`) bị bỏ qua với mã gói (D-11 / Q9).
-import { PACK_ACTIONS, type PackAction, packFeatureKey } from "@ai/contracts";
+import { PACK_ACTIONS, type PackAction, packFeatureKey } from "@ai/contracts/packs";
 import type { MiddlewareHandler } from "hono";
 import type { AuthUser } from "../../../../lib/auth.middleware";
 import { AppError } from "../../../../lib/errors";

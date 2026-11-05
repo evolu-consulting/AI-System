@@ -1,5 +1,5 @@
 // ADM-FR-41, ADM-FR-42 · gọi GET /admin/overview (nơi duy nhất của feature overview).
-import type { OverviewResponse } from "@ai/contracts";
+import type { OverviewResponse } from "@ai/contracts/overview";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 

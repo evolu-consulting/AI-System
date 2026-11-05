@@ -1,6 +1,6 @@
 // cf-esign-docusign · khối "Ký số" ở chi tiết HĐ (trung lập nhà cung cấp): Gửi ký (owner/editor) ⇒ "Đang chờ ký" (Ký ngay cho người ký
 // nội bộ, Làm mới trạng thái, Huỷ) ⇒ "Đã ký số" + thời điểm + tải "Bản đã ký"; từ chối/huỷ ⇒ lý do + Gửi lại. Ký thử ⇒ nhãn rõ.
-import type { ESignEnvelopeOut } from "@ai/contracts";
+import type { ESignEnvelopeOut } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useEsign } from "../hooks/use-esign";

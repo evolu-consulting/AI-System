@@ -1,6 +1,6 @@
 // CR-118 · cr118-community-files · §11.1: luật thuần tệp bài (sniff không tin đuôi, tên an toàn, header tải về).
 import { describe, expect, it } from "bun:test";
-import { ATTACH_ALLOWED } from "@ai/contracts";
+import { ATTACH_ALLOWED } from "@ai/contracts/attach";
 import {
   contentDisposition,
   downloadHeaders,

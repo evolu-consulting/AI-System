@@ -1,5 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import type { ESignEnvelopeOut, ESignProviderOut, ESignStateOut } from "@ai/contracts";
+import type {
+  ESignEnvelopeOut,
+  ESignProviderOut,
+  ESignStateOut,
+} from "@ai/contracts/pack-contracts";
 import {
   esignErrKey,
   esignView,

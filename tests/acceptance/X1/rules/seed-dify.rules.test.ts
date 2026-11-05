@@ -3,7 +3,7 @@
 // Nạp động (P7) ⇒ đỏ "Cannot find module" tới khi S1 xong.
 import { describe, expect, it } from "bun:test";
 import { randomBytes } from "node:crypto";
-import { ArgsSchema, InputMapSchema } from "@ai/contracts";
+import { ArgsSchema, InputMapSchema } from "@ai/contracts/commands";
 import { type Loose, loadSeedRules } from "../_modules";
 
 const APPS = ["chatbot", "translate", "gmail-summary", "email-reply", "screenshot-ask"] as const;

@@ -1,6 +1,6 @@
 // CR-102a · ADM-FR-75 · phần users cho user ngoài không cần khoá từng hàng (tách khỏi users.service ≤ 400 dòng):
 // vô hiệu theo tập mọi user của một công ty đối tác, danh sách user của công ty.
-import type { UserListQuery, UserListResponse } from "@ai/contracts";
+import type { UserListQuery, UserListResponse } from "@ai/contracts/users";
 import { type Tx, withScope } from "@ai/db";
 import { auditOf } from "../../lib/audit/audit.write";
 import type { ConfigSink } from "../../lib/config/config-write";

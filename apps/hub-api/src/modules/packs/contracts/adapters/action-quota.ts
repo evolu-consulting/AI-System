@@ -1,7 +1,7 @@
 // HD-FR-35 · #221 · D3-10: trần thao tác tốn AI theo tenant/ngày (`/extract`, `/manual`, `/approval` redo) — MỘT pipeline Redis
 // `INCR` + `EXPIRE` (khoá `q:contracts:a:<tenant>:<ngày múi tenant>`). Vượt ⇒ 429 `ACTION_QUOTA {limit, resets_at}`; Redis vắng/lỗi
 // ⇒ 503 `UPLOAD_QUOTA_UNAVAILABLE` (đóng an toàn như D-17). Đếm SAU khi qua kiểm thân/quyền (route gọi ngay trước use case).
-import { CONTRACT_APPROVAL_ERRORS } from "@ai/contracts";
+import { CONTRACT_APPROVAL_ERRORS } from "@ai/contracts/pack-contracts";
 import type { Redis } from "ioredis";
 import { AppError } from "../../../../lib/errors";
 import type { ActionQuota } from "../application/ai.ports";

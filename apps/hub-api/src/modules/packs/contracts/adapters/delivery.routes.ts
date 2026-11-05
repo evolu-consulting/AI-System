@@ -1,7 +1,11 @@
 // V2-D · BA §5.7a/b/e: `GET /milestones/:id/delivery` (bảng Trên HĐ · Đã giao · Giao lần này) và `POST /stock/check` (cảnh báo bán
 // vượt tồn khi lưu HĐ bán — không chặn, không ghi). Guard `read` trước đọc thân; tenant khác / SP lạ ⇒ 404. `deliveryError` dùng chung
 // cho xác nhận mốc (ledger) và lưu mốc (milestones).
-import { DELIVERY_ERRORS, type DeliveryErrorCode, StockCheckRequestSchema } from "@ai/contracts";
+import {
+  DELIVERY_ERRORS,
+  type DeliveryErrorCode,
+  StockCheckRequestSchema,
+} from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";

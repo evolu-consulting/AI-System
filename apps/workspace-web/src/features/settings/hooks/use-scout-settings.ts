@@ -1,5 +1,9 @@
 // price-scout · truy vấn/ghi mặc định nhóm + trần lượt dò (Cài đặt). Lưu xong cập nhật thẳng cache; cấu hình SP đang mở tải lại.
-import type { PriceScoutConfig, PriceScoutGroup, PriceScoutQuotaIn } from "@ai/contracts";
+import type {
+  PriceScoutConfig,
+  PriceScoutGroup,
+  PriceScoutQuotaIn,
+} from "@ai/contracts/pack-contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchScoutDefaults,

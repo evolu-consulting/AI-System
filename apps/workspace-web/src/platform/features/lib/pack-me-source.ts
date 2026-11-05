@@ -1,7 +1,7 @@
 // CR-118 · cr118-feature-gate-web · nguồn ảnh `GET /pack/me` (không phụ thuộc OpenFeature/React ⇒ test thuần).
 // Giữ ảnh + ETag; `refresh()` gộp lời gọi đang bay, 304 ⇒ không đổi/không báo. Kích hoạt tải lại: SSE `config.changed`
 // (nối lại sau đứt cũng tải một lần), focus cửa sổ (throttle), 403 từ API khác (`reportForbidden`).
-import type { ShellMeResponse } from "@ai/contracts";
+import type { ShellMeResponse } from "@ai/contracts/capabilities";
 
 export type PackMeResult =
   | { status: "fresh"; data: ShellMeResponse; etag: string | null }

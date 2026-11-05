@@ -7,7 +7,7 @@
 // đặt rõ `AI_SUB_CLI_PATH` (test không bao giờ gọi AI thật). API: `ANTHROPIC_API_KEY` (vắng ⇒ `UNAVAILABLE`),
 // `ANTHROPIC_BASE_URL` (tuỳ chọn). Trần: `AI_TENANT_DAILY_TOKENS` (token/tenant/ngày UTC, mặc định 5.000.000; `0` ⇒ không
 // trần) — áp cho CẢ gói lẫn API. Test tiêm `provider` giả qua seam.
-import { aiTokensSince, effectiveDailyLimit } from "@ai/contracts";
+import { aiTokensSince, effectiveDailyLimit } from "@ai/contracts/daily-limits";
 import type { Db } from "../db";
 import { logger } from "../logger";
 import type { Redis } from "../redis";

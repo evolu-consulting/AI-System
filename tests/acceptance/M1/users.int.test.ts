@@ -6,8 +6,8 @@ import {
   UserCreateResponseSchema,
   UserListResponseSchema,
   UserSchema,
-  versionConflictDetailsSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/users";
+import { versionConflictDetailsSchema } from "@ai/contracts/version-conflict";
 import {
   createEnv,
   type Env,

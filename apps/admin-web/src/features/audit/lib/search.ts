@@ -1,5 +1,10 @@
 // ADM-FR-51 · M4-R12 · bộ lọc Nhật ký nằm trên URL (hàm thuần): kiểm search, đổi qua lại giữa URL và Period.
-import { AUDIT_ACTIONS, AUDIT_ENTITIES, type AuditAction, type AuditEntity } from "@ai/contracts";
+import {
+  AUDIT_ACTIONS,
+  AUDIT_ENTITIES,
+  type AuditAction,
+  type AuditEntity,
+} from "@ai/contracts/audit";
 import {
   isValidCustom,
   PERIOD_PRESETS,

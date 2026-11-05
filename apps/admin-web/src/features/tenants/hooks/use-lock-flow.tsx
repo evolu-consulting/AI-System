@@ -1,5 +1,5 @@
 // ADM-FR-61 · luồng khoá/mở khoá tenant dùng chung cho danh sách và chi tiết: hộp thoại xác nhận + gọi API + toast.
-import type { Tenant } from "@ai/contracts";
+import type { Tenant } from "@ai/contracts/tenants";
 import { type ReactNode, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";

@@ -2,7 +2,7 @@
 // + chủ quản `demo-owner` (tenant_admin, email demo-owner@example.invalid) ⇒ tạo (idempotent, không đổi user đã có). Mật khẩu chủ
 // quản lấy từ env `DEMO_OWNER_PW` (không in, không ghi file). Từ chối khi APP_ENV ≠ development|test hoặc DB host ngoài loopback/*.localhost/*.test —
 // KHÔNG có cờ vượt (khác seed chính có `--i-know-prod`): production đã có tenant demo thật.
-import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts";
+import { PASSWORD_MAX_LEN, PASSWORD_MIN_LEN } from "@ai/contracts/common";
 import { type Db, hashPassword, withConfigWrite, withScope } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { publishConfigChanged } from "../../../apps/admin-api/src/lib/config/config-write";

@@ -1,6 +1,6 @@
 // ADM-FR-62 · M3-R03 · D12 · xem trước khi dán: `dry_run` (debounce 400 ms) chỉ để hiện "Không tìm thấy: …" và "n người đã ở trong
 // group"; không ghi, không đổi số trên nút. Kết quả cũ (danh sách đã đổi) bị bỏ.
-import type { GroupMembersAddResponse } from "@ai/contracts";
+import type { GroupMembersAddResponse } from "@ai/contracts/groups";
 import { useEffect, useRef, useState } from "react";
 import { useAddMembers } from "../api";
 

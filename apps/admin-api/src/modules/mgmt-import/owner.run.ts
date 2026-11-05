@@ -2,7 +2,7 @@
 // định cho production) hoặc OpenSearch chỉ-đọc; đích = Postgres `hub_api`/`admin_api` (NOBYPASSRLS) + kho file (FileBox/thư mục).
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { TENANT_TZ_DEFAULT } from "@ai/contracts";
+import { TENANT_TZ_DEFAULT } from "@ai/contracts/tenants";
 import type { Db } from "@ai/db";
 import { createExtrasStore } from "./adapters/extras.repo";
 import { createDirSource } from "./adapters/files.adapter";

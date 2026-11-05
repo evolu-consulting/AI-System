@@ -1,5 +1,6 @@
 // ADM-FR-51, ADM-FR-52, ADM-BR-09 · M4-R12, M4-R13 · hàm thuần đọc/khôi phục audit (plan-rules §A2–A3). Không I/O.
-import type { AuditAction, AuditEntity, Role } from "@ai/contracts";
+import type { AuditAction, AuditEntity } from "@ai/contracts/audit";
+import type { Role } from "@ai/contracts/common";
 
 export type AuditFilter =
   | { kind: "tenant"; tenantId: string }

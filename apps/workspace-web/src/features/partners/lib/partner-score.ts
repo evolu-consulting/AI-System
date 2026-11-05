@@ -7,7 +7,7 @@ import type {
   RepPartnerRow,
   RepRole,
   ScoreBand,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { REP_ROLE_ORDER, ROLES } from "./partner-v2";
 
 /** Dòng điểm đối tác × vai của MỌI engine: HD8 (`PartnerRow`) hoặc V2-E (`RepPartnerRow` đã quy đổi, thêm vai bên trả hoa hồng). */

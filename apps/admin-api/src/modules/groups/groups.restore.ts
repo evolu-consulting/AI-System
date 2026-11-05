@@ -1,6 +1,6 @@
 // ADM-FR-52 · M4-R13 · khôi phục group từ snapshot audit (plan M4 §4.4): cập nhật như PATCH (version = bản được
 // khôi phục) hoặc chèn lại cùng id vào tenant của dòng audit như POST — không kèm member/grant; key trùng → NAME_TAKEN.
-import { GroupCreateRequestSchema, GroupUpdateRequestSchema } from "@ai/contracts";
+import { GroupCreateRequestSchema, GroupUpdateRequestSchema } from "@ai/contracts/groups";
 import type { ConfigSink, Tx } from "@ai/db";
 import { appError } from "../../lib/errors";
 import {

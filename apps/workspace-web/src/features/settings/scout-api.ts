@@ -5,7 +5,7 @@ import type {
   PriceScoutGroup,
   PriceScoutQuotaIn,
   PriceScoutQuotaOut,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 
 const P = "/pack/contracts/price-scout";

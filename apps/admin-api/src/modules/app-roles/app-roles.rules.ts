@@ -1,13 +1,7 @@
 // CR-112 · ADM-BR-15/16 · luật thuần của vai theo app: mức ⇒ tập mã gói (giống hệt Group vai mặc định cùng mức), kế hoạch
 // biên dịch (phạm vi = 3 mã gói trên Group của vai; mong muốn = mã theo mức), trần công ty ⇒ hiệu lực, khoá Group của vai.
-import {
-  type AppRoleLevel,
-  LEVEL_ACTIONS,
-  levelRank,
-  PACK_ACTIONS,
-  packFeatureKey,
-  packGroupKey,
-} from "@ai/contracts";
+import { type AppRoleLevel, LEVEL_ACTIONS, levelRank } from "@ai/contracts/app-roles";
+import { PACK_ACTIONS, packFeatureKey, packGroupKey } from "@ai/contracts/packs";
 
 /** Độ dài tối đa của `admin.groups.key` (CHECK `^[a-z0-9-]{2,32}$`). */
 const GROUP_KEY_MAX = 32;

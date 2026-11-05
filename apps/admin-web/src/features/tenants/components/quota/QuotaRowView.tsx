@@ -1,5 +1,5 @@
 // ADM-FR-40 · một hàng của bảng quota: phạm vi · 3 ô số (spinbutton "Số run · Kế toán") · nút Bỏ · thanh đã dùng.
-import type { QuotaStatus } from "@ai/contracts";
+import type { QuotaStatus } from "@ai/contracts/quotas";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { QuotaBar } from "@/components/shared/quota/QuotaBar";

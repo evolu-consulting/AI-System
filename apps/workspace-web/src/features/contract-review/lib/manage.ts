@@ -1,5 +1,5 @@
 // gap-a1 · luật thuần của khối "Quản lý" trên trang chi tiết HĐ: đọc ô hoa hồng %, dựng dòng lịch sử, chọn câu lỗi theo mã máy chủ.
-import type { HistoryItem } from "@ai/contracts";
+import type { HistoryItem } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 
 /** Ô hoa hồng: trống ⇒ xoá (null); số 0–100, tối đa 2 chữ số thập phân (dấu phẩy hoặc chấm). */

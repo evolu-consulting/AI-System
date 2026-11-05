@@ -1,13 +1,13 @@
 // X1-AC10 · ADM-FR-10 · `side_effect` ở contract workflows/transfer + Import/Export + audit (plan §2.1). Dùng fixture
 // luật M4 (`_transfer-data.ts`, chỉ đọc). Đỏ ở expect (contract chưa có trường) tới khi B1 xong.
 import { describe, expect, it } from "bun:test";
+import { WorkflowElSchema } from "@ai/contracts/transfer";
 import {
   WorkflowCreateRequestSchema,
-  WorkflowElSchema,
   WorkflowListItemSchema,
   WorkflowSchema,
   WorkflowUpdateRequestSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/workflows";
 import { loadTransferRules } from "../../M4/_cd-modules";
 import { fileOf, ruleSnapshot, TYPES, workflowEl } from "../../M4/_transfer-data";
 import { type Loose, loadAuditFields } from "../_modules";

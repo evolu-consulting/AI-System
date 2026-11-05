@@ -1,5 +1,5 @@
 // ADM-FR-73 · AC-A15 · TT-R03 (plan-contract §6) · /admin/tenants/:id/workflow-tools*. Chỉ platform_admin.
-import { TenantWorkflowToolPutSchema } from "@ai/contracts";
+import { TenantWorkflowToolPutSchema } from "@ai/contracts/workflow-tools";
 import { type Context, Hono } from "hono";
 import {
   type AppVars,

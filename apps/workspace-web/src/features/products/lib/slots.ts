@@ -1,7 +1,7 @@
 // V2-J1 · chỗ gắn tab của chi tiết sản phẩm: V2-J1 dựng "Lịch sử mua bán" + "Hợp đồng · n"; hai tab giữa do lát sau thêm vào mảng này
 // (hiện chưa có dữ liệu nguồn): "Khách đang dùng" — V2-H (dịch vụ có hạn, `key: "users"`); "NCC & giá" — V2-J2 (không phải Giới thiệu,
 // `key: "suppliers"`). Thứ tự trong mảng = thứ tự tab, nằm giữa "Lịch sử mua bán" và "Hợp đồng". Slot nhận id + nhóm của SP.
-import type { ProductGroup } from "@ai/contracts";
+import type { ProductGroup } from "@ai/contracts/pack-contracts";
 import { createElement, type ReactNode } from "react";
 import { SupplierPricesTab } from "~/features/product-suppliers/components/SupplierPricesTab";
 import { RulesPanel } from "../components/RulesPanel";

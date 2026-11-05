@@ -2,7 +2,8 @@
 // tenant_admin: tenant mình ⇒ đọc chi tiết/quota (rút gọn); route chỉ-platform ⇒ 403; tenant khác ⇒ 404 MỌI route.
 // member ⇒ 403; đối tác ⇒ 403; platform_admin không đổi.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { ExternalOrgSchema, UserCreateResponseSchema } from "@ai/contracts";
+import { ExternalOrgSchema } from "@ai/contracts/external-orgs";
+import { UserCreateResponseSchema } from "@ai/contracts/users";
 import {
   createEnv,
   type Env,

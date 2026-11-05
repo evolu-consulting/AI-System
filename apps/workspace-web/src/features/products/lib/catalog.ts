@@ -5,7 +5,7 @@ import type {
   ProductLotCreate,
   ProductRuleCreate,
   ProductSourceCreate,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 
 const QTY = /^\d{1,14}([.,]\d{1,4})?$/;
 const str = (s: string): string | null => (s.trim() === "" ? null : s.trim());

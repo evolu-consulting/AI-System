@@ -1,14 +1,14 @@
 // ADM-FR-01 · parse request ở biên bằng zod (spec M1 §3 "Quy ước chung"): VALIDATION_ERROR có `details.issues`,
 // `:id` không phải uuid → NOT_FOUND giống hệt id không tồn tại. Tự viết thay @hono/zod-validator (spec §9).
+
 import {
-  SECRET_NAME_RE,
-  UuidSchema,
   WEB_APPS,
   type WebApp,
   X_APP_HEADER,
   X_CLIENT_EXTENSION,
   X_CLIENT_HEADER,
-} from "@ai/contracts";
+} from "@ai/contracts/auth";
+import { SECRET_NAME_RE, UuidSchema } from "@ai/contracts/common";
 import type { Context } from "hono";
 import type { z } from "zod";
 import { appError } from "./errors";

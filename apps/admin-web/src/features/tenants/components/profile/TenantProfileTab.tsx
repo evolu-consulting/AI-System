@@ -1,6 +1,6 @@
 // CR-121 · tab Hồ sơ của công ty: "Thông tin công ty" · "Liên hệ và lãnh đạo" · "Phòng ban" (chỉ đọc). Sửa tại chỗ từng ô;
 // platform_admin sửa, tenant_admin chỉ xem. Tên công ty sửa qua PATCH /admin/tenants/:id (một nơi duy nhất).
-import type { TenantDetail } from "@ai/contracts";
+import type { TenantDetail } from "@ai/contracts/tenants";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ErrorState } from "@/components/shared/states/ErrorState";

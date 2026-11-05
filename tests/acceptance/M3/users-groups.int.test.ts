@@ -1,7 +1,7 @@
 // ADM-FR-62, ADM-BR-09 · `User` có `groups[]`/`group_count` ở mọi response + lọc `?group=` (M3-R13; test-plan I-UG).
 // Trường mới đọc qua `newField` (typecheck xanh trước T4); `UserSchema.parse` lúc chạy kiểm strict.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { UserCreateResponseSchema, UserListResponseSchema, UserSchema } from "@ai/contracts";
+import { UserCreateResponseSchema, UserListResponseSchema, UserSchema } from "@ai/contracts/users";
 import {
   callerOf,
   createM3Env,

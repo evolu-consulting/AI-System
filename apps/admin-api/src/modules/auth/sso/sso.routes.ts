@@ -1,6 +1,6 @@
 // sso-switch · `POST /auth/sso/code` (Bearer: phiên web nguồn) và `POST /auth/sso/redeem` (web đích, `X-App` bắt buộc,
 // chỉ client web: phiên mới ⇒ cookie `ai_rt_<app>` HttpOnly, body TokenGrant không kèm refresh token).
-import { SsoCodeRequestSchema, SsoRedeemRequestSchema } from "@ai/contracts";
+import { SsoCodeRequestSchema, SsoRedeemRequestSchema } from "@ai/contracts/auth";
 import { Hono } from "hono";
 import { type AuthDeps, authenticate } from "../../../lib/auth-middleware";
 import { clientIp } from "../../../lib/client-ip";

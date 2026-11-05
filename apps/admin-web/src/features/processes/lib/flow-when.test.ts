@@ -1,6 +1,6 @@
 // CR-121 D-3: logic thuần của trình dựng điều kiện (thêm/sửa/xoá/nhóm lồng một cấp, câu mô tả, mã lỗi).
 import { describe, expect, test } from "bun:test";
-import type { FlowWhen } from "@ai/contracts";
+import type { FlowWhen } from "@ai/contracts/pack-contracts";
 import {
   condIssueCodes,
   DEFAULT_FIELDS,

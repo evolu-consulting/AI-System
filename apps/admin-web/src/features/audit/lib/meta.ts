@@ -1,5 +1,5 @@
 // ADM-FR-51 · dòng phụ của chi tiết: "{dd/MM/yyyy HH:mm} · v{n} · {tenant | Toàn hệ thống}".
-import type { AuditItem } from "@ai/contracts";
+import type { AuditItem } from "@ai/contracts/audit";
 import type { Translate } from "@/lib/format";
 import { formatClock } from "@/lib/format";
 

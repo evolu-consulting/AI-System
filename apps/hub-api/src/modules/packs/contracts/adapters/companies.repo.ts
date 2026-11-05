@@ -1,6 +1,6 @@
 // HD8-FR-09: câu SQL của danh bạ công ty — MỘT câu mỗi hàm, lọc `tenant_id` tường minh ngoài RLS. Danh sách kèm số HĐ + vai từ HĐ
 // người dùng thấy (RLS M1, `routes/companies._contracts`).
-import type { Company } from "@ai/contracts";
+import type { Company } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { CompanyUse } from "../application/companies.ports";

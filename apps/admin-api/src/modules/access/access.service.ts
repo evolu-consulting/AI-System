@@ -2,19 +2,23 @@
 // `computeEffectiveAccess` (hàm thuần) → map sang contract. Không ghi, không khoá.
 import {
   ACCESS_COMMANDS_MAX,
-  ACCESS_GROUPS_MAX,
-  BETA_GROUP_KEY,
-  COMMAND_DESC_MAX,
-  CORE_FEATURE_KEY,
   type EffectiveAccess,
   type EffectiveAccessQuery,
-  FEATURE_NAME_MAX,
   type FeatureMini,
+} from "@ai/contracts/access";
+import { ACCESS_GROUPS_MAX } from "@ai/contracts/commands";
+import {
+  COMMAND_DESC_MAX,
+  CORE_FEATURE_KEY,
+  FEATURE_NAME_MAX,
+  LocalizedTextSchema,
+} from "@ai/contracts/common";
+import {
+  BETA_GROUP_KEY,
   GROUP_NAME_MAX,
   type GroupRef,
-  LocalizedTextSchema,
   USER_GROUPS_MAX,
-} from "@ai/contracts";
+} from "@ai/contracts/groups";
 import { type Db, type DbScope, type Tx, withScope } from "@ai/db";
 import { appError } from "../../lib/errors";
 import { type Actor, canSeeUser } from "../users/users.rules";

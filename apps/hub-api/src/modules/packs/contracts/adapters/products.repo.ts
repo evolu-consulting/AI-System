@@ -6,7 +6,7 @@ import type {
   ProductOut,
   ProductRuleOut,
   ProductsQuery,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { ProductsRepo } from "../application/products.usecase";

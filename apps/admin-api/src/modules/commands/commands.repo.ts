@@ -2,14 +2,12 @@
 // `feature_commands` do module features ghi (qua features.service). jsonb parse bằng zod khi đọc.
 import {
   ArgsSchema,
-  COMMAND_DESC_MAX,
   type CommandArg,
-  type CommandMode,
   CommandOutputSchema,
   type InputMap,
   InputMapSchema,
-  LocalizedTextSchema,
-} from "@ai/contracts";
+} from "@ai/contracts/commands";
+import { COMMAND_DESC_MAX, type CommandMode, LocalizedTextSchema } from "@ai/contracts/common";
 import { commandNames, commands, featureCommands, type Tx, users, workflows } from "@ai/db";
 import { and, asc, count, eq, ilike, inArray, ne, or, type SQL, sql } from "drizzle-orm";
 import { likeArg, outer, usernameOf } from "../../lib/sql";

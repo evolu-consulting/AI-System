@@ -1,6 +1,6 @@
 // V2-I · DT-01…07 · `/partners?party=` — trang chi tiết đối tác theo mockup NITI: đầu trang (tên, điểm từng vai, MST · điện thoại · liên hệ,
 // "Tìm trên internet") + 3 tab: Tổng quan · Hợp đồng · n · Đánh giá & ghi chú. Tab / vai / khoảng biểu đồ nằm trên URL.
-import type { PartnerRole, RepRole } from "@ai/contracts";
+import type { PartnerRole, RepRole } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";

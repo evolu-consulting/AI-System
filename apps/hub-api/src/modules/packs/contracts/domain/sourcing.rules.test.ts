@@ -1,7 +1,7 @@
 // W1 · "Mua hàng": luật thuần (port `contracts/products.py::lines` + `sourcing.py`) — dòng giá có phụ lục, nguồn tự chọn/người chọn,
 // lãi, rủi ro, nhà cung cấp.
 import { describe, expect, it } from "bun:test";
-import { SOURCING_CANDIDATES_MAX } from "@ai/contracts";
+import { SOURCING_CANDIDATES_MAX } from "@ai/contracts/pack-contracts";
 import {
   bySupplier,
   isCandidate,

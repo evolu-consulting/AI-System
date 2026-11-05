@@ -1,5 +1,5 @@
 // ADM-FR-62 · M3-R03 · D12 · khối "Thêm nhiều người": dán username (mỗi dòng một người), đếm, xem trước dry_run, nút `Thêm {count} người`.
-import type { GroupMembersAddResponse } from "@ai/contracts";
+import type { GroupMembersAddResponse } from "@ai/contracts/groups";
 import { useTranslation } from "react-i18next";
 import { FormField } from "@/components/shared/form/FormField";
 import { Button } from "@/components/ui/button";

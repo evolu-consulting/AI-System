@@ -1,5 +1,5 @@
 // V2-J2 · truy vấn/ghi NCC & giá của một sản phẩm (tổng quan, xoá giá, tìm giá thị trường, lưu giá đã chọn).
-import type { SupplierSearchOut } from "@ai/contracts";
+import type { SupplierSearchOut } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {

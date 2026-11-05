@@ -1,13 +1,8 @@
 // ADM-NFR-06, ADM-FR-01, ADM-FR-10 · lỗi có mã (CONVENTIONS §5, spec M0 §3.1, M1 §3). Status lấy từ API_ERRORS (một nguồn).
-import {
-  API_ERRORS,
-  type ErrorCode,
-  type ErrorResponse,
-  EXTERNAL_ORG_ERRORS,
-  type ExternalOrgErrorCode,
-  TENANT_PROFILE_ERRORS,
-  type TenantProfileErrorCode,
-} from "@ai/contracts";
+import { API_ERRORS, type ErrorCode } from "@ai/contracts/common";
+import type { ErrorResponse } from "@ai/contracts/errors";
+import { EXTERNAL_ORG_ERRORS, type ExternalOrgErrorCode } from "@ai/contracts/external-orgs";
+import { TENANT_PROFILE_ERRORS, type TenantProfileErrorCode } from "@ai/contracts/tenants";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 export class AppError extends Error {

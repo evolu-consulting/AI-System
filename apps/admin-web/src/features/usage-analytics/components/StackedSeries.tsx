@@ -1,6 +1,6 @@
 // ADM-FR-42 · usage-analytics · biểu đồ cột chồng token theo xô thời gian × app (SVG tự vẽ như DailyBars, không thư viện):
 // mỗi đoạn có <title>; `role="img"` + bảng `sr-only` cho trình đọc màn hình; chú giải màu theo app.
-import type { UsageAnalytics } from "@ai/contracts";
+import type { UsageAnalytics } from "@ai/contracts/usage-analytics";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";

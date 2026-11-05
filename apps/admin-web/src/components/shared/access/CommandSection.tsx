@@ -1,5 +1,5 @@
 // ADM-FR-36 · M3-R12 · nhóm "Command": "Thấy /x" kèm "qua feature F · group G"; command không thấy gom sau nút "Hiện … (n)" với "Vì sao không?".
-import type { EffectiveCommand } from "@ai/contracts";
+import type { EffectiveCommand } from "@ai/contracts/access";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";

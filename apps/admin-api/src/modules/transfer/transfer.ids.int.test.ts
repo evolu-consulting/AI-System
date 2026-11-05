@@ -1,7 +1,7 @@
 // ADM-FR-54 · review M4 vòng 2 · readIds chỉ tra khoá trong file (DB > trần vẫn đọc id được); export vượt trần →
 // 400 VALIDATION_ERROR too_big (không mượn 413 PAYLOAD_TOO_LARGE của kích thước file).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import type { ImportItem } from "@ai/contracts";
+import type { ImportItem } from "@ai/contracts/transfer";
 import { createDb, runMigrations, withScope } from "@ai/db";
 import { resetTestDb } from "@ai/db/test-db";
 import postgres from "postgres";

@@ -1,5 +1,5 @@
 // U3 · R46 · "xem trước": bao nhiêu đối tác đổi mức nếu lưu bản nháp (`POST /scoring/:role/preview`, không ghi). Debounce 400 ms.
-import type { PartnerRole, ScoringDraft } from "@ai/contracts";
+import type { PartnerRole, ScoringDraft } from "@ai/contracts/pack-contracts";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsGroup } from "~/shared/ui/settings-layout";

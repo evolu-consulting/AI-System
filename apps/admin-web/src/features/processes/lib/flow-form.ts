@@ -1,13 +1,14 @@
 // CR-105 · L3: trạng thái soạn Form (danh sách bước tuần tự) của khe `contracts.approval` — chuyển (copy, không import chéo app) từ
 // contracts-web `features/settings/lib/flow-state.ts`; khác: phòng ban theo MÃ (`*_group_key`), không id (design §1/§5).
 // Thân Form = `slot_body`; Hub biên dịch ra `stages` mỗi lần lưu. Khe hở hợp đồng: tên trường theo mã + dạng bọc `{steps}` (xem `parseSlotBody`).
+
+import type { SlotFieldDto } from "@ai/contracts/hub-admin";
 import {
   APPROVAL_FLOW_DUE_H,
   APPROVAL_FLOW_REMIND_H,
   APPROVAL_FLOW_STEPS_MAX,
   type FlowWhen,
-} from "@ai/contracts";
-import type { SlotFieldDto } from "@ai/contracts/hub-admin";
+} from "@ai/contracts/pack-contracts";
 import { condIssueCodes, DEFAULT_FIELDS } from "./flow-when";
 
 export const FLOW_MAX_STEPS = APPROVAL_FLOW_STEPS_MAX;

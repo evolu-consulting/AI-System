@@ -1,5 +1,5 @@
 // ADM-FR-62 · menu `⋯` của hàng Group: Sửa · Xoá (beta-testers: "Xoá" khoá kèm tooltip, M3-R02).
-import type { GroupListItem } from "@ai/contracts";
+import type { GroupListItem } from "@ai/contracts/groups";
 import { MoreHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";

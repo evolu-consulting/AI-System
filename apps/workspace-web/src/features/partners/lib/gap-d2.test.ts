@@ -1,6 +1,6 @@
 // GAP-D2 · luật thuần: liên hệ nhiều người (#24), MST/lỗi công ty (#23), cảnh báo bất thường + đường xu hướng (#27).
 import { describe, expect, it } from "bun:test";
-import { PartnerContactsPutSchema } from "@ai/contracts";
+import { PartnerContactsPutSchema } from "@ai/contracts/pack-contracts";
 import { companyErrKey, normalizeTax } from "./company";
 import { blankRow, draftsOf, rowsOf, wireOf } from "./contacts";
 

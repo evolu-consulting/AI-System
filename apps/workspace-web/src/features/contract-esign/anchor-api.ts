@@ -1,5 +1,9 @@
 // esign-anchor · API vị trí ô ký: danh sách cụm theo công ty (Cài đặt › Ký số) + xem trước vị trí khi Gửi ký.
-import type { ESignAnchorsIn, ESignAnchorsOut, ESignPlacementOut } from "@ai/contracts";
+import type {
+  ESignAnchorsIn,
+  ESignAnchorsOut,
+  ESignPlacementOut,
+} from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 

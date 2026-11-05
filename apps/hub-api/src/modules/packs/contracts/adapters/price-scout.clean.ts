@@ -1,6 +1,10 @@
 // price-scout · làm sạch cấu hình dò giá đọc từ DB (jsonb): mỗi khoá kiểm riêng theo schema contract — khoá sai/lạ (dữ liệu cũ
 // hoặc hỏng) bị bỏ ⇒ theo mặc định nhóm. Lớp 3.
-import { PRICE_SCOUT_DEFAULT, type PriceScoutConfig, PriceScoutConfigSchema } from "@ai/contracts";
+import {
+  PRICE_SCOUT_DEFAULT,
+  type PriceScoutConfig,
+  PriceScoutConfigSchema,
+} from "@ai/contracts/pack-contracts";
 import type { PriceScoutOverride } from "../domain/price-scout.types";
 
 const FIELDS = Object.keys(PRICE_SCOUT_DEFAULT) as (keyof PriceScoutConfig)[];

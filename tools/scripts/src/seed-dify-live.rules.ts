@@ -1,6 +1,6 @@
 // ADM-FR-21 · HUB-FR-89 · X1-R01..R05, R14 · luật thuần `seed:dify` (plan X1 §5.2): danh sách trắng env, cờ CLI, kế hoạch
 // (không bao giờ chứa key), patch chỉ trường khác (idempotent), bản in dry-run.
-import { USERNAME_RE } from "@ai/contracts";
+import { USERNAME_RE } from "@ai/contracts/common";
 import {
   API_URL_VAR,
   APPS,

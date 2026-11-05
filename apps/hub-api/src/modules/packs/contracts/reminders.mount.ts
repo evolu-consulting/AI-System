@@ -1,7 +1,7 @@
 // HD4-FR-03…06 · HD4-NFR-01 · D4-01 · D4-02 · plan §2–§3 (lớp 4 của gói): nối vòng nhắc hạn (role `contracts_job` tìm tenant +
 // `PackSystemUow` role `contracts_rw` xử lý lô) và route ghi kết quả xử lý. Vòng nền chỉ khi `worker`: `drain` chạy tới hết việc rồi
 // mới trả ⇒ `startLoop` chỉ "ngủ" giữa các lượt khi không còn HĐ tới hạn (due_at = `remind_at`, không poll từng HĐ).
-import { TENANT_TZ_DEFAULT } from "@ai/contracts";
+import { TENANT_TZ_DEFAULT } from "@ai/contracts/tenants";
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import { logger } from "../../../lib/logger";

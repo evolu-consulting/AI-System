@@ -1,6 +1,6 @@
 // V2-F · HD-01 · 5.5a · Q15: luật thuần của form hợp đồng (nhập tay + xác nhận sau upload) — trạng thái, ô bắt buộc (viền đỏ),
 // giá trị tự cộng khi để trống, đọc số kiểu Việt ("91.500.000", SL "1,5"), thân `POST /contracts/manual`. Không React, không fetch.
-import type { ContractDeal, ManualContractRequest } from "@ai/contracts";
+import type { ContractDeal, ManualContractRequest } from "@ai/contracts/pack-contracts";
 import { parseMoney, parseQty } from "~/components/shared/format";
 
 export type LineState = {

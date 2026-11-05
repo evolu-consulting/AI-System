@@ -1,6 +1,6 @@
 // CR-112 · ADM-FR-80, ADM-FR-82 · bản nháp của Phân quyền: thay đổi chưa lưu + MỘT lần Lưu (tạo ⇒ sửa ⇒ gán/gỡ ⇒ xoá).
 // Lưu lỗi: 409 VERSION_CONFLICT hoặc đã ghi dở ⇒ tải lại và bỏ nháp (nháp không còn khớp); chưa ghi gì ⇒ giữ nháp để sửa tiếp.
-import type { AppRole, AppRoleLevel } from "@ai/contracts";
+import type { AppRole, AppRoleLevel } from "@ai/contracts/app-roles";
 import { useMemo, useState } from "react";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { useTr } from "@/lib/use-translate";

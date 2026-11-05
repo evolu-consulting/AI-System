@@ -1,5 +1,7 @@
 // CR-111 · một nhóm app trong danh mục Feature: tiêu đề (icon app, tên, mô tả) + bảng tên dễ hiểu / mô tả / trạng thái / key kỹ thuật.
-import { type FeatureListItem, getAppManifest } from "@ai/contracts";
+
+import { getAppManifest } from "@ai/contracts/app-manifest";
+import type { FeatureListItem } from "@ai/contracts/features";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { rowClickProps } from "@/components/shared/list/row-click";

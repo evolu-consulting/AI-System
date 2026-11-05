@@ -1,6 +1,6 @@
 // ADM-FR-62 · resolveViewedTenant (hàm thuần theo dữ liệu): tenant_admin cố định, platform chọn qua URL, mã lạ → unknown.
 import { describe, expect, test } from "bun:test";
-import type { Me } from "@ai/contracts";
+import type { Me } from "@ai/contracts/auth";
 import { resolveViewedTenant, resolveWorkspaceTenant } from "./viewed-tenant";
 
 const me = (role: Me["role"]) => ({ role, tenant: { key: "acme" } }) as unknown as Me;

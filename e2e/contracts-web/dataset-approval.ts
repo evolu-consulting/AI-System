@@ -1,5 +1,5 @@
 // HD-FR-36 · dữ liệu giả thẻ duyệt S05 (`GET /pack/contracts/contracts/:id/approval`) cho cảnh so mgmt-app và e2e HD3.
-import type { ContractApproval } from "@ai/contracts";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
 
 export const APPROVAL_RUN = "a3d30000-0000-4000-8000-000000000001";
 export const APPROVAL_TASK = "a3d30000-0000-4000-8000-000000000002";

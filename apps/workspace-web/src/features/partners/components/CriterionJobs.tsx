@@ -1,5 +1,5 @@
 // V2-I · DT-02: các việc góp điểm của MỘT tiêu chí — ngày, việc (HĐ), điểm việc, hệ số độ cũ h, trễ bao nhiêu ngày / lỗi của ai.
-import type { RepDetailItem } from "@ai/contracts";
+import type { RepDetailItem } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";

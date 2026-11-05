@@ -1,5 +1,5 @@
 // ADM-FR-74, ADM-FR-75 · trạng thái và hành động của tài khoản đối tác (hàm thuần).
-import type { User } from "@ai/contracts";
+import type { User } from "@ai/contracts/users";
 
 export type PartnerUserStatus = "active" | "locked" | "deactivated";
 

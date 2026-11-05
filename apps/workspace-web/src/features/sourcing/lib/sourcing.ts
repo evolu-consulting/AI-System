@@ -1,5 +1,5 @@
 // W1 · "Mua hàng" · luật thuần của màn (port cm-web `sourcing/{page,Lines}.tsx`).
-import type { SaleLine, SourceRef } from "@ai/contracts";
+import type { SaleLine, SourceRef } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 
 type T = (key: string, o?: Record<string, unknown>) => string;

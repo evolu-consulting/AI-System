@@ -1,6 +1,6 @@
 // FileBox chưa cấu hình ⇒ POST /contracts trả 503 FILE_STORAGE_UNAVAILABLE (không 404); guard quyền vẫn chạy trước.
 import { describe, expect, it } from "bun:test";
-import { packFeatureKey } from "@ai/contracts";
+import { packFeatureKey } from "@ai/contracts/packs";
 import { Hono } from "hono";
 import type { AuthUser } from "../../../../lib/auth.middleware";
 import { AppError } from "../../../../lib/errors";

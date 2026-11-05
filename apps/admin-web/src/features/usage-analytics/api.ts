@@ -1,6 +1,11 @@
 // ADM-FR-42 · usage-analytics · gọi `/admin/usage/analytics`, `/admin/usage/records(.csv)`, `/admin/usage/runs/:id` (nơi duy
 // nhất của feature). Bản tenant_admin không có `cost_usd` (server xoá).
-import type { UsageAnalytics, UsageGrain, UsageRecords, UsageRun } from "@ai/contracts";
+import type {
+  UsageAnalytics,
+  UsageGrain,
+  UsageRecords,
+  UsageRun,
+} from "@ai/contracts/usage-analytics";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { downloadFile } from "@/lib/download";
 import { api } from "@/lib/http";

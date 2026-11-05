@@ -1,6 +1,6 @@
 // ADM-FR-06, ADM-FR-07, ADM-NFR-01 · đổi mật khẩu + /auth/me (test-plan A3; M1-AC06; M1-R05/R06).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { MeSchema, TokenGrantSchema } from "@ai/contracts";
+import { MeSchema, TokenGrantSchema } from "@ai/contracts/auth";
 import {
   cookieOf,
   createEnv,

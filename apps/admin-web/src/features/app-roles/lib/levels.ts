@@ -1,5 +1,5 @@
 // CR-112 · ADM-FR-80, ADM-FR-82 · nhãn mức/vai/app của màn Phân quyền theo vai (hàm thuần: trả key i18n, không dịch chuỗi).
-import { type AppRoleLevel, levelRank } from "@ai/contracts";
+import { type AppRoleLevel, levelRank } from "@ai/contracts/app-roles";
 
 export const LEVELS: readonly AppRoleLevel[] = ["read", "write", "admin"];
 

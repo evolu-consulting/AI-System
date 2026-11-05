@@ -1,7 +1,7 @@
 // HUB-FR-01, HUB-FR-74 · H1-R02 · xác thực access token do Admin phát (EdDSA, plan §1 P4, §6.4).
 // CHÉP phần verify của `apps/admin-api/src/lib/jwt.ts` (không import chéo app); nợ: gộp vào `packages/auth`.
 // Hub chỉ cần khoá công khai — không ký token.
-import { ROLES, type Role, UuidSchema } from "@ai/contracts";
+import { ROLES, type Role, UuidSchema } from "@ai/contracts/common";
 import { importSPKI, jwtVerify } from "jose";
 
 const ALG = "EdDSA";

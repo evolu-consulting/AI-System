@@ -1,8 +1,9 @@
 // chat-api-gate · luật thuần: API Chat AI chỉ mở cho công ty có entitlement `chat-app` còn hiệu lực — cùng luật admin-api
 // `app-catalog.rules` (`TENANT_APP_FEATURES`: feature theo CÔNG TY, không theo nhóm/user; feature chưa tồn tại ⇒ mở;
 // platform_admin luôn được). Không I/O: đọc ảnh catalog trong cache cấu hình (0 SQL mỗi request).
-import type { Role } from "@ai/contracts";
+
 import { ME_STREAM_PROCESS_EVENTS } from "@ai/contracts/chat";
+import type { Role } from "@ai/contracts/common";
 import { routeMessage } from "../mention/mention-parse.rules";
 import { classifyBang } from "../processes/core/bang.rules";
 

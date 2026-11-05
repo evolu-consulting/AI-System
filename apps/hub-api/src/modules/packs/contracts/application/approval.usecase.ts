@@ -1,7 +1,7 @@
 // HD-FR-31 · HD-FR-33 · HD-FR-34 · HD-FR-36 · HD-FR-37 · M3-decouple: flow duyệt HĐ là máy trạng thái của gói (không engine).
 // Mở lượt (tải lên / trích lại / nhập tay), xem thẻ duyệt, quyết bước (luật `decide` thuần), cài đặt tenant. Quyết trong MỘT tx
 // khoá hàng HĐ (FOR UPDATE) ⇒ `finalize` đánh giá lại ngưỡng trong câu UPDATE (D3-14). Lớp 2: chỉ cổng, lỗi trả mã (route dịch).
-import type { ProductLink } from "@ai/contracts";
+import type { ProductLink } from "@ai/contracts/pack-contracts";
 import type { PackWho } from "../../kit/application/ports";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
 import type { RunPhase } from "../domain/approval-edit.rules";

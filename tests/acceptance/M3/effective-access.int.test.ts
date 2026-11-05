@@ -1,7 +1,7 @@
 // ADM-FR-36, ADM-BR-11, ADM-BR-12 · GET /admin/users/:id/effective-access (M3-AC04; M3-R11, R12; test-plan I-EA).
 // Số liệu tính trước ở test-plan §3. Mỗi `it` tự dựng lại dữ liệu (beforeEach reset).
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
-import { EffectiveAccessSchema } from "@ai/contracts";
+import { EffectiveAccessSchema } from "@ai/contracts/access";
 import {
   betaId,
   callerOf,

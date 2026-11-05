@@ -1,6 +1,6 @@
 // gap-a1 #7 · người có thể được giao HĐ: thành viên tenant còn dùng được VÀ thuộc nhóm được cấp quyền xem gói hợp đồng. MỘT câu SQL
 // (lọc tenant tường minh, nhóm qua một tham số JSON) đọc `admin.users` + `admin.group_members` bằng `hub_ro` như danh bạ thành viên.
-import { MEMBERS_MAX } from "@ai/contracts";
+import { MEMBERS_MAX } from "@ai/contracts/pack-contracts";
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";

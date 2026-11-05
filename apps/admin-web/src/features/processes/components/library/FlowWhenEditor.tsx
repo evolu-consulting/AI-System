@@ -1,7 +1,8 @@
 // CR-121 D-3: trình dựng điều kiện "Chỉ chạy khi" của một bước — chọn trường của app (theo `fields` của khe), toán tử theo kiểu,
 // giá trị; nhiều điều kiện ghép và/hoặc, nhóm lồng MỘT cấp; trống = "Luôn chạy". Thay FlowWhenEditor cũ (loại HĐ + giá trị cố định).
-import { type FlowWhen, isFlowCondGroup } from "@ai/contracts";
+
 import type { SlotFieldDto } from "@ai/contracts/hub-admin";
+import { type FlowWhen, isFlowCondGroup } from "@ai/contracts/pack-contracts";
 import { Group } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";

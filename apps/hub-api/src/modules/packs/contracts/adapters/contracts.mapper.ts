@@ -12,7 +12,7 @@ import type {
   ContractListRow,
   ContractParentRef,
   ContractVersionRef,
-} from "@ai/contracts";
+} from "@ai/contracts/pack-contracts";
 import type { MilestoneRow } from "../application/milestones.ports";
 import { fillFields } from "../domain/fields.rules";
 import { LEGAL_WARN_DEFAULT, legalWarning } from "../domain/legal-warn.rules";

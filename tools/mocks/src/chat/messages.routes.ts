@@ -1,7 +1,7 @@
 // C1-R01, C1-R02, C1-R09, CHAT-AC-05..16, 24–28, 31 · E12–E15 gửi tin + run (plan C1 §2.4, §2.6, §3.1).
 // Thứ tự kiểm: auth (Bearer) → path uuid (404) → sở hữu (404) → body (400) → `flow_id` thuộc hội thoại (404)
 // → trạng thái (409 `FLOW_BUSY`). Lỗi trước khi mở stream trả JSON; sau đó là SSE.
-import { UuidSchema } from "@ai/contracts";
+
 import {
   FLOW_ID_HEADER,
   isFlowIdle,
@@ -11,6 +11,7 @@ import {
   RUN_ID_HEADER,
   SendMessageRequestSchema,
 } from "@ai/contracts/chat";
+import { UuidSchema } from "@ai/contracts/common";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import type { ChatVars } from "./auth";

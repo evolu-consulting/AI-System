@@ -1,6 +1,6 @@
 // CR-112 · ADM-FR-79 · bước 1 của wizard: tạo công ty + tenant_admin đầu tiên NGAY (POST /admin/tenants có sẵn, không giao dịch xuyên bước).
 // Mã trùng ⇒ lỗi tại ô mã. Xong hiện mật khẩu tạm một lần rồi sang bước 2 (công ty đã tồn tại dù người dùng bỏ ngang).
-import type { TenantCreateResponse } from "@ai/contracts";
+import type { TenantCreateResponse } from "@ai/contracts/tenants";
 import { useState } from "react";
 import { notifyError } from "@/components/shared/toast";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";

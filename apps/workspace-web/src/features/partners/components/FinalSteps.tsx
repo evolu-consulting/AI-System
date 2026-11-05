@@ -1,6 +1,6 @@
 // V2-I · DT-02 · BA §5.1: các bước tới điểm cuối của một vai — (2) điểm dữ liệu = tổng Góp, (3) trộn đánh giá sao, (4) gộp các nhóm theo
 // giá trị giao dịch. Mỗi bước một dòng có số thật để người dùng tự kiểm.
-import type { RepCellOut } from "@ai/contracts";
+import type { RepCellOut } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { finalSteps, valueShares } from "../lib/partner-v2e";
 

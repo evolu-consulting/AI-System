@@ -1,4 +1,9 @@
 // ADM-NFR-06, ADM-FR-01, ADM-FR-10, ADM-FR-62 · điểm vào contract dùng chung giữa admin-api, admin-web và test.
+/**
+ * @deprecated CR-121 B-2 (ADR-0037): barrel gốc `@ai/contracts` — đừng import mới từ đây. Dùng subpath theo file
+ * (`@ai/contracts/access`, `/config`, `/chat`, `/hub-admin`…; xem `exports` trong package.json). Barrel còn lại
+ * cho `import * as` và tương thích; codemod `tools/scripts/src/codemod-contracts-subpaths.ts` (`--check` báo file còn import).
+ */
 export * from "./access";
 export * from "./app-catalog";
 export * from "./app-manifest";

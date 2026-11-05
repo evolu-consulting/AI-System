@@ -1,7 +1,7 @@
 // ADM-FR-68 · PB-R21 · FS5 · hàm thuần trình bày nguồn: tách cấu hình đầy đủ / công khai, nhãn Đích + Trạng thái, dung lượng.
 // Rò `path`: CHỈ `localPathOf` được đọc `config.path` (kể cả khi server lỡ gửi); mọi nơi khác không đụng tới.
 
-import type { Role } from "@ai/contracts";
+import type { Role } from "@ai/contracts/common";
 import type {
   ApplyMode,
   SourceCheckResult,

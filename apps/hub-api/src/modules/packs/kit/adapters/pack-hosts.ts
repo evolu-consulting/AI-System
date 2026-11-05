@@ -1,6 +1,6 @@
 // CR-102 · com-c9 · "chủ quản" của một gói = user NỘI BỘ còn dùng được (active, không bị khoá) của tenant, là `tenant_admin` hoặc
 // thuộc Group được cấp việc `read` của gói (cache cấu hình cho Group, MỘT câu admin.users). Người nhận thông báo của chủ quản.
-import { packFeatureKey } from "@ai/contracts";
+import { packFeatureKey } from "@ai/contracts/packs";
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";

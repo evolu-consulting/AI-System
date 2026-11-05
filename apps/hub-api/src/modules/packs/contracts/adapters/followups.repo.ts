@@ -1,8 +1,8 @@
 // W1 · hẹn nhắc chung (`contracts.followups`, port `ledger/followups.py::upsert/mine`): MỘT câu SQL văn bản cố định mỗi hàm, lọc `tenant_id`
 // tường minh ngoài RLS. Chủ thể phải TỒN TẠI và NGƯỜI DÙNG THẤY (RLS của đợt/HĐ/gia hạn; đối tác qua `visible_party_keys()`): không thấy ≡
 // không có ⇒ không chèn gì (404). Tiêu đề do máy chủ đặt như mgmt-app `subject()`. Một hẹn nhắc mở mỗi người + chủ thể: đặt lại ⇒ dời.
-import type { Followup, FollowupCreate } from "@ai/contracts";
-import { FOLLOWUP_LIST_MAX } from "@ai/contracts";
+import type { Followup, FollowupCreate } from "@ai/contracts/pack-contracts";
+import { FOLLOWUP_LIST_MAX } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { FollowupsRepo } from "../application/followups.usecase";

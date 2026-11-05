@@ -1,7 +1,9 @@
 // HUB-FR-10 · mục menu `/` từ catalog (plan-rules, test-plan R40–R42). Thuần.
 // Chỉ trả tên/alias/mô tả/tham số — không lộ workflow, input_map, secret, URL (R41).
-import type { CommandArg, LocalizedText } from "@ai/contracts";
+
 import type { CommandMenuArg, CommandMenuItem } from "@ai/contracts/chat";
+import type { CommandArg } from "@ai/contracts/commands";
+import type { LocalizedText } from "@ai/contracts/common";
 import type { CatalogCommand, CatalogWorkflow } from "./catalog.types";
 
 const desc = (d: LocalizedText) => ({ vi: d.vi, en: d.en ?? null });

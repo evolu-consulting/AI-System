@@ -1,5 +1,5 @@
 // DOC-ui-list: nhãn loại chứng từ + hàng con thụt dưới HĐ nguyên tắc (bảng + thẻ điện thoại) của danh sách "Hợp đồng & giao dịch".
-import type { DealSource, DocType } from "@ai/contracts";
+import type { DealSource, DocType } from "@ai/contracts/pack-contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";

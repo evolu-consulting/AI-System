@@ -1,6 +1,6 @@
 // ADM-FR-42 · usage-analytics · thanh lọc: tenant (chỉ platform_admin), khoảng ngày (preset), xô thời gian, app, agent,
 // model, user, kết quả; "Xoá lọc". Danh sách chọn lấy từ breakdown hiện có (giá trị đang chọn luôn có trong danh sách).
-import type { UsageAnalytics, UsageBreakdownRow } from "@ai/contracts";
+import type { UsageAnalytics, UsageBreakdownRow } from "@ai/contracts/usage-analytics";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { TenantPicker } from "@/components/shared/TenantPicker";

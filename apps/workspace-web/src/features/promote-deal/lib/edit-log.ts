@@ -1,5 +1,5 @@
 // CR-101 DOC-ui-frame · R5: dòng thời gian "Sửa trực tiếp" của giao dịch từ `GET /contracts/:id/edit-log` — nhãn trường + giá trị. Thuần.
-import type { EditLogEntry } from "@ai/contracts";
+import type { EditLogEntry } from "@ai/contracts/pack-contracts";
 
 /** Trường có nhãn riêng (`contracts.docframe.log.field.*`); trường khác hiện khoá thô bỏ tiền tố `fields.`. */
 const KNOWN = new Set([

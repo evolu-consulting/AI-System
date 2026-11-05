@@ -1,5 +1,5 @@
 // V2-M · các dòng tác động hiển thị trong hộp xác nhận xoá HĐ (thuần): chỉ liệt kê mục có số > 0, đúng thứ tự BA.
-import type { DeleteImpact } from "@ai/contracts";
+import type { DeleteImpact } from "@ai/contracts/pack-contracts";
 
 export type ImpactLine = { key: string; vars: Record<string, string | number> };
 

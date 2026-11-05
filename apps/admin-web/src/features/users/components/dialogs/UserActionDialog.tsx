@@ -1,5 +1,5 @@
 // ADM-FR-04, ADM-FR-05, ADM-FR-08 · hộp thoại xác nhận khoá / reset mật khẩu / đăng xuất mọi thiết bị / tắt 2FA của một user.
-import type { User } from "@ai/contracts";
+import type { User } from "@ai/contracts/users";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useTr } from "@/lib/use-translate";
 
