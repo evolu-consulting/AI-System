@@ -1,6 +1,7 @@
 // CR-118 · UW-FR-10/11/13/14 · ADR-0035 · `FlowSlotAdapter` của khe `contracts.approval`: bọc ĐÚNG use case thẻ duyệt hôm nay
 // (`getApproval` / `actApproval` — không đổi hành vi, quyền bước vẫn do engine `can_act` / máy trạng thái quyết) rồi chiếu sang
-// FlowView. Thêm duy nhất: task id phải khớp task đang mở của người xem (bấm trên thẻ cũ ⇒ 409), đầu vào lạ ⇒ 422.
+// FlowView. Thêm duy nhất: task id phải khớp task đang mở của người xem (bấm trên thẻ cũ ⇒ 409, kiểm lại trong use case —
+// CR-120 `expect`), đầu vào lạ ⇒ 422.
 import { type ContractApproval, ProductLinksSchema } from "@ai/contracts";
 import type { FlowActError, FlowSlotAdapter } from "../../kit/application/flow.ports";
 import type { PackWho } from "../../kit/application/ports";
@@ -68,7 +69,8 @@ export function approvalFlowSlot(d: ApprovalFlowSlotDeps): FlowSlotAdapter {
       const cur = await d.get(who, ref);
       if (!cur) return "not_found";
       if (cur.task_id !== taskId) return fail("APPROVAL_NOT_OPEN", 409);
-      const out = await d.act(who, ref, b);
+      // CR-120 · idempotent: kiểm lại task/giai đoạn TRONG use case (khoá / task engine định quyết) — bấm lại/đua không quyết bước kế.
+      const out = await d.act(who, ref, { ...b, expect: { taskId, step: cur.step ?? null } });
       if (out === "not_found") return out;
       if (out === "unavailable") return fail("AGENT_UNAVAILABLE", 503);
       if ("error" in out) return fail(out.error, STATUS[out.error]);

@@ -62,6 +62,9 @@ export type ApprovalAction = {
   action: "approve" | "reject" | "redo" | "return";
   feedback?: string;
   products?: readonly ProductLink[];
+  /** CR-120 · FlowRuntime.act: task (+ giai đoạn thẻ) người bấm đang thấy; khác task/giai đoạn đang mở ⇒ APPROVAL_NOT_OPEN — kiểm
+   *  TRONG khoá (máy cũ) / theo task engine định quyết, nên bấm lại hay đua KHÔNG quyết bước kế. Route cũ không gửi (giữ y hệt). */
+  expect?: { taskId: string; step: string | null } | undefined;
 };
 export type ActOutcome =
   | ContractApproval
@@ -213,6 +216,10 @@ async function redoGate(
 function beforeMachine(st: ApprovalState, b: ApprovalAction): TxOutcome | null {
   if (!st.approval) return { error: "APPROVAL_NOT_OPEN" };
   if (st.approval.mode === "engine") return { engine: st };
+  // CR-120 · máy cũ: task = id lượt (không đổi giữa cấp 1 → cấp 2) ⇒ so cả giai đoạn (bước mở: status = step của thẻ). Trong khoá.
+  const ex = b.expect;
+  if (ex && (ex.taskId !== st.approval.id || ex.step !== st.approval.status))
+    return { error: "APPROVAL_NOT_OPEN" };
   return b.action === "return" ? { error: "APPROVAL_NOT_OPEN" } : null;
 }
 

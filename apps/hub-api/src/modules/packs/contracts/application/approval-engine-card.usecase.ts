@@ -54,6 +54,8 @@ export type EngineActBody = {
   action: EngineAction;
   feedback?: string | undefined;
   products?: readonly unknown[] | undefined;
+  /** CR-120 · task người bấm thấy (FlowRuntime.act); khác task engine định quyết ⇒ APPROVAL_NOT_OPEN (bấm lại không quyết bước kế). */
+  expect?: { taskId: string } | undefined;
 };
 export type EngineActResult = "ok" | "unavailable" | { error: EngineErrorCode };
 
@@ -181,6 +183,7 @@ export function engineAct(d: EngineCardDeps) {
       hasSource: st.hasSource,
     });
     if (plan.kind === "error") return { error: plan.code };
+    if (b.expect && b.expect.taskId !== plan.taskId) return { error: "APPROVAL_NOT_OPEN" };
     const c = { who, id, st, runId: a.engineRunId, b };
     const ev = plan.kind !== "redo" ? await noteOverride(d, c, inp.sv, plan.taskId) : null;
     if (!ev) return exec(d, port, c, plan);

@@ -49,7 +49,10 @@ describe("CR-118 · approvalFlowSlot", () => {
   test("act: đúng task ⇒ gọi actApproval y nguyên + trả view (snapshot từ hàng)", async () => {
     const f = fake();
     const out = await f.slot.act(WHO, U(2), U(9), "reject", { feedback: "Sai" });
-    expect(f.acts).toEqual([{ action: "reject", feedback: "Sai" }]);
+    // CR-120: kèm task/giai đoạn người bấm thấy để use case kiểm lại trong khoá (idempotent).
+    expect(f.acts).toEqual([
+      { action: "reject", feedback: "Sai", expect: { taskId: U(9), step: "level1" } },
+    ]);
     expect(out).toMatchObject({ view: { ref: U(2), run: { snapshot_version: 2 } } });
   });
   test("act: task cũ ⇒ 409 APPROVAL_NOT_OPEN, không gọi use case", async () => {
