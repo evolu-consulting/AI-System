@@ -1,6 +1,6 @@
 // CR-121 D-1 · dữ kiện HIỆN TẠI cho rẽ duyệt HĐ trên DB thật (pool hub_api; tx gói role `contracts_rw` + RLS; phòng ban scope system):
 // tool `contracts-route` thật (repo thật) rẽ theo giá trị SAU khi sửa, phòng con của "sales", đối tác mới; chặn đọc chéo tenant ở cả hai
-// nguồn; trần 20 bước: def 22 stage lưu qua `ensureDef` thật + run/stage ở bước cuối (21) qua CHECK đã nới (migration 0095).
+// nguồn; trần 20 bước: def 22 stage lưu qua `ensureDef` thật + run/stage ở bước cuối (21) qua CHECK đã nới (migration 0097).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { contracts, groups, members, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
@@ -146,7 +146,7 @@ describe("CR-121 D-1 · chặn đọc chéo tenant (đường đọc dữ kiện
   });
 });
 
-describe("CR-121 D-1 · trần 20 bước (migration 0095)", () => {
+describe("CR-121 D-1 · trần 20 bước (migration 0097)", () => {
   it("def 20 bước (22 stage) lưu qua ensureDef thật; rẽ tới bước 20 rồi finalize; run/stage ở stage cuối qua CHECK", async () => {
     const steps = Array.from({ length: 20 }, (_, i) =>
       review(`b${i}`, i === 0 ? null : when({ field: "total_value", op: "ge", value: 1 })),
