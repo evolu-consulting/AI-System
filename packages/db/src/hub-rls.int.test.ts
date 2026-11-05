@@ -154,6 +154,8 @@ const PA_POLICY_TABLES = [
   "autofix_applies",
   // P-d1 (0036): hẹn giờ bền — 1 policy T (readiness #89).
   "process_timers",
+  // CR-120 (0093): sự kiện gói bắn cho node wait_event — 1 policy hub_rw.
+  "process_run_events",
 ];
 /** Bảng RLS thêm sau H1 ngoài P-a (danh sách cũ chưa cập nhật — sửa cùng T6 P-d1): P-b 0021 (sources, source_job_reads),
  * X2b2 0023 (attachments thêm policy room_member_select), H4b-1 0028 (secrets), K1 0029 (kh_jobs, kh_stage_usage,
