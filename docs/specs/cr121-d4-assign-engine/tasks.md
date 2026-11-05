@@ -3,17 +3,19 @@ id: cr121-d4-assign-engine
 lát: cr121-d4-assign-engine
 cr: CR-121
 làn: nhanh
-migration: không
+migration: hub 0096 (cột source, backfill)
 phụ thuộc: độc lập D-1..D-3 (không đụng approval-flow*.rules, approval-engine.tools, approval-engine*.usecase)
 ---
 ## Plan (ngắn)
 Spec: `docs/specs/cr121-d/spec.md` R7 (D-4). Hiện công ty phải bật feature ẩn `contracts-approval-engine` thì duyệt HĐ mới chạy theo quy trình;
 gán quy trình ở Công ty › Quy trình mà không bật ⇒ không có nút duyệt (vi phạm Luật GỐC 3). Đổi cổng engine sang "đã gán":
-nguồn duy nhất = luật định tuyến `hub.process_routing_rules` của công ty × khe `contracts.approval` (gán ở Admin ghi luật `is_default`
-trỏ def riêng + tập gán; luật điều kiện ghi thêm). "Đã gán" = có ≥ 1 luật KHÔNG phải mặc định-của-khe (`is_default` ∧ def = `process_slots.default_def_id`
-do `ensureSlotDefaults` cấp là CHƯA gán). Chưa gán ⇒ máy cũ (phần A dọn sau — máy cũ KHÔNG xoá ở lát này).
+nguồn duy nhất = luật định tuyến `hub.process_routing_rules` của công ty × khe `contracts.approval`, với DẤU TƯỜNG MINH `source` (migration hub 0096):
+'admin' = người gán/sửa (đường admin gán `upsertAssignment`, PUT luật, seed; mặc định của cột), 'auto' = `ensureSlotDefaults` tự cấp. `Đã gán` = có ≥ 1 luật `source='admin'`.
+Không so với `process_slots.default_def_id` lúc hỏi (platform đổi mẫu khe không đổi nghĩa luật đã cấp; admin gán đúng mẫu khe vẫn là gán). Chưa gán ⇒ máy cũ (phần A dọn sau — máy cũ KHÔNG xoá ở lát này).
 
 ## Làm
+- Migration hub `0096_routing_rule_source.sql` (cột `source` + CHECK + backfill; số 0095 của D-1) + schema drizzle; `ensureSlotDefaults` ghi 'auto', `upsertAssignment` đặt 'admin'.
+  Backfill: 'auto' CHỈ khi luật còn nguyên trạng lúc tự cấp (mặc định, priority 49, điều kiện rỗng, luật duy nhất, đầu luật `updated_by IS NULL`∧`version=1`, tập gán `assigned_by IS NULL`); còn lại 'admin'. Ca admin gán đúng mẫu khe chưa từng sửa không phân biệt được ⇒ 'auto' (= chưa gán như hiện tại).
 - `processes/library/slot-assigned.repo.ts` (mới): `slotAssigned` — MỘT câu SQL cố định theo index (tenant, slot), scope system; nối vào cổng
   `PackRunsPort.slotAssigned?` → `ApprovalEnginePort.slotAssigned?` (additive, optional).
 - `approval-engine.rules.ts`: bỏ `ENGINE_FEATURE_KEY`; `engineAllowedForTenant({env, assigned})`. `approval.mount.ts`: cổng đọc `slotAssigned`
@@ -56,6 +58,9 @@ Công ty được gán quy trình riêng cho khe "Duyệt hợp đồng" (luật
 engine quy trình, không cần bật tính năng nào khác; công ty chưa gán vẫn duyệt theo cách cũ; bỏ gán thì HĐ mới về cách cũ, lượt đã chạy engine chạy nốt.
 Env `CONTRACTS_APPROVAL_ENGINE` ≠ `on` vẫn tắt hết (công tắc khẩn).
 - Kịch bản: khi công ty chưa gán thì HĐ mới ở máy cũ; gán quy trình riêng thì HĐ mới ở engine dù không có feature; bỏ gán thì HĐ mới về máy cũ và lượt đã engine giữ nguyên [test: tests/acceptance/CF/engine-tenant-gate.int.test.ts » chưa gán ⇒ máy cũ, gán ⇒ engine (không có feature/entitlement nào), bỏ gán ⇒ máy cũ]
+- Kịch bản: platform đổi mẫu mặc định của khe thì công ty giữ luật tự cấp vẫn chưa gán; admin gán đúng mẫu mặc định thì đã gán, bỏ gán thì chưa gán [test: apps/hub-api/src/modules/processes/library/slot-assigned.int.test.ts » (a) tự cấp ⇒ chưa gán, platform đổi mẫu mặc định của khe ⇒ vẫn chưa gán]
+- Kịch bản: admin chủ động gán đúng mẫu mặc định [test: apps/hub-api/src/modules/processes/library/slot-assigned.int.test.ts » (b) admin chủ động gán đúng mẫu mặc định ⇒ đã gán, bỏ gán ⇒ cấp lại tự động ⇒ chưa gán]
+- Kịch bản: backfill phân loại luật tự cấp và luật admin [test: apps/hub-api/src/modules/processes/library/slot-assigned.int.test.ts » (c) backfill 0096: nguyên trạng tự cấp ⇒ 'auto', có dấu admin (người sửa đầu luật) ⇒ 'admin']
 - Kịch bản: cổng chỉ cho env on và đã gán [test: apps/hub-api/src/modules/packs/contracts/domain/approval-engine.rules.test.ts » chỉ env=on ∧ đã gán, chưa gán ⇒ máy cũ, env off/vắng tắt hết]
 
 ### MODIFIED sht/cai-dat-va-quyen.md

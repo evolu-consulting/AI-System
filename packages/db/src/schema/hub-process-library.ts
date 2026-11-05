@@ -97,6 +97,8 @@ export const processRoutingRules = hub.table("process_routing_rules", {
     .notNull(),
   defId: uuid("def_id").notNull(),
   isDefault: boolean("is_default").notNull().default(false),
+  /** CR-121 D-4 · 'admin' = người gán/sửa · 'auto' = `ensureSlotDefaults` tự cấp (hub 0096). Cổng engine duyệt HĐ: có luật 'admin'. */
+  source: text("source").$type<"admin" | "auto">().notNull().default("admin"),
 });
 
 /** dlc-step-library · bước DLC mẫu (platform_admin): Canvas khe `dlc.*` chép thành bước. DDL/CHECK/RLS: `0071_dlc_step_templates.sql`. */

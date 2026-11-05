@@ -568,6 +568,13 @@
       "when": 1804100000000,
       "tag": "0094_community_slots_optin",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1804300000000,
+      "tag": "0096_routing_rule_source",
+      "breakpoints": true
     }
   ]
 }

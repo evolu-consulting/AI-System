@@ -120,6 +120,8 @@ export const flowCoverageQuery = (slots: readonly CoverageSlot[]) => sql`
                                order by g.tenant, g.slot)
               from (select * from m where not visible order by tenant, slot limit ${GAPS_SHOWN}) g), '[]'::jsonb) as gaps`;
 
+/** Trần số tên công ty mỗi danh sách (thông điệp chỉ nêu  tên đầu; `value` giữ tối đa chừng này). */
+const NAMES_LIMIT = 100;
 const ACTIVE_RUN = sql`('running', 'waiting_review', 'waiting_answer', 'needs_decision')`;
 
 /**
@@ -148,10 +150,10 @@ export const approvalConfigQuery = () => sql`
   select
     coalesce((select jsonb_agg(n order by n) from (
       select coalesce(nullif(tn.name, ''), tn.key) as n from admin.tenants tn
-      where tn.active and tn.id in (select tenant_id from un)) x), '[]'::jsonb) as unrouted,
+      where tn.active and tn.id in (select tenant_id from un) order by 1 limit ${NAMES_LIMIT}) x), '[]'::jsonb) as unrouted,
     coalesce((select jsonb_agg(n order by n) from (
       select coalesce(nullif(tn.name, ''), tn.key) as n from admin.tenants tn
-      where tn.active and tn.id in (select tenant_id from bk)) y), '[]'::jsonb) as broken`;
+      where tn.active and tn.id in (select tenant_id from bk) order by 1 limit ${NAMES_LIMIT}) y), '[]'::jsonb) as broken`;
 
 /** Khe cần kiểm: đã đăng ký (gói đã mount), bỏ `dlc.*` (Rowan) và khe opt-in (không có mặc định ⇒ chưa gán là bình thường). */
 export const coverageSlotsOf = (

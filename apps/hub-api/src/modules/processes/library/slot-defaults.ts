@@ -38,8 +38,8 @@ export const ENSURE_SLOT_DEFAULTS_SQL = (
   h as (
     insert into hub.process_routings (tenant_id, slot) select tenant_id, slot from t on conflict do nothing),
   r as (
-    insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
-    select tenant_id, slot, 49, '{}'::jsonb, def_id, true from t on conflict do nothing returning 1)
+    insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default, source)
+    select tenant_id, slot, 49, '{}'::jsonb, def_id, true, 'auto' from t on conflict do nothing returning 1)
   select count(*)::int as n from r`;
 
 /** Khe cần cấp: đã đăng ký (gói đã mount), bỏ `dlc.*` (Rowan — không đụng) và khe opt-in (chỉ bật khi platform admin gán). */

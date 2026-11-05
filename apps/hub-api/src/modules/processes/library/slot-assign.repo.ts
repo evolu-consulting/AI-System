@@ -119,7 +119,7 @@ export async function upsertAssignment(
     values (${w.tenantId}, ${w.defId}, ${w.slot}, ${w.actorId}) on conflict do nothing`);
   const [done] = await tx.execute<{
     n: number;
-  }>(sql`with u as (update hub.process_routing_rules set def_id = ${w.defId}::uuid
+  }>(sql`with u as (update hub.process_routing_rules set def_id = ${w.defId}::uuid, source = 'admin'
       where tenant_id = ${w.tenantId} and slot = ${w.slot} and is_default returning 1),
     i as (insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
       select ${w.tenantId}::uuid, ${w.slot}, p, '{}'::jsonb, ${w.defId}::uuid, true
