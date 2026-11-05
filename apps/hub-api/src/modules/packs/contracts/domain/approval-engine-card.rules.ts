@@ -104,7 +104,10 @@ function ownerFields(st: EngineStageView | undefined, x: CardExtras) {
 /** CR-109 · bước review chưa tới (không phải bước soạn) mà `contracts-route` sẽ bỏ qua với facts hiện tại: các điều kiện không thỏa. */
 export function willSkip(s: FlowEngineStep, i: number, facts: FlowFacts): FlowCond[] | null {
   if (i === 0 || s.kind !== "review" || !s.when || stepApplies(s, facts)) return null;
-  return s.when.conds.filter((c) => !condHolds(c, facts));
+  // CR-121 D-0 · nhóm lồng ⇒ trải phẳng các điều kiện lá không thỏa (thẻ chỉ liệt kê điều kiện lá).
+  return s.when.conds.flatMap((c) =>
+    "field" in c ? (condHolds(c, facts) ? [] : [c]) : c.conds.filter((x) => !condHolds(x, facts)),
+  );
 }
 
 /** Các bước người dùng của mẫu chụp ghép với stage engine cùng khoá (thiếu stage ⇒ `pending`). */

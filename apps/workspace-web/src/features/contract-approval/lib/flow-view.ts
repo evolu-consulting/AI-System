@@ -34,11 +34,12 @@ const nameOf = (groups: readonly ContractGroup[], id: string | null): string | n
 
 const skipOf = (s: ApprovalCardStep): SkipCond[] | null =>
   s.skip_when
-    ? s.skip_when.map((c) =>
-        c.field === "deal"
-          ? { field: "deal", op: "in" as const, value: [...c.in] }
-          : { field: c.field, op: c.op, value: c.value },
-      )
+    ? s.skip_when.map((c): SkipCond => {
+        if (c.field === "deal" || c.field === "creator_department")
+          return { field: c.field, op: "in", value: [...c.in] };
+        if (c.field === "new_partner") return { field: c.field, op: "is", value: c.is };
+        return { field: c.field, op: c.op, value: c.value };
+      })
     : null;
 
 /** Hub báo `overdue` thì tin; vắng ⇒ bước đang mở qua `due_at`. */
@@ -157,10 +158,12 @@ export function withGroupLabels(v: FlowView, groups: readonly ContractGroup[]): 
   };
 }
 
-const condOf = (c: SkipCond): FlowCond =>
-  c.field === "deal"
-    ? ({ field: "deal", in: (c.value as string[]).slice() } as FlowCond)
-    : ({ field: c.field, op: c.op, value: c.value } as FlowCond);
+const condOf = (c: SkipCond): FlowCond => {
+  if (c.field === "deal" || c.field === "creator_department")
+    return { field: c.field, in: (c.value as string[]).slice() } as FlowCond;
+  if (c.field === "new_partner") return { field: "new_partner", is: c.value === true };
+  return { field: c.field, op: c.op, value: c.value } as FlowCond;
+};
 
 /** Bước review/dify của FlowView ⇒ dòng thời gian cũ (`idx` = vị trí trong danh sách bước, như `ApprovalCardStep.idx`). */
 export function rowOfFlowStep(s: FlowStepView, idx: number): TimelineRow {

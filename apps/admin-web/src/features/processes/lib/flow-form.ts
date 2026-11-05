@@ -6,6 +6,7 @@ import {
   APPROVAL_FLOW_REMIND_H,
   APPROVAL_FLOW_STEPS_MAX,
   type FlowWhen,
+  flowLeafConds,
 } from "@ai/contracts";
 
 export const FLOW_MAX_STEPS = APPROVAL_FLOW_STEPS_MAX;
@@ -184,7 +185,7 @@ function whenIssues(w: FlowWhen | null, i: number): FlowIssue[] {
   if (!w) return [];
   const out: FlowIssue[] = [];
   if (w.conds.length === 0) out.push({ index: i, field: "when", code: "whenEmpty" });
-  for (const c of w.conds)
+  for (const c of flowLeafConds(w))
     if (c.field === "total_value" && !(Number.isInteger(c.value) && c.value >= 0))
       out.push({ index: i, field: "when", code: "amountInvalid" });
   return out;

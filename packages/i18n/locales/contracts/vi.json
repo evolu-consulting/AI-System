@@ -534,6 +534,9 @@
         "willSkip": "Sẽ bỏ qua ({{reason}})",
         "skipReason": {
           "deal": "loại hợp đồng không thuộc điều kiện",
+          "department": "người tạo không thuộc phòng ban của điều kiện",
+          "newPartner": "đối tác đã có hợp đồng được duyệt",
+          "oldPartner": "đối tác chưa có hợp đồng được duyệt",
           "value": {
             "lt": "giá trị < {{n}}",
             "le": "giá trị ≤ {{n}}",

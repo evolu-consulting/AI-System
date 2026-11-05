@@ -77,7 +77,7 @@ describe("engineCardView", () => {
   });
   it("CR-109 · skip_when: bước pending dưới ngưỡng ⇒ điều kiện không thỏa; trên ngưỡng / thiếu giá trị / đã bỏ qua ⇒ null", () => {
     const under = engineCardView(input({ open: "s0" }));
-    expect(under.steps.map((s) => s.skip_when)).toEqual([null, BIG.conds]);
+    expect(under.steps.map((s) => s.skip_when) as unknown[]).toEqual([null, BIG.conds]);
     const over = engineCardView({ ...input({ open: "s0" }), facts: factsOf("buy", 5000) });
     expect(over.steps.map((s) => s.skip_when)).toEqual([null, null]);
     const noValue = engineCardView({ ...input({ open: "s0" }), facts: factsOf("buy", null) });

@@ -11,12 +11,10 @@ import {
   type ApprovalFlowIssue,
   type ApprovalFlowRule,
   type DifyWorkflow,
-  type FlowCond,
-  type FlowDeal,
   type FlowEngineStep,
   type FlowStep,
-  type FlowWhen,
 } from "./approval-flow.types";
+import { type FlowFacts, whenHolds } from "./approval-flow-cond.rules";
 import {
   DIFY_CONTRACT_INPUTS,
   type DifyParamName,
@@ -57,30 +55,8 @@ export const stageKeyOf = (i: number): string => `s${i}`;
 /** Trường output của tool `contracts-route` (= bước engine sẽ tới). */
 export const NEXT_FIELD = "next";
 
-/** Giá trị HIỆN TẠI của HĐ lúc rẽ (sau sửa tay). */
-export type FlowFacts = { deal: FlowDeal | null; total_value: unknown };
-
-// ── Điều kiện ────────────────────────────────────────────────────────────────────────────────────────────────────────
-const validTotal = (v: unknown): v is number =>
-  typeof v === "number" && Number.isFinite(v) && v >= 0;
-
-/** Một điều kiện; dữ liệu trống (loại HĐ / giá trị không hợp lệ) ⇒ ĐÚNG (an toàn: cần bước, như `needsLevel2`). */
-export function condHolds(c: FlowCond, f: FlowFacts): boolean {
-  if (c.field === "deal") return f.deal === null || c.in.includes(f.deal);
-  const v = f.total_value;
-  if (!validTotal(v)) return true;
-  if (c.op === "ge") return v >= c.value;
-  if (c.op === "gt") return v > c.value;
-  if (c.op === "le") return v <= c.value;
-  return v < c.value;
-}
-
-export function whenHolds(w: FlowWhen | null, f: FlowFacts): boolean {
-  if (w === null) return true;
-  return w.op === "and"
-    ? w.conds.every((c) => condHolds(c, f))
-    : w.conds.some((c) => condHolds(c, f));
-}
+// CR-121 D-0 · điều kiện bước tách sang `approval-flow-cond.rules.ts` (giữ đường import cũ).
+export { condHasData, condHolds, type FlowFacts, whenHolds } from "./approval-flow-cond.rules";
 
 /** Bước Dify luôn chạy (không điều kiện); bước review theo `when`. Bước Ký số không là bước engine (lọc bằng `engineSteps`). */
 export const stepApplies = (s: FlowStep, f: FlowFacts): boolean =>

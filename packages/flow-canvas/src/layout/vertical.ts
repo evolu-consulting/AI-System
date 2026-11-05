@@ -3,7 +3,7 @@
 // (Bắt đầu → từng bước theo thứ tự → "Ghi Đã duyệt"). Bố cục dọc, khoảng cách cố định, không dagre.
 // Không import runtime của @xyflow (chỉ kiểu) để test bun chạy nhanh, không kéo thư viện vào chunk chính.
 
-import type { FlowCond, FlowWhen } from "@ai/contracts";
+import type { FlowCond, FlowCondGroup, FlowWhen } from "@ai/contracts";
 import type { Edge, Node } from "@xyflow/react";
 import { stepKindSpec } from "../registry";
 
@@ -94,6 +94,10 @@ export type CondLabels = {
   skip: string;
   /** Màu chữ/nền nhãn trên cạnh (CSS var của host); vắng ⇒ token shadcn. */
   edge?: EdgeLabelStyle;
+  /** CR-121 D-0 · nhãn trường mới (host i18n; vắng ⇒ mã trường) + có/không của trường boolean. */
+  fields?: Partial<Record<"creator_department" | "new_partner", string>>;
+  yes?: string;
+  no?: string;
 };
 
 export type EdgeLabelStyle = { fill: string; bgFill: string; bgStroke: string };
@@ -105,16 +109,22 @@ export const DEFAULT_EDGE_LABEL: EdgeLabelStyle = {
 
 const OPS = { ge: "≥", gt: ">", le: "≤", lt: "<" } as const;
 
-function condText(c: FlowCond, l: CondLabels): string {
+function condText(c: FlowCond | FlowCondGroup, l: CondLabels): string {
+  if (!("field" in c)) return `(${groupText(c, l)})`;
   if (c.field === "deal") return `${l.deal}: ${c.in.map((d) => l.dealNames[d]).join(", ")}`;
+  if (c.field === "creator_department")
+    return `${l.fields?.creator_department ?? c.field}: ${c.in.join(", ")}`;
+  if (c.field === "new_partner")
+    return `${l.fields?.new_partner ?? c.field}: ${(c.is ? l.yes : l.no) ?? String(c.is)}`;
   return `${l.value} ${OPS[c.op]} ${l.number(c.value)}`;
 }
+const groupText = (w: FlowWhen | FlowCondGroup, l: CondLabels): string =>
+  w.conds.map((c) => condText(c, l)).join(` ${w.op === "or" ? l.or : l.and} `);
 
 /** Điều kiện rỗng / không có ⇒ null. */
 export function conditionLabel(when: FlowWhen | null, l: CondLabels): string | null {
   if (!when || when.conds.length === 0) return null;
-  const sep = ` ${when.op === "or" ? l.or : l.and} `;
-  return when.conds.map((c) => condText(c, l)).join(sep);
+  return groupText(when, l);
 }
 
 function stepHeight(d: FlowNodeData): number {

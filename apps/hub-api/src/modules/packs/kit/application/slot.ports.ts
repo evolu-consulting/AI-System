@@ -5,6 +5,33 @@
 /** Vi phạm của `slot_body` (path theo body, rule = mã luật của khe). */
 export type SlotIssue = { path: string; rule: string };
 
+/** CR-121 D-0 · kiểu trường nghiệp vụ: số / một trong danh sách / phòng ban (tính cả phòng con) / có-không. */
+export type SlotFieldType = "number" | "enum" | "department" | "boolean";
+/** Toán tử điều kiện: so sánh số (`ge|gt|le|lt`), thuộc danh sách (`in`), bằng có/không (`is`). */
+export type SlotFieldOp = "ge" | "gt" | "le" | "lt" | "in" | "is";
+/**
+ * CR-121 D-0 · trường nghiệp vụ app cho phép dùng trong điều kiện bước (trình sửa chỉ hiện các trường này). `key` = `field` của
+ * điều kiện trong `slot_body`; nhãn tiếng Việt theo ngôn ngữ nghiệp vụ; `options` chỉ cho `enum` (giá trị + nhãn).
+ */
+export type SlotField = {
+  key: string;
+  label: string;
+  type: SlotFieldType;
+  ops: readonly SlotFieldOp[];
+  options?: readonly { value: string; label: string }[];
+};
+/** CR-121 D-0 · loại node (bước) khe hỗ trợ — bằng đúng các tính năng/tool app đã có; trình sửa chỉ cho thêm các node này. */
+export type SlotNodeKind = "review" | "dify" | "esign" | "notify" | "wait_until";
+export type SlotNode = {
+  kind: SlotNodeKind;
+  label: string;
+  /** Khoá icon của shell (admin-web tự ánh xạ sang icon). */
+  icon: string;
+};
+/** Danh mục của khe (spec không khai ⇒ rỗng: khe không có điều kiện / node tuỳ biến). */
+export const slotFields = (s: Pick<SlotSpec, "fields">): readonly SlotField[] => s.fields ?? [];
+export const slotNodes = (s: Pick<SlotSpec, "nodes">): readonly SlotNode[] => s.nodes ?? [];
+
 export type SlotSpec = {
   /** `<gói>.<việc>` — khớp CHECK `process_slots_slot_ck` (0068). */
   key: string;
@@ -14,6 +41,10 @@ export type SlotSpec = {
   /** CR-120 · true ⇒ khe CHỈ BẬT khi platform admin gán (opt-in): hub KHÔNG cấp luật mặc định (`ensureSlotDefaults`) và ops
    *  `flow_coverage` không đòi quy trình hiển thị. Vd 3 khe Community (duyệt bài tự bật cho mọi công ty là sai). */
   optIn?: boolean;
+  /** CR-121 D-0 · trường nghiệp vụ dùng được trong điều kiện; vắng ⇒ rỗng (`slotFields`). */
+  fields?: readonly SlotField[];
+  /** CR-121 D-0 · danh mục node khe hỗ trợ; vắng ⇒ rỗng (`slotNodes`). */
+  nodes?: readonly SlotNode[];
   /** Khoá input run bắt buộc (vd `contract-id`). */
   requiredInputs: readonly string[];
   /** Tool hệ thống mà def của khe phải có (nút khoá trên canvas). */

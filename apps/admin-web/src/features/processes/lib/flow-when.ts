@@ -1,6 +1,6 @@
 // CR-105 · L3: điều kiện áp dụng của một bước (chuyển từ contracts-web `flow-path.ts`, phần `whenParts`/`buildWhen`):
 // loại HĐ (nhiều) AND/OR giá trị (≥ > ≤ <) — đúng dạng `stage.slot.when` (FlowWhen).
-import type { FlowCond, FlowWhen } from "@ai/contracts";
+import { type FlowCond, type FlowWhen, flowLeafConds } from "@ai/contracts";
 import type { DealKind } from "../library-api";
 
 export type ValueOp = "ge" | "gt" | "le" | "lt";
@@ -17,8 +17,9 @@ export function whenParts(w: FlowWhen): {
   deal: DealKind[];
   value: { op: ValueOp; value: number } | null;
 } {
-  const d = w.conds.find((c) => c.field === "deal");
-  const v = w.conds.find((c) => c.field === "total_value");
+  const leaves = flowLeafConds(w); // CR-121 D-0 · nhóm lồng: trình sửa cũ chỉ đọc điều kiện lá (D-3 làm trình dựng mới)
+  const d = leaves.find((c) => c.field === "deal");
+  const v = leaves.find((c) => c.field === "total_value");
   return {
     deal: d?.field === "deal" ? ([...d.in] as DealKind[]) : [],
     value: v?.field === "total_value" ? { op: v.op, value: v.value } : null,

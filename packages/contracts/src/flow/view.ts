@@ -57,8 +57,9 @@ export type FlowAssignee = z.infer<typeof FlowAssigneeSchema>;
 /** Điều kiện "bỏ qua" có cấu trúc (không biểu thức). */
 export const FlowSkipCondSchema = z.strictObject({
   field: Key,
-  op: z.enum(["ge", "gt", "le", "lt", "in"]),
-  value: z.union([z.number(), z.array(z.string().max(64)).max(20)]),
+  /** CR-121 D-0 · `is` + giá trị có/không cho trường boolean (vd đối tác mới). */
+  op: z.enum(["ge", "gt", "le", "lt", "in", "is"]),
+  value: z.union([z.number(), z.boolean(), z.array(z.string().max(64)).max(20)]),
 });
 
 const StepBase = {

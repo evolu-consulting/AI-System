@@ -131,5 +131,8 @@ const NEGATE = { ge: "lt", gt: "le", le: "gt", lt: "ge" } as const;
 /** CR-109 · điều kiện không thỏa ⇒ khoá i18n + tham số cho nhãn "Sẽ bỏ qua (…)": giá trị ⇒ phép so ngược lại (≥ 500tr không thỏa ⇒ "< 500tr"). */
 export function skipReason(c: FlowCond): { key: string; vars: { n: number } } {
   if (c.field === "deal") return { key: "deal", vars: { n: c.in.length } };
+  // CR-121 D-0 · trường mới: điều kiện không thỏa ⇒ câu lý do theo trường.
+  if (c.field === "creator_department") return { key: "department", vars: { n: c.in.length } };
+  if (c.field === "new_partner") return { key: c.is ? "newPartner" : "oldPartner", vars: { n: 0 } };
   return { key: `value.${NEGATE[c.op]}`, vars: { n: c.value } };
 }

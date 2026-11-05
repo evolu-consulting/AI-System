@@ -35,11 +35,12 @@ export const flowStateOf = (step: string | null | undefined): FlowState =>
 
 const skipOf = (s: CardStep): SkipCond[] | null =>
   s.skip_when
-    ? s.skip_when.map((c) =>
-        c.field === "deal"
-          ? { field: "deal", op: "in" as const, value: [...c.in] }
-          : { field: c.field, op: c.op, value: c.value },
-      )
+    ? s.skip_when.map((c): SkipCond => {
+        if (c.field === "deal" || c.field === "creator_department")
+          return { field: c.field, op: "in", value: [...c.in] };
+        if (c.field === "new_partner") return { field: c.field, op: "is", value: c.is };
+        return { field: c.field, op: c.op, value: c.value };
+      })
     : null;
 
 function stepOf(s: CardStep): FlowStepView {

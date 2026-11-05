@@ -1,7 +1,12 @@
 // CR-105 L4 · quy trình duyệt ĐANG DÙNG (chỉ đọc): `GET /pack/contracts/approval-flow` = `ApprovalFlowCurrent`
 // `{def_id, name, rel_version, is_default, steps:[{name, department_name, kind, when?}]}` (@ai/contracts). `when` dùng cho
 // "Xem trước đường đi" (luật như server: giá trị trống ⇒ điều kiện đúng).
-import { ApprovalFlowCurrentSchema, type FlowCond, type FlowWhen } from "@ai/contracts";
+import {
+  ApprovalFlowCurrentSchema,
+  type FlowCond,
+  type FlowCondGroup,
+  type FlowWhen,
+} from "@ai/contracts";
 
 export type DealKind = "buy" | "sell" | "referral";
 export type CurrentStep = {
@@ -84,16 +89,22 @@ export function ruleFacts(flow: CurrentFlow): {
 function cmp(op: "ge" | "gt" | "le" | "lt", v: number, t: number): boolean {
   return op === "ge" ? v >= t : op === "gt" ? v > t : op === "le" ? v <= t : v < t;
 }
-function hit(c: FlowCond, f: Facts): boolean {
+function hit(c: FlowCond | FlowCondGroup, f: Facts): boolean {
+  if (!("field" in c)) return holds(c, f);
   if (c.field === "deal") return c.in.length === 0 || c.in.includes(f.deal);
+  // CR-121 D-0 · xem trước chỉ có loại + giá trị: trường khác chưa có dữ liệu ⇒ bước vẫn chạy.
+  if (c.field !== "total_value") return true;
   if (f.value === null || !Number.isFinite(f.value)) return true;
   return cmp(c.op, f.value, c.value);
+}
+function holds(w: FlowWhen | FlowCondGroup, f: Facts): boolean {
+  const hits = w.conds.map((c) => hit(c, f));
+  return w.op === "or" ? hits.some(Boolean) : hits.every(Boolean);
 }
 const applies = (s: CurrentStep, f: Facts): boolean => {
   const w = s.when;
   if (!w || w.conds.length === 0) return true;
-  const hits = w.conds.map((c) => hit(c, f));
-  return w.op === "or" ? hits.some(Boolean) : hits.every(Boolean);
+  return holds(w, f);
 };
 
 /** Bước nào chạy / bị bỏ qua với `facts` (bước đầu luôn chạy). */

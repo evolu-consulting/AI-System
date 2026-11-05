@@ -41,10 +41,15 @@ export type DifyWorkflow = { key: string; name: string; params: readonly DifyPar
 export type ApprovalFlowIssue = { path: string; rule: ApprovalFlowRule };
 
 export type FlowDeal = "buy" | "sell" | "referral";
+/** CR-121 D-0 · `creator_department` theo MÃ Group (tính cả phòng con); `new_partner` = chưa có HĐ được duyệt với đối tác. */
 export type FlowCond =
   | { field: "deal"; in: FlowDeal[] }
-  | { field: "total_value"; op: "ge" | "gt" | "le" | "lt"; value: number };
-export type FlowWhen = { op: "and" | "or"; conds: FlowCond[] };
+  | { field: "total_value"; op: "ge" | "gt" | "le" | "lt"; value: number }
+  | { field: "creator_department"; in: string[] }
+  | { field: "new_partner"; is: boolean };
+/** Nhóm điều kiện lồng một cấp (không có `field`). */
+export type FlowCondGroup = { op: "and" | "or"; conds: FlowCond[] };
+export type FlowWhen = { op: "and" | "or"; conds: (FlowCond | FlowCondGroup)[] };
 export type FlowReviewStep = {
   kind: "review";
   key: string;

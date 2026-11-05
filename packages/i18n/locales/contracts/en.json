@@ -534,6 +534,9 @@
         "willSkip": "Will be skipped ({{reason}})",
         "skipReason": {
           "deal": "contract type does not match the condition",
+          "department": "creator is not in the condition's departments",
+          "newPartner": "partner already has an approved contract",
+          "oldPartner": "partner has no approved contract yet",
           "value": {
             "lt": "value < {{n}}",
             "le": "value ≤ {{n}}",

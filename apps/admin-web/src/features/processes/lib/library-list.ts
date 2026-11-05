@@ -94,10 +94,17 @@ export function moneyWords(v: number): string {
 /** Điều kiện của bước bằng lời: "Chỉ khi giá trị > 500 tr", "Chỉ khi loại Mua hoặc Bán và giá trị ≥ 50 tr"; không điều kiện ⇒ null. */
 export function describeWhen(when: FlowWhen | null | undefined): string | null {
   if (!when || when.conds.length === 0) return null;
-  const parts = when.conds.map((c) =>
-    c.field === "deal"
-      ? `loại ${c.in.map((d) => DEAL_WORD[d] ?? d).join(" hoặc ")}`
-      : `giá trị ${OP_WORD[c.op] ?? c.op} ${moneyWords(c.value)}`,
-  );
-  return `Chỉ khi ${parts.join(when.op === "or" ? " hoặc " : " và ")}`;
+  return `Chỉ khi ${joinWords(when.conds.map(itemWords), when.op)}`;
+}
+
+const joinWords = (parts: string[], op: "and" | "or") =>
+  parts.join(op === "or" ? " hoặc " : " và ");
+type WhenItem = FlowWhen["conds"][number];
+/** CR-121 D-0 · nhóm lồng ⇒ trong ngoặc; trường mới (phòng ban người tạo theo mã, đối tác mới). */
+function itemWords(c: WhenItem): string {
+  if (!("field" in c)) return `(${joinWords(c.conds.map(itemWords), c.op)})`;
+  if (c.field === "deal") return `loại ${c.in.map((d) => DEAL_WORD[d] ?? d).join(" hoặc ")}`;
+  if (c.field === "creator_department") return `phòng ban người tạo ${c.in.join(" hoặc ")}`;
+  if (c.field === "new_partner") return c.is ? "đối tác mới" : "đối tác cũ";
+  return `giá trị ${OP_WORD[c.op] ?? c.op} ${moneyWords(c.value)}`;
 }

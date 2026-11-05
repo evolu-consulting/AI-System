@@ -39,6 +39,7 @@ import {
   slotGroupKeys,
   validateSlotBody,
 } from "./domain/approval-slot.rules";
+import { APPROVAL_SLOT_FIELDS, APPROVAL_SLOT_NODES } from "./domain/approval-slot-catalog.rules";
 import { slotBodyFromStages } from "./domain/approval-slot-default.rules";
 
 /** esign-flow · bước Ký số sau "Đã duyệt" (tool finalize; vắng ⇒ không tự gửi ký); người cụ thể (duyệt/ký) thuộc tenant + quyền
@@ -124,6 +125,8 @@ export const approvalSlotSpec: SlotSpec = {
   key: APPROVAL_SLOT,
   label: APPROVAL_SLOT_LABEL,
   packKey: "contracts",
+  fields: APPROVAL_SLOT_FIELDS,
+  nodes: APPROVAL_SLOT_NODES,
   requiredInputs: ["contract-id"],
   systemTools: [FLOW_TOOL_KEYS.route, FLOW_TOOL_KEYS.finalize],
   validate: validateSlotBody,

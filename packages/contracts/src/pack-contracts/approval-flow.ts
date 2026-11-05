@@ -6,10 +6,14 @@
 import { z } from "zod";
 import { ESCALATE_AFTER_H, ProcessKeySchema, REMIND_EVERY_H } from "../chat/processes";
 import { INPUT_NAME_RE, INPUT_SCHEMA_MAX, IsoDateTime, UuidSchema } from "../common";
+import { GROUP_KEY_RE } from "../groups";
 import { CONTRACT_DEALS } from "./milestones";
 
-/** Tối đa 8 bước người dùng thấy (engine ≤ 10 stage: + `route` + `finalize`). */
+/** Tối đa 8 bước người dùng thấy (engine ≤ 10 stage: + `route` + `finalize`). CR-121 D-1 nâng 20 / engine 22 cùng migration
+ *  nới CHECK hub (`process_defs_stages_ck`, `process_runs_step_ck`, `back_to_step`, `from_step`) — bất biến ở dưới giữ hai trần khớp. */
 export const APPROVAL_FLOW_STEPS_MAX = 8;
+/** Stage hệ thống quy trình duyệt thêm ngoài bước người dùng: `route` + `finalize` (Ký số không là stage engine). */
+export const APPROVAL_FLOW_SYSTEM_STAGES = 2;
 export const APPROVAL_FLOW_CONDS_MAX = 6;
 export const APPROVAL_FLOW_DUE_H = ESCALATE_AFTER_H;
 export const APPROVAL_FLOW_REMIND_H = REMIND_EVERY_H;
@@ -78,6 +82,23 @@ export function flowDealOptionMap(
 const StepKeySchema = z.string().regex(/^[a-z0-9-]{1,24}$/);
 const StepNameSchema = z.string().trim().min(1).max(80);
 
+/**
+ * CR-121 D-0 · trường nghiệp vụ dùng trong điều kiện (khai ở `SlotSpec.fields` của khe `contracts.approval`). `deal` +
+ * `total_value` giữ nguyên hình/nghĩa cũ (def/run prod không đổi). `creator_department` = phòng ban người tạo HĐ (tính cả phòng
+ * con) theo MÃ Group (def thư viện dùng chung nhiều tenant); `new_partner` = đối tác chưa có HĐ nào được duyệt. Xét giá trị HIỆN
+ * TẠI mỗi lần rẽ; dữ liệu trống ⇒ điều kiện ĐÚNG (bước vẫn chạy, xem trước ghi "chưa có dữ liệu").
+ */
+export const FLOW_COND_FIELDS = [
+  "deal",
+  "total_value",
+  "creator_department",
+  "new_partner",
+] as const;
+export type FlowCondField = (typeof FLOW_COND_FIELDS)[number];
+export const FLOW_NUM_OPS = ["ge", "gt", "le", "lt"] as const;
+/** Số phòng ban tối đa trong một điều kiện `creator_department`. */
+export const APPROVAL_FLOW_COND_GROUPS_MAX = 20;
+
 export const FlowCondSchema = z.discriminatedUnion("field", [
   z.strictObject({
     field: z.literal("deal"),
@@ -85,16 +106,35 @@ export const FlowCondSchema = z.discriminatedUnion("field", [
   }),
   z.strictObject({
     field: z.literal("total_value"),
-    op: z.enum(["ge", "gt", "le", "lt"]),
+    op: z.enum(FLOW_NUM_OPS),
     value: z.number().int().min(0).max(APPROVAL_FLOW_VALUE_MAX),
   }),
+  z.strictObject({
+    field: z.literal("creator_department"),
+    in: z.array(z.string().regex(GROUP_KEY_RE)).min(1).max(APPROVAL_FLOW_COND_GROUPS_MAX),
+  }),
+  z.strictObject({ field: z.literal("new_partner"), is: z.boolean() }),
 ]);
 export type FlowCond = z.infer<typeof FlowCondSchema>;
-export const FlowWhenSchema = z.strictObject({
+/** CR-121 D-0 · nhóm điều kiện lồng MỘT cấp (phần tử không có `field`; bên trong chỉ điều kiện lá). */
+export const FlowCondGroupSchema = z.strictObject({
   op: z.enum(["and", "or"]),
   conds: z.array(FlowCondSchema).min(1).max(APPROVAL_FLOW_CONDS_MAX),
 });
+export type FlowCondGroup = z.infer<typeof FlowCondGroupSchema>;
+export const FlowWhenSchema = z.strictObject({
+  op: z.enum(["and", "or"]),
+  conds: z
+    .array(z.union([FlowCondSchema, FlowCondGroupSchema]))
+    .min(1)
+    .max(APPROVAL_FLOW_CONDS_MAX),
+});
 export type FlowWhen = z.infer<typeof FlowWhenSchema>;
+/** Phần tử của `FlowWhen.conds` là nhóm lồng (không phải điều kiện lá). */
+export const isFlowCondGroup = (c: FlowCond | FlowCondGroup): c is FlowCondGroup => !("field" in c);
+/** Mọi điều kiện lá của `when` (trải phẳng nhóm lồng) — cho chỗ chỉ hiển thị/kiểm từng điều kiện. */
+export const flowLeafConds = (w: FlowWhen): FlowCond[] =>
+  w.conds.flatMap((c) => (isFlowCondGroup(c) ? c.conds : [c]));
 
 export const FlowReviewStepSchema = z.strictObject({
   kind: z.literal("review"),
