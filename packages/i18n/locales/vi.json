@@ -558,8 +558,9 @@
   },
   "tenants": {
     "slots": {
-      "title": "Quy trình duyệt hợp đồng",
-      "desc": "Quy trình Sổ Hợp Tác công ty này đang chạy. Chỉ quản trị nền tảng gán; chưa gán thì chạy quy trình mặc định.",
+      "title": "Quy trình",
+      "desc": "Quy trình công ty dùng cho app này: quy trình đã gán, luật chọn theo phòng ban và quy trình mặc định. Chỉ quản trị nền tảng gán.",
+      "engine": "Duyệt theo quy trình",
       "col": {
         "slot": "Dùng cho",
         "process": "Quy trình",

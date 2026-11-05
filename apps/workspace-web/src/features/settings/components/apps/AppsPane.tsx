@@ -1,9 +1,36 @@
 // CR-118 §6 · §11.2 · Cài đặt › "Ứng dụng & quy trình" (quản trị công ty + chủ gói): mức, add-on, mỗi khe quy trình đã gán + luật chọn
 // quy trình theo phòng ban (ngoại lệ DUY NHẤT cho "chỉ xem": tenant admin sửa luật, không gán/sửa nội dung quy trình).
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "~/components/shared/toast";
 import { useCapabilities } from "../../hooks/use-apps-settings";
+import { flowEditorUrl } from "../../lib/editor-link";
 import { paneSlots } from "../../lib/app-slots";
 import { SlotCard } from "./SlotCard";
+
+/** CR-120 · một trang Quy trình duy nhất ở ai-admin liệt kê MỌI quy trình công ty có; Cài đặt chỉ giữ bộ sửa luật chọn. */
+function AllFlowsLink() {
+  const { t } = useTranslation();
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    setBusy(true);
+    const url = await flowEditorUrl();
+    setBusy(false);
+    if (url) window.location.assign(url);
+    else toast(t("contracts.settings.apps.allFlowsFail"), "late");
+  };
+  return (
+    <button
+      type="button"
+      data-testid="apps-all-flows"
+      disabled={busy}
+      className="mb-4 text-label text-act underline"
+      onClick={() => void go()}
+    >
+      {t("contracts.settings.apps.allFlows")}
+    </button>
+  );
+}
 
 export default function AppsPane({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation();
@@ -12,7 +39,8 @@ export default function AppsPane({ tenantId }: { tenantId: string }) {
   return (
     <div data-testid="apps-pane">
       <h2 className="mb-1 text-lg font-semibold">{a("title")}</h2>
-      <p className="mb-4 text-dim">{a("lead")}</p>
+      <p className="mb-2 text-dim">{a("lead")}</p>
+      <AllFlowsLink />
       {q.isPending && <p className="text-dim">{t("contracts.common.loading")}</p>}
       {q.isError && (
         <p role="alert" className="text-late">

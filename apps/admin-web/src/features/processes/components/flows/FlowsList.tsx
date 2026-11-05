@@ -1,4 +1,4 @@
-﻿// CR-120 · "Một trang Quy trình" (tenant_admin / platform đang xem một công ty): mọi quy trình công ty có, nhóm theo app, lọc bằng chip
+// CR-120 · "Một trang Quy trình" (tenant_admin / platform đang xem một công ty): mọi quy trình công ty có, nhóm theo app, lọc bằng chip
 // (app · nguồn · trạng thái). Náp lười từ ProcessesPage (không vào chunk đầu).
 import { useTranslation } from "react-i18next";
 import { FilterChips } from "@/components/shared/form/FilterChips";
@@ -59,7 +59,7 @@ export default function FlowsList(p: {
   flows: FlowsListData;
   actions: RowActions;
   canRun: boolean;
-  canEditRules: boolean;
+  isPlatform: boolean;
 }) {
   const { t } = useTranslation();
   const tr = useTr();
@@ -96,7 +96,7 @@ export default function FlowsList(p: {
                 deptName={f.deptName}
                 actions={p.actions}
                 canRun={p.canRun}
-                canEditRules={p.canEditRules}
+                isPlatform={p.isPlatform}
               />
             ))}
           </ul>

@@ -10,10 +10,10 @@ import { Switch } from "@/components/ui/switch";
 import type { FlowRow } from "../../lib/flows-view";
 import { RowDeleteButton } from "../library/RowDeleteButton";
 import type { RowActions } from "../ProcessesTable";
-import { EditRulesLink } from "./EditRulesLink";
 import { FlowWhenText } from "./FlowWhenText";
 
 const FlowDiagram = lazy(() => import("./FlowDiagram"));
+const RulesPanel = lazy(() => import("./RulesPanel"));
 const k = (s: string) => `process.admin.flows.${s}`;
 
 export type FlowItemProps = {
@@ -22,21 +22,32 @@ export type FlowItemProps = {
   deptName: (id: string) => string;
   actions: RowActions;
   canRun: boolean;
-  /** tenant_admin sửa luật chọn ở app Sổ Hợp Tác (platform sửa ở trang công ty). */
-  canEditRules: boolean;
+  /** Platform đang xem một công ty (tham số `tenant_id` khi tra phòng ban). */
+  isPlatform: boolean;
 };
 
 function PlatformActions({
   row,
   tid,
-  canEditRules,
-}: Pick<FlowItemProps, "row" | "tid" | "canEditRules">) {
+  isPlatform,
+}: Pick<FlowItemProps, "row" | "tid" | "isPlatform">) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [rules, setRules] = useState(false);
   return (
     <>
       <span className="flex items-center justify-end gap-1">
-        {canEditRules && row.slot === "contracts.approval" ? <EditRulesLink /> : null}
+        {row.slot ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-expanded={rules}
+            data-testid={`flows-edit-rules-${row.id}`}
+            onClick={() => setRules(!rules)}
+          >
+            {t(k("editRules"))}
+          </Button>
+        ) : null}
         {row.outside ? null : (
           <Button
             size="sm"
@@ -49,17 +60,21 @@ function PlatformActions({
           </Button>
         )}
       </span>
-      {open && row.slot ? (
-        <div className="col-span-full">
-          <Suspense fallback={null}>
+      <Suspense fallback={null}>
+        {open && row.slot ? (
+          <div className="col-span-full">
             <FlowDiagram tid={tid} slot={row.slot} defId={row.id} />
-          </Suspense>
-        </div>
-      ) : null}
+          </div>
+        ) : null}
+        {rules && row.slot ? (
+          <div className="col-span-full">
+            <RulesPanel tid={tid} slot={row.slot} isPlatform={isPlatform} />
+          </div>
+        ) : null}
+      </Suspense>
     </>
   );
 }
-
 function CompanyActions({
   row,
   actions,
@@ -134,7 +149,7 @@ export function FlowItem(p: FlowItemProps) {
         <FlowWhenText row={row} deptName={p.deptName} />
       </div>
       {row.source === "platform" ? (
-        <PlatformActions row={row} tid={p.tid} canEditRules={p.canEditRules} />
+        <PlatformActions row={row} tid={p.tid} isPlatform={p.isPlatform} />
       ) : (
         <CompanyActions row={row} actions={p.actions} canRun={p.canRun} />
       )}

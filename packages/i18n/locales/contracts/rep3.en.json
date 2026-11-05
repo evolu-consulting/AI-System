@@ -81,6 +81,8 @@
       "apps": {
         "title": "Apps & processes",
         "lead": "Processes are assigned to your company by the platform admin. You can only edit the department routing rules, not the process content.",
+        "allFlows": "View all processes",
+        "allFlowsFail": "Could not open the Processes page. Please try again.",
         "levelLabel": "Level",
         "level": { "off": "Off", "read": "Read", "write": "Read & write", "admin": "Admin" },
         "noAddons": "No add-ons.",

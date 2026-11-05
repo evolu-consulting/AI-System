@@ -558,8 +558,9 @@
   },
   "tenants": {
     "slots": {
-      "title": "Contract approval process",
-      "desc": "The Contracts app process this company is running. Only platform admins assign; unassigned runs the default process.",
+      "title": "Processes",
+      "desc": "Processes this company uses for the app: assigned processes, department selection rules and the default. Only platform admins assign.",
+      "engine": "Approve by process",
       "col": {
         "slot": "Used for",
         "process": "Process",

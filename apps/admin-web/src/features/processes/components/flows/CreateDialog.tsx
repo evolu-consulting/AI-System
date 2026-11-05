@@ -47,7 +47,14 @@ export default function CreateDialog(p: {
                 data-testid={`flows-template-${tpl.key}`}
               >
                 <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-label font-medium">{tpl.name}</span>
+                  <Link
+                    to="/processes/$processId"
+                    params={{ processId: tpl.id }}
+                    onClick={() => p.onOpenChange(false)}
+                    className="truncate text-label font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    {tpl.name}
+                  </Link>
                   <span className="font-mono text-caption text-muted-foreground">!{tpl.key}</span>
                 </span>
                 <Button size="sm" variant="outline" onClick={() => p.actions.onCopy(tpl)}>

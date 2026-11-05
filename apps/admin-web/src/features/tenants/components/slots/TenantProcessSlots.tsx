@@ -1,105 +1,53 @@
-// CR-105 · L3: khối "Gán quy trình" ở tab Gói của trang tenant — mỗi khe app đang chạy quy trình nào (hoặc mặc định) + đổi gán.
-// 1 tenant × 1 khe = đúng 1 quy trình: gán mới thay bản cũ; "Về mặc định" bỏ gán. Chỉ platform_admin.
-
-import { useState } from "react";
+// CR-120 · khối "Quy trình" DUY NHẤT trong thẻ app của công ty (trang công ty + ngăn "Công ty" của trang app): công tắc "Duyệt theo quy trình"
+// (feature `contracts-approval-engine`) + mỗi khe: quy trình đã gán, luật chọn theo phòng ban, "Mặc định" là một dòng. Bỏ ô chọn/Gán/Về mặc
+// định kiểu cũ (API gán cũ còn một bản phát hành, do lát cr120-single-source biến thành bản dẫn xuất). Chỉ platform_admin.
 import { useTranslation } from "react-i18next";
-import { StatusBadge } from "@/components/shared/StatusBadge";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { slotsOfApp } from "@/features/apps/lib/app-config";
-import type { TenantSlotInfo } from "@/features/processes/library-api";
 import { useTenantSlotBlock } from "../../hooks/use-tenant-slots";
+import type { EngineToggle } from "../../lib/engine-toggle";
 import { SlotRouting } from "./SlotRouting";
 
-type Block = ReturnType<typeof useTenantSlotBlock>;
-
-function SlotRow({ row, b, tenantId }: { row: TenantSlotInfo; b: Block; tenantId: string }) {
-  const { t } = useTranslation();
-  const [choice, setChoice] = useState("");
-  const options = b.candidates(row.slot);
-  const busy = b.pending === row.slot;
-  const picked = options.find((o) => o.id === choice);
-  return (
-    <li
-      className="space-y-2 rounded-md border border-border p-3"
-      data-testid={`tenant-slot-${row.slot}`}
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-label font-medium">{row.label}</span>
-        <span className="text-body">
-          {row.def_name ?? "—"}
-          {row.rel_version != null ? ` · v${row.rel_version}` : ""}
-        </span>
-        <StatusBadge tone={row.is_default ? "off" : "ok"}>
-          {row.is_default ? t("tenants.slots.isDefault") : t("tenants.slots.assigned")}
-        </StatusBadge>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Select value={choice} onValueChange={setChoice} disabled={busy}>
-          <SelectTrigger className="w-72" aria-label={t("tenants.slots.pick")}>
-            <SelectValue placeholder={t("tenants.slots.pickPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((o) => (
-              <SelectItem key={o.id} value={o.id}>
-                {o.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          size="sm"
-          disabled={busy || !picked}
-          onClick={() => picked && void b.assign(row.slot, picked.id, picked.label)}
-        >
-          {t("tenants.slots.assign")}
-        </Button>
-        {row.is_default ? null : (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={busy}
-            onClick={() => void b.unassign(row.slot)}
-          >
-            {t("tenants.slots.unassign")}
-          </Button>
-        )}
-      </div>
-      <SlotRouting tenantId={tenantId} slot={row.slot} candidates={options} />
-    </li>
-  );
-}
-
 /**
- * CR-118: khối nằm TRONG thẻ app — chỉ hiện các khe của `app` (tiền tố `<app>.`), không có khe ⇒ không hiện gì. Cả trang công ty và
- * ngăn "Công ty" của trang app dùng chung đúng component + hook này (một đường gán).
+ * Chỉ hiện các khe của `app` (tiền tố `<app>.`); không có khe và không có công tắc ⇒ không hiện gì. Cả trang công ty và ngăn "Công ty" của
+ * trang app dùng chung đúng component + hook này (một đường gán).
  */
 export function TenantProcessSlots({
   tenant,
   app,
+  engine = null,
 }: {
   tenant: { id: string; name: string };
   app: string;
+  engine?: EngineToggle | null;
 }) {
   const { t } = useTranslation();
   const b = useTenantSlotBlock(tenant);
-  if (b.hidden) return null;
-  const rows = slotsOfApp(b.slots.data ?? [], app);
-  if (rows.length === 0 && !b.slots.isError) return null;
+  const rows = b.hidden ? [] : slotsOfApp(b.slots.data ?? [], app);
+  if (rows.length === 0 && !b.slots.isError && !engine) return null;
   return (
     <section
       className="space-y-3 border-t border-border pt-3"
       aria-label={t("tenants.slots.title")}
+      data-testid={`tenant-processes-${app}`}
     >
-      <div>
-        <h4 className="text-label font-semibold">{t("tenants.slots.title")}</h4>
-        <p className="text-caption text-muted-foreground">{t("tenants.slots.desc")}</p>
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h4 className="text-label font-semibold">{t("tenants.slots.title")}</h4>
+          <p className="text-caption text-muted-foreground">{t("tenants.slots.desc")}</p>
+        </div>
+        {engine ? (
+          <span className="flex items-center gap-2 text-body font-medium">
+            {t("tenants.slots.engine")}
+            <Switch
+              data-testid="tenant-engine-switch"
+              checked={engine.on}
+              disabled={engine.disabled}
+              aria-label={t("tenants.slots.engine")}
+              onCheckedChange={engine.onChange}
+            />
+          </span>
+        ) : null}
       </div>
       {b.slots.isError ? (
         <p role="alert" className="text-body text-destructive">
@@ -108,7 +56,14 @@ export function TenantProcessSlots({
       ) : (
         <ul className="space-y-2">
           {rows.map((r) => (
-            <SlotRow key={r.slot} row={r} b={b} tenantId={tenant.id} />
+            <li
+              key={r.slot}
+              className="space-y-2 rounded-md border border-border p-3"
+              data-testid={`tenant-slot-${r.slot}`}
+            >
+              <span className="text-label font-medium">{r.label}</span>
+              <SlotRouting tenantId={tenant.id} slot={r.slot} candidates={b.candidates(r.slot)} />
+            </li>
           ))}
         </ul>
       )}

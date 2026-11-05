@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Switch } from "@/components/ui/switch";
 import { APPS } from "@/features/features/lib/feature-meta";
 import { useTr } from "@/lib/use-translate";
+import { ENGINE_KEY, type EngineToggle, engineOf } from "../../lib/engine-toggle";
 import {
   type AppLevel,
   activeAddons,
@@ -27,7 +28,8 @@ type Props = {
   /** Gói của app + số vai (tính theo mức đang chọn) + số công ty đối tác, khi app có gói. */
   meta?: Omit<ComponentProps<typeof AppCardMeta>, "app" | "level"> | null;
   /** CR-118: khối "Gán quy trình" của app nằm trong thẻ (cùng một component ở trang công ty và ngăn Công ty của trang app). */
-  slots?: ReactNode;
+  /** Hàm ⇒ nhận công tắc "Duyệt theo quy trình" (feature `contracts-approval-engine`, bỏ khỏi "Tính năng thêm") để đặt trong khối Quy trình. */
+  slots?: ReactNode | ((engine: EngineToggle | null) => ReactNode);
   /** CR-118: lối tắt ở đầu thẻ (vd "Mở cấu hình app"). */
   headerAction?: ReactNode;
 };
@@ -77,6 +79,16 @@ function CardSwitch({
     />
   );
 }
+/** App đang Tắt (mức Tắt, hoặc công tắc chính tắt) ⇒ khoá tính năng thêm. */
+function isAppOff(
+  card: Card,
+  level: { level: string } | null,
+  draft: ReadonlySet<string>,
+): boolean {
+  if (card.mode === "levels") return level?.level === "off";
+  return card.mode === "switch" && !draft.has(card.main?.key ?? "");
+}
+
 export function AppCard({
   card,
   draft,
@@ -93,9 +105,13 @@ export function AppCard({
   const name = tr(`featmeta.app.${card.app}.name`);
   const summary = useSummary(card, draft);
   const level = card.mode === "levels" ? detectLevel(card, draft) : null;
-  const mainOn = draft.has(card.main?.key ?? "");
-  const appOff =
-    card.mode === "levels" ? level?.level === "off" : card.mode === "switch" && !mainOn;
+  const appOff = isAppOff(card, level, draft);
+  const engine =
+    typeof slots === "function"
+      ? engineOf(card.addons, draft, appOff || !!readOnly, (on) =>
+          onChange(setKey(draft, ENGINE_KEY, on)),
+        )
+      : null;
   return (
     <section
       aria-label={name}
@@ -132,14 +148,14 @@ export function AppCard({
         />
       ) : null}
       <AddonList
-        items={card.addons}
+        items={engine ? card.addons.filter((f) => f.key !== ENGINE_KEY) : card.addons}
         draft={draft}
         locked={appOff || !!readOnly}
         showAddonBadge={card.mode !== "list"}
         onToggle={(key, on) => onChange(setKey(draft, key, on))}
       />
       {meta ? <AppCardMeta {...meta} app={card.app} level={level?.level ?? "off"} /> : null}
-      {slots}
+      {typeof slots === "function" ? slots(engine) : slots}
     </section>
   );
 }

@@ -1,7 +1,7 @@
 // CR-120 (part F) · bất biến "tenant đã bật app thì PHẢI thấy quy trình" trên prod (ro: chỉ đọc, không ghi dữ liệu, không gọi AI).
 // Sự cố gốc: tenant Demo không thấy quy trình nào vì danh sách tenant thấy đọc hub.process_tenant_defs còn việc gán nằm ở bảng cũ.
 // (1) demo-owner thấy ≥ 1 quy trình ở workspace-web Cài đặt › Ứng dụng & quy trình (`apps-slot-*` có `slot-process-*`, không có
-//     `slot-none-assigned`); (2) cùng người đó thấy ≥ 1 quy trình ở admin Quy trình nghiệp vụ, mục "Được platform gán" (mục này chỉ có
+//     `slot-none-assigned`); (2) cùng người đó thấy ≥ 1 quy trình ở admin Quy trình (một trang) (mục này chỉ có
 //     sau khi backfill đã lên prod; trước đó test này ĐỎ — đúng ý: đó là sự cố). (3) NiTi `tien`: bỏ qua nếu thiếu thông tin đăng nhập.
 // Thông tin đăng nhập: demo-owner qua DEMO_PW (runner e2e-deployed.ps1 nạp, như các spec khác). NiTi: env NITI_TENANT / NITI_USER
 // (mặc định `tien`) / NITI_PW — mật khẩu NiTi dùng một lần nên KHÔNG có trong runner; không đặt ⇒ bỏ qua. Không hardcode, không in.
@@ -27,7 +27,7 @@ async function expectAppsPaneHasProcesses(page: Page): Promise<void> {
 }
 
 test.describe("20 quy trình hiển thị cho tenant (ro)", () => {
-  test("demo-owner thấy ≥ 1 quy trình ở Cài đặt › Ứng dụng & quy trình và ở admin Quy trình nghiệp vụ", async ({
+  test("demo-owner thấy ≥ 1 quy trình ở Cài đặt › Ứng dụng & quy trình và ở admin Quy trình", async ({
     page,
   }) => {
     const errs = watchConsole(page);
@@ -48,19 +48,20 @@ test.describe("20 quy trình hiển thị cho tenant (ro)", () => {
     await settle(page);
     expect(new URL(page.url()).pathname.startsWith("/login")).toBe(false);
 
-    // Mục "Được platform gán" (hub-routing-backfill, tab "Của công ty" mặc định): mỗi khe `assigned-slot-*`; quy trình đã gán
-    // `assigned-row-*`, hoặc dòng `assigned-in-use-outside` khi tenant chạy mặc định khe chưa gán — cả hai đều là "thấy quy trình".
-    const area = page.getByTestId("assigned-processes");
+    // CR-120 · MỘT trang "Quy trình": `flows-list` gồm mọi quy trình công ty có (nhóm theo app); quy trình platform cung cấp là
+    // `flows-row-*` với nhãn nguồn "Platform cung cấp" — cũng gồm dòng "đang dùng" mặc định khe chưa gán.
+    const area = page.getByTestId("flows-list");
     await expect(area).toBeVisible({ timeout: 30_000 });
-    await expect(area.getByText(/Được platform gán|Assigned by platform/).first()).toBeVisible();
-    await expect(area.locator('[data-testid^="assigned-slot-"]').first()).toBeVisible({
+    await expect(area.locator('[data-testid^="flows-group-"]').first()).toBeVisible({
       timeout: 30_000,
     });
-    const items = area.locator(
-      '[data-testid^="assigned-row-"], [data-testid="assigned-in-use-outside"]',
+    const items = area.locator('[data-testid^="flows-row-"][data-source="platform"]');
+    await expect(items.first(), "trang Quy trình không có quy trình platform cung cấp").toBeVisible(
+      {
+        timeout: 30_000,
+      },
     );
-    await expect(items.first(), 'mục "Được platform gán" rỗng').toBeVisible({ timeout: 30_000 });
-
+    await expect(items.first().getByText(/Platform cung cấp|Provided by platform/)).toBeVisible();
     expect(errs.list).toEqual([]);
   });
 

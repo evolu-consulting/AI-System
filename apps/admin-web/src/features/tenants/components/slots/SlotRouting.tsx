@@ -141,19 +141,11 @@ function Body({
   );
 }
 
+/** Luôn mở sẵn (không còn thu gọn): tập quy trình đã gán + "Mặc định" + luật chọn là nội dung chính của khối Quy trình. */
 export function SlotRouting(p: { tenantId: string; slot: string; candidates: SlotCandidate[] }) {
-  const { t } = useTranslation();
   return (
-    <details
-      className="rounded-md border border-dashed border-border p-2"
-      data-testid={`admin-routing-details-${p.slot}`}
-    >
-      <summary className="cursor-pointer text-label font-medium">
-        {t("tenants.slots.routing.title")}
-      </summary>
-      <div className="pt-2">
-        <Body {...p} />
-      </div>
-    </details>
+    <div data-testid={`admin-routing-details-${p.slot}`}>
+      <Body {...p} />
+    </div>
   );
 }

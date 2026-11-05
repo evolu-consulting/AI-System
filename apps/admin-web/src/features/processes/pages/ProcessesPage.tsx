@@ -1,4 +1,4 @@
-﻿import { Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { AutomationNote } from "@/components/shared/AutomationNote";
@@ -146,7 +146,7 @@ function ListPage() {
             flows={flows}
             actions={v.actions}
             canRun={v.canRun}
-            canEditRules={!v.tenant.isPlatform}
+            isPlatform={v.tenant.isPlatform}
           />
           {v.createOpen ? (
             <CreateDialog

@@ -81,6 +81,8 @@
       "apps": {
         "title": "Ứng dụng & quy trình",
         "lead": "Quy trình do quản trị nền tảng gán cho công ty. Bạn chỉ sửa được luật chọn quy trình theo phòng ban, không sửa nội dung quy trình.",
+        "allFlows": "Xem tất cả quy trình",
+        "allFlowsFail": "Không mở được trang Quy trình. Vui lòng thử lại.",
         "levelLabel": "Mức",
         "level": { "off": "Tắt", "read": "Chỉ xem", "write": "Xem và ghi", "admin": "Quản trị" },
         "noAddons": "Không có add-on.",
