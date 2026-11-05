@@ -231,16 +231,11 @@ test("ADM-FR-71 · E-PB2-12 · mẫu sdlc: chỉ xem — 2 câu thông báo; kh�
   await openDef(p, "pb2-canvas", DEF_CANVAS.name);
   await p
     .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("link", { name: "Quy trình nghiệp vụ", exact: true })
+    .getByRole("link", { name: "Quy trình", exact: true })
     .click();
-  await p.getByRole("tab", { name: "Mẫu" }).click();
-  await p
-    .getByRole("table", { name: "Quy trình" })
-    .getByRole("row")
-    .filter({ hasText: "!sdlc" })
-    .getByRole("link")
-    .first()
-    .click();
+  // CR-120: mẫu nằm trong hộp thoại "Tạo quy trình" (không còn tab Mẫu)
+  await p.getByTestId("flows-create").click();
+  await p.getByTestId("flows-template-sdlc").getByRole("link").click();
   await expect(p.getByText("Đây là quy trình mẫu, chỉ xem. Chép mẫu để chỉnh sửa.")).toBeVisible();
   await expect(p.getByText("Quy trình mẫu: chỉ xem, không kéo thả được.")).toBeVisible();
   await expect(p.getByRole("button", { name: "Thêm giai đoạn", exact: true })).toHaveCount(0);

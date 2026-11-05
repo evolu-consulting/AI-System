@@ -130,3 +130,11 @@ Gộp: slot-contract → single-source → community-flows → runtime-on → in
 - Int (evotest, file của lát): 0090 gán cũ ⇒ luật mặc định, chạy lại vô hại, RLS; resolveSlot không đọc bảng cũ; `ensureSlotDefaults` idempotent; act qua FlowRuntime = use case cũ; `off` ⇒ đường cũ; bài flagged ẩn tới khi duyệt, agent lỗi ⇒ review, join/report chéo tenant 403/404.
 - e2e (viết, chạy MỘT lần cuối đợt, shard): duyệt HĐ qua FlowPanel; bài gắn cờ ⇒ duyệt ⇒ hiện; đối tác xin tham gia ⇒ duyệt.
 - Cuối đợt: `test:frozen`, `dlc:check`, perf `-Exclusive` (điều phối); review + security Opus.
+
+## §Một trang Quy trình (UX, lát cr120-flows-one-page)
+Người dùng: "sao phải chia, khó hiểu, tùm lum thứ". Quy tắc: MỘT khái niệm "Quy trình" = chuỗi bước công ty dùng cho từng việc (duyệt, nhận hồ sơ, kiểm duyệt bài…).
+- **Trang `/processes` (tenant_admin; platform khi đã chọn công ty):** mọi quy trình công ty có, nhóm theo app (Sổ Hợp Tác, Community, Chung). Dòng: tên · khi nào chạy (việc của khe + điều kiện luật, vd "Duyệt hợp đồng · HĐ mua từ Phòng Kinh doanh") · nguồn ("Platform cung cấp" chỉ xem sơ đồ + sửa luật chọn / "Công ty tạo" đủ Bật·Chạy·Sửa·Xoá) · trạng thái ("Đang dùng" / "Tắt"). Chip lọc: app, nguồn, trạng thái. Không tab; mẫu ở "Tạo quy trình › Tạo từ mẫu".
+- **Dữ liệu:** không endpoint mới — capabilities (khe theo app) + routing mỗi khe (tập gán, luật, `current_def_id`) + `/process-defs` (gói + `kind=sample`) + tên phòng ban; mỗi nguồn một truy vấn, sơ đồ nạp khi bấm; chunk lười.
+- **Khối "Quy trình" duy nhất ở thẻ app trang công ty (platform):** công tắc "Duyệt theo quy trình" (feature `contracts-approval-engine`, bỏ khỏi "Tính năng thêm"), tập gán + luật chọn mở sẵn, "Mặc định" là một dòng; bỏ ô chọn/Gán/Về mặc định cũ.
+- **workspace-web Cài đặt › Ứng dụng & quy trình:** giữ bộ sửa luật; link "Xem tất cả quy trình" → trang này.
+- **Platform chưa chọn công ty:** Thư viện / Mẫu · chạy thử giữ nguyên.

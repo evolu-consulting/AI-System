@@ -291,13 +291,12 @@ export async function openDef(p: Page, key: string, name: string): Promise<void>
   await adminLogin(p);
   await p
     .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("link", { name: "Quy trình nghiệp vụ", exact: true })
+    .getByRole("link", { name: "Quy trình", exact: true })
     .click();
-  await p.getByRole("tab", { name: "Mẫu · chạy thử" }).click(); // CR-105: def tenant không khe/không của gói nằm ở tab này
   await p
-    .getByRole("table", { name: "Quy trình" })
-    .getByRole("row")
-    .filter({ hasText: key })
+    .getByTestId("flows-list")
+    .getByRole("listitem")
+    .filter({ hasText: name })
     .getByRole("link", { name })
     .click();
 }

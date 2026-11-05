@@ -15,12 +15,8 @@ test('ADM-FR-67 · E-P15c · Adm "Chạy" ⇒ run mới trong danh sách; trang 
   try {
     await rtScript("hoa-don-t", 0, [{ kind: "done" }, { kind: "hold" }]);
     await adminLogin(p);
-    await p.getByRole("link", { name: "Quy trình nghiệp vụ", exact: true }).click();
-    await p.getByRole("tab", { name: "Mẫu · chạy thử" }).click(); // CR-105: def tenant không khe/không của gói nằm ở tab này
-    const row = p
-      .getByRole("table", { name: "Quy trình" })
-      .getByRole("row")
-      .filter({ hasText: "hoa-don-t" });
+    await p.getByRole("link", { name: "Quy trình", exact: true }).click();
+    const row = p.getByTestId("flows-list").getByRole("listitem").filter({ hasText: "Hoá đơn T" });
     await row.getByRole("button", { name: "Chạy" }).click();
     const dlg = p.getByRole("dialog", { name: "Chạy quy trình Hoá đơn T" });
     await dlg.getByRole("textbox", { name: "Nội dung đầu vào" }).fill("HD-15 admin");

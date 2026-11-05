@@ -15,3 +15,7 @@ export function engineOf(
     ? { on: draft.has(ENGINE_KEY), disabled: locked, onChange: onSet }
     : null;
 }
+
+/** "Tính năng thêm" của thẻ khi khối Quy trình đã giữ công tắc: bỏ feature đó khỏi danh sách (một khái niệm, một công tắc). */
+export const addonsWithoutEngine = <T extends { key: string }>(addons: readonly T[]): T[] =>
+  addons.filter((f) => f.key !== ENGINE_KEY);

@@ -5,7 +5,12 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Switch } from "@/components/ui/switch";
 import { APPS } from "@/features/features/lib/feature-meta";
 import { useTr } from "@/lib/use-translate";
-import { ENGINE_KEY, type EngineToggle, engineOf } from "../../lib/engine-toggle";
+import {
+  addonsWithoutEngine,
+  ENGINE_KEY,
+  type EngineToggle,
+  engineOf,
+} from "../../lib/engine-toggle";
 import {
   type AppLevel,
   activeAddons,
@@ -148,7 +153,7 @@ export function AppCard({
         />
       ) : null}
       <AddonList
-        items={engine ? card.addons.filter((f) => f.key !== ENGINE_KEY) : card.addons}
+        items={engine ? addonsWithoutEngine(card.addons) : card.addons}
         draft={draft}
         locked={appOff || !!readOnly}
         showAddonBadge={card.mode !== "list"}

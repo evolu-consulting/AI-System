@@ -6,7 +6,7 @@ test("CR-113 · 6 · ai-admin: mẫu Duyệt HĐ 2 cấp có hộp Luật duyệ
   page,
 }) => {
   await loginAdmin(page);
-  await page.getByRole("link", { name: "Quy trình nghiệp vụ", exact: true }).click();
+  await page.getByRole("link", { name: "Quy trình", exact: true }).click();
   await expect(page.getByRole("tab", { name: "Thư viện" })).toBeVisible();
   await page.getByRole("tab", { name: "Thư viện" }).click();
   await page

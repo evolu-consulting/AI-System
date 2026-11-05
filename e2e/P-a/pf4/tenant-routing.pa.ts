@@ -89,7 +89,7 @@ test("platform gán quy trình vào tập của tenant và bỏ gán quy trình 
     await platformLogin(p);
     await p.goto(`${ADMIN_URL}/tenants/${ACME}?tab=features`);
     const details = p.getByTestId(`admin-routing-details-${SLOT}`);
-    await details.getByText("Quy trình được gán & luật chọn theo phòng ban").click();
+    // CR-120: khối Quy trình mở sẵn (không còn <details> thu gọn)
     // hub-routing-backfill · quy trình chạy khi không có luật (gán cũ) gắn nhãn "Đang dùng".
     await expect(details.getByTestId(`admin-assigned-in-use-${P1}`)).toHaveText("Đang dùng");
 

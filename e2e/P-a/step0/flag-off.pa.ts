@@ -81,9 +81,7 @@ test(`D15 · E-P16 · cờ ${ON ? "on (đối chứng)" : "off"}: lối vào quy
     const ap = await adm.newPage();
     await adminLogin(ap);
     await expect(ap.getByRole("link", { name: "Tổng quan" }).first()).toBeVisible();
-    await expect(ap.getByRole("link", { name: "Quy trình nghiệp vụ", exact: true })).toHaveCount(
-      ON ? 1 : 0,
-    );
+    await expect(ap.getByRole("link", { name: "Quy trình", exact: true })).toHaveCount(ON ? 1 : 0);
   } finally {
     await adm.close();
     await u.close();

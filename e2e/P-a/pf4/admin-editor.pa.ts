@@ -14,12 +14,8 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
   const p = await ctx.newPage();
   try {
     await adminLogin(p);
-    await p.getByRole("link", { name: "Quy trình nghiệp vụ", exact: true }).click();
-    await p.getByRole("tab", { name: "Mẫu · chạy thử" }).click(); // CR-105: def tenant không khe/không của gói nằm ở tab này
-    const row = p
-      .getByRole("table", { name: "Quy trình" })
-      .getByRole("row")
-      .filter({ hasText: "hoa-don-t" });
+    await p.getByRole("link", { name: "Quy trình", exact: true }).click();
+    const row = p.getByTestId("flows-list").getByRole("listitem").filter({ hasText: "Hoá đơn T" });
     await row.getByRole("link", { name: "Hoá đơn T" }).click();
     // fnr-editor-drawer (qc, người dùng chốt ngăn chi tiết đóng mặc định 2026-10-29): bấm node để mở ngăn.
     await p
@@ -58,16 +54,11 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
     // mẫu: chỉ xem (breadcrumb cũng có link "Quy trình" ⇒ thu hẹp vào sidebar)
     await p
       .getByRole("navigation", { name: "Điều hướng chính" })
-      .getByRole("link", { name: "Quy trình nghiệp vụ", exact: true })
+      .getByRole("link", { name: "Quy trình", exact: true })
       .click();
-    await p.getByRole("tab", { name: "Mẫu" }).click();
-    await p
-      .getByRole("table", { name: "Quy trình" })
-      .getByRole("row")
-      .filter({ hasText: "!sdlc" })
-      .getByRole("link")
-      .first()
-      .click();
+    // CR-120: mẫu nằm trong hộp thoại "Tạo quy trình" (không còn tab Mẫu)
+    await p.getByTestId("flows-create").click();
+    await p.getByTestId("flows-template-sdlc").getByRole("link").click();
     await expect(
       p.getByText("Đây là quy trình mẫu, chỉ xem. Chép mẫu để chỉnh sửa."),
     ).toBeVisible();

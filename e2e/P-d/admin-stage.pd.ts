@@ -209,13 +209,12 @@ test("AC-H47 · PD2-E05 · công ty chưa bật tool: danh sách rỗng có thô
     await loginAs(p, "globex", "hoa");
     await p
       .getByRole("navigation", { name: "Điều hướng chính" })
-      .getByRole("link", { name: "Quy trình nghiệp vụ", exact: true })
+      .getByRole("link", { name: "Quy trình", exact: true })
       .click();
-    await p.getByRole("tab", { name: "Mẫu · chạy thử" }).click(); // CR-105: def tenant không khe/không của gói nằm ở tab này
     await p
-      .getByRole("table", { name: "Quy trình" })
-      .getByRole("row")
-      .filter({ hasText: "pd2-globex" })
+      .getByTestId("flows-list")
+      .getByRole("listitem")
+      .filter({ hasText: "Công ty khác E2E" })
       .getByRole("link", { name: "Công ty khác E2E" })
       .click();
     await node(p, "Xuất hoá đơn").click();
