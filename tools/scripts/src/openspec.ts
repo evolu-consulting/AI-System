@@ -92,7 +92,8 @@ export function changedSlices(root: string): string[] {
   if (mb) {
     for (const l of git(root, "diff", "--name-only", mb).split(/\r?\n/)) {
       const m = /^docs\/specs\/([^/]+)\//.exec(l);
-      if (m?.[1]) set.add(m[1]);
+      // `docs/specs/CR-<n>/` = thư mục spec của CR (spec.md…), không phải lát ⇒ không đòi tasks.md.
+      if (m?.[1] && !/^CR-\d+$/.test(m[1])) set.add(m[1]);
     }
   }
   const br = /^slice\/(.+)$/.exec(git(root, "rev-parse", "--abbrev-ref", "HEAD"));
