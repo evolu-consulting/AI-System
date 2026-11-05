@@ -35,5 +35,5 @@ Trang `/tenants` có tiêu đề + số đếm, nút "Thêm công ty", phễu l�
 - Kịch bản: khi bấm hàng acme thì mở ngăn tóm tắt và "Mở trang chi tiết" dẫn tới tab Hồ sơ [test: e2e/cr121-tenants-list.spec.ts » CR-121 · /tenants bấm hàng acme mở ngăn tóm tắt và Mở trang chi tiết tới tab Hồ sơ]
 
 ## Việc còn lại
-- Bộ lọc "Ứng dụng": API danh sách công ty chưa trả ứng dụng đang bật theo hàng (tránh N request) ⇒ chưa có nhóm lọc này; cần thêm trường vào `GET /admin/tenants` (lát API riêng).
+- [x] Bộ lọc "Ứng dụng" — xong ở lát cr121-q1-app-filter-contract-label (API `?app=` + `apps[]` + cột/nhóm lọc).
 - Chạy e2e `cr121-tenants-list`, `tenants`, `m1-flow` ở cuối đợt.

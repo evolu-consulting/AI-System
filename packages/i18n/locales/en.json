@@ -669,6 +669,7 @@
       "name": "Name",
       "users": "Users",
       "slots": "Subscription slots",
+      "apps": "Apps",
       "status": "Status"
     },
     "menu": {

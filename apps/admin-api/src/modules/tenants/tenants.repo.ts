@@ -1,5 +1,6 @@
 // ADM-FR-60, ADM-FR-61, ADM-NFR-07 · truy vấn tenants (scope platform; RLS vẫn áp).
 import type { EntityStatus } from "@ai/contracts/common";
+import { TENANT_APP_IDS, type TenantApp } from "@ai/contracts/tenants";
 import { type Tx, tenants, users } from "@ai/db";
 import { and, asc, eq, ilike, or, type SQL, sql } from "drizzle-orm";
 import { likeArg } from "../../lib/sql";
@@ -20,6 +21,8 @@ export type TenantRow = {
   version: number;
   /** M4-R17: username người ghi gần nhất; null khi chưa ai ghi hoặc không thấy qua RLS. */
   updatedBy: string | null;
+  /** CR-121 Q-1 · chỉ có ở danh sách. */
+  apps?: TenantApp[];
 };
 
 // Tham chiếu tenants.id viết tay: Drizzle in cột không kèm tên bảng trong select nên "id" sẽ bị hiểu là u.id.
@@ -27,6 +30,14 @@ const userCount = sql<number>`(select count(*)::int from admin.users u where u.t
 const updatedBy = sql<
   string | null
 >`(select u.username from admin.users u where u.id = admin.tenants.updated_by)`;
+// CR-121 Q-1 · app của feature = tiền tố khoá (`chat-app` ⇒ chat); `contracts-approval-engine` ẩn như ở admin-web (feature-meta).
+const APP_LIST = sql.raw(TENANT_APP_IDS.map((a) => `'${a}'`).join(","));
+const APP_OF = sql`case when f.key = 'chat-app' then 'chat' else split_part(f.key, '-', 1) end`;
+const ENTITLED = sql`from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
+  where e.tenant_id = admin.tenants.id and e.revoked_at is null and f.key <> 'contracts-approval-engine'`;
+const appsAgg = sql<TenantApp[]>`(select coalesce(array_agg(distinct a order by a), '{}') from
+  (select ${APP_OF} as a ${ENTITLED}) s where a in (${APP_LIST}))`;
+const hasApp = (app: TenantApp) => sql`exists (select 1 ${ENTITLED} and ${APP_OF} = ${app})`;
 const rowCols = {
   id: tenants.id,
   key: tenants.key,
@@ -42,7 +53,13 @@ const rowCols = {
   updatedBy,
 };
 
-export type TenantFilter = { q?: string; status?: EntityStatus; limit: number; offset: number };
+export type TenantFilter = {
+  q?: string;
+  status?: EntityStatus;
+  app?: TenantApp;
+  limit: number;
+  offset: number;
+};
 
 function filterSql(f: { q?: string }): SQL | undefined {
   return f.q ? or(ilike(tenants.key, likeArg(f.q)), ilike(tenants.name, likeArg(f.q))) : undefined;
@@ -51,9 +68,9 @@ const statusSql = (s?: EntityStatus) => (s ? eq(tenants.active, s === "active") 
 
 export async function listTenants(tx: Tx, f: TenantFilter) {
   const rows = await tx
-    .select({ ...rowCols, total: sql<number>`count(*) over()`.mapWith(Number) })
+    .select({ ...rowCols, apps: appsAgg, total: sql<number>`count(*) over()`.mapWith(Number) })
     .from(tenants)
-    .where(and(filterSql(f), statusSql(f.status)))
+    .where(and(filterSql(f), statusSql(f.status), f.app ? hasApp(f.app) : undefined))
     .orderBy(asc(tenants.key))
     .limit(f.limit)
     .offset(f.offset);
@@ -64,7 +81,7 @@ export async function listTenants(tx: Tx, f: TenantFilter) {
       locked: sql<number>`count(*) filter (where not ${tenants.active})`.mapWith(Number),
     })
     .from(tenants)
-    .where(filterSql(f));
+    .where(and(filterSql(f), f.app ? hasApp(f.app) : undefined));
   return {
     rows: rows as (TenantRow & { total: number })[],
     counts: c ?? { all: 0, active: 0, locked: 0 },

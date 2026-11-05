@@ -9,6 +9,7 @@ import type { AuthUser } from "../../../lib/auth.middleware";
 import type { Db } from "../../../lib/db";
 import { appError } from "../../../lib/errors";
 import { clipEntityName, dbHubAudit } from "../../../lib/hub-audit";
+import { recordLabelRegistry } from "../../packs/kit/public";
 import { processError } from "../core/errors";
 import { canViewRunDetail, logLevelOf } from "../domain/runs/run-log-text.rules";
 import { toRunDetail, toStageLog } from "./run-detail.map";
@@ -28,18 +29,22 @@ const scopeOf = (u: AuthUser, tenantIdQ?: string) => ({
 export class RunDetailService {
   constructor(private readonly d: RunDetailDeps) {}
 
-  /** Header + bước + dòng thời gian: 3 câu SQL cố định (run · stage_runs · union sự kiện), không theo số bước. */
+  /** Header + bước + dòng thời gian: 3 câu SQL cố định (run · stage_runs · union sự kiện), không theo số bước; + 1 câu nhãn bản ghi gói khi run gắn bản ghi. */
   async detail(u: AuthUser, runId: string, tenantIdQ?: string): Promise<RunDetail> {
     if (!canViewRunDetail(u.role)) throw appError("FORBIDDEN");
     const scope = scopeOf(u, tenantIdQ);
     return withHubScope(this.d.db, scope, async (tx) => {
       const head = await repo.readHead(tx, runId, scope.tenantId);
       if (!head) throw notFound();
-      const [stages, events] = await Promise.all([
+      // CR-121 Q-1 · nhãn bản ghi gói: MỘT câu (tx của gói, RLS tenant của run), song song; thiếu ⇒ nhãn cũ theo id.
+      const [stages, events, labels] = await Promise.all([
         repo.readStages(tx, runId, scope.tenantId),
         repo.readEvents(tx, runId, scope.tenantId),
+        head.pack_key && head.pack_record_id
+          ? recordLabelRegistry.labelsOf(head.pack_key, scope.tenantId, [head.pack_record_id])
+          : undefined,
       ]);
-      return toRunDetail(head, stages, events);
+      return toRunDetail(head, stages, events, labels?.get(head.pack_record_id ?? ""));
     });
   }
 

@@ -202,18 +202,22 @@ describe("CR-121 R-2 · chi tiết lượt chạy", () => {
     const old = await insertRun(c.sql, { def, startedBy: PA.A, status: "done" });
     const next = await insertRun(c.sql, { def, startedBy: PA.A, status: "running" });
     const contractId = crypto.randomUUID();
+    // CR-121 Q-1 · HĐ thật của tenant ⇒ nhãn = mã HĐ + tên (gói đăng ký bộ đặt nhãn); không phải "HĐ <id8>".
+    await c.sql`insert into contracts.contracts (id, tenant_id, title, created_by, fields)
+      values (${contractId}, ${T.acme}, ${"Thuê kho Q1"}, ${PA.A.id},
+        ${c.sql.json({ number: { value: "HD-Q1-001" } })})`;
     await c.sql`update hub.process_runs set pack_key = 'contracts', pack_record_id = ${contractId}
       where id = ${old.runId}`;
     await c.sql`update hub.process_runs set rerun_of = ${old.runId} where id = ${next.runId}`;
     const q = await countQueries(c.hub, () =>
       c.call("Adm", "GET", `/process-runs/${old.runId}/detail`),
     );
-    expect(q.n).toBeLessThanOrEqual(4);
+    expect(q.n).toBeLessThanOrEqual(6); // 3 câu Hub + nhãn gói (set_config role + 1 SELECT)
     const d = RunDetailSchema.parse(q.r.json);
     expect(d.source).toEqual({
       kind: "contract",
       id: contractId,
-      label: `HĐ ${contractId.slice(0, 8)}`,
+      label: "HĐ HD-Q1-001 · Thuê kho Q1",
       app_key: "contracts",
     });
     expect(d.rerun_by).toBe(next.runId);

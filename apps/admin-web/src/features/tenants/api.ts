@@ -8,6 +8,7 @@ import type { GrantMatrix } from "@ai/contracts/grants";
 import type { PackAction, PackListResponse, PackState } from "@ai/contracts/packs";
 import type { QuotaSetRequest, QuotaSetResponse } from "@ai/contracts/quotas";
 import type {
+  TenantApp,
   TenantCompanyProfile,
   TenantCreateRequest,
   TenantCreateResponse,
@@ -23,7 +24,7 @@ import { api } from "@/lib/http";
 import type { TenantFeature } from "./lib/feature-assign";
 import type { QuotaFeatureOption } from "./lib/quota-draft";
 
-export type TenantListParams = { q: string; status?: "active" | "locked" };
+export type TenantListParams = { q: string; status?: "active" | "locked"; app?: TenantApp };
 
 const KEYS = {
   all: ["tenants"] as const,
@@ -39,7 +40,7 @@ export function useTenantList(params: TenantListParams, enabled: boolean) {
     placeholderData: keepPreviousData,
     queryFn: () =>
       api<TenantListResponse>("/admin/tenants", {
-        query: { limit: 200, q: params.q || undefined, status: params.status },
+        query: { limit: 200, q: params.q || undefined, status: params.status, app: params.app },
       }),
   });
 }

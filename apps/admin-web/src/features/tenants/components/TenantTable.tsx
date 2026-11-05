@@ -104,6 +104,22 @@ export function tenantColumns(
     { id: "name", header: t("tenants.col.name"), cell: (r) => r.name },
     { id: "users", header: t("tenants.col.users"), cell: (r) => r.user_count },
     {
+      id: "apps",
+      header: t("tenants.col.apps"),
+      cell: (r) =>
+        r.apps?.length ? (
+          <span className="inline-flex flex-wrap gap-1">
+            {r.apps.map((a) => (
+              <StatusBadge key={a} tone="info">
+                {t(`featmeta.app.${a}.name`)}
+              </StatusBadge>
+            ))}
+          </span>
+        ) : (
+          "—"
+        ),
+    },
+    {
       id: "slots",
       header: t("tenants.col.slots"),
       cell: (r) => r.max_concurrent_sub ?? t("common.unlimited"),

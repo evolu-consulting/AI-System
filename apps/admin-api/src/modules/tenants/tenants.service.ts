@@ -51,6 +51,7 @@ export function toTenant(t: TenantRow): Tenant {
     updated_by: t.updatedBy,
     timezone: t.timezone,
     process_runs_max: t.processRunsMax,
+    ...(t.apps ? { apps: t.apps } : {}),
   };
 }
 

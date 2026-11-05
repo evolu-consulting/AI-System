@@ -91,6 +91,11 @@ export const ProcessRunsMaxSchema = z
   .min(TENANT_PROCESS_RUNS_MAX.min)
   .max(TENANT_PROCESS_RUNS_MAX.max);
 
+/** CR-121 Q-1 · ứng dụng lọc được (khoá = tiền tố feature; `chat` = feature `chat-app`; `core` luôn bật nên không có). */
+export const TENANT_APP_IDS = ["chat", "community", "contracts", "knowledge"] as const;
+export const TenantAppSchema = z.enum(TENANT_APP_IDS);
+export type TenantApp = z.infer<typeof TenantAppSchema>;
+
 const tenantShape = {
   id: UuidSchema,
   key: TenantKeySchema,
@@ -108,6 +113,8 @@ const tenantShape = {
   timezone: TimezoneSchema,
   /** N2-FR-04 · server luôn trả; optional để bản ghi/fixture cũ vẫn hợp lệ. */
   process_runs_max: ProcessRunsMaxSchema.optional(),
+  /** CR-121 Q-1 · ứng dụng đang bật (chỉ danh sách trả; theo thứ tự `TENANT_APP_IDS`). */
+  apps: z.array(TenantAppSchema).optional(),
 };
 const statusMatchesActive = (t: { active: boolean; status: string }) =>
   (t.status === "locked") === !t.active;
@@ -225,6 +232,8 @@ export type TenantProfileUpdateRequest = z.infer<typeof TenantProfileUpdateReque
 /** `q` khớp `key`/`name` (ILIKE); sắp `key` tăng dần. */
 export const TenantListQuerySchema = ListQueryBase.extend({
   status: EntityStatusSchema.optional(),
+  /** CR-121 Q-1 · chỉ công ty đang bật ứng dụng này. */
+  app: TenantAppSchema.optional(),
 });
 export type TenantListQuery = z.infer<typeof TenantListQuerySchema>;
 

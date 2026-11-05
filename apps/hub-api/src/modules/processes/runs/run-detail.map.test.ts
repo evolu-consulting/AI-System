@@ -13,6 +13,9 @@ describe("sourceOf", () => {
       app_key: "contracts",
     });
   });
+  it("có nhãn thật từ gói ⇒ dùng nhãn đó", () => {
+    expect(sourceOf("contracts", ID, "HĐ 01/2026 · Thuê kho")?.label).toBe("HĐ 01/2026 · Thuê kho");
+  });
   it("gói khác ⇒ kind = khoá gói", () => {
     expect(sourceOf("pkdemo", ID)?.kind).toBe("pkdemo");
   });

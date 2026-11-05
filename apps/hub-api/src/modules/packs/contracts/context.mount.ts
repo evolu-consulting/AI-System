@@ -6,6 +6,7 @@ import type { ContextSource } from "../kit/application/context.ports";
 import type { PackToolDef } from "../kit/application/pack-tools.ports";
 import { type ContractLabelRow, contextLabelRepo } from "./adapters/context-label.repo";
 import { mountIntake } from "./intake.mount";
+import { mountContractsRecordLabels } from "./record-label.mount";
 
 /** `Hợp đồng "<tên>" (số …, hết hạn …)` — phần thiếu bỏ. */
 export function contractLabel(r: ContractLabelRow): string {
@@ -40,6 +41,7 @@ export function mountContractsContext(
   reg: { registerContext(s: ContextSource): void; register(t: PackToolDef): void } | undefined,
   intake?: Parameters<typeof mountIntake>[0],
 ): void {
+  mountContractsRecordLabels(db); // CR-121 Q-1 · nhãn HĐ theo tập cho Hub (độc lập registry tool)
   reg?.registerContext(contractsContextSource(db));
   if (intake) mountIntake({ ...intake, packTools: reg }, db); // CR-120 · khe contracts.intake
 }
