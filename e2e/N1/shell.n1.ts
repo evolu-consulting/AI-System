@@ -155,7 +155,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
       .click();
     const menu = page.getByRole("menu", { name: "Tài khoản" });
     await expect(menu.getByRole("menuitem", { name: "Đăng xuất" })).toBeVisible();
-    await menu.getByRole("menuitem", { name: "Cài đặt", exact: true }).click();
+    await menu.getByRole("menuitem", { name: "Cài đặt Sổ Hợp Tác", exact: true }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page).toHaveURL(/\/contracts\/list$/);
   });

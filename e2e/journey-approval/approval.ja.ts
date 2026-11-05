@@ -52,7 +52,8 @@ test("1b · khối Quy trình nói rõ 'đang tắt — quy trình đã gán s�
   await loginAdmin(page, E);
   const block = await openProcessBlock(page, E);
   await expect(block.getByTestId("tenant-engine-switch")).not.toBeChecked();
-  const note = block.getByTestId("tenant-engine-off-note");
+  // cr120-handson-fixes: khối có nhiều khe (Tiếp nhận + Duyệt) ⇒ mỗi khe một ghi chú; kiểm cái đầu.
+  const note = block.getByTestId("tenant-engine-off-note").first();
   await expect(
     note,
     "công tắc tắt + có quy trình gán: khối phải nêu trạng thái và lý do",
