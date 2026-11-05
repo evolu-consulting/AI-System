@@ -1,5 +1,6 @@
 // CR-121 · hồ sơ công ty nhập tay: GET (2 câu SQL) + PATCH theo `version` (khoá hàng, kiểm CEO/Giám đốc là thành viên,
 // audit + bump như PATCH tenant). Quyền ở routes: GET platform_admin/tenant_admin công ty mình; PATCH chỉ platform_admin.
+import type { Role } from "@ai/contracts/common";
 import type {
   TenantCompanyProfile,
   TenantDepartment,
@@ -9,6 +10,7 @@ import type {
 import { type DbScope, type Tx, withScope } from "@ai/db";
 import { configWrite } from "../../lib/config/config-write";
 import { appError, tenantProfileError } from "../../lib/errors";
+import { canAddressTenant } from "../../lib/tenant-scope";
 import * as repo from "./tenants.profile.repo";
 import * as tenantsRepo from "./tenants.repo";
 import {
@@ -55,20 +57,32 @@ async function profileView(tx: Tx, id: string): Promise<TenantCompanyProfile> {
   };
 }
 
+/** Người gọi (vai + công ty) — service tự kiểm quyền, không chỉ dựa vào route (CR-121 F-4). */
+export type ProfileActor = { userId: string; role: Role; tenantId: string };
+
+/** Đọc: platform_admin mọi công ty; tenant_admin chỉ công ty mình (công ty khác ⇒ 404); vai khác ⇒ 403. */
+export function assertCanReadProfile(actor: ProfileActor, id: string): void {
+  if (actor.role !== "platform_admin" && actor.role !== "tenant_admin") throw appError("FORBIDDEN");
+  if (!canAddressTenant(actor, id)) throw appError("NOT_FOUND");
+}
+
 export async function getTenantProfile(
   ctx: TenantsCtx,
   scope: DbScope,
   id: string,
+  actor: ProfileActor,
 ): Promise<TenantCompanyProfile> {
+  assertCanReadProfile(actor, id);
   return withScope(ctx.db, scope, (tx) => profileView(tx, id));
 }
 
-/** PATCH theo `version` (M1-R19): lệch → 409; không trường nào đổi → không tăng version; CEO/Giám đốc ngoài công ty → 422. */
+/** PATCH theo `version` (M1-R19): lệch → 409; không trường nào đổi → không tăng version; CEO/Giám đốc ngoài công ty → 422. Chỉ platform_admin. */
 export async function updateTenantProfile(
-  c: TenantsCall,
+  c: TenantsCall & { actor: ProfileActor },
   id: string,
   input: TenantProfileUpdateRequest,
 ): Promise<TenantCompanyProfile> {
+  if (c.actor.role !== "platform_admin") throw appError("FORBIDDEN");
   return configWrite(c, "tenant.save", async (tx, ch) => {
     const cur = await mustFind(tx, id, true);
     if (cur.version !== input.version) {

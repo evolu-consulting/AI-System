@@ -134,4 +134,23 @@ describe("CR-121 C-7 · inboxOf (số chờ duyệt + vai duyệt)", () => {
     expect(await nav.caps(au({ userId: STRANGER, tenantId: T.acme, role: "member" }))).toEqual([]);
     expect(await nav.caps({ ...(au(HEAD) as object), userKind: "external" } as never)).toEqual([]);
   }, 90_000);
+
+  // CR-121 F-4 · chặn chéo công ty: ghép người của A với công ty B (và ngược lại) ⇒ không việc, không vai duyệt, không mục nav;
+  // đọc-không-ghi (số run/task không đổi). Chạy SAU test trên (acme còn việc mở + khe đã gán quy trình).
+  it("F-4 · ghép chéo (người A + công ty B, người B + công ty A) ⇒ 0 việc, không vai duyệt, không cap nav, không ghi gì", async () => {
+    const counts = async () =>
+      (
+        await c.sql<{ r: number; t: number }[]>`select
+          (select count(*)::int from hub.process_runs) as r, (select count(*)::int from hub.review_tasks) as t`
+      )[0];
+    const before = await counts();
+    const headInBeta: PackRunCaller = { userId: HEAD.userId, tenantId: T.beta, role: "member" };
+    const dbInAcme: PackRunCaller = { userId: DB.userId, tenantId: T.acme, role: "member" };
+    for (const u of [headInBeta, dbInAcme]) {
+      expect(await inbox(u)).toEqual({ count: 0, approver: false });
+      const nav = contractsNavSource(async () => true, bridge);
+      expect(await nav.caps({ ...u, userKind: "internal" } as never)).toEqual([]);
+    }
+    expect(await counts()).toEqual(before);
+  }, 60_000);
 });

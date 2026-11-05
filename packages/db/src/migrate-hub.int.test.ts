@@ -71,7 +71,6 @@ const HUB_TABLES = [
   "cli_sessions",
   "config_meta",
   "conversations",
-  "dify_run_stats", // CR-121 hub 0100 · VIEW hẹp của dify_runs (information_schema.tables liệt kê cả view)
   "dify_runs", // dify-workflows hub 0056
   "dlc_step_templates", // dlc-step-library hub 0071
   "dlc_workflows",

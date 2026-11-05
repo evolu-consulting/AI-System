@@ -215,9 +215,10 @@ describe("CR-121 · hồ sơ công ty", () => {
       setProbe(true);
       const db = createDb(ADMIN_API_URL, { max: 2 });
       try {
-        await getTenantProfile({ db }, { kind: "platform" }, ACME); // làm nóng (type discovery)
+        const actor = { userId: USER_ID.an, role: "platform_admin" as const, tenantId: ACME };
+        await getTenantProfile({ db }, { kind: "platform" }, ACME, actor); // làm nóng (type discovery)
         const before = sqlCounters().sql;
-        await getTenantProfile({ db }, { kind: "platform" }, ACME);
+        await getTenantProfile({ db }, { kind: "platform" }, ACME, actor);
         expect(sqlCounters().sql - before).toBeLessThanOrEqual(3);
       } finally {
         setProbe(false);

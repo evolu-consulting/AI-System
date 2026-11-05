@@ -27,6 +27,8 @@ export type Cast = {
   LEFT: string;
   /** group vai gói của tenant A */
   roles: { owner: string; editor: string; viewer: string };
+  /** group vai gói của tenant B (CR-121 F-4: test chặn chéo công ty) */
+  rolesB: { owner: string; editor: string; viewer: string };
 };
 
 const orgId = (n: number) => `7e5d00c1-0000-4000-8000-${n.toString(16).padStart(12, "0")}`;
@@ -75,7 +77,9 @@ export async function seedCast(sql: Sql, base: number): Promise<Cast> {
     select x.id, ${A}::uuid, 'x' || ${base}::text || lower(x.n), lower(x.n) || ${base}::text || '@ext.test', 'kit-placeholder-hash',
       'Đối tác ' || x.n, 'member', 'external', x.org, x.active, case when x.active then null else now() end
     from jsonb_to_recordset(${sql.json(ext)}) as x(id uuid, org uuid, n text, active boolean)`;
-  const roles = (await enablePack(sql, [A, B], "community")).get(A) as Cast["roles"];
+  const packRoles = await enablePack(sql, [A, B], "community");
+  const roles = packRoles.get(A) as Cast["roles"];
+  const rolesB = packRoles.get(B) as Cast["roles"];
   await members(sql, A, roles.owner, [hA]);
   await members(sql, A, roles.editor, [hM]);
   await sql`insert into community.partner_companies (tenant_id, ext_org_id, labels, cats)
@@ -87,7 +91,29 @@ export async function seedCast(sql: Sql, base: number): Promise<Cast> {
       { org: X, labels: ["supplier", "buyer"], cats: ["dong-goi"] },
       { org: LEFT, labels: ["buyer"], cats: ["dong-goi"] },
     ])}) as x(org uuid, labels text[], cats text[])`;
-  return { A, B, hA, hM, hB, s1a, s1b, s2, b1, b2, x1, gone, off, S1, S2, B1, B2, X, LEFT, roles };
+  return {
+    A,
+    B,
+    hA,
+    hM,
+    hB,
+    s1a,
+    s1b,
+    s2,
+    b1,
+    b2,
+    x1,
+    gone,
+    off,
+    S1,
+    S2,
+    B1,
+    B2,
+    X,
+    LEFT,
+    roles,
+    rolesB,
+  };
 }
 
 export type PostSeed = {

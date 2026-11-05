@@ -2,7 +2,7 @@
 // ty/lượt chạy), mỗi câu quét bảng nguồn MỘT lần rồi gom (CTE + subselect), kết quả về dạng jsonb/số. Chạy dưới scope `system`
 // (hub_api = hub_rw + hub_ro). Mốc thời gian là tham số `timestamptz` (đồng hồ giả được trong test).
 //   Q1 process_runs (+ review_tasks theo process_run_id): lượt chạy, lỗi, p95 trừ chờ duyệt, 24 cột giờ, đang chạy/kẹt.
-//   Q2 dify_run_stats (view hẹp của dify_runs, hub 0100, cộng admin.workflows lấy tên): lỗi công cụ AI, tỷ lệ lỗi 1 giờ, công cụ lỗi liên tiếp, lỗi nhiều nhất.
+//   Q2 hub.dify_run_counts / dify_failing_tool_count (hàm DEFINER chỉ trả số đếm, hub 0102, cộng admin.workflows lấy tên): lỗi công cụ AI, tỷ lệ lỗi 1 giờ, công cụ lỗi liên tiếp, lỗi nhiều nhất.
 //   Q3 tenant_quotas + usage_logs: hạn mức USD tháng, công ty ≥ X %, chi phí theo ngày.
 //   Q4 tenants: tổng công ty khách, công ty hoạt động 7 ngày (exists theo chỉ mục tenant+thời gian).
 //   Q5 jobs/process_timers/pg_*: trễ hàng đợi nền, truy vấn chậm, kết nối, dung lượng.
@@ -91,31 +91,32 @@ export type DifyRow = {
   top: { id: string; name: string; errors: number } | null;
 };
 
-/** Q2. Chỉ quét `dify_runs` 7 ngày (chỉ mục `dify_runs_created_at_idx`, migration hub 0100). */
+/**
+ * Q2. Chỉ ĐẾM qua hàm DEFINER `hub.dify_run_counts` / `hub.dify_failing_tool_count` (hub 0102; không đọc thẳng `dify_runs`):
+ * 7 lời gọi theo ngày (cửa sổ (now−(k+1)d, now−kd]) + 1 giờ + 24 giờ — mỗi dòng quét đúng một lần (chỉ mục `dify_runs_created_at_idx`).
+ */
 export async function difyAgg(tx: Tx, win: Window): Promise<DifyRow> {
   const r = await rows<DifyRow>(
     tx,
     sql`
-    with d as (
-      select workflow_id, status, created_at,
-        floor(extract(epoch from ${ts(win.now)} - created_at) / 86400)::int as k
-      from hub.dify_run_stats where created_at >= ${ts(win.since7)} and created_at <= ${ts(win.now)}),
-    ranked as (
-      select workflow_id, status, row_number() over (partition by workflow_id order by created_at desc) as rn
-      from d where created_at >= ${ts(win.since24)}),
+    with hi as (select ${ts(win.now)} + interval '1 microsecond' as t),
+    b as (
+      select k, c.workflow_id, c.status, c.n
+      from generate_series(0, 6) k cross join hi
+      cross join lateral hub.dify_run_counts(
+        hi.t - (k + 1) * 86400 * interval '1 second', hi.t - k * 86400 * interval '1 second') c),
+    h1 as (select c.* from hi cross join lateral hub.dify_run_counts(${ts(win.since1h)}, hi.t) c),
+    d24 as (select c.* from hi cross join lateral hub.dify_run_counts(${ts(win.since24)}, hi.t) c),
     top as (
-      select workflow_id, count(*)::int as n from d
-      where status = 'failed' and created_at >= ${ts(win.since24)}
-      group by workflow_id order by n desc, workflow_id limit 1)
+      select workflow_id, sum(n)::int as n from d24
+      where status = 'failed' group by workflow_id order by n desc, workflow_id limit 1)
     select
       (select coalesce(jsonb_agg(jsonb_build_object('k', k, 'n', n)), '[]'::jsonb)
-         from (select k, count(*)::int as n from d where status = 'failed' group by k) x) as errs,
-      (select count(*) from d where created_at >= ${ts(win.since1h)})::int as calls_1h,
-      (select count(*) from d where created_at >= ${ts(win.since1h)} and status = 'failed')::int as errs_1h,
-      (select count(*) from d where created_at >= ${ts(win.since24)} and status = 'failed')::int as errs_24h,
-      (select count(*) from (select workflow_id from ranked where rn <= ${OVERVIEW_AI_TOOL_STREAK}
-         group by workflow_id
-         having count(*) = ${OVERVIEW_AI_TOOL_STREAK} and bool_and(status = 'failed')) f)::int as failing_tools,
+         from (select k, sum(n)::int as n from b where status = 'failed' group by k) x) as errs,
+      (select coalesce(sum(n), 0) from h1)::int as calls_1h,
+      (select coalesce(sum(n), 0) from h1 where status = 'failed')::int as errs_1h,
+      (select coalesce(sum(n), 0) from d24 where status = 'failed')::int as errs_24h,
+      (select hub.dify_failing_tool_count(${ts(win.since24)}, ${OVERVIEW_AI_TOOL_STREAK}, hi.t) from hi) as failing_tools,
       (select jsonb_build_object('id', t.workflow_id, 'name', coalesce(w.name, '?'), 'errors', t.n)
          from top t left join admin.workflows w on w.id = t.workflow_id) as top`,
   );

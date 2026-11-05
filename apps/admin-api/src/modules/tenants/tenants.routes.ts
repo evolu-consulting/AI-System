@@ -48,12 +48,12 @@ export function tenantsRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars
   r.get("/:id/profile", ...admins, async (c) => {
     const id = parseIdParam(c);
     requireTenantScope(c, id);
-    return c.json(await getTenantProfile(d, c.get("scope"), id));
+    return c.json(await getTenantProfile(d, c.get("scope"), id, c.get("actor")));
   });
   r.patch("/:id/profile", ...platform, async (c) => {
     const id = parseIdParam(c);
     const input = await parseJson(c, TenantProfileUpdateRequestSchema);
-    return c.json(await updateTenantProfile(call(c), id, input));
+    return c.json(await updateTenantProfile({ ...call(c), actor: c.get("actor") }, id, input));
   });
   r.patch("/:id", ...platform, async (c) => {
     const id = parseIdParam(c);

@@ -11,7 +11,7 @@ import {
 import { FormSubmitRequestSchema } from "@ai/contracts/hub-admin";
 import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
-import { parseJson } from "../../../lib/http";
+import { parseIdParam, parseJson } from "../../../lib/http";
 import type { ProcessDeps } from "../core/ports";
 import { tenantIdQuery } from "../runs/runs.routes";
 import { GateService } from "./gates.service";
@@ -46,17 +46,17 @@ export function gatesRoutes(d: ProcessDeps): Hono<AuthVars> {
   // CR-121 · R-1 · điều khiển lượt chạy (quản trị, lý do bắt buộc). Quyền/khoá/CAS ở `RunControlService`.
   r.post("/process-runs/:id/stop", async (c) => {
     const b = await parseJson(c, StopProcessRunRequestSchema);
-    return c.json(await ctl.stop(c.var.user, c.req.param("id"), b.reason, tenantIdQuery(c)));
+    return c.json(await ctl.stop(c.var.user, parseIdParam(c), b.reason, tenantIdQuery(c)));
   });
 
   r.post("/process-runs/:id/rerun-step", async (c) => {
     const b = await parseJson(c, RerunStepRequestSchema);
-    return c.json(await ctl.rerunStep(c.var.user, c.req.param("id"), b, tenantIdQuery(c)));
+    return c.json(await ctl.rerunStep(c.var.user, parseIdParam(c), b, tenantIdQuery(c)));
   });
 
   r.post("/process-runs/:id/rerun", async (c) => {
     const b = await parseJson(c, RerunProcessRunRequestSchema);
-    const out = await ctl.rerun(c.var.user, c.req.param("id"), b.reason);
+    const out = await ctl.rerun(c.var.user, parseIdParam(c), b.reason);
     return c.json(out.body, out.created ? 201 : 200);
   });
 
