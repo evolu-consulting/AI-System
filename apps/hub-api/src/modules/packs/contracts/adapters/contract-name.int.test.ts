@@ -64,14 +64,14 @@ beforeAll(async () => {
   [T] = (await tenants(o, 1, 1301)) as [string];
   [U] = (await users(o, T, 1, { from: 1301 })) as [string];
   ids = await contracts(o, T, 2, { from: 1301, createdBy: U, owner: U });
-  // title = tên file; fields.title = tên HĐ thật; hạn xử lý trong 10 ngày (trigger tính `action_deadline` từ `end_date`).
+  // title = tên file; fields.title = tên HĐ thật; hạn xử lý trong 3 ngày (cửa sổ Việc của tôi 7 ngày) (trigger tính `action_deadline` từ `end_date`).
   for (const [i, file, name] of [
     [0, FILE_A, NAME_A],
     [1, FILE_B, NAME_B],
   ] as const) {
     await o`update contracts.contracts set title = ${file}, fields = ${o.json({
       title: { value: name },
-      end_date: { value: inDays(10) },
+      end_date: { value: inDays(3) },
       notice_days: { value: "0" },
     } as never)} where id = ${ids[i] as string}`;
   }
@@ -84,7 +84,7 @@ afterAll(async () => {
 });
 
 describe("CR-121 Q-4 · tên HĐ một nguồn (title = tên file, fields.title = tên thật)", () => {
-  it("danh sách + chi tiết HĐ trả tên thật; sắp xếp theo tên thật (không theo tên file)", async () => {
+  it("danh sách + chi tiết HĐ trả tên thật, sắp xếp theo tên thật (không theo tên file)", async () => {
     const asc = await uow().tenant(who(), (r) => r.list.list(filter("title:asc"), today));
     expect(asc.items.map((x) => x.title)).toEqual([NAME_A, NAME_B]); // theo tên file sẽ ra B trước A
     const d = await uow().tenant(who(), (r) => r.list.detail(ids[0] as string, today));

@@ -6,7 +6,7 @@ import { FOLLOWUP_LIST_MAX } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { FollowupsRepo } from "../application/followups.usecase";
-import { contractNameSql } from "./contract-name.sql";
+import { contractLabelSql } from "./contract-name.sql";
 import { one } from "./ledger-sql";
 
 const ME = sql`NULLIF(current_setting('app.user_id', true), '')::uuid`;
@@ -33,7 +33,7 @@ function subjectOf(t: string, b: FollowupCreate) {
             join contracts.contracts c on c.tenant_id = o.tenant_id and c.id = o.contract_id
             where ${kind}::text = 'obligation' and o.tenant_id = ${t}::uuid and o.id = ${sid}::uuid
             union all
-            select c.id, 'contract', ${contractNameSql("c")}
+            select c.id, 'contract', ${contractLabelSql("c")}
             from contracts.contracts c where ${kind}::text = 'contract' and c.tenant_id = ${t}::uuid and c.id = ${sid}::uuid
             union all
             select r.sale_contract_id, 'renewal', 'Hoàn tất gia hạn chữ ký ' || coalesce(cu.name, '')

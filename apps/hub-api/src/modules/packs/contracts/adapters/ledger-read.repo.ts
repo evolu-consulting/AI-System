@@ -13,7 +13,7 @@ import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { LedgerReadRepo } from "../application/ledger.ports";
 import { addDays } from "../domain/local-time.rules";
-import { contractLabelSql, contractNameSql } from "./contract-name.sql";
+import { contractCodeSql, contractLabelSql } from "./contract-name.sql";
 import { confirmedOf, evJson, obJson, one, seenEvent } from "./ledger-sql";
 
 /** `payments.DONE_DAYS`: "Đã xong" = 60 ngày gần nhất. */
@@ -29,9 +29,9 @@ const rowsOf = (t: string, today: string, order: SQL) => sql`coalesce((select js
       r.postponed_to, r.postpones, r.reminders, r.source, r.estimated, r.basis, coalesce(n.of, 0) as of,
       case when c.direction = 'sale' then c.fields -> 'buyer_name' ->> 'value'
            else c.fields -> 'supplier_name' ->> 'value' end as party,
-      ${contractNameSql("c")} as contract_title,
+      ${contractLabelSql("c")} as contract_title,
       case when r.status = 'open' then greatest(0, ${today}::date - r.due_date) else 0 end as days_late
-    from r left join lateral (select k.direction, k.fields, k.title from contracts.contracts k
+    from r left join lateral (select k.direction, k.fields, k.number, k.title from contracts.contracts k
       where k.tenant_id = r.tenant_id and k.id = r.contract_id limit 1) c on true
     left join (select y.contract_id, count(*) as of from contracts.obligations y
       where y.tenant_id = ${t}::uuid and y.contract_id in (select contract_id from r)
@@ -122,7 +122,7 @@ export function ledgerReadRepo(tx: Tx, t: string): LedgerReadRepo {
             and (${q.due_before ?? null}::date is null or o.due_date <= ${q.due_before ?? null}::date)
           order by o.due_date, o.seq, o.id limit ${LEDGER_LIST_MAX}::int)
         select coalesce(jsonb_agg(${obJson("o")} || jsonb_build_object('contract_number',
-            ${contractLabelSql("c")}) order by o.due_date, o.seq, o.id),
+            ${contractCodeSql("c")}) order by o.due_date, o.seq, o.id),
           '[]'::jsonb) as j
         from o left join contracts.contracts c on c.tenant_id = o.tenant_id and c.id = o.contract_id`,
       ),

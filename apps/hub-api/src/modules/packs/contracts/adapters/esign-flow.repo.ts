@@ -13,7 +13,7 @@ import {
   type EsignFlowRepo,
 } from "../application/esign-flow.usecase";
 import type { FlowEsignStep } from "../domain/approval-flow.types";
-import { contractLabelSql } from "./contract-name.sql";
+import { contractCodeSql } from "./contract-name.sql";
 
 const STALE = sql.raw(`a.esign_at < now() - interval '${ESIGN_SENDING_STALE_MIN} minutes'`);
 const json = <T>(v: unknown): T => (typeof v === "string" ? JSON.parse(v) : v) as T;
@@ -67,7 +67,7 @@ export function esignFlowRepo(tx: Tx, t: string): EsignFlowRepo {
         from contracts.contracts c
         where c.tenant_id = ${t}::uuid and c.id = ${contractId}::uuid and a.id = c.run_id and a.tenant_id = c.tenant_id
           and a.esign_status = 'sent'
-        returning a.id, c.owner_user_id as owner, ${contractLabelSql("c")} as label`);
+        returning a.id, c.owner_user_id as owner, ${contractCodeSql("c")} as label`);
       return r ? { approvalId: r.id, owner: r.owner, label: (r.label ?? "").slice(0, 120) } : null;
     },
   };

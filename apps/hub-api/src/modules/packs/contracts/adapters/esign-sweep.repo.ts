@@ -8,7 +8,7 @@ import type { Db, Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { EsignSweepRepo, EsignSweptRow } from "../application/esign-sweep";
-import { contractLabelSql } from "./contract-name.sql";
+import { contractCodeSql } from "./contract-name.sql";
 
 type Row = {
   id: string;
@@ -35,7 +35,7 @@ export function esignSweepRepo(tx: Tx, t: string): EsignSweepRepo {
       const at = now.toISOString();
       const rows = await tx.execute<Row>(sql`with
         o as (select a.id, a.esign_at, a.esign_signer, c.id as cid, c.owner_user_id as owner,
-            ${contractLabelSql("c")} as label, f.grp, z.stale, z.remind, z.overdue, w.wait
+            ${contractCodeSql("c")} as label, f.grp, z.stale, z.remind, z.overdue, w.wait
           from contracts.approvals a
           join contracts.contracts c on c.id = a.contract_id and c.tenant_id = a.tenant_id and c.run_id = a.id
           cross join lateral (select (a.flow_steps->-1->>'due_h')::int as due_h,

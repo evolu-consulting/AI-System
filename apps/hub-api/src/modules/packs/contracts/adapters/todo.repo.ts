@@ -7,7 +7,7 @@ import { sql } from "drizzle-orm";
 import type { TodoWindow } from "../application/overview.ports";
 import type { RawTodo, TodoAction } from "../domain/todo.rules";
 import { TODO_SOURCE_MAX } from "../domain/todo.rules";
-import { contractNameSql } from "./contract-name.sql";
+import { contractLabelSql } from "./contract-name.sql";
 import { CONFIRMED_STATUSES, confirmedOf, one } from "./ledger-sql";
 
 const ME = sql`NULLIF(current_setting('app.user_id', true), '')::uuid`;
@@ -15,7 +15,7 @@ const UUID_RE = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 const LIM = TODO_SOURCE_MAX + 1;
 const CONFIRMED = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
 /** Tên HĐ (một định nghĩa: `contractNameSql`) + đối tác (bên kia) của bí danh `c`. */
-const TITLE = contractNameSql;
+const TITLE = contractLabelSql;
 const PARTY = (c: string) =>
   sql.raw(`case when ${c}.direction = 'purchase' then ${c}.seller else ${c}.buyer end`);
 /** Số ngày nhắc của HĐ `c` (0…3650) ?? mặc định Cài đặt (V2-H) ?? 60. */
