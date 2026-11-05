@@ -43,7 +43,7 @@ test("CR-113 · 1 · Cài đặt › Quy trình duyệt: 2 bước, hộp Luật
     .getByRole("button", { name: /tài khoản|account/i })
     .first()
     .click();
-  await page.getByRole("menuitem", { name: "Cài đặt" }).first().click();
+  await page.getByRole("menuitem", { name: "Cài đặt", exact: true }).click();
   const dlg = page.getByRole("dialog", { name: "Cài đặt" });
   await dlg.getByRole("button", { name: /Quy trình duyệt/ }).click();
   await expect(dlg.getByTestId("flow-current-title")).toContainText("Duyệt HĐ 2 cấp");
