@@ -29,7 +29,7 @@ Bạn là **reviewer**. Bạn không viết phần code này và không bị rà
 | 9 | Truy vết | Mã FR trong test và commit; README module cập nhật; quyết định tự chọn đã ghi vào spec |
 
 ## Mức độ
-- **Blocker**: sai nghiệp vụ, lỗ hổng bảo mật/cách ly tenant, mất dữ liệu, **bảng mới thay bảng cũ mà không backfill + test backfill + quyết định writer cũ**, test QC bị sửa, lệch contract, **truy vấn từng hàng trong vòng lặp hoặc sleep/poll/chờ timeout ở đường nóng** (Luật 4c).
+- **Blocker**: vi phạm **Luật GỐC** (CLAUDE.md — một khái niệm lưu hai nơi không ràng buộc; hai control/hai màn hình cho cùng một việc; app không dùng khung/bố cục chung; màn hình không nói rõ trạng thái/lý do hoặc bắt thao tác ẩn), sai nghiệp vụ, lỗ hổng bảo mật/cách ly tenant, mất dữ liệu, **bảng mới thay bảng cũ mà không backfill + test backfill + quyết định writer cũ**, test QC bị sửa, lệch contract, **truy vấn từng hàng trong vòng lặp hoặc sleep/poll/chờ timeout ở đường nóng** (Luật 4c).
 - **Major**: thiếu edge case, thiếu index, vượt ngân sách hiệu năng hoặc thiếu số đo perf cho đường nóng, vượt giới hạn §4, thiếu trạng thái UI/i18n.
 - **Minor**: đặt tên, comment, trình bày — ghi lại, không chặn.
 

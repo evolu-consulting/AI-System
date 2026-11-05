@@ -15,6 +15,12 @@ TypeScript strict · Bun + Turborepo · Rsbuild + React + Tailwind + shadcn/ui �
 
 **Lệnh xong M0** (T17, máy sạch): `bun install --frozen-lockfile && docker compose up -d --wait && bun run db:migrate && bun run check && bun run typecheck && bun test && bun tests/acceptance/ADM-NFR-06/ac07.check.ts && bun run test:int && bun run --filter @ai/admin-web build && bun run --filter @ai/admin-web check:bundle && bunx playwright test && bun run test:lock:verify && bun run trace --check`
 
+## Luật GỐC — Nhất quán và dễ hiểu (người dùng chốt 2026-11-05, THẮNG mọi luật khác khi mâu thuẫn)
+1. **Dữ liệu nhất quán:** mỗi khái niệm có **một nguồn sự thật**; không lưu cùng một thứ ở hai nơi không ràng buộc. Thay nguồn ⇒ backfill + chuyển mọi chỗ đọc + gỡ cái cũ trong cùng thay đổi (D6). Có check tự động (ops-watch/int) phát hiện lệch.
+2. **Thiết kế nhất quán:** một khái niệm = một tên + một màn hình/component dùng chung ở mọi nơi; không có hai control cho cùng một việc; mọi app dùng chung khung (shell), bố cục cài đặt, token màu, kiểu nút; app mới theo đúng khuôn (manifest, khe flow, basePath).
+3. **UI/UX dễ hiểu với người dùng thật:** nhãn theo ngôn ngữ nghiệp vụ, không lộ khái niệm kỹ thuật (khe, add-on, def…); màn hình nói rõ **trạng thái và lý do** (vì sao không chạy, bước kế là gì, ai cần làm gì); không có thao tác ẩn bắt buộc (vd gán xong mà phải bật công tắc ở chỗ khác); thông báo lỗi nói cách khắc phục.
+4. **Kiểm trước khi báo xong:** reviewer chặn (Blocker) nếu vi phạm 1–3; tính năng chỉ "xong" khi e2e hành trình thật (D5) xanh và một lượt soát UI theo mục 3 (chụp màn hình các bước chính).
+
 ## Luật 0 — Intake: thông tin mới phải đối chiếu với spec (hỏi trước khi chạy)
 Khi người dùng đưa **yêu cầu / thay đổi / ghi chú / file** (đầu phiên hay giữa phiên):
 1. Không phải yêu cầu (câu hỏi, trò chuyện, xác nhận ngắn) → không làm gì.
