@@ -28,19 +28,31 @@ function indexOf(raw: Record<string, unknown>, steps: readonly LibStep[]): numbe
 }
 
 /** Đọc `details.issues` (hoặc `{issues}` thô) thành danh sách lỗi; mục hỏng bị bỏ qua. */
-export function parsePublishIssues(details: unknown, steps: readonly LibStep[]): PublishIssue[] {
+export function parsePublishIssues(
+  details: unknown,
+  steps: readonly LibStep[],
+  lang = "vi",
+): PublishIssue[] {
   const list: unknown[] = isObj(details) && Array.isArray(details.issues) ? details.issues : [];
-  return list.filter(isObj).map((raw) => toIssue(raw, steps));
+  return list.filter(isObj).map((raw) => toIssue(raw, steps, lang));
 }
 
 const str = (v: unknown): string => (typeof v === "string" ? v : "");
 
-function toIssue(raw: Record<string, unknown>, steps: readonly LibStep[]): PublishIssue {
+function toIssue(
+  raw: Record<string, unknown>,
+  steps: readonly LibStep[],
+  lang: string,
+): PublishIssue {
   const rule = str(raw.rule);
   const path = str(raw.path);
   const field = str(raw.field) || PATH_STEP.exec(path)?.[2] || null;
-  return { index: indexOf(raw, steps), field, text: str(raw.fix) || rule || path, rule };
+  const msg = lang.startsWith("en") ? str(raw.message_en) || str(raw.message) : str(raw.message);
+  return { index: indexOf(raw, steps), field, text: msg || rule || path, rule };
 }
 
-export const publishIssuesOf = (err: unknown, steps: readonly LibStep[]): PublishIssue[] =>
-  err instanceof ApiError ? parsePublishIssues(err.details, steps) : [];
+export const publishIssuesOf = (
+  err: unknown,
+  steps: readonly LibStep[],
+  lang = "vi",
+): PublishIssue[] => (err instanceof ApiError ? parsePublishIssues(err.details, steps, lang) : []);

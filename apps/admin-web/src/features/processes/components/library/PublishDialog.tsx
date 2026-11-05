@@ -30,7 +30,7 @@ type Props = {
 type Failure = { message: string; lines: string[] };
 
 export function PublishDialog({ def, open, onClose, onIssues }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const impact = useImpact(def.id, open);
   const refresh = useLibraryRefresh();
   const [note, setNote] = useState("");
@@ -52,7 +52,7 @@ export function PublishDialog({ def, open, onClose, onIssues }: Props) {
       onClose();
     } catch (err) {
       const s = processErrorSpec(err);
-      onIssues?.(publishIssuesOf(err, parseSlotBody(def.slot_body) ?? []));
+      onIssues?.(publishIssuesOf(err, parseSlotBody(def.slot_body) ?? [], i18n.language));
       setFail({
         message: t(s.key, s.params),
         lines: errorLines(detailsOf(err), ruleText),

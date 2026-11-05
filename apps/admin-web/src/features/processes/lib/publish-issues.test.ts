@@ -6,7 +6,7 @@ import { parsePublishIssues } from "./publish-issues";
 const steps = [newReview([], "pb-a"), { ...newReview([], "pb-b"), key: "duyet-gd" }];
 
 describe("parsePublishIssues", () => {
-  test("dạng chuẩn {step,field,fix}: theo mã bước hoặc số thứ tự", () => {
+  test("dạng chuẩn {step,field,message}: theo mã bước hoặc số thứ tự", () => {
     const out = parsePublishIssues(
       {
         issues: [
@@ -15,7 +15,8 @@ describe("parsePublishIssues", () => {
             rule: "R",
             step: "duyet-gd",
             field: "department_group_key",
-            fix: "Chọn phòng ban",
+            message: "Chọn phòng ban",
+            message_en: "Pick a department",
           },
           { path: "x", rule: "R2", step: 0 },
         ],
@@ -37,5 +38,15 @@ describe("parsePublishIssues", () => {
     ]);
     expect(parsePublishIssues({}, steps)).toEqual([]);
     expect(parsePublishIssues(null, steps)).toEqual([]);
+  });
+  test("ngôn ngữ en đọc message_en, thiếu thì lùi về message", () => {
+    const d = {
+      issues: [
+        { path: "x", rule: "R", step: 0, message: "vi", message_en: "en" },
+        { path: "x", rule: "R2", step: 1, message: "chỉ vi" },
+      ],
+    };
+    expect(parsePublishIssues(d, steps, "en").map((i) => i.text)).toEqual(["en", "chỉ vi"]);
+    expect(parsePublishIssues(d, steps).map((i) => i.text)).toEqual(["vi", "chỉ vi"]);
   });
 });
