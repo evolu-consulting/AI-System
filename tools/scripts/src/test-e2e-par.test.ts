@@ -92,11 +92,14 @@ describe("TS1 · test:e2e:par · lập việc", () => {
     expect(jobs.find((j) => j.name === "chat")?.meta.db).toBeUndefined();
   });
 
-  it("cổng gốc: ca 0 giữ 3000, ca khác ≥ 3410 và khác nhau; chỉ ca đồng hồ có clock", () => {
+  it("cổng gốc: ca 0 giữ 3000, ca khác ≥ 3610 và khác nhau; chỉ ca đồng hồ có clock", () => {
     const root = jobs.filter((j) => j.config === "playwright.config.ts");
     expect(root.find((j) => j.name === "root-0")?.rootPort).toBe(3000);
     const ports = root.map((j) => j.rootPort);
     expect(new Set(ports).size).toBe(root.length);
+    expect(root.filter((j) => j.name !== "root-0").every((j) => (j.rootPort ?? 0) >= 3610)).toBe(
+      true,
+    );
     expect(root.filter((j) => j.clock).map((j) => j.name)).toEqual(["root-clock"]);
   });
 });

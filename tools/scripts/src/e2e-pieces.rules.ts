@@ -9,9 +9,9 @@ export type Piece =
   | { kind: "root"; key: string; files: string[] }
   | { kind: "shard"; job: string; i: number; n: number };
 
-/** Mảnh gốc tối đa (k = 0..MAX): cổng web = 3400 + 10k (k ≥ 1) không đụng 3470 của community-web khi k ≤ 6. */
+/** Mảnh gốc tối đa (k = 0..MAX): cổng web = 3600 + 10k (k ≥ 1), dải 3600–3699 không cấu hình e2e nào khác dùng (xem test chặn trùng cổng). */
 export const ROOT_PIECE_MAX = 6;
-export const ROOT_CLOCK_PORT = 3490;
+export const ROOT_CLOCK_PORT = 3690;
 
 export function parsePiece(tok: string): Piece | null {
   const r = /^root@(\d+|clock)=(.+)$/.exec(tok);

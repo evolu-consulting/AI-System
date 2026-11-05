@@ -146,9 +146,10 @@ export function splitRoot(specs: readonly SpecInfo[], shards: number): SpecInfo[
 
 const ROOT_PORT0 = 3000;
 const ROOT_PORT_STEP = 10;
-const ROOT_PORT_BASE = 3400;
+// 3600+: dải trống (3400–3470 là cổng cố định của community/workspace stack, pm-checklist, journey, community-web chạy cùng slot); cổng web = 3600 + 10k, API = web + 1.
+const ROOT_PORT_BASE = 3600;
 
-/** Việc gốc: một việc mỗi ca; ca 0 giữ cổng 3000/3001 như cũ, ca khác từ 3410 (cổng web; API = web + 1). */
+/** Việc gốc: một việc mỗi ca; ca 0 giữ cổng 3000/3001 như cũ, ca khác từ 3610 (cổng web; API = web + 1). */
 export function rootJobs(specs: readonly SpecInfo[], shards: number, meta: Meta): Job[] {
   return splitRoot(specs, shards).map((files, i) => {
     const clock = files.some((f) => f.clock);

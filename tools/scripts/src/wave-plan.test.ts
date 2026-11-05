@@ -1,6 +1,16 @@
 // CR-121 T-1 Â· chia slot cá»•ng Ä‘á»£t theo thá»i lÆ°á»£ng Ä‘o (LPT), máº£nh e2e, gom thá»i lÆ°á»£ng, Ä‘o file int theo header.
 import { describe, expect, it } from "bun:test";
-import { baseJobName, parsePiece, pieceName, rootToken, shardToken } from "./e2e-pieces.rules";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { Glob } from "bun";
+import {
+  baseJobName,
+  parsePiece,
+  pieceName,
+  ROOT_CLOCK_PORT,
+  rootToken,
+  shardToken,
+} from "./e2e-pieces.rules";
 import { jobMatches, planJobs, unmatchedOnly } from "./test-e2e-par.rules";
 import { HangWatch } from "./test-int-par.watchdog";
 import {
@@ -260,5 +270,34 @@ describe("HangWatch Â· thá»i lÆ°á»£ng má»—i file (header â†’
     const m = w.finish(9000);
     expect(m.get("a.int.test.ts")).toBe(3000);
     expect(m.get("b.int.test.ts")).toBe(5000);
+  });
+});
+
+describe("cổng e2e chạy cùng một slot không đè nhau", () => {
+  // Lượt wave 4: root-2 (3420) đè pm-checklist (3420), root-4 (3440) đè journey (3440) — mọi việc trong một slot chung mạng container.
+  it("mảnh gốc dùng dải 3600–3699 (web = 3600 + 10k, API = web + 1, clock 3690) và không cấu hình e2e nào khác dùng dải đó", async () => {
+    const ports = [1, 2, 3, 4, 5, 6].map((k) => {
+      const j = planJobs(
+        { configs: ["playwright.config.ts"], specs: specs(3), rootShards: 3 },
+        {},
+        `root@${k}=e2e/s0.spec.ts`,
+      )[0];
+      return j?.rootPort ?? 0;
+    });
+    const range = [...ports, ROOT_CLOCK_PORT].flatMap((p) => [p, p + 1]);
+    expect(range.every((p) => p >= 3600 && p <= 3699)).toBe(true);
+    expect(new Set(range).size).toBe(range.length);
+    const root = new URL("../../..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+    const files = [
+      ...new Glob("e2e/**/playwright*.config.ts").scanSync({ cwd: root }),
+      ...new Glob("e2e/**/_*.ts").scanSync({ cwd: root }),
+    ];
+    expect(files.length).toBeGreaterThan(5);
+    const clash = files.filter((f) =>
+      [...readFileSync(join(root, f), "utf8").matchAll(/\b(3[6]\d\d)\b/g)].some((m) =>
+        range.includes(Number(m[1])),
+      ),
+    );
+    expect(clash).toEqual([]);
   });
 });
