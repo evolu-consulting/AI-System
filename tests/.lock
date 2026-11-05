@@ -920,7 +920,7 @@ d37d1b222353c0e08f017421c7c53fac44d0914841cb0c895ca0d3a47e9f70bd  tests/acceptan
 bc6b2417f10557e403ec460ce301de5a070ec9c77ecd584f285c66b97400acf7  tests/acceptance/M1/_modules.ts
 e30d81781521e75f45de4b5801f260acf203a4a10c249e984b6e19241bbf95b4  tests/acceptance/M1/auth-login.int.test.ts
 e56bd948975491f6f140b08b098373a0a605e348b4b497ab25cdba4c1172ea7b  tests/acceptance/M1/auth-password.int.test.ts
-352d494fe7764ae3a63ed060e165f84fb12446cbc9cb2922c1693ce29289c306  tests/acceptance/M1/auth-refresh.int.test.ts
+31816d31efb6c8720f6cde4847f8a2a819189bec2add49ddf7fcc3e1c75af44c  tests/acceptance/M1/auth-refresh.int.test.ts
 e7d208302c2d5d4d61999ffd0335832778a9c7bf32e46dc64f42dedc84e2f790  tests/acceptance/M1/db-guard.int.test.ts
 e9081786d9934f134983cb1f89d92c029f3227476d05c28a3814cc312af13382  tests/acceptance/M1/db-rls.int.test.ts
 629e7cbaa956cb4f14179121bcee5435a8b6d489e1a52acf127f53158b42d023  tests/acceptance/M1/db-schema.int.test.ts
