@@ -8,6 +8,7 @@
 // filebox: { url, token } }` (cùng khuôn `pkdemo` của N1). Vắng ⇒ route `/pack/contracts/*` không có ⇒ 404 ⇒ đỏ ở expect.
 
 import { expect } from "bun:test";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { literalize, type PlanNode, seqScansIn } from "@ai/test-kit/perf";
 import type postgres from "postgres";
 import { createApp as createHubApp } from "../../../../apps/hub-api/src/app";
@@ -464,6 +465,7 @@ export async function redisOps<R>(
 export type Cap = { text: string; params: unknown[] };
 const TX_CTL =
   /^\s*((begin|commit|rollback|savepoint|release)\b|select set_config\('app\.scope'|select b\.oid, b\.typarray from pg_catalog\.pg_type|select "(hub_)?config_version" from "(admin|hub)"\."config_meta")/i;
+const measuring = new AsyncLocalStorage<object>();
 type PoolOpts = {
   debug?: (conn: number, q: string, params: unknown[], ...rest: unknown[]) => void;
 };
@@ -476,17 +478,24 @@ export async function captureSql<R>(
   if (!opts) throw new Error("không thấy pool postgres.js của Hub (hub.db.db.$client.options)");
   const prev = opts.debug;
   const queries: Cap[] = [];
+  // CR-121 R-1 · chỉ đếm câu của ĐƯỜNG ĐO: mỗi câu gọi `debug` trong ngữ cảnh async của chỗ gửi nó (app.fetch chạy cùng tiến trình),
+  // nên câu nền của Hub (vòng NOTIFY/sweep, không sinh từ `fn`) không mang nhãn này và không bị đếm.
+  const mine: object = {};
   opts.debug = (conn, q, params, ...rest) => {
     if (typeof prev === "function") prev(conn, q, params, ...rest);
-    if (!TX_CTL.test(q)) queries.push({ text: q, params: params ?? [] });
+    if (measuring.getStore() === mine && !TX_CTL.test(q))
+      queries.push({ text: q, params: params ?? [] });
   };
   try {
-    const r = await fn();
+    const r = await measuring.run(mine, fn);
     return { r, queries };
   } finally {
     opts.debug = prev;
   }
 }
+/** Văn bản các câu đã chụp (gọn, để assert in ra câu thừa khi số câu lệch). */
+export const queryTexts = (queries: readonly Cap[]): string[] =>
+  queries.map((q, i) => `${i + 1}. ${q.text.replace(/\s+/g, " ").slice(0, 140)}`);
 // literalize / seqScansIn: cài đặt dùng chung ở `@ai/test-kit/perf` (TK1).
 export { literalize, seqScansIn };
 /** `EXPLAIN` câu đã chụp, chạy bằng role gói + tenant (RLS thật). Trả danh sách quan hệ bị `Seq Scan`. */

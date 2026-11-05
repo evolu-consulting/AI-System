@@ -2,7 +2,7 @@
 // câu nạp (dòng HĐ, đã giao, kế hoạch, thành phần) + 4 câu `applyDelivery` + MỘT CTE ghi (mốc + SL đã giao + sổ đối tác + nhật ký).
 // Đếm câu pool hub gửi (`captureSql` của HD1; tính cả `set_config` đầu tx). p95 đo ở `perf/confirm.perf.int.test.ts` (PERF=1).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { captureSql } from "../HD1/_support/hd1";
+import { captureSql, queryTexts } from "../HD1/_support/hd1";
 import {
   addDelivery,
   arrangeV2d,
@@ -47,16 +47,20 @@ describe("V2-D · xác nhận mốc giao: số câu SQL cố định (Luật 4c)
     const run = async (n: number, sale: boolean) => {
       const m = await addDelivery(c, await contractWith(n, sale, ps));
       const cap = await captureSql(c, () => ok(settleRaw(c, m, undefined, { at: d(0) })));
-      return cap.queries.length;
+      return cap.queries;
     };
     await run(1, false); // ấm
-    const counts = [
+    const caps = [
       await run(1, false),
       await run(20, false),
       await run(1, true),
       await run(20, true),
     ];
-    expect(counts).toEqual([TX + STMTS, TX + STMTS, TX + STMTS, TX + STMTS]);
+    // Lệch ⇒ in văn bản từng câu của các lượt để thấy ngay câu thừa/thiếu.
+    const bad = caps.some((q) => q.length !== TX + STMTS);
+    expect(bad ? caps.map((q) => queryTexts(q)) : caps.map((q) => q.length)).toEqual(
+      caps.map(() => (bad ? [] : TX + STMTS)) as never,
+    );
   });
 
   it("mốc giao của HĐ không gắn SP: không thêm câu kho (khoá + nạp + ghi)", async () => {
