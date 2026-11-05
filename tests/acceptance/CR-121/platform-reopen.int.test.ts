@@ -26,8 +26,8 @@ const lockedAt = async (id: string): Promise<boolean> =>
       { l: boolean }[]
     >`select locked_at is not null as l from contracts.contracts where id = ${id}`
   )[0]?.l === true;
-const reopenedEvents = (id: string) =>
-  c.sql<
+const reopenedEvents = async (id: string) => [
+  ...(await c.sql<
     {
       actor: string;
       tenant: string;
@@ -37,7 +37,8 @@ const reopenedEvents = (id: string) =>
     }[]
   >`select actor_user_id::text as actor, tenant_id::text as tenant, contract_id::text as contract,
       data->>'reason' as reason, data->>'by_platform' as by_platform
-    from contracts.contract_events where contract_id = ${id} and type = 'reopened'`;
+    from contracts.contract_events where contract_id = ${id} and type = 'reopened'`),
+];
 const asPlatform = (id: string, body: unknown, q = `?tenant_id=${T.acme}`) =>
   c.call("P", "POST", `${CBASE}/${id}/reopen${q}`, body);
 
