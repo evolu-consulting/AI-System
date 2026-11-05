@@ -21,6 +21,7 @@ import type { LibraryService } from "./library.service";
 import { specOrThrow } from "./library-draft";
 import * as rt from "./routing.repo";
 import { slotActive } from "./routing-active.rules";
+import { upsertAssignment } from "./slot-assign.repo";
 
 const MESSAGES: Record<HubAdminRoutingErrorCode, string> = {
   ROUTING_PROCESS_NOT_ASSIGNED: "Process is not assigned to the tenant",
@@ -210,7 +211,12 @@ export class RoutingService {
       throw routingError("ROUTING_DEPARTMENT_INVALID", { department_ids: outside.slice(0, 20) });
   }
 
-  /** platform_admin · gán quy trình đã xuất bản của khe vào tập của tenant (đã có ⇒ không đổi, không bump). */
+  /**
+   * platform_admin · gán quy trình đã xuất bản của khe cho tenant: CÙNG một tx vào tập gán + đặt luật MẶC ĐỊNH của khe = quy trình
+   * này với `source = 'admin'` (một đường — `upsertAssignment`; cổng engine đọc đúng luật này) ⇒ gán xong là chạy, không thao tác
+   * ẩn (CR-121 F-1). Gán quy trình khác ⇒ luật mặc định đổi theo (luật theo phòng ban/loại HĐ giữ nguyên). Đã là mặc định do
+   * admin đặt ⇒ không đổi, không bump.
+   */
   async assign(
     u: AuthUser,
     tenantId: string,
@@ -219,9 +225,16 @@ export class RoutingService {
   ): Promise<ProcessRouting> {
     await withConfigWrite(this.#w, u, async (tx) => {
       await this.lib.assignable(tx, tenantId, slot, defId);
-      const added = await rt.insertAssigned(tx, { tenantId, slot, defId, actorId: u.userId });
-      if (!added) return { result: null, audit: null };
-      const a = audit("assign_process", { tenantId, slot, defId, before: null, after: { slot } });
+      const cur = await rt.defaultRuleOf(tx, tenantId, slot);
+      if (cur?.def_id === defId && cur.source === "admin") return { result: null, audit: null };
+      const prev = await upsertAssignment(tx, { tenantId, slot, defId, actorId: u.userId });
+      const a = audit("assign_process", {
+        tenantId,
+        slot,
+        defId,
+        before: { default_def_id: prev },
+        after: { slot, default_def_id: defId },
+      });
       return { result: null, audit: a };
     });
     return this.#view(tenantId, slot);

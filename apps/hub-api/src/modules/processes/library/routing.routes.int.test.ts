@@ -54,6 +54,11 @@ async function call(who: string, method: string, path: string, body?: unknown): 
   return { status: r.status, json: text ? JSON.parse(text) : {} };
 }
 const R = (t: string) => `/tenants/${t}/process-routing/${SLOT}`;
+const ver = async () => Number((await call("A", "GET", R(X))).json.version);
+const defaultRule = async (t: string) => [
+  ...(await o`select def_id::text as d, source as s from hub.process_routing_rules
+    where tenant_id = ${t} and slot = ${SLOT} and is_default`),
+];
 const PROC = (t: string, d: string) => `${R(t)}/processes/${d}`;
 
 /** Bản sao def mặc định (đã xuất bản v1, đủ nút hệ thống) — chỉ đổi id/key/tên. */
@@ -136,17 +141,20 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
   it("platform_admin gán và bỏ gán quy trình", async () => {
     for (const who of ["A", "M"]) expect((await call(who, "PUT", PROC(X, lib.A))).status).toBe(403);
     expect((await call("P", "PUT", PROC(X, lib.A))).status).toBe(200);
+    // CR-121 F-1 · gán = luật mặc định của khe đổi theo (source admin), gán quy trình khác ⇒ mặc định đổi sang đó.
+    expect(await defaultRule(X)).toEqual([{ d: lib.A, s: "admin" }]);
     const r = await call("P", "PUT", PROC(X, lib.B));
     expect(r.json.processes.map((p: Json) => p.def_id).sort()).toEqual([lib.A, lib.B].sort());
+    expect(await defaultRule(X)).toEqual([{ d: lib.B, s: "admin" }]);
     const v0 = await hubVersion();
-    expect((await call("P", "PUT", PROC(X, lib.A))).status).toBe(200); // đã có ⇒ không bump
+    expect((await call("P", "PUT", PROC(X, lib.B))).status).toBe(200); // đã là mặc định do admin đặt ⇒ không bump
     expect(await hubVersion()).toBe(v0);
     // luật dùng A ⇒ bỏ gán A bị chặn kèm danh sách luật
     const put = await call("P", "PUT", R(X), {
-      version: 0,
+      version: 2,
       rules: [{ condition: { departmentIds: [dx.get("kinh-doanh")] }, def_id: lib.A }],
     });
-    expect({ s: put.status, v: put.json.version }).toEqual({ s: 200, v: 1 });
+    expect({ s: put.status, v: put.json.version }).toEqual({ s: 200, v: 3 });
     const del = await call("P", "DELETE", PROC(X, lib.A));
     expect({
       s: del.status,
@@ -158,6 +166,9 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
       rules: [{ id: put.json.rules[0].id, priority: 0 }],
     });
     expect((await call("P", "PUT", PROC(X, lib.C))).status).toBe(200);
+    // C đang là luật mặc định ⇒ bỏ gán bị chặn; gán B (đổi mặc định về B) rồi mới bỏ C được.
+    expect((await call("P", "DELETE", PROC(X, lib.C))).status).toBe(409);
+    expect((await call("P", "PUT", PROC(X, lib.B))).status).toBe(200);
     expect((await call("P", "DELETE", PROC(X, lib.C))).status).toBe(204);
     const left =
       await o`select def_id::text as d from hub.process_tenant_defs where tenant_id = ${X} order by 1`;
@@ -165,28 +176,25 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
     const audits = await o`select action, count(*)::int as n from hub.audit_log
       where tenant_id = ${X} and action in ('assign_process', 'unassign_process') group by action order by action`;
     expect([...audits]).toEqual([
-      { action: "assign_process", n: 3 },
+      { action: "assign_process", n: 4 },
       { action: "unassign_process", n: 1 },
     ]);
   });
 
   it("tenant admin lưu luật", async () => {
     const g = await call("A", "GET", R(X));
-    expect({ s: g.status, v: g.json.version, n: g.json.processes.length }).toEqual({
-      s: 200,
-      v: 1,
-      n: 2,
-    });
+    const v1 = Number(g.json.version);
+    expect({ s: g.status, v: v1, n: g.json.processes.length }).toEqual({ s: 200, v: 5, n: 2 });
     const v0 = await hubVersion();
     const r = await call("A", "PUT", R(X), {
-      version: 1,
+      version: v1,
       rules: [
         { condition: { departmentIds: [dx.get("van-hanh")] }, def_id: lib.B },
         { condition: { departmentIds: [dx.get("kinh-doanh")] }, def_id: lib.A },
         { condition: { departmentIds: [dx.get("van-hanh")] }, def_id: lib.A, is_default: true },
       ],
     });
-    expect({ s: r.status, v: r.json.version }).toEqual({ s: 200, v: 2 });
+    expect({ s: r.status, v: r.json.version }).toEqual({ s: 200, v: v1 + 1 });
     expect(await rulesInDb(X)).toEqual([
       { priority: 0, d: lib.B, f: false, c: { departmentIds: [dx.get("van-hanh")] } },
       { priority: 1, d: lib.A, f: false, c: { departmentIds: [dx.get("kinh-doanh")] } },
@@ -196,12 +204,13 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
     const [a] =
       await o`select actor_role, before->>'version' as b, after->>'version' as af from hub.audit_log
       where tenant_id = ${X} and action = 'set_routing' order by at desc limit 1`;
-    expect(a).toEqual({ actor_role: "tenant_admin", b: "1", af: "2" });
+    expect(a).toEqual({ actor_role: "tenant_admin", b: String(v1), af: String(v1 + 1) });
   });
 
   it("quy trình chưa gán ⇒ 422", async () => {
+    const v = await ver();
     const r = await call("A", "PUT", R(X), {
-      version: 2,
+      version: v,
       rules: [{ condition: { departmentIds: [dx.get("van-hanh")] }, def_id: lib.C }],
     });
     expect({ s: r.status, e: r.json.error?.code }).toEqual({
@@ -213,13 +222,13 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
       def_id: lib.A,
     }));
     // > 50 luật ⇒ chặn ở contract (zod `max`) ⇒ 400 VALIDATION_ERROR, không ghi gì.
-    expect((await call("A", "PUT", R(X), { version: 2, rules: many })).status).toBe(400);
-    expect((await call("A", "GET", R(X))).json.version).toBe(2);
+    expect((await call("A", "PUT", R(X), { version: v, rules: many })).status).toBe(400);
+    expect(await ver()).toBe(v);
   });
 
   it("phòng ban tenant khác ⇒ 422", async () => {
     const r = await call("A", "PUT", R(X), {
-      version: 2,
+      version: await ver(),
       rules: [{ condition: { departmentIds: [dy.get("phong-y")] }, def_id: lib.A }],
     });
     expect({ s: r.status, e: r.json.error?.code, d: r.json.error?.details }).toEqual({
@@ -240,8 +249,9 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
   });
 
   it("ghi đồng thời ⇒ 409", async () => {
+    const v = await ver();
     const body = (d: string) => ({
-      version: 2,
+      version: v,
       rules: [{ condition: { departmentIds: [dx.get("kinh-doanh")] }, def_id: d }],
     });
     const [a, b] = await Promise.all([
@@ -251,7 +261,7 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
     expect([a.status, b.status].sort()).toEqual([200, 409]);
     const lost = a.status === 409 ? a : b;
     expect(lost.json.error).toEqual(
-      expect.objectContaining({ code: "VERSION_CONFLICT", details: { current_version: 3 } }),
+      expect.objectContaining({ code: "VERSION_CONFLICT", details: { current_version: v + 1 } }),
     );
     expect((await rulesInDb(X)).length).toBe(1);
   });

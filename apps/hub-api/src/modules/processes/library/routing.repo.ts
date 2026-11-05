@@ -48,7 +48,8 @@ export async function assignedIds(tx: Tx, tenantId: string, slot: string): Promi
   return new Set(rows.map((r) => r.id));
 }
 
-/** Gán vào tập; đã có ⇒ false (không đổi gì). */
+/** Chỉ cho dữ liệu mồi của test (`community-optin.int`): thêm vào tập gán KHÔNG đổi luật. Đường gán thật = `upsertAssignment`
+ *  (`RoutingService.assign`, CR-121 F-1). Đã có ⇒ false. */
 export async function insertAssigned(
   tx: Tx,
   w: { tenantId: string; slot: string; defId: string; actorId: string },
@@ -57,6 +58,19 @@ export async function insertAssigned(
     await tx.execute(sql`insert into hub.process_tenant_defs (tenant_id, def_id, slot, assigned_by)
     values (${w.tenantId}, ${w.defId}, ${w.slot}, ${w.actorId}) on conflict (tenant_id, def_id) do nothing`);
   return r.count === 1;
+}
+
+/** CR-121 F-1 · luật mặc định hiện tại của tenant × khe (def + nguồn `admin`/`auto`) — null = chưa có. Một câu theo index. */
+export async function defaultRuleOf(
+  tx: Tx,
+  tenantId: string,
+  slot: string,
+): Promise<{ def_id: string; source: string } | null> {
+  const [r] = await tx.execute<{ def_id: string; source: string }>(
+    sql`select def_id::text as def_id, source from hub.process_routing_rules
+    where tenant_id = ${tenantId} and slot = ${slot} and is_default`,
+  );
+  return r ?? null;
 }
 
 export type CurrentRow = { def_id: string; name: string };
