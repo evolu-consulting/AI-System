@@ -11,6 +11,7 @@ Viết spec CR-120 (`docs/specs/CR-120/spec.md`), ADR-0036, hàng CR-120 ở `do
 
 ## Làm
 - [x] spec CR-120 (A–G: hợp đồng khe, một nguồn gán, runtime bật, loại bước, def mặc định, bất biến, lát + số migration)
+- [x] §8b UI nhất quán + một khung (điều phối gửi thêm 2026-11-05; lát cr120-one-shell đang chạy)
 - [x] ADR-0036 + mục lục ADR
 - [x] CHANGE-REQUESTS CR-120
 
