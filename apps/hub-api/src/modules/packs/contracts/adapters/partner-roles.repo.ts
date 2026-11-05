@@ -15,6 +15,7 @@ import type {
   PartyHit,
   RoleCount,
 } from "../application/partner-roles.ports";
+import { contractNameSql } from "./contract-name.sql";
 import { CONFIRMED_STATUSES, one } from "./ledger-sql";
 
 export type { NoteDelete, PartnerContractRaw, PartyHit, RoleCount };
@@ -191,7 +192,7 @@ function contractReads(tx: Tx, t: string) {
     contracts: (party: string) =>
       one<PartnerContractRaw[]>(
         tx,
-        sql`select coalesce(json_agg(json_build_object('id', c.id, 'title', c.title, 'number', c.number, 'deal', c.deal,
+        sql`select coalesce(json_agg(json_build_object('id', c.id, 'title', ${contractNameSql("c")}, 'number', c.number, 'deal', c.deal,
             'value', c.value, 'start_date', c.start_date, 'end_date', c.end_date, 'n_req', a.n_req, 'n_req_done', a.n_req_done,
             'n_done', a.n_done, 'next', nx.j) order by c.updated_at desc, c.id desc), '[]'::json) as j
           from (select * from contracts.contracts c where c.tenant_id = ${t}::uuid and c.kind = 'contract'

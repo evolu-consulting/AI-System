@@ -6,6 +6,7 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { SuppliersRepo } from "../application/supplier-prices.usecase";
 import type { OverviewData } from "../domain/supplier-advice.rules";
+import { contractNameSql } from "./contract-name.sql";
 import { CONFIRMED_STATUSES, json, one } from "./ledger-sql";
 
 const CONFIRMED = sql.raw(CONFIRMED_STATUSES.map((s) => `'${s}'`).join(", "));
@@ -40,7 +41,7 @@ const overviewQ = (t: string, productId: string) => sql`select jsonb_build_objec
               order by k.dt desc nulls last, k.id)
             from (select i0.* from contracts.contract_items i0 where i0.tenant_id = p.tenant_id and i0.product_id = p.id
                 and i0.unit_price is not null limit 300) i
-              join (select c.id, c.deal, c.number, c.title, c.status, c.seller, c.buyer, c.fields,
+              join (select c.id, c.deal, c.number, ${contractNameSql("c")} as title, c.status, c.seller, c.buyer, c.fields,
                   coalesce(c.start_date, c.created_at::date) as dt
                 from contracts.contracts c where c.tenant_id = p.tenant_id and c.kind = 'contract'
                   and c.deal in ('buy', 'sell') and c.status in (${CONFIRMED}) and c.superseded_at is null) k

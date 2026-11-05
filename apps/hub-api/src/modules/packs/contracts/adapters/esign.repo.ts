@@ -11,6 +11,7 @@ import type {
   ESignRepo,
   StoredSigner,
 } from "../application/esign.ports";
+import { contractNameSql } from "./contract-name.sql";
 
 type Raw = {
   id: string;
@@ -89,7 +90,7 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
     },
     contract: async (id) => {
       const [r] =
-        await tx.execute<CRaw>(sql`select c.id, c.title, c.number, c.locked_at is not null as locked,
+        await tx.execute<CRaw>(sql`select c.id, ${contractNameSql("c")} as title, c.number, c.locked_at is not null as locked,
           f.org, f.file_id, f.mime, f.name, p.name as partner_name, pc.email as partner_email,
           p.party_key is not null as has_partner
         from contracts.contracts c

@@ -17,6 +17,7 @@ import { isIsoDate, partyKey } from "../domain/ledger.rules";
 import { aggKey, type PartyEv } from "../domain/partners.rules";
 import { type Agg, addGroup, emptyAgg } from "../domain/scoring-agg.rules";
 import type { Role } from "../domain/scoring-config.rules";
+import { contractNameSql } from "./contract-name.sql";
 import { one } from "./ledger-sql";
 import { groupsJson, pendJson, ratedJson, winCtes } from "./partners-ledger.sql";
 
@@ -36,14 +37,14 @@ const confirmed = (c: string) =>
  * mgmt). HĐ gốc không join (không có cha); chỉ phụ lục tra HĐ cha theo id.
  */
 const bCte = sql`b as (
-    select c.id, c.kind, c.status, c.parent_id, c.title, c.created_at, c.direction as dir,
+    select c.id, c.kind, c.status, c.parent_id, ${contractNameSql("c")} as title, c.created_at, c.direction as dir,
       c.fields -> 'effective_date' ->> 'value' as eff,
       c.fields -> 'supplier_name' ->> 'value' as pname, c.fields -> 'supplier_tax_id' ->> 'value' as ptax
     from contracts.contracts c
     where ${confirmed("c")} and c.kind = 'contract' and c.direction is distinct from 'sale' and c.superseded_at is null
       and c.doc_type <> 'framework' -- CR-101: HĐ NT không là nguồn giá/điểm
     union all
-    select a.id, a.kind, a.status, a.parent_id, a.title, a.created_at, coalesce(a.direction, par.direction),
+    select a.id, a.kind, a.status, a.parent_id, ${contractNameSql("a")} as title, a.created_at, coalesce(a.direction, par.direction),
       a.fields -> 'effective_date' ->> 'value',
       src.f -> (src.sd || '_name') ->> 'value', src.f -> (src.sd || '_tax_id') ->> 'value'
     from contracts.contracts a

@@ -7,6 +7,7 @@ import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { ActivityRow, ActivityWindow, RecordHistory } from "../../kit/public";
 import { eventDataOut } from "./approval-engine.repo";
+import { contractNameSql } from "./contract-name.sql";
 
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS"Z"'`;
 const iso = (col: SQL) => sql`to_char(${col} at time zone 'UTC', ${sql.raw(ISO)})`;
@@ -25,7 +26,7 @@ function contractParts(tid: string, uid: string, w: ActivityWindow): SQL[] {
   const act = w.action ?? "%";
   return [
     sql`(select 'contract'::text as object, e.type as action, e.at, e.actor_user_id as actor_id, c.id as ref_id,
-        c.title as name, c.number, null::text as party, ${eventDataOut("e")}::text as detail
+        ${contractNameSql("c")} as name, c.number, null::text as party, ${eventDataOut("e")}::text as detail
       from contracts.contract_events e join contracts.contracts c on c.id = e.contract_id and c.tenant_id = e.tenant_id
       where e.tenant_id = ${tid}::uuid and e.actor_user_id = ${uid}::uuid and e.at >= ${lo} and e.at < ${hi}
         and e.type like ${act} order by e.at desc limit ${w.limit}::int)`,
@@ -41,7 +42,7 @@ function partnerParts(tid: string, uid: string, w: ActivityWindow): SQL[] {
   const { lo, hi } = bounds(w);
   const act = w.action ?? "%";
   return [
-    sql`(select 'partner'::text, p.type, p.created_at, p.by_user, p.contract_id, c.title, c.number, p.party_key,
+    sql`(select 'partner'::text, p.type, p.created_at, p.by_user, p.contract_id, ${contractNameSql("c")}, c.number, p.party_key,
         jsonb_strip_nulls(jsonb_build_object('amount', p.amount, 'days_late', p.days_late, 'note', p.note))::text
       from contracts.partner_events p
       left join contracts.contracts c on c.id = p.contract_id and c.tenant_id = p.tenant_id
@@ -79,7 +80,7 @@ async function record(
   limit: number,
 ): Promise<RecordHistory[]> {
   const rows = await tx.execute<RecRaw>(sql`with k as (
-      select c.id, c.title, c.number, c.created_at from contracts.contracts c
+      select c.id, ${contractNameSql("c")} as title, c.number, c.created_at from contracts.contracts c
       where c.tenant_id = ${tid}::uuid
         and (c.id = ${ref.id}::uuid or (c.number is not null and lower(btrim(c.number)) = lower(${ref.number}::text)))
       order by c.created_at desc limit 5)

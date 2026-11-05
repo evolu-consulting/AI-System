@@ -7,6 +7,7 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { MyWorkRepo } from "../application/mywork.usecase";
 import type { RawMyWork } from "../domain/mywork.rules";
+import { contractNameSql } from "./contract-name.sql";
 import { confirmedOf, one } from "./ledger-sql";
 
 const ME = sql`NULLIF(current_setting('app.user_id', true), '')::uuid`;
@@ -23,7 +24,7 @@ const sources = (t: string, w: Window) => sql`with ob as (
               and ${confirmedOf("o", t)}
             order by o.due_date, o.id limit ${LIM}::int),
           dl as (
-            select c.id, c.action_deadline, c.number, c.title, c.direction, c.seller, c.buyer, c.fields from contracts.contracts c
+            select c.id, c.action_deadline, c.number, ${contractNameSql("c")} as title, c.direction, c.seller, c.buyer, c.fields from contracts.contracts c
             where c.tenant_id = ${t}::uuid and c.kind = 'contract' and c.handled is null
               and c.status in ('active', 'expiring', 'expired') and c.superseded_at is null
               and c.doc_type <> 'framework' -- CR-101: HĐ NT nhắc gia hạn qua reminders
@@ -50,7 +51,7 @@ const sources = (t: string, w: Window) => sql`with ob as (
             order by g.due_at, g.id limit ${LIM}::int),
           rm as (
             select * from (
-              select distinct on (r.contract_id) r.id, r.contract_id, r.deadline, r.milestone, c.number, c.title, c.direction,
+              select distinct on (r.contract_id) r.id, r.contract_id, r.deadline, r.milestone, c.number, ${contractNameSql("c")} as title, c.direction,
                 c.seller, c.buyer, c.fields
               from contracts.contract_reminders r
               join contracts.contracts c on c.tenant_id = r.tenant_id and c.id = r.contract_id
@@ -65,17 +66,17 @@ const sources = (t: string, w: Window) => sql`with ob as (
 const payload = (t: string, w: Window) => sql`select jsonb_build_object(
             'obligations', coalesce((select jsonb_agg(jsonb_build_object('id', r.id, 'contract_id', r.contract_id,
                 'direction', r.direction, 'amount', r.amount, 'due', r.due_date, 'number', c.number,
-                'title', coalesce(nullif(c.fields -> 'title' ->> 'value', ''), c.number, c.title),
+                'title', ${contractNameSql("c")},
                 'party', case when c.direction = 'sale' then c.buyer else c.seller end,
                 'contract_direction', c.direction) order by r.due_date, r.id)
               from ob r left join contracts.contracts c on c.tenant_id = ${t}::uuid and c.id = r.contract_id), '[]'::jsonb),
             'deadlines', coalesce((select jsonb_agg(jsonb_build_object('id', d.id, 'deadline', d.action_deadline,
-                'number', d.number, 'title', coalesce(nullif(d.fields -> 'title' ->> 'value', ''), d.number, d.title),
+                'number', d.number, 'title', d.title,
                 'party', case when d.direction = 'sale' then d.buyer else d.seller end,
                 'contract_direction', d.direction) order by d.action_deadline, d.id) from dl d), '[]'::jsonb),
             'reminders', coalesce((select jsonb_agg(jsonb_build_object('id', m.id, 'contract_id', m.contract_id,
                 'deadline', m.deadline, 'milestone', m.milestone, 'number', m.number,
-                'title', coalesce(nullif(m.fields -> 'title' ->> 'value', ''), m.number, m.title),
+                'title', m.title,
                 'party', case when m.direction = 'sale' then m.buyer else m.seller end,
                 'contract_direction', m.direction) order by m.deadline, m.id) from rm m), '[]'::jsonb),
             'gfollowups', coalesce((select jsonb_agg(jsonb_build_object('id', g.id,

@@ -8,6 +8,7 @@ import { sql } from "drizzle-orm";
 import type { BizExtras, BizFilter, BizRow, StoredBiz } from "../application/business.ports";
 import type { BizInput } from "../domain/business-score.rules";
 import { likePattern } from "../domain/fold.rules";
+import { contractNameSql } from "./contract-name.sql";
 import { CONFIRMED_STATUSES, one } from "./ledger-sql";
 
 export type { BizExtras, BizFilter, BizRow, StoredBiz };
@@ -196,7 +197,7 @@ function extrasQ(t: string, id: string, today: string) {
       mv as (select m.milestone_id, m.contract_item_id, sum(m.amount) as cost from contracts.stock_moves m
         where m.tenant_id = ${t}::uuid and m.direction = 'out' and m.reason = 'delivery' and m.milestone_id is not null
           and m.moved_on > ${today}::date - 365 group by m.milestone_id, m.contract_item_id),
-      sales as (select o.done_at, c.id as cid, c.title, c.buyer, mi.delivered as qty, i.unit_price, mv.cost
+      sales as (select o.done_at, c.id as cid, ${contractNameSql("c")} as title, c.buyer, mi.delivered as qty, i.unit_price, mv.cost
         from contracts.milestone_items mi
         join contracts.obligations o on o.tenant_id = mi.tenant_id and o.id = mi.milestone_id and o.kind = 'delivery'
           and o.status = 'done' and o.done_at > ${today}::date - 365
@@ -220,7 +221,7 @@ function extrasQ(t: string, id: string, today: string) {
 }
 
 function contractsOfQ(t: string, id: string) {
-  return sql`select coalesce(jsonb_agg(jsonb_build_object('id', k.id, 'title', k.title, 'number', k.number, 'deal', k.deal,
+  return sql`select coalesce(jsonb_agg(jsonb_build_object('id', k.id, 'title', ${contractNameSql("k")}, 'number', k.number, 'deal', k.deal,
           'status', k.status, 'partner', case when k.deal = 'buy' then k.seller else k.buyer end, 'value', k.value,
           'start_date', k.start_date,
           'commission_total', case when k.deal = 'referral' then coalesce(oc.total, 0) end,

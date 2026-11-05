@@ -1,6 +1,7 @@
 // CR-101 DOC-model: mảnh SQL chứng từ dùng trong câu danh sách / chi tiết của `contracts.repo.ts` (văn bản cố định, không thêm câu).
 import { FRAME_CHILDREN_MAX } from "@ai/contracts/pack-contracts";
 import { sql } from "drizzle-orm";
+import { contractNameSql } from "./contract-name.sql";
 
 /** Bản hiện hành của chuỗi bí danh `x`: chưa bị thay và không phải nháp mở (v≥2 chưa khoá). */
 const currentRow = (x: string) =>
@@ -12,11 +13,11 @@ const currentRow = (x: string) =>
  *  + con (khi `c` là HĐ NT: bản hiện hành thấy được, index `contracts_frame_idx`, tới trần). */
 export const docOf = sql`jsonb_build_object('doc_type', c.doc_type, 'frame_root_id', c.frame_root_id, 'credit_limit', c.credit_limit,
       'order_terms', c.order_terms,
-      'frame', (select jsonb_build_object('id', fc.id, 'title', fc.title, 'number', fc.number) from contracts.contracts fc
+      'frame', (select jsonb_build_object('id', fc.id, 'title', ${contractNameSql("fc")}, 'number', fc.number) from contracts.contracts fc
         where c.frame_root_id is not null and fc.tenant_id = c.tenant_id and fc.root_id = c.frame_root_id
           and fc.superseded_at is null order by fc.version_no limit 1),
       'children', case when c.doc_type = 'framework' then (select jsonb_agg(jsonb_build_object('id', k.id,
-          'doc_type', k.doc_type, 'title', k.title, 'number', k.number, 'status', k.status, 'value', k.value,
+          'doc_type', k.doc_type, 'title', ${contractNameSql("k")}, 'number', k.number, 'status', k.status, 'value', k.value,
           'start_date', k.start_date) order by k.start_date nulls last, k.id)
         from (select k.* from contracts.contracts k where k.tenant_id = c.tenant_id and k.frame_root_id = c.root_id
           and ${currentRow("k")} order by k.start_date nulls last, k.id limit ${FRAME_CHILDREN_MAX}::int) k) end)`;
@@ -40,7 +41,7 @@ export const childrenOf = (
   tid: string,
   want: boolean,
 ) => sql`case when ${want}::boolean then coalesce((select json_agg(
-      json_build_object('frame_root_id', k.frame_root_id, 'id', k.id, 'doc_type', k.doc_type, 'title', k.title,
+      json_build_object('frame_root_id', k.frame_root_id, 'id', k.id, 'doc_type', k.doc_type, 'title', ${contractNameSql("k")},
         'number', k.number, 'status', k.status, 'value', k.value) order by k.frame_root_id, k.start_date nulls last, k.id)
     from contracts.contracts k
     where k.tenant_id = ${tid}::uuid and k.frame_root_id = any(array(select c.root_id from p

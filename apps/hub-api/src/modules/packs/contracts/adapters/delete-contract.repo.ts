@@ -5,6 +5,7 @@ import type { DeleteImpact } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { DeleteContractRepo } from "../application/delete-contract.usecase";
+import { contractNameSql } from "./contract-name.sql";
 import { one } from "./ledger-sql";
 import { contractStockBlock, reverseContractStock } from "./stock.repo";
 
@@ -33,7 +34,7 @@ const previewSql = (t: string, ids: string[]) => {
             where pc.tenant_id = p.tenant_id and pc.product_id = p.id and m.contract_id is not null
               and not m.contract_id = any(${arr})))
     select jsonb_build_object(
-      'contract', jsonb_build_object('id', c.id, 'number', c.number, 'title', c.title),
+      'contract', jsonb_build_object('id', c.id, 'number', c.number, 'title', ${contractNameSql("c")}),
       'milestones', (select count(*)::int from contracts.obligations o
         where o.tenant_id = c.tenant_id and o.contract_id = any(${arr})),
       'delivered_lines', (select count(*)::int from contracts.milestone_items mi

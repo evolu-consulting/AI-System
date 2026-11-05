@@ -5,6 +5,7 @@
 // tin của dock có `?party=`; tenant hiện ≤ vài nghìn HĐ.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import { contractNameSql } from "./contract-name.sql";
 
 export type ContractLabelRow = {
   title: string;
@@ -15,7 +16,8 @@ export type ContractLabelRow = {
 export function contextLabelRepo(tx: Tx, t: string) {
   return {
     contract: async (id: string): Promise<ContractLabelRow | null> => {
-      const rows = await tx.execute<ContractLabelRow>(sql`select c.title, c.number,
+      const rows =
+        await tx.execute<ContractLabelRow>(sql`select ${contractNameSql("c")} as title, c.number,
           to_char(c.end_date, 'YYYY-MM-DD') as end_date
         from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid`);
       return [...rows][0] ?? null;

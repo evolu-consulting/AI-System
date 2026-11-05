@@ -8,6 +8,7 @@ import type {
   RawCustomersPage,
   ServiceCustomersRepo,
 } from "../application/service-customers.usecase";
+import { contractNameSql } from "./contract-name.sql";
 import { one } from "./ledger-sql";
 
 const ME = sql`NULLIF(current_setting('app.user_id', true), '')::uuid`;
@@ -49,7 +50,7 @@ export function serviceCustomersRepo(tx: Tx, t: string): ServiceCustomersRepo {
 function pageQ(t: string, productId: string, limit: number) {
   return sql`with r as (
             select sc.id, sc.customer_name, sc.party_key, sc.contract_id, c.number as contract_number,
-              coalesce(nullif(c.fields -> 'title' ->> 'value', ''), c.number, c.title) as contract_title,
+              ${contractNameSql("c")} as contract_title,
               to_char(sc.started_on, 'YYYY-MM-DD') as started_on, to_char(sc.expires_on, 'YYYY-MM-DD') as expires_on,
               (select n::int from (select contracts.as_bigint(c.fields -> 'notice_days' ->> 'value') as n) x
                 where n between 0 and 3650) as notice_days,

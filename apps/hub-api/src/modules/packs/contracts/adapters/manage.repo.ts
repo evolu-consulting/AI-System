@@ -6,6 +6,7 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { ManageRepo, SummarySource } from "../application/manage.usecase";
 import { activityRepo } from "./activity.repo";
+import { contractNameSql } from "./contract-name.sql";
 
 type Raw = { version: number; updated_at: string | Date };
 const iso = (v: string | Date): string => new Date(v).toISOString();
@@ -85,7 +86,7 @@ export function manageRepo(tx: Tx, tenantId: string): { manage: ManageRepo } {
           title: string;
           source_text: string | null;
           has_summary: boolean;
-        }>(sql`select c.status, c.title, c.source_text,
+        }>(sql`select c.status, ${contractNameSql("c")} as title, c.source_text,
             coalesce(jsonb_typeof(c.ai_read -> 'summary') = 'object', false) as has_summary
           from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid`);
         const r = rows[0];

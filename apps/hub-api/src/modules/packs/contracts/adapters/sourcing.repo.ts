@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import type { SourcingRepo } from "../application/sourcing.usecase";
 import type { RawSourcing } from "../domain/sourcing.rules";
 import { PRICED_STATUSES } from "./appendix.repo";
+import { contractNameSql } from "./contract-name.sql";
 import { one } from "./ledger-sql";
 export const SOURCING_CONTRACTS_MAX = 2000;
 
@@ -68,7 +69,7 @@ export function sourcingRepo(tx: Tx, t: string): SourcingRepo {
 /** HĐ đã duyệt (≤ MAX + 1 để biết bị cắt) + dòng hàng + lựa chọn nguồn — MỘT câu. */
 function loadQ(t: string) {
   return sql`with c as (
-            select c.id, c.kind, c.parent_id, c.title, c.number, c.status, c.direction, c.end_date, c.created_at,
+            select c.id, c.kind, c.parent_id, ${contractNameSql("c")} as title, c.number, c.status, c.direction, c.end_date, c.created_at,
               contracts.as_date(c.fields -> 'effective_date' ->> 'value') as eff,
               json_build_object('key', contracts.party_key(c.fields -> 'supplier_name' ->> 'value', c.fields -> 'supplier_tax_id' ->> 'value'),
                 'name', c.seller) as seller,

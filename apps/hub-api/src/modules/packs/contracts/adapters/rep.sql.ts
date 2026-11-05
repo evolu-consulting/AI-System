@@ -8,6 +8,7 @@ import { type SQL, sql } from "drizzle-orm";
 import type { DetailJob, DetailMilestone, ScoreRows } from "../application/reputation.ports";
 import { type CellParam, REP_CELLS, type RepGroup, type RepRole } from "../domain/rep-config.rules";
 import { type CellInput, monthsBefore, type SrcAgg } from "../domain/rep-score.rules";
+import { contractNameSql } from "./contract-name.sql";
 import { CONFIRMED_STATUSES, json, one } from "./ledger-sql";
 
 /** Chỉ số ô (1-based, ≡ `contracts.v2e_cell`) ⇒ (nhóm, vai). */
@@ -247,7 +248,7 @@ export async function detailRows(
     sql`with ${base(t, today, cells)}
     select json_build_object(
       'ms', coalesce((select json_agg(x order by x.done_at desc, x.id) from (
-        select o.id, c.rep_cell as cell, o.kind, o.title, o.contract_id, c.title as contract, o.due_date, o.done_at, o.fault
+        select o.id, c.rep_cell as cell, o.kind, o.title, o.contract_id, ${contractNameSql("c")} as contract, o.due_date, o.done_at, o.fault
         from p, contracts.obligations o
         join contracts.contracts c on c.tenant_id = o.tenant_id and c.id = o.contract_id
         where o.tenant_id = p.t and o.status = 'done' and o.party_key = ${party}::text and o.owner = 'partner'

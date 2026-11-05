@@ -4,14 +4,15 @@
 // Trạng thái: `rejected` (huỷ khi chuyển G1) ⇒ `cancelled`, còn lại ⇒ `posted` (`deal.rules.ts::legacyStatus`). `rev` = 0.
 import type { TransactionListQuery } from "@ai/contracts/pack-contracts";
 import { sql } from "drizzle-orm";
+import { contractNameSql } from "./contract-name.sql";
 
 const PARTNER = `case c.direction when 'purchase' then c.seller else c.buyer end`;
 const DAY = `coalesce(c.start_date, (c.created_at at time zone 'UTC')::date)`;
 
-export const summaryJson = sql.raw(`jsonb_build_object('id', c.id, 'deal', c.deal,
+export const summaryJson = sql`jsonb_build_object('id', c.id, 'deal', c.deal,
   'status', case c.status when 'rejected' then 'cancelled' else 'posted' end, 'rev', 0,
-  'occurred_on', ${DAY}, 'due_on', c.end_date, 'partner_name', coalesce(${PARTNER}, c.title), 'party_key', c.partner_key,
-  'contract_id', null, 'total', coalesce(c.value, 0), 'lot_label', null, 'updated_at', c.updated_at)`);
+  'occurred_on', ${sql.raw(DAY)}, 'due_on', c.end_date, 'partner_name', coalesce(${sql.raw(PARTNER)}, ${contractNameSql("c")}), 'party_key', c.partner_key,
+  'contract_id', null, 'total', coalesce(c.value, 0), 'lot_label', null, 'updated_at', c.updated_at)`;
 
 export function listQ(t: string, q: TransactionListQuery) {
   const off = (q.page - 1) * q.limit;

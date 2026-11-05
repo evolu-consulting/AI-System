@@ -4,6 +4,7 @@ import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { AppendixRepo, LockedForParent, ParentSaved } from "../application/appendix.usecase";
 import type { PriceItem, PriceSource } from "../domain/appendix-pricing.rules";
+import { contractNameSql } from "./contract-name.sql";
 
 const iso = (v: string | Date): string => new Date(v).toISOString();
 const json = <T>(v: T | string): T => (typeof v === "string" ? (JSON.parse(v) as T) : v);
@@ -100,7 +101,7 @@ export function appendixRepo(tx: Tx, tenantId: string): AppendixRepo {
         number: string | null;
         seller: string | null;
         buyer: string | null;
-      }>(sql`select c.id, c.title, c.number, c.seller, c.buyer from contracts.contracts c
+      }>(sql`select c.id, ${contractNameSql("c")} as title, c.number, c.seller, c.buyer from contracts.contracts c
         where c.tenant_id = ${tenantId}::uuid and c.kind = 'contract' and c.id <> ${id}::uuid
         order by c.updated_at desc, c.id desc limit ${limit}::int`),
     family: familyQ(tx, tenantId),
@@ -113,7 +114,7 @@ function familyQ(tx: Tx, tenantId: string): AppendixRepo["family"] {
           select coalesce(c.parent_id, c.id) as root from contracts.contracts c
           where c.id = ${id}::uuid and c.tenant_id = ${tenantId}::uuid),
         fam as (
-          select c.id, c.kind, c.title, c.created_at,
+          select c.id, c.kind, ${contractNameSql("c")} as title, c.created_at,
             contracts.as_date(c.fields -> 'effective_date' ->> 'value') as eff
           from contracts.contracts c
           where c.tenant_id = ${tenantId}::uuid

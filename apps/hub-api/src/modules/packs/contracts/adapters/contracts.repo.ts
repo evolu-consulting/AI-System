@@ -22,6 +22,7 @@ import type {
 import { appendixRepo } from "./appendix.repo";
 import { eventDataOut } from "./approval-engine.repo";
 import { categoriesRepo } from "./categories.repo";
+import { contractNameSql } from "./contract-name.sql";
 import {
   type ContractDetailDto,
   type ContractFacetsDto,
@@ -114,13 +115,13 @@ const orderBy = (f: ContractListFilter) => sql`
         case when ${f.order}::text = 'value:asc' then c.value end asc nulls last,
         case when ${f.order}::text = 'end_date:desc' then c.end_date end desc nulls last,
         case when ${f.order}::text = 'end_date:asc' then c.end_date end asc nulls last,
-        case when ${f.order}::text = 'title:desc' then c.title end desc,
-        case when ${f.order}::text = 'title:asc' then c.title end asc,
+        case when ${f.order}::text = 'title:desc' then ${contractNameSql("c")} end desc,
+        case when ${f.order}::text = 'title:asc' then ${contractNameSql("c")} end asc,
         c.id desc`;
 
 async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | undefined) {
   const rows = await tx.execute<ListOut>(sql`with f as materialized (
-      select c.id, c.updated_at, c.value, c.end_date, c.title from contracts.contracts c
+      select c.id, c.updated_at, c.value, c.end_date, ${contractNameSql("c")} as title from contracts.contracts c
       where ${filterWhere(tid, f)}),
     p as (select f.id from f order by
         case when ${f.order}::text = 'updated_at:desc' then f.updated_at end desc,
@@ -135,13 +136,13 @@ async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | 
       limit ${f.limit}::int offset ${f.offset}::int)
     select (select count(*) from f)::int as total,
       coalesce((select json_agg(r order by r.ord) from (
-        select c.id, c.kind, c.parent_id, c.title, c.number, c.type, c.direction, c.status, c.seller, c.buyer,
+        select c.id, c.kind, c.parent_id, ${contractNameSql("c")} as title, c.number, c.type, c.direction, c.status, c.seller, c.buyer,
           c.seller_signer, c.buyer_signer, c.value, c.end_date, c.action_deadline, c.owner_user_id, c.updated_at, c.version,
           c.category_ids[1:50] as category_ids, c.locked_at is not null as locked, c.version_no,
           ${versionsCount} as versions_count, pp.ord
         from (select p.id, row_number() over () as ord from p) pp
         join contracts.contracts c on c.id = pp.id and c.tenant_id = ${tid}::uuid) r), '[]'::json) as items,
-      coalesce((select json_agg(json_build_object('id', pc.id, 'title', pc.title, 'number', pc.number) order by pc.id)
+      coalesce((select json_agg(json_build_object('id', pc.id, 'title', ${contractNameSql("pc")}, 'number', pc.number) order by pc.id)
         from contracts.contracts pc where pc.tenant_id = ${tid}::uuid
           and pc.id in (select k.parent_id from contracts.contracts k join p on k.id = p.id
             where k.tenant_id = ${tid}::uuid and k.parent_id is not null)), '[]'::json) as parents,
@@ -186,7 +187,7 @@ type ExportRaw = {
  *  lệch múi giờ qua driver). */
 async function exportRows(tx: Tx, tid: string, f: ContractListFilter, cap: number) {
   const rows =
-    await tx.execute<ExportRaw>(sql`select count(*) over ()::int as total, c.number, c.title, c.kind, c.type,
+    await tx.execute<ExportRaw>(sql`select count(*) over ()::int as total, c.number, ${contractNameSql("c")} as title, c.kind, c.type,
       c.direction, c.status, c.seller, c.buyer, c.seller_signer, c.buyer_signer, c.value, c.end_date::text as end_date,
       c.action_deadline::text as action_deadline, c.owner_user_id, c.category_ids[1:50] as category_ids, c.updated_at
     from contracts.contracts c where ${filterWhere(tid, f)} and c.doc_type <> 'framework' -- CR-101: xuất tệp không gồm HĐ NT
@@ -284,7 +285,7 @@ async function detail(
 ): Promise<ContractDetailDto | null> {
   // json_build_object đã đủ 100 tham số ⇒ phần CR-101 nối bằng `jsonb ||`.
   const rows = await tx.execute<{ d: DetailRaw | string }>(sql`select (json_build_object(
-      'id', c.id, 'kind', c.kind, 'parent_id', c.parent_id, 'title', c.title, 'number', c.number, 'type', c.type,
+      'id', c.id, 'kind', c.kind, 'parent_id', c.parent_id, 'title', ${contractNameSql("c")}, 'number', c.number, 'type', c.type,
       'direction', c.direction, 'status', c.status, 'seller', c.seller, 'buyer', c.buyer, 'seller_signer', c.seller_signer,
       'buyer_signer', c.buyer_signer, 'value', c.value, 'end_date', c.end_date, 'action_deadline', c.action_deadline,
       'owner_user_id', c.owner_user_id, 'updated_at', c.updated_at, 'version', c.version, 'error', c.error,
@@ -300,11 +301,11 @@ async function detail(
           order by e.id desc limit ${CONTRACT_EVENTS_MAX}::int) e),
       'file', (select json_build_object('id', f.id, 'name', f.name, 'mime', f.mime, 'size_bytes', f.size_bytes)
           from contracts.files f where f.id = c.file_id and f.tenant_id = c.tenant_id and f.deleted_at is null),
-      'parent', (select json_build_object('id', pc.id, 'title', pc.title, 'number', pc.number)
+      'parent', (select json_build_object('id', pc.id, 'title', ${contractNameSql("pc")}, 'number', pc.number)
           from contracts.contracts pc where pc.id = c.parent_id and pc.tenant_id = c.tenant_id),
       'appendices', (select json_agg(json_build_object('id', a.id, 'title', a.title, 'number', a.number,
           'status', a.status, 'effective_date', a.eff) order by a.created_at desc, a.id)
-          from (select a.id, a.title, a.number, a.status, a.created_at,
+          from (select a.id, ${contractNameSql("a")} as title, a.number, a.status, a.created_at,
             contracts.as_date(a.fields -> 'effective_date' ->> 'value') as eff
             from contracts.contracts a where a.parent_id = c.id and a.tenant_id = c.tenant_id
             order by a.created_at desc, a.id limit ${CONTRACT_APPENDICES_MAX}::int) a),
