@@ -51,7 +51,15 @@ Trạng thái gộp: chưa gộp
 Trước mỗi lần Đạt, gói cập nhật input của lượt (số HĐ, tên, giá trị, người phụ trách, ngày) theo HĐ hiện tại. Bản cũ hơn không đè bản mới,
 lượt đã kết thúc hoặc bản ghi khác thì không đổi. Thông báo sau bước duyệt dùng số và tên đã xác nhận, không dùng tên file lúc mở lượt.
 - Kịch bản: khi mở lượt lúc HĐ còn tên file rồi xác nhận số + tên và Đạt thì thông báo ghi "Đã duyệt HĐ HD-09 · Mua máy chủ"; cập nhật bản cũ / lặp / sai bản ghi / sau khi kết thúc đều bị từ chối [test: tests/acceptance/CR-121/notify-vars.int.test.ts » mở run với tên file ⇒ cập nhật v2 sau xác nhận ⇒ Thông báo dùng số + tên đã xác nhận, v1 cũ / lặp / sai bản ghi bị từ chối]
+- Kịch bản: khi cột `title` là tên file còn trường "Tên hợp đồng" có giá trị thì nhãn lượt chạy ra tên HĐ thật [test: apps/hub-api/src/modules/processes/runs/run-detail.int.test.ts » R-4 · nguồn hợp đồng và lượt đã chạy lại]
 - Kịch bản: khi quy trình không có bước đọc dữ liệu HĐ thì không cập nhật gì [test: apps/hub-api/src/modules/packs/contracts/domain/approval-run-inputs.rules.test.ts » quy trình chỉ có bước duyệt ⇒ không input HĐ]
 
+- Tên HĐ gom về MỘT định nghĩa SQL `contractNameSql` (`adapters/contract-name.sql.ts`). Đang dùng ở: `difyFacts` (input Dify + mẫu
+  Thông báo), `labelsQ` (approval-engine.repo) và nhãn bản ghi Q-1 (`record-label.repo.ts`).
+
 ## Việc còn lại
-- Nhãn bản ghi Q-1 (`packs/contracts/adapters/record-label.repo.ts`) dùng `c.title` (tên file); nên đổi sang `coalesce(fields.title, title)` (lát khác).
+Còn chỗ đọc `c.title` (tên file) với ý là tên HĐ, chưa chuyển sang `contractNameSql`: `context-label.repo.ts:18`, `esign-flow.repo.ts:69` và
+`esign-sweep.repo.ts:37` (`coalesce(number, title)`), `activity.repo.ts:28/44/82`, `mywork.repo.ts:26/53`, `intake.tools.ts:96`,
+`rep.sql.ts:250`, `transactions-read.sql.ts:13`, `manage.repo.ts:88`, `appendix.repo.ts:103`, `business.repo.ts:199`. Biểu thức tự viết
+lại (có thêm `number` ở giữa): `followups.repo.ts:35`, `ledger-read.repo.ts:31`, `mywork.repo.ts:68/73/78`, `service-customers.repo.ts:52`,
+`todo.repo.ts:18`. Danh sách/chi tiết HĐ (`contracts.repo.ts`) trả `c.title` thô cho UI.

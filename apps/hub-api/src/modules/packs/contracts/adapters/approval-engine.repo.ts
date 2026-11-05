@@ -12,6 +12,7 @@ import type {
 import type { FlowStep } from "../domain/approval-flow.types";
 import { OVERRIDE_EVENT } from "../domain/approval-owner.rules";
 import { approvalWrite } from "./approval.repo";
+import { contractNameSql } from "./contract-name.sql";
 
 const json = (v: unknown): unknown => (typeof v === "string" ? JSON.parse(v) : v);
 
@@ -223,7 +224,7 @@ function labelsQ(tx: Tx, tid: string): ApprovalEngineRepo["labels"] {
   return async (ids) => {
     if (ids.length === 0) return [];
     const rows = await tx.execute<{ id: string; number: string | null; title: string | null }>(sql`
-      select c.id, c.number, c.title from contracts.contracts c
+      select c.id, c.number, ${contractNameSql("c")} as title from contracts.contracts c
       where c.tenant_id = ${tid}::uuid and c.id = any(${`{${ids.join(",")}}`}::uuid[])`);
     return [...rows];
   };
@@ -243,7 +244,7 @@ function difyFactsQ(tx: Tx, tid: string): ApprovalEngineRepo["difyFacts"] {
       version: number | string;
       // CR-121 F-5 · tên HĐ = trường "Tên hợp đồng" (fields.title) như sổ cái/xuất; cột `title` chỉ là tên file lúc tải lên.
     }>(sql`
-      select coalesce(nullif(btrim(c.fields -> 'title' ->> 'value'), ''), c.title) as title, c.deal,
+      select ${contractNameSql("c")} as title, c.deal,
         c.fields -> 'total_value' -> 'value' as v,
         case c.deal when 'sell' then c.buyer when 'buy' then c.seller
           else concat_ws(' / ', c.seller, c.buyer) end as partner,

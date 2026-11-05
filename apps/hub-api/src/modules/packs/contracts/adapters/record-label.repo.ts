@@ -2,6 +2,7 @@
 // Chạy TRONG tx `PackUow.system` (role `contracts_rw`, RLS tenant; việc nền ⇒ `sees_all()`): MỘT câu `= any` (ids qua một tham số JSON ⇒ văn bản SQL cố định), lọc `tenant_id` tường minh.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import { contractNameSql } from "./contract-name.sql";
 
 export type ContractNameRow = { id: string; number: string | null; title: string };
 
@@ -14,7 +15,9 @@ export function contractRecordLabel(r: { number: string | null; title: string })
 export function recordLabelRepo(tx: Tx, t: string) {
   return {
     contractNames: async (ids: readonly string[]): Promise<ContractNameRow[]> => {
-      const rows = await tx.execute<ContractNameRow>(sql`select c.id, c.number, c.title
+      // CR-121 F-5 · tên HĐ theo định nghĩa chung (`fields.title`, trống ⇒ tên file), không đọc thẳng cột `title`.
+      const rows =
+        await tx.execute<ContractNameRow>(sql`select c.id, c.number, ${contractNameSql("c")} as title
         from contracts.contracts c
         where c.tenant_id = ${t}::uuid
           and c.id = any(array(select jsonb_array_elements_text(${JSON.stringify(ids)}::jsonb)::uuid))`);

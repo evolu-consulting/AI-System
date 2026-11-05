@@ -203,9 +203,10 @@ describe("CR-121 R-2 · chi tiết lượt chạy", () => {
     const next = await insertRun(c.sql, { def, startedBy: PA.A, status: "running" });
     const contractId = crypto.randomUUID();
     // CR-121 Q-1 · HĐ thật của tenant ⇒ nhãn = mã HĐ + tên (gói đăng ký bộ đặt nhãn); không phải "HĐ <id8>".
+    // CR-121 F-5 · cột `title` là TÊN FILE lúc tải lên; nhãn phải ra tên HĐ thật (`fields.title`), không ra tên file.
     await c.sql`insert into contracts.contracts (id, tenant_id, title, created_by, fields)
-      values (${contractId}, ${T.acme}, ${"Thuê kho Q1"}, ${PA.A.id},
-        ${c.sql.json({ number: { value: "HD-Q1-001" } })})`;
+      values (${contractId}, ${T.acme}, ${"hop-dong-thue-kho.pdf"}, ${PA.A.id},
+        ${c.sql.json({ number: { value: "HD-Q1-001" }, title: { value: "Thuê kho Q1" } })})`;
     await c.sql`update hub.process_runs set pack_key = 'contracts', pack_record_id = ${contractId}
       where id = ${old.runId}`;
     await c.sql`update hub.process_runs set rerun_of = ${old.runId} where id = ${next.runId}`;
