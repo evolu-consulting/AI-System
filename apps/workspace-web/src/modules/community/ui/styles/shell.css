@@ -1,13 +1,5 @@
 /* CR-120 · lớp vỏ Community còn lại sau khi dùng AppShell chung: nội dung chính + khung hộp thoại Cài đặt. Menu trái / thanh trên /
    menu tài khoản KHÔNG còn ở module (shell cấp). Màu theo token chung (var(--card)…); màu nhấn --cm-accent* (accent.css). */
-/* Màu rose của công ty (COMMUNITY_BRAND_ACCENTS) */
-[data-mod="community"][data-accent="rose"] {
-  --cm-accent: #e11d48;
-  --cm-accent-hover: #be123c;
-  --cm-accent-soft: #fff1f2;
-  --cm-accent-ink: #9f1239;
-}
-
 [data-mod="community"] .shellmain {
   min-width: 0;
 }
@@ -25,7 +17,7 @@
   position: absolute;
   inset: 0;
   border: 0;
-  background: rgba(15, 16, 32, 0.5);
+  background: var(--shadow-color-dialog);
 }
 [data-mod="community"] .dlg {
   position: relative;
@@ -36,7 +28,7 @@
   background: var(--card);
   color: var(--ink);
   border-radius: 16px;
-  box-shadow: 0 24px 60px rgba(15, 16, 32, 0.3);
+  box-shadow: 0 24px 60px var(--shadow-color-dialog);
   overflow: hidden;
 }
 [data-mod="community"] .dlg-head {

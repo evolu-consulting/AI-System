@@ -132,6 +132,13 @@
   --shadow-color-toast: rgb(30 27 75 / 0.25);
   --shadow-color-dialog: rgb(30 27 75 / 0.28);
   --shadow-color-drawer: rgb(30 27 75 / 0.18);
+
+  /* CR-120: màu thương hiệu công ty chủ quản Community (data-accent) */
+  --brand-blue: #2563eb;
+  --brand-teal: #0e7490;
+  --brand-green: #15803d;
+  --brand-orange: #c2410c;
+  --brand-rose: #e11d48;
 }
 
 /* Tối theo mgmt-app (quyết định người dùng D-02, 2026-10-19: contracts-web giống hệt mgmt-app): bộ tối của
@@ -239,6 +246,12 @@
   --shadow-color-toast: rgb(0 0 0 / 0.5);
   --shadow-color-dialog: rgb(0 0 0 / 0.5);
   --shadow-color-drawer: rgb(0 0 0 / 0.5);
+
+  --brand-blue: #60a5fa;
+  --brand-teal: #22d3ee;
+  --brand-green: #4ade80;
+  --brand-orange: #fb923c;
+  --brand-rose: #fb7185;
 }
 @theme inline {
   --color-background: var(--background);

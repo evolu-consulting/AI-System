@@ -89,7 +89,7 @@
   overflow-wrap: anywhere;
 }
 [data-mod="community"] .mcell.video {
-  background: #eceafb;
+  background: var(--accent);
 }
 [data-mod="community"] .mkind {
   font-size: 11.5px;

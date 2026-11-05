@@ -98,8 +98,8 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #c81e1e;
-  color: #fff;
+  background: var(--destructive);
+  color: var(--destructive-foreground);
   font-size: 11px;
   font-weight: 700;
   display: grid;
@@ -141,27 +141,27 @@
   color: var(--primary-foreground);
 }
 [data-mod="community"] .t2 {
-  background: #dff3f8;
-  color: #0e5f76;
+  background: var(--cm-buy-soft);
+  color: var(--cm-buy-ink);
 }
 [data-mod="community"] .t3 {
-  background: #ffedd5;
-  color: #9a3412;
+  background: var(--cm-note-soft);
+  color: var(--cm-note-ink);
 }
 [data-mod="community"] .t4 {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--cm-sell-soft);
+  color: var(--cm-sell-ink);
 }
 [data-mod="community"] .t5 {
-  background: #f3e8ff;
-  color: #6b21a8;
+  background: var(--accent);
+  color: var(--accent-foreground);
 }
 [data-mod="community"] .t6 {
   background: var(--danger-bg);
   color: var(--danger);
 }
 [data-mod="community"] .t7 {
-  background: #e0e7ff;
+  background: var(--accent);
   color: var(--cm-accent-ink);
 }
 [data-mod="community"] .page {
@@ -469,7 +469,7 @@
   padding: 0 14px;
   border: 0;
   border-radius: 8px;
-  background: #c81e1e;
+  background: var(--destructive);
   color: var(--primary-foreground);
   font-weight: 600;
   font-size: 13px;
@@ -601,8 +601,8 @@
   color: var(--ink-2);
 }
 [data-mod="community"] .tag.ok {
-  background: #e3f4ec;
-  color: #05603f;
+  background: var(--success-bg);
+  color: var(--success);
 }
 [data-mod="community"] .tag.soon {
   background: var(--warning-bg);
@@ -626,7 +626,7 @@
   background: var(--card);
   border: 1px solid var(--rule);
   border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(15, 16, 32, 0.12);
+  box-shadow: 0 10px 30px var(--shadow-color-drawer);
   padding: 6px;
 }
 [data-mod="community"] .menu button {
@@ -647,7 +647,7 @@
   background: var(--sunk);
 }
 [data-mod="community"] .menu button.red {
-  color: #b91c1c;
+  color: var(--danger);
 }
 [data-mod="community"] .pbody {
   padding: 10px 16px 0;
@@ -660,7 +660,7 @@
 }
 [data-mod="community"] .pbody p {
   margin: 0;
-  color: #2c2d40;
+  color: var(--ink-2);
   white-space: pre-line;
 }
 [data-mod="community"] .media {
@@ -680,7 +680,7 @@
 [data-mod="community"] .mbox {
   height: 170px;
   border-radius: 10px;
-  background: #e8eaf3;
+  background: var(--rule);
   color: var(--ink-2);
   display: flex;
   flex-direction: column;
@@ -695,20 +695,20 @@
   height: 220px;
 }
 [data-mod="community"] .mbox.vid {
-  background: #1f2033;
-  color: #e5e5f0;
+  background: var(--ink);
+  color: var(--background);
 }
 [data-mod="community"] .play {
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--background) 18%, transparent);
   display: grid;
   place-items: center;
 }
 [data-mod="community"] .match {
   margin: 12px 16px 0;
-  border: 1px solid #c7d2fe;
+  border: 1px solid var(--act-line);
   background: var(--cm-accent-soft);
   border-radius: 10px;
   padding: 10px 12px;
@@ -720,7 +720,7 @@
   font-size: 13px;
 }
 [data-mod="community"] .match.warn {
-  border-color: #f5cf9a;
+  border-color: var(--soon-line);
   background: var(--warning-bg);
   color: var(--soon);
 }
@@ -823,7 +823,7 @@
   padding: 12px;
   border-radius: 10px;
   background: var(--danger-bg);
-  border: 1px solid #f6b8b8;
+  border: 1px solid var(--late-line);
   color: var(--danger);
   display: flex;
   align-items: center;
@@ -862,7 +862,7 @@
   background: var(--card);
   border: 1px solid var(--rule);
   border-radius: 14px;
-  box-shadow: 0 18px 40px rgba(15, 16, 32, 0.16);
+  box-shadow: 0 18px 40px var(--shadow-color-dialog);
   overflow: hidden;
 }
 [data-mod="community"] .pophead {
@@ -899,7 +899,7 @@
   border: 0;
   background: var(--card);
   text-align: left;
-  border-bottom: 1px solid #f3f3f7;
+  border-bottom: 1px solid var(--rule-soft);
   color: var(--ink);
   font-size: 13.5px;
 }
@@ -907,7 +907,7 @@
   background: var(--sunk);
 }
 [data-mod="community"] .nitem.unread {
-  background: #f5f6ff;
+  background: var(--new-bg);
 }
 [data-mod="community"] .nitem .txt {
   flex: 1;
@@ -930,7 +930,7 @@
 [data-mod="community"] .cover {
   height: 110px;
   border-radius: 14px 14px 0 0;
-  background: #e0e7ff;
+  background: var(--accent);
 }
 [data-mod="community"] .phero {
   padding: 0 24px 18px;
@@ -1087,7 +1087,7 @@
   height: 28px;
   border-radius: 999px;
   border: 0;
-  background: #c4c4ce;
+  background: var(--scroll);
   position: relative;
   padding: 0;
   flex-shrink: 0;
@@ -1101,7 +1101,7 @@
   height: 22px;
   border-radius: 999px;
   background: var(--card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 1px 3px var(--shadow-color-toast);
   transition: left 0.15s;
 }
 [data-mod="community"] .sw[aria-pressed="true"] {
@@ -1158,7 +1158,7 @@
   margin: 8px 0 0;
   padding-left: 18px;
   font-size: 13px;
-  color: #2c2d40;
+  color: var(--ink-2);
 }
 [data-mod="community"] .fxbox {
   font-size: 12.5px;
@@ -1198,7 +1198,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 10px 24px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 [data-mod="community"] .fab:hover {
   background: var(--cm-accent-hover);
@@ -1215,7 +1215,7 @@
   background: var(--card);
   border: 1px solid var(--rule);
   border-radius: 16px;
-  box-shadow: 0 20px 48px rgba(15, 16, 32, 0.2);
+  box-shadow: 0 20px 48px var(--shadow-color-dialog);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1262,8 +1262,8 @@
   align-self: flex-end;
 }
 [data-mod="community"] .msg.err {
-  border-color: #c81e1e;
-  color: #c81e1e;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 [data-mod="community"] .chat .qp {
   display: flex;
@@ -1278,7 +1278,7 @@
   border-radius: 999px;
   font-size: 12px;
   padding: 6px 10px;
-  color: #2c2d40;
+  color: var(--ink-2);
   min-height: 32px;
 }
 [data-mod="community"] .chat .qp button:hover {
@@ -1329,7 +1329,7 @@
 }
 [data-mod="community"] .autherr {
   margin: 0;
-  color: #c81e1e;
+  color: var(--danger);
   font-size: 13px;
 }
 [data-mod="community"] .authalt {
@@ -1341,8 +1341,8 @@
 [data-mod="community"] .ssonote {
   margin: 0;
   padding: 8px 20px;
-  background: #fff8e6;
-  border-bottom: 1px solid #f0e2b8;
+  background: var(--warning-bg);
+  border-bottom: 1px solid var(--soon-line);
   font-size: 13px;
   color: var(--ink-2);
 }

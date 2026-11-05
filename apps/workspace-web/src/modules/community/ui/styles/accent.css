@@ -1,32 +1,32 @@
-/* CR-120: màu nhấn Community = token của AppShell (--primary…). Màu riêng của công ty chủ quản (data-accent) chỉ đè khi khác mặc định chàm;
-   biến --cm-* (không đụng token chung của app gộp). */
+/* CR-120: màu nhấn Community = token của AppShell (--primary…). Màu riêng của công ty chủ quản (data-accent) lấy từ --brand-<tên> (globals.css, có bản sáng + tối);
+   hover/soft/ink suy ra bằng color-mix nên tự đúng ở cả hai giao diện. Biến --cm-* (không đụng token chung của app gộp). */
 [data-mod="community"] {
   --cm-accent: var(--primary);
   --cm-accent-hover: var(--primary-strong);
   --cm-accent-soft: var(--accent);
   --cm-accent-ink: var(--accent-foreground);
 }
+[data-mod="community"][data-accent="blue"],
+[data-mod="community"][data-accent="teal"],
+[data-mod="community"][data-accent="green"],
+[data-mod="community"][data-accent="orange"],
+[data-mod="community"][data-accent="rose"] {
+  --cm-accent-hover: color-mix(in srgb, var(--cm-accent) 82%, var(--foreground));
+  --cm-accent-soft: color-mix(in srgb, var(--cm-accent) 12%, var(--card));
+  --cm-accent-ink: color-mix(in srgb, var(--cm-accent) 55%, var(--foreground));
+}
 [data-mod="community"][data-accent="blue"] {
-  --cm-accent: #2563eb;
-  --cm-accent-hover: #1d4ed8;
-  --cm-accent-soft: #eff6ff;
-  --cm-accent-ink: #1e40af;
+  --cm-accent: var(--brand-blue);
 }
 [data-mod="community"][data-accent="teal"] {
-  --cm-accent: #0891b2;
-  --cm-accent-hover: #0e7490;
-  --cm-accent-soft: #ecfeff;
-  --cm-accent-ink: #155e75;
+  --cm-accent: var(--brand-teal);
 }
 [data-mod="community"][data-accent="green"] {
-  --cm-accent: #16a34a;
-  --cm-accent-hover: #15803d;
-  --cm-accent-soft: #f0fdf4;
-  --cm-accent-ink: #166534;
+  --cm-accent: var(--brand-green);
 }
 [data-mod="community"][data-accent="orange"] {
-  --cm-accent: #ea580c;
-  --cm-accent-hover: #c2410c;
-  --cm-accent-soft: #fff7ed;
-  --cm-accent-ink: #9a3412;
+  --cm-accent: var(--brand-orange);
+}
+[data-mod="community"][data-accent="rose"] {
+  --cm-accent: var(--brand-rose);
 }
