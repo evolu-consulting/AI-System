@@ -266,10 +266,15 @@ export class LibraryService {
       const def = await this.#publishedOf(tx, defId, slot);
       await this.#b2(tx, def, { defId: null, asDefault: false, tenantIds: [tenantId] });
       const prev = await asg.upsertAssignment(tx, { tenantId, slot, defId, actorId: u.userId });
+      // hub-routing-backfill · def cũ bị thay ⇒ ra khỏi tập gán CR-118 trừ khi luật còn dùng (giữ + ghi audit).
+      const kept =
+        prev !== null && prev !== defId
+          ? !(await asg.releaseFromSet(tx, { tenantId, slot, defId: prev }))
+          : false;
       const a = audit("assign", def, {
         tenantId,
         before: { def_id: prev },
-        after: { slot, def_id: defId },
+        after: { slot, def_id: defId, ...(kept ? { kept_in_routing: prev } : {}) },
       });
       return { result: null, audit: a };
     });
@@ -292,8 +297,10 @@ export class LibraryService {
     await withConfigWrite(this.#w, u, async (tx) => {
       const prev = await asg.deleteAssignment(tx, tenantId, slot);
       if (prev === null) return { result: null, audit: null };
+      const kept = !(await asg.releaseFromSet(tx, { tenantId, slot, defId: prev }));
       const def = (await lib.readLibDef(tx, prev)) ?? { id: prev, key: "-" };
-      const a = audit("unassign", def, { tenantId, before: { def_id: prev }, after: { slot } });
+      const after = { slot, ...(kept ? { kept_in_routing: prev } : {}) };
+      const a = audit("unassign", def, { tenantId, before: { def_id: prev }, after });
       return { result: null, audit: a };
     });
   }

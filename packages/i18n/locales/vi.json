@@ -577,6 +577,8 @@
         "title": "Quy trình được gán & luật chọn theo phòng ban",
         "loadFail": "Không tải được quy trình đã gán.",
         "noneAssigned": "Chưa gán quy trình nào: công ty không thấy, không chọn, không chạy được ở khe này.",
+        "inUse": "Đang dùng",
+        "inUseOutside": "Đang dùng (mặc định của khe): {{name}}",
         "unassign": "Bỏ gán",
         "addPick": "Quy trình thư viện",
         "addPlaceholder": "Chọn quy trình đã xuất bản để gán thêm",
@@ -937,16 +939,27 @@
     "create": "+ Thêm công ty đối tác",
     "badge": "Đối tác",
     "selectTenant": "Chọn một tenant để xem công ty đối tác.",
-    "empty": { "text": "Chưa có công ty đối tác nào." },
-    "col": { "name": "Tên công ty", "accounts": "Số tài khoản", "status": "Trạng thái" },
-    "status": { "active": "Đang hoạt động", "inactive": "Đã vô hiệu" },
+    "empty": {
+      "text": "Chưa có công ty đối tác nào."
+    },
+    "col": {
+      "name": "Tên công ty",
+      "accounts": "Số tài khoản",
+      "status": "Trạng thái"
+    },
+    "status": {
+      "active": "Đang hoạt động",
+      "inactive": "Đã vô hiệu"
+    },
     "menu": {
       "open": "Xem tài khoản",
       "rename": "Đổi tên",
       "deactivate": "Vô hiệu",
       "reactivate": "Mở lại"
     },
-    "field": { "name": "Tên công ty" },
+    "field": {
+      "name": "Tên công ty"
+    },
     "createTitle": "Thêm công ty đối tác",
     "renameTitle": "Đổi tên công ty",
     "error": {
@@ -988,7 +1001,11 @@
         "status": "Trạng thái",
         "lastLogin": "Đăng nhập gần nhất"
       },
-      "status": { "active": "Hoạt động", "locked": "Đã khoá", "deactivated": "Đã vô hiệu" },
+      "status": {
+        "active": "Hoạt động",
+        "locked": "Đã khoá",
+        "deactivated": "Đã vô hiệu"
+      },
       "menu": {
         "resetPassword": "Đặt lại mật khẩu",
         "lock": "Khoá",
@@ -1012,7 +1029,6 @@
       }
     }
   },
-
   "tempPassword": {
     "titleTenant": "Đã tạo tenant {key}",
     "body": "Gửi thông tin sau cho khách qua kênh riêng. Mật khẩu tạm chỉ hiện một lần.",
@@ -1167,8 +1183,16 @@
       "message": "Nội dung",
       "status": "Trạng thái"
     },
-    "kind": { "bug": "Lỗi", "idea": "Đề xuất", "other": "Khác" },
-    "status": { "new": "Mới", "in_progress": "Đang xử lý", "done": "Xong" },
+    "kind": {
+      "bug": "Lỗi",
+      "idea": "Đề xuất",
+      "other": "Khác"
+    },
+    "status": {
+      "new": "Mới",
+      "in_progress": "Đang xử lý",
+      "done": "Xong"
+    },
     "version": "Phiên bản",
     "page": "Trang",
     "reply": "Phản hồi",
@@ -1236,7 +1260,12 @@
       "checks": "Các check",
       "events": "20 sự kiện gần nhất"
     },
-    "status": { "ok": "Ổn", "warn": "Cảnh báo", "crit": "Nghiêm trọng", "unknown": "Chưa rõ" },
+    "status": {
+      "ok": "Ổn",
+      "warn": "Cảnh báo",
+      "crit": "Nghiêm trọng",
+      "unknown": "Chưa rõ"
+    },
     "overall": {
       "ok": "Mọi thứ ổn",
       "warn": "Có cảnh báo",
@@ -1991,17 +2020,44 @@
   },
   "featmeta": {
     "app": {
-      "core": { "name": "Cơ bản", "desc": "Chức năng nền tảng, luôn bật cho mọi công ty" },
-      "chat": { "name": "Chat AI", "desc": "Trò chuyện với trợ lý AI" },
-      "community": { "name": "Community", "desc": "Không gian trao đổi nội bộ của công ty" },
-      "contracts": { "name": "Sổ Hợp Tác", "desc": "Quản lý hợp đồng, quy trình duyệt và ký" },
-      "knowledge": { "name": "Tri thức", "desc": "Kho tài liệu và hỏi đáp theo nguồn nội bộ" },
-      "other": { "name": "Khác", "desc": "Tính năng chưa được phân nhóm" }
+      "core": {
+        "name": "Cơ bản",
+        "desc": "Chức năng nền tảng, luôn bật cho mọi công ty"
+      },
+      "chat": {
+        "name": "Chat AI",
+        "desc": "Trò chuyện với trợ lý AI"
+      },
+      "community": {
+        "name": "Community",
+        "desc": "Không gian trao đổi nội bộ của công ty"
+      },
+      "contracts": {
+        "name": "Sổ Hợp Tác",
+        "desc": "Quản lý hợp đồng, quy trình duyệt và ký"
+      },
+      "knowledge": {
+        "name": "Tri thức",
+        "desc": "Kho tài liệu và hỏi đáp theo nguồn nội bộ"
+      },
+      "other": {
+        "name": "Khác",
+        "desc": "Tính năng chưa được phân nhóm"
+      }
     },
     "f": {
-      "core": { "name": "Cơ bản", "desc": "Chức năng nền tảng luôn bật cho mọi công ty" },
-      "chat-app": { "name": "Chat AI", "desc": "Cho phép công ty dùng ứng dụng Chat AI" },
-      "community-read": { "name": "Xem Community", "desc": "Đọc bài viết và bình luận" },
+      "core": {
+        "name": "Cơ bản",
+        "desc": "Chức năng nền tảng luôn bật cho mọi công ty"
+      },
+      "chat-app": {
+        "name": "Chat AI",
+        "desc": "Cho phép công ty dùng ứng dụng Chat AI"
+      },
+      "community-read": {
+        "name": "Xem Community",
+        "desc": "Đọc bài viết và bình luận"
+      },
       "community-write": {
         "name": "Sửa Community",
         "desc": "Đăng bài, bình luận và chỉnh sửa nội dung của mình"
@@ -2010,7 +2066,10 @@
         "name": "Quản trị Community",
         "desc": "Duyệt bài, quản lý chuyên mục và cài đặt"
       },
-      "contracts-read": { "name": "Xem hợp đồng", "desc": "Xem danh sách và nội dung hợp đồng" },
+      "contracts-read": {
+        "name": "Xem hợp đồng",
+        "desc": "Xem danh sách và nội dung hợp đồng"
+      },
       "contracts-write": {
         "name": "Soạn và sửa hợp đồng",
         "desc": "Tạo, chỉnh sửa và gửi duyệt hợp đồng"
@@ -2031,7 +2090,10 @@
         "name": "Xem tri thức",
         "desc": "Tìm kiếm và đọc tài liệu trong kho tri thức"
       },
-      "knowledge-write": { "name": "Sửa tri thức", "desc": "Thêm và cập nhật tài liệu tri thức" },
+      "knowledge-write": {
+        "name": "Sửa tri thức",
+        "desc": "Thêm và cập nhật tài liệu tri thức"
+      },
       "knowledge-admin": {
         "name": "Quản trị tri thức",
         "desc": "Quản lý nguồn, phân quyền và cấu hình kho tri thức"

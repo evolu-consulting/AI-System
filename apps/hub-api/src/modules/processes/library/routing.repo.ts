@@ -59,6 +59,24 @@ export async function insertAssigned(
   return r.count === 1;
 }
 
+export type CurrentRow = { def_id: string; name: string };
+/** hub-routing-backfill · quy trình chạy khi KHÔNG có luật (cùng thứ tự `RESOLVE_SLOT_SQL`): gán cũ ⇒ mặc định khe; def đã xoá
+ *  mềm ⇒ null. Scope system (đọc `process_defs` thư viện). Một câu theo PK. */
+export async function currentOf(
+  tx: Tx,
+  tenantId: string,
+  slot: string,
+): Promise<CurrentRow | null> {
+  const [r] =
+    await tx.execute<CurrentRow>(sql`select d.id::text as def_id, coalesce(r.name, d.name) as name
+    from (select
+        (select a.def_id from hub.process_slot_assignments a where a.tenant_id = ${tenantId} and a.slot = ${slot}) as a_id,
+        (select s.default_def_id from hub.process_slots s where s.slot = ${slot}) as s_id) x
+    join hub.process_defs d on d.id = coalesce(x.a_id, x.s_id) and d.deleted_at is null
+    left join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version`);
+  return r ?? null;
+}
+
 export type RuleRef = { id: string; priority: number };
 /** Luật đang dùng def (chặn bỏ gán). */
 export const rulesUsing = (

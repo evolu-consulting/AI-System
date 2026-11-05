@@ -577,6 +577,8 @@
         "title": "Assigned processes & department routing rules",
         "loadFail": "Could not load assigned processes.",
         "noneAssigned": "No process assigned: the company cannot see, pick or run one in this slot.",
+        "inUse": "In use",
+        "inUseOutside": "In use (slot default): {{name}}",
         "unassign": "Unassign",
         "addPick": "Library process",
         "addPlaceholder": "Pick a published process to assign",
@@ -937,16 +939,27 @@
     "create": "+ Add partner company",
     "badge": "Partner",
     "selectTenant": "Select a tenant to see its partner companies.",
-    "empty": { "text": "No partner companies yet." },
-    "col": { "name": "Company name", "accounts": "Accounts", "status": "Status" },
-    "status": { "active": "Active", "inactive": "Deactivated" },
+    "empty": {
+      "text": "No partner companies yet."
+    },
+    "col": {
+      "name": "Company name",
+      "accounts": "Accounts",
+      "status": "Status"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Deactivated"
+    },
     "menu": {
       "open": "View accounts",
       "rename": "Rename",
       "deactivate": "Deactivate",
       "reactivate": "Reactivate"
     },
-    "field": { "name": "Company name" },
+    "field": {
+      "name": "Company name"
+    },
     "createTitle": "Add partner company",
     "renameTitle": "Rename company",
     "error": {
@@ -988,7 +1001,11 @@
         "status": "Status",
         "lastLogin": "Last sign-in"
       },
-      "status": { "active": "Active", "locked": "Locked", "deactivated": "Deactivated" },
+      "status": {
+        "active": "Active",
+        "locked": "Locked",
+        "deactivated": "Deactivated"
+      },
       "menu": {
         "resetPassword": "Reset password",
         "lock": "Lock",
@@ -1012,7 +1029,6 @@
       }
     }
   },
-
   "tempPassword": {
     "titleTenant": "Tenant {key} created",
     "body": "Send these details through a private channel. The temporary password is shown only once.",
@@ -1167,8 +1183,16 @@
       "message": "Message",
       "status": "Status"
     },
-    "kind": { "bug": "Bug", "idea": "Suggestion", "other": "Other" },
-    "status": { "new": "New", "in_progress": "In progress", "done": "Done" },
+    "kind": {
+      "bug": "Bug",
+      "idea": "Suggestion",
+      "other": "Other"
+    },
+    "status": {
+      "new": "New",
+      "in_progress": "In progress",
+      "done": "Done"
+    },
     "version": "Version",
     "page": "Page",
     "reply": "Reply",
@@ -1236,7 +1260,12 @@
       "checks": "Checks",
       "events": "Last 20 events"
     },
-    "status": { "ok": "OK", "warn": "Warning", "crit": "Critical", "unknown": "Unknown" },
+    "status": {
+      "ok": "OK",
+      "warn": "Warning",
+      "crit": "Critical",
+      "unknown": "Unknown"
+    },
     "overall": {
       "ok": "All good",
       "warn": "Warnings",
@@ -1991,9 +2020,18 @@
   },
   "featmeta": {
     "app": {
-      "core": { "name": "Basics", "desc": "Core platform features, always on for every company" },
-      "chat": { "name": "Chat AI", "desc": "Chat with the AI assistant" },
-      "community": { "name": "Community", "desc": "The company's internal discussion space" },
+      "core": {
+        "name": "Basics",
+        "desc": "Core platform features, always on for every company"
+      },
+      "chat": {
+        "name": "Chat AI",
+        "desc": "Chat with the AI assistant"
+      },
+      "community": {
+        "name": "Community",
+        "desc": "The company's internal discussion space"
+      },
       "contracts": {
         "name": "Contract Ledger",
         "desc": "Contracts, approval workflows and e-signing"
@@ -2002,12 +2040,24 @@
         "name": "Knowledge",
         "desc": "Document library and Q&A over internal sources"
       },
-      "other": { "name": "Other", "desc": "Features not grouped yet" }
+      "other": {
+        "name": "Other",
+        "desc": "Features not grouped yet"
+      }
     },
     "f": {
-      "core": { "name": "Basics", "desc": "Core features always on for every company" },
-      "chat-app": { "name": "Chat AI", "desc": "Lets the company use the Chat AI app" },
-      "community-read": { "name": "View Community", "desc": "Read posts and comments" },
+      "core": {
+        "name": "Basics",
+        "desc": "Core features always on for every company"
+      },
+      "chat-app": {
+        "name": "Chat AI",
+        "desc": "Lets the company use the Chat AI app"
+      },
+      "community-read": {
+        "name": "View Community",
+        "desc": "Read posts and comments"
+      },
       "community-write": {
         "name": "Edit Community",
         "desc": "Post, comment and edit your own content"
@@ -2016,7 +2066,10 @@
         "name": "Administer Community",
         "desc": "Moderate posts, manage categories and settings"
       },
-      "contracts-read": { "name": "View contracts", "desc": "See the contract list and contents" },
+      "contracts-read": {
+        "name": "View contracts",
+        "desc": "See the contract list and contents"
+      },
       "contracts-write": {
         "name": "Draft and edit contracts",
         "desc": "Create, edit and submit contracts for approval"
@@ -2037,7 +2090,10 @@
         "name": "View knowledge",
         "desc": "Search and read documents in the knowledge library"
       },
-      "knowledge-write": { "name": "Edit knowledge", "desc": "Add and update knowledge documents" },
+      "knowledge-write": {
+        "name": "Edit knowledge",
+        "desc": "Add and update knowledge documents"
+      },
       "knowledge-admin": {
         "name": "Administer knowledge",
         "desc": "Manage sources, permissions and library settings"

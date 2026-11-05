@@ -67,10 +67,23 @@ function Diagram({ rows, who }: { rows: StepRow[]; who: (w: StepWho) => string }
   );
 }
 export function SlotFlowView({ defId }: { defId: string | undefined }) {
+  const f = useSlotFlow(defId);
+  if (!defId) return null;
+  return <FlowRowsView rows={f.rows} pending={f.pending} error={f.error} />;
+}
+
+/** hub-routing-backfill · cùng sơ đồ + bảng bước cho nguồn khác (vd quy trình trong tập gán, đọc qua routing). */
+export function FlowRowsView({
+  rows,
+  pending,
+  error,
+}: {
+  rows: StepRow[] | null;
+  pending: boolean;
+  error: unknown;
+}) {
   const { t } = useTranslation();
   const who = useWho();
-  const { rows, pending, error } = useSlotFlow(defId);
-  if (!defId) return null;
   if (pending)
     return <p className="text-caption text-muted-foreground">{t("appcfg.flow.loading")}</p>;
   if (error || !rows)

@@ -71,6 +71,8 @@ test("platform gán quy trình vào tập của tenant và bỏ gán quy trình 
           },
         ],
         processes: assigned,
+        current_def_id: P1,
+        current_def_name: "Mặc định",
       }),
     );
     await p.route(`**/process-defs?*`, (r) =>
@@ -88,6 +90,8 @@ test("platform gán quy trình vào tập của tenant và bỏ gán quy trình 
     await p.goto(`${ADMIN_URL}/tenants/${ACME}?tab=features`);
     const details = p.getByTestId(`admin-routing-details-${SLOT}`);
     await details.getByText("Quy trình được gán & luật chọn theo phòng ban").click();
+    // hub-routing-backfill · quy trình chạy khi không có luật (gán cũ) gắn nhãn "Đang dùng".
+    await expect(details.getByTestId(`admin-assigned-in-use-${P1}`)).toHaveText("Đang dùng");
 
     await details.getByTestId("admin-assign-pick").selectOption(P2);
     await details.getByTestId("admin-assign-add").click();

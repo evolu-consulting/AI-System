@@ -90,19 +90,35 @@ export async function tenantOf(
   return r ?? null;
 }
 
-/** Gán (thay thế) — trả def cũ (null = trước đó chạy mặc định). */
+/** Gán (thay thế) — trả def cũ (null = trước đó chạy mặc định). hub-routing-backfill: cùng câu thêm def vào tập gán CR-118
+ *  (`process_tenant_defs`, có sẵn ⇒ giữ) để màn luật chọn quy trình thấy quy trình đang dùng. */
 export async function upsertAssignment(
   tx: Tx,
   w: { tenantId: string; slot: string; defId: string; actorId: string },
 ): Promise<string | null> {
-  const [r] = await tx.execute<{ prev: string | null }>(sql`with old as (
-      select def_id from hub.process_slot_assignments where tenant_id = ${w.tenantId} and slot = ${w.slot} for update),
-    up as (insert into hub.process_slot_assignments (tenant_id, slot, def_id, assigned_by)
+  // Hai câu: khoá + đọc def cũ TRƯỚC (FOR UPDATE trong CTE cùng câu với upsert bỏ qua hàng vừa sửa ⇒ `prev` luôn null).
+  const [old] = await tx.execute<{ prev: string }>(sql`select def_id::text as prev
+    from hub.process_slot_assignments where tenant_id = ${w.tenantId} and slot = ${w.slot} for update`);
+  await tx.execute(sql`with up as (insert into hub.process_slot_assignments (tenant_id, slot, def_id, assigned_by)
       values (${w.tenantId}, ${w.slot}, ${w.defId}, ${w.actorId})
       on conflict (tenant_id, slot) do update set def_id = excluded.def_id, assigned_by = excluded.assigned_by,
         assigned_at = now() returning 1)
-    select (select def_id::text from old) as prev from up`);
-  return r?.prev ?? null;
+    insert into hub.process_tenant_defs (tenant_id, def_id, slot, assigned_by)
+      values (${w.tenantId}, ${w.defId}, ${w.slot}, ${w.actorId}) on conflict do nothing`);
+  return old?.prev ?? null;
+}
+
+/** hub-routing-backfill · def thôi là gán cũ (bỏ gán / bị thay) ⇒ bỏ khỏi tập gán, TRỪ khi luật còn dùng (giữ; FK luật cũng
+ *  chặn). Một câu; trả true nếu đã bỏ, false nếu giữ / không có. */
+export async function releaseFromSet(
+  tx: Tx,
+  w: { tenantId: string; slot: string; defId: string },
+): Promise<boolean> {
+  const r = await tx.execute(sql`delete from hub.process_tenant_defs a
+    where a.tenant_id = ${w.tenantId} and a.slot = ${w.slot} and a.def_id = ${w.defId}
+      and not exists (select 1 from hub.process_routing_rules x
+        where x.tenant_id = a.tenant_id and x.slot = a.slot and x.def_id = a.def_id)`);
+  return r.count === 1;
 }
 
 export async function deleteAssignment(

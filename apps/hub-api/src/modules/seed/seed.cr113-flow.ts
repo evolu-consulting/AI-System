@@ -114,6 +114,10 @@ export async function writeCr113Flow(tx: Tx): Promise<Cr113FlowResult> {
       where exists (select 1 from hub.process_defs where id = ${CR113_DEF.id})
       on conflict (tenant_id, slot) do nothing returning slot`
   ).length;
+  // hub-routing-backfill · gán cũ đang có cũng vào tập gán CR-118 (màn luật chọn quy trình thấy nó); có sẵn ⇒ giữ.
+  await tx`insert into hub.process_tenant_defs (tenant_id, def_id, slot, assigned_by)
+    select a.tenant_id, a.def_id, a.slot, ${actor.id} from hub.process_slot_assignments a
+    where a.tenant_id = ${t.id} and a.slot = ${SLOT} on conflict do nothing`;
   await bumpIfChanged(tx, r, t.id as string);
   return r;
 }

@@ -1,6 +1,7 @@
 // CR-118 §6 · §11.2 · một khe của công ty: quy trình platform đã gán (tên + phiên bản + sơ đồ chỉ đọc, nạp lười) và bộ sửa luật.
 // Sơ đồ: MỌI quy trình đã gán xem được (nạp khi mở: `GET /tenants/:tid/process-routing/:slot/processes/:defId`).
 import type { AssignedProcess } from "@ai/contracts/hub-admin";
+import { routingCurrent } from "@ai/web-kit/routing-current";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDepartments, useRouting } from "../../hooks/use-apps-settings";
@@ -12,10 +13,12 @@ function ProcessItem({
   tenantId,
   slot,
   p,
+  inUse,
 }: {
   tenantId: string;
   slot: string;
   p: AssignedProcess;
+  inUse: boolean;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -27,6 +30,14 @@ function ProcessItem({
         <span className="text-caption text-dim">
           {p.rel_version !== null ? `v${p.rel_version}` : t("contracts.settings.apps.noVersion")}
         </span>
+        {inUse && (
+          <span
+            data-testid={`slot-process-in-use-${p.def_id}`}
+            className="rounded-full bg-act/10 px-2 py-0.5 text-caption font-semibold text-act"
+          >
+            {t("contracts.settings.apps.inUse")}
+          </span>
+        )}
         <button
           type="button"
           data-testid={`slot-diagram-toggle-${p.def_id}`}
@@ -59,6 +70,7 @@ export function SlotCard({ tenantId, slot }: { tenantId: string; slot: string })
   const q = useRouting(tenantId, slot);
   const depts = useDepartments(true);
   const a = (k: string) => t(`contracts.settings.apps.${k}`);
+  const cur = q.data ? routingCurrent(q.data) : null;
   return (
     <section
       data-testid={`apps-slot-${slot}`}
@@ -82,11 +94,22 @@ export function SlotCard({ tenantId, slot }: { tenantId: string; slot: string })
           {a("noneAssigned")}
         </p>
       )}
+      {cur?.outside && (
+        <p data-testid="slot-in-use-outside" className="mb-2 text-body text-dim">
+          {t("contracts.settings.apps.inUseOutside", { name: cur.outside.name })}
+        </p>
+      )}
       {q.data && q.data.processes.length > 0 && (
         <>
           <ul className="mb-2 flex flex-col gap-2">
             {q.data.processes.map((p) => (
-              <ProcessItem key={p.def_id} tenantId={tenantId} slot={slot} p={p} />
+              <ProcessItem
+                key={p.def_id}
+                tenantId={tenantId}
+                slot={slot}
+                p={p}
+                inUse={cur?.markId === p.def_id}
+              />
             ))}
           </ul>
           <RoutingEditor

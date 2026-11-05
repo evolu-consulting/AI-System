@@ -128,9 +128,10 @@ export class RoutingService {
 
   #view(tenantId: string, slot: string): Promise<ProcessRouting> {
     return withHubScope(this.d.db, { kind: "system" }, async (tx) => {
-      const [{ version, rules }, processes] = [
+      const [{ version, rules }, processes, current] = [
         await rt.readRouting(tx, tenantId, slot),
         await rt.assignedOf(tx, tenantId, slot),
+        await rt.currentOf(tx, tenantId, slot),
       ];
       const live = new Map(processes.map((p) => [p.def_id, p.rel_version]));
       return {
@@ -149,6 +150,8 @@ export class RoutingService {
           name: p.name,
           rel_version: p.rel_version === null ? null : Number(p.rel_version),
         })),
+        current_def_id: current?.def_id ?? null,
+        current_def_name: current?.name ?? null,
       };
     });
   }

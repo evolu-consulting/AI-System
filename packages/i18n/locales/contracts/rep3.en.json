@@ -88,6 +88,8 @@
         "addonOff": "off",
         "slotTitle": "Process slot: {{slot}}",
         "noneAssigned": "No process is assigned to your company for this slot. Ask the platform admin to assign one.",
+        "inUse": "In use",
+        "inUseOutside": "In use (slot default): {{name}}",
         "noVersion": "unpublished",
         "viewDiagram": "View diagram",
         "hideDiagram": "Hide diagram",

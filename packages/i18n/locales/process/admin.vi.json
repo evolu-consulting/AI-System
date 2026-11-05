@@ -1,4 +1,17 @@
 {
+  "assigned": {
+    "title": "Được platform gán",
+    "lead": "Quy trình nền tảng đã gán cho công ty (chỉ xem). Gán hoặc sửa nội dung do quản trị nền tảng làm; luật chọn quy trình theo phòng ban sửa ở Cài đặt › Ứng dụng & quy trình.",
+    "slot": "Khe quy trình: {{slot}}",
+    "inUse": "Đang dùng",
+    "inUseOutside": "Đang dùng (mặc định của khe): {{name}}",
+    "unpublished": "chưa xuất bản",
+    "viewDiagram": "Xem sơ đồ",
+    "hideDiagram": "Ẩn sơ đồ",
+    "none": "Chưa có quy trình nào được gán.",
+    "loading": "Đang tải…",
+    "loadFail": "Không tải được quy trình đã gán."
+  },
   "list": {
     "title": "Quy trình nghiệp vụ",
     "subtitle": "Chuỗi giai đoạn do agent hoặc nhóm agent làm. Người kiểm bấm Đạt thì quy trình tự chạy tiếp, Chưa đạt thì agent làm lại theo góp ý.",

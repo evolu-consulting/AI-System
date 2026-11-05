@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { AutomationNote } from "@/components/shared/AutomationNote";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -23,6 +24,12 @@ import {
   type Tab,
   useProcessesView,
 } from "../hooks/use-processes-view";
+
+/** hub-routing-backfill · mục chỉ đọc "Được platform gán" (nạp lười: không vào chunk đầu). */
+const AssignedProcesses = lazy(
+  () =>
+    import(/* webpackChunkName: "assigned-processes" */ "../components/assigned/AssignedProcesses"),
+);
 
 /** CR-118 · đang lọc theo app (link từ trang cấu hình app): nói rõ + lối về trang app + bỏ lọc. */
 function AppFilterNotice({ app, onClear }: { app: string; onClear: () => void }) {
@@ -102,6 +109,8 @@ function ListPage() {
   const v = useProcessesView();
   if (!v.tenant.me) return null;
   const libraryTab = v.tenant.isPlatform && !v.tenant.tenantId;
+  // tenant đang xem (platform: tenant đã chọn; tenant_admin: tenant của phiên); thư viện platform ⇒ không có mục gán.
+  const assignedTid = v.tenant.isPlatform ? v.tenant.tenantId : v.tenant.me.tenant.id;
   return (
     <>
       <ProcessesHeader v={v} />
@@ -114,7 +123,16 @@ function ListPage() {
             </TabsTrigger>
             <TabsTrigger value="templates">{t("process.admin.list.tab.templates")}</TabsTrigger>
           </TabsList>
-          <TabsContent value="own">{v.tab === "own" ? <Body v={v} /> : null}</TabsContent>
+          <TabsContent value="own">
+            {v.tab === "own" ? <Body v={v} /> : null}
+            {v.tab === "own" && assignedTid ? (
+              <Suspense fallback={null}>
+                <div className="mt-4">
+                  <AssignedProcesses tenantId={assignedTid} />
+                </div>
+              </Suspense>
+            ) : null}
+          </TabsContent>
           <TabsContent value="templates">
             {v.tab === "templates" ? <Body v={v} /> : null}
           </TabsContent>

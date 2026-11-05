@@ -1,4 +1,17 @@
 {
+  "assigned": {
+    "title": "Assigned by platform",
+    "lead": "Platform processes assigned to your company (read-only). Assigning or editing is done by the platform admin; department routing rules are edited in Settings › Apps & processes.",
+    "slot": "Process slot: {{slot}}",
+    "inUse": "In use",
+    "inUseOutside": "In use (slot default): {{name}}",
+    "unpublished": "unpublished",
+    "viewDiagram": "View diagram",
+    "hideDiagram": "Hide diagram",
+    "none": "No process assigned yet.",
+    "loading": "Loading…",
+    "loadFail": "Could not load assigned processes."
+  },
   "list": {
     "title": "Business processes",
     "subtitle": "A chain of stages done by agents or agent teams. When a reviewer passes a stage the process continues; if it needs rework the agent redoes it using the feedback.",

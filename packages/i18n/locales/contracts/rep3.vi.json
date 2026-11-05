@@ -88,6 +88,8 @@
         "addonOff": "tắt",
         "slotTitle": "Khe quy trình: {{slot}}",
         "noneAssigned": "Chưa có quy trình nào được gán cho công ty ở khe này. Liên hệ quản trị nền tảng để được gán.",
+        "inUse": "Đang dùng",
+        "inUseOutside": "Đang dùng (mặc định của khe): {{name}}",
         "noVersion": "chưa xuất bản",
         "viewDiagram": "Xem sơ đồ",
         "hideDiagram": "Ẩn sơ đồ",

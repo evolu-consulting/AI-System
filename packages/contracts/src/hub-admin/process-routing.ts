@@ -80,6 +80,10 @@ export const ProcessRoutingSchema = z.strictObject({
   version: z.number().int().min(0),
   rules: z.array(ProcessRoutingRuleSchema),
   processes: z.array(AssignedProcessSchema),
+  /** hub-routing-backfill · quy trình chạy khi KHÔNG có luật nào khớp/không có luật: gán cũ của tenant × khe, không có ⇒ mặc
+   *  định khe; null = chưa có quy trình. Có thể nằm ngoài `processes` (mặc định khe chưa gán). Vắng ở server cũ. */
+  current_def_id: UuidSchema.nullable().optional(),
+  current_def_name: z.string().nullable().optional(),
 });
 export type ProcessRouting = z.infer<typeof ProcessRoutingSchema>;
 

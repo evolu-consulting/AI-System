@@ -1,5 +1,6 @@
 // CR-118 §11.2 · trong mỗi khe của tenant (trang công ty + ngăn "Công ty" của /apps/$appKey, cùng component): tập quy trình ĐÃ GÁN
 // (gán thêm / bỏ gán, bỏ gán bị chặn khi còn luật dùng ⇒ nêu luật bị ảnh hưởng) + bộ sửa luật chọn theo phòng ban. Chỉ platform_admin.
+import { routingCurrent } from "@ai/web-kit/routing-current";
 import type { RoutingErrorSpec } from "@ai/web-kit/routing-rules";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -42,6 +43,7 @@ function Body({
     );
   const data = q.data;
   const have = new Set(data.processes.map((p) => p.def_id));
+  const cur = routingCurrent(data);
   const options = candidates.filter((c) => !have.has(c.id));
   const doAssign = async () => {
     const r = await act.assign(pick);
@@ -71,6 +73,14 @@ function Body({
               {p.name}
               {p.rel_version !== null ? ` · v${p.rel_version}` : ""}
             </span>
+            {cur.markId === p.def_id && (
+              <span
+                data-testid={`admin-assigned-in-use-${p.def_id}`}
+                className="rounded-full bg-primary/10 px-2 py-0.5 text-caption font-semibold text-primary"
+              >
+                {k("inUse")}
+              </span>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -81,6 +91,11 @@ function Body({
             </Button>
           </li>
         ))}
+        {cur.outside && (
+          <li className="text-body text-muted-foreground" data-testid="admin-in-use-outside">
+            {t("tenants.slots.routing.inUseOutside", { name: cur.outside.name })}
+          </li>
+        )}
       </ul>
       <div className="flex flex-wrap items-center gap-2">
         <select
