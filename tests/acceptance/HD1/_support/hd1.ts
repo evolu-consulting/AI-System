@@ -46,6 +46,7 @@ import { hubActivity } from "../../P-d/d1/_count";
 import { setupX2a } from "../../X2a/_x2a";
 
 import { itemId } from "./pure";
+import { BACKGROUND } from "./sql-capture";
 
 export { countHops } from "./hops";
 export * from "./pure";
@@ -463,7 +464,7 @@ export async function redisOps<R>(
 // ---------- chụp SQL đầy đủ (không cắt 160 ký tự) + EXPLAIN ----------
 export type Cap = { text: string; params: unknown[] };
 const TX_CTL =
-  /^\s*((begin|commit|rollback|savepoint|release)\b|select set_config\('app\.scope'|select b\.oid, b\.typarray from pg_catalog\.pg_type|select "(hub_)?config_version" from "(admin|hub)"\."config_meta")/i;
+  /^\s*((begin|commit|rollback|savepoint|release)\b|select set_config\('app\.scope'|select b\.oid,\s+b\.typarray\s+from pg_catalog\.pg_type|select "(hub_)?config_version" from "(admin|hub)"\."config_meta")/i;
 type PoolOpts = {
   debug?: (conn: number, q: string, params: unknown[], ...rest: unknown[]) => void;
 };
@@ -478,7 +479,8 @@ export async function captureSql<R>(
   const queries: Cap[] = [];
   opts.debug = (conn, q, params, ...rest) => {
     if (typeof prev === "function") prev(conn, q, params, ...rest);
-    if (!TX_CTL.test(q)) queries.push({ text: q, params: params ?? [] });
+    if (!TX_CTL.test(q) && !BACKGROUND.some((b) => b.re.test(q)))
+      queries.push({ text: q, params: params ?? [] });
   };
   try {
     const r = await fn();
@@ -576,21 +578,4 @@ export async function jsonWith(
   }
   return { status: res.status, headers: res.headers, text, json };
 }
-
-/** Văn bản các câu đã chụp (gọn, để assert in ra câu thừa khi số câu lệch). */
-export const queryTexts = (queries: readonly Cap[]): string[] =>
-  queries.map((q, i) => `${i + 1}. ${q.text.replace(/\s+/g, " ").slice(0, 140)}`);
-/** Kháº³ng Ä‘á»‹nh sá»‘ cÃ¢u SQL tá»«ng lÆ°á»£t chá»¥p (`captureSql`) khá»›p `expected`; lá»‡ch â‡’ bÃ¡o lá»—i KÃˆM vÄƒn báº£n má»i cÃ¢u cá»§a cÃ¡c lÆ°á»£t Ä‘á»ƒ tháº¥y ngay cÃ¢u thá»«a. */
-export function expectQueryCounts(
-  caps: readonly { queries: readonly Cap[] }[],
-  expected: readonly number[],
-): void {
-  const got = caps.map((c) => c.queries.length);
-  if (got.length === expected.length && got.every((n, i) => n === expected[i])) return;
-  const dump = caps.map(
-    (c, i) => `#${i} (${c.queries.length} cÃ¢u):\n  ${queryTexts(c.queries).join("\n  ")}`,
-  );
-  throw new Error(
-    `sá»‘ cÃ¢u SQL lá»‡ch: nháº­n ${JSON.stringify(got)}, mong ${JSON.stringify(expected)}\n${dump.join("\n")}`,
-  );
-}
+export { expectQueryCounts, queryTexts } from "./sql-capture";
