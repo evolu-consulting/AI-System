@@ -1,4 +1,4 @@
-// prefs-sync · công tắc Giao diện + Ngôn ngữ DÙNG CHUNG, đặt trong menu tài khoản của cả 4 web (cùng vị trí, cùng giao diện).
+﻿// prefs-sync · công tắc Giao diện + Ngôn ngữ DÙNG CHUNG, đặt trong menu tài khoản của cả 4 web (cùng vị trí, cùng giao diện).
 // CR-120 · tối giản: MỘT hàng — Giao diện = nhóm 3 nút CHỈ biểu tượng (Mặt trời / Mặt trăng / Theo máy, có tooltip + aria-label, không chữ),
 // Ngôn ngữ = nhóm VI | EN gọn cùng kiểu. Không viền/ô hộp; nền chip theo token của app (shell/admin/chat/studio), tối dùng được.
 // Vai trò a11y giữ nguyên (radiogroup "Giao diện"/"Ngôn ngữ" + radio "Sáng"/"Tối"/"Theo máy", "VI"/"EN").
@@ -57,7 +57,6 @@ const SVG = {
   strokeWidth: 2,
   strokeLinecap: "round",
   strokeLinejoin: "round",
-  "aria-hidden": true,
 } as const;
 /** Đường nét lucide Sun / Moon / Monitor (nhúng để web-kit không phụ thuộc thư viện biểu tượng của app). */
 const ICONS: Record<Theme, ReactElement> = {
