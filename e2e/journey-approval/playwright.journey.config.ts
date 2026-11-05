@@ -40,7 +40,7 @@ process.env.JA_USER_PW ||= `${randomBytes(12).toString("base64url")}-Aa1`;
 
 export default defineConfig({
   testDir: ".",
-  testMatch: "**/*.ja.ts",
+  testMatch: ["**/*.ja.ts", "**/cr121-editor*.spec.ts"],
   workers: 1,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,

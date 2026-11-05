@@ -2,7 +2,7 @@
 // Xuất bản / Lịch sử / Gán / Xem trước / Đặt mặc định / Nhân bản. Canvas và Form chuyển được khi không có thay đổi chưa lưu
 // (chuyển đổi nằm ở Hub: Form lưu `slot_body`, Canvas lưu `stages` ⇒ `fromStages`).
 import { useNavigate } from "@tanstack/react-router";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
@@ -10,6 +10,7 @@ import { useDlcStepTemplates } from "../../dlc-steps-api";
 import { useCloneFlow } from "../../hooks/use-clone-flow";
 import { isDlcSlotKey } from "../../lib/dlc-slot";
 import { processErrorSpec } from "../../lib/errors";
+import type { PublishIssue } from "../../lib/publish-issues";
 import { type LibraryDef, setSlotDefault, useLibraryRefresh, useSlots } from "../../library-api";
 import { AssignTenantsDialog } from "./AssignTenantsDialog";
 import { CloneDialog } from "./CloneDialog";
@@ -39,6 +40,10 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
   const dlcSteps = useDlcStepTemplates(isDlcSlotKey(def.slot));
   const [mode, setMode] = useState<EditorMode>("canvas");
   const [action, setAction] = useState<LibraryAction | null>(null);
+  // CR-121 D-3: lỗi xuất bản (bước, trường, câu sửa) hiện ở thanh trạng thái Form; bản nháp đổi ⇒ lỗi cũ hết hiệu lực.
+  const [pubIssues, setPubIssues] = useState<PublishIssue[]>([]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ xoá khi phiên bản nháp đổi
+  useEffect(() => setPubIssues([]), [def.id, def.version]);
   const cloneFlow = useCloneFlow(
     (id) => void navigate({ to: "/processes/$processId", params: { processId: id } }),
   );
@@ -81,6 +86,7 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
           slot={slot}
           onDirtyChange={onFormDirty}
           onToCanvas={() => setMode("canvas")}
+          publishIssues={pubIssues}
         />
       )}
       <CloneDialog
@@ -90,7 +96,12 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
         onSubmit={(n) => void cloneFlow.submit(n)}
         onClose={cloneFlow.close}
       />
-      <PublishDialog def={def} open={action === "publish"} onClose={close} />
+      <PublishDialog
+        def={def}
+        open={action === "publish"}
+        onClose={close}
+        onIssues={setPubIssues}
+      />
       <ReleasesDialog def={def} open={action === "releases"} onClose={close} />
       <AssignTenantsDialog def={def} open={action === "assign"} onClose={close} />
       <PreviewDialog def={def} open={action === "preview"} onClose={close} />

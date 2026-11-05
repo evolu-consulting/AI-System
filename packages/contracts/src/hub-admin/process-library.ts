@@ -48,7 +48,14 @@ export const HUB_ADMIN_LIBRARY_ERRORS = {
 } as const;
 export type HubAdminLibraryErrorCode = keyof typeof HUB_ADMIN_LIBRARY_ERRORS;
 
-export const SlotIssueSchema = z.strictObject({ path: z.string(), rule: z.string() });
+/** CR-121 D-3 · `step`/`field`/`fix` (D-2): bước (mã hoặc số thứ tự), trường, câu sửa — trình sửa nhảy tới bước + hiện câu sửa. */
+export const SlotIssueSchema = z.strictObject({
+  path: z.string(),
+  rule: z.string(),
+  step: z.union([z.string(), z.number()]).optional(),
+  field: z.string().optional(),
+  fix: z.string().optional(),
+});
 /** `SLOT_BODY_INVALID` / `PROCESS_PUBLISH_INVALID`. */
 export const SlotIssuesDetailsSchema = z.strictObject({ issues: z.array(SlotIssueSchema).max(20) });
 /** `SLOT_GROUPS_MISSING`: tenant đầu tiên (mã tenant) thiếu Group theo mã. */
@@ -110,9 +117,31 @@ export const ProcessAssignmentListSchema = z.strictObject({
   items: z.array(ProcessAssignmentSchema),
 });
 
+/** CR-121 D-3 · trường nghiệp vụ khe cho dùng trong điều kiện (khai ở `SlotSpec.fields`, D-0): trình sửa chỉ hiện các trường này. */
+export const SLOT_FIELD_TYPES = ["number", "enum", "department", "boolean"] as const;
+export const SLOT_FIELD_OPS = ["ge", "gt", "le", "lt", "in", "is"] as const;
+export const SlotFieldSchema = z.strictObject({
+  key: z.string().min(1),
+  label: z.string(),
+  type: z.enum(SLOT_FIELD_TYPES),
+  ops: z.array(z.enum(SLOT_FIELD_OPS)),
+  options: z.array(z.strictObject({ value: z.string(), label: z.string() })).optional(),
+});
+export type SlotFieldDto = z.infer<typeof SlotFieldSchema>;
+/** CR-121 D-3 · loại node khe hỗ trợ (khai ở `SlotSpec.nodes`): trình sửa chỉ cho thêm các node này; `icon` = khoá icon shell. */
+export const SlotNodeSchema = z.strictObject({
+  kind: z.string().min(1),
+  label: z.string(),
+  icon: z.string(),
+});
+export type SlotNodeDto = z.infer<typeof SlotNodeSchema>;
+
 export const ProcessSlotSchema = z.strictObject({
   slot: SlotKeySchema,
   label: z.string(),
+  /** CR-121 D-3 · vắng = Hub cũ (trình sửa dùng danh mục mặc định). */
+  fields: z.array(SlotFieldSchema).optional(),
+  nodes: z.array(SlotNodeSchema).optional(),
   default_def_id: UuidSchema.nullable(),
   default_def_name: z.string().nullable(),
   /** Mã Group đã thấy ở các tenant (gợi ý cho Form), tối đa 200. */

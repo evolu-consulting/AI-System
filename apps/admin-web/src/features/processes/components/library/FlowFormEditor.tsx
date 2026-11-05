@@ -1,4 +1,6 @@
 // CR-105 · L3: Form = editor bước tuần tự của khe `contracts.approval` (chuyển từ contracts-web `FlowPane`). Lưu ghi `slot_body`.
+// CR-121 D-3: theo khuôn mockup — đầu trang (Loại + nguồn + phiên bản), thanh trạng thái, bộ đếm n/20, nút thêm bước chỉ icon theo
+// `nodes` của khe. Công tắc Danh sách | Sơ đồ = "Cách xem" của thanh công cụ (Sơ đồ = Canvas flow-canvas hiện có): không dựng control thứ hai.
 // Thân không biểu diễn được bằng Form (song song, nhánh…) ⇒ chỉ xem + "Sửa ở Canvas".
 import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
@@ -6,7 +8,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useFlowForm } from "../../hooks/use-flow-form";
 import { FLOW_MAX_STEPS } from "../../lib/flow-form";
+import { DEFAULT_FIELDS } from "../../lib/flow-when";
+import type { PublishIssue } from "../../lib/publish-issues";
 import type { LibraryDef, SlotInfo } from "../../library-api";
+import { FlowAddNodes } from "./FlowAddNodes";
+import { type BarIssue, FlowFormHeader, FlowStatusBar, issueText } from "./FlowStatusBar";
 import { FlowStepCard } from "./FlowStepCard";
 
 type Props = {
@@ -14,12 +20,29 @@ type Props = {
   slot: SlotInfo | undefined;
   onDirtyChange: (dirty: boolean) => void;
   onToCanvas: () => void;
+  /** Lỗi xuất bản gần nhất từ Hub (422: bước, trường, câu sửa). */
+  publishIssues?: readonly PublishIssue[];
 };
 
-export function FlowFormEditor({ def, slot, onDirtyChange, onToCanvas }: Props) {
+/** Nhảy tới bước (bấm lỗi ở thanh trạng thái): cuộn vào giữa + đưa focus vào ô đầu tiên của bước. */
+function jumpToStep(index: number): void {
+  const el = document.getElementById(`flow-step-${index}`);
+  el?.scrollIntoView({ block: "center", behavior: "smooth" });
+  el?.querySelector<HTMLElement>("input, button[role=combobox]")?.focus({ preventScroll: true });
+}
+
+export function FlowFormEditor({
+  def,
+  slot,
+  onDirtyChange,
+  onToCanvas,
+  publishIssues = [],
+}: Props) {
   const { t } = useTranslation();
-  const f = (k: string) => t(`process.admin.library.form.${k}`);
-  const form = useFlowForm(def, onDirtyChange);
+  const f = (k: string, o?: Record<string, string | number>) =>
+    t(`process.admin.library.form.${k}`, o);
+  const fields = slot?.fields && slot.fields.length > 0 ? slot.fields : DEFAULT_FIELDS;
+  const form = useFlowForm(def, onDirtyChange, fields);
   const { steps, dispatch, issues } = form;
   if (!form.canEdit)
     return (
@@ -33,8 +56,17 @@ export function FlowFormEditor({ def, slot, onDirtyChange, onToCanvas }: Props) 
   const groups = slot?.group_keys ?? [];
   const general = issues.filter((i) => i.index === null);
   const full = steps.length >= FLOW_MAX_STEPS;
+  const barIssues: BarIssue[] = [
+    ...issues.map((i) => ({ index: i.index, text: issueText(t, i.index, i.code) })),
+    ...publishIssues.map((i) => ({
+      index: i.index,
+      text: i.index === null ? i.text : f("stepIssue", { n: i.index + 1, msg: i.text }),
+    })),
+  ].filter((x, k, a) => a.findIndex((y) => y.index === x.index && y.text === x.text) === k);
   return (
     <div className="space-y-4" data-testid="flow-form">
+      <FlowFormHeader def={def} />
+      <FlowStatusBar def={def} dirty={form.dirty} issues={barIssues} onJump={jumpToStep} />
       <p className="text-body text-muted-foreground">{f("lead")}</p>
       <section
         className="rounded-md border border-border bg-muted/40 px-3 py-2 text-label"
@@ -47,6 +79,16 @@ export function FlowFormEditor({ def, slot, onDirtyChange, onToCanvas }: Props) 
           <li>{f("rules.escalate")}</li>
         </ul>
       </section>
+      <div className="flex items-center gap-2">
+        <h3 className="text-label font-medium text-muted-foreground">{f("steps")}</h3>
+        <span
+          className="font-mono text-caption text-muted-foreground"
+          data-testid="flow-counter"
+          title={f("counterHint", { max: FLOW_MAX_STEPS })}
+        >
+          {steps.length}/{FLOW_MAX_STEPS}
+        </span>
+      </div>
       <ol className="space-y-3">
         {steps.map((s, i) => (
           <FlowStepCard
@@ -55,6 +97,7 @@ export function FlowFormEditor({ def, slot, onDirtyChange, onToCanvas }: Props) 
             index={i}
             count={steps.length}
             groups={groups}
+            fields={fields}
             issues={issues}
             editable
             onPatch={(patch) => dispatch({ type: "patch", index: i, patch })}
@@ -65,24 +108,18 @@ export function FlowFormEditor({ def, slot, onDirtyChange, onToCanvas }: Props) 
         ))}
       </ol>
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={full}
-          onClick={() => dispatch({ type: "addReview" })}
-        >
-          {f("addStep")}
-        </Button>
-        {steps.some((s) => s.kind === "esign") ? null : (
-          <Button
-            type="button"
-            variant="outline"
-            disabled={full}
-            onClick={() => dispatch({ type: "addEsign", name: f("esign.defaultName") })}
-          >
-            {f("addEsign")}
-          </Button>
-        )}
+        <FlowAddNodes
+          nodes={slot?.nodes}
+          full={full}
+          hasEsign={steps.some((s) => s.kind === "esign")}
+          onAdd={(kind) =>
+            dispatch(
+              kind === "review"
+                ? { type: "addReview" }
+                : { type: "addEsign", name: f("esign.defaultName") },
+            )
+          }
+        />
         {full ? (
           <span className="text-caption text-muted-foreground">{f("maxReached")}</span>
         ) : null}
@@ -93,9 +130,7 @@ export function FlowFormEditor({ def, slot, onDirtyChange, onToCanvas }: Props) 
         </p>
       ))}
       <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-4 py-3 backdrop-blur">
-        <div className="min-w-0 flex-1 text-label text-muted-foreground">
-          {form.dirty ? t("common.unsaved") : t("common.savedVersion", { n: def.version })}
-        </div>
+        <div className="min-w-0 flex-1" />
         <Button type="button" variant="outline" disabled={!form.dirty} onClick={form.discard}>
           {f("discard")}
         </Button>

@@ -1,5 +1,6 @@
 // CR-105 · L3: state + lưu của Form (slot_body). Lưu = `PUT /process-defs/:id` kèm `slot_body` (Hub biên dịch ra `stages`);
 // 409 ⇒ ConflictDialog (entity `process_def`); lỗi khác ⇒ toast theo mã Hub.
+import type { SlotFieldDto } from "@ai/contracts/hub-admin";
 import { useEffect, useMemo, useReducer, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
@@ -20,7 +21,11 @@ import {
   useLibraryRefresh,
 } from "../library-api";
 
-export function useFlowForm(def: LibraryDef, onDirtyChange: (dirty: boolean) => void) {
+export function useFlowForm(
+  def: LibraryDef,
+  onDirtyChange: (dirty: boolean) => void,
+  fields?: readonly SlotFieldDto[],
+) {
   const { t } = useTranslation();
   const refresh = useLibraryRefresh();
   const saved = useMemo(() => parseSlotBody(def.slot_body), [def.slot_body]);
@@ -34,7 +39,7 @@ export function useFlowForm(def: LibraryDef, onDirtyChange: (dirty: boolean) => 
     dispatch({ type: "load", steps: saved ?? [] });
   }, [key, saved]);
 
-  const issues = validateFlow(steps);
+  const issues = validateFlow(steps, fields);
   const dirty = saved !== null && JSON.stringify(steps) !== JSON.stringify(saved);
   useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
 

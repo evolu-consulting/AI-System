@@ -1,4 +1,5 @@
 // CR-105 · L3: một bước của Form (duyệt / Ký số / Dify) — chuyển từ contracts-web `FlowStepCard`. Phòng ban theo mã.
+import type { SlotFieldDto } from "@ai/contracts/hub-admin";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,8 @@ type Props = {
   index: number;
   count: number;
   groups: readonly GroupOption[];
+  /** Trường điều kiện của khe (Hub trả kèm danh sách khe); vắng ⇒ danh mục mặc định. */
+  fields?: readonly SlotFieldDto[] | undefined;
   issues: readonly FlowIssue[];
   editable: boolean;
   onPatch: (p: Partial<LibStep>) => void;
@@ -39,7 +42,12 @@ export function ReviewFields({
   onPatch,
   first,
   onWhen,
-}: StepFieldProps<LibReviewStep> & { first: boolean; onWhen: Props["onWhen"] }) {
+  fields,
+}: StepFieldProps<LibReviewStep> & {
+  first: boolean;
+  onWhen: Props["onWhen"];
+  fields?: readonly SlotFieldDto[] | undefined;
+}) {
   const { t } = useTranslation();
   const f = (k: string, o?: Record<string, string | number>) =>
     t(`process.admin.library.form.${k}`, o);
@@ -107,7 +115,14 @@ export function ReviewFields({
         {first ? (
           <p className="text-body text-muted-foreground">{f("firstNoCond")}</p>
         ) : (
-          <FlowWhenEditor id={id} when={step.when} onChange={onWhen} error={err("when")} />
+          <FlowWhenEditor
+            id={id}
+            when={step.when}
+            onChange={onWhen}
+            error={err("when")}
+            fields={fields}
+            groups={groups}
+          />
         )}
       </div>
     </div>
@@ -141,7 +156,7 @@ export function FlowStepCard(p: Props) {
   );
   const movable = p.editable && !first && step.kind !== "esign";
   return (
-    <li className="space-y-3 rounded-md border border-border bg-card p-4" data-testid={id}>
+    <li id={id} className="space-y-3 rounded-md border border-border bg-card p-4" data-testid={id}>
       <div className="flex items-center gap-2">
         <b className="text-label">
           {index + 1}. {first ? f("firstName") : f(`${step.kind}Step`)}
@@ -169,7 +184,14 @@ export function FlowStepCard(p: Props) {
         </span>
       </div>
       {step.kind === "review" ? (
-        <ReviewFields {...common} step={step} first={first} onWhen={p.onWhen} onPatch={p.onPatch} />
+        <ReviewFields
+          {...common}
+          step={step}
+          first={first}
+          fields={p.fields}
+          onWhen={p.onWhen}
+          onPatch={p.onPatch}
+        />
       ) : step.kind === "esign" ? (
         <FlowEsignFields {...common} step={step} onPatch={p.onPatch} />
       ) : (

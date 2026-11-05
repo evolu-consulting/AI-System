@@ -6,8 +6,9 @@ import {
   APPROVAL_FLOW_REMIND_H,
   APPROVAL_FLOW_STEPS_MAX,
   type FlowWhen,
-  flowLeafConds,
 } from "@ai/contracts";
+import type { SlotFieldDto } from "@ai/contracts/hub-admin";
+import { condIssueCodes, DEFAULT_FIELDS } from "./flow-when";
 
 export const FLOW_MAX_STEPS = APPROVAL_FLOW_STEPS_MAX;
 export const DUE_MIN = APPROVAL_FLOW_DUE_H.min;
@@ -181,24 +182,19 @@ function commonIssues(s: LibReviewStep | LibEsignStep, i: number): FlowIssue[] {
   return out;
 }
 
-function whenIssues(w: FlowWhen | null, i: number): FlowIssue[] {
+function whenIssues(w: FlowWhen | null, i: number, fields: readonly SlotFieldDto[]): FlowIssue[] {
   if (!w) return [];
-  const out: FlowIssue[] = [];
-  if (w.conds.length === 0) out.push({ index: i, field: "when", code: "whenEmpty" });
-  for (const c of flowLeafConds(w))
-    if (c.field === "total_value" && !(Number.isInteger(c.value) && c.value >= 0))
-      out.push({ index: i, field: "when", code: "amountInvalid" });
-  return out;
+  return condIssueCodes(w, fields).map((code) => ({ index: i, field: "when", code }));
 }
 
-function reviewIssues(s: LibReviewStep, i: number): FlowIssue[] {
+function reviewIssues(s: LibReviewStep, i: number, fields: readonly SlotFieldDto[]): FlowIssue[] {
   const out = commonIssues(s, i);
   if (!s.department_group_key && !s.approver_user_id)
     out.push({ index: i, field: "department_group_key", code: "GROUP_REQUIRED" });
   if (s.escalate_group_key && s.escalate_group_key === s.department_group_key)
     out.push({ index: i, field: "escalate_group_key", code: "ESCALATE_SAME_GROUP" });
   if (i === 0 && s.when) out.push({ index: i, field: "when", code: "FIRST_CONDITIONAL" });
-  return [...out, ...whenIssues(s.when, i)];
+  return [...out, ...whenIssues(s.when, i, fields)];
 }
 
 function esignIssues(s: LibEsignStep, i: number, n: number): FlowIssue[] {
@@ -211,7 +207,10 @@ function esignIssues(s: LibEsignStep, i: number, n: number): FlowIssue[] {
 }
 
 /** Kiểm sơ bộ phía client (Hub vẫn là nguồn quyết định cuối ở lưu/xuất bản). */
-export function validateFlow(steps: readonly LibStep[]): FlowIssue[] {
+export function validateFlow(
+  steps: readonly LibStep[],
+  fields: readonly SlotFieldDto[] = DEFAULT_FIELDS,
+): FlowIssue[] {
   const out: FlowIssue[] = [];
   if (steps.length === 0 || steps[0]?.kind !== "review")
     out.push({ index: 0, field: "kind", code: "FIRST_NOT_REVIEW" });
@@ -220,7 +219,7 @@ export function validateFlow(steps: readonly LibStep[]): FlowIssue[] {
   steps.forEach((s, i) => {
     if (keys.has(s.key)) out.push({ index: i, field: "key", code: "KEY_DUP" });
     keys.add(s.key);
-    if (s.kind === "review") out.push(...reviewIssues(s, i));
+    if (s.kind === "review") out.push(...reviewIssues(s, i, fields));
     else if (s.kind === "esign") out.push(...esignIssues(s, i, steps.length));
     else if (!s.workflow_key) out.push({ index: i, field: "workflow_key", code: "difyEmpty" });
     const prev = steps[i - 1];

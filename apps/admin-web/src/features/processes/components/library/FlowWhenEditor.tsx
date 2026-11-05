@@ -1,10 +1,10 @@
-// CR-105 · L3: điều kiện áp dụng của một bước Form — loại HĐ (nhiều) AND/OR giá trị (≥ > ≤ <). Chuyển từ contracts-web `FlowWhen`.
-import type { FlowWhen } from "@ai/contracts";
+// CR-121 D-3: trình dựng điều kiện "Chỉ chạy khi" của một bước — chọn trường của app (theo `fields` của khe), toán tử theo kiểu,
+// giá trị; nhiều điều kiện ghép và/hoặc, nhóm lồng MỘT cấp; trống = "Luôn chạy". Thay FlowWhenEditor cũ (loại HĐ + giá trị cố định).
+import { type FlowWhen, isFlowCondGroup } from "@ai/contracts";
+import type { SlotFieldDto } from "@ai/contracts/hub-admin";
+import { Group } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -12,115 +12,181 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { buildWhen, DEALS, VALUE_OPS, type ValueOp, whenParts } from "../../lib/flow-when";
-import type { DealKind } from "../../library-api";
+import {
+  type Combiner,
+  DEFAULT_FIELDS,
+  whenAdd,
+  whenGroup,
+  whenPatch,
+  whenRemove,
+  whenSetOp,
+} from "../../lib/flow-when";
+import { FlowCondRow } from "./FlowCondRow";
+import type { GroupOption } from "./flow-step-props";
 
 type Props = {
   id: string;
   when: FlowWhen | null;
   onChange: (w: FlowWhen | null) => void;
-  error?: string;
+  error?: string | undefined;
+  fields?: readonly SlotFieldDto[];
+  groups?: readonly GroupOption[];
 };
 
-export function FlowWhenEditor({ id, when, onChange, error }: Props) {
+function OpToggle(p: { value: Combiner; onChange: (o: Combiner) => void; label: string }) {
+  const { t } = useTranslation();
+  return (
+    <fieldset className="m-0 flex items-center gap-1 border-0 p-0">
+      <legend className="sr-only">{p.label}</legend>
+      {(["and", "or"] as const).map((o) => (
+        <Button
+          key={o}
+          type="button"
+          size="sm"
+          variant={p.value === o ? "default" : "outline"}
+          aria-pressed={p.value === o}
+          onClick={() => p.onChange(o)}
+        >
+          {t(`process.admin.library.form.${o === "and" ? "opAnd" : "opOr"}`)}
+        </Button>
+      ))}
+    </fieldset>
+  );
+}
+
+function AddCond(p: {
+  label: string;
+  fields: readonly SlotFieldDto[];
+  onPick: (f: SlotFieldDto) => void;
+  testId: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Select
+      value=""
+      onValueChange={(k) => {
+        const f = p.fields.find((x) => x.key === k);
+        if (f) p.onPick(f);
+      }}
+    >
+      <SelectTrigger aria-label={p.label} data-testid={p.testId} className="w-52">
+        <SelectValue placeholder={p.label} />
+      </SelectTrigger>
+      <SelectContent>
+        {p.fields.map((x) => (
+          <SelectItem key={x.key} value={x.key}>
+            {t(`process.admin.library.form.field.${x.key}`, { defaultValue: x.label })}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+export function FlowWhenEditor({ id, when, onChange, error, fields, groups = [] }: Props) {
   const { t } = useTranslation();
   const f = (k: string) => t(`process.admin.library.form.${k}`);
+  const list = fields && fields.length > 0 ? fields : DEFAULT_FIELDS;
   if (!when)
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3" data-testid={`${id}-when`}>
         <span className="text-body text-muted-foreground">{f("always")}</span>
-        <Button
-          type="button"
-          variant="link"
-          size="sm"
-          onClick={() => onChange({ op: "and", conds: [] })}
-        >
-          {f("addCond")}
-        </Button>
+        <AddCond
+          label={f("addCond")}
+          fields={list}
+          testId={`${id}-add`}
+          onPick={(x) => onChange(whenAdd(null, x))}
+        />
       </div>
     );
-  const { deal, value } = whenParts(when);
-  const set = (d: readonly DealKind[], v: typeof value, op = when.op) =>
-    onChange(buildWhen(op, d, v));
+  const rowOf = (
+    c: Parameters<typeof FlowCondRow>[0]["cond"],
+    key: string,
+    path: readonly [number] | readonly [number, number],
+  ) => (
+    <FlowCondRow
+      key={key}
+      id={`${id}-c${path.join("-")}`}
+      cond={c}
+      fields={list}
+      groups={groups}
+      onChange={(n) => onChange(whenPatch(when, path, n))}
+      onRemove={() => onChange(whenRemove(when, path))}
+    />
+  );
   return (
-    <fieldset className="min-w-0 space-y-2 border-0 p-0">
+    <fieldset className="min-w-0 space-y-2 border-0 p-0" data-testid={`${id}-when`}>
       <legend className="sr-only">{f("cond")}</legend>
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-caption text-muted-foreground">{f("dealKind")}</span>
-        {DEALS.map((d) => (
-          <Label key={d} className="flex items-center gap-1.5 font-normal">
-            <Checkbox
-              checked={deal.includes(d)}
-              onCheckedChange={() =>
-                set(deal.includes(d) ? deal.filter((x) => x !== d) : [...deal, d], value)
-              }
-            />
-            {f(`deal.${d}`)}
-          </Label>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <Label className="flex items-center gap-1.5 font-normal">
-          <Checkbox
-            checked={!!value}
-            onCheckedChange={(c) => set(deal, c === true ? { op: "ge", value: 0 } : null)}
-          />
-          {f("valueCond")}
-        </Label>
-        {value ? (
-          <>
-            <Select
-              value={value.op}
-              onValueChange={(o) => set(deal, { ...value, op: o as ValueOp })}
-            >
-              <SelectTrigger aria-label={f("cmp")} className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {VALUE_OPS.map(([o, label]) => (
-                  <SelectItem key={o} value={o}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              id={`${id}-amount`}
-              type="number"
-              min={0}
-              aria-label={f("amount")}
-              className="w-44"
-              value={value.value}
-              onChange={(e) => set(deal, { ...value, value: Math.trunc(Number(e.target.value)) })}
-            />
-          </>
-        ) : null}
-      </div>
-      {deal.length > 0 && value ? (
-        <div className="flex items-center gap-3">
+      {when.conds.length > 1 ? (
+        <div className="flex items-center gap-2">
           <span className="text-caption text-muted-foreground">{f("op")}</span>
-          {(["and", "or"] as const).map((o) => (
-            <Button
-              key={o}
-              type="button"
-              size="sm"
-              variant={when.op === o ? "default" : "outline"}
-              aria-pressed={when.op === o}
-              onClick={() => set(deal, value, o)}
-            >
-              {f(o === "and" ? "opAnd" : "opOr")}
-            </Button>
-          ))}
+          <OpToggle
+            label={f("op")}
+            value={when.op}
+            onChange={(o) => onChange(whenSetOp(when, o))}
+          />
         </div>
       ) : null}
+      {when.conds.map((c, i) =>
+        isFlowCondGroup(c) ? (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: nhóm không có khoá riêng, thứ tự là danh tính
+            key={`g${i}`}
+            className="space-y-2 rounded-md border border-dashed border-border p-2"
+            data-testid={`${id}-group${i}`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-caption text-muted-foreground">{f("groupOp")}</span>
+              <OpToggle
+                label={f("groupOp")}
+                value={c.op}
+                onChange={(o) => onChange(whenSetOp(when, o, i))}
+              />
+            </div>
+            {c.conds.map((x, j) => rowOf(x, `g${i}c${j}`, [i, j]))}
+            <AddCond
+              label={f("addToGroup")}
+              fields={list}
+              testId={`${id}-group${i}-add`}
+              onPick={(x) => onChange(whenAdd(when, x, i))}
+            />
+          </div>
+        ) : (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: điều kiện lá không có khoá riêng
+            key={`c${i}`}
+            className="flex flex-wrap items-center gap-1"
+          >
+            {rowOf(c, `c${i}`, [i])}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-label={f("toGroup")}
+              title={f("toGroup")}
+              onClick={() => onChange(whenGroup(when, i))}
+            >
+              <Group aria-hidden className="size-4" />
+            </Button>
+          </div>
+        ),
+      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <AddCond
+          label={f("addCond")}
+          fields={list}
+          testId={`${id}-add`}
+          onPick={(x) => onChange(whenAdd(when, x))}
+        />
+        <Button type="button" variant="link" size="sm" onClick={() => onChange(null)}>
+          {f("clearCond")}
+        </Button>
+      </div>
       {error ? (
         <p role="alert" className="text-caption text-destructive">
           {error}
         </p>
       ) : null}
-      <Button type="button" variant="link" size="sm" onClick={() => onChange(null)}>
-        {f("clearCond")}
-      </Button>
     </fieldset>
   );
 }

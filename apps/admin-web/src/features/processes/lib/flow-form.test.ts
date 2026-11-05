@@ -10,7 +10,7 @@ import {
   toSlotBody,
   validateFlow,
 } from "./flow-form";
-import { buildWhen, whenParts } from "./flow-when";
+import { DEFAULT_FIELDS, whenAdd } from "./flow-when";
 
 const r = (over: Partial<ReturnType<typeof newReview>> = {}, steps: LibStep[] = []) => ({
   ...newReview(steps, "pb-ke-toan"),
@@ -102,17 +102,20 @@ describe("slot_body", () => {
   });
 });
 
-describe("flow-when", () => {
-  test("whenParts ⇄ buildWhen", () => {
-    const w = buildWhen("or", ["buy", "sell"], { op: "ge", value: 50_000_000 });
-    expect(w).toEqual({
-      op: "or",
-      conds: [
-        { field: "deal", in: ["buy", "sell"] },
-        { field: "total_value", op: "ge", value: 50_000_000 },
-      ],
-    });
-    expect(whenParts(w)).toEqual({ deal: ["buy", "sell"], value: { op: "ge", value: 50_000_000 } });
-    expect(buildWhen("and", [], null).conds).toEqual([]);
+describe("validateFlow · điều kiện theo trường của khe", () => {
+  const dept = DEFAULT_FIELDS.find((x) => x.key === "creator_department");
+  const when = (w: FlowWhen) => validateFlow([r(), r({ key: "s2", when: w })]);
+  test("điều kiện phòng ban chưa chọn phòng ⇒ chặn (condValueEmpty) ở bước 2", () => {
+    if (!dept) throw new Error("thiếu trường");
+    const issues = when(whenAdd(null, dept));
+    expect(issues).toEqual([{ index: 1, field: "when", code: "condValueEmpty" }]);
+  });
+  test("trường ngoài danh mục của khe ⇒ condFieldUnknown", () => {
+    const w: FlowWhen = { op: "and", conds: [{ field: "new_partner", is: true }] };
+    const only = DEFAULT_FIELDS.filter((x) => x.key !== "new_partner");
+    expect(validateFlow([r(), r({ key: "s2", when: w })], only).map((i) => i.code)).toEqual([
+      "condFieldUnknown",
+    ]);
+    expect(when(w)).toEqual([]);
   });
 });

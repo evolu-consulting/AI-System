@@ -25,7 +25,7 @@ import { libError, specOrThrow } from "./library-draft";
 import { explainIssues, missingGroupIssues } from "./library-publish.messages";
 import { bodyUserIds, publishIssues } from "./library-publish.rules";
 import * as asg from "./slot-assign.repo";
-import { listSlots, type SlotSpec } from "./slots";
+import { listSlots, type SlotSpec, slotFields, slotNodes, toFieldDto } from "./slots";
 
 type Act = "publish" | "rollback" | "assign" | "unassign" | "set_default" | "copy";
 const audit = (
@@ -210,12 +210,21 @@ export class LibraryService {
       const all = [...new Set([...listSlots().map((s) => s.key), ...rows.keys()])].sort();
       const items = all.map((slot) => {
         const r = rows.get(slot);
-        const label = listSlots().find((s) => s.key === slot)?.label ?? slot;
+        const spec = listSlots().find((s) => s.key === slot);
+        const label = spec?.label ?? slot;
         const def = {
           default_def_id: r?.default_def_id ?? null,
           default_def_name: r?.default_def_name ?? null,
         };
-        return { slot, label, ...def, group_keys: keys };
+        // CR-121 D-3: danh mục trường/node của khe (D-0) cho trình dựng điều kiện + nút thêm bước.
+        return {
+          slot,
+          label,
+          fields: spec ? slotFields(spec).map(toFieldDto) : [],
+          nodes: spec ? slotNodes(spec).map((n) => ({ ...n })) : [],
+          ...def,
+          group_keys: keys,
+        };
       });
       return { items };
     });

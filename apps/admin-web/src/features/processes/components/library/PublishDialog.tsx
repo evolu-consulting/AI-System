@@ -15,13 +15,21 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { processErrorSpec } from "../../lib/errors";
+import { parseSlotBody } from "../../lib/flow-form";
 import { detailsOf, errorLines, type RuleFormat } from "../../lib/library-view";
+import { type PublishIssue, publishIssuesOf } from "../../lib/publish-issues";
 import { type LibraryDef, publishDef, useImpact, useLibraryRefresh } from "../../library-api";
 
-type Props = { def: LibraryDef; open: boolean; onClose: () => void };
+type Props = {
+  def: LibraryDef;
+  open: boolean;
+  onClose: () => void;
+  /** CR-121 D-3: lỗi xuất bản có cấu trúc (bước, trường, câu sửa) để Form hiện + nhảy tới bước. */
+  onIssues?: (issues: PublishIssue[]) => void;
+};
 type Failure = { message: string; lines: string[] };
 
-export function PublishDialog({ def, open, onClose }: Props) {
+export function PublishDialog({ def, open, onClose, onIssues }: Props) {
   const { t } = useTranslation();
   const impact = useImpact(def.id, open);
   const refresh = useLibraryRefresh();
@@ -44,6 +52,7 @@ export function PublishDialog({ def, open, onClose }: Props) {
       onClose();
     } catch (err) {
       const s = processErrorSpec(err);
+      onIssues?.(publishIssuesOf(err, parseSlotBody(def.slot_body) ?? []));
       setFail({
         message: t(s.key, s.params),
         lines: errorLines(detailsOf(err), ruleText),
