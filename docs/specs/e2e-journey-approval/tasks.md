@@ -32,12 +32,12 @@ Unit `seed-e2e-journey.test.ts`; e2e `approval.ja.ts` chạy MỘT lần trên e
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-Không thay đổi hành vi (lý do: lát chỉ thêm tool seed tenant `e2e-` và e2e; không sửa mã sản phẩm — lỗ hổng "engine tắt mà UI không nói lý do" chỉ được test bắt, chưa sửa).
+Không thay đổi hành vi (lý do: lát thêm tool seed tenant `e2e-`, e2e và int; quyền xem của người duyệt đã có từ CR-109 `contracts.reviewer_contract_ids` — int `CF/approver-visible-run` chỉ khoá lại, không sửa mã sản phẩm).
 
 ## Việc còn lại
 
 Evotest (c832de8b + sửa test): int CF 43 pass / 0 fail (có `confirm-step`, `engine-off-flag`); e2e journey 4 pass / 1 fail.
 - Đã làm: bước "Xác nhận" do gói tự thêm ở đầu lượt cho quy trình thư viện không bắt đầu bằng nhóm sửa (`withConfirmStep`, một chỗ, không thêm SQL); cờ `engine_off` trên `GET /contracts/:id/approval` (+1 gọi cổng/tuyến chỉ cho lượt máy cũ) + ghi chú workspace-web. Ca 2 (engine tắt ⇒ UI nêu lý do) nay XANH.
-- ĐỎ ca 4: nhân viên xác nhận xong (bước "Phòng Kế toán duyệt" hiện) nhưng trưởng Kế toán mở HĐ KHÔNG thấy thẻ duyệt/bước (HĐ của phòng Kinh doanh — nghi quyền xem theo phòng ban chặn người duyệt khác phòng, cần soát `org-visibility`); chưa kịp chẩn đoán.
+- Ca 4 XANH (e2e journey 5/5): KHÔNG phải lỗi quyền xem. RLS `contracts_visible` (0070, `reviewer_contract_ids`) đã cho trưởng phòng của bước đang mở đọc HĐ + thẻ duyệt dù ngoài cây chủ HĐ; int `CF/approver-visible-run` (head_only, mode org) chứng minh: trưởng Kế toán đọc + `can_act` sau Xác nhận; thành viên Kế toán thường, tenant khác, Giám đốc-trước-bước 403/404; Giám đốc đọc khi run tới bước. Nguyên nhân thật: test `approveAs` gọi `reload()` giữa lượt `POST /auth/refresh` của SPA ⇒ phản hồi Set-Cookie bị huỷ, token bị coi đã xoay ⇒ 401 ⇒ về trang đăng nhập; sửa: chờ thẻ duyệt tải xong trước khi tải lại.
 - LƯU Ý lệch yêu cầu A: xác nhận vẫn là stage `s0` của run (do gói thêm, không do quy trình khai), chưa tách thành hành động trước khi mở run; run vẫn mở lúc AI đọc xong (không đổi đường mở run).
 - Chạy `deployed/21-approval-journey.rw.deployed.ts` qua runner sau khi `seed-e2e-journey.ts` chạy trên máy chủ (cần `E2E_JOURNEY_PW`, `ADMIN_PW`).
