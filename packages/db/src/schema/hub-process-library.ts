@@ -46,18 +46,19 @@ export const processSlots = hub.table("process_slots", {
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });
 
-/** Gán tenant × khe = đúng một def thư viện; gán lại = upsert thay thế; không hàng ⇒ chạy mặc định. */
-export const processSlotAssignments = hub.table(
-  "process_slot_assignments",
-  {
+/**
+ * Gán tenant × khe (CR-105) — từ CR-120 hub 0091 là VIEW CHỈ ĐỌC dẫn xuất từ luật `is_default` (+ `process_tenant_defs`); bảng cũ ⇒
+ * `process_slot_assignments_legacy` (không cấp cho hub_rw). KHÔNG ghi qua đây: ghi bằng luật định tuyến (`upsertAssignment`).
+ */
+export const processSlotAssignments = hub
+  .view("process_slot_assignments", {
     tenantId: uuid("tenant_id").notNull(),
     slot: text("slot").notNull(),
     defId: uuid("def_id").notNull(),
     assignedBy: uuid("assigned_by"),
-    assignedAt: ts("assigned_at").notNull().defaultNow(),
-  },
-  (t) => [primaryKey({ columns: [t.tenantId, t.slot] })],
-);
+    assignedAt: ts("assigned_at").notNull(),
+  })
+  .existing();
 
 /** CR-118 §11.2 · tập quy trình thư viện platform đã gán cho tenant (nhiều mỗi khe). DDL/RLS: `0087_process_routing.sql`. */
 export const processTenantDefs = hub.table(

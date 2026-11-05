@@ -125,6 +125,7 @@ export function communitySlotSpecs(): SlotSpec[] {
     key,
     label: LABELS[key] ?? key,
     packKey: "community",
+    optIn: true, // bật khi platform admin gán; không tự cấp mặc định
     requiredInputs: [shape.input],
     systemTools: shape.steps.map((s) => s.tool),
     validate: (b) => validateSlotBody(key, b),

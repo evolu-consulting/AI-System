@@ -57,6 +57,13 @@
       "when": 1803600000000,
       "tag": "0008_flow_states",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1803700000000,
+      "tag": "0009_moderation_guard_cols",
+      "breakpoints": true
     }
   ]
 }

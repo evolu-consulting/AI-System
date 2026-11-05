@@ -27,11 +27,8 @@ export function communityFlowPorts(db: Db, agents: AgentCaller | undefined): Com
     agents,
     moderationOn: async (tenantId) => {
       const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
-        tx.execute<{ on: boolean }>(sql`select (
-            exists (select 1 from hub.process_routings x where x.tenant_id = ${tenantId}::uuid and x.slot = ${SLOT_MODERATION})
-            or exists (select 1 from hub.process_tenant_defs x where x.tenant_id = ${tenantId}::uuid and x.slot = ${SLOT_MODERATION})
-            or exists (select 1 from hub.process_slot_assignments x where x.tenant_id = ${tenantId}::uuid and x.slot = ${SLOT_MODERATION})
-          ) as on`),
+        tx.execute<{ on: boolean }>(sql`select exists (select 1 from hub.process_routing_rules x
+            where x.tenant_id = ${tenantId}::uuid and x.slot = ${SLOT_MODERATION}) as on`),
       );
       return r?.on === true;
     },

@@ -42,12 +42,12 @@ export const ENSURE_SLOT_DEFAULTS_SQL = (
     select tenant_id, slot, 49, '{}'::jsonb, def_id, true from t on conflict do nothing returning 1)
   select count(*)::int as n from r`;
 
-/** Khe cần cấp: đã đăng ký (gói đã mount), bỏ `dlc.*` (Rowan — không đụng). */
+/** Khe cần cấp: đã đăng ký (gói đã mount), bỏ `dlc.*` (Rowan — không đụng) và khe opt-in (chỉ bật khi platform admin gán). */
 export const defaultSlotsOf = (
-  list: () => readonly { key: string; packKey: string }[],
+  list: () => readonly { key: string; packKey: string; optIn?: boolean | undefined }[],
 ): DefaultSlot[] =>
   list()
-    .filter((s) => !s.key.startsWith("dlc."))
+    .filter((s) => !s.key.startsWith("dlc.") && !s.optIn)
     .map((s) => ({ slot: s.key, feature: packFeatureKey(s.packKey, "read") }));
 
 /** Cấp phát một lượt (scope system). `tenantIds` vắng/null ⇒ mọi tenant. Trả số tenant × khe vừa được cấp. */
@@ -74,7 +74,7 @@ type ChangeSource = {
 export function startSlotDefaults(d: {
   db: Db;
   config: ChangeSource;
-  list: () => readonly { key: string; packKey: string }[];
+  list: () => readonly { key: string; packKey: string; optIn?: boolean | undefined }[];
   log: Logger;
   signal?: AbortSignal | undefined;
 }): Promise<void> {

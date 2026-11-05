@@ -27,7 +27,12 @@ const ORG: Partial<Record<Who, "S1" | "S2" | "B2">> = { s1a: "S1", s1b: "S1", s2
 // ---- seams
 let moderationOn = true;
 type AgentOut = { ok: true; text: string } | { ok: false; code: string };
-let agentOut: (key: string) => AgentOut = () => ({ ok: true, text: '{"flagged":false}' });
+let agentOut: (key: string, prompt: string) => AgentOut = () => ({
+  ok: true,
+  text: '{"flagged":false}',
+});
+/** Cổng giữ agent (test đua): đặt ⇒ mọi lời gọi agent chờ tới khi mở. */
+let gate: Promise<void> | null = null;
 const bg: Promise<unknown>[] = [];
 const drain = async () => {
   await Promise.all(bg.splice(0));
@@ -109,7 +114,12 @@ beforeAll(async () => {
     "/",
     communityModule(db, view(), pgExternalOrgResolver(db), {
       flows: {
-        agents: { call: async (r) => agentOut(r.agentKey) },
+        agents: {
+          call: async (r) => {
+            if (gate) await gate;
+            return agentOut(r.agentKey, r.prompt);
+          },
+        },
         moderationOn: async () => moderationOn,
         background: (p) => {
           bg.push(p);
@@ -220,6 +230,72 @@ describe("khe community.post-moderation [CR-120]", () => {
     }
   });
 
+  it("sửa bài ĐANG chờ duyệt giữa lúc agent sàng lọc ⇒ kết quả của nội dung cũ bị bỏ, bài vẫn pending dưới task mới", async () => {
+    let open!: () => void;
+    gate = new Promise<void>((r) => {
+      open = r;
+    });
+    // nội dung cũ ("Keo dán") được agent coi là sạch; nội dung mới bị gắn cờ — nếu lượt cũ ghi đè, bài sẽ được đăng với nội dung mới
+    agentOut = (_k, prompt) =>
+      prompt.includes("Gọi ngay")
+        ? flag("nội dung mới đáng ngờ")
+        : { ok: true, text: '{"flagged":false}' };
+    try {
+      const r = await call("s1a", "POST", "/posts", {
+        type: "sell",
+        body: "Keo dán",
+        fields: { product: "Keo", qty: "1", price: null },
+      });
+      const id = r.json.id as string;
+      const t1 = (await modRow(id)).task;
+      expect(await modRow(id)).toMatchObject({ moderation: "pending", mod_screen: "running" });
+      const edited = await call("s1a", "PATCH", `/posts/${id}`, { body: "Gọi ngay để mua rẻ" });
+      expect(edited.status).toBe(200);
+      const t2 = (await modRow(id)).task;
+      expect(t2).not.toBe(t1);
+      open(); // cả hai lượt screen (cũ, mới) trả về SAU khi bài đã đổi task
+      await drain();
+      expect(await modRow(id)).toMatchObject({
+        moderation: "pending",
+        mod_screen: "flagged",
+        task: t2,
+      });
+      expect(await inFeed("hM", id)).toBe(false);
+      // quyết định theo task cũ (màn duyệt mở trước khi sửa) ⇒ 409; theo task mới ⇒ được
+      const stale = await call("hA", "POST", `/moderation/${id}/decide`, {
+        action: "approve",
+        taskId: t1,
+      });
+      expect(stale.status).toBe(409);
+      expect((await modRow(id)).moderation).toBe("pending");
+      const ok = await call("hA", "POST", `/moderation/${id}/decide`, {
+        action: "approve",
+        taskId: t2,
+      });
+      expect(ok.status).toBe(200);
+    } finally {
+      gate = null;
+    }
+  });
+
+  it("bài đã gắn cờ, tác giả sửa ⇒ task đổi + chạy lại screen; task cũ của người duyệt vô hiệu", async () => {
+    agentOut = () => flag();
+    const id = await post();
+    const t1 = (await modRow(id)).task;
+    agentOut = () => ({ ok: true, text: '{"flagged":false}' });
+    expect(
+      (await call("s1a", "PATCH", `/posts/${id}`, { body: "Đã sửa lại cho đúng" })).status,
+    ).toBe(200);
+    await drain();
+    // nội dung mới sạch ⇒ tự duyệt; quyết định theo task cũ không áp được nữa
+    expect(await modRow(id)).toMatchObject({ moderation: "approved", mod_screen: "clean" });
+    expect((await modRow(id)).task).not.toBe(t1);
+    expect(
+      (await call("hA", "POST", `/moderation/${id}/decide`, { action: "reject", taskId: t1 }))
+        .status,
+    ).toBe(409);
+    expect((await modRow(id)).moderation).toBe("approved");
+  });
   it("đối tác không tự đổi cột duyệt (trigger posts_moderation_guard)", async () => {
     agentOut = () => flag();
     const id = await post();

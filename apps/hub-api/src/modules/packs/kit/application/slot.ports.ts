@@ -11,6 +11,9 @@ export type SlotSpec = {
   /** Nhãn hiển thị, vd "Sổ Hợp Tác · Duyệt hợp đồng". */
   label: string;
   packKey: string;
+  /** CR-120 · true ⇒ khe CHỈ BẬT khi platform admin gán (opt-in): hub KHÔNG cấp luật mặc định (`ensureSlotDefaults`) và ops
+   *  `flow_coverage` không đòi quy trình hiển thị. Vd 3 khe Community (duyệt bài tự bật cho mọi công ty là sai). */
+  optIn?: boolean;
   /** Khoá input run bắt buộc (vd `contract-id`). */
   requiredInputs: readonly string[];
   /** Tool hệ thống mà def của khe phải có (nút khoá trên canvas). */

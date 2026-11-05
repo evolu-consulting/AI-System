@@ -118,12 +118,14 @@ export const reopenModeration = async (tx: Tx, postId: string): Promise<boolean>
 /** Việc nền: agent `screen` ⇒ ghi kết quả (tx hệ thống). Sạch ⇒ approved + chuông bài mới. */
 export async function screenPost(d: FlowDeps, who: PackWho, postId: string): Promise<void> {
   const [row] = await d.sys.system(who.tenantId, ({ tx }) => repo.modRows(tx, [postId]));
-  if (!row) return;
+  // task đọc CÙNG lúc với nội dung gửi agent ⇒ kết quả chỉ áp cho đúng lượt này (sửa bài giữa chừng ⇒ task đổi ⇒ bỏ)
+  if (!row || row.moderation !== "pending" || !row.mod_task_id) return;
+  const taskId = row.mod_task_id;
   const text = await agentText(d, who, AGENT_SCREEN, screenPrompt(row), postId);
   const res = text === null ? null : parseScreen(text);
   const next = afterScreen(res);
   const n = await d.sys.system(who.tenantId, ({ tx }) =>
-    repo.applyScreen(tx, postId, { ...next, reason: res?.reason ?? null }),
+    repo.applyScreen(tx, postId, taskId, { ...next, reason: res?.reason ?? null }),
   );
   if (n === 1 && next.moderation === "approved") await d.onApproved?.(row, who.tenantId);
 }

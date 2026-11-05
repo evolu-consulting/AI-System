@@ -111,16 +111,20 @@ export const engineOffQuery = () => sql`
                       where en.tenant_id = tn.id and en.revoked_at is null and f.key = ${ENGINE_FEATURE_KEY} and f.status <> 'off')
   ) x`;
 
-/** Khe cần kiểm: đã đăng ký (gói đã mount), bỏ `dlc.*` (Rowan). */
+/** Khe cần kiểm: đã đăng ký (gói đã mount), bỏ `dlc.*` (Rowan) và khe opt-in (không có mặc định ⇒ chưa gán là bình thường). */
 export const coverageSlotsOf = (
-  list: () => readonly { key: string; packKey: string }[],
+  list: () => readonly { key: string; packKey: string; optIn?: boolean | undefined }[],
 ): CoverageSlot[] =>
   list()
-    .filter((s) => !s.key.startsWith("dlc."))
+    .filter((s) => !s.key.startsWith("dlc.") && !s.optIn)
     .map((s) => ({ slot: s.key, feature: packFeatureKey(s.packKey, "read") }));
 
 export function makeFlowCoverageCheck(
-  list: () => readonly { key: string; packKey: string }[] = () => slotRegistry.list(),
+  list: () => readonly {
+    key: string;
+    packKey: string;
+    optIn?: boolean | undefined;
+  }[] = () => slotRegistry.list(),
 ): OpsCheck {
   return {
     key: "flow_coverage",

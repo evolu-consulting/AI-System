@@ -35,28 +35,32 @@ export async function openModeration(tx: Tx, postId: string): Promise<void> {
     mod_task_id = gen_random_uuid(), mod_at = now() where id = ${postId}::uuid`);
 }
 
-/** Sửa nội dung bài đã duyệt/từ chối/chưa qua duyệt ⇒ pending/running lại, xoá quyết định cũ. Trả số hàng đổi (bài đang pending ⇒ 0). */
+/** Sửa nội dung bài ⇒ pending/running lại với task MỚI, xoá quyết định cũ (cả bài đang chờ: screen cũ + quyết định theo task cũ thành
+ *  vô hiệu). Trả số hàng đổi. */
 export async function reopenModeration(tx: Tx, postId: string): Promise<number> {
   const rows = await tx.execute<{
     id: string;
   }>(sql`update community.posts set moderation = 'pending', mod_screen = 'running',
       mod_task_id = gen_random_uuid(), mod_at = now(), mod_reason = null, mod_decided_by = null, mod_decided_name = null,
       mod_decided_at = null, mod_feedback = null
-    where id = ${postId}::uuid and moderation in ('approved', 'rejected', 'none') returning id`);
+    where id = ${postId}::uuid and moderation in ('approved', 'rejected', 'none', 'pending') returning id`);
   return rows.length;
 }
 
-/** Ghi kết quả screen (scope hệ thống) — chỉ khi lượt còn đang chạy. Trả số hàng đổi. */
+/** Ghi kết quả screen (scope hệ thống) — chỉ khi lượt còn đang chạy VÀ vẫn đúng task đã đọc lúc bắt đầu sàng lọc
+ *  (bài bị sửa giữa chừng ⇒ task đổi ⇒ kết quả của nội dung cũ bị bỏ). Trả số hàng đổi. */
 export async function applyScreen(
   tx: Tx,
   postId: string,
+  taskId: string,
   r: { moderation: Moderation; screen: Screen; reason: string | null },
 ): Promise<number> {
   const rows = await tx.execute<{
     id: string;
   }>(sql`update community.posts set moderation = ${r.moderation},
       mod_screen = ${r.screen}, mod_reason = ${r.reason}, mod_screened_at = now()
-    where id = ${postId}::uuid and moderation = 'pending' and mod_screen = 'running' returning id`);
+    where id = ${postId}::uuid and mod_task_id = ${taskId}::uuid and moderation = 'pending' and mod_screen = 'running'
+    returning id`);
   return rows.length;
 }
 

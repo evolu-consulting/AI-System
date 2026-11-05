@@ -3,6 +3,7 @@
 // Mỗi hàm MỘT câu cố định (lọc qua PK/index; mảng qua literal tham số) — Luật 4c.
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
+import { AppError } from "../../../lib/errors";
 
 const iso = (col: SQL) => sql`to_char(${col} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
 /** Mảng tham số qua MỘT tham số JSON (không ghép chuỗi literal `{a,b}` — review CR-105); kiểu ép phía SQL. */
@@ -116,13 +117,23 @@ export async function upsertAssignment(
     from hub.process_routing_rules where tenant_id = ${w.tenantId} and slot = ${w.slot} and is_default`);
   await tx.execute(sql`insert into hub.process_tenant_defs (tenant_id, def_id, slot, assigned_by)
     values (${w.tenantId}, ${w.defId}, ${w.slot}, ${w.actorId}) on conflict do nothing`);
-  await tx.execute(sql`with u as (update hub.process_routing_rules set def_id = ${w.defId}::uuid
-      where tenant_id = ${w.tenantId} and slot = ${w.slot} and is_default returning 1)
-    insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
-    select ${w.tenantId}::uuid, ${w.slot}, p, '{}'::jsonb, ${w.defId}::uuid, true
-    from (select max(g) as p from generate_series(0, 49) g where not exists (select 1 from hub.process_routing_rules x
-      where x.tenant_id = ${w.tenantId} and x.slot = ${w.slot} and x.priority = g)) f
-    where f.p is not null and not exists (select 1 from u)`);
+  const [done] = await tx.execute<{
+    n: number;
+  }>(sql`with u as (update hub.process_routing_rules set def_id = ${w.defId}::uuid
+      where tenant_id = ${w.tenantId} and slot = ${w.slot} and is_default returning 1),
+    i as (insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
+      select ${w.tenantId}::uuid, ${w.slot}, p, '{}'::jsonb, ${w.defId}::uuid, true
+      from (select max(g) as p from generate_series(0, 49) g where not exists (select 1 from hub.process_routing_rules x
+        where x.tenant_id = ${w.tenantId} and x.slot = ${w.slot} and x.priority = g)) f
+      where f.p is not null and not exists (select 1 from u) returning 1)
+    select ((select count(*) from u) + (select count(*) from i))::int as n`);
+  // 50 luật đã đầy (priority 0..49) và chưa có luật mặc định ⇒ KHÔNG im lặng: 409 (tx của người gọi hoàn tác cả đầu luật + tập gán).
+  if (Number(done?.n ?? 0) === 0)
+    throw new AppError(
+      "ROUTING_RULES_FULL",
+      409,
+      "Khe này đã đủ 50 luật định tuyến cho công ty — xoá bớt một luật rồi gán lại.",
+    );
   return old?.prev ?? null;
 }
 

@@ -37,7 +37,7 @@ describe("flow_coverage · evaluateFlowCoverage", () => {
     expect(r.status).toBe("crit");
     expect(r.message).toContain("Demo (contracts.approval)");
     expect(r.message).toContain("1/3");
-    expect(r.hint).toContain("process_tenant_defs");
+    expect(r.hint).toContain("ensureSlotDefaults");
   });
 
   it("nhiều tenant ⇒ chỉ nêu 5 tên đầu và 'và N nữa', số thật nằm ở value", () => {
