@@ -96,7 +96,7 @@ const HUB_TABLES = [
   "process_outputs",
   "process_routing_rules",
   "process_routings",
-  "process_runs",
+  "process_run_events", // CR-120 hub 0093 · sự kiện gói bắn cho node wait_event`n  "process_runs",
   "process_slot_assignments", // CR-120 hub 0091 · VIEW chỉ đọc (luật mặc định); bảng cũ ⇒ _legacy
   "process_slot_assignments_legacy",
   "process_slots",
