@@ -16,6 +16,7 @@ import {
   startPd,
   startRun,
   sweepN,
+  T,
   waitStageStatus,
   waitStatus,
 } from "../P-d/_support/pd";
@@ -147,6 +148,52 @@ describe("CR-121 D-6 · node notify [R1]", () => {
       });
     expect(await Promise.all([again(), again()])).toEqual([0, 0]);
     expect((await notesOf(runId)).length).toBe(3);
+  }, 60_000);
+
+  it("F-3 · chạy lại bước Thông báo (vòng 2, attempt về 1) ⇒ gửi thêm đúng 1 lần, vòng 1 không bị nuốt", async () => {
+    await createDef(
+      c,
+      defBody(
+        "cr121-notify-round",
+        [stage("bao", 0, notify([{ who: "starter" }], ["bell"])), setStage("ket", 1)],
+        {
+          inputs: INPUTS,
+        },
+      ),
+    );
+    const runId = await startRun(c, "cr121-notify-round", { inputs: RUN_INPUTS() });
+    await waitStatus(c.sql, runId, "done");
+    expect((await notesOf(runId)).length).toBe(1);
+    const res = await c.call("P", "POST", `/process-runs/${runId}/rerun-step?tenant_id=${T.acme}`, {
+      reason: "bad_data",
+      stage_idx: 0,
+    });
+    expect(res.status).toBe(200);
+    await settled(c);
+    await waitStatus(c.sql, runId, "done");
+    const notes = await notesOf(runId);
+    expect(notes.map((n) => n.user_id)).toEqual([PA.A.id, PA.A.id]);
+    expect(new Set(notes.map((n) => n.dedup_key)).size).toBe(2);
+  }, 60_000);
+
+  it("F-3 · run gắn gói đã kết thúc: platform_admin chạy lại bước ⇒ 409 pack_bound, không mở lại bước", async () => {
+    const runId = await startRun(c, "cr121-notify-round", { inputs: RUN_INPUTS() });
+    await waitStatus(c.sql, runId, "done");
+    await c.sql`update hub.process_runs set pack_key = 'contracts', pack_record_id = gen_random_uuid()
+      where id = ${runId}`;
+    const res = await c.call("P", "POST", `/process-runs/${runId}/rerun-step?tenant_id=${T.acme}`, {
+      reason: "bad_data",
+      stage_idx: 0,
+    });
+    expect({ status: res.status, pack: res.json?.error?.details?.pack_bound }).toEqual({
+      status: 409,
+      pack: true,
+    });
+    const st = await c.sql<
+      Json[]
+    >`select status from hub.stage_runs where process_run_id = ${runId}`;
+    expect(st.map((s) => s.status)).toEqual(["done", "done"]);
+    expect((await notesOf(runId)).length).toBe(1);
   }, 60_000);
 
   it("người nhận rỗng ⇒ bước vẫn xong, .md ghi cảnh báo, 0 thông báo, kênh chỉ chuông", async () => {
