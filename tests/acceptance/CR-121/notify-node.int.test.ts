@@ -142,7 +142,7 @@ describe("CR-121 D-6 · node notify [R1]", () => {
         await tx`select set_config('app.scope', 'system', true)`;
         const [r] = await tx<
           { n: number }[]
-        >`select notify.enqueue_run_notices(${batch}::jsonb) as n`;
+        >`select notify.enqueue_run_notices(${batch}::text::jsonb) as n`;
         return Number(r?.n ?? -1);
       });
     expect(await Promise.all([again(), again()])).toEqual([0, 0]);
