@@ -2,7 +2,7 @@
 // stack RAG của gói knowledge (`openAiEmbedder`), chỉ bật khi tenant đã chọn chiến lược embedding (`KNOWLEDGE_STRATEGY`
 // bắt đầu bằng `embedding`) và có key — không thêm DB vector, không gọi mạng khi tắt.
 import type { Db } from "../../lib/db";
-import { openAiEmbedder } from "../knowledge/adapters/ai.adapters";
+import { openAiEmbedder } from "../knowledge/public";
 import { ArtifactMcpTools } from "./artifact.mcp";
 import { ArtifactStore } from "./artifact.service";
 

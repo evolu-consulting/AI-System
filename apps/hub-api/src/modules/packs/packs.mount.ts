@@ -15,7 +15,7 @@ import { createTaxRegistry, taxBaseUrl } from "../../lib/tax-registry.http";
 import { agentSpecOf } from "../agents/agent-spec.service";
 import { DEFAULT_TENANT_TZ } from "../config/config.rules";
 import type { ConfigCache } from "../config/config.service";
-import { mountKnowledge } from "../knowledge/knowledge.mount";
+import { mountKnowledge } from "../knowledge/public";
 import { setChatUsageSink } from "../usage/chat-usage";
 import { mountCommunityWired } from "./community-wire.mount";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";

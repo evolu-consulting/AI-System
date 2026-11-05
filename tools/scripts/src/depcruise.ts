@@ -34,6 +34,8 @@ export function runDepcruise(opts: {
   config: string;
   outputType: "err" | "json";
   bin: string;
+  /** CR-121 ADR-0037: file baseline vi phạm cũ (`--ignore-known`); vi phạm trong đó không làm đỏ. */
+  knownViolations?: string;
 }): { code: number; out: string } {
   const p = Bun.spawnSync(
     [
@@ -44,6 +46,7 @@ export function runDepcruise(opts: {
       opts.config,
       "--output-type",
       opts.outputType,
+      ...(opts.knownViolations ? ["--ignore-known", opts.knownViolations] : []),
     ],
     { cwd: opts.cwd, stdout: "pipe", stderr: "pipe" },
   );
@@ -62,6 +65,8 @@ function main(argv: string[]): number {
   }
   const bin = depcruiseBin(root);
   const config = join(root, ".dependency-cruiser.cjs");
+  const known = join(root, ".dependency-cruiser-known-violations.json");
+  const knownViolations = existsSync(known) ? known : undefined;
   let code = 0;
   for (let i = 0; i < targets.length; i += BATCH) {
     const r = runDepcruise({
@@ -70,6 +75,7 @@ function main(argv: string[]): number {
       config,
       outputType: "err",
       bin,
+      knownViolations,
     });
     const text = r.out.trim();
     if (r.code === 0) console.log(text);

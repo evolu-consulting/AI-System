@@ -80,6 +80,7 @@ module.exports = {
       },
       to: { path: "modules/[^/]+/", pathNot: "modules/$1/" },
     },
+    ...require("./.dependency-cruiser.boundaries.cjs"), // CR-121 B · ADR-0037
     {
       name: "pack-no-cross-pack",
       comment:
@@ -188,7 +189,6 @@ module.exports = {
         ],
       },
     },
-
     {
       name: "test-kit-no-apps",
       comment:

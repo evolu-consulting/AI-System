@@ -3,7 +3,7 @@
 // `withHubScope(user)` của tenant người gọi ⇒ RLS chặn khác tenant. Lời gọi embedding nằm NGOÀI transaction.
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
-import type { Embedder } from "../knowledge/application/ports";
+import type { Embedder } from "../knowledge/public";
 import * as repo from "./artifact.repo";
 import {
   type ArtifactRef,

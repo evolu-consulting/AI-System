@@ -32,3 +32,4 @@ Mỗi quyết định kiến trúc một file `NNNN-<slug>.md`: Trạng thái (P
 | 0032 | Delta kiểu OpenSpec + bộ kiểm `openspec:check/pending/archive`, không dùng CLI OpenSpec | Accepted (người dùng, 2026-10-28) |
 | 0034 | Web gộp workspace-web: shell + module manifest + Clean Architecture boundaries + OpenFeature FeatureGate + flow runtime (CR-118; React 19.2.9 + Compiler) | Accepted (người dùng, 2026-11-04) |
 | 0036 | Mọi app phải khai báo khe flow (`check:app-slots`); gán quy trình một nguồn (`process_tenant_defs` + luật), bảng mới thay bảng cũ ⇒ backfill (CR-120) | Accepted (người dùng, 2026-11-05) |
+| 0037 | Ranh giới module hub-api: một cửa `modules/<m>/public.ts`, `testing/` chỉ cho test, baseline vi phạm chỉ co lại (`check:boundaries`, CR-121 B) | Accepted (người dùng, 2026-11-05) |
