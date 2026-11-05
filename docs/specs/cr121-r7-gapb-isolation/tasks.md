@@ -28,8 +28,8 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Lọc ngày trong danh sách hợp đồng không mất lựa chọn khi thao tác nhanh
 Mỗi thao tác ở ô lọc ngày (đổi cột, đổi cửa sổ, nhập từ/đến) được gộp lên bộ lọc đang có TRÊN URL tại thời điểm xử lý, không lên bộ lọc đã vẽ ở lần trước; hai lựa chọn liền nhau (kể cả trên máy chậm) giữ cả hai, các khoá URL khác (loại chứng từ…) không đổi.
-- Kịch bản: khi chọn cột "Hạn chót" rồi ngay lập tức chọn "Quá hạn" thì URL giữ cả `dfield=action_deadline` và `due=overdue` [test: apps/workspace-web/src/features/contracts-list/lib/date-filter.test.ts » hai thao tác liên tiếp trên CÙNG search cũ: giữ cả hai (không ghi đè theo bộ lọc đã vẽ); khoá khác giữ nguyên]
-- Kịch bản: khi chọn cột rồi cửa sổ "Quá hạn" thì truy vấn có `date_field=action_deadline` và `due=overdue`, tải lại giữ nguyên [test: e2e/contracts-web/gap-b-list.cw.ts » Gap #10 · lọc ngày » chọn 'Quá hạn' ⇒ URL có due=overdue và truy vấn có due; tải lại giữ nguyên; chọn khoảng ⇒ date_from/date_to]
+- Kịch bản: khi chọn cột "Hạn chót" rồi ngay lập tức chọn "Quá hạn" thì URL giữ cả `dfield=action_deadline` và `due=overdue` [test: apps/workspace-web/src/features/contracts-list/lib/date-filter.test.ts » hai thao tác liên tiếp trên CÙNG search cũ]
+- Kịch bản: khi chọn cột rồi cửa sổ "Quá hạn" thì truy vấn có `date_field=action_deadline` và `due=overdue`, tải lại giữ nguyên [test: e2e/contracts-web/gap-b-list.cw.ts » chọn 'Quá hạn' ⇒ URL có due=overdue và truy vấn có due]
 
 ## Việc còn lại
 - (đã làm sau lượt R7) `setDate` gộp theo `prev` của router; `DateFilterControl.onChange` phát thao tác (`DateAction`).
