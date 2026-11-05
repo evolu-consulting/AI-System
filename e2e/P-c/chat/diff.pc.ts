@@ -175,9 +175,10 @@ test("HUB-FR-128 · E12 · EN: 'Autofix result' region, 'Round 1', 'Tests passed
   browser,
 }) => {
   const g = await openGate({ room: "EPC-12", autofix: afView(), diff: DIFF });
-  await withSql((sql) => sql`update admin.users set locale = 'en' where username = 'hoa'`);
+  // Đăng nhập (helper chờ ô "Tin nhắn" tiếng Việt) TRƯỚC khi đổi locale sang en; g.open tải lại trang ⇒ nhận en.
   const u = await users(browser, "B");
   try {
+    await withSql((sql) => sql`update admin.users set locale = 'en' where username = 'hoa'`);
     await g.open(u.B);
     const box = u.B.getByRole("region", { name: "Autofix result" });
     await expect(box.getByText("Round 1")).toBeVisible();

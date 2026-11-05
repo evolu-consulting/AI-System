@@ -28,7 +28,8 @@ test.describe("PK-FR-05 · trạng thái gói trên contracts-web", () => {
 
   test("PK-FR-05 · bản EN của hai trạng thái (locale en)", async ({ page, context }) => {
     await context.addInitScript(() => localStorage.setItem("ai.locale", "en"));
-    const be = await installBackend(page, { session: true });
+    // prefs-sync: ngôn ngữ lấy từ /auth/me (server) trước localStorage ⇒ mock phiên trả locale en.
+    const be = await installBackend(page, { session: true, locale: "en" });
     be.setPack({ enabled: true, actions: [] });
     await page.goto("/contracts");
     await expect(

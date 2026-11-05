@@ -98,7 +98,8 @@ test("ADM-FR-73 · AC-A15 · PD2-E03 · padmin tab 'Tool quy trình': bật 'Xu�
   await clearAcmeSwitch();
   await platformLogin(p);
   await p.goto(`/tenants/${TENANT_ID.acme}`);
-  await p.getByRole("tab", { name: "Tool quy trình" }).click();
+  // CR-112: tab workspace công ty đổi nhãn "Tool quy trình" → "Công cụ quy trình"; bảng bên trong vẫn tên "Tool quy trình".
+  await p.getByRole("tab", { name: "Công cụ quy trình" }).click();
   const tbl = p.getByRole("table", { name: "Tool quy trình" });
   const sw = tbl.getByRole("switch", { name: `Bật tool ${PD2_E2E.W.name}` });
   await expect(sw).not.toBeChecked();

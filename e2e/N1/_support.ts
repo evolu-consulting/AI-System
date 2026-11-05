@@ -13,25 +13,25 @@ export const ACTIONS: Record<Role, string[]> = {
   editor: ["read", "write"],
   owner: ["read", "write", "admin"],
 };
-const me = (username: string) => ({
+const me = (username: string, locale = "vi") => ({
   id: "a1000000-0000-4000-8000-000000000065",
   tenant: TENANT,
   username,
   display_name: "Lan Nguyễn",
   email: `${username}@example.test`,
   role: "member",
-  locale: "vi",
+  locale,
   must_change_password: false,
   totp_enabled: false,
   totp_enabled_at: null,
   backup_codes_left: 0,
 });
-export const grant = (username = "lan") => ({
+export const grant = (username = "lan", locale = "vi") => ({
   status: "authenticated",
   access_token: "e2e.access.token",
   token_type: "Bearer",
   expires_in: 900,
-  user: me(username),
+  user: me(username, locale),
 });
 const json = (route: Route, status: number, body: unknown) =>
   route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
@@ -51,7 +51,7 @@ export type Backend = {
 /** Dựng backend giả. `session` = refresh cookie còn hạn (true ⇒ vào thẳng, không qua đăng nhập). */
 export async function installBackend(
   page: Page,
-  o: { session?: boolean; role?: Role; password?: string } = {},
+  o: { session?: boolean; role?: Role; password?: string; locale?: "vi" | "en" } = {},
 ): Promise<Backend> {
   let pack: Parameters<Backend["setPack"]>[0] = {
     enabled: true,
@@ -64,7 +64,7 @@ export async function installBackend(
   let sessionOn = o.session ?? true;
   await page.route("**/auth/refresh", (r) =>
     sessionOn
-      ? json(r, 200, grant())
+      ? json(r, 200, grant("lan", o.locale))
       : json(r, 401, { error: { code: "UNAUTHORIZED", message: "Hết phiên" } }),
   );
   await page.route("**/auth/login", async (r) => {
@@ -80,7 +80,7 @@ export async function installBackend(
       });
     }
     sessionOn = true;
-    return json(r, 200, grant(body.username));
+    return json(r, 200, grant(body.username, o.locale));
   });
   await page.route("**/auth/logout", (r) => json(r, 204, {}));
   await page.route("**/pack/contracts/me", async (r) => {

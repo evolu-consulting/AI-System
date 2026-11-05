@@ -16,14 +16,19 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await page.goto("/contracts");
     const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
     const links = nav.getByRole("link").filter({ hasNotText: "Sổ Hợp Tác" });
-    await expect(links).toHaveText(["Tổng quan", "Hợp đồng", "Đối tác", "Sản phẩm & Giá"]);
+    await expect(links).toHaveText([
+      "Tổng quan",
+      "Hợp đồng & giao dịch",
+      "Đối tác",
+      "Sản phẩm & Giá",
+    ]);
     const hrefs: Record<string, string | null> = {};
-    for (const name of ["Tổng quan", "Hợp đồng", "Đối tác", "Sản phẩm & Giá"]) {
+    for (const name of ["Tổng quan", "Hợp đồng & giao dịch", "Đối tác", "Sản phẩm & Giá"]) {
       hrefs[name] = await nav.getByRole("link", { name, exact: true }).getAttribute("href");
     }
     expect(hrefs).toEqual({
       "Tổng quan": "/overview",
-      "Hợp đồng": "/contracts",
+      "Hợp đồng & giao dịch": "/contracts",
       "Đối tác": "/partners",
       "Sản phẩm & Giá": "/products",
     });
@@ -196,9 +201,11 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await page.goto("/contracts");
     await expect(page.getByRole("button", { name: "Giao diện" })).toHaveCount(0);
     await page.getByRole("button", { name: /Tài khoản/ }).click();
-    await page.getByRole("radio", { name: "☾ Tối" }).click();
+    // prefs-sync: nhóm radio "Giao diện" (Sáng / Tối / Theo máy) dùng chung của web-kit PrefsPanel, nhãn không còn biểu tượng.
+    const theme = page.getByRole("radiogroup", { name: "Giao diện" });
+    await theme.getByRole("radio", { name: "Tối", exact: true }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await page.getByRole("radio", { name: "☀ Sáng" }).click();
+    await theme.getByRole("radio", { name: "Sáng", exact: true }).click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   });
 });
@@ -216,7 +223,7 @@ test.describe("PK-FR-10 · shell mobile (390×844)", () => {
     await expect(bottom.getByRole("link")).toHaveCount(4);
     await expect(bottom.getByRole("link")).toHaveText([
       "Tổng quan",
-      "Hợp đồng",
+      "Hợp đồng & giao dịch",
       "Đối tác",
       "Sản phẩm & Giá",
     ]);

@@ -177,54 +177,6 @@
       "since": "2026-11-03"
     },
     {
-      "id": "admin-tenant.pd.ts › ADM-FR-73 · AC-A15 · PD2-E03 · padmin tab 'Tool quy trình': bật 'Xuất HĐ' không hỏi (toast), tắt hỏi xác nhận; workflow tắt có huy hiệu",
-      "suite": "e2e:P-d",
-      "reason": "đỏ sẵn trên prod a4a95d93 (chạy -All module đóng băng, 2026-11-03), không do CR-114",
-      "owner": "platform",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "chat/diff.pc.ts › HUB-FR-128 · E12 · EN: 'Autofix result' region, 'Round 1', 'Tests passed · 12.4 s', '3 files'",
-      "suite": "e2e:P-c",
-      "reason": "đỏ sẵn trên prod a4a95d93 (chạy -All module đóng băng, 2026-11-03), không do CR-114",
-      "owner": "platform",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "shell.n1.ts › PK-FR-10 · shell desktop (1440×900) › PK-FR-10 · nav-v2 · menu chính 4 mục đúng nhãn, thứ tự và đường dẫn: Tổng quan /overview · Hợp đồng /contracts · Đối tác /partners · Sản phẩm & Giá /products",
-      "suite": "e2e:N1",
-      "reason": "đỏ sẵn trên prod a4a95d93 (chạy -All module đóng băng, 2026-11-03), không do CR-114",
-      "owner": "platform",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "shell.n1.ts › PK-FR-10 · shell desktop (1440×900) › PK-FR-10 · giao diện: menu 'Tài khoản' có nhóm 'Giao diện' (radio ☾ Tối / ☀ Sáng) đổi html[data-theme] (D-02, như mgmt-app)",
-      "suite": "e2e:N1",
-      "reason": "đỏ sẵn trên prod a4a95d93 (chạy -All module đóng băng, 2026-11-03), không do CR-114",
-      "owner": "platform",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "shell.n1.ts › PK-FR-10 · shell mobile (390×844) › PK-FR-10 · nav-v2 · thanh dưới 'Điều hướng' đúng 4 mục như menu trái; sidebar chính ẩn",
-      "suite": "e2e:N1",
-      "reason": "đỏ sẵn trên prod a4a95d93 (chạy -All module đóng băng, 2026-11-03), không do CR-114",
-      "owner": "platform",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "states.n1.ts › PK-FR-05 · trạng thái gói trên contracts-web › PK-FR-05 · bản EN của hai trạng thái (locale en)",
-      "suite": "e2e:N1",
-      "reason": "đỏ sẵn trên prod a4a95d93 (chạy -All module đóng băng, 2026-11-03), không do CR-114",
-      "owner": "platform",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
       "id": "tests/acceptance/P-a/pf1/lock-order.int.test.ts › P1-48d…P1-48e · apply (stage-driver) ∥ cancel / expire [§10 · Major #1]",
       "suite": "int",
       "reason": "chập chờn có sẵn trên platform/gd0 trước CR-115 (đỏ 1/lượt chung, 5/5 xanh khi chạy riêng): expire SKIP LOCKED bỏ qua run tx khác còn giữ sau apply",
