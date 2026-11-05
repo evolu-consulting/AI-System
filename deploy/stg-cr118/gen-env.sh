@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 [ -f .env ] && { echo "gen-env: .env da co - giu nguyen"; exit 0; }
 # --dry-run: khong ghi gi, chi bao se tao nhung file nao.
-[ "${1:-}" = "--dry-run" ] && { echo "gen-env[dry-run]: se tao .env (600) + ADMIN.pw + DEMO_OWNER.pw (600) + data/ out/ voi cong 28531..28535; moi bi mat sinh moi"; exit 0; }
+[ "${1:-}" = "--dry-run" ] && { echo "gen-env[dry-run]: se tao .env (600) + ADMIN.pw + DEMO_OWNER.pw (600) + data/ out/ voi cong 28531..28534; moi bi mat sinh moi"; exit 0; }
 umask 077
 rnd() { openssl rand -hex "$1"; }
 OWNER_PW=$(rnd 24); ADMIN_API_PW=$(rnd 24); HUB_API_PW=$(rnd 24); RT_PW=$(rnd 24)
@@ -13,9 +13,9 @@ tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 openssl genpkey -algorithm ed25519 -out "$tmp/jwt.pem" 2>/dev/null
 openssl pkey -in "$tmp/jwt.pem" -pubout -out "$tmp/jwt.pub"
 oneline() { awk '{printf "%s\\n", $0}' "$1"; }
-PC=28531; PA=28532; PCH=28533; PH=28534; PCM=28535
+PC=28531; PA=28532; PCH=28533; PH=28534
 B=http://127.0.0.1
-ORIGINS="$B:$PC,$B:$PA,$B:$PCH,$B:$PH,$B:$PCM"
+ORIGINS="$B:$PC,$B:$PA,$B:$PCH,$B:$PH"
 cat > .env <<EOF
 S2_UID=$(id -u)
 S2_GID=$(id -g)
@@ -23,7 +23,6 @@ S2_PORT_CONTRACTS=$PC
 S2_PORT_ADMIN=$PA
 S2_PORT_CHAT=$PCH
 S2_PORT_HUB=$PH
-S2_PORT_COMMUNITY=$PCM
 S2_PUBLIC_CONTRACTS_URL=$B:$PC
 S2_PUBLIC_ADMIN_URL=$B:$PA
 S2_PUBLIC_CHAT_URL=$B:$PCH

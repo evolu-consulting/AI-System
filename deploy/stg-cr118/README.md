@@ -6,7 +6,7 @@ Chạy **trên cùng máy** `149.202.83.5` (để UAT đúng môi trường Dock
 |---|---|---|
 | Project Docker | `sohoptac2-cr118` (mạng, container, tmpfs riêng) | không trộn với `sohoptac2` / `sohoptac2-stg` |
 | Image | `sohoptac2-app:cr118`, `sohoptac2-web:cr118` — **không bao giờ `:latest`** | prod nhận `:latest` ở lần restart sau |
-| Cổng | `127.0.0.1:28531` SHT+Community · `28532` admin · `28533` chat · `28534` hub/Studio · `28535` community.<d> cũ (301) | khác prod 1843x, stg 2843x |
+| Cổng | `127.0.0.1:28531` SHT+Community · `28532` admin · `28533` chat · `28534` hub/Studio | khác prod 1843x, stg 2843x |
 | Dữ liệu | Postgres/Redis/FileBox/MinIO **tmpfs** (mất khi `down -v`), bí mật sinh mới bằng `openssl` | không copy gì của prod |
 | Dùng lại, chỉ đọc | `sohoptac2-filebox:latest`, `sohoptac2-runtime:latest` (CR-118 không đổi) + một file `minio-bin/minio` | không build lại; `down.sh` KHÔNG xoá chúng |
 | Truy cập | chỉ SSH tunnel | không public, không domain/TLS |
@@ -22,7 +22,7 @@ cd ~/workspace/sohoptac2-cr118
 bash build.sh [--dry-run]     # docker compose build admin-api web  → hai image :cr118 (từ chối nếu image không phải cr118)
 bash up.sh    [--dry-run]     # gen-env (một lần) → pg/redis/filebox → migrate → seed → admin/hub/agent/web → s2-app-urls (community /community, sso=false) → kiểm nhanh
 # 3) tunnel (máy dev)
-ssh -i F:\workspace\id_evoc_key -N -L 28531:127.0.0.1:28531 -L 28532:127.0.0.1:28532 -L 28533:127.0.0.1:28533 -L 28534:127.0.0.1:28534 -L 28535:127.0.0.1:28535 evoc@149.202.83.5
+ssh -i F:\workspace\id_evoc_key -N -L 28531:127.0.0.1:28531 -L 28532:127.0.0.1:28532 -L 28533:127.0.0.1:28533 -L 28534:127.0.0.1:28534 evoc@149.202.83.5
 # 4) dọn (BẮT BUỘC sau UAT)
 bash down.sh [--dry-run] [--rm-dir]
 ```
@@ -35,8 +35,7 @@ Tài khoản: platform admin `admin` (mật khẩu ở `ADMIN.pw`), chủ quản
 2. Tắt Community ở Admin → Ứng dụng/năng lực ⇒ mục nav Community biến mất sau khi cấu hình đổi (SSE `config.changed`, ≤ vài giây).
 3. Đối tác: đăng nhập một lần, vào `/community`; gõ `/contracts` ⇒ bị chặn (không có SHT); `/community/profile/<org>/<section>` tải lại trực tiếp = 200 (history fallback).
 4. Hash cũ: mở `http://127.0.0.1:28531/community#/feed`, `#/profile/<o>/<s>`, `#/settings` ⇒ ánh xạ đúng.
-5. 301: `curl -sI -H 'Host: community.example.test' http://127.0.0.1:28535/` ⇒ `301`, `Location: https://app.example.test/community`; `/auth/`, `/pack/` trên 28535 vẫn proxy (tab cũ).
-6. Link báo giá/thông báo từ hub dùng `/community` (không `#/feed`): `COMMUNITY_WEB_URL=http://127.0.0.1:28531/community`.
+5. Link báo giá/thông báo từ hub dùng `/community` (không `#/feed`): `COMMUNITY_WEB_URL=http://127.0.0.1:28531/community`.
 Giới hạn: không HTTPS/domain ⇒ cookie `Secure`/SSO khác prod chỉ ảnh hưởng đúng kiểu đã có ở stg-sohoptac2 (APP_ENV=development).
 
 ## Dọn sau UAT (`down.sh` + nhắc lại)

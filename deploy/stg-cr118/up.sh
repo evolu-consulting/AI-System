@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# sohoptac2-cr118 · dung UAT CR-118 (project `sohoptac2-cr118`, image tag cr118, cong 127.0.0.1:28531..28535, DB/Redis/FileBox tmpfs). KHONG dung
+# sohoptac2-cr118 · dung UAT CR-118 (project `sohoptac2-cr118`, image tag cr118, cong 127.0.0.1:28531..28534, DB/Redis/FileBox tmpfs). KHONG dung
 # project `sohoptac2`: chi chep MOT file nhi phan minio (chi doc) neu thieu. Truy cap qua SSH tunnel (README). Dung lai: bash down.sh && bash up.sh.
 #   bash up.sh [--dry-run]     (--dry-run: in ke hoach, khong goi docker, khong ghi file)
 set -euo pipefail
@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 . ./lib.sh
 envv() { grep -m1 "^$1=" .env | cut -d= -f2-; }
 pw_of() { envv "$1" | sed -E 's#^postgres://[^:]+:([^@]+)@.*#\1#'; }
-PORTS="28531 28532 28533 28534 28535"
+PORTS="28531 28532 28533 28534"
 if [ "$DRY" = 1 ]; then
   echo "[dry-run] cong: $PORTS (127.0.0.1) · project $PROJECT · image $IMG_APP $IMG_WEB"
   bash ./gen-env.sh --dry-run
@@ -41,7 +41,7 @@ run dc run --rm -T tool tools/scripts/src/stg-seed.ts
 run dc up -d --remove-orphans admin-api hub-api agent-runtime web
 if [ "$DRY" = 1 ]; then
   echo "[dry-run] cho admin-api + hub-api /health; roi s2-app-urls.ts --community-url http://127.0.0.1:28531/community --apply (hang catalog community: url /community, sso=false)"
-  echo "[dry-run] kiem: curl 127.0.0.1:28531/community/x (200 SPA) · curl 127.0.0.1:28535/ (301 -> http://127.0.0.1:28531/community; tunnel: cong ...5 -> ...1)"
+  echo "[dry-run] kiem: curl 127.0.0.1:28531/community/x (200 SPA)"
   exit 0
 fi
 ok=0
@@ -55,5 +55,4 @@ done
 dc run --rm -T tool tools/scripts/src/s2-app-urls.ts --community-url http://127.0.0.1:28531/community --apply
 echo "up: kiem nhanh:"
 echo "  /community fallback : $(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:28531/community/profile/x/y) (mong 200)"
-echo "  community cu 301    : $(curl -s -o /dev/null -w '%{http_code} -> %{redirect_url}' http://127.0.0.1:28535/) (mong 301 -> http://127.0.0.1:28531/community)"
 dc ps --format '{{.Service}}: {{.Status}}'

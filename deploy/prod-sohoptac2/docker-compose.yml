@@ -241,8 +241,8 @@ services:
     cpus: 2
     mem_limit: 3g
 
-  # nginx: 3 bản build SPA (workspace-web gộp, admin-web, chat-web) + reverse proxy (mỗi web một cổng, chỉ 127.0.0.1); cổng 8085/18435 = 301 community.<d> cũ
-  # (CR-118). Mở public = bước sau (edge-proxy/host nginx).
+  # nginx: 3 bản build SPA (workspace-web gộp, admin-web, chat-web) + reverse proxy (mỗi web một cổng, chỉ 127.0.0.1)
+  # (CR-119: không còn cổng 8085/18435). Mở public = bước sau (edge-proxy/host nginx).
   web:
     image: sohoptac2-web:latest
     build:
@@ -255,7 +255,6 @@ services:
       - "127.0.0.1:${S2_PORT_ADMIN:-18432}:8082"
       - "127.0.0.1:${S2_PORT_CHAT:-18433}:8083"
       - "127.0.0.1:${S2_PORT_HUB:-18434}:8084"
-      - "127.0.0.1:${S2_PORT_COMMUNITY:-18435}:8085"
     depends_on: [admin-api, hub-api, filebox]
     cpus: 0.5
     mem_limit: 256m

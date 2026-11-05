@@ -1,5 +1,5 @@
 # sohoptac2-cr118 · UAT của web gộp CR-118 trên chính host prod (149.202.83.5) nhưng CÔ LẬP: project Docker `sohoptac2-cr118`, image tag `cr118`
-# (sohoptac2-app:cr118, sohoptac2-web:cr118 — KHÔNG BAO GIỜ :latest, prod nhận :latest ở lần restart sau), cổng 127.0.0.1:28531..28535, DB/Redis/FileBox tmpfs
+# (sohoptac2-app:cr118, sohoptac2-web:cr118 — KHÔNG BAO GIỜ :latest, prod nhận :latest ở lần restart sau), cổng 127.0.0.1:28531..28534, DB/Redis/FileBox tmpfs
 # (mất khi down -v), bí mật sinh MỚI bởi gen-env.sh (không copy gì của prod), không mount ./claude-home hay volume prod. Chỉ truy cập qua SSH tunnel.
 # filebox + agent-runtime dùng lại image prod KHÔNG đổi bởi CR-118 (sohoptac2-filebox/-runtime :latest, chỉ đọc; down.sh KHÔNG xoá chúng).
 # Quy trình: bash build.sh · bash up.sh · UAT qua tunnel · bash down.sh (down -v + xoá image cr118). Xem README.md.
@@ -182,7 +182,6 @@ services:
       - "127.0.0.1:${S2_PORT_ADMIN}:8082"
       - "127.0.0.1:${S2_PORT_CHAT}:8083"
       - "127.0.0.1:${S2_PORT_HUB}:8084"
-      - "127.0.0.1:${S2_PORT_COMMUNITY}:8085"
     depends_on: [admin-api, hub-api, filebox]
     cpus: 0.25
     mem_limit: 192m

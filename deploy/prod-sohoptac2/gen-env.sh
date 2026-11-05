@@ -12,8 +12,8 @@ if [ -f .env ]; then echo "gen-env: .env đã có — giữ nguyên"; else
   openssl genpkey -algorithm ed25519 -out "$tmp/jwt.pem" 2>/dev/null
   openssl pkey -in "$tmp/jwt.pem" -pubout -out "$tmp/jwt.pub"
   oneline() { awk '{printf "%s\\n", $0}' "$1"; }
-  P_CONTRACTS=18431; P_ADMIN=18432; P_CHAT=18433; P_HUB=18434; P_COMMUNITY=18435
-  ORIGINS="http://localhost:$P_CONTRACTS,http://localhost:$P_ADMIN,http://localhost:$P_CHAT,http://localhost:$P_HUB,http://localhost:$P_COMMUNITY"
+  P_CONTRACTS=18431; P_ADMIN=18432; P_CHAT=18433; P_HUB=18434
+  ORIGINS="http://localhost:$P_CONTRACTS,http://localhost:$P_ADMIN,http://localhost:$P_CHAT,http://localhost:$P_HUB"
   cat > .env <<EOF
 S2_UID=$(id -u)
 S2_GID=$(id -g)
@@ -21,7 +21,6 @@ S2_PORT_CONTRACTS=$P_CONTRACTS
 S2_PORT_ADMIN=$P_ADMIN
 S2_PORT_CHAT=$P_CHAT
 S2_PORT_HUB=$P_HUB
-S2_PORT_COMMUNITY=$P_COMMUNITY
 S2_PUBLIC_ADMIN_URL=http://localhost:$P_ADMIN
 S2_PUBLIC_CHAT_URL=http://localhost:$P_CHAT
 S2_PUBLIC_HUB_URL=http://localhost:$P_HUB
@@ -82,22 +81,20 @@ H_IN="${S2_HOSTS-}"; H_OLD="$(envget S2_HOSTS)"; H="${H_IN:-${H_OLD:-test}}"
 # CR-119 (2026-11-05): app[-test].<d> la host web gop DUY NHAT (SHT o goc, Community o /community); sohoptac[-test] bo. S2_APP_HOST_LIVE cu trong .env => xoa.
 sed -i '/^S2_APP_HOST_LIVE=/d' .env
 LOCAL=""
-# .env cu (truoc community) chua co S2_PORT_COMMUNITY => them 18435 (idempotent; compose cung mac dinh 18435).
-grep -q "^S2_PORT_COMMUNITY=" .env || setkv S2_PORT_COMMUNITY 18435
-for k in CONTRACTS ADMIN CHAT HUB COMMUNITY; do LOCAL="$LOCAL${LOCAL:+,}http://localhost:$(envget S2_PORT_$k)"; done
+# CR-119: bo cong/host community cu => xoa khoa S2_PORT_COMMUNITY trong .env cu.
+sed -i '/^S2_PORT_COMMUNITY=/d' .env
+for k in CONTRACTS ADMIN CHAT HUB; do LOCAL="$LOCAL${LOCAL:+,}http://localhost:$(envget S2_PORT_$k)"; done
 if [ "$MODE" != keep ]; then
   [ -f .env.bak-domain ] || { cp -p .env .env.bak-domain; chmod 600 .env.bak-domain; }
   if [ "$MODE" = domain ]; then
     [[ "$D" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]] || { echo "gen-env: S2_DOMAIN khong hop le"; exit 2; }
     T_C="https://app-test.$D"; T_A="https://ai-test-admin.$D"; T_H="https://ai-test-hub.$D"; T_CH="https://ai-test.$D"
     P_C="https://app.$D"; P_A="https://ai-admin.$D"; P_H="https://ai-hub.$D"; P_CH="https://ai.$D"
-    # community (CR-118): host cu community[-test].<d> chi con 301 (edge + nginx 8085); URL cong khai cua Community = <host So Hop Tac>/community.
-    # P_CM/T_CM van la origin hop le cho CORS (tab cu) - khop edge-lib.sh s2_names.
-    T_CM="https://community-test.$D"; P_CM="https://community.$D"
+    # CR-119 (2026-11-05): bo host community[-test].<d> (khong con trong CORS/edge); Community = <host app>/community.
     if [ "$H" = prod ]; then U_C="$P_C"; U_A="$P_A"; U_H="$P_H"; U_CH="$P_CH"; else U_C="$T_C"; U_A="$T_A"; U_H="$T_H"; U_CH="$T_CH"; fi
     U_CM="$U_C/community"
     setkv S2_DOMAIN "$D"; setkv S2_HOSTS "$H"; setkv TRUST_PROXY_HOPS 3
-    ORIG="$P_C,$P_A,$P_CH,$P_H,$P_CM,$T_C,$T_A,$T_CH,$T_H,$T_CM,$LOCAL"
+    ORIG="$P_C,$P_A,$P_CH,$P_H,$T_C,$T_A,$T_CH,$T_H,$LOCAL"
   else
     U_C="http://localhost:$(envget S2_PORT_CONTRACTS)"; U_A="http://localhost:$(envget S2_PORT_ADMIN)"
     U_CH="http://localhost:$(envget S2_PORT_CHAT)"; U_H="http://localhost:$(envget S2_PORT_HUB)"; U_CM="$U_C/community"

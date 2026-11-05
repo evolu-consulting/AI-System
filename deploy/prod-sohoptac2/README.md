@@ -11,12 +11,12 @@
 | admin-api | sohoptac2-app (bun 1.3.14) | 1 / 1 GB | :3001 nội bộ |
 | hub-api | sohoptac2-app | 2 / 3 GB | :4000 nội bộ, Studio `/studio`, AI client = gói Claude |
 | agent-runtime | sohoptac2-runtime (python 3.12 + uv) | 2 / 3 GB | worker `claude-sub` |
-| web | sohoptac2-web (nginx) | 0.5 / 256 MB | 3 SPA (workspace-web gộp có Community, admin-web, chat-web) + :8085 = 301 community.<d> cũ (CR-118) + reverse proxy |
+| web | sohoptac2-web (nginx) | 0.5 / 256 MB | 3 SPA (workspace-web gộp có Community, admin-web, chat-web) + reverse proxy (CR-119: bỏ :8085/community.<d> cũ) |
 | filebox | sohoptac2-filebox (python 3.12, app = bản sao FileBox dùng chung) | 1 / 768 MB | :9100 **chỉ nội bộ** (không publish), volume `fbdata`; FileBox RIÊNG, token riêng |
 | filebox-minio | alpine + nhị phân MinIO tĩnh chép từ host | 1 / 1 GB | :9000 chỉ nội bộ, volume `fbminio`, khoá riêng |
 | tool (profile `tools`) | sohoptac2-app | 1 / 1 GB | migrate / seed / smoke |
 
-Cổng (chỉ `127.0.0.1`): **18431** contracts-web · **18432** admin-web · **18433** chat-web · **18434** Hub + Studio (`/studio/`) · **18435** community.<d> cũ (chỉ 301 về `/community` của 18431, CR-118; trước đó là community-web).
+Cổng (chỉ `127.0.0.1`): **18431** contracts-web · **18432** admin-web · **18433** chat-web · **18434** Hub + Studio (`/studio/`) (CR-119: bỏ cổng 18435 / host community.<d> cũ).
 Migration: `packages/db/src/migrate.ts` = main + hub + packs-kit + gói `contracts` + `knowledge` + `community` (production bỏ `*-dev` và `pkdemo`).
 
 ## Mở bằng SSH tunnel (chưa public)
@@ -306,6 +306,8 @@ Thu tu (tren may chu, thu muc `~/workspace/sohoptac2`; do nguoi dung chay):
 Hoan tac: `bash rollback-cutover.sh` (khoi phuc `conf.d` tu ban sao luu goc: bat lai app cu, go ten prod khoi sohoptac2.conf, reload), roi `deploy.ps1 -Hosts test` neu muon URL ve -test.
 e2e: `e2e-deployed.ps1 -Domain evoluconsulting.com -Hosts prod` (hoac `DEP_DOMAIN` + `DEP_HOSTS=prod|test`).
 
+> **CR-119 (2026-11-05):** community[-test].<d> và cổng 8085/18435 đã bỏ; các mục CR-102/CR-118 bên dưới chỉ để tham chiếu lịch sử.
+
 ## Community (community-web, CR-102) — app Cộng đồng đối tác
 > **CR-118 thay thế phần kiến trúc dưới đây:** Community nay là module của web gộp `workspace-web` tại `https://app.<d>/community`; `community-web` không còn build, `community.<d>` chỉ 301. Các bước DNS/cert/migration lịch sử giữ để tham chiếu; runbook hiện hành: mục "Deploy CR-118" cuối file.
 **Đã có trong kit:** web image build thêm `apps/community-web` (cùng `PUBLIC_*`, `PUBLIC_SSO_URL` = chat-web; **không** đặt `PUBLIC_COMMUNITY_API` ⇒ build chạy `http` → `/pack/community/*`), nginx `web` cổng **8085** (publish `127.0.0.1:18435`, `S2_PORT_COMMUNITY`): `/auth` → admin-api (cookie `ai_rt_community`, `Path=/auth`), `/pack` `/conversations` `/runs` `/notifications` → hub-api (SSE: `proxy_buffering off`, `proxy_read_timeout 600`), `/sso` và mọi route SPA → `index.html`. `edge/sohoptac2.conf` có server `__N_COMMUNITY__` → `:8085`. Env: admin-api `APP_URL_COMMUNITY`, hub-api `COMMUNITY_WEB_URL` + `CONTRACTS_WEB_URL` + `COMMUNITY_SWEEP` (mặc định on; `off` tắt) + `COMMUNITY_SWEEP_EVERY_MS` (mặc định 60000), `CORS_ORIGINS`/`HUB_CORS_ORIGINS` gồm host community (prod, -test) + `http://localhost:18435`. `s2-app-urls.ts` đổi thêm hàng catalog `community`.
@@ -376,14 +378,14 @@ Chỉ chạy khi người dùng xác nhận deploy. **UAT trước** trên host 
 4. Kiểm `curl -sI https://community.<d>/` = 200, đối tác đăng nhập lại qua AI System → community-web như trước (phiên `ai_rt_community` cũ vẫn hợp lệ trong 30 ngày).
 
 ## Deploy CR-119 (host duy nhất app.<d>; bỏ host sohoptac.<d>) — runbook
-Chỉ chạy khi người dùng xác nhận deploy. **Quyết định 2026-11-05: bỏ host `sohoptac[-test].<d>`** — web gộp (SHT ở gốc, Community ở `/community`) chỉ phục vụ ở `app.<d>` (test `app-test.<d>`); không còn cờ `S2_APP_HOST_LIVE` (gen-env xoá khoá cũ khỏi `.env`) và không còn tham số `deploy.ps1 -AppHostLive`. Chi tiết: `docs/specs/CR-119/spec.md`. Tên thư mục kit, project Docker `sohoptac2`, volume và `~/workspace/sohoptac2` **giữ nguyên**.
+Chỉ chạy khi người dùng xác nhận deploy. **Quyết định 2026-11-05: bỏ host `sohoptac[-test].<d>` và `community[-test].<d>`** — web gộp (SHT ở gốc, Community ở `/community`) chỉ phục vụ ở `app.<d>` (test `app-test.<d>`); không còn cờ `S2_APP_HOST_LIVE` (gen-env xoá khoá cũ khỏi `.env`) và không còn tham số `deploy.ps1 -AppHostLive`. Chi tiết: `docs/specs/CR-119/spec.md`. Tên thư mục kit, project Docker `sohoptac2`, volume và `~/workspace/sohoptac2` **giữ nguyên**.
 
-**Kit sau thay đổi:** edge chỉ có `server_name` `ai`, `app`, `ai-admin`, `ai-hub`, `community` (+ `-test`); `sohoptac[-test]` không còn server_name/301; `community[-test].<d>` giữ **301 cố định** → `https://app[-test].<d>/community` (đích từ domain cấu hình, không từ Host client; `max-age=86400`) + proxy `/auth`,`/pack`,`/conversations`,`/runs`,`/me/stream` tới **2026-12-05** (30 ngày; đổi mốc theo ngày deploy thật), sau đó gỡ server community + DNS. URL công khai (`S2_PUBLIC_CONTRACTS_URL`, `COMMUNITY_WEB_URL`, `APP_URL_*`, `HUB_NOTIFY_BASE_URL`, CORS, `OPS_PUBLIC_URLS`) = `app`; CORS vẫn nhận `community*` cho tab cũ.
+**Kit sau thay đổi:** edge chỉ có `server_name` `ai`, `app`, `ai-admin`, `ai-hub` (+ `-test`); `sohoptac[-test]` và `community[-test]` không còn server_name/301/DNS cần thiết; nginx `web` không còn cổng `8085` (compose bỏ `18435`/`S2_PORT_COMMUNITY`, `gen-env.sh` xoá khoá cũ khỏi `.env`) và không còn proxy 30 ngày cho tab Community cũ (tab cũ phải tải lại tại `app.<d>/community`). URL công khai (`S2_PUBLIC_CONTRACTS_URL`, `COMMUNITY_WEB_URL`/`S2_PUBLIC_COMMUNITY_URL` = `<app>/community`, `APP_URL_*`, `HUB_NOTIFY_BASE_URL`, CORS, `OPS_PUBLIC_URLS`) = `app`.
 
 **Bước (A = người dùng, B = kit):**
 1. **A: DNS** — tạo `app.<d>` và `app-test.<d>` (cùng IP/CNAME như các host khác).
 2. **A: chứng chỉ** — nếu cert host nginx không phải wildcard: `certbot certonly ... --expand -d app.<d> -d app-test.<d>` (giữ các `-d` cũ); reload nginx host. Kiểm: `curl -sI https://app.<d>/` có TLS hợp lệ.
 3. B: `deploy.ps1 -Ref <ref> -Domain evoluconsulting.com -Hosts prod` (build web với URL `app`, `up -d`), rồi `bash cutover.sh` (hoặc `enable-domain.sh` cho `-test`) để render edge mới.
 4. B: catalog (ngay sau `up -d`): `docker compose -p sohoptac2 run --rm -T tool tools/scripts/src/s2-app-urls.ts --base-domain <d> --hosts prod` (xem kế hoạch) rồi thêm `--apply` — contracts → `https://app.<d>`, community → `https://app.<d>/community` (vô điều kiện, idempotent; thay cả hàng còn `sohoptac[-test]`/`community[-test]`/localhost).
-5. Kiểm: `curl -sI https://app.<d>/` = 200; `curl -sI https://community.<d>/` = `301` → `https://app.<d>/community`; đăng nhập `app.<d>`, chuyển Community ↔ SHT, mở link từ admin/chat (đọc catalog). `sohoptac.<d>` không còn được phục vụ (DNS có thể gỡ sau khi xác nhận không còn truy cập).
-**Rollback:** deploy lại ref trước CR-119 (kit cũ có `sohoptac.<d>` + cờ), `bash cutover.sh`, đặt lại 2 hàng catalog (admin-web › Ứng dụng) về `sohoptac` bằng tay. Trình duyệt đã nhớ 301 tối đa 1 ngày.
+5. Kiểm: `curl -sI https://app.<d>/` = 200; đăng nhập `app.<d>`, chuyển Community ↔ SHT, mở link từ admin/chat (đọc catalog). `sohoptac.<d>` và `community.<d>` không còn được phục vụ — **A: gỡ DNS + cert của `sohoptac[-test]`, `community[-test]` sau deploy** (sau khi xác nhận không còn truy cập).
+**Rollback:** deploy lại ref trước CR-119 (kit cũ có `sohoptac.<d>`, `community.<d>` + cờ), `bash cutover.sh`, đặt lại 2 hàng catalog (admin-web › Ứng dụng) về `sohoptac` bằng tay. Trình duyệt đã nhớ 301 tối đa 1 ngày.

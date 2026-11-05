@@ -4,7 +4,7 @@
 # git archive <Ref> + bộ kit này -> scp -> giải nén vào build/app -> gen-env.sh (bí mật một lần, trên máy chủ) -> docker compose build
 # -> setup.sh (migrate, seed, chạy, /health). Không đụng project khác; không đổi routing/TLS của host; dữ liệu (volume pgdata,
 # data/, claude-home/, .env, ADMIN_CREDENTIALS.txt) giữ nguyên giữa các lần deploy.
-# -Hosts prod|test: bo hostname cong khai (prod = app./ai-admin./ai./ai-hub. (+ community.); test = ...-test); CORS luon gom ca hai bo + tunnel. Can -Domain (hoac da co trong .env).
+# -Hosts prod|test: bo hostname cong khai (prod = app./ai-admin./ai./ai-hub.; test = ...-test); CORS luon gom ca hai bo + tunnel. Can -Domain (hoac da co trong .env).
 # fix-migrate-guard (su co 2026-10-30): moi lenh native (git/tar/ssh/scp) loi => throw (PS 5.1 khong tu throw theo exit code);
 # build loi => dung; VERSION tren may chu chi ghi SAU KHI setup.sh xong; tu choi deploy khi commit trong VERSION khong phai to tien
 # cua -Ref (vd prod dang chay nhanh khac) tru khi -Force (in canh bao).
@@ -64,7 +64,7 @@ try {
     "grep -E 'Built' build.log || true; bash setup.sh 2>&1; " +
     "echo '$commit ($Ref)' > VERSION; bash ./ops-host-status.sh || true"
   ssh @ssh $Server $remote; Assert-Exit "ssh build + setup.sh (migrate/seed/chay)"
-  Write-Host "sohoptac2: đã deploy $commit ($Ref). Tunnel: ssh -i $Key -N -L 18431:127.0.0.1:18431 -L 18432:127.0.0.1:18432 -L 18433:127.0.0.1:18433 -L 18434:127.0.0.1:18434 -L 18435:127.0.0.1:18435 $Server"
+  Write-Host "sohoptac2: đã deploy $commit ($Ref). Tunnel: ssh -i $Key -N -L 18431:127.0.0.1:18431 -L 18432:127.0.0.1:18432 -L 18433:127.0.0.1:18433 -L 18434:127.0.0.1:18434 $Server"
 } finally {
   Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }
