@@ -99,6 +99,13 @@ beforeAll(async () => {
   [other] = (await contracts(o, T2, 1, { from: 1216, createdBy: X, status: "active" })) as [string];
 }, 120_000);
 afterAll(async () => {
+  // Dọn lượt duyệt đã chèn: DB worker dùng chung với `migrate-hub.int` (reset chỉ xoá admin/hub, giữ `contracts`) — admin 0026
+  // đọc `contracts.approvals` ⇒ hàng sót trỏ tenant đã xoá làm hỏng FK.
+  if (o && T) {
+    const ts = o.array([T, T2]);
+    await o`update contracts.contracts set run_id = null where tenant_id = any(${ts}::uuid[]) and run_id is not null`;
+    await o`delete from contracts.approvals where tenant_id = any(${ts}::uuid[])`;
+  }
   await db?.close();
   await o?.end({ timeout: 2 });
 });
