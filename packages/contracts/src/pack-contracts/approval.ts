@@ -110,6 +110,9 @@ export type ApprovalAttention = z.infer<typeof ApprovalAttentionSchema>;
 
 export const ContractApprovalSchema = z.strictObject({
   run_id: z.uuid().nullable(),
+  /** CR-121 F-2 · lượt chạy trên engine quy trình (id `hub.process_runs`; KHÁC `run_id` = lượt duyệt của gói): đích của trang
+   *  "Chi tiết lượt chạy" (`GET /process-runs/:id/detail`). null ⇒ lượt kẹt chưa có run; vắng ⇒ máy cũ / hub cũ. */
+  engine_run_id: z.uuid().nullable().optional(),
   run_status: z.string().max(32).nullable(),
   step: ApprovalStepSchema.nullable(),
   task_id: z.uuid().nullable(),

@@ -599,6 +599,7 @@ fe5b7da92635c949fe143b54f48e0b36484ece9a8fced83a12fa8f329006485d  tests/acceptan
 a2cf21f501a2ec280c2d7db93dd61ecd056d05137d47675ed0ea6cc8f5269ff4  tests/acceptance/CF/prod-fix.int.test.ts
 7c0de5e3ee77b64f4b9eaddadd8be7bbcc279532c6afb0658fe002f58fc0178e  tests/acceptance/CF/reviewer-visible.int.test.ts
 7acc49aa171a5384d435c401517ee5ee5072533bf619c659439f4593c9249dde  tests/acceptance/CF/reviewer-visible.perf.int.test.ts
+c27d1d514abeabf8ee7a71f2228d0e88e9a4a604fa66425f9b0c62a8e8316f51  tests/acceptance/CF/run-detail-engine-id.int.test.ts
 cd6e259e02e4d31e734422168b67d0c3538e10146bb07e7800c457e66658c052  tests/acceptance/CR-050/flow-read.int.test.ts
 d32d5e7806b90ce16cb08ccb15df8d897cef438ca16f03cd87f84a28fb87d241  tests/acceptance/CR-051/flows-desc.int.test.ts
 af434c375aab81257bc41e49fb3932f750f6429d69d3db8111fb6f2bd5776c42  tests/acceptance/CR-053/per-app-session.int.test.ts

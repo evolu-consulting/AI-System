@@ -208,6 +208,8 @@ export function engineCardView(i: EngineCardInput) {
   return {
     mode: "engine" as const,
     run_id: i.approval.id,
+    /** CR-121 F-2 · id lượt chạy trên engine (`hub.process_runs`) — KHÁC `run_id` (= id lượt duyệt của gói); dùng cho `/process-runs/:id/detail`. */
+    engine_run_id: i.approval.engineRunId ?? null,
     run_status: i.sv?.status ?? null,
     step: cardStepOf(i.approval.status),
     task_id: live && task ? task.id : null,
