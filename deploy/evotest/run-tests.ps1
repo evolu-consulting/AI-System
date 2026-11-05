@@ -8,6 +8,7 @@
 #   đẩy lỗi / -NoMirror => dự phòng: git archive local (cùng danh sách loại) -> tgz -> scp như cũ. Mặc định IN TÓM TẮT GỌN (<= 15 dòng: bước, thời gian từng pha, pass/fail, CHỈ đỏ MỚI, đường dẫn log);
 #   -Full = in cả log máy chủ. Log đầy đủ luôn ở <log>\console.log. -Step perf / -Exclusive / -Probe luôn in đầy đủ (perf-probe đọc console).
 # git archive <Ref> (+ thay đổi chưa commit nếu -Dirty) -> scp -> remote.sh (build, chạy, dọn) -> log về .data/evotest/<giờ>/.
+# tool-evotest-hang: -QuietMin K (mặc định 8): K phút máy chủ không gửi dòng nào ⇒ in CẢNH BÁO + lệnh xem log slot (không tự dọn). Phía container: test:int:par kill file treo (--hang-idle=120/--hang-file=300 s, INT_HANG_IDLE_S/INT_HANG_FILE_S).
 # Thoát bằng mã test (0 xanh; 2 lỗi dựng/setup; 3 chờ slot quá 90 phút; 4 đĩa).
 # tool-evotest-cache:
 #   LƯỢT TOÀN BỘ (-Step int|e2e|all KHÔNG -Filter): từ chối chạy (exit 5) khi slot khác còn bận, trừ khi -Force; trong lúc nó chạy giữ khoá .exclusive nên lượt khác xếp hàng (lock.sh full_acquire).
@@ -16,7 +17,7 @@
 #   CHIA SLOT (lượt toàn bộ -Step e2e|all): thay vì chạy tuần tự trong MỘT slot, run-tests.ps1 tự chia: int (chỉ -Step all) một slot, việc e2e chia các slot trống còn lại (cân theo thời lượng đã đo
 #   ở ~/workspace/evotest/cache/e2e-timings.json), chạy SONG SONG bằng các tiến trình con (-InShard), rồi in MỘT bản tóm tắt gộp (thời lượng từng việc, 10 file int chậm nhất, mã thoát = ngăn xấu nhất; đỏ cũ known-red xử lý trong từng ngăn như trước).
 #   -NoShard: chạy một slot như cũ (giữ .exclusive). -Jobs N: số việc e2e cùng lúc trong slot; -Cpus N: CPU runner mỗi slot (mặc định 2; chia slot tự đặt theo lõi máy chủ). -Slots tối đa 12.
-param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,12)][int]$Slots = 8, [ValidateRange(0,9)][int]$Jobs = 0, [ValidateRange(0,8)][int]$Cpus = 0, [switch]$NoShard, [switch]$InShard, [string]$OutDir = "",[ValidateSet("", "cw")][string]$Capture = "", [switch]$Exclusive, [ValidateRange(1,600)][int]$ExclusiveTimeoutMin = 60, [string]$Probe = "", [switch]$Force, [switch]$Full, [switch]$NoMirror, [switch]$NoCache, [switch]$CachePrune, [ValidateRange(1,50)][int]$Keep = 5, [ValidateRange(1,100)][int]$MaxGb = 6)
+param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,12)][int]$Slots = 8, [ValidateRange(0,9)][int]$Jobs = 0, [ValidateRange(0,8)][int]$Cpus = 0, [switch]$NoShard, [switch]$InShard, [string]$OutDir = "",[ValidateSet("", "cw")][string]$Capture = "", [switch]$Exclusive, [ValidateRange(1,600)][int]$ExclusiveTimeoutMin = 60, [string]$Probe = "", [switch]$Force, [switch]$Full, [switch]$NoMirror, [switch]$NoCache, [switch]$CachePrune, [ValidateRange(1,50)][int]$Keep = 5, [ValidateRange(1,100)][int]$MaxGb = 6, [ValidateRange(1,120)][int]$QuietMin = 8)
 $ErrorActionPreference = "Stop"
 $isFull = (($Step -in "int", "e2e", "all") -and -not $Filter -and -not $Exclusive -and -not $InShard)
 if ($Force -and -not $isFull) { Write-Host "evotest: -Force chỉ có nghĩa với lượt toàn bộ (int|e2e|all không -Filter); bỏ qua" }
@@ -200,7 +201,30 @@ try {
   $K = "/tmp/evotest-kit-$stamp.tgz"
   $boot = "tar xzf $K -O boot.sh > /tmp/evotest-boot-$stamp.sh; tar xzf $K -O lock.sh > /tmp/evotest-lock-$stamp.sh; EVO_SRC_REF='$srcRef' EVO_LOCKLIB=/tmp/evotest-lock-$stamp.sh EVO_EXCLUSIVE='$(if ($Exclusive) { 1 })' EVO_FULL_RUN='$(if ($isFull) { 1 })' EVO_FORCE='$(if ($Force) { 1 })' EVO_NOCACHE='$(if ($NoCache) { 1 })' EVO_JOBS='$(if ($Jobs) { $Jobs })' EVO_RUNNER_CPUS='$(if ($Cpus) { $Cpus })' EVO_RUNNER_MEM='$(if ($Cpus) { [math]::Max(6, 2 * $Cpus).ToString() + 'g' })' EVO_PG_CPUS='$(if ($Cpus -ge 4) { 2 })' EVO_EXCLUSIVE_TIMEOUT_S=$($ExclusiveTimeoutMin * 60) EVO_SLOTS=$Slots EVO_CAPTURE='$Capture' EVO_ALL='$(if ($All) { 1 })' EVO_WORKERS='$(if ($Workers) { $Workers })' EVO_FILTER='$Filter' EVO_PROBE='$Probe' bash /tmp/evotest-boot-$stamp.sh $Step $commit $stamp 2>&1; rc=`$?; unlink /tmp/evotest-boot-$stamp.sh; exit `$rc"
   $finished = $false
-  ssh @ssh $Server $boot | ForEach-Object { if ($Full) { Write-Host $_ }; $_ } | Out-File -Encoding utf8 -FilePath "$out\console.log"
+  # tool-evotest-hang: cảnh báo khi máy chủ im >= -QuietMin phút (timer .NET riêng, vì vòng ssh chặn luồng chính). Chỉ cảnh báo + in lệnh xem log; KHÔNG tự dọn slot (của người khác).
+  if (-not ('EvoQuiet' -as [type])) {
+    Add-Type -TypeDefinition @'
+public class EvoQuiet : System.IDisposable {
+  System.Threading.Timer t; long last; long warned; readonly long sec; public volatile string Slot = "?"; readonly string key, srv;
+  public EvoQuiet(int minutes, string key, string srv) { sec = minutes * 60L; this.key = key; this.srv = srv; last = Now(); t = new System.Threading.Timer(Tick, null, 15000, 15000); }
+  static long Now() { return System.Diagnostics.Stopwatch.GetTimestamp() / System.Diagnostics.Stopwatch.Frequency; }
+  public void Touch() { last = Now(); warned = 0; }
+  void Tick(object s) {
+    long n = Now();
+    if (n - last < sec || (warned != 0 && n - warned < sec)) return;
+    warned = n;
+    string sl = Slot, ssh = "ssh -i " + key + " " + srv + " ";
+    System.Console.WriteLine("evotest: CANH BAO - " + ((n - last) / 60) + " phut khong co dong moi tu may chu (slot " + sl + "). Co the test int bi treo (bun quay 100% CPU). Xem: "
+      + ssh + "\"tail -n 30 ~/workspace/evotest/slots/s" + sl + "/app/.data/int-s*.log; docker stats --no-stream\"  (khong tu don slot; neu chac chan la slot cua minh: docker compose -p evotest-s" + sl + " down)");
+  }
+  public void Dispose() { t.Dispose(); }
+}
+'@
+  }
+  $quiet = New-Object EvoQuiet($QuietMin, $Key, $Server)
+  try {
+    ssh @ssh $Server $boot | ForEach-Object { $quiet.Touch(); if ($_ -match '^\[evotest\] slot (\d+)/') { $quiet.Slot = $Matches[1] }; if ($Full) { Write-Host $_ }; $_ } | Out-File -Encoding utf8 -FilePath "$out\console.log"
+  } finally { $quiet.Dispose() }
   $rc = $LASTEXITCODE
   $finished = $true
   Mark "server"

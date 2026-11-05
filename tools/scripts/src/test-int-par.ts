@@ -1,8 +1,9 @@
 // ADM-NFR-06 · `bun run test:int:par [--workers=N] [tiền tố…]`: test int song song. Mỗi worker một tiến trình `bun test`
 // trên một "ô" thuê riêng (DB `ai_system_s<ô>_test`, `ai_system_s<ô>_h1_test`, Redis DB <ô>; hai lượt cùng lúc không chung
 // ô). Worker lấy lô từ hàng đợi chung (file nặng trước); `INT_SERIAL` chạy tuần tự sau cùng trên ô đầu.
+// Watchdog (tool-evotest-hang): `--hang-idle=<s>` (im, mặc định 120) / `--hang-file=<s>` (một file, mặc định 300), env INT_HANG_IDLE_S/_FILE_S; 0 = tắt.
 // Log: `.data/int-s<ô>.log`; thời lượng file (JUnit): `.data/int-timings.json`.
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
 import { Glob } from "bun";
@@ -21,18 +22,10 @@ import {
   workerCount,
   workerEnv,
 } from "./test-int-par.rules";
+import { DATA, drain, type Run } from "./test-int-par.run";
+import { type HangCfg, hangLine, parseHangCfg } from "./test-int-par.watchdog";
 
-const DATA = ".data";
 const TIMINGS = join(DATA, "int-timings.json");
-const BASE_CMD = [
-  "bun",
-  "--env-file=.env.local",
-  "--config=bunfig.int.toml",
-  "test",
-  "--timeout",
-  "30000",
-];
-
 /** Mẫu bỏ qua của `bunfig.int.toml` (`pathIgnorePatterns`), để danh sách file giống `bun run test:int`. */
 function ignoreGlobs(root: string): Glob[] {
   const toml = readFileSync(join(root, "bunfig.int.toml"), "utf8");
@@ -54,48 +47,18 @@ const dbName = (tag: string) => `ai_system_${tag}_test`;
 /** Worker không tự gom rác DB (xem `cloneMigratedTestDb`); runner xoá một lần ở cuối. */
 const NO_GC = { TEST_DB_GC: "0" };
 
-type Run = { name: string; files: number; code: number; ms: number; text: string; junit: string };
-
-/** Một lô file trong một tiến trình `bun test`; log nối vào `.data/int-<ô>.log`. */
-async function runChunk(
-  slot: string,
-  k: number,
-  files: string[],
-  opts: { env: Record<string, string>; root: string },
-) {
-  const { env, root } = opts;
-  const name = `${slot}-${k}`;
-  const junit = join(DATA, `int-junit-${name}.xml`);
-  const t0 = performance.now();
-  const p = Bun.spawn(
-    [...BASE_CMD, "--reporter=junit", `--reporter-outfile=${junit}`, ...files.map((f) => `./${f}`)],
-    { cwd: root, env: { ...process.env, ...env }, stdout: "pipe", stderr: "pipe" },
-  );
-  const [out, err] = await Promise.all([
-    new Response(p.stdout).text(),
-    new Response(p.stderr).text(),
-  ]);
-  const text = out + err;
-  appendFileSync(join(root, DATA, `int-${slot}.log`), `\n=== ${name}: ${files.join(" ")}\n${text}`);
-  const code = await p.exited;
-  return { name, files: files.length, code, ms: performance.now() - t0, text, junit } satisfies Run;
-}
-
 /** Worker ở ô `slot`: lấy lô từ hàng đợi chung tới khi hết (không chia tĩnh ⇒ không worker nào gánh đuôi). */
 async function worker(
   slot: string,
   queue: string[],
-  ctx: { timings: Timings; n: number; env: Record<string, string> },
+  ctx: { timings: Timings; n: number; env: Record<string, string>; hang: HangCfg },
   root: string,
 ) {
   writeFileSync(join(root, DATA, `int-${slot}.log`), "");
-  const runs: Run[] = [];
   const t0 = performance.now();
-  for (let k = 0; queue.length; k++) {
-    const files = ctx.n === 1 ? queue.splice(0) : takeChunk(queue, ctx.timings, ctx.n);
-    runs.push(await runChunk(slot, k, files, { env: ctx.env, root }));
-  }
-  const nf = runs.reduce((a, r) => a + r.files, 0);
+  const take = (q: string[]) => (ctx.n === 1 ? q.splice(0) : takeChunk(q, ctx.timings, ctx.n));
+  const runs = await drain(slot, queue, take, { env: ctx.env, root, hang: ctx.hang });
+  const nf = runs.reduce((a, r) => a + r.files - (r.hung?.rest.length ?? 0), 0);
   const ok = runs.every((r) => r.code === 0);
   console.log(
     `  ${ok ? "✓" : "✗"} ${slot}: ${nf} file / ${runs.length} lô, ${((performance.now() - t0) / 1000).toFixed(1)} s`,
@@ -111,11 +74,14 @@ function summarize(r: Run): { pass: number; fail: number; fails: string[] } {
   // Lỗi không gắn ca nào ("# Unhandled error between tests", chunk đỏ dù 0 fail): liệt kê để không bị che.
   const k = lines.findIndex((l) => l.startsWith("# Unhandled error"));
   const errs = num(/^\s*(\d+) error/m);
+  // Lô bị watchdog kill (không có dòng tổng kết): file treo luôn là một đỏ MỚI có tên.
+  const hang = r.hung ? 1 : 0;
+  if (r.hung) fails.push(`(treo) ${hangLine(r.hung)}`);
   if (errs > 0)
     fails.push(
       `(unhandled) ${k >= 0 ? (lines.slice(k + 1, k + 4).find((l) => l.startsWith("error:")) ?? "") : ""}`,
     );
-  return { pass: num(/^\s*(\d+) pass/m), fail: num(/^\s*(\d+) fail/m) + errs, fails };
+  return { pass: num(/^\s*(\d+) pass/m), fail: num(/^\s*(\d+) fail/m) + errs + hang, fails };
 }
 function loadTimings(root: string): Timings {
   try {
@@ -191,9 +157,14 @@ async function serialLanes(
   slots: string[],
   envOf: (i: number) => Record<string, string>,
   root: string,
+  hang: HangCfg,
 ): Promise<Run[]> {
   if (!serial.length) return [];
-  return [await runChunk(`${slots[0]}-serial`, 0, serial, { env: envOf(0), root })];
+  return drain(`${slots[0]}-serial`, [...serial], (q) => q.splice(0), {
+    env: envOf(0),
+    root,
+    hang,
+  });
 }
 
 async function main(): Promise<number> {
@@ -218,10 +189,13 @@ async function main(): Promise<number> {
   const env = { ...parseEnv(readFileSync(join(root, ".env.local"), "utf8")), ...process.env };
   const envOf = (i: number) => ({ ...workerEnv(env, lease.slots[i] ?? 1, dbName), ...NO_GC });
   const queue = lptQueue(parallel, timings);
+  const hang = parseHangCfg(process.argv.slice(2), process.env);
   const runs = (
-    await Promise.all(slots.map((s, i) => worker(s, queue, { timings, n, env: envOf(i) }, root)))
+    await Promise.all(
+      slots.map((s, i) => worker(s, queue, { timings, n, env: envOf(i), hang }, root)),
+    )
   ).flat();
-  runs.push(...(await serialLanes(serial, slots, envOf, root)));
+  runs.push(...(await serialLanes(serial, slots, envOf, root, hang)));
   lease.release();
   // DB rác (đích cũ khi test đổi schema) xoá theo loạt khi đủ 32 cái: mỗi DROP DATABASE ép checkpoint (đo ~1 s/DB trên máy
   // này ⇒ 30–35 s cho 35–58 DB). TS1: chạy NỀN tách rời (không chặn kết quả); lượt sau không thấy khác biệt vì tên rác duy nhất.
@@ -236,6 +210,11 @@ async function main(): Promise<number> {
     for (const l of s.fails) console.log(`  [${r.name}] ${l}`);
   }
   const bad = runs.filter((r) => r.code !== 0);
+  const hungs = runs.flatMap((r) => (r.hung ? [r.hung] : []));
+  if (hungs.length)
+    console.log(
+      `test:int:par: ${hungs.length} file TREO (bị kill, các file còn lại vẫn chạy):\n${hungs.map((h) => `  ${hangLine(h)}`).join("\n")}`,
+    );
   console.log(
     `test:int:par: ${pass} pass, ${fail} fail, ${((performance.now() - t0) / 1000).toFixed(1)} s` +
       (bad.length ? ` — đỏ: ${bad.map((r) => r.name).join(", ")} (log .data/int-s*.log)` : ""),
@@ -248,7 +227,7 @@ async function main(): Promise<number> {
     reds: bad.flatMap((r) => [
       ...intReds(r.text),
       ...summarize(r)
-        .fails.filter((l) => l.startsWith("(unhandled)"))
+        .fails.filter((l) => l.startsWith("(unhandled)") || l.startsWith("(treo)"))
         .map((name) => ({ suite: "int", name })),
     ]),
     unattributed: bad.filter((r) => summarize(r).fails.length === 0).length,
