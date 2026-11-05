@@ -8,11 +8,13 @@ import type { ProcessesView } from "../hooks/use-processes-view";
 
 /** Mô tả trang theo tab: Thư viện (platform) / Mẫu · chạy thử / mặc định cũ. */
 const subtitleKey = (v: ProcessesView): string =>
-  v.library
-    ? "process.admin.library.subtitle"
-    : v.templates
-      ? "process.admin.library.samplesSubtitle"
-      : "process.admin.list.subtitle";
+  v.flowsMode
+    ? "process.admin.flows.subtitle"
+    : v.library
+      ? "process.admin.library.subtitle"
+      : v.templates
+        ? "process.admin.library.samplesSubtitle"
+        : "process.admin.list.subtitle";
 
 function CreateButton({ v }: { v: ProcessesView }) {
   const { t } = useTranslation();
@@ -26,6 +28,13 @@ function CreateButton({ v }: { v: ProcessesView }) {
       </Button>
     );
   if (!v.canWrite) return null;
+  // CR-120 · tạo mới hoặc "Tạo từ mẫu" nằm chung một hộp thoại (không còn tab Mẫu).
+  if (v.flowsMode)
+    return (
+      <Button data-testid="flows-create" onClick={() => v.setCreateOpen(true)}>
+        {t("process.admin.list.create")}
+      </Button>
+    );
   return (
     <Button asChild>
       <Link to="/processes/new">{t("process.admin.list.create")}</Link>

@@ -1,4 +1,4 @@
-// ADM-FR-65 · CR-056 · P-a F5: dữ liệu + hành động của danh sách quy trình (tab, bộ lọc chip, chép/xoá/chạy/bật).
+﻿// ADM-FR-65 · CR-056 · P-a F5: dữ liệu + hành động của danh sách quy trình (tab, bộ lọc chip, chép/xoá/chạy/bật).
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -94,25 +94,32 @@ export function useProcessesView() {
   const tenant = useProcessTenant();
   const navigate = useNavigate();
   const search = useSearch({ strict: false }) as { tab?: Tab; app?: string };
-  const templates = search.tab === "templates";
   const [filter, setFilter] = useState<StateFilter>("all");
   const [runRow, setRunRow] = useState<Row | null>(null);
   const del = useDeleteFlow(tenant.tenantId);
   // CR-105 · platform_admin: tab chính = thư viện (`kind=library`, không cần chọn tenant); tab Mẫu = `kind=template`.
   // Chọn một tenant ⇒ xem quy trình của tenant đó như trước.
-  const library = tenant.isPlatform && !tenant.tenantId && !templates;
+  const platformLibrary = tenant.isPlatform && !tenant.tenantId;
+  const templates = platformLibrary && search.tab === "templates";
+  const library = platformLibrary && !templates;
+  // CR-120 · tenant_admin / platform đang xem một công ty: MỘT danh sách "Quy trình" (không tab) do `useFlowsList` dựng; hook này chỉ
+  // giữ hành động dòng + xoá/chạy/nhân bản. Platform chưa chọn công ty: giữ thư viện + tab Mẫu như cũ.
+  const flowsMode = !platformLibrary;
+  const [createOpen, setCreateOpen] = useState(false);
   // Tab "Mẫu · chạy thử" (mọi vai) = `kind=sample`: mẫu + def tenant không khe/không của gói; tab chính của tenant = def của gói.
   const useLib = library || templates;
-  const ownQ = useProcessDefs(tenant.tenantId, false, tenant.ready && !useLib);
+  const ownQ = useProcessDefs(tenant.tenantId, false, tenant.ready && !useLib && !flowsMode);
   const libQ = useLibraryDefs(
     templates ? "sample" : "library",
-    tenant.ready && useLib,
+    tenant.ready && useLib && !flowsMode,
     tenant.tenantId,
   );
   const q = useLib ? libQ : ownQ;
-  // CR-105: bản "Chép mẫu" thuộc "Mẫu · chạy thử" (def tenant không khe/không của gói) ⇒ ở lại tab này để thấy bản vừa chép.
+  // Sau "Chép mẫu": danh sách MỘT trang tự làm tươi (invalidate) ⇒ chỉ đóng hộp thoại tạo; thư viện platform: sang tab Mẫu như cũ.
   const goOwn = () =>
-    void navigate({ to: "/processes", search: { tab: "templates" }, replace: true });
+    flowsMode
+      ? setCreateOpen(false)
+      : void navigate({ to: "/processes", search: { tab: "templates" }, replace: true });
   const goEditor = (id: string) =>
     void navigate({ to: "/processes/$processId", params: { processId: id } });
   const cloneFlow = useCloneFlow(goEditor);
@@ -147,6 +154,9 @@ export function useProcessesView() {
     tenant,
     app,
     clearApp: () => void navigate({ to: "/processes", search: {}, replace: true }),
+    flowsMode,
+    createOpen,
+    setCreateOpen,
     tab: (templates ? "templates" : "own") as Tab,
     setTab: (v: Tab) => void navigate({ to: "/processes", search: { tab: v }, replace: true }),
     filter,

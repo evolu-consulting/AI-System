@@ -1,19 +1,53 @@
 {
-  "assigned": {
-    "title": "Được platform gán",
-    "lead": "Quy trình nền tảng đã gán cho công ty (chỉ xem). Gán hoặc sửa nội dung do quản trị nền tảng làm; luật chọn quy trình theo phòng ban sửa ở Cài đặt › Ứng dụng & quy trình.",
-    "slot": "Khe quy trình: {{slot}}",
-    "inUse": "Đang dùng",
-    "inUseOutside": "Đang dùng (mặc định của khe): {{name}}",
-    "unpublished": "chưa xuất bản",
+  "flows": {
+    "subtitle": "Quy trình là chuỗi bước công ty dùng cho từng việc (duyệt, nhận hồ sơ, kiểm duyệt bài…).",
+    "loading": "Đang tải…",
+    "loadFail": "Không tải được một phần quy trình của công ty.",
+    "empty": "Chưa có quy trình nào khớp. Bấm Tạo quy trình để tạo mới hoặc chép từ mẫu.",
+    "app": {
+      "general": "Chung"
+    },
+    "filter": {
+      "app": "Ứng dụng",
+      "source": "Nguồn",
+      "status": "Trạng thái"
+    },
+    "source": {
+      "platform": "Platform cung cấp",
+      "company": "Công ty tạo"
+    },
+    "status": {
+      "on": "Đang dùng",
+      "off": "Tắt"
+    },
+    "purpose": {
+      "contractsApproval": "Duyệt hợp đồng"
+    },
+    "kind": {
+      "buy": "mua",
+      "sell": "bán",
+      "referral": "giới thiệu"
+    },
+    "when": {
+      "default": "Mặc định (mọi trường hợp còn lại)",
+      "kinds": "HĐ {{kinds}}",
+      "depts": "từ {{names}}",
+      "deptsN": "{{n}} phòng ban",
+      "current": "Quy trình mặc định, dùng khi không có luật nào khớp",
+      "unused": "Đã gán nhưng chưa có luật chọn",
+      "manual": "Chạy khi bấm Chạy"
+    },
     "viewDiagram": "Xem sơ đồ",
     "hideDiagram": "Ẩn sơ đồ",
-    "none": "Chưa có quy trình nào được gán.",
-    "loading": "Đang tải…",
-    "loadFail": "Không tải được quy trình đã gán."
+    "editRules": "Sửa luật chọn",
+    "create": {
+      "lead": "Tạo quy trình trống hoặc chép một mẫu có sẵn về công ty.",
+      "blank": "Tạo quy trình mới",
+      "fromTemplate": "Tạo từ mẫu"
+    }
   },
   "list": {
-    "title": "Quy trình nghiệp vụ",
+    "title": "Quy trình",
     "subtitle": "Chuỗi giai đoạn do agent hoặc nhóm agent làm. Người kiểm bấm Đạt thì quy trình tự chạy tiếp, Chưa đạt thì agent làm lại theo góp ý.",
     "tab": {
       "own": "Của công ty",
@@ -41,7 +75,7 @@
       "on": "Đang bật",
       "off": "Đang tắt"
     },
-    "empty": "Chưa có quy trình. Chép từ tab Mẫu hoặc tạo mới.",
+    "empty": "Chưa có quy trình. Bấm Tạo quy trình để tạo mới hoặc chép từ mẫu.",
     "template": "Mẫu",
     "delete": {
       "title": "Xoá quy trình?",

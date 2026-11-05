@@ -1,19 +1,53 @@
 {
-  "assigned": {
-    "title": "Assigned by platform",
-    "lead": "Platform processes assigned to your company (read-only). Assigning or editing is done by the platform admin; department routing rules are edited in Settings › Apps & processes.",
-    "slot": "Process slot: {{slot}}",
-    "inUse": "In use",
-    "inUseOutside": "In use (slot default): {{name}}",
-    "unpublished": "unpublished",
+  "flows": {
+    "subtitle": "A process is the chain of steps your company uses for each job (approvals, intake, post moderation…).",
+    "loading": "Loading…",
+    "loadFail": "Part of the company's processes could not be loaded.",
+    "empty": "No matching process. Choose Create process to start a new one or copy from a template.",
+    "app": {
+      "general": "General"
+    },
+    "filter": {
+      "app": "App",
+      "source": "Source",
+      "status": "Status"
+    },
+    "source": {
+      "platform": "Provided by platform",
+      "company": "Created by company"
+    },
+    "status": {
+      "on": "In use",
+      "off": "Off"
+    },
+    "purpose": {
+      "contractsApproval": "Contract approval"
+    },
+    "kind": {
+      "buy": "purchase",
+      "sell": "sale",
+      "referral": "referral"
+    },
+    "when": {
+      "default": "Default (all other cases)",
+      "kinds": "{{kinds}} contracts",
+      "depts": "from {{names}}",
+      "deptsN": "{{n}} departments",
+      "current": "Default process, used when no rule matches",
+      "unused": "Assigned but no rule selects it",
+      "manual": "Runs when you press Run"
+    },
     "viewDiagram": "View diagram",
     "hideDiagram": "Hide diagram",
-    "none": "No process assigned yet.",
-    "loading": "Loading…",
-    "loadFail": "Could not load assigned processes."
+    "editRules": "Edit selection rules",
+    "create": {
+      "lead": "Start a blank process or copy a ready-made template into your company.",
+      "blank": "Create a new process",
+      "fromTemplate": "Create from template"
+    }
   },
   "list": {
-    "title": "Business processes",
+    "title": "Processes",
     "subtitle": "A chain of stages done by agents or agent teams. When a reviewer passes a stage the process continues; if it needs rework the agent redoes it using the feedback.",
     "tab": {
       "own": "Company",
@@ -41,7 +75,7 @@
       "on": "On",
       "off": "Off"
     },
-    "empty": "No processes yet. Copy one from Templates or create a new one.",
+    "empty": "No processes yet. Choose Create process to start a new one or copy from a template.",
     "template": "Template",
     "delete": {
       "title": "Delete process?",

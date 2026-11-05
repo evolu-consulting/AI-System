@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+﻿import { Link } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { AutomationNote } from "@/components/shared/AutomationNote";
@@ -18,6 +18,7 @@ import { ProcessesHeader } from "../components/ProcessesHeader";
 import { ProcessesTable } from "../components/ProcessesTable";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
 import { RunDialog } from "../components/RunDialog";
+import { useFlowsList } from "../hooks/use-flows-list";
 import {
   type ProcessesView,
   type StateFilter,
@@ -25,11 +26,11 @@ import {
   useProcessesView,
 } from "../hooks/use-processes-view";
 
-/** hub-routing-backfill · mục chỉ đọc "Được platform gán" (nạp lười: không vào chunk đầu). */
-const AssignedProcesses = lazy(
-  () =>
-    import(/* webpackChunkName: "assigned-processes" */ "../components/assigned/AssignedProcesses"),
+/** CR-120 · MỘT trang Quy trình của công ty (nạp lười: không vào chunk đầu). */
+const FlowsList = lazy(
+  () => import(/* webpackChunkName: "flows-one-page" */ "../components/flows/FlowsList"),
 );
+const CreateDialog = lazy(() => import("../components/flows/CreateDialog"));
 
 /** CR-118 · đang lọc theo app (link từ trang cấu hình app): nói rõ + lối về trang app + bỏ lọc. */
 function AppFilterNotice({ app, onClear }: { app: string; onClear: () => void }) {
@@ -104,41 +105,60 @@ function Body({ v }: { v: ProcessesView }) {
   );
 }
 
+/** Thư viện platform (chưa chọn công ty): giữ hai tab Thư viện / Mẫu · chạy thử như cũ. */
+function LibraryTabs({ v }: { v: ProcessesView }) {
+  const { t } = useTranslation();
+  return (
+    <Tabs value={v.tab} onValueChange={(x) => v.setTab(x as Tab)}>
+      <TabsList>
+        <TabsTrigger value="own">{t("process.admin.library.tab.own")}</TabsTrigger>
+        <TabsTrigger value="templates">{t("process.admin.list.tab.templates")}</TabsTrigger>
+      </TabsList>
+      <TabsContent value="own">{v.tab === "own" ? <Body v={v} /> : null}</TabsContent>
+      <TabsContent value="templates">{v.tab === "templates" ? <Body v={v} /> : null}</TabsContent>
+    </Tabs>
+  );
+}
+
 function ListPage() {
   const { t } = useTranslation();
   const v = useProcessesView();
+  // tenant đang xem (platform: tenant đã chọn; tenant_admin: tenant của phiên); thư viện platform ⇒ rỗng.
+  const tid = v.tenant.me ? (v.tenant.isPlatform ? v.tenant.tenantId : v.tenant.me.tenant.id) : "";
+  const hub = hubConfigured();
+  const flows = useFlowsList(
+    tid ?? "",
+    v.tenant.tenantId,
+    v.tenant.isPlatform,
+    v.flowsMode && !!tid && hub,
+  );
   if (!v.tenant.me) return null;
-  const libraryTab = v.tenant.isPlatform && !v.tenant.tenantId;
-  // tenant đang xem (platform: tenant đã chọn; tenant_admin: tenant của phiên); thư viện platform ⇒ không có mục gán.
-  const assignedTid = v.tenant.isPlatform ? v.tenant.tenantId : v.tenant.me.tenant.id;
   return (
     <>
       <ProcessesHeader v={v} />
-      <AutomationNote kind="processes" showLink={v.tenant.isPlatform} />
-      {hubConfigured() ? (
-        <Tabs value={v.tab} onValueChange={(x) => v.setTab(x as Tab)}>
-          <TabsList>
-            <TabsTrigger value="own">
-              {t(libraryTab ? "process.admin.library.tab.own" : "process.admin.list.tab.own")}
-            </TabsTrigger>
-            <TabsTrigger value="templates">{t("process.admin.list.tab.templates")}</TabsTrigger>
-          </TabsList>
-          <TabsContent value="own">
-            {v.tab === "own" ? <Body v={v} /> : null}
-            {v.tab === "own" && assignedTid ? (
-              <Suspense fallback={null}>
-                <div className="mt-4">
-                  <AssignedProcesses tenantId={assignedTid} />
-                </div>
-              </Suspense>
-            ) : null}
-          </TabsContent>
-          <TabsContent value="templates">
-            {v.tab === "templates" ? <Body v={v} /> : null}
-          </TabsContent>
-        </Tabs>
-      ) : (
+      {v.flowsMode ? null : <AutomationNote kind="processes" showLink={v.tenant.isPlatform} />}
+      {!hub ? (
         <HubNotConfigured />
+      ) : v.flowsMode ? (
+        <Suspense fallback={null}>
+          <FlowsList
+            tid={tid ?? ""}
+            flows={flows}
+            actions={v.actions}
+            canRun={v.canRun}
+            canEditRules={!v.tenant.isPlatform}
+          />
+          {v.createOpen ? (
+            <CreateDialog
+              open
+              onOpenChange={v.setCreateOpen}
+              templates={flows.templates}
+              actions={v.actions}
+            />
+          ) : null}
+        </Suspense>
+      ) : (
+        <LibraryTabs v={v} />
       )}
       <RunDialog row={v.runRow} tenantId={v.tenant.tenantId} onClose={v.closeRun} />
       <ConfirmDialog
