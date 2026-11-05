@@ -115,37 +115,69 @@ describe("ADM-FR-02 · refresh / ADM-FR-03 · logout", () => {
     owner`update admin.refresh_tokens set revoked_at = revoked_at - make_interval(secs => ${secs})
       where revoked_reason = 'rotated'`;
 
-  test("ADM-FR-02 · xoay: cũ rotated, dùng lại ≤ 30 s → 200 cấp lại cùng chuỗi, phiên sống, lùi 31 s → reuse cả chuỗi", async () => {
+  const active = async () =>
+    (await owner`select count(*)::int as n from admin.refresh_tokens where revoked_at is null`)[0]
+      ?.n;
+  const session = async () => {
     const s = await signIn();
     if (s.kind !== "session") throw new Error("expected session");
+    return s;
+  };
+
+  test("ADM-FR-02 · xoay: dùng lại token cũ ≤ 30 s → 200 và chỉ còn MỘT lá sống, lá chưa dùng bị thay, sau đó lá mới vẫn xoay được", async () => {
+    const s = await session();
     const next = await refresh(ctx, s.refreshToken, WEB);
     const again = await refresh(ctx, s.refreshToken, WEB); // tải lại trang: phản hồi xoay bị huỷ
     expect(again.refreshToken).not.toBe(next.refreshToken);
-    await ageRotated(29);
-    const late = await refresh(ctx, s.refreshToken, WEB);
-    expect(late.grant.status).toBe("authenticated");
-    expect(await code(refresh(ctx, next.refreshToken, WEB))).toBe("ok");
+    expect(await active()).toBe(1);
+    const rows =
+      await owner`select id, revoked_reason, replaced_by from admin.refresh_tokens order by created_at`;
+    expect(rows.map((x) => x.revoked_reason)).toEqual(["rotated", "rotated", null]);
+    expect(rows[0]?.replaced_by).toBe(rows[2]?.id); // token cũ và lá bị thay đều trỏ tới lá mới\n    expect(rows[1]?.replaced_by).toBe(rows[2]?.id);
     expect(await code(refresh(ctx, again.refreshToken, WEB))).toBe("ok");
-    const fam = await owner`select count(distinct family_id)::int as n from admin.refresh_tokens`;
-    expect(fam[0]?.n).toBe(1);
-    await ageRotated(2); // 31 s kể từ lần xoay đầu
-    expect(await code(refresh(ctx, s.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
-    expect(await code(refresh(ctx, late.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
-    const alive = await owner`select count(*)::int as n from admin.refresh_tokens
-      where revoked_at is null`;
-    expect(alive[0]?.n).toBe(0);
   });
 
-  test("ADM-FR-02 · 4 refresh song song → cả 4 thành công (một xoay, ba cấp lại), không ai bị đăng xuất", async () => {
-    const s = await signIn();
-    if (s.kind !== "session") throw new Error("expected session");
+  test("ADM-FR-02 · xoay: lùi 31 s → reuse, thu hồi cả chuỗi kể cả lá mới", async () => {
+    const s = await session();
+    const next = await refresh(ctx, s.refreshToken, WEB);
+    await ageRotated(31);
+    expect(await code(refresh(ctx, s.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
+    expect(await code(refresh(ctx, next.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
+    expect(await active()).toBe(0);
+    const rows = await owner`select revoked_reason from admin.refresh_tokens order by created_at`;
+    expect(rows.map((x) => x.revoked_reason)).toEqual(["rotated", "reuse"]);
+  });
+
+  test("ADM-FR-02 · kẻ trộm phát lại token cũ ≤ 30 s → lá của chủ bị thu hồi, chỉ một lá sống, chủ dùng lá cũ sau ân hạn → reuse cả chuỗi", async () => {
+    const s = await session();
+    const victim = await refresh(ctx, s.refreshToken, WEB);
+    const thief = await refresh(ctx, s.refreshToken, WEB);
+    expect(await active()).toBe(1);
+    await ageRotated(31);
+    expect(await code(refresh(ctx, victim.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
+    expect(await code(refresh(ctx, thief.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
+    expect(await active()).toBe(0);
+  });
+
+  test("ADM-FR-02 · chủ đã dùng lá kế nhiệm rồi kẻ trộm phát lại token cũ ≤ 30 s → reuse, thu hồi cả chuỗi", async () => {
+    const s = await session();
+    const v1 = await refresh(ctx, s.refreshToken, WEB);
+    const v2 = await refresh(ctx, v1.refreshToken, WEB); // chủ đã đi tiếp
+    expect(await code(refresh(ctx, s.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
+    expect(await active()).toBe(0);
+    expect(await code(refresh(ctx, v2.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
+  });
+
+  test("ADM-FR-02 · 4 refresh song song → cả 4 thành công và cuối cùng đúng MỘT lá sống trong chuỗi", async () => {
+    const s = await session();
     const r = await Promise.all(
       [1, 2, 3, 4].map(async () => (await refresh(ctx, s.refreshToken, WEB)).refreshToken),
     );
     expect(new Set(r).size).toBe(4);
-    for (const t of r) expect(await code(refresh(ctx, t, WEB))).toBe("ok");
+    expect(await active()).toBe(1);
+    const fam = await owner`select count(distinct family_id)::int as n from admin.refresh_tokens`;
+    expect(fam[0]?.n).toBe(1);
   });
-
   test("ADM-FR-02 · cô lập tenant: reuse ở tenant A không đụng chuỗi tenant B, token B trong ân hạn chỉ cấp phiên B, B bị khoá → 401", async () => {
     const TB = "01900000-0000-7000-8000-00000000c002";
     const UB = "01900000-0000-7000-8000-00000000c021";

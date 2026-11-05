@@ -100,7 +100,13 @@ describe("ADM-FR-02 · xoay vòng refresh token", () => {
 });
 
 describe("ADM-FR-02 · ân hạn và reuse", () => {
-  it("ADM-FR-02 · M1-R07 · tải lại trang làm mất phản hồi xoay: dùng lại token vừa xoay (≤ 30 s) → 200 + cookie mới cùng chuỗi, chuỗi không bị thu hồi", async () => {
+  const activeIn = async (cookie: string | undefined) =>
+    (
+      await env.owner`select count(*)::int as n from admin.refresh_tokens
+        where revoked_at is null and family_id = ${(await tokenRow(cookie))?.family_id}`
+    )[0]?.n;
+
+  it("ADM-FR-02 · M1-R07 · tải lại trang làm mất phản hồi xoay: dùng lại token vừa xoay (≤ 30 s) → 200 cookie mới cùng chuỗi, chỉ MỘT lá sống, không reuse", async () => {
     const s = await env.session("acme", "an", PW);
     const c2 = cookieOf(await rotate(s.cookie));
     await ageRevocation(s.cookie, 29);
@@ -111,14 +117,39 @@ describe("ADM-FR-02 · ân hạn và reuse", () => {
     expect(c3).toBeDefined();
     expect(c3).not.toBe(s.cookie);
     expect((await tokenRow(c3))?.family_id).toBe((await tokenRow(s.cookie))?.family_id);
-    // Cookie nào trình duyệt giữ (của lượt thắng hay lượt cấp lại) cũng còn dùng được.
-    expect((await rotate(c2)).status).toBe(200);
+    // Lá chưa dùng (c2) bị thay bằng c3: một lá sống, c2 trỏ tới c3.
+    expect(await activeIn(c3)).toBe(1);
+    expect((await tokenRow(c2))?.revoked_reason).toBe("rotated");
+    expect((await tokenRow(c2))?.replaced_by).toBe((await tokenRow(c3))?.id);
     expect((await rotate(c3)).status).toBe(200);
     const [reused] = await env.owner`select count(*)::int as n from admin.refresh_tokens
       where revoked_reason = 'reuse'`;
     expect(reused?.n).toBe(0);
   });
 
+  it("ADM-FR-02 · M1-R07 · kẻ trộm phát lại token cũ ≤ 30 s → lá của chủ bị thu hồi, chỉ một lá sống, chủ dùng lá cũ sau 30 s → thu hồi cả chuỗi", async () => {
+    const s = await env.session("acme", "an", PW);
+    const victim = cookieOf(await rotate(s.cookie));
+    const thief = cookieOf(await rotate(s.cookie));
+    expect(thief).toBeDefined();
+    expect(await activeIn(thief)).toBe(1);
+    expect((await tokenRow(victim))?.revoked_at).not.toBeNull();
+    await ageRevocation(victim, 31);
+    expectErr(await rotate(victim), "INVALID_REFRESH_TOKEN");
+    expect(await activeIn(thief)).toBe(0);
+    expectErr(await rotate(thief), "INVALID_REFRESH_TOKEN");
+  });
+
+  it("ADM-FR-02 · M1-R07 · chủ đã dùng lá kế nhiệm rồi bản sao token cũ phát lại ≤ 30 s → 401, thu hồi cả chuỗi, lá của chủ cũng chết", async () => {
+    const s = await env.session("acme", "an", PW);
+    const v1 = cookieOf(await rotate(s.cookie));
+    const v2 = cookieOf(await rotate(v1));
+    const res = await rotate(s.cookie);
+    expectErr(res, "INVALID_REFRESH_TOKEN");
+    expect(clearsCookie(res)).toBe(true);
+    expect(await activeIn(v2)).toBe(0);
+    expectErr(await rotate(v2), "INVALID_REFRESH_TOKEN");
+  });
   it("ADM-FR-02 · M1-AC04 · reuse (> 30 s) → 401 INVALID_REFRESH_TOKEN, thu hồi cả chuỗi, token mới cũng chết, cookie bị xoá", async () => {
     const s = await env.session("acme", "an", PW);
     const c2 = cookieOf(await rotate(s.cookie));
@@ -155,19 +186,22 @@ describe("ADM-FR-02 · ân hạn và reuse", () => {
     expect((await rotate(other.cookie)).status).toBe(200);
   });
 
-  it("ADM-FR-02 · M1-R07 · 5 refresh song song cùng cookie → cả 5×200, mỗi lượt một cookie riêng còn dùng được, chuỗi không bị thu hồi", async () => {
+  it("ADM-FR-02 · M1-R07 · 5 refresh song song cùng cookie → cả 5×200 và cuối cùng đúng MỘT lá sống, không ai bị thu hồi chuỗi", async () => {
     const s = await env.session("acme", "an", PW);
     const results = await Promise.all(Array.from({ length: 5 }, () => rotate(s.cookie)));
     for (const r of results) expect(r.status).toBe(200);
     const cookies = results.map((r) => cookieOf(r));
     expect(new Set(cookies).size).toBe(5);
+    expect(await activeIn(s.cookie)).toBe(1);
     const family = (await tokenRow(s.cookie))?.family_id;
-    const rows = await env.owner`select revoked_reason from admin.refresh_tokens
-      where family_id = ${family} order by created_at`;
-    expect(rows.map((r) => r.revoked_reason)).toEqual(["rotated", null, null, null, null, null]);
-    for (const c of cookies) expect((await rotate(c)).status).toBe(200);
+    const [reused] = await env.owner`select count(*)::int as n from admin.refresh_tokens
+      where family_id = ${family} and revoked_reason = 'reuse'`;
+    expect(reused?.n).toBe(0);
+    const live = [];
+    for (const c of cookies) if ((await tokenRow(c))?.revoked_at === null) live.push(c);
+    expect(live).toHaveLength(1);
+    expect((await rotate(live[0])).status).toBe(200);
   });
-
   it("ADM-FR-02 · M1-R07 · token hết hạn → 401 INVALID_REFRESH_TOKEN (không phải REFRESH_SUPERSEDED)", async () => {
     const s = await env.session("acme", "an", PW);
     await env.owner`update admin.refresh_tokens set expires_at = now() - interval '1 minute'

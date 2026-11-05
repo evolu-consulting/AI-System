@@ -176,18 +176,35 @@ export async function rotateRefresh(tx: Tx, tenantId: string, id: string, replac
   return rows.length === 1;
 }
 
+/** "swapped" = token kế nhiệm chưa dùng đã bị thay; "reuse" = kế nhiệm đã dùng/thu hồi; "gone" = token cũ không còn trong ân hạn. */
+export type SwapResult = "swapped" | "reuse" | "gone";
+
 /**
- * Chuỗi (phiên) còn ít nhất một token sống? Dùng khi cấp lại token cho token cũ vừa xoay (ân hạn):
- * chuỗi đã bị đăng xuất / thu hồi reuse / khoá user thì KHÔNG cấp lại. FOR SHARE: chờ thu hồi đang chạy dở.
+ * Cấp lại trong ân hạn, GIỮ MỘT LÁ SỐNG MỖI CHUỖI. `oldId` = token đã xoay ≤ `graceMs` mà bị trình lại.
+ * (1) khoá hàng `oldId` FOR UPDATE — các lượt thua race / kẻ trộm phát lại xếp hàng tại đây, mỗi lượt đọc
+ *     `replaced_by` MỚI NHẤT sau khi chờ; (2) một câu SQL: thu hồi kế nhiệm CHƯA DÙNG (còn sống) và trỏ
+ *     `oldId.replaced_by` sang token mới `newId`. Kế nhiệm đã bị dùng (rotated/thu hồi) ⇒ "reuse": người gọi thu hồi
+ *     cả chuỗi. Thứ tự khoá toàn cục: hàng user → hàng token theo chiều chuỗi (cũ → mới).
  */
-export async function familyAlive(tx: Tx, tenantId: string, familyId: string): Promise<boolean> {
-  const rows = await tx
-    .select({ id: refreshTokens.id })
-    .from(refreshTokens)
-    .where(and(active(tenantId), eq(refreshTokens.familyId, familyId)))
-    .limit(1)
-    .for("share");
-  return rows.length > 0;
+export async function swapUnusedSuccessor(
+  tx: Tx,
+  t: { tenantId: string; oldId: string; newId: string; graceMs: number },
+): Promise<SwapResult> {
+  const locked = (await tx.execute(
+    sql`select replaced_by as sid from admin.refresh_tokens
+      where tenant_id = ${t.tenantId} and id = ${t.oldId} and revoked_reason = 'rotated'
+        and revoked_at > now() - make_interval(secs => ${t.graceMs / 1000}) for update`,
+  )) as unknown as { sid: string | null }[];
+  const sid = locked[0]?.sid;
+  if (!sid) return "gone";
+  const swapped = (await tx.execute(
+    sql`with s as (
+        update admin.refresh_tokens set revoked_at = now(), revoked_reason = 'rotated', replaced_by = ${t.newId}
+        where tenant_id = ${t.tenantId} and id = ${sid} and revoked_at is null returning id)
+      update admin.refresh_tokens set replaced_by = ${t.newId}
+      where tenant_id = ${t.tenantId} and id = ${t.oldId} and exists (select 1 from s) returning id`,
+  )) as unknown as { id: string }[];
+  return swapped.length === 1 ? "swapped" : "reuse";
 }
 
 export async function revokeRefresh(tx: Tx, tenantId: string, id: string, reason: RevokeReason) {
@@ -197,6 +214,7 @@ export async function revokeRefresh(tx: Tx, tenantId: string, id: string, reason
     .where(and(active(tenantId), eq(refreshTokens.id, id)));
 }
 
+/** Thứ tự khoá chung (tránh deadlock): hàng user (`lockUserShared`) TRƯỚC, rồi hàng token. Gọi `lockUserShared` trước hàm này. */
 export async function revokeFamily(tx: Tx, tenantId: string, familyId: string, r: RevokeReason) {
   await tx
     .update(refreshTokens)
