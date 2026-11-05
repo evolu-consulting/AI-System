@@ -4,8 +4,9 @@
 import type { ContractApproval } from "@ai/contracts";
 import { expect, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
-import { approvalAsHub } from "./dataset-approval";
+import { APPROVAL_TASK, approvalAsHub } from "./dataset-approval";
 import { contract, contractAsHub } from "./dataset-contract";
+import { mockApprovalFlow } from "./flow-mock";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
@@ -49,10 +50,19 @@ async function install(
       });
     return json(r, 200, contractAsHub());
   });
+  // CR-120: Xác nhận/Duyệt/Từ chối đi FlowRuntime.act (task đang mở của thẻ).
+  await mockApprovalFlow(page, {
+    card: () => state,
+    onAct: (legacy, _task, raw) => {
+      sent.push({ method: "POST", path: raw.path, body: raw.body });
+      return reply?.(legacy as { action: string }) ?? { status: 200, body: approvalAsHub("done") };
+    },
+  });
   return sent;
 }
 
-const approvalPath = `/pack/contracts/contracts/${contract.id}/approval`;
+const actPath = (action: string) =>
+  `/pack/contracts/flow/contracts.approval/${contract.id}/tasks/${APPROVAL_TASK}/actions/${action}`;
 
 test("HD-FR-36 · cấp 1 · Xác nhận: PATCH ô đã đổi rồi POST approve, báo «Đã lưu và xác nhận hợp đồng.»", async ({
   page,
@@ -74,7 +84,7 @@ test("HD-FR-36 · cấp 1 · Xác nhận: PATCH ô đã đổi rồi POST approv
       `/pack/contracts/contracts/${contract.id}/fields`,
       { version: 3, fields: { total_value: 250_000_000 } },
     ],
-    ["POST", approvalPath, { action: "approve" }],
+    ["POST", actPath("approve"), {}],
   ]);
 });
 
@@ -93,7 +103,7 @@ test("HD-FR-34 · cấp 2 · Duyệt ⇒ POST approve; người bắt đầu ⇒
   await expect(page.getByRole("alert")).toHaveText(
     "Bạn đã gửi hợp đồng này nên không thể duyệt bước này.",
   );
-  expect(sent).toEqual([{ method: "POST", path: approvalPath, body: { action: "approve" } }]);
+  expect(sent).toEqual([{ method: "POST", path: actPath("approve"), body: {} }]);
 });
 
 test("HD-FR-34 · Từ chối: thiếu lý do ⇒ báo, không gửi; có lý do ⇒ POST reject + feedback, «Đã từ chối hợp đồng.»", async ({
@@ -115,7 +125,7 @@ test("HD-FR-34 · Từ chối: thiếu lý do ⇒ báo, không gửi; có lý do
   await form.getByRole("button", { name: "Từ chối" }).click();
   await expect(page.locator("[data-sonner-toast]").first()).toHaveText("Đã từ chối hợp đồng.");
   expect(sent).toEqual([
-    { method: "POST", path: approvalPath, body: { action: "reject", feedback: "Sai đối tác" } },
+    { method: "POST", path: actPath("reject"), body: { feedback: "Sai đối tác" } },
   ]);
 });
 

@@ -6,6 +6,7 @@ import { asHub, type Role } from "./dataset";
 import { approvalAsHub } from "./dataset-approval";
 import { contract, contractAsHub } from "./dataset-contract";
 import { partnersAsHub } from "./dataset-partners";
+import { mockApprovalFlow } from "./flow-mock";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
@@ -79,6 +80,15 @@ test("B6 · Xác nhận cấp 1 → cấp 2 người gửi không quyết đư�
         fields: {},
       });
     return json(r, 200, contractAsHub());
+  });
+  // CR-120: "Xác nhận" đi FlowRuntime.act (thân ghi dưới dạng cũ).
+  await mockApprovalFlow(page, {
+    card: () => state,
+    onAct: (b) => {
+      posts.push(JSON.stringify(b));
+      state = approvalAsHub("level2", { can_act: false });
+      return state;
+    },
   });
   await page.goto(`/contracts/c/${contract.id}`);
   await page.getByRole("button", { name: "Xác nhận và lưu" }).click();

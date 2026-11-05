@@ -6,6 +6,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
 import { approvalAsHub } from "./dataset-approval";
 import { contract, contractAsHub } from "./dataset-contract";
+import { mockApprovalFlow } from "./flow-mock";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
@@ -68,6 +69,14 @@ async function install(page: Page, state: ContractApproval): Promise<unknown[]> 
     }
     if (path.endsWith("/approval")) return json(r, 200, state);
     return json(r, 200, contractAsHub());
+  });
+  // CR-120: "Xác nhận" đi FlowRuntime.act; SP gắn là `extension` của gói (ghi lại dưới tên cũ `products`).
+  await mockApprovalFlow(page, {
+    card: () => state,
+    onAct: (b) => {
+      approves.push(b);
+      return approvalAsHub("done");
+    },
   });
   return approves;
 }

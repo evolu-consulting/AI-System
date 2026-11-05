@@ -5,6 +5,7 @@ import type { ContractApproval } from "@ai/contracts";
 import { expect, type Page, test } from "@playwright/test";
 import { asHub } from "./dataset";
 import { contract, contractAsHub } from "./dataset-contract";
+import { mockApprovalFlow } from "./flow-mock";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
@@ -140,6 +141,7 @@ async function installCard(page: Page, state: ContractApproval) {
     if (path.endsWith("/approval")) return json(r, 200, state);
     return json(r, 200, contractAsHub());
   });
+  await mockApprovalFlow(page, { card: () => state }); // CR-120: dòng thời gian đọc FlowView của hub
 }
 
 test("thẻ duyệt: bước Ký số đã gửi quá hạn ⇒ Hạn ký + nhãn Quá hạn + Đã nhắc lúc", async ({

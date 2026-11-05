@@ -1,10 +1,12 @@
 // contract-flow S4 · Luật 4b: thẻ duyệt trên engine (dòng thời gian + Đạt / Trả lại / Từ chối), chỉ-trưởng-phòng không có nút,
 // lối vào chỉnh quy trình chỉ cho platform_admin (CR-105, form đã bỏ). Backend giả `page.route`; chờ phần tử, không sleep.
+// CR-120: hành động qua `/pack/contracts/flow/contracts.approval/…/actions/…`, dòng thời gian từ FlowView (`flow-mock.ts`).
 // VIẾT, CHƯA CHẠY (e2e chạy một lần cuối đợt).
 import type { ContractApproval } from "@ai/contracts";
 import { expect, type Page, test } from "@playwright/test";
 import { asHub, type Role } from "./dataset";
 import { contract, contractAsHub } from "./dataset-contract";
+import { mockApprovalFlow } from "./flow-mock";
 
 test.skip(process.env.CW_MODE === "ref", "chỉ kiểm hành vi contracts-web");
 
@@ -53,7 +55,7 @@ const card = (steps: Step[], o: Partial<ContractApproval> = {}): ContractApprova
 const AT_STEP1 = (o: Partial<ContractApproval> = {}, s1: Partial<Step> = {}) =>
   card([step(0, "Soạn & kiểm tra", "passed"), step(1, "Kế toán", "open", s1)], o);
 
-async function install(page: Page, state: ContractApproval, role: Role = "editor") {
+async function install(page: Page, state: ContractApproval, role: Role = "editor", runtime = true) {
   const posts: Record<string, unknown>[] = [];
   const d = asHub(role);
   await page.addInitScript(() => {
@@ -77,11 +79,22 @@ async function install(page: Page, state: ContractApproval, role: Role = "editor
     if (path.endsWith("/approval")) return json(r, 200, state);
     return json(r, 200, contractAsHub());
   });
+  // CR-120: hành động đi FlowRuntime.act (task đang mở của thẻ); dòng thời gian đọc FlowView của hub.
+  await mockApprovalFlow(page, {
+    runtime,
+    card: () => state,
+    onAct: (b, task) => {
+      expect(task).toBe(state.task_id);
+      posts.push(b);
+      return { ...state, step: "done", can_act: false, task_id: null };
+    },
+  });
   return posts;
 }
 
 test("dòng thời gian: tên bước, tên phòng, trạng thái, hạn quá hạn", async ({ page }) => {
-  await install(page, AT_STEP1({}, { due_at: "2020-01-01T00:00:00.000Z" }));
+  // Hub thật tính `overdue` ở server (CR-120: dòng thời gian đọc FlowView của hub, không tự tính ở web).
+  await install(page, AT_STEP1({}, { due_at: "2020-01-01T00:00:00.000Z", overdue: true }));
   await page.goto(`/contracts/c/${contract.id}`);
   const tl = page.locator("[data-approval=timeline]");
   await expect(tl.getByTestId("approval-step-0")).toContainText("Soạn & kiểm tra");
@@ -99,6 +112,44 @@ test("luồng 2 bước: bước 1 bấm Đạt ⇒ POST approve (không kèm pr
   await page.locator("[data-approval=pass]").click();
   await expect.poll(() => posts.length).toBe(1);
   expect(posts[0]).toEqual({ action: "approve" });
+});
+
+test("CR-120 · Đạt đi FlowRuntime.act (đúng task đang mở), dòng thời gian từ GET FlowView", async ({
+  page,
+}) => {
+  await install(page, AT_STEP1());
+  const acts: string[] = [];
+  const views: string[] = [];
+  page.on("request", (r) => {
+    const p = new URL(r.url()).pathname;
+    if (!p.includes("/flow/contracts.approval/")) return;
+    (r.method() === "POST" ? acts : views).push(p);
+  });
+  await page.goto(`/contracts/c/${contract.id}`);
+  await expect(page.getByTestId("approval-step-1")).toContainText("Kế toán");
+  expect(views).toContain(`/pack/contracts/flow/contracts.approval/${contract.id}`);
+  await page.locator("[data-approval=pass]").click();
+  await expect
+    .poll(() => acts)
+    .toContain(
+      `/pack/contracts/flow/contracts.approval/${contract.id}/tasks/${TASK}/actions/approve`,
+    );
+});
+
+test("CR-120 rollback · cờ flow.runtime tắt ⇒ Đạt đi POST approvals cũ, không yêu cầu /flow/*", async ({
+  page,
+}) => {
+  const posts = await install(page, AT_STEP1(), "editor", false);
+  const flowCalls: string[] = [];
+  page.on("request", (r) => {
+    if (new URL(r.url()).pathname.includes("/flow/")) flowCalls.push(r.url());
+  });
+  await page.goto(`/contracts/c/${contract.id}`);
+  await expect(page.getByTestId("approval-step-1")).toContainText("Kế toán");
+  await page.locator("[data-approval=pass]").click();
+  await expect.poll(() => posts.length).toBe(1);
+  expect(posts[0]).toEqual({ action: "approve" });
+  expect(flowCalls).toEqual([]);
 });
 
 test("Trả lại: cần góp ý, gửi action return", async ({ page }) => {
