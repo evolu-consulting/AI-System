@@ -99,7 +99,7 @@ describe("CR-105 · RLS thư viện quy trình", () => {
       slotSys: 1,
     });
     // Ghi chỉ scope system: tenant không tự gán / đổi gán / xoá gán (kể cả hàng của chính mình), không chạm release/khe.
-    // CR-120: bảng gán cũ là VIEW chỉ đọc ⇒ mọi ghi qua nó 42501 (không cấp quyền ghi), kể cả scope system.
+    // CR-120: bảng gán cũ là VIEW chỉ đọc (join, không tự cập nhật được) ⇒ mọi ghi 55000, kể cả scope system.
     const asgIns = `insert into hub.process_slot_assignments (tenant_id, slot, def_id) values ($1, 'x.y', $2)`;
     const writes = {
       insOwn: await write(user("a"), asgIns, [T.a, ids.libB]),
@@ -125,10 +125,10 @@ describe("CR-105 · RLS thư viện quy trình", () => {
       relDelSys: await write(sys, "delete from hub.process_def_releases"),
     };
     expect(writes).toEqual({
-      insOwn: "42501",
-      updOwn: "42501",
-      delCross: "42501",
-      insSys: "42501",
+      insOwn: "55000",
+      updOwn: "55000",
+      delCross: "55000",
+      insSys: "55000",
       relIns: "42501",
       slotUpd: "0",
       relUpdSys: "42501",

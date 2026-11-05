@@ -7,6 +7,7 @@ import {
   APPROVAL_SLOT,
   compileSlotStages,
 } from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-slot.rules";
+import { setSlotDefault } from "../../../apps/hub-api/src/test-support/slot-default";
 import { TEST_MASTER_KEY_B64 } from "../H2a/_h2a";
 import { groupId, seedContract, toLevel1 } from "../HD3/_hd3";
 import { type Json, PA, T, waitStatus } from "../P-d/_support/pd";
@@ -100,8 +101,7 @@ async function assignDifyFlow(): Promise<void> {
   const id = d?.id as string;
   await c.sql`insert into hub.process_def_releases (def_id, rel_version, name, stages, slot_body)
     values (${id}, 1, 'Quy trình có bước Dify', ${JSON.stringify(stages)}::text::jsonb, ${JSON.stringify(body)}::text::jsonb)`;
-  await c.sql`insert into hub.process_slot_assignments (tenant_id, slot, def_id) values (${T.acme}, ${APPROVAL_SLOT}, ${id})
-    on conflict (tenant_id, slot) do update set def_id = excluded.def_id`;
+  await setSlotDefault(c.sql, T.acme, APPROVAL_SLOT, id); // CR-120 · gán = luật mặc định (bảng gán cũ là VIEW chỉ đọc)
 }
 
 describe("cf-dify · bước Dify", () => {

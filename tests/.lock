@@ -558,7 +558,7 @@ b623b14308a36191f54e6b390e80b01e9eea67d9b200e9b934d1ca4b76f20697  tests/acceptan
 0dd63c84537c831d789675dd785db2a348edd9c947db9c58ad83f0e3caf50cdc  tests/acceptance/C1/rules.test.ts
 8b3804152a957ce18f63f00bc7edd0dfe40349a898ba74c892c1bda84433c71c  tests/acceptance/CF/_cf.ts
 1bdaca8c13f65c7e5ce110b60bdee90ea67c76327cd2f9dfdc4c87b6707a8d1f  tests/acceptance/CF/approval-card.int.test.ts
-0178c5b16d787da0a8e474e9dfc9d98b9b4bf9b94b6ed344b9818a6fb8c53e06  tests/acceptance/CF/approval-dify.int.test.ts
+98b4c611606a58a87df6693baba968287cd198f2e5cc8677e9583fb14b329151  tests/acceptance/CF/approval-dify.int.test.ts
 c828802b8684b5155dfea4dcff783d040a9eb8fe4ca0d0252109abb7cf9bf182  tests/acceptance/CF/approval-engine-off.int.test.ts
 bebc30f53a1eb8a7c6d59cc2085e26b59eadd21bf94b200c961011cff9baeef6  tests/acceptance/CF/approval-engine.int.test.ts
 6a013a8028e8abf2394a17a992f2f8a200e3b20dcec5bd53461c69c8cff4e3d7  tests/acceptance/CF/approval-inbox.int.test.ts

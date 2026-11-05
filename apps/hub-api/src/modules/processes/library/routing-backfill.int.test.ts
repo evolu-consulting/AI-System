@@ -143,7 +143,7 @@ describe("hub-routing-backfill · gán cũ đồng bộ tập gán", () => {
     const put = await call("AZ", "PUT", ROUTING(Z), {
       version: g.json.version,
       rules: [
-        { condition: { contractKinds: ["k"] }, def_id: lib.C, is_default: false },
+        { condition: { contractKinds: ["buy"] }, def_id: lib.C, is_default: false },
         { condition: {}, def_id: lib.C, is_default: true },
       ],
     });

@@ -105,7 +105,7 @@ async function rules(
     await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${t}, ${r.def}, ${SLOT}) on conflict do nothing`;
     const cond = r.kinds ? { contractKinds: r.kinds } : {};
     await o`insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
-      values (${t}, ${SLOT}, ${r.prio}, ${JSON.stringify(cond)}::jsonb, ${r.def}, ${r.dflt})`;
+      values (${t}, ${SLOT}, ${r.prio}, ${JSON.stringify(cond)}::text::jsonb, ${r.def}, ${r.dflt})`;
   }
 }
 
@@ -243,7 +243,7 @@ describe("CR-120 · cr120-single-source · một nguồn gán", () => {
         tx.execute(sql`select 1 from hub.process_slot_assignments_legacy`),
       ),
     );
-    expect({ insert, legacy }).toEqual({ insert: "42501", legacy: "42501" });
+    expect({ insert, legacy }).toEqual({ insert: "55000", legacy: "42501" });
     // dữ liệu cũ còn nguyên ở _legacy (đối chiếu/rollback một bản phát hành)
     expect(
       Number(
