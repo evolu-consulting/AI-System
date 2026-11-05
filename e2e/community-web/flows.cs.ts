@@ -80,6 +80,7 @@ test("2 · đối tác đăng ⇒ Chờ duyệt ⇒ chủ quản duyệt ở Duy
 
 test("3 · đối tác báo cáo một bài ⇒ chủ quản Ẩn bài ở Báo cáo vi phạm", async ({ browser }) => {
   // Bài RIÊNG của ca này: chủ quản đăng thông báo (mọi bạn bè thấy) có mã chạy duy nhất; ca không đụng bài mẫu dùng chung.
+  test.setTimeout(150_000);
   const NOTE = `Thông báo kiểm thử ${RUN}`;
   const host0 = await openAs(browser, "host");
   await host0.page.goto("/community");
@@ -87,12 +88,27 @@ test("3 · đối tác báo cáo một bài ⇒ chủ quản Ẩn bài ở Báo 
   await host0.page.locator("#draft-body").fill(NOTE);
   await host0.page.getByRole("button", { name: "Đăng bài" }).click();
   await expect(postByTitle(host0.page, NOTE).first()).toBeVisible();
+  // Ca 1 bật duyệt bài: nếu bài của chủ quản cũng vào hàng chờ thì tự duyệt (không phụ thuộc cấu hình tenant).
+  await host0.page.getByTestId("nav-community-review").click();
+  const pending = host0.page.getByTestId("review-item").filter({ hasText: NOTE });
+  const approve = pending.getByTestId("review-approve");
+  if (
+    await approve.waitFor({ timeout: 8_000 }).then(
+      () => true,
+      () => false,
+    )
+  )
+    await approve.click();
   await host0.ctx.close();
 
   const buyer = await openAs(browser, "buyer");
   await buyer.page.goto("/community");
   const target = postByTitle(buyer.page, NOTE).first();
-  await expect(target).toBeVisible();
+  // Duyệt bài (ca 1) có thể giữ bài mới ở "Chờ duyệt" một lúc ⇒ tải lại tới khi bài tới người mua.
+  await expect(async () => {
+    await buyer.page.reload();
+    await expect(target).toBeVisible({ timeout: 4_000 });
+  }).toPass({ timeout: 90_000 });
   await target.getByRole("button", { name: "Tuỳ chọn bài đăng" }).click();
   await target.getByTestId("post-report").click();
   const dlg = buyer.page.getByTestId("report-dialog");
