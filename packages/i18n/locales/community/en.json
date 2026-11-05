@@ -624,7 +624,8 @@
         "reasonLabel": "What is wrong with this post?",
         "send": "Send report",
         "sent": "Report sent. An admin will review it.",
-        "duplicate": "You already reported this post. An admin will handle it; no need to send again."
+        "duplicate": "You already reported this post. An admin will handle it; no need to send again.",
+        "postUntitled": "(Post without a title)"
       }
     }
   }

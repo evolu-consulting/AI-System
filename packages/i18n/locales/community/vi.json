@@ -624,7 +624,8 @@
         "reasonLabel": "Bài này vi phạm điều gì?",
         "send": "Gửi báo cáo",
         "sent": "Đã gửi báo cáo. Quản trị sẽ xem và xử lý.",
-        "duplicate": "Bạn đã báo cáo bài này rồi. Quản trị sẽ xử lý, không cần gửi lại."
+        "duplicate": "Bạn đã báo cáo bài này rồi. Quản trị sẽ xử lý, không cần gửi lại.",
+        "postUntitled": "(Bài không có tiêu đề)"
       }
     }
   }

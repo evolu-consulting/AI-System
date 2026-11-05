@@ -404,8 +404,9 @@ describe("khe community.report [CR-120]", () => {
         (i: { id: string }) => i.id === id,
       ),
     ).toMatchObject({ triage: "error", status: "pending" });
-    const title = (await sql`select title from community.posts where id = ${hostPost}::uuid`)[0]
-      ?.title;
+    const title = (
+      await sql`select title_raw as title from community.posts where id = ${hostPost}::uuid`
+    )[0]?.title;
     expect(
       (await call("hA", "GET", "/reports?pending=1")).json.items.find(
         (i: { id: string }) => i.id === id,

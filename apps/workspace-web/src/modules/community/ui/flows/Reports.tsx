@@ -39,7 +39,9 @@ export default function ReportsPage() {
           >
             <div className="ph">
               <div className="who">
-                <b>{t("community.flows.reports.reason")}</b>
+                <b data-testid="report-post-title">
+                  {r.postTitle || t("community.flows.reports.postUntitled")}
+                </b>
                 <div className="meta">
                   <span className="tag grey sm">{t(reportKindKey(r))}</span>
                   {level && <span className="tag soon sm">{t(level)}</span>}
@@ -50,7 +52,9 @@ export default function ReportsPage() {
               </div>
             </div>
             <div className="pbody">
-              <p>{r.reason}</p>
+              <p>
+                <b>{t("community.flows.reports.reason")}:</b> {r.reason}
+              </p>
               {r.status === "resolved" && r.action && (
                 <p className="muted">
                   {t(`community.flows.reports.result.${r.action}`, { by: r.decidedBy ?? "" })}

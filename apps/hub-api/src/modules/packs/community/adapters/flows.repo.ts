@@ -187,7 +187,7 @@ export type ReportRow = ReportViewRow & {
   created_at: string;
 };
 const REPORT_COLS = sql`r.id::text as id, r.post_id::text as post_id,
-  coalesce((select p.title from community.posts p where p.id = r.post_id), '') as post_title, r.reporter_user_id::text as reporter_user_id,
+  coalesce((select case when (select packs.viewer_ext_org()) is null then p.title_raw else p.title_masked end from community.posts p where p.id = r.post_id), '') as post_title, r.reporter_user_id::text as reporter_user_id,
   r.reason, r.status, r.triage, r.triage_kind, r.triage_level, r.action, r.task_id::text as task_id, to_json(r.created_at) #>> '{}' as created_at,
   r.decided_by::text as decided_by, r.decided_name, to_json(r.decided_at) #>> '{}' as decided_at, r.feedback`;
 
