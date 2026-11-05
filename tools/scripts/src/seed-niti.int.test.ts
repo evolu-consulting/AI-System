@@ -156,9 +156,10 @@ describe("seed-niti", () => {
     ).toBe(2);
     const rules =
       await o`select condition, is_default from hub.process_routing_rules where tenant_id = ${t} order by priority`;
-    expect(rules).toHaveLength(2);
-    expect(rules.map((x) => x.condition.contractKinds)).toEqual([["buy"], ["sell"]]);
-    expect(rules.some((x) => x.is_default)).toBe(false);
+    // CR-121 F-1 · gán đặt luật MẶC ĐỊNH của khe (= quy trình gán sau cùng) và seed giữ nguyên nó: 2 luật loại HĐ + 1 mặc định (cuối).
+    expect(rules).toHaveLength(3);
+    expect(rules.slice(0, 2).map((x) => x.condition.contractKinds)).toEqual([["buy"], ["sell"]]);
+    expect(rules.map((x) => x.is_default)).toEqual([false, false, true]);
     // CR-121 D-4 · gán quy trình là đủ: seed KHÔNG cấp feature `contracts-approval-engine` (hay feature nào khác cho engine).
     expect(
       (
