@@ -1,7 +1,7 @@
 {
   "entries": [
     {
-      "id": "tests/acceptance/P-c/tenant.int.test.ts › T01–T04 · cách ly tenant [PC-R14, HUB-BR-14] > HUB-BR-14 · PC-R14 · T03b",
+      "id": "tests/acceptance/P-c/tenant.int.test.ts › T01–T04 · cách ly tenant [PC-R14, HUB-BR-14] \u003e HUB-BR-14 · PC-R14 · T03b",
       "suite": "int",
       "reason": "chập chờn Bun 1.3.14: request kế trên kết nối dùng lại sau 401 sớm (body 3 MiB chưa đọc) nhận 431; 401 vẫn đúng, không do commit nào (bisect 2026-11-04). Sửa thật: test gửi Connection: close (qc) hoặc quyết định đọc-bỏ body có giới hạn",
       "owner": "hub-api",
@@ -113,74 +113,10 @@
       "since": "2026-11-03"
     },
     {
-      "id": "packages/db/src/migrate-hub.int.test.ts › HUB-FR-75 · runHubMigrations (int, ai_system_h1_test) > DB sạch (production)",
-      "suite": "int",
-      "reason": "HUB-FR-75 migrate-hub: đỏ trên cả base 45f218e7 và HEAD (evotest 2026-11-03)",
-      "owner": "hub-db",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "packages/db/src/migrate-hub.int.test.ts › HUB-FR-75 · runHubMigrations (int, ai_system_h1_test) > DB có stub",
-      "suite": "int",
-      "reason": "HUB-FR-75 migrate-hub: đỏ trên cả base 45f218e7 và HEAD (evotest 2026-11-03)",
-      "owner": "hub-db",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "apps/hub-api/src/modules/chat-gate/chat-gate.int.test.ts",
-      "suite": "int",
-      "reason": "hook beforeAll timeout 30 s (ca \"(unnamed)\"), đỏ trên cả base và HEAD",
-      "owner": "hub-api",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "thời gian: Lưu 200 dòng + 50 mốc",
-      "suite": "int",
-      "reason": "tests/acceptance/V2-G/perf.int.test.ts p95 ≤ 250 ms chập chờn theo tải máy",
-      "owner": "contracts",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "src/agent_runtime/runtimes/cli/test_confirm.py › test_hub_fr_95_model_need_input_kept",
-      "suite": "py",
-      "reason": "unit py đỏ sẵn trên base cdf07e7d (thấy khi chạy -Step py lần đầu 2026-11-03); chưa điều tra",
-      "owner": "agent-runtime",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "tests/acceptance/result_int_test.py › test_wrk_fr_27_partial_need_input",
-      "suite": "py",
-      "reason": "int py đỏ sẵn trên base: sự kiện job.result có thêm khoá source_reads (EVENT_KEYS của test chưa cập nhật)",
-      "owner": "agent-runtime",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "tests/acceptance/result_int_test.py › test_wrk_fr_03_event_sequence",
-      "suite": "py",
-      "reason": "int py đỏ sẵn trên base: sự kiện job.result có thêm khoá source_reads (EVENT_KEYS của test chưa cập nhật)",
-      "owner": "agent-runtime",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "cr052-login.spec.ts › [CR-052] cột showcase bên phải hiện ở ≥ 1024px và ẩn ở < 1024px; form luôn dùng được",
+      "id": "cr052-login.spec.ts › [CR-052] cột showcase bên phải hiện ở ≥ 1024px và ẩn ở \u003c 1024px; form luôn dùng được",
       "suite": "e2e:root-0",
       "reason": "đỏ sẵn trên prod a4a95d93 (chạy -All module đóng băng, 2026-11-03), không do CR-114",
       "owner": "platform",
-      "expires": "2026-11-17",
-      "since": "2026-11-03"
-    },
-    {
-      "id": "tests/acceptance/P-a/pf1/lock-order.int.test.ts › P1-48d…P1-48e · apply (stage-driver) ∥ cancel / expire [§10 · Major #1]",
-      "suite": "int",
-      "reason": "chập chờn có sẵn trên platform/gd0 trước CR-115 (đỏ 1/lượt chung, 5/5 xanh khi chạy riêng): expire SKIP LOCKED bỏ qua run tx khác còn giữ sau apply",
-      "owner": "hub-api processes",
       "expires": "2026-11-17",
       "since": "2026-11-03"
     }

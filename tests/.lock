@@ -1328,7 +1328,8 @@ e7cad92ff67848f061bdcc9b367104efb7cc8488d0cee25a1087d549d7853f04  tests/acceptan
 36a8b5ba7ca3d78fa4479ccfe306e391846b3a84f1037ad7cd23723e75e9d50c  tests/acceptance/V2-G/_support/v2g.ts
 52e458c226f0f06cdbd2f5b85ce3363c5dbdb58da2bcfee1727e40df7516f81c  tests/acceptance/V2-G/ai-read.int.test.ts
 c5f7c64fde560c3f2316e4b038228fed43e7c23ec7d75ed4d1dc61b4e9fb50db  tests/acceptance/V2-G/attach.int.test.ts
-72c9791e45b17ba7a7abc919598d6fe1921d08623548785787d6a2750d9faad0  tests/acceptance/V2-G/perf.int.test.ts
+eedb87f36bb14e786eedfae94a6287b0c11c196a1594be6e2cec99a6270e4a76  tests/acceptance/V2-G/perf.int.test.ts
+bdaab995b292ff7d43ef4b35e0d75e7de9c9112c0c6e6f49f6d7548083837e85  tests/acceptance/V2-G/perf/review.perf.int.test.ts
 f286db999e769ff0a68fd17471819db53c9e8c73392e7283aa8e23bc7f4470bb  tests/acceptance/V2-G/review.int.test.ts
 edda6dbe137c1132a5ea00decabb448f75c128a4fec20540accf4e708eb2f924  tests/acceptance/V2-H/api.int.test.ts
 0ebec76a4fcb921bdf4c601fff42fdaf1867195c2f70a0a4a02b93a8162fc18b  tests/acceptance/V2-H/rls.int.test.ts

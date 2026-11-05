@@ -27,8 +27,11 @@ def encode_event(event: RunEvent) -> str:
     (sự kiện giữ y hệt H2b khi job không có output). Nhận `job.result` theo `type` (review H2c v1
     #5), không theo tên lớp codegen `RunEventN` (đổi khi thứ tự `oneOf` đổi)."""
     root = event.root
-    if root.type == "job.result" and root.outputs is None:
-        return root.model_dump_json(exclude={"outputs"})
+    if root.type == "job.result":
+        # `outputs` / `source_reads` đều `.optional()` (không `nullable`) ở zod `RunEvent` của Hub ⇒ `null` bị từ chối (PF-S3 C18).
+        gone = {k for k in ("outputs", "source_reads") if getattr(root, k) is None}
+        if gone:
+            return root.model_dump_json(exclude=gone)
     return event.model_dump_json()
 
 

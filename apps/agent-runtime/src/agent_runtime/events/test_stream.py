@@ -95,10 +95,20 @@ def test_wrk_fr_18_result_outputs_key_only_when_present() -> None:
     assert got["outputs"] == [JOB]
 
 
+def test_wrk_fr_18_result_source_reads_key_only_when_present() -> None:
+    """PF-S3 C18: Hub `source_reads` là `.optional()` (không nullable) ⇒ không dump `null`."""
+    assert "source_reads" not in json.loads(encode_event(_result(None)))
+    assert "source_reads" not in json.loads(encode_event(_result([JOB])))
+
+
 def test_wrk_fr_18_encode_by_type_not_codegen_class() -> None:
     """Review H2c v1 #5: chỉ `type == "job.result"` bỏ `outputs` rỗng; loại khác dump nguyên."""
-    full = {"outputs": None}
-    for ev, dropped in ((_progress(), {}), (_result(None), full), (_result([JOB]), {})):
+    full = {"outputs": None, "source_reads": None}
+    for ev, dropped in (
+        (_progress(), {}),
+        (_result(None), full),
+        (_result([JOB]), {"source_reads": None}),
+    ):
         want = json.loads(ev.model_dump_json())
         for key in dropped:
             del want[key]

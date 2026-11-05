@@ -1,5 +1,5 @@
 // V2-G · Luật 4c: "Lưu" màn xác nhận = SỐ CÂU SQL CỐ ĐỊNH, không phụ thuộc số dòng hàng / số mốc (dữ liệu lô qua MỘT tham số JSON mỗi loại);
-// chi tiết vẫn MỘT câu đọc kể cả có `ai` + dòng gắn SP; gắn SP một dòng = số câu cố định. Đo thời gian Lưu 200 dòng + 50 mốc (số thật in ra).
+// chi tiết vẫn MỘT câu đọc kể cả có `ai` + dòng gắn SP; gắn SP một dòng = số câu cố định. Thời gian Lưu 200 dòng + 50 mốc (p95): perf/review.perf.int.test.ts (bộ perf, không phụ thuộc tải máy int).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { captureSql } from "../HD1/_support/hd1";
 import {
@@ -84,22 +84,5 @@ describe("V2-G · Lưu: số câu SQL cố định (Luật 4c)", () => {
     await attach(); // lock-strict: gắn SP chỉ khi HĐ chưa khoá ⇒ đo trước khi xác nhận
     expect(await count(attach)).toBeLessThanOrEqual(TX + 2);
     await ok(reviewOf(c, s.id, body));
-  });
-
-  it("thời gian: Lưu 200 dòng + 50 mốc (tenant tắt duyệt) — p95 ≤ 250 ms trong mạng cục bộ", async () => {
-    const times: number[] = [];
-    for (let i = 0; i < 12; i++) {
-      const { s, body } = await save(200, 50, false);
-      const t0 = performance.now();
-      const r = await reviewOf(c, s.id, body);
-      times.push(performance.now() - t0);
-      expect(r.status).toBe(200);
-    }
-    times.sort((x, y) => x - y);
-    const p = (q: number) => times[Math.min(times.length - 1, Math.floor(q * times.length))] ?? 0;
-    console.log(
-      `V2-G review 200x50: p50 ${p(0.5).toFixed(1)} ms · p95 ${p(0.95).toFixed(1)} ms · max ${(times.at(-1) ?? 0).toFixed(1)} ms`,
-    );
-    expect(p(0.95)).toBeLessThanOrEqual(250);
   });
 });

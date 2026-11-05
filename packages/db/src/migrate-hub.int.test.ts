@@ -62,6 +62,8 @@ const HUB_TABLES = [
   "agent_workflows",
   "agents",
   "ai_token_holds", // M3c hub 0043 · giữ chỗ trần token AI (review B #13)
+  "artifact_runs", // hub 0084 · hub_artifacts
+  "artifacts",
   "attachments",
   "audit_log",
   "autofix_applies",
@@ -88,10 +90,16 @@ const HUB_TABLES = [
   "ops_settings",
   "orchestrator_settings",
   "process_back_events",
+  "process_def_releases", // hub 0068 · thư viện quy trình / CR-118 hub 0087 (routing, slot)
   "process_defs",
   "process_notices",
   "process_outputs",
+  "process_routing_rules",
+  "process_routings",
   "process_runs",
+  "process_slot_assignments",
+  "process_slots",
+  "process_tenant_defs",
   "process_thread_events",
   "process_timers",
   "provider_models",
