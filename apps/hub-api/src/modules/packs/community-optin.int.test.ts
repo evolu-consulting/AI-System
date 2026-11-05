@@ -73,7 +73,7 @@ afterAll(async () => {
 });
 
 describe("duyệt bài opt-in [CR-120]", () => {
-  it("tenant mới bật Community ⇒ không cấp mặc định ⇒ moderation tắt; gán ⇒ bật; bỏ gán ⇒ tắt và không bị cấp lại", async () => {
+  it("tenant mới bật Community ⇒ không cấp mặc định ⇒ moderation tắt, gán ⇒ bật, bỏ gán ⇒ tắt và không bị cấp lại", async () => {
     const t = T[0] as string;
     expect(
       await ensureSlotDefaults(

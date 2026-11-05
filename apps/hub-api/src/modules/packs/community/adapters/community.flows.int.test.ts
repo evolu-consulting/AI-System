@@ -278,7 +278,7 @@ describe("khe community.post-moderation [CR-120]", () => {
     }
   });
 
-  it("bài đã gắn cờ, tác giả sửa ⇒ task đổi + chạy lại screen; task cũ của người duyệt vô hiệu", async () => {
+  it("bài đã gắn cờ, tác giả sửa ⇒ task đổi + chạy lại screen, task cũ của người duyệt vô hiệu", async () => {
     agentOut = () => flag();
     const id = await post();
     const t1 = (await modRow(id)).task;
@@ -519,7 +519,7 @@ describe("khe community.report [CR-120]", () => {
 });
 
 describe("GET /flows/nav [CR-120]", () => {
-  it("người duyệt + duyệt bài bật ⇒ đủ; thành viên thường ⇒ không; đối tác ⇒ chỉ gửi yêu cầu; công ty chưa bật khe ⇒ không có hàng chờ", async () => {
+  it("người duyệt + duyệt bài bật ⇒ đủ, thành viên thường ⇒ không, đối tác ⇒ chỉ gửi yêu cầu, công ty chưa bật khe ⇒ không có hàng chờ", async () => {
     moderationOn = true;
     expect((await call("hA", "GET", "/flows/nav")).json).toEqual({
       moderationQueue: true,
