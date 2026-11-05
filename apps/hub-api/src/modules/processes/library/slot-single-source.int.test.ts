@@ -196,8 +196,9 @@ describe("CR-120 · cr120-single-source · một nguồn gán", () => {
     expect(await ensureSlotDefaults(db, SLOTS, ALL)).toBe(2); // t2, t7
     const rows = await ruleRows();
     expect(await ensureSlotDefaults(db, SLOTS, ALL)).toBe(0);
+    // Như DB mới chạy từ đầu: 0091 dựng view ⇒ 0090 (đọc view) ⇒ 0099 gỡ view. (0090 đứng sau 0099 sẽ không còn view để đọc: thứ tự journal giữ nguyên.)
+    await runMig("0091_slot_assign_view.sql");
     await runMig("0090_slot_default_rules.sql");
-    await runMig("0091_slot_assign_view.sql"); // dựng lại view (như DB mới chạy từ đầu) rồi 0099 gỡ lại
     await runMig("0099_drop_slot_assign_view.sql");
     await runMig("0099_drop_slot_assign_view.sql"); // chạy lại vô hại
     expect(await ruleRows()).toEqual(rows);
