@@ -66,7 +66,8 @@ export type ExecutorKind =
   | "if"
   | "form" // CR-118
   | "wait_for" // CR-120 · G3
-  | "wait_event"; // CR-120 · G4 + "form"; P-d2 + "tool"; R4 + "set"; CR-103 + "if"
+  | "wait_event" // CR-120 · G4
+  | "notify"; // CR-121 D-6 + "form"; P-d2 + "tool"; R4 + "set"; CR-103 + "if"
 export type TimerKind = "wait_until" | "retry";
 export type InputType = "text" | "select" | "file" | "source_ref" | "date" | "number"; // D2-44
 export type NoticeKind =

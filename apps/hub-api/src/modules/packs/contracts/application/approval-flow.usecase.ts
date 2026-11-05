@@ -71,7 +71,7 @@ export function listDifyWorkflows(d: Pick<ApprovalFlowDeps, "workflows">) {
 export type CurrentFlowStep = {
   name: string;
   department_name: string | null;
-  kind: "review" | "dify" | "esign";
+  kind: "review" | "dify" | "esign" | "notify" | "wait_until";
   when?: FlowWhen | null;
   /** CR-108 · hạn xử lý (giờ), nhắc mỗi (giờ), nhóm nhận khi quá hạn (tên), số người duyệt còn dùng được — vắng ⇒ không hiện. */
   due_h?: number;
@@ -186,6 +186,11 @@ export function readCurrentFlow(
     };
     const steps = body.steps.map((s): CurrentFlowStep => {
       if (s.kind === "dify") return { name: s.name, department_name: null, kind: "dify" };
+      // CR-121 D-6 · Thông báo (phòng nhận theo mã) / Chờ tới (không phòng).
+      if (s.kind === "notify")
+        return { name: s.name, department_name: deptName(s.to.group_key), kind: "notify" };
+      if (s.kind === "wait_until")
+        return { name: s.name, department_name: null, kind: "wait_until" };
       if (s.kind === "esign")
         return {
           name: s.name,

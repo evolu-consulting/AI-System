@@ -6,6 +6,7 @@ import { agentNode } from "./agent/node";
 import { applyNode } from "./apply/node";
 import { formNode } from "./form/node";
 import { ifNode } from "./if/node";
+import { notifyNode } from "./notify/node";
 import { setNode } from "./set/node";
 import { teamNode } from "./team/node";
 import { toolNode } from "./tool/node";
@@ -26,6 +27,7 @@ export const NODES: { readonly [K in ExecutorKind]: NodeSpec<K> } = {
   form: formNode,
   wait_for: waitForNode,
   wait_event: waitEventNode,
+  notify: notifyNode,
 };
 
 /** Thứ tự cố định (= `EXECUTOR_KINDS`): quyết thứ tự lỗi `defIssues` (team trước tool như cũ). */
@@ -40,6 +42,7 @@ const NODE_LIST: readonly NodeSpec[] = [
   NODES.form,
   NODES.wait_for,
   NODES.wait_event,
+  NODES.notify,
 ] as NodeSpec[];
 
 /** Loại lạ (snapshot cũ/hỏng) ⇒ undefined. */

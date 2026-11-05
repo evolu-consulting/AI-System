@@ -77,8 +77,11 @@ function userStepOf(st: StageLike, i: number): FlowStep | null {
   const slot = st.slot;
   const kind = slot?.kind;
   if (!slot || st.key !== stageKeyOf(i) || st.step !== engineStepOf(i)) return null;
-  if (kind !== "review" && kind !== "dify") return null;
+  // CR-121 D-6 · bước Thông báo / Chờ tới: stage engine cùng loại (`notify` / `wait_until`).
+  const auto = kind === "notify" || kind === "wait_until";
+  if (kind !== "review" && kind !== "dify" && !auto) return null;
   if (kind === "review" && !isTool(st, FLOW_TOOL_KEYS.route)) return null;
+  if (auto && st.executor.kind !== kind) return null;
   return { ...slot, key: slot.key ?? st.key, name: st.name ?? slot.name } as FlowStep;
 }
 

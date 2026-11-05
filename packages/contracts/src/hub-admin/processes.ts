@@ -28,6 +28,7 @@ import {
 } from "./process-group-refs";
 import { IfExecutorSchema } from "./process-if";
 import { LIBRARY_DEF_FIELDS, LIBRARY_DEF_INPUT_FIELDS } from "./process-library";
+import { NotifyExecutorSchema } from "./process-notify";
 import { SetExecutorSchema } from "./process-set";
 import { PROCESS_DEF_RULES, processDefStageIssues } from "./process-steps";
 import {
@@ -74,6 +75,7 @@ export {
 export * from "./autofix";
 export * from "./dlc-step-templates";
 export * from "./process-library";
+export * from "./process-notify";
 export * from "./process-routing";
 export * from "./process-steps";
 export * from "./process-tools";
@@ -166,6 +168,8 @@ export const ProcessStageDefSchema = z.strictObject({
     /** CR-120 · G3/G4 · chờ N giờ / chờ sự kiện (luật `waitNodeIssues`, hub nodes/wait-for · wait-event). */
     WaitForExecutorSchema,
     WaitEventExecutorSchema,
+    /** CR-121 D-6 · gửi thông báo rồi xong bước (luật `notifyDefIssues`, hub nodes/notify). */
+    NotifyExecutorSchema,
   ]),
   instruction: z.string().max(STAGE_INSTRUCTION_MAX),
   output: z.strictObject({

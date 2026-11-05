@@ -1,7 +1,7 @@
 // CR-121 D-0 · danh mục của khe `contracts.approval` cho trình sửa quy trình: trường nghiệp vụ dùng trong điều kiện bước và loại
 // node = đúng các tính năng gói đã chạy được (`compileSlotStages`). Thuần, lớp 1 (chỉ builtin) — hình khớp `SlotField`/`SlotNode`
 // của kit (`approval.mount.ts` gán vào `SlotSpec`, tsc kiểm). Hạn thanh toán: KHÔNG có trường mức HĐ (chỉ `obligations.due_date`
-// nhiều dòng mỗi HĐ) ⇒ chưa khai. Node `notify` / `wait_until`: gói chưa có loại bước ⇒ chưa khai (xem docs/specs/cr121-d/spec.md).
+// nhiều dòng mỗi HĐ) ⇒ chưa khai. CR-121 D-6 · node `notify` / `wait_until` đã có loại bước (`approval-flow-notify.rules.ts`).
 
 export const APPROVAL_SLOT_FIELDS = [
   {
@@ -34,4 +34,7 @@ export const APPROVAL_SLOT_NODES = [
   { kind: "review", label: "Duyệt", icon: "check-circle" },
   { kind: "dify", label: "Trợ lý AI", icon: "sparkles" },
   { kind: "esign", label: "Ký số", icon: "signature" },
+  // CR-121 D-6 · gói có loại bước + phần chạy (stage engine `notify` / `wait_until`, tự sang bước kế).
+  { kind: "notify", label: "Thông báo", icon: "bell" },
+  { kind: "wait_until", label: "Chờ tới", icon: "clock" },
 ] as const;

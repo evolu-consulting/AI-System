@@ -6,6 +6,7 @@ import { agentLauncher } from "./agent/launch";
 import { applyLauncher } from "./apply/launch";
 import { formLauncher } from "./form/launch";
 import { ifLauncher } from "./if/launch";
+import { notifyLauncher } from "./notify/launch";
 import { setLauncher } from "./set/launch";
 import { teamLauncher } from "./team/launch";
 import { toolLauncher } from "./tool/launch";
@@ -25,6 +26,7 @@ export const NODE_LAUNCHERS: Readonly<Record<ExecutorKind, NodeLauncher>> = {
   form: formLauncher,
   wait_for: waitForLauncher,
   wait_event: waitEventLauncher,
+  notify: notifyLauncher,
 };
 
 export const nodeLauncherOf = (kind: ExecutorKind): NodeLauncher => NODE_LAUNCHERS[kind];

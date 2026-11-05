@@ -73,7 +73,8 @@ export const ApprovalCardStepSchema = z.strictObject({
   idx: z.number().int().min(0),
   key: z.string().max(64),
   name: z.string().max(200),
-  kind: z.enum(["review", "dify"]),
+  /** CR-121 D-6 · + bước Thông báo / Chờ tới (tự chạy như Dify, không Group). */
+  kind: z.enum(["review", "dify", "notify", "wait_until"]),
   status: z.enum(APPROVAL_STEP_STATUSES),
   /** Group (phòng) duyệt; null ở bước Dify. UI đổi ra tên qua `GET /pack/contracts/groups`. */
   group_id: z.uuid().nullable(),

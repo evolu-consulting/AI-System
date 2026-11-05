@@ -55,7 +55,7 @@ export type CardStep = {
   idx: number;
   key: string;
   name: string;
-  kind: "review" | "dify";
+  kind: "review" | "dify" | "notify" | "wait_until";
   status: CardStepStatus;
   group_id: string | null;
   head_only: boolean;

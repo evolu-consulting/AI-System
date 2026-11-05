@@ -34,6 +34,7 @@ import {
 } from "../domain/approval-flow.rules";
 import type { FlowStep } from "../domain/approval-flow.types";
 import { type FlowFacts, factNeedsOf } from "../domain/approval-flow-cond.rules";
+import { hasNotifyOrWait, notifyRunInputs } from "../domain/approval-flow-notify.rules";
 import { escalateOrder } from "../domain/approval-owner.rules";
 import type {
   ApprovalEngineBridge,
@@ -172,9 +173,12 @@ export async function openRun(
 ): Promise<"started" | "skipped"> {
   // started_by của run = người bắt đầu lượt duyệt (exclude_starter phải còn nghĩa sau Đọc lại / heal do người khác kích).
   const u = callerOf({ tenantId: who.tenantId, userId: c.starter });
-  const facts = hasDifyStep(c.flow.steps)
-    ? await d.uow.tenant(who, (r) => r.approvalEngine.difyFacts(c.id))
-    : null;
+  // CR-121 D-6 · Thông báo / Chờ tới cũng cần dữ liệu HĐ (cùng một câu đọc với Dify).
+  const notifyWait = hasNotifyOrWait(c.flow.steps);
+  const facts =
+    hasDifyStep(c.flow.steps) || notifyWait
+      ? await d.uow.tenant(who, (r) => r.approvalEngine.difyFacts(c.id))
+      : null;
   // dify-input-map · tham số `select` lấy từ loại HĐ ⇒ input run phụ theo catalog hiện hành (một lần gọi, không theo hàng).
   const selects = facts
     ? difySelectBindings(c.flow.steps, await port.workflowsOf(who.tenantId))
@@ -185,6 +189,14 @@ export async function openRun(
     inputs: [
       { type: "text" as const, key: "contract-id", text: c.id },
       ...(facts ? difyRunInputs(facts, selects) : []),
+      ...(facts && notifyWait
+        ? notifyRunInputs({
+            number: facts.number ?? null,
+            owner: facts.owner ?? null,
+            endDate: facts.endDate ?? null,
+            actionDeadline: facts.actionDeadline ?? null,
+          })
+        : []),
     ],
     ref: { pack: "contracts", record_id: c.id },
     ...slotRunOf(c.flow, c.def, port),

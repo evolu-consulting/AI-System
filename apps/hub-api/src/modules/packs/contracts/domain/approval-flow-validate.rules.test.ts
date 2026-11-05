@@ -36,7 +36,8 @@ describe("stepKindAndCondIssues", () => {
   });
 
   it("loại bước app không hỗ trợ ⇒ NODE_UNSUPPORTED kèm đúng bước", () => {
-    const b = { steps: [defaultSlotBody().steps[0], { kind: "notify", key: "n" }] };
+    // CR-121 D-6 · `notify` đã được khe hỗ trợ ⇒ dùng loại chưa khai (`if`).
+    const b = { steps: [defaultSlotBody().steps[0], { kind: "if", key: "n" }] };
     expect(stepKindAndCondIssues(b)).toEqual([{ path: "steps.1.kind", rule: "NODE_UNSUPPORTED" }]);
   });
 });

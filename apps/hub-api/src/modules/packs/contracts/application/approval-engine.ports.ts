@@ -26,6 +26,7 @@ export type EngineStartRequest = {
   inputs: (
     | { type: "text"; key: string; text: string }
     | { type: "number"; key: string; value: string }
+    | { type: "date"; key: string; value: string } // CR-121 D-6 · ngày HĐ cho bước Chờ tới
   )[];
   ref: EngineRunRef;
   /** CR-105 · run theo khe: engine kiểm def run mang đúng `source_ref` + ghi tên/bản quy trình vào snapshot run. */
@@ -130,6 +131,11 @@ export type EngineDifyFacts = {
   deal: string | null;
   totalValue: unknown;
   partner: string;
+  /** CR-121 D-6 · số HĐ, người phụ trách, ngày hết hạn / hạn xử lý (YYYY-MM-DD) cho bước Thông báo / Chờ tới. */
+  number?: string | null;
+  owner?: string | null;
+  endDate?: string | null;
+  actionDeadline?: string | null;
 };
 /** CR-107 · một lần bấm Đạt duyệt cuối: `claim` = mã ngẫu nhiên của lần bấm, `by` = người, `task` = task duyệt đang mở. */
 export type PendingLinksOwner = { claim: string; by: string; task: string };

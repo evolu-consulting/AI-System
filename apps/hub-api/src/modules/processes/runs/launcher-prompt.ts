@@ -5,6 +5,7 @@ import {
   HANDOFF_TOKENS_MAX,
   KH_SUMMARY_SECTION,
   KH_SUMMARY_WORDS,
+  type NotifyExecutor,
   type ProcessInputValue,
   type SourcePin,
   type StageAutofix,
@@ -39,7 +40,8 @@ export type SnapStage = {
     | { kind: "if" } // CR-103 · node If (đánh giá ở `settleStep`; điều kiện đọc từ snapshot ở `step.repo`)
     | { kind: "form"; fields: unknown[] } // CR-118 · node `form` (kiểm giá trị ở `gates/form-out`)
     | { kind: "wait_for"; hours: number } // CR-120 · G3
-    | { kind: "wait_event"; event: string; timeout_h: number }; // CR-120 · G4
+    | { kind: "wait_event"; event: string; timeout_h: number } // CR-120 · G4
+    | NotifyExecutor; // CR-121 D-6 · node `notify` (nodes/notify)
   after: { kind: "review"; group_id: string | null } | { kind: "auto" };
   output: { filename: string; required_sections?: string[] };
   real_action: boolean;

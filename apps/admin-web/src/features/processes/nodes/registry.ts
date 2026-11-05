@@ -151,6 +151,17 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
     fromDef: (ex) => ({ wait: waitEventFromDef(ex) }),
     toDef: (s) => waitEventToDef(s.wait),
   },
+  // CR-121 D-6 · node `notify`: phần chạy ở hub; khối sửa trong editor là việc của lát UI sau (chưa có ⇒ lưu lại từ editor ra
+  // executor rỗng và hub từ chối NOTIFY_INVALID — không mất cấu hình âm thầm). Chưa có nhãn i18n ⇒ không hiện trong danh sách chọn.
+  notify: {
+    kind: "notify",
+    family: NODE_FAMILY_OF.notify,
+    labelKey: null,
+    defaults: () => ({}),
+    draftValue: "notify",
+    draftExecutor: () => "notify",
+    toDef: () => ({ kind: "notify", to: [], channels: [], title: "", body: "" }),
+  },
 };
 
 /** Mục registry của executor contract. */

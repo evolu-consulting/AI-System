@@ -236,13 +236,28 @@ function difyFactsQ(tx: Tx, tid: string): ApprovalEngineRepo["difyFacts"] {
       deal: string | null;
       v: unknown;
       partner: string | null;
+      number: string | null;
+      owner: string | null;
+      end_date: string | null;
+      deadline: string | null;
     }>(sql`
       select c.title, c.deal, c.fields -> 'total_value' -> 'value' as v,
         case c.deal when 'sell' then c.buyer when 'buy' then c.seller
-          else concat_ws(' / ', c.seller, c.buyer) end as partner
+          else concat_ws(' / ', c.seller, c.buyer) end as partner,
+        c.number, c.owner_user_id::text as owner, c.end_date::date::text as end_date,
+        c.action_deadline::date::text as deadline
       from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
     return r
-      ? { title: r.title ?? "", deal: r.deal, totalValue: json(r.v), partner: r.partner ?? "" }
+      ? {
+          title: r.title ?? "",
+          deal: r.deal,
+          totalValue: json(r.v),
+          partner: r.partner ?? "",
+          number: r.number,
+          owner: r.owner,
+          endDate: r.end_date,
+          actionDeadline: r.deadline,
+        }
       : null;
   };
 }

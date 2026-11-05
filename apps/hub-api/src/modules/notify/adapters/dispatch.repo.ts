@@ -45,7 +45,7 @@ const system = { kind: "system" } as const;
 async function fanout(tx: Tx, nowIso: string, limit: number) {
   const rows = await tx.execute<{ picked: number; deliveries: number }>(sql`
     with picked as (
-      select n.id, n.tenant_id, n.user_id from hub.notifications n
+      select n.id, n.tenant_id, n.user_id, n.kind from hub.notifications n
       where n.fanout_at is null order by n.seq limit ${limit} for update skip locked),
     want as (
       select p.id, p.tenant_id, p.user_id, c.channel
@@ -53,7 +53,9 @@ async function fanout(tx: Tx, nowIso: string, limit: number) {
       join admin.users u on u.id = p.user_id and u.tenant_id = p.tenant_id and u.active and not u.locked_by_tenant
       left join hub.notify_prefs pr on pr.tenant_id = p.tenant_id and pr.user_id = p.user_id
       cross join (values ('email'), ('push')) c(channel)
-      where (c.channel = 'email' and coalesce(pr.email, true) and coalesce(u.email, '') <> '')
+      -- CR-121 D-6 · node quy trình chọn chỉ chuông (kind process.notify) ⇒ không mail.
+      where (c.channel = 'email' and coalesce(pr.email, true) and coalesce(u.email, '') <> ''
+              and p.kind <> 'process.notify')
          or (c.channel = 'push' and coalesce(pr.push, true) and exists (
               select 1 from hub.push_subscriptions s where s.tenant_id = p.tenant_id and s.user_id = p.user_id))),
     ins as (

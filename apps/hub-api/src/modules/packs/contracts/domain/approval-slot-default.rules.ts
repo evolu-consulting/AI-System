@@ -28,7 +28,7 @@ export function keyedSlotBody(
     return v ?? null;
   };
   const out = steps.map((s): SlotFlowStep => {
-    if (s.kind === "dify") return { ...s };
+    if (s.kind === "dify" || s.kind === "notify" || s.kind === "wait_until") return { ...s };
     const esc = { escalate_group_id: null, escalate_group_key: k(s.escalate_group_id) };
     if (s.kind === "review")
       return {

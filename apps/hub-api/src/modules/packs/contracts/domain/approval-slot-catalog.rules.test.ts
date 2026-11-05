@@ -43,8 +43,14 @@ describe("CR-121 D-0 · SlotSpec.fields / nodes", () => {
     for (const f of APPROVAL_SLOT_FIELDS) expect(f.label.length).toBeGreaterThan(0);
   });
 
-  it("node = tính năng gói đã chạy (duyệt, AI, ký số); khe không khai ⇒ rỗng", () => {
-    expect(slotNodes(approvalSlotSpec).map((n) => n.kind)).toEqual(["review", "dify", "esign"]);
+  it("node = tính năng gói đã chạy (duyệt, AI, ký số, CR-121 D-6 thông báo, chờ tới); khe không khai ⇒ rỗng", () => {
+    expect(slotNodes(approvalSlotSpec).map((n) => n.kind)).toEqual([
+      "review",
+      "dify",
+      "esign",
+      "notify",
+      "wait_until",
+    ]);
     expect(APPROVAL_SLOT_NODES.every((n) => n.icon && n.label)).toBe(true);
     expect([slotFields({}), slotNodes({})]).toEqual([[], []]);
   });

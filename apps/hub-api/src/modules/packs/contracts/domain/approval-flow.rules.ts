@@ -24,6 +24,12 @@ import {
   hasDifyStep,
 } from "./approval-flow-dify.rules";
 import { esignIssues } from "./approval-flow-esign.rules";
+import {
+  autoStageOf,
+  hasNotifyOrWait,
+  notifyDefInputs,
+  notifyWaitIssues,
+} from "./approval-flow-notify.rules";
 import { escalateOf } from "./approval-owner.rules";
 
 export type {
@@ -60,7 +66,10 @@ export { condHasData, condHolds, type FlowFacts, whenHolds } from "./approval-fl
 
 /** Bước Dify luôn chạy (không điều kiện); bước review theo `when`. Bước Ký số không là bước engine (lọc bằng `engineSteps`). */
 export const stepApplies = (s: FlowStep, f: FlowFacts): boolean =>
-  s.kind === "dify" || (s.kind === "review" && whenHolds(s.when, f));
+  s.kind === "dify" ||
+  s.kind === "notify" ||
+  s.kind === "wait_until" ||
+  (s.kind === "review" && whenHolds(s.when, f));
 
 /** esign-flow · các bước chạy trên engine (review + Dify). Bước Ký số luôn ở CUỐI ⇒ chỉ số bước engine không đổi. */
 export const engineSteps = (steps: readonly FlowStep[]): FlowEngineStep[] =>
@@ -116,9 +125,13 @@ export function validateFlow(steps: readonly FlowStep[]): ApprovalFlowIssue[] {
     if (seen.has(s.key)) out.push({ path: `steps.${i}.key`, rule: "KEY_DUP" });
     seen.add(s.key);
     const prev = steps[i - 1];
-    if (prev?.kind === "dify" && s.kind === "review" && s.when !== null)
+    // CR-121 D-6 · bước tự sang bước kế (Dify / Thông báo / Chờ tới) không rẽ ⇒ bước sau nó không được có điều kiện.
+    const autoPrev =
+      prev?.kind === "dify" || prev?.kind === "notify" || prev?.kind === "wait_until";
+    if (autoPrev && s.kind === "review" && s.when !== null)
       out.push({ path: `steps.${i}.when`, rule: "AFTER_DIFY_CONDITIONAL" });
     if (s.kind === "review") out.push(...reviewIssues(s, i));
+    out.push(...notifyWaitIssues(s, i));
   });
   out.push(...esignIssues(steps));
   return out;
@@ -128,7 +141,7 @@ export function validateFlow(steps: readonly FlowStep[]): ApprovalFlowIssue[] {
 export function flowGroupIds(steps: readonly FlowStep[]): string[] {
   const ids = new Set<string>();
   for (const s of steps) {
-    if (s.kind === "dify") continue;
+    if (s.kind === "dify" || s.kind === "notify" || s.kind === "wait_until") continue;
     if (s.escalate_group_id) ids.add(s.escalate_group_id);
     const g = s.kind === "review" ? s.department_group_id : s.company_signer.department_group_id;
     if (g) ids.add(g);
@@ -259,6 +272,8 @@ function stageOfStep(
   const owners = o.owners;
   const s = steps[i] as FlowEngineStep;
   const step = engineStepOf(i);
+  if (s.kind === "notify" || s.kind === "wait_until")
+    return autoStageOf(s, stageKeyOf(i), step) as unknown as ReturnType<typeof toolStage>;
   if (s.kind === "dify") {
     const after = { kind: "auto", branch: [] };
     return toolStage({
@@ -369,7 +384,14 @@ export function compileDef(
     token_budget: null,
     enabled: true,
     sources: [] as string[],
-    inputs: defInputs(hasDifyStep(steps), difySelectBindings(steps, [...workflows.values()])),
+    // CR-121 D-6 · Thông báo / Chờ tới dùng dữ liệu HĐ (tiêu đề, giá trị — chung input của Dify) + input riêng.
+    inputs: [
+      ...defInputs(
+        hasDifyStep(steps) || hasNotifyOrWait(steps),
+        difySelectBindings(steps, [...workflows.values()]),
+      ),
+      ...notifyDefInputs(steps),
+    ],
     ttl_days: null,
     stages: [first, route, ...rest, finalize],
   };

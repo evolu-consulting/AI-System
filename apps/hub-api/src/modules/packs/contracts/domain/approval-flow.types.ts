@@ -25,7 +25,11 @@ export type ApprovalFlowRule =
   | "ESIGN_NOT_LAST"
   | "SIGNER_GROUP_REQUIRED"
   | "SIGNER_USER_REQUIRED"
-  | "USER_NOT_MEMBER";
+  | "USER_NOT_MEMBER"
+  | "NOTIFY_TO_REQUIRED"
+  | "NOTIFY_CHANNEL_REQUIRED"
+  | "NOTIFY_TITLE_REQUIRED"
+  | "WAIT_OFFSET_RANGE";
 
 /** cf-dify · workflow Dify trong catalog mà tenant được dùng (khoá, tên, tham số khai trong `input_schema`). */
 export type FlowContractField = "contract_id" | "title" | "deal" | "total_value" | "partner";
@@ -91,9 +95,34 @@ export type FlowEsignStep = {
   remind_every_h: number | null;
   escalate_group_id: string | null;
 };
-export type FlowStep = FlowReviewStep | FlowDifyStep | FlowEsignStep;
-/** Bước chạy trên engine (review + Dify); bước Ký số do gói chạy sau "Đã duyệt". */
-export type FlowEngineStep = FlowReviewStep | FlowDifyStep;
+/** CR-121 D-6 · bước "Thông báo": người gửi duyệt / người phụ trách / thành viên Group (theo MÃ); chạy xong là sang bước kế. */
+export type FlowNotifyStep = {
+  kind: "notify";
+  key: string;
+  name: string;
+  to: { creator: boolean; owner: boolean; group_key: string | null };
+  channels: ("bell" | "email")[];
+  /** Mẫu có biến `{ma_hd}` `{ten_hd}` `{gia_tri}`. */
+  title: string;
+  body: string;
+};
+/** CR-121 D-6 · bước "Chờ tới": ngày HĐ (`end_date` hết hạn / `action_deadline` hạn xử lý) + `offset_days` lúc `time`. */
+export type FlowWaitStep = {
+  kind: "wait_until";
+  key: string;
+  name: string;
+  from: "end_date" | "action_deadline";
+  offset_days: number;
+  time: string;
+};
+export type FlowStep =
+  | FlowReviewStep
+  | FlowDifyStep
+  | FlowEsignStep
+  | FlowNotifyStep
+  | FlowWaitStep;
+/** Bước chạy trên engine (review + Dify + Thông báo + Chờ tới); bước Ký số do gói chạy sau "Đã duyệt". */
+export type FlowEngineStep = FlowReviewStep | FlowDifyStep | FlowNotifyStep | FlowWaitStep;
 export type ApprovalFlowResponse = {
   version: number;
   is_default: boolean;

@@ -158,6 +158,8 @@ export const EXECUTOR_KINDS = [
   // CR-120 · G3/G4 · chờ N giờ / chờ sự kiện (hẹn giờ dùng lại loại hẹn `wait_until`).
   "wait_for",
   "wait_event",
+  // CR-121 D-6 · gửi thông báo rồi xong bước ngay.
+  "notify",
 ] as const;
 export const STEP_ROLES = ["agent", "plan", "member"] as const;
 

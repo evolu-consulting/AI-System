@@ -18,12 +18,15 @@ type Keyed = { department_group_key?: string | null; escalate_group_key?: string
 type SlotSigner = FlowEsignStep["company_signer"] & { department_group_key?: string | null };
 export type SlotFlowStep =
   | (FlowReviewStep & Keyed)
-  | Extract<FlowStep, { kind: "dify" }>
+  | Extract<FlowStep, { kind: "dify" | "notify" | "wait_until" }>
   | (Omit<FlowEsignStep, "company_signer"> & Keyed & { company_signer: SlotSigner });
 export type SlotFlowBody = { steps: SlotFlowStep[] };
 export type SlotIssueRule = ApprovalFlowIssue["rule"] | "SLOT_SHAPE" | "GROUP_ID_IN_LIBRARY";
 
-const KINDS = new Set(["review", "dify", "esign"]);
+const KINDS = new Set(["review", "dify", "esign", "notify", "wait_until"]);
+/** Bước không mang Group theo id (Dify / Chờ tới; Thông báo trỏ Group bằng MÃ ở `to.group_key`). */
+const noGroupId = (s: SlotFlowStep) =>
+  s.kind === "dify" || s.kind === "notify" || s.kind === "wait_until";
 const isObj = (x: unknown): x is Record<string, unknown> =>
   typeof x === "object" && x !== null && !Array.isArray(x);
 
@@ -69,7 +72,8 @@ export function withConfirmStep(
 export function slotGroupKeys(body: SlotFlowBody): string[] {
   const keys = new Set<string>();
   for (const s of body.steps) {
-    if (s.kind === "dify") continue;
+    if (s.kind === "notify" && s.to.group_key) keys.add(s.to.group_key);
+    if (noGroupId(s)) continue;
     if (s.escalate_group_key) keys.add(s.escalate_group_key);
     const k = s.kind === "review" ? s.department_group_key : s.company_signer.department_group_key;
     if (k) keys.add(k);
@@ -90,7 +94,7 @@ export function resolveSlotSteps(
     return v ?? null;
   };
   const steps = body.steps.map((s): FlowStep => {
-    if (s.kind === "dify") return s;
+    if (noGroupId(s)) return s as FlowStep;
     const { department_group_key: dk, escalate_group_key: ek, ...rest } = s;
     const esc = { escalate_group_id: id(ek) };
     if (rest.kind === "review") return { ...rest, ...esc, department_group_id: id(dk) };
@@ -104,7 +108,7 @@ export function resolveSlotSteps(
 /** `slot_body` thư viện chứa id Group (thay vì mã) — path đầu tiên; null nếu sạch. */
 function groupIdPath(body: SlotFlowBody): string | null {
   for (const [i, s] of body.steps.entries()) {
-    if (s.kind === "dify") continue;
+    if (noGroupId(s)) continue;
     if (s.escalate_group_id) return `steps.${i}.escalate_group_id`;
     if (s.kind === "review" && s.department_group_id) return `steps.${i}.department_group_id`;
     if (s.kind === "esign" && s.company_signer.department_group_id)

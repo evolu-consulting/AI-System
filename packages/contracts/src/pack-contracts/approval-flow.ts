@@ -43,6 +43,11 @@ export const APPROVAL_FLOW_RULES = [
   "SIGNER_USER_REQUIRED",
   /** esign-flow · người (duyệt/ký) không thuộc công ty hoặc không có quyền gói hợp đồng. */
   "USER_NOT_MEMBER",
+  /** CR-121 D-6 · bước Thông báo thiếu người nhận / kênh / tiêu đề; bước Chờ tới lệch ngày ngoài ±365. */
+  "NOTIFY_TO_REQUIRED",
+  "NOTIFY_CHANNEL_REQUIRED",
+  "NOTIFY_TITLE_REQUIRED",
+  "WAIT_OFFSET_RANGE",
 ] as const;
 export type ApprovalFlowRule = (typeof APPROVAL_FLOW_RULES)[number];
 
@@ -206,10 +211,39 @@ export const FlowDifyStepSchema = z.strictObject({
   after: z.literal("auto"),
 });
 export type FlowDifyStep = z.infer<typeof FlowDifyStepSchema>;
+/** CR-121 D-6 · bước "Thông báo" (chạy xong là sang bước kế; thiếu người nhận/kênh/tiêu đề ⇒ lỗi kiểm `NOTIFY_*`). */
+export const FlowNotifyStepSchema = z.strictObject({
+  kind: z.literal("notify"),
+  key: StepKeySchema,
+  name: StepNameSchema,
+  to: z.strictObject({
+    creator: z.boolean(),
+    owner: z.boolean(),
+    group_key: z.string().regex(GROUP_KEY_RE).nullable(),
+  }),
+  channels: z.array(z.enum(["bell", "email"])).max(2),
+  /** Mẫu có biến `{ma_hd}` `{ten_hd}` `{gia_tri}`. */
+  title: z.string().max(200),
+  body: z.string().max(2000),
+});
+export type FlowNotifyStep = z.infer<typeof FlowNotifyStepSchema>;
+/** CR-121 D-6 · bước "Chờ tới": ngày của HĐ + số ngày lệch, lúc `time` (giờ công ty). */
+export const FLOW_WAIT_OFFSET_DAYS = { min: -365, max: 365 } as const;
+export const FlowWaitStepSchema = z.strictObject({
+  kind: z.literal("wait_until"),
+  key: StepKeySchema,
+  name: StepNameSchema,
+  from: z.enum(["end_date", "action_deadline"]),
+  offset_days: z.number().int(),
+  time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+});
+export type FlowWaitStep = z.infer<typeof FlowWaitStepSchema>;
 export const FlowStepSchema = z.discriminatedUnion("kind", [
   FlowReviewStepSchema,
   FlowDifyStepSchema,
   FlowEsignStepSchema,
+  FlowNotifyStepSchema,
+  FlowWaitStepSchema,
 ]);
 export type FlowStep = z.infer<typeof FlowStepSchema>;
 export const FlowStepsSchema = z.array(FlowStepSchema).min(1).max(APPROVAL_FLOW_STEPS_MAX);
@@ -229,7 +263,7 @@ export const ApprovalFlowCurrentStepSchema = z.strictObject({
   name: z.string().min(1).max(80),
   /** Tên phòng ban (Group của tenant); bước không gắn phòng (Dify, ký số theo người phụ trách) ⇒ null. */
   department_name: z.string().max(200).nullable(),
-  kind: z.enum(["review", "dify", "esign"]),
+  kind: z.enum(["review", "dify", "esign", "notify", "wait_until"]),
   /** Điều kiện áp dụng (vắng/null = luôn chạy). */
   when: FlowWhenSchema.nullable().optional(),
   /** CR-108 · tất cả tuỳ chọn (client cũ bỏ qua): hạn xử lý giờ, nhắc mỗi giờ, nhóm nhận khi quá hạn, số người duyệt còn dùng được. */

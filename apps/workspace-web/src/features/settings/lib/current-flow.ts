@@ -14,7 +14,7 @@ export type CurrentStep = {
   name: string;
   /** Tên phòng ban (không phải id). */
   department: string | null;
-  kind: "review" | "dify" | "esign";
+  kind: "review" | "dify" | "esign" | "notify" | "wait_until"; // CR-121 D-6
   when: FlowWhen | null;
   /** CR-108 · hạn xử lý (giờ); vắng ⇒ không hiện. */
   dueH: number | null;

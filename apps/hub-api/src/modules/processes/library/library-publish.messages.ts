@@ -33,8 +33,8 @@ const RULES: Record<string, (c: Ctx) => Msg> = {
     ),
   AFTER_DIFY_CONDITIONAL: (c) =>
     M(
-      `${c.step}: bước ngay sau trợ lý AI không được có điều kiện — xoá điều kiện hoặc chèn một bước duyệt ở giữa.`,
-      `${c.step}: a step right after an AI assistant cannot be conditional — remove the condition or insert an approval step between.`,
+      `${c.step}: bước ngay sau trợ lý AI / Thông báo / Chờ tới không được có điều kiện — xoá điều kiện hoặc chèn một bước duyệt ở giữa.`,
+      `${c.step}: a step right after an AI assistant / notification / wait cannot be conditional — remove the condition or insert an approval step between.`,
     ),
   KEY_DUP: (c) =>
     M(
@@ -98,6 +98,27 @@ const RULES: Record<string, (c: Ctx) => Msg> = {
       `${c.step}: người được chọn không thuộc công ty hoặc không có quyền ghi — chọn người khác.`,
       `${c.step}: the chosen user is not in the company or lacks write access — pick another.`,
     ),
+  // CR-121 D-6 · bước Thông báo / Chờ tới.
+  NOTIFY_TO_REQUIRED: (c) =>
+    M(
+      `${c.step}: bước Thông báo chưa có người nhận — chọn người gửi duyệt, người phụ trách hoặc một phòng ban.`,
+      `${c.step}: the notification has no recipient — pick the submitter, the owner or a department.`,
+    ),
+  NOTIFY_CHANNEL_REQUIRED: (c) =>
+    M(
+      `${c.step}: bước Thông báo chưa chọn kênh gửi — chọn chuông và/hoặc mail.`,
+      `${c.step}: pick a channel — bell and/or email.`,
+    ),
+  NOTIFY_TITLE_REQUIRED: (c) =>
+    M(
+      `${c.step}: bước Thông báo chưa có tiêu đề — nhập tiêu đề (có thể dùng {ma_hd}, {ten_hd}, {gia_tri}).`,
+      `${c.step}: the notification needs a title (you may use {ma_hd}, {ten_hd}, {gia_tri}).`,
+    ),
+  WAIT_OFFSET_RANGE: (c) =>
+    M(
+      `${c.step}: số ngày lệch của bước Chờ tới phải từ -365 đến 365 — nhập lại số ngày.`,
+      `${c.step}: the wait offset must be -365 to 365 days.`,
+    ),
   SLOT_SHAPE: () =>
     M(
       "Quy trình không đúng dạng — mở lại trong trình sửa và lưu lại.",
@@ -110,8 +131,8 @@ const RULES: Record<string, (c: Ctx) => Msg> = {
     ),
   NODE_UNSUPPORTED: (c) =>
     M(
-      `${c.step}: ứng dụng này chưa hỗ trợ loại bước đó — đổi sang Duyệt, Trợ lý AI hoặc Ký số.`,
-      `${c.step}: this app does not support that step type — use Approval, AI assistant or E-signature.`,
+      `${c.step}: ứng dụng này chưa hỗ trợ loại bước đó — chọn loại bước trong danh sách của ứng dụng.`,
+      `${c.step}: this app does not support that step type — pick a step type from the app's list.`,
     ),
   COND_FIELD_UNDECLARED: (c) =>
     M(
