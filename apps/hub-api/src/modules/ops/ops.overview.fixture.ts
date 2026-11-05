@@ -55,7 +55,7 @@ export async function insertRuns(o: Sql, b: Base, runs: readonly RunSeed[]): Pro
       now() - x.s * interval '1 minute',
       case when x.f is null then null else now() - x.f * interval '1 minute' end,
       now() - x.u * interval '1 minute', x.re::uuid
-    from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb)
+    from jsonb_to_recordset(${JSON.stringify(rows)}::text::jsonb)
       as x(id text, tenant_id text, status text, s float8, f float8, u float8, re text)`;
   return rows.map((r) => r.id);
 }
@@ -83,6 +83,6 @@ export type DifySeed = { workflow: string; tenant: string; status: "ok" | "faile
 export async function insertDify(o: Sql, rows: readonly DifySeed[]): Promise<void> {
   await o`insert into hub.dify_runs (tenant_id, workflow_id, trigger, status, created_at)
     select x.t::uuid, x.w::uuid, 'command', x.s, now() - x.a * interval '1 minute'
-    from jsonb_to_recordset(${JSON.stringify(rows.map((r) => ({ t: r.tenant, w: r.workflow, s: r.status, a: r.ago })))}::jsonb)
+    from jsonb_to_recordset(${JSON.stringify(rows.map((r) => ({ t: r.tenant, w: r.workflow, s: r.status, a: r.ago })))}::text::jsonb)
       as x(t text, w text, s text, a float8)`;
 }

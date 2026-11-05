@@ -95,7 +95,7 @@ beforeAll(async () => {
       ],
       unrouted: ["Cty A"],
       broken: [],
-    })}::jsonb, 'x', now(), now())`;
+    })}::text::jsonb, 'x', now(), now())`;
 }, 180_000);
 
 afterAll(async () => {
