@@ -1,4 +1,4 @@
-﻿// CR-121 T-1 Â· `verify:wave`: chia toÃ n bá»™ int + e2e ra cÃ¡c slot evotest theo THá»œI LÆ¯á»¢NG ÄÃƒ ÄO (khÃ´ng theo sá»‘ thÆ° má»¥c/file nhÆ° trÆ°á»›c).
+// CR-121 T-1 Â· `verify:wave`: chia toÃ n bá»™ int + e2e ra cÃ¡c slot evotest theo THá»œI LÆ¯á»¢NG ÄÃƒ ÄO (khÃ´ng theo sá»‘ thÆ° má»¥c/file nhÆ° trÆ°á»›c).
 // LPT: má»¥c náº·ng nháº¥t vÃ o thÃ¹ng sáº½ xong sá»›m nháº¥t; viá»‡c e2e > PIECE_CAP chia thÃ nh máº£nh (root theo file spec, viá»‡c khÃ¡c theo --shard).
 // HÃ m thuáº§n; I/O (Ä‘á»c/ghi cache thá»i lÆ°á»£ng, gá»i evotest) á»Ÿ wave-timings.ts / verify-wave.ts.
 import { rootToken, shardToken } from "./e2e-pieces.rules";
@@ -55,6 +55,10 @@ export type WavePlan = {
   pieces: string[];
 };
 
+/** Số file spec đã đo của một việc không phải root (mảnh nhiều hơn số file ⇒ có mảnh rỗng). */
+export const specFileCount = (t: WaveTimings, job: string): number =>
+  Object.keys(t.e2e).filter((k) => k.startsWith(`${job}:`)).length || Number.POSITIVE_INFINITY;
+
 const bootOf = (t: WaveTimings, job: string) => t.boot[job] ?? WAVE.defaultBootS;
 
 /** Tá»•ng giÃ¢y viá»‡c khÃ´ng pháº£i root (stack + test): cÃ¡c khoÃ¡ `<viá»‡c>:<file>` + boot; chÆ°a Ä‘o â‡’ sá»‘ cÅ© theo cáº¥u hÃ¬nh, rá»“i máº·c Ä‘á»‹nh. */
@@ -66,24 +70,30 @@ export function jobSeconds(t: WaveTimings, job: string, config: string): number 
   return t.e2e[config] ?? WAVE.defaultJobS;
 }
 
+/** Mảnh của một việc không phải root: ≤ cap thì một mảnh; lớn hơn chia `--shard`, nhưng không quá số thùng (hai mảnh cùng cấu hình một slot đụng cổng/dựng stack) và không quá số file spec (mảnh rỗng). */
+function jobPieces(t: WaveTimings, job: string, config: string, slots?: number): E2ePiece[] {
+  const total = jobSeconds(t, job, config);
+  const boot = bootOf(t, job);
+  // mỗi mảnh trả lại chi phí dựng stack ⇒ phần test mỗi mảnh ≤ cap − boot
+  const want =
+    total <= WAVE.pieceCapS
+      ? 1
+      : Math.ceil((total - boot) / Math.max(WAVE.minPieceBodyS, WAVE.pieceCapS - boot));
+  const n = Math.max(1, Math.min(want, slots ?? want, specFileCount(t, job)));
+  if (n === 1) return [{ token: job, job, cost: total }];
+  return Array.from({ length: n }, (_, k) => ({
+    token: shardToken(job, k + 1, n),
+    job,
+    cost: boot + (total - boot) / n,
+  }));
+}
 /** Máº£nh e2e: viá»‡c â‰¤ cap má»™t máº£nh; lá»›n hÆ¡n chia Ä‘á»u báº±ng `--shard`; root chia theo file spec (LPT, spec ghim cá»•ng 3000 á»Ÿ máº£nh 0, Ä‘á»“ng há»“ giáº£ riÃªng). */
-export function e2ePieces(i: Pick<WaveInput, "jobs" | "rootSpecs" | "timings">): E2ePiece[] {
+export function e2ePieces(
+  i: Pick<WaveInput, "jobs" | "rootSpecs" | "timings"> & { slots?: number },
+): E2ePiece[] {
   const { timings: t } = i;
   const out: E2ePiece[] = [];
-  for (const { job, config } of i.jobs) {
-    const total = jobSeconds(t, job, config);
-    const boot = bootOf(t, job);
-    // má»—i máº£nh tráº£ láº¡i chi phÃ­ dá»±ng stack â‡’ pháº§n test má»—i máº£nh â‰¤ cap âˆ’ boot
-    const n =
-      total <= WAVE.pieceCapS
-        ? 1
-        : Math.ceil((total - boot) / Math.max(WAVE.minPieceBodyS, WAVE.pieceCapS - boot));
-    if (n === 1) out.push({ token: job, job, cost: total });
-    else {
-      for (let k = 1; k <= n; k++)
-        out.push({ token: shardToken(job, k, n), job, cost: boot + (total - boot) / n });
-    }
-  }
+  for (const { job, config } of i.jobs) out.push(...jobPieces(t, job, config, i.slots));
   if (i.rootSpecs?.length) {
     const specs = i.rootSpecs.map((s) => ({ ...s, cost: t.e2e[s.file] ?? WAVE.defaultSpecS }));
     const boot = bootOf(t, "root");

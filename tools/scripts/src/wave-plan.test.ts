@@ -1,4 +1,4 @@
-﻿// CR-121 T-1 Â· chia slot cá»•ng Ä‘á»£t theo thá»i lÆ°á»£ng Ä‘o (LPT), máº£nh e2e, gom thá»i lÆ°á»£ng, Ä‘o file int theo header.
+// CR-121 T-1 Â· chia slot cá»•ng Ä‘á»£t theo thá»i lÆ°á»£ng Ä‘o (LPT), máº£nh e2e, gom thá»i lÆ°á»£ng, Ä‘o file int theo header.
 import { describe, expect, it } from "bun:test";
 import { baseJobName, parsePiece, pieceName, rootToken, shardToken } from "./e2e-pieces.rules";
 import { jobMatches, planJobs, unmatchedOnly } from "./test-e2e-par.rules";
@@ -9,6 +9,7 @@ import {
   e2ePieces,
   emptyTimings,
   planWave,
+  specFileCount,
   WAVE,
   type WaveInput,
 } from "./wave-plan.rules";
@@ -31,7 +32,7 @@ function input(over: Partial<WaveInput> = {}): WaveInput {
   intFiles.forEach((f, i) => {
     t.int[f] = 1 + (i % 7) * 5;
   });
-  t.e2e["big:a.ts"] = 400;
+  for (let k = 0; k < 8; k++) t.e2e[`big:f${k}.ts`] = 50;
   t.boot.big = 30;
   return {
     intFiles,
@@ -79,6 +80,46 @@ describe("wave-plan Â· chia thÃ¹ng theo thá»i lÆ°á»£ng", () => {
     expect(pieces.every((x) => x.cost <= WAVE.pieceCapS + 1)).toBe(true);
   });
 
+  it("số mảnh --shard không vượt số thùng và không vượt số file spec (không có mảnh rỗng / hai mảnh cùng cấu hình một slot)", () => {
+    const i = input();
+    // 8 file × 50 s: muốn ≥ 3 mảnh; ít thùng hơn ⇒ ít mảnh hơn
+    for (const slots of [2, 3, 7]) {
+      const n = e2ePieces({ ...i, slots }).filter((x) => x.job === "big").length;
+      expect(n).toBeLessThanOrEqual(slots);
+      const bins = planWave({ ...i, slots }).bins;
+      for (const b of bins) {
+        const e2e = b.cmds.find((c) => c.step === "e2e")?.filter.split(",") ?? [];
+        expect(e2e.filter((tk) => tk.startsWith("big")).length).toBeLessThanOrEqual(1);
+      }
+    }
+    // chỉ 2 file spec đã đo ⇒ tối đa 2 mảnh dù tổng giây rất lớn
+    const t = { ...i.timings, e2e: { ...i.timings.e2e } };
+    for (const k of Object.keys(t.e2e)) if (k.startsWith("big:")) delete t.e2e[k];
+    t.e2e["big:a.ts"] = 900;
+    t.e2e["big:b.ts"] = 900;
+    const mảnh = e2ePieces({ ...i, timings: t, slots: 9 }).filter((x) => x.job === "big");
+    expect(mảnh.length).toBe(2);
+    expect(specFileCount(t, "big")).toBe(2);
+  });
+
+  it("kế hoạch giống lượt hỏng: nhiều mảnh hơn thùng ⇒ không thùng nào có hai mảnh của một cấu hình", () => {
+    const base = input({ slots: 7 });
+    const t = {
+      ...base.timings,
+      e2e: { ...base.timings.e2e },
+      boot: { ...base.timings.boot, big: 20 },
+    };
+    for (let k = 0; k < 46; k++) t.e2e[`big:g${k}.ts`] = 20; // ≈ 920 s ⇒ muốn ~8+ mảnh > 7 thùng
+    const p = planWave({ ...base, timings: t });
+    const all = p.bins.flatMap((b) => b.cmds.filter((c) => c.step === "e2e"));
+    for (const c of all) {
+      const mine = c.filter.split(",").filter((tk) => tk.startsWith("big@"));
+      expect(mine.length).toBeLessThanOrEqual(1);
+    }
+    const shards = p.pieces.filter((tk) => tk.startsWith("big@"));
+    expect(shards.length).toBeLessThanOrEqual(7);
+    expect(new Set(shards.map((tk) => tk.split("/")[1])).size).toBe(1); // cùng n
+  });
   it("root: spec ghim cá»•ng 3000 á»Ÿ máº£nh 0, spec Ä‘á»“ng há»“ riÃªng máº£nh clock, Ä‘á»§ file Ä‘Ãºng má»™t láº§n", () => {
     const ps = e2ePieces(input()).filter((x) => x.job.startsWith("root"));
     const parsed = ps.map((x) => parsePiece(x.token));
@@ -150,7 +191,10 @@ describe("máº£nh e2e trong test-e2e-par", () => {
     expect(r0?.rootPort).toBe(3000);
     expect(r0?.files).toHaveLength(2);
     expect(jobs.find((j) => j.name === "root-3")?.meta.db).toBe("root3");
-    expect(jobs.find((j) => j.name === "studio.2of3")?.files).toEqual(["--shard=2/3"]);
+    expect(jobs.find((j) => j.name === "studio.2of3")?.files).toEqual([
+      "--shard=2/3",
+      "--pass-with-no-tests",
+    ]);
   });
 
   it("unmatchedOnly: máº£nh cá»§a viá»‡c cÃ³ tháº­t khÃ´ng bá»‹ bÃ¡o láº¡; viá»‡c láº¡ váº«n bÃ¡o", () => {

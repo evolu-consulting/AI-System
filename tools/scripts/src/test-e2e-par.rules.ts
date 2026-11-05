@@ -200,7 +200,7 @@ function pieceJobs(p: Plan, timings: Readonly<Record<string, number>>, tok: stri
     {
       name: pieceName(pc),
       config,
-      files: [`--shard=${pc.i}/${pc.n}`],
+      files: [`--shard=${pc.i}/${pc.n}`, "--pass-with-no-tests"],
       meta,
       cost: (timings[config] ?? meta.cost) / pc.n,
     },
