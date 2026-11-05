@@ -3,6 +3,7 @@
 # -Exclusive (chỉ -Step perf, CR-115): chờ mọi slot rảnh (tối đa -ExclusiveTimeoutMin phút, mặc định 60; hết giờ => exit 3), giữ khoá toàn máy ~/workspace/evotest/.exclusive trong lúc đo (lượt khác xếp hàng),
 #   nhả khoá cả khi lỗi/Ctrl-C; load/RAM lúc bắt đầu + kết thúc in ra và ghi vào <log>\exclusive.txt. Luật khoá: deploy/evotest/lock.sh.
 # -Probe "runs=3,size=small" (CR-116, chỉ -Step perf|py): bật PERF_PROBE=1 + PERF_PROBE_OPTS trong container; -Exclusive cũng dùng được với -Step py. Điều khiển bởi `bun run perf:probe` (docs/WORKFLOW.md "Đo perf").
+# -Filter + suite đóng băng (tool-test-select): đường dẫn int / tên việc e2e nêu TƯỜNG MINH luôn chạy, không cần -All (đóng băng chỉ lọc khi không có -Filter); 0 file ⇒ lỗi rõ, exit 2.
 # tool-evotest-fast: nguồn đi qua MIRROR GIT trên máy chủ (~/workspace/evotest/mirror.git): `git push <sha>:refs/evotest/<stamp>` chỉ gửi phần chênh lệch,
 #   remote.sh `git archive` ngay trên máy chủ (loại file nhị phân bằng chứng docs/** theo archive-exclude.txt). -Dirty = commit tạm (cây làm việc, index tạm) đẩy cùng đường;
 #   đẩy lỗi / -NoMirror => dự phòng: git archive local (cùng danh sách loại) -> tgz -> scp như cũ. Mặc định IN TÓM TẮT GỌN (<= 15 dòng: bước, thời gian từng pha, pass/fail, CHỈ đỏ MỚI, đường dẫn log);
@@ -47,6 +48,15 @@ if ($DryRun) {
   Write-Host "commit $commit, bước $Step -> $Server ~/workspace/evotest/slots/sN (N = slot trống đầu tiên trong $Slots); log: $out; luot toan bo: $isFull (-Force: $Force)"
   Write-Host "ssh: bash ~/workspace/evotest/boot.sh -> remote.sh $Step $commit (sau khi scp evotest-app.tgz + evotest-kit.tgz vào /tmp)"
   return
+}
+# Kiểm filter int NGAY tại máy (≈1 s, không tốn lượt upload): đường dẫn nêu tường minh luôn được chạy kể cả suite đóng băng (không cần -All);
+# filter không khớp file nào ⇒ dừng với "Filter không khớp file nào: …" thay vì chạy 0 file im lặng trên máy chủ. Chỉ khi -Ref HEAD (cây local = thứ sẽ chạy).
+if ($Step -eq "int" -and $Filter -and -not $InShard -and $Ref -eq "HEAD") {
+  $chk = @("tools/scripts/src/test-int-par.ts", "--check-only") + @($Filter -split '\s+' | Where-Object { $_ })
+  if (-not $All) { $chk += "--no-frozen" }
+  Push-Location $Repo
+  try { & bun @chk; $chkRc = $LASTEXITCODE } finally { Pop-Location }
+  if ($chkRc -ne 0) { Write-Host "evotest: dừng trước khi upload - sửa -Filter (đường dẫn dùng /, tương đối gốc repo)"; exit 2 }
 }
 # Tải máy chủ + slot trước khi dựng (chỉ in, không chặn; boot.sh vẫn tự xếp hàng). Chi tiết: bun run res:check --server
 $ErrorActionPreference = "Continue"

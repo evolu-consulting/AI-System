@@ -13,6 +13,7 @@ import { quarantineOn } from "./known-red.rules";
 import { repoRoot } from "./lib/git";
 import { findE2eConfigs } from "./test-all.discover";
 import {
+  explicitlyNamed,
   fileSeconds,
   type Job,
   jobConcurrency,
@@ -189,7 +190,10 @@ async function main(): Promise<number> {
   );
   // F1 (CR-095): `--no-frozen` (cổng hằng ngày) bỏ cấu hình e2e của module đóng băng.
   const noFrozen = process.argv.includes("--no-frozen");
-  const configs = selectE2eConfigs(await findE2eConfigs(root), !noFrozen);
+  // Việc đóng băng được `--only` nêu tên ⇒ vẫn chạy (đóng băng chỉ lọc khi không nêu tên).
+  const configs = selectE2eConfigs(await findE2eConfigs(root), !noFrozen, (c) =>
+    explicitlyNamed(c, args.only),
+  );
   const specs = await rootSpecs(root, timings);
   const plan = { configs, specs, rootShards: args.shards };
   const jobs = planJobs(plan, timings, args.only);

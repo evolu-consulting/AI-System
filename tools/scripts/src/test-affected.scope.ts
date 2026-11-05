@@ -28,6 +28,10 @@ export type Scope = {
   /** Có migration phải chọn rộng (đổi đối tượng sẵn có / không phân loại được). */
   migrationBroad: boolean;
   notes: string[];
+  /** `--explain`: lý do MỖI chỗ mở rộng danh sách (file gốc/schema/barrel thật sự ảnh hưởng runtime). */
+  expand: string[];
+  /** File đổi nhưng "không ảnh hưởng test runtime" (bỏ qua khi chọn test). */
+  ignored: string[];
 };
 
 export type ScopeDeps = {
@@ -67,6 +71,20 @@ const SQL_DIR = /^packages\/db\/(migrations[\w-]*)\//;
 const PACK_DIR = /^migrations-pack-([\w]+)$/;
 const SCHEMA_RE = /^packages\/db\/src\/schema\/[\w-]+\.ts$/;
 const SILENT = /^(docs|deploy|\.claude|\.github)\//;
+/**
+ * File "không ảnh hưởng test runtime": cấu hình công cụ/tài liệu/khoá test (docs/**, *.md, tests/.lock, biome.json, lefthook.yml,
+ * .dependency-cruiser*). Bỏ qua khi chọn test (không seed, không unit-tất-cả, không typecheck). `package.json` chỉ đổi `scripts`
+ * cũng thuộc nhóm này (xét theo nội dung trong `rootFile`). Còn lại (tsconfig, bun.lock, bunfig, schema db, barrel contracts) thật sự mở rộng.
+ */
+const NO_RUNTIME = [
+  /^docs\//,
+  /\.md$/,
+  /^tests\/\.lock$/,
+  /^biome\.jsonc?$/,
+  /^lefthook\.ya?ml$/,
+  /^\.dependency-cruiser[\w.-]*$/,
+];
+export const isNoRuntime = (f: string): boolean => NO_RUNTIME.some((r) => r.test(f));
 const CORE_DIRS = new Set([
   "migrations",
   "migrations-dev",
@@ -112,6 +130,8 @@ const empty = (): Scope => ({
   strict: false,
   migrationBroad: false,
   notes: [],
+  expand: [],
+  ignored: [],
 });
 
 /** Hành vi cũ (`--strict`): mọi file đổi là seed rộng; migration ⇒ MIGRATION_SEEDS; file gốc ⇒ chạy mọi unit. */
@@ -149,18 +169,18 @@ function rootFile(f: string, d: ScopeDeps, s: Scope): void {
   const pkg = f === "package.json" ? packageJsonKind(d.readBase(f), d.readFile(f)) : "none";
   const kind = classifyRoot(f, pkg);
   const why = `gốc ${f}`;
-  if (kind === "scripts") {
-    for (const t of d.graph.deps.keys())
-      if (t.startsWith("tools/")) s.broad.set(t, `${why}: chỉ đổi scripts ⇒ test của tools`);
-  } else if (kind === "deps" || kind === "unknown") {
-    s.broad.set(
-      f,
-      `${why}: ${kind === "deps" ? "phụ thuộc/cấu hình chạy" : "chưa phân loại"} ⇒ rộng`,
-    );
+  if (kind === "scripts") s.ignored.push(`${f} (chỉ đổi scripts)`);
+  else if (kind === "deps" || kind === "unknown") {
+    const reason = `${why}: ${kind === "deps" ? "phụ thuộc/cấu hình chạy" : "chưa phân loại"} ⇒ rộng`;
+    s.broad.set(f, reason);
+    s.expand.push(`${reason} (mọi unit)`);
     s.unitAll = true;
     if (kind === "unknown") s.notes.push(`file gốc chưa phân loại được (${f}): chọn rộng.`);
-  } else if (kind === "format") s.unitAll = true;
-  else if (kind === "typecheck") s.typecheckAll = true;
+  } else if (kind === "format") s.ignored.push(`${f} (định dạng)`);
+  else if (kind === "typecheck") {
+    s.typecheckAll = true;
+    s.expand.push(`${why}: cấu hình kiểu ⇒ typecheck mọi gói`);
+  }
 }
 type FileInfo = { all: readonly string[]; read: (f: string) => string };
 
@@ -246,6 +266,7 @@ function migrations(files: string[], d: ScopeDeps, fi: FileInfo, s: Scope): void
 
 function broadMigration(dir: string, why: string, s: Scope): void {
   s.migrationBroad = true;
+  s.expand.push(`migration ${dir}: ${why} ⇒ mọi int dùng DB mẫu`);
   for (const f of MIGRATION_SEEDS) s.broad.set(f, `migration ${dir}: ${why}`);
   s.notes.push(`migration ${dir}: ${why}.`);
 }
@@ -290,7 +311,10 @@ function schemaFiles(files: string[], narrow: boolean, d: ScopeDeps, fi: FileInf
   for (const f of files) {
     const text = d.readFile(f) ?? "";
     // Narrow: KHÔNG làm seed (importer barrel = mọi thứ); chỉ những file nhắc bảng/export mới là seed.
-    if (!narrow) s.broad.set(f, "file schema đổi");
+    if (!narrow) {
+      s.broad.set(f, "file schema đổi");
+      s.expand.push(`${f}: schema db đổi không kèm migration chỉ-thêm ⇒ mọi importer của schema`);
+    }
     for (const m of text.matchAll(SCHEMA_TABLE)) if (m[1]) tables.push(m[1]);
     for (const m of text.matchAll(SCHEMA_EXPORT)) if (m[1]) idents.push(m[1]);
   }
@@ -313,8 +337,13 @@ function codeFile(f: string, s: Scope, packs: Set<string>, mods: Set<string>): v
   } else if (m) {
     s.module.set(f, `module ${m}: mã đổi`);
     mods.add(m);
-  } else s.broad.set(f, "file đổi");
+  } else {
+    s.broad.set(f, "file đổi");
+    if (SHARED_BARREL.test(f))
+      s.expand.push(`${f}: barrel/contract dùng chung ⇒ mọi file import nó (kéo cả app + test)`);
+  }
 }
+const SHARED_BARREL = /^packages\/contracts\/(src\/)?index\.tsx?$/;
 /** Đọc nội dung có nhớ đệm (file không đọc được ⇒ chuỗi rỗng). */
 function fileInfo(d: ScopeDeps, all: readonly string[]): FileInfo {
   const cache = new Map<string, string>();
@@ -339,8 +368,8 @@ export function buildScope(d: ScopeDeps, all: readonly string[]): Scope {
   const schemas: string[] = [];
   const packs = new Set<string>();
   const mods = new Set<string>();
-  for (const f of d.changed) {
-    if (SILENT.test(f)) continue;
+  s.ignored.push(...d.changed.filter((f) => !SILENT.test(f) && isNoRuntime(f)));
+  for (const f of d.changed.filter((x) => !SILENT.test(x) && !isNoRuntime(x))) {
     if (!f.includes("/")) rootFile(f, d, s);
     else if (SQL_DIR.test(f)) migs.push(f);
     else if (SCHEMA_RE.test(f)) schemas.push(f);

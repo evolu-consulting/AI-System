@@ -31,8 +31,13 @@ export const FROZEN_E2E_CONFIGS: readonly string[] = [
 ];
 
 /** Chọn cấu hình e2e đưa vào kế hoạch việc (nguồn chung cho `test:e2e:par`, chế độ 1 slot lẫn chia slot): bỏ module đóng băng trừ khi `all` (-All). */
-export function selectE2eConfigs(configs: readonly string[], all: boolean): string[] {
-  return configs.filter((c) => all || !isFrozenConfig(c));
+export function selectE2eConfigs(
+  configs: readonly string[],
+  all: boolean,
+  /** Cấu hình được `--only` nêu tên tường minh: đóng băng vẫn chạy (không cần -All). */
+  named: (c: string) => boolean = () => false,
+): string[] {
+  return configs.filter((c) => all || !isFrozenConfig(c) || named(c));
 }
 
 /** Glob tối giản, thuần (không phụ thuộc `bun`): hỗ trợ `**`, `*`, `?`, `{a,b}`. */

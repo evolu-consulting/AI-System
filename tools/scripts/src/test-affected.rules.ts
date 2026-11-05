@@ -1,7 +1,7 @@
 // TS1 · luật chọn test của `bun run test:affected` (cổng LÁT; `test:all` vẫn là cổng ĐỢT). Hàm thuần: nhận file đổi + đồ thị
 // import (đã tính bao đóng ngược) + danh sách cấu hình e2e, trả kế hoạch: unit / int / cấu hình e2e / kiểm kiểu cần chạy.
 import { posix } from "./lib/import-graph";
-import { GLOBAL_FILES, packOf, type Scope } from "./test-affected.scope";
+import { GLOBAL_FILES, isNoRuntime, packOf, type Scope } from "./test-affected.scope";
 import { jobSlug } from "./test-e2e-par.rules";
 
 export type E2eMode = "owner" | "wide" | "none";
@@ -30,7 +30,14 @@ export type AffectedPlan = {
   notes: string[];
   /** `--explain`: file (int/unit/e2e) → luật đã chọn nó. */
   reasons: Record<string, string>;
+  /** `--explain`: lý do từng chỗ MỞ RỘNG danh sách (file gốc/schema/barrel thật sự ảnh hưởng runtime). */
+  expansions: string[];
+  /** File đổi bị bỏ qua vì không ảnh hưởng test runtime (docs, *.md, tests/.lock, biome, lefthook, depcruise, scripts-only). */
+  ignored: string[];
 };
+
+/** Danh sách test dài hơn mức này ⇒ cảnh báo, gợi ý chạy cuối đợt. */
+export const TOO_MANY = 150;
 
 const TEST_RE = /\.test\.tsx?$/;
 const INT_RE = /\.int\.test\.tsx?$/;
@@ -201,7 +208,15 @@ export function planAffected(i: Inputs): AffectedPlan {
   const reasons: Record<string, string> = {};
   const int = selectInt(i, files, reasons);
   const code = changed.some((f) => /^(apps|packages|tools)\//.test(f) && CODE_RE.test(f));
-  const testsTouched = files.some((f) => f.startsWith("tests/") || f.startsWith("e2e/"));
+  const live = (f: string) => !isNoRuntime(f); // tests/.lock, docs, *.md… không kéo typecheck:tests
+  const testsTouched = files.some(
+    (f) => live(f) && (f.startsWith("tests/") || f.startsWith("e2e/")),
+  );
+  const count = wide ? 0 : unit.length + int.length;
+  if (count > TOO_MANY)
+    notes.push(
+      `danh sách ${count} file test (> ${TOO_MANY}): chạy cuối đợt (verify:wave/test:all) thay vì mỗi lát; thu hẹp bằng --base=<commit trước lát> hoặc xem lý do mở rộng bằng --explain.`,
+    );
   const e2eWhy = pickE2e(i);
   const e2e = [...e2eWhy.keys()];
   for (const [c, w] of e2eWhy) reasons[c] = w;
@@ -218,9 +233,12 @@ export function planAffected(i: Inputs): AffectedPlan {
     python: changed.some((f) => f.startsWith("apps/agent-runtime/")),
     typecheck: code || wide || typecheckAll,
     typecheckAll,
-    typecheckTests: testsTouched || typecheckAll || changed.some((f) => /^(tests|e2e)\//.test(f)),
+    typecheckTests:
+      testsTouched || typecheckAll || changed.some((f) => live(f) && /^(tests|e2e)\//.test(f)),
     notes,
     reasons,
+    expansions: i.scope?.expand ?? [],
+    ignored: i.scope?.ignored ?? [],
   };
 }
 
@@ -261,7 +279,7 @@ export function planToJson(
     python: p.python,
     externalSkipped: p.externalSkipped,
     notes: p.notes,
-    ...(explain ? { reasons: p.reasons } : {}),
+    ...(explain ? { reasons: p.reasons, expansions: p.expansions, ignored: p.ignored } : {}),
   };
 }
 

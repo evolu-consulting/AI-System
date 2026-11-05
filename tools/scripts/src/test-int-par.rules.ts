@@ -50,6 +50,46 @@ export function selectFiles(
   };
 }
 
+/**
+ * Bộ lọc `filter` có NÊU TƯỜNG MINH file/thư mục đóng băng không: chính nó là file đó, hoặc nó nằm trong cây đóng băng
+ * (`tests/acceptance/P-a` ⇒ file dưới đó đóng băng). Tiền tố rộng (`tests/acceptance`) KHÔNG tính ⇒ không kéo cả module đóng băng.
+ */
+export function namesFrozen(
+  file: string,
+  filter: string,
+  isFrozen: (f: string) => boolean,
+): boolean {
+  const p = norm(filter);
+  if (!file.startsWith(p)) return false;
+  return p === file || isFrozen(p) || isFrozen(`${p.replace(/\/$/, "")}/x`);
+}
+
+export type IntSelection = { files: string[]; unmatched: string[]; error?: string };
+
+/**
+ * File int đưa vào lượt: `noFrozen` chỉ lọc khi KHÔNG có filter (cổng hằng ngày); filter nêu tường minh đường dẫn đóng băng
+ * thì file đó vẫn chạy (không cần -All). 0 file ⇒ `error` rõ (không chạy im lặng); filter lẻ không khớp ⇒ `unmatched`.
+ */
+export function resolveIntFiles(
+  all: readonly string[],
+  filters: readonly string[],
+  noFrozen: boolean,
+  isFrozen: (f: string) => boolean,
+): IntSelection {
+  const pre = filters.map(norm);
+  const keep = (f: string) =>
+    !noFrozen || !isFrozen(f) || pre.some((p) => namesFrozen(f, p, isFrozen));
+  const files = all.map(norm).filter(keep);
+  const unmatched = pre.filter((p) => !files.some((f) => f.startsWith(p)));
+  if (pre.length && !files.some((f) => pre.some((p) => f.startsWith(p))))
+    return {
+      files: [],
+      unmatched,
+      error: `Filter không khớp file nào: ${pre.join(", ")} (đường dẫn dùng "/", tương đối gốc repo, tiền tố file int *.int.test.ts)`,
+    };
+  return { files, unmatched };
+}
+
 /** Chi phí ước lượng mỗi file (giây): số đo JUnit lần trước; chưa đo → trung bình các file đã đo (không có gì: 1). */
 export function costOf(timings: Timings): (f: string) => number {
   const known = Object.values(timings);

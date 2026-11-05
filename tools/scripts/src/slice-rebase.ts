@@ -41,6 +41,25 @@ export function rebaseResolvingLock(git: GitFn, base: string): RebaseOutcome {
   return { ok: r.ok, out: r.out, lockResolved };
 }
 
+/** Cổng sau rebase (hook pre-commit KHÔNG chạy khi rebase ⇒ lỗi ranh giới module lọt, ví dụ D-4). */
+export const POST_REBASE_GATES: readonly { name: string; cmd: string[] }[] = [
+  { name: "check:boundaries", cmd: ["bun", "tools/scripts/src/check-boundaries.ts"] },
+];
+
+export type GateResult = { ok: true } | { ok: false; gate: string; out: string };
+
+/** Chạy cổng sau rebase; gặp cổng đỏ (vi phạm MỚI) ⇒ dừng ngay, trả tên cổng + đuôi log (≤ 40 dòng, có tên file vi phạm). */
+export function postRebaseGates(
+  run: (cmd: string[]) => GitResult,
+  gates: readonly { name: string; cmd: string[] }[] = POST_REBASE_GATES,
+): GateResult {
+  for (const g of gates) {
+    const r = run(g.cmd);
+    if (!r.ok) return { ok: false, gate: g.name, out: r.out.split("\n").slice(-40).join("\n") };
+  }
+  return { ok: true };
+}
+
 /** Sau rebase có tự giải lock: sinh lại lock; có đổi so với HEAD thì commit riêng. Trả lỗi nếu có. */
 export function relockAfterRebase(
   git: GitFn,

@@ -100,19 +100,51 @@ describe("buildScope", () => {
     const s = scopeOf(["docs/WORKFLOW.md", "lefthook.yml"]);
     expect(s.broad.size + s.module.size).toBe(0);
   });
-  test("biome ⇒ unit tất cả, không seed, tsconfig ⇒ typecheck tất cả", () => {
-    const b = scopeOf(["biome.json"]);
-    expect([b.unitAll, b.broad.size]).toEqual([true, 0]);
+  test("biome/depcruise/lefthook/*.md/tests/.lock ⇒ bỏ qua hoàn toàn (không seed, không unit-tất-cả)", () => {
+    const b = scopeOf([
+      "biome.json",
+      ".dependency-cruiser.cjs",
+      ".dependency-cruiser-known-violations.json",
+      "lefthook.yml",
+      "README.md",
+      "apps/x/NOTES.md",
+      "tests/.lock",
+      "docs/specs/a/tasks.md",
+    ]);
+    expect([b.unitAll, b.typecheckAll, b.broad.size, b.module.size]).toEqual([false, false, 0, 0]);
+    expect(b.expand).toEqual([]);
+    expect(b.ignored).toContain("tests/.lock");
+    expect(b.ignored).toContain("biome.json");
+  });
+  test("tsconfig ⇒ typecheck tất cả + lý do mở rộng; bun.lock ⇒ mọi unit + lý do", () => {
     const t = scopeOf(["tsconfig.json"]);
     expect([t.typecheckAll, t.unitAll, t.broad.size]).toEqual([true, false, 0]);
+    expect(t.expand.join("\n")).toContain("tsconfig.json");
+    const l = scopeOf(["bun.lock"]);
+    expect(l.unitAll).toBe(true);
+    expect(l.expand.join("\n")).toContain("bun.lock");
   });
-  test("package.json chỉ đổi scripts ⇒ seed là file tools/", () => {
+  test("barrel packages/contracts ⇒ vẫn rộng, kèm lý do trong expand", () => {
+    const s = scopeOf(["packages/contracts/src/index.ts"]);
+    expect(s.broad.has("packages/contracts/src/index.ts")).toBe(true);
+    expect(s.expand.join("\n")).toContain("packages/contracts/src/index.ts");
+  });
+  test("package.json chỉ đổi scripts ⇒ không seed, không unit-tất-cả (ghi vào ignored)", () => {
     const s = scopeOf(["package.json"], {
       readBase: () => '{"scripts":{"a":"1"}}',
       readFile: () => '{"scripts":{"a":"2"}}',
     });
-    expect([...s.broad.keys()]).toEqual(["tools/a.ts"]);
+    expect(s.broad.size).toBe(0);
     expect(s.unitAll).toBe(false);
+    expect(s.ignored[0]).toContain("package.json");
+  });
+  test("package.json đổi phụ thuộc ⇒ vẫn rộng", () => {
+    const s = scopeOf(["package.json"], {
+      readBase: () => '{"dependencies":{"x":"1"}}',
+      readFile: () => '{"dependencies":{"x":"2"}}',
+    });
+    expect(s.unitAll).toBe(true);
+    expect(s.broad.has("package.json")).toBe(true);
   });
   test("file gốc lạ ⇒ rộng + ghi chú", () => {
     const s = scopeOf(["lạ.xyz"]);

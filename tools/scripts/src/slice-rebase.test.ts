@@ -1,5 +1,36 @@
 import { describe, expect, test } from "bun:test";
-import { onlyLockConflicts, parseLines, relockAfterRebase } from "./slice-rebase";
+import { onlyLockConflicts, parseLines, postRebaseGates, relockAfterRebase } from "./slice-rebase";
+
+describe("slice-rebase · cổng sau rebase (check:boundaries)", () => {
+  test("mặc định chạy check:boundaries; xanh ⇒ ok", () => {
+    const seen: string[][] = [];
+    const r = postRebaseGates((cmd) => {
+      seen.push(cmd);
+      return { ok: true, out: "" };
+    });
+    expect(r).toEqual({ ok: true });
+    expect(seen.map((c) => c.join(" "))).toEqual(["bun tools/scripts/src/check-boundaries.ts"]);
+  });
+
+  test("vi phạm MỚI ⇒ dừng ở cổng đỏ, trả tên cổng + file vi phạm (đuôi ≤ 40 dòng), không chạy cổng sau", () => {
+    const out = `${Array.from({ length: 60 }, (_, i) => `dòng ${i}`).join("\n")}\n  cross-module-deep: apps/hub-api/src/modules/a/x.ts → apps/hub-api/src/modules/b/y.ts`;
+    let ran = 0;
+    const r = postRebaseGates(() => {
+      ran++;
+      return { ok: false, out };
+    }, [
+      { name: "check:boundaries", cmd: ["x"] },
+      { name: "khác", cmd: ["y"] },
+    ]);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.gate).toBe("check:boundaries");
+      expect(r.out).toContain("modules/a/x.ts");
+      expect(r.out.split("\n").length).toBe(40);
+    }
+    expect(ran).toBe(1);
+  });
+});
 
 describe("slice-rebase (phần thuần)", () => {
   test("onlyLockConflicts: chỉ tests/.lock ⇒ true; lẫn file khác hoặc rỗng ⇒ false", () => {

@@ -72,6 +72,9 @@ function gitShow(root: string, base: string, f: string): string | undefined {
 }
 
 function explainLines(p: AffectedPlan): void {
+  for (const e of p.expansions) console.log(`  ⇱ mở rộng: ${e}`);
+  if (p.ignored.length)
+    console.log(`  ∅ bỏ qua (không ảnh hưởng test runtime): ${p.ignored.join(", ")}`);
   for (const f of [...p.int, ...p.e2e]) console.log(`  · ${f} ← ${p.reasons[f] ?? "?"}`);
 }
 

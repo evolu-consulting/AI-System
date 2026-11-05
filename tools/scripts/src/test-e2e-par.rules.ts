@@ -186,6 +186,18 @@ export const onlyWants = (only?: string): string[] => (only ?? "").split(/[\s,]+
 export const jobMatches = (j: Pick<Job, "name" | "config">, w: string): boolean =>
   j.name === w || j.name.startsWith(w) || j.config.startsWith(norm(w));
 
+/**
+ * Cấu hình được `--only` NÊU TÊN tường minh (đúng tên việc / đúng đường dẫn cấu hình / tiền tố đường dẫn có `/`).
+ * Dùng cho cấu hình đóng băng: nêu tên ⇒ vẫn chạy không cần -All; tiền tố tên việc chung chung (`P`) thì không.
+ */
+export function explicitlyNamed(config: string, only?: string): boolean {
+  const c = norm(config);
+  return onlyWants(only).some((w) => {
+    const n = norm(w);
+    return jobSlug(c) === n || c === n || (n.includes("/") && c.startsWith(n));
+  });
+}
+
 /** Tên trong `--only` không khớp việc nào của cả danh sách (gõ sai / việc bị bỏ vì đóng băng) — để báo lỗi rõ thay vì chạy 0 việc. */
 export function unmatchedOnly(
   all: readonly Pick<Job, "name" | "config">[],

@@ -16,6 +16,7 @@ import {
   parseEnv,
   parseIntArgs,
   parseJunit,
+  resolveIntFiles,
   selectFiles,
   type Timings,
   takeChunk,
@@ -173,8 +174,19 @@ async function main(): Promise<number> {
   const opts = parseIntArgs(process.argv.slice(2), availableParallelism());
   // F1 (CR-095): `--no-frozen` (cổng hằng ngày) bỏ file int của module đóng băng.
   const noFrozen = process.argv.includes("--no-frozen");
-  const all = (await findIntFiles(root)).filter((f) => !(noFrozen && isFrozenFile(f)));
-  const { parallel, serial } = selectFiles(all, opts.filters);
+  // Filter nêu tường minh đường dẫn đóng băng ⇒ vẫn chạy (đóng băng chỉ lọc khi không có filter); 0 file ⇒ fail ngay, rõ lý do.
+  const sel = resolveIntFiles(await findIntFiles(root), opts.filters, noFrozen, isFrozenFile);
+  if (sel.error) {
+    console.error(`test:int:par: ${sel.error}`);
+    return 2;
+  }
+  if (sel.unmatched.length)
+    console.warn(`test:int:par: CẢNH BÁO filter không khớp file nào: ${sel.unmatched.join(", ")}`);
+  if (process.argv.includes("--check-only")) {
+    console.log(`test:int:par: filter hợp lệ, ${sel.files.length} file int trong phạm vi`);
+    return 0;
+  }
+  const { parallel, serial } = selectFiles(sel.files, opts.filters);
   const timings = loadTimings(root);
   const t0 = performance.now();
   const lease = await leaseSlots(

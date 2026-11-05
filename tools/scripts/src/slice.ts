@@ -3,7 +3,7 @@
 //                     tạo worktree `<gốc>/../evolu-wt/<tên>` + nhánh `slice/<tên>` từ platform/gd0, bun install,
 //                     chép .env*.local, kiểm hook.
 //   slice:merge <tên> [--no-test] [--no-openspec]  openspec:check <tên> (Delta, ADR-0032), rebase lên platform/gd0,
-//                     test:affected, rồi ff (hoặc merge) vào platform/gd0
+//                     check:boundaries (vi phạm mới ⇒ dừng), test:affected, rồi ff (hoặc merge) vào platform/gd0
 //                     ở checkout chính (checkout chính phải đang ở platform/gd0).
 //   slice:pool [--size N]  giữ N (mặc định 3) worktree ấm ở `evolu-wt/_pool/<n>` (detached, đã bun install; đĩa < 30 GB ⇒ không dựng);
 //                     `slice:new` lấy một cái (worktree move + checkout -b) rồi bổ sung nền không chặn; hết ⇒ dựng bình thường.
@@ -16,7 +16,7 @@ import { collectLocal } from "./res-check";
 import { hardLimits } from "./res-check.rules";
 import { ensureMergeDriver } from "./setup-merge-driver";
 import { cmdPool, spawnRefill, takeFromPool } from "./slice.pool";
-import { rebaseResolvingLock, relockAfterRebase } from "./slice-rebase";
+import { postRebaseGates, rebaseResolvingLock, relockAfterRebase } from "./slice-rebase";
 
 const BASE = "platform/gd0";
 const POOL_SCRIPT = "tools/scripts/src/slice.ts";
@@ -182,6 +182,12 @@ function cmdMerge(name: string | undefined, noTest: boolean, noOpenspec: boolean
     );
     if (rl.error) fail(`relock sau rebase lỗi: ${rl.error}`);
   }
+  // Rebase không chạy hook pre-commit ⇒ kiểm ranh giới module sau rebase; vi phạm MỚI ⇒ dừng, in file.
+  const gate = postRebaseGates((cmd) => run(dir, cmd));
+  if (!gate.ok)
+    fail(
+      `${gate.gate} đỏ SAU rebase lên ${BASE} (vi phạm MỚI) — sửa trong ${dir}, commit, chạy lại slice:merge:\n${gate.out}`,
+    );
   if (
     !noTest &&
     !run(dir, ["bun", "tools/scripts/src/test-affected.ts", `--base=${BASE}`, "--run=all"], true).ok
