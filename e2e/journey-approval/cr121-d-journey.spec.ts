@@ -6,7 +6,7 @@
 // 100 tr (Mua) ⇒ đúng bước chạy/bỏ qua theo quy trình của công ty đó; sửa giá trị HĐ đang chờ 600 → 100 tr ⇒ bước Giám đốc bị bỏ qua khi tới;
 // trang "Chi tiết lượt chạy" (admin) hiện đúng bước + nhật ký; công ty 1 không thấy dữ liệu công ty 2.
 import { expect, type Page, test } from "@playwright/test";
-import { apiLogin, cloneAndPublishFlow, type Session } from "../_kit/api";
+import { apiLogin, cloneAndPublishFlow, type Session, tenantIdByKey } from "../_kit/api";
 import { assignProcessUi } from "../_kit/ui";
 import {
   approveAs,
@@ -239,8 +239,23 @@ test("7 · admin: 'Chi tiết lượt chạy' của HĐ đã sửa giá trị hi
   const me = await userApi(EA, U.employee);
   const runId = (await cardOf(me, ids.aEdit as string)).run_id;
   expect(runId).toBeTruthy();
+  // Cùng dữ liệu qua API (platform admin + tenant_id): chẩn đoán rõ nếu trang không hiện được
+  const ps = await apiLogin({
+    base: API,
+    tenantKey: "platform",
+    username: base.adminUser,
+    password: base.adminPw,
+  });
+  const tid = await tenantIdByKey(API, ps, EA.tenantKey);
+  const det = await getJson<{ steps?: { name: string; state: string }[] }>(
+    ps,
+    `${HUB}/process-runs/${runId}/detail?tenant_id=${tid}`,
+  );
+  expect(det.status, JSON.stringify(det.json).slice(0, 200)).toBe(200);
+  expect(det.json.steps?.find((x) => x.name === GD)?.state).toBe("skipped");
   const page = await ctxPage(browser);
   await loginAdmin(page, base as Env);
+  await page.goto(`${base.admin}/processes`);
   // màn Quy trình xem theo công ty đã chọn (nhớ trong phiên trình duyệt)
   await page.evaluate((k) => sessionStorage.setItem("ai.process.tenant", k), EA.tenantKey);
   await page.goto(`${base.admin}/processes/e2e-d5-a-${SFX}/runs/${runId}`);
@@ -255,6 +270,7 @@ test("7 · admin: 'Chi tiết lượt chạy' của HĐ đã sửa giá trị hi
 
 test("8 · công ty 1 không thấy dữ liệu công ty 2", async () => {
   const a = await userApi(EA, U.employee);
+  expect(ids.b6 && ids.b1, "ca 6 phải chạy trước (cùng worker)").toBeTruthy();
   for (const k of ["b6", "b1"]) {
     const r = await getJson<unknown>(a, pack(`/contracts/${ids[k]}`));
     expect(r.status, `HĐ công ty 2 (${k}) lộ cho công ty 1`).toBe(404);
