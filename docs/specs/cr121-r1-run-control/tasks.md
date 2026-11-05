@@ -47,6 +47,12 @@ Chạm: `gates/back.effects.ts` (`taskId` nullable, cờ `backEvent`), `gates/ga
   (một nguồn hiệu ứng) ⇒ ~14 câu cố định / ~12 câu + 1 câu mỗi stage bị reset (vòng `resetStage` có sẵn, ≤ số stage của def) — vượt
   ngân sách 5 câu của brief; thao tác quản trị hiếm, không phải đường nóng. Gộp set-based ⇒ lát sau nếu cần.
 
+- Migration 0098 (review Opus): FK `rerun_of` thêm NOT VALID rồi VALIDATE (câu riêng, như 0063). Unique index KHÔNG `CONCURRENTLY`: migrator
+  drizzle bọc một tx, repo chưa có tiền lệ (0066/0070 ghi rõ). Cột mới toàn NULL; index một phần vẫn quét `process_runs` một lần dưới khoá
+  SHARE (chặn ghi trong lúc quét). Kích thước `process_runs` prod chưa đo (không chạm prod) — ước lượng nhỏ (hàng nghìn–chục nghìn hàng
+  ⇒ dưới 1 s). Bảng lớn hơn nhiều ⇒ điều phối quyết tạo index CONCURRENTLY tay trước khi migrate (như 0010).
+- Chạy lại bước đã xong khi bước sau đang chạy: `applyBack` reset bước sau (`current_run_id` = null) ⇒ kết quả muộn bị driver bỏ (int xanh,
+  không cần chặn 409).
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
@@ -62,6 +68,8 @@ Chỉ platform_admin; bước lỗi hoặc đã xong; trong CÙNG run chạy l�
 - Kịch bản: khi platform_admin chạy lại bước 2 của run xong hai lần đồng thời thì một lần quay lại (200 + 409), run chạy tới xong với output mới [test: tests/acceptance/CR-121/run-control.int.test.ts » Chạy lại bước: platform_admin trên run xong hai lần đồng thời ⇒ một lần quay lại, cùng run, kết quả cũ giữ]
 - Kịch bản: khi tenant_admin chạy lại bước thì 403 [test: tests/acceptance/CR-121/run-control.int.test.ts » Quyền: thành viên 403, tenant_admin tenant khác 404, tenant_admin chạy lại bước 403]
 - Kịch bản: luật vai × thao tác và trạng thái được phép [test: apps/hub-api/src/modules/processes/domain/runs/run-control.rules.test.ts » Chạy lại bước: bước lỗi/xong, run đã dừng/hết hạn ⇒ không]
+
+- Kịch bản: khi chạy lại bước đã xong trong lúc bước sau đang chạy thì kết quả muộn của bước sau không ghi vào run [test: tests/acceptance/CR-121/run-control.int.test.ts » Chạy lại bước đã xong khi run đang chạy bước sau ⇒ kết quả muộn của bước sau không ghi vào run]
 
 #### Yêu cầu: Chạy lại cả lượt
 platform_admin hoặc tenant_admin cùng tenant; run đã kết thúc, không gắn gói; tạo run MỚI cùng định nghĩa đã chụp + đầu vào, `rerun_of` = run cũ.
