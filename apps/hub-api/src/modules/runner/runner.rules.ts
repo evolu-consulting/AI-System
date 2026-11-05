@@ -24,7 +24,7 @@ import {
   WorkflowAsyncJobSchema,
 } from "@ai/contracts/hub";
 import type { WorkflowJobInput } from "../commands/catalog.types";
-import type { AgentConfig, ProfileConfig } from "../config/config.rules";
+import type { AgentConfig, ProfileConfig } from "../config/public";
 
 export type AgentRole = "orchestrator" | "agent";
 /** Hub điền khi `runtime_options.max_turns` vắng (plan §2.2). */

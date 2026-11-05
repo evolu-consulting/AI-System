@@ -42,7 +42,7 @@ import { closeUnreadBody } from "./lib/unread-body";
 import { mountCapabilities } from "./modules/capabilities/capabilities.mount";
 import { chatGate } from "./modules/chat-gate/chat-gate.middleware";
 import { CHAT_GATED_PREFIXES } from "./modules/chat-gate/chat-gate.rules";
-import { type ConfigCache, startConfigCache } from "./modules/config/config.service";
+import { type ConfigCache, startConfigCache } from "./modules/config/public";
 import { conversationRoutes } from "./modules/conversations/conversations.routes";
 import { conversationService } from "./modules/conversations/conversations.service";
 import { mountApplyResult } from "./modules/internal/apply.routes";

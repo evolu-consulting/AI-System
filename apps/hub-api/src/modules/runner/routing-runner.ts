@@ -3,7 +3,7 @@
 // CR-114: `agentic-cli` mà lượt đủ điều kiện `directSdkRoute` (cờ agent, không file/tool/stage) → `DirectSdkRunner` (SDK trong Hub).
 // Runner thật tiêm từ ngoài (không import `modules/dify`), nên vòng Orchestrator chỉ biết `AgentRunner`.
 import type { RunEvent } from "@ai/contracts/hub";
-import { agentWorkflowIds } from "../config/config.rules";
+import { agentWorkflowIds } from "../config/public";
 import { directSdkRoute } from "./direct/direct-sdk.rules";
 import type { AgentRunner, AgentTask } from "./job/job-agent-runner";
 import { packToolKeys } from "./job/pack-tool-keys.rules";

@@ -6,7 +6,7 @@
 // Không áp khi: chính sách "không khớp" = `ask` (Orchestrator phải hỏi lại), `forbidden`, `direct` (CR-054 đã thẳng), AU ≠ 1.
 import { type AccessSubject, accessInput, visibleAgents } from "../agents/agent-access.rules";
 import type { DefaultRoute } from "../agents/default-agent.rules";
-import type { AgentConfig, ConfigSnapshot } from "../config/config.rules";
+import type { AgentConfig, ConfigSnapshot } from "../config/public";
 
 export type FastRoute = { kind: "direct"; agent: AgentConfig; rule: "single_agent" };
 

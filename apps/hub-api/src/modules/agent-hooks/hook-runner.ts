@@ -5,7 +5,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { Db } from "../../lib/db";
 import type { Logger } from "../../lib/logger";
-import type { CatalogSnapshot } from "../config/catalog.rules";
+import type { CatalogSnapshot } from "../config/public";
 import type { CredentialService } from "../dify/credential.service";
 import type { DifyClient } from "../dify/dify.client";
 import { type HookInputs, pickInputs } from "./hooks.rules";

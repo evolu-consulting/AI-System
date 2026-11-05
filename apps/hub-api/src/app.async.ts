@@ -4,7 +4,7 @@ import type { Env, Hono } from "hono";
 import type { Db } from "./lib/db";
 import type { Logger } from "./lib/logger";
 import type { Redis } from "./lib/redis";
-import type { ConfigCache } from "./modules/config/config.service";
+import type { ConfigCache } from "./modules/config/public";
 import { CredentialService, loadMasterKey } from "./modules/dify/credential.service";
 import { credentialRoutes } from "./modules/internal/credential.routes";
 import { DifyCredentialService } from "./modules/internal/credential.service";

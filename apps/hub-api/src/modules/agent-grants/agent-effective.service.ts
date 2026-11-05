@@ -13,8 +13,7 @@ import { type HubScope, withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
 import { appError } from "../../lib/errors";
-import type { ConfigSnapshot } from "../config/config.rules";
-import type { ConfigCache } from "../config/config.service";
+import type { ConfigCache, ConfigSnapshot } from "../config/public";
 import { type EffectiveAgentCalc, effectiveAgents } from "./agent-effective.rules";
 import { currentVersion, type GroupRefRow, groupRefs, tenantExists } from "./agent-grants.repo";
 

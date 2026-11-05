@@ -13,8 +13,7 @@ import type {
 import type { Db } from "../../../lib/db";
 import type { Logger } from "../../../lib/logger";
 import type { RunFile } from "../../attachments/run-files.rules";
-import type { CatalogSnapshot } from "../../config/catalog.rules";
-import type { AgentConfig, ConfigSnapshot } from "../../config/config.rules";
+import type { AgentConfig, CatalogSnapshot, ConfigSnapshot } from "../../config/public";
 import type { KhJobPreparer } from "../../kh/kh.job";
 import type { SseEventBody } from "../../runs/sse/sse-writer";
 import type { DeltaGap, DeltaSink } from "../../stream/delta-sink";

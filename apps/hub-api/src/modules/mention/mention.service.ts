@@ -5,8 +5,7 @@ import type { Responder } from "@ai/contracts/chat";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { appError, isAppError } from "../../lib/errors";
 import { type AccessSubject, accessInput, visibleAgents } from "../agents/agent-access.rules";
-import type { AgentConfig, ConfigSnapshot } from "../config/config.rules";
-import type { ConfigCache } from "../config/config.service";
+import type { AgentConfig, ConfigCache, ConfigSnapshot } from "../config/public";
 import {
   aliasTags,
   firstUnknownTag,

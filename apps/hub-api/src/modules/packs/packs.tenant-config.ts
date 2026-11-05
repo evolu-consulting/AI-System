@@ -1,6 +1,7 @@
 // Tra cấu hình tenant cho module gói từ `ConfigCache` (0 SQL khi nóng) + đọc env số nguyên — tách khỏi `packs.mount.ts`.
-import { DEFAULT_TENANT_TZ } from "../config/config.rules";
-import type { ConfigCache } from "../config/config.service";
+
+import type { ConfigCache } from "../config/public";
+import { DEFAULT_TENANT_TZ } from "../config/public";
 
 type WithConfig = { config: ConfigCache };
 

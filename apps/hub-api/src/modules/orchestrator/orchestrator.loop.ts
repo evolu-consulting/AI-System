@@ -18,7 +18,7 @@ import {
 import type { NoMatchPolicy } from "../agents/default-agent.rules";
 import type { ArtifactRef } from "../artifacts/artifact.rules";
 import type { FileBrief } from "../attachments/run-files.rules";
-import type { AgentConfig } from "../config/config.rules";
+import type { AgentConfig } from "../config/public";
 import type { AgentRole } from "../runner/runner.rules";
 import {
   type DeltaKind,

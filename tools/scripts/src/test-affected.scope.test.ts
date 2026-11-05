@@ -2,6 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { PUBLIC_GATE, PUBLIC_GATE_RE } from "./test-affected.closure";
 import { planAffected } from "./test-affected.rules";
 import {
   affectedScoped,
@@ -211,6 +212,32 @@ describe("bao đóng + e2e", () => {
     const cut = closureWhy({ rev }, seeds, (f) => f === "app.ts");
     expect(cut.has("other.int.test.ts")).toBe(false);
     expect(cut.has("m/a.int.test.ts")).toBe(true);
+  });
+  test("CR-121 B-2: qua cửa public.ts một bước — module import public.ts bị kéo, importer của nó thì không", () => {
+    const M = "apps/hub-api/src/modules";
+    const g = new Map<string, Set<string>>([
+      [
+        `${M}/config/config.rules.ts`,
+        new Set([`${M}/config/public.ts`, `${M}/config/config.test.ts`]),
+      ],
+      [`${M}/config/public.ts`, new Set([`${M}/runs/run.service.ts`])],
+      [`${M}/runs/run.service.ts`, new Set([`${M}/runs/run.test.ts`, `${M}/runs/public.ts`])],
+      [`${M}/runs/public.ts`, new Set([`${M}/agents/agent.service.ts`])],
+      [`${M}/agents/agent.service.ts`, new Set([`${M}/agents/agent.test.ts`])],
+    ]);
+    const seeds = new Map([[`${M}/config/config.rules.ts`, "đổi"]]);
+    const hit = closureWhy({ rev: g }, seeds, () => false, PUBLIC_GATE);
+    expect(hit.has(`${M}/config/config.test.ts`)).toBe(true);
+    expect(hit.has(`${M}/runs/run.test.ts`)).toBe(true); // importer public.ts của config
+    expect(hit.has(`${M}/runs/public.ts`)).toBe(true); // cửa của runs vẫn nằm trong tập
+    expect(hit.has(`${M}/agents/agent.test.ts`)).toBe(false); // hai cửa ⇒ không kéo
+    expect(closureWhy({ rev: g }, seeds).has(`${M}/agents/agent.test.ts`)).toBe(true); // không gate ⇒ đi đủ
+  });
+  test("PUBLIC_GATE_RE: public.ts của module và gói, không phải file khác", () => {
+    expect(PUBLIC_GATE_RE.test("apps/hub-api/src/modules/config/public.ts")).toBe(true);
+    expect(PUBLIC_GATE_RE.test("apps/hub-api/src/modules/packs/kit/public.ts")).toBe(true);
+    expect(PUBLIC_GATE_RE.test("apps/hub-api/src/modules/config/config.rules.ts")).toBe(false);
+    expect(PUBLIC_GATE_RE.test("apps/hub-api/src/modules/config/domain/public.ts")).toBe(false);
   });
   test("affectedScoped ghi lý do `seed ← luật`", () => {
     const s = scopeOf(["pkg/lib.ts"]);

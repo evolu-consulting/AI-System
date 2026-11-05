@@ -4,7 +4,7 @@
 // `hub.cli_sessions` không RLS ⇒ mọi câu lọc `tenant_id` tường minh.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { ConfigSnapshot } from "../../config/config.rules";
+import type { ConfigSnapshot } from "../../config/public";
 import { priorStageIdxs } from "../domain/runs/step.rules";
 import { agentIdOf } from "../nodes/registry";
 import { retryFailures } from "./autofix.repo";

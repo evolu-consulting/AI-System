@@ -1,7 +1,7 @@
 // Kiểm sau khi MỌI gói đã mount (tách khỏi `packs.mount.ts`, trần 400 dòng): tool trùng catalog (Security L1) + CR-120 khe manifest
 // thiếu SlotSpec/FlowSlotAdapter (ADR-0036, log error, không chặn boot).
 import { logger } from "../../lib/logger";
-import type { ConfigCache } from "../config/config.service";
+import type { ConfigCache } from "../config/public";
 import type { PackToolRegistry } from "./kit/adapters/pack-tools.registry";
 import { checkSlotContract } from "./kit/adapters/slot-contract.check";
 

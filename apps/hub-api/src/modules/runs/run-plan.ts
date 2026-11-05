@@ -1,7 +1,7 @@
 // HUB-FR-77 · CR-054 · kế hoạch run cho tin không tag ở Hỏi AI: agent mặc định của tenant (`default-agent.rules`).
 import { type AccessSubject, accessInput, visibleAgents } from "../agents/agent-access.rules";
 import { type DefaultRoute, defaultRoute } from "../agents/default-agent.rules";
-import type { ConfigSnapshot } from "../config/config.rules";
+import type { ConfigSnapshot } from "../config/public";
 import { responderOf } from "../mention/mention.rules";
 import type { DirectRunStart } from "../mention/mention.service";
 import { type FastRoute, fastRoute } from "./fast-route.rules";

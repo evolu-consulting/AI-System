@@ -1,7 +1,7 @@
 // HUB-FR-31 (phần lúc giao job) · HUB-FR-67 · AC-H4b2-07 · spec H4b2 §9 Q4 · plan H4b2 §3.4 — hàm thuần: chọn bước
 // profile cho job theo `pickStep` (enabled từ ảnh cấu hình, `provider_state` đọc lúc giao). Kết quả `ok` mang profile chỉ
 // còn bước đã chọn ⇒ `buildJobPayload` giữ contract (`profile_steps` = [bước đó], `step_index` 0).
-import type { ConfigSnapshot, ProfileConfig } from "../../config/config.rules";
+import type { ConfigSnapshot, ProfileConfig } from "../../config/public";
 import { pickStep, type SkipWhy, type StepView } from "../profile-step.rules";
 
 export type ProviderStates = ReadonlyMap<string, StepView["state"]>;

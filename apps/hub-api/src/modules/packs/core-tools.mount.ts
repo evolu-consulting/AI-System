@@ -2,7 +2,7 @@
 // khe thư viện + tool bước DLC; Agent Hub qua cầu `dlcAgents`). Phụ thuộc khai theo cấu trúc (không import `packs.mount.ts` ⇒ không
 // vòng import); `PacksMountDeps` khớp kiểu này.
 import type { Db } from "@ai/db";
-import type { ConfigCache } from "../config/config.service";
+import type { ConfigCache } from "../config/public";
 import { mountGuide } from "../guide/guide.mount";
 import { mountMyHistory } from "../my-history/my-history.mount";
 import { contractsActivitySource } from "./contracts/activity.mount";

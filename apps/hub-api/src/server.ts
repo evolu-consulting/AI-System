@@ -17,9 +17,11 @@ import { envFileboxToken } from "./modules/attachments/filebox-token";
 import type { AttachmentDeps } from "./modules/attachments/storage";
 import { createFileboxStorage } from "./modules/attachments/storage.filebox";
 import { createLocalStorage } from "./modules/attachments/storage.local";
-import { bootOrchestratorProblem } from "./modules/config/config.service";
-import { assertHubSchemaCaps } from "./modules/config/schema-caps";
-import { missingAdminColumns } from "./modules/config/schema-check";
+import {
+  assertHubSchemaCaps,
+  bootOrchestratorProblem,
+  missingAdminColumns,
+} from "./modules/config/public";
 import { loadMasterKey, probeMasterKey } from "./modules/dify/credential.service";
 import { checkHubSecretsKey, type SecretKey } from "./modules/secrets/secrets.crypto";
 

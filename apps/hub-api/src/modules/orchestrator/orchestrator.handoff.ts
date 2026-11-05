@@ -17,7 +17,7 @@ import {
   olderBody,
   splitHistory,
 } from "../artifacts/history.rules";
-import type { AgentConfig } from "../config/config.rules";
+import type { AgentConfig } from "../config/public";
 import type { HandoffHint } from "./orchestrator.prompt";
 import { canPassThrough } from "./orchestrator.rules";
 

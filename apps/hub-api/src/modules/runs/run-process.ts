@@ -7,7 +7,7 @@ import type { SendMessageRequest } from "@ai/contracts/chat";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { appError } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
-import type { ConfigCache } from "../config/config.service";
+import type { ConfigCache } from "../config/public";
 import { responderOf } from "../mention/mention.rules";
 import { type DirectRunStart, directOnSnapshot } from "../mention/mention.service";
 import type { CreateRunInput, ProcessRunInput } from "./create-run";

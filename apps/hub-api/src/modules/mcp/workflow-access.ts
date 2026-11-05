@@ -1,8 +1,9 @@
 // commands-unfreeze · workflow gắn agent chỉ là tool khi người gọi dùng được feature của workflow: tenant có entitlement + user có grant
 // (cùng luật `usableCatalogCommands` của lệnh `/`). Workflow KHÔNG có command nào (không gắn feature) giữ hành vi cũ (không chặn).
 // Dùng ở hai nơi: dựng `payload.mcp.tools` của job (lúc offer) và `McpService.tools` (lúc `tools/list` VÀ `tools/call` — kiểm lại ở server).
-import { type CatalogSnapshot, usableCatalogCommands } from "../config/catalog.rules";
-import type { ConfigCache } from "../config/config.service";
+
+import type { ConfigCache } from "../config/public";
+import { type CatalogSnapshot, usableCatalogCommands } from "../config/public";
 
 export type WorkflowGate = (workflowId: string) => boolean;
 

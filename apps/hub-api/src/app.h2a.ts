@@ -9,7 +9,7 @@ import { commandRoutes } from "./modules/commands/commands.routes";
 import { CommandService, type PreparedCommand } from "./modules/commands/commands.service";
 import { asyncCommandDriver } from "./modules/commands/driver/command-async-driver";
 import { type CommandDriverDeps, commandDriver } from "./modules/commands/driver/command-driver";
-import type { ConfigCache } from "./modules/config/config.service";
+import type { ConfigCache } from "./modules/config/public";
 import { CredentialService, loadMasterKey } from "./modules/dify/credential.service";
 import { DifyClient } from "./modules/dify/dify.client";
 import { testRunRoutes } from "./modules/internal/test-run.routes";

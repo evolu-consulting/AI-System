@@ -9,7 +9,7 @@ import type { Logger } from "../../../lib/logger";
 import type { Redis } from "../../../lib/redis";
 import type { UserEvent } from "../../../lib/user-stream";
 import type { AttachmentStorage } from "../../attachments/storage";
-import type { ConfigCache } from "../../config/config.service";
+import type { ConfigCache } from "../../config/public";
 import type { KhRuntime } from "../../kh/kh.mount";
 import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import type { AgentRunner } from "../../runner/job/job-agent-runner";

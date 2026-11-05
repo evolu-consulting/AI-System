@@ -1,6 +1,6 @@
 // HUB-FR-92 · H2b-R11 · menu `@` (GET `/agents`, plan-rules). Thuần — đọc ảnh cấu hình, 0 query.
 import { AGENT_MENU_MAX, type AgentMenuItem } from "@ai/contracts/chat";
-import type { AgentConfig, ConfigSnapshot } from "../config/config.rules";
+import type { AgentConfig, ConfigSnapshot } from "../config/public";
 import { type AccessSubject, accessInput, visibleAgents } from "./agent-access.rules";
 
 /** `{key, name: {vi, en}, description}` — không trường khác (không lộ system prompt/runtime/profile). */

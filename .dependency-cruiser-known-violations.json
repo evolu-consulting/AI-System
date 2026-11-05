@@ -2251,35 +2251,8 @@
   },
   {
     "type": "dependency",
-    "from": "apps/hub-api/src/modules/agent-grants/agent-effective.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/agent-grants/agent-effective.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/hub-api/src/modules/agent-grants/agent-grants.map.ts",
     "to": "apps/hub-api/src/modules/agents/agent-access.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/agent-hooks/hook-runner.ts",
-    "to": "apps/hub-api/src/modules/config/catalog.rules.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -2359,33 +2332,6 @@
   },
   {
     "type": "dependency",
-    "from": "apps/hub-api/src/modules/agents/agent-menu.rules.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/agents/agents.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/agents/default-agent.rules.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/hub-api/src/modules/artifacts/artifact.mcp.ts",
     "to": "apps/hub-api/src/modules/mcp/mcp.rules.ts",
     "rule": {
@@ -2397,24 +2343,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/attachments/attachment-dify.ts",
     "to": "apps/hub-api/src/modules/dify/dify-upload.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/capabilities/capabilities.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/capabilities/config-push.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -2442,24 +2370,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/commands/commands.service.ts",
     "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/commands/commands.service.ts",
-    "to": "apps/hub-api/src/modules/config/catalog.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/commands/commands.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -2702,15 +2612,6 @@
   {
     "type": "dependency",
     "from": "apps/hub-api/src/modules/dify/agent/dify-agent-runner.ts",
-    "to": "apps/hub-api/src/modules/config/catalog.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/dify/agent/dify-agent-runner.ts",
     "to": "apps/hub-api/src/modules/conversations/conversations.rules.ts",
     "rule": {
       "severity": "error",
@@ -2927,15 +2828,6 @@
   {
     "type": "dependency",
     "from": "apps/hub-api/src/modules/internal/credential.service.ts",
-    "to": "apps/hub-api/src/modules/config/catalog.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/internal/credential.service.ts",
     "to": "apps/hub-api/src/modules/dify/credential.service.ts",
     "rule": {
       "severity": "error",
@@ -2991,24 +2883,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/internal/test-run.service.ts",
     "to": "apps/hub-api/src/modules/commands/commands.service.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/internal/test-run.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/internal/test-run.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -3206,24 +3080,6 @@
   {
     "type": "dependency",
     "from": "apps/hub-api/src/modules/mcp/adapters/workflow-invoker.ts",
-    "to": "apps/hub-api/src/modules/config/catalog.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/mcp/adapters/workflow-invoker.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/mcp/adapters/workflow-invoker.ts",
     "to": "apps/hub-api/src/modules/dify/credential.service.ts",
     "rule": {
       "severity": "error",
@@ -3332,43 +3188,7 @@
   {
     "type": "dependency",
     "from": "apps/hub-api/src/modules/mcp/mcp.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/mcp/mcp.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/mcp/mcp.service.ts",
     "to": "apps/hub-api/src/modules/kh/kh.query.service.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/mcp/workflow-access.ts",
-    "to": "apps/hub-api/src/modules/config/catalog.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/mcp/workflow-access.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -3520,24 +3340,6 @@
   },
   {
     "type": "dependency",
-    "from": "apps/hub-api/src/modules/mention/mention.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/mention/mention.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/hub-api/src/modules/notify/adapters/credentials.ts",
     "to": "apps/hub-api/src/modules/secrets/secrets.use.ts",
     "rule": {
@@ -3558,15 +3360,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/orchestrator/orchestrator.handoff.ts",
     "to": "apps/hub-api/src/modules/artifacts/history.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/orchestrator/orchestrator.handoff.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -3603,15 +3396,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/orchestrator/orchestrator.loop.ts",
     "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/orchestrator/orchestrator.loop.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -3710,15 +3494,6 @@
   {
     "type": "dependency",
     "from": "apps/hub-api/src/modules/orchestrator/orchestrator.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/orchestrator/orchestrator.service.ts",
     "to": "apps/hub-api/src/modules/runner/job/job-agent-runner.ts",
     "rule": {
       "severity": "error",
@@ -3772,15 +3547,6 @@
   },
   {
     "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/packs.after-mount.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/packs.filebox.ts",
     "to": "apps/hub-api/src/modules/attachments/filebox-token.ts",
     "rule": {
@@ -3792,24 +3558,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/packs.filebox.ts",
     "to": "apps/hub-api/src/modules/attachments/filebox.client.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/packs.tenant-config.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/packs.tenant-config.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -3837,15 +3585,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/processes/adapters/tools/mcp-tool-invoker.ts",
     "to": "apps/hub-api/src/modules/commands/catalog.types.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/processes/adapters/tools/mcp-tool-invoker.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -3891,15 +3630,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/processes/core/ports.ts",
     "to": "apps/hub-api/src/modules/attachments/storage.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/processes/core/ports.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -4042,26 +3772,8 @@
   },
   {
     "type": "dependency",
-    "from": "apps/hub-api/src/modules/processes/runs/launcher-session.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/hub-api/src/modules/processes/runs/launcher-step.ts",
     "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/processes/runs/launcher-step.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -4240,15 +3952,6 @@
   },
   {
     "type": "dependency",
-    "from": "apps/hub-api/src/modules/processes/runs/team-load.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/hub-api/src/modules/processes/runs/team-member.ts",
     "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
     "rule": {
@@ -4278,15 +3981,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/processes/runs/view-knowledge.ts",
     "to": "apps/hub-api/src/modules/kh/kh.writes.port.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/processes/runs/view.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -4341,15 +4035,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/rooms/agents/room-run.service.ts",
     "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/rooms/agents/room-run.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -4475,24 +4160,6 @@
   {
     "type": "dependency",
     "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.ts",
-    "to": "apps/hub-api/src/modules/config/catalog.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.ts",
     "to": "apps/hub-api/src/modules/conversations/conversations.rules.ts",
     "rule": {
       "severity": "error",
@@ -4556,24 +4223,6 @@
   {
     "type": "dependency",
     "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.types.ts",
-    "to": "apps/hub-api/src/modules/config/catalog.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.types.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.types.ts",
     "to": "apps/hub-api/src/modules/kh/kh.job.ts",
     "rule": {
       "severity": "error",
@@ -4627,26 +4276,8 @@
   },
   {
     "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/job/job-step.rules.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/hub-api/src/modules/runner/job/runner.repo.ts",
     "to": "apps/hub-api/src/modules/kh/kh.agent.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/routing-runner.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -4665,15 +4296,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/runner/runner.rules.ts",
     "to": "apps/hub-api/src/modules/commands/catalog.types.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/runner.rules.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -4753,15 +4375,6 @@
   },
   {
     "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/fast-route.rules.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/hub-api/src/modules/runs/run-context.ts",
     "to": "apps/hub-api/src/modules/agents/default-agent.rules.ts",
     "rule": {
@@ -4773,15 +4386,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/runs/run-context.ts",
     "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/run-context.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -4817,15 +4421,6 @@
   {
     "type": "dependency",
     "from": "apps/hub-api/src/modules/runs/run-plan.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/run-plan.ts",
     "to": "apps/hub-api/src/modules/mention/mention.rules.ts",
     "rule": {
       "severity": "error",
@@ -4836,15 +4431,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/runs/run-plan.ts",
     "to": "apps/hub-api/src/modules/mention/mention.service.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/run-process.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"
@@ -4971,24 +4557,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/runs/runs.service.ts",
     "to": "apps/hub-api/src/modules/attachments/run-files.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/runs.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/runs.service.ts",
-    "to": "apps/hub-api/src/modules/config/config.service.ts",
     "rule": {
       "severity": "error",
       "name": "cross-module-flat"

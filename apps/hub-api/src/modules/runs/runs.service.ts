@@ -20,12 +20,8 @@ import type { AccessSubject } from "../agents/agent-access.rules";
 import type { NoMatchPolicy } from "../agents/default-agent.rules";
 import { checkSendable } from "../attachments/run-files";
 import type { RunFile } from "../attachments/run-files.rules";
-import {
-  type ConfigSnapshot,
-  type PickedOrchestrator,
-  pickOrchestrator,
-} from "../config/config.rules";
-import type { ConfigCache } from "../config/config.service";
+import type { ConfigCache } from "../config/public";
+import { type ConfigSnapshot, type PickedOrchestrator, pickOrchestrator } from "../config/public";
 import {
   type DirectRunStart,
   directOnSnapshot,

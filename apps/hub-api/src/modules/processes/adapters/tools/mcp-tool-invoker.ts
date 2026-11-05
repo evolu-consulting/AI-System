@@ -4,7 +4,7 @@
 // `min(stage.timeout_s, HUB_DIFY_TIMEOUT_MAX_S)`. Không qua cổng `side_effect` của agent (trace `confirmation:"gate_review"`,
 // D2-03). Không log tham số/kết quả.
 import type { CatalogWorkflow } from "../../../commands/catalog.types";
-import type { ConfigCache } from "../../../config/config.service";
+import type { ConfigCache } from "../../../config/public";
 import type {
   InvokeCaller,
   InvokeFailure,

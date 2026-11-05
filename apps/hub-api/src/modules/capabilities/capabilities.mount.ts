@@ -6,7 +6,7 @@ import type { Env, Hono } from "hono";
 import { requireAuth } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
 import type { Redis } from "../../lib/redis";
-import type { ConfigCache } from "../config/config.service";
+import type { ConfigCache } from "../config/public";
 import { MeStreamConns } from "../me-stream/me-stream.session";
 import { externalFirewall } from "../packs/kit/adapters/external-firewall.middleware";
 import type { PackToolRegistry } from "../packs/kit/adapters/pack-tools.registry";

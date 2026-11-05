@@ -1,7 +1,7 @@
 // HUB-FR-92 · H2b-R11 · menu `@` từ cache cấu hình (plan §4, §7: 0 query khi cache nóng). Quyền tính trên ảnh hiện hành.
 import type { AgentMenuResponse } from "@ai/contracts/chat";
 import type { AuthUser } from "../../lib/auth.middleware";
-import type { ConfigCache } from "../config/config.service";
+import type { ConfigCache } from "../config/public";
 import { agentMenu } from "./agent-menu.rules";
 
 export type AgentsConfig = Pick<ConfigCache, "snapshot" | "user">;

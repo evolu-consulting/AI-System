@@ -20,7 +20,7 @@ import { accessInput, visibleAgents } from "../../agents/agent-access.rules";
 import { roomRunFiles } from "../../attachments/room-files";
 import { roomFileWindow } from "../../attachments/room-files.rules";
 import type { RunFile } from "../../attachments/run-files.rules";
-import type { ConfigCache } from "../../config/config.service";
+import type { ConfigCache } from "../../config/public";
 import type { MentionPlan, MentionRouted } from "../../mention/mention.service";
 import type { PreparedRun, RunDriver, RunService } from "../../runs/runs.service";
 import type { SseWriter } from "../../runs/sse/sse-writer";

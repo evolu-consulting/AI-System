@@ -9,7 +9,7 @@ import {
   type ConfigSnapshot,
   pickOrchestrator,
   type TenantAgentDefaults,
-} from "../config/config.rules";
+} from "../config/public";
 import {
   type AccessSubject,
   accessInput,

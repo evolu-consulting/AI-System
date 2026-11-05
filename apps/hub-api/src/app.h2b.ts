@@ -3,7 +3,7 @@
 import type { Env, Hono } from "hono";
 import { agentRoutes } from "./modules/agents/agents.routes";
 import { AgentsService } from "./modules/agents/agents.service";
-import type { ConfigCache } from "./modules/config/config.service";
+import type { ConfigCache } from "./modules/config/public";
 import { MentionService } from "./modules/mention/mention.service";
 import type { PrepareMention } from "./modules/runs/runs.routes";
 

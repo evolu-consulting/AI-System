@@ -19,8 +19,8 @@ import {
   type RunFile,
   withOutHint,
 } from "../../attachments/run-files.rules";
-import type { CatalogSnapshot } from "../../config/catalog.rules";
-import { agentWorkflowIds, type ProfileConfig } from "../../config/config.rules";
+import type { CatalogSnapshot } from "../../config/public";
+import { agentWorkflowIds, type ProfileConfig } from "../../config/public";
 import { stepLabel } from "../../conversations/conversations.rules";
 import type { KhJobItem } from "../../kh/kh.agent.rules";
 import { KH_QUERY_HINT } from "../../kh/kh.job";

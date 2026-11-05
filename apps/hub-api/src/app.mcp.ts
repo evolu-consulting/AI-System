@@ -9,7 +9,7 @@ import { userTokens } from "./modules/agent-hooks/user-token";
 import { artifactHandoffOn, artifactMcpTools } from "./modules/artifacts/artifact.mount";
 import { startArtifactSweeper } from "./modules/artifacts/artifact.sweeper";
 import type { AttachmentStorage } from "./modules/attachments/storage";
-import type { ConfigCache } from "./modules/config/config.service";
+import type { ConfigCache } from "./modules/config/public";
 import { CredentialService, loadMasterKey } from "./modules/dify/credential.service";
 import { DifyClient } from "./modules/dify/dify.client";
 import type { KhRuntime } from "./modules/kh/kh.mount";

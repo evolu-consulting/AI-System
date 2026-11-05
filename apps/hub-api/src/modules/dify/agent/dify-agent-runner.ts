@@ -13,7 +13,7 @@ import type { Db } from "../../../lib/db";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import type { CatalogWorkflow } from "../../commands/catalog.types";
-import { type CatalogSnapshot, tenantKeyOf } from "../../config/catalog.rules";
+import { type CatalogSnapshot, tenantKeyOf } from "../../config/public";
 import { stepLabel } from "../../conversations/conversations.rules";
 import {
   type ChatBinding,

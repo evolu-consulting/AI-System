@@ -6,7 +6,7 @@ import {
   ShellMeResponseSchema,
   TenantCapabilitiesResponseSchema,
 } from "@ai/contracts/capabilities";
-import type { ConfigCache } from "../config/config.service";
+import type { ConfigCache } from "../config/public";
 import { packAccessInput, tenantFeatureOn } from "../packs/kit/adapters/pack-guard.middleware";
 import { externalPackActions } from "../packs/kit/domain/external-access.rules";
 import { packActionsFor } from "../packs/kit/domain/pack-access.rules";

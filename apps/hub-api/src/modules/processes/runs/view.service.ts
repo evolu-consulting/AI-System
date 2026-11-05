@@ -15,7 +15,7 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { Db } from "../../../lib/db";
 import { clipEntityName, dbHubAudit } from "../../../lib/hub-audit";
-import type { ConfigCache } from "../../config/config.service";
+import type { ConfigCache } from "../../config/public";
 import { runTimesOf, withRunTimes } from "../adapters/runs/run-list.repo";
 import { processError } from "../core/errors";
 import { loadTaskDetails, type ViewerCtx } from "../core/task-view";

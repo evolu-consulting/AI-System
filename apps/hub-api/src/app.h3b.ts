@@ -8,7 +8,7 @@ import { agentGrantRoutes } from "./modules/agent-grants/agent-grants.routes";
 import { AgentGrantsService } from "./modules/agent-grants/agent-grants.service";
 import { agentSettingsRoutes } from "./modules/agent-settings/agent-settings.routes";
 import { AgentSettingsService } from "./modules/agent-settings/agent-settings.service";
-import type { ConfigCache } from "./modules/config/config.service";
+import type { ConfigCache } from "./modules/config/public";
 
 export type H3bDeps = { db: Db; config: ConfigCache; hubAudit?: HubAuditWriter };
 

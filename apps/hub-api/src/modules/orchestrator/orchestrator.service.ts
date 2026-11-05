@@ -10,7 +10,7 @@ import { artifactHandoffOn } from "../artifacts/artifact.flag";
 import { artifactStoreFor } from "../artifacts/artifact.mount";
 import type { ArtifactSink } from "../artifacts/artifact.service";
 import { fileBrief } from "../attachments/run-files.rules";
-import type { UserState } from "../config/config.rules";
+import type { UserState } from "../config/public";
 import { type AgentRunner, runJob } from "../runner/job/job-agent-runner";
 import type { RunContext, RunDriver } from "../runs/runs.service";
 import type { SseWriter } from "../runs/sse/sse-writer";

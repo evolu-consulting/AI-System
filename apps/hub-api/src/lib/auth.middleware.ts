@@ -3,7 +3,7 @@
 // Không đọc DB mỗi request: trạng thái khoá lấy từ ConfigCache (B3), đổi trong ≤ 5 s nhờ LISTEN `config_changed`.
 import type { Role } from "@ai/contracts/common";
 import type { Context, MiddlewareHandler } from "hono";
-import type { ConfigCache } from "../modules/config/config.service";
+import type { ConfigCache } from "../modules/config/public";
 import { appError } from "./errors";
 import { verifyAccessToken } from "./jwt";
 import type { Logger } from "./logger";

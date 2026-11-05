@@ -14,7 +14,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
 import { hashJobToken, isJobToken } from "../../lib/job-token";
 import type { Logger } from "../../lib/logger";
-import type { CatalogSnapshot } from "../config/catalog.rules";
+import type { CatalogSnapshot } from "../config/public";
 import { type CredentialService, isCredentialError } from "../dify/credential.service";
 import * as repo from "./credential.repo";
 

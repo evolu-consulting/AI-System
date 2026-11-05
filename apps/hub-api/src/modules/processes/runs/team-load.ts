@@ -4,7 +4,7 @@ import type { StepRole } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { RUNNABLE_RUNTIMES } from "../../agents/agent-access.rules";
-import type { ConfigSnapshot } from "../../config/config.rules";
+import type { ConfigSnapshot } from "../../config/public";
 import type { ProcessDeps } from "../core/ports";
 
 /** Phụ thuộc dùng chung cho stage nhóm (không có launcher/start). */

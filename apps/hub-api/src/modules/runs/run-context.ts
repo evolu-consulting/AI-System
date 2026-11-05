@@ -3,7 +3,7 @@ import type { HistoryItem } from "@ai/contracts/hub";
 import type { Logger } from "../../lib/logger";
 import type { NoMatchPolicy } from "../agents/default-agent.rules";
 import type { RunFile } from "../attachments/run-files.rules";
-import type { ConfigSnapshot, PickedOrchestrator } from "../config/config.rules";
+import type { ConfigSnapshot, PickedOrchestrator } from "../config/public";
 import type { DirectRunStart } from "../mention/mention.service";
 import type { SseWriter } from "./sse/sse-writer";
 /** Ngữ cảnh một run cho vòng chạy: ghi sự kiện qua `writer`, kết thúc bằng `writer.finish`, dừng khi `writer.signal`. */
