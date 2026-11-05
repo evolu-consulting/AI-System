@@ -47,7 +47,7 @@ const machineCount = async (): Promise<number> =>
         and status in ('level1', 'level2')`
   )[0]?.n ?? -1;
 
-/** Gán quy trình riêng cho khe duyệt HĐ (đúng đường Admin: tập gán + đầu luật + luật trỏ def riêng). */
+/** Gán quy trình riêng cho khe duyệt HĐ: def thư viện đã xuất bản + đúng lời gọi nút "Gán quy trình" của admin-web (F-1). */
 async function assign(): Promise<void> {
   const [kO] = await c.sql<
     { key: string }[]
@@ -78,10 +78,12 @@ async function assign(): Promise<void> {
   const id = d?.id as string;
   await c.sql`insert into hub.process_def_releases (def_id, rel_version, name, stages, slot_body)
     values (${id}, 1, 'Quy trình riêng', ${JSON.stringify(stages)}::text::jsonb, ${JSON.stringify(body)}::text::jsonb)`;
-  await c.sql`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${T.acme}, ${id}, ${APPROVAL_SLOT}) on conflict do nothing`;
-  await c.sql`insert into hub.process_routings (tenant_id, slot) values (${T.acme}, ${APPROVAL_SLOT}) on conflict do nothing`;
-  await c.sql`insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
-    values (${T.acme}, ${APPROVAL_SLOT}, 10, '{}'::jsonb, ${id}, false)`;
+  const r = await c.call(
+    "P",
+    "PUT",
+    `/tenants/${T.acme}/process-routing/${APPROVAL_SLOT}/processes/${id}`,
+  );
+  expect(r.status).toBe(200);
 }
 
 describe("cr121-a2 · lượt mới luôn engine", () => {
@@ -100,7 +102,11 @@ describe("cr121-a2 · lượt mới luôn engine", () => {
     await assign();
     const b = await toLevel1(c, await seedContract(c, 722), 10_000_000);
     const rb = await rowOf(b.runId);
-    expect({ mode: rb.mode, run: typeof rb.run }).toEqual({ mode: "engine", run: "string" });
+    expect({ mode: rb.mode, run: typeof rb.run, feedback: rb.feedback }).toEqual({
+      mode: "engine",
+      run: "string",
+      feedback: null,
+    });
     expect(String(rb.steps)).toContain("Kế toán duyệt A2");
     // Lượt mở trước khi gán vẫn chạy quy trình cũ của nó (không chuyển giữa chừng).
     expect((await rowOf(a.runId)).run).toBe(ra.run);
@@ -140,12 +146,13 @@ describe("cr121-a2 · lượt mới luôn engine", () => {
     ]);
     expect(rs.filter((r) => r.status === 202).length).toBe(1);
     expect(await done).toBe("needs_review");
-    const all = await c.sql<Json[]>`select mode, engine_run_id::text as run from contracts.approvals
-      where contract_id = ${id}`;
+    const all = await c.sql<Json[]>`select mode, engine_run_id::text as run, feedback
+      from contracts.approvals where contract_id = ${id}`;
     expect(all.length).toBe(1);
-    expect({ mode: all[0]?.mode, run: typeof all[0]?.run }).toEqual({
+    expect({ mode: all[0]?.mode, run: typeof all[0]?.run, fb: all[0]?.feedback }).toEqual({
       mode: "engine",
       run: "string",
+      fb: null,
     });
     expect(await runsOf(id)).toBe(1);
   }, 60_000);

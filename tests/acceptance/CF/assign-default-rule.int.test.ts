@@ -19,7 +19,7 @@ const PROC = (defId: string) =>
 
 let c: CtxCf;
 beforeAll(async () => {
-  c = await startCf({}, { contractsAi: { approvalEngineTenantGate: true } });
+  c = await startCf();
 }, 180_000);
 afterAll(async () => {
   await c?.stop();
@@ -73,9 +73,9 @@ describe("CR-121 F-1 · gán quy trình ⇒ luật mặc định ⇒ engine ch�
   it("gán qua API ⇒ lượt mới chạy engine với quy trình đó, gán quy trình khác ⇒ đổi theo", async () => {
     const [a, b] = [await libDef("cf-f1-a", NAME_A), await libDef("cf-f1-b", NAME_B)];
 
-    // Chưa gán ⇒ máy cũ.
+    // cr121-a2 · chưa gán ⇒ vẫn engine (quy trình mặc định của khe), không còn máy cũ.
     const before = await toLevel1(c, await seedContract(c, 731), 10_000_000);
-    expect(await modeOf(before.runId)).toBe("machine");
+    expect(await modeOf(before.runId)).toBe("engine");
 
     // Gán A: đúng một lời gọi như nút "Gán quy trình" ở admin-web.
     expect((await c.call("P", "PUT", PROC(a))).status).toBe(200);
