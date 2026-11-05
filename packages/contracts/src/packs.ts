@@ -81,6 +81,18 @@ export const PackMeResponseSchema = z.object({
 });
 export type PackMeResponse = z.infer<typeof PackMeResponseSchema>;
 
+/**
+ * CR-121 C-7 · `GET /pack/nav` — MỘT lần gọi cho menu của MỌI app: mỗi gói đang bật (và người xem có quyền) đóng góp các mục hàng
+ * việc người xem được thấy (`cap` khớp `cap` của manifest web) kèm số đang chờ (0 ⇒ web không hiện badge). Cap vắng ⇒ ẩn mục.
+ */
+export const PackNavItemSchema = z.strictObject({
+  cap: z.string().regex(/^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/),
+  count: z.number().int().min(0),
+});
+export const PackNavResponseSchema = z.strictObject({ items: z.array(PackNavItemSchema).max(100) });
+export type PackNavItem = z.infer<typeof PackNavItemSchema>;
+export type PackNavResponse = z.infer<typeof PackNavResponseSchema>;
+
 export const IndexOutboxRowSchema = z.object({
   entity: z.string().regex(/^[a-z][a-z0-9_]{1,40}$/),
   entity_id: z.uuid(),

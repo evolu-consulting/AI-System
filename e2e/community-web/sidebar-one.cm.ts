@@ -38,20 +38,17 @@ test("Community → Sổ Hợp Tác: cùng một thanh trái (shell-sidebar), m�
 });
 
 // CR-121 C-7 · mục hàng việc có badge số (0 ⇒ không có, trên 99 ⇒ "99+") ở cả hai app + mục "Chờ tôi duyệt" của Sổ Hợp Tác
-// (chỉ khi server báo có vai duyệt) + trang rỗng nói rõ lý do/bước kế. Số do server tính — test giả lập MỘT phản hồi `flows/nav`.
+// (chỉ khi server báo có vai duyệt) + trang rỗng nói rõ lý do/bước kế. Số do server tính — test giả lập MỘT phản hồi `GET /pack/nav`.
 test("Menu: badge số cho Duyệt bài / Yêu cầu tham gia / Chờ tôi duyệt; 0 ẩn, >99 hiện 99+; trang Chờ tôi duyệt rỗng có hướng dẫn", async ({
   page,
 }) => {
-  const nav = {
-    moderationQueue: true,
-    moderationOn: true,
-    joinSubmit: false,
-    joinReview: true,
-    reports: true,
-    counts: { review: 3, join: 120, reports: 0 },
-    contracts: { review: true, count: 2 },
-  };
-  await page.route("**/pack/community/flows/nav", (r) => r.fulfill({ json: nav }));
+  const items = [
+    { cap: "community.review", count: 3 },
+    { cap: "community.join", count: 120 },
+    { cap: "community.reports", count: 0 },
+    { cap: "contracts.review", count: 2 },
+  ];
+  await page.route("**/pack/nav", (r) => r.fulfill({ json: { items } }));
   await page.route("**/pack/contracts/my-work", (r) =>
     r.fulfill({ json: { followups: [], approvals: [] } }),
   );
@@ -78,9 +75,9 @@ test("Menu: badge số cho Duyệt bài / Yêu cầu tham gia / Chờ tôi duy�
     "Xem tất cả hợp đồng",
   );
   // người không có vai duyệt ⇒ không có mục
-  await page.unroute("**/pack/community/flows/nav");
-  await page.route("**/pack/community/flows/nav", (r) =>
-    r.fulfill({ json: { ...nav, contracts: { review: false, count: 0 } } }),
+  await page.unroute("**/pack/nav");
+  await page.route("**/pack/nav", (r) =>
+    r.fulfill({ json: { items: items.filter((i) => i.cap !== "contracts.review") } }),
   );
   await page.reload();
   await expect(side.locator('[data-nav-item="/contracts/approvals"]')).toHaveCount(0);

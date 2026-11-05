@@ -8,6 +8,7 @@ import { flowRoutes } from "../kit/adapters/flow.routes";
 import { packBell } from "../kit/adapters/pack-bell";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { packHosts } from "../kit/adapters/pack-hosts";
+import { packNavRegistry } from "../kit/adapters/pack-nav-registry";
 import { createPackUow } from "../kit/adapters/pack-uow";
 import { slotRegistry } from "../kit/adapters/slot-registry";
 import type { ExternalOrgResolver } from "../kit/application/ext-org.ports";
@@ -19,6 +20,7 @@ import { filesRoutes } from "./adapters/files.routes";
 import { communityFlowSlots } from "./adapters/flow-slots";
 import { flowsRoutes } from "./adapters/flows.routes";
 import type { FlowAgents, FlowDeps } from "./adapters/flows.service";
+import { communityNavSource } from "./adapters/nav.source";
 import type { CommunityEventDeps } from "./adapters/notify.events";
 import { communityEvents } from "./adapters/notify.events";
 import { startCommunitySweeper } from "./adapters/notify.sweep";
@@ -85,7 +87,6 @@ export function communityModule(
     sys: uow,
     agents: fo.agents,
     moderationOn: fo.moderationOn,
-    contractsInbox: fo.contractsInbox,
     background: fo.background,
     warn: (m, meta) => console.warn(m, meta),
     onApproved: async (p, tenantId) => {
@@ -126,6 +127,7 @@ export function communityModule(
   r.route("/", quoteRoutes(d));
   r.route("/", filesRoutes(d));
   r.route("/", flowsRoutes(d, flows));
+  packNavRegistry.register(communityNavSource(view, resolver, flows)); // CR-121 C-7 · mục hàng việc + số đếm cho `GET /pack/nav`
   // CR-120 · ADR-0035/0036: SlotSpec + FlowSlotAdapter của 3 khe (khoá = key khe); route flow kit sau cờ runtime.
   for (const s of communitySlotSpecs()) slotRegistry.register(s);
   if (flowRuntimeOn(fo.runtimeOn)) {
@@ -139,8 +141,6 @@ export type CommunityFlowOpts = {
   agents?: FlowAgents | undefined;
   moderationOn?: ((tenantId: string) => Promise<boolean>) | undefined;
   tenantAdmin?: ((who: PackWho) => Promise<boolean>) | undefined;
-  /** CR-121 C-7 · hộp "Chờ tôi duyệt" của Sổ Hợp Tác cho menu (`flows/nav`). */
-  contractsInbox?: ((who: PackWho) => Promise<{ visible: boolean; count: number }>) | undefined;
   background?: ((p: Promise<unknown>) => void) | undefined;
   /** Seam test của cờ `HUB_FLOW_RUNTIME` (vắng ⇒ env). */
   runtimeOn?: boolean | undefined;

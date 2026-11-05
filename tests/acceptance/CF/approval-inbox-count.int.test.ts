@@ -5,6 +5,7 @@ import {
   APPROVAL_SLOT,
   compileSlotStages,
 } from "../../../apps/hub-api/src/modules/packs/contracts/domain/approval-slot.rules";
+import { contractsNavSource } from "../../../apps/hub-api/src/modules/packs/contracts/nav.mount";
 import type {
   PackRunCaller,
   PackRunsBridge,
@@ -123,5 +124,14 @@ describe("CR-121 C-7 · inboxOf (số chờ duyệt + vai duyệt)", () => {
     expect((await inbox({ userId: STRANGER, tenantId: T.acme, role: "member" })).approver).toBe(
       false,
     );
+
+    // Nguồn nav của Sổ Hợp Tác (không cần Community bật): đúng người thấy cap + số, người khác không có mục.
+    const nav = contractsNavSource(async () => true, bridge);
+    const au = (u: PackRunCaller) => ({ ...u, userKind: "internal" }) as never;
+    expect(await nav.caps(au(HEAD))).toEqual([{ cap: "contracts.review", count: 1 }]);
+    expect(await nav.caps(au(MEMBER))).toEqual([{ cap: "contracts.review", count: 0 }]);
+    expect(await nav.caps(au(DB))).toEqual([]);
+    expect(await nav.caps(au({ userId: STRANGER, tenantId: T.acme, role: "member" }))).toEqual([]);
+    expect(await nav.caps({ ...(au(HEAD) as object), userKind: "external" } as never)).toEqual([]);
   }, 90_000);
 });

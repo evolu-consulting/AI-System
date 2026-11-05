@@ -138,7 +138,10 @@ export function Sidebar({
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const packs = useShellPacks();
-  const { hasCap, badgeOf } = useFlowCaps(packs.community === true, pathname);
+  const { hasCap, badgeOf } = useFlowCaps(
+    packs.community === true || packs.contracts === true,
+    pathname,
+  );
   const groups = useMemo(
     () => buildShellNav(MODULES, (p) => packs[p] === true, hasCap),
     [packs, hasCap],

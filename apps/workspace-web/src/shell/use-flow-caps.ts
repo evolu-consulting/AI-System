@@ -2,7 +2,7 @@
 // CR-121 C-7 · cùng yêu cầu đó trả số đếm cho mọi mục hàng việc (badge) + mục "Chờ tôi duyệt" của Sổ Hợp Tác.
 // Lỗi/chưa tải ⇒ không có mục nào (fail-closed). Tải lại: đổi trang trong /community, quay lại tab, hoặc sau một thao tác duyệt
 // (`notifyFlowNavChanged`) — KHÔNG poll.
-import type { FlowNav } from "@ai/contracts/community";
+import type { PackNavResponse } from "@ai/contracts/packs";
 import { api } from "@ai/web-kit/http";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FLOW_NAV_CHANGED } from "~/shared/kernel/flow-nav-event";
@@ -16,31 +16,20 @@ export const CAP = {
   contractsReview: "contracts.review",
 } as const;
 
-/** Thuần: từ kết quả server sang tập khoá `cap` của manifest. */
-export function capsOf(n: FlowNav | null): ReadonlySet<string> {
-  const out = new Set<string>();
-  if (!n) return out;
-  if (n.moderationQueue) out.add(CAP.communityReview);
-  if (n.joinSubmit || n.joinReview) out.add(CAP.communityJoin);
-  if (n.reports) out.add(CAP.communityReports);
-  if (n.contracts?.review) out.add(CAP.contractsReview);
-  return out;
+/** Thuần: từ kết quả server (`GET /pack/nav`) sang tập khoá `cap` của manifest. */
+export function capsOf(n: PackNavResponse | null): ReadonlySet<string> {
+  return new Set((n?.items ?? []).map((i) => i.cap));
 }
 
-/** Thuần: số chờ của từng `cap` (chỉ cap người xem thấy). Vắng/âm/không số ⇒ 0. */
-export function badgesOf(n: FlowNav | null): ReadonlyMap<string, number> {
-  const out = new Map<string, number>();
-  if (!n) return out;
-  const num = (v: unknown) => (typeof v === "number" && v > 0 ? Math.floor(v) : 0);
-  const caps = capsOf(n);
-  const put = (cap: string, v: unknown) => caps.has(cap) && out.set(cap, num(v));
-  put(CAP.communityReview, n.counts?.review);
-  put(CAP.communityJoin, n.counts?.join);
-  put(CAP.communityReports, n.counts?.reports);
-  put(CAP.contractsReview, n.contracts?.count);
-  return out;
+/** Thuần: số chờ của từng `cap` (chỉ cap người xem thấy). Không số/âm ⇒ 0. */
+export function badgesOf(n: PackNavResponse | null): ReadonlyMap<string, number> {
+  return new Map(
+    (n?.items ?? []).map((i) => [
+      i.cap,
+      typeof i.count === "number" && i.count > 0 ? Math.floor(i.count) : 0,
+    ]),
+  );
 }
-
 /** Thuần: chữ trên badge — 0 ⇒ không hiện (null); trên 99 ⇒ "99+". */
 export function badgeText(count: number): string | null {
   if (!Number.isFinite(count) || count <= 0) return null;
@@ -50,7 +39,7 @@ export function badgeText(count: number): string | null {
 export type FlowNavState = { hasCap: HasCap; badgeOf: (cap: string) => number };
 
 export function useFlowCaps(enabled: boolean, pathname: string): FlowNavState {
-  const [nav, setNav] = useState<FlowNav | null>(null);
+  const [nav, setNav] = useState<PackNavResponse | null>(null);
   const inCommunity = pathname === "/community" || pathname.startsWith("/community/");
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -71,7 +60,7 @@ export function useFlowCaps(enabled: boolean, pathname: string): FlowNavState {
       return;
     }
     let live = true;
-    api<FlowNav>("/pack/community/flows/nav").then(
+    api<PackNavResponse>("/pack/nav").then(
       (n) => live && setNav(n),
       () => live && setNav(null),
     );

@@ -194,7 +194,7 @@ a28ad24f38131f96657f8346d93599f51e7b275ff99fbd8ff8e53c3a9708d658  e2e/community-
 fff170ff16cf7ff9655084235682c2d7b01873b1ce57a536705d97ea25d9e21d  e2e/community-web/roles.cs.ts
 0bc9487b75a36601de77af0a5c452a68fd4fb5c265ede697269650865157569b  e2e/community-web/settings.cm.ts
 8ee9f46a4d33a5a739fa5876b19edb117b66725f88b0f67703d5e28a6328888c  e2e/community-web/shell.cm.ts
-886d1f268ef04e7bf114e0d253ff930ec8156d2a2ecc476cd6e6714c942f57c1  e2e/community-web/sidebar-one.cm.ts
+e46a1185ab1e46ce407be97bee6283148b911f5365f11846bd92c49ae18505c1  e2e/community-web/sidebar-one.cm.ts
 d300a56ef2a99bfa99325afe5bb1c3bed9b23ec3b4f30966982466465a621377  e2e/conflict-commands.spec.ts
 050ead1589157a3c1adfd87beadfa578732e86c83ffdc94c661af3c5bc731c91  e2e/conflict-features.spec.ts
 6ff69987dc413830ebaecd7283c563cf73598ccc2ec089953fe0d685e70ea42c  e2e/conflict-groups.spec.ts
@@ -583,7 +583,7 @@ b623b14308a36191f54e6b390e80b01e9eea67d9b200e9b934d1ca4b76f20697  tests/acceptan
 1bdaca8c13f65c7e5ce110b60bdee90ea67c76327cd2f9dfdc4c87b6707a8d1f  tests/acceptance/CF/approval-card.int.test.ts
 98b4c611606a58a87df6693baba968287cd198f2e5cc8677e9583fb14b329151  tests/acceptance/CF/approval-dify.int.test.ts
 bebc30f53a1eb8a7c6d59cc2085e26b59eadd21bf94b200c961011cff9baeef6  tests/acceptance/CF/approval-engine.int.test.ts
-4b168f02be30f5f1301579d8d9c6f6251a91ef27f1ed0c63a7e7e5bd23051723  tests/acceptance/CF/approval-inbox-count.int.test.ts
+093f445ed9f85a1b561b432a21d5beca3b5ec24510547861044b1f702bfd92cf  tests/acceptance/CF/approval-inbox-count.int.test.ts
 6a013a8028e8abf2394a17a992f2f8a200e3b20dcec5bd53461c69c8cff4e3d7  tests/acceptance/CF/approval-inbox.int.test.ts
 94fbc9e5af69ba1744b60ef449363b22093334e3b24c8ca02f3090e555ba2bf8  tests/acceptance/CF/approval-links-race.int.test.ts
 774a20a310a4cab334fc5d5191595cfab8f0e2938f9696936dfc2923ef01ed14  tests/acceptance/CF/approver-visible-run.int.test.ts

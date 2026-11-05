@@ -13,7 +13,7 @@ import type {
   SupplierQuoteWriter,
 } from "./community/application/pack-ports";
 import { mountCommunity } from "./community/community.mount";
-import { communityAgents, communityFlowPorts, contractsInboxOf } from "./community-flow.mount";
+import { communityAgents, communityFlowPorts } from "./community-flow.mount";
 import { communityUploadGate } from "./community-quota.mount";
 import { productsRepo } from "./contracts/adapters/products.repo";
 import { supplierQuoteRepo } from "./contracts/adapters/supplier-quote.repo";
@@ -24,7 +24,6 @@ import { supplierScores } from "./contracts/partners.mount";
 import { type PackAccessView, packAccessInput } from "./kit/adapters/pack-guard.middleware";
 import { createPackUow } from "./kit/adapters/pack-uow";
 import { orgForTenant } from "./kit/application/pack-files.ports";
-import type { PackRunsBridge } from "./kit/application/pack-runs.ports";
 import { packActionsFor } from "./kit/domain/pack-access.rules";
 import { fileboxClients, type PackFb } from "./packs.filebox";
 
@@ -88,11 +87,9 @@ export function mountCommunityWired<E extends Env>(
     redis?: Redis | undefined;
     /** Trần riêng của tenant: `uploads` (tệp/ngày) + trần token AI (CR-120: agent `screen`/`triage`; vắng ⇒ không agent ⇒ duyệt tay). */
     limitsOf?: CommunityLimitsOf | undefined;
-    /** CR-121 C-7 · cầu engine quy trình (số HĐ chờ duyệt cho menu); vắng ⇒ không có mục "Chờ tôi duyệt". */
-    runs?: PackRunsBridge | undefined;
   } = {},
 ): void {
-  const { fb, redis, limitsOf, runs, ...rest } = o;
+  const { fb, redis, limitsOf, ...rest } = o;
   const gate = communityUploadGate({
     redis,
     timeZoneOf,
@@ -101,13 +98,12 @@ export function mountCommunityWired<E extends Env>(
       : {}),
   });
   const agents = limitsOf ? communityAgents(db, limitsOf, redis) : undefined;
-  const ports = communityPorts(db, view, { timeZoneOf });
   mountCommunity(app, prefix, db, view, {
     ...rest,
-    ...ports,
+    ...communityPorts(db, view, { timeZoneOf }),
     ...(fb ? { blobs: communityBlobs(fb) } : {}),
     gate,
-    flows: communityFlowPorts(db, agents, contractsInboxOf(runs, ports.caps.contracts)),
+    flows: communityFlowPorts(db, agents),
   });
 }
 

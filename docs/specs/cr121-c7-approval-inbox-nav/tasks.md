@@ -8,25 +8,25 @@ phụ thuộc: cr121-c6
 ---
 ## Plan (ngắn)
 Menu trái hiện mục "Chờ tôi duyệt" cho Sổ Hợp Tác (cap `contracts.review`) + số đếm (badge) cho mọi mục hàng việc ở cả hai app.
-Server trả TẤT CẢ trong MỘT lần gọi: mở rộng `GET /pack/community/flows/nav` (`counts` + `contracts`). Web tải lại khi quay lại tab /
+Server trả TẤT CẢ trong MỘT lần gọi: endpoint kit `GET /pack/nav` (mỗi gói đăng ký nguồn qua `packNavRegistry` ở `kit/public.ts`; gói Sổ Hợp Tác và Community độc lập nhau). Web tải lại khi quay lại tab /
 sau một thao tác duyệt (`notifyFlowNavChanged`), không poll.
 
 ## Làm
-- hub: `flows/nav` + `counts{review,join,reports}` (1 câu SQL `pendingCounts`, 3 subquery đếm theo index một phần/`(tenant_id,status)`) +
-  `contracts{review,count}` (cổng `contractsInbox` → `PackRunsPort.inboxOf`: đếm task duyệt mở cùng mệnh đề với `openTasksOf`; chưa có việc ⇒
+- hub: `GET /pack/nav` gom song song nguồn của gói công ty ĐANG BẬT; nguồn Community: `counts` review/join/reports (1 câu SQL `pendingCounts`, 3 subquery đếm theo index một phần/`(tenant_id,status)`) +
+  nguồn Sổ Hợp Tác `contracts.review` (`contracts/nav.mount.ts` → `PackRunsPort.inboxOf`: đếm task duyệt mở cùng mệnh đề với `openTasksOf`; chưa có việc ⇒
   thêm 1 câu hệ thống xem có vai duyệt trong quy trình ĐANG GÁN của khe `contracts.approval`, Group theo mã). Chỉ đếm cho người duyệt.
 - web: manifest Sổ Hợp Tác thêm mục (icon ClipboardCheck, 20 px do `NavIcon`), `NavBadge` 16 px kiểu chuông Header (0 ẩn, >99 "99+"),
   trang `/contracts/approvals` (dữ liệu sẵn `GET /my-work` → approvals[]; rỗng = giải thích + "Xem tất cả hợp đồng").
 
 ## Không làm / Chạm
-Không đổi quyền duyệt, engine, migration, admin-web. Chạm: `pack-runs-view.ts` (tách mệnh đề FROM/WHERE dùng chung với `openTasksOf`).
+Không đổi quyền duyệt, engine, `flows/nav` của Community (giữ nguyên, không còn đếm/contracts), migration, admin-web. Chạm: `pack-runs-view.ts` (tách mệnh đề FROM/WHERE dùng chung với `openTasksOf`).
 
 ## Test tối thiểu
 unit `shell/use-flow-caps.test.ts` (map cap→badge, nav theo cap); int `tests/acceptance/CF/approval-inbox-count.int.test.ts` (người duyệt/người khác/tenant khác,
 vai duyệt) + `community.flows.int.test.ts` (số đếm theo tenant, người khác 0); e2e viết `e2e/community-web/sidebar-one.cm.ts` (không chạy trong lát).
 
 ## Quyết định trong lúc làm
-- Một endpoint cho cả hai app: giữ đường `/pack/community/flows/nav` (đã là nguồn cap); mục Sổ Hợp Tác chỉ hiện khi app Community bật (nav tải cùng gói).
+- Một endpoint kit cho mọi app (`GET /pack/nav`, sau review ranh giới): công ty chỉ bật Sổ Hợp Tác vẫn thấy mục; mọi đọc scope system lọc `tenant_id` của người gọi (`inboxOf`: `RESOLVE_SLOT_SQL(tenant)` + `admin.groups.tenant_id`).
 - Hiển thị mục khi có việc HOẶC là người duyệt của quy trình đang gán; khe chưa gán quy trình ⇒ ẩn (trừ khi còn việc mở).
 - PERF: endpoint tăng câu SQL cố định, chạy song song: +1 đếm community (chỉ người duyệt), +1 hub đếm việc duyệt HĐ (+1 nữa chỉ khi chưa có việc, để biết vai duyệt vì def/khe là bảng hệ thống). Đối tác / không có gói contracts: 0 câu thêm. Chưa đo p95 (không có perf test sẵn cho endpoint này).
 
@@ -36,7 +36,7 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Số chờ xử lý trên mục menu hàng việc (nguồn: cr121-c7-approval-inbox-nav)
 Mục Duyệt bài, Yêu cầu tham gia, Báo cáo vi phạm hiện số hàng đang chờ (badge); 0 thì không hiện, trên 99 hiện "99+". Số do server tính trong cùng lần gọi quyền menu, chỉ cho người duyệt, chỉ trong công ty của họ; tải lại khi quay lại tab và sau mỗi thao tác duyệt.
-- Kịch bản: khi người duyệt có bài chờ thì thấy đúng số của công ty mình, người khác thấy 0, công ty khác không lẫn [test: apps/hub-api/src/modules/packs/community/adapters/community.flows.int.test.ts » GET /flows/nav [CR-120] C-7]
+- Kịch bản: khi người duyệt có bài chờ thì thấy đúng số của công ty mình, người khác thấy 0, công ty khác không lẫn [test: apps/hub-api/src/modules/packs/community/adapters/community.flows.int.test.ts » GET /flows/nav [CR-120] » C-7 · /pack/nav]
 - Kịch bản: khi số là 0 thì không có badge, trên 99 hiện 99+ [test: apps/workspace-web/src/shell/use-flow-caps.test.ts » chữ badge]
 
 ### MODIFIED sht/duyet-ky-so.md

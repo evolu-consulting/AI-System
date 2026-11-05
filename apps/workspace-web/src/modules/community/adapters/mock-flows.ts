@@ -13,8 +13,6 @@ export const flowsMock = (): { flows: FlowsApi } => ({
       joinSubmit: false,
       joinReview: false,
       reports: false,
-      counts: { review: 0, join: 0, reports: 0 },
-      contracts: { review: false, count: 0 },
     }),
     modQueue: async () => ({ items: [] }),
     myModeration: async () => ({ items: [] }),

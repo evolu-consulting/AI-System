@@ -37,6 +37,7 @@ import { type ContractsAiDeps, contractsAiModule } from "./contracts/extraction.
 import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.mount";
 import { manageModule } from "./contracts/manage.mount";
 import { myWorkModule } from "./contracts/mywork.mount";
+import { mountContractsNav } from "./contracts/nav.mount";
 import { partnersModule, supplierScores } from "./contracts/partners.mount";
 import { priceScoutModule } from "./contracts/price-scout.mount";
 import { productsModule } from "./contracts/products.mount";
@@ -53,6 +54,7 @@ import { createPackFiles, packFilesRepo } from "./kit/adapters/pack-files.filebo
 import { packFilesRoutes } from "./kit/adapters/pack-files.routes";
 import { packGroups } from "./kit/adapters/pack-groups";
 import type { PackAccessView } from "./kit/adapters/pack-guard.middleware";
+import { packNavRoutes } from "./kit/adapters/pack-nav.route";
 import type { PackToolRegistry } from "./kit/adapters/pack-tools.registry";
 import { createPackUow, packTenantOnly } from "./kit/adapters/pack-uow";
 import { createPdfConverter } from "./kit/adapters/pdf";
@@ -114,6 +116,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
   const view: PackAccessView = d.config;
   d.packTools?.bindView(view, (m, meta) => logger.warn(m, meta)); // N2-FR-03 Â· gÃ³i báº­t theo cache guard
   app.route(PACK_PREFIX, packMeRoutes(view));
+  app.route(PACK_PREFIX, packNavRoutes(view)); // CR-121 C-7 · mục hàng việc của menu: MỘT endpoint cho mọi gói
   const pkdemoOn = d.packs?.pkdemo ?? pkdemoEnabled(d.appEnv ?? process.env.APP_ENV);
   const n2 = { runs: d.packRuns, tools: d.packTools };
   if (d.db && pkdemoOn) app.route(`${PACK_PREFIX}/${PKDEMO_KEY}`, pkdemoModule(d.db, view, n2));
@@ -134,7 +137,6 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
       signal: d.signal,
       fb,
       redis: d.redis,
-      runs: d.packRuns, // CR-121 C-7 · số HĐ chờ duyệt cho menu
       limitsOf: tenantLimits(d), // tệp/ngày + (CR-120) trần token agent screen/triage
     }); // CR-102 · com-c3 · bảng tin chủ quản ↔ đối tác
     mountDlcWired({ ...d, db: d.db }); // dlc-engine · khe DLC + tool bước DLC (Agent Hub qua cầu `dlcAgents`)
@@ -153,6 +155,7 @@ function mountContracts<E extends Env>(
   fb: PackFb | null,
 ): void {
   const cx = contractsCtx(d, view, fb);
+  mountContractsNav(view, d.packRuns); // CR-121 C-7 · mục "Chờ tôi duyệt" + số đếm cho `GET /pack/nav` (độc lập Community)
   for (const t of cx.ai.tools) d.packTools?.register(t); // contract-flow S3a · tool engine duyệt HĐ (cờ bật)
   mountContractsCore(app, cx);
   mountContractsMore(app, cx);

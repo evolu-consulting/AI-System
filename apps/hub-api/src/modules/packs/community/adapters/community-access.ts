@@ -3,6 +3,7 @@
 // hiệu lực (C2 sẽ gộp nhánh này vào `packGuard` chung qua `EXTERNAL_PACKS`; ở đây cục bộ để không chạm file C2).
 // Danh bạ (tên tenant/user/công ty) = MỘT câu qua cổng kit `ExternalOrgResolver.directory`.
 import type { Context } from "hono";
+import type { AuthUser } from "../../../../lib/auth.middleware";
 import { AppError } from "../../../../lib/errors";
 import {
   type PackAccessView,
@@ -28,8 +29,7 @@ export type Access = {
 
 const forbidden = () => new AppError("PACK_FORBIDDEN", 403, "Forbidden");
 
-async function internalAccess(view: PackAccessView, c: Context<PackGuardVars>) {
-  const u = c.get("user");
+async function internalAccess(view: PackAccessView, u: AuthUser) {
   const i = await packAccessInput(view, COMMUNITY_KEY, u);
   const ok = (a: "read" | "write" | "admin") =>
     checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction[a] }) === "ok";
@@ -38,18 +38,25 @@ async function internalAccess(view: PackAccessView, c: Context<PackGuardVars>) {
 }
 
 /** Người gọi + quyền; `need = "write"` ⇒ 403 khi chỉ đọc. Ném 403 PACK_DISABLED/PACK_FORBIDDEN. */
-export async function accessOf(
+export const accessOf = (
   view: PackAccessView,
   resolver: ExternalOrgResolver,
   c: Context<PackGuardVars>,
   need: "read" | "write" = "read",
+): Promise<Access> => accessOfUser(view, resolver, c.get("user"), need);
+
+/** Như `accessOf` nhưng từ người gọi (không cần Context) — dùng cho nguồn nav của kit (`GET /pack/nav`). */
+export async function accessOfUser(
+  view: PackAccessView,
+  resolver: ExternalOrgResolver,
+  u: AuthUser,
+  need: "read" | "write" = "read",
 ): Promise<Access> {
-  const u = c.get("user");
   if (!(await packEnabled(view, COMMUNITY_KEY, u.tenantId)))
     throw new AppError("PACK_DISABLED", 403, "Pack is not enabled");
   const external = u.userKind === "external";
   if (external && !u.extOrgId) throw forbidden();
-  const rights = external ? { canWrite: true, isAdmin: false } : await internalAccess(view, c);
+  const rights = external ? { canWrite: true, isAdmin: false } : await internalAccess(view, u);
   if (need === "write" && !rights.canWrite) throw forbidden();
   const dir = await resolver.directory(u.tenantId, u.userId);
   // Review TB1: claim token phải khớp DB (kind bất biến; lệch ⇒ token cũ/giả ⇒ từ chối, không trả raw/hits).

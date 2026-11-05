@@ -44,8 +44,6 @@ export type FlowDeps = {
   agents?: FlowAgents | undefined;
   /** Khe duyệt bài có def cho tenant (gán/luật riêng) ⇒ bài mới vào duyệt; vắng ⇒ tắt. */
   moderationOn?: ((tenantId: string) => Promise<boolean>) | undefined;
-  /** CR-121 C-7 · hộp "Chờ tôi duyệt" của Sổ Hợp Tác cho menu (nối ở packs/community-flow.mount); vắng ⇒ không có mục. */
-  contractsInbox?: ((who: PackWho) => Promise<{ visible: boolean; count: number }>) | undefined;
   /** Seam test: nhận promise việc nền (await để chờ xong, không ngủ). */
   background?: ((p: Promise<unknown>) => void) | undefined;
   /** Bài được duyệt (tự động hoặc tay) ⇒ phát chuông bài mới. */
