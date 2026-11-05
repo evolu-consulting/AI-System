@@ -23,7 +23,11 @@ export const isSystemToolStage = (s: StageLike): boolean =>
 
 /** Stage là một bước người dùng của khe (review / Dify) ⇒ sửa được. */
 export const isSlotStep = (s: Pick<StageLike, "slotRaw">): boolean =>
-  s.slotRaw?.kind === "review" || s.slotRaw?.kind === "dify" || s.slotRaw?.kind === "dlc";
+  s.slotRaw?.kind === "review" ||
+  s.slotRaw?.kind === "dify" ||
+  s.slotRaw?.kind === "dlc" ||
+  s.slotRaw?.kind === "notify" || // CR-121 D-6b
+  s.slotRaw?.kind === "wait_until";
 
 /** Nút hệ thống khoá trên canvas: `route` / `finalize` (tool hệ thống không phải bước người dùng). */
 export const isSystemStage = (s: StageLike): boolean => isSystemToolStage(s) && !isSlotStep(s);

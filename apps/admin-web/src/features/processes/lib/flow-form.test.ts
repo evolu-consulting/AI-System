@@ -3,9 +3,13 @@ import type { FlowWhen } from "@ai/contracts/pack-contracts";
 import {
   flowReducer,
   groupKeysOf,
+  type LibNotifyStep,
   type LibStep,
+  type LibWaitStep,
   newEsign,
+  newNotify,
   newReview,
+  newWait,
   parseSlotBody,
   toSlotBody,
   validateFlow,
@@ -117,5 +121,64 @@ describe("validateFlow · điều kiện theo trường của khe", () => {
       "condFieldUnknown",
     ]);
     expect(when(w)).toEqual([]);
+  });
+});
+
+// CR-121 D-6b · Thông báo / Chờ tới trong Form (luật kiểm khớp hub `notifyWaitIssues`).
+describe("flow-form · Thông báo / Chờ tới (D-6b)", () => {
+  const nt = (over: Partial<LibNotifyStep> = {}, steps: LibStep[] = []): LibNotifyStep => ({
+    ...newNotify(steps, "Báo duyệt xong"),
+    title: "Đã duyệt {ma_hd}",
+    ...over,
+  });
+  const codes = (steps: LibStep[]) => validateFlow(steps).map((i) => `${i.index}:${i.code}`);
+
+  test("thêm Thông báo và Chờ tới chèn trước Ký số, khoá không trùng", () => {
+    let s: LibStep[] = [r()];
+    s = flowReducer(s, { type: "addEsign", name: "Ký số" });
+    s = flowReducer(s, { type: "addNotify", name: "TB" });
+    s = flowReducer(s, { type: "addWait", name: "Chờ" });
+    expect(s.map((x) => x.kind)).toEqual(["review", "notify", "wait_until", "esign"]);
+    expect(new Set(s.map((x) => x.key)).size).toBe(4);
+  });
+  test("thiếu tiêu đề thông báo báo NOTIFY_TITLE_REQUIRED, mặc định là người gửi duyệt và chuông", () => {
+    expect(newNotify([], "x")).toMatchObject({
+      to: { creator: true, owner: false, group_key: null },
+      channels: ["bell"],
+    });
+    expect(codes([r(), nt({ title: "  " })])).toEqual(["1:NOTIFY_TITLE_REQUIRED"]);
+  });
+  test("thiếu người nhận hoặc kênh báo đúng mã, chọn phòng theo mã là đủ", () => {
+    const none = { creator: false, owner: false, group_key: null };
+    expect(codes([r(), nt({ to: none, channels: [] })])).toEqual([
+      "1:NOTIFY_TO_REQUIRED",
+      "1:NOTIFY_CHANNEL_REQUIRED",
+    ]);
+    expect(codes([r(), nt({ to: { ...none, group_key: "pb-giam-doc" } })])).toEqual([]);
+  });
+  test("Chờ tới lệch ngoài 365 ngày báo WAIT_OFFSET_RANGE, giờ sai báo WAIT_TIME_INVALID", () => {
+    const w = (over: Partial<LibWaitStep>): LibStep => ({ ...newWait([r()], "Chờ"), ...over });
+    expect(codes([r(), w({ offset_days: 366 })])).toEqual(["1:WAIT_OFFSET_RANGE"]);
+    expect(codes([r(), w({ offset_days: -365 })])).toEqual([]);
+    expect(codes([r(), w({ offset_days: 1.5 })])).toEqual(["1:WAIT_OFFSET_RANGE"]);
+    expect(codes([r(), w({ offset_days: Number.NaN })])).toEqual(["1:WAIT_OFFSET_RANGE"]);
+    expect(codes([r(), w({ time: "25:00" })])).toEqual(["1:WAIT_TIME_INVALID"]);
+  });
+  test("bước duyệt sau Thông báo hoặc Chờ tới không được có điều kiện", () => {
+    const when: FlowWhen = { op: "and", conds: [{ field: "deal", in: ["buy"] }] };
+    expect(codes([r(), nt(), r({ key: "s3", when })])).toContain("2:AFTER_DIFY_CONDITIONAL");
+    expect(codes([r(), newWait([r()], "Chờ"), r({ key: "s3", when })])).toContain(
+      "2:AFTER_DIFY_CONDITIONAL",
+    );
+  });
+  test("parseSlotBody nhận Thông báo và Chờ tới, groupKeysOf lấy phòng nhận", () => {
+    const steps: LibStep[] = [
+      r(),
+      nt({ to: { creator: false, owner: true, group_key: "pb-gd" } }),
+      newWait([r()], "Chờ"),
+    ];
+    const back = parseSlotBody(toSlotBody(steps));
+    expect(back?.map((x) => x.kind)).toEqual(["review", "notify", "wait_until"]);
+    expect(groupKeysOf(steps)).toEqual(["pb-gd", "pb-ke-toan"]);
   });
 });

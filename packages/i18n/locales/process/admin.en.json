@@ -892,6 +892,35 @@
       "reviewStep": "Approval step",
       "esignStep": "E-sign",
       "difyStep": "Dify step",
+      "notifyStep": "Notification",
+      "waitStep": "Wait until",
+      "notify": {
+        "defaultName": "Notification",
+        "to": "Recipients",
+        "toCreator": "Person who submitted for approval",
+        "toOwner": "Contract owner",
+        "toGroup": "Department to notify (code)",
+        "channels": "Channels",
+        "bell": "Bell (always on)",
+        "email": "Also send email",
+        "title": "Title",
+        "body": "Message",
+        "vars": "Insert contract info",
+        "var": {
+          "ma_hd": "Contract number",
+          "ten_hd": "Contract name",
+          "gia_tri": "Value"
+        }
+      },
+      "wait": {
+        "defaultName": "Wait until",
+        "from": "Wait until",
+        "endDate": "Contract end date",
+        "actionDeadline": "Contract action deadline",
+        "offset": "Offset (days, {{min}} to {{max}})",
+        "offsetHint": "Negative = before that date, positive = after it.",
+        "time": "Time (company time)"
+      },
       "name": "Step name",
       "dept": "Department code",
       "dueH": "Decision deadline (hours)",
@@ -966,7 +995,12 @@
         "ESIGN_NOT_LAST": "E-sign must be the last step.",
         "SIGNER_GROUP_REQUIRED": "Enter the department code of the signing head.",
         "difyEmpty": "The Dify step has no workflow.",
-        "AFTER_DIFY_CONDITIONAL": "The step after Dify has no condition.",
+        "AFTER_DIFY_CONDITIONAL": "The step after Dify, Notification or Wait until has no condition.",
+        "NOTIFY_TO_REQUIRED": "Pick at least one recipient: the submitter, the contract owner or a department.",
+        "NOTIFY_CHANNEL_REQUIRED": "Pick at least one channel.",
+        "NOTIFY_TITLE_REQUIRED": "Enter a notification title.",
+        "WAIT_OFFSET_RANGE": "The offset must be a whole number of days from -365 to 365.",
+        "WAIT_TIME_INVALID": "Enter a time like 09:00.",
         "condValueEmpty": "A condition has no value selected (e.g. department).",
         "condFieldUnknown": "A condition uses a field this app does not support."
       },
@@ -1017,6 +1051,8 @@
       "always": "Always runs",
       "addMenu": "Choose the kind of step to add",
       "addDlcStep": "Add DLC step",
+      "addNotify": "Add Notification step",
+      "addWait": "Add Wait-until step",
       "dlcLibrary": "DLC steps in the library",
       "dlcLibraryEmpty": "No library steps yet — add them on the DLC steps page.",
       "dlcBlank": "Blank step"
@@ -1146,6 +1182,14 @@
     "subtitle": "Each step of the run: who did what and why it stopped.",
     "flow": "Steps of the run",
     "stepAria": "Step {{n}}: {{name}} — {{state}}",
+    "kind": {
+      "notify": "Notification",
+      "wait_until": "Wait until"
+    },
+    "kindHint": {
+      "notify": "A Notification step posts to each recipient's bell (and email if chosen). With no recipients the step still finishes and records a warning in its result.",
+      "wait_until": "A Wait-until step holds the run until the due time, then continues on its own. If the contract has no such date the step stops for someone to decide."
+    },
     "timeline": "Timeline",
     "timelineEmpty": "No events yet.",
     "openRelatedRun": "Open related run",

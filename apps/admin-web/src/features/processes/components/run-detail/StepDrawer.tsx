@@ -107,6 +107,11 @@ function BasicTab({
   return (
     <>
       {note && <p className="rounded-lg bg-muted p-3 text-body">{note[lang]}</p>}
+      {(log.stage.executor.kind === "notify" || log.stage.executor.kind === "wait_until") && (
+        <p className="text-body text-muted-foreground" data-testid="step-kind-hint">
+          {T(`kindHint.${log.stage.executor.kind}`)}
+        </p>
+      )}
       {log.tasks.length > 0 && (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {log.tasks.map((k) => (

@@ -24,6 +24,16 @@ function useWho() {
             : t("appcfg.flow.noGroup");
         case "workflow":
           return t("appcfg.flow.workflow", { key: w.key });
+        case "notify":
+          return [
+            w.creator ? t("appcfg.flow.notifyTo.creator") : null,
+            w.owner ? t("appcfg.flow.notifyTo.owner") : null,
+            w.group,
+          ]
+            .filter(Boolean)
+            .join(", ");
+        case "wait":
+          return t("appcfg.flow.waitWho");
         default:
           return t(`appcfg.flow.signer.${w.type}`);
       }

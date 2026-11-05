@@ -59,18 +59,49 @@ export type LibDifyStep = {
   inputs?: Record<string, string>;
   after: "auto";
 };
-export type LibStep = LibReviewStep | LibEsignStep | LibDifyStep;
+/** CR-121 D-6b · bước Thông báo: người nhận (người gửi duyệt / người phụ trách / phòng theo mã), chuông luôn có (+ mail), mẫu có biến. */
+export type LibNotifyStep = {
+  kind: "notify";
+  key: string;
+  name: string;
+  to: { creator: boolean; owner: boolean; group_key: string | null };
+  channels: ("bell" | "email")[];
+  title: string;
+  body: string;
+};
+/** CR-121 D-6b · bước Chờ tới: ngày của HĐ ± số ngày, lúc `time` (giờ công ty). */
+export type LibWaitStep = {
+  kind: "wait_until";
+  key: string;
+  name: string;
+  from: "end_date" | "action_deadline";
+  offset_days: number;
+  time: string;
+};
+export type LibStep = LibReviewStep | LibEsignStep | LibDifyStep | LibNotifyStep | LibWaitStep;
+
+/** Biến mẫu chèn được vào tiêu đề/nội dung (khớp `NOTIFY_TEMPLATE_VARS` của hub). */
+export const NOTIFY_VARS = ["ma_hd", "ten_hd", "gia_tri"] as const;
+export const WAIT_OFFSET = { min: -365, max: 365 } as const;
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export type FlowAction =
   | { type: "load"; steps: LibStep[] }
   | { type: "addReview" }
+  | { type: "addNotify"; name: string }
+  | { type: "addWait"; name: string }
   | { type: "addEsign"; name: string }
   | { type: "remove"; index: number }
   | { type: "move"; index: number; dir: -1 | 1 }
   | {
       type: "patch";
       index: number;
-      patch: Partial<LibReviewStep> | Partial<LibEsignStep> | Partial<LibDifyStep>;
+      patch:
+        | Partial<LibReviewStep>
+        | Partial<LibEsignStep>
+        | Partial<LibDifyStep>
+        | Partial<LibNotifyStep>
+        | Partial<LibWaitStep>;
     }
   | { type: "setWhen"; index: number; when: FlowWhen | null };
 
@@ -85,7 +116,13 @@ export function parseSlotBody(body: unknown): LibStep[] | null {
       : null;
   if (!list) return null;
   const ok = list.every(
-    (s) => isObj(s) && (s.kind === "review" || s.kind === "esign" || s.kind === "dify"),
+    (s) =>
+      isObj(s) &&
+      (s.kind === "review" ||
+        s.kind === "esign" ||
+        s.kind === "dify" ||
+        s.kind === "notify" ||
+        s.kind === "wait_until"),
   );
   return ok ? (structuredClone(list) as LibStep[]) : null;
 }
@@ -131,6 +168,27 @@ export function newEsign(steps: readonly LibStep[], name: string): LibEsignStep 
     escalate_group_id: null,
   };
 }
+export function newNotify(steps: readonly LibStep[], name: string): LibNotifyStep {
+  return {
+    kind: "notify",
+    key: freshKey(steps, "n"),
+    name,
+    to: { creator: true, owner: false, group_key: null },
+    channels: ["bell"],
+    title: "",
+    body: "",
+  };
+}
+export function newWait(steps: readonly LibStep[], name: string): LibWaitStep {
+  return {
+    kind: "wait_until",
+    key: freshKey(steps, "w"),
+    name,
+    from: "end_date",
+    offset_days: 0,
+    time: "09:00",
+  };
+}
 /** Thêm trước bước Ký số (Ký số luôn cuối). */
 function insert(steps: LibStep[], s: LibStep): LibStep[] {
   const i = steps.findIndex((x) => x.kind === "esign");
@@ -152,6 +210,10 @@ export function flowReducer(steps: LibStep[], a: FlowAction): LibStep[] {
       return structuredClone(a.steps);
     case "addReview":
       return steps.length >= FLOW_MAX_STEPS ? steps : insert(steps, newReview(steps));
+    case "addNotify":
+      return steps.length >= FLOW_MAX_STEPS ? steps : insert(steps, newNotify(steps, a.name));
+    case "addWait":
+      return steps.length >= FLOW_MAX_STEPS ? steps : insert(steps, newWait(steps, a.name));
     case "addEsign":
       return steps.length >= FLOW_MAX_STEPS || steps.some((s) => s.kind === "esign")
         ? steps
@@ -207,6 +269,39 @@ function esignIssues(s: LibEsignStep, i: number, n: number): FlowIssue[] {
   return out;
 }
 
+/** Khớp `notifyWaitIssues` của hub (mã `NOTIFY_*` / `WAIT_OFFSET_RANGE`). */
+function notifyIssues(s: LibNotifyStep, i: number): FlowIssue[] {
+  const out: FlowIssue[] = [];
+  if (!s.name.trim()) out.push({ index: i, field: "name", code: "nameEmpty" });
+  if (!s.to.creator && !s.to.owner && !s.to.group_key)
+    out.push({ index: i, field: "to", code: "NOTIFY_TO_REQUIRED" });
+  if (s.channels.length === 0)
+    out.push({ index: i, field: "channels", code: "NOTIFY_CHANNEL_REQUIRED" });
+  if (s.title.trim() === "") out.push({ index: i, field: "title", code: "NOTIFY_TITLE_REQUIRED" });
+  return out;
+}
+function waitIssues(s: LibWaitStep, i: number): FlowIssue[] {
+  const out: FlowIssue[] = [];
+  if (!s.name.trim()) out.push({ index: i, field: "name", code: "nameEmpty" });
+  if (!inRange(s.offset_days, WAIT_OFFSET.min, WAIT_OFFSET.max))
+    out.push({ index: i, field: "offset_days", code: "WAIT_OFFSET_RANGE" });
+  if (!TIME_RE.test(s.time)) out.push({ index: i, field: "time", code: "WAIT_TIME_INVALID" });
+  return out;
+}
+
+function stepIssues(
+  s: LibStep,
+  i: number,
+  n: number,
+  fields: readonly SlotFieldDto[],
+): FlowIssue[] {
+  if (s.kind === "review") return reviewIssues(s, i, fields);
+  if (s.kind === "esign") return esignIssues(s, i, n);
+  if (s.kind === "notify") return notifyIssues(s, i);
+  if (s.kind === "wait_until") return waitIssues(s, i);
+  return s.workflow_key ? [] : [{ index: i, field: "workflow_key", code: "difyEmpty" }];
+}
+
 /** Kiểm sơ bộ phía client (Hub vẫn là nguồn quyết định cuối ở lưu/xuất bản). */
 export function validateFlow(
   steps: readonly LibStep[],
@@ -220,11 +315,11 @@ export function validateFlow(
   steps.forEach((s, i) => {
     if (keys.has(s.key)) out.push({ index: i, field: "key", code: "KEY_DUP" });
     keys.add(s.key);
-    if (s.kind === "review") out.push(...reviewIssues(s, i, fields));
-    else if (s.kind === "esign") out.push(...esignIssues(s, i, steps.length));
-    else if (!s.workflow_key) out.push({ index: i, field: "workflow_key", code: "difyEmpty" });
+    out.push(...stepIssues(s, i, steps.length, fields));
     const prev = steps[i - 1];
-    if (prev?.kind === "dify" && s.kind === "review" && s.when)
+    // bước tự sang bước kế (Dify / Thông báo / Chờ tới) không rẽ ⇒ bước duyệt sau nó không có điều kiện (như hub)
+    const auto = prev?.kind === "dify" || prev?.kind === "notify" || prev?.kind === "wait_until";
+    if (auto && s.kind === "review" && s.when)
       out.push({ index: i, field: "when", code: "AFTER_DIFY_CONDITIONAL" });
   });
   return out;
@@ -237,7 +332,9 @@ export const issueOf = (issues: readonly FlowIssue[], index: number, field: stri
 export function groupKeysOf(steps: readonly LibStep[]): string[] {
   const out = new Set<string>();
   for (const s of steps) {
-    if (s.kind !== "dify" && s.escalate_group_key) out.add(s.escalate_group_key);
+    if (s.kind === "notify" && s.to.group_key) out.add(s.to.group_key);
+    if (s.kind === "notify" || s.kind === "wait_until" || s.kind === "dify") continue;
+    if (s.escalate_group_key) out.add(s.escalate_group_key);
     if (s.kind === "review" && s.department_group_key) out.add(s.department_group_key);
     if (s.kind === "esign" && s.company_signer.department_group_key)
       out.add(s.company_signer.department_group_key);

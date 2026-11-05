@@ -151,13 +151,14 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
     fromDef: (ex) => ({ wait: waitEventFromDef(ex) }),
     toDef: (s) => waitEventToDef(s.wait),
   },
-  // CR-121 D-6 · node `notify`: phần chạy ở hub; khối sửa trong editor là việc của lát UI sau (chưa có ⇒ lưu lại từ editor ra
-  // executor rỗng và hub từ chối NOTIFY_INVALID — không mất cấu hình âm thầm). Chưa có nhãn i18n ⇒ không hiện trong danh sách chọn.
+  // CR-121 D-6/D-6b · node `notify`: người dùng thêm/sửa ở khe `contracts.approval` qua Form + Canvas thư viện (`library/FlowNotifyFields`,
+  // sửa vào `slot_body`; Hub dựng stage engine khi lưu). Trình sửa quy trình thường chưa có khối sửa ⇒ không nhãn ⇒ không hiện trong
+  // danh sách chọn; lưu lại ra executor rỗng thì hub từ chối NOTIFY_INVALID (không mất cấu hình âm thầm).
   notify: {
     kind: "notify",
     family: NODE_FAMILY_OF.notify,
     labelKey: null,
-    defaults: () => ({}),
+    defaults: () => ({ executor: "notify" }),
     draftValue: "notify",
     draftExecutor: () => "notify",
     toDef: () => ({ kind: "notify", to: [], channels: [], title: "", body: "" }),

@@ -24,6 +24,22 @@ export const defaultReviewSlot = (name: string): Record<string, unknown> => ({
   when: null,
 });
 
+/** CR-121 D-6b · bước Thông báo / Chờ tới mới (giá trị mặc định như Form: `newNotify` / `newWait`). */
+export const defaultSlotOf = (
+  kind: "notify" | "wait_until",
+  name: string,
+): Record<string, unknown> =>
+  kind === "notify"
+    ? {
+        kind,
+        name,
+        to: { creator: true, owner: false, group_key: null },
+        channels: ["bell"],
+        title: "",
+        body: "",
+      }
+    : { kind, name, from: "end_date", offset_days: 0, time: "09:00" };
+
 const isTool = (s: StageDraft, key: string): boolean => isSystemStage(s) && s.tool.key === key;
 const isRouteTool = (s: StageDraft): boolean =>
   s.executor === "tool" && s.tool.key === "contracts-route";
@@ -41,13 +57,18 @@ export function normalizeSlotStages(stages: readonly StageDraft[]): StageDraft[]
   const route = stages.find((s) => isTool(s, "contracts-route"));
   const finalize = stages.find((s) => isTool(s, "contracts-finalize"));
   const user = stages.filter((s) => !isSystemStage(s));
-  const tmpl = user.find(isSlotStep);
+  // khung stage mẫu = bước duyệt (gọi route); Thông báo / Chờ tới / Dify không làm khung
+  const tmpl = user.find((s) => isSlotStep(s) && isRouteTool(s)) ?? user.find(isSlotStep);
   if (!route || !finalize || !tmpl) return [...stages];
   const taken = new Set<string>();
   const steps = user.map((s, i): StageDraft => {
     // Stage mới (kể cả đã gõ `slotRaw` ở form bước nhưng executor còn trống) ⇒ lấy khung stage từ bước mẫu; Dify giữ nguyên.
     const keep = isSlotStep(s) && (s.slotRaw?.kind === "dify" || isRouteTool(s));
-    const base = keep ? s : { ...tmpl, uid: s.uid, uiY: s.uiY };
+    // CR-121 D-6b · Thông báo / Chờ tới tự sang bước kế (không cổng duyệt) như Dify.
+    const auto = s.slotRaw?.kind === "notify" || s.slotRaw?.kind === "wait_until";
+    const base = keep
+      ? s
+      : { ...tmpl, uid: s.uid, uiY: s.uiY, ...(auto ? { after: "auto" as const } : {}) };
     const slot = {
       ...(isSlotStep(s) ? s.slotRaw : defaultReviewSlot(s.name)),
       name: s.name,

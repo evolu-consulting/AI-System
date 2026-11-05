@@ -1,6 +1,6 @@
 ﻿import { describe, expect, test } from "bun:test";
 import type { StageDraft } from "./draft-types";
-import { defaultReviewSlot, engineStepOf, normalizeSlotStages } from "./slot-canvas";
+import { defaultReviewSlot, defaultSlotOf, engineStepOf, normalizeSlotStages } from "./slot-canvas";
 import { emptyStage } from "./stage-convert";
 
 const tool = (key: string, step: number, p: Partial<StageDraft> = {}): StageDraft => ({
@@ -116,5 +116,22 @@ describe("normalizeSlotStages · stage mới đã có slotRaw (gõ ở form bư�
     expect(n).toMatchObject({ key: "s2", executor: "tool", after: "review" });
     expect(n?.tool.key).toBe("contracts-route");
     expect(n?.slotRaw).toMatchObject({ name: "Pháp chế", department_group_key: "pb-pc" });
+  });
+});
+
+describe("normalizeSlotStages · bước Thông báo / Chờ tới (D-6b)", () => {
+  test("giữ nguyên slot, tự sang bước kế không cổng duyệt, route và finalize đúng chỗ", () => {
+    const stages = [
+      ...base(),
+      { ...emptyStage(9), name: "TB", slotRaw: defaultSlotOf("notify", "TB") },
+      { ...emptyStage(10), name: "Chờ", slotRaw: defaultSlotOf("wait_until", "Chờ") },
+    ];
+    const out = normalizeSlotStages(stages);
+    expect(out.map((s) => s.key)).toEqual(["s0", "route", "s1", "s2", "s3", "finalize"]);
+    expect(out[3]?.slotRaw).toMatchObject({ kind: "notify", name: "TB", channels: ["bell"] });
+    expect(out[3]?.after).toBe("auto");
+    expect(out[4]?.slotRaw).toMatchObject({ kind: "wait_until", from: "end_date", time: "09:00" });
+    expect(out[4]?.after).toBe("auto");
+    expect(out[2]?.after).toBe("review"); // bước duyệt giữ cổng
   });
 });

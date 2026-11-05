@@ -3,7 +3,7 @@
 // sơ đồ (trộn ⇒ lỗi KIND_MIX, không lưu được). dlc-step-library: "Thêm bước DLC" là menu con chọn BƯỚC MẪU của thư viện
 // (tên + việc) hoặc "Bước trống".
 import { PROCESS_STAGES_MAX } from "@ai/contracts/hub-admin";
-import { ChevronDown, LayoutTemplate, Plus } from "lucide-react";
+import { Bell, ChevronDown, Clock, LayoutTemplate, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,8 @@ type Props = {
   onAdd: () => void;
   /** `id` = bước mẫu; vắng ⇒ bước DLC trống. */
   onAddDlc: (id?: string) => void;
+  /** CR-121 D-6b · thêm bước Thông báo / Chờ tới. */
+  onAddSlot: (kind: "notify" | "wait_until") => void;
   onArrange: () => void;
 };
 
@@ -58,7 +60,14 @@ function DlcSubMenu({ templates = [], onAddDlc }: Pick<Props, "templates" | "onA
   );
 }
 
-export function SlotCanvasToolbar({ count, templates, onAdd, onAddDlc, onArrange }: Props) {
+export function SlotCanvasToolbar({
+  count,
+  templates,
+  onAdd,
+  onAddDlc,
+  onAddSlot,
+  onArrange,
+}: Props) {
   const { t } = useTranslation();
   const full = count >= PROCESS_STAGES_MAX;
   return (
@@ -91,6 +100,14 @@ export function SlotCanvasToolbar({ count, templates, onAdd, onAddDlc, onArrange
           <DropdownMenuContent align="start">
             <DropdownMenuItem onSelect={onAdd}>
               {t("process.admin.library.canvas.addStep")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAddSlot("notify")}>
+              <Bell aria-hidden className="size-4" />
+              {t("process.admin.library.canvas.addNotify")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAddSlot("wait_until")}>
+              <Clock aria-hidden className="size-4" />
+              {t("process.admin.library.canvas.addWait")}
             </DropdownMenuItem>
             <DlcSubMenu templates={templates} onAddDlc={onAddDlc} />
           </DropdownMenuContent>

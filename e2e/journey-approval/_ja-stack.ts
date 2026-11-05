@@ -150,6 +150,13 @@ async function main(): Promise<void> {
           key: `e2e-d5${k}-${sfx}`,
           name: `E2E D5${k.toUpperCase()} ${sfx}`,
         });
+    // CR-121 D-6b: một công ty MỚI cho hành trình Thông báo sau bước duyệt (cùng hậu tố, khoá riêng).
+    if (sfx)
+      await provisionExtraJourneyTenant(admin, hubDb, {
+        pw: env("JA_USER_PW"),
+        key: `e2e-d6-${sfx}`,
+        name: `E2E D6 ${sfx}`,
+      });
   } finally {
     await admin.close();
     await hubDb.close();

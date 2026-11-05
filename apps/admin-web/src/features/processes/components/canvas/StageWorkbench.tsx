@@ -79,6 +79,14 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
               templates={dlcSteps}
               onAdd={addReview}
               onAddDlc={addDlc}
+              onAddSlot={(kind) =>
+                ops.addSlotStep(
+                  kind,
+                  t(
+                    `process.admin.library.form.${kind === "notify" ? "notify" : "wait"}.defaultName`,
+                  ),
+                )
+              }
               onArrange={ops.arrange}
             />
           ) : (

@@ -3198,6 +3198,11 @@
       "headOnly": "chỉ trưởng phòng",
       "noGroup": "Chưa chọn phòng ban",
       "workflow": "Quy trình tự động {key}",
+      "notifyTo": {
+        "creator": "Người gửi duyệt",
+        "owner": "Người phụ trách"
+      },
+      "waitWho": "Tự chạy tiếp khi tới giờ hẹn",
       "signer": {
         "owner": "Người phụ trách hợp đồng",
         "dept_head": "Trưởng phòng",

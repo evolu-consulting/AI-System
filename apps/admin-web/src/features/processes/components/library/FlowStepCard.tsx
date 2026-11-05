@@ -15,6 +15,7 @@ import {
 } from "../../lib/flow-form";
 import { TextField } from "../editor/Fields";
 import { FlowEsignFields } from "./FlowEsignFields";
+import { NotifyFields, WaitFields } from "./FlowNotifyFields";
 import { FlowWhenEditor } from "./FlowWhenEditor";
 import type { GroupOption, StepFieldProps } from "./flow-step-props";
 import { GroupKeyField } from "./GroupKeyField";
@@ -129,6 +130,48 @@ export function ReviewFields({
   );
 }
 
+const STEP_TITLE: Record<LibStep["kind"], string> = {
+  review: "reviewStep",
+  esign: "esignStep",
+  dify: "difyStep",
+  notify: "notifyStep",
+  wait_until: "waitStep",
+};
+
+function StepBody(
+  p: Props & {
+    common: { id: string; groups: readonly GroupOption[]; err: (f: string) => string | undefined };
+    first: boolean;
+  },
+) {
+  const { t } = useTranslation();
+  const { step, common } = p;
+  if (step.kind === "review")
+    return (
+      <ReviewFields
+        {...common}
+        step={step}
+        first={p.first}
+        fields={p.fields}
+        onWhen={p.onWhen}
+        onPatch={p.onPatch}
+      />
+    );
+  if (step.kind === "esign") return <FlowEsignFields {...common} step={step} onPatch={p.onPatch} />;
+  if (step.kind === "notify") return <NotifyFields {...common} step={step} onPatch={p.onPatch} />;
+  if (step.kind === "wait_until") return <WaitFields {...common} step={step} onPatch={p.onPatch} />;
+  const f = (k: string, o?: Record<string, string | number>) =>
+    t(`process.admin.library.form.${k}`, o);
+  return (
+    <div className="space-y-1 text-body">
+      <p className="text-muted-foreground">
+        {f("difyInfo", { name: step.name || step.workflow_key })}
+      </p>
+      <p className="text-caption text-muted-foreground">{f("difyCanvas")}</p>
+    </div>
+  );
+}
+
 export function FlowStepCard(p: Props) {
   const { t } = useTranslation();
   const f = (k: string, o?: Record<string, string | number>) =>
@@ -159,7 +202,7 @@ export function FlowStepCard(p: Props) {
     <li id={id} className="space-y-3 rounded-md border border-border bg-card p-4" data-testid={id}>
       <div className="flex items-center gap-2">
         <b className="text-label">
-          {index + 1}. {first ? f("firstName") : f(`${step.kind}Step`)}
+          {index + 1}. {first ? f("firstName") : f(STEP_TITLE[step.kind])}
         </b>
         <span className="ml-auto flex gap-1">
           {movable
@@ -183,25 +226,7 @@ export function FlowStepCard(p: Props) {
             : null}
         </span>
       </div>
-      {step.kind === "review" ? (
-        <ReviewFields
-          {...common}
-          step={step}
-          first={first}
-          fields={p.fields}
-          onWhen={p.onWhen}
-          onPatch={p.onPatch}
-        />
-      ) : step.kind === "esign" ? (
-        <FlowEsignFields {...common} step={step} onPatch={p.onPatch} />
-      ) : (
-        <div className="space-y-1 text-body">
-          <p className="text-muted-foreground">
-            {f("difyInfo", { name: step.name || step.workflow_key })}
-          </p>
-          <p className="text-caption text-muted-foreground">{f("difyCanvas")}</p>
-        </div>
-      )}
+      <StepBody {...p} common={common} first={first} />
     </li>
   );
 }

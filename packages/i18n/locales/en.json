@@ -3198,6 +3198,11 @@
       "headOnly": "department head only",
       "noGroup": "No department chosen",
       "workflow": "Automatic workflow {key}",
+      "notifyTo": {
+        "creator": "Person who submitted",
+        "owner": "Contract owner"
+      },
+      "waitWho": "Continues on its own at the due time",
       "signer": {
         "owner": "Contract owner",
         "dept_head": "Department head",

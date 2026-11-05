@@ -1,6 +1,16 @@
 // CR-121 · R-3: sơ đồ ngang các bước của lượt chạy (hạt sáng tới bước đang chạy, viền nhấp nháy). Bấm bước ⇒ mở nhật ký bước.
 import type { RunDetailStep } from "@ai/contracts/chat";
-import { Check, CircleDashed, CircleHelp, Loader2, Minus, TriangleAlert, X } from "lucide-react";
+import {
+  Bell,
+  Check,
+  CircleDashed,
+  CircleHelp,
+  Clock,
+  Loader2,
+  Minus,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -23,6 +33,12 @@ const ICON: Record<RunDetailStep["state"], ReactNode> = {
   skipped: <Minus aria-hidden />,
   not_reached: <CircleDashed aria-hidden />,
   cancelled: <CircleHelp aria-hidden />,
+};
+
+/** CR-121 D-6b · biểu tượng loại bước Thông báo (chuông) / Chờ tới (đồng hồ); nhãn hiện khi rê chuột (icon-only). */
+const KIND_ICON: Record<string, ReactNode> = {
+  notify: <Bell aria-hidden />,
+  wait_until: <Clock aria-hidden />,
 };
 
 type Props = {
@@ -81,6 +97,14 @@ export function RunFlow({ steps, selected, onSelect }: Props) {
               <span className="flex items-center gap-1.5 text-label font-medium">
                 {ICON[s.state]}
                 {s.idx + 1}
+                {KIND_ICON[s.executor.kind] ? (
+                  <span
+                    className="ml-auto"
+                    title={t(`process.admin.runDetail.kind.${s.executor.kind}`)}
+                  >
+                    {KIND_ICON[s.executor.kind]}
+                  </span>
+                ) : null}
               </span>
               <span className="line-clamp-2 text-body font-medium break-words text-foreground">
                 {s.name}

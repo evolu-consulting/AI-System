@@ -892,6 +892,35 @@
       "reviewStep": "Bước duyệt",
       "esignStep": "Ký số",
       "difyStep": "Bước Dify",
+      "notifyStep": "Thông báo",
+      "waitStep": "Chờ tới",
+      "notify": {
+        "defaultName": "Thông báo",
+        "to": "Người nhận",
+        "toCreator": "Người gửi duyệt",
+        "toOwner": "Người phụ trách hợp đồng",
+        "toGroup": "Phòng ban nhận (mã)",
+        "channels": "Kênh gửi",
+        "bell": "Chuông (luôn có)",
+        "email": "Thêm email",
+        "title": "Tiêu đề",
+        "body": "Nội dung",
+        "vars": "Chèn thông tin hợp đồng",
+        "var": {
+          "ma_hd": "Mã hợp đồng",
+          "ten_hd": "Tên hợp đồng",
+          "gia_tri": "Giá trị"
+        }
+      },
+      "wait": {
+        "defaultName": "Chờ tới",
+        "from": "Chờ tới ngày",
+        "endDate": "Ngày hết hạn hợp đồng",
+        "actionDeadline": "Hạn xử lý hợp đồng",
+        "offset": "Lệch (ngày, {{min}} đến {{max}})",
+        "offsetHint": "Âm = trước ngày đó, dương = sau ngày đó.",
+        "time": "Giờ (giờ công ty)"
+      },
       "name": "Tên bước",
       "dept": "Mã phòng ban",
       "dueH": "Hạn quyết (giờ)",
@@ -966,7 +995,12 @@
         "ESIGN_NOT_LAST": "Ký số phải là bước cuối.",
         "SIGNER_GROUP_REQUIRED": "Nhập mã phòng ban của trưởng phòng ký.",
         "difyEmpty": "Bước Dify chưa chọn workflow.",
-        "AFTER_DIFY_CONDITIONAL": "Bước sau Dify không có điều kiện.",
+        "AFTER_DIFY_CONDITIONAL": "Bước sau Dify, Thông báo hoặc Chờ tới không có điều kiện.",
+        "NOTIFY_TO_REQUIRED": "Chọn ít nhất một người nhận: người gửi duyệt, người phụ trách hoặc một phòng ban.",
+        "NOTIFY_CHANNEL_REQUIRED": "Chọn ít nhất một kênh gửi.",
+        "NOTIFY_TITLE_REQUIRED": "Nhập tiêu đề thông báo.",
+        "WAIT_OFFSET_RANGE": "Số ngày lệch phải là số nguyên từ -365 đến 365.",
+        "WAIT_TIME_INVALID": "Nhập giờ dạng 09:00.",
         "condValueEmpty": "Điều kiện chưa chọn giá trị (vd phòng ban).",
         "condFieldUnknown": "Điều kiện dùng trường mà ứng dụng này không hỗ trợ."
       },
@@ -1017,6 +1051,8 @@
       "always": "Luôn chạy",
       "addMenu": "Chọn loại bước để thêm",
       "addDlcStep": "Thêm bước DLC",
+      "addNotify": "Thêm bước Thông báo",
+      "addWait": "Thêm bước Chờ tới",
       "dlcLibrary": "Bước DLC trong thư viện",
       "dlcLibraryEmpty": "Chưa có bước mẫu — thêm ở trang Bước DLC.",
       "dlcBlank": "Bước trống"
@@ -1146,6 +1182,14 @@
     "subtitle": "Từng bước của lượt chạy, ai làm gì và vì sao dừng.",
     "flow": "Các bước của lượt chạy",
     "stepAria": "Bước {{n}}: {{name}} — {{state}}",
+    "kind": {
+      "notify": "Thông báo",
+      "wait_until": "Chờ tới"
+    },
+    "kindHint": {
+      "notify": "Bước Thông báo gửi vào chuông của người nhận (kèm email nếu có chọn). Nếu không có người nhận, bước vẫn xong và ghi cảnh báo trong kết quả bước.",
+      "wait_until": "Bước Chờ tới giữ lượt chạy tới giờ hẹn rồi tự chạy tiếp. Thiếu ngày hẹn ở hợp đồng thì bước dừng chờ người quyết."
+    },
     "timeline": "Dòng thời gian",
     "timelineEmpty": "Chưa có sự kiện nào.",
     "openRelatedRun": "Mở lượt chạy liên quan",

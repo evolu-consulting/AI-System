@@ -7,7 +7,10 @@ import { describeWhen } from "@/features/processes/lib/library-list";
 export type StepWho =
   | { type: "group"; key: string | null; headOnly: boolean }
   | { type: "owner" | "dept_head" | "user" }
-  | { type: "workflow"; key: string };
+  | { type: "workflow"; key: string }
+  /** CR-121 D-6b · Thông báo (người nhận: người gửi / phụ trách / mã phòng) · Chờ tới (tự chạy tiếp tới giờ hẹn). */
+  | { type: "notify"; creator: boolean; owner: boolean; group: string | null }
+  | { type: "wait" };
 
 export type StepRow = {
   key: string;
@@ -25,6 +28,9 @@ function whoOf(s: LibStep): StepWho {
   if (s.kind === "review")
     return { type: "group", key: s.department_group_key, headOnly: s.head_only };
   if (s.kind === "esign") return { type: s.company_signer.mode };
+  if (s.kind === "notify")
+    return { type: "notify", creator: s.to.creator, owner: s.to.owner, group: s.to.group_key };
+  if (s.kind === "wait_until") return { type: "wait" };
   return { type: "workflow", key: s.workflow_key };
 }
 
@@ -35,7 +41,10 @@ export function stepRows(steps: readonly LibStep[]): StepRow[] {
     name: s.name,
     kind: s.kind,
     who: whoOf(s),
-    timing: s.kind === "dify" ? null : { dueH: s.due_h, remindH: s.remind_every_h },
+    timing:
+      s.kind === "dify" || s.kind === "notify" || s.kind === "wait_until"
+        ? null
+        : { dueH: s.due_h, remindH: s.remind_every_h },
     condition: s.kind === "review" ? describeWhen(s.when) : null,
   }));
 }

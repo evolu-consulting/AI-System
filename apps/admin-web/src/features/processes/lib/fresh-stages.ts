@@ -4,7 +4,7 @@ import type { DlcStepTemplate } from "@ai/contracts/hub-admin";
 import { dlcOf, freeDlcKey, isDlcStep, newDlcSlot } from "./dlc-slot";
 import { dlcSlotFromTemplate } from "./dlc-template";
 import type { StageDraft } from "./draft-types";
-import { defaultReviewSlot } from "./slot-canvas";
+import { defaultReviewSlot, defaultSlotOf } from "./slot-canvas";
 import { emptyStage, nextUid } from "./stage-convert";
 
 /** dlc-engine · bước duyệt mới của khe: stage trống mang `slot` bước duyệt mặc định ngay (không nối với bước DLC; khe hợp đồng
@@ -12,6 +12,13 @@ import { emptyStage, nextUid } from "./stage-convert";
 export const freshReviewStage = (): StageDraft => ({
   ...emptyStage(),
   slotRaw: defaultReviewSlot(""),
+});
+
+/** CR-121 D-6b · bước Thông báo / Chờ tới mới của khe: stage trống mang `slot` mặc định (khung route dựng lại khi lưu). */
+export const freshSlotStage = (kind: "notify" | "wait_until", name: string): StageDraft => ({
+  ...emptyStage(),
+  name,
+  slotRaw: defaultSlotOf(kind, name),
 });
 
 /**

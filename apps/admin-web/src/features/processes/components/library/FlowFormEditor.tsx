@@ -116,7 +116,11 @@ export function FlowFormEditor({
             dispatch(
               kind === "review"
                 ? { type: "addReview" }
-                : { type: "addEsign", name: f("esign.defaultName") },
+                : kind === "notify"
+                  ? { type: "addNotify", name: f("notify.defaultName") }
+                  : kind === "wait_until"
+                    ? { type: "addWait", name: f("wait.defaultName") }
+                    : { type: "addEsign", name: f("esign.defaultName") },
             )
           }
         />

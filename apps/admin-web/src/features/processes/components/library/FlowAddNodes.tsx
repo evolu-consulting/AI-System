@@ -1,7 +1,7 @@
 // CR-121 D-3: nút thêm bước CHỈ icon, theo `nodes` của khe (hover/tooltip hiện nhãn). Node form chưa dựng được (vd Dify cần chọn
 // workflow) hiện mờ kèm lý do; node ngoài danh mục của khe không có nút.
 import type { SlotNodeDto } from "@ai/contracts/hub-admin";
-import { CheckCircle2, type LucideIcon, PenLine, Plus, Sparkles } from "lucide-react";
+import { Bell, CheckCircle2, Clock, type LucideIcon, PenLine, Plus, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
@@ -9,9 +9,12 @@ const ICONS: Record<string, LucideIcon> = {
   "check-circle": CheckCircle2,
   sparkles: Sparkles,
   signature: PenLine,
+  bell: Bell,
+  clock: Clock,
 };
 /** Node Form thêm được ngay (Dify cần workflow ⇒ thêm ở Sơ đồ canvas). */
-const FORM_KINDS = new Set(["review", "esign"]);
+const FORM_KINDS = new Set(["review", "esign", "notify", "wait_until"]);
+export type AddKind = "review" | "esign" | "notify" | "wait_until";
 export const DEFAULT_NODES: readonly SlotNodeDto[] = [
   { kind: "review", label: "Duyệt", icon: "check-circle" },
   { kind: "esign", label: "Ký số", icon: "signature" },
@@ -21,7 +24,7 @@ type Props = {
   nodes: readonly SlotNodeDto[] | undefined;
   full: boolean;
   hasEsign: boolean;
-  onAdd: (kind: "review" | "esign") => void;
+  onAdd: (kind: AddKind) => void;
 };
 
 export function FlowAddNodes({ nodes, full, hasEsign, onAdd }: Props) {
@@ -47,7 +50,7 @@ export function FlowAddNodes({ nodes, full, hasEsign, onAdd }: Props) {
             aria-label={label}
             title={label}
             data-testid={`flow-add-${n.kind}`}
-            onClick={() => supported && onAdd(n.kind as "review" | "esign")}
+            onClick={() => supported && onAdd(n.kind as AddKind)}
           >
             <Icon aria-hidden className="size-4" />
           </Button>

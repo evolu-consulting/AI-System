@@ -31,6 +31,11 @@ export function FlowList({ flow }: { flow: CurrentFlow }) {
           {s.kind === "esign" && (
             <span className="text-caption text-dim">{t("contracts.flow.current.esign")}</span>
           )}
+          {(s.kind === "notify" || s.kind === "wait_until") && (
+            <span className="text-caption text-dim" data-testid={`flow-kind-${s.kind}`}>
+              {t(`contracts.flow.current.kind.${s.kind}`)}
+            </span>
+          )}
           {s.when && s.when.conds.length > 0 && (
             <span className="ml-auto text-caption text-dim">
               {t("contracts.flow.current.conditional")}

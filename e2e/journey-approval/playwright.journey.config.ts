@@ -44,7 +44,12 @@ process.env.JA_D5_SUFFIX ||= randomBytes(3).toString("hex");
 
 export default defineConfig({
   testDir: ".",
-  testMatch: ["**/*.ja.ts", "**/cr121-editor*.spec.ts", "**/cr121-d-journey*.spec.ts"],
+  testMatch: [
+    "**/*.ja.ts",
+    "**/cr121-editor*.spec.ts",
+    "**/cr121-d-journey*.spec.ts",
+    "**/cr121-d6b*.spec.ts",
+  ],
   workers: 1,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
