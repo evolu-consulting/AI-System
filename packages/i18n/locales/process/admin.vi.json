@@ -1114,5 +1114,97 @@
         }
       }
     }
+  },
+  "runDetail": {
+    "subtitle": "Từng bước của lượt chạy, ai làm gì và vì sao dừng.",
+    "flow": "Các bước của lượt chạy",
+    "stepAria": "Bước {{n}}: {{name}} — {{state}}",
+    "timeline": "Dòng thời gian",
+    "timelineEmpty": "Chưa có sự kiện nào.",
+    "openRelatedRun": "Mở lượt chạy liên quan",
+    "copyId": "Sao chép mã lượt chạy",
+    "copied": "Đã sao chép mã lượt chạy",
+    "isTest": "Lượt chạy thử",
+    "state": {
+      "done": "Xong",
+      "running": "Đang chạy",
+      "error": "Lỗi",
+      "needs_decision": "Cần quyết định",
+      "skipped": "Bỏ qua",
+      "not_reached": "Chưa tới",
+      "cancelled": "Đã huỷ"
+    },
+    "fact": {
+      "process": "Quy trình",
+      "tenant": "Công ty",
+      "startedBy": "Kích hoạt bởi",
+      "started": "Bắt đầu",
+      "finished": "Kết thúc",
+      "duration": "Thời lượng",
+      "attempt": "Lần chạy"
+    },
+    "drawer": {
+      "kind": "Nhật ký bước {{n}}",
+      "basic": "Cơ bản",
+      "debug": "Gỡ lỗi",
+      "loadFail": "Không tải được nhật ký bước này. Thử mở lại sau ít phút.",
+      "viewOutput": "Xem kết quả",
+      "empty": "Bước này chưa có gì để hiển thị."
+    },
+    "taskKind": {
+      "review": "Kiểm duyệt",
+      "ask": "Hỏi người phụ trách",
+      "decision": "Cần quyết định"
+    },
+    "debug": {
+      "lastError": "Mã lỗi cuối",
+      "khQueries": "Số lần hỏi tri thức",
+      "khWarning": "Cảnh báo tri thức",
+      "attempt": "Lần chạy {{n}}",
+      "tokens": "{{n}} token",
+      "job": "Việc nền",
+      "retry": "Hẹn thử lại lúc {{due}}",
+      "cancelled": "đã huỷ",
+      "fired": "đã chạy"
+    },
+    "ctl": {
+      "cancel": "Không làm",
+      "reasonLabel": "Lý do",
+      "reasonHint": "Chọn một lý do để tiếp tục — lý do được ghi vào dòng thời gian.",
+      "reason": {
+        "sent_by_mistake": "Gửi nhầm",
+        "needs_edit": "Cần sửa nội dung",
+        "bad_data": "Dữ liệu sai",
+        "other": "Khác"
+      },
+      "stop": {
+        "button": "Dừng lượt chạy",
+        "title": "Dừng lượt chạy này?",
+        "effect": "Lượt chạy dừng ngay, các bước chưa xong sẽ không chạy tiếp và việc đang chờ người xử lý bị đóng. Không hoàn tác được; muốn làm lại thì chạy lại cả lượt.",
+        "confirm": "Dừng lượt chạy",
+        "done": "Đã dừng lượt chạy"
+      },
+      "rerun": {
+        "button": "Chạy lại cả lượt",
+        "title": "Chạy lại cả lượt?",
+        "effect": "Tạo một lượt chạy mới từ bước đầu với cùng quy trình và đầu vào. Lượt này giữ nguyên để đối chiếu.",
+        "confirm": "Chạy lại cả lượt",
+        "done": "Đã tạo lượt chạy mới"
+      },
+      "rerun-step": {
+        "button": "Chạy lại bước này",
+        "title": "Chạy lại bước “{{name}}”?",
+        "effect": "Bước này chạy lại trong cùng lượt; kết quả cũ của bước được giữ làm lịch sử.",
+        "confirm": "Chạy lại bước",
+        "done": "Đã chạy lại bước"
+      }
+    },
+    "err": {
+      "packBound": "Lượt này thuộc quy trình duyệt của một gói (vd. duyệt hợp đồng) nên không chạy lại cả lượt ở đây được. Hãy mở lại quy trình từ màn hình của gói.",
+      "state": "Trạng thái lượt chạy đã đổi nên thao tác không còn hợp lệ. Tải lại trang rồi thử lại.",
+      "forbidden": "Bạn không có quyền thao tác này. Nhờ quản trị nền tảng hoặc quản trị công ty thực hiện.",
+      "notFound": "Không tìm thấy lượt chạy (có thể đã bị xoá). Quay lại danh sách quy trình.",
+      "generic": "Không thực hiện được. Kiểm tra kết nối rồi thử lại."
+    }
   }
 }

@@ -228,3 +228,71 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* CR-121 · R-3 · sơ đồ lượt chạy: hạt sáng chạy tới bước đang chạy + viền nhấp nháy (mockup Tpl-Run). Tôn trọng prefers-reduced-motion. */
+.run-part {
+  position: absolute;
+  top: -3px;
+  left: -8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--primary);
+  box-shadow: 0 0 10px 2px var(--primary);
+  opacity: 0;
+  animation: run-travel 1.4s linear infinite;
+}
+@keyframes run-travel {
+  0% {
+    left: -8px;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+.run-nb {
+  position: absolute;
+  inset: -4px;
+  border-radius: 18px;
+  pointer-events: none;
+  border: 1.5px solid transparent;
+}
+.run-nb-acc {
+  border-color: var(--primary);
+  animation: run-nbl 1.6s ease-in-out infinite;
+}
+.run-nb-warn {
+  border-color: var(--warning-solid);
+  animation: run-nbl 1.6s ease-in-out infinite;
+}
+@keyframes run-nbl {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .run-part,
+  .run-nb {
+    animation: none;
+  }
+  .run-part {
+    opacity: 1;
+    left: calc(50% - 4px);
+  }
+  .run-nb-acc,
+  .run-nb-warn {
+    opacity: 1;
+  }
+}

@@ -20,13 +20,31 @@ async function patchView(p: Page, runId: string, knowledge: Json | null): Promis
     return route.fulfill({ response: res, json: body });
   });
 }
-async function openOutput(p: Page, runId: string): Promise<ReturnType<Page["getByRole"]>> {
-  await adminLogin(p);
-  await p.goto(`/processes/${DEF_PAR.id}/runs/${runId}`);
-  await p.getByRole("button", { name: "Xem kết quả" }).first().click();
+// CR-121 R-3: trang lượt chạy mới — kết quả nằm trong ngăn "Nhật ký bước": mở lần lượt từng bước tới khi có nút "Xem kết quả".
+async function clickOutput(p: Page): Promise<ReturnType<Page["getByRole"]>> {
+  const steps = p.getByTestId("run-step");
+  await expect(steps.first()).toBeVisible();
+  const view = p.getByRole("button", { name: "Xem kết quả" }).first();
+  for (let i = 0, n = await steps.count(); i < n; i++) {
+    await steps.nth(i).click();
+    if (
+      await view.waitFor({ timeout: 3000 }).then(
+        () => true,
+        () => false,
+      )
+    )
+      break;
+    await p.keyboard.press("Escape");
+  }
+  await view.click();
   const dlg = p.getByRole("dialog", { name: /Kết quả giai đoạn/ });
   await expect(dlg).toBeVisible();
   return dlg;
+}
+async function openOutput(p: Page, runId: string): Promise<ReturnType<Page["getByRole"]>> {
+  await adminLogin(p);
+  await p.goto(`/processes/${DEF_PAR.id}/runs/${runId}`);
+  return clickOutput(p);
 }
 
 test("HUB-FR-134 · K1-AC06 · E20 · OutputDialog: warning timeout ⇒ status 'Không truy cập được KnowledgeHub…' + 'Hết thời gian chờ'; 'Tri thức: 3/5 lần hỏi'; 'Tóm tắt: lỗi'", async ({
@@ -67,8 +85,7 @@ test("HUB-FR-133 · E21 · OutputDialog: knowledge vắng ⇒ không có dòng t
     summary: "none",
   });
   await page.reload();
-  await page.getByRole("button", { name: "Xem kết quả" }).first().click();
-  const dlg = page.getByRole("dialog", { name: /Kết quả giai đoạn/ });
+  const dlg = await clickOutput(page);
   await expect(dlg.getByText("Tri thức: 1/5 lần hỏi")).toBeVisible();
   await expect(dlg.getByText("Tóm tắt: không ghi")).toBeVisible();
   await expect(

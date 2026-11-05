@@ -1114,5 +1114,97 @@
         }
       }
     }
+  },
+  "runDetail": {
+    "subtitle": "Each step of the run: who did what and why it stopped.",
+    "flow": "Steps of the run",
+    "stepAria": "Step {{n}}: {{name}} — {{state}}",
+    "timeline": "Timeline",
+    "timelineEmpty": "No events yet.",
+    "openRelatedRun": "Open related run",
+    "copyId": "Copy run ID",
+    "copied": "Run ID copied",
+    "isTest": "Test run",
+    "state": {
+      "done": "Done",
+      "running": "Running",
+      "error": "Error",
+      "needs_decision": "Needs a decision",
+      "skipped": "Skipped",
+      "not_reached": "Not reached",
+      "cancelled": "Cancelled"
+    },
+    "fact": {
+      "process": "Process",
+      "tenant": "Company",
+      "startedBy": "Started by",
+      "started": "Started",
+      "finished": "Finished",
+      "duration": "Duration",
+      "attempt": "Attempt"
+    },
+    "drawer": {
+      "kind": "Step {{n}} log",
+      "basic": "Basic",
+      "debug": "Debug",
+      "loadFail": "Could not load this step's log. Try again in a few minutes.",
+      "viewOutput": "View result",
+      "empty": "Nothing to show for this step yet."
+    },
+    "taskKind": {
+      "review": "Review",
+      "ask": "Question to the owner",
+      "decision": "Decision needed"
+    },
+    "debug": {
+      "lastError": "Last error code",
+      "khQueries": "Knowledge queries",
+      "khWarning": "Knowledge warning",
+      "attempt": "Attempt {{n}}",
+      "tokens": "{{n}} tokens",
+      "job": "Background job",
+      "retry": "Retry scheduled for {{due}}",
+      "cancelled": "cancelled",
+      "fired": "fired"
+    },
+    "ctl": {
+      "cancel": "Not now",
+      "reasonLabel": "Reason",
+      "reasonHint": "Pick a reason to continue — it is recorded on the timeline.",
+      "reason": {
+        "sent_by_mistake": "Sent by mistake",
+        "needs_edit": "Content needs editing",
+        "bad_data": "Wrong data",
+        "other": "Other"
+      },
+      "stop": {
+        "button": "Stop run",
+        "title": "Stop this run?",
+        "effect": "The run stops now: unfinished steps will not run and tasks waiting for people are closed. This cannot be undone; to try again, rerun the whole run.",
+        "confirm": "Stop run",
+        "done": "Run stopped"
+      },
+      "rerun": {
+        "button": "Rerun whole run",
+        "title": "Rerun the whole run?",
+        "effect": "Creates a new run from the first step with the same process and inputs. This run is kept for comparison.",
+        "confirm": "Rerun whole run",
+        "done": "New run created"
+      },
+      "rerun-step": {
+        "button": "Rerun this step",
+        "title": "Rerun step “{{name}}”?",
+        "effect": "This step runs again within the same run; its earlier results are kept as history.",
+        "confirm": "Rerun step",
+        "done": "Step rerun started"
+      }
+    },
+    "err": {
+      "packBound": "This run belongs to a package's approval process (e.g. contract approval), so the whole run cannot be rerun here. Reopen the process from the package's own screen.",
+      "state": "The run's state has changed, so this action no longer applies. Reload the page and try again.",
+      "forbidden": "You are not allowed to do this. Ask a platform admin or your company admin.",
+      "notFound": "Run not found (it may have been deleted). Go back to the process list.",
+      "generic": "Could not complete this. Check your connection and try again."
+    }
   }
 }
