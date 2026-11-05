@@ -42,6 +42,14 @@ const review = (key: string, when: unknown = null): FlowStep =>
     when,
   }) as FlowStep;
 const when = (c: unknown) => ({ op: "and", conds: [c] });
+/** Lưới an toàn (Luật 4c): một bước treo ⇒ fail NGAY kèm tên bước, không để `bun test` hết giờ (bun 1.3 treo 100 % CPU sau timeout). */
+function step<T>(label: string, p: Promise<T>, ms = 8_000): Promise<T> {
+  let t: ReturnType<typeof setTimeout> | undefined;
+  const guard = new Promise<never>((_, rej) => {
+    t = setTimeout(() => rej(new Error(`bước "${label}" không xong sau ${ms} ms`)), ms);
+  });
+  return Promise.race([p, guard]).finally(() => clearTimeout(t));
+}
 
 const uow = () =>
   createPackUow(db, "contracts", (tx, tid) => ({
@@ -169,41 +177,52 @@ describe("CR-121 D-1 · trần 20 bước (migration 0097)", () => {
         tools.filter((t) => !keys || keys.includes(t.key)),
     } as unknown as PackToolCatalog;
     const port = packRunsPortForTest(db, catalog);
-    await port.ensureDef(
-      callerOf({ tenantId: T, userId: A }),
-      APPROVAL_PROCESS_KEY,
-      def as never,
-      1,
+    await step(
+      "ensureDef",
+      port.ensureDef(callerOf({ tenantId: T, userId: A }), APPROVAL_PROCESS_KEY, def as never, 1),
     );
-    const [d] = await o<
-      { id: string; n: number }[]
-    >`select id::text as id, jsonb_array_length(stages) as n
-      from hub.process_defs where tenant_id = ${T} and key = ${APPROVAL_PROCESS_KEY} and deleted_at is null`;
+    const [d] = await step(
+      "def",
+      o<{ id: string; n: number }[]>`select id::text as id, jsonb_array_length(stages) as n
+        from hub.process_defs where tenant_id = ${T} and key = ${APPROVAL_PROCESS_KEY} and deleted_at is null`,
+    );
     expect(d?.n).toBe(22);
     // Rẽ trên mẫu chụp 20 bước: bước 18 ⇒ stage bước 19 (engine 20); bước 19 ⇒ finalize (engine 21).
-    await seed(4, steps, 5, null);
-    expect(await route(4, A, 18)).toEqual({ next: 20 });
-    expect(await route(4, A, 19)).toEqual({ next: 21 });
-    // Run ở stage cuối (finalize, chỉ số 21) + quay lại bước 20 ⇒ mọi CHECK đã nới nhận.
+    await step("seed", seed(4, steps, 5, null));
+    expect(await step("route18", route(4, A, 18))).toEqual({ next: 20 });
+    expect(await step("route19", route(4, A, 19))).toEqual({ next: 21 });
+    // Run ở stage cuối (finalize, chỉ số 21) + quay lại bước 20 ⇒ mọi CHECK đã nới nhận. Một tx owner (FK hội thoại ↔ run).
     const run = crypto.randomUUID();
     const conv = crypto.randomUUID();
     const flow = crypto.randomUUID();
-    await o`insert into hub.conversations (id, tenant_id, user_id, title, title_norm, process_run_id)
-      values (${conv}, ${T}, ${A}, 'd1', 'd1', ${run})`;
-    await o`insert into hub.flows (id, tenant_id, user_id, conversation_id, title, message_count)
-      values (${flow}, ${T}, ${A}, ${conv}, 'd1', 1)`;
-    await o`insert into hub.process_runs (id, tenant_id, process_def_id, def_version, snapshot, started_by, origin_kind,
-        input, conversation_id, flow_id, status, current_stage_idx, current_step, expires_at)
-      values (${run}, ${T}, ${d?.id as string}, 1, '{}'::jsonb, ${A}, 'admin', 'x', ${conv}, ${flow}, 'running', 21, 21,
-        now() + interval '7 days')`;
-    await o`insert into hub.stage_runs (tenant_id, process_run_id, stage_idx, status, round, back_to_step)
-      values (${T}, ${run}, 21, 'running', 2, 20)`;
-    const [r] = await o<
-      { s: number }[]
-    >`select current_step as s from hub.process_runs where id = ${run}`;
-    expect(r?.s).toBe(21);
-    await expect(
-      o`update hub.process_runs set current_step = 22 where id = ${run}`,
-    ).rejects.toThrow(/process_runs_step_ck/);
+    const s = await step(
+      "run21",
+      o.begin(async (tx) => {
+        await tx`set local lock_timeout = '3s'`;
+        await tx`insert into hub.conversations (id, tenant_id, user_id, title, title_norm, process_run_id)
+          values (${conv}, ${T}, ${A}, 'd1', 'd1', ${run})`;
+        await tx`insert into hub.flows (id, tenant_id, user_id, conversation_id, title, message_count)
+          values (${flow}, ${T}, ${A}, ${conv}, 'd1', 1)`;
+        await tx`insert into hub.process_runs (id, tenant_id, process_def_id, def_version, snapshot, started_by,
+            origin_kind, input, conversation_id, flow_id, status, current_stage_idx, current_step, expires_at)
+          values (${run}, ${T}, ${d?.id as string}, 1, '{}'::jsonb, ${A}, 'admin', 'x', ${conv}, ${flow}, 'running',
+            21, 21, now() + interval '7 days')`;
+        await tx`insert into hub.stage_runs (tenant_id, process_run_id, stage_idx, status, round, back_to_step)
+          values (${T}, ${run}, 21, 'running', 2, 20)`;
+        const [r] = await tx<
+          { s: number }[]
+        >`select current_step as s from hub.process_runs where id = ${run}`;
+        return r?.s;
+      }),
+    );
+    expect(s).toBe(21);
+    const err = await step(
+      "step22",
+      o`update hub.process_runs set current_step = 22 where id = ${run}`.then(
+        () => "",
+        (e: Error) => e.message,
+      ),
+    );
+    expect(err).toContain("process_runs_step_ck");
   });
 });
