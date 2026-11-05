@@ -2,7 +2,7 @@
 // ty/lượt chạy), mỗi câu quét bảng nguồn MỘT lần rồi gom (CTE + subselect), kết quả về dạng jsonb/số. Chạy dưới scope `system`
 // (hub_api = hub_rw + hub_ro). Mốc thời gian là tham số `timestamptz` (đồng hồ giả được trong test).
 //   Q1 process_runs (+ review_tasks theo process_run_id): lượt chạy, lỗi, p95 trừ chờ duyệt, 24 cột giờ, đang chạy/kẹt.
-//   Q2 dify_runs (+ admin.workflows lấy tên): lỗi công cụ AI, tỷ lệ lỗi 1 giờ, công cụ lỗi liên tiếp, lỗi nhiều nhất.
+//   Q2 dify_run_stats (view hẹp của dify_runs, hub 0100, cộng admin.workflows lấy tên): lỗi công cụ AI, tỷ lệ lỗi 1 giờ, công cụ lỗi liên tiếp, lỗi nhiều nhất.
 //   Q3 tenant_quotas + usage_logs: hạn mức USD tháng, công ty ≥ X %, chi phí theo ngày.
 //   Q4 tenants: tổng công ty khách, công ty hoạt động 7 ngày (exists theo chỉ mục tenant+thời gian).
 //   Q5 jobs/process_timers/pg_*: trễ hàng đợi nền, truy vấn chậm, kết nối, dung lượng.
@@ -99,7 +99,7 @@ export async function difyAgg(tx: Tx, win: Window): Promise<DifyRow> {
     with d as (
       select workflow_id, status, created_at,
         floor(extract(epoch from ${ts(win.now)} - created_at) / 86400)::int as k
-      from hub.dify_runs where created_at >= ${ts(win.since7)} and created_at <= ${ts(win.now)}),
+      from hub.dify_run_stats where created_at >= ${ts(win.since7)} and created_at <= ${ts(win.now)}),
     ranked as (
       select workflow_id, status, row_number() over (partition by workflow_id order by created_at desc) as rn
       from d where created_at >= ${ts(win.since24)}),

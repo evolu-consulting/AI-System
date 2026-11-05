@@ -107,7 +107,7 @@ afterAll(async () => {
 describe("GET /ops/overview · tính đúng trên dữ liệu mồi", () => {
   it("KPI, 24 cột giờ, cần xử lý, sức khoẻ khớp đáp án tính tay và qua schema hợp đồng", async () => {
     const svc = makeOverviewService({ db, statusDir: dir });
-    const out = OpsOverviewSchema.parse(await svc.get(DEFAULTS));
+    const out = OpsOverviewSchema.parse(await svc.get(DEFAULTS, "platform_admin"));
     const k = out.kpi;
     expect(k.runs).toMatchObject({
       value: 8,
@@ -153,7 +153,7 @@ describe("GET /ops/overview · tính đúng trên dữ liệu mồi", () => {
 
   it("ngưỡng cấu hình: stuck_hours = 12 ⇒ chỉ còn lượt lỗi cũ hơn 12 giờ (1), quota_pct = 95 ⇒ không công ty nào", async () => {
     const svc = makeOverviewService({ db, statusDir: dir });
-    const out = await svc.get({ stuck_hours: 12, quota_pct: 95 });
+    const out = await svc.get({ stuck_hours: 12, quota_pct: 95 }, "platform_admin");
     expect(out.attention.stuck_runs.count).toBe(1);
     expect(out.attention.near_quota_companies.count).toBe(0);
   });
@@ -161,20 +161,31 @@ describe("GET /ops/overview · tính đúng trên dữ liệu mồi", () => {
   it("số câu SQL cố định ≤ 8 (kể cả scope), lần gọi thứ hai trong 60 s dùng cache (0 câu), hết hạn ⇒ tính lại", async () => {
     let t = Date.now();
     const svc = makeOverviewService({ db, statusDir: dir, now: () => new Date(t) });
-    const first = await captureSql(client(), () => svc.get(DEFAULTS));
+    const first = await captureSql(client(), () => svc.get(DEFAULTS, "platform_admin"));
     expect(first.queries.length).toBeLessThanOrEqual(8);
     expect(first.queries.length).toBeGreaterThanOrEqual(6);
-    const again = await captureSql(client(), () => svc.get(DEFAULTS));
+    const again = await captureSql(client(), () => svc.get(DEFAULTS, "platform_admin"));
     expect(again.queries.length).toBe(0);
     expect(again.r).toBe(first.r);
     t += OVERVIEW_CACHE_TTL_S * 1000 + 1;
-    const stale = await captureSql(client(), () => svc.get(DEFAULTS));
+    const stale = await captureSql(client(), () => svc.get(DEFAULTS, "platform_admin"));
     expect(stale.queries.length).toBe(first.queries.length);
     // Số câu không phụ thuộc số công ty/lượt chạy: thêm dữ liệu rồi đo lại.
     const b = await seedBase(o, TC, "c");
     await insertRuns(o, b, [{ tenant: TC, status: "done", startedAgo: 10, finishedAgo: 5 }]);
     t += OVERVIEW_CACHE_TTL_S * 1000 + 1;
-    const more = await captureSql(client(), () => svc.get(DEFAULTS));
+    const more = await captureSql(client(), () => svc.get(DEFAULTS, "platform_admin"));
     expect(more.queries.length).toBe(first.queries.length);
+    // Vai kiểm ngay trong service: kể cả khi cache còn nóng, không phải platform_admin ⇒ FORBIDDEN, 0 câu SQL.
+    for (const role of ["tenant_admin", "member"] as const) {
+      const denied = await captureSql(client(), () =>
+        svc.get(DEFAULTS, role).then(
+          () => null,
+          (e: unknown) => e,
+        ),
+      );
+      expect((denied.r as { code?: string } | null)?.code).toBe("FORBIDDEN");
+      expect(denied.queries.length).toBe(0);
+    }
   });
 });

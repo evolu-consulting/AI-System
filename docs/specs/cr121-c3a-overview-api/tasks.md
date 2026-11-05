@@ -3,7 +3,7 @@ id: cr121-c3a-overview-api
 lát: cr121-c3a-overview-api
 cr: CR-121
 làn: nhanh
-migration: có (hub 0100: GRANT + 2 chỉ mục, không đổi dữ liệu)
+migration: có (hub 0100: view hẹp dify_run_stats + 2 chỉ mục, không đổi dữ liệu)
 phụ thuộc:
 ---
 ## Plan (ngắn)
@@ -15,7 +15,7 @@ phụ thuộc:
 - Contract `OpsOverviewSchema` + query (`stuck_hours` 1–72 mặc định 4, `quota_pct` 50–100 mặc định 80; sai ⇒ mặc định, không 4xx).
 - `adapters/overview.repo.ts`: SÁU câu SQL văn bản cố định (Luật 4c) — runs / dify / quota / companies / infra / flow_coverage. Cộng 2 câu scope của `systemRead` = 8 câu mỗi lần tính.
 - `application/overview.service.ts`: gộp + cache 60 s trong process theo (stuck_hours, quota_pct), một lượt tính bay mỗi khoá. `domain/overview.rules.ts`: tỷ lệ, p95 phút, chuỗi 7 ngày/24 giờ (thuần, có unit).
-- Migration hub 0100: `GRANT SELECT ON hub.dify_runs TO hub_rw` (hub_api chưa đọc được bảng này) + chỉ mục `dify_runs(created_at)`, `process_runs(started_at)` (cửa sổ toàn nền tảng; không có thì quét toàn bảng).
+- Migration hub 0100: view hẹp `hub.dify_run_stats(workflow_id, status, created_at)` + `GRANT SELECT` view cho hub_rw (KHÔNG cấp bảng `dify_runs`: tránh lộ error_message/id Dify mọi tenant) + chỉ mục `dify_runs(created_at)`, `process_runs(started_at)` (cửa sổ toàn nền tảng; không có thì quét toàn bảng).
 - Test: unit luật thuần; int dữ liệu mồi có đáp án tính tay (+ đếm SQL + cache); int route (403/401/200 + schema); perf 10.000 lượt chạy.
 
 ## Không làm / Chạm

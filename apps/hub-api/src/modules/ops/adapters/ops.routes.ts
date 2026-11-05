@@ -70,7 +70,9 @@ export function opsRoutes(d: OpsRoundDeps & { now?: () => Date }): Hono<AuthVars
   });
   const r = new Hono<AuthVars>();
   r.use("*", requirePlatformAdmin());
-  r.get("/overview", async (c) => c.json(await overview.get(overviewQuery(c.req.query()))));
+  r.get("/overview", async (c) =>
+    c.json(await overview.get(overviewQuery(c.req.query()), c.var.user.role)),
+  );
   r.get("/status", async (c) => c.json(await statusBody(d.repo)));
   r.post("/check", async (c) => {
     const out = await runChecksNow(d, now());

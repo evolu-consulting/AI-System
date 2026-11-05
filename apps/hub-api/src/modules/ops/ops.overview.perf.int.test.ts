@@ -68,11 +68,11 @@ afterAll(async () => {
 describe("GET /ops/overview · perf (Luật 4c)", () => {
   it("10.000 lượt chạy / 50 công ty: p95 ≤ 300 ms, ≤ 8 câu SQL", async () => {
     const q = { stuck_hours: 4, quota_pct: 80 };
-    await fresh().get(q); // làm nóng kết nối (type-discovery của driver không phải câu nghiệp vụ)
-    const sql = await captureSql(client(), () => fresh().get(q));
+    await fresh().get(q, "platform_admin"); // làm nóng kết nối (type-discovery của driver không phải câu nghiệp vụ)
+    const sql = await captureSql(client(), () => fresh().get(q, "platform_admin"));
     expect(sql.queries.length).toBeLessThanOrEqual(8);
     expect(sql.r.kpi.runs.value).toBeGreaterThan(1000);
-    const stat = await measure(() => fresh().get(q), { n: 30, warm: 3 });
+    const stat = await measure(() => fresh().get(q, "platform_admin"), { n: 30, warm: 3 });
     console.log(
       `OVERVIEW|runs=${RUNS}|companies=${COMPANIES}|sql=${sql.queries.length}|p50=${stat.p50.toFixed(1)}ms|p95=${stat.p95.toFixed(1)}ms|max=${stat.max.toFixed(1)}ms`,
     );

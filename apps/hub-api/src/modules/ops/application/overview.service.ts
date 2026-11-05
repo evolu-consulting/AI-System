@@ -1,6 +1,8 @@
 // CR-121 · cr121-c3a-overview-api · `GET /ops/overview` — gộp 6 câu SQL theo tập (`overview.repo`) + file host (`host.json`) thành
 // `OpsOverview`. Cache 60 giây TRONG process theo (stuck_hours, quota_pct), có chống dẫm chân (nhiều request cùng lúc dùng chung
 // một lượt tính). Không HTTP. Vai (platform_admin) kiểm ở route TRƯỚC khi vào đây; service chỉ đọc, không ghi.
+
+import type { Role } from "@ai/contracts";
 import {
   OpsHostStatusSchema,
   type OpsOverview,
@@ -9,6 +11,7 @@ import {
   OVERVIEW_CACHE_TTL_S,
 } from "@ai/contracts/hub-admin";
 import type { Db } from "../../../lib/db";
+import { appError } from "../../../lib/errors";
 import { readStatusFile, systemRead } from "../adapters/checks/check-kit";
 import {
   companiesAgg,
@@ -177,7 +180,7 @@ async function compute(d: OverviewDeps, p: OpsOverviewQuery, now: Date): Promise
 const OVERVIEW_LINKS_RUNS = (p: OpsOverviewQuery): string =>
   `${OVERVIEW_LINKS.runs}&hours=${p.stuck_hours}`;
 
-export type OverviewService = { get(p: OpsOverviewQuery): Promise<OpsOverview> };
+export type OverviewService = { get(p: OpsOverviewQuery, role: Role): Promise<OpsOverview> };
 
 /** Cache theo tham số + một lượt tính đang bay mỗi khoá. Lỗi không được cache (lần sau tính lại). */
 export function makeOverviewService(d: OverviewDeps): OverviewService {
@@ -185,7 +188,9 @@ export function makeOverviewService(d: OverviewDeps): OverviewService {
   const cache = new Map<string, Cached<OpsOverview>>();
   const flying = new Map<string, Promise<OpsOverview>>();
   return {
-    async get(p) {
+    async get(p, role) {
+      // Vai kiểm ngay trong service (không chỉ dựa vào route): không phải platform_admin ⇒ 403 trước mọi đọc DB/cache.
+      if (role !== "platform_admin") throw appError("FORBIDDEN");
       const key = cacheKey(p);
       const now = clock();
       const hit = cache.get(key);
