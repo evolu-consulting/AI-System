@@ -4,7 +4,7 @@ import { CONTRACTS_MANIFEST } from "@ai/contracts";
 import { slotContractGaps } from "./slot-contract.rules";
 
 describe("FLOW-FR-01 · slotContractGaps", () => {
-  test("khe manifest thiếu SlotSpec ⇒ gap spec; runtime bật mà thiếu adapter ⇒ gap adapter", () => {
+  test("khe manifest thiếu SlotSpec ⇒ gap spec, runtime bật mà thiếu adapter ⇒ gap adapter", () => {
     const gaps = slotContractGaps([CONTRACTS_MANIFEST], new Set(["contracts.approval"]), new Set());
     expect(gaps).toEqual([
       { app: "contracts", slot: "contracts.approval", missing: "adapter" },
