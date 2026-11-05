@@ -19,11 +19,11 @@ import {
   compact,
   configInfos,
   jobOfConfig,
-  MIGRATION_SEEDS,
   parseAffectedArgs,
   planAffected,
   planToJson,
 } from "./test-affected.rules";
+import { affectedScoped, buildScope } from "./test-affected.scope";
 import { runServer } from "./test-affected.server";
 import { findE2eConfigs } from "./test-all.discover";
 
@@ -61,7 +61,21 @@ function ignorer(root: string, bunfig: string): (f: string) => boolean {
   return (f) => globs.some((g) => g.match(f)) || f.includes("node_modules/");
 }
 
-function describePlan(base: string, p: AffectedPlan): void {
+/** Nội dung file ở `base` (undefined = chưa có ở base). */
+function gitShow(root: string, base: string, f: string): string | undefined {
+  const p = Bun.spawnSync(["git", "show", `${base}:${f}`], {
+    cwd: root,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  return p.exitCode === 0 ? p.stdout.toString() : undefined;
+}
+
+function explainLines(p: AffectedPlan): void {
+  for (const f of [...p.int, ...p.e2e]) console.log(`  · ${f} ← ${p.reasons[f] ?? "?"}`);
+}
+
+function describePlan(base: string, p: AffectedPlan, explain: boolean): void {
   const n = (x: string[]) => (x[0] === "*" ? "tất cả" : String(x.length));
   console.log(
     `test:affected: base ${base.slice(0, 12)} · ${p.changed.length} file đổi → ${p.affected} file bị ảnh hưởng`,
@@ -74,6 +88,7 @@ function describePlan(base: string, p: AffectedPlan): void {
     `  typecheck: ${p.typecheck ? `${p.typecheckPackages.length} gói (${p.typecheckPackages.join(", ")})` : "không"}${p.typecheckTests ? " + tests/e2e (tsconfig.tests)" : ""}`,
   );
   for (const note of p.notes) console.log(`  ! ${note}`);
+  if (explain) explainLines(p);
   if (p.changed.length > 400)
     console.log("  ! diff rất lớn: đặt --base=<commit trước lát> để gom đúng phạm vi lát.");
 }
@@ -153,10 +168,20 @@ async function main(): Promise<number> {
   const t0 = performance.now();
   const changed = changedSince(root, base);
   const graph = buildGraph(root);
-  const seeds = [
-    ...changed,
-    ...(changed.some((f) => f.startsWith("packages/db/migrations")) ? MIGRATION_SEEDS : []),
-  ];
+  const t1 = performance.now();
+  const scope = buildScope(
+    {
+      changed,
+      strict: args.strict,
+      graph,
+      readFile: (f) =>
+        existsSync(join(root, f)) ? readFileSync(join(root, f), "utf8") : undefined,
+      readBase: (f) => gitShow(root, base, f),
+    },
+    [...graph.deps.keys()],
+  );
+  const { affected, why } = affectedScoped(graph, scope, changed);
+  const t2 = performance.now();
   const configs = await findE2eConfigs(root);
   // Test của người khác sở hữu (tests/external-owned.json, vd DLC của rowan): bỏ, đếm số file bị bỏ; `--include-external` giữ.
   const isExternal = args.includeExternal ? () => false : externalMatcher(loadExternalOwned(root));
@@ -168,7 +193,9 @@ async function main(): Promise<number> {
   };
   const plan = planAffected({
     changed,
-    affected: affectedBy(graph, seeds),
+    affected,
+    scope,
+    why,
     e2eAffected: affectedBy(
       graph,
       changed.filter((f) => f.startsWith("e2e/") || f === "playwright.config.ts"),
@@ -193,10 +220,14 @@ async function main(): Promise<number> {
     plan.notes.push(
       `bỏ ${skipped.length} cấu hình e2e đóng băng (${skipped.join(", ")}); dùng \`bun run test:frozen\` hoặc --frozen.`,
     );
-  if (args.json) console.log(JSON.stringify(planToJson(base, plan), null, 2));
+  if (args.json) console.log(JSON.stringify(planToJson(base, plan, args.explain), null, 2));
   else {
-    describePlan(base, plan);
-    console.log(`  (lập kế hoạch ${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+    describePlan(base, plan, args.explain);
+    const sec = (a: number, b: number) => ((b - a) / 1000).toFixed(1);
+    const now = performance.now();
+    console.log(
+      `  (lập kế hoạch ${sec(t0, now)} s: đồ thị ${sec(t0, t1)} · phân loại+bao đóng ${sec(t1, t2)} · còn lại ${sec(t2, now)})`,
+    );
   }
   if (args.run === "none") return 0;
   return runPlan(root, args, { base, plan, configs: configs.map(posix), t0 });

@@ -1,6 +1,7 @@
 // TS1 · luật chọn test của `bun run test:affected` (cổng LÁT; `test:all` vẫn là cổng ĐỢT). Hàm thuần: nhận file đổi + đồ thị
 // import (đã tính bao đóng ngược) + danh sách cấu hình e2e, trả kế hoạch: unit / int / cấu hình e2e / kiểm kiểu cần chạy.
 import { posix } from "./lib/import-graph";
+import { GLOBAL_FILES, packOf, type Scope } from "./test-affected.scope";
 import { jobSlug } from "./test-e2e-par.rules";
 
 export type E2eMode = "owner" | "wide" | "none";
@@ -22,37 +23,20 @@ export type AffectedPlan = {
   externalSkipped: number;
   /** Chạy `turbo typecheck --filter=...[base]` (có file mã dưới apps/packages/tools đổi). */
   typecheck: boolean;
+  /** Kiểm kiểu MỌI gói (tsconfig đổi), không lọc theo diff. */
+  typecheckAll: boolean;
   /** Chạy `tsc -p tsconfig.tests.json` (bao đóng ngược chạm tests/ hoặc e2e/). */
   typecheckTests: boolean;
   notes: string[];
+  /** `--explain`: file (int/unit/e2e) → luật đã chọn nó. */
+  reasons: Record<string, string>;
 };
 
 const TEST_RE = /\.test\.tsx?$/;
 const INT_RE = /\.int\.test\.tsx?$/;
 const CODE_RE = /\.(ts|tsx|js|jsx|mjs|mts)$/;
 
-/** File cấp gốc đổi ⇒ ảnh hưởng mọi thứ: chạy hết unit và cảnh báo (int/e2e nên dùng `test:all`). */
-export const GLOBAL_FILES = [
-  "package.json",
-  "bun.lock",
-  "bunfig.toml",
-  "bunfig.int.toml",
-  "tsconfig.json",
-  "tsconfig.tests.json",
-  "tsconfig.depcruise.json",
-  "biome.json",
-  "turbo.json",
-  ".dependency-cruiser.cjs",
-  "lefthook.yml",
-];
-
-/** Migration không được import (đọc từ đĩa): coi như đổi các file nạp/băm chúng ⇒ kéo theo mọi int dùng DB mẫu. */
-export const MIGRATION_SEEDS = [
-  "packages/db/src/migrate.ts",
-  "packages/db/src/migrate-hub.ts",
-  "packages/db/src/migrate-packs.ts",
-  "packages/db/src/test-db-template.ts",
-];
+export { GLOBAL_FILES, MIGRATION_SEEDS } from "./test-affected.scope";
 
 /**
  * App web / vùng mã → cấu hình e2e "sở hữu" (không có cạnh import tới e2e: build/serve qua chuỗi lệnh). Khoá là tiền tố thư mục
@@ -99,6 +83,10 @@ export type Inputs = {
   changed: readonly string[];
   /** Bao đóng ngược của `changed` (đã gồm chính chúng) — từ `affectedBy`. */
   affected: ReadonlySet<string>;
+  /** Phân loại theo module (tool-affected-modules); không có ⇒ hành vi cũ (rộng). */
+  scope?: Scope;
+  /** --explain: file → seed ← lý do của bao đóng. */
+  why?: ReadonlyMap<string, string>;
   /** Bao đóng ngược chỉ của file ĐỔI dưới `e2e/` (spec/helper/stack/cấu hình sửa trực tiếp) — chế độ `owner`. */
   e2eAffected: ReadonlySet<string>;
   infos: readonly ConfigInfo[];
@@ -114,14 +102,32 @@ function expandOwner(c: string, known: ReadonlySet<string>): string[] {
   return c.endsWith("*") ? [...known].filter((k) => k.startsWith(c.slice(0, -1))) : [c];
 }
 
-function owners(affected: ReadonlySet<string>, known: ReadonlySet<string>): string[] {
-  const hit = (dir: string) => [...affected].some((f) => f.startsWith(`${dir}/`));
-  const picked = Object.entries({ ...WEB_OWNERS, ...API_OWNERS })
-    .filter(([dir]) => hit(dir))
-    .flatMap(([, cfgs]) => cfgs.flatMap((c) => expandOwner(c, known)));
-  return [...new Set(picked)];
+/** Khoá WEB_OWNERS "chuyên biệt": file thuộc khoá này CHỈ kéo cấu hình của khoá đó (không kéo cấu hình app mẹ). */
+export const EXCLUSIVE_WEB = ["apps/workspace-web/src/modules/community"];
+
+/** Khoá chủ khớp một file; chế độ module: khoá chuyên biệt thắng, hub-api không kéo `combine` cho file của gói. */
+function ownerKeys(f: string, strict: boolean): string[] {
+  const keys = Object.keys({ ...WEB_OWNERS, ...API_OWNERS }).filter((d) => f.startsWith(`${d}/`));
+  if (strict) return keys;
+  const ex = keys.find((k) => EXCLUSIVE_WEB.includes(k));
+  if (ex) return [ex];
+  return packOf(f) ? keys.filter((k) => !(k in API_OWNERS)) : keys;
 }
 
+/** Cấu hình e2e chủ của các file dính diff → lý do (`khoá ← file`). */
+function owners(
+  affected: ReadonlySet<string>,
+  known: ReadonlySet<string>,
+  strict: boolean,
+): Map<string, string> {
+  const all: Record<string, string[]> = { ...WEB_OWNERS, ...API_OWNERS };
+  const out = new Map<string, string>();
+  for (const f of affected)
+    for (const k of ownerKeys(f, strict))
+      for (const c of (all[k] ?? []).flatMap((x) => expandOwner(x, known)))
+        if (!out.has(c)) out.set(c, `chủ e2e ${k} ← ${f}`);
+  return out;
+}
 /** Tên việc của `test:e2e:par` cho một cấu hình (`root` = mọi ca của cấu hình gốc: `--only=root` khớp `root-0…`). */
 export const jobOfConfig = (config: string): string => jobSlug(config);
 
@@ -147,37 +153,59 @@ function configsIn(files: Iterable<string>, infos: readonly ConfigInfo[]): strin
   return out;
 }
 
-function pickE2e(i: Inputs): string[] {
-  if (i.opts.e2e === "none") return [];
+/** Cấu hình của các spec e2e nằm trong bao đóng → lý do. */
+function specConfigs(i: Inputs): [string, string][] {
+  const out: [string, string][] = [];
+  for (const f of i.affected) {
+    const c = configOfSpec(f, i.infos);
+    if (c) out.push([c, `spec ${f} nối tới file đổi`]);
+  }
+  return out;
+}
+
+function pickE2e(i: Inputs): Map<string, string> {
+  const out = new Map<string, string>();
+  if (i.opts.e2e === "none") return out;
   const known = new Set(i.infos.map((x) => x.config));
-  const picked = new Set<string>([
-    // Spec/helper/stack/cấu hình e2e sửa trực tiếp.
-    ...configsIn(i.e2eAffected, i.infos),
-    // Spec nối tới file đổi ngoài e2e/ (vd helper dùng chung ở tests/): đi theo đồ thị (chỉ lấy spec, không lấy cấu hình).
-    ...[...i.affected].flatMap((f) => configOfSpec(f, i.infos) ?? []),
-    ...owners(i.affected, known),
-  ]);
+  const add = (c: string, why: string) => known.has(c) && !out.has(c) && out.set(c, why);
+  // Spec/helper/stack/cấu hình e2e sửa trực tiếp.
+  for (const c of configsIn(i.e2eAffected, i.infos)) add(c, "file e2e đổi");
+  // Spec nối tới file đổi ngoài e2e/ (vd helper dùng chung ở tests/): đi theo đồ thị (chỉ lấy spec, không lấy cấu hình).
+  for (const [c, why] of specConfigs(i)) add(c, why);
+  for (const [c, why] of owners(i.affected, known, i.scope?.strict ?? true)) add(c, why);
+  for (const [pat, why] of i.scope?.extraE2e ?? [])
+    for (const c of expandOwner(pat, known)) add(c, why);
   // `wide`: mọi cấu hình có file cấu hình nằm trong bao đóng (nối qua import / đường dẫn spawn của stack).
-  if (i.opts.e2e === "wide") for (const c of known) if (i.affected.has(c)) picked.add(c);
-  return [...picked].filter((c) => known.has(c)).sort();
+  if (i.opts.e2e === "wide")
+    for (const c of known) if (i.affected.has(c)) add(c, "wide: cấu hình nằm trong bao đóng");
+  return new Map([...out].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+}
+function selectInt(i: Inputs, files: string[], reasons: Record<string, string>): string[] {
+  const why = (f: string) => i.why?.get(f) ?? "bao đóng ngược của file đổi";
+  const int = files.filter((f) => INT_RE.test(f) && !i.ignoredInt(f));
+  for (const f of int) reasons[f] = why(f);
+  for (const [f, w] of i.scope?.extraInt ?? [])
+    if (!int.includes(f) && i.exists(f) && !i.ignoredInt(f)) {
+      int.push(f);
+      reasons[f] = w;
+    }
+  return int.sort();
 }
 
 export function planAffected(i: Inputs): AffectedPlan {
-  const notes: string[] = [];
   const changed = [...i.changed].map(posix);
-  const wide = changed.some((f) => GLOBAL_FILES.includes(f));
-  if (wide)
-    notes.push(
-      "file cấp gốc đổi (package.json/tsconfig/biome/…): chạy mọi unit; int/e2e nên dùng `bun run test:all`.",
-    );
+  const wide = i.scope ? i.scope.unitAll : changed.some((f) => GLOBAL_FILES.includes(f));
+  const notes = i.scope ? [...i.scope.notes] : legacyNotes(changed, wide);
   const files = [...i.affected].filter((f) => i.exists(f)).sort();
   const unit = files.filter((f) => TEST_RE.test(f) && !INT_RE.test(f) && !i.ignoredUnit(f));
-  const int = files.filter((f) => INT_RE.test(f) && !i.ignoredInt(f));
+  const reasons: Record<string, string> = {};
+  const int = selectInt(i, files, reasons);
   const code = changed.some((f) => /^(apps|packages|tools)\//.test(f) && CODE_RE.test(f));
   const testsTouched = files.some((f) => f.startsWith("tests/") || f.startsWith("e2e/"));
-  if (changed.some((f) => f.startsWith("packages/db/migrations")))
-    notes.push("migration đổi: mọi int dùng DB mẫu bị kéo theo (đúng — hash migration đổi).");
-  const e2e = pickE2e(i);
+  const e2eWhy = pickE2e(i);
+  const e2e = [...e2eWhy.keys()];
+  for (const [c, w] of e2eWhy) reasons[c] = w;
+  const typecheckAll = i.scope?.typecheckAll ?? false;
   return {
     changed,
     affected: i.affected.size,
@@ -188,12 +216,25 @@ export function planAffected(i: Inputs): AffectedPlan {
     typecheckPackages: typecheckPackages(i.affected),
     externalSkipped: 0,
     python: changed.some((f) => f.startsWith("apps/agent-runtime/")),
-    typecheck: code || wide,
-    typecheckTests: testsTouched || changed.some((f) => /^(tests|e2e)\//.test(f)),
+    typecheck: code || wide || typecheckAll,
+    typecheckAll,
+    typecheckTests: testsTouched || typecheckAll || changed.some((f) => /^(tests|e2e)\//.test(f)),
     notes,
+    reasons,
   };
 }
 
+/** Ghi chú của đường không có `scope` (test cũ gọi thẳng `planAffected`). */
+function legacyNotes(changed: string[], wide: boolean): string[] {
+  const notes: string[] = [];
+  if (wide)
+    notes.push(
+      "file cấp gốc đổi (package.json/tsconfig/biome/…): chạy mọi unit; int/e2e nên dùng `bun run test:all`.",
+    );
+  if (changed.some((f) => f.startsWith("packages/db/migrations")))
+    notes.push("migration đổi: mọi int dùng DB mẫu bị kéo theo (đúng — hash migration đổi).");
+  return notes;
+}
 /** Rút gọn danh sách file thành tiền tố thư mục khi dòng lệnh quá dài (Windows ~32 k ký tự). */
 export function compact(files: readonly string[], maxChars = 6000): string[] {
   if (files.join(" ").length <= maxChars) return [...files];
@@ -204,7 +245,11 @@ export function compact(files: readonly string[], maxChars = 6000): string[] {
 /** `none` = chỉ lập kế hoạch; `local` = check+typecheck+unit tại máy; `server` = int+e2e trên evotest; `all` = như `test:affected` cũ (mọi thứ tại máy). */
 export type RunMode = "none" | "local" | "server" | "all";
 /** Kế hoạch dạng JSON (`--json`): unit `["*"]` = mọi unit; file đổi chỉ đếm (danh sách đầy đủ quá dài). */
-export function planToJson(base: string, p: AffectedPlan): Record<string, unknown> {
+export function planToJson(
+  base: string,
+  p: AffectedPlan,
+  explain = false,
+): Record<string, unknown> {
   return {
     base,
     changed: p.changed.length,
@@ -216,6 +261,7 @@ export function planToJson(base: string, p: AffectedPlan): Record<string, unknow
     python: p.python,
     externalSkipped: p.externalSkipped,
     notes: p.notes,
+    ...(explain ? { reasons: p.reasons } : {}),
   };
 }
 
@@ -236,6 +282,10 @@ export type AffectedArgs = {
   e2eJobs: string[];
   /** `-Dirty` ép gửi cả thay đổi chưa commit (mặc định tự bật khi cây làm việc bẩn). */
   dirty: boolean;
+  /** Hành vi cũ: migration/file gốc đổi ⇒ chọn rộng (không theo module). */
+  strict: boolean;
+  /** In luật đã chọn từng file int/e2e. */
+  explain: boolean;
 };
 
 /** `--k=v` hoặc `--k v` (giá trị không bắt đầu bằng `--`). */
@@ -269,5 +319,7 @@ export function parseAffectedArgs(argv: readonly string[]): AffectedArgs {
       .map((s) => s.trim())
       .filter(Boolean),
     dirty: argv.some((a) => /^--?dirty$/i.test(a)),
+    strict: argv.includes("--strict"),
+    explain: argv.includes("--explain"),
   };
 }
