@@ -26,6 +26,7 @@ async function rotate(
   f: FoundRefresh,
   u: AuthUser,
   meta: ClientMeta,
+  regrant: boolean,
 ): Promise<Session> {
   return withScope(ctx.db, tenantScope(f.tid), async (tx: Tx) => {
     await repo.lockUserShared(tx, f.tid, u.id);
@@ -33,15 +34,19 @@ async function rotate(
     const fresh = await repo.findUserById(tx, f.tid, u.id);
     if (!fresh || !canSignIn(fresh, fresh.tenant.active)) throw appError("INVALID_REFRESH_TOKEN");
     const id = Bun.randomUUIDv7();
-    // Request song song thua race: UPDATE chờ khoá hàng rồi thấy revoked_at đã đặt → 0 hàng.
-    if (!(await repo.rotateRefresh(tx, f.tid, f.token.id, id)))
-      throw appError("REFRESH_SUPERSEDED");
+    // `regrant` = token cũ vừa xoay ≤ 30 s (phản hồi mang cookie mới bị mất do tải lại trang). Thua race song song:
+    // UPDATE chờ khoá hàng rồi thấy revoked_at đã đặt → 0 hàng. Cả hai trường hợp: cấp thêm một token cùng chuỗi
+    // (không thu hồi token anh em: cookie nào trình duyệt giữ cũng còn sống), nhưng chỉ khi chuỗi chưa bị thu hồi.
+    const lost = regrant || !(await repo.rotateRefresh(tx, f.tid, f.token.id, id));
+    if (lost && !(await repo.familyAlive(tx, f.tid, f.token.familyId))) {
+      throw appError("INVALID_REFRESH_TOKEN");
+    }
     const family = { id: f.token.familyId, expiresAt: f.token.expiresAt };
     return issueSession(ctx, tx, fresh, { ...meta, id, family });
   });
 }
 
-/** Refresh (FR-02): valid → xoay; rotated ≤ 10 s → SUPERSEDED; thu hồi khác → thu hồi cả chuỗi. */
+/** Refresh (FR-02): valid → xoay; rotated ≤ 30 s → cấp lại cùng chuỗi; thu hồi khác / quá ân hạn → thu hồi cả chuỗi. */
 export async function refresh(
   ctx: AuthCtx,
   token: string | undefined,
@@ -51,7 +56,6 @@ export async function refresh(
   const f = await findRefreshToken(ctx, sha256(token));
   if (!f) throw appError("INVALID_REFRESH_TOKEN");
   const verdict = classifyRefresh(f.token, f.token.dbNow);
-  if (verdict === "superseded") throw appError("REFRESH_SUPERSEDED");
   if (verdict === "reuse") {
     await withScope(ctx.db, tenantScope(f.tid), (tx) =>
       repo.revokeFamily(tx, f.tid, f.token.familyId, "reuse"),
@@ -59,18 +63,20 @@ export async function refresh(
     throw appError("INVALID_REFRESH_TOKEN");
   }
   const u = f.user;
-  if (verdict === "expired" || !u || !canSignIn(u, u.tenant.active)) {
+  // Cấp lại (superseded) vẫn phải còn hạn tuyệt đối 30 ngày của chuỗi.
+  const lapsed = verdict === "expired" || f.token.expiresAt.getTime() <= f.token.dbNow.getTime();
+  if (lapsed || !u || !canSignIn(u, u.tenant.active)) {
     throw appError("INVALID_REFRESH_TOKEN");
   }
-  return rotate(ctx, f, u, meta);
+  return rotate(ctx, f, u, meta, verdict === "superseded");
 }
 
-/** Logout (FR-03): idempotent, token lạ/đã thu hồi vẫn thành công. */
+/** Logout (FR-03): idempotent, token lạ/đã thu hồi vẫn thành công. Thu hồi cả chuỗi (token cấp lại trong ân hạn cũng chết). */
 export async function logout(ctx: AuthCtx, token: string | undefined): Promise<void> {
   if (!token) return;
   const f = await findRefreshToken(ctx, sha256(token));
-  if (!f || f.token.revokedAt !== null) return;
+  if (!f) return;
   await withScope(ctx.db, tenantScope(f.tid), (tx) =>
-    repo.revokeRefresh(tx, f.tid, f.token.id, "logout"),
+    repo.revokeFamily(tx, f.tid, f.token.familyId, "logout"),
   );
 }

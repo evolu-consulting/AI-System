@@ -7,7 +7,7 @@ export const TEMP_LOCK_MS = 15 * 60_000;
 export const ACCESS_TOKEN_TTL_S = 900;
 export const REFRESH_TOKEN_TTL_S = 2_592_000;
 export const CHANGE_TOKEN_TTL_S = 300;
-export const REFRESH_GRACE_MS = 10_000;
+export const REFRESH_GRACE_MS = 30_000;
 
 export type RevokeReason =
   | "rotated"
@@ -66,7 +66,10 @@ export function outcomeAfterPasswordOk(
 
 export type RefreshVerdict = "valid" | "expired" | "superseded" | "reuse";
 
-/** Đã thu hồi thắng hết hạn (plan §10 G4). `rotated` trong ≤ 10 s → superseded (tab song song). */
+/**
+ * Đã thu hồi thắng hết hạn (plan §10 G4). `rotated` trong ≤ 30 s → superseded: tải lại trang / tab song song
+ * làm mất phản hồi mang cookie mới ⇒ cấp lại token (không thu hồi chuỗi); quá ân hạn → reuse (thu hồi chuỗi).
+ */
 export function classifyRefresh(
   t: { revokedAt: Date | null; revokedReason: RevokeReason | null; expiresAt: Date },
   now: Date,

@@ -34,7 +34,7 @@ const M1_TESTABLE = [
   "UNAUTHORIZED",
   "INVALID_CREDENTIALS",
   "INVALID_REFRESH_TOKEN",
-  "REFRESH_SUPERSEDED",
+  // REFRESH_SUPERSEDED không còn được phát (auth-refresh-reload): token cũ vừa xoay ≤ 30 s được cấp lại; mã giữ trong contract cho client cũ.
   "INVALID_CHANGE_TOKEN",
   "FORBIDDEN",
   "ACCOUNT_LOCKED",
@@ -101,11 +101,6 @@ const SCENARIOS: Record<Testable, Scenario> = {
   UNAUTHORIZED: (e) => e.get("/auth/me"),
   INVALID_CREDENTIALS: (e) => e.login("acme", "an", "Sai-Passw0rd-1"),
   INVALID_REFRESH_TOKEN: (e) => e.post("/auth/refresh"),
-  REFRESH_SUPERSEDED: async (e) => {
-    const s = await e.session("acme", "an", PW);
-    await e.post("/auth/refresh", { cookie: s.cookie });
-    return e.post("/auth/refresh", { cookie: s.cookie });
-  },
   INVALID_CHANGE_TOKEN: (e) =>
     e.post("/auth/change-password", {
       body: { change_token: "khong.phai.jwt", new_password: "New-Passw0rd-9" },
@@ -167,7 +162,7 @@ describe("ADM-FR-01 · mã lỗi ↔ API_ERRORS", () => {
     });
   }
 
-  it("ADM-FR-01 · spec §3 · tập mã M1 đã chạy kịch bản == 22 mã M1 (trừ INTERNAL_ERROR)", () => {
+  it("ADM-FR-01 · spec §3 · tập mã M1 đã chạy kịch bản == 21 mã M1 còn phát (trừ INTERNAL_ERROR, REFRESH_SUPERSEDED)", () => {
     expect([...covered].sort()).toEqual([...M1_TESTABLE].sort());
   });
 

@@ -110,25 +110,64 @@ describe("ADM-FR-01 · login", () => {
 });
 
 describe("ADM-FR-02 · refresh / ADM-FR-03 · logout", () => {
-  test("ADM-FR-02 · xoay: cũ rotated+replaced_by; dùng lại ngay → SUPERSEDED; lùi 11 s → reuse cả chuỗi", async () => {
+  // Đồng hồ giả: lùi revoked_at của token đã xoay (không sleep).
+  const ageRotated = (secs: number) =>
+    owner`update admin.refresh_tokens set revoked_at = revoked_at - make_interval(secs => ${secs})
+      where revoked_reason = 'rotated'`;
+
+  test("ADM-FR-02 · xoay: cũ rotated, dùng lại ≤ 30 s → 200 cấp lại cùng chuỗi, phiên sống, lùi 31 s → reuse cả chuỗi", async () => {
     const s = await signIn();
     if (s.kind !== "session") throw new Error("expected session");
     const next = await refresh(ctx, s.refreshToken, WEB);
-    expect(await code(refresh(ctx, s.refreshToken, WEB))).toBe("REFRESH_SUPERSEDED");
-    await owner`update admin.refresh_tokens set revoked_at = revoked_at - interval '11 seconds'
-      where revoked_reason = 'rotated'`;
+    const again = await refresh(ctx, s.refreshToken, WEB); // tải lại trang: phản hồi xoay bị huỷ
+    expect(again.refreshToken).not.toBe(next.refreshToken);
+    await ageRotated(29);
+    const late = await refresh(ctx, s.refreshToken, WEB);
+    expect(late.grant.status).toBe("authenticated");
+    expect(await code(refresh(ctx, next.refreshToken, WEB))).toBe("ok");
+    expect(await code(refresh(ctx, again.refreshToken, WEB))).toBe("ok");
+    const fam = await owner`select count(distinct family_id)::int as n from admin.refresh_tokens`;
+    expect(fam[0]?.n).toBe(1);
+    await ageRotated(2); // 31 s kể từ lần xoay đầu
     expect(await code(refresh(ctx, s.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
-    expect(await code(refresh(ctx, next.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
-    const rows = await owner`select revoked_reason from admin.refresh_tokens order by created_at`;
-    expect(rows.map((x) => x.revoked_reason)).toEqual(["rotated", "reuse"]);
+    expect(await code(refresh(ctx, late.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
+    const alive = await owner`select count(*)::int as n from admin.refresh_tokens
+      where revoked_at is null`;
+    expect(alive[0]?.n).toBe(0);
   });
 
-  test("ADM-FR-02 · 4 refresh song song → đúng 1 thắng", async () => {
+  test("ADM-FR-02 · 4 refresh song song → cả 4 thành công (một xoay, ba cấp lại), không ai bị đăng xuất", async () => {
     const s = await signIn();
     if (s.kind !== "session") throw new Error("expected session");
-    const r = await Promise.all([1, 2, 3, 4].map(() => code(refresh(ctx, s.refreshToken, WEB))));
-    expect(r.filter((x) => x === "ok")).toHaveLength(1);
-    expect(r.filter((x) => x === "REFRESH_SUPERSEDED")).toHaveLength(3);
+    const r = await Promise.all(
+      [1, 2, 3, 4].map(async () => (await refresh(ctx, s.refreshToken, WEB)).refreshToken),
+    );
+    expect(new Set(r).size).toBe(4);
+    for (const t of r) expect(await code(refresh(ctx, t, WEB))).toBe("ok");
+  });
+
+  test("ADM-FR-02 · cô lập tenant: reuse ở tenant A không đụng chuỗi tenant B, token B trong ân hạn chỉ cấp phiên B, B bị khoá → 401", async () => {
+    const TB = "01900000-0000-7000-8000-00000000c002";
+    const UB = "01900000-0000-7000-8000-00000000c021";
+    await owner`insert into admin.tenants (id, key, name) values (${TB}, 'beta', 'Beta')`;
+    await owner`insert into admin.users (id, tenant_id, username, password_hash, display_name, role, must_change_password)
+      values (${UB}, ${TB}, 'an', ${hash}, 'An B', 'member', false)`;
+    const a = await signIn();
+    const b = await login(ctx, { tenant_key: "beta", username: "an", password: PW }, WEB);
+    if (a.kind !== "session" || b.kind !== "session") throw new Error("expected session");
+    await refresh(ctx, a.refreshToken, WEB);
+    await refresh(ctx, b.refreshToken, WEB);
+    await owner`update admin.refresh_tokens set revoked_at = revoked_at - interval '31 seconds'
+      where tenant_id = ${TID} and revoked_reason = 'rotated'`;
+    expect(await code(refresh(ctx, a.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
+    const bRows = await owner`select revoked_reason from admin.refresh_tokens
+      where tenant_id = ${TB} order by created_at`;
+    expect(bRows.map((x) => x.revoked_reason)).toEqual(["rotated", null]);
+    // B vẫn trong ân hạn → cấp lại phiên của chính B (không lẫn user/tenant A).
+    const again = await refresh(ctx, b.refreshToken, WEB);
+    expect(again.grant.status === "authenticated" && again.grant.user.id).toBe(UB);
+    await owner`update admin.tenants set active = false where id = ${TB}`;
+    expect(await code(refresh(ctx, b.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
   });
 
   test("ADM-FR-03 · logout idempotent; refresh sau logout → INVALID_REFRESH_TOKEN", async () => {

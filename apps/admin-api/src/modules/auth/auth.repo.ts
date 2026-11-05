@@ -176,6 +176,20 @@ export async function rotateRefresh(tx: Tx, tenantId: string, id: string, replac
   return rows.length === 1;
 }
 
+/**
+ * Chuỗi (phiên) còn ít nhất một token sống? Dùng khi cấp lại token cho token cũ vừa xoay (ân hạn):
+ * chuỗi đã bị đăng xuất / thu hồi reuse / khoá user thì KHÔNG cấp lại. FOR SHARE: chờ thu hồi đang chạy dở.
+ */
+export async function familyAlive(tx: Tx, tenantId: string, familyId: string): Promise<boolean> {
+  const rows = await tx
+    .select({ id: refreshTokens.id })
+    .from(refreshTokens)
+    .where(and(active(tenantId), eq(refreshTokens.familyId, familyId)))
+    .limit(1)
+    .for("share");
+  return rows.length > 0;
+}
+
 export async function revokeRefresh(tx: Tx, tenantId: string, id: string, reason: RevokeReason) {
   await tx
     .update(refreshTokens)

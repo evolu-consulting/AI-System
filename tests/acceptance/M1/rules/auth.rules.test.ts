@@ -23,7 +23,7 @@ describe("ADM-FR-07 · hằng số auth", () => {
     expect(r.ACCESS_TOKEN_TTL_S).toBe(900);
     expect(r.REFRESH_TOKEN_TTL_S).toBe(2_592_000);
     expect(r.CHANGE_TOKEN_TTL_S).toBe(300);
-    expect(r.REFRESH_GRACE_MS).toBe(10_000);
+    expect(r.REFRESH_GRACE_MS).toBe(30_000);
   });
 });
 
@@ -115,17 +115,17 @@ describe("ADM-FR-02 · phân loại refresh token", () => {
     expect(r.classifyRefresh({ ...live, expiresAt: at(-1) }, NOW)).toBe("expired");
   });
 
-  it("ADM-FR-02 · M1-R07 · classifyRefresh: rotated trong ân hạn 10 s (0 ms và đúng 10000 ms) → superseded", async () => {
+  it("ADM-FR-02 · M1-R07 · classifyRefresh: rotated trong ân hạn 30 s (0 ms và đúng 30000 ms) → superseded", async () => {
     const r = await loadAuthRules();
-    for (const age of [0, 10_000]) {
+    for (const age of [0, 30_000]) {
       const t = { ...live, revokedAt: at(-age), revokedReason: "rotated" };
       expect(r.classifyRefresh(t, NOW)).toBe("superseded");
     }
   });
 
-  it("ADM-FR-02 · M1-AC04 · classifyRefresh: rotated quá 10 s (10001 ms) → reuse", async () => {
+  it("ADM-FR-02 · M1-AC04 · classifyRefresh: rotated quá 30 s (30001 ms) → reuse", async () => {
     const r = await loadAuthRules();
-    const t = { ...live, revokedAt: at(-10_001), revokedReason: "rotated" };
+    const t = { ...live, revokedAt: at(-30_001), revokedReason: "rotated" };
     expect(r.classifyRefresh(t, NOW)).toBe("reuse");
   });
 
