@@ -6,11 +6,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseQuery, parseWith } from "../../../../lib/http";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import { ImpactFail, type ObligationImpact } from "../application/obligation-impact.usecase";
 
 export function obligationImpactRoutes(

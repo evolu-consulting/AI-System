@@ -1,6 +1,6 @@
 // HD-FR-94 · BR-2 · BR-7 · BR-8 · D9-09 · D9-18: gia hạn cả nhóm, hoàn tất bằng serial mới, mất khách, hẹn nhắc — port
 // `mgmt-app/api/app/cks/sales.py:87-151` + `routes/cks.py:180-243`. Mỗi lệnh MỘT tx: khoá → kiểm → luật → MỘT câu ghi.
-import type { PackWho } from "../../../kit/application/ports";
+import type { PackWho } from "../../../kit/public";
 import { addDays } from "../../domain/local-time.rules";
 import {
   hasDuplicate,

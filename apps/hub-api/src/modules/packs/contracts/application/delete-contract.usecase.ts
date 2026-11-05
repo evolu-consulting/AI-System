@@ -2,7 +2,7 @@
 // `contracts.delete_contract` (voids sổ đối tác, gỡ khách đang dùng / SP sinh từ HĐ, xoá mốc + dòng giao, một dòng audit).
 // Lỗi bất kỳ ⇒ tx huỷ, không đổi gì. Quyền (`admin` = contracts-owner) kiểm ở route.
 
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import type { DeleteImpact, DeleteResult } from "../domain/delivery.types";
 import { localDate } from "../domain/local-time.rules";
 import { StockError } from "../domain/stock.rules";

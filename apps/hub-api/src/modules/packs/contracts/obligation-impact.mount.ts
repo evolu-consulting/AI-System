@@ -2,7 +2,7 @@
 // theo cờ `REPUTATION_ENGINE` (đọc mỗi lần gọi, như `rep-current.mount`). Dùng cho route `GET /obligations/:id/impact` và cho lệnh
 // `settle` (lưu delta trên dòng sổ).
 import type { Db } from "@ai/db";
-import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import { createPackUow, packTenantOnly } from "../kit/public";
 import { deliveryRepo } from "./adapters/delivery.repo";
 import { obligationImpactRepo } from "./adapters/obligation-impact.repo";
 import { obligationImpact } from "./application/obligation-impact.usecase";

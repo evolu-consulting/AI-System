@@ -4,8 +4,7 @@
 // CR-101a (Câu 6): người được mở lại = người phụ trách HĐ HOẶC owner gói (`admin`). Route chặn `write` trước; `admin` tính ở route
 // (cache quyền, 0 SQL); người phụ trách kiểm TRONG câu SQL (khoá hàng). Không được phép ⇒ `forbidden` (403), không ghi gì.
 // HĐ không thấy / tenant khác ⇒ 404. MỘT tx, 2 câu cố định.
-import type { KitTxRepos } from "../../kit/application/index-outbox";
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { KitTxRepos, PackUow, PackWho } from "../../kit/public";
 import { canReopen, reopenReasonOk, reopenVerdict } from "../domain/lock.rules";
 
 export type ReopenOutcome =

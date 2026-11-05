@@ -49,16 +49,18 @@ import { supplierPricesModule } from "./contracts/supplier-prices.mount";
 import { type UploadMountDeps, uploadModule } from "./contracts/upload.mount";
 import { mountCoreTools, mountDlcWired } from "./core-tools.mount";
 import { type AgentHubBridge, DLC_PACK, dlcRoutes } from "./dlc/dlc.mount";
-import { packMeRoutes } from "./kit/adapters/me.route";
-import { createPackFiles, packFilesRepo } from "./kit/adapters/pack-files.filebox";
-import { packFilesRoutes } from "./kit/adapters/pack-files.routes";
-import { packGroups } from "./kit/adapters/pack-groups";
-import type { PackAccessView } from "./kit/adapters/pack-guard.middleware";
-import { packNavRoutes } from "./kit/adapters/pack-nav.route";
-import type { PackToolRegistry } from "./kit/adapters/pack-tools.registry";
-import { createPackUow, packTenantOnly } from "./kit/adapters/pack-uow";
-import { createPdfConverter } from "./kit/adapters/pdf";
-import type { PackRunsBridge } from "./kit/application/pack-runs.ports";
+import type { PackAccessView, PackRunsBridge, PackToolRegistry } from "./kit/public";
+import {
+  createPackFiles,
+  createPackUow,
+  createPdfConverter,
+  packFilesRepo,
+  packFilesRoutes,
+  packGroups,
+  packMeRoutes,
+  packNavRoutes,
+  packTenantOnly,
+} from "./kit/public";
 import { afterPacksMounted } from "./packs.after-mount";
 import { fileboxClients, type PackFb, packFilebox } from "./packs.filebox";
 import { envInt, tenantLimits, tenantTz } from "./packs.tenant-config";

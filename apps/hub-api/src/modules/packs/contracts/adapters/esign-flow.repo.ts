@@ -5,8 +5,8 @@
 import type { Db, Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
-import { type PackAccessView, packAccessInput } from "../../kit/adapters/pack-guard.middleware";
-import type { PackWho } from "../../kit/application/ports";
+import type { PackWho } from "../../kit/public";
+import { type PackAccessView, packAccessInput } from "../../kit/public";
 import {
   ESIGN_SENDING_STALE_MIN,
   type EsignFlowCurrent,

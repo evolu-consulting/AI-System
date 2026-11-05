@@ -8,7 +8,7 @@ import {
 } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { AppError } from "../../../lib/errors";
-import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
+import type { PackToolCatalog } from "../../packs/kit/public";
 import type { DefRefs } from "../defs/def-refs";
 import { loadDefRefs } from "../defs/teams.repo";
 import type { ToolDefShape } from "../domain/defs/tool-def.rules";

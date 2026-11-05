@@ -4,11 +4,7 @@
 import { Hono } from "hono";
 import type { AuthUser } from "../../../../lib/auth.middleware";
 import { appError } from "../../../../lib/errors";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import type { listDifyWorkflows, readCurrentFlow } from "../application/approval-flow.usecase";
 
 const KEY = "contracts";

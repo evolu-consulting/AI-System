@@ -3,7 +3,7 @@
 // `signalEvent` (khoá run → stage → timer). Lỗi một run ⇒ ném (gói ghi log, không chặn việc của gói). Khoá sự kiện sai dạng ⇒ 0.
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
-import type { PackRunRef } from "../../packs/kit/application/pack-runs.ports";
+import type { PackRunRef } from "../../packs/kit/public";
 import type { SystemUow } from "../application/ports";
 import { signalEvent } from "../application/timers/signal-event.usecase";
 import type { ProcessDeps } from "../core/ports";

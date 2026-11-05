@@ -1,6 +1,6 @@
 // HD-FR-31 · #218 · M3-decouple: chế độ flow (production) — tải lên / trích lại / nhập tay MỞ LƯỢT DUYỆT của gói rồi xếp lượt AI
 // đọc vào hàng đợi bền (Redis Streams). Không engine quy trình. Lớp 2: chỉ cổng.
-import type { PackUow } from "../../kit/application/ports";
+import type { PackUow } from "../../kit/public";
 import { LIVE_APPROVAL } from "../domain/approval-machine.rules";
 import type { ApprovalTxRepos } from "./approval.ports";
 import type { ExtractJobs, startApproval } from "./approval.usecase";

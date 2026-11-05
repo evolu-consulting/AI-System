@@ -1,7 +1,7 @@
 // HD-FR-23 · HD-FR-25 · review HD2 Trung 4: tra MST hai bên (song song, ngoài tx) + tra lại theo hẹn giờ. Cổng giãn ≥ 2 s và
 // nghỉ khi 429 trả `unavailable` kèm `retryAt` ⇒ người gọi hẹn một lượt `refreshParties` đúng giờ đó (không ngủ chờ, không
 // vòng poll). `refreshParties`: đọc HĐ (1 câu) → tra lại → chỉ thay `warnings` khi `version` chưa đổi (không đè sửa mới hơn).
-import type { PackWho } from "../../kit/application/ports";
+import type { PackWho } from "../../kit/public";
 import type { ContractFields } from "../domain/fields.rules";
 import { fillFields } from "../domain/fields.rules";
 import { partyCheck, type TaxLookup } from "../domain/party.rules";

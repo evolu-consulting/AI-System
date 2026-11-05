@@ -1,6 +1,6 @@
 // PK-FR-09 · PK-FR-08 · PK-AC10 · N1 plan §8, §10: tạo item + dòng + 1 hàng outbox chỉ mục trong CÙNG một tx của gói
 // (tenant/user từ token qua `who`) — rollback thì không còn gì. Thứ tự câu: ghi cha+con, rồi outbox (3 câu kể cả set_config).
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { buildItem, type Item, type NewItem } from "../domain/item";
 import type { IdGen, PkdemoRepos } from "./ports";
 

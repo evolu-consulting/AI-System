@@ -4,7 +4,7 @@
 //   kẹt chưa có run (CR-107 · mẫu thiếu Group lúc mở) ⇒ run mới dưới người bắt đầu lượt với mẫu HIỆN HÀNH. Mẫu vẫn hỏng ⇒ ghi lại lý do.
 // - `retryEngineApproval` ("Thử lại"): run `needs_decision` ⇒ quyết decision mở bằng `add_attempt` của engine (không trạng thái mới).
 // - `cancelReopenEngineApproval` ("Huỷ & mở lại"): huỷ run (scope system) + ghi lý do `CANCELLED_BY_OWNER` rồi đi đúng đường mở lại.
-import type { PackWho } from "../../kit/application/ports";
+import type { PackWho } from "../../kit/public";
 import { CANCELLED_BY_OWNER, FLOW_INVALID, reconcileOf } from "../domain/approval-engine.rules";
 import { APPROVAL_PROCESS_KEY } from "../domain/approval-flow.rules";
 import type { ApprovalEnginePort, EngineStartRow } from "./approval-engine.ports";

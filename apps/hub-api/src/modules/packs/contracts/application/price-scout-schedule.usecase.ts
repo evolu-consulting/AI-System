@@ -2,7 +2,7 @@
 // lô SP (`FOR UPDATE SKIP LOCKED`, giới hạn theo lượt đang chạy của tenant + trần ngày + trần tháng — hết trần ⇒ 0 SP, bỏ qua) ⇒
 // gọi agent song song (≤ số lượt cho phép) NGOÀI tx ⇒ MỘT câu lưu cả lô (giá nguồn market, cảnh báo, lịch kế, token, gỡ lease).
 // Lỗi agent ⇒ thử lại sau 1 ngày. Không ngủ chờ: `drain` chạy tới khi hết tenant có việc rồi trả.
-import type { PackSystemUow } from "../../kit/application/ports";
+import type { PackSystemUow } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 import {
   effectiveConfig,

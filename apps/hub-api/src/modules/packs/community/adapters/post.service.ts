@@ -9,8 +9,7 @@ import {
 import type { Tx } from "@ai/db";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith } from "../../../../lib/http";
-import type { NotifyTxRepos } from "../../kit/application/notify";
-import type { PackUow } from "../../kit/application/ports";
+import type { NotifyTxRepos, PackUow } from "../../kit/public";
 import {
   type Audience,
   defaultAudience,

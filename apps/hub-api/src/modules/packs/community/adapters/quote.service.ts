@@ -3,7 +3,7 @@
 import type { HostHint, QuoteInput, QuotePreview, QuoteSaved } from "@ai/contracts/community";
 import type { Tx } from "@ai/db";
 import { AppError, appError } from "../../../../lib/errors";
-import type { PackUow } from "../../kit/application/ports";
+import type { PackUow } from "../../kit/public";
 import {
   type HostBookReader,
   QUOTE_FAIL_KINDS,

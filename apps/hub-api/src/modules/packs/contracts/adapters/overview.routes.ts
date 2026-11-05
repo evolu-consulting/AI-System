@@ -9,11 +9,7 @@ import {
 import { type Context, Hono } from "hono";
 import { appError } from "../../../../lib/errors";
 import { parseQuery, parseWith, readJson } from "../../../../lib/http";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import { type OverviewUsecase, TodoFail } from "../application/overview.usecase";
 
 const KEY = "contracts";

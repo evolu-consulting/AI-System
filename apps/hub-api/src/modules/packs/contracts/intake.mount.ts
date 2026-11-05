@@ -3,11 +3,8 @@
 // rõ ràng (stage `tool_failed`), tool đọc/nhắc vẫn chạy.
 import { ESignSignerSchema } from "@ai/contracts/pack-contracts";
 import type { Db, Tx } from "@ai/db";
-import { createPackUow } from "../kit/adapters/pack-uow";
-import { slotRegistry } from "../kit/adapters/slot-registry";
-import type { PackRunsBridge } from "../kit/application/pack-runs.ports";
-import type { PackToolDef } from "../kit/application/pack-tools.ports";
-import type { SlotSpec } from "../kit/application/slot.ports";
+import type { PackRunsBridge, PackToolDef, SlotSpec } from "../kit/public";
+import { createPackUow, slotRegistry } from "../kit/public";
 import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { intakeTools } from "./adapters/intake.tools";

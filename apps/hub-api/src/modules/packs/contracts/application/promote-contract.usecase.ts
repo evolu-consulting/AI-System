@@ -4,8 +4,9 @@
 // → không nâng được (đua) ⇒ gỡ tệp + hoàn hạn mức. Review cuối đợt: tenant BẬT duyệt ⇒ HĐ `needs_review` + mở lượt duyệt cấp 1 (engine
 // nếu công ty có entitlement, máy cũ nếu không — cùng `startApproval` của nhập tay); TẮT ⇒ khoá ngay (K1), `locked_by` = người nâng.
 // Không AI đọc lại (giao dịch đã có số liệu).
-import { orgForTenant } from "../../kit/application/pack-files.ports";
-import type { PackUow, PackWho } from "../../kit/application/ports";
+
+import type { PackUow, PackWho } from "../../kit/public";
+import { orgForTenant } from "../../kit/public";
 import { promoteVerdict } from "../domain/deal.rules";
 import { type ContractFileStore, UploadError } from "./upload-contract.ports";
 import { sniffUpload, UPLOAD_MIME } from "./upload-contract.usecase";

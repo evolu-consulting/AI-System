@@ -4,7 +4,7 @@
 // tay mới hơn) ⇒ đọc lại, gộp lại (≤ 3 lần). Không gọi mạng/CPU nặng trong tx; số câu cố định, không phụ thuộc số dòng hàng.
 // MST chưa tra được vì cổng hẹn giờ (khe 2 s / 429) ⇒ hẹn `refreshParties` (Trung 4). Chiều mua/bán: không cảnh báo khi chưa có
 // pháp nhân của mình (khớp mgmt-app `enrich.py:105`, review Thấp 5).
-import type { PackWho } from "../../kit/application/ports";
+import type { PackWho } from "../../kit/public";
 import {
   type ApplyOutput,
   mergeExtraction,

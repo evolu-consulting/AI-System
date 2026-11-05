@@ -5,7 +5,7 @@
 // người dùng thấy; danh bạ / báo giá / ảnh chụp điểm theo `visible_party_keys()` hoặc do mình tạo (0019); owner/chế độ tenant thấy hết.
 // Không dùng phạm vi hệ thống trong HTTP.
 
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { compareGoods, priceGaps, priceLines, productList } from "../domain/goods-prices.rules";
 import type { Inspect } from "../domain/link-check.rules";
 import { localDate } from "../domain/local-time.rules";

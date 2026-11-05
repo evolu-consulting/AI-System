@@ -5,8 +5,7 @@
 // Review HD3 S1: luật `editVerdict` — trường rẽ nhánh khi HĐ đang qua duyệt sau cấp 1 ⇒ 409 `CONTRACT_IN_APPROVAL` (hỏi engine
 // giai đoạn run chỉ khi cần, +1 câu hub). CR-097 K1 · HD-FR-100: HĐ đã khoá (`locked_at`) ⇒ trường pháp lý 409 `CONTRACT_LOCKED`
 // cho mọi người (`lockVerdict`, trước luật duyệt); chỉ trường vận hành (`notice_days`) sửa được. D3-13 (sửa ⇒ mở lại duyệt) bỏ.
-import type { KitTxRepos } from "../../kit/application/index-outbox";
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { KitTxRepos, PackUow, PackWho } from "../../kit/public";
 import {
   type ApprovalEditPolicy,
   DEFAULT_EDIT_POLICY,

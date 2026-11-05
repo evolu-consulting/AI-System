@@ -8,11 +8,7 @@ import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson, withoutScopeKeys } from "../../../../lib/http";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import type { ExportContracts } from "../application/export-contracts.usecase";
 import type { GetContract } from "../application/get-contract.usecase";
 import type { GetFacets } from "../application/get-facets.usecase";

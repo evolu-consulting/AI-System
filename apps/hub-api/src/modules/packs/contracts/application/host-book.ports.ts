@@ -1,6 +1,6 @@
 ﻿// com-c8-host-read · ADR-0031: cổng ĐỌC `HostBookReader` (gói community khai cùng hình dạng ở `application/*.ports.ts` của nó; contracts
 // cung cấp; `packs.mount.ts` tiêm sau — CHƯA nối Community). Kiểu thuần tự khai, không kiểu của gói kia. Chỉ đọc.
-import type { PackWho } from "../../kit/application/ports";
+import type { PackWho } from "../../kit/public";
 import type { HostHint, HostMatchHow } from "../domain/host-book.rules";
 
 /** Người gọi. `kind` do C1 thêm vào `PackWho`; vắng ⇒ coi là nội bộ (token người dùng), `external` ⇒ từ chối. */

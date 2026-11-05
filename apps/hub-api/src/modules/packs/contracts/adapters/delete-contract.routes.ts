@@ -10,11 +10,7 @@ import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import {
   DeleteContractFail,
   type DeleteContractUsecases,

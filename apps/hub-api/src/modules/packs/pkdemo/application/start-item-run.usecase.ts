@@ -1,15 +1,13 @@
 // N2-FR-01 · N2-D07 · mẫu khởi chạy run quy trình cho một bản ghi `pkdemo.items` (khuôn cho HD3: hợp đồng ↔ run duyệt).
 
+import type { PackRunCaller, PackRunRequest } from "../../kit/public";
 import {
   type OwnedRunOutcome,
   ownedRunOutcome,
-} from "../../kit/application/pack-run-outcome.usecase";
-import type { PackRunCaller, PackRunRequest } from "../../kit/application/pack-runs.ports";
-import {
   type StartPackRunDeps,
   type StartPackRunResult,
   startPackRun,
-} from "../../kit/application/start-pack-run.usecase";
+} from "../../kit/public";
 import type { PkdemoRepos } from "./ports";
 
 export type StartItemRun = (

@@ -1,7 +1,7 @@
 // V2-L · CD-01: đọc/ghi cài đặt công ty. Đọc: mọi người có quyền đọc gói (sidebar/menu dùng tên, logo, màu); ghi: chỉ quản lý (route).
 // Một tx đọc cả hai nguồn (bảng nhận diện + cờ duyệt); ghi chỉ cờ khi đổi (nhật ký duyệt chỉ ghi lúc đổi thật).
 
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import type { CompanyIn, CompanyOut } from "../domain/companies.types";
 import { LEGAL_WARN_DEFAULT } from "../domain/legal-warn.rules";
 import type { CompanyRepo } from "./companies.ports";

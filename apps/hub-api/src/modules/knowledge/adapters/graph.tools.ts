@@ -1,7 +1,7 @@
 // G1 · CR-095: tool MCP đọc đồ thị tri thức — đường để gói khác (contracts: HĐ tương tự, vùng quanh đối tác/tài liệu) đọc đồ
 // thị QUA CỔNG, không join chéo schema. `knowledge-similar` (= `/documents/{id}/similar` của mgmt-app) và
 // `knowledge-graph` (= `/graph/{id}`). Quyền `read`, không side_effect, tx của tenant job (`/mcp`).
-import type { PackToolDef } from "../../packs/kit/application/pack-tools.ports";
+import type { PackToolDef } from "../../packs/kit/public";
 import type { GraphService } from "../application/graph.usecases";
 import { KNOWLEDGE_KEY } from "./knowledge.tools";
 

@@ -12,11 +12,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import type { AttachParent, GetPrices, SuggestParents } from "../application/appendix.usecase";
 import type { CreateCategory, ListCategories } from "../application/categories.usecase";
 import { lockedError } from "./manage.routes";

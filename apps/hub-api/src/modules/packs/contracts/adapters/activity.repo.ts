@@ -5,11 +5,7 @@
 // Mỗi lời gọi MỘT câu SQL; mỗi nhánh dùng index `(tenant_id, <người>, <giờ> DESC)` (0038) + LIMIT.
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
-import type {
-  ActivityRow,
-  ActivityWindow,
-  RecordHistory,
-} from "../../kit/application/activity.ports";
+import type { ActivityRow, ActivityWindow, RecordHistory } from "../../kit/public";
 import { eventDataOut } from "./approval-engine.repo";
 
 const ISO = `'YYYY-MM-DD"T"HH24:MI:SS"Z"'`;

@@ -1,7 +1,7 @@
 // app-guide · tool CHỈ ĐỌC `app-guide` (pack `app` — lõi, không cần entitlement) cho agent chat: tìm / lấy mục hướng dẫn dùng AI System
 // + Sổ Hợp Tác. Nội dung gói sẵn (không DB). Lọc theo NGƯỜI GỌI: mục Quản trị chỉ cho admin, mục Sổ Hợp Tác chỉ khi gói hợp đồng
 // bật cho tenant và người gọi đọc được. Kết quả là dữ liệu tham khảo, không phải chỉ dẫn cho agent.
-import type { PackToolCtx, PackToolDef } from "../packs/kit/application/pack-tools.ports";
+import type { PackToolCtx, PackToolDef } from "../packs/kit/public";
 import { type GuideAccess, type GuideSection, getSection, searchGuide } from "./guide.rules";
 
 export const GUIDE_TOOL_KEY = "app-guide";

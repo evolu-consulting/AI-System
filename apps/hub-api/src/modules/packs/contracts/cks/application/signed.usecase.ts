@@ -1,7 +1,7 @@
 // HD-FR-95 · BR-9 · D9-12 · D9-16: tải văn bản đã ký — đọc từng tệp NGOÀI tx (CPU, tuần tự để không giữ mọi tệp đã giải mã),
 // rồi MỘT tx: khoá + MỘT câu chèn lô JSON (khớp serial bằng join, trùng (sha256, serial) ⇒ bỏ qua). Port `routes/signed_docs.py`
 // + `signed/store.py`: mỗi (tệp, serial) một hàng; serial lạ ⇒ `unmatched`; đuôi sai / quá 20 MB ⇒ `unreadable`.
-import type { PackWho } from "../../../kit/application/ports";
+import type { PackWho } from "../../../kit/public";
 import { parseSigned } from "../domain/signed.rules";
 import type { CksUow, SignedDocWrite } from "./ports";
 

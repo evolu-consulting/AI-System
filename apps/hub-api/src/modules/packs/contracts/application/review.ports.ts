@@ -1,5 +1,5 @@
 // V2-G · HD-02/HD-08 · §4.2: cổng của "Lưu" màn xác nhận (một tx) và gắn lại SP cho dòng HĐ đã lưu. Lớp 2 — chỉ kiểu.
-import type { KitTxRepos } from "../../kit/application/index-outbox";
+import type { KitTxRepos } from "../../kit/public";
 import type { Deal } from "../domain/milestones.rules";
 import type { ReviewPlan } from "../domain/review.rules";
 import type { ProductLinksRepo } from "./product-links.usecase";

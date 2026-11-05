@@ -5,8 +5,7 @@
 // cho cả lô — chuông ghi trong tx của tenant ⇒ đúng tenant HĐ. Không gọi mạng nhà cung cấp (Luật 4c: chỉ trạng thái DB). Ngủ CHỈ
 // giữa các lượt. Chạy lại / nhiều instance: ghi có điều kiện ⇒ không nhắc/chuyển cấp trùng. esign-sweep2 · sau phần SQL, pha đồng bộ
 // phong bì với nhà cung cấp (`esign-sync.ts`, ngoài tx, có giới hạn) khi `d.sync` có.
-import type { NotifyInput, NotifyTxRepos } from "../../kit/application/notify";
-import type { PackSystemUow } from "../../kit/application/ports";
+import type { NotifyInput, NotifyTxRepos, PackSystemUow } from "../../kit/public";
 import { ESIGN_SENDING_STALE_MIN } from "./esign-flow.usecase";
 import { type EsignSyncDeps, syncEsignOnce } from "./esign-sync";
 

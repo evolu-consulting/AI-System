@@ -12,11 +12,7 @@ import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { appError } from "../../../../lib/errors";
 import { parseQuery, parseWith, readJson } from "../../../../lib/http";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import { FollowupFail, type FollowupsUsecases } from "../application/followups.usecase";
 import { type MyWork, MyWorkFail } from "../application/mywork.usecase";
 

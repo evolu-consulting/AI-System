@@ -1,8 +1,7 @@
 // products-confirm · BA 5.5: gắn/tạo SP cho dòng HĐ khi HĐ đã xác nhận (lớp 2 — không SQL). MỘT tx `PackUow`; xong ⇒ outbox HĐ.
 // Bước duyệt cuối gọi cùng cổng `ProductLinksRepo` TRONG tx của nó (approval.usecase) — không qua hàm này.
 import type { ProductLink } from "@ai/contracts/pack-contracts";
-import type { KitTxRepos } from "../../kit/application/index-outbox";
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { KitTxRepos, PackUow, PackWho } from "../../kit/public";
 
 export type ProductLinksOutcome =
   /** `matched`: số link gửi lên trỏ đúng dòng của HĐ (dòng lạ bị bỏ qua — gọi nơi cần chặt thì so với số gửi). */

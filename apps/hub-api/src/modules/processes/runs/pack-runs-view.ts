@@ -9,7 +9,7 @@ import type {
   PackRunCaller,
   PackStepsView,
   PackStepView,
-} from "../../packs/kit/application/pack-runs.ports";
+} from "../../packs/kit/public";
 import { approverSql, headGateSql } from "../core/head-gate.sql";
 import type { ProcessDeps } from "../core/ports";
 import { dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules";

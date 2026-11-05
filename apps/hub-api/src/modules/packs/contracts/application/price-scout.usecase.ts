@@ -1,7 +1,7 @@
 // price-scout · cấu hình dò giá (SP + mặc định nhóm + trần tháng) và lượt dò bấm tay. Lượt dò: SP thuộc tenant (không phải Giới
 // thiệu) ⇒ giữ một lượt trong trần tháng (hết ⇒ `month_cap`, không gọi agent) ⇒ trần thao tác AI/ngày ⇒ agent `price-scout` với lời
 // nhắc dữ liệu CHỈ tên SP + cấu hình dò ⇒ cộng token ⇒ parse chặt (loại trang bị loại, quy VAT). Kết quả KHÔNG tự lưu (như V2-J2).
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 import {
   effectiveConfig,

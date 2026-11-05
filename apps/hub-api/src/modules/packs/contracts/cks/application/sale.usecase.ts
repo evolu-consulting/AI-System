@@ -1,6 +1,6 @@
 // HD-FR-91 · HD-FR-92 · BR-1 · BR-2 · BR-7 · D9-06 · D9-19 · D9-20: nhập lô, bán chữ ký, thêm chữ ký khách tự mua. Mỗi lệnh MỘT tx:
 // khoá tenant CKS → MỘT câu kiểm → luật (domain) → MỘT câu ghi (+ outbox HĐ). Lỗi luật ném `CksFail` ⇒ tx hoàn tác.
-import type { PackWho } from "../../../kit/application/ports";
+import type { PackWho } from "../../../kit/public";
 import {
   certLabel,
   hasDuplicate,

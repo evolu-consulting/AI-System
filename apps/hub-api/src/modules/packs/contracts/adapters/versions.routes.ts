@@ -7,11 +7,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { appError } from "../../../../lib/errors";
 import { parseWith } from "../../../../lib/http";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import type {
   VersionDiffRepo,
   VersionDiffUsecase,

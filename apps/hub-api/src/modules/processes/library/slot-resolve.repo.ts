@@ -4,7 +4,7 @@
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { Db } from "../../../lib/db";
-import type { ResolvedSlot } from "../../packs/kit/application/slot.ports";
+import type { ResolvedSlot } from "../../packs/kit/public";
 
 const KEY = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

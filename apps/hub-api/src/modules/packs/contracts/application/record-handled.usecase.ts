@@ -1,8 +1,7 @@
 // HD4-FR-06 · HD4-AC06 · plan §3: ghi kết quả xử lý (mgmt-app `routes/contracts.py:452-461`). MỘT tx `PackUow` (role `contracts_rw`):
 // ① set_config ② khoá hàng (0 hàng ⇒ not_found = 404) ③ trạng thái theo ngày ở múi tenant (domain) ④ CTE update + event `handled`
 // ⑤ outbox. Trigger HD4 xếp lịch lại (`remind_at = -infinity`) vì `handled` đổi ⇒ vòng nhắc dừng nhắc HĐ này.
-import type { KitTxRepos } from "../../kit/application/index-outbox";
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { KitTxRepos, PackUow, PackWho } from "../../kit/public";
 import { CONFIRMED_STATUSES, statusOn } from "../domain/deadline.rules";
 import { localDate } from "../domain/local-time.rules";
 import type { ContractStatus, HandledOutcome } from "../domain/status.rules";

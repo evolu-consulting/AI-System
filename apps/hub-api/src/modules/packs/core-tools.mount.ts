@@ -7,9 +7,7 @@ import { mountGuide } from "../guide/guide.mount";
 import { mountMyHistory } from "../my-history/my-history.mount";
 import { contractsActivitySource } from "./contracts/activity.mount";
 import { type AgentHubBridge, mountDlc } from "./dlc/dlc.mount";
-import type { PackAccessView } from "./kit/adapters/pack-guard.middleware";
-import type { PackToolRegistry } from "./kit/adapters/pack-tools.registry";
-import type { PackRunsBridge } from "./kit/application/pack-runs.ports";
+import type { PackAccessView, PackRunsBridge, PackToolRegistry } from "./kit/public";
 import { tenantTz } from "./packs.tenant-config";
 
 export type CoreToolsDeps = {

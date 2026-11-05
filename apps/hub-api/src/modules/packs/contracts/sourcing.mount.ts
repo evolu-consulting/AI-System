@@ -2,8 +2,8 @@
 // `/pack/contracts` ở `packs.mount.ts`. Múi tenant qua `safeTimeZone` (HD4) để ngày "đang áp dụng" là ngày lịch của tenant.
 import type { Db, Tx } from "@ai/db";
 import type { Hono } from "hono";
-import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
-import { createPackUow } from "../kit/adapters/pack-uow";
+import type { PackAccessView, PackGuardVars } from "../kit/public";
+import { createPackUow } from "../kit/public";
 import { sourcingRepo } from "./adapters/sourcing.repo";
 import { sourcingRoutes } from "./adapters/sourcing.routes";
 import { sourcingUsecases } from "./application/sourcing.usecase";

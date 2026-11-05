@@ -3,8 +3,7 @@
 // câu SQL `FOR UPDATE SKIP LOCKED` (lô ≤ `limit`), chuông một lô; giờ là tham số `now` (test đồng hồ giả, KHÔNG sleep). Ngủ CHỈ
 // giữa các lượt. Chạy lại / nhiều instance: ghi có điều kiện + khoá dedup ⇒ không nhắc trùng.
 import type { Tx } from "@ai/db";
-import type { Notifier } from "../../kit/application/notify";
-import type { PackSystemUow } from "../../kit/application/ports";
+import type { Notifier, PackSystemUow } from "../../kit/public";
 import type { CommunityBlobs } from "../application/pack-ports";
 import { digestDue } from "../domain/notify.rules";
 import { sweepFilesOnce } from "./files.sweep";

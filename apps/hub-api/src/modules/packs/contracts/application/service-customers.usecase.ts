@@ -1,6 +1,6 @@
 // V2-H · SP-03 · §5.8 · §5.9: khách đang dùng của một SP (đọc theo luật thấy M1 — RLS `service_customers`), "Nhắc gia hạn" ⇒ việc
 // "Liên hệ mời gia hạn" của chính người bấm trong Cần xử lý, Cài đặt kinh doanh (số ngày nhắc mặc định). Mỗi ca MỘT tx `PackUow`.
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 import {
   buildServiceCustomers,

@@ -1,7 +1,7 @@
 // M3 · D3-04 · ADR-0028: tệp gốc PDF của HĐ ⇒ chữ cho lượt AI đọc — tải bytes từ FileBox org của tenant rồi `PdfConverter` (unpdf
 // trong Bun Worker). PDF scan ⇒ `PDF_NEEDS_OCR` (OCR ngoài phạm vi); hỏng/quá lớn/bận ⇒ mã của port. Loại khác (ảnh) ⇒ null
 // (đường cũ: `AGENT_UNAVAILABLE`). Không ném, không log nội dung.
-import type { PdfConverter } from "../../kit/domain/pdf.rules";
+import type { PdfConverter } from "../../kit/public";
 import type { SourceFileText } from "../application/extraction.ports";
 
 export type FileContent = (org: string) => {

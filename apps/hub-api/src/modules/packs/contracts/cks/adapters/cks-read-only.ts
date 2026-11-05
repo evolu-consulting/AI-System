@@ -3,7 +3,7 @@
 // nóng không thêm câu SQL (giữ số câu HD9-AC09); nguội ⇒ một tx đọc cờ. Guard quyền gói chạy TRƯỚC (người xem vẫn 403, 0 SQL).
 import type { MiddlewareHandler } from "hono";
 import { AppError } from "../../../../../lib/errors";
-import type { PackGuardVars } from "../../../kit/adapters/pack-guard.middleware";
+import type { PackGuardVars } from "../../../kit/public";
 
 export const CKS_FLAG_TTL_MS = 60_000;
 

@@ -1,8 +1,7 @@
 // V2-D · HD-05 · BA §5.7a-d · §5.3b: xác nhận mốc giao ⇒ kho (gọi trong tx của `settle`, cùng khoá HĐ → mốc), bảng Trên HĐ · Đã giao ·
 // Giao lần này, kiểm tồn khi lưu HĐ bán (cảnh báo, không chặn). Lớp 2: không SQL — luật ở `domain/delivery.rules.ts`.
 
-import type { NotifyInput } from "../../kit/application/notify";
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { NotifyInput, PackUow, PackWho } from "../../kit/public";
 import {
   checkPlan,
   type DComp,

@@ -5,7 +5,7 @@ import { ATTACH_ALLOWED, ATTACH_MAX_BYTES } from "@ai/contracts/attach";
 import type { CommunityFile } from "@ai/contracts/community";
 import type { Tx } from "@ai/db";
 import { AppError, appError } from "../../../../lib/errors";
-import type { PackUow } from "../../kit/application/ports";
+import type { PackUow } from "../../kit/public";
 import type { CommunityBlobs } from "../application/pack-ports";
 import { downloadHeaders, sniffMime } from "../domain/file.rules";
 import type { Access } from "./community-access";

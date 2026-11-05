@@ -2,8 +2,8 @@
 // luật thấy M1) + repo + use case + route, gắn dưới `/pack/contracts` ở `packs.mount.ts`. Múi tenant qua `safeTimeZone`; `now` để test tiêm.
 import type { Db, Tx } from "@ai/db";
 import type { Hono } from "hono";
-import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
-import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import type { PackAccessView, PackGuardVars } from "../kit/public";
+import { createPackUow, packTenantOnly } from "../kit/public";
 import { serviceCustomersRepo } from "./adapters/service-customers.repo";
 import { serviceCustomersRoutes } from "./adapters/service-customers.routes";
 import { serviceCustomersUsecases } from "./application/service-customers.usecase";

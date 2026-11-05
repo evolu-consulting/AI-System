@@ -2,9 +2,8 @@
 // gắn dưới `/pack/contracts` ở `packs.mount.ts`. Múi tenant qua `safeTimeZone` (HD4); `now` để test tiêm.
 import type { Db, Tx } from "@ai/db";
 import type { Hono } from "hono";
-import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
-import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
-import type { PackWho } from "../kit/application/ports";
+import type { PackAccessView, PackGuardVars, PackWho } from "../kit/public";
+import { createPackUow, packTenantOnly } from "../kit/public";
 import { followupsRepo } from "./adapters/followups.repo";
 import { myWorkRepo } from "./adapters/mywork.repo";
 import { myWorkRoutes } from "./adapters/mywork.routes";

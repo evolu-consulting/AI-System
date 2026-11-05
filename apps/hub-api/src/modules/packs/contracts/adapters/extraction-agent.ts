@@ -3,7 +3,7 @@
 // STRICT (`ExtractionOutputSchema`: khoá lạ/kiểu sai ⇒ `INVALID_OUTPUT`, không ghi gì). Không bao giờ ném.
 import { ExtractionOutputSchema } from "@ai/contracts/pack-contracts";
 import { z } from "zod";
-import type { PackWho } from "../../kit/application/ports";
+import type { PackWho } from "../../kit/public";
 import type {
   AgentFailCode,
   AgentReply,

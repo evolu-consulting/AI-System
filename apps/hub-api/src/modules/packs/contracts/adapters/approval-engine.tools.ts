@@ -1,7 +1,7 @@
 // contract-flow S3a · tool gói của duyệt HĐ trên engine (stage `tool`, danh tính = người bắt đầu run, tx gói của tenant run).
 // `side_effect: false` (S2: `finalize` biên dịch `real_action: false`; an toàn nằm ở kiểm lại trong `contracts-finalize`). Chỉ chạm
 // HĐ có `engine_run_id = ctx.processRunId`; `/mcp` (không run) ⇒ từ chối. Không log nội dung.
-import type { PackToolDef } from "../../kit/application/pack-tools.ports";
+import type { PackToolDef } from "../../kit/public";
 import { type FinalizeDeps, finalizeRun, routeStep } from "../application/approval-engine.usecase";
 import { FLOW_TOOL_KEYS, FROM_STEP_ARG } from "../domain/approval-flow.rules";
 

@@ -13,7 +13,7 @@ import {
 import { type Context, Hono } from "hono";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";
-import type { PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
+import type { PackGuardVars } from "../../kit/public";
 import { toCommunityBrand, viewerCaps } from "../domain/brand.rules";
 import { bellView } from "../domain/notify.rules";
 import { type Access, accessOf } from "./community-access";

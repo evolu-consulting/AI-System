@@ -1,7 +1,7 @@
 // V2-E · DT-04 · HD-06 · §5.1i: đánh giá thủ công 1–5 sao từng tiêu chí (lệch hơn `reason_gap` điểm so với dữ liệu ⇒ bắt lý do;
 // nhiều người ⇒ lượt mới nhất của mỗi người) và ghi việc phát sinh theo danh mục "Loại việc". Chỉ thêm.
 
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { scoreCells } from "../domain/rep-board.rules";
 import { cellKey, isCell, type RepRole } from "../domain/rep-config.rules";
 import type { RepJobIn, RepRatingIn } from "../domain/reputation.types";

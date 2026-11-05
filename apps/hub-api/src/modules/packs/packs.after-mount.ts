@@ -2,8 +2,8 @@
 // thiếu SlotSpec/FlowSlotAdapter (ADR-0036, log error, không chặn boot).
 import { logger } from "../../lib/logger";
 import type { ConfigCache } from "../config/public";
-import type { PackToolRegistry } from "./kit/adapters/pack-tools.registry";
-import { checkSlotContract } from "./kit/adapters/slot-contract.check";
+import type { PackToolRegistry } from "./kit/public";
+import { checkSlotContract } from "./kit/public";
 
 type PacksMountDeps = { config: ConfigCache; packTools?: PackToolRegistry | undefined };
 

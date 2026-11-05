@@ -19,12 +19,12 @@ import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseQuery, parseWith, readJson } from "../../../../lib/http";
 import {
+  checkPackAccess,
   type PackAccessView,
   type PackGuardVars,
   packAccessInput,
   packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
-import { checkPackAccess } from "../../kit/domain/pack-access.rules";
+} from "../../kit/public";
 import { DeliveryFail } from "../application/delivery.ports";
 import { LedgerFail } from "../application/ledger.ports";
 import type { LedgerCommands, LedgerReads } from "../application/ledger.usecase";

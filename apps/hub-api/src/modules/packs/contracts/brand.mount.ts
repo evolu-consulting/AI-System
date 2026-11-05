@@ -4,7 +4,7 @@
 // được brand chủ quản; quyền vào community đã kiểm ở route, `tenantId` luôn từ token.
 import type { Db, Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import { createPackUow } from "../kit/adapters/pack-uow";
+import { createPackUow } from "../kit/public";
 import { one } from "./adapters/ledger-sql";
 
 const KEY = "contracts";

@@ -2,8 +2,8 @@
 // dưới `/pack/contracts` ở `packs.mount.ts`. Ghi kho (`applyDelivery`) không có route riêng — V2-D gọi trong tx xác nhận mốc giao.
 import type { Db, Tx } from "@ai/db";
 import { Hono } from "hono";
-import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
-import { createPackUow } from "../kit/adapters/pack-uow";
+import type { PackAccessView, PackGuardVars } from "../kit/public";
+import { createPackUow } from "../kit/public";
 import { productExtrasRoutes } from "./adapters/product-extras.routes";
 import { lotsRepo } from "./adapters/product-lots.repo";
 import { sourcesRepo } from "./adapters/product-sources.repo";

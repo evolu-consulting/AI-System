@@ -5,15 +5,14 @@
 import type { Context } from "hono";
 import type { AuthUser } from "../../../../lib/auth.middleware";
 import { AppError } from "../../../../lib/errors";
+import type { ExtDirectory, ExternalOrgResolver, PackWho } from "../../kit/public";
 import {
+  checkPackAccess,
   type PackAccessView,
   type PackGuardVars,
   packAccessInput,
   packEnabled,
-} from "../../kit/adapters/pack-guard.middleware";
-import type { ExtDirectory, ExternalOrgResolver } from "../../kit/application/ext-org.ports";
-import type { PackWho } from "../../kit/application/ports";
-import { checkPackAccess } from "../../kit/domain/pack-access.rules";
+} from "../../kit/public";
 
 export const COMMUNITY_KEY = "community";
 

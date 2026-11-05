@@ -8,7 +8,7 @@
 // Chỉ tool gói `action: read` không side_effect (lọc lúc cấp và lúc dùng). Redis giữ sha256 của handle, không bản rõ, không log.
 import { createHash, randomBytes } from "node:crypto";
 import type { Redis } from "../../lib/redis";
-import type { PackToolCatalog } from "../packs/kit/application/pack-tools.ports";
+import type { PackToolCatalog } from "../packs/kit/public";
 
 export const CHAT_TOKEN_PREFIX = "hct_";
 const CHAT_TOKEN_RE = /^hct_[A-Za-z0-9_-]{43}$/;

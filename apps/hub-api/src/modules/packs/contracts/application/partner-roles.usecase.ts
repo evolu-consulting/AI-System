@@ -2,7 +2,7 @@
 // sẽ tạo khi lưu"), ghi chú đối tác. Mọi đọc/ghi trong tx người dùng (RLS M1); đối tác ngoài phạm vi ⇒ như chưa có (không lộ).
 // Tạo đối tác/vai khi lưu HĐ là trigger DB (0024), không ở đây.
 
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 import {
   DEFAULT_MIN_EVENTS,

@@ -1,6 +1,6 @@
 // gap-d1 #19 · "Cách lấy hàng" của SP: danh sách + thêm + xoá + bảng rủi ro phụ thuộc NCC (`dependencyRisk`). Mỗi lệnh một tx RLS của
 // người gọi. SP Giới thiệu không có cách lấy hàng ⇒ not_found.
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { dependencyRisk, type PurchaseShare } from "../domain/product-sources.rules";
 import type {
   ProductSourceCreate,

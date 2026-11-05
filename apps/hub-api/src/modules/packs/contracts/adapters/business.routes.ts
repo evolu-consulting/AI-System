@@ -12,12 +12,12 @@ import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseQuery, parseWith, readJson } from "../../../../lib/http";
 import {
+  checkPackAccess,
   type PackAccessView,
   type PackGuardVars,
   packAccessInput,
   packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
-import { checkPackAccess } from "../../kit/domain/pack-access.rules";
+} from "../../kit/public";
 import { BizFail, type BusinessUsecase } from "../application/business.usecase";
 
 const KEY = "contracts";

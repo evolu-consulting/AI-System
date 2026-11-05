@@ -1,6 +1,6 @@
 // HD-FR-93 · HD-FR-95 · HD-FR-96 · BR-4 · BR-6: use case ĐỌC CKS — một tx RLS, MỘT câu SQL nghiệp vụ mỗi request (Luật 4c);
 // gom/tính ở domain. "Hôm nay" theo múi giờ tenant. Khách tenant khác / không có ⇒ `null` (route trả 404).
-import type { PackWho } from "../../../kit/application/ports";
+import type { PackWho } from "../../../kit/public";
 import { likePattern } from "../../domain/fold.rules";
 import { briefCustomer, type CustomerFilter, groupCustomers } from "../domain/customers.rules";
 import { cksPackages, type PkgFilter } from "../domain/prices.rules";

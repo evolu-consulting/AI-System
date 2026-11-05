@@ -11,7 +11,7 @@ import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseIdParam, parseWith, readJson, withoutScopeKeys } from "../../../../lib/http";
-import type { PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
+import type { PackGuardVars } from "../../kit/public";
 import { type Access, accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
 import * as posts from "./post.service";

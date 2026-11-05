@@ -1,6 +1,6 @@
 // gap-d1 #18 · "Nhập lô" tay của SP: một tx RLS của người gọi — tìm thành phần (mặc định: thành phần chính có kho) ⇒ `applyDelivery`
 // với dòng nhập lý do `manual` (không HĐ). Chỉ thành phần `stock`/`quota`; luật kho (BQ, FIFO, hạn gói) do `planDelivery`.
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 import type { ProductLotCreate, ProductLotResultOut } from "../domain/products.types";
 import { type DeliveryMove, type DeliveryResult, StockError } from "../domain/stock.rules";

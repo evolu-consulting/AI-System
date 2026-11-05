@@ -7,7 +7,7 @@
 // Đồng hồ là tham số (`at`) — test gọi `sweepFilesOnce`, không sleep.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { PackSystemUow } from "../../kit/application/ports";
+import type { PackSystemUow } from "../../kit/public";
 import type { CommunityBlobs } from "../application/pack-ports";
 
 export const FILE_UNATTACHED_TTL_MS = 24 * 3_600_000;

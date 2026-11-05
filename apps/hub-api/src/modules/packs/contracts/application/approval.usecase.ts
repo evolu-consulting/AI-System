@@ -2,7 +2,7 @@
 // Mở lượt (tải lên / trích lại / nhập tay), xem thẻ duyệt, quyết bước (luật `decide` thuần), cài đặt tenant. Quyết trong MỘT tx
 // khoá hàng HĐ (FOR UPDATE) ⇒ `finalize` đánh giá lại ngưỡng trong câu UPDATE (D3-14). Lớp 2: chỉ cổng, lỗi trả mã (route dịch).
 import type { ProductLink } from "@ai/contracts/pack-contracts";
-import type { PackWho } from "../../kit/application/ports";
+import type { PackWho } from "../../kit/public";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
 import type { RunPhase } from "../domain/approval-edit.rules";
 import {

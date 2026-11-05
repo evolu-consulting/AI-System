@@ -1,7 +1,7 @@
 // HD-FR-24 · HD-BR-01: trích lại theo yêu cầu người dùng (`POST …/contracts/:id/extract`). Một tx: khoá + kiểm trạng thái
 // (`needs_review`/`extract_failed`) + có nguồn ⇒ `extracting`, version+1, event; outbox; SAU commit xếp hàng trích (giữ
 // trường `edited` khi ghi kết quả — `mergeFields`). Id tenant khác ⇒ `not_found` (404 như không có).
-import type { PackWho } from "../../kit/application/ports";
+import type { PackWho } from "../../kit/public";
 import type { ExtractionUow, RequestExtractOutcome } from "./extraction.ports";
 import type { ExtractionStarter } from "./upload-contract.ports";
 

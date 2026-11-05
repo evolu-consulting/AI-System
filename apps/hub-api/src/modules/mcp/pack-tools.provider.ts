@@ -2,7 +2,7 @@
 // khoá ∈ `payload.mcp.tools` của job ∧ gói bật cho tenant ∧ user của job có quyền `read` gói ∧ tool KHÔNG side_effect (gói
 // không có cổng xác nhận ⇒ hành động thật chỉ qua stage `real_action` sau duyệt). Chạy bằng danh tính user + tenant của job.
 import type { WorkflowInput } from "@ai/contracts/workflows";
-import type { PackToolArgs, PackToolCatalog } from "../packs/kit/application/pack-tools.ports";
+import type { PackToolArgs, PackToolCatalog } from "../packs/kit/public";
 import {
   type McpToolDef,
   type ToolResult,

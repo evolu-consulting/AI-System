@@ -20,7 +20,7 @@ import {
   packGuard,
   packGuardOrPlatform,
   requestWho,
-} from "../../kit/adapters/pack-guard.middleware";
+} from "../../kit/public";
 import type {
   ApprovalAction,
   actApproval,

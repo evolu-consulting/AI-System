@@ -3,17 +3,18 @@
 import { packFeatureKey } from "@ai/contracts/packs";
 import type { Db } from "@ai/db";
 import { type Env, Hono } from "hono";
-import { pgExternalOrgResolver } from "../kit/adapters/ext-org.pg";
-import { flowRoutes } from "../kit/adapters/flow.routes";
-import { packBell } from "../kit/adapters/pack-bell";
-import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
-import { packHosts } from "../kit/adapters/pack-hosts";
-import { packNavRegistry } from "../kit/adapters/pack-nav-registry";
-import { createPackUow } from "../kit/adapters/pack-uow";
-import { slotRegistry } from "../kit/adapters/slot-registry";
-import type { ExternalOrgResolver } from "../kit/application/ext-org.ports";
-import { flowRuntime, flowRuntimeOn } from "../kit/application/flow.ports";
-import type { PackWho } from "../kit/application/ports";
+import type { ExternalOrgResolver, PackAccessView, PackGuardVars, PackWho } from "../kit/public";
+import {
+  createPackUow,
+  flowRoutes,
+  flowRuntime,
+  flowRuntimeOn,
+  packBell,
+  packHosts,
+  packNavRegistry,
+  pgExternalOrgResolver,
+  slotRegistry,
+} from "../kit/public";
 import { COMMUNITY_KEY } from "./adapters/community-access";
 import type { CommunityDeps } from "./adapters/community-deps";
 import { filesRoutes } from "./adapters/files.routes";

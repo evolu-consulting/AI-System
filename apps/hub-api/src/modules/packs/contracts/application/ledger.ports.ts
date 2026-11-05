@@ -1,7 +1,7 @@
 // HD7-FR-03…11 · HD7 plan §2/§4 · D7-15: cổng repo của sổ thanh toán (lớp 2 — chỉ kiểu). Mỗi hàm = MỘT câu SQL trong tx `PackUow`
 // (role `contracts_rw`, RLS tenant). Thứ tự khoá (D7-15, như HD4 D4-12): `lockContract*` (hàng HĐ) TRƯỚC `lockObligation` (hàng đợt).
 
-import type { NotifyTxRepos } from "../../kit/application/notify";
+import type { NotifyTxRepos } from "../../kit/public";
 import type { Direction, ObligationKind, PartnerRole, UndoPatch } from "../domain/ledger.rules";
 import type {
   ContractPartner,

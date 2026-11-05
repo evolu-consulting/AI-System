@@ -6,11 +6,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseIdParam, parseJson } from "../../../../lib/http";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import type { CreateItem } from "../application/create-item.usecase";
 import type { GetItem } from "../application/get-item.usecase";
 import type { ItemRunOutcome, StartItemRun } from "../application/start-item-run.usecase";

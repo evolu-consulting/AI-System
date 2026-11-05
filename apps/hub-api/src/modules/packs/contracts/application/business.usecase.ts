@@ -1,7 +1,7 @@
 // V2-J1 · SP-01/02/07 · KN-15 · CD-06: điểm kinh doanh của SP — danh sách (một câu gom theo tập), chi tiết (tóm tắt + lịch sử mua bán), HĐ theo SP,
 // cấu hình. Điểm tính khi đọc (đổi cấu hình ⇒ đổi ngay), không lưu. Ngày = ngày lịch tenant.
 
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import type {
   BizConfig,
   BizConfigOut,

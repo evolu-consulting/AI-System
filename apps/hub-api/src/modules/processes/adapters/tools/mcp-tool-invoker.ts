@@ -11,7 +11,7 @@ import type {
   WorkflowInvoker,
 } from "../../../mcp/adapters/workflow-invoker";
 import { TOOL_ERROR_TEXT, type ToolErrorCode, type ToolResult } from "../../../mcp/mcp.rules";
-import type { PackToolCatalog } from "../../../packs/kit/application/pack-tools.ports";
+import type { PackToolCatalog } from "../../../packs/kit/public";
 import type { ToolCallResult, ToolEndpoint, ToolInvoker } from "../../application/tools/tool.ports";
 
 const CODE_BY_TEXT = new Map(

@@ -3,8 +3,8 @@
 // chung cho tab "NCC & giá" (`supplierScores`), gợi ý đối tác (V2-C `scoreOf`) và xem trước "N đối tác đổi mức nếu bật" (chỉ đọc).
 // Không import `partners.mount`/`reputation.mount` (tránh vòng phụ thuộc) — tự dựng hai use case đọc từ adapter.
 import type { Db } from "@ai/db";
-import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
-import type { PackWho } from "../kit/application/ports";
+import type { PackWho } from "../kit/public";
+import { createPackUow, packTenantOnly } from "../kit/public";
 import { createInspect } from "./adapters/link-check.http";
 import { partnersRepo } from "./adapters/partners.repo";
 import { partnerDataOf } from "./adapters/partners-data.repo";

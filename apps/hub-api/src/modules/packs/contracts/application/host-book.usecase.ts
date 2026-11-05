@@ -1,7 +1,7 @@
 // com-c8-host-read · cổng đọc sổ chủ quản: kiểm người gọi (nội bộ + quyền đọc gói) TRƯỚC khi mở tx; 2 câu SQL cố định (ứng viên tên,
 // kho/giá) trong MỘT tx của người gọi + điểm uy tín theo tập khoá đối tác (engine hiện hành) — Luật 4c: không theo cỡ lô.
 // `stockHolders` (C9 matchBuy): MỘT tx hệ thống của tenant (2 câu như trên) + MỘT câu "ai có quyền đọc gói" theo tập — không vòng người.
-import type { PackSystemUow, PackUow, PackWho } from "../../kit/application/ports";
+import type { PackSystemUow, PackUow, PackWho } from "../../kit/public";
 import { HOST_BATCH_MAX, hintKey, isUuid, pickMatch } from "../domain/host-book.rules";
 import { DEFAULT_TENANT_TZ, localDate } from "../domain/local-time.rules";
 import {

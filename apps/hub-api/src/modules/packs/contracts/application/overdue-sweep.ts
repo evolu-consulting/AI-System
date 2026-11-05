@@ -2,7 +2,7 @@
 // theo tập: mgmt đọc 2.000 đợt vào Python rồi ghi từng hàng). Một lô = một tenant: `system(tid)` (set_config) + MỘT câu CTE khoá
 // `SKIP LOCKED` ≤ `batchSize` đợt, ghi `overdue_for` + sổ. "Hôm nay" = ngày lịch múi tenant (HD4 `localDate`). Không chờ khoá
 // (SKIP LOCKED) ⇒ không vòng chờ với lệnh ghi khoá HĐ → đợt.
-import type { PackSystemUow } from "../../kit/application/ports";
+import type { PackSystemUow } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 
 export type OverdueRepo = {

@@ -18,7 +18,7 @@ import type {
   PackRunSlot,
   PackRunsPort,
   PackWorkflow,
-} from "../../packs/kit/application/pack-runs.ports";
+} from "../../packs/kit/public";
 import { availableToolRows, paramsOf } from "../adapters/tools/tool-switch.repo";
 import type { SystemUow } from "../application/ports";
 import * as core from "../core/core.repo";

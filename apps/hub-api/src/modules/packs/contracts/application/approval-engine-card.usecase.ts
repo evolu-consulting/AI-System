@@ -3,7 +3,7 @@
 //   đọc ở câu `state` (không thêm SQL của gói).
 // - `act`: Đạt = `act` pass (duyệt cuối: lưu `pending_links` TRONG tx gói TRƯỚC khi act; tool `contracts-finalize` áp cùng tx khoá);
 //   Trả lại = fail + về bước 0; Từ chối = reject (cần lý do) rồi ghi HĐ rejected; Đọc lại = huỷ run (system) ⇒ `extracting` + job.
-import type { PackWho } from "../../kit/application/ports";
+import type { PackWho } from "../../kit/public";
 import { factsOf } from "../domain/approval-engine.rules";
 import {
   type EngineAction,

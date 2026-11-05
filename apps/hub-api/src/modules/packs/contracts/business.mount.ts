@@ -2,8 +2,8 @@
 // gắn dưới `/pack/contracts/business` ở `packs.mount.ts`.
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
-import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
-import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import type { PackAccessView, PackGuardVars } from "../kit/public";
+import { createPackUow, packTenantOnly } from "../kit/public";
 import { businessRepo } from "./adapters/business.repo";
 import { businessRoutes } from "./adapters/business.routes";
 import { businessUsecase } from "./application/business.usecase";

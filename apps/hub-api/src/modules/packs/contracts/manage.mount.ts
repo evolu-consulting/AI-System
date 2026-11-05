@@ -2,9 +2,8 @@
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import type { AiClient } from "../../../lib/ai-client/ai-client";
-import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
-import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
-import type { PackWho } from "../kit/application/ports";
+import type { PackAccessView, PackGuardVars, PackWho } from "../kit/public";
+import { createPackUow, packTenantOnly } from "../kit/public";
 import { EXTRACT_MODEL } from "./adapters/ai-transport";
 import { packAssignees } from "./adapters/manage.members";
 import { manageRepo } from "./adapters/manage.repo";

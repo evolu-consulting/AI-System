@@ -18,12 +18,8 @@ import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
-import type { PackWho } from "../../kit/application/ports";
+import type { PackWho } from "../../kit/public";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import type { CreateManual } from "../application/create-manual.usecase";
 import { type DealMilestone, settleNowOrder } from "../domain/deal.rules";
 import type { ManualInput } from "../domain/manual.rules";

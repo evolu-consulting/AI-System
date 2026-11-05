@@ -2,11 +2,14 @@
 // Quyền: người gọi phải có việc `read` của gói contracts (nhóm được giao) — user ngoài bị chặn ở usecase. `stockHolders`: tập người
 // có quyền đọc lấy bằng MỘT câu (`packHosts`, cache cấu hình cho Group).
 import type { Db } from "@ai/db";
-import { type PackAccessView, packAccessInput } from "../kit/adapters/pack-guard.middleware";
-import { packHosts } from "../kit/adapters/pack-hosts";
-import { createPackUow } from "../kit/adapters/pack-uow";
-import type { PackWho } from "../kit/application/ports";
-import { packActionsFor } from "../kit/domain/pack-access.rules";
+import type { PackWho } from "../kit/public";
+import {
+  createPackUow,
+  type PackAccessView,
+  packAccessInput,
+  packActionsFor,
+  packHosts,
+} from "../kit/public";
 import { hostBookRepo } from "./adapters/host-book.repo";
 import type { HostBookReader } from "./application/host-book.ports";
 import { hostBookUsecase } from "./application/host-book.usecase";

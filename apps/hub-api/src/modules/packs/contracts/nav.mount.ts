@@ -3,11 +3,13 @@
 // cho khe `contracts.approval`; số = task duyệt mở người đó quyết được. Lọc theo `user.tenantId` (đọc scope user + scope system có
 // `tenant_id` tường minh trong `PackRunsPort.inboxOf`). Engine tắt (không có cầu) ⇒ không mục.
 import type { AuthUser } from "../../../lib/auth.middleware";
-import { type PackAccessView, packAccessInput } from "../kit/adapters/pack-guard.middleware";
-import { packNavRegistry } from "../kit/adapters/pack-nav-registry";
-import type { PackNavSource } from "../kit/application/pack-nav.ports";
-import type { PackRunsBridge } from "../kit/application/pack-runs.ports";
-import { packActionsFor } from "../kit/domain/pack-access.rules";
+import type { PackNavSource, PackRunsBridge } from "../kit/public";
+import {
+  type PackAccessView,
+  packAccessInput,
+  packActionsFor,
+  packNavRegistry,
+} from "../kit/public";
 
 const KEY = "contracts";
 export const CONTRACTS_APPROVAL_SLOT = "contracts.approval";

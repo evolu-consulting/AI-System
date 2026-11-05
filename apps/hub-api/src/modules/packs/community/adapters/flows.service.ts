@@ -4,7 +4,7 @@
 
 import type { Tx } from "@ai/db";
 import { AppError, appError } from "../../../../lib/errors";
-import type { PackSystemUow, PackUow, PackWho } from "../../kit/application/ports";
+import type { PackSystemUow, PackUow, PackWho } from "../../kit/public";
 import {
   AGENT_SCREEN,
   AGENT_TRIAGE,

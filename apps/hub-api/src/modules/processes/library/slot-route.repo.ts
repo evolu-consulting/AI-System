@@ -6,7 +6,7 @@
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { Db } from "../../../lib/db";
-import type { RoutedSlot, RouteSlotFacts } from "../../packs/kit/application/slot.ports";
+import type { RoutedSlot, RouteSlotFacts } from "../../packs/kit/public";
 import { pickProcess, type RoutingRule } from "./routing.rules";
 import { RESOLVE_SLOT_SQL } from "./slot-resolve.repo";
 

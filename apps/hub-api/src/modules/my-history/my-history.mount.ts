@@ -3,11 +3,8 @@
 // chạy bằng `PackUow` + RLS gói của người gọi); quyền gói người gọi từ `PackAccessView` (cache, 0 SQL khi nóng).
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
-import type { PackAccessView } from "../packs/kit/adapters/pack-guard.middleware";
-import { packAccessInput } from "../packs/kit/adapters/pack-guard.middleware";
-import type { ActivitySource } from "../packs/kit/application/activity.ports";
-import type { PackToolDef } from "../packs/kit/application/pack-tools.ports";
-import { checkPackAccess } from "../packs/kit/domain/pack-access.rules";
+import type { ActivitySource, PackAccessView, PackToolDef } from "../packs/kit/public";
+import { checkPackAccess, packAccessInput } from "../packs/kit/public";
 import { myAudit, retentionRaw, searchChat, userNames, type Who } from "./my-history.repo";
 import { retentionMonths } from "./my-history.rules";
 import { type MyHistoryDeps, myHistoryTools } from "./my-history.tools";

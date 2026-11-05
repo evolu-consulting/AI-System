@@ -8,7 +8,7 @@ import { FILENAME_HEADER } from "@ai/contracts/chat";
 import { type Context, Hono } from "hono";
 import { appError } from "../../../../lib/errors";
 import { parseIdParam } from "../../../../lib/http";
-import type { PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
+import type { PackGuardVars } from "../../kit/public";
 import { safeFileName } from "../domain/file.rules";
 import { accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";

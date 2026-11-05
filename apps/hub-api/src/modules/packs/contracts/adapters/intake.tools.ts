@@ -5,13 +5,13 @@
 //   contracts-obligation-remind  — chuông nhắc nghĩa vụ cho người bắt đầu run (idempotent theo HĐ).
 // Chỉ chạm HĐ mà người bắt đầu thấy được (RLS `PackUow.tenant`); tenant khác ⇒ không thấy. Không log nội dung HĐ.
 import type { ESignSignerIn } from "@ai/contracts/pack-contracts";
-import type { NotifyTxRepos } from "../../kit/application/notify";
 import type {
+  NotifyTxRepos,
   PackToolArgs,
   PackToolCtx,
   PackToolDef,
-} from "../../kit/application/pack-tools.ports";
-import type { PackUow } from "../../kit/application/ports";
+  PackUow,
+} from "../../kit/public";
 import type { ESignRepo } from "../application/esign.ports";
 import type { ExtractionRepo } from "../application/extraction.ports";
 

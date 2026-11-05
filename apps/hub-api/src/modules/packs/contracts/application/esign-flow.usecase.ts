@@ -6,8 +6,7 @@
 // esign-flow-fix: kẹt `sending` (tiến trình chết giữa chừng) quá `ESIGN_SENDING_STALE_MIN` ⇒ Gửi lại nhận được; người ký công ty phải
 // còn dùng được + còn quyền ghi gói + THẤY HĐ ngay trước khi gửi (không ⇒ NO_SIGNER); trạng thái cuối ghi điều kiện MỘT câu.
 import type { ESignSignerIn } from "@ai/contracts/pack-contracts";
-import type { NotifyInput, NotifyTxRepos } from "../../kit/application/notify";
-import type { PackSystemUow, PackUow, PackWho } from "../../kit/application/ports";
+import type { NotifyInput, NotifyTxRepos, PackSystemUow, PackUow, PackWho } from "../../kit/public";
 import type { FlowEsignStep } from "../domain/approval-flow.types";
 import {
   type EsignReason,

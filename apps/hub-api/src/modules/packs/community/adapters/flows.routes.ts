@@ -16,7 +16,7 @@ import {
 } from "@ai/contracts/community";
 import { type Context, Hono } from "hono";
 import { parseIdParam, parseWith, readJson } from "../../../../lib/http";
-import type { PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
+import type { PackGuardVars } from "../../kit/public";
 import { awaitingReview } from "../domain/flow.rules";
 import { accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";

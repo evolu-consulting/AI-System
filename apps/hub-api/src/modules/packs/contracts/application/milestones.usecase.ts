@@ -1,7 +1,7 @@
 // V2-A · BA v2 §2 · §3.1 HD-11 · KN-07: thêm / sửa / xoá mốc HĐ. Mỗi lệnh MỘT tx `PackUow`: khoá HĐ → (khoá mốc) → luật thuần →
 // MỘT câu ghi (CTE: mốc + nhật ký HĐ + dữ liệu 5.4a). Chỉ mốc chưa xác nhận sửa/xoá được (mốc đã xác nhận giữ nguyên để không đổi
 // điểm đã tính). Lớp 2: không SQL.
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import {
   checkMilestone,
   type DbKind,

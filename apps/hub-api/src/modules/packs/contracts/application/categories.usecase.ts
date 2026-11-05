@@ -1,5 +1,5 @@
 // HD-FR-53 · HD5 plan: loại hàng của tenant — danh sách + thêm. Một tx `PackUow`, một câu SQL mỗi ca (ngoài `set_config`).
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 
 export type CategoryRow = { id: string; name: string };
 /** Trần số loại hàng/tenant (= `CATEGORIES_MAX` của contract; facets cắt ở 200). */

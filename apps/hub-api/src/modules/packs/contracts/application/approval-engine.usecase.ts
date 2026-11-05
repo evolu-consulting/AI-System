@@ -8,8 +8,8 @@
 //   chụp, ghi "Đã duyệt" (`confirmed_by` = người Đạt gần nhất) rồi áp `pending_links` CÙNG tx — lỗi gắn SP ⇒ ROLLBACK, không khoá.
 //   CR-107 · lỗi logic của tool ném `PackToolBusinessError` ⇒ engine không thử lại (needs_decision ngay).
 // Mở lại / Thử lại / Huỷ & mở lại: `approval-engine-reopen.usecase.ts`.
-import type { PackWho } from "../../kit/application/ports";
-import { PackToolBusinessError } from "../../kit/domain/pack-tool-error";
+import type { PackWho } from "../../kit/public";
+import { PackToolBusinessError } from "../../kit/public";
 import { PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
 import {
   ENGINE_START_FAILED,

@@ -3,7 +3,7 @@
 // đối tác; HD8: 3 câu của `partners.one` (lọc theo vai) — và (3) kho (mốc giao: 2 câu). Engine chấm lại đầu vào đã thêm đúng phần mà
 // `settle` sẽ ghi (luật ở `domain/obligation-impact.rules.ts`) ⇒ cùng số với bảng điểm sau khi xác nhận. Lớp 2: không SQL.
 import type { RepDelta } from "@ai/contracts/pack-contracts";
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 import {
   debtAfter,

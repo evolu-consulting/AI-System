@@ -2,7 +2,7 @@
 // đóng HĐ `extracting` quá hạn ⇒ `extract_failed STALE`, lượt duyệt `failed`), tối đa 4 tenant song song (giữ pool). Ghi có điều
 // kiện ⇒ nhiều instance chạy cùng lúc vẫn đúng. Ngủ CHỈ giữa các lượt (Luật 4c). Lớp 2.
 // M3c (review B #7): job còn xếp hàng không bị STALE 15'; hạn của job đang chạy ≥ `claimIdleMs` + 5' (`staleMinutesFor`).
-import type { PackSystemUow, PackWho } from "../../kit/application/ports";
+import type { PackSystemUow, PackWho } from "../../kit/public";
 import { reconcileOf } from "../domain/approval-engine.rules";
 import type { ReconcileItem, SweepCounts, SweepRepo } from "./approval.ports";
 import type { ApprovalEnginePort } from "./approval-engine.ports";

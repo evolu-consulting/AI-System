@@ -21,7 +21,7 @@ import { mcpRoutes } from "./modules/mcp/mcp.routes";
 import { McpService } from "./modules/mcp/mcp.service";
 import { packMcpTools } from "./modules/mcp/pack-tools.provider";
 import { workflowGate } from "./modules/mcp/workflow-access";
-import type { PackToolCatalog } from "./modules/packs/kit/application/pack-tools.ports";
+import type { PackToolCatalog } from "./modules/packs/kit/public";
 import type { JobAgentRunnerDeps } from "./modules/runner/job/job-agent-runner.types";
 
 /** = `HUB_DIFY_TIMEOUT_MAX_S` mặc định (plan §8). */

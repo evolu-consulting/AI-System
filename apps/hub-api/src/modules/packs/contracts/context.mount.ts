@@ -1,9 +1,8 @@
 // one-agent · lớp 4: nguồn nhãn ngữ cảnh của gói contracts (`ContextSource`) cho khối ngữ cảnh dock trợ lý. Tx = `PackUow` của
 // gói (role `contracts_rw`, RLS FORCE, `app.user_id` = NGƯỜI GỌI) ⇒ chỉ nhãn bản ghi người đó mở được trên giao diện.
 import type { Db } from "@ai/db";
-import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
-import type { ContextSource } from "../kit/application/context.ports";
-import type { PackToolDef } from "../kit/application/pack-tools.ports";
+import type { ContextSource, PackToolDef } from "../kit/public";
+import { createPackUow, packTenantOnly } from "../kit/public";
 import { type ContractLabelRow, contextLabelRepo } from "./adapters/context-label.repo";
 import { mountIntake } from "./intake.mount";
 import { mountContractsRecordLabels } from "./record-label.mount";

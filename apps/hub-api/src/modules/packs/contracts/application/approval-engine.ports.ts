@@ -1,18 +1,20 @@
 // contract-flow S3a · cổng CỤC BỘ của gói tới engine quy trình cho duyệt HĐ (lớp 2 — chỉ kiểu). Chỉ các hàm gói cần; nối vào cổng
 // kit `PackRunsPort` (S1a: ensureDef / start có ref / cancel / passedStages / lastApprover) bằng một adapter mỏng lúc mount.
 // Repo `approvalEngine` chạy trong tx `PackUow` (role `contracts_rw`, RLS FORCE) + `tenant_id` tường minh; mỗi hàm MỘT câu.
-import type { KitTxRepos } from "../../kit/application/index-outbox";
 import type {
+  KitTxRepos,
   PackActTarget,
   PackOpenRun,
   PackOpenTask,
   PackReviewAct,
   PackRunOutcomeSys,
   PackStepsView,
+  PackUow,
   PackWorkflow,
-} from "../../kit/application/pack-runs.ports";
-import type { PackUow } from "../../kit/application/ports";
-import type { ResolvedSlot, RoutedSlot, RouteSlotFacts } from "../../kit/application/slot.ports";
+  ResolvedSlot,
+  RoutedSlot,
+  RouteSlotFacts,
+} from "../../kit/public";
 import type { FlowStep } from "../domain/approval-flow.types";
 import type { ApprovalFlowRepo } from "./approval-flow.usecase";
 import type { ProductLinksRepo } from "./product-links.usecase";

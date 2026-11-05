@@ -3,7 +3,7 @@
 // kết quả vào bảng so sánh; `remove`. SP nhóm Giới thiệu không có tab ⇒ 404.
 
 // price-scout: `search` = lượt dò bấm tay của agent Hub `price-scout` (`price-scout.usecase.ts::scout`) — model/lệnh hệ thống ở Hub.
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 import { buildOverview, type OverviewData } from "../domain/supplier-advice.rules";
 import type {

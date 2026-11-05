@@ -1,7 +1,7 @@
 // W1 · "Việc của tôi": use case đọc + hai lệnh trên hẹn nhắc CỦA CHÍNH MÌNH (`cks_followups.user_id`). Mỗi ca MỘT tx `PackUow`
 // (role `contracts_rw`, RLS tenant + luật thấy M1); số câu SQL cố định (đọc: 1; xong/nhắc lại: 1).
 
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { addDays, localDate } from "../domain/local-time.rules";
 import { buildMyWork, type RawMyWork } from "../domain/mywork.rules";
 import { MYWORK_AHEAD_DAYS, type MyWorkApproval, type MyWorkOut } from "../domain/mywork.types";

@@ -12,11 +12,7 @@ import {
   PAYMENT_FILTERS,
 } from "@ai/contracts/pack-contracts";
 import { z } from "zod";
-import type {
-  PackToolArgs,
-  PackToolCtx,
-  PackToolDef,
-} from "../../kit/application/pack-tools.ports";
+import type { PackToolArgs, PackToolCtx, PackToolDef } from "../../kit/public";
 import type { GetContract } from "../application/get-contract.usecase";
 import type { LedgerReads } from "../application/ledger.usecase";
 import type { ListContracts } from "../application/list-contracts.usecase";

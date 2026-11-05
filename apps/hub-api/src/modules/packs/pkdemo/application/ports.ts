@@ -1,5 +1,5 @@
 // PK-FR-09 · N1 plan §9: cổng của gói `pkdemo` (lớp 2). Repo trong tx của `PackUow` (RLS `pkdemo_rw` + tenant).
-import type { KitTxRepos } from "../../kit/application/index-outbox";
+import type { KitTxRepos } from "../../kit/public";
 import type { Item } from "../domain/item";
 
 export type ItemsRepo = {

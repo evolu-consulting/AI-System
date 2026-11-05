@@ -4,10 +4,8 @@
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import { logger } from "../../../lib/logger";
-import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
-import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
-import type { PackRunsBridge } from "../kit/application/pack-runs.ports";
-import type { PackToolDef } from "../kit/application/pack-tools.ports";
+import type { PackAccessView, PackGuardVars, PackRunsBridge, PackToolDef } from "../kit/public";
+import { createPackUow, packTenantOnly } from "../kit/public";
 import { pkdemoRepos } from "./adapters/items.repo";
 import { PKDEMO_KEY, pkdemoRoutes } from "./adapters/pkdemo.routes";
 import { pkdemoTools } from "./adapters/pkdemo.tools";

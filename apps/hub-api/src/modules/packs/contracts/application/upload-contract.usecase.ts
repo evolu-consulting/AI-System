@@ -2,9 +2,8 @@
 // → 1 pipeline quota (vượt ⇒ hoàn + 429; lỗi Redis ⇒ 503) → DOCX → FileBox (org `t_<tenant>`) → tx 3 câu (set_config + CTE
 // files/contracts/events + outbox) → sau commit `ExtractionStarter`. Lỗi sau INCR ⇒ hoàn quota + gỡ tệp đã lưu.
 
-import { orgForTenant } from "../../kit/application/pack-files.ports";
-import type { PackWho } from "../../kit/application/ports";
-import type { DocxConverter } from "../../kit/domain/docx.rules";
+import type { DocxConverter, PackWho } from "../../kit/public";
+import { orgForTenant } from "../../kit/public";
 import { fillFields } from "../domain/fields.rules";
 import { nextDayStart } from "../domain/quota-reset.rules";
 import {

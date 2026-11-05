@@ -30,7 +30,7 @@ import { dockMessageAllowed } from "../chat-gate/chat-gate.rules";
 import type { ConversationService } from "../conversations/conversations.service";
 import type { MentionPlan, MentionRouted } from "../mention/mention.service";
 import { routeMessage } from "../mention/mention-parse.rules";
-import type { ContextLabeler } from "../packs/kit/application/context.ports";
+import type { ContextLabeler } from "../packs/kit/public";
 import { type Bang, classifyBang } from "../processes/core/bang.rules";
 import type { ProcessStartPort } from "../processes/core/ports";
 import { parseLastEventId } from "./runs.rules";

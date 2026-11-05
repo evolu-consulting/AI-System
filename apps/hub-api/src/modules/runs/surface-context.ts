@@ -1,7 +1,7 @@
 // one-agent · dựng khối ngữ cảnh cho run E12 từ `context` của tin + header `X-Ai-Surface`. Bản ghi đang xem chỉ được nhắc khi
 // người gọi THẤY nó (nhãn lấy qua gói bằng RLS của người gọi — `ContextLabeler`); id lạ / không thấy / lỗi ⇒ bỏ phần đó.
 import type { AiSurface, MessageContext } from "@ai/contracts/chat";
-import type { ContextLabeler } from "../packs/kit/application/context.ports";
+import type { ContextLabeler } from "../packs/kit/public";
 import { entityToCheck, surfaceBlock } from "./surface-context.rules";
 
 export async function surfaceNote(

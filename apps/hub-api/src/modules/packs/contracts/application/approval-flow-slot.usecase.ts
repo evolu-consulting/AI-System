@@ -3,8 +3,7 @@
 // FlowView. Thêm duy nhất: task id phải khớp task đang mở của người xem (bấm trên thẻ cũ ⇒ 409, kiểm lại trong use case —
 // CR-120 `expect`), đầu vào lạ ⇒ 422.
 import { type ContractApproval, ProductLinksSchema } from "@ai/contracts/pack-contracts";
-import type { FlowActError, FlowSlotAdapter } from "../../kit/application/flow.ports";
-import type { PackWho } from "../../kit/application/ports";
+import type { FlowActError, FlowSlotAdapter, PackWho } from "../../kit/public";
 import {
   APPROVAL_FLOW_SLOT,
   type ApprovalSummaryRow,

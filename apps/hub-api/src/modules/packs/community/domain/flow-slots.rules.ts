@@ -1,7 +1,7 @@
 // CR-120 · cr120-community-flows · `SlotSpec` của 3 khe Community (đăng ký vào registry kit lúc mount). `slot_body` = khung bước cố
 // định của khe (khớp seed hub 0092): chỉ cho đổi tên bước và (duyệt bài) `remind_every_h`/`escalate_after_h`; thêm/bớt/đổi loại bước
 // ⇒ vi phạm. `compile` dựng `stages` hiển thị (tool khoá của khe), giống hệt seed.
-import type { SlotIssue, SlotSpec } from "../../kit/application/slot.ports";
+import type { SlotIssue, SlotSpec } from "../../kit/public";
 import { AGENT_SCREEN, AGENT_TRIAGE, SLOT_JOIN, SLOT_MODERATION, SLOT_REPORT } from "./flow.rules";
 
 type StepShape = {

@@ -2,9 +2,8 @@
 // `contracts` (role `contracts_rw`, RLS FORCE, `app.user_id` = người gọi) — cùng repo/use case với route HTTP; tool chỉ gọi
 // use case ĐỌC (`listContracts`, `getContract`, `cksReads.customers`, `ledgerReads.payments/obligations`).
 import type { Db, Tx } from "@ai/db";
-import type { PackAccessView } from "../kit/adapters/pack-guard.middleware";
-import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
-import type { PackToolDef } from "../kit/application/pack-tools.ports";
+import type { PackAccessView, PackToolDef } from "../kit/public";
+import { createPackUow, packTenantOnly } from "../kit/public";
 import { assistantTools } from "./adapters/assistant.tools";
 import { contractsRepos } from "./adapters/contracts.repo";
 import { deliveryRepo } from "./adapters/delivery.repo";

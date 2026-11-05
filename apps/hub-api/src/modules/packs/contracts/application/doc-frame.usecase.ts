@@ -1,7 +1,7 @@
 // CR-101 DOC-model · R30 API · R42 API · R43: gắn chứng từ có sẵn vào HĐ nguyên tắc (nhiều id) và gỡ liên kết. Lớp 2 — không SQL.
 // MỘT tx `PackUow`: đọc HĐ NT + các con (một câu) → luật `attachVerdict` (lỗi sớm, đúng mã) → ghi cả chuỗi phiên bản của mỗi con
 // (một câu; trigger 0055 kiểm lại trong DB). Số câu cố định, không phụ thuộc số id.
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { attachVerdict } from "../domain/doc-types.rules";
 
 export type FrameRow = {

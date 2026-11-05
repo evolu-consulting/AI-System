@@ -3,7 +3,7 @@
 // hiện tại; kỳ đã chốt đọc từ `score_locks`, không tính lại. Đọc bảng điểm: cấu hình (một câu) rồi hai câu chấm song song — 3 tx, số
 // câu cố định.
 
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 import { board, changesOf, detailItems, scoreCells } from "../domain/rep-board.rules";
 import {

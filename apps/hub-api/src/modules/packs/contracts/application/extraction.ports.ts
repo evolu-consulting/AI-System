@@ -1,7 +1,6 @@
 // HD-FR-21 · HD-FR-24 · HD-FR-25 · HD-FR-26 · D2-01 · HD2 plan: cổng của trích hợp đồng. Lớp 2 — chỉ kiểu.
 
-import type { KitTxRepos } from "../../kit/application/index-outbox";
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { KitTxRepos, PackUow, PackWho } from "../../kit/public";
 import type { ParentFacts } from "../domain/extract-prompt.rules";
 import type {
   Clause,

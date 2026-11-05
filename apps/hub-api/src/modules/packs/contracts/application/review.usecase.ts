@@ -2,7 +2,7 @@
 // `planReview` → ghi trường + loại + dòng hàng + mốc → outbox) và gắn lại SP cho dòng HĐ đã lưu (một tx, một CTE). "Hủy" không có
 // lệnh: màn hình bỏ bản nháp, không gọi API. Tenant tắt duyệt ⇒ lưu = `active` ngay (V2-A để ngỏ); bật duyệt ⇒ vẫn `needs_review`.
 import type { ProductLink } from "@ai/contracts/pack-contracts";
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import type { ContractFieldKey, FieldValue } from "../domain/fields.rules";
 import type { Deal } from "../domain/milestones.rules";
 import { planReview, type ReviewMilestoneIn } from "../domain/review.rules";

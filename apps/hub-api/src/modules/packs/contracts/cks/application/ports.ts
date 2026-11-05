@@ -1,7 +1,6 @@
 // HD-FR-91…96 · HD9 plan §3/§4: cổng của lát CKS (lớp 2 — chỉ kiểu). Repo dựng TRONG tx của `PackUow` (RLS tenant, role
 // `contracts_rw`); mọi lệnh ghi gọi `lock()` đầu tiên (D9-06). Mỗi hàm repo = MỘT câu SQL (Luật 4c, D9-21).
-import type { KitTxRepos } from "../../../kit/application/index-outbox";
-import type { PackUow } from "../../../kit/application/ports";
+import type { KitTxRepos, PackUow } from "../../../kit/public";
 import type { CertRow } from "../domain/customers.rules";
 import type { LotIn, MarketIn, SoldIn } from "../domain/prices.rules";
 import type { SignedKind } from "../domain/signed.rules";

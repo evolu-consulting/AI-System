@@ -16,16 +16,16 @@ import { z } from "zod";
 import type { AuthUser } from "../../../../lib/auth.middleware";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";
+import type { PackWho } from "../../kit/public";
 import {
+  checkPackAccess,
   type PackAccessView,
   type PackGuardVars,
   packAccessInput,
   packGuard,
   packGuardOrPlatform,
   requestWho,
-} from "../../kit/adapters/pack-guard.middleware";
-import type { PackWho } from "../../kit/application/ports";
-import { checkPackAccess } from "../../kit/domain/pack-access.rules";
+} from "../../kit/public";
 import type {
   AssignOwner,
   EditCommission,

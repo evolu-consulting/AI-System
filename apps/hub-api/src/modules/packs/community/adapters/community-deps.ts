@@ -1,10 +1,12 @@
 // CR-102 · com-c3 · phụ thuộc route community (dựng ở `community.mount.ts`).
 import type { Tx } from "@ai/db";
-import type { PackBell } from "../../kit/adapters/pack-bell";
-import type { PackAccessView } from "../../kit/adapters/pack-guard.middleware";
-import type { ExternalOrgResolver } from "../../kit/application/ext-org.ports";
-import type { NotifyTxRepos } from "../../kit/application/notify";
-import type { PackUow } from "../../kit/application/ports";
+import type {
+  ExternalOrgResolver,
+  NotifyTxRepos,
+  PackAccessView,
+  PackBell,
+  PackUow,
+} from "../../kit/public";
 import type {
   CommunityBlobs,
   CommunityUploadGate,

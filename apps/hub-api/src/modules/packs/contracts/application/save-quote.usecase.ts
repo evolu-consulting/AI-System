@@ -2,7 +2,7 @@
 // người gọi: (tạo SP mới nếu cần, dùng lại `ProductsRepo.create` + `productPlan`) → khoá (SP, NCC, loại) → đọc giá đã lưu → MỘT câu
 // thay giá Báo giá cũ + chèn giá mới (nguồn `quote`) + vai NCC nếu thiếu (điểm MỚI, R24). Số câu cố định. Không chạm kho/giá vốn/điểm
 // (R25: bảng giá NCC tách khỏi `stock_moves`). Lệch > 30% / khác VAT chỉ CẢNH BÁO (form hiện), vẫn lưu.
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { partyKey } from "../domain/ledger.rules";
 import { localDate } from "../domain/local-time.rules";
 import { productPlan } from "../domain/products.rules";

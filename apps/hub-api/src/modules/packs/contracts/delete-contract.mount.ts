@@ -2,8 +2,8 @@
 // `/pack/contracts` ở `packs.mount.ts`. Múi giờ tenant qua `safeTimeZone` (ngày ghi dòng đảo kho); `now` để test tiêm.
 import type { Db, Tx } from "@ai/db";
 import type { Hono } from "hono";
-import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
-import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import type { PackAccessView, PackGuardVars } from "../kit/public";
+import { createPackUow, packTenantOnly } from "../kit/public";
 import { deleteContractRepo } from "./adapters/delete-contract.repo";
 import { deleteContractRoutes } from "./adapters/delete-contract.routes";
 import { deleteContractUsecases } from "./application/delete-contract.usecase";

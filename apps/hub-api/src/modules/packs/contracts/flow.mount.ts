@@ -3,11 +3,14 @@
 // gắn route (`/pack/contracts/flow/*` = 404; web không còn đường dự phòng về approvals cũ — CR-121 gỡ legacy-act). Tách khỏi `extraction.mount.ts` (trần 400 dòng).
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
-import { flowRoutes } from "../kit/adapters/flow.routes";
-import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
-import { createPackUow } from "../kit/adapters/pack-uow";
-import { flowAdapterSlots } from "../kit/adapters/slot-contract.check";
-import { flowRuntime, flowRuntimeOn } from "../kit/application/flow.ports";
+import type { PackAccessView, PackGuardVars } from "../kit/public";
+import {
+  createPackUow,
+  flowAdapterSlots,
+  flowRoutes,
+  flowRuntime,
+  flowRuntimeOn,
+} from "../kit/public";
 import { approvalFlowSummaryRepo } from "./adapters/approval-flow-summary.repo";
 import type { actApproval, getApproval } from "./application/approval.usecase";
 import { approvalFlowSlot } from "./application/approval-flow-slot.usecase";

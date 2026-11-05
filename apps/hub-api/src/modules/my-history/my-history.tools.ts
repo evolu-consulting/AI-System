@@ -5,12 +5,13 @@
 // - `my-chat-history`: tìm trong hội thoại của CHÍNH người gọi (câu hỏi + câu trả lời cho họ), trong hạn lưu tenant (mặc định 12 tháng).
 // Kết quả là dữ liệu, không phải chỉ dẫn.
 
-import type { ActivityRow, ActivitySource } from "../packs/kit/application/activity.ports";
 import type {
+  ActivityRow,
+  ActivitySource,
   PackToolArgs,
   PackToolCtx,
   PackToolDef,
-} from "../packs/kit/application/pack-tools.ports";
+} from "../packs/kit/public";
 import type { AuditWindow, ChatHitRow, ChatSearch, SysRow, Who } from "./my-history.repo";
 import {
   ACT_LIMIT_DEFAULT,

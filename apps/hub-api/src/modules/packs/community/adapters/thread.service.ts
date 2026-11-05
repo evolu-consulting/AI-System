@@ -2,8 +2,7 @@
 // lực); đối tác luôn luồng công ty mình. RLS chặn ghi (42501) ⇒ 404 như không thấy.
 import type { Tx } from "@ai/db";
 import { AppError, appError } from "../../../../lib/errors";
-import type { NotifyTxRepos } from "../../kit/application/notify";
-import type { PackUow } from "../../kit/application/ports";
+import type { NotifyTxRepos, PackUow } from "../../kit/public";
 import type { StoredText } from "../domain/content.rules";
 import type { Access } from "./community-access";
 import type { CommunityEvents } from "./notify.events";

@@ -1,10 +1,7 @@
 // contract-flow S2/S3 · nối duyệt HĐ trên engine + mẫu luồng (tách khỏi `extraction.mount.ts` giữ trần 400 dòng).
 import { logger } from "../../../lib/logger";
-import { type PackAccessView, packAccessInput } from "../kit/adapters/pack-guard.middleware";
-import { slotRegistry } from "../kit/adapters/slot-registry";
-import type { PackUow, PackWho } from "../kit/application/ports";
-import type { SlotSpec } from "../kit/application/slot.ports";
-import { checkPackAccess } from "../kit/domain/pack-access.rules";
+import type { PackUow, PackWho, SlotSpec } from "../kit/public";
+import { checkPackAccess, type PackAccessView, packAccessInput, slotRegistry } from "../kit/public";
 import { approvalEngineTools } from "./adapters/approval-engine.tools";
 import { approvalFlowRoutes } from "./adapters/approval-flow.routes";
 import type { ApprovalEngineBridge, ApprovalEngineUow } from "./application/approval-engine.ports";

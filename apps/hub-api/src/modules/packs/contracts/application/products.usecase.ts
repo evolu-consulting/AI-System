@@ -1,7 +1,7 @@
 // V2-B · danh mục SP: liệt kê / chi tiết / tạo (thành phần + quy tắc + NCC chính) / gợi ý SP cho dòng HĐ / thêm-xoá quy tắc. Mỗi
 // lệnh một tx RLS của người gọi; gợi ý đọc cả danh mục (≤ PRODUCTS_MATCH_SCAN SP) rồi so khớp thuần (`matchLine`).
 
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { matchLine, type ProductPlan, productPlan } from "../domain/products.rules";
 import type {
   ProductCreate,

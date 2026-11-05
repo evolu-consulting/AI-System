@@ -2,7 +2,7 @@
 // trường `edited` + dòng hàng + cảnh báo → MỘT tx: CTE (HĐ + dòng hàng lô JSON + event [+ mốc mặc định]) + outbox.
 // V2-A · HD-01 · C3: loại HĐ (Mua/Bán/Giới thiệu) + hoa hồng; tenant TẮT duyệt ⇒ cùng câu ghi HĐ `active` (lưu = có hiệu lực) và
 // mốc mặc định theo loại (ngày lịch tenant); tenant bật duyệt ⇒ `needs_review` như cũ (mốc HD7 sinh khi duyệt).
-import type { PackWho } from "../../kit/application/ports";
+import type { PackWho } from "../../kit/public";
 import { asDate } from "../domain/fold.rules";
 import {
   dealAndDirection,

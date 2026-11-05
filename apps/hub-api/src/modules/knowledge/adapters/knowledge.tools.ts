@@ -2,7 +2,7 @@
 // `knowledge-get`, `knowledge-add` (registry gói N2 chỉ nhận `<pack>-<tên>` theo PROCESS_KEY_RE, không có dấu chấm). Chạy bằng
 // danh tính user + tenant của job (`/mcp`) ⇒ tx `knowledge_rw` của đúng tenant; search/get cần quyền `read`, add cần `write`.
 // Không side_effect: ghi tri thức nội bộ tenant (khuôn `pkdemo-touch`). Lỗi đầu vào ⇒ ném (registry ⇒ `UPSTREAM_ERROR`).
-import type { PackToolDef } from "../../packs/kit/application/pack-tools.ports";
+import type { PackToolDef } from "../../packs/kit/public";
 import type { addDocument, getKnowledge, searchKnowledge } from "../application/knowledge.usecases";
 import type { Hit } from "../application/ports";
 import { LIMITS } from "../domain/knowledge.rules";

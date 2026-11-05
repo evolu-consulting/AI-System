@@ -2,8 +2,7 @@
 // văn bản; không ⇒ trang ký cuối), xem trước vị trí cho hộp Gửi ký. Nguồn chữ của file HIỆN HÀNH: `source_text` (trích lúc tải lên
 // từ chính tệp) ⇒ không có thì lớp chữ của PDF (bytes đang gửi). Lỗi đọc chữ ⇒ trang ký cuối (không chặn gửi ký). Không log nội dung.
 import type { ESignAnchorsIn, ESignAnchorsOut, ESignPlacement } from "@ai/contracts/pack-contracts";
-import type { PackUow, PackWho } from "../../kit/application/ports";
-import type { PdfConverter } from "../../kit/domain/pdf.rules";
+import type { PackUow, PackWho, PdfConverter } from "../../kit/public";
 import {
   type AnchorLists,
   type AnchorPick,

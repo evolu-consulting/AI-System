@@ -1,6 +1,6 @@
 // CR-097 K2 · UC-04 "so sánh" (decision 9): bảng diff trường pháp lý giữa hai phiên bản cùng chuỗi với HĐ `:id`. Lớp 2 — không SQL.
 // MỘT tx, MỘT câu (repo). Bản không thấy (RLS) / khác chuỗi / tenant khác ⇒ null (404).
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { CONTRACT_FIELD_KEYS } from "../domain/fields.rules";
 import { diffFields, type FieldChange } from "../domain/versions.rules";
 

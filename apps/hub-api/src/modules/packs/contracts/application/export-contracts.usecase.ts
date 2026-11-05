@@ -1,6 +1,6 @@
 // Gap #8 · xuất danh sách HĐ ra .xlsx/.csv: cùng bộ lọc với danh sách (không phân trang), trần số dòng; đọc MỘT tx RLS của người gọi
 // (`PackUow.tenant`). Trả hàng thô + ngữ cảnh định dạng (ngày/múi giờ tenant, tên người phụ trách); việc ghi tệp ở adapter.
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import type { ExportInput, OwnerNames } from "../domain/export.rules";
 import { toListFilter } from "./list-contracts.usecase";
 import type { ContractExportRow, ContractListInput, ContractsReadRepo } from "./ports";

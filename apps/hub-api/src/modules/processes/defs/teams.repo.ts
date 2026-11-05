@@ -3,7 +3,7 @@
 
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
+import type { PackToolCatalog } from "../../packs/kit/public";
 import { toolSwitchReader } from "../adapters/tools/tool-switch.repo";
 import type { TeamSectionsInfo } from "../domain/defs/team-sections.rules";
 import type { ToolDefShape } from "../domain/defs/tool-def.rules";

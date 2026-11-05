@@ -10,7 +10,7 @@ import {
 import { type Context, Hono } from "hono";
 import { appError } from "../../../../lib/errors";
 import { parseIdParam, parseWith, readJson } from "../../../../lib/http";
-import type { PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
+import type { PackGuardVars } from "../../kit/public";
 import { storeComment } from "../domain/content.rules";
 import * as comments from "./comment.service";
 import { type Access, accessOf, otherOrgNames } from "./community-access";

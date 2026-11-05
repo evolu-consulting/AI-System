@@ -16,12 +16,12 @@ import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseQuery, parseWith, readJson } from "../../../../lib/http";
 import {
+  checkPackAccess,
   type PackAccessView,
   type PackGuardVars,
   packAccessInput,
   packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
-import { checkPackAccess } from "../../kit/domain/pack-access.rules";
+} from "../../kit/public";
 import { PartnersFail, type PartnersUsecase } from "../application/partners.usecase";
 import type { RepEngine } from "../domain/rep-current.rules";
 import type { LinkCheckLimit } from "./link-check-limit.redis";

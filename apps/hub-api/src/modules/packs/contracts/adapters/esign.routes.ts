@@ -22,11 +22,7 @@ import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith, readJson } from "../../../../lib/http";
 import { logger } from "../../../../lib/logger";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import { ESignProviderError } from "../application/esign.ports";
 import { ESignFail, type ESignUsecase } from "../application/esign.usecase";
 

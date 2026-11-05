@@ -1,7 +1,7 @@
 // CR-102 · C6 · service sửa/xoá/ẩn bình luận (T-DEP-1): mỗi hàm MỘT tx. Hàng không thuộc quyền ⇒ 404 như không thấy.
 import type { Tx } from "@ai/db";
 import { appError } from "../../../../lib/errors";
-import type { PackUow } from "../../kit/application/ports";
+import type { PackUow } from "../../kit/public";
 import type { StoredText } from "../domain/content.rules";
 import { deleteComment, editComment, hideComment } from "./comment.repo";
 import type { Access } from "./community-access";

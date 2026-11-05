@@ -2,7 +2,7 @@
 // (`system(tid)`, thấy cả tenant): kỳ = các tháng ĐÃ HẾT trong 12 tháng gần nhất chưa có lượt chốt (lần đầu ⇒ điền lùi 12 kỳ cho biểu
 // đồ 12 tháng); mỗi kỳ = MỘT câu chấm theo tập (hôm nay = ngày cuối tháng) + MỘT câu ghi (hàng chốt + lượt chạy, `on conflict do
 // nothing`) ⇒ kỳ đã chốt không bao giờ tính lại, hai vòng chạy chồng không ghi đôi. Cấu hình đọc một lần mỗi lượt.
-import type { PackSystemUow } from "../../kit/application/ports";
+import type { PackSystemUow } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 import { lockRows } from "../domain/rep-board.rules";
 import { resolveConfig } from "../domain/rep-normalise.rules";

@@ -17,11 +17,7 @@ import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { AppError, appError } from "../../../../lib/errors";
 import { parseWith } from "../../../../lib/http";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../kit/public";
 import type { PromoteContract } from "../application/promote-contract.usecase";
 import { type UploadDoc, UploadError } from "../application/upload-contract.ports";
 import type { UploadContract, UploadContractInput } from "../application/upload-contract.usecase";

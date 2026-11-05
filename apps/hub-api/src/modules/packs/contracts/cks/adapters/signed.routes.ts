@@ -4,7 +4,7 @@ import { CKS_UPLOAD_BODY_MAX_BYTES, CKS_UPLOAD_MAX_FILES } from "@ai/contracts/p
 import type { Hono, MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { AppError, appError } from "../../../../../lib/errors";
-import type { PackGuardVars } from "../../../kit/adapters/pack-guard.middleware";
+import type { PackGuardVars } from "../../../kit/public";
 import type { CksUpload } from "../application/signed.usecase";
 
 const tooLarge = (m = "Payload too large") => new AppError("PAYLOAD_TOO_LARGE", 413, m);

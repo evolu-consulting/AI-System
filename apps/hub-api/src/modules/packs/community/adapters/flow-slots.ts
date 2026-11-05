@@ -3,12 +3,14 @@
 // `flowRuntime` chặn trước khi tới đây. Ref không thấy (tenant khác/không tồn tại) ⇒ null / `not_found` (không lộ tồn tại).
 import type { FlowActionRequest, FlowView } from "@ai/contracts/flow";
 import { AppError } from "../../../../lib/errors";
-import type { PackAccessView } from "../../kit/adapters/pack-guard.middleware";
-import { packAccessInput } from "../../kit/adapters/pack-guard.middleware";
-import type { ExternalOrgResolver } from "../../kit/application/ext-org.ports";
-import type { FlowActOutcome, FlowSlotAdapter } from "../../kit/application/flow.ports";
-import type { PackWho } from "../../kit/application/ports";
-import { checkPackAccess } from "../../kit/domain/pack-access.rules";
+import type {
+  ExternalOrgResolver,
+  FlowActOutcome,
+  FlowSlotAdapter,
+  PackAccessView,
+  PackWho,
+} from "../../kit/public";
+import { checkPackAccess, packAccessInput } from "../../kit/public";
 import { SLOT_JOIN, SLOT_MODERATION, SLOT_REPORT } from "../domain/flow.rules";
 import { joinView, moderationView, reportView, summaryOf } from "../domain/flow-view.rules";
 import { type Access, COMMUNITY_KEY } from "./community-access";

@@ -5,7 +5,7 @@
 import type { ProcessToolItem } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { PackToolCatalog } from "../../../packs/kit/application/pack-tools.ports";
+import type { PackToolCatalog } from "../../../packs/kit/public";
 import type { ToolCatalogItem, ToolSwitchReader } from "../../application/tools/tool.ports";
 import type { ToolDefShape } from "../../domain/defs/tool-def.rules";
 

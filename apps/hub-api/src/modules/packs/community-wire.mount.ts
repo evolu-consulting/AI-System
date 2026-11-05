@@ -21,10 +21,13 @@ import { saveQuoteUsecase } from "./contracts/application/save-quote.usecase";
 import { companyBrandModule } from "./contracts/brand.mount";
 import { hostBookModule } from "./contracts/host-book.mount";
 import { supplierScores } from "./contracts/partners.mount";
-import { type PackAccessView, packAccessInput } from "./kit/adapters/pack-guard.middleware";
-import { createPackUow } from "./kit/adapters/pack-uow";
-import { orgForTenant } from "./kit/application/pack-files.ports";
-import { packActionsFor } from "./kit/domain/pack-access.rules";
+import {
+  createPackUow,
+  orgForTenant,
+  type PackAccessView,
+  packAccessInput,
+  packActionsFor,
+} from "./kit/public";
 import { fileboxClients, type PackFb } from "./packs.filebox";
 
 const KEY = "contracts";

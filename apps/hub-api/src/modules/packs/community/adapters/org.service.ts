@@ -1,7 +1,7 @@
 // CR-102 · com-c3 · service công ty đối tác / nhóm hàng / hồ sơ / cài đặt (T-DEP-1). Mỗi hàm MỘT tx gói (RLS người xem).
 import type { PartnerUpdateInput } from "@ai/contracts/community";
 import type { Tx } from "@ai/db";
-import type { PackUow } from "../../kit/application/ports";
+import type { PackUow } from "../../kit/public";
 import type { Access } from "./community-access";
 import { type MediaCursor, type MediaRow, profileMedia } from "./media.sql";
 import {

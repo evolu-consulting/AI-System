@@ -2,7 +2,7 @@
 // `routes/partner_events.py`, `ledger/obligations.py`. Mỗi lệnh MỘT tx `PackUow`: khoá HĐ → khoá + đọc lại đợt → luật thuần → MỘT
 // câu ghi (CTE: đợt + sổ + nhật ký HĐ). "Hôm nay" = ngày lịch múi tenant (HD4 `localDate`).
 
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import { daysLate, roleOf, settledType, undoOf } from "../domain/ledger.rules";
 import {
   MANUAL_EVENT_TYPES,

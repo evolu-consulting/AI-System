@@ -10,7 +10,7 @@ import { type Context, Hono } from "hono";
 import { z } from "zod";
 import { appError } from "../../../../lib/errors";
 import { parseWith, withoutScopeKeys } from "../../../../lib/http";
-import type { PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
+import type { PackGuardVars } from "../../kit/public";
 import { type Access, accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
 import type { MediaCursor, MediaRow } from "./media.sql";

@@ -1,8 +1,7 @@
 // gap-d1 #21 · "Tải báo giá lên": tệp (PDF có lớp chữ hoặc văn bản) ⇒ chữ ⇒ AI đọc qua AI client chung ⇒ parse chặt ⇒ dòng giá CHƯA
 // LƯU. Tệp chỉ tồn tại trong bộ nhớ yêu cầu (không lưu FileBox). SP phải có tab NCC & giá (không Giới thiệu). Trần thao tác AI/ngày
 // của tenant tính sau khi tệp đã qua kiểm loại/kích thước. Lỗi ⇒ `SupplierFail`.
-import type { PackWho } from "../../kit/application/ports";
-import type { PdfConverter } from "../../kit/domain/pdf.rules";
+import type { PackWho, PdfConverter } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 import { parseQuoteReply, quoteFileKind, quotePrompt } from "../domain/quote-read.rules";
 import { QUOTE_MAX_BYTES, type QuoteReadOut } from "../domain/supplier-prices.types";

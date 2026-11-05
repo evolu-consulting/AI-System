@@ -3,7 +3,7 @@
 // tenant-wide) ‖ tập id HĐ người dùng thấy (SQL trong tx người dùng, RLS tenant + luật thấy M1/M1b) ⇒ lọc dữ liệu thô theo tập đó TRƯỚC khi
 // dựng dòng giá (`visibleTo`, review B #9) ⇒ nguồn / lãi / rủi ro / trang trong bộ nhớ. Số câu SQL cố định (trúng: 4 = phạm vi + dấu vân
 // tay, phạm vi + id; trượt thêm 3). HĐ không thấy không có mặt và không ảnh hưởng dòng khác; đổi nguồn HĐ không thấy ⇒ 404.
-import type { PackSystemUow, PackUow, PackWho } from "../../kit/application/ports";
+import type { PackSystemUow, PackUow, PackWho } from "../../kit/public";
 import { localDate } from "../domain/local-time.rules";
 import {
   type FullSale,

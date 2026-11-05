@@ -2,7 +2,7 @@
 // chờ AI, upload trả ngay); tối đa `concurrency` lượt chạy cùng lúc mỗi instance; HĐ đã trong hàng ⇒ bỏ trùng. Không sleep/poll:
 // lượt xong kéo lượt kế. `scheduleTaxRetry` hẹn MỘT bộ hẹn giờ mỗi HĐ tới đúng giờ cổng MST cho phép (khe 2 s / hết nghỉ 429)
 // rồi xếp lượt `refresh` vào cùng hàng. `onSettled` (test) nhận kết cục lượt trích; `idle()` resolve khi hàng rỗng.
-import type { PackWho } from "../../kit/application/ports";
+import type { PackWho } from "../../kit/public";
 import type { ExtractionOutcome, RunExtraction } from "./run-extraction.usecase";
 import type { RefreshParties, TaxRetryScheduler } from "./tax-parties";
 import type { ExtractionStarter } from "./upload-contract.ports";

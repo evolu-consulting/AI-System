@@ -2,8 +2,9 @@
 // `contracts.files` chưa xoá) trong tx RLS ⇒ không có ⇒ `null`, KHÔNG gọi FileBox. Org hàng phải = `t_<tenant token>` (CHECK ở DB;
 // kiểm lại — phòng thủ chiều sâu, lệch ⇒ `null` + log `pack-file-org-mismatch`). Gọi FileBox NGOÀI tx (không giữ kết nối DB khi
 // chờ mạng). Log chỉ `{pack, contract_id}` — không `file_id`, không URL `/d/`. FileBox lỗi ⇒ ném (route ⇒ 5xx, không Location).
-import { orgForTenant } from "../../kit/application/pack-files.ports";
-import type { PackUow, PackWho } from "../../kit/application/ports";
+
+import type { PackUow, PackWho } from "../../kit/public";
+import { orgForTenant } from "../../kit/public";
 import type { ContractsReadRepo } from "./ports";
 
 export type GetFileLink = (who: PackWho, id: string) => Promise<string | null>;

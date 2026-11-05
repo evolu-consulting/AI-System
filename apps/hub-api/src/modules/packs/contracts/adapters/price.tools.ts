@@ -1,10 +1,6 @@
 // com-c10a · 3 tool đọc cho trợ lý chung: tra giá, so sánh, tìm NCC. Dựa `HostBookReader` (kiểm nội bộ + quyền đọc gói TRƯỚC khi mở tx;
 // 2 câu SQL cố định/lần gọi, +2 khi cần điểm uy tín). Người ngoài/không quyền ⇒ reader ném `HostBookError("forbidden")`. Chỉ đọc.
-import type {
-  PackToolArgs,
-  PackToolCtx,
-  PackToolDef,
-} from "../../kit/application/pack-tools.ports";
+import type { PackToolArgs, PackToolCtx, PackToolDef } from "../../kit/public";
 import {
   HostBookError,
   type HostBookOut,

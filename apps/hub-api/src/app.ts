@@ -51,10 +51,8 @@ import type { KhRuntime } from "./modules/kh/kh.mount";
 import { NOTIFICATIONS_PREFIX } from "./modules/notify/adapters/notify.routes";
 import { mountNotify } from "./modules/notify/notify.mount";
 import { mountOps, OPS_PREFIX } from "./modules/ops/ops.mount";
-import { externalFirewall } from "./modules/packs/kit/adapters/external-firewall.middleware";
-import { packAccessInput } from "./modules/packs/kit/adapters/pack-guard.middleware";
-import type { ContextLabeler } from "./modules/packs/kit/application/context.ports";
-import { checkPackAccess } from "./modules/packs/kit/domain/pack-access.rules";
+import type { ContextLabeler } from "./modules/packs/kit/public";
+import { checkPackAccess, externalFirewall, packAccessInput } from "./modules/packs/kit/public";
 import { mountEsignWebhook, mountPacks, PACK_PREFIX } from "./modules/packs/packs.mount";
 import type { ProcessStartPort } from "./modules/processes/core/ports";
 import {

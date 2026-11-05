@@ -3,8 +3,7 @@
 // cuối đợt Cao-1/TB-2). Mỗi lần phát = các bước tuần tự, số câu cố định: (chủ quản: 1 tx hub) + (khớp hàng: 1 tx contracts) + MỘT tx
 // gói: ứng viên + tuỳ chọn + MỘT `notify.enqueue` cho cả lô — không vòng lặp từng người nhận. Lỗi phát chỉ log, không làm hỏng hành động.
 import type { Tx } from "@ai/db";
-import type { Notifier } from "../../kit/application/notify";
-import type { PackSystemUow } from "../../kit/application/ports";
+import type { Notifier, PackSystemUow } from "../../kit/public";
 import {
   type BellKind,
   bellKind,

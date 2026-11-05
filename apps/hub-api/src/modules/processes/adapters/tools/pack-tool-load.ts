@@ -3,7 +3,7 @@
 // `wfEnabled` = đã đăng ký. `preCallReason` không đổi ⇒ giữ D2-49 (`side_effect ∧ ¬real_action ⇒ tool_failed`).
 // Security M2 · người bắt đầu phải có quyền gói đúng `action` của tool (cache, 0 SQL nóng) — mất ⇒ `canRun=false` ⇒
 // `permission_lost` (như mất quyền chạy quy trình).
-import type { PackToolCatalog } from "../../../packs/kit/application/pack-tools.ports";
+import type { PackToolCatalog } from "../../../packs/kit/public";
 import type { ToolCallLoad } from "../../application/tools/tool.ports";
 
 export async function withPackTool(

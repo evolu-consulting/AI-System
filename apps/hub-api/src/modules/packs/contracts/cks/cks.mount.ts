@@ -3,8 +3,8 @@
 import type { Db, Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { Hono } from "hono";
-import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
-import { createPackUow, packTenantOnly } from "../../kit/adapters/pack-uow";
+import type { PackAccessView, PackGuardVars } from "../../kit/public";
+import { createPackUow, packTenantOnly } from "../../kit/public";
 import { cksRoutes } from "./adapters/cks.routes";
 import { cksReadRepo } from "./adapters/cks-read.repo";
 import { cachedFlag } from "./adapters/cks-read-only";

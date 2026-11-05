@@ -3,8 +3,8 @@
 // đọc `/transactions`. `PackUow` (role `contracts_rw`, RLS tenant + M1). Gắn dưới `/pack/contracts` ở `products.mount.ts`.
 import type { Db, Tx } from "@ai/db";
 import type { Hono } from "hono";
-import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
-import { createPackUow, packTenantOnly } from "../kit/adapters/pack-uow";
+import type { PackAccessView, PackGuardVars } from "../kit/public";
+import { createPackUow, packTenantOnly } from "../kit/public";
 import { dealsRepo } from "./adapters/deals.repo";
 import { dealsRoutes } from "./adapters/deals.routes";
 import { extractionRepo } from "./adapters/extraction.repo";

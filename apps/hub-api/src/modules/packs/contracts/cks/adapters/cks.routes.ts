@@ -19,11 +19,7 @@ import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
 import { AppError, appError } from "../../../../../lib/errors";
 import { parseQuery, parseWith, readJson } from "../../../../../lib/http";
-import {
-  type PackAccessView,
-  type PackGuardVars,
-  packGuard,
-} from "../../../kit/adapters/pack-guard.middleware";
+import { type PackAccessView, type PackGuardVars, packGuard } from "../../../kit/public";
 import { CksFail, type CksReads } from "../application/read.usecase";
 import type { CksRenewals } from "../application/renewal.usecase";
 import type { CksSales } from "../application/sale.usecase";

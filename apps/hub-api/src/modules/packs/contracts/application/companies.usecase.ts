@@ -1,7 +1,7 @@
 // HD8-FR-09 · port `mgmt-app/api/app/routes/companies.py` (danh sách, tạo, sửa, tra lại Cục Thuế) — câu lỗi + mã như mgmt. Tra MST
 // qua cổng `TaxRegistry` của HD2 (vắng cấu hình ⇒ coi như "chưa tra được"). Gọi Cục Thuế NGOÀI tx.
 
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { PackUow, PackWho } from "../../kit/public";
 import {
   applyRegistry,
   companyOrder,

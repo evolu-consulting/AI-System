@@ -1,8 +1,7 @@
 // HD-FR-54 · HD-FR-55 · HD5 plan: phụ lục gắn HĐ gốc (chọn tay + gợi ý) và bảng giá có áp phụ lục. Mỗi ca = một tx `PackUow`
 // (role `contracts_rw`, RLS FORCE), số câu SQL CỐ ĐỊNH (không theo số hàng): gắn = set_config + khoá/kiểm cha + CTE ghi + outbox;
 // gợi ý = set_config + đầu văn bản + ứng viên; giá = set_config + một câu gom họ HĐ.
-import type { KitTxRepos } from "../../kit/application/index-outbox";
-import type { PackUow, PackWho } from "../../kit/application/ports";
+import type { KitTxRepos, PackUow, PackWho } from "../../kit/public";
 import {
   applyAppendixPricing,
   type PricedLine,
