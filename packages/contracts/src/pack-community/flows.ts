@@ -67,6 +67,8 @@ export const ReportSchema = z.strictObject({
   id: Id,
   taskId: Id,
   postId: Id,
+  /** Tiêu đề bài bị báo cáo (người duyệt biết bài nào) — cùng câu SQL với danh sách, không gọi theo hàng. */
+  postTitle: Txt(2000),
   reason: Txt(1000),
   status: z.enum(["pending", "resolved"]),
   triage: z.enum(["running", "done", "error"]),

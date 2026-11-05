@@ -54,6 +54,7 @@ const reportItem = (r: ReportRow): Report => ({
   id: r.id,
   taskId: r.task_id,
   postId: r.post_id,
+  postTitle: r.post_title,
   reason: r.reason,
   status: r.status,
   triage: r.triage,

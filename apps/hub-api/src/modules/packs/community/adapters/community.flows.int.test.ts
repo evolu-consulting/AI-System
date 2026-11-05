@@ -404,6 +404,13 @@ describe("khe community.report [CR-120]", () => {
         (i: { id: string }) => i.id === id,
       ),
     ).toMatchObject({ triage: "error", status: "pending" });
+    const title = (await sql`select title from community.posts where id = ${hostPost}::uuid`)[0]
+      ?.title;
+    expect(
+      (await call("hA", "GET", "/reports?pending=1")).json.items.find(
+        (i: { id: string }) => i.id === id,
+      ).postTitle,
+    ).toBe(title ?? "");
     expect((await call("s1b", "POST", `/reports/${id}/decide`, { action: "hide" })).status).toBe(
       403,
     );
@@ -431,5 +438,36 @@ describe("khe community.report [CR-120]", () => {
       (tx) => tx`update community.reports set status = 'resolved', action = 'dismiss' returning id`,
     );
     expect(own).toHaveLength(0);
+  });
+});
+
+describe("GET /flows/nav [CR-120]", () => {
+  it("người duyệt + duyệt bài bật ⇒ đủ; thành viên thường ⇒ không; đối tác ⇒ chỉ gửi yêu cầu; công ty chưa bật khe ⇒ không có hàng chờ", async () => {
+    moderationOn = true;
+    expect((await call("hA", "GET", "/flows/nav")).json).toEqual({
+      moderationQueue: true,
+      moderationOn: true,
+      joinSubmit: false,
+      joinReview: true,
+      reports: true,
+    });
+    expect((await call("hM", "GET", "/flows/nav")).json).toEqual({
+      moderationQueue: false,
+      moderationOn: true,
+      joinSubmit: false,
+      joinReview: false,
+      reports: false,
+    });
+    expect((await call("s2", "GET", "/flows/nav")).json).toEqual({
+      moderationQueue: false,
+      moderationOn: true,
+      joinSubmit: true,
+      joinReview: false,
+      reports: false,
+    });
+    moderationOn = false; // tenant chưa được gán khe duyệt bài
+    const off = (await call("hA", "GET", "/flows/nav")).json;
+    expect(off).toMatchObject({ moderationQueue: false, moderationOn: false, reports: true });
+    moderationOn = true;
   });
 });
