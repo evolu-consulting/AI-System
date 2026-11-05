@@ -470,6 +470,13 @@
       "when": 1803100000000,
       "tag": "0073_brand_bumps_profile",
       "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1803200000000,
+      "tag": "0074_v2g_save_cell",
+      "breakpoints": true
     }
   ]
 }

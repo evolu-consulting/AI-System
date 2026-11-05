@@ -56,13 +56,12 @@ function lockQ(tx: Tx, t: string): ReviewRepo["lock"] {
 async function itemsAndMilestones(tx: Tx, t: string, id: string, w: ReviewWrite) {
   const rows = await tx.execute<{
     bad: number;
-    unk: number;
     upd: number;
     ins: number;
     ms: number;
   }>(sql`with ${itemCtes(t, id, w)}, ${milestoneCtes(t, id, w)}
-    select (select n from bad) as bad, (select n from unk) as unk, (select count(*)::int from up) as upd,
-      (select count(*)::int from ins) as ins, (select count(*)::int from mi) as ms`);
+    select (select n from bad) as bad, (select count(*)::int from up) as upd,
+      (select count(*)::int from comp where comp.id is null and (select n from bad) = 0) as ins, (select count(*)::int from mi) as ms`);
   const r = rows[0];
   if (!r) throw new Error("review-save: no row");
   return r;
@@ -71,7 +70,7 @@ async function itemsAndMilestones(tx: Tx, t: string, id: string, w: ReviewWrite)
 /** CTE `k` (HĐ + đối tác + đỉnh seq/ord) … `ins` của ②. */
 function itemCtes(t: string, id: string, w: ReviewWrite) {
   return sql`k as (
-      select c.id,
+      select c.id, c.rep_cell,
         contracts.party_key(
           c.fields -> (case when c.direction = 'sale' then 'buyer' else 'supplier' end || '_name') ->> 'value',
           c.fields -> (case when c.direction = 'sale' then 'buyer' else 'supplier' end || '_tax_id') ->> 'value') as party,
@@ -87,9 +86,6 @@ function itemCtes(t: string, id: string, w: ReviewWrite) {
     bad as (select count(*)::int as n from comp where comp.comps is not null and (comp.product_id is null or exists (
       select 1 from unnest(comp.comps) e where not exists (select 1 from contracts.product_components pc
         where pc.id = e and pc.product_id = comp.product_id and pc.tenant_id = ${t}::uuid)))),
-    unk as (select count(*)::int as n from comp where comp.id is not null and not exists (
-      select 1 from contracts.contract_items i where i.id = comp.id and i.contract_id = ${id}::uuid
-        and i.tenant_id = ${t}::uuid)),
     up as (
       update contracts.contract_items i set name = comp.name, unit = comp.unit, qty = comp.qty, unit_price = comp.unit_price,
         product_id = comp.product_id, component_ids = comp.comps,
@@ -102,8 +98,7 @@ function itemCtes(t: string, id: string, w: ReviewWrite) {
         product_id, component_ids)
       select ${t}::uuid, k.id, k.top_ord + 1 + comp.ord, comp.name, comp.unit, comp.qty, comp.unit_price, true, true,
         comp.product_id, comp.comps
-      from k, comp where comp.id is null and (select n from bad) = 0
-      returning id)`;
+      from k, comp where comp.id is null and (select n from bad) = 0)`;
 }
 
 /** CTE `rp` (thay mốc AI/mặc định còn mở) + `mi` (mốc mới) của ②. */
@@ -116,9 +111,9 @@ function milestoneCtes(t: string, id: string, w: ReviewWrite) {
       returning o.id),
     mi as (
       insert into contracts.obligations (tenant_id, contract_id, party_key, direction, kind, seq, due_date, amount, qty, title,
-        owner, source)
+        owner, source, rep_cell)
       select ${t}::uuid, k.id, k.party, m.direction, m.kind, k.top + 1 + m.ord, m.due_date, m.amount, null, m.title, m.owner,
-        m.source
+        m.source, k.rep_cell
       from k, jsonb_to_recordset(${JSON.stringify(ms)}::jsonb) as m (ord int, kind text, direction text, due_date date,
         amount bigint, title text, owner text, source text)
       where ${w.plan.milestones !== null}::boolean
@@ -138,7 +133,7 @@ function saveQ(tx: Tx, t: string): ReviewRepo["save"] {
     const c = await itemsAndMilestones(tx, t, id, w);
     if (c.bad > 0) return "component_invalid";
     const asked = (w.items ?? []).filter((i) => i.id !== null).length;
-    if (c.unk > 0 || c.upd !== asked) return "item_unknown";
+    if (c.upd !== asked) return "item_unknown";
     const done = await tx.execute<{ status: "needs_review" | "active" }>(sql`with u as (
         update contracts.contracts set status = case when ${p.activate}::boolean then 'active' else status end,
           confirmed_at = case when ${p.activate}::boolean then now() else confirmed_at end,
