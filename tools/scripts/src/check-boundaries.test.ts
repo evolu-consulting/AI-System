@@ -144,12 +144,13 @@ describe("CR-121 B · khuôn baseline và đếm theo module", () => {
   });
 
   test("baseline khứ hồi theo khuôn depcruise; mục luật khác bị bỏ qua", () => {
-    const vs = [v("cross-module-deep", "1")];
+    const first = v("cross-module-deep", "1");
+    const vs = [first];
     const known = toBaseline(vs);
     expect(known[0]).toEqual({
       type: "dependency",
-      from: vs[0]?.from,
-      to: vs[0]?.to,
+      from: first.from,
+      to: first.to,
       rule: { severity: "error", name: "cross-module-deep" },
     });
     const other = {
