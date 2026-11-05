@@ -241,8 +241,10 @@ function difyFactsQ(tx: Tx, tid: string): ApprovalEngineRepo["difyFacts"] {
       end_date: string | null;
       deadline: string | null;
       version: number | string;
+      // CR-121 F-5 · tên HĐ = trường "Tên hợp đồng" (fields.title) như sổ cái/xuất; cột `title` chỉ là tên file lúc tải lên.
     }>(sql`
-      select c.title, c.deal, c.fields -> 'total_value' -> 'value' as v,
+      select coalesce(nullif(btrim(c.fields -> 'title' ->> 'value'), ''), c.title) as title, c.deal,
+        c.fields -> 'total_value' -> 'value' as v,
         case c.deal when 'sell' then c.buyer when 'buy' then c.seller
           else concat_ws(' / ', c.seller, c.buyer) end as partner,
         c.number, c.owner_user_id::text as owner, c.end_date::date::text as end_date,

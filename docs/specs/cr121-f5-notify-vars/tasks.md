@@ -27,6 +27,15 @@ Không đổi UI. Quy trình không có bước Dify/Thông báo/Chờ tới th�
   (bấm khi chưa rời danh sách), nên ca 2 và ca 3 bị bỏ qua và chưa xác nhận được ca 3 trên e2e. Đã sửa test ở cả `cr121-d6b-notify` và
   `cr121-editor`: chờ URL chi tiết và đúng 1 nút rồi mới bấm, không nới assert. Chưa chạy lại vì đã hết 3 lượt evotest.
 
+- e2e lượt điều phối (1fe6c9d9): ca 3 đứng ở "Ban Giám đốc" pending. Nguyên nhân gốc là race ở client/test, KHÔNG phải `updateInputs`.
+  Trace cho thấy nhân viên bấm "Xác nhận và lưu" khi thẻ duyệt chưa có task mở: chỉ có POST `/review` (lưu nháp), KHÔNG có POST `actions/approve`;
+  client báo "Bước duyệt đã thay đổi… đã tải trạng thái mới" (`use-approval-ui.tsx` so `task_id`), nên bước xác nhận không được Đạt.
+  Đã sửa spec: chờ bước "Xác nhận hợp đồng" ở trạng thái open rồi mới bấm, sau đó kiểm passed.
+- e2e d42017cf: luồng đã chạy hết (xác nhận, BGĐ duyệt, Thông báo Đạt) nhưng chuông vẫn ra "· hop-dong-…". Nguyên nhân gốc thứ hai:
+  `difyFacts` đọc cột `contracts.title`, mà cột này là tên file lúc tải lên. Tên HĐ thật là `fields.title` (sổ cái/xuất dùng
+  `coalesce(fields.title, …)`). Đã sửa `difyFacts`: tên = `coalesce(fields.title, title)`, dùng cho cả input Dify và mẫu Thông báo.
+  Nhãn Q-1 (`record-label.repo.ts`) cũng đọc `c.title`, đã ghi vào việc còn lại.
+
 ## Quyết định trong lúc làm
 - Không chọn (b) `recordLabelRegistry`: nó mở tx gói riêng (`createPackUow`) ngay trong tx khoá run, vi phạm Luật 4c, và chỉ có nhãn, không có giá trị/ngày.
 - Điều kiện rẽ (giá trị HĐ) KHÔNG đọc input run: tool `contracts-route`/`contracts-finalize` dựng `FlowFacts` từ HĐ hiện tại dưới khoá HĐ
@@ -45,4 +54,4 @@ lượt đã kết thúc hoặc bản ghi khác thì không đổi. Thông báo 
 - Kịch bản: khi quy trình không có bước đọc dữ liệu HĐ thì không cập nhật gì [test: apps/hub-api/src/modules/packs/contracts/domain/approval-run-inputs.rules.test.ts » quy trình chỉ có bước duyệt ⇒ không input HĐ]
 
 ## Việc còn lại
-Không.
+- Nhãn bản ghi Q-1 (`packs/contracts/adapters/record-label.repo.ts`) dùng `c.title` (tên file); nên đổi sang `coalesce(fields.title, title)` (lát khác).
