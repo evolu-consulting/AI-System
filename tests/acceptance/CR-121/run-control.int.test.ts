@@ -4,7 +4,7 @@
 // bước đó, vòng tăng, kết quả cũ giữ; tenant_admin 403; bấm 2 lần đồng thời ⇒ 1 lần quay lại; (4) Chạy lại cả lượt ⇒ run mới
 // `rerun_of`, cùng snapshot + input; 2 lần đồng thời ⇒ 1 run mới; run đang chạy ⇒ 409.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import type { Json } from "../P-a/_support/pa";
+import { type Json, T } from "../P-a/_support/pa";
 import { needSchema } from "../P-a/_support/schema";
 import {
   type CtxPf1,
@@ -29,10 +29,12 @@ afterAll(async () => {
 
 const TO = 60_000;
 type R = "A" | "Adm" | "P" | "Db";
+/** platform_admin thao tác run của tenant khác qua `?tenant_id` (như cancel/decide/view). */
+const tq = (r: R) => (r === "P" ? `?tenant_id=${T.acme}` : "");
 const stop = (r: R, id: string, reason = "sent_by_mistake") =>
-  c.call(r, "POST", `/process-runs/${id}/stop`, { reason });
+  c.call(r, "POST", `/process-runs/${id}/stop${tq(r)}`, { reason });
 const rerunStep = (r: R, id: string, stageIdx: number, reason = "bad_data") =>
-  c.call(r, "POST", `/process-runs/${id}/rerun-step`, { reason, stage_idx: stageIdx });
+  c.call(r, "POST", `/process-runs/${id}/rerun-step${tq(r)}`, { reason, stage_idx: stageIdx });
 const rerun = (r: R, id: string, reason = "needs_edit") =>
   c.call(r, "POST", `/process-runs/${id}/rerun`, { reason });
 const audits = (id: string) =>
