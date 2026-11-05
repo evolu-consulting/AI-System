@@ -4,6 +4,7 @@ import { SSE_HEARTBEAT_S, SSE_PING_FRAME } from "@ai/contracts/chat";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import type { Redis } from "../../../lib/redis";
+import { deferredAbortClose } from "../../../lib/sse-shutdown";
 import { isTerminalEvent, parseEntry, type SseEventBody, sseKey } from "./sse-writer";
 
 export type SseEntry = SseEventBody & { seq: number };
@@ -144,7 +145,8 @@ class EventStreamSession {
   #closed = false;
   #unsub = () => {};
   #ping: ReturnType<typeof setInterval> | undefined;
-  readonly #onAbort = () => this.end();
+  /** Tắt instance: đóng ở macrotask sau (Bun treo `server.stop(true)` khi ≥ 2 stream `close()` cùng tick — `lib/sse-shutdown`). */
+  readonly #onAbort = deferredAbortClose(() => this.end());
 
   constructor(
     private readonly o: RunEventStreamOpts,
@@ -180,7 +182,11 @@ class EventStreamSession {
   end(): void {
     if (this.#closed) return;
     this.stop();
-    this.ctl.close();
+    try {
+      this.ctl.close();
+    } catch {
+      // `server.stop(true)` đã huỷ stream trước lệnh đóng hoãn
+    }
   }
 
   #tick(): void {

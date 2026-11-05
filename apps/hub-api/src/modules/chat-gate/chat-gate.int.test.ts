@@ -71,12 +71,8 @@ beforeAll(async () => {
   hub = await startHubX(k);
 }, 60_000);
 afterAll(async () => {
-  // Test cuối POST tin văn bản vào dock ⇒ Hub mở luồng SSE của run (client chỉ `cancel()` thân). `server.stop(true)` (Bun 1.3.14)
-  // không trả về dù mọi kết nối PG đã idle (đo evotest 2026-11-05: dừng ở bước "server stopped"). Mọi assertion đã chạy xong;
-  // chỉ chặn teardown tối đa 5 s (process test thoát ngay sau file) thay vì để hook (unnamed) hết 30 s ⇒ đỏ. Gốc: luồng SSE
-  // gửi-tin không thoát khi client huỷ (xem tasks.md kr-int-py) — việc của Opus (vòng đời run/stream).
-  const stopped = hub?.stop();
-  await Promise.race([stopped, new Promise((r) => setTimeout(r, 5_000))]);
+  // Các test gửi tin để lại luồng SSE run mở (Bun fetch huỷ thân không báo server); hub-sse-shutdown: đóng hoãn ⇒ stop không treo.
+  await hub?.stop();
   await sql?.end();
 });
 

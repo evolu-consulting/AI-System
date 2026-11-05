@@ -8,6 +8,7 @@ import { SSE_PING_FRAME, USER_STREAM_CONN_MAX } from "@ai/contracts/chat";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
+import { deferredAbortClose } from "../../lib/sse-shutdown";
 import { compareStreamId } from "../runner/runner.rules";
 import { evictOldest, parseStreamId, resumeDecision } from "./me-stream.rules";
 import type { UserEntry, UserStreamReader } from "./user-stream-reader";
@@ -113,11 +114,9 @@ class MeStreamSession implements Closable {
   #drain: (() => void) | undefined;
   /**
    * Tắt instance: đóng ở lượt event loop SAU — Bun 1.3 treo `server.stop(true)` khi ≥ 2 stream bị `close()` cùng tick
-   * ngay trước nó (đo thật, plan §16 B7); `stop(true)` cắt kết nối trước, `end()` sau đó vô hại.
+   * ngay trước nó (đo thật, plan §16 B7; `lib/sse-shutdown`); `stop(true)` cắt kết nối trước, `end()` sau đó vô hại.
    */
-  readonly #onAbort = () => {
-    setTimeout(() => this.end(), 0);
-  };
+  readonly #onAbort = deferredAbortClose(() => this.end());
 
   readonly tenantId: string;
 

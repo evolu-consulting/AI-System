@@ -223,6 +223,8 @@ async function main(): Promise<void> {
 
   const shutdown = async (signal: string): Promise<void> => {
     logger.info("shutdown", { signal });
+    // abort ⇒ mọi phiên SSE (run E13, /me/stream) đóng ở macrotask sau + dọn ping/đăng ký (`lib/sse-shutdown`);
+    // `stop()` êm chờ đúng các lệnh đóng đó (đóng cùng tick làm Bun 1.3.14 treo stop — hub-sse-shutdown).
     stop.abort();
     await server.stop();
     await processes?.settled();
