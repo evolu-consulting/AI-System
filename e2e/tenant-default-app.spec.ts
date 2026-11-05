@@ -34,7 +34,7 @@ test("platform_admin mở tenant acme → ô App mặc định: chọn Sổ Hợ
   });
   const a = seedAdmin();
   await loginToShell(page, "platform", a.username, a.password);
-  await page.goto(`/tenants/${TENANT_ID.acme}`);
+  await page.goto(`/tenants/${TENANT_ID.acme}?tab=info`); // CR-121: tab mặc định là Hồ sơ; "App mặc định" nằm ở tab Cài đặt
   const select = page.getByLabel("App mở sau khi đăng nhập");
   await expect(select).toHaveValue("");
   await select.selectOption({ label: "Sổ Hợp Tác" });

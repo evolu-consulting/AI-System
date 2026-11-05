@@ -11,9 +11,9 @@
     "list": {
       "filter": "Lọc",
       "filterMenu": "Chọn bộ lọc",
-      "removeFilter": "Bỏ lọc {{name}}",
-      "result": "{{shown}} / {{total}}",
-      "noMatch": "Không có {{what}} khớp bộ lọc",
+      "removeFilter": "Bỏ lọc {name}",
+      "result": "{shown} / {total}",
+      "noMatch": "Không có {what} khớp bộ lọc",
       "openDetail": "Mở trang chi tiết",
       "closeDrawer": "Đóng"
     },

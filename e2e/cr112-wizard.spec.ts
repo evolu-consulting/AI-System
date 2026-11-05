@@ -1,4 +1,4 @@
-﻿// CR-112 S7 · ADM-FR-79 · ADM-FR-77 AC4 · wizard thêm công ty 4 bước (không giao dịch xuyên bước, tiếp được, bỏ qua bước 3/4, "Onboard lại"),
+// CR-112 S7 · ADM-FR-79 · ADM-FR-77 AC4 · wizard thêm công ty 4 bước (không giao dịch xuyên bước, tiếp được, bỏ qua bước 3/4, "Onboard lại"),
 // tab Tổng quan, và tab Quota rút gọn của tenant_admin. Gói `contracts` giả bằng support/fake-packs.ts (DB e2e gốc không chạy migration gói).
 import { expect, type Page, test } from "@playwright/test";
 import { fakePacks } from "./support/fake-packs";
@@ -150,8 +150,10 @@ test("ADM-FR-77 AC4 · tenant_admin: tab Quota rút gọn chỉ đọc (run/toke
     await insertUsage(sql, 3, { tenant: TENANT_ID.acme });
   });
   const platformOnly: string[] = [];
+  const matrix: string[] = [];
   page.on("request", (r) => {
-    if (/\/daily-limits|\/grants\/matrix|\/packs/.test(r.url())) platformOnly.push(r.url());
+    if (/\/daily-limits|\/packs/.test(r.url())) platformOnly.push(r.url());
+    if (/\/grants\/matrix/.test(r.url())) matrix.push(r.url());
   });
   await loginAs(page, "acme", "binh");
   await page.goto(`/tenants/${TENANT_ID.acme}?tab=quota`);
@@ -166,6 +168,12 @@ test("ADM-FR-77 AC4 · tenant_admin: tab Quota rút gọn chỉ đọc (run/toke
   await expect(page.getByRole("spinbutton")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Lưu", exact: true })).toHaveCount(0);
   expect(platformOnly).toEqual([]);
+  // CR-121 C-2: dòng tóm tắt đầu trang (mọi vai) đọc ma trận quyền của CHÍNH công ty mình (limit=1, route cho tenant_admin); tab Quota không gọi thêm.
+  expect(matrix.length).toBeGreaterThan(0);
+  for (const u of matrix) {
+    expect(u).toContain(`tenant_id=${TENANT_ID.acme}`);
+    expect(u).toContain("limit=1");
+  }
   await shot(page, "quota-tenant-admin");
 
   // Dòng tóm tắt ở đầu trang (đọc được cho tenant_admin) + tab Hồ sơ chỉ xem (không nút Sửa).

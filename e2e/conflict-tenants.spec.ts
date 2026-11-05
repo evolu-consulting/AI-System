@@ -34,7 +34,7 @@ async function conflictOnAcme(page: Page, request: Parameters<typeof apiAsAdmin>
   return { mine, latest: mine + 1, name };
 }
 
-test("ADM-FR-55 · M3-AC08 · M4-R17 · tenant: admin lưu trước → alertdialog có {user} = admin; Xem khác biệt có name và max_concurrent_sub; Ghi đè → version +2, tên và max_concurrent_sub của mình (5)", async ({
+test("ADM-FR-55 · M3-AC08 · M4-R17 · tenant: admin lưu trước → alertdialog có {user} = admin; Xem khác biệt chỉ có name (sửa tại chỗ chỉ gửi tên); Ghi đè → version +2, tên của mình và max_concurrent_sub của người kia (7) giữ nguyên", async ({
   page,
   request,
 }) => {
@@ -42,12 +42,12 @@ test("ADM-FR-55 · M3-AC08 · M4-R17 · tenant: admin lưu trước → alertdia
   await expectConflictBody(page, { entity: "tenant", latest, mine, user: "admin" });
   await expectDiff(page, {
     latest,
-    fields: ["name", "max_concurrent_sub"],
-    absent: ["key", "version"],
+    fields: ["name"],
+    absent: ["key", "version", "max_concurrent_sub"], // CR-121 C-2: tên sửa tại chỗ ở tab Hồ sơ chỉ gửi {name}, không gửi cả form
   });
   await overwrite(page, { latest, user: "admin" });
   expect(await dbValue("tenants", TENANT_ID.acme, "name")).toBe("Acme A");
-  expect(await dbValue("tenants", TENANT_ID.acme, "max_concurrent_sub")).toBe(5);
+  expect(await dbValue("tenants", TENANT_ID.acme, "max_concurrent_sub")).toBe(7); // PATCH một phần: không đè trường người kia vừa đổi
   expect(await versionOf("tenants", TENANT_ID.acme)).toBe(latest + 1);
 });
 

@@ -30,7 +30,7 @@ test("N2-FR-04 · padmin đặt trần run acme = 200 ⇒ Lưu 200, tải lại 
   page: p,
 }) => {
   await platformLogin(p);
-  await p.goto(`/tenants/${TENANT_ID.acme}`);
+  await p.goto(`/tenants/${TENANT_ID.acme}?tab=info`); // CR-121: tab mặc định là Hồ sơ; trần run nằm ở tab Cài đặt
   await expect(CAP(p)).toHaveValue("5");
   await CAP(p).fill("1001");
   await CAP(p).blur();

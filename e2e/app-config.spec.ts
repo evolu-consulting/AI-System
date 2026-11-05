@@ -125,7 +125,7 @@ test("CR-118 · F2 · tab Quy trình: không có Hub ⇒ trạng thái rỗng c�
   await expect(page.getByRole("heading", { name: "Cảnh báo cấu hình" })).toBeVisible();
 });
 
-test("CR-118 · F3 · Xem trước acme: đối tác không thấy nhóm Sổ Hợp Tác, thành viên thấy mục theo mức Sửa, 'Duyệt theo quy trình' cần tính năng thêm", async ({
+test("CR-118 · F3 · Xem trước acme: đối tác không thấy nhóm Sổ Hợp Tác, thành viên thấy mục theo mức Sửa, 'Duyệt theo quy trình' không cần tính năng thêm (CR-121 D-4)", async ({
   page,
 }) => {
   await fakePacks(page, TENANT_ID.acme);
@@ -144,11 +144,14 @@ test("CR-118 · F3 · Xem trước acme: đối tác không thấy nhóm Sổ H�
   await page.getByRole("radio", { name: "Thành viên" }).click();
   const member = page.getByTestId("preview-member");
   await expect(member.locator('li[data-visible="true"]').first()).toBeVisible();
-  // lý do hiện ở hành động bị ẩn VÀ ở khe quy trình (không chạy) ⇒ hai chỗ
+  // CR-121 D-4: không còn add-on `contracts-approval-engine` ⇒ hành động duyệt theo quy trình hiện ngay ở mức Sửa; khe duyệt chạy (không còn "Cần bật tính năng thêm")
   await expect(
-    member.getByText('Cần bật tính năng thêm "Duyệt hợp đồng bằng quy trình"').first(),
+    member
+      .locator('li[data-visible="true"]')
+      .filter({ hasText: "Duyệt theo quy trình nhiều bước" }),
   ).toBeVisible();
-  await expect(member.getByTestId("preview-slot-contracts.approval")).toContainText("Chưa chạy");
+  await expect(member.getByText("Cần bật tính năng thêm")).toHaveCount(0);
+  await expect(member.getByTestId("preview-slot-contracts.approval")).toContainText("Đang chạy");
   await expect(member.getByText("Chỉ quản trị công ty thấy").first()).toBeVisible();
 });
 

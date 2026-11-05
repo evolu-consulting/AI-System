@@ -17,11 +17,11 @@ async function openEvolu(page: Page, tab: string) {
   await expect(page.getByRole("tab", { name: tab, selected: true })).toBeVisible();
 }
 
-test("CR-112 · 1 · Evolu › Ứng dụng & Gói: Sổ Hợp Tác, Community, DLC kèm số vai và số người", async ({
+test("CR-112 · 1 · Evolu › Ứng dụng: Sổ Hợp Tác, Community, DLC kèm số vai và số người", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openEvolu(page, "Ứng dụng & Gói");
+  await openEvolu(page, "Ứng dụng"); // CR-121: tab "Ứng dụng & Gói" đổi nhãn thành "Ứng dụng"
   // Thực tế: thẻ Sổ Hợp Tác + Community kèm "Gói đang bật 3 vai 5 người"; DLC không có thẻ app riêng ở tab này.
   for (const app of [APPS, /Community/]) {
     const card = page.getByRole("region", { name: app }).first();

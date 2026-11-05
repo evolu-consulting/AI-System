@@ -11,9 +11,9 @@
     "list": {
       "filter": "Filter",
       "filterMenu": "Choose filter",
-      "removeFilter": "Remove filter {{name}}",
-      "result": "{{shown}} / {{total}}",
-      "noMatch": "No {{what}} match the filters",
+      "removeFilter": "Remove filter {name}",
+      "result": "{shown} / {total}",
+      "noMatch": "No {what} match the filters",
       "openDetail": "Open detail page",
       "closeDrawer": "Close"
     },
