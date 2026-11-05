@@ -45,7 +45,7 @@ beforeAll(() => {
   put("packages/other/src/index.ts", "export const o = 1;");
   put("apps/chat-web/src/a.ts", 'import { c } from "@ai/contracts"; export { c };');
   put("apps/chat-web/src/a.test.ts", 'import "./a";');
-  put("apps/sohoptac-web/src/modules/community/b.ts", "export const b = 1;");
+  put("apps/workspace-web/src/modules/community/b.ts", "export const b = 1;");
   put("apps/admin-web/src/features/processes/p.ts", "export const p = 1;");
   put("apps/hub-api/src/modules/other/r.ts", "export const r = 1;");
 });
@@ -93,8 +93,8 @@ describe("test:affected · ánh xạ diff → việc e2e", () => {
     expect(p.typecheckPackages).toEqual(["apps/chat-web"]);
   });
 
-  it("module community (sohoptac-web) → community-web + community-web-stack + contracts-web + N1", () => {
-    expect(plan(["apps/sohoptac-web/src/modules/community/b.ts"]).jobs).toEqual([
+  it("module community (workspace-web) → community-web + community-web-stack + contracts-web + N1", () => {
+    expect(plan(["apps/workspace-web/src/modules/community/b.ts"]).jobs).toEqual([
       "N1",
       "community-web",
       "community-web-stack",
@@ -138,7 +138,7 @@ describe("test:affected · typecheckPackages, JSON, tham số", () => {
   });
 
   it("planToJson: cấu trúc ổn định", () => {
-    const j = planToJson("abc", plan(["apps/sohoptac-web/src/modules/community/b.ts"])) as Record<
+    const j = planToJson("abc", plan(["apps/workspace-web/src/modules/community/b.ts"])) as Record<
       string,
       unknown
     >;
@@ -163,7 +163,7 @@ describe("test:affected · typecheckPackages, JSON, tham số", () => {
       ],
       jobs: ["N1", "community-web", "community-web-stack", "contracts-web"],
     });
-    expect(j.typecheck).toEqual({ turbo: true, packages: ["apps/sohoptac-web"], tests: false });
+    expect(j.typecheck).toEqual({ turbo: true, packages: ["apps/workspace-web"], tests: false });
   });
 
   it("parseAffectedArgs: --base <ref> / --base=<ref>, --json, --run, quarantine mặc định bật", () => {

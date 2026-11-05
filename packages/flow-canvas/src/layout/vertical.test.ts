@@ -158,7 +158,7 @@ describe("flow-canvas · buildVerticalGraph", () => {
       r.edges.filter((e) => e.id.startsWith("skip-")).map((e) => [e.source, e.target]),
     ).toEqual([["a", "finalize"]]);
   });
-  test("snapshot toạ độ: cột dọc x = 0, y cộng dồn chiều cao + GAP_Y (giữ như bản sohoptac-web cũ)", () => {
+  test("snapshot toạ độ: cột dọc x = 0, y cộng dồn chiều cao + GAP_Y (giữ như bản workspace-web cũ)", () => {
     const { nodes } = buildFlowCanvas(STEPS, L);
     expect(nodes.map((n) => [n.id, n.position.x, n.position.y, n.width, n.height])).toEqual([
       ["start", 0, 0, 280, 40],

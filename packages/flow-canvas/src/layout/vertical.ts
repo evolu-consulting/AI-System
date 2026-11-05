@@ -1,4 +1,4 @@
-// CR-118 · @ai/flow-canvas · bố cục `vertical` (chuyển từ sohoptac-web `lib/flow-canvas.ts`, giữ nguyên toạ độ/chữ).
+// CR-118 · @ai/flow-canvas · bố cục `vertical` (chuyển từ workspace-web `lib/flow-canvas.ts`, giữ nguyên toạ độ/chữ).
 // CR-106 · canvas CHỈ ĐỌC của quy trình duyệt đang dùng: hàm thuần dựng node/edge từ `CurrentFlow.steps`
 // (Bắt đầu → từng bước theo thứ tự → "Ghi Đã duyệt"). Bố cục dọc, khoảng cách cố định, không dagre.
 // Không import runtime của @xyflow (chỉ kiểu) để test bun chạy nhanh, không kéo thư viện vào chunk chính.
@@ -8,7 +8,7 @@ import type { Edge, Node } from "@xyflow/react";
 import { stepKindSpec } from "../registry";
 
 export type DealKind = "buy" | "sell" | "referral";
-/** Bước đầu vào (dạng `CurrentStep` của sohoptac-web; `kind` là chuỗi: loại lạ/DLC vẽ chung, xem `registry.ts`). */
+/** Bước đầu vào (dạng `CurrentStep` của workspace-web; `kind` là chuỗi: loại lạ/DLC vẽ chung, xem `registry.ts`). */
 export type VerticalStepInput = {
   key: string;
   name: string;

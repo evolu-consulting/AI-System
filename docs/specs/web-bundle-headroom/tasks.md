@@ -12,7 +12,7 @@ Phân tích đồ thị ban đầu (rspack stats): zod (~370 KB nguồn) nằm t
 
 ## Làm
 - `@ai/contracts/light` (`src/light.ts`, không import): định nghĩa các hằng số trên; module cũ import lại + re-export.
-- web-kit `http.ts`, `auth/session.ts` và `date-filter.ts` của sohoptac-web import từ `@ai/contracts/light`.
+- web-kit `http.ts`, `auth/session.ts` và `date-filter.ts` của workspace-web import từ `@ai/contracts/light`.
 - `check:bundle` báo lỗi nếu JS ban đầu chứa zod (chuỗi `invalid_type`).
 
 ## Không làm / Chạm
@@ -27,6 +27,6 @@ Số liệu: initial JS gzip 165888 B (162.0 KB) → xem báo cáo lát.
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-Không thay đổi hành vi (lý do: chỉ chuyển hằng số sang module không phụ thuộc zod để zod rời JS tải ban đầu của sohoptac-web; giá trị và đường import cũ giữ nguyên).
+Không thay đổi hành vi (lý do: chỉ chuyển hằng số sang module không phụ thuộc zod để zod rời JS tải ban đầu của workspace-web; giá trị và đường import cũ giữ nguyên).
 
 ## Việc còn lại

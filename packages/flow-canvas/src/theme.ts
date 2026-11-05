@@ -1,5 +1,5 @@
 // CR-118 · @ai/flow-canvas · chữ + lớp CSS của node/cạnh do HOST cấp (gói không import i18n, không biết token riêng của app).
-// Mặc định: token shadcn (có ở admin-web và sohoptac-web). Host đè từng khoá bằng `theme`/`labels`.
+// Mặc định: token shadcn (có ở admin-web và workspace-web). Host đè từng khoá bằng `theme`/`labels`.
 import type { ReactNode } from "react";
 import type { StepInfo } from "./layout/vertical";
 

@@ -1,4 +1,4 @@
-// CR-118 §11.2 · luật chọn quy trình theo phòng ban: logic THUẦN sửa danh sách luật + ánh xạ lỗi API (dùng chung sohoptac-web và
+// CR-118 §11.2 · luật chọn quy trình theo phòng ban: logic THUẦN sửa danh sách luật + ánh xạ lỗi API (dùng chung workspace-web và
 // admin-web; mỗi app tự lo chữ). Hợp đồng: `@ai/contracts/hub-admin` (process-routing). Thứ tự mảng = ưu tiên (đầu = xét trước).
 import type { ProcessRoutingRule, PutProcessRoutingRequest } from "@ai/contracts/hub-admin";
 

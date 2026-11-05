@@ -1,4 +1,4 @@
-// CR-118 · cổng host → module: app chủ (shell sohoptac-web) cấp router mức thấp, đăng xuất và điều hướng nội bộ sang Sổ Hợp Tác.
+// CR-118 · cổng host → module: app chủ (shell workspace-web) cấp router mức thấp, đăng xuất và điều hướng nội bộ sang Sổ Hợp Tác.
 // Giữ MỎNG: file này nằm trong bundle đầu (manifest import) — phần dựng RouterPort nằm trong chunk module (`ui/entry`).
 
 import type { RouterPort } from "./ports";

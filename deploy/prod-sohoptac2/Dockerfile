@@ -1,5 +1,5 @@
 # sohoptac2: một image Bun cho admin-api + hub-api + lệnh migrate/seed (target app), một image nginx phục vụ các bản build web
-# (target web: 3 bản build SPA — sohoptac-web gộp có Community, admin-web, chat-web; studio-web build trong target app cho hub-api, community-web KHÔNG còn build: CR-118) và một image Python cho agent-runtime (target runtime). Mã nguồn = ./app (git archive do deploy.ps1 giải nén).
+# (target web: 3 bản build SPA — workspace-web gộp có Community, admin-web, chat-web; studio-web build trong target app cho hub-api, community-web KHÔNG còn build: CR-118) và một image Python cho agent-runtime (target runtime). Mã nguồn = ./app (git archive do deploy.ps1 giải nén).
 FROM oven/bun:1.3.14 AS app
 WORKDIR /app
 COPY app/ ./
@@ -22,13 +22,13 @@ ENV PUBLIC_APP_VERSION=$PUBLIC_APP_VERSION
 ENV PUBLIC_HUB_URL=$PUBLIC_HUB_URL PUBLIC_STUDIO_URL=$PUBLIC_STUDIO_URL PUBLIC_CHAT_APP_URL=$PUBLIC_CHAT_APP_URL \
     PUBLIC_ADMIN_WEB_URL=$PUBLIC_ADMIN_WEB_URL PUBLIC_CHAT_WEB_URL=$PUBLIC_CHAT_WEB_URL PUBLIC_AUTH_URL=$PUBLIC_AUTH_URL \
     PUBLIC_CONTRACTS_WEB_URL=$PUBLIC_CONTRACTS_WEB_URL PUBLIC_SSO_URL=$PUBLIC_SSO_URL
-# Build từng web riêng (turbo strict env có thể bỏ mất PUBLIC_*). CR-118: sohoptac-web = web gộp (Sổ Hợp Tác + Community, một shell/phiên).
-RUN bun run --cwd apps/sohoptac-web build && bun run --cwd apps/chat-web build \
+# Build từng web riêng (turbo strict env có thể bỏ mất PUBLIC_*). CR-118: workspace-web = web gộp (Sổ Hợp Tác + Community, một shell/phiên).
+RUN bun run --cwd apps/workspace-web build && bun run --cwd apps/chat-web build \
  && bun run --cwd apps/admin-web build && bun run --cwd apps/studio-web build \
  && chmod -R a+rX /app
 
 FROM nginx:stable-alpine AS web
-COPY --from=app /app/apps/sohoptac-web/dist /srv/contracts
+COPY --from=app /app/apps/workspace-web/dist /srv/contracts
 COPY --from=app /app/apps/admin-web/dist /srv/admin
 COPY --from=app /app/apps/chat-web/dist /srv/chat
 COPY nginx.conf /etc/nginx/conf.d/default.conf

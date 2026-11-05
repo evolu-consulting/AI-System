@@ -11,7 +11,7 @@ Delta hành vi cũ: `../cr118-spec/tasks.md`.
 ## 1. Phạm vi theo đợt
 | Đợt | Nội dung | Không làm |
 |---|---|---|
-| 1 — Web gộp + FeatureGate | `apps/sohoptac-web` (git mv contracts-web) nhận Community làm module; một shell/router/phiên; `/pack/me` + OpenFeature + SSE; React 19.2.9 + Compiler; depcruise 6 luật; deploy-kit | admin-api redeem SSO; route SHT; CSS Community sang shadcn |
+| 1 — Web gộp + FeatureGate | `apps/workspace-web` (git mv contracts-web) nhận Community làm module; một shell/router/phiên; `/pack/me` + OpenFeature + SSE; React 19.2.9 + Compiler; depcruise 6 luật; deploy-kit | admin-api redeem SSO; route SHT; CSS Community sang shadcn |
 | 2 — Flow + UX + năng lực | FlowRuntime, node `form`, `/apps/$appKey` 5 tab, tenant chỉ xem, `TenantCapabilityView` | Low-code màn/trạng thái; tenant tự sửa quy trình; route đóng băng; Dify mới; DLC |
 npm: `react` 19.2.9 (2026-10-14), `babel-plugin-react-compiler` 1.0.0 (chỉ app gộp), `@openfeature/web-sdk` 1.10.0, `@openfeature/react-sdk` 1.4.1 (lát kiểm peer). Web khác giữ React 18.
 
@@ -127,7 +127,7 @@ Tên lát `cr118-<…>`. `move` chỉ chạy khi không lát nào khác mở tr�
 
 ## 9. Kế hoạch test
 - Trong lát: unit luật thuần (gate, nav, legacy-hash, login outcome, home pick, previewApp); int một đường chính mỗi endpoint + chặn chéo tenant + đối tác + đếm SQL; e2e viết không chạy.
-- Một lần cuối MỖI đợt, evotest (T1): `run-tests.ps1 -Step e2e -Filter <job>` (đợt 1: sohoptac-web, community, N1, deployed; đợt 2 thêm admin app-config, P-a) + `-Capture cw` + `test:all --no-frozen`; đợt 2 thêm `test:frozen`, `dlc:check`; chỉ báo đỏ mới (`known-red.json`). Perf `-Exclusive` do điều phối, một lần, tuần tự.
+- Một lần cuối MỖI đợt, evotest (T1): `run-tests.ps1 -Step e2e -Filter <job>` (đợt 1: workspace-web, community, N1, deployed; đợt 2 thêm admin app-config, P-a) + `-Capture cw` + `test:all --no-frozen`; đợt 2 thêm `test:frozen`, `dlc:check`; chỉ báo đỏ mới (`known-red.json`). Perf `-Exclusive` do điều phối, một lần, tuần tự.
 - UAT stg riêng: project `sohoptac2-cr118`, image tag `cr118` (KHÔNG `:latest`), cổng 127.0.0.1:2853x, tunnel, DB tmpfs, seed demo; 3 vai (chủ quản admin, member, đối tác): chuyển Community↔SHT không reload, tắt Community ⇒ nav mất, đối tác gõ `/contracts`. Dọn: `down -v`, image `cr118`, `e2e:reap`, `e2e:lanes --prune`, worktree.
 - Cuối đợt: một review + security Opus medium.
 

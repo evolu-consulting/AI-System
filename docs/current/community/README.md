@@ -6,7 +6,7 @@ Quy ước chung: xem `docs/current/README.md` (file ≤ 400 dòng, Spec thắng
 
 **Dữ liệu seed/test:** tenant `demo` (Công ty demo): `demo-owner` Nguyễn Văn An = Admin chủ quản, `demo-editor` Lê Quốc Cường = Thành viên chủ quản. SP có sẵn trong SHT: Băng keo 5cm, Thùng phi 200L (NCC Cơ sở Tân Phát), Chữ ký số DN – USB Token, Chữ ký số HSM (Hãng NCCA), Hoá đơn điện tử (Viettel S-Invoice). Không dùng tenant NITI.
 
-**Giao diện:** theo mockup Community của người dùng (chờ ảnh). Tới khi có, nền thị giác = thiết kế `apps/sohoptac-web`. Riêng bảng tin và thẻ bài đã redesign Phase A (`styles/feed.css`, màu theo loại bài) — bố cục ở [hien-thi.md](hien-thi.md) mục 0.
+**Giao diện:** theo mockup Community của người dùng (chờ ảnh). Tới khi có, nền thị giác = thiết kế `apps/workspace-web`. Riêng bảng tin và thẻ bài đã redesign Phase A (`styles/feed.css`, màu theo loại bài) — bố cục ở [hien-thi.md](hien-thi.md) mục 0.
 
 ## Mục lục
 | File | Nội dung |

@@ -34,7 +34,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], deviceScaleFactor: 1 } }],
   webServer: {
-    command: `bun run --filter @ai/sohoptac-web build && bun run --filter @ai/sohoptac-web preview --port ${HUB_PORT}`,
+    command: `bun run --filter @ai/workspace-web build && bun run --filter @ai/workspace-web preview --port ${HUB_PORT}`,
     cwd: "../..",
     url: HUB_URL,
     reuseExistingServer: false,

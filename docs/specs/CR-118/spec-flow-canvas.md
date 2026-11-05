@@ -7,7 +7,7 @@ trạng thái: Đang làm (lát `cr118-flow-canvas`, 2026-11-04)
 # Phụ lục · Sơ đồ flow dùng chung (`@ai/flow-canvas`)
 
 ## 1. Vấn đề
-Ba nơi vẽ sơ đồ quy trình bằng ba cách: admin-web `ProcessCanvas` (xyflow, sửa được), sohoptac-web `FlowCanvas` (xyflow, chỉ đọc, tenant, CR-106/108/113) và admin-web `SlotFlowView` (CSS + bảng, chỉ đọc, thẻ khe ở `/apps`). Người dùng chốt (2026-11-04): MỘT gói dùng chung.
+Ba nơi vẽ sơ đồ quy trình bằng ba cách: admin-web `ProcessCanvas` (xyflow, sửa được), workspace-web `FlowCanvas` (xyflow, chỉ đọc, tenant, CR-106/108/113) và admin-web `SlotFlowView` (CSS + bảng, chỉ đọc, thẻ khe ở `/apps`). Người dùng chốt (2026-11-04): MỘT gói dùng chung.
 
 ## 2. Quyết định
 - Gói `packages/flow-canvas` (`@ai/flow-canvas`), `@xyflow/react` ghim đúng `12.11.6` (bản hai web đang dùng). Gói KHÔNG import `apps/**`, không `react-i18next`, không token riêng: chữ (nhãn) vào qua props/context, lớp CSS mặc định theo token shadcn (có ở cả hai theme), host đè từng lớp bằng `theme`.
@@ -22,9 +22,9 @@ Ba nơi vẽ sơ đồ quy trình bằng ba cách: admin-web `ProcessCanvas` (xy
 ## 3. Ba nơi dùng
 | Nơi | Cách dùng |
 |---|---|
-| sohoptac-web Cài đặt › Quy trình duyệt (tenant, chỉ xem) | `FlowCanvas mode="view"` + layout `vertical`, lười chunk `flow-canvas` |
+| workspace-web Cài đặt › Quy trình duyệt (tenant, chỉ xem) | `FlowCanvas mode="view"` + layout `vertical`, lười chunk `flow-canvas` |
 | admin-web editor quy trình (`ProcessCanvas`) | `FlowCanvas mode="edit"` + layout `columns`; host cấp `stage`/`if` node + `ops` |
 | admin-web `/apps/$appKey` › Quy trình (thẻ khe) | cùng `FlowCanvas mode="view"` + `vertical`; bảng bước giữ bên dưới |
 
 ## 4. Kiểm
-Unit: layout (snapshot vị trí node/cạnh = bản cũ), registry đủ loại + loại lạ, hai chế độ. Hồi quy: e2e admin canvas + baseline sohoptac-web (`contracts-web root`). `check:bundle` hai web xanh; depcruise: apps chỉ import cửa công khai.
+Unit: layout (snapshot vị trí node/cạnh = bản cũ), registry đủ loại + loại lạ, hai chế độ. Hồi quy: e2e admin canvas + baseline workspace-web (`contracts-web root`). `check:bundle` hai web xanh; depcruise: apps chỉ import cửa công khai.

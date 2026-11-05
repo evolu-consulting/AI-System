@@ -1,8 +1,8 @@
-// CR-118 · cr118-auth · e2e login gộp của web hợp nhất `sohoptac-web` trên STACK THẬT: backend dùng chung `e2e/community-web/_cs-stack.ts`
-// (reset DB test riêng → migrate → seed tenant demo + demo-owner + đối tác mật khẩu tạm) + build/preview sohoptac-web (proxy /auth →
+// CR-118 · cr118-auth · e2e login gộp của web hợp nhất `workspace-web` trên STACK THẬT: backend dùng chung `e2e/community-web/_cs-stack.ts`
+// (reset DB test riêng → migrate → seed tenant demo + demo-owner + đối tác mật khẩu tạm) + build/preview workspace-web (proxy /auth →
 // admin-api, /pack → hub-api). Không mock. Chỉ nhận `*.ss.ts`.
-// Chạy: `bun tools/scripts/src/run-playwright.ts e2e/sohoptac-web/playwright.stack.config.ts`
-//   hoặc evotest: `run-tests.ps1 -Step e2e -Filter sohoptac-web-stack`.
+// Chạy: `bun tools/scripts/src/run-playwright.ts e2e/workspace-web/playwright.stack.config.ts`
+//   hoặc evotest: `run-tests.ps1 -Step e2e -Filter workspace-web-stack`.
 // Cổng (dịch theo làn E2E_PORT_SHIFT): web 3410 · admin-api 3411 · hub-api 3412 · sẵn sàng 3413. Redis DB `SS_REDIS_DB` (mặc định 14).
 import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
@@ -13,7 +13,7 @@ if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
 const need = (name: string): string => {
   const v = process.env[name];
-  if (!v) throw new Error(`sohoptac-web stack: thiếu ${name} (chạy \`bun run keys:dev\`)`);
+  if (!v) throw new Error(`workspace-web stack: thiếu ${name} (chạy \`bun run keys:dev\`)`);
   return v;
 };
 const SH = Number(process.env.E2E_PORT_SHIFT ?? 0);
@@ -71,7 +71,7 @@ export default defineConfig({
       },
     },
     {
-      command: `bun run --filter @ai/sohoptac-web build && bun run --filter @ai/sohoptac-web preview --port ${P.web}`,
+      command: `bun run --filter @ai/workspace-web build && bun run --filter @ai/workspace-web preview --port ${P.web}`,
       cwd: "../..",
       url: WEB,
       reuseExistingServer: false,

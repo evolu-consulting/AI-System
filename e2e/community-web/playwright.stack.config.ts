@@ -83,7 +83,7 @@ export default defineConfig({
           },
         },
         {
-          command: `bun run --filter @ai/sohoptac-web build && bun run --filter @ai/sohoptac-web preview --port ${P.web}`,
+          command: `bun run --filter @ai/workspace-web build && bun run --filter @ai/workspace-web preview --port ${P.web}`,
           cwd: "../..",
           url: WEB,
           reuseExistingServer: false,

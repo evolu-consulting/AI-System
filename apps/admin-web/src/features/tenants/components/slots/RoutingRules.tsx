@@ -1,5 +1,5 @@
 // CR-118 §11.2 · bộ sửa luật chọn quy trình theo phòng ban (+ loại HĐ, cr118-route-kind) của một tenant × khe (platform_admin; logic dùng chung `@ai/web-kit/routing-rules`).
-// Bản của sohoptac-web (Cài đặt) là bản nhỏ trùng chức năng nhưng dùng token/shadcn riêng của app đó.
+// Bản của workspace-web (Cài đặt) là bản nhỏ trùng chức năng nhưng dùng token/shadcn riêng của app đó.
 import type { ProcessRouting } from "@ai/contracts/hub-admin";
 import {
   addRule,

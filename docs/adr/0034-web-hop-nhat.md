@@ -1,4 +1,4 @@
-# ADR-0034 · Web gộp sohoptac-web: shell + module manifest + Clean Architecture boundaries + OpenFeature FeatureGate + flow runtime
+# ADR-0034 · Web gộp workspace-web: shell + module manifest + Clean Architecture boundaries + OpenFeature FeatureGate + flow runtime
 
 Trạng thái: **Accepted** (người dùng chốt 2026-11-04, CR-118: 26 câu theo mặc định + N1–N3). Liên quan: ADR-0023 (Clean Architecture), ADR-0031 (cổng gói↔gói), ADR-0030 (duyệt HĐ trên engine), ADR-0033, `docs/specs/CR-118/spec.md`.
 
@@ -6,7 +6,7 @@ Trạng thái: **Accepted** (người dùng chốt 2026-11-04, CR-118: 26 câu t
 Community (`apps/community-web`, 9,1k dòng, hash routing, không react-query, CSS riêng, phiên `ai_rt_community`) và Sổ Hợp Tác (`apps/contracts-web`, 30,9k dòng, TanStack Router/Query, phiên `ai_rt_contracts`) là hai web; chuyển qua lại phải tải lại + hand-off SSO. Hai bộ i18n/CSS trùng tên khác nghĩa (`--accent`). Quyền bật/tắt app nằm ở ai-admin (CR-111/112) nhưng web không có điểm đọc chung; luồng nghiệp vụ trong web phần lớn hardcode dù engine + thư viện quy trình (CR-105) đã cấu hình được.
 
 ## Quyết định
-1. **Một web**: `git mv apps/contracts-web apps/sohoptac-web` (`@ai/sohoptac-web`, giữ lịch sử, cổng 3300); community-web nhập thành module rồi xoá. Một shell/router/phiên (`X-App: contracts`); route SHT giữ nguyên ở gốc, Community dưới `/community/*`; host chính `sohoptac.<d>`.
+1. **Một web**: `git mv apps/contracts-web apps/workspace-web` (`@ai/workspace-web`, giữ lịch sử, cổng 3300); community-web nhập thành module rồi xoá. Một shell/router/phiên (`X-App: contracts`); route SHT giữ nguyên ở gốc, Community dưới `/community/*`; host chính `sohoptac.<d>`.
 2. **Module + manifest**: mỗi module `modules/<m>/manifest.ts` là hợp đồng duy nhất với shell (nav, requires, settings, notification, assistant, i18n, slots); shell lọc bằng FeatureGate; module tắt = không DOM/route/chunk.
 3. **Clean Architecture cho web, cưỡng chế bằng depcruise** (6 luật, mức error): không import chéo module · shell chỉ đọc manifest · domain thuần · ui không gọi adapters · FeatureGate chỉ qua `platform/features/index.ts` · không import web khác. Contracts giữ `features/<f>/{lib,hooks,api.ts,components,pages}` ánh xạ lớp bằng luật; community tổ chức lại `domain/application/adapters/ui`.
 4. **FeatureGate chuẩn OpenFeature** (`@openfeature/web-sdk`, `@openfeature/react-sdk`) với provider mỏng đọc `GET /pack/me` (ConfigCache, 0 SQL nóng, ETag `"<config>.<hub_config>"`/304); cập nhật tức thời bằng event `config.changed` trên `/me/stream` (SSE có sẵn), dự phòng refetch khi focus/403/60 s. Server vẫn fail-closed.

@@ -78,4 +78,4 @@ gán thêm, không sửa nội dung quy trình. Thành viên/đối tác không 
 - Kịch bản: thành viên không thấy mục [test: e2e/contracts-web/tenant-routing.cw.ts » thành viên không thấy mục 'Ứng dụng & quy trình']
 - Kịch bản: thêm/xoá/đổi thứ tự luật, chọn phòng ban, một mặc định, trần 50, kiểm trước khi lưu [test: packages/web-kit/src/routing-rules.test.ts » thêm xoá đổi thứ tự sửa luật và trần 50 luật]
 - Kịch bản: lỗi 409/422 của hợp đồng ánh xạ về loại lỗi để hiện tiếng Việt [test: packages/web-kit/src/routing-rules.test.ts » mã 409/422 của hợp đồng]
-- Kịch bản: contracts-web proxy `/hub-admin` và `/tenants` sang hub [test: apps/sohoptac-web/rsbuild.config.test.ts » proxy /hub-admin và /tenants chuyển sang hub-api]
+- Kịch bản: contracts-web proxy `/hub-admin` và `/tenants` sang hub [test: apps/workspace-web/rsbuild.config.test.ts » proxy /hub-admin và /tenants chuyển sang hub-api]

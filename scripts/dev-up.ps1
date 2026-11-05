@@ -172,7 +172,7 @@ if ($Only -eq "all") {
   $common["PUBLIC_SSO_URL"] = "http://localhost:3100"
   if (-not $common.ContainsKey("PUBLIC_COMMUNITY_API")) { $common["PUBLIC_COMMUNITY_API"] = "http" }
   $common["PUBLIC_FROZEN_MODULES"] = "on"
-  $webs = [ordered]@{ "admin-web" = 3000; "chat-web" = 3100; "studio-web" = 3200; "sohoptac-web" = 3300 }
+  $webs = [ordered]@{ "admin-web" = 3000; "chat-web" = 3100; "studio-web" = 3200; "workspace-web" = 3300 }
   $procs = @{}
   foreach ($w in $webs.Keys) { $procs[$w] = Start-Bg $w (Join-Path $repo "apps\$w") @("bun", "run", "dev") $common }
   foreach ($w in $webs.Keys) { Wait-Port $webs[$w] $w (Join-Path $out "$w.log") $procs[$w] }

@@ -1,9 +1,9 @@
-# Web hợp nhất `sohoptac-web` (UW-FR)
+# Web hợp nhất `workspace-web` (UW-FR)
 
 Cập nhật: 2026-11-04 · Nguồn: CR-118 (cr118-spec). Mục "Việc còn lại" nằm ở `docs/specs/<lát>/tasks.md`.
 
 #### Yêu cầu: UW-FR-01..03 Một web, một phiên, module lazy theo manifest (nguồn: cr118-spec)
-Web nghiệp vụ `apps/sohoptac-web` có một shell/router/phiên; mỗi module khai `manifest.ts` (nav, requires, settings, i18n, slots); module tắt = không DOM, không route con, không tải chunk; đối tác cách ly ở mức route + chunk.
+Web nghiệp vụ `apps/workspace-web` có một shell/router/phiên; mỗi module khai `manifest.ts` (nav, requires, settings, i18n, slots); module tắt = không DOM, không route con, không tải chunk; đối tác cách ly ở mức route + chunk.
 - Kịch bản: khi công ty tắt Community thì nhóm Community biến khỏi sidebar và `/community` về home kèm toast [test: thủ công — e2e toggle feature ở lát cr118-e2e]
 
 #### Yêu cầu: UW-FR-04..06 GET /pack/me, FeatureGate OpenFeature, cập nhật tức thời (nguồn: cr118-spec)

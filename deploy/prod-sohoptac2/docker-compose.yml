@@ -241,7 +241,7 @@ services:
     cpus: 2
     mem_limit: 3g
 
-  # nginx: 3 bản build SPA (sohoptac-web gộp, admin-web, chat-web) + reverse proxy (mỗi web một cổng, chỉ 127.0.0.1); cổng 8085/18435 = 301 community.<d> cũ
+  # nginx: 3 bản build SPA (workspace-web gộp, admin-web, chat-web) + reverse proxy (mỗi web một cổng, chỉ 127.0.0.1); cổng 8085/18435 = 301 community.<d> cũ
   # (CR-118). Mở public = bước sau (edge-proxy/host nginx).
   web:
     image: sohoptac2-web:latest

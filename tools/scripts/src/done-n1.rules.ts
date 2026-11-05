@@ -8,7 +8,7 @@ type Opts = { bun: string; platform: string; nodeDir: string | null };
 const BUN_TEST_DIRS = [
   "apps/hub-api",
   "apps/admin-api",
-  "apps/sohoptac-web",
+  "apps/workspace-web",
   "apps/chat-web",
   "packages",
   "tests/acceptance/N1/rules",
@@ -78,7 +78,7 @@ export function n1Steps(o: Opts): PdStep[] {
     pw(o, "playwright N1", "e2e/N1/playwright.config.ts"),
     pw(o, "playwright contracts-web", "e2e/contracts-web/playwright.config.ts"),
     pw(o, "playwright chat", "e2e/chat/playwright.config.ts"),
-    ...web("sohoptac-web"),
+    ...web("workspace-web"),
     ...web("chat-web"),
     ...web("admin-web"),
     { title: "bun run check:fn", argv: [bun, "run", "check:fn"] },

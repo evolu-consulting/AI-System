@@ -55,8 +55,8 @@ export const META: Record<string, Meta> = {
     redis: REDIS_DB("CS_REDIS_DB"),
     cost: 60,
   },
-  // CR-118 · cr118-auth: login gộp sohoptac-web trên stack thật (backend dùng chung `_cs-stack.ts`).
-  "e2e/sohoptac-web/playwright.stack.config.ts": {
+  // CR-118 · cr118-auth: login gộp workspace-web trên stack thật (backend dùng chung `_cs-stack.ts`).
+  "e2e/workspace-web/playwright.stack.config.ts": {
     db: "ss",
     redis: REDIS_DB("SS_REDIS_DB"),
     cost: 60,
@@ -67,7 +67,7 @@ export const META: Record<string, Meta> = {
     cost: 90,
   },
   "e2e/contracts-web/playwright.config.ts": { cost: 22 },
-  // Mock thuần (không DB). Cổng web mặc định 3410 TRÙNG web của sohoptac-web stack (3410) ⇒ riêng 3470 để hai việc chạy cùng lúc trong một slot.
+  // Mock thuần (không DB). Cổng web mặc định 3410 TRÙNG web của workspace-web stack (3410) ⇒ riêng 3470 để hai việc chạy cùng lúc trong một slot.
   "e2e/community-web/playwright.config.ts": { env: { COMMUNITY_E2E_PORT: "3470" }, cost: 25 },
   "e2e/studio/playwright.config.ts": { cost: 101 },
   "e2e/x1/playwright.config.ts": { db: "x1", cost: 62 },

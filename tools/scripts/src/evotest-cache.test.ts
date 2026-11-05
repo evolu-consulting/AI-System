@@ -140,7 +140,7 @@ describe("pkgDirOf / summarizeStats", () => {
 
 describe("script build: no-op ngoài evotest", () => {
   const ROOT = join(import.meta.dir, "../../..");
-  const WEB = ["admin-web", "chat-web", "community-web", "sohoptac-web", "studio-web"];
+  const WEB = ["admin-web", "chat-web", "community-web", "workspace-web", "studio-web"];
   it("repo giữ nguyên `rsbuild build` ở 5 app web (prod Docker/local không đi qua cache)", () => {
     for (const a of WEB) {
       const j = JSON.parse(readFileSync(join(ROOT, "apps", a, "package.json"), "utf8")) as {

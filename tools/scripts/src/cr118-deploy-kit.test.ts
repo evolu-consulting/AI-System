@@ -24,9 +24,9 @@ function serverBlock(conf: string, port: number): string {
 
 describe("prod kit · web gộp", () => {
   const conf = read(`${PROD}/nginx.conf`);
-  it("Dockerfile: build sohoptac-web (gộp), chat, admin, studio; KHÔNG build/copy community-web", () => {
+  it("Dockerfile: build workspace-web (gộp), chat, admin, studio; KHÔNG build/copy community-web", () => {
     const d = read(`${PROD}/Dockerfile`);
-    for (const w of ["sohoptac-web", "chat-web", "admin-web", "studio-web"])
+    for (const w of ["workspace-web", "chat-web", "admin-web", "studio-web"])
       expect(d).toContain(`--cwd apps/${w} build`);
     expect(d).not.toMatch(/--cwd apps\/community-web build/);
     expect(d).not.toContain("/srv/community");

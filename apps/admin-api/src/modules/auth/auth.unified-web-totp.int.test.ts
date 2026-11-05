@@ -1,4 +1,4 @@
-// CR-118 · cr118-auth · web gộp sohoptac-web: bước TOTP với `X-App: contracts` cấp đúng cookie `ai_rt_contracts` (một phiên cho
+// CR-118 · cr118-auth · web gộp workspace-web: bước TOTP với `X-App: contracts` cấp đúng cookie `ai_rt_contracts` (một phiên cho
 // SHT + Community). Env M4 (có SECRET_MASTER_KEY, đồng hồ giả) — endpoint có sẵn, không đổi.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { TokenGrantSchema } from "@ai/contracts";

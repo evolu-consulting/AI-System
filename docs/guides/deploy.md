@@ -221,15 +221,15 @@ journalctl -u ai-worker -n 100 --no-pager
 | `admin.example.com` | `apps/admin-web/dist` | `/auth`, `/admin` → `admin-api:3001` |
 | `chat.example.com` | `apps/chat-web/dist` | `/auth` → `admin-api:3001`; `/conversations /runs /agents /commands /attachments /rooms /directory /me /health` → `hub-api:4000` (GET `text/html` của `/rooms /directory /me` trả `index.html` — route SPA) |
 | `hub.example.com` | (Hub tự phục vụ `/studio` từ `HUB_STUDIO_DIST`) | `/auth` → `admin-api:3001`; còn lại → `hub-api:4000` |
-| `contracts.example.com` (Sổ Hợp Tác, `apps/sohoptac-web/dist`) | `apps/sohoptac-web/dist` | `/auth`, **`/admin`** → `admin-api:3001`; `/pack /notifications /conversations /runs` → `hub-api:4000` |
+| `contracts.example.com` (Sổ Hợp Tác, `apps/workspace-web/dist`) | `apps/workspace-web/dist` | `/auth`, **`/admin`** → `admin-api:3001`; `/pack /notifications /conversations /runs` → `hub-api:4000` |
 
-**contracts-web (M1D):** màn Cài đặt › Thành viên & phòng ban gọi `/admin/org*` và `/admin/groups*` (admin-api) cùng origin — thiếu rule `/admin` thì màn báo "chỉ chủ sở hữu" vì 404. Bảng route phải khớp `proxy` trong `apps/sohoptac-web/rsbuild.config.ts` (test `apps/sohoptac-web/scripts/deploy-proxy.test.ts` kiểm cả hai):
+**contracts-web (M1D):** màn Cài đặt › Thành viên & phòng ban gọi `/admin/org*` và `/admin/groups*` (admin-api) cùng origin — thiếu rule `/admin` thì màn báo "chỉ chủ sở hữu" vì 404. Bảng route phải khớp `proxy` trong `apps/workspace-web/rsbuild.config.ts` (test `apps/workspace-web/scripts/deploy-proxy.test.ts` kiểm cả hai):
 
 ```nginx
 server {
   listen 443 ssl;
   server_name contracts.example.com;
-  root /srv/ai-system/apps/sohoptac-web/dist;
+  root /srv/ai-system/apps/workspace-web/dist;
 
   location ^~ /auth/ { proxy_pass http://127.0.0.1:3001; }
   location ^~ /admin/ { proxy_pass http://127.0.0.1:3001; }

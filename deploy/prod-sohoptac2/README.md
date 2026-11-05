@@ -11,7 +11,7 @@
 | admin-api | sohoptac2-app (bun 1.3.14) | 1 / 1 GB | :3001 nội bộ |
 | hub-api | sohoptac2-app | 2 / 3 GB | :4000 nội bộ, Studio `/studio`, AI client = gói Claude |
 | agent-runtime | sohoptac2-runtime (python 3.12 + uv) | 2 / 3 GB | worker `claude-sub` |
-| web | sohoptac2-web (nginx) | 0.5 / 256 MB | 3 SPA (sohoptac-web gộp có Community, admin-web, chat-web) + :8085 = 301 community.<d> cũ (CR-118) + reverse proxy |
+| web | sohoptac2-web (nginx) | 0.5 / 256 MB | 3 SPA (workspace-web gộp có Community, admin-web, chat-web) + :8085 = 301 community.<d> cũ (CR-118) + reverse proxy |
 | filebox | sohoptac2-filebox (python 3.12, app = bản sao FileBox dùng chung) | 1 / 768 MB | :9100 **chỉ nội bộ** (không publish), volume `fbdata`; FileBox RIÊNG, token riêng |
 | filebox-minio | alpine + nhị phân MinIO tĩnh chép từ host | 1 / 1 GB | :9000 chỉ nội bộ, volume `fbminio`, khoá riêng |
 | tool (profile `tools`) | sohoptac2-app | 1 / 1 GB | migrate / seed / smoke |
@@ -307,7 +307,7 @@ Hoan tac: `bash rollback-cutover.sh` (khoi phuc `conf.d` tu ban sao luu goc: bat
 e2e: `e2e-deployed.ps1 -Domain evoluconsulting.com -Hosts prod` (hoac `DEP_DOMAIN` + `DEP_HOSTS=prod|test`).
 
 ## Community (community-web, CR-102) — app Cộng đồng đối tác
-> **CR-118 thay thế phần kiến trúc dưới đây:** Community nay là module của web gộp `sohoptac-web` tại `https://sohoptac.<d>/community`; `community-web` không còn build, `community.<d>` chỉ 301. Các bước DNS/cert/migration lịch sử giữ để tham chiếu; runbook hiện hành: mục "Deploy CR-118" cuối file.
+> **CR-118 thay thế phần kiến trúc dưới đây:** Community nay là module của web gộp `workspace-web` tại `https://sohoptac.<d>/community`; `community-web` không còn build, `community.<d>` chỉ 301. Các bước DNS/cert/migration lịch sử giữ để tham chiếu; runbook hiện hành: mục "Deploy CR-118" cuối file.
 **Đã có trong kit:** web image build thêm `apps/community-web` (cùng `PUBLIC_*`, `PUBLIC_SSO_URL` = chat-web; **không** đặt `PUBLIC_COMMUNITY_API` ⇒ build chạy `http` → `/pack/community/*`), nginx `web` cổng **8085** (publish `127.0.0.1:18435`, `S2_PORT_COMMUNITY`): `/auth` → admin-api (cookie `ai_rt_community`, `Path=/auth`), `/pack` `/conversations` `/runs` `/notifications` → hub-api (SSE: `proxy_buffering off`, `proxy_read_timeout 600`), `/sso` và mọi route SPA → `index.html`. `edge/sohoptac2.conf` có server `__N_COMMUNITY__` → `:8085`. Env: admin-api `APP_URL_COMMUNITY`, hub-api `COMMUNITY_WEB_URL` + `CONTRACTS_WEB_URL` + `COMMUNITY_SWEEP` (mặc định on; `off` tắt) + `COMMUNITY_SWEEP_EVERY_MS` (mặc định 60000), `CORS_ORIGINS`/`HUB_CORS_ORIGINS` gồm host community (prod, -test) + `http://localhost:18435`. `s2-app-urls.ts` đổi thêm hàng catalog `community`.
 
 | Host (TẠM — tên chưa chốt) | Cổng `web` | App |
@@ -360,7 +360,7 @@ e2e: `e2e-deployed.ps1 -Domain evoluconsulting.com -Hosts prod` (hoac `DEP_DOMAI
 ## Deploy CR-118 (web gộp + 301 community) — rollout / rollback
 Chỉ chạy khi người dùng xác nhận deploy. **UAT trước** trên host qua `deploy/stg-cr118/` (project `sohoptac2-cr118`, image `:cr118`, cổng 2853x, tunnel; xem README ở đó) — **không** build/tag `sohoptac2-app:latest` ngoài `deploy.ps1`.
 
-**Thay đổi trong kit:** Dockerfile bỏ build/copy `community-web` (web = `sohoptac-web` gộp + `admin-web` + `chat-web`; `studio-web` vẫn build cho hub); nginx `8081` thêm `/me/stream` → hub, `/community/*` rơi vào `try_files … /index.html`; `8085` (community.<d>) = 301 HTML → `https://sohoptac.<d>/community` (`community-test.<d>` → `sohoptac-test.<d>`; `/sso` → `/sso`; fragment `#/…` do trình duyệt giữ và web gộp ánh xạ), **proxy `/auth`,`/pack`,`/conversations`,`/runs`,`/me/stream` giữ 30 ngày** (mốc ghi trong `nginx.conf`); `gen-env.sh`: `S2_PUBLIC_COMMUNITY_URL` = `<SHT>/community` ⇒ hub `COMMUNITY_WEB_URL` + `APP_URL_COMMUNITY`; hub `quote.service` dựng link `/community` (không `#/feed`). Edge không đổi (server community cũ vẫn forward `:8085`).
+**Thay đổi trong kit:** Dockerfile bỏ build/copy `community-web` (web = `workspace-web` gộp + `admin-web` + `chat-web`; `studio-web` vẫn build cho hub); nginx `8081` thêm `/me/stream` → hub, `/community/*` rơi vào `try_files … /index.html`; `8085` (community.<d>) = 301 HTML → `https://sohoptac.<d>/community` (`community-test.<d>` → `sohoptac-test.<d>`; `/sso` → `/sso`; fragment `#/…` do trình duyệt giữ và web gộp ánh xạ), **proxy `/auth`,`/pack`,`/conversations`,`/runs`,`/me/stream` giữ 30 ngày** (mốc ghi trong `nginx.conf`); `gen-env.sh`: `S2_PUBLIC_COMMUNITY_URL` = `<SHT>/community` ⇒ hub `COMMUNITY_WEB_URL` + `APP_URL_COMMUNITY`; hub `quote.service` dựng link `/community` (không `#/feed`). Edge không đổi (server community cũ vẫn forward `:8085`).
 
 **Rollout (thứ tự):**
 1. Kiểm prod trước (lệch deploy 2026-10-30): `bun run verify:predeploy --ref <ref>` (VERSION là tổ tiên? migration mới/mất? biến env mới?) + `bun run verify:prod`. Dừng nếu đỏ. `bash backup.sh`. Ghi lại image hiện tại: `docker image ls sohoptac2-app sohoptac2-web --format '{{.Repository}}:{{.Tag}} {{.ID}}'` và `docker tag sohoptac2-app:latest sohoptac2-app:pre-cr118` (tag giữ lại để rollback; tương tự `sohoptac2-web`).

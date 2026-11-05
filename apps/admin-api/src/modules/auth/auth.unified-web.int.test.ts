@@ -1,4 +1,4 @@
-// CR-118 · cr118-auth · web gộp sohoptac-web: MỘT phiên `X-App: contracts` cho cả SHT và Community (spec CR-118 §2). Endpoint có
+// CR-118 · cr118-auth · web gộp workspace-web: MỘT phiên `X-App: contracts` cho cả SHT và Community (spec CR-118 §2). Endpoint có
 // sẵn, không đổi — test xác nhận: đối tác đổi mật khẩu bắt buộc ⇒ cookie `ai_rt_contracts` (không `ai_rt_community`); bước TOTP
 // với X-App contracts ⇒ cookie contracts; đăng xuất xoá đúng một phiên (chat còn); chéo tenant bị từ chối.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";

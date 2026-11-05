@@ -176,8 +176,8 @@
         "typescript": "6.0.3",
       },
     },
-    "apps/sohoptac-web": {
-      "name": "@ai/sohoptac-web",
+    "apps/workspace-web": {
+      "name": "@ai/workspace-web",
       "version": "0.0.0",
       "dependencies": {
         "@ai/contracts": "workspace:*",
@@ -413,7 +413,7 @@
 
     "@ai/scripts": ["@ai/scripts@workspace:tools/scripts"],
 
-    "@ai/sohoptac-web": ["@ai/sohoptac-web@workspace:apps/sohoptac-web"],
+    "@ai/workspace-web": ["@ai/workspace-web@workspace:apps/workspace-web"],
 
     "@ai/studio-web": ["@ai/studio-web@workspace:apps/studio-web"],
 
