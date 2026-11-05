@@ -119,23 +119,19 @@ describe("ADM-FR-02 · ân hạn và reuse", () => {
     expect((await tokenRow(c3))?.family_id).toBe((await tokenRow(s.cookie))?.family_id);
     // Lá chưa dùng (c2) bị thay bằng c3: một lá sống, c2 trỏ tới c3.
     expect(await activeIn(c3)).toBe(1);
-    expect((await tokenRow(c2))?.revoked_reason).toBe("rotated");
+    expect((await tokenRow(c2))?.revoked_reason).toBe("reuse"); // lá bị thay: trình lại ⇒ reuse, không mở ân hạn mới
     expect((await tokenRow(c2))?.replaced_by).toBe((await tokenRow(c3))?.id);
     expect((await rotate(c3)).status).toBe(200);
-    const [reused] = await env.owner`select count(*)::int as n from admin.refresh_tokens
-      where revoked_reason = 'reuse'`;
-    expect(reused?.n).toBe(0);
   });
 
-  it("ADM-FR-02 · M1-R07 · kẻ trộm phát lại token cũ ≤ 30 s → lá của chủ bị thu hồi, chỉ một lá sống, chủ dùng lá cũ sau 30 s → thu hồi cả chuỗi", async () => {
+  it("ADM-FR-02 · M1-R07 · kẻ trộm phát lại token cũ ≤ 30 s → lá của chủ bị thu hồi, chỉ một lá sống, chủ trình lá bị thay → thu hồi cả chuỗi", async () => {
     const s = await env.session("acme", "an", PW);
     const victim = cookieOf(await rotate(s.cookie));
     const thief = cookieOf(await rotate(s.cookie));
     expect(thief).toBeDefined();
     expect(await activeIn(thief)).toBe(1);
     expect((await tokenRow(victim))?.revoked_at).not.toBeNull();
-    await ageRevocation(victim, 31);
-    expectErr(await rotate(victim), "INVALID_REFRESH_TOKEN");
+    expectErr(await rotate(victim), "INVALID_REFRESH_TOKEN"); // lá bị thay ⇒ reuse ngay, không cấp lại lần hai
     expect(await activeIn(thief)).toBe(0);
     expectErr(await rotate(thief), "INVALID_REFRESH_TOKEN");
   });
@@ -193,10 +189,6 @@ describe("ADM-FR-02 · ân hạn và reuse", () => {
     const cookies = results.map((r) => cookieOf(r));
     expect(new Set(cookies).size).toBe(5);
     expect(await activeIn(s.cookie)).toBe(1);
-    const family = (await tokenRow(s.cookie))?.family_id;
-    const [reused] = await env.owner`select count(*)::int as n from admin.refresh_tokens
-      where family_id = ${family} and revoked_reason = 'reuse'`;
-    expect(reused?.n).toBe(0);
     const live = [];
     for (const c of cookies) if ((await tokenRow(c))?.revoked_at === null) live.push(c);
     expect(live).toHaveLength(1);

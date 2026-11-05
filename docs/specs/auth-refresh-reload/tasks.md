@@ -19,7 +19,7 @@ cho phép kẻ trộm phát lại trong 30 s có chuỗi sống song song không
 - `auth.repo.ts`: `swapUnusedSuccessor` (SELECT … FOR UPDATE hàng token cũ, rồi MỘT câu SQL CTE: thu hồi kế nhiệm còn sống + `replaced_by` token cũ → token mới).
 - `auth.refresh.ts`: bỏ ném `REFRESH_SUPERSEDED`; `rotate(..., regrant)`: đường cấp lại (và lượt thua race song song) gọi `swapUnusedSuccessor`; "reuse" ⇒ thu hồi cả chuỗi ở giao dịch riêng.
   Lượt song song tuần tự hoá ở khoá hàng token cũ, mỗi lượt thay lá chưa dùng của lượt trước ⇒ N×200, cuối cùng đúng 1 lá sống (lá bị thay: 401 ở lần dùng sau ân hạn).
-- Thứ tự khoá chung (chống deadlock): hàng user (FOR SHARE) → hàng token theo chiều chuỗi (cũ → mới). `revokeFamily` (logout, reuse) nay lấy `lockUserShared` trước.
+- Thứ tự khoá chung (chống deadlock): hàng token theo id tăng dần (uuidv7 = cũ → mới). `revokeFamily` (logout, reuse) chạy `SELECT id … ORDER BY id FOR UPDATE` rồi UPDATE (`lockUserShared` là FOR SHARE, không tuần tự hoá).
 - Logout thu hồi **cả chuỗi**, vẫn idempotent.
 
 ## Không làm / Chạm
@@ -36,9 +36,10 @@ web-kit/admin-web/studio-web vô hại, mã giữ trong contract cho client cũ)
 ## Quyết định trong lúc làm
 - Không trả lại "cùng token kế nhiệm": DB chỉ lưu hash ⇒ cấp token mới (thay lá chưa dùng).
 - Lượt có token bị thay (lượt thua race song song, hoặc chủ khi kẻ trộm phát lại) nhận 401 ở lần dùng sau ân hạn — chấp nhận (người dùng/review chốt); đổi lại phát hiện được trộm.
+- Lá bị thay mang `revoked_reason = reuse` (CHECK của cột không có `superseded`; thêm giá trị cần migration — chưa làm): trình lại ⇒ reuse ⇒ thu hồi chuỗi, không mở ân hạn mới (chống ping-pong); đếm "reuse" trong audit/số liệu phải kể đến.
 - `REFRESH_SUPERSEDED` không còn được phát; bỏ khỏi danh sách mã M1 phải có kịch bản (`error-codes.int.test.ts`, 22 → 21), mã giữ trong contract.
 - Perf (đường nóng): số câu SQL đường vui (token hợp lệ) **không đổi** (4). Đường cấp lại: lock user, find user, SELECT FOR UPDATE, CTE UPDATE, insert = 5 (+1); lượt thua race: +2
-  (trước: ném lỗi). Logout/reuse: +1 (`lockUserShared`), không thuộc đường vui. Không vòng lặp theo hàng, không sleep/poll.
+  (trước: ném lỗi). Logout/reuse: +1 (SELECT … FOR UPDATE), không thuộc đường vui. Không vòng lặp theo hàng, không sleep/poll.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
@@ -48,7 +49,7 @@ Trạng thái gộp: chưa gộp
 Dùng lại refresh token vừa xoay trong ≤ 30 s (phản hồi mang cookie mới bị mất khi tải lại trang, hoặc hai tab refresh song song) được cấp một token thay thế (200); chuỗi luôn chỉ có MỘT token sống: lá kế nhiệm chưa dùng bị thu hồi và thay bằng lá mới. Nếu lá kế nhiệm đã được dùng, hoặc quá 30 s, hoặc token bị thu hồi vì lý do khác ⇒ 401 và thu hồi cả chuỗi (phát hiện đánh cắp). Chuỗi đã đăng xuất/khoá thì không được cấp lại. Đăng xuất thu hồi cả chuỗi.
 - Kịch bản: khi dùng lại token đã xoay trong 30 s thì 200 và chỉ còn một token sống [test: apps/admin-api/src/modules/auth/auth.service.int.test.ts » ADM-FR-02 · xoay: dùng lại token cũ ≤ 30 s → 200 và chỉ còn MỘT lá sống, lá chưa dùng bị thay, sau đó lá mới vẫn xoay được]
 - Kịch bản: khi dùng lại token đã xoay quá 30 s thì 401 và thu hồi cả chuỗi [test: tests/acceptance/M1/auth-refresh.int.test.ts » ADM-FR-02 · M1-AC04 · reuse (> 30 s) → 401 INVALID_REFRESH_TOKEN, thu hồi cả chuỗi, token mới cũng chết, cookie bị xoá]
-- Kịch bản: khi kẻ trộm phát lại token cũ trong 30 s thì lá của chủ bị thu hồi và chủ dùng lá cũ sau ân hạn làm thu hồi cả chuỗi [test: tests/acceptance/M1/auth-refresh.int.test.ts » ADM-FR-02 · M1-R07 · kẻ trộm phát lại token cũ ≤ 30 s → lá của chủ bị thu hồi, chỉ một lá sống, chủ dùng lá cũ sau 30 s → thu hồi cả chuỗi]
+- Kịch bản: khi kẻ trộm phát lại token cũ trong 30 s thì lá của chủ bị thu hồi và chủ trình lá bị thay làm thu hồi cả chuỗi [test: tests/acceptance/M1/auth-refresh.int.test.ts » ADM-FR-02 · M1-R07 · kẻ trộm phát lại token cũ ≤ 30 s → lá của chủ bị thu hồi, chỉ một lá sống, chủ trình lá bị thay → thu hồi cả chuỗi]
 - Kịch bản: khi chủ đã dùng lá kế nhiệm rồi bản sao token cũ phát lại thì thu hồi cả chuỗi [test: tests/acceptance/M1/auth-refresh.int.test.ts » ADM-FR-02 · M1-R07 · chủ đã dùng lá kế nhiệm rồi bản sao token cũ phát lại ≤ 30 s → 401, thu hồi cả chuỗi, lá của chủ cũng chết]
 - Kịch bản: khi nhiều refresh song song cùng cookie thì tất cả thành công và chỉ còn đúng một token sống [test: tests/acceptance/M1/auth-refresh.int.test.ts » ADM-FR-02 · M1-R07 · 5 refresh song song cùng cookie → cả 5×200 và cuối cùng đúng MỘT lá sống, không ai bị thu hồi chuỗi]
 - Kịch bản: khi đã đăng xuất thì token cũ trong ân hạn không được cấp lại [test: tests/acceptance/M1/auth-refresh.int.test.ts » ADM-FR-02 · M1-R07 · đã đăng xuất thì token cũ trong ân hạn KHÔNG được cấp lại (không sống lại phiên)]

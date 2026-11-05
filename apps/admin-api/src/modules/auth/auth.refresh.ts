@@ -21,12 +21,11 @@ async function findRefreshToken(ctx: AuthCtx, hash: Buffer): Promise<FoundRefres
   });
 }
 
-/** Thu hồi cả chuỗi (reuse hoặc logout). Thứ tự khoá chung: hàng user (FOR SHARE) → hàng token — như rotate/cấp lại. */
+/** Thu hồi cả chuỗi (reuse hoặc logout): khoá hàng token theo id tăng dần (cũ → mới) rồi UPDATE — xem `repo.revokeFamily`. */
 async function revokeFamilyOf(ctx: AuthCtx, f: FoundRefresh, reason: "reuse" | "logout") {
-  await withScope(ctx.db, tenantScope(f.tid), async (tx) => {
-    await repo.lockUserShared(tx, f.tid, f.token.userId);
-    await repo.revokeFamily(tx, f.tid, f.token.familyId, reason);
-  });
+  await withScope(ctx.db, tenantScope(f.tid), (tx) =>
+    repo.revokeFamily(tx, f.tid, f.token.familyId, reason),
+  );
 }
 
 /**

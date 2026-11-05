@@ -132,8 +132,9 @@ describe("ADM-FR-02 · refresh / ADM-FR-03 · logout", () => {
     expect(await active()).toBe(1);
     const rows =
       await owner`select id, revoked_reason, replaced_by from admin.refresh_tokens order by created_at`;
-    expect(rows.map((x) => x.revoked_reason)).toEqual(["rotated", "rotated", null]);
-    expect(rows[0]?.replaced_by).toBe(rows[2]?.id); // token cũ và lá bị thay đều trỏ tới lá mới\n    expect(rows[1]?.replaced_by).toBe(rows[2]?.id);
+    expect(rows.map((x) => x.revoked_reason)).toEqual(["rotated", "reuse", null]); // lá bị thay mang lý do reuse: trình lại ⇒ thu hồi chuỗi, không cấp lại lần hai
+    expect(rows[0]?.replaced_by).toBe(rows[2]?.id);
+    expect(rows[1]?.replaced_by).toBe(rows[2]?.id); // token cũ và lá bị thay đều trỏ tới lá mới
     expect(await code(refresh(ctx, again.refreshToken, WEB))).toBe("ok");
   });
 
@@ -148,17 +149,24 @@ describe("ADM-FR-02 · refresh / ADM-FR-03 · logout", () => {
     expect(rows.map((x) => x.revoked_reason)).toEqual(["rotated", "reuse"]);
   });
 
-  test("ADM-FR-02 · kẻ trộm phát lại token cũ ≤ 30 s → lá của chủ bị thu hồi, chỉ một lá sống, chủ dùng lá cũ sau ân hạn → reuse cả chuỗi", async () => {
+  test("ADM-FR-02 · kẻ trộm phát lại token cũ ≤ 30 s → lá của chủ bị thu hồi, chỉ một lá sống, chủ trình lá bị thay → reuse cả chuỗi", async () => {
     const s = await session();
     const victim = await refresh(ctx, s.refreshToken, WEB);
     const thief = await refresh(ctx, s.refreshToken, WEB);
     expect(await active()).toBe(1);
-    await ageRotated(31);
     expect(await code(refresh(ctx, victim.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
     expect(await code(refresh(ctx, thief.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
     expect(await active()).toBe(0);
   });
 
+  test("ADM-FR-02 · lá bị thay (reason reuse) trình lại trong ân hạn → reuse, không cấp lại lần hai, thu hồi cả chuỗi (chống ping-pong)", async () => {
+    const s = await session();
+    const swapped = await refresh(ctx, s.refreshToken, WEB);
+    const live = await refresh(ctx, s.refreshToken, WEB); // thay lá `swapped` bằng `live`
+    expect(await code(refresh(ctx, swapped.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
+    expect(await active()).toBe(0);
+    expect(await code(refresh(ctx, live.refreshToken, WEB))).toBe("INVALID_REFRESH_TOKEN");
+  });
   test("ADM-FR-02 · chủ đã dùng lá kế nhiệm rồi kẻ trộm phát lại token cũ ≤ 30 s → reuse, thu hồi cả chuỗi", async () => {
     const s = await session();
     const v1 = await refresh(ctx, s.refreshToken, WEB);

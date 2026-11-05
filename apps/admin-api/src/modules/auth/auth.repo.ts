@@ -184,7 +184,9 @@ export type SwapResult = "swapped" | "reuse" | "gone";
  * (1) khoá hàng `oldId` FOR UPDATE — các lượt thua race / kẻ trộm phát lại xếp hàng tại đây, mỗi lượt đọc
  *     `replaced_by` MỚI NHẤT sau khi chờ; (2) một câu SQL: thu hồi kế nhiệm CHƯA DÙNG (còn sống) và trỏ
  *     `oldId.replaced_by` sang token mới `newId`. Kế nhiệm đã bị dùng (rotated/thu hồi) ⇒ "reuse": người gọi thu hồi
- *     cả chuỗi. Thứ tự khoá toàn cục: hàng user → hàng token theo chiều chuỗi (cũ → mới).
+ *     cả chuỗi. Lá bị thay mang lý do `reuse` (CHECK của cột không có giá trị riêng; thêm cần migration): trình lại nó ⇒
+ *     `classifyRefresh` = reuse ⇒ thu hồi chuỗi, KHÔNG mở thêm ân hạn (chống ping-pong). Thứ tự khoá toàn cục giữa các
+ *     hàng token: id tăng dần (uuidv7 = cũ → mới); `revokeFamily` khoá cùng thứ tự.
  */
 export async function swapUnusedSuccessor(
   tx: Tx,
@@ -199,7 +201,7 @@ export async function swapUnusedSuccessor(
   if (!sid) return "gone";
   const swapped = (await tx.execute(
     sql`with s as (
-        update admin.refresh_tokens set revoked_at = now(), revoked_reason = 'rotated', replaced_by = ${t.newId}
+        update admin.refresh_tokens set revoked_at = now(), revoked_reason = 'reuse', replaced_by = ${t.newId}
         where tenant_id = ${t.tenantId} and id = ${sid} and revoked_at is null returning id)
       update admin.refresh_tokens set replaced_by = ${t.newId}
       where tenant_id = ${t.tenantId} and id = ${t.oldId} and exists (select 1 from s) returning id`,
@@ -214,8 +216,17 @@ export async function revokeRefresh(tx: Tx, tenantId: string, id: string, reason
     .where(and(active(tenantId), eq(refreshTokens.id, id)));
 }
 
-/** Thứ tự khoá chung (tránh deadlock): hàng user (`lockUserShared`) TRƯỚC, rồi hàng token. Gọi `lockUserShared` trước hàm này. */
+/**
+ * Thu hồi mọi token sống của chuỗi. Thứ tự khoá chung (tránh deadlock): hàng token theo id tăng dần (uuidv7 = cũ → mới,
+ * cùng thứ tự rotate/cấp lại). SELECT … FOR UPDATE trước rồi UPDATE là câu thứ hai (snapshot mới): token vừa được
+ * rotate chèn xong trong lúc ta chờ khoá vẫn bị UPDATE thấy. (`lockUserShared` là FOR SHARE nên không tuần tự hoá gì.)
+ */
 export async function revokeFamily(tx: Tx, tenantId: string, familyId: string, r: RevokeReason) {
+  await tx.execute(
+    sql`select id from admin.refresh_tokens
+      where tenant_id = ${tenantId} and family_id = ${familyId} and revoked_at is null
+      order by id for update`,
+  );
   await tx
     .update(refreshTokens)
     .set(revokeSet(r))
