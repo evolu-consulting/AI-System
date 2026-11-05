@@ -57,6 +57,7 @@ import type { PackToolRegistry } from "./kit/adapters/pack-tools.registry";
 import { createPackUow, packTenantOnly } from "./kit/adapters/pack-uow";
 import { createPdfConverter } from "./kit/adapters/pdf";
 import type { PackRunsBridge } from "./kit/application/pack-runs.ports";
+import { afterPacksMounted } from "./packs.after-mount";
 import { fileboxClients, type PackFb, packFilebox } from "./packs.filebox";
 import { envInt, tenantLimits, tenantTz } from "./packs.tenant-config";
 import { PKDEMO_KEY, pkdemoModule } from "./pkdemo/pkdemo.mount";
@@ -139,20 +140,8 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
     app.route(`${PACK_PREFIX}/${DLC_PACK}`, dlcRoutes(d.db, d.packRuns)); // dlc-chat-review · nội dung bước cho modal duyệt
     setChatUsageSink(chatUsageSink(d.db)); // M3 Â· usage chat (M2) â‡’ báº£ng usage chung cá»§a AI client
   }
-  rejectToolCollisions(d);
+  afterPacksMounted(d); // Security L1 tool trùng catalog + CR-120 khe manifest thiếu SlotSpec/adapter
   return view;
-}
-
-/** Security L1 Â· sau khi má»i gÃ³i Ä‘Äƒng kÃ½: tool gÃ³i trÃ¹ng khoÃ¡ workflow catalog bá»‹ gá»¡ (áº£nh catalog Ä‘áº§u tiÃªn, cache). */
-function rejectToolCollisions(d: PacksMountDeps): void {
-  const tools = d.packTools;
-  if (!tools) return;
-  void d.config
-    .catalog()
-    .then((c) =>
-      tools.rejectCatalogCollisions(new Set([...c.workflows.values()].map((w) => w.key))),
-    )
-    .catch(() => logger.warn("pack-tool-collision-check-failed", {}));
 }
 
 /** HD1 (Ä‘á»c/sá»­a, táº£i lÃªn) + HD2 (trÃ­ch, nháº­p tay) + HD3 (flow duyá»‡t trÃªn engine: starter, tool gÃ³i, quÃ©t, tráº§n thao tÃ¡c). */

@@ -5,6 +5,7 @@ import type { Hono } from "hono";
 import { flowRoutes } from "../kit/adapters/flow.routes";
 import type { PackAccessView, PackGuardVars } from "../kit/adapters/pack-guard.middleware";
 import { createPackUow } from "../kit/adapters/pack-uow";
+import { flowAdapterSlots } from "../kit/adapters/slot-contract.check";
 import { flowRuntime, flowRuntimeOn } from "../kit/application/flow.ports";
 import { approvalFlowSummaryRepo } from "./adapters/approval-flow-summary.repo";
 import type { actApproval, getApproval } from "./application/approval.usecase";
@@ -29,5 +30,6 @@ export function contractsFlowRoutes(
     rows: (who, ids) =>
       ids.length ? uow.tenant(who, (r) => r.flow.rows(ids)) : Promise.resolve([]),
   });
+  flowAdapterSlots.add(slot.slot); // CR-120 · kiểm khe manifest ↔ adapter lúc mount
   return flowRoutes(view, "contracts", flowRuntime("contracts", [slot]));
 }
