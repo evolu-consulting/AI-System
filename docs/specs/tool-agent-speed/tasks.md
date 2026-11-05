@@ -1,4 +1,4 @@
----
+﻿---
 id: tool-agent-speed
 lát: tool-agent-speed
 cr:
@@ -31,4 +31,4 @@ Không thay đổi hành vi (lý do: lát công cụ test/hook; hành vi sản p
 
 ## Việc còn lại
 - Chuyển dần các spec khác sang `e2e/_kit` khi chạm tới.
-- Bài chủ quản tạo từ composer với chip 'Tất cả' không hiện cho người mua ABC — cần kiểm tra (có thể lỗi sản phẩm)
+- Khi bật duyệt bài, bài của chính chủ quản cũng phải duyệt — cần PM xác nhận có miễn duyệt cho chủ quản không

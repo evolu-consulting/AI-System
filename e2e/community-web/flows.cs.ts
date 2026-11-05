@@ -4,7 +4,7 @@
 // (Không phụ thuộc thứ tự file: ca 3 tự đăng bài riêng rồi báo cáo/ẩn bài đó, không đụng bài mẫu dùng chung.)
 //  3. Đối tác báo cáo một bài của chủ quản (menu ⋯) ⇒ chủ quản vào "Báo cáo vi phạm", thấy tiêu đề bài + lý do ⇒ Ẩn bài.
 import { expect, test } from "@playwright/test";
-import { apiLogin, createPost, pageFetch } from "../_kit/api";
+import { apiLogin, approvePost, createPost, pageFetch } from "../_kit/api";
 import { assignProcessUi, loginPlatformAdminUi, openTenantAppsTab } from "../_kit/ui";
 import { openAs, postByTitle, TENANT, USERNAME } from "./_stack";
 
@@ -96,9 +96,10 @@ test("3 · đối tác báo cáo một bài ⇒ chủ quản Ẩn bài ở Báo 
     app: "contracts",
   });
   await createPost("", hostApi, { type: "note", body: NOTE });
+  await approvePost("", hostApi, NOTE); // bật duyệt bài ⇒ bài của chủ quản cũng phải duyệt
   await hostPage.ctx.close();
   const hostPostText = "(đăng bằng API)";
-  const needsReview = false;
+  const needsReview = true;
   const buyer = await openAs(browser, "buyer");
   await buyer.page.goto("/community");
   const target = postByTitle(buyer.page, NOTE).first();
