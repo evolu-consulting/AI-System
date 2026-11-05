@@ -12,7 +12,7 @@ const openTenants = async (page: Page) => {
   const a = seedAdmin();
   await loginToShell(page, "platform", a.username, a.password);
   await page.goto("/tenants");
-  await expect(page.getByRole("table", { name: "Tenants" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Công ty" })).toBeVisible();
 };
 
 test("CR-121 · /tenants phễu lọc Đã khoá cho chip và n / tổng, bỏ chip thì đủ lại", async ({

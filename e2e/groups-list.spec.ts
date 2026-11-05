@@ -51,7 +51,7 @@ test("ADM-FR-62 · M3-R06 · platform admin: /groups chưa chọn công ty → d
   await loginAdmin(page);
   await page.goto("/groups");
   await expect(page).toHaveURL(/\/tenants$/);
-  await expect(page.getByRole("table", { name: "Tenants" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Công ty" })).toBeVisible();
   expect(calls).toEqual([]);
   await page.goto("/groups?tenant=acme");
   await expect(page).toHaveURL(/tab=groups/);

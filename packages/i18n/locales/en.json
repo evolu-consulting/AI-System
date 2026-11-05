@@ -654,7 +654,7 @@
       }
     },
     "list": {
-      "title": "Tenants",
+      "title": "Companies",
       "subtitle": "Customer companies on the platform. Each has its own users, groups and quota.",
       "create": "Add company",
       "what": "company"

@@ -654,7 +654,7 @@
       }
     },
     "list": {
-      "title": "Tenants",
+      "title": "Công ty",
       "subtitle": "Công ty khách hàng dùng nền tảng. Mỗi tenant có user, group và quota riêng.",
       "create": "Thêm công ty",
       "what": "công ty"

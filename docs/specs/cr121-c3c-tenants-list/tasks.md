@@ -23,7 +23,7 @@ phụ thuộc: cr121-c1b (khuôn danh sách), cr121-c2 (trang chi tiết công t
 
 ## Quyết định trong lúc làm
 - Ứng dụng đang bật trong ngăn nạp theo công ty đang mở (`useTenantFeatureStates` + `appsOn`, một request khi mở), không đổi API danh sách.
-- Tiêu đề trang vẫn "Tenants" (caption bảng là selector của e2e cũ).
+- Tiêu đề trang + caption bảng đổi "Tenants" thành "Công ty"/"Companies" (i18n), e2e đổi theo.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp

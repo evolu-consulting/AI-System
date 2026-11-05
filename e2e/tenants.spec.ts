@@ -26,7 +26,7 @@ const openTenants = async (page: Page) => {
     .getByRole("navigation", { name: "Điều hướng chính" })
     .getByRole("link", { name: "CÔNG TY", exact: true })
     .click();
-  await expect(page.getByRole("table", { name: "Tenants" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Công ty" })).toBeVisible();
 };
 const fillNewTenant = async (page: Page, key: string) => {
   await page.getByRole("textbox", { name: "Mã công ty" }).fill(key);
@@ -36,13 +36,13 @@ const fillNewTenant = async (page: Page, key: string) => {
   await page.getByRole("textbox", { name: "Email" }).fill("bill@initech.test");
 };
 
-test("ADM-FR-60 · BR-05 · admin → /tenants: table 'Tenants' có hàng platform, acme, globex", async ({
+test("ADM-FR-60 · BR-05 · admin → /tenants: table 'Công ty' có hàng platform, acme, globex", async ({
   page,
 }) => {
   await openTenants(page);
-  await expect(rowOf(page, "Tenants", /platform/)).toBeVisible();
-  await expect(rowOf(page, "Tenants", "acme")).toBeVisible();
-  await expect(rowOf(page, "Tenants", "globex")).toBeVisible();
+  await expect(rowOf(page, "Công ty", /platform/)).toBeVisible();
+  await expect(rowOf(page, "Công ty", "acme")).toBeVisible();
+  await expect(rowOf(page, "Công ty", "globex")).toBeVisible();
 });
 
 test("ADM-FR-61 · M1-R10 · chip 'Đã khoá' lọc zeta; ô tìm 'glo' lọc globex", async ({ page }) => {
@@ -50,12 +50,12 @@ test("ADM-FR-61 · M1-R10 · chip 'Đã khoá' lọc zeta; ô tìm 'glo' lọc g
   await page.getByRole("button", { name: "Lọc" }).click();
   await page.getByRole("menuitemradio", { name: /^Đã khoá/ }).click();
   await page.keyboard.press("Escape");
-  await expect(rowOf(page, "Tenants", "zeta")).toBeVisible();
-  await expect(rowOf(page, "Tenants", "acme")).toHaveCount(0);
+  await expect(rowOf(page, "Công ty", "zeta")).toBeVisible();
+  await expect(rowOf(page, "Công ty", "acme")).toHaveCount(0);
   await page.getByRole("button", { name: /Bỏ lọc Trạng thái: Đã khoá/ }).click();
   await page.getByRole("searchbox").fill("glo");
-  await expect(rowOf(page, "Tenants", "globex")).toBeVisible();
-  await expect(rowOf(page, "Tenants", "acme")).toHaveCount(0);
+  await expect(rowOf(page, "Công ty", "globex")).toBeVisible();
+  await expect(rowOf(page, "Công ty", "acme")).toHaveCount(0);
 });
 
 test("ADM-BR-05 · BR-09 · tenant_admin vào /tenants → 'Bạn không có quyền xem trang này' + link 'Về Tổng quan'", async ({
