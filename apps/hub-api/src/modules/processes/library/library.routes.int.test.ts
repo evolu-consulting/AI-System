@@ -292,7 +292,7 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       s: 422,
       e: expect.objectContaining({
         code: "SLOT_GROUPS_MISSING",
-        details: { tenant: "t1072", tenant_id: Y, keys: ["phap-che"] },
+        details: expect.objectContaining({ tenant: "t1072", tenant_id: Y, keys: ["phap-che"] }),
       }),
     });
     expect([

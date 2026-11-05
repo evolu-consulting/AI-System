@@ -5,7 +5,9 @@ export type PublishIssue = { path: string; rule: string };
 
 type Cond =
   | { field: "deal"; in: readonly string[] }
-  | { field: "total_value"; op: "ge" | "gt" | "le" | "lt"; value: number };
+  | { field: "total_value"; op: "ge" | "gt" | "le" | "lt"; value: number }
+  | { field: "creator_department"; in: readonly string[] }
+  | { field: "new_partner"; is: boolean };
 type When = { op: "and" | "or"; conds: readonly Cond[] };
 type StageLike = { executor?: { kind?: string; tool_key?: string }; slot?: unknown };
 
@@ -26,6 +28,8 @@ function andSatisfiable(conds: readonly Cond[]): boolean {
   let deals: string[] | null = null;
   for (const c of conds) {
     if (c.field === "deal") deals = c.in.filter((d) => deals === null || deals.includes(d));
+    else if (c.field !== "total_value")
+      continue; // CR-121: phòng ban / đối tác mới — luôn có thể đúng
     else if (c.op === "ge" || c.op === "gt") lo = tighterLo(lo, c);
     else hi = tighterHi(hi, c);
   }

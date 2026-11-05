@@ -9,7 +9,17 @@ import {
   stageKeyOf,
   stepApplies,
 } from "./approval-flow.rules";
-import type { FlowDeal, FlowEsignStep, FlowStep } from "./approval-flow.types";
+import type {
+  FlowCond,
+  FlowCondGroup,
+  FlowDeal,
+  FlowEsignStep,
+  FlowStep,
+  FlowWhen,
+} from "./approval-flow.types";
+import { condHasData, type FlowFacts } from "./approval-flow-cond.rules";
+import { validateSlotBody } from "./approval-slot.rules";
+import { APPROVAL_SLOT_FIELDS, APPROVAL_SLOT_NODES } from "./approval-slot-catalog.rules";
 
 export const SLOT_SHAPE_UNSUPPORTED = "SLOT_SHAPE_UNSUPPORTED";
 
@@ -75,21 +85,111 @@ function userStepOf(st: StageLike, i: number): FlowStep | null {
 const finalizeOk = (f: StageLike, n: number) =>
   f.key === FINALIZE_STAGE && f.step === engineStepOf(n) && isTool(f, FLOW_TOOL_KEYS.finalize);
 
-export type PreviewStep = { index: number; key: string; kind: FlowStep["kind"]; run: boolean };
+/** `no_data`: bước có điều kiện mà dữ kiện của điều kiện còn trống ⇒ vẫn chạy (an toàn) nhưng ghi "chưa có dữ liệu". */
+export type PreviewState = "run" | "skip" | "no_data";
+export type PreviewStep = {
+  index: number;
+  key: string;
+  kind: FlowStep["kind"];
+  run: boolean;
+  state: PreviewState;
+};
+export type PreviewInput = {
+  contractType: FlowDeal | null;
+  value: unknown;
+  /** CR-121 D-2 · mã phòng ban người gửi duyệt (đã gồm phòng cha — như dữ kiện lúc rẽ thật). */
+  creatorDepartments?: readonly string[] | null | undefined;
+  newPartner?: boolean | null | undefined;
+};
+
+const condLeaves = (w: FlowWhen | FlowCondGroup): FlowCond[] =>
+  w.conds.flatMap((c) => ("field" in c ? [c] : condLeaves(c)));
+
+/** Bước có điều kiện thiếu dữ liệu của ít nhất một điều kiện lá. */
+const whenMissingData = (s: FlowStep, f: FlowFacts): boolean =>
+  s.kind === "review" && s.when !== null && condLeaves(s.when).some((c) => !condHasData(c, f));
 
 /**
- * Xem trước: với (loại HĐ, giá trị) bước nào chạy / bị bỏ qua. Bước đầu luôn chạy, Dify luôn chạy, review theo `when` (trống
- * ⇒ chạy, như `condHolds`), bước Ký số (đuôi) luôn chạy.
+ * Xem trước: với dữ kiện mẫu (loại HĐ, giá trị, phòng ban người gửi, đối tác mới) bước nào chạy / bị bỏ qua / chưa có dữ liệu. Bước
+ * đầu luôn chạy, Dify luôn chạy, review theo `when` (dữ liệu trống ⇒ chạy, như `condHolds`), bước Ký số (đuôi) luôn chạy.
  */
 export function previewPath(
   flow: { steps: readonly FlowStep[] },
-  input: { contractType: FlowDeal | null; value: unknown },
+  input: PreviewInput,
 ): PreviewStep[] {
-  const facts = { deal: input.contractType, total_value: input.value };
-  return flow.steps.map((s, i) => ({
-    index: i,
-    key: s.key,
-    kind: s.kind,
-    run: i === 0 || s.kind === "esign" || stepApplies(s, facts),
-  }));
+  const facts: FlowFacts = {
+    deal: input.contractType,
+    total_value: input.value,
+    creator_departments: input.creatorDepartments,
+    new_partner: input.newPartner,
+  };
+  return flow.steps.map((s, i) => {
+    const run = i === 0 || s.kind === "esign" || stepApplies(s, facts);
+    const state: PreviewState = !run ? "skip" : whenMissingData(s, facts) ? "no_data" : "run";
+    return { index: i, key: s.key, kind: s.kind, run, state };
+  });
+}
+
+/** Mã phòng ban dùng trong điều kiện `creator_department` của body (kiểm tồn tại ở tenant khi gán). */
+export function conditionDepartmentKeys(steps: readonly FlowStep[]): string[] {
+  const leaves = steps.flatMap((s) => (s.kind === "review" && s.when ? condLeaves(s.when) : []));
+  return [...new Set(leaves.flatMap((c) => (c.field === "creator_department" ? c.in : [])))];
+}
+
+const isObj = (x: unknown): x is Record<string, unknown> =>
+  typeof x === "object" && x !== null && !Array.isArray(x);
+const FIELDS = new Map<string, (typeof APPROVAL_SLOT_FIELDS)[number]>(
+  APPROVAL_SLOT_FIELDS.map((f) => [f.key, f]),
+);
+const NODE_KINDS = new Set<string>(APPROVAL_SLOT_NODES.map((n) => n.kind));
+
+/** Một điều kiện lá so với danh mục trường của khe: trường chưa khai / toán tử sai / giá trị ngoài danh sách. */
+function leafIssue(c: unknown): string | null {
+  if (!isObj(c)) return "COND_FIELD_UNDECLARED";
+  const f = FIELDS.get(String(c.field));
+  if (!f) return "COND_FIELD_UNDECLARED";
+  if (f.type === "boolean") return typeof c.is === "boolean" ? null : "COND_VALUE_INVALID";
+  if (f.type === "number")
+    return (f.ops as readonly string[]).includes(String(c.op)) && typeof c.value === "number"
+      ? null
+      : "COND_OP_UNSUPPORTED";
+  const vals = Array.isArray(c.in) ? c.in : null;
+  if (!vals || vals.length === 0) return "COND_VALUE_INVALID";
+  return f.type === "enum" && !enumOk(f, vals) ? "COND_VALUE_INVALID" : null;
+}
+
+function enumOk(f: (typeof APPROVAL_SLOT_FIELDS)[number], vals: unknown[]): boolean {
+  if (!("options" in f)) return true;
+  const ok = new Set<string>(f.options.map((o) => o.value));
+  return vals.every((v) => ok.has(String(v)));
+}
+
+/** Lỗi điều kiện của một bước (`steps.i.when`): lá sai danh mục; nhóm lồng sâu hơn một cấp. */
+function whenIssues(conds: unknown[], path: string, depth = 0): { path: string; rule: string }[] {
+  return conds.flatMap((c) => {
+    if (isObj(c) && Array.isArray(c.conds))
+      return depth === 0 ? whenIssues(c.conds, path, 1) : [{ path, rule: "COND_NESTING" }];
+    const r = leafIssue(c);
+    return r ? [{ path, rule: `${r}:${String((c as { field?: unknown })?.field)}` }] : [];
+  });
+}
+
+/** Luật khe thêm vào `validateSlotBody` (path `steps.i.kind` / `steps.i.when`; rule = mã cho câu sửa tiếng Việt). */
+export function stepKindAndCondIssues(body: unknown): { path: string; rule: string }[] {
+  if (!isObj(body) || !Array.isArray(body.steps)) return [];
+  const out: { path: string; rule: string }[] = [];
+  body.steps.forEach((s, i) => {
+    if (!isObj(s)) return;
+    if (!NODE_KINDS.has(String(s.kind)))
+      out.push({ path: `steps.${i}.kind`, rule: "NODE_UNSUPPORTED" });
+    const w = s.when;
+    if (isObj(w) && Array.isArray(w.conds)) out.push(...whenIssues(w.conds, `steps.${i}.when`));
+  });
+  return out;
+}
+
+/** `SlotSpec.validate` của khe duyệt HĐ: loại bước + điều kiện (khai báo) trước, rồi hình + luật chéo bước. */
+export function validateApprovalBody(body: unknown): { path: string; rule: string }[] {
+  const extra = stepKindAndCondIssues(body);
+  return extra.length ? extra : validateSlotBody(body);
 }

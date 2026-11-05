@@ -22,6 +22,7 @@ import { defError, toProcessDef } from "../defs/defs.map";
 import { readDef } from "../defs/defs.repo";
 import * as lib from "./library.repo";
 import { libError, specOrThrow } from "./library-draft";
+import { explainIssues, missingGroupIssues } from "./library-publish.messages";
 import { bodyUserIds, publishIssues } from "./library-publish.rules";
 import * as asg from "./slot-assign.repo";
 import { listSlots, type SlotSpec } from "./slots";
@@ -79,7 +80,8 @@ export class LibraryService {
       systemTools: spec.systemTools,
       bodyIssues: spec.validate(def.slot_body),
     });
-    if (issues.length) throw libError("PROCESS_PUBLISH_INVALID", { issues });
+    // CR-121 D-2 · 422 kèm danh sách {bước, trường, câu tiếng Việt/Anh nói cách sửa}; kiểm tenant = đúng MỘT câu SQL (`firstMiss`).
+    if (issues.length) throw libError("PROCESS_PUBLISH_INVALID", { issues: explainIssues(issues) });
     const need = { keys: spec.groupKeys(def.slot_body), users: bodyUserIds(def.slot_body) };
     const miss = await asg.firstMiss(tx, { ...a, slot: def.slot, feature: feature(spec) }, need);
     if (miss?.keys.length)
@@ -87,6 +89,7 @@ export class LibraryService {
         tenant: miss.tenant,
         tenant_id: miss.tenant_id,
         keys: miss.keys,
+        issues: missingGroupIssues(def.slot_body, miss.tenant, miss.keys),
       });
     if (miss) throw defError("PROCESS_REF_INVALID", { path: "slot_body", ref: "user" });
   }

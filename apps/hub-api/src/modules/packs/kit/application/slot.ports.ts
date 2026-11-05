@@ -32,6 +32,20 @@ export type SlotNode = {
 export const slotFields = (s: Pick<SlotSpec, "fields">): readonly SlotField[] => s.fields ?? [];
 export const slotNodes = (s: Pick<SlotSpec, "nodes">): readonly SlotNode[] => s.nodes ?? [];
 
+/** CR-121 D-2 · dữ kiện mẫu cho xem trước; trường vắng/null ⇒ "chưa có dữ liệu". `creatorDepartments` = mã phòng người gửi duyệt. */
+export type SlotPreviewInput = {
+  contractType?: string | null;
+  value?: number | null;
+  creatorDepartments?: readonly string[] | null;
+  newPartner?: boolean | null;
+};
+export type SlotPreviewStep = {
+  key: string;
+  name: string;
+  run: boolean;
+  state: "run" | "skip" | "no_data";
+};
+
 export type SlotSpec = {
   /** `<gói>.<việc>` — khớp CHECK `process_slots_slot_ck` (0068). */
   key: string;
@@ -55,11 +69,8 @@ export type SlotSpec = {
   compile(body: unknown): unknown[];
   /** Mã Group mà body tham chiếu (B2: kiểm Group theo tenant khi gán/xuất bản). */
   groupKeys(body: unknown): string[];
-  /** Xem trước đường đi (không ghi): bước nào chạy / bị bỏ qua với (loại HĐ, giá trị); body sai hình ⇒ null. */
-  preview?(
-    body: unknown,
-    input: { contractType: string; value: number },
-  ): { key: string; name: string; run: boolean }[] | null;
+  /** Xem trước đường đi (không ghi): bước nào chạy / bị bỏ qua / chưa có dữ liệu với dữ kiện mẫu; body sai hình ⇒ null. */
+  preview?(body: unknown, input: SlotPreviewInput): SlotPreviewStep[] | null;
   /** CR-105 · lưu từ canvas (chỉ `stages`): dựng lại `slot_body` theo mã; dạng khác (song song, If, nhánh) ⇒ `{stage}` sai đầu tiên. */
   fromStages?(stages: readonly unknown[]): { body: unknown } | { stage: string };
 };

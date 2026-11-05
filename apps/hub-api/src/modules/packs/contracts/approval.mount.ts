@@ -26,14 +26,17 @@ import { myApprovals } from "./application/mywork-approvals.usecase";
 import { engineAllowedForTenant } from "./domain/approval-engine.rules";
 import { FLOW_TOOL_KEYS } from "./domain/approval-flow.rules";
 import type { FlowDeal, FlowStep } from "./domain/approval-flow.types";
-import { previewPath } from "./domain/approval-flow-stages.rules";
+import {
+  conditionDepartmentKeys,
+  previewPath,
+  validateApprovalBody,
+} from "./domain/approval-flow-stages.rules";
 import {
   APPROVAL_SLOT,
   APPROVAL_SLOT_LABEL,
   compileSlotStages,
   slotBodyOf,
   slotGroupKeys,
-  validateSlotBody,
 } from "./domain/approval-slot.rules";
 import { APPROVAL_SLOT_FIELDS, APPROVAL_SLOT_NODES } from "./domain/approval-slot-catalog.rules";
 import { slotBodyFromStages } from "./domain/approval-slot-default.rules";
@@ -123,11 +126,14 @@ export const approvalSlotSpec: SlotSpec = {
   nodes: APPROVAL_SLOT_NODES,
   requiredInputs: ["contract-id"],
   systemTools: [FLOW_TOOL_KEYS.route, FLOW_TOOL_KEYS.finalize],
-  validate: validateSlotBody,
+  validate: validateApprovalBody,
   compile: compileSlotStages,
+  // CR-121 D-2 · mã phòng ban trong điều kiện cũng phải có ở công ty khi gán (cùng một câu kiểm Group).
   groupKeys: (b) => {
     const body = slotBodyOf(b);
-    return body ? slotGroupKeys(body) : [];
+    if (!body) return [];
+    const steps = body.steps as unknown as FlowStep[];
+    return [...new Set([...slotGroupKeys(body), ...conditionDepartmentKeys(steps)])];
   },
   preview: (b, i) => {
     const body = slotBodyOf(b);
@@ -135,9 +141,19 @@ export const approvalSlotSpec: SlotSpec = {
     const steps = body.steps as unknown as FlowStep[];
     const path = previewPath(
       { steps },
-      { contractType: i.contractType as FlowDeal, value: i.value },
+      {
+        contractType: (i.contractType ?? null) as FlowDeal | null,
+        value: i.value ?? null,
+        creatorDepartments: i.creatorDepartments,
+        newPartner: i.newPartner,
+      },
     );
-    return path.map((p) => ({ key: p.key, name: steps[p.index]?.name ?? p.key, run: p.run }));
+    return path.map((p) => ({
+      key: p.key,
+      name: steps[p.index]?.name ?? p.key,
+      run: p.run,
+      state: p.state,
+    }));
   },
   fromStages: slotBodyFromStages,
 };
