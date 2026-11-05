@@ -155,7 +155,12 @@ export function collectTraffic(page: Page): Traffic {
   const pending: Promise<void>[] = [];
   const t: Traffic = {
     flush: async () => {
-      await Promise.all(pending);
+      // Body không đọc xong trong 15 s (luồng treo) ⇒ ghi cảnh báo thay vì treo tới hết giờ test.
+      const done = await Promise.race([
+        Promise.all(pending).then(() => true),
+        new Promise<boolean>((res) => setTimeout(() => res(false), 15_000)),
+      ]);
+      if (!done) console.warn("[collectTraffic] flush: còn response chưa đọc xong sau 15 s");
     },
     bodies: [],
     requests: [],
@@ -165,6 +170,8 @@ export function collectTraffic(page: Page): Traffic {
     t.requests.push({ url: r.url(), method: r.method(), post: r.postData() }),
   );
   page.on("response", (r) => {
+    // Luồng SSE (text/event-stream) không bao giờ kết thúc ⇒ r.text() treo làm flush() quá giờ; bỏ qua body của luồng.
+    if ((r.headers()["content-type"] ?? "").includes("text/event-stream")) return;
     pending.push(
       r
         .text()

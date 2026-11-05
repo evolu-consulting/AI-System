@@ -33,7 +33,7 @@ test("ADM-FR-14 · M2-R26 · /workflows: heading, bảng, chip Tất cả 5 / B�
   await loginAdmin(page);
   await openPage(page, "/workflows", "Workflow Dify (tool AI)");
   await expect(page.getByRole("table", { name: "Workflow Dify (tool AI)" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "+ Thêm workflow" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "+ Khai báo workflow" })).toBeVisible();
   for (const [label, n] of [
     ["Tất cả", 5],
     ["Bật", 4],
@@ -62,8 +62,7 @@ test("ADM-FR-10 · M2-AC07 · form khai báo: mô tả 19 ký tự → lỗi, 20
 }) => {
   await loginAdmin(page);
   await openPage(page, "/workflows", "Workflow Dify (tool AI)");
-  await page.getByRole("button", { name: "+ Thêm workflow" }).click();
-  await page.getByRole("menuitem", { name: /^Workflow Dify/ }).click();
+  await page.getByRole("link", { name: "+ Khai báo workflow" }).click();
   await expect(page).toHaveURL(/\/workflows\/new$/);
   const posts: string[] = [];
   page.on("request", (r) => {

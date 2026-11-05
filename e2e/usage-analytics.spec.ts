@@ -46,19 +46,18 @@ test("ADM-FR-42 · platform_admin: tab 'Phân tích token', lọc tenant acme, K
   );
 });
 
-test("ADM-FR-42 · tenant_admin binh: không chọn tenant, không chi phí; response analytics không chứa cost_usd", async ({
+test("ADM-FR-42 · tenant_admin binh (tenant-admin-scope): /usage/analytics chỉ platform_admin → ForbiddenState, không gọi API analytics, không combobox Tenant, không chi phí/token của tenant khác", async ({
   page,
 }) => {
   await loginAs(page, "acme", "binh");
-  const resp = page.waitForResponse(
-    (r) => r.url().includes("/admin/usage/analytics") && r.request().method() === "GET",
-  );
+  const calls: string[] = [];
+  page.on("request", (r) => calls.push(r.url()));
   await page.goto("/usage/analytics");
-  const body = await (await resp).text();
-  await expect(page.getByRole("heading", { level: 1, name: "Phân tích token" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Bạn không có quyền xem trang này" }),
+  ).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Tenant" })).toHaveCount(0);
   await expect(region(page, "Chi phí ước tính")).toHaveCount(0);
-  await expect(region(page, "Token vào")).toContainText("5.200");
-  expect(body).not.toContain("cost_usd");
-  expect(body).not.toContain(GLOBEX);
+  await expect(region(page, "Token vào")).toHaveCount(0);
+  expect(calls.filter((u) => u.includes("/admin/usage/analytics"))).toEqual([]);
 });

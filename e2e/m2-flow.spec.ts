@@ -49,8 +49,7 @@ test("ADM-FR-50 · M2-AC09 · admin seed → Secrets (thêm) → Workflows (tạ
 
   // 2. Workflows: tạo workflow chưa gắn
   await openWorkflowProcessFromNav(page);
-  await page.getByRole("button", { name: "+ Thêm workflow" }).click();
-  await page.getByRole("menuitem", { name: /^Workflow Dify/ }).click();
+  await page.getByRole("link", { name: "+ Khai báo workflow" }).click();
   await expect(page).toHaveURL(/\/workflows\/new$/);
   await page.getByRole("textbox", { name: "Key", exact: true }).fill("translate-e2e");
   await page.getByRole("textbox", { name: "Tên", exact: true }).fill("Translate e2e");
