@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  assignedNames,
   canDeleteLibrary,
   cloneSuggestion,
   describeWhen,
@@ -109,5 +110,16 @@ describe("describeWhen", () => {
         ],
       }),
     ).toBe("Chỉ khi loại Mua hoặc Bán và giá trị ≥ 50 tr");
+  });
+});
+
+describe("CR-120 · assignedNames", () => {
+  test("tenant đang dùng đứng trước + gắn nhãn, tenant chỉ trong tập giữ tên", () => {
+    const items = [
+      { tenant_name: "A" },
+      { tenant_name: "NiTi", in_use: true },
+      { tenant_name: "B", in_use: false },
+    ];
+    expect(assignedNames(items, (n) => `${n} (đang dùng)`)).toEqual(["NiTi (đang dùng)", "A", "B"]);
   });
 });

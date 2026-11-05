@@ -719,7 +719,8 @@
       "none": "Not assigned",
       "default": "Default for every unassigned tenant",
       "count": "{{n}} tenants",
-      "named": "{{n}} tenants: {{names}}"
+      "named": "{{n}} tenants: {{names}}",
+      "inUse": "{{name}} (in use)"
     },
     "pubState": {
       "published": "Published v{{n}}",

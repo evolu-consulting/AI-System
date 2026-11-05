@@ -102,6 +102,8 @@ export const ProcessAssignmentSchema = z.strictObject({
   tenant_name: z.string(),
   tenant_key: z.string(),
   assigned_at: IsoDateTime,
+  /** CR-120 · def đang chạy cho tenant: luật mặc định hoặc luật điều kiện của tenant × khe trỏ def này (vắng = Hub cũ). */
+  in_use: z.boolean().optional(),
 });
 export type ProcessAssignment = z.infer<typeof ProcessAssignmentSchema>;
 export const ProcessAssignmentListSchema = z.strictObject({

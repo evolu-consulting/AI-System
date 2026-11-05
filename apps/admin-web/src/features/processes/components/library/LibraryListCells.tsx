@@ -1,7 +1,7 @@
 ﻿// CR-105 · UX: ô "Trạng thái" và "Tenant đang dùng" của danh sách thư viện — chữ dễ đọc thay cho số; tên tenant tải lười, rút gọn có tooltip.
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { type ListRow, statusOf, tenantsSummary } from "../../lib/library-list";
+import { assignedNames, type ListRow, statusOf, tenantsSummary } from "../../lib/library-list";
 import { useAssignments } from "../../library-api";
 
 export function StatusCell({ row }: { row: ListRow }) {
@@ -27,7 +27,10 @@ export function TenantsCell({ row }: { row: ListRow }) {
   const { t } = useTranslation();
   const count = row.tenant_count ?? 0;
   const q = useAssignments(row.id, count > 0);
-  const all = (q.data ?? []).map((a) => a.tenant_name);
+  // CR-120 · tenant đang chạy def (luật trỏ def) đứng trước, gắn "(đang dùng)"; còn lại chỉ có trong tập gán.
+  const all = assignedNames(q.data ?? [], (name) =>
+    t("process.admin.library.usage.inUse", { name }),
+  );
   const s = tenantsSummary(row, all);
   if (s.kind === "none")
     return <span className="text-muted-foreground">{t("process.admin.library.usage.none")}</span>;

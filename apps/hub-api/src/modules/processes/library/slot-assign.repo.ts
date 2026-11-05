@@ -22,12 +22,15 @@ export type Affected = {
   tenantIds: readonly string[];
 };
 
+// CR-120 · một nguồn: tenant có def trong tập gán (luật chỉ trỏ def trong tập — FK) ∪ (def là mẫu khe ⇒ tenant bật gói chưa có luật
+// mặc định, đang rơi về mẫu) ∪ tenant chỉ định.
 const affectedCte = (a: Affected) => sql`t as (
-    select x.tenant_id from hub.process_slot_assignments x where x.def_id = ${a.defId}::uuid
+    select x.tenant_id from hub.process_tenant_defs x where x.def_id = ${a.defId}::uuid
     union
     select e.tenant_id from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
     where ${a.asDefault} and f.key = ${a.feature} and f.status <> 'off' and e.revoked_at is null
-      and not exists (select 1 from hub.process_slot_assignments y where y.tenant_id = e.tenant_id and y.slot = ${a.slot})
+      and not exists (select 1 from hub.process_routing_rules y
+        where y.tenant_id = e.tenant_id and y.slot = ${a.slot} and y.is_default)
     union
     select unnest(${arr(a.tenantIds, "uuid")}))`;
 
@@ -73,11 +76,16 @@ export type AssignmentRow = {
   tenant_name: string;
   tenant_key: string;
   assigned_at: string;
+  in_use: boolean;
 };
+/** CR-120 · một nguồn: tenant có def trong tập gán (`process_tenant_defs`, index def_id); `in_use` = luật (mặc định hoặc điều kiện)
+ *  của tenant × khe trỏ def. Một câu. */
 export const listAssignments = (tx: Tx, defId: string): Promise<AssignmentRow[]> =>
   tx.execute<AssignmentRow>(sql`select a.tenant_id::text as tenant_id, tn.name as tenant_name,
-      tn.key as tenant_key, ${iso(sql`a.assigned_at`)} as assigned_at
-    from hub.process_slot_assignments a join admin.tenants tn on tn.id = a.tenant_id
+      tn.key as tenant_key, ${iso(sql`a.assigned_at`)} as assigned_at,
+      exists (select 1 from hub.process_routing_rules r
+        where r.tenant_id = a.tenant_id and r.slot = a.slot and r.def_id = a.def_id) as in_use
+    from hub.process_tenant_defs a join admin.tenants tn on tn.id = a.tenant_id
     where a.def_id = ${defId} order by tn.key limit 1000`);
 
 export async function tenantOf(

@@ -15,7 +15,10 @@ import { urls } from "@ai/test-kit/env";
 import { sql } from "drizzle-orm";
 import { connectDb, type Db } from "../../../lib/db";
 import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/domain/approval-slot-default.rules";
+import { listDefs } from "../defs/defs.repo";
+import { usage } from "./library.repo";
 import { pickProcess, type RoutingRule } from "./routing.rules";
+import { listAssignments } from "./slot-assign.repo";
 import { ensureSlotDefaults } from "./slot-defaults";
 import { resolveSlot } from "./slot-resolve.repo";
 import { routeSlot } from "./slot-route.repo";
@@ -250,6 +253,46 @@ describe("CR-120 · cr120-single-source · một nguồn gán", () => {
         )[0]?.n,
       ),
     ).toBe(4);
+  });
+
+  it("danh sách thư viện: tenant_count = tập gán (process_tenant_defs), assignments kèm in_use theo luật", async () => {
+    const ids = [lib.A, lib.B, lib.C];
+    const [list, asgB, asgC, u] = await withHubScope(db, { kind: "system" }, async (tx) => [
+      await listDefs(tx, {
+        tenantId: null,
+        library: true,
+        includeTemplates: false,
+        limit: 500,
+        kind: "library",
+      } as never),
+      await listAssignments(tx, lib.B),
+      await listAssignments(tx, lib.C),
+      await usage(tx, lib.C),
+    ]);
+    const truth = Object.fromEntries(
+      (
+        await o<
+          { d: string; n: number }[]
+        >`select def_id::text as d, count(*)::int as n from hub.process_tenant_defs
+        where def_id = any(${o.array(ids)}::uuid[]) group by 1`
+      ).map((r) => [r.d, Number(r.n)]),
+    );
+    const shown = Object.fromEntries(
+      (list as { id: string; tenant_count: number }[])
+        .filter((r) => ids.includes(r.id))
+        .map((r) => [r.id, Number(r.tenant_count)]),
+    );
+    expect(shown).toEqual(truth);
+    expect(truth).toEqual({ [lib.A]: 3, [lib.B]: 2, [lib.C]: 2 }); // A: t1,t3,t4 · B: t3 (0089), t7 · C: t3,t4
+    const flags = (rows: typeof asgB) => rows.map((r) => [r.tenant_id, r.in_use]);
+    expect(flags(asgC)).toEqual(
+      [
+        [T.t3, true],
+        [T.t4, true],
+      ].sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+    );
+    expect(flags(asgB).every(([, used]) => used === false)).toBe(true);
+    expect(u.tenant_count).toBe(2); // PROCESS_IN_USE theo cùng nguồn
   });
 
   it("resolveSlot/routeSlot không đọc bảng gán cũ (bỏ VIEW tạm ⇒ vẫn trả đúng)", async () => {

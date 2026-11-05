@@ -34,8 +34,8 @@ const slotRows = (tx: Tx, tenantId: string) =>
     where s.slot not like 'dlc.%'
     union all
     select a.tenant_id::text, a.slot, d.id::text, d.name, d.published_version
-    from hub.process_slot_assignments a left join hub.process_defs d on d.id = a.def_id and d.deleted_at is null
-    where a.tenant_id = ${tenantId}::uuid and a.slot not like 'dlc.%'`);
+    from hub.process_routing_rules a left join hub.process_defs d on d.id = a.def_id and d.deleted_at is null
+    where a.tenant_id = ${tenantId}::uuid and a.is_default and a.slot not like 'dlc.%'`); // CR-120 · luật mặc định
 
 const standaloneRows = (tx: Tx, tenantId: string) =>
   tx.execute<DefSql>(sql`select d.id::text as id, d.name, d.published_version as version,
@@ -44,7 +44,7 @@ const standaloneRows = (tx: Tx, tenantId: string) =>
     where (d.tenant_id = ${tenantId}::uuid or d.tenant_id is null)
       and d.deleted_at is null and d.pack_version is null and d.key not like 'dlc%'
       and not exists (select 1 from hub.process_slots s where s.default_def_id = d.id)
-      and not exists (select 1 from hub.process_slot_assignments a where a.def_id = d.id)
+      and not exists (select 1 from hub.process_tenant_defs a where a.def_id = d.id)
     order by d.name, d.id limit ${STANDALONE_MAX}`);
 
 export function loadHubExtras(db: Db, tenantId: string): Promise<HubExtras> {

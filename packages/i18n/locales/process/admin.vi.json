@@ -719,7 +719,8 @@
       "none": "Chưa gán",
       "default": "Mặc định cho mọi tenant chưa gán",
       "count": "{{n}} tenant",
-      "named": "{{n}} tenant: {{names}}"
+      "named": "{{n}} tenant: {{names}}",
+      "inUse": "{{name}} (đang dùng)"
     },
     "pubState": {
       "published": "Đã xuất bản v{{n}}",

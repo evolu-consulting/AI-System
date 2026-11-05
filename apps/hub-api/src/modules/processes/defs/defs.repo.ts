@@ -56,8 +56,9 @@ export type DefListRow = Pick<
 };
 
 const iso = (col: SQL) => sql`to_char(${col} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
-/** CR-105 · đếm gán + cờ mặc định (index `assignments(def_id)`, `process_slots(default_def_id)`). */
-const LIB_USE = sql`(select count(*)::int from hub.process_slot_assignments a where a.def_id = d.id) as tenant_count,
+/** CR-105 · đếm gán + cờ mặc định (index `process_tenant_defs(def_id)`, `process_slots(default_def_id)`). CR-120 · một nguồn:
+ *  số tenant có def trong tập gán (PK tenant × def ⇒ mỗi tenant một hàng). */
+const LIB_USE = sql`(select count(*)::int from hub.process_tenant_defs a where a.def_id = d.id) as tenant_count,
   exists (select 1 from hub.process_slots s where s.default_def_id = d.id) as is_default,
   coalesce((select r.stages is distinct from d.stages or r.slot_body is distinct from d.slot_body or r.name <> d.name
     from hub.process_def_releases r where r.def_id = d.id and r.rel_version = d.published_version), false) as has_unpublished_changes`;

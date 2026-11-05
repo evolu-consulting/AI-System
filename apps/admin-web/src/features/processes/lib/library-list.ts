@@ -36,6 +36,15 @@ export function tenantsSummary(r: ListRow, names: readonly string[] = []): Tenan
   return n > 0 ? { kind: "assigned", names: shown, extra } : { kind: "none" };
 }
 
+/** CR-120 · tên tenant đã gán: đang dùng (`in_use`) trước và gắn nhãn `mark`, giữ thứ tự Hub trong mỗi nhóm. */
+export function assignedNames(
+  items: readonly { tenant_name: string; in_use?: boolean | undefined }[],
+  mark: (name: string) => string,
+): string[] {
+  const used = items.filter((a) => a.in_use === true).map((a) => mark(a.tenant_name));
+  return [...used, ...items.filter((a) => a.in_use !== true).map((a) => a.tenant_name)];
+}
+
 /** Mặc định ghim đầu; còn lại theo `updated_at` mới nhất trước (ổn định). */
 export function sortLibraryRows<R extends ListRow>(rows: readonly R[]): R[] {
   return [...rows].sort((a, b) => {

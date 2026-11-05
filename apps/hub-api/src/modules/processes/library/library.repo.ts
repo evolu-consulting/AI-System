@@ -85,7 +85,7 @@ export async function usage(
   defId: string,
 ): Promise<{ tenant_count: number; is_default: boolean }> {
   const [r] = await tx.execute<{ tenant_count: number; is_default: boolean }>(sql`select
-    (select count(*)::int from hub.process_slot_assignments a where a.def_id = ${defId}) as tenant_count,
+    (select count(*)::int from hub.process_tenant_defs a where a.def_id = ${defId}) as tenant_count,
     exists (select 1 from hub.process_slots s where s.default_def_id = ${defId}) as is_default`);
   return { tenant_count: Number(r?.tenant_count ?? 0), is_default: r?.is_default === true };
 }
