@@ -171,10 +171,25 @@ export async function approveAs(
   stepName: string,
 ): Promise<void> {
   await loginCw(page, e, user);
+  // Mỗi lần tải trang, SPA tự `POST /auth/refresh` (xoay token). Tải lại khi lượt refresh trước CHƯA xong ⇒ phản hồi (Set-Cookie) bị
+  // huỷ, token cũ bị coi là "đã xoay" ⇒ 401 ⇒ về trang đăng nhập (lỗi của test, không phải của quyền xem). Nên luôn chờ trang nạp xong
+  // (thẻ duyệt đã trả về) trước khi tải lại.
+  const loaded = () =>
+    page.waitForResponse(
+      (r) => r.request().method() === "GET" && r.url().includes(`/contracts/${id}/approval`),
+      { timeout: 30_000 },
+    );
+  const first = loaded();
   await page.goto(`${e.cw}/contracts/c/${id}`);
+  await first;
   const btn = page.locator("[data-approval=pass], [data-approval=approve]").first();
+  let n = 0;
   await expect(async () => {
-    await page.reload();
+    if (n++ > 0) {
+      const again = loaded();
+      await page.reload();
+      await again;
+    }
     await expect(stepOf(page, stepName)).toHaveAttribute("data-status", "open", { timeout: 4_000 });
     await expect(btn).toBeVisible({ timeout: 4_000 });
   }).toPass({ timeout: 60_000 });
