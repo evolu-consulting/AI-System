@@ -60,6 +60,11 @@ test("CR-121 · /apps ở 375px: ngăn không tràn ngang", async ({ page }) => 
   await page.getByRole("row").nth(1).click();
   const drawer = page.getByRole("dialog");
   await expect(drawer).toBeVisible();
-  const box = await drawer.boundingBox();
-  expect(box && box.x >= 0 && box.x + box.width <= 375).toBe(true);
+  // chờ ngăn trượt xong (animation 500 ms) rồi mới đo: đo ngay lúc đang trượt thì x > 0
+  await expect
+    .poll(async () => {
+      const box = await drawer.boundingBox();
+      return !!box && box.x >= 0 && box.x + box.width <= 375;
+    })
+    .toBe(true);
 });
