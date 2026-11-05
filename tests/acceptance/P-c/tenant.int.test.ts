@@ -79,7 +79,11 @@ describe("T01–T04 · cách ly tenant [PC-R14, HUB-BR-14]", () => {
     const post = async (auth: string | null, body: string) => {
       const res = await fetch(`${c.base}/internal/jobs/${a.job.id}/autofix-result`, {
         method: "POST",
-        headers: { "content-type": "application/json", ...(auth ? { authorization: auth } : {}) },
+        headers: {
+          "content-type": "application/json",
+          connection: "close",
+          ...(auth ? { authorization: auth } : {}),
+        },
         body,
       });
       return { status: res.status, text: await res.text() };

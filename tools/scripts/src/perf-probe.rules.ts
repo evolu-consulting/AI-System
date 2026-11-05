@@ -96,7 +96,7 @@ function applyLine(out: Parsed, cur: Cur, kv: Kv): Cur {
     mapOf(out.ends, scn).set(num(kv.r), kv);
     return null;
   } else if (cur) {
-    const by = getOrInit(mapOf(out.runs, cur.scn), cur.r, () => ({}));
+    const by = getOrInit(mapOf(out.runs, cur.scn), cur.r, () => ({}) as Record<string, Sample[]>);
     const s: Sample = {
       ms: num(kv.ms),
       cpu: num(kv.cpu),

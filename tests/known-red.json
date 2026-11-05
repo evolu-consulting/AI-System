@@ -1,12 +1,3 @@
 {
-  "entries": [
-    {
-      "id": "tests/acceptance/P-c/tenant.int.test.ts › T01–T04 · cách ly tenant [PC-R14, HUB-BR-14] \u003e HUB-BR-14 · PC-R14 · T03b",
-      "suite": "int",
-      "reason": "chập chờn Bun 1.3.14: request kế trên kết nối dùng lại sau 401 sớm (body 3 MiB chưa đọc) nhận 431; 401 vẫn đúng, không do commit nào (bisect 2026-11-04). Sửa thật: test gửi Connection: close (qc) hoặc quyết định đọc-bỏ body có giới hạn",
-      "owner": "hub-api",
-      "expires": "2026-11-18",
-      "since": "2026-11-04"
-    }
-  ]
+  "entries": []
 }

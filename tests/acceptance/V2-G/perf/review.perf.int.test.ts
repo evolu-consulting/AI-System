@@ -41,10 +41,8 @@ const ms = (n: number) =>
     amount: 1000,
   }));
 
-/** Chuẩn bị (KHÔNG tính giờ): HĐ chờ xác nhận có 200 dòng, thân Lưu = sửa 200 dòng + 1 dòng mới + 50 mốc. */
+/** Chuẩn bị (KHÔNG tính giờ; arrange/TRUNCATE chỉ 1 lần ngoài vòng đo): HĐ chờ xác nhận có 200 dòng, thân Lưu = sửa 200 dòng + 1 dòng mới + 50 mốc. */
 async function prepare() {
-  await arrangeV2a(c);
-  await setApproval(c.sql, T.acme, false);
   const s = await seedReview(c, 1, { deal: "sell", ai, items: lines(200) });
   const items = s.items.map((id, i) => ({ id, name: `Hàng ${i} sửa`, qty: 2, unit_price: 2000 }));
   return {
@@ -61,8 +59,11 @@ async function prepare() {
 describe("V2-G · Lưu 200 dòng + 50 mốc: thời gian (perf)", () => {
   it(`p95 ≤ ${P95_MS} ms (tenant tắt duyệt, ${RUNS} lượt sau ${WARM} lượt làm nóng)`, async () => {
     const times: number[] = [];
-    for (let i = 0; i < WARM + RUNS; i++) {
-      const { id, body } = await prepare();
+    await arrangeV2a(c);
+    await setApproval(c.sql, T.acme, false);
+    const prepared = [];
+    for (let i = 0; i < WARM + RUNS; i++) prepared.push(await prepare());
+    for (const [i, { id, body }] of prepared.entries()) {
       const t0 = performance.now();
       const r = await reviewOf(c, id, body);
       const ms1 = performance.now() - t0;

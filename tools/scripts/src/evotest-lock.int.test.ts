@@ -133,7 +133,7 @@ d("evotest boot.sh · -Exclusive", () => {
 
   const readers = new WeakMap<
     object,
-    { r: ReadableStreamDefaultReader<Uint8Array>; text: string }
+    { r: { read(): Promise<{ done: boolean; value?: Uint8Array }> }; text: string }
   >();
   const dec = new TextDecoder();
   /** Đọc stdout tới khi gặp `marker` (đợi tín hiệu, không ngủ); marker rỗng = đọc tới hết. Trả toàn bộ chữ đã đọc. */
@@ -143,12 +143,13 @@ d("evotest boot.sh · -Exclusive", () => {
       s = { r: (p.stdout as ReadableStream<Uint8Array>).getReader(), text: "" };
       readers.set(p, s);
     }
-    while (marker === "" || !s.text.includes(marker)) {
-      const { done, value } = await s.r.read();
+    const st = s;
+    while (marker === "" || !st.text.includes(marker)) {
+      const { done, value } = await st.r.read();
       if (done) break;
-      s.text += dec.decode(value);
+      st.text += dec.decode(value);
     }
-    return s.text;
+    return st.text;
   }
   it("lượt thường xếp hàng khi có exclusive, chỉ chạy SAU khi exclusive xong và nhả khoá; in tải đầu/cuối", async () => {
     const home = tmp();
