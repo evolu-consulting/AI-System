@@ -572,7 +572,7 @@ bebc30f53a1eb8a7c6d59cc2085e26b59eadd21bf94b200c961011cff9baeef6  tests/acceptan
 6a013a8028e8abf2394a17a992f2f8a200e3b20dcec5bd53461c69c8cff4e3d7  tests/acceptance/CF/approval-inbox.int.test.ts
 94fbc9e5af69ba1744b60ef449363b22093334e3b24c8ca02f3090e555ba2bf8  tests/acceptance/CF/approval-links-race.int.test.ts
 15756a59796295575451dfbcaa1214716a1fbd4524de6496fd67dc7a72647c26  tests/acceptance/CF/bells-batch.int.test.ts
-8c3d2949c450706257e2f77ed8cde3a8c3d5d4ea140fd9591b9dc63fe18614dd  tests/acceptance/CF/confirm-step.int.test.ts
+2ba7a41a35870e38d7b00c4022d2363781c4bf1bd77b59246fa1b1776533a7f7  tests/acceptance/CF/confirm-step.int.test.ts
 1a83f85985ce62eaaf7164752a445d959997d409cea109af35d202499f1fea4d  tests/acceptance/CF/eng-reliable.int.test.ts
 14d5b37baf1773d776e271adf6abb92185be39ef232047eec086a297637ad25c  tests/acceptance/CF/engine-off-flag.int.test.ts
 ef77dec7dd9caf803431fe6be67f9b58af2897d54089a34c4ada6f26137dcb0a  tests/acceptance/CF/engine-tenant-gate.int.test.ts

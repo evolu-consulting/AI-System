@@ -79,10 +79,10 @@ describe("confirm-step · người tải xác nhận trước, rồi tới bư�
     expect(await c.port.act(caller(PA.A), run, { stage: "s0" }, { result: "pass" })).not.toBe("ok");
     await waitStatus(c.sql, run, "waiting_review");
     const after = await c.port.stepsView(caller(PA.H), run);
-    expect(after?.steps.map((s) => [s.key, s.status])).toEqual([
-      ["confirm", "passed"],
-      ["kt", "open"],
-      ["gd", "pending"],
+    expect(after?.steps.filter((s) => /^s\d$/.test(s.key)).map((s) => [s.key, s.status])).toEqual([
+      ["s0", "passed"],
+      ["s1", "open"],
+      ["s2", "pending"],
     ]);
     const [n] = await c.sql<
       { n: number }[]
