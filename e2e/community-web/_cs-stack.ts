@@ -118,7 +118,7 @@ if (import.meta.main) {
   const api = spawn("apps/admin-api/src/server.ts", {
     APP_ENV: "test",
     PORT: String(PORTS.api),
-    CORS_ORIGINS: origin,
+    CORS_ORIGINS: [origin, process.env.CS_ADMIN_ORIGIN].filter(Boolean).join(","),
     ADMIN_API_DATABASE_URL: env("TEST_ADMIN_API_DATABASE_URL"),
     ADMIN_HUB_URL: hubUrl,
   });
@@ -128,7 +128,7 @@ if (import.meta.main) {
     HUB_DATABASE_URL: hubDbUrl(env("TEST_DATABASE_URL")),
     REDIS_URL: `redis://localhost:6379/${env("CS_REDIS_DB")}`,
     HUB_INSTANCE_ID: "e2e-cs",
-    HUB_CORS_ORIGINS: origin,
+    HUB_CORS_ORIGINS: [origin, process.env.CS_ADMIN_ORIGIN].filter(Boolean).join(","),
     HUB_CONFIG_POLL_S: "2",
   });
   const stop = (): void => {

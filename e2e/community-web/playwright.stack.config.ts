@@ -22,7 +22,13 @@ const need = (name: string): string => {
 };
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
 const SH = Number(process.env.E2E_PORT_SHIFT ?? 0);
-const P = { web: 3400 + SH, api: 3401 + SH, hub: 3402 + SH, ready: 3403 + SH } as const;
+const P = {
+  web: 3400 + SH,
+  api: 3401 + SH,
+  hub: 3402 + SH,
+  ready: 3403 + SH,
+  admin: 3405 + SH,
+} as const;
 const WEB = `http://localhost:${P.web}`;
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
 const EXTERNAL = process.env.CS_EXTERNAL === "1";
@@ -31,6 +37,8 @@ const EXTERNAL = process.env.CS_EXTERNAL === "1";
 process.env.DEMO_OWNER_PW ||= `${randomBytes(12).toString("base64url")}-Aa1`;
 process.env.COMMUNITY_SEED_PW_FILE ||= resolve("test-results/community-stack-seed/pw.json");
 process.env.COMMUNITY_URL ||= WEB;
+// CR-120: ai-admin (platform admin gán quy trình duyệt bài ở hành trình `flows.cs.ts`).
+process.env.CS_ADMIN_URL ||= `http://localhost:${P.admin}`;
 
 export default defineConfig({
   testDir: ".",
@@ -78,6 +86,7 @@ export default defineConfig({
             CS_HUB_PORT: String(P.hub),
             CS_READY_PORT: String(P.ready),
             CS_WEB_ORIGIN: WEB,
+            CS_ADMIN_ORIGIN: `http://localhost:${P.admin}`,
             // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
             CS_REDIS_DB: process.env.CS_REDIS_DB ?? "13",
           },
@@ -93,6 +102,19 @@ export default defineConfig({
             PUBLIC_COMMUNITY_API: "http",
             ADMIN_API_URL: `http://localhost:${P.api}`,
             HUB_URL: `http://localhost:${P.hub}`,
+          },
+        },
+        {
+          command: `bun run --filter @ai/admin-web build && bun run --filter @ai/admin-web preview --port ${P.admin}`,
+          cwd: "../..",
+          url: `http://localhost:${P.admin}`,
+          reuseExistingServer: false,
+          timeout: 300_000,
+          env: {
+            E2E_DIST_DIR: "dist-e2e/cs-admin",
+            ADMIN_API_URL: `http://localhost:${P.api}`,
+            PUBLIC_HUB_URL: `http://localhost:${P.hub}`,
+            PUBLIC_FROZEN_MODULES: "on",
           },
         },
       ],
