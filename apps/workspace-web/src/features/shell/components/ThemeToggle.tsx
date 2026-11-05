@@ -6,12 +6,13 @@ import { Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 /** Giao diện đang HIỆU LỰC trên trang (lựa chọn riêng > mặc định công ty > theo máy) — đọc từ `html[data-theme]`. */
-const isDark = (): boolean => document.documentElement.dataset.theme === "dark";
+/** `_theme` chỉ để vẽ lại khi đổi lựa chọn (React Compiler không ghi nhớ kết quả khi tham số đổi). */
+const isDark = (_theme: string): boolean => document.documentElement.dataset.theme === "dark";
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { t } = useTranslation();
-  usePrefs(); // đăng ký: đổi giao diện ở đâu cũng vẽ lại
-  const dark = isDark();
+  const { theme } = usePrefs(); // đổi giao diện ở đâu cũng vẽ lại
+  const dark = isDark(theme);
   const label = t("contracts.shell.themeToggle");
   return (
     <button

@@ -23,7 +23,7 @@ export type MeState = {
 };
 
 /** `enabled=false` (CR-120): AppShell trong vùng Community của đối tác — KHÔNG gọi `/pack/contracts/me` (không gói contracts). */
-export function useMe(opts: { enabled?: boolean } = {}): MeState {
+export function useMe(opts: { enabled?: boolean; handle401?: boolean } = {}): MeState {
   const { t } = useTranslation();
   const user = useSession((s) => s.me);
   const q = useQuery({
@@ -35,11 +35,13 @@ export function useMe(opts: { enabled?: boolean } = {}): MeState {
   });
   const unauthorized = q.isError && errorKind(q.error) === "unauthorized";
 
+  const handle401 = opts.handle401 ?? true;
   useEffect(() => {
-    if (!unauthorized || session.getState().status !== "authed") return;
+    // Một chỗ xử lý hết phiên (ContractsGate); bản của AppShell (handle401=false) không đăng xuất lần hai.
+    if (!handle401 || !unauthorized || session.getState().status !== "authed") return;
     toast(t("contracts.session.expired"), "late");
     void logout();
-  }, [unauthorized, t]);
+  }, [handle401, unauthorized, t]);
 
   const view = q.data ? packView(q.data) : null;
   const ok = view?.kind === "ok" ? view : null;

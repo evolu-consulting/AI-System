@@ -25,7 +25,8 @@ export type NavEntry = {
 /** Mục menu tài khoản do module đóng góp (vd Community: Tường nhà · Cài đặt chung). */
 export type AccountEntry = {
   to: string;
-  search?: Readonly<Record<string, string>>;
+  /** Số (không phải chuỗi): router mã hoá chuỗi "1" thành `%221%22`, số 1 thành `1`. */
+  search?: Readonly<Record<string, string | number>>;
   labelKey: string;
   icon: NavIconType;
   testId?: string;

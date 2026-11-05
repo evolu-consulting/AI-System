@@ -56,6 +56,7 @@ test("thành viên SHT: đăng nhập vào /overview, đăng xuất xoá phiên"
   await expect(page.getByRole("link", { name: "Bảng tin" })).toBeVisible();
   await page.getByRole("button", { name: "Tài khoản" }).click();
   await page.getByRole("menuitem", { name: "Đăng xuất" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Đăng xuất" }).click(); // menu chung hỏi xác nhận
   await expect(page).toHaveURL(/\/login/);
   expect(await refreshStatus(page)).toBe(401);
   await page.goto("/contracts");

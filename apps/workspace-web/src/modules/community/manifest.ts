@@ -93,7 +93,7 @@ export const communityManifest = {
     { to: `${COMMUNITY_BASE}/profile`, labelKey: "contracts.shell.menuProfile", icon: User },
     {
       to: COMMUNITY_BASE,
-      search: { settings: "1" },
+      search: { settings: 1 },
       labelKey: "contracts.shell.menuCommunitySettings",
       icon: Settings,
     },
