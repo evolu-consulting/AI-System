@@ -78,12 +78,22 @@ export function flowsRoutes(d: CommunityDeps, f: svc.FlowDeps): Hono<PackGuardVa
     const a = await access(c);
     const rev = svc.reviewer(a);
     const on = await svc.moderationEnabled(f, a.who.tenantId);
+    // CR-121 C-7 · số đếm + hộp HĐ chờ duyệt: độc lập nhau ⇒ chạy song song (mỗi bên 1 câu SQL cố định).
+    const hasContracts = a.who.userKind !== "external" && a.org === null && !!f.contractsInbox;
+    const [pc, inbox] = await Promise.all([
+      svc.navCounts(f, a),
+      hasContracts && f.contractsInbox
+        ? f.contractsInbox(a.who)
+        : Promise.resolve({ visible: false, count: 0 }),
+    ]);
     const nav: FlowNav = {
       moderationQueue: rev && on,
       moderationOn: on,
       joinSubmit: a.org !== null,
       joinReview: rev,
       reports: rev,
+      counts: { review: rev && on ? pc.review : 0, join: pc.join, reports: pc.reports },
+      contracts: { review: inbox.visible, count: inbox.visible ? inbox.count : 0 },
     };
     return c.json(nav);
   });

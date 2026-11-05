@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { flowRuntime } from "~/platform/flow";
+import { notifyFlowNavChanged } from "~/shared/kernel/flow-nav-event";
 import {
   approvalKey,
   cancelReopenApproval,
@@ -97,6 +98,7 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
           flowActionOf(body),
         );
         setMsg(t(label ?? DONE_KEY[body.action]));
+        notifyFlowNavChanged(); // C-7 · số "Chờ tôi duyệt" ở menu giảm ngay
         await refresh();
         return { ok: true, step: out.view.phase };
       } catch (e) {

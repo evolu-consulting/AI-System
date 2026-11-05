@@ -82,6 +82,22 @@ export async function modQueue(tx: Tx, limit: number): Promise<ModPostRow[]> {
   ];
 }
 
+/** CR-121 C-7 · số hàng chờ của 3 hàng việc người duyệt — MỘT câu (3 subquery đếm theo index một phần/`(tenant_id, status, …)`), RLS tenant. */
+export async function pendingCounts(
+  tx: Tx,
+  tenantId: string,
+): Promise<{ review: number; join: number; reports: number }> {
+  const [r] = await tx.execute<{ review: number; join: number; reports: number }>(sql`select
+      (select count(*) from community.posts p where p.tenant_id = ${tenantId}::uuid and p.moderation = 'pending')::int as review,
+      (select count(*) from community.join_requests j where j.tenant_id = ${tenantId}::uuid and j.status = 'pending')::int as join,
+      (select count(*) from community.reports r where r.tenant_id = ${tenantId}::uuid and r.status = 'pending')::int as reports`);
+  return {
+    review: Number(r?.review ?? 0),
+    join: Number(r?.join ?? 0),
+    reports: Number(r?.reports ?? 0),
+  };
+}
+
 /** Bài của chính người xem đang/đã qua duyệt (mới trước). */
 export async function myModeration(tx: Tx, userId: string, limit: number): Promise<ModPostRow[]> {
   return [

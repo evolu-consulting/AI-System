@@ -134,6 +134,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
       signal: d.signal,
       fb,
       redis: d.redis,
+      runs: d.packRuns, // CR-121 C-7 · số HĐ chờ duyệt cho menu
       limitsOf: tenantLimits(d), // tệp/ngày + (CR-120) trần token agent screen/triage
     }); // CR-102 · com-c3 · bảng tin chủ quản ↔ đối tác
     mountDlcWired({ ...d, db: d.db }); // dlc-engine · khe DLC + tool bước DLC (Agent Hub qua cầu `dlcAgents`)

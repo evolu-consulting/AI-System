@@ -213,7 +213,17 @@
       },
       "review": "Review posts",
       "join": "Join requests",
-      "reports": "Reported posts"
+      "reports": "Reported posts",
+      "approvals": "Awaiting my approval",
+      "pending": "{{n}} pending"
+    },
+    "approvalsPage": {
+      "title": "Awaiting my approval",
+      "subtitle": "Contracts waiting for your decision at an approval step. Open a contract to approve, send back or reject it.",
+      "emptyTitle": "No contracts are waiting for your approval",
+      "emptyBody": "Contracts appear here when they reach an approval step you are responsible for. The number in the menu updates automatically.",
+      "emptyNext": "View all contracts",
+      "loadError": "Could not load the list. Try reloading the page."
     },
     "productsPage": {
       "title": "Products & Prices",

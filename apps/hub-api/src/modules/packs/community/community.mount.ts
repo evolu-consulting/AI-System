@@ -85,6 +85,7 @@ export function communityModule(
     sys: uow,
     agents: fo.agents,
     moderationOn: fo.moderationOn,
+    contractsInbox: fo.contractsInbox,
     background: fo.background,
     warn: (m, meta) => console.warn(m, meta),
     onApproved: async (p, tenantId) => {
@@ -138,6 +139,8 @@ export type CommunityFlowOpts = {
   agents?: FlowAgents | undefined;
   moderationOn?: ((tenantId: string) => Promise<boolean>) | undefined;
   tenantAdmin?: ((who: PackWho) => Promise<boolean>) | undefined;
+  /** CR-121 C-7 · hộp "Chờ tôi duyệt" của Sổ Hợp Tác cho menu (`flows/nav`). */
+  contractsInbox?: ((who: PackWho) => Promise<{ visible: boolean; count: number }>) | undefined;
   background?: ((p: Promise<unknown>) => void) | undefined;
   /** Seam test của cờ `HUB_FLOW_RUNTIME` (vắng ⇒ env). */
   runtimeOn?: boolean | undefined;

@@ -1,5 +1,6 @@
 // PK-FR-10 · TF5 · nav-v2 (người dùng chốt 2026-10-20): 4 mục menu — Tổng quan · Hợp đồng · Đối tác · Sản phẩm & Giá — theo mockup NITI;
 // vai suy từ quyền gói (`write`/`owner`). CR-119 p2: mọi đường dẫn dưới `/contracts`; tuyến cũ chuyển hướng bằng shared/kernel/legacy-routes.
+import { ClipboardCheck } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { IconBox, IconContract, IconOverview, IconPartners } from "~/components/icons";
 import { basePathOf } from "~/shared/kernel/app-path";
@@ -8,9 +9,17 @@ import { basePathOf } from "~/shared/kernel/app-path";
 const B = basePathOf("contracts");
 
 export type NavItem = {
-  to: "/contracts" | "/contracts/list" | "/contracts/partners" | "/contracts/products";
+  to:
+    | "/contracts"
+    | "/contracts/list"
+    | "/contracts/approvals"
+    | "/contracts/partners"
+    | "/contracts/products";
   labelKey: string;
   icon: ComponentType<SVGProps<SVGSVGElement>>;
+  testId?: string;
+  /** CR-121 C-7 · khoá quyền động (server tính, shell/use-flow-caps): có ⇒ chỉ hiện khi đúng. */
+  cap?: string;
   /** Chỉ sáng khi path đúng bằng `to` (Tổng quan = gốc app, mọi trang khác nằm dưới nó). */
   exact?: true;
   /** Tiền tố con cũng thuộc mục này (chi tiết `/contracts/c/<id>` → "Hợp đồng"). */
@@ -23,6 +32,14 @@ export const NAV: readonly NavItem[] = [
   { to: `${B}/partners`, labelKey: "contracts.nav.partners", icon: IconPartners },
   { to: `${B}/products`, labelKey: "contracts.nav.products", icon: IconBox },
 ];
+/** CR-121 C-7 · mục "Chờ tôi duyệt" (cap `contracts.review`): chỉ người có vai duyệt trong quy trình đang gán. Ngoài `NAV` (mục luôn hiện). */
+export const APPROVALS_NAV: NavItem = {
+  to: `${B}/approvals`,
+  labelKey: "contracts.nav.approvals",
+  icon: ClipboardCheck,
+  testId: "nav-contracts-approvals",
+  cap: "contracts.review",
+};
 export type Role = "owner" | "editor" | "viewer";
 
 export const roleOf = (p: { write: boolean; owner: boolean }): Role =>

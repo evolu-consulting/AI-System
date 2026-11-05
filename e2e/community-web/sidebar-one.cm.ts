@@ -37,6 +37,55 @@ test("Community → Sổ Hợp Tác: cùng một thanh trái (shell-sidebar), m�
   await expect(page.locator("aside.rail nav, nav.sidenav")).toHaveCount(0);
 });
 
+// CR-121 C-7 · mục hàng việc có badge số (0 ⇒ không có, trên 99 ⇒ "99+") ở cả hai app + mục "Chờ tôi duyệt" của Sổ Hợp Tác
+// (chỉ khi server báo có vai duyệt) + trang rỗng nói rõ lý do/bước kế. Số do server tính — test giả lập MỘT phản hồi `flows/nav`.
+test("Menu: badge số cho Duyệt bài / Yêu cầu tham gia / Chờ tôi duyệt; 0 ẩn, >99 hiện 99+; trang Chờ tôi duyệt rỗng có hướng dẫn", async ({
+  page,
+}) => {
+  const nav = {
+    moderationQueue: true,
+    moderationOn: true,
+    joinSubmit: false,
+    joinReview: true,
+    reports: true,
+    counts: { review: 3, join: 120, reports: 0 },
+    contracts: { review: true, count: 2 },
+  };
+  await page.route("**/pack/community/flows/nav", (r) => r.fulfill({ json: nav }));
+  await page.route("**/pack/contracts/my-work", (r) =>
+    r.fulfill({ json: { followups: [], approvals: [] } }),
+  );
+  await page.goto("/community");
+  await page.getByLabel("Chọn nhân vật").selectOption("an");
+  const side = page.getByTestId("shell-sidebar");
+  const badge = (to: string) => side.locator(`[data-nav-item="${to}"] [data-testid="nav-badge"]`);
+  await expect(badge("/community/review")).toHaveText("3");
+  await expect(badge("/community/join")).toHaveText("99+");
+  await expect(badge("/community/reports")).toHaveCount(0); // 0 ⇒ không hiện badge
+  await expect(badge("/contracts/approvals")).toHaveText("2");
+  // badge 16 px, cùng kiểu chuông Header
+  const h = await badge("/community/review").evaluate((el) =>
+    Math.round(el.getBoundingClientRect().height),
+  );
+  expect(h).toBe(16);
+  // trang Chờ tôi duyệt: rỗng ⇒ câu giải thích + bước kế
+  await side.locator('[data-nav-item="/contracts/approvals"]').click();
+  await expect(page).toHaveURL(/\/contracts\/approvals/);
+  await expect(page.getByTestId("approvals-empty")).toContainText(
+    "Hiện không có hợp đồng nào chờ bạn duyệt",
+  );
+  await expect(page.getByTestId("approvals-empty").getByRole("link")).toHaveText(
+    "Xem tất cả hợp đồng",
+  );
+  // người không có vai duyệt ⇒ không có mục
+  await page.unroute("**/pack/community/flows/nav");
+  await page.route("**/pack/community/flows/nav", (r) =>
+    r.fulfill({ json: { ...nav, contracts: { review: false, count: 0 } } }),
+  );
+  await page.reload();
+  await expect(side.locator('[data-nav-item="/contracts/approvals"]')).toHaveCount(0);
+});
+
 // CR-121 C-6 · cùng khung nhìn: biểu tượng menu cùng cỡ, cụm nút Header cùng testid, một nút trợ lý (assistant-fab) ở cả hai module.
 test("Community và Sổ Hợp Tác: icon menu cùng cỡ, cụm nút Header cùng testid, nút trợ lý cùng testid", async ({
   page,

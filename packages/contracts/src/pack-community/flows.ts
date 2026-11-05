@@ -92,5 +92,13 @@ export const FlowNavSchema = z.strictObject({
   /** Người duyệt xem/quyết yêu cầu tham gia + báo cáo vi phạm. */
   joinReview: z.boolean(),
   reports: z.boolean(),
+  /** CR-121 C-7 · số hàng chờ MỖI mục hàng việc (0 ⇒ không hiện badge); chỉ đếm cho mục người xem được thấy. Server đếm theo tập. */
+  counts: z.strictObject({
+    review: z.number().int().min(0),
+    join: z.number().int().min(0),
+    reports: z.number().int().min(0),
+  }),
+  /** CR-121 C-7 · Sổ Hợp Tác "Chờ tôi duyệt": người có vai duyệt trong quy trình đang gán (hoặc đang có việc) + số HĐ chờ. */
+  contracts: z.strictObject({ review: z.boolean(), count: z.number().int().min(0) }),
 });
 export type FlowNav = z.infer<typeof FlowNavSchema>;

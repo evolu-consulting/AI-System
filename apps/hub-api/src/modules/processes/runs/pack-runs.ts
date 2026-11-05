@@ -33,7 +33,7 @@ import { GateService } from "../gates/gates.service";
 import { resolveSlot, resolveSlotDef } from "../library/slot-resolve.repo";
 import { routeSlot } from "../library/slot-route.repo";
 import { defSourceRef } from "../library/source-ref";
-import { openTaskFor, openTasksOf, stepsView, UUID } from "./pack-runs-view";
+import { inboxOf, openTaskFor, openTasksOf, stepsView, UUID } from "./pack-runs-view";
 import { signalPackEvent } from "./pack-signal";
 import { StartService } from "./start.service";
 
@@ -381,5 +381,6 @@ export function packRunsOf(d: ProcessDeps, sys?: Pick<SystemUow, "system">): Pac
     ...sysReads(d),
     stepsView: (u, runId) => stepsView(d, u, runId),
     openTasksOf: (u, packKey) => openTasksOf(d, u, packKey),
+    inboxOf: (u, packKey, slot) => inboxOf(d, u, packKey, slot),
   };
 }

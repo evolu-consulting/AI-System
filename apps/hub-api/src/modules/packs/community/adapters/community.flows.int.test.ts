@@ -26,6 +26,8 @@ const ORG: Partial<Record<Who, "S1" | "S2" | "B2">> = { s1a: "S1", s1b: "S1", s2
 
 // ---- seams
 let moderationOn = true;
+/** C-7 · kết quả cổng hộp "HĐ chờ duyệt" (SQL thật của nó có int riêng: tests/acceptance/CF/approval-inbox-count). */
+let inbox = { visible: false, count: 0 };
 type AgentOut = { ok: true; text: string } | { ok: false; code: string };
 let agentOut: (key: string, prompt: string) => AgentOut = () => ({
   ok: true,
@@ -121,6 +123,7 @@ beforeAll(async () => {
           },
         },
         moderationOn: async () => moderationOn,
+        contractsInbox: async () => inbox,
         background: (p) => {
           bg.push(p);
         },
@@ -521,21 +524,21 @@ describe("khe community.report [CR-120]", () => {
 describe("GET /flows/nav [CR-120]", () => {
   it("người duyệt + duyệt bài bật ⇒ đủ, thành viên thường ⇒ không, đối tác ⇒ chỉ gửi yêu cầu, công ty chưa bật khe ⇒ không có hàng chờ", async () => {
     moderationOn = true;
-    expect((await call("hA", "GET", "/flows/nav")).json).toEqual({
+    expect((await call("hA", "GET", "/flows/nav")).json).toMatchObject({
       moderationQueue: true,
       moderationOn: true,
       joinSubmit: false,
       joinReview: true,
       reports: true,
     });
-    expect((await call("hM", "GET", "/flows/nav")).json).toEqual({
+    expect((await call("hM", "GET", "/flows/nav")).json).toMatchObject({
       moderationQueue: false,
       moderationOn: true,
       joinSubmit: false,
       joinReview: false,
       reports: false,
     });
-    expect((await call("s2", "GET", "/flows/nav")).json).toEqual({
+    expect((await call("s2", "GET", "/flows/nav")).json).toMatchObject({
       moderationQueue: false,
       moderationOn: true,
       joinSubmit: true,
@@ -546,5 +549,35 @@ describe("GET /flows/nav [CR-120]", () => {
     const off = (await call("hA", "GET", "/flows/nav")).json;
     expect(off).toMatchObject({ moderationQueue: false, moderationOn: false, reports: true });
     moderationOn = true;
+  });
+
+  it("C-7 · số đếm: người duyệt thấy đúng số công ty mình (không lẫn công ty khác), người khác 0; hộp HĐ chờ duyệt chỉ cho người nội bộ", async () => {
+    const mk = (t: string, k: string[]) =>
+      seedPosts(
+        sql,
+        t,
+        k.map((key) => ({ key, type: "note", org: null, author: c.hA })),
+      );
+    const ids = [
+      ...(await mk(c.A, ["C7_a"])).values(),
+      ...(await mk(c.B, ["C7_b1", "C7_b2"])).values(),
+    ];
+    await sql`update community.posts set moderation = 'pending', mod_at = now() where id = any(${ids}::uuid[])`;
+    const [w] =
+      await sql`select (select count(*)::int from community.posts where tenant_id = ${c.A}::uuid and moderation = 'pending') as review,
+      (select count(*)::int from community.join_requests where tenant_id = ${c.A}::uuid and status = 'pending') as join,
+      (select count(*)::int from community.reports where tenant_id = ${c.A}::uuid and status = 'pending') as reports`;
+    expect(w?.review).toBeGreaterThanOrEqual(1); // chỉ A; 2 bài chờ của B không được cộng
+    expect((await call("hA", "GET", "/flows/nav")).json.counts).toEqual(w);
+    const zero = { review: 0, join: 0, reports: 0 };
+    for (const u of ["hM", "s2"] as const)
+      expect((await call(u, "GET", "/flows/nav")).json.counts).toEqual(zero);
+    const ct = async (u: Who) => (await call(u, "GET", "/flows/nav")).json.contracts;
+    inbox = { visible: true, count: 5 };
+    expect(await ct("hM")).toEqual({ review: true, count: 5 });
+    expect(await ct("s2")).toEqual({ review: false, count: 0 }); // đối tác không bao giờ
+    inbox = { visible: false, count: 9 }; // không có vai duyệt ⇒ không lộ số
+    expect(await ct("hM")).toEqual({ review: false, count: 0 });
+    inbox = { visible: false, count: 0 };
   });
 });

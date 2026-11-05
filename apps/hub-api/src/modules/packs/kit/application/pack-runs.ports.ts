@@ -188,6 +188,12 @@ export type PackRunsPort = {
   /** S1b · task duyệt MỞ của run gói `packKey` (tenant người gọi) mà `u` quyết được — cùng luật `canAct` (Group duyệt,
    *  head_only, Group chuyển cấp, exclude_starter). MỘT câu SQL, scope user; thứ tự tạo task. */
   openTasksOf(u: PackRunCaller, packKey: string): Promise<PackOpenTask[]>;
+  /** CR-121 C-7 · số task duyệt mở `u` quyết được + `u` có vai duyệt trong quy trình đang gán cho `slot` (menu "Chờ tôi duyệt"); MỘT câu SQL. */
+  inboxOf?(
+    u: PackRunCaller,
+    packKey: string,
+    slot: string,
+  ): Promise<{ count: number; approver: boolean }>;
   /** CR-107 · "Thử lại" run gói đang `needs_decision`: quyết decision mở bằng `add_attempt` (= `POST /process-runs/:id/decide`)
    *  dưới `u` với vai admin — GÓI đã kiểm quyền admin gói trước khi gọi. Run không gắn gói / không có decision mở ⇒ "not_open". */
   retryDecision(u: PackRunCaller, runId: string): Promise<"ok" | "not_open">;

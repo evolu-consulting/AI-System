@@ -9,7 +9,7 @@ import { cn } from "~/lib/utils";
 import type { NavEntry } from "~/shared/kernel/module-manifest";
 import { MODULES } from "~/shell/modules";
 import { activeEntry, buildShellNav, type ShellNavGroup } from "~/shell/nav";
-import { useFlowCaps } from "~/shell/use-flow-caps";
+import { badgeText, useFlowCaps } from "~/shell/use-flow-caps";
 import { useShellPacks } from "~/shell/use-shell-packs";
 import type { Role } from "../lib/nav";
 import { BrandMark } from "./BrandMark";
@@ -30,7 +30,37 @@ export function NavIcon({ icon: Icon }: { icon: NavEntry["icon"] }) {
   );
 }
 
-function SideLink({ n, wide, current }: { n: NavEntry; wide: boolean; current: boolean }) {
+/** CR-121 C-7 · badge 16 px (cùng kiểu chuông ở Header): 0 ⇒ không có; trên 99 ⇒ "99+". */
+export function NavBadge({ count, className }: { count: number; className?: string }) {
+  const { t } = useTranslation();
+  const text = badgeText(count);
+  if (!text) return null;
+  return (
+    <span
+      data-testid="nav-badge"
+      role="img"
+      aria-label={t("contracts.nav.pending", { n: count })}
+      className={cn(
+        "grid h-4 min-w-4 place-items-center rounded-full bg-late px-1 text-micro font-semibold text-panel",
+        className,
+      )}
+    >
+      {text}
+    </span>
+  );
+}
+
+function SideLink({
+  n,
+  wide,
+  current,
+  count,
+}: {
+  n: NavEntry;
+  wide: boolean;
+  current: boolean;
+  count: number;
+}) {
   const { t } = useTranslation();
   return (
     <Link
@@ -42,8 +72,12 @@ function SideLink({ n, wide, current }: { n: NavEntry; wide: boolean; current: b
       title={wide ? undefined : t(n.labelKey)}
       className="flex h-11 items-center gap-3 overflow-hidden rounded-[10px] px-3 text-body whitespace-nowrap text-ink-2 transition-colors hover:bg-sunk aria-[current=page]:bg-act-soft aria-[current=page]:font-semibold aria-[current=page]:text-act"
     >
-      <NavIcon icon={n.icon} />
+      <span className="relative shrink-0">
+        <NavIcon icon={n.icon} />
+        {!wide && <NavBadge count={count} className="absolute -top-1.5 -right-1.5" />}
+      </span>
       <span className={wide ? "" : "sr-only"}>{t(n.labelKey)}</span>
+      {wide && <NavBadge count={count} className="ml-auto" />}
     </Link>
   );
 }
@@ -53,11 +87,13 @@ function Group({
   wide,
   pathname,
   first,
+  badgeOf,
 }: {
   g: ShellNavGroup;
   wide: boolean;
   pathname: string;
   first: boolean;
+  badgeOf: (cap: string) => number;
 }) {
   const { t } = useTranslation();
   const on = activeEntry(g, pathname);
@@ -76,7 +112,13 @@ function Group({
         !first && <hr className="mx-3 my-1.5 border-rule-soft" />
       )}
       {g.items.map((n) => (
-        <SideLink key={n.to} n={n} wide={wide} current={on === n} />
+        <SideLink
+          key={n.to}
+          n={n}
+          wide={wide}
+          current={on === n}
+          count={n.cap ? badgeOf(n.cap) : 0}
+        />
       ))}
     </div>
   );
@@ -96,7 +138,7 @@ export function Sidebar({
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const packs = useShellPacks();
-  const hasCap = useFlowCaps(packs.community === true, pathname);
+  const { hasCap, badgeOf } = useFlowCaps(packs.community === true, pathname);
   const groups = useMemo(
     () => buildShellNav(MODULES, (p) => packs[p] === true, hasCap),
     [packs, hasCap],
@@ -135,7 +177,14 @@ export function Sidebar({
         )}
       </Link>
       {groups.map((g, i) => (
-        <Group key={g.key} g={g} wide={pinned} pathname={pathname} first={i === 0} />
+        <Group
+          key={g.key}
+          g={g}
+          wide={pinned}
+          pathname={pathname}
+          first={i === 0}
+          badgeOf={badgeOf}
+        />
       ))}
       <div className="mt-auto flex flex-col gap-1 pt-2">
         <UserMenu user={user} role={role} onLogout={onLogout} side wide={pinned} />

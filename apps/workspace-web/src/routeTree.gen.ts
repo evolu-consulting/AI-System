@@ -23,6 +23,7 @@ import { Route as AuthedContractsIndexRouteImport } from './routes/_authed/contr
 import { Route as AuthedContractsFeedbackRouteImport } from './routes/_authed/contracts/feedback'
 import { Route as AuthedContractsListRouteImport } from './routes/_authed/contracts/list'
 import { Route as AuthedContractsNotificationsRouteImport } from './routes/_authed/contracts/notifications'
+import { Route as AuthedContractsApprovalsRouteImport } from './routes/_authed/contracts/approvals'
 import { Route as AuthedContractsPartnersRouteImport } from './routes/_authed/contracts/partners'
 import { Route as AuthedContractsProductsRouteImport } from './routes/_authed/contracts/products'
 import { Route as AuthedContractsCIdRouteImport } from './routes/_authed/contracts/c/$id'
@@ -100,6 +101,11 @@ const AuthedContractsNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthedContractsRoute,
   } as any)
+const AuthedContractsApprovalsRoute = AuthedContractsApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
+  getParentRoute: () => AuthedContractsRoute,
+} as any)
 const AuthedContractsPartnersRoute = AuthedContractsPartnersRouteImport.update({
   id: '/partners',
   path: '/partners',
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/contracts/feedback': typeof AuthedContractsFeedbackRoute
   '/contracts/list': typeof AuthedContractsListRoute
   '/contracts/notifications': typeof AuthedContractsNotificationsRoute
+  '/contracts/approvals': typeof AuthedContractsApprovalsRoute
   '/contracts/partners': typeof AuthedContractsPartnersRoute
   '/contracts/products': typeof AuthedContractsProductsRoute
   '/community/': typeof AuthedCommunityIndexRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/contracts/feedback': typeof AuthedContractsFeedbackRoute
   '/contracts/list': typeof AuthedContractsListRoute
   '/contracts/notifications': typeof AuthedContractsNotificationsRoute
+  '/contracts/approvals': typeof AuthedContractsApprovalsRoute
   '/contracts/partners': typeof AuthedContractsPartnersRoute
   '/contracts/products': typeof AuthedContractsProductsRoute
   '/community': typeof AuthedCommunityIndexRoute
@@ -187,6 +195,7 @@ export interface FileRoutesById {
   '/_authed/contracts/feedback': typeof AuthedContractsFeedbackRoute
   '/_authed/contracts/list': typeof AuthedContractsListRoute
   '/_authed/contracts/notifications': typeof AuthedContractsNotificationsRoute
+  '/_authed/contracts/approvals': typeof AuthedContractsApprovalsRoute
   '/_authed/contracts/partners': typeof AuthedContractsPartnersRoute
   '/_authed/contracts/products': typeof AuthedContractsProductsRoute
   '/_authed/community/': typeof AuthedCommunityIndexRoute
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/contracts/feedback'
     | '/contracts/list'
     | '/contracts/notifications'
+    | '/contracts/approvals'
     | '/contracts/partners'
     | '/contracts/products'
     | '/community/'
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/contracts/feedback'
     | '/contracts/list'
     | '/contracts/notifications'
+    | '/contracts/approvals'
     | '/contracts/partners'
     | '/contracts/products'
     | '/community'
@@ -251,6 +262,7 @@ export interface FileRouteTypes {
     | '/_authed/contracts/feedback'
     | '/_authed/contracts/list'
     | '/_authed/contracts/notifications'
+    | '/_authed/contracts/approvals'
     | '/_authed/contracts/partners'
     | '/_authed/contracts/products'
     | '/_authed/community/'
@@ -370,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedContractsNotificationsRouteImport
       parentRoute: typeof AuthedContractsRoute
     }
+    '/_authed/contracts/approvals': {
+      id: '/_authed/contracts/approvals'
+      path: '/approvals'
+      fullPath: '/contracts/approvals'
+      preLoaderRoute: typeof AuthedContractsApprovalsRouteImport
+      parentRoute: typeof AuthedContractsRoute
+    }
     '/_authed/contracts/partners': {
       id: '/_authed/contracts/partners'
       path: '/partners'
@@ -433,6 +452,7 @@ interface AuthedContractsRouteChildren {
   AuthedContractsFeedbackRoute: typeof AuthedContractsFeedbackRoute
   AuthedContractsListRoute: typeof AuthedContractsListRoute
   AuthedContractsNotificationsRoute: typeof AuthedContractsNotificationsRoute
+  AuthedContractsApprovalsRoute: typeof AuthedContractsApprovalsRoute
   AuthedContractsPartnersRoute: typeof AuthedContractsPartnersRoute
   AuthedContractsProductsRoute: typeof AuthedContractsProductsRoute
   AuthedContractsIndexRoute: typeof AuthedContractsIndexRoute
@@ -446,6 +466,7 @@ const AuthedContractsRouteChildren: AuthedContractsRouteChildren = {
   AuthedContractsFeedbackRoute: AuthedContractsFeedbackRoute,
   AuthedContractsListRoute: AuthedContractsListRoute,
   AuthedContractsNotificationsRoute: AuthedContractsNotificationsRoute,
+  AuthedContractsApprovalsRoute: AuthedContractsApprovalsRoute,
   AuthedContractsPartnersRoute: AuthedContractsPartnersRoute,
   AuthedContractsProductsRoute: AuthedContractsProductsRoute,
   AuthedContractsIndexRoute: AuthedContractsIndexRoute,

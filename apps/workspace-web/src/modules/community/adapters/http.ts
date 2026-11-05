@@ -2,6 +2,7 @@
 // token trong bộ nhớ, 401 ⇒ refresh cookie một lần). Hình dữ liệu = `@ai/contracts/community`; server quyết quyền xem.
 import type { FeedQuery, JoinRequest, Report } from "@ai/contracts/community";
 import { api, apiResponse } from "@ai/web-kit/http";
+import { notifyFlowNavChanged } from "~/shared/kernel/flow-nav-event";
 import type { CommunityApi, FlowsApi } from "../application/ports";
 import { cancelRun, createConversation, sendAndStream } from "./dock";
 
@@ -24,19 +25,26 @@ export function feedQueryString(q: FeedQuery): Record<string, string | number | 
 
 const pend = (p: boolean) => (p ? { query: { pending: "1" } } : undefined);
 const post = (body: unknown) => ({ method: "POST" as const, body });
+/** C-7 · sau mỗi quyết (duyệt/từ chối/xử lý) báo shell tải lại số đếm menu. */
+const decided = async <T>(p: Promise<T>): Promise<T> => {
+  const r = await p;
+  notifyFlowNavChanged();
+  return r;
+};
 
 export const createHttpFlows = (): FlowsApi => ({
   nav: () => api(`${BASE}/flows/nav`),
   modQueue: () => api(`${BASE}/moderation/queue`),
   myModeration: () => api(`${BASE}/moderation/mine`),
-  decideModeration: (id, input) => api(`${BASE}/moderation/${enc(id)}/decide`, post(input)),
+  decideModeration: (id, input) =>
+    decided(api(`${BASE}/moderation/${enc(id)}/decide`, post(input))),
   createJoin: (input) => api(`${BASE}/join-requests`, post(input)),
   listJoins: async (p) =>
     (await api<{ items: JoinRequest[] }>(`${BASE}/join-requests`, pend(p))).items,
-  decideJoin: (id, input) => api(`${BASE}/join-requests/${enc(id)}/decide`, post(input)),
+  decideJoin: (id, input) => decided(api(`${BASE}/join-requests/${enc(id)}/decide`, post(input))),
   reportPost: (postId, reason) => api(`${BASE}/posts/${enc(postId)}/report`, post({ reason })),
   listReports: async (p) => (await api<{ items: Report[] }>(`${BASE}/reports`, pend(p))).items,
-  decideReport: (id, input) => api(`${BASE}/reports/${enc(id)}/decide`, post(input)),
+  decideReport: (id, input) => decided(api(`${BASE}/reports/${enc(id)}/decide`, post(input))),
 });
 
 export function createHttpApi(): CommunityApi {

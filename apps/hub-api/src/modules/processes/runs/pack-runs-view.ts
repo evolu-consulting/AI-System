@@ -15,6 +15,7 @@ import type { ProcessDeps } from "../core/ports";
 import { dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules";
 import { alsoGroupsOf, canAct, headGate, overrideOnly } from "../domain/tasks/task-access.rules";
 import type { ProcessRunStatus } from "../domain/types";
+import { RESOLVE_SLOT_SQL } from "../library/slot-resolve.repo";
 
 type Ts = Date | string;
 type StageSnap = Parameters<typeof stageMeta>[0] & {
@@ -199,20 +200,8 @@ const OPEN_GATE = headGateSql("x.st", "t.tenant_id");
  * chưa kết thúc). MỘT câu, scope user (RLS T) + lọc `tenant_id` tường minh; fix-review · vào qua index một phần run gói CHƯA
  * kết thúc `process_runs_pack_open_idx` (0060; điều kiện status khớp vị từ index) ⇒ không quét lịch sử run đã xong.
  */
-export async function openTasksOf(
-  d: ProcessDeps,
-  u: PackRunCaller,
-  packKey: string,
-): Promise<PackOpenTask[]> {
-  if (!/^[a-z][a-z0-9-]{0,39}$/.test(packKey) || !UUID.test(u.tenantId)) return [];
-  const groupIds = [...((await d.config.user(u.userId))?.groupIds ?? [])].filter((g) =>
-    UUID.test(g),
-  );
-  const groups = `{${groupIds.join(",")}}`;
-  const rows = await withHubScope(d.db, userScope(u), (tx) =>
-    tx.execute<OpenRow>(sql`
-      select t.id as task_id, r.id as run_id, r.pack_record_id as record_id, x.st->>'key' as stage_key,
-        x.st->>'name' as stage_name, t.escalate_at as due_at, (t.escalated_at is not null) as escalated
+/** Mệnh đề FROM/WHERE của "task duyệt mở mà `u` quyết được" — MỘT nguồn cho danh sách (`openTasksOf`) và số đếm (`inboxOf`). */
+const openTasksFrom = (u: PackRunCaller, packKey: string, groups: string) => sql`
       from hub.process_runs r
       join hub.review_tasks t on t.process_run_id = r.id and t.tenant_id = r.tenant_id
         and t.kind = 'review' and t.status = 'open'
@@ -227,7 +216,62 @@ export async function openTasksOf(
           or (hg.gate is null and t.assignee_group_id = any(${groups}::uuid[]))
           or hg.gate = ${u.userId}::uuid
           or (t.escalated_at is not null and t.escalate_group_id = any(${groups}::uuid[]))
-          or coalesce(x.st->'after'->'also_group_ids', '[]'::jsonb) ?| ${groups}::text[])
+          or coalesce(x.st->'after'->'also_group_ids', '[]'::jsonb) ?| ${groups}::text[])`;
+
+const groupsOf = async (d: ProcessDeps, userId: string): Promise<string> => {
+  const ids = [...((await d.config.user(userId))?.groupIds ?? [])].filter((g) => UUID.test(g));
+  return `{${ids.join(",")}}`;
+};
+const PACK_KEY = /^[a-z][a-z0-9-]{0,39}$/;
+const SLOT_KEY = /^[a-z][a-z0-9-]{0,39}\.[a-z][a-z0-9-]{0,39}$/;
+
+/**
+ * CR-121 C-7 · hộp "Chờ tôi duyệt" cho menu: MỘT câu — `n` = số task duyệt mở `u` quyết được (cùng mệnh đề với `openTasksOf`),
+ * `approver` = `u` là người duyệt (Group duyệt / cũng quyết / người duyệt cụ thể) của quy trình ĐANG GÁN cho `slot` (bản xuất bản
+ * hiện hành, cùng câu `RESOLVE_SLOT_SQL`); khe chưa có quy trình ⇒ false. Lookup theo PK + index một phần run gói chưa kết thúc.
+ */
+export async function inboxOf(
+  d: ProcessDeps,
+  u: PackRunCaller,
+  packKey: string,
+  slot: string,
+): Promise<{ count: number; approver: boolean }> {
+  if (!PACK_KEY.test(packKey) || !SLOT_KEY.test(slot) || !UUID.test(u.tenantId))
+    return { count: 0, approver: false };
+  const groups = await groupsOf(d, u.userId);
+  const [r] = await withHubScope(d.db, userScope(u), (tx) =>
+    tx.execute<{ n: number | string; approver: boolean }>(sql`
+      with o as (select t.id ${openTasksFrom(u, packKey, groups)}),
+      rs as (${RESOLVE_SLOT_SQL(u.tenantId, slot)})
+      select (select count(*) from o)::int as n,
+        exists (select 1 from rs
+          join hub.process_def_releases rel on rel.def_id = rs.def_id and rel.rel_version = rs.rel_version
+          cross join lateral jsonb_array_elements(rel.stages) sg
+          where sg->'after'->>'kind' = 'review'
+            and (sg->'after'->>'group_id' = any(${groups}::text[])
+              or sg->'after'->>'approver_user_id' = ${u.userId}
+              or coalesce(sg->'after'->'also_group_ids', '[]'::jsonb) ?| ${groups}::text[]
+              -- def thư viện lưu Group theo MÃ (group_key / also_group_keys); phân giải sang id theo tenant của người xem
+              or exists (select 1 from admin.groups g
+                where g.tenant_id = ${u.tenantId}::uuid and g.id = any(${groups}::uuid[])
+                  and (g.key = sg->'after'->>'group_key'
+                    or coalesce(sg->'after'->'also_group_keys', '[]'::jsonb) ? g.key)))) as approver`),
+  );
+  return { count: Number(r?.n ?? 0), approver: r?.approver === true };
+}
+
+export async function openTasksOf(
+  d: ProcessDeps,
+  u: PackRunCaller,
+  packKey: string,
+): Promise<PackOpenTask[]> {
+  if (!PACK_KEY.test(packKey) || !UUID.test(u.tenantId)) return [];
+  const groups = await groupsOf(d, u.userId);
+  const rows = await withHubScope(d.db, userScope(u), (tx) =>
+    tx.execute<OpenRow>(sql`
+      select t.id as task_id, r.id as run_id, r.pack_record_id as record_id, x.st->>'key' as stage_key,
+        x.st->>'name' as stage_name, t.escalate_at as due_at, (t.escalated_at is not null) as escalated
+      ${openTasksFrom(u, packKey, groups)}
       order by t.created_at, t.id`),
   );
   return [...rows].map((r) => ({

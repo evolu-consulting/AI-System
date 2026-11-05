@@ -44,6 +44,8 @@ export type FlowDeps = {
   agents?: FlowAgents | undefined;
   /** Khe duyệt bài có def cho tenant (gán/luật riêng) ⇒ bài mới vào duyệt; vắng ⇒ tắt. */
   moderationOn?: ((tenantId: string) => Promise<boolean>) | undefined;
+  /** CR-121 C-7 · hộp "Chờ tôi duyệt" của Sổ Hợp Tác cho menu (nối ở packs/community-flow.mount); vắng ⇒ không có mục. */
+  contractsInbox?: ((who: PackWho) => Promise<{ visible: boolean; count: number }>) | undefined;
   /** Seam test: nhận promise việc nền (await để chờ xong, không ngủ). */
   background?: ((p: Promise<unknown>) => void) | undefined;
   /** Bài được duyệt (tự động hoặc tay) ⇒ phát chuông bài mới. */
@@ -54,6 +56,12 @@ export type FlowDeps = {
 };
 
 export const reviewer = (a: Access): boolean => a.org === null && a.isAdmin;
+
+/** CR-121 C-7 · số đếm cho menu: chỉ đếm khi người xem là người duyệt (đối tác/thành viên ⇒ 0, không tốn câu SQL). */
+export const navCounts = (d: FlowDeps, a: Access) =>
+  reviewer(a)
+    ? d.uow.tenant(a.who, ({ tx }) => repo.pendingCounts(tx, a.who.tenantId))
+    : Promise.resolve({ review: 0, join: 0, reports: 0 });
 export type DecideBody = {
   taskId?: string | undefined;
   action: string;
