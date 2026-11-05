@@ -1,6 +1,7 @@
 // CR-118 · cr118-app-config · manifest DỮ LIỆU của một app (chỉ dữ liệu, không code): mục menu, hành động chính, khe quy trình,
 // feature cần có. Một nguồn cho trang cấu hình app của ai-admin (xem trước "công ty thấy gì") và shell web gộp (dựng menu).
 // Tên hiển thị tiếng Việt viết thẳng (`label`) để xem trước không phụ thuộc bản dịch của web nào; web gộp dùng `labelKey`.
+import type { FlowStepKind } from "../flow/view";
 
 /** Mức dùng app của công ty (feature `<app>-read|write|admin`, cộng dồn). */
 export const APP_LEVELS = ["read", "write", "admin"] as const;
@@ -34,15 +35,38 @@ export type AppNavItem = AppGate & {
 
 export type AppAction = AppGate & { key: string; label: string };
 
-/** Khe quy trình của app (điểm cắm một quy trình thư viện cho từng công ty). */
+/**
+ * Khe quy trình của app (điểm cắm một quy trình thư viện cho từng công ty). CR-120 §2 · ADR-0036: mọi app khai báo ≥ 1 khe, và ≥ 1 khe
+ * LUÔN BẬT (`required` + không `addon`) — kiểm bằng `bun run check:app-slots` (`appSlotIssues`).
+ */
 export type AppSlotDecl = {
+  /** `<app>.<việc>` — khớp CHECK `process_slots_slot_ck` (hub 0068) và tiền tố = `AppManifest.key`. */
   key: string;
   label: string;
   /** Mức tối thiểu để khe chạy. */
   level: AppAccessLevel;
   /** Feature thêm bắt buộc để khe chạy (thiếu ⇒ app dùng cách duyệt mặc định cũ). */
   addon?: string;
+  /** Câu ngắn (≤ 200) nói khe làm gì — hiện ở admin /apps và Cài đặt › Ứng dụng & quy trình. */
+  purpose: string;
+  /** Mặc định true: thuộc bất biến FLOW-FR-05 (tenant bật app ⇒ khe có def hiệu lực). */
+  required?: boolean;
+  /** Key def thư viện (`tenant_id null`, dạng `ProcessKey`) = `process_slots.default_def_id`; seed bằng migration hub. */
+  defaultDefKey: string;
+  /** Loại bước editor cho phép ở khe (≥ 1, trong `FLOW_STEP_KINDS`). */
+  allowedKinds: readonly FlowStepKind[];
+  /** Sự kiện mở lượt (≤ 120, vd `post.created`) — chỉ hiển thị. */
+  trigger: string;
 };
+
+export const SLOT_PURPOSE_MAX = 200;
+export const SLOT_TRIGGER_MAX = 120;
+
+/** Khe thuộc bất biến (mặc định bắt buộc). */
+export const slotRequired = (s: Pick<AppSlotDecl, "required">): boolean => s.required !== false;
+/** Khe luôn bật: bắt buộc và không cần add-on. */
+export const slotAlwaysOn = (s: Pick<AppSlotDecl, "required" | "addon">): boolean =>
+  slotRequired(s) && !s.addon;
 
 export type AppManifest = {
   key: string;

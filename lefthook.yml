@@ -7,3 +7,6 @@ pre-commit:
       run: bun tools/scripts/src/check-size.ts --files {staged_files}
     - name: check-case
       run: bun tools/scripts/src/check-case.ts
+    - name: check-app-slots
+      glob: "packages/contracts/src/app-manifest/**"
+      run: bun tools/scripts/src/check-app-slots.ts

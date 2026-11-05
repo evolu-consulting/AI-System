@@ -61,12 +61,27 @@ export const CONTRACTS_MANIFEST: AppManifest = {
       ],
     },
   ],
+  // CR-120 §2 · ADR-0036: `contracts.intake` LUÔN BẬT (người dùng 2026-11-05); `contracts.approval` theo add-on engine duyệt.
   slots: [
     {
       key: "contracts.approval",
       label: "Duyệt hợp đồng",
       level: "write",
       addon: "contracts-approval-engine",
+      purpose: "Duyệt hợp đồng qua các phòng ban theo luồng công ty cài đặt trước khi ký.",
+      defaultDefKey: "hd-mac-dinh",
+      allowedKinds: ["review", "dify", "esign", "form", "wait", "system"],
+      trigger: "contract.submitted",
+    },
+    {
+      key: "contracts.intake",
+      label: "Tiếp nhận hợp đồng",
+      level: "write",
+      purpose:
+        "Nhận hợp đồng tải lên rồi chuyển trưởng phòng của người tải xem lại (hoặc cho qua).",
+      defaultDefKey: "hd-tiep-nhan",
+      allowedKinds: ["form", "review", "dify", "esign", "wait", "system"],
+      trigger: "contract.uploaded",
     },
   ],
 };
