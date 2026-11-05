@@ -1,6 +1,6 @@
 // HUB-FR-42 · HUB-NFR-02 · H1-R12 · P9 · đọc `sse:<run_id>` cho E12/E13 (plan §5.3): XRANGE phần đã có rồi theo dõi
 // bằng một kết nối chặn dùng chung (`XREAD BLOCK 1000` multiplex mọi run đang có người xem trên instance), `: ping` 15 s.
-import { SSE_HEARTBEAT_S, SSE_PING_FRAME } from "@ai/contracts/chat";
+import { SSE_HEARTBEAT_S, SSE_OPEN_FRAME, SSE_PING_FRAME } from "@ai/contracts/chat";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import type { Redis } from "../../../lib/redis";
@@ -159,6 +159,8 @@ class EventStreamSession {
     const { o } = this;
     if (o.signal?.aborted) return this.end();
     o.signal?.addEventListener("abort", this.#onAbort, { once: true });
+    // byte đầu ngay khi mở ⇒ Bun gửi header luôn (run đang chạy chưa có sự kiện mới không phải chờ `: ping` đầu)
+    this.ctl.enqueue(ENC.encode(SSE_OPEN_FRAME));
     this.#ping = setInterval(() => this.#tick(), o.pingMs ?? SSE_HEARTBEAT_S * 1000);
     try {
       this.#push(await o.reader.range(o.runId, o.after));

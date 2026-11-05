@@ -10,6 +10,7 @@ import {
   isNewEvent,
   matchesQuery,
   type RawSseEvent,
+  SSE_OPEN_FRAME,
   SSE_PING_FRAME,
   toChatEvent,
 } from "./index";
@@ -83,6 +84,14 @@ describe("SSE parser", () => {
     const wire = encodeSseEvent(started) + SSE_PING_FRAME + encodeSseEvent(finished);
     const raws = collect([wire]);
     expect(raws.map(toChatEvent)).toEqual([started, finished]);
+  });
+
+  test("hub-sse-preamble · chú thích mở (`: open`) và mọi dòng `:` bị bỏ, kể cả chunk riêng/cắt đôi", () => {
+    const wire = `${SSE_OPEN_FRAME}${encodeSseEvent(started)}:x\n\n`;
+    expect(collect([wire]).map(toChatEvent)).toEqual([started]);
+    expect(collect([": op", "en\n\n", encodeSseEvent(finished)]).map(toChatEvent)).toEqual([
+      finished,
+    ]);
   });
 
   test("chunk cắt giữa dòng và giữa \\r\\n", () => {

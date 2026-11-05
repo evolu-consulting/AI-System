@@ -1,5 +1,6 @@
 // HUB-FR-42 · H1-R12 · phần thuần của SSE: trả lời XREAD RESP2/RESP3, entry `e`, khung SSE (plan §5.2–5.3).
 import { describe, expect, it } from "bun:test";
+import { SSE_OPEN_FRAME } from "@ai/contracts/chat";
 import { logger } from "../../lib/logger";
 import { runEventStream, type SseReader, sseFrame, xreadPairs } from "./sse/sse-reader";
 import { isTerminalEvent, parseEntry } from "./sse/sse-writer";
@@ -40,9 +41,14 @@ describe("runEventStream đóng stream [HUB-FR-42]", () => {
   const reader = { range: async () => [], subscribe: () => () => {} } as unknown as SseReader;
   const base = { reader, runId: "r", log: logger, pingMs: 60_000 };
 
-  it("HUB-FR-42 · ensureTerminal trả id ≤ after → đóng ngay", async () => {
-    const s = runEventStream({ ...base, after: 3, ensureTerminal: async () => 3 });
-    expect((await s.getReader().read()).done).toBe(true);
+  /** hub-sse-preamble · byte đầu luôn là `: open` (Bun gửi header ngay). */
+  const readOpen = async (r: { read(): Promise<{ value?: Uint8Array }> }) =>
+    expect(new TextDecoder().decode((await r.read()).value)).toBe(SSE_OPEN_FRAME);
+
+  it("HUB-FR-42 · ensureTerminal trả id ≤ after → `: open` rồi đóng ngay", async () => {
+    const r = runEventStream({ ...base, after: 3, ensureTerminal: async () => 3 }).getReader();
+    await readOpen(r);
+    expect((await r.read()).done).toBe(true);
   });
 
   it("HUB-FR-42 · signal abort (tắt instance) → đóng stream đang theo dõi", async () => {
@@ -54,6 +60,7 @@ describe("runEventStream đóng stream [HUB-FR-42]", () => {
       signal: ac.signal,
     });
     const r = s.getReader();
+    await readOpen(r);
     const pending = r.read();
     setTimeout(() => ac.abort(), 20);
     expect((await pending).done).toBe(true);

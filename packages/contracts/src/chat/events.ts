@@ -99,4 +99,9 @@ export type RawSseEvent = { id: string | null; event: string; data: string };
 
 /** Dòng chú thích heartbeat, phát mỗi `SSE_HEARTBEAT_S`; parser bỏ qua. */
 export const SSE_PING_FRAME = ": ping\n\n";
+/**
+ * hub-sse-preamble · chú thích phát NGAY khi mở stream: Bun chỉ gửi header response khi có byte đầu, thiếu nó client chờ
+ * tới `: ping` đầu (`SSE_HEARTBEAT_S`). Parser bỏ qua như mọi dòng `:`.
+ */
+export const SSE_OPEN_FRAME = ": open\n\n";
 export const SSE_CONTENT_TYPE = "text/event-stream; charset=utf-8";
