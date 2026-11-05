@@ -420,7 +420,7 @@
       "stop": "Stop",
       "send": "Send",
       "open": "Open price assistant",
-      "fab": "Ask price assistant",
+      "fab": "Ask AI assistant",
       "searchContext": "Searching the feed: {{q}}",
       "errForbidden": "You can't use the price assistant yet. Ask an admin to grant read access to the Community pack.",
       "errBusy": "The assistant is busy, try again in a moment.",

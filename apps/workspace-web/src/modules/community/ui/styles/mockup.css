@@ -73,8 +73,8 @@
   font-weight: 600;
 }
 [data-mod="community"] .iconbtn {
-  width: 44px;
-  height: 44px;
+  width: 40px; /* CR-121 C-6: bằng nút chuông/góp ý của Header (h-10 w-10) */
+  height: 40px;
   border-radius: 10px;
   border: 0;
   background: none;
@@ -92,16 +92,16 @@
 }
 [data-mod="community"] .badge {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  top: 4px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
   border-radius: 999px;
   background: var(--destructive);
   color: var(--destructive-foreground);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   display: grid;
   place-items: center;
 }
@@ -165,9 +165,9 @@
   color: var(--cm-accent-ink);
 }
 [data-mod="community"] .page {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 24px 20px 48px;
+  /* CR-121 C-6: khoảng đệm + bề rộng do <main> của AppShell cấp (px-7 py-7, khoang wide) — không cộng thêm. */
+  margin: 0;
+  padding: 0;
 }
 [data-mod="community"] .ws {
   display: flex;
@@ -1102,27 +1102,6 @@
 }
 
 /* C10b · dock "Hỏi trợ lý giá" (mockup .fab/.chat/.msg) */
-[data-mod="community"] .fab {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 40;
-  height: 52px;
-  padding: 0 18px 0 14px;
-  border-radius: 999px;
-  border: 0;
-  background: var(--cm-accent);
-  color: var(--primary-foreground);
-  font-weight: 600;
-  font-size: 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--primary) 35%, transparent);
-}
-[data-mod="community"] .fab:hover {
-  background: var(--cm-accent-hover);
-}
 [data-mod="community"] .chat {
   position: fixed;
   right: 24px;

@@ -1,6 +1,7 @@
 // Nút nổi "Hỏi trợ lý giá" + khung chat (mockup `.fab` / `.chat`), C10b: nối trợ lý chung `assistant` qua Agent Hub (SSE,
 // surface=community) + ngữ cảnh trang. Chỉ chủ quản nội bộ; đối tác không thấy nút (GĐ1: không chatbot đối tác).
 import { useState } from "react";
+import { AssistantFab } from "~/shared/ui/AssistantFab";
 import { useApp } from "../application/ctx";
 import { ask, stop, useDock } from "../application/use-dock";
 import { dockContext, dockSuggestions, dockVisible, QUESTION_MAX } from "../domain/dock";
@@ -105,15 +106,13 @@ export function ChatDock() {
           </form>
         </div>
       )}
-      <button
-        type="button"
-        className="fab"
+      <AssistantFab
         onClick={() => setOpen(!open)}
-        aria-label={t("community.dock.open")}
-      >
-        <IconChat size={20} />
-        {t("community.dock.fab")}
-      </button>
+        label={t("community.dock.open")}
+        tooltip={t("community.dock.fab")}
+        icon={<IconChat size={24} />}
+        className="z-40"
+      />
     </>
   );
 }

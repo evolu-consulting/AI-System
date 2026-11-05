@@ -36,3 +36,41 @@ test("Community → Sổ Hợp Tác: cùng một thanh trái (shell-sidebar), m�
   );
   await expect(page.locator("aside.rail nav, nav.sidenav")).toHaveCount(0);
 });
+
+// CR-121 C-6 · cùng khung nhìn: biểu tượng menu cùng cỡ, cụm nút Header cùng testid, một nút trợ lý (assistant-fab) ở cả hai module.
+test("Community và Sổ Hợp Tác: icon menu cùng cỡ, cụm nút Header cùng testid, nút trợ lý cùng testid", async ({
+  page,
+}) => {
+  const iconBox = async () =>
+    page
+      .getByTestId("shell-sidebar")
+      .locator("[data-nav-item] svg")
+      .first()
+      .evaluate((el) => {
+        const r = (el as SVGElement).getBoundingClientRect();
+        return {
+          w: Math.round(r.width),
+          h: Math.round(r.height),
+          sw: el.getAttribute("stroke-width"),
+        };
+      });
+  await page.goto("/community");
+  await page.getByLabel("Chọn nhân vật").selectOption("an");
+  const cm = await iconBox();
+  await expect(page.getByTestId("topbar-actions")).toHaveCount(1);
+  await expect(page.getByTestId("topbar-bell")).toHaveCount(1);
+  await expect(page.getByTestId("topbar-search")).toHaveCount(1);
+  await expect(page.getByTestId("assistant-fab")).toHaveCount(1);
+  await page.getByTestId("shell-sidebar").locator('[data-nav-item="/contracts/list"]').click();
+  await expect(page).toHaveURL(/\/contracts/);
+  const ct = await iconBox();
+  expect(cm).toEqual({ w: 20, h: 20, sw: "1.8" });
+  expect(ct).toEqual(cm);
+  await expect(page.getByTestId("topbar-actions")).toHaveCount(1);
+  await expect(page.getByTestId("topbar-bell")).toHaveCount(1);
+  await expect(page.getByTestId("topbar-search")).toHaveCount(1);
+  await expect(page.getByTestId("assistant-fab")).toHaveCount(1);
+  // tooltip nhãn khi di chuột
+  await page.getByTestId("assistant-fab").hover();
+  await expect(page.getByRole("tooltip")).toHaveText("Hỏi trợ lý AI");
+});

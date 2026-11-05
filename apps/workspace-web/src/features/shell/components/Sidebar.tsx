@@ -15,6 +15,21 @@ import type { Role } from "../lib/nav";
 import { BrandMark } from "./BrandMark";
 import { type ShellUser, UserMenu } from "./UserMenu";
 
+/** CR-121 C-6 · cỡ + nét biểu tượng menu do Sidebar quyết định (module không tự chọn): mọi module cùng 20 px / 1.8. */
+export const NAV_ICON_PX = 20;
+export const NAV_ICON_STROKE = 1.8;
+
+export function NavIcon({ icon: Icon }: { icon: NavEntry["icon"] }) {
+  return (
+    <Icon
+      className="shrink-0"
+      width={NAV_ICON_PX}
+      height={NAV_ICON_PX}
+      strokeWidth={NAV_ICON_STROKE}
+    />
+  );
+}
+
 function SideLink({ n, wide, current }: { n: NavEntry; wide: boolean; current: boolean }) {
   const { t } = useTranslation();
   return (
@@ -27,7 +42,7 @@ function SideLink({ n, wide, current }: { n: NavEntry; wide: boolean; current: b
       title={wide ? undefined : t(n.labelKey)}
       className="flex h-11 items-center gap-3 overflow-hidden rounded-[10px] px-3 text-body whitespace-nowrap text-ink-2 transition-colors hover:bg-sunk aria-[current=page]:bg-act-soft aria-[current=page]:font-semibold aria-[current=page]:text-act"
     >
-      <n.icon className="shrink-0" />
+      <NavIcon icon={n.icon} />
       <span className={wide ? "" : "sr-only"}>{t(n.labelKey)}</span>
     </Link>
   );

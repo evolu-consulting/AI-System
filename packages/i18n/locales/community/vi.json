@@ -420,7 +420,7 @@
       "stop": "Dừng",
       "send": "Gửi",
       "open": "Mở trợ lý giá",
-      "fab": "Hỏi trợ lý giá",
+      "fab": "Hỏi trợ lý AI",
       "searchContext": "Đang tìm trên bảng tin: {{q}}",
       "errForbidden": "Bạn chưa được dùng Trợ lý giá. Nhờ quản trị cấp quyền đọc gói Cộng đồng.",
       "errBusy": "Trợ lý đang bận, thử lại sau giây lát.",

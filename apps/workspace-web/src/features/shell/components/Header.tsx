@@ -63,19 +63,27 @@ export function Header({
       <div
         ref={(el) => topbarSlots.set("search", el)}
         data-slot="topbar-search"
+        data-testid="topbar-search"
         className="flex min-w-0 flex-1 items-center gap-2"
       />
-      <div className="flex items-center gap-1">
-        {packs.contracts && <AppSwitcher role={user?.role} userId={user?.username} />}
-        <span
-          ref={(el) => topbarSlots.set("bell", el)}
-          data-slot="topbar-bell"
-          className="flex items-center"
-        />
-        {packs.contracts && !inCommunity && <ConnectedBell />}
+      <div data-testid="topbar-actions" className="flex items-center gap-1">
+        {packs.contracts && (
+          <span data-testid="topbar-apps" className="flex items-center">
+            <AppSwitcher role={user?.role} userId={user?.username} />
+          </span>
+        )}
+        <span data-testid="topbar-bell" className="flex items-center">
+          <span
+            ref={(el) => topbarSlots.set("bell", el)}
+            data-slot="topbar-bell"
+            className="flex items-center"
+          />
+          {packs.contracts && !inCommunity && <ConnectedBell />}
+        </span>
         {packs.contracts && (
           <button
             type="button"
+            data-testid="topbar-feedback"
             onClick={onFeedback}
             aria-label={t("contracts.shell.feedback")}
             title={t("contracts.shell.feedback")}

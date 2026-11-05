@@ -348,6 +348,7 @@
       "navExpand": "Expand sidebar",
       "feedback": "Send feedback",
       "openAssistant": "Open AI assistant",
+      "askAssistant": "Ask AI assistant",
       "assistant": "AI assistant",
       "assistantSoon": "The AI assistant will be available in a later release.",
       "collapse": "Collapse ›",

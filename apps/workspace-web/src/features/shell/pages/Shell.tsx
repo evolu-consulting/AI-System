@@ -7,6 +7,7 @@ import { logout } from "~/features/auth/api";
 import { SettingsDialogLazy } from "~/features/settings/components/SettingsDialogLazy";
 import { useBrandSync } from "~/features/settings/hooks/use-settings";
 import { cn } from "~/lib/utils";
+import { AssistantFab } from "~/shared/ui/AssistantFab";
 import { useShellPacks } from "~/shell/use-shell-packs";
 import { AssistantDock, DockBody } from "../components/AssistantDock";
 import { BottomNav } from "../components/BottomNav";
@@ -73,19 +74,13 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
       </div>
       <BottomNav />
       <SettingsDialogLazy owner={owner} tenantName={user?.tenant.name ?? ""} />
-      <button
-        type="button"
+      <AssistantFab
         onClick={dock.openAssistant}
-        aria-label={t("contracts.shell.openAssistant")}
-        title={t("contracts.shell.assistant")}
-        className={cn(
-          "fixed right-5 bottom-20 z-30 grid h-12 w-12 place-items-center rounded-full bg-act text-on-act shadow-toast transition-transform hover:scale-105 active:scale-95 md:right-6 md:bottom-6",
-          dock.open && "lg:hidden",
-          dock.sheet && "hidden",
-        )}
-      >
-        <IconRobot width={24} height={24} />
-      </button>
+        label={t("contracts.shell.openAssistant")}
+        tooltip={t("contracts.shell.askAssistant")}
+        icon={<IconRobot width={24} height={24} />}
+        className={cn(dock.open && "lg:hidden", dock.sheet && "hidden")}
+      />
       {dock.sheet && (
         <div className="fixed inset-0 z-40 flex flex-col lg:hidden">
           <button
