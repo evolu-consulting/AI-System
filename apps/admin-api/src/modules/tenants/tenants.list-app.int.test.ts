@@ -34,7 +34,7 @@ beforeAll(async () => {
     (${T_A}, 'q1-a', 'Q1 A'), (${T_B}, 'q1-b', 'Q1 B'), (${T_C}, 'q1-c', 'Q1 C')`;
   const grant = (t: string, k: string, revoked = false) =>
     owner`insert into admin.feature_entitlements (feature_id, tenant_id, revoked_at)
-      select id, ${t}, ${revoked ? owner`now()` : null} from admin.features where key = ${k}`;
+      select id, ${t}::uuid, ${revoked ? new Date() : null}::timestamptz from admin.features where key = ${k}`;
   for (const k of ["chat-app", "contracts-read", "contracts-write"]) await grant(T_A, k);
   for (const k of ["knowledge-read", "contracts-approval-engine"]) await grant(T_B, k);
   await grant(T_C, "contracts-read", true);
