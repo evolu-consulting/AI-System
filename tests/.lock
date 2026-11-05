@@ -579,7 +579,6 @@ b623b14308a36191f54e6b390e80b01e9eea67d9b200e9b934d1ca4b76f20697  tests/acceptan
 8b3804152a957ce18f63f00bc7edd0dfe40349a898ba74c892c1bda84433c71c  tests/acceptance/CF/_cf.ts
 1bdaca8c13f65c7e5ce110b60bdee90ea67c76327cd2f9dfdc4c87b6707a8d1f  tests/acceptance/CF/approval-card.int.test.ts
 98b4c611606a58a87df6693baba968287cd198f2e5cc8677e9583fb14b329151  tests/acceptance/CF/approval-dify.int.test.ts
-c828802b8684b5155dfea4dcff783d040a9eb8fe4ca0d0252109abb7cf9bf182  tests/acceptance/CF/approval-engine-off.int.test.ts
 bebc30f53a1eb8a7c6d59cc2085e26b59eadd21bf94b200c961011cff9baeef6  tests/acceptance/CF/approval-engine.int.test.ts
 6a013a8028e8abf2394a17a992f2f8a200e3b20dcec5bd53461c69c8cff4e3d7  tests/acceptance/CF/approval-inbox.int.test.ts
 94fbc9e5af69ba1744b60ef449363b22093334e3b24c8ca02f3090e555ba2bf8  tests/acceptance/CF/approval-links-race.int.test.ts
@@ -588,7 +587,7 @@ bebc30f53a1eb8a7c6d59cc2085e26b59eadd21bf94b200c961011cff9baeef6  tests/acceptan
 15756a59796295575451dfbcaa1214716a1fbd4524de6496fd67dc7a72647c26  tests/acceptance/CF/bells-batch.int.test.ts
 2ba7a41a35870e38d7b00c4022d2363781c4bf1bd77b59246fa1b1776533a7f7  tests/acceptance/CF/confirm-step.int.test.ts
 1a83f85985ce62eaaf7164752a445d959997d409cea109af35d202499f1fea4d  tests/acceptance/CF/eng-reliable.int.test.ts
-64e6b78fa9cff0bdadef4b7df0e1fe552ef2d83bbc91af6c6267248c4e5e12ea  tests/acceptance/CF/engine-tenant-gate.int.test.ts
+12d785e622892649fb0076558ccf9f6cad4ecbbf5a3b147906ce3864eeefdcd1  tests/acceptance/CF/engine-only.int.test.ts
 1fe0cfce8fca552545c2070850ae08943e0599a65107818a56622f61496150f0  tests/acceptance/CF/fix-engine-access.int.test.ts
 8c1d4ea5f3d2ba0a967bef10ba6f29ad2f40ed819cd196451d83397911e70ac3  tests/acceptance/CF/fix-pack.int.test.ts
 9e51899f59e421a726d21a6b42c8239559e49c1560c72f82a1b59486772d9a11  tests/acceptance/CF/head-only-bells.int.test.ts
@@ -858,7 +857,7 @@ d9b155f6b8b69688ab02197453a52fe045309c0687dd372b1897465f79de038c  tests/acceptan
 0058d55793ffc26affe4f3fd14012cf4dab0c002f5e55b22aba116032a57cf14  tests/acceptance/HD2/_support/hd2.ts
 f04342017eac1078da1e185f45e27bec66bfae36ae2a14b88903c63aeb5e441e  tests/acceptance/HD2/extract.int.test.ts
 0fbaf887aa268f91a7c7c89e233329551636d8f152e584d19bf99d6517d90d1a  tests/acceptance/HD2/manual.int.test.ts
-8ec41cb576e42fc17b900a60ba508a8d096155b4092a3881f5cb7af9258009e3  tests/acceptance/HD3/_hd3.ts
+c26549249aa95dfcaeab2c0507cf948ba8431ff6459097bfaadb9ab22d823e66  tests/acceptance/HD3/_hd3.ts
 e7de4bbf580dfd88f6abbf6899e01f85f62278ca989e5367bd031d81c2fb2e3f  tests/acceptance/HD3/approval.perf.int.test.ts
 42fbb74ae94cda3d47022387407fda92a068e2e8fe4aa9704cec50fc214e2195  tests/acceptance/HD3/confirm-edit.int.test.ts
 13e42d61d5030a801b854ec1f4d68a62abf92c0290be1a1e92a08a51e331ed0a  tests/acceptance/HD3/flow.int.test.ts

@@ -39,14 +39,13 @@ export type ApprovalDeps = {
   /** "Trích lại" (review B #27/#28): AI sẵn sàng + trần thao tác tenant — chỉ áp khi phán quyết thật sự trích lại (sau
    *  kiểm người duyệt/bước/nguồn). `quota` ném 429/503 ⇒ tx ROLLBACK. Vắng ⇒ không kiểm. */
   redo?: { ready: boolean; quota: (tenantId: string) => Promise<void> };
-  /** contract-flow S3a · cờ engine bật: lượt vừa vào `level1` (đã COMMIT) ⇒ mở run engine. Vắng ⇒ máy 2 bước cũ. Không ném. */
+  /** cr121-a2 · lượt vừa vào `level1` (đã COMMIT) ⇒ mở run engine (luôn có khi chạy thật; mở hụt ⇒ lượt kẹt chờ "Mở lại", không về
+   *  máy cũ). Vắng CHỈ ở HD2 / seam test máy cũ. Không ném. */
   engine?: EngineStart;
   /** contract-flow S3b · thẻ + hành động cho lượt `mode = 'engine'`. Vắng ⇒ lượt engine hiện thẻ rỗng, không quyết được. */
   card?: EngineCard;
   /** S3b · cài đặt duyệt đổi (tenant chưa lưu mẫu) ⇒ đồng bộ lại def engine. Không ném. */
   onSettingsSaved?: (who: PackWho) => Promise<unknown>;
-  /** engine-off-note · công ty có quy trình gán/luật mà chưa bật engine (cổng theo công ty) ⇒ true. Chỉ gọi cho lượt máy cũ; không ném. */
-  engineOff?: (who: PackWho, startedBy: string) => Promise<boolean>;
   /** fix-review · "Mở lại quy trình" (route owner/admin): lượt engine mà run kết thúc bất thường ⇒ run mới dưới người bắt đầu. */
   reopen?: EngineOwnerOp<ReopenOut>;
   /** CR-107 · "Thử lại" run `needs_decision` / "Huỷ & mở lại" (route owner/admin). */
@@ -56,10 +55,9 @@ export type ApprovalDeps = {
 type ReopenOut = "ok" | "not_found" | "not_stalled" | "flow_invalid" | "failed";
 type EngineOwnerOp<T> = (who: PackWho, contractId: string) => Promise<T>;
 export type EngineStart = (who: PackWho, contractId: string) => Promise<unknown>;
-export type ContractApproval = (
+export type ContractApproval =
   | ReturnType<typeof approvalView>
-  | Awaited<ReturnType<NonNullable<ApprovalDeps["card"]>["view"]>>
-) & { engine_off?: boolean };
+  | Awaited<ReturnType<NonNullable<ApprovalDeps["card"]>["view"]>>;
 /** `products` (products-confirm): gắn/tạo SP cho dòng HĐ — áp TRONG tx chỉ khi bước này làm HĐ thành "đã xác nhận". */
 export type ApprovalAction = {
   action: "approve" | "reject" | "redo" | "return";
@@ -140,9 +138,8 @@ export function getApproval(d: ApprovalDeps) {
     });
     if (!got.st) return null;
     if (got.st.approval?.mode === "engine") return engineViewOf(d, who, got.st);
-    const view = viewOf(got.st, await actorOf(d, who, got.s as ApprovalSettings));
-    const by = got.st.approval?.startedBy;
-    return d.engineOff && by && (await d.engineOff(who, by)) ? { ...view, engine_off: true } : view;
+    // cr121-a2 · chỉ lượt máy cũ CÒN DỞ (mở trước khi gỡ máy cũ) đi nhánh này — quyết nốt qua `decide` cũ, không chuyển giữa chừng.
+    return viewOf(got.st, await actorOf(d, who, got.s as ApprovalSettings));
   };
 }
 

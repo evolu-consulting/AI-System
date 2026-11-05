@@ -16,7 +16,8 @@ export type ApprovalSettings = {
 };
 export const APPROVAL_THRESHOLD_MAX = 1_000_000_000_000_000;
 
-/** `total_value ≥ ngưỡng` ⇒ cấp 2; trống / không phải số hữu hạn / âm ⇒ cấp 2 (an toàn, intake câu 1). */
+/** `total_value ≥ ngưỡng` ⇒ cấp 2; trống / không phải số hữu hạn / âm ⇒ cấp 2 (an toàn, intake câu 1).
+ *  @deprecated cr121-a2 · chỉ máy 2 bước cũ (`decide`) dùng, cho lượt `mode='machine'` còn dở; gỡ cùng máy cũ khi đếm lượt đó = 0. */
 export function needsLevel2(total: unknown, threshold: number): boolean {
   if (typeof total !== "number" || !Number.isFinite(total) || total < 0) return true;
   return total >= threshold;

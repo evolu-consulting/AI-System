@@ -23,7 +23,6 @@ import {
   readCurrentFlow,
 } from "./application/approval-flow.usecase";
 import { myApprovals } from "./application/mywork-approvals.usecase";
-import { engineAllowedForTenant } from "./domain/approval-engine.rules";
 import { FLOW_TOOL_KEYS } from "./domain/approval-flow.rules";
 import type { FlowDeal, FlowStep } from "./domain/approval-flow.types";
 import {
@@ -52,30 +51,17 @@ type FlowDeps = EsignHooks & {
   groups: Pick<FlowGroups, "idsOf" | "existingIds" | "list" | "memberCounts">;
 };
 
-/** contract-flow S3a · duyệt trên engine: cờ `CONTRACTS_APPROVAL_ENGINE=on` (hoặc seam test `on`) + cầu engine có + chế độ flow
- *  (không seam HD2). Tắt ⇒ null (máy 2 bước cũ y nguyên). Cổng engine đọc lười từ cầu mỗi lời gọi (engine gắn sau). */
+/** cr121-a2 · duyệt HĐ CHỈ chạy trên engine: mọi lượt MỚI mở run theo luật định tuyến của khe (luật admin nếu có, không thì luật
+ *  mặc định / mẫu khe — `routeSlot`), không còn env `CONTRACTS_APPROVAL_ENGINE` hay cổng "đã gán". null CHỈ khi chế độ HD2 (seam
+ *  `transport`, không mở lượt duyệt), cầu engine vắng (app luôn dựng qua `withPackBridges`), hoặc seam TEST `legacyMachine` (hồi quy
+ *  đường decide cũ cho lượt máy cũ còn dở — gỡ cùng máy cũ). Cổng engine đọc lười từ cầu mỗi lời gọi (engine gắn sau). */
 export function approvalEngine(
-  o: {
-    on: boolean | undefined;
-    hd2: boolean;
-    /** CR-121 D-4 · cổng theo công ty = đã gán quy trình cho khe duyệt HĐ (không còn feature); false ⇒ không cổng (seam test `on`). */
-    gate: boolean;
-  },
+  o: { hd2: boolean; legacyMachine: boolean },
   flow: FlowDeps,
   uow: ApprovalEngineUow,
   view: PackAccessView,
 ) {
-  const env = process.env.CONTRACTS_APPROVAL_ENGINE;
-  const on = o.on ?? env === "on";
-  if (!on || !flow.engine || o.hd2) return null;
-  // CR-121 D-4 · cổng = công ty đã gán quy trình cho khe duyệt HĐ (MỘT câu `slotAssigned`, chỉ ở lúc mở lượt mới); không đọc feature.
-  const gate = o.gate
-    ? async (tenantId: string) =>
-        engineAllowedForTenant({
-          env: "on",
-          assigned: (await flow.engine?.port?.slotAssigned?.(tenantId, APPROVAL_SLOT)) === true,
-        })
-    : undefined;
+  if (!flow.engine || o.hd2 || o.legacyMachine) return null;
   const ed = {
     bridge: flow.engine,
     uow,
@@ -87,17 +73,8 @@ export function approvalEngine(
     const i = await packAccessInput(view, "contracts", who);
     return checkPackAccess({ ...i, grantedGroupIds: i.grantedByAction.admin }) === "ok";
   };
-  const startRaw = startEngineApproval(ed);
-  // Mở lượt MỚI chỉ cho công ty đã gán quy trình; chưa gán ⇒ "machine" (máy 2 bước cũ). Lượt đã engine vẫn chạy nốt (tool/reopen không cổng).
-  const start: typeof startRaw = gate
-    ? async (who, id) => ((await gate(who.tenantId)) ? startRaw(who, id) : "machine")
-    : startRaw;
-  // CR-121 D-4 · gán ⇒ engine chạy, nên không còn ca "đã gán mà không chạy" để báo (trước đây ghi chú vì thiếu feature). Giữ chữ ký cho
-  // `extraction.mount.ts` / `approval.usecase.ts` (ngoài lát này); phần A gỡ hẳn cờ `engine_off` cùng máy cũ.
-  const engineOff = async (_who: PackWho, _startedBy: string): Promise<boolean> => false;
   return {
-    start,
-    engineOff,
+    start: startEngineApproval(ed),
     reopen: reopenEngineApproval(ed),
     retry: retryEngineApproval(ed), // CR-107
     cancelReopen: cancelReopenEngineApproval(ed),

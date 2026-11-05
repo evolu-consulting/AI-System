@@ -97,10 +97,9 @@ export type ContractsAiDeps = {
     sweepOnce: () => ReturnType<typeof sweepApprovalsOnce>;
     reclaimOnce: () => Promise<number>;
   }) => void;
-  /** contract-flow S3a · ghi đè cờ `CONTRACTS_APPROVAL_ENGINE=on` (test). */
+  /** cr121-a2 · CHỈ TEST: `false` ⇒ lượt mới mở ở máy 2 bước cũ (hồi quy đường decide cũ cho lượt máy cũ còn dở — HD3/K1/K4);
+   *  vắng/`true` ⇒ engine (như chạy thật). Không có env nào bật được nhánh này; gỡ cùng máy cũ. */
   approvalEngine?: boolean;
-  /** engine-flag-tenant · test: bật cổng theo công ty cả khi seam `approvalEngine` ghi đè env. */
-  approvalEngineTenantGate?: boolean;
 };
 
 export type ContractsAi = {
@@ -266,9 +265,8 @@ export function contractsAiModule(
 ): ContractsAi {
   const pack = packUow(db);
   const uow = packTenantOnly(pack);
-  // engine-flag-tenant · env `on` ⇒ cổng theo công ty; seam test `approvalEngine` ghi đè env, cổng chỉ khi `approvalEngineTenantGate`.
-  const gate = d.approvalEngine === undefined || d.approvalEngineTenantGate === true;
-  const engOpts = { on: d.approvalEngine, hd2: d.transport !== undefined, gate };
+  // cr121-a2 · lượt mới luôn engine (không env, không cổng "đã gán"); seam test `approvalEngine: false` giữ máy cũ.
+  const engOpts = { hd2: d.transport !== undefined, legacyMachine: d.approvalEngine === false };
   const engFlow = { ...flow, groups: withCreatorDepartments(flow.groups, db) }; // CR-121 D-1
   const eng = approvalEngine(engOpts, engFlow, uow, view);
   const { handle, schedule } = extractionRunner(d, flow, pack, eng?.start);
@@ -287,7 +285,6 @@ export function contractsAiModule(
     ...(eng
       ? {
           engine: eng.start,
-          engineOff: eng.engineOff,
           reopen: eng.reopen,
           retry: eng.retry,
           cancelReopen: eng.cancelReopen,

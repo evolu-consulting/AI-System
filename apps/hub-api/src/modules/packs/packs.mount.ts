@@ -196,7 +196,7 @@ function contractsCtx(d: PacksMountDeps & { db: Db }, view: PackAccessView, fb: 
       ...(d.redis ? { redis: d.redis } : {}),
       quota,
       ...(d.esign ? { afterApproved: d.esign.flow.afterApproved } : {}), // esign-flow · bước Ký số sau Đã duyệt
-      ...(d.packRuns ? { engine: d.packRuns } : {}), // contract-flow S3a · duyệt trên engine (cờ CONTRACTS_APPROVAL_ENGINE)
+      ...(d.packRuns ? { engine: d.packRuns } : {}), // cr121-a2 · duyệt HĐ luôn trên engine (không cờ)
       tenants: () => packTenants(view, CONTRACTS_KEY),
       ...(d.signal ? { signal: d.signal } : {}),
       timeZoneOf, // V2-A Â· ngÃ y lá»‹ch tenant cho má»‘c máº·c Ä‘á»‹nh

@@ -1,7 +1,6 @@
 // contract-flow S3a · luật thuần duyệt trên engine: bước bắt buộc ⇒ finalize, tham số `from_step`, điều kiện mở run, ánh xạ stage.
 import { describe, expect, it } from "bun:test";
 import {
-  engineAllowedForTenant,
   engineStartable,
   factsOf,
   finalizeReady,
@@ -90,18 +89,5 @@ describe("ánh xạ stage ↔ bước", () => {
     expect(finalizesOnApprove(TWO, factsOf("buy", 10), 0)).toBe(true);
     expect(finalizesOnApprove(TWO, factsOf("buy", 5000), 0)).toBe(false);
     expect(finalizesOnApprove(TWO, factsOf("buy", 5000), 1)).toBe(true);
-  });
-});
-
-describe("CR-121 D-4 · engineAllowedForTenant (env x đã gán quy trình, không feature)", () => {
-  it("chỉ env=on ∧ đã gán, chưa gán ⇒ máy cũ, env off/vắng tắt hết", () => {
-    const cases: [string | undefined, boolean, boolean][] = [
-      ["on", true, true],
-      ["on", false, false],
-      ["off", true, false],
-      [undefined, true, false],
-    ];
-    for (const [env, assigned, want] of cases)
-      expect(engineAllowedForTenant({ env, assigned })).toBe(want);
   });
 });

@@ -168,6 +168,8 @@ function deps(w: World, port: Partial<ApprovalEnginePort> | null = {}): Approval
             [
               ["k1", G1],
               ["k2", G2],
+              // CR-120 · bước "người tải lên xác nhận" (`withConfirmStep`) trỏ Group editor của gói.
+              ["contracts-editor", G1],
             ] as const
           ).filter(([, g]) => w.groups.includes(g)),
         ),
@@ -216,13 +218,13 @@ const runRow = (o: Partial<EngineRunRow> = {}): EngineRunRow => ({
 const ctx = { tenantId: T, userId: U, processRunId: RUN };
 
 describe("startEngineApproval", () => {
-  it("khe có bản xuất bản ⇒ ensureDef theo source_ref → start ref contracts → gắn (2 bước) → kick", async () => {
+  it("khe có bản xuất bản ⇒ ensureDef theo source_ref → start ref contracts → gắn (xác nhận + 2 bước) → kick", async () => {
     const w = world();
     expect(await startEngineApproval(deps(w))(who, C)).toBe("started");
     expect(w.calls).toEqual([
       "ensureDef:contracts-approval:ref-1",
       `start:contracts:${C}`,
-      `attach:${RUN}:v1:2`,
+      `attach:${RUN}:v1:3`,
       "kick",
     ]);
   });
@@ -232,7 +234,7 @@ describe("startEngineApproval", () => {
     expect(w.calls).toEqual([
       "ensureDef:contracts-approval:ref-1",
       `start:contracts:${C}`,
-      `attach:${RUN}:v5:2`,
+      `attach:${RUN}:v5:3`,
       `cancel:${RUN}`,
     ]);
   });
@@ -241,8 +243,14 @@ describe("startEngineApproval", () => {
     expect(await startEngineApproval(deps(w))(who, C)).toBe("stalled");
     expect(w.calls).toEqual(["stalled:null:FLOW_MISSING", "warn:contract-engine-flow-stalled"]);
   });
-  it("engine vắng ⇒ máy · CR-107 · Group thiếu ⇒ lượt kẹt FLOW_GROUP_MISSING:<mã>, không gọi engine · lượt không mở được ⇒ skipped", async () => {
-    expect(await startEngineApproval(deps(world(), null))(who, C)).toBe("machine");
+  it("cr121-a2 · engine vắng ⇒ lượt kẹt ENGINE_RUN_FAILED (không máy cũ) · CR-107 · Group thiếu ⇒ lượt kẹt FLOW_GROUP_MISSING:<mã>, không gọi engine · lượt không mở được ⇒ skipped", async () => {
+    const w0 = world();
+    expect(await startEngineApproval(deps(w0, null))(who, C)).toBe("stalled");
+    expect(w0.calls).toEqual([
+      "warn:contract-engine-start-failed",
+      "stalled:null:ENGINE_RUN_FAILED",
+      "warn:contract-engine-flow-stalled",
+    ]);
     const w = world({ groups: [G1] });
     expect(await startEngineApproval(deps(w))(who, C)).toBe("stalled");
     expect(w.calls).toEqual([
@@ -261,11 +269,20 @@ describe("startEngineApproval", () => {
     expect(await startEngineApproval(deps(w2))(who, C)).toBe("skipped");
     expect(w2.calls).toEqual([]);
   });
-  it("engine ném ⇒ log, máy cũ (không ném)", async () => {
+  it("cr121-a2 · engine ném ⇒ log + lượt kẹt ENGINE_RUN_FAILED (không máy cũ, không ném), lượt đã gắn run ⇒ không ghi", async () => {
     const w = world();
     const d = deps(w, { start: async () => Promise.reject(new Error("boom")) });
-    expect(await startEngineApproval(d)(who, C)).toBe("machine");
-    expect(w.calls.at(-1)).toBe("warn:contract-engine-start-failed");
+    expect(await startEngineApproval(d)(who, C)).toBe("stalled");
+    expect(w.calls.slice(-3)).toEqual([
+      "warn:contract-engine-start-failed",
+      "stalled:null:ENGINE_RUN_FAILED",
+      "warn:contract-engine-flow-stalled",
+    ]);
+    const w2 = world({
+      st: { ...(world().st as EngineStartRow), mode: "engine", engineRunId: RUN },
+    });
+    expect(await startEngineApproval(deps(w2, null))(who, C)).toBe("skipped");
+    expect(w2.calls).toEqual(["warn:contract-engine-start-failed"]);
   });
 });
 
@@ -315,7 +332,7 @@ describe("fix-review · Mở lại quy trình", () => {
     expect(w.replaces).toEqual([null]);
     const w2 = world({ st, groups: [G2] });
     expect(await reopenEngineApproval(deps(w2))(who, C)).toBe("flow_invalid");
-    expect(w2.calls[0]).toBe("stalled:null:FLOW_GROUP_MISSING:k1");
+    expect(w2.calls[0]).toBe("stalled:null:FLOW_GROUP_MISSING:contracts-editor,k1");
   });
   it("CR-107 · Thử lại ⇒ retryDecision của engine trên run đang gắn · lượt máy ⇒ not_open", async () => {
     const w = stalled();

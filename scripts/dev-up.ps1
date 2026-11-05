@@ -81,8 +81,6 @@ if (Test-Path $pidFile) { throw "Có phiên dev-up đang chạy ($pidFile) — c
 $coreEnv = @{ HUB_DEV_RUNTIME = "none"; HUB_SEED_FIXTURES = "1"
   HUB_PROCESS_ENGINE = "on"; HUB_FROZEN_MODULES = "on"; ADMIN_FROZEN_MODULES = "on"
   CONTRACTS_WEB_URL = "http://localhost:3300"; COMMUNITY_WEB_URL = "http://localhost:3400"
-  # duyệt HĐ trên engine (như prod demo): công tắc env + feature `contracts-approval-engine` (demo-packs cấp cho evolu/demo)
-  CONTRACTS_APPROVAL_ENGINE = "on"
   # catalog ứng dụng (switcher "Ứng dụng", link "Đặt trong Sổ Hợp Tác" của Agents): admin-api điền URL còn rỗng từ APP_URL_*
   APP_URL_ADMIN = "http://localhost:3000"; APP_URL_CHAT = "http://localhost:3100"; APP_URL_STUDIO = "http://localhost:3200"
   APP_URL_CONTRACTS = "http://localhost:3300/contracts"; APP_URL_COMMUNITY = "http://localhost:3400" }

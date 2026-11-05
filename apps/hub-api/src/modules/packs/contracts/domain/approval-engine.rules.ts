@@ -81,15 +81,8 @@ export function routeFrom(v: unknown, n: number): number | null {
   return typeof i === "number" && Number.isInteger(i) && i >= 0 && i < n ? i : null;
 }
 
-/** CR-121 D-4 · env `CONTRACTS_APPROVAL_ENGINE`: ≠ `on` (kể cả `off`/vắng) ⇒ tắt hết (công tắc khẩn của vận hành); `on` ⇒ chỉ công ty
- *  ĐÃ gán quy trình riêng cho khe duyệt HĐ (luật định tuyến không phải mặc định khe — nguồn duy nhất, `slotAssigned`) chạy engine; chưa
- *  gán ⇒ máy cũ (phần A dọn sau). KHÔNG còn phụ thuộc feature nào. Lượt đã chạy engine không phụ thuộc hàm này (chạy nốt). */
-export const engineAllowedForTenant = (i: {
-  env: string | undefined;
-  assigned: boolean;
-}): boolean => i.env === "on" && i.assigned;
-
-/** Mở run engine chỉ cho lượt `level1` còn chế độ máy, chưa gắn run. */
+/** Mở run engine chỉ cho lượt `level1` vừa mở (cột `mode` mặc định 'machine' khi tạo), chưa gắn run. cr121-a2 · mọi lượt mới đều
+ *  qua đây ngay sau khi vào `level1` (không env/cổng); lượt máy cũ còn dở chỉ đi lại đây nếu quay về `level1` (Đọc lại / heal). */
 export const engineStartable = (r: {
   approvalStatus: string | null;
   mode: string | null;
@@ -113,6 +106,8 @@ export const FLOW_MISSING = "FLOW_MISSING";
 export const FLOW_ROUTE_NONE = "FLOW_ROUTE_NONE";
 /** cr118-routing-deleted · luật đã khớp nhưng quy trình của luật bị xoá / chưa xuất bản ⇒ chặn khởi tạo (lý do riêng cho UI). */
 export const FLOW_ROUTE_UNAVAILABLE = "FLOW_ROUTE_UNAVAILABLE";
+/** cr121-a2 · engine chưa gắn / ném lúc mở run lượt mới ⇒ lượt kẹt (dùng nhãn UI sẵn "gặp lỗi, chờ mở lại"), không về máy cũ. */
+export const ENGINE_START_FAILED = "ENGINE_RUN_FAILED";
 /** Owner/admin "Huỷ & mở lại" một run đang chờ quyết. */
 export const CANCELLED_BY_OWNER = "CANCELLED_BY_OWNER";
 /** Thiếu Group ⇒ `FLOW_GROUP_MISSING:<mã,…>` (mã Group thiếu, tối đa 5, cắt 200 ký tự); không biết mã ⇒ `FLOW_GROUP_MISSING`. */

@@ -97,8 +97,8 @@ describe("MK · script + bunfig", () => {
     expect(hubApiEnv({}).HUB_PORT).toBe("4000");
     // seed-refresh: dev bật engine quy trình + duyệt HĐ trên engine (vắng ⇒ Cài đặt › Quy trình duyệt 404); ghi đè được
     expect(hubApiEnv({}).HUB_PROCESS_ENGINE).toBe("on");
-    expect(hubApiEnv({}).CONTRACTS_APPROVAL_ENGINE).toBe("on");
-    expect(hubApiEnv({ CONTRACTS_APPROVAL_ENGINE: "off" }).CONTRACTS_APPROVAL_ENGINE).toBe("off");
+    // cr121-a2 · duyệt HĐ luôn trên engine — không còn env CONTRACTS_APPROVAL_ENGINE.
+    expect("CONTRACTS_APPROVAL_ENGINE" in hubApiEnv({})).toBe(false);
   });
 
   it("smoke live: vắng/0 → bỏ qua; 1 → chạy", () => {

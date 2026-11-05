@@ -1,8 +1,8 @@
-// contract-flow S3a · duyệt HĐ chạy trên engine quy trình (bật bằng `CONTRACTS_APPROVAL_ENGINE=on` + engine gắn cầu). Lớp 2: chỉ cổng.
+// contract-flow S3a · duyệt HĐ chạy trên engine quy trình (cr121-a2: mọi lượt mới, không cờ/env). Lớp 2: chỉ cổng.
 // - `startEngineApproval`: chỗ mở duyệt cấp 1 (sau AI đọc / nhập tay) ⇒ đồng bộ def theo version mẫu (`ensureDef`) → mở run có
 //   `ref {pack:'contracts', record_id}` (COMMIT, chưa kick) → tx gói gắn run vào lượt (`mode='engine'`, `engine_run_id`,
 //   `flow_version`, `flow_steps`) → kick; gắn hụt ⇒ huỷ bù. CR-107 · mẫu không mở được (thiếu Group / hỏng / không có) ⇒ lượt KẸT
-//   `mode='engine'` + lý do (`markStalled`), KHÔNG về máy cũ; chỉ engine vắng / engine ném mới giữ chế độ máy (hành vi cũ).
+//   `mode='engine'` + lý do (`markStalled`), KHÔNG về máy cũ; cr121-a2 · engine vắng / ném cũng ⇒ lượt kẹt `ENGINE_RUN_FAILED`.
 // - `routeStep` (tool `contracts-route`) / `finalizeRun` (tool `contracts-finalize`): chạy trong tx gói của tenant run, CHỈ chạm HĐ có
 //   `engine_run_id = ctx.processRunId`. Finalize kiểm lại stage đã Đạt phủ đủ bước bắt buộc theo giá trị HIỆN TẠI (khoá HĐ) + mẫu
 //   chụp, ghi "Đã duyệt" (`confirmed_by` = người Đạt gần nhất) rồi áp `pending_links` CÙNG tx — lỗi gắn SP ⇒ ROLLBACK, không khoá.
@@ -12,6 +12,7 @@ import type { PackWho } from "../../kit/application/ports";
 import { PackToolBusinessError } from "../../kit/domain/pack-tool-error";
 import { PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
 import {
+  ENGINE_START_FAILED,
   engineStartable,
   FLOW_INVALID,
   FLOW_MISSING,
@@ -65,7 +66,7 @@ export type ApprovalEngineDeps = {
 };
 /** Danh tính lời gọi tool (cấu trúc khớp `PackToolCtx`). */
 export type EngineToolCtx = { tenantId: string; userId: string; processRunId?: string | null };
-export type EngineStartOutcome = "started" | "machine" | "skipped" | "stalled";
+export type EngineStartOutcome = "started" | "skipped" | "stalled";
 
 /** Cổng engine dùng ở đây (ensureDef/start/cancel) không xét vai trò; người gọi = người mở duyệt. */
 export const callerOf = (who: PackWho): EngineCaller => ({ ...who, role: "member" });
@@ -217,11 +218,28 @@ export async function openRun(
   return "started";
 }
 
-/** Gọi SAU khi lượt duyệt vào `level1` (đã COMMIT). Không ném: lỗi engine ⇒ log, lượt chạy máy cũ; mẫu không mở được ⇒ lượt kẹt. */
+/** cr121-a2 · engine chưa gắn / ném lúc mở ⇒ lượt KẸT `ENGINE_RUN_FAILED` (mode='engine', chưa run — UI "gặp lỗi, chờ mở lại"),
+ *  KHÔNG về máy cũ. Ghi có điều kiện (`engine_run_id is null`): đua với lần mở khác đã gắn run ⇒ không ghi. Không ném. */
+async function stallStart(d: ApprovalEngineDeps, who: PackWho, id: string) {
+  try {
+    const st = await d.uow.tenant(who, (r) => r.approvalEngine.startState(id));
+    if (!st?.approvalId || !engineStartable(st)) return "skipped" as const;
+    const c = { id, approvalId: st.approvalId, run: null, reason: ENGINE_START_FAILED };
+    return (await markStalled(d, who, c)) ? ("stalled" as const) : ("skipped" as const);
+  } catch (e) {
+    d.warn("contract-engine-stall-failed", { contract_id: id, ...engineErrMeta(e) });
+    return "skipped" as const;
+  }
+}
+
+/** Gọi SAU khi lượt duyệt vào `level1` (đã COMMIT). Không ném: lỗi engine ⇒ log + lượt kẹt; mẫu không mở được ⇒ lượt kẹt. */
 export function startEngineApproval(d: ApprovalEngineDeps) {
   return async (who: PackWho, id: string): Promise<EngineStartOutcome> => {
     const port = d.bridge.port;
-    if (!port) return "machine";
+    if (!port) {
+      d.warn("contract-engine-start-failed", { contract_id: id, error: "engine_unavailable" });
+      return stallStart(d, who, id);
+    }
     try {
       const got = await loadStart(d, who, id);
       if (!got) return "skipped";
@@ -237,7 +255,7 @@ export function startEngineApproval(d: ApprovalEngineDeps) {
       return await openRun(d, port, who, { id, flow, starter, def });
     } catch (e) {
       d.warn("contract-engine-start-failed", { contract_id: id, ...engineErrMeta(e) });
-      return "machine";
+      return stallStart(d, who, id);
     }
   };
 }

@@ -63,6 +63,8 @@ export async function startHd3(o: { processRunsPerTenant?: number } = {}): Promi
   const contractsAi = {
     tax: null,
     model: model.provider,
+    // cr121-a2 · lượt mới chạy engine khi chạy thật; HD3/K1/K4 kiểm đường decide máy cũ (còn sống cho lượt máy cũ đang dở) ⇒ seam test.
+    approvalEngine: false,
     onSettled: (id: string, out: string) => {
       const w = waiters.get(id) ?? [];
       waiters.delete(id);

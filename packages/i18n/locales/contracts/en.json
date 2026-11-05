@@ -504,7 +504,6 @@
       "extracted": "Value read by AI (decides whether management approval is needed): {{value}}",
       "editedByHand": "edited by hand",
       "confirm": "Confirm",
-      "engineOff": "This company has its own approval process assigned, but \"Approve by process\" is not turned on, so this contract uses the old approval and the assigned process does not run. Ask your system administrator to turn it on.",
       "confirmSave": "Confirm and save",
       "more": "More actions",
       "confirming": "Confirming…",

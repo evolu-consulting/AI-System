@@ -504,7 +504,6 @@
       "extracted": "Giá trị AI đọc được (quyết định có cần Ban giám đốc duyệt): {{value}}",
       "editedByHand": "đã sửa tay",
       "confirm": "Xác nhận",
-      "engineOff": "Công ty đã gán quy trình duyệt riêng nhưng chức năng \"Duyệt theo quy trình\" chưa được bật, nên hợp đồng này duyệt theo cách cũ và quy trình đã gán chưa chạy. Liên hệ quản trị hệ thống để bật.",
       "confirmSave": "Xác nhận và lưu",
       "more": "Thêm thao tác",
       "confirming": "Đang xác nhận…",
