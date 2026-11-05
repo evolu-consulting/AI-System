@@ -27,10 +27,12 @@ beforeEach(() => env.reset());
 const ALLOWED: [string, string][] = [
   ["GET", ""],
   ["GET", "/quotas"],
+  ["GET", "/profile"], // CR-121
 ];
 /** Chỉ platform_admin (tenant_admin tenant mình ⇒ 403). */
 const PLATFORM_ONLY: [string, string][] = [
   ["PATCH", ""],
+  ["PATCH", "/profile"], // CR-121
   ["POST", "/lock"],
   ["POST", "/unlock"],
   ["PUT", "/quotas"],

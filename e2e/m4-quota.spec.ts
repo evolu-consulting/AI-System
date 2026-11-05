@@ -120,7 +120,7 @@ test("ADM-FR-40 · Q9 · E22 · tab Thông tin và Quota cập nhật version ch
   expect((await resp).status()).toBe(200);
   await expect(conflictDialog(page)).toHaveCount(0);
 
-  await page.getByRole("tab", { name: "Thông tin" }).click();
+  await page.getByRole("tab", { name: "Cài đặt" }).click();
   await name.fill("Acme Hai");
   resp = page.waitForResponse(isPatch);
   await save.click();

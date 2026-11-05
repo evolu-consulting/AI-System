@@ -4,6 +4,7 @@
 import {
   TenantCreateRequestSchema,
   TenantListQuerySchema,
+  TenantProfileUpdateRequestSchema,
   TenantUpdateRequestSchema,
 } from "@ai/contracts";
 import { type Context, Hono } from "hono";
@@ -11,6 +12,7 @@ import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";
 import { requireTenantScope } from "../../lib/tenant-scope";
 import type { TestHooks } from "../../lib/test-hooks";
+import { getTenantProfile, updateTenantProfile } from "./tenants.profile.service";
 import {
   createTenant,
   getTenant,
@@ -41,6 +43,17 @@ export function tenantsRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars
     const id = parseIdParam(c);
     requireTenantScope(c, id);
     return c.json(await getTenant(d, c.get("scope"), id));
+  });
+  // CR-121 · hồ sơ công ty: đọc = như GET /:id (tenant_admin chỉ công ty mình); sửa = như PATCH /:id (chỉ platform_admin).
+  r.get("/:id/profile", ...admins, async (c) => {
+    const id = parseIdParam(c);
+    requireTenantScope(c, id);
+    return c.json(await getTenantProfile(d, c.get("scope"), id));
+  });
+  r.patch("/:id/profile", ...platform, async (c) => {
+    const id = parseIdParam(c);
+    const input = await parseJson(c, TenantProfileUpdateRequestSchema);
+    return c.json(await updateTenantProfile(call(c), id, input));
   });
   r.patch("/:id", ...platform, async (c) => {
     const id = parseIdParam(c);

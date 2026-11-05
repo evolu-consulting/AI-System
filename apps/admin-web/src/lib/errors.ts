@@ -27,6 +27,7 @@ export const ERROR_MESSAGE_KEYS = [
   "users.error.usernameTaken",
   "users.error.emailTaken",
   "tenants.error.keyTaken",
+  "tenants.error.leaderNotMember",
   "common.tenantPicker.required",
   "errors.platformTenantLocked",
   // CR-102a (`EXTERNAL_ORG_ERRORS` + NAME_TAKEN của công ty đối tác)
@@ -120,6 +121,7 @@ const STATIC_KEYS: Partial<Record<string, string>> = {
   KEY_TAKEN: "tenants.error.keyTaken",
   TENANT_REQUIRED: "common.tenantPicker.required",
   PLATFORM_TENANT_LOCKED: "errors.platformTenantLocked",
+  LEADER_NOT_MEMBER: "tenants.error.leaderNotMember", // CR-121 (422 CEO/Giám đốc không thuộc công ty)
   EXTERNAL_ORG_INACTIVE: "errors.externalOrgInactive",
   USER_DEACTIVATED: "errors.userDeactivated",
   NAME_TAKEN: "partners.error.nameTaken",

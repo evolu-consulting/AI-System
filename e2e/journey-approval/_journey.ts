@@ -1,4 +1,4 @@
-﻿// e2e-journey-approval · bước dùng chung của hành trình duyệt HĐ (stack `approval.ja.ts` và triển khai `deployed/21-*`): đăng nhập hai web,
+// e2e-journey-approval · bước dùng chung của hành trình duyệt HĐ (stack `approval.ja.ts` và triển khai `deployed/21-*`): đăng nhập hai web,
 // platform admin gán quy trình + luật + bật engine ở ai-admin, nhân viên tải HĐ, người duyệt bấm Đạt. Chỉ thao tác như người dùng thật (UI).
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
 import { loginPlatformAdminUi, openTenantAppsTab, optionValue, safeReload } from "../_kit/ui";
@@ -115,7 +115,7 @@ export async function adminSetEngine(page: Page, e: Env, on: boolean): Promise<v
   await expect(toast(page, "Đã lưu tính năng cho")).toBeVisible();
   // đọc lại từ máy chủ: công tắc phải đúng
   await safeReload(page);
-  await page.getByRole("tab", { name: "Ứng dụng & Gói" }).click();
+  await page.getByRole("tab", { name: "Ứng dụng" }).click();
   await expect(
     processBlock(page.getByRole("region", { name: /Sổ Hợp Tác|Hợp đồng/ }).first()).getByTestId(
       "tenant-engine-switch",

@@ -21,10 +21,10 @@ test("ADM-FR-77 · tenant_admin binh: sidebar chỉ có công ty acme, không nh
   await expect(nav(page).getByRole("link", { name: "Tạo công ty" })).toHaveCount(0);
   await page.goto("/users");
   await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.acme}\\?.*tab=users`));
-  await expect(page.getByRole("tab", { name: "Người dùng", selected: true })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Thành viên", selected: true })).toBeVisible();
   // CR-112 S7 (ADM-FR-77 AC4): tenant_admin có tab Quota rút gọn (chỉ đọc); tab chỉ-platform vẫn ẩn.
   await expect(page.getByRole("tab", { name: "Quota" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Công cụ quy trình" })).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: "Quy trình" })).toHaveCount(0);
   await page.goto(`/tenants/${TENANT_ID.globex}`);
   await expect(page.getByRole("heading", { name: "Không tìm thấy" })).toBeVisible();
 });
@@ -43,7 +43,7 @@ test("ADM-FR-76 · platform_admin: 3 nhóm NỀN TẢNG · CÔNG TY · HỆ TH�
   await expect(list.getByRole("link")).toHaveCount(1);
   await list.getByRole("link").click();
   await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.globex}`));
-  await expect(page.getByRole("tab", { name: "Thông tin" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Cài đặt" })).toBeVisible();
   await page.goto("/users");
   await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.globex}\\?.*tab=users`));
 });

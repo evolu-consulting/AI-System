@@ -155,6 +155,73 @@ export const TenantDetailSchema = z
   .refine(statusMatchesActive, statusIssue);
 export type TenantDetail = z.infer<typeof TenantDetailSchema>;
 
+/** CR-121 · mã lỗi hồ sơ công ty (khối riêng như `EXTERNAL_ORG_ERRORS`, không thuộc `API_ERRORS`). */
+export const TENANT_PROFILE_ERRORS = {
+  /** CEO/Giám đốc phải là thành viên đang hoạt động của chính công ty này. */
+  LEADER_NOT_MEMBER: 422,
+} as const satisfies Record<string, 422>;
+export type TenantProfileErrorCode = keyof typeof TENANT_PROFILE_ERRORS;
+
+export const TENANT_PROFILE_PHONE_RE = /^[0-9 .+()-]{6,24}$/;
+export const TENANT_PROFILE_TAX_CODE_RE = /^\d{10}(-\d{3})?$/;
+export const TENANT_STAFF_SIZE_MAX = 1_000_000;
+
+/** Chuỗi rỗng/chỉ khoảng trắng ⇒ null (xoá giá trị); còn lại kiểm bằng `inner`. */
+const clearable = <T extends z.ZodType>(inner: T) =>
+  z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? null : v), inner.nullable());
+const textField = (max: number) => clearable(z.string().trim().min(1).max(max));
+
+/** Một người trong công ty (CEO/Giám đốc/trưởng phòng) — chỉ để hiển thị. */
+export const TenantPersonSchema = z.strictObject({
+  id: UuidSchema,
+  display_name: z.string().min(1),
+});
+export type TenantPerson = z.infer<typeof TenantPersonSchema>;
+
+export const TenantDepartmentSchema = z.strictObject({
+  group_id: UuidSchema,
+  /** `groups.name` (jsonb vi/en). */
+  name: z.record(z.string(), z.string()),
+  member_count: CountSchema,
+  head: TenantPersonSchema.nullable(),
+});
+export type TenantDepartment = z.infer<typeof TenantDepartmentSchema>;
+
+/** `GET/PATCH /admin/tenants/:id/profile` — hồ sơ công ty nhập tay + phòng ban (chỉ đọc). */
+export const TenantCompanyProfileSchema = z.strictObject({
+  tenant_id: UuidSchema,
+  /** Cùng bộ đếm `version` với `PATCH /admin/tenants/:id`. */
+  version: VersionSchema,
+  legal_name: z.string().nullable(),
+  tax_code: z.string().nullable(),
+  address: z.string().nullable(),
+  staff_size: z.number().int().min(0).nullable(),
+  contact_name: z.string().nullable(),
+  contact_email: z.string().nullable(),
+  contact_phone: z.string().nullable(),
+  ceo: TenantPersonSchema.nullable(),
+  director: TenantPersonSchema.nullable(),
+  /** Số thành viên đang hoạt động (cùng nguồn "Thành viên"). */
+  member_count: CountSchema,
+  departments: z.array(TenantDepartmentSchema),
+});
+export type TenantCompanyProfile = z.infer<typeof TenantCompanyProfileSchema>;
+
+/** Gửi trường nào sửa trường đó; `null`/chuỗi rỗng = xoá. Không có `name` (tên công ty sửa qua `PATCH /admin/tenants/:id`). */
+export const TenantProfileUpdateRequestSchema = z.strictObject({
+  version: VersionSchema,
+  legal_name: textField(256).optional(),
+  tax_code: clearable(z.string().trim().regex(TENANT_PROFILE_TAX_CODE_RE)).optional(),
+  address: textField(512).optional(),
+  staff_size: clearable(z.number().int().min(0).max(TENANT_STAFF_SIZE_MAX)).optional(),
+  contact_name: textField(128).optional(),
+  contact_email: clearable(EmailSchema).optional(),
+  contact_phone: clearable(z.string().trim().regex(TENANT_PROFILE_PHONE_RE)).optional(),
+  ceo_user_id: clearable(UuidSchema).optional(),
+  director_user_id: clearable(UuidSchema).optional(),
+});
+export type TenantProfileUpdateRequest = z.infer<typeof TenantProfileUpdateRequestSchema>;
+
 /** `q` khớp `key`/`name` (ILIKE); sắp `key` tăng dần. */
 export const TenantListQuerySchema = ListQueryBase.extend({
   status: EntityStatusSchema.optional(),

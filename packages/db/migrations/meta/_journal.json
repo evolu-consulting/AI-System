@@ -246,6 +246,13 @@
       "when": 1803100000000,
       "tag": "0034_profile_version",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1803200000000,
+      "tag": "0035_tenant_profile",
+      "breakpoints": true
     }
   ]
 }

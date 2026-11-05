@@ -736,15 +736,16 @@
     },
     "tab": {
       "overview": "Overview",
-      "info": "Details",
-      "features": "Apps & Packs",
+      "profile": "Profile",
+      "info": "Settings",
+      "features": "Apps",
       "agents": "Agents",
       "quota": "Quota",
-      "users": "Users",
+      "users": "Members",
       "groups": "Groups",
       "partners": "Partners",
       "access": "Permissions",
-      "workflowTools": "Process tools",
+      "workflowTools": "Processes",
       "packs": "Packs",
       "unavailableBody": "This section will be available in a later release."
     },
@@ -763,14 +764,45 @@
       "saved": "Saved the default app of {tenant}"
     },
     "profile": {
-      "title": "Company profile",
-      "legalName": "Legal name",
-      "address": "Address",
-      "taxId": "Tax ID",
-      "email": "Email",
+      "title": "Other contact channels",
       "websites": "Websites",
       "zalo": "Zalo OA",
       "phones": "Phones"
+    },
+    "summary": "{users} users · {apps} apps on · {roles} roles",
+    "company": {
+      "card": {
+        "info": "Company information",
+        "contact": "Contact and leadership",
+        "departments": "Departments"
+      },
+      "legalName": "Legal name",
+      "taxCode": "Tax code",
+      "address": "Address",
+      "staffSize": "Number of staff",
+      "staffCount": "{count} staff",
+      "memberCount": "{count} members using the system",
+      "contactName": "Contact person",
+      "contactEmail": "Contact email",
+      "contactPhone": "Phone number",
+      "ceo": "CEO",
+      "director": "Director",
+      "noneChosen": "Not chosen",
+      "leaderHint": "Pick from the active members of this company.",
+      "empty": "Not provided",
+      "edit": "Edit {field}",
+      "saved": "Company information saved",
+      "departmentsEmpty": "This company has no departments yet.",
+      "deptPeople": "{count} people",
+      "deptHead": "head: {name}",
+      "manageGroups": "Manage groups and departments",
+      "error": {
+        "email": "The email looks wrong, for example name@company.com",
+        "phone": "Phone numbers use digits, spaces and + ( ) . - only (6–24 characters)",
+        "taxCode": "Tax code is 10 digits; a branch adds -xxx",
+        "staffSize": "Enter a whole number, 0 or more",
+        "tooLong": "The text is too long"
+      }
     },
     "users": {
       "summary": "{users} users · {admins} tenant admins · {locked} locked",
@@ -800,7 +832,8 @@
       "nameRequired": "Enter the company name",
       "timezoneRequired": "Choose a time zone",
       "timezoneUnsupported": "This time zone isn't supported. Choose another one from the list.",
-      "processRunsRange": "Enter a whole number from 1 to 1000."
+      "processRunsRange": "Enter a whole number from 1 to 1000.",
+      "leaderNotMember": "The CEO and director must be active members of this company. Pick again from the member list."
     },
     "empty": "No customer tenants yet. Create one to onboard your first company.",
     "quota": {

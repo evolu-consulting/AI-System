@@ -5,6 +5,8 @@ import {
   type ErrorResponse,
   EXTERNAL_ORG_ERRORS,
   type ExternalOrgErrorCode,
+  TENANT_PROFILE_ERRORS,
+  type TenantProfileErrorCode,
 } from "@ai/contracts";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
@@ -86,6 +88,15 @@ const EXT_MESSAGES: Record<ExternalOrgErrorCode, string> = {
 /** CR-102a · mã lỗi user ngoài (khối riêng `EXTERNAL_ORG_ERRORS`, không thuộc `API_ERRORS` khoá 46). */
 export function extOrgError(code: ExternalOrgErrorCode, details?: unknown): AppError {
   return new AppError(code, EXTERNAL_ORG_ERRORS[code], EXT_MESSAGES[code], details);
+}
+
+const PROFILE_MESSAGES: Record<TenantProfileErrorCode, string> = {
+  LEADER_NOT_MEMBER: "CEO and director must be active members of this company",
+};
+
+/** CR-121 · mã lỗi hồ sơ công ty (khối riêng `TENANT_PROFILE_ERRORS`). `details.fields` = trường sai. */
+export function tenantProfileError(code: TenantProfileErrorCode, details?: unknown): AppError {
+  return new AppError(code, TENANT_PROFILE_ERRORS[code], PROFILE_MESSAGES[code], details);
 }
 
 export function isAppError(err: unknown, code?: ErrorCode): err is AppError {

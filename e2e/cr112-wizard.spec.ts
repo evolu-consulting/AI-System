@@ -120,9 +120,9 @@ test("ADM-FR-79 · AC1,AC2,AC4 · sidebar '+' → bước 1 tạo công ty ngay,
   await expect(page.getByTestId("ov-apps")).toHaveText("1");
   await shot(page, "4-review");
   await page.getByRole("button", { name: "Hoàn tất" }).click();
-  await expect(page).toHaveURL(new RegExp(`/tenants/${tenantId}\\?.*tab=overview`));
-  await expect(page.getByRole("tab", { name: "Tổng quan", selected: true })).toBeVisible();
-  await expect(page.getByTestId("ov-roles")).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/tenants/${tenantId}\\?.*tab=profile`));
+  await expect(page.getByRole("tab", { name: "Hồ sơ", selected: true })).toBeVisible();
+  await expect(page.getByTestId("tenant-summary")).toBeVisible();
   await shot(page, "overview");
 });
 
@@ -168,7 +168,8 @@ test("ADM-FR-77 AC4 · tenant_admin: tab Quota rút gọn chỉ đọc (run/toke
   expect(platformOnly).toEqual([]);
   await shot(page, "quota-tenant-admin");
 
-  // Tab Tổng quan (đọc được cho tenant_admin): số người dùng + quota.
-  await page.getByRole("tab", { name: "Tổng quan" }).click();
-  await expect(page.getByTestId("ov-users")).toBeVisible();
+  // Dòng tóm tắt ở đầu trang (đọc được cho tenant_admin) + tab Hồ sơ chỉ xem (không nút Sửa).
+  await expect(page.getByTestId("tenant-summary")).toBeVisible();
+  await page.getByRole("tab", { name: "Hồ sơ" }).click();
+  await expect(page.getByRole("button", { name: /^Sửa / })).toHaveCount(0);
 });

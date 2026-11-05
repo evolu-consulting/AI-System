@@ -736,15 +736,16 @@
     },
     "tab": {
       "overview": "Tổng quan",
-      "info": "Thông tin",
-      "features": "Ứng dụng & Gói",
+      "profile": "Hồ sơ",
+      "info": "Cài đặt",
+      "features": "Ứng dụng",
       "agents": "Agents",
       "quota": "Quota",
-      "users": "Người dùng",
+      "users": "Thành viên",
       "groups": "Nhóm",
       "partners": "Đối tác",
       "access": "Phân quyền",
-      "workflowTools": "Công cụ quy trình",
+      "workflowTools": "Quy trình",
       "packs": "Gói",
       "unavailableBody": "Mục này sẽ khả dụng ở bản sau."
     },
@@ -763,14 +764,45 @@
       "saved": "Đã lưu app mặc định của {tenant}"
     },
     "profile": {
-      "title": "Hồ sơ công ty",
-      "legalName": "Tên pháp lý",
-      "address": "Địa chỉ",
-      "taxId": "MST",
-      "email": "Email",
+      "title": "Kênh liên hệ khác",
       "websites": "Website",
       "zalo": "Zalo OA",
       "phones": "Điện thoại"
+    },
+    "summary": "{users} người dùng · {apps} ứng dụng đang bật · {roles} vai",
+    "company": {
+      "card": {
+        "info": "Thông tin công ty",
+        "contact": "Liên hệ và lãnh đạo",
+        "departments": "Phòng ban"
+      },
+      "legalName": "Tên pháp lý",
+      "taxCode": "Mã số thuế",
+      "address": "Địa chỉ",
+      "staffSize": "Số nhân viên",
+      "staffCount": "{count} nhân viên",
+      "memberCount": "{count} thành viên đang dùng hệ thống",
+      "contactName": "Người liên hệ",
+      "contactEmail": "Email liên hệ",
+      "contactPhone": "Số điện thoại",
+      "ceo": "CEO",
+      "director": "Giám đốc",
+      "noneChosen": "Chưa chọn",
+      "leaderHint": "Chọn từ thành viên đang hoạt động của công ty này.",
+      "empty": "Chưa có thông tin",
+      "edit": "Sửa {field}",
+      "saved": "Đã lưu thông tin công ty",
+      "departmentsEmpty": "Công ty chưa tạo phòng ban nào.",
+      "deptPeople": "{count} người",
+      "deptHead": "trưởng phòng {name}",
+      "manageGroups": "Quản lý nhóm và phòng ban",
+      "error": {
+        "email": "Email chưa đúng, ví dụ ten@congty.vn",
+        "phone": "Số điện thoại chỉ gồm số, dấu cách, + ( ) . - (6–24 ký tự)",
+        "taxCode": "Mã số thuế gồm 10 số, chi nhánh thêm -xxx",
+        "staffSize": "Nhập số nguyên từ 0 trở lên",
+        "tooLong": "Nội dung quá dài"
+      }
     },
     "users": {
       "summary": "{users} user · {admins} tenant_admin · {locked} đã khoá",
@@ -800,7 +832,8 @@
       "nameRequired": "Nhập tên công ty",
       "timezoneRequired": "Chọn múi giờ",
       "timezoneUnsupported": "Múi giờ này chưa được hỗ trợ. Chọn một múi giờ khác trong danh sách.",
-      "processRunsRange": "Nhập số nguyên từ 1 đến 1000."
+      "processRunsRange": "Nhập số nguyên từ 1 đến 1000.",
+      "leaderNotMember": "CEO và Giám đốc phải là thành viên đang hoạt động của công ty này. Chọn lại từ danh sách thành viên."
     },
     "empty": "Chưa có tenant khách hàng nào. Tạo tenant để onboard công ty đầu tiên.",
     "quota": {

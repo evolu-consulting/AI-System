@@ -55,7 +55,12 @@ export function toTenant(t: TenantRow): Tenant {
 }
 
 /** Hàng audit `tenant` (plan M4 §4.2): tenant_id = chính tenant, snapshot false. */
-function tenantAudit(action: AuditActionValue, before: Tenant | null, after: Tenant): AuditInput {
+export function tenantAudit(
+  action: AuditActionValue,
+  before: Tenant | null,
+  after: Tenant,
+  summary?: Record<string, unknown>,
+): AuditInput {
   return auditOf(action, "tenant", {
     entityId: after.id,
     entityName: after.key,
@@ -63,6 +68,7 @@ function tenantAudit(action: AuditActionValue, before: Tenant | null, after: Ten
     before,
     after,
     entityVersion: after.version,
+    summary,
   });
 }
 
@@ -79,7 +85,7 @@ export async function listTenants(
   };
 }
 
-async function mustFind(tx: Tx, id: string, forUpdate = false): Promise<TenantRow> {
+export async function mustFind(tx: Tx, id: string, forUpdate = false): Promise<TenantRow> {
   const t = await repo.findTenant(tx, id, { forUpdate });
   if (!t) throw appError("NOT_FOUND");
   return t;

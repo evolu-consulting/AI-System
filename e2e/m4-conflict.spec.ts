@@ -42,7 +42,7 @@ test("M4-R17 · M4-AC14 · E21 · tenant acme: admin (API) lưu trước → 'ad
   request,
 }) => {
   await loginAdmin(page);
-  await page.goto(`/tenants/${TENANT_ID.acme}`);
+  await page.goto(`/tenants/${TENANT_ID.acme}?tab=info`);
   await page.getByRole("textbox", { name: "Tên công ty" }).fill("Acme A");
   const mine = await versionOf("tenants", TENANT_ID.acme);
   const api = await apiAsAdmin(request);

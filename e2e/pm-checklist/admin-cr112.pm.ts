@@ -92,7 +92,7 @@ test("CR-112 · 4 · evolu/julian.bui: chỉ thấy công ty mình, không nhóm
     nav(page).getByRole("list", { name: "Danh sách công ty" }).getByRole("link"),
   ).toHaveCount(1);
   await page.goto("/users");
-  await expect(page.getByRole("tab", { name: "Người dùng", selected: true })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Thành viên", selected: true })).toBeVisible();
   await page.getByRole("tab", { name: "Phân quyền" }).click();
   await expect(page.getByRole("tab", { name: "Phân quyền", selected: true })).toBeVisible();
 });

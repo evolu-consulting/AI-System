@@ -67,7 +67,7 @@ test("CR-112 · tab Ứng dụng & Gói của acme: bộ 'Không chuẩn' → Qu
   const calls = await fakePacks(page, TENANT_ID.acme);
   await loginAdmin(page);
   await page.goto(`/tenants/${TENANT_ID.acme}?tab=features`);
-  await expect(page.getByRole("tab", { name: "Ứng dụng & Gói" })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: "Ứng dụng" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -115,7 +115,7 @@ test("CR-112 · URL cũ ?tab=packs mở tab Ứng dụng & Gói, tab Gói không
   await fakePacks(page, TENANT_ID.acme);
   await loginAdmin(page);
   await page.goto(`/tenants/${TENANT_ID.acme}?tab=packs`);
-  await expect(page.getByRole("tab", { name: "Ứng dụng & Gói" })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: "Ứng dụng" })).toHaveAttribute(
     "aria-selected",
     "true",
   );

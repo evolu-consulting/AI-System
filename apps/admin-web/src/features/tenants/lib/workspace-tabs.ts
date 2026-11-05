@@ -1,9 +1,10 @@
-// CR-112 · ADM-FR-76/77 · tab workspace công ty theo vai. Thứ tự (Q9/Q10): Tổng quan (COULD, chỉ đọc) · Thông tin · Ứng dụng & Gói (key `features`, S4 đã gộp Feature + Gói) ·
-// Người dùng · Nhóm · Đối tác · Phân quyền · Agents · Công cụ quy trình · Quota. Tab mặc định (không `?tab=`) vẫn là Thông tin.
-// platform_admin đủ tab; tenant_admin: Tổng quan, Thông tin (chỉ xem), Ứng dụng & Gói (chỉ xem), nhóm quyền người dùng, Agents, Quota rút gọn (chỉ đọc, không tiền).
-// "packs" chỉ còn là key URL cũ (activeTab chuyển sang `features`), không nằm trong danh sách tab.
+// CR-121 · tab workspace công ty theo vai. Thứ tự: Hồ sơ · Ứng dụng (key `features`) · Quy trình (key `workflow-tools`, chỉ platform) ·
+// Thành viên (key `users`) · Cài đặt (key `info`) · rồi các mục quản trị còn lại (Nhóm · Đối tác · Phân quyền · Agents · Quota).
+// Bỏ tab "Tổng quan" (đã có "Tổng quan" ở thanh bên); số tóm tắt nằm một dòng ở đầu trang. Tab mặc định (không `?tab=`) = Hồ sơ.
+// platform_admin đủ tab; tenant_admin: Hồ sơ (chỉ xem), Ứng dụng (chỉ xem), Thành viên, Cài đặt (chỉ xem), Nhóm, Đối tác, Phân quyền,
+// Agents, Quota rút gọn (chỉ đọc, không tiền). "packs"/"overview" chỉ còn là key URL cũ (activeTab chuyển đi), không nằm trong danh sách.
 export type TenantTab =
-  | "overview"
+  | "profile"
   | "info"
   | "features"
   | "packs"
@@ -16,22 +17,22 @@ export type TenantTab =
   | "quota";
 
 export const TENANT_TABS: readonly TenantTab[] = [
-  "overview",
-  "info",
+  "profile",
   "features",
+  "workflow-tools",
   "users",
+  "info",
   "groups",
   "partners",
   "access",
   "agents",
-  "workflow-tools",
   "quota",
 ];
 const TENANT_ADMIN: readonly TenantTab[] = [
-  "overview",
-  "info",
+  "profile",
   "features",
   "users",
+  "info",
   "groups",
   "partners",
   "access",
@@ -40,7 +41,7 @@ const TENANT_ADMIN: readonly TenantTab[] = [
 ];
 
 export const TAB_LABEL = {
-  overview: "tenants.tab.overview",
+  profile: "tenants.tab.profile",
   info: "tenants.tab.info",
   features: "tenants.tab.features",
   packs: "tenants.tab.packs",
@@ -56,8 +57,8 @@ export const TAB_LABEL = {
 export const visibleTabs = (isPlatform: boolean): readonly TenantTab[] =>
   isPlatform ? TENANT_TABS : TENANT_ADMIN;
 
-/** Tab trên URL không thuộc vai ⇒ về "info" (không render nội dung tab chỉ-platform). */
+/** Tab trên URL không thuộc vai (hoặc không còn, vd `overview`) ⇒ "profile" (không render nội dung tab chỉ-platform). */
 export function activeTab(tab: TenantTab | undefined, isPlatform: boolean): TenantTab {
-  const t = tab === "packs" ? "features" : tab; // CR-112 S4: tab Gói đã gộp vào "Ứng dụng & Gói" (URL cũ vẫn mở được)
-  return t && visibleTabs(isPlatform).includes(t) ? t : "info";
+  const t = tab === "packs" ? "features" : tab; // CR-112 S4: tab Gói đã gộp vào "Ứng dụng" (URL cũ vẫn mở được)
+  return t && visibleTabs(isPlatform).includes(t) ? t : "profile";
 }

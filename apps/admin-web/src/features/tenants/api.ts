@@ -9,12 +9,15 @@ import type {
   PackState,
   QuotaSetRequest,
   QuotaSetResponse,
+  TenantCompanyProfile,
   TenantCreateRequest,
   TenantCreateResponse,
   TenantDetail,
   TenantListResponse,
+  TenantProfileUpdateRequest,
   TenantUpdateRequest,
   TenantWorkflowToolList,
+  UserListResponse,
 } from "@ai/contracts";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
@@ -47,6 +50,44 @@ export function useTenantDetail(id: string, enabled: boolean) {
     queryKey: KEYS.detail(id),
     enabled,
     queryFn: () => api<TenantDetail>(`/admin/tenants/${id}`),
+  });
+}
+
+const PROFILE_KEY = (id: string) => ["tenants", "company-profile", id] as const;
+
+/** CR-121 · hồ sơ công ty nhập tay + phòng ban (chỉ đọc). */
+export function useTenantCompanyProfile(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: PROFILE_KEY(id),
+    enabled,
+    queryFn: () => api<TenantCompanyProfile>(`/admin/tenants/${id}/profile`),
+  });
+}
+
+/** PATCH từng trường (kèm `version`); xong ghi bản mới vào cache + làm mới chi tiết/danh sách công ty (version dùng chung). */
+export function useUpdateTenantProfile(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: TenantProfileUpdateRequest) =>
+      api<TenantCompanyProfile>(`/admin/tenants/${id}/profile`, { method: "PATCH", body }),
+    onSuccess: (res) => {
+      qc.setQueryData(PROFILE_KEY(id), res);
+      void qc.invalidateQueries({ queryKey: KEYS.detail(id) });
+      void qc.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+}
+
+/** CR-121 · thành viên nội bộ đang hoạt động của công ty để chọn CEO/Giám đốc (≤ 200, theo tên). */
+export function useTenantMembers(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["tenants", "members", id] as const,
+    enabled,
+    staleTime: 30_000,
+    queryFn: () =>
+      api<UserListResponse>("/admin/users", {
+        query: { tenant_id: id, kind: "internal", status: "active", limit: 200 },
+      }),
   });
 }
 

@@ -41,7 +41,7 @@ export function TenantCreatePage() {
 
   const go = (s: WizardStep) =>
     void navigate({ search: { tenant: tenantId, step: stepNumber(s) }, replace: true });
-  const toWorkspace = (tab?: "overview") =>
+  const toWorkspace = (tab?: "profile") =>
     void router.navigate(
       tenantId
         ? { to: "/tenants/$tenantId", params: { tenantId }, search: { tab } }
@@ -49,7 +49,7 @@ export function TenantCreatePage() {
     );
   const finish = () => {
     if (query.data) notifySuccess(t("tenants.wizard.done", { name: query.data.name }));
-    toWorkspace("overview");
+    toWorkspace("profile");
   };
 
   return (

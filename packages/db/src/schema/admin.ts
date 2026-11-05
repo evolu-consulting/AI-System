@@ -58,9 +58,20 @@ export const tenants = admin.table(
     profile: jsonb("profile").notNull().default({}),
     /** portal-home (0018): app mở sau đăng nhập mặc định của công ty; null = trang chủ AI System. */
     defaultApp: text("default_app"),
+    /** CR-121 (0035): hồ sơ công ty nhập tay; trống = chưa khai. CEO/Giám đốc: FK kép cùng công ty ở SQL 0035. */
+    legalName: text("legal_name"),
+    taxCode: text("tax_code"),
+    address: text("address"),
+    staffSize: integer("staff_size"),
+    contactName: text("contact_name"),
+    contactEmail: text("contact_email"),
+    contactPhone: text("contact_phone"),
+    ceoUserId: uuid("ceo_user_id"),
+    directorUserId: uuid("director_user_id"),
   },
   (t) => [
     uniqueIndex("tenants_key_uq").on(t.key),
+    // CR-121: CHECK của 9 cột hồ sơ nằm ở SQL 0035 (độ dài, MST, SĐT, quy mô 0…1.000.000, FK kép CEO/Giám đốc).
     check("tenants_process_runs_max_check", sql`${t.processRunsMax} BETWEEN 1 AND 1000`),
     check("tenants_timezone_check", sql`char_length(${t.timezone}) BETWEEN 1 AND 64`),
     check("tenants_key_check", sql`${t.key} ~ '^[a-z0-9-]{2,32}$'`),

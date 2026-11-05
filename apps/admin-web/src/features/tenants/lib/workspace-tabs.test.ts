@@ -1,44 +1,42 @@
-// CR-112 · ADM-FR-76/81 · tab workspace theo vai.
+// CR-112 · CR-121 · ADM-FR-76/81 · tab workspace theo vai.
 import { describe, expect, it } from "bun:test";
 import { activeTab, TENANT_TABS, visibleTabs } from "./workspace-tabs";
 
 describe("ADM-FR-81 · workspace-tabs", () => {
-  it("tenant_admin thấy overview/info/features/users/groups/partners/access/agents/quota (Quota rút gọn), tab chỉ-platform trên URL ⇒ info", () => {
+  it("tenant_admin thấy profile/features/users/info/groups/partners/access/agents/quota, tab chỉ-platform trên URL ⇒ profile", () => {
     expect(visibleTabs(false)).toEqual([
-      "overview",
-      "info",
+      "profile",
       "features",
       "users",
+      "info",
       "groups",
       "partners",
       "access",
       "agents",
       "quota",
     ]);
-    expect(activeTab("workflow-tools", false)).toBe("info");
+    expect(activeTab("workflow-tools", false)).toBe("profile");
     expect(activeTab("quota", false)).toBe("quota");
     expect(activeTab("users", false)).toBe("users");
     expect(activeTab("access", false)).toBe("access");
-    expect(activeTab(undefined, false)).toBe("info");
-    // CR-112 S4 · ADM-FR-78: tab Gói gộp vào Ứng dụng & Gói — URL cũ ?tab=packs mở tab gộp, tab không còn trong danh sách.
+    expect(activeTab(undefined, false)).toBe("profile");
+    // CR-112 S4 · ADM-FR-78: tab Gói gộp vào Ứng dụng — URL cũ ?tab=packs mở tab gộp, tab không còn trong danh sách.
     expect(activeTab("packs", true)).toBe("features");
     expect(visibleTabs(true)).not.toContain("packs");
     expect(activeTab("packs", false)).toBe("features"); // tenant_admin cũng thấy tab gộp (chỉ xem)
   });
 
-  it("platform_admin đủ tab theo thứ tự spec: Tổng quan, Thông tin, Ứng dụng & Gói, Người dùng…, Agents, Công cụ quy trình, Quota", () => {
+  it("CR-121 · platform_admin: Hồ sơ · Ứng dụng · Quy trình · Thành viên · Cài đặt đứng đầu, không còn tab Tổng quan", () => {
     expect(visibleTabs(true)).toEqual([...TENANT_TABS]);
-    expect(TENANT_TABS[0]).toBe("overview");
-    expect(TENANT_TABS[1]).toBe("info");
-    expect(TENANT_TABS[2]).toBe("features");
-    expect(TENANT_TABS.slice(3)).toEqual([
-      "users",
-      "groups",
-      "partners",
-      "access",
-      "agents",
+    expect(TENANT_TABS.slice(0, 5)).toEqual([
+      "profile",
+      "features",
       "workflow-tools",
-      "quota",
+      "users",
+      "info",
     ]);
+    expect(TENANT_TABS).not.toContain("overview" as never);
+    // URL cũ ?tab=overview (không còn là tab hợp lệ) ⇒ về Hồ sơ.
+    expect(activeTab("overview" as never, true)).toBe("profile");
   });
 });

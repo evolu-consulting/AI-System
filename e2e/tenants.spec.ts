@@ -108,22 +108,22 @@ test("ADM-FR-60 · M1-R19 · chi tiết acme: mã readonly, sửa tên + Lưu �
   page,
 }) => {
   await asAdmin(page);
-  await page.goto(`/tenants/${TENANT_ID.acme}`);
-  await expect(page.getByRole("tab", { name: "Thông tin" })).toBeVisible();
+  await page.goto(`/tenants/${TENANT_ID.acme}?tab=info`);
+  await expect(page.getByRole("tab", { name: "Cài đặt" })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Mã công ty" })).not.toBeEditable();
   await page.getByRole("textbox", { name: "Tên công ty" }).fill("Acme Corp 2");
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Đã lưu acme" })).toBeVisible();
   await expect(page.getByRole("tab")).toHaveText([
-    "Tổng quan",
-    "Thông tin",
-    "Ứng dụng & Gói",
-    "Người dùng",
+    "Hồ sơ",
+    "Ứng dụng",
+    "Quy trình",
+    "Thành viên",
+    "Cài đặt",
     "Nhóm",
     "Đối tác",
     "Phân quyền",
     "Agents",
-    "Công cụ quy trình",
     "Quota",
   ]);
   await page.getByRole("tab", { name: "Agents" }).click();
@@ -161,7 +161,7 @@ test("ADM-FR-61 · M1-R10 · tenant platform không có nút khoá", async ({ pa
     return r?.id;
   });
   await page.goto(`/tenants/${id}`);
-  await expect(page.getByRole("tab", { name: "Thông tin" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Cài đặt" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Khoá tenant" })).toHaveCount(0);
 });
 

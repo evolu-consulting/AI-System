@@ -59,7 +59,7 @@ test("ADM-FR-78 · đặt mức Sửa ⇒ bật gói + entitlement Xem/Sửa (g�
   const a = seedAdmin();
   await loginToShell(page, "platform", a.username, a.password);
   await page.goto(`/tenants/${TENANT_ID.acme}`);
-  await page.getByRole("tab", { name: "Ứng dụng & Gói" }).click();
+  await page.getByRole("tab", { name: "Ứng dụng" }).click();
   const card = page.getByRole("region", { name: "Sổ Hợp Tác" });
   await expect(card).toContainText("Đang: Tắt");
   await expect(card).toContainText("Gói chưa bật");

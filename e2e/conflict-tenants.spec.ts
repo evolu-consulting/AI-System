@@ -19,7 +19,7 @@ test.beforeEach(() => {
 
 async function conflictOnAcme(page: Page, request: Parameters<typeof apiAsAdmin>[0]) {
   await loginAdmin(page);
-  await page.goto(`/tenants/${TENANT_ID.acme}`);
+  await page.goto(`/tenants/${TENANT_ID.acme}?tab=info`);
   const name = page.getByRole("textbox", { name: "Tên công ty" });
   await name.fill("Acme A");
   const mine = await versionOf("tenants", TENANT_ID.acme);

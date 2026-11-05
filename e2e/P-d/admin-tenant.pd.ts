@@ -33,7 +33,7 @@ test("ADM-FR-72 · AC-A14 · PD-E05 · padmin đổi múi giờ acme sang Europe
 }) => {
   await platformLogin(p);
   await p.goto(`/tenants/${TENANT_ID.acme}`);
-  await expect(p.getByRole("tab", { name: "Thông tin" })).toBeVisible();
+  await expect(p.getByRole("tab", { name: "Cài đặt" })).toBeVisible();
   await expect(TZ(p)).toHaveValue(/^Asia\/Ho_Chi_Minh/);
   await expect(TZ(p)).not.toBeEditable();
   await p.getByRole("button", { name: "Đổi múi giờ" }).click();
@@ -99,7 +99,7 @@ test("ADM-FR-73 · AC-A15 · PD2-E03 · padmin tab 'Tool quy trình': bật 'Xu�
   await platformLogin(p);
   await p.goto(`/tenants/${TENANT_ID.acme}`);
   // CR-112: tab workspace công ty đổi nhãn "Tool quy trình" → "Công cụ quy trình"; bảng bên trong vẫn tên "Tool quy trình".
-  await p.getByRole("tab", { name: "Công cụ quy trình" }).click();
+  await p.getByRole("tab", { name: "Quy trình" }).click();
   const tbl = p.getByRole("table", { name: "Tool quy trình" });
   const sw = tbl.getByRole("switch", { name: `Bật tool ${PD2_E2E.W.name}` });
   await expect(sw).not.toBeChecked();

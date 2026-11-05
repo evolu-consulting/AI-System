@@ -26,7 +26,7 @@ export async function openTenantAppsTab(page: Page, tenantName: string | RegExp)
     .getByRole("link", { name })
     .click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
-  await page.getByRole("tab", { name: "Ứng dụng & Gói" }).click();
+  await page.getByRole("tab", { name: "Ứng dụng" }).click();
 }
 
 /** Giá trị `value` của lựa chọn có chữ `text` trong `<select>` (ném lỗi rõ nếu không có). */

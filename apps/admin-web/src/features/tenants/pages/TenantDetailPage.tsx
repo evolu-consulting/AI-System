@@ -22,12 +22,12 @@ import { setLastTenant } from "@/lib/last-tenant";
 import { useTr } from "@/lib/use-translate";
 import { useTenantDetail } from "../api";
 import { EmbeddedTab, isEmbeddedTab } from "../components/EmbeddedTab";
-import { TenantOverview } from "../components/overview/TenantOverview";
+import { TenantProfileTab } from "../components/profile/TenantProfileTab";
 import { TenantQuotaReadonly } from "../components/quota/TenantQuotaReadonly";
 import { TenantQuotaTab } from "../components/quota/TenantQuotaTab";
 import { TenantDefaultAppCard } from "../components/TenantDefaultAppCard";
 import { TenantInfoForm } from "../components/TenantInfoForm";
-import { TenantProfileCard } from "../components/TenantProfileCard";
+import { TenantSummaryLine } from "../components/TenantSummaryLine";
 import { useLockFlow } from "../hooks/use-lock-flow";
 import { useTenantConflict } from "../hooks/use-tenant-conflict";
 import { slotsToValue, type TenantInfoValues } from "../lib/schemas";
@@ -183,6 +183,7 @@ export function TenantDetailPage() {
             : undefined
         }
       />
+      <TenantSummaryLine tenantId={tenant.id} users={tenant.user_count} />
       <Tabs
         value={current}
         onValueChange={(v) => void navigate({ search: { tab: v as TenantTab }, replace: true })}
@@ -194,8 +195,8 @@ export function TenantDetailPage() {
             </TabsTrigger>
           ))}
         </TabsList>
-        <TabsContent value="overview" className="pt-4">
-          <TenantOverview tenant={tenant} />
+        <TabsContent value="profile" className="pt-4">
+          <TenantProfileTab tenant={tenant} canEdit={isPlatform} />
         </TabsContent>
         <TabsContent value="info" className="pt-4">
           <TenantInfoForm
@@ -206,7 +207,6 @@ export function TenantDetailPage() {
             onDirtyChange={setInfoDirty}
             onSubmit={save}
           />
-          <TenantProfileCard profile={tenant.profile} />
           {isPlatform ? <TenantDefaultAppCard tenant={tenant} /> : null}
         </TabsContent>
         <TabsContent value="features" className="pt-4">
