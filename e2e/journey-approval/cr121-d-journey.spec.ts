@@ -144,7 +144,7 @@ test("2 · platform admin gán A cho công ty 1, B cho công ty 2 (không công 
       .getByRole("list", { name: "Danh sách công ty" })
       .getByRole("link", { name: new RegExp(e.tenantName) })
       .click();
-    await page.getByRole("tab", { name: "Ứng dụng & Gói" }).click();
+    await page.getByRole("tab", { name: "Ứng dụng" }).click();
     const card = page.getByRole("region", { name: /Sổ Hợp Tác|Hợp đồng/ }).first();
     const blk = processBlock(card);
     await expect(blk).toBeVisible();
