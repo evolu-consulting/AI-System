@@ -58,10 +58,10 @@ describe("canRerunStepUi", () => {
 
 describe("lỗi + tiện ích", () => {
   it("409 pack_bound ⇒ câu riêng; 409 khác ⇒ câu trạng thái", () => {
-    const pack = new ApiError(409, "CONFLICT", "x", { pack_bound: true });
+    const pack = new ApiError(409, "VERSION_CONFLICT", "x", { pack_bound: true });
     expect(isPackBoundError(pack)).toBe(true);
     expect(controlErrorKey(pack)).toContain("packBound");
-    expect(controlErrorKey(new ApiError(409, "CONFLICT", "x"))).toContain("err.state");
+    expect(controlErrorKey(new ApiError(409, "VERSION_CONFLICT", "x"))).toContain("err.state");
     expect(controlErrorKey(new Error("boom"))).toContain("err.generic");
   });
   it("tab Gỡ lỗi chỉ khi level=debug", () => {
