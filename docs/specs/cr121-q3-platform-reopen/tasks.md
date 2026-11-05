@@ -11,7 +11,7 @@ platform_admin mở lại HĐ và lượt duyệt engine của MỘT công ty qu
 - Guard `packGuardOrPlatform` (kit): vai platform_admin (JWT) ⇒ bắt buộc `?tenant_id` uuid (400), gói phải bật cho công ty đó (403 `PACK_DISABLED`), đặt `platformTenant`; vai khác = `packGuard` cũ (`tenant_id` bị bỏ qua).
 - `PackWho.platform` ⇒ `createPackUow.tenant` mở tx tenant đích KHÔNG gắn người (như vòng nền) để luật thấy theo người (chế độ `org`) không chặn; actor vẫn là `userId`.
 - Use case `reopenContract` kiểm vai ở đây (`o.role` + `who.platform`), lý do 1..500 (`reopenReasonOk`), `canReopen({platform})`; repo ghi event `reopened` thêm `by_platform`/`actor_role`; người bắt đầu lượt duyệt mới = người phụ trách/người tạo HĐ (platform không thuộc công ty).
-- Route engine `approval/{reopen,retry,cancel-reopen}`: platform_admin cùng route + body `{reason}`; audit `platform_approval_op` (contract_events) SAU khi thao tác thành công; thiếu `audit` ⇒ 403.
+- Route engine `approval/{reopen,retry,cancel-reopen}`: platform_admin cùng route + body `{reason}`; audit `platform_approval_op` (ý định, TRƯỚC) + `platform_approval_result` (SAU) trong contract_events; lý do qua `reopenReasonOk`; thiếu `audit` ⇒ 403.
 - Idempotent: khoá hàng `FOR UPDATE` + điều kiện `locked` trong một câu ⇒ bấm 2 lần/đua chỉ 1×200, còn lại 409 `CONTRACT_NOT_LOCKED`, đúng 1 event.
 - UI admin-web: `canReopenUi` cho platform_admin; thẻ `ControlDialog` có ô lý do tự nhập (bắt buộc, ≤ 500) cho platform_admin; gửi `?tenant_id` = công ty của lượt.
 
@@ -29,7 +29,7 @@ Không đổi quyền nào khác của platform_admin (đọc/ghi HĐ, duyệt�
 
 ## Quyết định trong lúc làm
 - Audit HĐ = `contract_events` (actor, tenant, HĐ, lý do) vì `hub.audit_log` có CHECK enum entity/action (cần migration).
-- Chưa có int cho 3 route engine của platform (ngoài danh sách XONG KHI); route dùng cùng guard/`requestWho` đã test ở route HĐ.
+- Audit engine: dòng ý định ghi TRƯỚC thao tác (fail-closed), dòng kết quả ghi sau (`contract_events` chỉ thêm, nên tách 2 dòng thay vì cập nhật); use case `ownerOp` kiểm lại vai khi `who.platform`.
 - Compare-and-set theo trạng thái khoá (không thêm `expected_version` vào schema để không đổi contract).
 
 ## Delta (so với docs/current)
@@ -44,10 +44,16 @@ Quản trị nền tảng (platform_admin) mở lại hợp đồng đã khoá c
 - Kịch bản: khi bấm mở lại hai lần (kể cả đồng thời) thì chỉ một lần thành công, lần còn lại 409 và chỉ có một sự kiện [test: tests/acceptance/CR-121/platform-reopen.int.test.ts » mở 2 lần (đua + lần sau) chỉ ra 1 kết quả: 1×200, còn lại 409 CONTRACT_NOT_LOCKED, đúng 1 event]
 - Kịch bản: khi quyền được xét theo vai thì platform_admin được mở lại, vai không có cờ platform thì không [test: apps/hub-api/src/modules/packs/contracts/domain/lock.rules.test.ts » CR-121 Q-3 · platform_admin mở lại được dù không phụ trách / không owner gói, cờ false/vắng không cấp quyền]
 
+#### Yêu cầu: Platform admin xử lý lượt duyệt kẹt của một công ty
+Quản trị nền tảng mở lại / thử lại / huỷ & mở lại lượt duyệt kẹt của một công ty qua đúng 3 chức năng của quản trị công ty; bắt buộc chỉ rõ công ty và lý do (1–500 ký tự). Lịch sử hợp đồng ghi dòng ý định TRƯỚC thao tác và dòng kết quả sau thao tác.
+- Kịch bản: khi platform_admin mở lại lượt kẹt thì thiếu công ty hoặc lý do sai trả 400, công ty không khớp HĐ trả 404, hợp lệ trả 200 và có dòng ý định + kết quả [test: tests/acceptance/CR-121/platform-reopen-engine.int.test.ts » reopen: platform_admin thiếu tenant_id 400, lý do sai 400, tenant không khớp HĐ 404, thành công 200 có audit]
+- Kịch bản: khi platform_admin thử lại lượt chờ quyết định thì cùng quy tắc 400/404/200 và audit [test: tests/acceptance/CR-121/platform-reopen-engine.int.test.ts » retry: platform_admin thiếu tenant_id 400, lý do sai 400, tenant không khớp HĐ 404, thành công 200 có audit]
+- Kịch bản: khi platform_admin huỷ và mở lại lượt chờ quyết định thì cùng quy tắc 400/404/200 và audit [test: tests/acceptance/CR-121/platform-reopen-engine.int.test.ts » cancel-reopen: platform_admin thiếu tenant_id 400, lý do sai 400, tenant không khớp HĐ 404, thành công 200 có audit]
+
 #### Yêu cầu: Nút "Mở lại quy trình" cho platform admin trên trang chi tiết lượt chạy
 Trang chi tiết lượt chạy hiện nút "Mở lại quy trình" cho platform_admin với lượt gắn hợp đồng của mọi công ty; thẻ xác nhận có ô lý do bắt buộc (tối đa 500 ký tự).
 - Kịch bản: khi platform_admin mở lượt gắn hợp đồng thì thấy nút và chỉ xác nhận được khi đã nhập lý do hợp lệ [test: e2e/K1/admin/cr121-run.k1.ts » CR-121 Q-3 · platform_admin mở lượt chạy gắn hợp đồng của công ty acme ⇒ thấy nút 'Mở lại quy trình', thẻ bắt buộc nhập lý do (≤ 500) mới cho xác nhận]
 - Kịch bản: khi xét hiện nút theo vai thì platform_admin thấy với mọi công ty, tenant_admin chỉ công ty mình [test: apps/admin-web/src/features/processes/lib/run-detail-view.test.ts » R-4 · Q-3 · Mở lại quy trình: tenant_admin của đúng công ty HOẶC platform_admin (mọi công ty), lượt gắn hợp đồng]
 
 ## Việc còn lại
-- Chạy e2e cuối đợt (spec chỉ viết, chưa chạy). Int cho 3 route engine của platform_admin (reopen/retry/cancel-reopen) chưa có.
+- Chạy e2e cuối đợt (spec chỉ viết, chưa chạy).

@@ -79,22 +79,26 @@ export const reopenContract =
     });
   };
 
-// CR-121 Q-3 · audit thao tác của platform_admin trên lượt duyệt engine của một công ty: một dòng `contract_events`
-// (type `platform_approval_op`; actor, tenant, HĐ, lý do, thao tác) trong lịch sử HĐ của công ty. Ghi dưới scope tenant đích.
+// CR-121 Q-3 · audit thao tác của platform_admin trên lượt duyệt engine của một công ty, trong lịch sử HĐ (`contract_events`, chỉ thêm):
+// (1) `intent` GHI TRƯỚC thao tác, fail-closed (không ghi được ⇒ không thao tác) ⇒ thao tác đã có hiệu lực thì luôn có dấu vết;
+// (2) `result` ghi sau (kết quả). Cả hai: actor, tenant, HĐ, thao tác, lý do (intent). Scope tenant đích.
 export type PlatformApprovalOp = "reopen" | "retry" | "cancel-reopen";
 
 export type PlatformAuditRepo = {
-  record(c: { id: string; actor: string; op: PlatformApprovalOp; reason: string }): Promise<void>;
+  intent(c: { id: string; actor: string; op: PlatformApprovalOp; reason: string }): Promise<void>;
+  result(c: { id: string; actor: string; op: PlatformApprovalOp; outcome: string }): Promise<void>;
 };
 
-export type RecordPlatformOp = (
-  who: PackWho,
-  id: string,
-  op: PlatformApprovalOp,
-  reason: string,
-) => Promise<void>;
+export type PlatformOpAudit = {
+  intent(who: PackWho, id: string, op: PlatformApprovalOp, reason: string): Promise<void>;
+  result(who: PackWho, id: string, op: PlatformApprovalOp, outcome: string): Promise<void>;
+};
 
-export const recordPlatformOp =
-  (d: { uow: PackUow<{ audit: PlatformAuditRepo }> }): RecordPlatformOp =>
-  (who, id, op, reason) =>
-    d.uow.tenant(who, (r) => r.audit.record({ id, actor: who.userId, op, reason }));
+export const platformOpAudit = (d: {
+  uow: PackUow<{ audit: PlatformAuditRepo }>;
+}): PlatformOpAudit => ({
+  intent: (who, id, op, reason) =>
+    d.uow.tenant(who, (r) => r.audit.intent({ id, actor: who.userId, op, reason })),
+  result: (who, id, op, outcome) =>
+    d.uow.tenant(who, (r) => r.audit.result({ id, actor: who.userId, op, outcome })),
+});

@@ -1,4 +1,4 @@
-﻿// gap-a1 · route trang chi tiết HĐ (mount dưới `/pack/contracts`): `GET /contracts/:id/history` (read, theo luật thấy của người gọi),
+// gap-a1 · route trang chi tiết HĐ (mount dưới `/pack/contracts`): `GET /contracts/:id/history` (read, theo luật thấy của người gọi),
 // `GET /assignees` + `PUT /contracts/:id/owner` + `PUT /contracts/:id/commission` + `POST /contracts/:id/summary` (write; AI có trần
 // thao tác theo tenant/ngày). Guard TRƯỚC đọc thân/tham số (viewer ⇒ 403, 0 SQL); `:id` sai dạng ⇒ 400; HĐ không thấy / tenant khác ⇒ 404.
 import {

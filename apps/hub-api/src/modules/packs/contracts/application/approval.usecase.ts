@@ -275,7 +275,13 @@ export const retryApproval = (d: ApprovalDeps) => ownerOp(d, d.retry);
 export const cancelReopenApproval = (d: ApprovalDeps) => ownerOp(d, d.cancelReopen);
 
 function ownerOp<T extends string>(d: ApprovalDeps, op: EngineOwnerOp<T> | undefined) {
-  return async (who: PackWho, id: string): Promise<ContractApproval | T | "failed"> => {
+  return async (
+    who: PackWho,
+    id: string,
+    o: { role?: string } = {},
+  ): Promise<ContractApproval | T | "failed" | "forbidden"> => {
+    // CR-121 Q-3: `who.platform` (scope tenant đích không gắn người) chỉ hợp lệ với vai platform_admin (route truyền vai từ JWT).
+    if (who.platform === true && o.role !== "platform_admin") return "forbidden";
     const out = op ? await op(who, id) : "failed";
     if (out !== "ok") return out;
     return (await getApproval(d)(who, id)) ?? ("not_found" as T);

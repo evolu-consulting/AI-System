@@ -31,9 +31,10 @@ import type {
   retryApproval,
   saveApprovalSettings,
 } from "../application/approval.usecase";
-import type { RecordPlatformOp } from "../application/reopen-contract.usecase";
+import type { PlatformApprovalOp, PlatformOpAudit } from "../application/reopen-contract.usecase";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
 import type { ApprovalErrorCode } from "../domain/approval-machine.rules";
+import { reopenReasonOk } from "../domain/lock.rules";
 
 const KEY = "contracts";
 export type ApprovalRoutesDeps = {
@@ -45,7 +46,7 @@ export type ApprovalRoutesDeps = {
   readSettings: ReturnType<typeof readApprovalSettings>;
   saveSettings: ReturnType<typeof saveApprovalSettings>;
   /** CR-121 Q-3: audit thao tác của platform_admin (vắng ⇒ platform_admin bị từ chối ở 3 route trên). */
-  audit?: RecordPlatformOp;
+  audit?: PlatformOpAudit;
 };
 
 const who = (u: AuthUser) => ({ userId: u.userId, tenantId: u.tenantId });
@@ -69,6 +70,7 @@ const approvalError = (code: ApprovalErrorCode) => {
 /** Kết quả thao tác owner trên lượt engine ⇒ thẻ mới hoặc lỗi: 404 / 409 APPROVAL_NOT_OPEN / 422 APPROVAL_GROUP_MISSING / 503. */
 function ownerOut<T>(out: T | OwnerFail): T {
   if (out === "not_found") throw appError("NOT_FOUND");
+  if (out === "forbidden") throw appError("FORBIDDEN");
   if (out === "not_stalled" || out === "not_open") throw approvalError("APPROVAL_NOT_OPEN");
   if (out === "flow_invalid")
     throw new AppError(
@@ -80,8 +82,29 @@ function ownerOut<T>(out: T | OwnerFail): T {
     throw new AppError("ENGINE_UNAVAILABLE", 503, "Approval engine unavailable");
   return out as T;
 }
-type OwnerFail = "not_found" | "not_stalled" | "not_open" | "flow_invalid" | "failed";
+type OwnerFail = "not_found" | "not_stalled" | "not_open" | "flow_invalid" | "failed" | "forbidden";
 
+type PackWho = Parameters<PlatformOpAudit["intent"]>[0];
+
+/** CR-121 Q-3 · thao tác engine của platform_admin: lý do 1..500 (400) → audit `intent` TRƯỚC (fail-closed) → thao tác → audit `result`. */
+async function platformOp(
+  audit: PlatformOpAudit | undefined,
+  op: (who: PackWho, id: string, o?: { role?: string }) => Promise<unknown>,
+  w: PackWho,
+  id: string,
+  path: PlatformApprovalOp,
+  role: string,
+  rawBody: unknown,
+) {
+  if (!audit) throw appError("FORBIDDEN");
+  const { reason } = parseWith(ReopenRequestSchema, rawBody);
+  if (!reopenReasonOk(reason))
+    throw new AppError("REASON_REQUIRED", 400, "A reason (1-500 characters) is required");
+  await audit.intent(w, id, path, reason.trim());
+  const out = await op(w, id, { role });
+  await audit.result(w, id, path, typeof out === "string" ? out : "ok").catch(() => undefined);
+  return ownerOut(out as OwnerFail | object);
+}
 export function approvalRoutes(view: PackAccessView, d: ApprovalRoutesDeps): Hono<PackGuardVars> {
   const r = new Hono<PackGuardVars>();
   const read = packGuard(view, KEY, "read");
@@ -123,11 +146,9 @@ export function approvalRoutes(view: PackAccessView, d: ApprovalRoutesDeps): Hon
       const id = parseWith(z.uuid(), c.req.param("id"));
       const w = requestWho(c);
       if (!w.platform) return c.json(ownerOut(await op(who(c.get("user")), id)));
-      if (!d.audit) throw appError("FORBIDDEN");
-      const { reason } = parseWith(ReopenRequestSchema, await readJson(c));
-      const out = ownerOut(await op(w, id));
-      await d.audit(w, id, path, reason);
-      return c.json(out);
+      return c.json(
+        await platformOp(d.audit, op, w, id, path, c.get("user").role, await readJson(c)),
+      );
     });
   r.get("/approval-settings", read, async (c) =>
     c.json(settingsOut(await d.readSettings(who(c.get("user"))))),
