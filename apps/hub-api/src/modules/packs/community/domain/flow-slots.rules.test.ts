@@ -102,7 +102,7 @@ describe("communitySlotSpecs", () => {
     expect(s.map((x) => x.key).sort()).toEqual([SLOT_JOIN, SLOT_MODERATION, SLOT_REPORT].sort());
     for (const x of s) {
       expect(x.packKey).toBe("community");
-      expect(x.groupKeys?.({} as never)).toEqual(["community-admin"]);
+      expect(x.groupKeys?.({} as never)).toEqual([]); // người duyệt do gói quyết, không đòi Group khi gán
       expect(x.requiredInputs).toHaveLength(1);
     }
   });

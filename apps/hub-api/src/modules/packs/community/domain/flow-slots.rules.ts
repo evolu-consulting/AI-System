@@ -130,6 +130,8 @@ export function communitySlotSpecs(): SlotSpec[] {
     systemTools: shape.steps.map((s) => s.tool),
     validate: (b) => validateSlotBody(key, b),
     compile: (b) => compileSlotBody(key, b),
-    groupKeys: () => ["community-admin"],
+    // Người duyệt do GÓI quyết (tenant_admin hoặc quyền `community-admin` của gói) — hub không giải Group của khe này; `community-admin` là
+    // khoá QUYỀN, không phải mã Group (Group vai là `community-owner|editor|viewer`) ⇒ khai ở đây sẽ chặn mọi lần gán (B2 thiếu Group).
+    groupKeys: () => [],
   }));
 }
