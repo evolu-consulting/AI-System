@@ -1,10 +1,11 @@
 // app-catalog · /apps (chỉ platform_admin): bảng danh mục app web + thêm/sửa/xoá. Bật/tắt nhanh ngay trên bảng.
 import type { AppCatalogItem, AppCreateRequest } from "@ai/contracts";
-import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { PageHeader } from "@/components/shared/PageHeader";
+import { ListEmpty, ListPage } from "@/components/shared/list/ListPage";
+import { applyFilters, type FilterGroup, isFiltered } from "@/components/shared/list/list-filter";
+import { rowClickProps } from "@/components/shared/list/row-click";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { notifySuccess } from "@/components/shared/toast";
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { ApiError } from "@/lib/http";
 import { useAppList, useCreateApp, useDeleteApp, useUpdateApp } from "../api";
+import { AppDrawer } from "../components/AppDrawer";
 import { AppFormDialog } from "../components/AppFormDialog";
 
 type Editing = { item: AppCatalogItem | null } | null;
@@ -32,6 +34,34 @@ function AppsContent() {
   const del = useDeleteApp();
   const [editing, setEditing] = useState<Editing>(null);
   const [removing, setRemoving] = useState<AppCatalogItem | null>(null);
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [sel, setSel] = useState<{ status?: string; audience?: string }>({});
+  const all = list.data?.items ?? [];
+  const groups: FilterGroup[] = [
+    {
+      id: "status",
+      label: t("apps.col.enabled"),
+      value: sel.status,
+      options: [
+        { value: "on", label: t("common.on") },
+        { value: "off", label: t("common.off") },
+      ],
+    },
+    {
+      id: "audience",
+      label: t("apps.col.audience"),
+      value: sel.audience,
+      options: [...new Set(all.map((a) => a.audience))].map((v) => ({
+        value: v,
+        label: t(`apps.audience.${v}`),
+      })),
+    },
+  ];
+  const rows = applyFilters(all, groups, (a, id) =>
+    id === "status" ? (a.enabled ? "on" : "off") : a.audience,
+  );
+  const opened = all.find((a) => a.key === openKey) ?? null;
+  const clear = () => setSel({});
   const err = list.error instanceof ApiError ? list.error : null;
 
   const save = async (v: AppCreateRequest) => {
@@ -56,12 +86,17 @@ function AppsContent() {
   };
 
   return (
-    <>
-      <PageHeader
-        title={t("apps.title")}
-        description={t("apps.subtitle")}
-        actions={<Button onClick={() => setEditing({ item: null })}>{t("apps.create")}</Button>}
-      />
+    <ListPage
+      title={t("apps.title")}
+      description={t("apps.subtitle")}
+      count={list.data ? all.length : undefined}
+      primary={<Button onClick={() => setEditing({ item: null })}>{t("apps.create")}</Button>}
+      groups={groups}
+      onChange={(id, v) => setSel((s) => ({ ...s, [id]: v }))}
+      onClear={clear}
+      shown={list.data ? rows.length : undefined}
+      total={list.data ? all.length : undefined}
+    >
       {err ? (
         <ErrorState message={err.message} code={err.code} onRetry={() => void list.refetch()} />
       ) : null}
@@ -79,13 +114,9 @@ function AppsContent() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {(list.data?.items ?? []).map((a) => (
-            <TableRow key={a.key}>
-              <TableCell className="font-medium">
-                <Link to="/apps/$appKey" params={{ appKey: a.key }} className="hover:underline">
-                  {a.name.vi}
-                </Link>
-              </TableCell>
+          {rows.map((a) => (
+            <TableRow key={a.key} {...rowClickProps(() => setOpenKey(a.key), openKey === a.key)}>
+              <TableCell className="font-medium">{a.name.vi}</TableCell>
               <TableCell className="font-mono">{a.key}</TableCell>
               <TableCell className="max-w-64 truncate">{a.url || "—"}</TableCell>
               <TableCell>{t(`apps.audience.${a.audience}`)}</TableCell>
@@ -112,9 +143,13 @@ function AppsContent() {
           ))}
         </TableBody>
       </Table>
-      {list.data && list.data.items.length === 0 ? (
+      {list.data && all.length === 0 ? (
         <p className="mt-4 text-label text-muted-foreground">{t("apps.empty")}</p>
       ) : null}
+      {list.data && all.length > 0 && rows.length === 0 && isFiltered(groups) ? (
+        <ListEmpty what={t("apps.what")} onClear={clear} />
+      ) : null}
+      <AppDrawer app={opened} onClose={() => setOpenKey(null)} />
       {editing ? (
         <AppFormDialog
           key={editing.item?.key ?? "new"}
@@ -137,7 +172,7 @@ function AppsContent() {
           }}
         />
       ) : null}
-    </>
+    </ListPage>
   );
 }
 

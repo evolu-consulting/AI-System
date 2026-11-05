@@ -1,5 +1,6 @@
 // HUB-FR-77 · HUB-FR-78 · CR-054 · bảng "Agent của công ty": Agent · Model · Chạy bằng · Bật cho công ty · Ai được dùng · Thao tác.
 import type { AgentDefaults, AgentGrantRow, AgentSettingsItem } from "@ai/contracts/hub-admin";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/states/EmptyState";
@@ -18,6 +19,9 @@ type Props = {
   loading: boolean;
   actions: AgentActions;
   onGrant: (item: AgentSettingsItem) => void;
+  onOpen?: (item: AgentSettingsItem) => void;
+  activeId?: string | null;
+  empty?: ReactNode;
 };
 
 const NO_ROWS: AgentGrantRow[] = [];
@@ -105,7 +109,9 @@ export function AgentsTable(p: Props) {
       rows={p.items}
       getRowKey={(row) => row.agent.id}
       isLoading={p.loading}
-      empty={<EmptyState message={t("agents.list.empty")} />}
+      empty={p.empty ?? <EmptyState message={t("agents.list.empty")} />}
+      onRowClick={p.onOpen}
+      activeKey={p.activeId}
       skeletonRows={4}
     />
   );

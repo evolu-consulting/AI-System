@@ -57,16 +57,17 @@ test("ADM-FR-20 · M2-R26 · /commands: heading, bảng, /dich có alias tr + sw
   await openPage(page, "/commands", "Commands");
   await expect(page.getByRole("link", { name: "+ Tạo command" })).toBeVisible();
   await expect(page.getByRole("searchbox", { name: "Tìm theo tên, alias, mô tả…" })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "Feature" })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "Workflow" })).toBeVisible();
+  await page.getByRole("button", { name: "Lọc" }).click();
+  await expect(page.getByRole("menu", { name: "Chọn bộ lọc" })).toBeVisible();
   await expect(row(page, "dich")).toContainText("tr");
   await expect(row(page, "dich").getByRole("switch", { name: "Bật command /dich" })).toBeChecked();
   for (const [label, n] of [
-    ["Tất cả", 5],
     ["Bật", 3],
     ["Tắt", 2],
   ] as const) {
-    await expect(page.getByRole("radio", { name: new RegExp(`${label}\\s*${n}`) })).toBeVisible();
+    await expect(
+      page.getByRole("menuitemradio", { name: new RegExp(`${label}\\s*${n}`) }),
+    ).toBeVisible();
   }
 });
 

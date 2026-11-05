@@ -23,13 +23,7 @@ const nameColumn = ({ t }: ColumnCtx): Col => ({
   // Khoảng trắng giữa tên và alias: e2e lọc hàng bằng regex `/tên(?![\w-])` trên textContent.
   cell: (c) => (
     <div className="min-w-0">
-      <Link
-        to="/commands/$commandId"
-        params={{ commandId: c.id }}
-        className="font-mono font-medium text-foreground hover:underline"
-      >
-        /{c.name}
-      </Link>{" "}
+      <span className="font-mono font-medium text-foreground">/{c.name}</span>{" "}
       {c.aliases.length ? (
         <span className="font-mono text-caption text-muted-foreground">{c.aliases.join(", ")}</span>
       ) : null}{" "}

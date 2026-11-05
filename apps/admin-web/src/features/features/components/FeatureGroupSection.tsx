@@ -2,6 +2,7 @@
 import { type FeatureListItem, getAppManifest } from "@ai/contracts";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { rowClickProps } from "@/components/shared/list/row-click";
 import { StatusBadge, type StatusTone } from "@/components/shared/StatusBadge";
 import {
   Table,
@@ -24,9 +25,18 @@ type Props = {
   isFetching: boolean;
   onStatus: (f: FeatureListItem, status: FeatureStatusFilter) => void;
   onDelete: (f: FeatureListItem) => void;
+  onOpen?: (f: FeatureListItem) => void;
+  activeId?: string | null;
 };
 
-export function FeatureGroupSection({ group, isFetching, onStatus, onDelete }: Props) {
+export function FeatureGroupSection({
+  group,
+  isFetching,
+  onStatus,
+  onDelete,
+  onOpen,
+  activeId,
+}: Props) {
   const { t, i18n } = useTranslation();
   const tr = useTr();
   const Icon = APPS[group.app].icon;
@@ -83,16 +93,23 @@ export function FeatureGroupSection({ group, isFetching, onStatus, onDelete }: P
           {group.items.map((f) => {
             const text = featureText(tr, i18n.language, f);
             return (
-              <TableRow key={f.id}>
+              <TableRow
+                key={f.id}
+                {...(onOpen ? rowClickProps(() => onOpen(f), activeId === f.id) : {})}
+              >
                 <TableCell className="max-w-md whitespace-normal">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <Link
-                      to="/features/$featureId"
-                      params={{ featureId: f.id }}
-                      className="font-medium text-foreground hover:underline"
-                    >
-                      {text.name}
-                    </Link>
+                    {onOpen ? (
+                      <span className="font-medium text-foreground">{text.name}</span>
+                    ) : (
+                      <Link
+                        to="/features/$featureId"
+                        params={{ featureId: f.id }}
+                        className="font-medium text-foreground hover:underline"
+                      >
+                        {text.name}
+                      </Link>
+                    )}
                     {f.is_core ? (
                       <StatusBadge tone="info">{t("features.default")}</StatusBadge>
                     ) : null}

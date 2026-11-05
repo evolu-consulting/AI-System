@@ -8,6 +8,15 @@
     "search": "Search…",
     "clearSearch": "Clear search",
     "clearFilters": "Clear filters",
+    "list": {
+      "filter": "Filter",
+      "filterMenu": "Choose filter",
+      "removeFilter": "Remove filter {{name}}",
+      "result": "{{shown}} / {{total}}",
+      "noMatch": "No {{what}} match the filters",
+      "openDetail": "Open detail page",
+      "closeDrawer": "Close"
+    },
     "all": "All",
     "actions": "Actions",
     "moreActions": "More actions",
@@ -435,7 +444,8 @@
       "title": "Company agents",
       "search": "Search agents",
       "empty": "No agents for this company yet. Agents are created in Agent Forge.",
-      "footnote": "★ Default = the agent that answers when nobody tags an @agent in Ask AI; there is always exactly one (click “Set as default” on another row to change it; the default agent can't be turned off). Only platform admins can change “Enabled for company”. Company admins grant groups/people access to enabled agents. Models are changed in Agent Forge (haiku/sonnet/opus aliases always point to the latest version)."
+      "footnote": "★ Default = the agent that answers when nobody tags an @agent in Ask AI; there is always exactly one (click “Set as default” on another row to change it; the default agent can't be turned off). Only platform admins can change “Enabled for company”. Company admins grant groups/people access to enabled agents. Models are changed in Agent Forge (haiku/sonnet/opus aliases always point to the latest version).",
+      "what": "agents"
     },
     "col": {
       "agent": "Agent",
@@ -531,6 +541,13 @@
       "offHint": "Turned off for this company — the feature that calls this agent will say clearly that it is off.",
       "openStudio": "Open in Studio",
       "openStudioAria": "Open {agent} in Studio"
+    },
+    "drawer": {
+      "kind": "Agent",
+      "model": "Model",
+      "runtime": "Runs on",
+      "who": "Who can use it",
+      "entitled": "Enabled for company"
     }
   },
   "hubErrors": {
@@ -1374,7 +1391,11 @@
       "generic": "Could not save"
     },
     "deleteTitle": "Delete app {name}?",
-    "deleteDesc": "The app disappears from every user's switcher."
+    "deleteDesc": "The app disappears from every user's switcher.",
+    "drawer": {
+      "kind": "App"
+    },
+    "what": "apps"
   },
   "secrets": {
     "error": {
@@ -1831,7 +1852,12 @@
         "duplicate": "Duplicate",
         "delete": "Delete"
       },
-      "noFeature": "No feature"
+      "noFeature": "No feature",
+      "drawer": {
+        "kind": "Command",
+        "aliases": "Aliases"
+      },
+      "what": "commands"
     },
     "delete": {
       "title": "Delete /{name}?",
@@ -1962,7 +1988,8 @@
     "list": {
       "title": "Features",
       "subtitle": "Feature bundles. Users see a command when a feature containing it is granted to them.",
-      "create": "+ New feature"
+      "create": "+ New feature",
+      "what": "features"
     },
     "col": {
       "name": "Name",
@@ -2017,6 +2044,12 @@
     "empty": "No features besides core. Features bundle commands to grant to tenants and groups.",
     "editor": {
       "titleNew": "New feature"
+    },
+    "drawer": {
+      "kind": "Feature",
+      "app": "App",
+      "usage": "In use",
+      "key": "Key"
     }
   },
   "featmeta": {

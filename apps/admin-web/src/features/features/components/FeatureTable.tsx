@@ -16,6 +16,8 @@ type Props = {
   empty: ReactNode;
   onStatus: (f: FeatureListItem, status: FeatureStatusFilter) => void;
   onDelete: (f: FeatureListItem) => void;
+  onOpen?: (f: FeatureListItem) => void;
+  activeId?: string | null;
 };
 
 export function FeatureTable({
@@ -27,6 +29,8 @@ export function FeatureTable({
   empty,
   onStatus,
   onDelete,
+  onOpen,
+  activeId,
 }: Props) {
   const groups = useMemo(() => groupByApp(features ?? []), [features]);
   if (error) return <ErrorState message={error.message} code={error.code} onRetry={onRetry} />;
@@ -41,6 +45,8 @@ export function FeatureTable({
           isFetching={isFetching}
           onStatus={onStatus}
           onDelete={onDelete}
+          onOpen={onOpen}
+          activeId={activeId}
         />
       ))}
     </div>

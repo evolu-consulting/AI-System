@@ -16,9 +16,19 @@ type Props = {
   empty: ReactNode;
   onToggle: (c: CommandListItem, enabled: boolean) => void;
   onDelete: (c: CommandListItem) => void;
+  onOpen?: (c: CommandListItem) => void;
+  activeId?: string | null;
 };
 
-export function CommandTable({ commands, optimistic, onToggle, onDelete, ...table }: Props) {
+export function CommandTable({
+  commands,
+  optimistic,
+  onToggle,
+  onDelete,
+  onOpen,
+  activeId,
+  ...table
+}: Props) {
   const { t, i18n } = useTranslation();
   const tr = useTr();
   const lang = i18n.language;
@@ -32,6 +42,8 @@ export function CommandTable({ commands, optimistic, onToggle, onDelete, ...tabl
       columns={columns}
       rows={commands}
       getRowKey={(c) => c.id}
+      onRowClick={onOpen}
+      activeKey={activeId}
       {...table}
     />
   );

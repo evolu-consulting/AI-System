@@ -57,7 +57,8 @@ test("CR-118 · F1 · /apps → Sổ Hợp Tác: 5 tab, tab Công ty → acme �
   const calls = await fakePacks(page, TENANT_ID.acme, {}, sync);
   await loginAdmin(page);
   await page.goto("/apps");
-  await page.getByRole("link", { name: "Sổ Hợp Tác" }).click();
+  await page.getByRole("row", { name: /Sổ Hợp Tác/ }).click();
+  await page.getByRole("link", { name: "Mở trang chi tiết" }).click();
   await expect(page).toHaveURL(/\/apps\/contracts/);
   await expect(page.getByRole("heading", { level: 1, name: "Sổ Hợp Tác" })).toBeVisible();
   for (const name of TABS) await expect(page.getByRole("tab", { name })).toBeVisible();

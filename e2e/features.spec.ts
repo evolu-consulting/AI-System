@@ -42,13 +42,15 @@ test("ADM-FR-30 · M2-R20 · /features: heading, bảng, core có badge 'Mặc �
   await expect(page.getByRole("link", { name: "+ Tạo feature" })).toBeVisible();
   await expect(row(page, "core")).toContainText("Mặc định");
   await expect(row(page, "core")).toContainText("Mọi tenant");
+  await page.getByRole("button", { name: "Lọc" }).click();
   for (const [label, n] of [
-    ["Tất cả", 5],
     ["Bật", 3],
     ["Beta", 1],
     ["Tắt", 1],
   ] as const) {
-    await expect(page.getByRole("radio", { name: new RegExp(`${label}\\s*${n}`) })).toBeVisible();
+    await expect(
+      page.getByRole("menuitemradio", { name: new RegExp(`${label}\\s*${n}`) }),
+    ).toBeVisible();
   }
   await row(page, "core").getByRole("button", { name: "Thao tác khác" }).click();
   await expect(page.getByRole("menuitem")).toHaveCount(1);

@@ -8,6 +8,15 @@
     "search": "Tìm…",
     "clearSearch": "Xoá từ khoá",
     "clearFilters": "Xoá bộ lọc",
+    "list": {
+      "filter": "Lọc",
+      "filterMenu": "Chọn bộ lọc",
+      "removeFilter": "Bỏ lọc {{name}}",
+      "result": "{{shown}} / {{total}}",
+      "noMatch": "Không có {{what}} khớp bộ lọc",
+      "openDetail": "Mở trang chi tiết",
+      "closeDrawer": "Đóng"
+    },
     "all": "Tất cả",
     "actions": "Thao tác",
     "moreActions": "Thao tác khác",
@@ -435,7 +444,8 @@
       "title": "Agent của công ty",
       "search": "Tìm agent",
       "empty": "Chưa có agent nào cho công ty này. Agent được tạo ở Agent Forge.",
-      "footnote": "★ Mặc định = agent trả lời khi người dùng không tag @agent ở Hỏi AI; luôn có đúng một (bấm “Đặt mặc định” ở dòng khác để đổi; không tắt được agent đang mặc định). “Bật cho công ty” chỉ quản trị nền tảng đổi được. Quản trị công ty cấp quyền cho nhóm/người trong phạm vi agent đã bật. Model đổi ở Agent Forge (alias haiku/sonnet/opus luôn trỏ bản mới nhất)."
+      "footnote": "★ Mặc định = agent trả lời khi người dùng không tag @agent ở Hỏi AI; luôn có đúng một (bấm “Đặt mặc định” ở dòng khác để đổi; không tắt được agent đang mặc định). “Bật cho công ty” chỉ quản trị nền tảng đổi được. Quản trị công ty cấp quyền cho nhóm/người trong phạm vi agent đã bật. Model đổi ở Agent Forge (alias haiku/sonnet/opus luôn trỏ bản mới nhất).",
+      "what": "agent"
     },
     "col": {
       "agent": "Agent",
@@ -531,6 +541,13 @@
       "offHint": "Đã tắt cho công ty này — tính năng gọi agent sẽ báo rõ là đã bị tắt.",
       "openStudio": "Mở trong Studio",
       "openStudioAria": "Mở {agent} trong Studio"
+    },
+    "drawer": {
+      "kind": "Agent",
+      "model": "Model",
+      "runtime": "Chạy bằng",
+      "who": "Ai được dùng",
+      "entitled": "Bật cho công ty"
     }
   },
   "hubErrors": {
@@ -1374,7 +1391,11 @@
       "generic": "Không lưu được"
     },
     "deleteTitle": "Xoá ứng dụng {name}?",
-    "deleteDesc": "App biến mất khỏi switcher của mọi người dùng."
+    "deleteDesc": "App biến mất khỏi switcher của mọi người dùng.",
+    "drawer": {
+      "kind": "Ứng dụng"
+    },
+    "what": "ứng dụng"
   },
   "secrets": {
     "error": {
@@ -1831,7 +1852,12 @@
         "duplicate": "Nhân bản",
         "delete": "Xoá"
       },
-      "noFeature": "Chưa gắn feature"
+      "noFeature": "Chưa gắn feature",
+      "drawer": {
+        "kind": "Lệnh",
+        "aliases": "Tên gọi khác"
+      },
+      "what": "lệnh"
     },
     "delete": {
       "title": "Xoá /{name}?",
@@ -1962,7 +1988,8 @@
     "list": {
       "title": "Features",
       "subtitle": "Gói chức năng. Người dùng thấy command khi feature chứa nó được cấp cho họ.",
-      "create": "+ Tạo feature"
+      "create": "+ Tạo feature",
+      "what": "tính năng"
     },
     "col": {
       "name": "Tên",
@@ -2017,6 +2044,12 @@
     "empty": "Chưa có feature nào ngoài core. Feature gom các command để cấp cho tenant và group.",
     "editor": {
       "titleNew": "Feature mới"
+    },
+    "drawer": {
+      "kind": "Tính năng",
+      "app": "Ứng dụng",
+      "usage": "Đang dùng",
+      "key": "Khoá"
     }
   },
   "featmeta": {

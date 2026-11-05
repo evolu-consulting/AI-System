@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { rowClickProps } from "./list/row-click";
 import { ErrorState } from "./states/ErrorState";
 import { LoadingState } from "./states/LoadingState";
 
@@ -38,13 +39,21 @@ type Props<T> = {
   header?: ReactNode;
   /** CR-120 · gom dòng liền nhau cùng khoá nhóm dưới một hàng tiêu đề (nơi gọi tự sắp `rows` theo nhóm). */
   group?: { of: (row: T) => string; label: (key: string) => ReactNode };
+  /** CR-121 · bấm cả hàng (trừ control con) mở ngăn chi tiết; `activeKey` tô hàng đang mở. */
+  onRowClick?: (row: T) => void;
+  activeKey?: string | null;
 };
 
-type RowProps<T> = { row: T; columns: Column<T>[] };
+type RowProps<T> = {
+  row: T;
+  columns: Column<T>[];
+  onOpen?: (row: T) => void;
+  active?: boolean;
+};
 
-function RowImpl<T>({ row, columns }: RowProps<T>) {
+function RowImpl<T>({ row, columns, onOpen, active }: RowProps<T>) {
   return (
-    <TableRow>
+    <TableRow {...(onOpen ? rowClickProps(() => onOpen(row), active) : {})}>
       {columns.map((c) => (
         <TableCell key={c.id} className={c.className}>
           {c.cell(row)}
@@ -82,6 +91,8 @@ export function DataTable<T>({
   skeletonRows = 8,
   header,
   group,
+  onRowClick,
+  activeKey,
 }: Props<T>) {
   if (error) return <ErrorState message={error.message} code={error.code} onRetry={onRetry} />;
   const showEmpty = !isLoading && rows !== undefined && rows.length === 0 && empty;
@@ -126,7 +137,16 @@ export function DataTable<T>({
                     </TableCell>
                   </TableRow>
                 ) : null;
-              return [head, <Row key={getRowKey(row)} row={row} columns={columns} />];
+              return [
+                head,
+                <Row
+                  key={getRowKey(row)}
+                  row={row}
+                  columns={columns}
+                  onOpen={onRowClick}
+                  active={activeKey === getRowKey(row)}
+                />,
+              ];
             })
           )}
         </TableBody>
