@@ -48,12 +48,18 @@ test.describe("20 quy trình hiển thị cho tenant (ro)", () => {
     await settle(page);
     expect(new URL(page.url()).pathname.startsWith("/login")).toBe(false);
 
-    const heading = page.getByText(/Được platform gán|Assigned by the platform/).first();
-    await expect(heading).toBeVisible({ timeout: 30_000 });
-    // Vùng chứa gần nhất của mục (section, nếu không thì phần tử cha của tiêu đề) phải có ≥ 1 dòng quy trình (hàng bảng / mục danh sách).
-    const area = heading.locator("xpath=ancestor::section[1] | ..").last();
-    const items = area.locator('li, [role="row"]:not(:has([role="columnheader"])), tbody tr');
-    expect(await items.count(), 'mục "Được platform gán" rỗng').toBeGreaterThanOrEqual(1);
+    // Mục "Được platform gán" (hub-routing-backfill, tab "Của công ty" mặc định): mỗi khe `assigned-slot-*`; quy trình đã gán
+    // `assigned-row-*`, hoặc dòng `assigned-in-use-outside` khi tenant chạy mặc định khe chưa gán — cả hai đều là "thấy quy trình".
+    const area = page.getByTestId("assigned-processes");
+    await expect(area).toBeVisible({ timeout: 30_000 });
+    await expect(area.getByText(/Được platform gán|Assigned by platform/).first()).toBeVisible();
+    await expect(area.locator('[data-testid^="assigned-slot-"]').first()).toBeVisible({
+      timeout: 30_000,
+    });
+    const items = area.locator(
+      '[data-testid^="assigned-row-"], [data-testid="assigned-in-use-outside"]',
+    );
+    await expect(items.first(), 'mục "Được platform gán" rỗng').toBeVisible({ timeout: 30_000 });
 
     expect(errs.list).toEqual([]);
   });
