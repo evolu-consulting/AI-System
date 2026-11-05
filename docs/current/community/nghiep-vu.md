@@ -1,4 +1,4 @@
-# Community — nghiệp vụ
+﻿# Community — nghiệp vụ
 
 Nguồn: PDF 28/10/2026 (`docs/intake/community/source-pdf.txt`), Intake (`.../2026-10-28-intake.md`), CR-102/102a/102b. Trạng thái: đã chạy trên `platform/gd0` (c2d8eebf, đợt Community C1–C12, gộp 2026-10-28); **chưa deploy production**. Dòng "Gộp" ở từng mục = hành vi thực tế từ Delta các lát.
 
@@ -148,11 +148,11 @@ Community chạy như module của web gộp `workspace-web`: Bảng tin `/commu
 - Kịch bản: khi đối tác gõ `/contracts` thì về `/community` và không tải chunk contracts [test: thủ công — e2e partner-isolation ở lát cr118-e2e]
 
 #### Yêu cầu: Đăng nhập Community nằm trong web gộp (nguồn: cr118-spec)
-Login gộp (form contracts + đổi mật khẩu bắt buộc lần đầu + TOTP) thay màn đăng nhập riêng của community-web; path `/community*` không tự dội sang AI System (đối tác không có chat-web); path SHT giữ dội như nay. `community.<d>/*` trả 301 về `sohoptac.<d>/community`.
+Login gộp (form contracts + đổi mật khẩu bắt buộc lần đầu + TOTP) thay màn đăng nhập riêng của community-web; path `/community*` không tự dội sang AI System (đối tác không có chat-web); path SHT giữ dội như nay. `community.<d>/*` trả 301 về `app.<d>/community`.
 - Kịch bản: khi đối tác lần đầu đăng nhập thì buộc đổi mật khẩu rồi vào `/community` [test: thủ công — unit login outcome + e2e ở lát cr118-auth]
 
 #### Đã bỏ: COM-FR-44 SSO hand-off Community → Sổ Hợp Tác (nguồn: cr118-spec)
-Lý do: cùng một web và một phiên `contracts` nên không còn hand-off giữa hai app; xoá `contracts-link.ts`, `api/session.ts`, `api/auth.ts` phía community-web. Endpoint `/auth/sso/code` + `/sso` giữ cho admin-web/chat-web vào app (catalog `community`: url `https://sohoptac.<d>/community`, `sso=false`).
+Lý do: cùng một web và một phiên `contracts` nên không còn hand-off giữa hai app; xoá `contracts-link.ts`, `api/session.ts`, `api/auth.ts` phía community-web. Endpoint `/auth/sso/code` + `/sso` giữ cho admin-web/chat-web vào app (catalog `community`: url `https://app.<d>/community`, `sso=false`).
 
 #### Yêu cầu: Đăng nhập Community nằm trong web gộp (nguồn: cr118-auth)
 Login gộp của `workspace-web` (`platform/auth`) có ba bước: mật khẩu → đổi mật khẩu bắt buộc (lần đầu) → mã TOTP (khi đã bật 2FA), rồi
