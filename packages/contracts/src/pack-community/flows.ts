@@ -78,3 +78,17 @@ export const ReportSchema = z.strictObject({
 });
 export type Report = z.infer<typeof ReportSchema>;
 export const ReportListSchema = z.strictObject({ items: z.array(ReportSchema).max(100) });
+
+/** Màn nào của 3 luồng người xem này được dùng (nav shell): tính ở server theo vai + khe đã bật, UI không đoán. */
+export const FlowNavSchema = z.strictObject({
+  /** Hàng chờ duyệt bài: người duyệt + tenant đã bật duyệt bài. */
+  moderationQueue: z.boolean(),
+  /** Xem trạng thái duyệt bài của tôi: tenant đã bật duyệt bài. */
+  moderationOn: z.boolean(),
+  /** Đối tác gửi yêu cầu tham gia. */
+  joinSubmit: z.boolean(),
+  /** Người duyệt xem/quyết yêu cầu tham gia + báo cáo vi phạm. */
+  joinReview: z.boolean(),
+  reports: z.boolean(),
+});
+export type FlowNav = z.infer<typeof FlowNavSchema>;

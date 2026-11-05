@@ -9,6 +9,7 @@ import { cn } from "~/lib/utils";
 import type { NavEntry } from "~/shared/kernel/module-manifest";
 import { MODULES } from "~/shell/modules";
 import { activeEntry, buildShellNav, type ShellNavGroup } from "~/shell/nav";
+import { useFlowCaps } from "~/shell/use-flow-caps";
 import { useShellPacks } from "~/shell/use-shell-packs";
 import type { Role } from "../lib/nav";
 import { BrandMark } from "./BrandMark";
@@ -79,7 +80,11 @@ export function Sidebar({
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const packs = useShellPacks();
-  const groups = useMemo(() => buildShellNav(MODULES, (p) => packs[p] === true), [packs]);
+  const hasCap = useFlowCaps(packs.community === true, pathname);
+  const groups = useMemo(
+    () => buildShellNav(MODULES, (p) => packs[p] === true, hasCap),
+    [packs, hasCap],
+  );
   const brand = useBrand();
   const company = nameOf(brand, user?.tenant.name);
   // Tên sản phẩm chỉ hiện khi người dùng có gói contracts (đối tác không thấy tên "Sổ Hợp Tác" — I1/I3, HT-75/76).

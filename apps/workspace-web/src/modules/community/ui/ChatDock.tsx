@@ -17,7 +17,15 @@ export function ChatDock() {
   const send = (q: string) => {
     if (busy || !q.trim()) return;
     setText("");
-    void ask(api, q, dockContext({ route: route.name, orgId: route.orgId, search }));
+    void ask(
+      api,
+      q,
+      dockContext({
+        route: route.name === "profile" ? "profile" : "feed",
+        orgId: route.orgId,
+        search,
+      }),
+    );
   };
   return (
     <>

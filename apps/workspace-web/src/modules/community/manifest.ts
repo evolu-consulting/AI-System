@@ -1,13 +1,20 @@
 // CR-118 · COM-FR-31 (MODIFIED) · manifest module Community — dữ liệu route + nhà máy cây route tương thích TanStack Router.
 // Shell chỉ đọc file này (luật web-shell-manifest-only). KHÔNG khởi tạo router ở đây: host truyền `createRoute` + route cha
 // (`createRoute` của @tanstack/react-router, `lazyRouteComponent` làm `lazy`). Trang tải lười ⇒ module tắt không có chunk.
-import { Newspaper, PenLine, Settings, User } from "lucide-react";
+import { ClipboardCheck, Flag, Newspaper, PenLine, Settings, User, UserPlus } from "lucide-react";
 import type { ComponentType } from "react";
 import type { ModuleManifest } from "~/shared/kernel/module-manifest";
 import { type CommunityHostConfig, setCommunityHost } from "./application/host";
 import { COMMUNITY_BASE } from "./domain/base";
 
-export type CommunityRouteId = "feed" | "profile" | "profileOrg" | "profileSection";
+export type CommunityRouteId =
+  | "feed"
+  | "profile"
+  | "profileOrg"
+  | "profileSection"
+  | "review"
+  | "join"
+  | "reports";
 export type PageLoader = () => Promise<{ default: ComponentType }>;
 export type CommunityRouteDef = { id: CommunityRouteId; path: string };
 export type { LowRouter } from "./application/router-port";
@@ -17,11 +24,21 @@ export type { CommunityHostConfig };
 export const COMMUNITY_PACK = "community";
 
 /** Route con tương đối dưới `/community` (khung); `?settings=1` mở hộp thoại Cài đặt, không phải route. Giữ gọn: nằm trong bundle đầu. */
-const CHILD_PATHS = ["/", "/profile", "/profile/$orgId", "/profile/$orgId/$section"] as const;
+const CHILD_PATHS = [
+  "/",
+  "/profile",
+  "/profile/$orgId",
+  "/profile/$orgId/$section",
+  "/review",
+  "/join",
+  "/reports",
+] as const;
 
 /** Route của module (đường dẫn tuyệt đối từ gốc router). */
 export const communityRoutes: readonly CommunityRouteDef[] = CHILD_PATHS.map((p, i) => ({
-  id: (["feed", "profile", "profileOrg", "profileSection"] as const)[i] as CommunityRouteId,
+  id: (["feed", "profile", "profileOrg", "profileSection", "review", "join", "reports"] as const)[
+    i
+  ] as CommunityRouteId,
   path: p === "/" ? COMMUNITY_BASE : COMMUNITY_BASE + p,
 }));
 
@@ -86,6 +103,31 @@ export const communityManifest = {
       to: `${COMMUNITY_BASE}/profile`,
       labelKey: "contracts.nav.myPosts",
       icon: PenLine,
+      bottom: false,
+    },
+    // CR-120: 3 màn của luồng — chỉ hiện đúng vai và khi khe đã bật (cap do server tính, shell/use-flow-caps).
+    {
+      to: `${COMMUNITY_BASE}/review`,
+      labelKey: "contracts.nav.review",
+      icon: ClipboardCheck,
+      testId: "nav-community-review",
+      cap: "community.review",
+      bottom: false,
+    },
+    {
+      to: `${COMMUNITY_BASE}/join`,
+      labelKey: "contracts.nav.join",
+      icon: UserPlus,
+      testId: "nav-community-join",
+      cap: "community.join",
+      bottom: false,
+    },
+    {
+      to: `${COMMUNITY_BASE}/reports`,
+      labelKey: "contracts.nav.reports",
+      icon: Flag,
+      testId: "nav-community-reports",
+      cap: "community.reports",
       bottom: false,
     },
   ],

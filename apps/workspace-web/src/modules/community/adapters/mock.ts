@@ -20,6 +20,7 @@ import { canViewPost, defaultAudience } from "../domain/visibility";
 import { mockDockChat } from "./mock-chat";
 import { commentMutations } from "./mock-comments";
 import { fileMock } from "./mock-files";
+import { flowsMock } from "./mock-flows";
 import { profileMock } from "./mock-profile";
 import { quoteEnvOf, quoteMock } from "./mock-quote";
 import { settingsMock } from "./mock-settings";
@@ -377,6 +378,7 @@ export function createMockApi(): { api: CommunityApi; setPersona: (id: string) =
       for (const n of notifs) if (n.to === notifyKey() && (!id || n.id === id)) n.unread = false;
     },
     ...fileMock(),
+    ...flowsMock(),
     ...settingsMock(() => me.userId),
     chat: mockDockChat,
     ...quoteMock(quoteEnv),

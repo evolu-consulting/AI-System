@@ -14,9 +14,13 @@ export type CanPack = (pack: string) => boolean;
 
 const byOrder = (a: ModuleManifest, b: ModuleManifest): number => a.order - b.order;
 
+/** Quyền động theo người dùng (vai + khe đã bật): mục có `cap` chỉ hiện khi đúng. */
+export type HasCap = (cap: string) => boolean;
+
 export function buildShellNav(
   manifests: readonly ModuleManifest[],
   can: CanPack,
+  hasCap: HasCap = () => false,
 ): readonly ShellNavGroup[] {
   return [...manifests]
     .sort(byOrder)
@@ -25,7 +29,7 @@ export function buildShellNav(
       key: m.key,
       labelKey: m.groupLabelKey,
       basePath: m.basePath,
-      items: m.nav,
+      items: m.nav.filter((n) => !n.cap || hasCap(n.cap)),
     }));
 }
 

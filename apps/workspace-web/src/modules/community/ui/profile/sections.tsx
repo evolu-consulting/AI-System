@@ -1,7 +1,13 @@
 // CR-110 · COM-FR-36/37 · nội dung 4 mục hồ sơ. Mỗi mục là component riêng; `ProfilePage` chỉ ghép theo registry.
-import type { PartnerOrg, Profile, ProfileMediaItem } from "@ai/contracts/community";
+import type {
+  ModerationItem,
+  PartnerOrg,
+  Profile,
+  ProfileMediaItem,
+} from "@ai/contracts/community";
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "../../application/ctx";
+import { byPostId } from "../../domain/flows";
 import { hasReputation } from "../../domain/profile-sections";
 import { t } from "../../i18n";
 import { Composer } from "../Composer";
@@ -51,6 +57,17 @@ export function AboutSection({ p }: { p: Profile }) {
 
 /** Bài đăng: Composer chỉ ở hồ sơ của mình. */
 export function PostsSection({ own, orgId }: { own: boolean; orgId: string }) {
+  const { api, rev } = useApp();
+  const [mods, setMods] = useState<ReadonlyMap<string, ModerationItem> | undefined>();
+  // CR-120: trạng thái duyệt của bài tôi = MỘT yêu cầu cho cả danh sách (không gọi theo bài). Lỗi/khe tắt ⇒ không hiện gì.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: nạp lại khi dữ liệu đổi (rev)
+  useEffect(() => {
+    if (!own) return;
+    api.flows.myModeration().then(
+      (r) => setMods(byPostId(r.items)),
+      () => setMods(undefined),
+    );
+  }, [api, own, rev]);
   return (
     <>
       {own && (
@@ -62,6 +79,7 @@ export function PostsSection({ own, orgId }: { own: boolean; orgId: string }) {
         fixed={own ? { mine: true } : { authorOrgId: orgId }}
         tabs={["all", "archived"]}
         withFilters={false}
+        {...(mods ? { mods } : {})}
       />
     </>
   );

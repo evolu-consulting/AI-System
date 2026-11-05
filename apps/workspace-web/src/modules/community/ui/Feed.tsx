@@ -1,5 +1,11 @@
 // Bảng tin: FeedPage (2 cột: composer + thanh tab sticky + bài | rail lọc/đối tác) và FeedList (Profile: chip + lọc gọn).
-import type { FeedQuery, FeedResponse, FeedTab, PartnerOrg } from "@ai/contracts/community";
+import type {
+  FeedQuery,
+  FeedResponse,
+  FeedTab,
+  ModerationItem,
+  PartnerOrg,
+} from "@ai/contracts/community";
 import { useApp } from "../application/ctx";
 import { useFeed, useFeedFilters, usePartners } from "../application/useFeed";
 import { hasActiveFilter } from "../domain/filters";
@@ -23,6 +29,8 @@ type Props = {
   fixed?: Pick<FeedQuery, "mine" | "authorOrgId">;
   tabs?: FeedTab[];
   withFilters?: boolean;
+  /** Trạng thái duyệt của bài tôi theo id (một lần gọi cho cả danh sách). */
+  mods?: ReadonlyMap<string, ModerationItem>;
 };
 
 /** Ba ô chọn nhóm hàng / khu vực / người đăng + nút Xoá lọc. */
@@ -92,7 +100,15 @@ export function FeedFilters({
   );
 }
 
-function FeedBody({ data, error }: { data: FeedResponse | null; error: string | null }) {
+function FeedBody({
+  data,
+  error,
+  mods,
+}: {
+  data: FeedResponse | null;
+  error: string | null;
+  mods?: ReadonlyMap<string, ModerationItem> | undefined;
+}) {
   return (
     <>
       {error && (
@@ -104,14 +120,19 @@ function FeedBody({ data, error }: { data: FeedResponse | null; error: string | 
         <div className="card empty">{t("community.feed.empty")}</div>
       )}
       {data?.items.map((p) => (
-        <PostCard key={p.id} post={p} />
+        <PostCard key={p.id} post={p} mod={mods?.get(p.id)} />
       ))}
     </>
   );
 }
 
 /** Danh sách bài + chip lọc + ô lọc gọn (dùng ở Hồ sơ). */
-export function FeedList({ fixed = {}, tabs = TABS.map((t) => t.id), withFilters = true }: Props) {
+export function FeedList({
+  fixed = {},
+  tabs = TABS.map((t) => t.id),
+  withFilters = true,
+  mods,
+}: Props) {
   const { isHostViewer } = useApp();
   const f = useFeedFilters(fixed);
   const { data, error } = useFeed(f.query);
@@ -134,7 +155,7 @@ export function FeedList({ fixed = {}, tabs = TABS.map((t) => t.id), withFilters
       {withFilters && data && (
         <FeedFilters f={f} data={data} partners={partners} className="selrow" />
       )}
-      <FeedBody data={data} error={error} />
+      <FeedBody data={data} error={error} mods={mods} />
     </>
   );
 }

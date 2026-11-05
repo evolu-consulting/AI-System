@@ -510,6 +510,122 @@
         "p3Title": "Shipping holiday schedule for Sep 2",
         "caption": "{{org}} · {{area}}"
       }
+    },
+    "flows": {
+      "common": {
+        "loadError": "Could not load the list. Check your connection, then press Reload.",
+        "retry": "Reload",
+        "cancel": "Cancel",
+        "reasonNeeded": "Enter a reason so the recipient knows what to do next.",
+        "submitError": "Not sent yet. Check your connection and try again; what you typed is kept."
+      },
+      "mod": {
+        "pending": "Awaiting review",
+        "approved": "Approved",
+        "rejected": "Rejected: {{reason}}",
+        "rejectedNoReason": "Rejected",
+        "pendingChecking": "The post is being checked. It is not on the feed yet; it moves on by itself when done.",
+        "pendingReview": "An admin is reviewing the post. It is not on the feed yet; once approved it appears right away.",
+        "approvedWhy": "The post is on the feed.",
+        "rejectedWhy": "The post is not on the feed.",
+        "editHint": "Editing the content sends it for review again."
+      },
+      "review": {
+        "title": "Posts awaiting review",
+        "intro": "New posts need approval before they appear on the feed. Approved posts show right away; if you reject, the author sees your reason.",
+        "empty": "No posts are waiting for review. New posts that need review will appear here.",
+        "needsYou": "Needs your review",
+        "checkingTag": "Being checked",
+        "checking": "The system is checking this post. Nothing to do yet; if it needs a manual review it will move to \"Needs your review\".",
+        "flagged": "The system thinks this needs a look: {{reason}}",
+        "flaggedNoReason": "The system thinks this post needs a look.",
+        "unchecked": "The system could not check this post, so it needs your review.",
+        "approve": "Approve",
+        "reject": "Reject",
+        "rejectTitle": "Reject post",
+        "rejectIntro": "The author sees this reason next to the post and can edit and send it for review again.",
+        "reasonLabel": "Reason for rejecting",
+        "approved": "Post approved and now on the feed.",
+        "rejected": "Post rejected. The author will see the reason.",
+        "conflict": "Someone else already handled this post. The list was refreshed."
+      },
+      "join": {
+        "title": "Join requests",
+        "introHost": "Partner companies ask to join the community. Approving links the company with the labels it asked for; rejecting lets them send again.",
+        "introPartner": "Send a request so your company is linked with the community. An admin will review and answer; each company can have one pending request.",
+        "formTitle": "Company details",
+        "company": "Company name",
+        "contact": "Contact person",
+        "email": "Contact email",
+        "reason": "Why you want to join",
+        "submit": "Send request",
+        "invalid": "Enter the company name, a contact person and a valid email.",
+        "duplicate": "Your company already has a request waiting for review. Wait for the answer; no need to send again.",
+        "sentToast": "Join request sent.",
+        "sentTitle": "Request from {{company}} sent",
+        "sentWhy": "An admin will review and answer. Once approved, your company is linked with the community.",
+        "empty": "No join requests yet. When a partner company sends one, it shows up here.",
+        "status": {
+          "pending": "Awaiting review",
+          "approved": "Approved",
+          "rejected": "Rejected"
+        },
+        "approve": "Approve",
+        "reject": "Reject",
+        "rejectTitle": "Reject request",
+        "rejectIntro": "The company will know the request was rejected and can send it again after fixing the details.",
+        "reasonLabel": "Reason (optional)",
+        "rejectedWhy": "Reason for rejecting: {{reason}}",
+        "approved": "Approved. The company is now linked as a partner.",
+        "rejected": "Request rejected.",
+        "conflict": "Someone else already handled this request. The list was refreshed."
+      },
+      "reports": {
+        "menu": "Report",
+        "title": "Reported posts",
+        "intro": "Posts reported by members. The system suggests a category for reference; you decide to hide the post, warn the author or dismiss.",
+        "empty": "No reports yet. When someone reports a post, it shows up here.",
+        "reason": "Reason for the report",
+        "triaging": "Being categorized",
+        "kind": {
+          "spam": "Spam",
+          "abuse": "Abuse",
+          "contact": "Shares contact info",
+          "fraud": "Suspected fraud",
+          "other": "Other"
+        },
+        "level": {
+          "low": "Low severity",
+          "medium": "Medium severity",
+          "high": "High severity"
+        },
+        "status": {
+          "pending": "To handle",
+          "resolved": "Handled"
+        },
+        "action": {
+          "hide": "Hide post",
+          "warn": "Warn",
+          "dismiss": "Dismiss"
+        },
+        "done": {
+          "hide": "Post hidden from the feed.",
+          "warn": "Author warned.",
+          "dismiss": "Report dismissed."
+        },
+        "result": {
+          "hide": "Post hidden ({{by}}).",
+          "warn": "Author warned ({{by}}).",
+          "dismiss": "Dismissed ({{by}})."
+        },
+        "conflict": "Someone else already handled this report. The list was refreshed.",
+        "dialogTitle": "Report post",
+        "dialogIntro": "An admin will review and decide. The post stays visible while it waits.",
+        "reasonLabel": "What is wrong with this post?",
+        "send": "Send report",
+        "sent": "Report sent. An admin will review it.",
+        "duplicate": "You already reported this post. An admin will handle it; no need to send again."
+      }
     }
   }
 }

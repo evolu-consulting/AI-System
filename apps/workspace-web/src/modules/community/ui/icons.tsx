@@ -80,6 +80,14 @@ export const IconEyeOff = (p: P) =>
     </>,
     p,
   );
+export const IconFlag = (p: P) =>
+  svg(
+    <>
+      <path d="M5 21V4" />
+      <path d="M5 4h11l-2 4 2 4H5" />
+    </>,
+    p,
+  );
 export const IconImage = (p: P) =>
   svg(
     <>

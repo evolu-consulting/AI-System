@@ -210,7 +210,10 @@
       "group": {
         "contracts": "Sổ Hợp Tác",
         "community": "Community"
-      }
+      },
+      "review": "Duyệt bài",
+      "join": "Yêu cầu tham gia",
+      "reports": "Báo cáo vi phạm"
     },
     "productsPage": {
       "title": "Sản phẩm & Giá",

@@ -11,6 +11,12 @@ import type {
   CreatePostInput,
   FeedQuery,
   FeedResponse,
+  FlowDecideInput,
+  FlowNav,
+  JoinRequest,
+  JoinRequestInput,
+  ModerationItem,
+  ModerationList,
   PartnerOrg,
   PartnerUpdateInput,
   PostActionInput,
@@ -22,6 +28,7 @@ import type {
   QuoteMatch,
   QuotePreview,
   QuoteSaved,
+  Report,
   Thread,
   ThreadSummary,
   UpdatePostInput,
@@ -50,7 +57,22 @@ export interface DockChat {
   cancel(runId: string): Promise<void>;
 }
 
+/** CR-120 · 3 luồng Community (`/pack/community/{moderation,join-requests,reports,posts/:id/report,flows/nav}`). Mỗi danh sách = MỘT yêu cầu (server giới hạn 100). */
+export interface FlowsApi {
+  nav(): Promise<FlowNav>;
+  modQueue(): Promise<ModerationList>;
+  myModeration(): Promise<ModerationList>;
+  decideModeration(id: string, input: FlowDecideInput): Promise<ModerationItem>;
+  createJoin(input: JoinRequestInput): Promise<JoinRequest>;
+  listJoins(pendingOnly: boolean): Promise<JoinRequest[]>;
+  decideJoin(id: string, input: FlowDecideInput): Promise<JoinRequest>;
+  reportPost(postId: string, reason: string): Promise<Report>;
+  listReports(pendingOnly: boolean): Promise<Report[]>;
+  decideReport(id: string, input: FlowDecideInput): Promise<Report>;
+}
+
 export interface CommunityApi {
+  flows: FlowsApi;
   /** `GET /pack/community/viewer` (C3: `/pack/:k/me` của kit đã chiếm `/me`). */
   getViewer(): Promise<CommunityViewer>;
   /** `GET /pack/community/brand` — brand công ty chủ quản, mọi vai kể cả đối tác (CR-110 COM-FR-45). */

@@ -62,6 +62,9 @@ describe("createCommunityRoutes", () => {
       "/profile",
       "/profile/$orgId",
       "/profile/$orgId/$section",
+      "/review",
+      "/join",
+      "/reports",
     ]);
     expect(made.slice(1).every((m) => m.parent === "/community" && m.comp === undefined)).toBe(
       true,
@@ -69,7 +72,15 @@ describe("createCommunityRoutes", () => {
     expect(attached).toEqual([
       {
         parent: "/community",
-        kids: ["/", "/profile", "/profile/$orgId", "/profile/$orgId/$section"],
+        kids: [
+          "/",
+          "/profile",
+          "/profile/$orgId",
+          "/profile/$orgId/$section",
+          "/review",
+          "/join",
+          "/reports",
+        ],
       },
     ]);
     expect(lazyCalls).toBe(1); // bộ tải chỉ được gọi khi vào route ⇒ module tắt không nạp chunk

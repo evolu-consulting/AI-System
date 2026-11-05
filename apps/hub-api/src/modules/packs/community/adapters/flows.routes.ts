@@ -7,6 +7,7 @@
 //   POST /reports/:id/decide          {action hide|warn|dismiss}
 import {
   FlowDecideInputSchema,
+  type FlowNav,
   type JoinRequest,
   JoinRequestInputSchema,
   type ModerationItem,
@@ -72,6 +73,19 @@ export function flowsRoutes(d: CommunityDeps, f: svc.FlowDeps): Hono<PackGuardVa
   const decideBody = async (c: Context<PackGuardVars>) =>
     parseWith(FlowDecideInputSchema, await readJson(c));
 
+  r.get("/flows/nav", async (c) => {
+    const a = await access(c);
+    const rev = svc.reviewer(a);
+    const on = await svc.moderationEnabled(f, a.who.tenantId);
+    const nav: FlowNav = {
+      moderationQueue: rev && on,
+      moderationOn: on,
+      joinSubmit: a.org !== null,
+      joinReview: rev,
+      reports: rev,
+    };
+    return c.json(nav);
+  });
   r.get("/moderation/queue", async (c) => {
     const rows = await svc.modQueue(f, await access(c));
     return c.json({ items: rows.map((x) => modItem(x, now())) });

@@ -210,7 +210,10 @@
       "group": {
         "contracts": "Contract Ledger",
         "community": "Community"
-      }
+      },
+      "review": "Review posts",
+      "join": "Join requests",
+      "reports": "Reported posts"
     },
     "productsPage": {
       "title": "Products & Prices",

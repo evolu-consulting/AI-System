@@ -510,6 +510,122 @@
         "p3Title": "Lịch nghỉ vận chuyển dịp lễ 2/9",
         "caption": "{{org}} · {{area}}"
       }
+    },
+    "flows": {
+      "common": {
+        "loadError": "Không tải được danh sách. Kiểm tra kết nối mạng rồi bấm Tải lại.",
+        "retry": "Tải lại",
+        "cancel": "Hủy",
+        "reasonNeeded": "Hãy nhập lý do để người nhận biết cần làm gì tiếp.",
+        "submitError": "Chưa gửi được. Kiểm tra kết nối rồi thử lại; nội dung bạn nhập vẫn còn nguyên."
+      },
+      "mod": {
+        "pending": "Chờ duyệt",
+        "approved": "Đã duyệt",
+        "rejected": "Bị từ chối: {{reason}}",
+        "rejectedNoReason": "Bị từ chối",
+        "pendingChecking": "Hệ thống đang kiểm tra bài. Bài chưa hiện trên bảng tin; xong sẽ tự chuyển bước.",
+        "pendingReview": "Quản trị đang xem bài. Bài chưa hiện trên bảng tin; được duyệt là hiện ngay.",
+        "approvedWhy": "Bài đã hiện trên bảng tin.",
+        "rejectedWhy": "Bài không lên bảng tin.",
+        "editHint": "Sửa nội dung sẽ gửi duyệt lại."
+      },
+      "review": {
+        "title": "Hàng chờ duyệt bài",
+        "intro": "Các bài mới cần được duyệt trước khi hiện trên bảng tin. Duyệt xong bài hiện ngay; từ chối thì tác giả thấy lý do của bạn.",
+        "empty": "Không có bài nào chờ duyệt. Khi có bài mới cần duyệt, bài sẽ xuất hiện ở đây.",
+        "needsYou": "Cần bạn duyệt",
+        "checkingTag": "Đang kiểm tra",
+        "checking": "Hệ thống đang kiểm tra bài này. Chưa cần bạn xử lý; nếu cần duyệt tay, bài sẽ chuyển sang \"Cần bạn duyệt\".",
+        "flagged": "Hệ thống thấy cần xem lại: {{reason}}",
+        "flaggedNoReason": "Hệ thống thấy bài này cần xem lại.",
+        "unchecked": "Hệ thống chưa kiểm tra được bài này nên cần bạn xem.",
+        "approve": "Duyệt",
+        "reject": "Từ chối",
+        "rejectTitle": "Từ chối bài",
+        "rejectIntro": "Tác giả sẽ thấy lý do này cạnh bài và có thể sửa rồi gửi duyệt lại.",
+        "reasonLabel": "Lý do từ chối",
+        "approved": "Đã duyệt bài, bài đã hiện trên bảng tin.",
+        "rejected": "Đã từ chối bài. Tác giả sẽ thấy lý do.",
+        "conflict": "Bài đã được người khác xử lý. Danh sách đã được làm mới."
+      },
+      "join": {
+        "title": "Yêu cầu tham gia",
+        "introHost": "Công ty đối tác xin tham gia cộng đồng. Duyệt thì công ty được liên kết với nhãn đã xin; từ chối thì họ có thể gửi lại.",
+        "introPartner": "Gửi yêu cầu để công ty bạn được liên kết với cộng đồng. Quản trị sẽ xem và trả lời; mỗi công ty có một yêu cầu đang chờ.",
+        "formTitle": "Thông tin công ty",
+        "company": "Tên công ty",
+        "contact": "Người liên hệ",
+        "email": "Email liên hệ",
+        "reason": "Lý do tham gia",
+        "submit": "Gửi yêu cầu",
+        "invalid": "Hãy nhập tên công ty, người liên hệ và một email hợp lệ.",
+        "duplicate": "Công ty bạn đã có yêu cầu đang chờ duyệt. Hãy đợi kết quả, không cần gửi lại.",
+        "sentToast": "Đã gửi yêu cầu tham gia.",
+        "sentTitle": "Đã gửi yêu cầu của {{company}}",
+        "sentWhy": "Quản trị sẽ xem và trả lời. Khi được duyệt, công ty bạn sẽ được liên kết với cộng đồng.",
+        "empty": "Chưa có yêu cầu tham gia nào. Khi một công ty đối tác gửi yêu cầu, yêu cầu sẽ hiện ở đây.",
+        "status": {
+          "pending": "Chờ duyệt",
+          "approved": "Đã duyệt",
+          "rejected": "Đã từ chối"
+        },
+        "approve": "Duyệt",
+        "reject": "Từ chối",
+        "rejectTitle": "Từ chối yêu cầu",
+        "rejectIntro": "Công ty sẽ biết yêu cầu bị từ chối và có thể gửi lại sau khi chỉnh thông tin.",
+        "reasonLabel": "Lý do (không bắt buộc)",
+        "rejectedWhy": "Lý do từ chối: {{reason}}",
+        "approved": "Đã duyệt. Công ty đã được liên kết đối tác.",
+        "rejected": "Đã từ chối yêu cầu.",
+        "conflict": "Yêu cầu đã được người khác xử lý. Danh sách đã được làm mới."
+      },
+      "reports": {
+        "menu": "Báo cáo",
+        "title": "Báo cáo vi phạm",
+        "intro": "Các bài bị thành viên báo cáo. Hệ thống gợi ý phân loại để bạn tham khảo; bạn quyết định ẩn bài, cảnh báo hay bỏ qua.",
+        "empty": "Chưa có báo cáo nào. Khi có người báo cáo một bài, báo cáo sẽ hiện ở đây.",
+        "reason": "Lý do báo cáo",
+        "triaging": "Đang phân loại",
+        "kind": {
+          "spam": "Spam",
+          "abuse": "Xúc phạm",
+          "contact": "Lộ liên hệ",
+          "fraud": "Nghi lừa đảo",
+          "other": "Khác"
+        },
+        "level": {
+          "low": "Mức thấp",
+          "medium": "Mức vừa",
+          "high": "Mức cao"
+        },
+        "status": {
+          "pending": "Chờ xử lý",
+          "resolved": "Đã xử lý"
+        },
+        "action": {
+          "hide": "Ẩn bài",
+          "warn": "Cảnh báo",
+          "dismiss": "Bỏ qua"
+        },
+        "done": {
+          "hide": "Đã ẩn bài khỏi bảng tin.",
+          "warn": "Đã gửi cảnh báo cho tác giả.",
+          "dismiss": "Đã bỏ qua báo cáo."
+        },
+        "result": {
+          "hide": "Đã ẩn bài ({{by}}).",
+          "warn": "Đã cảnh báo tác giả ({{by}}).",
+          "dismiss": "Đã bỏ qua ({{by}})."
+        },
+        "conflict": "Báo cáo đã được người khác xử lý. Danh sách đã được làm mới.",
+        "dialogTitle": "Báo cáo bài đăng",
+        "dialogIntro": "Quản trị sẽ xem và quyết định. Bài vẫn hiện trong lúc chờ xử lý.",
+        "reasonLabel": "Bài này vi phạm điều gì?",
+        "send": "Gửi báo cáo",
+        "sent": "Đã gửi báo cáo. Quản trị sẽ xem và xử lý.",
+        "duplicate": "Bạn đã báo cáo bài này rồi. Quản trị sẽ xử lý, không cần gửi lại."
+      }
     }
   }
 }
