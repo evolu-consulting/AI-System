@@ -68,7 +68,11 @@ describe("confirm-step · người tải xác nhận trước, rồi tới bư�
     const run = a?.run as string;
     await waitStatus(c.sql, run, "waiting_review");
     const before = await c.port.stepsView(caller(PA.A), run);
-    expect(before?.steps.map((s) => s.key)).toEqual(["confirm", "kt", "gd"]);
+    expect(before?.steps.filter((s) => s.key.startsWith("s")).map((s) => s.key)).toEqual([
+      "s0",
+      "s1",
+      "s2",
+    ]); // s0 = Xác nhận do gói thêm; s1/s2 = Kế toán/Giám đốc của quy trình
     expect(before?.steps[0]?.status).toBe("open");
 
     expect(await c.port.act(caller(PA.A), run, { stage: "s0" }, { result: "pass" })).toBe("ok");

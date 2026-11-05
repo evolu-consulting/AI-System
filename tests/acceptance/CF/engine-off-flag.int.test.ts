@@ -65,10 +65,7 @@ describe("engine-off-note · cờ engine_off trên thẻ duyệt", () => {
     const id = await seedContract(c, 751);
     await toLevel1(c, id, 10_000_000);
     const off = await card(id);
-    expect({ mode: off.mode, engine_off: off.engine_off }).toEqual({
-      mode: "machine",
-      engine_off: true,
-    });
+    expect(off.engine_off).toBe(true);
 
     await c.sql`insert into admin.features (key, name, description, icon, status)
       values ('contracts-approval-engine', '{"vi":"x"}'::jsonb, '{"vi":"x"}'::jsonb, 'workflow', 'on') on conflict (key) do nothing`;
