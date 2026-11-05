@@ -20,6 +20,24 @@ export const ACCEPTED_EDITS: readonly AcceptedEdit[] = [
     dbHash: "7aeecbb713aae20e7ff551d7fca8f44291250176e26ba850ad9a8f5d53b7abfe",
     why: "6a0d535d (2026-10-21) viết lại 0048 cho idempotent sau khi prod đã áp bản 8992a44d",
   },
+  {
+    table: "__drizzle_migrations_hub",
+    tag: "0029_k1_kh",
+    dbHash: "fafb379b31278735a3338f07dfdc685e2e861c4880ee2181f6dd600edf10ff1b",
+    why: "cr120-int-reds: thêm guard chạy lại cho CHECK entity (không đặt về danh sách hẹp); lần đầu áp y hệt bản cũ",
+  },
+  {
+    table: "__drizzle_migrations_hub",
+    tag: "0030_h4b2_models",
+    dbHash: "847b18e6df6194941e4d80014fbf2703952e6a825ff0e3488f56680f174b9baf",
+    why: "cr120-int-reds: thêm guard chạy lại cho CHECK entity (kiểu 0071); lần đầu áp y hệt bản cũ",
+  },
+  {
+    table: "__drizzle_migrations_hub",
+    tag: "0068_process_library",
+    dbHash: "f8baecce0dff924a1efdddf4c583dd76a34c691f3f17a73543fb007d9cb357e8",
+    why: "cr120-int-reds: phần bảng gán cũ chỉ chạy khi còn là bảng (sau hub 0091 là VIEW); lần đầu áp y hệt bản cũ",
+  },
 ];
 
 type Journal = { entries: { tag: string; when: number }[] };
