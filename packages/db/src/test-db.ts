@@ -70,8 +70,13 @@ export async function rollbackJournalFrom(
 ): Promise<number> {
   const journal = JSON.parse(
     readFileSync(new URL("../migrations-hub/meta/_journal.json", import.meta.url), "utf8"),
-  ) as { entries: { idx: number; when: number }[] };
+  ) as { entries: { idx: number; when: number; tag?: string }[] };
   const from = journal.entries.filter((e) => e.idx >= idx);
+  // Gỡ journal về trước 0068 = DB chưa có bảng gán cũ: 0068 sẽ dựng lại `process_slot_assignments`; nếu bảng `_legacy` (0091 đổi tên,
+  // 0099 gỡ view) còn lại thì PK `process_slot_assignments_pkey` trùng tên ⇒ áp lại lỗi. Phản ánh đúng trạng thái "trước 0068".
+  if (from.some((e) => e.tag?.startsWith("0068_"))) {
+    await owner.unsafe("drop table if exists hub.process_slot_assignments_legacy");
+  }
   await owner.unsafe(
     `delete from drizzle.${HUB_TABLE} where created_at >= ${Math.min(...from.map((e) => e.when))}`,
   );

@@ -187,6 +187,21 @@ async function deptIds(admin: Db, tenantId: string): Promise<Map<string, string>
   return new Map(r.map((g) => [g.key, g.id]));
 }
 
+/** Luật theo phòng ban × loại HĐ theo spec; null nếu thiếu quy trình/phòng ban. */
+function wantedRules(
+  s: SeedSpec,
+  defIds: Map<string, string | null>,
+  depts: Map<string, string>,
+): RuleLike[] | null {
+  const want: RuleLike[] = [];
+  for (const r of s.rules) {
+    const def = defIds.get(r.process);
+    const dept = depts.get(r.dept);
+    if (!def || !dept) return null;
+    want.push({ condition: conditionOf(r, dept), def_id: def, is_default: false });
+  }
+  return want;
+}
 /** Luật chọn quy trình (theo thứ tự spec, không mặc định) — bỏ qua nếu đã đúng. dry ⇒ chỉ so. */
 async function ensureRouting(
   h: Hubs,
@@ -196,22 +211,26 @@ async function ensureRouting(
   depts: Map<string, string>,
   dry: boolean,
 ): Promise<"set" | "same"> {
-  const want: RuleLike[] = [];
-  for (const r of s.rules) {
-    const def = defIds.get(r.process);
-    const dept = depts.get(r.dept);
-    if (!def || !dept) return "set"; // chưa đủ thành phần (chỉ xảy ra khi chạy thử trước khi có gì)
-    want.push({ condition: conditionOf(r, dept), def_id: def, is_default: false });
-  }
+  const want = wantedRules(s, defIds, depts);
+  if (!want) return "set"; // chưa đủ thành phần (chỉ xảy ra khi chạy thử trước khi có gì)
+  // Gán (CR-121 F-1) = vào tập gán + đặt luật MẶC ĐỊNH của khe = quy trình vừa gán ⇒ chỉ gán quy trình CHƯA trong tập (chạy lại không
+  // đổi luật mặc định/phiên bản). Luật mặc định là do bước gán đặt: so sánh/ghi chỉ phần luật theo phòng ban × loại HĐ, giữ nguyên mặc định.
+  const before = await h.routing.get(h.u as never, tenantId, SLOT).catch(() => null);
+  const have = new Set(before?.processes.map((p) => p.def_id));
   if (!dry)
     for (const id of new Set(want.map((w) => w.def_id)))
-      await h.routing.assign(h.u as never, tenantId, SLOT, id);
+      if (!have.has(id)) await h.routing.assign(h.u as never, tenantId, SLOT, id);
   const cur = await h.routing.get(h.u as never, tenantId, SLOT).catch(() => null);
-  if (cur && sameRules(cur.rules, want)) return "same";
+  const curRules = cur?.rules.filter((r) => !r.is_default) ?? [];
+  if (cur && sameRules(curRules, want)) return "same";
   if (dry) return "set";
+  const keep = (cur?.rules ?? []).filter((r) => r.is_default);
   await h.routing.put(h.u as never, tenantId, SLOT, {
     version: cur?.version ?? 0,
-    rules: want as never,
+    rules: [
+      ...want,
+      ...keep.map((r) => ({ condition: {}, def_id: r.def_id, is_default: true })),
+    ] as never,
   });
   return "set";
 }
