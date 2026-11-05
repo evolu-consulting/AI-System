@@ -1258,7 +1258,8 @@
       "backup": "Backup",
       "disk": "Đĩa server",
       "stuck": "Hàng đợi / run kẹt",
-      "slo": "SLO / hồi quy"
+      "slo": "SLO / hồi quy",
+      "flow_coverage": "Quy trình hiển thị cho tenant"
     },
     "history": {
       "title": "Lịch sử (50 sự kiện gần nhất)",

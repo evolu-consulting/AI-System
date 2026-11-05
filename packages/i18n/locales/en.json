@@ -1258,7 +1258,8 @@
       "backup": "Backup",
       "disk": "Server disk",
       "stuck": "Queue / stuck runs",
-      "slo": "SLO / regressions"
+      "slo": "SLO / regressions",
+      "flow_coverage": "Processes visible to tenants"
     },
     "history": {
       "title": "History (last 50 events)",

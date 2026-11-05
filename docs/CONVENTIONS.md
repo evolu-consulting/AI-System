@@ -159,6 +159,8 @@ Thực thi: luật Biome · `bun run check:size` (đỏ khi > 400 dòng) · `dep
 
 - Từ M2: không sửa migration đã commit; mọi thay đổi là migration mới (kể cả siết policy RLS). Ngoại lệ M1 (`0002_admin_rls.sql` sửa ở `ceb5693`): xem `packages/db/README.md`.
 
+- **Bảng mới thay/chồng lên bảng khác (CR-120):** migration thêm bảng mà chức năng sẽ ĐỌC từ đó trong khi dữ liệu thật đang ở bảng cũ phải đi kèm (1) **backfill** chép dữ liệu cũ sang bảng mới (một câu SQL tập hợp, chạy lại vô hại — `on conflict do nothing`), trong cùng migration hoặc migration kế tiếp cùng lát; (2) **test backfill** (hàng cũ → có ở bảng mới, đếm trước/sau, chạy lần hai không đổi); (3) quyết định **rõ ràng** về writer cũ — GIỮ (ghi cả hai bảng, ghi lý do và hạn gỡ) hoặc BỎ (xoá/chuyển code ghi bảng cũ trong cùng lát). Reviewer chặn (Blocker) nếu thiếu một trong ba. Bất biến dữ liệu tương ứng được ops-watch kiểm tự động (`flow_coverage`, vd tenant bật app mà không có quy trình hiển thị ⇒ crit); thêm bất biến cho bảng mới khi có thể.
+
 ## 9. Python — Agent Runtime (`apps/agent-runtime`)
 
 Theo [ADR-0007](adr/0007-hub-ts-agent-runtime-python.md). Chỉ áp cho `apps/agent-runtime`; phần còn lại của repo vẫn TS (§1–8). Mã chạy trong WSL2 Ubuntu (CR-029, WRK-NFR-06): **chỉ nhắm Linux, không viết nhánh Windows**.

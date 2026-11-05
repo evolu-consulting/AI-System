@@ -3,6 +3,7 @@ import type { OpsCheck } from "../../application/ops.check";
 import { backupCheck } from "./backup.check";
 import { dbRedisCheck } from "./db-redis.check";
 import { diskCheck } from "./disk.check";
+import { flowCoverageCheck } from "./flow-coverage.check";
 import { providerCheck } from "./provider.check";
 import { publicHostsCheck } from "./public-hosts.check";
 import { runsFailedCheck } from "./runs-failed.check";
@@ -20,4 +21,5 @@ export const OPS_CHECKS: readonly OpsCheck[] = [
   diskCheck,
   stuckCheck,
   sloCheck,
+  flowCoverageCheck,
 ];

@@ -8,7 +8,7 @@ export const OPS_STATUSES = ["ok", "warn", "crit", "unknown"] as const;
 export const OpsStatusSchema = z.enum(OPS_STATUSES);
 export type OpsStatus = z.infer<typeof OpsStatusSchema>;
 
-/** 8 check v1 (bảng ở proposal §2) + `slo` (CR-117: SLO + phát hiện hồi quy). */
+/** 8 check v1 (bảng ở proposal §2) + `slo` (CR-117: SLO + phát hiện hồi quy) + `flow_coverage` (CR-120: bất biến dữ liệu quy trình). */
 export const OPS_CHECK_KEYS = [
   "provider",
   "runs_failed",
@@ -19,6 +19,7 @@ export const OPS_CHECK_KEYS = [
   "disk",
   "stuck",
   "slo",
+  "flow_coverage",
 ] as const;
 export const OpsCheckKeySchema = z.enum(OPS_CHECK_KEYS);
 export type OpsCheckKey = z.infer<typeof OpsCheckKeySchema>;
@@ -112,6 +113,14 @@ export const OPS_CHECK_META: Readonly<Record<OpsCheckKey, OpsCheckMeta>> = {
     crit: { min: 1, max: 48, default: 4 },
     order: "asc",
     note: "số lượt kiểm LIÊN TIẾP vi phạm một SLO (contracts.list p95, chat dispatch p50, timer PD-P01, tỷ lệ lỗi log)",
+  },
+  flow_coverage: {
+    label: "Quy trình hiển thị cho tenant",
+    unit: "count",
+    warn: null,
+    crit: null,
+    order: null,
+    note: "crit khi tenant đã bật app mà khe quy trình bắt buộc không có quy trình nào trong danh sách tenant thấy (CR-120)",
   },
 };
 
