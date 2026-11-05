@@ -13,9 +13,9 @@ index 07f6716702ac888215c86ad6e0071aaf55ae519c..cd27622fe6f2998de775d902e3c00f30
        return queryError(q, Errors.connection('CONNECTION_DESTROYED', options))
  
 +    // patch(cr116): socket closed while the connection is still reserved (begin() sends ROLLBACK after the backend
-+    // died) => reject instead of scheduling a write to a null socket (uncaught TypeError in setImmediate).
++    // died) => reject, return true: a falsy result makes `c.execute(q) || move(c, full)` park it in `full` for good.
 +    if (!socket)
-+      return queryError(q, Errors.connection('CONNECTION_CLOSED', options))
++      return (queryError(q, Errors.connection('CONNECTION_CLOSED', options)), true)
 +
      if (stream)
        return queryError(q, Errors.generic('COPY_IN_PROGRESS', 'You cannot execute queries during copy'))
@@ -63,9 +63,9 @@ index 1b1cccde43b4570d5d071d6ffaab2669b3c2065a..57b016bc9d5dac2a06eb8b18f8faa8b5
        return queryError(q, Errors.connection('CONNECTION_DESTROYED', options))
  
 +    // patch(cr116): socket closed while the connection is still reserved (begin() sends ROLLBACK after the backend
-+    // died) => reject instead of scheduling a write to a null socket (uncaught TypeError in setImmediate).
++    // died) => reject, return true: a falsy result makes `c.execute(q) || move(c, full)` park it in `full` for good.
 +    if (!socket)
-+      return queryError(q, Errors.connection('CONNECTION_CLOSED', options))
++      return (queryError(q, Errors.connection('CONNECTION_CLOSED', options)), true)
 +
      if (stream)
        return queryError(q, Errors.generic('COPY_IN_PROGRESS', 'You cannot execute queries during copy'))

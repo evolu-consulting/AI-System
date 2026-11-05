@@ -26,6 +26,7 @@ phụ thuộc: cr116-bench-apps (đo Vòng 2)
 
 ## Quyết định trong lúc làm
 - Nguyên nhân TypeError (đọc mã 3.4.9): `begin()` gửi `ROLLBACK` sau khi `closed()` đã đặt `socket = null` ⇒ `write()` hẹn `setImmediate(nextWrite)` ⇒ `socket.write` trên null, ném trong pha check (không try/catch nào bắt). Ném giữa `nextWrite` để lại `chunk`/`nextWriteTimer` ⇒ StartupMessage lần nối lại không gửi ⇒ treo tới CONNECT_TIMEOUT. Thêm 2 lỗi cùng họ khi viết test: ROLLBACK xếp sau sự kiện `error` nằm lại `sent` (lệch phản hồi phiên mới, tx treo) và `errorResponse` 57P01 cũ làm hỏng câu đầu của kết nối mới.
+- Linux (evotest) treo 30 s, Windows khong: sau khi socket da dong, ROLLBACK cua begin() vao `execute()` voi `socket = null`; ban va dau tra `undefined` nen `c.execute(q) || move(c, full)` (index.js handler) day ket noi DA DONG vao hang `full` => khong bao gio noi lai. Linux phat 'close' truoc khi ROLLBACK chay, Windows thi sau. Va (a) nay tra `true` (ket noi van nam hang `closed`).
 - Upstream: porsager/postgres PR #1168 "Guard nextWrite against null socket after async close" (thấy qua tìm kiếm, chưa xác minh đã merge; chỉ vá (b), không vá (a)/(c)).
 - "Đã tới COMMIT" = callback tx đã trả về (`bodyDone`); 40P01/40001 vẫn chạy lại kể cả lúc COMMIT (server chắc chắn rollback).
 - Backoff chỉ cho mất kết nối: 20 ms rồi 80 ms (+ jitter ≤ 50%), tối đa SCOPE_MAX_ATTEMPTS = 3; 40P01/40001 chạy lại ngay như cũ. Đây là giãn cách giữa hai lần thử, không phải chờ trạng thái (Luật 4c).
