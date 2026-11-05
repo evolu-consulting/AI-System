@@ -81,6 +81,14 @@ export type ApprovalEnginePort = {
   ): Promise<"ok" | "not_open">;
   /** S3b · huỷ run ở scope system ("Đọc lại"); đã kết thúc / không có ⇒ false. */
   cancelSys(tenantId: string, runId: string): Promise<boolean>;
+  /** CR-121 F-5 · input run theo HĐ đã xác nhận/sửa (CAS theo `version` HĐ); vắng ⇒ không cập nhật. */
+  updateInputs?(
+    r: { tenantId: string; runId: string; pack: string; recordId: string; version: number },
+    patch: readonly (
+      | { type: "text"; key: string; text: string }
+      | { type: "number" | "date"; key: string; value: string }
+    )[],
+  ): Promise<boolean>;
   /** S3b · dòng thời gian stage cho người xem (≤ 2 câu SQL); không thấy run ⇒ null. */
   stepsView(u: EngineCaller, runId: string): Promise<PackStepsView | null>;
   /** S3b · kết quả nhiều run (scope system, một câu lọc tenant). */
@@ -138,6 +146,8 @@ export type EngineDifyFacts = {
   owner?: string | null;
   endDate?: string | null;
   actionDeadline?: string | null;
+  /** CR-121 F-5 · `contracts.version` (CAS khi cập nhật input run). */
+  version?: number;
 };
 /** CR-107 · một lần bấm Đạt duyệt cuối: `claim` = mã ngẫu nhiên của lần bấm, `by` = người, `task` = task duyệt đang mở. */
 export type PendingLinksOwner = { claim: string; by: string; task: string };

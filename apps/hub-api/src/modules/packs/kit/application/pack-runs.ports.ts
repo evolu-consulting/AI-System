@@ -126,6 +126,16 @@ export type PackWorkflow = {
   }[];
 };
 
+export type PackInputsRef = {
+  tenantId: string;
+  runId: string;
+  pack: string;
+  recordId: string;
+  version: number;
+};
+export type PackInputValue =
+  | { type: "text"; key: string; text: string }
+  | { type: "number" | "date"; key: string; value: string };
 export type PackRunsPort = {
   /** Mở run (kiểm def bật + Group chạy + trần + inputs) và COMMIT nhưng CHƯA kick; người gọi `kick()` sau khi gắn run.
    *  S1a · `ref` ⇒ ghi `pack_key/pack_record_id` cùng tx tạo run. */
@@ -169,6 +179,8 @@ export type PackRunsPort = {
   ): Promise<"ok" | "not_open">;
   /** S1a · huỷ run ở scope system (gói "Đọc lại"). Run không có trong tenant / đã kết thúc ⇒ false. */
   cancelSys(tenantId: string, runId: string): Promise<boolean>;
+  /** CR-121 F-5 · cập nhật input của run CÒN MỞ gắn (gói, bản ghi) theo khoá; CAS theo `version` bản ghi (cũ hơn/bằng ⇒ false). */
+  updateInputs(r: PackInputsRef, patch: readonly PackInputValue[]): Promise<boolean>;
   /** S1a · kết quả nhiều run, scope system, MỘT câu lọc `tenant_id = any` + `id = any`. */
   outcomesOf(
     tenantIds: string | readonly string[],

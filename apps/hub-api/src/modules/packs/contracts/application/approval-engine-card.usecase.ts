@@ -12,6 +12,7 @@ import {
   planEngineAct,
 } from "../domain/approval-engine-card.rules";
 import { engineSteps, esignCard } from "../domain/approval-flow.rules";
+import { contractRunInputs, usesContractInputs } from "../domain/approval-run-inputs.rules";
 import type { ApprovalState } from "./approval.ports";
 import type { ApprovalEnginePort, ApprovalEngineRepo, EngineCaller } from "./approval-engine.ports";
 
@@ -27,7 +28,12 @@ type Repos = {
     /** CR-109 · khoá theo luật thấy cũ (không cờ duyệt): null ⇒ người gọi chỉ là người duyệt ngoài cây. */
     state(id: string, o: { lock: boolean }): Promise<unknown>;
   };
-  approvalEngine: Pick<ApprovalEngineRepo, "setPendingLinks" | "recordOverride" | "voidOverride">;
+  approvalEngine: Pick<
+    ApprovalEngineRepo,
+    "setPendingLinks" | "recordOverride" | "voidOverride"
+  > & {
+    difyFacts?: ApprovalEngineRepo["difyFacts"];
+  };
   outbox: { enqueue(e: { entity: string; entity_id: string; op: "upsert" }[]): Promise<unknown> };
 };
 export type EngineCardDeps = {
@@ -252,13 +258,33 @@ async function pass(d: EngineCardDeps, port: ApprovalEnginePort, c: Ctx, p: Plan
   if (out !== "ok") await release();
   return out;
 }
+/** CR-121 F-5 · TRƯỚC khi Đạt: đưa dữ liệu HĐ hiện tại (đã "Xác nhận và lưu" / sửa ở bước 0) vào input run — mẫu Thông báo
+ *  ({ma_hd}, {ten_hd}, {gia_tri}), ngày Chờ tới, input Dify của bước sau dùng số đã xác nhận, không phải số lúc mở run. CAS theo
+ *  `contracts.version` ở engine (bản cũ không đè bản mới). Quy trình không có bước đọc input HĐ ⇒ 0 SQL. Lỗi ⇒ chỉ cảnh báo (input
+ *  cũ vẫn chạy được, không chặn duyệt). Điều kiện rẽ không đọc input (tool rẽ dựng dữ kiện từ HĐ hiện tại). */
+async function refreshInputs(d: EngineCardDeps, port: ApprovalEnginePort, c: Ctx): Promise<void> {
+  const steps = c.st.approval?.flowSteps ?? [];
+  if (!port.updateInputs || !usesContractInputs(steps)) return;
+  try {
+    const f = await d.uow.tenant(c.who, async (r) => r.approvalEngine.difyFacts?.(c.id) ?? null);
+    if (!f || f.version === undefined) return;
+    const ref = { tenantId: c.who.tenantId, runId: c.runId, pack: "contracts", recordId: c.id };
+    await port.updateInputs({ ...ref, version: f.version }, contractRunInputs(steps, f));
+  } catch {
+    d.warn?.("contract-approval-inputs-refresh-failed", { contract_id: c.id, run_id: c.runId });
+  }
+}
+
 async function exec(
   d: EngineCardDeps,
   port: ApprovalEnginePort,
   c: Ctx,
   p: Plan,
 ): Promise<EngineActResult> {
-  if (p.kind === "pass") return pass(d, port, c, p);
+  if (p.kind === "pass") {
+    await refreshInputs(d, port, c);
+    return pass(d, port, c, p);
+  }
   if (p.kind === "reject") return reject(d, port, c, p.taskId);
   if (p.kind === "redo") return p.reextract ? redo(d, port, c) : "ok";
   const fb = c.b.feedback ? { feedback: c.b.feedback } : {};

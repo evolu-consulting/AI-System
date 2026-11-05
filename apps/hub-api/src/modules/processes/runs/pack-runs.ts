@@ -33,6 +33,7 @@ import { GateService } from "../gates/gates.service";
 import { resolveSlot, resolveSlotDef } from "../library/slot-resolve.repo";
 import { routeSlot } from "../library/slot-route.repo";
 import { defSourceRef } from "../library/source-ref";
+import { updatePackInputs } from "./pack-inputs";
 import { inboxOf, openTaskFor, openTasksOf, stepsView, UUID } from "./pack-runs-view";
 import { signalPackEvent } from "./pack-signal";
 import { StartService } from "./start.service";
@@ -376,6 +377,7 @@ export function packRunsOf(d: ProcessDeps, sys?: Pick<SystemUow, "system">): Pac
       return "ok";
     },
     cancelSys: (tenantId, runId) => cancelSys(d, tenantId, runId),
+    updateInputs: (r, patch) => updatePackInputs(d, r, patch), // CR-121 F-5
     signalEvent: (tenantId, ref, event) => signalPackEvent(d, sys, { tenantId, ref, event }),
     retryDecision: (u, runId) => retryDecision(d, gates, u, runId),
     ...sysReads(d),
