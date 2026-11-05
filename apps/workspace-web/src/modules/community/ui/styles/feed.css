@@ -246,7 +246,7 @@
   color: var(--primary-foreground);
 }
 [data-mod="community"] .tab.on .n {
-  background: color-mix(in srgb, var(--primary-foreground) 22%, transparent);
+  background: color-mix(in srgb, var(--primary-foreground) 12%, transparent);
   color: var(--primary-foreground);
 }
 
