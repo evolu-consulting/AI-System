@@ -14,9 +14,9 @@ import { readDef } from "../../../apps/hub-api/src/modules/processes/defs/defs.r
 import { DefsService } from "../../../apps/hub-api/src/modules/processes/defs/defs.service";
 import { LibraryService } from "../../../apps/hub-api/src/modules/processes/library/library.service";
 import { type FoundDef, planRenames, RENAMES, type RenameStep } from "./rename-process-defs.rules";
-import { approvalPackTools } from "./seed-niti.tools";
 import { SLOT } from "./seed-niti.data";
 import { applyGuard } from "./seed-niti.rules";
+import { approvalPackTools } from "./seed-niti.tools";
 
 const LIB_SCOPE = { tenantId: null, library: true } as const;
 const COPY_KEYS = [
