@@ -68,6 +68,7 @@ afterAll(async () => {
 describe("GET /ops/overview · perf (Luật 4c)", () => {
   it("10.000 lượt chạy / 50 công ty: p95 ≤ 300 ms, ≤ 8 câu SQL", async () => {
     const q = { stuck_hours: 4, quota_pct: 80 };
+    await fresh().get(q); // làm nóng kết nối (type-discovery của driver không phải câu nghiệp vụ)
     const sql = await captureSql(client(), () => fresh().get(q));
     expect(sql.queries.length).toBeLessThanOrEqual(8);
     expect(sql.r.kpi.runs.value).toBeGreaterThan(1000);
