@@ -11,10 +11,10 @@ async function setTheme(page: Page, name: "Sáng" | "Tối") {
     .getByRole("radio", { name, exact: true })
     .click();
   await page.keyboard.press("Escape");
-  await expect(page.locator("html")).toHaveAttribute(
-    "data-theme",
-    name === "Tối" ? "dark" : "light",
-  );
+  // Sáng = mặc định (không có data-theme); chỉ Tối đặt thuộc tính.
+  if (name === "Tối") await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  else await expect(page.locator("html")).not.toHaveAttribute("data-theme", "dark");
+  await page.waitForFunction(() => document.getAnimations().length === 0); // chờ transition màu xong
 }
 
 /** Chạy trong trang: trả về danh sách phần tử chữ có tỉ lệ tương phản thấp hơn ngưỡng AA. */
@@ -102,7 +102,7 @@ const openFeed = async (p: Page) => {
 };
 const openSht = async (p: Page) => {
   await p.getByTestId("nav-group-contracts").getByRole("link").first().click();
-  await expect(p.getByTestId("nav-group-contracts")).toBeVisible();
+  await expect(p.locator("main, [role=main]").first()).toBeVisible();
   await p.waitForLoadState("networkidle");
 };
 
@@ -110,6 +110,7 @@ async function check(page: Page, theme: "Sáng" | "Tối", open: (p: Page) => Pr
   await page.goto("/community");
   await setTheme(page, theme);
   await open(page);
+  await page.waitForFunction(() => document.getAnimations().length === 0);
   const bad = await page.evaluate(findLowContrast);
   expect(bad, JSON.stringify(bad, null, 1)).toEqual([]);
 }
