@@ -32,6 +32,8 @@ beforeAll(async () => {
       on conflict (key) do nothing`;
   await owner`insert into admin.tenants (id, key, name) values
     (${T_A}, 'q1-a', 'Q1 A'), (${T_B}, 'q1-b', 'Q1 B'), (${T_C}, 'q1-c', 'Q1 C')`;
+  // Tenant mới có thể được cấp sẵn feature mặc định (trigger/seed) ⇒ xoá trước để bộ dữ liệu chỉ có đúng phần của test.
+  await owner`delete from admin.feature_entitlements where tenant_id in (${T_A}, ${T_B}, ${T_C})`;
   const grant = (t: string, k: string, revoked = false) =>
     owner`insert into admin.feature_entitlements (feature_id, tenant_id, revoked_at)
       select id, ${t}::uuid, ${revoked ? new Date() : null}::timestamptz from admin.features where key = ${k}`;
