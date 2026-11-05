@@ -32,7 +32,7 @@ const put = (auth: string | null, body: unknown, tid = X) =>
     body: JSON.stringify(body),
   });
 const assigned = async () =>
-  o`select def_id from hub.process_slot_assignments where tenant_id = ${X} and slot = ${SLOT}`;
+  o`select def_id from hub.process_routing_rules where is_default and tenant_id = ${X} and slot = ${SLOT}`;
 
 beforeAll(async () => {
   await cloneDb("full");

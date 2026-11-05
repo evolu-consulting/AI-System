@@ -92,7 +92,7 @@ describe("CR-105 · seed QT thử", () => {
     ).toBe(0);
     expect(
       await count(
-        sql`select 1 from hub.process_slot_assignments where def_id = ${LIBRARY_SAMPLE.id}`,
+        sql`select 1 from hub.process_routing_rules where is_default and def_id = ${LIBRARY_SAMPLE.id}`,
       ),
     ).toBe(0);
   });

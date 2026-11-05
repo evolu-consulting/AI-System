@@ -88,7 +88,7 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
     (await once(body.action, async (): Promise<ActResult> => {
       try {
         await before?.();
-        // CR-120: hành động đi FlowRuntime.act (task đang mở của thẻ); runtime tắt ⇒ adapter tự về endpoint cũ (`legacy-act`).
+        // CR-120: hành động đi FlowRuntime.act (task đang mở của thẻ); một đường duy nhất (CR-121 gỡ `legacy-act`).
         const out = await flowRuntime.act(
           APPROVAL_SLOT,
           id,
@@ -98,7 +98,7 @@ export function useApproval(id: string, contractKey: readonly unknown[]) {
         );
         setMsg(t(label ?? DONE_KEY[body.action]));
         await refresh();
-        return { ok: true, step: out.view ? out.view.phase : out.phase };
+        return { ok: true, step: out.view.phase };
       } catch (e) {
         setErr(approvalErrorText(e, t));
         return { ok: false, code: codeOf(e) };

@@ -1,5 +1,5 @@
 // CR-105 L5 · int: yaml `approval_process` => slot assignment, through the real HTTP adapter against the real hub library
-// routes (in-process Hono app, hub_api role) on a real DB. State checks: hub.process_slot_assignments row, tenant row.
+// routes (in-process Hono app, hub_api role) on a real DB. State checks: default routing rule (hub.process_routing_rules), tenant row.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { Role } from "@ai/contracts";
 import { Hono } from "hono";
@@ -137,8 +137,8 @@ describe("onboard approval_process", () => {
     const defId = await publishedLibraryDef("pl-onb-ok");
     const r = await onboardTenant(ctx.db, specOf("plonb1", "pl-onb-ok"), ctx.padmin, hubCfg());
     expect(r.approval).toEqual({ process: "pl-onb-ok", slot: SLOT, state: "assigned" });
-    const rows = await ctx.sql`select def_id from hub.process_slot_assignments
-      where tenant_id = ${r.tenant.id} and slot = ${SLOT}`;
+    const rows = await ctx.sql`select def_id from hub.process_routing_rules
+      where is_default and tenant_id = ${r.tenant.id} and slot = ${SLOT}`;
     expect(rows.map((x) => x.def_id)).toEqual([defId]);
     const [au] = await ctx.sql`select actor_id from hub.audit_log
       where action = 'assign' and entity_id = ${defId} order by at desc limit 1`;
@@ -157,7 +157,7 @@ describe("onboard approval_process", () => {
     const [t] = await ctx.sql`select 1 from admin.tenants where key = 'plonb2'`;
     expect(t).toBeDefined();
     const n =
-      await ctx.sql`select 1 from hub.process_slot_assignments where tenant_id = ${r.tenant.id}`;
+      await ctx.sql`select 1 from hub.process_routing_rules where is_default and tenant_id = ${r.tenant.id}`;
     expect(n).toHaveLength(0);
   });
 });

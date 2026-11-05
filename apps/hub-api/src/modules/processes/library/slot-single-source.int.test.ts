@@ -4,8 +4,9 @@
 // 0090 + 0091 + `ensureSlotDefaults` (boot), rồi so với `routeSlot`/`resolveSlot` MỚI (chỉ đọc nguồn mới):
 //   (1) launch (`routeSlot`) KHÔNG đổi cho mọi tenant; `resolveSlot` không đổi cho tenant không có luật. Tenant ĐÃ có luật (t3, t4):
 //       câu cũ `resolveSlot` bỏ qua luật (lệch với launch) ⇒ nay theo luật mặc định / mẫu khe — giữ launch là chính (tasks.md);
-//   (2) chạy lại 0090/0091/ensure vô hại; (3) VIEW `process_slot_assignments` = luật mặc định, chỉ đọc; RLS theo tenant (đọc chéo 0,
-//       không scope 0), bảng `_legacy` không cấp cho hub_rw; (4) resolveSlot/routeSlot không đọc bảng cũ (đổi tên tạm ⇒ vẫn chạy).
+//   (2) chạy lại 0090/0091/0099/ensure vô hại; (3) CR-121 A1 · hub 0099 gỡ VIEW `process_slot_assignments` (không còn đối tượng cùng
+//       tên; 0099 không động tới BẢNG cùng tên khi DB chưa qua 0091), bảng `_legacy` không cấp cho hub_rw, dữ liệu cũ còn; (4)
+//       resolveSlot/routeSlot chỉ đọc nguồn mới (không còn view nào để đọc).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -124,6 +125,14 @@ const snapshot = async (
     out[k] = { route: await Promise.all(FACTS.map((f) => route(t, f))), resolve: await resolve(t) };
   return out;
 };
+/** Loại đối tượng `hub.process_slot_assignments` (r = bảng, v = view, null = không còn). */
+const relkind = async (): Promise<string | null> =>
+  (
+    await o<
+      { k: string }[]
+    >`select c.relkind::text as k from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'hub' and c.relname = 'process_slot_assignments'`
+  )[0]?.k ?? null;
 let before: Awaited<ReturnType<typeof snapshot>>;
 const ruleRows = async () => [
   ...(await o`select tenant_id::text as t, priority, def_id::text as d, is_default from hub.process_routing_rules
@@ -135,9 +144,11 @@ beforeAll(async () => {
   o = openOwner(2);
   db = connectDb(urls().hubApi, 4);
   // Về trạng thái trước 0090/0091 (DB prod lúc deploy): bảng gán cũ là bảng, chưa có view.
-  await o.unsafe(`drop view hub.process_slot_assignments;
+  await o.unsafe(`drop view if exists hub.process_slot_assignments;
     alter table hub.process_slot_assignments_legacy rename to process_slot_assignments;
     grant select, insert, update, delete on hub.process_slot_assignments to hub_rw`);
+  await runMig("0099_drop_slot_assign_view.sql"); // gặp BẢNG cùng tên (DB trước 0091) ⇒ không động tới (chỉ gỡ khi là VIEW)
+  expect(await relkind()).toBe("r");
   await o`insert into admin.tenants (id, key, name) select t, 'ss' || right(t::text, 4), 'SS ' || right(t::text, 4)
     from unnest(${o.array(ALL)}::uuid[]) t`;
   await enablePack(
@@ -168,6 +179,8 @@ beforeAll(async () => {
   });
   await runMig("0090_slot_default_rules.sql");
   await runMig("0091_slot_assign_view.sql");
+  expect(await relkind()).toBe("v");
+  await runMig("0099_drop_slot_assign_view.sql");
 }, 180_000);
 afterAll(async () => {
   await db?.close();
@@ -184,7 +197,9 @@ describe("CR-120 · cr120-single-source · một nguồn gán", () => {
     const rows = await ruleRows();
     expect(await ensureSlotDefaults(db, SLOTS, ALL)).toBe(0);
     await runMig("0090_slot_default_rules.sql");
-    await runMig("0091_slot_assign_view.sql");
+    await runMig("0091_slot_assign_view.sql"); // dựng lại view (như DB mới chạy từ đầu) rồi 0099 gỡ lại
+    await runMig("0099_drop_slot_assign_view.sql");
+    await runMig("0099_drop_slot_assign_view.sql"); // chạy lại vô hại
     expect(await ruleRows()).toEqual(rows);
     const dflt = rows.filter((r) => r.is_default).map((r) => [r.t, r.d, r.priority]);
     expect(dflt).toEqual(
@@ -219,38 +234,25 @@ describe("CR-120 · cr120-single-source · một nguồn gán", () => {
     expect((await resolveSlot(db, T.t1 as string, SLOT))?.isDefault).toBe(false);
   });
 
-  it("VIEW process_slot_assignments = luật mặc định, chỉ đọc, RLS theo tenant, bảng _legacy không cấp cho hub_rw", async () => {
-    const v = [
-      ...(await o`select tenant_id::text as t, def_id::text as d from hub.process_slot_assignments
-      where tenant_id = any(${o.array(ALL)}::uuid[]) order by 1`),
-    ].map((r) => [r.t, r.d]);
-    expect(v.map((r) => r[0])).toEqual([T.t1, T.t2, T.t3, T.t6, T.t7].sort());
-    const user = (t: string) => ({ kind: "user" as const, tenantId: t, userId: userId(1399) });
-    const read = (s: Parameters<typeof withHubScope>[1], where: string) =>
-      withHubScope(db, s, (tx) =>
-        tx.execute<{ n: number }>(
-          sql.raw(`select count(*)::int as n from hub.process_slot_assignments ${where}`),
-        ),
-      ).then((r) => Number(r[0]?.n));
-    expect({
-      own: await read(user(T.t1 as string), `where tenant_id = '${T.t1}'`),
-      cross: await read(user(T.t2 as string), `where tenant_id = '${T.t1}'`),
-      all: await read(user(T.t2 as string), ""),
-    }).toEqual({ own: 1, cross: 0, all: 1 });
-    const insert = await codeOf(() =>
-      withHubScope(db, { kind: "system" }, (tx) =>
-        tx.execute(
-          sql`insert into hub.process_slot_assignments (tenant_id, slot, def_id) values (${T.t5}, ${SLOT}, ${lib.A})`,
-        ),
-      ),
-    );
+  it("CR-121 A1 · hub 0099 gỡ VIEW process_slot_assignments, gán hiệu lực đọc từ luật mặc định, bảng _legacy không cấp cho hub_rw và còn dữ liệu cũ", async () => {
+    expect(await relkind()).toBeNull();
     const legacy = await codeOf(() =>
       withHubScope(db, { kind: "system" }, (tx) =>
         tx.execute(sql`select 1 from hub.process_slot_assignments_legacy`),
       ),
     );
-    expect({ insert, legacy }).toEqual({ insert: "55000", legacy: "42501" });
-    // dữ liệu cũ còn nguyên ở _legacy (đối chiếu/rollback một bản phát hành)
+    const gone = await codeOf(() =>
+      withHubScope(db, { kind: "system" }, (tx) =>
+        tx.execute(sql`select 1 from hub.process_slot_assignments`),
+      ),
+    );
+    expect({ legacy, gone }).toEqual({ legacy: "42501", gone: "42P01" });
+    // nguồn mới thay view: luật mặc định ⋈ tập gán (đúng câu view cũ dẫn xuất) = {t1,t2,t3,t6,t7}
+    const eff = await o`select r.tenant_id::text as t from hub.process_routing_rules r
+      join hub.process_tenant_defs a on a.tenant_id = r.tenant_id and a.slot = r.slot and a.def_id = r.def_id
+      where r.is_default and r.tenant_id = any(${o.array(ALL)}::uuid[]) order by 1`;
+    expect(eff.map((r) => r.t)).toEqual([T.t1, T.t2, T.t3, T.t6, T.t7].sort());
+    // dữ liệu cũ còn nguyên ở _legacy (đối chiếu một bản phát hành)
     expect(
       Number(
         (
@@ -301,17 +303,9 @@ describe("CR-120 · cr120-single-source · một nguồn gán", () => {
     expect(u.tenant_count).toBe(2); // PROCESS_IN_USE theo cùng nguồn
   });
 
-  it("resolveSlot/routeSlot không đọc bảng gán cũ (bỏ VIEW tạm ⇒ vẫn trả đúng)", async () => {
-    await o.unsafe(
-      "alter view hub.process_slot_assignments rename to process_slot_assignments_off",
-    );
-    try {
-      expect((await newResolve(T.t1 as string)).def).toBe(lib.A);
-      expect((await newRoute(T.t3 as string, { contractKind: "k1" })).def).toBe(lib.C);
-    } finally {
-      await o.unsafe(
-        "alter view hub.process_slot_assignments_off rename to process_slot_assignments",
-      );
-    }
+  it("resolveSlot/routeSlot chỉ đọc nguồn mới (không còn đối tượng process_slot_assignments)", async () => {
+    expect(await relkind()).toBeNull();
+    expect((await newResolve(T.t1 as string)).def).toBe(lib.A);
+    expect((await newRoute(T.t3 as string, { contractKind: "k1" })).def).toBe(lib.C);
   });
 });

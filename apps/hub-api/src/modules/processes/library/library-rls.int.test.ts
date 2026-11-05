@@ -65,13 +65,14 @@ afterAll(async () => {
   await o?.end({ timeout: 2 });
 });
 
-const ASG = "select count(*)::int as n from hub.process_slot_assignments";
+// CR-121: bảng/view gán cũ đã gỡ ⇒ "gán" = luật mặc định của tenant × khe (nguồn duy nhất, RLS tenant).
+const ASG = "select count(*)::int as n from hub.process_routing_rules where is_default";
 
 describe("CR-105 · RLS thư viện quy trình", () => {
   it("chặn đọc chéo tenant bảng gán, release, khe", async () => {
     const read = {
-      asgOwn: await count(user("a"), `${ASG} where tenant_id = $1`, [T.a]),
-      asgCross: await count(user("b"), `${ASG} where tenant_id = $1`, [T.a]),
+      asgOwn: await count(user("a"), `${ASG} and tenant_id = $1`, [T.a]),
+      asgCross: await count(user("b"), `${ASG} and tenant_id = $1`, [T.a]),
       asgAllB: await count(user("b"), ASG),
       asgNoScope: await count("none", ASG),
       asgSys: await count(sys, ASG),
@@ -99,19 +100,7 @@ describe("CR-105 · RLS thư viện quy trình", () => {
       slotSys: 1,
     });
     // Ghi chỉ scope system: tenant không tự gán / đổi gán / xoá gán (kể cả hàng của chính mình), không chạm release/khe.
-    // CR-120: bảng gán cũ là VIEW chỉ đọc (join, không tự cập nhật được) ⇒ mọi ghi 55000, kể cả scope system.
-    const asgIns = `insert into hub.process_slot_assignments (tenant_id, slot, def_id) values ($1, 'x.y', $2)`;
     const writes = {
-      insOwn: await write(user("a"), asgIns, [T.a, ids.libB]),
-      updOwn: await write(user("a"), "update hub.process_slot_assignments set def_id = $1", [
-        ids.libB,
-      ]),
-      delCross: await write(
-        user("b"),
-        "delete from hub.process_slot_assignments where tenant_id = $1",
-        [T.a],
-      ),
-      insSys: await write(sys, asgIns, [T.a, ids.libB]),
       relIns: await write(
         user("a"),
         "insert into hub.process_def_releases (def_id, rel_version, name, stages) values ($1, 9, 'x', '[{}]')",
@@ -125,17 +114,13 @@ describe("CR-105 · RLS thư viện quy trình", () => {
       relDelSys: await write(sys, "delete from hub.process_def_releases"),
     };
     expect(writes).toEqual({
-      insOwn: "55000",
-      updOwn: "55000",
-      delCross: "55000",
-      insSys: "55000",
       relIns: "42501",
       slotUpd: "0",
       relUpdSys: "42501",
       relDelSys: "42501",
     });
     // Thăm dò tồn tại: hàng của A ≡ không tồn tại dưới B.
-    const probe = (t: string) => count(user("b"), `${ASG} where tenant_id = $1`, [t]);
+    const probe = (t: string) => count(user("b"), `${ASG} and tenant_id = $1`, [t]);
     expect(await probe(T.a)).toBe(await probe(NIL));
   });
 

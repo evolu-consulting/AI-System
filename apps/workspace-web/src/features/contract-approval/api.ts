@@ -11,8 +11,7 @@ export function fetchApproval(id: string, signal?: AbortSignal): Promise<Contrac
   return api<ContractApproval>(`${BASE}/${encodeURIComponent(id)}/approval`, { signal });
 }
 
-// CR-120: Duyệt/Trả lại/Từ chối KHÔNG còn gọi thẳng `POST …/approval` — đi `FlowRuntime.act` (`~/platform/flow`); đường cũ chỉ còn
-// trong `platform/flow/adapters/legacy-act.ts` cho rollback `HUB_FLOW_RUNTIME=off`.
+// CR-120/121: Duyệt/Trả lại/Từ chối KHÔNG gọi thẳng `POST …/approval` — chỉ đi `FlowRuntime.act` (`~/platform/flow`).
 
 /** fix-review · Mở lại quy trình (run engine kết thúc bất thường): owner/admin của gói. */
 export function reopenApproval(id: string): Promise<ContractApproval> {

@@ -154,7 +154,8 @@ describe("hub-routing-backfill · gán cũ đồng bộ tập gán", () => {
     expect(g.json.rules.map((r: Json) => r.is_default)).toEqual([false]);
     expect(g.json.current_def_id).toBe(DFLT);
     expect(
-      (await o`select 1 from hub.process_slot_assignments where tenant_id = ${Z}`).length,
+      (await o`select 1 from hub.process_routing_rules where is_default and tenant_id = ${Z}`)
+        .length,
     ).toBe(0);
   });
 

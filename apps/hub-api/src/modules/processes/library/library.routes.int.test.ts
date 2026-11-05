@@ -195,7 +195,7 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       get: 404,
     });
     expect([
-      ...(await o`select count(*)::int as n from hub.process_slot_assignments where tenant_id = ${X}`),
+      ...(await o`select count(*)::int as n from hub.process_routing_rules where is_default and tenant_id = ${X}`),
     ]).toEqual([{ n: 0 }]);
   });
 
@@ -266,7 +266,7 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       is_default: false,
     });
     expect([
-      ...(await o`select def_id::text as d from hub.process_slot_assignments where tenant_id = ${X}`),
+      ...(await o`select def_id::text as d from hub.process_routing_rules where is_default and tenant_id = ${X}`),
     ]).toEqual([{ d: b }]);
     expect(
       (await call("P", "GET", `${D(b)}/assignments`)).json.items.map((i: Json) => i.tenant_key),
@@ -296,7 +296,7 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       }),
     });
     expect([
-      ...(await o`select count(*)::int as n from hub.process_slot_assignments where tenant_id = ${Y}`),
+      ...(await o`select count(*)::int as n from hub.process_routing_rules where is_default and tenant_id = ${Y}`),
     ]).toEqual([{ n: 0 }]);
     // Chưa xuất bản ⇒ không gán được.
     const draft = await cloneOf(c, "pl-gc-nhap");
@@ -509,7 +509,7 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       name: "Kiểm tra CL",
     });
     expect([
-      ...(await o`select count(*)::int as n from hub.process_slot_assignments where def_id = ${c}`),
+      ...(await o`select count(*)::int as n from hub.process_routing_rules where is_default and def_id = ${c}`),
     ]).toEqual([{ n: 0 }]);
   });
   it("def thư viện không bỏ khe được (slot: null ⇒ 422)", async () => {

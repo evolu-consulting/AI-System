@@ -3,7 +3,7 @@
 // việc gán của nó nằm ở bảng cũ `process_slot_assignments`.
 // Với MỖI (tenant bật gói của khe, khe quy trình đã đăng ký — trừ `dlc.*`, của Rowan): phải có quy trình trong danh sách tenant thấy
 // (đúng thứ `GET .../routing` trả `processes`: hàng `process_tenant_defs` mà def chưa xoá mềm). Thiếu ⇒ crit kèm tên tenant + khe.
-// "Hiệu lực" = luật định tuyến ∨ mẫu khe (cr120-single-source: gán cũ nay là VIEW dẫn xuất từ luật ⇒ không đọc riêng); danh sách
+// "Hiệu lực" = luật định tuyến ∨ mẫu khe (cr120-single-source: bảng gán cũ đã thành view rồi bị gỡ ở hub 0099, CR-121 ⇒ không đọc riêng); danh sách
 // thấy được rỗng nhưng vẫn có đường chạy (mẫu khe — tenant chưa được `ensureSlotDefaults` cấp) là đúng ca Demo ⇒ cũng crit (chạy được
 // mà tenant không xem/sửa được). Một câu SQL tập hợp (Luật 4c), không ngưỡng.
 

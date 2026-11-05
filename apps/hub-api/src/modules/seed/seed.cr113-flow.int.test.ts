@@ -84,7 +84,8 @@ async function snapshot(): Promise<string> {
     await sql`select id, key, slot, published_version from hub.process_defs where id = ${CR113_DEF.id}`;
   const rels =
     await sql`select rel_version from hub.process_def_releases where def_id = ${CR113_DEF.id}`;
-  const asg = await sql`select slot, def_id from hub.process_slot_assignments`;
+  const asg =
+    await sql`select slot, def_id from hub.process_routing_rules where is_default order by tenant_id, slot`;
   return JSON.stringify([defs, rels, asg, await members(LEGAL_GROUP.key)]);
 }
 
@@ -130,8 +131,8 @@ describe("pm-ready · fixture CR-113 (quy trình duyệt mẫu cho evolu)", () =
     const [rel] =
       await sql`select count(*)::int as n from hub.process_def_releases where def_id = ${CR113_DEF.id}`;
     expect(rel?.n).toBe(1);
-    const asg = await sql`select a.def_id::text as def_id, t.key from hub.process_slot_assignments a
-      join admin.tenants t on t.id = a.tenant_id where a.slot = 'contracts.approval'`;
+    const asg = await sql`select a.def_id::text as def_id, t.key from hub.process_routing_rules a
+      join admin.tenants t on t.id = a.tenant_id where a.is_default and a.slot = 'contracts.approval'`;
     expect(asg.map((r) => ({ def_id: r.def_id, key: r.key }))).toEqual([
       { def_id: CR113_DEF.id, key: "evolu" },
     ]);

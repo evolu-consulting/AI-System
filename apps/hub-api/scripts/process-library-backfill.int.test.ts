@@ -90,7 +90,7 @@ describe("CR-105 · script chuyển mẫu duyệt HĐ sang thư viện", () => {
       name: d.name,
       pv: d.pv,
       steps: d.body.steps.map((s) => [s.key, s.department_group_key, s.department_group_id]),
-      asg: await o`select def_id::text as def from hub.process_slot_assignments where tenant_id = ${T.own}`,
+      asg: await o`select def_id::text as def from hub.process_routing_rules where is_default and tenant_id = ${T.own}`,
       rel: await o`select count(*)::int as n from hub.process_def_releases where def_id = ${d.id}`,
     }).toEqual({
       name: "Quy trình HĐ – Công ty Riêng",
@@ -114,7 +114,7 @@ describe("CR-105 · script chuyển mẫu duyệt HĐ sang thư viện", () => {
   it("tenant chưa lưu mẫu không gán, chạy mặc định", async () => {
     await backfill(o, { dryRun: false });
     expect([
-      ...(await o`select count(*)::int as n from hub.process_slot_assignments where tenant_id in (${T.dflt}, ${T.none})`),
+      ...(await o`select count(*)::int as n from hub.process_routing_rules where is_default and tenant_id in (${T.dflt}, ${T.none})`),
     ]).toEqual([{ n: 0 }]);
     const r = await resolveSlot(db, T.none, SLOT);
     const s = await resolveSlot(db, T.dflt, SLOT);
@@ -131,7 +131,7 @@ describe("CR-105 · script chuyển mẫu duyệt HĐ sang thư viện", () => {
       created: r.created.some((x) => x.tenant === "t1084"),
       defs: [...(await o`select count(*)::int as n from hub.process_defs where key = 'hd-t1084'`)],
       asg: [
-        ...(await o`select def_id::text as d from hub.process_slot_assignments where tenant_id = ${T.asg}`),
+        ...(await o`select def_id::text as d from hub.process_routing_rules where is_default and tenant_id = ${T.asg}`),
       ],
     }).toEqual({
       skipped: ["assigned"],

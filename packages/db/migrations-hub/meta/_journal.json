@@ -589,6 +589,13 @@
       "when": 1804700000000,
       "tag": "0098_run_rerun_of",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1804800000000,
+      "tag": "0099_drop_slot_assign_view",
+      "breakpoints": true
     }
   ]
 }

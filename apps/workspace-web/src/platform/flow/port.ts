@@ -8,21 +8,17 @@ import type {
   FlowView,
 } from "@ai/contracts/flow";
 
-/** CR-120 · rollback (`HUB_FLOW_RUNTIME=off`): hành động đã đi endpoint cũ của gói ⇒ không có FlowView, chỉ giai đoạn mới. */
-export type LegacyActDone = { view: null; phase: string | null };
-export type FlowActDone = FlowActionResult | LegacyActDone;
-
 export interface FlowRuntime {
   /** Trạng thái flow của `ref` tại khe. `null` = khe/ref không có (404) hoặc runtime chưa bật. */
   view(slot: string, ref: string, signal?: AbortSignal): Promise<FlowView | null>;
-  /** Hành động của task đang mở (`POST /pack/<k>/flow/:slot/:ref/tasks/:id/actions/:action`); runtime tắt ⇒ endpoint cũ (`legacy-act`). */
+  /** Hành động của task đang mở (`POST /pack/<k>/flow/:slot/:ref/tasks/:id/actions/:action`). Một đường duy nhất (CR-121 gỡ `legacy-act`). */
   act(
     slot: string,
     ref: string,
     taskId: string,
     action: string,
     body: FlowActionRequest,
-  ): Promise<FlowActDone>;
+  ): Promise<FlowActionResult>;
   /** Người điền gửi form của bước `form` (đường sẵn có `POST /review-tasks/:id/form`; Hub kiểm theo snapshot). */
   submitForm(taskId: string, values: FlowFormValues): Promise<void>;
   /** Huy hiệu danh sách, một lô ≤ 100 ref (một yêu cầu, không N+1). `null` = runtime chưa bật. */
