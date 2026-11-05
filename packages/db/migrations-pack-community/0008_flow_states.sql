@@ -29,6 +29,8 @@ ALTER TABLE community.posts ADD CONSTRAINT posts_moderation_ck CHECK (
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS posts_mod_queue_idx ON community.posts (tenant_id, mod_at) WHERE moderation = 'pending';
 --> statement-breakpoint
+CREATE INDEX IF NOT EXISTS posts_mod_mine_idx ON community.posts (tenant_id, author_user_id, created_at DESC) WHERE moderation <> 'none';
+--> statement-breakpoint
 DROP POLICY IF EXISTS posts_moderation ON community.posts;
 --> statement-breakpoint
 CREATE POLICY posts_moderation ON community.posts AS RESTRICTIVE FOR SELECT TO community_rw
@@ -36,15 +38,15 @@ CREATE POLICY posts_moderation ON community.posts AS RESTRICTIVE FOR SELECT TO c
     OR (SELECT packs.viewer_ext_org()) IS NULL
     OR author_user_id = NULLIF(current_setting('app.user_id', true), '')::uuid);
 --> statement-breakpoint
--- Người xem đối tác không đổi trạng thái duyệt (kể cả bài của mình) trừ MỞ lượt lúc đăng; chủ quản/việc nền: được.
+-- Người xem đối tác không đổi trạng thái duyệt (kể cả bài của mình) trừ MỞ/MỞ LẠI lượt (đăng, sửa nội dung); chủ quản/việc nền: được.
 CREATE OR REPLACE FUNCTION community.posts_moderation_guard() RETURNS trigger
   LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
   IF (NEW.moderation, NEW.mod_screen, NEW.mod_decided_by, NEW.mod_task_id)
      IS DISTINCT FROM (OLD.moderation, OLD.mod_screen, OLD.mod_decided_by, OLD.mod_task_id)
      AND (SELECT packs.viewer_ext_org()) IS NOT NULL
-     -- ngoại lệ DUY NHẤT: mở lượt duyệt cho bài vừa đăng (none → pending/running, chưa ai quyết) trong tx tạo bài của chính người đăng
-     AND NOT (OLD.moderation = 'none' AND NEW.moderation = 'pending' AND NEW.mod_screen = 'running'
+     -- ngoại lệ DUY NHẤT: MỞ/MỞ LẠI lượt duyệt (none|approved|rejected → pending/running, chưa ai quyết) trong tx đăng/sửa bài của chính người đăng
+     AND NOT (OLD.moderation IN ('none', 'approved', 'rejected') AND NEW.moderation = 'pending' AND NEW.mod_screen = 'running'
        AND NEW.mod_decided_by IS NULL) THEN
     RAISE EXCEPTION 'moderation is host-only' USING ERRCODE = '42501';
   END IF;

@@ -35,6 +35,17 @@ export async function openModeration(tx: Tx, postId: string): Promise<void> {
     mod_task_id = gen_random_uuid(), mod_at = now() where id = ${postId}::uuid`);
 }
 
+/** Sửa nội dung bài đã duyệt/từ chối/chưa qua duyệt ⇒ pending/running lại, xoá quyết định cũ. Trả số hàng đổi (bài đang pending ⇒ 0). */
+export async function reopenModeration(tx: Tx, postId: string): Promise<number> {
+  const rows = await tx.execute<{
+    id: string;
+  }>(sql`update community.posts set moderation = 'pending', mod_screen = 'running',
+      mod_task_id = gen_random_uuid(), mod_at = now(), mod_reason = null, mod_decided_by = null, mod_decided_name = null,
+      mod_decided_at = null, mod_feedback = null
+    where id = ${postId}::uuid and moderation in ('approved', 'rejected', 'none') returning id`);
+  return rows.length;
+}
+
 /** Ghi kết quả screen (scope hệ thống) — chỉ khi lượt còn đang chạy. Trả số hàng đổi. */
 export async function applyScreen(
   tx: Tx,

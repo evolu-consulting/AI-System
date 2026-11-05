@@ -25,7 +25,13 @@ import { mediaKindOf } from "../domain/file.rules";
 import { priceChanged } from "../domain/notify.rules";
 import { type Access, otherOrgNames } from "./community-access";
 import { attachableFiles } from "./files.repo";
-import { type FlowDeps, moderationEnabled, openModeration, startScreen } from "./flows.service";
+import {
+  type FlowDeps,
+  moderationEnabled,
+  openModeration,
+  reopenModeration,
+  startScreen,
+} from "./flows.service";
 import type { CommunityEvents } from "./notify.events";
 import { partnerRows } from "./org.repo";
 import { type FeedFilter, type FeedRaw, feedQuery, type PostRow, postById } from "./post.sql";
@@ -183,8 +189,10 @@ export async function update(
   id: string,
   input: UpdatePostInput,
   events?: CommunityEvents,
+  flows?: FlowDeps,
 ): Promise<PostRow> {
-  const { row, priceEdit } = await uow.tenant(a.who, async ({ tx }) => {
+  const moderated = await moderationEnabled(flows, a.who.tenantId);
+  const { row, priceEdit, reopened } = await uow.tenant(a.who, async ({ tx }) => {
     const cur = await editable(tx, id, { org: a.org, userId: a.who.userId });
     if (!cur) throw appError("NOT_FOUND");
     const fields = mergedFields(cur.type, cur.fields_raw, input.fields);
@@ -213,8 +221,15 @@ export async function update(
             price: content.fields.raw.price ?? "",
           }
         : null;
-    return { row: await postById(tx, id), priceEdit };
+    // CR-120: sửa tiêu đề/nội dung/tệp khi khe duyệt bật ⇒ mở lại lượt duyệt trong CÙNG tx (không đi vòng qua duyệt)
+    const changed =
+      content.title.raw !== cur.title_raw ||
+      content.body.raw !== cur.body_raw ||
+      input.media != null;
+    const reopened = moderated && changed && (await reopenModeration(tx, id));
+    return { row: await postById(tx, id), priceEdit, reopened };
   });
+  if (reopened && flows) startScreen(flows, a.who, id);
   // review TB-2: chuông sửa giá phát SAU commit (không mở tx lồng khi đang giữ tx của bài)
   if (priceEdit) await events?.emitPriceEdited(priceEdit);
   return found(row);

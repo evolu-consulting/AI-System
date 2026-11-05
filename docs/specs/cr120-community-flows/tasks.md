@@ -18,6 +18,7 @@ viên → ẩn/cảnh báo/bỏ qua). Trạng thái ở gói (community 0008), h
 - [x] G1: loại bước `agent` (contract view + `AgentStep.tsx` + registry canvas).
 - [x] gói: `flow.rules` / `flow-view.rules` / `flow-slots.rules` (thuần), `flows.repo/service/routes`, `flow-slots` (FlowSlotAdapter), mount.
 - [x] rebase lên gd0: journal hub 0092 `when` 1804000000000 (idx 79, sau 0093).
+- [x] sửa nội dung bài (tiêu đề/nội dung/tệp) khi khe bật ⇒ mở lại duyệt cùng tx + chạy lại screen sau commit; trigger 0008 cho đối tác chỉ mở/mở lại lượt.
 - [x] reportList: chủ quản không phải admin ⇒ 403 (RLS cho chủ quản thấy mọi báo cáo ⇒ chặn ở service).
 
 ## Không làm / Chạm
@@ -43,6 +44,7 @@ Không chạm đường nóng có ngưỡng. Mỗi hàm repo MỘT câu SQL cố
 - Quyết là compare-and-set theo task id + trạng thái chờ ⇒ hai người bấm cùng lúc chỉ một thắng (người kia 409).
 
 ## Việc còn lại
+- Bài duyệt lại sau sửa phát chuông ài mới lần nữa khi được duyệt (chưa phân biệt bài sửa).
 - UI 4 trang (hàng đợi duyệt, trạng thái bài của tôi, yêu cầu tham gia, báo cáo) + e2e hành trình thật (D5) — lát sau cr120-one-shell.
 - Hàng chờ nhắc/chuyển cấp bước duyệt bài (đồng hồ 24/48 h mới hiển thị, chưa phát chuông).
 - Gán khe cho tenant (onboard) để bật duyệt bài: bật qua cấu hình quy trình (D7 ops-watch chưa có check riêng cho 3 khe).
@@ -59,7 +61,9 @@ Tenant chưa gán khe: bài đăng như cũ.
 - Kịch bản: khi agent sạch thì đăng ngay, khi lỗi/sai hình thì vào duyệt không tự đăng [test: apps/hub-api/src/modules/packs/community/adapters/community.flows.int.test.ts » agent sạch ⇒ approved ngay (không qua duyệt), agent lỗi/sai hình ⇒ vào duyệt, KHÔNG tự đăng]
 - Kịch bản: khi từ chối thì bài không lên bảng tin, người đăng vẫn xem được trạng thái [test: apps/hub-api/src/modules/packs/community/adapters/community.flows.int.test.ts » từ chối ⇒ rejected, không lên bảng tin, người đăng vẫn thấy trạng thái ở 'bài của tôi']
 - Kịch bản: khi tenant chưa gán khe thì bài đăng như cũ [test: apps/hub-api/src/modules/packs/community/adapters/community.flows.int.test.ts » tenant chưa gán khe ⇒ bài đăng như cũ (moderation = none)]
-- Kịch bản: khi đối tác sửa cột duyệt thì bị chặn [test: apps/hub-api/src/modules/packs/community/adapters/community.flows.int.test.ts » đối tác không tự đổi cột duyệt (trigger posts_moderation_guard)]
+- Kịch bản: khi người đăng sửa tiêu đề/nội dung/tệp bài đã duyệt thì bài mở lại duyệt (chờ), ẩn khỏi bảng tin chung, chạy lại sàng lọc; sửa không đổi nội dung thì giữ nguyên [test: apps/hub-api/src/modules/packs/community/adapters/community.flows.int.test.ts » sửa nội dung bài đã duyệt ⇒ mở lại duyệt (pending), ẩn khỏi bảng tin chung, sửa không đổi nội dung thì giữ nguyên]
+- Kịch bản: khi đối tác tự đặt approved/người quyết thì trigger chặn (chỉ được mở/mở lại lượt) [test: apps/hub-api/src/modules/packs/community/adapters/community.flows.int.test.ts » đối tác không tự đổi cột duyệt (trigger posts_moderation_guard)]
+- Kịch bản: khi đối tác đặt none → approved hoặc approved → pending kèm người quyết thì bị chặn [test: apps/hub-api/src/modules/packs/community/adapters/community.flows.int.test.ts » đối tác không tự đặt approved/quyết định: none → approved và approved → pending kèm người quyết đều bị trigger chặn]
 - Kịch bản: khi hết 2 phút sàng lọc chưa xong thì coi như lỗi và chờ duyệt [test: apps/hub-api/src/modules/packs/community/domain/flow.rules.test.ts » awaitingReview]
 #### Yêu cầu: Đối tác xin tham gia (khe `community.partner-join`) (nguồn: cr120-community-flows)
 Người của công ty đối tác gửi form (công ty, liên hệ, email, lý do, nhãn); mỗi công ty một yêu cầu đang chờ. Tenant admin duyệt ⇒ công ty được

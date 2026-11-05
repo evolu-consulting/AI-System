@@ -93,7 +93,9 @@ export function postsRoutes(d: CommunityDeps): Hono<PackGuardVars> {
     const id = parseIdParam(c);
     const input = parseWith(UpdatePostInputSchema, await readJson(c));
     if (a.org !== null && input.audience) throw audienceNotAllowed();
-    return c.json(postView(a, namesOf(a), await posts.update(d.uow, a, id, input, d.events)));
+    return c.json(
+      postView(a, namesOf(a), await posts.update(d.uow, a, id, input, d.events, d.flows)),
+    );
   });
 
   r.post("/posts/:id/actions", async (c) => {

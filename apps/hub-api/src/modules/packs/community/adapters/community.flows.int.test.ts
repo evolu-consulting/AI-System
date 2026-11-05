@@ -232,8 +232,55 @@ describe("khe community.post-moderation [CR-120]", () => {
     expect(code).toBe("42501");
     expect((await modRow(id)).moderation).toBe("pending");
   });
-});
 
+  it("sửa nội dung bài đã duyệt ⇒ mở lại duyệt (pending), ẩn khỏi bảng tin chung, sửa không đổi nội dung thì giữ nguyên", async () => {
+    agentOut = () => ({ ok: true, text: '{"flagged":false}' });
+    const id = await post();
+    expect(await modRow(id)).toMatchObject({ moderation: "approved" });
+    expect(await inFeed("hM", id)).toBe(true);
+    const same = await call("s1a", "PATCH", `/posts/${id}`, { body: "Keo dán" });
+    expect(same.status).toBe(200);
+    await drain();
+    expect((await modRow(id)).moderation).toBe("approved");
+    agentOut = () => flag("nội dung mới đáng ngờ");
+    const edited = await call("s1a", "PATCH", `/posts/${id}`, { body: "Gọi ngay để mua rẻ" });
+    expect(edited.status).toBe(200);
+    await drain();
+    expect(await modRow(id)).toMatchObject({ moderation: "pending", mod_screen: "flagged" });
+    expect(await inFeed("hM", id)).toBe(false);
+    expect(await inFeed("s1a", id)).toBe(true);
+    const prev = await sql`select mod_decided_by from community.posts where id = ${id}::uuid`;
+    expect(prev[0]?.mod_decided_by).toBeNull();
+  });
+
+  it("đối tác không tự đặt approved/quyết định: none → approved và approved → pending kèm người quyết đều bị trigger chặn", async () => {
+    moderationOn = false;
+    let plain: string;
+    try {
+      plain = await post();
+    } finally {
+      moderationOn = true;
+    }
+    const direct = await pgCode(() =>
+      as(
+        c.s1a,
+        (tx) => tx`update community.posts set moderation = 'approved' where id = ${plain}::uuid`,
+      ),
+    );
+    expect(direct).toBe("42501");
+    agentOut = () => ({ ok: true, text: '{"flagged":false}' });
+    const ok = await post();
+    const withDecider = await pgCode(() =>
+      as(
+        c.s1a,
+        (tx) =>
+          tx`update community.posts set moderation = 'pending', mod_screen = 'running', mod_decided_by = ${c.s1a}::uuid where id = ${ok}::uuid`,
+      ),
+    );
+    expect(withDecider).toBe("42501");
+    expect((await modRow(ok)).moderation).toBe("approved");
+  });
+});
 describe("khe community.partner-join [CR-120]", () => {
   const form = (company: string) => ({
     company,

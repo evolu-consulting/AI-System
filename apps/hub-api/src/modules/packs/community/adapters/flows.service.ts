@@ -111,6 +111,10 @@ export const moderationEnabled = async (d: FlowDeps | undefined, tenantId: strin
 /** Trong tx tạo bài: mở lượt (bài ẩn với người khác tới khi duyệt). */
 export const openModeration = (tx: Tx, postId: string) => repo.openModeration(tx, postId);
 
+/** Sửa nội dung bài đã qua duyệt (approved/rejected/none) ⇒ mở lại lượt trong tx sửa. true = đã mở lại (cần chạy lại screen sau commit). */
+export const reopenModeration = async (tx: Tx, postId: string): Promise<boolean> =>
+  (await repo.reopenModeration(tx, postId)) === 1;
+
 /** Việc nền: agent `screen` ⇒ ghi kết quả (tx hệ thống). Sạch ⇒ approved + chuông bài mới. */
 export async function screenPost(d: FlowDeps, who: PackWho, postId: string): Promise<void> {
   const [row] = await d.sys.system(who.tenantId, ({ tx }) => repo.modRows(tx, [postId]));
