@@ -2,7 +2,7 @@
 import { describe, expect, it } from "bun:test";
 import { compileDef, routeNext, validateFlow } from "./approval-flow.rules";
 import type { FlowStep } from "./approval-flow.types";
-import { notifyRunInputs } from "./approval-flow-notify.rules";
+import { notifyDefInputs, notifyRunInputs } from "./approval-flow-notify.rules";
 import { fromStages, validateApprovalBody } from "./approval-flow-stages.rules";
 import { compileSlotStages } from "./approval-slot.rules";
 import { APPROVAL_SLOT_NODES } from "./approval-slot-catalog.rules";
@@ -116,6 +116,11 @@ describe("CR-121 D-6 · Thông báo / Chờ tới trong khe duyệt HĐ", () => 
     const stages = compileSlotStages(body) as Parameters<typeof fromStages>[0];
     const back = fromStages(stages);
     expect(back.ok).toBe(true);
+    // Def thư viện khai sẵn input người phụ trách + ngày HĐ (gộp khi lưu nháp).
+    expect(notifyDefInputs(body.steps as FlowStep[]).map((x) => [x.key, x.type])).toContainEqual([
+      "contract-end-date",
+      "date",
+    ]);
     if (back.ok) expect(back.steps.map((s) => s.kind)).toEqual(["review", "notify", "wait_until"]);
   });
   it("input run: ngày sai dạng / trống không gửi", () => {

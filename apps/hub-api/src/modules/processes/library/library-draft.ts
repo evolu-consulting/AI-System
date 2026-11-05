@@ -71,7 +71,13 @@ export function slotDraft(
   const issues = spec.validate(body);
   if (issues.length) throw libError("SLOT_BODY_INVALID", { issues: issues.slice(0, 20) });
   const stages = spec.compile(body) as ProcessDefInput["stages"];
-  return { input: { ...input, stages, run_group_ids: [] }, body };
+  // CR-121 D-6 · input mà stages cần (ngày HĐ, người phụ trách) gộp vào def — thiếu thì thêm, có rồi giữ.
+  const have = new Set((input.inputs ?? []).map((x) => x.key));
+  const extra = (spec.inputs?.(body) ?? []).filter((x) => !have.has(x.key));
+  const inputs = extra.length
+    ? ([...(input.inputs ?? []), ...extra] as ProcessDefInput["inputs"])
+    : input.inputs;
+  return { input: { ...input, stages, run_group_ids: [], inputs }, body };
 }
 
 /** Tham chiếu để kiểm def thư viện: agent/nhóm bật (như mẫu) + tool hệ thống của gói khe từ catalog (không theo tenant). */

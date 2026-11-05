@@ -73,6 +73,11 @@ export type SlotSpec = {
   preview?(body: unknown, input: SlotPreviewInput): SlotPreviewStep[] | null;
   /** CR-105 · lưu từ canvas (chỉ `stages`): dựng lại `slot_body` theo mã; dạng khác (song song, If, nhánh) ⇒ `{stage}` sai đầu tiên. */
   fromStages?(stages: readonly unknown[]): { body: unknown } | { stage: string };
+  /** CR-121 D-6 · input run mà stages của body cần (vd ngày HĐ cho Chờ tới, người phụ trách cho Thông báo) — gộp vào `inputs`
+   *  của def thư viện khi lưu (thiếu khoá thì thêm, có rồi giữ). Vắng ⇒ không thêm. */
+  inputs?(
+    body: unknown,
+  ): readonly { key: string; label: string; type: string; required: boolean }[];
 };
 
 export type SlotRegistry = {

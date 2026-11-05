@@ -25,6 +25,7 @@ import {
 import { myApprovals } from "./application/mywork-approvals.usecase";
 import { FLOW_TOOL_KEYS } from "./domain/approval-flow.rules";
 import type { FlowDeal, FlowStep } from "./domain/approval-flow.types";
+import { notifyDefInputs } from "./domain/approval-flow-notify.rules";
 import {
   conditionDepartmentKeys,
   previewPath,
@@ -133,6 +134,11 @@ export const approvalSlotSpec: SlotSpec = {
     }));
   },
   fromStages: slotBodyFromStages,
+  // CR-121 D-6 · Thông báo (người phụ trách) / Chờ tới (ngày HĐ) đọc input run do gói điền lúc mở lượt.
+  inputs: (b) => {
+    const body = slotBodyOf(b);
+    return body ? notifyDefInputs(body.steps as unknown as FlowStep[]) : [];
+  },
 };
 
 /** CR-105 L4 · `GET /approval-flow` (chỉ đọc, quy trình đang dùng) + S3b `GET /groups` + `GET /dify-workflows`. */
