@@ -1,15 +1,18 @@
 // PK-FR-01 · review N1 m-02 · migration `migrations-packs/0003_install_owner.sql`: `packs.install` lần đầu gặp feature trùng
 // khoá không thuộc gói ⇒ RAISE 23505 (không lặng lẽ nhận); không trùng ⇒ cài được; cài lại ⇒ idempotent. Mọi thứ trong tx
 // rollback (role/schema cũng transactional) ⇒ không để lại gì. DB = DB Hub đã có bộ khung gói (mẫu test:int:par).
-import { afterAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import postgres from "postgres";
-import { withDatabase } from "./test-db";
+import { cloneMigratedTestDb, migrateFullTest, withDatabase } from "./test-db";
 
 const BASE = process.env.HUB_TEST_DATABASE_URL ?? process.env.TEST_DATABASE_URL;
 if (!BASE)
   throw new Error("HUB_TEST_DATABASE_URL/TEST_DATABASE_URL chưa đặt — chạy `bun run keys:dev`");
 const OWNER = process.env.HUB_TEST_DATABASE_URL ?? withDatabase(BASE, "ai_system_h1_test");
 const sql = postgres(OWNER, { max: 1, onnotice: () => {} });
+// Tự dựng DB Hub đầy đủ (Admin + Hub + gói) từ mẫu thay vì trông vào file int chạy TRƯỚC trong cùng ô worker: chia lượt toàn bộ ra nhiều
+// slot / chạy riêng file này thì DB `…_h1_test` còn rỗng ⇒ 3F000/42P01 (schema `packs` chưa có). Kết nối `sql` lười nên mở sau clone.
+beforeAll(() => cloneMigratedTestDb(OWNER, { key: "full", migrate: migrateFullTest }));
 afterAll(() => sql.end({ timeout: 1 }));
 
 class Rollback extends Error {}
