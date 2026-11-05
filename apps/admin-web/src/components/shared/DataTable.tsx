@@ -36,6 +36,8 @@ type Props<T> = {
   skeletonRows?: number;
   /** Tiêu đề / mô tả / ô tìm nằm TRONG khung bảng (mockup P-d2 C1); vẫn hiện khi rỗng do lọc. */
   header?: ReactNode;
+  /** CR-120 · gom dòng liền nhau cùng khoá nhóm dưới một hàng tiêu đề (nơi gọi tự sắp `rows` theo nhóm). */
+  group?: { of: (row: T) => string; label: (key: string) => ReactNode };
 };
 
 type RowProps<T> = { row: T; columns: Column<T>[] };
@@ -79,6 +81,7 @@ export function DataTable<T>({
   empty,
   skeletonRows = 8,
   header,
+  group,
 }: Props<T>) {
   if (error) return <ErrorState message={error.message} code={error.code} onRetry={onRetry} />;
   const showEmpty = !isLoading && rows !== undefined && rows.length === 0 && empty;
@@ -113,7 +116,18 @@ export function DataTable<T>({
           {isLoading || !rows ? (
             <SkeletonRows columns={columns} count={skeletonRows} />
           ) : (
-            rows.map((row) => <Row key={getRowKey(row)} row={row} columns={columns} />)
+            rows.flatMap((row, i) => {
+              const g = group?.of(row);
+              const head =
+                group && g !== undefined && (i === 0 || group.of(rows[i - 1] as T) !== g) ? (
+                  <TableRow key={`group:${g}`} className="bg-muted/40 hover:bg-muted/40">
+                    <TableCell colSpan={columns.length} className="py-1.5 text-label font-semibold">
+                      {group.label(g)}
+                    </TableCell>
+                  </TableRow>
+                ) : null;
+              return [head, <Row key={getRowKey(row)} row={row} columns={columns} />];
+            })
           )}
         </TableBody>
       </Table>

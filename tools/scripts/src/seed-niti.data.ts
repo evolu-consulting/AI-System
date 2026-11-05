@@ -102,7 +102,7 @@ export const NITI_SPEC: SeedSpec = {
   processes: [
     {
       key: "niti-mua-kd",
-      name: "Mua (từ Kinh doanh)",
+      name: "Duyệt 2 cấp: Kế toán → Giám đốc",
       steps: [
         { key: "ke-toan", name: "Phòng Kế toán duyệt", dept: KT.key },
         { key: "giam-doc", name: "Ban Giám đốc duyệt", dept: BGD.key },
@@ -110,12 +110,12 @@ export const NITI_SPEC: SeedSpec = {
     },
     {
       key: "niti-ban-kd",
-      name: "Bán (từ Kinh doanh)",
+      name: "Duyệt 1 cấp: Giám đốc",
       steps: [{ key: "giam-doc", name: "Ban Giám đốc duyệt", dept: BGD.key }],
     },
     {
       key: "niti-mua-bgd",
-      name: "Mua (từ Ban Giám đốc)",
+      name: "Duyệt 1 cấp: Kế toán",
       steps: [{ key: "ke-toan", name: "Phòng Kế toán duyệt", dept: KT.key }],
     },
   ],

@@ -14,6 +14,7 @@ import { ApiError } from "@/lib/http";
 import { hubConfigured } from "@/lib/hub";
 import { useTr } from "@/lib/use-translate";
 import { CloneDialog } from "../components/library/CloneDialog";
+import { LibraryFilter } from "../components/library/LibraryFilter";
 import { ProcessesHeader } from "../components/ProcessesHeader";
 import { ProcessesTable } from "../components/ProcessesTable";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
@@ -25,6 +26,8 @@ import {
   type Tab,
   useProcessesView,
 } from "../hooks/use-processes-view";
+import { activeCount, appOfSlot, appOptions } from "../lib/library-filter";
+import type { LibraryListItem } from "../library-api";
 
 /** CR-120 · MỘT trang Quy trình của công ty (nạp lười: không vào chunk đầu). */
 const FlowsList = lazy(
@@ -57,6 +60,7 @@ function AppFilterNotice({ app, onClear }: { app: string; onClear: () => void })
 
 function Body({ v }: { v: ProcessesView }) {
   const { t } = useTranslation();
+  const tr = useTr();
   const err = v.q.error;
   if (err instanceof ApiError && err.status === 403) return <ForbiddenState />;
   const chips = (["all", "on", "off"] as const).map((value) => ({
@@ -64,8 +68,23 @@ function Body({ v }: { v: ProcessesView }) {
     label: t(`process.admin.list.filter.${value}`),
   }));
   const emptyKey = v.templates ? "emptyTemplates" : "empty";
+  const filtered = activeCount(v.libFilter) > 0;
+  const message = filtered
+    ? t("process.admin.library.filter.noMatch")
+    : t(`process.admin.list.${emptyKey}`);
+  // CR-120 · chưa chọn app và có ≥ 2 app ⇒ tiêu đề nhóm theo app.
+  const group =
+    v.library && !v.app && appOptions(v.rows ?? []).length > 1
+      ? {
+          of: (r: LibraryListItem) => appOfSlot(r.slot),
+          label: (a: string) => tr(`featmeta.app.${a}.name`, { defaultValue: a }),
+        }
+      : undefined;
   return (
     <div className="space-y-3">
+      {v.library ? (
+        <LibraryFilter filter={v.libFilter} rows={v.allRows ?? []} onChange={v.setLibFilter} />
+      ) : null}
       {v.app ? <AppFilterNotice app={v.app} onClear={v.clearApp} /> : null}
       {v.templates ? null : (
         <FilterChips
@@ -89,8 +108,9 @@ function Body({ v }: { v: ProcessesView }) {
             : null
         }
         onRetry={() => void v.q.refetch()}
-        empty={<EmptyState message={t(`process.admin.list.${emptyKey}`)} />}
+        empty={<EmptyState message={message} />}
         actions={v.actions}
+        group={group}
       />
       {v.q.hasNextPage ? (
         <Button

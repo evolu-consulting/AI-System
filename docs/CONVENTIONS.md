@@ -234,3 +234,9 @@ Thêm `uv run pytest -m int` khi chạm DB/Redis.
 - Module chưa chuyển: một dòng `TECH-DEBT.md` (gom theo app). Chuyển xong cả module ⇒ xoá khỏi dòng đó, cập nhật `CODEMAP.md`.
 - **Test khoá khi dời file:** `qc` sửa đường dẫn trong helper `tryLoad`/import của test khoá **cùng task dời** (một commit qc cho mỗi lần dời, cập nhật `tests/.lock`). **Không** để shim re-export ở đường dẫn cũ.
 - **Luật `tryLoad` (qc):** helper nạp module theo đường dẫn phải **báo rõ** khi file vắng (ném/`expect` với thông điệp "module vắng: <đường dẫn>"), không trả `{}` lặng lẽ. Áp khi qc chạm helper đó lần đầu (mẫu: `tests/acceptance/P-a/_support/modules.ts`).
+
+
+## 11. UI — tên quy trình và nhãn (CR-120)
+- **Tên quy trình = việc nó làm (các bước), không mã hoá AI/KHI NÀO.** Ví dụ: "Duyệt 2 cấp: Kế toán → Giám đốc", "Duyệt 1 cấp: Giám đốc", "Duyệt 1 cấp: Kế toán". Cấm đưa phòng ban khởi tạo, loại hợp đồng, ngưỡng tiền vào tên ("Mua (từ Kinh doanh)", "… trên 500 tr"): đó là **luật chọn quy trình** (routing), đổi luật không được buộc đổi tên.
+- Dòng phụ dưới tên trong bảng thư viện = nhãn khe: "<App> · <việc>" (vd "Sổ Hợp Tác · Duyệt hợp đồng"). Không hiện khoá khe.
+- Bộ lọc danh sách: nút phễu (icon Filter) mở popover nhỏ; bộ lọc đang bật hiện thành chip bỏ được từng cái; trạng thái lưu ở URL query; lọc phía client trên dữ liệu đã tải (đổi bộ lọc không gọi API).

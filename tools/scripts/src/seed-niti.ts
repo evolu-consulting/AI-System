@@ -112,7 +112,7 @@ function appendCred(file: string, line: string): void {
 }
 
 /** Khe `contracts.approval` thật + catalog tool hệ thống của engine duyệt (như test thư viện; script không chạy qua app.ts). */
-function approvalPackTools(): PackToolCatalog {
+export function approvalPackTools(): PackToolCatalog {
   slotRegistry.register(approvalSlotSpec);
   const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((t) => ({
     key: t.name,

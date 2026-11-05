@@ -1,16 +1,15 @@
-﻿// ADM-FR-65 · CR-056 · P-a F5: dữ liệu + hành động của danh sách quy trình (tab, bộ lọc chip, chép/xoá/chạy/bật).
+// ADM-FR-65 · CR-056 · P-a F5: dữ liệu + hành động của danh sách quy trình (tab, bộ lọc chip, chép/xoá/chạy/bật).
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
-import { slotsOfApp } from "@/features/apps/lib/app-config";
 import { copyDef, deleteDef, useInvalidateDefs, useProcessDefs } from "../api";
 import type { CloneSource } from "../components/library/CloneDialog";
 import { processErrorSpec } from "../lib/errors";
-import { sortLibraryRows } from "../lib/library-list";
-import { rowsForTab } from "../lib/library-view";
+import { type LibFilter, libFilterSearch } from "../lib/library-filter";
 import { type LibraryListItem, useLibraryDefs, useSlots } from "../library-api";
 import { useCloneFlow } from "./use-clone-flow";
+import { useLibraryRows } from "./use-library-rows";
 import { useProcessTenant } from "./use-process-tenant";
 import { useToggleEnabled } from "./use-toggle-enabled";
 
@@ -93,7 +92,7 @@ function useRowActions(
 export function useProcessesView() {
   const tenant = useProcessTenant();
   const navigate = useNavigate();
-  const search = useSearch({ strict: false }) as { tab?: Tab; app?: string };
+  const search = useSearch({ strict: false }) as { tab?: Tab } & LibFilter;
   const [filter, setFilter] = useState<StateFilter>("all");
   const [runRow, setRunRow] = useState<Row | null>(null);
   const del = useDeleteFlow(tenant.tenantId);
@@ -131,17 +130,19 @@ export function useProcessesView() {
     goOwn,
     cloneFlow.open,
   );
-  // CR-118: `?app=` lọc thư viện theo app (chỉ ở tab thư viện của platform_admin).
-  const app = library ? search.app : undefined;
-  const rows = useMemo(() => {
-    if (!q.data) return undefined;
-    const list = rowsForTab(
-      q.data.pages.flatMap((p) => p.items),
-      templates,
-      filter,
-    );
-    return library ? sortLibraryRows(app ? slotsOfApp(list, app) : list) : list; // thư viện: mặc định ghim đầu, còn lại mới cập nhật trước
-  }, [q.data, templates, filter, library, app]);
+  // CR-118/120: bộ lọc thư viện (app · việc · trạng thái · tenant) ở URL, lọc phía client trên danh sách đã tải (chỉ tab thư viện).
+  const loaded = useMemo(
+    () => (q.data ? q.data.pages.flatMap((p) => p.items) : undefined),
+    [q.data],
+  );
+  const { rows, libFilter } = useLibraryRows({
+    items: loaded,
+    search,
+    library,
+    templates,
+    enabledFilter: filter,
+  });
+  const app = libFilter.app;
   // "Tạo từ quy trình mặc định": nhân bản def mặc định của khe (từ danh sách đã tải hoặc từ khe).
   const dflt = rows?.find((r) => r.is_default);
   const slot = slots.data?.[0];
@@ -153,6 +154,11 @@ export function useProcessesView() {
   return {
     tenant,
     app,
+    libFilter,
+    /** Tất cả dòng thư viện đã tải (chưa lọc) — nguồn tuỳ chọn của popover lọc. */
+    allRows: loaded,
+    setLibFilter: (f: LibFilter) =>
+      void navigate({ to: "/processes", search: libFilterSearch(f), replace: true }),
     clearApp: () => void navigate({ to: "/processes", search: {}, replace: true }),
     flowsMode,
     createOpen,

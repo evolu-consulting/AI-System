@@ -38,6 +38,8 @@ type Props = Opts & {
   error: { message: string; code: string } | null;
   onRetry: () => void;
   empty: React.ReactNode;
+  /** CR-120 · thư viện chưa chọn app: tiêu đề nhóm theo app. */
+  group?: { of: (row: Row) => string; label: (key: string) => React.ReactNode } | undefined;
 };
 
 const L = (t: TFunction, k: string): string => t(`process.admin.list.${k}`);
@@ -222,6 +224,7 @@ export function ProcessesTable(p: Props) {
       error={p.error}
       onRetry={p.onRetry}
       empty={p.empty}
+      group={p.group}
     />
   );
 }
