@@ -17,7 +17,7 @@ import {
 } from "../_support/v2g";
 
 const WARM = 3;
-const RUNS = 12;
+const RUNS = 40;
 const P95_MS = 250;
 
 let c: CtxN1;
@@ -42,8 +42,8 @@ const ms = (n: number) =>
   }));
 
 /** Chuẩn bị (KHÔNG tính giờ; arrange/TRUNCATE chỉ 1 lần ngoài vòng đo): HĐ chờ xác nhận có 200 dòng, thân Lưu = sửa 200 dòng + 1 dòng mới + 50 mốc. */
-async function prepare() {
-  const s = await seedReview(c, 1, { deal: "sell", ai, items: lines(200) });
+async function prepare(n: number) {
+  const s = await seedReview(c, n, { deal: "sell", ai, items: lines(200) });
   const items = s.items.map((id, i) => ({ id, name: `Hàng ${i} sửa`, qty: 2, unit_price: 2000 }));
   return {
     id: s.id,
@@ -62,7 +62,7 @@ describe("V2-G · Lưu 200 dòng + 50 mốc: thời gian (perf)", () => {
     await arrangeV2a(c);
     await setApproval(c.sql, T.acme, false);
     const prepared = [];
-    for (let i = 0; i < WARM + RUNS; i++) prepared.push(await prepare());
+    for (let i = 0; i < WARM + RUNS; i++) prepared.push(await prepare(1000 + i));
     for (const [i, { id, body }] of prepared.entries()) {
       const t0 = performance.now();
       const r = await reviewOf(c, id, body);
@@ -76,5 +76,5 @@ describe("V2-G · Lưu 200 dòng + 50 mốc: thời gian (perf)", () => {
       `V2-G review 200x50 (sau làm nóng): p50 ${p(0.5).toFixed(1)} ms · p95 ${p(0.95).toFixed(1)} ms · max ${(times.at(-1) ?? 0).toFixed(1)} ms`,
     );
     expect(p(0.95)).toBeLessThanOrEqual(P95_MS);
-  }, 120_000);
+  }, 300_000);
 });
