@@ -1,6 +1,6 @@
 // Gap #10 · lọc ngày của danh sách HĐ (hạn chót / hiệu lực đến): trạng thái nằm trên URL (`?due=` `?dfield=` `?df=` `?dt=`) nên chia sẻ/tải lại
 // giữ nguyên. Thuần: phân tích + dựng tham số; "hôm nay" do server quyết theo ngày lịch tenant (client chỉ gửi `due`).
-import { CONTRACT_DATE_FIELDS, CONTRACT_DUE_PRESETS } from "@ai/contracts";
+import { CONTRACT_DATE_FIELDS, CONTRACT_DUE_PRESETS } from "@ai/contracts/light";
 
 export type DateField = (typeof CONTRACT_DATE_FIELDS)[number];
 export type DuePreset = (typeof CONTRACT_DUE_PRESETS)[number];

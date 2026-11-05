@@ -1,6 +1,7 @@
 // HD-FR-07 · HD-AC03 · HD-AC05 · D-03 · D-10 · D-18 · HD1 plan §1: ListQuery / ListRow / ListResponse / Facets gói hợp đồng.
 import { z } from "zod";
 import { CountSchema, IsoDateTime } from "../common";
+import { CONTRACT_DATE_FIELDS, CONTRACT_DUE_PRESETS } from "../light";
 import { ContractParentRefSchema } from "./appendix";
 import { DocTypeSchema, ListDocRefSchema, ListFrameChildSchema } from "./doc-types";
 import {
@@ -25,8 +26,7 @@ export const CONTRACT_Q_MAX = 100;
 export const CONTRACT_SORTS = ["updated_at", "value", "end_date", "title"] as const;
 export const CONTRACT_SORT_DIRS = ["asc", "desc"] as const;
 /** Gap #10: cột ngày lọc được; cửa sổ tương đối: quá hạn (< hôm nay), 30/60/90 ngày tới (hôm nay … +N). */
-export const CONTRACT_DATE_FIELDS = ["end_date", "action_deadline"] as const;
-export const CONTRACT_DUE_PRESETS = ["overdue", "30", "60", "90"] as const;
+export { CONTRACT_DATE_FIELDS, CONTRACT_DUE_PRESETS };
 /** Gap #8: xuất danh sách ra tệp (cùng bộ lọc, không phân trang), trần số dòng. */
 export const CONTRACT_EXPORT_FORMATS = ["xlsx", "csv"] as const;
 export const CONTRACT_EXPORT_MAX_ROWS = 50_000;

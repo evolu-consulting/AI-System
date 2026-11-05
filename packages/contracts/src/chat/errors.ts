@@ -2,6 +2,7 @@
 // `/auth/*` giữ mã của Admin (`API_ERRORS` trong `../common`), không lặp ở đây.
 import { z } from "zod";
 import { UuidSchema } from "../common";
+import { RETRY_AFTER_HEADER, TOO_MANY_RUNS_RETRY_AFTER_S } from "../light";
 import { ATTACH_PER_MESSAGE_MAX } from "./attachments";
 
 /** Mã lỗi HTTP của endpoint Hub (không phải `/auth/*`) → status. */
@@ -56,8 +57,7 @@ export type CmdMissingArgDetails = z.infer<typeof CmdMissingArgDetailsSchema>;
 
 // HUB-FR-91, HUB-FR-94 · lỗi định tuyến `@` + giới hạn run (H2b plan §2.1, P2, P9): hằng riêng — không đổi `CHAT_API_ERRORS`.
 export const AGENT_SUGGESTIONS_MAX = 3;
-export const RETRY_AFTER_HEADER = "Retry-After";
-export const TOO_MANY_RUNS_RETRY_AFTER_S = 5;
+export { RETRY_AFTER_HEADER, TOO_MANY_RUNS_RETRY_AFTER_S };
 
 /** Lỗi E12 trước khi tạo run: tag `@` không tìm thấy (404), vượt giới hạn run đang chạy (429 + `Retry-After`). */
 export const CHAT_ROUTING_ERRORS = {

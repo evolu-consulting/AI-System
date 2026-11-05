@@ -2,6 +2,7 @@
 // Một nguồn cho switcher của cả 4 web + URL đích SSO (thay env build). Docs: docs/specs/app-catalog/tasks.md.
 import { z } from "zod";
 import { LocalizedTextSchema } from "./common";
+import { MY_APPS_PATH } from "./light";
 
 export const APP_KEY_RE = /^[a-z0-9-]{2,32}$/;
 export const APP_NAME_MAX = 60;
@@ -90,7 +91,7 @@ export type AppCatalogItem = {
 export type AppCatalogListResponse = { items: AppCatalogItem[] };
 
 /** `GET /me/apps` (bản gốc) và `GET /auth/me/apps` (cùng handler; web gọi đường này vì mọi web đã proxy `/auth`). */
-export const MY_APPS_PATH = "/auth/me/apps";
+export { MY_APPS_PATH };
 
 /** Một app người gọi được mở (đã lọc quyền + bỏ app tắt/chưa có URL). */
 export const MeAppSchema = z.strictObject({

@@ -1,17 +1,16 @@
 // CHAT-AC-03 · fetch wrapper (chép admin-web): JSON, ApiError, Bearer, Accept-Language;
 // 401 bất kỳ mã từ endpoint Hub (C1: `AUTH_EXPIRED`) → refresh đúng 1 lần rồi gửi lại. `/auth/*` không vòng refresh (plan Q-401).
-import {
-  type ChatAttachmentErrorCode,
-  type ChatCommandErrorCode,
-  type ChatDefaultAgentErrorCode,
-  type ChatErrorCode,
-  type ChatProcessErrorCode,
-  type ChatRoomAgentErrorCode,
-  type ChatRoomErrorCode,
-  type ChatRoutingErrorCode,
-  RETRY_AFTER_HEADER,
-  TOO_MANY_RUNS_RETRY_AFTER_S,
+import type {
+  ChatAttachmentErrorCode,
+  ChatCommandErrorCode,
+  ChatDefaultAgentErrorCode,
+  ChatErrorCode,
+  ChatProcessErrorCode,
+  ChatRoomAgentErrorCode,
+  ChatRoomErrorCode,
+  ChatRoutingErrorCode,
 } from "@ai/contracts/chat";
+import { RETRY_AFTER_HEADER, TOO_MANY_RUNS_RETRY_AFTER_S } from "@ai/contracts/light";
 
 /** CR-053 · = `X_APP_HEADER` (`@ai/contracts` auth): app báo mình khi gọi `/auth/*` (không kéo contract vào bundle). */
 const X_APP_HEADER = "X-App";

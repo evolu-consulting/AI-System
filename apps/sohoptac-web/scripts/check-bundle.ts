@@ -16,6 +16,8 @@ export const chunkBudget = (name: string): number =>
     : /^(community|cm)[.\-_]/.test(name)
       ? COMMUNITY_CHUNK_BUDGET_BYTES
       : CHUNK_BUDGET_BYTES;
+/** Chuỗi mã lỗi chỉ có trong runtime zod (không có trong code app). */
+const ZOD_MARKER = "invalid_type";
 /** Chunk bất đồng bộ (route, lazy) do Rsbuild tách vào `static/js/async`. */
 const ASYNC_DIR = join("static", "js", "async");
 
@@ -72,6 +74,15 @@ export function asyncChunkSizes(distDir: string): [string, number][] {
     .map((f): [string, number] => [f, Bun.gzipSync(readFileSync(join(dir, f))).byteLength]);
 }
 
+function zodInInitial(distDir: string, js: string[]): string[] {
+  return js
+    .filter((f) => {
+      const abs = join(distDir, f.replace(/^\//, ""));
+      return existsSync(abs) && readFileSync(abs, "utf8").includes(ZOD_MARKER);
+    })
+    .map((f) => `check:bundle zod nằm trong JS ban đầu (${f})`);
+}
+
 export function checkBundle(distDir: string): BundleReport {
   const indexPath = join(distDir, "index.html");
   if (!existsSync(indexPath)) {
@@ -89,6 +100,8 @@ export function checkBundle(distDir: string): BundleReport {
   const jsKb = toKb(jsBytes);
   const cssKb = toKb(cssBytes);
   const errors = missing.map((p) => `check:bundle: thiếu ${p}`);
+  // CR-118 bundle: zod (~370 KB nguồn) không được vào JS tải ban đầu — dùng `@ai/contracts/light` cho hằng số.
+  errors.push(...zodInInitial(distDir, js));
   if (jsBytes > JS_BUDGET_BYTES)
     errors.push(`check:bundle js ${jsKb} KB > ${JS_BUDGET_BYTES / 1024} KB`);
   if (cssBytes > CSS_BUDGET_BYTES) errors.push(`check:bundle css ${cssKb} KB > 25 KB`);

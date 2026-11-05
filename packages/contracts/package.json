@@ -10,6 +10,7 @@
     "./community": "./src/pack-community/index.ts",
     "./flow": "./src/flow/index.ts",
     "./hub": "./src/hub/index.ts",
+    "./light": "./src/light.ts",
     "./hub-internal": "./src/hub-internal/index.ts",
     "./hub-admin": "./src/hub-admin/index.ts",
     "./studio": "./src/studio/index.ts"

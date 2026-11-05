@@ -66,6 +66,15 @@ describe("ADM-NFR-06 · M0-AC19 · check:bundle", () => {
     expect(errors[0]).toMatch(new RegExp(`^check:bundle js \\d+\\.\\d KB > ${JS_KB} KB$`));
   });
 
+  test("zod trong JS tải ban đầu → lỗi (hằng số phải qua @ai/contracts/light)", () => {
+    const dir = makeDist(page(["/static/js/a.js"]), {
+      "static/js/a.js": 'x({code:"invalid_type"});',
+    });
+    expect(checkBundle(dir).errors).toEqual([
+      "check:bundle zod nằm trong JS ban đầu (/static/js/a.js)",
+    ]);
+  });
+
   test("2 script cộng dồn vượt dù từng file dưới ngưỡng", () => {
     const dir = makeDist(page(["/a.js", "/b.js"]), {
       "a.js": noise(HALF_KB),
