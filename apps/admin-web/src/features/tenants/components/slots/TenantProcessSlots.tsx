@@ -62,7 +62,12 @@ export function TenantProcessSlots({
               data-testid={`tenant-slot-${r.slot}`}
             >
               <span className="text-label font-medium">{r.label}</span>
-              <SlotRouting tenantId={tenant.id} slot={r.slot} candidates={b.candidates(r.slot)} />
+              <SlotRouting
+                tenantId={tenant.id}
+                slot={r.slot}
+                candidates={b.candidates(r.slot)}
+                engineOff={engine ? !engine.on : false}
+              />
             </li>
           ))}
         </ul>

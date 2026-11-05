@@ -561,6 +561,7 @@
       "title": "Processes",
       "desc": "Processes this company uses for the app: assigned processes, department selection rules and the default. Only platform admins assign.",
       "engine": "Approve by process",
+      "engineOffNote": "Off: the assigned processes and routing rules below will NOT run; the company\u0027s contracts keep using the old approval. Turn on \"Approve by process\" and Save to apply.",
       "col": {
         "slot": "Used for",
         "process": "Process",
@@ -579,7 +580,7 @@
         "loadFail": "Could not load assigned processes.",
         "noneAssigned": "No process assigned: the company cannot see, pick or run one in this slot.",
         "inUse": "In use",
-        "inUseOutside": "In use (slot default): {{name}}",
+        "inUseOutside": "In use (slot default): {name}",
         "slotMissing": "This slot has no process for the company yet. Ask the platform admin to assign the default process.",
         "unassign": "Unassign",
         "addPick": "Library process",

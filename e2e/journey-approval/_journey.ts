@@ -64,6 +64,10 @@ async function openContractsCard(page: Page, e: Env): Promise<Locator> {
   return card;
 }
 
+/** CR-120: khối Quy trình duy nhất của thẻ app (công tắc Duyệt theo quy trình + quy trình đã gán + luật), luôn mở. */
+export const processBlock = (card: Locator): Locator =>
+  card.getByTestId("tenant-processes-contracts");
+
 async function optionValue(select: Locator, text: string): Promise<string> {
   const v = await select.locator("option", { hasText: text }).first().getAttribute("value");
   if (!v) throw new Error(`không có lựa chọn "${text}"`);
@@ -73,8 +77,7 @@ async function optionValue(select: Locator, text: string): Promise<string> {
 /** Platform admin: gán 2 quy trình cho công ty + 2 luật (Phòng Kinh doanh × Mua/Bán). Chạy lại được (đã đủ thì bỏ qua). */
 export async function adminAssignAndRoute(page: Page, e: Env): Promise<void> {
   const card = await openContractsCard(page, e);
-  const slots = card.getByRole("region", { name: "Quy trình duyệt hợp đồng" });
-  await slots.getByText("Quy trình được gán & luật chọn theo phòng ban").click();
+  const slots = processBlock(card);
   const box = slots.getByTestId(`admin-assigned-${SLOT}`);
   for (const name of [PROC.buy, PROC.sell]) {
     const assigned = box.getByTestId(/^admin-assigned-[0-9a-f-]{36}$/).filter({ hasText: name });
@@ -104,18 +107,15 @@ export async function adminAssignAndRoute(page: Page, e: Env): Promise<void> {
   await expect(toast(page, "Đã lưu luật chọn quy trình")).toBeVisible();
 }
 
-/** Cảnh báo cấu hình của app Sổ Hợp Tác ở ai-admin (nơi UI nói "đã gán quy trình nhưng chưa bật tính năng thêm"). */
-export async function adminWarnings(page: Page, e: Env): Promise<string> {
-  await page.goto(`${e.admin}/apps/contracts`);
-  const sec = page.getByRole("region", { name: "Cảnh báo cấu hình" });
-  await expect(sec).toBeVisible();
-  return sec.innerText();
+/** Khối Quy trình của công ty (sau khi mở trang công ty › Ứng dụng & Gói). */
+export async function openProcessBlock(page: Page, e: Env): Promise<Locator> {
+  return processBlock(await openContractsCard(page, e));
 }
 
-/** Platform admin bật/tắt "Duyệt hợp đồng bằng quy trình" cho công ty (lưu một lượt). */
+/** Platform admin bật/tắt công tắc "Duyệt theo quy trình" trong khối Quy trình (lưu một lượt). */
 export async function adminSetEngine(page: Page, e: Env, on: boolean): Promise<void> {
   const card = await openContractsCard(page, e);
-  const sw = card.getByRole("switch", { name: "Bật Duyệt hợp đồng bằng quy trình" });
+  const sw = processBlock(card).getByTestId("tenant-engine-switch");
   await expect(sw).toBeVisible();
   if (await sw.isDisabled()) {
     // ứng dụng đang Tắt ⇒ công tắc khoá: chọn mức Quản trị trước (thao tác thật của admin)
@@ -125,17 +125,15 @@ export async function adminSetEngine(page: Page, e: Env, on: boolean): Promise<v
   await sw.click();
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(toast(page, "Đã lưu tính năng cho")).toBeVisible();
-  // hub nạp lại cấu hình trong vài giây: công tắc đọc lại từ máy chủ phải đúng
+  // đọc lại từ máy chủ: công tắc phải đúng
   await page.reload();
   await page.getByRole("tab", { name: "Ứng dụng & Gói" }).click();
   await expect(
-    page
-      .getByRole("region", { name: /Sổ Hợp Tác|Hợp đồng/ })
-      .first()
-      .getByRole("switch", { name: "Bật Duyệt hợp đồng bằng quy trình" }),
+    processBlock(page.getByRole("region", { name: /Sổ Hợp Tác|Hợp đồng/ }).first()).getByTestId(
+      "tenant-engine-switch",
+    ),
   ).toBeChecked({ checked: on });
 }
-
 /** Nhân viên tải HĐ mẫu lên bằng UI; chờ AI đọc xong (có nút "Xác nhận và lưu"). Trả id HĐ. */
 export async function uploadAndOpen(page: Page, e: Env, run: string): Promise<string> {
   const doc = buyContract(run);

@@ -561,6 +561,7 @@
       "title": "Quy trình",
       "desc": "Quy trình công ty dùng cho app này: quy trình đã gán, luật chọn theo phòng ban và quy trình mặc định. Chỉ quản trị nền tảng gán.",
       "engine": "Duyệt theo quy trình",
+      "engineOffNote": "Đang tắt: quy trình đã gán và luật chọn bên dưới sẽ KHÔNG chạy, hợp đồng của công ty vẫn duyệt theo cách cũ. Bật \"Duyệt theo quy trình\" rồi Lưu để áp dụng.",
       "col": {
         "slot": "Dùng cho",
         "process": "Quy trình",
@@ -579,7 +580,7 @@
         "loadFail": "Không tải được quy trình đã gán.",
         "noneAssigned": "Chưa gán quy trình nào: công ty không thấy, không chọn, không chạy được ở khe này.",
         "inUse": "Đang dùng",
-        "inUseOutside": "Đang dùng (mặc định của khe): {{name}}",
+        "inUseOutside": "Đang dùng (mặc định của khe): {name}",
         "slotMissing": "Khe này chưa có quy trình cho công ty. Liên hệ quản trị nền tảng để gán quy trình mặc định.",
         "unassign": "Bỏ gán",
         "addPick": "Quy trình thư viện",

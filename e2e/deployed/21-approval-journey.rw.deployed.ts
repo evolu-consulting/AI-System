@@ -8,11 +8,11 @@
 import {
   adminAssignAndRoute,
   adminSetEngine,
-  adminWarnings,
   approveAs,
   type Env,
   loginAdmin,
   loginCw,
+  openProcessBlock,
   stepOf,
   U,
   uploadAndOpen,
@@ -48,13 +48,14 @@ test("admin: gán 2 quy trình + luật; engine TẮT trước ca âm", async ({
   await adminSetEngine(page, E, false); // idempotent: lượt trước có thể đã bật
 });
 
-test("ai-admin cảnh báo đã gán quy trình nhưng chưa bật tính năng thêm (engine tắt)", async ({
+test("khối Quy trình nói rõ đang tắt khi có quy trình gán mà công tắc còn tắt", async ({
   browser,
 }) => {
   const E = env();
   const page = await (await browser.newContext({ locale: "vi-VN" })).newPage();
   await loginAdmin(page, E);
-  expect(await adminWarnings(page, E)).toMatch(/chưa bật tính năng thêm/);
+  const note = (await openProcessBlock(page, E)).getByTestId("tenant-engine-off-note");
+  await expect(note).toContainText(/Đang tắt/);
 });
 
 test("ÂM — engine tắt: UI phải nói rõ vì sao quy trình đã gán không chạy", async ({ browser }) => {

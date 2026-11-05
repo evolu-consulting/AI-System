@@ -10,6 +10,7 @@ import { createDb } from "@ai/db";
 import { runHubMigrations } from "@ai/db/migrate-hub";
 import { runPackMigrations } from "@ai/db/migrate-packs";
 import { connectDb } from "../../apps/hub-api/src/lib/db";
+import { startFbFake } from "../../tests/acceptance/FB1/_fbfake";
 import { provisionJourneyTenant } from "../../tools/scripts/src/seed-e2e-journey";
 import { prepareDbWithRetry } from "../x1/_prepare";
 
@@ -141,6 +142,7 @@ async function main(): Promise<void> {
     await hubDb.close();
   }
 
+  const fb = startFbFake();
   const cli = writeFakeClaude(resolve(REPO, "test-results/journey-approval/fake-claude"));
   hub = spawn("apps/hub-api/src/server.ts", {
     APP_ENV: "test",
@@ -154,9 +156,11 @@ async function main(): Promise<void> {
     CONTRACTS_APPROVAL_ENGINE: "on",
     AI_PROVIDER: "subscription",
     AI_SUB_CLI_PATH: cli,
-    // kho tệp: prod dùng FileBox, ở đây thư mục cục bộ (cùng cổng AttachmentStore) để tải HĐ lên được
-    HUB_ATTACH_DRIVER: "local",
-    HUB_ATTACH_DIR: resolve(REPO, "test-results/journey-approval/attach"),
+    // FileBox: prod dùng FileBox HTTP; ở đây FileBox GIẢ trong tiến trình (hợp đồng thật, tests/acceptance/FB1/_fbfake.ts)
+    HUB_ATTACH_DRIVER: "filebox",
+    FILEBOX_URL: fb.origin,
+    FILEBOX_ORG: "ai-system",
+    FILEBOX_TOKEN: fb.token,
   });
   await healthy(hubUrl, hub);
   Bun.serve({ port: PORTS.ready, fetch: () => new Response("ok") });

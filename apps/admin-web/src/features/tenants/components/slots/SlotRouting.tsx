@@ -17,10 +17,12 @@ function Body({
   tenantId,
   slot,
   candidates,
+  engineOff,
 }: {
   tenantId: string;
   slot: string;
   candidates: SlotCandidate[];
+  engineOff: boolean;
 }) {
   const { t } = useTranslation();
   const k = (s: string) => t(`tenants.slots.routing.${s}`);
@@ -59,6 +61,15 @@ function Body({
   };
   return (
     <div className="space-y-3" data-testid={`admin-assigned-${slot}`}>
+      {engineOff && (data.processes.length > 0 || data.rules.length > 0) && (
+        <p
+          role="status"
+          data-testid="tenant-engine-off-note"
+          className="rounded-md bg-warning-bg px-3 py-2 text-caption text-warning"
+        >
+          {t("tenants.slots.engineOffNote")}
+        </p>
+      )}
       <ul className="space-y-1">
         {data.processes.length === 0 && (
           <li className="text-body text-muted-foreground">{k("noneAssigned")}</li>
@@ -142,7 +153,12 @@ function Body({
 }
 
 /** Luôn mở sẵn (không còn thu gọn): tập quy trình đã gán + "Mặc định" + luật chọn là nội dung chính của khối Quy trình. */
-export function SlotRouting(p: { tenantId: string; slot: string; candidates: SlotCandidate[] }) {
+export function SlotRouting(p: {
+  tenantId: string;
+  slot: string;
+  candidates: SlotCandidate[];
+  engineOff: boolean;
+}) {
   return (
     <div data-testid={`admin-routing-details-${p.slot}`}>
       <Body {...p} />

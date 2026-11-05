@@ -9,11 +9,11 @@ import { expect, type Page, test } from "@playwright/test";
 import {
   adminAssignAndRoute,
   adminSetEngine,
-  adminWarnings,
   approveAs,
   type Env,
   loginAdmin,
   loginCw,
+  openProcessBlock,
   stepOf,
   U,
   uploadAndOpen,
@@ -45,17 +45,20 @@ test("1 · platform admin gán 2 quy trình + 2 luật ở ai-admin", async ({ b
   await adminAssignAndRoute(page, E);
 });
 
-test("1b · ai-admin cảnh báo 'đã gán quy trình nhưng chưa bật tính năng thêm' khi engine còn tắt [LỖI SẢN PHẨM nếu đỏ]", async ({
+test("1b · khối Quy trình nói rõ 'đang tắt — quy trình đã gán sẽ không chạy' khi có quy trình/luật mà công tắc còn tắt", async ({
   browser,
 }) => {
   const page = await ctxPage(browser);
   await loginAdmin(page, E);
-  const warn = await adminWarnings(page, E);
-  expect(
-    warn,
-    "LỖI SẢN PHẨM: công ty có quy trình gán + luật nhưng chưa có feature contracts-approval-engine mà ai-admin không cảnh báo",
-  ).toMatch(/chưa bật tính năng thêm/);
-  expect(warn).toContain(E.tenantName);
+  const block = await openProcessBlock(page, E);
+  await expect(block.getByTestId("tenant-engine-switch")).not.toBeChecked();
+  const note = block.getByTestId("tenant-engine-off-note");
+  await expect(
+    note,
+    "công tắc tắt + có quy trình gán: khối phải nêu trạng thái và lý do",
+  ).toBeVisible();
+  await expect(note).toContainText(/Đang tắt/);
+  await expect(note).toContainText(/không chạy/i);
 });
 
 test("2 · ÂM — engine tắt: sau 'Xác nhận và lưu' UI phải nói rõ vì sao quy trình đã gán không chạy [LỖI SẢN PHẨM nếu đỏ]", async ({
@@ -79,13 +82,14 @@ test("2 · ÂM — engine tắt: sau 'Xác nhận và lưu' UI phải nói rõ v
   ).toBeVisible({ timeout: 5_000 });
 });
 
-test("3 · platform admin bật 'Duyệt hợp đồng bằng quy trình' ở ai-admin; cảnh báo biến mất", async ({
+test("3 · platform admin bật công tắc 'Duyệt theo quy trình' trong khối Quy trình; ghi chú 'đang tắt' biến mất", async ({
   browser,
 }) => {
   const page = await ctxPage(browser);
   await loginAdmin(page, E);
   await adminSetEngine(page, E, true);
-  expect(await adminWarnings(page, E)).not.toMatch(/chưa bật tính năng thêm/);
+  const block = await openProcessBlock(page, E);
+  await expect(block.getByTestId("tenant-engine-off-note")).toHaveCount(0);
 });
 
 test("4 · engine bật: nhân viên KD xác nhận ⇒ quy trình Mua chạy; trưởng Kế toán duyệt; Giám đốc duyệt; HĐ đã duyệt", async ({
