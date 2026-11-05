@@ -17,7 +17,7 @@ vai + khe do server tính (`GET /pack/community/flows/nav`), shell lọc mục c
 - [x] shell: `NavEntry.cap`, `buildShellNav(…, hasCap)`, `use-flow-caps` (một yêu cầu, fail-closed); Sidebar truyền `hasCap`.
 - [x] "Bài đăng của tôi": ghi chú duyệt dưới thẻ bài (một lần gọi `moderation/mine` cho cả danh sách, không gọi theo bài).
 - [x] i18n vi + en (`community.flows.*`, `contracts.nav.{review,join,reports}`); không có từ khe/slot/def/engine.
-- [ ] e2e hành trình thật (D5) — CHƯA viết/chạy (hết giờ lát), xem "Việc còn lại".
+- [x] e2e hành trình thật (D5): `e2e/community-web/z-flows.cs.ts` (ai-admin gán quy trình → đối tác đăng → Chờ duyệt → duyệt → hiện; báo cáo → Ẩn bài), xanh 7/7 trên evotest.
 
 ## Không làm / Chạm
 Không chạm backend nghiệp vụ (chỉ thêm route đọc `flows/nav`); không chạm DLC; không migration.
