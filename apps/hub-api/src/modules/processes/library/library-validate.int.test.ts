@@ -118,13 +118,13 @@ describe("CR-121 · D-2 · kiểm khi xuất bản và gán", () => {
     expect(r.json.error.code).toBe("PROCESS_PUBLISH_INVALID");
     const issue = r.json.error.details.issues[0];
     expect(issue).toMatchObject({
-      step: 2,
+      step: 3,
       field: "when",
       rule: "COND_FIELD_UNDECLARED:foo_field",
     });
-    expect(issue.message).toContain("Bước 2");
+    expect(issue.message).toContain("Bước 3");
     expect(issue.message).toContain("foo_field");
-    expect(issue.message_en).toContain("Step 2");
+    expect(issue.message_en).toContain("Step 3");
   });
 
   it("gán: mã phòng ban trong điều kiện không có ở công ty ⇒ 422 nói bước + công ty + cách sửa", async () => {
@@ -154,7 +154,7 @@ describe("CR-121 · D-2 · kiểm khi xuất bản và gán", () => {
     expect(bad.status).toBe(422);
     expect(bad.json.error.code).toBe("SLOT_GROUPS_MISSING");
     const issue = bad.json.error.details.issues[0];
-    expect(issue).toMatchObject({ step: 2, rule: "GROUP_MISSING_IN_TENANT" });
+    expect(issue).toMatchObject({ step: 3, rule: "GROUP_MISSING_IN_TENANT" });
     expect(issue.message).toContain("'sales'");
     expect(issue.message).toContain("t1122");
     expect(issue.message).toContain("tạo phòng ban");
