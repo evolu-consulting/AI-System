@@ -109,10 +109,12 @@ describe("CR-121 R-1 · Dừng / Chạy lại bước / Chạy lại cả lượ
       const before = (await outputs(c.sql, id)).length;
       const [x, y] = await Promise.all([rerunStep("P", id, 1), rerunStep("P", id, 1)]);
       expect([x.status, y.status].sort()).toEqual([200, 409]);
+      // Một lần chạy lại: đúng một audit `rerun_step`; không ghi "quay lại" của người duyệt.
+      expect((await audits(id)).filter((a) => a.summary?.op === "rerun_step").length).toBe(1);
       const ev = await c.sql<
         Json[]
-      >`select to_step from hub.process_back_events where process_run_id = ${id}`;
-      expect(ev.map((e) => e.to_step)).toEqual([1]);
+      >`select 1 from hub.process_back_events where process_run_id = ${id}`;
+      expect(ev.length).toBe(0);
       const run = await runRow(c.sql, id);
       expect({ st: run.status, fin: run.finished_at, step: run.current_step }).toEqual({
         st: "running",

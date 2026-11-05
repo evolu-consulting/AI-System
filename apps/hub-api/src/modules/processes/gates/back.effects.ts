@@ -33,6 +33,9 @@ export type BackApply = {
   taskId: string | null;
   /** D8 · `add_attempt` ⇒ `back_limit + 1` cùng lúc `back_rounds + 1`. */
   raiseLimit: boolean;
+  /** CR-121 · false ⇒ không ghi `process_back_events` (quản trị chạy lại bước — CHECK `to_step < from_step` không áp; người làm +
+   *  lý do ghi ở `hub.audit_log`). Vắng ⇒ ghi như cũ. */
+  backEvent?: boolean;
 };
 
 /** `hub.runs` cần huỷ SAU COMMIT ở scope system (`g.cancelRunsByIds`). */
@@ -91,7 +94,7 @@ export async function applyBack(
     firstIdx: first,
     raiseLimit: p.raiseLimit,
   });
-  await recordBack(tx, { p, run, steps, plan });
+  if (p.backEvent !== false) await recordBack(tx, { p, run, steps, plan });
   const step: StepOutcome = {
     kind: "next_step",
     status: "running",
