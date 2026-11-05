@@ -68,7 +68,7 @@ export function flowRuntime(packKey: string, adapters: readonly FlowSlotAdapter[
   };
 }
 
-/** Cờ flow runtime (CR-120 · ADR-0036 §5): seam test ưu tiên; mặc định BẬT, chỉ `HUB_FLOW_RUNTIME=off` tắt (rollback ⇒ route không
- *  gắn ⇒ 404, web chuyển hành động về endpoint approvals cũ qua `/pack/me.flags["flow.runtime"]`). */
+/** Cờ flow runtime (CR-120 · ADR-0036 §5): seam test ưu tiên; mặc định BẬT, chỉ `HUB_FLOW_RUNTIME=off` tắt (tắt ⇒ route không
+ *  gắn ⇒ 404; cờ `/pack/me.flags["flow.runtime"]` tắt; web KHÔNG còn đường dự phòng về approvals cũ — CR-121 gỡ legacy-act). */
 export const flowRuntimeOn = (seam: boolean | undefined, env = process.env.HUB_FLOW_RUNTIME) =>
   seam ?? env !== "off";

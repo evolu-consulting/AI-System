@@ -100,7 +100,23 @@ describe("CR-105 · RLS thư viện quy trình", () => {
       slotSys: 1,
     });
     // Ghi chỉ scope system: tenant không tự gán / đổi gán / xoá gán (kể cả hàng của chính mình), không chạm release/khe.
+    // CR-121: ghi chéo tenant lên luật định tuyến (nguồn gán duy nhất): B sửa/xoá luật của A ⇒ 0 hàng (USING lọc), B chèn luật mang tenant A ⇒ 42501.
     const writes = {
+      ruleUpdCross: await write(
+        user("b"),
+        "update hub.process_routing_rules set def_id = $2 where tenant_id = $1",
+        [T.a, ids.libB],
+      ),
+      ruleDelCross: await write(
+        user("b"),
+        "delete from hub.process_routing_rules where tenant_id = $1",
+        [T.a],
+      ),
+      ruleInsCross: await write(
+        user("b"),
+        "insert into hub.process_routing_rules (tenant_id, slot, priority, def_id) values ($1, 'x.y', 5, $2)",
+        [T.a, ids.libA],
+      ),
       relIns: await write(
         user("a"),
         "insert into hub.process_def_releases (def_id, rel_version, name, stages) values ($1, 9, 'x', '[{}]')",
@@ -114,6 +130,9 @@ describe("CR-105 · RLS thư viện quy trình", () => {
       relDelSys: await write(sys, "delete from hub.process_def_releases"),
     };
     expect(writes).toEqual({
+      ruleUpdCross: "0",
+      ruleDelCross: "0",
+      ruleInsCross: "42501",
       relIns: "42501",
       slotUpd: "0",
       relUpdSys: "42501",

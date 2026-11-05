@@ -1,6 +1,6 @@
 // CR-118 · CR-120 · ADR-0035/0036 · nối flow runtime của gói contracts: khe `contracts.approval` = adapter bọc thẻ duyệt hiện có
-// (CÙNG use case `act` với `POST …/approval` cũ — giữ một bản phát hành cho rollback). Mặc định BẬT; `HUB_FLOW_RUNTIME=off` ⇒ không
-// gắn route (`/pack/contracts/flow/*` = 404). Tách khỏi `extraction.mount.ts` (trần 400 dòng).
+// (CÙNG use case `act` với `POST …/approval` cũ). Mặc định BẬT; `HUB_FLOW_RUNTIME=off` ⇒ không
+// gắn route (`/pack/contracts/flow/*` = 404; web không còn đường dự phòng về approvals cũ — CR-121 gỡ legacy-act). Tách khỏi `extraction.mount.ts` (trần 400 dòng).
 import type { Db } from "@ai/db";
 import type { Hono } from "hono";
 import { flowRoutes } from "../kit/adapters/flow.routes";

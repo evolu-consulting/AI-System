@@ -108,7 +108,7 @@ function esignOf(e: NonNullable<ContractApproval["esign"]>): FlowStepView {
 }
 
 /**
- * CR-120: CHỈ còn cho rollback (`HUB_FLOW_RUNTIME=off` ⇒ hub không có `/flow/*`, `useFlowView` trả null) — đường chính đọc FlowView
+ * CR-120: dự phòng khi `HUB_FLOW_RUNTIME=off` (hub không có `/flow/*`, `useFlowView` trả null; chỉ hiển thị, hành động không còn đường cũ) — đường chính đọc FlowView
  * của hub. (`legacy-act.ts` đã gỡ ở CR-121 A1; hàm này còn vì máy duyệt cũ `needsLevel2` chưa gỡ.)
  * Thẻ duyệt ⇒ FlowView (chỉ phần hiển thị dòng bước). `tasks` rỗng: nút Duyệt/Trả lại/Từ chối của thẻ vẫn do `useApprovalUi` lo
  * (cần lưu ô trước, hộp gắn sản phẩm…), không đi qua FlowPanel.

@@ -1,5 +1,5 @@
 // CR-118 · CR-120 · adapter HTTP của `FlowRuntime` cho route flow chung của kit hub (`/pack/<k>/flow/...`). Bearer + refresh
-// do web-kit lo. Runtime mặc định bật; `HUB_FLOW_RUNTIME=off` (rollback) ⇒ route không gắn: cờ báo qua `/pack/me.flags` nên
+// do web-kit lo. Runtime mặc định bật; `HUB_FLOW_RUNTIME=off` ⇒ route không gắn: cờ báo qua `/pack/me.flags` nên
 // `view`/`summary` trả null mà KHÔNG gửi yêu cầu (không 404 ở console); `act` luôn đi route flow (CR-121 gỡ `legacy-act`).
 import type { FlowActionResult, FlowSummary, FlowView } from "@ai/contracts/flow";
 import { ApiError, api } from "@ai/web-kit/http";
