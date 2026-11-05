@@ -226,9 +226,10 @@ const PACK_KEY = /^[a-z][a-z0-9-]{0,39}$/;
 const SLOT_KEY = /^[a-z][a-z0-9-]{0,39}\.[a-z][a-z0-9-]{0,39}$/;
 
 /**
- * CR-121 C-7 · hộp "Chờ tôi duyệt" cho menu: MỘT câu — `n` = số task duyệt mở `u` quyết được (cùng mệnh đề với `openTasksOf`),
- * `approver` = `u` là người duyệt (Group duyệt / cũng quyết / người duyệt cụ thể) của quy trình ĐANG GÁN cho `slot` (bản xuất bản
- * hiện hành, cùng câu `RESOLVE_SLOT_SQL`); khe chưa có quy trình ⇒ false. Lookup theo PK + index một phần run gói chưa kết thúc.
+ * CR-121 C-7 · hộp "Chờ tôi duyệt" cho menu. `count` = số task duyệt mở `u` quyết được (MỘT câu, scope user, cùng mệnh đề với
+ * `openTasksOf`). `approver` = `u` có vai duyệt: có việc mở ⇒ đương nhiên true (không hỏi thêm); chưa có việc ⇒ MỘT câu thứ hai
+ * (scope system — def/khe là bảng hệ thống) xem `u` có thuộc Group duyệt / "cũng quyết" / là người duyệt cụ thể của quy trình ĐANG
+ * GÁN cho `slot` (bản xuất bản hiện hành, cùng `RESOLVE_SLOT_SQL`) không; khe chưa có quy trình ⇒ false. Tối đa 2 câu, cố định.
  */
 export async function inboxOf(
   d: ProcessDeps,
@@ -239,12 +240,17 @@ export async function inboxOf(
   if (!PACK_KEY.test(packKey) || !SLOT_KEY.test(slot) || !UUID.test(u.tenantId))
     return { count: 0, approver: false };
   const groups = await groupsOf(d, u.userId);
-  const [r] = await withHubScope(d.db, userScope(u), (tx) =>
-    tx.execute<{ n: number | string; approver: boolean }>(sql`
-      with o as (select t.id ${openTasksFrom(u, packKey, groups)}),
-      rs as (${RESOLVE_SLOT_SQL(u.tenantId, slot)})
-      select (select count(*) from o)::int as n,
-        exists (select 1 from rs
+  const [c] = await withHubScope(d.db, userScope(u), (tx) =>
+    tx.execute<{ n: number | string }>(
+      sql`select count(*)::int as n ${openTasksFrom(u, packKey, groups)}`,
+    ),
+  );
+  const count = Number(c?.n ?? 0);
+  if (count > 0) return { count, approver: true };
+  const [r] = await withHubScope(d.db, { kind: "system" }, (tx) =>
+    tx.execute<{ approver: boolean }>(sql`
+      with rs as (${RESOLVE_SLOT_SQL(u.tenantId, slot)})
+      select exists (select 1 from rs
           join hub.process_def_releases rel on rel.def_id = rs.def_id and rel.rel_version = rs.rel_version
           cross join lateral jsonb_array_elements(rel.stages) sg
           where sg->'after'->>'kind' = 'review'
@@ -257,9 +263,8 @@ export async function inboxOf(
                   and (g.key = sg->'after'->>'group_key'
                     or coalesce(sg->'after'->'also_group_keys', '[]'::jsonb) ? g.key)))) as approver`),
   );
-  return { count: Number(r?.n ?? 0), approver: r?.approver === true };
+  return { count: 0, approver: r?.approver === true };
 }
-
 export async function openTasksOf(
   d: ProcessDeps,
   u: PackRunCaller,

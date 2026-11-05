@@ -13,8 +13,8 @@ sau một thao tác duyệt (`notifyFlowNavChanged`), không poll.
 
 ## Làm
 - hub: `flows/nav` + `counts{review,join,reports}` (1 câu SQL `pendingCounts`, 3 subquery đếm theo index một phần/`(tenant_id,status)`) +
-  `contracts{review,count}` (cổng `contractsInbox` → `PackRunsPort.inboxOf`, 1 câu SQL: đếm task duyệt mở cùng mệnh đề với `openTasksOf` +
-  `approver` = có vai duyệt trong quy trình ĐANG GÁN của khe `contracts.approval`, Group theo mã). Chỉ đếm cho người duyệt.
+  `contracts{review,count}` (cổng `contractsInbox` → `PackRunsPort.inboxOf`: đếm task duyệt mở cùng mệnh đề với `openTasksOf`; chưa có việc ⇒
+  thêm 1 câu hệ thống xem có vai duyệt trong quy trình ĐANG GÁN của khe `contracts.approval`, Group theo mã). Chỉ đếm cho người duyệt.
 - web: manifest Sổ Hợp Tác thêm mục (icon ClipboardCheck, 20 px do `NavIcon`), `NavBadge` 16 px kiểu chuông Header (0 ẩn, >99 "99+"),
   trang `/contracts/approvals` (dữ liệu sẵn `GET /my-work` → approvals[]; rỗng = giải thích + "Xem tất cả hợp đồng").
 
@@ -28,7 +28,7 @@ vai duyệt) + `community.flows.int.test.ts` (số đếm theo tenant, người 
 ## Quyết định trong lúc làm
 - Một endpoint cho cả hai app: giữ đường `/pack/community/flows/nav` (đã là nguồn cap); mục Sổ Hợp Tác chỉ hiện khi app Community bật (nav tải cùng gói).
 - Hiển thị mục khi có việc HOẶC là người duyệt của quy trình đang gán; khe chưa gán quy trình ⇒ ẩn (trừ khi còn việc mở).
-- PERF: endpoint tăng +2 câu SQL cố định (1 đếm community, 1 hub HĐ) chạy song song; ngoài người duyệt/không có gói contracts thì 0 câu thêm.
+- PERF: endpoint tăng câu SQL cố định, chạy song song: +1 đếm community (chỉ người duyệt), +1 hub đếm việc duyệt HĐ (+1 nữa chỉ khi chưa có việc, để biết vai duyệt vì def/khe là bảng hệ thống). Đối tác / không có gói contracts: 0 câu thêm. Chưa đo p95 (không có perf test sẵn cho endpoint này).
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
