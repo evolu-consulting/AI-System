@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { withHubScope } from "@ai/db/hub-scope";
 import { enablePack, tenantId, userId } from "@ai/test-kit/builders";
-import { cloneDb, openOwner, pgCode, type Sql } from "@ai/test-kit/db";
+import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { sql } from "drizzle-orm";
 import { connectDb, type Db } from "../../../lib/db";
@@ -27,6 +27,12 @@ const SLOT = "contracts.approval";
 const DFLT = APPROVAL_DEFAULT_DEF.id;
 const SLOTS = [{ slot: SLOT, feature: "contracts-read" }];
 const tid = (i: number) => tenantId(1300 + i);
+/** SQLSTATE của lỗi (drizzle bọc lỗi postgres trong `cause`). */
+const codeOf = (f: () => Promise<unknown>) =>
+  f().then(
+    () => "ok",
+    (e: { code?: string; cause?: { code?: string } }) => e.code ?? e.cause?.code ?? "no-code",
+  );
 const T = { t1: tid(1), t2: tid(2), t3: tid(3), t4: tid(4), t5: tid(5), t6: tid(6), t7: tid(7) };
 const ALL = Object.values(T);
 const FACTS = [{}, { contractKind: "k1" }, { contractKind: "k2" }];
@@ -206,7 +212,7 @@ describe("CR-120 · cr120-single-source · một nguồn gán", () => {
     expect(after.t1?.route[0]?.def).toBe(lib.A);
     expect(after.t2?.route[0]?.def).toBe(DFLT);
     expect(after.t3?.route[1]?.def).toBe(lib.C);
-    expect(after.t4?.route[0]?.blocked).toBe("route_none");
+    expect(after.t4?.route[2]?.blocked).toBe("route_none"); // k2: không luật khớp, không mặc định
     expect(after.t5?.resolve.def).toBe(DFLT);
     expect(after.t6?.route[0]?.def).toBe(DFLT);
     expect((await resolveSlot(db, T.t6 as string, SLOT))?.isDefault).toBe(true);
@@ -231,14 +237,14 @@ describe("CR-120 · cr120-single-source · một nguồn gán", () => {
       cross: await read(user(T.t2 as string), `where tenant_id = '${T.t1}'`),
       all: await read(user(T.t2 as string), ""),
     }).toEqual({ own: 1, cross: 0, all: 1 });
-    const insert = await pgCode(() =>
+    const insert = await codeOf(() =>
       withHubScope(db, { kind: "system" }, (tx) =>
         tx.execute(
           sql`insert into hub.process_slot_assignments (tenant_id, slot, def_id) values (${T.t5}, ${SLOT}, ${lib.A})`,
         ),
       ),
     );
-    const legacy = await pgCode(() =>
+    const legacy = await codeOf(() =>
       withHubScope(db, { kind: "system" }, (tx) =>
         tx.execute(sql`select 1 from hub.process_slot_assignments_legacy`),
       ),
