@@ -603,6 +603,7 @@ f857603f22fa521cdd7a58f936b351583f33e4a8a128f8d7b19371fd76ef35a1  tests/acceptan
 d434e09c410726267a31ac21af6f154373050beee54f8e1e58c0ed25f67d2e3c  tests/acceptance/CR-055/commands-features.int.test.ts
 f4e1e120afdcd75c76dcf9ca53ca42ded719c9c58779936343c7c700dcba14f1  tests/acceptance/CR-055/import.int.test.ts
 284df29ea2a75727855dc25776364905e22261046705289179f14fdee0e828eb  tests/acceptance/CR-120/timed-wait.int.test.ts
+0abce6734305832edd9b9280459eacd075adab5c4b2219b58aedc0bd8ab3c912  tests/acceptance/CR-121/run-control.int.test.ts
 d397d82c125bf81bc2871d5b2a1aad5081f8da4289f4abc24a99d196c5440cab  tests/acceptance/CR118/approval-flow-runtime.int.test.ts
 4c128b43789651b6df543fad369caca5adce14a73261f7e682ef8b8176840a44  tests/acceptance/CR118/approval-flow-summary.perf.int.test.ts
 aff8fbafdade829813b2cba7420c706de9f862b5bd04a04c5a658ffa4b2e2061  tests/acceptance/CR118/capabilities.int.test.ts

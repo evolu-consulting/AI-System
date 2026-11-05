@@ -17,7 +17,7 @@ Dừng · Chạy lại bước · Chạy lại cả lượt. Điểm vào `gates
       ⇒ người chờ không còn thấy việc, run `cancelled`, run_end + notifier) + `cancelled_by` + audit. Đã dừng ⇒ 200 cùng kết quả, không ghi.
 - [x] `POST /process-runs/:id/rerun-step` — CHỈ platform_admin. Bước `done|failed|needs_decision|waiting_timer`, run không `cancelled|expired`.
       Dùng `applyBack` (quay lại bước của stage: reset stage ≥ bước, vòng +1, task mở `superseded`, huỷ hẹn, run `running`) với
-      `raiseLimit` (không tiêu số lần quay lại của người duyệt), `process_back_events` (task_id null) + audit. Output cũ giữ (theo version).
+      `raiseLimit` (không tiêu số lần quay lại của người duyệt), KHÔNG ghi `process_back_events` (`backEvent:false` — CHECK `to_step < from_step`; đây không phải "quay lại" của người duyệt) + audit. Output cũ giữ (theo version).
 - [x] `POST /process-runs/:id/rerun` — platform_admin, tenant_admin cùng tenant; run đã kết thúc. Run MỚI cùng snapshot + input/inputs/nguồn
       ghim, người bắt đầu giữ nguyên, origin `admin`, `rerun_of` = run cũ; 201 (mới) / 200 (đã có — bấm lại trả cùng run).
 - [x] hub 0098: `process_runs.rerun_of` (FK + unique một phần).
@@ -25,7 +25,7 @@ Dừng · Chạy lại bước · Chạy lại cả lượt. Điểm vào `gates
 
 ## Không làm / Chạm
 UI, API nhật ký (R-2), e2e. Không sửa `runs.routes.ts`, `runs/view.service.ts`, code gói contracts.
-Chạm: `gates/back.effects.ts` (`taskId` nullable), `gates/gates.repo.ts` (`setRunBack` xoá `finished_at` — run `done` chạy lại bước).
+Chạm: `gates/back.effects.ts` (`taskId` nullable, cờ `backEvent`), `gates/gates.repo.ts` (`setRunBack` xoá `finished_at` — run `done` chạy lại bước).
 
 ## Test tối thiểu
 - unit `apps/hub-api/src/modules/processes/domain/runs/run-control.rules.test.ts`
