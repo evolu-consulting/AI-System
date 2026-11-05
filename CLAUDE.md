@@ -47,6 +47,15 @@ Người dùng gõ `/intake` thì chạy luôn (đã là xác nhận).
 5. **Prompt cache:** giữ `CLAUDE.md`/tài liệu chung ổn định trong đợt (sửa gom cuối đợt); Claude Code tự cache, không cần cấu hình.
 6. **Đọc ít:** tra `docs/INDEX.md`/CODEMAP trước, mở đúng file; code theo Clean Architecture + file nhỏ (Luật 4) để agent không phải đọc rộng.
 
+**Luật điều phối (người dùng chốt 2026-11-05, rút từ CR-118/120 — agent chạy lâu, tốn tiền, sót lỗi cơ bản):**
+- **D1. Trần song song:** tối đa **4 agent code** cùng lúc; lát đụng chung vùng code (cùng module/route/bảng) xếp **nối tiếp**, không song song.
+- **D2. Lát nhỏ, chốt phạm vi trước:** mỗi lát ≤ **60 phút**, phạm vi + file được sửa ghi trong brief. **Không SendMessage thêm việc vào agent đang chạy** (thắng Luật 0c mục 3/T6 khi agent đang chạy) — phát sinh ⇒ ghi hàng chờ, gom thành lát sau. Chỉ SendMessage để sửa lỗi của chính lát đó sau khi nó báo xong.
+- **D3. Model:** Sonnet viết; Opus `low` chỉ soát diff ngắn phần dữ liệu khách/RLS/quyền/máy trạng thái run; Opus `medium` làm cả lát chỉ khi lõi máy trạng thái/khoá; không UI/e2e trong lát Opus.
+- **D4. Test trong lát:** chỉ unit + int của file mình sửa (evotest: commit trước hoặc `-Dirty`; suite đóng băng cần `-All`; đường dẫn dùng `/`). **e2e chạy MỘT lần cuối đợt bằng script chia slot**, do điều phối chạy — agent không tự chạy e2e toàn job.
+- **D5. Hành trình thật trước khi báo xong một tính năng:** mỗi tính năng người dùng nhìn thấy phải có ít nhất **một e2e hành trình không giả lập** (dữ liệu tạo đúng đường platform/khách làm, không bật sẵn gì trong seed) chạy xanh; test giả lập hub/seed bật sẵn không được tính là "chạy được".
+- **D6. Một nguồn dữ liệu:** thêm bảng/đường mới thay cái cũ ⇒ cùng lát phải (a) backfill + test backfill, (b) chuyển **mọi chỗ đọc** cái cũ (grep, liệt kê trong báo cáo), (c) gỡ hoặc khoá UI cũ. Không để hai control/hai màn hình cho cùng một khái niệm.
+- **D7. Cấu hình khách đủ trọn:** script seed/onboard một tenant phải bật mọi tính năng mà cấu hình đó cần (vd gán quy trình duyệt ⇒ bật `contracts-approval-engine`); ops-watch có check phát hiện cấu hình nửa vời.
+
 **Bổ sung (người dùng chốt 2026-11-03) — 6 tiêu chí, áp cho phiên điều phối và mọi agent:**
 - **T1. Script thay agent khi chạy test:** chạy `verify:*` / `test:affected` / `deploy/evotest/run-tests.ps1` rồi đọc tóm tắt JSON/đuôi log; không giao agent chỉ để chạy test và tóm tắt log. Thiếu script cho việc lặp lại ⇒ viết script (lát tool), không viết script tạm trong scratchpad lần thứ hai.
 - **T2. Chỉ báo lỗi mới:** đỏ có sẵn ghi ở `tests/known-red.json` (có hạn); báo cáo và cổng chỉ nêu ca đỏ ngoài danh sách. Ca mới nghi là có sẵn ⇒ chạy lại riêng trên evotest ở cả ref base và ref mới (một lần), rồi thêm vào danh sách hoặc sửa.
