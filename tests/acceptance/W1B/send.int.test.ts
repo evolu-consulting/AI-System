@@ -85,7 +85,7 @@ describe("W1b · gửi đúng giờ", () => {
       user_id: P.hoa.id,
       tenant_id: T.acme,
       title: "Thu Khách An",
-      link: `/contracts/${k}`,
+      link: `/contracts/c/${k}`,
     });
     expect(n?.body).toBe(`gọi\nĐã hẹn nhắc lúc 09:00 ${d(0).slice(8)}/${d(0).slice(5, 7)}.`);
     expect(n?.dedup_key).toBe(`followup:${id}:${d(0).replaceAll("-", "")}0200`); // UTC

@@ -34,11 +34,15 @@ GRANT UPDATE (last_probe_at, last_ok_at) ON hub.provider_state TO hub_rw;
 --> statement-breakpoint
 
 -- ── (5) audit_log CHECK entity: + provider, model_profile (giữ toàn bộ giá trị 0029; action không đổi) ─────────────
+-- Chạy lại sau migration sau (0071… đã thêm giá trị): đã có 'model_profile' ⇒ không đặt về danh sách hẹp hơn.
 DO $$ BEGIN
-  ALTER TABLE hub.audit_log DROP CONSTRAINT IF EXISTS hub_audit_log_entity_check;
-  ALTER TABLE hub.audit_log ADD CONSTRAINT hub_audit_log_entity_check CHECK (
-    entity IN ('agent_grant', 'run', 'agent', 'orchestrator', 'agent_entitlement', 'agent_default',
-      'process_def', 'process_run', 'review_task', 'agent_team', 'secret', 'kh_connection', 'kh_query', 'kh_worklog',
-      'provider', 'model_profile')
-  );
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'hub_audit_log_entity_check'
+                 AND conrelid = 'hub.audit_log'::regclass AND pg_get_constraintdef(oid) LIKE '%model_profile%') THEN
+    ALTER TABLE hub.audit_log DROP CONSTRAINT IF EXISTS hub_audit_log_entity_check;
+    ALTER TABLE hub.audit_log ADD CONSTRAINT hub_audit_log_entity_check CHECK (
+      entity IN ('agent_grant', 'run', 'agent', 'orchestrator', 'agent_entitlement', 'agent_default',
+        'process_def', 'process_run', 'review_task', 'agent_team', 'secret', 'kh_connection', 'kh_query', 'kh_worklog',
+        'provider', 'model_profile')
+    );
+  END IF;
 END $$;

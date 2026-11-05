@@ -232,7 +232,10 @@ describe("A64–A67 · bản tenant hỏng, khởi động, loại khỏi AU, ru
         (st) => st === 200 || proc.exitCode !== null,
         10_000,
       );
-      expect(proc.exitCode).toBeNull();
+      if (proc.exitCode !== null) {
+        const out = `${await new Response(proc.stdout).text()}\n${await new Response(proc.stderr).text()}`;
+        throw new Error(`server.ts thoát sớm (mã ${proc.exitCode}): ${out.slice(-1500)}`);
+      }
       expect(health).toBe(200);
     } finally {
       proc.kill();

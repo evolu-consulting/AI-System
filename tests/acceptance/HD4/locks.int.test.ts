@@ -83,7 +83,7 @@ describe("HD4 review M1 · thứ tự khoá HĐ → lịch", () => {
     const b = await r.r.once(); // phải trả ngay: hàng `held` bị SKIP LOCKED
     expect({ claimed: b?.claimed, notes: (await notes(sql)).map((n) => n.link) }).toEqual({
       claimed: 1,
-      notes: [`/contracts/${other}`],
+      notes: [`/contracts/c/${other}`],
     });
     release();
     await user; // không 40P01

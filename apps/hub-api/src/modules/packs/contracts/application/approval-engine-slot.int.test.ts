@@ -24,7 +24,7 @@ const STARTER = { [X]: userId(1061), [Y]: userId(1062), [Z]: userId(1063) } as R
   string,
   string
 >;
-const KEYS = ["ke-toan", "giam-doc", "phap-che"];
+const EDITOR = "contracts-editor"; // CR-120: gói tự thêm bước "Xác nhận hợp đồng" (nhóm sửa) đầu lượt ⇒ tenant phải có Group này\nconst KEYS = [EDITOR, "ke-toan", "giam-doc", "phap-che"];
 
 let o: Sql;
 let db: Db;
@@ -249,9 +249,9 @@ describe("CR-105 · engine mở lượt theo khe contracts.approval", () => {
       xSteps: x.a.steps.map((s) => (s.kind === "review" ? s.department_group_id : undefined)),
       xVersion: x.a.version,
     }).toEqual({
-      x: [gx.get("ke-toan"), gx.get("giam-doc")],
-      y: [gy.get("phap-che")],
-      xSteps: [gx.get("ke-toan"), gx.get("giam-doc")],
+      x: [gx.get(EDITOR), gx.get("ke-toan"), gx.get("giam-doc")],
+      y: [gy.get(EDITOR), gy.get("phap-che")],
+      xSteps: [gx.get(EDITOR), gx.get("ke-toan"), gx.get("giam-doc")],
       xVersion: 1,
     });
     expect(rx.sourceRef).toMatch(/^[0-9a-f]{16}$/);
@@ -279,7 +279,7 @@ describe("CR-105 · engine mở lượt theo khe contracts.approval", () => {
       outs: ["started", "started", "started"],
       firstRun: r1,
       firstSteps: steps1,
-      second: [gx.get("phap-che")],
+      second: [gx.get(EDITOR), gx.get("phap-che")],
       versionBump: 1,
       thirdSameDef: true,
     });
@@ -300,9 +300,9 @@ describe("CR-105 · engine mở lượt theo khe contracts.approval", () => {
       y: reviewGroups((runs.get(y.a.run as string) as Run).stages),
     }).toEqual({
       outs: ["started", "started", "started"],
-      before: [gz.get("ke-toan")],
-      after: [gz.get("ke-toan"), gz.get("giam-doc")],
-      y: [gy.get("phap-che")],
+      before: [gz.get(EDITOR), gz.get("ke-toan")],
+      after: [gz.get(EDITOR), gz.get("ke-toan"), gz.get("giam-doc")],
+      y: [gy.get(EDITOR), gy.get("phap-che")],
     });
     await o`update hub.process_slots set default_def_id = ${lib.D} where slot = ${APPROVAL_SLOT}`;
   });
@@ -317,7 +317,7 @@ describe("CR-105 · engine mở lượt theo khe contracts.approval", () => {
     const gy = gid[Y] as Map<string, string>;
     expect({ out: y.out, g: reviewGroups((runs.get(y.a.run as string) as Run).stages) }).toEqual({
       out: "started",
-      g: [gy.get("phap-che")],
+      g: [gy.get(EDITOR), gy.get("phap-che")],
     });
   });
 

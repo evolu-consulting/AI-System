@@ -264,7 +264,7 @@ describe("my-activity · thao tác của chính người gọi", () => {
     const s = JSON.stringify(r);
     expect(s).toContain("field_changed");
     expect(s).toContain(NUM);
-    expect(s).toContain(`/contracts/${hA}`);
+    expect(s).toContain(`/contracts/c/${hA}`);
     expect(s).toContain("paid");
     expect(s).toContain("HĐ cũ đã xoá");
     expect(s).toContain("Cấp agent cho nhóm KD");

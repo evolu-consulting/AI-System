@@ -99,7 +99,14 @@ async function hubSchema(db: Sql): Promise<Json> {
   const rls =
     await db`select relname, relrowsecurity from pg_class c join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'hub' and c.relkind = 'r' order by 1`;
-  return { cols: [...cols], cons: [...cons], idx: [...idx], pol: [...pol], rls: [...rls] };
+  // Mẫu DB nạp từ cache evotest (pg_dump → pg_restore) làm phẳng AND lồng của CHECK (`BETWEEN … AND …` ⇒ `((a AND b) AND c)` thành
+  // `(a AND b AND c)`) còn DB dựng từ migration thì giữ lồng — cùng ngữ nghĩa. So CHECK theo chuỗi bỏ ngoặc/khoảng trắng (mọi cột,
+  // giá trị, toán tử vẫn phải khớp); kiểu ràng buộc khác (PK/FK/UNIQUE) so nguyên văn.
+  const consNorm = cons.map((c) => ({
+    ...c,
+    def: String(c.def).startsWith("CHECK") ? String(c.def).replace(/[()\s]/g, "") : c.def,
+  }));
+  return { cols: [...cols], cons: consNorm, idx: [...idx], pol: [...pol], rls: [...rls] };
 }
 const sqlState = (p: Promise<unknown>): Promise<string | undefined> =>
   p.then(

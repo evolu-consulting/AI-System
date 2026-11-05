@@ -68,27 +68,33 @@ CREATE TABLE IF NOT EXISTS hub.process_slot_assignments (
   CONSTRAINT process_slot_assignments_def_fk FOREIGN KEY (def_id) REFERENCES hub.process_defs (id) ON DELETE RESTRICT
 );
 --> statement-breakpoint
-CREATE INDEX IF NOT EXISTS process_slot_assignments_def_idx ON hub.process_slot_assignments (def_id);
+-- CR-120 · chạy lại sau hub 0091 (tên này đã là VIEW, bảng cũ = _legacy): bỏ qua phần của bảng gán cũ.
+DO $$ BEGIN IF (SELECT c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'hub' AND c.relname = 'process_slot_assignments') = 'r' THEN
+  CREATE INDEX IF NOT EXISTS process_slot_assignments_def_idx ON hub.process_slot_assignments (def_id);
+END IF; END $$;
 --> statement-breakpoint
 ALTER TABLE hub.process_def_releases ENABLE ROW LEVEL SECURITY;
 --> statement-breakpoint
 ALTER TABLE hub.process_slots ENABLE ROW LEVEL SECURITY;
 --> statement-breakpoint
-ALTER TABLE hub.process_slot_assignments ENABLE ROW LEVEL SECURITY;
+DO $$ BEGIN IF (SELECT c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'hub' AND c.relname = 'process_slot_assignments') = 'r' THEN
+  ALTER TABLE hub.process_slot_assignments ENABLE ROW LEVEL SECURITY;
+END IF; END $$;
 --> statement-breakpoint
 DO $$
 DECLARE
   v_t constant text := '(current_setting(''app.scope'', true) = ''system'' OR (current_setting(''app.scope'', true) = '
     || '''user'' AND tenant_id = NULLIF(current_setting(''app.tenant_id'', true), '''')::uuid))';
   v_sys constant text := '(current_setting(''app.scope'', true) = ''system'')';
+  v_asg constant boolean := (SELECT c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'hub' AND c.relname = 'process_slot_assignments') = 'r';
 BEGIN
   -- assignments: tenant chỉ ĐỌC hàng của mình; ghi chỉ system (route platform_admin + withConfigWrite).
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'hub' AND tablename = 'process_slot_assignments'
+  IF v_asg AND NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'hub' AND tablename = 'process_slot_assignments'
                  AND policyname = 'process_slot_assignments_select') THEN
     EXECUTE format('CREATE POLICY process_slot_assignments_select ON hub.process_slot_assignments FOR SELECT TO hub_rw'
       || ' USING %s', v_t);
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'hub' AND tablename = 'process_slot_assignments'
+  IF v_asg AND NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'hub' AND tablename = 'process_slot_assignments'
                  AND policyname = 'process_slot_assignments_write') THEN
     EXECUTE format('CREATE POLICY process_slot_assignments_write ON hub.process_slot_assignments FOR ALL TO hub_rw'
       || ' USING %s WITH CHECK %s', v_sys, v_sys);
@@ -121,4 +127,6 @@ REVOKE UPDATE, DELETE, TRUNCATE ON hub.process_def_releases FROM hub_rw;
 --> statement-breakpoint
 GRANT SELECT, INSERT, UPDATE ON hub.process_slots TO hub_rw;
 --> statement-breakpoint
-GRANT SELECT, INSERT, UPDATE, DELETE ON hub.process_slot_assignments TO hub_rw;
+DO $$ BEGIN IF (SELECT c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'hub' AND c.relname = 'process_slot_assignments') = 'r' THEN
+  GRANT SELECT, INSERT, UPDATE, DELETE ON hub.process_slot_assignments TO hub_rw;
+END IF; END $$;

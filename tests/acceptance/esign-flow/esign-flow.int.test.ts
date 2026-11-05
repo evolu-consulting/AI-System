@@ -116,7 +116,7 @@ const envOf = async (id: string) =>
 const bells = async (id: string) =>
   (
     await c.sql<{ user_id: string }[]>`select user_id::text from hub.notifications
-      where kind = 'contract.esign' and link = ${`/contracts/${id}`} order by created_at`
+      where kind = 'contract.esign' and link = ${`/contracts/c/${id}`} order by created_at`
   ).map((r) => r.user_id);
 
 describe("esign-flow · duyệt xong ⇒ tự gửi ký", () => {

@@ -158,9 +158,13 @@ DO $$ BEGIN
       'start', 'cancel', 'decide', 'review', 'answer', 'forward', 'view', 'copy', 'authorize_real_action', 'rotate',
       'check', 'degrade', 'write_fail')
   );
-  ALTER TABLE hub.audit_log DROP CONSTRAINT IF EXISTS hub_audit_log_entity_check;
-  ALTER TABLE hub.audit_log ADD CONSTRAINT hub_audit_log_entity_check CHECK (
-    entity IN ('agent_grant', 'run', 'agent', 'orchestrator', 'agent_entitlement', 'agent_default',
-      'process_def', 'process_run', 'review_task', 'agent_team', 'secret', 'kh_connection', 'kh_query', 'kh_worklog')
-  );
+  -- Chạy lại sau migration sau (0030, 0071… thêm giá trị): đã có 'kh_worklog' ⇒ không đặt về danh sách hẹp hơn.
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'hub_audit_log_entity_check'
+                 AND conrelid = 'hub.audit_log'::regclass AND pg_get_constraintdef(oid) LIKE '%kh_worklog%') THEN
+    ALTER TABLE hub.audit_log DROP CONSTRAINT IF EXISTS hub_audit_log_entity_check;
+    ALTER TABLE hub.audit_log ADD CONSTRAINT hub_audit_log_entity_check CHECK (
+      entity IN ('agent_grant', 'run', 'agent', 'orchestrator', 'agent_entitlement', 'agent_default',
+        'process_def', 'process_run', 'review_task', 'agent_team', 'secret', 'kh_connection', 'kh_query', 'kh_worklog')
+    );
+  END IF;
 END $$;

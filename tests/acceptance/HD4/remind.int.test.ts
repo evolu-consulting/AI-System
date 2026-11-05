@@ -112,7 +112,7 @@ describe("HD4-FR-02 · HD4-AC02 · trạng thái theo ngày ở múi tenant (00:
       tenant_id: T.acme,
       user_id: P.lan.id,
       kind: "contract.deadline",
-      link: `/contracts/${id}`,
+      link: `/contracts/c/${id}`,
       dedup_key: `remind:${id}:2026-12-31:60`,
     });
     expect(n[0]?.title).toContain("hạn chót hành động 31/12/2026");
@@ -223,8 +223,8 @@ describe("HD4-NFR-03 · HD4-AC05 · 2 tenant, song song", () => {
     const n = await notes(sql);
     expect(n.map((x) => [x.tenant_id, x.user_id, x.link]).sort()).toEqual(
       [
-        [T.acme, P.lan.id, `/contracts/${a}`],
-        [T.beta, P.an.id, `/contracts/${b}`],
+        [T.acme, P.lan.id, `/contracts/c/${a}`],
+        [T.beta, P.an.id, `/contracts/c/${b}`],
       ].sort(),
     );
   });
