@@ -147,7 +147,7 @@ test("xác nhận ngay dừng giữa chừng (settle_error) ⇒ ở lại báo l
   await expect(page).toHaveURL(/\/contracts\/c\/new/);
   await expect(page.getByRole("link", { name: "Mở giao dịch" })).toHaveAttribute(
     "href",
-    `/contracts/${NEW_ID}`,
+    `/contracts/c/${NEW_ID}`,
   );
 });
 
