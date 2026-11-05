@@ -278,18 +278,23 @@ test("7 · admin: 'Chi tiết lượt chạy' của HĐ đã sửa giá trị hi
 });
 
 test("8 · công ty 1 không thấy dữ liệu công ty 2", async () => {
+  // Độc lập với ca khác: lấy id HĐ của công ty 2 và công ty 1 ngay bằng API (người dùng của chính công ty đó)
   const a = await userApi(EA, U.employee);
-  expect(ids.b6 && ids.b1, "ca 6 phải chạy trước (cùng worker)").toBeTruthy();
-  for (const k of ["b6", "b1"]) {
-    const r = await getJson<unknown>(a, pack(`/contracts/${ids[k]}`));
-    expect(r.status, `HĐ công ty 2 (${k}) lộ cho công ty 1`).toBe(404);
-    const c = await getJson<unknown>(a, pack(`/contracts/${ids[k]}/approval`));
+  const b = await userApi(EB, U.employee);
+  type Page = { items?: { id: string }[] };
+  const listA = await getJson<Page>(a, pack("/contracts?limit=100"));
+  const listB = await getJson<Page>(b, pack("/contracts?limit=100"));
+  expect(listA.status).toBe(200);
+  expect(listB.status).toBe(200);
+  const idsA = new Set((listA.json.items ?? []).map((x) => x.id));
+  const idsB = (listB.json.items ?? []).map((x) => x.id);
+  expect(idsA.size, "công ty 1 phải có HĐ (ca 3–5)").toBeGreaterThan(0);
+  expect(idsB.length, "công ty 2 phải có HĐ (ca 6)").toBeGreaterThan(0);
+  for (const id of idsB) {
+    expect(idsA.has(id), "danh sách công ty 1 lộ HĐ công ty 2").toBe(false);
+    const r = await getJson<unknown>(a, pack(`/contracts/${id}`));
+    expect(r.status, "HĐ công ty 2 lộ cho công ty 1").toBe(404);
+    const c = await getJson<unknown>(a, pack(`/contracts/${id}/approval`));
     expect(c.status).toBe(404);
   }
-  const list = await getJson<{ items?: { id: string }[] }>(a, pack("/contracts?limit=100"));
-  expect(list.status).toBe(200);
-  const seen = new Set((list.json.items ?? []).map((x) => x.id));
-  expect(seen.has(ids.a600 as string)).toBe(true);
-  expect(seen.has(ids.b6 as string)).toBe(false);
-  expect(seen.has(ids.b1 as string)).toBe(false);
 });
