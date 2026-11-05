@@ -142,6 +142,28 @@ describe("CR-121 R-1 · Dừng / Chạy lại bước / Chạy lại cả lượ
   );
 
   it(
+    "Chạy lại bước đã xong khi run đang chạy bước sau ⇒ kết quả muộn của bước sau không ghi vào run",
+    async () => {
+      needSchema(c.ready);
+      const id = await start();
+      await jobDone(c, await nextStageJob(c, id), MD_AUTO); // bước 0 xong
+      const late = await nextStageJob(c, id); // worker đang chạy bước 1
+      const n0 = (await outputs(c.sql, id)).length;
+      expect((await rerunStep("P", id, 0)).status).toBe(200);
+      await jobDone(c, late, MD_AUTO).catch(() => {}); // kết quả bước 1 đến muộn
+      await (c.hub.handles() as { settled?: () => Promise<void> } | null)?.settled?.();
+      expect((await outputs(c.sql, id)).length).toBe(n0); // không ghi output bước 1 cũ
+      expect((await stageRow(c.sql, id, 1)).status).toBe("pending");
+      const run = await runRow(c.sql, id);
+      expect({ st: run.status, step: run.current_step }).toEqual({ st: "running", step: 0 });
+      // Chạy tiếp đúng thứ tự: bước 0 rồi bước 1 ⇒ xong.
+      for (let i = 0; i < 2; i++) await jobDone(c, await nextStageJob(c, id), MD_AUTO);
+      await waitStatus(c.sql, id, "done");
+    },
+    TO,
+  );
+
+  it(
     "Chạy lại cả lượt: run đã dừng, hai lần đồng thời ⇒ một run mới rerun_of cùng snapshot + input",
     async () => {
       needSchema(c.ready);
