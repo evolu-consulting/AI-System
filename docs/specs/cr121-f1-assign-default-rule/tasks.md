@@ -46,5 +46,9 @@ Gán quy trình đã xuất bản của khe cho công ty (admin-web, Công ty �
 Đọc chi tiết HĐ hoặc lượt duyệt của công ty khác trả 404 `NOT_FOUND` như id không tồn tại.
 - Kịch bản: khi người công ty 2 đọc HĐ và lượt duyệt của công ty 1 thì nhận 404 NOT_FOUND [test: tests/acceptance/CF/assign-default-rule.int.test.ts » người công ty khác đọc HĐ / lượt duyệt của công ty này ⇒ 404 (không lộ tồn tại, không 400)]
 
+## Quyết định bổ sung (điều phối, sau soát Opus)
+- Khe opt-in: `slotActive`/`moderationOn` đã coi "có luật hoặc có quy trình trong tập" = bật ⇒ gán (luật mặc định admin + tập gán) là bật, không cần công tắc; không đổi cổng. Int mới khoá hành vi.
+- `RoutingService.unassign`: khe opt-in + quy trình chỉ còn được luật MẶC ĐỊNH dùng ⇒ bỏ gán = tắt khe (xoá luật mặc định cùng tx; trước F-1 không có luật nên bỏ gán được, giữ khả năng "tắt"). Khe thường vẫn 409. 409 có `message` tiếng Việt nói cách sửa (mặc định ⇒ gán quy trình khác trước; luật điều kiện ⇒ sửa/xoá luật) + i18n vi/en `tenants.slots.routing.err.inUse` cập nhật câu cách sửa.
+
 ## Việc còn lại
 - D-5: bỏ workaround đã gỡ; chạy lại e2e hành trình sau khi F-1 merge.

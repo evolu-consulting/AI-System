@@ -14,6 +14,7 @@ import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
 import { communitySlotSpecs } from "../../packs/community/domain/flow-slots.rules";
+import { communityFlowPorts } from "../../packs/community-flow.mount";
 import { approvalEngineTools } from "../../packs/contracts/adapters/approval-engine.tools";
 import { approvalSlotSpec } from "../../packs/contracts/approval.mount";
 import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/domain/approval-slot-default.rules";
@@ -165,9 +166,18 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
       e: "ROUTING_PROCESS_IN_USE",
       rules: [{ id: put.json.rules[0].id, priority: 0 }],
     });
+    expect(del.json.error?.message).toContain("sửa hoặc xoá các luật đó rồi bỏ gán");
     expect((await call("P", "PUT", PROC(X, lib.C))).status).toBe(200);
     // C đang là luật mặc định ⇒ bỏ gán bị chặn; gán B (đổi mặc định về B) rồi mới bỏ C được.
-    expect((await call("P", "DELETE", PROC(X, lib.C))).status).toBe(409);
+    const inDefault = await call("P", "DELETE", PROC(X, lib.C));
+    expect({ s: inDefault.status, e: inDefault.json.error?.code }).toEqual({
+      s: 409,
+      e: "ROUTING_PROCESS_IN_USE",
+    });
+    // Thông điệp nói cách sửa (Luật GỐC 3): đang là mặc định ⇒ gán quy trình khác làm mặc định trước.
+    expect(inDefault.json.error?.message).toContain(
+      "gán quy trình khác làm mặc định trước rồi bỏ gán",
+    );
     expect((await call("P", "PUT", PROC(X, lib.B))).status).toBe(200);
     expect((await call("P", "DELETE", PROC(X, lib.C))).status).toBe(204);
     const left =
@@ -389,5 +399,54 @@ describe("CR-118 §11.2 · API luật chọn quy trình", () => {
         active: !slot.startsWith("community."),
       });
     }
+  });
+
+  it("CR-121 F-1 · khe opt-in (duyệt bài Community): chưa gán ⇒ tắt · gán ⇒ bật và chạy đúng quy trình đó · bỏ gán ⇒ tắt lại", async () => {
+    const MOD = "community.post-moderation";
+    const modR = `/tenants/${Y}/process-routing/${MOD}`;
+    const on = () => communityFlowPorts(db, undefined).moderationOn?.(Y) as Promise<boolean>;
+    const [seed] =
+      await o`select default_def_id::text as id from hub.process_slots where slot = ${MOD}`;
+    const [d] = await o`insert into hub.process_defs (tenant_id, key, name, description, input_hint,
+        run_group_ids, stages, token_budget, enabled, sources, inputs, slot, slot_body, published_version)
+      select null, 'rt-mod', 'QT duyệt bài', description, input_hint, run_group_ids, stages, token_budget, enabled,
+        sources, inputs, slot, slot_body, 1 from hub.process_defs where id = ${seed?.id} returning id::text as id`;
+    const id = d?.id as string;
+    await o`insert into hub.process_def_releases (def_id, rel_version, name, stages, slot_body)
+      select id, 1, name, stages, slot_body from hub.process_defs where id = ${id}`;
+
+    const g0 = await call("P", "GET", modR);
+    expect({ s: g0.status, active: g0.json.active, procs: g0.json.processes.length }).toEqual({
+      s: 200,
+      active: false,
+      procs: 0,
+    });
+    expect(await on()).toBe(false);
+
+    const asg = await call("P", "PUT", `${modR}/processes/${id}`);
+    expect({ s: asg.status, active: asg.json.active, cur: asg.json.current_def_id }).toEqual({
+      s: 200,
+      active: true,
+      cur: id,
+    });
+    expect([
+      ...(await o`select def_id::text as d, source as s, is_default as f from hub.process_routing_rules
+      where tenant_id = ${Y} and slot = ${MOD}`),
+    ]).toEqual([{ d: id, s: "admin", f: true }]);
+    expect(await on()).toBe(true);
+
+    // Bỏ gán quy trình mặc định duy nhất của khe opt-in = tắt khe (không bị 409 chặn, không còn luật mồ côi).
+    expect((await call("P", "DELETE", `${modR}/processes/${id}`)).status).toBe(204);
+    const g1 = await call("P", "GET", modR);
+    expect({
+      active: g1.json.active,
+      rules: g1.json.rules.length,
+      procs: g1.json.processes.length,
+    }).toEqual({
+      active: false,
+      rules: 0,
+      procs: 0,
+    });
+    expect(await on()).toBe(false);
   });
 });

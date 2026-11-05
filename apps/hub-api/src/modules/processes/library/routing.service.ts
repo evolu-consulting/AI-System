@@ -21,7 +21,7 @@ import type { LibraryService } from "./library.service";
 import { specOrThrow } from "./library-draft";
 import * as rt from "./routing.repo";
 import { slotActive } from "./routing-active.rules";
-import { upsertAssignment } from "./slot-assign.repo";
+import { deleteAssignment, upsertAssignment } from "./slot-assign.repo";
 
 const MESSAGES: Record<HubAdminRoutingErrorCode, string> = {
   ROUTING_PROCESS_NOT_ASSIGNED: "Process is not assigned to the tenant",
@@ -39,8 +39,18 @@ function unavailableOf(
   if (!live.has(defId)) return { unavailable: "deleted" };
   return live.get(defId) == null ? { unavailable: "unpublished" } : {};
 }
-export const routingError = (code: HubAdminRoutingErrorCode, details?: unknown): AppError =>
-  new AppError(code, HUB_ADMIN_ROUTING_ERRORS[code], MESSAGES[code], details);
+export const routingError = (
+  code: HubAdminRoutingErrorCode,
+  details?: unknown,
+  message?: string,
+): AppError =>
+  new AppError(code, HUB_ADMIN_ROUTING_ERRORS[code], message ?? MESSAGES[code], details);
+
+// Thông điệp 409 bỏ gán: nói cách sửa (Luật GỐC 3); UI hiển thị bản i18n vi/en `tenants.slots.routing.err.inUse` theo mã lỗi.
+const IN_USE_DEFAULT_MSG =
+  "Quy trình này đang là mặc định của việc — hãy gán quy trình khác làm mặc định trước rồi bỏ gán.";
+const IN_USE_RULES_MSG =
+  "Quy trình này đang được luật chọn quy trình dùng — hãy sửa hoặc xoá các luật đó rồi bỏ gán.";
 
 type Act = "assign_process" | "unassign_process" | "set_routing";
 const audit = (
@@ -240,18 +250,34 @@ export class RoutingService {
     return this.#view(tenantId, slot);
   }
 
-  /** platform_admin · bỏ gán; luật đang dùng ⇒ 409 `ROUTING_PROCESS_IN_USE` kèm danh sách luật. Không có ⇒ 204 không đổi. */
+  /**
+   * platform_admin · bỏ gán; luật đang dùng ⇒ 409 `ROUTING_PROCESS_IN_USE` kèm danh sách luật + câu cách sửa. Không có ⇒ 204 không đổi.
+   * Khe opt-in (vd duyệt bài Community): "gán" chính là bật khe ⇒ quy trình chỉ còn được dùng bởi luật mặc định thì bỏ gán = tắt khe
+   * (xoá luôn luật mặc định cùng tx, CR-121 F-1); khe thường luôn cần một mặc định ⇒ phải gán quy trình khác trước.
+   */
   async unassign(u: AuthUser, tenantId: string, slot: string, defId: string): Promise<void> {
-    specOrThrow(slot);
+    const optIn = specOrThrow(slot).optIn === true;
     await withConfigWrite(this.#w, u, async (tx) => {
       const used = await rt.rulesUsing(tx, tenantId, slot, defId);
-      if (used.length)
-        throw routingError("ROUTING_PROCESS_IN_USE", {
-          rules: used.map((r) => ({ id: r.id, priority: Number(r.priority) })),
-        });
+      const dflt = used.length ? await rt.defaultRuleOf(tx, tenantId, slot) : null;
+      const isDefault = dflt?.def_id === defId;
+      const turnOff = optIn && isDefault && used.length === 1;
+      if (used.length && !turnOff)
+        throw routingError(
+          "ROUTING_PROCESS_IN_USE",
+          { rules: used.map((r) => ({ id: r.id, priority: Number(r.priority) })) },
+          isDefault ? IN_USE_DEFAULT_MSG : IN_USE_RULES_MSG,
+        );
+      if (turnOff) await deleteAssignment(tx, tenantId, slot);
       if (!(await rt.deleteAssigned(tx, tenantId, slot, defId)))
         return { result: null, audit: null };
-      const a = audit("unassign_process", { tenantId, slot, defId, before: { slot }, after: {} });
+      const a = audit("unassign_process", {
+        tenantId,
+        slot,
+        defId,
+        before: { slot },
+        after: turnOff ? { slot_off: true } : {},
+      });
       return { result: null, audit: a };
     });
   }

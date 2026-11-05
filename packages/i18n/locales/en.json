@@ -638,7 +638,7 @@
           "unavailable": "A rule uses a deleted or unpublished process, so it cannot be saved. Remove the rule or pick another process.",
           "deptInvalid": "A department does not belong to the company.",
           "rulesInvalid": "Invalid rules: normal rules need departments or a contract kind, only one default.",
-          "inUse": "Cannot unassign: the process is used by rule(s) {rules}. Edit or remove those rules first.",
+          "inUse": "Cannot unassign: the process is used by rule(s) {rules}. If it is the default process, assign another process as the default first; otherwise edit or remove those rules, then unassign.",
           "forbidden": "Only the platform admin can assign processes.",
           "other": "Could not complete. Try again later."
         }

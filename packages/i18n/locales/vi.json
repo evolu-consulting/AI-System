@@ -638,7 +638,7 @@
           "unavailable": "Có luật đang dùng quy trình đã xoá hoặc chưa xuất bản nên chưa lưu được. Hãy xoá hoặc đổi quy trình của luật đó.",
           "deptInvalid": "Có phòng ban không thuộc công ty.",
           "rulesInvalid": "Luật không hợp lệ: luật thường cần phòng ban hoặc loại hợp đồng, chỉ một luật mặc định.",
-          "inUse": "Không bỏ gán được: quy trình đang được luật số {rules} dùng. Sửa hoặc xoá các luật đó trước.",
+          "inUse": "Không bỏ gán được: quy trình đang được luật số {rules} dùng. Nếu đó là quy trình mặc định, hãy gán quy trình khác làm mặc định trước; nếu không, sửa hoặc xoá các luật đó rồi bỏ gán.",
           "forbidden": "Chỉ quản trị nền tảng gán được quy trình.",
           "other": "Không thực hiện được. Thử lại sau."
         }
