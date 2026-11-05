@@ -40,6 +40,8 @@ cho lượt duyệt MỚI. Gỡ env `CONTRACTS_APPROVAL_ENGINE`, cổng "đã g�
   đã nhận lượt kẹt chưa run).
 - Lượt máy cũ đang dở quay lại `level1` (Đọc lại / heal của sweep) ⇒ mở run engine (bắt đầu lại từ bước đầu, như lượt mới) — không
   phải chuyển giữa chừng vì mọi quyết định cũ đã bị Đọc lại xoá.
+- Sau rebase lên F-1 (8b4b81b7): `CF/assign-default-rule.int` bước "chưa gán ⇒ máy cũ" đổi thành "⇒ engine" (đổi hành vi được duyệt);
+  bỏ seam `approvalEngineTenantGate` (đã gỡ). `engine-only.int` gán qua đúng API "Gán quy trình" của F-1.
 - Seam `contractsAi.approvalEngine: false` chỉ đặt được từ deps test (không env) ⇒ prod không thể mở lượt máy cũ.
 - Perf: mở lượt bớt 1 câu (`slotAssigned`) so với trước; không thêm truy vấn theo hàng.
 - Check ops đếm lượt máy cũ còn mở: hub KHÔNG đọc được `contracts.approvals` (cách ly gói, xem `flow-coverage.check.ts`) ⇒ cần cổng đếm
