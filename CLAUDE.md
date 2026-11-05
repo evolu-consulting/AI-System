@@ -53,6 +53,20 @@ Người dùng gõ `/intake` thì chạy luôn (đã là xác nhận).
 5. **Prompt cache:** giữ `CLAUDE.md`/tài liệu chung ổn định trong đợt (sửa gom cuối đợt); Claude Code tự cache, không cần cấu hình.
 6. **Đọc ít:** tra `docs/INDEX.md`/CODEMAP trước, mở đúng file; code theo Clean Architecture + file nhỏ (Luật 4) để agent không phải đọc rộng.
 
+**Ma trận model (người dùng chốt 2026-11-05 — "việc không cần thinking cao thì không dùng Opus, giữ quality"). Chọn theo việc, không theo độ quan trọng của CR:**
+
+| Việc | Model · effort |
+|---|---|
+| Dọn worktree/nhánh, relock, chạy script có sẵn + tóm tắt, cập nhật STATE/CODEMAP, đổi tên/đường dẫn hàng loạt | Haiku · mặc định |
+| Tìm "ở đâu/có gì" trong code/tài liệu | Explore Haiku |
+| Code + test một lát thường: UI, e2e, API CRUD, mapper, i18n, seed, script, docs/spec từ quyết định đã chốt | Sonnet · mặc định |
+| Lát "hơi khó": migration/backfill đơn giản, sửa đường ghi dữ liệu, perf SQL, hạ tầng test, chẩn đoán lỗi nhiều bước, đổi tên/refactor lớn | Sonnet · high |
+| Soát diff rủi ro (dữ liệu khách, RLS/quyền, máy trạng thái run) sau khi Sonnet viết; phân loại lỗi mới/cũ; chọn 1 trong 2 thiết kế | Opus · low |
+| Tự viết lõi máy trạng thái run / khoá / đồng thời / idempotency; thiết kế ranh giới module/contract nhiều lát dựa vào (spec CR lớn); review + security cuối đợt | Opus · medium |
+| Opus · high | chỉ khi Opus medium đã sai/bế tắc đúng việc đó |
+
+Quy tắc kèm: không gộp UI/e2e/docs vào lát Opus; spec CR thường (quyết định đã chốt, chỉ cần viết ra) ⇒ Sonnet; Opus chỉ khi phải tự thiết kế. Sonnet high sai lần 2 cùng việc ⇒ Opus medium. Phiên điều phối không tự làm việc của Haiku/Sonnet (đọc log dài, chạy test lặp).
+
 **Luật điều phối (người dùng chốt 2026-11-05, rút từ CR-118/120 — agent chạy lâu, tốn tiền, sót lỗi cơ bản):**
 - **D1. Trần song song:** tối đa **4 agent code** cùng lúc; lát đụng chung vùng code (cùng module/route/bảng) xếp **nối tiếp**, không song song.
 - **D2. Lát nhỏ, chốt phạm vi trước:** mỗi lát ≤ **60 phút**, phạm vi + file được sửa ghi trong brief. **Không SendMessage thêm việc vào agent đang chạy** (thắng Luật 0c mục 3/T6 khi agent đang chạy) — phát sinh ⇒ ghi hàng chờ, gom thành lát sau. Chỉ SendMessage để sửa lỗi của chính lát đó sau khi nó báo xong.
