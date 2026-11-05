@@ -52,6 +52,7 @@ const RUN = Date.now().toString(36);
 
 type Card = {
   run_id: string | null;
+  engine_run_id?: string | null;
   run_status: string | null;
   can_act: boolean;
   steps?: { idx: number; name: string; status: string; skip_when?: unknown[] | null }[];
@@ -246,7 +247,7 @@ test("7 · admin: 'Chi tiết lượt chạy' của HĐ đã sửa giá trị hi
   browser,
 }) => {
   const me = await userApi(EA, U.employee);
-  const runId = (await cardOf(me, ids.aEdit as string)).run_id;
+  const runId = (await cardOf(me, ids.aEdit as string)).engine_run_id;
   expect(runId).toBeTruthy();
   // Cùng dữ liệu qua API (platform admin + tenant_id): chẩn đoán rõ nếu trang không hiện được
   const ps = await apiLogin({
@@ -282,8 +283,8 @@ test("8 · công ty 1 không thấy dữ liệu công ty 2", async () => {
   const a = await userApi(EA, U.employee);
   const b = await userApi(EB, U.employee);
   type Page = { items?: { id: string }[] };
-  const listA = await getJson<Page>(a, pack("/contracts?limit=100"));
-  const listB = await getJson<Page>(b, pack("/contracts?limit=100"));
+  const listA = await getJson<Page>(a, pack("/contracts"));
+  const listB = await getJson<Page>(b, pack("/contracts"));
   expect(listA.status).toBe(200);
   expect(listB.status).toBe(200);
   const idsA = new Set((listA.json.items ?? []).map((x) => x.id));

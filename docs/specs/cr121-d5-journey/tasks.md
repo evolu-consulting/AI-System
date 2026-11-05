@@ -24,7 +24,7 @@ Không đổi code sản phẩm. Chạm `tools/scripts/src/seed-e2e-journey.ts` 
 `run-tests.ps1 -Step e2e -Filter journey-approval -Dirty` (job journey-approval-journey).
 
 ## Quyết định trong lúc làm
-- Giá trị HĐ chỉ sửa được khi bước đầu của luồng đang mở (luật cũ HD3 S1) ⇒ ca "sửa 600 → 100" sửa lúc Kế toán đang mở, không cần Trả lại.
+- Giá trị HĐ bị khoá ngay khi gửi duyệt (HD3 S1) ⇒ ca "sửa 600 → 100" sửa lúc HĐ còn chờ xác nhận, trước "Xác nhận và lưu".
 - Hành trình chỉ gán qua UI (không workaround luật); chờ lát F-1 (gán ⇒ luật mặc định = quy trình đã gán) rồi mới chạy lại.
 
 ## Delta (so với docs/current)
@@ -37,10 +37,10 @@ từng công ty; mỗi công ty chạy đúng quy trình của mình, bước kh
 công ty này không thấy dữ liệu công ty kia.
 - Kịch bản: khi công ty 1 (Kế toán → Giám đốc khi ≥ 500 tr và Mua) gửi HĐ 600 tr thì qua cả Kế toán lẫn Giám đốc [test: e2e/journey-approval/cr121-d-journey.spec.ts » 3 · công ty 1: HĐ 600 tr Mua đi qua Kế toán rồi Giám đốc, duyệt xong là khoá]
 - Kịch bản: khi công ty 1 gửi HĐ 100 tr thì bước Giám đốc bị bỏ qua và HĐ khoá sau Kế toán [test: e2e/journey-approval/cr121-d-journey.spec.ts » 4 · công ty 1: HĐ 100 tr Mua bỏ qua bước Giám đốc — Kế toán duyệt là xong]
-- Kịch bản: khi sửa giá trị HĐ đang chờ từ 600 xuống 100 tr thì bước Giám đốc bị bỏ qua khi tới [test: e2e/journey-approval/cr121-d-journey.spec.ts » 5 · công ty 1: sửa giá trị HĐ đang chờ 600 → 100 tr ⇒ bước Giám đốc bị bỏ qua khi tới]
+- Kịch bản: khi sửa giá trị HĐ đang chờ xác nhận từ 600 xuống 100 tr thì bước Giám đốc bị bỏ qua khi tới [test: e2e/journey-approval/cr121-d-journey.spec.ts » 5 · công ty 1: sửa giá trị HĐ đang chờ 600 → 100 tr ⇒ bước Giám đốc bị bỏ qua khi tới]
 - Kịch bản: khi công ty 2 được gán quy trình một bước Giám đốc thì cả HĐ 600 tr và 100 tr chỉ qua Giám đốc [test: e2e/journey-approval/cr121-d-journey.spec.ts » 6 · công ty 2: chỉ một bước Giám đốc, không phụ thuộc giá trị (600 tr và 100 tr)]
 - Kịch bản: khi admin mở Chi tiết lượt chạy thì thấy bước Giám đốc "bỏ qua" và nhật ký [test: e2e/journey-approval/cr121-d-journey.spec.ts » 7 · admin: 'Chi tiết lượt chạy' của HĐ đã sửa giá trị hiện đúng bước (Giám đốc: bỏ qua) và nhật ký]
 - Kịch bản: khi người công ty 1 đọc HĐ công ty 2 thì bị từ chối và danh sách không lộ [test: e2e/journey-approval/cr121-d-journey.spec.ts » 8 · công ty 1 không thấy dữ liệu công ty 2]
 
 ## Việc còn lại
-Chạy lại job `journey-approval` một lượt (ca 5, 7, 8 sửa sau lượt 2; ca 1–4, 6 đã xanh).
+Không. Job `journey-approval` xanh (15 pass).
