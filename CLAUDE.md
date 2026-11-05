@@ -74,6 +74,7 @@ Quy tắc kèm: không gộp UI/e2e/docs vào lát Opus; spec CR thường (quy�
 - **D4. Test trong lát:** chỉ unit + int của file mình sửa (evotest: commit trước hoặc `-Dirty`; suite đóng băng cần `-All`; đường dẫn dùng `/`). **e2e chạy MỘT lần cuối đợt bằng script chia slot**, do điều phối chạy — agent không tự chạy e2e toàn job.
 - **D5. Hành trình thật trước khi báo xong một tính năng:** mỗi tính năng người dùng nhìn thấy phải có ít nhất **một e2e hành trình không giả lập** (dữ liệu tạo đúng đường platform/khách làm, không bật sẵn gì trong seed) chạy xanh; test giả lập hub/seed bật sẵn không được tính là "chạy được".
 - **D6. Một nguồn dữ liệu:** thêm bảng/đường mới thay cái cũ ⇒ cùng lát phải (a) backfill + test backfill, (b) chuyển **mọi chỗ đọc** cái cũ (grep, liệt kê trong báo cáo), (c) gỡ hoặc khoá UI cũ. Không để hai control/hai màn hình cho cùng một khái niệm.
+- **D8. Hiệu năng trong brief + đo thời gian lát:** mọi brief có mục "perf" (đường nóng nào bị chạm, ngưỡng p95/số câu SQL/bundle phải giữ — Luật 4c; không chạm thì ghi "không"). Báo cáo agent ghi thời gian theo pha: code · chờ test · sửa. Lát vượt 60 phút ⇒ điều phối ghi nguyên nhân (chờ evotest, phạm vi phình, đọc rộng, rebase) vào STATE để sửa quy trình, không chỉ chạy tiếp.
 - **D7. Cấu hình khách đủ trọn:** script seed/onboard một tenant phải bật mọi tính năng mà cấu hình đó cần (vd gán quy trình duyệt ⇒ bật `contracts-approval-engine`); ops-watch có check phát hiện cấu hình nửa vời.
 
 **Bổ sung (người dùng chốt 2026-11-03) — 6 tiêu chí, áp cho phiên điều phối và mọi agent:**
