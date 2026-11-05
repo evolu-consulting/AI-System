@@ -29,7 +29,7 @@ test("CR-121 · sửa tên công ty tại chỗ (Lưu), rồi chọn CEO từ th
   await page.getByRole("button", { name: "Sửa Tên công ty" }).click();
   await page.getByRole("textbox", { name: "Tên công ty" }).fill("Acme Việt Nam");
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
-  await expect(toast(page, "Đã lưu thông tin công ty")).toBeVisible();
+  await expect(toast(page, "Đã lưu acme")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: "Acme Việt Nam" })).toBeVisible();
 
   // Số nhân viên sai ⇒ lỗi dễ hiểu, chưa lưu; nhập đúng ⇒ lưu được.

@@ -89,6 +89,39 @@ export function bindDecision(
   return { kind: "error", code: "ORG_REBIND" };
 }
 
+/**
+ * CR-121 · D6: 4 khoá hồ sơ đã chuyển sang CỘT `admin.tenants` (0035), nguồn duy nhất — onboarding ghi cột, jsonb `profile` chỉ giữ
+ * phần còn lại (websites, zalo_oa, phones). Khoá jsonb (spec) ⇒ tên cột.
+ */
+export const MOVED_PROFILE_KEYS = {
+  legal_name: "legal_name",
+  address: "address",
+  tax_id: "tax_code",
+  email: "contact_email",
+} as const;
+type MovedKey = keyof typeof MOVED_PROFILE_KEYS;
+
+/** Tách hồ sơ spec: `cols` (chỉ khoá spec CÓ, theo tên cột) + `rest` (jsonb còn lại). */
+export function splitProfile(p: Record<string, unknown>): {
+  cols: Record<string, string>;
+  rest: Record<string, unknown>;
+} {
+  const cols: Record<string, string> = {};
+  const rest: Record<string, unknown> = { ...p };
+  for (const k of Object.keys(MOVED_PROFILE_KEYS) as MovedKey[]) {
+    delete rest[k];
+    if (typeof p[k] === "string") cols[MOVED_PROFILE_KEYS[k]] = p[k] as string;
+  }
+  return { cols, rest };
+}
+
+/** Hồ sơ hiện tại (đã gộp cột + jsonb) so với spec: khoá chuyển-cột mà spec KHÔNG khai thì bỏ qua (giữ giá trị người dùng đã nhập tay). */
+export function profileSame(cur: Record<string, unknown>, spec: Record<string, unknown>): boolean {
+  const c = { ...cur };
+  for (const k of Object.keys(MOVED_PROFILE_KEYS)) if (spec[k] === undefined) delete c[k];
+  return sameJson(c, spec);
+}
+
 /** So hai jsonb hồ sơ theo nội dung (thứ tự khoá không tính) — bỏ câu ghi khi không đổi (idempotent, không tăng version). */
 export function sameJson(a: unknown, b: unknown): boolean {
   const norm = (x: unknown): unknown =>

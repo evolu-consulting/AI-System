@@ -96,7 +96,7 @@ const TABLE: Array<[string, string, string]> = [
   ["nav.main", "Điều hướng chính", "Main navigation"],
   ["nav.overview", "Tổng quan", "Overview"],
   ["nav.group.access", "TRUY CẬP", "ACCESS"],
-  ["nav.tenants", "Tenants", "Tenants"],
+  ["nav.tenants", "Công ty", "Companies"], // CR-121 shell: mục "Tenants" đổi nhãn nghiệp vụ thành "Công ty"
   ["nav.users", "Users", "Users"],
   ["nav.collapse", "Thu gọn thanh bên", "Collapse sidebar"],
   ["nav.expand", "Mở rộng thanh bên", "Expand sidebar"],

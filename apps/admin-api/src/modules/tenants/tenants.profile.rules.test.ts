@@ -1,6 +1,7 @@
 // CR-121 · hồ sơ công ty: luật thuần (changedProfileFields, leaderIdsToCheck) + kiểm email/SĐT/MST/quy mô ở contract.
 import { describe, expect, test } from "bun:test";
 import { TenantProfileUpdateRequestSchema as Req } from "@ai/contracts";
+import { profileSame, splitProfile } from "../tenant-onboard/domain/onboard.rules";
 import { changedProfileFields, leaderIdsToCheck, type ProfileCols } from "./tenants.rules";
 
 const EMPTY: ProfileCols = {
@@ -84,5 +85,25 @@ describe("CR-121 · TenantProfileUpdateRequestSchema (email, SĐT, MST, quy mô)
     expect(ok({ staff_size: 1.5 }).success).toBe(false);
     expect(ok({ ceo_user_id: "x" }).success).toBe(false);
     expect(ok({ name: "Tên mới" }).success).toBe(false);
+  });
+});
+
+describe("CR-121 · D6 · onboarding ghi CỘT cho 4 khoá chuyển-cột", () => {
+  test("splitProfile: legal_name/address/tax_id/email ⇒ cột; phần còn lại ở jsonb", () => {
+    const { cols, rest } = splitProfile({
+      legal_name: "Cty A",
+      tax_id: "0312345678",
+      email: "a@b.vn",
+      zalo_oa: "oa",
+      phones: [{ label: "x", number: "0281234567" }],
+    });
+    expect(cols).toEqual({ legal_name: "Cty A", tax_code: "0312345678", contact_email: "a@b.vn" });
+    expect(Object.keys(rest).sort()).toEqual(["phones", "zalo_oa"]);
+  });
+
+  test("profileSame: khoá chuyển-cột spec không khai thì bỏ qua (giữ giá trị nhập tay), khai khác thì không same", () => {
+    expect(profileSame({ zalo_oa: "oa", address: "Nhập tay" }, { zalo_oa: "oa" })).toBe(true);
+    expect(profileSame({ address: "Cũ" }, { address: "Mới" })).toBe(false);
+    expect(profileSame({ zalo_oa: "a" }, { zalo_oa: "b" })).toBe(false);
   });
 });

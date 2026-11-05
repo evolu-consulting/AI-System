@@ -95,13 +95,17 @@ describe("niti-onboard · onboarding NitiGroup", () => {
           name: string;
           tz: string;
           profile: Record<string, unknown>;
+          tax_code: string | null;
           settings: Record<string, string>;
         }[]
       >`
-        select name, timezone as tz, profile, settings from admin.tenants where id = ${tid}`,
+        select name, timezone as tz, profile, tax_code, settings from admin.tenants where id = ${tid}`,
     );
     expect(t.name).toBe("CÔNG TY TNHH THƯƠNG MẠI DỊCH VỤ NITIGROUP");
-    expect(t.profile).toMatchObject({ tax_id: "0318938091", zalo_oa: "NitiGroup" });
+    // CR-121 · D6: MST nay ở CỘT `tax_code`, jsonb chỉ giữ phần còn lại (Zalo, website, điện thoại).
+    expect(t.tax_code).toBe("0318938091");
+    expect(t.profile).toMatchObject({ zalo_oa: "NitiGroup" });
+    expect(t.profile).not.toHaveProperty("tax_id");
     expect(t.settings).toEqual({ visibility: "org", mgmt_source: SOURCE, mgmt_org_id: ORG_A });
     const depts = await ctx.sql<
       { key: string; name: { vi: string; en: string }; parent: string | null; sort: number }[]

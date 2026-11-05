@@ -6,7 +6,7 @@ import {
   deptRows,
   memberPairs,
   type OnboardSpec,
-  sameJson,
+  profileSame,
 } from "../domain/onboard.rules";
 import type { OnboardPorts, OnboardRepo, OnboardSink, TenantNow } from "./ports";
 
@@ -87,7 +87,7 @@ async function tenantStep(
   const same =
     cur.name === s.name &&
     cur.timezone === s.timezone &&
-    sameJson(cur.profile, s.profile) &&
+    profileSame(cur.profile, s.profile) &&
     !setting;
   if (!same) {
     const set = { name: s.name, timezone: s.timezone, profile: s.profile, mark };

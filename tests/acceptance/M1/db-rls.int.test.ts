@@ -196,13 +196,23 @@ describe("ADM-NFR-07 · quyền hub_ro", () => {
   it("ADM-NFR-07 · spec §4 · hub_ro đọc được cột an toàn của users (cả hai tenant), tenants, features", async () => {
     const r = await asHub(async (tx) => ({
       users: await tx`select id, tenant_id, username, role, active from admin.users`,
-      tenants: await tx`select * from admin.tenants`,
+      // CR-121: `select *` trên tenants không còn (hub_ro chỉ đọc theo cột, 0035) ⇒ liệt kê cột Hub dùng.
+      tenants:
+        await tx`select id, key, name, active, settings, timezone, default_app from admin.tenants`,
       features: await tx`select * from admin.features`,
     }));
     expect(new Set(r.users.map((u) => u.tenant_id)).size).toBeGreaterThanOrEqual(2);
     expect(r.users).toHaveLength(14);
     expect(r.tenants).toHaveLength(4);
     expect(r.features.map((f) => f.key).sort()).toEqual(["contracts-approval-engine", "core"]);
+  });
+
+  it("CR-121 · hub_ro không đọc được cột liên hệ/hồ sơ mới của tenants (PII) ⇒ 42501", async () => {
+    for (const col of ["contact_email", "contact_phone", "tax_code", "ceo_user_id", "legal_name"])
+      expect(await asHub((tx) => sqlState(tx.unsafe(`select ${col} from admin.tenants`)))).toBe(
+        "42501",
+      );
+    expect(await asHub((tx) => sqlState(tx`select * from admin.tenants`))).toBe("42501");
   });
 
   it("ADM-NFR-07 · spec §4 · hub_ro insert/update bất kỳ bảng admin.* → 42501", async () => {

@@ -111,6 +111,9 @@ test("ADM-FR-60 · M1-R19 · chi tiết acme: mã readonly, sửa tên + Lưu �
   await page.goto(`/tenants/${TENANT_ID.acme}?tab=info`);
   await expect(page.getByRole("tab", { name: "Cài đặt" })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Mã công ty" })).not.toBeEditable();
+  // CR-121: tên công ty sửa tại chỗ ở tab Hồ sơ.
+  await page.getByRole("tab", { name: "Hồ sơ" }).click();
+  await page.getByRole("button", { name: "Sửa Tên công ty" }).click();
   await page.getByRole("textbox", { name: "Tên công ty" }).fill("Acme Corp 2");
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Đã lưu acme" })).toBeVisible();

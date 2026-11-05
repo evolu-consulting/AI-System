@@ -155,7 +155,6 @@ export function TenantDetailPage() {
     setTzError(undefined);
     return conflict.save(
       {
-        name: v.name,
         max_concurrent_sub: slotsToValue(v.slots),
         timezone: v.timezone,
         process_runs_max: Number(v.processRuns), // N2-FR-04
@@ -196,7 +195,11 @@ export function TenantDetailPage() {
           ))}
         </TabsList>
         <TabsContent value="profile" className="pt-4">
-          <TenantProfileTab tenant={tenant} canEdit={isPlatform} />
+          <TenantProfileTab
+            tenant={tenant}
+            canEdit={isPlatform}
+            onSaveName={(name) => conflict.save({ name }, tenant.version)}
+          />
         </TabsContent>
         <TabsContent value="info" className="pt-4">
           <TenantInfoForm

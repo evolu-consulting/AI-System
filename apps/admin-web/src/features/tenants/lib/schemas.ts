@@ -51,8 +51,8 @@ export const tenantTimezoneField = z
   .min(1, "tenants.error.timezoneRequired")
   .refine(isSupportedTimeZone, "tenants.error.timezoneUnsupported");
 
+/** CR-121 · D6: tên công ty sửa ở tab Hồ sơ (một nơi duy nhất), không còn trong form Cài đặt. */
 export const tenantInfoSchema = z.object({
-  name: tenantNameField,
   slots: slotsInput,
   timezone: tenantTimezoneField,
   processRuns: processRunsInput,

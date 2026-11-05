@@ -94,8 +94,13 @@ export async function tenantStats(tx: Tx, tenantId: string) {
 
 /** niti-onboard: hồ sơ công ty (chỉ chi tiết tenant đọc — danh sách không kéo jsonb). */
 export async function tenantProfile(tx: Tx, id: string): Promise<Record<string, unknown>> {
+  // CR-121 · D6: legal_name/address/tax_id/email nay là cột (0035) — không đọc lại từ jsonb (có thể còn bản cũ).
   const [r] = await tx
-    .select({ profile: tenants.profile })
+    .select({
+      profile: sql<
+        Record<string, unknown>
+      >`${tenants.profile} - 'legal_name' - 'address' - 'tax_id' - 'email'`,
+    })
     .from(tenants)
     .where(eq(tenants.id, id))
     .limit(1);

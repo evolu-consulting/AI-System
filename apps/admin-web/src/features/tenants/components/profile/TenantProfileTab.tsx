@@ -10,12 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
-import {
-  useTenantCompanyProfile,
-  useTenantMembers,
-  useUpdateTenant,
-  useUpdateTenantProfile,
-} from "../../api";
+import { useTenantCompanyProfile, useTenantMembers, useUpdateTenantProfile } from "../../api";
 import { type ProfileTextField, validateField } from "../../lib/profile-fields";
 import { TenantProfileCard } from "../TenantProfileCard";
 import { InlineField } from "./InlineField";
@@ -30,13 +25,19 @@ function useSaveError() {
   };
 }
 
-export function TenantProfileTab({ tenant, canEdit }: { tenant: TenantDetail; canEdit: boolean }) {
+type Props = {
+  tenant: TenantDetail;
+  canEdit: boolean;
+  /** Lưu tên công ty qua `PATCH /admin/tenants/:id` của trang (cùng ConflictDialog + toast "Đã lưu {mã}"). */
+  onSaveName: (name: string) => Promise<unknown>;
+};
+
+export function TenantProfileTab({ tenant, canEdit, onSaveName }: Props) {
   const { t, i18n } = useTranslation();
   const toError = useSaveError();
   const profile = useTenantCompanyProfile(tenant.id, true);
   const members = useTenantMembers(tenant.id, canEdit);
   const patchProfile = useUpdateTenantProfile(tenant.id);
-  const patchTenant = useUpdateTenant(tenant.id);
 
   if (profile.isPending) return <LoadingState />;
   if (profile.error || !profile.data) {
@@ -61,17 +62,6 @@ export function TenantProfileTab({ tenant, canEdit }: { tenant: TenantDetail; ca
       throw toError(e);
     }
   };
-  const saveName = async (name: string) => {
-    try {
-      await patchTenant.mutateAsync({ version: p.version, name: name.trim() });
-      void profile.refetch();
-      saved();
-    } catch (e) {
-      void profile.refetch();
-      throw toError(e);
-    }
-  };
-
   const text = (
     field: ProfileTextField,
     label: string,
@@ -92,7 +82,9 @@ export function TenantProfileTab({ tenant, canEdit }: { tenant: TenantDetail; ca
       onSave={(raw) => {
         const r = validateField(field, raw);
         if (!r.ok) return Promise.reject(new Error(t(r.error)));
-        return field === "name" ? saveName(String(r.value)) : saveProfile({ [field]: r.value });
+        return field === "name"
+          ? onSaveName(String(r.value)).then(() => undefined)
+          : saveProfile({ [field]: r.value });
       }}
     />
   );

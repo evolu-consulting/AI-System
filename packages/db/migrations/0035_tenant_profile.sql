@@ -41,3 +41,11 @@ UPDATE admin.tenants SET
   contact_phone = CASE WHEN contact_phone IS NULL AND profile->'phones'->0->>'number' ~ '^[0-9 .+()-]{6,24}$'
                        THEN profile->'phones'->0->>'number' ELSE contact_phone END
 WHERE profile <> '{}'::jsonb;
+--> statement-breakpoint
+-- PII: hub_ro có SELECT mức bảng (GRANT mặc định 0000) ⇒ đọc được cột liên hệ mới. Thu về SELECT theo đúng danh sách cột CŨ (trước 0035);
+-- 9 cột hồ sơ (legal_name, tax_code, address, staff_size, contact_*, ceo_user_id, director_user_id) Hub không có đường đọc. Cột mới của
+-- bảng sau này mặc định KHÔNG cấp cho hub_ro (phải GRANT tường minh, như admin.users 0002/0028/0033).
+REVOKE SELECT ON admin.tenants FROM hub_ro;
+--> statement-breakpoint
+GRANT SELECT (id, key, name, active, max_concurrent_sub, settings, version, created_at, updated_at, updated_by,
+              timezone, process_runs_max, profile, default_app) ON admin.tenants TO hub_ro;

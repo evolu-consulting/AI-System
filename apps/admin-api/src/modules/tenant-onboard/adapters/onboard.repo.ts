@@ -3,7 +3,7 @@
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import type { NewTenant, OnboardRepo, TenantNow } from "../application/ports";
-import type { DeptRow } from "../domain/onboard.rules";
+import { type DeptRow, splitProfile } from "../domain/onboard.rules";
 
 const run = async <T>(tx: Tx, q: SQL): Promise<T[]> => (await tx.execute(q)) as unknown as T[];
 const json = (x: unknown): string => JSON.stringify(x);
@@ -20,12 +20,27 @@ export async function actorOk(tx: Tx, actorId: string): Promise<boolean> {
 
 /** Tenant theo key, khoá hàng (chạy đồng thời hai lần ⇒ tuần tự). */
 export async function lockTenant(tx: Tx, key: string): Promise<TenantNow | null> {
-  const [r] = await run<TenantNow>(
+  const [r] = await run<
+    TenantNow & {
+      legal_name: string | null;
+      address: string | null;
+      tax_code: string | null;
+      contact_email: string | null;
+    }
+  >(
     tx,
-    sql`select id, name, timezone, profile, settings->>'mgmt_source' as src, settings->>'mgmt_org_id' as org
+    sql`select id, name, timezone, profile - 'legal_name' - 'address' - 'tax_id' - 'email' as profile,
+        legal_name, address, tax_code, contact_email,
+        settings->>'mgmt_source' as src, settings->>'mgmt_org_id' as org
       from admin.tenants where key = ${key} for no key update`,
   );
-  return r ?? null;
+  if (!r) return null;
+  // CR-121 · D6: 4 khoá chuyển-cột đọc từ CỘT (jsonb đã bỏ các khoá này) rồi gộp lại theo tên khoá spec để so sánh.
+  const { legal_name, address, tax_code, contact_email, ...now } = r;
+  const moved = { legal_name, address, tax_id: tax_code, email: contact_email };
+  const profile = { ...now.profile };
+  for (const [k, v] of Object.entries(moved)) if (v !== null) profile[k] = v;
+  return { ...now, profile };
 }
 
 /** Tenant KHÁC đang giữ marker org này (một org ⇒ một tenant). */
@@ -40,11 +55,14 @@ export async function orgTakenBy(tx: Tx, orgId: string, tenantId: string | null)
 
 /** Key đã có (đua) ⇒ không trả hàng. Trigger `tenants_beta_group` chạy như tạo tenant qua API. */
 export async function insertTenant(tx: Tx, t: NewTenant, actorId: string): Promise<boolean> {
+  const { cols, rest } = splitProfile(t.profile as Record<string, unknown>);
   const rows = await run<{ id: string }>(
     tx,
-    sql`insert into admin.tenants (id, key, name, timezone, profile, settings, updated_by)
-      values (${t.id}::uuid, ${t.key}, ${t.name}, ${t.timezone}, ${json(t.profile)}::jsonb,
-        ${json(t.settings)}::jsonb, ${actorId}::uuid)
+    sql`insert into admin.tenants (id, key, name, timezone, profile, settings, updated_by,
+        legal_name, address, tax_code, contact_email)
+      values (${t.id}::uuid, ${t.key}, ${t.name}, ${t.timezone}, ${json(rest)}::jsonb,
+        ${json(t.settings)}::jsonb, ${actorId}::uuid,
+        ${cols.legal_name ?? null}::text, ${cols.address ?? null}::text, ${cols.tax_code ?? null}::text, ${cols.contact_email ?? null}::text)
       on conflict (key) do nothing returning id`,
   );
   return rows.length === 1;
@@ -57,10 +75,16 @@ export async function updateTenant(
   set: { name: string; timezone: string; profile: unknown; mark: Record<string, string> },
   actorId: string,
 ): Promise<void> {
+  // Khoá chuyển-cột: spec có ⇒ ghi cột; spec không khai ⇒ giữ giá trị cột (có thể do người dùng nhập tay ở tab Hồ sơ).
+  const { cols, rest } = splitProfile(set.profile as Record<string, unknown>);
   await run(
     tx,
     sql`update admin.tenants set name = ${set.name}, timezone = ${set.timezone},
-        profile = ${json(set.profile)}::jsonb, settings = settings || ${json(set.mark)}::jsonb,
+        profile = ${json(rest)}::jsonb, settings = settings || ${json(set.mark)}::jsonb,
+        legal_name = coalesce(${cols.legal_name ?? null}::text, legal_name),
+        address = coalesce(${cols.address ?? null}::text, address),
+        tax_code = coalesce(${cols.tax_code ?? null}::text, tax_code),
+        contact_email = coalesce(${cols.contact_email ?? null}::text, contact_email),
         version = version + 1, updated_at = now(), updated_by = ${actorId}::uuid
       where id = ${id}::uuid`,
   );

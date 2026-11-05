@@ -25,7 +25,6 @@ type Props = {
 };
 
 const toValues = (t: TenantDetail): TenantInfoValues => ({
-  name: t.name,
   slots: t.max_concurrent_sub === null ? "" : String(t.max_concurrent_sub),
   timezone: t.timezone,
   processRuns: String(t.process_runs_max ?? TENANT_PROCESS_RUNS_MAX.default),
@@ -60,7 +59,6 @@ export function TenantInfoForm({
   useEffect(() => {
     const next = toValues(tenant);
     const same =
-      next.name === loaded.current.name &&
       next.slots === loaded.current.slots &&
       next.timezone === loaded.current.timezone &&
       next.processRuns === loaded.current.processRuns;
@@ -89,9 +87,6 @@ export function TenantInfoForm({
           description={t("tenants.field.keyHint")}
         >
           {(p) => <Input {...p} value={tenant.key} readOnly className="bg-muted font-mono" />}
-        </FormField>
-        <FormField id="info-name" label={t("tenants.field.name")} error={msg(errors.name?.message)}>
-          {(p) => <Input {...p} {...form.register("name")} autoComplete="off" />}
         </FormField>
         <FormField
           id="info-slots"

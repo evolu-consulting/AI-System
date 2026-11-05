@@ -104,11 +104,12 @@ test("ADM-FR-40 · Q9 · E22 · tab Thông tin và Quota cập nhật version ch
 }) => {
   await loginAdmin(page);
   await page.goto(`/tenants/${ACME}?tab=info`);
-  const name = page.getByRole("textbox", { name: "Tên công ty" });
+  // CR-121: tên công ty đã chuyển sang tab Hồ sơ ⇒ dùng ô "Giới hạn slot" của tab Cài đặt làm trường đổi.
+  const name = page.getByRole("spinbutton", { name: "Giới hạn slot subscription" });
   await expect(name).toBeVisible();
   const save = page.getByRole("button", { name: "Lưu", exact: true });
 
-  await name.fill("Acme Một");
+  await name.fill("7");
   let resp = page.waitForResponse(isPatch);
   await save.click();
   expect((await resp).status()).toBe(200);
@@ -121,7 +122,7 @@ test("ADM-FR-40 · Q9 · E22 · tab Thông tin và Quota cập nhật version ch
   await expect(conflictDialog(page)).toHaveCount(0);
 
   await page.getByRole("tab", { name: "Cài đặt" }).click();
-  await name.fill("Acme Hai");
+  await name.fill("8");
   resp = page.waitForResponse(isPatch);
   await save.click();
   expect((await resp).status()).toBe(200);
