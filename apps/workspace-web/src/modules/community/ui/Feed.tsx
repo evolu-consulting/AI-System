@@ -156,6 +156,7 @@ export function FeedPage() {
                   type="button"
                   role="tab"
                   aria-selected={f.tab === t.id}
+                  data-type={t.id}
                   className={f.tab === t.id ? "tab on" : "tab"}
                   onClick={() => f.setTab(t.id)}
                 >

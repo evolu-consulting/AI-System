@@ -68,17 +68,20 @@ function Segmented<T extends string>(p: {
   );
 }
 
-export function PrefsPanel(): ReactElement {
+/** `hideTheme`: app có công tắc sáng/tối riêng ở thanh trên (workspace-web, CR-120) ⇒ menu chỉ còn ngôn ngữ. */
+export function PrefsPanel({ hideTheme = false }: { hideTheme?: boolean } = {}): ReactElement {
   const cur = usePrefs();
   const tx = TEXT[cur.locale];
   return (
     <div data-testid="prefs-panel">
-      <Segmented
-        label={tx.theme}
-        value={cur.theme}
-        options={THEMES.map((v) => [v, tx[v]] as [Theme, string])}
-        onPick={(theme) => void prefs.set({ theme })}
-      />
+      {!hideTheme && (
+        <Segmented
+          label={tx.theme}
+          value={cur.theme}
+          options={THEMES.map((v) => [v, tx[v]] as [Theme, string])}
+          onPick={(theme) => void prefs.set({ theme })}
+        />
+      )}
       <Segmented
         label={tx.language}
         value={cur.locale}

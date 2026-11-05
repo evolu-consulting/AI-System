@@ -204,7 +204,13 @@
       "contracts": "Contracts & transactions",
       "partners": "Partners",
       "products": "Products & Prices",
-      "community": "Community"
+      "community": "Community",
+      "feed": "Feed",
+      "myPosts": "My posts",
+      "group": {
+        "contracts": "Contract Ledger",
+        "community": "Community"
+      }
     },
     "productsPage": {
       "title": "Products & Prices",
@@ -331,6 +337,9 @@
     },
     "shell": {
       "navMain": "Main navigation",
+      "themeToggle": "Light/dark mode",
+      "menuProfile": "My wall",
+      "menuCommunitySettings": "General settings",
       "navBottom": "Navigation",
       "navCollapse": "Collapse sidebar",
       "navExpand": "Expand sidebar",

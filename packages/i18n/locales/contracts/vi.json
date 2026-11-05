@@ -204,7 +204,13 @@
       "contracts": "Hợp đồng & giao dịch",
       "partners": "Đối tác",
       "products": "Sản phẩm & Giá",
-      "community": "Community"
+      "community": "Community",
+      "feed": "Bảng tin",
+      "myPosts": "Bài đăng của tôi",
+      "group": {
+        "contracts": "Sổ Hợp Tác",
+        "community": "Community"
+      }
     },
     "productsPage": {
       "title": "Sản phẩm & Giá",
@@ -331,6 +337,9 @@
     },
     "shell": {
       "navMain": "Điều hướng chính",
+      "themeToggle": "Chế độ sáng/tối",
+      "menuProfile": "Tường nhà",
+      "menuCommunitySettings": "Cài đặt chung",
       "navBottom": "Điều hướng",
       "navCollapse": "Thu gọn thanh bên",
       "navExpand": "Mở rộng thanh bên",

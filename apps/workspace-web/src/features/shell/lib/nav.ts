@@ -51,5 +51,7 @@ export function activeNav(pathname: string): NavItem | undefined {
 export type PageLayout = "board" | "wide" | "reading";
 export function layoutOf(pathname: string): PageLayout {
   if (pathname === B) return "wide";
+  // CR-120: Community (Bảng tin 3 cột / Hồ sơ) trong cùng khung ⇒ khoang rộng như Tổng quan.
+  if (pathname === "/community" || pathname.startsWith("/community/")) return "wide";
   return [`${B}/list`, `${B}/partners`, `${B}/products`].includes(pathname) ? "board" : "reading";
 }

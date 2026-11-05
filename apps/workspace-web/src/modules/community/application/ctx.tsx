@@ -20,6 +20,8 @@ export type { Route } from "../domain/route";
 export type Ctx = {
   /** Brand công ty chủ quản (topbar + màu nhấn); chưa tải/lỗi ⇒ chữ cái đầu + indigo. */
   brand: BrandView;
+  /** Màu nhấn công ty chủ quản (`data-accent`), cho phần tử vẽ ngoài cây trang (khe thanh trên). */
+  brandAccent: string;
   /** Hộp thoại Cài đặt chung (mở từ user-menu hoặc `?settings=1`); không phải route. */
   settingsOpen: boolean;
   openSettings: () => void;
@@ -90,6 +92,21 @@ export function AppProvider({
   useEffect(() => {
     boot.api.getViewer().then(setViewer, () => setViewer(null));
   }, [boot, rev]);
+  // CR-120: báo shell người xem (mock: cấp danh tính + gói cho AppShell; http: bỏ qua).
+  const brandView = viewer ? toBrandView(brandRaw, viewer.orgName) : null;
+  const brandNameOut = brandView?.name ?? null;
+  const brandLogoOut = brandView?.logo ?? null;
+  useEffect(() => {
+    host.reportViewer(
+      viewer && {
+        name: viewer.name,
+        orgName: viewer.orgName,
+        isHost: viewer.role !== "partner",
+        contracts: viewer.caps.contracts,
+        brand: { name: brandNameOut ?? viewer.orgName, logo: brandLogoOut },
+      },
+    );
+  }, [host, viewer, brandNameOut, brandLogoOut]);
   const viewerId = viewer?.userId;
   // biome-ignore lint/correctness/useExhaustiveDependencies: brand theo tenant; nạp lại khi đổi người xem (persona)
   useEffect(() => {
@@ -112,6 +129,7 @@ export function AppProvider({
     () =>
       viewer && {
         brand: toBrandView(brandRaw, viewer.orgName),
+        brandAccent,
         settingsOpen,
         openSettings,
         closeSettings,
@@ -147,6 +165,7 @@ export function AppProvider({
       route,
       search,
       brandRaw,
+      brandAccent,
       settingsOpen,
       openSettings,
       closeSettings,

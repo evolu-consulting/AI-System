@@ -1,7 +1,7 @@
 // CR-118 · cr118-feature-gate-web · React: `<FeatureRoot>` nạp cờ rồi mới vẽ con; `useFeature`/`useCan`/`<FeatureGate>`.
 import { OpenFeatureProvider, useBooleanFlagValue } from "@openfeature/react-sdk";
 import { OpenFeature } from "@openfeature/web-sdk";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { FEATURE_DOMAIN, source } from "../gate";
 import { createPackMeProvider } from "../lib/provider";
 
@@ -12,6 +12,26 @@ const getProvider = () => (provider ??= createPackMeProvider(source));
 /** Cờ boolean (`contracts`, `community.write`, khoá add-on). `fallback` dùng khi chưa có ảnh (lỗi mạng). */
 export function useFeature(flag: string, fallback = false): boolean {
   return useBooleanFlagValue(flag, fallback);
+}
+
+/** Nhiều cờ một lần (menu theo manifest, CR-120): cùng ngữ nghĩa provider — chưa có ảnh ⇒ `fallbacks[k]` (mặc định tắt), có ảnh ⇒ cờ phải bằng true. */
+export function useFeatures(
+  keys: readonly string[],
+  fallbacks: Readonly<Record<string, boolean>> = {},
+): Record<string, boolean> {
+  const snap = useSyncExternalStore(
+    (cb) => source.subscribe(cb),
+    () => source.snapshot(),
+    () => null,
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: keys/fallbacks là hằng của chỗ gọi
+  return useMemo(
+    () =>
+      Object.fromEntries(
+        keys.map((k) => [k, snap ? snap.flags[k] === true : (fallbacks[k] ?? false)]),
+      ),
+    [snap, keys.join("|")],
+  );
 }
 
 /** Quyền hành động của gói: `useCan("contracts", "write")` = cờ `contracts.write`. */

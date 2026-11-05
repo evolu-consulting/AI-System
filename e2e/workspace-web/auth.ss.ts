@@ -62,6 +62,49 @@ test("thành viên SHT: đăng nhập vào /overview, đăng xuất xoá phiên"
   await expect(page).toHaveURL(/\/login\?/);
 });
 
+test("MỘT khung (CR-120): Sổ Hợp Tác ↔ Community đổi trang trong app — không tải lại, cùng sidebar/topbar, mục menu là <Link> không ↗", async ({
+  page,
+}) => {
+  await page.goto("/contracts");
+  await fillLogin(page, OWNER, ownerPw());
+  await expect(page).toHaveURL(/\/contracts$/);
+  const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
+  await expect(nav.getByTestId("nav-group-contracts")).toBeVisible();
+  await expect(nav.getByTestId("nav-group-community")).toBeVisible();
+  await page.evaluate(() => {
+    const w = window as unknown as { __noReload: number; __loaded?: boolean };
+    w.__noReload = 1;
+    window.addEventListener("load", () => {
+      w.__loaded = true;
+    });
+  });
+  const entries = await page.evaluate(() => performance.getEntriesByType("navigation").length);
+  const sameShell = async () => {
+    await expect(page.locator("header.top")).toHaveCount(0); // không còn khung riêng của Community
+    await expect(nav.locator("a[target], .ext")).toHaveCount(0); // không link ngoài / biểu tượng ↗
+    await expect(page.getByRole("button", { name: "Chế độ sáng/tối" })).toBeVisible();
+  };
+  await nav.getByRole("link", { name: "Bảng tin" }).click(); // SHT → Community
+  await expect(page).toHaveURL(/\/community$/);
+  await sameShell();
+  await nav.getByRole("link", { name: "Hợp đồng & giao dịch" }).click(); // Community → SHT
+  await expect(page).toHaveURL(/\/contracts\/list$/);
+  await sameShell();
+  await nav.getByRole("link", { name: "Bài đăng của tôi" }).click(); // SHT → Community (hồ sơ)
+  await expect(page).toHaveURL(/\/community\/profile$/);
+  await sameShell();
+  const w = () =>
+    page.evaluate(() => {
+      const x = window as unknown as { __noReload?: number; __loaded?: boolean };
+      return {
+        marker: x.__noReload,
+        loaded: x.__loaded,
+        nav: performance.getEntriesByType("navigation").length,
+      };
+    });
+  expect(await w()).toEqual({ marker: 1, loaded: undefined, nav: entries });
+});
+
 test("đối tác lần đầu: buộc đổi mật khẩu rồi vào /community, gõ /overview về /community", async ({
   page,
 }) => {
@@ -77,6 +120,10 @@ test("đối tác lần đầu: buộc đổi mật khẩu rồi vào /community
   await page.getByRole("button", { name: "Lưu mật khẩu" }).click();
   await expect(page).toHaveURL(/\/community$/);
   await expect(page.getByRole("link", { name: "Bảng tin" })).toBeVisible();
+  // đối tác (không gói contracts): khung chung chỉ có nhóm Community, không phát sinh mục/đường dẫn Sổ Hợp Tác
+  await expect(page.getByTestId("nav-group-community")).toBeVisible();
+  await expect(page.getByTestId("nav-group-contracts")).toHaveCount(0);
+  await expect(page.locator('a[href^="/contracts"]')).toHaveCount(0);
   for (const path of ["/overview", "/contracts", "/partners"]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/community$/);

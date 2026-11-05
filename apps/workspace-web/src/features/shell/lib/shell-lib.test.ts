@@ -59,6 +59,8 @@ describe("menu (nav-v2)", () => {
     expect(layoutOf("/contracts/partners")).toBe("board");
     expect(layoutOf("/contracts/products")).toBe("board");
     expect(layoutOf("/contracts/c/new")).toBe("reading");
+    expect(layoutOf("/community")).toBe("wide"); // CR-120: Community trong cùng khung
+    expect(layoutOf("/community/profile")).toBe("wide");
   });
 });
 

@@ -1,22 +1,34 @@
-// PK-FR-10 · TF5 · nav-v2 · điện thoại: cùng các mục của menu trái (5 sau CR-097 G2 thêm Giao dịch; 5 cột vừa 390 px) ở thanh dưới, tầm ngón cái.
+// PK-FR-10 · TF5 · nav-v2 · CR-120 · điện thoại: cùng các mục của menu trái (sinh từ manifest) ở thanh dưới, tầm ngón cái; tối đa 5 cột.
 import { Link } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useFeature } from "~/platform/features";
-import { NAV } from "../lib/nav";
+import { MODULES } from "~/shell/modules";
+import { buildShellNav } from "~/shell/nav";
+import { useShellPacks } from "~/shell/use-shell-packs";
 
 export function BottomNav() {
   const { t } = useTranslation();
-  const contractsOn = useFeature("contracts", true);
-  if (!contractsOn) return null;
+  const packs = useShellPacks();
+  const items = useMemo(
+    () =>
+      buildShellNav(MODULES, (p) => packs[p] === true)
+        .flatMap((g) => g.items)
+        .filter((n) => n.bottom !== false)
+        .slice(0, 5),
+    [packs],
+  );
+  if (items.length === 0) return null;
   return (
     <nav
       aria-label={t("contracts.shell.navBottom")}
-      className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-rule bg-panel md:hidden"
+      style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      className="fixed inset-x-0 bottom-0 z-20 grid border-t border-rule bg-panel md:hidden"
     >
-      {NAV.map((n) => (
+      {items.map((n) => (
         <Link
           key={n.to}
-          to={n.to}
+          to={n.to as never}
+          activeOptions={{ exact: n.exact === true }}
           className="flex h-14 flex-col items-center justify-center gap-0.5 px-1 text-micro text-dim aria-[current=page]:font-semibold aria-[current=page]:text-act"
         >
           <n.icon width={19} height={19} />

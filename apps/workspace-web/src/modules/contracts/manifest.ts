@@ -11,5 +11,7 @@ export const contractsManifest: ModuleManifest<NavItem> = {
   basePath: basePathOf(KEY),
   home: basePathOf(KEY),
   requires: { pack: "contracts", action: "read" },
+  groupLabelKey: "contracts.nav.group.contracts",
+  order: 10,
   nav: NAV,
 };

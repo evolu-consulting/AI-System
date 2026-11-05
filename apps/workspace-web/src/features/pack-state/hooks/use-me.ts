@@ -22,12 +22,14 @@ export type MeState = {
   owner: boolean;
 };
 
-export function useMe(): MeState {
+/** `enabled=false` (CR-120): AppShell trong vùng Community của đối tác — KHÔNG gọi `/pack/contracts/me` (không gói contracts). */
+export function useMe(opts: { enabled?: boolean } = {}): MeState {
   const { t } = useTranslation();
   const user = useSession((s) => s.me);
   const q = useQuery({
     queryKey: ME_QUERY_KEY,
     queryFn: ({ signal }) => fetchPackMe(signal),
+    enabled: opts.enabled ?? true,
     // Lỗi hiện ngay kèm "Thử lại" (không tự thử lại ngầm).
     retry: false,
   });

@@ -117,6 +117,18 @@
   /* nav-v2 (mockup NITI): điểm cuối nền chuyển màu của ô nhận diện công ty */
   --grad-to: #a855f7;
 
+  /* CR-120: loại bài Community — 3 token ngữ nghĩa (bán = xanh lá, mua = xanh dương, thông báo = hổ phách); màu thương hiệu (cam…) chỉ cho nút chính.
+     Chữ trên nền soft đạt WCAG AA (≥ 6:1). */
+  --type-sell: #047857;
+  --type-sell-soft: #d1fae5;
+  --type-sell-ink: #065f46;
+  --type-buy: #1d4ed8;
+  --type-buy-soft: #dbeafe;
+  --type-buy-ink: #1e40af;
+  --type-note: #b45309;
+  --type-note-soft: #fef3c7;
+  --type-note-ink: #92400e;
+
   --shadow-color-toast: rgb(30 27 75 / 0.25);
   --shadow-color-dialog: rgb(30 27 75 / 0.28);
   --shadow-color-drawer: rgb(30 27 75 / 0.18);
@@ -177,6 +189,16 @@
   --sidebar-accent-foreground: #a5b4fc;
   --sidebar-border: #2a2c44;
   --sidebar-ring: #818cf8;
+
+  --type-sell: #34d399;
+  --type-sell-soft: #0f2e20;
+  --type-sell-ink: #6ee7b7;
+  --type-buy: #60a5fa;
+  --type-buy-soft: #172554;
+  --type-buy-ink: #93c5fd;
+  --type-note: #fbbf24;
+  --type-note-soft: #352608;
+  --type-note-ink: #fcd34d;
 
   --mention-agent: #a5b4fc;
   --mention-command: #fbbf24;

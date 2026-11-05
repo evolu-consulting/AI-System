@@ -1,18 +1,22 @@
 /* community-feed-redesign: bảng tin 2 cột, thanh tab sticky, màu theo loại bài, dải deal, callout, rail phải.
    Nguồn: mockup feed-mockup.html (chỉ light). Màu nhấn theo --cm-accent*; buy/note là màu semantic cố định. */
 [data-mod="community"] {
-  --cm-buy: #b45309;
-  --cm-buy-soft: #fdf1e0;
-  --cm-buy-ink: #8a4306;
-  --cm-note: #475569;
-  --cm-note-soft: #eef1f6;
-  --cm-good: #0b7a54;
-  --cm-good-soft: #ddf4ea;
-  --cm-feed-bg: #f4f4f9;
-  --cm-line: #e5e5ec;
-  --cm-line-2: #efeff4;
-  --cm-surface-2: #f6f7fb;
-  --cm-ink-3: #6b6c80;
+  --cm-sell: var(--type-sell);
+  --cm-sell-soft: var(--type-sell-soft);
+  --cm-sell-ink: var(--type-sell-ink);
+  --cm-buy: var(--type-buy);
+  --cm-buy-soft: var(--type-buy-soft);
+  --cm-buy-ink: var(--type-buy-ink);
+  --cm-note: var(--type-note);
+  --cm-note-soft: var(--type-note-soft);
+  --cm-note-ink: var(--type-note-ink);
+  --cm-good: var(--type-sell);
+  --cm-good-soft: var(--type-sell-soft);
+  --cm-feed-bg: var(--background);
+  --cm-line: var(--rule);
+  --cm-line-2: var(--rule-soft);
+  --cm-surface-2: var(--sunk);
+  --cm-ink-3: var(--dim);
   --cm-shadow: 0 1px 2px rgba(22, 23, 44, 0.04), 0 6px 20px -8px rgba(22, 23, 44, 0.1);
   --cm-shadow-bar: 0 1px 0 var(--cm-line), 0 10px 24px -14px rgba(22, 23, 44, 0.4);
 }
@@ -68,7 +72,7 @@
   height: 38px;
   border: 1px solid var(--cm-line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--card);
   font-weight: 600;
 }
 [data-mod="community"] .feedcomposer .seg button:hover {
@@ -79,6 +83,11 @@
   border-color: var(--cm-accent);
   color: var(--cm-accent-ink);
 }
+[data-mod="community"] .feedcomposer .seg button[data-type="sell"].on {
+  background: var(--cm-sell-soft);
+  border-color: var(--cm-sell);
+  color: var(--cm-sell-ink);
+}
 [data-mod="community"] .feedcomposer .seg button[data-type="buy"].on {
   background: var(--cm-buy-soft);
   border-color: var(--cm-buy);
@@ -87,7 +96,7 @@
 [data-mod="community"] .feedcomposer .seg button[data-type="note"].on {
   background: var(--cm-note-soft);
   border-color: var(--cm-note);
-  color: var(--cm-note);
+  color: var(--cm-note-ink);
 }
 [data-mod="community"] .feedcomposer textarea {
   border-radius: 12px;
@@ -147,8 +156,8 @@
   padding: 0 12px;
   border-radius: 10px;
   border: 1px solid var(--cm-line);
-  background: #fff;
-  color: #45465a;
+  background: var(--card);
+  color: var(--ink-2);
   font-size: 13px;
   font-weight: 600;
 }
@@ -156,7 +165,7 @@
   background: var(--cm-surface-2);
 }
 [data-mod="community"] .ctype.sell svg {
-  color: var(--cm-accent);
+  color: var(--cm-sell);
 }
 [data-mod="community"] .ctype.buy svg {
   color: var(--cm-buy);
@@ -201,7 +210,7 @@
   border: 0;
   border-radius: 9px;
   background: none;
-  color: #45465a;
+  color: var(--ink-2);
   font-size: 13.5px;
   font-weight: 600;
   white-space: nowrap;
@@ -217,18 +226,31 @@
   border-radius: 999px;
   padding: 1px 7px;
 }
+/* CR-120: số đếm của tab theo màu loại bài (bán/mua/thông báo); tab đang chọn giữ màu nhấn chính */
+[data-mod="community"] .tab[data-type="sell"] .n {
+  background: var(--cm-sell-soft);
+  color: var(--cm-sell-ink);
+}
+[data-mod="community"] .tab[data-type="buy"] .n {
+  background: var(--cm-buy-soft);
+  color: var(--cm-buy-ink);
+}
+[data-mod="community"] .tab[data-type="note"] .n {
+  background: var(--cm-note-soft);
+  color: var(--cm-note-ink);
+}
 [data-mod="community"] .tab.on {
   background: var(--cm-accent);
-  color: #fff;
+  color: var(--primary-foreground);
 }
 [data-mod="community"] .tab.on .n {
   background: rgba(255, 255, 255, 0.22);
-  color: #fff;
+  color: var(--primary-foreground);
 }
 
 /* ---------- Rail phải ---------- */
 [data-mod="community"] .rcard {
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--cm-line);
   border-radius: 16px;
   box-shadow: var(--cm-shadow);
@@ -297,7 +319,7 @@
   margin: 0;
   padding: 0 15px 14px 32px;
   font-size: 12.5px;
-  color: #45465a;
+  color: var(--ink-2);
 }
 [data-mod="community"] .rtips li + li {
   margin-top: 6px;
@@ -317,7 +339,7 @@
   border-radius: 14px 0 0 14px;
 }
 [data-mod="community"] .post.sell::before {
-  background: var(--cm-accent);
+  background: var(--cm-sell);
 }
 [data-mod="community"] .post.buy::before {
   background: var(--cm-buy);
@@ -362,8 +384,8 @@
   white-space: nowrap;
 }
 [data-mod="community"] .pill.sell {
-  background: var(--cm-accent-soft);
-  color: var(--cm-accent-ink);
+  background: var(--cm-sell-soft);
+  color: var(--cm-sell-ink);
 }
 [data-mod="community"] .pill.buy {
   background: var(--cm-buy-soft);
@@ -371,7 +393,7 @@
 }
 [data-mod="community"] .pill.note {
   background: var(--cm-note-soft);
-  color: var(--cm-note);
+  color: var(--cm-note-ink);
 }
 
 /* ---------- Dải deal ---------- */
@@ -391,8 +413,8 @@
   flex-direction: column;
   justify-content: center;
   min-width: 0;
-  background: var(--cm-accent-soft);
-  color: var(--cm-accent-ink);
+  background: var(--cm-sell-soft);
+  color: var(--cm-sell-ink);
 }
 [data-mod="community"] .deal.buy .hero {
   background: var(--cm-buy-soft);

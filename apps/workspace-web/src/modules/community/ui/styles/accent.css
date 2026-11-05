@@ -1,9 +1,10 @@
-/* Mau nhan theo cong ty chu quan (data-accent tren [data-mod=community]); bien --cm-* de khong dam voi app gop. */
+/* CR-120: màu nhấn Community = token của AppShell (--primary…). Màu riêng của công ty chủ quản (data-accent) chỉ đè khi khác mặc định chàm;
+   biến --cm-* (không đụng token chung của app gộp). */
 [data-mod="community"] {
-  --cm-accent: #4f46e5;
-  --cm-accent-hover: #4338ca;
-  --cm-accent-soft: #eef2ff;
-  --cm-accent-ink: #3730a3;
+  --cm-accent: var(--primary);
+  --cm-accent-hover: var(--primary-strong);
+  --cm-accent-soft: var(--accent);
+  --cm-accent-ink: var(--accent-foreground);
 }
 [data-mod="community"][data-accent="blue"] {
   --cm-accent: #2563eb;

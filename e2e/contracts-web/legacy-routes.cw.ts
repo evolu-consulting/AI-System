@@ -54,3 +54,40 @@ test("`/` ⇒ home /contracts", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/contracts$/);
 });
+
+test("CR-120 · điều hướng menu trong app không tải lại trang, cả hai chiều (menu và nút Back/Forward)", async ({
+  page,
+}) => {
+  await installV2f(page);
+  await page.goto("/contracts");
+  const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
+  await expect(nav).toBeVisible();
+  await page.evaluate(() => {
+    const w = window as unknown as { __noReload: number; __loaded?: boolean };
+    w.__noReload = 1;
+    window.addEventListener("load", () => {
+      w.__loaded = true;
+    });
+  });
+  const entries = await page.evaluate(() => performance.getEntriesByType("navigation").length);
+  await nav.getByRole("link", { name: "Hợp đồng & giao dịch" }).click(); // tiến
+  await expect(page).toHaveURL(/\/contracts\/list$/);
+  await nav.getByRole("link", { name: "Đối tác" }).click();
+  await expect(page).toHaveURL(/\/contracts\/partners$/);
+  await nav.getByRole("link", { name: "Tổng quan" }).click(); // về lại (chiều ngược)
+  await expect(page).toHaveURL(/\/contracts$/);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/contracts\/partners$/);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/contracts$/);
+  expect(
+    await page.evaluate(() => {
+      const x = window as unknown as { __noReload?: number; __loaded?: boolean };
+      return {
+        marker: x.__noReload,
+        loaded: x.__loaded,
+        nav: performance.getEntriesByType("navigation").length,
+      };
+    }),
+  ).toEqual({ marker: 1, loaded: undefined, nav: entries });
+});

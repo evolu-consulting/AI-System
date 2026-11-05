@@ -1,7 +1,9 @@
 // CR-118 · COM-FR-31 (MODIFIED) · manifest module Community — dữ liệu route + nhà máy cây route tương thích TanStack Router.
 // Shell chỉ đọc file này (luật web-shell-manifest-only). KHÔNG khởi tạo router ở đây: host truyền `createRoute` + route cha
 // (`createRoute` của @tanstack/react-router, `lazyRouteComponent` làm `lazy`). Trang tải lười ⇒ module tắt không có chunk.
+import { Newspaper, PenLine, Settings, User } from "lucide-react";
 import type { ComponentType } from "react";
+import type { ModuleManifest } from "~/shared/kernel/module-manifest";
 import { type CommunityHostConfig, setCommunityHost } from "./application/host";
 import { COMMUNITY_BASE } from "./domain/base";
 
@@ -59,6 +61,10 @@ export function createCommunityRoutes<Parent, Route, Component>(
   return host.addChildren(layout, kids);
 }
 
+/**
+ * CR-120 · nhóm menu trái + mục menu tài khoản của Community, đọc bởi AppShell dùng chung (thay Sidebar/UserMenu riêng của module).
+ * `/community/profile` (không orgId) = hồ sơ của mình ⇒ "Bài đăng của tôi" / "Tường nhà".
+ */
 export const communityManifest = {
   key: COMMUNITY_PACK,
   basePath: COMMUNITY_BASE,
@@ -66,4 +72,33 @@ export const communityManifest = {
   home: COMMUNITY_BASE,
   requires: { pack: COMMUNITY_PACK, action: "read" as const },
   routes: communityRoutes,
+  groupLabelKey: "contracts.nav.group.community",
+  order: 20,
+  nav: [
+    {
+      to: COMMUNITY_BASE,
+      labelKey: "contracts.nav.feed",
+      icon: Newspaper,
+      exact: true,
+      testId: "nav-community",
+    },
+    {
+      to: `${COMMUNITY_BASE}/profile`,
+      labelKey: "contracts.nav.myPosts",
+      icon: PenLine,
+      bottom: false,
+    },
+  ],
+  accountMenu: [
+    { to: `${COMMUNITY_BASE}/profile`, labelKey: "contracts.shell.menuProfile", icon: User },
+    {
+      to: COMMUNITY_BASE,
+      search: { settings: "1" },
+      labelKey: "contracts.shell.menuCommunitySettings",
+      icon: Settings,
+    },
+  ],
 } as const;
+
+/** Kiểm kiểu: manifest Community thoả hợp đồng chung của shell (phần thừa `base`/`routes` là của riêng module). */
+export const communityShellManifest: ModuleManifest = communityManifest;

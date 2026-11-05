@@ -126,8 +126,8 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
   }) => {
     await page.goto("/contracts/list");
     const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
-    await expect(nav.getByText("Sổ Hợp Tác")).toBeVisible();
-    await expect(nav.getByText("Acme Corp").first()).toBeVisible();
+    await expect(nav.getByTestId("shell-brand").getByText("Sổ Hợp Tác")).toBeVisible();
+    await expect(nav.getByTestId("shell-brand").getByText("Acme Corp")).toBeVisible();
     expect((await nav.boundingBox())?.width).toBe(224);
   });
 
@@ -200,18 +200,25 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await expect(page.getByRole("dialog").or(page.getByRole("menu"))).toBeVisible();
   });
 
-  test("PK-FR-10 · giao diện: menu 'Tài khoản' có nhóm 'Giao diện' (radio ☾ Tối / ☀ Sáng) đổi html[data-theme] (D-02, như mgmt-app)", async ({
+  test("PK-FR-10 · giao diện: MỘT nút biểu tượng 'Chế độ sáng/tối' (aria-pressed) ở thanh trên đổi html[data-theme]; menu 'Tài khoản' không còn radio 'Giao diện' (CR-120)", async ({
     page,
   }) => {
     await page.goto("/contracts/list");
     await expect(page.getByRole("button", { name: "Giao diện" })).toHaveCount(0);
+    const toggle = page.getByRole("button", { name: "Chế độ sáng/tối" });
+    await expect(toggle).toBeVisible();
+    // menu tài khoản: không còn nhóm radio "Giao diện" (chỉ còn Ngôn ngữ)
     await page.getByRole("button", { name: /Tài khoản/ }).click();
-    // prefs-sync: nhóm radio "Giao diện" (Sáng / Tối / Theo máy) dùng chung của web-kit PrefsPanel, nhãn không còn biểu tượng.
-    const theme = page.getByRole("radiogroup", { name: "Giao diện" });
-    await theme.getByRole("radio", { name: "Tối", exact: true }).click();
+    await expect(page.getByRole("radiogroup", { name: "Giao diện" })).toHaveCount(0);
+    await expect(page.getByRole("radiogroup", { name: "Ngôn ngữ" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+    await toggle.click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await theme.getByRole("radio", { name: "Sáng", exact: true }).click();
+    await expect(toggle).toHaveAttribute("aria-pressed", "true");
+    await toggle.click();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+    await expect(toggle).toHaveAttribute("aria-pressed", "false");
   });
 });
 

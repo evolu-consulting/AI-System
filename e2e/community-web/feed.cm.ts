@@ -7,8 +7,8 @@ const as = async (page: import("@playwright/test").Page, id: string) => {
 
 test("chủ quản: đăng Cần bán, sửa (đã sửa), lưu trữ, xoá có xác nhận", async ({ page }) => {
   await page.goto("/community");
-  // topbar hiện thương hiệu công ty chủ quản (GET /brand); nhóm "Sổ Hợp Tác" nằm ở sidebar (chủ quản Admin có quyền)
-  await expect(page.locator("header.top button.brand")).toBeVisible();
+  // khung chung hiện thương hiệu công ty chủ quản (GET /brand); nhóm "Sổ Hợp Tác" nằm ở sidebar (chủ quản Admin có quyền)
+  await expect(page.getByTestId("shell-brand")).toBeVisible();
   await expect(page.getByText("Sổ Hợp Tác").first()).toBeVisible();
   // composer thu gọn: nút loại bài "Cần bán" (aria-label) + ô gợi ý có chữ "cần bán" trong tên ⇒ chọn đúng tên (exact)
   await page.getByTestId("composer").getByRole("button", { name: "Cần bán", exact: true }).click();
@@ -79,15 +79,15 @@ test("chủ quản: luồng theo từng công ty + audience preview + nút Lưu 
 
 test("thông báo, cài đặt và hồ sơ qua user-menu", async ({ page }) => {
   await page.goto("/community");
-  await page.locator('button.iconbtn[aria-label="Thông báo"]').click(); // chuông; chip lọc "Thông báo" cùng tên nên không dùng getByRole
+  await page.locator('header button.iconbtn[aria-label="Thông báo"]').click(); // chuông (khe thanh trên chung); chip lọc "Thông báo" cùng tên nên không dùng getByRole
   await expect(page.getByRole("dialog", { name: "Thông báo" })).toBeVisible();
   await page.getByRole("button", { name: "Đánh dấu đã đọc" }).click();
-  await page.locator('button.iconbtn[aria-label="Thông báo"]').click(); // bấm lại chuông để đóng popover (che user-menu)
+  await page.locator('header button.iconbtn[aria-label="Thông báo"]').click(); // bấm lại chuông để đóng popover (che user-menu)
   await expect(page.getByRole("dialog", { name: "Thông báo" })).toHaveCount(0);
   // cài đặt + hồ sơ nay nằm trong user-menu (avatar) của Shell
   await page.getByRole("button", { name: "Tài khoản" }).click();
   await page.getByRole("menuitem", { name: "Tường nhà" }).click();
-  await expect(page.getByTestId("sht-link").first()).toBeVisible(); // sidebar Shell cũng có sht-link
+  await expect(page.getByTestId("nav-group-contracts").getByRole("link").first()).toBeVisible(); // menu trái chung có nhóm Sổ Hợp Tác
   await page.getByRole("button", { name: "Tài khoản" }).click();
   await page.getByRole("menuitem", { name: "Cài đặt chung" }).click();
   await expect(page.getByRole("dialog", { name: "Cài đặt" })).toBeVisible(); // màu nhấn = thương hiệu công ty, không còn chọn màu cá nhân (COM-FR-39)

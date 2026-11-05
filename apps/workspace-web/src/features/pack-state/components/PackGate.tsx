@@ -19,14 +19,14 @@ export function PackGate({ status, view, errorKey, onRetry, onLogout, children }
   const { t } = useTranslation();
   if (status === "loading" || (status === "ready" && !view)) {
     return (
-      <main className="grid min-h-dvh place-items-center bg-ground">
+      <div className="grid min-h-[60dvh] place-items-center">
         <Loading />
-      </main>
+      </div>
     );
   }
   if (status === "error") {
     return (
-      <main className="grid min-h-dvh place-items-center bg-ground px-6">
+      <div className="grid min-h-[60dvh] place-items-center px-6">
         <div className="flex flex-col items-center gap-3 text-center">
           <p role="alert" className="text-sm text-late">
             {t(errorKey ?? "contracts.errors.unknown")}
@@ -39,7 +39,7 @@ export function PackGate({ status, view, errorKey, onRetry, onLogout, children }
             {t("contracts.common.retry")}
           </button>
         </div>
-      </main>
+      </div>
     );
   }
   if (view && view.kind !== "ok") return <PackStatePage kind={view.kind} onLogout={onLogout} />;

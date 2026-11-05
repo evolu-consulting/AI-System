@@ -8,6 +8,9 @@ import { IconLogout, IconSettings } from "~/components/icons";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { nameOf, useBrand } from "~/features/settings/lib/brand";
 import { openSettings } from "~/features/settings/lib/bus";
+import { MODULES } from "~/shell/modules";
+import { buildAccountEntries } from "~/shell/nav";
+import { useShellPacks } from "~/shell/use-shell-packs";
 
 import { canSeeSettings, type Role } from "../lib/nav";
 import { AccountLinks, LegalLinks } from "./AccountSection";
@@ -43,6 +46,9 @@ type BodyProps = {
 function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
   const { t } = useTranslation();
   const qc = useQueryClient();
+  const packs = useShellPacks();
+  // CR-120: mục tài khoản do module đóng góp (Community: Tường nhà · Cài đặt chung) + Cài đặt Sổ Hợp Tác chỉ khi có gói contracts.
+  const extra = buildAccountEntries(MODULES, (p) => packs[p] === true);
   return (
     <>
       <div className="border-b border-rule px-4 py-3">
@@ -52,9 +58,22 @@ function MenuBody({ user, role, name, company, close, onLogout }: BodyProps) {
           {company} · <span className="text-act">{t(`contracts.shell.role.${role}`)}</span>
         </p>
       </div>
-      <PrefsPanel />
+      <PrefsPanel hideTheme />
       <AccountLinks role={user.role} close={close} />
-      {canSeeSettings(role, user.role) && (
+      {extra.map((e) => (
+        <Link
+          key={e.labelKey}
+          to={e.to as never}
+          search={e.search as never}
+          role="menuitem"
+          data-testid={e.testId}
+          onClick={close}
+          className="flex items-center gap-2.5 px-4 py-2.5 text-label hover:bg-sunk"
+        >
+          <e.icon width={18} height={18} /> {t(e.labelKey)}
+        </Link>
+      ))}
+      {packs.contracts && canSeeSettings(role, user.role) && (
         <>
           <button
             type="button"

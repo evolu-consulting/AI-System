@@ -8,7 +8,7 @@ export type PackBlock = "forbidden" | "disabled";
 export function PackStatePage({ kind, onLogout }: { kind: PackBlock; onLogout: () => void }) {
   const { t } = useTranslation();
   return (
-    <main className="grid min-h-dvh place-items-center bg-ground px-6 py-10">
+    <div className="grid min-h-[60dvh] place-items-center px-6 py-10">
       <section className="flex max-w-md flex-col items-center gap-4 rounded-xl border border-rule bg-panel px-8 py-10 text-center">
         <span
           aria-hidden
@@ -28,6 +28,6 @@ export function PackStatePage({ kind, onLogout }: { kind: PackBlock; onLogout: (
           {t("contracts.packState.logout")}
         </button>
       </section>
-    </main>
+    </div>
   );
 }

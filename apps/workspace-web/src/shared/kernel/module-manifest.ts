@@ -1,15 +1,48 @@
-// CR-118 · hợp đồng duy nhất giữa một module nghiệp vụ và shell (intake PHẦN A §1 "Manifest module"): thuần, không React.
+// CR-118 · hợp đồng duy nhất giữa một module nghiệp vụ và shell (intake PHẦN A §1 "Manifest module"): thuần, không React runtime.
 // Shell chỉ đọc `modules/<m>/manifest.ts` (luật depcruise web-shell-manifest-only) rồi lọc bằng FeatureGate (platform/features).
+// CR-120: MỘT AppShell cho mọi module — mỗi manifest đóng góp một nhóm menu (`nav` + `groupLabelKey`) và mục menu tài khoản.
+import type { ComponentType, SVGProps } from "react";
 
 /** Gói + hành động tối thiểu để module hiện ra (FeatureGate đọc, server vẫn fail-closed). */
 export type PackRequirement = { pack: string; action: "read" | "write" | "owner" };
 
-export type ModuleManifest<TNavItem = unknown> = {
+export type NavIconType = ComponentType<SVGProps<SVGSVGElement>>;
+
+/** Một mục menu trái do module đóng góp; điều hướng bằng `<Link to>` của TanStack (trong app, không tải lại). */
+export type NavEntry = {
+  to: string;
+  labelKey: string;
+  icon: NavIconType;
+  /** Chỉ sáng khi path đúng bằng `to`. */
+  exact?: true;
+  /** Tiền tố con cũng thuộc mục này (vd chi tiết hợp đồng → "Hợp đồng"). */
+  also?: readonly string[];
+  testId?: string;
+  /** CR-120: false ⇒ không đưa vào thanh dưới của điện thoại (tối đa 5 cột). */
+  bottom?: false;
+};
+
+/** Mục menu tài khoản do module đóng góp (vd Community: Tường nhà · Cài đặt chung). */
+export type AccountEntry = {
+  to: string;
+  search?: Readonly<Record<string, string>>;
+  labelKey: string;
+  icon: NavIconType;
+  testId?: string;
+};
+
+export type ModuleManifest<TNavItem extends NavEntry = NavEntry> = {
   key: string;
   /** CR-119 phần 2: gốc đường dẫn của app = `/${key}` (`basePathOf(key)`); nav/guard/home/`next` suy từ đây — app mới chỉ khai khoá. */
   basePath: string;
   /** Đường dẫn trang chủ của module (chuỗi — module không import module khác). */
   home: string;
   requires: PackRequirement;
+  /** Khoá i18n tên nhóm trong menu trái (CR-120). */
+  groupLabelKey: string;
+  /** Thứ tự nhóm trong menu trái (nhỏ hơn ⇒ trên). */
+  order: number;
   nav: readonly TNavItem[];
+  /** Mục thêm vào menu tài khoản khi module bật (CR-120). */
+  accountMenu?: readonly AccountEntry[];
 };
