@@ -65,7 +65,7 @@ afterAll(async () => {
 });
 
 describe("E5b · esign-sweep đọc hạn/nhắc từ phong bì trước", () => {
-  it("phong bì có hạn/nhắc ⇒ nhắc + quá hạn; phong bì trống ⇒ theo bước Ký số cũ (chưa tới hạn)", async () => {
+  it("phong bì có hạn/nhắc ⇒ nhắc + quá hạn, phong bì trống ⇒ theo bước Ký số cũ (chưa tới hạn)", async () => {
     const uow = createPackUow(db, "contracts", (tx, t) => ({ esignSweep: esignSweepRepo(tx, t) }));
     const rows = await uow.system(T, (r) =>
       r.esignSweep.sweep({ now: NOW, staleMin: 15, limit: 50 }),
