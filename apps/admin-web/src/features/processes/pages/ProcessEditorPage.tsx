@@ -32,7 +32,7 @@ import { useDefSave } from "../hooks/use-def-save";
 import { useDraft } from "../hooks/use-draft";
 import { useEditorRefs } from "../hooks/use-editor-refs";
 import { useProcessTenant } from "../hooks/use-process-tenant";
-import { isCompanyCopy, usesStepForm } from "../lib/company-copy";
+import { copyTenantId, isCompanyCopy, usesStepForm, viewerTenantId } from "../lib/company-copy";
 import { type DefDraft, toDraft, withLiveErrors } from "../lib/def-form";
 import { processErrorSpec } from "../lib/errors";
 import { normalizeSlotStages } from "../lib/slot-canvas";
@@ -139,8 +139,9 @@ function EditorLoadFailure(p: {
 }) {
   const failure = <LoadFailure error={p.error} onRetry={p.onRetry} />;
   const hidden = p.error instanceof ApiError && p.error.status === 404;
-  if (hidden && p.tenant.tenantId && !p.tenant.isPlatform)
-    return <LibraryReadOnlyView tenantId={p.tenant.tenantId} defId={p.defId} fallback={failure} />;
+  const tid = viewerTenantId(p.tenant.isPlatform, p.tenant.tenantId, p.tenant.me?.tenant.id);
+  if (hidden && tid && !p.tenant.isPlatform)
+    return <LibraryReadOnlyView tenantId={tid} defId={p.defId} fallback={failure} />;
   return failure;
 }
 
@@ -220,7 +221,7 @@ function Editor({ processId }: ProcessEditorPageProps) {
   return (
     <>
       <PageHeader title={def?.name ?? t("process.admin.editor.title.new")} />
-      <CopySourceLine tenantId={tenant.tenantId} sourceId={def?.source_template_id} />
+      <CopySourceLine tenantId={copyTenantId(def)} sourceId={def?.source_template_id} />
       {processId === undefined || !def ? (
         config
       ) : (

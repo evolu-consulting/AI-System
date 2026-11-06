@@ -5,6 +5,17 @@ type DefLike = { source_template_id?: string | null; slot_body?: unknown };
 export const isCompanyCopy = (def: DefLike | undefined, lib: unknown): boolean =>
   !!def?.source_template_id && !lib;
 
+/** Công ty của bản riêng = `tenant_id` CỦA CHÍNH def (một nguồn) — không phụ thuộc `?company=` hay công ty đang chọn (tenant_admin: `tenantId` của hook luôn vắng). */
+export const copyTenantId = (def: { tenant_id?: string | null } | undefined): string | undefined =>
+  def?.tenant_id ?? undefined;
+
+/** Công ty để đọc chỉ-xem thư viện khi def bị ẩn (404): tenant_admin = công ty của phiên; platform = công ty đang chọn (nếu có). */
+export const viewerTenantId = (
+  isPlatform: boolean,
+  picked: string | undefined,
+  sessionTenant: string | undefined,
+): string | undefined => (isPlatform ? picked : sessionTenant);
+
 /** Bản riêng DÙNG ĐƯỢC Form bước dọc chung ⇔ Hub trả `slot_body` (bản sao cũ chưa có body ⇒ chỉ Sơ đồ). */
 export const usesStepForm = <D extends DefLike>(def: D | undefined, lib: unknown): D | null =>
   def && isCompanyCopy(def, lib) && def.slot_body != null ? def : null;
