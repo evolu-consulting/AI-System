@@ -70,6 +70,7 @@ test("Lưu = MỘT POST /review (trường + loại + dòng + mốc giữ lại)
       version: 3,
       deal: "sell",
       draft: true, // lock-strict: "Lưu nháp" chỉ ghi, không xác nhận / khoá
+      fields: { number: "01-2026-HDMB-PN" }, // p12: số chứng từ AI đọc "01/2026/HĐMB-PN" được chuẩn hoá khi nạp form (review-model.ts)
       items: [
         {
           id: ITEM1,
@@ -105,9 +106,10 @@ test("đổi Bán → Mua: đối tác dựng lại theo bên bán, gửi deal=b
   await expect(page.getByLabel("Gắn dòng 1 với sản phẩm")).toHaveValue(P_USB.id); // gợi ý chạy lại theo loại mới
   await page.getByRole("button", { name: "Lưu nháp", exact: true }).click();
   await expect(toast(page)).toBeVisible();
-  const b = review(sent)[0]?.body as { deal: string; fields?: unknown };
+  const b = review(sent)[0]?.body as { deal: string; fields?: Record<string, unknown> };
   expect(b.deal).toBe("buy");
-  expect(b.fields).toBeUndefined();
+  // chỉ còn số chứng từ đã chuẩn hoá (p12); đối tác dựng lại không phải là "trường đổi" ⇒ không gửi
+  expect(b.fields).toEqual({ number: "01-2026-HDMB-PN" });
 });
 
 test("Hủy = bỏ chỉnh sửa, KHÔNG gửi yêu cầu ghi nào", async ({ page }) => {

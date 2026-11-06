@@ -181,6 +181,7 @@ test("M1D · /settings chuyển thẳng tới 'Thành viên & phòng ban' (/sett
 test("M1D · đổi cơ cấu ở /settings/members ⇒ danh sách HĐ của quản lý / trưởng phòng / người xem đổi theo", async ({
   page,
 }) => {
+  test.setTimeout(90_000); // ~9 lần tải trang + nhiều thao tác cơ cấu: 30 s mặc định quá sát khi máy chủ evotest bận
   const f = await install(page);
 
   // Trước: chế độ tenant — người xem Chi thấy cả 3 HĐ.

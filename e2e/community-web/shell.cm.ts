@@ -3,6 +3,7 @@
 // trong app không tải lại trang; khung (menu trái, thanh trên, menu tài khoản, công tắc sáng/tối) dùng chung, không còn khung riêng của Community.
 import { expect, type Page, test } from "@playwright/test";
 import { HOST_ORG } from "../../apps/workspace-web/src/modules/community/adapters/seed";
+import { spa } from "./_nav";
 
 const as = async (page: Page, id: string) => {
   await page.getByLabel("Chọn nhân vật").selectOption(id);
@@ -33,7 +34,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
       expect(await page.locator("body").innerHTML()).not.toContain(SHT);
       await page.keyboard.press("Escape");
       // hồ sơ cũng không có link SHT
-      await page.goto("/community/profile");
+      await spa(page, "/community/profile"); // persona mock nằm trong bộ nhớ: goto sẽ tải lại ⇒ về persona mặc định (Admin có SHT)
       await expect(page.getByTestId("nav-group-contracts")).toHaveCount(0);
       expect(await page.locator("body").innerHTML()).not.toContain(SHT);
     });

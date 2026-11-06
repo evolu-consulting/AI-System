@@ -82,6 +82,7 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
   test("PK-FR-10 · V2-O · tuyến cũ chuyển hướng (CR-119 p2: bảng legacy-routes): /overview /my-work ⇒ /contracts; /prices /cks /cks/x /sourcing ⇒ /contracts/products; /settings ⇒ /contracts/settings/members; /settings/scoring ⇒ /contracts/partners; /partners /contracts/<id> giữ query", async ({
     page,
   }) => {
+    test.setTimeout(90_000); // 13 lần tải trang đầy đủ liên tiếp: 30 s mặc định quá sát khi máy chủ evotest bận
     const hops: [string, RegExp][] = [
       ["/overview", /\/contracts$/],
       ["/my-work", /\/contracts$/],
