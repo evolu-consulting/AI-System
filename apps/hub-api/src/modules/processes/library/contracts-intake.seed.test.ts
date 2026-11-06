@@ -25,9 +25,12 @@ const lits = [...SQL.matchAll(/'(\[\{.*?\}\])'::jsonb/g)].map((m) =>
 
 describe("CR-120 · seed 0093 contracts.intake", () => {
   it("stages trong SQL = builder (đã normalize), inputs khớp, id/khe cố định", () => {
-    expect(lits.find((j) => Array.isArray(j) && j[0]?.key === "extract")).toEqual(
-      contractsIntakeStages(),
+    // CR-122: `normalizeStage` nay tự thêm trường `event` vào output node wait_event; migration 0093 bất biến nên SQL
+    // chưa có ⇒ bỏ trường tự thêm khỏi vế builder của stage `signed`; phần còn lại phải khớp tuyệt đối.
+    const built = contractsIntakeStages().map((s) =>
+      s.key === "signed" ? { ...s, output: { ...s.output, fields: [] } } : s,
     );
+    expect(lits.find((j) => Array.isArray(j) && j[0]?.key === "extract")).toEqual(built);
     expect(lits.find((j) => Array.isArray(j) && j[0]?.key === "contract-id")).toEqual(
       CONTRACTS_INTAKE_INPUTS,
     );

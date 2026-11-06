@@ -89,7 +89,7 @@ describe("CR-122 B · flow mẫu Thư viện", () => {
     expect(d.stages.slice(1, 3).map((s) => s.next_step)).toEqual([3, 3]);
   });
 
-  it("mẫu 3: Nếu phòng ban = X thì nhóm duyệt X, không thì sang Ký số", () => {
+  it("mẫu 3: phòng ban = X ⇒ nhóm duyệt X; khác X ⇒ truong-phong duyệt; cả hai gộp về Ký số", () => {
     const d = flowDefOf(FLOW_TEMPLATES[2] as never);
     expect(d.stages[0]?.executor).toMatchObject({
       kind: "if",
@@ -97,7 +97,12 @@ describe("CR-122 B · flow mẫu Thư viện", () => {
       else_step: 2,
       when: { conds: [{ from: { kind: "fact", key: "creator_department" }, op: "eq" }] },
     });
-    expect(d.stages[2]?.executor).toMatchObject({ kind: "tool", tool_key: "contracts-esign-send" });
+    expect(d.stages.slice(1, 3).map((s) => (s.after as { group_key?: string }).group_key)).toEqual([
+      "duyet-kinh-doanh",
+      "truong-phong",
+    ]);
+    expect(d.stages.slice(1, 3).map((s) => s.next_step)).toEqual([3, 3]);
+    expect(d.stages[3]?.executor).toMatchObject({ kind: "tool", tool_key: "contracts-esign-send" });
   });
 
   // CHỜ LÁT A: bước tự có dữ liệu hồ sơ (contract_id…) ⇒ cạnh Ký số không còn thiếu `contract_id`. Mở khi A gộp.

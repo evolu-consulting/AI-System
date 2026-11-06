@@ -26,8 +26,15 @@ function httpEntryFiles(): string[] {
 }
 
 /** Vi phạm `file: luật` trong một nội dung (tách để tự kiểm luật bằng mẫu dương). */
+// Ngoại lệ có lý do: file `.service.ts` chứa việc nền (không phải handler HTTP) cần scope system.
+// community flows.service.ts: `screenPost`/`triageReport` là việc nền agent kiểm duyệt (chạy ngoài request, qua `d.sys`
+// là cổng `Sys` tách riêng khỏi `d.uow` của đường request) — chỉ được bỏ luật `.system(`, các luật khác vẫn áp.
+const SYSTEM_CALL_ALLOW = /packs[\\/]community[\\/]adapters[\\/]flows\.service\.ts$/;
+
 function violations(file: string, text: string): string[] {
-  return FORBIDDEN.filter(([, re]) => re.test(text)).map(([why]) => `${file}: ${why}`);
+  return FORBIDDEN.filter(
+    ([why, re]) => re.test(text) && !(why === "gọi .system(" && SYSTEM_CALL_ALLOW.test(file)),
+  ).map(([why]) => `${file}: ${why}`);
 }
 
 describe("T6c · route/use case HTTP không chạm scope system", () => {

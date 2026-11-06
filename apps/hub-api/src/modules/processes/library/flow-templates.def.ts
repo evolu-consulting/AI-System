@@ -183,10 +183,10 @@ const duyetTheoGiaTri = (): Stage[] => {
   ];
 };
 
-/** 3 · Nếu phòng ban = X thì nhóm duyệt X → Ký số → Kết thúc (phòng ban khác: ký số luôn). X = mã phòng ban mẫu, công ty đổi khi sao. */
+/** 3 · Nếu phòng ban = X thì nhóm duyệt X, ngược lại nhóm truong-phong duyệt → gộp nhánh → Ký số → Kết thúc. X = mã phòng ban mẫu, công ty đổi khi sao. */
 export const FLOW_TEMPLATE_DEPARTMENT = "phong-kinh-doanh";
 const duyetTheoPhongBan = (): Stage[] => {
-  const to = { reject: 5, ret: 6 };
+  const to = { reject: 6, ret: 7 };
   return [
     ifFact(
       0,
@@ -195,12 +195,13 @@ const duyetTheoPhongBan = (): Stage[] => {
       1,
       2,
     ),
-    approve("nhom-duyet", "Nhóm phòng ban duyệt", 1, "duyet-kinh-doanh", to, { next_step: 2 }),
-    esignSend(2),
-    esignWait(3, 5),
-    finish(4, "approved", "Đã duyệt"),
-    finish(5, "rejected", "Từ chối"),
-    finish(6, "returned", "Trả lại"),
+    approve("nhom-duyet", "Nhóm phòng ban duyệt", 1, "duyet-kinh-doanh", to, { next_step: 3 }),
+    approve("truong-phong", "Trưởng phòng duyệt", 2, "truong-phong", to, { next_step: 3 }),
+    esignSend(3),
+    esignWait(4, 6),
+    finish(5, "approved", "Đã duyệt"),
+    finish(6, "rejected", "Từ chối"),
+    finish(7, "returned", "Trả lại"),
   ];
 };
 
