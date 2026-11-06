@@ -860,6 +860,7 @@ ecec119db50ace21f66bcec6f1cc5e96205fb7447a2b2d344d061387f9513156  tests/acceptan
 a6c80d3614d2ce182cdff8ff1ab61febb2f0cea10429fb9c134e67d7709f7f55  tests/acceptance/HD1/detail.int.test.ts
 449f332744ab38f4bf1f3497852c8f00642abc0825dc45091920c036821bd4e5  tests/acceptance/HD1/export.int.test.ts
 7565fc62a3a976e481ddf43175b65fcda59c69c106647a249604a479f9abdd16  tests/acceptance/HD1/hops.int.test.ts
+add5c1044334d44566e105d12b8ae07fde28ba14937cb03d64573fbb421c75f7  tests/acceptance/HD1/ingest-formats.int.test.ts
 85fb1040651a8271426d9040fc9c7de2a8654535c06d65b09ce074cfa8848a1e  tests/acceptance/HD1/list.int.test.ts
 35869b676517b12f84f8da7bbf2c96931622fb59d63a0dead0d6b30cafff6b15  tests/acceptance/HD1/patch.int.test.ts
 cac1966e817c11e8f5b86c7b224a98ca7a5e1fcafdfa98932ec38d167f76825f  tests/acceptance/HD1/perf/export.perf.int.test.ts
@@ -870,7 +871,7 @@ eea9e296535b67bfd995e65695493cf880c068c0af44399759c3e2a6d7e0c31d  tests/acceptan
 d9b155f6b8b69688ab02197453a52fe045309c0687dd372b1897465f79de038c  tests/acceptance/HD1/rules/fields.rules.test.ts
 583bab2224241adcd0da6958299b63ac197ae843dfe38c3a5adf47f4b10a4945  tests/acceptance/HD1/rules/fold.rules.test.ts
 639485fe5398d5990d19572889382193f3140c18a580fd403d26e6ec01c9c7f0  tests/acceptance/HD1/rules/upload.rules.test.ts
-13e2d333c47b5c4574a839d0a2e81ee0c2be342c8517abc0e7aadbef0515edf7  tests/acceptance/HD1/upload.int.test.ts
+0c4e84cf4c84f8300efa7a04b5bdfa1b0bc9acaf7d72b52c20abc2c5aa396064  tests/acceptance/HD1/upload.int.test.ts
 0058d55793ffc26affe4f3fd14012cf4dab0c002f5e55b22aba116032a57cf14  tests/acceptance/HD2/_support/hd2.ts
 f04342017eac1078da1e185f45e27bec66bfae36ae2a14b88903c63aeb5e441e  tests/acceptance/HD2/extract.int.test.ts
 0fbaf887aa268f91a7c7c89e233329551636d8f152e584d19bf99d6517d90d1a  tests/acceptance/HD2/manual.int.test.ts
