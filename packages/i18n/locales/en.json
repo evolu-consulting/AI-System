@@ -668,6 +668,10 @@
   },
   "tenants": {
     "flows": {
+      "stepsGap": {
+        "loadFail": "Could not load the steps. Reload the page; if it persists, open the detail page.",
+        "noBody": "This process has no step list to draw yet (not published or incomplete). Open the detail page to view or complete it."
+      },
       "systemDefaultShort": "Default",
       "appOffStatus": "App not in use",
       "err": {

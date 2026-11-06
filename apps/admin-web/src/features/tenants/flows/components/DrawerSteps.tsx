@@ -9,9 +9,9 @@ import { FlowRowsView } from "@/features/apps/components/SlotFlowView";
 import { ViewModeToggle } from "@/features/processes/components/ViewModeToggle";
 import { useViewMode } from "@/features/processes/hooks/use-view-mode";
 import { companySearch } from "@/features/processes/lib/company-copy";
-import { ApiError } from "@/lib/http";
 import { defStepsQuery, useLibraryView } from "../api";
 import { useFlowAssign } from "../hooks/use-flow-assign";
+import { defView, stepsGap } from "../lib/def-kind";
 
 function StepActions(p: {
   tenantId: string;
@@ -74,10 +74,15 @@ export function DrawerSteps({
   const steps = useQuery({ ...defStepsQuery(tenantId, slot, defId ?? ""), enabled: !!defId });
   const lib = useLibraryView(tenantId, defId, true);
   const act = useFlowAssign(tenantId, slot, isPlatform);
-  // Bản riêng của công ty (không phải thư viện) ⇒ 422 NOT_LIBRARY_DEF ⇒ sửa thẳng.
-  const isCopy =
-    !!defId && lib.error instanceof ApiError && String(lib.error.code) === "NOT_LIBRARY_DEF";
-  const copyId = isCopy ? defId : (lib.data?.company_copy?.def_id ?? null);
+  // Thư viện (chỉ xem) hay bản riêng (sửa được): xem `defView` — luôn có MỘT nút mở trang chi tiết cho việc có quy trình.
+  const view = defView({ defId, library: lib.data, libraryPending: lib.isPending });
+  const isCopy = view.kind === "own";
+  const copyId = view.copyId;
+  const gap = stepsGap({
+    error: steps.error,
+    loaded: steps.isSuccess,
+    hasSteps: !!steps.data?.steps,
+  });
   return (
     <section className="space-y-3" aria-label={t("tenants.flows.stepsTitle")}>
       <div className="flex items-center gap-2">
@@ -92,6 +97,7 @@ export function DrawerSteps({
           error={steps.error}
           view={mode}
           showTitle={false}
+          unavailable={gap ? t(`tenants.flows.stepsGap.${gap}`) : undefined}
         />
       ) : (
         <p className="text-caption text-muted-foreground">{t("tenants.flows.noneChosen")}</p>
@@ -101,14 +107,14 @@ export function DrawerSteps({
           {t(lib.data.company_copy ? "tenants.flows.hasCopy" : "tenants.flows.libraryReadOnly")}
         </p>
       ) : null}
-      {isCopy && lib.error ? (
+      {isCopy ? (
         <p className="text-caption text-muted-foreground">{t("tenants.flows.ownCopy")}</p>
       ) : null}
       <StepActions
         tenantId={tenantId}
         defId={defId}
         copyId={copyId}
-        hasLibrary={!!lib.data}
+        hasLibrary={view.kind === "library"}
         canCopy={!!lib.data && !lib.data.company_copy}
         pending={act.pending}
         onCopy={() => defId && void act.copy(defId)}

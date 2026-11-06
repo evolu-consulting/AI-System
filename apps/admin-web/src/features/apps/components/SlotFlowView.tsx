@@ -89,6 +89,7 @@ export function FlowRowsView({
   error,
   view,
   showTitle = true,
+  unavailable,
 }: {
   rows: StepRow[] | null;
   pending: boolean;
@@ -97,13 +98,19 @@ export function FlowRowsView({
   view?: "canvas" | "list";
   /** Tiêu đề "Các bước của quy trình…" — tắt khi nơi dùng đã có tiêu đề (ngăn việc). */
   showTitle?: boolean;
+  /** Lý do + bước kế khi không vẽ được (thay câu chung). */
+  unavailable?: string;
 }) {
   const { t } = useTranslation();
   const who = useWho();
   if (pending)
     return <p className="text-caption text-muted-foreground">{t("appcfg.flow.loading")}</p>;
   if (error || !rows)
-    return <p className="text-caption text-muted-foreground">{t("appcfg.flow.unavailable")}</p>;
+    return (
+      <p className="text-caption text-muted-foreground">
+        {unavailable ?? t("appcfg.flow.unavailable")}
+      </p>
+    );
   return (
     <div className="space-y-3" data-testid="slot-flow">
       {showTitle ? <h4 className="text-label font-semibold">{t("appcfg.flow.title")}</h4> : null}

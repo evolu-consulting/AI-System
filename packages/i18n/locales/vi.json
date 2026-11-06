@@ -668,6 +668,10 @@
   },
   "tenants": {
     "flows": {
+      "stepsGap": {
+        "loadFail": "Không tải được các bước. Tải lại trang; nếu vẫn lỗi, mở trang chi tiết để xem.",
+        "noBody": "Quy trình này chưa có danh sách bước để vẽ (chưa xuất bản hoặc nội dung chưa đủ). Mở trang chi tiết để xem hoặc hoàn thiện."
+      },
       "systemDefaultShort": "Mặc định",
       "appOffStatus": "Chưa dùng ứng dụng",
       "err": {
