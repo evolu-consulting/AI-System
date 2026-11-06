@@ -61,9 +61,20 @@ export function toProcessDef(r: DefRow): ProcessDef {
     created_at: r.created_at,
     updated_at: r.updated_at,
     ttl_days: r.ttl_days,
-    ...(r.slot === null ? {} : { ...libFields(r), slot: r.slot, slot_body: r.slot_body }),
+    ...(r.slot === null
+      ? companyCopyBody(r)
+      : { ...libFields(r), slot: r.slot, slot_body: r.slot_body }),
   };
 }
+
+/** CR-121 c17b · bản riêng của công ty (sao từ thư viện) trả `slot_body` để Form bước dọc sửa được; def thường: không có. */
+const companyCopyBody = (r: Pick<DefRow, "tenant_id" | "source_template_id" | "slot_body">) =>
+  r.tenant_id !== null &&
+  r.source_template_id !== null &&
+  r.slot_body !== null &&
+  r.slot_body !== undefined
+    ? { slot_body: r.slot_body }
+    : {};
 
 /** CR-105 · trường def thư viện (vắng ở def tenant/mẫu — giữ hình response cũ). */
 const libFields = (

@@ -1,4 +1,4 @@
-﻿// CR-105 · L2b · int: `POST /process-defs/:id/preview` — đường chính (bước có `when` bị bỏ qua), chỉ platform_admin, không ghi.
+// CR-105 · L2b · int: `POST /process-defs/:id/preview` — đường chính (bước có `when` bị bỏ qua), chỉ platform_admin, không ghi.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { type CtxPa, startPa } from "../../../../../../tests/acceptance/P-a/_support/pa";
 import { approvalSlotSpec } from "../../packs/contracts/approval.mount";
@@ -73,12 +73,12 @@ describe("CR-105 · xem trước đường đi", () => {
       true,
     ]);
     expect(await counts()).toBe(before);
-    // chỉ platform_admin; tenant_admin ⇒ 403 trước khi đọc DB
+    // def thư viện chỉ platform_admin xem trước; tenant_admin chỉ bản riêng của công ty mình (c17b) ⇒ def thư viện = 404 (không lộ)
     const adm = await c.call("Adm", "POST", `/process-defs/${DEF}/preview`, {
       contract_type: "buy",
       value: 1,
     });
-    expect(adm.status).toBe(403);
+    expect(adm.status).toBe(404);
   });
 
   // CR-121 D-2 · dữ kiện mở rộng: phòng ban người gửi + đối tác mới; thiếu dữ kiện ⇒ "chưa có dữ liệu" (vẫn chạy, an toàn).

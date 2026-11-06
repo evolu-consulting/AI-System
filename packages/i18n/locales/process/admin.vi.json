@@ -46,6 +46,7 @@
     "more": "Tải thêm"
   },
   "editor": {
+    "copyBadge": "Bản riêng của công ty",
     "copySaveNote": "Lưu là áp dụng ngay cho lượt chạy mới; lượt đang chạy giữ bản cũ.",
     "stepsTab": "Các bước",
     "libReadonly": "Quy trình dùng chung — chỉ xem.",
@@ -364,6 +365,7 @@
       "waitUntil": "Chờ tới {{date}}",
       "retryAt": "Thử lại lúc {{time}}",
       "col": {
+        "record": "Hồ sơ",
         "run": "Lượt",
         "starter": "Người bắt đầu",
         "status": "Trạng thái",

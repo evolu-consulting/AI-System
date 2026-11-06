@@ -11,14 +11,22 @@ import type { LibraryDef } from "../../library-api";
 export type BarIssue = { index: number | null; text: string };
 type Props = {
   def: LibraryDef;
+  /** c17b · bản riêng của công ty: không có Nháp/Xuất bản, ghi rõ lưu là áp dụng ngay. */
+  companyCopy?: boolean;
   dirty: boolean;
   issues: readonly BarIssue[];
   onJump: (index: number) => void;
 };
 
-export function FlowFormHeader({ def }: { def: LibraryDef }) {
+export function FlowFormHeader({ def, companyCopy }: { def: LibraryDef; companyCopy?: boolean }) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, string | number>) => t(`process.admin.library.${k}`, o);
+  if (companyCopy)
+    return (
+      <header className="space-y-1" data-testid="flow-form-header">
+        <h2 className="text-heading font-semibold">{def.name}</h2>
+      </header>
+    );
   return (
     <header className="space-y-1" data-testid="flow-form-header">
       <h2 className="text-heading font-semibold">{def.name}</h2>
@@ -37,7 +45,7 @@ export function FlowFormHeader({ def }: { def: LibraryDef }) {
   );
 }
 
-export function FlowStatusBar({ def, dirty, issues, onJump }: Props) {
+export function FlowStatusBar({ def, companyCopy, dirty, issues, onJump }: Props) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, string | number>) => t(`process.admin.library.${k}`, o);
   const status = statusOf(def);
@@ -47,15 +55,19 @@ export function FlowStatusBar({ def, dirty, issues, onJump }: Props) {
       className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-border bg-card px-3 py-2"
       data-testid="flow-status-bar"
     >
-      <StatusBadge
-        tone={status.kind === "draft" ? "off" : status.kind === "changed" ? "warn" : "ok"}
-      >
-        {status.kind === "draft"
-          ? L("pubState.draft")
-          : status.kind === "changed"
-            ? L("status.changed", { n: status.version })
-            : L("pubState.published", { n: status.version })}
-      </StatusBadge>
+      {companyCopy ? (
+        <StatusBadge tone="info">{t("process.admin.editor.copyBadge")}</StatusBadge>
+      ) : (
+        <StatusBadge
+          tone={status.kind === "draft" ? "off" : status.kind === "changed" ? "warn" : "ok"}
+        >
+          {status.kind === "draft"
+            ? L("pubState.draft")
+            : status.kind === "changed"
+              ? L("status.changed", { n: status.version })
+              : L("pubState.published", { n: status.version })}
+        </StatusBadge>
+      )}
       <span className="font-mono text-caption text-muted-foreground">
         {dirty ? t("common.unsaved") : t("common.savedVersion", { n: def.version })}
       </span>

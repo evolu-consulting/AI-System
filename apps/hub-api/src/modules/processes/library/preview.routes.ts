@@ -5,7 +5,6 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
-import { requirePlatformAdmin } from "../../../lib/admin-role.middleware";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { parseIdParam, parseJson, validationError } from "../../../lib/http";
@@ -22,16 +21,29 @@ const PreviewRequestSchema = z.strictObject({
 
 type Row = { slot: string; slot_body: unknown };
 
+/** platform_admin: def thư viện (khe của chính nó). tenant_admin (c17b): CHỈ bản riêng của công ty mình — khe lấy từ def nguồn còn sống. */
+const readRow = (d: ProcessDeps, id: string, u: { role: string; tenantId: string | null }) =>
+  withHubScope(d.db, { kind: "system" }, (tx) =>
+    u.role === "platform_admin"
+      ? tx.execute<Row>(sql`select slot, slot_body from hub.process_defs
+        where id = ${id} and tenant_id is null and slot is not null and deleted_at is null`)
+      : tx.execute<Row>(sql`select s.slot, d.slot_body from hub.process_defs d
+        join hub.process_defs s on s.id = d.source_template_id and s.slot is not null and s.deleted_at is null
+        where d.id = ${id} and d.tenant_id = ${u.tenantId} and d.slot_body is not null and d.deleted_at is null`),
+  );
+
 export function previewRoutes(d: ProcessDeps): Hono<AuthVars> {
   const r = new Hono<AuthVars>();
-  r.use("/process-defs/:id/preview", requirePlatformAdmin());
+  // 403 trước parse: member không xem trước được.
+  r.use("/process-defs/:id/preview", async (c, next) => {
+    const role = c.get("user")?.role;
+    if (role !== "platform_admin" && role !== "tenant_admin") throw appError("FORBIDDEN");
+    await next();
+  });
   r.post("/process-defs/:id/preview", async (c) => {
     const id = parseIdParam(c);
     const b = await parseJson(c, PreviewRequestSchema);
-    const [row] = await withHubScope(d.db, { kind: "system" }, (tx) =>
-      tx.execute<Row>(sql`select slot, slot_body from hub.process_defs
-        where id = ${id} and tenant_id is null and slot is not null and deleted_at is null`),
-    );
+    const [row] = await readRow(d, id, c.get("user"));
     if (!row) throw appError("NOT_FOUND");
     const steps = slotSpecOf(row.slot)?.preview?.(row.slot_body, {
       contractType: b.contract_type ?? null,

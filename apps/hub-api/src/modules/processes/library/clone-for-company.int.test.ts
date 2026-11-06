@@ -20,6 +20,7 @@ import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.por
 import type { ProcessDeps } from "../core/ports";
 import { defsRoutes } from "../defs/defs.routes";
 import { libraryRoutes } from "./library.routes";
+import { previewRoutes } from "./preview.routes";
 
 const SLOT = "contracts.approval";
 const X = tenantId(1211);
@@ -137,6 +138,7 @@ beforeAll(async () => {
   });
   const deps = { db, packTools, start: {} } as unknown as ProcessDeps;
   app.route("/", defsRoutes(deps));
+  app.route("/", previewRoutes(deps));
   app.route("/", libraryRoutes(deps));
 }, 180_000);
 afterAll(async () => {
@@ -410,5 +412,29 @@ describe("CR-121 c17 · soát: quyền, hình dạng, phiên bản, nguồn bị
     const r = await put("A", id, g2, g2.stages);
     expect({ s: r.status, c: r.json.error?.code }).toEqual({ s: 422, c: "COPY_SOURCE_REMOVED" });
     expect(await ver(id)).toBe(v0);
+  });
+});
+
+describe("CR-121 c17b · bản riêng: Form bước dọc + xem trước bằng HĐ mẫu", () => {
+  it("GET bản riêng trả slot_body (Form sửa được); xem trước: tenant_admin chỉ bản riêng của công ty mình", async () => {
+    const src = await libCopy("cc-prev", "QT xem trước");
+    const id = (await call("A", "POST", CL(X, src), {})).json.def_id as string;
+    const g = (await call("A", "GET", `/process-defs/${id}`)).json;
+    expect(Array.isArray(g.slot_body?.steps)).toBe(true);
+    const facts = { contract_type: "buy", value: 600_000_000 };
+    const ok = await call("A", "POST", `/process-defs/${id}/preview`, facts);
+    expect(ok.status).toBe(200);
+    expect(Array.isArray(ok.json.steps) && ok.json.steps.length > 0).toBe(true);
+    expect((await call("AY", "POST", `/process-defs/${id}/preview`, facts)).status).toBe(404);
+    expect((await call("M", "POST", `/process-defs/${id}/preview`, facts)).status).toBe(403);
+    // tenant_admin không xem trước được def thư viện (chỉ platform)
+    expect((await call("A", "POST", `/process-defs/${src}/preview`, facts)).status).toBe(404);
+    expect((await call("P", "POST", `/process-defs/${src}/preview`, facts)).status).toBe(200);
+  });
+
+  it("đọc chỉ-xem: lượt chạy kèm record_label (null khi lượt không gắn hồ sơ)", async () => {
+    const v = await call("A", "GET", VW(X, lib.A));
+    expect(v.status).toBe(200);
+    for (const r of v.json.runs as Json[]) expect(r).toHaveProperty("record_label");
   });
 });

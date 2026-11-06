@@ -46,6 +46,7 @@
     "more": "Load more"
   },
   "editor": {
+    "copyBadge": "Company copy",
     "copySaveNote": "Saving applies right away to new runs; runs in progress keep the old version.",
     "stepsTab": "Steps",
     "libReadonly": "Shared process — view only.",
@@ -364,6 +365,7 @@
       "waitUntil": "Waiting until {{date}}",
       "retryAt": "Retrying at {{time}}",
       "col": {
+        "record": "Record",
         "run": "Run",
         "starter": "Started by",
         "status": "Status",

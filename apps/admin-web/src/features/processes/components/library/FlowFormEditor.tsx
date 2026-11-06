@@ -21,6 +21,8 @@ type Props = {
   slot: SlotInfo | undefined;
   onDirtyChange: (dirty: boolean) => void;
   onToCanvas: () => void;
+  /** c17b · bản riêng của công ty: cùng Form, lưu thẳng (áp dụng ngay), không ghi "Nháp/Xuất bản". */
+  companyCopy?: boolean;
   /** Lỗi xuất bản gần nhất từ Hub (422: bước, trường, câu sửa). */
   publishIssues?: readonly PublishIssue[];
 };
@@ -37,6 +39,7 @@ export function FlowFormEditor({
   slot,
   onDirtyChange,
   onToCanvas,
+  companyCopy = false,
   publishIssues = [],
 }: Props) {
   const { t } = useTranslation();
@@ -66,8 +69,14 @@ export function FlowFormEditor({
   ].filter((x, k, a) => a.findIndex((y) => y.index === x.index && y.text === x.text) === k);
   return (
     <div className="space-y-4" data-testid="flow-form">
-      <FlowFormHeader def={def} />
-      <FlowStatusBar def={def} dirty={form.dirty} issues={barIssues} onJump={jumpToStep} />
+      <FlowFormHeader def={def} companyCopy={companyCopy} />
+      <FlowStatusBar
+        def={def}
+        companyCopy={companyCopy}
+        dirty={form.dirty}
+        issues={barIssues}
+        onJump={jumpToStep}
+      />
       <p className="text-body text-muted-foreground">{f("lead")}</p>
       <section
         className="rounded-md border border-border bg-muted/40 px-3 py-2 text-label"
@@ -135,7 +144,12 @@ export function FlowFormEditor({
         </p>
       ))}
       <div className="sticky bottom-0 z-10 -mx-4 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-4 py-3 backdrop-blur">
-        <div className="min-w-0 flex-1" />
+        <div
+          className="min-w-0 flex-1 text-label text-muted-foreground"
+          data-testid="copy-save-note"
+        >
+          {companyCopy ? t("process.admin.editor.copySaveNote") : null}
+        </div>
         <Button type="button" variant="outline" disabled={!form.dirty} onClick={form.discard}>
           {f("discard")}
         </Button>
@@ -144,7 +158,7 @@ export function FlowFormEditor({
           disabled={!form.dirty || issues.length > 0}
           onClick={() => void form.save(steps)}
         >
-          {t("process.admin.library.saveDraft")}
+          {t(companyCopy ? "common.save" : "process.admin.library.saveDraft")}
         </Button>
       </div>
       <LazyConflictDialog props={form.conflictProps} />

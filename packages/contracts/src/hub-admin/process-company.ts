@@ -2,7 +2,7 @@
 // `POST /tenants/:tid/process-defs/:id/clone-for-company`. Vai: platform_admin mọi tenant · tenant_admin CHỈ tenant mình
 // (tenant lạ ⇒ 404) · member 403. Export lại qua `processes.ts`.
 import { z } from "zod";
-import { ProcessRunSummarySchema } from "../chat/processes-entities";
+import { ProcessRunListItemSchema } from "../chat/processes-api";
 import { UuidSchema } from "../common";
 import { SlotKeySchema } from "./process-library";
 
@@ -40,6 +40,6 @@ export const ProcessLibraryViewSchema = z.strictObject({
   company_copy: z
     .strictObject({ def_id: UuidSchema, rel_version: z.number().int().min(1) })
     .nullable(),
-  runs: z.array(ProcessRunSummarySchema).max(PROCESS_LIBRARY_VIEW_RUNS_MAX),
+  runs: z.array(ProcessRunListItemSchema).max(PROCESS_LIBRARY_VIEW_RUNS_MAX),
 });
 export type ProcessLibraryView = z.infer<typeof ProcessLibraryViewSchema>;

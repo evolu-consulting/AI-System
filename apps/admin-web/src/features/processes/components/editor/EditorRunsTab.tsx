@@ -1,6 +1,6 @@
 // ADM-FR-67 · CR-056 · P-a F5: tab "Lượt chạy" của editor — `GET /process-runs?scope=tenant&process_key=` (lọc server).
 
-import type { ProcessRunSummary } from "@ai/contracts/hub-admin";
+import type { ProcessRunListResponse, ProcessRunSummary } from "@ai/contracts/hub-admin";
 import { Link } from "@tanstack/react-router";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
@@ -8,6 +8,7 @@ import { type Column, DataTable } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { formatClock } from "@/lib/format";
 import { useTenantRuns } from "../../hooks/use-run-data";
+import { recordLabelOf } from "../../lib/company-copy";
 import { runStageNote } from "../../lib/run-stage-note";
 import { runSummaryBadgeStatus } from "../../lib/stage-label";
 import { RunStatusBadge } from "../run/RunStatusBadge";
@@ -30,7 +31,7 @@ function StageCell({ run }: { run: ProcessRunSummary }) {
 }
 
 /** Cột bảng lượt chạy — dùng chung tab Lượt chạy của trình sửa và của trang chỉ-xem thư viện (c17b). */
-export function runColumns(t: TFunction): Column<ProcessRunSummary>[] {
+export function runColumns(t: TFunction): Column<ProcessRunListResponse["items"][number]>[] {
   const L = (k: string) => t(`process.admin.editor.runs.col.${k}`);
   return [
     {
@@ -46,6 +47,8 @@ export function runColumns(t: TFunction): Column<ProcessRunSummary>[] {
         </Link>
       ),
     },
+    // c11b: nhãn hồ sơ nghiệp vụ (mã HĐ thật), cùng schema danh sách `GET /process-runs`; lượt không gắn hồ sơ ⇒ "—"
+    { id: "record", header: L("record"), cell: (r) => recordLabelOf(r) },
     { id: "starter", header: L("starter"), cell: (r) => r.started_by.display_name },
     {
       id: "status",

@@ -67,7 +67,13 @@ test("CR-121 c17b · tenant_admin: thư viện chỉ xem có tab Lượt chạy;
     const copy = p.getByTestId("library-copy");
     if (await copy.count()) await copy.click();
     else await p.getByTestId("library-open-copy").click();
+    // bản riêng: Danh sách = cùng Form bước dọc; ghi chú lưu áp dụng ngay; xem trước bằng HĐ mẫu
+    await p.getByTestId("flows-view-list").click();
+    await expect(p.getByTestId("flow-form")).toBeVisible();
+    await expect(p.getByTestId("flow-counter")).toHaveText(/^\d+\/20$/);
     await expect(p.getByTestId("copy-save-note")).toContainText("áp dụng ngay cho lượt chạy mới");
+    await expect(p.getByRole("button", { name: "Xem trước bằng HĐ mẫu" })).toBeVisible();
+    await p.evaluate(() => localStorage.removeItem("processView"));
     await expect(p.getByRole("button", { name: /^Xuất bản/ })).toHaveCount(0);
   } finally {
     await ctx.close();

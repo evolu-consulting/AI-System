@@ -10,6 +10,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import type { ProcessDeps } from "../core/ports";
+import { labelOf, runRecordLabels } from "../runs/run-record-labels";
 import { listRuns, toSummary } from "../runs/runs.repo";
 import * as lib from "./library.repo";
 import type { LibraryService } from "./library.service";
@@ -184,6 +185,8 @@ export class CompanyLibraryService {
           limit: PROCESS_LIBRARY_VIEW_RUNS_MAX,
         });
         const slot = g.slot;
+        const page = rows.slice(0, PROCESS_LIBRARY_VIEW_RUNS_MAX);
+        const labels = await runRecordLabels(tenantId, page);
         return {
           read_only: true as const,
           def_id: g.id,
@@ -195,7 +198,8 @@ export class CompanyLibraryService {
           stages: rel.stages,
           slot_body: rel.slot_body,
           company_copy: copy ? { def_id: copy.id, rel_version: copy.source_rel_version } : null,
-          runs: rows.slice(0, PROCESS_LIBRARY_VIEW_RUNS_MAX).map(toSummary),
+          // c11b: nhãn hồ sơ (mã HĐ thật) theo TẬP, cùng nguồn với GET /process-runs
+          runs: page.map((r) => ({ ...toSummary(r), record_label: labelOf(labels, r) })),
         };
       },
       { isolationLevel: "repeatable read", accessMode: "read only" },

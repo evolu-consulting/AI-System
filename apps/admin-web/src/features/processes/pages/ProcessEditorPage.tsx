@@ -24,6 +24,7 @@ import { InputsCard } from "../components/editor/InputsCard";
 import { ProcessSaveBar } from "../components/editor/ProcessSaveBar";
 import { SourcesCard } from "../components/editor/SourcesCard";
 import { LimitsCard, StagesCard } from "../components/editor/StagesCard";
+import { CompanyCopyBody } from "../components/library/CompanyCopyBody";
 import { LibraryEditorBody } from "../components/library/LibraryEditorBody";
 import { LibraryReadOnlyView } from "../components/library/LibraryReadOnlyView";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
@@ -31,6 +32,7 @@ import { useDefSave } from "../hooks/use-def-save";
 import { useDraft } from "../hooks/use-draft";
 import { useEditorRefs } from "../hooks/use-editor-refs";
 import { useProcessTenant } from "../hooks/use-process-tenant";
+import { isCompanyCopy, usesStepForm } from "../lib/company-copy";
 import { type DefDraft, toDraft, withLiveErrors } from "../lib/def-form";
 import { processErrorSpec } from "../lib/errors";
 import { normalizeSlotStages } from "../lib/slot-canvas";
@@ -49,7 +51,8 @@ function useLoadedDef(processId: string | undefined, d: ReturnType<typeof useDra
   const data: LibraryDef | undefined = q.data;
   // biome-ignore lint/correctness/useExhaustiveDependencies: nạp một lần cho mỗi quy trình; làm tươi nền không đè bản đang sửa
   useEffect(() => {
-    const key = data?.slot ? `${data.id}:${data.version}` : data?.id;
+    // thư viện + bản riêng sao từ thư viện (c17b: Form lưu slot_body ⇒ nạp lại theo version)
+    const key = data?.slot || data?.source_template_id ? `${data.id}:${data.version}` : data?.id;
     if (data && loaded.current !== key) {
       loaded.current = key ?? null;
       d.load(toDraft(data));
@@ -90,7 +93,10 @@ function ConfigTab(p: {
   formDirty: boolean;
   onFormDirty: (dirty: boolean) => void;
   config: React.ReactNode;
+  copy: LibraryDef | null;
 }) {
+  if (!p.lib && p.copy)
+    return <CompanyCopyBody def={p.copy} onFormDirty={p.onFormDirty} canvas={p.config} />;
   if (!p.lib) return <>{p.config}</>;
   return (
     <LibraryEditorBody
@@ -121,9 +127,6 @@ const prepareLibraryDraft = (d: DefDraft): DefDraft => ({
   ...d,
   stages: normalizeSlotStages(d.stages),
 });
-/** Bản riêng của công ty (sao từ thư viện): sửa thẳng, không Xuất bản. */
-const isCompanyCopy = (def: { source_template_id?: string | null } | undefined, lib: unknown) =>
-  !!def?.source_template_id && !lib;
 const prepareFor = (lib: LibraryDef | null) => (lib ? prepareLibraryDraft : undefined);
 const slotExtra = (lib: LibraryDef | null) => (lib ? { slot: lib.slot } : undefined);
 
@@ -229,6 +232,7 @@ function Editor({ processId }: ProcessEditorPageProps) {
           <TabsContent value="config">
             <ConfigTab
               lib={lib}
+              copy={usesStepForm(def, lib)}
               canvasDirty={d.dirty}
               formDirty={formDirty}
               onFormDirty={setFormDirty}

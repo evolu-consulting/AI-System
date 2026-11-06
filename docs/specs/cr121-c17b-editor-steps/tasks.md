@@ -23,11 +23,17 @@ Hub/contract không đổi. Perf: không chạm đường nóng.
 - unit: `lib/step-limit.test.ts` (n/20, chặn 21, vN+1, ánh xạ chế độ, nhãn điều kiện). Không có int (không đổi Hub).
 - e2e viết, không chạy: `e2e/P-a/pf4/editor-steps.pa.ts`; chỉnh nhãn ở `process-library.pa.ts`, `journey-approval/cr121-d6b-notify.spec.ts` ("Xuất bản vN", "công ty đang dùng").
 
+## Bổ sung (vòng 2, điều phối)
+- Bản riêng công ty dùng CÙNG `FlowFormEditor` (một component) qua `CompanyCopyBody`: công tắc Sơ đồ/Danh sách (`view-mode.ts`), "Chỉ chạy khi", n/20, "Thêm bước", Xem trước bằng HĐ mẫu = `PreviewDialog` (đúng đường xem trước của thiết kế); lưu theo đường khe (c17). Hub: `GET /process-defs/:id` của bản riêng trả thêm `slot_body`; `POST /process-defs/:id/preview` cho tenant_admin xem trước CHÍNH bản riêng của công ty mình (khe lấy từ def nguồn; def thư viện/công ty khác = 404; member 403). Form bị chặn ở dạng tuần tự: bước song song/If ⇒ Form báo lý do và chỉ sửa ở Sơ đồ; lưu sai dạng ⇒ 422 `SLOT_SHAPE_UNSUPPORTED` (c17).
+- `record_label`: `ProcessLibraryView.runs` chuyển sang `ProcessRunListItemSchema` (cùng schema danh sách `GET /process-runs`, một nguồn); Hub gắn nhãn theo TẬP bằng `runRecordLabels`; cột "Hồ sơ" ở bảng Lượt chạy dùng chung (trình sửa + trang chỉ-xem).
+- Test: unit `lib/company-copy.test.ts`; int (evotest xanh 13/13): `clone-for-company.int » CR-121 c17b …`, `library-preview.int` (tenant_admin trên def thư viện ⇒ 404 thay 403).
+- Bẫy: Form của bản riêng không có thông tin khe (`GET /process-slots` chỉ platform) ⇒ dùng trường điều kiện mặc định của hợp đồng, không có gợi ý mã phòng ban; platform sửa bản riêng của công ty khác chưa hỗ trợ (PUT cần ngữ cảnh công ty).
+
 ## Khác biệt còn lại so với artboard / bẫy
-1. Bản riêng của công ty vẫn mở trình sửa chung (Cấu hình/Lượt chạy, canvas giai đoạn); chưa có danh sách bước dọc + "Chỉ chạy khi" + "Thêm bước" cho bản riêng (Form hiện chỉ cho def thư viện của platform; Hub chấp nhận lưu bản riêng theo khe nhưng web chưa dựng Form cho nó).
-2. "Xem trước bằng HĐ mẫu" chỉ có ở thư viện platform (API xem trước là của platform); bản riêng chưa có.
-3. Cột `record_label` (c11b) chưa có trong contract `ProcessRunSummary` ở nhánh này ⇒ bảng Lượt chạy chưa có nhãn hồ sơ.
-4. Tab Danh sách ở trang chỉ-xem nhiều lượt >20: API chỉ trả 20 lượt gần nhất.
+1. (đã làm ở vòng 2) Form bước dọc + Xem trước cho bản riêng.
+2. "Xem trước bằng HĐ mẫu" = `PreviewDialog` (xác nhận điều phối); không nối sang tab "Mẫu · chạy thử".
+3. (đã làm ở vòng 2) `record_label`.
+4. Tab Lượt chạy ở trang chỉ-xem nhiều lượt >20: API chỉ trả 20 lượt gần nhất.
 5. "Dùng bởi" đếm = số công ty được gán (tập gán), không phân biệt "đang dùng thật" theo luật.
 
 ## Quyết định trong lúc làm
@@ -41,6 +47,8 @@ Trạng thái gộp: chưa gộp
 Trình sửa quy trình thư viện mở ở Sơ đồ (canvas) mặc định; "Danh sách" là bước dọc có "Chỉ chạy khi", bộ đếm n/20 và chặn bước thứ 21 kèm lý do; lựa chọn được nhớ theo người dùng. Thư viện hiện "Xuất bản vN+1" và "X công ty đang dùng vN"; bản riêng của công ty ghi rõ lưu là áp dụng ngay cho lượt chạy mới (không có Xuất bản); trang chỉ-xem có tab Lượt chạy của công ty.
 - Kịch bản: bộ đếm n/20 và bước thứ 21 bị chặn [test: apps/admin-web/src/features/processes/lib/step-limit.test.ts » CR-121 c17b · n/20 và chặn bước thứ 21]
 - Kịch bản: xuất bản vN+1 và Danh sách ứng với Form [test: apps/admin-web/src/features/processes/lib/step-limit.test.ts » CR-121 c17b · xuất bản vN+1, chế độ xem]
+- Kịch bản: bản riêng của công ty dùng cùng Form bước dọc khi Hub trả slot_body, lượt chạy hiện nhãn hồ sơ [test: apps/admin-web/src/features/processes/lib/company-copy.test.ts » CR-121 c17b · bản riêng dùng Form bước dọc chung]
+- Kịch bản: tenant_admin xem trước bằng HĐ mẫu CHÍNH bản riêng của công ty mình, bản riêng công ty khác 404 [test: apps/hub-api/src/modules/processes/library/clone-for-company.int.test.ts » CR-121 c17b · bản riêng: Form bước dọc + xem trước bằng HĐ mẫu]
 - Kịch bản: platform chuyển Danh sách, tải lại vẫn Danh sách; tenant_admin thấy tab Lượt chạy và ghi chú lưu áp dụng ngay [test: thủ công — e2e/P-a/pf4/editor-steps.pa.ts viết, chạy một lần cuối đợt]
 
 ## Việc còn lại
