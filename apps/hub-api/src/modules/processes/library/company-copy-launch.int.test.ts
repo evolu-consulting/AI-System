@@ -159,8 +159,8 @@ beforeAll(async () => {
   await o`insert into admin.tenants (id, key, name) values (${X}, 't1231', 'X'), (${Z}, 't1232', 'Z')`;
   await users(o, X, 3, { from: 1230 });
   await users(o, Z, 1, { from: 1233 });
-  gx = await groups(o, X, ["ke-toan"]);
-  await groups(o, Z, ["ke-toan"]);
+  gx = await groups(o, X, ["ke-toan", "contracts-editor"]); // launch tự thêm bước xác nhận đầu (contracts-editor)
+  await groups(o, Z, ["ke-toan", "contracts-editor"]);
   const stages = JSON.stringify(compileSlotStages(body));
   const [r] = await o<
     { id: string }[]
@@ -221,7 +221,10 @@ afterAll(async () => {
 
 describe("CR-121 c9b · bản riêng công ty launch được", () => {
   it("sao → launch dùng bản riêng → PUT luật/danh sách khe nhận bản riêng", async () => {
-    const before = await open(1, U.s, X); // chưa sao: chạy bản thư viện
+    const first = await routeSlot(db, X, APPROVAL_SLOT, U.s); // cổng không được ném
+    expect(first && "defId" in first ? first.defId : first).toBe(libA);
+    const before = await open(1, U.s, X);
+    expect(before.out).toBe("started");
     expect(before.run?.slot?.process_def_id).toBe(libA);
 
     const cl = await call("A", "POST", `/tenants/${X}/process-defs/${libA}/clone-for-company`, {});
@@ -244,7 +247,10 @@ describe("CR-121 c9b · bản riêng công ty launch được", () => {
       rel_version: 1,
       process_name: "QT A",
     });
-    expect(reviewGroups(after.run?.stages)).toEqual([gx.get("ke-toan")]);
+    expect(reviewGroups(after.run?.stages)).toEqual([
+      gx.get("contracts-editor"),
+      gx.get("ke-toan"),
+    ]);
 
     // snapshot lượt chạy ghi bản riêng (đường ghi thật `stampSlotRun`)
     const def = await insertDef(o, { id: crypto.randomUUID(), tenantId: X });
