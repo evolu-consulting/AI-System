@@ -1,0 +1,61 @@
+LUẬT CHUNG CHO MỌI AGENT LÁT (2026-11-05, thay cr118-rules.txt)
+
+Nguồn luật: F:\workspace\evolu-platform\CLAUDE.md "Luật GỐC" + "Luật điều phối" D1–D8. Đọc đúng 2 mục đó, không đọc cả file.
+
+AN TOÀN
+- Chỉ ghi trong worktree của lát (đường dẫn TUYỆT ĐỐI). Không ghi vào F:\workspace\evolu-platform.
+- Không --no-verify, không LEFTHOOK=0. Không tắt tiến trình không phải của mình; tắt mọi tiến trình mình bật.
+- Không push/deploy/prod. Không đụng đường dẫn DLC (Rowan). Không dữ liệu NitiGroup/titi trong test. Không in/commit secret.
+- Format CHỈ file mình sửa (`bunx biome check --write <file…>`). KHÔNG `--changed` (nó sửa file ngoài phạm vi).
+
+NHANH (mỗi phút chờ test = tiền + thời gian)
+1. Không đọc rộng: brief đã ghi file/điểm vào. Cần tìm thêm ⇒ Grep đúng tên, không mở cả thư mục. Đọc ≤ 10 phút.
+2. Viết XONG code + test rồi mới chạy test. Tối đa 3 lượt evotest mỗi lát:
+   lượt 1 = toàn bộ test của lát; lượt 2 = sau khi sửa; lượt 3 = xác nhận. Không chạy sau từng sửa nhỏ.
+   Dùng `bun run verify:slice [--e2e <job>]` nếu đã có (gộp int + e2e một lần, chỉ in lỗi mới); chưa có ⇒ `deploy/evotest/run-tests.ps1` (commit trước hoặc -Dirty; -All cho suite đóng băng; Filter int = đường dẫn dùng /, e2e = TÊN JOB).
+3. Không đọc log dài: đọc dòng tóm tắt + 25 dòng cuối ca đỏ.
+4. e2e: tạo dữ liệu RIÊNG của spec (tên/khóa có hậu tố duy nhất), không sửa/ẩn dữ liệu mẫu dùng chung; không phụ thuộc thứ tự file. Dùng helper sẵn trong e2e/_kit (nếu có) cho đăng nhập, gán quy trình, đặt luật.
+5. Unit chạy local (`bun test <file>`), nhanh, trước khi lên evotest.
+5b. Viết dữ liệu mồi int: ĐỌC CHECK/NOT NULL/FK của bảng trước (grep migration hoặc `\d+` trong schema drizzle) — không đoán rồi chạy evotest để dò (R-2 tốn 5 lượt vì việc này). Suite đóng băng (P-*) cần `-All` ngay lượt đầu.
+5c. KHÔNG đưa query postgres.js (thenable lười) thẳng vào `expect(...).rejects` — bun 1.3.14 treo quay CPU (đã làm treo D-1 và C-2). Viết: `const err = await q.then(()=>null, e=>e); expect(err?.code).toBe("23503")`.
+5d. (người dùng 2026-11-06) TRONG LÁT CHỈ chạy unit + int của CHÍNH lát (file test lát viết/sửa + test trực tiếp của file mình đổi). KHÔNG chạy `verify:slice` hay `test:affected --run` nếu nó kéo > 30 file; KHÔNG chạy e2e (chỉ viết). e2e trình duyệt chạy MỘT lần sau khi gộp các lát, do điều phối chạy.
+6. Chọn test bằng `bun run test:affected --explain` (theo module) — chỉ chạy đúng danh sách đó, không thêm bộ khác "cho chắc".
+7. MỐC THỜI GIAN (đã sửa hạ tầng, lát phải nhanh hơn CR-120): một lượt evotest int nhỏ ≈ 40 s (trước 110 s); lát trọn ≤ 45 phút.
+   Một lượt evotest > 5 phút hoặc lát > 45 phút ⇒ DỪNG, báo nguyên nhân (chờ slot, test chậm, phạm vi phình) thay vì chạy tiếp.
+
+ĐÚNG NGAY LƯỢT ĐẦU (tránh vòng review 2)
+Trước khi báo xong, tự soát diff theo .claude/agents/reviewer.md mục Blocker:
+- Đổi trạng thái/duyệt/hàng chờ: chặn đua (compare-and-set theo id lượt/phiên bản), bấm 2 lần ra 1 kết quả, kết quả cũ không ghi đè sau khi nội dung đổi.
+- Bảng/nguồn mới thay cũ: backfill + chuyển MỌI chỗ đọc + gỡ cũ (D6). Không đọc view legacy.
+- Mỗi bảng mới: tenant_id + RLS + 1 test chặn đọc chéo tenant. Mỗi endpoint: kiểm vai ở service.
+- UI: nhãn nghiệp vụ, trạng thái + lý do, i18n vi+en, token màu shell (không mã màu cứng).
+- Không SQL theo hàng trong vòng lặp; list có limit + index.
+
+ĐỠ CHỜ LỆNH (đo 5 agent 2026-11-06: sửa code ~3% thời gian; tsc lặp tới 48 lần = 20 phút, đọc qua shell 195 lần, ngủ chờ 7–9 phút)
+T1. tsc / check:* / depcruise: CHỈ MỘT lần ở cuối, chỉ gói mình đổi (`bunx tsc --noEmit -p <gói>`). Giữa chừng dùng `bun test <file>` để biết đúng sai.
+T2. Tìm/đọc bằng công cụ Grep/Read/Glob. KHÔNG Select-String, Get-Content, Get-ChildItem -Recurse trong PowerShell (chậm gấp chục lần).
+T3. Không Start-Sleep để chờ. Lệnh dài ⇒ chạy nền (run_in_background) rồi làm việc khác, có thông báo khi xong.
+T4. Ít lượt: đọc đủ rồi viết trọn file (Write) hoặc gom nhiều chỗ sửa; mục tiêu ≤ 60 lần gọi công cụ mỗi lát. Không chạy lại lệnh chỉ để xem lại kết quả.
+T5. Không dừng giữa lát để hỏi; tự chọn theo brief/readiness, ghi lựa chọn trong báo cáo, báo MỘT lần khi xong.
+
+CHẠY NHANH — CLAUDE.md Luật 0d (người dùng 2026-11-06, THẮNG các mục dưới khi mâu thuẫn): đọc "Bản đồ file" trong tasks.md của CR rồi mở thẳng file, đọc ≤ 5 phút; code ngay; unit local + int đúng file; không chạy e2e; UI tự chụp + soát trước khi báo; báo cáo ≤ 5 dòng.
+
+ĐÓNG BĂNG UI TRƯỚC KHI SỬA e2e (người dùng 2026-11-06 "phí time quá")
+- Sau wave: gom MỌI sửa UI thành một đợt, xong mới giao qc. Đã giao qc thì UI CR đó đóng băng (chỉ lỗi chặn). Góp ý UI mới ⇒ hàng chờ sau deploy.
+- MỘT agent qc cho mỗi đợt sửa e2e (không 2 qc song song cùng vùng file). Chạy đúng job bị ảnh hưởng; wave toàn bộ chỉ một lần cuối.
+
+VAI (người dùng 2026-11-06 — Luật 3)
+- Agent qc CHỈ viết/sửa/chạy test. KHÔNG sửa code sản phẩm (apps/**/src ngoài file test, packages/** ngoài test). Gặp lỗi sản phẩm ⇒ báo "Lỗi sản phẩm" + file:dòng + cách tái hiện, dừng ca đó. Điều phối giao agent code.
+- Agent code không sửa e2e/** và tests/acceptance/** (qc giữ) — liệt kê ca cần đổi trong báo cáo.
+
+ĐÚNG THIẾT KẾ (người dùng 2026-11-06 — test xanh mà sai thiết kế = CHƯA XONG)
+- Lát UI phải ghi trong tasks.md: làm theo artboard nào (file .dc.html trong scratchpad\cr121-design\project), phần nào.
+- Trước khi báo xong: chụp màn hình thật (dev stack local / Playwright) cạnh artboard, liệt kê khác biệt về cấu trúc, tab, nhãn, hành động. Còn khác biệt không được duyệt ⇒ chưa xong.
+- Soát ảnh bằng mắt (người dùng 2026-11-06, bắt lỗi cột Trạng thái lệch): mỗi cột ô + tiêu đề cùng mép trái/đệm, cùng một component cho cùng khái niệm (vd trạng thái bật/tắt cùng kiểu viên), tiêu đề không xuống dòng, hàng cùng cao, căn giữa dọc; ít chữ, không lặp thông tin (feedback "design đơn giản"). Ghi "đã soát căn mép: …" trong báo cáo.
+- Không giữ màn/tab/control cũ song song với màn mới cho cùng khái niệm (Luật GỐC 1–2); gỡ cái cũ trong cùng lát.
+
+XONG KHI
+- Delta trong docs/specs/<lát>/tasks.md + `bun run openspec:check` xanh; commit; test/e2e đổi ⇒ `bun run test:lock:write` + commit.
+- Tính năng người dùng thấy ⇒ có e2e hành trình thật (D5) xanh. Không bỏ e2e lại "việc còn lại".
+
+BÁO CÁO ≤ 6 dòng: commit · test (lệnh → kết quả) · việc dở · bẫy · thời gian theo pha (đọc · code · chờ test · sửa) · số lượt evotest.
