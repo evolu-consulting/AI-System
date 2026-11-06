@@ -46,6 +46,7 @@
   },
   "editor": {
     "advanced": "Advanced",
+    "toolOff": "Feature «{{name}}» is not enabled for the company",
     "keyInternal": "Internal process code",
     "budgetAi": "AI cost limit per run (optional)",
     "enabledLib": "Enabled",
@@ -73,14 +74,14 @@
     "groups": "Groups that can run (empty = whole company)",
     "budget": "Token budget for the whole run (optional)",
     "enabled": "Enabled",
-    "stages": "Stages",
+    "stages": "Steps",
     "add": "Add stage",
     "remove": "Remove stage",
     "up": "Move up",
     "down": "Move down",
     "stage": {
       "aria": "Stage {{n}}: {{name}}",
-      "name": "Stage name",
+      "name": "Step name",
       "key": "Stage key",
       "executor": "Performed by",
       "kind": {
@@ -88,7 +89,7 @@
         "team": "Agent team",
         "wait": "Wait until date",
         "tool": "Call tool",
-        "set": "Set values",
+        "set": "Prepare data",
         "if": "If (true/false branch)",
         "form": "Person fills a form",
         "waitFor": "Wait N hours",
@@ -221,7 +222,7 @@
           "TOOL_INVALID": "The tool isn't fully set up: fill every required parameter from a real source (up to 20 parameters, no file parameters).",
           "TOOL_SIDE_EFFECT": "A tool with side effects can only be used when the stage has “Real action” on.",
           "sideEffectLocked": "A tool with side effects needs “Real action”, which this stage can't turn on: every stage in the previous step must have a reviewer.",
-          "ref": "This tool isn't enabled for your company or no longer exists."
+          "ref": "This feature is not enabled for your company or no longer exists."
         }
       },
       "if": {
@@ -304,9 +305,9 @@
           "input": "Input",
           "const": "Constant",
           "field": "Previous step",
-          "fact": "Record data"
+          "fact": "Record info"
         },
-        "fact": "Record data",
+        "fact": "Record info",
         "prevField": "Field of a previous step",
         "as": "Write as",
         "asKeep": "Keep as is",
@@ -1280,7 +1281,7 @@
     "addCond": "Add condition",
     "removeCond": "Remove condition",
     "toGroup": "Make a group",
-    "fact": "Field",
+    "fact": "Record info",
     "op": "Compare",
     "value": "Value",
     "yes": "Yes",
@@ -1298,7 +1299,7 @@
       "agent": "Agent",
       "tool": "Tool",
       "esign": "E-sign",
-      "set": "Set value",
+      "set": "Prepare data",
       "finish": "Finish",
       "soon": "Not available yet"
     },
@@ -1332,11 +1333,11 @@
     "companies": "{{n}} companies",
     "add": "Add step",
     "moreActions": "More actions",
-    "group": { "basic": "Basic", "core": "Core" },
+    "group": { "basic": "Basic", "core": "Core", "advanced": "Advanced" },
     "ifHint": "If true go to the True step, otherwise the False step (empty = next step).",
     "link": {
       "next": "Next step",
-      "merge": "Merge into",
+      "merge": "Then continue to",
       "on": {
         "completed": "Signed",
         "declined": "Declined",
@@ -1355,13 +1356,14 @@
       "edge": "Missing input",
       "summary": "{{n}} connections miss data",
       "chip": "Missing {{keys}}",
+      "chipFull": "Step «{{to}}» needs «{{keys}}» — the previous step does not have it",
       "loading": "Suggesting…",
       "ghost": "Set value (suggested)",
       "suggest": "Suggest a bridge",
       "none": "No suggestion. Add a Set value node to connect the two steps.",
       "accept": "Accept",
       "dismiss": "Dismiss",
-      "nodeName": "Set value"
+      "nodeName": "Prepare data"
     },
     "finish": {
       "name": "Name",

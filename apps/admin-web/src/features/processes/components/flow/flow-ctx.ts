@@ -13,7 +13,13 @@ export type FlowCtx = {
   /** Node Bắt đầu khi trên canvas: nhãn sự kiện + tóm tắt điều kiện + mở thẻ sửa. */
   trigger?: { label: string; summary: string; onOpen: () => void };
   /** Cạnh vàng (FR-26): cặp stage (uid) mà bước sau cần đầu vào bước trước không có. */
-  warnEdges?: readonly { from: string; to: string; keys: string[] }[];
+  warnEdges?: readonly {
+    from: string;
+    to: string;
+    keys: string[];
+    labels: string[];
+    toName: string;
+  }[];
   /** Gợi ý cầu nối ngay trên canvas (trạng thái + hành động theo cạnh vàng). */
   bridge?: BridgeApi;
   /** Tên bước (0-based) cho tóm tắt node ("Chờ ký", "Kết thúc…"). */

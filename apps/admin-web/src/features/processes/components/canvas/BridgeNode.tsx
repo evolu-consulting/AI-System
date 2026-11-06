@@ -9,7 +9,14 @@ import { Button } from "@/components/ui/button";
 import { useFlowCtx } from "../flow/flow-ctx";
 
 export const BRIDGE_W = 300;
-export type BridgeNodeData = { from: string; to: string; keys: string[] };
+export type BridgeNodeData = {
+  from: string;
+  to: string;
+  keys: string[];
+  /** Nhãn nghiệp vụ của từng khoá (vắng ⇒ khoá) + tên bước đích — câu: "Bước «Gửi ký số» cần «Hợp đồng» — bước trước chưa có". */
+  labels: string[];
+  toName: string;
+};
 export type BridgeNodeType = Node<BridgeNodeData, "bridge">;
 
 function BridgeNodeImpl({ data }: NodeProps<BridgeNodeType>) {
@@ -42,7 +49,10 @@ function BridgeNodeImpl({ data }: NodeProps<BridgeNodeType>) {
         )}
         {preview
           ? t("process.admin.flow.bridge.ghost")
-          : t("process.admin.flow.bridge.chip", { keys: data.keys.join(", ") })}
+          : t("process.admin.flow.bridge.chipFull", {
+              to: data.toName,
+              keys: (data.labels.length > 0 ? data.labels : data.keys).join(", "),
+            })}
       </p>
       {ui.kind === "idle" ? (
         <Button

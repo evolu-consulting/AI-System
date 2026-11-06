@@ -23,10 +23,13 @@ function useLabels() {
   };
 }
 
-function ErrorLine({ v }: { v: StageView }) {
+function ErrorLine({ v, kind }: { v: StageView; kind: string }) {
   const { t } = useTranslation();
   if (!v.errorKey) return null;
-  const msg = t(v.errorKey, { defaultValue: t("process.admin.canvas.node.error") });
+  // lỗi "tool chưa bật" nói tên tính năng (loại node), không nói "tool"
+  const msg = v.errorKey.endsWith("stage.tool.err.ref")
+    ? t("process.admin.flow.toolOff", { name: kind })
+    : t(v.errorKey, { defaultValue: t("process.admin.canvas.node.error") });
   return (
     <span
       className="flex items-center gap-1 truncate text-caption text-destructive"
@@ -78,7 +81,7 @@ export function FlowNodeBody({ v }: { v: StageView }) {
           {summary}
         </span>
       ) : null}
-      <ErrorLine v={v} />
+      <ErrorLine v={v} kind={kind} />
     </span>
   );
 }

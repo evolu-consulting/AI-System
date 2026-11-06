@@ -28,6 +28,8 @@ function Row(p: {
   r: CompanyFlowRow;
   tenantId: string;
   busy: boolean;
+  /** Mục "Nâng cao: thứ tự" đang mở ⇒ mới cho kéo thả. */
+  ordering: boolean;
   onOp: (a: FlowOp) => void;
   onDrop: (fromId: string, toId: string) => void;
 }) {
@@ -38,13 +40,17 @@ function Row(p: {
   return (
     <li
       className={`${GRID} border-t border-border px-3 py-2`}
-      draggable
+      draggable={p.ordering}
       data-testid={`company-flow-${r.flow_key}`}
       onDragStart={(e) => e.dataTransfer.setData("text/plain", r.id)}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => p.onDrop(e.dataTransfer.getData("text/plain"), r.id)}
     >
-      <GripVertical aria-hidden className="size-4 cursor-grab text-muted-foreground" />
+      {p.ordering ? (
+        <GripVertical aria-hidden className="size-4 cursor-grab text-muted-foreground" />
+      ) : (
+        <span />
+      )}
       <div className="min-w-0">
         <p className="m-0 truncate text-body font-medium">{r.name}</p>
         {r.warnings.length > 0 ? (
@@ -54,7 +60,7 @@ function Row(p: {
       <p className="m-0 min-w-0 truncate text-body">{triggerText(r, k("withCondition"))}</p>
       <p className="m-0 min-w-0 truncate text-body text-muted-foreground">
         {r.source
-          ? k("source.copy", { name: r.source.name, v: r.source.version })
+          ? k("source.copy", { name: r.source.name || r.name, v: r.source.version })
           : r.kind === "assigned"
             ? k("source.assigned")
             : k("source.own")}
@@ -122,6 +128,7 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   const op = useCompanyFlowOp(tenantId);
   const isPlatform = useSession((s) => s.me?.role) === "platform_admin";
   const [err, setErr] = useState<string | null>(null);
+  const [ordering, setOrdering] = useState(false);
   const run = (a: FlowOp) => {
     setErr(null);
     op.mutate(a, {
@@ -173,6 +180,7 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
                   r={r}
                   tenantId={tenantId}
                   busy={op.isPending}
+                  ordering={ordering}
                   onOp={run}
                   onDrop={onDrop}
                 />
@@ -181,7 +189,18 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
           </section>
         ))}
       </div>
-      <p className="text-caption text-muted-foreground">{t("tenants.companyFlows.orderHint")}</p>
+      <details
+        className="rounded-md border border-border px-3 py-2"
+        data-testid="company-flow-order"
+        onToggle={(e) => setOrdering((e.currentTarget as HTMLDetailsElement).open)}
+      >
+        <summary className="cursor-pointer text-label font-medium">
+          {t("tenants.companyFlows.orderTitle")}
+        </summary>
+        <p className="mt-2 text-caption text-muted-foreground">
+          {t("tenants.companyFlows.orderHint")}
+        </p>
+      </details>
     </div>
   );
 }

@@ -128,7 +128,13 @@ function triggerPart(views: readonly StageView[], t: TriggerInfo): { node: Node[
   return { node: [node], edges };
 }
 
-type WarnEdges = readonly { from: string; to: string; keys: string[] }[];
+type WarnEdges = readonly {
+  from: string;
+  to: string;
+  keys: string[];
+  labels: string[];
+  toName: string;
+}[];
 const NO_WARN: WarnEdges = [];
 
 /** CR-122 · U2d: ô gợi ý cầu nối dưới mỗi cạnh vàng; có đề xuất ⇒ thêm cạnh nét đứt qua ô (xem trước node Ghi giá trị mờ). */
@@ -149,14 +155,15 @@ function bridgePart(
       id,
       type: "bridge",
       position: {
-        x: (a.position.x + NODE_W + b.position.x) / 2 - BRIDGE_W / 2,
+        // ô đặt lệch về bên trái cạnh để câu không bị mép phải khung cắt
+        x: (a.position.x + NODE_W + b.position.x) / 2 - BRIDGE_W * 0.8,
         y: Math.max(a.position.y, b.position.y) + NODE_H + 28,
       },
       measured: { width: BRIDGE_W, height: ok ? 150 : 76 },
       selectable: false,
       focusable: false,
       draggable: false,
-      data: { from: w.from, to: w.to, keys: w.keys },
+      data: { from: w.from, to: w.to, keys: w.keys, labels: w.labels, toName: w.toName },
     });
     if (ok)
       for (const [s, t] of [
@@ -214,9 +221,15 @@ function useFlowGraph(
     );
     const tp = triggerPart(views, trig);
     const bp = bridgePart(nodes, warn, bridge);
+    // CR-122 · C: flow bỏ hàng tiêu đề cột "Bước n" + nút + đầu cột (thêm bước qua menu "Thêm bước"); cạnh nối tới tiêu đề cũng bỏ.
+    const isHeader = (id: string) => /^h\d+$/.test(id);
+    const shown = trig ? nodes.filter((n) => n.type !== "stepHeader") : nodes;
+    const shownEdges = trig
+      ? edges.filter((e) => !isHeader(e.source) && !isHeader(e.target))
+      : edges;
     return {
-      nodes: [...tp.node, ...nodes, ...bp.node],
-      edges: warnStyle([...tp.edges, ...edges, ...bp.edges], warn),
+      nodes: [...tp.node, ...shown, ...bp.node],
+      edges: warnStyle([...tp.edges, ...shownEdges, ...bp.edges], warn),
       steps: lay.steps,
       dlc,
     };

@@ -60,7 +60,10 @@ export function FlowEditorBody({
     const r = retargetEvent(trigger, stages, next);
     onChange(r.trigger, r.stages);
   };
-  const groups = useMemo(() => groupProblems(problems), [problems]);
+  const groups = useMemo(
+    () => groupProblems(problems, (uid) => stages.find((s) => s.uid === uid)?.name ?? ""),
+    [problems, stages],
+  );
   const bridge = useBridge({
     stages,
     toDef: () => toInput(draft),

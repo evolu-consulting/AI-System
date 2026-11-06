@@ -46,6 +46,7 @@
   },
   "editor": {
     "advanced": "Nâng cao",
+    "toolOff": "Tính năng «{{name}}» chưa bật cho công ty",
     "keyInternal": "Mã nội bộ của quy trình",
     "budgetAi": "Giới hạn chi phí AI mỗi lượt (tuỳ chọn)",
     "enabledLib": "Đang bật",
@@ -73,14 +74,14 @@
     "groups": "Group được chạy (để trống = cả công ty)",
     "budget": "Ngân sách token cả lượt (tuỳ chọn)",
     "enabled": "Bật",
-    "stages": "Giai đoạn",
+    "stages": "Các bước",
     "add": "Thêm giai đoạn",
     "remove": "Xoá giai đoạn",
     "up": "Lên",
     "down": "Xuống",
     "stage": {
       "aria": "Giai đoạn {{n}}: {{name}}",
-      "name": "Tên giai đoạn",
+      "name": "Tên bước",
       "key": "Mã giai đoạn",
       "executor": "Người thực hiện",
       "kind": {
@@ -88,7 +89,7 @@
         "team": "Nhóm agent",
         "wait": "Chờ tới ngày",
         "tool": "Gọi tool",
-        "set": "Ghi giá trị",
+        "set": "Chuẩn bị dữ liệu",
         "if": "Nếu (rẽ Đúng/Sai)",
         "form": "Người điền form",
         "waitFor": "Chờ N giờ",
@@ -221,7 +222,7 @@
           "TOOL_INVALID": "Tool chưa khai báo đủ: điền mọi tham số bắt buộc từ nguồn có thật (tối đa 20 tham số, không dùng tham số tệp).",
           "TOOL_SIDE_EFFECT": "Tool có tác dụng phụ chỉ dùng được khi giai đoạn bật “Hành động thật”.",
           "sideEffectLocked": "Tool có tác dụng phụ cần “Hành động thật”, nhưng giai đoạn này không bật được: mọi giai đoạn ở bước trước phải có người kiểm.",
-          "ref": "Tool này chưa được bật cho công ty hoặc không còn."
+          "ref": "Tính năng này chưa bật cho công ty hoặc không còn."
         }
       },
       "if": {
@@ -304,9 +305,9 @@
           "input": "Đầu vào",
           "const": "Hằng",
           "field": "Bước trước",
-          "fact": "Dữ kiện"
+          "fact": "Thông tin hồ sơ"
         },
-        "fact": "Dữ kiện",
+        "fact": "Thông tin hồ sơ",
         "prevField": "Field của bước trước",
         "as": "Kiểu ghi",
         "asKeep": "Giữ nguyên",
@@ -1280,7 +1281,7 @@
     "addCond": "Thêm điều kiện",
     "removeCond": "Xoá điều kiện",
     "toGroup": "Gộp thành nhóm",
-    "fact": "Dữ kiện",
+    "fact": "Thông tin hồ sơ",
     "op": "So sánh",
     "value": "Giá trị",
     "yes": "Có",
@@ -1298,7 +1299,7 @@
       "agent": "Agent",
       "tool": "Công cụ",
       "esign": "Ký số",
-      "set": "Ghi giá trị",
+      "set": "Chuẩn bị dữ liệu",
       "finish": "Kết thúc",
       "soon": "Chưa dùng được"
     },
@@ -1332,11 +1333,11 @@
     "companies": "{{n}} công ty",
     "add": "Thêm bước",
     "moreActions": "Thao tác khác",
-    "group": { "basic": "Cơ bản", "core": "Lõi" },
+    "group": { "basic": "Cơ bản", "core": "Lõi", "advanced": "Nâng cao" },
     "ifHint": "Đúng thì đi bước Đúng, sai thì đi bước Sai (trống = bước kế).",
     "link": {
       "next": "Bước kế",
-      "merge": "Gộp tới",
+      "merge": "Sau đó đi tiếp",
       "on": {
         "completed": "Đã ký",
         "declined": "Từ chối",
@@ -1355,13 +1356,14 @@
       "edge": "Thiếu dữ liệu",
       "summary": "{{n}} chỗ nối thiếu dữ liệu",
       "chip": "Thiếu {{keys}}",
+      "chipFull": "Bước «{{to}}» cần «{{keys}}» — bước trước chưa có",
       "loading": "Đang gợi ý…",
       "ghost": "Ghi giá trị (đề xuất)",
       "suggest": "Gợi ý cầu nối",
       "none": "Chưa có gợi ý. Thêm node Ghi giá trị để nối hai bước.",
       "accept": "Nhận",
       "dismiss": "Bỏ",
-      "nodeName": "Ghi giá trị"
+      "nodeName": "Chuẩn bị dữ liệu"
     },
     "finish": {
       "name": "Tên",

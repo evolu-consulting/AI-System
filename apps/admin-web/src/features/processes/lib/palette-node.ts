@@ -34,6 +34,8 @@ export type EdgeProblem = {
   /** uid hai bước. */
   from: string;
   to: string;
+  /** Nhãn nghiệp vụ của đầu vào thiếu (nếu manifest/engine có). */
+  label?: string;
   rule: "missing" | "type";
   key: string;
   expected?: string;
@@ -70,19 +72,49 @@ function pairProblems(
     to: b.uid,
     rule: is.rule,
     key: is.key,
+    label: ioLabel(
+      ins.find((x) => x.key === is.key),
+      is.key,
+    ),
     ...(is.rule === "type" ? { expected: is.expected, got: is.got } : {}),
   }));
 }
 
-export type EdgeGroup = { from: string; to: string; keys: string[] };
+export type EdgeGroup = {
+  from: string;
+  to: string;
+  keys: string[];
+  /** Nhãn nghiệp vụ của từng khoá (cùng thứ tự `keys`; chưa có nhãn ⇒ chính khoá). */
+  labels: string[];
+  fromName: string;
+  toName: string;
+};
+
+/** Nhãn của một đầu vào node: `label` (engine lát A khai) nếu có, vắng ⇒ khoá. */
+export function ioLabel(io: { key: string; label?: string } | undefined, key: string): string {
+  return io?.label?.trim() ? io.label : key;
+}
 
 /** Gộp các lỗi cùng một cạnh (nhiều đầu vào thiếu) thành MỘT cạnh vàng. */
-export function groupProblems(ps: readonly EdgeProblem[]): EdgeGroup[] {
+export function groupProblems(
+  ps: readonly EdgeProblem[],
+  names: (uid: string) => string = () => "",
+): EdgeGroup[] {
   const out = new Map<string, EdgeGroup>();
   for (const p of ps) {
     const k = `${p.from}>${p.to}`;
-    const g = out.get(k) ?? { from: p.from, to: p.to, keys: [] };
-    if (!g.keys.includes(p.key)) g.keys.push(p.key);
+    const g = out.get(k) ?? {
+      from: p.from,
+      to: p.to,
+      keys: [],
+      labels: [],
+      fromName: names(p.from),
+      toName: names(p.to),
+    };
+    if (!g.keys.includes(p.key)) {
+      g.keys.push(p.key);
+      g.labels.push(p.label ?? p.key);
+    }
     out.set(k, g);
   }
   return [...out.values()];

@@ -70,16 +70,18 @@ export function NodePalette({ ops, count, max }: Props) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="max-h-96 overflow-y-auto">
           <DropdownMenuLabel>{t("process.admin.flow.group.basic")}</DropdownMenuLabel>
-          {nodesForApp(ctx.app).map((n) => (
-            <DropdownMenuItem
-              key={n.id}
-              data-testid={`flow-node-${n.id}`}
-              disabled={!n.patch}
-              onSelect={() => add(n)}
-            >
-              {t(`process.admin.flow.node.${n.id}`)}
-            </DropdownMenuItem>
-          ))}
+          {nodesForApp(ctx.app)
+            .filter((n) => n.id !== "set")
+            .map((n) => (
+              <DropdownMenuItem
+                key={n.id}
+                data-testid={`flow-node-${n.id}`}
+                disabled={!n.patch}
+                onSelect={() => add(n)}
+              >
+                {t(`process.admin.flow.node.${n.id}`)}
+              </DropdownMenuItem>
+            ))}
           {groups.map(([g, nodes]) => (
             <div key={g}>
               <DropdownMenuSeparator />
@@ -98,6 +100,19 @@ export function NodePalette({ ops, count, max }: Props) {
               ))}
             </div>
           ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>{t("process.admin.flow.group.advanced")}</DropdownMenuLabel>
+          {nodesForApp(ctx.app)
+            .filter((n) => n.id === "set")
+            .map((n) => (
+              <DropdownMenuItem
+                key={n.id}
+                data-testid={`flow-node-${n.id}`}
+                onSelect={() => add(n)}
+              >
+                {t(`process.admin.flow.node.${n.id}`)}
+              </DropdownMenuItem>
+            ))}
         </DropdownMenuContent>
       </DropdownMenu>
       <Button type="button" variant="ghost" size="sm" onClick={ops.arrange}>
