@@ -61,25 +61,33 @@ describe("CR-121 c18 · admin 0037 · backfill + gỡ engine", () => {
           on conflict (key) do nothing`;
         const [t] = await tx<{ id: string }[]>`
           insert into admin.tenants (key, name) values (${`c18-${SUFFIX}`}, 'C18') returning id`;
+        const tid = t?.id as string;
         await tx`insert into admin.feature_entitlements (feature_id, tenant_id)
-          select id, ${t?.id ?? ""} from admin.features where key = 'contracts-approval-engine'
+          select id, ${tid} from admin.features where key = 'contracts-approval-engine'
           on conflict (feature_id, tenant_id) do nothing`;
+        // Cấp phép nhóm + quota riêng của engine: phải bị xoá tường minh kèm audit theo công ty.
+        const [grp] = await tx<{ id: string }[]>`
+          insert into admin.groups (tenant_id, key, name) values (${tid}, 'c18-g', ${tx.json({ vi: "G" })}) returning id`;
+        const gid = grp?.id as string;
+        await tx`insert into admin.feature_grants (tenant_id, feature_id, group_id)
+          select ${tid}, id, ${gid} from admin.features where key = 'contracts-approval-engine'`;
+        await tx`insert into admin.tenant_quotas (tenant_id, feature_id, max_runs)
+          select ${tid}, id, 5 from admin.features where key = 'contracts-approval-engine'`;
         await tx`update admin.features set app = null`;
 
-        const audited = () =>
-          tx<
-            { n: number }[]
-          >`select count(*)::int as n from admin.audit_log where entity_name = 'contracts-approval-engine'`;
-        const [a0] = await audited();
         for (const s of stmts0037) await tx.unsafe(s);
 
         const apps = await tx<{ key: string; app: string }[]>`
           select key, app from admin.features where key = any(${Object.keys(keys)})`;
-        const [eng] = await tx<{ f: number; e: number; a: number }[]>`select
-            (select count(*) from admin.features where key = 'contracts-approval-engine')::int as f,
-            (select count(*) from admin.audit_log where entity = 'entitlement' and entity_name = 'contracts-approval-engine')::int as e,
-            (select count(*) from admin.audit_log where entity = 'feature' and entity_name = 'contracts-approval-engine')::int as a`;
-        const [a1] = await audited();
+        const [eng] = await tx<{ f: number }[]>`
+          select count(*)::int as f from admin.features where key = 'contracts-approval-engine'`;
+        const tenantAudit = await tx<{ entity: string; summary: Record<string, unknown> }[]>`
+          select entity, summary from admin.audit_log
+          where tenant_id = ${tid} and entity_name = 'contracts-approval-engine' order by entity`;
+        const [fa] = await tx<{ k: string | null; c: number }[]>`
+          select (select before->>'key' from admin.audit_log where entity = 'feature' and entity_name = 'contracts-approval-engine'
+                    and before is not null order by seq desc limit 1) as k,
+            (select count(*)::int from admin.feature_grants g join admin.tenants x on x.id = g.tenant_id where x.id = ${tid}) as c`;
         const [nul] = await tx<{ n: number; notnull: boolean }[]>`
           select (select count(*) from admin.features where app is null)::int as n,
             (select attnotnull from pg_attribute where attrelid = 'admin.features'::regclass and attname = 'app') as notnull`;
@@ -88,7 +96,7 @@ describe("CR-121 c18 · admin 0037 · backfill + gỡ engine", () => {
         // Trigger điền app khi INSERT SQL thẳng không nêu app (cài gói, seed).
         const [ins] = await tx<{ app: string }[]>`
           insert into admin.features (key, name) values (${`knowledge-x${SUFFIX}`}, ${tx.json(name("x"))}) returning app`;
-        result = { apps, eng, nul, ins, delta: (a1?.n ?? 0) - (a0?.n ?? 0) };
+        result = { apps, eng, nul, ins, tenantAudit, fa };
         throw ROLLBACK;
       })
       .catch((e) => {
@@ -97,14 +105,23 @@ describe("CR-121 c18 · admin 0037 · backfill + gỡ engine", () => {
 
     const r = result as {
       apps: { key: string; app: string }[];
-      eng: { f: number; e: number; a: number };
+      eng: { f: number };
       nul: { n: number; notnull: boolean };
       ins: { app: string };
-      delta: number;
+      tenantAudit: { entity: string; summary: Record<string, unknown> }[];
+      fa: { k: string | null; c: number };
     };
     expect(Object.fromEntries(r.apps.map((x) => [x.key, x.app]))).toEqual(keys);
     expect(r.eng.f).toBe(0); // engine đã gỡ
-    expect(r.delta).toBe(2); // audit mới: 1 entitlement + 1 feature (lần chạy migrate đầu có thể đã ghi thêm dòng của nó)
+    // Audit theo công ty: entitlement + grant + quota đều có dòng riêng (không cascade lặng lẽ); grant/quota nêu số dòng.
+    expect(r.tenantAudit.map((x) => x.entity)).toEqual(["entitlement", "grant", "quota"]);
+    expect(r.tenantAudit.find((x) => x.entity === "grant")?.summary.rows).toBe(1);
+    expect(r.tenantAudit.find((x) => x.entity === "quota")?.summary).toMatchObject({
+      quotas: 1,
+      alerts: 0,
+    });
+    expect(r.fa.c).toBe(0); // grant đã xoá
+    expect(r.fa.k).toBe("contracts-approval-engine"); // audit feature có efore để khôi phục
     expect(r.nul).toEqual({ n: 0, notnull: true });
     expect(r.ins.app).toBe("knowledge");
   });

@@ -155,4 +155,21 @@ SELECT 'machine-open', 'OK',
 FROM contracts.approvals
 WHERE mode = 'machine' AND status NOT IN ('done', 'rejected', 'cancelled', 'failed');
 
+-- 8. (c18) Công ty còn entitlement `contracts-approval-engine` (admin 0037 sẽ xoá feature này) nhưng khe contracts.approval CHƯA có luật gán quy trình
+--    ⇒ sau deploy hợp đồng mới của công ty đó không còn duyệt bằng engine. Chỉ cảnh báo để điều phối gán quy trình trước.
+WITH eng AS (
+  SELECT t.id, t.key, t.name FROM admin.tenants t
+  WHERE EXISTS (SELECT 1 FROM admin.feature_entitlements e JOIN admin.features f ON f.id = e.feature_id
+                WHERE e.tenant_id = t.id AND e.revoked_at IS NULL AND f.key = 'contracts-approval-engine')),
+bad AS (
+  SELECT e.* FROM eng e
+  WHERE NOT EXISTS (SELECT 1 FROM hub.process_routing_rules r WHERE r.tenant_id = e.id AND r.slot = 'contracts.approval'))
+SELECT 'engine-feature', 'WARN',
+  replace(name, E'\t', ' ') || ' (' || key || '): còn feature contracts-approval-engine nhưng khe contracts.approval chưa có quy trình gán ⇒ sau deploy 0037 không còn duyệt bằng engine',
+  'Admin › Công ty › Quy trình: gán quy trình duyệt hợp đồng cho công ty này TRƯỚC khi deploy.'
+FROM bad
+UNION ALL
+SELECT 'engine-feature', 'OK',
+  (SELECT count(*) FROM eng) || ' công ty còn feature engine, đều đã có quy trình gán cho khe contracts.approval', ''
+WHERE NOT EXISTS (SELECT 1 FROM bad);
 ROLLBACK;
