@@ -22,7 +22,7 @@ const key = parseHubSecretsKey(randomBytes(32).toString("base64"));
 type Sent = { from: string; to: string; subject: string; pass: string | undefined; host: string };
 const sent: Sent[] = [];
 
-function app(token: string | undefined = TOKEN): Hono {
+function app(token: string | null = TOKEN): Hono {
   const creds = hubCredentials(
     db,
     new HubSecretReader({ db, key, log: { warn: () => {} } as never }),
@@ -36,7 +36,11 @@ function app(token: string | undefined = TOKEN): Hono {
     }),
   );
   const a = new Hono();
-  mountMailRelay(a, { token, send: (msgs) => email.sendBatch(msgs), log: { warn: () => {} } });
+  mountMailRelay(a, {
+    token: token ?? undefined,
+    send: (msgs) => email.sendBatch(msgs),
+    log: { warn: () => {} },
+  });
   return a;
 }
 const post = (a: Hono, body: unknown, auth?: string) =>
@@ -105,7 +109,7 @@ describe("CR-121 c21b · POST /internal/mail", () => {
 
   it("Hub chưa cấu hình token dịch vụ ⇒ 503 kể cả khi gửi token, thân sai ⇒ 400", async () => {
     sent.length = 0;
-    expect((await post(app(undefined), MAIL, `Bearer ${TOKEN}`)).status).toBe(503);
+    expect((await post(app(null), MAIL, `Bearer ${TOKEN}`)).status).toBe(503);
     const bad = [
       { ...MAIL, to: [] },
       { ...MAIL, subject: "a\r\nBcc: x" },
