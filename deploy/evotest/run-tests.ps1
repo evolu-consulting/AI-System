@@ -22,6 +22,12 @@ param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "i
 $ErrorActionPreference = "Stop"
 $isFull = (($Step -in "int", "e2e", "all") -and -not $Filter -and -not $Exclusive -and -not $InShard)
 if ($Force -and -not $isFull) { Write-Host "evotest: -Force chỉ có nghĩa với lượt toàn bộ (int|e2e|all không -Filter); bỏ qua" }
+# Mặc định nhanh (người dùng 2026-11-06): e2e có -Filter mà không -Jobs ⇒ mọi job trong Filter chạy CÙNG LÚC (≤ 4), 2 CPU mỗi job
+# (trước đây 2 job/slot nối tiếp ⇒ 3 job ~9 phút). -Jobs/-Cpus nêu rõ thì giữ nguyên.
+if ($Step -eq "e2e" -and $Filter -and -not $InShard -and -not $Jobs) {
+  $Jobs = [math]::Min(4, [math]::Max(1, @($Filter -split '[,\s]+' | Where-Object { $_ }).Count))
+  if (-not $Cpus) { $Cpus = [math]::Min(8, 2 * $Jobs) }
+}
 if ($Exclusive -and $Step -ne "perf" -and $Step -ne "py") { throw "-Exclusive chỉ dùng với -Step perf|py (đo hiệu năng cần máy yên)" }
 if ($Probe -and $Step -ne "perf" -and $Step -ne "py") { throw "-Probe chỉ dùng với -Step perf|py" }
 $Repo = (Resolve-Path "$PSScriptRoot\..\..").Path
