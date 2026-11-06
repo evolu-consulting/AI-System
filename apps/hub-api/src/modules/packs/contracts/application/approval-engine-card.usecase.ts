@@ -192,20 +192,34 @@ export function engineAct(d: EngineCardDeps) {
     if (plan.kind === "error") return { error: plan.code };
     if (b.expect && b.expect.taskId !== plan.taskId) return { error: "APPROVAL_NOT_OPEN" };
     const c = { who, id, st, runId: a.engineRunId, b };
-    const ev = plan.kind !== "redo" ? await noteOverride(d, c, inp.sv, plan.taskId) : null;
-    if (!ev) return exec(d, port, c, plan);
-    // Review · engine không nhận (not_open / đua / lỗi) ⇒ bù trừ: xoá ĐÚNG bản ghi vừa chèn (lịch sử không hiện duyệt thay giả).
-    const undo = () =>
-      d.uow
-        .tenant(c.who, async (r) => r.approvalEngine.voidOverride?.(ev))
-        .catch(() => d.warn?.("contract-approval-override-void-failed", { contract_id: id }));
-    const out = await exec(d, port, c, plan).catch(async (e: unknown) => {
-      await undo();
-      throw e;
-    });
-    if (out !== "ok") await undo();
+    const note = plan.kind !== "redo" ? await noteOverride(d, c, inp.sv, plan.taskId) : null;
+    if (note?.id) return execOrVoid(d, port, c, plan, note.id);
+    const out = await exec(d, port, c, plan);
+    // W1 · hai lần bấm song song của CÙNG người: lần chèn bản ghi thua đua (bù trừ xoá) còn lần trùng (không chèn) thắng ⇒ ghi
+    // lại sau khi engine nhận quyết (idempotent, `on conflict do nothing`) — quyết duyệt thay không bao giờ thiếu audit.
+    if (out === "ok" && note) await noteOverride(d, c, inp.sv, plan.taskId);
     return out;
   };
+}
+
+/** Review · engine không nhận (not_open / đua / lỗi) ⇒ bù trừ: xoá ĐÚNG bản ghi vừa chèn (lịch sử không hiện duyệt thay giả). */
+async function execOrVoid(
+  d: EngineCardDeps,
+  port: ApprovalEnginePort,
+  c: Ctx,
+  plan: Plan,
+  ev: string,
+): Promise<EngineActResult> {
+  const undo = () =>
+    d.uow
+      .tenant(c.who, async (r) => r.approvalEngine.voidOverride?.(ev))
+      .catch(() => d.warn?.("contract-approval-override-void-failed", { contract_id: c.id }));
+  const out = await exec(d, port, c, plan).catch(async (e: unknown) => {
+    await undo();
+    throw e;
+  });
+  if (out !== "ok") await undo();
+  return out;
 }
 
 /** CR-113 (review) · người quyết chỉ có quyền nhờ Toàn quyền ⇒ ghi "duyệt thay" (`contract_events` `approval_override`) TRƯỚC khi
@@ -228,11 +242,11 @@ async function noteOverride(
     action: c.b.action,
     actor: c.who.userId,
   };
-  // id vừa chèn (bù trừ được); trùng lần bấm trước ⇒ null (không bù trừ bản ghi cũ).
-  return (
+  // `id` vừa chèn (bù trừ được); trùng lần bấm trước ⇒ `id: null` (không bù trừ bản ghi cũ) nhưng vẫn là duyệt thay.
+  const id =
     (await d.uow.tenant(c.who, async (r) => r.approvalEngine.recordOverride?.(c.id, aid, ev))) ??
-    null
-  );
+    null;
+  return { id };
 }
 
 type Plan = Exclude<ReturnType<typeof planEngineAct>, { kind: "error" }>;
