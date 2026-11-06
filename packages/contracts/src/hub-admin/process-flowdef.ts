@@ -58,8 +58,14 @@ type FlowDefShape = {
   owner: FlowOwner;
   trigger: FlowTrigger;
   source?: unknown;
-  stages: readonly { step?: number; next_step?: number; outcome?: string }[];
+  stages: readonly {
+    step?: number;
+    next_step?: number;
+    outcome?: string;
+    executor?: { kind: string; when?: { conds?: readonly IfCondShape[] } };
+  }[];
 };
+type IfCondShape = { from: { kind: string; key?: string }; op: string; value: unknown };
 
 function stageIssues(d: FlowDefShape, add: (p: string, r: FlowDefRule) => void): void {
   const steps = resolveSteps(d.stages);
@@ -104,6 +110,25 @@ function whenIssues(w: FactWhen, ev: AppEventDecl, add: (p: string, r: FlowDefRu
   });
 }
 
+/** CR-122 E2b · vế `fact` của node Nếu: khoá thuộc `AppEventDecl.facts` của sự kiện + phép so/giá trị đúng kiểu dữ kiện. */
+function ifFactIssues(
+  stages: FlowDefShape["stages"],
+  ev: AppEventDecl,
+  add: (p: string, r: FlowDefRule) => void,
+) {
+  const types = new Map(ev.facts.map((f) => [f.key, f.type]));
+  stages.forEach((s, i) => {
+    if (s.executor?.kind !== "if") return;
+    (s.executor.when?.conds ?? []).forEach((c, j) => {
+      if (c.from.kind !== "fact") return;
+      const t = types.get(c.from.key ?? "");
+      const cond = { fact: c.from.key ?? "", op: c.op, value: c.value } as FactCond;
+      if (t === undefined || !condOk(cond, t))
+        add(`stages.${i}.executor.when.conds.${j}`, "FLOW_WHEN_INVALID");
+    });
+  });
+}
+
 /**
  * Luật chéo của FlowDef MỚI (≤ 20 bước, ≥ 1 Kết thúc, `next_step` tiến về sau, Kết thúc không đi tiếp, `source` chỉ ở bản công ty).
  * `events` (sự kiện của app sở hữu flow) có ⇒ kiểm thêm: sự kiện thuộc app, `outcome` thuộc sự kiện, điều kiện đúng dữ kiện + kiểu.
@@ -124,6 +149,7 @@ export function flowDefIssues(d: FlowDefShape, events?: readonly AppEventDecl[])
           add(`stages.${i}.outcome`, "FLOW_OUTCOME_UNKNOWN");
       });
       if (d.trigger.when) whenIssues(d.trigger.when, ev, add);
+      ifFactIssues(d.stages, ev, add);
     }
   }
   return out.slice(0, ISSUES_MAX);

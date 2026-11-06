@@ -54,6 +54,12 @@ export function gatesRoutes(d: ProcessDeps): Hono<AuthVars> {
     return c.json(await ctl.rerunStep(c.var.user, parseIdParam(c), b, tenantIdQuery(c)));
   });
 
+  // CR-122 E2b · "Chạy lại từ Nếu" cho lượt dừng "Cần xử lý" vì dữ kiện đổi sau khi rẽ (`decision.reason = facts_changed`).
+  r.post("/process-runs/:id/rerun-from-if", async (c) => {
+    const b = await parseJson(c, RerunProcessRunRequestSchema);
+    return c.json(await ctl.rerunFromIf(c.var.user, parseIdParam(c), b.reason, tenantIdQuery(c)));
+  });
+
   r.post("/process-runs/:id/rerun", async (c) => {
     const b = await parseJson(c, RerunProcessRunRequestSchema);
     const out = await ctl.rerun(c.var.user, parseIdParam(c), b.reason);

@@ -20,6 +20,7 @@ import {
 } from "../chat/processes";
 import { IsoDateTime, UuidSchema } from "../common";
 import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "./autofix";
+import { ApproveExecutorSchema } from "./process-approve";
 import { FormExecutorSchema } from "./process-form";
 import {
   AnswererGroupSchema,
@@ -75,6 +76,7 @@ export {
 } from "../chat/processes-entities";
 export * from "./autofix";
 export * from "./dlc-step-templates";
+export * from "./process-approve";
 export * from "./process-company";
 export * from "./process-library";
 export * from "./process-notify";
@@ -172,6 +174,8 @@ export const ProcessStageDefSchema = z.strictObject({
     WaitEventExecutorSchema,
     /** CR-121 D-6 · gửi thông báo rồi xong bước (luật `notifyDefIssues`, hub nodes/notify). */
     NotifyExecutorSchema,
+    /** CR-122 · E2b · node Duyệt độc lập (luật `approveStageIssues`, hub nodes/approve). */
+    ApproveExecutorSchema,
   ]),
   instruction: z.string().max(STAGE_INSTRUCTION_MAX),
   output: z.strictObject({

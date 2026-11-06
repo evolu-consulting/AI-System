@@ -4,6 +4,7 @@ import type { ExecutorKind, ProcessDefInput } from "@ai/contracts/hub-admin";
 import type { DefRefs, RefMiss } from "../defs/def-refs";
 import { agentNode } from "./agent/node";
 import { applyNode } from "./apply/node";
+import { approveNode } from "./approve/node";
 import { formNode } from "./form/node";
 import { ifNode } from "./if/node";
 import { notifyNode } from "./notify/node";
@@ -28,6 +29,7 @@ export const NODES: { readonly [K in ExecutorKind]: NodeSpec<K> } = {
   wait_for: waitForNode,
   wait_event: waitEventNode,
   notify: notifyNode,
+  approve: approveNode,
 };
 
 /** Thứ tự cố định (= `EXECUTOR_KINDS`): quyết thứ tự lỗi `defIssues` (team trước tool như cũ). */
@@ -43,6 +45,7 @@ const NODE_LIST: readonly NodeSpec[] = [
   NODES.wait_for,
   NODES.wait_event,
   NODES.notify,
+  NODES.approve,
 ] as NodeSpec[];
 
 /** Loại lạ (snapshot cũ/hỏng) ⇒ undefined. */

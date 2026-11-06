@@ -16,6 +16,7 @@ import { ifFacts } from "./if-facts.repo";
 type SnapRule = { field: string; op: BranchRule["op"]; value: string | number; goto_step: number };
 type StepHead = {
   current_step: number;
+  status: string;
   pack_key: string | null;
   pack_record_id: string | null;
   snapshot: {
@@ -25,10 +26,25 @@ type StepHead = {
       step?: number;
       next_step?: number;
       outcome?: string;
-      executor?: { kind: string };
+      executor?: { kind: string; reject_step?: number | null; return_step?: number | null };
       after?: { branch?: SnapRule[] };
     }[];
   } | null;
+};
+/** Lượt đã kết thúc ⇒ join bước không chạy (sự kiện/kết quả tới muộn không gọi lại handler, không ghi đè `cancelled`). */
+const ENDED: ReadonlySet<string> = new Set(["done", "cancelled", "failed", "expired", "rejected"]);
+
+type SnapStageLite = NonNullable<NonNullable<StepHead["snapshot"]>["stages"]>[number];
+/** CR-122 E2b · node Duyệt: field `decision` = rejected/returned ⇒ rẽ tới `reject_step`/`return_step` (cùng đường `after.branch`). */
+const approveRules = (s: SnapStageLite): BranchRule[] => {
+  const e = s?.executor;
+  if (e?.kind !== "approve") return [];
+  const out: BranchRule[] = [];
+  if (typeof e.reject_step === "number")
+    out.push({ field: "decision", op: "eq", value: "rejected", gotoStep: e.reject_step });
+  if (typeof e.return_step === "number")
+    out.push({ field: "decision", op: "eq", value: "returned", gotoStep: e.return_step });
+  return out;
 };
 
 /** CR-122 · bản ghi app + sự kiện của lượt (FlowDef mới có `trigger`); lượt cũ / không gắn gói ⇒ null. */
@@ -51,7 +67,7 @@ const branchesOf = (stages: NonNullable<StepHead["snapshot"]>["stages"] & {}): B
           value: r.value,
           gotoStep: r.goto_step,
         }))
-      : [],
+      : approveRules(s),
   );
 
 /** CR-103 · snapshot `executor` kind `if` (snake_case) ⇒ domain `IfExec`; stage khác / hỏng ⇒ `null`. */
@@ -96,12 +112,12 @@ export function stepRepo(tx: Tx, tenantId: string): StepRepo {
     async loadJoin(runId) {
       // T19-perf · hai câu đọc độc lập gửi liền (pipeline postgres.js, một round-trip); run đã khoá ⇒ cùng ảnh.
       const [[h], rows] = await Promise.all([
-        tx.execute<StepHead>(sql`select current_step, pack_key, pack_record_id, snapshot from hub.process_runs
+        tx.execute<StepHead>(sql`select current_step, status, pack_key, pack_record_id, snapshot from hub.process_runs
     where id = ${runId} and tenant_id = ${tenantId}`),
         tx.execute<{ stage_idx: number; status: StageRunStatus }>(sql`select stage_idx,
     status from hub.stage_runs where process_run_id = ${runId} and tenant_id = ${tenantId}`),
       ]);
-      if (!h) return null;
+      if (!h || ENDED.has(h.status)) return null;
       const stages = h.snapshot?.stages ?? [];
       return {
         step: Number(h.current_step),

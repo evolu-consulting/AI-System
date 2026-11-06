@@ -1315,7 +1315,7 @@ e6f29d8fc3471fa69a54382b8d25c34b3a5889fce3218cdca5dfb172ef346ca4  tests/acceptan
 5b724cb3c54c3ab86b3865a9d94d4eecbfb16ce70317a0fce62efa0f1bb71817  tests/acceptance/P-d/rules/contracts-pd1-issues.test.ts
 b16cd03a8b16c495b2a239d751cbca54ff0e60d9a2c91864f578d5f3452df189  tests/acceptance/P-d/rules/contracts-pd1.test.ts
 52f6854d397b9cf14292480f1e684ee3956b22a19700e56d1e24b1c4b4274f67  tests/acceptance/P-d/rules/d2/branch.test.ts
-3ef849e023a00ab41f5b9b713a6e10f88494ba2260169e1b4d5ab5c1e9e797f7  tests/acceptance/P-d/rules/d2/contracts-pd2.test.ts
+6365adfa1b8e41fb511c31bcd786301a5eb82b64856126041be52065968c55fb  tests/acceptance/P-d/rules/d2/contracts-pd2.test.ts
 71219701258e07a06e07b309e8a6e6f5bcb793bee1a3a69736e13d35bf1c0f9f  tests/acceptance/P-d/rules/d2/def-issues.test.ts
 967fb29ff80891576d9d463857a9304a1b6a2b8f9b2117a9ce3affcb3216b556  tests/acceptance/P-d/rules/d2/run-tool-stage-recheck.test.ts
 6428781000d3a94fb478e08d40bf3ac289cf94d577cb0a33f001e0d3228302f6  tests/acceptance/P-d/rules/d2/run-tool-stage.test.ts

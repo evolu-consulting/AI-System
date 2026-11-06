@@ -151,7 +151,13 @@ export function stageOutputSteps(
   p: { kind: string; stageRunId: string; hubRunId: string; tenantId: string; attempt: number },
 ): Promise<OutputStep[]> {
   // CR-121 D-6 · `notify` như `set`: Hub tự chạy, không `hub.runs` (hubRunId rỗng).
-  if (p.kind === "tool" || p.kind === "set" || p.kind === "form" || p.kind === "notify")
+  if (
+    p.kind === "tool" ||
+    p.kind === "set" ||
+    p.kind === "form" ||
+    p.kind === "notify" ||
+    p.kind === "approve"
+  )
     return Promise.resolve([]);
   if (p.kind === "team") return outputSteps(tx, p);
   return outputStepsSingle(tx, p);

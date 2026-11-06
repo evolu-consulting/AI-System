@@ -190,5 +190,7 @@
   "timer_invalid": "The scheduled date isn't valid or is past the run's expiry.",
   "timer_invalid_hint": "The date is missing or wrong, more than 730 days away, or after the run expires. Recalculate the date, skip the wait to continue, or cancel.",
   "tool_failed": "The tool call failed.",
-  "tool_failed_hint": "The tool was turned off for the company, or it returned an error or a result that doesn't match. Review it, then choose what to do."
+  "tool_failed_hint": "The tool was turned off for the company, or it returned an error or a result that doesn't match. Review it, then choose what to do.",
+  "facts_changed": "The record changed after the branch was taken.",
+  "facts_changed_hint": "The value at the branch differs from the current value, so the result may be wrong. Rerun from the If step to branch on the new value."
 }

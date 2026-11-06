@@ -16,7 +16,8 @@ export type Executor =
   | { kind: "form" } // CR-118
   | { kind: "wait_for" } // CR-120 · G3
   | { kind: "wait_event" } // CR-120 · G4
-  | { kind: "notify" }; // CR-121 D-6
+  | { kind: "notify" } // CR-121 D-6
+  | { kind: "approve" }; // CR-122 E2b
 
 type NameRow = { id: string; key: string; vi: string | null; en: string | null };
 
@@ -80,9 +81,16 @@ export const NOTIFY_EXECUTOR_REF: ExecutorRef = {
   key: "notify",
   name: { vi: "Thông báo", en: "Notify" },
 };
+/** CR-122 E2b · stage `approve` (node Duyệt độc lập). */
+export const APPROVE_EXECUTOR_REF: ExecutorRef = {
+  kind: "approve",
+  key: "approve",
+  name: { vi: "Duyệt", en: "Approve" },
+};
 /** ExecutorRef cố định của stage Hub tự chạy; agent/team ⇒ null (tra catalog). */
 const FIXED_REFS: Readonly<Record<string, ExecutorRef>> = {
   notify: NOTIFY_EXECUTOR_REF,
+  approve: APPROVE_EXECUTOR_REF,
   apply: APPLY_EXECUTOR_REF,
   wait_until: WAIT_UNTIL_EXECUTOR_REF,
   set: SET_EXECUTOR_REF,

@@ -25,8 +25,10 @@ export type FlowEventInput = {
 };
 
 /**
- * Đọc dữ kiện HIỆN TẠI của bản ghi cho node Nếu (FLOW2-FR-12/21). Tối đa MỘT câu SQL mỗi nguồn dữ liệu, `tenant_id` tường minh
- * (Luật 4c; E2 đếm câu trong test). Bản ghi không thấy trong tenant ⇒ `null` (không lộ tồn tại).
+ * Đọc dữ kiện HIỆN TẠI của bản ghi cho node Nếu (FLOW2-FR-12/21). Tối đa MỘT câu SQL mỗi nguồn dữ liệu (Luật 4c). Bản ghi không thấy
+ * trong tenant ⇒ `null` (không lộ tồn tại).
+ * BẢO MẬT: engine gọi reader NGOÀI tx của join bước và ngoài RLS của người dùng ⇒ reader PHẢI tự lọc `tenant_id = tenantId` ở mọi
+ * câu (không tin `ref` một mình) và chỉ đọc dữ liệu ĐÃ COMMIT (kết nối/scope riêng của gói, không dùng tx của engine).
  */
 export type FactsReader = {
   packKey: string;

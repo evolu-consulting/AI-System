@@ -24,10 +24,12 @@ describe("PD2-C01 · enum nối cuối [plan-contract §6]", () => {
       11,
       "skipped",
     ]);
-    expect([chat.DECISION_REASONS?.length, chat.DECISION_REASONS?.at(-1)]).toEqual([
-      23,
-      "tool_failed",
-    ]);
+    // CR-122 E2b nối cuối `facts_changed` (24): tiền tố 23 giá trị cũ giữ nguyên, `tool_failed` vẫn ở vị trí 23.
+    expect([
+      chat.DECISION_REASONS?.length,
+      chat.DECISION_REASONS?.at(22),
+      chat.DECISION_REASONS?.at(-1),
+    ]).toEqual([24, "tool_failed", "facts_changed"]);
     // CR-103 nối cuối `set`, `if`: tiền tố 5 giá trị cũ giữ nguyên.
     expect(chat.EXECUTOR_KINDS?.slice(0, 5)).toEqual([
       "agent",
@@ -36,7 +38,8 @@ describe("PD2-C01 · enum nối cuối [plan-contract §6]", () => {
       "wait_until",
       "tool",
     ]);
-    expect(chat.EXECUTOR_KINDS?.slice(5)).toEqual(["set", "if"]);
+    // CR-118…CR-122 nối thêm sau `if` (form, wait_for, wait_event, notify, approve): kiểm tiền tố, không kiểm đuôi.
+    expect(chat.EXECUTOR_KINDS?.slice(5, 7)).toEqual(["set", "if"]);
   });
   it("AC-H44 · PD2-C01 · PROCESS_DEF_RULES.slice(17) = [TOOL_INVALID, TOOL_SIDE_EFFECT, BRANCH_INVALID]; PROCESS_REF_KINDS cuối tool", () => {
     // CR-103 nối cuối SET_INVALID, IF_INVALID: đoạn P-d2 (17..19) giữ nguyên.

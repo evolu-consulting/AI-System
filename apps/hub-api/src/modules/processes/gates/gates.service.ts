@@ -37,6 +37,7 @@ import * as repo from "../runs/runs.repo";
 import type { StepOutcome } from "../runs/step-persist";
 import { stageRowOf } from "../runs/team-runner";
 import { ViewService } from "../runs/view.service";
+import { approveDecide } from "./approve-out";
 import { type BackOut, backFromDecision, type CancelIds } from "./back.effects";
 import { type FormSubmit, formPre, formReplayCheck } from "./form-out";
 import { reviewDecisionCheck } from "./gate.rules";
@@ -214,9 +215,11 @@ export class GateService {
     assertReviewAllowed(run, idx, v.userId, b); // N2-FR-05 403 · P-b2 422 BACK_TARGET_INVALID — trước khi đóng task
     const pre = { run, idx, outputId: s?.current_output_id ?? null, taskId, v, form };
     const answer = await formPre(tx, pre); // CR-118 · stage form chỉ quyết qua gửi form (ghi output cùng tx)
-    const t = transition(buildState({ run, s, def: snapOf(run).stages[idx], idx, reason: null }), {
+    const def = snapOf(run).stages[idx];
+    const eb = await approveDecide(tx, { ...pre, tenantId: run.tenantId, def: def as never }, b); // CR-122 E2b
+    const t = transition(buildState({ run, s, def, idx, reason: null }), {
       kind: "review",
-      result: b.result,
+      result: eb.result,
     });
     const [closed, ref] = await Promise.all([
       core.closeTask(tx, taskId, {
@@ -233,7 +236,7 @@ export class GateService {
     if (!t.ok) throw processError(t.code);
     const e: Eff = { run, idx, next: t.next, effects: t.effects, ref };
     const gx: Gx = { d: this.d, tx };
-    const { events, step, status, kick, cancel } = await reviewOut(gx, e, task, b);
+    const { events, step, status, kick, cancel } = await reviewOut(gx, e, task, eb);
     // D9 · decision mở cũ nhất (Chưa đạt chạm `back_limit` vừa ghi decision mới nhất) ∥ đọc thẻ task trả về: độc lập
     // (`process_runs.decision` không thuộc `TaskDetail`) ⇒ pipeline.
     const [, details] = await Promise.all([

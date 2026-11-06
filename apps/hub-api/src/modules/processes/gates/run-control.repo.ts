@@ -3,12 +3,13 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 
-export type ControlOp = "stop" | "rerun_step" | "rerun";
+export type ControlOp = "stop" | "rerun_step" | "rerun" | "rerun_if";
 /** `hub.audit_log.action` có sẵn (CHECK): Dừng ⇒ 'cancel'; chạy lại ⇒ 'start'. Phân biệt bằng `summary.op`. */
 const ACTION: Record<ControlOp, "cancel" | "start"> = {
   stop: "cancel",
   rerun_step: "start",
   rerun: "start",
+  rerun_if: "start",
 };
 
 type Audit = {

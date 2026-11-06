@@ -19,6 +19,7 @@ export const NODE_FAMILY_OF: Readonly<Record<ExecutorKind, NodeFamily>> = {
   wait_for: "wait", // CR-120 · G3
   wait_event: "wait", // CR-120 · G4
   notify: "work", // CR-121 D-6 · gửi thông báo, xong ngay
+  approve: "work", // CR-122 E2b · node Duyệt độc lập (người quyết qua cổng kiểm)
 };
 
 /** CR-103 · R3: loại node có khai báo field output cho bước sau dùng không ("none" ⇒ không được có tham chiếu tới nó). */
@@ -35,6 +36,7 @@ export const NODE_PRODUCES: Readonly<Record<ExecutorKind, NodeProduces>> = {
   wait_for: "none",
   wait_event: "none",
   notify: "none",
+  approve: "declared", // CR-122 E2b · field `decision` (approved/rejected/returned)
 };
 
 /** Họ của loại node; loại lạ (def cũ/hỏng) ⇒ null. */

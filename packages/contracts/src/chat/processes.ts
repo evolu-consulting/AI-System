@@ -130,6 +130,8 @@ export const DECISION_REASONS = [
   "timer_invalid",
   // P-d2 · PD2-R05 · gọi tool lỗi nghiệp vụ / lỗi tạm sau khi đã gửi tool `side_effect`.
   "tool_failed",
+  // CR-122 · H2 · dữ kiện bản ghi đổi sau khi node Nếu rẽ (tới Kết thúc thì dừng, chạy lại từ Nếu).
+  "facts_changed",
 ] as const;
 export const DECISION_OPTIONS = ["add_attempt", "use_current", "cancel"] as const;
 export const NOTICE_KINDS = [
@@ -160,6 +162,8 @@ export const EXECUTOR_KINDS = [
   "wait_event",
   // CR-121 D-6 · gửi thông báo rồi xong bước ngay.
   "notify",
+  // CR-122 · E2b · node Duyệt độc lập (Duyệt / Từ chối / Trả lại rẽ theo bước).
+  "approve",
 ] as const;
 export const STEP_ROLES = ["agent", "plan", "member"] as const;
 

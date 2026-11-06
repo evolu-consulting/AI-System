@@ -169,6 +169,17 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
       body: "",
     }),
   },
+  // CR-122 E2b · node Duyệt độc lập — CHỈ cho typecheck (engine đã có); `draftValue = null` ⇒ chưa chọn được trong bảng node. U2 bật
+  // (nhãn, khối sửa đích Từ chối/Trả lại).
+  approve: {
+    kind: "approve",
+    family: NODE_FAMILY_OF.approve,
+    labelKey: null,
+    defaults: () => ({}),
+    draftValue: null,
+    draftExecutor: () => "approve",
+    toDef: () => ({ kind: "approve", reject_step: null, return_step: null }),
+  },
 };
 
 /** Mục registry của executor contract. */

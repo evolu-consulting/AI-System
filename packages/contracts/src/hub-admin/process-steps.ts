@@ -42,6 +42,8 @@ export const PROCESS_DEF_RULES = [
   "FORM_INVALID",
   // CR-121 D-6 · node `notify` (`notifyDefIssues`, hub-api nodes/notify).
   "NOTIFY_INVALID",
+  // CR-122 E2b · node Duyệt độc lập (`approveStageIssues`, hub-api nodes/approve).
+  "APPROVE_INVALID",
 ] as const;
 export type ProcessDefRule = (typeof PROCESS_DEF_RULES)[number];
 export type ProcessDefIssue = { path: string; rule: ProcessDefRule };

@@ -3,7 +3,7 @@
 import type { ProcessRunStatus, StageRunStatus } from "../types";
 import { isTerminal } from "./run-state.core";
 
-export type RunControlOp = "stop" | "rerun_step" | "rerun";
+export type RunControlOp = "stop" | "rerun_step" | "rerun" | "rerun_if";
 export type ControlActor = { role: "platform_admin" | "tenant_admin" | "member"; tenantId: string };
 
 /** Vai được phép thao tác (chưa xét tenant của run — tenant khác ⇒ 404 ở service). */
@@ -56,3 +56,18 @@ const REASON_VI: Record<string, string> = {
 };
 export const rerunStepFeedback = (reason: string): string =>
   `Quản trị chạy lại bước (lý do: ${REASON_VI[reason] ?? "Khác"})`;
+
+/**
+ * CR-122 E2b · H2 · "Chạy lại từ Nếu": chỉ lượt đang `needs_decision` vì `facts_changed` và đích là stage Nếu có thật. Sau lần bấm
+ * đầu run về `running` + `decision = null` ⇒ lần bấm sau không khớp (compare-and-set theo trạng thái sau khoá).
+ */
+export function rerunIfTarget(
+  status: ProcessRunStatus,
+  decision: unknown,
+  kinds: readonly (string | undefined)[],
+): number | null {
+  if (status !== "needs_decision" || typeof decision !== "object" || decision === null) return null;
+  const d = decision as { reason?: unknown; stage_idx?: unknown };
+  if (d.reason !== "facts_changed" || typeof d.stage_idx !== "number") return null;
+  return kinds[d.stage_idx] === "if" ? d.stage_idx : null;
+}

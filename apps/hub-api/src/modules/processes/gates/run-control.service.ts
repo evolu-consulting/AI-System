@@ -21,6 +21,7 @@ import {
   canRerunStep,
   canStop,
   type RunControlOp,
+  rerunIfTarget,
   rerunStepFeedback,
   rerunStepPackBlocked,
   roleAllows,
@@ -172,6 +173,59 @@ export class RunControlService {
           from_status: run.status,
           stage_status: st,
         },
+      });
+      const events = processUpdated(recipients, {
+        id: run.id,
+        status: step.status,
+        stageIdx: step.stageIdx,
+        step: step.step,
+      });
+      const body = await summaryOf(tx, run.tenantId, run.id);
+      return { body, events, runId: run.id, kick: true, cancel };
+    });
+    await this.#post(out);
+    return out.body;
+  }
+
+  // ── CR-122 E2b · POST /process-runs/:id/rerun-from-if (quản trị công ty) — chạy lại từ node Nếu sau "dữ kiện đổi" ──
+  async rerunFromIf(u: AuthUser, runId: string, reason: RunControlReason, tq?: string) {
+    const a = actorOf(u);
+    assertRole("rerun_if", a);
+    const out = await withHubScope(this.d.db, scopeOf(u, tq), async (tx): Promise<Out> => {
+      const run = await lockVisible(tx, a, runId);
+      const [r] = await tx.execute<{ decision: unknown }>(sql`select decision from hub.process_runs
+        where id = ${run.id} and tenant_id = ${run.tenantId}`);
+      const stages = (snapOf(run).stages ?? []) as { executor?: { kind?: string } }[];
+      const ifIdx = rerunIfTarget(
+        run.status as ProcessRunStatus,
+        r?.decision,
+        stages.map((s) => s?.executor?.kind),
+      );
+      // CAS sau khoá: lần bấm thứ hai thấy run đã `running` + decision null ⇒ 409, không chạy lại hai lần.
+      if (ifIdx === null) throw processError("PROCESS_RUN_STATE");
+      const target = stepsOfSnap(snapOf(run))[ifIdx] as number;
+      const recipients = await core.runRecipients(tx, run.id, run.tenantId);
+      // Đặt lại từ bước Nếu (Nếu đọc lại dữ kiện HIỆN TẠI khi chạy); không tiêu số lần quay lại của người duyệt.
+      const { step, cancel } = await applyBack(
+        { d: this.d, tx },
+        {
+          run,
+          fromIdx: Number(run.currentStageIdx),
+          target,
+          feedback: rerunStepFeedback(reason),
+          decidedBy: a.userId,
+          taskId: null,
+          raiseLimit: true,
+          backEvent: false,
+        },
+      );
+      await auditControl(tx, {
+        tenantId: run.tenantId,
+        runId: run.id,
+        actorId: a.userId,
+        actorRole: a.role,
+        op: "rerun_if",
+        summary: { reason, stage_idx: ifIdx, step: target, from_status: run.status },
       });
       const events = processUpdated(recipients, {
         id: run.id,

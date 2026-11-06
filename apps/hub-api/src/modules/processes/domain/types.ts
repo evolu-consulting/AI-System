@@ -45,7 +45,8 @@ export type DecisionReason =
   | "apply_failed"
   | "retry_exhausted"
   | "timer_invalid"
-  | "tool_failed"; // P-d2
+  | "tool_failed" // P-d2
+  | "facts_changed"; // CR-122 E2b · dữ kiện đổi sau khi Nếu rẽ
 export type TeamRunStatus =
   | "running"
   | "waiting_answer"
@@ -67,7 +68,8 @@ export type ExecutorKind =
   | "form" // CR-118
   | "wait_for" // CR-120 · G3
   | "wait_event" // CR-120 · G4
-  | "notify"; // CR-121 D-6 + "form"; P-d2 + "tool"; R4 + "set"; CR-103 + "if"
+  | "notify" // CR-121 D-6
+  | "approve"; // CR-122 E2b + "form"; P-d2 + "tool"; R4 + "set"; CR-103 + "if"
 export type TimerKind = "wait_until" | "retry";
 export type InputType = "text" | "select" | "file" | "source_ref" | "date" | "number"; // D2-44
 export type NoticeKind =

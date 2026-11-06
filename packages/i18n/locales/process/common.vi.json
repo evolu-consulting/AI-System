@@ -190,5 +190,7 @@
   "timer_invalid": "Ngày hẹn không hợp lệ hoặc đã quá hạn lượt chạy.",
   "timer_invalid_hint": "Thiếu ngày, ngày sai, xa quá 730 ngày hoặc sau ngày hết hạn của lượt chạy. Chọn tính lại ngày hẹn, bỏ chờ để đi tiếp, hoặc huỷ.",
   "tool_failed": "Gọi tool bị lỗi.",
-  "tool_failed_hint": "Tool đã bị tắt cho công ty, hoặc trả lỗi hay kết quả sai mẫu. Xem lại rồi chọn cách xử lý."
+  "tool_failed_hint": "Tool đã bị tắt cho công ty, hoặc trả lỗi hay kết quả sai mẫu. Xem lại rồi chọn cách xử lý.",
+  "facts_changed": "Dữ liệu bản ghi đã đổi sau khi rẽ nhánh.",
+  "facts_changed_hint": "Giá trị lúc rẽ khác giá trị hiện tại nên kết quả có thể sai. Chạy lại từ bước Nếu để rẽ theo giá trị mới."
 }

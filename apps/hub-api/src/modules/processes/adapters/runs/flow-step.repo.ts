@@ -29,7 +29,8 @@ export function flowStepRepo(tx: Tx, tenantId: string): FlowStepRepo {
     async applyOutcome(runId, p, outcome) {
       const h = outcomeHandlerFor(p.pack, p.event);
       if (!h) throw new Error(`OutcomeHandler chưa đăng ký: ${p.pack} · ${p.event}`);
-      // Người quyết bước cuối chưa truyền qua join bước ⇒ hệ thống (null); app tự đọc người duyệt từ lịch sử nếu cần.
+      // TODO(CR-122 A1): người quyết bước cuối — node Duyệt ghi `fields.decided_by` vào output (gates/approve-out.ts); join bước chưa
+      // đọc nó ⇒ hệ thống (null). App tự đọc người duyệt từ lịch sử nếu cần.
       await h.apply(tx, {
         tenantId,
         runId,
@@ -43,7 +44,7 @@ export function flowStepRepo(tx: Tx, tenantId: string): FlowStepRepo {
       const decision = {
         reason: "facts_changed",
         stage_idx: a.ifIdx,
-        options: ["rerun_from_if"],
+        options: ["cancel"], // "Chạy lại từ Nếu" = thao tác riêng (`POST /process-runs/:id/rerun-from-if`)
         at: new Date().toISOString(),
       };
       await Promise.all([

@@ -58,6 +58,10 @@ const REASON: Record<DecisionReason, { vi: string; en: string }> = {
   timer_invalid: { vi: "ngày hẹn không hợp lệ", en: "scheduled date is invalid" },
   // P-d2 · PD2-R05.
   tool_failed: { vi: "gọi tool không thành công", en: "tool call failed" },
+  facts_changed: {
+    vi: "dữ liệu bản ghi đổi sau khi rẽ nhánh",
+    en: "record changed after branching",
+  },
 };
 
 const t = (l: ThreadLocale, vi: string, en: string): string => (l === "vi" ? vi : en);
