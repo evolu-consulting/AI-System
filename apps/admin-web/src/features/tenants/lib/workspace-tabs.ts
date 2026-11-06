@@ -1,65 +1,69 @@
-// CR-121 · tab workspace công ty theo vai. Thứ tự: Hồ sơ · Ứng dụng (key `features`) · [Quy trình = key `processes` (c11); tab `workflow-tools` đã gỡ ở c16, URL cũ → /ai-tools] ·
-// Thành viên (key `users`) · Cài đặt (key `info`) · rồi các mục quản trị còn lại (Nhóm · Đối tác · Phân quyền · Agents · Quota).
-// Bỏ tab "Tổng quan" (đã có "Tổng quan" ở thanh bên); số tóm tắt nằm một dòng ở đầu trang. Tab mặc định (không `?tab=`) = Hồ sơ.
-// platform_admin đủ tab; tenant_admin: Hồ sơ (chỉ xem), Ứng dụng (chỉ xem), Thành viên, Cài đặt (chỉ xem), Nhóm, Đối tác, Phân quyền,
-// Agents, Quota rút gọn (chỉ đọc, không tiền). "packs"/"overview" chỉ còn là key URL cũ (activeTab chuyển đi), không nằm trong danh sách.
-export type TenantTab =
-  | "profile"
-  | "info"
-  | "features"
-  | "processes"
-  | "packs"
-  | "users"
-  | "groups"
-  | "partners"
-  | "access"
-  | "agents"
-  | "quota";
+// CR-121 c14 (R2, Q6) · trang công ty có ĐÚNG 5 tab cho CẢ platform_admin VÀ tenant_admin (artboard Tpl-Settings):
+// Hồ sơ `profile` · Ứng dụng `apps` · Quy trình `processes` · Thành viên `members` · Cài đặt `settings`. Quyền ghi theo vai như trước.
+// Nhóm · Đối tác · Phân quyền · Agents là MỤC CON của Thành viên (`?tab=members&view=groups|partners|access|agents`), Quota là phần của Cài đặt (`at=quota`).
+// URL cũ (`tab=info|features|packs|users|groups|partners|access|agents|quota`) vẫn mở được: `legacyTab` đổi sang tab mới + mục con.
+export type TenantTab = "profile" | "apps" | "processes" | "members" | "settings";
+
+/** Mục con của tab Thành viên (mặc định `users`). */
+export type MemberView = "users" | "groups" | "partners" | "access" | "agents";
+export const MEMBER_VIEWS: readonly MemberView[] = [
+  "users",
+  "groups",
+  "partners",
+  "access",
+  "agents",
+];
 
 export const TENANT_TABS: readonly TenantTab[] = [
   "profile",
-  "features",
+  "apps",
   "processes",
-  "users",
-  "info",
-  "groups",
-  "partners",
-  "access",
-  "agents",
-  "quota",
-];
-const TENANT_ADMIN: readonly TenantTab[] = [
-  "profile",
-  "features",
-  "processes",
-  "users",
-  "info",
-  "groups",
-  "partners",
-  "access",
-  "agents",
-  "quota",
+  "members",
+  "settings",
 ];
 
 export const TAB_LABEL = {
   profile: "tenants.tab.profile",
-  info: "tenants.tab.info",
-  features: "tenants.tab.features",
+  apps: "tenants.tab.apps",
   processes: "tenants.tab.processes",
-  packs: "tenants.tab.packs",
-  users: "tenants.tab.users",
-  groups: "tenants.tab.groups",
-  partners: "tenants.tab.partners",
-  access: "tenants.tab.access",
-  agents: "tenants.tab.agents",
-  quota: "tenants.tab.quota",
+  members: "tenants.tab.members",
+  settings: "tenants.tab.settings",
 } as const satisfies Record<TenantTab, string>;
 
-export const visibleTabs = (isPlatform: boolean): readonly TenantTab[] =>
-  isPlatform ? TENANT_TABS : TENANT_ADMIN;
+/** Cả hai vai thấy đủ 5 tab (Q6); tham số giữ để chỗ gọi cũ không đổi. */
+export const visibleTabs = (_isPlatform: boolean): readonly TenantTab[] => TENANT_TABS;
 
-/** Tab trên URL không thuộc vai (hoặc không còn, vd `overview`) ⇒ "profile" (không render nội dung tab chỉ-platform). */
-export function activeTab(tab: TenantTab | undefined, isPlatform: boolean): TenantTab {
-  const t = tab === "packs" ? "features" : tab; // CR-112 S4: tab Gói đã gộp vào "Ứng dụng" (URL cũ vẫn mở được)
-  return t && visibleTabs(isPlatform).includes(t) ? t : "profile";
+export type LegacyTabTarget = { tab: TenantTab; view?: MemberView; at?: "quota" };
+
+/** Khóa `?tab=` cũ ⇒ tab mới (+ mục con / vị trí). `info` (Cài đặt cũ) ⇒ `settings`; khóa lạ ⇒ undefined. */
+export function legacyTab(old: unknown): LegacyTabTarget | undefined {
+  switch (old) {
+    case "profile":
+    case "apps":
+    case "processes":
+    case "members":
+    case "settings":
+      return { tab: old };
+    case "info":
+      return { tab: "settings" };
+    case "features":
+    case "packs":
+      return { tab: "apps" };
+    case "users":
+      return { tab: "members", view: "users" };
+    case "groups":
+    case "partners":
+    case "access":
+    case "agents":
+      return { tab: "members", view: old };
+    case "quota":
+      return { tab: "settings", at: "quota" };
+    default:
+      return undefined;
+  }
+}
+
+/** Tab trên URL không hợp lệ (vd `overview`) ⇒ "profile". */
+export function activeTab(tab: TenantTab | undefined, _isPlatform: boolean): TenantTab {
+  return tab && TENANT_TABS.includes(tab) ? tab : "profile";
 }

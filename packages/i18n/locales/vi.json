@@ -670,16 +670,16 @@
     "flows": {
       "lead": "Mỗi việc dùng một quy trình lấy từ Thư viện.",
       "leadInfo": "Mẫu quy trình được tạo và chỉnh ở Thư viện quy trình. Ở đây công ty chỉ chọn mẫu nào áp dụng cho việc nào.",
-      "stepsMore": "+{{n}}",
+      "stepsMore": "+{n}",
       "rulesTitle": "Luật định tuyến",
       "rulesInfo": "Xét từ trên xuống, dùng luật khớp đầu tiên. Không luật nào khớp thì dùng quy trình mặc định.",
       "rulesEdit": "Sửa luật",
       "rulesDone": "Xong",
       "rulesDefault": "Còn lại (mặc định)",
-      "rulesOtherDepts": "{{n}} phòng ban khác",
+      "rulesOtherDepts": "{n} phòng ban khác",
       "rulesNone": "Chưa có luật nào, mọi hồ sơ dùng quy trình mặc định.",
-      "runTitle": "{{job}} · bắt đầu {{at}}",
-      "summary": "{{on}}/{{total}} việc có quy trình",
+      "runTitle": "{job} · bắt đầu {at}",
+      "summary": "{on}/{total} việc có quy trình",
       "empty": "Công ty chưa dùng ứng dụng nào có quy trình.",
       "loadFail": "Không tải được dữ liệu quy trình. Thử tải lại trang.",
       "col": {
@@ -688,8 +688,8 @@
         "status": "Trạng thái",
         "rules": "Luật"
       },
-      "appJobs": "{{n}} việc",
-      "steps": "{{n}} bước",
+      "appJobs": "{n} việc",
+      "steps": "{n} bước",
       "noneChosen": "Chưa chọn quy trình",
       "on": "Đang bật",
       "off": "Đang tắt",
@@ -698,7 +698,7 @@
         "unpublished": "quy trình chưa xuất bản, cần xuất bản trong Thư viện",
         "deleted": "quy trình đã bị xoá, hãy chọn quy trình khác"
       },
-      "rules": "{{n}} luật",
+      "rules": "{n} luật",
       "change": "Đổi",
       "assign": "Gán",
       "drawerKind": "Việc",
@@ -714,13 +714,13 @@
       "copy": "Sao chép cho công ty này",
       "openEditor": "Mở trình sửa",
       "assignTitle": "Gán quy trình",
-      "sameKind": "Chỉ gồm quy trình cùng loại: {{type}}",
+      "sameKind": "Chỉ gồm quy trình cùng loại: {type}",
       "tenantNoCandidates": "Công ty chưa có quy trình nào để chọn cho việc này. Hãy sao một quy trình thư viện ở phần Các bước.",
       "inUse": "Đang dùng",
       "use": "Dùng quy trình này",
       "running": "Đang chạy",
       "runningNone": "Hiện không có lượt nào đang chạy.",
-      "runStep": "bước {{n}}/{{total}}",
+      "runStep": "bước {n}/{total}",
       "runWaiting": "đang chờ",
       "runRunning": "đang xử lý",
       "toast": {
@@ -736,21 +736,6 @@
       }
     },
     "slots": {
-      "title": "Quy trình",
-      "desc": "Quy trình công ty dùng cho app này: quy trình đã gán, luật chọn theo phòng ban và quy trình mặc định. Chỉ quản trị nền tảng gán.",
-      "col": {
-        "slot": "Dùng cho",
-        "process": "Quy trình",
-        "version": "Bản"
-      },
-      "isDefault": "Mặc định",
-      "assigned": "Đã gán",
-      "pick": "Quy trình thư viện",
-      "pickPlaceholder": "Chọn quy trình đã xuất bản",
-      "assign": "Gán",
-      "unassign": "Về mặc định",
-      "empty": "Chưa có khe quy trình nào cho công ty này.",
-      "loadFail": "Không tải được quy trình đang dùng.",
       "routing": {
         "title": "Quy trình được gán & luật chọn theo phòng ban",
         "loadFail": "Không tải được quy trình đã gán.",
@@ -803,15 +788,6 @@
           "forbidden": "Chỉ quản trị nền tảng gán được quy trình.",
           "other": "Không thực hiện được. Thử lại sau."
         }
-      },
-      "err": {
-        "groupsMissing": "Công ty thiếu phòng ban theo mã mà quy trình dùng: {keys}.",
-        "notPublished": "Quy trình chưa xuất bản.",
-        "forbidden": "Chỉ quản trị nền tảng gán được quy trình."
-      },
-      "toast": {
-        "assigned": "Đã gán “{process}” cho {tenant}",
-        "unassigned": "{tenant} về quy trình mặc định"
       }
     },
     "list": {
@@ -903,20 +879,29 @@
       "processRunsHint": "Từ 1 đến 1000. Lượt đang chờ duyệt vẫn được tính."
     },
     "tab": {
-      "overview": "Tổng quan",
       "profile": "Hồ sơ",
-      "info": "Cài đặt",
-      "features": "Ứng dụng",
+      "apps": "Ứng dụng",
       "processes": "Quy trình",
-      "agents": "Agents",
-      "quota": "Quota",
-      "users": "Thành viên",
-      "groups": "Nhóm",
-      "partners": "Đối tác",
-      "access": "Phân quyền",
-      "packs": "Gói",
-      "unavailableBody": "Mục này sẽ khả dụng ở bản sau."
+      "members": "Thành viên",
+      "settings": "Cài đặt"
     },
+    "members": {
+      "sections": "Mục của thành viên",
+      "view": {
+        "users": "Người dùng",
+        "groups": "Nhóm",
+        "partners": "Đối tác",
+        "access": "Phân quyền",
+        "agents": "Agents"
+      }
+    },
+    "settings": {
+      "quota": "Quota",
+      "lockTitle": "Khoá công ty",
+      "lockNote": "Khoá công ty: người dùng của công ty không đăng nhập được cho tới khi mở khoá.",
+      "lockedNote": "Công ty đang bị khoá — người dùng không đăng nhập được."
+    },
+    "summaryFlows": "{on}/{total} việc có quy trình",
     "agents": {
       "unavailable": "Cấp agent cho tenant làm ở Agent Forge. Mục này sẽ khả dụng khi Agent Hub sẵn sàng."
     },
@@ -1048,14 +1033,14 @@
       "reason": {
         "always": "luôn bật",
         "levelOff": "quyền truy cập đang Tắt",
-        "jobOff": "{{job}} chưa bật"
+        "jobOff": "{job} chưa bật"
       },
       "accessList": "Theo từng tính năng",
-      "flowsCount": "Quy trình: {{on}} bật · {{off}} tắt",
+      "flowsCount": "Quy trình: {on} bật · {off} tắt",
       "showDetail": "Chi tiết",
       "hideDetail": "Thu gọn",
       "attention": "Cần xử lý",
-      "attentionItem": "{{job}} đang tắt — {{app}}",
+      "attentionItem": "{job} đang tắt — {app}",
       "openFlows": "Mở Quy trình",
       "tile": {
         "users": "Người dùng",
@@ -1064,7 +1049,7 @@
         "runs": "Chạy cùng lúc",
         "runsUnit": "lượt tối đa",
         "plan": "Gói",
-        "planRuns": "{{n}} lượt/tháng",
+        "planRuns": "{n} lượt/tháng",
         "planUnlimited": "Không giới hạn"
       },
       "title": "Ứng dụng & Gói",
@@ -3129,7 +3114,7 @@
     "assignNote": {
       "title": "Gán quy trình ở trang Công ty",
       "body": "Quy trình của từng công ty được gán ở Công ty › Quy trình, không gán ở trang ứng dụng.",
-      "open": "Quy trình của {{company}}",
+      "open": "Quy trình của {company}",
       "pickCompany": "Chọn một công ty"
     },
     "subtitle": "Cấu hình một ứng dụng: bật cho công ty nào, ở mức nào, chạy quy trình nào.",
@@ -3140,8 +3125,6 @@
     "tab": {
       "overview": "Tổng quan",
       "features": "Tính năng",
-      "processes": "Quy trình",
-      "companies": "Công ty",
       "preview": "Xem trước"
     },
     "overview": {

@@ -33,7 +33,9 @@ test("ADM-FR-62 · M3-R24 · tenant_admin binh: menu không còn link 'Groups'/'
   await expect(nav.getByRole("link", { name: "Phân quyền", exact: true })).toHaveCount(0);
   await nav.getByRole("list", { name: "Danh sách công ty" }).getByRole("link").click();
   await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.acme}`));
-  await page.getByRole("tab", { name: "Nhóm" }).click();
+  // CR-121 c14: Nhóm là mục con của tab Thành viên
+  await page.getByRole("tab", { name: "Thành viên" }).click();
+  await page.getByTestId("members-view-groups").click();
   await expect(page.getByRole("heading", { level: 2, name: "Groups", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "+ Tạo group" })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Tenant" })).toHaveCount(0);
@@ -54,7 +56,8 @@ test("ADM-FR-62 · M3-R06 · platform admin: /groups chưa chọn công ty → d
   await expect(page.getByRole("table", { name: "Công ty" })).toBeVisible();
   expect(calls).toEqual([]);
   await page.goto("/groups?tenant=acme");
-  await expect(page).toHaveURL(/tab=groups/);
+  await expect(page).toHaveURL(/tab=members/);
+  await expect(page).toHaveURL(/view=groups/);
   await expect(groupRow(page, "ke-toan")).toBeVisible();
   expect(calls.length).toBeGreaterThan(0);
 });

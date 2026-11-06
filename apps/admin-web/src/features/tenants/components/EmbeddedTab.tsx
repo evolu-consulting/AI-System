@@ -1,13 +1,11 @@
-// CR-112 · ADM-FR-76 · tab của workspace công ty nhúng màn có sẵn (Người dùng, Nhóm, Đối tác, Phân quyền, Agents); nạp lười khi mở tab.
+// CR-112 · CR-121 c14 · mục con của tab Thành viên nhúng màn có sẵn (Người dùng, Nhóm, Đối tác, Phân quyền, Agents); nạp lười khi mở.
 import { lazy, Suspense } from "react";
 import { EmbeddedProvider } from "@/components/shared/embedded";
 import { LoadingState } from "@/components/shared/states/LoadingState";
-import type { TenantTab } from "../lib/workspace-tabs";
+import type { MemberView } from "../lib/workspace-tabs";
 
-export type EmbeddedTabId = Extract<
-  TenantTab,
-  "users" | "groups" | "partners" | "access" | "agents"
->;
+/** Mục con của tab Thành viên (CR-121 c14) — mỗi mục nhúng màn có sẵn. */
+export type EmbeddedTabId = MemberView;
 
 const PAGES = {
   users: lazy(() =>
@@ -26,8 +24,6 @@ const PAGES = {
     import("@/features/agents/pages/AgentsPage").then((m) => ({ default: m.AgentsPage })),
   ),
 } as const;
-
-export const isEmbeddedTab = (tab: TenantTab): tab is EmbeddedTabId => tab in PAGES;
 
 export function EmbeddedTab({ tab }: { tab: EmbeddedTabId }) {
   const Page = PAGES[tab];

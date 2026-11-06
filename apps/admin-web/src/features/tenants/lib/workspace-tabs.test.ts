@@ -1,40 +1,33 @@
-// CR-112 · CR-121 · ADM-FR-76/81 · tab workspace theo vai.
+// CR-121 c14 · ADM-FR-76/81 · trang công ty có đúng 5 tab cho cả hai vai; khóa cũ chuyển sang tab mới + mục con.
 import { describe, expect, it } from "bun:test";
-import { activeTab, TENANT_TABS, visibleTabs } from "./workspace-tabs";
+import { activeTab, legacyTab, TAB_LABEL, TENANT_TABS, visibleTabs } from "./workspace-tabs";
 
-describe("ADM-FR-81 · workspace-tabs", () => {
-  it("tenant_admin thấy profile/features/processes/users/info/groups/partners/access/agents/quota, tab chỉ-platform trên URL ⇒ profile", () => {
-    expect(visibleTabs(false)).toEqual([
-      "profile",
-      "features",
-      "processes",
-      "users",
-      "info",
-      "groups",
-      "partners",
-      "access",
-      "agents",
-      "quota",
-    ]);
-    // c16: tab `workflow-tools` đã gỡ (bật/tắt Dify theo công ty nằm ở Công cụ AI) — key lạ ⇒ Hồ sơ.
-    expect(activeTab("workflow-tools" as never, false)).toBe("profile");
-    expect(TENANT_TABS).not.toContain("workflow-tools" as never);
-    expect(activeTab("processes", false)).toBe("processes"); // c11: tenant_admin cũng có tab Quy trình
-    expect(activeTab("quota", false)).toBe("quota");
-    expect(activeTab("users", false)).toBe("users");
-    expect(activeTab("access", false)).toBe("access");
-    expect(activeTab(undefined, false)).toBe("profile");
-    // CR-112 S4 · ADM-FR-78: tab Gói gộp vào Ứng dụng — URL cũ ?tab=packs mở tab gộp, tab không còn trong danh sách.
-    expect(activeTab("packs", true)).toBe("features");
-    expect(visibleTabs(true)).not.toContain("packs");
-    expect(activeTab("packs", false)).toBe("features"); // tenant_admin cũng thấy tab gộp (chỉ xem)
+describe("CR-121 c14 · workspace-tabs", () => {
+  it("platform_admin VÀ tenant_admin thấy đúng 5 tab theo thứ tự Hồ sơ · Ứng dụng · Quy trình · Thành viên · Cài đặt", () => {
+    const want = ["profile", "apps", "processes", "members", "settings"];
+    expect([...TENANT_TABS]).toEqual(want);
+    expect([...visibleTabs(true)]).toEqual(want);
+    expect([...visibleTabs(false)]).toEqual(want);
+    expect(Object.keys(TAB_LABEL)).toEqual(want);
   });
 
-  it("CR-121 · platform_admin: Hồ sơ · Ứng dụng · Quy trình (c11) · Thành viên · Cài đặt đứng đầu, không còn tab Tổng quan", () => {
-    expect(visibleTabs(true)).toEqual([...TENANT_TABS]);
-    expect(TENANT_TABS.slice(0, 5)).toEqual(["profile", "features", "processes", "users", "info"]);
-    expect(TENANT_TABS).not.toContain("overview" as never);
-    // URL cũ ?tab=overview (không còn là tab hợp lệ) ⇒ về Hồ sơ.
+  it("tab mặc định = Hồ sơ; khóa lạ/cũ chưa đổi (overview, workflow-tools) ⇒ Hồ sơ; tab hợp lệ giữ nguyên", () => {
+    expect(activeTab(undefined, false)).toBe("profile");
     expect(activeTab("overview" as never, true)).toBe("profile");
+    expect(activeTab("workflow-tools" as never, false)).toBe("profile");
+    expect(activeTab("members", false)).toBe("members");
+    expect(activeTab("processes", false)).toBe("processes");
+  });
+
+  it("khóa cũ ⇒ tab mới + mục con: info ⇒ settings, features/packs ⇒ apps, users/groups/partners/access/agents ⇒ members, quota ⇒ settings#quota", () => {
+    expect(legacyTab("info")).toEqual({ tab: "settings" });
+    expect(legacyTab("features")).toEqual({ tab: "apps" });
+    expect(legacyTab("packs")).toEqual({ tab: "apps" });
+    expect(legacyTab("users")).toEqual({ tab: "members", view: "users" });
+    for (const v of ["groups", "partners", "access", "agents"] as const)
+      expect(legacyTab(v)).toEqual({ tab: "members", view: v });
+    expect(legacyTab("quota")).toEqual({ tab: "settings", at: "quota" });
+    expect(legacyTab("workflow-tools")).toBeUndefined();
+    expect(legacyTab(undefined)).toBeUndefined();
   });
 });

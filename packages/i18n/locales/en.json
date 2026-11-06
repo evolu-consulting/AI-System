@@ -670,16 +670,16 @@
     "flows": {
       "lead": "Each job uses one process taken from the Library.",
       "leadInfo": "Process templates are created and edited in the Process Library. Here the company only picks which template applies to which job.",
-      "stepsMore": "+{{n}}",
+      "stepsMore": "+{n}",
       "rulesTitle": "Routing rules",
       "rulesInfo": "Checked top to bottom; the first matching rule is used. If none match, the default process is used.",
       "rulesEdit": "Edit rules",
       "rulesDone": "Done",
       "rulesDefault": "Everything else (default)",
-      "rulesOtherDepts": "{{n}} other departments",
+      "rulesOtherDepts": "{n} other departments",
       "rulesNone": "No rules yet; every record uses the default process.",
-      "runTitle": "{{job}} · started {{at}}",
-      "summary": "{{on}}/{{total}} jobs have a process",
+      "runTitle": "{job} · started {at}",
+      "summary": "{on}/{total} jobs have a process",
       "empty": "This company uses no app that has processes.",
       "loadFail": "Could not load process data. Try reloading the page.",
       "col": {
@@ -688,8 +688,8 @@
         "status": "Status",
         "rules": "Rules"
       },
-      "appJobs": "{{n}} jobs",
-      "steps": "{{n}} steps",
+      "appJobs": "{n} jobs",
+      "steps": "{n} steps",
       "noneChosen": "No process chosen",
       "on": "On",
       "off": "Off",
@@ -698,7 +698,7 @@
         "unpublished": "process is not published; publish it in the Library",
         "deleted": "process was deleted; pick another one"
       },
-      "rules": "{{n}} rules",
+      "rules": "{n} rules",
       "change": "Change",
       "assign": "Assign",
       "drawerKind": "Job",
@@ -714,13 +714,13 @@
       "copy": "Copy for this company",
       "openEditor": "Open editor",
       "assignTitle": "Assign process",
-      "sameKind": "Only processes of the same kind: {{type}}",
+      "sameKind": "Only processes of the same kind: {type}",
       "tenantNoCandidates": "The company has no process to choose for this job yet. Copy a Library process in the Steps section.",
       "inUse": "In use",
       "use": "Use this process",
       "running": "Running",
       "runningNone": "No runs in progress.",
-      "runStep": "step {{n}}/{{total}}",
+      "runStep": "step {n}/{total}",
       "runWaiting": "waiting",
       "runRunning": "in progress",
       "toast": {
@@ -736,21 +736,6 @@
       }
     },
     "slots": {
-      "title": "Processes",
-      "desc": "Processes this company uses for the app: assigned processes, department selection rules and the default. Only platform admins assign.",
-      "col": {
-        "slot": "Used for",
-        "process": "Process",
-        "version": "Version"
-      },
-      "isDefault": "Default",
-      "assigned": "Assigned",
-      "pick": "Library process",
-      "pickPlaceholder": "Pick a published process",
-      "assign": "Assign",
-      "unassign": "Back to default",
-      "empty": "This company has no process slot yet.",
-      "loadFail": "Could not load the process in use.",
       "routing": {
         "title": "Assigned processes & department routing rules",
         "loadFail": "Could not load assigned processes.",
@@ -803,15 +788,6 @@
           "forbidden": "Only the platform admin can assign processes.",
           "other": "Could not complete. Try again later."
         }
-      },
-      "err": {
-        "groupsMissing": "The company lacks department codes the process uses: {keys}.",
-        "notPublished": "The process is not published.",
-        "forbidden": "Only platform admins can assign a process."
-      },
-      "toast": {
-        "assigned": "Assigned “{process}” to {tenant}",
-        "unassigned": "{tenant} is back on the default process"
       }
     },
     "list": {
@@ -903,20 +879,29 @@
       "processRunsHint": "From 1 to 1000. Runs waiting for review still count."
     },
     "tab": {
-      "overview": "Overview",
       "profile": "Profile",
-      "info": "Settings",
-      "features": "Apps",
+      "apps": "Apps",
       "processes": "Processes",
-      "agents": "Agents",
-      "quota": "Quota",
-      "users": "Members",
-      "groups": "Groups",
-      "partners": "Partners",
-      "access": "Permissions",
-      "packs": "Packs",
-      "unavailableBody": "This section will be available in a later release."
+      "members": "Members",
+      "settings": "Settings"
     },
+    "members": {
+      "sections": "Member sections",
+      "view": {
+        "users": "Users",
+        "groups": "Groups",
+        "partners": "Partners",
+        "access": "Access",
+        "agents": "Agents"
+      }
+    },
+    "settings": {
+      "quota": "Quota",
+      "lockTitle": "Lock company",
+      "lockNote": "Locking the company stops its users from signing in until it is unlocked.",
+      "lockedNote": "The company is locked — users cannot sign in."
+    },
+    "summaryFlows": "{on}/{total} jobs have a process",
     "agents": {
       "unavailable": "Agents are granted in Agent Forge. This will be available once Agent Hub is ready."
     },
@@ -1048,14 +1033,14 @@
       "reason": {
         "always": "always on",
         "levelOff": "access is set to Off",
-        "jobOff": "{{job}} is not on"
+        "jobOff": "{job} is not on"
       },
       "accessList": "Per feature",
-      "flowsCount": "Processes: {{on}} on · {{off}} off",
+      "flowsCount": "Processes: {on} on · {off} off",
       "showDetail": "Details",
       "hideDetail": "Collapse",
       "attention": "Needs attention",
-      "attentionItem": "{{job}} is off — {{app}}",
+      "attentionItem": "{job} is off — {app}",
       "openFlows": "Open Processes",
       "tile": {
         "users": "Users",
@@ -1064,7 +1049,7 @@
         "runs": "Concurrent runs",
         "runsUnit": "runs max",
         "plan": "Plan",
-        "planRuns": "{{n}} runs/month",
+        "planRuns": "{n} runs/month",
         "planUnlimited": "Unlimited"
       },
       "title": "Apps & Packs",
@@ -3129,7 +3114,7 @@
     "assignNote": {
       "title": "Assign processes on the Company page",
       "body": "Each company's processes are assigned in Company › Processes, not on the app page.",
-      "open": "Processes of {{company}}",
+      "open": "Processes of {company}",
       "pickCompany": "Choose a company"
     },
     "subtitle": "Configure one app: which companies have it, at what level, and which flows run.",
@@ -3140,8 +3125,6 @@
     "tab": {
       "overview": "Overview",
       "features": "Features",
-      "processes": "Flows",
-      "companies": "Companies",
       "preview": "Preview"
     },
     "overview": {

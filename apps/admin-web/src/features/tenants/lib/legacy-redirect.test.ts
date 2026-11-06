@@ -17,16 +17,25 @@ describe("ADM-FR-76 · legacyTarget", () => {
     ).toEqual({
       to: "/tenants/$tenantId",
       params: { tenantId: "acme-id" },
-      search: expect.objectContaining({ tab: "users", q: "an", status: "locked", page: 3 }),
+      search: expect.objectContaining({
+        tab: "members",
+        view: "users",
+        q: "an",
+        status: "locked",
+        page: 3,
+      }),
     });
     const t = legacyTarget("groups", { tenant: "globex" }, ctx());
-    expect(t).toMatchObject({ params: { tenantId: "globex-id" }, search: { tab: "groups" } });
+    expect(t).toMatchObject({
+      params: { tenantId: "globex-id" },
+      search: { tab: "members", view: "groups" },
+    });
   });
 
   it("platform_admin không chọn: dùng công ty chọn gần nhất; chưa có ⇒ danh sách công ty; mã lạ ⇒ danh sách", () => {
     expect(legacyTarget("partners", {}, ctx({ lastTenantId: "globex-id" }))).toMatchObject({
       params: { tenantId: "globex-id" },
-      search: { tab: "partners" },
+      search: { tab: "members", view: "partners" },
     });
     expect(legacyTarget("users", {}, ctx())).toEqual({ to: "/tenants" });
     expect(
@@ -40,9 +49,11 @@ describe("ADM-FR-76 · legacyTarget", () => {
     const c = ctx({ role: "tenant_admin" });
     expect(legacyTarget("users", { tenant: "globex" }, c)).toMatchObject({
       params: { tenantId: "own-id" },
-      search: { tab: "users" },
+      search: { tab: "members", view: "users" },
     });
-    expect(legacyTarget("agents", {}, c)).toMatchObject({ search: { tab: "agents" } });
+    expect(legacyTarget("agents", {}, c)).toMatchObject({
+      search: { tab: "members", view: "agents" },
+    });
   });
 
   it("Phân quyền: ?tab=check cũ thành tab con view=check, user giữ nguyên", () => {
@@ -50,7 +61,7 @@ describe("ADM-FR-76 · legacyTarget", () => {
       legacyTarget("access", { tab: "check", user: "an", tenant: "acme" }, ctx()),
     ).toMatchObject({
       params: { tenantId: "acme-id" },
-      search: { tab: "access", view: "check", user: "an" },
+      search: { tab: "members", view: "access", mode: "check", user: "an" },
     });
   });
 

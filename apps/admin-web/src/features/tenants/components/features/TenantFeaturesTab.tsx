@@ -19,7 +19,7 @@ import { useTenantOverview } from "../../hooks/use-tenant-overview";
 import { appsConfirmMessage, needsConfirm } from "../../lib/apps-confirm";
 import { packOf, roleStats } from "../../lib/apps-plan";
 import { detectLevel } from "../../lib/feature-assign";
-import type { TenantTab } from "../../lib/workspace-tabs";
+import type { MemberView, TenantTab } from "../../lib/workspace-tabs";
 import { AppsSaveBar } from "./AppsSaveBar";
 
 type Props = {
@@ -33,7 +33,7 @@ type Props = {
 };
 
 /** Tab của workspace (cr112-nav/rbac-ui, c11); giữ ở dạng chuỗi để không phụ thuộc kiểu `TenantTab` của lát khác. */
-const ACCESS_TAB: string = "access";
+const ACCESS_TAB: string = "members";
 const FLOWS_TAB: string = "processes";
 
 export default function TenantFeaturesTab({ tenant, onDirtyChange }: Props) {
@@ -60,11 +60,15 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange }: Props) {
     );
   }
   if (a.query.isPending || (!readOnly && a.packsQ.isPending)) return <LoadingState />;
-  const go = (tab: string, job?: string) =>
+  const go = (tab: string, job?: string, view?: string) =>
     void navigate({
       to: "/tenants/$tenantId",
       params: { tenantId: tenant.id },
-      search: { tab: tab as TenantTab, ...(job ? { job } : {}) },
+      search: {
+        tab: tab as TenantTab,
+        ...(job ? { job } : {}),
+        ...(view ? { view: view as MemberView } : {}),
+      },
     });
   const appName = (pack: string) => tr(`featmeta.app.${pack}.name`);
   const requestSave = () => (needsConfirm(a.plan) ? setConfirm(true) : void a.save());
@@ -86,7 +90,7 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange }: Props) {
             pack,
             roles: roleStats(a.roles, pack.key, level),
             partners: a.partners,
-            onOpenAccess: () => go(ACCESS_TAB),
+            onOpenAccess: () => go(ACCESS_TAB, undefined, "access"),
           }
         : null,
       flows: counts.get(card.app),

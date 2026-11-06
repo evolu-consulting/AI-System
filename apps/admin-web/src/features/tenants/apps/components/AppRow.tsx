@@ -77,7 +77,7 @@ function Access({
       <LevelControl
         value={level?.level ?? "off"}
         available={availableLevels(card)}
-        ariaLabel={t("tenants.apps.levelAria", { name })}
+        ariaLabel={t("tenants.features.levelAria", { name })}
         disabled={readOnly}
         onChange={(l) => p.onLevel(card, l)}
       />

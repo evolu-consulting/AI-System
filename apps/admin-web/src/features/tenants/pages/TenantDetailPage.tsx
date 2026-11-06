@@ -21,12 +21,7 @@ import { ApiError } from "@/lib/http";
 import { setLastTenant } from "@/lib/last-tenant";
 import { useTr } from "@/lib/use-translate";
 import { useTenantDetail } from "../api";
-import { EmbeddedTab, isEmbeddedTab } from "../components/EmbeddedTab";
 import { TenantProfileTab } from "../components/profile/TenantProfileTab";
-import { TenantQuotaReadonly } from "../components/quota/TenantQuotaReadonly";
-import { TenantQuotaTab } from "../components/quota/TenantQuotaTab";
-import { TenantDefaultAppCard } from "../components/TenantDefaultAppCard";
-import { TenantInfoForm } from "../components/TenantInfoForm";
 import { TenantSummaryLine } from "../components/TenantSummaryLine";
 import { useLockFlow } from "../hooks/use-lock-flow";
 import { useTenantConflict } from "../hooks/use-tenant-conflict";
@@ -34,6 +29,8 @@ import { slotsToValue, type TenantInfoValues } from "../lib/schemas";
 import { onboardAgainSearch } from "../lib/wizard";
 import { WorkspaceProvider } from "../lib/workspace-context";
 import { activeTab, TAB_LABEL, type TenantTab, visibleTabs } from "../lib/workspace-tabs";
+import { MembersTab } from "../members/MembersTab";
+import { SettingsTab } from "../settings/SettingsTab";
 
 const route = getRouteApi("/_authed/tenants/$tenantId");
 
@@ -46,15 +43,9 @@ const CompanyFlowsTab = lazy(() => import("../flows/components/CompanyFlowsTab")
 
 function Header({
   tenant,
-  canLock,
-  onLock,
-  onUnlock,
   onOnboard,
 }: {
   tenant: TenantDetail;
-  canLock: boolean;
-  onLock: () => void;
-  onUnlock: () => void;
   /** ADM-FR-79 · "Onboard lại": mở wizard từ bước 2 (chỉ platform_admin). */
   onOnboard?: () => void;
 }) {
@@ -62,7 +53,6 @@ function Header({
   const date = new Date(tenant.created_at).toLocaleDateString(
     i18n.language === "vi" ? "vi-VN" : "en-GB",
   );
-  const noLock = tenant.key === "platform" || !canLock;
   return (
     <PageHeader
       title={tenant.name}
@@ -79,15 +69,6 @@ function Header({
               {t("tenants.wizard.onboardAgain")}
             </Button>
           ) : null}
-          {noLock ? null : tenant.status === "locked" ? (
-            <Button variant="outline" onClick={onUnlock}>
-              {t("tenants.unlock.button")}
-            </Button>
-          ) : (
-            <Button variant="destructive" onClick={onLock}>
-              {t("tenants.lock.button")}
-            </Button>
-          )}
         </>
       }
     />
@@ -98,7 +79,7 @@ export function TenantDetailPage() {
   const { t } = useTranslation();
   const tr = useTr();
   const { tenantId } = route.useParams();
-  const { tab, job } = route.useSearch();
+  const { tab, job, view, at } = route.useSearch();
   const navigate = route.useNavigate();
   const router = useRouter();
   const role = useSession((s) => s.me?.role);
@@ -169,9 +150,6 @@ export function TenantDetailPage() {
     <WorkspaceProvider value={workspace}>
       <Header
         tenant={tenant}
-        canLock={isPlatform}
-        onLock={() => requestLock(tenant)}
-        onUnlock={() => requestUnlock(tenant)}
         onOnboard={
           isPlatform
             ? () =>
@@ -201,18 +179,7 @@ export function TenantDetailPage() {
             onSaveName={(name) => conflict.save({ name }, tenant.version)}
           />
         </TabsContent>
-        <TabsContent value="info" className="pt-4">
-          <TenantInfoForm
-            readOnly={!isPlatform}
-            tenant={tenant}
-            pending={conflict.pending}
-            timezoneError={tzError}
-            onDirtyChange={setInfoDirty}
-            onSubmit={save}
-          />
-          {isPlatform ? <TenantDefaultAppCard tenant={tenant} /> : null}
-        </TabsContent>
-        <TabsContent value="features" className="pt-4">
+        <TabsContent value="apps" className="pt-4">
           <Suspense fallback={<LoadingState />}>
             <TenantFeaturesTab tenant={tenant} onDirtyChange={setFeaturesDirty} />
           </Suspense>
@@ -222,24 +189,27 @@ export function TenantDetailPage() {
             <CompanyFlowsTab tenant={tenant} initialJob={job} />
           </Suspense>
         </TabsContent>
-        <TabsContent value="quota" className="pt-4">
-          {isPlatform ? (
-            <TenantQuotaTab
-              tenant={tenant}
-              onDirtyChange={setQuotaDirty}
-              onReloadTenant={reloadTenant}
-            />
-          ) : (
-            <TenantQuotaReadonly tenantId={tenant.id} />
-          )}
+        <TabsContent value="members" className="pt-4">
+          <MembersTab
+            view={view ?? "users"}
+            onView={(v) => void navigate({ search: { tab: "members", view: v }, replace: true })}
+          />
         </TabsContent>
-        {visibleTabs(isPlatform)
-          .filter(isEmbeddedTab)
-          .map((v) => (
-            <TabsContent key={v} value={v} className="pt-4">
-              <EmbeddedTab tab={v} />
-            </TabsContent>
-          ))}
+        <TabsContent value="settings" className="pt-4">
+          <SettingsTab
+            tenant={tenant}
+            isPlatform={isPlatform}
+            pending={conflict.pending}
+            timezoneError={tzError}
+            scrollToQuota={at === "quota"}
+            onInfoDirty={setInfoDirty}
+            onQuotaDirty={setQuotaDirty}
+            onSubmit={save}
+            onReloadTenant={reloadTenant}
+            onLock={() => requestLock(tenant)}
+            onUnlock={() => requestUnlock(tenant)}
+          />
+        </TabsContent>
       </Tabs>
       <UnsavedGuard dirty={infoDirty || quotaDirty || featuresDirty} />
       {dialogs}

@@ -181,7 +181,7 @@ export function TenantProfileTab({ tenant, canEdit, onSaveName }: Props) {
           <Link
             to="/tenants/$tenantId"
             params={{ tenantId: tenant.id }}
-            search={{ tab: "groups" }}
+            search={{ tab: "members", view: "groups" }}
             className="mt-3 inline-block text-label text-primary hover:underline"
           >
             {t("tenants.company.manageGroups")}

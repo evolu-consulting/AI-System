@@ -20,11 +20,12 @@ test("ADM-FR-77 · tenant_admin binh: sidebar chỉ có công ty acme, không nh
   await expect(nav(page).getByRole("textbox", { name: "Tìm công ty" })).toHaveCount(0);
   await expect(nav(page).getByRole("link", { name: "Tạo công ty" })).toHaveCount(0);
   await page.goto("/users");
-  await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.acme}\\?.*tab=users`));
+  await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.acme}\\?.*tab=members`));
   await expect(page.getByRole("tab", { name: "Thành viên", selected: true })).toBeVisible();
-  // CR-112 S7 (ADM-FR-77 AC4): tenant_admin có tab Quota rút gọn (chỉ đọc); tab chỉ-platform vẫn ẩn.
-  await expect(page.getByRole("tab", { name: "Quota" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Quy trình" })).toHaveCount(0);
+  // CR-121 c14 (Q6): tenant_admin thấy ĐỦ 5 tab; Quota rút gọn (chỉ đọc) nằm trong tab Cài đặt.
+  for (const n of ["Hồ sơ", "Ứng dụng", "Quy trình", "Thành viên", "Cài đặt"])
+    await expect(page.getByRole("tab", { name: n, exact: true })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Quota" })).toHaveCount(0);
   await page.goto(`/tenants/${TENANT_ID.globex}`);
   await expect(page.getByRole("heading", { name: "Không tìm thấy" })).toBeVisible();
 });
@@ -45,7 +46,7 @@ test("ADM-FR-76 · platform_admin: 3 nhóm NỀN TẢNG · CÔNG TY · HỆ TH�
   await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.globex}`));
   await expect(page.getByRole("tab", { name: "Cài đặt" })).toBeVisible();
   await page.goto("/users");
-  await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.globex}\\?.*tab=users`));
+  await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.globex}\\?.*tab=members`));
 });
 
 test("ADM-FR-76 · AC2 · platform_admin chưa chọn công ty: /users → danh sách công ty", async ({

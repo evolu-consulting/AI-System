@@ -161,10 +161,11 @@ test.describe("stg · admin-web", () => {
     await page.getByRole("link", { name: "demo", exact: true }).first().click();
     await page.waitForURL(/\/tenants\/[0-9a-f-]{36}/);
     const id = new URL(page.url()).pathname.split("/")[2];
-    await page.goto(`${URLS.admin}/tenants/${id}?tab=features`);
-    const card = page.getByRole("region", { name: /Sổ Hợp Tác|Contract Ledger/ });
+    // CR-121 c12/c14: tab Ứng dụng là bảng, mỗi app một hàng
+    await page.goto(`${URLS.admin}/tenants/${id}?tab=apps`);
+    const card = page.getByTestId("apps-row-contracts");
     await expect(card).toBeVisible({ timeout: 30_000 });
-    await expect(card).toContainText(/Đang:|Current:|Now:/);
+    await expect(card).toContainText(/Đang bật|Đang tắt|On|Off|Needs attention|Cần xử lý/);
     await shot(page, "08-admin-tenant-features");
     await ctx.close();
   });

@@ -28,7 +28,7 @@ export function WizardPeopleStep({ tenant, onDirtyChange }: { tenant: TenantDeta
       <Link
         to="/tenants/$tenantId"
         params={{ tenantId: tenant.id }}
-        search={{ tab: "users", drawer: "new" }}
+        search={{ tab: "members", view: "users", drawer: "new" }}
         className="text-label text-primary underline underline-offset-4"
       >
         {t("tenants.wizard.addUsers")}

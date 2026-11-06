@@ -63,7 +63,7 @@ export function ByTenantTable({ rows, loading, error }: Props) {
                   <Link
                     to="/tenants/$tenantId"
                     params={{ tenantId: r.tenant_id }}
-                    search={{ tab: "quota" }}
+                    search={{ tab: "settings", at: "quota" }}
                     className="font-medium text-primary hover:underline"
                   >
                     {r.tenant_name}{" "}

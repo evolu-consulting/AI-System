@@ -1,9 +1,10 @@
 // CR-112 · ADM-FR-76 AC2/AC3 · route cũ `/users`, `/groups`, `/partners`, `/access`, `/agents` (tenant_admin) → tab tương ứng của workspace công ty.
 // tenant_admin: công ty mình. platform_admin: `?tenant=<mã>` nếu có, không thì công ty chọn gần nhất; chưa có ⇒ danh sách công ty. Giữ nguyên query khác.
 import { validateWorkspaceSearch, type WorkspaceSearch } from "./workspace-search";
-import type { TenantTab } from "./workspace-tabs";
+import type { MemberView } from "./workspace-tabs";
 
-export type LegacyTab = Extract<TenantTab, "users" | "groups" | "partners" | "access" | "agents">;
+/** Route cũ (`/users`, `/groups`, …) = mục con của tab Thành viên (CR-121 c14). */
+export type LegacyTab = MemberView;
 
 export type LegacyContext = {
   role: "platform_admin" | "tenant_admin" | "member" | undefined;
@@ -38,13 +39,13 @@ export function legacyTarget(
           : ctx.lastTenantId
         : undefined;
   if (!tenantId) return { to: "/tenants" };
-  // Phân quyền cũ dùng `?tab=matrix|check` cho tab con → `view`; mọi tab khác bỏ `tab` cũ.
+  // Phân quyền cũ dùng `?tab=matrix|check` cho tab con → `mode`; mọi mục khác bỏ `tab` cũ.
   const { tenant: _tenant, tab: oldTab, ...rest } = search;
-  const carried = tab === "access" ? { ...rest, view: oldTab } : rest;
+  const carried = tab === "access" ? { ...rest, mode: oldTab } : rest;
   return {
     to: "/tenants/$tenantId",
     params: { tenantId },
-    search: { ...validateWorkspaceSearch(carried), tab },
+    search: { ...validateWorkspaceSearch(carried), tab: "members", view: tab },
   };
 }
 

@@ -1,4 +1,4 @@
-// ADM-FR-35 · M3-R13 · tab Phân quyền của workspace công ty: tab con + user trên URL (`?tab=access&view=roles|matrix|check&user=`); tenant theo workspace (CR-112).
+// ADM-FR-35 · M3-R13 · tab Phân quyền của workspace công ty: tab con + user trên URL (`?tab=members&view=access&mode=roles|matrix|check&user=`); tenant theo workspace (CR-112).
 import type { Me } from "@ai/contracts/auth";
 import { getRouteApi } from "@tanstack/react-router";
 import { useWorkspaceView } from "@/features/tenants/lib/use-workspace-view";
@@ -15,9 +15,9 @@ export function useAccessView(me: Me | null) {
   return {
     ...tn,
     user: search.user,
-    tab: (search.view ?? "roles") as AccessTab,
+    tab: (search.mode ?? "roles") as AccessTab,
     needsTenant: tn.isPlatform && !tn.tenantId,
-    setTab: (view: AccessTab) => patch({ view }),
+    setTab: (mode: AccessTab) => patch({ mode }),
     setUser: (user: string | undefined) => patch({ user }),
   };
 }
