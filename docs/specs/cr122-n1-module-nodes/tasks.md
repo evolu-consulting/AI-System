@@ -32,7 +32,7 @@ Trình sửa lấy bảng node qua `GET /process-palette`: node lõi + node củ
 - Kịch bản: khi nối hai node lệch giao diện thì báo thiếu/lệch kiểu [test: packages/contracts/src/app-manifest/nodes.rules.test.ts » đủ và khớp kiểu ⇒ rỗng, thiếu đầu vào bắt buộc ⇒ missing, khác kiểu ⇒ type, không bắt buộc thiếu ⇒ bỏ qua]
 - Kịch bản: khi khai node sai thì check:app-events đỏ [test: packages/contracts/src/app-manifest/nodes.rules.test.ts » khai sai ⇒ mã luật, khoá trùng / khác tiền tố app]
 
-### MODIFIED current/engine/company-flows.md
+### ADDED current/engine/company-flows-pair.md
 #### Yêu cầu: Bản gốc và bản sao không bao giờ cùng Bật
 Bật bằng PATCH bị chặn khi bản đối ứng đang Bật (409 `FLOW_PAIR_ACTIVE`, câu sửa) hoặc khi bản sao chưa xuất bản (409 `FLOW_NOT_PUBLISHED`).
 - Kịch bản: khi PATCH bật gốc sau khi xuất bản bản sao, hoặc bật bản chưa xuất bản, thì 409 [test: apps/hub-api/src/modules/processes/library/company-flows.int.test.ts » soát B1: bản gốc và bản sao không cùng Bật qua PATCH, bản chưa xuất bản không PATCH bật được]
