@@ -39,6 +39,8 @@ export type EngineStageView = {
   /** CR-122 · P11 · tên stage + Group (khớp `PackStepView`) — thẻ của lượt flow (không có mẫu chụp) dựng bước từ đây. */
   name?: string;
   group_id?: string | null;
+  /** P11f · vị trí stage trong run (khớp `PackStepView.idx`). */
+  idx?: number;
 };
 export type EngineStepsView = {
   status: string;
@@ -146,19 +148,30 @@ export function cardSteps(
   });
 }
 
-const STAGE_KEY = /^s(\d+)$/;
+/**
+ * Vị trí stage của engine: `idx` của `stepsView`; vắng (dữ liệu cũ) ⇒ từ khoá `s<i>`. P11f · khoá stage của FlowDef là khoá do người
+ * dựng đặt (`duyet-lon`, `nhanh`…), KHÔNG phải `s<i>` ⇒ không được dựa vào khoá để biết vị trí.
+ */
+const stageIdx = (st: EngineStageView): number | null => {
+  if (typeof st.idx === "number") return st.idx;
+  const m = /^s(\d+)$/.exec(st.key);
+  return m ? Number(m[1]) : null;
+};
+/** Stage engine ở vị trí `idx` (thẻ dạng khe: khoá `s<i>`; lượt flow: `idx`). */
+export const stageAt = (sv: EngineStepsView | null | undefined, idx: number) =>
+  sv?.steps.find((s) => s.key === `s${idx}`) ?? sv?.steps.find((s) => stageIdx(s) === idx);
+
 /**
  * CR-122 · P11 · lượt flow theo sự kiện (FlowDef: Nếu / Duyệt / Thông báo / Kết thúc — không có mẫu chụp dạng khe): bước của thẻ = stage
- * DUYỆT của run đã tới (có task review hoặc đang mở), đúng `s<idx>` của engine; nhánh chưa tới / node tự động không hiện.
+ * DUYỆT của run đã tới (có task review hoặc đang mở), theo vị trí stage engine; nhánh chưa tới / node tự động không hiện.
  */
 export function runCardSteps(sv: EngineStepsView, x: CardExtras = {}): CardStep[] {
   const reached = (st: EngineStageView) => !!st.task_ref || !!st.task || st.status === "open";
-  const shown = sv.steps.filter((st) => STAGE_KEY.test(st.key) && reached(st));
+  const placed = sv.steps.filter((st) => stageIdx(st) !== null);
+  const shown = placed.filter(reached);
   // P11b · chưa có bước mở (vừa gắn run, node tự động đang chạy) ⇒ hiện bước KẾ TIẾP đang chờ, thẻ không trống.
   if (!shown.some((s) => s.status === "open")) {
-    const next = sv.steps.find(
-      (st) => STAGE_KEY.test(st.key) && !reached(st) && WAITING.has(st.status),
-    );
+    const next = placed.find((st) => !reached(st) && WAITING.has(st.status));
     if (next) shown.push(next);
   }
   return shown.map((st) => runCardStep(st, x));
@@ -166,9 +179,8 @@ export function runCardSteps(sv: EngineStepsView, x: CardExtras = {}): CardStep[
 const WAITING = new Set<CardStepStatus>(["pending", "running"]);
 
 function runCardStep(st: EngineStageView, x: CardExtras): CardStep {
-  const m = STAGE_KEY.exec(st.key);
   return {
-    idx: Number(m?.[1]),
+    idx: stageIdx(st) as number,
     key: st.key,
     name: st.name ?? st.key,
     kind: "review" as const,
@@ -258,7 +270,7 @@ export function attentionOf(i: EngineCardInput): EngineAttention | null {
 export function engineCardView(i: EngineCardInput) {
   const steps = cardSteps(i.flow, i.sv, i.facts, i.extras);
   const open = openStep(steps);
-  const task = open ? (i.sv?.steps.find((s) => s.key === `s${open.idx}`)?.task ?? null) : null;
+  const task = open ? (stageAt(i.sv, open.idx)?.task ?? null) : null;
   const can = task?.can_act === true;
   const live = i.approval.status === "level1";
   const attention = attentionOf(i);
@@ -311,7 +323,7 @@ export function planEngineAct(
 ): EnginePlan {
   const card = engineCardView(i);
   const open = openStep(card.steps);
-  const task = open ? i.sv?.steps.find((s) => s.key === `s${open.idx}`)?.task : null;
+  const task = open ? stageAt(i.sv, open.idx)?.task : null;
   if (i.approval.status !== "level1" || !open || !task) return err("APPROVAL_NOT_OPEN");
   if (!task.can_act)
     return err(card.block_reason === "starter" ? "STARTER_CANNOT_REVIEW" : "NOT_REVIEWER");

@@ -21,6 +21,31 @@ const st = (key: string, status: EngineStageView["status"], o: Partial<EngineSta
 const NO_FACTS = { deal: null, total_value: null } as never;
 const approval = { id: "a1", status: "level1", startedBy: "u1", feedback: null, engineRunId: "r1" };
 
+describe("CR-122 P11f · khoá stage FlowDef do người dựng đặt (không phải s<i>)", () => {
+  it("stepsView thật (key 'nhanh'/'duyet-lon', idx 0/1) ⇒ bước 'Duyệt giá trị lớn' idx 1 mở, task + can_act", () => {
+    // Tái hiện e2e G1.2 (trace 20261107-003237): run gắn, `run_status: waiting_review` nhưng thẻ `steps: []`, `task_id: null`.
+    const sv = {
+      status: "waiting_review",
+      started_by: "u1",
+      steps: [
+        st("nhanh", "passed", { idx: 0, name: "Giá trị lớn hơn 100 triệu" }),
+        st("duyet-lon", "open", {
+          idx: 1,
+          name: "Duyệt giá trị lớn",
+          task: { id: "t9", can_act: true },
+          task_ref: "t9",
+        }),
+        st("duyet-nho", "pending", { idx: 2, name: "Duyệt giá trị nhỏ" }),
+      ],
+    };
+    const v = engineCardView({ approval, flow: [], facts: NO_FACTS, sv, viewerId: "u2" });
+    expect(v.steps.map((s) => [s.idx, s.name, s.status])).toEqual([
+      [1, "Duyệt giá trị lớn", "open"],
+    ]);
+    expect(v).toMatchObject({ task_id: "t9", can_act: true });
+  });
+});
+
 describe("CR-122 P11 · thẻ duyệt từ run flow", () => {
   it("flow_steps rỗng ⇒ bước = stage Duyệt đã tới (s1 mở, s2 nhánh chưa tới bị ẩn), task + can_act theo stage mở", () => {
     const sv = {
