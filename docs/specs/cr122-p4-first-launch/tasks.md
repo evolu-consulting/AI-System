@@ -12,7 +12,7 @@ Sửa lỗi sản phẩm qc tìm ở Q1: #4 HĐ đầu tiên sau khi gán flow k
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-### MODIFIED engine/flow-trigger.md
+### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Gán flow có hiệu lực ngay
 Sau khi gán và bật, sự kiện đầu tiên mở lượt ngay; thiếu tính năng thì làm mới catalog một lần rồi kiểm lại trước khi từ chối. Community coi bài cần duyệt khi cờ bật và có flow `post.created` đang bật.
 - Kịch bản: gán + bật ⇒ sự kiện đầu tiên mở đúng 1 lượt [test: apps/hub-api/src/modules/processes/triggers/first-launch.int.test.ts]
