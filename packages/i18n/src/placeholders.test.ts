@@ -26,6 +26,16 @@ describe("ADM-NFR-06 · tham số nội suy vi/en", () => {
     expect(diff).toEqual([]);
   });
 
+  // admin-web nội suy bằng `{x}` (prefix "{", suffix "}"): `{{x}}` sẽ hiển thị sai. (Chuỗi `process.*` ở file riêng được đổi cú pháp lúc nạp.)
+  test("không dùng cú pháp {{x}} trong locale gốc của admin-web", () => {
+    for (const lng of ["vi", "en"] as const) {
+      const bad = Object.entries(flat(resources[lng].translation as Tree)).filter(([, v]) =>
+        /\{\{/.test(v),
+      );
+      expect(bad.map(([k]) => `${lng}:${k}`)).toEqual([]);
+    }
+  });
+
   test("không có giá trị rỗng", () => {
     const vi = flat(resources.vi.translation as Tree);
     const en = flat(resources.en.translation as Tree);

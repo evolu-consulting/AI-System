@@ -896,6 +896,16 @@
       }
     },
     "settings": {
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyFail": "Could not copy. Select the code and copy it by hand.",
+      "unsavedBoth": "Unsaved changes in Info and Quota. They save one after the other; press Save twice.",
+      "lockedBanner": "The company is locked — users cannot sign in.",
+      "lockedWho": {
+        "platform": "Data is kept. You can unlock it in the Lock company section below.",
+        "tenant": "Data is kept. Only a platform admin can unlock it; please contact them."
+      },
+      "lockedBy": "Last action by {by}.",
       "quota": "Quota",
       "lockTitle": "Lock company",
       "lockNote": "Locking the company stops its users from signing in until it is unlocked.",
@@ -3159,9 +3169,9 @@
       "noHub": "The Hub address is not configured, so flows cannot be shown.",
       "noSlots": "This app has no flow slots. A slot is a place where the app lets you plug in a flow, for example \"Contract approval\".",
       "alwaysOn": "Always on",
-      "needsAddon": "Needs add-on {{addon}}",
-      "trigger": "Starts when: {{trigger}}",
-      "slotMissing": "This slot is not on the hub yet (missing a published default flow \"{{def}}\"). Companies that turn on the app will have no flow here.",
+      "needsAddon": "Needs add-on {addon}",
+      "trigger": "Starts when: {trigger}",
+      "slotMissing": "This slot is not on the hub yet (missing a published default flow \"{def}\"). Companies that turn on the app will have no flow here.",
       "intro": "Each slot has a default flow. For a company that needs its own, duplicate, edit, then assign it in the Companies tab. Running items keep the old version; new items use the new one.",
       "default": "Default",
       "noDefault": "None",

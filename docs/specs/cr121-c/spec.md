@@ -69,18 +69,20 @@ Tab (key URL): **Hồ sơ `profile` · Ứng dụng `apps` · Quy trình `proces
 | Cài đặt | Mã công ty (chỉ đọc, chép được), Múi giờ, Chạy cùng lúc tối đa, Gói + "Đổi gói", **Quota**, Khoá công ty; một thanh "Có thay đổi chưa lưu · Huỷ · Lưu" |
 - Gỡ: tab Nhóm/Đối tác/Phân quyền/Agents/Quota/`workflow-tools` (chuyển hướng bảng dưới). `TenantDetailPage` dùng chung ⇒ tenant_admin cùng 5 tab; quyền ghi theo vai như hiện tại.
 - Trạng thái: công ty khoá ⇒ banner "Công ty đang bị khoá — người dùng không đăng nhập được" + "Mở khoá".
-- Kịch bản: `?tab=quota` ⇒ `?tab=settings#quota`; tenant_admin mở công ty mình ⇒ 5 tab đúng thứ tự (e2e MỚI).
+- Kịch bản: `?tab=quota` ⇒ `?tab=settings&at=quota`; tenant_admin mở công ty mình ⇒ 5 tab đúng thứ tự (e2e MỚI).
 
 | URL cũ | Chuyển tới |
 |---|---|
-| `?tab=info` | `?tab=profile` |
+| `?tab=info` | `?tab=settings` (Cài đặt cũ; c14 chốt, thay `profile`) |
 | `?tab=features` | `?tab=apps` |
-| `?tab=groups\|partners\|access\|agents` | `?tab=members&view=groups\|partners\|access\|agents` |
-| `?tab=quota` | `?tab=settings#quota` |
+| `?tab=users\|groups\|partners\|access\|agents` | `?tab=members&view=users\|groups\|partners\|access\|agents` (tab con của Phân quyền cũ `view=roles\|matrix\|check` ⇒ `mode=`) |
+| `?tab=quota` | `?tab=settings&at=quota` (search param, không dùng hash; cuộn tới phần Quota) |
 | `?tab=workflow-tools` | `/ai-tools` (kèm thông báo "Bật/tắt Dify theo công ty nằm ở Công cụ AI") |
 | `/apps/$appKey?tab=companies\|processes` | `/tenants/<id>?tab=processes` (nếu có công ty) hoặc trang app chỉ còn link |
 | `/processes?tenant=<id>` | `/tenants/<id>?tab=processes` |
 Key tab mới `processes`, không tái dùng `workflow-tools`.
+
+**Quyết định trong lúc làm (c14/c14b):** `info` ⇒ `settings` vì nội dung Cài đặt cũ chuyển vào tab Cài đặt; `features|packs` ⇒ `apps`; mục con của Thành viên dùng `view=`, nên tab con của Phân quyền đổi từ `view` sang `mode=`; vị trí Quota dùng `at=quota` thay `#quota`. Tab Cài đặt: ô Gói và nút Đổi gói chưa làm vì hệ thống chưa có khái niệm gói thương mại (giữ ô hạn mức).
 
 ### R3 · Công ty › Ứng dụng — artboard `Company` (lát c12)
 Bảng mỗi hàng một ứng dụng: **Ứng dụng · Quyền truy cập · Trạng thái · Thành viên · Quy trình**. Quyền = `LevelControl` **Tắt·Xem·Sửa·Quản trị** (Q3); "Quy trình" = "2 bật · 1 tắt" là liên kết sang tab Quy trình (lọc theo app). App nền: "Cơ bản · luôn bật".

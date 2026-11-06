@@ -20,6 +20,9 @@ type Props = {
   onDirtyChange: (dirty: boolean) => void;
   /** Sau "Tải bản mới" ở hộp xung đột: nạp lại tenant (version mới nhất). */
   onReloadTenant: () => void;
+  /** CR-121 c14b · id của <form> cho thanh lưu chung; `hideBar` ẩn thanh lưu riêng. */
+  formId?: string;
+  hideBar?: boolean;
 };
 
 const monthLabel = (month: string) => month.split("-").reverse().join("/");
@@ -69,6 +72,7 @@ export function TenantQuotaTab(props: Props) {
         <TenantDailyLimits tenantId={props.tenant.id} />
       </div>
       <form
+        id={props.formId}
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
@@ -129,7 +133,7 @@ export function TenantQuotaTab(props: Props) {
           }
         />
         <p className="text-caption text-muted-foreground">{t("tenants.quota.note")}</p>
-        {q.dirty ? <SaveBar saving={q.saving} onCancel={q.reset} /> : null}
+        {q.dirty && !props.hideBar ? <SaveBar saving={q.saving} onCancel={q.reset} /> : null}
       </form>
       <LazyConflictDialog props={q.conflictProps} />
     </>

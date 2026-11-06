@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTr } from "@/lib/use-translate";
 import { type TenantInfoValues, tenantInfoSchema } from "../lib/schemas";
+import { CopyKeyButton } from "./CopyKeyButton";
 import { TenantTimezoneField } from "./TenantTimezoneField";
 
 type Props = {
@@ -22,6 +23,9 @@ type Props = {
   onSubmit: (values: TenantInfoValues) => void;
   /** CR-112: tenant_admin xem thông tin công ty, không sửa (PATCH chỉ platform_admin). */
   readOnly?: boolean;
+  /** CR-121 c14b · id của <form> để thanh lưu chung của tab Cài đặt gửi form; `hideBar` ẩn thanh lưu riêng. */
+  formId?: string;
+  hideBar?: boolean;
 };
 
 const toValues = (t: TenantDetail): TenantInfoValues => ({
@@ -37,6 +41,8 @@ export function TenantInfoForm({
   onDirtyChange,
   onSubmit,
   readOnly = false,
+  formId,
+  hideBar = false,
 }: Props) {
   const { t } = useTranslation();
   const tr = useTr();
@@ -79,14 +85,19 @@ export function TenantInfoForm({
   }, [form, online, save, readOnly]);
 
   return (
-    <form onSubmit={save} noValidate className="max-w-xl space-y-4 pb-20">
+    <form id={formId} onSubmit={save} noValidate className="max-w-xl space-y-4 pb-20">
       <fieldset disabled={readOnly} className="contents">
         <FormField
           id="info-key"
           label={t("tenants.field.key")}
           description={t("tenants.field.keyHint")}
         >
-          {(p) => <Input {...p} value={tenant.key} readOnly className="bg-muted font-mono" />}
+          {(p) => (
+            <div className="flex items-center gap-2">
+              <Input {...p} value={tenant.key} readOnly className="bg-muted font-mono" />
+              <CopyKeyButton value={tenant.key} />
+            </div>
+          )}
         </FormField>
         <FormField
           id="info-slots"
@@ -132,7 +143,7 @@ export function TenantInfoForm({
           <StatusBadge tone="ok">{t("tenants.status.active")}</StatusBadge>
         )}
       </div>
-      {isDirty && !readOnly ? (
+      {isDirty && !readOnly && !hideBar ? (
         <div className="fixed right-0 bottom-0 left-0 z-30 flex items-center justify-between gap-3 border-t border-border bg-card px-6 py-3 shadow-drawer lg:left-sidebar">
           <span className="text-label text-muted-foreground">{t("common.unsaved")}</span>
           <div className="flex gap-2">
