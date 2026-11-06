@@ -141,7 +141,7 @@ describe("esign-sweep · vòng nền bước Ký số", () => {
   it("kẹt ⇒ cần quyết; nhắc một lần mỗi chu kỳ; quá hạn chuyển cấp một lần; chuông đúng tenant; số câu cố định", async () => {
     const p1 = await pass(NOW);
     expect(p1).toMatchObject({ stale: 1, reminded: 6, escalated: 0, bells: 7 });
-    expect(p1.queries).toBe(4); // mỗi tenant: 1 quét + 1 chuông
+    expect(p1.queries).toBe(6); // mỗi tenant: 1 quét + 1 quét phong bì (E5c) + 1 chuông
     expect(await step0(k[0] as string)).toEqual({ st: "needs_decision", why: "SEND_FAILED" });
     expect((await step0(k[2] as string))?.st).toBe("sending");
     const b1 = await bells();
@@ -167,14 +167,14 @@ describe("esign-sweep · vòng nền bước Ký số", () => {
 
     const p2 = await pass(NOW); // chạy lại cùng mốc ⇒ không gì đổi
     expect(p2).toMatchObject({ stale: 0, reminded: 0, escalated: 0, bells: 0 });
-    expect(p2.queries).toBe(2); // mỗi tenant 1 câu quét, lô rỗng ⇒ 0 câu chuông
+    expect(p2.queries).toBe(4); // mỗi tenant 1 câu quét + 1 câu quét phong bì (E5c), lô rỗng ⇒ 0 câu chuông
 
     const p3 = await pass(at(24)); // chu kỳ nhắc kế (k[1], k[3], k[5]; k[4] tới hạn nhắc đầu); k[2] giờ mới kẹt
     expect(p3).toMatchObject({ stale: 1, reminded: 7, escalated: 0 });
 
     const p4 = await pass(at(48)); // k[1]/k[3]/k[5] gửi 73 h ⇒ quá hạn + nhắc; k[1] có Group ⇒ trưởng phòng B
     expect(p4).toMatchObject({ reminded: 7, escalated: 6 });
-    expect(p4.queries).toBe(5); // T1: quét + danh bạ + chuông; T2: quét + chuông
+    expect(p4.queries).toBe(7); // T1: quét + quét phong bì + danh bạ + chuông; T2: quét + quét phong bì + chuông
     const esc = (await bells()).filter((b) => b.title.endsWith("quá hạn"));
     expect(
       esc
