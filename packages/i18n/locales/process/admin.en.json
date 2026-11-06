@@ -1301,6 +1301,11 @@
       "finish": "Finish",
       "soon": "Not available yet"
     },
+    "companies": "{{n}} companies",
+    "add": "Add step",
+    "moreActions": "More actions",
+    "group": { "basic": "Basic", "core": "Core" },
+    "ifHint": "If true go to the True step, otherwise the False step (empty = next step).",
     "link": {
       "next": "Next step",
       "merge": "Merge into",
@@ -1317,9 +1322,13 @@
       "return": "On return go to"
     },
     "bridge": {
-      "missing": "The next step needs “{{key}}”, the previous step does not provide it.",
-      "type": "The next step needs “{{key}}” as {{expected}}, the previous one gives {{got}}.",
+      "missing": "{{from}} → {{to}}: missing “{{key}}”",
+      "type": "{{from}} → {{to}}: “{{key}}” has the wrong type ({{got}} instead of {{expected}})",
       "edge": "Missing input",
+      "summary": "{{n}} connections miss data",
+      "chip": "Missing {{keys}}",
+      "loading": "Suggesting…",
+      "ghost": "Set value (suggested)",
       "suggest": "Suggest a bridge",
       "none": "No suggestion. Add a Set value node to connect the two steps.",
       "accept": "Accept",

@@ -20,8 +20,10 @@ import {
 import type { Edge, Node, XYPosition } from "@xyflow/react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { BridgeApi } from "../../hooks/use-bridge";
 import { countAtStep } from "../../lib/step-ops";
 import { useFlowCtx } from "../flow/flow-ctx";
+import { BRIDGE_W, BridgeNode } from "./BridgeNode";
 import { type CanvasHandlers, HandlersCtx } from "./canvas-ctx";
 import { IfNode } from "./IfNode";
 import { StageNode } from "./StageNode";
@@ -29,7 +31,7 @@ import type { StageView } from "./stage-view";
 import { stepHeaderLabels } from "./stage-view";
 import { TriggerNode } from "./TriggerNode";
 
-const nodeTypes = { stage: StageNode, if: IfNode, trigger: TriggerNode };
+const nodeTypes = { stage: StageNode, if: IfNode, trigger: TriggerNode, bridge: BridgeNode };
 
 export type ProcessCanvasProps = CanvasHandlers & {
   views: readonly StageView[];
@@ -125,18 +127,58 @@ function triggerPart(views: readonly StageView[], t: TriggerInfo): { node: Node[
   return { node: [node], edges };
 }
 
-type WarnEdges = readonly { from: string; to: string }[];
+type WarnEdges = readonly { from: string; to: string; keys: string[] }[];
 const NO_WARN: WarnEdges = [];
 
+/** CR-122 · U2d: ô gợi ý cầu nối dưới mỗi cạnh vàng; có đề xuất ⇒ thêm cạnh nét đứt qua ô (xem trước node Ghi giá trị mờ). */
+function bridgePart(
+  nodes: readonly Node[],
+  warn: WarnEdges,
+  api: BridgeApi | undefined,
+): { node: Node[]; edges: Edge[] } {
+  if (!api) return { node: [], edges: [] };
+  const out: { node: Node[]; edges: Edge[] } = { node: [], edges: [] };
+  for (const w of warn) {
+    const a = nodes.find((n) => n.id === w.from);
+    const b = nodes.find((n) => n.id === w.to);
+    if (!a || !b) continue;
+    const id = `bridge:${w.from}>${w.to}`;
+    const ok = api.ui(w).kind === "ok";
+    out.node.push({
+      id,
+      type: "bridge",
+      position: {
+        x: (a.position.x + NODE_W + b.position.x) / 2 - BRIDGE_W / 2,
+        y: Math.max(a.position.y, b.position.y) + NODE_H + 28,
+      },
+      measured: { width: BRIDGE_W, height: ok ? 150 : 76 },
+      selectable: false,
+      focusable: false,
+      draggable: false,
+      data: { from: w.from, to: w.to, keys: w.keys },
+    });
+    if (ok)
+      for (const [s, t] of [
+        [w.from, id],
+        [id, w.to],
+      ] as const)
+        out.edges.push({
+          ...toEdge({ id: `${s}>${t}`, source: s, target: t, kind: "forward" }),
+          style: { strokeDasharray: "5 4" },
+        });
+  }
+  return out;
+}
+
 /** CR-122 · FR-26 · cạnh vàng: bước sau cần đầu vào mà bước trước không có (nét vàng + nhãn, không chỉ màu). */
-function warnStyle(edges: Edge[], warn: WarnEdges, label: string): Edge[] {
+function warnStyle(edges: Edge[], warn: WarnEdges): Edge[] {
   if (warn.length === 0) return edges;
   const bad = new Set(warn.map((w) => `${w.from}>${w.to}`));
   return edges.map((e) =>
     bad.has(`${e.source}>${e.target}`)
       ? {
           ...e,
-          label,
+          label: "⚠",
           style: { stroke: "var(--color-warning)", strokeWidth: 2.5 },
           labelStyle: { fill: "var(--color-warning)", fontSize: 12 },
           labelBgStyle: { fill: "var(--color-card)" },
@@ -150,7 +192,7 @@ function useFlowGraph(
   approve: string,
   trig: TriggerInfo,
   warn: WarnEdges,
-  warnLabel: string,
+  bridge: BridgeApi | undefined,
 ) {
   const { views, selected, readOnly } = p;
   return useMemo(() => {
@@ -170,13 +212,14 @@ function useFlowGraph(
       e.kind === "forward" && gated(e.source) ? approveEdge(toEdge(e), approve) : toEdge(e),
     );
     const tp = triggerPart(views, trig);
+    const bp = bridgePart(nodes, warn, bridge);
     return {
-      nodes: [...tp.node, ...nodes],
-      edges: warnStyle([...tp.edges, ...edges], warn, warnLabel),
+      nodes: [...tp.node, ...nodes, ...bp.node],
+      edges: warnStyle([...tp.edges, ...edges, ...bp.edges], warn),
       steps: lay.steps,
       dlc,
     };
-  }, [views, selected, readOnly, approve, trig, warn, warnLabel]);
+  }, [views, selected, readOnly, approve, trig, warn, bridge]);
 }
 
 function useCanvasLabels(dlc: boolean): Partial<FlowLabels> {
@@ -208,21 +251,16 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
   const handlers = useRef<CanvasHandlers>(p);
   handlers.current = p;
   const { t } = useTranslation();
-  const tc = useFlowCtx()?.trigger;
+  const flowCtx = useFlowCtx();
+  const tc = flowCtx?.trigger;
   const tLabel = tc?.label;
   const tSummary = tc?.summary;
   const trig = useMemo(
     () => (tLabel === undefined ? null : { label: tLabel, summary: tSummary ?? "" }),
     [tLabel, tSummary],
   );
-  const warn = useFlowCtx()?.warnEdges ?? NO_WARN;
-  const g = useFlowGraph(
-    p,
-    t("process.admin.library.dlc.approve"),
-    trig,
-    warn,
-    t("process.admin.flow.bridge.edge"),
-  );
+  const warn = flowCtx?.warnEdges ?? NO_WARN;
+  const g = useFlowGraph(p, t("process.admin.library.dlc.approve"), trig, warn, flowCtx?.bridge);
   const labels = useCanvasLabels(g.dlc);
   const onAddToStep = useCallback((step: number) => handlers.current.ops.add(step), []);
   const onConnect = useCallback(
@@ -260,7 +298,7 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
 
   return (
     <div
-      className={`${p.compact ? "h-[280px]" : "h-[min(70vh,640px)]"} overflow-hidden rounded-md border border-border bg-background`}
+      className={`${p.compact ? "h-[280px]" : trig ? "h-[min(62vh,460px)]" : "h-[min(70vh,640px)]"} overflow-hidden rounded-md border border-border bg-background`}
     >
       <HandlersCtx.Provider value={handlers}>
         <FlowCanvas

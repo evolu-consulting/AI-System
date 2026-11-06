@@ -2,6 +2,7 @@
 // `GET /process-palette`, form Kết thúc và vẽ node Bắt đầu khi trên canvas; vắng ⇒ trình sửa giai đoạn thường / flow cũ.
 import type { AppEventDecl } from "@ai/contracts/app-manifest";
 import { createContext, useContext } from "react";
+import type { BridgeApi } from "../../hooks/use-bridge";
 
 export type FlowCtx = {
   app: string;
@@ -11,11 +12,23 @@ export type FlowCtx = {
   /** Node Bắt đầu khi trên canvas: nhãn sự kiện + tóm tắt điều kiện + mở thẻ sửa. */
   trigger?: { label: string; summary: string; onOpen: () => void };
   /** Cạnh vàng (FR-26): cặp stage (uid) mà bước sau cần đầu vào bước trước không có. */
-  warnEdges?: readonly { from: string; to: string }[];
+  warnEdges?: readonly { from: string; to: string; keys: string[] }[];
+  /** Gợi ý cầu nối ngay trên canvas (trạng thái + hành động theo cạnh vàng). */
+  bridge?: BridgeApi;
+  /** Tên bước (0-based) cho tóm tắt node ("Chờ ký", "Kết thúc…"). */
+  stepName?: (n: number) => string;
+  /** Workbench đăng ký hàm chọn node (bấm cảnh báo kiểm nối ⇒ chọn node trên canvas). */
+  selectRef?: { current: ((uid: string) => void) | null };
 };
 export const FlowContext = createContext<FlowCtx | null>(null);
 export const useFlowCtx = (): FlowCtx | null => useContext(FlowContext);
 
 /** Mức zoom tối thiểu khi fit canvas: flow (cột Bắt đầu khi + ≥ 8 bước) đọc được; Canvas thư viện cũ 0.7; mặc định của canvas. */
 export const useFitMin = (lib: boolean): number | undefined =>
-  useFlowCtx() ? 0.55 : lib ? 0.7 : undefined;
+  useFlowCtx() ? 0.8 : lib ? 0.7 : undefined;
+
+/** Workbench đăng ký hàm chọn node để ngoài canvas (cảnh báo kiểm nối) chọn đúng node. */
+export function useRegisterSelect(select: (uid: string) => void): void {
+  const ctx = useFlowCtx();
+  if (ctx?.selectRef) ctx.selectRef.current = select;
+}

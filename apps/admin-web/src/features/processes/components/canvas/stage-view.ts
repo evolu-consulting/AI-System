@@ -45,10 +45,19 @@ export type StageView = {
   dlc: { no: number; action: string; agent: string; gate: boolean; group: string | null } | null;
   /** dlc-engine · họ bước (dlc / review) để không nối hai loại; stage thường / hệ thống ⇒ null. */
   family: "dlc" | "review" | null;
+  /** CR-122 · U2d · bản nháp gốc (node flow đọc loại/tóm tắt/kết quả từ đây) + khoá i18n của lỗi đầu tiên (null = không lỗi). */
+  src: StageDraft;
+  errorKey: string | null;
 };
 
 const hasStageError = (errors: DraftErrors, i: number): boolean =>
   Object.keys(errors).some((k) => k.startsWith(`stages.${i}.`));
+
+/** Khoá i18n của lỗi đầu tiên của stage `i` (để node nói rõ lỗi gì); không lỗi ⇒ null. */
+const firstError = (errors: DraftErrors, i: number): string | null => {
+  const k = Object.keys(errors).find((x) => x.startsWith(`stages.${i}.`));
+  return k ? (errors[k] ?? null) : null;
+};
 
 /** CR-103 · node If: bước Đúng / Sai (0-based) cho canvas; stage khác ⇒ null. */
 const ifsOf = (s: StageDraft): StageView["ifs"] =>
@@ -132,6 +141,8 @@ export function stageViews(
     y: s.uiY ?? null,
     dlc: dlcInfoOf(s, stages),
     family: stageFamily(s),
+    src: s,
+    errorKey: firstError(errors, i),
   }));
 }
 
@@ -157,6 +168,8 @@ export const sameView = (a: StageView, b: StageView): boolean =>
   JSON.stringify(a.slotInfo) === JSON.stringify(b.slotInfo) &&
   JSON.stringify(a.dlc) === JSON.stringify(b.dlc) &&
   a.family === b.family &&
+  a.src === b.src &&
+  a.errorKey === b.errorKey &&
   a.y === b.y &&
   a.backTo.join() === b.backTo.join();
 

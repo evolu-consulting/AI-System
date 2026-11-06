@@ -16,6 +16,8 @@ type Props = {
   errors: DraftErrors;
   readOnly: boolean;
   onChange: (patch: Partial<StageDraft>) => void;
+  /** CR-122 · U2d · node `set` của flow: ẩn tên tệp + mẫu (chi tiết kỹ thuật, giữ mặc định). */
+  hideFile?: boolean;
 };
 
 function Sections({ stage, index, errors, readOnly, onChange }: Props) {
@@ -87,27 +89,31 @@ export function StageOutput(p: Props) {
   };
   return (
     <div className="space-y-3">
-      <TextField
-        id={`${stage.uid}-file`}
-        label={t("process.admin.editor.stage.filename")}
-        value={stage.filename}
-        error={e("output.filename")}
-        readOnly={readOnly}
-        mono
-        onChange={(v) => p.onChange({ filename: v })}
-      />
-      <TextField
-        id={`${stage.uid}-tpl`}
-        label={t("process.admin.editor.stage.template")}
-        value={stage.template}
-        error={e("output.template")}
-        readOnly={readOnly}
-        multiline
-        rows={5}
-        mono
-        onChange={(v) => p.onChange({ template: v })}
-      />
-      <Sections {...p} />
+      {p.hideFile ? null : (
+        <>
+          <TextField
+            id={`${stage.uid}-file`}
+            label={t("process.admin.editor.stage.filename")}
+            value={stage.filename}
+            error={e("output.filename")}
+            readOnly={readOnly}
+            mono
+            onChange={(v) => p.onChange({ filename: v })}
+          />
+          <TextField
+            id={`${stage.uid}-tpl`}
+            label={t("process.admin.editor.stage.template")}
+            value={stage.template}
+            error={e("output.template")}
+            readOnly={readOnly}
+            multiline
+            rows={5}
+            mono
+            onChange={(v) => p.onChange({ template: v })}
+          />
+        </>
+      )}
+      {p.hideFile ? null : <Sections {...p} />}
       <OutputFields {...p} />
     </div>
   );

@@ -44,6 +44,35 @@ function usedByText(
     : prefix + L("usedByVersion", { n, v: def.published_version });
 }
 
+type LFn = (k: string, o?: Record<string, string | number>) => string;
+
+/** Dòng "công ty đang dùng" + nơi gán: flow có trigger chỉ một liên kết ngắn (giải thích ở tooltip); def cũ giữ hai câu. */
+function AssignInfo({ def, L }: { def: LibraryDef; L: LFn }) {
+  const { t } = useTranslation();
+  if (hasTrigger(def))
+    return (
+      <Link
+        to="/tenants"
+        title={L("assign.where")}
+        className="text-caption text-primary underline-offset-4 hover:underline"
+        data-testid="assign-where"
+      >
+        {t("process.admin.flow.companies", { n: def.tenant_count ?? 0 })}
+      </Link>
+    );
+  return (
+    <>
+      <span className="text-caption text-muted-foreground">{usedByText(def, L)}</span>
+      {/* Một chỗ gán duy nhất: Công ty › Quy trình (Luật gốc 2) — thư viện không gán trực tiếp */}
+      <span className="text-caption text-muted-foreground" data-testid="assign-where">
+        {L("assign.where")}{" "}
+        <Link to="/tenants" className="text-primary underline-offset-4 hover:underline">
+          {L("assign.openCompanies")}
+        </Link>
+      </span>
+    </>
+  );
+}
 export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Props) {
   const { t } = useTranslation();
   const L = (k: string, o?: Record<string, string | number>) => t(`process.admin.library.${k}`, o);
@@ -74,14 +103,7 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
         {def.is_default ? (
           <StatusBadge tone="ok">{L("defaultBadge", { slot: def.slot_label ?? "" })}</StatusBadge>
         ) : null}
-        <span className="text-caption text-muted-foreground">{usedByText(def, L)}</span>
-        {/* Một chỗ gán duy nhất: Công ty › Quy trình (Luật gốc 2) — thư viện không gán trực tiếp */}
-        <span className="text-caption text-muted-foreground" data-testid="assign-where">
-          {L("assign.where")}{" "}
-          <Link to="/tenants" className="text-primary underline-offset-4 hover:underline">
-            {L("assign.openCompanies")}
-          </Link>
-        </span>
+        <AssignInfo def={def} L={L} />
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button
             type="button"
@@ -104,24 +126,26 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <fieldset className="inline-flex min-w-0 rounded-md border border-border p-0.5">
-          <legend className="sr-only">{L("mode.label")}</legend>
-          {modesOfDef(def).map((m) => (
-            <Button
-              key={m}
-              type="button"
-              size="sm"
-              variant={mode === m ? "default" : "ghost"}
-              aria-pressed={mode === m}
-              disabled={mode !== m && dirty}
-              title={mode !== m && dirty ? L("mode.saveFirst") : undefined}
-              onClick={() => onMode(m)}
-            >
-              {L(`mode.${m}`)}
-            </Button>
-          ))}
-        </fieldset>
-        {status.kind === "published" ? null : (
+        {modesOfDef(def).length > 1 ? (
+          <fieldset className="inline-flex min-w-0 rounded-md border border-border p-0.5">
+            <legend className="sr-only">{L("mode.label")}</legend>
+            {modesOfDef(def).map((m) => (
+              <Button
+                key={m}
+                type="button"
+                size="sm"
+                variant={mode === m ? "default" : "ghost"}
+                aria-pressed={mode === m}
+                disabled={mode !== m && dirty}
+                title={mode !== m && dirty ? L("mode.saveFirst") : undefined}
+                onClick={() => onMode(m)}
+              >
+                {L(`mode.${m}`)}
+              </Button>
+            ))}
+          </fieldset>
+        ) : null}
+        {status.kind === "published" || hasTrigger(def) ? null : (
           <span className="text-caption text-muted-foreground">{L("saveHint")}</span>
         )}
         <div className="ml-auto flex flex-wrap items-center gap-1">

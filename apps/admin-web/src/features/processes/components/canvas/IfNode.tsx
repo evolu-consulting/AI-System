@@ -6,6 +6,7 @@ import { NODE_H, NODE_W } from "@ai/flow-canvas/pure";
 import { type Node, type NodeProps, Position } from "@xyflow/react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import { useFlowCtx } from "../flow/flow-ctx";
 import { useHandlers } from "./canvas-ctx";
 import { onStageKeyDown } from "./stage-keys";
 import { type StageView, sameView } from "./stage-view";
@@ -15,6 +16,7 @@ export type IfType = Node<IfData, "if">;
 
 function IfImpl({ data }: NodeProps<IfType>) {
   const { t } = useTranslation();
+  const flow = useFlowCtx();
   const h = useHandlers();
   const { v, selected } = data;
   const name = v.name || t("process.admin.editor.stage.unnamed");
@@ -60,7 +62,7 @@ function IfImpl({ data }: NodeProps<IfType>) {
           className="inline-block w-full break-words text-caption font-medium leading-tight"
           title={name}
         >
-          {t("process.admin.editor.stage.aria", { n: v.index + 1, name })}
+          {flow ? name : t("process.admin.editor.stage.aria", { n: v.index + 1, name })}
         </span>
       </button>
     </div>

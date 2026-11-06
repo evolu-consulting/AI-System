@@ -8,7 +8,9 @@ import { NODE_H, NODE_W } from "@ai/flow-canvas/pure";
 import { Handle, type Node, type NodeProps, Position } from "@xyflow/react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import { useFlowCtx } from "../flow/flow-ctx";
 import { useHandlers } from "./canvas-ctx";
+import { FINISH_CLASS, FlowNodeBody, isFinishView } from "./FlowNodeBody";
 import { StageBody, stageButtonClass } from "./StageBody";
 import { onStageKeyDown } from "./stage-keys";
 import { type StageView, sameView } from "./stage-view";
@@ -38,6 +40,7 @@ function RejectPort() {
 function StageNodeImpl({ data }: NodeProps<StageNodeType>) {
   const h = useHandlers();
   const { v, selected } = data;
+  const flow = useFlowCtx();
   return (
     <div style={{ width: NODE_W, height: NODE_H }} className="pointer-events-auto">
       <HiddenHandle type="target" position={Position.Left} />
@@ -53,7 +56,7 @@ function StageNodeImpl({ data }: NodeProps<StageNodeType>) {
         type="button"
         data-stage-uid={v.uid}
         aria-current={selected ? "true" : undefined}
-        className={`${stageButtonClass(v, selected)} h-full overflow-hidden`}
+        className={`${stageButtonClass(v, selected)} h-full overflow-hidden ${flow && isFinishView(v) ? FINISH_CLASS : ""}`}
         onClick={(e) => h.onSelect(v.uid, e.detail === 0)}
         onKeyDown={(e) =>
           onStageKeyDown(e, {
@@ -67,7 +70,7 @@ function StageNodeImpl({ data }: NodeProps<StageNodeType>) {
           })
         }
       >
-        <StageBody v={v} />
+        {flow ? <FlowNodeBody v={v} /> : <StageBody v={v} />}
       </button>
     </div>
   );

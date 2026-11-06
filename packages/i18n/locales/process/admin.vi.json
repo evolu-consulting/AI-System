@@ -1301,6 +1301,11 @@
       "finish": "Kết thúc",
       "soon": "Chưa dùng được"
     },
+    "companies": "{{n}} công ty",
+    "add": "Thêm bước",
+    "moreActions": "Thao tác khác",
+    "group": { "basic": "Cơ bản", "core": "Lõi" },
+    "ifHint": "Đúng thì đi bước Đúng, sai thì đi bước Sai (trống = bước kế).",
     "link": {
       "next": "Bước kế",
       "merge": "Gộp tới",
@@ -1317,9 +1322,13 @@
       "return": "Trả lại đi tới"
     },
     "bridge": {
-      "missing": "Bước sau cần “{{key}}”, bước trước không có.",
-      "type": "Bước sau cần “{{key}}” kiểu {{expected}}, bước trước cho kiểu {{got}}.",
+      "missing": "{{from}} → {{to}}: thiếu “{{key}}”",
+      "type": "{{from}} → {{to}}: “{{key}}” sai kiểu ({{got}} thay vì {{expected}})",
       "edge": "Thiếu dữ liệu",
+      "summary": "{{n}} chỗ nối thiếu dữ liệu",
+      "chip": "Thiếu {{keys}}",
+      "loading": "Đang gợi ý…",
+      "ghost": "Ghi giá trị (đề xuất)",
       "suggest": "Gợi ý cầu nối",
       "none": "Chưa có gợi ý. Thêm node Ghi giá trị để nối hai bước.",
       "accept": "Nhận",

@@ -54,8 +54,9 @@ export function StageIf(p: StageIfProps) {
       className="space-y-3"
       data-testid="stage-if"
     >
-      <strong className="text-label font-medium">{t(`${K}title`)}</strong>
-      <p className="text-caption text-muted-foreground">{t(`${K}hint`)}</p>
+      <strong className="text-label font-medium" title={t("process.admin.flow.ifHint")}>
+        {t(`${K}title`)}
+      </strong>
       {sources.length === 0 ? (
         <p className="text-caption text-muted-foreground">{t(`${K}noSources`)}</p>
       ) : null}
@@ -89,7 +90,7 @@ export function StageIf(p: StageIfProps) {
               placeholder={t(`${K}fromPh`)}
               options={sources.map((s) => ({
                 value: s.value,
-                label: `${s.label} (${t(`process.admin.editor.stage.type.${s.type}`)})`,
+                label: s.label,
               }))}
               onChange={(from) => {
                 const ft = sources.find((s) => s.value === from)?.type ?? "string";

@@ -73,3 +73,17 @@ function pairProblems(
     ...(is.rule === "type" ? { expected: is.expected, got: is.got } : {}),
   }));
 }
+
+export type EdgeGroup = { from: string; to: string; keys: string[] };
+
+/** Gộp các lỗi cùng một cạnh (nhiều đầu vào thiếu) thành MỘT cạnh vàng. */
+export function groupProblems(ps: readonly EdgeProblem[]): EdgeGroup[] {
+  const out = new Map<string, EdgeGroup>();
+  for (const p of ps) {
+    const k = `${p.from}>${p.to}`;
+    const g = out.get(k) ?? { from: p.from, to: p.to, keys: [] };
+    if (!g.keys.includes(p.key)) g.keys.push(p.key);
+    out.set(k, g);
+  }
+  return [...out.values()];
+}

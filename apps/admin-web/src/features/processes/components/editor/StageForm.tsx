@@ -97,6 +97,7 @@ function Body(p: StageFormProps) {
           errors={errors}
           readOnly={readOnly}
           onChange={onChange}
+          hideFile={!!flow && set}
         />
       )}
       {apply ? (

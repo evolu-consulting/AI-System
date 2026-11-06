@@ -32,6 +32,7 @@ export type StageSetProps = {
 };
 
 type Row = SetRowDraft;
+const KEEP = "keep";
 const SOURCES = ["input", "const", "field", "fact"] as const;
 
 function SourceValue(p: {
@@ -135,13 +136,13 @@ export function StageSet(p: StageSetProps) {
             <SelectField
               id={`${rid}-as`}
               label={t(`${K}as`)}
-              value={r.as}
+              value={r.as || KEEP}
               readOnly={p.readOnly}
               options={[
-                { value: "", label: t(`${K}asKeep`) },
+                { value: KEEP, label: t(`${K}asKeep`) },
                 ...SET_AS.map((a) => ({ value: a, label: t(`${K}asType.${a}`) })),
               ]}
-              onChange={(v) => set(j, { as: v as Row["as"] })}
+              onChange={(v) => set(j, { as: (v === KEEP ? "" : v) as Row["as"] })}
             />
             {p.readOnly ? null : (
               <Button

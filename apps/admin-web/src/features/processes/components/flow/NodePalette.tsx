@@ -1,10 +1,19 @@
-// CR-122 · U2 · FLOW2-FR-15/25: bảng node của trình sửa — node dựng sẵn (Duyệt, Điền thông tin, Nếu, Agent, Công cụ, Ghi giá trị,
-// Kết thúc) + node lõi/module lấy từ `GET /process-palette` (Gửi email, Thông báo chuông, Hẹn giờ, Chờ khoảng, Ký số, Hiện bài…).
+// CR-122 · U2d · FLOW2-FR-15/25: MỘT nút "+ Thêm bước" mở danh sách node theo nhóm (Lõi · từng ứng dụng) thay cho hàng 13 nút.
+// Node dựng sẵn (Duyệt, Điền thông tin, Nếu, Agent, Công cụ, Ghi giá trị, Kết thúc) + node lõi/module từ `GET /process-palette`.
 // Chèn node bảng ghi `stage.node`; mỗi stage mẫu thành một bước mới cuối.
 import type { AppNodeDecl } from "@ai/contracts/app-manifest";
-import { LayoutTemplate } from "lucide-react";
+import { LayoutTemplate, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useTr } from "@/lib/use-translate";
 import type { StageOps } from "../../hooks/use-stage-ops";
 import { finishPatch, type NodeEntry, nodesForApp } from "../../lib/flow-def";
 import { nodeLabel, nodeToPatches } from "../../lib/palette-node";
@@ -21,12 +30,24 @@ export function FlowToolbar({
   return useFlowCtx() ? <NodePalette {...p} /> : children;
 }
 
+/** Nhóm node bảng theo tiền tố khoá (`core.*` ⇒ Lõi, còn lại ⇒ app). */
+function groupModules(nodes: readonly AppNodeDecl[]): [string, AppNodeDecl[]][] {
+  const out = new Map<string, AppNodeDecl[]>();
+  for (const n of nodes) {
+    const g = n.key.split(".")[0] ?? "core";
+    out.set(g, [...(out.get(g) ?? []), n]);
+  }
+  return [...out];
+}
+
 export function NodePalette({ ops, count, max }: Props) {
   const { t, i18n } = useTranslation();
+  const tr = useTr();
   const ctx = useFlowCtx();
   const palette = usePalette(ctx?.app ?? "", ctx?.tenantId);
   if (!ctx) return null;
   const full = count >= max;
+  const room = max - count;
   const add = (n: NodeEntry) => {
     if (!n.patch) return;
     const patch = n.id === "finish" ? finishPatch(ctx.event) : n.patch;
@@ -37,35 +58,48 @@ export function NodePalette({ ops, count, max }: Props) {
       const name = nodeLabel(n, i18n.language);
       ops.addNode(patch, i === 0 ? name : `${name} ${i + 1}`);
     });
-  const room = max - count;
+  const groups = groupModules(palette.data ?? []);
   return (
-    <div className="flex flex-wrap items-center gap-2" data-testid="flow-palette">
-      {nodesForApp(ctx.app).map((n) => (
-        <Button
-          key={n.id}
-          type="button"
-          variant="outline"
-          size="sm"
-          data-testid={`flow-node-${n.id}`}
-          disabled={full || !n.patch}
-          onClick={() => add(n)}
-        >
-          {t(`process.admin.flow.node.${n.id}`)}
-        </Button>
-      ))}
-      {(palette.data ?? []).map((n) => (
-        <Button
-          key={n.key}
-          type="button"
-          variant="outline"
-          size="sm"
-          data-testid={`flow-node-${n.key}`}
-          disabled={room < n.stages.length}
-          onClick={() => addModule(n)}
-        >
-          {nodeLabel(n, i18n.language)}
-        </Button>
-      ))}
+    <div className="flex flex-wrap items-center gap-2 scroll-mt-40" data-testid="flow-palette">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" size="sm" disabled={full} data-testid="flow-add-step">
+            <Plus aria-hidden className="size-4" />
+            {t("process.admin.flow.add")}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="max-h-96 overflow-y-auto">
+          <DropdownMenuLabel>{t("process.admin.flow.group.basic")}</DropdownMenuLabel>
+          {nodesForApp(ctx.app).map((n) => (
+            <DropdownMenuItem
+              key={n.id}
+              data-testid={`flow-node-${n.id}`}
+              disabled={!n.patch}
+              onSelect={() => add(n)}
+            >
+              {t(`process.admin.flow.node.${n.id}`)}
+            </DropdownMenuItem>
+          ))}
+          {groups.map(([g, nodes]) => (
+            <div key={g}>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>
+                {g === "core" ? t("process.admin.flow.group.core") : tr(`featmeta.app.${g}.name`)}
+              </DropdownMenuLabel>
+              {nodes.map((n) => (
+                <DropdownMenuItem
+                  key={n.key}
+                  data-testid={`flow-node-${n.key}`}
+                  disabled={room < n.stages.length}
+                  onSelect={() => addModule(n)}
+                >
+                  {nodeLabel(n, i18n.language)}
+                </DropdownMenuItem>
+              ))}
+            </div>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
       <Button type="button" variant="ghost" size="sm" onClick={ops.arrange}>
         <LayoutTemplate aria-hidden className="size-4" />
         {t("process.admin.canvas.toolbar.arrange")}

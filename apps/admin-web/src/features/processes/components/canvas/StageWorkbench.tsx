@@ -9,7 +9,7 @@ import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { isDlcStep } from "../../lib/dlc-slot";
 import { writeViewMode } from "../../lib/view-mode";
-import { useFitMin } from "../flow/flow-ctx";
+import { useFitMin, useRegisterSelect } from "../flow/flow-ctx";
 import { FlowToolbar } from "../flow/NodePalette";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
 import { SlotCanvasToolbar } from "../library/SlotCanvasToolbar";
@@ -50,6 +50,7 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
   const lib = useLibraryCanvas();
   const { ops } = w;
   const fitMin = useFitMin(!!lib);
+  useRegisterSelect((uid) => w.select(uid, true));
   // CR-105 UX: quy trình khe không vẽ "Quay lại"/"Rẽ nhánh" — trừ cổng "Từ chối" của bước DLC (dlc-step-library).
   const views = lib ? withoutSlotLinks(w.views) : w.views;
   const addStage = () => ops.add();

@@ -55,8 +55,9 @@ function runFit(
     const v = rf.getViewport();
     // (neo theo mép trái của node ngoài cùng — có thể < 0 khi canvas có cột đầu như node "Bắt đầu khi")
     if (v.zoom <= minZoom + 0.001) {
-      const left = getNodesBounds(rf.getNodes()).x;
-      void rf.setViewport({ ...v, x: 16 - left * v.zoom });
+      // và neo mép TRÊN (lề đều 16px) thay vì để trống dọc.
+      const b = getNodesBounds(rf.getNodes());
+      void rf.setViewport({ ...v, x: 16 - b.x * v.zoom, y: 16 - b.y * v.zoom });
     }
   });
 }

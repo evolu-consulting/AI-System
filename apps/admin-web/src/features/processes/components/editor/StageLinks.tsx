@@ -98,7 +98,7 @@ export function StageLinks({ stage, all, readOnly, onChange }: StageFormProps) {
             />
           ))
         : null}
-      {stage.outcome === undefined && !isWait ? (
+      {stage.outcome === undefined && !isWait && needsMerge(all, stage) ? (
         <StepSelect
           label={t("process.admin.flow.link.merge")}
           value={stage.nextStep ?? null}
@@ -112,3 +112,7 @@ export function StageLinks({ stage, all, readOnly, onChange }: StageFormProps) {
     </div>
   );
 }
+
+/** "Gộp tới" chỉ có nghĩa khi bước nằm trong nhánh của một node Nếu (đứng sau Nếu) hoặc đã đặt sẵn. */
+const needsMerge = (all: StageFormProps["all"], s: StageFormProps["stage"]): boolean =>
+  s.nextStep !== undefined || all.some((x) => x.executor === "if" && x.step < s.step);
