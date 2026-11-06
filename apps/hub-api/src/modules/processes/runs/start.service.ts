@@ -175,7 +175,12 @@ export class StartService {
       /** contract-flow S1a · bản ghi gói của run — CHỈ `PackRunsPort.start` truyền (route công khai không). */
       packRef?: { pack: string; recordId: string };
       /** CR-122 · E1 · lượt mở từ sự kiện (bộ điều phối): ghi cùng tx tạo run; unique (sự kiện × flow) ⇒ 23505 khi mở lại. */
-      flowEvent?: { eventRowId: string; companyFlowId: string };
+      flowEvent?: {
+        eventRowId: string;
+        companyFlowId: string;
+        /** E1b · flow Thư viện được gán: def (bản xuất bản, Group đã đổi sang id công ty) đọc sẵn ở scope system. */
+        def?: repo.StartDefRow;
+      };
     } = {},
   ): Promise<ProcessRunSummary> {
     const me = meOf(u);
@@ -185,11 +190,15 @@ export class StartService {
       { kind: "user", ...me },
       async (tx) => {
         const origin = await originOf(tx, u, req.origin);
-        const def = await this.#resolve(tx, u, userState, {
-          kind: "process",
-          key: req.process_key,
-          input: req.input,
-        });
+        const pre = o.flowEvent?.def;
+        const def =
+          pre && userState?.active && !pre.deleted
+            ? pre
+            : await this.#resolve(tx, u, userState, {
+                kind: "process",
+                key: req.process_key,
+                input: req.input,
+              });
         // prod-fix · run gắn bản ghi gói (lượt duyệt HĐ chờ người nhiều ngày) không chịu/không tính trần run/tenant.
         const r = await this.#insert(
           tx,

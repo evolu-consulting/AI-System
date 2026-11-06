@@ -23,6 +23,7 @@ import type { ProcessBgDeps, ProcessDeps, ProcessStartPort, StageLauncher } from
 import { ThreadPoster } from "./core/thread-poster";
 import { defsRoutes } from "./defs/defs.routes";
 import { gatesRoutes } from "./gates/gates.routes";
+import { companyFlowsRoutes } from "./library/company-flows.routes";
 import { libraryInternalRoutes } from "./library/library.internal.routes";
 import { libraryRoutes } from "./library/library.routes";
 import { previewRoutes } from "./library/preview.routes";
@@ -152,7 +153,14 @@ export function mountProcesses<E extends Env>(app: Hono<E>, m: ProcessMountDeps)
 }
 
 /** Route admin-web cần (editor, lượt chạy + Token, duyệt/huỷ/quyết định). KHÔNG có asks + hộp việc `/me/*` (chat-web). */
-const ADMIN_ROUTES = [processRunsRoutes, gatesRoutes, usageRoutes, defsRoutes, libraryRoutes];
+const ADMIN_ROUTES = [
+  processRunsRoutes,
+  gatesRoutes,
+  usageRoutes,
+  defsRoutes,
+  libraryRoutes,
+  companyFlowsRoutes,
+];
 const ALL_ROUTES = [
   processRunsRoutes,
   gatesRoutes,
@@ -161,6 +169,7 @@ const ALL_ROUTES = [
   usageRoutes,
   defsRoutes,
   libraryRoutes, // CR-105 · L2a
+  companyFlowsRoutes, // CR-122 · E1b
 ];
 
 /** CR-103 · `admin`: chặn role ở GỐC mọi tiền tố quy trình (JWT role, không dựa `X-App` do client đặt) ⇒ member 403. */

@@ -46,6 +46,22 @@ export async function findDefByKey(
   return r ?? null;
 }
 
+/**
+ * CR-122 · E1b · flow Thư viện được gán (`tenant_id NULL`) chạy THẲNG bản xuất bản mới nhất (không cần bản công ty): `stages`/tên từ
+ * `process_def_releases` tại `published_version`; chưa xuất bản / đã xoá ⇒ null. Scope system (releases chỉ system đọc). Group theo
+ * MÃ trong stage được đổi sang id của công ty ở `flow-launch.ts`.
+ */
+export async function libraryFlowDef(tx: Tx, defId: string): Promise<StartDefRow | null> {
+  const [r] = await tx.execute<StartDefRow>(sql`select d.id, d.key, r.name, d.version, d.enabled,
+      (d.deleted_at is not null) as deleted, '{}'::uuid[] as run_group_ids, r.stages, d.token_budget,
+      coalesce(d.sources, '[]'::jsonb) as sources, coalesce(d.inputs, '[]'::jsonb) as inputs, d.ttl_days,
+      false as from_template
+    from hub.process_defs d
+    join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version
+    where d.id = ${defId} and d.tenant_id is null and d.deleted_at is null`);
+  return r ?? null;
+}
+
 /** Theo id trong tenant (nút "Chạy" admin — def đã kiểm ở `DefsService.run`). */
 export async function findDefById(
   tx: Tx,

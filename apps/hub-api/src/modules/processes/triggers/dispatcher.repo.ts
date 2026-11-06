@@ -15,7 +15,12 @@ export type ClaimedEvent = {
   actor_id: string | null;
   attempts: number;
 };
-export type CandidateRow = FlowCandidate & { tenantId: string; event: string };
+/** `defTenantId` null ⇒ flow Thư viện được gán (chạy bản xuất bản mới nhất). */
+export type CandidateRow = FlowCandidate & {
+  tenantId: string;
+  event: string;
+  defTenantId: string | null;
+};
 export type EventFinish = {
   id: string;
   /** null ⇒ xong (processed_at = now). */
@@ -87,11 +92,14 @@ export async function candidatesOf(tx: Tx, evs: readonly ClaimedEvent[]): Promis
     flow_id: string;
     position: number;
     key: string;
+    def_tenant_id: string | null;
     trigger_event: string;
     trigger: { when?: FactWhen } | null;
-  }>(sql`select cf.id, cf.tenant_id, cf.flow_id, cf.position, d.key, d.trigger_event, d.trigger
+  }>(sql`select cf.id, cf.tenant_id, cf.flow_id, cf.position, d.key, d.tenant_id as def_tenant_id,
+      d.trigger_event, d.trigger
     from hub.company_flows cf
     join hub.process_defs d on d.id = cf.flow_id and d.deleted_at is null
+      and (d.tenant_id = cf.tenant_id or d.tenant_id is null)
     where cf.enabled and cf.tenant_id = any(${arr(evs.map((e) => e.tenant_id))}::uuid[])
       and d.trigger_event = any(${arr(evs.map((e) => e.event))}::text[])
     order by cf.tenant_id, d.trigger_event, cf.position, cf.id`);
@@ -103,6 +111,7 @@ export async function candidatesOf(tx: Tx, evs: readonly ClaimedEvent[]): Promis
     when: r.trigger?.when ?? null,
     tenantId: r.tenant_id,
     event: r.trigger_event,
+    defTenantId: r.def_tenant_id,
   }));
 }
 

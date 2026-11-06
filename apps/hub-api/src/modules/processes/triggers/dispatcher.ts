@@ -10,6 +10,7 @@ import {
   type ClaimedEvent,
   candidatesOf,
   claimEvents,
+  closeExhausted,
   type EventFinish,
   finishEvents,
 } from "./dispatcher.repo";
@@ -103,6 +104,7 @@ async function handle(
 export async function dispatchOnce(d: DispatcherDeps): Promise<DispatchStats> {
   const now = (d.now ?? (() => new Date()))();
   const { evs, cands, on } = await withHubScope(d.db, SYS, async (tx) => {
+    await closeExhausted(tx, now); // soát E1 #1: hết 5 lượt mà Hub chết ⇒ không kẹt mãi
     const evs = await claimEvents(tx, now, d.batch ?? 50, d.leaseMs ?? 120_000);
     if (evs.length === 0) return { evs, cands: [], on: new Set<string>() };
     const cands = await candidatesOf(tx, evs);
