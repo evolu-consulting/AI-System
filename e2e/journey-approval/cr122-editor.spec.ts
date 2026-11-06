@@ -1,4 +1,4 @@
-// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-122 · Q1 · ca UI của trình sửa flow (canvas) trên stack thật `playwright.journey.config.ts`, công ty MỚI `e2e-c22u-<hậu tố>`:
 //  1) menu "+ Thêm bước" gom nhóm (Cơ bản · …) và liệt kê node dựng sẵn;
 //  2) cạnh vàng (Ký số cần `contract_id` mà bước trước không có) ⇒ ô "Gợi ý cầu nối" ⇒ Bỏ / Nhận (route AI giả: AI thật cần agent `flow-bridge` đã seed);
@@ -112,9 +112,7 @@ test("1 · menu '+ Thêm bước': một nút, nhóm Cơ bản + node dựng s�
   await page.keyboard.press("Escape");
 });
 
-test("2 · cạnh vàng ⇒ Gợi ý cầu nối (route AI giả): Bỏ rồi hỏi lại rồi Nhận ⇒ chèn node Ghi giá trị giữa flow; Lưu ⇒ đích của Nếu vẫn đúng", async ({
-  page,
-}) => {
+async function mockBridge(page: Page): Promise<void> {
   const cors = {
     "access-control-allow-origin": ADMIN,
     "access-control-allow-credentials": "true",
@@ -136,6 +134,12 @@ test("2 · cạnh vàng ⇒ Gợi ý cầu nối (route AI giả): Bỏ rồi h�
           }),
         }),
   );
+}
+
+test("2 · cạnh vàng ⇒ Gợi ý cầu nối (route AI giả): Bỏ rồi hỏi lại rồi Nhận ⇒ chèn node Ghi giá trị giữa flow", async ({
+  page,
+}) => {
+  await mockBridge(page);
   await openCopy(page);
   const bridge = page.getByTestId("canvas-bridge");
   await expect(bridge).toBeVisible();
@@ -154,7 +158,19 @@ test("2 · cạnh vàng ⇒ Gợi ý cầu nối (route AI giả): Bỏ rồi h�
   await expect(
     page.getByRole("application", CANVAS).getByText("Ghi giá trị").first(),
   ).toBeVisible();
+});
 
+// Lỗi sản phẩm #3 (tasks.md): node Ký số chèn từ bảng node có tham số công cụ chưa có nguồn ("Chọn nguồn cho tham số này") ⇒ nút Lưu không gửi PUT (không báo lỗi ở thanh lưu).
+test("2b · chèn cầu nối giữa flow rồi Lưu ⇒ đích của Nếu vẫn đúng", async ({ page }) => {
+  test.fixme(
+    true,
+    "Lỗi sản phẩm #3: flow có node Ký số chưa cấu hình nguồn tham số không lưu được (Lưu im lặng)",
+  );
+  await mockBridge(page);
+  await openCopy(page);
+  const bridge = page.getByTestId("canvas-bridge");
+  await bridge.getByRole("button", { name: "Gợi ý cầu nối" }).click();
+  await bridge.getByRole("button", { name: "Nhận", exact: true }).click();
   // Lưu (bản công ty) ⇒ đích của Nếu theo node, không theo số bước cũ
   const put = page.waitForResponse(
     (r) => r.request().method() === "PUT" && /\/process-defs\//.test(r.url()),

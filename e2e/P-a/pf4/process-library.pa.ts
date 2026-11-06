@@ -108,7 +108,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     expect(three[2]?.department_group_key).toBe("contracts-owner");
 
     // Form hiện đúng 3 bước vừa lưu từ Canvas (vòng đi–về giữ chỉnh sửa)
-    await toolbar.getByRole("button", { name: "Danh sách", exact: true }).click(); // editor thư viện: công tắc nằm ở thanh trên
+    await toolbar.getByRole("button", { name: /^Danh sách/ }).click(); // editor thư viện: công tắc nằm ở thanh trên
     await expect(
       p.getByTestId("flow-step-2").getByRole("textbox", { name: "Tên bước" }),
     ).toHaveValue("Pháp chế (canvas)");

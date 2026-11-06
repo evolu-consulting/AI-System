@@ -40,7 +40,7 @@ test("CR-121 c17b · platform: Sơ đồ mặc định, Danh sách nhớ lại, 
     await expect(p.getByRole("application", { name: "Canvas quy trình" })).toBeVisible(); // Sơ đồ mặc định
     await expect(toolbar.getByRole("button", { name: /^Xuất bản v\d+$/ })).toBeVisible();
     await expect(toolbar).toContainText(/\d+ công ty/);
-    await toolbar.getByRole("button", { name: "Danh sách" }).click();
+    await toolbar.getByRole("button", { name: /^Danh sách/ }).click();
     await expect(p.getByTestId("flow-form")).toBeVisible();
     await expect(p.getByTestId("flow-counter")).toHaveText(/^\d+\/20$/);
     await expect(p.getByText("Chỉ chạy khi").first()).toBeVisible();

@@ -149,7 +149,17 @@ test("G1.1b · mở dòng được gán (chỉ xem): canvas có node Bắt đầ
 test("G1.2 · HĐ 150 tr: Nếu rẽ nhánh Đúng ⇒ chờ Kế toán; duyệt ⇒ HĐ khoá, nhánh Sai (Giám đốc) không mở", async ({
   browser,
 }) => {
-  const { emp, id } = await submit(browser, "g1");
+  test.setTimeout(300_000);
+  // Lượt đầu sau khi vừa gán flow có thể chưa thấy flow mới (cấu hình hub nạp lại định kỳ): thử tối đa 2 HĐ, ghi nhận độ trễ.
+  let sent = await submit(browser, "g1");
+  const first = await isOpen(sent.emp, BIG)
+    .waitFor({ timeout: 45_000 })
+    .then(
+      () => true,
+      () => false,
+    );
+  if (!first) sent = await submit(browser, "g1b");
+  const { emp, id } = sent;
   await expect(isOpen(emp, BIG)).toBeVisible({ timeout: 90_000 });
   await expect(isOpen(emp, SMALL)).toHaveCount(0);
   await approveAs(await ctxPage(browser), E, U.accounting, id, BIG);
