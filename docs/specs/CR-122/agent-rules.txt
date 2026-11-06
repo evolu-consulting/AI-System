@@ -34,7 +34,7 @@ Trước khi báo xong, tự soát diff theo .claude/agents/reviewer.md mục Bl
 ĐỠ CHỜ LỆNH (đo 5 agent 2026-11-06: sửa code ~3% thời gian; tsc lặp tới 48 lần = 20 phút, đọc qua shell 195 lần, ngủ chờ 7–9 phút)
 T1. tsc / check:* / depcruise: CHỈ MỘT lần ở cuối, chỉ gói mình đổi (`bunx tsc --noEmit -p <gói>`). Giữa chừng dùng `bun test <file>` để biết đúng sai.
 T2. Tìm/đọc bằng công cụ Grep/Read/Glob. KHÔNG Select-String, Get-Content, Get-ChildItem -Recurse trong PowerShell (chậm gấp chục lần).
-T3. Không Start-Sleep để chờ. Lệnh dài ⇒ chạy nền (run_in_background) rồi làm việc khác, có thông báo khi xong.
+T3. Không Start-Sleep để chờ. evotest: chạy TIỀN CẢNH (timeout 600000), một lệnh cho mọi job/file cần chạy — xong là có kết quả. Chỉ chạy nền khi thật sự có việc khác để làm trong lúc đó, và KHÔNG ngủ chờ nó.
 T4. Ít lượt: đọc đủ rồi viết trọn file (Write) hoặc gom nhiều chỗ sửa; mục tiêu ≤ 60 lần gọi công cụ mỗi lát. Không chạy lại lệnh chỉ để xem lại kết quả.
 T6. e2e/int lặp lại: CHỈ chạy job/file còn đỏ (đã xanh không chạy lại); job khác nhau ⇒ lệnh riêng chạy nền song song (máy chủ 8 slot); run-tests.ps1 tự chạy mọi job trong -Filter cùng lúc. Sửa HẾT ca đỏ đã biết trong một lượt rồi mới chạy lại; đọc 25 dòng cuối mỗi ca đỏ trong summary.compact.txt, không đọc cả log. Tối đa 3 lượt mỗi lát.
 T5. Không dừng giữa lát để hỏi; tự chọn theo brief/readiness, ghi lựa chọn trong báo cáo, báo MỘT lần khi xong.
