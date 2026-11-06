@@ -102,7 +102,7 @@ afterAll(async () => {
 });
 
 describe("CR-122 E1 · lưu def có trigger", () => {
-  it("POST + GET: trigger/app/outcome/next_step lưu và đọc lại; trigger_event sinh", async () => {
+  it("POST + GET: trigger/app/outcome/next_step lưu và đọc lại, trigger_event sinh", async () => {
     const c = await call("POST", "/process-defs", body());
     expect(c.status).toBe(201);
     id = c.json.id;
@@ -118,7 +118,7 @@ describe("CR-122 E1 · lưu def có trigger", () => {
     expect(r?.e).toBe("contract.submitted");
   });
 
-  it("PUT sai luật FlowDef ⇒ 422 + paths, không ghi; PUT không gửi trigger ⇒ giữ nguyên", async () => {
+  it("PUT sai luật FlowDef ⇒ 422 + paths, không ghi, PUT không gửi trigger ⇒ giữ nguyên", async () => {
     const cur = await call("GET", `/process-defs/${id}`);
     const bad = await call("PUT", `/process-defs/${id}`, {
       ...body({ stages: [stage("dau", 0, { outcome: "shown" })] }),
