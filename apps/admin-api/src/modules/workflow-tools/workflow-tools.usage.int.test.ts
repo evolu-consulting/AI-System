@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { AiToolUsageListSchema, WorkflowCompanyListSchema } from "@ai/contracts/workflow-tools";
 import { createDb, withScope } from "@ai/db";
 import { probe, probeSamples, resetProbe, setProbe } from "@ai/db/probe";
-import { ADMIN_API_URL } from "../../../../../tests/acceptance/M1/_fixtures";
+import { ADMIN_API_URL, makeHashes } from "../../../../../tests/acceptance/M1/_fixtures";
 import { loadApp, loadJwt } from "../../../../../tests/acceptance/M1/_modules";
 import { createM4Env, type M4Env, TENANT_ID } from "../../../../../tests/acceptance/M4/_ab";
 import { USAGE_QUERIES, workflowToolsRepo } from "./adapters/workflow-tools.repo";
@@ -97,7 +97,7 @@ describe("c16 · cờ module đóng băng tắt (ADMIN_FROZEN_MODULES=off)", () 
           db,
           keys: await jwt.loadJwtKeys(env.keys.env),
           appEnv: "test",
-          dummyHash: env.hashes.pw,
+          dummyHash: (await makeHashes()).pw,
           now: env.clock.now,
           frozenModules: false,
         },
