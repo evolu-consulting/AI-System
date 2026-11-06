@@ -1356,6 +1356,7 @@ dda4e43d5cbb95fcbb70ed1d25eeb6a30f2db04d593608f30d5e45063f584cca  tests/acceptan
 aee09928fc94da7157b1045eeb696ec8c7c3c229e7e34067de5530d9aaec66cf  tests/acceptance/V2-B/products.int.test.ts
 5461916eedbea38907fd85104c943f19f29d7c6325361d1cdc500b5ef3b62684  tests/acceptance/V2-B/rls.int.test.ts
 affd50f7b613c78680ce9109484e67c0c6089eaa377cf1be491c30ad92564575  tests/acceptance/V2-C/partner-roles.int.test.ts
+c2b9a83dcd2690783397ee8dacf36d73c6e04046d5d7608815efc80fb64e6ae7  tests/acceptance/V2-C/partner-search.int.test.ts
 1e1821c78d8f3b96fdc8be719640a74b2de4b9705889b106f0d47bb01afba1cd  tests/acceptance/V2-D/_support/v2d.ts
 f2415146566f513220e39a5a5f78386acb9acbd17351c087d5af4e0a5c8b202a  tests/acceptance/V2-D/access.int.test.ts
 02fbfad025571e4871bdae5c6deb31f8cd2a911d21562f9daef2c7aa15f996f9  tests/acceptance/V2-D/money.int.test.ts
