@@ -4,6 +4,7 @@
 import type {
   ProcessAssignment,
   ProcessDef,
+  ProcessDefInput,
   ProcessImpact,
   ProcessRelease,
   ProcessReleaseDetail,
@@ -20,6 +21,8 @@ import { type StudioAudit, withConfigWrite } from "../../studio/studio-write";
 import type { ProcessDeps } from "../core/ports";
 import { defError, toProcessDef } from "../defs/defs.map";
 import { readDef } from "../defs/defs.repo";
+import { edgeCheck } from "../defs/edge-check";
+import { flowDefPaths } from "../defs/flow-def.rules";
 import * as lib from "./library.repo";
 import { libError, specOrThrow } from "./library-draft";
 import { explainIssues, missingGroupIssues } from "./library-publish.messages";
@@ -46,12 +49,17 @@ const audit = (
   after: o.after,
   summary: { key: def.key, ...o.after },
 });
+type B2Def = Pick<lib.LibRow, "key" | "name" | "slot" | "stages" | "slot_body" | "trigger" | "app">;
 const feature = (spec: SlotSpec) => `${spec.packKey}-read`;
 const notFound = () => appError("NOT_FOUND");
 
 export class LibraryService {
   readonly #w;
-  constructor(private readonly d: Pick<ProcessDeps, "db" | "packTools">) {
+  constructor(
+    private readonly d: Pick<ProcessDeps, "db" | "packTools"> & {
+      config?: ProcessDeps["config"];
+    },
+  ) {
     this.#w = { db: d.db, audit: dbHubAudit };
   }
 
@@ -74,11 +82,9 @@ export class LibraryService {
   }
 
   /** B2: luật khe + nút hệ thống + bước không tới được, rồi Group/user theo MỌI tenant của `a` (một câu). */
-  async #b2(
-    tx: Tx,
-    def: { slot: string; stages: unknown[]; slot_body: unknown },
-    a: Omit<asg.Affected, "slot" | "feature">,
-  ) {
+  async #b2(tx: Tx, def: B2Def, a: Omit<asg.Affected, "slot" | "feature">) {
+    // CR-122 · E6 · flow Thư viện theo sự kiện (không khe): luật FlowDef + cạnh, KHÔNG đòi khe / nút hệ thống của khe.
+    if (def.slot === null) return this.#flowIssues(def);
     const spec = specOrThrow(def.slot);
     const issues = publishIssues({
       stages: def.stages as never,
@@ -99,9 +105,28 @@ export class LibraryService {
     if (miss) throw defError("PROCESS_REF_INVALID", { path: "slot_body", ref: "user" });
   }
 
+  /**
+   * CR-122 · E6 · kiểm bản xuất bản của flow theo sự kiện: `parseFlowDef` + `flowDefIssues(def, sự kiện của app)` (`flowDefPaths`) ⇒ 422
+   * `PROCESS_DEF_INVALID` + `paths`; `flowEdgeIssues` ⇒ 422 `FLOW_EDGE_MISSING`. Thư viện không có công ty ⇒ không kiểm cấu hình node
+   * (`nodeConfigRegistry` chạy ở bản công ty, như `DefsService`).
+   */
+  async #flowIssues(def: B2Def): Promise<void> {
+    const input = {
+      key: def.key,
+      name: def.name,
+      stages: def.stages,
+      trigger: def.trigger,
+      app: def.app,
+    } as unknown as ProcessDefInput;
+    const paths = flowDefPaths(input, null, null);
+    if (paths.length > 0) throw defError("PROCESS_DEF_INVALID", { paths });
+    await edgeCheck(this.d, null, input);
+  }
+
   impact(id: string): Promise<ProcessImpact> {
     return this.#read(async (tx) => {
       const def = await this.#def(tx, id);
+      if (def.slot === null) return { ...(await lib.flowImpact(tx, id)), is_default: false };
       const { is_default } = await lib.usage(tx, id);
       const spec = specOrThrow(def.slot);
       const a = {
@@ -148,7 +173,7 @@ export class LibraryService {
       const { is_default } = await lib.usage(tx, id);
       await this.#b2(
         tx,
-        { slot: def.slot, stages: old.stages, slot_body: old.slot_body },
+        { ...def, stages: old.stages, slot_body: old.slot_body },
         {
           defId: id,
           asDefault: is_default,

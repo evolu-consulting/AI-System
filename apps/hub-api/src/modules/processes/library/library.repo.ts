@@ -7,16 +7,20 @@ export type LibRow = {
   id: string;
   key: string;
   name: string;
-  slot: string;
+  /** null ⇒ flow Thư viện theo sự kiện (có `trigger`, không khe) — CR-122 · E6. */
+  slot: string | null;
   slot_body: unknown;
   stages: unknown[];
   enabled: boolean;
   published_version: number | null;
   version: number;
+  trigger: unknown;
+  app: string | null;
 };
 const iso = (col: SQL) => sql`to_char(${col} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`;
-const LIB_COLS = sql`d.id, d.key, d.name, d.slot, d.slot_body, d.stages, d.enabled, d.published_version, d.version`;
-const IS_LIB = sql`d.tenant_id is null and d.slot is not null and d.deleted_at is null`;
+const LIB_COLS = sql`d.id, d.key, d.name, d.slot, d.slot_body, d.stages, d.enabled, d.published_version, d.version, d.trigger, d.app`;
+// CR-122 · E6 · khớp CHECK 0110: def Thư viện = có khe HOẶC có `trigger` (flow theo sự kiện).
+const IS_LIB = sql`d.tenant_id is null and (d.slot is not null or d.trigger is not null) and d.deleted_at is null`;
 
 /** Def thư viện còn sống; `lock` ⇒ FOR UPDATE (publish/rollback/clone đọc nguồn). */
 export async function readLibDef(tx: Tx, id: string, lock = false): Promise<LibRow | null> {
@@ -90,6 +94,18 @@ export async function usage(
   return { tenant_count: Number(r?.tenant_count ?? 0), is_default: r?.is_default === true };
 }
 
+/** CR-122 · E6 · tác động của flow Thư viện theo sự kiện: số công ty đang gán (`company_flows`) + lượt đang chạy — một câu. */
+export async function flowImpact(
+  tx: Tx,
+  defId: string,
+): Promise<{ tenant_count: number; active_runs: number }> {
+  const [r] = await tx.execute<{ tenant_count: number; active_runs: number }>(sql`select
+    (select count(*)::int from hub.company_flows cf where cf.flow_id = ${defId}) as tenant_count,
+    (select count(*)::int from hub.process_runs r where r.process_def_id = ${defId}
+      and r.status in ('running', 'waiting_review', 'waiting_answer', 'needs_decision')) as active_runs`);
+  return { tenant_count: Number(r?.tenant_count ?? 0), active_runs: Number(r?.active_runs ?? 0) };
+}
+
 /** Key def thư viện đã dùng có tiền tố `base` (nhân bản chọn hậu tố trống — một câu). */
 export async function libKeysLike(tx: Tx, base: string): Promise<Set<string>> {
   const rows = await tx.execute<{ key: string }>(sql`select key from hub.process_defs
@@ -104,10 +120,10 @@ export async function insertClone(
   const [r] = await tx.execute<{
     id: string;
   }>(sql`insert into hub.process_defs (tenant_id, key, name,
-      description, input_hint, run_group_ids, stages, token_budget, enabled, sources, inputs, ttl_days, slot, slot_body,
+      description, input_hint, run_group_ids, stages, token_budget, enabled, sources, inputs, ttl_days, slot, slot_body, trigger, app,
       created_by, updated_by)
     select null, ${w.key}, ${w.name}, description, input_hint, run_group_ids, stages, token_budget, enabled, sources,
-      inputs, ttl_days, slot, slot_body, ${w.actorId}, ${w.actorId}
+      inputs, ttl_days, slot, slot_body, trigger, app, ${w.actorId}, ${w.actorId}
     from hub.process_defs where id = ${w.src} returning id::text as id`);
   if (!r) throw new Error("clone: không ghi được");
   return r.id;

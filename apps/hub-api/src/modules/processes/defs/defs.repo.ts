@@ -79,7 +79,10 @@ const visible = (s: DefScope) => {
     s.tenantId === null
       ? sql`d.tenant_id is null`
       : sql`(d.tenant_id = ${s.tenantId} or d.tenant_id is null)`;
-  return s.library ? base : sql`(${base} and d.slot is null)`;
+  // CR-122 · E6 · def Thư viện = có khe HOẶC (tenant NULL + có `trigger`); def có trigger của chính công ty vẫn thấy.
+  return s.library
+    ? base
+    : sql`(${base} and d.slot is null and (d.tenant_id is not null or d.trigger is null))`;
 };
 
 export type ListOpts = DefScope & {
@@ -99,19 +102,21 @@ const sampleScope = (o: ListOpts): SQL => {
     o.tenantId === null
       ? sql`d.tenant_id is null`
       : sql`(d.tenant_id = ${o.tenantId} or d.tenant_id is null)`;
-  return sql`${own} and d.slot is null and d.source_ref is null and d.pack_version is null`;
+  return sql`${own} and d.slot is null and (d.tenant_id is not null or d.trigger is null) and d.source_ref is null and d.pack_version is null`;
 };
 /** Danh sách chính: def thư viện (có khe, chỉ platform_admin thấy qua `visible`) + def của gói còn hiện (`pack_version`); mẫu/vật chất hoá ẩn. */
 const mainScope = (o: ListOpts): SQL => {
   // Có tenant (tenant_admin / platform_admin chọn tenant): chỉ def của gói trong tenant đó; chưa chọn tenant (platform): def thư viện.
   if (o.tenantId !== null)
     return sql`d.tenant_id = ${o.tenantId} and d.source_ref is null and d.pack_version is not null`;
-  return sql`${visible(o)} and d.source_ref is null and (d.slot is not null or d.pack_version is not null)`;
+  return sql`${visible(o)} and d.source_ref is null and (d.slot is not null or d.trigger is not null or d.pack_version is not null)`;
 };
 
 function listScope(o: ListOpts): SQL {
-  if (o.kind === "library") return sql`d.tenant_id is null and d.slot is not null`;
-  if (o.kind === "template") return sql`d.tenant_id is null and d.slot is null`;
+  if (o.kind === "library")
+    return sql`d.tenant_id is null and (d.slot is not null or d.trigger is not null)`;
+  if (o.kind === "template")
+    return sql`d.tenant_id is null and d.slot is null and d.trigger is null`;
   return o.kind === "sample" ? sampleScope(o) : mainScope(o);
 }
 
