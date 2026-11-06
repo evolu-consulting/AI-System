@@ -87,3 +87,112 @@ Cờ: `FLOW_TRIGGERS` theo công ty (tắt = bóng: đường khe cũ mở lư�
 ## Delta (so với docs/current)
 
 Không thay đổi hành vi (lý do: lát tài liệu — chốt spec/ADR/lát CR-122, chưa có code). Delta thật do từng lát khai khi làm; danh sách tài liệu phải sửa: spec.md §8.
+
+## Bản đồ file (Haiku 2026-11-06, Luật 0d.2)
+Kiểm: ~90 mục đường dẫn trong cột FILE (kể cả thư mục và mẫu `*`) bằng cách kiểm tồn tại trên đĩa và Grep tên hàm/khối. (mới) = chưa có, sẽ tạo.
+
+### F0
+- `packages/contracts/src/hub-admin/process-library.ts` — FlowDef (trigger, next_step, outcome) — thêm trường mới, bỏ slot_body; zod: ≤ 20 bước, 1 trigger, ≥ 1 Kết thúc.
+- `packages/contracts/src/hub-admin/process-routing.ts`, `process-company.ts` — (đọc) — cộng thêm view model company_flows, chưa gỡ.
+- `packages/contracts/src/flow/view.ts`, `form.ts`, `index.ts` — FlowView — bỏ field `slot`.
+- `packages/contracts/src/app-manifest/manifest.ts` — `AppSlotDecl` (dòng 42) — thêm `events[]` bên cạnh, giữ đến R1. (không có trong bảng FILE)
+- `apps/hub-api/src/modules/packs/kit/public.ts` — export cổng — khai báo FactsReader, OutcomeHandler, events[].
+- `apps/hub-api/src/modules/packs/kit/application/slot.ports.ts` — `SlotSpec` (dòng 49) — cộng cổng mới; gỡ SlotSpec ở R1.
+- `apps/hub-api/src/modules/packs/kit/application/flow.ports.ts` — cổng flow — thêm FactsReader/OutcomeHandler.
+- `docs/adr/0038-flow-trigger-model.md` — (có sẵn) — tham chiếu, không sửa.
+
+### E1
+- `packages/db/src/schema/hub-process-library.ts` — (đọc) — thêm định nghĩa Drizzle cho `company_flows`, RLS tenant.
+- `packages/db/src/schema/hub-processes.ts` — (đọc) — bảng mới `flow_events`.
+- `packages/db/migrations-hub/0105_*.sql` (mới) — hub.flow_events: unique (tenant_id, event_id), RLS.
+- `packages/db/migrations-hub/0106_*.sql` (mới) — hub.company_flows + cột trigger/source, index chọn flow khớp, RLS.
+- `packages/db/migrations-hub/meta/_journal.json` — journal — thêm when 1805400000000 và 1805500000000.
+- `apps/hub-api/src/modules/processes/library/slot-resolve.repo.ts` — `resolveSlot` (dòng 54) — giữ chữ ký cho cổng dlc.*; phần còn lại thay bằng company-flows.*.
+- `apps/hub-api/src/modules/processes/library/routing.repo.ts`, `routing.service.ts`, `slot-assign.repo.ts`, `slot-route.repo.ts`, `slot-assigned.repo.ts` — chuyển sang company-flows.* (gỡ ở R1).
+- `apps/hub-api/src/modules/processes/library/library-company.service.ts`, `library-company.repo.ts` — clone "Sao chép để sửa" và quay về bản gốc trong một tx.
+- `apps/hub-api/src/modules/processes/runs/launcher.ts`, `launcher-batch.ts` — mở lượt từ sự kiện; lượt chụp snapshot lúc bắt đầu.
+- `apps/hub-api/src/modules/processes/triggers/` (mới) — dispatcher `FOR UPDATE SKIP LOCKED`, match, `decides`.
+- `apps/hub-api/src/server.ts` — đăng ký vòng nền dispatcher.
+- Cờ `FLOW_TRIGGERS` theo công ty: (mới) — chưa thấy nơi đọc cờ; E1 tạo.
+
+### E2
+- `apps/hub-api/src/modules/processes/nodes/review/` (mới) — node Duyệt độc lập (duyệt/từ chối/trả lại, nhắc, chuyển cấp).
+- `apps/hub-api/src/modules/processes/nodes/finish/` (mới) — node Kết thúc gọi OutcomeHandler trong tx, idempotent.
+- `apps/hub-api/src/modules/processes/nodes/if/` (có) — thêm nguồn `fact` qua FactsReader, `next_step`; trường trống ⇒ nhánh Sai.
+- `apps/hub-api/src/modules/processes/nodes/tool/` (có) — node Công cụ cho Dify/MCP/tool catalog đã bật.
+- `apps/hub-api/src/modules/processes/nodes/registry.ts`, `registry.launch.ts`, `types.ts` — đăng ký hai node mới.
+- `apps/hub-api/src/modules/processes/gates/` (có) — chỗ gọi gate của Duyệt độc lập; chưa đọc dòng cụ thể.
+- `apps/hub-api/src/modules/processes/runs/apply*.ts` — CẦN XÁC MINH: tên `apply*` có thể là luồng Apply (PR) cũ, không phải Kết thúc; dừng "Cần xử lý" (H2) đặt ở đâu chưa rõ.
+
+### E3
+- `apps/hub-api/src/modules/packs/contracts/application/esign-flow.usecase.ts` — gửi ký + chờ `esign.completed|declined` có hạn; rẽ Đã ký / Từ chối.
+- `apps/hub-api/src/modules/packs/contracts/application/esign-sync.ts`, `esign-sweep.ts` — đồng bộ/quét — giữ nguyên, nối sự kiện.
+- `apps/hub-api/src/modules/packs/contracts/application/esign.usecase.ts`, `esign.ports.ts` — cổng gói ký — giữ đa nhà cung cấp.
+- `apps/hub-api/src/modules/processes/runs/pack-signal.ts` — kit đăng ký node Ký số qua cổng gói.
+- `apps/hub-api/src/modules/packs/contracts/adapters/docusign.provider.ts`, `esign.fake.ts` — adapter (không có trong bảng FILE; giữ nguyên).
+
+### A1
+- `apps/hub-api/src/modules/packs/contracts/application/approval-engine.usecase.ts` — `startEngineApproval` (dòng 248) — mở lượt khi `contract.submitted`.
+- `apps/hub-api/src/modules/packs/contracts/application/approval-engine-slot.ts` — `slotFlowOf` (dòng 82) — gỡ sau khi thay.
+- `apps/hub-api/src/modules/packs/contracts/application/approval-flow.usecase.ts`, `approval-flow-slot.usecase.ts` — gửi duyệt ghi sự kiện cùng tx; gỡ khe.
+- `apps/hub-api/src/modules/packs/contracts/application/approval-engine.ports.ts` — cổng FactsReader + OutcomeHandler (Đã duyệt khoá HĐ + gắn SP / Từ chối / Trả lại).
+- `apps/hub-api/src/modules/packs/contracts/domain/approval-slot.rules.ts` — `withConfirmStep` (dòng 48), `compileSlotStages` (dòng 149) — gỡ (H3).
+- `apps/hub-api/src/modules/packs/contracts/domain/approval-slot-catalog.rules.ts`, `approval-slot-default.rules.ts` — gỡ sau khi thay.
+- `apps/hub-api/src/modules/packs/contracts/intake.mount.ts` — đăng ký phát `contract.submitted|uploaded`.
+- `apps/hub-api/src/modules/packs/packs.after-mount.ts` — gắn cổng/handler sau mount (đường dẫn sửa, xem dưới).
+- `apps/workspace-web/src/features/settings/lib/routing-def.ts`, `app-slots.ts` — gỡ Cài đặt › Quy trình duyệt cũ.
+
+### A2
+- `apps/hub-api/src/modules/packs/community/adapters/flows.service.ts` — phát `post.created|partner.join_requested|report.created` cùng tx; OutcomeHandler Hiện/Ẩn/Nhận/Từ chối/Cảnh báo.
+- `apps/hub-api/src/modules/packs/community/adapters/flows.repo.ts`, `flows.routes.ts` — chặn đọc chéo tenant giữ nguyên.
+- `apps/hub-api/src/modules/packs/community/adapters/flow-slots.ts` — khe 3 bước cố định — gỡ.
+- `apps/hub-api/src/modules/packs/community/community.mount.ts` — đăng ký FactsReader/handler (đường dẫn sửa, xem dưới).
+- `apps/hub-api/src/modules/packs/community/domain/flow-slots.rules.ts` — gỡ khe cố định (test: `flow-slots.rules.test.ts`).
+- `apps/hub-api/src/modules/packs/community-flow.mount.ts` — (không có trong bảng FILE) — kiểm trước khi sửa.
+
+### U1
+- `apps/admin-web/src/features/processes/pages/ProcessEditorPage.tsx` — trình sửa; canvas FlowDef mặc định, chế độ danh sách nhớ theo người dùng.
+- `apps/admin-web/src/features/processes/components/canvas/ProcessCanvas.tsx`, `CanvasView.tsx`, `StageNode.tsx`, `IfNode.tsx` — canvas dùng chung; thêm node Bắt đầu khi/Duyệt/Kết thúc/Công cụ.
+- `apps/admin-web/src/features/processes/components/library/LibraryEditorBody.tsx` — thân trình sửa Thư viện.
+- `apps/admin-web/src/features/processes/lib/slot-canvas.ts` — mapper canvas ⇄ FlowDef (thay).
+- `apps/admin-web/src/features/processes/lib/system-nodes.ts`, `apps/admin-web/src/features/processes/nodes/registry.ts` — bảng node theo manifest app.
+- `apps/admin-web/src/features/processes/components/library/FlowWhenEditor.tsx` — gỡ; điều kiện dùng control chung (`FlowCondRow.tsx` là cơ sở).
+- `apps/admin-web/src/features/processes/components/library/FlowFormEditor.tsx`, `SlotStageForm.tsx` — gỡ editor Form theo khe.
+- `apps/admin-web/src/features/processes/components/library/PublishDialog.tsx`, `CompanyCopyBody.tsx`, `apps/admin-web/src/features/processes/lib/company-copy.ts` — xuất bản và copy công ty, bỏ khe (CompanyCopyBody không có trong bảng FILE).
+
+### U2
+- `apps/admin-web/src/features/tenants/flows/components/SlotRouting.tsx`, `RoutingRules.tsx`, `DrawerAssign.tsx` — thay bằng danh sách company_flows; gỡ.
+- `apps/admin-web/src/features/tenants/flows/hooks/use-slot-routing.ts`, `api.ts` — hook và API company-flows (API đã có ở E1).
+- `apps/admin-web/src/features/apps/lib/flow-view.ts`, `slot-rows.ts` — bỏ khe, dòng theo app.
+- `packages/web-kit/src/routing-current.ts` — tra theo `ref`.
+- `apps/workspace-web/src/platform/flow/ui/FlowPanel.tsx` — FlowPanel (đường dẫn sửa); `FlowRuntime` tại `apps/workspace-web/src/platform/flow/port.ts` (dòng 11).
+- `apps/workspace-web/src/features/settings/components/FlowRules.tsx`, `apps/RoutingEditor.tsx` — (không có trong bảng FILE) — gỡ theo FR-23.
+
+### M1
+- `packages/db/migrations-hub/0107_*.sql` (mới) + `meta/_journal.json` — backfill theo tập, when 1805600000000.
+- `tools/scripts/src/check-app-slots.ts` — thay bằng `check-app-events.ts` (mới); root `package.json` dòng 116 `check:app-slots`.
+- `tools/scripts/src/seed-niti.ts`, `rename-process-defs.ts` — seed/đổi tên; bật đủ cấu hình (D7).
+- `apps/hub-api/src/modules/ops/adapters/checks/flow-coverage.check.ts` — sự kiện bắt buộc × công ty thiếu flow không điều kiện = 0; so lệch bóng.
+- `apps/hub-api/scripts/process-library-backfill.ts` — (không có trong bảng FILE) — script backfill đã có, kiểm trước khi viết mới.
+- `deploy/prod-sohoptac2/preflight-cr121.sql` — kiểm bổ sung; dòng 77, 79, 109, 113, 166 đọc `process_routing_rules`.
+
+### Q1
+- `e2e/**` (có) — thêm job G1, G2, G3; viết, không chạy trước Q1.
+- `tests/.lock` (có) — qc ghi lock.
+
+### R1
+- `packages/db/migrations-hub/0108_*.sql` (mới) — gỡ bảng/view khe cũ.
+- `apps/hub-api/src/modules/processes/library/slot-assign.repo.ts`, `slot-assigned.repo.ts`, `slot-route.repo.ts`, `slot-defaults.ts` (`ensureSlotDefaults` dòng 54), `slots.ts` — gỡ; `slot-resolve.repo.ts` gỡ phần ngoài `resolveSlot`.
+- `apps/hub-api/src/modules/processes/library/routing.service.ts`, `routing.repo.ts`, `routing.rules.ts`, `routing-active.rules.ts` — gỡ.
+- `apps/hub-api/src/modules/packs/kit/adapters/slot-registry.ts`, `slot-contract.check.ts` — gỡ; `kit/domain/slot-contract.rules.ts` (không có trong bảng) gỡ cùng.
+- `tools/scripts/src/check-app-slots.ts` — gỡ; root `package.json` dòng 116 gỡ `check:app-slots`.
+- `apps/hub-api/src/modules/packs/contracts/application/approval-flow*.ts`, `approval-engine*.ts`; `FlowSlotAdapter` — KHÔNG TÌM THẤY định nghĩa trong repo (tên có thể đã đổi); xác minh trước khi gỡ.
+
+Đường dẫn sai trong bảng lát đã sửa:
+- F0: `packs/application/slot.ports.ts`, `packs/application/flow.ports.ts` → `packs/kit/application/slot.ports.ts`, `packs/kit/application/flow.ports.ts`.
+- A1: `packs/contracts/packs.after-mount.ts` → `packs/packs.after-mount.ts`.
+- A2: `community.mount.ts` (nằm trong adapters/ theo mô tả) → `packs/community/community.mount.ts`.
+- U2: "FlowPanel apps/workspace-web" → `apps/workspace-web/src/platform/flow/ui/FlowPanel.tsx`.
+- Thiếu trong bảng, đã thêm: `manifest.ts` (AppSlotDecl), `community-flow.mount.ts`, `process-library-backfill.ts`, `FlowWhenEditor` dependencies.
+- Mới (chưa có): `processes/triggers/`, `nodes/review/`, `nodes/finish/`, `0105`–`0108`, `check-app-events.ts`.
+- Không tìm thấy: `FlowSlotAdapter`; `process_routing_rules` không có định nghĩa Drizzle (chỉ SQL trong migrations 0087, 0096; prod preflight đọc trực tiếp).
