@@ -11,6 +11,21 @@ import { setFlowTriggers } from "../processes/triggers/flags";
 import { communityFlowPorts } from "./community-flow.mount";
 
 const X = tenantId(1271);
+const ST = JSON.stringify([
+  {
+    key: "duyet",
+    name: "Duyệt",
+    step: 0,
+    executor: { kind: "set", values: [] },
+    instruction: "",
+    output: { filename: "n.md", template: "# n", required_sections: ["n"], fields: [] },
+    after: { kind: "auto", branch: [] },
+    real_action: false,
+    answerer: { kind: "starter" },
+    token_budget: null,
+    outcome: "accepted",
+  },
+]);
 let o: Sql;
 let db: Db;
 let flowId = "";
@@ -23,7 +38,7 @@ beforeAll(async () => {
   const [d] = await o<
     { id: string }[]
   >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app, published_version, enabled)
-    values (null, 'p4-post-mod', 'Duyệt bài', '[]'::jsonb, '{"event":"post.created"}'::jsonb, 'community', 1, true)
+    values (null, 'p4-post-mod', 'Duyệt bài', ${ST}::text::jsonb, '{"event":"post.created"}'::jsonb, 'community', 1, true)
     returning id::text as id`;
   flowId = d?.id as string;
 });
