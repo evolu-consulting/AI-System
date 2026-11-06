@@ -113,6 +113,8 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     mustKnow: mustKnowToDraft(s.must_know),
     autofix: autofixToDraft(s.autofix),
     ...(s.ui ? { uiY: s.ui.y } : {}),
+    ...(s.outcome === undefined ? {} : { outcome: s.outcome }),
+    ...(s.next_step === undefined ? {} : { nextStep: s.next_step }),
     ...(s.slot ? { slotRaw: repairSlot(structuredClone(s.slot)) } : {}),
   };
 }
@@ -174,6 +176,8 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
     must_know: mustKnowToDef(s.mustKnow),
     autofix: autofixToDef(s.autofix),
     ...(s.uiY === undefined ? {} : { ui: { y: clampUiY(s.uiY) } }),
+    ...(s.outcome === undefined ? {} : { outcome: s.outcome }),
+    ...(s.nextStep === undefined ? {} : { next_step: s.nextStep }),
     ...(s.slotRaw ? { slot: s.slotRaw } : {}),
   };
 }

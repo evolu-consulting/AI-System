@@ -1251,5 +1251,52 @@
       "notFound": "Không tìm thấy lượt chạy (có thể đã bị xoá). Quay lại danh sách quy trình.",
       "generic": "Không thực hiện được. Kiểm tra kết nối rồi thử lại."
     }
+  },
+  "flow": {
+    "trigger": "Bắt đầu khi",
+    "event": "Sự kiện",
+    "onlyWhen": "Chỉ khi",
+    "always": "Luôn chạy",
+    "addCond": "Thêm điều kiện",
+    "removeCond": "Xoá điều kiện",
+    "toGroup": "Gộp thành nhóm",
+    "fact": "Dữ kiện",
+    "op": "So sánh",
+    "value": "Giá trị",
+    "yes": "Có",
+    "no": "Không",
+    "and": "Và",
+    "or": "Hoặc",
+    "listHint": "Cách nhau bằng dấu phẩy",
+    "node": {
+      "approve": "Duyệt",
+      "form": "Điền thông tin",
+      "if": "Nếu",
+      "fork": "Chia / Gộp",
+      "wait": "Chờ",
+      "notify": "Thông báo",
+      "agent": "Agent",
+      "tool": "Công cụ",
+      "esign": "Ký số",
+      "set": "Ghi giá trị",
+      "finish": "Kết thúc",
+      "soon": "Chưa dùng được"
+    },
+    "finish": {
+      "name": "Tên",
+      "outcome": "Kết quả"
+    },
+    "err": {
+      "tooManySteps": "Flow tối đa 20 bước. Gộp bớt bước.",
+      "noFinish": "Thêm ít nhất một node Kết thúc.",
+      "finishNext": "Node Kết thúc là điểm cuối, không đi tiếp được.",
+      "nextStepInvalid": "Bước gộp phải ở phía sau bước hiện tại.",
+      "sourceOwner": "Chỉ bản công ty mới có nguồn sao.",
+      "eventUnknown": "Chọn một sự kiện của ứng dụng.",
+      "outcomeUnknown": "Chọn kết quả thuộc sự kiện này cho node Kết thúc.",
+      "whenInvalid": "Điều kiện dùng dữ kiện hoặc giá trị không hợp lệ cho sự kiện này.",
+      "noTrigger": "Flow chưa có node Bắt đầu khi.",
+      "invalid": "Flow chưa hợp lệ. Kiểm tra từng node."
+    }
   }
 }

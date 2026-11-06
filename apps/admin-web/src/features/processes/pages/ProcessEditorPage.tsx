@@ -1,5 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5: editor quy trình tối thiểu (`/processes/new`, `/processes/$processId`) — Cấu hình · Lượt chạy
 // (plan-frontend-admin §1, board ②). `processId` vắng ⇒ tạo mới. Mẫu + tenant_admin ⇒ chỉ xem + "Chép mẫu".
+import type { FlowTrigger } from "@ai/contracts/hub-admin";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -25,6 +26,7 @@ import { InputsCard } from "../components/editor/InputsCard";
 import { ProcessSaveBar } from "../components/editor/ProcessSaveBar";
 import { SourcesCard } from "../components/editor/SourcesCard";
 import { LimitsCard, StagesCard } from "../components/editor/StagesCard";
+import { FlowEditorBody } from "../components/flow/FlowEditorBody";
 import { CompanyCopyBody } from "../components/library/CompanyCopyBody";
 import { LibraryEditorBody } from "../components/library/LibraryEditorBody";
 import { LibraryReadOnlyView } from "../components/library/LibraryReadOnlyView";
@@ -43,6 +45,7 @@ import {
 } from "../lib/company-copy";
 import { type DefDraft, toDraft, withLiveErrors } from "../lib/def-form";
 import { processErrorSpec } from "../lib/errors";
+import { hasTrigger } from "../lib/flow-def";
 import { notFoundBack } from "../lib/route-guard";
 import { normalizeSlotStages } from "../lib/slot-canvas";
 import type { LibraryDef } from "../library-api";
@@ -136,7 +139,9 @@ function LoadFailure({ error, onRetry }: { error: unknown; onRetry: () => void }
 
 /** CR-105 · def có khe + người xem là platform_admin ⇒ editor thư viện (Canvas|Form, xuất bản, gán…). */
 const libraryOf = (def: unknown, isPlatform: boolean): LibraryDef | null =>
-  isPlatform && (def as LibraryDef | undefined)?.slot ? (def as LibraryDef) : null;
+  isPlatform && ((def as LibraryDef | undefined)?.slot || hasTrigger(def))
+    ? (def as LibraryDef)
+    : null;
 const isReadOnlyDef = (def: { is_template?: boolean } | undefined, isPlatform: boolean) =>
   !!def?.is_template && !isPlatform;
 /** Canvas thư viện: chuẩn hoá dạng `s0 → route → s1..sn → finalize` trước khi kiểm + lưu (Hub `fromStages`). */
@@ -144,7 +149,8 @@ const prepareLibraryDraft = (d: DefDraft): DefDraft => ({
   ...d,
   stages: normalizeSlotStages(d.stages),
 });
-const prepareFor = (lib: LibraryDef | null) => (lib ? prepareLibraryDraft : undefined);
+const prepareFor = (lib: LibraryDef | null) =>
+  lib && !hasTrigger(lib) ? prepareLibraryDraft : undefined;
 const slotExtra = (lib: LibraryDef | null) => (lib ? { slot: lib.slot } : undefined);
 
 /** tenant_admin mở def thư viện: Hub ẩn (404) ⇒ thử đọc chỉ-xem theo công ty mình; không phải thư viện ⇒ NotFound. */
@@ -162,6 +168,46 @@ function EditorLoadFailure(p: {
   return failure;
 }
 
+/** CR-122 · U1: flow có trigger = FlowDef mới; trigger sửa ở state riêng, gửi kèm khi Lưu. */
+function useFlowTrigger(data: unknown, draftDirty: boolean) {
+  const src = hasTrigger(data) ? data : null;
+  const [edit, setEdit] = useState<FlowTrigger | null>(null);
+  const trig = src ? (edit ?? src.trigger) : null;
+  const dirty = draftDirty || (!!src && JSON.stringify(trig) !== JSON.stringify(src.trigger));
+  const extra = src && trig ? { trigger: trig, app: src.app } : {};
+  return { src, trig, setEdit, dirty, extra };
+}
+
+function FlowWrap(p: {
+  ft: ReturnType<typeof useFlowTrigger>;
+  def: LibraryDef | undefined;
+  lib: LibraryDef | null;
+  d: ReturnType<typeof useDraft>;
+  readOnly: boolean;
+  children: React.ReactNode;
+}) {
+  const { src, trig, setEdit } = p.ft;
+  if (!src || !trig) return <>{p.children}</>;
+  return (
+    <FlowEditorBody
+      meta={{
+        key: p.def?.key ?? "",
+        name: p.d.draft.name,
+        app: src.app,
+        owner: p.lib ? "library" : "company",
+      }}
+      trigger={trig}
+      stages={p.d.draft.stages}
+      readOnly={p.readOnly}
+      onChange={(next, stages) => {
+        setEdit(next);
+        if (stages) p.d.patch({ stages });
+      }}
+    >
+      {p.children}
+    </FlowEditorBody>
+  );
+}
 function Editor({ processId, company }: ProcessEditorPageProps) {
   const { t } = useTranslation();
   const d = useDraft();
@@ -169,8 +215,11 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
   const [formDirty, setFormDirty] = useState(false);
   const refs = useEditorRefs(tenant.tenantId, tenant.ready);
   const lib = libraryOf(q.data, tenant.isPlatform);
+  // CR-122 · U1: flow có trigger = FlowDef mới; trigger sửa ở state riêng, gửi kèm khi Lưu.
+  const ft = useFlowTrigger(q.data, d.dirty);
+  const dirty = ft.dirty;
   const save = useDefSave({
-    extra: slotExtra(lib),
+    extra: { ...slotExtra(lib), ...ft.extra },
     prepare: prepareFor(lib),
     id: processId,
     tenantId: tenant.tenantId,
@@ -195,7 +244,7 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
       />
     );
   if (processId !== undefined && !def) return <LoadingState />;
-  const config = (
+  const form = (
     <form
       id={FORM_ID}
       noValidate
@@ -227,7 +276,7 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
       <LimitsCard ttl={d.draft.ttl} noExpiry={d.draft.noExpiry} />
       {readOnly ? null : (
         <ProcessSaveBar
-          dirty={d.dirty}
+          dirty={dirty}
           pending={save.pending}
           formId={FORM_ID}
           version={processId === undefined ? undefined : version}
@@ -235,6 +284,11 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
         />
       )}
     </form>
+  );
+  const config = (
+    <FlowWrap ft={ft} def={def} lib={lib} d={d} readOnly={readOnly}>
+      {form}
+    </FlowWrap>
   );
   return (
     <>
@@ -252,7 +306,7 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
             <ConfigTab
               lib={lib}
               copy={usesStepForm(def, lib)}
-              canvasDirty={d.dirty}
+              canvasDirty={dirty}
               formDirty={formDirty}
               onFormDirty={setFormDirty}
               config={config}
@@ -263,7 +317,7 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
           </TabsContent>
         </Tabs>
       )}
-      <UnsavedGuard dirty={(d.dirty || formDirty) && !readOnly} />
+      <UnsavedGuard dirty={(d.dirty || formDirty || dirty) && !readOnly} />
       <LazyConflictDialog props={save.conflictProps} />
     </>
   );

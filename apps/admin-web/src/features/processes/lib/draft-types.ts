@@ -117,6 +117,10 @@ export type StageDraft = {
   formFields?: FormFieldDraft[];
   /** CR-105 · `stage.slot` của khe (mô tả bước người dùng: review/Dify, hoặc `esign` ở finalize) — giữ nguyên qua Canvas, Hub `fromStages` dựng lại `slot_body`. */
   slotRaw?: Record<string, unknown> | undefined;
+  /** CR-122 · node Kết thúc: khoá kết quả app khai (`AppEventDecl.outcomes`); vắng = không phải Kết thúc. */
+  outcome?: string;
+  /** CR-122 · bước gộp (0-based, > bước của mình); vắng = đi tiếp bước kế. */
+  nextStep?: number;
   /** CR-103 · fnr-canvas · `y` đã lưu của node trên canvas (`ui.y`, chỉ-UI); vắng = bố cục tự động. */
   uiY?: number;
 };

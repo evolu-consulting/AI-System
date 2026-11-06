@@ -10,6 +10,7 @@ import { useDlcStepTemplates } from "../../dlc-steps-api";
 import { useCloneFlow } from "../../hooks/use-clone-flow";
 import { isDlcSlotKey } from "../../lib/dlc-slot";
 import { processErrorSpec } from "../../lib/errors";
+import { hasTrigger } from "../../lib/flow-def";
 import type { PublishIssue } from "../../lib/publish-issues";
 import { editorModeOf, viewModeOf } from "../../lib/step-limit";
 import { readViewMode, writeViewMode } from "../../lib/view-mode";
@@ -40,7 +41,10 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
   const slots = useSlots(true);
   const dlcSteps = useDlcStepTemplates(isDlcSlotKey(def.slot));
   // Q11: Sơ đồ (canvas) mặc định, "Danh sách" (= Form) là chế độ phụ; nhớ theo người dùng (cùng `view-mode.ts` với mọi nơi xem quy trình).
-  const [mode, setModeState] = useState<EditorMode>(() => editorModeOf(readViewMode()));
+  // CR-122 · flow có trigger: MỘT trình sửa canvas (Danh sách = chế độ phụ của canvas), không còn Form theo khe.
+  const flow = hasTrigger(def);
+  const [modeState, setModeState] = useState<EditorMode>(() => editorModeOf(readViewMode()));
+  const mode: EditorMode = flow ? "canvas" : modeState;
   const setMode = (m: EditorMode) => {
     writeViewMode(viewModeOf(m));
     setModeState(m);

@@ -3,7 +3,7 @@
 import type { DlcStepTemplate } from "@ai/contracts/hub-admin";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { StageDraft } from "../lib/def-form";
+import { emptyStage, type StageDraft } from "../lib/def-form";
 import { linkDlcReject } from "../lib/dlc-slot";
 import { freshDlcStage, freshReviewStage, freshSlotStage } from "../lib/fresh-stages";
 import { stepLabel } from "../lib/step-label";
@@ -105,6 +105,9 @@ export function useStageOps(d: DraftState) {
     /** CR-121 D-6b · thêm bước Thông báo / Chờ tới của khe (mang `slot.kind` ngay; Hub dựng stage engine khi lưu). */
     addSlotStep: (kind: "notify" | "wait_until", name: string) =>
       addVia(() => d.addFresh(() => freshSlotStage(kind, name))),
+    /** CR-122 · U1 · thêm node từ bảng node (loại + tên nghiệp vụ) thành bước mới cuối. */
+    addNode: (patch: Partial<StageDraft>, name: string) =>
+      addVia(() => d.addFresh(() => ({ ...emptyStage(), ...patch, name }))),
     /** dlc-step-library · kéo cổng "Từ chối" của bước `from` thả lên bước `to` (phải đứng trước) ⇒ `gate.back_to = [to]`. */
     linkReject: linkRejectOf(d, rep),
     clearNotice: () => setNotice(null),

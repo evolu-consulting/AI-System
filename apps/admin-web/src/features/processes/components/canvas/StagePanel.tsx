@@ -9,6 +9,8 @@ import { dlcDraftErrors, isDlcStep } from "../../lib/dlc-slot";
 import type { StageDraft } from "../../lib/draft-types";
 import { isSystemStage } from "../../lib/system-nodes";
 import { StageForm } from "../editor/StageForm";
+import { FinishFields } from "../flow/FinishFields";
+import { useFlowCtx } from "../flow/flow-ctx";
 import { DlcStageForm } from "../library/DlcStageForm";
 import { type LibraryCanvasCtx, useLibraryCanvas } from "../library/library-canvas-ctx";
 import { SlotStageForm } from "../library/SlotStageForm";
@@ -82,10 +84,53 @@ function LibraryStepForm({
   );
 }
 
+/** Form của giai đoạn đang chọn: Kết thúc (flow) · bước của khe (Canvas thư viện cũ) · form giai đoạn chung. */
+function PanelBody({
+  d,
+  w,
+  readOnly,
+  refs,
+  lib,
+}: Pick<Props, "d" | "w" | "readOnly" | "refs"> & { lib: LibraryCanvasCtx | null }) {
+  const flow = useFlowCtx();
+  const { sel, index, ops } = w;
+  if (!sel) return null;
+  if (flow && sel.outcome !== undefined)
+    return (
+      <FinishFields
+        key={sel.uid}
+        stage={sel}
+        readOnly={readOnly}
+        onChange={(p) => d.patchStage(index, p)}
+        onRemove={() => w.remove(index)}
+      />
+    );
+  if (lib && !readOnly && !isSystemStage(sel))
+    return <LibraryStepForm key={sel.uid} d={d} w={w} lib={lib} refs={refs} />;
+  return (
+    <StageForm
+      key={sel.uid}
+      stage={sel}
+      index={index}
+      all={w.stages}
+      defSources={d.draft.sources}
+      defInputs={d.draft.inputs}
+      errors={d.errors}
+      readOnly={readOnly || isSystemStage(sel)}
+      refs={refs}
+      stepNotice={ops.notice?.uid === sel.uid ? ops.notice.error : undefined}
+      onChange={(p) => d.patchStage(index, p)}
+      onMove={(dir) => ops.moveColumn(index, dir)}
+      onStep={(step) => ops.setStep(index, step)}
+      onSplit={() => ops.split(index)}
+      onRemove={() => w.remove(index)}
+    />
+  );
+}
 export function StagePanel({ d, w, readOnly, refs, variant = "column" }: Props) {
   const { t } = useTranslation();
   const lib = useLibraryCanvas();
-  const { sel, index, ops } = w;
+  const { sel } = w;
   const drawer = variant === "drawer";
   useEscClose(drawer && w.open, w.close);
   if (drawer && !w.open) return null;
@@ -119,27 +164,7 @@ export function StagePanel({ d, w, readOnly, refs, variant = "column" }: Props) 
           {t("process.admin.library.system.locked")}
         </p>
       ) : null}
-      {sel && lib && !readOnly && !isSystemStage(sel) ? (
-        <LibraryStepForm key={sel.uid} d={d} w={w} lib={lib} refs={refs} />
-      ) : sel ? (
-        <StageForm
-          key={sel.uid}
-          stage={sel}
-          index={index}
-          all={w.stages}
-          defSources={d.draft.sources}
-          defInputs={d.draft.inputs}
-          errors={d.errors}
-          readOnly={readOnly || isSystemStage(sel)}
-          refs={refs}
-          stepNotice={ops.notice?.uid === sel.uid ? ops.notice.error : undefined}
-          onChange={(p) => d.patchStage(index, p)}
-          onMove={(dir) => ops.moveColumn(index, dir)}
-          onStep={(step) => ops.setStep(index, step)}
-          onSplit={() => ops.split(index)}
-          onRemove={() => w.remove(index)}
-        />
-      ) : null}
+      <PanelBody d={d} w={w} readOnly={readOnly} refs={refs} lib={lib} />
     </aside>
   );
 }

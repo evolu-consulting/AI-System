@@ -1251,5 +1251,52 @@
       "notFound": "Run not found (it may have been deleted). Go back to the process list.",
       "generic": "Could not complete this. Check your connection and try again."
     }
+  },
+  "flow": {
+    "trigger": "Starts when",
+    "event": "Event",
+    "onlyWhen": "Only if",
+    "always": "Always runs",
+    "addCond": "Add condition",
+    "removeCond": "Remove condition",
+    "toGroup": "Make a group",
+    "fact": "Field",
+    "op": "Compare",
+    "value": "Value",
+    "yes": "Yes",
+    "no": "No",
+    "and": "And",
+    "or": "Or",
+    "listHint": "Comma separated",
+    "node": {
+      "approve": "Approval",
+      "form": "Fill in form",
+      "if": "If",
+      "fork": "Split / Join",
+      "wait": "Wait",
+      "notify": "Notify",
+      "agent": "Agent",
+      "tool": "Tool",
+      "esign": "E-sign",
+      "set": "Set value",
+      "finish": "Finish",
+      "soon": "Not available yet"
+    },
+    "finish": {
+      "name": "Name",
+      "outcome": "Result"
+    },
+    "err": {
+      "tooManySteps": "A flow has at most 20 steps. Merge some steps.",
+      "noFinish": "Add at least one Finish node.",
+      "finishNext": "Finish is an end point and cannot continue.",
+      "nextStepInvalid": "The join step must come after the current step.",
+      "sourceOwner": "Only company copies have a source.",
+      "eventUnknown": "Pick one of the app's events.",
+      "outcomeUnknown": "Pick a result that belongs to this event for the Finish node.",
+      "whenInvalid": "The condition uses a field or value that does not fit this event.",
+      "noTrigger": "The flow has no Starts when node.",
+      "invalid": "The flow is not valid. Check each node."
+    }
   }
 }

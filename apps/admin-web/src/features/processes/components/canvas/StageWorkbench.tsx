@@ -1,5 +1,6 @@
 // ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend §1, FB3/FB7): bàn làm việc giai đoạn — thanh công cụ + tab Canvas/Danh sách
 // + panel bên chứa form của MỘT giai đoạn đang chọn (mặc định giai đoạn 1).
+import { PROCESS_STAGES_MAX } from "@ai/contracts/hub-admin";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { isDlcStep } from "../../lib/dlc-slot";
 import { writeViewMode } from "../../lib/view-mode";
+import { FlowToolbar } from "../flow/NodePalette";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
 import { SlotCanvasToolbar } from "../library/SlotCanvasToolbar";
 import { ViewModeToggle } from "../ViewModeToggle";
@@ -75,29 +77,33 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
             <p className="text-caption text-muted-foreground">
               {t("process.admin.canvas.readOnly")}
             </p>
-          ) : lib ? (
-            <SlotCanvasToolbar
-              count={w.stages.length}
-              templates={dlcSteps}
-              onAdd={addReview}
-              onAddDlc={addDlc}
-              onAddSlot={(kind) =>
-                ops.addSlotStep(
-                  kind,
-                  t(
-                    `process.admin.library.form.${kind === "notify" ? "notify" : "wait"}.defaultName`,
-                  ),
-                )
-              }
-              onArrange={ops.arrange}
-            />
           ) : (
-            <CanvasToolbar
-              count={w.stages.length}
-              onAddStage={addStage}
-              onAddStep={() => ops.addStep(w.sel?.step ?? -1)}
-              onArrange={ops.arrange}
-            />
+            <FlowToolbar ops={ops} count={w.stages.length} max={PROCESS_STAGES_MAX}>
+              {lib ? (
+                <SlotCanvasToolbar
+                  count={w.stages.length}
+                  templates={dlcSteps}
+                  onAdd={addReview}
+                  onAddDlc={addDlc}
+                  onAddSlot={(kind) =>
+                    ops.addSlotStep(
+                      kind,
+                      t(
+                        `process.admin.library.form.${kind === "notify" ? "notify" : "wait"}.defaultName`,
+                      ),
+                    )
+                  }
+                  onArrange={ops.arrange}
+                />
+              ) : (
+                <CanvasToolbar
+                  count={w.stages.length}
+                  onAddStage={addStage}
+                  onAddStep={() => ops.addStep(w.sel?.step ?? -1)}
+                  onArrange={ops.arrange}
+                />
+              )}
+            </FlowToolbar>
           )}
           <div className="ml-auto flex items-center gap-1">
             {lib ? null : (

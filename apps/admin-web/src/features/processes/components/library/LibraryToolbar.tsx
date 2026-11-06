@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { isDlcSlotKey } from "../../lib/dlc-slot";
+import { hasTrigger } from "../../lib/flow-def";
 import { statusOf } from "../../lib/library-list";
 import { canSetDefault, publishState } from "../../lib/library-view";
 import { nextVersion } from "../../lib/step-limit";
@@ -26,15 +27,21 @@ type Props = {
 const modesOf = (slot: string | null | undefined): readonly EditorMode[] =>
   isDlcSlotKey(slot) ? ["canvas"] : ["canvas", "form"];
 
+/** CR-122 · flow có trigger chỉ có canvas (không còn Form theo khe). */
+const modesOfDef = (def: LibraryDef): readonly EditorMode[] =>
+  hasTrigger(def) ? ["canvas"] : modesOf(def.slot);
+
 /** "X công ty đang dùng vN" (đã xuất bản) · "X công ty đang dùng" (nháp). */
 function usedByText(
   def: LibraryDef,
   L: (k: string, o?: Record<string, string | number>) => string,
 ) {
   const n = def.tenant_count ?? 0;
+  const slot = def.slot_label ?? def.slot;
+  const prefix = slot ? `${L("usedFor", { slot })} · ` : "";
   return def.published_version == null
-    ? L("assignedCount", { n })
-    : L("usedByVersion", { n, v: def.published_version });
+    ? prefix + L("assignedCount", { n })
+    : prefix + L("usedByVersion", { n, v: def.published_version });
 }
 
 export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Props) {
@@ -67,9 +74,7 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
         {def.is_default ? (
           <StatusBadge tone="ok">{L("defaultBadge", { slot: def.slot_label ?? "" })}</StatusBadge>
         ) : null}
-        <span className="text-caption text-muted-foreground">
-          {L("usedFor", { slot: def.slot_label ?? def.slot ?? "" })} · {usedByText(def, L)}
-        </span>
+        <span className="text-caption text-muted-foreground">{usedByText(def, L)}</span>
         {/* Một chỗ gán duy nhất: Công ty › Quy trình (Luật gốc 2) — thư viện không gán trực tiếp */}
         <span className="text-caption text-muted-foreground" data-testid="assign-where">
           {L("assign.where")}{" "}
@@ -101,7 +106,7 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
       <div className="flex flex-wrap items-center gap-2">
         <fieldset className="inline-flex min-w-0 rounded-md border border-border p-0.5">
           <legend className="sr-only">{L("mode.label")}</legend>
-          {modesOf(def.slot).map((m) => (
+          {modesOfDef(def).map((m) => (
             <Button
               key={m}
               type="button"
