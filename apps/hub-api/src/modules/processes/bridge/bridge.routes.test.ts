@@ -1,6 +1,7 @@
 // CR-122 · N2 · FLOW2-FR-26 · `POST /process-defs/bridge-suggest` (Hono thật, cache cấu hình giả, Agent Hub GIẢ — không DB, không AI thật):
 // chỉ gửi tên/kiểu trường; đề xuất hợp lệ ⇒ stage `set` đã chèn thử sạch lệch; AI sai/không khớp/lỗi ⇒ `ok:false` + lý do; vai/tenant/tần suất.
 import { describe, expect, test } from "bun:test";
+import { getAppManifest } from "@ai/contracts/app-manifest";
 import type { Role } from "@ai/contracts/common";
 import { BridgeSuggestResponseSchema } from "@ai/contracts/hub-admin";
 import { Hono } from "hono";
@@ -9,6 +10,7 @@ import type { AuthVars } from "../../../lib/auth.middleware";
 import { mapError } from "../../../lib/errors";
 import type { ProcessDeps } from "../core/ports";
 import { bridgeRoutes } from "./bridge.routes";
+import { bridgePromptOf, eventFactsOf } from "./bridge.rules";
 
 // biome-ignore lint/suspicious/noExplicitAny: JSON response trong test
 type Json = Record<string, any>;
@@ -130,22 +132,36 @@ describe("CR-122 N2 · gợi ý cầu nối", () => {
   });
 
   test("CR-122 E4b · flow của app có trigger ⇒ prompt có facts (chỉ khoá + kiểu) của sự kiện, AI dùng được nguồn fact", async () => {
+    // CR-122 · A · cạnh vào Ký số giờ tự có contract_id ⇒ kiểm facts của prompt bằng luật thuần (không cần cạnh lệch).
+    const d = { ...def(GAP), app: "contracts", trigger: { event: "contract.submitted" } };
+    const facts = eventFactsOf(d, getAppManifest);
+    expect(facts.length).toBeGreaterThan(0);
+    for (const f of facts) expect(Object.keys(f).sort()).toEqual(["key", "type"]);
+    const issue = { from: "dau", to: "ky", missing: ["x"], typeMismatch: [] };
+    const p = JSON.parse(
+      bridgePromptOf({
+        fromNode: null,
+        toNode: null,
+        fromOutputs: [],
+        toInputs: [],
+        issue,
+        runInputs: [],
+        facts,
+      }),
+    );
+    expect(p.facts).toEqual(facts);
+    expect(
+      eventFactsOf({ app: "contracts", trigger: { event: "khong.co" } }, getAppManifest),
+    ).toEqual([]);
+  });
+
+  test("CR-122 · A · flow của app có trigger ⇒ cạnh vào Ký số đã khớp (contract_id từ Bắt đầu khi), không gọi AI", async () => {
     const { app, calls } = mount(() => ok(GOOD));
     const d = { ...def(GAP), app: "contracts", trigger: { event: "contract.submitted" } };
     const r = await post(app, "A", body({ def: d }));
     expect(r.status).toBe(200);
-    const p = JSON.parse((calls[0] as Call).prompt);
-    expect(p.facts.length).toBeGreaterThan(0);
-    for (const f of p.facts as Record<string, unknown>[])
-      expect(Object.keys(f).sort()).toEqual(["key", "type"]);
-    // Sự kiện lạ ⇒ không dữ kiện; nguồn fact không thuộc sự kiện ⇒ đề xuất bị từ chối.
-    const bad = JSON.stringify({
-      ...JSON.parse(GOOD),
-      values: [{ key: "contract_id", type: "string", from: { kind: "fact", key: "khong_co" } }],
-    });
-    const m2 = mount(() => ok(bad));
-    const r2 = await post(m2.app, "A", body({ def: d }));
-    expect(r2.json.ok).toBe(false);
+    expect(r.json.ok).toBe(false);
+    expect(calls).toHaveLength(0);
   });
 
   test("hai bước đã khớp ⇒ ok:false, không gọi AI, cạnh không có thật ⇒ 400", async () => {

@@ -5,11 +5,13 @@
 // Cạnh từ node Bắt đầu khi (sự kiện) không xét ở đây. `insertBridgeStage` chèn một stage cầu nối vào đúng một cạnh (dịch số bước).
 // Không import `./processes` (file đó import `FlowEdgeWarningSchema` ở đây) ⇒ không vòng import.
 import { z } from "zod";
+import { defStartOutputs } from "../app-manifest/index";
 import {
   APP_FACT_TYPES,
   type AppFactType,
   type AppNodeDecl,
   type AppNodeIo,
+  ioLabel,
 } from "../app-manifest/manifest";
 import { edgeIssues } from "../app-manifest/nodes.rules";
 import { PROCESS_STAGES_MAX } from "../chat/processes";
@@ -18,6 +20,7 @@ import { resolveSteps } from "./process-steps";
 /** Hình tối thiểu của stage mà luật cần (bản nháp FE / def đã parse đều khớp). */
 export type EdgeStage = {
   key: string;
+  name?: string;
   step?: number;
   next_step?: number;
   outcome?: string;
@@ -56,6 +59,16 @@ export const FlowEdgeWarningSchema = z.strictObject({
       }),
     )
     .max(20),
+  /** CR-122 · A · tên bước trước / sau (UI ghi "Bước «Gửi ký số» cần «Hợp đồng»"); vắng ⇒ khoá. */
+  from_name: z.string().max(200).optional(),
+  to_name: z.string().max(200).optional(),
+  /** Nhãn vi/en của mỗi trường trong `missing`/`typeMismatch` (vắng nhãn ⇒ khoá). */
+  labels: z
+    .array(
+      z.strictObject({ key: z.string().max(64), vi: z.string().max(200), en: z.string().max(200) }),
+    )
+    .max(40)
+    .optional(),
 });
 /** Một cạnh lệch giao diện (`from`/`to` = khoá stage). Rỗng cả hai mảng ⇒ không có trong kết quả. */
 export type FlowEdgeIssue = z.infer<typeof FlowEdgeWarningSchema>;
@@ -147,40 +160,57 @@ function withUpstream(own: AppNodeIo[], upstream: readonly AppNodeIo[]): AppNode
 }
 
 /** Dữ liệu (khoá + kiểu) sẵn có SAU mỗi stage, cùng chỉ số với `def.stages` — cho AI/trình sửa biết "bước trước có gì". */
-export function flowStageOutputs(
-  def: { stages: readonly EdgeStage[] },
-  palette: readonly EdgePaletteNode[],
-): AppNodeIo[][] {
+export function flowStageOutputs(def: EdgeDef, palette: readonly EdgePaletteNode[]): AppNodeIo[][] {
   const byKey = new Map(palette.map((n) => [n.key, n]));
+  const start = defStartOutputs(def);
   return allOutputs(def.stages, flowEdges(def.stages), (s) =>
     s.node === undefined ? undefined : byKey.get(s.node),
-  );
+  ).map((o) => withUpstream(o, start));
 }
+
+/** Def tối thiểu cho kiểm cạnh: `app` + `trigger` (nếu có) ⇒ đầu ra Bắt đầu khi có ở mọi bước. */
+export type EdgeDef = {
+  stages: readonly EdgeStage[];
+  app?: string | null;
+  trigger?: { event: string } | null;
+};
 
 /**
  * Mọi cạnh lệch giao diện của flow, theo thứ tự cạnh. `palette` = bảng node (lõi + app, đã lọc theo tính năng công ty): node không có
  * trong bảng ⇒ không đòi gì. Chỉ cạnh có `missing` hoặc `typeMismatch` mới có trong kết quả.
  */
-export function flowEdgeIssues(
-  def: { stages: readonly EdgeStage[] },
-  palette: readonly EdgePaletteNode[],
-): FlowEdgeIssue[] {
+export function flowEdgeIssues(def: EdgeDef, palette: readonly EdgePaletteNode[]): FlowEdgeIssue[] {
   const byKey = new Map(palette.map((n) => [n.key, n]));
   const nodeOf = (s: EdgeStage) => (s.node === undefined ? undefined : byKey.get(s.node));
   const edges = flowEdges(def.stages);
   const outs = allOutputs(def.stages, edges, nodeOf);
+  const start = defStartOutputs(def);
   const found: FlowEdgeIssue[] = [];
   for (const [i, j] of edges) {
+    const from = def.stages[i] as EdgeStage;
     const to = def.stages[j] as EdgeStage;
     const inputs = nodeOf(to)?.inputs ?? [];
     if (inputs.length === 0) continue;
-    const r = edgeIssues(outs[i] ?? [], inputs);
+    // CR-122 · A · đầu ra Bắt đầu khi (bản ghi + dữ kiện) có ở MỌI cạnh phía sau.
+    const r = edgeIssues(withUpstream([...(outs[i] ?? [])], start), inputs);
     if (r.length === 0) continue;
     const missing = r.flatMap((x) => (x.rule === "missing" ? [x.key] : []));
     const typeMismatch = r.flatMap((x) =>
       x.rule === "type" ? [{ key: x.key, expected: x.expected, got: x.got }] : [],
     );
-    found.push({ from: (def.stages[i] as EdgeStage).key, to: to.key, missing, typeMismatch });
+    const labels = r.map((x) => {
+      const io = inputs.find((n) => n.key === x.key);
+      return { key: x.key, ...ioLabel(io ?? { key: x.key }) };
+    });
+    found.push({
+      from: from.key,
+      to: to.key,
+      missing,
+      typeMismatch,
+      from_name: from.name ?? from.key,
+      to_name: to.name ?? to.key,
+      labels,
+    });
   }
   return found;
 }

@@ -106,7 +106,16 @@ export const NODE_STAGES_MAX = 3;
 export const NODE_IO_MAX = 20;
 
 /** Một cổng vào/ra của node (FR-26): khoá snake_case + kiểu dữ kiện sẵn có. */
-export type AppNodeIo = { key: string; type: AppFactType; required: boolean };
+export type AppNodeIo = {
+  key: string;
+  type: AppFactType;
+  required: boolean;
+  /** CR-122 · A · nhãn nghiệp vụ (UI ghi "Bước «Gửi ký số» cần «Hợp đồng»"); vắng ⇒ dùng `key`. */
+  label?: { vi: string; en: string };
+};
+/** Nhãn hai thứ tiếng của một đầu vào/ra; vắng ⇒ khoá. */
+export const ioLabel = (io: { key: string; label?: { vi: string; en: string } }) =>
+  io.label ?? { vi: io.key, en: io.key };
 /** Một stage mẫu của node: executor có sẵn + cấu hình đặt sẵn; `outcome` ⇒ node Kết thúc. */
 export type AppNodeStage = {
   executor: { kind: NodeExecutor } & Readonly<Record<string, unknown>>;
@@ -143,7 +152,9 @@ export type AppFactType = (typeof APP_FACT_TYPES)[number];
 export type AppFactDecl = {
   /** `snake_case` (khớp `FACT_KEY_RE`) — khoá `fact` trong điều kiện của FlowDef và trong kết quả `FactsReader`. */
   key: string;
+  /** Nhãn tiếng Việt; `label_en` vắng ⇒ dùng `label`. */
   label: string;
+  label_en?: string;
   type: AppFactType;
   /** Chỉ cho `enum`: giá trị + nhãn. */
   options?: readonly { value: string; label: string }[];
@@ -155,6 +166,11 @@ export type AppEventDecl = {
   key: string;
   /** Nhãn trên node Bắt đầu khi, vd "Khi gửi duyệt HĐ". */
   label: string;
+  /**
+   * CR-122 · A · bản ghi mà sự kiện nói tới (= `ref` của sự kiện), vd HĐ ⇒ `contract_id`. Đầu ra của node Bắt đầu khi (cùng mọi
+   * `facts`) — có ở MỌI bước sau, node cần khoá này (vd Ký số cần `contract_id`) tự nhận, không cần cầu nối.
+   */
+  record?: { key: string; label: { vi: string; en: string } };
   facts: readonly AppFactDecl[];
   /** ≥ 1 — node Kết thúc của flow theo sự kiện này chỉ chọn trong danh sách này. */
   outcomes: readonly AppOutcomeDecl[];

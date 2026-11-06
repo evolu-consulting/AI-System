@@ -3,6 +3,7 @@
 // cùng tx tạo run (unique `process_runs_flow_event_uq` ⇒ mở lại cùng sự kiện × flow trả `duplicate`).
 // E1b · flow Thư viện được gán (`defTenantId` null) chạy THẲNG bản xuất bản mới nhất: đọc def + Group theo mã (scope system, 2 câu),
 // đổi mã → id công ty; thiếu ⇒ `FlowLaunchRefused`. Lỗi 4xx của engine ⇒ `FlowLaunchRefused` (không thử lại); lỗi khác ⇒ ném.
+import { eventOf, recordInputsOf } from "@ai/contracts/app-manifest";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
@@ -50,8 +51,15 @@ async function libraryDefFor(
 }
 
 function launchOpts(e: ClaimedEvent, c: CandidateRow, app: string, def: StartDefRow | undefined) {
+  // CR-122 · A · input của lượt = bản ghi (`record` = ref) + dữ kiện lúc sự kiện ⇒ node/tool cần `contract_id` tự nhận.
+  const recordInputs = recordInputsOf(eventOf(app, e.event), e.ref, e.facts ?? {});
   return {
-    flowEvent: { eventRowId: e.id, companyFlowId: c.companyFlowId, ...(def ? { def } : {}) },
+    flowEvent: {
+      eventRowId: e.id,
+      companyFlowId: c.companyFlowId,
+      recordInputs,
+      ...(def ? { def } : {}),
+    },
     ...(UUID.test(e.ref) ? { packRef: { pack: app, recordId: e.ref } } : {}),
   };
 }

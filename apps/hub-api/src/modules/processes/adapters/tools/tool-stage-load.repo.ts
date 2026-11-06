@@ -1,5 +1,6 @@
 // HUB-FR-146 · AC-H44 · D2-15/D2-30 · plan-d2 §4, §8, §10 S2/S9/S10: đọc `loadCall` của `ToolStageRepo` (MỘT câu SQL) và
 // ánh xạ hàng → `ToolCallLoad`; tách khỏi `tool-stage.repo.ts` để giữ trần 200 dòng adapter (PD-A03).
+import { APP_MANIFESTS, nodeByKey } from "@ai/contracts/app-manifest";
 import { InputSchemaSchema } from "@ai/contracts/workflows";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
@@ -10,6 +11,7 @@ type LoadRow = {
   stage_name: string;
   tool_key: string;
   args: Record<string, RawArg> | null;
+  node_key?: string | null;
   out_fields: { key: string; type: string; required: boolean }[] | null;
   timeout_s: number | null;
   inputs: RawInput[] | null;
@@ -46,7 +48,7 @@ export async function loadCallRow(
   k: { tenantId: string; runId: string; stageRunId: string; hubRunId: string },
 ): Promise<LoadRow | null> {
   const [r] = await tx.execute<LoadRow>(sql`select st->>'name' as stage_name,
-      st->'executor'->>'tool_key' as tool_key, st->'executor'->'args' as args,
+      st->'executor'->>'tool_key' as tool_key, st->'executor'->'args' as args, st->>'node' as node_key,
       st->'output'->'fields' as out_fields, (st->>'timeout_s')::int as timeout_s, r.inputs, r.started_by,
       (select jsonb_object_agg(r.snapshot->'stages'->(o.stage_idx::int)->>'key',
           case when o.status = 'skipped' then null else po.fields end)
@@ -84,6 +86,27 @@ const argOf = (a: RawArg): ArgSource =>
 /** Giá trị chuỗi của input start: `text` ⇒ `text`; select/date/number ⇒ `value`; kiểu khác không làm nguồn. */
 const inputText = (v: RawInput): string | undefined => (v.type === "text" ? v.text : v.value);
 
+/** CR-122 · A · khoá đầu vào node được tự nối: chưa có trong `args` (nguồn khai rõ thắng) và có trong input lượt. Thuần. */
+export function autoArgKeys(
+  nodeInputs: readonly { key: string }[],
+  argNames: readonly string[],
+  runInputs: ReadonlyMap<string, string>,
+): string[] {
+  const have = new Set(argNames);
+  return nodeInputs.flatMap((i) => (!have.has(i.key) && runInputs.has(i.key) ? [i.key] : []));
+}
+
+/** Nguồn khai rõ + (CR-122 · A) đầu vào của node (manifest) chưa có nguồn mà trùng khoá với input lượt (bản ghi / dữ kiện). */
+function argsOf(r: LoadRow, inputs: ReadonlyMap<string, string>): Record<string, ArgSource> {
+  const args: Record<string, ArgSource> = Object.fromEntries(
+    Object.entries(r.args ?? {}).map(([n, a]) => [n, argOf(a)]),
+  );
+  const node = r.node_key ? nodeByKey(Object.values(APP_MANIFESTS), r.node_key) : undefined;
+  for (const k of autoArgKeys(node?.inputs ?? [], Object.keys(args), inputs))
+    args[k] = { from: "input", key: k };
+  return args;
+}
+
 /** Workflow đã xoá khỏi catalog ⇒ `wfEnabled=false` ⇒ `tool_failed` (không kẹt `running`). */
 export function toLoad(r: LoadRow): ToolCallLoad {
   const inputs = new Map<string, string>();
@@ -93,7 +116,7 @@ export function toLoad(r: LoadRow): ToolCallLoad {
     if (t !== undefined) inputs.set(v.key, t);
     inputTypes.set(v.key, v.type);
   }
-  const args = Object.fromEntries(Object.entries(r.args ?? {}).map(([n, a]) => [n, argOf(a)]));
+  const args = argsOf(r, inputs);
   return {
     stageName: r.stage_name,
     toolKey: r.tool_key,

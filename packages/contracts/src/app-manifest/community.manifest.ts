@@ -1,6 +1,8 @@
 // CR-118 · manifest dữ liệu của app Community (key catalog `community`). Đối tác thấy Bảng tin và Bài của tôi (đăng bài cần mức Sửa).
 import type { AppManifest } from "./manifest";
 
+const POST_RECORD = { key: "post_id", label: { vi: "Bài đăng", en: "Post" } } as const;
+
 export const COMMUNITY_MANIFEST: AppManifest = {
   key: "community",
   name: "Community",
@@ -68,11 +70,12 @@ export const COMMUNITY_MANIFEST: AppManifest = {
       trigger: "report.created",
     },
   ],
-  // CR-122 · flow-model.md mục C · FLOW2-FR-18 (thay 3 khe trên). Brief F0: cả ba `decides` (kết quả đổi trạng thái bài/đơn/báo cáo).
+  // CR-122 · A · `record` = bản ghi của sự kiện (= `ref`). CR-122 · flow-model.md mục C · FLOW2-FR-18 (thay 3 khe trên). Brief F0: cả ba `decides` (kết quả đổi trạng thái bài/đơn/báo cáo).
   events: [
     {
       key: "post.created",
       label: "Khi đăng bài",
+      record: POST_RECORD,
       facts: [
         { key: "post_kind", label: "Loại bài", type: "string" },
         { key: "author_is_partner", label: "Người đăng là đối tác", type: "boolean" },
@@ -87,6 +90,7 @@ export const COMMUNITY_MANIFEST: AppManifest = {
     {
       key: "partner.join_requested",
       label: "Khi có đối tác xin tham gia",
+      record: { key: "join_id", label: { vi: "Đơn tham gia", en: "Join request" } },
       facts: [
         { key: "company_name", label: "Tên công ty", type: "string" },
         { key: "email_domain", label: "Tên miền email", type: "string" },
@@ -101,6 +105,7 @@ export const COMMUNITY_MANIFEST: AppManifest = {
     {
       key: "report.created",
       label: "Khi có báo cáo vi phạm",
+      record: { key: "report_id", label: { vi: "Báo cáo", en: "Report" } },
       facts: [
         { key: "report_kind", label: "Loại", type: "string" },
         { key: "severity", label: "Mức", type: "string" },
@@ -122,7 +127,7 @@ export const COMMUNITY_MANIFEST: AppManifest = {
       group: "content",
       feature: "community-write",
       stages: [{ executor: { kind: "set", values: [] }, outcome: "shown" }],
-      inputs: [{ key: "post_id", type: "string", required: true }],
+      inputs: [{ key: "post_id", type: "string", required: true, label: POST_RECORD.label }],
       outputs: [],
     },
   ],

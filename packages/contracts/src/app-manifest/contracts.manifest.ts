@@ -2,6 +2,9 @@
 import type { AppFactDecl, AppManifest } from "./manifest";
 
 /** CR-122 · dữ kiện HĐ (cùng khoá với `APPROVAL_SLOT_FIELDS` cũ của gói ⇒ M1 backfill điều kiện không phải đổi tên). */
+/** CR-122 · A · bản ghi của mọi sự kiện HĐ (= `ref`): mọi bước sau tự biết HĐ nào. */
+const CONTRACT_RECORD = { key: "contract_id", label: { vi: "Hợp đồng", en: "Contract" } } as const;
+
 const CONTRACT_FACTS: readonly AppFactDecl[] = [
   { key: "total_value", label: "Giá trị hợp đồng", type: "number" },
   {
@@ -98,6 +101,7 @@ export const CONTRACTS_MANIFEST: AppManifest = {
   events: [
     {
       key: "contract.submitted",
+      record: CONTRACT_RECORD,
       label: "Khi gửi duyệt hợp đồng",
       facts: CONTRACT_FACTS,
       outcomes: [
@@ -115,6 +119,7 @@ export const CONTRACTS_MANIFEST: AppManifest = {
     },
     {
       key: "contract.uploaded",
+      record: CONTRACT_RECORD,
       label: "Khi tải hợp đồng lên",
       facts: [
         { key: "file_type", label: "Loại tệp", type: "string" },
@@ -130,6 +135,7 @@ export const CONTRACTS_MANIFEST: AppManifest = {
     },
     {
       key: "contract.approved",
+      record: CONTRACT_RECORD,
       label: "Khi hợp đồng được duyệt",
       facts: CONTRACT_FACTS,
       outcomes: [{ key: "done", label: "Xong", effect: "Không đổi hợp đồng." }],
@@ -175,7 +181,9 @@ export const CONTRACTS_MANIFEST: AppManifest = {
           },
         },
       ],
-      inputs: [{ key: "contract_id", type: "string", required: true }],
+      inputs: [
+        { key: "contract_id", type: "string", required: true, label: CONTRACT_RECORD.label },
+      ],
       outputs: [{ key: "event", type: "string", required: true }],
     },
   ],

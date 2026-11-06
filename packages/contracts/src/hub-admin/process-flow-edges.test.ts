@@ -30,7 +30,8 @@ describe("flowEdgeIssues", () => {
       },
       palette,
     );
-    expect(bad).toEqual([{ from: "a", to: "b", missing: ["contract_id"], typeMismatch: [] }]);
+    // CR-122 · A · + tên bước và nhãn trường (vắng tên ⇒ khoá).
+    expect(bad).toMatchObject([{ from: "a", to: "b", missing: ["contract_id"], typeMismatch: [] }]);
     expect(blockingEdgeIssues(bad)).toHaveLength(1);
     const ok = flowEdgeIssues(
       {
@@ -54,7 +55,7 @@ describe("flowEdgeIssues", () => {
       },
       palette,
     );
-    expect(r).toEqual([
+    expect(r).toMatchObject([
       {
         from: "a",
         to: "b",
