@@ -306,8 +306,9 @@ test("H2 · giá trị HĐ đổi sau khi rẽ ⇒ lượt dừng 'Cần xử l�
   await expect(page.getByTestId("run-facts-changed")).toBeVisible({ timeout: 60_000 });
   await page.getByTestId("run-rerun-if").click();
   const dlg = page.getByRole("dialog");
-  await dlg.getByRole("textbox").fill(`Giá trị đổi ${RUN}`);
-  await dlg.getByRole("button", { name: "Chạy lại từ Nếu" }).click();
+  // Hộp xác nhận bắt buộc chọn MỘT lý do (chip), không có ô nhập
+  await dlg.getByRole("radio", { name: "Dữ liệu sai" }).click();
+  await dlg.getByTestId("control-confirm").click();
   await expect(page.getByText("Đã chạy lại từ bước Nếu")).toBeVisible();
   // lượt đọc lại 50 tr ⇒ nhánh Sai ⇒ chờ Giám đốc
   await expect(isOpen(d.emp, SMALL)).toBeVisible({ timeout: 90_000 });
