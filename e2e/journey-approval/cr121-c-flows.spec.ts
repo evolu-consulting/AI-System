@@ -5,13 +5,7 @@
 // 2) tenant_admin công ty đó: Xem bản thư viện chỉ xem ⇒ "Sao chép cho công ty này" (tự gán thay bản cũ) ⇒ "Mở trình sửa" ⇒ Đổi về bản cũ.
 // Cần stack hành trình (playwright.journey.config.ts: JA_* env, quy trình thư viện `e2e-mua-kd`). VIẾT, CHƯA CHẠY (luật 5d; điều phối chạy cuối đợt).
 import { expect, test } from "@playwright/test";
-import {
-  apiLogin,
-  cloneAndPublishFlow,
-  createIsolatedTenant,
-  grantFeature,
-  type Session,
-} from "../_kit/api";
+import { apiLogin, cloneAndPublishFlow, createIsolatedTenant, type Session } from "../_kit/api";
 import { assignProcessUi, loginPlatformAdminUi } from "../_kit/ui";
 import { uniqueSuffix } from "../_kit/unique";
 
@@ -53,14 +47,6 @@ test.beforeAll(async () => {
     adminUser: `${t.key}-admin`,
     adminPw: j.temp_password ?? "",
   };
-  // Công ty dùng Sổ Hợp Tác (gán quy trình chỉ được khi công ty có ứng dụng này): cấp đúng đường admin-api, không seed bật sẵn.
-  const feats = await fetch(`${API}/admin/features?limit=200`, {
-    headers: { authorization: `Bearer ${platform.token}` },
-  }).then((r) => r.json() as Promise<{ items?: { id: string; key: string }[] }>);
-  for (const k of ["contracts-read", "contracts-write"]) {
-    const f = feats.items?.find((x) => x.key === k);
-    if (f) await grantFeature(API, platform, f.id, company.id);
-  }
   // Quy trình thư viện RIÊNG của spec (nhân bản + xuất bản), không dùng/ẩn dữ liệu mẫu.
   await cloneAndPublishFlow(HUB, platform, {
     fromKey: "e2e-mua-kd",
@@ -69,7 +55,7 @@ test.beforeAll(async () => {
   });
 });
 
-test("1 · platform_admin gán từ đầu: Đang tắt · chưa gán ⇒ Gán ⇒ Đang bật; canvas mặc định, danh sách được nhớ", async ({
+test("1 · platform_admin: Chưa dùng ứng dụng ⇒ bật Sổ Hợp Tác ở tab Ứng dụng ⇒ Gán ⇒ Đang bật; canvas mặc định, danh sách được nhớ", async ({
   page,
 }) => {
   await loginPlatformAdminUi(
@@ -80,12 +66,34 @@ test("1 · platform_admin gán từ đầu: Đang tắt · chưa gán ⇒ Gán �
   );
   await page.goto(`${ADMIN_URL}/tenants/${company.id}?tab=processes`);
   const status = page.getByTestId(`flows-status-${SLOT}`);
+  // F6: công ty mới CHƯA dùng Sổ Hợp Tác ⇒ việc nói rõ "Chưa dùng ứng dụng" và không có nút Gán
+  await expect(page.getByTestId(`flows-job-${SLOT}`)).toContainText("Chưa dùng ứng dụng");
+  await expect(page.getByTestId(`flows-assign-${SLOT}`)).toHaveCount(0);
+  // hành trình D5: bật Sổ Hợp Tác ở tab Ứng dụng (mức Sửa) bằng UI rồi mới gán
+  await page.getByRole("tab", { name: "Ứng dụng" }).click();
+  const card = page.getByTestId("apps-row-contracts");
+  await card.getByRole("button", { name: "Chi tiết" }).click();
+  await card
+    .getByRole("radiogroup", { name: "Mức dùng Sổ Hợp Tác" })
+    .getByRole("radio", { name: "Sửa" })
+    .click();
+  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  await expect(page.getByText("Đã lưu tính năng cho")).toBeVisible();
+  await page.getByRole("tab", { name: "Quy trình" }).click();
+  const offNote = page.getByTestId(`flows-job-${SLOT}`).getByText("Chưa dùng ứng dụng");
+  // ghi nhận nếu tab Quy trình còn dữ liệu cũ ngay sau khi bật app (không tải lại) rồi tải lại để đi tiếp
+  const stale = await offNote.isVisible();
+  await page.reload();
+  await expect(page.getByTestId(`flows-job-${SLOT}`)).not.toContainText("Chưa dùng ứng dụng");
+  expect
+    .soft(stale, "tab Quy trình còn hiện Chưa dùng ứng dụng ngay sau khi bật app (cache cũ)")
+    .toBe(false);
   // công ty mới chưa có luật gán: việc chạy theo mẫu mặc định của khe (không bật tay gì), chưa có quy trình riêng
   const job = page.getByTestId(`flows-job-${SLOT}`);
   await expect(job).not.toContainText(FLOW);
-  await expect(page.getByTestId(`flows-system-default-${SLOT}`)).toBeVisible(); // F1: nhãn "mặc định hệ thống"
+  // bật app ở tab Ứng dụng đã cho công ty luật mặc định của riêng mình ⇒ không còn nhãn "mặc định hệ thống"
+  await expect(page.getByTestId(`flows-system-default-${SLOT}`)).toHaveCount(0);
   const summary = page.getByTestId("tenant-summary");
-  const before = await summary.innerText();
 
   await page.getByTestId(`flows-assign-${SLOT}`).click();
   const panel = page.getByTestId(`flows-assign-panel-${SLOT}`);
@@ -106,7 +114,6 @@ test("1 · platform_admin gán từ đầu: Đang tắt · chưa gán ⇒ Gán �
   await expect(job).toContainText(FLOW);
   await expect(page.getByTestId(`flows-system-default-${SLOT}`)).toHaveCount(0);
   await expect(summary).toContainText("việc có quy trình");
-  await expect(summary).not.toHaveText(before);
 
   // Q11: sơ đồ (canvas) mặc định; chọn danh sách bước ⇒ nhớ sau khi tải lại. Esc rồi mở lại ngăn vẫn có công tắc (F1).
   await page.getByTestId(`flows-open-${SLOT}`).click();

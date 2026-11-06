@@ -1,4 +1,4 @@
-// CR-121 · c22 · màn "Hệ thống" (`/system`): tenant_admin vào từ sidebar, thấy Chi phí · Nhật ký · Góp ý (không thấy Secrets/Nguồn/Bước DLC),
+// CR-121 · c22 · màn "Hệ thống" (`/system`): tenant_admin vào từ sidebar, thấy Chi phí · Nhật ký · Góp ý · Nguồn (F7; không thấy Secrets/Bước DLC),
 // bấm Chi phí sang `/usage`; platform_admin thấy đủ mục. Chỉ đọc, không tạo dữ liệu.
 import { expect, test } from "@playwright/test";
 import { loginAdmin, loginAs, resetFixture, withOwner } from "./support/helpers";
@@ -15,12 +15,11 @@ test("CR-121 · tenant_admin: Hệ thống → Chi phí, chỉ thấy các mục
   await expect(page).toHaveURL(/\/system$/);
   await expect(page.getByRole("heading", { level: 1, name: "Hệ thống" })).toBeVisible();
   const hub = page.getByTestId("system-hub");
-  for (const name of ["Chi phí & quota", "Nhật ký", "Góp ý"]) {
+  for (const name of ["Chi phí & quota", "Nhật ký", "Góp ý", "Nguồn"]) {
     await expect(hub.getByRole("link", { name: new RegExp(name) })).toBeVisible();
   }
   for (const name of [
     "Secrets",
-    "Nguồn",
     "Bước DLC",
     "Import / Export",
     "Tình trạng hệ thống",
@@ -30,6 +29,15 @@ test("CR-121 · tenant_admin: Hệ thống → Chi phí, chỉ thấy các mục
   }
   await hub.getByRole("link", { name: /Chi phí/ }).click();
   await expect(page).toHaveURL(/\/usage/);
+});
+
+test("CR-121 · F7 · tenant_admin mở Nguồn của công ty mình từ Hệ thống", async ({ page }) => {
+  await loginAs(page, "acme", "binh");
+  await page.goto("/system");
+  await page.getByTestId("system-hub").getByRole("link", { name: /Nguồn/ }).click();
+  await expect(page).toHaveURL(/\/sources/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByText("Không có quyền")).toHaveCount(0);
 });
 
 test("CR-121 · platform_admin: Hệ thống có đủ lối vào quản trị chung", async ({ page }) => {
