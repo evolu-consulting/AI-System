@@ -184,10 +184,13 @@ describe("sự kiện flow Community [CR-122 A2]", () => {
     const id = r.json.id as string;
     expect(await row(events(`partner.join_requested:${id}`))).toMatchObject({
       ref: id,
-      facts: { company_name: "Công ty Số Hai", email: "ba@doi-tac.test" },
+      facts: { company_name: "Công ty Số Hai", email_domain: "doi-tac.test" },
     });
+    expect(JSON.stringify((await row(events(`partner.join_requested:${id}`))).facts)).not.toContain(
+      "ba@",
+    ); // PII không nhân bản vào hàng đợi sự kiện
     expect(await readerOf("partner.join_requested").read(c.A, id, [])).toMatchObject({
-      email: "ba@doi-tac.test",
+      email_domain: "doi-tac.test",
     });
     expect(await finish("partner.join_requested", id, "accepted")).toBe("applied");
     expect(await finish("partner.join_requested", id, "accepted")).toBe("already_applied");

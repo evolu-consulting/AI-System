@@ -89,7 +89,7 @@ export const COMMUNITY_MANIFEST: AppManifest = {
       label: "Khi có đối tác xin tham gia",
       facts: [
         { key: "company_name", label: "Tên công ty", type: "string" },
-        { key: "email", label: "Email", type: "string" },
+        { key: "email_domain", label: "Tên miền email", type: "string" },
       ],
       outcomes: [
         { key: "accepted", label: "Nhận", effect: "Tạo liên kết đối tác." },

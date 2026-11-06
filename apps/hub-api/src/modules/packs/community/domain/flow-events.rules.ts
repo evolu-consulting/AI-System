@@ -17,9 +17,23 @@ export const postFacts = (p: { type: string; author_org: string | null }): Facts
   author_is_partner: p.author_org !== null,
 });
 
+/** Tên miền của email (chữ thường); email sai dạng ⇒ null. */
+export const emailDomain = (email: string): string | null => {
+  const at = email.lastIndexOf("@");
+  const d =
+    at >= 0
+      ? email
+          .slice(at + 1)
+          .trim()
+          .toLowerCase()
+      : "";
+  return d.includes(".") ? d : null;
+};
+
+/** Không đưa email (PII) vào `hub.flow_events.facts`: chỉ tên miền suy ra, đủ cho điều kiện (vd tên miền công ty vs hộp thư miễn phí). */
 export const joinFacts = (j: { company: string; email: string }): Facts => ({
   company_name: j.company,
-  email: j.email,
+  email_domain: emailDomain(j.email),
 });
 
 /** Loại/mức do agent `triage` điền SAU khi tạo báo cáo ⇒ lúc phát sự kiện thường là `null` (node Nếu đọc lại giá trị hiện tại). */

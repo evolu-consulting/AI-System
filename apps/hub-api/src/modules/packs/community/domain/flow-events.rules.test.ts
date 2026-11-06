@@ -6,6 +6,7 @@ import {
   EV_JOIN,
   EV_POST,
   EV_REPORT,
+  emailDomain,
   eventIdOf,
   joinFacts,
   joinTarget,
@@ -43,6 +44,14 @@ describe("flow-events.rules [CR-122 A2]", () => {
       author_is_partner: true,
     });
     expect(postFacts({ type: "note", author_org: null }).author_is_partner).toBe(false);
+  });
+
+  it("facts đơn tham gia không chứa email (PII), chỉ tên miền suy ra", () => {
+    const f = joinFacts({ company: "A", email: "Ba@Doi-Tac.TEST" });
+    expect(f).toEqual({ company_name: "A", email_domain: "doi-tac.test" });
+    expect(JSON.stringify(f)).not.toContain("ba@");
+    expect(emailDomain("khong-hop-le")).toBeNull();
+    expect(emailDomain("x@localhost")).toBeNull();
   });
 
   it("outcome ⇒ trạng thái bản ghi; mọi outcome khai trong manifest đều có đích", () => {

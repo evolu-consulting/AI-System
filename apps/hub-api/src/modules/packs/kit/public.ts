@@ -25,6 +25,7 @@ export {
 export { packHosts } from "./adapters/pack-hosts";
 export { packNavRoutes } from "./adapters/pack-nav.route";
 export { packNavRegistry } from "./adapters/pack-nav-registry";
+export { withPackRoleInTx } from "./adapters/pack-role-in-tx";
 export { PackToolRegistry } from "./adapters/pack-tools.registry";
 export { createPackUow, packTenantOnly } from "./adapters/pack-uow";
 export { createPdfConverter } from "./adapters/pdf/index";

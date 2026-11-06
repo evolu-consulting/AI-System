@@ -4,7 +4,6 @@
 //   factsOf        — dữ kiện HIỆN TẠI của bản ghi (FactsReader), tx gói riêng.
 //   apply*Outcome  — kết quả Kết thúc ⇒ trạng thái bản ghi: so-sánh-và-đặt theo trạng thái chờ ⇒ gọi lại cùng (runId, outcome) không đổi
 //                    gì (`already_applied`), kết quả cũ không ghi đè quyết định khác.
-//   inCommunityRole — handler chạy TRONG tx của engine (role hub): chuyển tạm sang `community_rw` + tenant để RLS gói áp, rồi trả lại.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { FlowEventInput, OutcomeResult } from "../../kit/public";
@@ -117,33 +116,4 @@ export async function applyReportOutcome(
     ) select (select count(*) from r)::int as n,
       exists (select 1 from community.reports where id = ${ref}::uuid and tenant_id = ${tenantId}::uuid) as ex`);
   return result(r as Applied);
-}
-
-/**
- * Chạy `fn` dưới role `community_rw` + tenant của gói trong CHÍNH tx engine (cùng commit/rollback với trạng thái lượt), xong trả role và
- * `app.*` về như cũ. Cùng bộ `set_config` với `withPackScope` (user rỗng ⇒ việc nền/hệ thống).
- */
-export async function inCommunityRole<T>(
-  tx: Tx,
-  tenantId: string,
-  fn: () => Promise<T>,
-): Promise<T> {
-  const [prev] = await tx.execute<{
-    role: string;
-    tid: string;
-    uid: string;
-    kind: string;
-    ext: string;
-  }>(sql`select current_user::text as role, coalesce(current_setting('app.tenant_id', true), '') as tid,
-      coalesce(current_setting('app.user_id', true), '') as uid, coalesce(current_setting('app.user_kind', true), '') as kind,
-      coalesce(current_setting('app.ext_org_id', true), '') as ext`);
-  await tx.execute(sql`select set_config('role', 'community_rw', true), set_config('app.tenant_id', ${tenantId}, true),
-      set_config('app.user_id', '', true), set_config('app.user_kind', packs.scope_user_kind(''), true),
-      set_config('app.ext_org_id', packs.scope_ext_org(${tenantId}, ''), true)`);
-  const out = await fn();
-  const p = prev as NonNullable<typeof prev>;
-  await tx.execute(sql`select set_config('role', ${p.role}, true), set_config('app.tenant_id', ${p.tid}, true),
-      set_config('app.user_id', ${p.uid}, true), set_config('app.user_kind', ${p.kind}, true),
-      set_config('app.ext_org_id', ${p.ext}, true)`);
-  return out;
 }

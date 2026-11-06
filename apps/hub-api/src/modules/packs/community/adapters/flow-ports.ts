@@ -1,7 +1,13 @@
 // CR-122 · A2 · FLOW2-FR-12/15 · cổng giữa engine flow và app Community: `FactsReader` (node Nếu đọc dữ kiện HIỆN TẠI) + `OutcomeHandler`
 // (node Kết thúc: Hiện/Ẩn bài, Nhận/Từ chối đơn, Ẩn/Giữ/Cảnh báo báo cáo). Đăng ký lúc mount qua `FlowOpts.registerPorts`.
 import type { Tx } from "@ai/db";
-import type { FactsReader, OutcomeHandler, OutcomeResult, PackSystemUow } from "../../kit/public";
+import {
+  type FactsReader,
+  type OutcomeHandler,
+  type OutcomeResult,
+  type PackSystemUow,
+  withPackRoleInTx,
+} from "../../kit/public";
 import {
   COMMUNITY_EVENTS,
   EV_JOIN,
@@ -16,7 +22,6 @@ import {
   applyPostOutcome,
   applyReportOutcome,
   factsOf,
-  inCommunityRole,
 } from "./flow-events.repo";
 
 export const COMMUNITY_PACK = "community";
@@ -43,7 +48,9 @@ export function communityOutcomeHandler(): OutcomeHandler<Tx> {
       const h = BY_EVENT[i.event];
       const t = h?.target(i.outcome);
       if (!h || !t) throw new Error(`Community: outcome lạ ${i.event}/${i.outcome}`);
-      return inCommunityRole(tx, i.tenantId, () => h.apply(tx, i.tenantId, i.ref, t as never));
+      return withPackRoleInTx(tx, COMMUNITY_PACK, i.tenantId, () =>
+        h.apply(tx, i.tenantId, i.ref, t as never),
+      );
     },
   };
 }
