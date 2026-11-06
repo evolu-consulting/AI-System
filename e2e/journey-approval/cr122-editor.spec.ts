@@ -84,7 +84,7 @@ test.beforeAll(async () => {
     name: FLOW,
     app: "contracts",
     slot: "contracts.approval",
-    trigger: { event: "contract.uploaded" },
+    trigger: { event: "contract.submitted" },
     stages: stages(),
   });
   tenantId = await enableFlowTriggers(KEY, false); // chỉ lấy id công ty; không bật cờ (không có lượt chạy ở ca này)

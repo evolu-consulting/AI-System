@@ -66,7 +66,11 @@ test("2 · đối tác đăng ⇒ Chờ duyệt ⇒ chủ quản duyệt ở Duy
   // Bài của tôi: "Chờ duyệt" + lý do/bước kế + gợi ý sửa
   await sup.page.goto("/community/profile");
   const mine = postByTitle(sup.page, TITLE);
-  await expect(mine.getByTestId("mod-label")).toHaveText("Chờ duyệt");
+  // FLOW_TRIGGERS bật: bài mở lượt qua bộ điều phối (≤ vài giây) ⇒ nhãn hiện sau, không còn đồng bộ như đường khe cũ
+  await expect(async () => {
+    await sup.page.reload();
+    await expect(mine.getByTestId("mod-label")).toHaveText("Chờ duyệt", { timeout: 4_000 });
+  }).toPass({ timeout: 60_000 });
   await expect(mine.getByTestId("mod-hint")).toHaveText("Sửa nội dung sẽ gửi duyệt lại.");
 
   // Chủ quản: có mục "Duyệt bài" (khe đã bật), bài nằm trong hàng chờ, duyệt
