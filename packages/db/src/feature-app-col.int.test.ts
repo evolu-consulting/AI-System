@@ -66,14 +66,20 @@ describe("CR-121 c18 · admin 0037 · backfill + gỡ engine", () => {
           on conflict (feature_id, tenant_id) do nothing`;
         await tx`update admin.features set app = null`;
 
+        const audited = () =>
+          tx<
+            { n: number }[]
+          >`select count(*)::int as n from admin.audit_log where entity_name = 'contracts-approval-engine'`;
+        const [a0] = await audited();
         for (const s of stmts0037) await tx.unsafe(s);
 
         const apps = await tx<{ key: string; app: string }[]>`
           select key, app from admin.features where key = any(${Object.keys(keys)})`;
-        const [eng] = await tx<{ f: number; e: number; a: number }[]>`
-          select (select count(*) from admin.features where key = 'contracts-approval-engine')::int as f,
+        const [eng] = await tx<{ f: number; e: number; a: number }[]>`select
+            (select count(*) from admin.features where key = 'contracts-approval-engine')::int as f,
             (select count(*) from admin.audit_log where entity = 'entitlement' and entity_name = 'contracts-approval-engine')::int as e,
             (select count(*) from admin.audit_log where entity = 'feature' and entity_name = 'contracts-approval-engine')::int as a`;
+        const [a1] = await audited();
         const [nul] = await tx<{ n: number; notnull: boolean }[]>`
           select (select count(*) from admin.features where app is null)::int as n,
             (select attnotnull from pg_attribute where attrelid = 'admin.features'::regclass and attname = 'app') as notnull`;
@@ -82,7 +88,7 @@ describe("CR-121 c18 · admin 0037 · backfill + gỡ engine", () => {
         // Trigger điền app khi INSERT SQL thẳng không nêu app (cài gói, seed).
         const [ins] = await tx<{ app: string }[]>`
           insert into admin.features (key, name) values (${`knowledge-x${SUFFIX}`}, ${tx.json(name("x"))}) returning app`;
-        result = { apps, eng, nul, ins };
+        result = { apps, eng, nul, ins, delta: (a1?.n ?? 0) - (a0?.n ?? 0) };
         throw ROLLBACK;
       })
       .catch((e) => {
@@ -94,9 +100,11 @@ describe("CR-121 c18 · admin 0037 · backfill + gỡ engine", () => {
       eng: { f: number; e: number; a: number };
       nul: { n: number; notnull: boolean };
       ins: { app: string };
+      delta: number;
     };
     expect(Object.fromEntries(r.apps.map((x) => [x.key, x.app]))).toEqual(keys);
-    expect(r.eng).toEqual({ f: 0, e: 1, a: 1 }); // engine đã gỡ; audit: 1 entitlement + 1 feature
+    expect(r.eng.f).toBe(0); // engine đã gỡ
+    expect(r.delta).toBe(2); // audit mới: 1 entitlement + 1 feature (lần chạy migrate đầu có thể đã ghi thêm dòng của nó)
     expect(r.nul).toEqual({ n: 0, notnull: true });
     expect(r.ins.app).toBe("knowledge");
   });
