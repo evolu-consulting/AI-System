@@ -137,6 +137,13 @@ export async function uploadAndOpen(
   await expect(page.getByRole("button", { name: "Xác nhận và lưu" })).toBeVisible({
     timeout: 120_000,
   });
+  // Nút xác nhận hiện sớm (P11d): chờ AI điền xong Tên + Nhà cung cấp (ô bắt buộc) rồi mới xác nhận, tránh bấm khi form còn trống.
+  await expect(page.getByRole("textbox", { name: /^Tên hợp đồng/ })).not.toHaveValue("", {
+    timeout: 120_000,
+  });
+  await expect(page.getByRole("textbox", { name: /^Nhà cung cấp/ })).not.toHaveValue("", {
+    timeout: 60_000,
+  });
   return id;
 }
 

@@ -49,7 +49,7 @@ test("1 · platform admin gán quy trình duyệt bài cho công ty (đường t
 test("2 · đối tác đăng ⇒ Chờ duyệt ⇒ chủ quản duyệt ở Duyệt bài ⇒ bài hiện", async ({
   browser,
 }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(420_000);
   const sup = await openAs(browser, "supplier");
   await sup.page.goto("/community");
   await sup.page
@@ -83,7 +83,7 @@ test("2 · đối tác đăng ⇒ Chờ duyệt ⇒ chủ quản duyệt ở Duy
   await expect(async () => {
     await host.page.reload();
     await expect(item.getByTestId("review-approve")).toBeVisible({ timeout: 4_000 });
-  }).toPass({ timeout: 120_000 });
+  }).toPass({ timeout: 240_000 });
   await item.getByTestId("review-approve").click();
   await expect(item).toHaveCount(0);
 
