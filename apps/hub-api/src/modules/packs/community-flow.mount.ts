@@ -36,10 +36,17 @@ export function communityFlowPorts(db: Db, agents: AgentCaller | undefined): Com
       registerOutcomeHandler(handler);
     },
     moderationOn: async (tenantId) => {
+      // CR-122: flow gán qua `company_flows` (sự kiện `post.created`, đang bật) + cờ FLOW_TRIGGERS bật ⇒ bài vào "Chờ duyệt" để flow quyết.
+      // Một câu, cùng tx với cờ ⇒ gán/bật xong có hiệu lực ngay (không cache).
       const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
         tx.execute<{ on: boolean }>(sql`select (
             exists (select 1 from hub.process_routing_rules x where x.tenant_id = ${tenantId}::uuid and x.slot = ${SLOT_MODERATION})
             or exists (select 1 from hub.process_tenant_defs x where x.tenant_id = ${tenantId}::uuid and x.slot = ${SLOT_MODERATION})
+            or (exists (select 1 from hub.tenant_flow_settings s where s.tenant_id = ${tenantId}::uuid and s.flow_triggers)
+              and exists (select 1 from hub.company_flows cf
+                join hub.process_defs d on d.id = cf.flow_id and d.deleted_at is null
+                  and (d.tenant_id = cf.tenant_id or d.tenant_id is null)
+                where cf.tenant_id = ${tenantId}::uuid and cf.enabled and d.trigger_event = 'post.created'))
           ) as on`),
       );
       return r?.on === true;

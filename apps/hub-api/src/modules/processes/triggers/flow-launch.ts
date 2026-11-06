@@ -64,11 +64,22 @@ function launchOpts(e: ClaimedEvent, c: CandidateRow, app: string, def: StartDef
   };
 }
 
+/**
+ * Node thiếu tính năng — kiểm theo cache; thấy thiếu ⇒ nạp lại cấu hình MỘT lần rồi kiểm lại. Từ chối là kết cục cuối (không thử
+ * lại): cache cũ (tính năng vừa bật cùng lúc gán flow, NOTIFY/poll chưa tới) làm HĐ đầu tiên mất lượt mãi mãi.
+ */
+async function featureMissFresh(d: ProcessDepsCore, tenantId: string, nodes: readonly string[]) {
+  const miss = await nodeFeatureMiss(d.config, tenantId, nodes);
+  if (!miss) return null;
+  await d.config.poll?.();
+  return nodeFeatureMiss(d.config, tenantId, nodes);
+}
+
 export function flowLaunchOf(d: ProcessDepsCore): FlowLaunch {
   const start = new StartService(d);
   return async (e, c, app) => {
     if (!e.actor_id) throw new FlowLaunchRefused("no_actor");
-    const off = await nodeFeatureMiss(d.config, e.tenant_id, c.nodes);
+    const off = await featureMissFresh(d, e.tenant_id, c.nodes);
     if (off) throw new FlowLaunchRefused(`FLOW_NODE_FEATURE_OFF:${off.node}`);
     const u = { tenantId: e.tenant_id, userId: e.actor_id } as AuthUser;
     const def = c.defTenantId === null ? await libraryDefFor(d, e, c) : undefined;
