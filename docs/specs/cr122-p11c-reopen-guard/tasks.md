@@ -27,7 +27,7 @@ savepoint.
 ## Lưu ý deploy (p13)
 - Trước khi deploy chạy trên prod (chỉ đọc): `select tenant_id, count(*) from community.posts where moderation = 'pending' and mod_screen is null group by 1;`
   — bài chờ duyệt có sẵn từ trước, flow mở lượt vẫn nhận (P11c) nhưng cần biết số lượng để soát thủ công. Trong DB int (mẫu `full`) đã đếm
-  ở `not-launched.int.test.ts` (log `P11c p13: …`).
+  ở `not-launched.int.test.ts` (log `P11c p13: …`): kết quả 0 bài (evotest 2026-11-07, 750b10ed1).
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
