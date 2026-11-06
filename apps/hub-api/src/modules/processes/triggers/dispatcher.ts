@@ -23,7 +23,8 @@ import {
   notLaunchedReason,
 } from "./not-launched";
 
-export type LaunchResult = { runId: string } | "duplicate";
+/** `superseded` (P11c) = bản ghi không nhận lượt (CAS app thua) ⇒ không tạo run, chốt sự kiện, không thử lại. */
+export type LaunchResult = { runId: string } | "duplicate" | "superseded";
 /** Lỗi KHÔNG thử lại (cấu hình: flow Thư viện chưa có bản công ty, người gây sự kiện không được chạy…) — ghi `refused`. */
 export class FlowLaunchRefused extends Error {}
 /** Mở lượt cho MỘT flow khớp (adapter: `flow-launch.ts`). Ném ⇒ sự kiện thử lại. */
@@ -63,10 +64,12 @@ async function runPlan(
   const ran: { companyFlowId: string; runId: string | null }[] = [];
   const refused: { companyFlowId: string; reason: string }[] = [];
   const errors: string[] = [];
+  const superseded: string[] = [];
   for (const c of plan.run) {
     try {
       const r = await d.launch(e, c, app);
-      ran.push({ companyFlowId: c.companyFlowId, runId: r === "duplicate" ? null : r.runId });
+      if (r === "superseded") superseded.push(c.companyFlowId);
+      else ran.push({ companyFlowId: c.companyFlowId, runId: r === "duplicate" ? null : r.runId });
     } catch (err) {
       const msg = errText(err);
       if (err instanceof FlowLaunchRefused)
@@ -74,7 +77,7 @@ async function runPlan(
       else errors.push(`${c.defKey}: ${msg}`);
     }
   }
-  return { ran, refused, errors };
+  return { ran, refused, errors, superseded };
 }
 
 function finishOf(e: ClaimedEvent, now: Date, outcome: Record<string, unknown>, errors: string[]) {
@@ -115,12 +118,13 @@ async function handle(
     const nl = notLaunchedReason({ ...NONE, planned, noActor: true });
     return { f: { id: e.id, retryAt: null, error: "no_actor", outcome }, launched: 0, nl };
   }
-  const { ran, refused, errors } = await runPlan(d, e, info.app, plan);
-  const f = finishOf(e, now, { ...base, ran, refused }, errors);
-  // CR-122 · P11b · chốt xong mà không có lượt ⇒ báo app (bản ghi không kẹt "đang mở quy trình").
+  const { ran, refused, errors, superseded } = await runPlan(d, e, info.app, plan);
+  const f = finishOf(e, now, { ...base, ran, refused, superseded }, errors);
+  // CR-122 · P11b · chốt xong mà không có lượt ⇒ báo app (bản ghi không kẹt "đang mở quy trình"). P11c · superseded = bản ghi đã có
+  // lượt khác ⇒ không phải "không mở được".
   const nl = notLaunchedReason({
     planned,
-    ran: ran.length,
+    ran: ran.length + superseded.length,
     refused: refused.map((r) => r.reason),
     errors: errors.length,
     retrying: f.retryAt !== null,

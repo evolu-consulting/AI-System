@@ -80,9 +80,19 @@ function ownerOut<T>(out: T | OwnerFail): T {
     );
   if (out === "failed")
     throw new AppError("ENGINE_UNAVAILABLE", 503, "Approval engine unavailable");
+  // CR-122 · P11c · lượt đang chờ bộ điều phối mở quy trình (bấm Mở lại đúp / quá sớm)
+  if (out === "flow_starting")
+    throw new AppError("APPROVAL_FLOW_STARTING", 409, "Đang mở quy trình, thử lại sau ít phút");
   return out as T;
 }
-type OwnerFail = "not_found" | "not_stalled" | "not_open" | "flow_invalid" | "failed" | "forbidden";
+type OwnerFail =
+  | "not_found"
+  | "not_stalled"
+  | "not_open"
+  | "flow_invalid"
+  | "flow_starting"
+  | "failed"
+  | "forbidden";
 
 type PackWho = Parameters<PlatformOpAudit["intent"]>[0];
 

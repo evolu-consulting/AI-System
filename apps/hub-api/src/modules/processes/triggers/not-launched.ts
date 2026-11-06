@@ -2,6 +2,7 @@
 // `OutcomeHandler.notLaunched` để bản ghi không kẹt mãi ở "đang mở quy trình" (vd thẻ duyệt HĐ ghi lý do nghiệp vụ + cho Mở lại).
 // Lý do = mã máy (web dịch sang câu nghiệp vụ, kèm cách sửa). Gọi TRONG tx chốt lô; chỉ hàng lỗi (ít) ⇒ không ảnh hưởng đường nóng.
 import type { Tx } from "@ai/db";
+import { logger } from "../../../lib/logger";
 import { outcomeHandlerFor } from "../adapters/runs/flow-ports";
 
 export const NL_NOT_ASSIGNED = "FLOW_NOT_ASSIGNED";
@@ -37,6 +38,19 @@ export async function notifyNotLaunched(
   for (const i of items) {
     const app = appOf(i.event);
     const h = app ? outcomeHandlerFor(app, i.event) : undefined;
-    if (h?.notLaunched) await h.notLaunched(tx, i);
+    const hook = h?.notLaunched?.bind(h);
+    if (!hook) continue;
+    // P11c · mỗi hook trong SAVEPOINT riêng (tx con của drizzle — savepoint viết tay không cô lập lỗi với postgres.js): hook lỗi ⇒ chỉ
+    // log, KHÔNG làm hỏng tx chốt lô (sự kiện khác vẫn chốt, hàng đợi không kẹt).
+    try {
+      await tx.transaction(async (sp) => {
+        await hook(sp as unknown as Tx, i);
+      });
+    } catch (e) {
+      logger.warn("flow-not-launched-hook-failed", {
+        event: i.event,
+        error: e instanceof Error ? e.message.slice(0, 200) : "unknown",
+      });
+    }
   }
 }

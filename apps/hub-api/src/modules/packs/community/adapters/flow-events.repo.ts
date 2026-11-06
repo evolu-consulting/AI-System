@@ -116,11 +116,17 @@ export async function applyPostOutcome(
  * khi còn pending + running (bài sửa/mở lại giữa chừng hay đã quyết ⇒ không đụng). MỘT câu.
  */
 export async function openReviewForFlow(tx: Tx, tenantId: string, ref: string): Promise<boolean> {
-  if (uuids([ref]).length === 0) return false;
-  const rows = await tx.execute<{ id: string }>(sql`update community.posts set mod_screen = null
-    where id = ${ref}::uuid and tenant_id = ${tenantId}::uuid and moderation = 'pending' and mod_screen = 'running'
-    returning id`);
-  return rows.length > 0;
+  if (uuids([ref]).length === 0) return true; // ref không phải bài ⇒ không có gì để gắn (không huỷ lượt)
+  // P11c · trả = bài CÒN chờ duyệt (lượt có việc). false ⇒ bộ điều phối huỷ tạo run (superseded). `mod_screen` null từ trước (bài
+  // pending trước khi có agent screen) vẫn là chờ duyệt ⇒ true.
+  const [r] = await tx.execute<{
+    ok: boolean;
+  }>(sql`with u as (update community.posts set mod_screen = null
+      where id = ${ref}::uuid and tenant_id = ${tenantId}::uuid and moderation = 'pending' and mod_screen = 'running'
+      returning id)
+    select exists (select 1 from community.posts where id = ${ref}::uuid and tenant_id = ${tenantId}::uuid
+      and moderation = 'pending') as ok`);
+  return r?.ok === true;
 }
 
 /** Nhận ⇒ approved + liên kết công ty đối tác (nhãn xin) CÙNG câu; Từ chối ⇒ rejected. Chỉ khi đang chờ. */

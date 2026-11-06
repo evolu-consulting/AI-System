@@ -63,7 +63,7 @@ export type ApprovalDeps = {
   retry?: EngineOwnerOp<"ok" | "not_found" | "not_open" | "failed">;
   cancelReopen?: EngineOwnerOp<ReopenOut>;
 };
-type ReopenOut = "ok" | "not_found" | "not_stalled" | "flow_invalid" | "failed";
+type ReopenOut = "ok" | "not_found" | "not_stalled" | "flow_invalid" | "flow_starting" | "failed";
 type EngineOwnerOp<T> = (who: PackWho, contractId: string) => Promise<T>;
 export type EngineStart = (who: PackWho, contractId: string) => Promise<unknown>;
 export type ContractApproval =

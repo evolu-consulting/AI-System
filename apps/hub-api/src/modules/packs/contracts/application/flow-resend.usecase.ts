@@ -11,7 +11,7 @@ type Op<T> = (who: PackWho, contractId: string) => Promise<T>;
 export function withFlowResend<T extends string>(
   next: Op<T> | undefined,
   d: { uow: ApprovalUow; flow: ContractFlowGate | undefined },
-): Op<T | "ok" | "not_stalled" | "failed"> {
+): Op<T | "ok" | "flow_starting" | "failed"> {
   return async (who, id) => {
     const a = d.flow
       ? await d.uow.tenant(
@@ -24,7 +24,8 @@ export function withFlowResend<T extends string>(
     if (!a || !prep?.on) return next ? next(who, id) : "failed";
     return d.uow.tenant(who, async (r) => {
       const repo = requireFlow(r);
-      if (!(await repo.rearmFlow?.(id, a.id))) return "not_stalled" as const;
+      // P11c · CAS chỉ khi ĐÃ kẹt thật; đang mở quy trình (bấm đúp / sự kiện đầu chưa xong) ⇒ 409, không phát thêm sự kiện
+      if (!(await repo.rearmFlow?.(id, a.id))) return "flow_starting" as const;
       const key = `${a.id}.${crypto.randomUUID().slice(0, 8)}`; // event_id mới ⇒ không bị coi là trùng
       await repo.emitContract(EV_SUBMITTED, id, key, {
         actor: a.startedBy,

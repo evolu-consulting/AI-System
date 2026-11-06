@@ -25,5 +25,13 @@ export async function attachFlowEvent(
         where not exists (select 1 from jsonb_array_elements(coalesce(inputs, '[]'::jsonb)) y
           where y->>'key' = x->>'key')), '[]'::jsonb)
     where id = ${runId} and tenant_id = ${tenantId}`);
-  await fe.onCreated?.(tx, runId);
+  // P11c · app trả false = bản ghi không còn chờ lượt này (đã có run khác / đã quyết) ⇒ NÉM để tx tạo run rollback (không run mồ côi).
+  if ((await fe.onCreated?.(tx, runId)) === false) throw new FlowRunSuperseded();
+}
+
+/** Bản ghi không nhận lượt vừa mở (CAS của app thua) ⇒ huỷ tạo run; bộ điều phối chốt sự kiện `superseded`, không thử lại. */
+export class FlowRunSuperseded extends Error {
+  constructor() {
+    super("flow_run_superseded");
+  }
 }

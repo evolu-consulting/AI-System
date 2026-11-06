@@ -14,6 +14,7 @@ import {
   withPackRoleInTx,
 } from "../../kit/public";
 import { type ContractFlowRepo, FLOW_STARTING } from "../application/contract-flow.ports";
+import { FLOW_START_STALE_MS } from "../domain/approval-engine-card.rules";
 import {
   APPROVAL_STATUS_OF,
   CONTRACTS_PACK,
@@ -78,7 +79,11 @@ export function contractFlowRepo(tx: Tx, tid: string): ContractFlowRepo {
         id: string;
       }>(sql`update contracts.approvals x set feedback = ${FLOW_STARTING}, updated_at = now()
         where x.id = ${aid}::uuid and x.tenant_id = ${tid}::uuid and x.contract_id = ${cid}::uuid
-          and x.status = 'level1' and x.mode = 'engine' and x.engine_run_id is null returning x.id`);
+          and x.status = 'level1' and x.mode = 'engine' and x.engine_run_id is null
+          -- P11c · chỉ khi ĐÃ kẹt thật: lý do khác FLOW_STARTING, hoặc FLOW_STARTING quá 2 phút (bấm đúp / sự kiện đầu đang chạy ⇒ 0 hàng)
+          and (x.feedback is distinct from ${FLOW_STARTING}
+            or x.updated_at < now() - make_interval(secs => ${FLOW_START_STALE_MS / 1000}::int))
+        returning x.id`);
       return rows.length > 0;
     },
     async readFacts(cid) {

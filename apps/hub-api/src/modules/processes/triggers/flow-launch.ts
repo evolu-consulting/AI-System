@@ -11,6 +11,7 @@ import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
 import { outcomeHandlerFor } from "../adapters/runs/flow-ports";
 import { nodeFeatureMiss } from "../defs/node-features";
+import { FlowRunSuperseded } from "../runs/flow-event-attach";
 import { libraryFlowDef, type StartDefRow } from "../runs/runs.repo";
 import { type ProcessDepsCore, StartService } from "../runs/start.service";
 import { type FlowLaunch, FlowLaunchRefused } from "./dispatcher";
@@ -104,9 +105,17 @@ export function flowLaunchOf(d: ProcessDepsCore): FlowLaunch {
       );
       return { runId: s.id };
     } catch (err) {
-      if (isFlowEventDup(err)) return "duplicate";
-      if (err instanceof AppError && err.status < 500) throw new FlowLaunchRefused(err.code);
-      throw err;
+      return launchFailure(err);
     }
   };
+}
+
+/** Lỗi tạo run ⇒ kết quả: trùng sự kiện × flow ⇒ `duplicate`; app không nhận lượt (P11c, tx đã rollback) ⇒ `superseded` (chốt, không
+ *  thử lại); 4xx engine ⇒ từ chối; còn lại ⇒ ném (thử lại). */
+function launchFailure(err: unknown): "duplicate" | "superseded" {
+  if (isFlowEventDup(err)) return "duplicate";
+  const cause = (err as { cause?: unknown } | null)?.cause;
+  if (err instanceof FlowRunSuperseded || cause instanceof FlowRunSuperseded) return "superseded";
+  if (err instanceof AppError && err.status < 500) throw new FlowLaunchRefused(err.code);
+  throw err;
 }

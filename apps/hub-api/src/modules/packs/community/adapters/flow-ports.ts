@@ -59,7 +59,7 @@ export function communityOutcomeHandler(): OutcomeHandler<Tx> {
         ? withPackRoleInTx(tx, COMMUNITY_PACK, i.tenantId, () =>
             openReviewForFlow(tx, i.tenantId, i.ref),
           )
-        : Promise.resolve(false),
+        : Promise.resolve(true), // P11c · false = superseded (huỷ tạo run) ⇒ sự kiện khác không gắn gì: true
   };
 }
 

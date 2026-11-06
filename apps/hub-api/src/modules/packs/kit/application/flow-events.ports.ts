@@ -61,7 +61,8 @@ export type OutcomeHandler<TX = unknown> = {
   apply(tx: TX, input: OutcomeInput): Promise<OutcomeResult>;
   /**
    * CR-122 · P11 · lượt vừa được bộ điều phối mở cho sự kiện của bản ghi — gọi TRONG tx tạo run (cùng commit): app gắn run vào bản
-   * ghi (vd thẻ duyệt HĐ). Phải idempotent + có điều kiện (CAS); trả false = không gắn (bản ghi không chờ lượt). Ném ⇒ tx rollback.
+   * ghi (vd thẻ duyệt HĐ). Phải idempotent + có điều kiện (CAS). P11c · trả false = bản ghi KHÔNG nhận lượt này (đã có run khác / đã
+   * quyết) ⇒ tx tạo run ROLLBACK, sự kiện chốt `superseded`; sự kiện không cần gắn ⇒ trả true. Ném ⇒ tx rollback, sự kiện thử lại.
    */
   launched?(tx: TX, input: Omit<OutcomeInput, "outcome" | "actorId">): Promise<boolean>;
   /**

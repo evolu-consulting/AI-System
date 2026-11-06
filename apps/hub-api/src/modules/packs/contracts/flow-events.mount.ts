@@ -92,7 +92,7 @@ export function contractsOutcomeHandler(): OutcomeHandler<Tx> {
     },
     // CR-122 · P11 · lượt flow mở cho `contract.submitted` ⇒ gắn vào thẻ duyệt CÙNG tx tạo run (CAS).
     launched: (tx, input) =>
-      input.event === EV_SUBMITTED ? attachFlowRun(tx, input) : Promise.resolve(false),
+      input.event === EV_SUBMITTED ? attachFlowRun(tx, input) : Promise.resolve(true), // P11c · false = superseded
     // CR-122 · P11b · không mở được lượt ⇒ thẻ ghi lý do (không kẹt mãi "đang mở quy trình").
     notLaunched: (tx, input) =>
       input.event === EV_SUBMITTED ? markFlowNotLaunched(tx, input) : Promise.resolve(false),
