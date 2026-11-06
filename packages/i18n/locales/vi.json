@@ -3187,7 +3187,6 @@
   },
   "aiTools": {
     "title": "Công cụ AI",
-    "description": "Các quy trình AI (Dify) mà agent và lệnh gọi tới. Công cụ chưa ai dùng hiện ở mục Chưa dùng.",
     "search": "Tìm công cụ",
     "chips": {
       "label": "Lọc công cụ",
@@ -3247,7 +3246,9 @@
       "loadError": "Không tải được danh sách công ty.",
       "grantedBy": "Bật bởi {name} · {date}",
       "switchAria": "Bật {tool} cho {company}",
-      "descriptionLabel": "Mô tả"
+      "descriptionLabel": "Mô tả",
+      "moduleOff": "Workflow Dify chưa bật trên hệ thống này",
+      "moduleOffWhy": "Nên chưa chọn được công ty dùng công cụ này. Liên hệ quản trị nền tảng để bật module Workflow Dify."
     },
     "off": {
       "title": "Tắt {tool} cho {company}?",
@@ -3258,6 +3259,11 @@
       "on": "Đã bật {tool} cho {company}",
       "off": "Đã tắt {tool} cho {company}",
       "gone": "Công cụ này không còn trong danh mục. Đã tải lại danh sách."
+    },
+    "hint": "Các quy trình AI (Dify) mà agent và lệnh gọi tới. Công cụ chưa ai dùng hiện ở mục Chưa dùng.",
+    "legend": {
+      "agent": "agent",
+      "command": "lệnh"
     }
   }
 }

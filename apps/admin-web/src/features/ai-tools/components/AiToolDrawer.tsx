@@ -7,6 +7,7 @@ import { DetailDrawer } from "@/components/shared/list/DetailDrawer";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useWorkflowUsages } from "@/features/workflows/api";
 import { usageSections } from "@/features/workflows/lib/usage";
+import { frozenModulesOn } from "@/lib/frozen";
 import { useTr } from "@/lib/use-translate";
 import { CompanyToolsList } from "./CompanyToolsList";
 
@@ -70,7 +71,19 @@ export function AiToolDrawer({ tool, onClose }: Props) {
       {tool ? (
         <>
           <UsedBy tool={tool} />
-          <CompanyToolsList key={tool.workflow_id} tool={tool} />
+          {frozenModulesOn ? (
+            <CompanyToolsList key={tool.workflow_id} tool={tool} />
+          ) : (
+            <section aria-label={t("aiTools.drawer.companies")} className="space-y-1">
+              <h3 className="text-caption font-semibold text-muted-foreground">
+                {t("aiTools.drawer.companies")}
+              </h3>
+              <p className="text-body font-medium">{t("aiTools.drawer.moduleOff")}</p>
+              <p className="text-caption text-muted-foreground">
+                {t("aiTools.drawer.moduleOffWhy")}
+              </p>
+            </section>
+          )}
         </>
       ) : null}
     </DetailDrawer>

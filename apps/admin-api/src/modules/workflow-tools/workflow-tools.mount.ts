@@ -7,7 +7,11 @@ import { configWrite } from "../../lib/config/config-write";
 import type { TestHooks } from "../../lib/test-hooks";
 import { toolAudit } from "./adapters/workflow-tools.mapper";
 import { workflowToolsRepo } from "./adapters/workflow-tools.repo";
-import { aiToolsRoutes, workflowToolsRoutes } from "./adapters/workflow-tools.routes";
+import {
+  aiToolsCompaniesRoutes,
+  aiToolsUsageRoutes,
+  workflowToolsRoutes,
+} from "./adapters/workflow-tools.routes";
 import type { ToolsTx } from "./application";
 
 export type WorkflowToolsDeps = AuthDeps & { db: Db; hooks?: TestHooks };
@@ -27,10 +31,18 @@ function toolsTx(d: WorkflowToolsDeps, c: Context<AppVars>): ToolsTx {
   };
 }
 
+/** CR-121 c16 · "Dùng bởi" của Công cụ AI: luôn mount (không theo cờ module đóng băng). */
+export function mountAiToolsUsage(app: Hono<AppVars>, d: WorkflowToolsDeps): void {
+  app.route(
+    "/admin/workflow-tools",
+    aiToolsUsageRoutes(d, (c) => toolsTx(d, c)),
+  );
+}
+
 export function mountWorkflowTools(app: Hono<AppVars>, d: WorkflowToolsDeps): void {
   app.route(
     "/admin/workflow-tools",
-    aiToolsRoutes(d, (c) => toolsTx(d, c)),
+    aiToolsCompaniesRoutes(d, (c) => toolsTx(d, c)),
   );
   app.route(
     "/admin/tenants",

@@ -9,8 +9,8 @@ export type StatusFilter = "on" | "unused";
 export type AiToolFilters = { status?: StatusFilter; kind?: UsageKind; q?: string };
 
 /** Số dòng hiện lần đầu và mỗi lần bấm "Xem thêm". */
-export const FIRST_PAGE = 10;
-export const MORE_STEP = 25;
+export const FIRST_PAGE = 6;
+export const MORE_STEP = 20;
 
 export const usedTotal = (t: AiToolUsage): number => t.agent_count + t.command_count;
 /** "Chưa dùng" = không agent nào, không lệnh nào gọi tới. */

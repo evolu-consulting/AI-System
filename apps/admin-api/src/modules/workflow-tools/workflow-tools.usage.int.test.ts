@@ -5,6 +5,7 @@ import { AiToolUsageListSchema, WorkflowCompanyListSchema } from "@ai/contracts/
 import { createDb, withScope } from "@ai/db";
 import { probe, probeSamples, resetProbe, setProbe } from "@ai/db/probe";
 import { ADMIN_API_URL } from "../../../../../tests/acceptance/M1/_fixtures";
+import { loadApp, loadJwt } from "../../../../../tests/acceptance/M1/_modules";
 import { createM4Env, type M4Env, TENANT_ID } from "../../../../../tests/acceptance/M4/_ab";
 import { USAGE_QUERIES, workflowToolsRepo } from "./adapters/workflow-tools.repo";
 
@@ -81,5 +82,38 @@ describe("c16 · Dùng bởi + Công ty dùng (platform_admin)", () => {
     const id = crypto.randomUUID();
     expect((await tadmin("GET", "/admin/workflow-tools/usage")).status).toBe(403);
     expect((await tadmin("GET", `/admin/workflow-tools/${id}/companies`)).status).toBe(403);
+  });
+});
+
+describe("c16 · cờ module đóng băng tắt (ADMIN_FROZEN_MODULES=off)", () => {
+  it("'Dùng bởi' vẫn 200; công ty/công tắc theo công ty (module đóng băng) không mount ⇒ 404", async () => {
+    const jwt = await loadJwt();
+    const { createApp } = await loadApp();
+    const db = createDb(ADMIN_API_URL, { max: 2 });
+    try {
+      const app = createApp(
+        { version: "0.0.0", corsOrigins: ["http://localhost:3000"] },
+        {
+          db,
+          keys: await jwt.loadJwtKeys(env.keys.env),
+          appEnv: "test",
+          dummyHash: env.hashes.pw,
+          now: env.clock.now,
+          frozenModules: false,
+        },
+        // biome-ignore lint/suspicious/noExplicitAny: cùng cách M1 dựng app trong test
+      ) as any;
+      const token = await env.token("platform", "admin");
+      const get = (p: string) =>
+        app.fetch(
+          new Request(`http://localhost${p}`, { headers: { authorization: `Bearer ${token}` } }),
+        );
+      expect((await get("/admin/workflow-tools/usage")).status).toBe(200);
+      expect((await get(`/admin/workflow-tools/${crypto.randomUUID()}/companies`)).status).toBe(
+        404,
+      );
+    } finally {
+      await db.close();
+    }
   });
 });

@@ -3187,7 +3187,6 @@
   },
   "aiTools": {
     "title": "AI tools",
-    "description": "The AI workflows (Dify) that agents and commands call. Tools nobody uses are under Unused.",
     "search": "Search tools",
     "chips": {
       "label": "Filter tools",
@@ -3247,7 +3246,9 @@
       "loadError": "Could not load the companies.",
       "grantedBy": "Turned on by {name} · {date}",
       "switchAria": "Turn {tool} on for {company}",
-      "descriptionLabel": "Description"
+      "descriptionLabel": "Description",
+      "moduleOff": "Dify workflows are not enabled on this system",
+      "moduleOffWhy": "So companies cannot be chosen for this tool yet. Ask the platform admin to enable the Dify workflow module."
     },
     "off": {
       "title": "Turn {tool} off for {company}?",
@@ -3258,6 +3259,11 @@
       "on": "{tool} turned on for {company}",
       "off": "{tool} turned off for {company}",
       "gone": "This tool is no longer in the catalog. The list was reloaded."
+    },
+    "hint": "The AI workflows (Dify) that agents and commands call. Tools nobody uses are under Unused.",
+    "legend": {
+      "agent": "agent",
+      "command": "command"
     }
   }
 }

@@ -36,9 +36,9 @@ Trạng thái gộp: chưa gộp
 
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Thanh điều hướng 6 mục phẳng
-Sidebar admin-web gồm Tổng quan · Công ty · Ứng dụng · Quy trình · Công cụ AI · Hệ thống, không nhóm; Features/Commands/Agents/Workflow Dify gộp vào Công cụ AI; `/commands` và `/agents` chuyển tới `/ai-tools?kind=` (tạm tới `/workflows`).
+Sidebar admin-web gồm Tổng quan · Công ty · Ứng dụng · Quy trình · Công cụ AI · Hệ thống, không nhóm; Features/Commands/Agents/Workflow Dify gộp vào Công cụ AI; `/commands` và `/agents` chuyển tới `/ai-tools?kind=` (c16: trang Công cụ AI thật, lọc theo loại dùng).
 - Kịch bản: khi platform_admin mở admin thì sidebar đúng 6 mục theo thứ tự, không tiêu đề nhóm [test: apps/admin-web/src/features/shell/lib/nav.test.ts » platform_admin: đúng 6 mục theo thứ tự artboard Main, không nhóm]
-- Kịch bản: khi vào /commands hoặc /agents thì sang /ai-tools?kind=command|agent rồi tạm về /workflows [test: apps/admin-web/src/features/shell/lib/nav.test.ts » chuyển hướng /commands /agents sang /ai-tools tạm tới /workflows]
+- Kịch bản: khi vào /commands hoặc /agents thì sang /ai-tools?kind=command|agent [test: apps/admin-web/src/features/ai-tools/lib/ai-tools.test.ts » tham số URL lạ bị bỏ]
 
 ## Việc còn lại
 - Nối badge số; màn Công cụ AI (c16); nơi gom Chi phí/Nhật ký/Góp ý/Secrets.

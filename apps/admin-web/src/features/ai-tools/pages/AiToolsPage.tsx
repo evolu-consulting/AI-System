@@ -1,5 +1,6 @@
 // CR-121 R6 · c16 · /ai-tools — MỘT danh sách công cụ AI (workflow Dify) kèm "Dùng bởi"; chip lọc, ô tìm, ngăn chi tiết có "Công ty dùng".
 // Chỉ platform_admin (vai khác thấy ForbiddenState, không gọi API). Bộ lọc + công cụ đang mở nằm trên URL.
+import { Bot, Terminal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
@@ -22,7 +23,7 @@ function AiToolsContent() {
   const v = useAiToolsView();
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title={t("aiTools.title")} description={t("aiTools.description")} />
+      <PageHeader title={t("aiTools.title")} hint={t("aiTools.hint")} />
       {v.notice === "company-tools" ? (
         <Alert>
           <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
@@ -57,15 +58,27 @@ function AiToolsContent() {
           onOpen={(x) => v.patch({ tool: x.workflow_id })}
         />
         {v.total > 0 ? (
-          <div className="border-t border-border px-4 py-2.5 text-caption text-muted-foreground tabular-nums">
-            <span aria-live="polite">
-              {t("aiTools.shown", { shown: v.page?.rows.length ?? 0, total: v.total })}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-2.5 text-caption text-muted-foreground tabular-nums">
+            <span>
+              <span aria-live="polite">
+                {t("aiTools.shown", { shown: v.page?.rows.length ?? 0, total: v.total })}
+              </span>
+              {v.page?.more ? (
+                <Button variant="link" size="sm" className="ml-2" onClick={v.more}>
+                  {t("aiTools.more")}
+                </Button>
+              ) : null}
             </span>
-            {v.page?.more ? (
-              <Button variant="link" size="sm" className="ml-2" onClick={v.more}>
-                {t("aiTools.more")}
-              </Button>
-            ) : null}
+            <span className="inline-flex items-center gap-3.5">
+              <span className="inline-flex items-center gap-1.5">
+                <Bot aria-hidden className="size-3.5" />
+                {t("aiTools.legend.agent")}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Terminal aria-hidden className="size-3.5" />
+                {t("aiTools.legend.command")}
+              </span>
+            </span>
           </div>
         ) : null}
       </div>

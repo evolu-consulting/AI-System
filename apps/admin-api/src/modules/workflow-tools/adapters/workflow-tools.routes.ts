@@ -32,23 +32,29 @@ async function mapErr<T>(p: Promise<T>): Promise<T> {
 }
 
 /**
- * CR-121 R6 · c16 · `/admin/workflow-tools*` — "Dùng bởi" và "Công ty dùng" của trang Công cụ AI. Chỉ platform_admin
- * (vai khác 403 ở middleware, trước khi đọc DB; tenant_admin không thấy tên công ty khác).
+ * CR-121 R6 · c16 · `GET /admin/workflow-tools/usage` — "Dùng bởi" (agent, lệnh). Chỉ platform_admin (vai khác 403 ở middleware,
+ * trước khi đọc DB). Mount KHÔNG phụ thuộc cờ module đóng băng: trang Công cụ AI luôn đọc được.
  */
-export function aiToolsRoutes(d: AuthDeps, txOf: ToolsTxOf): Hono<AppVars> {
+export function aiToolsUsageRoutes(d: AuthDeps, txOf: ToolsTxOf): Hono<AppVars> {
   const r = new Hono<AppVars>();
   r.use("*", requireAuth(d), requireRole("platform_admin"));
   r.get("/usage", async (c) => {
     const items = await listUsage(txOf(c));
     return c.json({ items: items.map(toAiToolUsage) });
   });
+  return r;
+}
+
+/** `GET /admin/workflow-tools/:workflow_id/companies` — công ty + công tắc; cùng nhóm với công tắc theo công ty (module đóng băng). */
+export function aiToolsCompaniesRoutes(d: AuthDeps, txOf: ToolsTxOf): Hono<AppVars> {
+  const r = new Hono<AppVars>();
+  r.use("*", requireAuth(d), requireRole("platform_admin"));
   r.get("/:workflow_id/companies", async (c) => {
     const items = await mapErr(listCompanies(txOf(c), parseIdParam(c, "workflow_id")));
     return c.json({ items: items.map(toWorkflowCompany) });
   });
   return r;
 }
-
 export function workflowToolsRoutes(d: AuthDeps, txOf: ToolsTxOf): Hono<AppVars> {
   const r = new Hono<AppVars>();
   r.use("/:id/workflow-tools", requireAuth(d), requireRole("platform_admin"));

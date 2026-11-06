@@ -1,7 +1,7 @@
 // CR-121 R6 · c16 · bảng Công cụ AI (artboard AiTools): Công cụ · Trạng thái · Dùng bởi · Thao tác. Bấm hàng ⇒ ngăn chi tiết.
 import type { AiToolUsage } from "@ai/contracts/workflow-tools";
 import { Link } from "@tanstack/react-router";
-import { Bot, MoreHorizontal, Terminal, Workflow } from "lucide-react";
+import { Bot, Info, MoreHorizontal, Terminal, Workflow } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
@@ -119,7 +119,18 @@ export function AiToolsTable(p: Props) {
           </span>
         ),
       },
-      { id: "usedBy", header: t("aiTools.col.usedBy"), cell: (r) => <UsedByPills tool={r} /> },
+      {
+        id: "usedBy",
+        header: (
+          <span className="inline-flex items-center gap-1.5">
+            {t("aiTools.col.usedBy")}
+            <span title={t("aiTools.usedByTip")} role="img" aria-label={t("aiTools.usedByTip")}>
+              <Info aria-hidden className="size-3.5" />
+            </span>
+          </span>
+        ),
+        cell: (r) => <UsedByPills tool={r} />,
+      },
       {
         id: "actions",
         header: <span className="sr-only">{t("aiTools.col.actions")}</span>,

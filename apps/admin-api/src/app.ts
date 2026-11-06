@@ -52,7 +52,10 @@ import { exportRoutes, importRoutes } from "./modules/transfer/transfer.routes";
 import { usageRoutes } from "./modules/usage/usage.routes";
 import { usageAnalyticsRoutes } from "./modules/usage-analytics/analytics.routes";
 import { usersRoutes } from "./modules/users/users.routes";
-import { mountWorkflowTools } from "./modules/workflow-tools/workflow-tools.mount";
+import {
+  mountAiToolsUsage,
+  mountWorkflowTools,
+} from "./modules/workflow-tools/workflow-tools.mount";
 import { workflowsRoutes } from "./modules/workflows/workflows.routes";
 
 export type AppConfig = { version: string; corsOrigins: string[] };
@@ -165,6 +168,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/tenants", packsRoutes({ ...ctx, hooks })); // N1 · PK-FR-05
   app.route("/admin/tenants", tenantDefaultAppRoutes(ctx)); // tenant-default-app
   const frozenOn = deps.frozenModules !== false;
+  mountAiToolsUsage(app, { ...ctx, hooks }); // c16: "Dùng bởi" không theo cờ đóng băng
   if (frozenOn) mountWorkflowTools(app, { ...ctx, hooks });
   app.route("/admin/users", accessRoutes(ctx));
   app.route("/admin/users", usersRoutes({ ...ctx, hooks }));

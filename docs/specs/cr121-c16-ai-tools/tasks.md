@@ -29,18 +29,14 @@ unit `features/ai-tools/lib/ai-tools.test.ts`, `tenants/lib/{workspace-tabs,work
 - Hàng = công cụ (workflow Dify) theo artboard; chip loại = lọc theo loại đang dùng (Agent · Lệnh). `?kind=workflow` cũ = không lọc.
 - "Chưa dùng" = 0 agent và 0 lệnh; "Đang bật" = workflow bật toàn hệ thống.
 - Số đếm chip tính trên toàn danh mục, không đổi theo bộ lọc.
-- `workflow-tools` chỉ mount khi `ADMIN_FROZEN_MODULES=on` (app.ts) — route mới đi cùng mount đó (như tab cũ).
+- Cờ `ADMIN_FROZEN_MODULES=off`: `GET /admin/workflow-tools/usage` mount KHÔNG theo cờ (`mountAiToolsUsage`) ⇒ danh sách + "Dùng bởi" luôn có; `/:id/companies` + công tắc theo công ty vẫn theo cờ, ngăn chi tiết (cờ build `PUBLIC_FROZEN_MODULES`) thay bằng dòng "Workflow Dify chưa bật trên hệ thống này" + lý do. Int có ca cờ off.
 
-## Khác biệt so với artboard (chưa duyệt)
-CHƯA CHỤP ĐƯỢC ảnh thật: dev stack ở worktree đã dựng (admin-api :3411 + admin-web :3410) nhưng đăng nhập cần mật khẩu seed trong `.env.local` mà phiên bị chặn đọc (credential) ⇒ không vào được. Đối chiếu bằng code (CHƯA duyệt, cần ảnh):
-1. Tiêu đề: artboard có biểu tượng ⓘ cạnh "Công cụ AI" (tooltip), bản làm dùng dòng mô tả dưới tiêu đề (PageHeader chung).
-2. Tooltip ⓘ ở cột "Dùng bởi": bản làm không có; mỗi pill có `title` + chữ cho trình đọc màn hình.
-3. Hàng chip: artboard 3 chip trạng thái + loại nằm cùng hàng; bản làm thêm 2 chip loại (Agent, Lệnh) cùng hàng, ô tìm bên phải (cuộn xuống dòng khi hẹp). Chip dạng nút `aria-pressed`, màu theo token shell (không mã màu cứng).
-4. Bảng: cột, nhãn đúng artboard; cột "Công cụ" dùng biểu tượng workflow chung (artboard cũng 1 biểu tượng); trạng thái chấm + chữ; "Dùng bởi" chỉ agent + lệnh (hook/quy trình chưa có nguồn).
-5. Chân bảng: artboard "6 trong 26 công cụ · Xem thêm" + chú giải biểu tượng loại; bản làm có "n trong N công cụ · Xem thêm" (đầu 10, +25), KHÔNG có chú giải biểu tượng.
-6. Trạng thái rỗng "Mọi công cụ đều đang được dùng." + "Xem tất cả": có, hiện khi lọc Chưa dùng mà không còn công cụ nào (artboard vẽ riêng như ví dụ).
-7. Breadcrumb: artboard "Hệ thống › Công cụ AI"; bản làm đặt đúng như vậy (link Hệ thống → /system, route do c22).
-8. Ngăn chi tiết: artboard không vẽ; theo spec R6 làm bằng `DetailDrawer` (C-1b).
+## Khác biệt so với artboard
+Ảnh chụp do điều phối làm ở lượt UAT trên stack gộp. Đã sửa: ⓘ cạnh tiêu đề + ⓘ cột "Dùng bởi", chú giải biểu tượng agent/lệnh ở chân bảng, "6 trong N · Xem thêm" (đầu 6, +20). Còn lại, CHỜ DUYỆT UAT:
+1. Chip: thêm 2 chip loại (Agent, Lệnh) ngoài 3 chip artboard (spec R6 "+ loại"); hook/quy trình chưa có nguồn nên chưa có chip.
+2. "Dùng bởi" chỉ agent + lệnh; tooltip bằng `title` gốc.
+3. Ngăn chi tiết artboard không vẽ: dùng `DetailDrawer` chung.
+4. Breadcrumb "Hệ thống › Công cụ AI" như artboard; link Hệ thống chờ c22.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
