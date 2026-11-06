@@ -55,7 +55,10 @@ async function seed(
     { id: string }[]
   >`insert into hub.stage_runs (tenant_id, process_run_id, stage_idx, status)
     values (${tid}, ${r?.id as string}, 0, 'running') returning id`;
-  // `current_run_id` có FK tới `hub.runs` ⇒ dựng lần chạy hub của stage trước khi gắn.
+  // `current_run_id` có FK tới `hub.runs` (→ `hub.flows`) ⇒ dựng flow + lần chạy hub của stage trước khi gắn.
+  await o`insert into hub.flows (id, tenant_id, user_id, conversation_id, title)
+    select r.flow_id, r.tenant_id, r.started_by, r.conversation_id, 'g1'
+    from hub.process_runs r where r.id = ${r?.id as string}`;
   await o`insert into hub.runs (id, tenant_id, user_id, conversation_id, flow_id, status, config_version,
       user_message_id, answer_message_id, process_run_id, stage_run_id)
     select ${hubRunId}, r.tenant_id, r.started_by, r.conversation_id, r.flow_id, 'running', 1,
