@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLibraryView } from "@/features/tenants/flows/api";
+import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
 import { hubConfigured } from "@/lib/hub";
 import { copyDef, useProcessDef } from "../api";
@@ -35,6 +36,7 @@ import { useProcessTenant } from "../hooks/use-process-tenant";
 import { copyTenantId, isCompanyCopy, usesStepForm, viewerTenantId } from "../lib/company-copy";
 import { type DefDraft, toDraft, withLiveErrors } from "../lib/def-form";
 import { processErrorSpec } from "../lib/errors";
+import { notFoundBack } from "../lib/route-guard";
 import { normalizeSlotStages } from "../lib/slot-canvas";
 import type { LibraryDef } from "../library-api";
 
@@ -111,8 +113,9 @@ function ConfigTab(p: {
 
 function LoadFailure({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const { t } = useTranslation();
+  const role = useSession((s) => s.me?.role);
   const status = error instanceof ApiError ? error.status : 0;
-  if (status === 404) return <NotFoundState backTo="/processes" />;
+  if (status === 404) return <NotFoundState backTo={notFoundBack(role)} />;
   if (status === 403) return <ForbiddenState />;
   return <HubLoadError message={t("process.common.error.load")} onRetry={onRetry} />;
 }

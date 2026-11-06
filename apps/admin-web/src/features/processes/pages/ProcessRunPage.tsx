@@ -13,18 +13,22 @@ import { hubConfigured } from "@/lib/hub";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
 import { RunDetailBody } from "../components/run-detail/RunDetailBody";
 import { useProcessTenant } from "../hooks/use-process-tenant";
+import { notFoundBack } from "../lib/route-guard";
 import { useRunDetail } from "../run-detail-api";
 
-export type ProcessRunPageProps = { processId: string; runId: string };
+export type ProcessRunPageProps = { processId: string; runId: string; company?: string };
 
-function RunBody({ runId }: { runId: string }) {
+function RunBody({ runId, company }: { runId: string; company?: string | undefined }) {
   const { t } = useTranslation();
-  const tenant = useProcessTenant();
+  const picked = useProcessTenant();
+  // platform mở từ Công ty › Quy trình: công ty theo đường dẫn; tenant_admin: Hub suy từ phiên (tenantId vắng).
+  const tenant = company && picked.isPlatform ? { ...picked, tenantId: company } : picked;
   const q = useRunDetail(runId, tenant.tenantId);
   if (!hubConfigured()) return <HubNotConfigured />;
   if (q.isError && !q.data) {
     const e = q.error;
-    if (e instanceof ApiError && e.status === 404) return <NotFoundState backTo="/processes" />;
+    if (e instanceof ApiError && e.status === 404)
+      return <NotFoundState backTo={notFoundBack(tenant.me?.role)} />;
     if (e instanceof ApiError && e.status === 403) return <ForbiddenState />;
     return (
       <HubLoadError message={t("process.common.error.load")} onRetry={() => void q.refetch()} />
@@ -47,10 +51,10 @@ function RunBody({ runId }: { runId: string }) {
   );
 }
 
-export function ProcessRunPage({ runId }: ProcessRunPageProps) {
+export function ProcessRunPage({ runId, company }: ProcessRunPageProps) {
   return (
     <ProcessRouteGate>
-      <RunBody runId={runId} />
+      <RunBody runId={runId} company={company} />
     </ProcessRouteGate>
   );
 }

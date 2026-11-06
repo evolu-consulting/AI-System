@@ -5,6 +5,7 @@ import {
   parseLibFilter,
   parseSearchQ,
 } from "@/features/processes/lib/library-filter";
+import { listRedirectTarget } from "@/features/processes/lib/route-guard";
 import { ProcessesPage } from "@/features/processes/pages/ProcessesPage";
 import { processesRedirectTenant } from "@/features/tenants/lib/legacy-redirect";
 import { session } from "@/lib/auth/session";
@@ -27,9 +28,12 @@ export const Route = createFileRoute("/_authed/processes/")({
     ...(typeof s.tenant === "string" ? { tenant: s.tenant } : {}),
   }),
   // CR-121 c13: không còn chỗ gán ở /processes ⇒ tenant_admin / `?tenant=<id>` chuyển tới Công ty › Quy trình.
-  beforeLoad: ({ search }) => {
+  beforeLoad: ({ search, location }) => {
     const me = session.getState().me;
-    const id = processesRedirectTenant(me?.role, search as Record<string, unknown>, me?.tenant.id);
+    const id = listRedirectTarget(
+      location.pathname,
+      processesRedirectTenant(me?.role, search as Record<string, unknown>, me?.tenant.id),
+    );
     if (id)
       throw redirect({
         to: "/tenants/$tenantId",
