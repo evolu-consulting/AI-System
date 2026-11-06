@@ -4,59 +4,22 @@
 // Không import vào `./processes` (file này import nó) ⇒ không vòng import; export qua `hub-admin/index.ts`.
 import { z } from "zod";
 import { APP_KEY_RE } from "../app-catalog";
-import {
-  type AppEventDecl,
-  type AppFactType,
-  FACT_KEY_RE,
-  FLOW_EVENT_KEY_RE,
-} from "../app-manifest/manifest";
+import type { AppEventDecl, AppFactType } from "../app-manifest/manifest";
 import { PROCESS_NAME_MAX, PROCESS_STAGES_MAX, ProcessKeySchema } from "../chat/processes";
-import { IF_CONDS_MAX, IF_CONDS_MIN, IF_VALUE_MAX } from "./process-if";
+
 import { resolveSteps } from "./process-steps";
+import {
+  type FactCond,
+  type FactWhen,
+  type FlowTrigger,
+  FlowTriggerSchema,
+} from "./process-trigger";
 import { type ProcessStageDef, ProcessStageDefSchema } from "./processes";
 
 /** Trần số BƯỚC (không phải stage — một bước có ≤ 3 stage song song) của một flow. */
 export const FLOW_STEPS_MAX = 20;
 export const FLOW_OWNERS = ["library", "company"] as const;
 export type FlowOwner = (typeof FLOW_OWNERS)[number];
-/** So sánh dữ kiện: như `BRANCH_OPS` + `in` (thuộc danh sách, cho `enum`/`department`). */
-export const FACT_OPS = ["eq", "ne", "lt", "le", "gt", "ge", "in"] as const;
-export type FactOp = (typeof FACT_OPS)[number];
-export const FACT_IN_MAX = 50;
-
-export const FactCondSchema = z.strictObject({
-  fact: z.string().regex(FACT_KEY_RE),
-  op: z.enum(FACT_OPS),
-  value: z.union([
-    z.string().max(IF_VALUE_MAX),
-    z.number(),
-    z.boolean(),
-    z.array(z.string().max(IF_VALUE_MAX)).min(1).max(FACT_IN_MAX),
-  ]),
-});
-export type FactCond = z.infer<typeof FactCondSchema>;
-const WhenOp = z.enum(["and", "or"]);
-export const FactCondGroupSchema = z.strictObject({
-  op: WhenOp,
-  conds: z.array(FactCondSchema).min(IF_CONDS_MIN).max(IF_CONDS_MAX),
-});
-/** AND/OR lồng MỘT cấp, ≤ 6 vế mỗi cấp (FLOW2-FR-12) — cùng control dựng điều kiện cho Bắt đầu khi và Nếu (FR-16). */
-export const FactWhenSchema = z.strictObject({
-  op: WhenOp,
-  conds: z
-    .array(z.union([FactCondSchema, FactCondGroupSchema]))
-    .min(IF_CONDS_MIN)
-    .max(IF_CONDS_MAX),
-});
-export type FactWhen = z.infer<typeof FactWhenSchema>;
-
-/** Node Bắt đầu khi: sự kiện trong `AppManifest.events` + điều kiện tuỳ chọn trên dữ kiện lúc sự kiện. */
-export const FlowTriggerSchema = z.strictObject({
-  event: z.string().regex(FLOW_EVENT_KEY_RE),
-  when: FactWhenSchema.optional(),
-});
-export type FlowTrigger = z.infer<typeof FlowTriggerSchema>;
-
 /** Chỉ bản công ty: bản Thư viện đã sao (= `source_ref` + `source_rel_version` hiện có). */
 export const FlowSourceSchema = z.strictObject({
   flow_key: ProcessKeySchema,

@@ -25,6 +25,9 @@ export type DefRow = {
   /** CR-105 · def thư viện: khe + thân Form theo mã + bản đang chạy; đếm gán / cờ mặc định. */
   slot: string | null;
   slot_body: unknown;
+  /** CR-122 · FlowDef: node Bắt đầu khi + app (NULL = def cũ). */
+  trigger: ProcessDefInput["trigger"] | null;
+  app: string | null;
   published_version: number | null;
   tenant_count: number;
   is_default: boolean;
@@ -67,7 +70,7 @@ const LIB_USE = sql`(select count(*)::int from hub.process_tenant_defs a where a
 const COLS = sql`d.id, d.tenant_id, d.key, d.name, d.description, d.input_hint, d.run_group_ids, d.stages,
   d.token_budget, d.enabled, coalesce(d.sources, '[]'::jsonb) as sources,
   coalesce(d.inputs, '[]'::jsonb) as inputs, d.ttl_days, d.source_template_id, d.version,
-  d.slot, d.slot_body, d.published_version, ${LIB_USE},
+  d.slot, d.slot_body, d.trigger, d.app, d.published_version, ${LIB_USE},
   ${iso(sql`d.created_at`)} as created_at, ${iso(sql`d.updated_at`)} as updated_at`;
 
 /** Chặn 1 (readiness): def thư viện (`slot`) chỉ thấy với `library` (platform_admin); thiếu ⇒ như không tồn tại. */
@@ -203,17 +206,25 @@ export type DefWrite = {
 };
 
 const slotBodyOf = (v: unknown) => (v === undefined || v === null ? null : JSON.stringify(v));
+/** CR-122 · `trigger`/`app` vắng ở body ⇒ giữ giá trị cũ (đường ghi cũ: gói, khe); null ⇒ xoá. */
+const keepOr = (v: unknown, col: SQL, cast: SQL) =>
+  v === undefined
+    ? col
+    : v === null
+      ? sql`null`
+      : sql`${typeof v === "string" ? v : JSON.stringify(v)}::${cast}`;
 
 export async function insertDef(tx: Tx, w: DefWrite): Promise<DefRow> {
   const d = w.input;
   const [r] =
     await tx.execute<DefRow>(sql`with ins as (insert into hub.process_defs as d (tenant_id, key, name,
       description, input_hint, run_group_ids, stages, token_budget, enabled, sources, inputs, ttl_days, source_template_id,
-      slot, slot_body, created_by, updated_by)
+      slot, slot_body, trigger, app, created_by, updated_by)
     values (${w.tenantId}, ${d.key}, ${d.name}, ${d.description}, ${d.input_hint}, ${pgUuids(d.run_group_ids)},
       ${JSON.stringify(d.stages)}::jsonb, ${d.token_budget}, ${d.enabled}, ${JSON.stringify(d.sources)}::jsonb,
       ${JSON.stringify(d.inputs)}::jsonb, ${w.ttlDays}, ${w.sourceTemplateId},
-      ${w.slot ?? null}, ${slotBodyOf(w.slotBody)}::jsonb, ${w.actorId}, ${w.actorId})
+      ${w.slot ?? null}, ${slotBodyOf(w.slotBody)}::jsonb, ${keepOr(d.trigger, sql`null`, sql`jsonb`)},
+      ${keepOr(d.app, sql`null`, sql`text`)}, ${w.actorId}, ${w.actorId})
     returning *) select ${COLS} from ins d`);
   if (!r) throw new Error("insert process_defs không trả hàng");
   return r;
@@ -231,7 +242,8 @@ export async function updateDef(
       stages = ${JSON.stringify(d.stages)}::jsonb, token_budget = ${d.token_budget}, enabled = ${d.enabled},
       sources = ${JSON.stringify(d.sources)}::jsonb, inputs = ${JSON.stringify(d.inputs)}::jsonb,
       ttl_days = ${ttlDays}, version = version + 1, updated_by = ${actorId}, updated_at = now(),
-      source_ref = null, slot = ${w.slot ?? null}, slot_body = ${slotBodyOf(w.slotBody)}::jsonb
+      source_ref = null, slot = ${w.slot ?? null}, slot_body = ${slotBodyOf(w.slotBody)}::jsonb,
+      trigger = ${keepOr(d.trigger, sql`trigger`, sql`jsonb`)}, app = ${keepOr(d.app, sql`app`, sql`text`)}
     where id = ${id} returning *) select ${COLS} from up d`);
   if (!r) throw new Error("update process_defs không trả hàng");
   return r;

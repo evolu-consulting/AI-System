@@ -1,6 +1,7 @@
 // CR-105 · L2a · thư viện quy trình (design §4; readiness Cao: schema response ở contracts). Mở rộng `/process-defs…` (không tiền tố
 // `/process-library`) + `/process-slots` + `/tenants/:tid/process-slots/:slot` — chỉ platform_admin. Export lại qua `processes.ts`.
 import { z } from "zod";
+import { APP_KEY_RE } from "../app-catalog";
 import {
   PROCESS_LIST_LIMIT,
   PROCESS_NAME_MAX,
@@ -8,6 +9,7 @@ import {
   ProcessKeySchema,
 } from "../chat/processes";
 import { CountSchema, IsoDateTime, UuidSchema } from "../common";
+import { FlowTriggerSchema } from "./process-trigger";
 
 /** `<gói>.<việc>` — khớp CHECK `process_slots_slot_ck` (hub 0068). */
 export const SLOT_KEY_RE = /^[a-z][a-z0-9-]{0,39}\.[a-z][a-z0-9-]{0,39}$/;
@@ -20,6 +22,9 @@ export const ProcessDefKindSchema = z.enum(PROCESS_DEF_KINDS);
 export const LIBRARY_DEF_INPUT_FIELDS = {
   slot: SlotKeySchema.nullable().optional(),
   slot_body: z.unknown().optional(),
+  /** CR-122 · FlowDef: node Bắt đầu khi + app sở hữu (vắng khi ghi ⇒ giữ nguyên; null ⇒ xoá). Luật ở `flowDefIssues`. */
+  trigger: FlowTriggerSchema.nullable().optional(),
+  app: z.string().regex(APP_KEY_RE).nullable().optional(),
 };
 /** Trường thêm vào `ProcessDef` / mục danh sách (vắng ở def tenant/mẫu cũ). `tenant_count` = số tenant đang GÁN. */
 export const LIBRARY_DEF_FIELDS = {

@@ -1,0 +1,140 @@
+// CR-122 · E1 · FLOW2-FR-01/02/15 · int (Hono thật `defsRoutes` + DB thật): lưu def có `trigger` + `app` (trường gốc của body, như
+// admin-web gửi), GET trả lại; stage giữ `outcome` + `next_step`; sai luật FlowDef ⇒ 422 `PROCESS_DEF_INVALID` + `paths`; PUT không
+// gửi `trigger` ⇒ giữ nguyên; `trigger_event` sinh để bộ điều phối chọn flow.
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import type { Role } from "@ai/contracts/common";
+import { tenantId, userId, users } from "@ai/test-kit/builders";
+import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
+import { urls } from "@ai/test-kit/env";
+import { Hono } from "hono";
+import type { AuthVars } from "../../../lib/auth.middleware";
+import { connectDb, type Db } from "../../../lib/db";
+import { mapError } from "../../../lib/errors";
+import type { ProcessDeps } from "../core/ports";
+import { defsRoutes } from "./defs.routes";
+
+const X = tenantId(1231);
+const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
+  A: { userId: userId(1231), tenantId: X, role: "tenant_admin" },
+};
+// biome-ignore lint/suspicious/noExplicitAny: JSON response trong test
+type Json = Record<string, any>;
+
+let o: Sql;
+let db: Db;
+let app: Hono<AuthVars>;
+let id = "";
+
+async function call(method: string, path: string, body?: unknown) {
+  const r = await app.request(path, {
+    method,
+    headers: { "content-type": "application/json", "x-who": "A" },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  const text = await r.text();
+  return { status: r.status, json: (text ? JSON.parse(text) : {}) as Json };
+}
+
+const stage = (key: string, step: number, extra: object = {}) => ({
+  key,
+  name: key.toUpperCase(),
+  step,
+  executor: { kind: "set", values: [{ key: "x", from: { const: "1" } }] },
+  instruction: "",
+  output: {
+    filename: `${key}.md`,
+    template: "# x",
+    required_sections: ["x"],
+    fields: [{ key: "x", type: "string", required: false }],
+  },
+  after: { kind: "auto", branch: [] },
+  real_action: false,
+  answerer: { kind: "starter" },
+  token_budget: null,
+  ...extra,
+});
+const trigger = {
+  event: "contract.submitted",
+  when: { op: "and", conds: [{ fact: "total_value", op: "ge", value: 1000 }] },
+};
+const body = (o: object = {}) => ({
+  key: "e1-flow-hd",
+  name: "Duyệt HĐ lớn",
+  description: "",
+  input_hint: "",
+  run_group_ids: [],
+  stages: [
+    stage("dau", 0, { next_step: 2 }),
+    stage("giua", 1),
+    stage("xong", 2, { outcome: "approved" }),
+  ],
+  token_budget: null,
+  enabled: true,
+  sources: [],
+  inputs: [],
+  trigger,
+  app: "contracts",
+  ...o,
+});
+
+beforeAll(async () => {
+  await cloneDb("full");
+  o = openOwner(2);
+  db = connectDb(urls().hubApi, 4);
+  await o`insert into admin.tenants (id, key, name) values (${X}, 't1231', 'X')`;
+  await users(o, X, 1, { from: 1231 });
+  app = new Hono<AuthVars>();
+  app.use("*", async (c, next) => {
+    c.set("user", WHO[c.req.header("x-who") ?? ""] as never);
+    await next();
+  });
+  app.onError((e, c) => {
+    const m = mapError(e);
+    if (m.status === 500) console.error(e);
+    return c.json(m.body, m.status);
+  });
+  app.route("/", defsRoutes({ db, packTools: undefined, start: {} } as unknown as ProcessDeps));
+}, 180_000);
+
+afterAll(async () => {
+  await db?.close();
+  await o?.end({ timeout: 2 });
+});
+
+describe("CR-122 E1 · lưu def có trigger", () => {
+  it("POST + GET: trigger/app/outcome/next_step lưu và đọc lại; trigger_event sinh", async () => {
+    const c = await call("POST", "/process-defs", body());
+    expect(c.status).toBe(201);
+    id = c.json.id;
+    const g = await call("GET", `/process-defs/${c.json.id}`);
+    expect(g.status).toBe(200);
+    expect(g.json.trigger).toEqual(trigger);
+    expect(g.json.app).toBe("contracts");
+    expect(g.json.stages[0].next_step).toBe(2);
+    expect(g.json.stages[2].outcome).toBe("approved");
+    const [r] = await o<
+      { e: string }[]
+    >`select trigger_event as e from hub.process_defs where id = ${c.json.id}`;
+    expect(r?.e).toBe("contract.submitted");
+  });
+
+  it("PUT sai luật FlowDef ⇒ 422 + paths, không ghi; PUT không gửi trigger ⇒ giữ nguyên", async () => {
+    const cur = await call("GET", `/process-defs/${id}`);
+    const bad = await call("PUT", `/process-defs/${id}`, {
+      ...body({ stages: [stage("dau", 0, { outcome: "shown" })] }),
+      version: cur.json.version,
+    });
+    expect(bad.status).toBe(422);
+    expect(bad.json.error?.code ?? bad.json.code).toBe("PROCESS_DEF_INVALID");
+    expect(JSON.stringify(bad.json)).toContain("stages.0.outcome");
+    const { trigger: _t, app: _a, ...noTrigger } = body({ name: "Đổi tên" });
+    const ok = await call("PUT", `/process-defs/${id}`, {
+      ...noTrigger,
+      version: cur.json.version,
+    });
+    expect(ok.status).toBe(200);
+    expect(ok.json.name).toBe("Đổi tên");
+    expect(ok.json.trigger).toEqual(trigger);
+    expect(ok.json.app).toBe("contracts");
+  });
+});

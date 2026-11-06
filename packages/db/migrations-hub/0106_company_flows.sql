@@ -7,6 +7,15 @@
 -- (4) RLS: đọc/ghi theo tenant (scope user đúng `app.tenant_id`) hoặc system; cờ chỉ system ghi. Chạy lại vô hại.
 ALTER TABLE hub.process_defs ADD COLUMN IF NOT EXISTS trigger jsonb;
 --> statement-breakpoint
+ALTER TABLE hub.process_defs ADD COLUMN IF NOT EXISTS app text;
+--> statement-breakpoint
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'process_defs_app_ck') THEN
+    ALTER TABLE hub.process_defs ADD CONSTRAINT process_defs_app_ck CHECK (app IS NULL OR app ~ '^[a-z0-9-]{2,32}$');
+  END IF;
+END $$;
+--> statement-breakpoint
 ALTER TABLE hub.process_defs ADD COLUMN IF NOT EXISTS trigger_event text
   GENERATED ALWAYS AS (trigger ->> 'event') STORED;
 --> statement-breakpoint

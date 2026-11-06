@@ -61,6 +61,9 @@ export function toProcessDef(r: DefRow): ProcessDef {
     created_at: r.created_at,
     updated_at: r.updated_at,
     ttl_days: r.ttl_days,
+    // CR-122 · FlowDef: chỉ trả khi có (def cũ giữ hình response cũ).
+    ...(r.trigger ? { trigger: r.trigger } : {}),
+    ...(r.app ? { app: r.app } : {}),
     ...(r.slot === null
       ? companyCopyBody(r)
       : { ...libFields(r), slot: r.slot, slot_body: r.slot_body }),

@@ -54,6 +54,7 @@ import {
   toTeams,
 } from "./defs.map";
 import * as repo from "./defs.repo";
+import { flowDefPaths } from "./flow-def.rules";
 import { listTeams, loadDefRefs } from "./teams.repo";
 
 type Scope = repo.DefScope;
@@ -70,6 +71,11 @@ const audit = (a: Audit): StudioAudit => ({
   summary: { key: a.row.key, version: a.row.version },
 });
 
+/** CR-122 · E1 · def có `trigger` ⇒ luật FlowDef (422 `PROCESS_DEF_INVALID`, `paths`). */
+function flowCheck(input: ProcessDefInput, tenantId: string | null, cur: repo.DefRow | null): void {
+  const paths = flowDefPaths(input, tenantId, cur);
+  if (paths.length > 0) throw defError("PROCESS_DEF_INVALID", { paths });
+}
 export class DefsService {
   readonly #w;
   constructor(private readonly d: Pick<ProcessDeps, "db" | "start" | "packTools">) {
@@ -229,6 +235,7 @@ export class DefsService {
   async create(u: AuthUser, s: Scope, raw: ProcessDefInput): Promise<ProcessDef> {
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
       const { input, slot, body } = this.#draft(u, s.tenantId, raw, null);
+      flowCheck(input, s.tenantId, null);
       await this.#check(tx, s.tenantId, input, slot !== null);
       await this.#keyFree(tx, s.tenantId, input.key);
       const row = await repo.insertDef(tx, {
@@ -260,6 +267,7 @@ export class DefsService {
       const copy = await this.#companyCopyDraft(tx, cur, raw);
       const { input, slot, body } = copy ?? this.#draft(u, cur.tenant_id, raw, cur);
       await guardInUse(tx, cur, { key: input.key, slot, enabled: input.enabled });
+      flowCheck(input, cur.tenant_id, cur);
       // bản riêng sao từ thư viện: stage dùng khoá nhóm/tool của khe (không phải id nhóm) ⇒ kiểm tham chiếu như def thư viện
       await this.#check(tx, cur.tenant_id, input, slot !== null || copy !== null);
       await this.#keyFree(tx, cur.tenant_id, input.key, id);
