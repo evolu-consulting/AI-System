@@ -9,7 +9,7 @@ ALTER TABLE hub.process_defs DROP CONSTRAINT IF EXISTS process_defs_source_rel_c
 ALTER TABLE hub.process_defs ADD CONSTRAINT process_defs_source_rel_ck CHECK (
   source_rel_version IS NULL OR (source_rel_version >= 1 AND source_template_id IS NOT NULL AND tenant_id IS NOT NULL));
 --> statement-breakpoint
-CREATE INDEX IF NOT EXISTS process_defs_company_copy_idx ON hub.process_defs (tenant_id, source_template_id)
+CREATE UNIQUE INDEX IF NOT EXISTS process_defs_company_copy_idx ON hub.process_defs (tenant_id, source_template_id)
   WHERE source_rel_version IS NOT NULL AND deleted_at IS NULL;
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS process_runs_snap_def_idx ON hub.process_runs (tenant_id, ((snapshot ->> 'process_def_id')), started_at DESC);

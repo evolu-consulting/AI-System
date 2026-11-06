@@ -30,6 +30,10 @@ export function companyAccess(u: AuthUser, tenantId: string): void {
 }
 
 const notFound = () => appError("NOT_FOUND");
+/** 23505 (postgres.js `code`, có thể nằm ở `cause` khi drizzle bọc lỗi). */
+const isUniqueViolation = (e: unknown): boolean =>
+  (e as { code?: string })?.code === "23505" ||
+  (e as { cause?: { code?: string } })?.cause?.code === "23505";
 const KEY_BASE_MAX = 50;
 
 export class CompanyLibraryService {
@@ -45,6 +49,25 @@ export class CompanyLibraryService {
     defId: string,
   ): Promise<CloneForCompanyResponse> {
     companyAccess(u, tenantId);
+    try {
+      return await this.#clone(u, tenantId, defId);
+    } catch (e) {
+      // Lưới cuối: UNIQUE `process_defs_company_copy_idx` (0103) chặn hai bản riêng cùng công ty × nguồn ⇒ coi như "đã có" (200).
+      if (!isUniqueViolation(e)) throw e;
+      const have = await withHubScope(this.d.db, { kind: "system" }, (tx) =>
+        co.companyCopyOf(tx, tenantId, defId),
+      );
+      if (!have) throw e;
+      return {
+        def_id: have.id,
+        source_template_id: defId,
+        rel_version: have.source_rel_version,
+        created: false,
+      };
+    }
+  }
+
+  async #clone(u: AuthUser, tenantId: string, defId: string): Promise<CloneForCompanyResponse> {
     const { result } = await this.svc.write(u, async (tx) => {
       const src = await this.#libSource(tx, tenantId, defId);
       const have = await co.companyCopyOf(tx, tenantId, src.id);

@@ -41,6 +41,7 @@ Trạng thái gộp: chưa gộp
 #### Yêu cầu: Sao chép quy trình thư viện cho công ty
 Quản trị công ty (hoặc quản trị nền tảng) sao một quy trình thư viện đã xuất bản thành bản riêng của công ty và tự đặt bản riêng thay bản cũ trong các luật chọn quy trình đang trỏ đúng quy trình nguồn; làm lại lần hai trả bản đã có, không tạo bản thứ hai.
 - Kịch bản: sao lần đầu ⇒ 201 `created:true`, luật mặc định và luật điều kiện trỏ nguồn đổi sang bản riêng, luật trỏ quy trình khác giữ nguyên, có audit [test: apps/hub-api/src/modules/processes/library/clone-for-company.int.test.ts » tạo bản riêng + chỉ luật trỏ đúng nguồn đổi + idempotent 200 + công ty khác tách biệt]
+- Kịch bản: hai POST cùng lúc ⇒ đúng một bản, 201 + 200 [test: apps/hub-api/src/modules/processes/library/clone-for-company.int.test.ts » hai POST cùng lúc ⇒ đúng một bản riêng, mã 201 + 200]
 - Kịch bản: sao lần hai ⇒ 200 `created:false`, cùng `def_id`, không ghi thêm [test: apps/hub-api/src/modules/processes/library/clone-for-company.int.test.ts » tạo bản riêng + chỉ luật trỏ đúng nguồn đổi + idempotent 200 + công ty khác tách biệt]
 - Kịch bản: công ty chưa có luật và nguồn là mặc định của việc ⇒ bản riêng thành luật mặc định [test: apps/hub-api/src/modules/processes/library/clone-for-company.int.test.ts » công ty đang chạy đúng mẫu khe (chưa có luật) ⇒ bản riêng thành luật mặc định]
 - Kịch bản: member 403, quản trị công ty khác 404, mẫu không khe 422 `NOT_LIBRARY_DEF`, khe mất 422 `SLOT_GONE`, chưa xuất bản 422 [test: apps/hub-api/src/modules/processes/library/clone-for-company.int.test.ts » member 403, tenant_admin công ty lạ 404, công ty/def không có 404, không phải thư viện 422, không ghi gì]
@@ -55,5 +56,7 @@ Danh sách lượt chạy lọc được theo việc (khe) hoặc theo quy trìn
 - Kịch bản: lọc theo `def_id` giao với `slot`, `slot` sai định dạng ⇒ 400 [test: apps/hub-api/src/modules/processes/runs/runs-slot-filter.int.test.ts » lọc def_id (thư viện hoặc bản riêng), giao với slot, không lọc ⇒ đủ]
 
 ## Việc còn lại
+- Deploy: index process_runs_snap_def_idx (0103) cần cửa sổ yên lặng — migrator hub bọc MỘT tx, repo chưa có tiền lệ CREATE INDEX CONCURRENTLY (0066/0098); dùng cửa sổ dừng hub-api khi migrate.
+- Index: process_defs_company_copy_idx là UNIQUE (tenant_id, source_template_id) WHERE source_rel_version IS NOT NULL AND deleted_at IS NULL; cloneForCompany bắt 23505 ⇒ 200 created:false. Lọc lượt snapshot.process_def_id = any OR process_def_id = any: nhánh sau dùng process_runs_def_started_idx (0019), nhánh đầu process_runs_snap_def_idx ⇒ BitmapOr. EXPLAIN chưa chạy (không có DB lớn); số câu SQL cố định.
 - BẪY chặn c11/c17: `ROUTE_SLOT_SQL`/`RESOLVE_SLOT_SQL` (launch) và `routing.repo.assignedOf` chỉ nhận def có `slot` + release; bản riêng (`slot NULL`, CHECK `process_defs_slot_ck`) sau khi luật trỏ vào sẽ bị coi "chưa xuất bản/route_unavailable". Cần quyết định + lát riêng cho đường launch bản riêng (đọc `slot_body` của bản riêng, `rel` = `source_rel_version`) TRƯỚC khi UI gọi `clone-for-company` trên prod.
 - admin-web: thêm 2 mã lỗi vào `features/processes/lib/errors.ts` + i18n (c17).

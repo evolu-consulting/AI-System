@@ -35,7 +35,7 @@ type Json = Record<string, any>;
 let o: Sql;
 let db: Db;
 let app: Hono<AuthVars>;
-const lib = { A: "", B: "", C: "", unpub: "", gone: "", tpl: "" };
+const lib = { A: "", B: "", C: "", D: "", unpub: "", gone: "", tpl: "" };
 let dx: Map<string, string>;
 
 async function call(who: string, method: string, path: string, body?: unknown) {
@@ -98,6 +98,7 @@ beforeAll(async () => {
   lib.A = await libCopy("cc-a", "QT A");
   lib.B = await libCopy("cc-b", "QT B");
   lib.C = await libCopy("cc-c", "QT C");
+  lib.D = await libCopy("cc-d", "QT D");
   lib.unpub = await libCopy("cc-unpub", "QT chưa xuất bản");
   await o`update hub.process_defs set published_version = null where id = ${lib.unpub}`;
   lib.gone = await libCopy("cc-gone", "QT khe mất");
@@ -233,6 +234,25 @@ describe("CR-121 c9 · Sao chép cho công ty này", () => {
     expect((await privOf(Y, lib.A)).length).toBe(1);
     expect(await rules(Y)).toEqual([]);
     expect((await privOf(X, lib.A)).length).toBe(1);
+  });
+
+  it("hai POST cùng lúc ⇒ đúng một bản riêng, mã 201 + 200", async () => {
+    const [r1, r2] = await Promise.all([
+      call("A", "POST", CL(X, lib.D), {}),
+      call("P", "POST", CL(X, lib.D), {}),
+    ]);
+    expect([r1.status, r2.status].sort()).toEqual([200, 201]);
+    expect(r1.json.def_id).toBe(r2.json.def_id);
+    expect([r1.json.created, r2.json.created].sort()).toEqual([false, true]);
+    expect((await privOf(X, lib.D)).length).toBe(1);
+    // UNIQUE ở tầng DB: chèn tay bản thứ hai cùng công ty × nguồn bị chặn 23505
+    const err =
+      await o`insert into hub.process_defs (tenant_id, key, name, stages, source_template_id, source_rel_version)
+      select ${X}, 'cc-dup', 'dup', stages, ${lib.D}, 1 from hub.process_defs where id = ${DFLT}`.then(
+        () => null,
+        (e) => e,
+      );
+    expect(err?.code).toBe("23505");
   });
 
   it("công ty đang chạy đúng mẫu khe (chưa có luật) ⇒ bản riêng thành luật mặc định", async () => {
