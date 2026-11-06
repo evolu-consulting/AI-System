@@ -11,11 +11,11 @@ import { expect, type Page, test } from "@playwright/test";
 import { apiLogin, companyFlows, type Session } from "../_kit/api";
 import {
   approve,
+  createLibraryFlow,
   enableFlowTriggers,
   finish,
   ifFact,
   notifyCreator,
-  seedLibraryFlow,
 } from "../_kit/flows";
 import {
   assignFlowUi,
@@ -103,11 +103,17 @@ const dirSession = (): Promise<Session> =>
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  flowId = await seedLibraryFlow({
+  // platform_admin tạo + xuất bản flow Thư viện qua API thật (E6)
+  const platform = await apiLogin({
+    base: API,
+    tenantKey: "platform",
+    username: E.adminUser,
+    password: E.adminPw,
+  });
+  flowId = await createLibraryFlow(HUB, platform.token, {
     key: `c22-g1-${SFX}`,
     name: FLOW,
     app: "contracts",
-    slot: "contracts.approval",
     trigger: { event: "contract.submitted" },
     stages: stages(),
   });

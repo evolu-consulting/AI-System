@@ -1,4 +1,4 @@
-﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-122 · Q1 · ca UI của trình sửa flow (canvas) trên stack thật `playwright.journey.config.ts`, công ty MỚI `e2e-c22u-<hậu tố>`:
 //  1) menu "+ Thêm bước" gom nhóm (Cơ bản · …) và liệt kê node dựng sẵn;
 //  2) cạnh vàng (Ký số cần `contract_id` mà bước trước không có) ⇒ ô "Gợi ý cầu nối" ⇒ Bỏ / Nhận (route AI giả: AI thật cần agent `flow-bridge` đã seed);
@@ -8,12 +8,12 @@ import { expect, type Page, test } from "@playwright/test";
 import { apiLogin, assignCompanyFlow, type Session } from "../_kit/api";
 import {
   bridgeSet,
+  createLibraryFlow,
   enableFlowTriggers,
   esignNode,
   finish,
   ifFact,
   plainSet,
-  seedLibraryFlow,
 } from "../_kit/flows";
 import { flowRows, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
 import { U } from "./_journey";
@@ -82,21 +82,20 @@ async function openCopy(page: Page): Promise<void> {
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  const flowId = await seedLibraryFlow({
-    key: `c22u-ed-${SFX}`,
-    name: FLOW,
-    app: "contracts",
-    slot: "contracts.approval",
-    trigger: { event: "contract.submitted" },
-    stages: stages(),
-  });
-  tenantId = await enableFlowTriggers(KEY, false); // chỉ lấy id công ty; không bật cờ (không có lượt chạy ở ca này)
   const platform = await apiLogin({
     base: API,
     tenantKey: "platform",
     username: need("SEED_ADMIN_USERNAME"),
     password: need("SEED_ADMIN_PASSWORD"),
   });
+  const flowId = await createLibraryFlow(HUB, platform.token, {
+    key: `c22u-ed-${SFX}`,
+    name: FLOW,
+    app: "contracts",
+    trigger: { event: "contract.submitted" },
+    stages: stages(),
+  });
+  tenantId = await enableFlowTriggers(KEY, false); // chỉ lấy id công ty; không bật cờ (không có lượt chạy ở ca này)
   await assignCompanyFlow(HUB, platform, tenantId, flowId);
 });
 

@@ -161,28 +161,44 @@ export function finish(key: string, name: string, step: number, outcome: string)
 }
 
 /**
- * Flow Thư viện ĐÃ xuất bản v1 (def tenant null + release) mang `slot` của app (để hiện ở Thư viện/ô "Gán" như flow đã backfill M1).
- * Trả id def. `slot` mặc định khe duyệt HĐ.
+/**
+ * Flow Thư viện do platform_admin tạo + XUẤT BẢN qua API thật (E6): `POST /process-defs {trigger, app, stages}` → `POST /:id/publish`.
+ * Trả id def. Gán cho công ty: `assignCompanyFlow` (api.ts) hoặc UI.
  */
-export async function seedLibraryFlow(o: {
-  key: string;
-  name: string;
-  app: string;
-  slot: string;
-  trigger: Json;
-  stages: Json[];
-}): Promise<string> {
-  return withOwner(async (sql) => {
-    const st = JSON.stringify(o.stages);
-    const [d] = await sql<
-      { id: string }[]
-    >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app, slot,
-        published_version, enabled)
-      values (null, ${o.key}, ${o.name}, ${st}::text::jsonb, ${sql.json(o.trigger as never)}, ${o.app}, ${o.slot}, 1, true)
-      returning id::text as id`;
-    const id = d?.id as string;
-    await sql`insert into hub.process_def_releases (def_id, rel_version, name, stages)
-      values (${id}::uuid, 1, ${o.name}, ${st}::text::jsonb)`;
-    return id;
+export async function createLibraryFlow(
+  hub: string,
+  token: string,
+  o: { key: string; name: string; app: string; trigger: Json; stages: Json[] },
+): Promise<string> {
+  const h = { authorization: `Bearer ${token}`, "content-type": "application/json" };
+  const made = await fetch(`${hub}/process-defs`, {
+    method: "POST",
+    headers: h,
+    body: JSON.stringify({
+      key: o.key,
+      name: o.name,
+      description: "",
+      input_hint: "",
+      run_group_ids: [],
+      token_budget: null,
+      enabled: true,
+      sources: [],
+      inputs: [],
+      stages: o.stages,
+      trigger: o.trigger,
+      app: o.app,
+    }),
   });
+  const text = await made.text();
+  if (made.status >= 300)
+    throw new Error(`tạo flow ${o.key}: ${made.status} ${text.slice(0, 300)}`);
+  const def = JSON.parse(text) as { id: string; version: number };
+  const pub = await fetch(`${hub}/process-defs/${def.id}/publish`, {
+    method: "POST",
+    headers: h,
+    body: JSON.stringify({ version: def.version, note: "e2e" }),
+  });
+  if (pub.status >= 300)
+    throw new Error(`xuất bản flow ${o.key}: ${pub.status} ${(await pub.text()).slice(0, 300)}`);
+  return def.id;
 }

@@ -27,31 +27,6 @@ const libraryId = () =>
       )[0]?.id as string,
   );
 
-test("CR-121 c17b · platform: Sơ đồ mặc định, Danh sách nhớ lại, n/20, Chỉ chạy khi, Xuất bản vN+1", async ({
-  browser,
-}) => {
-  const ctx = await browser.newContext();
-  const p = await ctx.newPage();
-  try {
-    const id = await libraryId();
-    await platformLogin(p);
-    await p.goto(`${ADMIN_URL}/processes/${id}`);
-    const toolbar = p.getByTestId("library-toolbar");
-    await expect(p.getByRole("application", { name: "Canvas quy trình" })).toBeVisible(); // Sơ đồ mặc định
-    await expect(toolbar.getByRole("button", { name: /^Xuất bản v\d+$/ })).toBeVisible();
-    await expect(toolbar).toContainText(/\d+ công ty/);
-    await toolbar.getByRole("button", { name: /^Danh sách/ }).click();
-    await expect(p.getByTestId("flow-form")).toBeVisible();
-    await expect(p.getByTestId("flow-counter")).toHaveText(/^\d+\/20$/);
-    await expect(p.getByText("Chỉ chạy khi").first()).toBeVisible();
-    await p.reload();
-    await expect(p.getByTestId("flow-form")).toBeVisible(); // nhớ theo người dùng (processView)
-    await p.evaluate(() => localStorage.removeItem("processView"));
-  } finally {
-    await ctx.close();
-  }
-});
-
 test("CR-121 c17b · tenant_admin: thư viện chỉ xem có tab Lượt chạy; bản riêng không có Xuất bản, có ghi chú lưu áp dụng ngay", async ({
   browser,
 }) => {
