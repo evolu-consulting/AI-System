@@ -54,7 +54,8 @@ function harness(prep: FlowPrep) {
 
 describe("A1 · manifest ⇄ luật thuần", () => {
   it("3 sự kiện + khoá dữ kiện khớp manifest events[]", () => {
-    const evs = CONTRACTS_MANIFEST.events ?? [];
+    // esign.* (N1) là sự kiện của node Ký số, không thuộc 3 sự kiện hợp đồng.
+    const evs = (CONTRACTS_MANIFEST.events ?? []).filter((e) => e.key.startsWith("contract."));
     expect(evs.map((e) => e.key).sort()).toEqual([...CONTRACT_EVENTS].sort());
     for (const e of evs)
       expect(e.facts.map((f) => f.key).sort()).toEqual(

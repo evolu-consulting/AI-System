@@ -89,3 +89,38 @@ export async function withPackScope<T>(
     config,
   );
 }
+
+type PrevScope = { role: string; tid: string; uid: string; kind: string; ext: string };
+
+/** CR-122 A2b: chạy `fn` dưới role gói + tenant NGAY TRONG tx đang mở (tx engine), xong (kể cả `fn` ném) trả role/app.* như cũ.
+ *  Dùng cho OutcomeHandler của gói. `pack` sai ⇒ PACK_KEY_INVALID; `tenantId` sai ⇒ TENANT_INVALID, trước khi đổi gì. */
+export async function withPackRoleInTx<T>(
+  tx: Tx,
+  pack: string,
+  tenantId: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const role = packRole(pack);
+  if (typeof tenantId !== "string" || !UUID.test(tenantId))
+    throw new PackScopeError("TENANT_INVALID");
+  const [prev] = await tx.execute<PrevScope>(sql`select current_user::text as role,
+      coalesce(current_setting('app.tenant_id', true), '') as tid, coalesce(current_setting('app.user_id', true), '') as uid,
+      coalesce(current_setting('app.user_kind', true), '') as kind, coalesce(current_setting('app.ext_org_id', true), '') as ext`);
+  if (!prev) throw new Error("withPackRoleInTx: không đọc được scope hiện tại");
+  await tx.execute(sql`select set_config('role', ${role}, true), set_config('app.tenant_id', ${tenantId}, true),
+      set_config('app.user_id', '', true), set_config('app.user_kind', packs.scope_user_kind(''), true),
+      set_config('app.ext_org_id', packs.scope_ext_org(${tenantId}, ''), true)`);
+  const restore = () =>
+    tx.execute(sql`select set_config('role', ${prev.role}, true), set_config('app.tenant_id', ${prev.tid}, true),
+      set_config('app.user_id', ${prev.uid}, true), set_config('app.user_kind', ${prev.kind}, true),
+      set_config('app.ext_org_id', ${prev.ext}, true)`);
+  let out: T;
+  try {
+    out = await fn();
+  } catch (e) {
+    await restore().catch(() => undefined); // tx đã hỏng ⇒ sẽ rollback, giữ lỗi gốc
+    throw e;
+  }
+  await restore();
+  return out;
+}
