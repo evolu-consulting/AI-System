@@ -167,6 +167,35 @@ describe("sự kiện flow Community [CR-122 A2]", () => {
     expect(runs.n).toBe(0);
   });
 
+  it("cờ tắt, phát sự kiện ném lỗi ⇒ bài VẪN được ghi (savepoint), 0 sự kiện; cờ bật thì lỗi làm hỏng bài", async () => {
+    // CHECK chưa kiểm hàng cũ nhưng chặn mọi INSERT mới của post.created ⇒ `hub.emit_flow_event` ném 23514.
+    await sql`alter table hub.flow_events add constraint m1_boom check (event <> 'post.created') not valid`;
+    try {
+      triggersOn = false;
+      const r = await call("s1a", "POST", "/posts", {
+        type: "sell",
+        body: "Keo dán 2",
+        fields: { product: "Keo", qty: "1", price: null },
+      });
+      expect(r.status).toBe(201);
+      await Promise.all(bg.splice(0));
+      const id = r.json.id as string;
+      expect(await events(`post.created:${id}`)).toHaveLength(0);
+      expect(
+        (await row(sql`select count(*)::int as n from community.posts where id = ${id}::uuid`)).n,
+      ).toBe(1);
+      triggersOn = true;
+      const bad = await call("s1a", "POST", "/posts", {
+        type: "sell",
+        body: "Keo dán 3",
+        fields: { product: "Keo", qty: "1", price: null },
+      });
+      expect(bad.status).toBeGreaterThanOrEqual(500);
+    } finally {
+      await sql`alter table hub.flow_events drop constraint m1_boom`;
+    }
+  });
+
   it("cờ bật: bài ⇒ post.created cùng tx, Hiện/Ẩn idempotent", async () => {
     triggersOn = true;
     const id = await newPost();

@@ -3,7 +3,7 @@ import { describe, expect, it } from "bun:test";
 import { CONTRACTS_MANIFEST } from "@ai/contracts/app-manifest";
 import { CONTRACT_EVENTS, contractEventId, FACT_KEYS } from "../domain/contract-flow-events.rules";
 import { startApproval } from "./approval.usecase";
-import type { ContractFlowGate, FlowPrep } from "./contract-flow.ports";
+import { type ContractFlowGate, emitGuarded, type FlowPrep } from "./contract-flow.ports";
 import { handleExtractJob } from "./extract-job.usecase";
 
 const who = {
@@ -70,6 +70,21 @@ describe("A1 · manifest ⇄ luật thuần", () => {
       contractEventId("contract.submitted", CID, "a1"),
     );
     expect(contractEventId("contract.uploaded", CID)).toBe(`contract.uploaded:${CID}`);
+  });
+});
+
+describe("A1 · emitGuarded (savepoint khi cờ tắt)", () => {
+  const calls: string[] = [];
+  const repo = {
+    shadow: async (e: string, fn: (r: unknown) => Promise<unknown>) => {
+      calls.push(`shadow:${e}`);
+      await fn({});
+    },
+  } as never;
+  it("cờ tắt ⇒ chạy qua repo.shadow; cờ bật ⇒ chạy thẳng, không savepoint", async () => {
+    await emitGuarded(repo, false, "contract.submitted", async () => calls.push("fn"));
+    await emitGuarded(repo, true, "contract.submitted", async () => calls.push("fn-on"));
+    expect(calls).toEqual(["shadow:contract.submitted", "fn", "fn-on"]);
   });
 });
 

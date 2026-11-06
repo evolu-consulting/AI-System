@@ -167,7 +167,14 @@ export async function create(
     // CR-120: khe duyệt bài có def ⇒ mở lượt trong CÙNG tx (bài ẩn với người khác tới khi duyệt)
     if (moderated) await openModeration(tx, id);
     if (emitsEvents(flows))
-      await emitEvent(tx, a.who, EV_POST, id, postFacts({ type: input.type, author_org: a.org }));
+      await emitEvent(
+        tx,
+        a.who,
+        EV_POST,
+        id,
+        postFacts({ type: input.type, author_org: a.org }),
+        trig,
+      );
     return postById(tx, id);
   });
   const post = found(row);

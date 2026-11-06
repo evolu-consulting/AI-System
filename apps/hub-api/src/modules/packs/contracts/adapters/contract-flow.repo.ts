@@ -7,7 +7,12 @@
 //   cửa sổ ghi rồi TRẢ LẠI role/biến cũ (engine còn ghi hub.* sau đó). Idempotent theo `(runId, outcome)`.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import { type OutcomeInput, type OutcomeResult, withPackRoleInTx } from "../../kit/public";
+import {
+  type OutcomeInput,
+  type OutcomeResult,
+  shadowEmit,
+  withPackRoleInTx,
+} from "../../kit/public";
 import type { ContractFlowRepo } from "../application/contract-flow.ports";
 import {
   APPROVAL_STATUS_OF,
@@ -36,6 +41,7 @@ const deptsJson = (d: readonly string[] | null) => (d && d.length > 0 ? JSON.str
 
 export function contractFlowRepo(tx: Tx, tid: string): ContractFlowRepo {
   return {
+    shadow: (event, fn) => shadowEmit(tx, event, (sp) => fn(contractFlowRepo(sp, tid))),
     async emitContract(event, cid, versionKey, o) {
       const id = contractEventId(event, cid, versionKey);
       const rows = await tx.execute<{ id: string | null }>(sql`

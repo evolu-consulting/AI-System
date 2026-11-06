@@ -6,11 +6,18 @@
 //                    gì (`already_applied`), kết quả cũ không ghi đè quyết định khác.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { FlowEventInput, OutcomeResult } from "../../kit/public";
 import {
+  type FlowEventInput,
+  type OutcomeResult,
+  type PackWho,
+  shadowEmit,
+} from "../../kit/public";
+import {
+  type CommunityEvent,
   EV_JOIN,
   EV_POST,
   EV_REPORT,
+  eventIdOf,
   type Facts,
   joinFacts,
   postFacts,
@@ -22,6 +29,31 @@ export async function emitFlowEvent(tx: Tx, e: FlowEventInput): Promise<boolean>
   const r = await tx.execute<{ id: string | null }>(sql`select hub.emit_flow_event(
       ${e.tenantId}::uuid, ${e.eventId}, ${e.event}, ${e.ref}, ${JSON.stringify(e.facts)}::jsonb, ${e.actorId}::uuid) as id`);
   return r[0]?.id != null;
+}
+
+/**
+ * Ghi sự kiện CÙNG tx bản ghi; `event_id` ổn định theo bản ghi ⇒ ghi lại không mở lượt thứ hai. `on` = cờ `FLOW_TRIGGERS`: tắt ⇒ chỉ
+ * để ghi bóng, chạy trong SAVEPOINT (lỗi ⇒ rollback về savepoint + log, tx bản ghi chạy tiếp); bật ⇒ lỗi làm hỏng tx.
+ */
+export async function emitEvent(
+  tx: Tx,
+  who: PackWho,
+  event: CommunityEvent,
+  ref: string,
+  facts: Facts,
+  on: boolean,
+): Promise<void> {
+  const emit = (t: Tx) =>
+    emitFlowEvent(t, {
+      tenantId: who.tenantId,
+      event,
+      ref,
+      eventId: eventIdOf(event, ref),
+      facts,
+      actorId: who.userId,
+    });
+  if (on) await emit(tx);
+  else await shadowEmit(tx, event, emit);
 }
 
 /** Dữ kiện hiện tại (một câu theo sự kiện); không thấy trong tenant ⇒ null (không lộ tồn tại). */

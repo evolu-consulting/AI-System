@@ -18,17 +18,9 @@ import {
   screenPrompt,
   triagePrompt,
 } from "../domain/flow.rules";
-import {
-  type CommunityEvent,
-  EV_JOIN,
-  EV_REPORT,
-  eventIdOf,
-  type Facts,
-  joinFacts,
-  reportFacts,
-} from "../domain/flow-events.rules";
+import { EV_JOIN, EV_REPORT, joinFacts, reportFacts } from "../domain/flow-events.rules";
 import type { Access } from "./community-access";
-import { emitFlowEvent } from "./flow-events.repo";
+import { emitEvent } from "./flow-events.repo";
 import * as repo from "./flows.repo";
 import { upsertPartner } from "./org.repo";
 
@@ -130,22 +122,7 @@ export const triggersEnabled = async (d: FlowDeps | undefined, tenantId: string)
 /** Có nối cổng cờ ⇒ app luôn phát sự kiện (cờ tắt = bóng: bộ điều phối chỉ ghi "lẽ ra chạy", đường khe cũ vẫn mở lượt). */
 export const emitsEvents = (d: FlowDeps | undefined): boolean => !!d?.triggersOn;
 
-/** Ghi sự kiện CÙNG tx bản ghi; `event_id` ổn định theo bản ghi ⇒ ghi lại không mở lượt thứ hai. */
-export const emitEvent = (
-  tx: Tx,
-  who: PackWho,
-  event: CommunityEvent,
-  ref: string,
-  facts: Facts,
-): Promise<boolean> =>
-  emitFlowEvent(tx, {
-    tenantId: who.tenantId,
-    event,
-    ref,
-    eventId: eventIdOf(event, ref),
-    facts,
-    actorId: who.userId,
-  });
+export { emitEvent } from "./flow-events.repo";
 
 // ---------------------------------------------------------------- post-moderation
 /** Khe duyệt bài bật cho tenant? Gọi TRƯỚC khi mở tx tạo bài (không giữ tx gói khi hỏi hub). */
@@ -234,6 +211,7 @@ export type JoinInput = {
 export async function createJoin(d: FlowDeps, a: Access, input: JoinInput): Promise<repo.JoinRow> {
   if (a.org === null) throw new AppError("JOIN_HOST_NOT_ALLOWED", 403, "Hosts are already members");
   const org = a.org;
+  const trig = await triggersEnabled(d, a.who.tenantId);
   try {
     return await d.uow.tenant(a.who, async ({ tx }) => {
       const id = await repo.insertJoin(tx, {
@@ -249,6 +227,7 @@ export async function createJoin(d: FlowDeps, a: Access, input: JoinInput): Prom
           EV_JOIN,
           id,
           joinFacts({ company: input.company, email: input.email }),
+          trig,
         );
       const [row] = await repo.joinRows(tx, [id]);
       return row as repo.JoinRow;
@@ -309,6 +288,7 @@ export async function createReport(
   postId: string,
   reason: string,
 ): Promise<repo.ReportRow> {
+  const trig = await triggersEnabled(d, a.who.tenantId);
   const row = await d.uow.tenant(a.who, async ({ tx }) => {
     const [post] = await repo.modRows(tx, [postId]);
     if (!post) throw appError("NOT_FOUND");
@@ -328,6 +308,7 @@ export async function createReport(
         EV_REPORT,
         id,
         reportFacts({ triage_kind: null, triage_level: null }),
+        trig,
       );
     const [r] = await repo.reportRows(tx, [id]);
     return r as repo.ReportRow;

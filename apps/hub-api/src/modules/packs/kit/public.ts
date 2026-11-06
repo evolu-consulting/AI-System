@@ -31,6 +31,7 @@ export { PackToolRegistry } from "./adapters/pack-tools.registry";
 export { createPackUow, packTenantOnly } from "./adapters/pack-uow";
 export { createPdfConverter } from "./adapters/pdf/index";
 export { recordLabelRegistry } from "./adapters/record-label-registry";
+export { shadowEmit } from "./adapters/shadow-emit";
 export { checkSlotContract, flowAdapterSlots } from "./adapters/slot-contract.check";
 export { slotRegistry } from "./adapters/slot-registry";
 export type {

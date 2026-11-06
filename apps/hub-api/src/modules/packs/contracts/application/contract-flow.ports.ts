@@ -18,6 +18,8 @@ export type ContractFlowRepo = {
   readFacts(
     contractId: string,
   ): Promise<{ facts: Record<string, unknown>; startedBy: string | null } | null>;
+  /** Chạy `fn` (với repo trên tx CON) trong SAVEPOINT: lỗi ⇒ rollback về savepoint + log, tx bản ghi chạy tiếp (chỉ khi cờ TẮT = bóng). */
+  shadow?(event: string, fn: (repo: ContractFlowRepo) => Promise<unknown>): Promise<void>;
 };
 export type ContractFlowTxRepos = { contractFlow?: ContractFlowRepo | undefined };
 
@@ -40,9 +42,34 @@ export const emitFlow = async (
   actor: string,
 ): Promise<void> => {
   if (!prep || !flowEmits(prep)) return;
+  const repo = prep.on ? requireFlow(r) : r.contractFlow;
+  if (!repo) return;
   const o = { actor, departments: prep.departments };
-  await (prep.on ? requireFlow(r) : r.contractFlow)?.emitContract(ev, ids[0], ids[1], o);
+  await emitGuarded(repo, prep.on, ev, (x) => x.emitContract(ev, ids[0], ids[1], o));
 };
+
+/** `contract.uploaded` CÙNG tx tải lên (cùng luật cờ như `emitFlow`). */
+export const emitUploadedFlow = async (
+  r: ContractFlowTxRepos,
+  prep: FlowPrep,
+  contractId: string,
+  fileType: string,
+  actor: string,
+): Promise<void> => {
+  if (!flowEmits(prep)) return;
+  const repo = prep.on ? requireFlow(r) : r.contractFlow;
+  const o = { fileType, actor, departments: prep.departments };
+  if (repo)
+    await emitGuarded(repo, prep.on, "contract.uploaded", (x) => x.emitUploaded(contractId, o));
+};
+
+/** Cờ bật ⇒ chạy thẳng (lỗi làm hỏng tx); cờ tắt ⇒ trong savepoint (lỗi bóng không làm hỏng tx ghi hợp đồng). */
+export const emitGuarded = (
+  repo: ContractFlowRepo,
+  on: boolean,
+  event: string,
+  fn: (repo: ContractFlowRepo) => Promise<unknown>,
+): Promise<unknown> => (on || !repo.shadow ? fn(repo) : repo.shadow(event, fn));
 
 /** Bắn trong tx đang mở; cờ bật mà repo chưa nối ⇒ ném (không im lặng nuốt sự kiện). */
 export function requireFlow(r: ContractFlowTxRepos): ContractFlowRepo {
