@@ -62,6 +62,11 @@ export class LibraryService {
     });
   }
 
+  /** CR-121 c9 · ghi cấu hình (scope system, khoá `config_meta`, audit) cho `CompanyLibraryService` — một cửa ghi, không import chéo studio. */
+  write<T>(u: AuthUser, fn: (tx: Tx) => Promise<{ result: T; audit: StudioAudit | null }>) {
+    return withConfigWrite(this.#w, u, fn);
+  }
+
   async #def(tx: Tx, id: string, lock = false): Promise<lib.LibRow> {
     const r = await lib.readLibDef(tx, id, lock);
     if (!r) throw notFound();

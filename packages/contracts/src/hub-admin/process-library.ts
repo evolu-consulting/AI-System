@@ -45,6 +45,10 @@ export const HUB_ADMIN_LIBRARY_ERRORS = {
   SLOT_UNKNOWN: 422,
   SLOT_BODY_INVALID: 422,
   SLOT_SHAPE_UNSUPPORTED: 422,
+  /** CR-121 c9 · `clone-for-company`: `:id` không phải def thư viện (không có khe). */
+  NOT_LIBRARY_DEF: 422,
+  /** CR-121 c9 · `clone-for-company`: khe của def không còn đăng ký. */
+  SLOT_GONE: 422,
 } as const;
 export type HubAdminLibraryErrorCode = keyof typeof HUB_ADMIN_LIBRARY_ERRORS;
 

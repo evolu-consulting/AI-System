@@ -74,6 +74,7 @@ export {
 } from "../chat/processes-entities";
 export * from "./autofix";
 export * from "./dlc-step-templates";
+export * from "./process-company";
 export * from "./process-library";
 export * from "./process-notify";
 export * from "./process-routing";

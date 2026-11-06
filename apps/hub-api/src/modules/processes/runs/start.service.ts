@@ -30,6 +30,7 @@ import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { enqueueThread } from "../core/thread";
 import { canRun } from "../domain/runs/run-access.rules";
+import { runDefIdsFor } from "./run-def-filter";
 import * as repo from "./runs.repo";
 import { type CreateRunInput, createRun, originOf } from "./start-inputs";
 
@@ -274,6 +275,7 @@ export class StartService {
   async list(u: AuthUser, q: ProcessRunListQuery, tenantIdQ?: string) {
     const tenantId = this.#listTenant(u, q, tenantIdQ);
     const scope = { kind: "user" as const, userId: u.userId, tenantId };
+    const defIds = await runDefIdsFor(this.d.db, tenantId, q); // CR-121 c9 · slot/def_id
     const [rows, times] = await withHubScope(this.d.db, scope, async (tx) => {
       if (q.room_id && !(await repo.isRoomMember(tx, tenantId, q.room_id, u.userId)))
         throw appError("NOT_FOUND");
@@ -285,6 +287,7 @@ export class StartService {
         ...(q.process_key && { processKey: q.process_key }),
         ...(q.status && { status: q.status }),
         ...(q.include_test && { includeTest: true }),
+        ...(defIds && { defIds }),
         limit: q.limit,
         ...(q.cursor && { after: repo.decodeCursor(q.cursor) }),
       });

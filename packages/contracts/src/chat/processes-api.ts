@@ -102,6 +102,13 @@ export const ProcessRunListQuerySchema = z.strictObject({
   tenant_id: UuidSchema.optional(),
   /** CR-105 · opt-in: gồm lượt chạy thử (`is_test`); mặc định ẩn. */
   include_test: z.stringbool().default(false),
+  /** CR-121 c9 · lọc theo việc `<gói>.<việc>` (khớp `SLOT_KEY_RE`, hub 0068): lượt chạy theo def thư viện/bản sao của khe đó. */
+  slot: z
+    .string()
+    .regex(/^[a-z][a-z0-9-]{0,39}\.[a-z][a-z0-9-]{0,39}$/)
+    .optional(),
+  /** CR-121 c9 · lọc theo def (thư viện hoặc bản riêng) mà lượt đã chọn lúc launch. */
+  def_id: UuidSchema.optional(),
 });
 export type ProcessRunListQuery = z.infer<typeof ProcessRunListQuerySchema>;
 export const ProcessRunListResponseSchema = z.strictObject({

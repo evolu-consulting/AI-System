@@ -154,6 +154,8 @@ export const processDefs = hub.table("process_defs", {
   publishedVersion: integer("published_version"),
   /** CR-105 · def tenant vật chất hoá từ thư viện: sha256 (16 hex) của def đã biên dịch; NULL = không vật chất hoá. */
   sourceRef: text("source_ref"),
+  /** CR-121 c9 (0103) · bản xuất bản của def thư viện lúc sao cho công ty (`source_template_id` = def nguồn); NULL = không phải bản sao thư viện. */
+  sourceRelVersion: integer("source_rel_version"),
 });
 // CR-105 · bảng thư viện quy trình (releases, khe, gán) ở `hub-process-library.ts`.
 

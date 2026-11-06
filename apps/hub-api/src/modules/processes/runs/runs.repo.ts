@@ -207,6 +207,8 @@ export type ListFilter = {
   status?: ProcessRunStatus;
   /** true ⇒ gồm lượt chạy thử (`is_test`); vắng ⇒ ẩn. */
   includeTest?: boolean;
+  /** CR-121 c9 · chỉ lượt đã chọn một trong các def này lúc launch (`snapshot.process_def_id`) hoặc chạy trực tiếp def; [] ⇒ không lượt nào. */
+  defIds?: readonly string[];
   limit: number;
   after?: [string, string];
 };
@@ -225,6 +227,13 @@ export async function listRuns(tx: Tx, f: ListFilter): Promise<RunSummaryRow[]> 
   if (f.processKey) where.push(sql`r.snapshot->>'key' = ${f.processKey}`);
   if (f.status) where.push(sql`r.status = ${f.status}`);
   if (!f.includeTest) where.push(sql`r.is_test = false`);
+  if (f.defIds) {
+    // Một tham số JSON (Luật 4c): khớp index `process_runs_snap_def_idx` (tenant_id, snapshot.process_def_id, started_at).
+    const ids = sql`array(select jsonb_array_elements_text(${JSON.stringify(f.defIds)}::jsonb))`;
+    where.push(
+      sql`((r.snapshot->>'process_def_id') = any(${ids}) or r.process_def_id = any(${ids}::uuid[]))`,
+    );
+  }
   if (f.after)
     where.push(sql`(r.started_at, r.id) < (${f.after[0]}::timestamptz, ${f.after[1]}::uuid)`);
   return tx.execute<RunSummaryRow>(sql`select ${RUN_COLS} from hub.process_runs r

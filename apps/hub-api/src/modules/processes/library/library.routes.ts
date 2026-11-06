@@ -2,6 +2,7 @@
 // `/process-slots` + `/tenants/:tid/process-slots…`. MỌI route ở đây chỉ platform_admin: 403 trước parse/đọc DB. Không logic.
 import {
   AssignSlotRequestSchema,
+  CloneForCompanyRequestSchema,
   CopyProcessDefRequestSchema,
   PublishProcessDefRequestSchema,
   RollbackProcessDefRequestSchema,
@@ -9,12 +10,13 @@ import {
   SlotKeySchema,
 } from "@ai/contracts/hub-admin";
 import { type Context, Hono } from "hono";
-import { requirePlatformAdmin } from "../../../lib/admin-role.middleware";
+import { requireAdminRole, requirePlatformAdmin } from "../../../lib/admin-role.middleware";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { parseIdParam, parseJson, validationError } from "../../../lib/http";
 import type { ProcessDeps } from "../core/ports";
 import { dlcStepRoutes } from "./dlc-steps.routes";
 import { LibraryService } from "./library.service";
+import { CompanyLibraryService } from "./library-company.service";
 import { routingRoutes } from "./routing.routes";
 import { RoutingService } from "./routing.service";
 
@@ -79,9 +81,31 @@ export function libraryRoutes(d: ProcessDeps): Hono<AuthVars> {
     c.json(await svc.assignments(parseIdParam(c))),
   );
   tenantRoutes(r, svc);
+  companyRoutes(r, new CompanyLibraryService(d, svc)); // CR-121 c9
   routingRoutes(r, new RoutingService(d, svc)); // CR-118 §11.2
   r.route("/", dlcStepRoutes(d)); // dlc-step-library
   return r;
+}
+
+/**
+ * CR-121 c9 (R9) · KHÔNG nằm trong `GATED` (tenant_admin được dùng cho công ty mình): chỉ chặn member sớm (403 trước parse/đọc DB);
+ * vai chi tiết (tenant_admin khác công ty ⇒ 404) kiểm ở service.
+ */
+function companyRoutes(r: Hono<AuthVars>, svc: CompanyLibraryService): void {
+  const clone = "/tenants/:tid/process-defs/:id/clone-for-company";
+  const view = "/tenants/:tid/process-library/:id";
+  r.use(clone, requireAdminRole());
+  r.use(view, requireAdminRole());
+  r.post(clone, async (c) => {
+    const tid = tidOf(c).toLowerCase();
+    const id = parseIdParam(c);
+    await parseJson(c, CloneForCompanyRequestSchema);
+    const out = await svc.cloneForCompany(c.var.user, tid, id);
+    return c.json(out, out.created ? 201 : 200);
+  });
+  r.get(view, async (c) =>
+    c.json(await svc.view(c.var.user, tidOf(c).toLowerCase(), parseIdParam(c))),
+  );
 }
 
 function tenantRoutes(r: Hono<AuthVars>, svc: LibraryService): void {
