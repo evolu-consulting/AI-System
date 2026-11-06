@@ -1,4 +1,4 @@
-// CR-122 · M1 · FLOW2-FR-20 · int (DB thật `hub_api`): migration hub 0107 backfill khe → FlowDef + `company_flows` trên dữ liệu giống prod
+// CR-122 · M1 · FLOW2-FR-20 · int (DB thật `hub_api`): migration hub 0111 backfill khe → FlowDef + `company_flows` trên dữ liệu giống prod
 // (công ty có luật phòng ban × loại HĐ + mặc định, bản riêng Q9 đã sao, công ty chưa có luật, lượt đang chạy). Chạy MIGRATION THẬT 3 lần
 // (file SQL trong tx như drizzle) ⇒ kết quả y hệt; đường mới (`dispatchOnce`, cờ bật) chọn CÙNG flow với đường cũ (`routeSlot`);
 // lượt cũ không đổi; def `dlc.*` không đụng; công ty khác không thấy dòng của nhau. `launch` giả (đếm), không engine.
@@ -35,7 +35,7 @@ const U = {
 const SYS = { kind: "system" as const };
 const T0 = new Date(Date.now() + 60_000);
 const MIGRATION = readFileSync(
-  join(import.meta.dir, "../../../../../../packages/db/migrations-hub/0107_flow_backfill.sql"),
+  join(import.meta.dir, "../../../../../../packages/db/migrations-hub/0111_flow_backfill.sql"),
   "utf8",
 );
 const PARTS = MIGRATION.split("--> statement-breakpoint")
@@ -44,7 +44,8 @@ const PARTS = MIGRATION.split("--> statement-breakpoint")
 
 let o: Sql;
 let db: Db;
-const lib = { a: "", b: "", c: "", dlc: "" };
+const lib = { a: "", b: "", c: "", dlc: "", ia: "", ib: "" };
+const INTAKE_SLOT = "contracts.intake";
 const copyZ = { id: "" };
 const rel1: Record<string, string> = {};
 const launched: string[] = [];
@@ -129,16 +130,26 @@ const rootOf = async (defId: string) =>
 
 let evSeq = 0;
 /** Gửi sự kiện `contract.submitted`, chạy bộ điều phối MỘT lượt, trả flow đã mở (gốc Thư viện). */
-async function newPath(t: string, actor: string, depts: string[], deal: string): Promise<string[]> {
+async function newPath(
+  t: string,
+  actor: string,
+  depts: string[],
+  deal: string,
+  event = "contract.submitted",
+): Promise<string[]> {
   const ref = `m1-${++evSeq}`;
+  const facts =
+    event === "contract.uploaded"
+      ? { file_type: "pdf", uploader_department: depts }
+      : { total_value: 150_000_000, deal, creator_department: depts };
   await withHubScope(db, { kind: "user", tenantId: t, userId: actor }, (tx) =>
     insertFlowEvents(tx, [
       {
         tenantId: t,
         eventId: `m1:${ref}`,
-        event: "contract.submitted",
+        event,
         ref,
-        facts: { total_value: 150_000_000, deal, creator_department: depts } as never,
+        facts: facts as never,
         actorId: actor,
       },
     ]),
@@ -188,18 +199,31 @@ beforeAll(async () => {
     values (${Z}, 'm1-b-riengz', 'QT B (riêng)', ${stagesOf("phap-che")}::text::jsonb, true, ${lib.b}, 1) returning id::text as id`;
   copyZ.id = cz?.id as string;
 
-  const rule = (t: string, p: number, cond: object, def: string, dflt: boolean) =>
+  const rule = (
+    t: string,
+    p: number,
+    cond: object,
+    def: string,
+    dflt: boolean,
+    slot = APPROVAL_SLOT,
+  ) =>
     o`insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
-      values (${t}, ${APPROVAL_SLOT}, ${p}, ${JSON.stringify(cond)}::text::jsonb, ${def}, ${dflt})`;
-  const head = (t: string, defs: string[]) =>
-    o`insert into hub.process_routings (tenant_id, slot) values (${t}, ${APPROVAL_SLOT})`.then(
+      values (${t}, ${slot}, ${p}, ${JSON.stringify(cond)}::text::jsonb, ${def}, ${dflt})`;
+  const head = (t: string, defs: string[], slot = APPROVAL_SLOT) =>
+    o`insert into hub.process_routings (tenant_id, slot) values (${t}, ${slot})`.then(
       () =>
         o`insert into hub.process_tenant_defs (tenant_id, def_id, slot)
-        select ${t}, d, ${APPROVAL_SLOT} from unnest(${o.array(defs)}::uuid[]) d`,
+        select ${t}, d, ${slot} from unnest(${o.array(defs)}::uuid[]) d`,
     );
   await head(X, [lib.a, lib.b]);
   await rule(X, 0, { departmentIds: [gx.get("kinh-doanh")] }, lib.a, false);
   await rule(X, 1, {}, lib.b, true);
+  // X · khe Tiếp nhận (contract.uploaded, decides): luật phòng ban + mặc định.
+  lib.ia = await libDef("m1-ia", "Nhận A", "ke-toan", INTAKE_SLOT);
+  lib.ib = await libDef("m1-ib", "Nhận B", "phap-che", INTAKE_SLOT);
+  await head(X, [lib.ia, lib.ib], INTAKE_SLOT);
+  await rule(X, 0, { departmentIds: [gx.get("kinh-doanh")] }, lib.ia, false, INTAKE_SLOT);
+  await rule(X, 1, {}, lib.ib, true, INTAKE_SLOT);
   await head(W, [lib.a, lib.b, lib.c]);
   await rule(W, 0, { departmentIds: [gw.get("kinh-doanh")], contractKinds: ["buy"] }, lib.a, false);
   await rule(
@@ -239,7 +263,7 @@ afterAll(async () => {
   await o?.end({ timeout: 2 });
 });
 
-describe("CR-122 M1 · hub 0107 backfill", () => {
+describe("CR-122 M1 · hub 0111 backfill", () => {
   let runsBefore: unknown;
   let after1: unknown;
 
@@ -350,6 +374,18 @@ describe("CR-122 M1 · hub 0107 backfill", () => {
     }
     expect((await oldPath(X, U.xKd, "buy")) === lib.a).toBe(true);
     expect((await oldPath(W, U.wBgd, "buy")) === lib.c).toBe(true);
+  });
+
+  it("contract.uploaded (decides): luật điều kiện (position = priority) đứng trước, mặc định (900+) sau ⇒ chỉ MỘT flow chạy, như đường cũ", async () => {
+    const cases: [string, string[], string][] = [
+      [U.xKd, ["kd-bac", "kinh-doanh"], lib.ia], // khớp luật phòng ban → A, mặc định B KHÔNG chạy thêm
+      [U.xOps, ["van-hanh"], lib.ib], // không khớp → mặc định B
+    ];
+    for (const [u, depts, want] of cases) {
+      const old = await routeSlot(db, X, INTAKE_SLOT, u, {});
+      expect(old && "defId" in old ? await rootOf(old.defId) : null).toBe(want);
+      expect(await newPath(X, u, depts, "", "contract.uploaded")).toEqual([want]);
+    }
   });
 
   it("chặn chéo tenant: mỗi công ty chỉ thấy dòng của mình; không dòng nào trỏ def của công ty khác", async () => {

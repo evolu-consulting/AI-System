@@ -88,7 +88,7 @@ beforeAll(async () => {
   await flow(X, "e1-tat", 2, { event: sub }, false);
   await flow(X, "e1-bai-a", 0, { event: "post.created" }); // decides — chỉ flow đầu
   await flow(X, "e1-bai-b", 1, { event: "post.created" });
-  await flow(X, "e1-tai-a", 0, { event: "contract.uploaded" }); // không decides — chạy tất cả
+  await flow(X, "e1-tai-a", 0, { event: "contract.uploaded" }); // decides — chỉ flow đầu
   await flow(X, "e1-tai-b", 1, { event: "contract.uploaded" });
   await flow(X, "e1-refuse", 0, { event: "contract.approved" });
   await flow(Y, "e1-y", 0, { event: sub });
@@ -126,20 +126,20 @@ describe("CR-122 E1 · hàng đợi + bộ điều phối", () => {
     ]);
   });
 
-  it("decides (post.created) ⇒ 1 lượt; không decides (contract.uploaded) ⇒ mọi flow khớp", async () => {
+  it("decides (post.created, contract.uploaded) ⇒ mỗi sự kiện đúng 1 lượt (flow đầu theo position)", async () => {
     launched.length = 0;
     await emit(X, "post:1", "post.created", "p-1", {});
     await emit(X, "up:1", "contract.uploaded", "u-1", {});
     await run();
-    expect(launched.sort()).toEqual(["p-1|e1-bai-a", "u-1|e1-tai-a", "u-1|e1-tai-b"]);
+    expect(launched.sort()).toEqual(["p-1|e1-bai-a", "u-1|e1-tai-a"]);
   });
 
   it("hai Hub chạy đồng thời ⇒ mỗi sự kiện × flow đúng một lần", async () => {
     launched.length = 0;
     for (let i = 0; i < 20; i++) await emit(X, `par:${i}`, "contract.uploaded", `par-${i}`, {});
     await Promise.all([run(), run()]);
-    expect(launched.length).toBe(40);
-    expect(new Set(launched).size).toBe(40);
+    expect(launched.length).toBe(20); // contract.uploaded decides ⇒ 1 flow mỗi sự kiện
+    expect(new Set(launched).size).toBe(20);
   });
 
   it("cờ FLOW_TRIGGERS tắt (Y) ⇒ bóng: không mở lượt, ghi would_run", async () => {

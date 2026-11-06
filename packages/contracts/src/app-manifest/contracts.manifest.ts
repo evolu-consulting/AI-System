@@ -124,7 +124,8 @@ export const CONTRACTS_MANIFEST: AppManifest = {
         { key: "accepted", label: "Đã nhận", effect: "Hợp đồng được nhận vào sổ." },
         { key: "cancelled", label: "Huỷ", effect: "Bản tải lên bị huỷ." },
       ],
-      decides: false,
+      // M1 · khe cũ chỉ chọn MỘT quy trình ⇒ flow có điều kiện (position = priority) đứng trước, mặc định (900+) đứng sau, chỉ một chạy.
+      decides: true,
       required: false,
     },
     {

@@ -27,7 +27,7 @@ beforeAll(async () => {
       null,
       { op: "and", conds: [{ fact: "n", op: "ge", value: 500 }] },
     ].entries()) {
-      const trig = { event: "contract.uploaded", ...(when ? { when } : {}) };
+      const trig = { event: "contract.approved", ...(when ? { when } : {}) };
       const [d] = await o<
         { id: string }[]
       >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app)
@@ -37,7 +37,7 @@ beforeAll(async () => {
     await withHubScope(db, { kind: "system" }, (tx) => setFlowTriggers(tx, t, true));
   }
   await o`insert into hub.flow_events (tenant_id, event_id, event, ref, facts, actor_id)
-    select (${o.array(TENANTS)}::uuid[])[1 + (g % 5)], 'perf:' || g, 'contract.uploaded', 'r-' || g,
+    select (${o.array(TENANTS)}::uuid[])[1 + (g % 5)], 'perf:' || g, 'contract.approved', 'r-' || g,
       jsonb_build_object('n', g), ${U}::uuid from generate_series(1, ${N}) g`;
   await o`analyze hub.flow_events`;
 }, 180_000);
