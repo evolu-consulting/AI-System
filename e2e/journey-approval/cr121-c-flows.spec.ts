@@ -52,7 +52,7 @@ test.beforeAll(async () => {
     const r = await fetch(`${API}/admin/groups?tenant_id=${company.id}`, {
       method: "POST",
       headers: { ...platform.headers, "content-type": "application/json" },
-      body: JSON.stringify({ key, name: key, description: null }),
+      body: JSON.stringify({ key, name: { vi: key, en: key }, description: null }),
     });
     if (r.status >= 400)
       throw new Error(`tạo nhóm ${key}: ${r.status} ${(await r.text()).slice(0, 160)}`);
