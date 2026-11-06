@@ -20,8 +20,10 @@ import { ApiError } from "@/lib/http";
 import { useViewMode } from "../../hooks/use-view-mode";
 import { companySearch } from "../../lib/company-copy";
 import { processErrorSpec } from "../../lib/errors";
+import { libraryFlowOf } from "../../lib/library-flow";
 import { runColumns } from "../editor/EditorRunsTab";
 import { ViewModeToggle } from "../ViewModeToggle";
+import { LibraryFlowCanvas } from "./LibraryFlowCanvas";
 
 type Props = { tenantId: string; defId: string; fallback: ReactNode };
 
@@ -68,7 +70,8 @@ export function LibraryReadOnlyView({ tenantId, defId, fallback }: Props) {
       <HubLoadError message={t("process.common.error.load")} onRetry={() => void q.refetch()} />
     );
   const v = q.data;
-  const rows = rowsFromSlotBody(v.slot_body);
+  const flow = libraryFlowOf(v);
+  const rows = flow ? null : rowsFromSlotBody(v.slot_body);
   const copyId = v.company_copy?.def_id ?? null;
   return (
     <div className="space-y-4" data-testid="library-readonly">
@@ -104,12 +107,21 @@ export function LibraryReadOnlyView({ tenantId, defId, fallback }: Props) {
         </TabsList>
         <TabsContent value="steps">
           <section className="space-y-3" aria-label={t("tenants.flows.stepsTitle")}>
-            <div className="flex items-center gap-2">
-              <h2 className="text-label font-semibold">{t("tenants.flows.stepsTitle")}</h2>
-              <span className="ml-auto" />
-              <ViewModeToggle mode={mode} set={setMode} />
-            </div>
-            <FlowRowsView rows={rows} pending={false} error={null} view={mode} />
+            {flow ? (
+              <>
+                <h2 className="text-label font-semibold">{t("tenants.flows.stepsTitle")}</h2>
+                <LibraryFlowCanvas flow={flow} tenantId={tenantId} />
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-label font-semibold">{t("tenants.flows.stepsTitle")}</h2>
+                  <span className="ml-auto" />
+                  <ViewModeToggle mode={mode} set={setMode} />
+                </div>
+                <FlowRowsView rows={rows} pending={false} error={null} view={mode} />
+              </>
+            )}
           </section>
         </TabsContent>
         <TabsContent value="runs">

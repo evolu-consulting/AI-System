@@ -29,8 +29,12 @@ export const PROCESS_LIBRARY_VIEW_RUNS_MAX = 20;
 export const ProcessLibraryViewSchema = z.strictObject({
   read_only: z.literal(true),
   def_id: UuidSchema,
-  slot: SlotKeySchema,
+  /** null ⇒ flow Thư viện theo sự kiện (có `trigger`, không khe). */
+  slot: SlotKeySchema.nullable(),
   slot_label: z.string(),
+  /** Flow theo sự kiện: node "Bắt đầu khi" (`trigger`) + app; def khe cũ ⇒ vắng/null. */
+  trigger: z.unknown().optional(),
+  app: z.string().nullable().optional(),
   name: z.string(),
   description: z.string(),
   rel_version: z.number().int().min(1),

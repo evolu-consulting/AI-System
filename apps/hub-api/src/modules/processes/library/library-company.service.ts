@@ -36,6 +36,12 @@ const isUniqueViolation = (e: unknown): boolean =>
   (e as { code?: string })?.code === "23505" ||
   (e as { cause?: { code?: string } })?.cause?.code === "23505";
 const KEY_BASE_MAX = 50;
+/** Xem được: còn sống, đã xuất bản, và là def thư viện (có khe HOẶC có `trigger` — flow theo sự kiện, CR-122). */
+const slotLabel = (slot: string | null): string =>
+  slot === null ? "" : (listSlots().find((s) => s.key === slot)?.label ?? slot);
+const flowPart = (g: co.GlobalDef) => (g.trigger == null ? {} : { trigger: g.trigger, app: g.app });
+const isViewable = (g: co.GlobalDef): g is co.GlobalDef & { published_version: number } =>
+  !g.deleted && g.published_version !== null && (g.slot !== null || g.trigger != null);
 
 export class CompanyLibraryService {
   constructor(
@@ -175,7 +181,8 @@ export class CompanyLibraryService {
       async (tx) => {
         if (!(await tenantOf(tx, tenantId))) throw notFound();
         const g = await co.readGlobalDef(tx, defId);
-        if (!g || g.deleted || g.slot === null || g.published_version === null) throw notFound();
+        // thư viện = có khe HOẶC có `trigger` (flow theo sự kiện, CR-122)
+        if (!g || !isViewable(g)) throw notFound();
         const rel = await lib.readRelease(tx, g.id, g.published_version);
         if (!rel) throw notFound();
         const copy = await co.companyCopyOf(tx, tenantId, g.id);
@@ -191,7 +198,8 @@ export class CompanyLibraryService {
           read_only: true as const,
           def_id: g.id,
           slot,
-          slot_label: listSlots().find((s) => s.key === slot)?.label ?? slot,
+          slot_label: slotLabel(slot),
+          ...flowPart(g),
           name: rel.name,
           description: g.description,
           rel_version: Number(g.published_version),

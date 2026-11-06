@@ -11,11 +11,14 @@ export type GlobalDef = {
   slot: string | null;
   published_version: number | null;
   deleted: boolean;
+  /** CR-122 · flow Thư viện theo sự kiện (không khe). */
+  trigger: unknown;
+  app: string | null;
 };
 
 export async function readGlobalDef(tx: Tx, id: string): Promise<GlobalDef | null> {
   const [r] = await tx.execute<GlobalDef>(sql`select d.id::text as id, d.key, d.description, d.slot,
-      d.published_version, (d.deleted_at is not null) as deleted
+      d.published_version, (d.deleted_at is not null) as deleted, d.trigger, d.app
     from hub.process_defs d where d.id = ${id} and d.tenant_id is null`);
   return r ?? null;
 }

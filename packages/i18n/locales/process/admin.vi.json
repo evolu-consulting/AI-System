@@ -56,6 +56,8 @@
     "libReadonly": "Quy trình dùng chung — chỉ xem.",
     "copied": "Đã sao chép và gán cho công ty này",
     "copyFailed": "Không sao chép được: {{reason}}",
+    "saveBlocked": "Chưa lưu được: {{reason}}",
+    "saveBlockedStep": "Chưa lưu được — bước «{{step}}»: {{reason}}",
     "openCopy": "Mở bản riêng",
     "kind": "Loại: {{kind}} · bản dùng chung v{{n}}",
     "copySource": "Sao từ thư viện: {{name}} · v{{n}}",

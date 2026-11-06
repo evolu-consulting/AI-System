@@ -16,6 +16,7 @@ import {
   serverPaths,
   serverRules,
 } from "../lib/errors";
+import { blockedInfo } from "../lib/save-blocked";
 import type { TeamSections } from "../lib/wait-form";
 import type { DraftState } from "./use-draft";
 
@@ -107,7 +108,17 @@ export function useDefSave({
     const draft = prepare ? prepare(d.draftRef.current) : d.draftRef.current;
     const errors = validateDraft(draft, undefined, teams, tools);
     d.showErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+    const blocked = blockedInfo(errors, draft.stages);
+    if (blocked) {
+      // lỗi chặn Lưu không được im lặng: nói rõ bước nào + câu sửa (ô lỗi có thể nằm trong node đang đóng trên canvas)
+      const reason = t(blocked.reasonKey);
+      notifyError(
+        blocked.stepName
+          ? t("process.admin.editor.saveBlockedStep", { step: blocked.stepName, reason })
+          : t("process.admin.editor.saveBlocked", { reason }),
+      );
+      return;
+    }
     const body = { ...toInput(draft), ...extra } as ProcessDefInput;
     setPending(true);
     try {

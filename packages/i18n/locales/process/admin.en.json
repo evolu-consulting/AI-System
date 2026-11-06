@@ -56,6 +56,8 @@
     "libReadonly": "Shared process — view only.",
     "copied": "Copied and assigned to this company",
     "copyFailed": "Could not copy: {{reason}}",
+    "saveBlocked": "Not saved: {{reason}}",
+    "saveBlockedStep": "Not saved — step \"{{step}}\": {{reason}}",
     "openCopy": "Open the company copy",
     "kind": "Type: {{kind}} · shared version v{{n}}",
     "copySource": "Copied from library: {{name}} · v{{n}}",
