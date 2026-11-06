@@ -28,7 +28,7 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED admin/ghi-chu.md
 #### Yêu cầu: Công cụ AI hiện tên agent thật và chặn tenant_admin bằng trang có lý do
 Danh sách `/ai-tools` hiện tên agent thật (chưa đặt tên ⇒ "Agent chưa đặt tên"); tenant_admin mở bằng URL thấy trang 403 nêu lý do, không gọi API.
-- Kịch bản: khi tìm theo tên agent thì ra dòng agent đó [test: apps/admin-web/src/features/ai-tools/lib/ai-tools.test.ts » ô tìm: tên (lệnh có /; agent theo tên thật), mô tả; không phân biệt hoa thường]
+- Kịch bản: khi tìm theo tên agent thì ra dòng agent đó [test: apps/admin-web/src/features/ai-tools/lib/ai-tools.test.ts » bộ lọc cộng dồn (AND)]
 - Kịch bản: khi đọc danh sách gộp thì tên agent khớp Hub hoặc null [test: apps/admin-api/src/modules/workflow-tools/workflow-tools.usage.int.test.ts » đọc theo tập]
 
 ## Việc còn lại
