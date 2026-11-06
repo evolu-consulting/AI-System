@@ -116,6 +116,7 @@ test.beforeAll(async () => {
     app: "contracts",
     trigger: { event: "contract.submitted" },
     stages: stages(),
+    withGroupKeys: true,
   });
   tenantId = await enableFlowTriggers(E.tenantKey);
 });
@@ -130,7 +131,7 @@ test("G1.1 · platform_admin gán flow Thư viện cho công ty ⇒ dòng 'Đư�
   const row = await assignFlowUi(box, FLOW);
   await expect(row).toContainText("Được gán · chỉ xem");
   await expect(row).toContainText("Khi gửi duyệt hợp đồng");
-  await expect(row).toContainText("Đang bật");
+  await expect(row).toContainText("Đang dùng");
   expect(flowId).not.toBe("");
 });
 
@@ -188,7 +189,7 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   const page = await tenantAdmin(browser);
   const box = await openAdminList(page);
   const orig = flowRow(box, FLOW).filter({ hasText: "Được gán" });
-  await expect(orig).toContainText("Đang bật");
+  await expect(orig).toContainText("Đang dùng");
   // 409 · tắt flow bắt buộc cuối cùng
   await orig.getByRole("button", { name: "Tắt", exact: true }).click();
   await expect(page.getByTestId("company-flow-error")).toContainText(
@@ -199,8 +200,8 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   await orig.getByRole("button", { name: "Sao chép để sửa" }).click();
   const copy = flowRows(box).filter({ hasText: `Sao từ ${FLOW} · v1` });
   await expect(copy).toBeVisible();
-  await expect(copy).toContainText("Đang tắt");
-  await expect(orig).toContainText("Đang bật");
+  await expect(copy).toContainText("Tắt · chưa xuất bản");
+  await expect(orig).toContainText("Đang dùng");
   // 409 · bật bản chưa xuất bản
   await copy.getByRole("button", { name: "Bật", exact: true }).click();
   await expect(page.getByTestId("company-flow-error")).toContainText("Xuất bản trước");
@@ -248,9 +249,9 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   const box2 = await openCompanyFlows(page);
   const copy2 = flowRows(box2).filter({ hasText: `Sao từ ${FLOW} · v1` });
   await copy2.getByRole("button", { name: "Xuất bản", exact: true }).click();
-  await expect(copy2).toContainText("Đang bật");
+  await expect(copy2).toContainText("Đang dùng");
   const orig2 = flowRow(box2, FLOW).filter({ hasText: "Được gán" });
-  await expect(orig2).toContainText("Đang tắt · đã thay bằng bản công ty");
+  await expect(orig2).toContainText("Đã thay bằng bản công ty");
   // 409 · bật gốc khi bản công ty đang bật
   await orig2.getByRole("button", { name: "Bật", exact: true }).click();
   await expect(page.getByTestId("company-flow-error")).toContainText(
@@ -272,8 +273,8 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   const box3 = await openCompanyFlows(page);
   const copy3 = flowRows(box3).filter({ hasText: `Sao từ ${FLOW} · v1` });
   await copy3.getByRole("button", { name: "Quay về bản gốc" }).click();
-  await expect(flowRow(box3, FLOW).filter({ hasText: "Được gán" })).toContainText("Đang bật");
-  await expect(copy3).toContainText("Đang tắt · đã quay về bản gốc");
+  await expect(flowRow(box3, FLOW).filter({ hasText: "Được gán" })).toContainText("Đang dùng");
+  await expect(copy3).toContainText("Tắt · đã quay về bản gốc");
   const c = await submit(browser, "g2c");
   await expect(isOpen(c.emp, BIG)).toBeVisible({ timeout: 90_000 });
   await approveAs(await ctxPage(browser), E, U.accounting, c.id, BIG);
@@ -334,6 +335,7 @@ test("List · kéo thả đổi thứ tự flow của công ty (đúng thứ t�
   const box = await openAdminList(page);
   const before = (await companyFlows(HUB, await dirSession(), tenantId)).map((r) => r.id);
   expect(before.length).toBeGreaterThanOrEqual(2);
+  await page.getByTestId("company-flow-order").locator("summary").click(); // kéo thả chỉ bật khi mở Nâng cao
   const rows = flowRows(box);
   await rows.nth(1).dragTo(rows.nth(0));
   await expect

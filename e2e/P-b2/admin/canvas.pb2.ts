@@ -183,8 +183,7 @@ test("ADM-FR-71 · E-PB2-10 · tab 'Danh sách' ⇒ danh sách theo bước + pa
   browser,
 }) => {
   await openCanvas(p);
-  const tabs = p.getByRole("tablist", { name: "Chế độ xem" });
-  await tabs.getByRole("tab", { name: "Danh sách" }).click();
+  await p.getByTestId("flows-view-list").click(); // CR-121 F9: công tắc Sơ đồ / Danh sách bước (không còn tablist)
   await expect(canvas(p)).toHaveCount(0);
   await expect(p.getByRole("button", { name: /^Giai đoạn [1-4]: / })).toHaveCount(4);
   await p.getByRole("button", { name: /^Giai đoạn 3: Test hồi quy/ }).click();
@@ -202,9 +201,7 @@ test("ADM-FR-71 · E-PB2-10 · tab 'Danh sách' ⇒ danh sách theo bước + pa
     await q.unroute("**/canvas*.js");
     await q.setViewportSize({ width: 700, height: 800 });
     await q.reload();
-    await expect(
-      q.getByRole("tablist", { name: "Chế độ xem" }).getByRole("tab", { name: "Danh sách" }),
-    ).toHaveAttribute("aria-selected", "true");
+    await expect(q.getByTestId("flows-view-list")).toHaveAttribute("aria-pressed", "true");
   } finally {
     await ctx.close();
   }

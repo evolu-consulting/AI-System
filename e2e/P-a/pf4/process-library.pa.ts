@@ -74,6 +74,10 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await expect(toolbar.getByText(/Lưu nháp chưa áp dụng cho tenant/)).toBeVisible();
     expect(name).toBe("Quy trình HĐ e2e");
     // CR-122: flow có Bắt đầu khi chỉ còn MỘT trình sửa canvas (Form theo khe + nút hệ thống đã gỡ) — sửa/xuất bản/hiện nút ở cr122-flows + cr122-editor.
+    await p
+      .getByRole("navigation", { name: "Điều hướng chính" })
+      .getByRole("link", { name: "Quy trình", exact: true })
+      .click();
 
     // Dọn rác: xoá quy trình KHÔNG dùng (nháp hoặc đã xuất bản) bằng gõ lại tên; mặc định / đang gán thì nút Xoá bị khoá
     await openMenu(table.getByRole("row").filter({ hasText: name }).first());
