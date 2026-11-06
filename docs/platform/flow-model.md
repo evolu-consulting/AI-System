@@ -1,6 +1,6 @@
 # Mô hình Flow chuẩn (đích) — nền cho các CR sau
 
-Trạng thái: **Đề xuất 2026-11-06**, chờ người dùng chốt mục H. Không code. Thay thế mô hình "khe + luật định tuyến" (ADR-0035, ADR-0036) khi được chốt ⇒ cần ADR mới.
+Trạng thái: **ĐÃ CHỐT 2026-11-06** — người dùng: "Chốt theo mặc định" cho mục A–I và H1–H6; thêm: "các tool hoặc flow Dify dùng như tool, có thể tạo node là tool đó để gắn vô flow app" (⇒ node **Công cụ**: mỗi workflow Dify / tool MCP / tool của app trong catalog đã bật cho công ty là một node chọn được trên canvas, đầu ra là trường khai báo của tool). Chưa code. Thay thế mô hình "khe + luật định tuyến" (ADR-0035, ADR-0036) khi được chốt ⇒ cần ADR mới.
 Nguồn ý người dùng: CR-120 ("flow là xương sống mọi app; flow động"), chat 2026-11-06 (trigger theo sự kiện, nhất quán, If/else, tenant admin sửa được), Luật GỐC 1–3 (`CLAUDE.md:18-22`).
 
 Từ vựng (một khái niệm = một tên): **Quy trình** (UI) = **Flow** (code) · **Node** = một ô trên sơ đồ · **Sự kiện** = việc xảy ra trong app làm flow chạy · **Dữ kiện** (code `facts`) = các trường nghiệp vụ của bản ghi mà flow đọc được · **Lượt chạy** = run · **Thư viện** = flow của platform · **Bản công ty** = flow do công ty sở hữu.
@@ -169,7 +169,7 @@ Engine vẫn chạy được snapshot cũ (`after.branch`, `contracts-route`, `c
 
 ---
 
-## H. Câu hỏi cần chốt (kèm mặc định đề xuất)
+## H. Câu hỏi cần chốt (kèm mặc định đề xuất) — ĐÃ CHỐT theo mặc định (2026-11-06)
 
 1. **Nhiều flow đang bật cùng khớp một sự kiện:** *Mặc định đề xuất:* chạy **tất cả**; riêng sự kiện quyết định trạng thái (gửi duyệt HĐ, đăng bài cần duyệt) chỉ chạy flow khớp **đầu tiên**, flow khác ghi lý do không chạy. Lý do: đúng nguyên tắc "bật là chạy", mà vẫn không có hai kết quả duyệt mâu thuẫn. Clone dùng thay nên bản gốc không chạy trùng.
 2. **Nếu đọc dữ kiện lúc nào:** giá trị hiện tại mỗi lần rẽ, và khi tới Kết thúc · Đã duyệt mà giá trị đã đổi khiến đường đi khác ⇒ dừng "Cần xử lý: giá trị HĐ đổi sau khi rẽ" để quản trị chọn chạy lại từ node Nếu? — *Mặc định: có* (giữ cr121-d + an toàn của finalize ADR-0030 §6). Trường trống ⇒ nhánh Sai — *mặc định có*, khác "trống ⇒ bước vẫn chạy" của cr121-d R2; lịch sử ghi rõ.
