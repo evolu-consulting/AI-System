@@ -91,8 +91,14 @@ export type EdgeGroup = {
 };
 
 /** Nhãn của một đầu vào node: `label` (engine lát A khai) nếu có, vắng ⇒ khoá. */
-export function ioLabel(io: { key: string; label?: string } | undefined, key: string): string {
-  return io?.label?.trim() ? io.label : key;
+export function ioLabel(
+  io: { key: string; label?: string | { vi: string; en: string } } | undefined,
+  key: string,
+  lang: "vi" | "en" = "vi",
+): string {
+  const l = io?.label;
+  const s = typeof l === "string" ? l : l?.[lang] || l?.vi;
+  return s?.trim() ? s : key;
 }
 
 /** Gộp các lỗi cùng một cạnh (nhiều đầu vào thiếu) thành MỘT cạnh vàng. */
