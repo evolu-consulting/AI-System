@@ -6,6 +6,7 @@ import { type Env, Hono } from "hono";
 import type { ExternalOrgResolver, PackAccessView, PackGuardVars, PackWho } from "../kit/public";
 import {
   createPackUow,
+  flowAdapterSlots,
   flowRoutes,
   flowRuntime,
   flowRuntimeOn,
@@ -133,6 +134,7 @@ export function communityModule(
   for (const s of communitySlotSpecs()) slotRegistry.register(s);
   if (flowRuntimeOn(fo.runtimeOn)) {
     const slots = communityFlowSlots(flows, { view, resolver, tenantAdmin: fo.tenantAdmin });
+    for (const s of slots) flowAdapterSlots.add(s.slot); // CR-121 R-8 · kiểm khe manifest ↔ adapter lúc mount
     r.route("/", flowRoutes(view, COMMUNITY_KEY, flowRuntime(COMMUNITY_KEY, slots)));
   }
   return r;
