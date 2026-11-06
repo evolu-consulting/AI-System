@@ -1844,7 +1844,8 @@
       "agents_other": "{count} agents"
     },
     "blocked": {
-      "disable": "Can't disable {key}: used by"
+      "disable": "Can't disable {key}: used by",
+      "howToFix": "Detach this workflow from the commands and agents above (or turn them off or delete them), then try again."
     },
     "delete": {
       "title": "Delete {key}?",
@@ -3307,7 +3308,9 @@
       "unused": "Unused",
       "agent": "Agents",
       "command": "Commands",
-      "workflow": "Workflows"
+      "workflow": "Workflows",
+      "secret": "Uses secret {name}",
+      "removeSecret": "Remove secret filter {name}"
     },
     "col": {
       "tool": "Tool",
@@ -3364,7 +3367,10 @@
       "moduleOffWhy": "So companies cannot be chosen for this tool yet. Ask the platform admin to enable the Dify workflow module.",
       "moreCompanies": "and {count} more",
       "readonlyNote": "Companies get this tool through groups, features or grants.",
-      "openCommand": "Open command page"
+      "openCommand": "Open command page",
+      "enabledLabel": "On for the whole system",
+      "secretLabel": "Secret",
+      "actions": "Workflow actions"
     },
     "off": {
       "title": "Turn {tool} off for {company}?",

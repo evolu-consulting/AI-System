@@ -8,12 +8,12 @@ import { useAiToolsNav } from "./use-ai-tools-nav";
 const route = getRouteApi("/_authed/ai-tools");
 
 export function useAiToolsView() {
-  const { status, kind, q, tool, notice } = route.useSearch();
+  const { status, kind, q, tool, notice, secret } = route.useSearch();
   const patch = useAiToolsNav();
   const usage = useAiToolUsage();
   const [shown, setShown] = useState(FIRST_PAGE);
   const items = usage.data?.items;
-  const filters = useMemo(() => ({ status, kind, q }), [status, kind, q]);
+  const filters = useMemo(() => ({ status, kind, q, secret }), [status, kind, q, secret]);
   const filtered = useMemo(
     () => (items ? filterTools(items, filters) : undefined),
     [items, filters],

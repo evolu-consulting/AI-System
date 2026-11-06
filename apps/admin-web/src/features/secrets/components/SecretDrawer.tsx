@@ -49,8 +49,8 @@ function ReplaceInfo({ secret }: { secret: Secret }) {
               id: key,
               label: key,
               mono: true,
-              href: "/workflows",
-              search: { q: key },
+              href: "/ai-tools",
+              search: { kind: "workflow", q: key },
             })),
           },
         ]}

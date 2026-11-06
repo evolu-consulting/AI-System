@@ -27,6 +27,8 @@ export function toAiTool(v: UsageView): AiTool {
     side_effect: v.sideEffect,
     companies_count: v.companiesCount,
     companies: v.companies,
+    secret: v.secret,
+    key: v.key,
   };
 }
 export function toWorkflowCompany(v: CompanyView): WorkflowCompany {

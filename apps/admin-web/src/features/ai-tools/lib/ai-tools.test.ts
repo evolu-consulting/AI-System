@@ -22,6 +22,8 @@ const tool = (p: Partial<AiTool>): AiTool => ({
   side_effect: false,
   companies_count: 0,
   companies: [],
+  secret: null,
+  key: null,
   ...p,
 });
 
@@ -57,6 +59,15 @@ describe("filterTools", () => {
     expect(filterTools(items, { q: "/dich" }).map((t) => t.kind)).toEqual(["command"]);
     expect(filterTools(items, { q: "ABCDEF" }).map((t) => t.kind)).toEqual(["agent"]);
     expect(filterTools(items, { q: "kho" }).map((t) => t.name)).toEqual(["Tra tri thức"]);
+  });
+  test("lọc theo secret (nút ở Secrets) và tìm theo mã workflow", () => {
+    const w = [
+      tool({ name: "A", secret: "dify-a", key: "xuat-hd" }),
+      tool({ name: "B", secret: "dify-b", key: "ghi-so" }),
+    ];
+    expect(filterTools(w, { secret: "dify-a" }).map((t) => t.name)).toEqual(["A"]);
+    expect(filterTools(w, { q: "ghi-so" }).map((t) => t.name)).toEqual(["B"]);
+    expect(filterTools(items, { secret: "dify-a" })).toEqual([]);
   });
   test("bộ lọc cộng dồn (AND)", () => {
     expect(filterTools(items, { kind: "agent", status: "unused" })).toEqual([]);

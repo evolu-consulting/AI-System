@@ -35,8 +35,8 @@ function UsedBy({ keys }: { keys: string[] }) {
       {keys.map((key) => (
         <Link
           key={key}
-          to="/workflows"
-          search={{ q: key }}
+          to="/ai-tools"
+          search={{ kind: "workflow", q: key }}
           className="font-mono text-primary underline-offset-4 hover:underline"
         >
           {key}

@@ -32,7 +32,11 @@ describe("c16 · Dùng bởi + Công ty dùng (platform_admin)", () => {
     expect(before.status).toBe(200);
     const list = AiToolListSchema.parse(before.json);
     const mine = list.items.find((i) => i.kind === "workflow" && i.id === w.id);
-    expect(mine).toMatchObject({ companies_count: 0, companies: [] });
+    expect(mine).toMatchObject({ companies_count: 0, companies: [], key: w.key });
+    const [sec] = await env.owner<
+      { name: string }[]
+    >`select s.name from admin.secrets s join admin.workflows x on x.secret_id = s.id where x.id = ${w.id}`;
+    expect(mine?.secret).toBe(sec?.name ?? null);
     // lệnh luôn có trong danh sách gộp, số lệnh khớp DB
     const [cmd] = await env.owner<{ n: number }[]>`select count(*)::int as n from admin.commands`;
     expect(list.items.filter((i) => i.kind === "command")).toHaveLength(cmd?.n ?? 0);

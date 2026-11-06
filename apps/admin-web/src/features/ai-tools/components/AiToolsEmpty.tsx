@@ -9,8 +9,8 @@ type Props = { filters: AiToolFilters; onClear: () => void };
 
 export function AiToolsEmpty({ filters, onClear }: Props) {
   const { t } = useTranslation();
-  const { status, kind, q } = filters;
-  if (!status && !kind && !q)
+  const { status, kind, q, secret } = filters;
+  if (!status && !kind && !q && !secret)
     return (
       <EmptyState
         title={t("aiTools.empty")}

@@ -1844,7 +1844,8 @@
       "agents_other": "{count} agent"
     },
     "blocked": {
-      "disable": "Không tắt được {key}: đang được dùng bởi"
+      "disable": "Không tắt được {key}: đang được dùng bởi",
+      "howToFix": "Gỡ workflow khỏi các lệnh và agent ở trên (hoặc tắt/xoá chúng) rồi thử lại."
     },
     "delete": {
       "title": "Xoá {key}?",
@@ -3307,7 +3308,9 @@
       "unused": "Chưa dùng",
       "agent": "Agent",
       "command": "Lệnh",
-      "workflow": "Workflow"
+      "workflow": "Workflow",
+      "secret": "Dùng secret {name}",
+      "removeSecret": "Bỏ lọc secret {name}"
     },
     "col": {
       "tool": "Công cụ",
@@ -3364,7 +3367,10 @@
       "moduleOffWhy": "Nên chưa chọn được công ty dùng công cụ này. Liên hệ quản trị nền tảng để bật module Workflow Dify.",
       "moreCompanies": "và {count} công ty khác",
       "readonlyNote": "Công ty được cấp công cụ này qua nhóm, tính năng hoặc cấp quyền.",
-      "openCommand": "Mở trang lệnh"
+      "openCommand": "Mở trang lệnh",
+      "enabledLabel": "Bật toàn hệ thống",
+      "secretLabel": "Secret",
+      "actions": "Thao tác workflow"
     },
     "off": {
       "title": "Tắt {tool} cho {company}?",

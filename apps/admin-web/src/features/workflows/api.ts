@@ -85,6 +85,9 @@ export function useWorkflowUsages(id: string, enabled: boolean) {
   });
 }
 
+/** Đọc chi tiết MỚI (version hiện tại) trước khi bật/tắt/xoá từ danh sách Công cụ AI. */
+export const fetchWorkflow = (id: string) => api<Workflow>(`/admin/workflows/${id}`);
+
 export function useWorkflow(id: string | undefined) {
   return useQuery({
     queryKey: WORKFLOW_KEYS.detail(id ?? ""),

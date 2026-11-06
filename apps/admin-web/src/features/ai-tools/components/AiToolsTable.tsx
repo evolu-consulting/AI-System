@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Translate } from "@/lib/format";
 import { useTr } from "@/lib/use-translate";
+import type { WorkflowRowActions } from "../hooks/use-workflow-row-actions";
 import { type AiToolKind, idTail, initial, moreCompanies } from "../lib/ai-tools";
 
 const KIND_ICON = { agent: Bot, command: Terminal, workflow: Workflow } as const;
@@ -61,7 +62,15 @@ function Companies({ tool }: { tool: AiTool }) {
   );
 }
 
-function RowMenu({ tool, onOpen }: { tool: AiTool; onOpen: (t: AiTool) => void }) {
+function RowMenu({
+  tool,
+  onOpen,
+  actions,
+}: {
+  tool: AiTool;
+  onOpen: (t: AiTool) => void;
+  actions: WorkflowRowActions;
+}) {
   const { t } = useTranslation();
   const tr = useTr();
   return (
@@ -93,6 +102,12 @@ function RowMenu({ tool, onOpen }: { tool: AiTool; onOpen: (t: AiTool) => void }
                 {t("aiTools.menu.runs")}
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => void actions.toggleById(tool.id)}>
+              {t(tool.enabled ? "workflows.menu.disable" : "workflows.menu.enable")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => void actions.removeById(tool.id)}>
+              {t("workflows.menu.delete")}
+            </DropdownMenuItem>
           </>
         ) : null}
         {tool.kind === "command" ? (
@@ -116,13 +131,14 @@ type Props = {
   empty: React.ReactNode;
   activeId: string | undefined;
   onOpen: (t: AiTool) => void;
+  workflowActions: WorkflowRowActions;
 };
 
 export function AiToolsTable(p: Props) {
   const active = p.rows?.find((r) => r.id === p.activeId);
   const { t } = useTranslation();
   const tr = useTr();
-  const { onOpen } = p;
+  const { onOpen, workflowActions } = p;
   const columns = useMemo<Column<AiTool>[]>(
     () => [
       {
@@ -174,10 +190,10 @@ export function AiToolsTable(p: Props) {
         id: "actions",
         header: <span className="sr-only">{t("aiTools.col.actions")}</span>,
         className: "w-12",
-        cell: (r) => <RowMenu tool={r} onOpen={onOpen} />,
+        cell: (r) => <RowMenu tool={r} onOpen={onOpen} actions={workflowActions} />,
       },
     ],
-    [t, tr, onOpen],
+    [t, tr, onOpen, workflowActions],
   );
   return (
     <DataTable

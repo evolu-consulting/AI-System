@@ -13,6 +13,7 @@ import { AiToolsEmpty } from "../components/AiToolsEmpty";
 import { AiToolsTable } from "../components/AiToolsTable";
 import { AiToolsToolbar } from "../components/AiToolsToolbar";
 import { useAiToolsView } from "../hooks/use-ai-tools-view";
+import { useWorkflowRowActions } from "../hooks/use-workflow-row-actions";
 
 function loadError(e: Error | null) {
   if (!e) return null;
@@ -22,6 +23,7 @@ function loadError(e: Error | null) {
 function AiToolsContent() {
   const { t } = useTranslation();
   const v = useAiToolsView();
+  const wf = useWorkflowRowActions();
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
@@ -54,6 +56,7 @@ function AiToolsContent() {
         onStatus={(status) => v.refilter({ status })}
         onKind={(kind) => v.refilter({ kind })}
         onQuery={(q) => v.refilter({ q: q || undefined })}
+        onSecret={(secret) => v.refilter({ secret })}
       />
       <div className="overflow-hidden rounded-xl border border-border bg-card">
         <AiToolsTable
@@ -65,10 +68,13 @@ function AiToolsContent() {
           empty={
             <AiToolsEmpty
               filters={v.filters}
-              onClear={() => v.refilter({ status: undefined, kind: undefined, q: undefined })}
+              onClear={() =>
+                v.refilter({ status: undefined, kind: undefined, q: undefined, secret: undefined })
+              }
             />
           }
           activeId={v.activeId}
+          workflowActions={wf}
           onOpen={(x) => v.patch({ tool: x.id })}
         />
         {v.total > 0 ? (
@@ -100,7 +106,12 @@ function AiToolsContent() {
           </div>
         ) : null}
       </div>
-      <AiToolDrawer tool={v.active} onClose={() => v.patch({ tool: undefined })} />
+      <AiToolDrawer
+        tool={v.active}
+        onClose={() => v.patch({ tool: undefined })}
+        workflowActions={wf}
+      />
+      {wf.dialogs}
     </div>
   );
 }

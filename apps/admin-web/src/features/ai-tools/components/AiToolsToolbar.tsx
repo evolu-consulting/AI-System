@@ -1,5 +1,5 @@
 // CR-121 R6 · c16 · hàng chip (artboard AiTools): Tất cả · Đang bật · Chưa dùng + loại (Agent · Lệnh), ô "Tìm công cụ" bên phải.
-import { Bot, Terminal, Workflow } from "lucide-react";
+import { Bot, Terminal, Workflow, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { SearchBox } from "@/components/shared/form/SearchBox";
@@ -36,11 +36,12 @@ type Props = {
   onStatus: (s: StatusFilter | undefined) => void;
   onKind: (k: AiToolKind | undefined) => void;
   onQuery: (q: string) => void;
+  onSecret: (s: string | undefined) => void;
 };
 
-export function AiToolsToolbar({ filters, counts, onStatus, onKind, onQuery }: Props) {
+export function AiToolsToolbar({ filters, counts, onStatus, onKind, onQuery, onSecret }: Props) {
   const { t } = useTranslation();
-  const { status, kind } = filters;
+  const { status, kind, secret } = filters;
   const toggleStatus = (s: StatusFilter) => onStatus(status === s ? undefined : s);
   const toggleKind = (k: AiToolKind) => onKind(kind === k ? undefined : k);
   return (
@@ -87,6 +88,20 @@ export function AiToolsToolbar({ filters, counts, onStatus, onKind, onQuery }: P
         <Workflow aria-hidden className="size-3.5 text-muted-foreground" />
         {t("aiTools.chips.workflow")}
       </Chip>
+      {secret ? (
+        <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-accent pr-1 pl-3 text-label font-medium text-accent-foreground">
+          {t("aiTools.chips.secret", { name: secret })}
+          <button
+            type="button"
+            aria-label={t("aiTools.chips.removeSecret", { name: secret })}
+            title={t("aiTools.chips.removeSecret", { name: secret })}
+            onClick={() => onSecret(undefined)}
+            className="grid size-6 place-items-center rounded-full hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <X aria-hidden className="size-3" />
+          </button>
+        </span>
+      ) : null}
       <div className="ml-auto w-full sm:w-auto">
         <SearchBox label={t("aiTools.search")} value={filters.q ?? ""} onChange={onQuery} />
       </div>

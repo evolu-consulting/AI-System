@@ -30,7 +30,12 @@ export function WorkflowBlockedDialog({
       onClose={onClose}
       title={info ? t(key, { key: info.workflowKey }) : ""}
     >
-      {info ? <DependencyList sections={usageSections(tr, info.commands, info.agents)} /> : null}
+      {info ? (
+        <div className="space-y-3">
+          <DependencyList sections={usageSections(tr, info.commands, info.agents)} />
+          <p className="text-caption text-muted-foreground">{t("workflows.blocked.howToFix")}</p>
+        </div>
+      ) : null}
     </BlockedDialog>
   );
 }

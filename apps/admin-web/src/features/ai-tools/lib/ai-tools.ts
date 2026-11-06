@@ -5,7 +5,13 @@ import type { AiTool } from "@ai/contracts/workflow-tools";
 export type AiToolKind = AiTool["kind"];
 export const AI_TOOL_KINDS: readonly AiToolKind[] = ["agent", "command", "workflow"];
 export type StatusFilter = "on" | "unused";
-export type AiToolFilters = { status?: StatusFilter; kind?: AiToolKind; q?: string };
+/** `secret` = tên secret (chip "Dùng secret X", từ nút ở Secrets); chỉ workflow có secret. */
+export type AiToolFilters = {
+  status?: StatusFilter;
+  kind?: AiToolKind;
+  q?: string;
+  secret?: string;
+};
 
 /** Số dòng hiện lần đầu ("6 trong N") và mỗi lần bấm "Xem thêm". */
 export const FIRST_PAGE = 6;
@@ -22,9 +28,9 @@ export function parseStatus(v: unknown): StatusFilter | undefined {
 /** 6 ký tự cuối id: admin chỉ biết `agent_id` (Mơ hồ A6) nên agent hiện "Agent …xxxxxx". */
 export const idTail = (id: string): string => id.slice(-6);
 
-/** Tên để tìm/hiện: lệnh có `/`, agent theo đuôi id. Khoá kỹ thuật của workflow không dùng. */
+/** Tên để tìm/hiện: lệnh có `/`, agent theo đuôi id; mã workflow chỉ để tìm (liên kết từ Secrets), không hiện. */
 export const searchText = (t: AiTool): string =>
-  `${t.kind === "command" ? "/" : ""}${t.name ?? idTail(t.id)} ${t.description ?? ""}`.toLowerCase();
+  `${t.kind === "command" ? "/" : ""}${t.name ?? idTail(t.id)} ${t.description ?? ""} ${t.key ?? ""}`.toLowerCase();
 
 export function filterTools(items: readonly AiTool[], f: AiToolFilters): AiTool[] {
   const q = (f.q ?? "").trim().toLowerCase();
@@ -32,6 +38,7 @@ export function filterTools(items: readonly AiTool[], f: AiToolFilters): AiTool[
     (t) =>
       (q === "" || searchText(t).includes(q)) &&
       (f.kind === undefined || t.kind === f.kind) &&
+      (f.secret === undefined || t.secret === f.secret) &&
       (f.status === undefined || (f.status === "on" ? t.enabled : isUnused(t))),
   );
 }

@@ -5,7 +5,7 @@ import { useCallback } from "react";
 const route = getRouteApi("/_authed/ai-tools");
 
 export type AiToolsPatch = Partial<
-  Record<"status" | "kind" | "q" | "tool" | "notice", string | undefined>
+  Record<"status" | "kind" | "q" | "tool" | "notice" | "secret", string | undefined>
 >;
 
 export function useAiToolsNav() {

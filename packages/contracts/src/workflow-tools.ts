@@ -44,6 +44,10 @@ export const AiToolSchema = z.strictObject({
   side_effect: z.boolean(),
   companies_count: Count,
   companies: z.array(z.string().max(200)).max(5),
+  /** Tên secret của workflow (lọc "Dùng secret X"); null với agent/lệnh. */
+  secret: z.string().max(200).nullable(),
+  /** Mã workflow — chỉ để tìm (liên kết từ Secrets theo mã); không hiện. null với agent/lệnh. */
+  key: CatalogKeySchema.nullable(),
 });
 export type AiTool = z.infer<typeof AiToolSchema>;
 

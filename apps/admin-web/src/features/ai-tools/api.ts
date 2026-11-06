@@ -5,7 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 
 export const AI_TOOL_KEYS = {
-  usage: ["ai-tools", "usage"] as const,
+  // Bắt đầu bằng "workflows" ⇒ bật/tắt/xoá workflow (invalidate WORKFLOW_KEYS.all) tự làm mới danh sách này.
+  usage: ["workflows", "ai-tools"] as const,
   companies: (workflowId: string) => ["ai-tools", "companies", workflowId] as const,
 };
 

@@ -12,6 +12,8 @@ export type AiToolsSearch = {
   kind?: AiToolKind;
   status?: StatusFilter;
   q?: string;
+  /** Tên secret: chip "Dùng secret X" (từ nút ở trang Secrets). */
+  secret?: string;
   /** Công cụ đang mở ngăn chi tiết. */
   tool?: string;
   /** `company-tools`: tới từ `/tenants/<id>?tab=workflow-tools` (tab đã gỡ). */
@@ -26,6 +28,7 @@ export const Route = createFileRoute("/_authed/ai-tools")({
     kind: parseKind(s.kind),
     status: parseStatus(s.status),
     q: str(s.q),
+    secret: str(s.secret),
     tool: str(s.tool),
     notice: s.notice === "company-tools" ? "company-tools" : undefined,
   }),

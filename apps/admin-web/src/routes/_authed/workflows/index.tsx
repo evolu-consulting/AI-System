@@ -23,7 +23,11 @@ export const Route = createFileRoute("/_authed/workflows/")({
     };
   },
   // CR-121 R2: danh sách Workflow nay là chip "Workflow" của Công cụ AI (editor `/workflows/new`, `/workflows/<id>` giữ nguyên).
-  beforeLoad: () => {
-    throw redirect({ to: "/ai-tools", search: { kind: "workflow" }, replace: true });
+  beforeLoad: ({ search }) => {
+    throw redirect({
+      to: "/ai-tools",
+      search: { kind: "workflow", secret: search.secret, q: search.q },
+      replace: true,
+    });
   },
 });

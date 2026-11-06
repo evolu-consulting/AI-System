@@ -30,8 +30,8 @@ export function SecretDeleteDialogs({ target, onClose, onConfirm }: Props) {
                 id: key,
                 label: key,
                 mono: true,
-                href: "/workflows",
-                search: { q: key },
+                href: "/ai-tools",
+                search: { kind: "workflow", q: key },
               })),
             },
           ]}

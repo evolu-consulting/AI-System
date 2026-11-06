@@ -73,16 +73,17 @@ const names = (from: string, where: string) =>
 const AGENT_SQL = `select 'agent' as kind, a.id, null::text as name, null::text as description, true as enabled,
     false as side_effect,
     (select count(distinct g.tenant_id)::int from hub.agent_grants g where g.agent_id = a.id) as cc,
-    ${names("hub.agent_grants g join admin.tenants t on t.id = g.tenant_id", "g.agent_id = a.id")} as companies
+    ${names("hub.agent_grants g join admin.tenants t on t.id = g.tenant_id", "g.agent_id = a.id")} as companies, null::text as secret, null::text as wkey
   from (select agent_id as id from hub.agent_workflows union select agent_id from hub.agent_grants order by 1 limit $1) a`;
 const COMMAND_SQL = `select 'command', c.id, c.name, null::text, c.enabled, false,
     (select count(distinct e.tenant_id)::int from admin.feature_commands fc
        join admin.feature_entitlements e on e.feature_id = fc.feature_id and e.revoked_at is null where fc.command_id = c.id),
-    ${names("admin.feature_commands fc join admin.feature_entitlements e on e.feature_id = fc.feature_id and e.revoked_at is null join admin.tenants t on t.id = e.tenant_id", "fc.command_id = c.id")}
+    ${names("admin.feature_commands fc join admin.feature_entitlements e on e.feature_id = fc.feature_id and e.revoked_at is null join admin.tenants t on t.id = e.tenant_id", "fc.command_id = c.id")}, null::text, null::text
   from (select * from admin.commands order by name limit $1) c`;
 const WORKFLOW_SQL = `select 'workflow', w.id, w.name, w.description, w.enabled, w.side_effect,
     (select count(*)::int from admin.tenant_workflow_tools x where x.workflow_id = w.id and x.revoked_at is null),
-    ${names("admin.tenant_workflow_tools x join admin.tenants t on t.id = x.tenant_id", "x.workflow_id = w.id and x.revoked_at is null")}
+    ${names("admin.tenant_workflow_tools x join admin.tenants t on t.id = x.tenant_id", "x.workflow_id = w.id and x.revoked_at is null")},
+    (select s.name from admin.secrets s where s.id = w.secret_id), w.key
   from (select * from admin.workflows order by key limit $1) w`;
 
 type UsageRow = {
@@ -94,6 +95,8 @@ type UsageRow = {
   side_effect: boolean;
   cc: number;
   companies: string[];
+  secret: string | null;
+  wkey: string | null;
 };
 
 /** Danh sách gộp: 2 câu cố định (kiểm quyền đọc bảng Hub + MỘT UNION ALL), không theo số công cụ/công ty. */
@@ -117,6 +120,8 @@ async function usageOf(tx: Tx, limit: number, withWorkflows: boolean): Promise<U
     sideEffect: r.side_effect,
     companiesCount: r.cc,
     companies: r.companies,
+    secret: r.secret,
+    key: r.wkey,
   }));
 }
 function companiesOf(tx: Tx, workflowId: string, limit: number): Promise<CompanyView[]> {

@@ -37,6 +37,10 @@ export type UsageView = {
   sideEffect: boolean;
   companiesCount: number;
   companies: string[];
+  /** Tên secret của workflow (null với agent/lệnh) — cho bộ lọc "Dùng secret X". */
+  secret: string | null;
+  /** Mã workflow (chỉ để tìm theo mã; không hiện trên UI). */
+  key: string | null;
 };
 /** CR-121 c16 · một công ty và công tắc của một công cụ. */
 export type CompanyView = {

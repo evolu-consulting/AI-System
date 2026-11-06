@@ -68,7 +68,11 @@ export function SecretDrawerController({ mode, name, onClose }: Props) {
         t("secrets.toast.replaced", { name: res.name, last4: res.last4 }),
         {
           label: t("secrets.toast.viewWorkflows"),
-          onClick: () => void router.navigate({ to: "/workflows", search: { secret: res.name } }),
+          onClick: () =>
+            void router.navigate({
+              to: "/ai-tools",
+              search: { kind: "workflow", secret: res.name },
+            }),
         },
         REPLACED_TOAST_MS,
       );
