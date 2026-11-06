@@ -29,6 +29,8 @@ const X = tenantId(1191);
 const Z = tenantId(1192); // không luật ⇒ đường cũ
 const U = { north: userId(1191), ops: userId(1192), none: userId(1193), z: userId(1194) };
 const KEYS = ["ke-toan", "phap-che"];
+// Launch tự chèn bước XÁC NHẬN đầu quy trình (`withConfirmStep`) giao nhóm này ⇒ tenant phải có nhóm; bước đầu = xác nhận, rồi bước của quy trình.
+const EDITOR = "contracts-editor";
 // cr118-route-kind · tenant W: luật phòng ban × loại HĐ (không mặc định).
 const W = tenantId(1195);
 const UW = { kd: userId(1195), bgd: userId(1196) };
@@ -151,8 +153,8 @@ beforeAll(async () => {
   await o`insert into admin.tenants (id, key, name) values (${X}, 't1191', 'X'), (${Z}, 't1192', 'Z')`;
   await users(o, X, 3, { from: 1191 });
   await users(o, Z, 1, { from: 1194 });
-  gx = await groups(o, X, [...KEYS, "kinh-doanh", "kd-bac", "van-hanh"]);
-  await groups(o, Z, KEYS);
+  gx = await groups(o, X, [...KEYS, EDITOR, "kinh-doanh", "kd-bac", "van-hanh"]);
+  await groups(o, Z, [...KEYS, EDITOR]);
   const g = (k: string) => gx.get(k) as string;
   await o`insert into admin.departments (tenant_id, group_id, parent_group_id) values
     (${X}, ${g("kinh-doanh")}, null), (${X}, ${g("kd-bac")}, ${g("kinh-doanh")}), (${X}, ${g("van-hanh")}, null)`;
@@ -172,7 +174,7 @@ beforeAll(async () => {
   rule.dflt = rows.find((r) => r.f)?.id as string;
   await o`insert into admin.tenants (id, key, name) values (${W}, 't1195', 'W')`;
   await users(o, W, 2, { from: 1195 });
-  gw = await groups(o, W, [...KEYS, "kiem-soat", "kinh-doanh", "bgd"]);
+  gw = await groups(o, W, [...KEYS, EDITOR, "kiem-soat", "kinh-doanh", "bgd"]);
   const w = (k: string) => gw.get(k) as string;
   await o`insert into admin.departments (tenant_id, group_id, parent_group_id) values
     (${W}, ${w("kinh-doanh")}, null), (${W}, ${w("bgd")}, null)`;
@@ -232,8 +234,8 @@ describe("CR-118 §11.2 · launch theo luật phòng ban", () => {
       opsSlot: [ops.run?.slot?.process_def_id, ops.run?.slot?.route_rule_id],
     }).toEqual({
       outs: ["started", "started"],
-      north: [gx.get("ke-toan")],
-      ops: [gx.get("phap-che")],
+      north: [gx.get(EDITOR), gx.get("ke-toan")],
+      ops: [gx.get(EDITOR), gx.get("phap-che")],
       northSlot: [lib.A, rule.kd],
       opsSlot: [lib.B, rule.dflt],
     });
@@ -305,7 +307,11 @@ describe("CR-118 §11.2 · launch theo luật phòng ban", () => {
       blocked: [bgdSell.a.run, bgdSell.a.reason],
     }).toEqual({
       outs: ["started", "started", "started", "stalled"],
-      groups: [[gw.get("ke-toan")], [gw.get("phap-che")], [gw.get("kiem-soat")]],
+      groups: [
+        [gw.get(EDITOR), gw.get("ke-toan")],
+        [gw.get(EDITOR), gw.get("phap-che")],
+        [gw.get(EDITOR), gw.get("kiem-soat")],
+      ],
       slots: [
         [lib.A, kindRule.kdBuy],
         [lib.B, kindRule.kdSell],
