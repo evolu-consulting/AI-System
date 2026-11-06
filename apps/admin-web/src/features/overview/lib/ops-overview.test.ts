@@ -7,6 +7,7 @@ import {
   fmtDec,
   healthTiles,
   hourBars,
+  hourlyEmptyKey,
   resolveLink,
   sparkPoints,
 } from "./ops-overview";
@@ -41,6 +42,12 @@ describe("ops-overview", () => {
     expect(p).toHaveLength(6);
     expect(p[0]).toBe("0.0,26.0");
     expect(p[1]).toBe("33.3,2.0");
+  });
+
+  test("hourlyEmptyKey: câu rỗng không mâu thuẫn với số đang chạy", () => {
+    expect(hourlyEmptyKey(5, 3)).toBeNull();
+    expect(hourlyEmptyKey(0, 3)).toBe("hourlyEmptyRunning");
+    expect(hourlyEmptyKey(0, 0)).toBe("hourlyEmpty");
   });
 
   test("hourBars: cột cao nhất = 100%, giờ trống = 0, lỗi có tối thiểu 6%", () => {

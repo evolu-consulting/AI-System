@@ -358,6 +358,7 @@
       "hourly": "Runs per hour",
       "hourlyChart": "Bar chart of runs per hour, done and failed",
       "hourlyEmpty": "No runs in the last 24 hours, so there are no bars yet.",
+      "hourlyEmptyRunning": "Bars only count finished or failed runs. None have finished or failed in the last 24 hours — {n} still running.",
       "hourTip": "{time}: {ok} done, {error} failed",
       "done": "Done",
       "failed": "Failed",

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { formatCount, formatUsd } from "@/lib/quota-format";
 import { cn } from "@/lib/utils";
-import { type Delta, deltaOf, fmtDec, hourBars } from "../../lib/ops-overview";
+import { type Delta, deltaOf, fmtDec, hourBars, hourlyEmptyKey } from "../../lib/ops-overview";
 import { BentoTile, type TileError } from "./BentoTile";
 import { HourlyBars, Sparkline } from "./charts";
 
@@ -120,7 +120,13 @@ export function RunsTile({
           {k.value === 0 ? (
             <p className="text-caption text-muted-foreground">{t("overview.ops.runs.empty")}</p>
           ) : null}
-          <HourlyBars bars={bars} empty={total === 0} />
+          <HourlyBars
+            bars={bars}
+            empty={(() => {
+              const key = hourlyEmptyKey(total, k.running);
+              return key ? t(`overview.ops.${key}`, { n: f(k.running) }) : null;
+            })()}
+          />
         </>
       ) : null}
     </BentoTile>

@@ -358,6 +358,7 @@
       "hourly": "Lượt theo giờ",
       "hourlyChart": "Biểu đồ cột lượt chạy theo giờ, xong và lỗi",
       "hourlyEmpty": "Chưa có lượt chạy nào trong 24 giờ qua nên chưa có cột nào.",
+      "hourlyEmptyRunning": "Cột chỉ tính lượt đã xong hoặc lỗi. Chưa có lượt nào xong hay lỗi trong 24 giờ qua — {n} lượt đang chạy.",
       "hourTip": "{time}: xong {ok}, lỗi {error}",
       "done": "Xong",
       "failed": "Lỗi",

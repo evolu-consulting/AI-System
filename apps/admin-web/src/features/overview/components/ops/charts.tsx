@@ -44,7 +44,7 @@ export function Sparkline({
   );
 }
 
-export function HourlyBars({ bars, empty }: { bars: HourBar[]; empty: boolean }) {
+export function HourlyBars({ bars, empty }: { bars: HourBar[]; empty: string | null }) {
   const { t } = useTranslation();
   return (
     <div className="mt-auto space-y-1.5">
@@ -83,9 +83,7 @@ export function HourlyBars({ bars, empty }: { bars: HourBar[]; empty: boolean })
           </div>
         ))}
       </div>
-      {empty ? (
-        <p className="text-caption text-muted-foreground">{t("overview.ops.hourlyEmpty")}</p>
-      ) : null}
+      {empty ? <p className="text-caption text-muted-foreground">{empty}</p> : null}
       <div aria-hidden className="flex justify-between text-caption text-muted-foreground">
         <span>{t("overview.ops.ago24")}</span>
         <span>{t("overview.ops.now")}</span>

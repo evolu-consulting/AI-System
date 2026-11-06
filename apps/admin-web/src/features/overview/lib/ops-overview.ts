@@ -62,6 +62,18 @@ export function hourBars(hourly: OpsOverview["hourly"]): { bars: HourBar[]; tota
   return { bars, total: hourly.reduce((s, h) => s + h.ok + h.error, 0) };
 }
 
+/**
+ * Câu rỗng của biểu đồ cột: cột chỉ đếm lượt đã xong/lỗi, nên khi có lượt đang chạy câu phải nói đúng điều đó
+ * (không được bảo "không có lượt nào" khi ô lớn đang hiện số lượt đang chạy). `null` = có cột, không cần câu.
+ */
+export function hourlyEmptyKey(
+  finishedTotal: number,
+  running: number,
+): "hourlyEmpty" | "hourlyEmptyRunning" | null {
+  if (finishedTotal > 0) return null;
+  return running > 0 ? "hourlyEmptyRunning" : "hourlyEmpty";
+}
+
 /** Trang đích đã có trong admin-web. `/runs` chưa có ⇒ `null` (hiện số, không link; ghi "việc còn lại"). */
 export type OpsLink = {
   to: "/tenants" | "/workflows" | "/system" | "/usage";
