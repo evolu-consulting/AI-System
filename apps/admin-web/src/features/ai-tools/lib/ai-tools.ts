@@ -25,12 +25,9 @@ export function parseStatus(v: unknown): StatusFilter | undefined {
   return v === "on" || v === "unused" ? v : undefined;
 }
 
-/** 6 ký tự cuối id: admin chỉ biết `agent_id` (Mơ hồ A6) nên agent hiện "Agent …xxxxxx". */
-export const idTail = (id: string): string => id.slice(-6);
-
-/** Tên để tìm/hiện: lệnh có `/`, agent theo đuôi id; mã workflow chỉ để tìm (liên kết từ Secrets), không hiện. */
+/** Tên để tìm/hiện: lệnh có `/`; mã workflow chỉ để tìm (liên kết từ Secrets), không hiện. */
 export const searchText = (t: AiTool): string =>
-  `${t.kind === "command" ? "/" : ""}${t.name ?? idTail(t.id)} ${t.description ?? ""} ${t.key ?? ""}`.toLowerCase();
+  `${t.kind === "command" ? "/" : ""}${t.name ?? ""} ${t.description ?? ""} ${t.key ?? ""}`.toLowerCase();
 
 export function filterTools(items: readonly AiTool[], f: AiToolFilters): AiTool[] {
   const q = (f.q ?? "").trim().toLowerCase();

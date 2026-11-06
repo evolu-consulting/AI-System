@@ -3327,6 +3327,8 @@
       "agent": "agent",
       "command": "lệnh",
       "workflow": "workflow"
-    }
+    },
+    "agentUnnamed": "Agent chưa đặt tên",
+    "platformOnly": "Công cụ AI do quản trị nền tảng quản lý. Liên hệ quản trị nền tảng nếu bạn cần dùng."
   }
 }

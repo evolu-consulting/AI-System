@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { useSession } from "@/lib/auth/use-session";
 import { ForbiddenState } from "./states/ForbiddenState";
 
-export function PlatformOnly({ children }: { children: ReactNode }) {
+export function PlatformOnly({ children, reason }: { children: ReactNode; reason?: string }) {
   const role = useSession((s) => s.me?.role);
-  return role === "platform_admin" ? children : <ForbiddenState />;
+  return role === "platform_admin" ? children : <ForbiddenState reason={reason} />;
 }

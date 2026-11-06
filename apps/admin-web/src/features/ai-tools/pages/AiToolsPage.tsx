@@ -121,8 +121,10 @@ function AiToolsContent() {
 }
 
 export function AiToolsPage() {
+  const { t } = useTranslation();
+  // tenant_admin vào bằng URL: trang 403 có lý do, không gọi API (API là platform-only).
   return (
-    <PlatformOnly>
+    <PlatformOnly reason={t("aiTools.platformOnly")}>
       <AiToolsContent />
     </PlatformOnly>
   );

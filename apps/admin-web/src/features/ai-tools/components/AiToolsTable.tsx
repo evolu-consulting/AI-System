@@ -17,13 +17,13 @@ import type { Translate } from "@/lib/format";
 import { useTr } from "@/lib/use-translate";
 import type { CommandRowActions } from "../hooks/use-command-row-actions";
 import type { WorkflowRowActions } from "../hooks/use-workflow-row-actions";
-import { type AiToolKind, idTail, initial, moreCompanies } from "../lib/ai-tools";
+import { type AiToolKind, initial, moreCompanies } from "../lib/ai-tools";
 
 const KIND_ICON = { agent: Bot, command: Terminal, workflow: Workflow } as const;
 
-/** Tên hiển thị: lệnh `/tên`, agent "Agent …xxxxxx" (admin chỉ biết id), workflow theo tên nghiệp vụ. */
+/** Tên hiển thị: lệnh `/tên`, agent theo tên thật (chưa đặt tên ⇒ nhãn nghiệp vụ, không lộ id), workflow theo tên nghiệp vụ. */
 export function toolName(tr: Translate, x: AiTool): string {
-  if (x.kind === "agent") return tr("workflows.usage.agent", { id: idTail(x.id) });
+  if (x.kind === "agent") return x.name ?? tr("aiTools.agentUnnamed");
   return x.kind === "command" ? `/${x.name}` : (x.name ?? "");
 }
 

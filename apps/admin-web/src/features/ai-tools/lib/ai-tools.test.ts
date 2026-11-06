@@ -4,7 +4,6 @@ import type { AiTool } from "@ai/contracts/workflow-tools";
 import {
   companyTally,
   filterTools,
-  idTail,
   initial,
   moreCompanies,
   parseKind,
@@ -31,7 +30,7 @@ const items = [
   tool({
     kind: "agent",
     id: "00000000-0000-4000-8000-0000000abcdef",
-    name: null,
+    name: "Trợ lý pháp chế",
     description: null,
     companies_count: 7,
     companies: ["A", "B"],
@@ -55,9 +54,9 @@ describe("filterTools", () => {
     expect(filterTools(items, { kind: "command" })).toHaveLength(1);
     expect(filterTools(items, { kind: "workflow" })).toHaveLength(2);
   });
-  test("ô tìm: tên (lệnh có /), đuôi id agent, mô tả; không phân biệt hoa thường", () => {
+  test("ô tìm: tên (lệnh có /; agent theo tên thật), mô tả; không phân biệt hoa thường", () => {
     expect(filterTools(items, { q: "/dich" }).map((t) => t.kind)).toEqual(["command"]);
-    expect(filterTools(items, { q: "ABCDEF" }).map((t) => t.kind)).toEqual(["agent"]);
+    expect(filterTools(items, { q: "PHÁP CHẾ" }).map((t) => t.kind)).toEqual(["agent"]);
     expect(filterTools(items, { q: "kho" }).map((t) => t.name)).toEqual(["Tra tri thức"]);
   });
   test("lọc theo secret (nút ở Secrets) và tìm theo mã workflow", () => {
@@ -95,7 +94,6 @@ describe("đếm, cắt, helper", () => {
     expect(moreCompanies(tool({ companies_count: 8, companies: ["a", "b", "c", "d", "e"] }))).toBe(
       3,
     );
-    expect(idTail("00000000-0000-4000-8000-0000000abcdef")).toBe("abcdef");
   });
   test("tham số URL lạ bị bỏ", () => {
     expect(parseKind("workflow")).toBe("workflow");

@@ -40,6 +40,20 @@ describe("c16 · Dùng bởi + Công ty dùng (platform_admin)", () => {
     // lệnh luôn có trong danh sách gộp, số lệnh khớp DB
     const [cmd] = await env.owner<{ n: number }[]>`select count(*)::int as n from admin.commands`;
     expect(list.items.filter((i) => i.kind === "command")).toHaveLength(cmd?.n ?? 0);
+    // F10: tên agent thật từ hub.agents (khi Hub đã migrate + cấp cột cho admin_rw, migration hub 0104); không thì null (UI "Agent chưa đặt tên").
+    const [acc] = await env.owner<
+      { ok: boolean }[]
+    >`select coalesce(has_column_privilege('admin_api', to_regclass('hub.agents'), 'name', 'SELECT'), false) as ok`;
+    const agents = list.items.filter((i) => i.kind === "agent");
+    if (acc?.ok) {
+      const rows = await env.owner<
+        { id: string; name: string | null }[]
+      >`select id, coalesce(name->>'vi', name->>'en') as name from hub.agents`;
+      const byId = new Map(rows.map((r) => [r.id, r.name]));
+      for (const a of agents) expect(a.name).toBe(byId.get(a.id) ?? null);
+    } else {
+      for (const a of agents) expect(a.name).toBeNull();
+    }
 
     expect((await admin("PUT", `/admin/tenants/${A}/workflow-tools/${w.id}`, {})).status).toBe(200);
     const after = AiToolListSchema.parse((await admin("GET", "/admin/ai-tools")).json);

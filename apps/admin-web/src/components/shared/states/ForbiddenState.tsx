@@ -4,14 +4,15 @@ import { Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
-export function ForbiddenState() {
+/** `reason`: câu giải thích riêng của trang (mặc định "chỉ platform_admin"). */
+export function ForbiddenState({ reason }: { reason?: string }) {
   const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center gap-3 py-16 text-center">
       <Lock aria-hidden className="size-8 text-primary/50" />
       <h1 className="text-page-title font-bold text-foreground">{t("state.forbidden.title")}</h1>
       <p className="max-w-md text-body text-muted-foreground">
-        {t("state.forbidden.platformOnly")}
+        {reason ?? t("state.forbidden.platformOnly")}
       </p>
       <Button asChild>
         <Link to="/">{t("state.forbidden.cta")}</Link>

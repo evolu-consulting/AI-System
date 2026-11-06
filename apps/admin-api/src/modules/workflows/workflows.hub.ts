@@ -12,6 +12,18 @@ export async function hubAgentsReadable(tx: Tx): Promise<boolean> {
   return rows[0]?.ok === true;
 }
 
+/**
+ * CR-121 F10 · MỘT câu cho cả hai quyền đọc: bảng agent-workflow/grant (đếm agent) và cột `hub.agents.name`
+ * (migration hub 0104, để hiện tên agent thật ở Công cụ AI).
+ */
+export async function hubAgentAccess(tx: Tx): Promise<{ agents: boolean; names: boolean }> {
+  const rows = (await tx.execute(
+    sql`select coalesce(has_table_privilege(to_regclass('hub.agent_workflows'), 'SELECT'), false) as agents,
+      coalesce(has_column_privilege(to_regclass('hub.agents'), 'name', 'SELECT'), false) as names`,
+  )) as unknown as { agents: boolean; names: boolean }[];
+  return { agents: rows[0]?.agents === true, names: rows[0]?.names === true };
+}
+
 /** Biểu thức đếm agent của workflow (cột `workflowId` của câu ngoài); `0` khi không đọc được bảng. */
 export function agentCountExpr(readable: boolean, workflowId: AnyColumn): SQL<number> {
   return readable

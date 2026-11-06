@@ -3,7 +3,7 @@
 import { type Tx, tenants, tenantWorkflowTools as twt, workflows } from "@ai/db";
 import { and, asc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { usernameOf } from "../../../lib/sql";
-import { hubAgentsReadable } from "../../workflows/workflows.hub";
+import { hubAgentAccess } from "../../workflows/workflows.hub";
 import type {
   CompanyView,
   SwitchKey,
@@ -70,7 +70,10 @@ export const USAGE_QUERIES = 2;
 const names = (from: string, where: string) =>
   `(select coalesce(array_agg(n.name order by n.name), '{}') from
     (select distinct t.name from ${from} where ${where} order by t.name limit 5) n)`;
-const AGENT_SQL = `select 'agent' as kind, a.id, null::text as name, null::text as description, true as enabled,
+/** Tên agent: `hub.agents.name` (jsonb {vi,en}) khi admin_rw đọc được cột (migration hub 0104); không thì null ⇒ UI "Agent chưa đặt tên". */
+const agentSql = (withNames: boolean) => `select 'agent' as kind, a.id,
+    ${withNames ? "(select coalesce(h.name->>'vi', h.name->>'en') from hub.agents h where h.id = a.id)" : "null::text"} as name,
+    null::text as description, true as enabled,
     false as side_effect,
     (select count(distinct g.tenant_id)::int from hub.agent_grants g where g.agent_id = a.id) as cc,
     ${names("hub.agent_grants g join admin.tenants t on t.id = g.tenant_id", "g.agent_id = a.id")} as companies, null::text as secret, null::text as wkey
@@ -101,9 +104,9 @@ type UsageRow = {
 
 /** Danh sách gộp: 2 câu cố định (kiểm quyền đọc bảng Hub + MỘT UNION ALL), không theo số công cụ/công ty. */
 async function usageOf(tx: Tx, limit: number, withWorkflows: boolean): Promise<UsageView[]> {
-  const hub = await hubAgentsReadable(tx);
+  const hub = await hubAgentAccess(tx);
   const parts = [
-    ...(hub ? [AGENT_SQL] : []),
+    ...(hub.agents ? [agentSql(hub.names)] : []),
     COMMAND_SQL,
     ...(withWorkflows ? [WORKFLOW_SQL] : []),
   ];

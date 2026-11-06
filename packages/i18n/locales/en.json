@@ -3327,6 +3327,8 @@
       "agent": "agent",
       "command": "command",
       "workflow": "workflow"
-    }
+    },
+    "agentUnnamed": "Unnamed agent",
+    "platformOnly": "AI tools are managed by the platform administrators. Contact them if you need access."
   }
 }
