@@ -26,7 +26,7 @@ export function useAiToolsView() {
     notice,
     total: filtered?.length ?? 0,
     page: filtered ? sliceShown(filtered, shown) : undefined,
-    active: items?.find((x) => x.workflow_id === tool),
+    active: items?.find((x) => x.id === tool),
     activeId: tool,
     more: () => setShown((n) => n + MORE_STEP),
     /** Đổi bộ lọc ⇒ quay về trang đầu của "Xem thêm". */

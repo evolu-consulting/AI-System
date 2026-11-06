@@ -3194,7 +3194,8 @@
       "on": "Đang bật",
       "unused": "Chưa dùng",
       "agent": "Agent",
-      "command": "Lệnh"
+      "command": "Lệnh",
+      "workflow": "Workflow"
     },
     "col": {
       "tool": "Công cụ",
@@ -3202,11 +3203,10 @@
       "usedBy": "Dùng bởi",
       "actions": "Thao tác"
     },
-    "usedByTip": "Số agent và lệnh đang gọi công cụ này.",
+    "usedByTip": "Các công ty đang dùng công cụ này.",
     "usedBy": {
-      "agent": "{count} agent",
-      "command": "{count} lệnh",
-      "none": "Chưa ai dùng"
+      "companies": "{count} công ty",
+      "none": "Chưa công ty nào dùng"
     },
     "status": {
       "on": "Đang bật",
@@ -3248,7 +3248,10 @@
       "switchAria": "Bật {tool} cho {company}",
       "descriptionLabel": "Mô tả",
       "moduleOff": "Workflow Dify chưa bật trên hệ thống này",
-      "moduleOffWhy": "Nên chưa chọn được công ty dùng công cụ này. Liên hệ quản trị nền tảng để bật module Workflow Dify."
+      "moduleOffWhy": "Nên chưa chọn được công ty dùng công cụ này. Liên hệ quản trị nền tảng để bật module Workflow Dify.",
+      "moreCompanies": "và {count} công ty khác",
+      "readonlyNote": "Công ty được cấp công cụ này qua nhóm, tính năng hoặc cấp quyền.",
+      "openCommand": "Mở trang lệnh"
     },
     "off": {
       "title": "Tắt {tool} cho {company}?",
@@ -3260,10 +3263,16 @@
       "off": "Đã tắt {tool} cho {company}",
       "gone": "Công cụ này không còn trong danh mục. Đã tải lại danh sách."
     },
-    "hint": "Các quy trình AI (Dify) mà agent và lệnh gọi tới. Công cụ chưa ai dùng hiện ở mục Chưa dùng.",
+    "hint": "Agent, lệnh và workflow Dify mà công ty dùng. Công cụ chưa công ty nào dùng hiện ở mục Chưa dùng.",
     "legend": {
       "agent": "agent",
-      "command": "lệnh"
+      "command": "lệnh",
+      "workflow": "workflow"
+    },
+    "kind": {
+      "agent": "agent",
+      "command": "lệnh",
+      "workflow": "workflow"
     }
   }
 }

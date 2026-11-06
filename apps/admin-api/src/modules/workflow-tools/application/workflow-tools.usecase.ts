@@ -24,8 +24,8 @@ export function listTools(tx: ToolsTx, tenantId: string): Promise<ToolView[]> {
 }
 
 /** CR-121 c16 · "Dùng bởi" của cả danh mục (một lượt đọc theo tập). */
-export function listUsage(tx: ToolsTx): Promise<UsageView[]> {
-  return tx.read((r) => r.usage(TOOLS_LIST_LIMIT));
+export function listUsage(tx: ToolsTx, withWorkflows: boolean): Promise<UsageView[]> {
+  return tx.read((r) => r.usage(TOOLS_LIST_LIMIT, withWorkflows));
 }
 
 export const COMPANIES_LIST_LIMIT = 500;

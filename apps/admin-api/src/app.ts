@@ -168,7 +168,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/tenants", packsRoutes({ ...ctx, hooks })); // N1 · PK-FR-05
   app.route("/admin/tenants", tenantDefaultAppRoutes(ctx)); // tenant-default-app
   const frozenOn = deps.frozenModules !== false;
-  mountAiToolsUsage(app, { ...ctx, hooks }); // c16: "Dùng bởi" không theo cờ đóng băng
+  mountAiToolsUsage(app, { ...ctx, hooks }, frozenOn); // c16: "Dùng bởi" không theo cờ đóng băng
   if (frozenOn) mountWorkflowTools(app, { ...ctx, hooks });
   app.route("/admin/users", accessRoutes(ctx));
   app.route("/admin/users", usersRoutes({ ...ctx, hooks }));

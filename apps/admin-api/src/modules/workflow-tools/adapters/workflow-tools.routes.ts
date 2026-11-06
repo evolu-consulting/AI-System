@@ -17,7 +17,7 @@ import {
   type ToolsTx,
   toggleTool,
 } from "../application";
-import { toAiToolUsage, toTenantWorkflowTool, toWorkflowCompany } from "./workflow-tools.mapper";
+import { toAiTool, toTenantWorkflowTool, toWorkflowCompany } from "./workflow-tools.mapper";
 
 /** Dựng `ToolsTx` cho một request (scope + actor của request) — mount nối `withScope`/`configWrite`. */
 export type ToolsTxOf = (c: Context<AppVars>) => ToolsTx;
@@ -32,15 +32,19 @@ async function mapErr<T>(p: Promise<T>): Promise<T> {
 }
 
 /**
- * CR-121 R6 · c16 · `GET /admin/workflow-tools/usage` — "Dùng bởi" (agent, lệnh). Chỉ platform_admin (vai khác 403 ở middleware,
+ * CR-121 R6 · c16 · `GET /admin/ai-tools` — danh sách gộp agent · lệnh (· workflow Dify khi module bật) kèm công ty dùng. Chỉ platform_admin (vai khác 403 ở middleware,
  * trước khi đọc DB). Mount KHÔNG phụ thuộc cờ module đóng băng: trang Công cụ AI luôn đọc được.
  */
-export function aiToolsUsageRoutes(d: AuthDeps, txOf: ToolsTxOf): Hono<AppVars> {
+export function aiToolsUsageRoutes(
+  d: AuthDeps,
+  txOf: ToolsTxOf,
+  withWorkflows: boolean,
+): Hono<AppVars> {
   const r = new Hono<AppVars>();
   r.use("*", requireAuth(d), requireRole("platform_admin"));
-  r.get("/usage", async (c) => {
-    const items = await listUsage(txOf(c));
-    return c.json({ items: items.map(toAiToolUsage) });
+  r.get("/", async (c) => {
+    const items = await listUsage(txOf(c), withWorkflows);
+    return c.json({ items: items.map(toAiTool) });
   });
   return r;
 }

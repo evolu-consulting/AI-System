@@ -1,7 +1,7 @@
 // CR-121 R6 · c16 · int: "Dùng bởi" + "Công ty dùng" của trang Công cụ AI qua admin-api thật (RLS admin_api).
 // (1) đường chính + số câu SQL cố định khi thêm 20 workflow; (2) vai khác platform_admin ⇒ 403 cả hai route.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { AiToolUsageListSchema, WorkflowCompanyListSchema } from "@ai/contracts/workflow-tools";
+import { AiToolListSchema, WorkflowCompanyListSchema } from "@ai/contracts/workflow-tools";
 import { createDb, withScope } from "@ai/db";
 import { probe, probeSamples, resetProbe, setProbe } from "@ai/db/probe";
 import { ADMIN_API_URL, makeHashes } from "../../../../../tests/acceptance/M1/_fixtures";
@@ -28,20 +28,20 @@ describe("c16 · Dùng bởi + Công ty dùng (platform_admin)", () => {
     if (!w) throw new Error("fixture: admin.workflows rỗng");
     await env.owner`delete from admin.tenant_workflow_tools where workflow_id = ${w.id}`;
 
-    const before = await admin("GET", "/admin/workflow-tools/usage");
+    const before = await admin("GET", "/admin/ai-tools");
     expect(before.status).toBe(200);
-    const list = AiToolUsageListSchema.parse(before.json);
-    const mine = list.items.find((i) => i.workflow_id === w.id);
-    const [cmd] = await env.owner<
-      { n: number }[]
-    >`select count(*)::int as n from admin.commands where workflow_id = ${w.id}`;
-    expect(mine).toMatchObject({ company_count: 0, command_count: cmd?.n ?? 0 });
+    const list = AiToolListSchema.parse(before.json);
+    const mine = list.items.find((i) => i.kind === "workflow" && i.id === w.id);
+    expect(mine).toMatchObject({ companies_count: 0, companies: [] });
+    // lệnh luôn có trong danh sách gộp, số lệnh khớp DB
+    const [cmd] = await env.owner<{ n: number }[]>`select count(*)::int as n from admin.commands`;
+    expect(list.items.filter((i) => i.kind === "command")).toHaveLength(cmd?.n ?? 0);
 
     expect((await admin("PUT", `/admin/tenants/${A}/workflow-tools/${w.id}`, {})).status).toBe(200);
-    const after = AiToolUsageListSchema.parse(
-      (await admin("GET", "/admin/workflow-tools/usage")).json,
-    );
-    expect(after.items.find((i) => i.workflow_id === w.id)?.company_count).toBe(1);
+    const after = AiToolListSchema.parse((await admin("GET", "/admin/ai-tools")).json);
+    const on = after.items.find((i) => i.kind === "workflow" && i.id === w.id);
+    expect(on?.companies_count).toBe(1);
+    expect(on?.companies).toHaveLength(1);
 
     const cs = await admin("GET", `/admin/workflow-tools/${w.id}/companies`);
     expect(cs.status).toBe(200);
@@ -59,7 +59,7 @@ describe("c16 · Dùng bởi + Công ty dùng (platform_admin)", () => {
       const db = createDb(ADMIN_API_URL, { max: 2 });
       try {
         await probe("usage", () =>
-          withScope(db, { kind: "platform" }, (tx) => workflowToolsRepo(tx).usage(200)),
+          withScope(db, { kind: "platform" }, (tx) => workflowToolsRepo(tx).usage(200, true)),
         );
       } finally {
         await db.close();
@@ -80,13 +80,13 @@ describe("c16 · Dùng bởi + Công ty dùng (platform_admin)", () => {
   it("vai khác platform_admin (tenant_admin) ⇒ 403 cả usage lẫn companies", async () => {
     const tadmin = env.by("acme", "binh");
     const id = crypto.randomUUID();
-    expect((await tadmin("GET", "/admin/workflow-tools/usage")).status).toBe(403);
+    expect((await tadmin("GET", "/admin/ai-tools")).status).toBe(403);
     expect((await tadmin("GET", `/admin/workflow-tools/${id}/companies`)).status).toBe(403);
   });
 });
 
 describe("c16 · cờ module đóng băng tắt (ADMIN_FROZEN_MODULES=off)", () => {
-  it("'Dùng bởi' vẫn 200; công ty/công tắc theo công ty (module đóng băng) không mount ⇒ 404", async () => {
+  it("danh sách gộp vẫn 200 (agent/lệnh, không workflow); công ty/công tắc theo công ty (module đóng băng) không mount ⇒ 404", async () => {
     const jwt = await loadJwt();
     const { createApp } = await loadApp();
     const db = createDb(ADMIN_API_URL, { max: 2 });
@@ -108,7 +108,11 @@ describe("c16 · cờ module đóng băng tắt (ADMIN_FROZEN_MODULES=off)", () 
         app.fetch(
           new Request(`http://localhost${p}`, { headers: { authorization: `Bearer ${token}` } }),
         );
-      expect((await get("/admin/workflow-tools/usage")).status).toBe(200);
+      const r = await get("/admin/ai-tools");
+      expect(r.status).toBe(200);
+      const items = (await r.json()).items as { kind: string }[];
+      expect(items.some((i) => i.kind === "command")).toBe(true);
+      expect(items.some((i) => i.kind === "workflow")).toBe(false); // module Dify tắt ⇒ không có dòng workflow
       expect((await get(`/admin/workflow-tools/${crypto.randomUUID()}/companies`)).status).toBe(
         404,
       );

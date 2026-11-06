@@ -1,10 +1,10 @@
 // CR-121 R6 · c16 · hàng chip (artboard AiTools): Tất cả · Đang bật · Chưa dùng + loại (Agent · Lệnh), ô "Tìm công cụ" bên phải.
-import { Bot, Terminal } from "lucide-react";
+import { Bot, Terminal, Workflow } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { SearchBox } from "@/components/shared/form/SearchBox";
 import { cn } from "@/lib/utils";
-import type { AiToolFilters, StatusFilter, ToolCounts, UsageKind } from "../lib/ai-tools";
+import type { AiToolFilters, AiToolKind, StatusFilter, ToolCounts } from "../lib/ai-tools";
 
 function Chip(p: {
   pressed: boolean;
@@ -34,7 +34,7 @@ type Props = {
   filters: AiToolFilters;
   counts: ToolCounts | undefined;
   onStatus: (s: StatusFilter | undefined) => void;
-  onKind: (k: UsageKind | undefined) => void;
+  onKind: (k: AiToolKind | undefined) => void;
   onQuery: (q: string) => void;
 };
 
@@ -42,7 +42,7 @@ export function AiToolsToolbar({ filters, counts, onStatus, onKind, onQuery }: P
   const { t } = useTranslation();
   const { status, kind } = filters;
   const toggleStatus = (s: StatusFilter) => onStatus(status === s ? undefined : s);
-  const toggleKind = (k: UsageKind) => onKind(kind === k ? undefined : k);
+  const toggleKind = (k: AiToolKind) => onKind(kind === k ? undefined : k);
   return (
     <section aria-label={t("aiTools.chips.label")} className="flex flex-wrap items-center gap-2">
       <Chip
@@ -78,6 +78,14 @@ export function AiToolsToolbar({ filters, counts, onStatus, onKind, onQuery }: P
       >
         <Terminal aria-hidden className="size-3.5 text-muted-foreground" />
         {t("aiTools.chips.command")}
+      </Chip>
+      <Chip
+        pressed={kind === "workflow"}
+        count={counts?.workflow}
+        onClick={() => toggleKind("workflow")}
+      >
+        <Workflow aria-hidden className="size-3.5 text-muted-foreground" />
+        {t("aiTools.chips.workflow")}
       </Chip>
       <div className="ml-auto w-full sm:w-auto">
         <SearchBox label={t("aiTools.search")} value={filters.q ?? ""} onChange={onQuery} />

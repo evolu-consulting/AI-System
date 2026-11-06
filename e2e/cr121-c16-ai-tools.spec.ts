@@ -53,9 +53,9 @@ test("CR-121 · c16 · tìm công cụ → ngăn chi tiết → bật cho công 
   await page.getByRole("searchbox", { name: "Tìm công cụ" }).fill(TOOL.name);
   const row = page.getByRole("row", { name: new RegExp(TOOL.name) });
   await expect(row).toBeVisible();
-  await expect(row).toContainText("Chưa ai dùng");
+  await expect(row).toContainText("Chưa công ty nào dùng");
 
-  // Chip "Chưa dùng" giữ công cụ chưa ai gọi; chip "Agent" thì không.
+  // Chip "Chưa dùng" giữ công cụ chưa công ty nào dùng.
   await page.getByRole("button", { name: /^Chưa dùng/ }).click();
   await expect(row).toBeVisible();
   await page.getByRole("button", { name: /^Chưa dùng/ }).click();

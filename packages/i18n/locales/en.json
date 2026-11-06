@@ -3194,7 +3194,8 @@
       "on": "On",
       "unused": "Unused",
       "agent": "Agents",
-      "command": "Commands"
+      "command": "Commands",
+      "workflow": "Workflows"
     },
     "col": {
       "tool": "Tool",
@@ -3202,11 +3203,10 @@
       "usedBy": "Used by",
       "actions": "Actions"
     },
-    "usedByTip": "How many agents and commands call this tool.",
+    "usedByTip": "The companies that use this tool.",
     "usedBy": {
-      "agent": "{count} agent(s)",
-      "command": "{count} command(s)",
-      "none": "Nobody uses it"
+      "companies": "{count} companies",
+      "none": "No company uses it"
     },
     "status": {
       "on": "On",
@@ -3248,7 +3248,10 @@
       "switchAria": "Turn {tool} on for {company}",
       "descriptionLabel": "Description",
       "moduleOff": "Dify workflows are not enabled on this system",
-      "moduleOffWhy": "So companies cannot be chosen for this tool yet. Ask the platform admin to enable the Dify workflow module."
+      "moduleOffWhy": "So companies cannot be chosen for this tool yet. Ask the platform admin to enable the Dify workflow module.",
+      "moreCompanies": "and {count} more",
+      "readonlyNote": "Companies get this tool through groups, features or grants.",
+      "openCommand": "Open command page"
     },
     "off": {
       "title": "Turn {tool} off for {company}?",
@@ -3260,10 +3263,16 @@
       "off": "{tool} turned off for {company}",
       "gone": "This tool is no longer in the catalog. The list was reloaded."
     },
-    "hint": "The AI workflows (Dify) that agents and commands call. Tools nobody uses are under Unused.",
+    "hint": "Agents, commands and Dify workflows that companies use. Tools no company uses are under Unused.",
     "legend": {
       "agent": "agent",
-      "command": "command"
+      "command": "command",
+      "workflow": "workflow"
+    },
+    "kind": {
+      "agent": "agent",
+      "command": "command",
+      "workflow": "workflow"
     }
   }
 }

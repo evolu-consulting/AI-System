@@ -1,9 +1,5 @@
 // ADM-FR-73 · TT-R03 · view lớp 2 ⇒ contract `TenantWorkflowTool` + audit `workflow` grant/revoke before/after `{on}`.
-import type {
-  AiToolUsage,
-  TenantWorkflowTool,
-  WorkflowCompany,
-} from "@ai/contracts/workflow-tools";
+import type { AiTool, TenantWorkflowTool, WorkflowCompany } from "@ai/contracts/workflow-tools";
 import type { AuditInput } from "@ai/db";
 import { auditOf } from "../../../lib/audit/audit.write";
 import type { CompanyView, ToolAudit, ToolView, UsageView } from "../application";
@@ -21,20 +17,18 @@ export function toTenantWorkflowTool(v: ToolView): TenantWorkflowTool {
   };
 }
 
-export function toAiToolUsage(v: UsageView): AiToolUsage {
+export function toAiTool(v: UsageView): AiTool {
   return {
-    workflow_id: v.workflowId,
-    key: v.key,
+    kind: v.kind,
+    id: v.id,
     name: v.name,
     description: v.description,
     enabled: v.enabled,
     side_effect: v.sideEffect,
-    agent_count: v.agentCount,
-    command_count: v.commandCount,
-    company_count: v.companyCount,
+    companies_count: v.companiesCount,
+    companies: v.companies,
   };
 }
-
 export function toWorkflowCompany(v: CompanyView): WorkflowCompany {
   return {
     tenant_id: v.tenantId,

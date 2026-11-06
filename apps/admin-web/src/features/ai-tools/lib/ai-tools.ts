@@ -1,52 +1,37 @@
-// CR-121 R6 · c16 · lõi thuần của trang Công cụ AI: lọc (chip trạng thái + loại + ô tìm), đếm chip, "Dùng bởi", cắt "Xem thêm".
-import type { AiToolUsage } from "@ai/contracts/workflow-tools";
+// CR-121 R6 · c16 · lõi thuần của trang Công cụ AI: lọc (chip trạng thái + loại + ô tìm), đếm chip, "Dùng bởi" (công ty), cắt "Xem thêm".
+import type { AiTool } from "@ai/contracts/workflow-tools";
 
-/** Loại thứ gọi tới công cụ. Hook / quy trình chưa có nguồn đọc ở admin ⇒ chưa có chip. */
-export type UsageKind = "agent" | "command";
-export const USAGE_KINDS: readonly UsageKind[] = ["agent", "command"];
+/** Loại công cụ. Hook: admin chưa có nguồn đọc ⇒ chưa có loại. */
+export type AiToolKind = AiTool["kind"];
+export const AI_TOOL_KINDS: readonly AiToolKind[] = ["agent", "command", "workflow"];
 export type StatusFilter = "on" | "unused";
+export type AiToolFilters = { status?: StatusFilter; kind?: AiToolKind; q?: string };
 
-export type AiToolFilters = { status?: StatusFilter; kind?: UsageKind; q?: string };
-
-/** Số dòng hiện lần đầu và mỗi lần bấm "Xem thêm". */
+/** Số dòng hiện lần đầu ("6 trong N") và mỗi lần bấm "Xem thêm". */
 export const FIRST_PAGE = 6;
 export const MORE_STEP = 20;
 
-export const usedTotal = (t: AiToolUsage): number => t.agent_count + t.command_count;
-/** "Chưa dùng" = không agent nào, không lệnh nào gọi tới. */
-export const isUnused = (t: AiToolUsage): boolean => usedTotal(t) === 0;
+/** "Chưa dùng" = chưa công ty nào dùng. */
+export const isUnused = (t: AiTool): boolean => t.companies_count === 0;
 
-/** `?kind=` hợp lệ của chip loại; `workflow` (địa chỉ cũ) = không lọc. */
-export function parseUsageKind(v: unknown): UsageKind | undefined {
-  return USAGE_KINDS.find((k) => k === v);
-}
+export const parseKind = (v: unknown): AiToolKind | undefined => AI_TOOL_KINDS.find((k) => k === v);
 export function parseStatus(v: unknown): StatusFilter | undefined {
   return v === "on" || v === "unused" ? v : undefined;
 }
 
-/** "Dùng bởi" của một công cụ: chỉ loại có số > 0, theo thứ tự cố định agent → lệnh. */
-export function usageParts(t: AiToolUsage): { kind: UsageKind; count: number }[] {
-  const parts: { kind: UsageKind; count: number }[] = [
-    { kind: "agent", count: t.agent_count },
-    { kind: "command", count: t.command_count },
-  ];
-  return parts.filter((p) => p.count > 0);
-}
+/** 6 ký tự cuối id: admin chỉ biết `agent_id` (Mơ hồ A6) nên agent hiện "Agent …xxxxxx". */
+export const idTail = (id: string): string => id.slice(-6);
 
-const usedBy = (t: AiToolUsage, k: UsageKind): boolean =>
-  k === "agent" ? t.agent_count > 0 : t.command_count > 0;
+/** Tên để tìm/hiện: lệnh có `/`, agent theo đuôi id. Khoá kỹ thuật của workflow không dùng. */
+export const searchText = (t: AiTool): string =>
+  `${t.kind === "command" ? "/" : ""}${t.name ?? idTail(t.id)} ${t.description ?? ""}`.toLowerCase();
 
-/** Khớp tên hoặc mô tả, không phân biệt hoa thường; khoá kỹ thuật không phải thứ người dùng tìm. */
-const matchesQuery = (t: AiToolUsage, q: string): boolean => {
-  const s = q.trim().toLowerCase();
-  return s === "" || t.name.toLowerCase().includes(s) || t.description.toLowerCase().includes(s);
-};
-
-export function filterTools(items: readonly AiToolUsage[], f: AiToolFilters): AiToolUsage[] {
+export function filterTools(items: readonly AiTool[], f: AiToolFilters): AiTool[] {
+  const q = (f.q ?? "").trim().toLowerCase();
   return items.filter(
     (t) =>
-      matchesQuery(t, f.q ?? "") &&
-      (f.kind === undefined || usedBy(t, f.kind)) &&
+      (q === "" || searchText(t).includes(q)) &&
+      (f.kind === undefined || t.kind === f.kind) &&
       (f.status === undefined || (f.status === "on" ? t.enabled : isUnused(t))),
   );
 }
@@ -57,16 +42,16 @@ export type ToolCounts = {
   unused: number;
   agent: number;
   command: number;
+  workflow: number;
 };
 
-/** Số đếm trên chip — tính trên TOÀN danh mục (không phụ thuộc bộ lọc đang chọn), một lượt duyệt. */
-export function toolCounts(items: readonly AiToolUsage[]): ToolCounts {
-  const c: ToolCounts = { all: items.length, on: 0, unused: 0, agent: 0, command: 0 };
+/** Số đếm trên chip — trên TOÀN danh mục (không đổi theo bộ lọc), một lượt duyệt. */
+export function toolCounts(items: readonly AiTool[]): ToolCounts {
+  const c: ToolCounts = { all: items.length, on: 0, unused: 0, agent: 0, command: 0, workflow: 0 };
   for (const t of items) {
     if (t.enabled) c.on++;
     if (isUnused(t)) c.unused++;
-    if (t.agent_count > 0) c.agent++;
-    if (t.command_count > 0) c.command++;
+    c[t.kind]++;
   }
   return c;
 }
@@ -76,7 +61,14 @@ export function sliceShown<T>(rows: readonly T[], shown: number): { rows: T[]; m
   return { rows: rows.slice(0, shown), more: rows.length > shown };
 }
 
-/** "Công ty dùng": đang bật / tổng. */
+/** Chữ cái đầu để vẽ avatar công ty. */
+export const initial = (name: string): string => name.trim().charAt(0).toUpperCase() || "?";
+
+/** Số công ty ngoài ≤ 5 tên đã trả. */
+export const moreCompanies = (t: AiTool): number =>
+  Math.max(0, t.companies_count - t.companies.length);
+
+/** "Công ty dùng" của workflow: đang bật / tổng. */
 export const companyTally = (cs: readonly { on: boolean }[]): { on: number; total: number } => ({
   on: cs.filter((c) => c.on).length,
   total: cs.length,

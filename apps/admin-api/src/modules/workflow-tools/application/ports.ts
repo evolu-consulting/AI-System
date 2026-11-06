@@ -27,19 +27,17 @@ export type ToolTarget = {
 
 export type SwitchKey = { tenantId: string; workflowId: string };
 
-/** CR-121 c16 · một công cụ AI kèm "Dùng bởi" (số agent, số lệnh) và số công ty đang bật. */
+/** CR-121 c16 · một dòng danh sách gộp (agent · lệnh · workflow Dify). */
 export type UsageView = {
-  workflowId: string;
-  key: string;
-  name: string;
-  description: string;
+  kind: "agent" | "command" | "workflow";
+  id: string;
+  name: string | null;
+  description: string | null;
   enabled: boolean;
   sideEffect: boolean;
-  agentCount: number;
-  commandCount: number;
-  companyCount: number;
+  companiesCount: number;
+  companies: string[];
 };
-
 /** CR-121 c16 · một công ty và công tắc của một công cụ. */
 export type CompanyView = {
   tenantId: string;
@@ -50,8 +48,8 @@ export type CompanyView = {
 };
 
 export interface WorkflowToolsRepo {
-  /** Mọi công cụ sắp `key`, ≤ `limit`, kèm "Dùng bởi" — SỐ CÂU CỐ ĐỊNH (`USAGE_QUERIES`), không theo số công cụ. */
-  usage(limit: number): Promise<UsageView[]>;
+  /** Agent + lệnh (+ workflow khi `withWorkflows`), mỗi loại ≤ `limit`, kèm công ty dùng — SỐ CÂU CỐ ĐỊNH (`USAGE_QUERIES`). */
+  usage(limit: number, withWorkflows: boolean): Promise<UsageView[]>;
   workflowExists(workflowId: string): Promise<boolean>;
   /** Mọi công ty sắp tên, ≤ `limit`, kèm công tắc của một công cụ — một câu. */
   companies(workflowId: string, limit: number): Promise<CompanyView[]>;

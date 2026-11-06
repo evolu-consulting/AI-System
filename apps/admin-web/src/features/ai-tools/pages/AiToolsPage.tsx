@@ -1,6 +1,6 @@
 // CR-121 R6 · c16 · /ai-tools — MỘT danh sách công cụ AI (workflow Dify) kèm "Dùng bởi"; chip lọc, ô tìm, ngăn chi tiết có "Công ty dùng".
 // Chỉ platform_admin (vai khác thấy ForbiddenState, không gọi API). Bộ lọc + công cụ đang mở nằm trên URL.
-import { Bot, Terminal } from "lucide-react";
+import { Bot, Terminal, Workflow } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
@@ -55,7 +55,7 @@ function AiToolsContent() {
             />
           }
           activeId={v.activeId}
-          onOpen={(x) => v.patch({ tool: x.workflow_id })}
+          onOpen={(x) => v.patch({ tool: x.id })}
         />
         {v.total > 0 ? (
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-2.5 text-caption text-muted-foreground tabular-nums">
@@ -77,6 +77,10 @@ function AiToolsContent() {
               <span className="inline-flex items-center gap-1.5">
                 <Terminal aria-hidden className="size-3.5" />
                 {t("aiTools.legend.command")}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Workflow aria-hidden className="size-3.5" />
+                {t("aiTools.legend.workflow")}
               </span>
             </span>
           </div>

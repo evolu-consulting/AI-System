@@ -1,5 +1,5 @@
 // CR-121 R6 · c16 (chuyển từ tab "Quy trình" của công ty, ToolRow): "Công ty dùng" trong ngăn chi tiết — mỗi công ty một công tắc.
-import type { AiToolUsage, WorkflowCompany } from "@ai/contracts/workflow-tools";
+import type { AiTool, WorkflowCompany } from "@ai/contracts/workflow-tools";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,9 +18,10 @@ export function grantedLine(t: Translate, row: WorkflowCompany, locale: string):
   return t("aiTools.drawer.grantedBy", { name: row.granted_by, date });
 }
 
-export function CompanyToolsList({ tool }: { tool: AiToolUsage }) {
+export function CompanyToolsList({ tool: row }: { tool: AiTool }) {
   const { t, i18n } = useTranslation();
-  const tools = useCompanyTools({ id: tool.workflow_id, name: tool.name });
+  const tool = { ...row, name: row.name ?? "" };
+  const tools = useCompanyTools({ id: tool.id, name: tool.name });
   const locale = i18n.language === "vi" ? "vi-VN" : "en-GB";
   const items = tools.list.data?.items;
   const tally = items ? companyTally(items) : null;

@@ -1,6 +1,6 @@
 // CR-121 R6 · c16 · gọi API Công cụ AI (nơi duy nhất): "Dùng bởi" cả danh mục, "Công ty dùng" của một công cụ, công tắc theo công ty.
 // Công tắc dùng lại `PUT|DELETE /admin/tenants/:id/workflow-tools/:workflow_id` (không đổi) — chỉ đổi chỗ gọi (D6, chuyển từ tab công ty).
-import type { AiToolUsageList, WorkflowCompanyList } from "@ai/contracts/workflow-tools";
+import type { AiToolList, WorkflowCompanyList } from "@ai/contracts/workflow-tools";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 
@@ -13,7 +13,7 @@ export const AI_TOOL_KEYS = {
 export function useAiToolUsage() {
   return useQuery({
     queryKey: AI_TOOL_KEYS.usage,
-    queryFn: () => api<AiToolUsageList>("/admin/workflow-tools/usage"),
+    queryFn: () => api<AiToolList>("/admin/ai-tools"),
   });
 }
 

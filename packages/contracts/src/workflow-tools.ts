@@ -28,25 +28,30 @@ export type TenantWorkflowToolList = z.infer<typeof TenantWorkflowToolListSchema
 // và GET /admin/workflow-tools/:workflow_id/companies (công ty dùng + công tắc; bật/tắt vẫn qua PUT|DELETE ở trên).
 const Count = z.number().int().min(0);
 
-/** Một công cụ AI (workflow Dify) kèm số agent/lệnh gọi tới và số công ty đang bật. */
-export const AiToolUsageSchema = z.strictObject({
-  workflow_id: UuidSchema,
-  key: CatalogKeySchema,
-  name: z.string().min(1).max(128),
-  description: z.string().max(2000),
+/** Loại công cụ trong danh sách gộp. Hook: admin chưa có nguồn đọc ⇒ chưa có loại này. */
+export const AI_TOOL_KINDS = ["agent", "command", "workflow"] as const;
+
+/**
+ * Một dòng của danh sách Công cụ AI. `companies_count` = số công ty đang dùng (agent: có grant; lệnh: có tính năng chứa lệnh được cấp;
+ * workflow: công tắc đang bật); `companies` ≤ 5 tên đầu để hiện. `name` null = agent (admin chỉ biết id). `description` chỉ workflow.
+ */
+export const AiToolSchema = z.strictObject({
+  kind: z.enum(AI_TOOL_KINDS),
+  id: UuidSchema,
+  name: z.string().min(1).max(128).nullable(),
+  description: z.string().max(2000).nullable(),
   enabled: z.boolean(),
   side_effect: z.boolean(),
-  agent_count: Count,
-  command_count: Count,
-  company_count: Count,
+  companies_count: Count,
+  companies: z.array(z.string().max(200)).max(5),
 });
-export type AiToolUsage = z.infer<typeof AiToolUsageSchema>;
+export type AiTool = z.infer<typeof AiToolSchema>;
 
-export const AiToolUsageListSchema = z.strictObject({
-  items: z.array(AiToolUsageSchema).max(TENANT_WORKFLOW_TOOLS_MAX),
+export const AI_TOOLS_MAX = 600;
+export const AiToolListSchema = z.strictObject({
+  items: z.array(AiToolSchema).max(AI_TOOLS_MAX),
 });
-export type AiToolUsageList = z.infer<typeof AiToolUsageListSchema>;
-
+export type AiToolList = z.infer<typeof AiToolListSchema>;
 /** Trần danh sách công ty của một công cụ. */
 export const WORKFLOW_COMPANIES_MAX = 500;
 

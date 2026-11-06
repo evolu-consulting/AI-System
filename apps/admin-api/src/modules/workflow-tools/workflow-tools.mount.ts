@@ -32,10 +32,14 @@ function toolsTx(d: WorkflowToolsDeps, c: Context<AppVars>): ToolsTx {
 }
 
 /** CR-121 c16 · "Dùng bởi" của Công cụ AI: luôn mount (không theo cờ module đóng băng). */
-export function mountAiToolsUsage(app: Hono<AppVars>, d: WorkflowToolsDeps): void {
+export function mountAiToolsUsage(
+  app: Hono<AppVars>,
+  d: WorkflowToolsDeps,
+  withWorkflows: boolean,
+): void {
   app.route(
-    "/admin/workflow-tools",
-    aiToolsUsageRoutes(d, (c) => toolsTx(d, c)),
+    "/admin/ai-tools",
+    aiToolsUsageRoutes(d, (c) => toolsTx(d, c), withWorkflows),
   );
 }
 
