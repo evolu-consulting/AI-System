@@ -36,20 +36,28 @@ export type EnvAppDeps = Required<
     | "ops"
   >;
 
-/** N3 live (ADR-0027): SMTP/VAPID nền tảng một bộ từ env; bí mật chỉ từ env hoặc kho secret, không có giá trị cố định trong code. */
+/**
+ * N3 live (ADR-0027) + CR-121 D4: cấu hình mail KHÔNG đọc từ env lúc gửi (nguồn = kho secret Hub). `HUB_SMTP_*` + `SMTP_PASSWORD`
+ * chỉ thành `mailSeed` để khởi tạo kho secret một lần khi kho chưa có; không có `SMTP_PASSWORD` ⇒ không seed (kho trống ⇒ ops check
+ * `notify_config` cảnh báo). VAPID giữ như cũ.
+ */
 function liveEnvOf(env: Env): LiveEnv {
   return {
-    smtp: {
-      host: env.HUB_SMTP_HOST,
-      port: env.HUB_SMTP_PORT,
-      secure: env.HUB_SMTP_SECURE,
-      user: env.HUB_SMTP_USER,
-      from: env.HUB_SMTP_FROM,
-    },
     vapid: env.HUB_VAPID_PUBLIC_KEY
       ? { publicKey: env.HUB_VAPID_PUBLIC_KEY, subject: env.HUB_VAPID_SUBJECT }
       : null,
-    ...(env.SMTP_PASSWORD ? { smtpPassword: env.SMTP_PASSWORD } : {}),
+    mailSeed: env.SMTP_PASSWORD
+      ? {
+          smtp: {
+            host: env.HUB_SMTP_HOST,
+            port: env.HUB_SMTP_PORT,
+            secure: env.HUB_SMTP_SECURE,
+            user: env.HUB_SMTP_USER,
+            from: env.HUB_SMTP_FROM,
+          },
+          password: env.SMTP_PASSWORD,
+        }
+      : null,
     ...(env.VAPID_PRIVATE_KEY ? { vapidPrivateKey: env.VAPID_PRIVATE_KEY } : {}),
   };
 }

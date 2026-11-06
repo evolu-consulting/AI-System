@@ -8,7 +8,7 @@ export const OPS_STATUSES = ["ok", "warn", "crit", "unknown"] as const;
 export const OpsStatusSchema = z.enum(OPS_STATUSES);
 export type OpsStatus = z.infer<typeof OpsStatusSchema>;
 
-/** 8 check v1 (bảng ở proposal §2) + `slo` (CR-117: SLO + phát hiện hồi quy) + `flow_coverage` (CR-120: bất biến dữ liệu quy trình) + `app_roles` (CR-121 c19: vai hub ↔ vai theo app) + `tenant_profile` (CR-121 c20: tên công ty một nguồn). */
+/** 8 check v1 (bảng ở proposal §2) + `slo` (CR-117: SLO + phát hiện hồi quy) + `flow_coverage` (CR-120: bất biến dữ liệu quy trình) + `app_roles` (CR-121 c19: vai hub ↔ vai theo app) + `tenant_profile` (CR-121 c20: tên công ty một nguồn) + `notify_config` (CR-121 c21: cấu hình mail ở kho secret Hub). */
 export const OPS_CHECK_KEYS = [
   "provider",
   "runs_failed",
@@ -22,6 +22,7 @@ export const OPS_CHECK_KEYS = [
   "flow_coverage",
   "app_roles",
   "tenant_profile",
+  "notify_config",
 ] as const;
 export const OpsCheckKeySchema = z.enum(OPS_CHECK_KEYS);
 export type OpsCheckKey = z.infer<typeof OpsCheckKeySchema>;
@@ -139,6 +140,14 @@ export const OPS_CHECK_META: Readonly<Record<OpsCheckKey, OpsCheckMeta>> = {
     crit: null,
     order: null,
     note: "crit khi tên công ty bị lưu hai nơi (cột company_settings.company_name quay lại) hoặc công ty có tên rỗng (CR-121 D3: nguồn duy nhất admin.tenants.name)",
+  },
+  notify_config: {
+    label: "Cấu hình gửi mail",
+    unit: "count",
+    warn: null,
+    crit: null,
+    order: null,
+    note: "warn khi kho secret Hub chưa có cấu hình mail (secret nền tảng smtp_password) — chưa gửi được email (CR-121 D4: nguồn duy nhất = kho secret)",
   },
 };
 

@@ -114,8 +114,9 @@ export const EnvSchema = z.object({
   // N3 · gốc URL app dựng liên kết tuyệt đối trong email; khoá công khai VAPID (KHÔNG bí mật) cho trình duyệt đăng ký push.
   HUB_NOTIFY_BASE_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:3300"),
   HUB_VAPID_PUBLIC_KEY: z.string().max(256).optional(),
-  // N3 live (ADR-0027): MỘT bộ SMTP nền tảng, giá trị cố định mặc định (tạm). Bí mật KHÔNG có mặc định: `SMTP_PASSWORD` /
-  // `VAPID_PRIVATE_KEY` (env) hoặc kho secret Hub (`smtp_password` / `vapid_private_key`). Tên bí mật không có tiền tố HUB_.
+  // N3 live (ADR-0027) + CR-121 D4: cấu hình mail nằm ở kho secret Hub (secret nền tảng `smtp_password`, JSON). `HUB_SMTP_*` +
+  // `SMTP_PASSWORD` CHỈ để khởi tạo kho một lần khi chưa có (không ghi đè); sau đó đổi cấu hình ở kho, không đọc env nữa.
+  // `VAPID_PRIVATE_KEY` (env) hoặc kho (`vapid_private_key`) như cũ. Tên bí mật không có tiền tố HUB_.
   HUB_SMTP_HOST: z.string().min(1).default("smtp.gmail.com"),
   HUB_SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
   HUB_SMTP_SECURE: z

@@ -1411,7 +1411,8 @@
       "slo": "SLO / hồi quy",
       "flow_coverage": "Quy trình hiển thị cho tenant",
       "app_roles": "Vai theo ứng dụng",
-      "tenant_profile": "Hồ sơ công ty"
+      "tenant_profile": "Hồ sơ công ty",
+      "notify_config": "Cấu hình gửi mail"
     },
     "history": {
       "title": "Lịch sử (50 sự kiện gần nhất)",

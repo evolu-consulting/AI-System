@@ -32,7 +32,11 @@ các cổng này; public bằng tên miền ⇒ đổi `S2_PUBLIC_*`, `CORS_ORIG
   SAO LƯU: mất `SECRET_MASTER_KEY`/`HUB_SECRETS_KEY` = mất mọi secret đã lưu.
 - `~/workspace/sohoptac2/ADMIN_CREDENTIALS.txt` (600) — platform admin (`admin`, tenant `platform`); mật khẩu chỉ ở file này.
 - `APP_ENV=production`; không đặt cờ dev/test (`LOGIN_IP_MAX_ATTEMPTS`, `*_FROZEN_MODULES`, `HUB_NOTIFY_MODE=fake`…).
-- SMTP: giữ mặc định trong code (`HUB_SMTP_HOST=smtp.gmail.com:587`), `HUB_NOTIFY_MODE` mặc định `off`, tài khoản gửi để trống (chờ người dùng).
+- Mail (CR-121 D4): cấu hình gửi mail nằm ở **kho secret Hub** (secret nền tảng `smtp_password`, giá trị JSON host/cổng/người gửi/mật khẩu) —
+  nguồn duy nhất. `HUB_SMTP_*` + `SMTP_PASSWORD` trong `.env` chỉ khởi tạo kho MỘT lần (cần `HUB_NOTIFY_MODE=live`, kho chưa có secret mail,
+  có `SMTP_PASSWORD`); kho đã có ⇒ không ghi đè, đổi cấu hình ở kho chứ không ở env. `HUB_NOTIFY_MODE` mặc định `off`; kho trống ⇒
+  Admin › Tình trạng hệ thống hiện cảnh báo "Cấu hình gửi mail" (không chặn khởi động). Chờ người dùng cung cấp tài khoản gửi.
+  (Mailer riêng của admin-api — `SMTP_URL`/`MAIL_FROM` — chưa chuyển về kho, xem tasks CR-121 c21.)
 
 ## AI qua gói Claude (ai-sub)
 - `gen-env.sh` chép MỘT lần `~/.claude/.credentials.json` + `~/.claude.json` của user `evoc` vào `./claude-home` (700/600) và chép

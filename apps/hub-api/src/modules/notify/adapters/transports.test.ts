@@ -20,9 +20,11 @@ describe("transportsFor", () => {
     expect(transportsFor("fake")?.email).toBeInstanceOf(FakeEmailTransport);
     expect(() => transportsFor("live")).toThrow(NotifyNotConfigured);
     const live = transportsFor("live", {
-      smtp: { host: "h", port: 587, secure: false, user: "", from: "a@b.test" },
+      mail: async () => ({
+        smtp: { host: "h", port: 587, secure: false, user: "", from: "a@b.test" },
+        password: "",
+      }),
       vapid: null,
-      smtpPassword: async () => undefined,
       vapidPrivateKey: async () => undefined,
     });
     expect(live?.email).toBeDefined();
@@ -41,22 +43,25 @@ describe("envAppDeps · notify", () => {
     ).notify;
     expect(fake).toMatchObject({ mode: "fake", worker: true, vapidPublicKey: "BPub" });
   });
-  test("live khởi động được với giá trị cố định mặc định; bí mật chỉ từ env nếu có", () => {
+  test("live khởi động được; env mail chỉ thành mailSeed (có SMTP_PASSWORD mới seed), không còn cấu hình gửi từ env", () => {
     const d = envAppDeps(env({ HUB_NOTIFY_MODE: "live" }), log).notify;
-    expect(d?.live?.smtp).toEqual({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      user: "",
-      from: "no-reply@example.com",
-    });
+    expect(d?.live?.mailSeed).toBeNull();
     expect(d?.live?.vapid).toBeNull();
-    expect(d?.live?.smtpPassword).toBeUndefined();
+    expect(d?.live).not.toHaveProperty("smtp");
     const withPw = envAppDeps(
       env({ HUB_NOTIFY_MODE: "live", SMTP_PASSWORD: "p", HUB_VAPID_PUBLIC_KEY: "BPub" }),
       log,
     ).notify;
-    expect(withPw?.live?.smtpPassword).toBe("p");
+    expect(withPw?.live?.mailSeed).toEqual({
+      smtp: {
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false,
+        user: "",
+        from: "no-reply@example.com",
+      },
+      password: "p",
+    });
     expect(withPw?.live?.vapid?.publicKey).toBe("BPub");
   });
   test("fake bị từ chối ở production", () => {

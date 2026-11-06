@@ -1,5 +1,5 @@
 ﻿// N3-FR-07 · ADR-0027 · transport EMAIL thật trên `nodemailer` (hộp thư pool, SMTP nền tảng MỘT bộ — D-04). Mật khẩu KHÔNG ở đây:
-// `getPassword()` do nơi dựng truyền vào (env SMTP_PASSWORD, hoặc `hub.secrets` kind `smtp_password`). Không log nội dung/địa chỉ.
+// `getPassword()` do nơi dựng truyền vào (CR-121 D4: cấu hình + mật khẩu từ kho secret Hub, xem `mail-config.ts`). Không log nội dung/địa chỉ.
 // Mỗi tin một `sendMail` song song (pool giới hạn kết nối); lỗi ánh xạ qua `mapSmtpError` (thuần, có test).
 import nodemailer from "nodemailer";
 import type { EmailTransport } from "../application/ports";
@@ -58,6 +58,26 @@ export function mapSmtpError(err: unknown): SendResult {
   if (rc >= 500 && rc !== 535) return { ok: false, permanent: true, code: `smtp_${rc}` };
   if (rc >= 400) return { ok: false, permanent: false, code: `smtp_${rc}` };
   return { ok: false, permanent: false, code: `smtp_${(e.code ?? "error").toLowerCase()}` };
+}
+
+/**
+ * CR-121 c21 · cấu hình + mật khẩu lấy từ kho secret Hub ở lần gửi đầu (không đọc env). Lỗi lấy secret ném ra ⇒ cả lô thử lại
+ * (safeBatch), lần sau đọc lại; thành công ⇒ dựng transport một lần.
+ */
+export function createStoredSmtpTransport(
+  getMail: () => Promise<{ smtp: SmtpConfig; password: string }>,
+  factory: MailFactory = realMailFactory,
+): EmailTransport {
+  let inner: EmailTransport | null = null;
+  return {
+    async sendBatch(msgs) {
+      if (!inner) {
+        const m = await getMail();
+        inner = createSmtpTransport(m.smtp, async () => m.password, factory);
+      }
+      return inner.sendBatch(msgs);
+    },
+  };
 }
 
 export function createSmtpTransport(

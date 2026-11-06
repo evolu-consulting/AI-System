@@ -5,13 +5,13 @@ import type { Db } from "@ai/db";
 import type { Env, Hono } from "hono";
 import type { Logger } from "../../lib/logger";
 import { startLoop } from "../../lib/loop";
-import type { SecretKey } from "../secrets/secrets.crypto";
+import { type SecretKey, sealHubSecret } from "../secrets/secrets.crypto";
 import { HubSecretReader } from "../secrets/secrets.use";
 import { hubCredentials } from "./adapters/credentials";
 import { dispatchRepo } from "./adapters/dispatch.repo";
 import { inboxRepo } from "./adapters/inbox.repo";
+import { type MailConfig, mailConfigReader, seedMailSecret } from "./adapters/mail-config";
 import { NOTIFICATIONS_PREFIX, notifyRoutes } from "./adapters/notify.routes";
-import type { SmtpConfig } from "./adapters/smtp.transport";
 import type { LiveNotifyConfig } from "./adapters/transports";
 import { type NotifyMode, type Transports, transportsFor } from "./adapters/transports";
 import type { VapidConfig } from "./adapters/webpush.transport";
@@ -33,11 +33,13 @@ export type NotifyDeps = {
   now?: () => Date;
 };
 
-/** Phần `live` lấy từ env (không bí mật) + bí mật nếu đặt qua env; thiếu bí mật ⇒ đọc kho secret Hub lúc gửi. */
+/**
+ * Phần `live` lấy từ env. CR-121 D4: cấu hình MAIL không đọc từ env khi gửi — `mailSeed` (từ env cũ) chỉ dùng để KHỞI TẠO kho secret
+ * một lần khi kho chưa có; mọi lần gửi đọc kho secret Hub. VAPID giữ nguyên (ngoài phạm vi D4).
+ */
 export type LiveEnv = {
-  smtp: SmtpConfig;
   vapid: VapidConfig | null;
-  smtpPassword?: string;
+  mailSeed?: MailConfig | null;
   vapidPrivateKey?: string;
 };
 
@@ -56,12 +58,24 @@ function liveConfig(d: NotifyMountDeps, e: LiveEnv): LiveNotifyConfig {
     new HubSecretReader({ db: d.db, key: d.hubSecretsKey ?? null, log: d.log }),
   );
   return {
-    smtp: e.smtp,
+    mail: mailConfigReader(creds),
     vapid: e.vapid,
-    smtpPassword: async () => e.smtpPassword ?? creds.use("smtp_password", async (v) => v),
     vapidPrivateKey: async () =>
       e.vapidPrivateKey ?? creds.use("vapid_private_key", async (v) => v),
   };
+}
+
+async function seedFromEnv(d: NotifyMountDeps, seed: MailConfig | null | undefined): Promise<void> {
+  if (!seed || !d.hubSecretsKey) return;
+  try {
+    const key = d.hubSecretsKey;
+    const r = await seedMailSecret(d.db, (m, v) => sealHubSecret(key, m, v), seed);
+    d.log.info("notify_mail_secret_seed", { result: r });
+  } catch (err) {
+    d.log.warn("notify_mail_secret_seed_failed", {
+      error: err instanceof Error ? err.name : "unknown",
+    });
+  }
 }
 
 const DEFAULT_EVERY_MS = 2000;
@@ -74,6 +88,8 @@ export function mountNotify<E extends Env>(app: Hono<E>, d: NotifyMountDeps): vo
   const transports =
     n.transports ?? transportsFor(n.mode ?? "off", n.live && liveConfig(d, n.live));
   if (!transports || !n.worker) return;
+  // Khởi tạo kho secret mail từ env MỘT lần (không ghi đè); worker đợi xong lượt này rồi mới gửi.
+  const seeded = seedFromEnv(d, n.live?.mailSeed);
   const deps = {
     store: dispatchRepo(d.db),
     ...transports,
@@ -84,7 +100,10 @@ export function mountNotify<E extends Env>(app: Hono<E>, d: NotifyMountDeps): vo
   startLoop({
     name: "notify-dispatch",
     everyMs: n.everyMs ?? DEFAULT_EVERY_MS,
-    tick: () => drain(deps),
+    tick: async () => {
+      await seeded;
+      return drain(deps);
+    },
     log: d.log,
     signal: d.signal,
   });

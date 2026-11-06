@@ -1411,7 +1411,8 @@
       "slo": "SLO / regressions",
       "flow_coverage": "Processes visible to tenants",
       "app_roles": "App roles",
-      "tenant_profile": "Company profile"
+      "tenant_profile": "Company profile",
+      "notify_config": "Mail sending setup"
     },
     "history": {
       "title": "History (last 50 events)",
