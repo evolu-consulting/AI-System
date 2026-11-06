@@ -81,7 +81,7 @@ async function main(): Promise<number> {
   } catch {}
   const t0 = performance.now();
   const startedAt = stamp(new Date(Date.now() - 5000));
-  const results = await runBins(root, plan.bins);
+  const results = await runBins(root, plan.bins, { wave: true });
   try {
     const r = ingest(join(root, ".data/evotest"), startedAt, timings);
     saveWaveTimings(root, r.timings);

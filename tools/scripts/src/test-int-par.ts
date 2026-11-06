@@ -188,7 +188,10 @@ async function main(): Promise<number> {
   if (sel.unmatched.length)
     console.warn(`test:int:par: CẢNH BÁO filter không khớp file nào: ${sel.unmatched.join(", ")}`);
   if (process.argv.includes("--check-only")) {
-    console.log(`test:int:par: filter hợp lệ, ${sel.files.length} file int trong phạm vi`);
+    const n = selectFiles(sel.files, opts.filters); // đếm SAU lọc tiền tố (chốt phạm vi evotest-scope.ts đọc số này)
+    console.log(
+      `test:int:par: filter hợp lệ, ${n.parallel.length + n.serial.length} file int trong phạm vi`,
+    );
     return 0;
   }
   const { parallel, serial } = selectFiles(sel.files, opts.filters);

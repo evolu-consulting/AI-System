@@ -18,7 +18,7 @@
 #   CHIA SLOT (lượt toàn bộ -Step e2e|all): thay vì chạy tuần tự trong MỘT slot, run-tests.ps1 tự chia: int (chỉ -Step all) một slot, việc e2e chia các slot trống còn lại (cân theo thời lượng đã đo
 #   ở ~/workspace/evotest/cache/e2e-timings.json), chạy SONG SONG bằng các tiến trình con (-InShard), rồi in MỘT bản tóm tắt gộp (thời lượng từng việc, 10 file int chậm nhất, mã thoát = ngăn xấu nhất; đỏ cũ known-red xử lý trong từng ngăn như trước).
 #   -NoShard: chạy một slot như cũ (giữ .exclusive). -Jobs N: số việc e2e cùng lúc trong slot; -Cpus N: CPU runner mỗi slot (mặc định 2; chia slot tự đặt theo lõi máy chủ). -Slots tối đa 12.
-param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,12)][int]$Slots = 8, [ValidateRange(0,9)][int]$Jobs = 0, [ValidateRange(0,8)][int]$Cpus = 0, [switch]$NoShard, [switch]$InShard, [string]$OutDir = "",[ValidateSet("", "cw")][string]$Capture = "", [switch]$Exclusive, [ValidateRange(1,600)][int]$ExclusiveTimeoutMin = 60, [string]$Probe = "", [switch]$Force, [switch]$Full, [switch]$NoMirror, [switch]$NoCache, [switch]$CachePrune, [ValidateRange(1,50)][int]$Keep = 5, [ValidateRange(1,100)][int]$MaxGb = 6, [ValidateRange(1,120)][int]$QuietMin = 8)
+param([ValidateSet("int", "e2e", "unit", "all", "perf", "py")][string]$Step = "int", [string]$Ref = "HEAD", [switch]$Dirty, [switch]$DryRun, [string]$Filter = "", [int]$Workers = 0, [switch]$All, [ValidateRange(1,12)][int]$Slots = 8, [ValidateRange(0,9)][int]$Jobs = 0, [ValidateRange(0,8)][int]$Cpus = 0, [switch]$NoShard, [switch]$InShard, [string]$OutDir = "",[ValidateSet("", "cw")][string]$Capture = "", [switch]$Exclusive, [ValidateRange(1,600)][int]$ExclusiveTimeoutMin = 60, [string]$Probe = "", [switch]$Force, [switch]$Wave, [switch]$Full, [switch]$NoMirror, [switch]$NoCache, [switch]$CachePrune, [ValidateRange(1,50)][int]$Keep = 5, [ValidateRange(1,100)][int]$MaxGb = 6, [ValidateRange(1,120)][int]$QuietMin = 8)
 $ErrorActionPreference = "Stop"
 $isFull = (($Step -in "int", "e2e", "all") -and -not $Filter -and -not $Exclusive -and -not $InShard)
 if ($Force -and -not $isFull) { Write-Host "evotest: -Force chỉ có nghĩa với lượt toàn bộ (int|e2e|all không -Filter); bỏ qua" }
@@ -43,6 +43,17 @@ if ($CachePrune) {
     ssh @ssh $Server "R=`$HOME/workspace/evotest; C=`$R/cache; . /tmp/evotest-cache-$stamp.sh; cache_prune $Keep $MaxGb; unlink /tmp/evotest-cache-$stamp.sh" 2>&1
   } finally { Remove-Item -Force $ct -ErrorAction SilentlyContinue }
   return
+}
+# CHỐT PHẠM VI (tool-evotest-scope-guard, luật 5d/D4): worktree lát (evolu-wt\ hoặc nhánh slice/*) không được chạy rộng
+# (không -Filter, > 30 file int, > 3 job e2e, > 60 spec) ⇒ dừng TRƯỚC khi upload, exit 6. Lối thoát cho điều phối: -Wave hoặc EVOTEST_WAVE=1
+# (verify:wave tự truyền -Wave). Checkout chính không bị chặn. Ngăn con -InShard đã được lượt cha kiểm nên bỏ qua.
+if ($Step -in "int", "e2e", "all" -and -not $InShard -and $Ref -eq "HEAD") {
+  $sg = @("tools/scripts/src/evotest-scope.ts", "--step", $Step, "--repo", $Repo)
+  if ($Filter) { $sg += @("--filter", $Filter) }   # chuỗi rỗng bị PS 5.1 bỏ khi truyền cho exe nên chỉ thêm khi có
+  if ($All) { $sg += "--all" }; if ($Wave -or $env:EVOTEST_WAVE -eq "1") { $sg += "--wave" }
+  Push-Location $Repo
+  try { & bun @sg; $sgRc = $LASTEXITCODE } finally { Pop-Location }
+  if ($sgRc -ne 0) { exit $sgRc }
 }
 if ($DryRun) {
   Write-Host "commit $commit, bước $Step -> $Server ~/workspace/evotest/slots/sN (N = slot trống đầu tiên trong $Slots); log: $out; luot toan bo: $isFull (-Force: $Force)"

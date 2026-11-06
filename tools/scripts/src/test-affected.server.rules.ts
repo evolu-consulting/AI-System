@@ -71,7 +71,7 @@ export function mergeCmds(cmds: readonly ServerCmd[]): ServerCmd[] {
 }
 
 /** Đối số `run-tests.ps1` cho một lệnh: `-Step int|e2e -Filter … [-Dirty]`. e2e gộp nhiều việc bằng dấu phẩy. */
-export function evotestArgs(cmd: ServerCmd, dirty: boolean, all = false): string[] {
+export function evotestArgs(cmd: ServerCmd, dirty: boolean, all = false, wave = false): string[] {
   return [
     "-NoProfile",
     "-File",
@@ -83,6 +83,7 @@ export function evotestArgs(cmd: ServerCmd, dirty: boolean, all = false): string
     ...(cmd.step === "int" && cmd.workers ? ["-Workers", String(cmd.workers)] : []),
     ...(dirty ? ["-Dirty"] : []),
     ...(all ? ["-All"] : []),
+    ...(wave ? ["-Wave"] : []),
   ];
 }
 

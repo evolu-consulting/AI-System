@@ -199,7 +199,11 @@ async function main(): Promise<number> {
   const jobs = planJobs(plan, timings, args.only);
   if (args.list) {
     // chia việc cho nhiều slot evotest (deploy/evotest/run-tests.ps1 + evotest-shard.ts): chỉ in kế hoạch, không cần .env.local
-    console.log(JSON.stringify(jobs.map((j) => ({ name: j.name, cost: j.cost }))));
+    console.log(
+      JSON.stringify(
+        jobs.map((j) => ({ name: j.name, cost: j.cost, config: j.config, nfiles: j.files.length })),
+      ),
+    );
     return 0;
   }
   // `--only` gõ sai / việc bị bỏ (đóng băng): báo rõ thay vì chạy 0 việc rồi chết mù ở bước sau.

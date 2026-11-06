@@ -38,7 +38,7 @@ function redLines(log: string): string[] {
     .slice(0, 60);
 }
 
-type Flags = { dirty: boolean; all: boolean };
+type Flags = { dirty: boolean; all: boolean; wave: boolean };
 
 async function runCmd(root: string, bin: number, cmd: ServerCmd, fl: Flags): Promise<StepResult> {
   const name = `server:${bin}:${cmd.step}`;
@@ -48,7 +48,7 @@ async function runCmd(root: string, bin: number, cmd: ServerCmd, fl: Flags): Pro
   console.log(
     `▶ ${name}: evotest -Step ${cmd.step} -Filter "${cmd.filter.slice(0, 120)}"  (log ${log})`,
   );
-  const p = Bun.spawn([shell, ...evotestArgs(cmd, fl.dirty, fl.all)], {
+  const p = Bun.spawn([shell, ...evotestArgs(cmd, fl.dirty, fl.all, fl.wave)], {
     cwd: root,
     stdout: Bun.file(log),
     stderr: Bun.file(log),
@@ -95,10 +95,14 @@ export async function runServer(
 export async function runBins(
   root: string,
   bins: readonly Bin[],
-  opts: { dirty?: boolean; all?: boolean } = {},
+  opts: { dirty?: boolean; all?: boolean; wave?: boolean } = {},
 ): Promise<StepResult[]> {
   mkdirSync(join(root, ".data/test-affected"), { recursive: true });
-  const fl: Flags = { dirty: opts.dirty ?? dirtyTree(root), all: opts.all ?? false };
+  const fl: Flags = {
+    dirty: opts.dirty ?? dirtyTree(root),
+    all: opts.all ?? false,
+    wave: opts.wave ?? false,
+  };
   const done = await Promise.all(bins.map((b, i) => runBin(root, i + 1, b, fl)));
   return done.flat();
 }
