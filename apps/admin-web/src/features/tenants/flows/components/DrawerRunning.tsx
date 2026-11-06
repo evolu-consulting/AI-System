@@ -1,11 +1,11 @@
 // CR-121 c11 · R4 · khối "Đang chạy" của MỘT việc: các lượt chưa kết thúc (API lượt chạy lọc theo việc, R9).
 // Tóm tắt lượt chạy CHƯA có nhãn bản ghi (HĐ) ⇒ hiện tên việc + giờ bắt đầu + bước hiện tại, không id thô (khi API thêm nhãn: thay `title`).
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { StatusBadge } from "@/components/shared/StatusBadge";
+import { ensureProcessLocale } from "@/app/i18n";
+import { RunStatusBadge } from "@/features/processes/components/run/RunStatusBadge";
 import { useSlotRuns } from "../api";
 import { runTitle } from "../lib/run-title";
-
-const WAITING = new Set(["waiting_review", "waiting_answer", "needs_decision", "waiting_timer"]);
 
 export function DrawerRunning({
   tenantId,
@@ -20,6 +20,15 @@ export function DrawerRunning({
 }) {
   const { t, i18n } = useTranslation();
   const q = useSlotRuns(tenantId, slot, isPlatform, true);
+  // Nhãn trạng thái dùng chung `RunStatusBadge` (chuỗi `process.common.status.*` nạp lười, trang công ty chưa nạp sẵn).
+  const [labels, setLabels] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void ensureProcessLocale(i18n.language).then(() => live && setLabels(true));
+    return () => {
+      live = false;
+    };
+  }, [i18n.language]);
   const when = (iso: string) =>
     new Date(iso).toLocaleString(i18n.language === "vi" ? "vi-VN" : "en-GB", {
       dateStyle: "short",
@@ -59,9 +68,7 @@ export function DrawerRunning({
               <span className="text-caption text-muted-foreground">
                 {t("tenants.flows.runStep", { n: r.current_step + 1, total: r.step_count })}
               </span>
-              <StatusBadge tone={WAITING.has(r.status) ? "warn" : "info"}>
-                {t(WAITING.has(r.status) ? "tenants.flows.runWaiting" : "tenants.flows.runRunning")}
-              </StatusBadge>
+              {labels ? <RunStatusBadge status={r.status} /> : null}
               <span className="text-caption text-muted-foreground">
                 {r.started_by.display_name}
               </span>

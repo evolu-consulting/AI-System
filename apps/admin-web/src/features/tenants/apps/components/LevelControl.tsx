@@ -49,7 +49,10 @@ export function LevelControl({ value, available, ariaLabel, disabled, onChange }
 /** ⓘ giải nghĩa các mức: Xem = chỉ đọc · Sửa = tạo và sửa · Quản trị = thêm cài đặt app và người dùng. */
 export function LevelHelp() {
   const { t } = useTranslation();
-  const text = t("tenants.apps.levelHelp");
+  // MỘT định nghĩa mức (tenants.apps.levelDesc), cũng dùng ở hộp thoại vai (RoleDialog).
+  const text = (["read", "write", "admin"] as const)
+    .map((l) => t(`tenants.apps.levelDesc.${l}`))
+    .join(" · ");
   return (
     <button
       type="button"

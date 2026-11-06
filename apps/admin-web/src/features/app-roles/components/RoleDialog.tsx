@@ -82,7 +82,7 @@ export function RoleDialog({ mode, appName, initial, onSubmit, onClose }: Props)
               ))}
             </select>
             <p className="text-caption text-muted-foreground">
-              {t(`appRoles.dialog.levelHint.${level}`)}
+              {t(`tenants.apps.levelDesc.${level}`)}
             </p>
           </div>
         </form>

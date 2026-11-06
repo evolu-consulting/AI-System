@@ -34,8 +34,13 @@ export type WorkspaceSearch = {
 /** URL cũ → nơi mới (R2): `?tab=workflow-tools` ⇒ Công cụ AI kèm thông báo; còn lại không chuyển. */
 export function legacyTabRedirect(
   s: WorkspaceSearch,
-): { to: "/ai-tools"; notice: "company-tools" } | null {
-  return s.legacy === "workflow-tools" ? { to: "/ai-tools", notice: "company-tools" } : null;
+  role?: string,
+): { to: "/ai-tools"; notice: "company-tools" } | { to: "processes" } | null {
+  if (s.legacy !== "workflow-tools") return null;
+  // tenant_admin không vào được Công cụ AI (Forbidden) ⇒ về tab Quy trình của công ty mình.
+  return role === "tenant_admin"
+    ? { to: "processes" }
+    : { to: "/ai-tools", notice: "company-tools" };
 }
 
 const str = (v: unknown): string | undefined => (typeof v === "string" && v !== "" ? v : undefined);

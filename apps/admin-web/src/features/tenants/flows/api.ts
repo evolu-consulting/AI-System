@@ -8,6 +8,7 @@ import type {
 } from "@ai/contracts/hub-admin";
 import { useQuery } from "@tanstack/react-query";
 import { rowsFromSlotBody } from "@/features/apps/lib/flow-view";
+import { isRunEnded } from "@/features/processes/lib/run-detail-view";
 import { api } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";
 
@@ -55,8 +56,6 @@ export const cloneForCompany = (tid: string, defId: string) =>
     { method: "POST", body: {} },
   );
 
-const RUN_ENDED: readonly string[] = ["done", "cancelled", "failed", "expired"];
-
 /** Lượt chưa kết thúc của MỘT việc (một lần gọi theo việc, chỉ khi mở ngăn — không gọi từng hàng). */
 export const useSlotRuns = (tid: string, slot: string, isPlatform: boolean, enabled: boolean) =>
   useQuery({
@@ -67,6 +66,6 @@ export const useSlotRuns = (tid: string, slot: string, isPlatform: boolean, enab
       const r = await api<ProcessRunListResponse>(url("/process-runs"), {
         query: { scope: "tenant", slot, tenant_id: isPlatform ? tid : undefined, limit: 20 },
       });
-      return r.items.filter((x) => !RUN_ENDED.includes(x.status));
+      return r.items.filter((x) => !isRunEnded(x.status));
     },
   });

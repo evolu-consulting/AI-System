@@ -53,9 +53,9 @@ describe("CR-121 R1 · sidebar 6 mục phẳng", () => {
     }
   });
 
-  test("tenant_admin: Tổng quan · Công ty (+ Quy trình khi engine bật) · Hệ thống", () => {
+  test("tenant_admin: Tổng quan · Công ty · Hệ thống (không có Quy trình riêng, dùng Công ty › Quy trình)", () => {
     expect(ids("tenant_admin")).toEqual(["overview", "companies", "system"]);
-    expect(ids("tenant_admin", true)).toEqual(["overview", "companies", "processes", "system"]);
+    expect(ids("tenant_admin", true)).toEqual(["overview", "companies", "system"]);
   });
 
   test("member không có mục nào", () => {
@@ -108,6 +108,8 @@ describe("ADM-FR-60 · quyền đường dẫn & breadcrumb", () => {
     expect(crumbsFor("/secrets")).toEqual([{ labelKey: "nav.secrets" }]);
     expect(crumbsFor("/workflows")).toEqual([{ labelKey: "nav.workflows" }]);
     expect(crumbsFor("/workflows/")).toEqual([{ labelKey: "nav.workflows" }]);
+    // CR-121 R2: Công cụ AI là mục gốc như sidebar (không còn cấp Hệ thống)
+    expect(crumbsFor("/ai-tools")).toEqual([{ labelKey: "nav.aiTools" }]);
     expect(crumbsFor("/commands/new")).toEqual([
       { labelKey: "nav.commands", to: "/commands" },
       { labelKey: "commands.editor.titleNew" },

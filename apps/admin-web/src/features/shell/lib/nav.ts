@@ -68,7 +68,8 @@ export const isFrozenPath = (pathname: string): boolean =>
 export function navItems(role: Role | undefined, opts: NavOptions = {}): NavItem[] {
   const proc = opts.processes ? [PROCESSES] : [];
   if (role === "platform_admin") return [OVERVIEW, COMPANIES, APPS, ...proc, AI_TOOLS, SYSTEM];
-  if (role === "tenant_admin") return [OVERVIEW, COMPANIES, ...proc, SYSTEM];
+  // tenant_admin dùng Công ty › Quy trình (CR-121 R2), không có mục Quy trình (thư viện) riêng.
+  if (role === "tenant_admin") return [OVERVIEW, COMPANIES, SYSTEM];
   return [];
 }
 
@@ -125,7 +126,7 @@ const EXACT_CRUMBS: Record<string, Crumb[]> = {
   "/transfer": [{ labelKey: "nav.transfer" }],
   "/system": [{ labelKey: "nav.system" }],
   "/system-health": [{ labelKey: "nav.system", to: "/system" }, { labelKey: "system.title" }],
-  "/ai-tools": [{ labelKey: "nav.system", to: "/system" }, { labelKey: "nav.aiTools" }],
+  "/ai-tools": [{ labelKey: "nav.aiTools" }],
   "/audit": [{ labelKey: "nav.audit" }],
   "/feedback": [{ labelKey: "nav.feedback" }],
   "/tenants": [{ labelKey: "nav.tenants" }],

@@ -1031,7 +1031,11 @@
         "write": "Edit",
         "admin": "Admin"
       },
-      "levelHelp": "View = read only · Edit = create and edit · Admin = add app settings and users",
+      "levelDesc": {
+        "read": "View = read only",
+        "write": "Edit = create and edit",
+        "admin": "Admin = add app settings and users"
+      },
       "col": {
         "app": "App",
         "access": "Access",
@@ -1514,7 +1518,7 @@
       "disk": "Server disk",
       "stuck": "Queue / stuck runs",
       "slo": "SLO / regressions",
-      "flow_coverage": "Processes visible to tenants",
+      "flow_coverage": "Processes visible to companies",
       "app_roles": "App roles",
       "tenant_profile": "Company profile",
       "notify_config": "Mail sending setup"
@@ -2668,12 +2672,7 @@
       "name": "Role name",
       "level": "Level",
       "create": "Create role",
-      "apply": "Apply",
-      "levelHint": {
-        "read": "View: read only.",
-        "write": "Edit: read and write.",
-        "admin": "Admin: read, write and administer the app."
-      }
+      "apply": "Apply"
     },
     "role": {
       "default": "Default",
@@ -3174,9 +3173,9 @@
       "noHub": "The Hub address is not configured, so flows cannot be shown.",
       "noSlots": "This app has no flow slots. A slot is a place where the app lets you plug in a flow, for example \"Contract approval\".",
       "alwaysOn": "Always on",
-      "needsAddon": "Needs add-on {addon}",
+      "needsAddon": "Turn on {addon} for this company (Company › Apps) to use it",
       "trigger": "Starts when: {trigger}",
-      "slotMissing": "This slot is not on the hub yet (missing a published default flow \"{def}\"). Companies that turn on the app will have no flow here.",
+      "slotMissing": "This job has no published default process yet, so companies that turn on the app will have no process for it. Publish a default process in the Library.",
       "intro": "Each slot has a default flow. For a company that needs its own, duplicate, edit, then assign it in the Companies tab. Running items keep the old version; new items use the new one.",
       "default": "Default",
       "noDefault": "None",

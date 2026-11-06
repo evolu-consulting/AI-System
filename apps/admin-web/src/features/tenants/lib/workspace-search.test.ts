@@ -39,6 +39,12 @@ describe("CR-121 c16 · ?tab=workflow-tools cũ", () => {
     const s = validateWorkspaceSearch({ tab: "workflow-tools" });
     expect(s.tab).toBeUndefined();
     expect(legacyTabRedirect(s)).toEqual({ to: "/ai-tools", notice: "company-tools" });
+    // tenant_admin không có quyền Công cụ AI ⇒ về tab Quy trình
+    expect(legacyTabRedirect(s, "tenant_admin")).toEqual({ to: "processes" });
+    expect(legacyTabRedirect(s, "platform_admin")).toEqual({
+      to: "/ai-tools",
+      notice: "company-tools",
+    });
     expect(legacyTabRedirect(validateWorkspaceSearch({ tab: "members" }))).toBeNull();
     expect(legacyTabRedirect(validateWorkspaceSearch({}))).toBeNull();
   });

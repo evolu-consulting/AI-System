@@ -1031,7 +1031,11 @@
         "write": "Sửa",
         "admin": "Quản trị"
       },
-      "levelHelp": "Xem = chỉ đọc · Sửa = tạo và sửa · Quản trị = thêm cài đặt app và người dùng",
+      "levelDesc": {
+        "read": "Xem = chỉ đọc",
+        "write": "Sửa = tạo và sửa",
+        "admin": "Quản trị = thêm cài đặt app và người dùng"
+      },
       "col": {
         "app": "Ứng dụng",
         "access": "Quyền truy cập",
@@ -1514,7 +1518,7 @@
       "disk": "Đĩa server",
       "stuck": "Hàng đợi / run kẹt",
       "slo": "SLO / hồi quy",
-      "flow_coverage": "Quy trình hiển thị cho tenant",
+      "flow_coverage": "Quy trình hiển thị cho công ty",
       "app_roles": "Vai theo ứng dụng",
       "tenant_profile": "Hồ sơ công ty",
       "notify_config": "Cấu hình gửi mail"
@@ -2668,12 +2672,7 @@
       "name": "Tên vai",
       "level": "Mức",
       "create": "Tạo vai",
-      "apply": "Áp dụng",
-      "levelHint": {
-        "read": "Xem: chỉ đọc.",
-        "write": "Sửa: đọc và ghi.",
-        "admin": "Quản trị: đọc, ghi và quản trị ứng dụng."
-      }
+      "apply": "Áp dụng"
     },
     "role": {
       "default": "Mặc định",
@@ -3174,9 +3173,9 @@
       "noHub": "Chưa cấu hình địa chỉ Hub nên chưa xem được quy trình.",
       "noSlots": "App này chưa có khe quy trình. Khe là chỗ app cho phép gắn một quy trình, ví dụ \"Duyệt hợp đồng\".",
       "alwaysOn": "Luôn bật",
-      "needsAddon": "Cần tính năng thêm {addon}",
+      "needsAddon": "Cần bật {addon} cho công ty này (Công ty › Ứng dụng) thì mới dùng được",
       "trigger": "Mở lượt khi: {trigger}",
-      "slotMissing": "Khe chưa có trên hub (thiếu quy trình mặc định \"{def}\" đã xuất bản). Công ty bật app sẽ không có quy trình ở khe này.",
+      "slotMissing": "Việc này chưa có quy trình mặc định đã xuất bản nên công ty bật ứng dụng sẽ chưa có quy trình cho việc này. Hãy xuất bản một quy trình mặc định trong Thư viện.",
       "intro": "Mỗi khe có một quy trình mặc định. Công ty nào cần luồng riêng thì nhân bản, sửa rồi gán ở tab Công ty. Lượt đang chạy giữ bản cũ; lượt mới dùng bản mới.",
       "default": "Mặc định",
       "noDefault": "Chưa có",

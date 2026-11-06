@@ -1,5 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { WorkflowsPage } from "@/features/workflows/pages/WorkflowsPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export type WorkflowsSearch = {
   q?: string;
@@ -23,5 +22,8 @@ export const Route = createFileRoute("/_authed/workflows/")({
       page: Number.isInteger(page) && page > 1 ? page : undefined,
     };
   },
-  component: WorkflowsPage,
+  // CR-121 R2: danh sách Workflow nay là chip "Workflow" của Công cụ AI (editor `/workflows/new`, `/workflows/<id>` giữ nguyên).
+  beforeLoad: () => {
+    throw redirect({ to: "/ai-tools", search: { kind: "workflow" }, replace: true });
+  },
 });
