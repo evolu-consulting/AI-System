@@ -1,4 +1,4 @@
-{
+﻿{
   "version": "7",
   "dialect": "postgresql",
   "entries": [
@@ -490,6 +490,13 @@
       "version": "7",
       "when": 1803400000000,
       "tag": "0076_company_name_one_source",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1806000000000,
+      "tag": "0077_emit_flow_event_grant",
       "breakpoints": true
     }
   ]

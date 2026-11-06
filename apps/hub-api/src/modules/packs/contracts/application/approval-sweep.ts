@@ -1,14 +1,24 @@
-// HD-FR-35 · #218 · D3-09 · M3-decouple: vòng quét theo tập của flow duyệt — mỗi tenant bật gói MỘT câu (đếm HĐ trong flow +
+﻿// HD-FR-35 · #218 · D3-09 · M3-decouple: vòng quét theo tập của flow duyệt — mỗi tenant bật gói MỘT câu (đếm HĐ trong flow +
 // đóng HĐ `extracting` quá hạn ⇒ `extract_failed STALE`, lượt duyệt `failed`), tối đa 4 tenant song song (giữ pool). Ghi có điều
 // kiện ⇒ nhiều instance chạy cùng lúc vẫn đúng. Ngủ CHỈ giữa các lượt (Luật 4c). Lớp 2.
 // M3c (review B #7): job còn xếp hàng không bị STALE 15'; hạn của job đang chạy ≥ `claimIdleMs` + 5' (`staleMinutesFor`).
 import type { PackSystemUow, PackWho } from "../../kit/public";
 import { reconcileOf } from "../domain/approval-engine.rules";
-import type { ReconcileItem, SweepCounts, SweepRepo } from "./approval.ports";
+import { EV_SUBMITTED } from "../domain/contract-flow-events.rules";
+import type { ApprovalRepo, ReconcileItem, SweepCounts, SweepRepo } from "./approval.ports";
 import type { ApprovalEnginePort } from "./approval-engine.ports";
+import {
+  type ContractFlowGate,
+  type ContractFlowTxRepos,
+  requireFlow,
+} from "./contract-flow.ports";
 
 export type SweepDeps = {
-  uow: PackSystemUow<{ sweep: SweepRepo }>;
+  uow: PackSystemUow<
+    { sweep: SweepRepo } & ContractFlowTxRepos & { approval?: Pick<ApprovalRepo, "runOf"> }
+  >;
+  /** CR-122 A1 · cờ flow bật ⇒ HĐ heal `extracting → level1` ghi `contract.submitted` (idempotent theo lượt) thay vì mở run. */
+  flow?: ContractFlowGate;
   /** Tenant đang bật gói (cache cấu hình, 0 SQL). */
   tenants: () => Promise<string[]>;
   /** Hạn job đã chạy (mặc định 15'). */
@@ -119,8 +129,21 @@ export async function cancelOrphans(d: SweepDeps, t: string): Promise<number> {
 /** S3b · heal `extracting → level1` chưa có run ⇒ mở run (`startEngineApproval` tự kiểm điều kiện, không ném). */
 async function openHealed(d: SweepDeps, t: string, healed: SweepCounts["healedLevel1"]) {
   // Giới hạn số HĐ mở run mỗi tenant mỗi lượt (phần dư: lượt quét sau không còn `extracting` ⇒ do owner mở lại / đường nhập tay).
-  for (const h of (healed ?? []).slice(0, HEAL_OPEN_MAX))
+  for (const h of (healed ?? []).slice(0, HEAL_OPEN_MAX)) {
+    const prep = d.flow ? await d.flow.prepare(t, h.userId) : null;
+    if (prep?.on) {
+      await d.uow.system(t, async (r) => {
+        const run = await r.approval?.runOf(h.contractId);
+        if (run?.runId)
+          await requireFlow(r).emitContract(EV_SUBMITTED, h.contractId, run.runId, {
+            actor: h.userId,
+            departments: prep.departments,
+          });
+      });
+      continue;
+    }
     await d.engine?.start({ tenantId: t, userId: h.userId }, h.contractId);
+  }
 }
 
 async function sweepTenant(d: SweepDeps, t: string, o: Parameters<SweepRepo["sweep"]>[0]) {

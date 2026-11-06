@@ -1,4 +1,4 @@
-// contract-flow S3a · duyệt HĐ chạy trên engine quy trình (cr121-a2: mọi lượt mới, không cờ/env). Lớp 2: chỉ cổng.
+﻿// contract-flow S3a · duyệt HĐ chạy trên engine quy trình (cr121-a2: mọi lượt mới, không cờ/env). Lớp 2: chỉ cổng.
 // - `startEngineApproval`: chỗ mở duyệt cấp 1 (sau AI đọc / nhập tay) ⇒ đồng bộ def theo version mẫu (`ensureDef`) → mở run có
 //   `ref {pack:'contracts', record_id}` (COMMIT, chưa kick) → tx gói gắn run vào lượt (`mode='engine'`, `engine_run_id`,
 //   `flow_version`, `flow_steps`) → kick; gắn hụt ⇒ huỷ bù. CR-107 · mẫu không mở được (thiếu Group / hỏng / không có) ⇒ lượt KẸT
@@ -16,7 +16,6 @@ import {
   engineStartable,
   FLOW_INVALID,
   FLOW_MISSING,
-  factsOf,
   finalizeReady,
   groupMissingReason,
   noRunStalled,
@@ -32,10 +31,10 @@ import {
   hasDifyStep,
   routeNext,
 } from "../domain/approval-flow.rules";
-import type { FlowStep } from "../domain/approval-flow.types";
-import { type FlowFacts, factNeedsOf } from "../domain/approval-flow-cond.rules";
+import { factNeedsOf } from "../domain/approval-flow-cond.rules";
 import { hasNotifyOrWait, notifyRunInputs } from "../domain/approval-flow-notify.rules";
 import { escalateOrder } from "../domain/approval-owner.rules";
+import { EV_APPROVED } from "../domain/contract-flow-events.rules";
 import type {
   ApprovalEngineBridge,
   ApprovalEnginePort,
@@ -46,6 +45,7 @@ import type {
   EngineRunRow,
   EngineStartRow,
 } from "./approval-engine.ports";
+import { departmentsOf, type FactsDeps, fullFacts, partnerIn } from "./approval-engine-facts";
 import {
   defVersionOf,
   type EngineFlow,
@@ -54,6 +54,7 @@ import {
   slotRunOf,
 } from "./approval-engine-slot";
 import type { FlowGroups } from "./approval-flow.usecase";
+import { type ContractFlowGate, type FlowPrep, requireFlow } from "./contract-flow.ports";
 import type { ProductLinksRepo } from "./product-links.usecase";
 
 export type ApprovalEngineDeps = {
@@ -64,6 +65,8 @@ export type ApprovalEngineDeps = {
   warn: (msg: string, meta: Record<string, unknown>) => void;
   /** esign-flow · sau khi ghi "Đã duyệt" (đã COMMIT): chạy bước Ký số của mẫu chụp. Vắng ⇒ không có bước ký tự động. */
   afterApproved?: ((tenantId: string, contractId: string) => Promise<unknown>) | undefined;
+  /** CR-122 A1 · cờ flow + phòng ban; bật ⇒ `contract.approved` cùng tx với lúc ghi "Đã duyệt". */
+  flow?: ContractFlowGate | undefined;
 };
 /** Danh tính lời gọi tool (cấu trúc khớp `PackToolCtx`). */
 export type EngineToolCtx = { tenantId: string; userId: string; processRunId?: string | null };
@@ -287,34 +290,6 @@ function target(ctx: EngineToolCtx, args: Readonly<Record<string, unknown>>) {
 const inRun = (row: EngineRunRow | null, id: string): row is EngineRunRow =>
   row !== null && row.contractId === id;
 
-/** CR-121 D-1 · nguồn dữ kiện mở rộng: `creatorDepartments` đi kèm `groups` (cùng nguồn Group của tenant, nối lúc mount). */
-type FactsDeps = Pick<ApprovalEngineDeps, "uow"> & {
-  groups?:
-    | (Partial<FlowGroups> & { creatorDepartments?: CreatorDepartments | undefined })
-    | undefined;
-};
-
-/** CR-121 D-1 · `new_partner` trong tx gói đang mở (MỘT câu, chỉ khi mẫu dùng; repo vắng ⇒ chưa có dữ liệu). */
-const partnerIn = async (r: ApprovalEngineTxRepos, id: string, steps: readonly FlowStep[]) =>
-  factNeedsOf(steps).partner && r.flowFacts ? r.flowFacts.newPartner(id) : null;
-
-/** CR-121 D-1 · phòng ban người bắt đầu lượt (= danh tính run của tool) + phòng cha; NGOÀI tx gói. Không cần / không nối ⇒ null. */
-async function departmentsOf(d: FactsDeps, who: PackWho, need: boolean) {
-  const f = d.groups?.creatorDepartments;
-  return need && f ? f(who.tenantId, who.userId) : null;
-}
-
-/** Dữ kiện đầy đủ theo giá trị HIỆN TẠI của HĐ (loại, giá trị từ hàng vừa đọc + phòng ban + đối tác mới). */
-const fullFacts = (
-  row: EngineRunRow,
-  depts: readonly string[] | null,
-  partner: boolean | null,
-): FlowFacts => ({
-  ...factsOf(row.deal, row.totalValue),
-  creator_departments: depts,
-  new_partner: partner,
-});
-
 /** Tool `contracts-route`: `next` = bước engine kế theo mẫu chụp + giá trị HIỆN TẠI của HĐ (CR-121 D-1 · + phòng ban người tạo,
  *  đối tác mới — đọc lại MỖI lần rẽ ⇒ sửa HĐ giữa lượt rẽ đúng). Câu SQL: byRun (1) + new_partner (0/1) + phòng ban (0/1). */
 export function routeStep(d: FactsDeps) {
@@ -355,7 +330,12 @@ async function applyPendingLinks(
 async function finalizeInTx(
   r: ApprovalEngineTxRepos,
   t: Target,
-  o: { passed: readonly string[]; by: string | null; depts: readonly string[] | null },
+  o: {
+    passed: readonly string[];
+    by: string | null;
+    depts: readonly string[] | null;
+    prep?: FlowPrep | null;
+  },
 ): Promise<void> {
   const row = await r.approvalEngine.byRun(t.run, { lock: true });
   if (!inRun(row, t.id)) throw new PackToolBusinessError("contracts tool: contract not in run");
@@ -367,11 +347,17 @@ async function finalizeInTx(
   if (!(await r.approvalEngine.finalize(t.id, row.approvalId, t.run, o.by)))
     throw new PackToolBusinessError("contracts tool: approval not open");
   await applyPendingLinks(r, t, row, o.by);
+  // CR-122 A1 · `contract.approved` CÙNG tx với lúc HĐ được duyệt (cờ bật).
+  if (o.prep?.on)
+    await requireFlow(r).emitContract(EV_APPROVED, t.id, row.approvalId, {
+      actor: o.by,
+      departments: o.prep.departments,
+    });
 }
 
 /** Tool `contracts-finalize`: kiểm lại dưới khoá HĐ, ghi "Đã duyệt" + gắn SP chờ trong CÙNG tx. Gọi lại sau khi đã ghi ⇒ ok.
  *  esign-flow · SAU commit: bước Ký số (nếu mẫu chụp có) tự gửi ký — idempotent (claim trên lượt), lỗi chỉ log, không làm hỏng tool. */
-export type FinalizeDeps = Pick<ApprovalEngineDeps, "uow" | "bridge" | "afterApproved"> &
+export type FinalizeDeps = Pick<ApprovalEngineDeps, "uow" | "bridge" | "afterApproved" | "flow"> &
   Partial<Pick<ApprovalEngineDeps, "warn">> &
   FactsDeps;
 export function finalizeRun(d: FinalizeDeps) {
@@ -385,7 +371,8 @@ export function finalizeRun(d: FinalizeDeps) {
       port.lastApprover(t.who.tenantId, t.run),
       departmentsOf(d, t.who, true),
     ]);
-    await d.uow.tenant(t.who, (r) => finalizeInTx(r, t, { passed, by, depts }));
+    const prep = d.flow ? await d.flow.prepare(t.who.tenantId, t.who.userId) : null;
+    await d.uow.tenant(t.who, (r) => finalizeInTx(r, t, { passed, by, depts, prep }));
     if (d.afterApproved)
       await d
         .afterApproved(t.who.tenantId, t.id)

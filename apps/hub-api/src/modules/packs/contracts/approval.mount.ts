@@ -1,4 +1,4 @@
-// contract-flow S2/S3 · nối duyệt HĐ trên engine + mẫu luồng (tách khỏi `extraction.mount.ts` giữ trần 400 dòng).
+﻿// contract-flow S2/S3 · nối duyệt HĐ trên engine + mẫu luồng (tách khỏi `extraction.mount.ts` giữ trần 400 dòng).
 import { logger } from "../../../lib/logger";
 import type { PackUow, PackWho, SlotSpec } from "../kit/public";
 import { checkPackAccess, type PackAccessView, packAccessInput, slotRegistry } from "../kit/public";
@@ -19,6 +19,7 @@ import {
   listDifyWorkflows,
   readCurrentFlow,
 } from "./application/approval-flow.usecase";
+import type { ContractFlowGate } from "./application/contract-flow.ports";
 import { myApprovals } from "./application/mywork-approvals.usecase";
 import { FLOW_TOOL_KEYS } from "./domain/approval-flow.rules";
 import type { FlowDeal, FlowStep } from "./domain/approval-flow.types";
@@ -45,6 +46,8 @@ export type EsignHooks = {
   members?: FlowMembers | undefined;
 };
 type FlowDeps = EsignHooks & {
+  /** CR-122 A1 · cổng cờ flow (bật ⇒ `contract.approved` cùng tx khi tool finalize ghi "Đã duyệt"). */
+  flowGate?: ContractFlowGate | undefined;
   engine?: ApprovalEngineBridge | undefined;
   groups: Pick<FlowGroups, "idsOf" | "existingIds" | "list" | "memberCounts">;
 };
@@ -66,6 +69,7 @@ export function approvalEngine(
     groups: flow.groups,
     warn: (m: string, meta: Record<string, unknown>) => logger.warn(m, meta),
     afterApproved: flow.afterApproved,
+    flow: flow.flowGate,
   };
   const isAdmin = async (who: PackWho) => {
     const i = await packAccessInput(view, "contracts", who);

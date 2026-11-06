@@ -1,6 +1,7 @@
-// HD-FR-08 · D-06 · D-09 · D-17 · plan §4–§5: cổng của use case tải lên hợp đồng. Lớp 2 — chỉ kiểu.
+﻿// HD-FR-08 · D-06 · D-09 · D-17 · plan §4–§5: cổng của use case tải lên hợp đồng. Lớp 2 — chỉ kiểu.
 import type { KitTxRepos, PackUow, PackWho } from "../../kit/public";
 import type { ContractFields } from "../domain/fields.rules";
+import type { ContractFlowTxRepos } from "./contract-flow.ports";
 
 /** Ngày đếm: tenant theo múi tenant, toàn hệ thống theo UTC (`YYYY-MM-DD`). */
 export type UploadDays = { tenant: string; global: string };
@@ -65,7 +66,7 @@ export type UploadContractRepo = {
    *  (thấy, HĐ, hiện hành, đã khoá, chưa có nháp) kiểm trong câu ⇒ `UploadError` mã tương ứng, không ghi gì. */
   insertVersion(row: NewUploadedContract, supersedesId: string): Promise<InsertedVersion>;
 };
-export type UploadTxRepos = { upload: UploadContractRepo } & KitTxRepos;
+export type UploadTxRepos = { upload: UploadContractRepo } & KitTxRepos & ContractFlowTxRepos;
 export type UploadUow = PackUow<UploadTxRepos>;
 
 /** HD2 làm thật; HD1 no-op. Gọi SAU commit. */

@@ -1,8 +1,9 @@
-// HD-FR-31…37 · M3-decouple: cổng của flow duyệt HĐ trong gói (lớp 2 — chỉ kiểu). Repo chạy trong tx `PackUow` (role
+﻿// HD-FR-31…37 · M3-decouple: cổng của flow duyệt HĐ trong gói (lớp 2 — chỉ kiểu). Repo chạy trong tx `PackUow` (role
 // `contracts_rw`, RLS tenant); mỗi hàm MỘT câu. Lượt duyệt = hàng `contracts.approvals`; HĐ trỏ lượt hiện tại qua `run_id`.
 import type { KitTxRepos, PackUow } from "../../kit/public";
 import type { ApprovalSettings } from "../domain/approval-def.rules";
 import type { FlowStep } from "../domain/approval-flow.types";
+import type { ContractFlowTxRepos } from "./contract-flow.ports";
 import type { ProductLinksRepo } from "./product-links.usecase";
 
 export type ContractRunRef = {
@@ -124,5 +125,9 @@ export type SweepRepo = {
 };
 
 /** `links` (products-confirm): gắn/tạo SP ở bước duyệt cuối; vắng (test cũ) ⇒ bỏ qua. */
-export type ApprovalTxRepos = { approval: ApprovalRepo; links?: ProductLinksRepo } & KitTxRepos;
+export type ApprovalTxRepos = {
+  approval: ApprovalRepo;
+  links?: ProductLinksRepo;
+} & KitTxRepos &
+  ContractFlowTxRepos;
 export type ApprovalUow = PackUow<ApprovalTxRepos>;

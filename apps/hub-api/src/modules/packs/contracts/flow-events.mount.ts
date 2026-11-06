@@ -1,0 +1,96 @@
+// CR-122 · A1 · FLOW2-FR-12/15/18/19 · nối gói Hợp đồng vào flow theo sự kiện lúc mount: cờ công ty (`ContractFlowGate`), `FactsReader`
+// (dữ kiện HIỆN TẠI, tự lọc tenant) và `OutcomeHandler` (Đã duyệt / Từ chối / Trả lại, idempotent theo `(runId, outcome)`) đăng ký vào
+// sổ của kit — engine tra theo `(contracts, sự kiện)`. Đăng ký lại ⇒ thay (mount chạy lại vô hại).
+import type { Db, Tx } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
+import { withPackScope } from "@ai/db/pack-scope";
+import { sql } from "drizzle-orm";
+import { logger } from "../../../lib/logger";
+import {
+  type FactsReader,
+  type FlowFacts,
+  flowPortRegistry,
+  type OutcomeHandler,
+} from "../kit/public";
+import { applyContractOutcome, contractFlowRepo } from "./adapters/contract-flow.repo";
+import { creatorDepartmentsOf } from "./adapters/flow-facts.repo";
+import { type ContractFlowGate, FLOW_OFF, type FlowPrep } from "./application/contract-flow.ports";
+import {
+  CONTRACT_EVENTS,
+  CONTRACTS_PACK,
+  EV_APPROVED,
+  EV_SUBMITTED,
+  EV_UPLOADED,
+  isContractOutcome,
+  pickFacts,
+} from "./domain/contract-flow-events.rules";
+
+/** Cờ `hub.tenant_flow_settings.flow_triggers` (scope system hub; role gói không đọc bảng này) + phòng ban người gây sự kiện khi bật. */
+export function contractFlowGate(db: Db): ContractFlowGate {
+  const depts = creatorDepartmentsOf(db);
+  return {
+    async prepare(tenantId, userId): Promise<FlowPrep> {
+      try {
+        const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
+          tx.execute<{ on: boolean }>(
+            sql`select exists (select 1 from hub.tenant_flow_settings
+              where tenant_id = ${tenantId}::uuid and flow_triggers) as on`,
+          ),
+        );
+        if (r?.on !== true) return FLOW_OFF;
+        return { on: true, departments: await depts(tenantId, userId) };
+      } catch (e) {
+        logger.warn("contract-flow-gate-failed", {
+          error: e instanceof Error ? e.name : "unknown",
+        });
+        return FLOW_OFF;
+      }
+    },
+  };
+}
+
+export function contractsFactsReader(db: Db): FactsReader {
+  const depts = creatorDepartmentsOf(db);
+  return {
+    packKey: CONTRACTS_PACK,
+    events: CONTRACT_EVENTS,
+    async read(tenantId, ref, keys) {
+      const r = await withPackScope(db, { packKey: CONTRACTS_PACK, tenantId, userId: null }, (tx) =>
+        contractFlowRepo(tx, tenantId).readFacts(ref),
+      );
+      if (!r) return null;
+      const all: Record<string, unknown> = { ...r.facts };
+      if (keys.includes("creator_department") && r.startedBy) {
+        const d = await depts(tenantId, r.startedBy);
+        if (d.length > 0) all.creator_department = d;
+      }
+      return pickFacts(all, keys) as FlowFacts;
+    },
+  };
+}
+
+/** `contract.approved` / `contract.uploaded` không đổi HĐ (kết cục `done` / `accepted`); kết cục khác chưa hỗ trợ ⇒ ném (Cần xử lý). */
+const NO_OP: Readonly<Record<string, string>> = {
+  [EV_APPROVED]: "done",
+  [EV_UPLOADED]: "accepted",
+};
+
+export function contractsOutcomeHandler(): OutcomeHandler<Tx> {
+  return {
+    packKey: CONTRACTS_PACK,
+    events: CONTRACT_EVENTS,
+    async apply(tx, input) {
+      if (input.event === EV_SUBMITTED && isContractOutcome(input.outcome))
+        return applyContractOutcome(tx, input, input.outcome);
+      if (NO_OP[input.event] === input.outcome) return "applied";
+      throw new Error(`contracts outcome chưa hỗ trợ: ${input.event} · ${input.outcome}`);
+    },
+  };
+}
+
+/** Gọi MỘT lần lúc mount gói Hợp đồng; trả cổng cờ cho các use case bắn sự kiện. */
+export function mountContractFlow(db: Db): ContractFlowGate {
+  flowPortRegistry.registerFactsReader(contractsFactsReader(db));
+  flowPortRegistry.registerOutcomeHandler(contractsOutcomeHandler());
+  return contractFlowGate(db);
+}

@@ -1,4 +1,4 @@
-// HD-FR-08 · HD-AC09…AC11 · HD-NFR-03 · D-06 · D-09 · plan §5: tải lên hợp đồng. Thứ tự: magic bytes (415) → kind/parent (422)
+﻿// HD-FR-08 · HD-AC09…AC11 · HD-NFR-03 · D-06 · D-09 · plan §5: tải lên hợp đồng. Thứ tự: magic bytes (415) → kind/parent (422)
 // → 1 pipeline quota (vượt ⇒ hoàn + 429; lỗi Redis ⇒ 503) → DOCX → FileBox (org `t_<tenant>`) → tx 3 câu (set_config + CTE
 // files/contracts/events + outbox) → sau commit `ExtractionStarter`. Lỗi sau INCR ⇒ hoàn quota + gỡ tệp đã lưu.
 
@@ -13,6 +13,7 @@ import {
   sniffFileType,
   uploadDay,
 } from "../domain/upload.rules";
+import { type ContractFlowGate, FLOW_OFF, requireFlow } from "./contract-flow.ports";
 import {
   type ContractFileStore,
   type ExtractionStarter,
@@ -49,6 +50,8 @@ export type UploadContractDeps = {
   newId: () => string;
   now?: () => Date;
   log?: { warn(msg: string, fields?: Record<string, unknown>): void };
+  /** CR-122 A1 · cờ flow bật ⇒ ghi `contract.uploaded` CÙNG tx với hàng HĐ. */
+  flow?: ContractFlowGate;
 };
 
 export type UploadContractInput = {
@@ -150,41 +153,56 @@ type Stored = {
   versionId: string;
   approvalId: string | null;
 };
-/** Một tx: `set_config` + một CTE (files → contracts → events) + outbox = 3 câu. */
-function persist(
+/** Hàng HĐ mới từ lượt tải lên (chưa có id sinh ở `persist`). */
+function uploadedRow(
+  d: UploadContractDeps,
+  i: UploadContractInput,
+  s: Stored,
+): NewUploadedContract {
+  return {
+    id: d.newId(),
+    fileRowId: d.newId(),
+    org: s.org,
+    fileId: s.fileId,
+    versionId: s.versionId,
+    name: i.name,
+    mime: UPLOAD_MIME[s.type],
+    size: i.bytes.byteLength,
+    kind: i.kind,
+    parentId: i.parentId,
+    title: i.title,
+    status: s.text.ok ? "extracting" : "extract_failed",
+    error: s.text.ok ? null : "DOCX_UNREADABLE",
+    fields: fillFields({}),
+    sourceText: s.text.ok ? s.text.markdown : null,
+    userId: i.who.userId,
+    approvalId: s.text.ok ? s.approvalId : null,
+    ...(i.doc ? { doc: i.doc } : {}),
+  };
+}
+
+/** Một tx: `set_config` + một CTE (files → contracts → events) + outbox = 3 câu (+1 khi cờ flow bật: `contract.uploaded`). */
+async function persist(
   d: UploadContractDeps,
   i: UploadContractInput,
   s: Stored,
 ): Promise<UploadContractResult & { approvalId: string | null }> {
+  const prep = d.flow ? await d.flow.prepare(i.who.tenantId, i.who.userId) : FLOW_OFF;
   return d.uow.tenant(i.who, async (r) => {
-    const row: NewUploadedContract = {
-      id: d.newId(),
-      fileRowId: d.newId(),
-      org: s.org,
-      fileId: s.fileId,
-      versionId: s.versionId,
-      name: i.name,
-      mime: UPLOAD_MIME[s.type],
-      size: i.bytes.byteLength,
-      kind: i.kind,
-      parentId: i.parentId,
-      title: i.title,
-      status: s.text.ok ? "extracting" : "extract_failed",
-      error: s.text.ok ? null : "DOCX_UNREADABLE",
-      fields: fillFields({}),
-      sourceText: s.text.ok ? s.text.markdown : null,
-      userId: i.who.userId,
-      approvalId: s.text.ok ? s.approvalId : null,
-      ...(i.doc ? { doc: i.doc } : {}),
-    };
+    const row = uploadedRow(d, i, s);
     const out = i.supersedes
       ? await r.upload.insertVersion(row, i.supersedes)
       : await r.upload.insert(row);
     await r.outbox.enqueue([{ entity: "contract", entity_id: out.id, op: "upsert" }]);
+    if (prep.on)
+      await requireFlow(r).emitUploaded(out.id, {
+        fileType: s.type,
+        actor: i.who.userId,
+        departments: prep.departments,
+      });
     return { ...out, approvalId: s.text.ok ? s.approvalId : null };
   });
 }
-
 /** Hạn mức tải lên/ngày (dùng chung: tải lên, nâng giao dịch thành HĐ — DOC-deals). Vượt ⇒ hoàn + `UPLOAD_QUOTA`. */
 export async function takeQuota(
   d: Pick<UploadContractDeps, "counter" | "limits" | "tenantLimitOf">,

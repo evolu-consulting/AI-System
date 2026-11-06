@@ -1,4 +1,4 @@
-// HD-FR-21…26 · HD-FR-31…37 · M3-decouple: nối trích + flow duyệt hợp đồng (lớp 4 của gói) — KHÔNG phụ thuộc engine quy trình.
+﻿// HD-FR-21…26 · HD-FR-31…37 · M3-decouple: nối trích + flow duyệt hợp đồng (lớp 4 của gói) — KHÔNG phụ thuộc engine quy trình.
 // - Lượt AI đọc = job trên hàng đợi bền Redis Streams (vắng Redis ⇒ chạy ngay trong tiến trình) → lời gọi model trực tiếp qua AI
 //   client chung (usage + trần theo tenant). Lời nhắc có rào + parse strict + kiểm trích dẫn của HD2 giữ nguyên.
 // - Duyệt = máy trạng thái của gói (`contracts.approvals`); vòng quét đóng HĐ `extracting` quá hạn (STALE).
@@ -16,25 +16,18 @@ import type { PackAccessView, PackGuardVars, PackToolDef, PackUow, PackWho } fro
 import { createPackUow, packTenantOnly } from "../kit/public";
 import type { ActionQuota } from "./adapters/action-quota";
 import { aiTransport, EXTRACT_MODEL } from "./adapters/ai-transport";
-import { approvalRepo } from "./adapters/approval.repo";
 import { approvalRoutes } from "./adapters/approval.routes";
-import { approvalEngineRepo } from "./adapters/approval-engine.repo";
-import { approvalFlowRepo } from "./adapters/approval-flow.repo";
-import { sweepRepo } from "./adapters/approval-sweep.repo";
 import { createExtractStream } from "./adapters/extract-stream.redis";
-import { extractionRepo } from "./adapters/extraction.repo";
 import { extractionRoutes } from "./adapters/extraction.routes";
 import { type AgentTransport, createExtractionAgent } from "./adapters/extraction-agent";
 import { createExtractionVerifier } from "./adapters/extraction-verifier";
-import { flowFactsRepo, withCreatorDepartments } from "./adapters/flow-facts.repo";
+import { withCreatorDepartments } from "./adapters/flow-facts.repo";
 import {
   createInprocLimiter,
   INPROC_DEFAULT_CONCURRENCY,
   type InprocLimiter,
 } from "./adapters/inproc-limit";
 import { platformAuditRepo } from "./adapters/platform-audit.repo";
-import { productLinksRepo } from "./adapters/product-links.repo";
-import { reviewRepo } from "./adapters/review.repo";
 import { reviewRoutes } from "./adapters/review.routes";
 import {
   type ApprovalGroups,
@@ -61,6 +54,7 @@ import {
   startApprovalSweeper,
   sweepApprovalsOnce,
 } from "./application/approval-sweep";
+import type { ContractFlowGate } from "./application/contract-flow.ports";
 import { createManual } from "./application/create-manual.usecase";
 import { handleExtractJob } from "./application/extract-job.usecase";
 import type { SourceFileText, TaxRegistry } from "./application/extraction.ports";
@@ -80,7 +74,9 @@ import { createRefreshParties, type TaxRetryScheduler } from "./application/tax-
 import type { ExtractionStarter } from "./application/upload-contract.ports";
 import { approvalEngine, type EsignHooks, flowTemplateRoutes } from "./approval.mount";
 import { DEFAULT_TENANT_TZ, localDate } from "./domain/local-time.rules";
+import { packUow } from "./extraction.uow";
 import { contractsFlowRoutes } from "./flow.mount";
+import { mountContractFlow } from "./flow-events.mount";
 
 const KEY = "contracts";
 
@@ -205,24 +201,13 @@ export function withFallback(
 
 type AiDeps = Omit<ContractsAiDeps, "tax"> & { tax: TaxRegistry | null };
 
-const packUow = (db: Db) =>
-  createPackUow(db, KEY, (tx, tid) => ({
-    extraction: extractionRepo(tx, tid),
-    approval: approvalRepo(tx, tid),
-    approvalFlow: approvalFlowRepo(tx, tid),
-    approvalEngine: approvalEngineRepo(tx, tid),
-    sweep: sweepRepo(tx, tid),
-    review: reviewRepo(tx, tid),
-    links: productLinksRepo(tx, tid),
-    flowFacts: flowFactsRepo(tx, tid), // CR-121 D-1
-  }));
-
 /** Lượt trích (agent + kiểm trích dẫn + tra MST hẹn giờ) và handler job của hàng đợi. */
 function extractionRunner(
   d: AiDeps,
   flow: ContractsFlowDeps,
   pack: ReturnType<typeof packUow>,
   engine: EngineStart | undefined,
+  gate: ContractFlowGate,
 ) {
   const uow = packTenantOnly(pack);
   // Tra lại MST hẹn giờ (cổng Cục Thuế) — hàng trong tiến trình, chỉ cho việc `tax`.
@@ -253,6 +238,7 @@ function extractionRunner(
     log: logger,
     ...(d.onSettled ? { onSettled: d.onSettled } : {}),
     ...(engine ? { engine } : {}),
+    flow: gate, // CR-122 A1
   });
   return { handle, schedule };
 }
@@ -267,9 +253,10 @@ export function contractsAiModule(
   const uow = packTenantOnly(pack);
   // cr121-a2 · lượt mới luôn engine (không env, không cổng "đã gán"); seam test `approvalEngine: false` giữ máy cũ.
   const engOpts = { hd2: d.transport !== undefined, legacyMachine: d.approvalEngine === false };
-  const engFlow = { ...flow, groups: withCreatorDepartments(flow.groups, db) }; // CR-121 D-1
+  const gate = mountContractFlow(db); // CR-122 A1: cổng cờ + đăng ký FactsReader/OutcomeHandler
+  const engFlow = { ...flow, groups: withCreatorDepartments(flow.groups, db), flowGate: gate }; // CR-121 D-1
   const eng = approvalEngine(engOpts, engFlow, uow, view);
-  const { handle, schedule } = extractionRunner(d, flow, pack, eng?.start);
+  const { handle, schedule } = extractionRunner(d, flow, pack, eng?.start, gate);
   const ready = d.transport !== undefined || flow.ai.ready;
   const { jobs, reclaimOnce } = extractJobs(db, flow, handle, {
     concurrency: d.concurrency ?? 2,
@@ -282,6 +269,7 @@ export function contractsAiModule(
     groups: flow.groups,
     jobs,
     redo,
+    flow: gate,
     ...(eng
       ? {
           engine: eng.start,
@@ -306,7 +294,7 @@ export function contractsAiModule(
     start: (who, id) => jobs.enqueue({ ...who, contractId: id, approvalId: null }),
   };
   const starter = legacy ? legacyStarter : flowStarter({ jobs, log: logger });
-  startSweep(d, flow, pack, reclaimOnce, eng);
+  startSweep(d, flow, pack, reclaimOnce, eng, gate);
   const routes = extractionRoutes(view, {
     requestExtract: legacy
       ? requestExtract({ uow, starter, available: true })
@@ -376,12 +364,14 @@ function startSweep(
   pack: SweepDeps["uow"],
   reclaimOnce: () => Promise<number>,
   eng: { start: EngineStart } | null,
+  gate: ContractFlowGate,
 ): void {
   const sd: SweepDeps = {
     uow: pack,
     tenants: flow.tenants,
     staleMinutes: staleMinutesFor(claimIdleMs()),
     queuedMinutes: envInt("CONTRACTS_QUEUE_STALE_MIN", QUEUED_STALE_MINUTES),
+    flow: gate,
     ...(eng ? { engine: { port: () => flow.engine?.port, start: eng.start } } : {}),
   };
   if (d.onHandles) {

@@ -1,4 +1,4 @@
-// contract-flow S3a · cổng CỤC BỘ của gói tới engine quy trình cho duyệt HĐ (lớp 2 — chỉ kiểu). Chỉ các hàm gói cần; nối vào cổng
+﻿// contract-flow S3a · cổng CỤC BỘ của gói tới engine quy trình cho duyệt HĐ (lớp 2 — chỉ kiểu). Chỉ các hàm gói cần; nối vào cổng
 // kit `PackRunsPort` (S1a: ensureDef / start có ref / cancel / passedStages / lastApprover) bằng một adapter mỏng lúc mount.
 // Repo `approvalEngine` chạy trong tx `PackUow` (role `contracts_rw`, RLS FORCE) + `tenant_id` tường minh; mỗi hàm MỘT câu.
 import type {
@@ -17,6 +17,7 @@ import type {
 } from "../../kit/public";
 import type { FlowStep } from "../domain/approval-flow.types";
 import type { ApprovalFlowRepo } from "./approval-flow.usecase";
+import type { ContractFlowTxRepos } from "./contract-flow.ports";
 import type { ProductLinksRepo } from "./product-links.usecase";
 
 /** Người gọi = user JWT (cấu trúc khớp `PackRunCaller`). */
@@ -215,5 +216,6 @@ export type ApprovalEngineTxRepos = {
   links?: ProductLinksRepo;
   /** CR-121 D-1 · vắng ⇒ `new_partner` chưa có dữ liệu (bước có điều kiện đó vẫn chạy). */
   flowFacts?: FlowFactsRepo;
-} & KitTxRepos;
+} & KitTxRepos &
+  ContractFlowTxRepos;
 export type ApprovalEngineUow = PackUow<ApprovalEngineTxRepos>;

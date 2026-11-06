@@ -1,4 +1,4 @@
-// HD-FR-31 · HD-FR-33 · HD-FR-34 · HD-FR-36 · HD-FR-37 · M3-decouple: flow duyệt HĐ là máy trạng thái của gói (không engine).
+﻿// HD-FR-31 · HD-FR-33 · HD-FR-34 · HD-FR-36 · HD-FR-37 · M3-decouple: flow duyệt HĐ là máy trạng thái của gói (không engine).
 // Mở lượt (tải lên / trích lại / nhập tay), xem thẻ duyệt, quyết bước (luật `decide` thuần), cài đặt tenant. Quyết trong MỘT tx
 // khoá hàng HĐ (FOR UPDATE) ⇒ `finalize` đánh giá lại ngưỡng trong câu UPDATE (D3-14). Lớp 2: chỉ cổng, lỗi trả mã (route dịch).
 import type { ProductLink } from "@ai/contracts/pack-contracts";
@@ -13,8 +13,10 @@ import {
   decide,
   phaseOf,
 } from "../domain/approval-machine.rules";
+import { EV_APPROVED, EV_SUBMITTED } from "../domain/contract-flow-events.rules";
 import type { ApprovalState, ApprovalTxRepos, ApprovalUow, OpenOutcome } from "./approval.ports";
 import type { EngineCard } from "./approval-engine-card.usecase";
+import { type ContractFlowGate, FLOW_OFF, type FlowPrep, requireFlow } from "./contract-flow.ports";
 
 /** Group duyệt: id theo khoá của tenant (thiếu ⇒ vắng) + Group của user (cache cấu hình, 0 SQL khi nóng). */
 export type ApprovalGroups = {
@@ -42,6 +44,8 @@ export type ApprovalDeps = {
   /** cr121-a2 · lượt vừa vào `level1` (đã COMMIT) ⇒ mở run engine (luôn có khi chạy thật; mở hụt ⇒ lượt kẹt chờ "Mở lại", không về
    *  máy cũ). Vắng CHỈ ở HD2 / seam test máy cũ. Không ném. */
   engine?: EngineStart;
+  /** CR-122 A1 · cờ `flowTriggersOn` + phòng ban (đọc TRƯỚC tx). Bật ⇒ ghi `contract.submitted|approved` CÙNG tx, KHÔNG mở lượt theo `engine`. */
+  flow?: ContractFlowGate;
   /** contract-flow S3b · thẻ + hành động cho lượt `mode = 'engine'`. Vắng ⇒ lượt engine hiện thẻ rỗng, không quyết được. */
   card?: EngineCard;
   /** S3b · cài đặt duyệt đổi (tenant chưa lưu mẫu) ⇒ đồng bộ lại def engine. Không ném. */
@@ -81,10 +85,15 @@ export function startApproval(d: ApprovalDeps) {
     initial: "extracting" | "level1",
   ): Promise<OpenOutcome> => {
     const aid = crypto.randomUUID();
-    const out = await d.uow.tenant(who, (r) => r.approval.open(id, aid, who.userId, initial));
+    const prep = initial === "level1" ? await flowPrep(d.flow, who) : FLOW_OFF;
+    const out = await d.uow.tenant(who, async (r) => {
+      const o = await r.approval.open(id, aid, who.userId, initial);
+      if (o === "ok" && prep.on) await emitSubmitted(r, id, aid, who.userId, prep);
+      return o;
+    });
     if (out === "ok" && initial === "extracting")
       await d.jobs.enqueue({ ...who, contractId: id, approvalId: aid });
-    if (out === "ok" && initial === "level1" && d.engine) await d.engine(who, id);
+    if (out === "ok" && initial === "level1" && d.engine && !prep.on) await d.engine(who, id);
     return out;
   };
 }
@@ -119,6 +128,24 @@ const actorOf = (d: ApprovalDeps, who: PackWho, s: ApprovalSettings) =>
 const viewOf = (st: ApprovalState, actor: ApprovalActor) =>
   approvalView(st.approval, actor, { value: st.value, threshold: st.threshold });
 
+/** CR-122 A1 · đọc cờ flow của công ty TRƯỚC tx (role gói không đọc `hub.tenant_flow_settings`); không cổng ⇒ tắt (đường cũ). */
+export const flowPrep = (g: ContractFlowGate | undefined, who: PackWho): Promise<FlowPrep> =>
+  g ? g.prepare(who.tenantId, who.userId) : Promise.resolve(FLOW_OFF);
+
+/** `contract.submitted` CÙNG tx với lúc lượt vào `level1`; `event_id` theo LƯỢT (gửi lại = lượt mới = sự kiện mới). */
+export async function emitSubmitted(
+  r: Parameters<typeof requireFlow>[0],
+  contractId: string,
+  approvalId: string,
+  actor: string,
+  prep: FlowPrep,
+): Promise<void> {
+  await requireFlow(r).emitContract(EV_SUBMITTED, contractId, approvalId, {
+    actor,
+    departments: prep.departments,
+  });
+}
+
 const NOBODY = { userId: "", inLevel1: false, inLevel2: false };
 async function engineViewOf(
   d: ApprovalDeps,
@@ -152,6 +179,7 @@ async function apply(
     approvalId: string;
     feedback: string | undefined;
     products?: readonly ProductLink[] | undefined;
+    prep?: FlowPrep | undefined;
   },
   dec: Exclude<Decision, { kind: "error" }>,
 ): Promise<"ok" | "redo" | null> {
@@ -172,11 +200,22 @@ async function apply(
 async function finalizeOrLevel2(
   r: ApprovalTxRepos,
   who: PackWho,
-  c: { contractId: string; approvalId: string; products?: readonly ProductLink[] | undefined },
+  c: {
+    contractId: string;
+    approvalId: string;
+    products?: readonly ProductLink[] | undefined;
+    prep?: FlowPrep | undefined;
+  },
   level2Passed: boolean,
 ): Promise<"ok" | null> {
   if (await r.approval.finalize(c.contractId, c.approvalId, who.userId, level2Passed)) {
     await linkOnConfirm(r, who, c);
+    // CR-122 A1 · `contract.approved` CÙNG tx với lúc HĐ được duyệt (cờ bật).
+    if (c.prep?.on)
+      await requireFlow(r).emitContract(EV_APPROVED, c.contractId, c.approvalId, {
+        actor: who.userId,
+        departments: c.prep.departments,
+      });
     return "ok";
   }
   if (level2Passed) return null;
@@ -233,7 +272,7 @@ async function lockedState(r: ApprovalTxRepos, id: string): Promise<ApprovalStat
 }
 
 /** Trong tx khoá HĐ: đọc trạng thái → `decide` → cổng trích lại → ghi. */
-function decideInTx(d: ApprovalDeps, who: PackWho, id: string, b: ApprovalAction) {
+function decideInTx(d: ApprovalDeps, who: PackWho, id: string, b: ApprovalAction, prep: FlowPrep) {
   return async (r: ApprovalTxRepos, actor: ApprovalActor): Promise<TxOutcome> => {
     const st = await lockedState(r, id);
     if (!st) return "not_found";
@@ -257,6 +296,7 @@ function decideInTx(d: ApprovalDeps, who: PackWho, id: string, b: ApprovalAction
       approvalId: st.approval.id,
       feedback: b.feedback,
       products: b.products,
+      prep,
     };
     const done = await apply(r, who, c, dec);
     if (done === null) return { error: "APPROVAL_NOT_OPEN" };
@@ -308,7 +348,8 @@ export function actApproval(d: ApprovalDeps) {
   return async (who: PackWho, id: string, b: ApprovalAction): Promise<ActOutcome> => {
     const s = await d.uow.tenant(who, (r) => r.approval.settings());
     const actor = await actorOf(d, who, s);
-    const inTx = decideInTx(d, who, id, b);
+    const prep = b.action === "approve" ? await flowPrep(d.flow, who) : FLOW_OFF;
+    const inTx = decideInTx(d, who, id, b, prep);
     const out = await d.uow.tenant(who, (r) => inTx(r, actor));
     if (out === "not_found" || out === "unavailable") return out;
     if ("engine" in out) return actOnEngine(d, who, id, b, out.engine);

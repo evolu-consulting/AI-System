@@ -1,4 +1,4 @@
-// HD-FR-08 · D-06 · D-16 · D-17 · HD1 plan §4–§5: nối tải lên hợp đồng (lớp 4 của gói): `PackUow` (role `contracts_rw`) + bộ
+﻿// HD-FR-08 · D-06 · D-16 · D-17 · HD1 plan §4–§5: nối tải lên hợp đồng (lớp 4 của gói): `PackUow` (role `contracts_rw`) + bộ
 // đếm Redis (vắng ⇒ 503 `UPLOAD_QUOTA_UNAVAILABLE`) + FileBox org `t_<tenant>` + `DocxConverter` (N1 T5g) + `ExtractionStarter`
 // (HD2: hàng đợi trích của `extraction.mount.ts`). `packs.mount.ts` gắn dưới `/pack/contracts` cạnh `contractsModule` (T7).
 import {
@@ -12,6 +12,7 @@ import type { Redis } from "ioredis";
 import { logger } from "../../../lib/logger";
 import type { PackAccessView, PackFileboxClient, PackGuardVars, PackWho } from "../kit/public";
 import { createDocxConverter, createPackUow, packTenantOnly } from "../kit/public";
+import { contractFlowRepo } from "./adapters/contract-flow.repo";
 import { promoteRepo } from "./adapters/deals.repo";
 import { uploadRoutes } from "./adapters/upload.routes";
 import { uploadContractRepo } from "./adapters/upload-contract.repo";
@@ -21,6 +22,7 @@ import { createPromoteContract } from "./application/promote-contract.usecase";
 import type { ContractFileStore, ExtractionStarter } from "./application/upload-contract.ports";
 import { createUploadContract, takeQuota } from "./application/upload-contract.usecase";
 import { uploadDay } from "./domain/upload.rules";
+import { contractFlowGate } from "./flow-events.mount";
 
 const KEY = "contracts";
 const MiB = 1024 * 1024;
@@ -63,7 +65,10 @@ function fileStore(client: (org: string) => PackFileboxClient): ContractFileStor
 
 export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
   const uow = packTenantOnly(
-    createPackUow(d.db, KEY, (tx, tid) => ({ upload: uploadContractRepo(tx, tid) })),
+    createPackUow(d.db, KEY, (tx, tid) => ({
+      upload: uploadContractRepo(tx, tid),
+      contractFlow: contractFlowRepo(tx, tid), // CR-122 A1
+    })),
   );
   const q = {
     counter: d.redis ? redisUploadCounter(d.redis) : unavailableUploadCounter,
@@ -82,6 +87,7 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
     zipNames,
     newId: () => Bun.randomUUIDv7(),
     log: logger,
+    flow: contractFlowGate(d.db), // CR-122 A1
   });
   const maxBytes = contractsMaxBytes();
   // CR-101 DOC-deals · R10: nâng giao dịch thành HĐ (file ký + số), cùng kho tệp + kiểm loại tệp với tải lên.
