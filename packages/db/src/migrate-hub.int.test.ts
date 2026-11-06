@@ -69,11 +69,13 @@ const HUB_TABLES = [
   "autofix_applies",
   "autofix_results",
   "cli_sessions",
+  "company_flows", // CR-122 hub 0106 · flow công ty
   "config_meta",
   "conversations",
   "dify_runs", // dify-workflows hub 0056
   "dlc_step_templates", // dlc-step-library hub 0071
   "dlc_workflows",
+  "flow_events", // CR-122 hub 0105 · sự kiện flow (outbox gói → engine)
   "flows",
   "jobs",
   "kh_connections",
@@ -121,6 +123,7 @@ const HUB_TABLES = [
   "stage_runs",
   "team_runs",
   "tenant_agent_defaults",
+  "tenant_flow_settings", // CR-122 hub 0106 · cài đặt flow theo tenant
   "tool_confirmations",
   "usage_daily", // hub 0049 · tổng hợp usage theo ngày
   "usage_daily_dim",

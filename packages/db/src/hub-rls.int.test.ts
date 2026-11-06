@@ -189,6 +189,11 @@ const LATER_POLICY_TABLES = [
   "process_routing_rules",
   // dlc-step-library (0071): thư viện bước DLC — chỉ system, 1 policy.
   "dlc_step_templates",
+  // CR-122 (0105/0106): sự kiện flow (1 policy), flow công ty (1 policy), cài đặt flow theo tenant (đọc T + ghi = 2 policy) — chỉ hub_rw.
+  "flow_events",
+  "company_flows",
+  "tenant_flow_settings",
+  "tenant_flow_settings",
 ];
 /** 0022 (B4 · WRK-FR-27): agent_runtime đọc `hub.runs` cột (id, status), chỉ hàng `running`. */
 const RUNTIME_POLICIES = [
