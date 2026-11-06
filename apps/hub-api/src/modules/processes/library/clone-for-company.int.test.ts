@@ -264,6 +264,7 @@ describe("CR-121 c9 · đọc chỉ-xem theo công ty", () => {
     const withCopy = await call("A", "GET", VW(X, lib.A));
     expect(withCopy.json.company_copy).toEqual({ def_id: pid, rel_version: 1 });
     expect((await call("P", "GET", VW(Y, lib.A))).status).toBe(200); // platform_admin mọi công ty
-    expect((await call("A", "PUT", VW(X, lib.C), {})).status).toBe(404); // không có đường ghi
+    const put = await app.request(VW(X, lib.C), { method: "PUT", headers: { "x-who": "A" } });
+    expect(put.status).toBe(404); // không có đường ghi
   });
 });
