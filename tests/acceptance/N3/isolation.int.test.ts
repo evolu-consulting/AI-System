@@ -123,13 +123,31 @@ describe("N3-FR-03 · người nhận phải cùng tenant", () => {
 
 describe("N3-NFR-02 · role gói chỉ có EXECUTE cổng, không đọc bảng", () => {
   it("không USAGE hub/admin (PK-AC03 giữ nguyên), có USAGE notify + EXECUTE enqueue; mọi gói đã cài đều có", async () => {
-    for (const k of ["pkdemo", "contracts"]) {
+    // CR-122 W2: gói có luồng (contracts, community) có USAGE hub chỉ để gọi hub.emit_flow_event; pkdemo vẫn không.
+    const existing = await sql<{ rolname: string }[]>`select rolname from pg_roles
+      where rolname in ('pkdemo_rw','contracts_rw','community_rw')`;
+    const packs = existing.map((x) => x.rolname.replace(/_rw$/, ""));
+    expect(packs).toContain("pkdemo");
+    expect(packs).toContain("contracts");
+    for (const k of packs) {
       const [r] = await sql<{ hub: boolean; adm: boolean; ntf: boolean; ex: boolean }[]>`select
         has_schema_privilege(${`${k}_rw`}, 'hub', 'USAGE') as hub,
         has_schema_privilege(${`${k}_rw`}, 'admin', 'USAGE') as adm,
         has_schema_privilege(${`${k}_rw`}, 'notify', 'USAGE') as ntf,
         has_function_privilege(${`${k}_rw`}, 'notify.enqueue(text,jsonb)', 'EXECUTE') as ex`;
-      expect({ k, ...r }).toEqual({ k, hub: false, adm: false, ntf: true, ex: true });
+      expect({ k, ...r }).toEqual({ k, hub: k !== "pkdemo", adm: false, ntf: true, ex: true });
+      if (k === "pkdemo") continue;
+      const role = `${k}_rw`;
+      const [f] = await sql<{ ex: boolean }[]>`select has_function_privilege(${role},
+        'hub.emit_flow_event(uuid,text,text,text,jsonb,uuid)', 'EXECUTE') as ex`;
+      expect({ k, emit: f?.ex }).toEqual({ k, emit: true });
+      // không quyền bảng/cột/sequence nào trên schema hub
+      const leaks = await sql<{ rel: string }[]>`select c.relname as rel
+        from pg_class c join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname = 'hub' and (
+          (c.relkind in ('r','v','m','p','f') and has_any_column_privilege(${role}, c.oid, 'SELECT,INSERT,UPDATE,REFERENCES'))
+          or (c.relkind = 'S' and has_sequence_privilege(${role}, c.oid, 'USAGE,SELECT,UPDATE')))`;
+      expect({ k, leaks: leaks.map((x) => x.rel) }).toEqual({ k, leaks: [] });
     }
     const [pub] = await sql<
       { ex: boolean }[]

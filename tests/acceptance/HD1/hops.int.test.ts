@@ -191,8 +191,8 @@ describe("HD-NFR-02 · PATCH: 4 câu cố định, 1 tx", () => {
   });
 });
 
-describe("HD-NFR-03 · tải lên: kiểm quota 1 pipeline Redis, ghi 1 tx 3 câu", () => {
-  it("HD-NFR-03 · tải PDF thành công: 3 câu SQL (set_config, CTE files+contracts+event, outbox); đúng 1 pipeline Redis, 0 lệnh Redis lẻ; 1 lời gọi FileBox; 0 HTTP nội bộ", async () => {
+describe("HD-NFR-03 · tải lên: kiểm quota 1 pipeline Redis, ghi 1 tx 4 câu", () => {
+  it("HD-NFR-03 · tải PDF thành công: 4 câu SQL (set_config, CTE files+contracts+event, outbox, emit_flow_event cùng tx); đúng 1 pipeline Redis, 0 lệnh Redis lẻ; 1 lời gọi FileBox; 0 HTTP nội bộ", async () => {
     await arrange(c);
     await upload(c, P.hoa, {}); // làm nóng
     const h = await countHops(
@@ -208,7 +208,7 @@ describe("HD-NFR-03 · tải lên: kiểm quota 1 pipeline Redis, ghi 1 tx 3 câ
       pipelines: h.r.pipelines.length,
       single: h.r.single,
     }).toEqual({
-      sql: 3,
+      sql: 4,
       http: [],
       ext: 1,
       pipelines: 1,
