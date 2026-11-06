@@ -38,7 +38,7 @@ const rows = () =>
     }[]
   >`select d.id, d.key, d.slot, d.app, d.trigger, d.published_version, d.stages,
       (select count(*)::int from hub.process_def_releases r where r.def_id = d.id) as nrel
-    from hub.process_defs d where d.tenant_id is null and d.key = any(${o.array(KEYS)}::text[]) order by d.key`;
+    from hub.process_defs d where d.tenant_id is null and d.key in ${o(KEYS)} order by d.key`;
 
 describe("CR-122 B · seed flow mẫu", () => {
   it("tạo 3 flow mẫu đã xuất bản (bản 1), có trigger + app, không khe, đọc lại vẫn hợp lệ", async () => {
