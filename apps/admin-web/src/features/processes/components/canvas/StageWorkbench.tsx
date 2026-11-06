@@ -3,12 +3,14 @@
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { isDlcStep } from "../../lib/dlc-slot";
+import { writeViewMode } from "../../lib/view-mode";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
 import { SlotCanvasToolbar } from "../library/SlotCanvasToolbar";
+import { ViewModeToggle } from "../ViewModeToggle";
 import { CanvasToolbar } from "./CanvasToolbar";
 import { CanvasView } from "./CanvasView";
 import { ShortcutsHint } from "./ShortcutsHint";
@@ -99,10 +101,13 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
           )}
           <div className="ml-auto flex items-center gap-1">
             {lib ? null : (
-              <TabsList aria-label={t("process.admin.canvas.view.label")}>
-                <TabsTrigger value="canvas">{t("process.admin.canvas.view.canvas")}</TabsTrigger>
-                <TabsTrigger value="list">{t("process.admin.canvas.view.list")}</TabsTrigger>
-              </TabsList>
+              <ViewModeToggle
+                mode={w.mode}
+                set={(m) => {
+                  writeViewMode(m);
+                  w.setMode(m);
+                }}
+              />
             )}
             <ShortcutsHint />
           </div>

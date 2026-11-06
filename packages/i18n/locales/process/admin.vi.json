@@ -17,8 +17,7 @@
     },
     "col": {
       "name": "Quy trình",
-      "key": "Ký hiệu",
-      "stages": "Giai đoạn",
+      "stages": "Số bước",
       "running": "Lượt đang chạy",
       "updated": "Cập nhật",
       "enabled": "Bật"
@@ -514,7 +513,7 @@
     "PROCESS_IN_USE": "Quy trình đang là mặc định hoặc đang gán cho tenant: không xoá/tắt/đổi ký hiệu được.",
     "PROCESS_NOT_PUBLISHED": "Quy trình chưa xuất bản. Xuất bản trước.",
     "PROCESS_PUBLISH_INVALID": "Quy trình chưa hợp lệ để xuất bản. Xem chỗ sai bên dưới.",
-    "SLOT_SHAPE_UNSUPPORTED": "Khe này chỉ nhận các bước tuần tự (không song song, không nhánh). Sửa lại ở Canvas.",
+    "SLOT_SHAPE_UNSUPPORTED": "Khe này chỉ nhận các bước tuần tự (không song song, không nhánh). Sửa lại ở Sơ đồ.",
     "SLOT_GROUPS_MISSING": "Có tenant thiếu phòng ban theo mã mà quy trình dùng. Xem mã thiếu bên dưới.",
     "SLOT_BODY_INVALID": "Nội dung Form chưa hợp lệ. Xem chỗ sai bên dưới.",
     "SLOT_UNKNOWN": "Loại việc này chưa có trên hệ thống. Bật ứng dụng tương ứng cho công ty, hoặc nhờ quản trị nền tảng bổ sung.",
@@ -548,11 +547,6 @@
       "no": "Sai"
     },
     "region": "Chi tiết giai đoạn",
-    "view": {
-      "label": "Chế độ xem",
-      "canvas": "Canvas",
-      "list": "Danh sách"
-    },
     "drawer": {
       "close": "Đóng ngăn chi tiết"
     },
@@ -587,8 +581,8 @@
       "branch": "Rẽ nhánh: luật {{n}} tới bước {{step}}"
     },
     "empty": "Chưa có giai đoạn. Thêm giai đoạn đầu tiên.",
-    "loading": "Đang tải canvas…",
-    "loadFailed": "Không tải được canvas. Đang dùng dạng danh sách.",
+    "loading": "Đang tải sơ đồ…",
+    "loadFailed": "Không tải được sơ đồ. Đang dùng dạng danh sách.",
     "retry": "Thử lại",
     "readOnly": "Quy trình mẫu: chỉ xem, không kéo thả được.",
     "confirmRemove": {
@@ -914,10 +908,10 @@
         "owner": "Toàn quyền duyệt thay được mọi bước — lượt duyệt thay được ghi rõ.",
         "escalate": "Bước có hạn: quá hạn tự chuyển cho nhóm chuyển cấp (mặc định Toàn quyền)."
       },
-      "unsupported": "Quy trình này có dạng Form không biểu diễn được (vd bước song song). Chỉ xem; hãy sửa ở Canvas.",
-      "toCanvas": "Sửa ở Canvas",
+      "unsupported": "Quy trình này có dạng Danh sách không biểu diễn được (vd bước song song). Chỉ xem; hãy sửa ở Sơ đồ.",
+      "toCanvas": "Sửa ở Sơ đồ",
       "difyInfo": "Bước Dify: {{name}}",
-      "difyCanvas": "Bước Dify giữ nguyên ở Form; sửa ở Canvas.",
+      "difyCanvas": "Bước Dify giữ nguyên ở Danh sách; sửa ở Sơ đồ.",
       "none": "Không",
       "esign": {
         "defaultName": "Ký số",
@@ -972,7 +966,7 @@
       "counterHint": "Tối đa {{max}} bước, chạy từ trên xuống. Bước có điều kiện chỉ chạy khi hợp đồng khớp điều kiện.",
       "addNode": "Thêm bước",
       "addNodeOf": "Thêm bước: {{name}}",
-      "nodeCanvasOnly": "{{name}}: thêm ở Canvas",
+      "nodeCanvasOnly": "{{name}}: thêm ở Sơ đồ",
       "type": "Loại: {{slot}}",
       "source": "Quy trình thư viện · đã xuất bản v{{n}}",
       "sourceDraft": "Quy trình thư viện · chưa xuất bản",
@@ -1079,7 +1073,7 @@
       },
       "steps": {
         "title": "Bước DLC",
-        "subtitle": "Thư viện bước dùng lại cho quy trình DLC: chọn việc, agent, cổng duyệt và chỗ quay lại khi từ chối. Canvas quy trình chép bước mẫu khi thêm — sửa mẫu không đổi quy trình đã có.",
+        "subtitle": "Thư viện bước dùng lại cho quy trình DLC: chọn việc, agent, cổng duyệt và chỗ quay lại khi từ chối. Sơ đồ quy trình chép bước mẫu khi thêm — sửa mẫu không đổi quy trình đã có.",
         "agentTenant": "Lấy agent từ công ty",
         "create": "Thêm bước",
         "edit": "Sửa",

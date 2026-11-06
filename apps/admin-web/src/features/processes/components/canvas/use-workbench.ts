@@ -5,6 +5,7 @@ import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { useStageOps } from "../../hooks/use-stage-ops";
 import { isSystemStage } from "../../lib/system-nodes";
+import { readViewMode } from "../../lib/view-mode";
 import { type StageView, sameView, stageViews } from "./stage-view";
 
 export const PANEL_ID = "stage-panel";
@@ -24,7 +25,7 @@ export function useWorkbench(d: DraftState, refs: EditorRefs) {
   const [removing, setRemoving] = useState<string | null>(null);
   // fnr-editor-drawer: ngăn chi tiết (view Canvas) mở khi có giai đoạn được chọn; đóng ⇒ bỏ chọn. Mặc định ĐÓNG (người dùng chốt 2026-10-29, kiểu n8n).
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<Mode>(() => (window.innerWidth < 768 ? "list" : "canvas"));
+  const [mode, setMode] = useState<Mode>(() => (window.innerWidth < 768 ? "list" : readViewMode())); // Q11: Sơ đồ mặc định, lựa chọn nhớ theo người dùng (view-mode.ts)
   const stages = d.draft.stages;
   const sel = stages.find((s) => s.uid === d.selected) ?? stages[0];
   const views = useStableViews(stageViews(stages, d.errors, refs));

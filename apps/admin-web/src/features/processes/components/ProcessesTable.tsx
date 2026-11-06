@@ -11,6 +11,7 @@ import { formatUpdated } from "@/lib/format";
 import { isTemplateRow, rowMode } from "../lib/library-view";
 import type { LibraryListItem as Row } from "../library-api";
 import { StatusCell, StepsCell, UsedByCell } from "./library/LibraryListCells";
+import { LibraryRowMenu } from "./library/LibraryRowMenu";
 import { RowDeleteButton } from "./library/RowDeleteButton";
 
 export type RowActions = {
@@ -104,13 +105,8 @@ function enabledColumn(t: TFunction, o: Opts): Column<Row> {
   };
 }
 
-/** Sửa · (Nhân bản — thư viện) · Xoá; xoá bị khoá khi là mặc định của khe hoặc đang có tenant gán. */
-function WriteActions(p: {
-  t: TFunction;
-  r: Row;
-  library?: boolean | undefined;
-  actions: RowActions;
-}) {
+/** Sửa · Xoá (danh sách mẫu/chạy thử; Thư viện dùng `LibraryRowMenu`); xoá bị khoá khi là mặc định của khe hoặc đang có tenant gán. */
+function WriteActions(p: { t: TFunction; r: Row; actions: RowActions }) {
   const { t, r, actions } = p;
   return (
     <>
@@ -119,11 +115,6 @@ function WriteActions(p: {
           {L(t, "edit")}
         </Link>
       </Button>
-      {p.library ? (
-        <Button size="sm" variant="ghost" onClick={() => actions.onClone(r)}>
-          {t("process.admin.library.clone.button")}
-        </Button>
-      ) : null}
       {/* mặc định của khe / đang có tenant gán ⇒ khoá + tooltip lý do; còn lại (nháp lẫn đã xuất bản) xoá được */}
       <RowDeleteButton row={r} label={L(t, "deleteButton")} onDelete={() => actions.onDelete(r)} />
     </>
@@ -155,7 +146,7 @@ function actionsColumn(t: TFunction, o: Opts): Column<Row> {
           </Button>
         )}
         {rowMode(r, canEditTemplates) === "full" ? (
-          <WriteActions t={t} r={r} library={library} actions={actions} />
+          <WriteActions t={t} r={r} actions={actions} />
         ) : null}
       </span>
     ),
@@ -188,9 +179,11 @@ function libraryColumns(t: TFunction, o: Opts): Column<Row>[] {
       header: <span className="sr-only">{t("common.actions")}</span>,
       className: "whitespace-nowrap text-right",
       cell: (r) => (
-        <span className="flex items-center justify-end gap-1">
-          <WriteActions t={t} r={r} library actions={o.actions} />
-        </span>
+        <LibraryRowMenu
+          row={r}
+          onClone={() => o.actions.onClone(r)}
+          onDelete={() => o.actions.onDelete(r)}
+        />
       ),
     },
   ];
@@ -199,11 +192,6 @@ function libraryColumns(t: TFunction, o: Opts): Column<Row>[] {
 export function buildColumns(t: TFunction, o: Opts): Column<Row>[] {
   if (o.library) return libraryColumns(t, o);
   const cols: Column<Row>[] = [nameColumn(t, false)];
-  cols.push({
-    id: "key",
-    header: L(t, "col.key"),
-    cell: (r) => <span className="font-mono text-label">!{r.key}</span>,
-  });
   cols.push({
     id: "stages",
     header: L(t, "col.stages"),
