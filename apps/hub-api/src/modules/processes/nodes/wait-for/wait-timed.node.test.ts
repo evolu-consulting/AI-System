@@ -58,11 +58,15 @@ describe("CR-120 · wait_for / wait_event · normalize", () => {
       { kind: "wait_event", event: "a.b", timeout_h: 2 },
     ]) {
       const n = normalizeStage(stage("w", ex, { token_budget: 5000 }));
-      expect(n.output.fields).toEqual([]);
+      // CR-122 E3b · `wait_event` khai field `event` (khoá đã nhận / timeout); `wait_for` vẫn không field.
+      const ev = ex.kind === "wait_event";
+      expect(n.output.fields).toEqual(
+        ev ? [{ key: "event", type: "string", required: false }] : [],
+      );
       expect(n.output.required_sections).toEqual(["Bàn giao"]);
       expect(n.token_budget).toBeNull();
       expect(normalizeStage(n)).toEqual(n);
-      expect(nodeSpecOf(ex.kind)?.produces).toBe("none");
+      expect(nodeSpecOf(ex.kind)?.produces).toBe(ev ? "declared" : "none");
     }
   });
 });

@@ -34,7 +34,7 @@ export const NODE_PRODUCES: Readonly<Record<ExecutorKind, NodeProduces>> = {
   if: "none",
   form: "declared", // CR-118 · output.fields dựng từ trường form
   wait_for: "none",
-  wait_event: "none",
+  wait_event: "declared", // CR-122 E3b · field `event` (khoá đã nhận / timeout)
   notify: "none",
   approve: "declared", // CR-122 E2b · field `decision` (approved/rejected/returned)
 };

@@ -155,16 +155,21 @@ async function waitMd(
   if (keys.length > 0) {
     // `signalEvent` ghi sự kiện TRƯỚC khi thả stage ⇒ stage tiêu thụ sự kiện chưa dùng = đã nhận; không có = hết hạn.
     // CR-122 E3 · nhiều khoá (đã ký / từ chối / huỷ): MỘT câu tiêu thụ sự kiện nhận SỚM nhất ⇒ field `event` để rẽ bước.
-    const got = await c.tx.execute<{
-      event: string;
-    }>(sql`update hub.process_run_events e set consumed_by = ${x.s.id}
-      where e.ctid = (select ctid from hub.process_run_events
+    // E3b · MỘT câu: chọn sự kiện thắng (nhận sớm nhất) VÀ đánh dấu đã dùng MỌI dòng chưa dùng cùng khoá của stage này
+    // (webhook + vòng đồng bộ cùng bắn, sự kiện phụ về cùng lúc) ⇒ một `wait_event` sau đó không nhận nhầm dòng sót.
+    const ks = JSON.stringify(keys);
+    const got = await c.tx.execute<{ won: string | null }>(sql`with pend as (
+        select event, received_at from hub.process_run_events
         where tenant_id = ${c.tenantId} and process_run_id = ${x.runId} and consumed_by is null
-          and event = any(array(select jsonb_array_elements_text(${JSON.stringify(keys)}::jsonb)))
-        order by received_at, array_position(array(select jsonb_array_elements_text(${JSON.stringify(keys)}::jsonb)), event)
-        limit 1 for update)
-      returning e.event`);
-    const won = got[0]?.event ?? TIMEOUT_KEY;
+          and event = any(array(select jsonb_array_elements_text(${ks}::jsonb)))
+        for update),
+      w as (select event from pend
+        order by received_at, array_position(array(select jsonb_array_elements_text(${ks}::jsonb)), event) limit 1),
+      u as (update hub.process_run_events e set consumed_by = ${x.s.id}
+        where e.tenant_id = ${c.tenantId} and e.process_run_id = ${x.runId} and e.consumed_by is null
+          and e.event in (select event from pend) returning 1)
+      select (select event from w) as won, (select count(*) from u) as n`);
+    const won = got[0]?.won ?? TIMEOUT_KEY;
     const text =
       won === TIMEOUT_KEY
         ? `Hết hạn chờ sự kiện ${keys[0]}; chạy tiếp.`

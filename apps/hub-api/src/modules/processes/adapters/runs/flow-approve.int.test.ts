@@ -118,6 +118,27 @@ describe("CR-122 · E2b · node Duyệt rẽ theo quyết định (đường th�
     const runId = await seedRun({ step: 1, st: DONE_AT_APPROVE, decision: "returned" });
     expect((await settle(runId))?.step).toBe(4);
   });
+  it("Từ chối rẽ tới Kết thúc khi hẹn còn mở ⇒ hẹn của nhánh bị bỏ và nhánh sau Kết thúc bị huỷ", async () => {
+    const runId = await seedRun({ step: 1, st: DONE_AT_APPROVE, decision: "rejected" });
+    const ids = await o<
+      { id: string; stage_idx: number }[]
+    >`select id, stage_idx from hub.stage_runs
+      where process_run_id = ${runId} order by stage_idx`;
+    const due = new Date(Date.now() + 86_400_000).toISOString();
+    // Hẹn mở (nhắc/chuyển cấp/thử lại) trên nhánh Đã duyệt (bước 2) và nhánh Trả lại (bước 4, sau Kết thúc · Từ chối).
+    for (const i of [2, 4])
+      await o`insert into hub.process_timers (tenant_id, process_run_id, stage_run_id, kind, due_at, idempotency_key)
+        values (${tid}, ${runId}, ${ids[i]?.id as string}, 'retry', ${due}, ${`e3b:${runId}:${i}`})`;
+    expect((await settle(runId))?.step).toBe(3);
+    await o`update hub.stage_runs set status = 'done' where process_run_id = ${runId} and stage_idx = 3`;
+    expect((await settle(runId))?.kind).toBe("finish");
+    const open = await o<{ n: number }[]>`select count(*)::int as n from hub.process_timers
+      where process_run_id = ${runId} and cancelled_at is null and fired_at is null`;
+    expect(open[0]?.n).toBe(0);
+    expect(await stagesOf(runId)).toEqual(["done", "done", "skipped", "done", "skipped"]);
+    expect(applied).toContain(`${runId}:rejected`);
+  });
+
   it("lượt đã huỷ, kết quả tới muộn ⇒ vẫn cancelled, handler không bị gọi", async () => {
     const runId = await seedRun({
       step: 2,

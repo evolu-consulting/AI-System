@@ -118,6 +118,19 @@ describe("CR-122 · E3 · chờ ký nhiều kết quả (đường thật)", () 
     expect(r?.current_step).toBe(2);
   });
 
+  it("hai sự kiện cùng chờ (webhook + đồng bộ) ⇒ thắng cái nhận sớm, MỌI dòng cùng khoá đã dùng (không sót cho bước chờ sau)", async () => {
+    const runId = await seedRun();
+    await o`insert into hub.process_run_events (tenant_id, process_run_id, event, received_at)
+      values (${tid}, ${runId}, 'esign.completed', now() - interval '1 minute')`;
+    expect(await signal(runId, "esign.declined")).toEqual({ kind: "ok", released: 1 });
+    const [f] = await o<{ fields: { event?: string } }[]>`select o.fields from hub.stage_runs s
+      join hub.process_outputs o on o.id = s.current_output_id where s.process_run_id = ${runId} and s.stage_idx = 1`;
+    expect(f?.fields.event).toBe("esign.completed");
+    const [left] = await o<{ n: number }[]>`select count(*)::int as n from hub.process_run_events
+      where process_run_id = ${runId} and consumed_by is null`;
+    expect(left?.n).toBe(0);
+  });
+
   it("sự kiện lạ (không thuộc khoá chờ) ⇒ không thả", async () => {
     const runId = await seedRun();
     expect(await signal(runId, "esign.other")).toEqual({ kind: "ok", released: 0 });
