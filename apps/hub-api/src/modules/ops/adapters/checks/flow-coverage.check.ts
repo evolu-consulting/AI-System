@@ -175,7 +175,7 @@ export const approvalConfigQuery = () => sql`
       and not exists (select 1 from hub.process_routing_rules x where x.tenant_id = ad.tenant_id and x.slot = ${APPROVAL_SLOT})),
   bk as (
     select r.tenant_id from hub.process_routing_rules r join hub.process_defs d on d.id = r.def_id
-    where r.slot = ${APPROVAL_SLOT} and (d.deleted_at is not null or d.published_version is null)
+    where r.slot = ${APPROVAL_SLOT} and (d.deleted_at is not null or (d.published_version is null and d.source_rel_version is null))
     union
     select ad.tenant_id from ad
     where exists (select 1 from hub.process_runs r where r.tenant_id = ad.tenant_id and r.process_def_id = ad.def_id

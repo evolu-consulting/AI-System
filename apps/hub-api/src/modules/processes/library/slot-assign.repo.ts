@@ -209,7 +209,7 @@ export const tenantSlotRows = (
   tx.execute<TenantSlotRow>(sql`with k as (
       select slot from hub.process_slots union select unnest(${arr(slots, "text")})
       union select slot from hub.process_routing_rules where tenant_id = ${tenantId} and is_default)
-    select k.slot, d.id::text as def_id, d.name as def_name, d.published_version as rel_version,
+    select k.slot, d.id::text as def_id, d.name as def_name, coalesce(d.published_version, d.source_rel_version) as rel_version,
       (a.def_id is null or coalesce(a.def_id = s.default_def_id, false)) as is_default
     from k left join hub.process_routing_rules a on a.tenant_id = ${tenantId} and a.slot = k.slot and a.is_default
       left join hub.process_slots s on s.slot = k.slot

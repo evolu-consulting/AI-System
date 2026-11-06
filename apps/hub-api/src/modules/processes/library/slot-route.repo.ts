@@ -8,7 +8,7 @@ import { sql } from "drizzle-orm";
 import type { Db } from "../../../lib/db";
 import type { RoutedSlot, RouteSlotFacts } from "../../packs/kit/public";
 import { pickProcess, type RoutingRule } from "./routing.rules";
-import { RESOLVE_SLOT_SQL } from "./slot-resolve.repo";
+import { LIB_OR_COMPANY_COPY, RESOLVE_SLOT_SQL } from "./slot-resolve.repo";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLOT = /^[a-z][a-z0-9-]{0,39}\.[a-z][a-z0-9-]{0,39}$/;
@@ -41,9 +41,14 @@ export const ROUTE_SLOT_SQL = (tenantId: string, slot: string, userId: string | 
     (select jsonb_agg(jsonb_build_object('id', id, 'priority', priority, 'condition', condition, 'defId', def_id,
        'isDefault', is_default)) from rr) as rules,
     (select array_agg(id::text) from anc) as depts,
-    (select jsonb_object_agg(d.id::text, jsonb_build_object('name', rl.name, 'rel', rl.rel_version, 'body', rl.slot_body))
-       from hub.process_defs d join hub.process_def_releases rl on rl.def_id = d.id and rl.rel_version = d.published_version
-       where d.id in (select def_id from rr) and d.deleted_at is null and d.slot = ${slot}) as defs,
+    (select jsonb_object_agg(d.id::text, jsonb_build_object(
+         'name', case when d.tenant_id is null then rl.name else d.name end,
+         'rel', case when d.tenant_id is null then rl.rel_version else d.source_rel_version end,
+         'body', case when d.tenant_id is null then rl.slot_body else d.slot_body end))
+       from hub.process_defs d
+       left join hub.process_def_releases rl on rl.def_id = d.id and rl.rel_version = d.published_version
+       left join hub.process_defs src on src.id = d.source_template_id and d.tenant_id is not null
+       where d.id in (select def_id from rr) and d.deleted_at is null and ${LIB_OR_COMPANY_COPY(tenantId, slot, "rl")}) as defs,
     b.def_id, b.name, b.rel_version, b.slot_body, b.is_default
   from (select 1) one left join lateral (${RESOLVE_SLOT_SQL(tenantId, slot)}) b on true`;
 

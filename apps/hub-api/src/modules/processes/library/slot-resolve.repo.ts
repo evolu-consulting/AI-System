@@ -19,20 +19,36 @@ type Row = {
 };
 
 /**
+ * CR-121 c9b · def áp được cho khe: (1) def thư viện của khe ĐÃ XUẤT BẢN (có hàng release), hoặc (2) BẢN RIÊNG của CHÍNH công ty
+ * sao từ def thư viện của khe (`source_rel_version` có; `slot NULL` theo CHECK `process_defs_slot_ck` ⇒ khe lấy từ def nguồn `src`).
+ * Bản riêng đọc `slot_body` của chính nó, bản = `source_rel_version`; `enabled` KHÔNG chặn (launch gói không kiểm `enabled`, như def
+ * vật chất hoá). Công ty khác không bao giờ thấy bản riêng này (`d.tenant_id = tenant`). Dùng chung RESOLVE/ROUTE ⇒ không thêm câu SQL.
+ * Alias bắt buộc: `d` (process_defs), `rel` (release của `d`, left join), `src` (def nguồn, left join).
+ */
+export const LIB_OR_COMPANY_COPY = (tenantId: string, slot: string, rel = "r") => sql`(
+    (d.tenant_id is null and d.slot = ${slot} and ${sql.raw(rel)}.def_id is not null)
+    or (d.tenant_id = ${tenantId}::uuid and d.source_rel_version is not null and src.tenant_id is null and src.slot = ${slot}))`;
+
+/**
  * Câu tra (xuất để perf test đo đúng câu chạy thật). Def đã xoá mềm / chưa xuất bản / khác khe ⇒ không hàng.
  * CR-120 · ADR-0036 · một nguồn: luật `is_default` của tenant × khe (index một-mặc-định) ⇒ không có ⇒ mẫu cấp phát của khe
  * (`process_slots.default_def_id`, cho tenant chưa được `ensureSlotDefaults` cấp — giữ hành vi cũ). KHÔNG đọc `process_slot_assignments`.
  * `is_default` = def hiệu lực là mặc định của khe (không luật, hoặc luật mặc định trỏ đúng mẫu).
  */
 export const RESOLVE_SLOT_SQL = (tenantId: string, slot: string) => sql`
-  select d.id as def_id, r.name, r.rel_version, r.slot_body,
+  select d.id as def_id,
+    case when d.tenant_id is null then r.name else d.name end as name,
+    case when d.tenant_id is null then r.rel_version else d.source_rel_version end as rel_version,
+    case when d.tenant_id is null then r.slot_body else d.slot_body end as slot_body,
     (x.a_id is null or coalesce(x.a_id = x.s_id, false)) as is_default
   from (select
           (select a.def_id from hub.process_routing_rules a
             where a.tenant_id = ${tenantId}::uuid and a.slot = ${slot} and a.is_default) as a_id,
           (select s.default_def_id from hub.process_slots s where s.slot = ${slot}) as s_id) x
-  join hub.process_defs d on d.id = coalesce(x.a_id, x.s_id) and d.deleted_at is null and d.slot = ${slot}
-  join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version`;
+  join hub.process_defs d on d.id = coalesce(x.a_id, x.s_id) and d.deleted_at is null
+  left join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version
+  left join hub.process_defs src on src.id = d.source_template_id and d.tenant_id is not null
+  where ${LIB_OR_COMPANY_COPY(tenantId, slot)}`;
 
 /** Quy trình đang chạy của khe cho tenant; chưa có bản xuất bản nào áp được ⇒ null (gói rơi về đường cũ). */
 export async function resolveSlot(

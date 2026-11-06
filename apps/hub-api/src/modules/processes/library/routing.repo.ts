@@ -9,7 +9,7 @@ export type AssignedRow = { def_id: string; name: string; rel_version: number | 
  *  `rel_version` lấy từ bản phát hành thật (không có hàng release ⇒ null = chưa chạy được). */
 export const assignedOf = (tx: Tx, tenantId: string, slot: string): Promise<AssignedRow[]> =>
   tx.execute<AssignedRow>(sql`select a.def_id::text as def_id, coalesce(r.name, d.name) as name,
-      r.rel_version
+      coalesce(r.rel_version, d.source_rel_version) as rel_version
     from hub.process_tenant_defs a join hub.process_defs d on d.id = a.def_id and d.deleted_at is null
     left join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version
     where a.tenant_id = ${tenantId} and a.slot = ${slot} order by d.name, a.def_id`);
@@ -30,12 +30,12 @@ export async function assignedDef(
   w: { tenantId: string; slot: string; defId: string; draft: boolean },
 ): Promise<AssignedDefRow | null> {
   const [r] = await tx.execute<AssignedDefRow>(sql`select a.def_id::text as def_id,
-      coalesce(r.name, d.name) as name, r.rel_version, coalesce(r.stages, d.stages) as stages,
+      coalesce(r.name, d.name) as name, coalesce(r.rel_version, d.source_rel_version) as rel_version, coalesce(r.stages, d.stages) as stages,
       case when r.def_id is null then d.slot_body else r.slot_body end as slot_body
     from hub.process_tenant_defs a join hub.process_defs d on d.id = a.def_id and d.deleted_at is null
     left join hub.process_def_releases r on r.def_id = d.id and r.rel_version = d.published_version
     where a.tenant_id = ${w.tenantId} and a.slot = ${w.slot} and a.def_id = ${w.defId}
-      and (r.def_id is not null or ${w.draft})`);
+      and (r.def_id is not null or d.source_rel_version is not null or ${w.draft})`);
   return r ?? null;
 }
 

@@ -251,8 +251,9 @@ export async function inboxOf(
     tx.execute<{ approver: boolean }>(sql`
       with rs as (${RESOLVE_SLOT_SQL(u.tenantId, slot)})
       select exists (select 1 from rs
-          join hub.process_def_releases rel on rel.def_id = rs.def_id and rel.rel_version = rs.rel_version
-          cross join lateral jsonb_array_elements(rel.stages) sg
+          join hub.process_defs pd on pd.id = rs.def_id
+          left join hub.process_def_releases rel on rel.def_id = rs.def_id and rel.rel_version = rs.rel_version
+          cross join lateral jsonb_array_elements(coalesce(rel.stages, pd.stages)) sg
           where sg->'after'->>'kind' = 'review'
             and (sg->'after'->>'group_id' = any(${groups}::text[])
               or sg->'after'->>'approver_user_id' = ${u.userId}
