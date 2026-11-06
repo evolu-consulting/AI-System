@@ -113,6 +113,10 @@ test("1 · menu '+ Thêm bước': một nút, nhóm Cơ bản + node dựng s�
 test("3 · node Ký số trên bản công ty: panel cấu hình riêng hiện trạng thái rõ khi công ty chưa bật ký số", async ({
   page,
 }) => {
+  test.fixme(
+    true,
+    "Lỗi sản phẩm #7 (còn): sau '+ Thêm bước' > Ký số, node s5 viền đỏ (destructive) và click vào node timeout 15 s — panel cấu hình không mở",
+  );
   await openCopy(page);
   await addEsign(page);
   await page

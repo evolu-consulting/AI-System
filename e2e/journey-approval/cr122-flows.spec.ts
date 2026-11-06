@@ -82,7 +82,11 @@ async function submit(
   const emp = await ctxPage(browser);
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, `${RUN}${tag}`, M150);
-  await emp.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  // Bấm lại tới khi bản nháp được xác nhận thật (form còn dựng lại khi AI điền xong ⇒ lần bấm đầu có thể mất)
+  await expect(async () => {
+    await emp.getByRole("button", { name: "Xác nhận và lưu" }).click({ timeout: 5_000 });
+    await expect(emp.getByText("Bản nháp chỉ bạn thấy")).toHaveCount(0, { timeout: 10_000 });
+  }).toPass({ timeout: 60_000 });
   return { emp, id };
 }
 const isOpen = (page: Page, name: string) =>
