@@ -32,8 +32,8 @@ Trạng thái gộp: chưa gộp
 Sau khi người dùng xác nhận, thẻ duyệt tự cập nhật tới khi quy trình mở và hiện bước duyệt đang mở; trang không còn gợi ý "bản nháp"
 khi hợp đồng đã gửi đi.
 - Kịch bản: vừa xác nhận, quy trình đang mở ⇒ thẻ tiếp tục tải lại [test: apps/workspace-web/src/features/contract-approval/lib/engine-card.flow.test.ts » chưa run, chưa bước, không attention ⇒ vẫn tải lại (đang mở quy trình)]
-- Kịch bản: bước duyệt đã mở ⇒ thôi tải lại [test: apps/workspace-web/src/features/contract-approval/lib/engine-card.flow.test.ts » run đã gắn, bước kế đang chờ ⇒ tải lại; bước mở ⇒ thôi]
-- Kịch bản: đã gửi ⇒ không còn là bản nháp [test: apps/workspace-web/src/features/contract-approval/lib/engine-card.flow.test.ts » đã gửi (engine, bước soạn không mở) ⇒ hết là bản nháp; bước soạn s0 mở / máy cũ ⇒ còn nháp]
+- Kịch bản: bước duyệt đã mở ⇒ thôi tải lại [test: apps/workspace-web/src/features/contract-approval/lib/engine-card.flow.test.ts » run đã gắn, bước kế đang chờ ⇒ tải lại, bước mở ⇒ thôi]
+- Kịch bản: đã gửi ⇒ không còn là bản nháp [test: apps/workspace-web/src/features/contract-approval/lib/engine-card.flow.test.ts » đã gửi (engine, bước soạn không mở) ⇒ hết là bản nháp, bước soạn s0 mở / máy cũ ⇒ còn nháp]
 
 ## Việc còn lại
 - [ ] qc chạy lại e2e journey G1.2 (một lần) sau gộp.

@@ -29,7 +29,7 @@ describe("P11e · thẻ sau 'Xác nhận và lưu' khi bật flow theo sự ki�
   test("chưa run, chưa bước, không attention ⇒ vẫn tải lại (đang mở quy trình)", () => {
     expect(engineAdvancing(card({}))).toBe(true);
   });
-  test("run đã gắn, bước kế đang chờ ⇒ tải lại; bước mở ⇒ thôi", () => {
+  test("run đã gắn, bước kế đang chờ ⇒ tải lại, bước mở ⇒ thôi", () => {
     expect(engineAdvancing(card({ engine_run_id: "r1", steps: [step(0, "running")] }))).toBe(true);
     expect(engineAdvancing(card({ engine_run_id: "r1", steps: [step(1, "open")] }))).toBe(false);
   });
@@ -40,7 +40,7 @@ describe("P11e · thẻ sau 'Xác nhận và lưu' khi bật flow theo sự ki�
       ),
     ).toBe(false);
   });
-  test("đã gửi (engine, bước soạn không mở) ⇒ hết là bản nháp; bước soạn s0 mở / máy cũ ⇒ còn nháp", () => {
+  test("đã gửi (engine, bước soạn không mở) ⇒ hết là bản nháp, bước soạn s0 mở / máy cũ ⇒ còn nháp", () => {
     expect(submittedForReview(card({}))).toBe(true);
     expect(submittedForReview(card({ steps: [step(0, "open")] }))).toBe(false);
     expect(submittedForReview(card({ mode: "machine" } as never))).toBe(false);
