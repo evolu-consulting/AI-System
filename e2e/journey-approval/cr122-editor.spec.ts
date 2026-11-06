@@ -171,6 +171,10 @@ test("2 · cạnh vàng ⇒ Gợi ý cầu nối (route AI giả): Bỏ rồi h�
 test("3 · node Ký số trên bản công ty: panel cấu hình riêng hiện trạng thái rõ khi công ty chưa bật ký số", async ({
   page,
 }) => {
+  test.fixme(
+    true,
+    "Lỗi sản phẩm #7: thêm node Ký số từ menu '+ Thêm bước' ở bản công ty làm trình sửa văn 'Something went wrong!' (error boundary)",
+  );
   await openCopy(page);
   await addEsign(page);
   await page

@@ -116,7 +116,6 @@ test.beforeAll(async () => {
     app: "contracts",
     trigger: { event: "contract.submitted" },
     stages: stages(),
-    withGroupKeys: true,
   });
   tenantId = await enableFlowTriggers(E.tenantKey);
 });
