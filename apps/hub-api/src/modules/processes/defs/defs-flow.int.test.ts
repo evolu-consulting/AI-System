@@ -24,6 +24,7 @@ let o: Sql;
 let db: Db;
 let app: Hono<AuthVars>;
 let id = "";
+let contractsOff = false; // N2 · tắt tính năng `contracts-write` của công ty giữa chừng (đường chạy tay)
 
 async function call(method: string, path: string, body?: unknown) {
   const r = await app.request(path, {
@@ -100,7 +101,7 @@ beforeAll(async () => {
         { id: "f1", key: "contracts-write", status: "on" },
         { id: "f2", key: "community-write", status: "on" },
       ],
-      entitled: new Set([`${X}:f1`]),
+      entitled: new Set(contractsOff ? [] : [`${X}:f1`]),
       grantGroups: new Map(),
     }),
     user: async () => undefined,
@@ -170,5 +171,88 @@ describe("CR-122 E1 · lưu def có trigger", () => {
     const on = await call("PUT", `/process-defs/${id}`, withNode("contracts.esign"));
     expect(on.status).toBe(200);
     expect(on.json.stages[0].node).toBe("contracts.esign");
+  });
+});
+
+/** Stage `set` chỉ có một field `fkey` (ghi hằng) — đủ để làm "bước trước có trường fkey". */
+const withField = (key: string, step: number, fkey: string, ftype: string, extra: object = {}) =>
+  stage(key, step, {
+    executor: {
+      kind: "set",
+      values: [{ key: fkey, from: { const: ftype === "date" ? "2026-01-01" : "1" } }],
+    },
+    output: {
+      filename: `${key}.md`,
+      template: "# x",
+      required_sections: ["x"],
+      fields: [{ key: fkey, type: ftype, required: false }],
+    },
+    ...extra,
+  });
+const edgeBody = (version: number, fkey: string, ftype: string, node: string) => ({
+  ...body({
+    stages: [
+      withField("dau", 0, fkey, ftype),
+      stage("giua", 1, { node }),
+      stage("xong", 2, { outcome: "approved" }),
+    ],
+  }),
+  version,
+});
+
+describe("CR-122 N2 · cạnh lệch giao diện + chạy tay", () => {
+  it("thiếu trường BẮT BUỘC ⇒ 422 FLOW_EDGE_MISSING nêu cạnh + trường, không ghi, đủ trường ⇒ lưu, không warnings", async () => {
+    const cur = await call("GET", `/process-defs/${id}`);
+    const bad = await call(
+      "PUT",
+      `/process-defs/${id}`,
+      edgeBody(cur.json.version, "x", "string", "contracts.esign"),
+    );
+    expect([bad.status, bad.json.error?.code ?? bad.json.code]).toEqual([422, "FLOW_EDGE_MISSING"]);
+    expect(JSON.stringify(bad.json)).toContain("contract_id");
+    expect((await call("GET", `/process-defs/${id}`)).json.version).toBe(cur.json.version);
+    const ok = await call(
+      "PUT",
+      `/process-defs/${id}`,
+      edgeBody(cur.json.version, "contract_id", "string", "contracts.esign"),
+    );
+    expect(ok.status).toBe(200);
+    expect(ok.json.warnings).toBeUndefined();
+  });
+
+  it("sai kiểu (field `date` là chuỗi, Hẹn giờ cần date) ⇒ vẫn lưu, response có warnings", async () => {
+    const cur = await call("GET", `/process-defs/${id}`);
+    const r = await call(
+      "PUT",
+      `/process-defs/${id}`,
+      edgeBody(cur.json.version, "date", "string", "core.wait-until"),
+    );
+    expect(r.status).toBe(200);
+    expect(r.json.warnings).toEqual([
+      {
+        from: "dau",
+        to: "giua",
+        missing: [],
+        typeMismatch: [{ key: "date", expected: "date", got: "string" }],
+      },
+    ]);
+  });
+
+  it("chạy tay: node của tính năng đã tắt ⇒ 422 FLOW_NODE_FEATURE_OFF, không mở lượt", async () => {
+    const cur = await call("GET", `/process-defs/${id}`);
+    const saved = await call(
+      "PUT",
+      `/process-defs/${id}`,
+      edgeBody(cur.json.version, "contract_id", "string", "contracts.esign"),
+    );
+    expect(saved.status).toBe(200);
+    contractsOff = true;
+    try {
+      const r = await call("POST", `/process-defs/${id}/run`, { input: "x" });
+      expect([r.status, r.json.error?.code ?? r.json.code]).toEqual([422, "FLOW_NODE_FEATURE_OFF"]);
+      expect(JSON.stringify(r.json)).toContain("contracts-write");
+    } finally {
+      contractsOff = false;
+    }
   });
 });

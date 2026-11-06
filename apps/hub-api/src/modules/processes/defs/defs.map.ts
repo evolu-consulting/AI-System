@@ -21,6 +21,7 @@ const MESSAGES: Record<HubAdminProcessErrorCode, string> = {
   PROCESS_REF_INVALID: "Process definition references an unavailable item",
   TEMPLATE_READ_ONLY: "Templates are read-only",
   FLOW_NODE_FEATURE_OFF: "A node uses a feature that is turned off for this company",
+  FLOW_EDGE_MISSING: "A step needs fields that the previous step does not provide",
 };
 
 export function defError(code: HubAdminProcessErrorCode, details?: unknown): AppError {

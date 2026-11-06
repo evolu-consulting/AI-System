@@ -3,6 +3,7 @@
 import type { ProcessRunSummary } from "@ai/contracts/chat";
 import type { ProcessInputValue } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
+import type { AgentCaller } from "../../../lib/ai-client/agent-call";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { Db } from "../../../lib/db";
 import type { Logger } from "../../../lib/logger";
@@ -128,6 +129,8 @@ export type ProcessDeps = {
    * factory). Vắng ⇒ stage tool chạy `stageDriver` (không có agent ⇒ `agent_failed`).
    */
   toolDriver?: (link: { runId: string; stageRunId: string; tenantId: string }) => RunDriver;
+  /** CR-122 · N2 · agent Hub `flow-bridge` (AI client chung) cho "Gợi ý cầu nối"; vắng ⇒ gợi ý trả `ok:false` (chưa nối AI). */
+  bridgeAgent?: Pick<AgentCaller, "call">;
 };
 
 /**

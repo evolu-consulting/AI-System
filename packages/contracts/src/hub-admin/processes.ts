@@ -94,6 +94,7 @@ export const HUB_ADMIN_PROCESS_ERRORS = {
   PROCESS_REF_INVALID: 422,
   TEMPLATE_READ_ONLY: 403,
   FLOW_NODE_FEATURE_OFF: 422, // CR-122 · FR-25 · node của tính năng đã tắt cho công ty
+  FLOW_EDGE_MISSING: 422, // CR-122 · N2 · FR-26 · bước sau thiếu trường BẮT BUỘC mà bước trước không có (`details.edges`)
 } as const;
 export type HubAdminProcessErrorCode = keyof typeof HUB_ADMIN_PROCESS_ERRORS;
 export const PROCESS_DEF_PATHS_MAX = 20;
@@ -107,7 +108,6 @@ export const ProcessRefInvalidDetailsSchema = z.strictObject({
   path: z.string().min(1),
   ref: z.enum(PROCESS_REF_KINDS),
 });
-
 export const STAGE_INSTRUCTION_MAX = 4_000;
 export const STAGE_TEMPLATE_MAX = 20_000;
 export const STAGE_SECTIONS_MAX = 20;

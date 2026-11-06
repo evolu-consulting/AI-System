@@ -27,6 +27,7 @@ export const AI_FEATURES = [
   "contracts.partner-search",
   "contracts.price_search",
   "contracts.price_scout",
+  "flow.bridge", // CR-122 · N2 · gợi ý cầu nối giữa hai node (agent Hub `flow-bridge`)
 ] as const;
 
 type Env = Record<string, string | undefined>;

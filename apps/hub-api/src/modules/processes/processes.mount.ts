@@ -17,6 +17,7 @@ import { toolDriverFactory } from "./adapters/tools/tool-driver";
 import { toolStageRepo } from "./adapters/tools/tool-stage.repo";
 import type { UnitOfWork } from "./application/ports";
 import { asksRoutes } from "./asks/asks.routes";
+import { bridgeRoutes } from "./bridge/bridge.routes";
 import { type Clock, clockOf } from "./core/clock";
 import type { ProcessHandles } from "./core/handles";
 import type { ProcessBgDeps, ProcessDeps, ProcessStartPort, StageLauncher } from "./core/ports";
@@ -162,6 +163,7 @@ const ADMIN_ROUTES = [
   libraryRoutes,
   companyFlowsRoutes,
   paletteRoutes,
+  bridgeRoutes,
 ];
 const ALL_ROUTES = [
   processRunsRoutes,
@@ -173,6 +175,7 @@ const ALL_ROUTES = [
   libraryRoutes, // CR-105 · L2a
   companyFlowsRoutes, // CR-122 · E1b
   paletteRoutes, // CR-122 · N1
+  bridgeRoutes, // CR-122 · N2
 ];
 
 /** CR-103 · `admin`: chặn role ở GỐC mọi tiền tố quy trình (JWT role, không dựa `X-App` do client đặt) ⇒ member 403. */

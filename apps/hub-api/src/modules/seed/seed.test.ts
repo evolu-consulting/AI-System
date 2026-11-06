@@ -57,11 +57,12 @@ describe("HUB-FR-60 · seed yaml mặc định", () => {
       "price-scout",
       "community-screen",
       "community-triage",
+      "flow-bridge",
       "mgmt-assistant-dify",
       "dify-tom",
       "dify-tro-ly",
     ]);
-    expect(p.agents).toHaveLength(8); // + price-scout, CR-120 community-screen/triage
+    expect(p.agents).toHaveLength(9); // + price-scout, CR-120 community-screen/triage, CR-122 flow-bridge
     expect(p.agents.every((a) => a.profile === "fake-1")).toBe(true);
     expect(p.orchestrator).toMatchObject({ agent: "orchestrator", token_budget: 200_000 });
     // grant assistant × acme/beta (access.yaml) vẫn ở seed tối giản.
@@ -102,18 +103,19 @@ describe("HUB-FR-60 · seed yaml mặc định (trợ lý chat)", () => {
 describe("HUB-FR-60 · seed yaml mặc định (fixtures)", () => {
   it("HUB-FR-60 · CR-081 · HUB_SEED_FIXTURES ⇒ nạp thêm processes.full.yaml: 20 agent", () => {
     const p = buildSeedPlan(full(), { appEnv: "development" });
-    expect(p.agents.slice(0, 8).map((a) => a.key)).toEqual([
+    expect(p.agents.slice(0, 9).map((a) => a.key)).toEqual([
       "orchestrator",
       "assistant",
       "price-scout",
       "community-screen",
       "community-triage",
+      "flow-bridge",
       "mgmt-assistant-dify",
       "dify-tom",
       "dify-tro-ly",
     ]);
     // + hoa-don-doc + 8 agent vai + 4 agent nhóm BA + 3 agent fixbug (P-c1 B6) — mọi agent fake-1 ở development.
-    expect(p.agents).toHaveLength(24);
+    expect(p.agents).toHaveLength(25);
     expect(p.agents.every((a) => a.profile === "fake-1")).toBe(true);
   });
 });

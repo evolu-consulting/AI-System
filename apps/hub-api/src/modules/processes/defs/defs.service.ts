@@ -5,10 +5,12 @@
 import type {
   AgentTeamListResponse,
   CopyProcessDefRequest,
+  FlowEdgeIssue,
   ProcessDef,
   ProcessDefInput,
   ProcessDefListQuery,
   ProcessDefListResponse,
+  ProcessDefSaved,
   ProcessEditorContext,
   ProcessInputValue,
   ProcessRunSummary,
@@ -54,6 +56,7 @@ import {
   toTeams,
 } from "./defs.map";
 import * as repo from "./defs.repo";
+import { edgeCheck, withWarnings } from "./edge-check";
 import { flowDefPaths } from "./flow-def.rules";
 import { nodeFeatureError, nodeFeatureMiss } from "./node-features";
 import { listTeams, loadDefRefs } from "./teams.repo";
@@ -252,11 +255,13 @@ export class DefsService {
     return { input: d.input, slot: null, body: d.body };
   }
 
-  async create(u: AuthUser, s: Scope, raw: ProcessDefInput): Promise<ProcessDef> {
+  async create(u: AuthUser, s: Scope, raw: ProcessDefInput): Promise<ProcessDefSaved> {
+    let warnings: FlowEdgeIssue[] = [];
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
       const { input, slot, body } = this.#draft(u, s.tenantId, raw, null);
       flowCheck(input, s.tenantId, null);
       await nodeCheck(this.d, s.tenantId, input);
+      warnings = await edgeCheck(this.d, s.tenantId, input);
       await this.#check(tx, s.tenantId, input, slot !== null);
       await this.#keyFree(tx, s.tenantId, input.key);
       const row = await repo.insertDef(tx, {
@@ -273,7 +278,7 @@ export class DefsService {
         audit: audit({ action: "create", row, before: null, after: auditSnapshot(row) }),
       };
     });
-    return toProcessDef(result);
+    return withWarnings(toProcessDef(result), warnings);
   }
 
   async update(
@@ -281,8 +286,9 @@ export class DefsService {
     s: Scope,
     id: string,
     b: ProcessDefInput & { version: number },
-  ): Promise<ProcessDef> {
+  ): Promise<ProcessDefSaved> {
     const { version, ...raw } = b;
+    let warnings: FlowEdgeIssue[] = [];
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
       const cur = await this.#lock(tx, u, { s, id, version });
       const copy = await this.#companyCopyDraft(tx, cur, raw);
@@ -290,6 +296,7 @@ export class DefsService {
       await guardInUse(tx, cur, { key: input.key, slot, enabled: input.enabled });
       flowCheck(input, cur.tenant_id, cur);
       await nodeCheck(this.d, cur.tenant_id, input);
+      warnings = await edgeCheck(this.d, cur.tenant_id, input);
       // bản riêng sao từ thư viện: stage dùng khoá nhóm/tool của khe (không phải id nhóm) ⇒ kiểm tham chiếu như def thư viện
       await this.#check(tx, cur.tenant_id, input, slot !== null || copy !== null);
       await this.#keyFree(tx, cur.tenant_id, input.key, id);
@@ -309,7 +316,7 @@ export class DefsService {
       };
       return { result: row, audit: audit(a) };
     });
-    return toProcessDef(result);
+    return withWarnings(toProcessDef(result), warnings);
   }
 
   async remove(u: AuthUser, s: Scope, id: string, version: number): Promise<void> {
@@ -362,6 +369,15 @@ export class DefsService {
     const def = await this.#read((tx) => repo.readDef(tx, s, id));
     if (!def || def.tenant_id === null || !def.enabled)
       throw processError("PROCESS_NOT_FOUND", { suggestions: [] });
+    // CR-122 · N2 · như đường mở lượt từ sự kiện (`flow-launch`): node của tính năng đã tắt ⇒ 422 `FLOW_NODE_FEATURE_OFF`, không mở lượt.
+    if (this.d.config) {
+      const miss = await nodeFeatureMiss(
+        this.d.config,
+        def.tenant_id,
+        def.stages.map((x) => x.node),
+      );
+      if (miss) throw nodeFeatureError(miss);
+    }
     return this.d.start.fromAdmin(u, def.id, input, inputs, test);
   }
 }
