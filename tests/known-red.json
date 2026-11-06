@@ -1,3 +1,20 @@
 {
-  "entries": []
+  "entries": [
+    {
+      "id": "m4-audit.spec.ts",
+      "suite": "e2e:root",
+      "reason": "Chập chờn khi máy evotest tải cao ('Tải thêm' > 50 dòng); chạy riêng xanh 7/7 (2026-11-06, 3 lần trong wave CR-121 C). Cần lát sửa cho ổn định.",
+      "owner": "điều phối CR-121",
+      "expires": "2026-11-13",
+      "since": "2026-11-06"
+    },
+    {
+      "id": "m3-flow.spec.ts",
+      "suite": "e2e:root",
+      "reason": "Chập chờn trong wave (xung đột hai admin sửa /dich); chạy riêng xanh 3/3 (2026-11-06). Cần lát sửa cho ổn định.",
+      "owner": "điều phối CR-121",
+      "expires": "2026-11-13",
+      "since": "2026-11-06"
+    }
+  ]
 }
