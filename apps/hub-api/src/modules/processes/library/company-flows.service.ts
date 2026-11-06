@@ -103,7 +103,9 @@ export class CompanyFlowsService {
 
   setEnabled(u: AuthUser, tid: string, id: string, enabled: boolean) {
     return this.#tx(u, tid, async (tx) => {
-      const row = await this.#locked(tx, tid, id);
+      const row = enabled
+        ? await this.#lockPairForEnable(tx, tid, id)
+        : await this.#locked(tx, tid, id);
       if (!enabled) await this.#guardRequired(tx, tid, row);
       await r.setFlowState(tx, {
         tid,
@@ -151,7 +153,7 @@ export class CompanyFlowsService {
       const keys = groupKeysOf(def.stages);
       const gs = keys.length
         ? await tx.execute<{ id: string; key: string }>(sql`select id, key from admin.groups
-            where tenant_id = ${tid}::uuid and key = any(${`{${keys.join(",")}}`}::text[])`)
+            where tenant_id = ${tid}::uuid and key in (select jsonb_array_elements_text(${JSON.stringify(keys)}::jsonb))`)
         : [];
       const b = bindGroupKeys(def.stages, new Map(gs.map((g) => [g.key, g.id])));
       if (b.missing.length)
@@ -237,6 +239,38 @@ export class CompanyFlowsService {
       });
       return this.#list(tx, tid);
     });
+  }
+
+  /**
+   * Soát E1b B1 · bật một dòng: bản sao "chưa xuất bản" phải qua Xuất bản; bản gốc và bản sao không bao giờ cùng Bật. Khoá theo thứ
+   * tự CỐ ĐỊNH bản sao trước, gốc sau (như publish/revert) rồi mới kiểm bản đối ứng đang Tắt — không đua, không deadlock.
+   */
+  async #lockPairForEnable(tx: Tx, tid: string, id: string): Promise<r.CfRow> {
+    const peek = await r.lockCompanyFlow(tx, tid, id, false);
+    if (!peek) throw appError("NOT_FOUND");
+    const isCopy = peek.def_tenant_id !== null;
+    const other = isCopy
+      ? await r.originalRowOf(tx, tid, peek.flow_id)
+      : await r.copyRowOf(tx, tid, peek.flow_id);
+    const [copyId, origId] = isCopy ? [id, other] : [other, id];
+    const locked = new Map<string, r.CfRow>();
+    for (const x of [copyId, origId]) if (x) locked.set(x, await this.#locked(tx, tid, x));
+    const row = locked.get(id) as r.CfRow;
+    if (row.off_reason === "not_published")
+      throw err(
+        "FLOW_NOT_PUBLISHED",
+        409,
+        "Bản công ty chưa xuất bản. Bấm Xuất bản để dùng bản này thay bản gốc.",
+      );
+    if (other && locked.get(other)?.enabled)
+      throw err(
+        "FLOW_PAIR_ACTIVE",
+        409,
+        isCopy
+          ? "Bản gốc đang bật. Dùng Xuất bản để thay bản gốc bằng bản công ty."
+          : "Bản công ty đang bật thay bản gốc. Dùng Quay về bản gốc để bật lại bản gốc.",
+      );
+    return row;
   }
 
   async #guardRequired(tx: Tx, tid: string, row: r.CfRow): Promise<void> {

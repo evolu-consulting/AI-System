@@ -40,9 +40,14 @@ export async function listCompanyFlows(tx: Tx, tid: string): Promise<CfRow[]> {
     where cf.tenant_id = ${tid}::uuid and d.deleted_at is null order by cf.position, cf.id limit 200`);
 }
 
-export async function lockCompanyFlow(tx: Tx, tid: string, id: string): Promise<CfRow | null> {
+export async function lockCompanyFlow(
+  tx: Tx,
+  tid: string,
+  id: string,
+  lock = true,
+): Promise<CfRow | null> {
   const [r] = await tx.execute<CfRow>(sql`select ${COLS} ${FROM}
-    where cf.tenant_id = ${tid}::uuid and cf.id = ${id}::uuid for update of cf`);
+    where cf.tenant_id = ${tid}::uuid and cf.id = ${id}::uuid ${lock ? sql`for update of cf` : sql``}`);
   return r ?? null;
 }
 

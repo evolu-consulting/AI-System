@@ -39,7 +39,7 @@ async function libraryDefFor(
       keys.length === 0
         ? []
         : await tx.execute<{ id: string; key: string }>(sql`select id, key from admin.groups
-            where tenant_id = ${e.tenant_id}::uuid and key = any(${`{${keys.join(",")}}`}::text[])`);
+            where tenant_id = ${e.tenant_id}::uuid and key in (select jsonb_array_elements_text(${JSON.stringify(keys)}::jsonb))`);
     return { def, ids: new Map(rows.map((r) => [r.key, r.id])) };
   });
   if (!out) throw new FlowLaunchRefused("library_not_published");

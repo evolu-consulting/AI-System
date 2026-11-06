@@ -187,6 +187,33 @@ describe("CR-122 E1b · company-flows", () => {
     expect(orig?.id).toBeTruthy();
   });
 
+  it("soát B1: bản gốc và bản sao không cùng Bật qua PATCH, bản chưa xuất bản không PATCH bật được", async () => {
+    const code = (j: Json) => j.error?.code ?? j.code;
+    let l = await call("A", "GET", P(X));
+    const orig = rowOf(l.json, lib);
+    const copy = (l.json.items as Json[]).find(
+      (x) => x.kind === "company" && x.source?.flow_key === "e1b-duyet",
+    );
+    // sau revert: gốc Bật, bản sao Tắt ⇒ bật bản sao bằng PATCH bị chặn
+    const a = await call("A", "PATCH", `${P(X)}/${copy?.id}`, { enabled: true });
+    expect([a.status, code(a.json)]).toEqual([409, "FLOW_PAIR_ACTIVE"]);
+    // xuất bản bản sao (gốc Tắt) rồi PATCH bật lại gốc ⇒ chặn
+    await call("A", "POST", `${P(X)}/${copy?.id}/publish`);
+    const b = await call("A", "PATCH", `${P(X)}/${orig?.id}`, { enabled: true });
+    expect([b.status, code(b.json)]).toEqual([409, "FLOW_PAIR_ACTIVE"]);
+    l = await call("A", "GET", P(X));
+    expect([rowOf(l.json, lib)?.enabled, rowOf(l.json, copy?.flow_id)?.enabled]).toEqual([
+      false,
+      true,
+    ]);
+    // bản sao mới (chưa xuất bản) của flow có điều kiện ⇒ PATCH bật bị chặn, phải qua Xuất bản
+    const condRow = rowOf(l.json, libCond);
+    const c = await call("A", "POST", `${P(X)}/${condRow?.id}/clone`);
+    const n = await call("A", "PATCH", `${P(X)}/${c.json.id}`, { enabled: true });
+    expect([n.status, code(n.json)]).toEqual([409, "FLOW_NOT_PUBLISHED"]);
+    await call("A", "POST", `${P(X)}/${copy?.id}/revert`); // trả trạng thái cho ca sau
+  });
+
   it("xếp thứ tự: đủ id ⇒ position theo mảng, thiếu/lạ ⇒ 422", async () => {
     const l = await call("A", "GET", P(X));
     const ids = (l.json.items as Json[]).map((x) => x.id).reverse();
