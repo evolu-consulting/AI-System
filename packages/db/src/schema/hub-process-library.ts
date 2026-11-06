@@ -87,6 +87,43 @@ export const processRoutingRules = hub.table("process_routing_rules", {
   source: text("source").$type<"admin" | "auto">().notNull().default("admin"),
 });
 
+/** CR-122 · E1 · hàng đợi sự kiện app (`(tenant_id, event_id)` duy nhất). DDL/CHECK/RLS: `0105_flow_events.sql`. */
+export const flowEvents = hub.table("flow_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull(),
+  eventId: text("event_id").notNull(),
+  event: text("event").notNull(),
+  ref: text("ref").notNull(),
+  facts: jsonb("facts").$type<Record<string, unknown>>().notNull(),
+  actorId: uuid("actor_id"),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  attempts: integer("attempts").notNull().default(0),
+  nextAt: ts("next_at").notNull().defaultNow(),
+  processedAt: ts("processed_at"),
+  error: text("error"),
+  outcome: jsonb("outcome").$type<Record<string, unknown>>(),
+});
+
+/** CR-122 · E1 · flow của công ty (nguồn duy nhất bật/tắt + thứ tự). DDL/RLS: `0106_company_flows.sql`. */
+export const companyFlows = hub.table("company_flows", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  tenantId: uuid("tenant_id").notNull(),
+  flowId: uuid("flow_id").notNull(),
+  enabled: boolean("enabled").notNull().default(false),
+  position: integer("position").notNull().default(0),
+  replacedBy: uuid("replaced_by"),
+  offReason: text("off_reason").$type<"replaced" | "reverted" | "turned_off" | "not_published">(),
+  updatedBy: uuid("updated_by"),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
+
+/** CR-122 · E1 · cờ `FLOW_TRIGGERS` theo công ty (false = bóng). Chỉ system ghi. */
+export const tenantFlowSettings = hub.table("tenant_flow_settings", {
+  tenantId: uuid("tenant_id").primaryKey(),
+  flowTriggers: boolean("flow_triggers").notNull().default(false),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
+
 /** dlc-step-library · bước DLC mẫu (platform_admin): Canvas khe `dlc.*` chép thành bước. DDL/CHECK/RLS: `0071_dlc_step_templates.sql`. */
 export const dlcStepTemplates = hub.table("dlc_step_templates", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -38,6 +38,8 @@ import { roomStart } from "./runs/room-start";
 import { processRunsRoutes } from "./runs/runs.routes";
 import { startProcessSweeper, sweepOnce } from "./runs/sweeps";
 import { warmBackgroundPool } from "./runs/warm-pool";
+import { startFlowDispatcher } from "./triggers/dispatcher";
+import { flowLaunchOf } from "./triggers/flow-launch";
 import { usageRoutes } from "./usage/usage.routes";
 
 /** Gốc route quy trình cần JWT (`app.ts` gắn `requireAuth`; `/me/*` đã có ở X2a). */
@@ -235,4 +237,6 @@ function startBackground(o: {
   startProcessSweeper(bg, { signal: m.signal });
   // D-PD10 · plan §5 · vòng nhắc + chuyển cấp 300 s (theo tập, `systemBatch`).
   startProcessReminder(bg, { signal: m.signal });
+  // CR-122 · E1 · bộ điều phối sự kiện → lượt (cờ FLOW_TRIGGERS tắt ⇒ chỉ ghi bóng). Test gọi `dispatchOnce` trực tiếp.
+  startFlowDispatcher({ db: bg.db, launch: flowLaunchOf(bg), log: m.log }, { signal: m.signal });
 }

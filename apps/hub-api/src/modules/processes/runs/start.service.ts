@@ -174,6 +174,8 @@ export class StartService {
       deferKick?: boolean;
       /** contract-flow S1a · bản ghi gói của run — CHỈ `PackRunsPort.start` truyền (route công khai không). */
       packRef?: { pack: string; recordId: string };
+      /** CR-122 · E1 · lượt mở từ sự kiện (bộ điều phối): ghi cùng tx tạo run; unique (sự kiện × flow) ⇒ 23505 khi mở lại. */
+      flowEvent?: { eventRowId: string; companyFlowId: string };
     } = {},
   ): Promise<ProcessRunSummary> {
     const me = meOf(u);
@@ -198,6 +200,9 @@ export class StartService {
         if (o.packRef)
           await tx.execute(sql`update hub.process_runs set pack_key = ${o.packRef.pack},
             pack_record_id = ${o.packRef.recordId} where id = ${r.runId} and tenant_id = ${u.tenantId}`);
+        if (o.flowEvent)
+          await tx.execute(sql`update hub.process_runs set flow_event_id = ${o.flowEvent.eventRowId}::uuid,
+            company_flow_id = ${o.flowEvent.companyFlowId}::uuid where id = ${r.runId} and tenant_id = ${u.tenantId}`);
         if (origin.originKind === "room") await this.#enqueueBlock(tx, r.runId, def);
         const row = await repo.loadSummary(tx, u.tenantId, r.runId);
         return {
