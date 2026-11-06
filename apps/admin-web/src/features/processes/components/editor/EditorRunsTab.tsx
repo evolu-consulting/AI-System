@@ -8,7 +8,7 @@ import { type Column, DataTable } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { formatClock } from "@/lib/format";
 import { useTenantRuns } from "../../hooks/use-run-data";
-import { recordLabelOf } from "../../lib/company-copy";
+import { recordLabelText } from "../../lib/run-label";
 import { runStageNote } from "../../lib/run-stage-note";
 import { runSummaryBadgeStatus } from "../../lib/stage-label";
 import { RunStatusBadge } from "../run/RunStatusBadge";
@@ -48,7 +48,7 @@ export function runColumns(t: TFunction): Column<ProcessRunListResponse["items"]
       ),
     },
     // c11b: nhãn hồ sơ nghiệp vụ (mã HĐ thật), cùng schema danh sách `GET /process-runs`; lượt không gắn hồ sơ ⇒ "—"
-    { id: "record", header: L("record"), cell: (r) => recordLabelOf(r) },
+    { id: "record", header: L("record"), cell: (r) => recordLabelText(r) },
     { id: "starter", header: L("starter"), cell: (r) => r.started_by.display_name },
     {
       id: "status",

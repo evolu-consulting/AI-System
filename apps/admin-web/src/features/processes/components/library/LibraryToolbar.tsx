@@ -1,17 +1,18 @@
 // CR-105 · thanh trên của editor quy trình thư viện (UX): trạng thái (Nháp / vN), "Xuất bản" là nút chính, "Gán cho tenant",
 // "Xem trước đường đi"; Lịch sử · Nhân bản · Đặt mặc định là nút phụ. "Lưu nháp" nằm ở thanh lưu bên dưới — tách khỏi "Xuất bản".
-import { Copy, History, Route, Upload, Users } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Copy, History, Route, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { isDlcSlotKey } from "../../lib/dlc-slot";
 import { statusOf } from "../../lib/library-list";
-import { canAssign, canSetDefault, publishState } from "../../lib/library-view";
+import { canSetDefault, publishState } from "../../lib/library-view";
 import { nextVersion } from "../../lib/step-limit";
 import type { LibraryDef } from "../../library-api";
 
 export type EditorMode = "canvas" | "form";
-export type LibraryAction = "publish" | "releases" | "assign" | "preview" | "default" | "clone";
+export type LibraryAction = "publish" | "releases" | "preview" | "default" | "clone";
 type Props = {
   def: LibraryDef;
   mode: EditorMode;
@@ -69,6 +70,13 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
         <span className="text-caption text-muted-foreground">
           {L("usedFor", { slot: def.slot_label ?? def.slot ?? "" })} · {usedByText(def, L)}
         </span>
+        {/* Một chỗ gán duy nhất: Công ty › Quy trình (Luật gốc 2) — thư viện không gán trực tiếp */}
+        <span className="text-caption text-muted-foreground" data-testid="assign-where">
+          {L("assign.where")}{" "}
+          <Link to="/tenants" className="text-primary underline-offset-4 hover:underline">
+            {L("assign.openCompanies")}
+          </Link>
+        </span>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button
             type="button"
@@ -78,16 +86,6 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
           >
             <Upload aria-hidden className={ic} />
             {L("publish.buttonNext", { v: nextVersion(def.published_version) })}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!canAssign(def)}
-            title={canAssign(def) ? undefined : L("assign.needPublish")}
-            onClick={() => onAction("assign")}
-          >
-            <Users aria-hidden className={ic} />
-            {L("assign.button")}
           </Button>
           <Button
             type="button"

@@ -14,7 +14,6 @@ import type { PublishIssue } from "../../lib/publish-issues";
 import { editorModeOf, viewModeOf } from "../../lib/step-limit";
 import { readViewMode, writeViewMode } from "../../lib/view-mode";
 import { type LibraryDef, setSlotDefault, useLibraryRefresh, useSlots } from "../../library-api";
-import { AssignTenantsDialog } from "./AssignTenantsDialog";
 import { CloneDialog } from "./CloneDialog";
 import { FlowFormEditor } from "./FlowFormEditor";
 import { type EditorMode, type LibraryAction, LibraryToolbar } from "./LibraryToolbar";
@@ -110,7 +109,6 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
         onIssues={setPubIssues}
       />
       <ReleasesDialog def={def} open={action === "releases"} onClose={close} />
-      <AssignTenantsDialog def={def} open={action === "assign"} onClose={close} />
       <PreviewDialog def={def} open={action === "preview"} onClose={close} />
       <ConfirmDialog
         open={action === "default"}

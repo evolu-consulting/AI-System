@@ -31,24 +31,9 @@ export function publishState(d: Pick<LibraryDef, "slot" | "published_version">):
   return d.published_version == null ? "draft" : "published";
 }
 
-/** Chỉ quy trình đã xuất bản mới đặt mặc định / gán được; mặc định hiện tại thì không đặt lại. */
+/** Chỉ quy trình đã xuất bản mới đặt mặc định được; mặc định hiện tại thì không đặt lại. */
 export const canSetDefault = (d: Pick<LibraryDef, "slot" | "published_version" | "is_default">) =>
   publishState(d) === "published" && d.is_default !== true;
-export const canAssign = (d: Pick<LibraryDef, "slot" | "published_version">) =>
-  publishState(d) === "published";
-
-/** Kế hoạch gán cho một quy trình: tenant mới chọn ⇒ gán (PUT), tenant bỏ chọn ⇒ về mặc định (DELETE). */
-export function assignPlan(
-  current: readonly string[],
-  selected: readonly string[],
-): { add: string[]; remove: string[] } {
-  const cur = new Set(current);
-  const sel = new Set(selected);
-  return {
-    add: [...sel].filter((id) => !cur.has(id)),
-    remove: [...cur].filter((id) => !sel.has(id)),
-  };
-}
 
 const rec = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 
@@ -69,12 +54,6 @@ export function parseSampleValue(raw: string): number | null | "invalid" {
   const s = raw.replace(/[\s.,]/g, "");
   if (s === "") return null;
   return /^\d{1,15}$/.test(s) ? Number(s) : "invalid";
-}
-
-/** Đếm kết quả `Promise.allSettled` của loạt gán/bỏ gán. */
-export function settledCounts(rs: readonly PromiseSettledResult<unknown>[]) {
-  const failed = rs.filter((r) => r.status === "rejected").length;
-  return { ok: rs.length - failed, failed };
 }
 
 /** Luật của issue xuất bản: `SYSTEM_TOOL_MISSING:<tool>` | `UNREACHABLE_STEP` | luật khác (giữ nguyên). */

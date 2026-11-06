@@ -48,7 +48,6 @@ const url = (path: string): string => {
 };
 const enc = encodeURIComponent;
 const D = (id: string) => `/process-defs/${enc(id)}`;
-const T = (tid: string, slot: string) => `/tenants/${enc(tid)}/process-slots/${enc(slot)}`;
 
 export const LKEYS = {
   slots: ["process", "slots"] as const,
@@ -105,16 +104,7 @@ export const useReleases = (id: string, enabled: boolean) =>
     queryFn: async () => (await api<{ items: ReleaseItem[] }>(url(`${D(id)}/releases`))).items,
   });
 
-export const useAssignments = (id: string, enabled: boolean) =>
-  useQuery({
-    queryKey: LKEYS.assignments(id),
-    enabled: enabled && hubConfigured(),
-    staleTime: 0,
-    queryFn: async () =>
-      (await api<{ items: AssignmentItem[] }>(url(`${D(id)}/assignments`))).items,
-  });
-
-/** CR-118: công ty đang được GÁN của nhiều quy trình một lượt (trang cấu hình app) — cùng khoá cache với `useAssignments`. */
+/** CR-118: công ty đang được GÁN của nhiều quy trình một lượt (trang cấu hình app) — khoá cache `LKEYS.assignments`. */
 export const useAssignmentsOf = (ids: readonly string[], enabled: boolean) =>
   useQueries({
     queries: ids.map((id) => ({
@@ -166,12 +156,6 @@ export const setSlotDefault = (slot: string, defId: string) =>
     method: "PUT",
     body: { def_id: defId },
   });
-
-export const assignTenant = (tenantId: string, slot: string, defId: string) =>
-  api<unknown>(url(T(tenantId, slot)), { method: "PUT", body: { def_id: defId } });
-
-export const unassignTenant = (tenantId: string, slot: string) =>
-  api<undefined>(url(T(tenantId, slot)), { method: "DELETE" });
 
 export const previewDef = (id: string, facts: PreviewFacts) =>
   api<unknown>(url(`${D(id)}/preview`), { method: "POST", body: facts });

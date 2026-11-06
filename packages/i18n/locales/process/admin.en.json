@@ -520,7 +520,7 @@
     "NOT_LIBRARY_DEF": "This process is the company copy, not a shared one. Open it to edit directly.",
     "COPY_SOURCE_REMOVED": "The original library process has been removed. This company copy still runs but cannot be edited. Ask the platform admin to restore the original, or assign another process in Company > Processes.",
     "SLOT_GONE": "The job that used this process no longer exists in the app. Pick another process in Company > Processes.",
-    "SLOT_UNKNOWN": "The process slot does not exist (is the app turned off?)."
+    "SLOT_UNKNOWN": "This kind of job is not available on the system. Turn on the matching app for the company, or ask the platform admin to add it."
   },
   "validate": {
     "nameRequired": "Enter a process name.",
@@ -820,12 +820,8 @@
       "submit": "Duplicate"
     },
     "assign": {
-      "button": "Assign to tenants",
-      "needPublish": "Publish before assigning.",
-      "title": "Assign “{{name}}” to tenants",
-      "body": "{{slot}}: one process per tenant, a new assignment replaces the old one. Unchecking = back to the default process.",
-      "submit": "Save assignments",
-      "done": "Updated assignments for {{n}} tenants"
+      "where": "Companies assign this process on the Company › Processes page.",
+      "openCompanies": "Open the company list"
     },
     "preview": {
       "button": "Preview with a sample contract",

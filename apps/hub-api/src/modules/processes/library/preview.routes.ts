@@ -5,6 +5,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
+import { requireAdminRole } from "../../../lib/admin-role.middleware";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { parseIdParam, parseJson, validationError } from "../../../lib/http";
@@ -38,12 +39,8 @@ const readRow = (d: ProcessDeps, id: string, u: { role: string; tenantId: string
 
 export function previewRoutes(d: ProcessDeps): Hono<AuthVars> {
   const r = new Hono<AuthVars>();
-  // 403 trước parse: member không xem trước được.
-  r.use("/process-defs/:id/preview", async (c, next) => {
-    const role = c.get("user")?.role;
-    if (role !== "platform_admin" && role !== "tenant_admin") throw appError("FORBIDDEN");
-    await next();
-  });
+  // 403 trước parse: member không xem trước được; vai chi tiết (tenant_admin chỉ bản riêng công ty mình) ở `readRow`.
+  r.use("/process-defs/:id/preview", requireAdminRole());
   r.post("/process-defs/:id/preview", async (c) => {
     const id = parseIdParam(c);
     const b = await parseJson(c, PreviewRequestSchema);

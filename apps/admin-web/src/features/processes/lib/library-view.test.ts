@@ -1,7 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import {
-  assignPlan,
-  canAssign,
   canSetDefault,
   deleteLock,
   inUseReason,
@@ -9,7 +7,6 @@ import {
   normalizePreview,
   parseSampleValue,
   publishState,
-  settledCounts,
   tenantUsage,
 } from "./library-view";
 
@@ -41,18 +38,12 @@ describe("library-view", () => {
     });
     expect(tenantUsage({})).toEqual({ count: 0, isDefault: false });
   });
-  test("publishState / canSetDefault / canAssign", () => {
+  test("publishState / canSetDefault", () => {
     expect(publishState({ slot: null, published_version: null })).toBe("none");
     expect(publishState({ slot: "s", published_version: null })).toBe("draft");
     expect(publishState({ slot: "s", published_version: 4 })).toBe("published");
-    expect(canAssign({ slot: "s", published_version: null })).toBe(false);
-    expect(canAssign({ slot: "s", published_version: 1 })).toBe(true);
     expect(canSetDefault({ slot: "s", published_version: 1, is_default: true })).toBe(false);
     expect(canSetDefault({ slot: "s", published_version: 1, is_default: false })).toBe(true);
-  });
-  test("assignPlan: thêm tenant mới, bỏ tenant bỏ chọn", () => {
-    expect(assignPlan(["a", "b"], ["b", "c"])).toEqual({ add: ["c"], remove: ["a"] });
-    expect(assignPlan([], [])).toEqual({ add: [], remove: [] });
   });
   test("normalizePreview chịu hai dạng + thiếu tên", () => {
     const want = [
@@ -80,14 +71,6 @@ describe("library-view", () => {
     expect(parseSampleValue("50.000.000")).toBe(50_000_000);
     expect(parseSampleValue("  ")).toBeNull();
     expect(parseSampleValue("5tr")).toBe("invalid");
-  });
-  test("settledCounts", () => {
-    expect(
-      settledCounts([
-        { status: "fulfilled", value: 1 },
-        { status: "rejected", reason: new Error("x") },
-      ]),
-    ).toEqual({ ok: 1, failed: 1 });
   });
 });
 

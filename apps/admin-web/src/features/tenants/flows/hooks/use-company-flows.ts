@@ -2,7 +2,7 @@
 // Số lần gọi theo SỐ VIỆC đã đăng ký (hằng nhỏ), không theo hàng dữ liệu; lượt đang chạy chỉ gọi khi mở ngăn.
 import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { slotsOfCaps } from "@/features/processes/lib/flows-view";
+import { slotsOfCaps } from "@/features/processes/lib/caps-slots";
 import { useTenantCaps, useTenantRoutings } from "../../api-routing";
 import { defStepsQuery } from "../api";
 import { groupJobs, summaryOf } from "../lib/flow-rows";

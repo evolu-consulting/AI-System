@@ -1,5 +1,5 @@
 // CR-105 · L2a · route thư viện quy trình (readiness Chặn 2: mở rộng `/process-defs…`, không tiền tố `/process-library`) +
-// `/process-slots` + `/tenants/:tid/process-slots…`. MỌI route ở đây chỉ platform_admin: 403 trước parse/đọc DB. Không logic.
+// `/process-slots` + `/tenants/:tid/process-slots…`. Các route quản lý thư viện (`GATED`) chỉ platform_admin: 403 trước parse/đọc DB; ngoại lệ CR-121 c9: `clone-for-company` và đọc chỉ-xem theo công ty dùng `requireAdminRole` (vai chi tiết kiểm ở service). Không logic.
 import {
   AssignSlotRequestSchema,
   CloneForCompanyRequestSchema,
