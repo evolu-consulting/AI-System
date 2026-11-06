@@ -3,6 +3,7 @@
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useSlotRuns } from "../api";
+import { runTitle } from "../lib/run-title";
 
 const WAITING = new Set(["waiting_review", "waiting_answer", "needs_decision", "waiting_timer"]);
 
@@ -24,6 +25,8 @@ export function DrawerRunning({
       dateStyle: "short",
       timeStyle: "short",
     });
+  const title = (r: { record_label?: string | null; started_at: string }) =>
+    runTitle(t, r, jobName, when(r.started_at));
   return (
     <section
       className="space-y-2"
@@ -46,7 +49,12 @@ export function DrawerRunning({
               data-testid={`flows-run-${r.id}`}
             >
               <span className="min-w-0 truncate">
-                {t("tenants.flows.runTitle", { job: jobName, at: when(r.started_at) })}
+                {title(r).primary}
+                {title(r).secondary && (
+                  <span className="block text-caption text-muted-foreground">
+                    {title(r).secondary}
+                  </span>
+                )}
               </span>
               <span className="text-caption text-muted-foreground">
                 {t("tenants.flows.runStep", { n: r.current_step + 1, total: r.step_count })}

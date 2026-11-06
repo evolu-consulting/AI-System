@@ -196,6 +196,9 @@ export type RunSummaryRow = {
   started_at: string;
   updated_at: string;
   finished_at: string | null;
+  /** CR-121 c11b · bản ghi gói gắn lượt (nhãn nghiệp vụ lấy theo tập qua ecordLabelRegistry); null = lượt không gắn bản ghi. */
+  pack_key: string | null;
+  pack_record_id: string | null;
 };
 
 export type ListFilter = {
@@ -216,7 +219,7 @@ export type ListFilter = {
 const RUN_COLS = sql`r.id, r.snapshot, r.def_version, r.status, r.current_stage_idx, r.current_step, r.origin_kind, r.origin_room_id,
   r.origin_conversation_id, r.started_by, u.display_name as started_by_name, r.decision,
   ${iso(sql`r.started_at`)} as started_at, ${iso(sql`r.updated_at`)} as updated_at,
-  ${iso(sql`r.finished_at`)} as finished_at`;
+  ${iso(sql`r.finished_at`)} as finished_at, r.pack_key, r.pack_record_id`;
 
 /** `limit + 1` để biết còn trang; thứ tự (started_at, id) giảm (các idx §11). */
 export async function listRuns(tx: Tx, f: ListFilter): Promise<RunSummaryRow[]> {

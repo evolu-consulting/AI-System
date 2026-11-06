@@ -31,6 +31,7 @@ import type { ProcessDeps } from "../core/ports";
 import { enqueueThread } from "../core/thread";
 import { canRun } from "../domain/runs/run-access.rules";
 import { runDefIdsFor } from "./run-def-filter";
+import { labelOf, runRecordLabels } from "./run-record-labels";
 import * as repo from "./runs.repo";
 import { type CreateRunInput, createRun, originOf } from "./start-inputs";
 
@@ -297,8 +298,12 @@ export class StartService {
     });
     const page = rows.slice(0, q.limit);
     const last = rows.length > q.limit ? page[page.length - 1] : undefined;
+    const labels = await runRecordLabels(tenantId, page); // CR-121 c11b · nhãn bản ghi theo tập
     return {
-      items: page.map((r) => withRunTimes(repo.toSummary(r), times)),
+      items: page.map((r) => ({
+        ...withRunTimes(repo.toSummary(r), times),
+        record_label: labelOf(labels, r),
+      })),
       next_cursor: last ? repo.encodeCursor([last.started_at, last.id]) : null,
     };
   }

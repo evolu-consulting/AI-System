@@ -111,8 +111,13 @@ export const ProcessRunListQuerySchema = z.strictObject({
   def_id: UuidSchema.optional(),
 });
 export type ProcessRunListQuery = z.infer<typeof ProcessRunListQuerySchema>;
+/** CR-121 c11b · mỗi lượt kèm `record_label` = nhãn nghiệp vụ của bản ghi gắn lượt (mã HĐ thật…); null = không gắn bản ghi / gói không có nhãn. */
+export const ProcessRunListItemSchema = ProcessRunSummarySchema.extend({
+  record_label: z.string().nullable(),
+});
+export type ProcessRunListItem = z.infer<typeof ProcessRunListItemSchema>;
 export const ProcessRunListResponseSchema = z.strictObject({
-  items: z.array(ProcessRunSummarySchema).max(PROCESS_LIST_LIMIT.max),
+  items: z.array(ProcessRunListItemSchema).max(PROCESS_LIST_LIMIT.max),
   next_cursor: z.string().nullable(),
 });
 export type ProcessRunListResponse = z.infer<typeof ProcessRunListResponseSchema>;
