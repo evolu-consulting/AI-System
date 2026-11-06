@@ -21,6 +21,7 @@ export type MailRelayOutcome =
   | { kind: "ok"; body: MailRelayResponse }
   | { kind: "unavailable" }
   | { kind: "unauthorized" }
+  | { kind: "limited" }
   | { kind: "invalid" }
   | { kind: "not_configured" }
   | { kind: "failed" };
@@ -28,6 +29,8 @@ export type MailRelayOutcome =
 export type MailRelayDeps = {
   /** `HUB_INTERNAL_TOKEN`; vắng ⇒ `unavailable`. */
   token: string | undefined;
+  /** Trần mỗi phút (xét SAU khi xác thực: người lạ không tiêu hao ngân sách của dịch vụ); vắng ⇒ không giới hạn. */
+  limit?: () => Promise<boolean>;
   /** Vắng (notify tắt) ⇒ `not_configured`. */
   send: MailRelaySend | null;
   log: Pick<Logger, "warn">;
@@ -45,6 +48,7 @@ export class MailRelayService {
   async relay(authorization: string | undefined, raw: string): Promise<MailRelayOutcome> {
     if (!this.d.token) return { kind: "unavailable" };
     if (!serviceTokenMatches(this.d.token, authorization)) return { kind: "unauthorized" };
+    if (this.d.limit && !(await this.d.limit())) return { kind: "limited" };
     let json: unknown;
     try {
       json = JSON.parse(raw);

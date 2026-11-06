@@ -27,7 +27,8 @@ Không đụng DLC, không migration, không UI. `nodemailer` còn trong `apps/a
 
 ## Quyết định trong lúc làm
 - Endpoint chung `{to, subject, text}` (admin giữ mẫu nội dung quota) thay vì mẫu ở Hub: Hub không phải biết nghiệp vụ quota/đặt lại mật khẩu.
-- Một token dịch vụ dùng chung hai chiều (`HUB_INTERNAL_TOKEN`) như hiện có — không thêm khoá riêng cho mail.
+- Một token dịch vụ dùng chung hai chiều (`HUB_INTERNAL_TOKEN`) như hiện có — không thêm khoá riêng cho mail (TECH-DEBT #263).
+- Trần 30 lần/phút (`mail-relay.limit.ts`, cùng mẫu cửa sổ phút INCR+EXPIRE Redis của `link-check-limit`/`community-quota`; Redis vắng/lỗi ⇒ đếm trong tiến trình), xét SAU xác thực; vượt ⇒ 429 `MAIL_RELAY_LIMIT` + `Retry-After`, admin map ⇒ `MAIL_SEND_FAILED` (alert giữ pending). `text` tối thiểu 1 ký tự.
 - Deploy: hub-api phải lên trước/cùng admin-api; prod đã có `ADMIN_HUB_URL` + `HUB_INTERNAL_TOKEN` (gen-env.sh) nên không cần đổi env; kho chưa có cấu hình mail ⇒ mail quota chưa gửi (alert `pending`).
 
 ## Delta (so với docs/current)

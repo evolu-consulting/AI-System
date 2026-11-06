@@ -1,5 +1,5 @@
 // CR-121 c21b (D4) · `POST /internal/mail` (token dịch vụ, không JWT/CORS): 200 `MailRelayResponse` · 400 `VALIDATION_ERROR` (gồm thân quá lớn) ·
-// 401 `UNAUTHORIZED` (một thân) · 409 `NOT_CONFIGURED` (kho chưa có cấu hình mail / thông báo tắt) · 502 `MAIL_SEND_FAILED` ·
+// 401 `UNAUTHORIZED` (một thân) · 409 `NOT_CONFIGURED` (kho chưa có cấu hình mail / thông báo tắt) · 429 `MAIL_RELAY_LIMIT` (trần mỗi phút) · 502 `MAIL_SEND_FAILED` ·
 // 503 `UNAVAILABLE` (Hub chưa có token dịch vụ). Mọi phản hồi `no-store`; không log thân/header.
 import { HUB_INTERNAL_ERRORS, MAIL_RELAY_TEXT_MAX_BYTES } from "@ai/contracts/hub-internal";
 import { type Env, Hono } from "hono";
@@ -21,6 +21,11 @@ function respond(c: import("hono").Context, o: MailRelayOutcome): Response {
       return c.json(toErrorBody("UNAUTHORIZED", "Unauthorized"), E.UNAUTHORIZED, {
         ...NO_STORE,
         "WWW-Authenticate": "Bearer",
+      });
+    case "limited":
+      return c.json(toErrorBody("MAIL_RELAY_LIMIT", "Too many requests"), E.MAIL_RELAY_LIMIT, {
+        ...NO_STORE,
+        "Retry-After": "60",
       });
     case "invalid":
       return c.json(

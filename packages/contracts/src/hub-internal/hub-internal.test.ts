@@ -30,6 +30,7 @@ describe("HUB-FR-89 · hub-internal", () => {
       APPLY_NOT_EXPECTED: 409,
       APPLY_RESULT_EXISTS: 409,
       MAIL_SEND_FAILED: 502,
+      MAIL_RELAY_LIMIT: 429,
     });
     for (const code of Object.keys(HUB_INTERNAL_ERRORS)) {
       expect(ErrorResponseSchema.safeParse({ error: { code, message: "m" } }).success).toBe(true);

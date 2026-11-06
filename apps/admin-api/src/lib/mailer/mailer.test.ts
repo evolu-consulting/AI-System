@@ -5,7 +5,7 @@ import { createMailer, createMemoryMailer, MailError } from "./index";
 const TOKEN = "t".repeat(40);
 type Seen = { auth: string | null; body: unknown };
 let seen: Seen[] = [];
-let mode: "ok" | "not_configured" | "fail" = "ok";
+let mode: "ok" | "not_configured" | "fail" | "limited" = "ok";
 let server: ReturnType<typeof Bun.serve>;
 let url = "";
 
@@ -20,6 +20,11 @@ beforeAll(() => {
         return Response.json(
           { error: { code: "MAIL_SEND_FAILED", message: "x" } },
           { status: 502 },
+        );
+      if (mode === "limited")
+        return Response.json(
+          { error: { code: "MAIL_RELAY_LIMIT", message: "x" } },
+          { status: 429 },
         );
       return Response.json({ sent: 1, skipped: 0 });
     },
@@ -50,6 +55,10 @@ describe("mailer (qua Hub)", () => {
     mode = "not_configured";
     await expect(createMailer({ url, token: TOKEN }).send(msg)).rejects.toMatchObject({
       code: "MAIL_DISABLED",
+    });
+    mode = "limited"; // Hub 429 ⇒ giữ pending (MAIL_SEND_FAILED), không phải MAIL_DISABLED
+    await expect(createMailer({ url, token: TOKEN }).send(msg)).rejects.toMatchObject({
+      code: "MAIL_SEND_FAILED",
     });
     mode = "fail";
     await expect(createMailer({ url, token: TOKEN }).send(msg)).rejects.toMatchObject({

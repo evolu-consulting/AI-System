@@ -14,7 +14,10 @@ export const MailRelayRequestSchema = z.strictObject({
     .min(1)
     .max(MAIL_RELAY_SUBJECT_MAX)
     .refine((s) => !/[\r\n]/.test(s)),
-  text: z.string().refine((s) => new TextEncoder().encode(s).length <= MAIL_RELAY_TEXT_MAX_BYTES),
+  text: z
+    .string()
+    .min(1)
+    .refine((s) => new TextEncoder().encode(s).length <= MAIL_RELAY_TEXT_MAX_BYTES),
 });
 export type MailRelayRequest = z.infer<typeof MailRelayRequestSchema>;
 

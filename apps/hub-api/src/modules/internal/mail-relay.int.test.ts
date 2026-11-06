@@ -13,6 +13,7 @@ import { mailConfigReader, seedMailSecret } from "../notify/adapters/mail-config
 import { createStoredSmtpTransport, type MailSender } from "../notify/adapters/smtp.transport";
 import { parseHubSecretsKey, sealHubSecret } from "../secrets/secrets.crypto";
 import { HubSecretReader } from "../secrets/secrets.use";
+import { mailRelayLimit } from "./mail-relay.limit";
 import { mountMailRelay } from "./mail-relay.routes";
 
 const TOKEN = "s".repeat(40);
@@ -22,7 +23,7 @@ const key = parseHubSecretsKey(randomBytes(32).toString("base64"));
 type Sent = { from: string; to: string; subject: string; pass: string | undefined; host: string };
 const sent: Sent[] = [];
 
-function app(token: string | null = TOKEN): Hono {
+function app(token: string | null = TOKEN, limit?: number): Hono {
   const creds = hubCredentials(
     db,
     new HubSecretReader({ db, key, log: { warn: () => {} } as never }),
@@ -38,6 +39,7 @@ function app(token: string | null = TOKEN): Hono {
   const a = new Hono();
   mountMailRelay(a, {
     token: token ?? undefined,
+    limit: mailRelayLimit({ limit }),
     send: (msgs) => email.sendBatch(msgs),
     log: { warn: () => {} },
   });
@@ -118,5 +120,18 @@ describe("CR-121 c21b · POST /internal/mail", () => {
     ];
     for (const b of bad) expect((await post(app(), b, `Bearer ${TOKEN}`)).status).toBe(400);
     expect(sent).toHaveLength(0);
+  });
+
+  it("vượt trần mỗi phút ⇒ 429 MAIL_RELAY_LIMIT, thư vượt trần không gửi, người lạ không tiêu hao trần; text rỗng ⇒ 400", async () => {
+    const a = app(TOKEN, 2);
+    sent.length = 0;
+    for (let i = 0; i < 5; i++)
+      expect((await post(a, MAIL, "Bearer " + "x".repeat(40))).status).toBe(401);
+    expect((await post(a, MAIL, `Bearer ${TOKEN}`)).status).toBe(200);
+    expect((await post(a, { ...MAIL, text: "" }, `Bearer ${TOKEN}`)).status).toBe(400);
+    const over = await post(a, MAIL, `Bearer ${TOKEN}`);
+    expect(over.status).toBe(429);
+    expect(await codeOf(over)).toBe("MAIL_RELAY_LIMIT");
+    expect(sent).toHaveLength(2); // chỉ lần 200 đầu gửi 2 người nhận
   });
 });
