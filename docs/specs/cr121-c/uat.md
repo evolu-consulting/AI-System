@@ -17,12 +17,12 @@ Giới hạn: seed mỏng (công ty chưa bật app, 0 workflow, 0 lệnh, 0 lư
 ## Khác artboard — chấp nhận (đã quyết / hợp lý)
 Sidebar 6 mục phẳng; logo + khối người dùng chân sidebar; tooltip `title`; bảng Ứng dụng thêm cột Chi tiết, Thành viên là số; 4 ô số ở tab Ứng dụng; Công ty › Quy trình 4 cột + chip tên bước; ngăn việc thêm "Chỉ gồm quy trình cùng loại"; Thư viện cấu trúc khớp; tenant_admin `/processes` → Công ty › Quy trình (c13); breadcrumb Công cụ AI một cấp và tenant_admin không có mục Quy trình (quyết ở review cuối đợt R2); Hệ thống 9 thẻ (artboard không vẽ).
 
-## Chờ người dùng quyết
-1. Sidebar: vào `/` thì mở, sang trang khác thì thu gọn (L4) — giữ hay luôn nhớ trạng thái người dùng chọn?
-2. Thanh trên thiếu ô Tìm kiếm Ctrl K + nút sáng/tối của artboard Main — làm trước deploy hay để sau?
-3. "Gói + Đổi gói" ở Cài đặt: hệ thống chưa có gói thương mại — bỏ khỏi phạm vi?
-4. Loại "Hook" ở Công cụ AI: admin chưa có nguồn dữ liệu hook — bỏ khỏi phạm vi?
-5. Badge số trên sidebar (c10 chưa nối dữ liệu) — làm trước deploy?
+## Người dùng đã quyết (2026-11-06)
+1. Sidebar: nhớ lựa chọn mở/thu gọn của người dùng, mọi trang như nhau → F11.
+2. Sáng/tối: đã có trong menu tài khoản (icon góc phải, `AccountMenu` → `PrefsPanel` Sáng/Tối/Theo máy, CR-120 "nút sáng/tối icon") — KHÔNG thêm nút ở thanh trên; mục UAT "thiếu nút sáng/tối" là sai.
+3. "Gói + Đổi gói" và loại "Hook": bỏ khỏi CR-121 (hàng chờ).
+4. Công ty › Ứng dụng: người dùng chê "chữ Tắt bị lệch, nhiều chữ quá, design đơn giản" → F11 (LevelControl thẳng hàng, bỏ mô tả dài/trạng thái lặp/"Chi tiết", gộp thông tin trùng đầu trang, sửa số "0 vs 1/5 ứng dụng đang bật", thanh lưu chỉ hiện khi có thay đổi).
+5. Badge số sidebar (số đếm nhỏ cạnh mục, vd "Công ty 3"): chờ người dùng xác nhận có cần không; mặc định bỏ.
 
 ## UAT lượt 2 (sau F8–F10)
 Seed: công ty bật Sổ Hợp Tác, có luật + bản riêng, 1 workflow, 2 lượt chạy (done + needs_decision). Chụp lại 03c ngăn Gán + bảng luật, 06c ngăn workflow, 07 bản riêng, 08 trang lượt chạy, dải "Cần xử lý".
