@@ -41,7 +41,7 @@ const app = (nodes: AppNodeDecl[]): AppManifest => ({
 const rules = (m: AppManifest[]) => appNodeIssues(m).map((i) => i.rule);
 
 describe("FLOW2-FR-25 · nodes[]", () => {
-  test("node lõi + manifest thật hợp lệ; Ký số = tool + wait_event; Hiện bài = Kết thúc shown", () => {
+  test("node lõi + manifest thật hợp lệ, Ký số = tool + wait_event, Hiện bài = Kết thúc shown", () => {
     expect(appNodeIssues(Object.values(APP_MANIFESTS))).toEqual([]);
     expect(CORE_NODES.map((n) => n.key)).toEqual([
       "core.email",
@@ -53,7 +53,7 @@ describe("FLOW2-FR-25 · nodes[]", () => {
     expect(es?.stages.map((s) => s.executor.kind)).toEqual(["tool", "wait_event"]);
     expect(APP_MANIFESTS.community?.nodes[0]?.stages[0]?.outcome).toBe("shown");
   });
-  test("khai sai ⇒ mã luật; khoá trùng / khác tiền tố app", () => {
+  test("khai sai ⇒ mã luật, khoá trùng / khác tiền tố app", () => {
     const bad = node({
       key: "khac.x",
       label: { vi: " ", en: "X" },
@@ -82,7 +82,7 @@ describe("FLOW2-FR-25 · nodes[]", () => {
 });
 
 describe("FLOW2-FR-26 · edgeIssues", () => {
-  test("đủ và khớp kiểu ⇒ rỗng; thiếu đầu vào bắt buộc ⇒ missing; khác kiểu ⇒ type; không bắt buộc thiếu ⇒ bỏ qua", () => {
+  test("đủ và khớp kiểu ⇒ rỗng, thiếu đầu vào bắt buộc ⇒ missing, khác kiểu ⇒ type, không bắt buộc thiếu ⇒ bỏ qua", () => {
     const prev = [
       { key: "contract_id", type: "string" as const, required: true },
       { key: "total_value", type: "string" as const, required: true },

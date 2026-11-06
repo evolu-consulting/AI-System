@@ -153,7 +153,7 @@ describe("CR-122 E1 · lưu def có trigger", () => {
     expect(ok.json.app).toBe("contracts");
   });
 
-  it("N1 · bước là node của tính năng đã tắt ⇒ 422 FLOW_NODE_FEATURE_OFF nêu tính năng; node bật ⇒ lưu được", async () => {
+  it("N1 · bước là node của tính năng đã tắt ⇒ 422 FLOW_NODE_FEATURE_OFF nêu tính năng, node bật ⇒ lưu được", async () => {
     const cur = await call("GET", `/process-defs/${id}`);
     const withNode = (node: string) => ({
       ...body({
