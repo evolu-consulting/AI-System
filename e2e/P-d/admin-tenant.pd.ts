@@ -32,7 +32,7 @@ test("ADM-FR-72 · AC-A14 · PD-E05 · padmin đổi múi giờ acme sang Europe
   browser,
 }) => {
   await platformLogin(p);
-  await p.goto(`/tenants/${TENANT_ID.acme}`);
+  await p.goto(`/tenants/${TENANT_ID.acme}?tab=settings`); // CR-121 c14b: Múi giờ nằm ở tab Cài đặt
   await expect(p.getByRole("tab", { name: "Cài đặt" })).toBeVisible();
   await expect(TZ(p)).toHaveValue(/^Asia\/Ho_Chi_Minh/);
   await expect(TZ(p)).not.toBeEditable();
@@ -52,10 +52,9 @@ test("ADM-FR-72 · AC-A14 · PD-E05 · padmin đổi múi giờ acme sang Europe
   try {
     const t = await ctx.newPage();
     await adminLogin(t); // binh · tenant_admin acme
+    // CR-121 c10: tenant_admin không có danh sách công ty — /tenants chuyển thẳng sang công ty MÌNH.
     await t.goto(`${ADMIN}/tenants`);
-    await expect(
-      t.getByRole("heading", { name: "Bạn không có quyền xem trang này" }),
-    ).toBeVisible();
+    await expect(t).toHaveURL(new RegExp(`/tenants/${TENANT_ID.acme}`));
   } finally {
     await ctx.close();
   }
@@ -79,7 +78,7 @@ test("ADM-FR-72 · AC-A14 · PD-E05 · API trả 400 (múi giờ lạ) ⇒ alert
       }),
     });
   });
-  await p.goto(`/tenants/${TENANT_ID.acme}`);
+  await p.goto(`/tenants/${TENANT_ID.acme}?tab=settings`); // CR-121 c14b: Múi giờ nằm ở tab Cài đặt
   await p.getByRole("button", { name: "Đổi múi giờ" }).click();
   await p.getByRole("searchbox", { name: "Tìm múi giờ" }).fill("Berlin");
   await p.getByRole("option", { name: "Europe/Berlin" }).click();

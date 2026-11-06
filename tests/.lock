@@ -99,8 +99,8 @@ e786529d67cd6715b72320a9159b64a39529b5a86b49b04b16ee7807f8cad8cd  e2e/P-a/scenar
 3d3525d2affda6c01d989e250a305d65a395a8ef80d2617f91c3311e94c64daa  e2e/P-b/_pb-runtime.ts
 8bc8a3751961bbe7f4a55fee237be5774169792ff120402e3401dddf3663079b  e2e/P-b/_pb-stack.ts
 7f317fa076f712b79d9b92aebda11aa9287365ddaf7281400c7a6c9cf1c99a76  e2e/P-b/_pb-support.ts
-64d40e83d8803e8cbbdb3646a1ea2b50634c152eb59a263f5ed302ec81a56c7c  e2e/P-b/admin/editor.pb.ts
-594ea5f1c7f115f445954359ec5c8b18bf7b129bdad46db36a5c9a10fe3b8c6e  e2e/P-b/admin/sources.pb.ts
+7cf860002d66eaf0cc3ed0fbdb3f18ec725c49982552230a8166d01382b3916e  e2e/P-b/admin/editor.pb.ts
+f353a016027a21351f81a425e04feff32f9d42ddceb81df82cb0f7439c0a20ae  e2e/P-b/admin/sources.pb.ts
 e6dd75f71517e0496f64210437a2a3cc5ba2ccc2b627090294cf8b2388c9466b  e2e/P-b/chat/inputs.pb.ts
 e9a64c8733b12868aff5ea371be91a067769888e4645475245054d9c93ead958  e2e/P-b/playwright.pb.config.ts
 87d1cb6cfdaa67cf3956dbbf7633d93758a9516cce9f3f70b56e971a28e96867  e2e/P-b2/_pb2-data.ts
@@ -122,8 +122,8 @@ e80da141b41719e6e2164c538016b714db832b4f865f4456660c49c9add969ef  e2e/P-c2/chat/
 c2819175148be556f76c37369dde90368aea7b55f49dafc76e3e8cfe9fd82f76  e2e/P-c2/playwright.pc2.config.ts
 4f89a10a6cd056cef5663a3cb9ff9836acfb0bec20a0653b9ec146808e93d224  e2e/P-d/_pd-support.ts
 6185f49c2a535255e3b28843ff8bf25edef127edb2f2625260f53b502bf46e3c  e2e/P-d/admin-real-step.pd.ts
-d22ef429019d5f37a96d6b3f8bc829cc3bdfe5676acc2ce96582a27662d7e593  e2e/P-d/admin-stage.pd.ts
-448b2077e6c719bd903c0cd0a5d3f4b9a3ae7f6d4923b7af822540481b69d289  e2e/P-d/admin-tenant.pd.ts
+b1f9e33c6e8bff76fb804592ff36585cba0799f27a71a036a4f5d20e554b4b41  e2e/P-d/admin-stage.pd.ts
+27b7439b42f4f9158c7a77b8fb00265b6de5d3de9000213cd0044df5d9869e20  e2e/P-d/admin-tenant.pd.ts
 ea143e8c08ca83e4c59cefa90e1cbd0b3a9b0ed70bff4dcb1da881f5573ff0ca  e2e/P-d/admin-uat-fixes.pd.ts
 063824b2ca90ff2fd2642e9987d371b75f72bd712a0d087614fb666ad5038ddf  e2e/P-d/chat-labels.pd.ts
 fa9d32e553dd9fb86b5fb6b2ffd64ee5f9724df4260c3ff3c028c2b7d758079d  e2e/P-d/chat-uat-fixes.pd.ts
@@ -511,7 +511,7 @@ e52783cc6de20d84c8fd0d0af7f2410c82155c91b49407b7a614b725fd28d21c  e2e/m2-flow.sp
 22065fb383eb83fb9ae355a0643a7462bc0fb068934f0c24a10cde631d465554  e2e/m4-audit.spec.ts
 c26d7bae09227a090ef145f480f710b2d76587b4b8aae43eb3c70f5a2ffe5361  e2e/m4-conflict.spec.ts
 6ba50c48bd669dac31f45b9ceeffa0d6f65e1ebdf7ef13c27c9574b888e18573  e2e/m4-overview.spec.ts
-057771b5bf4d953e29cd8dd20f883a5fb361ebe1495a7d2d9bdfce62b294b878  e2e/m4-quota.spec.ts
+f82ffaf7a7bafe39abec62f41c2f58abe384cbd80f447ec691c6724c23c49b51  e2e/m4-quota.spec.ts
 bb20754055ace1eb9ac4e6ae1aab7d1a9494b45a0c93ff56cbc87112ad53673f  e2e/m4-transfer.spec.ts
 c19aa08b6d7fe451d6f6187e9a101eda3021ec979222c5d11b6982ba5b6fe949  e2e/m4-usage.spec.ts
 51350d094e3c8a466a9090a7f61d01a088717f8f19969c2372d670626eb69739  e2e/ops/playwright.ops.config.ts

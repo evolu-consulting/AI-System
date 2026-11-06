@@ -4,6 +4,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { AGENT } from "../_pb-data";
 import {
+  ADMIN_URL,
   adminLogin,
   createDef,
   ED_SOURCES,
@@ -27,17 +28,15 @@ const openStage1 = (p: Page, name: string) =>
     .click();
 
 async function openDef(p: Page, key: string, name: string): Promise<void> {
+  // CR-121 c13/R2: tenant_admin không còn mục sidebar "Quy trình" / danh sách `flows-list`; bản riêng của công ty mở ở
+  // trình sửa `/processes/<id>` (cùng đường `openDef` của P-b2/P-d). `name` giữ cho dễ đọc.
+  void name;
   await adminLogin(p);
-  await p
-    .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("link", { name: "Quy trình", exact: true })
-    .click();
-  await p
-    .getByTestId("flows-list")
-    .getByRole("listitem")
-    .filter({ hasText: name })
-    .getByRole("link", { name })
-    .click();
+  const def = (
+    await hub(await tok("Adm"), "GET", "/process-defs?kind=sample&limit=100")
+  ).json?.items?.find((d: { key: string }) => d.key === key);
+  expect(def, `GET /process-defs có ${key}`).toBeTruthy();
+  await p.goto(`${ADMIN_URL}/processes/${def.id}`);
   await expect(sourcesCard(p)).toBeVisible();
 }
 async function addSource(p: Page, key: string): Promise<void> {

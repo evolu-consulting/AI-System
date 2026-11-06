@@ -114,14 +114,18 @@ test("ADM-FR-40 · Q9 · E22 · tab Thông tin và Quota cập nhật version ch
   let resp = page.waitForResponse(isPatch);
   await save.click();
   expect((await resp).status()).toBe(200);
+  await expect(save).toBeDisabled(); // form sạch sau khi lưu (form đã reset) rồi mới sửa tiếp
 
   await page.getByRole("spinbutton", { name: "Số run · Cả tenant" }).fill("777");
+  await expect(save).toBeEnabled();
   resp = page.waitForResponse(isPut);
-  await save.click();
+  await save.dispatchEvent("click"); // toast lần lưu trước che nút (chặn con trỏ)
   expect((await resp).status()).toBe(200);
   await expect(conflictDialog(page)).toHaveCount(0);
 
+  await expect(save).toBeDisabled();
   await name.fill("8");
+  await expect(save).toBeEnabled();
   resp = page.waitForResponse(isPatch);
   await name.blur();
   await save.dispatchEvent("click"); // toast lần lưu trước che nút (chặn con trỏ)

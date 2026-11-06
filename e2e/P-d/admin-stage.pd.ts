@@ -6,6 +6,7 @@ import {
   loginAs,
   node,
   openDef,
+  PD2_E2E,
   panel,
   saveDef,
   seedPd,
@@ -207,16 +208,8 @@ test("AC-H47 · PD2-E05 · công ty chưa bật tool: danh sách rỗng có thô
   await seedPd2Defs();
   const open = async () => {
     await loginAs(p, "globex", "hoa");
-    await p
-      .getByRole("navigation", { name: "Điều hướng chính" })
-      .getByRole("link", { name: "Quy trình", exact: true })
-      .click();
-    await p
-      .getByTestId("flows-list")
-      .getByRole("listitem")
-      .filter({ hasText: "Công ty khác E2E" })
-      .getByRole("link", { name: "Công ty khác E2E" })
-      .click();
+    // CR-121 c13/R2: tenant_admin vào trình sửa bản riêng của công ty mình trực tiếp (không còn danh sách ở sidebar).
+    await p.goto(`${new URL(p.url()).origin}/processes/${PD2_E2E.defGlobex}`);
     await node(p, "Xuất hoá đơn").click();
     await panel(p).getByRole("combobox", { name: "Người thực hiện" }).click();
     await p.getByRole("option", { name: "Gọi tool" }).click();

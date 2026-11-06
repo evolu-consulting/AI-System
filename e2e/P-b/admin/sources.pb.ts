@@ -16,7 +16,9 @@ const navLink = (p: Page) =>
   });
 
 async function openSources(p: Page): Promise<void> {
-  await navLink(p).click();
+  // CR-121 c10/c22: sidebar không còn mục "Nguồn" và hub Hệ thống chỉ liệt kê Nguồn cho platform_admin ⇒ tenant_admin
+  // không có lối vào bằng UI tới /sources (trang vẫn cho phép) — vào bằng URL; xem báo cáo lát (Lỗi sản phẩm).
+  await p.goto(new URL("/sources", p.url()).href);
   await expect(p.getByRole("heading", { name: "Nguồn tham chiếu" })).toBeVisible();
   await expect(table(p)).toBeVisible();
 }
