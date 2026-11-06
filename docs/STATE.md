@@ -3,6 +3,26 @@
 Cập nhật: 2026-10-27 · Người cập nhật: docs-architect (đóng đợt CR-097, contract-flow, góp ý Trello, giao hàng theo %)
 
 ## Đang ở đâu
+- **2026-11-06 CR-120 + CR-121 CODE XONG trên `platform/gd0` tại `6890d847` — CHƯA deploy, CHƯA push.** Mọi lát đã merge. `verify:wave` chạy 5 lần: lượt 1 có 29 ca đỏ mới; lượt 5 còn 1 ca chat streaming chập chờn dưới tải (chạy riêng 74/74 xanh). Review Opus cuối đợt: 2 Cao đã sửa (F-3), các Trung đã sửa (F-4). Đã kiểm tay trên trình duyệt 2026-11-06. [CR-120](CHANGE-REQUESTS.md), [CR-121](CHANGE-REQUESTS.md).
+  - **Lát quá 60 phút (nguyên nhân):** D-4 65 (phạm vi phình); R-2 60; C-2 74 (chờ evotest, seed CHECK); D-3 60; D-5 60; A-2 75 (sửa unit cũ đỏ + rebase); D-6 85 (phạm vi phình: contract + khe + input HĐ); C-7 ~25 + fix vòng 2 (endpoint chung `/pack/nav`); W1/W2 >40 (API 529 + nhiều lượt e2e); R-5 7 lượt evotest (chẩn đoán đếm SQL).
+  - **Checklist trước deploy:**
+    - Chạy `deploy/prod-sohoptac2/preflight-cr121.ps1` (chỉ đọc; cần người dùng đồng ý). Mọi tenant phải có quy trình duyệt mặc định đã xuất bản + nhóm duyệt gồm `contracts-editor`; PG ≥ 15; không có `pg_depend` trên `hub.process_slot_assignments`; `HUB_FLOW_RUNTIME=on`.
+    - Deploy giờ vắng và DỪNG hub-api + worker trong lúc `db:migrate` (migration 0097/0075/0100/0102 giữ khoá ACCESS EXCLUSIVE trong một tx).
+    - Sau deploy: `s2-app-urls --apply`; hỏi người dùng trước khi chạy `rename-process-defs` / `seed-niti` trên prod.
+    - Deploy kế: xoá `hub.process_slot_assignments_legacy` + máy duyệt cũ khi số lượt duyệt máy cũ đang chạy về 0 (cần bộ đếm phía contracts).
+  - **Hàng đợi (đợt sau):**
+    - T-2: dựng stack e2e một lần cho mỗi slot evotest (wave ~7–8 phút, server 12 nhân đang bão hoà);
+    - `wave-timings.json` nằm trong git, làm bẩn main sau mỗi lần chạy — chuyển sang `.data` hoặc gitignore;
+    - `captureSql` vẫn đếm truy vấn Hub nền trong vài test perf (chỉ lọc danh sách ở W1/mywork, W1/sourcing) — Opus medium nếu còn chập chờn;
+    - slot `contracts.intake` chưa có FlowSlotAdapter (log slot-contract-gap) — chọn adapter thật hoặc cờ trong manifest;
+    - ánh xạ feature→app suy từ tiền tố key (han-muc-duyet không được đếm) — thêm cột app tường minh;
+    - link "Cần xử lý ngay" không áp bộ lọc ở trang đích (thiếu trang /runs);
+    - ranh giới module còn 289 vi phạm (attachments, runs, dify, agents, runner…);
+    - luật depcruise `contracts-no-process-engine` mù qua `kit/public.ts` — viết luật theo tên;
+    - `contract_delete_log.title` vẫn là tên file;
+    - `review-tasks/:id` và `process-runs/:id/{cancel,decide}` chưa kiểm uuid;
+    - DB dev local `ai_system` lệch journal (dev dùng `ai_system_cr121`);
+    - preview launch đặt PORT, nên cấu hình dev-up phải xoá PORT (đã làm trong `F:\workspace\.claude\launch.json`).
 - **2026-11-04 CR-118 (web nghiệp vụ hợp nhất `workspace-web` + FeatureGate OpenFeature + flow runtime + trang cấu hình app + read-model năng lực) ĐANG LÀM — CHƯA push/deploy.** Release 1 cắt tại `47ea8cf5` (web gộp, auth, community-module, capabilities, app-config, flow-contract/web/admin, form-node …); sau đó đã merge vào `platform/gd0` (tới `1d4c57b4`): flow-canvas, feature-gate-web, r1-fixes, flow-routing (nhiều quy trình/tenant + luật theo phòng ban), fg-home, tenant-settings, lib-test-fix, community-files. **Release 2 chờ:** `cr118-shell`, `cr118-deploy-kit` (chưa merge), e2e một lần + UAT stg `sohoptac2-cr118` tag `cr118`. Gộp `docs/current` 2026-11-04 (đợt cr118-r1): 20 lát CR-118, 0 mục "Chưa rõ"; Delta của shell/deploy-kit chưa gộp. [CR-118](CHANGE-REQUESTS.md), [ADR-0034](adr/0034-web-hop-nhat.md), [`specs/CR-118/spec.md`](specs/CR-118/spec.md).
 - **2026-10-31 CR-105 (thư viện quy trình + gán theo tenant) ĐÃ LÀM, merge local trên `platform/gd0` — CHƯA push, CHƯA deploy.** Đang UAT. Deploy prod cần: migrate `0068`/`0069` + backfill thư viện quy trình (`setup.sh`: dry-run rồi chạy thật); admin-api prod cần `ADMIN_HUB_URL` + `HUB_INTERNAL_TOKEN` để onboarding `approval_process`. Chi tiết [CR-105](CHANGE-REQUESTS.md), [`current/engine/thu-vien-quy-trinh.md`](current/engine/thu-vien-quy-trinh.md).
 - **2026-10-30 Sự cố deploy `3f5e6b8c` + phục hồi (nhánh `slice/integrate-prod`, CHƯA deploy/push).** Prod đang chạy bản build 04:24 UTC từ nhánh ngoài `platform/gd0` (agent hooks + dlc-dify) đã áp hub `0064_agent_hooks` (when 1798900000000); `0064_ops_watch` cùng `when` bị Drizzle bỏ qua im lặng ⇒ 0066 lỗi, cả lô rollback, deploy.ps1 vẫn báo xong (container không đổi, DB không hỏng). Sửa: `fix-migrate-guard` (guard journal↔DB trước mọi migrate, deploy.ps1 fail cứng + kiểm VERSION là tổ tiên), phục hồi nguồn build prod (`slice/recover-agent-hooks`, `slice/recover-dlc-dify-rest`), gộp vào `slice/integrate-prod`; hub ops đổi số 0065_ops_watch/0066_ops_indexes/0067_ops_known_status (SQL không đổi). Mô phỏng guard trên 174 dòng theo dõi prod: 0 lỗi, chờ áp đúng 3 migration ops. DB dev local đã áp ops cũ: áp tay `0064_agent_hooks` hoặc reset (guard sẽ báo).
