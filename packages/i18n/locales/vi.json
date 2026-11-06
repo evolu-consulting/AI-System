@@ -668,6 +668,14 @@
   },
   "tenants": {
     "companyFlows": {
+      "newFlow": {
+        "label": "Dùng quy trình mới cho công ty này",
+        "on": "Đang dùng quy trình mới",
+        "off": "Đang dùng cách cũ",
+        "confirm": "Hợp đồng của công ty này sẽ chạy theo quy trình mới. Bật?",
+        "ok": "Bật",
+        "cancel": "Huỷ"
+      },
       "empty": "Công ty chưa có flow nào. Quản trị nền tảng gán flow từ Thư viện.",
       "col": {
         "name": "Flow",

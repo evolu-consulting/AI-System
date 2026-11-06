@@ -8,6 +8,9 @@ import type { AuthVars } from "../../../lib/auth.middleware";
 import { parseJson } from "../../../lib/http";
 import type { ProcessDeps } from "../core/ports";
 import { CompanyFlowsService } from "./company-flows.service";
+import { FlowSettingsService } from "./flow-settings.service";
+
+const FlowSettingsSchema = z.strictObject({ flow_triggers: z.boolean() });
 
 const AssignSchema = z.strictObject({ flow_id: UuidSchema });
 const EnabledSchema = z.strictObject({ enabled: z.boolean() });
@@ -17,6 +20,13 @@ const P = "/tenants/:tid/company-flows";
 export function companyFlowsRoutes(d: ProcessDeps): Hono<AuthVars> {
   const svc = new CompanyFlowsService(d.db);
   const r = new Hono<AuthVars>();
+  const fs = new FlowSettingsService(d.db);
+  r.use("/tenants/:tid/flow-settings", requireAdminRole()); // CR-122 · P7: vai platform_admin kiểm ở service
+  r.get("/tenants/:tid/flow-settings", async (c) => c.json(await fs.get(c.var.user, tid(c))));
+  r.put("/tenants/:tid/flow-settings", async (c) => {
+    const b = await parseJson(c, FlowSettingsSchema);
+    return c.json(await fs.put(c.var.user, tid(c), b.flow_triggers));
+  });
   r.use(P, requireAdminRole());
   r.use(`${P}/*`, requireAdminRole());
   const tid = (c: { req: { param(k: string): string } }) => UuidSchema.parse(c.req.param("tid"));

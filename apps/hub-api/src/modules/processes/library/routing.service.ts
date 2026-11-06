@@ -20,6 +20,10 @@ import type { ProcessDeps } from "../core/ports";
 import type { LibraryService } from "./library.service";
 import { specOrThrow } from "./library-draft";
 import * as rt from "./routing.repo";
+
+/** Cùng đường ghi cấu hình + audit cho các service trong thư mục (ADR-0037: một điểm chạm sang `studio`). */
+export { withConfigWrite };
+
 import { slotActive } from "./routing-active.rules";
 import { deleteAssignment, upsertAssignment } from "./slot-assign.repo";
 

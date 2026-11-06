@@ -14,6 +14,7 @@ import { useTr } from "@/lib/use-translate";
 import { type FlowOp, useCompanyFlowOp } from "../company-flows-api";
 import { actionsOf, errorKey, groupByApp, reorderIds, statusKey } from "../lib/company-flow-view";
 import { AssignFlow } from "./AssignFlow";
+import { FlowSwitch } from "./FlowSwitch";
 
 /** Cùng lưới cho tiêu đề và mọi dòng ⇒ cột thẳng mép. */
 const GRID =
@@ -141,6 +142,7 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   };
   return (
     <div className="space-y-3" data-testid="company-flow-list">
+      {isPlatform ? <FlowSwitch tenantId={tenantId} /> : null}
       {isPlatform ? (
         <AssignFlow
           assignedFlowIds={new Set(rows.map((r) => r.flow_id))}
