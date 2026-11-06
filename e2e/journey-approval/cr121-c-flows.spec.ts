@@ -5,8 +5,14 @@
 // 2) tenant_admin công ty đó: Xem bản thư viện chỉ xem ⇒ "Sao chép cho công ty này" (tự gán thay bản cũ) ⇒ "Mở trình sửa" ⇒ Đổi về bản cũ.
 // Cần stack hành trình (playwright.journey.config.ts: JA_* env, quy trình thư viện `e2e-mua-kd`). VIẾT, CHƯA CHẠY (luật 5d; điều phối chạy cuối đợt).
 import { expect, test } from "@playwright/test";
-import { apiLogin, cloneAndPublishFlow, createIsolatedTenant, type Session } from "../_kit/api";
-import { loginPlatformAdminUi } from "../_kit/ui";
+import {
+  apiLogin,
+  cloneAndPublishFlow,
+  createIsolatedTenant,
+  grantFeature,
+  type Session,
+} from "../_kit/api";
+import { assignProcessUi, loginPlatformAdminUi } from "../_kit/ui";
 import { uniqueSuffix } from "../_kit/unique";
 
 const need = (n: string): string => {
@@ -47,6 +53,14 @@ test.beforeAll(async () => {
     adminUser: `${t.key}-admin`,
     adminPw: j.temp_password ?? "",
   };
+  // Công ty dùng Sổ Hợp Tác (gán quy trình chỉ được khi công ty có ứng dụng này): cấp đúng đường admin-api, không seed bật sẵn.
+  const feats = await fetch(`${API}/admin/features?limit=200`, {
+    headers: { authorization: `Bearer ${platform.token}` },
+  }).then((r) => r.json() as Promise<{ items?: { id: string; key: string }[] }>);
+  for (const k of ["contracts-read", "contracts-write"]) {
+    const f = feats.items?.find((x) => x.key === k);
+    if (f) await grantFeature(API, platform, f.id, company.id);
+  }
   // Quy trình thư viện RIÊNG của spec (nhân bản + xuất bản), không dùng/ẩn dữ liệu mẫu.
   await cloneAndPublishFlow(HUB, platform, {
     fromKey: "e2e-mua-kd",
@@ -67,23 +81,35 @@ test("1 · platform_admin gán từ đầu: Đang tắt · chưa gán ⇒ Gán �
   await page.goto(`${ADMIN_URL}/tenants/${company.id}?tab=processes`);
   const status = page.getByTestId(`flows-status-${SLOT}`);
   // công ty mới chưa có luật gán: việc chạy theo mẫu mặc định của khe (không bật tay gì), chưa có quy trình riêng
-  await expect(page.getByTestId(`flows-job-${SLOT}`)).not.toContainText(FLOW);
+  const job = page.getByTestId(`flows-job-${SLOT}`);
+  await expect(job).not.toContainText(FLOW);
+  await expect(page.getByTestId(`flows-system-default-${SLOT}`)).toBeVisible(); // F1: nhãn "mặc định hệ thống"
+  const summary = page.getByTestId("tenant-summary");
+  const before = await summary.innerText();
 
   await page.getByTestId(`flows-assign-${SLOT}`).click();
   const panel = page.getByTestId(`flows-assign-panel-${SLOT}`);
   await expect(panel).toContainText("Chỉ gồm quy trình cùng loại");
-  const pick = panel.getByTestId("admin-assign-pick");
-  const value = await pick.locator("option", { hasText: FLOW }).first().getAttribute("value");
-  if (!value) throw new Error("quy trình thư viện vừa xuất bản không có trong ngăn Gán");
-  await pick.selectOption(value);
-  await panel.getByTestId("admin-assign-add").click();
+  // gán bằng UI và CHỜ quy trình hiện trong danh sách đã gán rồi mới đóng ngăn (đóng sớm huỷ lượt gán đang bay)
+  const bad: string[] = [];
+  page.on("response", (r) => {
+    if (r.request().method() !== "GET" && r.status() >= 400)
+      bad.push(`${r.status()} ${r.request().method()} ${r.url()}`);
+  });
+  await assignProcessUi(panel.getByTestId(`admin-assigned-${SLOT}`), FLOW).catch(async (e) => {
+    throw new Error(`gán lỗi: ${bad.join(" | ")} · ${await panel.innerText()} · ${e}`);
+  });
   await page.keyboard.press("Escape");
   // gán xong là chạy: không công tắc nào khác
   await expect(status).toContainText("Đang bật");
-  await expect(page.getByTestId("tenant-summary")).toContainText("việc có quy trình"); // c14: dòng đầu trang
+  // F1: dòng việc đổi tên sang bản vừa gán, nhãn mặc định hệ thống mất, tóm tắt "x/y việc có quy trình" tăng
+  await expect(job).toContainText(FLOW);
+  await expect(page.getByTestId(`flows-system-default-${SLOT}`)).toHaveCount(0);
+  await expect(summary).toContainText("việc có quy trình");
+  await expect(summary).not.toHaveText(before);
 
-  // Q11: sơ đồ (canvas) mặc định; chọn danh sách bước ⇒ nhớ sau khi tải lại.
-  await openJob(page);
+  // Q11: sơ đồ (canvas) mặc định; chọn danh sách bước ⇒ nhớ sau khi tải lại. Esc rồi mở lại ngăn vẫn có công tắc (F1).
+  await page.getByTestId(`flows-open-${SLOT}`).click();
   await expect(page.getByTestId("flows-view-canvas")).toHaveAttribute("aria-pressed", "true");
   await page.getByTestId("flows-view-list").click();
   await page.reload();

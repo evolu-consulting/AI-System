@@ -9,6 +9,8 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import {
+  ACME,
+  ADMIN_URL,
   adminLogin,
   hub,
   mkRoom,
@@ -81,7 +83,10 @@ test(`D15 · E-P16 · cờ ${ON ? "on (đối chứng)" : "off"}: lối vào quy
     const ap = await adm.newPage();
     await adminLogin(ap);
     await expect(ap.getByRole("link", { name: "Tổng quan" }).first()).toBeVisible();
-    await expect(ap.getByRole("link", { name: "Quy trình", exact: true })).toHaveCount(ON ? 1 : 0);
+    // CR-121 R2: menu quản trị công ty không còn mục "Quy trình" riêng (cờ on hay off); quy trình nằm ở Công ty › tab Quy trình
+    await expect(ap.getByRole("link", { name: "Quy trình", exact: true })).toHaveCount(0);
+    await ap.goto(`${ADMIN_URL}/tenants/${ACME}?tab=processes`);
+    await expect(ap.getByRole("tab", { name: "Quy trình" })).toBeVisible();
   } finally {
     await adm.close();
     await u.close();
