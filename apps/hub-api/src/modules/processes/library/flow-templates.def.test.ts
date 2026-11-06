@@ -105,9 +105,7 @@ describe("CR-122 B · flow mẫu Thư viện", () => {
     expect(d.stages[3]?.executor).toMatchObject({ kind: "tool", tool_key: "contracts-esign-send" });
   });
 
-  // CHỜ LÁT A: bước tự có dữ liệu hồ sơ (contract_id…) ⇒ cạnh Ký số không còn thiếu `contract_id`. Mở khi A gộp.
-  // Khi mở: đánh dấu `node: "contracts.esign"` ở bước Ký số của mẫu + palette = node của manifest contracts, rồi so `[]`.
-  it.skip("flowEdgeIssues = 0 (chờ A)", () => {
+  it("flowEdgeIssues = 0", () => {
     for (const t of FLOW_TEMPLATES) expect(flowEdgeIssues(flowDefOf(t) as never, [])).toEqual([]);
   });
 });

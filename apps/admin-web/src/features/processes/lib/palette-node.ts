@@ -101,6 +101,33 @@ export function ioLabel(
   return s?.trim() ? s : key;
 }
 
+/** CR-122: cạnh lệch do server trả (`from_name`/`to_name`/`labels`) ⇒ dữ liệu hiển thị theo ngôn ngữ; thiếu trường nào lấy khoá. */
+export function edgeIssueView(
+  issue: {
+    from: string;
+    to: string;
+    missing: readonly string[];
+    from_name?: string;
+    to_name?: string;
+    labels?: readonly { key: string; vi: string; en: string }[];
+  },
+  lang: string,
+): EdgeGroup {
+  const L = lang === "vi" ? "vi" : "en";
+  const pick = (k: string) => {
+    const x = issue.labels?.find((l) => l.key === k);
+    return x?.[L]?.trim() ? x[L] : k;
+  };
+  return {
+    from: issue.from,
+    to: issue.to,
+    keys: [...issue.missing],
+    labels: issue.missing.map(pick),
+    fromName: issue.from_name?.trim() ? issue.from_name : issue.from,
+    toName: issue.to_name?.trim() ? issue.to_name : issue.to,
+  };
+}
+
 /** Gộp các lỗi cùng một cạnh (nhiều đầu vào thiếu) thành MỘT cạnh vàng. */
 export function groupProblems(
   ps: readonly EdgeProblem[],

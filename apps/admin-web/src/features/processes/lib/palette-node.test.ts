@@ -1,7 +1,23 @@
 import { describe, expect, test } from "bun:test";
 import { CORE_NODES } from "@ai/contracts/app-manifest";
 import { emptyStage } from "./def-form";
-import { edgeProblems, nodeToPatches } from "./palette-node";
+import { edgeIssueView, edgeProblems, nodeToPatches } from "./palette-node";
+
+test("edgeIssueView: tên bước + nhãn theo ngôn ngữ, thiếu thì lấy khoá", () => {
+  const issue = {
+    from: "a",
+    to: "b",
+    missing: ["contract_id", "x"],
+    from_name: "Duyệt",
+    labels: [{ key: "contract_id", vi: "Hợp đồng", en: "Contract" }],
+  };
+  expect(edgeIssueView(issue, "vi")).toMatchObject({
+    fromName: "Duyệt",
+    toName: "b",
+    labels: ["Hợp đồng", "x"],
+  });
+  expect(edgeIssueView(issue, "en").labels).toEqual(["Contract", "x"]);
+});
 
 const waitUntil = CORE_NODES.find((n) => n.key === "core.wait-until");
 const email = CORE_NODES.find((n) => n.key === "core.email");
