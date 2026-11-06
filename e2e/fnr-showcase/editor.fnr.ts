@@ -140,7 +140,7 @@ test("CR-103 · editor · A · đổi node Hoàn tất từ Ghi giá trị sang 
 
   await openEditor(p, copy.id, false);
   await node(p, "Hoàn tất").click();
-  await expect(execBox(p)).toContainText("Ghi giá trị");
+  await expect(execBox(p)).toContainText("Chuẩn bị dữ liệu"); // CR-122 C: "Ghi giá trị" đổi tên
   await execBox(p).click();
   await p.getByRole("option", { name: "Ghi sổ HĐ" }).click();
   await expect(execBox(p)).toContainText("Ghi sổ HĐ");

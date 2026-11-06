@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "id": "m2-flow.spec.ts",
+      "suite": "e2e:root",
+      "reason": "Chập chờn khi máy evotest quá tải (load 14/12 trong wave CR-122): đỏ ở wave, chạy lại riêng root-1 xanh (2026-11-07).",
+      "owner": "qc CR-122 W4",
+      "expires": "2026-11-14",
+      "since": "2026-11-07"
+    },
+    {
       "id": "m4-audit.spec.ts",
       "suite": "e2e:root",
       "reason": "Chập chờn khi máy evotest tải cao ('Tải thêm' > 50 dòng); chạy riêng xanh 7/7 (2026-11-06, 3 lần trong wave CR-121 C). Cần lát sửa cho ổn định.",
