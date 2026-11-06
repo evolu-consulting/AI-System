@@ -123,6 +123,8 @@ test("1 · platform_admin: Chưa dùng ứng dụng ⇒ bật Sổ Hợp Tác �
   await expect(page.getByTestId(`flows-system-default-${SLOT}`)).toHaveCount(0);
 
   // Q11: sơ đồ (canvas) mặc định; chọn danh sách bước ⇒ nhớ sau khi tải lại. Esc rồi mở lại ngăn vẫn có công tắc (F1).
+  // chờ ngăn đóng hẳn sau "Xong" rồi mới mở lại (bấm lúc ngăn đang đóng dở bị nuốt)
+  await expect(page.getByTestId("flows-drawer-done")).toHaveCount(0);
   await page.getByTestId(`flows-open-${SLOT}`).click();
   await expect(page.getByTestId("flows-view-canvas")).toHaveAttribute("aria-pressed", "true");
   await page.getByTestId("flows-view-list").click();
