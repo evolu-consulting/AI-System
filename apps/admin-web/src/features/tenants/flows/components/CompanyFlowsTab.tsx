@@ -11,13 +11,20 @@ import { useCompanyFlows } from "../hooks/use-company-flows";
 import { FlowDrawer } from "./FlowDrawer";
 import { GRID, JobRow } from "./JobRow";
 
-export default function CompanyFlowsTab({ tenant }: { tenant: { id: string; name: string } }) {
+export default function CompanyFlowsTab({
+  tenant,
+  initialJob,
+}: {
+  tenant: { id: string; name: string };
+  /** Việc mở sẵn ngăn Gán (từ dải "Cần xử lý" ở tab Ứng dụng). */
+  initialJob?: string;
+}) {
   const { t } = useTranslation();
   const tr = useTr();
   const role = useSession((s) => s.me?.role);
   const isPlatform = role === "platform_admin";
   const f = useCompanyFlows(tenant.id);
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(initialJob ?? null);
   if (f.pending) return <LoadingState />;
   if (f.error) {
     const e = f.error instanceof ApiError ? f.error : null;

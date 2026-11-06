@@ -1,36 +1,44 @@
-// CR-112 · ADM-FR-78 · tab "Ứng dụng & Gói" của chi tiết công ty (hợp nhất Feature CR-111 + Gói): mỗi app một thẻ chọn mức
-// Tắt/Xem/Sửa/Quản trị — mức điều khiển CẢ gói (bật/tắt) lẫn entitlement; lưu một lượt, một hộp xác nhận. Chỉ platform_admin sửa
+// CR-112 · CR-121 c12 (R3) · tab "Ứng dụng" của chi tiết công ty (artboard Company): BẢNG mỗi hàng một app — Quyền truy cập
+// (Tắt/Xem/Sửa/Quản trị điều khiển CẢ gói lẫn entitlement) · Trạng thái + lý do · Thành viên · Quy trình ("2 bật · 1 tắt").
+// Dải "Cần xử lý" mở ngăn Gán ở tab Quy trình (Q5); 4 ô số chỉ xem. Lưu một lượt, một hộp xác nhận. Chỉ platform_admin sửa
 // (tenant_admin: xem). Nạp lười. (Giữ tên/đường dẫn file cũ để workspace không phải đổi dòng import.)
-import { getAppManifest } from "@ai/contracts/app-manifest";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";
-import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
 import { loadError } from "@/lib/load-error";
 import { useTr } from "@/lib/use-translate";
+import { AppsTable, AttentionStrip, StatTiles, type Tile } from "../../apps/components/AppsTable";
+import { attentionOf, flowCounts, isAppOn } from "../../apps/lib/apps-table";
+import { useCompanyFlows } from "../../flows/hooks/use-company-flows";
 import { useAppsTab } from "../../hooks/use-apps-tab";
+import { useTenantOverview } from "../../hooks/use-tenant-overview";
 import { appsConfirmMessage, needsConfirm } from "../../lib/apps-confirm";
 import { packOf, roleStats } from "../../lib/apps-plan";
 import { detectLevel } from "../../lib/feature-assign";
 import type { TenantTab } from "../../lib/workspace-tabs";
-import { AppCard } from "./AppCard";
 import { AppsSaveBar } from "./AppsSaveBar";
 
 type Props = {
-  tenant: { id: string; name: string };
+  tenant: {
+    id: string;
+    name: string;
+    user_count?: number;
+    process_runs_max?: number;
+  };
   onDirtyChange: (dirty: boolean) => void;
-  /** CR-118: chỉ hiện thẻ của một app (ngăn "Công ty" của trang cấu hình app) — cùng AppCard, cùng một đường lưu. */
+  /** CR-118: chỉ hiện hàng của một app (ngăn "Công ty" của trang cấu hình app, gỡ ở c13) — cùng bảng, cùng một đường lưu. */
   onlyApp?: string;
   /** CR-118: báo bản nháp chưa lưu (tập key feature) cho màn "Xem trước"; null khi không có thay đổi. */
   onDraft?: (keys: ReadonlySet<string> | null) => void;
 };
 
-/** Tab Phân quyền của workspace (cr112-nav/rbac-ui); giữ ở dạng chuỗi để không phụ thuộc kiểu `TenantTab` của lát khác. */
+/** Tab của workspace (cr112-nav/rbac-ui, c11); giữ ở dạng chuỗi để không phụ thuộc kiểu `TenantTab` của lát khác. */
 const ACCESS_TAB: string = "access";
+const FLOWS_TAB: string = "processes";
 
 export default function TenantFeaturesTab({ tenant, onDirtyChange, onlyApp, onDraft }: Props) {
   const { t, i18n } = useTranslation();
@@ -38,6 +46,8 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange, onlyApp, onDr
   const navigate = useNavigate();
   const readOnly = useSession((s) => s.me?.role) !== "platform_admin";
   const a = useAppsTab(tenant, onDirtyChange);
+  const flows = useCompanyFlows(tenant.id);
+  const overview = useTenantOverview(tenant.id);
   const [confirm, setConfirm] = useState(false);
   const { dirty, value } = a;
   useEffect(() => {
@@ -58,15 +68,67 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange, onlyApp, onDr
     );
   }
   if (a.query.isPending || (!readOnly && a.packsQ.isPending)) return <LoadingState />;
-  const openAccess = () =>
+  const go = (tab: string, job?: string) =>
     void navigate({
       to: "/tenants/$tenantId",
       params: { tenantId: tenant.id },
-      search: { tab: ACCESS_TAB as TenantTab },
+      search: { tab: tab as TenantTab, ...(job ? { job } : {}) },
     });
   const appName = (pack: string) => tr(`featmeta.app.${pack}.name`);
   const requestSave = () => (needsConfirm(a.plan) ? setConfirm(true) : void a.save());
   const { plan } = a;
+  const cards = a.cards.filter((c) => !onlyApp || c.app === onlyApp);
+  const onApp = new Set<string>(a.cards.filter((c) => isAppOn(c, value)).map((c) => c.app));
+  const attention = attentionOf(flows.groups, (app) => onApp.has(app));
+  const counts = flowCounts(flows.groups);
+  const rows = cards.map((card) => {
+    const pack = packOf(card, a.packs);
+    const level = detectLevel(card, value).level;
+    return {
+      card,
+      draft: value,
+      readOnly,
+      members: pack?.member_count ?? null,
+      meta: pack
+        ? {
+            pack,
+            roles: roleStats(a.roles, pack.key, level),
+            partners: a.partners,
+            onOpenAccess: () => go(ACCESS_TAB),
+          }
+        : null,
+      flows: counts.get(card.app),
+      offSlots: attention.filter((x) => x.app === card.app).map((x) => x.slot),
+      onChange: a.change,
+      onLevel: a.changeLevel,
+      onOpenFlows: () => go(FLOWS_TAB),
+    };
+  });
+  const quota = overview.quota;
+  const tiles: Tile[] = [
+    {
+      label: t("tenants.apps.tile.users"),
+      value: String(tenant.user_count ?? "—"),
+      sub: t("tenants.apps.tile.usersUnit"),
+    },
+    {
+      label: t("tenants.apps.tile.apps"),
+      value: String(onApp.size),
+      sub: `/ ${a.cards.length}`,
+    },
+    {
+      label: t("tenants.apps.tile.runs"),
+      value: String(tenant.process_runs_max ?? "—"),
+      sub: t("tenants.apps.tile.runsUnit"),
+    },
+    {
+      label: t("tenants.apps.tile.plan"),
+      value:
+        quota?.max_runs != null
+          ? t("tenants.apps.tile.planRuns", { n: quota.max_runs })
+          : t("tenants.apps.tile.planUnlimited"),
+    },
+  ];
   return (
     <div className="space-y-6">
       <section aria-label={t("tenants.apps.title")} className="space-y-4">
@@ -78,43 +140,11 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange, onlyApp, onDr
             </p>
           </div>
         )}
-        <div className={onlyApp ? "grid gap-4" : "grid items-start gap-4 lg:grid-cols-2"}>
-          {a.cards
-            .filter((c) => !onlyApp || c.app === onlyApp)
-            .map((card) => {
-              const pack = packOf(card, a.packs);
-              const level = detectLevel(card, a.value).level;
-              return (
-                <AppCard
-                  key={card.app}
-                  card={card}
-                  draft={a.value}
-                  onChange={a.change}
-                  onLevel={a.changeLevel}
-                  readOnly={readOnly}
-                  headerAction={
-                    !onlyApp && !readOnly && getAppManifest(card.app) && card.mode === "levels" ? (
-                      <Button variant="link" size="sm" className="h-auto p-0" asChild>
-                        <Link to="/apps/$appKey" params={{ appKey: card.app }}>
-                          {t("appcfg.openApp")}
-                        </Link>
-                      </Button>
-                    ) : null
-                  }
-                  meta={
-                    pack
-                      ? {
-                          pack,
-                          roles: roleStats(a.roles, pack.key, level),
-                          partners: a.partners,
-                          onOpenAccess: openAccess,
-                        }
-                      : null
-                  }
-                />
-              );
-            })}
-        </div>
+        {onlyApp ? null : (
+          <AttentionStrip items={attention} onAssign={(slot) => go(FLOWS_TAB, slot)} />
+        )}
+        <AppsTable rows={rows} />
+        {onlyApp ? null : <StatTiles tiles={tiles} onOpenFlows={() => go(FLOWS_TAB)} />}
         {readOnly ? null : (
           <AppsSaveBar
             plan={plan}

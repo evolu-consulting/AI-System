@@ -13,6 +13,8 @@ export type WorkspaceSearch = {
   page?: number;
   drawer?: "new" | "edit";
   user?: string;
+  /** CR-121 c12 (Q5) · mở ngăn Gán của việc này khi vào tab Quy trình (`?tab=processes&job=<khoá việc>`). */
+  job?: string;
   /** Id công ty đối tác đang mở drawer (tab Đối tác). */
   org?: string;
   /** Tab con của Phân quyền: Vai theo ứng dụng (mặc định) / Ma trận / Kiểm tra quyền. */
@@ -45,6 +47,7 @@ export function validateWorkspaceSearch(s: Record<string, unknown>): WorkspaceSe
     page: Number.isInteger(page) && page > 1 ? page : undefined,
     drawer: oneOf(s.drawer, ["new", "edit"]),
     user: str(s.user),
+    job: str(s.job),
     org: str(s.org),
     view: oneOf(s.view, ["roles", "matrix", "check"]),
     legacy: s.tab === "workflow-tools" ? "workflow-tools" : undefined,

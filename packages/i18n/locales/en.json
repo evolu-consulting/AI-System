@@ -1025,6 +1025,42 @@
       "cell": "{field} · {scope}"
     },
     "apps": {
+      "levelHelp": "View = read only · Edit = create and edit · Admin = add app settings and users",
+      "col": {
+        "app": "App",
+        "access": "Access",
+        "status": "Status",
+        "members": "Members",
+        "flows": "Processes"
+      },
+      "status": {
+        "on": "On",
+        "off": "Off",
+        "attention": "Needs attention",
+        "nonstandard": "Non-standard access"
+      },
+      "reason": {
+        "always": "always on",
+        "levelOff": "access is set to Off",
+        "jobOff": "{{job}} is not on"
+      },
+      "accessList": "Per feature",
+      "flowsCount": "Processes: {{on}} on · {{off}} off",
+      "showDetail": "Details",
+      "hideDetail": "Collapse",
+      "attention": "Needs attention",
+      "attentionItem": "{{job}} is off — {{app}}",
+      "openFlows": "Open Processes",
+      "tile": {
+        "users": "Users",
+        "usersUnit": "people",
+        "apps": "Apps on",
+        "runs": "Concurrent runs",
+        "runsUnit": "runs max",
+        "plan": "Plan",
+        "planRuns": "{{n}} runs/month",
+        "planUnlimited": "Unlimited"
+      },
       "title": "Apps & Packs",
       "desc": "Pick the access level of each app for this company. Off = pack off; View/Edit/Admin = pack on with matching access (the company ceiling). Roles in the app only take effect up to this level.",
       "descReadOnly": "The company's apps and levels (read only). The platform operator changes them.",

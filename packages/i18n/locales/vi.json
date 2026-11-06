@@ -1025,6 +1025,42 @@
       "cell": "{field} · {scope}"
     },
     "apps": {
+      "levelHelp": "Xem = chỉ đọc · Sửa = tạo và sửa · Quản trị = thêm cài đặt app và người dùng",
+      "col": {
+        "app": "Ứng dụng",
+        "access": "Quyền truy cập",
+        "status": "Trạng thái",
+        "members": "Thành viên",
+        "flows": "Quy trình"
+      },
+      "status": {
+        "on": "Đang bật",
+        "off": "Đang tắt",
+        "attention": "Cần xử lý",
+        "nonstandard": "Quyền không chuẩn"
+      },
+      "reason": {
+        "always": "luôn bật",
+        "levelOff": "quyền truy cập đang Tắt",
+        "jobOff": "{{job}} chưa bật"
+      },
+      "accessList": "Theo từng tính năng",
+      "flowsCount": "Quy trình: {{on}} bật · {{off}} tắt",
+      "showDetail": "Chi tiết",
+      "hideDetail": "Thu gọn",
+      "attention": "Cần xử lý",
+      "attentionItem": "{{job}} đang tắt — {{app}}",
+      "openFlows": "Mở Quy trình",
+      "tile": {
+        "users": "Người dùng",
+        "usersUnit": "người",
+        "apps": "Ứng dụng đang bật",
+        "runs": "Chạy cùng lúc",
+        "runsUnit": "lượt tối đa",
+        "plan": "Gói",
+        "planRuns": "{{n}} lượt/tháng",
+        "planUnlimited": "Không giới hạn"
+      },
       "title": "Ứng dụng & Gói",
       "desc": "Chọn mức dùng cho từng ứng dụng của công ty. Tắt = tắt gói; Xem/Sửa/Quản trị = bật gói và cấp quyền theo mức (trần của công ty). Vai trong app chỉ có hiệu lực tới mức này.",
       "descReadOnly": "Ứng dụng và mức dùng của công ty (chỉ xem). Đơn vị vận hành nền tảng đổi mức.",

@@ -73,8 +73,8 @@ test("CR-118 · F1 · /apps → Sổ Hợp Tác: 5 tab, tab Công ty → acme �
     .getByRole("button", { name: /Mở cấu hình của/ })
     .click();
   const drawer = page.getByRole("complementary", { name: "Cấu hình công ty đang chọn" });
-  const card = drawer.getByRole("region", { name: "Sổ Hợp Tác" });
-  await expect(card).toContainText("Đang: Tắt");
+  const card = drawer.getByTestId("apps-row-contracts"); // CR-121 c12: hàng của bảng ứng dụng
+  await expect(card.getByRole("radio", { name: "Tắt" })).toBeChecked();
   await card
     .getByRole("radiogroup", { name: "Mức dùng Sổ Hợp Tác" })
     .getByRole("radio", { name: "Sửa" })
@@ -98,7 +98,7 @@ test("CR-118 · F1 · /apps → Sổ Hợp Tác: 5 tab, tab Công ty → acme �
   expect(await acmeKeys()).toEqual([]); // xem trước KHÔNG ghi gì
 
   await page.getByRole("tab", { name: "Công ty" }).click();
-  await expect(card).toContainText("Đang: Sửa"); // bản nháp còn nguyên sau khi đổi tab
+  await expect(card.getByRole("radio", { name: "Sửa" })).toBeChecked(); // bản nháp còn nguyên sau khi đổi tab
   await drawer.getByRole("button", { name: "Lưu", exact: true }).click(); // chỉ bật/cấp ⇒ không hỏi xác nhận
   await expect(toast(page, "Đã lưu tính năng cho")).toBeVisible();
   expect(calls).toEqual(["PUT contracts"]);
@@ -106,8 +106,10 @@ test("CR-118 · F1 · /apps → Sổ Hợp Tác: 5 tab, tab Công ty → acme �
   await expect(acmeRow(page)).toContainText("Sửa");
   // cùng đường lưu: trang công ty thấy đúng mức đó
   await page.goto(`/tenants/${TENANT_ID.acme}?tab=features`);
-  await expect(page.getByRole("region", { name: "Sổ Hợp Tác" })).toContainText("Đang: Sửa");
-  await expect(page.getByRole("link", { name: "Mở cấu hình app" }).first()).toBeVisible();
+  await expect(
+    page.getByTestId("apps-row-contracts").getByRole("radio", { name: "Sửa" }),
+  ).toBeChecked();
+  // CR-121 c12: bảng ứng dụng không còn lối tắt "Mở cấu hình app" (App chỉ link sang Công ty › Quy trình — c13).
 });
 
 test("CR-118 · F2 · tab Quy trình: không có Hub ⇒ trạng thái rỗng có hướng dẫn, tab Tổng quan nêu số công ty theo mức", async ({
@@ -161,7 +163,7 @@ test("CR-118 · F4 · tenant_admin (binh) xem thẻ app chỉ-đọc ở trang c
   await fakePacks(page, TENANT_ID.acme);
   await loginAs(page, "acme", "binh");
   await page.goto(`/tenants/${TENANT_ID.acme}?tab=features`);
-  await expect(page.getByRole("region", { name: "Sổ Hợp Tác" })).toBeVisible();
+  await expect(page.getByTestId("apps-row-contracts")).toBeVisible();
   await expect(page.getByRole("button", { name: "Lưu", exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Mở cấu hình app" })).toHaveCount(0);
   await page.goto("/apps/contracts");

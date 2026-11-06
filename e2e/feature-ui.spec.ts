@@ -71,9 +71,11 @@ test("CR-112 · tab Ứng dụng & Gói của acme: bộ 'Không chuẩn' → Qu
     "aria-selected",
     "true",
   );
-  const card = page.getByRole("region", { name: "Sổ Hợp Tác" });
-  await expect(card).toContainText("Đang: Sửa");
-  await expect(card.getByText("Không chuẩn")).toBeVisible();
+  // CR-121 c12: bảng ứng dụng, mỗi app một hàng (không còn thẻ); chi tiết (gói/vai/tính năng thêm) mở bằng "Chi tiết".
+  const card = page.getByTestId("apps-row-contracts");
+  await card.getByRole("button", { name: "Chi tiết" }).click();
+  await expect(card.getByRole("radio", { name: "Sửa" })).toBeChecked();
+  await expect(card.getByText("Quyền không chuẩn")).toBeVisible();
   await expect(card).toContainText("Gói chưa bật");
   await expect(card).toContainText("3 vai");
   await expect(card).toContainText("3 người");
@@ -85,7 +87,7 @@ test("CR-112 · tab Ứng dụng & Gói của acme: bộ 'Không chuẩn' → Qu
   await level.getByRole("radio", { name: "Quản trị" }).click();
   await addon.click();
   await expect(page.getByText("Chưa lưu: cấp 3, thu hồi 0 · bật 1 gói, tắt 0 gói")).toBeVisible();
-  await expect(card).toContainText("Đang: Quản trị · 1 tính năng thêm");
+  await expect(card.getByRole("radio", { name: "Quản trị" })).toBeChecked();
   await save.click(); // chỉ bật/cấp ⇒ không hỏi xác nhận
   await expect(toast(page, "Đã lưu tính năng cho")).toBeVisible();
   expect(calls).toEqual(["PUT contracts"]);
@@ -95,12 +97,12 @@ test("CR-112 · tab Ứng dụng & Gói của acme: bộ 'Không chuẩn' → Qu
     "contracts-write",
     "han-muc-duyet",
   ]);
-  await expect(card.getByText("Không chuẩn")).toHaveCount(0);
+  await expect(card.getByText("Quyền không chuẩn")).toHaveCount(0);
   await expect(card).toContainText("Gói đang bật");
 
   await level.getByRole("radio", { name: "Tắt" }).click();
   await expect(addon).toBeDisabled();
-  await expect(card).toContainText("Đang: Tắt");
+  await expect(card.getByRole("radio", { name: "Tắt" })).toBeChecked();
   await save.click();
   const dialog = page.getByRole("alertdialog");
   await expect(dialog).toContainText("3 người dùng của công ty mất quyền vào ứng dụng này");
@@ -120,5 +122,5 @@ test("CR-112 · URL cũ ?tab=packs mở tab Ứng dụng & Gói, tab Gói không
     "true",
   );
   await expect(page.getByRole("tab", { name: "Gói", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "Sổ Hợp Tác" })).toBeVisible();
+  await expect(page.getByTestId("apps-row-contracts")).toBeVisible();
 });

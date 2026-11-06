@@ -44,7 +44,6 @@ export function AddonList({ items, draft, locked, showAddonBadge, onToggle }: Pr
                 {text.desc ? (
                   <p className="text-caption text-muted-foreground">{text.desc}</p>
                 ) : null}
-                <p className="font-mono text-caption text-muted-foreground">{f.key}</p>
               </div>
               <Switch
                 aria-label={t("tenants.features.switchAria", { name: text.name })}

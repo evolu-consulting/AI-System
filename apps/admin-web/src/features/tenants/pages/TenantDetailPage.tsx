@@ -98,7 +98,7 @@ export function TenantDetailPage() {
   const { t } = useTranslation();
   const tr = useTr();
   const { tenantId } = route.useParams();
-  const { tab } = route.useSearch();
+  const { tab, job } = route.useSearch();
   const navigate = route.useNavigate();
   const router = useRouter();
   const role = useSession((s) => s.me?.role);
@@ -219,7 +219,7 @@ export function TenantDetailPage() {
         </TabsContent>
         <TabsContent value="processes" className="pt-4">
           <Suspense fallback={<LoadingState />}>
-            <CompanyFlowsTab tenant={tenant} />
+            <CompanyFlowsTab tenant={tenant} initialJob={job} />
           </Suspense>
         </TabsContent>
         <TabsContent value="quota" className="pt-4">
