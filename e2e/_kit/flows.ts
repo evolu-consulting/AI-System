@@ -163,7 +163,6 @@ export function finish(key: string, name: string, step: number, outcome: string)
 /**
  * Flow Thư viện do platform_admin tạo + XUẤT BẢN qua API thật (E6): `POST /process-defs {trigger, app, stages}` → `POST /:id/publish`.
  * Trả id def. Gán cho công ty: `assignCompanyFlow` (api.ts) hoặc UI.
- * Lỗi sản phẩm #6: API từ chối `after.group_key` ở flow Thư viện (PROCESS_REF_INVALID) ⇒ node Duyệt có phòng ban phải qua `withGroupKeys`.
  */
 export async function createLibraryFlow(
   hub: string,
@@ -174,15 +173,8 @@ export async function createLibraryFlow(
     app: string;
     trigger: Json;
     stages: Json[];
-    withGroupKeys?: boolean;
   },
 ): Promise<string> {
-  const stripped = o.stages.map((s) => {
-    const after = s.after as Json;
-    if (!o.withGroupKeys || after.kind !== "review") return s;
-    const { group_key: _g, ...rest } = after;
-    return { ...s, after: rest };
-  });
   const h = { authorization: `Bearer ${token}`, "content-type": "application/json" };
   const made = await fetch(`${hub}/process-defs`, {
     method: "POST",
@@ -197,7 +189,7 @@ export async function createLibraryFlow(
       enabled: true,
       sources: [],
       inputs: [],
-      stages: stripped,
+      stages: o.stages,
       trigger: o.trigger,
       app: o.app,
     }),
@@ -213,11 +205,5 @@ export async function createLibraryFlow(
   });
   if (pub.status >= 300)
     throw new Error(`xuất bản flow ${o.key}: ${pub.status} ${(await pub.text()).slice(0, 300)}`);
-  if (o.withGroupKeys)
-    await withOwner(async (sql) => {
-      const st = JSON.stringify(o.stages);
-      await sql`update hub.process_defs set stages = ${st}::text::jsonb where id = ${def.id}::uuid`;
-      await sql`update hub.process_def_releases set stages = ${st}::text::jsonb where def_id = ${def.id}::uuid`;
-    });
   return def.id;
 }
