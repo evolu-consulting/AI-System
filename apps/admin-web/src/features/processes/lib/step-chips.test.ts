@@ -16,6 +16,19 @@ describe("splitChips", () => {
   });
 });
 
+describe("splitChips · ngân sách ký tự (không cắt giữa chữ)", () => {
+  test("tên dài ⇒ gộp sớm vào +N, nguyên chip; luôn hiện ≥ 1 chip", () => {
+    const long = [
+      { name: "Phân tích lỗi và kiểm tra" },
+      { name: "Pháp chế duyệt" },
+      { name: "Giám đốc" },
+    ];
+    const r = splitChips(long);
+    expect(r.shown.map((s) => s.name)).toEqual(["Phân tích lỗi và kiểm tra", "Pháp chế duyệt"]);
+    expect(r.rest).toHaveLength(1);
+    expect(splitChips([{ name: "x".repeat(80) }, { name: "y" }]).shown).toHaveLength(1);
+  });
+});
 describe("libraryChips / libraryConditions", () => {
   test("chip là TÊN bước theo thứ tự, khoá duy nhất kể cả tên trùng; thiếu dữ liệu ⇒ []", () => {
     const c = libraryChips({ steps: [{ name: "Duyệt" }, { name: "Duyệt" }] });

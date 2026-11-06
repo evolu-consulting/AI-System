@@ -27,6 +27,7 @@ export function ViewModeToggle({ mode, set }: { mode: ViewMode; set: (m: ViewMod
           ) : (
             <List aria-hidden className="size-4" />
           )}
+          {t(`tenants.flows.view.${m}`)}
         </Button>
       ))}
     </span>

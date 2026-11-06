@@ -33,7 +33,13 @@ import { useDefSave } from "../hooks/use-def-save";
 import { useDraft } from "../hooks/use-draft";
 import { useEditorRefs } from "../hooks/use-editor-refs";
 import { useProcessTenant } from "../hooks/use-process-tenant";
-import { copyTenantId, isCompanyCopy, usesStepForm, viewerTenantId } from "../lib/company-copy";
+import {
+  copyTenantId,
+  isCompanyCopy,
+  scopedTenantId,
+  usesStepForm,
+  viewerTenantId,
+} from "../lib/company-copy";
 import { type DefDraft, toDraft, withLiveErrors } from "../lib/def-form";
 import { processErrorSpec } from "../lib/errors";
 import { notFoundBack } from "../lib/route-guard";
@@ -41,11 +47,18 @@ import { normalizeSlotStages } from "../lib/slot-canvas";
 import type { LibraryDef } from "../library-api";
 
 /** `company` (CR-121 c17): mở từ Công ty › Quy trình của công ty đó ⇒ def thư viện hiện CHỈ XEM + "Sao chép cho công ty này". */
-export type ProcessEditorPageProps = { processId?: string; company?: string };
+export type ProcessEditorPageProps = { processId?: string; company?: string | undefined };
 const FORM_ID = "process-form";
 
-function useLoadedDef(processId: string | undefined, d: ReturnType<typeof useDraft>) {
-  const tenant = useProcessTenant();
+function useLoadedDef(
+  processId: string | undefined,
+  d: ReturnType<typeof useDraft>,
+  company: string | undefined,
+) {
+  const picked = useProcessTenant();
+  // platform_admin mở từ Công ty › Quy trình: công ty theo `?company=` (Hub cần tenant_id để đọc/lưu def của công ty).
+  const tenantId = scopedTenantId(picked.isPlatform, picked.tenantId, company);
+  const tenant = tenantId === picked.tenantId ? picked : { ...picked, tenantId, ready: true };
   const q = useProcessDef(processId, tenant.tenantId);
   const [version, setVersion] = useState(1);
   const loaded = useRef<string | null>(null);
@@ -148,10 +161,10 @@ function EditorLoadFailure(p: {
   return failure;
 }
 
-function Editor({ processId }: ProcessEditorPageProps) {
+function Editor({ processId, company }: ProcessEditorPageProps) {
   const { t } = useTranslation();
   const d = useDraft();
-  const { tenant, q, version, setVersion } = useLoadedDef(processId, d);
+  const { tenant, q, version, setVersion } = useLoadedDef(processId, d, company);
   const [formDirty, setFormDirty] = useState(false);
   const refs = useEditorRefs(tenant.tenantId, tenant.ready);
   const lib = libraryOf(q.data, tenant.isPlatform);
@@ -271,16 +284,17 @@ function CopySourceLine(p: { tenantId: string | undefined; sourceId: string | nu
 
 export function ProcessEditorPage(props: ProcessEditorPageProps) {
   const { company, ...rest } = props;
+  const withCompany = { ...rest, company };
   return (
     <ProcessRouteGate>
       {company && rest.processId ? (
         <LibraryReadOnlyView
           tenantId={company}
           defId={rest.processId}
-          fallback={<Editor {...rest} />}
+          fallback={<Editor {...withCompany} />}
         />
       ) : (
-        <Editor {...rest} />
+        <Editor {...withCompany} />
       )}
     </ProcessRouteGate>
   );

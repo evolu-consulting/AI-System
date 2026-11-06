@@ -23,7 +23,7 @@ export function StepChips({ steps }: { steps: readonly ChipStep[] | null }) {
           ) : null}
           <span
             title={`${s.index}. ${s.name}`}
-            className="max-w-32 truncate rounded-full border border-border bg-muted px-2 text-caption text-muted-foreground"
+            className="whitespace-nowrap rounded-full border border-border bg-muted px-2 text-caption text-muted-foreground"
           >
             {s.name}
           </span>

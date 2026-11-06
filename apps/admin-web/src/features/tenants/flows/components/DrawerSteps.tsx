@@ -1,5 +1,6 @@
 // CR-121 c11 · Q1/Q11 · các bước của quy trình đang dùng: CANVAS mặc định, danh sách là chế độ phụ (nút icon có nhãn khi rê chuột, nhớ theo người dùng).
 // Bản thư viện: CHỈ XEM + "Sao chép cho công ty này"; bản riêng của công ty: "Mở trình sửa".
+
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FlowRowsView } from "@/features/apps/components/SlotFlowView";
 import { ViewModeToggle } from "@/features/processes/components/ViewModeToggle";
 import { useViewMode } from "@/features/processes/hooks/use-view-mode";
+import { companySearch } from "@/features/processes/lib/company-copy";
 import { ApiError } from "@/lib/http";
 import { defStepsQuery, useLibraryView } from "../api";
 import { useFlowAssign } from "../hooks/use-flow-assign";
@@ -33,7 +35,7 @@ function StepActions(p: {
           <Link
             to="/processes/$processId"
             params={{ processId: p.defId }}
-            search={{ company: p.tenantId }}
+            search={companySearch(p.tenantId)}
             data-testid="flows-open-detail"
           >
             {t("tenants.flows.openDetail")}
@@ -45,6 +47,7 @@ function StepActions(p: {
           <Link
             to="/processes/$processId"
             params={{ processId: p.copyId }}
+            search={companySearch(p.tenantId)}
             data-testid="flows-open-editor"
           >
             {t("tenants.flows.openEditor")}

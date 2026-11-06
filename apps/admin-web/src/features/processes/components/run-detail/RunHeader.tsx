@@ -1,5 +1,6 @@
 // CR-121 · R-3: đầu trang "Chi tiết lượt chạy" — mã lượt (sao chép), quy trình + phiên bản, công ty, kích hoạt bởi, mốc thời gian,
 // trạng thái + lý do, nút icon Dừng / Chạy lại cả lượt.
+
 import type { RunDetail } from "@ai/contracts/chat";
 import { Link } from "@tanstack/react-router";
 import { Copy, RotateCcw, Square, Unlock } from "lucide-react";
@@ -10,6 +11,7 @@ import { notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { copyText } from "@/lib/clipboard";
 import { formatClock } from "@/lib/format";
+import { companySearch } from "../../lib/company-copy";
 import { formatDuration, type RunControls } from "../../lib/run-detail-view";
 import { RunStatusBadge } from "../run/RunStatusBadge";
 
@@ -128,6 +130,7 @@ export function RunHeader({
           <Link
             to="/processes/$processId/runs/$runId"
             params={{ processId: run.process.key, runId: run.rerun_by }}
+            search={companySearch(run.tenant.id)}
             className="text-primary underline-offset-4 hover:underline"
           >
             {T("openRelatedRun")}

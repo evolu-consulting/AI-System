@@ -36,20 +36,34 @@ export function StatusCell({ row }: { row: ListRow }) {
 export function UsedByCell({ row }: { row: ListRow }) {
   const { t } = useTranslation();
   const count = row.tenant_count ?? 0;
-  if (count === 0)
-    return (
-      <span className="text-muted-foreground">
-        {t("process.admin.library.usage.none")}
-        {row.is_default ? ` · ${t("process.admin.library.usage.default")}` : ""}
-      </span>
-    );
+  // Ngắn: "—" khi chưa ai dùng; viên "Mặc định" (cùng viên với mọi nơi) khi là mặc định của việc.
   return (
-    <span title={row.is_default ? t("process.admin.library.usage.default") : undefined}>
-      {t("process.admin.library.usage.count", { n: count })}
+    <span className="inline-flex flex-wrap items-center gap-2">
+      {count > 0 ? (
+        <span>{t("process.admin.library.usage.count", { n: count })}</span>
+      ) : row.is_default ? null : (
+        <span className="text-muted-foreground" title={t("process.admin.library.usage.none")}>
+          —
+        </span>
+      )}
+      {row.is_default ? <DefaultPill slotLabel={row.slot_label ?? ""} /> : null}
     </span>
   );
 }
 
+/** Viên "Mặc định" dùng chung (tên Thư viện / cột Dùng bởi / danh sách khác): tooltip nói mặc định của việc nào. */
+export function DefaultPill({ slotLabel, short = true }: { slotLabel: string; short?: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <span title={t("process.admin.library.defaultBadge", { slot: slotLabel })}>
+      <StatusBadge tone="ok">
+        {short
+          ? t("process.admin.library.defaultTag")
+          : t("process.admin.library.defaultBadge", { slot: slotLabel })}
+      </StatusBadge>
+    </span>
+  );
+}
 /** "Các bước": chip TÊN bước (≤ 4 + "+N") và nhãn điều kiện; chưa có dữ liệu bước ⇒ số bước. */
 export function StepsCell({ row }: { row: ListRow }) {
   const chips = libraryChips(row);

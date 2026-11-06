@@ -18,6 +18,7 @@ import { rowsFromSlotBody } from "@/features/apps/lib/flow-view";
 import { cloneForCompany, useLibraryView } from "@/features/tenants/flows/api";
 import { ApiError } from "@/lib/http";
 import { useViewMode } from "../../hooks/use-view-mode";
+import { companySearch } from "../../lib/company-copy";
 import { processErrorSpec } from "../../lib/errors";
 import { runColumns } from "../editor/EditorRunsTab";
 import { ViewModeToggle } from "../ViewModeToggle";
@@ -40,7 +41,11 @@ function useCopyForCompany(tenantId: string, defId: string) {
       notifySuccess(t("process.admin.editor.copied"));
       void qc.invalidateQueries({ queryKey: ["process", "company-lib", tenantId] });
       void qc.invalidateQueries({ queryKey: ["process", "assigned", "caps", tenantId] });
-      void navigate({ to: "/processes/$processId", params: { processId: r.def_id } });
+      void navigate({
+        to: "/processes/$processId",
+        params: { processId: r.def_id },
+        search: companySearch(tenantId),
+      });
     } catch (e) {
       const s = processErrorSpec(e);
       notifyError(t("process.admin.editor.copyFailed", { reason: t(s.key, s.params) }));
@@ -78,7 +83,11 @@ export function LibraryReadOnlyView({ tenantId, defId, fallback }: Props) {
         </AlertDescription>
         {copyId ? (
           <Button asChild data-testid="library-open-copy">
-            <Link to="/processes/$processId" params={{ processId: copyId }}>
+            <Link
+              to="/processes/$processId"
+              params={{ processId: copyId }}
+              search={companySearch(tenantId)}
+            >
               {t("process.admin.editor.openCopy")}
             </Link>
           </Button>
@@ -107,7 +116,7 @@ export function LibraryReadOnlyView({ tenantId, defId, fallback }: Props) {
           {/* chỉ lượt của CÔNG TY NÀY chạy đúng quy trình này (Hub lọc theo def_id + công ty) */}
           <DataTable
             caption={t("process.admin.editor.tab.runs")}
-            columns={runColumns(t)}
+            columns={runColumns(t, tenantId)}
             rows={v.runs}
             getRowKey={(r) => r.id}
             isLoading={false}

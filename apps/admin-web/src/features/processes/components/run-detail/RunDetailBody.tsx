@@ -1,4 +1,5 @@
 // CR-121 · R-3: thân trang "Chi tiết lượt chạy" (admin): đầu trang · sơ đồ · dòng thời gian · ngăn nhật ký bước · thao tác có lý do.
+
 import type { RunControlReason } from "@ai/contracts/chat";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
@@ -8,6 +9,7 @@ import { notifySuccess } from "@/components/shared/toast";
 import { cn } from "@/lib/utils";
 import { useRun } from "../../api";
 import type { ProcessTenant } from "../../hooks/use-process-tenant";
+import { companySearch } from "../../lib/company-copy";
 import {
   type ControlRole,
   canReopenUi,
@@ -83,6 +85,7 @@ export function RunDetailBody({ runId, tenant }: Props) {
       void navigate({
         to: "/processes/$processId/runs/$runId",
         params: { processId: run.process.key, runId: newId },
+        search: companySearch(run.tenant.id),
       });
   };
   const confirm = async (reason: RunControlReason, text?: string) => {
@@ -123,7 +126,7 @@ export function RunDetailBody({ runId, tenant }: Props) {
           <AutofixBlocks stages={full.data.stages} tenantId={tenant.tenantId} />
         </>
       )}
-      <RunTimeline items={run.timeline} processKey={run.process.key} />
+      <RunTimeline items={run.timeline} processKey={run.process.key} company={run.tenant.id} />
       <section className="rounded-lg border border-border bg-card">
         <button
           type="button"

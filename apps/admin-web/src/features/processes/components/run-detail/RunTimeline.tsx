@@ -1,4 +1,5 @@
 // CR-121 · R-3: dòng thời gian thu gọn được của lượt chạy; mục "chạy lại" có liên kết tới lượt liên quan (`ref_run_id`).
+
 import type { RunTimelineItem } from "@ai/contracts/chat";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
@@ -6,10 +7,11 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatClock } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { companySearch } from "../../lib/company-copy";
 
-type Props = { items: readonly RunTimelineItem[]; processKey: string };
+type Props = { items: readonly RunTimelineItem[]; processKey: string; company?: string };
 
-export function RunTimeline({ items, processKey }: Props) {
+export function RunTimeline({ items, processKey, company }: Props) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language === "vi" ? "vi" : "en";
   const [open, setOpen] = useState(true);
@@ -49,6 +51,7 @@ export function RunTimeline({ items, processKey }: Props) {
                     <Link
                       to="/processes/$processId/runs/$runId"
                       params={{ processId: processKey, runId: it.ref_run_id }}
+                      search={companySearch(company)}
                       className="text-primary underline-offset-4 hover:underline"
                     >
                       {T("openRelatedRun")}

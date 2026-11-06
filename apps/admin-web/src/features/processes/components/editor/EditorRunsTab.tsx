@@ -8,6 +8,7 @@ import { type Column, DataTable } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { formatClock } from "@/lib/format";
 import { useTenantRuns } from "../../hooks/use-run-data";
+import { companySearch } from "../../lib/company-copy";
 import { recordLabelText } from "../../lib/run-label";
 import { runStageNote } from "../../lib/run-stage-note";
 import { runSummaryBadgeStatus } from "../../lib/stage-label";
@@ -31,7 +32,10 @@ function StageCell({ run }: { run: ProcessRunSummary }) {
 }
 
 /** Cột bảng lượt chạy — dùng chung tab Lượt chạy của trình sửa và của trang chỉ-xem thư viện (c17b). */
-export function runColumns(t: TFunction): Column<ProcessRunListResponse["items"][number]>[] {
+export function runColumns(
+  t: TFunction,
+  company?: string | null,
+): Column<ProcessRunListResponse["items"][number]>[] {
   const L = (k: string) => t(`process.admin.editor.runs.col.${k}`);
   return [
     {
@@ -41,6 +45,7 @@ export function runColumns(t: TFunction): Column<ProcessRunListResponse["items"]
         <Link
           to="/processes/$processId/runs/$runId"
           params={{ processId: r.process.key, runId: r.id }}
+          search={companySearch(company)}
           className="font-mono text-label text-primary underline-offset-4 hover:underline"
         >
           #{r.id.slice(0, 8)}
@@ -67,7 +72,7 @@ export function runColumns(t: TFunction): Column<ProcessRunListResponse["items"]
 export function EditorRunsTab({ processKey, tenantId }: Props) {
   const { t } = useTranslation();
   const q = useTenantRuns(processKey, tenantId);
-  const columns = runColumns(t);
+  const columns = runColumns(t, tenantId);
   const err = q.error;
   return (
     <DataTable

@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { formatUpdated } from "@/lib/format";
 import { isTemplateRow, rowMode } from "../lib/library-view";
 import type { LibraryListItem as Row } from "../library-api";
-import { StatusCell, StepsCell, UsedByCell } from "./library/LibraryListCells";
+import { DefaultPill, StatusCell, StepsCell, UsedByCell } from "./library/LibraryListCells";
 import { LibraryRowMenu } from "./library/LibraryRowMenu";
 import { RowDeleteButton } from "./library/RowDeleteButton";
 
@@ -66,14 +66,8 @@ function nameColumn(t: TFunction, library: boolean): Column<Row> {
             <span className="text-caption text-muted-foreground">v{r.published_version}</span>
           ) : null}
           {isTemplateRow(r) ? <StatusBadge tone="info">{L(t, "template")}</StatusBadge> : null}
-          {r.is_default ? (
-            <span title={t("process.admin.library.defaultBadge", { slot: r.slot_label ?? "" })}>
-              <StatusBadge tone="ok">
-                {library
-                  ? t("process.admin.library.defaultTag")
-                  : t("process.admin.library.defaultBadge", { slot: r.slot_label ?? "" })}
-              </StatusBadge>
-            </span>
+          {r.is_default && !library ? (
+            <DefaultPill slotLabel={r.slot_label ?? ""} short={false} />
           ) : null}
         </span>
         {library ? (

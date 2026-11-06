@@ -16,6 +16,17 @@ export const viewerTenantId = (
   sessionTenant: string | undefined,
 ): string | undefined => (isPlatform ? picked : sessionTenant);
 
+/** `?company=` cho link sang trình sửa / trang lượt chạy: platform_admin cần công ty để Hub đọc def/lượt của công ty đó (tenant_admin: Hub suy từ phiên, tham số bị bỏ qua). Một nguồn: link luôn mang công ty đang xem. */
+export const companySearch = (tenantId: string | null | undefined): { company?: string } =>
+  tenantId ? { company: tenantId } : {};
+
+/** Công ty dùng để đọc: platform_admin theo `?company=` (nếu có), còn lại theo lựa chọn sẵn có. */
+export const scopedTenantId = (
+  isPlatform: boolean,
+  picked: string | undefined,
+  company: string | undefined,
+): string | undefined => (isPlatform && company ? company : picked);
+
 /** Bản riêng DÙNG ĐƯỢC Form bước dọc chung ⇔ Hub trả `slot_body` (bản sao cũ chưa có body ⇒ chỉ Sơ đồ). */
 export const usesStepForm = <D extends DefLike>(def: D | undefined, lib: unknown): D | null =>
   def && isCompanyCopy(def, lib) && def.slot_body != null ? def : null;
