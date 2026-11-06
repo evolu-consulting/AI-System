@@ -31,5 +31,11 @@ Nên sửa → F14: chip bước Thư viện bị cắt giữa chữ; "Dùng b�
 Chưa kiểm được (stack không có Dify/agent-runtime): ngăn workflow, lượt chạy "cần quyết định". L8 (tenant_admin không có mục Quy trình/Công cụ AI) là quyết định review R2 — không phải lỗi.
 Bảo mật: script UAT lượt 2 in thân POST /auth/login ⇒ lộ SEED_ADMIN_PASSWORD (local) trong output agent; không ghi file/commit. Khuyên đổi nếu dùng lại nơi khác.
 
+## UAT lượt 3–5 (gd0 a1090c74f → 1c5a437d0, ảnh `uat-cr121c\r3..r5\`)
+- r3: L7 đạt (có ảnh "Cần người quyết"); Thư viện chip/Dùng bởi đạt; nút Sơ đồ/Danh sách có chữ; ngăn việc F15 đạt ở 1440 + 1280×800. L6 đạt một phần ⇒ L9 (ngăn thiếu nút mở bản riêng) → F16; hàng Thư viện số trơn "7" → F17.
+- r4: F16 đạt (platform + tenant: bản riêng "Mở trình sửa", thư viện "Mở trang chi tiết" + "Sao chép", href có `company=`); F17 đạt ("7 bước"); tenant_admin Hệ thống 4 thẻ, Ứng dụng chỉ xem, Quy trình gọn. Điều phối thấy trình sửa bản riêng lộ trường kỹ thuật → F18.
+- r5: F18 đạt — bản riêng: Tên, Mô tả, Thời hạn + "Nâng cao" (giới hạn chi phí AI); thư viện: "Mã nội bộ", chi phí AI, công tắc trong "Nâng cao".
+Còn chưa kiểm được: ngăn workflow Dify (stack không có Dify).
+
 ## UAT lượt 2 (kế hoạch, sau F8–F10)
 Seed: công ty bật Sổ Hợp Tác, có luật + bản riêng, 1 workflow, 2 lượt chạy (done + needs_decision). Chụp lại 03c ngăn Gán + bảng luật, 06c ngăn workflow, 07 bản riêng, 08 trang lượt chạy, dải "Cần xử lý".
