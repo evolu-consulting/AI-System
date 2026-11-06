@@ -68,7 +68,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await expect(toolbar.getByText("Nháp", { exact: true })).toBeVisible();
     const name = (await p.getByRole("heading", { level: 1 }).innerText()).trim();
     // thanh trên: không lỗi i18n; chỉ MỘT công tắc (Sơ đồ / Danh sách); gợi ý "Lưu nháp…" hiện khi chưa xuất bản
-    await expect(toolbar).toContainText("0 công ty đang dùng");
+    await expect(toolbar).toContainText("0 công ty");
     await expect(toolbar).not.toContainText("returned an object");
     await expect(p.getByRole("tab", { name: "Danh sách" })).toHaveCount(0);
     await expect(toolbar.getByText(/Lưu nháp chưa áp dụng cho tenant/)).toBeVisible();

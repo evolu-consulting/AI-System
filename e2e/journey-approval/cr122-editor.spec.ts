@@ -180,3 +180,41 @@ test("2 · cạnh vàng ⇒ Gợi ý cầu nối (route AI giả): Bỏ rồi h�
   expect(iff?.then_step, "Đúng ⇒ vẫn là Nhận dữ liệu").toBe(stepOf("nhan"));
   expect(iff?.else_step, "Sai ⇒ vẫn là Kết thúc (đã dời)").toBe(stepOf("xong"));
 });
+
+test("3 · node Ký số trên bản công ty: panel cấu hình riêng hiện trạng thái rõ khi công ty chưa bật ký số", async ({
+  page,
+}) => {
+  await openCopy(page);
+  await page
+    .getByRole("application", CANVAS)
+    .getByRole("button", { name: /Ký số/ })
+    .first()
+    .click();
+  // stack hành trình KHÔNG có nhà cung cấp ký số (ESIGN_PROVIDERS) ⇒ panel nói rõ lý do + cách sửa, không ô trống bí ẩn
+  await expect(page.getByTestId("esign-disabled")).toContainText("Công ty chưa bật ký số");
+});
+
+// U2f: chọn nhà cung cấp + người ký, đặt sai MỘT ô ⇒ lỗi hiện đúng ô đó khi lưu. Cần UAT/stack bật feature, entitlement ký số, nhóm và nhà
+// cung cấp (hub khởi động lại mới thấy node) — stack journey chưa có ⇒ viết sẵn, gỡ `fixme` khi stack có nhà cung cấp ký số.
+test("4 · cấu hình Ký số: chọn nhà cung cấp + người ký; một ô sai ⇒ lỗi đúng ô (Hạn, Nhắc, Người ký)", async ({
+  page,
+}) => {
+  test.fixme(
+    true,
+    "stack journey chưa có nhà cung cấp ký số (ESIGN_PROVIDERS) — panel 'node-config' không hiện",
+  );
+  await openCopy(page);
+  await page
+    .getByRole("application", CANVAS)
+    .getByRole("button", { name: /Ký số/ })
+    .first()
+    .click();
+  const cfg = page.getByTestId("node-config");
+  await expect(cfg).toBeVisible();
+  await cfg.getByRole("combobox", { name: "Nhà cung cấp" }).click();
+  await page.getByRole("option").nth(1).click();
+  await cfg.getByRole("checkbox").first().check();
+  await cfg.getByLabel("Hạn (ngày)").fill("0");
+  await expect(cfg.getByLabel("Hạn (ngày)")).toBeVisible();
+  await expect(cfg.getByRole("alert")).toHaveCount(1);
+});
