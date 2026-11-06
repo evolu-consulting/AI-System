@@ -317,7 +317,7 @@ test("H2 · giá trị HĐ đổi sau khi rẽ ⇒ lượt dừng 'Cần xử l�
   const again = await fetch(`${HUB}/process-runs/${runId}/rerun-from-if?tenant_id=${tenantId}`, {
     method: "POST",
     headers: { ...s.headers, "content-type": "application/json" },
-    body: JSON.stringify({ reason: "bấm lần hai" }),
+    body: JSON.stringify({ reason: "bad_data" }),
   });
   expect(again.status).toBe(409);
 });
