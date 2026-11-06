@@ -24,5 +24,12 @@ Sidebar 6 mục phẳng; logo + khối người dùng chân sidebar; tooltip `ti
 4. Công ty › Ứng dụng: người dùng chê "chữ Tắt bị lệch, nhiều chữ quá, design đơn giản" → F11 (LevelControl thẳng hàng, bỏ mô tả dài/trạng thái lặp/"Chi tiết", gộp thông tin trùng đầu trang, sửa số "0 vs 1/5 ứng dụng đang bật", thanh lưu chỉ hiện khi có thay đổi).
 5. Badge số sidebar (số đếm nhỏ cạnh mục, vd "Công ty 3"): người dùng "Không cần" ⇒ bỏ; gỡ prop/badge chưa nối dữ liệu nếu còn trong code (F11).
 
-## UAT lượt 2 (sau F8–F10)
+## UAT lượt 2 — kết quả (gd0 179a3adfb, ảnh `uat-cr121c\r2\`)
+Đã đạt: tab Ứng dụng gọn + thẳng hàng; Thư viện menu ⋯ hết cắt cột (L2); tên agent thật (L3); trang chỉ xem bản thư viện cho tenant_admin + "Mở bản riêng"; bản riêng có Huỷ·Lưu, không Xuất bản.
+Chặn → F14: L6 platform_admin mở bản riêng công ty "Không tìm thấy"; L7 platform_admin mở trang lượt chạy của công ty "Không tìm thấy".
+Nên sửa → F14: chip bước Thư viện bị cắt giữa chữ; "Dùng bởi" lặp câu dài; nút Sơ đồ/Danh sách ở bản riêng chỉ icon. → F15: ngăn việc tiêu đề "Luật định tuyến" xuống 3 dòng, "Còn lại (mặc định)" xuống dòng, nút "Xong" sát mép ở 900px.
+Chưa kiểm được (stack không có Dify/agent-runtime): ngăn workflow, lượt chạy "cần quyết định". L8 (tenant_admin không có mục Quy trình/Công cụ AI) là quyết định review R2 — không phải lỗi.
+Bảo mật: script UAT lượt 2 in thân POST /auth/login ⇒ lộ SEED_ADMIN_PASSWORD (local) trong output agent; không ghi file/commit. Khuyên đổi nếu dùng lại nơi khác.
+
+## UAT lượt 2 (kế hoạch, sau F8–F10)
 Seed: công ty bật Sổ Hợp Tác, có luật + bản riêng, 1 workflow, 2 lượt chạy (done + needs_decision). Chụp lại 03c ngăn Gán + bảng luật, 06c ngăn workflow, 07 bản riêng, 08 trang lượt chạy, dải "Cần xử lý".
