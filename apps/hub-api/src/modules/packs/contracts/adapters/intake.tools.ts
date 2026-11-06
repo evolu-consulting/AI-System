@@ -85,6 +85,8 @@ async function planSend(
   const node: SendNodeOpts = {
     ...(users ? { companyUsers: users } : {}),
     ...(cfg.order ? { order: cfg.order } : {}),
+    ...(cfg.due_days !== undefined ? { dueH: cfg.due_days * 24 } : {}),
+    ...(cfg.remind_every_hours !== undefined ? { remindEveryH: cfg.remind_every_hours } : {}),
   };
   return {
     signers,

@@ -4,7 +4,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { ESignSignerSchema } from "@ai/contracts/pack-contracts";
 import { createDb, type Db, type Tx } from "@ai/db";
-import { contracts, tenants, users } from "@ai/test-kit/builders";
+import { contracts, groups, members, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { createPackUow } from "../../kit/adapters/pack-uow";
@@ -22,6 +22,8 @@ let T1 = "";
 let T2 = "";
 let A = "";
 let B = "";
+let C = "";
+let D = "";
 let X = ""; // người dùng của T2
 let K: string[] = [];
 
@@ -36,9 +38,9 @@ beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
   [T1, T2] = (await tenants(o, 2, 961)) as [string, string];
-  [A, B] = (await users(o, T1, 2, { from: 961 })) as [string, string];
+  [A, B, C, D] = (await users(o, T1, 4, { from: 961 })) as [string, string, string, string];
   [X] = (await users(o, T2, 1, { from: 971 })) as [string];
-  K = await contracts(o, T1, 3, { from: 961, createdBy: A, owner: A });
+  K = await contracts(o, T1, 5, { from: 961, createdBy: A, owner: A });
   for (const [i, id] of K.entries()) {
     const fid = crypto.randomUUID();
     await o`insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
@@ -81,8 +83,10 @@ const envelope = async (cid: string) =>
       {
         provider: string;
         signers: { role: string; order: number; client_user_id: string | null }[];
+        due_h: number | null;
+        remind_every_h: number | null;
       }[]
-    >`select provider, signers from contracts.esign_envelopes where contract_id = ${cid}`
+    >`select provider, signers, due_h, remind_every_h from contracts.esign_envelopes where contract_id = ${cid}`
   )[0];
 
 describe("E5 · args của node ghi đè cài đặt ký số của app", () => {
@@ -150,5 +154,71 @@ describe("E5 · args của node ghi đè cài đặt ký số của app", () => 
     expect(await u.checkNode(T1, { company_signers: [{ kind: "user", id: X }] })).toEqual([
       { field: "company_signers", code: "SIGNER_NOT_IN_TENANT" },
     ]);
+  });
+});
+
+describe("E5b · danh bạ người ký: nhánh Group", () => {
+  let G = ""; // Group của T1: B, C còn dùng được, D bị khoá
+  let GX = ""; // Group của T2
+
+  beforeAll(async () => {
+    G = (await groups(o, T1, ["e5b-ky"])).get("e5b-ky") as string;
+    await members(o, T1, G, [B, C, D]);
+    await o`update admin.users set active = false where id = ${D}`;
+    GX = (await groups(o, T2, ["e5b-khac"])).get("e5b-khac") as string;
+    await members(o, T2, GX, [X]);
+  });
+
+  it("Group ⇒ mọi thành viên còn dùng được (bỏ người bị khoá), theo thứ tự khai, bỏ trùng", async () => {
+    const { u } = setup();
+    const members2 = [B, C].sort();
+    expect(await u.resolveNodeSigners(T1, [{ kind: "group", id: G }])).toEqual(members2);
+    // người cụ thể đứng trước Group khai sau; B trùng ⇒ giữ lần đầu
+    expect(
+      await u.resolveNodeSigners(T1, [
+        { kind: "user", id: B },
+        { kind: "group", id: G },
+      ]),
+    ).toEqual([B, ...members2.filter((x) => x !== B)]);
+    expect(await u.checkNode(T1, { company_signers: [{ kind: "group", id: G }] })).toEqual([]);
+  });
+
+  it("Group của công ty khác ⇒ không thuộc công ty (kiểm lúc lưu + từ chối lúc gửi)", async () => {
+    const { u, send } = setup();
+    await u.saveSettings(
+      { tenantId: T1, userId: A },
+      { enabled: true, default_provider: "selfsign" },
+    );
+    expect(await u.checkNode(T1, { company_signers: [{ kind: "group", id: GX }] })).toEqual([
+      { field: "company_signers", code: "SIGNER_NOT_IN_TENANT" },
+    ]);
+    await expect(
+      send.run(CTX(A), { contract_id: K[3] as string, company_signers: `group:${GX}` }),
+    ).rejects.toThrow();
+    expect(await envelope(K[3] as string)).toBeUndefined();
+  });
+
+  it("gửi ký với Group ⇒ mỗi thành viên còn dùng được là một người ký công ty, hạn/nhắc ghi trên phong bì", async () => {
+    const { u, send } = setup();
+    await u.saveSettings(
+      { tenantId: T1, userId: A },
+      { enabled: true, default_provider: "selfsign" },
+    );
+    await send.run(CTX(A), {
+      contract_id: K[3] as string,
+      company_signers: `group:${G}`,
+      partner_signs: false,
+      order: "sequential",
+      due_days: 3,
+      remind_every_hours: 12,
+    });
+    const e = await envelope(K[3] as string);
+    expect(e?.signers.map((s) => s.client_user_id)).toEqual([B, C].sort());
+    expect(e?.signers.map((s) => s.order)).toEqual([1, 2]);
+    expect([e?.due_h, e?.remind_every_h]).toEqual([72, 12]);
+    // không cấu hình node ⇒ cột trống (sweep dùng bước Ký số cũ)
+    await send.run(CTX(A), { contract_id: K[4] as string });
+    const base = await envelope(K[4] as string);
+    expect([base?.due_h, base?.remind_every_h]).toEqual([null, null]);
   });
 });

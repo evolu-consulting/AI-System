@@ -23,7 +23,13 @@ export type NodeDirectory = {
   ): Promise<{ userIds: string[]; unknown: EsignNodeSigner[] }>;
 };
 /** Cấu hình node áp lúc gửi: người ký công ty (user id) + thứ tự. */
-export type SendNodeOpts = { companyUsers?: readonly string[]; order?: "parallel" | "sequential" };
+export type SendNodeOpts = {
+  companyUsers?: readonly string[];
+  order?: "parallel" | "sequential";
+  /** E5b · hạn ký + chu kỳ nhắc (GIỜ) ghi trên phong bì; `esign-sweep` đọc trước bước Ký số cũ. */
+  dueH?: number;
+  remindEveryH?: number;
+};
 
 type Issues = ESignNodeCheckOut["issues"];
 export type EsignNodeDeps = {

@@ -136,6 +136,9 @@ export type ESignRepo = {
     envelopeId: string;
     signers: StoredSigner[];
     sentBy: string;
+    /** CR-122 · E5b · hạn ký (giờ) + chu kỳ nhắc (giờ) theo phong bì (node Ký số); vắng ⇒ null ⇒ sweep dùng bước Ký số cũ. */
+    dueH?: number | null;
+    remindEveryH?: number | null;
   }): Promise<boolean>;
   update(
     envelopeId: string,

@@ -9,7 +9,12 @@ import type { Db, Tx } from "@ai/db";
 import type { Env, Hono } from "hono";
 import { logger } from "../../../lib/logger";
 import type { PackAccessView, PackGuardVars, PackWho, PdfConverter } from "../kit/public";
-import { createPackUow, createPdfConverter, selfContactOf } from "../kit/public";
+import {
+  createPackUow,
+  createPdfConverter,
+  nodeConfigRegistry,
+  selfContactOf,
+} from "../kit/public";
 import { fileboxClients, packFilebox } from "../packs.filebox";
 import { docusignProvider } from "./adapters/docusign.provider";
 import { esignRepo, tenantOfEnvelope } from "./adapters/esign.repo";
@@ -20,6 +25,7 @@ import { esignAnchorRoutes } from "./adapters/esign-anchor.routes";
 import { activeUserOf, deptHeadOf, esignFlowRepo, packWriters } from "./adapters/esign-flow.repo";
 import { esignFlowRoutes } from "./adapters/esign-flow.routes";
 import { esignNodeDirectory } from "./adapters/esign-node.repo";
+import { ESIGN_NODE_KEY, esignNodeValidator } from "./adapters/esign-node.validator";
 import { escalateTargetsOf, esignSweepRepo } from "./adapters/esign-sweep.repo";
 import { esignSyncClaim } from "./adapters/esign-sync.repo";
 import type { ESignFiles, ESignProvider, ESignRegistry } from "./application/esign.ports";
@@ -132,6 +138,8 @@ export function esignModule(
     },
     warn: (m, meta) => logger.warn(m, meta),
   });
+  // CR-122 · E5b · lưu def có node Ký số ⇒ server tự kiểm cấu hình (validator theo node, `processes/defs` gọi).
+  nodeConfigRegistry.register(ESIGN_NODE_KEY, esignNodeValidator(u.checkNode));
   // esign-flow-fix · quyền ghi gói của người ký (cổng quyền cần cache cấu hình ⇒ gắn sau ở `packs.mount`).
   let writers: Writers | null = null;
   const active = activeUserOf(db);

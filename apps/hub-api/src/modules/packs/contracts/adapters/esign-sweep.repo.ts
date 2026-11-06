@@ -4,6 +4,7 @@
 // (`esignDueOf`). esign-remind-fix · nhánh nhắc join phong bì mở của HĐ (index một phần `esign_envelopes_open_uq`) ⇒ `wait` ≡
 // `remindTargetOf` = "owner" (không tới lượt người ký công ty); không có phong bì mở ⇒ nhắc người ký như cũ. Một hàng chỉ bị MỘT nhánh UPDATE chạm (trạng thái loại trừ nhau). Văn bản cố định; mốc giờ là tham số `now`.
 // Danh bạ chuyển cấp đọc `admin.*` qua hub scope (như `deptHeadOf`).
+// CR-122 · E5b · hạn/nhắc: cột `esign_envelopes.due_h|remind_every_h` của phong bì MỞ đọc TRƯỚC (node Ký số đặt); trống ⇒ bước Ký số cũ.
 import type { Db, Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
@@ -38,8 +39,12 @@ export function esignSweepRepo(tx: Tx, t: string): EsignSweepRepo {
             ${contractCodeSql("c")} as label, f.grp, z.stale, z.remind, z.overdue, w.wait
           from contracts.approvals a
           join contracts.contracts c on c.id = a.contract_id and c.tenant_id = a.tenant_id and c.run_id = a.id
-          cross join lateral (select (a.flow_steps->-1->>'due_h')::int as due_h,
-              (a.flow_steps->-1->>'remind_every_h')::int as rem_h, a.flow_steps->-1->>'escalate_group_id' as grp) f
+          left join lateral (select e.due_h, e.remind_every_h from contracts.esign_envelopes e
+            where e.tenant_id = ${t}::uuid and e.contract_id = c.id and e.status in ('sent', 'delivered')
+            order by e.created_at desc limit 1) en on true
+          cross join lateral (select coalesce(en.due_h, (a.flow_steps->-1->>'due_h')::int) as due_h,
+              coalesce(en.remind_every_h, (a.flow_steps->-1->>'remind_every_h')::int) as rem_h,
+              a.flow_steps->-1->>'escalate_group_id' as grp) f
           cross join lateral (select
               (a.esign_status = 'sending'
                 and a.esign_at < ${at}::timestamptz - make_interval(mins => ${staleMin}::int)) as stale,

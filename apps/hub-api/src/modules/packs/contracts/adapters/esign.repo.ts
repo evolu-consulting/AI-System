@@ -115,9 +115,9 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
     },
     insert: async (r) => {
       const rows = await tx.execute(sql`insert into contracts.esign_envelopes
-          (tenant_id, contract_id, provider, envelope_id, signers, sent_by)
+          (tenant_id, contract_id, provider, envelope_id, signers, sent_by, due_h, remind_every_h)
         values (${t}::uuid, ${r.contractId}::uuid, ${r.provider}, ${r.envelopeId}, ${JSON.stringify(r.signers)}::jsonb,
-          ${r.sentBy}::uuid)
+          ${r.sentBy}::uuid, ${r.dueH ?? null}::int, ${r.remindEveryH ?? null}::int)
         on conflict (tenant_id, contract_id) where status in ('sent', 'delivered') do nothing returning id`);
       return rows.length === 1;
     },

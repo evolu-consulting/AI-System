@@ -8,6 +8,12 @@ export { flowPortRegistry } from "./adapters/flow-port-registry";
 export { packMeRoutes } from "./adapters/me.route";
 export { memberNamesOf, selfContactOf } from "./adapters/member-names";
 export { packMembersRoutes } from "./adapters/members.route";
+export {
+  constToolArgs,
+  type NodeConfigIssue,
+  type NodeConfigValidator,
+  nodeConfigRegistry,
+} from "./adapters/node-config-registry";
 export type { PackBell } from "./adapters/pack-bell";
 export { packBell } from "./adapters/pack-bell";
 export type { PackFileboxClient } from "./adapters/pack-files.filebox";

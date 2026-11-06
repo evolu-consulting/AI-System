@@ -159,7 +159,14 @@ export function esignUsecase(d: ESignDeps) {
         clientUserId: x.client_user_id,
       })),
     });
-    const row = { contractId: id, provider: p.key, envelopeId, signers: stored };
+    const row = {
+      contractId: id,
+      provider: p.key,
+      envelopeId,
+      signers: stored,
+      dueH: node?.dueH ?? null,
+      remindEveryH: node?.remindEveryH ?? null,
+    };
     const ok = await run((r) => r.esign.insert({ ...row, sentBy: who.userId }));
     if (!ok) {
       await p.voidEnvelope(envelopeId, "duplicate").catch(() => null);

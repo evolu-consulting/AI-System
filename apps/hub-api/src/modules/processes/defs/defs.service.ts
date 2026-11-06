@@ -22,6 +22,7 @@ import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { validationError } from "../../../lib/http";
 import { dbHubAudit } from "../../../lib/hub-audit";
+import { nodeConfigRegistry } from "../../packs/kit/public";
 import { sourceError } from "../../sources/sources.errors";
 import { type StudioAudit, withConfigWrite } from "../../studio/studio-write";
 import { tenantTzRepo } from "../adapters/timers/tenant-tz.repo";
@@ -88,6 +89,9 @@ async function nodeCheck(
     input.stages.map((x) => x.node),
   );
   if (miss) throw nodeFeatureError(miss);
+  // CR-122 · E5b · cấu hình riêng của node (validator do gói đăng ký ở kit) ⇒ 422 `FLOW_NODE_CONFIG_INVALID` + path.
+  const issues = await nodeConfigRegistry.check(tenantId, input.stages);
+  if (issues.length > 0) throw defError("FLOW_NODE_CONFIG_INVALID", { issues });
 }
 
 /** CR-122 · E1 · def có `trigger` ⇒ luật FlowDef (422 `PROCESS_DEF_INVALID`, `paths`). */

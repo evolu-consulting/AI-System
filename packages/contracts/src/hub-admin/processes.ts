@@ -86,7 +86,6 @@ export * from "./process-tools";
 export * from "./process-ui";
 export * from "./process-wait";
 export * from "./sources";
-
 export const HUB_ADMIN_PROCESS_ERRORS = {
   PROCESS_KEY_TAKEN: 409,
   PROCESS_DEF_INVALID: 422,
@@ -95,6 +94,7 @@ export const HUB_ADMIN_PROCESS_ERRORS = {
   TEMPLATE_READ_ONLY: 403,
   FLOW_NODE_FEATURE_OFF: 422, // CR-122 · FR-25 · node của tính năng đã tắt cho công ty
   FLOW_EDGE_MISSING: 422, // CR-122 · N2 · FR-26 · bước sau thiếu trường BẮT BUỘC mà bước trước không có (`details.edges`)
+  FLOW_NODE_CONFIG_INVALID: 422, // CR-122 · E5b · cấu hình riêng của node sai (`details.issues[{path,code}]`, path `stages.<i>.executor.args.<khoá>`)
 } as const;
 export type HubAdminProcessErrorCode = keyof typeof HUB_ADMIN_PROCESS_ERRORS;
 export const PROCESS_DEF_PATHS_MAX = 20;
