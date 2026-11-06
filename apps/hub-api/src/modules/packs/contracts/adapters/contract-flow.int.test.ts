@@ -65,7 +65,7 @@ async function openApproval(tenant: string, contractId: string, by: string): Pro
   await o`insert into contracts.approvals (id, tenant_id, contract_id, status, started_by)
     values (${aid}, ${tenant}, ${contractId}, 'level1', ${by})`;
   await o`update contracts.contracts set run_id = ${aid},
-    fields = jsonb_build_object('total_value', jsonb_build_object('value', 750000000)), deal = 'sell'
+    fields = jsonb_build_object('total_value', jsonb_build_object('value', 750000000)), deal = 'buy', direction = 'purchase'
     where id = ${contractId}`;
   return aid;
 }
@@ -84,7 +84,7 @@ const apply = (tenant: string, ref: string, runId: string, outcome: string) =>
 describe("A1 · gửi duyệt ghi sự kiện cùng tx", () => {
   it("startApproval(level1) + cờ bật ⇒ 1 dòng contract.submitted (facts manifest, theo lượt); gửi lại cùng lượt không ghi thêm", async () => {
     const id = C[0] as string;
-    await o`update contracts.contracts set deal = 'buy',
+    await o`update contracts.contracts set deal = 'buy', direction = 'purchase',
       fields = jsonb_build_object('total_value', jsonb_build_object('value', 500))  where id = ${id}`;
     const start = startApproval({
       uow: uow(),
@@ -124,7 +124,7 @@ describe.skip("A1 · OutcomeHandler trong tx engine", () => {
     expect(a).toMatchObject({ status: "done", engine_run_id: run });
     const ev = await events(T1, `contract.approved:${id}:%`);
     expect(ev).toHaveLength(1);
-    expect(ev[0]?.facts).toMatchObject({ total_value: 750000000, deal: "sell" });
+    expect(ev[0]?.facts).toMatchObject({ total_value: 750000000, deal: "buy" });
     expect(await apply(T1, id, run, "approved")).toBe("already_applied");
     expect(await events(T1, `contract.approved:${id}:%`)).toHaveLength(1);
     // run khác chưa từng áp lên HĐ đã đóng ⇒ không đè
@@ -172,7 +172,7 @@ describe("A1 · chặn đọc chéo tenant", () => {
     const reader = contractsFactsReader(db);
     expect(await reader.read(T2, id, ["deal"])).toBeNull();
     expect(await reader.read(T1, id, ["deal", "total_value"])).toEqual({
-      deal: "sell",
+      deal: "buy",
       total_value: 750000000,
     });
     expect(await reader.read(T1, X, ["deal"])).toBeNull(); // HĐ của T2 đọc dưới tenant T1
