@@ -1,12 +1,13 @@
 // V2-F · HD-01/09 · mockup `fieldsHTML`: lưới ô thông tin hợp đồng dùng chung (nhập tay, xác nhận sau upload, sửa ở trang chi tiết).
 // Ô bắt buộc có dấu * và viền đỏ khi thiếu; nhãn đối tác + ô hoa hồng/giá trị đi theo loại; giá trị để trống ⇒ placeholder tự cộng.
-import type { ReactNode } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import { Tag } from "~/components/shared/tag";
 import { QuoteLine } from "~/features/contract-source/components/QuoteLine";
 import { cn } from "~/lib/utils";
 import { autoTotal, type FormState, type RequiredKey, type TextKey } from "../lib/form-model";
+import { idKind, type PartnerSearchHit } from "../lib/partner-match";
 import { PartnerField } from "./PartnerField";
 
 export type FieldBadge = { kind: "warn" | "quote"; text: string };
@@ -81,6 +82,9 @@ type TextOpts = {
   mono?: boolean;
   ph?: string;
   suffix?: string;
+  /** CR-122 p10: ô chỉ đọc (giá trị lấy từ sổ đối tác) + dòng giải thích. */
+  locked?: boolean;
+  hint?: string | undefined;
 };
 
 function TextField({
@@ -110,6 +114,8 @@ function TextField({
         <input
           id={`cf-${k}`}
           name={k}
+          data-testid={`cf-${k}`}
+          readOnly={o.locked}
           type={o.type ?? "text"}
           inputMode={o.mono ? "decimal" : undefined}
           value={f[k]}
@@ -136,8 +142,32 @@ function TextField({
           </span>
         )}
       </div>
+      {o.hint && <span className="text-[12px] text-dim">{o.hint}</span>}
     </Row>
   );
+}
+
+/** Chọn từ sổ ⇒ tên + MST/CCCD lấy từ sổ (chỉ đọc); bỏ chọn (gõ lại tên) ⇒ xoá số cũ để nhập tay. */
+function usePickedPartner(onSet: Props["onSet"]) {
+  const [picked, setPicked] = useState<PartnerSearchHit | null>(null);
+  const pick = useCallback(
+    (h: PartnerSearchHit | null) => {
+      setPicked(h);
+      if (h) {
+        onSet("partner_name", h.name ?? "");
+        onSet("partner_tax_id", h.tax_id ?? "");
+      } else onSet("partner_tax_id", "");
+    },
+    [onSet],
+  );
+  return { picked, pick };
+}
+
+/** Nhãn + tuỳ chọn ô MST/CCCD: đã chọn từ sổ ⇒ chỉ đọc kèm giải thích; số 12 chữ số ⇒ nhãn CCCD. */
+function taxField(picked: PartnerSearchHit | null, L: (k: string) => string): [string, TextOpts] {
+  if (!picked) return [L("partnerTaxId"), { mono: true }];
+  const key = idKind(picked.tax_id) === "cccd" ? "partnerCccd" : "partnerTaxId";
+  return [L(key), { mono: true, locked: true, hint: L("partnerIdFromBook") }];
 }
 
 export function FieldsGrid({
@@ -155,6 +185,7 @@ export function FieldsGrid({
   const L = (k: string) => t(`contracts.cform.${k}`);
   const D = (k: string) => t(`contracts.doclist.f.${k}`);
   const sum = autoTotal(f.items);
+  const { picked, pick } = usePickedPartner(onSet);
   const text = (k: TextKey, label: string, o: TextOpts = {}) => (
     <TextField
       k={k}
@@ -163,7 +194,7 @@ export function FieldsGrid({
       f={f}
       onSet={onSet}
       disabled={disabled}
-      locked={lockedKeys?.has(k)}
+      locked={lockedKeys?.has(k) || o.locked}
       badges={badges?.[k]}
       unsure={unsure?.has(k)}
     />
@@ -188,11 +219,14 @@ export function FieldsGrid({
         name={f.partner_name}
         taxId={f.partner_tax_id}
         onName={(v) => onSet("partner_name", v)}
+        picked={picked}
+        onPick={pick}
         invalid={invalid.has("partner_name")}
         disabled={disabled}
         unsure={unsure?.has("partner_name")}
+        suggest={!!(unsure || badges)}
       />
-      {text("partner_tax_id", L("partnerTaxId"), { mono: true })}
+      {text("partner_tax_id", ...taxField(picked, L))}
       {referral ? (
         <>
           {text("commission_pct", L("commissionPct"), {

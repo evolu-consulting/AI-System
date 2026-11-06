@@ -24,6 +24,19 @@ export const PartnerLookupQuerySchema = z.strictObject({
   tax_id: noNul(0, 60).optional(),
   deal: z.enum(PARTNER_DEALS).optional(),
 });
+/** CR-122 p10: ô Nhà cung cấp/Đối tác chọn từ sổ đối tác — `GET /partners/search?q=&role=&limit=20` (tiền tố tên/tên ngắn/MST). */
+export const PartnerSearchQuerySchema = z.strictObject({
+  q: noNul(0, 100).optional(),
+  role: z.enum(PARTNER_ROLES_V2).optional(),
+  limit: z.coerce.number().int().min(1).max(50).optional(),
+});
+export type PartnerSearchHit = {
+  party: string;
+  name: string | null;
+  /** MST, hoặc số CCCD (12 số) của đối tác là cá nhân — một nguồn: danh bạ đối tác. */
+  tax_id: string | null;
+  roles: PartnerRoleV2[];
+};
 export const PartnerNotesQuerySchema = z.strictObject({ party: Party });
 export const PartnerNoteCreateSchema = z.strictObject({
   party: Party,

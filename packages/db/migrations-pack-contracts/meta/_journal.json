@@ -519,6 +519,13 @@
       "when": 1806400000000,
       "tag": "0080_esign_expire_claim",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1806500000000,
+      "tag": "0081_partner_pick_search_idx",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,7 @@ import { sql } from "drizzle-orm";
 import type {
   NoteDelete,
   PartnerContractRaw,
+  PartnerSearchHit,
   PartyHit,
   RoleCount,
 } from "../application/partner-roles.ports";
@@ -66,7 +67,44 @@ function roleReads(tx: Tx, t: string) {
 
     /** Đối tác khớp khoá; không có MST ⇒ thêm khớp tên đã fold (vai, danh bạ tên/tên ngắn). Ưu tiên khớp khoá. */
     find: (key: string, fold: string | null) => one<PartyHit | null>(tx, findQ(t, key, fold)),
+
+    /**
+     * CR-122 p10: sổ đối tác = `partner_roles` ∪ `companies` của tenant; khớp TIỀN TỐ tên đã fold / tên ngắn / MST (index
+     * text_pattern_ops 0081), lọc vai nếu có, `limit` cứng. MỘT câu; tenant lọc tường minh ngoài RLS.
+     */
+    search: (q: string, role: string | null, limit: number) =>
+      one<PartnerSearchHit[]>(tx, searchQ(t, q, role, limit)),
   };
+}
+
+function searchQ(t: string, q: string, role: string | null, limit: number) {
+  return sql`with p as (
+      select replace(replace(replace(contracts.fold(${q}::text), '\\', '\\\\'), '%', '\\%'), '_', '\\_') || '%' as lk,
+        regexp_replace(${q}::text, '[^0-9]', '', 'g') as dg),
+    k as (
+      select pr.party_key from contracts.partner_roles pr, p
+        where pr.tenant_id = ${t}::uuid and contracts.fold(pr.name) like p.lk
+      union select co.party_key from contracts.companies co, p
+        where co.tenant_id = ${t}::uuid and contracts.fold(co.name) like p.lk
+      union select co.party_key from contracts.companies co, p
+        where co.tenant_id = ${t}::uuid and contracts.fold(co.short_name) like p.lk
+      union select co.party_key from contracts.companies co, p
+        where p.dg <> '' and co.tenant_id = ${t}::uuid and co.tax_id like p.dg || '%'
+      union select pr.party_key from contracts.partner_roles pr, p
+        where p.dg <> '' and pr.tenant_id = ${t}::uuid and pr.party_key like 'tax:' || p.dg || '%'),
+    s as (
+      select k.party_key,
+        coalesce(co.short_name, co.name, (select pr.name from contracts.partner_roles pr
+          where pr.tenant_id = ${t}::uuid and pr.party_key = k.party_key and pr.name is not null order by pr.first_at limit 1)) as name,
+        coalesce(co.tax_id, case when k.party_key like 'tax:%' then substr(k.party_key, 5) end) as tax_id,
+        (select coalesce(jsonb_agg(r.role order by r.role), '[]'::jsonb) from contracts.partner_roles r
+          where r.tenant_id = ${t}::uuid and r.party_key = k.party_key) as roles
+      from k left join contracts.companies co on co.tenant_id = ${t}::uuid and co.party_key = k.party_key
+      where ${role}::text is null or exists (select 1 from contracts.partner_roles r
+        where r.tenant_id = ${t}::uuid and r.party_key = k.party_key and r.role = ${role}::text)
+      order by 2, 1 limit ${limit}::int)
+    select coalesce(jsonb_agg(jsonb_build_object('party', s.party_key, 'name', s.name, 'tax_id', s.tax_id, 'roles', s.roles)
+      order by s.name, s.party_key), '[]'::jsonb) as j from s`;
 }
 
 function findQ(t: string, key: string, fold: string | null) {

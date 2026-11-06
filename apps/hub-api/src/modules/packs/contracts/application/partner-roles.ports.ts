@@ -29,6 +29,13 @@ export type RoleCount = {
 };
 export type PartyHit = { party: string; name: string | null; tax_id: string | null };
 export type NoteDelete = { deleted: number; exists: boolean };
+/** CR-122 p10: một dòng tìm sổ đối tác. */
+export type PartnerSearchHit = {
+  party: string;
+  name: string | null;
+  tax_id: string | null;
+  roles: PartnerRoleV2[];
+};
 
 export type PartnerRolesRepo = {
   addNote(party: string, body: string, source?: "manual" | "internet"): Promise<PartnerNote | null>;
@@ -51,4 +58,6 @@ export type PartnerRolesRepo = {
   ): Promise<PartnerContactPerson[] | null>;
   roles(party: string | null): Promise<RoleCount[]>;
   find(key: string, fold: string | null): Promise<PartyHit | null>;
+  /** CR-122 p10: tìm tiền tố trong sổ đối tác của tenant (một câu, có limit); `role` null ⇒ mọi vai. */
+  search(q: string, role: PartnerRoleV2 | null, limit: number): Promise<PartnerSearchHit[]>;
 };

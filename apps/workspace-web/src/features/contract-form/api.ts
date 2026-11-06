@@ -2,6 +2,8 @@
 import type {
   ContractDeal,
   PartnerLookup,
+  PartnerRoleV2,
+  PartnerSearchHit,
   ProductCreate,
   ProductMatchOut,
   ProductOut,
@@ -23,6 +25,17 @@ export function lookupPartner(
   const u = new URLSearchParams({ name, deal });
   if (taxId.trim()) u.set("tax_id", taxId.trim());
   return api<PartnerLookup>(`${BASE}/partners/lookup?${u}`, { signal });
+}
+
+/** CR-122 p10: tìm trong sổ đối tác (server giới hạn + index), lọc vai theo loại HĐ. */
+export function searchPartners(
+  q: string,
+  role: PartnerRoleV2,
+  signal?: AbortSignal,
+  limit = 20,
+): Promise<PartnerSearchHit[]> {
+  const u = new URLSearchParams({ q, role, limit: String(limit) });
+  return api<PartnerSearchHit[]>(`${BASE}/partners/search?${u}`, { signal });
 }
 
 export const fetchProducts = async (signal?: AbortSignal): Promise<ProductOut[]> =>

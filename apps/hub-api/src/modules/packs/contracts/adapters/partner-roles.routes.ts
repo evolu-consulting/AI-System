@@ -8,6 +8,7 @@ import {
   PartnerNotesQuerySchema,
   PartnerPartyQuerySchema,
   PartnerRolesQuerySchema,
+  PartnerSearchQuerySchema,
 } from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { z } from "zod";
@@ -64,6 +65,9 @@ export function partnerRolesRoutes(
   );
   r.get("/partners/lookup", read, async (c) =>
     c.json(await run(uc.lookup(who(c), parseQuery(c, PartnerLookupQuerySchema)))),
+  );
+  r.get("/partners/search", read, async (c) =>
+    c.json(await run(uc.search(who(c), parseQuery(c, PartnerSearchQuerySchema)))),
   );
   r.get("/partners/notes", read, async (c) =>
     c.json(await run(uc.notes(who(c), parseQuery(c, PartnerNotesQuerySchema).party))),

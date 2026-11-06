@@ -20,10 +20,11 @@ import type {
   PartnerNote,
   PartnerProfile,
   PartnerRoleRow,
+  PartnerRoleV2,
   PartnerWebLine,
   ScoreBand,
 } from "../domain/partner-roles.types";
-import type { PartnerRolesRepo, RoleCount } from "./partner-roles.ports";
+import type { PartnerRolesRepo, PartnerSearchHit, RoleCount } from "./partner-roles.ports";
 import { toProgress } from "./progress";
 
 export class PartnerRolesFail extends Error {
@@ -198,6 +199,18 @@ export function partnerRolesUsecase(d: PartnerRolesDeps) {
     roles: async (who: PackWho, party?: string): Promise<PartnerRoleRow[]> =>
       (await d.uow.tenant(who, (x) => x.roles.roles(party ?? null))).map(rowOf),
     lookup: (who: PackWho, q: LookupQuery): Promise<PartnerLookup> => lookupPartner(d, who, q),
+    /** CR-122 p10: tìm trong sổ đối tác (tenant của `who`, RLS M1), limit 1…50 mặc định 20. */
+    search: (
+      who: PackWho,
+      q: { q?: string | undefined; role?: PartnerRoleV2 | undefined; limit?: number | undefined },
+    ): Promise<PartnerSearchHit[]> =>
+      d.uow.tenant(who, (x) =>
+        x.roles.search(
+          (q.q ?? "").trim(),
+          q.role ?? null,
+          Math.min(50, Math.max(1, q.limit ?? 20)),
+        ),
+      ),
     ...noteCommands(d),
     profile: (who: PackWho, party: string): Promise<PartnerProfile> =>
       partnerProfile(d, who, party),
