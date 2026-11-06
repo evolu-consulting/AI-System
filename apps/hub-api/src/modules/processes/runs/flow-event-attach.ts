@@ -10,6 +10,11 @@ export type FlowEventAttach = {
   recordInputs?: readonly { key: string; type: string; text?: string; value?: string }[];
   /** CR-122 · P11 · app gắn run vào bản ghi CÙNG tx tạo run (`OutcomeHandler.launched`, CAS). */
   onCreated?: (tx: Tx, runId: string) => Promise<unknown>;
+  /**
+   * CR-122 · P11g · sự kiện mở lượt (vd `contract.submitted`) ⇒ `snapshot.trigger.event`. Engine tìm `FactsReader` theo (gói, sự kiện)
+   * từ đây (`step.repo.ts packOf`); vắng ⇒ node Nếu KHÔNG đọc được dữ kiện ⇒ mọi vế `fact` rỗng ⇒ luôn rẽ nhánh Sai.
+   */
+  event?: string;
 };
 
 export async function attachFlowEvent(
@@ -18,8 +23,10 @@ export async function attachFlowEvent(
   runId: string,
   fe: FlowEventAttach,
 ): Promise<void> {
+  const trigger = fe.event ? JSON.stringify({ trigger: { event: fe.event } }) : "{}";
   await tx.execute(sql`update hub.process_runs set flow_event_id = ${fe.eventRowId}::uuid,
       company_flow_id = ${fe.companyFlowId}::uuid,
+      snapshot = coalesce(snapshot, '{}'::jsonb) || ${trigger}::jsonb,
       inputs = coalesce(inputs, '[]'::jsonb) || coalesce((select jsonb_agg(x) from jsonb_array_elements(
         ${JSON.stringify(fe.recordInputs ?? [])}::jsonb) x
         where not exists (select 1 from jsonb_array_elements(coalesce(inputs, '[]'::jsonb)) y

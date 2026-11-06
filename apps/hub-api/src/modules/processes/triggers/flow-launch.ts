@@ -69,6 +69,7 @@ function launchOpts(e: ClaimedEvent, c: CandidateRow, app: string, def: StartDef
   return {
     flowEvent: {
       eventRowId: e.id,
+      event: e.event, // P11g · snapshot.trigger.event ⇒ node Nếu đọc được dữ kiện app
       companyFlowId: c.companyFlowId,
       recordInputs,
       ...(def ? { def } : {}),
