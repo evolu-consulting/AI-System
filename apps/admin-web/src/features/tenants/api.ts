@@ -198,6 +198,7 @@ export function useTenantFeatureStates(id: string, enabled: boolean) {
         id: f.feature.id,
         key: f.feature.key,
         name: f.feature.name,
+        app: f.feature.app,
         entitled: f.state === "core" || f.state === "entitled",
       }));
     },

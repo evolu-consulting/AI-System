@@ -2245,10 +2245,6 @@
         "name": "Quản trị hợp đồng",
         "desc": "Cấu hình quy trình, mẫu, đối tác và phân quyền"
       },
-      "contracts-approval-engine": {
-        "name": "Duyệt hợp đồng bằng quy trình",
-        "desc": "Duyệt hợp đồng theo quy trình nhiều bước đã thiết kế"
-      },
       "han-muc-duyet": {
         "name": "Kiểm tra hạn mức duyệt",
         "desc": "Tự đối chiếu giá trị hợp đồng với hạn mức của người duyệt"

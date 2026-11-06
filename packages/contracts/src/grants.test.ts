@@ -99,7 +99,7 @@ describe("ADM-FR-35 · batch + ma trận (M3-R08, R09)", () => {
       group_total: 1,
       features: [
         {
-          feature,
+          feature: { ...feature, app: "other" },
           state: "none",
           command_names: ["kiemtra-hoadon"],
           command_count: 1,

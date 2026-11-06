@@ -19,7 +19,7 @@ const FEATURES = [
   F("contracts-read"),
   F("contracts-write"),
   F("contracts-admin"),
-  F("contracts-approval-engine"),
+  F("contracts-export"),
   F("contracts.extract"),
   F("contracts.price_scout", "off"),
   F("community-read"),
@@ -39,7 +39,7 @@ const shell = (o: Partial<ShellInput> = {}): ShellInput => ({
     { key: "community", enabled: true, actions: ["read"] },
   ],
   addons: [
-    { pack: "contracts", key: "contracts-approval-engine", on: true },
+    { pack: "contracts", key: "contracts-export", on: true },
     { pack: "contracts", key: "contracts.extract", on: false },
   ],
   brand: { name: "ACME", app_name: null, logo: null, accent: "#123456" },
@@ -52,7 +52,7 @@ describe("CR-118 · installedPacks / addonKeysOf", () => {
   });
   it("add-on = feature cùng tiền tố gói, trừ 3 mức", () => {
     expect(addonKeysOf(FEATURES, "contracts")).toEqual([
-      "contracts-approval-engine",
+      "contracts-export",
       "contracts.extract",
       "contracts.price_scout",
     ]);
@@ -80,13 +80,13 @@ describe("CR-118 · UW-FR-04 · shellMe", () => {
     });
     expect(r.apps).toEqual(["contracts", "community"]);
     expect(r.home).toBe("contracts");
-    expect(r.addons).toEqual(["contracts-approval-engine"]);
+    expect(r.addons).toEqual(["contracts-export"]);
     expect(r.flags).toMatchObject({
       contracts: true,
       "contracts.read": true,
       "contracts.write": true,
       "contracts.admin": false,
-      "contracts-approval-engine": true,
+      "contracts-export": true,
       "contracts.extract": false,
       community: true,
     });
@@ -97,7 +97,7 @@ describe("CR-118 · UW-FR-04 · shellMe", () => {
     expect(r.packs.contracts).toEqual({ enabled: false, level: "off", actions: [] });
     expect(r.addons).toEqual([]);
     expect(r.flags.contracts).toBe(false);
-    expect(r.flags["contracts-approval-engine"]).toBe(false);
+    expect(r.flags["contracts-export"]).toBe(false);
     expect(r.home).toBe("community");
     expect(r.user.kind).toBe("external");
   });
@@ -142,8 +142,7 @@ const caps = (o: Partial<CapsInput> = {}): CapsInput => ({
   tenantId: T,
   versions: { admin: 3, hub: 7 },
   features: FEATURES,
-  entitled: (fid) =>
-    ["f-contracts-read", "f-contracts-write", "f-contracts-approval-engine"].includes(fid),
+  entitled: (fid) => ["f-contracts-read", "f-contracts-write", "f-contracts-export"].includes(fid),
   agents: [
     { id: "a1", key: "assistant", name: "Trợ lý", enabled: true },
     { id: "a2", key: "price-scout", name: "Dò giá", enabled: true },
@@ -176,7 +175,7 @@ describe("CR-118 · UW-FR-16..19 · tenantCapabilities", () => {
     const app = r.apps.find((a) => a.key === "contracts");
     expect(app?.level).toBe("write");
     expect(app?.addons).toEqual([
-      { key: "contracts-approval-engine", on: true },
+      { key: "contracts-export", on: true },
       { key: "contracts.extract", on: false },
       { key: "contracts.price_scout", on: false },
     ]);

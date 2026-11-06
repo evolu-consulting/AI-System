@@ -1,5 +1,6 @@
 // CR-110 low · hộp xác nhận thu hồi liệt kê tên thân thiện của mọi feature bị thu hồi (kể cả tính năng thêm khi app về Tắt).
 import { describe, expect, test } from "bun:test";
+import { appOfKey } from "@/features/features/lib/feature-fixtures";
 import { buildCards, diffEntitlements, setLevel, type TenantFeature } from "./feature-assign";
 import { revokeMessage } from "./revoke-message";
 
@@ -7,6 +8,7 @@ const feat = (key: string, entitled: boolean): TenantFeature => ({
   id: key,
   key,
   name: { vi: `Tên ${key}` },
+  app: appOfKey(key),
   entitled,
 });
 const tr = (key: string, p?: Record<string, string | number>) =>

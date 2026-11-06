@@ -9,6 +9,7 @@ import {
   LocalizedOptionalSchema,
   LocalizedTextSchema,
 } from "@ai/contracts/common";
+import type { FeatureApp } from "@ai/contracts/features";
 import { featureCommands, featureEntitlements, features, type Tx, tenants, users } from "@ai/db";
 import { and, asc, desc, eq, ilike, isNull, or, type SQL, sql } from "drizzle-orm";
 import { likeArg, outer, usernameOf } from "../../lib/sql";
@@ -23,6 +24,8 @@ export type FeatureRow = {
   description: { vi?: string; en?: string };
   icon: string;
   status: FeatureStatus;
+  /** CR-121 c18 · cột `admin.features.app` (nguồn duy nhất). */
+  app: FeatureApp;
   version: number;
   createdAt: Date;
   updatedAt: Date;
@@ -45,6 +48,7 @@ const rowCols = {
   description: features.description,
   icon: features.icon,
   status: features.status,
+  app: features.app,
   version: features.version,
   createdAt: features.createdAt,
   updatedAt: features.updatedAt,
@@ -152,7 +156,14 @@ export type FeatureSet = {
 
 export async function insertFeature(
   tx: Tx,
-  f: Required<FeatureSet> & { id: string; key: string; actorId: string; version?: number },
+  f: Required<FeatureSet> & {
+    id: string;
+    key: string;
+    actorId: string;
+    version?: number;
+    /** Bỏ trống ⇒ trigger DB điền theo `admin.feature_app_of(key)`. */
+    app?: FeatureApp;
+  },
 ): Promise<void> {
   const { actorId, ...rest } = f;
   await tx.insert(features).values({ ...rest, updatedBy: actorId });

@@ -1,6 +1,7 @@
-﻿// CR-112 · tab Tổng quan + quota rút gọn · luật thuần.
+// CR-112 · tab Tổng quan + quota rút gọn · luật thuần.
 import { describe, expect, it } from "bun:test";
 import type { QuotaStatus } from "@ai/contracts/quotas";
+import { appOfKey } from "@/features/features/lib/feature-fixtures";
 import { buildCards, entitledKeys, type TenantFeature } from "./feature-assign";
 import { appsOn, quotaLines, tenantQuotaRow } from "./overview";
 
@@ -8,6 +9,7 @@ const feat = (key: string, entitled: boolean): TenantFeature => ({
   id: key,
   key,
   name: { vi: key, en: key },
+  app: appOfKey(key),
   entitled,
 });
 

@@ -25,7 +25,11 @@ import {
   uniqueArray,
   VersionSchema,
 } from "./common";
+import { FEATURE_APP_IDS } from "./tenants";
 
+/** CR-121 c18 · ứng dụng của feature (cột `admin.features.app`). */
+export const FeatureAppSchema = z.enum(FEATURE_APP_IDS);
+export type FeatureApp = z.infer<typeof FeatureAppSchema>;
 export const FeatureIconSchema = z.string().regex(FEATURE_ICON_RE);
 export const FeatureNameSchema = LocalizedTextSchema(FEATURE_NAME_MAX);
 export const FeatureDescSchema = LocalizedOptionalSchema(FEATURE_DESC_MAX);
@@ -48,6 +52,7 @@ const listItemShape = {
   /** `icon` null trong DB → `"package"`. */
   icon: FeatureIconSchema,
   status: FeatureStatusSchema,
+  app: FeatureAppSchema,
   is_core: z.boolean(),
   command_count: CountSchema,
   /** Entitlement chưa thu hồi; `core` = 0 (FE hiện "Mọi tenant" theo `is_core`). */
@@ -91,6 +96,8 @@ export const FeatureCreateRequestSchema = z.strictObject({
   description: FeatureDescSchema.default({}),
   icon: FeatureIconSchema.default(FEATURE_ICON_DEFAULT),
   status: FeatureStatusSchema.default("on"),
+  /** Bỏ trống ⇒ DB điền theo `admin.feature_app_of(key)` (trigger). */
+  app: FeatureAppSchema.optional(),
   command_ids: CommandIdsSchema.default([]),
 });
 export type FeatureCreateRequest = z.infer<typeof FeatureCreateRequestSchema>;

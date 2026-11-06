@@ -48,7 +48,7 @@ export type TenantOption = { id: string; key: string; name: string; locked: bool
 
 /**
  * Dựng bảng công ty từ danh sách công ty + entitlement theo từng feature key của app.
- * Mức = mức cao nhất công ty có (khớp `detectLevel` của thẻ app); app Tắt ⇒ `off`.
+ * `ents` chỉ chứa feature của chính `appId` (đã lọc theo cột `app` ở hook). Mức = mức cao nhất công ty có (khớp `detectLevel` của thẻ app); app Tắt ⇒ `off`.
  */
 export function buildCompanyRows(
   tenants: readonly TenantOption[],
@@ -61,12 +61,10 @@ export function buildCompanyRows(
   }
   const levelKey = (l: Level) =>
     Object.keys(ents).find((k) => {
-      const m = metaOf(k);
-      return m.app === appId && m.level === l;
+      return metaOf({ key: k, app: appId }).level === l;
     });
   const addonKeys = Object.keys(ents).filter((k) => {
-    const m = metaOf(k);
-    return m.app === appId && !m.level;
+    return !metaOf({ key: k, app: appId }).level;
   });
   return tenants.map((t) => {
     const top = [...LEVELS].reverse().find((l) => {

@@ -6,7 +6,6 @@ import { DetailDrawer } from "@/components/shared/list/DetailDrawer";
 import type { StatusTone } from "@/components/shared/StatusBadge";
 import { useTr } from "@/lib/use-translate";
 import { featureText } from "../lib/feature-label";
-import { metaOf } from "../lib/feature-meta";
 
 const TONE: Record<FeatureListItem["status"], StatusTone> = { on: "ok", beta: "info", off: "off" };
 
@@ -27,7 +26,7 @@ export function FeatureDrawer({ feature: f, onClose }: Props) {
       facts={
         f
           ? [
-              { k: t("features.drawer.app"), v: tr(`featmeta.app.${metaOf(f.key).app}.name`) },
+              { k: t("features.drawer.app"), v: tr(`featmeta.app.${f.app}.name`) },
               {
                 k: t("features.drawer.usage"),
                 v: f.is_core

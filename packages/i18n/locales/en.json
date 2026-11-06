@@ -2245,10 +2245,6 @@
         "name": "Administer contracts",
         "desc": "Configure workflows, templates, partners and permissions"
       },
-      "contracts-approval-engine": {
-        "name": "Approve contracts with workflows",
-        "desc": "Approve contracts through the designed multi-step workflow"
-      },
       "han-muc-duyet": {
         "name": "Approval limit check",
         "desc": "Automatically compare contract value against the approver's limit"

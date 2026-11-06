@@ -17,6 +17,7 @@ const detail: FeatureDetail = {
   description: {},
   icon: "package",
   status: "on",
+  app: "core",
   is_core: true,
   command_count: 1,
   tenant_count: 0,

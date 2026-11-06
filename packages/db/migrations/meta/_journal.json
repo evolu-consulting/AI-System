@@ -260,6 +260,13 @@
       "when": 1803300000000,
       "tag": "0036_tenants_profile_revoke_hub_ro",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1803400000000,
+      "tag": "0037_feature_app_col",
+      "breakpoints": true
     }
   ]
 }

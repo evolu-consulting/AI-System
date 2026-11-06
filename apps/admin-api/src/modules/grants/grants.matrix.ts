@@ -7,6 +7,7 @@ import {
   type FeatureStatus,
   LocalizedTextSchema,
 } from "@ai/contracts/common";
+import type { FeatureApp } from "@ai/contracts/features";
 import {
   type GrantMatrix,
   type GrantMatrixQuery,
@@ -30,6 +31,7 @@ type FeatureRow = {
   key: string;
   name: unknown;
   status: FeatureStatus;
+  app: FeatureApp;
   entitled: boolean;
   revoked: boolean;
   grant_count: number;
@@ -67,7 +69,7 @@ async function featureRows(tx: Tx, tenantId: string, groupIds: string[]): Promis
       cn as (select fc.feature_id, count(*)::int as n,
           (array_agg(c.name order by c.name))[1:${MATRIX_COMMAND_NAMES_MAX}] as names
         from admin.feature_commands fc join admin.commands c on c.id = fc.command_id group by fc.feature_id)
-    select f.id, f.key, f.name, f.status,
+    select f.id, f.key, f.name, f.status, f.app,
       coalesce(e.revoked_at is null and e.feature_id is not null, false) as entitled,
       coalesce(e.revoked_at is not null, false) as revoked,
       coalesce(gc.n, 0) as grant_count, coalesce(cn.names, '{}') as command_names,
@@ -119,6 +121,7 @@ async function readMatrix(
         key: f.key,
         name: FeatureName.parse(f.name),
         status: f.status,
+        app: f.app,
         is_core: f.key === CORE_FEATURE_KEY,
       },
       state: matrixRowState({

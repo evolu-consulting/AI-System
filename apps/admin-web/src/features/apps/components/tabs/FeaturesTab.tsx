@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/shared/states/EmptyState";
 import { FeatureTable } from "@/features/features/components/FeatureTable";
 import { useFeatureActions } from "@/features/features/hooks/use-feature-actions";
 import { useFeatureList } from "@/features/features/hooks/use-feature-queries";
-import { type AppId, isHiddenFeature, metaOf } from "@/features/features/lib/feature-meta";
+import type { AppId } from "@/features/features/lib/feature-meta";
 import { loadError } from "@/lib/load-error";
 
 export function FeaturesTab({ appId }: { appId: AppId | null }) {
@@ -14,9 +14,7 @@ export function FeaturesTab({ appId }: { appId: AppId | null }) {
   const list = useFeatureList({ q: "", offset: 0 }, appId !== null);
   const actions = useFeatureActions();
   if (!appId) return <EmptyState message={t("appcfg.features.noGroup")} />;
-  const items = (list.data?.items ?? []).filter(
-    (f) => metaOf(f.key).app === appId && !isHiddenFeature(f.key),
-  );
+  const items = (list.data?.items ?? []).filter((f) => f.app === appId);
   const err = loadError(list.error);
   return (
     <div className="space-y-4">

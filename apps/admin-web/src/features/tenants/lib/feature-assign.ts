@@ -4,14 +4,20 @@ import {
   APPS,
   type AppId,
   groupByApp,
-  isHiddenFeature,
   LEVELS,
   type Level,
   metaOf,
 } from "@/features/features/lib/feature-meta";
 import type { LocalizedText } from "@/lib/localized";
 
-export type TenantFeature = { id: string; key: string; name: LocalizedText; entitled: boolean };
+export type TenantFeature = {
+  id: string;
+  key: string;
+  name: LocalizedText;
+  /** CR-121 c18 · cột `admin.features.app`. */
+  app: AppId;
+  entitled: boolean;
+};
 export type AppLevel = "off" | Level;
 /** core: luôn bật · levels: thanh Tắt/Xem/Sửa/Quản trị · switch: một công tắc · list: mỗi feature một công tắc. */
 export type CardMode = "core" | "levels" | "switch" | "list";
@@ -30,7 +36,7 @@ export function buildCards(features: readonly TenantFeature[]): AppCard[] {
   return groupByApp(features).map(({ app, items }) => {
     const levelFeatures: Partial<Record<Level, TenantFeature>> = {};
     for (const f of items) {
-      const level = metaOf(f.key).level;
+      const level = metaOf(f).level;
       if (level && APPS[app].levels) levelFeatures[level] = f;
     }
     const base = { app, levelFeatures };
@@ -104,11 +110,7 @@ export function setKey(draft: ReadonlySet<string>, key: string, on: boolean): Se
 
 /** Key đang được cấp (bỏ `core`: luôn có hiệu lực, không có hàng entitlement). */
 export function entitledKeys(features: readonly TenantFeature[]): Set<string> {
-  return new Set(
-    features
-      .filter((f) => f.entitled && metaOf(f.key).app !== "core" && !isHiddenFeature(f.key))
-      .map((f) => f.key),
-  );
+  return new Set(features.filter((f) => f.entitled && f.app !== "core").map((f) => f.key));
 }
 
 /** Việc cần làm để đưa trạng thái hiện có về `draft`: chỉ feature có trong catalog, không đụng `core`. */
@@ -116,8 +118,7 @@ export function diffEntitlements(
   features: readonly TenantFeature[],
   draft: ReadonlySet<string>,
 ): { grant: TenantFeature[]; revoke: TenantFeature[] } {
-  // Feature ẩn không có trong draft ⇒ không bao giờ bị "thu hồi" khi lưu (CR-121 D-4).
-  const own = features.filter((f) => metaOf(f.key).app !== "core" && !isHiddenFeature(f.key));
+  const own = features.filter((f) => f.app !== "core");
   return {
     grant: own.filter((f) => !f.entitled && draft.has(f.key)),
     revoke: own.filter((f) => f.entitled && !draft.has(f.key)),

@@ -1,4 +1,4 @@
-﻿// CR-120 (part F) · int (DB test, role hub_api, scope system): check `flow_coverage` chạy một lượt ops-watch THẬT.
+// CR-120 (part F) · int (DB test, role hub_api, scope system): check `flow_coverage` chạy một lượt ops-watch THẬT.
 // Tenant bật gói chạy bằng mẫu khe mà tập gán rỗng (đúng ca Demo) ⇒ crit kèm tên tenant + khe; tenant đã có `process_tenant_defs`
 // ⇒ không bị nêu; sau `ensureSlotDefaults` (cr120-single-source) ⇒ ok. Tenant không bật gói không bị kiểm.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
@@ -94,6 +94,19 @@ describe("ops-watch · flow_coverage · int", () => {
     expect(r?.value.gap_count).toBe(0);
   });
 
+  it("CR-121 c18 · feature thiếu app (khoá thuộc ứng dụng mà cột app = other) và engine còn sót ⇒ crit nêu key, sửa xong ⇒ ok", async () => {
+    await o`insert into admin.features (key, name, app) values ('contracts-c18bad', '{"vi":"x"}'::jsonb, 'other'),
+      ('contracts-approval-engine', '{"vi":"e"}'::jsonb, 'contracts')`;
+    await round(62);
+    const r = await row();
+    expect(r?.status).toBe("crit");
+    expect(r?.message).toContain("contracts-c18bad");
+    expect(r?.message).toContain("contracts-approval-engine");
+    await o`delete from admin.features where key in ('contracts-c18bad', 'contracts-approval-engine')`;
+    await round(93);
+    expect((await row())?.status).toBe("ok");
+  });
+
   it("CR-121 D-4 · luật trỏ quy trình đã xoá / còn lượt duyệt mà hết luật ⇒ crit nêu tên (không nhắc feature), sửa ⇒ ok", async () => {
     await o`insert into admin.tenants (id, key, name) values (${RULE}, 't1205', 'Luật hỏng')`;
     await o`insert into admin.tenants (id, key, name) values (${NOENG}, 't1206', 'Mất gán')`;
@@ -124,7 +137,7 @@ describe("ops-watch · flow_coverage · int", () => {
         input, conversation_id, flow_id, expires_at)
       values (${NOENG}, ${tdef?.id as string}, 1, '{}'::jsonb, ${u?.id as string}, 'admin', 'x', ${cv?.id as string},
         gen_random_uuid(), now() + interval '1 day')`;
-    await round(62);
+    await round(124);
     const r = await row();
     expect(r?.status).toBe("crit");
     expect(r?.message).toContain("Luật hỏng");
@@ -135,7 +148,7 @@ describe("ops-watch · flow_coverage · int", () => {
     await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${RULE}, ${DFLT}, ${SLOT}) on conflict do nothing`;
     await o`update hub.process_routing_rules set def_id = ${DFLT} where tenant_id = ${RULE}`;
     await o`delete from hub.process_runs where tenant_id = ${NOENG}`;
-    await round(93);
+    await round(155);
     expect((await row())?.status).toBe("ok");
   });
 });

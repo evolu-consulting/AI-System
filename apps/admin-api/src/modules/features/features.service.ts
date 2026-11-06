@@ -54,6 +54,7 @@ export function toFeatureItem(r: repo.FeatureRow): FeatureListItem {
     description: r.description,
     icon: r.icon,
     status: r.status,
+    app: r.app,
     is_core: isCore(r),
     command_count: r.commandCount,
     tenant_count: r.tenantCount,
@@ -142,6 +143,7 @@ export async function createFeatureIn(
     description: input.description,
     icon: input.icon,
     status: input.status,
+    ...(input.app ? { app: input.app } : {}),
   };
   await tx.transaction((sp) => repo.insertFeature(sp, row)).catch(mapFeatureConflict);
   await m.addPairs(tx, pairs(id, input.command_ids));

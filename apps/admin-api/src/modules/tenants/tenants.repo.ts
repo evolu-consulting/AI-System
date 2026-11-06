@@ -30,11 +30,11 @@ const userCount = sql<number>`(select count(*)::int from admin.users u where u.t
 const updatedBy = sql<
   string | null
 >`(select u.username from admin.users u where u.id = admin.tenants.updated_by)`;
-// CR-121 Q-1 · app của feature = tiền tố khoá (`chat-app` ⇒ chat); `contracts-approval-engine` ẩn như ở admin-web (feature-meta).
+// CR-121 Q-1 · app của feature = cột `admin.features.app` (c18, nguồn duy nhất; không suy theo tiền tố khoá). `core`/`other` không tính.
 const APP_LIST = sql.raw(TENANT_APP_IDS.map((a) => `'${a}'`).join(","));
-const APP_OF = sql`case when f.key = 'chat-app' then 'chat' else split_part(f.key, '-', 1) end`;
+const APP_OF = sql`f.app`;
 const ENTITLED = sql`from admin.feature_entitlements e join admin.features f on f.id = e.feature_id
-  where e.tenant_id = admin.tenants.id and e.revoked_at is null and f.key <> 'contracts-approval-engine'`;
+  where e.tenant_id = admin.tenants.id and e.revoked_at is null`;
 const appsAgg = sql<TenantApp[]>`(select coalesce(array_agg(distinct a order by a), '{}') from
   (select ${APP_OF} as a ${ENTITLED}) s where a in (${APP_LIST}))`;
 const hasApp = (app: TenantApp) => sql`exists (select 1 ${ENTITLED} and ${APP_OF} = ${app})`;

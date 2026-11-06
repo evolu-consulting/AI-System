@@ -115,7 +115,7 @@ export function FeatureGroupSection({
                     {f.is_core ? (
                       <StatusBadge tone="info">{t("features.default")}</StatusBadge>
                     ) : null}
-                    {metaOf(f.key).addon ? (
+                    {metaOf(f).addon ? (
                       <StatusBadge tone="warn">{t("features.addon")}</StatusBadge>
                     ) : null}
                   </div>

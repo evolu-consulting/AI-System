@@ -2,7 +2,7 @@
 // Không có endpoint gộp (làn đầy đủ, để lát sau nếu cần): dùng API sẵn có, số lời gọi = số feature của app (≤ 8), không phụ thuộc số công ty.
 import { useMemo } from "react";
 import { useFeatureList, useTenantOptions } from "@/features/features/api";
-import { type AppId, isHiddenFeature, metaOf } from "@/features/features/lib/feature-meta";
+import type { AppId } from "@/features/features/lib/feature-meta";
 import { useFeatureEntitlementLists } from "../api";
 import { buildCompanyRows, type EntRow } from "../lib/app-config";
 
@@ -10,10 +10,7 @@ export function useAppCompanies(appId: AppId | null) {
   const features = useFeatureList({ q: "", offset: 0 }, appId !== null);
   const tenants = useTenantOptions(appId !== null);
   const appFeatures = useMemo(
-    () =>
-      (features.data?.items ?? []).filter(
-        (f) => appId && metaOf(f.key).app === appId && !isHiddenFeature(f.key),
-      ),
+    () => (features.data?.items ?? []).filter((f) => appId && f.app === appId),
     [features.data, appId],
   );
   const lists = useFeatureEntitlementLists(appFeatures.map((f) => f.id));

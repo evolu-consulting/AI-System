@@ -1,5 +1,6 @@
 // CR-112 · ADM-FR-78 · kế hoạch lưu tab "Ứng dụng & Gói": mức ⇒ gói + entitlement, thứ tự bật gói → cấp/thu hồi → tắt gói, lỗi từng phần.
 import { describe, expect, test } from "bun:test";
+import { appOfKey } from "@/features/features/lib/feature-fixtures";
 import { appsConfirmMessage, needsConfirm } from "./apps-confirm";
 import {
   type AppsPlan,
@@ -29,7 +30,6 @@ const KEYS = [
   "contracts-read",
   "contracts-write",
   "contracts-admin",
-  "contracts-approval-engine",
   "han-muc-duyet",
 ];
 const feats = (on: string[] = []): TenantFeature[] =>
@@ -37,6 +37,7 @@ const feats = (on: string[] = []): TenantFeature[] =>
     id: `id-${k}`,
     key: k,
     name: { vi: k },
+    app: appOfKey(k),
     entitled: k === "core" || on.includes(k),
   }));
 const pack = (enabled: boolean, extra: Partial<PackInfo> = {}): PackInfo => ({
@@ -185,7 +186,13 @@ describe("roleStats · vai không hiệu lực theo mức đang chọn", () => {
 });
 
 describe("runPlan · thứ tự và lỗi từng phần", () => {
-  const f = (k: string): TenantFeature => ({ id: k, key: k, name: { vi: k }, entitled: true });
+  const f = (k: string): TenantFeature => ({
+    id: k,
+    key: k,
+    name: { vi: k },
+    app: appOfKey(k),
+    entitled: true,
+  });
   const plan: AppsPlan = {
     enablePacks: ["a"],
     grant: [f("g1")],

@@ -15,6 +15,7 @@ import {
   UuidSchema,
 } from "./common";
 import { GroupRefSchema, groupRefShape, refineBeta } from "./groups";
+import { FEATURE_APP_IDS } from "./tenants";
 
 export const GRANT_BATCH_MAX = 200;
 export const MATRIX_GROUPS_MAX = 200;
@@ -146,7 +147,8 @@ export const MatrixGroupSchema = refineBeta(
 export type MatrixGroup = z.infer<typeof MatrixGroupSchema>;
 
 export const MatrixFeatureSchema = z.strictObject({
-  feature: GrantFeatureRefSchema,
+  /** CR-121 c18 · `app` = cột `admin.features.app` (admin-web nhóm feature theo app, không suy từ khoá). */
+  feature: GrantFeatureRefSchema.extend({ app: z.enum(FEATURE_APP_IDS) }),
   state: MatrixRowStateSchema,
   command_names: z.array(z.string().regex(CATALOG_KEY_RE)).max(MATRIX_COMMAND_NAMES_MAX),
   command_count: CountSchema,

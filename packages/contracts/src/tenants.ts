@@ -91,8 +91,10 @@ export const ProcessRunsMaxSchema = z
   .min(TENANT_PROCESS_RUNS_MAX.min)
   .max(TENANT_PROCESS_RUNS_MAX.max);
 
-/** CR-121 Q-1 · ứng dụng lọc được (khoá = tiền tố feature; `chat` = feature `chat-app`; `core` luôn bật nên không có). */
+/** CR-121 Q-1 · ứng dụng lọc được (đọc cột `admin.features.app`; `core` luôn bật nên không có). */
 export const TENANT_APP_IDS = ["chat", "community", "contracts", "knowledge"] as const;
+/** CR-121 c18 · giá trị cột `admin.features.app` (nguồn duy nhất feature → ứng dụng): + `core` (luôn bật) và `other` (chưa phân app, nhóm "Khác"). */
+export const FEATURE_APP_IDS = ["core", ...TENANT_APP_IDS, "other"] as const;
 export const TenantAppSchema = z.enum(TENANT_APP_IDS);
 export type TenantApp = z.infer<typeof TenantAppSchema>;
 

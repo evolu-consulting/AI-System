@@ -1,5 +1,6 @@
 // CR-111 · mức Tắt/Xem/Sửa/Quản trị ↔ tập key (hai chiều, kể cả bộ không chuẩn), tính năng thêm, diff lưu một lượt.
 import { describe, expect, test } from "bun:test";
+import { appOfKey } from "@/features/features/lib/feature-fixtures";
 import {
   type AppCard,
   availableLevels,
@@ -17,6 +18,7 @@ const feat = (key: string, entitled = false): TenantFeature => ({
   id: `id-${key}`,
   key,
   name: { vi: key },
+  app: appOfKey(key),
   entitled,
 });
 const catalog = (on: string[] = []): TenantFeature[] =>
@@ -29,7 +31,6 @@ const catalog = (on: string[] = []): TenantFeature[] =>
     "contracts-read",
     "contracts-write",
     "contracts-admin",
-    "contracts-approval-engine",
     "han-muc-duyet",
     "ke-toan",
   ].map((k) => feat(k, k === "core" || on.includes(k)));
@@ -50,7 +51,6 @@ describe("buildCards", () => {
       ["contracts", "levels"],
       ["other", "list"],
     ]);
-    // CR-121 D-4 · `contracts-approval-engine` không còn trong danh mục hiển thị (gán quy trình là đủ).
     expect(card("contracts").addons.map((f) => f.key)).toEqual(["han-muc-duyet"]);
     expect(card("chat").main?.key).toBe("chat-app");
   });
@@ -138,13 +138,11 @@ describe("diffEntitlements", () => {
     expect(d.grant.map((f) => f.key).sort()).toEqual(["contracts-admin", "han-muc-duyet"]);
     expect(d.revoke.map((f) => f.key).sort()).toEqual(["chat-app"]);
   });
-  test("CR-121 D-4 · feature ẩn (contracts-approval-engine) không vào entitledKeys và không bao giờ bị thu hồi/cấp khi lưu", () => {
-    const withHidden = catalog(["contracts-read", "contracts-approval-engine"]);
-    expect(entitledKeys(withHidden).has("contracts-approval-engine")).toBe(false);
-    const d = diffEntitlements(withHidden, entitledKeys(withHidden));
-    expect(d).toEqual({ grant: [], revoke: [] });
-    const off = diffEntitlements(withHidden, new Set<string>());
+  test("`core` (app=core) không bao giờ bị thu hồi/cấp khi lưu", () => {
+    const all = catalog(["contracts-read"]);
+    const off = diffEntitlements(all, new Set<string>());
     expect(off.revoke.map((f) => f.key)).toEqual(["contracts-read"]);
+    expect(diffEntitlements(all, entitledKeys(all))).toEqual({ grant: [], revoke: [] });
   });
   test("bộ không chuẩn: lưu không đổi mức vẫn ra diff chuẩn hoá (thêm read)", () => {
     const bad = catalog(["contracts-write"]);

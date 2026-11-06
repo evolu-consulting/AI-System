@@ -217,6 +217,10 @@ export const features = admin.table(
     status: text("status", { enum: ["on", "off", "beta"] })
       .notNull()
       .default("on"),
+    /** CR-121 c18 (0037) · NGUỒN DUY NHẤT feature → ứng dụng. DB không có DEFAULT: bỏ trống ⇒ trigger `features_app_fill` điền theo `admin.feature_app_of(key)`; CHECK `features_app_check` ở 0037. */
+    app: text("app", { enum: ["core", "chat", "community", "contracts", "knowledge", "other"] })
+      .notNull()
+      .default(sql`null`),
     version: versionCol(),
     ...audit(),
     updatedBy: updatedBy(),

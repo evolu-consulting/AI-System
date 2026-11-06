@@ -24,6 +24,10 @@ export type CoverageAgg = {
   unrouted?: string[];
   /** CR-121 D-4 · tên công ty có quy trình đã gán nhưng không chạy được: quy trình của luật bị xoá/chưa xuất bản, hoặc run duyệt HĐ kẹt `needs_decision`. */
   broken?: string[];
+  /** CR-121 c18 (D1) · feature `contracts-approval-engine` còn trong `admin.features` (đã gỡ ở admin 0037; gán quy trình là đủ). */
+  engine_feature?: boolean;
+  /** CR-121 c18 (D5) · key feature theo quy ước thuộc một ứng dụng nhưng cột `admin.features.app` = `other` (thiếu app). */
+  feature_app_missing?: string[];
 };
 export type CoverageSlot = { slot: string; feature: string };
 
@@ -52,13 +56,43 @@ function approvalConfigParts(unrouted: readonly string[], broken: readonly strin
     );
   return parts;
 }
-/** Thuần. */
+/** CR-121 c18 · đoạn thông điệp cho danh mục feature lệch (engine còn sót, feature thiếu app). */
+function featureCatalogParts(engine: boolean, missing: readonly string[]): string[] {
+  const parts: string[] = [];
+  if (engine)
+    parts.push("feature contracts-approval-engine còn trong danh mục (đã gỡ: gán quy trình là đủ)");
+  if (missing.length > 0)
+    parts.push(
+      `${missing.length} feature chưa gán ứng dụng (cột app = other): ${namesOf(missing)}`,
+    );
+  return parts;
+}
+
+const FEATURE_CATALOG_HINT =
+  "Admin › Tính năng: gán ứng dụng cho feature (cột app) rồi kiểm lại; feature engine còn sót thì chạy lại migration admin 0037.";
+
+/** Thuần. Danh mục feature lệch (c18) nêu trước, nối với kết quả hiển thị/duyệt bên dưới. */
 export function evaluateFlowCoverage(a: CoverageAgg): OpsCheckResult {
+  const engine = a.engine_feature ?? false;
+  const missing = a.feature_app_missing ?? [];
+  const base = evaluateCoverage(a);
+  const value = { ...(base.value as object), engine_feature: engine, feature_app_missing: missing };
+  if (!engine && missing.length === 0) return { ...base, value };
+  const parts = featureCatalogParts(engine, missing);
+  return {
+    status: "crit",
+    value,
+    message: `${parts.join(" · ")}${base.status === "crit" ? ` · ${base.message}` : ""}`,
+    hint: `${FEATURE_CATALOG_HINT} ${base.status === "crit" ? (base.hint ?? "") : ""}`.trim(),
+  };
+}
+
+function evaluateCoverage(a: CoverageAgg): OpsCheckResult {
   const unrouted = a.unrouted ?? [];
   const broken = a.broken ?? [];
   const value = { checked: a.checked, gap_count: a.gap_count, gaps: a.gaps, unrouted, broken };
   if (unrouted.length > 0 || broken.length > 0) {
-    const r = evaluateFlowCoverage({ ...a, unrouted: [], broken: [] });
+    const r = evaluateCoverage({ ...a, unrouted: [], broken: [] });
     const parts = approvalConfigParts(unrouted, broken);
     return {
       status: "crit",
@@ -154,6 +188,18 @@ export const approvalConfigQuery = () => sql`
       select coalesce(nullif(tn.name, ''), tn.key) as n from admin.tenants tn
       where tn.active and tn.id in (select tenant_id from bk) order by 1 limit ${NAMES_LIMIT}) y), '[]'::jsonb) as broken`;
 
+/**
+ * CR-121 c18 · danh mục feature lệch, một câu tập hợp: (a) engine còn tồn tại; (b) feature mà quy ước (`admin.feature_app_of`, cùng hàm
+ * backfill/trigger của 0037) xếp vào một ứng dụng nhưng cột `app` = `other`. Feature cố ý gán app khác quy ước không bị nêu.
+ */
+export const featureCatalogQuery = () => sql`
+  select
+    exists (select 1 from admin.features where key = 'contracts-approval-engine') as engine_feature,
+    coalesce((select jsonb_agg(k order by k) from (
+      select f.key as k from admin.features f
+      where f.app = 'other' and admin.feature_app_of(f.key) <> 'other' order by f.key limit ${NAMES_LIMIT}) m), '[]'::jsonb)
+      as feature_app_missing`;
+
 /** Khe cần kiểm: đã đăng ký (gói đã mount), bỏ `dlc.*` (Rowan) và khe opt-in (không có mặc định ⇒ chưa gán là bình thường). */
 export const coverageSlotsOf = (
   list: () => readonly { key: string; packKey: string; optIn?: boolean | undefined }[],
@@ -174,14 +220,21 @@ export function makeFlowCoverageCheck(
     async run(d) {
       const slots = coverageSlotsOf(list);
       if (slots.length === 0) return evaluateFlowCoverage({ checked: 0, gap_count: 0, gaps: [] });
-      const [r, e] = await systemRead(d.db, async (tx) => [
+      const [r, e, c] = await systemRead(d.db, async (tx) => [
         (await tx.execute<CoverageAgg>(flowCoverageQuery(slots)))[0],
         (await tx.execute<{ unrouted: string[]; broken: string[] }>(approvalConfigQuery()))[0],
+        (
+          await tx.execute<{ engine_feature: boolean; feature_app_missing: string[] }>(
+            featureCatalogQuery(),
+          )
+        )[0],
       ]);
       return evaluateFlowCoverage({
         ...(r ?? { checked: 0, gap_count: 0, gaps: [] }),
         unrouted: e?.unrouted ?? [],
         broken: e?.broken ?? [],
+        engine_feature: c?.engine_feature ?? false,
+        feature_app_missing: c?.feature_app_missing ?? [],
       });
     },
   };

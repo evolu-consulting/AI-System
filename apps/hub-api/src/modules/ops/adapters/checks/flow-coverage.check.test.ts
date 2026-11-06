@@ -83,6 +83,34 @@ describe("flow_coverage · cấu hình duyệt HĐ nửa vời (CR-121 D-4)", ()
   });
 });
 
+describe("flow_coverage · danh mục feature lệch (CR-121 c18)", () => {
+  it("feature engine còn sót ⇒ crit nêu cách sửa", () => {
+    const r = evaluateFlowCoverage(agg({ engine_feature: true }));
+    expect(r.status).toBe("crit");
+    expect(r.message).toContain("contracts-approval-engine");
+    expect(r.hint).toContain("0037");
+  });
+
+  it("feature thiếu app (cột app = other dù khoá thuộc một ứng dụng) ⇒ crit nêu key, kèm lệch hiển thị khi có", () => {
+    const r = evaluateFlowCoverage(
+      agg({ feature_app_missing: ["contracts-odd"], gap_count: 1, gaps: [gap("Demo")] }),
+    );
+    expect(r.status).toBe("crit");
+    expect(r.message).toContain("contracts-odd");
+    expect(r.message).toContain("chưa gán ứng dụng");
+    expect(r.message).toContain("Demo (contracts.approval)");
+    expect((r.value as { feature_app_missing: string[] }).feature_app_missing).toEqual([
+      "contracts-odd",
+    ]);
+  });
+
+  it("danh mục sạch ⇒ không ảnh hưởng", () => {
+    expect(
+      evaluateFlowCoverage(agg({ engine_feature: false, feature_app_missing: [] })).status,
+    ).toBe("ok");
+  });
+});
+
 describe("flow_coverage · khe cần kiểm", () => {
   it("bỏ khe dlc.*, feature = <gói>-read", () => {
     const slots = coverageSlotsOf(() => [
