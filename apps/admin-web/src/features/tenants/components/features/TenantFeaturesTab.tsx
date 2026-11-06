@@ -129,7 +129,6 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange }: Props) {
   return (
     <div className="space-y-6">
       <section aria-label={t("tenants.apps.title")} className="space-y-4">
-        <h2 className="text-h3 font-semibold">{t("tenants.apps.title")}</h2>
         <AttentionStrip items={attention} onAssign={(slot) => go(FLOWS_TAB, slot)} />
         <AppsTable rows={rows} />
         <StatTiles tiles={tiles} onOpenFlows={() => go(FLOWS_TAB)} />

@@ -45,9 +45,11 @@ export default function CompanyFlowsTab({
           {`(${t("tenants.flows.leadInfo")})`}
         </span>
       </p>
-      <p className="text-caption text-muted-foreground" data-testid="flows-summary">
-        {t("tenants.flows.summary", f.summary)}
-      </p>
+      {f.summary.total > 0 ? (
+        <p className="text-caption text-muted-foreground" data-testid="flows-summary">
+          {t("tenants.flows.summary", f.summary)}
+        </p>
+      ) : null}
       {f.routingFailed ? (
         <p role="alert" className="text-caption text-destructive">
           {t("tenants.flows.loadFail")}

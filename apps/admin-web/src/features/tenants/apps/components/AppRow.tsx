@@ -123,7 +123,7 @@ function DetailToggle({ open, onToggle }: { open: boolean; onToggle: () => void 
 }
 
 export const ROW_GRID =
-  "grid grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_minmax(0,1.6fr)_4rem_minmax(0,1.3fr)] items-center gap-3";
+  "grid grid-cols-[minmax(0,1.2fr)_minmax(0,2fr)_minmax(0,1.6fr)_5.5rem_minmax(0,1.3fr)] items-center gap-4";
 
 export function AppRow(p: AppRowProps) {
   const { t } = useTranslation();
@@ -144,7 +144,7 @@ export function AppRow(p: AppRowProps) {
   const hasDetail = card.addons.length > 0 || !!p.meta;
   return (
     <div className="border-t border-border" data-testid={`apps-row-${card.app}`}>
-      <div className={`${ROW_GRID} px-3 py-2`}>
+      <div className={`${ROW_GRID} min-h-14 px-3 py-2`}>
         <span className="flex min-w-0 items-center gap-2">
           <Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
           <span className="min-w-0 truncate text-label font-medium" title={name}>

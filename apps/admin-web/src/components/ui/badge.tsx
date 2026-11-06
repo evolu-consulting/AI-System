@@ -19,7 +19,7 @@ const badgeVariants = cva(
         link: "text-primary underline-offset-4 [a&]:hover:underline",
         // Trạng thái (ADM-FR-60, plan-frontend §1.2): cặp chữ/nền lấy từ token đã chốt ở M0.
         ok: "bg-success-bg text-success",
-        off: "bg-muted text-muted-strong-foreground",
+        off: "border-border bg-muted text-muted-strong-foreground",
         warn: "bg-warning-bg text-warning",
         info: "bg-accent text-accent-foreground",
         err: "bg-danger-bg text-danger",

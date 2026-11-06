@@ -72,7 +72,7 @@ export function AppsTable({ rows }: { rows: readonly AppRowProps[] }) {
           <LevelHelp />
         </span>
         <span>{t("tenants.apps.col.status")}</span>
-        <span>{t("tenants.apps.col.members")}</span>
+        <span className="whitespace-nowrap">{t("tenants.apps.col.members")}</span>
         <span>{t("tenants.apps.col.flows")}</span>
       </div>
       {rows.map((r) => (
