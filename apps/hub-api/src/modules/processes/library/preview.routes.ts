@@ -23,13 +23,17 @@ type Row = { slot: string; slot_body: unknown };
 
 /** platform_admin: def thư viện (khe của chính nó). tenant_admin (c17b): CHỈ bản riêng của công ty mình — khe lấy từ def nguồn còn sống. */
 const readRow = (d: ProcessDeps, id: string, u: { role: string; tenantId: string | null }) =>
-  withHubScope(d.db, { kind: "system" }, (tx) =>
-    u.role === "platform_admin"
-      ? tx.execute<Row>(sql`select slot, slot_body from hub.process_defs
+  withHubScope(
+    d.db,
+    { kind: "system" },
+    (tx) =>
+      u.role === "platform_admin"
+        ? tx.execute<Row>(sql`select slot, slot_body from hub.process_defs
         where id = ${id} and tenant_id is null and slot is not null and deleted_at is null`)
-      : tx.execute<Row>(sql`select s.slot, d.slot_body from hub.process_defs d
+        : tx.execute<Row>(sql`select s.slot, d.slot_body from hub.process_defs d
         join hub.process_defs s on s.id = d.source_template_id and s.slot is not null and s.deleted_at is null
         where d.id = ${id} and d.tenant_id = ${u.tenantId} and d.slot_body is not null and d.deleted_at is null`),
+    { accessMode: "read only" }, // xem trước không ghi gì
   );
 
 export function previewRoutes(d: ProcessDeps): Hono<AuthVars> {

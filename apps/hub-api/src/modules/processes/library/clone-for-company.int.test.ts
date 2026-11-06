@@ -422,6 +422,12 @@ describe("CR-121 c17b · bản riêng: Form bước dọc + xem trước bằng 
     const g = (await call("A", "GET", `/process-defs/${id}`)).json;
     expect(Array.isArray(g.slot_body?.steps)).toBe(true);
     const facts = { contract_type: "buy", value: 600_000_000 };
+    const counts = async () =>
+      (
+        await o`select (select count(*) from hub.process_defs)::int
+          + (select count(*) from hub.process_def_releases)::int + (select count(*) from hub.process_runs)::int as n`
+      )[0]?.n;
+    const before = await counts();
     const ok = await call("A", "POST", `/process-defs/${id}/preview`, facts);
     expect(ok.status).toBe(200);
     expect(Array.isArray(ok.json.steps) && ok.json.steps.length > 0).toBe(true);
@@ -430,6 +436,7 @@ describe("CR-121 c17b · bản riêng: Form bước dọc + xem trước bằng 
     // tenant_admin không xem trước được def thư viện (chỉ platform)
     expect((await call("A", "POST", `/process-defs/${src}/preview`, facts)).status).toBe(404);
     expect((await call("P", "POST", `/process-defs/${src}/preview`, facts)).status).toBe(200);
+    expect(await counts()).toBe(before); // xem trước không ghi gì
   });
 
   it("đọc chỉ-xem: lượt chạy kèm record_label (null khi lượt không gắn hồ sơ)", async () => {
