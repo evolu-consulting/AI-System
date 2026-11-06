@@ -1,14 +1,25 @@
-// ADM-FR-65 · e2e P-a PF4 · E-P15a (test-plan-e2e §2; plan-frontend-e2e §2 admin-web; Import/Export ⇒ P-b, U2): Adm (tenant_admin)
-// có `link "Quy trình"` (CHỨC NĂNG); `một trang Quy trình (không tab); "Tạo quy trình" › mẫu ⇒ "Chép mẫu" `sdlc` ⇒ dòng mới ở `table
-// "Quy trình"` đang tắt; bật (`switch "Bật …"`) ⇒ lỗi "Chọn Group kiểm cho mọi giai đoạn có người kiểm trước khi bật."; member
-// không có nav.
-import { expect, test } from "@playwright/test";
-import { adminLogin, settle } from "../_pa-support";
+// ADM-FR-65 · e2e P-a PF4 · E-P15a (test-plan-e2e §2): CR-121 c15 viết lại theo luồng mới — hộp "Tạo quy trình" theo công ty (chép mẫu sdlc
+// ở /processes của tenant_admin) đã gỡ ở c13 và công ty nhận quy trình qua Sao chép ở Công ty › Quy trình (c11) ⇒ ca "Chép mẫu ⇒ dòng tắt ⇒
+// bật báo lỗi Group kiểm" không còn luồng để lái, XOÁ (lý do: không còn chỗ tạo quy trình theo công ty ở /processes).
+// Còn: Adm thấy nav "Quy trình" và vào Công ty › Quy trình của công ty mình; member không có nav; platform_admin thấy Thư viện đối chiếu
+// artboard Library (5 cột, ô tìm, bấm dòng ⇒ trình sửa ở canvas).
+import { expect, type Page, test } from "@playwright/test";
+import { seedAdmin } from "../../support/helpers";
+import { ADMIN_URL, adminLogin, settle } from "../_pa-support";
 
 test.afterEach(() => settle());
 
-// CR-121 c13: /processes chỉ còn là Thư viện (hộp "Tạo quy trình" theo công ty `flows-create` đã gỡ) ⇒ cần viết lại theo tab Mẫu · chạy thử, tạm treo.
-test.fixme('ADM-FR-65 · E-P15a · Adm: nav "Quy trình"; tab Mẫu ⇒ "Chép mẫu" sdlc ⇒ dòng mới tắt; bật ⇒ lỗi phải chọn Group kiểm; member không có nav', async ({
+async function platformLogin(p: Page): Promise<void> {
+  const a = seedAdmin();
+  await p.goto(`${ADMIN_URL}/login`);
+  await p.getByRole("textbox", { name: "Mã công ty" }).fill("platform");
+  await p.getByRole("textbox", { name: "Tên đăng nhập" }).fill(a.username);
+  await p.getByLabel("Mật khẩu", { exact: true }).fill(a.password);
+  await p.getByRole("button", { name: "Đăng nhập", exact: true }).click();
+  await p.waitForURL((u) => !u.pathname.startsWith("/login"));
+}
+
+test('ADM-FR-65 · E-P15a · Adm: nav "Quy trình" ⇒ Công ty › Quy trình; member không có nav', async ({
   browser,
 }) => {
   const ctx = await browser.newContext();
@@ -18,44 +29,53 @@ test.fixme('ADM-FR-65 · E-P15a · Adm: nav "Quy trình"; tab Mẫu ⇒ "Chép m
     const nav = p.getByRole("link", { name: "Quy trình", exact: true });
     await expect(nav).toBeVisible();
     await nav.click();
-    // CR-120: MỘT trang "Quy trình" (không còn tab); mẫu nằm trong "Tạo quy trình" › "Tạo từ mẫu".
-    await expect(p.getByTestId("flows-list")).toBeVisible();
-    await expect(p.getByRole("tab")).toHaveCount(0);
-    // cr120-handson-fixes · 4/6: mọi khe tải được (không "Không tải được một phần…") và không lộ mã khe (`community.x ·`).
-    await p.waitForLoadState("networkidle");
-    await expect(p.getByText("Không tải được một phần quy trình của công ty.")).toHaveCount(0);
-    await expect(p.getByTestId("flows-list")).not.toContainText(
-      /(community|contracts)\.[a-z-]+\s·/,
-    );
-    await p.getByTestId("flows-create").click();
-    const tpl = p.getByTestId("flows-template-sdlc");
-    await expect(tpl).toBeVisible();
-    const tplName = (await tpl.getByRole("link").innerText()).trim();
-    await tpl.getByRole("button", { name: "Chép mẫu" }).click();
-    await expect(p.getByText("Đã chép mẫu")).toBeVisible();
-
-    // bản chép là quy trình "Công ty tạo", mặc định Tắt; chỉ hàng của công ty có công tắc "Bật".
-    const row = p
-      .getByTestId("flows-list")
-      .getByRole("listitem")
-      .filter({ hasText: tplName })
-      .filter({ has: p.getByRole("switch") });
-    await expect(row).toHaveCount(1);
-    await expect(row.getByText("Công ty tạo")).toBeVisible();
-    const sw = row.getByRole("switch", { name: /^Bật / });
-    await expect(sw).not.toBeChecked();
-    await sw.click();
-    await expect(
-      p.getByText("Chọn Group kiểm cho mọi giai đoạn có người kiểm trước khi bật."),
-    ).toBeVisible();
-    await expect(sw).not.toBeChecked();
-
-    // member (lan) không có nav "Quy trình"
+    await expect(p).toHaveURL(/\/tenants\/[^/?]+\?.*tab=processes/);
     const m = await browser.newContext();
     const mp = await m.newPage();
     await adminLogin(mp, "A").catch(() => undefined);
     await expect(mp.getByRole("link", { name: "Quy trình", exact: true })).toHaveCount(0);
     await m.close();
+  } finally {
+    await ctx.close();
+  }
+});
+
+test("CR-121 c15 · Thư viện: 5 cột, tìm, bấm dòng ⇒ trình sửa canvas", async ({ browser }) => {
+  const ctx = await browser.newContext();
+  const p = await ctx.newPage();
+  try {
+    await platformLogin(p);
+    await p.getByRole("link", { name: "Quy trình", exact: true }).click();
+    await expect(p.getByRole("heading", { level: 1, name: "Thư viện quy trình" })).toBeVisible();
+    const table = p.getByRole("table", { name: "Quy trình" });
+    for (const h of ["Quy trình", "Các bước", "Dùng bởi", "Trạng thái", "Cập nhật"])
+      await expect(table.getByRole("columnheader", { name: h })).toBeVisible();
+    // không lộ khái niệm kỹ thuật (khe/def/slot) ở nhãn cột
+    await expect(table).not.toContainText(/\b(slot|def)\b/i);
+
+    // ô tìm: khớp tên → còn dòng; không khớp → thông báo
+    const search = p.getByRole("searchbox", { name: "Tìm quy trình" });
+    await search.fill("Quy trình HĐ mặc định");
+    await search.press("Enter");
+    const base = table.getByRole("row").filter({ hasText: "Quy trình HĐ mặc định" }).first();
+    await expect(base).toBeVisible();
+    await expect(base.getByRole("img").first()).toBeVisible(); // chip tên bước
+    await search.fill("khong-co-quy-trinh-nay-zzz");
+    await search.press("Enter");
+    await expect(p.getByText("Không có quy trình nào khớp bộ lọc.")).toBeVisible();
+    await search.fill("Quy trình HĐ mặc định");
+    await search.press("Enter");
+
+    // bấm dòng ⇒ trình sửa, mặc định canvas
+    await table
+      .getByRole("row")
+      .filter({ hasText: "Quy trình HĐ mặc định" })
+      .first()
+      .getByRole("cell")
+      .nth(2)
+      .click();
+    await expect(p).toHaveURL(/\/processes\/[0-9a-f-]{36}/);
+    await expect(p.getByRole("application", { name: "Canvas quy trình" })).toBeVisible();
   } finally {
     await ctx.close();
   }

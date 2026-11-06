@@ -719,24 +719,23 @@
       "app": "App",
       "slot": "Việc cần duyệt",
       "status": "Trạng thái",
-      "tenant": "Tenant",
+      "usedBy": "Dùng bởi",
+      "search": "Tìm quy trình",
       "all": "Tất cả",
       "draft": "Nháp",
       "published": "Đã xuất bản",
-      "tenantNone": "Chưa gán",
-      "tenantDefault": "Mặc định",
-      "tenantOf": "Đã gán cho {{name}}",
+      "tenantNone": "Chưa công ty nào dùng",
+      "tenantDefault": "Mặc định cho công ty chưa chọn",
+      "tenantOf": "Dùng bởi {{name}}",
       "tenantLoading": "Đang tải…",
       "clear": "Xoá lọc",
       "remove": "Bỏ lọc {{what}}",
       "noMatch": "Không có quy trình nào khớp bộ lọc."
     },
     "usage": {
-      "none": "Chưa gán",
-      "default": "Mặc định cho mọi tenant chưa gán",
-      "count": "{{n}} tenant",
-      "named": "{{n}} tenant: {{names}}",
-      "inUse": "{{name}} (đang dùng)"
+      "none": "Chưa công ty nào dùng",
+      "default": "Mặc định cho công ty chưa chọn",
+      "count": "{{n}} công ty"
     },
     "pubState": {
       "published": "Đã xuất bản v{{n}}",
@@ -750,9 +749,8 @@
     },
     "col": {
       "usedFor": "Dùng cho",
-      "tenants": "Tenant đang dùng",
-      "tenantsDefault": "{{n}} + mọi tenant chưa gán",
-      "steps": "Số bước",
+      "tenants": "Dùng bởi",
+      "steps": "Các bước",
       "status": "Trạng thái"
     },
     "inUse": {
@@ -978,14 +976,17 @@
         "new_partner": "Đối tác mới"
       }
     },
-    "subtitle": "Quy trình duyệt dùng cho các ứng dụng. Nhân bản → chỉnh → xuất bản → gán cho tenant. Tenant chưa gán chạy quy trình mặc định.",
+    "subtitle": "Mẫu dùng chung cho mọi công ty.",
     "samplesSubtitle": "Mẫu để chạy thử, không áp dụng cho hợp đồng thật.",
-    "createFromDefault": "Tạo từ quy trình mặc định",
+    "createFromDefault": "Tạo quy trình",
+    "title": "Thư viện quy trình",
     "saveDraft": "Lưu nháp",
     "assignedCount": "{{n}} tenant đã gán",
     "saveHint": "Lưu nháp chưa áp dụng cho tenant — bấm Xuất bản để áp dụng.",
     "status": {
       "draft": "Nháp",
+      "off": "Đã tắt",
+      "offWhy": "Quản trị nền tảng đã tắt, công ty không chọn được",
       "published": "Đã xuất bản v{{n}}",
       "changed": "Có thay đổi chưa xuất bản (v{{n}})"
     },

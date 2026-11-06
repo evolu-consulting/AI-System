@@ -24,7 +24,7 @@ import {
   type Tab,
   useProcessesView,
 } from "../hooks/use-processes-view";
-import { activeCount, appOfSlot, appOptions } from "../lib/library-filter";
+import { appOfSlot, appOptions } from "../lib/library-filter";
 import type { LibraryListItem } from "../library-api";
 
 /** CR-118 · đang lọc theo app (link từ trang cấu hình app): nói rõ + lối về trang app + bỏ lọc. */
@@ -60,7 +60,7 @@ function Body({ v }: { v: ProcessesView }) {
     label: t(`process.admin.list.filter.${value}`),
   }));
   const emptyKey = v.templates ? "emptyTemplates" : "empty";
-  const filtered = activeCount(v.libFilter) > 0;
+  const filtered = v.filtered;
   const message = filtered
     ? t("process.admin.library.filter.noMatch")
     : t(`process.admin.list.${emptyKey}`);
@@ -75,7 +75,13 @@ function Body({ v }: { v: ProcessesView }) {
   return (
     <div className="space-y-3">
       {v.library ? (
-        <LibraryFilter filter={v.libFilter} rows={v.allRows ?? []} onChange={v.setLibFilter} />
+        <LibraryFilter
+          q={v.term}
+          onQ={v.setQ}
+          filter={v.libFilter}
+          rows={v.allRows ?? []}
+          onChange={v.setLibFilter}
+        />
       ) : null}
       {v.app ? <AppFilterNotice app={v.app} onClear={v.clearApp} /> : null}
       {v.templates ? null : (

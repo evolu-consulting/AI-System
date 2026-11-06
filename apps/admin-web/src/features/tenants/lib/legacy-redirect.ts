@@ -53,7 +53,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 /**
  * CR-121 c13 (R2/R7) · `/processes` không còn chỗ gán: tenant_admin ⇒ Quy trình của công ty MÌNH; platform_admin vào
- * `/processes?tenant=<id>` (chỉ có công ty, không kèm bộ lọc thư viện) ⇒ Quy trình của công ty đó. Trả id công ty, hoặc null = ở lại thư viện.
+ * `/processes?tenant=<id>` ⇒ Quy trình của công ty đó (c15: bộ lọc "Dùng bởi" đã đổi sang `?usedBy=` nên `tenant` chỉ còn là URL cũ, kèm bộ lọc nào cũng chuyển). Trả id công ty, hoặc null = ở lại thư viện.
  */
 export function processesRedirectTenant(
   role: LegacyContext["role"],
@@ -63,6 +63,5 @@ export function processesRedirectTenant(
   if (role === "tenant_admin") return ownTenantId ?? null;
   if (role !== "platform_admin") return null;
   const t = search.tenant;
-  const onlyTenant = !search.app && !search.slot && !search.status && !search.tab;
-  return typeof t === "string" && UUID_RE.test(t) && onlyTenant ? t : null;
+  return typeof t === "string" && UUID_RE.test(t) ? t : null;
 }

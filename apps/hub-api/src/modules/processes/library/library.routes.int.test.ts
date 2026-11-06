@@ -245,6 +245,13 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       ).find((i) => i.id === id)?.has_unpublished_changes,
     });
     expect(await flag()).toEqual({ detail: false, list: false });
+    // CR-121 c15 · danh sách trả TÊN bước theo thứ tự (cùng truy vấn, không gọi thêm theo hàng)
+    const listed = (
+      (await call("P", "GET", "/process-defs?kind=library&limit=100")).json.items as Json[]
+    ).find((i) => i.id === id);
+    expect(((listed?.steps ?? []) as Json[]).map((s) => s.name)).toEqual(
+      (body("F1").steps as Json[]).map((s) => s.name),
+    );
     expect((await saveDraft(id, { slot_body: body("F2") })).status).toBe(200);
     expect(await flag()).toEqual({ detail: true, list: true });
     const v = (await call("P", "GET", D(id))).json.version;

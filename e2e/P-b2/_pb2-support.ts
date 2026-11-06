@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
 import type postgres from "postgres";
 import { fullMd } from "../P-a/_pa-data";
-import { adminLogin, hub, tok, withSql } from "../P-a/_pa-support";
+import { ADMIN_URL, adminLogin, hub, tok, withSql } from "../P-a/_pa-support";
 import { ACME, DEF_PAR, DEF_PAR2, PA_E2E, PB2_E2E, PERSONA } from "./_pb2-data";
 
 export {
@@ -287,18 +287,20 @@ export async function runView(who: Who, runId: string): Promise<Json> {
 
 // ---------- admin canvas ----------
 /** Mở def `key` ("tên") ở admin-web (bảng "Quy trình"). */
+/** CR-121 c15: `/processes` của Adm (tenant_admin) chuyển tới Công ty › Quy trình ⇒ mở trình sửa thẳng theo id (Hub). `name` giữ cho khớp chữ ký cũ. */
 export async function openDef(p: Page, key: string, name: string): Promise<void> {
+  void name;
   await adminLogin(p);
-  await p
-    .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("link", { name: "Quy trình", exact: true })
-    .click();
-  await p
-    .getByTestId("flows-list")
-    .getByRole("listitem")
-    .filter({ hasText: name })
-    .getByRole("link", { name })
-    .click();
+  const def = await defByKey(key);
+  await p.goto(`${ADMIN_URL}/processes/${def.id}`);
+}
+/** Mở thẳng một mẫu toàn nền tảng (kind=template, vd `sdlc`) ở chế độ chỉ xem, qua Hub bằng token Adm. */
+export async function openTemplate(p: Page, key: string): Promise<void> {
+  await adminLogin(p);
+  const list = await hub(await tok("Adm"), "GET", "/process-defs?kind=template&limit=100");
+  const item = ((list.json?.items ?? []) as Json[]).find((d) => d.key === key);
+  expect(item, `GET /process-defs?kind=template có ${key}`).toBeTruthy();
+  await p.goto(`${ADMIN_URL}/processes/${item.id}`);
 }
 export const canvas = (p: Page) => p.getByRole("application", { name: "Canvas quy trình" });
 export const panel = (p: Page) => p.getByRole("complementary", { name: "Chi tiết giai đoạn" });

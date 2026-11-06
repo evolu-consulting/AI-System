@@ -1,5 +1,5 @@
 // ADM-FR-65 · CR-056 · P-a F5: bảng quy trình (6 cột + hành động dòng) cho tab "Của công ty" / "Mẫu" (plan-frontend-admin §1 ①).
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import type { TFunction } from "i18next";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { formatUpdated } from "@/lib/format";
 import { isTemplateRow, rowMode } from "../lib/library-view";
 import type { LibraryListItem as Row } from "../library-api";
-import { StatusCell, TenantsCell } from "./library/LibraryListCells";
+import { StatusCell, StepsCell, UsedByCell } from "./library/LibraryListCells";
 import { RowDeleteButton } from "./library/RowDeleteButton";
 
 export type RowActions = {
@@ -61,6 +61,9 @@ function nameColumn(t: TFunction, library: boolean): Column<Row> {
           >
             {r.name}
           </Link>
+          {library && r.published_version != null ? (
+            <span className="text-caption text-muted-foreground">v{r.published_version}</span>
+          ) : null}
           {isTemplateRow(r) ? <StatusBadge tone="info">{L(t, "template")}</StatusBadge> : null}
           {r.is_default ? (
             <span title={t("process.admin.library.defaultBadge", { slot: r.slot_label ?? "" })}>
@@ -159,45 +162,60 @@ function actionsColumn(t: TFunction, o: Opts): Column<Row> {
   };
 }
 
-/** CR-105 · cột thư viện: "Dùng cho" (khe) · Trạng thái (Nháp / Đã xuất bản vN) · "Tenant đang dùng" (chữ dễ đọc). */
-function libraryColumns(t: TFunction): Column<Row>[] {
+/** CR-121 c15 (artboard Library): Quy trình · Các bước · Dùng bởi · Trạng thái · Cập nhật (+ cột thao tác Nhân bản/Xoá, không tiêu đề). */
+function libraryColumns(t: TFunction, o: Opts): Column<Row>[] {
   return [
+    nameColumn(t, true),
+    {
+      id: "stages",
+      header: t("process.admin.library.col.steps"),
+      className: "max-w-96",
+      cell: (r) => <StepsCell row={r} />,
+    },
+    {
+      id: "tenants",
+      header: t("process.admin.library.col.tenants"),
+      cell: (r) => <UsedByCell row={r} />,
+    },
     {
       id: "status",
       header: t("process.admin.library.col.status"),
       cell: (r) => <StatusCell row={r} />,
     },
+    { id: "updated", header: L(t, "col.updated"), cell: (r) => formatUpdated(r.updated_at, null) },
     {
-      id: "tenants",
-      header: t("process.admin.library.col.tenants"),
-      cell: (r) => <TenantsCell row={r} />,
+      id: "actions",
+      header: <span className="sr-only">{t("common.actions")}</span>,
+      className: "whitespace-nowrap text-right",
+      cell: (r) => (
+        <span className="flex items-center justify-end gap-1">
+          <WriteActions t={t} r={r} library actions={o.actions} />
+        </span>
+      ),
     },
   ];
 }
 
 export function buildColumns(t: TFunction, o: Opts): Column<Row>[] {
-  const cols: Column<Row>[] = [nameColumn(t, o.library === true)];
-  // Ký hiệu không là cột chính ở thư viện (xem ở trang chi tiết / tooltip tên).
-  if (!o.library)
-    cols.push({
-      id: "key",
-      header: L(t, "col.key"),
-      cell: (r) => <span className="font-mono text-label">!{r.key}</span>,
-    });
+  if (o.library) return libraryColumns(t, o);
+  const cols: Column<Row>[] = [nameColumn(t, false)];
+  cols.push({
+    id: "key",
+    header: L(t, "col.key"),
+    cell: (r) => <span className="font-mono text-label">!{r.key}</span>,
+  });
   cols.push({
     id: "stages",
-    header: o.library ? t("process.admin.library.col.steps") : L(t, "col.stages"),
+    header: L(t, "col.stages"),
     cell: (r) => r.stage_count,
     className: "text-right",
   });
-  if (o.library) cols.push(...libraryColumns(t));
-  else
-    cols.push({
-      id: "running",
-      header: L(t, "col.running"),
-      cell: (r) => r.active_runs,
-      className: "text-right",
-    });
+  cols.push({
+    id: "running",
+    header: L(t, "col.running"),
+    cell: (r) => r.active_runs,
+    className: "text-right",
+  });
   cols.push({
     id: "updated",
     header: L(t, "col.updated"),
@@ -209,6 +227,7 @@ export function buildColumns(t: TFunction, o: Opts): Column<Row>[] {
 export function ProcessesTable(p: Props) {
   const { t } = useTranslation();
   const { templates, canEditTemplates, canRun, actions, library } = p;
+  const navigate = useNavigate();
   const columns = useMemo(
     () => buildColumns(t, { templates, canEditTemplates, canRun, actions, library }),
     [t, templates, canEditTemplates, canRun, actions, library],
@@ -225,6 +244,11 @@ export function ProcessesTable(p: Props) {
       onRetry={p.onRetry}
       empty={p.empty}
       group={p.group}
+      onRowClick={
+        library
+          ? (r) => void navigate({ to: "/processes/$processId", params: { processId: r.id } })
+          : undefined
+      }
     />
   );
 }

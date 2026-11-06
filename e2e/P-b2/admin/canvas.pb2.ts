@@ -10,6 +10,7 @@ import {
   defByKey,
   node,
   openDef,
+  openTemplate,
   panel,
   saveDef,
   stepSpin,
@@ -225,18 +226,11 @@ test("ADM-FR-71 · E-PB2-11 · focus node + Enter ⇒ panel mở, focus 'Tên gi
   await expect(p.getByRole("alertdialog", { name: "Xoá giai đoạn “Rà soát code”?" })).toBeVisible();
 });
 
-// CR-121 c13: /processes chỉ còn là Thư viện (hộp "Tạo quy trình" theo công ty `flows-create` đã gỡ) ⇒ cần viết lại theo tab Mẫu · chạy thử, tạm treo.
-test.fixme("ADM-FR-71 · E-PB2-12 · mẫu sdlc: chỉ xem — 2 câu thông báo; không 'Thêm giai đoạn'; Alt+ArrowRight không đổi gì", async ({
+// CR-121 c15: hộp "Tạo quy trình" theo công ty đã gỡ (c13) ⇒ mở mẫu sdlc thẳng theo id (Hub), kiểm chỉ-xem như cũ.
+test("ADM-FR-71 · E-PB2-12 · mẫu sdlc: chỉ xem — 2 câu thông báo; không 'Thêm giai đoạn'; Alt+ArrowRight không đổi gì", async ({
   page: p,
 }) => {
-  await openDef(p, "pb2-canvas", DEF_CANVAS.name);
-  await p
-    .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("link", { name: "Quy trình", exact: true })
-    .click();
-  // CR-120: mẫu nằm trong hộp thoại "Tạo quy trình" (không còn tab Mẫu)
-  await p.getByTestId("flows-create").click();
-  await p.getByTestId("flows-template-sdlc").getByRole("link").click();
+  await openTemplate(p, "sdlc");
   await expect(p.getByText("Đây là quy trình mẫu, chỉ xem. Chép mẫu để chỉnh sửa.")).toBeVisible();
   await expect(p.getByText("Quy trình mẫu: chỉ xem, không kéo thả được.")).toBeVisible();
   await expect(p.getByRole("button", { name: "Thêm giai đoạn", exact: true })).toHaveCount(0);

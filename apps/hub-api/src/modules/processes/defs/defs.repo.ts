@@ -52,6 +52,8 @@ export type DefListRow = Pick<
   stage_count: number;
   /** CR-105 · số stage mang `slot.kind` review/dify (bước người dùng của khe; không tính nút hệ thống route/finalize). */
   slot_step_count: number;
+  /** CR-121 c15 · tên bước + điều kiện từ `slot_body` (mảng hoặc `{steps}`), cùng hàng — không truy vấn thêm theo hàng. Def không khe ⇒ null. */
+  slot_steps: { name: string; when: unknown }[] | null;
   active_runs: number;
 };
 
@@ -119,6 +121,10 @@ export async function listDefs(tx: Tx, o: ListOpts): Promise<DefListRow[]> {
       ${iso(sql`d.updated_at`)} as updated_at, jsonb_array_length(d.stages)::int as stage_count,
       (select count(*)::int from jsonb_array_elements(d.stages) e
         where e->'slot'->>'kind' in ('review', 'dify')) as slot_step_count,
+      case when d.slot is null then null else (select coalesce(jsonb_agg(jsonb_build_object('name', s.e->>'name', 'when', s.e->'when') order by s.o), '[]'::jsonb)
+        from jsonb_array_elements(case when jsonb_typeof(d.slot_body) = 'array' then d.slot_body
+            when jsonb_typeof(d.slot_body->'steps') = 'array' then d.slot_body->'steps' else '[]'::jsonb end)
+          with ordinality as s(e, o) where jsonb_typeof(s.e) = 'object' and s.e->>'name' is not null) end as slot_steps,
       (select count(*)::int from hub.process_runs r where r.process_def_id = d.id
         and r.status in ('running', 'waiting_review', 'waiting_answer', 'needs_decision')) as active_runs,
       d.slot, d.published_version, ${LIB_USE}

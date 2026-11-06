@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import {
-  assignedNames,
   canDeleteLibrary,
   cloneSuggestion,
   describeWhen,
@@ -9,7 +8,6 @@ import {
   slugKey,
   sortLibraryRows,
   statusOf,
-  tenantsSummary,
 } from "./library-list";
 
 const row = (o: Partial<ListRow> = {}): ListRow =>
@@ -35,27 +33,6 @@ describe("statusOf", () => {
       kind: "changed",
       version: 4,
     });
-  });
-});
-
-describe("tenantsSummary", () => {
-  test("mặc định / đã gán (tên rút gọn, phần còn lại) / chưa gán", () => {
-    expect(tenantsSummary(row({ is_default: true }))).toEqual({
-      kind: "default",
-      names: [],
-      extra: 0,
-    });
-    expect(tenantsSummary(row({ tenant_count: 5 }), ["A", "B", "C", "D", "E"])).toEqual({
-      kind: "assigned",
-      names: ["A", "B", "C"],
-      extra: 2,
-    });
-    expect(tenantsSummary(row({ tenant_count: 2 }), ["A", "B"])).toEqual({
-      kind: "assigned",
-      names: ["A", "B"],
-      extra: 0,
-    });
-    expect(tenantsSummary(row({ tenant_count: 0 }))).toEqual({ kind: "none" });
   });
 });
 
@@ -110,16 +87,5 @@ describe("describeWhen", () => {
         ],
       }),
     ).toBe("Chỉ khi loại Mua hoặc Bán và giá trị ≥ 50 tr");
-  });
-});
-
-describe("CR-120 · assignedNames", () => {
-  test("tenant đang dùng đứng trước + gắn nhãn, tenant chỉ trong tập giữ tên", () => {
-    const items = [
-      { tenant_name: "A" },
-      { tenant_name: "NiTi", in_use: true },
-      { tenant_name: "B", in_use: false },
-    ];
-    expect(assignedNames(items, (n) => `${n} (đang dùng)`)).toEqual(["NiTi (đang dùng)", "A", "B"]);
   });
 });

@@ -719,24 +719,23 @@
       "app": "App",
       "slot": "Approval task",
       "status": "Status",
-      "tenant": "Tenant",
+      "usedBy": "Used by",
+      "search": "Search processes",
       "all": "All",
       "draft": "Draft",
       "published": "Published",
-      "tenantNone": "Not assigned",
-      "tenantDefault": "Default",
-      "tenantOf": "Assigned to {{name}}",
+      "tenantNone": "No company uses it yet",
+      "tenantDefault": "Default for companies that have not chosen",
+      "tenantOf": "Used by {{name}}",
       "tenantLoading": "Loading…",
       "clear": "Clear filters",
       "remove": "Remove filter {{what}}",
       "noMatch": "No flow matches the filters."
     },
     "usage": {
-      "none": "Not assigned",
-      "default": "Default for every unassigned tenant",
-      "count": "{{n}} tenants",
-      "named": "{{n}} tenants: {{names}}",
-      "inUse": "{{name}} (in use)"
+      "none": "No company uses it yet",
+      "default": "Default for companies that have not chosen",
+      "count": "{{n}} companies"
     },
     "pubState": {
       "published": "Published v{{n}}",
@@ -750,8 +749,7 @@
     },
     "col": {
       "usedFor": "Used for",
-      "tenants": "Tenants using",
-      "tenantsDefault": "{{n}} + all unassigned tenants",
+      "tenants": "Used by",
       "steps": "Steps",
       "status": "Status"
     },
@@ -978,14 +976,17 @@
         "new_partner": "New partner"
       }
     },
-    "subtitle": "Approval processes used by apps. Duplicate → edit → publish → assign to tenants. Tenants without an assignment run the default process.",
+    "subtitle": "Templates shared by every company.",
     "samplesSubtitle": "Samples for trial runs, not applied to real contracts.",
-    "createFromDefault": "Create from the default process",
+    "createFromDefault": "Create process",
+    "title": "Process library",
     "saveDraft": "Save draft",
     "assignedCount": "{{n}} tenants assigned",
     "saveHint": "Saving a draft does not apply it to tenants — press Publish to apply.",
     "status": {
       "draft": "Draft",
+      "off": "Off",
+      "offWhy": "Turned off by the platform admin; companies cannot pick it",
       "published": "Published v{{n}}",
       "changed": "Unpublished changes (v{{n}})"
     },

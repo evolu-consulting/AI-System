@@ -1,4 +1,4 @@
-// CR-105 · UX: ánh xạ thuần cho danh sách thư viện — trạng thái, "đang dùng" bằng chữ, sắp xếp (mặc định ghim đầu), khoá sinh từ tên,
+// CR-105 · UX: ánh xạ thuần cho danh sách thư viện — trạng thái, sắp xếp (mặc định ghim đầu), khoá sinh từ tên,
 // xoá được bản nháp, mô tả điều kiện bước bằng lời. Không React / không API.
 import type { FlowWhen } from "@ai/contracts/pack-contracts";
 import type { LibraryListItem } from "../library-api";
@@ -19,30 +19,6 @@ export function statusOf(
   return r.has_unpublished_changes === true
     ? { kind: "changed", version: r.published_version }
     : { kind: "published", version: r.published_version };
-}
-
-export type TenantsSummary =
-  | { kind: "default"; names: string[]; extra: number }
-  | { kind: "assigned"; names: string[]; extra: number }
-  | { kind: "none" };
-
-const NAMES_SHOWN = 3;
-/** "Đang dùng": mặc định ⇒ mọi tenant chưa gán; có gán ⇒ n tenant + tên (rút gọn); không ⇒ Chưa gán. `names` = tên tenant đã tải. */
-export function tenantsSummary(r: ListRow, names: readonly string[] = []): TenantsSummary {
-  const n = r.tenant_count ?? 0;
-  const shown = names.slice(0, NAMES_SHOWN);
-  const extra = Math.max(0, n - shown.length);
-  if (r.is_default === true) return { kind: "default", names: shown, extra };
-  return n > 0 ? { kind: "assigned", names: shown, extra } : { kind: "none" };
-}
-
-/** CR-120 · tên tenant đã gán: đang dùng (`in_use`) trước và gắn nhãn `mark`, giữ thứ tự Hub trong mỗi nhóm. */
-export function assignedNames(
-  items: readonly { tenant_name: string; in_use?: boolean | undefined }[],
-  mark: (name: string) => string,
-): string[] {
-  const used = items.filter((a) => a.in_use === true).map((a) => mark(a.tenant_name));
-  return [...used, ...items.filter((a) => a.in_use !== true).map((a) => a.tenant_name)];
 }
 
 /** Mặc định ghim đầu; còn lại theo `updated_at` mới nhất trước (ổn định). */

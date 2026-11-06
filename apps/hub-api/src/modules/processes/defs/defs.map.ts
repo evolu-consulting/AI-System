@@ -3,6 +3,7 @@ import {
   type AgentTeam,
   HUB_ADMIN_PROCESS_ERRORS,
   type HubAdminProcessErrorCode,
+  PROCESS_STAGES_MAX,
   type ProcessDef,
   type ProcessDefInput,
   type ProcessDefListItem,
@@ -86,8 +87,15 @@ export const listStepCount = (
   r: Pick<DefListRow, "slot" | "stage_count" | "slot_step_count">,
 ): number => (r.slot !== null && r.slot_step_count > 0 ? r.slot_step_count : r.stage_count);
 
+/** CR-121 c15 · bước cho bảng Thư viện (`when` null ⇒ bỏ khoá); tối đa PROCESS_STAGES_MAX. */
+export const listSteps = (r: Pick<DefListRow, "slot_steps">) =>
+  (r.slot_steps ?? []).slice(0, PROCESS_STAGES_MAX).map((s) => ({
+    name: s.name.slice(0, 200),
+    ...(s.when === null || s.when === undefined ? {} : { when: s.when }),
+  }));
+
 export const toListItem = (r: DefListRow): ProcessDefListItem => ({
-  ...(r.slot === null ? {} : { slot: r.slot, ...libFields(r) }),
+  ...(r.slot === null ? {} : { slot: r.slot, ...libFields(r), steps: listSteps(r) }),
   id: r.id,
   key: r.key,
   name: r.name,

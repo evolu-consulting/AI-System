@@ -1,5 +1,5 @@
 // CR-105 · L3 `pl-editor-ui` · e2e P-a PF4: platform_admin nhân bản "Quy trình HĐ mặc định", sửa ở Form, xuất bản, gán cho tenant acme
-// ⇒ cột "Tenant đang dùng" tăng; Canvas hiện nút hệ thống (contracts-route/contracts-finalize) với huy hiệu "Hệ thống", không xoá được.
+// ⇒ cột "Dùng bởi" tăng; Canvas hiện nút hệ thống (contracts-route/contracts-finalize) với huy hiệu "Hệ thống", không xoá được.
 // Chỉ chạy được khi backend L1/L2a/L2b đã gộp (seed 0069: def "Quy trình HĐ mặc định" + khe contracts.approval). KHÔNG chạy trong lát.
 import { expect, type Page, test } from "@playwright/test";
 import { seedAdmin } from "../../support/helpers";
@@ -37,7 +37,9 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     // giao diện đơn giản: không còn cột Ký hiệu; trạng thái + "đang dùng" bằng chữ; mặc định ghim đầu; nút tạo từ mặc định
     await expect(table.getByRole("columnheader", { name: "Ký hiệu" })).toHaveCount(0);
     await expect(table.getByRole("columnheader", { name: "Trạng thái" })).toBeVisible();
-    await expect(base.getByText("Mặc định cho mọi tenant chưa gán")).toBeVisible();
+    // CR-121 c15: cột "Dùng bởi" nói bằng công ty; mặc định = "Mặc định cho công ty chưa chọn"
+    await expect(table.getByRole("columnheader", { name: "Dùng bởi" })).toBeVisible();
+    await expect(base.getByText("Mặc định cho công ty chưa chọn")).toBeVisible();
     // Có nhiều quy trình mặc định của khe (HĐ + 3 khe DLC từ hub 0070) ⇒ chỉ kiểm hàng mặc định HĐ có mặt, không kiểm vị trí đầu.
     await expect(base).toBeVisible();
     await expect(p.getByRole("combobox", { name: "Tenant" })).toHaveCount(0);
@@ -151,7 +153,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
       p.getByText("Nút hệ thống của Sổ Hợp Tác: khoá, không xoá hoặc đổi."),
     ).toBeVisible();
 
-    // danh sách: "Tenant đang dùng" của bản nhân bản = "1 tenant: Acme Corp" (chữ dễ đọc)
+    // danh sách: "Dùng bởi" của bản nhân bản = "1 công ty" (đếm, CR-121 c15)
     // ở trang editor có thêm link "Quy trình" trên đường dẫn ⇒ chọn đúng link ở thanh bên
     await p
       .getByRole("navigation", { name: "Điều hướng chính" })
@@ -159,7 +161,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
       .click();
     await expect(table.getByRole("row").filter({ hasText: name }).first()).toBeVisible();
     await expect(table.getByRole("row").filter({ hasText: name }).first()).toContainText(
-      "1 tenant",
+      "1 công ty",
     );
 
     // Dọn rác: xoá quy trình KHÔNG dùng (nháp hoặc đã xuất bản) bằng gõ lại tên; mặc định / đang gán thì nút Xoá bị khoá

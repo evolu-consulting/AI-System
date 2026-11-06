@@ -6,7 +6,7 @@ import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { copyDef, deleteDef, useInvalidateDefs, useProcessDefs } from "../api";
 import type { CloneSource } from "../components/library/CloneDialog";
 import { processErrorSpec } from "../lib/errors";
-import { type LibFilter, libFilterSearch } from "../lib/library-filter";
+import { activeCount, type LibFilter, libFilterSearch, parseSearchQ } from "../lib/library-filter";
 import { type LibraryListItem, useLibraryDefs, useSlots } from "../library-api";
 import { useCloneFlow } from "./use-clone-flow";
 import { useLibraryRows } from "./use-library-rows";
@@ -92,7 +92,7 @@ function useRowActions(
 export function useProcessesView() {
   const tenant = useProcessTenant();
   const navigate = useNavigate();
-  const search = useSearch({ strict: false }) as { tab?: Tab } & LibFilter;
+  const search = useSearch({ strict: false }) as { tab?: Tab; q?: string } & LibFilter;
   const [filter, setFilter] = useState<StateFilter>("all");
   const [runRow, setRunRow] = useState<Row | null>(null);
   const del = useDeleteFlow(tenant.tenantId);
@@ -131,7 +131,7 @@ export function useProcessesView() {
   );
   const { rows, libFilter } = useLibraryRows({
     items: loaded,
-    search,
+    search: { ...search, q: parseSearchQ(search.q) },
     library,
     templates,
     enabledFilter: filter,
@@ -152,8 +152,30 @@ export function useProcessesView() {
     /** Tất cả dòng thư viện đã tải (chưa lọc) — nguồn tuỳ chọn của popover lọc. */
     allRows: loaded,
     setLibFilter: (f: LibFilter) =>
-      void navigate({ to: "/processes", search: libFilterSearch(f), replace: true }),
-    clearApp: () => void navigate({ to: "/processes", search: {}, replace: true }),
+      void navigate({
+        to: "/processes",
+        search: { ...libFilterSearch(f), ...(search.q ? { q: search.q } : {}) },
+        replace: true,
+      }),
+    clearApp: () =>
+      void navigate({
+        to: "/processes",
+        search: search.q ? { q: search.q } : {},
+        replace: true,
+      }),
+    term: search.q ?? "",
+    /** Ô tìm (CR-121 c15): giữ trong URL `?q=`; bộ lọc khác giữ nguyên. */
+    /** Đang lọc hoặc tìm ⇒ trống thì nói "không khớp". */
+    filtered: activeCount(libFilter) > 0 || Boolean(search.q),
+    setQ: (q: string) =>
+      void navigate({
+        to: "/processes",
+        search: {
+          ...libFilterSearch(libFilter),
+          ...(parseSearchQ(q) ? { q: parseSearchQ(q) } : {}),
+        },
+        replace: true,
+      }),
     tab: (templates ? "templates" : "own") as Tab,
     setTab: (v: Tab) => void navigate({ to: "/processes", search: { tab: v }, replace: true }),
     filter,

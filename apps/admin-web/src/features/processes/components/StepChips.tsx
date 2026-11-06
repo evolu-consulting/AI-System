@@ -1,14 +1,13 @@
-// CR-121 c11 · chip bước theo TÊN bước nối bằng mũi tên ("Pháp chế → Kế toán → Duyệt"), cắt + "+N" khi dài (artboard CompanyFlows).
+// CR-121 c15 · MỘT component chip bước cho Thư viện quy trình và Công ty › Quy trình: chip = TÊN bước nối bằng mũi tên, cắt + "+N".
 import { useTranslation } from "react-i18next";
-import type { StepRow } from "@/features/apps/lib/flow-view";
+import { splitChips } from "../lib/step-chips";
 
-const MAX_CHIPS = 4;
+export type ChipStep = { key: string; name: string; index: number };
 
-export function StepChips({ steps }: { steps: readonly StepRow[] | null }) {
+export function StepChips({ steps }: { steps: readonly ChipStep[] | null }) {
   const { t } = useTranslation();
   if (!steps || steps.length === 0) return null;
-  const shown = steps.slice(0, MAX_CHIPS);
-  const more = steps.length - shown.length;
+  const { shown, rest } = splitChips(steps);
   return (
     <span
       role="img"
@@ -30,15 +29,12 @@ export function StepChips({ steps }: { steps: readonly StepRow[] | null }) {
           </span>
         </span>
       ))}
-      {more > 0 ? (
+      {rest.length > 0 ? (
         <span
           className="text-caption text-muted-foreground"
-          title={steps
-            .slice(MAX_CHIPS)
-            .map((s) => s.name)
-            .join(" → ")}
+          title={rest.map((s) => s.name).join(" → ")}
         >
-          {t("tenants.flows.stepsMore", { n: more })}
+          {t("tenants.flows.stepsMore", { n: rest.length })}
         </span>
       ) : null}
     </span>

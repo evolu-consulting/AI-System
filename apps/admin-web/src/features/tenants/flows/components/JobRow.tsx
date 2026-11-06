@@ -3,8 +3,8 @@ import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import type { StepRow } from "@/features/apps/lib/flow-view";
+import { StepChips } from "@/features/processes/components/StepChips";
 import { type FlowJob, JOB_KEY, jobFallbackName } from "../lib/flow-rows";
-import { StepChips } from "./StepChips";
 
 export const GRID =
   "grid grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)_minmax(0,1.3fr)_5rem_5rem] items-center gap-3";

@@ -36,7 +36,7 @@ export function ProcessesHeader({ v }: { v: ProcessesView }) {
   const { t } = useTranslation();
   return (
     <PageHeader
-      title={t("process.admin.list.title")}
+      title={t(v.library ? "process.admin.library.title" : "process.admin.list.title")}
       description={t(subtitleKey(v))}
       actions={<CreateButton v={v} />}
     />

@@ -3,22 +3,26 @@
 // kiểm ⇒ "Lưu" ⇒ bật được; sửa song song (PUT /process-defs/:id trước) ⇒ ConflictDialog (409); mở mẫu `sdlc` ⇒ "Đây là quy trình mẫu, chỉ
 // xem. Chép mẫu để chỉnh sửa.".
 import { expect, test } from "@playwright/test";
-import { adminLogin, hub, settle, tok } from "../_pa-support";
+import { ADMIN_URL, adminLogin, hub, settle, tok } from "../_pa-support";
 
 test.afterEach(() => settle());
 
-// CR-121 c13: /processes chỉ còn là Thư viện (hộp "Tạo quy trình" theo công ty `flows-create` đã gỡ) ⇒ cần viết lại theo tab Mẫu · chạy thử, tạm treo.
-test.fixme('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disabled ở stage 1; Lưu ⇒ bật được; sửa song song ⇒ ConflictDialog; mẫu ⇒ "Đây là quy trình mẫu, chỉ xem…"', async ({
+// CR-121 c15: hộp "Tạo quy trình" theo công ty đã gỡ (c13) ⇒ mở quy trình/mẫu thẳng theo id (Hub), không qua danh sách theo công ty.
+const defId = async (kind: "sample" | "template", key: string): Promise<string> => {
+  const list = await hub(await tok("Adm"), "GET", `/process-defs?kind=${kind}&limit=100`);
+  const item = (list.json?.items ?? []).find((d: { key: string }) => d.key === key);
+  expect(item, `GET /process-defs?kind=${kind} có ${key}`).toBeTruthy();
+  return item.id;
+};
+
+test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disabled ở stage 1; Lưu ⇒ bật được; sửa song song ⇒ ConflictDialog; mẫu ⇒ "Đây là quy trình mẫu, chỉ xem…"', async ({
   browser,
 }) => {
   const ctx = await browser.newContext();
   const p = await ctx.newPage();
   try {
     await adminLogin(p);
-    await p.getByRole("link", { name: "Quy trình", exact: true }).click();
-    const row = p.getByTestId("flows-list").getByRole("listitem").filter({ hasText: "Hoá đơn T" });
-    await row.getByRole("link", { name: "Hoá đơn T" }).click();
-    // fnr-editor-drawer (qc, người dùng chốt ngăn chi tiết đóng mặc định 2026-10-29): bấm node để mở ngăn.
+    await p.goto(`${ADMIN_URL}/processes/${await defId("sample", "hoa-don-t")}`); // fnr-editor-drawer (qc, người dùng chốt ngăn chi tiết đóng mặc định 2026-10-29): bấm node để mở ngăn.
     await p
       .getByRole("application", { name: "Canvas quy trình" })
       .getByRole("button", { name: /^Giai đoạn 1: Đọc hoá đơn/ })
@@ -52,14 +56,8 @@ test.fixme('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật"
     await conflict.getByRole("button", { name: "Tải bản mới" }).click();
     await expect(conflict).toHaveCount(0);
 
-    // mẫu: chỉ xem (breadcrumb cũng có link "Quy trình" ⇒ thu hẹp vào sidebar)
-    await p
-      .getByRole("navigation", { name: "Điều hướng chính" })
-      .getByRole("link", { name: "Quy trình", exact: true })
-      .click();
-    // CR-120: mẫu nằm trong hộp thoại "Tạo quy trình" (không còn tab Mẫu)
-    await p.getByTestId("flows-create").click();
-    await p.getByTestId("flows-template-sdlc").getByRole("link").click();
+    // mẫu: chỉ xem (mở thẳng mẫu sdlc theo id)
+    await p.goto(`${ADMIN_URL}/processes/${await defId("template", "sdlc")}`);
     await expect(
       p.getByText("Đây là quy trình mẫu, chỉ xem. Chép mẫu để chỉnh sửa."),
     ).toBeVisible();

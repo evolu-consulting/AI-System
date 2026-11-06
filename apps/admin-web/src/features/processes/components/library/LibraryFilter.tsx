@@ -1,8 +1,9 @@
-// CR-120 · nút phễu của bảng thư viện: popover nhỏ (App · Việc · Trạng thái · Tenant) + chip bộ lọc đang bật (bỏ từng cái). Lọc phía client.
+// CR-120 · nút phễu của bảng thư viện: popover nhỏ (App · Việc · Trạng thái · Dùng bởi) + chip bộ lọc đang bật (bỏ từng cái). Lọc phía client.
 import { Filter, X } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
@@ -23,6 +24,9 @@ import {
 import type { LibraryListItem } from "../../library-api";
 
 type Props = {
+  /** Ô tìm (CR-121 c15): giá trị URL `?q=` + hàm đặt. */
+  q: string;
+  onQ: (q: string) => void;
   filter: LibFilter;
   rows: readonly LibraryListItem[];
   onChange: (f: LibFilter) => void;
@@ -74,11 +78,30 @@ function patch(f: LibFilter, k: keyof LibFilter, v: string | undefined): LibFilt
   return next;
 }
 
-export function LibraryFilter({ filter, rows, onChange }: Props) {
+/** Ô tìm: gõ xong (Enter hoặc rời ô) mới ghi vào URL — không điều hướng từng phím. */
+function SearchBox(p: { value: string; onCommit: (q: string) => void; label: string }) {
+  const [draft, setDraft] = useState(p.value);
+  useEffect(() => setDraft(p.value), [p.value]);
+  return (
+    <Input
+      type="search"
+      value={draft}
+      placeholder={p.label}
+      aria-label={p.label}
+      className="h-8 w-56"
+      data-testid="library-search"
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => draft !== p.value && p.onCommit(draft)}
+      onKeyDown={(e) => e.key === "Enter" && p.onCommit(draft)}
+    />
+  );
+}
+
+export function LibraryFilter({ q, onQ, filter, rows, onChange }: Props) {
   const { t } = useTranslation();
   const tr = useTr();
   const [open, setOpen] = useState(false);
-  const tenants = useAssignableTenants(open || filter.tenant !== undefined);
+  const tenants = useAssignableTenants(open || filter.usedBy !== undefined);
   const n = activeCount(filter);
   const appName = (a: string) => tr(`featmeta.app.${a}.name`, { defaultValue: a });
   const slotLabel = (s: string) => slotOptions(rows).find((o) => o.slot === s)?.label ?? s;
@@ -92,10 +115,11 @@ export function LibraryFilter({ filter, rows, onChange }: Props) {
     ...(filter.app ? [{ k: "app" as const, text: appName(filter.app) }] : []),
     ...(filter.slot ? [{ k: "slot" as const, text: slotLabel(filter.slot) }] : []),
     ...(filter.status ? [{ k: "status" as const, text: t(`${L}${filter.status}`) }] : []),
-    ...(filter.tenant ? [{ k: "tenant" as const, text: tenantLabel(filter.tenant) }] : []),
+    ...(filter.usedBy ? [{ k: "usedBy" as const, text: tenantLabel(filter.usedBy) }] : []),
   ];
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <SearchBox value={q} onCommit={onQ} label={t(`${L}search`)} />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" data-testid="library-filter-button">
@@ -129,15 +153,15 @@ export function LibraryFilter({ filter, rows, onChange }: Props) {
             onChange={(v) => onChange(patch(filter, "status", v))}
           />
           <Pick
-            label={t(`${L}tenant`)}
-            value={filter.tenant}
+            label={t(`${L}usedBy`)}
+            value={filter.usedBy}
             allLabel={t(`${L}all`)}
             options={[
               { value: "none", label: t(`${L}tenantNone`) },
               { value: "default", label: t(`${L}tenantDefault`) },
               ...tenants.items.map((x) => ({ value: x.id, label: tenantLabel(x.id) })),
             ]}
-            onChange={(v) => onChange(patch(filter, "tenant", v))}
+            onChange={(v) => onChange(patch(filter, "usedBy", v))}
           />
         </PopoverContent>
       </Popover>

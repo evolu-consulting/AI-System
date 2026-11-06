@@ -7,6 +7,7 @@ import {
   type LibFilter,
   needsAssignments,
   parseLibFilter,
+  searchLibrary,
 } from "../lib/library-filter";
 import { sortLibraryRows } from "../lib/library-list";
 import { rowsForTab } from "../lib/library-view";
@@ -14,7 +15,7 @@ import { type LibraryListItem, useAssignmentsOf } from "../library-api";
 
 type In = {
   items: readonly LibraryListItem[] | undefined;
-  search: LibFilter;
+  search: LibFilter & { q?: string | undefined };
   library: boolean;
   templates: boolean;
   enabledFilter: "all" | "on" | "off";
@@ -22,10 +23,10 @@ type In = {
 
 export function useLibraryRows(p: In) {
   const { items, search, library, templates, enabledFilter } = p;
-  const { app, slot, status, tenant } = search;
+  const { app, slot, status, usedBy, q } = search;
   const libFilter = useMemo(
-    () => (library ? parseLibFilter({ app, slot, status, tenant }) : {}),
-    [library, app, slot, status, tenant],
+    () => (library ? parseLibFilter({ app, slot, status, usedBy }) : {}),
+    [library, app, slot, status, usedBy],
   );
   const needAsg = library && needsAssignments(libFilter);
   const asgIds = useMemo(
@@ -44,8 +45,8 @@ export function useLibraryRows(p: In) {
     if (!items) return undefined;
     const list = rowsForTab(items, templates, enabledFilter);
     if (!library) return list;
-    const sorted = sortLibraryRows(applyLibFilter(list, libFilter, assigned)); // mặc định ghim đầu, còn lại mới cập nhật trước
+    const sorted = sortLibraryRows(searchLibrary(applyLibFilter(list, libFilter, assigned), q)); // mặc định ghim đầu, còn lại mới cập nhật trước
     return libFilter.app ? sorted : groupByApp(sorted); // chưa chọn app ⇒ gom theo app (tiêu đề nhóm)
-  }, [items, templates, enabledFilter, library, libFilter, assigned]);
+  }, [items, templates, enabledFilter, library, libFilter, assigned, q]);
   return { rows, libFilter, asgLoading: needAsg && asg.some((a) => a.isPending) };
 }

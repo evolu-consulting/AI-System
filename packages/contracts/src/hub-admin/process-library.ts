@@ -30,8 +30,14 @@ export const LIBRARY_DEF_FIELDS = {
   has_unpublished_changes: z.boolean().optional(),
   tenant_count: CountSchema.optional(),
 };
+/** CR-121 c15 · bước của quy trình thư viện cho bảng Thư viện: TÊN bước (theo thứ tự) + điều kiện `when` (FlowWhen, client đọc bằng describeWhen). */
+export const LibraryListStepSchema = z.strictObject({
+  name: z.string().max(200),
+  when: z.unknown().optional(),
+});
 export const LIBRARY_LIST_ITEM_FIELDS = {
   slot: SlotKeySchema.nullable().optional(),
+  steps: z.array(LibraryListStepSchema).max(PROCESS_STAGES_MAX).optional(),
   ...LIBRARY_DEF_FIELDS,
 };
 

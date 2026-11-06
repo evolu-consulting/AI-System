@@ -73,12 +73,13 @@ describe("ADM-FR-76 · legacyTarget", () => {
 describe("CR-121 c13 · /processes?tenant= chuyển tới Công ty › Quy trình", () => {
   const T = "11111111-1111-4111-8111-111111111111";
   const OWN = "22222222-2222-4222-8222-222222222222";
-  it("platform_admin kèm ?tenant=<id> ⇒ công ty đó; không có/kèm bộ lọc thư viện/mã lạ ⇒ ở lại thư viện", () => {
+  it("platform_admin kèm ?tenant=<id> ⇒ công ty đó (kể cả kèm bộ lọc); không có/mã lạ/bộ lọc ?usedBy= ⇒ ở lại thư viện", () => {
     expect(processesRedirectTenant("platform_admin", { tenant: T }, undefined)).toBe(T);
     expect(processesRedirectTenant("platform_admin", {}, undefined)).toBeNull();
     expect(
       processesRedirectTenant("platform_admin", { tenant: T, app: "contracts" }, undefined),
-    ).toBeNull();
+    ).toBe(T);
+    expect(processesRedirectTenant("platform_admin", { usedBy: T }, undefined)).toBeNull();
     expect(processesRedirectTenant("platform_admin", { tenant: "none" }, undefined)).toBeNull();
   });
   it("tenant_admin luôn về công ty mình; member không chuyển", () => {
