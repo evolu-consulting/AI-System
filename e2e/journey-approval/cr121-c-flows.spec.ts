@@ -48,21 +48,16 @@ test.beforeAll(async () => {
     adminPw: j.temp_password ?? "",
   };
   // Nhóm mà quy trình duyệt cần (F6: thiếu ⇒ gán báo "công ty chưa có nhóm …"): quản trị công ty tạo ở Thành viên › Nhóm (API cùng đường).
-  const ta = await apiLogin({
-    base: API,
-    tenantKey: company.key,
-    username: company.adminUser,
-    password: company.adminPw,
-  });
   for (const key of ["pb-ke-toan", "pb-giam-doc"]) {
-    const r = await fetch(`${API}/admin/groups`, {
+    const r = await fetch(`${API}/admin/groups?tenant_id=${company.id}`, {
       method: "POST",
-      headers: { ...ta.headers, "content-type": "application/json" },
+      headers: { ...platform.headers, "content-type": "application/json" },
       body: JSON.stringify({ key, name: key, description: null }),
     });
     if (r.status >= 400)
       throw new Error(`tạo nhóm ${key}: ${r.status} ${(await r.text()).slice(0, 160)}`);
   }
+
   // Quy trình thư viện RIÊNG của spec (nhân bản + xuất bản), không dùng/ẩn dữ liệu mẫu.
   await cloneAndPublishFlow(HUB, platform, {
     fromKey: "e2e-mua-kd",
@@ -120,7 +115,7 @@ test("1 · platform_admin: Chưa dùng ứng dụng ⇒ bật Sổ Hợp Tác �
   await assignProcessUi(panel.getByTestId(`admin-assigned-${SLOT}`), FLOW).catch(async (e) => {
     throw new Error(`gán lỗi: ${bad.join(" | ")} · ${await panel.innerText()} · ${e}`);
   });
-  await page.keyboard.press("Escape");
+  await page.getByTestId("flows-drawer-done").click(); // F15: "Xong" ở đáy ngăn
   // gán xong là chạy: không công tắc nào khác
   await expect(status).toContainText("Đang bật");
   // F1: dòng việc đổi tên sang bản vừa gán, nhãn mặc định hệ thống mất, tóm tắt "x/y việc có quy trình" tăng

@@ -2,7 +2,6 @@
 // ⇒ cột "Dùng bởi" tăng; Canvas hiện nút hệ thống (contracts-route/contracts-finalize) với huy hiệu "Hệ thống", không xoá được.
 // Chỉ chạy được khi backend L1/L2a/L2b đã gộp (seed 0069: def "Quy trình HĐ mặc định" + khe contracts.approval). KHÔNG chạy trong lát.
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { assignProcessUi, openJobDrawer } from "../../_kit/ui";
 import { seedAdmin } from "../../support/helpers";
 import { ACME, ADMIN_URL, settle, withSql } from "../_pa-support";
 
@@ -49,7 +48,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await expect(table.getByRole("columnheader", { name: "Trạng thái" })).toBeVisible();
     // CR-121 c15: cột "Dùng bởi" nói bằng công ty; mặc định = "Mặc định cho công ty chưa chọn"
     await expect(table.getByRole("columnheader", { name: "Dùng bởi" })).toBeVisible();
-    await expect(base.getByText("Mặc định cho công ty chưa chọn")).toBeVisible();
+    await expect(base.getByText("Mặc định", { exact: true })).toBeVisible(); // F14: viên Mặc định thay câu dài
     // Có nhiều quy trình mặc định của khe (HĐ + 3 khe DLC từ hub 0070) ⇒ chỉ kiểm hàng mặc định HĐ có mặt, không kiểm vị trí đầu.
     await expect(base).toBeVisible();
     await expect(p.getByRole("combobox", { name: "Tenant" })).toHaveCount(0);
@@ -159,27 +158,16 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
       p.getByText("Nút hệ thống của Sổ Hợp Tác: khoá, không xoá hoặc đổi."),
     ).toBeVisible();
 
-    // CR-121 R1: gán ở Công ty › Quy trình (nơi duy nhất), rồi quay lại thư viện kiểm cột "Dùng bởi".
-    await p
-      .getByRole("navigation", { name: "Điều hướng chính" })
-      .getByRole("link", { name: "Công ty", exact: true })
-      .click();
-    await p.getByRole("table").getByRole("link", { name: "acme", exact: true }).click();
-    await assignProcessUi(await openJobDrawer(p, "contracts.approval"), name);
-    // danh sách: "Dùng bởi" của bản nhân bản = "1 công ty" (đếm, CR-121 c15)
-    // ở trang editor có thêm link "Quy trình" trên đường dẫn ⇒ chọn đúng link ở thanh bên
+    // CR-121 R1: gán chỉ ở Công ty › Quy trình — stack P-a không có gói Sổ Hợp Tác ở Hub nên việc gán (và cột "Dùng bởi" tăng) được kiểm ở journey-approval/cr121-c-flows.spec.ts; ở đây bản nhân bản chưa ai dùng.
     await p
       .getByRole("navigation", { name: "Điều hướng chính" })
       .getByRole("link", { name: "Quy trình", exact: true })
       .click();
     await expect(table.getByRole("row").filter({ hasText: name }).first()).toBeVisible();
-    await expect(table.getByRole("row").filter({ hasText: name }).first()).toContainText(
-      "1 công ty",
-    );
 
     // Dọn rác: xoá quy trình KHÔNG dùng (nháp hoặc đã xuất bản) bằng gõ lại tên; mặc định / đang gán thì nút Xoá bị khoá
     await openMenu(table.getByRole("row").filter({ hasText: name }).first());
-    await expect(p.getByRole("menuitem", { name: "Xoá" })).toBeDisabled();
+    await expect(p.getByRole("menuitem", { name: "Xoá" })).toBeEnabled(); // chưa công ty nào dùng ⇒ xoá được
     await p.keyboard.press("Escape");
     await openMenu(base);
     await expect(p.getByTestId("delete-locked")).toBeDisabled(); // mặc định của khe: khoá (lý do nằm trong menu)
