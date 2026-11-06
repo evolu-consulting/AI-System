@@ -3,11 +3,11 @@
 // - `emit*`: ghi `hub.flow_events` qua hàm SECURITY DEFINER `hub.emit_flow_event` (hub 0109) CÙNG tx bản ghi (role `contracts_rw` không
 //   ghi được bảng). Facts dựng NGAY TRONG câu từ hàng HĐ (không thêm vòng đọc). Trùng `(tenant_id, event_id)` ⇒ không ghi.
 // - `readFacts`: dữ kiện HIỆN TẠI cho `FactsReader` (node Nếu), lọc `tenant_id`; không thấy ⇒ null (không lộ tồn tại).
-// - `applyOutcome`: việc của `OutcomeHandler` TRONG tx engine. Tx engine chạy role hub ⇒ `inPack` đổi sang role gói + tenant đúng
+// - `applyOutcome`: việc của `OutcomeHandler` TRONG tx engine. Tx engine chạy role hub ⇒ `withPackRoleInTx` đổi sang role gói + tenant đúng
 //   cửa sổ ghi rồi TRẢ LẠI role/biến cũ (engine còn ghi hub.* sau đó). Idempotent theo `(runId, outcome)`.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { OutcomeInput, OutcomeResult } from "../../kit/public";
+import { type OutcomeInput, type OutcomeResult, withPackRoleInTx } from "../../kit/public";
 import type { ContractFlowRepo } from "../application/contract-flow.ports";
 import {
   APPROVAL_STATUS_OF,
@@ -69,27 +69,6 @@ export function contractFlowRepo(tx: Tx, tid: string): ContractFlowRepo {
       return { facts: (facts ?? {}) as Record<string, unknown>, startedBy: r.started_by };
     },
   };
-}
-
-type Saved = { role: string; uid: string; kind: string; ext: string; tid: string };
-
-/** Chạy `fn` dưới role gói + tenant của gói (như `withPackScope`), xong TRẢ LẠI role/biến của tx engine (kể cả khi `fn` ném). */
-export async function inPack<T>(tx: Tx, tenantId: string, fn: () => Promise<T>): Promise<T> {
-  if (!UUID.test(tenantId)) throw new Error("tenant invalid");
-  const [s] = await tx.execute<Saved>(sql`select current_setting('role') as role,
-    coalesce(current_setting('app.user_id', true), '') as uid, coalesce(current_setting('app.user_kind', true), '') as kind,
-    coalesce(current_setting('app.ext_org_id', true), '') as ext, coalesce(current_setting('app.tenant_id', true), '') as tid`);
-  await tx.execute(sql`select set_config('role', ${`${CONTRACTS_PACK}_rw`}, true), set_config('app.tenant_id', ${tenantId}, true),
-    set_config('app.user_id', '', true), set_config('app.user_kind', packs.scope_user_kind(''), true),
-    set_config('app.ext_org_id', packs.scope_ext_org(${tenantId}, ''), true)`);
-  try {
-    return await fn();
-  } finally {
-    if (s)
-      await tx.execute(sql`select set_config('role', ${s.role}, true), set_config('app.tenant_id', ${s.tid}, true),
-        set_config('app.user_id', ${s.uid}, true), set_config('app.user_kind', ${s.kind}, true),
-        set_config('app.ext_org_id', ${s.ext}, true)`);
-  }
 }
 
 type Applied = { n: number; links: unknown; startedBy: string | null; approvalId: string };
@@ -166,7 +145,7 @@ export async function applyContractOutcome(
 ): Promise<OutcomeResult> {
   const tid = i.tenantId;
   if (!UUID.test(i.ref) || !UUID.test(i.runId)) return "not_found";
-  const got = await inPack(tx, tid, async () => {
+  const got = await withPackRoleInTx(tx, CONTRACTS_PACK, tid, async () => {
     await approvalWrite(tx); // CR-109: cờ tx-local cho policy ghi HĐ
     const a = await applyQ(tx, tid, i, o);
     if (a.n === 0) return { a, already: await appliedQ(tx, tid, i, o) };
@@ -182,7 +161,7 @@ export async function applyContractOutcome(
         ? await tx.execute<{ keys: string[] | null }>(CREATOR_DEPARTMENTS_SQL(tid, sb))
         : [];
     const departments = dep[0]?.keys ?? [];
-    await inPack(tx, tid, () =>
+    await withPackRoleInTx(tx, CONTRACTS_PACK, tid, () =>
       contractFlowRepo(tx, tid).emitContract(EV_APPROVED, i.ref, got.a.approvalId, {
         actor: i.actorId,
         departments,

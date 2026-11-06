@@ -23,13 +23,13 @@ Gói Hợp đồng bắn `contract.submitted|uploaded|approved` vào `hub.flow_e
 - Không đụng settle/node (E2b), triggers/dispatcher (E1b), admin-web, DLC. Chưa gỡ `slotFlowOf`/`withConfirmStep`/`approval-slot*.rules`/`routing-def.ts` (R1, D6: còn đường khe khi cờ tắt).
 
 ## Test tối thiểu
-- unit: `contract-flow.usecase.test.ts`, `flow-events.mount.test.ts`. int: `adapters/contract-flow.int.test.ts` (gửi duyệt ghi cùng tx + trùng không ghi thêm, chặn đọc chéo tenant ở FactsReader; phần OutcomeHandler `describe.skip` chờ soát `inPack`).
+- unit: `contract-flow.usecase.test.ts`, `flow-events.mount.test.ts`. int: `adapters/contract-flow.int.test.ts` (gửi duyệt ghi cùng tx + trùng không ghi thêm, chặn đọc chéo tenant ở FactsReader và OutcomeHandler; OutcomeHandler Đã duyệt / Từ chối / Trả lại, gọi lại ⇒ `already_applied`).
 
 ## Quyết định trong lúc làm
 - Cờ đọc trước tx bằng cổng (`ContractFlowGate`) vì `contracts_rw` không có quyền bảng `hub.tenant_flow_settings`; lỗi đọc cờ ⇒ coi như TẮT.
 - `creator_department` = mảng mã Group (kể cả phòng cha) như `creator_departments` cũ; `new_partner` giữ định nghĩa CR-121.
 - Trả lại ⇒ lượt `cancelled` + HĐ `needs_review` bỏ `run_id` (= Nháp: `approvals_status_ck` không có `returned`).
-- `OutcomeHandler` ghi bảng gói trong tx engine bằng `inPack` (đổi role tạm rồi trả lại) — đang chờ soát; actorId lấy từ engine (null) — chưa đọc `fields.decided_by`.
+- `OutcomeHandler` ghi bảng gói trong tx engine bằng `withPackRoleInTx` (helper chung kit, A2b); `actorId` do engine truyền (người duyệt cuối từ `fields.decided_by`, E3) ⇒ `confirmed_by`/`decided_by`.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
@@ -45,4 +45,4 @@ Khi cờ flow của công ty bật, gửi duyệt / tải lên / duyệt xong gh
 - Kịch bản: khi định tuyến kết cục theo sự kiện thì chỉ đúng cặp (sự kiện, kết cục) đã khai được áp [test: apps/hub-api/src/modules/packs/contracts/flow-events.mount.test.ts » approved/done và uploaded/accepted không đổi HĐ, kết cục chưa hỗ trợ thì ném]
 
 ## Việc còn lại
-- Chạy int OutcomeHandler sau kết luận soát `inPack`; đọc người duyệt cuối từ `fields.decided_by`; R1 gỡ đường khe.
+- R1 gỡ đường khe (`slotFlowOf`, `withConfirmStep`, `approval-slot*.rules`, `routing-def.ts`).

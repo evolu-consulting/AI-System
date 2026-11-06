@@ -69,7 +69,13 @@ async function openApproval(tenant: string, contractId: string, by: string): Pro
     where id = ${contractId}`;
   return aid;
 }
-const apply = (tenant: string, ref: string, runId: string, outcome: string) =>
+const apply = (
+  tenant: string,
+  ref: string,
+  runId: string,
+  outcome: string,
+  actorId: string | null = null,
+) =>
   withHubScope(db, { kind: "system" }, (tx) =>
     contractsOutcomeHandler().apply(tx, {
       tenantId: tenant,
@@ -77,7 +83,7 @@ const apply = (tenant: string, ref: string, runId: string, outcome: string) =>
       event: "contract.submitted",
       ref,
       outcome,
-      actorId: null,
+      actorId,
     }),
   );
 
@@ -110,22 +116,21 @@ describe("A1 · gửi duyệt ghi sự kiện cùng tx", () => {
   });
 });
 
-// CHỜ KẾT LUẬN SOÁT (điều phối 2026-11-06): OutcomeHandler đổi role gói tạm trong tx engine (`inPack`) — cách này đang được soát, chưa chạy int.
-describe.skip("A1 · OutcomeHandler trong tx engine", () => {
+describe("A1 · OutcomeHandler trong tx engine", () => {
   it("Đã duyệt: HĐ active + lượt done + bắn contract.approved; gọi lại ⇒ already_applied, không ghi thêm", async () => {
     const id = C[1] as string;
     const aid = await openApproval(T1, id, A);
     const run = crypto.randomUUID();
-    expect(await apply(T1, id, run, "approved")).toBe("applied");
+    expect(await apply(T1, id, run, "approved", A)).toBe("applied");
     expect((await cRow(id))?.status).toBe("active");
     const [a] = await o<
-      { status: string; engine_run_id: string }[]
-    >`select status, engine_run_id from contracts.approvals where id = ${aid}`;
-    expect(a).toMatchObject({ status: "done", engine_run_id: run });
+      { status: string; engine_run_id: string; decided_by: string }[]
+    >`select status, engine_run_id, decided_by from contracts.approvals where id = ${aid}`;
+    expect(a).toMatchObject({ status: "done", engine_run_id: run, decided_by: A }); // người duyệt cuối từ engine
     const ev = await events(T1, `contract.approved:${id}:%`);
     expect(ev).toHaveLength(1);
     expect(ev[0]?.facts).toMatchObject({ total_value: 750000000, deal: "buy" });
-    expect(await apply(T1, id, run, "approved")).toBe("already_applied");
+    expect(await apply(T1, id, run, "approved", A)).toBe("already_applied");
     expect(await events(T1, `contract.approved:${id}:%`)).toHaveLength(1);
     // run khác chưa từng áp lên HĐ đã đóng ⇒ không đè
     expect(await apply(T1, id, crypto.randomUUID(), "rejected")).toBe("not_found");
@@ -179,7 +184,7 @@ describe("A1 · chặn đọc chéo tenant", () => {
     expect((await cRow(id))?.status).toBe("needs_review");
     expect((await cRow(X))?.status).toBe("needs_review");
   });
-  it.skip("OutcomeHandler của tenant khác ⇒ not_found, không đổi HĐ (chờ soát inPack)", async () => {
+  it("OutcomeHandler của tenant khác ⇒ not_found, không đổi HĐ", async () => {
     const id = C[5] as string;
     expect(await apply(T2, id, crypto.randomUUID(), "approved")).toBe("not_found");
     expect((await cRow(id))?.status).toBe("needs_review");

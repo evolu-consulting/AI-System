@@ -1,4 +1,4 @@
-// CR-122 · A1 · FLOW2-FR-15 · OutcomeHandler của gói Hợp đồng: định tuyến theo (sự kiện, kết cục) — phần SQL ở int (chờ soát `inPack`).
+// CR-122 · A1 · FLOW2-FR-15 · OutcomeHandler của gói Hợp đồng: định tuyến theo (sự kiện, kết cục) — phần SQL ở `adapters/contract-flow.int.test.ts`.
 import { describe, expect, it } from "bun:test";
 import type { Tx } from "@ai/db";
 import { flowPortRegistry } from "../kit/public";
