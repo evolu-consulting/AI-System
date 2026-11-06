@@ -845,7 +845,6 @@
       "groups": "Nhóm",
       "partners": "Đối tác",
       "access": "Phân quyền",
-      "workflowTools": "Quy trình",
       "packs": "Gói",
       "unavailableBody": "Mục này sẽ khả dụng ở bản sau."
     },
@@ -955,35 +954,6 @@
       "pickFeature": "Chọn feature",
       "noFeatureLeft": "Mọi feature đã có quota",
       "cell": "{field} · {scope}"
-    },
-    "tools": {
-      "title": "Tool quy trình",
-      "desc": "Bật workflow nào thì quy trình của công ty này gọi được workflow đó ở giai đoạn “Gọi tool”.",
-      "search": "Tìm tool",
-      "col": {
-        "name": "Tên",
-        "key": "Ký hiệu",
-        "note": "Ghi chú",
-        "grantedBy": "Bật bởi",
-        "on": "Bật cho công ty"
-      },
-      "sideEffect": "Tác dụng phụ",
-      "workflowOff": "Workflow đang tắt",
-      "workflowOffTip": "Workflow đang tắt toàn hệ thống nên tool chưa dùng được dù đã bật cho công ty.",
-      "grantedBy": "{name} · {date}",
-      "switchAria": "Bật tool {name}",
-      "empty": "Chưa có workflow nào trong catalog",
-      "emptyDesc": "Tạo workflow ở mục Workflows, rồi bật cho công ty ở đây.",
-      "openWorkflows": "Mở Workflows",
-      "noMatch": "Không có tool nào khớp.",
-      "offTitle": "Tắt tool {name}?",
-      "offBody": "Lượt chạy đang chờ gọi tool này sẽ dừng ở “Cần người quyết”.",
-      "offConfirm": "Tắt tool",
-      "toast": {
-        "on": "Đã bật tool {name} cho {tenant}",
-        "off": "Đã tắt tool {name} cho {tenant}",
-        "gone": "Workflow này không còn trong catalog. Đã tải lại danh sách."
-      }
     },
     "apps": {
       "title": "Ứng dụng & Gói",
@@ -3213,6 +3183,81 @@
       "adminOnly": "Chỉ quản trị công ty thấy",
       "partnerNever": "Đối tác không bao giờ thấy",
       "noRole": "Chưa có vai nào đủ mức {level}"
+    }
+  },
+  "aiTools": {
+    "title": "Công cụ AI",
+    "description": "Các quy trình AI (Dify) mà agent và lệnh gọi tới. Công cụ chưa ai dùng hiện ở mục Chưa dùng.",
+    "search": "Tìm công cụ",
+    "chips": {
+      "label": "Lọc công cụ",
+      "all": "Tất cả",
+      "on": "Đang bật",
+      "unused": "Chưa dùng",
+      "agent": "Agent",
+      "command": "Lệnh"
+    },
+    "col": {
+      "tool": "Công cụ",
+      "status": "Trạng thái",
+      "usedBy": "Dùng bởi",
+      "actions": "Thao tác"
+    },
+    "usedByTip": "Số agent và lệnh đang gọi công cụ này.",
+    "usedBy": {
+      "agent": "{count} agent",
+      "command": "{count} lệnh",
+      "none": "Chưa ai dùng"
+    },
+    "status": {
+      "on": "Đang bật",
+      "off": "Đang tắt"
+    },
+    "menu": {
+      "label": "Thao tác {name}",
+      "open": "Xem chi tiết",
+      "edit": "Mở trang chi tiết",
+      "runs": "Lịch sử chạy"
+    },
+    "shown": "{shown} trong {total} công cụ",
+    "more": "Xem thêm",
+    "allUsed": "Mọi công cụ đều đang được dùng.",
+    "showAll": "Xem tất cả",
+    "noMatch": "Không có công cụ nào khớp.",
+    "empty": "Chưa có công cụ AI nào",
+    "emptyDesc": "Tạo workflow Dify để agent, lệnh và quy trình của công ty gọi tới.",
+    "create": "Tạo workflow",
+    "loadError": "Không tải được danh sách công cụ.",
+    "notice": {
+      "companyTools": "Bật/tắt Dify theo công ty nằm ở Công cụ AI. Chọn một công cụ để chọn công ty được dùng."
+    },
+    "drawer": {
+      "kind": "Công cụ AI",
+      "open": "Mở trang chi tiết",
+      "sideEffect": "Có tác dụng phụ",
+      "systemOff": "Đang tắt toàn hệ thống",
+      "systemOffTip": "Công cụ đang tắt toàn hệ thống nên chưa dùng được dù đã bật cho công ty.",
+      "usedBy": "Dùng bởi",
+      "usedByNone": "Chưa agent hay lệnh nào gọi công cụ này.",
+      "usedByError": "Không tải được danh sách dùng bởi.",
+      "companies": "Công ty dùng",
+      "companiesDesc": "Bật cho công ty nào thì quy trình của công ty đó gọi được công cụ này ở bước “Gọi công cụ”.",
+      "tally": "{on} / {total} công ty đang bật",
+      "none": "Chưa có công ty nào.",
+      "loadError": "Không tải được danh sách công ty.",
+      "grantedBy": "Bật bởi {name} · {date}",
+      "switchAria": "Bật {tool} cho {company}",
+      "descriptionLabel": "Mô tả"
+    },
+    "off": {
+      "title": "Tắt {tool} cho {company}?",
+      "body": "Lượt chạy đang chờ gọi công cụ này sẽ dừng ở “Cần người quyết”.",
+      "confirm": "Tắt công cụ"
+    },
+    "toast": {
+      "on": "Đã bật {tool} cho {company}",
+      "off": "Đã tắt {tool} cho {company}",
+      "gone": "Công cụ này không còn trong danh mục. Đã tải lại danh sách."
     }
   }
 }

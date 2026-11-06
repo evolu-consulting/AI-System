@@ -3,12 +3,14 @@
 // CHỈ khi đổi. Không vòng hàng (Luật 4c).
 import { isOnAfter, type ToggleWant, toggleChange } from "../domain";
 import {
+  type CompanyView,
   type SwitchKey,
   type SwitchRow,
   ToolNotFoundError,
   type ToolsTx,
   type ToolTarget,
   type ToolView,
+  type UsageView,
   type WorkflowToolsRepo,
 } from "./ports";
 
@@ -18,6 +20,21 @@ export function listTools(tx: ToolsTx, tenantId: string): Promise<ToolView[]> {
   return tx.read(async (r) => {
     if (!(await r.tenantExists(tenantId))) throw new ToolNotFoundError();
     return r.list(tenantId, TOOLS_LIST_LIMIT);
+  });
+}
+
+/** CR-121 c16 · "Dùng bởi" của cả danh mục (một lượt đọc theo tập). */
+export function listUsage(tx: ToolsTx): Promise<UsageView[]> {
+  return tx.read((r) => r.usage(TOOLS_LIST_LIMIT));
+}
+
+export const COMPANIES_LIST_LIMIT = 500;
+
+/** CR-121 c16 · công ty dùng một công cụ + công tắc; workflow không tồn tại ⇒ ToolNotFoundError. */
+export function listCompanies(tx: ToolsTx, workflowId: string): Promise<CompanyView[]> {
+  return tx.read(async (r) => {
+    if (!(await r.workflowExists(workflowId))) throw new ToolNotFoundError();
+    return r.companies(workflowId, COMPANIES_LIST_LIMIT);
   });
 }
 

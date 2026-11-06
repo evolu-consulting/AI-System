@@ -17,7 +17,16 @@ export type WorkspaceSearch = {
   org?: string;
   /** Tab con của Phân quyền: Vai theo ứng dụng (mặc định) / Ma trận / Kiểm tra quyền. */
   view?: "roles" | "matrix" | "check";
+  /** CR-121 c16 · `?tab=workflow-tools` cũ (tab đã gỡ) — route chuyển tới /ai-tools. */
+  legacy?: "workflow-tools";
 };
+
+/** URL cũ → nơi mới (R2): `?tab=workflow-tools` ⇒ Công cụ AI kèm thông báo; còn lại không chuyển. */
+export function legacyTabRedirect(
+  s: WorkspaceSearch,
+): { to: "/ai-tools"; notice: "company-tools" } | null {
+  return s.legacy === "workflow-tools" ? { to: "/ai-tools", notice: "company-tools" } : null;
+}
 
 const str = (v: unknown): string | undefined => (typeof v === "string" && v !== "" ? v : undefined);
 const oneOf = <T extends string>(v: unknown, allowed: readonly T[]): T | undefined =>
@@ -38,5 +47,6 @@ export function validateWorkspaceSearch(s: Record<string, unknown>): WorkspaceSe
     user: str(s.user),
     org: str(s.org),
     view: oneOf(s.view, ["roles", "matrix", "check"]),
+    legacy: s.tab === "workflow-tools" ? "workflow-tools" : undefined,
   };
 }

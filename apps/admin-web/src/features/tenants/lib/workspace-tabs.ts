@@ -1,4 +1,4 @@
-// CR-121 · tab workspace công ty theo vai. Thứ tự: Hồ sơ · Ứng dụng (key `features`) · Quy trình (key `workflow-tools`, chỉ platform) ·
+// CR-121 · tab workspace công ty theo vai. Thứ tự: Hồ sơ · Ứng dụng (key `features`) · [Quy trình: c11 thêm key `processes`; tab `workflow-tools` đã gỡ ở c16, URL cũ → /ai-tools] ·
 // Thành viên (key `users`) · Cài đặt (key `info`) · rồi các mục quản trị còn lại (Nhóm · Đối tác · Phân quyền · Agents · Quota).
 // Bỏ tab "Tổng quan" (đã có "Tổng quan" ở thanh bên); số tóm tắt nằm một dòng ở đầu trang. Tab mặc định (không `?tab=`) = Hồ sơ.
 // platform_admin đủ tab; tenant_admin: Hồ sơ (chỉ xem), Ứng dụng (chỉ xem), Thành viên, Cài đặt (chỉ xem), Nhóm, Đối tác, Phân quyền,
@@ -13,13 +13,11 @@ export type TenantTab =
   | "partners"
   | "access"
   | "agents"
-  | "workflow-tools"
   | "quota";
 
 export const TENANT_TABS: readonly TenantTab[] = [
   "profile",
   "features",
-  "workflow-tools",
   "users",
   "info",
   "groups",
@@ -50,7 +48,6 @@ export const TAB_LABEL = {
   partners: "tenants.tab.partners",
   access: "tenants.tab.access",
   agents: "tenants.tab.agents",
-  "workflow-tools": "tenants.tab.workflowTools",
   quota: "tenants.tab.quota",
 } as const satisfies Record<TenantTab, string>;
 

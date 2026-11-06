@@ -39,8 +39,6 @@ const route = getRouteApi("/_authed/tenants/$tenantId");
 
 export type { TenantTab } from "../lib/workspace-tabs";
 
-/** P-d2 · tab "Tool quy trình" nạp lười (chỉ khi mở tab). */
-const TenantToolsTab = lazy(() => import("../components/tools/TenantToolsTab"));
 /** CR-112 · tab "Ứng dụng & Gói" (CR-111 thẻ app + gói nghiệp vụ, gộp) nạp lười. */
 const TenantFeaturesTab = lazy(() => import("../components/features/TenantFeaturesTab"));
 
@@ -215,11 +213,6 @@ export function TenantDetailPage() {
         <TabsContent value="features" className="pt-4">
           <Suspense fallback={<LoadingState />}>
             <TenantFeaturesTab tenant={tenant} onDirtyChange={setFeaturesDirty} />
-          </Suspense>
-        </TabsContent>
-        <TabsContent value="workflow-tools" className="pt-4">
-          <Suspense fallback={<LoadingState />}>
-            <TenantToolsTab tenant={tenant} />
           </Suspense>
         </TabsContent>
         <TabsContent value="quota" className="pt-4">

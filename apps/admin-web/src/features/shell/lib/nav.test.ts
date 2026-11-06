@@ -1,12 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  aiToolsDestination,
-  crumbsFor,
-  isAllowedForRole,
-  isFrozenPath,
-  navItems,
-  parseAiToolKind,
-} from "./nav";
+import { crumbsFor, isAllowedForRole, isFrozenPath, navItems } from "./nav";
 
 const ids = (role: Parameters<typeof navItems>[0], processes = false) =>
   navItems(role, { processes }).map((i) => i.id);
@@ -68,15 +61,6 @@ describe("CR-121 R1 · sidebar 6 mục phẳng", () => {
   test("member không có mục nào", () => {
     expect(ids("member", true)).toEqual([]);
     expect(ids(undefined)).toEqual([]);
-  });
-
-  test("chuyển hướng /commands /agents sang /ai-tools tạm tới /workflows", () => {
-    expect(parseAiToolKind("command")).toBe("command");
-    expect(parseAiToolKind("agent")).toBe("agent");
-    expect(parseAiToolKind("workflow")).toBe("workflow");
-    expect(parseAiToolKind("x")).toBeUndefined();
-    expect(aiToolsDestination("command")).toBe("/workflows");
-    expect(aiToolsDestination(undefined)).toBe("/workflows");
   });
 });
 

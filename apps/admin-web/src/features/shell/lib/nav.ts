@@ -1,6 +1,6 @@
 // CR-121 · R1 (c10) · sidebar 6 mục phẳng theo artboard `Main`: Tổng quan · Công ty · Ứng dụng · Quy trình · Công cụ AI · Hệ thống. Không nhóm, không tiêu đề nhóm.
 // platform_admin thấy đủ 6 (Quy trình chỉ khi engine quy trình bật); tenant_admin: Tổng quan · Công ty (công ty mình) · Quy trình (khi engine bật).
-// Features / Commands / Agents / Workflow Dify gộp vào "Công cụ AI" (`/ai-tools?kind=`; c10 tạm chuyển tới /workflows đến khi c16 thay).
+// Features / Commands / Agents / Workflow Dify gộp vào "Công cụ AI" (`/ai-tools?kind=`; c16: trang thật /ai-tools?kind=agent|command lọc theo loại dùng).
 // Người dùng / Nhóm / Đối tác / Phân quyền nằm trong workspace công ty; route cũ chuyển hướng (tenants/lib/legacy-redirect.ts).
 import type { Role } from "@ai/contracts/common";
 
@@ -72,17 +72,6 @@ export function navItems(role: Role | undefined, opts: NavOptions = {}): NavItem
   return [];
 }
 
-export type AiToolKind = "workflow" | "command" | "agent";
-const AI_KINDS: readonly AiToolKind[] = ["workflow", "command", "agent"];
-/** `?kind=` hợp lệ của `/ai-tools`; giá trị lạ ⇒ undefined. */
-export const parseAiToolKind = (v: unknown): AiToolKind | undefined =>
-  AI_KINDS.find((k) => k === v);
-/**
- * Điểm đến tạm của `/ai-tools` (c10): mọi `kind` → danh mục `/workflows`. c16 thay bằng màn Công cụ AI thật.
- * `/commands` → `/ai-tools?kind=command`, `/agents` → `/ai-tools?kind=agent`.
- */
-export const aiToolsDestination = (_kind: AiToolKind | undefined): "/workflows" => "/workflows";
-
 export type Crumb = {
   labelKey:
     | `nav.${NavId}`
@@ -136,6 +125,7 @@ const EXACT_CRUMBS: Record<string, Crumb[]> = {
   "/transfer": [{ labelKey: "nav.transfer" }],
   "/system": [{ labelKey: "nav.system" }],
   "/system-health": [{ labelKey: "nav.system", to: "/system" }, { labelKey: "system.title" }],
+  "/ai-tools": [{ labelKey: "nav.system", to: "/system" }, { labelKey: "nav.aiTools" }],
   "/audit": [{ labelKey: "nav.audit" }],
   "/feedback": [{ labelKey: "nav.feedback" }],
   "/tenants": [{ labelKey: "nav.tenants" }],

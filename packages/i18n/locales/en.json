@@ -845,7 +845,6 @@
       "groups": "Groups",
       "partners": "Partners",
       "access": "Permissions",
-      "workflowTools": "Processes",
       "packs": "Packs",
       "unavailableBody": "This section will be available in a later release."
     },
@@ -955,35 +954,6 @@
       "pickFeature": "Choose a feature",
       "noFeatureLeft": "Every feature already has a quota",
       "cell": "{field} · {scope}"
-    },
-    "tools": {
-      "title": "Process tools",
-      "desc": "A workflow you enable here can be called by this company's processes at a “Call tool” stage.",
-      "search": "Search tools",
-      "col": {
-        "name": "Name",
-        "key": "Key",
-        "note": "Note",
-        "grantedBy": "Enabled by",
-        "on": "Enabled for company"
-      },
-      "sideEffect": "Side effects",
-      "workflowOff": "Workflow is off",
-      "workflowOffTip": "The workflow is off system-wide, so the tool can't be used even though it's enabled for this company.",
-      "grantedBy": "{name} · {date}",
-      "switchAria": "Enable tool {name}",
-      "empty": "There are no workflows in the catalog",
-      "emptyDesc": "Create one under Workflows, then enable it for this company here.",
-      "openWorkflows": "Open Workflows",
-      "noMatch": "No tool matches.",
-      "offTitle": "Turn off tool {name}?",
-      "offBody": "Runs waiting to call this tool will stop at “Needs a decision”.",
-      "offConfirm": "Turn off tool",
-      "toast": {
-        "on": "Enabled tool {name} for {tenant}",
-        "off": "Turned off tool {name} for {tenant}",
-        "gone": "This workflow is no longer in the catalog. The list was reloaded."
-      }
     },
     "apps": {
       "title": "Apps & Packs",
@@ -3213,6 +3183,81 @@
       "adminOnly": "Only company admins see this",
       "partnerNever": "Partners never see this",
       "noRole": "No role reaches level {level}"
+    }
+  },
+  "aiTools": {
+    "title": "AI tools",
+    "description": "The AI workflows (Dify) that agents and commands call. Tools nobody uses are under Unused.",
+    "search": "Search tools",
+    "chips": {
+      "label": "Filter tools",
+      "all": "All",
+      "on": "On",
+      "unused": "Unused",
+      "agent": "Agents",
+      "command": "Commands"
+    },
+    "col": {
+      "tool": "Tool",
+      "status": "Status",
+      "usedBy": "Used by",
+      "actions": "Actions"
+    },
+    "usedByTip": "How many agents and commands call this tool.",
+    "usedBy": {
+      "agent": "{count} agent(s)",
+      "command": "{count} command(s)",
+      "none": "Nobody uses it"
+    },
+    "status": {
+      "on": "On",
+      "off": "Off"
+    },
+    "menu": {
+      "label": "Actions for {name}",
+      "open": "View details",
+      "edit": "Open detail page",
+      "runs": "Run history"
+    },
+    "shown": "{shown} of {total} tools",
+    "more": "Show more",
+    "allUsed": "Every tool is in use.",
+    "showAll": "Show all",
+    "noMatch": "No tool matches.",
+    "empty": "No AI tools yet",
+    "emptyDesc": "Create a Dify workflow so agents, commands and company processes can call it.",
+    "create": "Create workflow",
+    "loadError": "Could not load the tools.",
+    "notice": {
+      "companyTools": "Switching Dify tools on or off per company now lives under AI tools. Pick a tool to choose which companies may use it."
+    },
+    "drawer": {
+      "kind": "AI tool",
+      "open": "Open detail page",
+      "sideEffect": "Has side effects",
+      "systemOff": "Off for the whole system",
+      "systemOffTip": "The tool is off for the whole system, so it cannot be used even where a company has it on.",
+      "usedBy": "Used by",
+      "usedByNone": "No agent or command calls this tool.",
+      "usedByError": "Could not load who uses this tool.",
+      "companies": "Companies using it",
+      "companiesDesc": "A company's processes can call this tool at the “Call tool” step only when it is on for that company.",
+      "tally": "{on} / {total} companies on",
+      "none": "No companies yet.",
+      "loadError": "Could not load the companies.",
+      "grantedBy": "Turned on by {name} · {date}",
+      "switchAria": "Turn {tool} on for {company}",
+      "descriptionLabel": "Description"
+    },
+    "off": {
+      "title": "Turn {tool} off for {company}?",
+      "body": "Runs waiting to call this tool will stop at “Needs a decision”.",
+      "confirm": "Turn off"
+    },
+    "toast": {
+      "on": "{tool} turned on for {company}",
+      "off": "{tool} turned off for {company}",
+      "gone": "This tool is no longer in the catalog. The list was reloaded."
     }
   }
 }

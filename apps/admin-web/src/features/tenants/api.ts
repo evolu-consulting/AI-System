@@ -18,7 +18,6 @@ import type {
   TenantUpdateRequest,
 } from "@ai/contracts/tenants";
 import type { UserListResponse } from "@ai/contracts/users";
-import type { TenantWorkflowToolList } from "@ai/contracts/workflow-tools";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 import type { TenantFeature } from "./lib/feature-assign";
@@ -227,30 +226,6 @@ export function useSetTenantPack(id: string) {
         query: on && level ? { level } : undefined,
       }),
     onSettled: () => qc.invalidateQueries({ queryKey: PACK_KEYS.list(id) }),
-  });
-}
-
-const TOOL_KEYS = { list: (id: string) => ["tenants", "workflow-tools", id] as const };
-
-/** ADM-FR-73 · danh sách tool quy trình của tenant (mọi workflow catalog + công tắc); chỉ platform_admin. */
-export function useTenantWorkflowTools(id: string, enabled: boolean) {
-  return useQuery({
-    queryKey: TOOL_KEYS.list(id),
-    enabled,
-    queryFn: () => api<TenantWorkflowToolList>(`/admin/tenants/${id}/workflow-tools`),
-  });
-}
-
-/** Bật (`PUT`, body rỗng) hoặc tắt (`DELETE`) một tool; xong làm mới danh sách (công tắc không optimistic). */
-export function useSetTenantTool(id: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ workflowId, on }: { workflowId: string; on: boolean }) =>
-      api<unknown>(`/admin/tenants/${id}/workflow-tools/${workflowId}`, {
-        method: on ? "PUT" : "DELETE",
-        body: on ? {} : undefined,
-      }),
-    onSettled: () => qc.invalidateQueries({ queryKey: TOOL_KEYS.list(id) }),
   });
 }
 

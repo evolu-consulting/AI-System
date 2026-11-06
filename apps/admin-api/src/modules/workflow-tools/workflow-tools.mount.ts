@@ -7,7 +7,7 @@ import { configWrite } from "../../lib/config/config-write";
 import type { TestHooks } from "../../lib/test-hooks";
 import { toolAudit } from "./adapters/workflow-tools.mapper";
 import { workflowToolsRepo } from "./adapters/workflow-tools.repo";
-import { workflowToolsRoutes } from "./adapters/workflow-tools.routes";
+import { aiToolsRoutes, workflowToolsRoutes } from "./adapters/workflow-tools.routes";
 import type { ToolsTx } from "./application";
 
 export type WorkflowToolsDeps = AuthDeps & { db: Db; hooks?: TestHooks };
@@ -28,6 +28,10 @@ function toolsTx(d: WorkflowToolsDeps, c: Context<AppVars>): ToolsTx {
 }
 
 export function mountWorkflowTools(app: Hono<AppVars>, d: WorkflowToolsDeps): void {
+  app.route(
+    "/admin/workflow-tools",
+    aiToolsRoutes(d, (c) => toolsTx(d, c)),
+  );
   app.route(
     "/admin/tenants",
     workflowToolsRoutes(d, (c) => toolsTx(d, c)),
