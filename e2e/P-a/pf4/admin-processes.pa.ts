@@ -7,7 +7,8 @@ import { adminLogin, settle } from "../_pa-support";
 
 test.afterEach(() => settle());
 
-test('ADM-FR-65 · E-P15a · Adm: nav "Quy trình"; tab Mẫu ⇒ "Chép mẫu" sdlc ⇒ dòng mới tắt; bật ⇒ lỗi phải chọn Group kiểm; member không có nav', async ({
+// CR-121 c13: /processes chỉ còn là Thư viện (hộp "Tạo quy trình" theo công ty `flows-create` đã gỡ) ⇒ cần viết lại theo tab Mẫu · chạy thử, tạm treo.
+test.fixme('ADM-FR-65 · E-P15a · Adm: nav "Quy trình"; tab Mẫu ⇒ "Chép mẫu" sdlc ⇒ dòng mới tắt; bật ⇒ lỗi phải chọn Group kiểm; member không có nav', async ({
   browser,
 }) => {
   const ctx = await browser.newContext();

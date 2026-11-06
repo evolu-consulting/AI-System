@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { AutomationNote } from "@/components/shared/AutomationNote";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -19,7 +18,6 @@ import { ProcessesHeader } from "../components/ProcessesHeader";
 import { ProcessesTable } from "../components/ProcessesTable";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
 import { RunDialog } from "../components/RunDialog";
-import { useFlowsList } from "../hooks/use-flows-list";
 import {
   type ProcessesView,
   type StateFilter,
@@ -28,12 +26,6 @@ import {
 } from "../hooks/use-processes-view";
 import { activeCount, appOfSlot, appOptions } from "../lib/library-filter";
 import type { LibraryListItem } from "../library-api";
-
-/** CR-120 · MỘT trang Quy trình của công ty (nạp lười: không vào chunk đầu). */
-const FlowsList = lazy(
-  () => import(/* webpackChunkName: "flows-one-page" */ "../components/flows/FlowsList"),
-);
-const CreateDialog = lazy(() => import("../components/flows/CreateDialog"));
 
 /** CR-118 · đang lọc theo app (link từ trang cấu hình app): nói rõ + lối về trang app + bỏ lọc. */
 function AppFilterNotice({ app, onClear }: { app: string; onClear: () => void }) {
@@ -47,7 +39,7 @@ function AppFilterNotice({ app, onClear }: { app: string; onClear: () => void })
     >
       {t("appcfg.listFilter", { app: name })}
       <Button variant="link" size="sm" className="h-auto p-0" asChild>
-        <Link to="/apps/$appKey" params={{ appKey: app }} search={{ tab: "processes" }}>
+        <Link to="/apps/$appKey" params={{ appKey: app }}>
           {t("appcfg.openApp")}
         </Link>
       </Button>
@@ -143,43 +135,13 @@ function LibraryTabs({ v }: { v: ProcessesView }) {
 function ListPage() {
   const { t } = useTranslation();
   const v = useProcessesView();
-  // tenant đang xem (platform: tenant đã chọn; tenant_admin: tenant của phiên); thư viện platform ⇒ rỗng.
-  const tid = v.tenant.me ? (v.tenant.isPlatform ? v.tenant.tenantId : v.tenant.me.tenant.id) : "";
   const hub = hubConfigured();
-  const flows = useFlowsList(
-    tid ?? "",
-    v.tenant.tenantId,
-    v.tenant.isPlatform,
-    v.flowsMode && !!tid && hub,
-  );
   if (!v.tenant.me) return null;
   return (
     <>
       <ProcessesHeader v={v} />
-      {v.flowsMode ? null : <AutomationNote kind="processes" showLink={v.tenant.isPlatform} />}
-      {!hub ? (
-        <HubNotConfigured />
-      ) : v.flowsMode ? (
-        <Suspense fallback={null}>
-          <FlowsList
-            tid={tid ?? ""}
-            flows={flows}
-            actions={v.actions}
-            canRun={v.canRun}
-            isPlatform={v.tenant.isPlatform}
-          />
-          {v.createOpen ? (
-            <CreateDialog
-              open
-              onOpenChange={v.setCreateOpen}
-              templates={flows.templates}
-              actions={v.actions}
-            />
-          ) : null}
-        </Suspense>
-      ) : (
-        <LibraryTabs v={v} />
-      )}
+      <AutomationNote kind="processes" showLink={v.tenant.isPlatform} />
+      {hub ? <LibraryTabs v={v} /> : <HubNotConfigured />}
       <RunDialog row={v.runRow} tenantId={v.tenant.tenantId} onClose={v.closeRun} />
       <ConfirmDialog
         open={v.delRow !== null}

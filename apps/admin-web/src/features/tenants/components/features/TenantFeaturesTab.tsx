@@ -3,7 +3,7 @@
 // Dải "Cần xử lý" mở ngăn Gán ở tab Quy trình (Q5); 4 ô số chỉ xem. Lưu một lượt, một hộp xác nhận. Chỉ platform_admin sửa
 // (tenant_admin: xem). Nạp lười. (Giữ tên/đường dẫn file cũ để workspace không phải đổi dòng import.)
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ErrorState } from "@/components/shared/states/ErrorState";
@@ -30,17 +30,13 @@ type Props = {
     process_runs_max?: number;
   };
   onDirtyChange: (dirty: boolean) => void;
-  /** CR-118: chỉ hiện hàng của một app (ngăn "Công ty" của trang cấu hình app, gỡ ở c13) — cùng bảng, cùng một đường lưu. */
-  onlyApp?: string;
-  /** CR-118: báo bản nháp chưa lưu (tập key feature) cho màn "Xem trước"; null khi không có thay đổi. */
-  onDraft?: (keys: ReadonlySet<string> | null) => void;
 };
 
 /** Tab của workspace (cr112-nav/rbac-ui, c11); giữ ở dạng chuỗi để không phụ thuộc kiểu `TenantTab` của lát khác. */
 const ACCESS_TAB: string = "access";
 const FLOWS_TAB: string = "processes";
 
-export default function TenantFeaturesTab({ tenant, onDirtyChange, onlyApp, onDraft }: Props) {
+export default function TenantFeaturesTab({ tenant, onDirtyChange }: Props) {
   const { t, i18n } = useTranslation();
   const tr = useTr();
   const navigate = useNavigate();
@@ -49,11 +45,7 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange, onlyApp, onDr
   const flows = useCompanyFlows(tenant.id);
   const overview = useTenantOverview(tenant.id);
   const [confirm, setConfirm] = useState(false);
-  const { dirty, value } = a;
-  useEffect(() => {
-    onDraft?.(dirty ? value : null);
-  }, [onDraft, dirty, value]);
-  useEffect(() => () => onDraft?.(null), [onDraft]);
+  const { value } = a;
   const err = loadError(a.query.error) ?? (readOnly ? null : loadError(a.packsQ.error));
   if (err) {
     return (
@@ -77,7 +69,7 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange, onlyApp, onDr
   const appName = (pack: string) => tr(`featmeta.app.${pack}.name`);
   const requestSave = () => (needsConfirm(a.plan) ? setConfirm(true) : void a.save());
   const { plan } = a;
-  const cards = a.cards.filter((c) => !onlyApp || c.app === onlyApp);
+  const cards = a.cards;
   const onApp = new Set<string>(a.cards.filter((c) => isAppOn(c, value)).map((c) => c.app));
   const attention = attentionOf(flows.groups, (app) => onApp.has(app));
   const counts = flowCounts(flows.groups);
@@ -132,19 +124,15 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange, onlyApp, onDr
   return (
     <div className="space-y-6">
       <section aria-label={t("tenants.apps.title")} className="space-y-4">
-        {onlyApp ? null : (
-          <div>
-            <h2 className="text-h3 font-semibold">{t("tenants.apps.title")}</h2>
-            <p className="text-caption text-muted-foreground">
-              {t(readOnly ? "tenants.apps.descReadOnly" : "tenants.apps.desc")}
-            </p>
-          </div>
-        )}
-        {onlyApp ? null : (
-          <AttentionStrip items={attention} onAssign={(slot) => go(FLOWS_TAB, slot)} />
-        )}
+        <div>
+          <h2 className="text-h3 font-semibold">{t("tenants.apps.title")}</h2>
+          <p className="text-caption text-muted-foreground">
+            {t(readOnly ? "tenants.apps.descReadOnly" : "tenants.apps.desc")}
+          </p>
+        </div>
+        <AttentionStrip items={attention} onAssign={(slot) => go(FLOWS_TAB, slot)} />
         <AppsTable rows={rows} />
-        {onlyApp ? null : <StatTiles tiles={tiles} onOpenFlows={() => go(FLOWS_TAB)} />}
+        <StatTiles tiles={tiles} onOpenFlows={() => go(FLOWS_TAB)} />
         {readOnly ? null : (
           <AppsSaveBar
             plan={plan}

@@ -97,28 +97,22 @@ export function useProcessesView() {
   const [runRow, setRunRow] = useState<Row | null>(null);
   const del = useDeleteFlow(tenant.tenantId);
   // CR-105 · platform_admin: tab chính = thư viện (`kind=library`, không cần chọn tenant); tab Mẫu = `kind=template`.
-  // Chọn một tenant ⇒ xem quy trình của tenant đó như trước.
-  const platformLibrary = tenant.isPlatform && !tenant.tenantId;
+  // CR-121 c13: /processes chỉ còn là THƯ VIỆN (platform_admin); gán/xem quy trình theo công ty ở Công ty › Quy trình.
+  const platformLibrary = tenant.isPlatform;
   const templates = platformLibrary && search.tab === "templates";
   const library = platformLibrary && !templates;
-  // CR-120 · tenant_admin / platform đang xem một công ty: MỘT danh sách "Quy trình" (không tab) do `useFlowsList` dựng; hook này chỉ
-  // giữ hành động dòng + xoá/chạy/nhân bản. Platform chưa chọn công ty: giữ thư viện + tab Mẫu như cũ.
-  const flowsMode = !platformLibrary;
-  const [createOpen, setCreateOpen] = useState(false);
   // Tab "Mẫu · chạy thử" (mọi vai) = `kind=sample`: mẫu + def tenant không khe/không của gói; tab chính của tenant = def của gói.
   const useLib = library || templates;
-  const ownQ = useProcessDefs(tenant.tenantId, false, tenant.ready && !useLib && !flowsMode);
+  const ownQ = useProcessDefs(tenant.tenantId, false, tenant.ready && !useLib);
   const libQ = useLibraryDefs(
     templates ? "sample" : "library",
-    tenant.ready && useLib && !flowsMode,
+    tenant.ready && useLib,
     tenant.tenantId,
   );
   const q = useLib ? libQ : ownQ;
   // Sau "Chép mẫu": danh sách MỘT trang tự làm tươi (invalidate) ⇒ chỉ đóng hộp thoại tạo; thư viện platform: sang tab Mẫu như cũ.
   const goOwn = () =>
-    flowsMode
-      ? setCreateOpen(false)
-      : void navigate({ to: "/processes", search: { tab: "templates" }, replace: true });
+    void navigate({ to: "/processes", search: { tab: "templates" }, replace: true });
   const goEditor = (id: string) =>
     void navigate({ to: "/processes/$processId", params: { processId: id } });
   const cloneFlow = useCloneFlow(goEditor);
@@ -160,9 +154,6 @@ export function useProcessesView() {
     setLibFilter: (f: LibFilter) =>
       void navigate({ to: "/processes", search: libFilterSearch(f), replace: true }),
     clearApp: () => void navigate({ to: "/processes", search: {}, replace: true }),
-    flowsMode,
-    createOpen,
-    setCreateOpen,
     tab: (templates ? "templates" : "own") as Tab,
     setTab: (v: Tab) => void navigate({ to: "/processes", search: { tab: v }, replace: true }),
     filter,

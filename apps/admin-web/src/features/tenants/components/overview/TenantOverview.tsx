@@ -57,7 +57,7 @@ export function TenantOverview({ tenant }: Props) {
               {o.apps.map((a) => (
                 <li key={a.app}>
                   {tr(`featmeta.app.${a.app}.name`)}
-                  {a.level === "on" ? "" : ` · ${t(`tenants.features.level.${a.level}`)}`}
+                  {a.level === "on" ? "" : ` · ${t(`tenants.apps.level.${a.level}`)}`}
                 </li>
               ))}
             </ul>

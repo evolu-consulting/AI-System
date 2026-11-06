@@ -47,11 +47,12 @@ const acmeKeys = () =>
     return rows.map((r) => r.key as string);
   });
 
-const TABS = ["Tổng quan", "Tính năng", "Quy trình", "Công ty", "Xem trước"];
+const TABS = ["Tổng quan", "Tính năng", "Xem trước"]; // CR-121 c13: tab Quy trình/Công ty gán đã gỡ
 const acmeRow = (page: import("@playwright/test").Page) =>
   page.getByRole("row").filter({ has: page.getByText("acme", { exact: true }) });
 
-test("CR-118 · F1 · /apps → Sổ Hợp Tác: 5 tab, tab Công ty → acme → mức Sửa → Xem trước bản nháp (quản trị công ty thấy 'Tạo và sửa hợp đồng') → quay lại Lưu ⇒ bảng phản ánh", async ({
+// CR-121 c13: mức theo công ty KHÔNG sửa ở trang app nữa (chỉ ở Công ty › Ứng dụng, đã phủ bởi feature-ui.spec.ts) ⇒ cần viết lại, tạm treo.
+test.fixme("CR-118 · F1 · /apps → Sổ Hợp Tác: 5 tab, tab Công ty → acme → mức Sửa → Xem trước bản nháp (quản trị công ty thấy 'Tạo và sửa hợp đồng') → quay lại Lưu ⇒ bảng phản ánh", async ({
   page,
 }) => {
   const calls = await fakePacks(page, TENANT_ID.acme, {}, sync);
@@ -112,19 +113,26 @@ test("CR-118 · F1 · /apps → Sổ Hợp Tác: 5 tab, tab Công ty → acme �
   // CR-121 c12: bảng ứng dụng không còn lối tắt "Mở cấu hình app" (App chỉ link sang Công ty › Quy trình — c13).
 });
 
-test("CR-118 · F2 · tab Quy trình: không có Hub ⇒ trạng thái rỗng có hướng dẫn, tab Tổng quan nêu số công ty theo mức", async ({
+test("CR-121 · c13 · /apps/contracts?tab=processes cũ ⇒ Tổng quan + thông báo Gán quy trình ở trang Công ty, không còn điều khiển gán", async ({
   page,
 }) => {
   await fakePacks(page, TENANT_ID.acme);
   await loginAdmin(page);
   await page.goto("/apps/contracts?tab=processes");
-  await expect(
-    page.getByText("Chưa cấu hình địa chỉ Hub nên chưa xem được quy trình."),
-  ).toBeVisible();
-  await page.getByRole("tab", { name: "Tổng quan" }).click();
-  await expect(page.getByText(/Đang bật cho 1\/\d+ công ty/).first()).toBeVisible();
-  await expect(page.getByText(/Sửa 1/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Cảnh báo cấu hình" })).toBeVisible();
+  const note = page.getByTestId("app-assign-note");
+  await expect(note).toContainText("Gán quy trình ở trang Công ty");
+  await expect(page.getByRole("tab", { name: "Tổng quan" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByRole("tab", { name: "Quy trình" })).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: "Công ty" })).toHaveCount(0);
+  await expect(page.getByTestId("admin-assign-pick")).toHaveCount(0);
+  await note
+    .getByRole("link", { name: /Quy trình của/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/tenants\/[^/]+\?tab=processes|\/tenants\/[^/]+.*tab=processes/);
 });
 
 test("CR-118 · F3 · Xem trước acme: đối tác không thấy nhóm Sổ Hợp Tác, thành viên thấy mục theo mức Sửa, 'Duyệt theo quy trình' không cần tính năng thêm (CR-121 D-4)", async ({

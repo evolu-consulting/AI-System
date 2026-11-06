@@ -14,7 +14,7 @@ function useReason() {
       case "app_off":
         return t("appcfg.reason.appOff");
       case "need_level":
-        return t("appcfg.reason.needLevel", { level: t(`tenants.features.level.${r.level}`) });
+        return t("appcfg.reason.needLevel", { level: t(`tenants.apps.level.${r.level}`) });
       case "need_addon":
         return t("appcfg.reason.needAddon", { addon: r.label });
       case "company_admin_only":
@@ -22,7 +22,7 @@ function useReason() {
       case "partner_never":
         return t("appcfg.reason.partnerNever");
       case "no_role":
-        return t("appcfg.reason.noRole", { level: t(`tenants.features.level.${r.level}`) });
+        return t("appcfg.reason.noRole", { level: t(`tenants.apps.level.${r.level}`) });
     }
   };
 }

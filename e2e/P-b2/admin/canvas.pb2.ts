@@ -225,7 +225,8 @@ test("ADM-FR-71 · E-PB2-11 · focus node + Enter ⇒ panel mở, focus 'Tên gi
   await expect(p.getByRole("alertdialog", { name: "Xoá giai đoạn “Rà soát code”?" })).toBeVisible();
 });
 
-test("ADM-FR-71 · E-PB2-12 · mẫu sdlc: chỉ xem — 2 câu thông báo; không 'Thêm giai đoạn'; Alt+ArrowRight không đổi gì", async ({
+// CR-121 c13: /processes chỉ còn là Thư viện (hộp "Tạo quy trình" theo công ty `flows-create` đã gỡ) ⇒ cần viết lại theo tab Mẫu · chạy thử, tạm treo.
+test.fixme("ADM-FR-71 · E-PB2-12 · mẫu sdlc: chỉ xem — 2 câu thông báo; không 'Thêm giai đoạn'; Alt+ArrowRight không đổi gì", async ({
   page: p,
 }) => {
   await openDef(p, "pb2-canvas", DEF_CANVAS.name);

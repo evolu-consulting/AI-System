@@ -1,7 +1,9 @@
 // ADM-FR-65 · CR-056 · P-a: `/processes` — danh sách quy trình (PF4). Cờ off ⇒ NotFound (trong trang).
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { type LibFilter, parseLibFilter } from "@/features/processes/lib/library-filter";
 import { ProcessesPage } from "@/features/processes/pages/ProcessesPage";
+import { processesRedirectTenant } from "@/features/tenants/lib/legacy-redirect";
+import { session } from "@/lib/auth/session";
 
 /** `app` (CR-118) + `slot`/`status`/`tenant` (CR-120): bộ lọc thư viện (nút phễu), lưu ở URL; link từ trang cấu hình app dùng `app`. */
 export type ProcessesSearch = { tab?: "own" | "templates" } & LibFilter;
@@ -11,5 +13,17 @@ export const Route = createFileRoute("/_authed/processes/")({
     tab: s.tab === "templates" ? "templates" : s.tab === "own" ? "own" : undefined,
     ...parseLibFilter(s),
   }),
+  // CR-121 c13: không còn chỗ gán ở /processes ⇒ tenant_admin / `?tenant=<id>` chuyển tới Công ty › Quy trình.
+  beforeLoad: ({ search }) => {
+    const me = session.getState().me;
+    const id = processesRedirectTenant(me?.role, search as Record<string, unknown>, me?.tenant.id);
+    if (id)
+      throw redirect({
+        to: "/tenants/$tenantId",
+        params: { tenantId: id },
+        search: { tab: "processes" },
+        replace: true,
+      });
+  },
   component: ProcessesPage,
 });

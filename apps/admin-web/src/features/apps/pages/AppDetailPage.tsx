@@ -1,6 +1,5 @@
 // CR-118 · cr118-app-config · /apps/$appKey (chỉ platform_admin): trang cấu hình MỘT app — "app này bật cho ai, chạy quy trình nào".
-// 5 tab: Tổng quan · Tính năng · Quy trình · Công ty · Xem trước. Dùng lại AppCard/AppsSaveBar (một đường lưu với trang công ty),
-// FeatureTable, thư viện quy trình CR-105 và ProcessEditorPage. Bản nháp chưa lưu của ngăn "Công ty" được giữ khi chuyển sang tab "Xem trước".
+// CR-121 c13: 3 tab Tổng quan · Tính năng · Xem trước. Gán quy trình KHÔNG làm ở đây — chỉ link sang Công ty › Quy trình (AssignNote).
 import type { AppCreateRequest } from "@ai/contracts/app-catalog";
 import { getAppManifest, type PreviewRole } from "@ai/contracts/app-manifest";
 import { Link } from "@tanstack/react-router";
@@ -13,18 +12,16 @@ import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { notifySuccess } from "@/components/shared/toast";
-import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/http";
 import { loadError } from "@/lib/load-error";
 import { useAppList, useUpdateApp } from "../api";
 import { AppFormDialog } from "../components/AppFormDialog";
-import { CompaniesTab } from "../components/tabs/CompaniesTab";
+import { AssignNote } from "../components/AssignNote";
 import { FeaturesTab } from "../components/tabs/FeaturesTab";
 import { OverviewTab } from "../components/tabs/OverviewTab";
 import { PreviewTab } from "../components/tabs/PreviewTab";
-import { ProcessesTab } from "../components/tabs/ProcessesTab";
 import { useAppCompanies } from "../hooks/use-app-companies";
 import { useAppProcesses } from "../hooks/use-app-processes";
 import {
@@ -33,12 +30,11 @@ import {
   configWarnings,
   enabledCount,
   featureAppOf,
-  type PreviewVersion,
 } from "../lib/app-config";
 
-type Props = { appKey: string; tab: AppTab; onTab: (t: AppTab) => void };
+type Props = { appKey: string; tab: AppTab; onTab: (t: AppTab) => void; notice?: boolean };
 
-function Content({ appKey, tab, onTab }: Props) {
+function Content({ appKey, tab, onTab, notice }: Props) {
   const { t } = useTranslation();
   const list = useAppList(true);
   const update = useUpdateApp();
@@ -47,12 +43,8 @@ function Content({ appKey, tab, onTab }: Props) {
   const companies = useAppCompanies(appId);
   const processes = useAppProcesses(appKey);
   const [editing, setEditing] = useState(false);
-  const [selected, setSelected] = useState<string | undefined>();
-  const [dirty, setDirty] = useState(false);
-  const [draft, setDraft] = useState<ReadonlySet<string> | null>(null);
   const [previewTenant, setPreviewTenant] = useState<string | undefined>();
   const [role, setRole] = useState<PreviewRole>("member");
-  const [version, setVersion] = useState<PreviewVersion>("saved");
   const app = list.data?.items.find((a) => a.key === appKey);
   const warnings = useMemo(
     () =>
@@ -72,12 +64,6 @@ function Content({ appKey, tab, onTab }: Props) {
   if (list.isPending) return <LoadingState />;
   if (!app) return <NotFoundState backTo="/apps" />;
 
-  const draftFor = (id: string | undefined) => (id && id === selected ? draft : null);
-  const openPreviewFromDrawer = () => {
-    setPreviewTenant(selected);
-    setVersion(draft ? "draft" : "saved");
-    onTab("preview");
-  };
   const save = async (v: AppCreateRequest) => {
     try {
       const { key: _k, ...body } = v;
@@ -89,13 +75,8 @@ function Content({ appKey, tab, onTab }: Props) {
     notifySuccess(t("apps.toast.saved", { name: v.name.vi }));
     return null;
   };
-  const noPerCompany = (
-    <p className="text-body text-muted-foreground">{t("appcfg.overview.noPerCompany")}</p>
-  );
-
   return (
     <>
-      <UnsavedGuard dirty={dirty} />
       <PageHeader
         title={app.name.vi}
         description={t("appcfg.subtitle")}
@@ -122,6 +103,7 @@ function Content({ appKey, tab, onTab }: Props) {
         <span className="font-mono">{app.url || t("appcfg.overview.noUrl")}</span>
         <span>· {t(app.sso ? "appcfg.overview.ssoOn" : "appcfg.overview.ssoOff")}</span>
       </p>
+      <AssignNote rows={companies.rows} highlight={!!notice} />
       <Tabs value={tab} onValueChange={(v) => onTab(v as AppTab)}>
         <TabsList aria-label={t("appcfg.tabs")}>
           {APP_TABS.map((k) => (
@@ -143,47 +125,17 @@ function Content({ appKey, tab, onTab }: Props) {
         <TabsContent value="features" className="pt-4">
           <FeaturesTab appId={appId} />
         </TabsContent>
-        <TabsContent value="processes" className="pt-4">
-          <ProcessesTab
-            data={processes}
-            decls={manifest?.slots}
-            onOpenCompanies={() => onTab("companies")}
-          />
-        </TabsContent>
-        <TabsContent value="companies" forceMount className="pt-4 data-[state=inactive]:hidden">
-          {appId ? (
-            <CompaniesTab
-              appKey={appKey}
-              rows={companies.rows}
-              pending={companies.pending}
-              error={companies.error}
-              onRetry={companies.refetch}
-              assigned={processes.assigned}
-              selectedId={selected}
-              onSelect={(id) => {
-                setSelected(id);
-                if (id === undefined) setDraft(null);
-              }}
-              dirty={dirty}
-              onDirtyChange={setDirty}
-              onDraft={setDraft}
-              onPreview={openPreviewFromDrawer}
-            />
-          ) : (
-            noPerCompany
-          )}
-        </TabsContent>
         <TabsContent value="preview" className="pt-4">
           <PreviewTab
             manifest={manifest}
             rows={companies.rows}
             tenantId={previewTenant}
             onTenant={setPreviewTenant}
-            draft={draftFor(previewTenant)}
+            draft={null}
             role={role}
             onRole={setRole}
-            version={version}
-            onVersion={setVersion}
+            version="saved"
+            onVersion={() => {}}
           />
         </TabsContent>
       </Tabs>

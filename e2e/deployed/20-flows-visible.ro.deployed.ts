@@ -48,20 +48,8 @@ test.describe("20 quy trình hiển thị cho tenant (ro)", () => {
     await settle(page);
     expect(new URL(page.url()).pathname.startsWith("/login")).toBe(false);
 
-    // CR-120 · MỘT trang "Quy trình": `flows-list` gồm mọi quy trình công ty có (nhóm theo app); quy trình platform cung cấp là
-    // `flows-row-*` với nhãn nguồn "Platform cung cấp" — cũng gồm dòng "đang dùng" mặc định khe chưa gán.
-    const area = page.getByTestId("flows-list");
-    await expect(area).toBeVisible({ timeout: 30_000 });
-    await expect(area.locator('[data-testid^="flows-group-"]').first()).toBeVisible({
-      timeout: 30_000,
-    });
-    const items = area.locator('[data-testid^="flows-row-"][data-source="platform"]');
-    await expect(items.first(), "trang Quy trình không có quy trình platform cung cấp").toBeVisible(
-      {
-        timeout: 30_000,
-      },
-    );
-    await expect(items.first().getByText(/Platform cung cấp|Provided by platform/)).toBeVisible();
+    // CR-121 c13: /processes chỉ còn là Thư viện (platform_admin); quy trình theo công ty xem ở Công ty › Quy trình (cr121-c-flows.spec.ts).
+    expect(new URL(page.url()).pathname.startsWith("/processes")).toBe(true);
     expect(errs.list).toEqual([]);
   });
 

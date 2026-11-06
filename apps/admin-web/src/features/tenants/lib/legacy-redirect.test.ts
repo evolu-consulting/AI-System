@@ -1,6 +1,6 @@
 // CR-112 · ADM-FR-76 AC2/AC3 · ánh xạ route cũ → tab workspace công ty.
 import { describe, expect, it } from "bun:test";
-import { type LegacyContext, legacyTarget } from "./legacy-redirect";
+import { type LegacyContext, legacyTarget, processesRedirectTenant } from "./legacy-redirect";
 
 const ctx = (over: Partial<LegacyContext> = {}): LegacyContext => ({
   role: "platform_admin",
@@ -56,5 +56,23 @@ describe("ADM-FR-76 · legacyTarget", () => {
 
   it("member không có workspace ⇒ danh sách (guard route đã chặn trước)", () => {
     expect(legacyTarget("users", {}, ctx({ role: "member" }))).toEqual({ to: "/tenants" });
+  });
+});
+
+describe("CR-121 c13 · /processes?tenant= chuyển tới Công ty › Quy trình", () => {
+  const T = "11111111-1111-4111-8111-111111111111";
+  const OWN = "22222222-2222-4222-8222-222222222222";
+  it("platform_admin kèm ?tenant=<id> ⇒ công ty đó; không có/kèm bộ lọc thư viện/mã lạ ⇒ ở lại thư viện", () => {
+    expect(processesRedirectTenant("platform_admin", { tenant: T }, undefined)).toBe(T);
+    expect(processesRedirectTenant("platform_admin", {}, undefined)).toBeNull();
+    expect(
+      processesRedirectTenant("platform_admin", { tenant: T, app: "contracts" }, undefined),
+    ).toBeNull();
+    expect(processesRedirectTenant("platform_admin", { tenant: "none" }, undefined)).toBeNull();
+  });
+  it("tenant_admin luôn về công ty mình; member không chuyển", () => {
+    expect(processesRedirectTenant("tenant_admin", {}, OWN)).toBe(OWN);
+    expect(processesRedirectTenant("tenant_admin", { tenant: T }, OWN)).toBe(OWN);
+    expect(processesRedirectTenant("member", {}, OWN)).toBeNull();
   });
 });

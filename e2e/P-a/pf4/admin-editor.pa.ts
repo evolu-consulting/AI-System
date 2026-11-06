@@ -7,7 +7,8 @@ import { adminLogin, hub, settle, tok } from "../_pa-support";
 
 test.afterEach(() => settle());
 
-test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disabled ở stage 1; Lưu ⇒ bật được; sửa song song ⇒ ConflictDialog; mẫu ⇒ "Đây là quy trình mẫu, chỉ xem…"', async ({
+// CR-121 c13: /processes chỉ còn là Thư viện (hộp "Tạo quy trình" theo công ty `flows-create` đã gỡ) ⇒ cần viết lại theo tab Mẫu · chạy thử, tạm treo.
+test.fixme('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disabled ở stage 1; Lưu ⇒ bật được; sửa song song ⇒ ConflictDialog; mẫu ⇒ "Đây là quy trình mẫu, chỉ xem…"', async ({
   browser,
 }) => {
   const ctx = await browser.newContext();

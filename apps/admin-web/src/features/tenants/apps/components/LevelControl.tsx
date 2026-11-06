@@ -29,7 +29,7 @@ export function LevelControl({ value, available, ariaLabel, disabled, onChange }
       onValueChange={(v) => onChange((v || value) as AppLevel)}
     >
       {ORDER.map((l) => {
-        const label = t(`tenants.features.level.${l}`);
+        const label = t(`tenants.apps.level.${l}`);
         return (
           <ToggleGroupItem
             key={l}

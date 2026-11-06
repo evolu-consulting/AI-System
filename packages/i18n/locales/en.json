@@ -1025,6 +1025,12 @@
       "cell": "{field} · {scope}"
     },
     "apps": {
+      "level": {
+        "off": "Off",
+        "read": "View",
+        "write": "Edit",
+        "admin": "Admin"
+      },
       "levelHelp": "View = read only · Edit = create and edit · Admin = add app settings and users",
       "col": {
         "app": "App",
@@ -1085,12 +1091,6 @@
     "features": {
       "title": "Features by app",
       "desc": "Pick the access level of each app for this company. A higher level includes the lower ones: Edit = View + Edit, Admin = View + Edit + Admin.",
-      "level": {
-        "off": "Off",
-        "read": "View",
-        "write": "Edit",
-        "admin": "Admin"
-      },
       "summary": {
         "now": "Now: {state}",
         "addons": "{count} add-on(s)",
@@ -3126,6 +3126,12 @@
     }
   },
   "appcfg": {
+    "assignNote": {
+      "title": "Assign processes on the Company page",
+      "body": "Each company's processes are assigned in Company › Processes, not on the app page.",
+      "open": "Processes of {{company}}",
+      "pickCompany": "Choose a company"
+    },
     "subtitle": "Configure one app: which companies have it, at what level, and which flows run.",
     "back": "App list",
     "edit": "Edit app details",

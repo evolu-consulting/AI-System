@@ -10,6 +10,7 @@ import {
   enabledCount,
   featureAppOf,
   filterCompanies,
+  isLegacyAssignTab,
   parseAppTab,
   slotsOfApp,
 } from "./app-config";
@@ -36,8 +37,14 @@ const ents = {
 
 describe("tab của trang app", () => {
   test("5 tab theo thứ tự wireframe, giá trị lạ ⇒ undefined", () => {
-    expect([...APP_TABS]).toEqual(["overview", "features", "processes", "companies", "preview"]);
-    expect(parseAppTab("processes")).toBe("processes");
+    expect([...APP_TABS]).toEqual(["overview", "features", "preview"]);
+    expect(parseAppTab("features")).toBe("features");
+    // CR-121 c13: tab gán cũ không còn là tab hợp lệ, được nhận ra để chuyển hướng kèm thông báo
+    expect(parseAppTab("processes")).toBeUndefined();
+    expect(parseAppTab("companies")).toBeUndefined();
+    expect(isLegacyAssignTab("processes")).toBe(true);
+    expect(isLegacyAssignTab("companies")).toBe(true);
+    expect(isLegacyAssignTab("overview")).toBe(false);
     expect(parseAppTab("packs")).toBeUndefined();
     expect(parseAppTab(undefined)).toBeUndefined();
   });

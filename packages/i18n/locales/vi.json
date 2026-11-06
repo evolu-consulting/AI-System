@@ -1025,6 +1025,12 @@
       "cell": "{field} · {scope}"
     },
     "apps": {
+      "level": {
+        "off": "Tắt",
+        "read": "Xem",
+        "write": "Sửa",
+        "admin": "Quản trị"
+      },
       "levelHelp": "Xem = chỉ đọc · Sửa = tạo và sửa · Quản trị = thêm cài đặt app và người dùng",
       "col": {
         "app": "Ứng dụng",
@@ -1085,12 +1091,6 @@
     "features": {
       "title": "Tính năng theo ứng dụng",
       "desc": "Chọn mức dùng cho từng ứng dụng của công ty. Mức cao gồm cả mức thấp: Sửa = Xem + Sửa, Quản trị = Xem + Sửa + Quản trị.",
-      "level": {
-        "off": "Tắt",
-        "read": "Xem",
-        "write": "Sửa",
-        "admin": "Quản trị"
-      },
       "summary": {
         "now": "Đang: {state}",
         "addons": "{count} tính năng thêm",
@@ -3126,6 +3126,12 @@
     }
   },
   "appcfg": {
+    "assignNote": {
+      "title": "Gán quy trình ở trang Công ty",
+      "body": "Quy trình của từng công ty được gán ở Công ty › Quy trình, không gán ở trang ứng dụng.",
+      "open": "Quy trình của {{company}}",
+      "pickCompany": "Chọn một công ty"
+    },
     "subtitle": "Cấu hình một ứng dụng: bật cho công ty nào, ở mức nào, chạy quy trình nào.",
     "back": "Danh sách ứng dụng",
     "edit": "Sửa thông tin app",

@@ -8,12 +8,14 @@ import {
   metaOf,
 } from "@/features/features/lib/feature-meta";
 
-export const APP_TABS = ["overview", "features", "processes", "companies", "preview"] as const;
+export const APP_TABS = ["overview", "features", "preview"] as const;
 export type AppTab = (typeof APP_TABS)[number];
 export const DEFAULT_APP_TAB: AppTab = "overview";
 
 /** `?tab=` không hợp lệ ⇒ undefined (trang rơi về Tổng quan). */
 export const parseAppTab = (v: unknown): AppTab | undefined => APP_TABS.find((t) => t === v);
+/** CR-121 c13 · `?tab=processes|companies` cũ (gán quy trình/công ty ở trang app đã gỡ): mở Tổng quan kèm thông báo "Gán quy trình ở trang Công ty". */
+export const isLegacyAssignTab = (v: unknown): boolean => v === "processes" || v === "companies";
 
 export type CompaniesSearch = { tenant?: string };
 

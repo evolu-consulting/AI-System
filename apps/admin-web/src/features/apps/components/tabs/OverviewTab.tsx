@@ -59,7 +59,7 @@ export function OverviewTab({ app, appId, rows, slotCount, warnings, onEdit }: P
           {t("appcfg.overview.enabledOf", { on: enabledCount(rows), total: rows.length })}
         </Stat>
         <Stat label={t("appcfg.overview.byLevel")}>
-          {LEVELS.map((l) => `${t(`tenants.features.level.${l}`)} ${counts[l]}`).join(" · ")}
+          {LEVELS.map((l) => `${t(`tenants.apps.level.${l}`)} ${counts[l]}`).join(" · ")}
         </Stat>
         <Stat label={t("appcfg.overview.slots")}>{slotCount}</Stat>
         <Stat label={t("appcfg.overview.access")}>
