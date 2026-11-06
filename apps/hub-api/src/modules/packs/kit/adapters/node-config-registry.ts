@@ -10,28 +10,40 @@ export type NodeConfigValidator = (
 ) => Promise<readonly NodeConfigIssue[]>;
 
 const validators = new Map<string, NodeConfigValidator>();
+const toolValidators = new Map<string, NodeConfigValidator>();
 
 export const nodeConfigRegistry = {
   /** Đăng ký lại cùng khoá node ⇒ thay (mount chạy lại vô hại). */
   register(nodeKey: string, v: NodeConfigValidator): void {
     validators.set(nodeKey, v);
   },
-  /** Mọi stage có `node` đã đăng ký validator ⇒ gộp lỗi (≤ 20). Không validator / không `node` ⇒ bỏ qua. */
+  /** E5d · validator theo KHOÁ TOOL: chạy cho mọi stage gọi tool đó, kể cả def gọi thẳng tool không mang `node` (không lách được kiểm lúc lưu). */
+  registerTool(toolKey: string, v: NodeConfigValidator): void {
+    toolValidators.set(toolKey, v);
+  },
+  /** Stage có validator theo `node` hoặc theo khoá tool ⇒ gộp lỗi (≤ 20; cùng một hàm không chạy hai lần). Không có ⇒ bỏ qua. */
   async check(
     tenantId: string,
     stages: readonly { node?: string | undefined; executor: unknown }[],
   ): Promise<NodeConfigIssue[]> {
     const out: NodeConfigIssue[] = [];
     for (const [index, s] of stages.entries()) {
-      const v = s.node ? validators.get(s.node) : undefined;
-      if (v && s.node)
-        out.push(...(await v(tenantId, { index, node: s.node, executor: s.executor })));
+      const tool = (s.executor as { kind?: string; tool_key?: string } | null)?.tool_key;
+      const vs = new Set([
+        ...(s.node && validators.has(s.node) ? [validators.get(s.node)] : []),
+        ...(tool && toolValidators.has(tool) ? [toolValidators.get(tool)] : []),
+      ]);
+      for (const v of vs)
+        out.push(
+          ...((await v?.(tenantId, { index, node: s.node ?? "", executor: s.executor })) ?? []),
+        );
     }
     return out.slice(0, 20);
   },
   /** Chỉ cho test. */
-  clear(nodeKey: string): void {
-    validators.delete(nodeKey);
+  clear(key: string): void {
+    validators.delete(key);
+    toolValidators.delete(key);
   },
 };
 

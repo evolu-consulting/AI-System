@@ -25,9 +25,10 @@ import { esignAnchorRoutes } from "./adapters/esign-anchor.routes";
 import { activeUserOf, deptHeadOf, esignFlowRepo, packWriters } from "./adapters/esign-flow.repo";
 import { esignFlowRoutes } from "./adapters/esign-flow.routes";
 import { esignNodeDirectory } from "./adapters/esign-node.repo";
-import { ESIGN_NODE_KEY, esignNodeValidator } from "./adapters/esign-node.validator";
+import { esignNodeValidator } from "./adapters/esign-node.validator";
 import { escalateTargetsOf, esignSweepRepo } from "./adapters/esign-sweep.repo";
 import { esignSyncClaim } from "./adapters/esign-sync.repo";
+import { INTAKE_TOOL_KEYS } from "./adapters/intake.tools";
 import type { ESignFiles, ESignProvider, ESignRegistry } from "./application/esign.ports";
 import { type ESignUsecase, esignUsecase } from "./application/esign.usecase";
 import { esignAnchors } from "./application/esign-anchor.usecase";
@@ -139,7 +140,8 @@ export function esignModule(
     warn: (m, meta) => logger.warn(m, meta),
   });
   // CR-122 · E5b · lưu def có node Ký số ⇒ server tự kiểm cấu hình (validator theo node, `processes/defs` gọi).
-  nodeConfigRegistry.register(ESIGN_NODE_KEY, esignNodeValidator(u.checkNode));
+  // E5d · theo KHOÁ TOOL (không chỉ theo node): def gọi thẳng `contracts-esign-send` không mang `node` cũng bị kiểm.
+  nodeConfigRegistry.registerTool(INTAKE_TOOL_KEYS.esignSend, esignNodeValidator(u.checkNode));
   // esign-flow-fix · quyền ghi gói của người ký (cổng quyền cần cache cấu hình ⇒ gắn sau ở `packs.mount`).
   let writers: Writers | null = null;
   const active = activeUserOf(db);

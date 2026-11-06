@@ -8,6 +8,7 @@
 import type { Db, Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
+import { ESIGN_EXPIRE_LEASE_MIN } from "../application/esign-expire";
 import type { EsignSweepRepo, EsignSweptRow } from "../application/esign-sweep";
 import type { EsignTurnSigner } from "../domain/esign-sweep.rules";
 import { contractCodeSql } from "./contract-name.sql";
@@ -131,6 +132,9 @@ export function esignEnvelopeSweep(
             (e.due_h is not null and e.created_at + make_interval(hours => e.due_h) <= ${at}::timestamptz) as overdue) z
         where e.tenant_id = ${t}::uuid and e.status in ('sent', 'delivered')
           and (e.due_h is not null or e.remind_every_h is not null) and (z.remind or z.overdue)
+          -- E5d · phong bì đang được một tiến trình khác giữ quyền huỷ (lease chưa hết) ⇒ không trả về
+          and (e.expire_claimed_at is null
+            or e.expire_claimed_at <= ${at}::timestamptz - make_interval(mins => ${ESIGN_EXPIRE_LEASE_MIN}::int))
           and not exists (select 1 from contracts.approvals a
             where a.tenant_id = e.tenant_id and a.id = c.run_id and a.esign_status in ('sending', 'sent')
               and a.flow_steps->-1->>'kind' = 'esign')

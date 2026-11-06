@@ -512,6 +512,13 @@
       "when": 1806300000000,
       "tag": "0079_esign_envelope_sweep",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1806400000000,
+      "tag": "0080_esign_expire_claim",
+      "breakpoints": true
     }
   ]
 }

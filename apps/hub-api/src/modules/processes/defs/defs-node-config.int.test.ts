@@ -53,9 +53,9 @@ const stage = (key: string, step: number, extra: object = {}) => ({
   token_budget: null,
   ...extra,
 });
-const esignStage = (args: Record<string, unknown>) =>
+const esignStage = (args: Record<string, unknown>, withNode = true) =>
   stage("ky", 0, {
-    node: "contracts.esign",
+    ...(withNode ? { node: "contracts.esign" } : {}),
     real_action: true,
     executor: {
       kind: "tool",
@@ -83,8 +83,8 @@ beforeAll(async () => {
   await o`insert into admin.tenants (id, key, name) values (${X}, 't1241', 'X')`;
   await users(o, X, 1, { from: 1241 });
   // Validator thật của gói; kiểm công ty giả (nhà cung cấp `nope` chưa bật) để không dựng cả module ký số.
-  nodeConfigRegistry.register(
-    "contracts.esign",
+  nodeConfigRegistry.registerTool(
+    "contracts-esign-send",
     esignNodeValidator(async (t, cfg) => {
       checked.push(t);
       return cfg.provider === "nope" ? [{ field: "provider", code: "PROVIDER_UNAVAILABLE" }] : [];
@@ -115,7 +115,7 @@ beforeAll(async () => {
 }, 180_000);
 
 afterAll(async () => {
-  nodeConfigRegistry.clear("contracts.esign");
+  nodeConfigRegistry.clear("contracts-esign-send");
   await db?.close();
   await o?.end({ timeout: 2 });
 });
@@ -146,6 +146,16 @@ describe("E5b · lưu def kiểm cấu hình node", () => {
     );
     expect([r.status, codeOf(r)]).toEqual([422, "FLOW_NODE_CONFIG_INVALID"]);
     expect(JSON.stringify(r.json)).toContain("stages.0.executor.args.order");
+  });
+
+  it("E5d · def gọi thẳng tool gửi ký KHÔNG mang `node` vẫn bị kiểm (validator theo khoá tool)", async () => {
+    const r = await call(
+      "POST",
+      "/process-defs",
+      body([esignStage({ provider: { from: "const", value: "nope" } }, false)]),
+    );
+    expect([r.status, codeOf(r)]).toEqual([422, "FLOW_NODE_CONFIG_INVALID"]);
+    expect(JSON.stringify(r.json)).toContain("stages.0.executor.args.provider");
   });
 
   it("cấu hình đúng ⇒ không bị chặn bởi mã FLOW_NODE_CONFIG_INVALID", async () => {

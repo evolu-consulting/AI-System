@@ -59,7 +59,12 @@ export type EsignSweepDeps = {
   sync?: EsignSyncDeps;
   /** CR-122 · E5c · phong bì của node quá hạn ⇒ huỷ ở nhà cung cấp + ghi `voided` + bắn `esign.voided` cho lượt đang chờ (ngoài tx).
    *  Trả true khi đã huỷ; hụt ⇒ false (lượt sau thử lại). Vắng ⇒ chỉ đánh dấu + chuông. */
-  expire?: (tenantId: string, contractId: string) => Promise<boolean>;
+  expire?: (
+    tenantId: string,
+    contractId: string,
+    envelopeId: string,
+    now: Date,
+  ) => Promise<boolean>;
 };
 export type EsignSweepResult = {
   tenants: number;
@@ -180,19 +185,24 @@ async function sweepTenant(d: EsignSweepDeps, t: string, now: Date) {
       escalated: rows.filter((x) => x.overdue).length,
       bells: bells.length,
       envReminded: env.filter((x) => x.remind).length,
-      expire: env.filter((x) => x.overdue).map((x) => x.contractId),
+      expire: env.filter((x) => x.overdue).map((x) => ({ c: x.contractId, e: x.envelopeId })),
     };
   });
 }
 
 /** Huỷ các phong bì node quá hạn (ngoài tx của tenant; song song ≤ PARALLEL, mỗi HĐ một lời gọi). Lỗi từng HĐ chỉ log. */
-async function expireAll(d: EsignSweepDeps, t: string, ids: readonly string[]): Promise<number> {
+async function expireAll(
+  d: EsignSweepDeps,
+  t: string,
+  ids: readonly { c: string; e: string }[],
+  now: Date,
+): Promise<number> {
   if (!d.expire || ids.length === 0) return 0;
   let n = 0;
   for (let i = 0; i < ids.length; i += PARALLEL)
     await Promise.all(
-      ids.slice(i, i + PARALLEL).map((id) =>
-        d.expire?.(t, id).then(
+      ids.slice(i, i + PARALLEL).map((x) =>
+        d.expire?.(t, x.c, x.e, now).then(
           (ok) => {
             if (ok) n += 1;
           },
@@ -231,7 +241,7 @@ export async function sweepEsignOnce(d: EsignSweepDeps, at?: Date): Promise<Esig
           });
           return { stale: 0, reminded: 0, escalated: 0, bells: 0, envReminded: 0, expire: [] };
         });
-        return { ...p, expired: await expireAll(d, t, p.expire) };
+        return { ...p, expired: await expireAll(d, t, p.expire, now) };
       }),
     );
     for (const p of part) {

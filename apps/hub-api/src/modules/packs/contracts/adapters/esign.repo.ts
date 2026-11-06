@@ -113,6 +113,17 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
         where e.tenant_id = ${t}::uuid and e.envelope_id = ${envelopeId}`);
       return toRow(r);
     },
+    claimExpire: async (id, now, leaseMin) => {
+      const at = now.toISOString();
+      const [r] = await tx.execute<Raw>(sql`update contracts.esign_envelopes e
+        set expire_claimed_at = ${at}::timestamptz
+        where e.tenant_id = ${t}::uuid and e.id = ${id}::uuid and e.status in ('sent', 'delivered')
+          and e.due_h is not null and e.created_at + make_interval(hours => e.due_h) <= ${at}::timestamptz
+          and (e.expire_claimed_at is null
+            or e.expire_claimed_at <= ${at}::timestamptz - make_interval(mins => ${leaseMin}::int))
+        returning ${COLS}`);
+      return toRow(r);
+    },
     insert: async (r) => {
       const rows = await tx.execute(sql`insert into contracts.esign_envelopes
           (tenant_id, contract_id, provider, envelope_id, signers, sent_by, due_h, remind_every_h)

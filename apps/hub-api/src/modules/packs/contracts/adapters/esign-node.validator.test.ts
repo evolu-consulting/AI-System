@@ -63,6 +63,26 @@ describe("E5b · esignNodeValidator", () => {
   });
 });
 
+describe("E5d · validator theo khoá tool", () => {
+  it("stage gọi thẳng tool không mang `node` vẫn bị kiểm, và không kiểm hai lần khi có cả node lẫn tool", async () => {
+    nodeConfigRegistry.registerTool("contracts-esign-send", validator);
+    nodeConfigRegistry.register("contracts.esign", validator);
+    try {
+      expect(
+        await nodeConfigRegistry.check("t1", [{ executor: tool({ provider: c("nope") }) }]),
+      ).toEqual([{ path: "stages.0.executor.args.provider", code: "PROVIDER_UNAVAILABLE" }]);
+      // cùng hàm đăng ký theo node VÀ theo tool ⇒ chạy một lần (một lỗi)
+      const both = await nodeConfigRegistry.check("t1", [
+        { node: "contracts.esign", executor: tool({ provider: c("nope") }) },
+      ]);
+      expect(both).toHaveLength(1);
+    } finally {
+      nodeConfigRegistry.clear("contracts-esign-send");
+      nodeConfigRegistry.clear("contracts.esign");
+    }
+  });
+});
+
 describe("E5b · nodeConfigRegistry.check", () => {
   it("gọi validator của đúng node cho mọi stage mang `node`, gộp lỗi; node lạ / không node ⇒ bỏ qua", async () => {
     nodeConfigRegistry.register("e5b.test", validator);

@@ -15,17 +15,29 @@ export type EsignExpireDeps = {
   warn?: (msg: string, meta: Record<string, unknown>) => void;
 };
 
-/** Không còn phong bì mở / huỷ ở nhà cung cấp hụt ⇒ false (vòng quét thử lại lượt sau). Hook lỗi chỉ log, không làm hỏng việc huỷ. */
+/** E5d · lease giữ quyền huỷ: tiến trình giữ mà chết giữa chừng ⇒ sau chừng này phút bên khác giành lại được. */
+export const ESIGN_EXPIRE_LEASE_MIN = 10;
+
+/**
+ * Huỷ ĐÚNG phong bì `envelopeId` (hàng đã quét) khi còn mở + đã quá hạn lúc `now`: GIÀNH quyền bằng một UPDATE có điều kiện TRƯỚC khi gọi nhà
+ * cung cấp — hai tiến trình quét cùng lúc chỉ MỘT bên giành được ⇒ một lần `voidEnvelope`, một sự kiện `esign.voided`. Không giành được /
+ * phong bì khác của HĐ (gửi lại sau khi quét) / huỷ ở nhà cung cấp hụt ⇒ false (hụt: lease hết hạn thì lượt sau thử lại). Hook lỗi chỉ log.
+ */
 export function esignExpire(d: EsignExpireDeps) {
-  return async (tenantId: string, id: string): Promise<boolean> => {
+  return async (
+    tenantId: string,
+    contractId: string,
+    envelopeId: string,
+    now: Date,
+  ): Promise<boolean> => {
     const run: Run = (fn) => d.uow.system(tenantId, fn);
-    const e = await run((r) => r.esign.latest(id));
-    if (!e || !isOpen(e.status)) return false;
+    const e = await run((r) => r.esign.claimExpire(envelopeId, now, ESIGN_EXPIRE_LEASE_MIN));
+    if (!e || e.contractId !== contractId || !isOpen(e.status)) return false;
     if (!(await d.voidExpired(d.avail(e.provider), e, run))) return false;
     await d
-      .onStatus?.(tenantId, id, "voided")
+      .onStatus?.(tenantId, contractId, "voided")
       .catch((err: unknown) =>
-        d.warn?.("esign-flow-hook-failed", { contract_id: id, error: errName(err) }),
+        d.warn?.("esign-flow-hook-failed", { contract_id: contractId, error: errName(err) }),
       );
     return true;
   };

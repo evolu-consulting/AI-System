@@ -129,6 +129,11 @@ export type ESignRepo = {
   contract(id: string): Promise<ContractForSign | null>;
   latest(contractId: string): Promise<EnvelopeRow | null>;
   byEnvelope(envelopeId: string): Promise<EnvelopeRow | null>;
+  /**
+   * CR-122 · E5d · giành quyền huỷ phong bì QUÁ HẠN (MỘT UPDATE có điều kiện trên đúng `id`): còn mở, đã quá `due_h` lúc `now`, chưa ai giữ
+   * hoặc lease (`leaseMin` phút) đã hết ⇒ trả hàng (đã giữ); không ⇒ null. CHỈ bên giành được mới gọi nhà cung cấp.
+   */
+  claimExpire(id: string, now: Date, leaseMin: number): Promise<EnvelopeRow | null>;
   /** Trùng envelope đang chờ của HĐ (index một phần) ⇒ false. */
   insert(r: {
     contractId: string;
