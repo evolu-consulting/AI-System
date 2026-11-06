@@ -982,6 +982,7 @@
     },
     "subtitle": "Mẫu dùng chung cho mọi công ty.",
     "samplesSubtitle": "Mẫu để chạy thử, không áp dụng cho hợp đồng thật.",
+    "stepsCount": "{{n}} bước",
     "createFromDefault": "Tạo quy trình",
     "count": "{{n}} quy trình",
     "title": "Thư viện quy trình",

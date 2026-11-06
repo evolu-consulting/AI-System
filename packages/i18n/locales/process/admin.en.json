@@ -982,6 +982,7 @@
     },
     "subtitle": "Templates shared by every company.",
     "samplesSubtitle": "Samples for trial runs, not applied to real contracts.",
+    "stepsCount": "{{n}} steps",
     "createFromDefault": "Create process",
     "count": "{{n}} processes",
     "title": "Process library",

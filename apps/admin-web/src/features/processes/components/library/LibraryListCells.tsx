@@ -2,7 +2,7 @@
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { type ListRow, statusOf } from "../../lib/library-list";
-import { libraryChips, libraryConditions } from "../../lib/step-chips";
+import { libraryConditions, stepsDisplay } from "../../lib/step-chips";
 import { StepChips } from "../StepChips";
 
 export function StatusCell({ row }: { row: ListRow }) {
@@ -66,12 +66,13 @@ export function DefaultPill({ slotLabel, short = true }: { slotLabel: string; sh
 }
 /** "Các bước": chip TÊN bước (≤ 4 + "+N") và nhãn điều kiện; chưa có dữ liệu bước ⇒ số bước. */
 export function StepsCell({ row }: { row: ListRow }) {
-  const chips = libraryChips(row);
+  const d = stepsDisplay(row);
   const conds = libraryConditions(row);
-  if (chips.length === 0) return <span className="text-muted-foreground">{row.stage_count}</span>;
+  // Một kiểu cho cột: có tên ⇒ chip; không có tên ⇒ viên "N bước" (không số trơn).
+  if (d.kind !== "chips") return <StepChips steps={null} count={d.kind === "count" ? d.n : 0} />;
   return (
     <span className="flex min-w-0 flex-col gap-1">
-      <StepChips steps={chips} />
+      <StepChips steps={d.chips} />
       {conds.map((c) => (
         <span key={c} className="truncate text-caption text-muted-foreground" title={c}>
           {c}

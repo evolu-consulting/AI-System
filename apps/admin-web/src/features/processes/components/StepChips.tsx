@@ -4,8 +4,24 @@ import { splitChips } from "../lib/step-chips";
 
 export type ChipStep = { key: string; name: string; index: number };
 
-export function StepChips({ steps }: { steps: readonly ChipStep[] | null }) {
+export function StepChips({
+  steps,
+  count,
+}: {
+  steps: readonly ChipStep[] | null;
+  /** Không có tên bước nhưng biết số bước ⇒ viên trung tính "N bước" (cùng kiểu chip, không số trơn). */
+  count?: number;
+}) {
   const { t } = useTranslation();
+  if ((!steps || steps.length === 0) && count && count > 0)
+    return (
+      <span
+        className="inline-flex whitespace-nowrap rounded-full border border-border bg-muted px-2 text-caption text-muted-foreground"
+        data-testid="steps-count"
+      >
+        {t("process.admin.library.stepsCount", { n: count })}
+      </span>
+    );
   if (!steps || steps.length === 0) return null;
   const { shown, rest } = splitChips(steps);
   return (

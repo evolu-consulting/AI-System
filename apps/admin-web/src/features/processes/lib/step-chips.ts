@@ -30,6 +30,17 @@ export function libraryChips(row: Pick<LibraryListItem, "steps">): Chip[] {
   return (row.steps ?? []).map((s, i) => ({ key: `${i}:${s.name}`, name: s.name, index: i + 1 }));
 }
 
+/** Cột "Các bước": có tên bước ⇒ chip; không có tên (khe không có slot_body dạng bước) ⇒ viên trung tính "N bước"; không có gì ⇒ none. */
+export type StepsDisplay =
+  | { kind: "chips"; chips: Chip[] }
+  | { kind: "count"; n: number }
+  | { kind: "none" };
+export function stepsDisplay(row: Pick<LibraryListItem, "steps" | "stage_count">): StepsDisplay {
+  const chips = libraryChips(row);
+  if (chips.length > 0) return { kind: "chips", chips };
+  return row.stage_count > 0 ? { kind: "count", n: row.stage_count } : { kind: "none" };
+}
+
 /** Nhãn điều kiện của các bước ("Chỉ khi giá trị ≥ 500 tr…"), bỏ trùng; dòng không có bước điều kiện ⇒ []. */
 export function libraryConditions(row: Pick<LibraryListItem, "steps">): string[] {
   const out = (row.steps ?? [])

@@ -1,6 +1,6 @@
 // CR-121 c15 · chip bước dùng chung: tên bước, tối đa 4 + "+N"; nhãn điều kiện của dòng thư viện.
 import { describe, expect, test } from "bun:test";
-import { libraryChips, libraryConditions, MAX_CHIPS, splitChips } from "./step-chips";
+import { libraryChips, libraryConditions, MAX_CHIPS, splitChips, stepsDisplay } from "./step-chips";
 
 const steps = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `Bước ${i + 1}` }));
 
@@ -44,5 +44,14 @@ describe("libraryChips / libraryConditions", () => {
     ).toEqual(["Chỉ khi giá trị ≥ 500 tr"]);
     expect(libraryConditions({ steps: [{ name: "A" }] })).toEqual([]);
     expect(libraryConditions({})).toEqual([]);
+  });
+});
+
+describe("CR-121 f17 · cột Các bước một kiểu", () => {
+  test("có tên ⇒ chip; không có tên ⇒ viên đếm 'N bước'; không có gì ⇒ none", () => {
+    expect(stepsDisplay({ steps: [{ name: "A" }], stage_count: 1 }).kind).toBe("chips");
+    expect(stepsDisplay({ stage_count: 7 })).toEqual({ kind: "count", n: 7 });
+    expect(stepsDisplay({ steps: [], stage_count: 7 })).toEqual({ kind: "count", n: 7 });
+    expect(stepsDisplay({ stage_count: 0 })).toEqual({ kind: "none" });
   });
 });
