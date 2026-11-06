@@ -11,6 +11,7 @@ import { assignRoutingProcess, putRouting, RKEYS } from "../../api-routing";
 import { cloneForCompany } from "../api";
 import { assignErrorOf } from "../lib/assign-error";
 import { withDefault } from "../lib/flow-rows";
+import { invalidateCompanyFlows } from "../lib/invalidate";
 
 export function useFlowAssign(tenantId: string, slot: string, isPlatform: boolean) {
   const tr = useTr();
@@ -18,8 +19,7 @@ export function useFlowAssign(tenantId: string, slot: string, isPlatform: boolea
   const [pending, setPending] = useState(false);
   const refresh = async () => {
     await qc.invalidateQueries({ queryKey: RKEYS.routing(tenantId, slot) });
-    void qc.invalidateQueries({ queryKey: ["process", "assigned", "caps", tenantId] });
-    void qc.invalidateQueries({ queryKey: ["process", "company-lib", tenantId] });
+    void invalidateCompanyFlows(qc, tenantId);
   };
   const run = async (job: () => Promise<unknown>, done: string): Promise<boolean> => {
     setPending(true);

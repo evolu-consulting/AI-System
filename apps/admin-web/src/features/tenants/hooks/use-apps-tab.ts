@@ -12,6 +12,7 @@ import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useSetTenantPack, useTenantFeatureStates, useTenantPacks } from "../api";
 import { useTenantAppRoles } from "../api-apps";
+import { invalidateCompanyFlows } from "../flows/lib/invalidate";
 import {
   derivePacks,
   nextIntent,
@@ -108,6 +109,8 @@ export function useAppsTab(
     } finally {
       setSaving(false);
       void qc.invalidateQueries({ queryKey: ["tenants", "app-roles", tenant.id] });
+      // Lưu mức app/tính năng đổi năng lực công ty ⇒ tab Quy trình + tóm tắt phải thấy ngay (kể cả khi lưu lỗi một phần).
+      void invalidateCompanyFlows(qc, tenant.id);
     }
   }, [plan, setPack, apply, reset, t, tr, tenant.name, tenant.id, qc]);
 
