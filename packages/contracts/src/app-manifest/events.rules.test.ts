@@ -19,6 +19,7 @@ const app = (events: AppEventDecl[], key = "demo"): AppManifest => ({
   nav: [],
   slots: [],
   events,
+  nodes: [],
 });
 const errs = (m: AppManifest[], o = {}) =>
   appEventIssues(m, o)
@@ -34,6 +35,9 @@ describe("FLOW2-FR-17 · appEventIssues", () => {
       "contract.submitted",
       "contract.uploaded",
       "contract.approved",
+      "esign.completed",
+      "esign.declined",
+      "esign.voided",
     ]);
     expect(keys("community")).toEqual(["post.created", "partner.join_requested", "report.created"]);
     const sub = APP_MANIFESTS.contracts?.events[0];

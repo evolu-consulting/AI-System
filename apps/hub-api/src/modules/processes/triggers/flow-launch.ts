@@ -7,6 +7,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
+import { nodeFeatureMiss } from "../defs/node-features";
 import { libraryFlowDef, type StartDefRow } from "../runs/runs.repo";
 import { type ProcessDepsCore, StartService } from "../runs/start.service";
 import { type FlowLaunch, FlowLaunchRefused } from "./dispatcher";
@@ -59,6 +60,8 @@ export function flowLaunchOf(d: ProcessDepsCore): FlowLaunch {
   const start = new StartService(d);
   return async (e, c, app) => {
     if (!e.actor_id) throw new FlowLaunchRefused("no_actor");
+    const off = await nodeFeatureMiss(d.config, e.tenant_id, c.nodes);
+    if (off) throw new FlowLaunchRefused(`FLOW_NODE_FEATURE_OFF:${off.node}`);
     const u = { tenantId: e.tenant_id, userId: e.actor_id } as AuthUser;
     const def = c.defTenantId === null ? await libraryDefFor(d, e, c) : undefined;
     try {

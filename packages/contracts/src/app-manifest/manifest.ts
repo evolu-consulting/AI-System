@@ -81,6 +81,48 @@ export type AppManifest = {
   slots: readonly AppSlotDecl[];
   /** CR-122 · FLOW2-FR-17/18 · sự kiện làm flow chạy (node Bắt đầu khi); luật ở `appEventIssues` (`check:app-events`). */
   events: readonly AppEventDecl[];
+  /** CR-122 · FLOW2-FR-25 · node của app trên bảng node (executor có sẵn + cấu hình đặt sẵn); luật ở `appNodeIssues`. */
+  nodes: readonly AppNodeDecl[];
+};
+
+// ── CR-122 · FLOW2-FR-25/26 · node của module tính năng (KHÔNG executor mới — chỉ cấu hình đặt sẵn của executor có) ──────────
+
+/** `<app|core>.<node>`, vd `core.email`, `contracts.esign`. */
+export const APP_NODE_KEY_RE = /^[a-z][a-z0-9-]{0,39}\.[a-z][a-z0-9-]{0,39}$/;
+/** Executor có sẵn mà node module được dùng (khớp `executor.kind` của `ProcessStageDefSchema`). */
+export const NODE_EXECUTORS = [
+  "notify",
+  "wait_until",
+  "wait_for",
+  "wait_event",
+  "tool",
+  "set",
+] as const;
+export type NodeExecutor = (typeof NODE_EXECUTORS)[number];
+/** Nhóm trên bảng node. */
+export const NODE_GROUPS = ["message", "timing", "sign", "content"] as const;
+export type NodeGroup = (typeof NODE_GROUPS)[number];
+export const NODE_STAGES_MAX = 3;
+export const NODE_IO_MAX = 20;
+
+/** Một cổng vào/ra của node (FR-26): khoá snake_case + kiểu dữ kiện sẵn có. */
+export type AppNodeIo = { key: string; type: AppFactType; required: boolean };
+/** Một stage mẫu của node: executor có sẵn + cấu hình đặt sẵn; `outcome` ⇒ node Kết thúc. */
+export type AppNodeStage = {
+  executor: { kind: NodeExecutor } & Readonly<Record<string, unknown>>;
+  outcome?: string;
+  real_action?: boolean;
+};
+export type AppNodeDecl = {
+  key: string;
+  label: { vi: string; en: string };
+  group: NodeGroup;
+  /** 1..3 stage mẫu chèn vào flow (vd Ký số = tool gửi ký + chờ sự kiện ký). */
+  stages: readonly AppNodeStage[];
+  /** Khoá tính năng (danh mục CR-111) phải bật cho công ty; vắng = luôn có (node lõi). */
+  feature?: string;
+  inputs: readonly AppNodeIo[];
+  outputs: readonly AppNodeIo[];
 };
 
 // ── CR-122 · ADR-0038 · flow-model.md mục C: sự kiện app (thay `AppSlotDecl`) ─────────────────────────────────────────────

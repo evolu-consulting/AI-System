@@ -20,6 +20,7 @@ const MESSAGES: Record<HubAdminProcessErrorCode, string> = {
   PROCESS_DEF_INCOMPLETE: "Process definition is incomplete",
   PROCESS_REF_INVALID: "Process definition references an unavailable item",
   TEMPLATE_READ_ONLY: "Templates are read-only",
+  FLOW_NODE_FEATURE_OFF: "A node uses a feature that is turned off for this company",
 };
 
 export function defError(code: HubAdminProcessErrorCode, details?: unknown): AppError {

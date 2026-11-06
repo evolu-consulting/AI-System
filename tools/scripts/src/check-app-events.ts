@@ -8,6 +8,7 @@ import {
   APP_MANIFESTS,
   type AppManifest,
   appEventIssues,
+  appNodeIssues,
   formatEventIssue,
 } from "@ai/contracts/app-manifest";
 
@@ -34,7 +35,11 @@ function main(): void {
   });
   for (const i of issues)
     (i.level === "error" ? console.error : console.warn)(`  ${formatEventIssue(i)}`);
-  const errors = issues.filter((i) => i.level === "error").length;
+  // CR-122 · N1 · FLOW2-FR-25 · node lõi + node của app (`nodes[]`): mọi vi phạm là lỗi.
+  const nodeIssues = appNodeIssues(manifests);
+  for (const n of nodeIssues)
+    console.error(`  LỖI ${n.app}${n.node ? ` · ${n.node}` : ""}: ${n.rule}`);
+  const errors = issues.filter((i) => i.level === "error").length + nodeIssues.length;
   if (errors > 0) {
     console.error(`check:app-events: ${errors} lỗi khai báo sự kiện (ADR-0038)`);
     process.exit(1);

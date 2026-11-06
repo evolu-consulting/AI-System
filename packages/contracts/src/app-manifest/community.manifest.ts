@@ -114,4 +114,16 @@ export const COMMUNITY_MANIFEST: AppManifest = {
       required: false,
     },
   ],
+  // CR-122 · N1 · FLOW2-FR-25 · "Hiện bài" = node Kết thúc đặt sẵn kết quả `shown` của `post.created` (app hiện bài qua OutcomeHandler).
+  nodes: [
+    {
+      key: "community.show-post",
+      label: { vi: "Hiện bài", en: "Show post" },
+      group: "content",
+      feature: "community-write",
+      stages: [{ executor: { kind: "set", values: [] }, outcome: "shown" }],
+      inputs: [{ key: "post_id", type: "string", required: true }],
+      outputs: [],
+    },
+  ],
 };

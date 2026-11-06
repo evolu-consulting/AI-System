@@ -26,6 +26,7 @@ import { gatesRoutes } from "./gates/gates.routes";
 import { companyFlowsRoutes } from "./library/company-flows.routes";
 import { libraryInternalRoutes } from "./library/library.internal.routes";
 import { libraryRoutes } from "./library/library.routes";
+import { paletteRoutes } from "./library/palette.routes";
 import { previewRoutes } from "./library/preview.routes";
 import { inboxRoutes } from "./notify/inbox.routes";
 import { createNotifier } from "./notify/notifier";
@@ -160,6 +161,7 @@ const ADMIN_ROUTES = [
   defsRoutes,
   libraryRoutes,
   companyFlowsRoutes,
+  paletteRoutes,
 ];
 const ALL_ROUTES = [
   processRunsRoutes,
@@ -170,6 +172,7 @@ const ALL_ROUTES = [
   defsRoutes,
   libraryRoutes, // CR-105 · L2a
   companyFlowsRoutes, // CR-122 · E1b
+  paletteRoutes, // CR-122 · N1
 ];
 
 /** CR-103 · `admin`: chặn role ở GỐC mọi tiền tố quy trình (JWT role, không dựa `X-App` do client đặt) ⇒ member 403. */

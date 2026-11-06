@@ -20,6 +20,8 @@ export type CandidateRow = FlowCandidate & {
   tenantId: string;
   event: string;
   defTenantId: string | null;
+  /** N1 · khoá node bảng (`stage.node`) của def — kiểm tính năng còn bật lúc mở lượt. */
+  nodes: string[];
 };
 export type EventFinish = {
   id: string;
@@ -93,10 +95,12 @@ export async function candidatesOf(tx: Tx, evs: readonly ClaimedEvent[]): Promis
     position: number;
     key: string;
     def_tenant_id: string | null;
+    nodes: string[] | null;
     trigger_event: string;
     trigger: { when?: FactWhen } | null;
   }>(sql`select cf.id, cf.tenant_id, cf.flow_id, cf.position, d.key, d.tenant_id as def_tenant_id,
-      d.trigger_event, d.trigger
+      d.trigger_event, d.trigger,
+      (select jsonb_agg(distinct s ->> 'node') from jsonb_array_elements(d.stages) s where s ? 'node') as nodes
     from hub.company_flows cf
     join hub.process_defs d on d.id = cf.flow_id and d.deleted_at is null
       and (d.tenant_id = cf.tenant_id or d.tenant_id is null)
@@ -112,6 +116,7 @@ export async function candidatesOf(tx: Tx, evs: readonly ClaimedEvent[]): Promis
     tenantId: r.tenant_id,
     event: r.trigger_event,
     defTenantId: r.def_tenant_id,
+    nodes: r.nodes ?? [],
   }));
 }
 

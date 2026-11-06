@@ -93,7 +93,22 @@ beforeAll(async () => {
     if (m.status === 500) console.error(e);
     return c.json(m.body, m.status);
   });
-  app.route("/", defsRoutes({ db, packTools: undefined, start: {} } as unknown as ProcessDeps));
+  // N1 · cache cấu hình giả: `contracts-write` cấp cho X, `community-write` không ⇒ node Hiện bài tắt.
+  const config = {
+    catalog: async () => ({
+      features: [
+        { id: "f1", key: "contracts-write", status: "on" },
+        { id: "f2", key: "community-write", status: "on" },
+      ],
+      entitled: new Set([`${X}:f1`]),
+      grantGroups: new Map(),
+    }),
+    user: async () => undefined,
+  };
+  app.route(
+    "/",
+    defsRoutes({ db, packTools: undefined, start: {}, config } as unknown as ProcessDeps),
+  );
 }, 180_000);
 
 afterAll(async () => {
@@ -136,5 +151,24 @@ describe("CR-122 E1 · lưu def có trigger", () => {
     expect(ok.json.name).toBe("Đổi tên");
     expect(ok.json.trigger).toEqual(trigger);
     expect(ok.json.app).toBe("contracts");
+  });
+
+  it("N1 · bước là node của tính năng đã tắt ⇒ 422 FLOW_NODE_FEATURE_OFF nêu tính năng; node bật ⇒ lưu được", async () => {
+    const cur = await call("GET", `/process-defs/${id}`);
+    const withNode = (node: string) => ({
+      ...body({
+        stages: [stage("dau", 0, { node }), stage("xong", 1, { outcome: "approved" })],
+      }),
+      version: cur.json.version,
+    });
+    const off = await call("PUT", `/process-defs/${id}`, withNode("community.show-post"));
+    expect([off.status, off.json.error?.code ?? off.json.code]).toEqual([
+      422,
+      "FLOW_NODE_FEATURE_OFF",
+    ]);
+    expect(JSON.stringify(off.json)).toContain("community-write");
+    const on = await call("PUT", `/process-defs/${id}`, withNode("contracts.esign"));
+    expect(on.status).toBe(200);
+    expect(on.json.stages[0].node).toBe("contracts.esign");
   });
 });

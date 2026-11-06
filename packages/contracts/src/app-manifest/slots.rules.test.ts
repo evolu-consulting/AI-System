@@ -20,6 +20,7 @@ const app = (slots: AppSlotDecl[], key = "demo"): AppManifest => ({
   nav: [],
   slots,
   events: [],
+  nodes: [],
 });
 const rules = (m: AppManifest[]) => appSlotIssues(m).map((i) => i.rule);
 

@@ -135,5 +135,45 @@ export const CONTRACTS_MANIFEST: AppManifest = {
       decides: false,
       required: false,
     },
+    // CR-122 · N1 · sự kiện ký số (E3: phong bì sang trạng thái cuối) — node Ký số chờ các sự kiện này; flow cũng có thể bắt đầu khi.
+    ...(
+      [
+        ["esign.completed", "Khi hợp đồng ký xong"],
+        ["esign.declined", "Khi đối tác từ chối ký"],
+        ["esign.voided", "Khi phong bì ký bị huỷ"],
+      ] as const
+    ).map(([key, label]) => ({
+      key,
+      label,
+      facts: CONTRACT_FACTS,
+      outcomes: [{ key: "done", label: "Xong", effect: "Không đổi hợp đồng." }],
+      decides: false,
+      required: false,
+    })),
+  ],
+  // CR-122 · N1 · FLOW2-FR-25 · Ký số = tool gói gửi ký + chờ sự kiện ký (E3: `also_events` + rẽ theo kết quả).
+  nodes: [
+    {
+      key: "contracts.esign",
+      label: { vi: "Ký số", en: "E-signature" },
+      group: "sign",
+      feature: "contracts-write",
+      stages: [
+        {
+          executor: { kind: "tool", tool_key: "contracts-esign-send", args: {} },
+          real_action: true,
+        },
+        {
+          executor: {
+            kind: "wait_event",
+            event: "esign.completed",
+            also_events: ["esign.declined", "esign.voided"],
+            timeout_h: 168,
+          },
+        },
+      ],
+      inputs: [{ key: "contract_id", type: "string", required: true }],
+      outputs: [{ key: "event", type: "string", required: true }],
+    },
   ],
 };
