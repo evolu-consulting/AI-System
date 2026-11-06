@@ -8,7 +8,7 @@ import {
 } from "@ai/web-kit/routing-rules";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { assignRoutingProcess, putRouting, RKEYS, unassignRoutingProcess } from "../api-routing";
+import { assignRoutingProcess, putRouting, RKEYS, unassignRoutingProcess } from "../../api-routing";
 
 type Done = { ok: true } | { ok: false; spec: RoutingErrorSpec };
 

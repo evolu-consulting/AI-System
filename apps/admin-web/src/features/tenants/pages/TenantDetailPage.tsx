@@ -41,6 +41,8 @@ export type { TenantTab } from "../lib/workspace-tabs";
 
 /** CR-112 · tab "Ứng dụng & Gói" (CR-111 thẻ app + gói nghiệp vụ, gộp) nạp lười. */
 const TenantFeaturesTab = lazy(() => import("../components/features/TenantFeaturesTab"));
+/** CR-121 c11 · tab "Quy trình" (R4): nơi duy nhất gán quy trình cho công ty. */
+const CompanyFlowsTab = lazy(() => import("../flows/components/CompanyFlowsTab"));
 
 function Header({
   tenant,
@@ -213,6 +215,11 @@ export function TenantDetailPage() {
         <TabsContent value="features" className="pt-4">
           <Suspense fallback={<LoadingState />}>
             <TenantFeaturesTab tenant={tenant} onDirtyChange={setFeaturesDirty} />
+          </Suspense>
+        </TabsContent>
+        <TabsContent value="processes" className="pt-4">
+          <Suspense fallback={<LoadingState />}>
+            <CompanyFlowsTab tenant={tenant} />
           </Suspense>
         </TabsContent>
         <TabsContent value="quota" className="pt-4">

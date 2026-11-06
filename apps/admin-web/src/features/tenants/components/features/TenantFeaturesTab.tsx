@@ -17,7 +17,6 @@ import { appsConfirmMessage, needsConfirm } from "../../lib/apps-confirm";
 import { packOf, roleStats } from "../../lib/apps-plan";
 import { detectLevel } from "../../lib/feature-assign";
 import type { TenantTab } from "../../lib/workspace-tabs";
-import { TenantProcessSlots } from "../slots/TenantProcessSlots";
 import { AppCard } from "./AppCard";
 import { AppsSaveBar } from "./AppsSaveBar";
 
@@ -93,7 +92,6 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange, onlyApp, onDr
                   onChange={a.change}
                   onLevel={a.changeLevel}
                   readOnly={readOnly}
-                  slots={readOnly ? null : <TenantProcessSlots tenant={tenant} app={card.app} />}
                   headerAction={
                     !onlyApp && !readOnly && getAppManifest(card.app) && card.mode === "levels" ? (
                       <Button variant="link" size="sm" className="h-auto p-0" asChild>

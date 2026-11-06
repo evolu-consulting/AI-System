@@ -23,7 +23,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
-import { useSlotRoutingActions } from "../../hooks/use-slot-routing";
+import { useSlotRoutingActions } from "../hooks/use-slot-routing";
 
 type Dept = { id: string; name: string };
 const SEL = "h-9 min-w-0 rounded-md border border-input bg-background px-2 text-body";

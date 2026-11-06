@@ -44,23 +44,21 @@ export async function loginAdmin(page: Page, e: Env): Promise<void> {
   await loginPlatformAdminUi(page, e.admin, e.adminUser, e.adminPw);
 }
 
-/** Mở trang công ty › tab "Ứng dụng & Gói"; trả thẻ Sổ Hợp Tác. */
-async function openContractsCard(page: Page, e: Env): Promise<Locator> {
-  await openTenantAppsTab(page, e.tenantName);
-  const card = page.getByRole("region", { name: /Sổ Hợp Tác|Hợp đồng/ }).first();
-  await expect(card).toBeVisible();
-  return card;
+/**
+ * CR-121 c11: mở tab "Quy trình" của công ty đang mở rồi ngăn của việc duyệt hợp đồng — NƠI DUY NHẤT gán quy trình + đặt luật
+ * (khối trong thẻ app đã gỡ). Trả ngăn Gán (chứa `admin-assigned-*`, `admin-routing-*`).
+ */
+export async function openProcessPanel(page: Page): Promise<Locator> {
+  await page.getByRole("tab", { name: "Quy trình" }).click();
+  await page.getByTestId(`flows-open-${SLOT}`).click();
+  const panel = page.getByTestId(`flows-assign-panel-${SLOT}`);
+  await expect(panel).toBeVisible();
+  return panel;
 }
-
-/** CR-120: khối Quy trình duy nhất của thẻ app (công tắc Duyệt theo quy trình + quy trình đã gán + luật), luôn mở. */
-export const processBlock = (card: Locator): Locator =>
-  card.getByTestId("tenant-processes-contracts");
-
 /** Platform admin: gán 2 quy trình cho công ty + 2 luật (Phòng Kinh doanh × Mua/Bán). Chạy lại được (đã đủ thì bỏ qua). */
 export async function adminAssignAndRoute(page: Page, e: Env): Promise<void> {
-  const card = await openContractsCard(page, e);
-  const slots = processBlock(card);
-  const box = slots.getByTestId(`admin-assigned-${SLOT}`);
+  await openTenantAppsTab(page, e.tenantName);
+  const box = (await openProcessPanel(page)).getByTestId(`admin-assigned-${SLOT}`);
   for (const name of [PROC.buy, PROC.sell]) {
     const assigned = box.getByTestId(/^admin-assigned-[0-9a-f-]{36}$/).filter({ hasText: name });
     if ((await assigned.count()) > 0) continue;
@@ -95,9 +93,10 @@ export async function adminAssignAndRoute(page: Page, e: Env): Promise<void> {
   await expect(toast(page, "Đã lưu luật chọn quy trình")).toBeVisible();
 }
 
-/** Khối Quy trình của công ty (sau khi mở trang công ty › Ứng dụng & Gói). */
+/** Khối Quy trình của công ty (ngăn việc ở công ty › Quy trình). */
 export async function openProcessBlock(page: Page, e: Env): Promise<Locator> {
-  return processBlock(await openContractsCard(page, e));
+  await openTenantAppsTab(page, e.tenantName);
+  return openProcessPanel(page);
 }
 
 /** Nhân viên tải HĐ mẫu lên bằng UI; chờ AI đọc xong (có nút "Xác nhận và lưu"). Trả id HĐ. */

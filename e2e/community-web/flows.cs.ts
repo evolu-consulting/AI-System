@@ -1,11 +1,16 @@
-﻿// CR-120 · cr120-community-flow-ui · HÀNH TRÌNH THẬT (D5, không mock) trên stack community-web + ai-admin:
+// CR-120 · cr120-community-flow-ui · HÀNH TRÌNH THẬT (D5, không mock) trên stack community-web + ai-admin:
 //  1. Platform admin ở ai-admin gán quy trình "duyệt bài" cho công ty (đường thật, không bật cờ trong seed).
 //  2. Đối tác đăng bài ⇒ "Chờ duyệt" ở Bài đăng của tôi (kèm gợi ý sửa) ⇒ chủ quản thấy mục "Duyệt bài" ⇒ duyệt ⇒ bài hiện trên bảng tin.
 // (Không phụ thuộc thứ tự file: ca 3 tự đăng bài riêng rồi báo cáo/ẩn bài đó, không đụng bài mẫu dùng chung.)
 //  3. Đối tác báo cáo một bài của chủ quản (menu ⋯) ⇒ chủ quản vào "Báo cáo vi phạm", thấy tiêu đề bài + lý do ⇒ Ẩn bài.
 import { expect, test } from "@playwright/test";
 import { apiLogin, approvePost, createPost, pageFetch } from "../_kit/api";
-import { assignProcessUi, loginPlatformAdminUi, openTenantAppsTab } from "../_kit/ui";
+import {
+  assignProcessUi,
+  loginPlatformAdminUi,
+  openJobDrawer,
+  openTenantAppsTab,
+} from "../_kit/ui";
 import { openAs, postByTitle, TENANT, USERNAME } from "./_stack";
 
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
@@ -28,9 +33,8 @@ test("1 · platform admin gán quy trình duyệt bài cho công ty (đường t
     process.env.SEED_ADMIN_PASSWORD ?? "",
   );
   await openTenantAppsTab(page, TENANT_NAME);
-  const box = page
-    .getByTestId("tenant-processes-community")
-    .getByTestId("admin-assigned-community.post-moderation");
+  // CR-121 c11: gán ở công ty › Quy trình › ngăn của việc (không còn khối trong thẻ app)
+  const box = await openJobDrawer(page, "community.post-moderation");
   await expect(box).toBeVisible();
   await assignProcessUi(box); // thư viện có ít nhất một quy trình duyệt bài; đã gán thì bỏ qua
   await expect(box.getByTestId(/^admin-assigned-[0-9a-f-]{36}$/)).toHaveCount(1);

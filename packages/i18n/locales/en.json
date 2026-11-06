@@ -667,6 +667,65 @@
     }
   },
   "tenants": {
+    "flows": {
+      "lead": "Each job uses one process taken from the Library.",
+      "leadInfo": "Process templates are created and edited in the Process Library. Here the company only picks which template applies to which job.",
+      "summary": "{{on}}/{{total}} jobs have a process",
+      "empty": "This company uses no app that has processes.",
+      "loadFail": "Could not load process data. Try reloading the page.",
+      "col": {
+        "job": "Job",
+        "process": "Process",
+        "status": "Status",
+        "rules": "Rules"
+      },
+      "appJobs": "{{n}} jobs",
+      "steps": "{{n}} steps",
+      "noneChosen": "No process chosen",
+      "on": "On",
+      "off": "Off",
+      "reason": {
+        "noProcess": "no process assigned",
+        "unpublished": "process is not published; publish it in the Library",
+        "deleted": "process was deleted; pick another one"
+      },
+      "rules": "{{n}} rules",
+      "change": "Change",
+      "assign": "Assign",
+      "drawerKind": "Job",
+      "stepsTitle": "Steps",
+      "viewMode": "How to view steps",
+      "view": {
+        "canvas": "Diagram",
+        "list": "Step list"
+      },
+      "libraryReadOnly": "This is a Library template, view only. Copy it for this company to edit your own; the copy replaces the current one.",
+      "hasCopy": "The company already has its own copy of this process.",
+      "ownCopy": "This is the company's own copy and can be edited.",
+      "copy": "Copy for this company",
+      "openEditor": "Open editor",
+      "assignTitle": "Assign process",
+      "sameKind": "Only processes of the same kind: {{type}}",
+      "tenantNoCandidates": "The company has no process to choose for this job yet. Copy a Library process in the Steps section.",
+      "inUse": "In use",
+      "use": "Use this process",
+      "running": "Running",
+      "runningNone": "No runs in progress.",
+      "runStep": "step {{n}}/{{total}}",
+      "runWaiting": "waiting",
+      "runRunning": "in progress",
+      "toast": {
+        "assigned": "Process changed for this job.",
+        "copied": "Copied and now using the company's own copy for this job."
+      },
+      "job": {
+        "contractsApproval": "Contract approval",
+        "contractsIntake": "Contract intake",
+        "communityModeration": "Post moderation",
+        "communityJoin": "Partner join requests",
+        "communityReport": "Violation reports"
+      }
+    },
     "slots": {
       "title": "Processes",
       "desc": "Processes this company uses for the app: assigned processes, department selection rules and the default. Only platform admins assign.",
@@ -839,6 +898,7 @@
       "profile": "Profile",
       "info": "Settings",
       "features": "Apps",
+      "processes": "Processes",
       "agents": "Agents",
       "quota": "Quota",
       "users": "Members",

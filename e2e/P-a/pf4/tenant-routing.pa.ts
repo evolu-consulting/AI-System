@@ -1,5 +1,5 @@
-// CR-118 §11.2 · cr118-tenant-settings · e2e P-a PF4: platform_admin mở trang công ty acme › tab Tính năng › khe "contracts.approval" ›
-// "Quy trình được gán & luật…": gán thêm một quy trình đã xuất bản; bỏ gán quy trình đang được luật dùng ⇒ 409 nêu luật bị ảnh hưởng.
+// CR-118 §11.2 · cr118-tenant-settings · e2e P-a PF4: platform_admin mở trang công ty acme › tab Quy trình › khe "contracts.approval" ›
+// "Quy trình được gán & luật…" (nay ở tab Quy trình): gán thêm một quy trình đã xuất bản; bỏ gán quy trình đang được luật dùng ⇒ 409 nêu luật bị ảnh hưởng.
 // Hub routing + khe/thư viện giả bằng `page.route` (stack P-a chưa có hai quy trình đã xuất bản cùng khe); cần acme đang bật gói contracts.
 // VIẾT, CHƯA CHẠY (e2e chạy cuối đợt). Việc chọn quy trình thật khi launch: int hub `routing-launch.int.test.ts`.
 import { expect, type Page, test } from "@playwright/test";
@@ -87,9 +87,21 @@ test("platform gán quy trình vào tập của tenant và bỏ gán quy trình 
     // DB e2e của stack P-a không chạy migration gói ⇒ `/admin/tenants/:id/packs` trả 500 và tab Tính năng chỉ hiện lỗi: dùng backend gói giả chung.
     await fakePacks(p, ACME, { enabled: true });
     await platformLogin(p);
-    await p.goto(`${ADMIN_URL}/tenants/${ACME}?tab=features`);
+    // CR-121 c11: gán quy trình CHỈ ở công ty › tab Quy trình › ngăn của việc (khối trong thẻ app đã gỡ).
+    await p.route(`**/hub-admin/tenants/${ACME}/capabilities`, (r) =>
+      json(r, 200, {
+        tenant_id: ACME,
+        apps: [
+          {
+            key: "contracts",
+            slots: [{ slot: SLOT, def_id: P1, def_name: "Mặc định", version: 1, is_default: true }],
+          },
+        ],
+      }),
+    );
+    await p.goto(`${ADMIN_URL}/tenants/${ACME}?tab=processes`);
+    await p.getByTestId(`flows-open-${SLOT}`).click();
     const details = p.getByTestId(`admin-routing-details-${SLOT}`);
-    // CR-120: khối Quy trình mở sẵn (không còn <details> thu gọn)
     // hub-routing-backfill · quy trình chạy khi không có luật (gán cũ) gắn nhãn "Đang dùng".
     await expect(details.getByTestId(`admin-assigned-in-use-${P1}`)).toHaveText("Đang dùng");
 

@@ -7,8 +7,8 @@ import { useTranslation } from "react-i18next";
 import { notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { useTenantDepartments, useTenantRouting } from "../../api-routing";
-import { useSlotRoutingActions } from "../../hooks/use-slot-routing";
-import type { SlotCandidate } from "../../lib/slot-candidates";
+import { useSlotRoutingActions } from "../hooks/use-slot-routing";
+import type { SlotCandidate } from "../lib/slot-candidates";
 import { RoutingRules } from "./RoutingRules";
 
 const SEL = "h-9 min-w-0 w-72 rounded-md border border-input bg-background px-2 text-body";

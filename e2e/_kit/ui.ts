@@ -29,6 +29,17 @@ export async function openTenantAppsTab(page: Page, tenantName: string | RegExp)
   await page.getByRole("tab", { name: "Ứng dụng" }).click();
 }
 
+/**
+ * CR-121 c11 · mở công ty › tab "Quy trình" rồi ngăn chi tiết của việc `slot` (nơi DUY NHẤT gán quy trình).
+ * Trả hộp `admin-assigned-<slot>` của ngăn Gán (platform_admin) để dùng với `assignProcessUi`.
+ */
+export async function openJobDrawer(page: Page, slot: string): Promise<Locator> {
+  await page.getByRole("tab", { name: "Quy trình" }).click();
+  await page.getByTestId(`flows-open-${slot}`).click();
+  const box = page.getByTestId(`flows-assign-panel-${slot}`).getByTestId(`admin-assigned-${slot}`);
+  await expect(box).toBeVisible();
+  return box;
+}
 /** Giá trị `value` của lựa chọn có chữ `text` trong `<select>` (ném lỗi rõ nếu không có). */
 export async function optionValue(select: Locator, text: string): Promise<string> {
   const v = await select.locator("option", { hasText: text }).first().getAttribute("value");

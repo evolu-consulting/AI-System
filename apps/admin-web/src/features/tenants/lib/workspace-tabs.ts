@@ -1,4 +1,4 @@
-// CR-121 · tab workspace công ty theo vai. Thứ tự: Hồ sơ · Ứng dụng (key `features`) · [Quy trình: c11 thêm key `processes`; tab `workflow-tools` đã gỡ ở c16, URL cũ → /ai-tools] ·
+// CR-121 · tab workspace công ty theo vai. Thứ tự: Hồ sơ · Ứng dụng (key `features`) · [Quy trình = key `processes` (c11); tab `workflow-tools` đã gỡ ở c16, URL cũ → /ai-tools] ·
 // Thành viên (key `users`) · Cài đặt (key `info`) · rồi các mục quản trị còn lại (Nhóm · Đối tác · Phân quyền · Agents · Quota).
 // Bỏ tab "Tổng quan" (đã có "Tổng quan" ở thanh bên); số tóm tắt nằm một dòng ở đầu trang. Tab mặc định (không `?tab=`) = Hồ sơ.
 // platform_admin đủ tab; tenant_admin: Hồ sơ (chỉ xem), Ứng dụng (chỉ xem), Thành viên, Cài đặt (chỉ xem), Nhóm, Đối tác, Phân quyền,
@@ -7,6 +7,7 @@ export type TenantTab =
   | "profile"
   | "info"
   | "features"
+  | "processes"
   | "packs"
   | "users"
   | "groups"
@@ -18,6 +19,7 @@ export type TenantTab =
 export const TENANT_TABS: readonly TenantTab[] = [
   "profile",
   "features",
+  "processes",
   "users",
   "info",
   "groups",
@@ -29,6 +31,7 @@ export const TENANT_TABS: readonly TenantTab[] = [
 const TENANT_ADMIN: readonly TenantTab[] = [
   "profile",
   "features",
+  "processes",
   "users",
   "info",
   "groups",
@@ -42,6 +45,7 @@ export const TAB_LABEL = {
   profile: "tenants.tab.profile",
   info: "tenants.tab.info",
   features: "tenants.tab.features",
+  processes: "tenants.tab.processes",
   packs: "tenants.tab.packs",
   users: "tenants.tab.users",
   groups: "tenants.tab.groups",

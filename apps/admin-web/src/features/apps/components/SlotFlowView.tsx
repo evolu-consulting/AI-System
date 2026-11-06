@@ -87,10 +87,13 @@ export function FlowRowsView({
   rows,
   pending,
   error,
+  view,
 }: {
   rows: StepRow[] | null;
   pending: boolean;
   error: unknown;
+  /** CR-121 c11 (Q11): chỉ sơ đồ (canvas) hoặc chỉ bảng bước (list); vắng ⇒ cả hai như cũ. */
+  view?: "canvas" | "list";
 }) {
   const { t } = useTranslation();
   const who = useWho();
@@ -101,39 +104,41 @@ export function FlowRowsView({
   return (
     <div className="space-y-3" data-testid="slot-flow">
       <h4 className="text-label font-semibold">{t("appcfg.flow.title")}</h4>
-      <Diagram rows={rows} who={who} />
-      <Table>
-        <caption className="sr-only">{t("appcfg.flow.title")}</caption>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("appcfg.flow.col.step")}</TableHead>
-            <TableHead>{t("appcfg.flow.col.who")}</TableHead>
-            <TableHead>{t("appcfg.flow.col.timing")}</TableHead>
-            <TableHead>{t("appcfg.flow.col.condition")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((r) => (
-            <TableRow key={r.key}>
-              <TableCell className="whitespace-normal font-medium">{`${r.index}. ${r.name}`}</TableCell>
-              <TableCell className="whitespace-normal">{who(r.who)}</TableCell>
-              <TableCell className="whitespace-normal">
-                {r.timing
-                  ? r.timing.remindH
-                    ? t("appcfg.flow.timingRemind", {
-                        due: r.timing.dueH,
-                        remind: r.timing.remindH,
-                      })
-                    : t("appcfg.flow.timing", { due: r.timing.dueH })
-                  : "—"}
-              </TableCell>
-              <TableCell className="whitespace-normal">
-                {r.condition ?? t("appcfg.flow.always")}
-              </TableCell>
+      {view === "list" ? null : <Diagram rows={rows} who={who} />}
+      {view === "canvas" ? null : (
+        <Table>
+          <caption className="sr-only">{t("appcfg.flow.title")}</caption>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("appcfg.flow.col.step")}</TableHead>
+              <TableHead>{t("appcfg.flow.col.who")}</TableHead>
+              <TableHead>{t("appcfg.flow.col.timing")}</TableHead>
+              <TableHead>{t("appcfg.flow.col.condition")}</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.key}>
+                <TableCell className="whitespace-normal font-medium">{`${r.index}. ${r.name}`}</TableCell>
+                <TableCell className="whitespace-normal">{who(r.who)}</TableCell>
+                <TableCell className="whitespace-normal">
+                  {r.timing
+                    ? r.timing.remindH
+                      ? t("appcfg.flow.timingRemind", {
+                          due: r.timing.dueH,
+                          remind: r.timing.remindH,
+                        })
+                      : t("appcfg.flow.timing", { due: r.timing.dueH })
+                    : "—"}
+                </TableCell>
+                <TableCell className="whitespace-normal">
+                  {r.condition ?? t("appcfg.flow.always")}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }

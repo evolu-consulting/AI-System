@@ -13,7 +13,7 @@ import {
   type Env,
   loginAdmin,
   loginCw,
-  processBlock,
+  openProcessPanel,
   SLOT,
   stepOf,
   U,
@@ -145,9 +145,7 @@ test("2 · platform admin gán A cho công ty 1, B cho công ty 2 (không công 
       .getByRole("list", { name: "Danh sách công ty" })
       .getByRole("link", { name: new RegExp(e.tenantName) })
       .click();
-    await page.getByRole("tab", { name: "Ứng dụng" }).click();
-    const card = page.getByRole("region", { name: /Sổ Hợp Tác|Hợp đồng/ }).first();
-    const blk = processBlock(card);
+    const blk = await openProcessPanel(page);
     await expect(blk).toBeVisible();
     await expect(blk.getByTestId("tenant-engine-switch")).toHaveCount(0);
     await assignProcessUi(blk.getByTestId(`admin-assigned-${SLOT}`), name);

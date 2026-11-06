@@ -667,6 +667,65 @@
     }
   },
   "tenants": {
+    "flows": {
+      "lead": "Mỗi việc dùng một quy trình lấy từ Thư viện.",
+      "leadInfo": "Mẫu quy trình được tạo và chỉnh ở Thư viện quy trình. Ở đây công ty chỉ chọn mẫu nào áp dụng cho việc nào.",
+      "summary": "{{on}}/{{total}} việc có quy trình",
+      "empty": "Công ty chưa dùng ứng dụng nào có quy trình.",
+      "loadFail": "Không tải được dữ liệu quy trình. Thử tải lại trang.",
+      "col": {
+        "job": "Việc",
+        "process": "Quy trình",
+        "status": "Trạng thái",
+        "rules": "Luật"
+      },
+      "appJobs": "{{n}} việc",
+      "steps": "{{n}} bước",
+      "noneChosen": "Chưa chọn quy trình",
+      "on": "Đang bật",
+      "off": "Đang tắt",
+      "reason": {
+        "noProcess": "chưa gán quy trình",
+        "unpublished": "quy trình chưa xuất bản, cần xuất bản trong Thư viện",
+        "deleted": "quy trình đã bị xoá, hãy chọn quy trình khác"
+      },
+      "rules": "{{n}} luật",
+      "change": "Đổi",
+      "assign": "Gán",
+      "drawerKind": "Việc",
+      "stepsTitle": "Các bước",
+      "viewMode": "Cách xem các bước",
+      "view": {
+        "canvas": "Sơ đồ",
+        "list": "Danh sách bước"
+      },
+      "libraryReadOnly": "Đây là quy trình mẫu của Thư viện, chỉ xem. Sao chép cho công ty này để sửa riêng; bản sao sẽ được dùng thay bản hiện tại.",
+      "hasCopy": "Công ty đã có bản riêng sao từ quy trình này.",
+      "ownCopy": "Đây là bản riêng của công ty, có thể sửa.",
+      "copy": "Sao chép cho công ty này",
+      "openEditor": "Mở trình sửa",
+      "assignTitle": "Gán quy trình",
+      "sameKind": "Chỉ gồm quy trình cùng loại: {{type}}",
+      "tenantNoCandidates": "Công ty chưa có quy trình nào để chọn cho việc này. Hãy sao một quy trình thư viện ở phần Các bước.",
+      "inUse": "Đang dùng",
+      "use": "Dùng quy trình này",
+      "running": "Đang chạy",
+      "runningNone": "Hiện không có lượt nào đang chạy.",
+      "runStep": "bước {{n}}/{{total}}",
+      "runWaiting": "đang chờ",
+      "runRunning": "đang xử lý",
+      "toast": {
+        "assigned": "Đã đổi quy trình cho việc này.",
+        "copied": "Đã sao chép và dùng bản riêng cho việc này."
+      },
+      "job": {
+        "contractsApproval": "Duyệt hợp đồng",
+        "contractsIntake": "Nhận hợp đồng",
+        "communityModeration": "Duyệt bài",
+        "communityJoin": "Đối tác xin tham gia",
+        "communityReport": "Báo cáo vi phạm"
+      }
+    },
     "slots": {
       "title": "Quy trình",
       "desc": "Quy trình công ty dùng cho app này: quy trình đã gán, luật chọn theo phòng ban và quy trình mặc định. Chỉ quản trị nền tảng gán.",
@@ -839,6 +898,7 @@
       "profile": "Hồ sơ",
       "info": "Cài đặt",
       "features": "Ứng dụng",
+      "processes": "Quy trình",
       "agents": "Agents",
       "quota": "Quota",
       "users": "Thành viên",

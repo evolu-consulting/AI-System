@@ -12,8 +12,8 @@ import {
   type Env,
   loginAdmin,
   loginCw,
+  openProcessPanel,
   PROC,
-  processBlock,
   SLOT,
   stepOf,
   U,
@@ -96,9 +96,7 @@ test("2 · platform admin gán quy trình cho công ty mới (không công tắc
     .getByRole("list", { name: "Danh sách công ty" })
     .getByRole("link", { name: new RegExp(E.tenantName) })
     .click();
-  await page.getByRole("tab", { name: "Ứng dụng" }).click();
-  const card = page.getByRole("region", { name: /Sổ Hợp Tác|Hợp đồng/ }).first();
-  const blk = processBlock(card);
+  const blk = await openProcessPanel(page);
   await expect(blk).toBeVisible();
   await assignProcessUi(blk.getByTestId(`admin-assigned-${SLOT}`), FLOW);
 });

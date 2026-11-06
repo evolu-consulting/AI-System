@@ -2,7 +2,7 @@
 // của platform). API cho phép tenant_admin sửa luật của chính công ty; gán / bỏ gán nội dung quy trình vẫn chỉ platform.
 import { useTranslation } from "react-i18next";
 import { useFlowDepartments, useTenantRouting } from "@/features/tenants/api-routing";
-import { RoutingRules } from "@/features/tenants/components/slots/RoutingRules";
+import { RoutingRules } from "@/features/tenants/flows/components/RoutingRules";
 
 export default function RulesPanel(p: { tid: string; slot: string; isPlatform: boolean }) {
   const { t } = useTranslation();
