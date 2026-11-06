@@ -24,6 +24,7 @@ Trang con, ngăn trượt dùng chung, route, API. Không sửa web-kit (PrefsPa
 ## Quyết định trong lúc làm
 - Chưa có nút tìm kiếm ⌘K và chuông/góp ý là component web-kit (ngoài phạm vi) ⇒ IconButton áp cho nút shell của admin-web; chuông/góp ý chuyển sang IconButton khi lát web-kit.
 - Cấu trúc nav giữ nguyên (không đổi route), nên không đổi nav.test.ts.
+- **Superseded (2026-11-06):** "Cấu trúc nav giữ nguyên" không còn đúng — nav đổi thành 6 mục phẳng theo `docs/specs/cr121-c/spec.md` R1 (lát c10), có đổi `nav.test.ts`.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
