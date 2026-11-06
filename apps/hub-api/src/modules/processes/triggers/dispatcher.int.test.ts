@@ -18,7 +18,8 @@ const Y = tenantId(1222);
 const UX = userId(1221);
 const UY = userId(1222);
 const DFLT = APPROVAL_DEFAULT_DEF.id;
-const T0 = new Date("2026-11-06T08:00:00Z");
+/** Đồng hồ giả SAU giờ DB (`next_at` mặc định = now() của DB) ⇒ sự kiện vừa ghi đã tới hạn. */
+const T0 = new Date(Date.now() + 60_000);
 const SYS = { kind: "system" as const };
 
 let o: Sql;
