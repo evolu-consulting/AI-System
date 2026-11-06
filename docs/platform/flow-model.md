@@ -9,9 +9,11 @@ Từ vựng (một khái niệm = một tên): **Quy trình** (UI) = **Flow** (c
 
 ## A. Mô hình
 
-**Flow** = một sơ đồ node bắt đầu bằng đúng **một node Bắt đầu khi (trigger)** và kết thúc ở ≥ 1 **node Kết thúc**. Sự kiện app khớp trigger ⇒ mở một lượt chạy. Flow dài ngắn tuỳ ý (≤ 20 bước, như cr121-d R4).
+**Flow** = một sơ đồ node bắt đầu bằng đúng **một node Bắt đầu khi (trigger)** và kết thúc ở ≥ 1 **node Kết thúc**. Flow dài ngắn tuỳ ý (≤ 20 bước, như cr121-d R4). **Mỗi app có NHIỀU flow**, mỗi flow có node bắt đầu riêng (vd contracts: "Duyệt HĐ", "Nhận HĐ tải lên", "Báo khi HĐ được duyệt"…).
 
-**Một định dạng: `FlowDef`** — cùng một kiểu cho flow Thư viện, bản công ty, mẫu chạy thử; một trình sửa, một engine.
+**Flow chạy khi đủ hai điều:** (a) flow đang **Bật** cho công ty đó **và** (b) sự kiện app khớp node bắt đầu (sự kiện + điều kiện). Bật/Tắt là trạng thái của flow **theo từng công ty**.
+
+**Một kiểu = một định dạng `FlowDef` + một trình sửa + một engine** (không phải một flow) — cùng kiểu cho flow Thư viện, bản công ty, mẫu chạy thử.
 
 | Trường | Ý nghĩa |
 |---|---|
@@ -33,16 +35,19 @@ Nháp ──Xuất bản──► vN (bất biến) ──Bật cho công ty─�
 Lượt chạy luôn chụp snapshot bản lúc bắt đầu ⇒ sửa/xuất bản không đổi lượt đang chạy [ADR-0017 bài 5; flow-engine.md §1]
 ```
 
-**Danh sách flow của công ty** (`company_flows`: tenant, flow, `enabled`, `position`) là **nguồn duy nhất** cho "công ty chạy flow nào". Một dòng trỏ tới flow Thư viện (chỉ xem, theo bản Thư viện mới nhất — như hành vi gán hiện nay, `thu-vien-quy-trinh.md` "Nháp, xuất bản") hoặc tới bản công ty (sửa được). Thay cho `process_tenant_defs` + `process_routings` + `process_routing_rules` + `process_slots`.
+**Danh sách flow của công ty** (`company_flows`: tenant, flow, `enabled`, `replaced_by`, `position`) là **nguồn duy nhất** cho "công ty có flow nào, flow nào đang bật". Hai loại dòng, cùng định dạng flow:
+- **Được gán**: platform_admin gán (cấp) một flow Thư viện cho công ty ⇒ dòng trỏ flow Thư viện, chỉ xem, chạy bản Thư viện xuất bản mới nhất (như hành vi gán hiện nay, `thu-vien-quy-trinh.md` "Nháp, xuất bản").
+- **Bản công ty**: do tenant_admin (hoặc platform_admin) clone, sửa được.
+Thay cho `process_tenant_defs` + `process_routings` + `process_routing_rules` + `process_slots`.
 
-**Sao chép** (giữ quyết định cr121-c Q1/Q9): flow Thư viện mở chỉ xem + nút "Sao chép cho công ty này" ⇒ tạo bản công ty **cùng định dạng**, ghi "Sao từ <tên> · vN", **thay đúng dòng** đang trỏ bản Thư viện đó (giữ vị trí), một transaction, bấm lần hai trả bản đã có. Mã phòng ban trong bản Thư viện đổi thành Group của công ty lúc sao (giữ luật hiện có "mã Group → id theo tenant"); thiếu phòng ⇒ lỗi nói rõ phòng nào + cách sửa.
+**Clone để dùng thay** (mở rộng cr121-c Q1/Q9): tenant_admin mở flow được gán (chỉ xem) → "Sao chép để sửa" ⇒ tạo bản công ty **cùng định dạng**, ghi "Sao từ <tên> · vN". Bản sao sửa ở nháp; **khi xuất bản lần đầu** ⇒ bản sao Bật, bản gốc **tự Tắt cho công ty này** (`replaced_by` = bản sao, lý do hiện trên dòng gốc: "Đang tắt · đã thay bằng <bản công ty>"), một transaction. **Quay về bản gốc** = một nút trên bản công ty: bật lại bản gốc, tắt bản sao (giữ bản sao để dùng lại). Bấm Sao chép lần hai ⇒ mở bản sao đã có. Mã phòng ban đổi thành Group của công ty lúc sao (giữ luật "mã Group → id theo tenant"); thiếu phòng ⇒ lỗi nói rõ phòng nào + cách sửa. Bản gốc và bản sao không bao giờ cùng Bật cho một công ty ⇒ không chạy trùng.
 
 **Ai sửa gì**
 
 | Vai | Thư viện | Bản công ty | Danh sách flow công ty | Lượt chạy |
 |---|---|---|---|---|
-| platform_admin | tạo, sửa, xuất bản, tắt | của mọi công ty | mọi công ty | xem, huỷ, mở lại |
-| tenant_admin | chỉ xem + Sao chép | của công ty mình: sửa, xuất bản, xoá | công ty mình: bật/tắt, xếp thứ tự | công ty mình |
+| platform_admin | tạo, sửa, xuất bản, tắt; **gán cho công ty** | của mọi công ty | mọi công ty | xem, huỷ, mở lại |
+| tenant_admin | flow được gán: chỉ xem + Sao chép để sửa | của công ty mình: sửa, xuất bản (= dùng thay bản gốc), quay về bản gốc, xoá | công ty mình: bật/tắt, xếp thứ tự | công ty mình |
 | member | — | — | — | xem trạng thái + làm việc được giao (duyệt, form) trên bản ghi |
 
 ---
@@ -70,7 +75,7 @@ Luật chung: trình sửa chỉ cho thêm node mà app khai trong manifest (gi�
 
 ## C. Trigger
 
-**App khai sự kiện trong manifest** (thay `AppSlotDecl` của CR-120 §2): `events[] = {key, label, facts[{key,label,type}], outcomes[{key,label,effect}], required}`. `check:app-events` (thay `check:app-slots`) đỏ khi app không có sự kiện nào hoặc sự kiện `required` không có flow mặc định trong Thư viện. App mới = manifest + sự kiện + cổng dữ kiện + cổng kết quả.
+**App khai sự kiện trong manifest** (thay `AppSlotDecl` của CR-120 §2): `events[] = {key, label, facts[{key,label,type}], outcomes[{key,label,effect}], required, decides}`. `check:app-events` (thay `check:app-slots`) đỏ khi app không có sự kiện nào hoặc sự kiện `required` không có flow mặc định trong Thư viện. App mới = manifest + sự kiện + cổng dữ kiện + cổng kết quả.
 
 | App | Sự kiện (nhãn trên node Bắt đầu khi) | Dữ kiện | Kết quả | required |
 |---|---|---|---|---|
@@ -85,7 +90,12 @@ Luật chung: trình sửa chỉ cho thêm node mà app khai trong manifest (gi�
 
 **Dữ kiện vào lượt chạy:** app ghi sự kiện `{event, ref, facts, event_id, actor}` vào hàng đợi sự kiện **cùng transaction** với thay đổi bản ghi. Lượt chạy nhận `ref` + dữ kiện lúc sự kiện (dùng cho điều kiện trigger và hiển thị). Node **Nếu** đọc **giá trị hiện tại** qua cổng dữ kiện của app mỗi lần rẽ và ghi lại giá trị đã đọc — giữ quyết định cr121-d ("rẽ theo giá trị HIỆN TẠI", hồi quy nếu đọc input cũ). Trường trống ⇒ Nếu đi nhánh Sai và lịch sử ghi "chưa có dữ liệu" (nói rõ lý do; xem H2).
 
-**Nhiều flow cùng khớp một sự kiện — đề xuất: chạy MỘT, flow khớp đầu tiên theo thứ tự trong danh sách của công ty.** Lý do: sự kiện như "gửi duyệt" điều khiển trạng thái bản ghi; hai lượt song song cho ra hai kết quả mâu thuẫn. Người dùng đã quen "xét từ trên xuống, khớp đầu tiên" (cr121-c R4). Sự kiện `required` phải có ≥ 1 flow đang bật **không điều kiện** (lưới cuối); tắt/xoá flow đó bị chặn kèm câu sửa. Muốn làm thêm việc phụ (thông báo…) ⇒ thêm node vào chính flow đó, hoặc dùng sự kiện khác (`contract.approved`). Xem H1.
+**Nhiều flow đang bật cùng khớp một sự kiện — đề xuất (H1):**
+1. **Mặc định chạy TẤT CẢ** flow đang bật khớp node bắt đầu, đúng nguyên tắc "flow nào được bật thì chạy" (vd "Khi đăng bài" vừa chạy "Duyệt bài" vừa chạy "Báo chủ quản").
+2. **Clone thay bản gốc ⇒ không chạy trùng**: bản gốc đã tự Tắt cho công ty (mục A).
+3. **Ngoại lệ: sự kiện quyết định trạng thái bản ghi.** App khai `decides: true` cho sự kiện có kết quả đổi trạng thái (gửi duyệt HĐ, đăng bài cần duyệt). Với sự kiện này, mỗi bản ghi chỉ có **một** lượt quyết định: flow khớp **đầu tiên** theo thứ tự trong danh sách công ty. Flow khớp khác không chạy, và lịch sử bản ghi ghi "Không chạy: <flow X> khớp trước". Lý do: hai lượt duyệt song song cho hai kết quả mâu thuẫn (một Đã duyệt, một Từ chối). "Xét từ trên xuống, khớp đầu tiên" người dùng đã quen (cr121-c R4).
+4. Danh sách công ty cảnh báo khi hai flow đang bật cùng sự kiện `decides` mà flow trên không có điều kiện: "<flow dưới> sẽ không bao giờ chạy — thêm điều kiện cho <flow trên> hoặc tắt một flow".
+5. Sự kiện `required` phải có ≥ 1 flow đang bật **không điều kiện** (lưới cuối); tắt flow đó bị chặn kèm câu sửa.
 
 **Idempotent:** khoá lượt = `(tenant, event_id)` duy nhất (vd `contract.submitted:<id>:<lần gửi>`); bộ điều phối đọc hàng đợi sau commit (`FOR UPDATE SKIP LOCKED`), khớp, mở lượt; chạy lại/hai Hub ⇒ vẫn một lượt (cùng cách `client_msg_id` đã đạt ở ADR-0017 bài 2). Không flow nào khớp sự kiện không bắt buộc ⇒ ghi "không có quy trình" vào lịch sử bản ghi, không lỗi.
 
@@ -96,7 +106,7 @@ Luật chung: trình sửa chỉ cho thêm node mà app khai trong manifest (gi�
 | Giữ nguyên (brief) | Thêm / đổi (cộng thêm vào engine, Opus) |
 |---|---|
 | registry node, FlowRuntime, `process_runs` / `stage_runs` / `review_tasks`, snapshot lúc bắt đầu, timer + retry, nhắc/chuyển cấp, canvas `@ai/flow-canvas`, Thư viện + xuất bản + quay lại, sao chép (`source_ref`, `source_rel_version`), mã Group → id, tool của gói, FlowPanel + `FlowView` | 1. `trigger` trên `FlowDef`; hàng đợi sự kiện + bộ điều phối + khoá `(tenant, event_id)` |
-| | 2. `company_flows` (bật, thứ tự) + chọn flow khớp đầu tiên — một câu SQL, p95 ≤ 5 ms như `resolveSlot` [CR-120 §9] |
+| | 2. `company_flows` (bật, `replaced_by`, thứ tự) + chọn mọi flow đang bật khớp (sự kiện `decides`: chỉ flow đầu tiên) — một câu SQL, p95 ≤ 5 ms như `resolveSlot` [CR-120 §9] |
 | | 3. Node **Duyệt** độc lập (thay `contracts-route` + gate) |
 | | 4. Nếu: nguồn `fact` qua cổng `FactsReader` của app (đọc hiện tại, một câu SQL, như `flow-facts.repo` cr121-d R3) + `next_step` để hai nhánh gộp lại (nay If chỉ nhảy tới, nhánh Đúng chảy tiếp vào nhánh Sai [flow-engine.md §3]) |
 | | 5. Node **Ký số** = node app: gọi tool gói gửi ký, chờ sự kiện `esign.completed|declined` có hạn; phần gửi/đồng bộ nhiều nhà cung cấp của gói giữ nguyên [duyet-ky-so.md §4b] — esign không còn chạy ngoài engine |
@@ -110,7 +120,7 @@ Engine vẫn chạy được snapshot cũ (`after.branch`, `contracts-route`, `c
 ## E. Nhất quán UI
 
 - **Một trình sửa** (admin-web, dùng cho cả platform_admin và tenant_admin): **canvas mặc định**, "Danh sách bước" là chế độ phụ, nhớ theo người dùng (giữ cr121-c Q11). Bảng node bên trái chỉ gồm node app khai. Điều kiện của **Bắt đầu khi** và **Nếu** dùng **một** control dựng điều kiện (control của cr121-d R6, đổi chỗ gắn từ bước sang node). Đầu trang: tên · app · "Sao từ … · vN" · trạng thái · nút Xuất bản (hoặc lỗi + cách sửa) · Xem trước bằng bản ghi mẫu (tô đường đi).
-- **Một danh sách flow của công ty** (Công ty › Quy trình; tenant_admin thấy đúng màn này cho công ty mình): nhóm theo app; mỗi dòng = tên · **Bắt đầu khi** (vd "Khi gửi duyệt HĐ · giá trị > 100 triệu") · nguồn ("Thư viện · chỉ xem" / "Bản công ty · sao từ … v1") · trạng thái **Đang bật / Đang tắt + lý do** · thứ tự (kéo thả, câu dẫn "Cùng một sự kiện: chạy quy trình khớp đầu tiên"). Nút: Mở · Sao chép · Bật/Tắt.
+- **Một danh sách flow của công ty** (Công ty › Quy trình; tenant_admin thấy đúng màn này cho công ty mình): nhóm theo app; mỗi dòng = tên · **Bắt đầu khi** (vd "Khi gửi duyệt HĐ · giá trị > 100 triệu") · nguồn ("Được gán từ Thư viện · chỉ xem" / "Bản công ty · sao từ … v1") · trạng thái **Đang bật / Đang tắt + lý do** (vd "đã thay bằng <bản công ty>") · thứ tự (kéo thả; chỉ có nghĩa cho sự kiện quyết định, câu dẫn "Duyệt: chạy quy trình khớp đầu tiên"). Nút: Mở · Sao chép để sửa · Bật/Tắt · Quay về bản gốc.
 - **Trên bản ghi** (HĐ, bài): FlowPanel hiện "Đang chạy: <tên flow> · bước <x> · chờ <ai>" hoặc "Không có quy trình nào khớp — <cách sửa>".
 - **Gỡ:** tab/cột "Việc", "Luật định tuyến", hàng "Mặc định", "Thêm luật", nút Gán/Đổi theo việc (cr121-c R4), `SlotRouting`/`RoutingRules`/`TenantProcessSlots`, editor Form theo khe + lỗi `SLOT_SHAPE_UNSUPPORTED`, vùng "Chỉ chạy khi" trên từng bước (`FlowWhenEditor` — thay bằng node Nếu), Cài đặt › Quy trình duyệt cũ của contracts, khe community 3 bước cố định, mọi chữ "khe" (đã cấm ở Luật GỐC 3).
 
@@ -127,7 +137,7 @@ Engine vẫn chạy được snapshot cũ (`after.branch`, `contracts-route`, `c
 
 **Backfill prod (2 công ty contracts, một migration theo tập, chạy lại vô hại, int "công ty cũ thấy dữ liệu"):**
 1. Mỗi def Thư viện có khe ⇒ `FlowDef` cùng key: `trigger.event` theo khe (`contracts.approval` → `contract.submitted`…); `when` từng bước ⇒ node Nếu trước bước đó; bước Ký số ⇒ node Ký số; `route`/`finalize` ⇒ Kết thúc · Đã duyệt / Từ chối. Xuất bản v+1, ghi audit.
-2. Mỗi (công ty × khe): luật có điều kiện ⇒ dòng `company_flows` (bản công ty mang điều kiện ở trigger) theo `priority`; luật `is_default` ⇒ dòng cuối không điều kiện.
+2. Mỗi (công ty × khe): luật `is_default` ⇒ dòng `company_flows` "được gán" (Bật, cuối danh sách); luật có điều kiện ⇒ bản công ty mang điều kiện ở trigger, Bật, theo `priority`; bản riêng đã sao (cr121-c Q9) ⇒ dòng bản công ty Bật + dòng gốc Tắt `replaced_by`.
 3. 28 `process_runs` đang có: **không đụng**, chạy nốt theo snapshot (engine giữ tool cũ).
 4. Kiểm sau backfill: với mỗi công ty, mô phỏng 4 HĐ mẫu (≥/< ngưỡng × mua/bán) ⇒ đường đi mới = đường đi cũ.
 
@@ -140,16 +150,17 @@ Engine vẫn chạy được snapshot cũ (`after.branch`, `contracts-route`, `c
 ## G. Ba kịch bản nghiệm thu (thành e2e trên prod, công ty Demo)
 
 **G1 · Hợp đồng Demo đi hết**
-1. platform_admin tạo flow Thư viện "Duyệt HĐ Demo": Bắt đầu khi *Khi gửi duyệt HĐ* → Nếu *Giá trị HĐ > 100 triệu* → Đúng: Duyệt (Pháp chế) / Sai: Duyệt (Kế toán) → Gộp → Ký số (người ký: Giám đốc, đối tác ký) → Thông báo (người tạo) → Kết thúc · Đã duyệt. Xuất bản v1, bật cho Demo.
-   *Thấy:* canvas đúng 7 node có nhánh Đúng/Sai gộp lại; danh sách Demo có dòng "Khi gửi duyệt HĐ · Đang bật".
+1. platform_admin tạo flow Thư viện "Duyệt HĐ Demo": Bắt đầu khi *Khi gửi duyệt HĐ* → Nếu *Giá trị HĐ > 100 triệu* → Đúng: Duyệt (Pháp chế) / Sai: Duyệt (Kế toán) → Gộp → Ký số (người ký: Giám đốc, đối tác ký) → Thông báo (người tạo) → Kết thúc · Đã duyệt. Xuất bản v1, gán cho Demo.
+   *Thấy:* canvas đúng 7 node có nhánh Đúng/Sai gộp lại; danh sách Demo có dòng "Duyệt HĐ Demo · Được gán từ Thư viện · Khi gửi duyệt HĐ · Đang bật".
 2. Nhân viên tạo HĐ 150 triệu, bấm Gửi duyệt. *Thấy:* HĐ "Chờ Pháp chế duyệt"; FlowPanel ghi bước + người chờ.
 3. Pháp chế duyệt ⇒ HĐ "Chờ ký"; ký xong (sandbox) ⇒ HĐ "Đang hiệu lực", người tạo nhận chuông. *Thấy:* lịch sử lượt: Nếu đọc "150.000.000 > 100.000.000 · Đúng", Kế toán "bỏ qua", mỗi bước có giờ và người.
 
-**G2 · Tenant admin sửa bản công ty**
-1. Nhân viên gửi HĐ A 150 triệu (dừng ở Pháp chế).
-2. tenant_admin Demo mở dòng flow (chỉ xem) → Sao chép cho công ty này. *Thấy:* "Đã sao chép và gán cho công ty này", dòng đổi thành "Bản công ty · sao từ Duyệt HĐ Demo v1", cùng vị trí.
-3. Đổi người duyệt nhánh Đúng sang phòng Giám đốc; thêm Nếu *Loại HĐ = Mua hàng* trên nhánh Sai (Đúng: thêm Duyệt Mua hàng) → Xuất bản. *Thấy:* "Sẵn sàng xuất bản" rồi v2 (bản công ty).
-4. Gửi HĐ B 150 triệu. *Thấy:* B chờ Giám đốc; A vẫn chờ Pháp chế (lượt cũ giữ bản cũ, lịch sử ghi "Duyệt HĐ Demo v1"). Công ty khác không đổi.
+**G2 · Tenant admin clone flow được gán và dùng thay**
+1. (Từ G1: platform_admin đã gán "Duyệt HĐ Demo" cho Demo.) Nhân viên gửi HĐ A 150 triệu (dừng ở Pháp chế).
+2. tenant_admin Demo mở dòng "Duyệt HĐ Demo · Được gán từ Thư viện" (chỉ xem, canvas) → Sao chép để sửa. *Thấy:* nháp "Bản công ty · sao từ Duyệt HĐ Demo v1"; bản gốc vẫn Đang bật.
+3. Đổi người duyệt nhánh Đúng sang phòng Giám đốc; thêm Nếu *Loại HĐ = Mua hàng* trên nhánh Sai (Đúng: thêm Duyệt Mua hàng) → Xuất bản. *Thấy:* bản công ty "Đang bật"; dòng gốc "Đang tắt · đã thay bằng bản công ty".
+4. Gửi HĐ B 150 triệu. *Thấy:* B chờ Giám đốc (chỉ một lượt, bản gốc không chạy); A vẫn chờ Pháp chế (lượt cũ giữ bản cũ, lịch sử ghi "Duyệt HĐ Demo v1"). Công ty khác không đổi.
+5. Bấm Quay về bản gốc. *Thấy:* dòng gốc Đang bật, bản công ty "Đang tắt · đã quay về bản gốc"; HĐ C mới chờ Pháp chế.
 
 **G3 · Community duyệt bài**
 1. tenant_admin bật flow Thư viện "Duyệt bài đối tác": Bắt đầu khi *Khi đăng bài · Người đăng là đối tác* → Agent kiểm bài → Nếu *bị gắn cờ* → Đúng: Duyệt (Quản trị community, nhắc 24 giờ) → Kết thúc Hiện bài / Ẩn bài; Sai: Kết thúc · Hiện bài.
@@ -160,7 +171,7 @@ Engine vẫn chạy được snapshot cũ (`after.branch`, `contracts-route`, `c
 
 ## H. Câu hỏi cần chốt (kèm mặc định đề xuất)
 
-1. **Nhiều flow khớp một sự kiện:** chạy một (khớp đầu tiên theo thứ tự) hay chạy hết? — *Mặc định: một*, vì sự kiện điều khiển trạng thái bản ghi; việc phụ đặt trong cùng flow hoặc dùng sự kiện khác.
+1. **Nhiều flow đang bật cùng khớp một sự kiện:** *Mặc định đề xuất:* chạy **tất cả**; riêng sự kiện quyết định trạng thái (gửi duyệt HĐ, đăng bài cần duyệt) chỉ chạy flow khớp **đầu tiên**, flow khác ghi lý do không chạy. Lý do: đúng nguyên tắc "bật là chạy", mà vẫn không có hai kết quả duyệt mâu thuẫn. Clone dùng thay nên bản gốc không chạy trùng.
 2. **Nếu đọc dữ kiện lúc nào:** giá trị hiện tại mỗi lần rẽ, và khi tới Kết thúc · Đã duyệt mà giá trị đã đổi khiến đường đi khác ⇒ dừng "Cần xử lý: giá trị HĐ đổi sau khi rẽ" để quản trị chọn chạy lại từ node Nếu? — *Mặc định: có* (giữ cr121-d + an toàn của finalize ADR-0030 §6). Trường trống ⇒ nhánh Sai — *mặc định có*, khác "trống ⇒ bước vẫn chạy" của cr121-d R2; lịch sử ghi rõ.
 3. **Trả lại:** kết thúc lượt (HĐ về Nháp, gửi lại mở lượt mới) thay vì quay về bước soạn trong cùng lượt? — *Mặc định: kết thúc lượt*; bỏ được bước ẩn `withConfirmStep`, lịch sử mỗi lần gửi tách rõ.
 4. **tenant_admin xuất bản bản công ty** không cần platform duyệt? — *Mặc định: có* (người dùng yêu cầu tenant admin tự sửa); kiểm khi xuất bản giữ nguyên, platform xem được nhật ký.
@@ -174,7 +185,7 @@ Engine vẫn chạy được snapshot cũ (`after.branch`, `contracts-route`, `c
 | Lát | Model | Nội dung |
 |---|---|---|
 | F0 contract | Opus medium | `FlowDef` + `trigger`, manifest `events[]`, cổng `FactsReader`/`OutcomeHandler`, ADR mới (thay 0035/0036) |
-| E1 trigger | Opus medium | hàng đợi sự kiện, bộ điều phối, khoá `(tenant, event_id)`, `company_flows`, khớp đầu tiên + perf |
+| E1 trigger | Opus medium | hàng đợi sự kiện, bộ điều phối, khoá `(tenant, event_id)`, `company_flows` + clone dùng thay/quay về, chạy mọi flow bật khớp (`decides`: khớp đầu tiên) + perf |
 | E2 node | Opus medium | Duyệt độc lập, Nếu đọc `fact` + `next_step` gộp, Kết thúc `outcome` |
 | E3 ký số | Opus medium + Sonnet high | node app chờ sự kiện ký; adapter contracts |
 | A1 contracts / A2 community | Sonnet high + Opus low soát | phát sự kiện cùng tx, dữ kiện, kết quả; gỡ `withConfirmStep` |
