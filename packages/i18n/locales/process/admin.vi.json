@@ -300,6 +300,17 @@
         "source": "Nguồn",
         "fromInput": "Đầu vào",
         "fromConst": "Giá trị cố định",
+        "from": {
+          "input": "Đầu vào",
+          "const": "Hằng",
+          "field": "Bước trước",
+          "fact": "Dữ kiện"
+        },
+        "fact": "Dữ kiện",
+        "prevField": "Field của bước trước",
+        "as": "Kiểu ghi",
+        "asKeep": "Giữ nguyên",
+        "asType": { "number": "Số", "text": "Chữ", "date": "Ngày", "bool": "Đúng/sai" },
         "input": "Đầu vào",
         "value": "Giá trị",
         "add": "Thêm dòng",

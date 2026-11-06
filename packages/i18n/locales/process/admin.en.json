@@ -300,6 +300,17 @@
         "source": "Source",
         "fromInput": "Input",
         "fromConst": "Constant",
+        "from": {
+          "input": "Input",
+          "const": "Constant",
+          "field": "Previous step",
+          "fact": "Record data"
+        },
+        "fact": "Record data",
+        "prevField": "Field of a previous step",
+        "as": "Write as",
+        "asKeep": "Keep as is",
+        "asType": { "number": "Number", "text": "Text", "date": "Date", "bool": "Yes/No" },
         "input": "Input",
         "value": "Value",
         "add": "Add row",

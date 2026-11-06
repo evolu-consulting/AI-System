@@ -9,7 +9,7 @@ import type { StageDraft } from "../../lib/draft-types";
 import type { EdgeProblem } from "../../lib/palette-node";
 import { stageToDraft } from "../../lib/stage-convert";
 import { insertStepAfter } from "../../lib/step-ops";
-import { type BridgeResult, bridgeSuggest } from "../../palette-api";
+import { type BridgeRequest, type BridgeResult, bridgeSuggest } from "../../palette-api";
 
 type Props = {
   problems: readonly EdgeProblem[];
@@ -64,7 +64,14 @@ function Line({ p, ...r }: { p: EdgeProblem } & Props) {
     if (!from || !to) return;
     setBusy(true);
     try {
-      setRes(await bridgeSuggest({ def: r.toDef(), from: from.key, to: to.key }));
+      setRes(
+        await bridgeSuggest({
+          // `toInput` bỏ trống vài mặc định (vd `back_to_steps`) mà schema Hub tự điền khi đọc.
+          def: r.toDef() as unknown as BridgeRequest["def"],
+          from: from.key,
+          to: to.key,
+        }),
+      );
     } catch {
       setRes("error");
     } finally {

@@ -36,6 +36,8 @@ function remapOne(s: StageDraft, m: Map<number, number>): StageDraft {
   const n = to0(s.nextStep, m);
   if (n === null) delete out.nextStep;
   else out.nextStep = n;
+  if (s.set.rows.some((r) => r.step !== null))
+    out.set = { rows: s.set.rows.map((r) => ({ ...r, step: to0(r.step, m) })) };
   if (s.wait.branches)
     out.wait = {
       ...s.wait,

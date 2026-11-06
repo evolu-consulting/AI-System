@@ -1,9 +1,7 @@
 // CR-122 · U2 · client bảng node (`GET /process-palette`, N1) + gợi ý cầu nối (`POST /process-defs/bridge-suggest`, N2).
-// Hợp đồng N2 (`packages/contracts/src/hub-admin/process-bridge.ts` ở nhánh cr122-n2-bridge-ai): gửi bản nháp + khoá stage trước/sau;
-// nhận `{ok:true, stage, explain_vi, explain_en}` (stage `set` đầy đủ) hoặc `{ok:false, reason_vi, reason_en}`. Khi N2 gộp ⇒ đổi sang
-// import schema từ contracts (kiểu dưới đây khớp từng trường).
+// Hợp đồng N2 (`process-bridge.ts`): gửi bản nháp + khoá stage trước/sau; nhận stage `set` đề xuất + giải thích, hoặc lý do không gợi ý được.
 import type { AppNodeDecl } from "@ai/contracts/app-manifest";
-import type { ProcessDefInput, ProcessStageDef } from "@ai/contracts/hub-admin";
+import type { BridgeSuggestRequest, BridgeSuggestResponse } from "@ai/contracts/hub-admin";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";
@@ -29,10 +27,8 @@ export function usePalette(app: string, tenantId: string | undefined) {
   });
 }
 
-export type BridgeRequest = { def: ProcessDefInput; from: string; to: string };
-export type BridgeResult =
-  | { ok: true; stage: ProcessStageDef; explain_vi: string; explain_en: string }
-  | { ok: false; reason_vi: string; reason_en: string };
+export type BridgeRequest = BridgeSuggestRequest;
+export type BridgeResult = BridgeSuggestResponse;
 
 export const bridgeSuggest = (body: BridgeRequest): Promise<BridgeResult> =>
   api<BridgeResult>(url("/process-defs/bridge-suggest"), { method: "POST", body });

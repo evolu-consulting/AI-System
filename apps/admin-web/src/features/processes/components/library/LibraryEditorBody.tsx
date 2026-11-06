@@ -84,7 +84,10 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
         onMode={setMode}
         onAction={onAction}
       />
-      {mode === "canvas" ? (
+      {mode === "canvas" && flow ? (
+        // CR-122 · U2c: flow có trigger dùng form giai đoạn chung (không còn form bước theo khe của Canvas thư viện cũ).
+        canvas
+      ) : mode === "canvas" ? (
         <LibraryCanvasContext.Provider
           value={{ groups: slot?.group_keys ?? [], dlcSteps: dlcSteps.data ?? [] }}
         >

@@ -8,6 +8,7 @@ import { isIf } from "../../lib/if-form";
 import { isSet } from "../../lib/set-form";
 import { isTool } from "../../lib/tool-form";
 import { isWait, isWaitFamily } from "../../lib/wait-form";
+import { useFlowCtx } from "../flow/flow-ctx";
 import { StageActions } from "./StageActions";
 import { StageAdminModeNotice } from "./StageAdminModeNotice";
 import { StageAnswerer } from "./StageAnswerer";
@@ -52,6 +53,7 @@ function setErrors(
 function Body(p: StageFormProps) {
   const { t } = useTranslation();
   const { stage, index, errors, readOnly, onChange } = p;
+  const flow = useFlowCtx();
   const set = isSet(stage);
   const form = isForm(stage);
   // `set`/`form` như `tool`: không nguồn/tự-sửa/người trả lời/ghi nhớ (Hub ép khi lưu)
@@ -69,6 +71,14 @@ function Body(p: StageFormProps) {
             label: i.label || i.key,
             type: i.type,
           }))}
+          prev={p.all
+            .filter((s) => s.step < stage.step)
+            .map((s) => ({
+              step: s.step,
+              label: s.name || s.key,
+              fields: s.executor === "wait_event" ? [...s.fields, { key: "event" }] : s.fields,
+            }))}
+          facts={flow?.event?.facts}
           readOnly={readOnly}
           errors={setErrors(errors, index, t)}
           onChange={(rows) => onChange({ set: { rows } })}

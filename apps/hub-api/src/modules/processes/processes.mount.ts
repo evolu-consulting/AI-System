@@ -51,6 +51,7 @@ export const PROCESS_PROTECTED_PREFIXES = [
   "/process-runs",
   "/review-tasks",
   "/process-defs",
+  "/process-palette", // CR-122 · N1 · bảng node (thiếu dòng này ⇒ route không có JWT ⇒ 401 AUTH_EXPIRED)
   "/agent-teams",
   "/process-editor", // P-d1 · `GET /process-editor/context` (plan-contract §4)
   "/process-slots", // CR-105 · L2a · khe thư viện (platform_admin)

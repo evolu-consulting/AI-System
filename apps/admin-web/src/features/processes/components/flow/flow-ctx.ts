@@ -15,3 +15,7 @@ export type FlowCtx = {
 };
 export const FlowContext = createContext<FlowCtx | null>(null);
 export const useFlowCtx = (): FlowCtx | null => useContext(FlowContext);
+
+/** Mức zoom tối thiểu khi fit canvas: flow (cột Bắt đầu khi + ≥ 8 bước) đọc được; Canvas thư viện cũ 0.7; mặc định của canvas. */
+export const useFitMin = (lib: boolean): number | undefined =>
+  useFlowCtx() ? 0.55 : lib ? 0.7 : undefined;
