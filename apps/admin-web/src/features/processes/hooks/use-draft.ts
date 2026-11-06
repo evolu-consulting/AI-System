@@ -10,6 +10,7 @@ import {
   snapshot,
   stageIndexesOf,
 } from "../lib/def-form";
+import { type EdgeRef, insertOnEdge } from "../lib/insert-on-edge";
 import {
   addStageAsNewStep,
   addStageToStep,
@@ -23,7 +24,8 @@ import {
 } from "../lib/step-ops";
 import { remapStepRefs } from "../lib/step-refs";
 
-type Update = (fn: (d: DefDraft) => DefDraft) => void;
+/** `remap = false` ⇒ phép đã tự đánh lại đích bước (vd `insertOnEdge`), không remap lần hai. */
+type Update = (fn: (d: DefDraft) => DefDraft, remap?: boolean) => void;
 
 /** Các thao tác sửa bản nháp (không đụng accordion/lỗi). */
 function draftOps(update: Update) {
@@ -91,6 +93,15 @@ function useStepMutations(ref: Ref, update: Update, select: (uid: string) => voi
       if ("stages" in r) select(s.uid);
       return r;
     },
+    /** CR-122 · P8 · chèn giai đoạn dựng sẵn vào giữa một cạnh (đích đã đánh lại bên trong `insertOnEdge`). */
+    insertOnEdge: (fresh: StageDraft, e: EdgeRef): StepOpResult<StageDraft> => {
+      const r = insertOnEdge(ref.current.stages, fresh, e);
+      if ("stages" in r) {
+        update((d) => ({ ...d, stages: r.stages }), false);
+        select(fresh.uid);
+      }
+      return r;
+    },
     moveToStep: (i: number, step: number) => applySteps((st) => moveToStep(st, i, step)),
     splitToNewStep: (i: number) => applySteps((st) => splitToNewStep(st, i)),
   };
@@ -103,12 +114,14 @@ export function useDraft() {
   const [selected, setSelected] = useState<string | null>(() => draft.stages[0]?.uid ?? null);
   const ref = useRef(draft);
   ref.current = draft;
-  const update = (fn: (d: DefDraft) => DefDraft) => {
+  const update: Update = (fn, remap = true) => {
     const prev = ref.current;
     const raw = fn(prev);
     // CR-122 · U2b: đổi/chèn/xoá bước ⇒ đánh lại mọi đích bước (goto, Nếu, Duyệt, gộp, chờ sự kiện) để không trỏ sai.
     const next =
-      raw.stages === prev.stages ? raw : { ...raw, stages: remapStepRefs(prev.stages, raw.stages) };
+      raw.stages === prev.stages || !remap
+        ? raw
+        : { ...raw, stages: remapStepRefs(prev.stages, raw.stages) };
     ref.current = next;
     setDraft(next);
   };

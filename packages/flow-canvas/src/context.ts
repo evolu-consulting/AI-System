@@ -1,5 +1,5 @@
 // CR-118 · @ai/flow-canvas · ngữ cảnh host cho node/cạnh: chữ, lớp CSS, chế độ, móc "thêm giai đoạn", bước đang bị chặn khi kéo.
-import { createContext, useContext } from "react";
+import { createContext, type ReactNode, useContext } from "react";
 import type { FlowMode } from "./mode";
 import {
   DEFAULT_LABELS,
@@ -18,7 +18,11 @@ export type FlowHost = {
   onAddToStep: ((step: number) => void) | undefined;
   /** Bước (0-based) của cột đầy đang bị rê vào, hoặc `null`. */
   blockedStep: number | null;
+  /** CR-122 · P8: nút "+" giữa cạnh (chèn bước vào giữa) — host dựng nội dung; vắng ⇒ không hiện. */
+  renderEdgeInsert: ((e: EdgeInsertInfo) => ReactNode) | undefined;
 };
+
+export type EdgeInsertInfo = { source: string; target: string; side?: "yes" | "no" };
 
 export const DEFAULT_HOST: FlowHost = {
   theme: DEFAULT_THEME,
@@ -27,6 +31,7 @@ export const DEFAULT_HOST: FlowHost = {
   renderInfo: undefined,
   onAddToStep: undefined,
   blockedStep: null,
+  renderEdgeInsert: undefined,
 };
 
 export const FlowHostCtx = createContext<FlowHost>(DEFAULT_HOST);

@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { emptyStage, type StageDraft } from "../lib/def-form";
 import { linkDlcReject } from "../lib/dlc-slot";
 import { freshDlcStage, freshReviewStage, freshSlotStage } from "../lib/fresh-stages";
+import type { EdgeRef } from "../lib/insert-on-edge";
 import { stepLabel } from "../lib/step-label";
 import { columnNeighbor, type StepOpResult } from "../lib/step-ops";
 import type { DraftState } from "./use-draft";
@@ -108,6 +109,21 @@ export function useStageOps(d: DraftState) {
     /** CR-122 · U1 · thêm node từ bảng node (loại + tên nghiệp vụ) thành bước mới cuối. */
     addNode: (patch: Partial<StageDraft>, name: string) =>
       addVia(() => d.addFresh(() => ({ ...emptyStage(), ...patch, name }))),
+    /** CR-122 · P8 · chèn các node (một node module có thể nhiều giai đoạn) vào GIỮA cạnh `edge`, nối tiếp nhau. */
+    insertNodes: (items: { patch: Partial<StageDraft>; name: string }[], edge: EdgeRef) => {
+      let from = edge.from;
+      for (const it of items) {
+        const fresh = { ...emptyStage(), ...it.patch, name: it.name };
+        const r = d.insertOnEdge(fresh, {
+          from,
+          to: edge.to,
+          side: from === edge.from ? edge.side : undefined,
+        });
+        report(undefined, r);
+        if ("error" in r) return;
+        from = fresh.uid;
+      }
+    },
     /** dlc-step-library · kéo cổng "Từ chối" của bước `from` thả lên bước `to` (phải đứng trước) ⇒ `gate.back_to = [to]`. */
     linkReject: linkRejectOf(d, rep),
     clearNotice: () => setNotice(null),

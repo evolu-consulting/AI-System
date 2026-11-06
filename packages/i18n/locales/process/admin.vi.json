@@ -1332,6 +1332,7 @@
     "moduleNote": "Nhà cung cấp, người ký và các thiết lập khác của bước này lấy từ cài đặt của ứng dụng. Mở Nâng cao nếu cần chỉnh chi tiết.",
     "notify": { "title": "Tiêu đề", "body": "Nội dung" },
     "moreRight": "Còn bước bên phải — kéo ngang để xem",
+    "insertOnEdge": "Thêm bước vào giữa",
     "companies": "{{n}} công ty",
     "add": "Thêm bước",
     "moreActions": "Thao tác khác",

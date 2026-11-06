@@ -4,7 +4,8 @@
 // y tự do, lưu `ui.y`; cột đầy ⇒ trượt về chỗ cũ). nodes/edges là DẪN XUẤT từ bản nháp (không giữ state riêng).
 // dlc-step-library: sơ đồ DLC ⇒ cạnh "Từ chối" tới NODE đích (không tới tiêu đề cột), cạnh tiến sau bước có cổng mang nhãn "Duyệt";
 // `linkable` ⇒ kéo cổng "Từ chối" của bước nào có cổng cũng nối được (`ops.linkReject` kiểm đích đứng trước).
-import { FlowCanvas, type FlowLabels, toEdge } from "@ai/flow-canvas";
+import { PROCESS_STAGES_MAX } from "@ai/contracts/hub-admin";
+import { type EdgeInsertInfo, FlowCanvas, type FlowLabels, toEdge } from "@ai/flow-canvas";
 import {
   COL_W,
   HEADER_H,
@@ -26,6 +27,7 @@ import { countAtStep } from "../../lib/step-ops";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { BRIDGE_W, BridgeNode } from "./BridgeNode";
 import { type CanvasHandlers, HandlersCtx } from "./canvas-ctx";
+import { EdgeInsertMenu } from "./EdgeInsertMenu";
 import { IfNode } from "./IfNode";
 import { StageNode } from "./StageNode";
 import type { StageView } from "./stage-view";
@@ -201,6 +203,7 @@ function useFlowGraph(
   trig: TriggerInfo,
   warn: WarnEdges,
   bridge: BridgeApi | undefined,
+  insertable: boolean,
 ) {
   const { views, selected, readOnly } = p;
   return useMemo(() => {
@@ -216,8 +219,15 @@ function useFlowGraph(
       return a === null || b === null || a === b;
     });
     const gated = (id: string) => byUid.get(id)?.dlc?.gate === true;
+    // CR-122 · P8: cạnh tiến giữa hai node có nút "+" (kiểu `forward`) khi sơ đồ sửa được và có bảng node.
+    const mk = (e: (typeof linked)[number]): Edge => {
+      const base = toEdge(e);
+      return insertable && e.kind === "forward" && byUid.has(e.source) && byUid.has(e.target)
+        ? { ...base, type: "forward" }
+        : base;
+    };
     const edges = linked.map((e) =>
-      e.kind === "forward" && gated(e.source) ? approveEdge(toEdge(e), approve) : toEdge(e),
+      e.kind === "forward" && gated(e.source) ? approveEdge(mk(e), approve) : mk(e),
     );
     const tp = triggerPart(views, trig);
     const bp = bridgePart(nodes, warn, bridge);
@@ -233,7 +243,7 @@ function useFlowGraph(
       steps: lay.steps,
       dlc,
     };
-  }, [views, selected, readOnly, approve, trig, warn, bridge]);
+  }, [views, selected, readOnly, approve, trig, warn, bridge, insertable]);
 }
 
 function useCanvasLabels(dlc: boolean): Partial<FlowLabels> {
@@ -274,8 +284,30 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
     [tLabel, tSummary],
   );
   const warn = flowCtx?.warnEdges ?? NO_WARN;
-  const g = useFlowGraph(p, t("process.admin.library.dlc.approve"), trig, warn, flowCtx?.bridge);
+  const insertable = !!flowCtx && !p.readOnly;
+  const g = useFlowGraph(
+    p,
+    t("process.admin.library.dlc.approve"),
+    trig,
+    warn,
+    flowCtx?.bridge,
+    insertable,
+  );
   const labels = useCanvasLabels(g.dlc);
+  const room = PROCESS_STAGES_MAX - p.views.length;
+  const renderEdgeInsert = useMemo(
+    () =>
+      insertable
+        ? (e: EdgeInsertInfo) => (
+            <EdgeInsertMenu
+              edge={{ from: e.source, to: e.target, side: e.side }}
+              ops={handlers.current.ops}
+              room={room}
+            />
+          )
+        : undefined,
+    [insertable, room],
+  );
   const onAddToStep = useCallback((step: number) => handlers.current.ops.add(step), []);
   const onConnect = useCallback(
     (c: { source: string; target: string; sourceHandle?: string | null }) => {
@@ -323,6 +355,7 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
           nodeTypes={nodeTypes}
           labels={labels}
           onAddToStep={onAddToStep}
+          renderEdgeInsert={renderEdgeInsert}
           blockedStep={blocked}
           controls={!p.compact}
           compact={p.compact}

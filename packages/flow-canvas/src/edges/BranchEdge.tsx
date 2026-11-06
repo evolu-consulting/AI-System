@@ -11,6 +11,7 @@ import {
 } from "@xyflow/react";
 import { memo } from "react";
 import { useFlowHost } from "../context";
+import { InsertSlot, useEdgeHover } from "./InsertSlot";
 
 type Side = "yes" | "no";
 const SIDE_STYLE = {
@@ -42,18 +43,29 @@ function BranchEdgeImpl(p: EdgeProps) {
     : getBezierPath({ ...geo, curvature: 0.5 });
   const rule = d?.rule ?? 1;
   const s = d?.side ? SIDE_STYLE[d.side] : null;
+  const { hover, on } = useEdgeHover();
   return (
     <>
-      <BaseEdge
-        id={p.id}
-        path={path}
-        markerEnd={p.markerEnd}
-        style={{
-          stroke: s?.stroke ?? "var(--color-primary)",
-          strokeWidth: 1.75,
-          ...(s ? (s.dash ? { strokeDasharray: s.dash } : {}) : { strokeDasharray: "6 4" }),
-        }}
-      />
+      <g {...on}>
+        <BaseEdge
+          id={p.id}
+          path={path}
+          markerEnd={p.markerEnd}
+          interactionWidth={d?.side ? 28 : 20}
+          style={{
+            stroke: s?.stroke ?? "var(--color-primary)",
+            strokeWidth: 1.75,
+            ...(s ? (s.dash ? { strokeDasharray: s.dash } : {}) : { strokeDasharray: "6 4" }),
+          }}
+        />
+      </g>
+      {d?.side ? (
+        <InsertSlot
+          p={{ source: p.source, target: p.target, side: d.side, x: lx + 44, y: ly }}
+          hover={hover}
+          on={on}
+        />
+      ) : null}
       <EdgeLabelRenderer>
         <span
           data-testid={d?.side ? `if-edge-${d.side}` : undefined}

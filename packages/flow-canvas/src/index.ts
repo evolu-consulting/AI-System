@@ -2,7 +2,7 @@
 // Phần thuần (bố cục, registry, kiểu) có ở `@ai/flow-canvas/pure`.
 
 export { FIT, FIT_COMPACT } from "./columns-fit";
-export { type FlowHost, FlowHostCtx, useFlowHost } from "./context";
+export { type EdgeInsertInfo, type FlowHost, FlowHostCtx, useFlowHost } from "./context";
 export { toEdge } from "./edges/toEdge";
 export { FlowCanvas, type FlowCanvasProps } from "./FlowCanvas";
 export { HiddenHandle } from "./nodes/HiddenHandle";

@@ -21,6 +21,7 @@ import { type ColumnsFitOptions, FIT, FIT_COMPACT, useColumnsFit } from "./colum
 import { type FlowHost, FlowHostCtx } from "./context";
 import { BackEdge } from "./edges/BackEdge";
 import { BranchEdge } from "./edges/BranchEdge";
+import { ForwardEdge } from "./edges/ForwardEdge";
 import { type FlowMode, interactionOf } from "./mode";
 import { JoinNode } from "./nodes/JoinNode";
 import { StepHeaderNode } from "./nodes/StepHeaderNode";
@@ -34,7 +35,7 @@ import {
 } from "./theme";
 
 const COLUMNS_NODE_TYPES = { stepHeader: StepHeaderNode, join: JoinNode } satisfies NodeTypes;
-const EDGE_TYPES = { back: BackEdge, branch: BranchEdge };
+const EDGE_TYPES = { back: BackEdge, branch: BranchEdge, forward: ForwardEdge };
 const VERTICAL_EDGE_DEFAULTS = {
   markerEnd: { type: MarkerType.ArrowClosed },
   style: { strokeWidth: 1.5 },
@@ -56,6 +57,8 @@ export type FlowCanvasProps = {
   onAddToStep?: (step: number) => void;
   /** Cột đầy đang bị rê vào khi kéo. */
   blockedStep?: number | null;
+  /** CR-122 · P8: nội dung nút "+" giữa cạnh (chỉ `edit`; cạnh kiểu `forward` và cạnh Đúng/Sai của Nếu). */
+  renderEdgeInsert?: FlowHost["renderEdgeInsert"];
   /** Hiện nút phóng/thu + fit (mặc định có). */
   controls?: boolean;
   // ---- chỉ `columns` ----
@@ -86,8 +89,9 @@ function useHostValue(p: FlowCanvasProps): { host: FlowHost; labels: FlowLabels 
       renderInfo: p.renderInfo,
       onAddToStep: p.onAddToStep,
       blockedStep: p.blockedStep ?? null,
+      renderEdgeInsert: p.renderEdgeInsert,
     }),
-    [theme, labels, p.mode, p.renderInfo, p.onAddToStep, p.blockedStep],
+    [theme, labels, p.mode, p.renderInfo, p.onAddToStep, p.blockedStep, p.renderEdgeInsert],
   );
   return { host, labels };
 }
