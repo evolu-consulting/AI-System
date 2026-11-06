@@ -62,7 +62,11 @@ type FlowDefShape = {
     step?: number;
     next_step?: number;
     outcome?: string;
-    executor?: { kind: string; when?: { conds?: readonly IfCondShape[] } };
+    executor?: {
+      kind: string;
+      when?: { conds?: readonly IfCondShape[] };
+      values?: readonly { from: object }[];
+    };
   }[];
 };
 type IfCondShape = { from: { kind: string; key?: string }; op: string; value: unknown };
@@ -118,6 +122,13 @@ function ifFactIssues(
 ) {
   const types = new Map(ev.facts.map((f) => [f.key, f.type]));
   stages.forEach((s, i) => {
+    // CR-122 E4 · node Ghi giá trị đọc dữ kiện: khoá phải thuộc `AppEventDecl.facts` (kiểu do `as`/field đích kiểm ở luật `set`).
+    if (s.executor?.kind === "set")
+      (s.executor.values ?? []).forEach((v, j) => {
+        const f = v.from as { kind?: unknown; key?: unknown };
+        if (f.kind === "fact" && !types.has(String(f.key ?? "")))
+          add(`stages.${i}.executor.values.${j}.from`, "FLOW_WHEN_INVALID");
+      });
     if (s.executor?.kind !== "if") return;
     (s.executor.when?.conds ?? []).forEach((c, j) => {
       if (c.from.kind !== "fact") return;

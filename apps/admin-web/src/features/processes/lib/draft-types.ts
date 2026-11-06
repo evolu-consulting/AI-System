@@ -1,6 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-d1: kiểu bản nháp của editor quy trình (tách khỏi `def-form` để các module `*-form` không import vòng).
 // Chỉ kiểu — không giá trị; `def-form` re-export cho nơi dùng cũ.
-import type { FormFieldType, ProcessStageDef } from "@ai/contracts/hub-admin";
+import type { FormFieldType, ProcessStageDef, SetExecutor } from "@ai/contracts/hub-admin";
 import type { AutofixDraft } from "./autofix-form";
 import type { InputDraft, StageSourceDraft } from "./sources-form";
 
@@ -31,7 +31,14 @@ export type ArgDraft = {
 /** P-d2 · khối "Gọi tool": `key` rỗng = chưa chọn tool; `args` theo tên tham số. */
 export type ToolDraft = { key: string; args: Record<string, ArgDraft> };
 /** CR-103 · R4 · một dòng gán của node `set`: `source` chọn nguồn; `value` = hằng (chuỗi, ép số khi gửi). */
-export type SetRowDraft = { key: string; source: "input" | "const"; input: string; value: string };
+export type SetRowDraft = {
+  key: string;
+  source: "input" | "const";
+  input: string;
+  value: string;
+  /** CR-122 E4 · dòng nguồn field/dữ kiện (hoặc có `as`) chưa sửa được trên editor ⇒ giữ nguyên khi lưu (không mất dữ liệu). */
+  keep?: SetExecutor["values"][number];
+};
 export type SetDraft = { rows: SetRowDraft[] };
 /** P-d2 · một luật rẽ nhánh; `goto` đếm bước từ 1 như UI (`goto_step = goto - 1`), null = chưa chọn. */
 export type BranchDraft = { field: string; op: string; value: string; goto: number | null };

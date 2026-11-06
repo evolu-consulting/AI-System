@@ -1,6 +1,6 @@
 // CR-103 · R4 · node `set` (họ work): Hub ghi field từ input run / hằng, không AI, không agent. Phần thuần: luật def
 // (`setDefIssues`, SET_INVALID) + ép trường khi lưu (template/mục cố định, không agent-only cấu hình).
-import { NODE_FAMILY_OF, type ProcessDefInput } from "@ai/contracts/hub-admin";
+import { NODE_FAMILY_OF, type ProcessDefInput, resolveSteps } from "@ai/contracts/hub-admin";
 import { setDefIssues } from "../../domain/set/set.rules";
 import type { DefIssue, DefStage, NodeSpec } from "../types";
 
@@ -16,6 +16,7 @@ function setIssuesOf(d: ProcessDefInput): DefIssue[] {
       fields: s.output.fields,
     })),
     inputs,
+    { steps: resolveSteps(d.stages) }, // CR-122 E4 · nguồn field phải là bước trước
   );
 }
 

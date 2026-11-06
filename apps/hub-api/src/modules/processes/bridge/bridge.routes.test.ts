@@ -120,7 +120,9 @@ describe("CR-122 N2 · gợi ý cầu nối", () => {
     expect([c.agentKey, c.feature, c.tenantId]).toEqual(["flow-bridge", "flow.bridge", X]);
     expect(c.signal).toBeInstanceOf(AbortSignal);
     const p = JSON.parse(c.prompt);
-    expect(Object.keys(p).sort()).toEqual(["from", "mismatch", "run_inputs", "to"]);
+    // CR-122 E4 · + `facts` (khoá/kiểu dữ kiện) và `from.step` (nguồn field của bước trước) — vẫn chỉ tên/kiểu.
+    expect(Object.keys(p).sort()).toEqual(["facts", "from", "mismatch", "run_inputs", "to"]);
+    expect(p.from.step).toBe(0);
     expect(p.mismatch.missing).toEqual(["contract_id"]);
     expect(p.run_inputs).toEqual([{ key: "contract-id", type: "string" }]);
     expect(c.prompt).not.toContain("DAU"); // không đưa tên/nội dung do người dùng đặt

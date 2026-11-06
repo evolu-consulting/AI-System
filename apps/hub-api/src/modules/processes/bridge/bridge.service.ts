@@ -8,6 +8,7 @@ import {
   flowEdgeIssues,
   flowEdges,
   flowStageOutputs,
+  resolveSteps,
 } from "@ai/contracts/hub-admin";
 import type { AgentCaller } from "../../../lib/ai-client/agent-call";
 import type { AuthUser } from "../../../lib/auth.middleware";
@@ -92,6 +93,7 @@ export class BridgeService {
     const toStage = def.stages[t];
     const prompt = bridgePromptOf({
       fromNode: def.stages[f]?.node ?? null,
+      fromStep: resolveSteps(def.stages)[f], // CR-122 E4 · nguồn field của bước trước
       toNode: toStage?.node ?? null,
       fromOutputs: flowStageOutputs(def, palette)[f] ?? [],
       toInputs: palette.find((n) => n.key === toStage?.node)?.inputs ?? [],

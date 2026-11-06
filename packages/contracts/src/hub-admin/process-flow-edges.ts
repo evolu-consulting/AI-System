@@ -29,6 +29,8 @@ export type EdgeStage = {
     reject_step?: number | null;
     return_step?: number | null;
     branches?: readonly { goto_step: number }[];
+    /** Node `set`: các khoá được ghi. */
+    values?: readonly { key: string }[];
   };
   after: {
     kind?: string;
@@ -104,8 +106,13 @@ function ownOutputs(s: EdgeStage, node: EdgePaletteNode | undefined): AppNodeIo[
   const out: AppNodeIo[] = [...(node?.outputs ?? [])];
   const have = new Set(out.map((o) => o.key));
   for (const f of s.output?.fields ?? [])
-    if (!have.has(f.key) && FACT_TYPES.has(f.type))
+    if (!have.has(f.key) && FACT_TYPES.has(f.type) && have.add(f.key))
       out.push({ key: f.key, type: f.type as AppFactType, required: false });
+  // CR-122 E4 · node Ghi giá trị: mọi khoá đã ghi là đầu ra (kể cả chưa khai `output.fields` trong bản nháp ⇒ kiểu `string`).
+  if (s.executor.kind === "set")
+    for (const v of s.executor.values ?? [])
+      if (!have.has(v.key) && have.add(v.key))
+        out.push({ key: v.key, type: "string", required: false });
   return out;
 }
 

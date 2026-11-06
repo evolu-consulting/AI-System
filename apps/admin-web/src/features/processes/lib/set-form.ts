@@ -32,11 +32,14 @@ export function normalizeSet(s: StageDraft): StageDraft {
 
 export function setFromDef(ex: SetExecutor): SetDraft {
   return {
-    rows: ex.values.map((v) =>
-      "input" in v.from
+    rows: ex.values.map((v): SetRowDraft => {
+      // CR-122 E4 · nguồn field/dữ kiện hoặc có `as`: editor chưa sửa được ⇒ giữ nguyên dòng (U2 làm khối sửa).
+      if ("kind" in v.from || v.as)
+        return { key: v.key, source: "const", input: "", value: "", keep: v };
+      return "input" in v.from
         ? { key: v.key, source: "input", input: v.from.input, value: "" }
-        : { key: v.key, source: "const", input: "", value: String(v.from.const) },
-    ),
+        : { key: v.key, source: "const", input: "", value: String(v.from.const) };
+    }),
   };
 }
 
@@ -49,7 +52,8 @@ export function setToDef(d: SetDraft): SetExecutor {
   const values: SetExecutor["values"] = [];
   for (const r of d.rows) {
     if (r.key === "") continue;
-    if (r.source === "input") {
+    if (r.keep) values.push({ ...r.keep, key: r.key });
+    else if (r.source === "input") {
       if (r.input !== "") values.push({ key: r.key, from: { input: r.input } });
     } else values.push({ key: r.key, from: { const: constOf(r.value) } });
   }

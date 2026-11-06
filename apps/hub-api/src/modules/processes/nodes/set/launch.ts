@@ -2,11 +2,12 @@
 // (`setFields`) → ghi output `.md` (khối ```fields) → đi đường hậu-output như stage agent/tool (`transition` + `effects`):
 // `after: auto` ⇒ done + join bước (kick bước kế); `after: review` ⇒ waiting_review + task duyệt (cổng, nhắc, chuyển cấp).
 import { sql } from "drizzle-orm";
+import { auditSetBad, setSourcesOf } from "../../adapters/runs/set-sources.repo";
 import { stateOf } from "../../adapters/tools/tool-stage.repo";
 import * as core from "../../core/core.repo";
 import { processUpdated } from "../../core/events";
 import { transition } from "../../domain/runs/run-state.rules";
-import { setFields, setInputsOf, setOutputMd } from "../../domain/set/set.rules";
+import { setFieldsOf, setInputsOf, setOutputMd } from "../../domain/set/set.rules";
 import type { KickResult, LaunchCtx, LauncherDeps, NodeLauncher } from "../../runs/launch-common";
 import { stageRowById } from "../../runs/step-persist";
 import { effects, headOf, type SnapStage } from "../../runs/team-runner";
@@ -26,7 +27,15 @@ async function launchSet(d: LauncherDeps, tx: Tx, c: LaunchCtx): Promise<KickRes
   const def = c.def as unknown as SnapStage;
   const declared = (c.def as { output: { fields?: { key: string; type: string }[] } }).output
     .fields;
-  const fields = setFields(ex, setInputsOf(c.head.inputs), declared ?? []);
+  // CR-122 E4 · nguồn field bước trước / dữ kiện bản ghi (0 câu thêm khi chỉ input/hằng); sai dạng ⇒ null + audit.
+  const src = await setSourcesOf(tx, {
+    tenantId,
+    runId: c.runId,
+    exec: ex,
+    inputs: setInputsOf(c.head.inputs),
+  });
+  const { fields, bad } = setFieldsOf(ex, src, declared ?? []);
+  await auditSetBad(tx, { tenantId, runId: c.runId, stageIdx: c.idx, keys: bad });
   const ev = { kind: "stage_output", templateOk: true } as const;
   const t = transition(stateOf(head, stage, def), ev);
   if (!t.ok) return { kind: "skip" };

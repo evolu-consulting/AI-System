@@ -10,6 +10,8 @@ import {
   insertBridgeStage,
   type ProcessDefInput,
   ProcessStageDefSchema,
+  resolveSteps,
+  SET_AS,
   SET_VALUES_MAX,
   SetFromSchema,
   STAGE_TIMEOUT_S,
@@ -30,6 +32,7 @@ export const BridgeAiReplySchema = z.discriminatedUnion("ok", [
           key: z.string().regex(FIELD_KEY_RE),
           type: z.enum(["number", "string", "date"]),
           from: SetFromSchema,
+          as: z.enum(SET_AS).optional(),
         }),
       )
       .min(1)
@@ -102,10 +105,14 @@ export function bridgePromptOf(c: {
   toInputs: readonly Io[];
   issue: FlowEdgeIssue;
   runInputs: readonly { key: string; type: SetFieldType }[];
+  /** CR-122 E4 · bước của stage trước (nguồn `{kind:"field", step, key}`) + dữ kiện sự kiện (nguồn `{kind:"fact", key}`). */
+  fromStep?: number;
+  facts?: readonly { key: string; type: string }[];
 }): string {
   const io = (x: Io) => ({ key: x.key, type: x.type, ...(x.required ? { required: true } : {}) });
   return JSON.stringify({
-    from: { node: c.fromNode, outputs: c.fromOutputs.map(io) },
+    from: { node: c.fromNode, step: c.fromStep ?? null, outputs: c.fromOutputs.map(io) },
+    facts: (c.facts ?? []).map((f) => ({ key: f.key, type: f.type })),
     to: { node: c.toNode, inputs: c.toInputs.map(io) },
     mismatch: { missing: c.issue.missing, type: c.issue.typeMismatch },
     run_inputs: c.runInputs,
@@ -136,13 +143,17 @@ export function bridgeStageOf(key: string, values: Extract<BridgeAiReply, { ok: 
     key,
     name: "Ghi giá trị cầu nối",
     step: 0,
-    executor: { kind: "set" as const, values: values.map((v) => ({ key: v.key, from: v.from })) },
+    executor: {
+      kind: "set" as const,
+      values: values.map((v) => ({ key: v.key, from: v.from, ...(v.as ? { as: v.as } : {}) })),
+    },
     instruction: "",
     output: {
       filename: `${key}.md`,
       template: "x",
       required_sections: ["x"],
-      fields: values.map((v) => ({ key: v.key, type: v.type, required: true })),
+      // Nguồn field/fact có thể trống/sai dạng lúc chạy (ghi null) ⇒ không bắt buộc, tránh vỡ mẫu output.
+      fields: values.map((v) => ({ key: v.key, type: v.type, required: !("kind" in v.from) })),
     },
     after: { kind: "auto" as const, branch: [] },
     real_action: false,
@@ -168,18 +179,26 @@ export function verifyBridge(
     from: string;
     to: string;
     palette: readonly EdgePaletteNode[];
+    /** CR-122 E4 · dữ kiện của sự kiện mở flow (`AppEventDecl.facts`); vắng ⇒ AI không được dùng nguồn `fact`. */
+    facts?: readonly { key: string; type: string }[];
   },
 ): BridgeSuggestResponse {
   const key = freeBridgeKey(c.def.stages);
   const stage = bridgeStageOf(key, r.values);
   if (!stage) return BRIDGE_NO.invalid();
-  const own = setDefIssues(
-    [{ executor: stage.executor, fields: stage.output.fields }],
-    c.def.inputs,
-  );
-  if (own.length > 0) return BRIDGE_NO.invalid();
   const ins = insertBridgeStage(c.def.stages, c.from, c.to, stage as unknown as Stage);
   if (!ins) return BRIDGE_NO.invalid();
+  // CR-122 E4 · kiểm luật `set` trên def SAU khi chèn (nguồn field phải là bước trước có khoá đó); dữ kiện phải thuộc sự kiện của flow.
+  const at = ins.stages.findIndex((s) => s.key === key);
+  const own = setDefIssues(
+    ins.stages.map((s) => ({ executor: s.executor, fields: s.output.fields })),
+    c.def.inputs,
+    { steps: resolveSteps(ins.stages) },
+  ).filter((x) => x.path.startsWith(`stages.${at}.`));
+  if (own.length > 0) return BRIDGE_NO.invalid();
+  const facts = new Set((c.facts ?? []).map((f) => f.key));
+  if (r.values.some((v) => "kind" in v.from && v.from.kind === "fact" && !facts.has(v.from.key)))
+    return BRIDGE_NO.invalid();
   const left = flowEdgeIssues({ stages: ins.stages }, c.palette).filter(
     (x) => x.from === key || x.to === key,
   );
