@@ -115,8 +115,13 @@ test("3 · node Ký số trên bản công ty: panel cấu hình riêng hiện t
 }) => {
   await openCopy(page);
   await addEsign(page);
-  // thêm node xong, panel chi tiết của node mới tự mở (che node) ⇒ không bấm lại vào node
-  await expect(page.getByRole("complementary", { name: "Chi tiết giai đoạn" })).toBeVisible();
+  // thêm Ký số = 2 node (gửi + chờ sự kiện); panel tự mở ở node chờ (che canvas) ⇒ đóng, rồi mở node GỬI (đầu tiên, không phải "Ký số 2")
+  await page.getByRole("button", { name: "Đóng ngăn chi tiết" }).click();
+  await page
+    .getByRole("application", CANVAS)
+    .getByRole("button", { name: /^Ký số(?! \d)/ })
+    .first()
+    .click();
   // stack hành trình KHÔNG có nhà cung cấp ký số (ESIGN_PROVIDERS) ⇒ panel nói rõ lý do + cách sửa, không ô trống bí ẩn
   await expect(page.getByTestId("esign-disabled")).toContainText("Công ty chưa bật ký số");
 });
