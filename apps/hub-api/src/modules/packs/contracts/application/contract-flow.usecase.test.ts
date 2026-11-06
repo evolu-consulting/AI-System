@@ -90,7 +90,7 @@ describe("A1 · emitGuarded (savepoint khi cờ tắt)", () => {
 });
 
 describe("A1 · gửi duyệt (startApproval level1)", () => {
-  it("cờ BẬT: ghi contract.submitted sau open, cùng tx, theo lượt, không gọi engine cũ", async () => {
+  it("cờ BẬT: lượt level1 chưa phát (phát lúc Xác nhận và lưu), không gọi engine cũ", async () => {
     const h = harness({ on: true, departments: ["pb-kd"] });
     const out = await startApproval({
       uow: h.uow,
@@ -100,15 +100,9 @@ describe("A1 · gửi duyệt (startApproval level1)", () => {
       groups: {},
     } as never)(who, CID, "level1");
     expect(out).toBe("ok");
-    expect(h.order).toEqual(["open", "emit"]);
-    expect(h.emitted).toHaveLength(1);
-    expect(h.emitted[0]).toMatchObject({
-      event: "contract.submitted",
-      cid: CID,
-      actor: who.userId,
-      departments: ["pb-kd"],
-    });
-    expect(h.emitted[0]?.key).toMatch(/^[0-9a-f-]{36}$/); // id lượt duyệt
+    // P11d · lượt vào level1 = nháp chờ rà soát: KHÔNG phát (phát lúc "Xác nhận và lưu"), không mở run cũ
+    expect(h.order).toEqual(["open"]);
+    expect(h.emitted).toHaveLength(0);
     expect(h.started).toEqual([]);
   });
   it("cờ TẮT: vẫn ghi sự kiện (bóng) và mở run theo đường cũ", async () => {
@@ -150,7 +144,7 @@ describe("A1 · gửi duyệt (startApproval level1)", () => {
 
 describe("A1 · sau AI đọc (handleExtractJob → level1)", () => {
   const job = { ...who, contractId: CID, approvalId: "44444444-4444-4444-8444-444444444444" };
-  it("cờ BẬT: contract.submitted cùng tx afterExtraction, event_id theo approvalId, không mở run cũ", async () => {
+  it("cờ BẬT: AI đọc xong chưa phát (nháp chờ rà soát), không mở run cũ", async () => {
     const h = harness({ on: true, departments: null });
     await handleExtractJob({
       run: async () => "ok",
@@ -158,12 +152,9 @@ describe("A1 · sau AI đọc (handleExtractJob → level1)", () => {
       flow: h.gate,
       engine: h.engine,
     } as never)(job);
-    expect(h.order).toEqual(["after", "emit"]);
-    expect(h.emitted[0]).toMatchObject({
-      event: "contract.submitted",
-      cid: CID,
-      key: job.approvalId,
-    });
+    // P11d · AI đọc xong ⇒ nháp chờ rà soát: KHÔNG phát `contract.submitted`, không mở run cũ
+    expect(h.order).toEqual(["after"]);
+    expect(h.emitted).toHaveLength(0);
     expect(h.started).toEqual([]);
   });
   it("cờ TẮT: giữ đường cũ, vẫn ghi sự kiện bóng", async () => {

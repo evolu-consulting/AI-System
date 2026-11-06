@@ -22,8 +22,8 @@ import {
   emitFlow,
   FLOW_OFF,
   type FlowPrep,
-  requireFlow,
 } from "./contract-flow.ports";
+import { submitOrNull } from "./flow-submit.usecase";
 
 /** Group duyệt: id theo khoá của tenant (thiếu ⇒ vắng) + Group của user (cache cấu hình, 0 SQL khi nóng). */
 export type ApprovalGroups = {
@@ -139,7 +139,8 @@ const viewOf = (st: ApprovalState, actor: ApprovalActor) =>
 export const flowPrep = (g: ContractFlowGate | undefined, who: PackWho): Promise<FlowPrep> =>
   g ? g.prepare(who.tenantId, who.userId) : Promise.resolve(FLOW_OFF);
 
-/** `contract.submitted` CÙNG tx với lúc lượt vào `level1`; `event_id` theo LƯỢT (gửi lại = lượt mới = sự kiện mới). */
+/** Lượt vào `level1` (AI đọc xong / nhập tay): cờ TẮT ⇒ ghi bóng `contract.submitted` như cũ. P11d · cờ BẬT ⇒ KHÔNG phát: HĐ là nháp chờ
+ *  rà soát, `contract.submitted` chỉ phát lúc người dùng bấm "Xác nhận và lưu" (`submitToFlow`). */
 export const emitSubmitted = async (
   r: ContractFlowTxRepos,
   contractId: string,
@@ -147,9 +148,7 @@ export const emitSubmitted = async (
   actor: string,
   prep: FlowPrep,
 ): Promise<void> => {
-  await emitFlow(r, prep, EV_SUBMITTED, [contractId, approvalId], actor);
-  // CR-122 · P11 · cờ bật ⇒ CÙNG tx: lượt chờ flow (`mode engine` + FLOW_STARTING) — máy cũ không còn duyệt/khoá HĐ được.
-  if (prep.on) await requireFlow(r).holdForFlow?.(contractId, approvalId);
+  if (!prep.on) await emitFlow(r, prep, EV_SUBMITTED, [contractId, approvalId], actor);
 };
 
 const NOBODY = { userId: "", inLevel1: false, inLevel2: false };
@@ -351,6 +350,8 @@ export function actApproval(d: ApprovalDeps) {
     const s = await d.uow.tenant(who, (r) => r.approval.settings());
     const actor = await actorOf(d, who, s);
     const prep = b.action === "approve" ? await flowPrep(d.flow, who) : FLOW_OFF;
+    const sub = await submitOrNull(d.uow, get, { who, id, b, actor, prep }); // P11d · Xác nhận ⇒ flow
+    if (sub) return sub;
     const inTx = decideInTx(d, who, id, b, prep);
     const out = await d.uow.tenant(who, (r) => inTx(r, actor));
     if (out === "not_found" || out === "unavailable") return out;

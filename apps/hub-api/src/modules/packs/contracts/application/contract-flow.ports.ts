@@ -22,7 +22,12 @@ export type ContractFlowRepo = {
    * CR-122 · P11 · cờ BẬT, lượt vừa vào `level1` + đã ghi `contract.submitted`: lượt chuyển `mode = 'engine'`, chưa có run, lý do
    * `FLOW_STARTING` ⇒ máy cũ không còn quyết / khoá HĐ được; bộ điều phối gắn run (`attachFlowRun`). Có điều kiện, chạy lại vô hại.
    */
-  holdForFlow?(contractId: string, approvalId: string): Promise<boolean>;
+  holdForFlow?(
+    contractId: string,
+    approvalId: string,
+    /** P11d · SP chọn lúc "Xác nhận và lưu" ⇒ `pending_links` (gắn khi flow Đã duyệt). */
+    links?: readonly unknown[] | null,
+  ): Promise<boolean>;
   /** CR-122 · P11b · Mở lại lượt chờ flow chưa có run ⇒ về FLOW_STARTING (CAS); sau đó phát lại `contract.submitted` (event_id mới). */
   rearmFlow?(contractId: string, approvalId: string): Promise<boolean>;
   /** Chạy `fn` (với repo trên tx CON) trong SAVEPOINT: lỗi ⇒ rollback về savepoint + log, tx bản ghi chạy tiếp (chỉ khi cờ TẮT = bóng). */

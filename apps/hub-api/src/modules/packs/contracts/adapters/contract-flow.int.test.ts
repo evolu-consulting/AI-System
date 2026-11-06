@@ -9,7 +9,7 @@ import { contracts, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { createPackUow } from "../../kit/adapters/pack-uow";
-import { startApproval } from "../application/approval.usecase";
+import { actApproval, startApproval } from "../application/approval.usecase";
 import type { ContractFlowGate } from "../application/contract-flow.ports";
 import { contractsFactsReader, contractsOutcomeHandler } from "../flow-events.mount";
 import { approvalRepo } from "./approval.repo";
@@ -88,17 +88,23 @@ const apply = (
   );
 
 describe("A1 · gửi duyệt ghi sự kiện cùng tx", () => {
-  it("startApproval(level1) + cờ bật ⇒ 1 dòng contract.submitted (facts manifest, theo lượt); gửi lại cùng lượt không ghi thêm", async () => {
+  it("startApproval(level1) + cờ bật ⇒ chưa phát; Xác nhận và lưu ⇒ 1 dòng contract.submitted (facts manifest, theo lượt); gửi lại cùng lượt không ghi thêm", async () => {
     const id = C[0] as string;
     await o`update contracts.contracts set deal = 'buy', direction = 'purchase',
       fields = jsonb_build_object('total_value', jsonb_build_object('value', 500))  where id = ${id}`;
-    const start = startApproval({
+    const ad = {
       uow: uow(),
       flow: gateOn,
       jobs: { enqueue: async () => {} },
-      groups: {},
-    } as never);
-    expect(await start({ tenantId: T1, userId: A }, id, "level1")).toBe("ok");
+      groups: {
+        idsOf: async () => new Map(),
+        userGroups: async () => new Set(),
+        actionsOf: async () => new Set(["write"]),
+      },
+    } as never;
+    expect(await startApproval(ad)({ tenantId: T1, userId: A }, id, "level1")).toBe("ok");
+    expect(await events(T1, `contract.submitted:${id}:%`)).toHaveLength(0); // P11d · nháp chờ rà soát
+    await actApproval(ad)({ tenantId: T1, userId: A }, id, { action: "approve" });
     const rows = await events(T1, `contract.submitted:${id}:%`);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ event: "contract.submitted", ref: id });

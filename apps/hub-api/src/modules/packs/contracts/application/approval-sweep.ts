@@ -4,14 +4,9 @@
 // M3c (review B #7): job còn xếp hàng không bị STALE 15'; hạn của job đang chạy ≥ `claimIdleMs` + 5' (`staleMinutesFor`).
 import type { PackSystemUow, PackWho } from "../../kit/public";
 import { reconcileOf } from "../domain/approval-engine.rules";
-import { EV_SUBMITTED } from "../domain/contract-flow-events.rules";
 import type { ApprovalRepo, ReconcileItem, SweepCounts, SweepRepo } from "./approval.ports";
 import type { ApprovalEnginePort } from "./approval-engine.ports";
-import {
-  type ContractFlowGate,
-  type ContractFlowTxRepos,
-  requireFlow,
-} from "./contract-flow.ports";
+import type { ContractFlowGate, ContractFlowTxRepos } from "./contract-flow.ports";
 
 export type SweepDeps = {
   uow: PackSystemUow<
@@ -131,19 +126,8 @@ async function openHealed(d: SweepDeps, t: string, healed: SweepCounts["healedLe
   // Giới hạn số HĐ mở run mỗi tenant mỗi lượt (phần dư: lượt quét sau không còn `extracting` ⇒ do owner mở lại / đường nhập tay).
   for (const h of (healed ?? []).slice(0, HEAL_OPEN_MAX)) {
     const prep = d.flow ? await d.flow.prepare(t, h.userId) : null;
-    if (prep?.on) {
-      await d.uow.system(t, async (r) => {
-        const run = await r.approval?.runOf(h.contractId);
-        if (!run?.runId) return;
-        const repo = requireFlow(r);
-        await repo.emitContract(EV_SUBMITTED, h.contractId, run.runId, {
-          actor: h.userId,
-          departments: prep.departments,
-        });
-        await repo.holdForFlow?.(h.contractId, run.runId); // CR-122 · P11 · như `emitSubmitted`
-      });
-      continue;
-    }
+    // CR-122 · P11d · cờ bật: heal về `level1` = nháp chờ rà soát; `contract.submitted` chỉ phát khi người dùng "Xác nhận và lưu".
+    if (prep?.on) continue;
     await d.engine?.start({ tenantId: t, userId: h.userId }, h.contractId);
   }
 }

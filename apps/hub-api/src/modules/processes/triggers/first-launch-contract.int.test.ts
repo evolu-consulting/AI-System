@@ -138,6 +138,11 @@ const approvalOf = async (cid: string) =>
 const contractOf = async (cid: string) =>
   (await o<{ status: string }[]>`select status from contracts.contracts where id = ${cid}`)[0]
     ?.status;
+const eventsOf = async (cid: string) =>
+  (
+    await o<{ n: number }[]>`select count(*)::int as n from hub.flow_events
+      where event = 'contract.submitted' and ref = ${cid}`
+  )[0]?.n ?? 0;
 const openTask = async (runId: string) =>
   (
     await o<{ n: number }[]>`select count(*)::int as n from hub.review_tasks t
@@ -150,6 +155,14 @@ describe("CR-122 P11 · #4 HĐ gửi duyệt khi công ty bật flow theo sự k
     const id = C[0] as string;
     const who = { tenantId: T, userId: A };
     expect(await startApproval(ad(true))(who, id, "level1")).toBe("ok");
+    // P11d · AI đọc xong / nhập tay ⇒ nháp chờ rà soát: máy cũ, còn nút "Xác nhận và lưu", CHƯA phát sự kiện
+    expect(await approvalOf(id)).toMatchObject({ mode: "machine", run: null, status: "level1" });
+    expect(await eventsOf(id)).toBe(0);
+    expect(await dispatchOnce({ db, launch: flowLaunchOf(deps()) })).toMatchObject({ claimed: 0 });
+    // "Xác nhận và lưu" ⇒ đúng 1 sự kiện + lượt chờ flow, HĐ chưa khoá
+    expect(await actApproval(ad(true))(who, id, { action: "approve" })).not.toHaveProperty("error");
+    expect(await eventsOf(id)).toBe(1);
+    expect(await contractOf(id)).toBe("needs_review");
     expect(await approvalOf(id)).toMatchObject({
       mode: "engine",
       run: null,
@@ -204,6 +217,7 @@ describe("CR-122 P11 · #4 HĐ gửi duyệt khi công ty bật flow theo sự k
     const ac = new AbortController();
     const t0 = performance.now();
     expect(await startApproval(ad(true))({ tenantId: T, userId: A }, id, "level1")).toBe("ok");
+    await actApproval(ad(true))({ tenantId: T, userId: A }, id, { action: "approve" }); // Xác nhận ⇒ sự kiện
     startFlowDispatcher({ db, launch: flowLaunchOf(deps()) }, { signal: ac.signal, idleMs: 2_000 });
     let ms = -1;
     try {

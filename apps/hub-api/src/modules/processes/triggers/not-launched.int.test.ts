@@ -9,7 +9,7 @@ import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../lib/db";
 import { approvalRepo } from "../../packs/contracts/adapters/approval.repo";
 import { contractFlowRepo } from "../../packs/contracts/adapters/contract-flow.repo";
-import { startApproval } from "../../packs/contracts/application/approval.usecase";
+import { actApproval, startApproval } from "../../packs/contracts/application/approval.usecase";
 import { withFlowResend } from "../../packs/contracts/application/flow-resend.usecase";
 import { contractsOutcomeHandler } from "../../packs/contracts/flow-events.mount";
 import { createPackUow } from "../../packs/kit/adapters/pack-uow";
@@ -124,7 +124,23 @@ const uow = () =>
   }));
 const gateOn = { prepare: async () => ({ on: true, departments: null }) };
 const ad = () =>
-  ({ uow: uow(), flow: gateOn, jobs: { enqueue: async () => {} }, groups: {} }) as never;
+  ({
+    uow: uow(),
+    flow: gateOn,
+    jobs: { enqueue: async () => {} },
+    groups: {
+      idsOf: async () => new Map(),
+      userGroups: async () => new Set(),
+      actionsOf: async () => new Set(["read", "write", "admin"]),
+    },
+  }) as never;
+/** P11d · gửi duyệt như người dùng: mở lượt `level1` (nháp chờ rà soát) rồi "Xác nhận và lưu" ⇒ `contract.submitted`. */
+async function submitHd(w: { tenantId: string; userId: string }, id: string, _initial: "level1") {
+  const s = await startApproval(ad())(w, id, "level1");
+  if (s !== "ok") return s;
+  const out = await actApproval(ad())(w, id, { action: "approve" });
+  return out && typeof out === "object" && "error" in out ? out.error : "ok";
+}
 const dispatch = () =>
   dispatchOnce({ db, launch: flowLaunchOf(deps()), now: () => new Date(Date.now() + 1000) });
 const approvalOf = async (cid: string) =>
@@ -137,7 +153,7 @@ const approvalOf = async (cid: string) =>
 describe("CR-122 P11b · lượt chờ flow không mở được run", () => {
   it("0 flow khớp ⇒ lý do FLOW_NOT_ASSIGNED, gán flow + Mở lại (event_id mới) ⇒ run gắn vào lượt", async () => {
     const who = { tenantId: N, userId: UN };
-    expect(await startApproval(ad())(who, CN, "level1")).toBe("ok");
+    expect(await submitHd(who, CN, "level1")).toBe("ok");
     expect(await dispatch()).toMatchObject({ claimed: 1, launched: 0 });
     expect(await approvalOf(CN)).toMatchObject({
       run: null,
@@ -158,7 +174,7 @@ describe("CR-122 P11b · lượt chờ flow không mở được run", () => {
   });
 
   it("flow cần nhóm công ty chưa có ⇒ lý do FLOW_GROUP_MISSING:<mã>", async () => {
-    expect(await startApproval(ad())({ tenantId: G, userId: UG }, CG, "level1")).toBe("ok");
+    expect(await submitHd({ tenantId: G, userId: UG }, CG, "level1")).toBe("ok");
     expect(await dispatch()).toMatchObject({ claimed: 1, launched: 0 });
     expect(await approvalOf(CG)).toMatchObject({
       run: null,
@@ -184,7 +200,7 @@ describe("CR-122 P11c · Mở lại an toàn + hook không chặn lô", () => {
 
   it("Mở lại 2 lần song song ⇒ một 'ok' + một 409 (flow_starting), đúng 1 run", async () => {
     const id = CX[0] as string;
-    expect(await startApproval(ad())(who(), id, "level1")).toBe("ok");
+    expect(await submitHd(who(), id, "level1")).toBe("ok");
     await o`update hub.flow_events set processed_at = now() where ref = ${id}`; // sự kiện đầu đã chốt (không mở được)
     await stuck(id);
     const outs = await Promise.all([resend()(who(), id), resend()(who(), id)]);
@@ -195,7 +211,7 @@ describe("CR-122 P11c · Mở lại an toàn + hook không chặn lô", () => {
 
   it("Mở lại khi sự kiện đầu chưa xử lý xong ⇒ 409 (flow_starting), không phát thêm sự kiện", async () => {
     const id = CX[1] as string;
-    expect(await startApproval(ad())(who(), id, "level1")).toBe("ok");
+    expect(await submitHd(who(), id, "level1")).toBe("ok");
     expect(await resend()(who(), id)).toBe("flow_starting");
     const [ev] = await o<
       { n: number }[]
@@ -236,8 +252,8 @@ describe("CR-122 P11c · Mở lại an toàn + hook không chặn lô", () => {
       },
     });
     try {
-      expect(await startApproval(ad())(who(), bad, "level1")).toBe("ok");
-      expect(await startApproval(ad())(who(), good, "level1")).toBe("ok");
+      expect(await submitHd(who(), bad, "level1")).toBe("ok");
+      expect(await submitHd(who(), good, "level1")).toBe("ok");
       expect(await dispatch()).toMatchObject({ claimed: 2 });
       const done = await o<{ n: number }[]>`select count(*)::int as n from hub.flow_events
         where ref = any(${o.array([bad, good])}::text[]) and processed_at is not null`;

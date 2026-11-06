@@ -64,11 +64,13 @@ export function contractFlowRepo(tx: Tx, tid: string): ContractFlowRepo {
         from contracts.contracts c where c.id = ${cid}::uuid and c.tenant_id = ${tid}::uuid`);
       return rows[0]?.id != null;
     },
-    async holdForFlow(cid, aid) {
+    async holdForFlow(cid, aid, links) {
+      const pl = links && links.length > 0 ? JSON.stringify(links) : null;
       const rows = await tx.execute<{
         id: string;
       }>(sql`update contracts.approvals x set mode = 'engine',
-          engine_run_id = null, feedback = ${FLOW_STARTING}, updated_at = now()
+          engine_run_id = null, feedback = ${FLOW_STARTING}, updated_at = now(),
+          pending_links = coalesce(${pl}::jsonb, x.pending_links)
         where x.id = ${aid}::uuid and x.tenant_id = ${tid}::uuid and x.contract_id = ${cid}::uuid
           and x.status = 'level1' and x.mode = 'machine' and x.engine_run_id is null returning x.id`);
       return rows.length > 0;
