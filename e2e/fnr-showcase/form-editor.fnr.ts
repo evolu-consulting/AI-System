@@ -196,7 +196,8 @@ test("CR-118 · editor form · Danh sách: sửa trường của bước form c�
   await adminLogin(p);
   await p.goto(`${ADMIN_URL}/processes/${id}`);
   await expect(canvas(p)).toBeVisible();
-  await p.getByRole("tab", { name: "Danh sách" }).click();
+  // CR-121 F9: công tắc chế độ dùng chung `ViewModeToggle` (nút "Danh sách bước"), không còn tab
+  await p.getByTestId("flows-view-list").click();
   await p.getByRole("button", { name: /^Giai đoạn 2: Điền form/ }).click();
   const box = p.getByTestId("stage-form-fields");
   await expect(box.getByLabel("Nhãn trường 1")).toHaveValue("Họ tên");
