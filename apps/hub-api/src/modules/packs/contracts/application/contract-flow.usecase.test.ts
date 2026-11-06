@@ -1,4 +1,4 @@
-﻿// CR-122 · A1 · FLOW2-FR-18/19 · cờ flow: bật ⇒ `contract.submitted` ghi CÙNG tx và KHÔNG mở run theo đường khe cũ; tắt ⇒ giữ nguyên.
+// CR-122 · A1 · FLOW2-FR-18/19 · cờ flow: bật ⇒ `contract.submitted` ghi CÙNG tx và KHÔNG mở run theo đường khe cũ; tắt ⇒ giữ nguyên.
 import { describe, expect, it } from "bun:test";
 import { CONTRACTS_MANIFEST } from "@ai/contracts/app-manifest";
 import { CONTRACT_EVENTS, contractEventId, FACT_KEYS } from "../domain/contract-flow-events.rules";

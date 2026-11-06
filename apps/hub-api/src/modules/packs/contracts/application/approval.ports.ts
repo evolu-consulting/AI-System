@@ -1,4 +1,4 @@
-﻿// HD-FR-31…37 · M3-decouple: cổng của flow duyệt HĐ trong gói (lớp 2 — chỉ kiểu). Repo chạy trong tx `PackUow` (role
+// HD-FR-31…37 · M3-decouple: cổng của flow duyệt HĐ trong gói (lớp 2 — chỉ kiểu). Repo chạy trong tx `PackUow` (role
 // `contracts_rw`, RLS tenant); mỗi hàm MỘT câu. Lượt duyệt = hàng `contracts.approvals`; HĐ trỏ lượt hiện tại qua `run_id`.
 import type { KitTxRepos, PackUow } from "../../kit/public";
 import type { ApprovalSettings } from "../domain/approval-def.rules";

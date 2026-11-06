@@ -1,4 +1,4 @@
-﻿---
+---
 id: cr122-a1-contracts
 lát: cr122-a1-contracts
 cr: CR-122

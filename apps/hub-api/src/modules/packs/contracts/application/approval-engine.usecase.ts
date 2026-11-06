@@ -1,4 +1,4 @@
-﻿// contract-flow S3a · duyệt HĐ chạy trên engine quy trình (cr121-a2: mọi lượt mới, không cờ/env). Lớp 2: chỉ cổng.
+// contract-flow S3a · duyệt HĐ chạy trên engine quy trình (cr121-a2: mọi lượt mới, không cờ/env). Lớp 2: chỉ cổng.
 // - `startEngineApproval`: chỗ mở duyệt cấp 1 (sau AI đọc / nhập tay) ⇒ đồng bộ def theo version mẫu (`ensureDef`) → mở run có
 //   `ref {pack:'contracts', record_id}` (COMMIT, chưa kick) → tx gói gắn run vào lượt (`mode='engine'`, `engine_run_id`,
 //   `flow_version`, `flow_steps`) → kick; gắn hụt ⇒ huỷ bù. CR-107 · mẫu không mở được (thiếu Group / hỏng / không có) ⇒ lượt KẸT

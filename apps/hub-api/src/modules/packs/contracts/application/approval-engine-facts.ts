@@ -1,4 +1,4 @@
-﻿// CR-121 D-1 · dữ kiện HIỆN TẠI của HĐ cho rẽ/kiểm lại bước (tách khỏi `approval-engine.usecase.ts`, trần 400 dòng).
+// CR-121 D-1 · dữ kiện HIỆN TẠI của HĐ cho rẽ/kiểm lại bước (tách khỏi `approval-engine.usecase.ts`, trần 400 dòng).
 import type { PackWho } from "../../kit/public";
 import { factsOf } from "../domain/approval-engine.rules";
 import type { FlowStep } from "../domain/approval-flow.types";

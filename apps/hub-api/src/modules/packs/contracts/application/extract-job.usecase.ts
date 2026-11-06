@@ -1,4 +1,4 @@
-﻿// HD-FR-24 · HD-FR-32 · #218 · M3-decouple: xử lý MỘT job AI đọc HĐ lấy từ hàng đợi bền — lượt trích HD2 (lời nhắc có rào, parse
+// HD-FR-24 · HD-FR-32 · #218 · M3-decouple: xử lý MỘT job AI đọc HĐ lấy từ hàng đợi bền — lượt trích HD2 (lời nhắc có rào, parse
 // strict, kiểm trích dẫn giữ nguyên) với agent = lời gọi model trực tiếp qua AI client chung; xong ⇒ lượt duyệt `extracting`
 // chuyển `level1` (HĐ needs_review) hoặc `failed`. Lỗi bất kỳ ⇒ log (không lộ nội dung), không ném (job được ACK).
 // M3c (review B #7): trước lượt đọc đánh dấu lượt "đã bắt đầu" (hết xếp hàng) ⇒ STALE tính từ lúc chạy; lỗi đánh dấu chỉ log.

@@ -1,4 +1,4 @@
-﻿// HD-FR-35 · #218 · D3-09 · M3-decouple: vòng quét theo tập của flow duyệt — mỗi tenant bật gói MỘT câu (đếm HĐ trong flow +
+// HD-FR-35 · #218 · D3-09 · M3-decouple: vòng quét theo tập của flow duyệt — mỗi tenant bật gói MỘT câu (đếm HĐ trong flow +
 // đóng HĐ `extracting` quá hạn ⇒ `extract_failed STALE`, lượt duyệt `failed`), tối đa 4 tenant song song (giữ pool). Ghi có điều
 // kiện ⇒ nhiều instance chạy cùng lúc vẫn đúng. Ngủ CHỈ giữa các lượt (Luật 4c). Lớp 2.
 // M3c (review B #7): job còn xếp hàng không bị STALE 15'; hạn của job đang chạy ≥ `claimIdleMs` + 5' (`staleMinutesFor`).

@@ -1,4 +1,4 @@
-﻿// contract-flow S2/S3 · nối duyệt HĐ trên engine + mẫu luồng (tách khỏi `extraction.mount.ts` giữ trần 400 dòng).
+// contract-flow S2/S3 · nối duyệt HĐ trên engine + mẫu luồng (tách khỏi `extraction.mount.ts` giữ trần 400 dòng).
 import { logger } from "../../../lib/logger";
 import type { PackUow, PackWho, SlotSpec } from "../kit/public";
 import { checkPackAccess, type PackAccessView, packAccessInput, slotRegistry } from "../kit/public";

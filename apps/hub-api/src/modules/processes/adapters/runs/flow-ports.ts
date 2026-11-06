@@ -1,4 +1,4 @@
-﻿// CR-122 · E2 · FLOW2-FR-12/15/21 · flow-model.md mục C–D: cổng app cho engine — `FactsReader` (node Nếu đọc dữ kiện HIỆN TẠI) +
+// CR-122 · E2 · FLOW2-FR-12/15/21 · flow-model.md mục C–D: cổng app cho engine — `FactsReader` (node Nếu đọc dữ kiện HIỆN TẠI) +
 // `OutcomeHandler` (node Kết thúc, gọi TRONG tx settle). Gói đăng ký lúc mount; sổ nằm ở kit (`flowPortRegistry`, A1: gói contracts
 // không import được `processes`), tra theo `(pack, event)`. Một gói/sự kiện chỉ một reader + một handler (đăng ký lại ⇒ thay).
 import type { Tx } from "@ai/db";

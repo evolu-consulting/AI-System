@@ -1,4 +1,4 @@
-﻿// HD-FR-08 · D-06 · D-16 · D-17 · HD1 plan §4–§5: nối tải lên hợp đồng (lớp 4 của gói): `PackUow` (role `contracts_rw`) + bộ
+// HD-FR-08 · D-06 · D-16 · D-17 · HD1 plan §4–§5: nối tải lên hợp đồng (lớp 4 của gói): `PackUow` (role `contracts_rw`) + bộ
 // đếm Redis (vắng ⇒ 503 `UPLOAD_QUOTA_UNAVAILABLE`) + FileBox org `t_<tenant>` + `DocxConverter` (N1 T5g) + `ExtractionStarter`
 // (HD2: hàng đợi trích của `extraction.mount.ts`). `packs.mount.ts` gắn dưới `/pack/contracts` cạnh `contractsModule` (T7).
 import {

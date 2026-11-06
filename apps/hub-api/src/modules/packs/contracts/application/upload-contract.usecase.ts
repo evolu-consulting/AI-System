@@ -1,4 +1,4 @@
-﻿// HD-FR-08 · HD-AC09…AC11 · HD-NFR-03 · D-06 · D-09 · plan §5: tải lên hợp đồng. Thứ tự: magic bytes (415) → kind/parent (422)
+// HD-FR-08 · HD-AC09…AC11 · HD-NFR-03 · D-06 · D-09 · plan §5: tải lên hợp đồng. Thứ tự: magic bytes (415) → kind/parent (422)
 // → 1 pipeline quota (vượt ⇒ hoàn + 429; lỗi Redis ⇒ 503) → DOCX → FileBox (org `t_<tenant>`) → tx 3 câu (set_config + CTE
 // files/contracts/events + outbox) → sau commit `ExtractionStarter`. Lỗi sau INCR ⇒ hoàn quota + gỡ tệp đã lưu.
 

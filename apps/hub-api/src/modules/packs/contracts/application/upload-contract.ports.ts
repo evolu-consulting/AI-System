@@ -1,4 +1,4 @@
-﻿// HD-FR-08 · D-06 · D-09 · D-17 · plan §4–§5: cổng của use case tải lên hợp đồng. Lớp 2 — chỉ kiểu.
+// HD-FR-08 · D-06 · D-09 · D-17 · plan §4–§5: cổng của use case tải lên hợp đồng. Lớp 2 — chỉ kiểu.
 import type { KitTxRepos, PackUow, PackWho } from "../../kit/public";
 import type { ContractFields } from "../domain/fields.rules";
 import type { ContractFlowTxRepos } from "./contract-flow.ports";

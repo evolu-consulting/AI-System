@@ -1,4 +1,4 @@
-﻿// HD-FR-21…26 · HD-FR-31…37 · M3-decouple: nối trích + flow duyệt hợp đồng (lớp 4 của gói) — KHÔNG phụ thuộc engine quy trình.
+// HD-FR-21…26 · HD-FR-31…37 · M3-decouple: nối trích + flow duyệt hợp đồng (lớp 4 của gói) — KHÔNG phụ thuộc engine quy trình.
 // - Lượt AI đọc = job trên hàng đợi bền Redis Streams (vắng Redis ⇒ chạy ngay trong tiến trình) → lời gọi model trực tiếp qua AI
 //   client chung (usage + trần theo tenant). Lời nhắc có rào + parse strict + kiểm trích dẫn của HD2 giữ nguyên.
 // - Duyệt = máy trạng thái của gói (`contracts.approvals`); vòng quét đóng HĐ `extracting` quá hạn (STALE).

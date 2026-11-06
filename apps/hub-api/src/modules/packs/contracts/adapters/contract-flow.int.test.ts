@@ -1,4 +1,4 @@
-﻿// CR-122 · A1 · FLOW2-FR-12/15/18/19 · gói Hợp đồng ⇄ flow theo sự kiện, DB thật (pool hub_api, role contracts_rw, RLS gói):
+// CR-122 · A1 · FLOW2-FR-12/15/18/19 · gói Hợp đồng ⇄ flow theo sự kiện, DB thật (pool hub_api, role contracts_rw, RLS gói):
 // (1) gửi duyệt ghi `contract.submitted` CÙNG tx (hub.emit_flow_event, 0109), facts theo manifest, event_id theo lượt, trùng ⇒ không ghi;
 // (2) OutcomeHandler Đã duyệt / Từ chối / Trả lại về Nháp: áp trong tx engine, idempotent theo (runId, outcome), Đã duyệt bắn contract.approved;
 // (3) chặn đọc chéo tenant: FactsReader + OutcomeHandler của tenant khác không thấy / không đổi HĐ.
