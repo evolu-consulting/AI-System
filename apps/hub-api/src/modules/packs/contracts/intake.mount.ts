@@ -30,9 +30,13 @@ export function intakeWiring(
   return {
     tools: intakeTools({
       uow,
-      send: async (tenantId, signer, contractId, signers) => {
+      send: async (tenantId, signer, contractId, signers, provider, node) => {
         if (!esign) throw new Error("ESIGN_UNAVAILABLE");
-        await esign.sendSystem(tenantId, signer, contractId, signers);
+        await esign.sendSystem(tenantId, signer, contractId, signers, provider, node);
+      },
+      nodeSigners: async (tenantId, entries) => {
+        if (!esign) throw new Error("ESIGN_UNAVAILABLE");
+        return esign.resolveNodeSigners(tenantId, entries); // E5 · kiểm thuộc công ty
       },
       parsePartner: (name, email) => {
         const p = ESignSignerSchema.safeParse({ role: "partner", name, email });

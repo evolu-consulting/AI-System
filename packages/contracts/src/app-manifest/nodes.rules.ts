@@ -60,6 +60,15 @@ function nodeRules(owner: string, n: AppNodeDecl, outcomes: ReadonlySet<string>)
     ["node_outcome", n.stages.some((s) => s.outcome !== undefined && !outcomes.has(s.outcome))],
     ["node_io", ioBad(n.inputs) || ioBad(n.outputs)],
     ["node_feature", n.feature !== undefined && !n.feature.trim()],
+    [
+      "node_config",
+      n.config !== undefined &&
+        (!Number.isInteger(n.config.stage) ||
+          n.config.stage < 0 ||
+          n.config.stage >= n.stages.length ||
+          n.stages[n.config.stage]?.executor.kind !== "tool" ||
+          !n.config.options_path.startsWith(`/pack/${owner}/`)),
+    ],
   ];
   return checks.filter(([, bad]) => bad).map(([r]) => r);
 }

@@ -121,6 +121,9 @@ export type AppNodeDecl = {
   stages: readonly AppNodeStage[];
   /** Khoá tính năng (danh mục CR-111) phải bật cho công ty; vắng = luôn có (node lõi). */
   feature?: string;
+  /** CR-122 · E5 · node có cấu hình riêng: panel ghi vào `args` của stage `stage` (chỉ số trong `stages`) và lấy lựa chọn từ
+   *  `options_path` (`/pack/<app>/…`, GET). Vắng ⇒ node không có cấu hình. */
+  config?: { stage: number; options_path: string };
   inputs: readonly AppNodeIo[];
   outputs: readonly AppNodeIo[];
 };

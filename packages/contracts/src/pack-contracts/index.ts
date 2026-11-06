@@ -13,6 +13,7 @@ export * from "./doc-types";
 export * from "./errors";
 export * from "./esign";
 export * from "./esign-anchor";
+export * from "./esign-node";
 export * from "./extract";
 export * from "./fields";
 export * from "./followups";

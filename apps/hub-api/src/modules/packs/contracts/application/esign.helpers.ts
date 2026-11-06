@@ -82,18 +82,27 @@ export function sendableFile(c: ContractForSign | null, e: EnvelopeRow | null) {
 
 /** Thứ tự ký = thứ tự gửi. esign-multi: người ký công ty = CHÍNH tài khoản gửi (tên + email từ tài khoản, bỏ qua client gửi), ký
  *  nhúng (clientUserId = user); tài khoản không email ⇒ 422. Đối tác giữ nguyên (đã chuẩn hoá ở schema). */
+export type CompanyIdentity = { userId: string; name: string; email: string | null };
+/** CR-122 · E5 · `identities` = người ký công ty theo cấu hình node (lần lượt cho từng mục `company`; vắng ⇒ chính `userId`);
+ *  `parallel` ⇒ mọi người ký cùng thứ tự 1 (ký cùng lúc), vắng ⇒ tuần tự theo danh sách. */
+export type StoredSignersOpts = { identities?: readonly CompanyIdentity[]; parallel?: boolean };
+
 export function storedSigners(
   signers: ESignSignerIn[],
   userId: string,
   me: { name: string; email: string | null },
+  o: StoredSignersOpts = {},
 ): StoredSigner[] {
   const base = { status: null, signed_at: null, provider: null, certificate_ref: null };
+  let ci = 0;
   return signers.map((x, i) => {
-    if (x.role === "partner") return { ...x, order: i + 1, client_user_id: null, ...base };
-    const email = me.email?.trim().toLowerCase() ?? "";
+    const order = o.parallel ? 1 : i + 1;
+    if (x.role === "partner") return { ...x, order, client_user_id: null, ...base };
+    const who = o.identities?.[ci++] ?? { userId, ...me };
+    const email = who.email?.trim().toLowerCase() ?? "";
     if (email === "") throw new ESignFail("ESIGN_SIGNER_NO_EMAIL", "account-email");
-    const name = me.name.trim().normalize("NFC").slice(0, 100) || email;
-    return { role: "company", name, email, order: i + 1, client_user_id: userId, ...base };
+    const name = who.name.trim().normalize("NFC").slice(0, 100) || email;
+    return { role: "company", name, email, order, client_user_id: who.userId, ...base };
   });
 }
 

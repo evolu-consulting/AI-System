@@ -2,6 +2,8 @@
 // (ai đọc được HĐ — RLS M1); gửi ký/"Ký ngay"/làm mới/huỷ = `write` (owner/editor); bật/tắt ở Cài đặt = `admin` (owner).
 //   GET  /esign/settings                     {configured, enabled, provider, demo, providers[], default_provider}
 //   PUT  /esign/settings                     {enabled?, default_provider?} (esign-multi: default phải khả dụng ⇒ 422)
+//   GET  /esign/options                      (E5) {providers[đang bật], default_provider, enabled, groups[], orders, limits} cho panel node
+//   POST /esign/node-config/check            (E5) {EsignNodeConfig} ⇒ {issues:[{field,code}]} — gọi trước khi lưu def
 //   GET  /contracts/:id/esign                trạng thái + người ký gợi ý
 //   POST /contracts/:id/esign                gửi ký {signers[], provider?} (tuần tự; company = tài khoản gửi)
 //   POST /contracts/:id/esign/refresh        làm mới trạng thái (một lần)
@@ -15,6 +17,7 @@ import {
   ESignSettingsSchema,
   ESignSignUrlSchema,
   ESignVoidSchema,
+  EsignNodeConfigSchema,
 } from "@ai/contracts/pack-contracts";
 import { type Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -59,6 +62,12 @@ export function esignRoutes(view: PackAccessView, u: ESignUsecase): Hono<PackGua
   r.put("/esign/settings", admin, async (c) => {
     const b = parseWith(ESignSettingsSchema, await readJson(c));
     return c.json(await run(u.saveSettings(who(c), b)));
+  });
+  // CR-122 · E5 · panel node Ký số: lựa chọn (nhà cung cấp đang bật + Group) và kiểm cấu hình trước khi lưu def.
+  r.get("/esign/options", read, async (c) => c.json(await run(u.nodeOptions(who(c)))));
+  r.post("/esign/node-config/check", write, async (c) => {
+    const b = parseWith(EsignNodeConfigSchema, await readJson(c));
+    return c.json({ issues: await run(u.checkNode(who(c).tenantId, b)) });
   });
   r.get("/contracts/:id/esign", read, async (c) => c.json(await run(u.state(who(c), idOf(c)))));
   r.post("/contracts/:id/esign", write, async (c) => {

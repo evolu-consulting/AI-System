@@ -159,6 +159,8 @@ export const CONTRACTS_MANIFEST: AppManifest = {
       label: { vi: "Ký số", en: "E-signature" },
       group: "sign",
       feature: "contracts-write",
+      // E5 · nhà cung cấp, người ký công ty, đối tác ký, thứ tự, hạn, nhắc ghi ở `args` stage 0 (`EsignNodeConfig`, esign-node.ts).
+      config: { stage: 0, options_path: "/pack/contracts/esign/options" },
       stages: [
         {
           executor: { kind: "tool", tool_key: "contracts-esign-send", args: {} },

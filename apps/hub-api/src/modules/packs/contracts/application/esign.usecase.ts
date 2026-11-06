@@ -24,6 +24,8 @@ import type {
   ESignRepo,
 } from "./esign.ports";
 import type { ESignAnchors } from "./esign-anchor.usecase";
+import { esignNodeApi, type NodeDirectory, type SendNodeOpts } from "./esign-node.usecase";
+import { storeSignedFile } from "./esign-signed-file";
 import { errName, VOID_PENDING, voidForReopen } from "./esign-void";
 
 export { ESignFail } from "./esign.helpers";
@@ -44,11 +46,14 @@ export type ESignDeps = {
   onStatus?: (tenantId: string, contractId: string, status: ESignStatus) => Promise<void>;
   /** esign-flow-fix · log cảnh báo (không thân/khoá). */
   warn?: (msg: string, meta: Record<string, unknown>) => void;
+  /** CR-122 · E5 · danh bạ công ty cho node Ký số (Group + người ký theo tenant); vắng ⇒ node chỉ dùng người bắt đầu. */
+  directory?: NodeDirectory;
 };
+export type { NodeDirectory, SendNodeOpts } from "./esign-node.usecase";
+
 type Run = <T>(fn: (r: R) => Promise<T>) => Promise<T>;
 
 const FINAL = new Set<ESignStatus>(["completed", "declined", "voided"]);
-const baseName = (n: string) => n.replace(/\.pdf$/i, "").slice(0, 150);
 const RETURN_PATH = (id: string) => new RegExp(`/contracts/(?:c/)?${id}/?$`); // CR-119 p2: /contracts/c/<id> (+ dạng cũ)
 
 export function esignUsecase(d: ESignDeps) {
@@ -67,41 +72,6 @@ export function esignUsecase(d: ESignDeps) {
     out(await d.uow.tenant(who, (r) => r.esign.settings()));
   const rowOut = (e: EnvelopeRow) =>
     envelopeOut(e, demoOf(e.provider), labelOf(d.providers.entries, e.provider));
-
-  /** Lưu "Bản đã ký" (nhà cung cấp ⇒ PDF đã ký; ký thử ⇒ PDF gốc) — mất đua ⇒ xoá tệp vừa đẩy. */
-  const storeSigned = async (
-    p: ESignProvider,
-    files: ESignFiles,
-    tid: string,
-    row: EnvelopeRow,
-    run: Run,
-  ) => {
-    const c = await run((r) => r.esign.contract(row.contractId));
-    if (!c?.file) return;
-    const org = `t_${tid}`;
-    const bytes =
-      (await p.combinedPdf(row.envelopeId)) ?? (await files(c.file.org).getContent(c.file.fileId));
-    if (!bytes) throw new ESignFail("ESIGN_PROVIDER", "signed-pdf-missing");
-    const name = `${baseName(c.file.name)}-${p.demo ? "ky-thu" : "da-ky"}.pdf`;
-    const up = await files(org).postFile(name, bytes);
-    const f = {
-      id: d.newId(),
-      org,
-      ...up,
-      name,
-      sizeBytes: bytes.byteLength,
-      createdBy: row.sentBy,
-    };
-    const drop = () =>
-      files(org)
-        .deleteFile(up.fileId)
-        .catch(() => null);
-    const ok = await run((r) => r.esign.attachSigned(row.envelopeId, f)).catch(async (e) => {
-      await drop();
-      throw e;
-    });
-    if (!ok) await drop();
-  };
 
   /** Một lần GET trạng thái từ nhà cung cấp CỦA ENVELOPE ⇒ cập nhật hàng; ký xong ⇒ lưu bản đã ký (idempotent).
    *  `given` (ký thử): trạng thái đã biết, không hỏi nhà cung cấp. */
@@ -128,7 +98,7 @@ export function esignUsecase(d: ESignDeps) {
       }),
     );
     if (st === "completed" && row.signedFileId === null)
-      await storeSigned(p, d.files, tid, row, run);
+      await storeSignedFile(d.newId, p, d.files, tid, row, run);
     await finalHook(tid, row, st);
   };
 
@@ -149,6 +119,7 @@ export function esignUsecase(d: ESignDeps) {
     id: string,
     signers: ESignSignerIn[],
     providerKey?: string,
+    node?: SendNodeOpts,
   ): Promise<void> => {
     const s = out(await run((r) => r.esign.settings()));
     if (!d.files || !s.configured || !s.enabled) throw new ESignFail("ESIGN_DISABLED", "disabled");
@@ -159,7 +130,16 @@ export function esignUsecase(d: ESignDeps) {
       e: await r.esign.latest(id),
     }));
     const file = sendableFile(got.c, got.e);
-    const stored = storedSigners(signers, who.userId, await d.me(who));
+    const identities = await Promise.all(
+      (node?.companyUsers ?? []).map(async (userId) => ({
+        userId,
+        ...(await d.me({ tenantId: who.tenantId, userId })),
+      })),
+    );
+    const stored = storedSigners(signers, who.userId, await d.me(who), {
+      identities,
+      parallel: node?.order === "parallel",
+    });
     const bytes = await d.files(file.org).getContent(file.fileId);
     if (!bytes) throw new ESignFail("ESIGN_PROVIDER", "file-unavailable");
     const title = got.c?.title ?? "";
@@ -289,10 +269,19 @@ export function esignUsecase(d: ESignDeps) {
       id: string,
       signers: ESignSignerIn[],
       providerKey?: string,
+      node?: SendNodeOpts,
     ): Promise<void> {
       const run: Run = (fn) => d.uow.system(tenantId, fn);
-      await sendWith(run, { tenantId, userId: signer }, id, signers, providerKey);
+      await sendWith(run, { tenantId, userId: signer }, id, signers, providerKey, node);
     },
+
+    /** CR-122 · E5 · panel node Ký số: lựa chọn + kiểm cấu hình lúc lưu def + đổi người ký (`esign-node.usecase.ts`). */
+    ...esignNodeApi({
+      settings,
+      settingsOf: async (tid) => out(await d.uow.system(tid, (r) => r.esign.settings())),
+      avail,
+      directory: d.directory,
+    }),
 
     /** esign-flow · K4 mở lại HĐ: phong bì đang mở ⇒ huỷ ở nhà cung cấp + ghi `voided` (bản đã ký cũ giữ lịch sử). Không ném. */
     async voidOpen(who: PackWho, id: string): Promise<boolean> {

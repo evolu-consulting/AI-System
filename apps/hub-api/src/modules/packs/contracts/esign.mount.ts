@@ -19,6 +19,7 @@ import { esignAnchorRepo } from "./adapters/esign-anchor.repo";
 import { esignAnchorRoutes } from "./adapters/esign-anchor.routes";
 import { activeUserOf, deptHeadOf, esignFlowRepo, packWriters } from "./adapters/esign-flow.repo";
 import { esignFlowRoutes } from "./adapters/esign-flow.routes";
+import { esignNodeDirectory } from "./adapters/esign-node.repo";
 import { escalateTargetsOf, esignSweepRepo } from "./adapters/esign-sweep.repo";
 import { esignSyncClaim } from "./adapters/esign-sync.repo";
 import type { ESignFiles, ESignProvider, ESignRegistry } from "./application/esign.ports";
@@ -117,6 +118,7 @@ export function esignModule(
       // esign-anchor-fix · xem trước (quyền read) dùng worker/hàng chờ RIÊNG ⇒ gọi dồn không làm lần gửi thật bị PDF_BUSY.
       previewPdf: lazyPdf(1),
     }),
+    directory: esignNodeDirectory(db), // CR-122 · E5
     onStatus: async (tid, id, st) => {
       await flow?.onStatus(tid, id, st);
       const ev = esignEventOf(st);
