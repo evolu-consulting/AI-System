@@ -18,6 +18,7 @@ import {
   stepFromDropX,
 } from "@ai/flow-canvas/pure";
 import type { Edge, Node, XYPosition } from "@xyflow/react";
+import { ChevronRight } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { BridgeApi } from "../../hooks/use-bridge";
@@ -298,7 +299,7 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
 
   return (
     <div
-      className={`${p.compact ? "h-[280px]" : trig ? "h-[min(62vh,460px)]" : "h-[min(70vh,640px)]"} overflow-hidden rounded-md border border-border bg-background`}
+      className={`${p.compact ? "h-[280px]" : trig ? "h-[min(62vh,460px)]" : "h-[min(70vh,640px)]"} relative overflow-hidden rounded-md border border-border bg-background`}
     >
       <HandlersCtx.Provider value={handlers}>
         <FlowCanvas
@@ -323,6 +324,20 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
           onConnect={p.linkable && !p.readOnly ? onConnect : undefined}
         />
       </HandlersCtx.Provider>
+      {trig && g.steps >= 4 ? <MoreRight label={t("process.admin.flow.moreRight")} /> : null}
+    </div>
+  );
+}
+
+/** CR-122 · U2e: flow dài hơn khung ⇒ bóng mờ + mũi tên ở mép phải báo "còn bước bên phải" (kéo ngang để xem). */
+function MoreRight({ label }: { label: string }) {
+  return (
+    <div
+      aria-hidden
+      title={label}
+      className="pointer-events-none absolute inset-y-0 right-0 flex w-14 items-center justify-end bg-gradient-to-l from-background to-transparent pr-1 text-muted-foreground"
+    >
+      <ChevronRight className="size-5" />
     </div>
   );
 }

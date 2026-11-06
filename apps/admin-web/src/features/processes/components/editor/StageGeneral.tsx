@@ -30,7 +30,9 @@ function useStageError(p: StageFormProps) {
   };
 }
 
-export function StageGeneral(p: StageFormProps) {
+/** CR-122 · U2e: `name` = chỉ tên (nghiệp vụ); `tech` = mã giai đoạn + người thực hiện + hướng dẫn (đặt trong "Nâng cao"); `all` = như cũ. */
+export function StageGeneral(p: StageFormProps & { part?: "all" | "name" | "tech" }) {
+  const part = p.part ?? "all";
   const { t } = useTranslation();
   const { stage, readOnly, refs, onChange } = p;
   const e = useStageError(p);
@@ -55,27 +57,38 @@ export function StageGeneral(p: StageFormProps) {
     stage.executor,
     t("process.admin.editor.gone"),
   );
+  const nameField = (
+    <TextField
+      id={`${stage.uid}-name`}
+      label={t("process.admin.editor.stage.name")}
+      value={stage.name}
+      error={e("name")}
+      readOnly={readOnly}
+      onChange={(v) => onChange({ name: v })}
+    />
+  );
+  const keyField = (
+    <TextField
+      id={`${stage.uid}-key`}
+      label={t("process.admin.editor.stage.key")}
+      value={stage.key}
+      error={e("key")}
+      readOnly={readOnly}
+      mono
+      onChange={(v) => onChange({ key: v, keyAuto: false })}
+    />
+  );
+  if (part === "name") return nameField;
   return (
     <>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <TextField
-          id={`${stage.uid}-name`}
-          label={t("process.admin.editor.stage.name")}
-          value={stage.name}
-          error={e("name")}
-          readOnly={readOnly}
-          onChange={(v) => onChange({ name: v })}
-        />
-        <TextField
-          id={`${stage.uid}-key`}
-          label={t("process.admin.editor.stage.key")}
-          value={stage.key}
-          error={e("key")}
-          readOnly={readOnly}
-          mono
-          onChange={(v) => onChange({ key: v, keyAuto: false })}
-        />
-      </div>
+      {part === "tech" ? (
+        keyField
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {nameField}
+          {keyField}
+        </div>
+      )}
       <SelectField
         id={`${stage.uid}-exec`}
         label={t("process.admin.editor.stage.executor")}

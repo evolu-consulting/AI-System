@@ -22,11 +22,16 @@ function BridgeNodeImpl({ data }: NodeProps<BridgeNodeType>) {
   return (
     <div
       style={{ width: BRIDGE_W }}
-      className={`pointer-events-auto rounded-md border bg-card p-2 text-left ${
+      className={`pointer-events-auto relative rounded-md border bg-card p-2 text-left ${
         preview ? "border-dashed border-primary opacity-90" : "border-warning"
       }`}
       data-testid="canvas-bridge"
     >
+      {/* chân nối lên cạnh vàng (ô nằm ngay dưới mũi tên) */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 -top-[76px] h-[76px] border-l-2 border-dashed border-warning"
+      />
       <HiddenHandle type="target" position={Position.Left} />
       <HiddenHandle type="source" position={Position.Right} />
       <p className="m-0 flex items-center gap-1.5 text-caption font-medium">

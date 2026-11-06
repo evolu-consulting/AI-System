@@ -1301,6 +1301,10 @@
       "finish": "Finish",
       "soon": "Not available yet"
     },
+    "advanced": "Advanced",
+    "moduleNote": "The provider, signers and other settings of this step come from the app settings. Open Advanced to tweak details.",
+    "notify": { "title": "Title", "body": "Message" },
+    "moreRight": "More steps to the right — drag to see",
     "companies": "{{n}} companies",
     "add": "Add step",
     "moreActions": "More actions",

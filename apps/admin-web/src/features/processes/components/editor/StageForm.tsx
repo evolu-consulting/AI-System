@@ -9,6 +9,7 @@ import { isSet } from "../../lib/set-form";
 import { isTool } from "../../lib/tool-form";
 import { isWait, isWaitFamily } from "../../lib/wait-form";
 import { useFlowCtx } from "../flow/flow-ctx";
+import { TextField } from "./Fields";
 import { StageActions } from "./StageActions";
 import { StageAdminModeNotice } from "./StageAdminModeNotice";
 import { StageAnswerer } from "./StageAnswerer";
@@ -124,9 +125,98 @@ function Body(p: StageFormProps) {
   );
 }
 
+/** Thu gọn "Nâng cao" (đóng mặc định): chi tiết kỹ thuật không bắt người dùng nghiệp vụ nhìn. */
+function AdvancedBox({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <details className="rounded-md border border-border px-3 py-2" data-testid="stage-advanced">
+      <summary className="cursor-pointer text-label font-medium">
+        {t("process.admin.flow.advanced")}
+      </summary>
+      <div className="mt-3 space-y-4">{children}</div>
+    </details>
+  );
+}
+
+/** Node module (Gửi email, Ký số, Hẹn giờ…): chỉ phần nghiệp vụ đặt sẵn của node. */
+function ModuleBody(p: StageFormProps) {
+  const { t } = useTranslation();
+  const { stage } = p;
+  if (isWait(stage)) return <StageWait {...p} />;
+  if (isWaitFamily(stage)) return <StageTimedWait {...p} />;
+  if (stage.executor === "notify" && stage.notifyRaw)
+    return <NotifyBasics stage={stage} readOnly={p.readOnly} onChange={p.onChange} />;
+  return (
+    <p className="text-caption text-muted-foreground" data-testid="module-note">
+      {t("process.admin.flow.moduleNote")}
+    </p>
+  );
+}
+
+/** Gửi email / Thông báo chuông: tiêu đề + nội dung (người nhận và kênh đã đặt sẵn theo node). */
+function NotifyBasics(p: Pick<StageFormProps, "stage" | "readOnly" | "onChange">) {
+  const { t } = useTranslation();
+  const raw = p.stage.notifyRaw;
+  if (!raw) return null;
+  const set = (patch: { title?: string; body?: string }) =>
+    p.onChange({ notifyRaw: { ...raw, ...patch } });
+  return (
+    <div className="space-y-3" data-testid="notify-basics">
+      <TextField
+        id={`${p.stage.uid}-ntitle`}
+        label={t("process.admin.flow.notify.title")}
+        value={raw.title}
+        readOnly={p.readOnly}
+        onChange={(v) => set({ title: v })}
+      />
+      <TextField
+        id={`${p.stage.uid}-nbody`}
+        label={t("process.admin.flow.notify.body")}
+        value={raw.body}
+        readOnly={p.readOnly}
+        multiline
+        rows={4}
+        onChange={(v) => set({ body: v })}
+      />
+    </div>
+  );
+}
+
+/** CR-122 · U2e · trình sửa node của FLOW: tên + phần nghiệp vụ ở trên; mã giai đoạn, người thực hiện, chạy ở bước… vào "Nâng cao". */
+function FlowForm(p: StageFormProps) {
+  const { stage } = p;
+  const mod = !!stage.node;
+  return (
+    <section className="space-y-4 px-1" aria-label={stage.name}>
+      <StageGeneral {...p} part="name" />
+      {stage.executor === "approve" ? <StageApprove {...p} /> : null}
+      <StageLinks {...p} />
+      {mod ? (
+        <ModuleBody {...p} />
+      ) : isWait(stage) ? (
+        <StageWait {...p} />
+      ) : isWaitFamily(stage) ? (
+        <StageTimedWait {...p} />
+      ) : isIf(stage) ? (
+        <StageIfForm {...p} />
+      ) : (
+        <Body {...p} />
+      )}
+      <AdvancedBox>
+        <StageGeneral {...p} part="tech" />
+        <StageStepFields {...p} />
+        {mod && !isWaitFamily(stage) && !isWait(stage) ? <Body {...p} /> : null}
+      </AdvancedBox>
+      <StageActions {...p} />
+    </section>
+  );
+}
+
 export function StageForm(p: StageFormProps) {
   const { t } = useTranslation();
   const { stage, index } = p;
+  const flow = useFlowCtx();
+  if (flow) return <FlowForm {...p} />;
   return (
     <section
       aria-label={t("process.admin.editor.stage.aria", { n: index + 1, name: stage.name })}

@@ -87,7 +87,7 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
   );
   return (
     <div
-      className="sticky top-0 z-20 -mx-4 space-y-2 border-b border-border bg-background/95 px-4 py-3 backdrop-blur"
+      className="sticky top-0 z-20 -mx-4 space-y-2 border-b border-border bg-background px-4 py-3 shadow-sm"
       data-testid="library-toolbar"
     >
       <div className="flex flex-wrap items-center gap-2">

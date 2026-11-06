@@ -110,15 +110,17 @@ export function StageIf(p: StageIfProps) {
               }))}
               onChange={(op) => setCond(j, { op })}
             />
-            <TextField
-              id={`${id}-c${j}-value`}
-              label={t(`${K}value`)}
-              type={type === "number" ? "number" : type === "date" ? "date" : "text"}
-              value={c.value}
-              readOnly={readOnly}
-              error={cell("value")}
-              onChange={(v) => setCond(j, { value: v })}
-            />
+            <div className="sm:col-span-2">
+              <TextField
+                id={`${id}-c${j}-value`}
+                label={t(`${K}value`)}
+                type={type === "number" ? "number" : type === "date" ? "date" : "text"}
+                value={c.value}
+                readOnly={readOnly}
+                error={cell("value")}
+                onChange={(v) => setCond(j, { value: v })}
+              />
+            </div>
             {readOnly || value.conds.length <= 1 ? null : (
               <div className="flex items-end">
                 <Button
