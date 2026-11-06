@@ -1304,7 +1304,7 @@
     },
     "esign": {
       "title": "E-sign settings",
-      "default": "From app settings",
+      "default": "Default",
       "provider": "Provider",
       "order": "Signing order",
       "orders": { "parallel": "In parallel", "sequential": "One by one" },

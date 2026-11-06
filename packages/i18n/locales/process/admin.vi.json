@@ -1304,7 +1304,7 @@
     },
     "esign": {
       "title": "Cấu hình ký số",
-      "default": "Theo cài đặt ứng dụng",
+      "default": "Mặc định",
       "provider": "Nhà cung cấp",
       "order": "Thứ tự ký",
       "orders": { "parallel": "Song song", "sequential": "Lần lượt" },
