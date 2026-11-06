@@ -23,6 +23,8 @@ type Props = {
   nowMs: number;
   onStop: () => void;
   onRerun: () => void;
+  /** CR-122 · lượt dừng "Cần xử lý" vì dữ kiện đổi sau khi rẽ ⇒ nút "Chạy lại từ Nếu". */
+  onRerunFromIf?: () => void;
   /** R-4 · liên kết tới hợp đồng (null = chưa biết URL app). */
   sourceHref: string | null;
   canReopen: boolean;
@@ -36,6 +38,7 @@ export function RunHeader({
   nowMs,
   onStop,
   onRerun,
+  onRerunFromIf,
   sourceHref,
   canReopen,
   onReopen,
@@ -102,6 +105,12 @@ export function RunHeader({
               {T("ctl.reopen.button")}
             </Button>
           )}
+          {run.decision_reason === "facts_changed" && onRerunFromIf && (
+            <Button variant="outline" size="sm" onClick={onRerunFromIf} data-testid="run-rerun-if">
+              <RotateCcw aria-hidden className="size-4" />
+              {T("ctl.rerun-from-if.button")}
+            </Button>
+          )}
           {controls.canRerun && (
             <IconButton label={T("ctl.rerun.button")} onClick={onRerun}>
               <RotateCcw aria-hidden />
@@ -122,6 +131,11 @@ export function RunHeader({
         <span className="text-body" data-testid="run-status-text">
           {run.status_text[lang]}
         </span>
+        {run.decision_reason === "facts_changed" && (
+          <span className="text-body text-warning" data-testid="run-facts-changed">
+            {T("factsChanged")}
+          </span>
+        )}
         {run.is_test && <span className="text-caption text-muted-foreground">{T("isTest")}</span>}
       </div>
       {run.rerun_by && (

@@ -184,6 +184,7 @@ function FlowWrap(p: {
   lib: LibraryDef | null;
   d: ReturnType<typeof useDraft>;
   readOnly: boolean;
+  tenantId: string | undefined;
   children: React.ReactNode;
 }) {
   const { src, trig, setEdit } = p.ft;
@@ -199,6 +200,7 @@ function FlowWrap(p: {
       trigger={trig}
       stages={p.d.draft.stages}
       readOnly={p.readOnly}
+      tenantId={p.tenantId}
       onChange={(next, stages) => {
         setEdit(next);
         if (stages) p.d.patch({ stages });
@@ -286,7 +288,7 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
     </form>
   );
   const config = (
-    <FlowWrap ft={ft} def={def} lib={lib} d={d} readOnly={readOnly}>
+    <FlowWrap ft={ft} def={def} lib={lib} d={d} readOnly={readOnly} tenantId={tenant.tenantId}>
       {form}
     </FlowWrap>
   );

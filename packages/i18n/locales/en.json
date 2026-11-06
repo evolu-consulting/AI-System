@@ -667,6 +667,39 @@
     }
   },
   "tenants": {
+    "companyFlows": {
+      "empty": "This company has no flows yet. The platform admin assigns flows from the Library.",
+      "col": { "name": "Flow", "trigger": "Starts when", "source": "Source", "status": "Status" },
+      "withCondition": "with condition",
+      "source": {
+        "assigned": "Assigned · view only",
+        "own": "Company copy",
+        "copy": "Copied from {{name}} · v{{v}}"
+      },
+      "status": {
+        "on": "On",
+        "off": {
+          "replaced": "Off · replaced by the company copy",
+          "reverted": "Off · reverted to the original",
+          "turned_off": "Off · turned off by an admin",
+          "not_published": "Off · not published"
+        }
+      },
+      "warn": { "shadowed": "Never runs: the flow above matches every case" },
+      "open": "Open",
+      "clone": "Copy to edit",
+      "publish": "Publish",
+      "revert": "Revert to original",
+      "turnOn": "Turn on",
+      "turnOff": "Turn off",
+      "orderHint": "Drag to reorder. For deciding events, the first matching flow runs.",
+      "err": {
+        "requiredLast": "A required event needs at least one active flow without conditions. Turn another one on first.",
+        "pairActive": "The original and the company copy cannot both be on. Turn the other off or use Revert to original.",
+        "notPublished": "The flow is not published, so it cannot be turned on. Publish it first.",
+        "generic": "Could not complete. Reload and try again."
+      }
+    },
     "flows": {
       "stepsGap": {
         "loadFail": "Could not load the steps. Reload the page; if it persists, open the detail page.",

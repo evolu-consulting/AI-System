@@ -85,18 +85,7 @@ export function validateFlowDef(raw: unknown, app: string): FlowIssue[] {
 
 /** Một mục bảng node: nhãn nghiệp vụ (i18n), loại draft khi thêm, có dùng được hôm nay không. */
 export type NodeEntry = {
-  id:
-    | "approve"
-    | "form"
-    | "if"
-    | "fork"
-    | "wait"
-    | "notify"
-    | "agent"
-    | "tool"
-    | "esign"
-    | "set"
-    | "finish";
+  id: "approve" | "form" | "if" | "agent" | "tool" | "set" | "finish";
   /** Patch draft khi thêm (executor...). `null` = chưa có loại engine (E2/E3) ⇒ hiện nhưng tắt, kèm lý do. */
   patch: Partial<StageDraft> | null;
   /** Chỉ node app khai: cần app có sự kiện (mọi app có manifest). */
@@ -104,15 +93,11 @@ export type NodeEntry = {
 };
 
 const NODE_TABLE: readonly NodeEntry[] = [
-  { id: "approve", patch: null },
+  { id: "approve", patch: { executor: "approve", after: "review" } },
   { id: "form", patch: { executor: "form" } },
   { id: "if", patch: { executor: "if" } },
-  { id: "fork", patch: {} },
-  { id: "wait", patch: { executor: "wait_for" } },
-  { id: "notify", patch: { executor: "notify" } },
   { id: "agent", patch: { executor: "" } },
   { id: "tool", patch: { executor: "tool" } },
-  { id: "esign", patch: null, appNode: true },
   { id: "set", patch: { executor: "set" } },
   { id: "finish", patch: { executor: "set" } },
 ];

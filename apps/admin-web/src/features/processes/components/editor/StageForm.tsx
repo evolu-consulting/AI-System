@@ -12,6 +12,7 @@ import { StageActions } from "./StageActions";
 import { StageAdminModeNotice } from "./StageAdminModeNotice";
 import { StageAnswerer } from "./StageAnswerer";
 import { StageApply } from "./StageApply";
+import { StageApprove } from "./StageApprove";
 import { StageAutofix } from "./StageAutofix";
 import { StageBranch } from "./StageBranch";
 import { StageFormFields } from "./StageFormFields";
@@ -121,6 +122,7 @@ export function StageForm(p: StageFormProps) {
     >
       <StageGeneral {...p} />
       <StageStepFields {...p} />
+      {stage.executor === "approve" ? <StageApprove {...p} /> : null}
       {isWait(stage) ? (
         <StageWait {...p} />
       ) : isWaitFamily(stage) ? (

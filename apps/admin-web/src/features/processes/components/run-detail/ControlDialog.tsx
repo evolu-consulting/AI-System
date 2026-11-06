@@ -18,6 +18,7 @@ import { CONTROL_REASONS } from "../../lib/run-detail-view";
 export type ControlTarget =
   | { op: "stop" }
   | { op: "rerun" }
+  | { op: "rerun-from-if" }
   | { op: "reopen"; contractId: string }
   | { op: "rerun-step"; idx: number; name: string };
 

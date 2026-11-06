@@ -107,8 +107,8 @@ describe("flow-def", () => {
   });
   test("bảng node: có Kết thúc/Nếu/Công cụ; Ký số là node app; Kết thúc dùng kết quả đầu", () => {
     const ids = nodesForApp("contracts").map((n) => n.id);
-    expect(ids).toEqual(expect.arrayContaining(["if", "tool", "finish", "esign"]));
-    expect(nodesForApp("khong-co-app").map((n) => n.id)).not.toContain("esign");
+    expect(ids).toEqual(expect.arrayContaining(["approve", "if", "tool", "finish"]));
+    expect(nodesForApp("khong-co-app").map((n) => n.id)).toContain("approve");
     expect(finishPatch(ev).outcome).toBe(CONTRACTS_MANIFEST.events[0]?.outcomes[0]?.key ?? "");
   });
 });

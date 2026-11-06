@@ -11,6 +11,9 @@ import {
   toFlowDef,
   validateFlowDef,
 } from "../../lib/flow-def";
+import { edgeProblems } from "../../lib/palette-node";
+import { usePalette } from "../../palette-api";
+import { BridgeIssues } from "./BridgeIssues";
 import { FlowContext } from "./flow-ctx";
 import { TriggerCard } from "./TriggerCard";
 
@@ -19,12 +22,24 @@ type Props = {
   trigger: FlowTrigger;
   stages: readonly StageDraft[];
   readOnly: boolean;
+  /** Công ty để lọc bảng node theo tính năng đang bật (vắng ⇒ mọi node). */
+  tenantId?: string | undefined;
   onChange: (trigger: FlowTrigger, stages?: StageDraft[]) => void;
   children: ReactNode;
 };
 
-export function FlowEditorBody({ meta, trigger, stages, readOnly, onChange, children }: Props) {
+export function FlowEditorBody({
+  meta,
+  trigger,
+  stages,
+  readOnly,
+  tenantId,
+  onChange,
+  children,
+}: Props) {
   const { t } = useTranslation();
+  const palette = usePalette(meta.app, tenantId);
+  const problems = useMemo(() => edgeProblems(stages, palette.data ?? []), [stages, palette.data]);
   const issues = useMemo(
     () => validateFlowDef(toFlowDef(stages, { ...meta, trigger }), meta.app),
     [stages, meta, trigger],
@@ -39,7 +54,7 @@ export function FlowEditorBody({ meta, trigger, stages, readOnly, onChange, chil
     onChange(r.trigger, r.stages);
   };
   return (
-    <FlowContext.Provider value={{ app: meta.app, event }}>
+    <FlowContext.Provider value={{ app: meta.app, tenantId, event }}>
       <div className="space-y-4" data-testid="flow-editor">
         <TriggerCard
           app={meta.app}
@@ -61,6 +76,14 @@ export function FlowEditorBody({ meta, trigger, stages, readOnly, onChange, chil
             ))}
           </ul>
         ) : null}
+        <BridgeIssues
+          app={meta.app}
+          problems={problems}
+          stages={stages}
+          nodes={palette.data ?? []}
+          readOnly={readOnly}
+          onStages={(next) => onChange(trigger, next)}
+        />
         {children}
       </div>
     </FlowContext.Provider>

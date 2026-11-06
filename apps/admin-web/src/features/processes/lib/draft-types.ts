@@ -1,6 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-d1: kiểu bản nháp của editor quy trình (tách khỏi `def-form` để các module `*-form` không import vòng).
 // Chỉ kiểu — không giá trị; `def-form` re-export cho nơi dùng cũ.
-import type { FormFieldType } from "@ai/contracts/hub-admin";
+import type { FormFieldType, ProcessStageDef } from "@ai/contracts/hub-admin";
 import type { AutofixDraft } from "./autofix-form";
 import type { InputDraft, StageSourceDraft } from "./sources-form";
 
@@ -117,6 +117,12 @@ export type StageDraft = {
   formFields?: FormFieldDraft[];
   /** CR-105 · `stage.slot` của khe (mô tả bước người dùng: review/Dify, hoặc `esign` ở finalize) — giữ nguyên qua Canvas, Hub `fromStages` dựng lại `slot_body`. */
   slotRaw?: Record<string, unknown> | undefined;
+  /** CR-122 · U2 · executor `notify` đã có cấu hình (node bảng Gửi email / Thông báo chuông) — giữ nguyên khi lưu. */
+  notifyRaw?: Extract<ProcessStageDef["executor"], { kind: "notify" }>;
+  /** CR-122 · U2 · khoá node bảng (`core.email`, `contracts.esign`…) đã chèn stage này; ghi vào `stage.node`. */
+  node?: string;
+  /** CR-122 · U2 · node Duyệt: bước (0-based, sau bước mình) khi Từ chối / Trả lại; null = hành vi cổng cũ. */
+  approve?: { reject: number | null; ret: number | null };
   /** CR-122 · node Kết thúc: khoá kết quả app khai (`AppEventDecl.outcomes`); vắng = không phải Kết thúc. */
   outcome?: string;
   /** CR-122 · bước gộp (0-based, > bước của mình); vắng = đi tiếp bước kế. */

@@ -1242,8 +1242,16 @@
         "effect": "Bước này chạy lại trong cùng lượt; kết quả cũ của bước được giữ làm lịch sử.",
         "confirm": "Chạy lại bước",
         "done": "Đã chạy lại bước"
+      },
+      "rerun-from-if": {
+        "button": "Chạy lại từ Nếu",
+        "title": "Chạy lại từ bước Nếu?",
+        "effect": "Dữ kiện của bản ghi đã đổi. Lượt đọc lại giá trị hiện tại ở bước Nếu và đi tiếp từ đó; các bước trước giữ nguyên.",
+        "confirm": "Chạy lại từ Nếu",
+        "done": "Đã chạy lại từ bước Nếu"
       }
     },
+    "factsChanged": "Cần xử lý · dữ kiện đã đổi sau khi rẽ nhánh",
     "err": {
       "packBound": "Lượt này thuộc quy trình duyệt của một gói (vd. duyệt hợp đồng) và đã kết thúc nên không chạy lại lượt hay chạy lại bước ở đây được. Hãy dùng \"Mở lại quy trình\" trên màn hình của gói.",
       "state": "Trạng thái lượt chạy đã đổi nên thao tác không còn hợp lệ. Tải lại trang rồi thử lại.",
@@ -1281,6 +1289,20 @@
       "set": "Ghi giá trị",
       "finish": "Kết thúc",
       "soon": "Chưa dùng được"
+    },
+    "approve": {
+      "default": "Mặc định",
+      "reject": "Từ chối đi tới",
+      "return": "Trả lại đi tới"
+    },
+    "bridge": {
+      "missing": "Bước sau cần “{{key}}”, bước trước không có.",
+      "type": "Bước sau cần “{{key}}” kiểu {{expected}}, bước trước cho kiểu {{got}}.",
+      "suggest": "Gợi ý cầu nối",
+      "none": "Chưa có gợi ý. Thêm node Ghi giá trị để nối hai bước.",
+      "accept": "Nhận",
+      "dismiss": "Bỏ",
+      "nodeName": "Ghi giá trị"
     },
     "finish": {
       "name": "Tên",

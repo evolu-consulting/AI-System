@@ -1242,8 +1242,16 @@
         "effect": "This step runs again within the same run; its earlier results are kept as history.",
         "confirm": "Rerun step",
         "done": "Step rerun started"
+      },
+      "rerun-from-if": {
+        "button": "Re-run from If",
+        "title": "Re-run from the If step?",
+        "effect": "The record's data changed. The run re-reads the current values at the If step and continues from there; earlier steps stay as they are.",
+        "confirm": "Re-run from If",
+        "done": "Re-run from the If step started"
       }
     },
+    "factsChanged": "Needs attention · data changed after the branch",
     "err": {
       "packBound": "This run belongs to a package's approval process (e.g. contract approval), and has ended, so neither the run nor a step can be rerun here. Use \"Reopen process\" on the package's own screen.",
       "state": "The run's state has changed, so this action no longer applies. Reload the page and try again.",
@@ -1281,6 +1289,20 @@
       "set": "Set value",
       "finish": "Finish",
       "soon": "Not available yet"
+    },
+    "approve": {
+      "default": "Default",
+      "reject": "On reject go to",
+      "return": "On return go to"
+    },
+    "bridge": {
+      "missing": "The next step needs “{{key}}”, the previous step does not provide it.",
+      "type": "The next step needs “{{key}}” as {{expected}}, the previous one gives {{got}}.",
+      "suggest": "Suggest a bridge",
+      "none": "No suggestion. Add a Set value node to connect the two steps.",
+      "accept": "Accept",
+      "dismiss": "Dismiss",
+      "nodeName": "Set value"
     },
     "finish": {
       "name": "Name",

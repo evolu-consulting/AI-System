@@ -81,6 +81,7 @@ export function useReopenContract() {
 export type RunControlOp =
   | { op: "stop"; reason: RunControlReason }
   | { op: "rerun"; reason: RunControlReason }
+  | { op: "rerun-from-if"; reason: RunControlReason }
   | { op: "rerun-step"; reason: RunControlReason; stageIdx: number };
 
 /** Dừng / chạy lại bước / chạy lại cả lượt; xong làm tươi mọi dữ liệu lượt chạy. Kết quả `rerun` có `id` lượt mới (nếu server trả). */

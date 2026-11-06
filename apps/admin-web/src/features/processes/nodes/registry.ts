@@ -44,7 +44,11 @@ export type FeNode<K extends ExecutorKind = ExecutorKind> = {
   /** Giá trị ô `executor` của draft. */
   draftExecutor(ex: Ex<K>): string;
   /** Phần draft riêng của loại khi nạp def (vắng ⇒ giữ rỗng). */
-  fromDef?(ex: Ex<K>): Partial<Pick<StageDraft, "wait" | "tool" | "set" | "ifx" | "formFields">>;
+  fromDef?(
+    ex: Ex<K>,
+  ): Partial<
+    Pick<StageDraft, "wait" | "tool" | "set" | "ifx" | "formFields" | "approve" | "notifyRaw">
+  >;
   /** Draft → executor của contract. */
   toDef(s: StageDraft): Executor;
 };
@@ -160,25 +164,33 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
     defaults: () => ({ executor: "notify" }),
     draftValue: "notify",
     draftExecutor: () => "notify",
-    // Trình sửa thường chưa có khối sửa riêng: gửi chuông cho người bắt đầu lượt, tiêu đề = tên bước (hợp lệ, không mất bước).
-    toDef: (s) => ({
-      kind: "notify",
-      to: [{ who: "starter" }],
-      channels: ["bell"],
-      title: s.name.trim() || "Thông báo",
-      body: "",
-    }),
+    // CR-122 · U2: node bảng (Gửi email, Thông báo chuông) mang cấu hình đặt sẵn ⇒ giữ nguyên (`notifyRaw`); stage tự thêm: gửi chuông
+    // cho người bắt đầu lượt, tiêu đề = tên bước (hợp lệ, không mất bước).
+    fromDef: (ex) => ({ notifyRaw: ex }),
+    toDef: (s) =>
+      s.notifyRaw ?? {
+        kind: "notify",
+        to: [{ who: "starter" }],
+        channels: ["bell"],
+        title: s.name.trim() || "Thông báo",
+        body: "",
+      },
   },
   // CR-122 E2b · node Duyệt độc lập — CHỈ cho typecheck (engine đã có); `draftValue = null` ⇒ chưa chọn được trong bảng node. U2 bật
   // (nhãn, khối sửa đích Từ chối/Trả lại).
   approve: {
     kind: "approve",
     family: NODE_FAMILY_OF.approve,
-    labelKey: null,
-    defaults: () => ({}),
-    draftValue: null,
+    labelKey: "process.admin.flow.node.approve",
+    defaults: () => ({ executor: "approve", after: "review" }),
+    draftValue: "approve",
     draftExecutor: () => "approve",
-    toDef: () => ({ kind: "approve", reject_step: null, return_step: null }),
+    fromDef: (ex) => ({ approve: { reject: ex.reject_step, ret: ex.return_step } }),
+    toDef: (s) => ({
+      kind: "approve",
+      reject_step: s.approve?.reject ?? null,
+      return_step: s.approve?.ret ?? null,
+    }),
   },
 };
 

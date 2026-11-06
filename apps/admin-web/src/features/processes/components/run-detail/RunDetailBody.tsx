@@ -116,6 +116,7 @@ export function RunDetailBody({ runId, tenant }: Props) {
         nowMs={Date.now()}
         onStop={() => setTarget({ op: "stop" })}
         onRerun={() => setTarget({ op: "rerun" })}
+        onRerunFromIf={() => setTarget({ op: "rerun-from-if" })}
       />
       <div className="rounded-lg border border-border bg-card">
         <RunFlow steps={run.steps} selected={sel} onSelect={setSel} />

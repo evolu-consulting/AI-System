@@ -70,7 +70,7 @@ export function emptyStage(step = 0): StageDraft {
 /** CR-103 · ô `executor` + phần draft riêng của loại (wait/tool) theo registry node. */
 function executorPart(
   ex: ProcessStageDef["executor"],
-): Pick<StageDraft, "executor" | "wait" | "tool" | "set" | "ifx"> {
+): Pick<StageDraft, "executor" | "wait" | "tool" | "set" | "ifx" | "approve" | "notifyRaw"> {
   const node = feNodeOf(ex.kind) as FeNode;
   return {
     executor: node.draftExecutor(ex as never),
@@ -115,6 +115,7 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     ...(s.ui ? { uiY: s.ui.y } : {}),
     ...(s.outcome === undefined ? {} : { outcome: s.outcome }),
     ...(s.next_step === undefined ? {} : { nextStep: s.next_step }),
+    ...(s.node === undefined ? {} : { node: s.node }),
     ...(s.slot ? { slotRaw: repairSlot(structuredClone(s.slot)) } : {}),
   };
 }
@@ -178,6 +179,7 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
     ...(s.uiY === undefined ? {} : { ui: { y: clampUiY(s.uiY) } }),
     ...(s.outcome === undefined ? {} : { outcome: s.outcome }),
     ...(s.nextStep === undefined ? {} : { next_step: s.nextStep }),
+    ...(s.node === undefined ? {} : { node: s.node }),
     ...(s.slotRaw ? { slot: s.slotRaw } : {}),
   };
 }

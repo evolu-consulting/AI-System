@@ -667,6 +667,44 @@
     }
   },
   "tenants": {
+    "companyFlows": {
+      "empty": "Công ty chưa có flow nào. Quản trị nền tảng gán flow từ Thư viện.",
+      "col": {
+        "name": "Flow",
+        "trigger": "Bắt đầu khi",
+        "source": "Nguồn",
+        "status": "Trạng thái"
+      },
+      "withCondition": "có điều kiện",
+      "source": {
+        "assigned": "Được gán · chỉ xem",
+        "own": "Bản công ty",
+        "copy": "Sao từ {{name}} · v{{v}}"
+      },
+      "status": {
+        "on": "Đang bật",
+        "off": {
+          "replaced": "Đang tắt · đã thay bằng bản công ty",
+          "reverted": "Đang tắt · đã quay về bản gốc",
+          "turned_off": "Đang tắt · quản trị đã tắt",
+          "not_published": "Đang tắt · chưa xuất bản"
+        }
+      },
+      "warn": { "shadowed": "Không bao giờ chạy: flow phía trên khớp mọi trường hợp" },
+      "open": "Mở",
+      "clone": "Sao chép để sửa",
+      "publish": "Xuất bản",
+      "revert": "Quay về bản gốc",
+      "turnOn": "Bật",
+      "turnOff": "Tắt",
+      "orderHint": "Kéo để đổi thứ tự. Với sự kiện quyết định, chạy flow khớp đầu tiên.",
+      "err": {
+        "requiredLast": "Cần ít nhất một flow đang bật, không điều kiện cho sự kiện bắt buộc. Bật flow khác trước khi tắt.",
+        "pairActive": "Bản gốc và bản công ty không bật cùng lúc. Tắt bản kia hoặc dùng Quay về bản gốc.",
+        "notPublished": "Flow chưa xuất bản nên chưa bật được. Xuất bản trước.",
+        "generic": "Không thực hiện được. Tải lại trang rồi thử lại."
+      }
+    },
     "flows": {
       "stepsGap": {
         "loadFail": "Không tải được các bước. Tải lại trang; nếu vẫn lỗi, mở trang chi tiết để xem.",
