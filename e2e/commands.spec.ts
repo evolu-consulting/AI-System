@@ -8,15 +8,13 @@ test.beforeAll(() => {
   resetFixture();
 });
 
-/** Hàng bảng Commands theo tên (`/dich` không nhầm `/dich-moi`). */
-const row = (page: Page, name: string) =>
-  page
-    .getByRole("table", { name: "Commands" })
-    .getByRole("row")
-    .filter({ hasText: new RegExp(`/${name}(?![\\w-])`) });
-const rowMenu = async (page: Page, name: string, item: string) => {
-  await row(page, name).getByRole("button", { name: "Thao tác khác" }).click();
-  await page.getByRole("menuitem", { name: item, exact: true }).click();
+/** Hàng công cụ AI theo tên lệnh (`dich` không nhầm `dich-moi`). CR-121 c16: danh sách /commands gộp vào /ai-tools. */
+const toolRow = (page: Page, name: string) =>
+  page.getByRole("row", { name: new RegExp(`(?<![\\w-])${name}(?![\\w-])`) });
+const header = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
+const openCommand = async (page: Page, id: string) => {
+  await page.goto(`/commands/${id}`);
+  await expect(page.getByRole("textbox", { name: "Tên command" })).toBeVisible();
 };
 const SOURCES = [
   "Tham số",
@@ -50,76 +48,62 @@ const openNew = async (page: Page, qs = "") => {
   await expect(page.getByRole("textbox", { name: "Tên command" })).toBeVisible();
 };
 
-test("ADM-FR-20 · M2-R26 · /commands: heading, bảng, /dich có alias tr + switch 'Bật command /dich', combobox Feature/Workflow, chip Tất cả 5 / Bật 3 / Tắt 2", async ({
+test("ADM-FR-20 · M2-R26 · /commands → Công cụ AI (CR-121 c16): chip Lệnh, ô tìm, nút 'Tạo lệnh', hàng /dich đang bật", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/commands", "Commands");
-  await expect(page.getByRole("link", { name: "+ Tạo command" })).toBeVisible();
-  await expect(page.getByRole("searchbox", { name: "Tìm theo tên, alias, mô tả…" })).toBeVisible();
-  await page.getByRole("button", { name: "Lọc" }).click();
-  await expect(page.getByRole("menu", { name: "Chọn bộ lọc" })).toBeVisible();
-  await expect(row(page, "dich")).toContainText("tr");
-  await expect(row(page, "dich").getByRole("switch", { name: "Bật command /dich" })).toBeChecked();
-  for (const [label, n] of [
-    ["Bật", 3],
-    ["Tắt", 2],
-  ] as const) {
-    await expect(
-      page.getByRole("menuitemradio", { name: new RegExp(`${label}\\s*${n}`) }),
-    ).toBeVisible();
-  }
+  await openPage(page, "/commands", "Công cụ AI");
+  await expect(page).toHaveURL(/\/ai-tools\?.*kind=command/);
+  await expect(page.getByRole("link", { name: "Tạo lệnh" })).toBeVisible();
+  await expect(page.getByRole("searchbox", { name: "Tìm công cụ" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Lệnh\s*5$/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(toolRow(page, "dich")).toContainText("Đang bật");
 });
 
-test("ADM-BR-06 · ADM-FR-20 · tắt /dich → toast 'Đã tắt /dich' + 'Hoàn tác' (bấm trong 5 s → bật lại, PATCH kèm version); /xuat-bao-cao có switch khoá + tooltip 'Bật workflow report-export trước'", async ({
+test("ADM-BR-06 · ADM-FR-20 · editor /dich (công tắc chuyển từ danh sách): tắt 'Bật command' → Lưu (PATCH kèm version, enabled=false) → toast; bật lại → Lưu", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/commands", "Commands");
-  const sw = row(page, "dich").getByRole("switch", { name: "Bật command /dich" });
-  const off = page.waitForResponse(
-    (r) => r.url().includes("/admin/commands/") && r.request().method() === "PATCH",
-  );
-  await sw.click();
-  expect((await off).status()).toBe(200);
-  const t = toast(page, "Đã tắt /dich");
-  await expect(t).toBeVisible();
-  const undo = page.waitForResponse(
-    (r) => r.url().includes("/admin/commands/") && r.request().method() === "PATCH",
-  );
-  await t.getByRole("button", { name: "Hoàn tác" }).click();
-  const undone = await undo;
-  expect(undone.status()).toBe(200);
-  expect(JSON.parse(undone.request().postData() ?? "{}")).toMatchObject({ enabled: true });
+  await openCommand(page, ID.command.dich);
+  const sw = page.getByRole("switch", { name: "Bật command" });
   await expect(sw).toBeChecked();
-  const locked = row(page, "xuat-bao-cao").getByRole("switch", {
-    name: "Bật command /xuat-bao-cao",
-  });
-  await expect(locked).toBeDisabled();
-  await locked.hover();
-  await expect(page.getByText("Bật workflow report-export trước")).toBeVisible();
+  const patch = () =>
+    page.waitForResponse(
+      (r) => r.url().includes("/admin/commands/") && r.request().method() === "PATCH",
+    );
+  await sw.click();
+  let res = patch();
+  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  let done = await res;
+  expect(done.status()).toBe(200);
+  expect(JSON.parse(done.request().postData() ?? "{}")).toMatchObject({ enabled: false });
+  await expect(toast(page, "Đã lưu /dich")).toBeVisible();
+  await sw.click();
+  res = patch();
+  await page.getByRole("button", { name: "Lưu", exact: true }).click();
+  done = await res;
+  expect(done.status()).toBe(200);
+  expect(JSON.parse(done.request().postData() ?? "{}")).toMatchObject({ enabled: true });
 });
-
-test("ADM-FR-23 · X1 F4 · editor command có nút 'Chạy thử'; ADM-FR-20 · menu ⋯ vẫn không có 'Lịch sử'", async ({
+test("ADM-FR-23 · X1 F4 · editor command có nút 'Chạy thử'; ADM-FR-20 · editor có 'Nhân bản' và 'Xoá', không có 'Lịch sử'", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await page.goto(`/commands/${ID.command.dich}`);
-  await expect(page.getByRole("textbox", { name: "Tên command" })).toBeVisible();
+  await openCommand(page, ID.command.dich);
   await expect(page.getByRole("button", { name: "Chạy thử", exact: true }).first()).toBeVisible();
-  await openPage(page, "/commands", "Commands");
-  await row(page, "dich").getByRole("button", { name: "Thao tác khác" }).click();
-  await expect(page.getByRole("menuitem", { name: "Lịch sử" })).toHaveCount(0);
-  await expect(page.getByRole("menuitem", { name: "Nhân bản" })).toBeVisible();
-  await expect(page.getByRole("menuitem", { name: "Xoá" })).toBeVisible();
+  await expect(header(page, "Nhân bản")).toBeVisible();
+  await expect(header(page, "Xoá")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Lịch sử" })).toHaveCount(0);
 });
-
 test("ADM-BR-01 · CR-055 · bước 1: tên '/Dịch' → 'dich'; alias thêm/bỏ; feature mặc định core, bỏ hết → gợi ý 'Chưa gắn feature' (không chặn); tên trùng dich → lỗi trước khi lưu", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/commands", "Commands");
-  await page.getByRole("link", { name: "+ Tạo command" }).click();
+  await openPage(page, "/commands", "Công cụ AI");
+  await page.getByRole("link", { name: "Tạo lệnh" }).click();
   await expect(page).toHaveURL(/\/commands\/new$/);
   const name = page.getByRole("textbox", { name: "Tên command" });
   await name.fill("/Dịch");
@@ -242,8 +226,8 @@ test("ADM-FR-20 · ui-admin 7.4 · nhân bản /dich → /commands/new?from=<id>
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/commands", "Commands");
-  await rowMenu(page, "dich", "Nhân bản");
+  await openCommand(page, ID.command.dich);
+  await header(page, "Nhân bản").click();
   await expect(page).toHaveURL(new RegExp(`/commands/new\\?.*from=${ID.command.dich}`));
   await expect(page.getByRole("textbox", { name: "Tên command" })).toHaveValue("dich-copy");
   await expect(page.getByText("Bản sao của /dich: đã tắt, không có alias.")).toBeVisible();
@@ -258,31 +242,32 @@ test("ADM-FR-20 · ui-admin 7.4 · nhân bản /dich → /commands/new?from=<id>
   expect(c).toMatchObject({ enabled: false, aliases: [] });
 });
 
-test("CR-055 · hộp xoá /dich nói rõ command là danh mục chung (mất ở MỌI công ty) + cách bỏ khỏi một công ty; /tr-nhanh bỏ hết feature → badge 'Chưa gắn feature' ở danh sách", async ({
+test("CR-055 · hộp xoá /dich (nút Xoá ở editor) nói rõ command là danh mục chung (mất ở MỌI công ty) + cách bỏ khỏi một công ty; /tr-nhanh bỏ hết feature → editor hiện gợi ý 'Chưa gắn feature'", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/commands", "Commands");
-  await rowMenu(page, "dich", "Xoá");
+  await openCommand(page, ID.command.dich);
+  await header(page, "Xoá").click();
   const dialog = page.getByRole("alertdialog", { name: "Xoá /dich?" });
   await expect(dialog).toContainText("MỌI công ty");
   await expect(dialog).toContainText("thu hồi feature của công ty đó");
   await dialog.getByRole("button", { name: "Huỷ" }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(row(page, "tr-nhanh")).not.toContainText("Chưa gắn feature");
+  await openCommand(page, ID.command.trNhanh);
+  await expect(page.getByText(/^Chưa gắn feature — không ai dùng được command này/)).toHaveCount(0);
   await withOwner(
     (sql) => sql`delete from admin.feature_commands where command_id = ${ID.command.trNhanh}`,
   );
   await page.reload();
-  await expect(row(page, "tr-nhanh")).toContainText("Chưa gắn feature");
+  await expect(page.getByText(/^Chưa gắn feature — không ai dùng được command này/)).toBeVisible();
 });
 
-test("ADM-FR-20 · M2-R26 · xoá /tr-nhanh: alertdialog 'Xoá /tr-nhanh?' gõ tên → nút 'Xoá command' → toast 'Đã xoá /tr-nhanh'", async ({
+test("ADM-FR-20 · M2-R26 · xoá /tr-nhanh ở editor: alertdialog 'Xoá /tr-nhanh?' gõ tên → nút 'Xoá command' → toast 'Đã xoá /tr-nhanh' → về Công cụ AI, không còn hàng /tr-nhanh", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/commands", "Commands");
-  await rowMenu(page, "tr-nhanh", "Xoá");
+  await openCommand(page, ID.command.trNhanh);
+  await header(page, "Xoá").click();
   const dialog = page.getByRole("alertdialog", { name: "Xoá /tr-nhanh?" });
   await expect(dialog).toBeVisible();
   const submit = dialog.getByRole("button", { name: "Xoá command" });
@@ -294,7 +279,8 @@ test("ADM-FR-20 · M2-R26 · xoá /tr-nhanh: alertdialog 'Xoá /tr-nhanh?' gõ t
   await submit.click();
   expect((await deleted).status()).toBe(204);
   await expect(toast(page, "Đã xoá /tr-nhanh")).toBeVisible();
-  await expect(row(page, "tr-nhanh")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/ai-tools\?.*kind=command/);
+  await expect(toolRow(page, "tr-nhanh")).toHaveCount(0);
 });
 
 test("ADM-FR-24 · M2-R23 · tab 'Ai dùng được' của /dich: bảng tenant acme/globex/platform/zeta/bulk, tổng '5 tenant · 66 user' (gồm tenant bulk 55 user của fixture e2e). Card 'chưa khả dụng' bỏ ở M3 (kiểm ở access-command.spec); tạo mới thì tab khoá", async ({

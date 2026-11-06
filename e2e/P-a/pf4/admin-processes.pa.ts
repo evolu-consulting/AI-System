@@ -26,14 +26,16 @@ test('ADM-FR-65 · E-P15a · Adm: nav "Quy trình" ⇒ Công ty › Quy trình; 
   const p = await ctx.newPage();
   try {
     await adminLogin(p);
-    const nav = p.getByRole("link", { name: "Quy trình", exact: true });
-    await expect(nav).toBeVisible();
-    await nav.click();
-    await expect(p).toHaveURL(/\/tenants\/[^/?]+\?.*tab=processes/);
+    // CR-121 R2: tenant_admin không còn mục sidebar Quy trình — vào Công ty (công ty mình) › tab Quy trình.
+    await expect(p.getByRole("link", { name: "Quy trình", exact: true })).toHaveCount(0);
+    await p.getByRole("link", { name: "Công ty", exact: true }).click();
+    await expect(p).toHaveURL(/\/tenants\/[^/?]+/);
+    await p.getByRole("tab", { name: "Quy trình" }).click();
+    await expect(p.getByRole("tab", { name: "Quy trình", selected: true })).toBeVisible();
     const m = await browser.newContext();
     const mp = await m.newPage();
     await adminLogin(mp, "A").catch(() => undefined);
-    await expect(mp.getByRole("link", { name: "Quy trình", exact: true })).toHaveCount(0);
+    await expect(mp.getByRole("link", { name: "Công ty", exact: true })).toHaveCount(0);
     await m.close();
   } finally {
     await ctx.close();

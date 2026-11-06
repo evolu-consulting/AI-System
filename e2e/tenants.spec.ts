@@ -24,7 +24,7 @@ const openTenants = async (page: Page) => {
   await asAdmin(page);
   await page
     .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("link", { name: "CÔNG TY", exact: true })
+    .getByRole("link", { name: "Công ty", exact: true })
     .click();
   await expect(page.getByRole("table", { name: "Công ty" })).toBeVisible();
 };
@@ -58,17 +58,15 @@ test("ADM-FR-61 · M1-R10 · chip 'Đã khoá' lọc zeta; ô tìm 'glo' lọc g
   await expect(rowOf(page, "Công ty", "acme")).toHaveCount(0);
 });
 
-test("ADM-BR-05 · BR-09 · tenant_admin vào /tenants → 'Bạn không có quyền xem trang này' + link 'Về Tổng quan'", async ({
+test("ADM-BR-05 · BR-09 · tenant_admin vào /tenants → chuyển thẳng sang công ty MÌNH (CR-121 c10); công ty khác không xem được", async ({
   page,
 }) => {
   await loginToShell(page, "acme", "binh", PW);
   await page.goto("/tenants");
-  await expect(
-    page.getByRole("heading", { name: "Bạn không có quyền xem trang này" }),
-  ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Về Tổng quan" })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.acme}`));
+  await page.goto(`/tenants/${TENANT_ID.globex}`);
+  await expect(page.getByRole("heading", { name: "Không tìm thấy" })).toBeVisible();
 });
-
 test("ADM-FR-60 · M1-R17 · tạo tenant → dialog 'Đã tạo tenant initech': mật khẩu tạm 16 ký tự, Esc/click nền không đóng, 'Tiếp tục cấu hình' khoá tới khi tick", async ({
   page,
 }) => {
@@ -110,7 +108,7 @@ test("ADM-FR-60 · M1-R19 · chi tiết acme: mã readonly, sửa tên + Lưu �
   page,
 }) => {
   await asAdmin(page);
-  await page.goto(`/tenants/${TENANT_ID.acme}?tab=info`);
+  await page.goto(`/tenants/${TENANT_ID.acme}?tab=settings`);
   await expect(page.getByRole("tab", { name: "Cài đặt" })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Mã công ty" })).not.toBeEditable();
   // CR-121: tên công ty sửa tại chỗ ở tab Hồ sơ.
@@ -125,13 +123,10 @@ test("ADM-FR-60 · M1-R19 · chi tiết acme: mã readonly, sửa tên + Lưu �
     "Quy trình",
     "Thành viên",
     "Cài đặt",
-    "Nhóm",
-    "Đối tác",
-    "Phân quyền",
-    "Agents",
-    "Quota",
   ]);
-  await page.getByRole("tab", { name: "Agents" }).click();
+  // CR-121 c14: Agents là mục con của Thành viên.
+  await page.getByRole("tab", { name: "Thành viên" }).click();
+  await page.getByTestId("members-view-agents").click();
   await expect(page.getByRole("heading", { level: 2, name: "Agents", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
 });
@@ -140,7 +135,7 @@ test("ADM-FR-61 · M1-AC03 · khoá acme: gõ 'acme' mới bật nút; user acme
   page,
 }) => {
   await asAdmin(page);
-  await page.goto(`/tenants/${TENANT_ID.acme}`);
+  await page.goto(`/tenants/${TENANT_ID.acme}?tab=settings`); // CR-121 c14b: Khoá công ty nằm ở tab Cài đặt
   await page.getByRole("button", { name: "Khoá tenant", exact: true }).click();
   const dialog = page.getByRole("alertdialog", { name: "Khoá tenant acme?" });
   const confirm = dialog.getByRole("button", { name: "Khoá tenant", exact: true });

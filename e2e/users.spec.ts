@@ -54,7 +54,7 @@ test("ADM-FR-04 · ADM-FR-76 · M1-R14 · admin: /users?tenant=acme → workspac
   page,
 }) => {
   await asAdmin(page);
-  await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.acme}.*tab=users`));
+  await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.acme}.*tab=members`));
   await expect(page.getByRole("tab", { name: "Thành viên", selected: true })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Tenant" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "+ Tạo user" })).not.toHaveAttribute(

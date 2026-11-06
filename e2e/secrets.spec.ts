@@ -178,7 +178,8 @@ test("ADM-FR-50 · M2-R04 · AC-A06 · Thay giá trị: dialog 'DIFY_TRANSLATE_K
   await expect(t).toBeVisible();
   expect(await leaksOnPage(page, traffic, leakForms(LEAK_2))).toEqual([]);
   await t.getByRole("button", { name: "Xem các workflow dùng secret này" }).click();
-  await expect(page).toHaveURL(/\/workflows\?.*secret=DIFY_TRANSLATE_KEY/);
+  // CR-121 c16: /workflows chuyển sang Công cụ AI (chưa có bộ lọc theo secret — xem báo cáo lát: Lỗi sản phẩm).
+  await expect(page).toHaveURL(/\/ai-tools\?.*kind=workflow/);
 });
 
 test("ADM-FR-50 · M2-R04 · Sửa ghi chú: chỉ có ô Ghi chú (không có ô giá trị); lưu → hàng đổi ghi chú, •••• 7f3a giữ nguyên", async ({

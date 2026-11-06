@@ -38,8 +38,9 @@ test("ADM-FR-36 · M3-R13 · link 'Mở Kiểm tra quyền' → route cũ /acces
   const drawer = await openDrawer(page, "lan");
   await drawer.getByRole("tab", { name: "Quyền hiệu lực" }).click();
   await drawer.getByRole("link", { name: "Mở Kiểm tra quyền" }).click();
-  await expect(page).toHaveURL(/\/tenants\/[0-9a-f-]{36}\?.*tab=access/);
-  await expect(page).toHaveURL(/view=check/);
+  await expect(page).toHaveURL(/\/tenants\/[0-9a-f-]{36}\?.*tab=members/);
+  await expect(page).toHaveURL(/view=access/);
+  await expect(page).toHaveURL(/mode=check/);
   await expect(page).toHaveURL(/user=lan/);
   await expect(page.getByRole("tab", { name: "Kiểm tra quyền", exact: true })).toHaveAttribute(
     "aria-selected",

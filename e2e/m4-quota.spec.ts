@@ -17,7 +17,8 @@ const isPatch = (r: Resp) =>
 async function openQuota(page: Page) {
   await loginAdmin(page);
   await page.goto(`/tenants/${ACME}?tab=quota`);
-  await expect(page.getByRole("tab", { name: "Quota" })).toHaveAttribute("aria-selected", "true");
+  // CR-121 c14b: ?tab=quota cũ ⇒ tab Cài đặt (Quota là một khối trong đó).
+  await expect(page.getByRole("tab", { name: "Cài đặt" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("spinbutton", { name: "Số run · Cả tenant" })).toBeVisible();
 }
 
@@ -103,7 +104,7 @@ test("ADM-FR-40 · Q9 · E22 · tab Thông tin và Quota cập nhật version ch
   page,
 }) => {
   await loginAdmin(page);
-  await page.goto(`/tenants/${ACME}?tab=info`);
+  await page.goto(`/tenants/${ACME}?tab=settings`);
   // CR-121: tên công ty đã chuyển sang tab Hồ sơ ⇒ dùng ô "Giới hạn slot" của tab Cài đặt làm trường đổi.
   const name = page.getByRole("spinbutton", { name: "Giới hạn slot subscription" });
   await expect(name).toBeVisible();
@@ -114,17 +115,16 @@ test("ADM-FR-40 · Q9 · E22 · tab Thông tin và Quota cập nhật version ch
   await save.click();
   expect((await resp).status()).toBe(200);
 
-  await page.getByRole("tab", { name: "Quota" }).click();
   await page.getByRole("spinbutton", { name: "Số run · Cả tenant" }).fill("777");
   resp = page.waitForResponse(isPut);
   await save.click();
   expect((await resp).status()).toBe(200);
   await expect(conflictDialog(page)).toHaveCount(0);
 
-  await page.getByRole("tab", { name: "Cài đặt" }).click();
   await name.fill("8");
   resp = page.waitForResponse(isPatch);
-  await save.click();
+  await name.blur();
+  await save.dispatchEvent("click"); // toast lần lưu trước che nút (chặn con trỏ)
   expect((await resp).status()).toBe(200);
   await expect(conflictDialog(page)).toHaveCount(0);
 });

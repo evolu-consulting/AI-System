@@ -55,10 +55,12 @@ test("ADM-FR-79 · AC1,AC2,AC4 · sidebar '+' → bước 1 tạo công ty ngay,
 }) => {
   await fakePacks(page, ANY_ID, {}, syncWizco);
   await loginAdmin(page);
+  // CR-121 c10: sidebar phẳng — Công ty → nút "Thêm công ty" của danh sách.
   await page
     .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("link", { name: "Tạo công ty" })
+    .getByRole("link", { name: "Công ty", exact: true })
     .click();
+  await page.getByRole("link", { name: "Thêm công ty" }).click();
   await expect(page).toHaveURL(/\/tenants\/new$/);
   await expect(page.getByRole("heading", { level: 1, name: "Thêm công ty" })).toBeVisible();
   await expect(stepper(page).locator('[aria-current="step"]')).toContainText("Thông tin");
@@ -96,12 +98,9 @@ test("ADM-FR-79 · AC1,AC2,AC4 · sidebar '+' → bước 1 tạo công ty ngay,
   await expect(stepper(page).locator('[aria-current="step"]')).toContainText("Ứng dụng & Gói");
 
   // Bước 2 dùng nguyên tab Ứng dụng & Gói: đặt mức Xem + Lưu; Tiếp tục khoá khi còn nháp.
-  const card = page.getByRole("region", { name: "Sổ Hợp Tác" });
+  const card = page.getByTestId("apps-row-contracts"); // CR-121 c12: bảng Ứng dụng
   const next = page.getByRole("button", { name: "Tiếp tục", exact: true });
-  await card
-    .getByRole("radiogroup", { name: "Mức dùng Sổ Hợp Tác" })
-    .getByRole("radio", { name: "Xem" })
-    .click();
+  await card.getByLabel("Mức dùng Sổ Hợp Tác").getByRole("radio", { name: "Xem" }).click();
   await expect(next).toBeDisabled();
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(toast(page, "Đã lưu tính năng cho")).toBeVisible();
@@ -157,7 +156,7 @@ test("ADM-FR-77 AC4 · tenant_admin: tab Quota rút gọn chỉ đọc (run/toke
   });
   await loginAs(page, "acme", "binh");
   await page.goto(`/tenants/${TENANT_ID.acme}?tab=quota`);
-  await expect(page.getByRole("tab", { name: "Quota", selected: true })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Cài đặt", selected: true })).toBeVisible(); // CR-121 c14b: Quota nằm trong Cài đặt
   await expect(page.getByRole("heading", { level: 2, name: /^Quota tháng/ })).toBeVisible();
   await expect(page.getByRole("progressbar", { name: "Run · Cả tenant" })).toHaveAttribute(
     "aria-valuetext",
@@ -165,7 +164,7 @@ test("ADM-FR-77 AC4 · tenant_admin: tab Quota rút gọn chỉ đọc (run/toke
   );
   await expect(page.getByText("Số USD")).toHaveCount(0);
   await expect(page.getByText("USD", { exact: true })).toHaveCount(0);
-  await expect(page.getByRole("spinbutton")).toHaveCount(0);
+  await expect(page.locator("#quota").getByRole("spinbutton")).toHaveCount(0); // khối Quota (Cài đặt) chỉ đọc
   await expect(page.getByRole("button", { name: "Lưu", exact: true })).toHaveCount(0);
   expect(platformOnly).toEqual([]);
   // CR-121 C-2: dòng tóm tắt đầu trang (mọi vai) đọc ma trận quyền của CHÍNH công ty mình (limit=1, route cho tenant_admin); tab Quota không gọi thêm.

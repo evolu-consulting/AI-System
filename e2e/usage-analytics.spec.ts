@@ -2,7 +2,14 @@
 // platform_admin lọc tenant, thấy KPI token, bảng "token đổ vào đâu" theo app, bản ghi + chi tiết run; tenant_admin không
 // có bộ chọn tenant, không có chi phí (response không chứa cost_usd).
 import { expect, type Page, test } from "@playwright/test";
-import { loginAdmin, loginAs, resetFixture, USER_ID, withOwner } from "./support/helpers";
+import {
+  loginAdmin,
+  loginAs,
+  openSystemEntry,
+  resetFixture,
+  USER_ID,
+  withOwner,
+} from "./support/helpers";
 import { ACME, GLOBEX } from "./support/m4-ab";
 
 const RUN = "a4900000-0000-4000-8000-0000000000e1";
@@ -27,7 +34,7 @@ test("ADM-FR-42 · platform_admin: tab 'Phân tích token', lọc tenant acme, K
   page,
 }) => {
   await loginAdmin(page);
-  await page.getByRole("link", { name: "Chi phí & quota" }).click();
+  await openSystemEntry(page, /Chi phí & quota/);
   await page.getByRole("link", { name: "Phân tích token" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Phân tích token" })).toBeVisible();
   await page.getByRole("combobox", { name: "Tenant" }).click();

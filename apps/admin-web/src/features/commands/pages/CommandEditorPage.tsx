@@ -12,19 +12,22 @@ import { PlatformOnly } from "@/components/shared/PlatformOnly";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
+import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
-import { useCommand, useCommandAccess } from "../api";
+import { useCommand, useCommandAccess, useDeleteCommand } from "../api";
 import { StepArgs } from "../components/editor/StepArgs";
 import { StepInputMap } from "../components/editor/StepInputMap";
 import { StepName } from "../components/editor/StepName";
 import { StepOutput } from "../components/editor/StepOutput";
 import { StepWorkflow } from "../components/editor/StepWorkflow";
+import { CommandDeleteDialog } from "../components/editor-parts/CommandDeleteDialog";
 import { useCommandForm } from "../hooks/use-command-form";
 import { useWide } from "../hooks/use-wide";
 import { useWorkflowLink } from "../hooks/use-workflow-link";
@@ -63,23 +66,46 @@ type BodyProps = Pick<Props, "tab" | "onTab"> & {
 
 function EditorHeader({ command }: { command?: Command }) {
   const { t } = useTranslation();
+  const tr = useTr();
   const router = useRouter();
+  const del = useDeleteCommand();
+  const [confirm, setConfirm] = useState(false);
   if (!command) return <PageHeader title={t("commands.editor.titleNew")} />;
+  const confirmDelete = async () => {
+    await del.mutateAsync(command.id).catch((err) => {
+      if (err instanceof ApiError && err.code === "UNAUTHORIZED") throw err;
+      const spec = describeError(err);
+      notifyError(tr(spec.key, spec.params));
+      throw err; // giữ hộp thoại mở
+    });
+    notifySuccess(t("commands.toast.deleted", { name: command.name }));
+    void router.navigate({ to: "/ai-tools", search: { kind: "command" } });
+  };
   return (
     <>
+      <CommandDeleteDialog
+        target={confirm ? command : null}
+        onClose={() => setConfirm(false)}
+        onConfirm={confirmDelete}
+      />
       <PageHeader
         title={`/${command.name}`}
         description={command.aliases.length ? `alias ${command.aliases.join(", ")}` : undefined}
         actions={
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() =>
-              void router.navigate({ to: "/commands/new", search: { from: command.id } })
-            }
-          >
-            {t("commands.header.duplicate")}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                void router.navigate({ to: "/commands/new", search: { from: command.id } })
+              }
+            >
+              {t("commands.header.duplicate")}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => setConfirm(true)}>
+              {t("commands.header.delete")}
+            </Button>
+          </div>
         }
       />
       <div className="-mt-3 mb-4 flex gap-2">

@@ -2099,6 +2099,7 @@
       "text": "No commands yet. A command lets users call a workflow with a short command like /dich."
     },
     "header": {
+      "delete": "Delete",
       "duplicate": "Duplicate"
     },
     "test": {
@@ -3336,6 +3337,7 @@
     "empty": "No AI tools yet",
     "emptyDesc": "Create a Dify workflow so agents, commands and company processes can call it.",
     "create": "Create workflow",
+    "createCommand": "Create command",
     "loadError": "Could not load the tools.",
     "notice": {
       "companyTools": "Switching Dify tools on or off per company now lives under AI tools. Pick a tool to choose which companies may use it."

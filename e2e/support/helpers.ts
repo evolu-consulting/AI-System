@@ -130,18 +130,15 @@ export async function openPage(page: Page, path: string, heading: string) {
 }
 
 /**
- * CR-112 (nav.ts, nhóm TỰ ĐỘNG HOÁ): "Workflow Dify (tool AI)" là một liên kết trong sidebar → /workflows,
- * tiêu đề h1 cùng tên (thay nhóm sổ xuống DLC-R15 "Workflow Process").
+ * CR-121 c10/c16: sidebar chỉ còn "Công cụ AI" (gộp Workflow Dify, Lệnh, Agent) → /ai-tools, h1 "Công cụ AI".
+ * Tên cũ `openWorkflowProcessFromNav` giữ cho các spec gọi sẵn.
  */
 export async function openWorkflowProcessFromNav(page: Page) {
   const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
-  await nav.getByRole("link", { name: "Workflow Dify (tool AI)", exact: true }).click();
-  await expect(page).toHaveURL(/\/workflows$/);
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Workflow Dify (tool AI)" }),
-  ).toBeVisible();
+  await nav.getByRole("link", { name: "Công cụ AI", exact: true }).click();
+  await expect(page).toHaveURL(/\/ai-tools/);
+  await expect(page.getByRole("heading", { level: 1, name: "Công cụ AI" })).toBeVisible();
 }
-
 export type Traffic = {
   /** Chờ mọi body response đã đọc xong rồi mới quét (không race). */
   flush: () => Promise<void>;

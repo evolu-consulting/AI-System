@@ -31,7 +31,7 @@ test("ADM-FR-62 · M3-R24 · tenant_admin binh: menu không còn link 'Groups'/'
   const nav = page.getByRole("navigation");
   await expect(nav.getByRole("link", { name: "Groups", exact: true })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Phân quyền", exact: true })).toHaveCount(0);
-  await nav.getByRole("list", { name: "Danh sách công ty" }).getByRole("link").click();
+  await nav.getByRole("link", { name: "Công ty", exact: true }).click(); // CR-121 c10: tenant_admin vào thẳng công ty mình
   await expect(page).toHaveURL(new RegExp(`/tenants/${TENANT_ID.acme}`));
   // CR-121 c14: Nhóm là mục con của tab Thành viên
   await page.getByRole("tab", { name: "Thành viên" }).click();

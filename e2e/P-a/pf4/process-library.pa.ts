@@ -2,6 +2,7 @@
 // ⇒ cột "Dùng bởi" tăng; Canvas hiện nút hệ thống (contracts-route/contracts-finalize) với huy hiệu "Hệ thống", không xoá được.
 // Chỉ chạy được khi backend L1/L2a/L2b đã gộp (seed 0069: def "Quy trình HĐ mặc định" + khe contracts.approval). KHÔNG chạy trong lát.
 import { expect, type Page, test } from "@playwright/test";
+import { assignProcessUi, openJobDrawer } from "../../_kit/ui";
 import { seedAdmin } from "../../support/helpers";
 import { ACME, ADMIN_URL, settle, withSql } from "../_pa-support";
 
@@ -129,13 +130,10 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
         (${ACME}, 'contracts-owner', '{"vi":"contracts-owner"}'::jsonb)
         on conflict (tenant_id, key) do nothing`,
     );
-    // Gán cho tenant acme (hộp thoại)
-    await toolbar.getByRole("button", { name: "Gán cho tenant" }).click();
-    const asg = p.getByRole("dialog");
-    await asg.getByRole("checkbox", { name: /acme/i }).check();
-    await asg.getByRole("button", { name: "Lưu gán" }).click();
-    await expect(p.getByText(/Đã cập nhật gán cho 1 tenant/)).toBeVisible();
-
+    // CR-121 R1: trình sửa thư viện không còn nút gán — chỉ ghi chữ hướng dẫn + link; gán nằm ở Công ty › Quy trình
+    // (việc gán làm ở bước "Dùng bởi" bên dưới).
+    await expect(p.getByTestId("assign-where")).toContainText("Công ty › Quy trình");
+    await expect(toolbar.getByRole("button", { name: "Gán cho tenant" })).toHaveCount(0);
     // Canvas: CHỈ route/finalize khoá (huy hiệu "Hệ thống", Delete không mở hộp xoá, panel báo khoá); bước duyệt không khoá
     await toolbar.getByRole("button", { name: "Sơ đồ", exact: true }).click();
     const sys = canvas.getByRole("button").filter({ hasText: "Hệ thống" });
@@ -152,6 +150,13 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
       p.getByText("Nút hệ thống của Sổ Hợp Tác: khoá, không xoá hoặc đổi."),
     ).toBeVisible();
 
+    // CR-121 R1: gán ở Công ty › Quy trình (nơi duy nhất), rồi quay lại thư viện kiểm cột "Dùng bởi".
+    await p
+      .getByRole("navigation", { name: "Điều hướng chính" })
+      .getByRole("link", { name: "Công ty", exact: true })
+      .click();
+    await p.getByRole("table").getByRole("link", { name: "acme", exact: true }).click();
+    await assignProcessUi(await openJobDrawer(p, "contracts.approval"), name);
     // danh sách: "Dùng bởi" của bản nhân bản = "1 công ty" (đếm, CR-121 c15)
     // ở trang editor có thêm link "Quy trình" trên đường dẫn ⇒ chọn đúng link ở thanh bên
     await p

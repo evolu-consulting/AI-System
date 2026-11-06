@@ -2099,6 +2099,7 @@
       "text": "Chưa có command nào. Command giúp người dùng gọi workflow bằng một lệnh ngắn như /dich."
     },
     "header": {
+      "delete": "Xoá",
       "duplicate": "Nhân bản"
     },
     "test": {
@@ -3336,6 +3337,7 @@
     "empty": "Chưa có công cụ AI nào",
     "emptyDesc": "Tạo workflow Dify để agent, lệnh và quy trình của công ty gọi tới.",
     "create": "Tạo workflow",
+    "createCommand": "Tạo lệnh",
     "loadError": "Không tải được danh sách công cụ.",
     "notice": {
       "companyTools": "Bật/tắt Dify theo công ty nằm ở Công cụ AI. Chọn một công cụ để chọn công ty được dùng."

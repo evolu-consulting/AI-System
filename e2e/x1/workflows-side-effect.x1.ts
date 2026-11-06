@@ -30,18 +30,22 @@ test("X1-AC10 · editor translate: switch 'Cần xác nhận trước khi chạy
   await expect(sw(page)).toBeChecked();
 });
 
-test("X1-AC10 · danh sách: columnheader 'Xác nhận'; workflow có cờ hiện 'Hỏi xác nhận', workflow không cờ hiện '—'", async ({
+test("X1-AC10 · Công cụ AI: workflow có cờ hiện huy hiệu 'Có tác dụng phụ' trong ngăn chi tiết, workflow không cờ thì không", async ({
   page,
 }) => {
   await withOwner(async (sql) => {
     await sql`update admin.workflows set side_effect = true where id = ${ID.workflow.reportTax}`;
   });
   await loginAdmin(page);
-  await page.goto("/workflows");
-  const table = page.getByRole("table", { name: "Workflow Dify (tool AI)" });
-  await expect(table.getByRole("columnheader", { name: "Xác nhận" })).toBeVisible();
+  await page.goto("/ai-tools?kind=workflow"); // CR-121 R2: /workflows (danh sách) chuyển sang Công cụ AI; "Hỏi xác nhận" nay là huy hiệu "Có tác dụng phụ" trong ngăn chi tiết
   const rowOf = (key: string) =>
-    table.getByRole("row").filter({ hasText: new RegExp(`(?<![w-])${key}(?![w-])`) });
-  await expect(rowOf("report-tax")).toContainText("Hỏi xác nhận");
-  await expect(rowOf("translate")).not.toContainText("Hỏi xác nhận");
+    page.getByRole("row", { name: new RegExp(`(?<![\\w-])${key}(?![\\w-])`) });
+  await rowOf("report-tax").first().click();
+  const drawer = page.getByRole("dialog");
+  await expect(drawer).toContainText("Có tác dụng phụ");
+  await page.keyboard.press("Escape");
+  await expect(drawer).toHaveCount(0);
+  await rowOf("translate").first().click();
+  await expect(drawer).toBeVisible();
+  await expect(drawer).not.toContainText("Có tác dụng phụ");
 });

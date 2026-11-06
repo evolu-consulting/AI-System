@@ -1,5 +1,6 @@
 // CR-121 R6 · c16 · /ai-tools — MỘT danh sách công cụ AI (workflow Dify) kèm "Dùng bởi"; chip lọc, ô tìm, ngăn chi tiết có "Công ty dùng".
 // Chỉ platform_admin (vai khác thấy ForbiddenState, không gọi API). Bộ lọc + công cụ đang mở nằm trên URL.
+import { Link } from "@tanstack/react-router";
 import { Bot, Terminal, Workflow } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -23,7 +24,20 @@ function AiToolsContent() {
   const v = useAiToolsView();
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title={t("aiTools.title")} hint={t("aiTools.hint")} />
+      <PageHeader
+        title={t("aiTools.title")}
+        hint={t("aiTools.hint")}
+        actions={
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/commands/new">{t("aiTools.createCommand")}</Link>
+            </Button>
+            <Button asChild>
+              <Link to="/workflows/new">{t("aiTools.create")}</Link>
+            </Button>
+          </div>
+        }
+      />
       {v.notice === "company-tools" ? (
         <Alert>
           <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
