@@ -9,12 +9,13 @@ Làn: nhanh · perf: không
 - Đổi tên khi `keyAuto` ⇒ mã, tên tệp, mẫu mặc định đi theo (`patchStage`).
 
 ## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
 
 ### MODIFIED engine/flow-web.md
 
-#### Yêu cầu
-Node mới (palette, nút + trên cạnh, Thêm bước) và flow cũ thiếu trường tự có mã giai đoạn duy nhất, tên tệp kết quả và mẫu kết quả mặc định; lỗi chặn Lưu chỉ nhắc trường nghiệp vụ.
 
-- Kịch bản: chèn Thông báo qua `insertOnEdge` rồi validate ⇒ không còn lỗi mã/tên tệp/mẫu/phần kết quả. [test: apps/admin-web/src/features/processes/lib/insert-on-edge.test.ts]
-- Kịch bản: chèn hai node cùng tên ⇒ mã khác nhau (`thong-bao`, `thong-bao-2`). [test: apps/admin-web/src/features/processes/lib/insert-on-edge.test.ts]
-- Kịch bản: đổi tên khi mã còn tự sinh ⇒ mã đổi theo. [test: apps/admin-web/src/features/processes/lib/def-form.test.ts]
+#### Yêu cầu: Node mới tự có trường kỹ thuật
+Node mới (palette, nút + trên cạnh, Thêm bước) và flow cũ thiếu trường tự có mã giai đoạn duy nhất, tên tệp kết quả và mẫu kết quả mặc định; lỗi chặn Lưu chỉ nhắc trường nghiệp vụ.
+- Kịch bản: khi chèn bước Thông báo vào cạnh rồi kiểm tra thì không còn lỗi mã, tên tệp, mẫu kết quả [test: apps/admin-web/src/features/processes/lib/insert-on-edge.test.ts » P14 · chèn Thông báo]
+- Kịch bản: khi chèn hai node cùng tên thì mã khác nhau (thong-bao, thong-bao-2) [test: apps/admin-web/src/features/processes/lib/insert-on-edge.test.ts » P14 · chèn Thông báo]
+- Kịch bản: khi đổi tên mà mã còn tự sinh thì mã đổi theo tên [test: apps/admin-web/src/features/processes/lib/def-form.test.ts » patchStage: còn keyAuto]
