@@ -150,6 +150,16 @@ export async function uploadAndOpen(
 export const stepOf = (page: Page, name: string): Locator =>
   page.getByTestId(/^approval-step-\d+$/).filter({ hasText: name });
 
+/** CR-122 W4: chờ thẻ duyệt hiện bước 0 ở trạng thái `open` (thẻ cũ ⇒ APPROVAL_NOT_OPEN), rồi bấm "Xác nhận và lưu" ĐÚNG MỘT lần. */
+export async function confirmAndSave(page: Page): Promise<void> {
+  await expect(async () => {
+    await expect(page.getByTestId("approval-step-0")).toHaveAttribute("data-status", "open", {
+      timeout: 2_000,
+    });
+  }).toPass({ timeout: 60_000 });
+  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
+}
+
 /** Người duyệt mở HĐ, thấy bước `stepName` đang mở + nút Đạt, bấm Đạt; bước đó thành "passed". */
 export async function approveAs(
   page: Page,

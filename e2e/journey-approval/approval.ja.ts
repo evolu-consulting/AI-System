@@ -8,6 +8,7 @@ import { expect, type Page, test } from "@playwright/test";
 import {
   adminAssignAndRoute,
   approveAs,
+  confirmAndSave,
   type Env,
   loginAdmin,
   loginCw,
@@ -59,7 +60,7 @@ test("3 · gán là đủ: nhân viên KD xác nhận ⇒ quy trình Mua chạy;
   const emp = await ctxPage(browser);
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, `${RUN}b`);
-  await emp.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await confirmAndSave(emp);
   // quy trình đã chọn (Mua: Kế toán → Giám đốc) bắt đầu: bước đầu đã duyệt/mở, hai bước phòng ban hiện trên dòng thời gian
   await expect(stepOf(emp, "Phòng Kế toán duyệt")).toBeVisible({ timeout: 60_000 });
   await expect(stepOf(emp, "Ban Giám đốc duyệt")).toBeVisible();

@@ -53,14 +53,17 @@ describe("contract-flow S3a · duyệt trên engine", () => {
   let aid = "";
   let run = "";
 
-  it("mở cấp 1 ⇒ run engine gắn HĐ (mode engine, flow v1, 2 bước, ref contracts)", async () => {
+  it("mở cấp 1 ⇒ run engine gắn HĐ (mode engine, flow = published_version của def mặc định, 2 bước, ref contracts)", async () => {
     id = await seedContract(c, 701);
     aid = (await toLevel1(c, id, 10_000_000)).runId;
     const a = await approvalOf(aid);
+    // CR-122 M1 (migration 0111) cố ý tạo release mới max+1 ⇒ phiên bản = published_version hiện hành của def mặc định của khe, không cứng v1.
+    const [pub] = await c.sql<Json[]>`select d.published_version as v from hub.process_slots s
+      join hub.process_defs d on d.id = s.default_def_id where s.slot = 'contracts.approval'`;
     expect({ s: a.status, m: a.mode, v: a.flow_version, n: a.n }).toEqual({
       s: "level1",
       m: "engine",
-      v: 1,
+      v: pub?.v,
       n: 2,
     });
     run = a.run as string;

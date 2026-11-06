@@ -11,6 +11,7 @@ import { openTenantPage } from "../_kit/ui";
 import {
   apiAssignDef,
   approveAs,
+  confirmAndSave,
   type Env,
   loginAdmin,
   loginCw,
@@ -89,7 +90,7 @@ async function submit(
   const emp = await ctxPage(browser);
   await loginCw(emp, e, U.employee);
   const id = await uploadAndOpen(emp, e, `${RUN}${tag}`, total);
-  await emp.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await confirmAndSave(emp);
   return { emp, id };
 }
 
@@ -197,7 +198,7 @@ test("5 · công ty 1: sửa giá trị HĐ đang chờ 600 → 100 tr ⇒ bư�
     )
     .toBe(200);
   await emp.reload(); // form tải lại giá trị mới rồi mới xác nhận
-  await emp.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await confirmAndSave(emp);
   await expect(stepOf(emp, KT)).toBeVisible({ timeout: 60_000 });
 
   // Thẻ duyệt đổi theo giá trị HIỆN TẠI: Giám đốc sẽ bị bỏ qua
