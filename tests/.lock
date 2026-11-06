@@ -601,6 +601,7 @@ cc84dfc70be74eeefc97376a651bdfa01093cf14679a2cb1403b361e4e106d6e  tests/acceptan
 26c1ba28271ebf2c4a6eb9480373390cf0ac121767111d80bfa6b06d121e8c2e  tests/acceptance/CF/engine-only.int.test.ts
 1fe0cfce8fca552545c2070850ae08943e0599a65107818a56622f61496150f0  tests/acceptance/CF/fix-engine-access.int.test.ts
 8c1d4ea5f3d2ba0a967bef10ba6f29ad2f40ed819cd196451d83397911e70ac3  tests/acceptance/CF/fix-pack.int.test.ts
+f279fb276f2cdd4bcc9f964855434076a81ed2b59dc014e12d21b4139eef10bb  tests/acceptance/CF/flag-off-legacy.int.test.ts
 9e51899f59e421a726d21a6b42c8239559e49c1560c72f82a1b59486772d9a11  tests/acceptance/CF/head-only-bells.int.test.ts
 a90bb43fdc5fcf95d81f6d444deb0f03f817077667c6b6bda870aa44a1eb23e3  tests/acceptance/CF/owner-act.int.test.ts
 af1a40e9d1a9352732b4b4e3e9a8b2cb099e3578db2a64b88bc0151f98c63047  tests/acceptance/CF/owner-override.int.test.ts
