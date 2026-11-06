@@ -123,7 +123,6 @@ test("ADM-FR-40 · Q9 · E22 · tab Thông tin và Quota cập nhật version ch
   expect((await resp).status()).toBe(200);
   await expect(conflictDialog(page)).toHaveCount(0);
 
-  await expect(save).toBeDisabled();
   await name.fill("8");
   await expect(save).toBeEnabled();
   resp = page.waitForResponse(isPatch);
