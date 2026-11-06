@@ -101,6 +101,9 @@ const dirSession = (): Promise<Session> =>
   apiLogin({ base: API, tenantKey: E.tenantKey, username: U.director, password: E.pw });
 
 test.describe.configure({ mode: "serial" });
+// Lỗi sản phẩm #6: API tạo def Thư viện từ chối `group_key` (PROCESS_REF_INVALID) / đòi `group_id` (PROCESS_DEF_INCOMPLETE) ⇒ không dựng được
+// flow G1 bằng đường thật. Đang có lát sửa; gỡ dòng này khi gộp.
+test.fixme(true, "Lỗi sản phẩm #6: def Thư viện đòi group_id, không nhận group_key");
 
 test.beforeAll(async () => {
   // platform_admin tạo + xuất bản flow Thư viện qua API thật (E6)

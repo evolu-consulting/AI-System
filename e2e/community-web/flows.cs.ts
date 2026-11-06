@@ -97,7 +97,7 @@ test("2 · đối tác đăng ⇒ Chờ duyệt ⇒ chủ quản duyệt ở Duy
 
 test("3 · đối tác báo cáo một bài ⇒ chủ quản Ẩn bài ở Báo cáo vi phạm", async ({ browser }) => {
   // Bài RIÊNG của ca này: chủ quản đăng thông báo (mọi bạn bè thấy) có mã chạy duy nhất; ca không đụng bài mẫu dùng chung.
-  test.setTimeout(150_000);
+  test.setTimeout(240_000);
   const NOTE = `Thông báo kiểm thử ${RUN}`;
   // Đăng bằng API (audience "all" tường minh như seed): ca này kiểm luồng báo cáo, không kiểm ô soạn bài.
   const hostPage = await openAs(browser, "host"); // trang cùng origin: gọi API qua trình duyệt (Node không nối thẳng origin web)
@@ -111,7 +111,10 @@ test("3 · đối tác báo cáo một bài ⇒ chủ quản Ẩn bài ở Báo 
   });
   const note = await createPost("", hostApi, { type: "note", body: NOTE });
   expect(note.id, "createPost phải trả id bài").toBeTruthy();
-  await approvePost("", hostApi, note.id as string); // bật duyệt bài ⇒ bài của chủ quản cũng phải duyệt
+  // bật duyệt bài ⇒ bài của chủ quản cũng phải duyệt; bước duyệt mở sau bước kiểm tra của hệ thống (FLOW_TASK_NOT_OPEN tới lúc đó)
+  await expect(async () => {
+    await approvePost("", hostApi, note.id as string);
+  }).toPass({ timeout: 90_000 });
   await hostPage.ctx.close();
   const hostPostText = "(đăng bằng API)";
   const needsReview = true;
