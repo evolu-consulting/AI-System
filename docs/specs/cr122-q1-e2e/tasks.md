@@ -30,3 +30,11 @@ Không thay đổi hành vi (lý do: chỉ thêm/sửa test e2e và kit test).
 
 ## Việc còn lại
 Chạy job journey-approval, community-web, P-a, fnr-showcase, P-b2; ca Ký số chờ U2f.
+
+## Lỗi sản phẩm (bổ sung)
+- #1 ĐÃ SỬA ở E6 (kit dùng API thật). 
+- #2 `LibraryReadOnlyView.tsx:71` chỉ vẽ `slot_body`: dòng "Được gán" mở ra "Chưa xem được các bước" (G1.1b fixme). Tái hiện: gán flow mới cho công ty, platform_admin bấm Mở.
+- #3 Flow có node Ký số bảng chưa cấu hình: thẻ node báo "Chọn nguồn cho tham số này", bấm Lưu không gửi PUT và không báo lỗi (cr122-editor 2b fixme). A (dữ liệu tự nối) dự kiến sửa.
+- #4 (nghi) HĐ đầu tiên của công ty sau khi gán flow không mở lượt trong 135 s; HĐ sau đó chạy đúng (G1.2 fixme, G1 được G2 phủ).
+- #5 (nghi) Community: flow duyệt bài đã gán + FLOW_TRIGGERS bật, bài của đối tác không hiện "Chờ duyệt" (flows.cs ca 2 fixme).
+- P-a Form theo khe: mọi def thư viện đã backfill có trigger ⇒ chỉ còn canvas; đã gỡ phần Form/slot-stage-form trong process-library.pa và ca Form của editor-steps.pa.
