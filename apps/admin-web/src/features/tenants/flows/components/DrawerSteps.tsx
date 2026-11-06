@@ -2,43 +2,14 @@
 // Bản thư viện: CHỈ XEM + "Sao chép cho công ty này"; bản riêng của công ty: "Mở trình sửa".
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { List, Network } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { FlowRowsView } from "@/features/apps/components/SlotFlowView";
+import { ViewModeToggle } from "@/features/processes/components/ViewModeToggle";
 import { useViewMode } from "@/features/processes/hooks/use-view-mode";
-import type { ViewMode } from "@/features/processes/lib/view-mode";
 import { ApiError } from "@/lib/http";
 import { defStepsQuery, useLibraryView } from "../api";
 import { useFlowAssign } from "../hooks/use-flow-assign";
-
-const MODES: readonly ViewMode[] = ["canvas", "list"];
-
-function ModeToggle({ mode, set }: { mode: ViewMode; set: (m: ViewMode) => void }) {
-  const { t } = useTranslation();
-  return (
-    <span role="toolbar" aria-label={t("tenants.flows.viewMode")} className="inline-flex gap-1">
-      {MODES.map((m) => (
-        <Button
-          key={m}
-          size="sm"
-          variant={mode === m ? "secondary" : "ghost"}
-          aria-pressed={mode === m}
-          title={t(`tenants.flows.view.${m}`)}
-          aria-label={t(`tenants.flows.view.${m}`)}
-          data-testid={`flows-view-${m}`}
-          onClick={() => set(m)}
-        >
-          {m === "canvas" ? (
-            <Network aria-hidden className="size-4" />
-          ) : (
-            <List aria-hidden className="size-4" />
-          )}
-        </Button>
-      ))}
-    </span>
-  );
-}
 
 export function DrawerSteps({
   tenantId,
@@ -64,7 +35,7 @@ export function DrawerSteps({
       <div className="flex items-center gap-2">
         <h3 className="text-label font-semibold">{t("tenants.flows.stepsTitle")}</h3>
         <span className="ml-auto" />
-        <ModeToggle mode={mode} set={setMode} />
+        <ViewModeToggle mode={mode} set={setMode} />
       </div>
       <FlowRowsView
         rows={steps.data?.steps ?? null}
@@ -89,6 +60,18 @@ export function DrawerSteps({
             onClick={() => void act.copy(defId)}
           >
             {t("tenants.flows.copy")}
+          </Button>
+        ) : null}
+        {lib.data ? (
+          <Button size="sm" variant="ghost" asChild>
+            <Link
+              to="/processes/$processId"
+              params={{ processId: defId }}
+              search={{ company: tenantId }}
+              data-testid="flows-open-detail"
+            >
+              {t("tenants.flows.openDetail")}
+            </Link>
           </Button>
         ) : null}
         {copyId ? (

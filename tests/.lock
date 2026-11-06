@@ -86,6 +86,7 @@ c9e5a2ddb6cc6e214013cca1331dfeff96026968e28fe68569343f480e8e6626  e2e/P-a/pf3/ou
 7d29e0642514fd8d436cf09401d6e395b38cd0c7c1c2d1d615d05268efb8b48d  e2e/P-a/pf4/admin-editor.pa.ts
 352411bdff2453649c79629d3487ed25fc39759c626a5a011f7927ba146c822e  e2e/P-a/pf4/admin-processes.pa.ts
 8e5e84bce3303cb30dea6870ab0081f099a0c51b9f6a5d69dbd9db8ac800f10f  e2e/P-a/pf4/admin-runs.pa.ts
+df1df1fc1c3d03706247f3fec0c8bfc57a810fa28a4b7e73c15fdb28a98e8b81  e2e/P-a/pf4/library-readonly-copy.pa.ts
 ca22731aabfdf2e09b44e36e7aede4d2e6e83ba6566ddfc6c264b3c17e961b2b  e2e/P-a/pf4/process-library.pa.ts
 073bf6c7cc900dd859acbbc4bb378754f15069c58fb7c424b293371ec0d9963e  e2e/P-a/pf4/tenant-routing.pa.ts
 72603518958efdf91c519864563ad874c5fb85941fa208165b52742df5210f8d  e2e/P-a/pf4/token.pa.ts

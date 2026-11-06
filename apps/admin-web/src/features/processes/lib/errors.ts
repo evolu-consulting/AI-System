@@ -24,6 +24,9 @@ const KNOWN = new Set([
   "SLOT_GROUPS_MISSING",
   "SLOT_BODY_INVALID",
   "SLOT_UNKNOWN",
+  // CR-121 c17 · Sao chép cho công ty này
+  "NOT_LIBRARY_DEF",
+  "SLOT_GONE",
 ]);
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 

@@ -209,6 +209,23 @@ export class DefsService {
     return { input: d.input, slot, body: d.body };
   }
 
+  /**
+   * CR-121 c17 · bản riêng của công ty (sao từ def thư viện, có `slot_body`) lưu theo ĐƯỜNG KHE: `slot_body` thắng `stages` (như `slotDraft`),
+   * `stages` biên dịch lại từ body, `slot_body` được GIỮ (launch đọc `slot_body` của bản riêng — c9b). Khe lấy từ def nguồn; `slot` của hàng vẫn null.
+   * Không phải bản riêng có body ⇒ null (đường cũ).
+   */
+  async #companyCopyDraft(tx: Tx, cur: repo.DefRow, input: ProcessDefInput) {
+    if (cur.tenant_id === null || cur.slot !== null || cur.source_template_id === null) return null;
+    if (cur.slot_body === null || cur.slot_body === undefined) return null;
+    const srcSlot = await repo.sourceSlotOf(tx, cur.source_template_id);
+    if (srcSlot === null) throw libError("SLOT_UNKNOWN", { slot: null });
+    const d = slotDraft(specOrThrow(srcSlot), input, {
+      stages: cur.stages,
+      slot_body: cur.slot_body,
+    });
+    return { input: d.input, slot: null, body: d.body };
+  }
+
   async create(u: AuthUser, s: Scope, raw: ProcessDefInput): Promise<ProcessDef> {
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
       const { input, slot, body } = this.#draft(u, s.tenantId, raw, null);
@@ -240,9 +257,11 @@ export class DefsService {
     const { version, ...raw } = b;
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
       const cur = await this.#lock(tx, u, { s, id, version });
-      const { input, slot, body } = this.#draft(u, cur.tenant_id, raw, cur);
+      const copy = await this.#companyCopyDraft(tx, cur, raw);
+      const { input, slot, body } = copy ?? this.#draft(u, cur.tenant_id, raw, cur);
       await guardInUse(tx, cur, { key: input.key, slot, enabled: input.enabled });
-      await this.#check(tx, cur.tenant_id, input, slot !== null);
+      // bản riêng sao từ thư viện: stage dùng khoá nhóm/tool của khe (không phải id nhóm) ⇒ kiểm tham chiếu như def thư viện
+      await this.#check(tx, cur.tenant_id, input, slot !== null || copy !== null);
       await this.#keyFree(tx, cur.tenant_id, input.key, id);
       const row = await repo.updateDef(tx, {
         id,

@@ -11,12 +11,14 @@ import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
 import { communitySlotSpecs } from "../../packs/community/domain/flow-slots.rules";
+import { approvalEngineTools } from "../../packs/contracts/adapters/approval-engine.tools";
 import { approvalSlotSpec } from "../../packs/contracts/approval.mount";
 import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/domain/approval-slot-default.rules";
 import { intakeSlotSpec } from "../../packs/contracts/intake.mount";
 import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
 import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import type { ProcessDeps } from "../core/ports";
+import { defsRoutes } from "../defs/defs.routes";
 import { libraryRoutes } from "./library.routes";
 
 const SLOT = "contracts.approval";
@@ -107,11 +109,21 @@ beforeAll(async () => {
   slotRegistry.register(approvalSlotSpec);
   slotRegistry.register(intakeSlotSpec);
   for (const s of communitySlotSpecs()) slotRegistry.register(s);
+  // catalog tool hệ thống thật của khe duyệt (c17: lưu bản riêng kiểm tool_key của stage biên dịch)
+  const tools = approvalEngineTools({ uow: null, bridge: {} } as never).map((x) => ({
+    key: x.name,
+    name: x.name,
+    description: x.description,
+    sideEffect: false,
+    action: x.action,
+    params: x.params,
+  }));
   const packTools = {
-    has: () => true,
-    info: () => undefined,
+    has: (k: string) => tools.some((x) => x.key === k),
+    info: (k: string) => tools.find((x) => x.key === k),
     enabled: async () => true,
-    available: async () => [],
+    available: async (_t: string, keys?: readonly string[]) =>
+      tools.filter((x) => !keys || keys.includes(x.key)),
   } as unknown as PackToolCatalog;
   app = new Hono<AuthVars>();
   app.use("*", async (c, next) => {
@@ -123,7 +135,9 @@ beforeAll(async () => {
     if (m.status === 500) console.error(e);
     return c.json(m.body, m.status);
   });
-  app.route("/", libraryRoutes({ db, packTools, start: {} } as unknown as ProcessDeps));
+  const deps = { db, packTools, start: {} } as unknown as ProcessDeps;
+  app.route("/", defsRoutes(deps));
+  app.route("/", libraryRoutes(deps));
 }, 180_000);
 afterAll(async () => {
   await db?.close();
@@ -286,5 +300,55 @@ describe("CR-121 c9 · đọc chỉ-xem theo công ty", () => {
     expect((await call("P", "GET", VW(Y, lib.A))).status).toBe(200); // platform_admin mọi công ty
     const put = await app.request(VW(X, lib.C), { method: "PUT", headers: { "x-who": "A" } });
     expect(put.status).toBe(404); // không có đường ghi
+  });
+});
+
+describe("CR-121 c17 · sửa bản riêng lưu theo đường khe", () => {
+  it("PUT bản riêng (chỉ gửi stages) ⇒ slot_body được dựng lại + giữ, slot vẫn null, nguồn/bản không đổi", async () => {
+    // nhóm duyệt của bước mặc định phải là phòng ban của công ty thì bản riêng mới qua kiểm tham chiếu khi lưu
+    for (const k of ["contracts-editor", "contracts-owner"])
+      await o`insert into admin.departments (tenant_id, group_id) values (${X}, ${dx.get(k) as string}) on conflict do nothing`;
+    const src = await libCopy("cc-edit", "QT sửa riêng");
+    const c = await call("A", "POST", CL(X, src), {});
+    expect(c.status).toBe(201);
+    const id = c.json.def_id as string;
+    const g = (await call("A", "GET", `/process-defs/${id}`)).json;
+    const before = (
+      await o`select slot_body, source_rel_version as rel from hub.process_defs where id = ${id}`
+    )[0];
+    const stepName = ((before?.slot_body ?? {}) as Json).steps[0].name as string;
+    const stages = structuredClone(g.stages) as Json[];
+    const at = stages.findIndex((s) => s.name === stepName);
+    expect(at).toBeGreaterThanOrEqual(0);
+    (stages[at] as Json).name = "Sửa riêng";
+    const input = Object.fromEntries(
+      [
+        "key",
+        "name",
+        "description",
+        "input_hint",
+        "run_group_ids",
+        "token_budget",
+        "enabled",
+        "sources",
+        "inputs",
+        "ttl_days",
+      ].map((k) => [k, g[k]]),
+    );
+    const put = await call("A", "PUT", `/process-defs/${id}`, {
+      ...input,
+      stages,
+      version: g.version,
+    });
+    expect({ s: put.status, e: put.json.error }).toEqual({ s: 200, e: undefined });
+    const after = (
+      await o`select slot, slot_body, source_rel_version as rel, stages from hub.process_defs where id = ${id}`
+    )[0];
+    expect({
+      slot: after?.slot,
+      step0: ((after?.slot_body ?? {}) as Json).steps[0].name,
+      rel: after?.rel,
+      stageNames: ((after?.stages ?? []) as Json[]).map((s) => s.name).includes("Sửa riêng"),
+    }).toEqual({ slot: null, step0: "Sửa riêng", rel: before?.rel, stageNames: true });
   });
 });

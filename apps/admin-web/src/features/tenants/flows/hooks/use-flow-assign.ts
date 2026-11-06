@@ -5,7 +5,7 @@ import { toPutBody } from "@ai/web-kit/routing-rules";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
-import { describeError } from "@/lib/errors";
+import { processErrorSpec } from "@/features/processes/lib/errors";
 import { useTr } from "@/lib/use-translate";
 import { assignRoutingProcess, putRouting, RKEYS } from "../../api-routing";
 import { cloneForCompany } from "../api";
@@ -28,7 +28,7 @@ export function useFlowAssign(tenantId: string, slot: string, isPlatform: boolea
       notifySuccess(tr(done));
       return true;
     } catch (e) {
-      const spec = describeError(e);
+      const spec = processErrorSpec(e); // c17: NOT_LIBRARY_DEF / SLOT_GONE có câu nghiệp vụ riêng
       notifyError(tr(spec.key, spec.params));
       return false;
     } finally {

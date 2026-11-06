@@ -145,6 +145,14 @@ export async function readDef(
   return r ?? null;
 }
 
+/** CR-121 c17 · khe của def thư viện nguồn (bản riêng của công ty không có `slot` — CHECK `process_defs_slot_ck`); null = nguồn đã xoá/không còn khe. */
+export async function sourceSlotOf(tx: Tx, sourceId: string): Promise<string | null> {
+  const [r] = await tx.execute<{ slot: string | null }>(
+    sql`select slot from hub.process_defs where id = ${sourceId} and deleted_at is null`,
+  );
+  return r?.slot ?? null;
+}
+
 /** Key đã dùng trong cùng phạm vi (tenant hoặc mẫu) — gọi sau khoá `config_meta` nên không race. */
 export async function keyTaken(
   tx: Tx,

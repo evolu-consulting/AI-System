@@ -712,6 +712,7 @@
       "hasCopy": "The company already has its own copy of this process.",
       "ownCopy": "This is the company's own copy and can be edited.",
       "copy": "Copy for this company",
+      "openDetail": "Open detail page",
       "openEditor": "Open editor",
       "assignTitle": "Assign process",
       "sameKind": "Only processes of the same kind: {type}",

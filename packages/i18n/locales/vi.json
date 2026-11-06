@@ -712,6 +712,7 @@
       "hasCopy": "Công ty đã có bản riêng sao từ quy trình này.",
       "ownCopy": "Đây là bản riêng của công ty, có thể sửa.",
       "copy": "Sao chép cho công ty này",
+      "openDetail": "Mở trang chi tiết",
       "openEditor": "Mở trình sửa",
       "assignTitle": "Gán quy trình",
       "sameKind": "Chỉ gồm quy trình cùng loại: {type}",

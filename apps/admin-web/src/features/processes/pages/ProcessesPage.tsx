@@ -50,6 +50,18 @@ function AppFilterNotice({ app, onClear }: { app: string; onClear: () => void })
   );
 }
 
+/** CR-121 c17 · "N quy trình" (artboard Library); còn trang sau ⇒ "N+". */
+function LibraryCount({ v }: { v: ProcessesView }) {
+  const { t } = useTranslation();
+  if (!v.library || !v.rows) return null;
+  return (
+    <p role="status" className="text-caption text-muted-foreground tabular-nums">
+      {t("process.admin.library.count", { n: v.rows.length })}
+      {v.q.hasNextPage ? "+" : ""}
+    </p>
+  );
+}
+
 function Body({ v }: { v: ProcessesView }) {
   const { t } = useTranslation();
   const tr = useTr();
@@ -83,6 +95,7 @@ function Body({ v }: { v: ProcessesView }) {
           onChange={v.setLibFilter}
         />
       ) : null}
+      <LibraryCount v={v} />
       {v.app ? <AppFilterNotice app={v.app} onClear={v.clearApp} /> : null}
       {v.templates ? null : (
         <FilterChips

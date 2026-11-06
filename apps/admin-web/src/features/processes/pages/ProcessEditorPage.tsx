@@ -14,6 +14,7 @@ import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLibraryView } from "@/features/tenants/flows/api";
 import { ApiError } from "@/lib/http";
 import { hubConfigured } from "@/lib/hub";
 import { copyDef, useProcessDef } from "../api";
@@ -24,6 +25,7 @@ import { ProcessSaveBar } from "../components/editor/ProcessSaveBar";
 import { SourcesCard } from "../components/editor/SourcesCard";
 import { LimitsCard, StagesCard } from "../components/editor/StagesCard";
 import { LibraryEditorBody } from "../components/library/LibraryEditorBody";
+import { LibraryReadOnlyView } from "../components/library/LibraryReadOnlyView";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
 import { useDefSave } from "../hooks/use-def-save";
 import { useDraft } from "../hooks/use-draft";
@@ -34,7 +36,8 @@ import { processErrorSpec } from "../lib/errors";
 import { normalizeSlotStages } from "../lib/slot-canvas";
 import type { LibraryDef } from "../library-api";
 
-export type ProcessEditorPageProps = { processId?: string };
+/** `company` (CR-121 c17): mở từ Công ty › Quy trình của công ty đó ⇒ def thư viện hiện CHỈ XEM + "Sao chép cho công ty này". */
+export type ProcessEditorPageProps = { processId?: string; company?: string };
 const FORM_ID = "process-form";
 
 function useLoadedDef(processId: string | undefined, d: ReturnType<typeof useDraft>) {
@@ -121,6 +124,20 @@ const prepareLibraryDraft = (d: DefDraft): DefDraft => ({
 const prepareFor = (lib: LibraryDef | null) => (lib ? prepareLibraryDraft : undefined);
 const slotExtra = (lib: LibraryDef | null) => (lib ? { slot: lib.slot } : undefined);
 
+/** tenant_admin mở def thư viện: Hub ẩn (404) ⇒ thử đọc chỉ-xem theo công ty mình; không phải thư viện ⇒ NotFound. */
+function EditorLoadFailure(p: {
+  error: unknown;
+  onRetry: () => void;
+  defId: string;
+  tenant: ReturnType<typeof useProcessTenant>;
+}) {
+  const failure = <LoadFailure error={p.error} onRetry={p.onRetry} />;
+  const hidden = p.error instanceof ApiError && p.error.status === 404;
+  if (hidden && p.tenant.tenantId && !p.tenant.isPlatform)
+    return <LibraryReadOnlyView tenantId={p.tenant.tenantId} defId={p.defId} fallback={failure} />;
+  return failure;
+}
+
 function Editor({ processId }: ProcessEditorPageProps) {
   const { t } = useTranslation();
   const d = useDraft();
@@ -145,7 +162,14 @@ function Editor({ processId }: ProcessEditorPageProps) {
   const readOnly = isReadOnlyDef(def, tenant.isPlatform);
   if (!hubConfigured()) return <HubNotConfigured />;
   if (processId !== undefined && q.isError)
-    return <LoadFailure error={q.error} onRetry={() => void q.refetch()} />;
+    return (
+      <EditorLoadFailure
+        error={q.error}
+        onRetry={() => void q.refetch()}
+        defId={processId}
+        tenant={tenant}
+      />
+    );
   if (processId !== undefined && !def) return <LoadingState />;
   const config = (
     <form
@@ -189,6 +213,7 @@ function Editor({ processId }: ProcessEditorPageProps) {
   return (
     <>
       <PageHeader title={def?.name ?? t("process.admin.editor.title.new")} />
+      <CopySourceLine tenantId={tenant.tenantId} sourceId={def?.source_template_id} />
       {processId === undefined || !def ? (
         config
       ) : (
@@ -217,10 +242,34 @@ function Editor({ processId }: ProcessEditorPageProps) {
   );
 }
 
+/** CR-121 c17 · "Sao từ thư viện: <bản gốc> · vN" của bản riêng công ty (vN = bản thư viện lúc sao). */
+function CopySourceLine(p: { tenantId: string | undefined; sourceId: string | null | undefined }) {
+  const { t } = useTranslation();
+  const src = useLibraryView(p.tenantId ?? "", p.sourceId ?? null, !!p.tenantId && !!p.sourceId);
+  if (!src.data) return null;
+  return (
+    <p className="text-caption text-muted-foreground" data-testid="copy-source">
+      {t("process.admin.editor.copySource", {
+        name: src.data.name,
+        n: src.data.company_copy?.rel_version ?? src.data.rel_version,
+      })}
+    </p>
+  );
+}
+
 export function ProcessEditorPage(props: ProcessEditorPageProps) {
+  const { company, ...rest } = props;
   return (
     <ProcessRouteGate>
-      <Editor {...props} />
+      {company && rest.processId ? (
+        <LibraryReadOnlyView
+          tenantId={company}
+          defId={rest.processId}
+          fallback={<Editor {...rest} />}
+        />
+      ) : (
+        <Editor {...rest} />
+      )}
     </ProcessRouteGate>
   );
 }

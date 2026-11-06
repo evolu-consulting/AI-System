@@ -1,6 +1,7 @@
 // HUB-FR-104 · P-b2 (UAT L2): 422 PROCESS_DEF_INVALID có rules[] ⇒ câu lỗi theo mã luật, theo ô.
 import { describe, expect, test } from "bun:test";
-import { serverErrors } from "./errors";
+import { ApiError } from "@/lib/http";
+import { processErrorSpec, serverErrors } from "./errors";
 
 describe("serverErrors", () => {
   test("rules song song paths: BACK_TARGET_INVALID gộp về ô back_to_steps, STEP_TOO_WIDE về ô step", () => {
@@ -24,5 +25,14 @@ describe("serverErrors", () => {
     expect(serverErrors("PROCESS_REF_INVALID", ["stages.0.executor"], [])).toEqual({
       "stages.0.executor": "process.admin.apiError.PROCESS_REF_INVALID",
     });
+  });
+});
+
+describe("CR-121 c17 · mã lỗi Sao chép cho công ty này", () => {
+  test("NOT_LIBRARY_DEF và SLOT_GONE có câu nghiệp vụ riêng (không rơi về lỗi chung)", () => {
+    for (const code of ["NOT_LIBRARY_DEF", "SLOT_GONE"]) {
+      const err = new ApiError(422, code as never, "x");
+      expect(processErrorSpec(err).key).toBe(`process.admin.apiError.${code}`);
+    }
   });
 });

@@ -46,6 +46,12 @@
     "more": "Tải thêm"
   },
   "editor": {
+    "libReadonly": "Quy trình dùng chung — chỉ xem.",
+    "copied": "Đã sao chép và gán cho công ty này",
+    "copyFailed": "Không sao chép được: {{reason}}",
+    "openCopy": "Mở bản riêng",
+    "kind": "Loại: {{kind}} · bản dùng chung v{{n}}",
+    "copySource": "Sao từ thư viện: {{name}} · v{{n}}",
     "title": {
       "new": "Quy trình mới"
     },
@@ -507,7 +513,9 @@
     "SLOT_SHAPE_UNSUPPORTED": "Khe này chỉ nhận các bước tuần tự (không song song, không nhánh). Sửa lại ở Canvas.",
     "SLOT_GROUPS_MISSING": "Có tenant thiếu phòng ban theo mã mà quy trình dùng. Xem mã thiếu bên dưới.",
     "SLOT_BODY_INVALID": "Nội dung Form chưa hợp lệ. Xem chỗ sai bên dưới.",
-    "SLOT_UNKNOWN": "Khe quy trình không tồn tại (gói chưa bật?)."
+    "SLOT_UNKNOWN": "Khe quy trình không tồn tại (gói chưa bật?).",
+    "NOT_LIBRARY_DEF": "Quy trình này là bản riêng của công ty, không phải quy trình dùng chung. Mở nó để sửa trực tiếp.",
+    "SLOT_GONE": "Việc dùng quy trình này không còn trong ứng dụng nữa. Hãy chọn quy trình khác ở Công ty › Quy trình."
   },
   "validate": {
     "nameRequired": "Nhập tên quy trình.",
@@ -979,6 +987,7 @@
     "subtitle": "Mẫu dùng chung cho mọi công ty.",
     "samplesSubtitle": "Mẫu để chạy thử, không áp dụng cho hợp đồng thật.",
     "createFromDefault": "Tạo quy trình",
+    "count": "{{n}} quy trình",
     "title": "Thư viện quy trình",
     "saveDraft": "Lưu nháp",
     "assignedCount": "{{n}} tenant đã gán",
