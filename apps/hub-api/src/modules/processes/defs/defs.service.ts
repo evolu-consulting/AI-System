@@ -99,6 +99,10 @@ function flowCheck(input: ProcessDefInput, tenantId: string | null, cur: repo.De
   const paths = flowDefPaths(input, tenantId, cur);
   if (paths.length > 0) throw defError("PROCESS_DEF_INVALID", { paths });
 }
+/** CR-122 · P6 · def Thư viện = có khe HOẶC (tenant NULL + `trigger`): Group chỉ theo MÃ (map → id lúc mở lượt, E1b); def công ty chỉ theo id. */
+function isLibraryDef(tenantId: string | null, slot: string | null, trigger: unknown): boolean {
+  return slot !== null || (tenantId === null && !!trigger);
+}
 export class DefsService {
   readonly #w;
   constructor(
@@ -266,7 +270,7 @@ export class DefsService {
       flowCheck(input, s.tenantId, null);
       await nodeCheck(this.d, s.tenantId, input);
       warnings = await edgeCheck(this.d, s.tenantId, input);
-      await this.#check(tx, s.tenantId, input, slot !== null);
+      await this.#check(tx, s.tenantId, input, isLibraryDef(s.tenantId, slot, input.trigger));
       await this.#keyFree(tx, s.tenantId, input.key);
       const row = await repo.insertDef(tx, {
         tenantId: s.tenantId,
@@ -303,7 +307,13 @@ export class DefsService {
       await nodeCheck(this.d, cur.tenant_id, input);
       warnings = await edgeCheck(this.d, cur.tenant_id, input);
       // bản riêng sao từ thư viện: stage dùng khoá nhóm/tool của khe (không phải id nhóm) ⇒ kiểm tham chiếu như def thư viện
-      await this.#check(tx, cur.tenant_id, input, slot !== null || copy !== null);
+      const trigger = input.trigger === undefined ? cur.trigger : input.trigger;
+      await this.#check(
+        tx,
+        cur.tenant_id,
+        input,
+        isLibraryDef(cur.tenant_id, slot, trigger) || copy !== null,
+      );
       await this.#keyFree(tx, cur.tenant_id, input.key, id);
       const row = await repo.updateDef(tx, {
         id,

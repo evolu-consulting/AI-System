@@ -4,7 +4,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Role } from "@ai/contracts/common";
 import { withHubScope } from "@ai/db/hub-scope";
-import { tenantId, userId, users } from "@ai/test-kit/builders";
+import { groups, tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
@@ -22,6 +22,7 @@ import { libraryFlowDef } from "../runs/runs.repo";
 import { dispatchOnce, type FlowLaunch } from "../triggers/dispatcher";
 import { insertFlowEvents } from "../triggers/dispatcher.repo";
 import { setFlowTriggers } from "../triggers/flags";
+import { bindGroupKeys, groupKeysOf } from "../triggers/group-keys.rules";
 import { companyFlowsRoutes } from "./company-flows.routes";
 import { libraryRoutes } from "./library.routes";
 
@@ -218,6 +219,52 @@ describe("CR-122 E6 · xuất bản flow Thư viện có trigger", () => {
     expect((await call("POST", `/tenants/${X}/company-flows`, { flow_id: id })).status).toBe(201);
     const g = await call("GET", `/process-defs/${id}`, undefined, "A");
     expect([g.status, g.json.id]).toEqual([200, id]);
+  });
+
+  // CR-122 · P6 · lỗi sản phẩm #6: flow Thư viện lưu/bật/xuất bản với node Duyệt theo MÃ Group, không đòi `group_id`.
+  it("P6 · flow Thư viện có node Duyệt theo group_key: tạo + bật + xuất bản + gán công ty ⇒ Group duyệt = id của công ty", async () => {
+    const gx = await groups(o, X, ["kinh-doanh"]);
+    const review = stage("duyet", 1, {
+      after: { kind: "review", group_key: "kinh-doanh", back_to_steps: [] }, // KHÔNG có group_id
+    });
+    const stages = [stage("dau", 0), review, stage("xong", 2, { outcome: "approved" })];
+    const c = await call("POST", "/process-defs", body("p6-duyet", { stages, enabled: true }));
+    expect([c.status, c.json.enabled]).toEqual([201, true]);
+    const id = c.json.id as string;
+    const cur = (await call("GET", `/process-defs/${id}`)).json;
+    const put = await call("PUT", `/process-defs/${id}`, {
+      ...body("p6-duyet", { stages, enabled: true }),
+      version: cur.version,
+    });
+    expect(put.status).toBe(200);
+    const pub = await call("POST", `/process-defs/${id}/publish`, { version: put.json.version });
+    expect([pub.status, pub.json]).toEqual([201, { rel_version: 1 }]);
+    expect((await call("POST", `/tenants/${X}/company-flows`, { flow_id: id })).status).toBe(201);
+    // Đúng bước mở lượt (`flow-launch.libraryDefFor`): bản xuất bản + mã → id Group của công ty ⇒ task duyệt giao đúng nhóm.
+    const def = await withHubScope(db, { kind: "system" }, (tx) => libraryFlowDef(tx, id));
+    const keys = groupKeysOf(def?.stages ?? []);
+    expect(keys).toEqual(["kinh-doanh"]);
+    const bound = bindGroupKeys(
+      def?.stages ?? [],
+      new Map([["kinh-doanh", gx.get("kinh-doanh") as string]]),
+    );
+    expect(bound.missing).toEqual([]);
+    const after = (bound.stages[1] as { after: { group_id: string } }).after;
+    expect(after.group_id).toBe(gx.get("kinh-doanh") as string);
+  });
+
+  it("P6 · def của công ty vẫn chỉ theo id: group_key ⇒ 422", async () => {
+    const review = stage("duyet", 1, {
+      after: { kind: "review", group_key: "kinh-doanh", back_to_steps: [] },
+    });
+    const stages = [stage("dau", 0), review, stage("xong", 2, { outcome: "approved" })];
+    const r = await call(
+      "POST",
+      `/process-defs?tenant_id=${X}`,
+      body("p6-cty", { stages, enabled: false, trigger: undefined, app: undefined }),
+    );
+    expect(r.status).toBe(422);
+    expect(r.json.error?.code ?? r.json.code).toBe("PROCESS_REF_INVALID");
   });
 
   it("def theo khe cũ xuất bản như trước (luật khe + nút hệ thống)", async () => {

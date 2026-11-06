@@ -199,7 +199,7 @@ export const ProcessStageDefSchema = z.strictObject({
   after: z.discriminatedUnion("kind", [
     z.strictObject({
       kind: z.literal("review"),
-      group_id: UuidSchema.nullable(),
+      group_id: UuidSchema.nullable().default(null), // CR-122 · P6 · def Thư viện chỉ có `group_key` ⇒ vắng = null
       /** P-b2 · bước được phép quay lại khi Chưa đạt (< bước của stage, không trùng — luật `BACK_TARGET_INVALID`). */
       back_to_steps: z.array(ProcessStepSchema).max(PROCESS_STEP_MAX).default([]),
       /** P-d1 · PD-R18 · nhắc lặp mỗi N giờ; `null` = nhắc 1 lần sau 24 h như cũ. */
