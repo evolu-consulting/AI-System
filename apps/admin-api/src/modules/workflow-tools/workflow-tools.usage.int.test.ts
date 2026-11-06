@@ -73,7 +73,7 @@ describe("c16 · Dùng bởi + Công ty dùng (platform_admin)", () => {
     const n2 = await sqlOf();
     expect(n1).toBeGreaterThan(0);
     expect(n2).toBe(n1);
-    expect(n1).toBeLessThanOrEqual(USAGE_QUERIES + 1); // + câu đặt scope RLS
+    expect(n1).toBeLessThanOrEqual(USAGE_QUERIES + 2); // + các câu đặt scope RLS của withScope (đo: 4 tổng)
   });
 
   it("vai khác platform_admin (tenant_admin) ⇒ 403 cả usage lẫn companies", async () => {

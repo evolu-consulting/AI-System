@@ -32,7 +32,15 @@ unit `features/ai-tools/lib/ai-tools.test.ts`, `tenants/lib/{workspace-tabs,work
 - `workflow-tools` chỉ mount khi `ADMIN_FROZEN_MODULES=on` (app.ts) — route mới đi cùng mount đó (như tab cũ).
 
 ## Khác biệt so với artboard (chưa duyệt)
-(điền sau khi chụp)
+CHƯA CHỤP ĐƯỢC ảnh thật: dev stack ở worktree đã dựng (admin-api :3411 + admin-web :3410) nhưng đăng nhập cần mật khẩu seed trong `.env.local` mà phiên bị chặn đọc (credential) ⇒ không vào được. Đối chiếu bằng code (CHƯA duyệt, cần ảnh):
+1. Tiêu đề: artboard có biểu tượng ⓘ cạnh "Công cụ AI" (tooltip), bản làm dùng dòng mô tả dưới tiêu đề (PageHeader chung).
+2. Tooltip ⓘ ở cột "Dùng bởi": bản làm không có; mỗi pill có `title` + chữ cho trình đọc màn hình.
+3. Hàng chip: artboard 3 chip trạng thái + loại nằm cùng hàng; bản làm thêm 2 chip loại (Agent, Lệnh) cùng hàng, ô tìm bên phải (cuộn xuống dòng khi hẹp). Chip dạng nút `aria-pressed`, màu theo token shell (không mã màu cứng).
+4. Bảng: cột, nhãn đúng artboard; cột "Công cụ" dùng biểu tượng workflow chung (artboard cũng 1 biểu tượng); trạng thái chấm + chữ; "Dùng bởi" chỉ agent + lệnh (hook/quy trình chưa có nguồn).
+5. Chân bảng: artboard "6 trong 26 công cụ · Xem thêm" + chú giải biểu tượng loại; bản làm có "n trong N công cụ · Xem thêm" (đầu 10, +25), KHÔNG có chú giải biểu tượng.
+6. Trạng thái rỗng "Mọi công cụ đều đang được dùng." + "Xem tất cả": có, hiện khi lọc Chưa dùng mà không còn công cụ nào (artboard vẽ riêng như ví dụ).
+7. Breadcrumb: artboard "Hệ thống › Công cụ AI"; bản làm đặt đúng như vậy (link Hệ thống → /system, route do c22).
+8. Ngăn chi tiết: artboard không vẽ; theo spec R6 làm bằng `DetailDrawer` (C-1b).
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
@@ -47,5 +55,5 @@ Trang `/ai-tools` (platform_admin) liệt kê công cụ AI với trạng thái,
 - Kịch bản: hành trình tìm công cụ, bật cho công ty, tải lại vẫn bật, tắt có xác nhận [test: e2e/cr121-c16-ai-tools.spec.ts » tìm công cụ → ngăn chi tiết]
 
 ## Việc còn lại
-- Hook / quy trình trong "Dùng bởi" khi có nguồn đọc; ⓘ giải nghĩa cạnh tiêu đề (artboard) — hiện là dòng mô tả.
+- Chụp ảnh thật cạnh artboard (bị chặn đọc mật khẩu seed) + duyệt các khác biệt 1–8; hook / quy trình trong "Dùng bởi" khi có nguồn đọc.
 - qc: e2e cũ nào còn nhắc tab `Quy trình`/`Tool quy trình` (xem báo cáo).
