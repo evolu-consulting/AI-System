@@ -165,7 +165,7 @@ describe("ops-watch · flow_coverage · int", () => {
     await o`insert into hub.process_routings (tenant_id, slot) values (${LAC}, ${SLOT})`;
     await o`insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
       values (${LAC}, ${SLOT}, 0, '{}'::jsonb, ${pid}, true)`;
-    await round(124);
+    await round(186);
     const bad = await row();
     expect(bad?.status).toBe("crit");
     expect(bad?.message).toContain("Lạc luật");
@@ -173,7 +173,7 @@ describe("ops-watch · flow_coverage · int", () => {
     expect(bad?.message).not.toContain("Tốt");
     await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${LAC}, ${DFLT}, ${SLOT}) on conflict do nothing`;
     await o`update hub.process_routing_rules set def_id = ${DFLT} where tenant_id = ${LAC}`;
-    await round(155);
+    await round(217);
     expect((await row())?.status).toBe("ok");
   });
 });
