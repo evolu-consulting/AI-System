@@ -105,4 +105,4 @@ export type { DocxConverter } from "./domain/docx.rules";
 export { externalPackActions } from "./domain/external-access.rules";
 export { checkPackAccess, packActionsFor } from "./domain/pack-access.rules";
 export { PackToolBusinessError } from "./domain/pack-tool-error";
-export type { PdfConverter } from "./domain/pdf.rules";
+export type { PdfConverter, PdfResult } from "./domain/pdf.rules";

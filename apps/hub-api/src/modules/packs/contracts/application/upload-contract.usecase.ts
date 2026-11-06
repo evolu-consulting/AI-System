@@ -6,11 +6,13 @@ import type { DocxConverter, PackWho } from "../../kit/public";
 import { orgForTenant } from "../../kit/public";
 import { fillFields } from "../domain/fields.rules";
 import { nextDayStart } from "../domain/quota-reset.rules";
+import { plainText } from "../domain/text-formats.rules";
 import {
   markdownText,
   quotaVerdict,
   type SniffedType,
   sniffFileType,
+  unreadableFormat,
   uploadDay,
 } from "../domain/upload.rules";
 import { type ContractFlowGate, emitUploadedFlow, FLOW_OFF } from "./contract-flow.ports";
@@ -34,6 +36,10 @@ export const UPLOAD_MIME: Record<SniffedType, string> = {
   jpeg: "image/jpeg",
   png: "image/png",
   md: "text/markdown",
+  webp: "image/webp",
+  gif: "image/gif",
+  text: "text/plain",
+  office: "application/zip",
 };
 const ZIP_SIG = [0x50, 0x4b, 0x03, 0x04];
 
@@ -42,8 +48,12 @@ export type UploadContractDeps = {
   counter: UploadCounter;
   files: ContractFileStore;
   docx: DocxConverter;
+  /** CR-122 p9 · xlsx/pptx/odt ⇒ chữ (vắng/null ⇒ không đọc được ⇒ `extract_failed`). */
+  officeText?: (bytes: Uint8Array) => string | null;
   starter: ExtractionStarter;
   zipNames: (bytes: Uint8Array) => string[];
+  /** CR-122 p9 · đếm trang PDF (null = không đếm được ⇒ để bước đọc xử lý) + trần trang; vắng ⇒ không kiểm. */
+  pdfPages?: ((bytes: Uint8Array) => Promise<number | null>) & { limit: number };
   limits: { tenant: number; global: number };
   /** tenant-quotas · hạn mức lượt tải/ngày riêng của tenant (Admin); vắng/null ⇒ `limits.tenant` (env). */
   tenantLimitOf?: (tenantId: string) => Promise<number | null>;
@@ -82,7 +92,8 @@ export function sniffUpload(bytes: Uint8Array, zipNames: (b: Uint8Array) => stri
   const zip = ZIP_SIG.every((b, i) => bytes[i] === b);
   return (
     sniffFileType(bytes, zip ? zipNames(bytes) : undefined) ??
-    (markdownText(bytes, name) !== null ? "md" : null)
+    (markdownText(bytes, name) !== null ? "md" : null) ??
+    (plainText(bytes, name) !== null ? "text" : null)
   );
 }
 
@@ -94,19 +105,33 @@ function precheckKind(i: UploadContractInput): void {
   if (i.parentId !== null) throw new UploadError("PARENT_INVALID");
 }
 
+/** Mọi kiểm tra TRƯỚC quota/FileBox/HĐ nháp/AI: loại tệp (HEIC/WEBP báo đúng tên), loại chứng từ, trần trang PDF (422). */
+async function precheck(d: UploadContractDeps, i: UploadContractInput): Promise<SniffedType> {
+  const type = sniffUpload(i.bytes, d.zipNames, i.name);
+  if (!type) {
+    // Không nhận ra ⇒ báo rõ định dạng (heic, tiff, …; không biết ⇒ đuôi tệp) để người dùng đổi sang PDF/JPG.
+    const ext = /\.([a-z0-9]{1,5})$/i.exec(i.name)?.[1]?.toLowerCase();
+    const format = unreadableFormat(i.bytes) ?? ext;
+    throw new UploadError("FILE_TYPE", format ? { format } : undefined);
+  }
+  precheckKind(i);
+  const pages = type === "pdf" && d.pdfPages ? await d.pdfPages(i.bytes) : null;
+  if (pages !== null && d.pdfPages && pages > d.pdfPages.limit)
+    throw new UploadError("FILE_TOO_MANY_PAGES", { pages, limit: d.pdfPages.limit });
+  return type;
+}
+
 export function createUploadContract(d: UploadContractDeps): UploadContract {
   const now = d.now ?? (() => new Date());
   return async (i) => {
-    const type = sniffUpload(i.bytes, d.zipNames, i.name);
-    if (!type) throw new UploadError("FILE_TYPE");
-    precheckKind(i);
+    const type = await precheck(d, i);
     const at = now();
     const days: UploadDays = { tenant: uploadDay(at, i.timeZone), global: uploadDay(at, "UTC") };
     await takeQuota(d, i, days, at);
     let stored: { org: string; fileId: string } | null = null;
     let row: UploadContractResult & { approvalId: string | null };
     try {
-      const text = await toText(d.docx, type, i);
+      const text = await toText(d, type, i);
       const org = orgForTenant(i.who.tenantId);
       const up = await d.files.put(org, i.name, i.bytes);
       stored = { org, fileId: up.fileId };
@@ -172,7 +197,7 @@ function uploadedRow(
     parentId: i.parentId,
     title: i.title,
     status: s.text.ok ? "extracting" : "extract_failed",
-    error: s.text.ok ? null : "DOCX_UNREADABLE",
+    error: s.text.ok ? null : s.type === "docx" ? "DOCX_UNREADABLE" : "TEXT_UNREADABLE",
     fields: fillFields({}),
     sourceText: s.text.ok ? s.text.markdown : null,
     userId: i.who.userId,
@@ -225,16 +250,21 @@ export async function takeQuota(
 }
 
 type Text = { ok: true; markdown: string | null } | { ok: false };
+/** Chữ lấy được ⇒ ok; null (hỏng/rỗng) ⇒ vẫn lưu, `extract_failed`. */
+const fromText = (t: string | null): Text =>
+  t === null ? { ok: false } : { ok: true, markdown: t };
 /** DOCX ⇒ Markdown; `DOCX_BUSY` ⇒ 503 (người gọi hoàn quota); `DOCX_UNREADABLE` ⇒ vẫn lưu, `extract_failed`.
  * Truyền `tenantId` ⇒ hàng đợi công bằng N1 (tenant đã có việc chờ ⇒ BUSY; review m-03). */
 async function toText(
-  docx: DocxConverter,
+  d: Pick<UploadContractDeps, "docx" | "officeText">,
   type: SniffedType,
   i: UploadContractInput,
 ): Promise<Text> {
   if (type === "md") return { ok: true, markdown: markdownText(i.bytes, i.name) };
+  if (type === "text") return fromText(plainText(i.bytes, i.name));
+  if (type === "office") return fromText(d.officeText?.(i.bytes) ?? null);
   if (type !== "docx") return { ok: true, markdown: null };
-  const r = await docx.toMarkdown(i.bytes, { tenantId: i.who.tenantId });
+  const r = await d.docx.toMarkdown(i.bytes, { tenantId: i.who.tenantId });
   if (r.ok) return { ok: true, markdown: r.markdown };
   if (r.code === "DOCX_BUSY") throw new UploadError("DOCX_BUSY");
   return { ok: false };

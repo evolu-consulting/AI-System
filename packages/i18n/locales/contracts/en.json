@@ -110,6 +110,8 @@
         },
         "badType": "Only PDF, DOCX, PNG, JPG or Markdown (.md) files are accepted.",
         "tooLarge": "File is larger than 20 MB.",
+        "unreadableFormat": "The {{format}} format cannot be read yet — save it as PDF or JPG, or enter it manually.",
+        "tooManyPages": "The file has {{pages}} pages, over the {{limit}}-page limit. Split it into shorter files (for example, separate the appendix) and upload again.",
         "empty": "File is empty.",
         "quota": "Daily upload limit reached.",
         "quotaPopup": {
@@ -662,7 +664,13 @@
       "saved": "Saved.",
       "failedTitle": "This contract could not be read.",
       "failedBody": "AI could not extract information from the file (it may be blurry, a scan, or an unusual format). You can review the original file, delete it and upload a clearer copy, or enter it manually.",
-      "manual": "Enter manually"
+      "manual": "Enter manually",
+      "failReason": {
+        "unreadable": "The file is damaged or cannot be opened. Upload another copy, or press “Enter manually”.",
+        "tooLarge": "The file is too large for AI to read. Split it, or press “Enter manually”.",
+        "unsupported": "This file format cannot be read automatically. Upload a PDF, DOCX or JPG/PNG image, or press “Enter manually”.",
+        "cap": "Your company has used all AI reads for today. Try again tomorrow, or press “Enter manually”."
+      }
     },
     "catalog": {
       "tabs": "Product groups",

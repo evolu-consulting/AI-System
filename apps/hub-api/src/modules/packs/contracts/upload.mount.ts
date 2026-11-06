@@ -14,6 +14,9 @@ import type { PackAccessView, PackFileboxClient, PackGuardVars, PackWho } from "
 import { createDocxConverter, createPackUow, packTenantOnly } from "../kit/public";
 import { contractFlowRepo } from "./adapters/contract-flow.repo";
 import { promoteRepo } from "./adapters/deals.repo";
+import { officeText } from "./adapters/office-text";
+import { pdfPageCounter } from "./adapters/pdf-pages";
+import { scanLimits } from "./adapters/source-file-text";
 import { uploadRoutes } from "./adapters/upload.routes";
 import { uploadContractRepo } from "./adapters/upload-contract.repo";
 import { redisUploadCounter, unavailableUploadCounter } from "./adapters/upload-counter.redis";
@@ -83,8 +86,10 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
     ...q,
     files: fileStore(d.filebox),
     docx: createDocxConverter(),
+    officeText, // CR-122 p9: xlsx/pptx/odt ⇒ chữ
     starter: d.starter,
     zipNames,
+    pdfPages: pdfPageCounter(scanLimits().maxPages), // CR-122 p9: quá trần trang ⇒ 422 FILE_TOO_MANY_PAGES
     newId: () => Bun.randomUUIDv7(),
     log: logger,
     flow: contractFlowGate(d.db), // CR-122 A1

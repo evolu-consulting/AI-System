@@ -21,7 +21,7 @@ import { mountCommunityWired } from "./community-wire.mount";
 import { ACTIONS_TENANT_DAILY, actionQuota } from "./contracts/adapters/action-quota";
 import { packWriters } from "./contracts/adapters/esign-flow.repo";
 import { LINK_CHECKS_PER_MINUTE } from "./contracts/adapters/link-check-limit.redis";
-import { pdfSourceText } from "./contracts/adapters/source-file-text";
+import { scanFileDeps } from "./contracts/adapters/source-file-text";
 import { uploadUnavailableRoutes } from "./contracts/adapters/upload.routes";
 import type { ExtractionStarter } from "./contracts/application/upload-contract.ports";
 import { mountAssistantTools } from "./contracts/assistant.mount";
@@ -196,9 +196,7 @@ function contractsCtx(d: PacksMountDeps & { db: Db }, view: PackAccessView, fb: 
       ai: aiClient,
       groups: packGroups(db, view, CONTRACTS_KEY),
       members: packWriters(db, view, CONTRACTS_KEY), // esign-flow · người duyệt/ký cụ thể thuộc tenant + quyền gói
-      ...(fb
-        ? { fileText: pdfSourceText({ files: fileboxClients(fb), pdf: createPdfConverter() }) }
-        : {}),
+      ...(fb ? scanFileDeps(fileboxClients(fb), createPdfConverter()) : {}), // CR-122 p9: chữ PDF + tệp đính kèm AI
       ...(d.redis ? { redis: d.redis } : {}),
       quota,
       ...(d.esign ? { afterApproved: d.esign.flow.afterApproved } : {}), // esign-flow · bước Ký số sau Đã duyệt

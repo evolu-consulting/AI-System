@@ -110,6 +110,8 @@
         },
         "badType": "Chỉ nhận PDF, DOCX, PNG, JPG hoặc Markdown (.md).",
         "tooLarge": "Tệp quá 20 MB.",
+        "unreadableFormat": "Định dạng {{format}} chưa đọc được — hãy lưu sang PDF hoặc JPG, hoặc nhập tay.",
+        "tooManyPages": "Tệp có {{pages}} trang, vượt giới hạn {{limit}} trang. Hãy tách thành tệp ngắn hơn (ví dụ tách phụ lục) rồi tải lại.",
         "empty": "Tệp rỗng.",
         "quota": "Đã hết lượt tải lên trong ngày.",
         "quotaPopup": {
@@ -662,7 +664,13 @@
       "saved": "Đã lưu.",
       "failedTitle": "Không đọc được hợp đồng này.",
       "failedBody": "AI chưa trích được thông tin từ file (có thể do ảnh mờ, bản quét, hoặc định dạng lạ). Bạn có thể xem lại file gốc, xoá rồi tải lên bản rõ hơn, hoặc nhập tay.",
-      "manual": "Nhập tay"
+      "manual": "Nhập tay",
+      "failReason": {
+        "unreadable": "Tệp bị hỏng hoặc không mở được. Hãy tải lên bản khác, hoặc bấm “Nhập tay”.",
+        "tooLarge": "Tệp quá lớn để AI đọc. Hãy tách nhỏ tệp, hoặc bấm “Nhập tay”.",
+        "unsupported": "Định dạng tệp này chưa hỗ trợ đọc tự động. Hãy tải lên PDF, DOCX hoặc ảnh JPG/PNG, hoặc bấm “Nhập tay”.",
+        "cap": "Hôm nay đã hết lượt AI đọc của công ty. Hãy thử lại ngày mai, hoặc bấm “Nhập tay”."
+      }
     },
     "catalog": {
       "tabs": "Nhóm sản phẩm",

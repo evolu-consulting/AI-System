@@ -13,12 +13,15 @@ export type AiUsage = {
   cacheReadTokens: number;
   cacheWriteTokens: number;
 };
+/** CR-122 p9 · tệp đính kèm lượt gọi (PDF/ảnh) để model đọc bằng thị giác. Nhà cung cấp không đọc được ⇒ `UNAVAILABLE`. */
+export type AiAttachment = { mime: string; bytes: Uint8Array };
 export type ModelRequest = {
   model: string;
   system: string;
   prompt: string;
   maxTokens: number;
   signal: AbortSignal;
+  attachments?: readonly AiAttachment[];
   /** V2-I · DT-07: cho phép đúng MỘT công cụ — tìm web (nhà cung cấp không hỗ trợ ⇒ `UNAVAILABLE`). */
   webSearch?: boolean;
 };
@@ -100,6 +103,8 @@ export type AiCallRequest = {
   signal: AbortSignal;
   /** V2-I: lời gọi có tìm web (chỉ gói/CLI; xem `ModelRequest.webSearch`). */
   webSearch?: boolean;
+  /** CR-122 p9: PDF/ảnh đính kèm (HĐ scan) — model đọc bằng thị giác. */
+  attachments?: readonly AiAttachment[];
 } & AiCallTags;
 export type AiFailCode = "CAP_EXCEEDED" | "UNAVAILABLE" | "FAILED" | "REFUSED";
 export type AiCallResult =
@@ -138,8 +143,17 @@ export const utcDayStart = (d: Date): Date =>
   new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 
 /** Token input ước tính, nghiêng về dư (≈ 2 ký tự/token — tiếng Việt tốn token hơn tiếng Anh). */
-export const estimateInputTokens = (req: Pick<AiCallRequest, "system" | "prompt">): number =>
-  Math.ceil((req.system.length + req.prompt.length) / 2);
+export const estimateInputTokens = (
+  req: Pick<AiCallRequest, "system" | "prompt" | "attachments">,
+): number =>
+  Math.ceil((req.system.length + req.prompt.length) / 2) + attachmentTokens(req.attachments);
+
+/** Tệp đính kèm ≈ 1 token/50 byte, kẹp 2.000…80.000 mỗi tệp (trang ảnh ~1,5–3k token; PDF ≤ 100 trang). */
+const attachmentTokens = (a: readonly AiAttachment[] | undefined): number =>
+  (a ?? []).reduce(
+    (n, x) => n + Math.min(80_000, Math.max(2_000, Math.ceil(x.bytes.length / 50))),
+    0,
+  );
 
 type Admission =
   | { kind: "ok"; maxTokens: number; holdId: string | null }
@@ -181,6 +195,7 @@ async function callProvider(p: ModelProvider, req: AiCallRequest, maxTokens: num
       maxTokens,
       signal: req.signal,
       ...(req.webSearch ? { webSearch: true } : {}),
+      ...(req.attachments?.length ? { attachments: req.attachments } : {}),
     });
   } catch {
     return { ok: false, code: "FAILED" } as ModelReply;

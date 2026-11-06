@@ -22,6 +22,9 @@ import type { PromoteContract } from "../application/promote-contract.usecase";
 import { type UploadDoc, UploadError } from "../application/upload-contract.ports";
 import type { UploadContract, UploadContractInput } from "../application/upload-contract.usecase";
 import { dealDbCode } from "../domain/deal.rules";
+import { imagesToPdf } from "../domain/images-pdf.rules";
+import { unreadableFormat } from "../domain/upload.rules";
+import { scanLimits } from "./source-file-text";
 
 const CONTRACTS_KEY = "contracts";
 /** Phần dư cho khung multipart (ranh giới, header phần, trường chữ). */
@@ -42,6 +45,7 @@ export type UploadRoutesDeps = {
 const MESSAGES: Record<UploadError["code"], string> = {
   FILE_TOO_LARGE: "File too large",
   FILE_TYPE: "File type not allowed",
+  FILE_TOO_MANY_PAGES: "File has too many pages",
   PARENT_INVALID: "Invalid parent contract",
   FRAME_INVALID: "Invalid framework contract",
   UPLOAD_QUOTA: "Upload quota exceeded",
@@ -62,10 +66,19 @@ const STATUS = {
   FRAME_INVALID: DOC_ERRORS.FRAME_INVALID,
   DOCX_BUSY: 503,
   NOT_FOUND: 404,
+  FILE_TOO_MANY_PAGES: 422,
 } as const;
 const VersionFormSchema = UploadContractFormSchema.pick({ title: true });
+/** CR-122 p9: lý do nghiệp vụ rõ cho ảnh không nhận được (FLOW2-FR-27). */
+const messageOf = (e: UploadError): string => {
+  const f = (e.details as { format?: string } | undefined)?.format;
+  if (e.code !== "FILE_TYPE" || !f) return MESSAGES[e.code];
+  return f === "images"
+    ? "Không đọc được một trong các ảnh (chỉ nhận JPG hoặc PNG khi ghép nhiều ảnh)"
+    : `Định dạng ${f.toUpperCase()} chưa đọc được — hãy lưu sang PDF hoặc JPG`;
+};
 const toAppError = (e: UploadError) =>
-  new AppError(e.code, STATUS[e.code], MESSAGES[e.code], e.details);
+  new AppError(e.code, STATUS[e.code], messageOf(e), e.details);
 const tooLarge = () => toAppError(new UploadError("FILE_TOO_LARGE"));
 
 /** Đọc bỏ thân tới `cap` byte để trả 413 trên kết nối sạch (Bun đóng socket khi còn thân chưa đọc ⇒ client ECONNRESET). */
@@ -182,19 +195,39 @@ export function uploadUnavailableRoutes(view: PackAccessView): Hono<PackGuardVar
 async function readUpload(c: Context<PackGuardVars>, maxBytes: number) {
   const form = await c.req.formData().catch(() => null);
   if (!form) throw appError("VALIDATION_ERROR");
-  const file = form.get("file");
-  if (!(file instanceof Blob)) throw appError("VALIDATION_ERROR");
-  if (file.size > maxBytes) throw tooLarge();
+  const files = form.getAll("file").filter((f): f is File => f instanceof Blob);
+  const file = files[0];
+  if (!file) throw appError("VALIDATION_ERROR");
+  if (files.some((f) => f.size > maxBytes)) throw tooLarge();
   // Tệp rỗng ⇒ 415 trước khi chạm quota/FileBox. Bun 1.3.14 trả phần rỗng là Blob không có `name`
   // (vẫn qua `instanceof File`) ⇒ không tin `name` là chuỗi (TECH-DEBT #233).
-  if (file.size === 0) throw toAppError(new UploadError("FILE_TYPE"));
+  if (files.some((f) => f.size === 0)) throw toAppError(new UploadError("FILE_TYPE"));
   const u = c.get("user");
+  const name = cleanFileName(fileNameOf(file));
+  const bytes =
+    files.length === 1
+      ? new Uint8Array(await file.arrayBuffer())
+      : await mergePages(files, maxBytes, name);
   return {
     form,
     who: { tenantId: u.tenantId, userId: u.userId },
-    name: cleanFileName(fileNameOf(file)),
-    bytes: new Uint8Array(await file.arrayBuffer()),
+    name: files.length === 1 ? name : `${defaultTitle(name)}.pdf`,
+    bytes,
   };
+}
+
+/** CR-122 p9 · FLOW2-FR-27: nhiều ảnh chụp trang của MỘT hợp đồng ⇒ một PDF (thứ tự như người dùng chọn). Chỉ JPG/PNG. */
+async function mergePages(files: File[], maxBytes: number, _name: string): Promise<Uint8Array> {
+  // Mỗi ảnh = một trang: quá trần trang ⇒ 422 trước khi giải mã ảnh (không lưu gì).
+  const limit = scanLimits().maxPages;
+  if (files.length > limit)
+    throw toAppError(new UploadError("FILE_TOO_MANY_PAGES", { pages: files.length, limit }));
+  const pages = await Promise.all(files.map(async (f) => new Uint8Array(await f.arrayBuffer())));
+  const bad = pages.map((p) => unreadableFormat(p)).find((x) => x !== null);
+  const pdf = await imagesToPdf(pages);
+  if (!pdf) throw toAppError(new UploadError("FILE_TYPE", { format: bad ?? "images" }));
+  if (pdf.length > maxBytes) throw tooLarge();
+  return pdf;
 }
 
 export function uploadRoutes(view: PackAccessView, d: UploadRoutesDeps): Hono<PackGuardVars> {

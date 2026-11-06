@@ -80,6 +80,8 @@ export type ExtractionStarter = {
 export type UploadErrorCode =
   | "FILE_TOO_LARGE"
   | "FILE_TYPE"
+  /** CR-122 p9 · PDF/ảnh ghép quá số trang AI đọc được ⇒ 422 ngay lúc tải lên (không lưu, không tạo HĐ nháp); details `{pages, limit}`. */
+  | "FILE_TOO_MANY_PAGES"
   | "PARENT_INVALID"
   // CR-101 · HĐ NT gắn không có / không thấy / tenant khác (FK `contracts_frame_fk`)
   | "FRAME_INVALID"

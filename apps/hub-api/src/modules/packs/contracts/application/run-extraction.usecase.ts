@@ -90,7 +90,8 @@ export function createRunExtraction(d: RunExtractionDeps): RunExtraction {
   };
 }
 
-/** Văn bản để đọc: `source_text` có sẵn; không có mà là PDF có lớp chữ ⇒ chữ trích (kiểm trích dẫn cũng dùng chữ này). */
+/** Văn bản để đọc: `source_text` có sẵn; không có mà là PDF có lớp chữ ⇒ chữ trích (kiểm trích dẫn cũng dùng chữ này).
+ *  PDF scan/ảnh ⇒ `text: null` (tệp đi thẳng agent đọc bằng thị giác). */
 async function sourceText(
   d: RunExtractionDeps,
   who: PackWho,

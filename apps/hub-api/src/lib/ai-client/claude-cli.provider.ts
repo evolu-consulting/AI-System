@@ -5,8 +5,10 @@
 // của user chạy hub-api (`CLAUDE_CONFIG_DIR` nếu đặt, không thì `~/.claude`) — xem docs/specs/ai-sub/tasks.md.
 // `billing = subscription` ⇒ dòng usage `subscription`, chi phí 0. Chưa đăng nhập ⇒ `UNAVAILABLE`. Huỷ giữa chừng ⇒ không có usage
 // (CLI chỉ báo usage khi xong). Chạy CLI qua seam `CliRun` (test dùng runner giả — không AI thật).
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import type { AiUsage, ModelProvider, ModelReply } from "./ai-client";
+import { join } from "node:path";
+import type { AiAttachment, AiUsage, ModelProvider, ModelReply } from "./ai-client";
 
 export type CliOutput = { exitCode: number | null; stdout: string; stderr: string };
 export type CliRun = (
@@ -46,7 +48,23 @@ const AUTH_RE = /\/login|not logged in|log in|authenticat|oauth|invalid api key|
 /** Lượt tìm web (V2-I): đúng một công cụ `WebSearch` (không Bash/đọc tệp/MCP), vài lượt để gọi tìm rồi trả lời. */
 export const WEB_SEARCH_MAX_TURNS = 6;
 
-export function cliArgs(model: string, system: string, webSearch = false): string[] {
+/** CR-122 p9 · lượt đọc tệp đính kèm: đúng một công cụ `Read` (cwd = thư mục tạm chỉ chứa các tệp đó), vài lượt để mở tệp rồi trả lời. */
+export const READ_FILES_MAX_TURNS = 6;
+const MIME_EXT: Record<string, string> = {
+  "application/pdf": "pdf",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
+
+export function cliArgs(
+  model: string,
+  system: string,
+  webSearch = false,
+  readFiles = false,
+): string[] {
+  const tool = webSearch ? "WebSearch" : readFiles ? "Read" : "";
   return [
     "-p",
     "--output-format",
@@ -54,12 +72,12 @@ export function cliArgs(model: string, system: string, webSearch = false): strin
     "--model",
     model,
     "--max-turns",
-    webSearch ? String(WEB_SEARCH_MAX_TURNS) : "1",
+    webSearch ? String(WEB_SEARCH_MAX_TURNS) : readFiles ? String(READ_FILES_MAX_TURNS) : "1",
     "--system-prompt",
     system,
     "--tools",
-    webSearch ? "WebSearch" : "",
-    ...(webSearch ? ["--allowedTools", "WebSearch"] : []),
+    tool,
+    ...(tool ? ["--allowedTools", tool] : []),
     "--strict-mcp-config",
     "--setting-sources",
     "",
@@ -184,6 +202,17 @@ function limiter(max: number) {
   };
 }
 
+/** CR-122 p9 · ghi tệp đính kèm vào thư mục tạm, trả tên tệp (file-1.pdf, …). */
+async function stageFiles(dir: string, files: readonly AiAttachment[]): Promise<string[]> {
+  const names = files.map((f, i) => `file-${i + 1}.${MIME_EXT[f.mime]}`);
+  await Promise.all(files.map((f, i) => Bun.write(join(dir, names[i] ?? ""), f.bytes)));
+  return names;
+}
+const promptWithFiles = (prompt: string, names: readonly string[]): string =>
+  names.length
+    ? `${prompt}\n\nThe document is in these attached files in the current directory; open them with the Read tool: ${names.join(", ")}`
+    : prompt;
+
 export function claudeCliProvider(o: ClaudeCliOptions): ModelProvider {
   const run = o.run ?? bunCliRun;
   const src = o.env ?? process.env;
@@ -193,21 +222,28 @@ export function claudeCliProvider(o: ClaudeCliOptions): ModelProvider {
     billing: "subscription",
     async complete(r): Promise<ModelReply> {
       if (r.system.length > SYSTEM_ARG_MAX) return { ok: false, code: "FAILED" };
+      const files = r.attachments ?? [];
+      if (files.some((f) => !MIME_EXT[f.mime])) return { ok: false, code: "UNAVAILABLE" };
+      const dir = files.length ? await mkdtemp(join(tmpdir(), "ai-att-")) : null;
       try {
+        const names = dir ? await stageFiles(dir, files) : [];
+        const prompt = promptWithFiles(r.prompt, names);
         const out = await gate(r.signal, () =>
-          run([o.cliPath, ...cliArgs(r.model, r.system, r.webSearch === true)], {
-            stdin: r.prompt,
+          run([o.cliPath, ...cliArgs(r.model, r.system, r.webSearch === true, names.length > 0)], {
+            stdin: prompt,
             env: cliEnv(src, {
               ...(o.configDir ? { configDir: o.configDir } : {}),
               maxTokens: r.maxTokens,
             }),
-            cwd: tmpdir(),
+            cwd: dir ?? tmpdir(),
             signal: r.signal,
           }),
         );
         return replyOf(out, r.model);
       } catch {
         return { ok: false, code: "FAILED" };
+      } finally {
+        if (dir) await rm(dir, { recursive: true, force: true }).catch(() => undefined);
       }
     },
   };

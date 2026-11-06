@@ -44,6 +44,7 @@ describe("convertPdf / createPdfConverter (worker)", () => {
     expect(await conv.toText(makePdf([[], [], ["x"]]))).toEqual({
       ok: false,
       code: "PDF_NEEDS_OCR",
+      pages: 3, // CR-122 p9: số trang để hợp đồng scan áp trần đọc
     });
   });
   it("rác / zip ⇒ PDF_UNREADABLE (không ném)", async () => {

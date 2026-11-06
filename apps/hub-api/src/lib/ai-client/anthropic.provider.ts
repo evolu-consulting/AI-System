@@ -3,7 +3,7 @@
 // người gọi truyền (env/secret) — không đọc env ở đây. `stop_reason = refusal` ⇒ `REFUSED`; lỗi xác thực/quyền ⇒ `UNAVAILABLE`.
 // Lỗi/huỷ giữa stream ⇒ trả usage một phần đã nhận (M3c, review B #14).
 import Anthropic from "@anthropic-ai/sdk";
-import type { AiUsage, ModelProvider, ModelReply } from "./ai-client";
+import type { AiAttachment, AiUsage, ModelProvider, ModelReply } from "./ai-client";
 import { type CachedPrompt, cachedPrompt } from "./prompt-cache";
 
 type RawUsage = {
@@ -32,6 +32,39 @@ function replyOf(msg: FinalMsg): ModelReply {
   return { ok: true, text, model: msg.model, usage };
 }
 
+const IMAGE_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+type Block = Anthropic.Beta.BetaContentBlockParam;
+
+/** CR-122 p9 · PDF ⇒ khối `document`, ảnh ⇒ khối `image` (base64, Messages API đọc bằng thị giác). Loại khác ⇒ null (không đọc được). */
+export function attachmentBlocks(a: readonly AiAttachment[]): Block[] | null {
+  const out: Block[] = [];
+  for (const x of a) {
+    const data = Buffer.from(x.bytes).toString("base64");
+    if (x.mime === "application/pdf")
+      out.push({
+        type: "document",
+        source: { type: "base64", media_type: "application/pdf", data },
+      });
+    else if (IMAGE_MIME.includes(x.mime))
+      out.push({
+        type: "image",
+        source: { type: "base64", media_type: x.mime as "image/png", data },
+      });
+    else return null;
+  }
+  return out;
+}
+
+/** Tệp đứng TRƯỚC chữ trong tin cuối (khuyến nghị của Anthropic cho tài liệu dài). */
+function withAttachments(
+  messages: ReturnType<typeof cachedPrompt>["messages"],
+  blocks: Block[],
+): ReturnType<typeof cachedPrompt>["messages"] {
+  const last = messages.at(-1);
+  if (!last || typeof last.content === "string") return messages;
+  return [...messages.slice(0, -1), { ...last, content: [...blocks, ...last.content] }];
+}
+
 export function anthropicProvider(o: { apiKey: string; baseURL?: string }): ModelProvider {
   const client = new Anthropic({
     apiKey: o.apiKey,
@@ -45,6 +78,11 @@ export function anthropicProvider(o: { apiKey: string; baseURL?: string }): Mode
       let stream: ReturnType<typeof client.beta.messages.stream> | undefined;
       // CR-114 · system cố định có `cache_control` (prefix ổn định); prompt lượt này sau breakpoint.
       const p = cachedPrompt({ system: r.system, history: [], prompt: r.prompt });
+      if (r.attachments?.length) {
+        const blocks = attachmentBlocks(r.attachments);
+        if (!blocks) return { ok: false, code: "UNAVAILABLE" };
+        p.messages = withAttachments(p.messages, blocks);
+      }
       try {
         stream = client.beta.messages.stream(
           {

@@ -136,7 +136,18 @@ export const PatchFieldsResponseSchema = z.strictObject({
 export type PatchFieldsResponse = z.infer<typeof PatchFieldsResponseSchema>;
 
 /** Tải lên (D-09): PDF, DOCX, JPEG, PNG theo magic bytes; Markdown (.md, UTF-8 thuần, Gap #9); ≤ 20 MiB; 30/tenant/ngày, 300/hệ thống/ngày (D-06). */
-export const CONTRACT_FILE_TYPES = ["pdf", "docx", "jpeg", "png", "md"] as const;
+/** CR-122 p9 (FLOW2-FR-27): thêm WEBP/GIF (ảnh, gửi thẳng AI), tệp chữ (txt/csv/html/rtf/xml/json) và zip-office (xlsx/pptx/odt) lấy chữ. */
+export const CONTRACT_FILE_TYPES = [
+  "pdf",
+  "docx",
+  "jpeg",
+  "png",
+  "md",
+  "webp",
+  "gif",
+  "text",
+  "office",
+] as const;
 export type ContractFileType = (typeof CONTRACT_FILE_TYPES)[number];
 export const CONTRACT_FILE_MIME = {
   pdf: "application/pdf",
@@ -144,6 +155,10 @@ export const CONTRACT_FILE_MIME = {
   jpeg: "image/jpeg",
   png: "image/png",
   md: "text/markdown",
+  webp: "image/webp",
+  gif: "image/gif",
+  text: "text/plain",
+  office: "application/zip",
 } as const satisfies Record<ContractFileType, string>;
 export const CONTRACT_UPLOAD_MAX_BYTES = 20 * 1024 * 1024;
 export const CONTRACT_UPLOAD_TENANT_DAILY = 30;

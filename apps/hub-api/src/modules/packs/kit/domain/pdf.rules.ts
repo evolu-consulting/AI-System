@@ -12,7 +12,8 @@ export const PDF_MIN_PAGE_CHARS = 50;
 export type PdfErrorCode = "PDF_UNREADABLE" | "PDF_BUSY" | "PDF_TOO_LARGE" | "PDF_NEEDS_OCR";
 export type PdfResult =
   | { ok: true; markdown: string; pages: number; warnings: string[] }
-  | { ok: false; code: PdfErrorCode };
+  /** `pages` chỉ có ở `PDF_NEEDS_OCR` (CR-122 p9: hợp đồng scan đọc bằng thị giác cần số trang để áp trần). */
+  | { ok: false; code: PdfErrorCode; pages?: number };
 export type PdfRequestOpts = { tenantId?: string };
 /** Port (ADR-0023 §2): không ném — mọi lỗi thành `{ok:false}`. */
 export interface PdfConverter {
@@ -53,7 +54,7 @@ export function pagesToText(pageTexts: readonly string[]): { text: string; warni
 /** Kết quả từ chữ từng trang (worker gọi sau khi đọc PDF). */
 export function pdfResultOf(pageTexts: readonly string[], totalPages: number): PdfResult {
   if (totalPages > PDF_MAX_PAGES) return { ok: false, code: "PDF_TOO_LARGE" };
-  if (isScanned(pageTexts)) return { ok: false, code: "PDF_NEEDS_OCR" };
+  if (isScanned(pageTexts)) return { ok: false, code: "PDF_NEEDS_OCR", pages: totalPages };
   const { text, warnings } = pagesToText(pageTexts);
   return { ok: true, markdown: text, pages: totalPages, warnings };
 }

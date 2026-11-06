@@ -29,6 +29,7 @@ import {
 } from "./adapters/inproc-limit";
 import { platformAuditRepo } from "./adapters/platform-audit.repo";
 import { reviewRoutes } from "./adapters/review.routes";
+import type { FileContent } from "./adapters/source-file-text";
 import {
   type ApprovalGroups,
   actApproval,
@@ -115,6 +116,8 @@ export type ContractsFlowDeps = EsignHooks & {
   ai: AiClient;
   /** M3 · D3-04 · PDF có lớp chữ ⇒ chữ (FileBox + unpdf); vắng ⇒ tệp đi thẳng agent (`AGENT_UNAVAILABLE`). */
   fileText?: SourceFileText;
+  /** CR-122 p9 · bytes tệp gốc ở FileBox để đính kèm lượt AI (PDF scan / ảnh đọc bằng thị giác); vắng ⇒ `AGENT_UNAVAILABLE`. */
+  fileBytes?: FileContent;
   groups: ApprovalGroups & Pick<FlowGroups, "existingIds" | "list">;
   /** contract-flow S3a · cầu engine quy trình (`packRuns`, cổng gắn lúc engine mount); vắng ⇒ không chạy duyệt trên engine. */
   engine?: ApprovalEngineBridge;
@@ -215,7 +218,10 @@ function extractionRunner(
   const schedule: TaxRetryScheduler = (...a) => taxQueue?.scheduleTaxRetry(...a);
   const transport =
     d.transport ??
-    aiTransport(flow.ai, { model: process.env.CONTRACTS_EXTRACT_MODEL || EXTRACT_MODEL });
+    aiTransport(flow.ai, {
+      model: process.env.CONTRACTS_EXTRACT_MODEL || EXTRACT_MODEL,
+      ...(flow.fileBytes ? { files: flow.fileBytes } : {}), // CR-122 p9: scan/ảnh ⇒ tệp đính kèm lời gọi
+    });
   const agent = createExtractionAgent(transport, { timeoutMs: agentTimeoutMs() });
   const verifier = createExtractionVerifier();
   const run = createRunExtraction({

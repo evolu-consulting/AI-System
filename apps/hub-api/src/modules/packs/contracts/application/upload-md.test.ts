@@ -13,7 +13,7 @@ describe("Gap #9 · markdown", () => {
     expect(sniffUpload(enc("# x"), noZip, "a.markdown")).toBe("md");
   });
   it("từ chối: sai đuôi, rỗng, có byte NUL, UTF-8 hỏng", () => {
-    expect(sniffUpload(enc("# x"), noZip, "a.txt")).toBeNull();
+    expect(sniffUpload(enc("# x"), noZip, "a.bin")).toBeNull(); // CR-122 p9: .txt nay là tệp chữ ("text")
     expect(sniffUpload(enc("# x"), noZip)).toBeNull();
     expect(markdownText(new Uint8Array(), "a.md")).toBeNull();
     expect(markdownText(new Uint8Array([0x23, 0x00, 0x41]), "a.md")).toBeNull();

@@ -1,7 +1,31 @@
 // Gap #9 · luật thuần của hàng đợi tải lên: loại tệp (cả .md), 20 MB/tệp, trạng thái từng tệp. Máy chủ vẫn kiểm lại bằng nội dung.
 import { CONTRACT_UPLOAD_MAX_BYTES } from "@ai/contracts/pack-contracts";
 
-export const UPLOAD_EXTS = [".pdf", ".docx", ".png", ".jpg", ".jpeg", ".md", ".markdown"] as const;
+/** CR-122 p9: thêm ảnh (webp/gif), tệp chữ, zip-office; `.heic/.heif` cho qua để máy chủ báo rõ "Định dạng HEIC chưa đọc được". */
+export const UPLOAD_EXTS = [
+  ".pdf",
+  ".docx",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".gif",
+  ".heic",
+  ".heif",
+  ".md",
+  ".markdown",
+  ".txt",
+  ".csv",
+  ".tsv",
+  ".html",
+  ".htm",
+  ".rtf",
+  ".xml",
+  ".json",
+  ".xlsx",
+  ".pptx",
+  ".odt",
+] as const;
 export const UPLOAD_ACCEPT = UPLOAD_EXTS.join(",");
 export const UPLOAD_MAX_BYTES = CONTRACT_UPLOAD_MAX_BYTES;
 

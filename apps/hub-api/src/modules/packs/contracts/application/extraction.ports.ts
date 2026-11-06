@@ -27,15 +27,23 @@ export type AgentFailCode =
   | "INVALID_OUTPUT"
   | "TIMEOUT"
   /** M3 · trần token AI/ngày của tenant đã hết (AI client chung). */
-  | "AI_CAP_EXCEEDED";
+  | "AI_CAP_EXCEEDED"
+  /** CR-122 p9 · không lấy được bytes tệp gốc ở FileBox để đưa cho AI đọc. */
+  | "SOURCE_UNAVAILABLE";
 export type AgentReply = { ok: true; raw: RawExtraction } | { ok: false; code: AgentFailCode };
 
-/** M3 · D3-04 · tệp gốc ⇒ chữ (PDF có lớp chữ, ADR-0028). `null` ⇒ loại tệp không đọc được ở đây (ảnh) ⇒ đường cũ. PDF scan ⇒
- *  `PDF_NEEDS_OCR`. Không ném. */
+/** M3 · D3-04 · tệp gốc ⇒ chữ (PDF có lớp chữ, ADR-0028). `null` ⇒ loại tệp không đọc được ở đây (ảnh) ⇒ tệp đi thẳng agent.
+ *  CR-122 p9 · PDF scan (không lớp chữ) ⇒ `text: null` + số trang: tệp đi thẳng agent đọc bằng thị giác, chỉ `readPages` trang đầu
+ *  (`readPages < pages` ⇒ HĐ ghi cảnh báo "chỉ đọc N trang đầu"). Hỏng/quá lớn ⇒ `ok:false`. Không ném. */
 export type SourceFileText = (
   who: PackWho,
   f: SourceFile,
-) => Promise<{ ok: true; text: string } | { ok: false; code: string } | null>;
+) => Promise<
+  | { ok: true; text: string }
+  | { ok: true; text: null; pages: number }
+  | { ok: false; code: string }
+  | null
+>;
 
 /** Agent trích chạy trong Agent Hub (D2-01). Adapter dựng lời nhắc có rào (domain) + parse strict; không bao giờ ném. */
 export type ExtractionAgent = {

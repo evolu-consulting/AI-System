@@ -65,21 +65,38 @@ export function SaveNotice({ err }: { err: string | null }) {
   );
 }
 
+/** CR-122 p9 · FLOW2-FR-27: mã lỗi đọc ⇒ lý do nghiệp vụ (tệp hỏng / quá lớn / định dạng chưa hỗ trợ / hết hạn mức AI) kèm gợi ý "Nhập tay". */
+const FAIL_REASON: Record<string, string> = {
+  PDF_UNREADABLE: "unreadable",
+  DOCX_UNREADABLE: "unreadable",
+  TEXT_UNREADABLE: "unreadable",
+  SOURCE_UNAVAILABLE: "unreadable",
+  PDF_TOO_LARGE: "tooLarge",
+  AGENT_UNAVAILABLE: "unsupported",
+  AI_CAP_EXCEEDED: "cap",
+};
+
 export function ExtractFailed({
   file,
   id,
   write,
+  error,
 }: {
   file: FileRef | null;
   id: string;
   /** gap-a1 #5: vai có quyền ghi ⇒ nút "Thử lại" (đọc lại bằng AI). */
   write: boolean;
+  /** Mã lỗi của lượt đọc (`contract.error`) — chọn câu lý do. */
+  error?: string | null;
 }) {
   const { t } = useTranslation();
+  const reason = error ? FAIL_REASON[error] : undefined;
   return (
     <Panel className="mb-4 p-5">
       <p className="font-medium text-late">{t("contracts.review.failedTitle")}</p>
-      <p className="mt-1 text-sm text-dim">{t("contracts.review.failedBody")}</p>
+      <p className="mt-1 text-sm text-dim">
+        {t(reason ? `contracts.review.failReason.${reason}` : "contracts.review.failedBody")}
+      </p>
       <div className="mt-3 flex flex-wrap gap-2">
         {write && <ReextractButton id={id} retry />}
         {file && <FileLink file={file} />}

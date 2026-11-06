@@ -75,7 +75,10 @@ async function toText(
   if (fmt === "pdf") {
     if (!d.pdf) return { ok: false, code: "PDF_UNSUPPORTED" };
     const r = await d.pdf(bytes, tenantId);
-    return r.ok ? { ok: true, value: { md: r.markdown, warnings: r.warnings } } : r;
+    // CR-122 p9: bộ chuyển PDF kèm `pages` ở PDF_NEEDS_OCR (cho gói hợp đồng) — nạp tri thức chỉ trả mã như cũ.
+    return r.ok
+      ? { ok: true, value: { md: r.markdown, warnings: r.warnings } }
+      : { ok: false, code: r.code };
   }
   return { ok: false, code: "FORMAT_UNSUPPORTED" };
 }

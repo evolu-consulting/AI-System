@@ -185,7 +185,7 @@ function ContractBody({
           <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
           <ManagePanel c={c} write={write} />
           {c.status === "extract_failed" ? (
-            <ExtractFailed file={file} id={id} write={write} />
+            <ExtractFailed file={file} id={id} write={write} error={c.error} />
           ) : (
             <DetailGrid
               c={c}
