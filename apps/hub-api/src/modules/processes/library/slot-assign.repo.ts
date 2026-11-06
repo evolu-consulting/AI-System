@@ -214,4 +214,5 @@ export const tenantSlotRows = (
     from k left join hub.process_routing_rules a on a.tenant_id = ${tenantId} and a.slot = k.slot and a.is_default
       left join hub.process_slots s on s.slot = k.slot
       left join hub.process_defs d on d.id = coalesce(a.def_id, s.default_def_id) and d.deleted_at is null
+        and (d.tenant_id is null or d.tenant_id = ${tenantId})
     order by k.slot`);

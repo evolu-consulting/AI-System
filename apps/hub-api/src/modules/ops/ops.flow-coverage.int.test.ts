@@ -20,6 +20,7 @@ const GOOD = tenantId(1202); // đã có process_tenant_defs
 const DEAD = tenantId(1203); // process_tenant_defs trỏ def đã xoá mềm
 const OFF = tenantId(1204); // không bật gói
 const RULE = tenantId(1205); // CR-121 D-4 · luật trỏ quy trình đã xoá
+const LAC = tenantId(1207); // CR-121 c9b · luật trỏ BẢN RIÊNG của công ty khác
 const NOENG = tenantId(1206); // CR-121 D-4 · còn run duyệt đang chạy mà hết luật
 
 let o: Sql;
@@ -148,6 +149,30 @@ describe("ops-watch · flow_coverage · int", () => {
     await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${RULE}, ${DFLT}, ${SLOT}) on conflict do nothing`;
     await o`update hub.process_routing_rules set def_id = ${DFLT} where tenant_id = ${RULE}`;
     await o`delete from hub.process_runs where tenant_id = ${NOENG}`;
+    await round(155);
+    expect((await row())?.status).toBe("ok");
+  });
+
+  it("CR-121 c9b · luật trỏ bản riêng của công ty KHÁC ⇒ crit nêu tên; trỏ lại def sống ⇒ ok", async () => {
+    await o`insert into admin.tenants (id, key, name) values (${LAC}, 't1207', 'Lạc luật')`;
+    const [priv] = await o<
+      { id: string }[]
+    >`insert into hub.process_defs (tenant_id, key, name, stages,
+        source_template_id, source_rel_version)
+      select ${GOOD}, 'cov-priv', 'Bản riêng Tốt', stages, ${DFLT}, 1 from hub.process_defs where id = ${DFLT} returning id::text as id`;
+    const pid = priv?.id as string;
+    await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${LAC}, ${pid}, ${SLOT})`;
+    await o`insert into hub.process_routings (tenant_id, slot) values (${LAC}, ${SLOT})`;
+    await o`insert into hub.process_routing_rules (tenant_id, slot, priority, condition, def_id, is_default)
+      values (${LAC}, ${SLOT}, 0, '{}'::jsonb, ${pid}, true)`;
+    await round(124);
+    const bad = await row();
+    expect(bad?.status).toBe("crit");
+    expect(bad?.message).toContain("Lạc luật");
+    // bản riêng của CHÍNH công ty (GOOD) trỏ luật của GOOD thì không báo hỏng
+    expect(bad?.message).not.toContain("Tốt");
+    await o`insert into hub.process_tenant_defs (tenant_id, def_id, slot) values (${LAC}, ${DFLT}, ${SLOT}) on conflict do nothing`;
+    await o`update hub.process_routing_rules set def_id = ${DFLT} where tenant_id = ${LAC}`;
     await round(155);
     expect((await row())?.status).toBe("ok");
   });
