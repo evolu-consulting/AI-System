@@ -943,7 +943,7 @@ f69d6bcc8608c6a0af601e2937d5ef1b03335f0e2a87ec810c3a041f88f1e732  tests/acceptan
 2926d58e88b651949143aef0c91fb965ed21e17264946d67f1f261daddf9c64e  tests/acceptance/M1/auth-password.int.test.ts
 f558922a04d113789f6fbc53fbf931da38f5e7fb7678a92d2039571e5965d2c5  tests/acceptance/M1/auth-refresh.int.test.ts
 e7d208302c2d5d4d61999ffd0335832778a9c7bf32e46dc64f42dedc84e2f790  tests/acceptance/M1/db-guard.int.test.ts
-f9b4848ea38b52dbd72738fe2e98f1a01043d3f01109c74819dc9cccff505f29  tests/acceptance/M1/db-rls.int.test.ts
+1b5df8ac09a7cfbf8c8baf894255fb13ab432af8225a7326e2deb671a4131b55  tests/acceptance/M1/db-rls.int.test.ts
 629e7cbaa956cb4f14179121bcee5435a8b6d489e1a52acf127f53158b42d023  tests/acceptance/M1/db-schema.int.test.ts
 093a758743e4bfd786ef4e2b959a9d98083c046d22b23a6ea425eca57201019e  tests/acceptance/M1/error-codes.int.test.ts
 b51784a475b5bf9953e55e50f7b9a82b9f58e469359b27e3864964d9b259cfb5  tests/acceptance/M1/i18n-labels.test.ts
