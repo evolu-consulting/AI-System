@@ -645,6 +645,13 @@
       "when": 1805500000000,
       "tag": "0106_company_flows",
       "breakpoints": true
+    },
+    {
+      "idx": 92,
+      "version": "7",
+      "when": 1805800000000,
+      "tag": "0109_emit_flow_event",
+      "breakpoints": true
     }
   ]
 }

@@ -53,7 +53,8 @@ async function flow(t: string, key: string, position: number, trigger: object, e
   cf[key] = r?.id as string;
 }
 const emit = (t: string, eventId: string, event: string, ref: string, facts: object, actor = UX) =>
-  withHubScope(db, SYS, (tx) =>
+  // E1b · `hub.emit_flow_event` chỉ ghi cho tenant hiện tại của tx ⇒ scope user của chính công ty.
+  withHubScope(db, { kind: "user", tenantId: t, userId: actor }, (tx) =>
     insertFlowEvents(tx, [
       { tenantId: t, eventId, event, ref, facts: facts as never, actorId: actor },
     ]),

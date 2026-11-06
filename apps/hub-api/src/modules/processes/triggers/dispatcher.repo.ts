@@ -26,7 +26,10 @@ export type EventFinish = {
 
 const arr = (xs: readonly string[]) => `{${[...new Set(xs)].join(",")}}`;
 
-/** App ghi sự kiện CÙNG tx bản ghi (scope user đúng tenant hoặc system). Trùng `(tenant_id, event_id)` ⇒ bỏ qua (idempotent). */
+/**
+ * App ghi sự kiện CÙNG tx bản ghi qua `hub.emit_flow_event` (SECURITY DEFINER, hub 0109): gọi được từ tx gói (role `<k>_rw`) lẫn tx
+ * hub scope user; CHỈ cho tenant hiện tại của tx (`app.tenant_id`) — khác ⇒ 42501. Trùng `(tenant_id, event_id)` ⇒ bỏ qua. MỘT câu.
+ */
 export async function insertFlowEvents(tx: Tx, evs: readonly FlowEventInput[]): Promise<number> {
   if (evs.length === 0) return 0;
   const rows = evs.map((e) => ({
@@ -37,12 +40,21 @@ export async function insertFlowEvents(tx: Tx, evs: readonly FlowEventInput[]): 
     facts: e.facts,
     actor_id: e.actorId,
   }));
-  const r = await tx.execute<{ id: string }>(sql`insert into hub.flow_events
-      (tenant_id, event_id, event, ref, facts, actor_id)
-    select x.tenant_id, x.event_id, x.event, x.ref, coalesce(x.facts, '{}'::jsonb), x.actor_id
-    from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb)
-      as x(tenant_id uuid, event_id text, event text, ref text, facts jsonb, actor_id uuid)
-    on conflict (tenant_id, event_id) do nothing returning id`);
+  const [r] = await tx.execute<{ n: number }>(sql`select count(id)::int as n from (
+      select hub.emit_flow_event(x.tenant_id, x.event_id, x.event, x.ref, x.facts, x.actor_id) as id
+      from jsonb_to_recordset(${JSON.stringify(rows)}::jsonb)
+        as x(tenant_id uuid, event_id text, event text, ref text, facts jsonb, actor_id uuid)) s`);
+  return r?.n ?? 0;
+}
+
+/** Sự kiện hết lượt thử mà Hub chết giữa chừng (attempts = 5, lease đã qua, chưa xong) ⇒ chốt lỗi `lease_exhausted`. MỘT câu. */
+export async function closeExhausted(tx: Tx, now: Date): Promise<number> {
+  const r = await tx.execute<{
+    id: string;
+  }>(sql`update hub.flow_events set processed_at = ${now.toISOString()}::timestamptz,
+      error = 'lease_exhausted'
+    where processed_at is null and attempts >= ${FLOW_EVENT_ATTEMPTS_MAX}
+      and next_at <= ${now.toISOString()}::timestamptz returning id`);
   return r.length;
 }
 
