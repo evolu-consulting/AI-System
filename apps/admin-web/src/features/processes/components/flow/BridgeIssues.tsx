@@ -1,62 +1,83 @@
 // CR-122 · U2 · FLOW2-FR-26: kiểm nối — cạnh vàng "Bước sau cần X, bước trước không có" + "Gợi ý cầu nối" (AI) có XEM TRƯỚC:
-// Nhận ⇒ chèn node Ghi giá trị giữa hai bước; Bỏ ⇒ không đổi gì.
-import type { AppNodeDecl } from "@ai/contracts/app-manifest";
+// Nhận ⇒ chèn node Ghi giá trị giữa hai bước; Bỏ ⇒ không đổi gì. Hợp đồng `bridge-suggest` của N2: xem `palette-api.ts`.
+import type { ProcessDefInput } from "@ai/contracts/hub-admin";
 import { AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { emptyStage } from "../../lib/def-form";
 import type { StageDraft } from "../../lib/draft-types";
-import { type BridgeSuggestion, bridgePatch, type EdgeProblem } from "../../lib/palette-node";
+import type { EdgeProblem } from "../../lib/palette-node";
+import { stageToDraft } from "../../lib/stage-convert";
 import { insertStepAfter } from "../../lib/step-ops";
-import { bridgeSuggest } from "../../palette-api";
+import { type BridgeResult, bridgeSuggest } from "../../palette-api";
 
 type Props = {
-  app: string;
   problems: readonly EdgeProblem[];
   stages: readonly StageDraft[];
-  nodes: readonly AppNodeDecl[];
   readOnly: boolean;
+  /** Bản nháp hiện tại ở dạng gửi Hub (cho AI đọc tên + kiểu trường). */
+  toDef: () => ProcessDefInput;
   onStages: (stages: StageDraft[]) => void;
 };
 
-function Line({ p, ...r }: { p: EdgeProblem } & Omit<Props, "problems" | "nodes">) {
+function BridgeResultView(p: {
+  res: BridgeResult | "error" | null;
+  vi: boolean;
+  onAccept: () => void;
+  onDismiss: () => void;
+}) {
   const { t } = useTranslation();
-  const [sug, setSug] = useState<BridgeSuggestion | "none" | null>(null);
+  const { res } = p;
+  if (res === null) return null;
+  if (res === "error" || !res.ok)
+    return (
+      <p className="m-0 text-caption text-muted-foreground">
+        {res === "error"
+          ? t("process.admin.flow.bridge.none")
+          : p.vi
+            ? res.reason_vi
+            : res.reason_en}
+      </p>
+    );
+  return (
+    <div className="rounded-md border border-border bg-card p-2" data-testid="flow-bridge-preview">
+      <p className="m-0 text-caption">{p.vi ? res.explain_vi : res.explain_en}</p>
+      <div className="mt-2 flex gap-2">
+        <Button type="button" size="sm" onClick={p.onAccept}>
+          {t("process.admin.flow.bridge.accept")}
+        </Button>
+        <Button type="button" size="sm" variant="ghost" onClick={p.onDismiss}>
+          {t("process.admin.flow.bridge.dismiss")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+function Line({ p, ...r }: { p: EdgeProblem } & Props) {
+  const { t, i18n } = useTranslation();
+  const [res, setRes] = useState<BridgeResult | "error" | null>(null);
   const [busy, setBusy] = useState(false);
-  const stage = (uid: string) => r.stages.find((s) => s.uid === uid);
-  const to = stage(p.to);
-  const from = stage(p.from);
+  const from = r.stages.find((s) => s.uid === p.from);
+  const to = r.stages.find((s) => s.uid === p.to);
+  const vi = i18n.language === "vi";
   const ask = async () => {
+    if (!from || !to) return;
     setBusy(true);
     try {
-      const s = await bridgeSuggest({
-        app: r.app,
-        from_node: from?.node ?? null,
-        to_node: to?.node ?? "",
-        issues: [
-          {
-            key: p.key,
-            rule: p.rule,
-            ...(p.expected ? { expected: p.expected } : {}),
-            ...(p.got ? { got: p.got } : {}),
-          },
-        ],
-      });
-      setSug(s ?? "none");
+      setRes(await bridgeSuggest({ def: r.toDef(), from: from.key, to: to.key }));
     } catch {
-      setSug("none");
+      setRes("error");
     } finally {
       setBusy(false);
     }
   };
   const accept = () => {
-    if (!sug || sug === "none" || !from) return;
-    const fresh = { ...emptyStage(), ...bridgePatch(sug, t("process.admin.flow.bridge.nodeName")) };
-    const out = insertStepAfter(r.stages as StageDraft[], from.step, fresh);
+    if (!res || res === "error" || !res.ok || !from) return;
+    const out = insertStepAfter(r.stages as StageDraft[], from.step, stageToDraft(res.stage, 0));
     if ("stages" in out) r.onStages(out.stages);
-    setSug(null);
+    setRes(null);
   };
+  const okRes = res !== null && res !== "error" && res.ok ? res : null;
   return (
     <li className="space-y-1" data-testid="flow-edge-issue">
       <div className="flex flex-wrap items-center gap-2">
@@ -68,7 +89,7 @@ function Line({ p, ...r }: { p: EdgeProblem } & Omit<Props, "problems" | "nodes"
             expected: p.expected ?? "",
           })}
         </span>
-        {r.readOnly || sug ? null : (
+        {r.readOnly || okRes ? null : (
           <Button
             type="button"
             size="sm"
@@ -80,37 +101,12 @@ function Line({ p, ...r }: { p: EdgeProblem } & Omit<Props, "problems" | "nodes"
           </Button>
         )}
       </div>
-      {sug === "none" ? (
-        <p className="m-0 text-caption text-muted-foreground">
-          {t("process.admin.flow.bridge.none")}
-        </p>
-      ) : sug ? (
-        <div
-          className="rounded-md border border-border bg-card p-2"
-          data-testid="flow-bridge-preview"
-        >
-          <ul className="m-0 list-none space-y-0.5 p-0 text-caption">
-            {sug.rows.map((x) => (
-              <li key={x.key}>
-                {x.key} ← {"input" in x.from ? x.from.input : String(x.from.const)}
-              </li>
-            ))}
-          </ul>
-          <div className="mt-2 flex gap-2">
-            <Button type="button" size="sm" onClick={accept}>
-              {t("process.admin.flow.bridge.accept")}
-            </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setSug(null)}>
-              {t("process.admin.flow.bridge.dismiss")}
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      <BridgeResultView res={res} vi={vi} onAccept={accept} onDismiss={() => setRes(null)} />
     </li>
   );
 }
 
-export function BridgeIssues({ problems, nodes: _nodes, ...rest }: Props) {
+export function BridgeIssues({ problems, ...rest }: Props & { problems: readonly EdgeProblem[] }) {
   if (problems.length === 0) return null;
   return (
     <ul
@@ -118,7 +114,7 @@ export function BridgeIssues({ problems, nodes: _nodes, ...rest }: Props) {
       data-testid="flow-bridge"
     >
       {problems.map((p) => (
-        <Line key={`${p.from}-${p.to}-${p.key}`} p={p} {...rest} />
+        <Line key={`${p.from}-${p.to}-${p.key}`} p={p} problems={problems} {...rest} />
       ))}
     </ul>
   );

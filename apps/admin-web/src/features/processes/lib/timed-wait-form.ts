@@ -35,6 +35,8 @@ export const waitEventFromDef = (ex: Ex<"wait_event">): WaitDraft => ({
   ...emptyWait(),
   event: ex.event,
   timeoutH: String(ex.timeout_h),
+  ...(ex.also_events ? { also: [...ex.also_events] } : {}),
+  ...(ex.branches ? { branches: ex.branches.map((b) => ({ on: b.on, step: b.goto_step })) } : {}),
 });
 export const waitForToDef = (w: WaitDraft): Ex<"wait_for"> => ({
   kind: "wait_for",
@@ -44,6 +46,14 @@ export const waitEventToDef = (w: WaitDraft): Ex<"wait_event"> => ({
   kind: "wait_event",
   event: (w.event ?? "").trim(),
   timeout_h: Number((w.timeoutH ?? "").trim()),
+  ...(w.also?.length ? { also_events: w.also } : {}),
+  ...(w.branches?.some((b) => b.step !== null)
+    ? {
+        branches: w.branches.flatMap((b) =>
+          b.step === null ? [] : [{ on: b.on, goto_step: b.step }],
+        ),
+      }
+    : {}),
 });
 
 const intIn = (v: string | undefined, r: { min: number; max: number }): boolean => {

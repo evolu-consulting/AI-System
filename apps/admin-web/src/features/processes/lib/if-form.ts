@@ -16,27 +16,56 @@ export const emptyIf = (): IfDraft => ({ op: "and", conds: [emptyCond()], yes: n
 export const fieldSrc = (stageKey: string, field: string) => `field|${stageKey}|${field}`;
 export const inputSrc = (key: string) => `input|${key}`;
 
+/** CR-122 · nguồn dữ kiện HIỆN TẠI của bản ghi (app khai ở `AppEventDecl.facts`). */
+export const factSrc = (key: string) => `fact|${key}`;
+
 export function parseSrc(s: string): Cond["from"] | null {
   const [kind, a, b] = s.split("|");
   if (kind === "field" && a && b) return { kind: "field", stage_key: a, field: b };
   if (kind === "input" && a) return { kind: "input", key: a };
+  if (kind === "fact" && a) return { kind: "fact", key: a };
   return null;
 }
 const srcOf = (f: Cond["from"]) =>
-  f.kind === "field" ? fieldSrc(f.stage_key, f.field) : inputSrc(f.key);
+  f.kind === "field"
+    ? fieldSrc(f.stage_key, f.field)
+    : f.kind === "fact"
+      ? factSrc(f.key)
+      : inputSrc(f.key);
+
+/** Dữ kiện của sự kiện → nguồn chọn được trong node Nếu (kiểu số/ngày giữ, còn lại so chuỗi). */
+export function factSources(
+  facts: readonly { key: string; label: string; type: string }[],
+): CondSource[] {
+  return facts.map((f) => ({
+    value: factSrc(f.key),
+    type: f.type === "number" || f.type === "date" ? f.type : "string",
+    label: f.label,
+  }));
+}
 
 /** Nguồn chọn được cho stage ở bước `step`: field của stage ở bước nhỏ hơn + input khai báo. */
 export function condSources(
-  stages: readonly { key: string; step: number; fields: readonly FieldDraft[] }[],
+  stages: readonly {
+    key: string;
+    step: number;
+    fields: readonly FieldDraft[];
+    executor?: string;
+  }[],
   inputs: readonly { key: string; type: string }[],
   step: number,
 ): CondSource[] {
   const asType = (t: string): FieldDraft["type"] => (t === "number" || t === "date" ? t : "string");
+  // CR-122 · bước chờ sự kiện luôn ghi field `event` (khoá sự kiện đã nhận / `timeout`) ⇒ Nếu rẽ theo đó được.
+  const withEvent = (s: (typeof stages)[number]): readonly FieldDraft[] =>
+    s.executor === "wait_event" && !s.fields.some((f) => f.key === "event")
+      ? [...s.fields, { key: "event", type: "string", required: false }]
+      : s.fields;
   return [
     ...stages
       .filter((s) => s.step < step)
       .flatMap((s) =>
-        s.fields.map((f) => ({
+        withEvent(s).map((f) => ({
           value: fieldSrc(s.key, f.key),
           type: f.type,
           label: `${s.key}.${f.key}`,

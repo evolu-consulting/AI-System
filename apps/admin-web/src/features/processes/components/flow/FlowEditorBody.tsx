@@ -3,6 +3,7 @@
 import type { FlowTrigger } from "@ai/contracts/hub-admin";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { type DefDraft, toInput } from "../../lib/def-form";
 import type { StageDraft } from "../../lib/draft-types";
 import {
   eventOf,
@@ -24,6 +25,8 @@ type Props = {
   readOnly: boolean;
   /** Công ty để lọc bảng node theo tính năng đang bật (vắng ⇒ mọi node). */
   tenantId?: string | undefined;
+  /** Bản nháp đầy đủ (gửi cho gợi ý cầu nối). */
+  draft: DefDraft;
   onChange: (trigger: FlowTrigger, stages?: StageDraft[]) => void;
   children: ReactNode;
 };
@@ -34,6 +37,7 @@ export function FlowEditorBody({
   stages,
   readOnly,
   tenantId,
+  draft,
   onChange,
   children,
 }: Props) {
@@ -77,10 +81,9 @@ export function FlowEditorBody({
           </ul>
         ) : null}
         <BridgeIssues
-          app={meta.app}
           problems={problems}
           stages={stages}
-          nodes={palette.data ?? []}
+          toDef={() => toInput(draft)}
           readOnly={readOnly}
           onStages={(next) => onChange(trigger, next)}
         />

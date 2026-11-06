@@ -67,24 +67,3 @@ export function edgeProblems(
   });
   return out;
 }
-
-/** Gợi ý cầu nối (hợp đồng N2 — xem tasks.md của N2): một hoặc vài dòng gán giá trị `key ← nguồn`. */
-export type BridgeSuggestion = {
-  rows: { key: string; from: { input: string } | { const: string | number | boolean } }[];
-  reason?: string;
-};
-
-/** Nhận gợi ý ⇒ node "Ghi giá trị" chèn giữa hai bước (executor `set`, tên do UI đặt). */
-export function bridgePatch(s: BridgeSuggestion, name: string): Partial<StageDraft> {
-  return {
-    executor: "set",
-    name,
-    set: {
-      rows: s.rows.map((r) =>
-        "input" in r.from
-          ? { key: r.key, source: "input", input: r.from.input, value: "" }
-          : { key: r.key, source: "const", input: "", value: String(r.from.const) },
-      ),
-    },
-  };
-}

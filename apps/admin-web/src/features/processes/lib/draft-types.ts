@@ -14,6 +14,10 @@ export type WaitDraft = {
   /** CR-120 · G4 · `wait_event`: khoá sự kiện + hạn (giờ, chữ). */
   event?: string;
   timeoutH?: string;
+  /** CR-122 · U2b · `wait_event.branches`: mỗi kết quả (khoá sự kiện / `timeout`) → bước đích (0-based, null = chưa chọn). */
+  branches?: { on: string; step: number | null }[];
+  /** Sự kiện phụ cũng kết thúc chờ (`also_events`, ≤ 3) — giữ nguyên khi lưu. */
+  also?: string[];
 };
 export type EscalateDraft = { on: boolean; afterH: string; groupId: string };
 

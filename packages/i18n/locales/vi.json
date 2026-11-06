@@ -676,6 +676,11 @@
         "status": "Trạng thái"
       },
       "withCondition": "có điều kiện",
+      "assign": {
+        "pick": "Flow trong Thư viện",
+        "placeholder": "Chọn flow để gán cho công ty",
+        "add": "Gán"
+      },
       "source": {
         "assigned": "Được gán · chỉ xem",
         "own": "Bản công ty",

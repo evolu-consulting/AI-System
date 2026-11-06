@@ -19,6 +19,7 @@ import { StageFormFields } from "./StageFormFields";
 import { StageGate } from "./StageGate";
 import { StageGeneral, StageLimits } from "./StageGeneral";
 import { StageIfForm } from "./StageIf";
+import { StageLinks } from "./StageLinks";
 import { StageMustKnow } from "./StageMustKnow";
 import { StageOutput } from "./StageOutput";
 import { StageRemind } from "./StageRemind";
@@ -123,6 +124,7 @@ export function StageForm(p: StageFormProps) {
       <StageGeneral {...p} />
       <StageStepFields {...p} />
       {stage.executor === "approve" ? <StageApprove {...p} /> : null}
+      <StageLinks {...p} />
       {isWait(stage) ? (
         <StageWait {...p} />
       ) : isWaitFamily(stage) ? (

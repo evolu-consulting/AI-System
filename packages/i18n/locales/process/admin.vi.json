@@ -1290,6 +1290,16 @@
       "finish": "Kết thúc",
       "soon": "Chưa dùng được"
     },
+    "link": {
+      "next": "Bước kế",
+      "merge": "Gộp tới",
+      "on": {
+        "completed": "Đã ký",
+        "declined": "Từ chối",
+        "voided": "Huỷ",
+        "timeout": "Hết hạn"
+      }
+    },
     "approve": {
       "default": "Mặc định",
       "reject": "Từ chối đi tới",

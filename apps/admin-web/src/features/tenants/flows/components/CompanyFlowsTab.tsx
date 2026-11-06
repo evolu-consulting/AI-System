@@ -1,6 +1,5 @@
 // CR-122 · U2 · tab "Quy trình" của công ty — MỘT danh sách flow (`company_flows`) thay "việc → quy trình → luật" của CR-121.
 // platform_admin + tenant_admin công ty mình.
-import { useTranslation } from "react-i18next";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";
 import { ApiError } from "@/lib/http";
@@ -14,7 +13,6 @@ export default function CompanyFlowsTab({
   /** Còn nhận từ dải "Cần xử lý" của tab Ứng dụng; danh sách mới không còn ngăn Gán theo việc nên bỏ qua. */
   initialJob?: string | undefined;
 }) {
-  const { t } = useTranslation();
   const q = useCompanyFlowList(tenant.id);
   if (q.isPending) return <LoadingState />;
   if (q.isError) {
@@ -30,11 +28,7 @@ export default function CompanyFlowsTab({
   const rows = q.data.items;
   return (
     <div className="space-y-4" data-testid="company-flows">
-      {rows.length === 0 ? (
-        <p className="text-body text-muted-foreground">{t("tenants.companyFlows.empty")}</p>
-      ) : (
-        <CompanyFlowList tenantId={tenant.id} rows={rows} />
-      )}
+      <CompanyFlowList tenantId={tenant.id} rows={rows} />
     </div>
   );
 }

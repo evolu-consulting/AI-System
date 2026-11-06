@@ -25,6 +25,7 @@ export const useCompanyFlowList = (tid: string) =>
 export type FlowOp =
   | { op: "toggle"; id: string; enabled: boolean }
   | { op: "order"; ids: string[] }
+  | { op: "assign"; flowId: string }
   | { op: "clone" | "publish" | "revert"; id: string };
 
 function call(tid: string, a: FlowOp): Promise<List> {
@@ -34,6 +35,8 @@ function call(tid: string, a: FlowOp): Promise<List> {
         method: "PATCH",
         body: { enabled: a.enabled },
       });
+    case "assign":
+      return api<List>(url(tid), { method: "POST", body: { flow_id: a.flowId } });
     case "order":
       return api<List>(url(tid, "/order"), { method: "PUT", body: { ids: a.ids } });
     default:

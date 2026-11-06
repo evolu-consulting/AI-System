@@ -1290,6 +1290,16 @@
       "finish": "Finish",
       "soon": "Not available yet"
     },
+    "link": {
+      "next": "Next step",
+      "merge": "Merge into",
+      "on": {
+        "completed": "Signed",
+        "declined": "Declined",
+        "voided": "Cancelled",
+        "timeout": "Expired"
+      }
+    },
     "approve": {
       "default": "Default",
       "reject": "On reject go to",

@@ -8,10 +8,12 @@ import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { eventsOfApp } from "@/features/processes/lib/flow-def";
+import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { type FlowOp, useCompanyFlowOp } from "../company-flows-api";
 import { actionsOf, errorKey, groupByApp, reorderIds, statusKey } from "../lib/company-flow-view";
+import { AssignFlow } from "./AssignFlow";
 
 /** Cùng lưới cho tiêu đề và mọi dòng ⇒ cột thẳng mép. */
 const GRID =
@@ -118,6 +120,7 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   const { t } = useTranslation();
   const tr = useTr();
   const op = useCompanyFlowOp(tenantId);
+  const isPlatform = useSession((s) => s.me?.role) === "platform_admin";
   const [err, setErr] = useState<string | null>(null);
   const run = (a: FlowOp) => {
     setErr(null);
@@ -131,12 +134,22 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   };
   return (
     <div className="space-y-3" data-testid="company-flow-list">
+      {isPlatform ? (
+        <AssignFlow
+          assignedFlowIds={new Set(rows.map((r) => r.flow_id))}
+          busy={op.isPending}
+          onAssign={(flowId) => run({ op: "assign", flowId })}
+        />
+      ) : null}
+      {rows.length === 0 ? (
+        <p className="text-body text-muted-foreground">{t("tenants.companyFlows.empty")}</p>
+      ) : null}
       {err ? (
         <p role="alert" className="text-body text-destructive" data-testid="company-flow-error">
           {t(`tenants.companyFlows.err.${err}`)}
         </p>
       ) : null}
-      <div className="rounded-md border border-border">
+      <div className={`rounded-md border border-border ${rows.length === 0 ? "hidden" : ""}`}>
         <div
           className={`${GRID} px-3 py-2 text-caption font-semibold text-muted-foreground`}
           role="presentation"

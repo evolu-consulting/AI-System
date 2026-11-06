@@ -21,6 +21,7 @@ import {
   splitToNewStep,
   swapStepColumns,
 } from "../lib/step-ops";
+import { remapStepRefs } from "../lib/step-refs";
 
 type Update = (fn: (d: DefDraft) => DefDraft) => void;
 
@@ -103,7 +104,11 @@ export function useDraft() {
   const ref = useRef(draft);
   ref.current = draft;
   const update = (fn: (d: DefDraft) => DefDraft) => {
-    const next = fn(ref.current);
+    const prev = ref.current;
+    const raw = fn(prev);
+    // CR-122 · U2b: đổi/chèn/xoá bước ⇒ đánh lại mọi đích bước (goto, Nếu, Duyệt, gộp, chờ sự kiện) để không trỏ sai.
+    const next =
+      raw.stages === prev.stages ? raw : { ...raw, stages: remapStepRefs(prev.stages, raw.stages) };
     ref.current = next;
     setDraft(next);
   };

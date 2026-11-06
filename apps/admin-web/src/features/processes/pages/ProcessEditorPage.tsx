@@ -201,6 +201,7 @@ function FlowWrap(p: {
       stages={p.d.draft.stages}
       readOnly={p.readOnly}
       tenantId={p.tenantId}
+      draft={p.d.draft}
       onChange={(next, stages) => {
         setEdit(next);
         if (stages) p.d.patch({ stages });

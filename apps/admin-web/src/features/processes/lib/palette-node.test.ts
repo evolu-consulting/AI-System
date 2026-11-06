@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { CORE_NODES } from "@ai/contracts/app-manifest";
 import { emptyStage } from "./def-form";
-import { bridgePatch, edgeProblems, nodeToPatches } from "./palette-node";
+import { edgeProblems, nodeToPatches } from "./palette-node";
 
 const waitUntil = CORE_NODES.find((n) => n.key === "core.wait-until");
 const email = CORE_NODES.find((n) => n.key === "core.email");
@@ -28,10 +28,5 @@ describe("palette-node", () => {
   });
   test("không có node bảng ⇒ không cạnh vàng", () => {
     expect(edgeProblems([st("a", 0), st("b", 1)], CORE_NODES)).toEqual([]);
-  });
-  test("nhận gợi ý cầu nối ⇒ node Ghi giá trị", () => {
-    const p = bridgePatch({ rows: [{ key: "date", from: { input: "end_date" } }] }, "Cầu nối");
-    expect(p.executor).toBe("set");
-    expect(p.set?.rows[0]).toEqual({ key: "date", source: "input", input: "end_date", value: "" });
   });
 });

@@ -10,10 +10,12 @@ import {
   type CondSource,
   condSources,
   emptyCond,
+  factSources,
   IF_CONDS_MAX,
   type IfDraft,
   ifErrorAt,
 } from "../../lib/if-form";
+import { useFlowCtx } from "../flow/flow-ctx";
 import { SelectField, TextField } from "./Fields";
 import type { StageFormProps } from "./stage-form-props";
 
@@ -185,7 +187,10 @@ export function StageIfForm(p: StageFormProps) {
       id={stage.uid}
       index={index}
       value={stage.ifx}
-      sources={condSources(all, defInputs ?? [], stage.step)}
+      sources={[
+        ...factSources(useFlowCtx()?.event?.facts ?? []),
+        ...condSources(all, defInputs ?? [], stage.step),
+      ]}
       steps={gotoSteps(all, stage.step).map((s) => s + 1)}
       errors={errors}
       readOnly={readOnly}

@@ -671,6 +671,11 @@
       "empty": "This company has no flows yet. The platform admin assigns flows from the Library.",
       "col": { "name": "Flow", "trigger": "Starts when", "source": "Source", "status": "Status" },
       "withCondition": "with condition",
+      "assign": {
+        "pick": "Library flow",
+        "placeholder": "Pick a flow to assign to this company",
+        "add": "Assign"
+      },
       "source": {
         "assigned": "Assigned · view only",
         "own": "Company copy",
