@@ -8,6 +8,7 @@ import { useLibraryDefs } from "@/features/processes/library-api";
 import { useFlowDepartments, useTenantRouting } from "../../api-routing";
 import { useFlowAssign } from "../hooks/use-flow-assign";
 import { slotCandidates } from "../lib/slot-candidates";
+import { AppOffNote } from "./AssignErrorNote";
 import { RulesSection } from "./RulesSection";
 import { SlotRouting } from "./SlotRouting";
 
@@ -77,11 +78,14 @@ export function DrawerAssign({
   slot,
   jobName,
   isPlatform,
+  appOff,
 }: {
   tenantId: string;
   slot: string;
   jobName: string;
   isPlatform: boolean;
+  /** Công ty chưa dùng ứng dụng của việc này ⇒ khoá Gán/Đổi, nói rõ + link bật. */
+  appOff: boolean;
 }) {
   const { t } = useTranslation();
   const lib = useLibraryDefs("library", isPlatform);
@@ -93,10 +97,13 @@ export function DrawerAssign({
       data-testid={`flows-assign-panel-${slot}`}
     >
       <h3 className="text-label font-semibold">{t("tenants.flows.sameKind", { type: jobName })}</h3>
-      {isPlatform ? (
+      {appOff ? (
+        <AppOffNote tenantId={tenantId} app={slot.split(".")[0] ?? ""} />
+      ) : isPlatform ? (
         <SlotRouting
           tenantId={tenantId}
           slot={slot}
+          app={slot.split(".")[0] ?? ""}
           candidates={slotCandidates(
             lib.data?.pages.flatMap((p) => p.items),
             slot,

@@ -5,7 +5,7 @@ import type { ProcessRouting } from "@ai/contracts/hub-admin";
 import { fromServer, type RuleDraft } from "@ai/web-kit/routing-rules";
 
 /** Lý do một việc đang tắt (hiện cạnh "Đang tắt"). */
-export type OffReason = "noProcess" | "unpublished" | "deleted";
+export type OffReason = "noProcess" | "unpublished" | "deleted" | "appOff";
 
 export type FlowJob = {
   slot: string;
@@ -24,6 +24,8 @@ export type FlowJob = {
    * của hệ thống (hiện nhãn "Đang dùng mặc định hệ thống"), `none` = chưa có quy trình.
    */
   source: "company" | "system" | "none";
+  /** Công ty CHƯA dùng ứng dụng của việc này (mức Tắt): việc vẫn có trong năng lực nhưng không gán/đổi được. */
+  appOff: boolean;
 };
 
 export type FlowGroup = { app: string; jobs: FlowJob[] };
@@ -71,6 +73,7 @@ export function jobOf(
   app: string,
   s: CapabilityApp["slots"][number],
   routing: ProcessRouting | undefined,
+  appLevel: CapabilityApp["level"] = "read",
 ): FlowJob {
   const defId = routing ? (routing.current_def_id ?? null) : s.def_id;
   const defName = routing ? (routing.current_def_name ?? null) : s.def_name;
@@ -78,7 +81,8 @@ export function jobOf(
     routing && defId
       ? (routing.processes.find((p) => p.def_id === defId)?.rel_version ?? s.version)
       : s.version;
-  const reason = reasonOf(defId, routing);
+  const appOff = appLevel === "off";
+  const reason = appOff ? "appOff" : reasonOf(defId, routing);
   const source = sourceOf(defId, routing, s.is_default);
   return {
     slot: s.slot,
@@ -91,6 +95,7 @@ export function jobOf(
     reason,
     rules: routing ? routing.rules.filter((r) => !r.is_default).length : 0,
     routingLoaded: !!routing,
+    appOff,
   };
 }
 
@@ -110,7 +115,7 @@ export function groupJobs(
     .map((a) => ({
       app: a.key,
       jobs: a.slots
-        .map((s) => jobOf(a.key, s, routings.get(s.slot)))
+        .map((s) => jobOf(a.key, s, routings.get(s.slot), a.level))
         .sort((x, y) => x.slot.localeCompare(y.slot)),
     }))
     .sort((x, y) => rank(x.app) - rank(y.app) || x.app.localeCompare(y.app));
@@ -118,7 +123,8 @@ export function groupJobs(
 
 /** Dòng tóm tắt đầu trang: "x/y việc có quy trình". */
 export function summaryOf(groups: readonly FlowGroup[]): { on: number; total: number } {
-  const all = groups.flatMap((g) => g.jobs);
+  // Việc của ứng dụng công ty chưa dùng không tính vào tổng.
+  const all = groups.flatMap((g) => g.jobs).filter((j) => !j.appOff);
   // "Có quy trình" = công ty đã gán/đặt luật (mặc định hệ thống chưa tính) ⇒ gán xong thì số đổi ngay.
   return {
     on: all.filter((j) => j.status === "on" && j.source !== "system").length,

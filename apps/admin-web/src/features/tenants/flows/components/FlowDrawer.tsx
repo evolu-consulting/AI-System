@@ -53,6 +53,7 @@ export function FlowDrawer({
             slot={job.slot}
             jobName={jobName(job)}
             isPlatform={isPlatform}
+            appOff={job.appOff}
           />
           <DrawerRunning
             tenantId={tenantId}

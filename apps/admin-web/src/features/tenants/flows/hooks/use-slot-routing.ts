@@ -10,7 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { assignRoutingProcess, putRouting, RKEYS, unassignRoutingProcess } from "../../api-routing";
 
-type Done = { ok: true } | { ok: false; spec: RoutingErrorSpec };
+type Done = { ok: true } | { ok: false; spec: RoutingErrorSpec; raw: unknown };
 
 export function useSlotRoutingActions(tenantId: string, slot: string) {
   const qc = useQueryClient();
@@ -29,7 +29,7 @@ export function useSlotRoutingActions(tenantId: string, slot: string) {
       void qc.invalidateQueries({ queryKey: ["process", "tenant-slots"] });
       return { ok: true };
     } catch (e) {
-      return { ok: false, spec: routingErrorOf(e) };
+      return { ok: false, spec: routingErrorOf(e), raw: e };
     } finally {
       setPending(false);
     }
@@ -46,7 +46,7 @@ export function useSlotRoutingActions(tenantId: string, slot: string) {
         void qc.invalidateQueries({ queryKey: ["process", "assigned", "caps", tenantId] });
         return { ok: true };
       } catch (e) {
-        return { ok: false, spec: routingErrorOf(e) };
+        return { ok: false, spec: routingErrorOf(e), raw: e };
       } finally {
         setPending(false);
       }

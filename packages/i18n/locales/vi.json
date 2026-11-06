@@ -668,6 +668,23 @@
   },
   "tenants": {
     "flows": {
+      "appOffStatus": "Chưa dùng ứng dụng",
+      "err": {
+        "appOff": "Công ty chưa dùng {app}.",
+        "openApps": "Bật ở tab Ứng dụng",
+        "openGroups": "Mở Thành viên › Nhóm",
+        "openLibrary": "Mở Thư viện quy trình",
+        "go": {
+          "apps": "Hãy bật ứng dụng ở tab Ứng dụng.",
+          "library": "Hãy xử lý trong Thư viện quy trình.",
+          "groups": "Hãy tạo nhóm ở tab Thành viên › Nhóm."
+        },
+        "groupsMissing": "Công ty chưa có nhóm {keys} mà quy trình này cần nên chưa gán được.",
+        "notPublished": "Quy trình này chưa xuất bản nên chưa gán được.",
+        "publishInvalid": "Quy trình này còn lỗi cấu hình nên chưa gán được.",
+        "refInvalid": "Quy trình nhắc tới người hoặc nhóm không thuộc công ty này nên chưa gán được.",
+        "unprocessable": "Chưa gán được quy trình này cho {app}. Có thể công ty chưa dùng {app} hoặc quy trình chưa sẵn sàng."
+      },
       "systemDefault": "Đang dùng mặc định hệ thống (công ty chưa gán quy trình riêng)",
       "lead": "Mỗi việc dùng một quy trình lấy từ Thư viện.",
       "leadInfo": "Mẫu quy trình được tạo và chỉnh ở Thư viện quy trình. Ở đây công ty chỉ chọn mẫu nào áp dụng cho việc nào.",
@@ -695,6 +712,7 @@
       "on": "Đang bật",
       "off": "Đang tắt",
       "reason": {
+        "appOff": "bật ứng dụng ở tab Ứng dụng",
         "noProcess": "chưa gán quy trình",
         "unpublished": "quy trình chưa xuất bản, cần xuất bản trong Thư viện",
         "deleted": "quy trình đã bị xoá, hãy chọn quy trình khác"

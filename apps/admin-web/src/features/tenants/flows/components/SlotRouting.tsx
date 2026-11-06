@@ -8,7 +8,9 @@ import { notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { useTenantDepartments, useTenantRouting } from "../../api-routing";
 import { useSlotRoutingActions } from "../hooks/use-slot-routing";
+import { type AssignErrorSpec, assignErrorOf } from "../lib/assign-error";
 import type { SlotCandidate } from "../lib/slot-candidates";
+import { AssignErrorNote } from "./AssignErrorNote";
 import { RulesSection } from "./RulesSection";
 
 const SEL = "h-9 min-w-0 w-72 rounded-md border border-input bg-background px-2 text-body";
@@ -16,10 +18,12 @@ const SEL = "h-9 min-w-0 w-72 rounded-md border border-input bg-background px-2 
 function Body({
   tenantId,
   slot,
+  app,
   candidates,
 }: {
   tenantId: string;
   slot: string;
+  app: string;
   candidates: SlotCandidate[];
 }) {
   const { t } = useTranslation();
@@ -29,6 +33,8 @@ function Body({
   const act = useSlotRoutingActions(tenantId, slot);
   const [pick, setPick] = useState("");
   const [err, setErr] = useState<RoutingErrorSpec | null>(null);
+  // Lỗi gán không thuộc nhóm ROUTING_* (nhóm, xuất bản, ứng dụng chưa dùng…) ⇒ câu nghiệp vụ + hành động khắc phục.
+  const [assignErr, setAssignErr] = useState<AssignErrorSpec | null>(null);
   if (q.isError)
     return (
       <p role="alert" className="text-body text-destructive">
@@ -50,8 +56,13 @@ function Body({
     if (r.ok) {
       setPick("");
       setErr(null);
+      setAssignErr(null);
       notifySuccess(k("assignedToast"));
-    } else setErr(r.spec);
+    } else {
+      const spec = assignErrorOf(r.raw, { app });
+      setAssignErr(spec);
+      setErr(spec ? null : r.spec);
+    }
   };
   const doUnassign = async (defId: string) => {
     const r = await act.unassign(defId);
@@ -122,6 +133,7 @@ function Body({
           {k("add")}
         </Button>
       </div>
+      {assignErr && <AssignErrorNote tenantId={tenantId} spec={assignErr} />}
       {err && (
         <p role="alert" data-testid="admin-assign-error" className="text-body text-destructive">
           {err.kind === "inUse"
@@ -142,7 +154,12 @@ function Body({
 }
 
 /** Luôn mở sẵn (không còn thu gọn): tập quy trình đã gán + "Mặc định" + luật chọn là nội dung chính của khối Quy trình. */
-export function SlotRouting(p: { tenantId: string; slot: string; candidates: SlotCandidate[] }) {
+export function SlotRouting(p: {
+  tenantId: string;
+  slot: string;
+  app: string;
+  candidates: SlotCandidate[];
+}) {
   return (
     <div data-testid={`admin-routing-details-${p.slot}`}>
       <Body {...p} />

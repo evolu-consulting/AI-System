@@ -83,6 +83,7 @@ export default function CompanyFlowsTab({
                 <JobRow
                   key={j.slot}
                   job={j}
+                  tenantId={tenant.id}
                   steps={f.stepsOf(j.slot)}
                   canChange
                   onOpen={() => setOpen(j.slot)}

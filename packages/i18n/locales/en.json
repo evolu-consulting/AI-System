@@ -668,6 +668,23 @@
   },
   "tenants": {
     "flows": {
+      "appOffStatus": "App not in use",
+      "err": {
+        "appOff": "The company does not use {app}.",
+        "openApps": "Turn it on in the Apps tab",
+        "openGroups": "Open Members › Groups",
+        "openLibrary": "Open the Process Library",
+        "go": {
+          "apps": "Turn the app on in the Apps tab.",
+          "library": "Fix it in the Process Library.",
+          "groups": "Create the group in Members › Groups."
+        },
+        "groupsMissing": "The company has no group {keys} that this process needs, so it cannot be assigned.",
+        "notPublished": "This process is not published, so it cannot be assigned.",
+        "publishInvalid": "This process still has configuration errors, so it cannot be assigned.",
+        "refInvalid": "The process refers to a person or group outside this company, so it cannot be assigned.",
+        "unprocessable": "Could not assign this process to {app}. The company may not use {app}, or the process is not ready."
+      },
       "systemDefault": "Using the system default (no process assigned for this company yet)",
       "lead": "Each job uses one process taken from the Library.",
       "leadInfo": "Process templates are created and edited in the Process Library. Here the company only picks which template applies to which job.",
@@ -695,6 +712,7 @@
       "on": "On",
       "off": "Off",
       "reason": {
+        "appOff": "turn the app on in the Apps tab",
         "noProcess": "no process assigned",
         "unpublished": "process is not published; publish it in the Library",
         "deleted": "process was deleted; pick another one"

@@ -210,3 +210,31 @@ describe("CR-121 f1 · nguồn quy trình đang dùng (luật công ty thắng m
     expect(jobOf("c", slot("c.y"), undefined).source).toBe("none");
   });
 });
+
+describe("CR-121 f6 · việc của ứng dụng công ty chưa dùng", () => {
+  it("app mức Tắt ⇒ Chưa dùng ứng dụng (reason appOff, status off), không tính vào tóm tắt", () => {
+    const j = jobOf("contracts", slot("contracts.approval", D1, 1), undefined, "off");
+    expect(j).toMatchObject({ appOff: true, status: "off", reason: "appOff" });
+    const on = jobOf("community", slot("community.report", D1, 1), undefined, "write");
+    expect(on.appOff).toBe(false);
+    expect(
+      summaryOf([
+        { app: "contracts", jobs: [j] },
+        { app: "community", jobs: [on] },
+      ]),
+    ).toEqual({ on: 1, total: 1 });
+  });
+  it("groupJobs đọc mức app từ năng lực: app Tắt vẫn liệt kê việc nhưng đánh dấu appOff", () => {
+    const g = groupJobs(
+      [
+        { key: "contracts", level: "off", slots: [slot("contracts.approval", D1, 1)] },
+        { key: "community", level: "read", slots: [slot("community.report", D1, 1)] },
+      ] as unknown as CapabilityApp[],
+      new Map(),
+    );
+    expect(g.flatMap((x) => x.jobs).map((j) => [j.slot, j.appOff])).toEqual([
+      ["contracts.approval", true],
+      ["community.report", false],
+    ]);
+  });
+});
