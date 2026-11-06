@@ -68,7 +68,7 @@ export const isFrozenPath = (pathname: string): boolean =>
 export function navItems(role: Role | undefined, opts: NavOptions = {}): NavItem[] {
   const proc = opts.processes ? [PROCESSES] : [];
   if (role === "platform_admin") return [OVERVIEW, COMPANIES, APPS, ...proc, AI_TOOLS, SYSTEM];
-  if (role === "tenant_admin") return [OVERVIEW, COMPANIES, ...proc];
+  if (role === "tenant_admin") return [OVERVIEW, COMPANIES, ...proc, SYSTEM];
   return [];
 }
 
@@ -94,6 +94,7 @@ export type Crumb = {
     | "groups.editor.titleNew"
     | "features.editor.titleNew"
     | "nav.processesNew"
+    | "system.title"
     | "nav.usageAnalytics";
   to?: string;
 };
@@ -134,6 +135,7 @@ const EXACT_CRUMBS: Record<string, Crumb[]> = {
   "/usage/analytics": [{ labelKey: "nav.usage", to: "/usage" }, { labelKey: "nav.usageAnalytics" }],
   "/transfer": [{ labelKey: "nav.transfer" }],
   "/system": [{ labelKey: "nav.system" }],
+  "/system-health": [{ labelKey: "nav.system", to: "/system" }, { labelKey: "system.title" }],
   "/audit": [{ labelKey: "nav.audit" }],
   "/feedback": [{ labelKey: "nav.feedback" }],
   "/tenants": [{ labelKey: "nav.tenants" }],

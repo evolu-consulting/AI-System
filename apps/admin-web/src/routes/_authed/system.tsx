@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SystemPage } from "@/features/system/pages/SystemPage";
+import { SystemHubPage } from "@/features/system/pages/SystemHubPage";
 
-// CR-104 · ops-ui · /system "Tình trạng hệ thống" (chỉ platform_admin; vai khác thấy ForbiddenState từ PlatformOnly).
-export const Route = createFileRoute("/_authed/system")({ component: SystemPage });
+// CR-121 · c22 · /system "Hệ thống": hub lối vào (platform_admin thấy hết; tenant_admin: Chi phí · Nhật ký · Góp ý).
+export const Route = createFileRoute("/_authed/system")({ component: SystemHubPage });

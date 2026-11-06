@@ -1478,6 +1478,17 @@
       "asc": "Warning threshold must be lower than critical",
       "desc": "Warning threshold must be higher than critical",
       "server": "Hub rejected: {message}"
+    },
+    "hub": {
+      "subtitle": "Costs, audit log, feedback and the platform-wide settings.",
+      "usage": "AI costs and quota per company, per month.",
+      "audit": "Who did what and when, for reviewing changes.",
+      "feedback": "User feedback: review, change status and reply.",
+      "health": "System health checks, history and alert settings.",
+      "secrets": "Shared keys and passwords for connections; platform-managed only.",
+      "sources": "Reference sources (repositories, folders, libraries) used by processes.",
+      "dlcSteps": "Library of DLC steps reused in processes.",
+      "transfer": "Export and import company configuration."
     }
   },
   "apps": {

@@ -60,9 +60,9 @@ describe("CR-121 R1 · sidebar 6 mục phẳng", () => {
     }
   });
 
-  test("tenant_admin: Tổng quan · Công ty (+ Quy trình khi engine bật)", () => {
-    expect(ids("tenant_admin")).toEqual(["overview", "companies"]);
-    expect(ids("tenant_admin", true)).toEqual(["overview", "companies", "processes"]);
+  test("tenant_admin: Tổng quan · Công ty (+ Quy trình khi engine bật) · Hệ thống", () => {
+    expect(ids("tenant_admin")).toEqual(["overview", "companies", "system"]);
+    expect(ids("tenant_admin", true)).toEqual(["overview", "companies", "processes", "system"]);
   });
 
   test("member không có mục nào", () => {
@@ -92,6 +92,10 @@ describe("ADM-FR-60 · quyền đường dẫn & breadcrumb", () => {
     expect(crumbsFor("/")).toEqual([{ labelKey: "nav.overview" }]);
     expect(crumbsFor("/tenants/new")).toHaveLength(2);
     expect(crumbsFor("/unknown")).toEqual([]);
+    expect(crumbsFor("/system-health")).toEqual([
+      { labelKey: "nav.system", to: "/system" },
+      { labelKey: "system.title" },
+    ]);
   });
 
   test("CR-054 · breadcrumb Agents", () => {

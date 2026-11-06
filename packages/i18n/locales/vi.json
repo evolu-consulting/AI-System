@@ -1478,6 +1478,17 @@
       "asc": "Ngưỡng cảnh báo phải nhỏ hơn ngưỡng nghiêm trọng",
       "desc": "Ngưỡng cảnh báo phải lớn hơn ngưỡng nghiêm trọng",
       "server": "Hub từ chối: {message}"
+    },
+    "hub": {
+      "subtitle": "Chi phí, nhật ký, góp ý và các cấu hình dùng chung của nền tảng.",
+      "usage": "Chi phí và hạn mức AI theo công ty, theo tháng.",
+      "audit": "Ai đã làm gì, khi nào — để tra soát thay đổi.",
+      "feedback": "Góp ý của người dùng: xem, đổi trạng thái và trả lời.",
+      "health": "Các kiểm tra sức khoẻ hệ thống, lịch sử và cấu hình cảnh báo.",
+      "secrets": "Khoá và mật khẩu dùng chung cho các kết nối; chỉ nền tảng quản lý.",
+      "sources": "Nguồn tham chiếu (kho mã, thư mục, thư viện) mà quy trình dùng.",
+      "dlcSteps": "Thư viện bước DLC dùng lại trong quy trình.",
+      "transfer": "Xuất và nhập cấu hình công ty."
     }
   },
   "apps": {

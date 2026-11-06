@@ -104,7 +104,7 @@ export function HealthTile({ h, ...c }: Common & { h?: OpsOverview["health"] }) 
         {tiles.map((x) => (
           <Link
             key={x.key}
-            to="/system"
+            to="/system-health"
             className="flex flex-col justify-center gap-0.5 rounded-lg p-2 hover:bg-muted"
           >
             <span className="flex items-center gap-2 text-caption text-muted-foreground">

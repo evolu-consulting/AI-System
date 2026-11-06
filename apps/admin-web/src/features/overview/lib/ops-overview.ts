@@ -76,7 +76,7 @@ export function hourlyEmptyKey(
 
 /** Trang đích đã có trong admin-web. `/runs` chưa có ⇒ `null` (hiện số, không link; ghi "việc còn lại"). */
 export type OpsLink = {
-  to: "/tenants" | "/workflows" | "/system" | "/usage";
+  to: "/tenants" | "/workflows" | "/system-health" | "/usage";
   search?: Record<string, string>;
 };
 const LINKABLE = new Set(["/tenants", "/workflows", "/system", "/usage"]);
@@ -85,7 +85,8 @@ export function resolveLink(link: string): OpsLink | null {
   const [path = ""] = link.split("?");
   if (!LINKABLE.has(path)) return null;
   // Bỏ `?filter=…`: trang đích chưa đọc bộ lọc nên link không hứa thứ không có (xem tasks.md "Việc còn lại").
-  return { to: path as OpsLink["to"] };
+  // CR-121 c22: `/system` nay là hub; trang Tình trạng hệ thống ở `/system-health`.
+  return { to: (path === "/system" ? "/system-health" : path) as OpsLink["to"] };
 }
 
 export type AttentionKey = keyof OpsOverview["attention"];
