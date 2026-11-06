@@ -40,7 +40,7 @@ describe("CR-122 E1 · whenHolds", () => {
     expect(whenHolds(w, { ...ok, creator_department: ["ban-gd"] })).toBe(false);
     expect(whenHolds(w, { ...ok, new_partner: false })).toBe(false);
   });
-  test("OR ngoài, AND lồng một cấp; kiểu lệch (chuỗi so số) ⇒ không khớp", () => {
+  test("OR ngoài, AND lồng một cấp, kiểu lệch (chuỗi so số) ⇒ không khớp", () => {
     const w: FactWhen = {
       op: "or",
       conds: [

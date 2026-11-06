@@ -109,7 +109,7 @@ describe("CR-122 E1 · hàng đợi + bộ điều phối", () => {
     expect(n?.n).toBe(1);
   });
 
-  it("decides: chỉ flow khớp đầu theo position chạy; flow tắt không xét; điều kiện không khớp ghi lý do", async () => {
+  it("decides: chỉ flow khớp đầu theo position chạy, flow tắt không xét, điều kiện không khớp ghi lý do", async () => {
     launched.length = 0;
     await o`delete from hub.flow_events`;
     await emit(X, "sub:a", "contract.submitted", "r-a", { total_value: 50 });
