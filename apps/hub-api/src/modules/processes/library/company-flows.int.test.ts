@@ -92,7 +92,7 @@ beforeAll(async () => {
   const [y] = await o<
     { id: string }[]
   >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app)
-    values (${Y}, 'e1b-y', 'Y', '[]'::jsonb, '{"event":"contract.submitted"}'::jsonb, 'contracts') returning id::text as id`;
+    values (${Y}, 'e1b-y', 'Y', '[{"key":"a"}]'::jsonb, '{"event":"contract.submitted"}'::jsonb, 'contracts') returning id::text as id`;
   defY = y?.id as string;
   app = new Hono<AuthVars>();
   app.use("*", async (c, next) => {

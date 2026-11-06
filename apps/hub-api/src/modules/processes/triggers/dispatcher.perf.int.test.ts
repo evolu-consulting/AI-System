@@ -31,7 +31,7 @@ beforeAll(async () => {
       const [d] = await o<
         { id: string }[]
       >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app)
-        values (${t}, ${`perf-${j}`}, ${`P${j}`}, '[]'::jsonb, ${o.json(trig as never)}, 'contracts') returning id::text as id`;
+        values (${t}, ${`perf-${j}`}, ${`P${j}`}, '[{"key":"a"}]'::jsonb, ${o.json(trig as never)}, 'contracts') returning id::text as id`;
       await o`insert into hub.company_flows (tenant_id, flow_id, enabled, position) values (${t}, ${d?.id as string}, true, ${j})`;
     }
     await withHubScope(db, { kind: "system" }, (tx) => setFlowTriggers(tx, t, true));

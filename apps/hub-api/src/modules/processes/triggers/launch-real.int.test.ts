@@ -119,7 +119,7 @@ describe("CR-122 E1b · mở lượt thật từ sự kiện", () => {
     const [d] = await o<
       { id: string }[]
     >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app)
-      values (${Y}, 'e1b-y', 'Y', '[]'::jsonb, '{"event":"contract.approved"}'::jsonb, 'contracts') returning id::text as id`;
+      values (${Y}, 'e1b-y', 'Y', '[{"key":"a"}]'::jsonb, '{"event":"contract.approved"}'::jsonb, 'contracts') returning id::text as id`;
     await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${X}, ${d?.id as string}, true)`;
     const seen: string[] = [];
     await withHubScope(db, { kind: "user", tenantId: X, userId: UX }, (tx) =>
