@@ -16,7 +16,8 @@ export const COMPANY_FLOW_OFF_REASONS = [
   "not_published", // chưa có bản xuất bản
 ] as const;
 /** Cảnh báo trên dòng (FLOW2-FR-20): flow `decides` bị flow trên không điều kiện che ⇒ không bao giờ chạy. */
-export const COMPANY_FLOW_WARNINGS = ["shadowed_by_unconditional"] as const;
+export const COMPANY_FLOW_WARNINGS = ["shadowed_by_unconditional", "group_missing"] as const;
+/** CR-122 · P15: `group_missing` = bản công ty còn bước duyệt chưa chọn nhóm ("Nhóm <mã> chưa có ở công ty — chọn nhóm khác"). */
 
 export const CompanyFlowRowSchema = z.strictObject({
   /** id dòng `company_flows`. */

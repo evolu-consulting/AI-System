@@ -47,6 +47,7 @@ import {
   validateProcessDef,
   withHandoff,
 } from "./def.rules";
+import { bindIfCompany, isLibraryDef } from "./def-group-bind";
 import {
   auditSnapshot,
   defError,
@@ -98,10 +99,6 @@ async function nodeCheck(
 function flowCheck(input: ProcessDefInput, tenantId: string | null, cur: repo.DefRow | null): void {
   const paths = flowDefPaths(input, tenantId, cur);
   if (paths.length > 0) throw defError("PROCESS_DEF_INVALID", { paths });
-}
-/** CR-122 · P6 · def Thư viện = có khe HOẶC (tenant NULL + `trigger`): Group chỉ theo MÃ (map → id lúc mở lượt, E1b); def công ty chỉ theo id. */
-function isLibraryDef(tenantId: string | null, slot: string | null, trigger: unknown): boolean {
-  return slot !== null || (tenantId === null && !!trigger);
 }
 export class DefsService {
   readonly #w;
@@ -266,7 +263,8 @@ export class DefsService {
   async create(u: AuthUser, s: Scope, raw: ProcessDefInput): Promise<ProcessDefSaved> {
     let warnings: FlowEdgeIssue[] = [];
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
-      const { input, slot, body } = this.#draft(u, s.tenantId, raw, null);
+      const { input: i0, slot, body } = this.#draft(u, s.tenantId, raw, null);
+      const input = await bindIfCompany(tx, s.tenantId, slot !== null, i0);
       flowCheck(input, s.tenantId, null);
       await nodeCheck(this.d, s.tenantId, input);
       warnings = await edgeCheck(this.d, s.tenantId, input);
@@ -300,7 +298,9 @@ export class DefsService {
     const { result } = await withConfigWrite(this.#w, u, async (tx) => {
       const cur = await this.#lock(tx, u, { s, id, version });
       const copy = await this.#companyCopyDraft(tx, cur, raw);
-      const { input, slot, body } = copy ?? this.#draft(u, cur.tenant_id, raw, cur);
+      const { input: i0, slot, body } = copy ?? this.#draft(u, cur.tenant_id, raw, cur);
+      // CR-122 · P15 · def công ty (không đường khe) chỉ nhận id Group: mã hợp lệ tự đổi sang id (client cũ).
+      const input = await bindIfCompany(tx, cur.tenant_id, slot !== null || copy !== null, i0);
       await guardInUse(tx, cur, { key: input.key, slot, enabled: input.enabled });
       // def khe / bản riêng lưu theo khe (kể cả đã backfill trigger) theo đường khe, không áp luật FlowDef.
       if (slot === null && copy === null) flowCheck(input, cur.tenant_id, cur);

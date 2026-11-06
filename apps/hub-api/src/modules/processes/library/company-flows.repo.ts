@@ -24,12 +24,16 @@ export type CfRow = {
   src_published: number | null;
   published_version: number | null;
   version: number;
+  /** CR-122 · P15 · def công ty có bước duyệt chưa chọn nhóm (vd mã Thư viện chưa có nhóm ở công ty). */
+  no_group: boolean;
 };
 
 const COLS = sql`cf.id, cf.flow_id, d.key as flow_key, d.name, d.app, d.tenant_id as def_tenant_id, d.trigger_event,
   (d.trigger -> 'when') is not null as has_condition, cf.enabled, cf.position, cf.replaced_by, cf.off_reason,
   s.id as src_id, s.key as src_key, s.name as src_name, d.source_rel_version as src_version,
-  s.published_version as src_published, d.published_version, d.version`;
+  s.published_version as src_published, d.published_version, d.version,
+  (d.tenant_id is not null and exists (select 1 from jsonb_array_elements(d.stages) st
+    where st -> 'after' ->> 'kind' = 'review' and coalesce(st -> 'after' ->> 'group_id', '') = '')) as no_group`;
 const FROM = sql`from hub.company_flows cf
   join hub.process_defs d on d.id = cf.flow_id and (d.tenant_id = cf.tenant_id or d.tenant_id is null)
   left join hub.process_defs s on s.id = d.source_template_id and s.tenant_id is null`;

@@ -8,6 +8,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError, appError } from "../../../lib/errors";
+import { groupIdsByKey, groupMissingMessage } from "../defs/def-group-bind";
 import { libraryFlowDef } from "../runs/runs.repo";
 import { bindGroupKeys, groupKeysOf } from "../triggers/group-keys.rules";
 import * as r from "./company-flows.repo";
@@ -47,7 +48,10 @@ function toRow(x: r.CfRow, shadowed: boolean): CompanyFlowRow {
         : x.version
       : x.published_version,
     library_newer: newer ? x.src_published : null,
-    warnings: shadowed ? ["shadowed_by_unconditional"] : [],
+    warnings: [
+      ...(shadowed ? (["shadowed_by_unconditional"] as const) : []),
+      ...(x.no_group ? (["group_missing"] as const) : []),
+    ],
   };
 }
 
@@ -151,18 +155,8 @@ export class CompanyFlowsService {
       const def = await libraryFlowDef(tx, row.flow_id);
       if (!def) throw err("FLOW_NOT_ASSIGNABLE", 422, "Quy trình Thư viện chưa có bản xuất bản.");
       const keys = groupKeysOf(def.stages);
-      const gs = keys.length
-        ? await tx.execute<{ id: string; key: string }>(sql`select id, key from admin.groups
-            where tenant_id = ${tid}::uuid and key in (select jsonb_array_elements_text(${JSON.stringify(keys)}::jsonb))`)
-        : [];
-      const b = bindGroupKeys(def.stages, new Map(gs.map((g) => [g.key, g.id])));
-      if (b.missing.length)
-        throw err(
-          "GROUPS_MISSING",
-          422,
-          `Công ty chưa có phòng ban: ${b.missing.join(", ")}. Tạo phòng ban với mã này rồi sao chép lại.`,
-          { keys: b.missing },
-        );
+      // CR-122 · P15 · bản công ty chỉ giữ id: mã → id của công ty; mã chưa có nhóm ⇒ để trống + cảnh báo (KHÔNG chặn sao chép).
+      const b = bindGroupKeys(def.stages, await groupIdsByKey(tx, tid, keys), { strip: true });
       const key = await r.freeKey(tx, tid, `${row.flow_key.slice(0, 26)}-cty`);
       const flowId = await r.insertCopyDef(tx, {
         tid,
@@ -179,7 +173,10 @@ export class CompanyFlowsService {
         position: row.position,
         actor: u.userId,
       });
-      return { id: cid, ...(await this.#list(tx, tid)) };
+      const missing = b.missing.length
+        ? { missing_group_keys: b.missing, message: groupMissingMessage(b.missing) }
+        : {};
+      return { id: cid, ...(await this.#list(tx, tid)), ...missing };
     });
   }
 

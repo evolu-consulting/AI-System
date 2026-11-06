@@ -253,9 +253,10 @@ describe("CR-122 E6 · xuất bản flow Thư viện có trigger", () => {
     expect(after.group_id).toBe(gx.get("kinh-doanh") as string);
   });
 
-  it("P6 · def của công ty vẫn chỉ theo id: group_key ⇒ 422", async () => {
+  // CR-122 · P15: def công ty lưu id; mã hợp lệ của công ty tự đổi sang id, mã lạ ⇒ 422 câu nghiệp vụ (không còn PROCESS_REF_INVALID).
+  it("P6/P15 · def của công ty: group_key lạ ⇒ 422 GROUPS_MISSING nêu mã", async () => {
     const review = stage("duyet", 1, {
-      after: { kind: "review", group_key: "kinh-doanh", back_to_steps: [] },
+      after: { kind: "review", group_key: "khong-co-nhom", back_to_steps: [] },
     });
     const stages = [stage("dau", 0), review, stage("xong", 2, { outcome: "approved" })];
     const r = await call(
@@ -264,7 +265,76 @@ describe("CR-122 E6 · xuất bản flow Thư viện có trigger", () => {
       body("p6-cty", { stages, enabled: false, trigger: undefined, app: undefined }),
     );
     expect(r.status).toBe(422);
-    expect(r.json.error?.code ?? r.json.code).toBe("PROCESS_REF_INVALID");
+    expect(r.json.error?.code ?? r.json.code).toBe("GROUPS_MISSING");
+    expect(JSON.stringify(r.json)).toContain("Nhóm khong-co-nhom chưa có ở công ty");
+  });
+
+  const reviewStages = (after: object) => [
+    stage("dau", 0),
+    stage("duyet", 1, { after: { kind: "review", back_to_steps: [], ...after } }),
+    stage("xong", 2, { outcome: "approved" }),
+  ];
+  /** Tạo + xuất bản flow Thư viện (người duyệt theo mã), gán cho X, rồi tenant_admin "Sao chép để sửa". */
+  async function cloneLib(key: string, groupKey: string) {
+    const c = await call(
+      "POST",
+      "/process-defs",
+      body(key, { stages: reviewStages({ group_key: groupKey }) }),
+    );
+    expect(c.status).toBe(201);
+    const id = c.json.id as string;
+    await call("POST", `/process-defs/${id}/publish`, { version: c.json.version });
+    const asg = await call("POST", `/tenants/${X}/company-flows`, { flow_id: id });
+    const rowId = (asg.json.items as Json[]).find((x) => x.flow_id === id)?.id;
+    const cl = await call("POST", `/tenants/${X}/company-flows/${rowId}/clone`, undefined, "A");
+    const copy = (cl.json.items as Json[]).find((x) => x.id === cl.json.id);
+    const [d] = await o<
+      { s: Json[] }[]
+    >`select stages as s from hub.process_defs where id = ${copy?.flow_id}`;
+    return { cl, copy, after: d?.s[1]?.after as Json, fid: copy?.flow_id as string };
+  }
+  const putCopy = async (fid: string, after: object) => {
+    const cur = (await call("GET", `/process-defs/${fid}`, undefined, "A")).json;
+    return call(
+      "PUT",
+      `/process-defs/${fid}`,
+      {
+        ...body(cur.key, { name: cur.name, stages: reviewStages(after), trigger: cur.trigger }),
+        version: cur.version,
+      },
+      "A",
+    );
+  };
+
+  it("P15 · sao chép flow Thư viện có Duyệt theo key ⇒ bản sao có group_id (không còn key); PUT đổi người duyệt (id hoặc key cũ) ⇒ 200", async () => {
+    const gx = await groups(o, X, ["p15-a", "p15-b"]);
+    const { cl, copy, after, fid } = await cloneLib("p15-ok", "p15-a");
+    expect(cl.status).toBe(201);
+    expect(cl.json.missing_group_keys).toBeUndefined();
+    expect(copy?.warnings).toEqual([]);
+    expect(after.group_id).toBe(gx.get("p15-a") as string);
+    expect(after.group_key).toBeUndefined();
+    const byId = await putCopy(fid, { group_id: gx.get("p15-b") });
+    expect(byId.status).toBe(200);
+    expect(byId.json.stages[1].after.group_id).toBe(gx.get("p15-b") as string);
+    const byKey = await putCopy(fid, { group_key: "p15-a" }); // client cũ gửi mã
+    expect(byKey.status).toBe(200);
+    expect(byKey.json.stages[1].after).toMatchObject({ group_id: gx.get("p15-a") });
+    expect(byKey.json.stages[1].after.group_key).toBeUndefined();
+  });
+
+  it("P15 · mã nhóm chưa có ở công ty ⇒ bản sao VẪN lưu được, trống nhóm + cảnh báo nêu mã; chọn nhóm khác ⇒ PUT 200", async () => {
+    const gx = await groups(o, X, ["p15-c"]);
+    const { cl, copy, after, fid } = await cloneLib("p15-thieu", "p15-thieu-nhom");
+    expect(cl.status).toBe(201);
+    expect(cl.json.missing_group_keys).toEqual(["p15-thieu-nhom"]);
+    expect(cl.json.message).toBe("Nhóm p15-thieu-nhom chưa có ở công ty — chọn nhóm khác.");
+    expect(copy?.warnings).toEqual(["group_missing"]);
+    expect([after.group_id, after.group_key]).toEqual([null, undefined]);
+    const put = await putCopy(fid, { group_id: gx.get("p15-c") });
+    expect(put.status).toBe(200);
+    const l = await call("GET", `/tenants/${X}/company-flows`, undefined, "A");
+    expect((l.json.items as Json[]).find((x) => x.flow_id === fid)?.warnings).toEqual([]);
   });
 
   it("def theo khe cũ xuất bản như trước (luật khe + nút hệ thống)", async () => {

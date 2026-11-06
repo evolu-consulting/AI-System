@@ -703,7 +703,10 @@
           "not_published": "Tắt · chưa xuất bản"
         }
       },
-      "warn": { "shadowed": "Không bao giờ chạy: flow phía trên khớp mọi trường hợp" },
+      "warn": {
+        "shadowed": "Không bao giờ chạy: flow phía trên khớp mọi trường hợp",
+        "groupMissing": "Có bước duyệt chưa chọn nhóm (nhóm theo mã chưa có ở công ty) — mở để chọn nhóm khác"
+      },
       "open": "Mở",
       "clone": "Sao chép để sửa",
       "publish": "Xuất bản",

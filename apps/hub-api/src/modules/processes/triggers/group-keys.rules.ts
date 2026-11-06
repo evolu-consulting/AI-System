@@ -22,33 +22,46 @@ export function groupKeysOf(stages: readonly unknown[]): string[] {
   return [...out];
 }
 
-function bindOne(o: unknown, ids: ReadonlyMap<string, string>, miss: Set<string>): unknown {
+function bindOne(
+  o: unknown,
+  ids: ReadonlyMap<string, string>,
+  miss: Set<string>,
+  strip: boolean,
+): unknown {
   if (!isObj(o) || typeof o.group_key !== "string") return o;
   const id = ids.get(o.group_key);
   if (!id) miss.add(o.group_key);
-  return { ...o, group_id: id ?? null };
+  const { group_key: _k, ...rest } = o;
+  return { ...(strip ? rest : o), group_id: id ?? null };
 }
 
+/**
+ * `strip` (CR-122 · P15): bản công ty chỉ giữ id ⇒ bỏ `group_key`/`also_group_keys`; mã thiếu ⇒ `group_id` null (admin chọn lại).
+ * Mặc định giữ mã (đường mở lượt).
+ */
 export function bindGroupKeys(
   stages: readonly unknown[],
   ids: ReadonlyMap<string, string>,
+  opts: { strip?: boolean } = {},
 ): { stages: unknown[]; missing: string[] } {
+  const strip = opts.strip === true;
   const miss = new Set<string>();
   const out = stages.map((s) => {
     if (!isObj(s)) return s;
-    let after = bindOne(s.after, ids, miss) as Obj | unknown;
+    let after = bindOne(s.after, ids, miss, strip) as Obj | unknown;
     if (isObj(after)) {
-      if (after.escalate) after = { ...after, escalate: bindOne(after.escalate, ids, miss) };
+      if (after.escalate) after = { ...after, escalate: bindOne(after.escalate, ids, miss, strip) };
       const also = (after as Obj).also_group_keys;
       if (Array.isArray(also)) {
         const got = also.map((k) => ids.get(String(k)));
         also.forEach((k, i) => {
           if (!got[i]) miss.add(String(k));
         });
-        after = { ...(after as Obj), also_group_ids: got.filter(Boolean) };
+        const { also_group_keys: _a, ...rest } = after as Obj;
+        after = { ...(strip ? rest : (after as Obj)), also_group_ids: got.filter(Boolean) };
       }
     }
-    return { ...s, after, answerer: bindOne(s.answerer, ids, miss) };
+    return { ...s, after, answerer: bindOne(s.answerer, ids, miss, strip) };
   });
   return { stages: out, missing: [...miss] };
 }

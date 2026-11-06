@@ -54,9 +54,11 @@ function Row(p: {
       )}
       <div className="min-w-0">
         <p className="m-0 truncate text-body font-medium">{r.name}</p>
-        {r.warnings.length > 0 ? (
-          <p className="m-0 text-caption text-warning">{k("warn.shadowed")}</p>
-        ) : null}
+        {r.warnings.map((w) => (
+          <p key={w} className="m-0 text-caption text-warning">
+            {k(w === "group_missing" ? "warn.groupMissing" : "warn.shadowed")}
+          </p>
+        ))}
       </div>
       <p className="m-0 min-w-0 truncate text-body">{triggerText(r, k("withCondition"))}</p>
       <p className="m-0 min-w-0 truncate text-body text-muted-foreground">

@@ -698,7 +698,10 @@
           "not_published": "Off · not published"
         }
       },
-      "warn": { "shadowed": "Never runs: the flow above matches every case" },
+      "warn": {
+        "shadowed": "Never runs: the flow above matches every case",
+        "groupMissing": "An approval step has no group (its group code does not exist in this company) — open it to pick another group"
+      },
       "open": "Open",
       "clone": "Copy to edit",
       "publish": "Publish",

@@ -143,7 +143,7 @@ describe("CR-122 E1b · company-flows", () => {
     expect((await call("A", "PATCH", `${P(X)}/${id}`, { enabled: false })).status).toBe(409);
   });
 
-  it("sao chép để sửa: bản công ty Tắt chưa xuất bản, Group mã → id, lần hai trả bản cũ, công ty thiếu phòng ⇒ 422 nêu mã", async () => {
+  it("sao chép để sửa: bản công ty Tắt chưa xuất bản, Group mã → id, lần hai trả bản cũ, công ty thiếu phòng ⇒ vẫn sao chép, nêu mã thiếu", async () => {
     const l = await call("A", "GET", P(X));
     const id = rowOf(l.json, lib)?.id as string;
     const c1 = await call("A", "POST", `${P(X)}/${id}/clone`);
@@ -161,7 +161,8 @@ describe("CR-122 E1b · company-flows", () => {
     await call("P", "POST", P(Y), { flow_id: lib });
     const ly = await call("AY", "GET", P(Y));
     const cy = await call("AY", "POST", `${P(Y)}/${rowOf(ly.json, lib)?.id}/clone`);
-    expect([cy.status, cy.json.error?.code ?? cy.json.code]).toEqual([422, "GROUPS_MISSING"]);
+    // CR-122 · P15: công ty thiếu nhóm ⇒ vẫn sao chép được (nhóm để trống + cảnh báo nêu mã), không chặn.
+    expect([cy.status, cy.json.missing_group_keys]).toEqual([201, ["kinh-doanh"]]);
   });
 
   it("xuất bản bản sao ⇒ bản sao Bật + gốc Tắt (replaced_by), quay về bản gốc ⇒ đảo lại, bản sao giữ (reverted)", async () => {
