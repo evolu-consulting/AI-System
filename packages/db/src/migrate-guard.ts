@@ -38,6 +38,26 @@ export const ACCEPTED_EDITS: readonly AcceptedEdit[] = [
     dbHash: "f8baecce0dff924a1efdddf4c583dd76a34c691f3f17a73543fb007d9cb357e8",
     why: "cr120-int-reds: phần bảng gán cũ chỉ chạy khi còn là bảng (sau hub 0091 là VIEW); lần đầu áp y hệt bản cũ",
   },
+  // Hash THẬT trên prod sohoptac2 (đọc 2026-11-06 = sha256 bản fd7385677~1 của chính file đó, khác 3 hash trên — tính lệch
+  // dòng/CRLF). Deploy CR-121 bị migrate-guard chặn vì thiếu 3 dòng này.
+  {
+    table: "__drizzle_migrations_hub",
+    tag: "0029_k1_kh",
+    dbHash: "f2f3c41abb190348ff4bbd2cb4fc90e0205c80391b7aca53dc5377b320d84e68",
+    why: "prod sohoptac2: bản 0029 trước fd7385677 (cr120-int-reds)",
+  },
+  {
+    table: "__drizzle_migrations_hub",
+    tag: "0030_h4b2_models",
+    dbHash: "82c2bd32184dc1c3654fea718648cd9711de36e5b36f5298d2c0996d258e3d47",
+    why: "prod sohoptac2: bản 0030 trước fd7385677 (cr120-int-reds)",
+  },
+  {
+    table: "__drizzle_migrations_hub",
+    tag: "0068_process_library",
+    dbHash: "dd1f1821f219b319d23ea8599ae82263f4887b59de6297c674c2e076796bbac4",
+    why: "prod sohoptac2: bản 0068 trước fd7385677 (cr120-int-reds)",
+  },
 ];
 
 type Journal = { entries: { tag: string; when: number }[] };
