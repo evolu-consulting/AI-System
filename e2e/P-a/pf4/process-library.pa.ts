@@ -1,7 +1,7 @@
 // CR-105 · L3 `pl-editor-ui` · e2e P-a PF4: platform_admin nhân bản "Quy trình HĐ mặc định", sửa ở Form, xuất bản, gán cho tenant acme
 // ⇒ cột "Dùng bởi" tăng; Canvas hiện nút hệ thống (contracts-route/contracts-finalize) với huy hiệu "Hệ thống", không xoá được.
 // Chỉ chạy được khi backend L1/L2a/L2b đã gộp (seed 0069: def "Quy trình HĐ mặc định" + khe contracts.approval). KHÔNG chạy trong lát.
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { assignProcessUi, openJobDrawer } from "../../_kit/ui";
 import { seedAdmin } from "../../support/helpers";
 import { ACME, ADMIN_URL, settle, withSql } from "../_pa-support";
@@ -16,6 +16,15 @@ async function platformLogin(p: Page): Promise<void> {
   await p.getByLabel("Mật khẩu", { exact: true }).fill(a.password);
   await p.getByRole("button", { name: "Đăng nhập", exact: true }).click();
   await p.waitForURL((u) => !u.pathname.startsWith("/login"));
+}
+
+/** F9: Nhân bản/Xoá nằm trong menu ⋯ của dòng (`library-row-menu`). */
+async function openMenu(row: Locator): Promise<void> {
+  await row.getByTestId("library-row-menu").click();
+}
+async function pickMenu(row: Locator, name: string): Promise<void> {
+  await openMenu(row);
+  await row.page().getByRole("menuitem", { name }).click();
 }
 
 test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", async ({ browser }) => {
@@ -47,7 +56,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await expect(p.getByRole("button", { name: "Tạo quy trình" })).toBeVisible();
 
     // Nhân bản ⇒ hộp thoại nhập TÊN (ký hiệu tự sinh) ⇒ mở nháp mới
-    await base.getByRole("button", { name: "Nhân bản" }).click();
+    await pickMenu(base, "Nhân bản");
     const cloneDlg = p.getByRole("dialog");
     await expect(cloneDlg.getByRole("textbox", { name: "Tên quy trình mới" })).toHaveValue(
       "Quy trình HĐ mặc định – bản mới",
@@ -100,7 +109,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     expect(three[2]?.department_group_key).toBe("contracts-owner");
 
     // Form hiện đúng 3 bước vừa lưu từ Canvas (vòng đi–về giữ chỉnh sửa)
-    await toolbar.getByRole("button", { name: "Danh sách", exact: true }).click();
+    await toolbar.getByRole("button", { name: "Danh sách", exact: true }).click(); // editor thư viện: công tắc nằm ở thanh trên
     await expect(
       p.getByTestId("flow-step-2").getByRole("textbox", { name: "Tên bước" }),
     ).toHaveValue("Pháp chế (canvas)");
@@ -169,11 +178,13 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     );
 
     // Dọn rác: xoá quy trình KHÔNG dùng (nháp hoặc đã xuất bản) bằng gõ lại tên; mặc định / đang gán thì nút Xoá bị khoá
-    await expect(
-      table.getByRole("row").filter({ hasText: name }).first().getByRole("button", { name: "Xoá" }),
-    ).toBeDisabled();
-    await expect(base.getByRole("button", { name: "Xoá" })).toBeDisabled(); // mặc định của khe: khoá (tooltip nêu lý do)
-    await base.getByRole("button", { name: "Nhân bản" }).click();
+    await openMenu(table.getByRole("row").filter({ hasText: name }).first());
+    await expect(p.getByRole("menuitem", { name: "Xoá" })).toBeDisabled();
+    await p.keyboard.press("Escape");
+    await openMenu(base);
+    await expect(p.getByTestId("delete-locked")).toBeDisabled(); // mặc định của khe: khoá (lý do nằm trong menu)
+    await p.keyboard.press("Escape");
+    await pickMenu(base, "Nhân bản");
     await p.getByRole("textbox", { name: "Tên quy trình mới" }).fill("Nháp tạm e2e");
     await p.getByRole("dialog").getByRole("button", { name: "Nhân bản", exact: true }).click();
     await expect(p.getByRole("heading", { level: 1 })).toHaveText("Nháp tạm e2e");
@@ -182,7 +193,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
       .getByRole("link", { name: "Quy trình", exact: true })
       .click();
     const tmp = table.getByRole("row").filter({ hasText: "Nháp tạm e2e" });
-    await tmp.getByRole("button", { name: "Xoá" }).click();
+    await pickMenu(tmp, "Xoá");
     // xác nhận bằng cách GÕ LẠI TÊN (nút Xoá chỉ bật khi gõ đúng)
     const confirm = p.getByRole("alertdialog");
     await expect(confirm.getByRole("button", { name: "Xoá" })).toBeDisabled();

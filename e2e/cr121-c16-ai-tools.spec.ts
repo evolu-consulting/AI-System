@@ -4,7 +4,7 @@
 import { expect, test } from "@playwright/test";
 import { apiLogin, createIsolatedTenant } from "./_kit/api";
 import { uniqueSuffix } from "./_kit/unique";
-import { loginAdmin, seedAdmin, withOwner } from "./support/helpers";
+import { loginAdmin, loginAs, seedAdmin, withOwner } from "./support/helpers";
 
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến e2e (playwright.config đặt)
 const ADMIN = process.env.E2E_API_URL ?? "http://localhost:3001";
@@ -111,4 +111,17 @@ test("CR-121 · c16 · ?tab=workflow-tools cũ của trang công ty → /ai-tool
   await expect(page.getByText("Bật/tắt Dify theo công ty nằm ở Công cụ AI.")).toBeVisible();
   await page.goto(`/tenants/${company.id}`);
   await expect(page.getByRole("tab", { name: "Tool quy trình" })).toHaveCount(0);
+});
+
+test("CR-121 · F10 · tenant_admin mở /ai-tools: trang 403 nêu lý do, không gọi API Công cụ AI", async ({
+  page,
+}) => {
+  const calls: string[] = [];
+  page.on("request", (r) => {
+    if (/\/admin\/(ai-tools|workflow-tools)/.test(r.url())) calls.push(r.url());
+  });
+  await loginAs(page, "acme", "binh");
+  await page.goto("/ai-tools");
+  await expect(page.getByText("Công cụ AI do quản trị nền tảng quản lý")).toBeVisible();
+  expect(calls).toEqual([]);
 });

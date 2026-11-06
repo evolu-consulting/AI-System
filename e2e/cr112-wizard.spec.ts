@@ -121,7 +121,7 @@ test("ADM-FR-79 · AC1,AC2,AC4 · sidebar '+' → bước 1 tạo công ty ngay,
   await page.getByRole("button", { name: "Hoàn tất" }).click();
   await expect(page).toHaveURL(new RegExp(`/tenants/${tenantId}\\?.*tab=profile`));
   await expect(page.getByRole("tab", { name: "Hồ sơ", selected: true })).toBeVisible();
-  await expect(page.getByTestId("tenant-summary")).toBeVisible();
+  await expect(page.getByTestId("tenant-summary")).toHaveCount(0); // F11: dòng tóm tắt đầu trang đã gỡ
   await shot(page, "overview");
 });
 
@@ -168,7 +168,7 @@ test("ADM-FR-77 AC4 · tenant_admin: tab Quota rút gọn chỉ đọc (run/toke
   await expect(page.getByRole("button", { name: "Lưu", exact: true })).toHaveCount(0);
   expect(platformOnly).toEqual([]);
   // CR-121 C-2: dòng tóm tắt đầu trang (mọi vai) đọc ma trận quyền của CHÍNH công ty mình (limit=1, route cho tenant_admin); tab Quota không gọi thêm.
-  expect(matrix.length).toBeGreaterThan(0);
+  expect(matrix).toEqual([]); // F11: dòng tóm tắt đầu trang đã gỡ ⇒ không còn đọc ma trận quyền ở trang công ty
   for (const u of matrix) {
     expect(u).toContain(`tenant_id=${TENANT_ID.acme}`);
     expect(u).toContain("limit=1");
@@ -176,7 +176,7 @@ test("ADM-FR-77 AC4 · tenant_admin: tab Quota rút gọn chỉ đọc (run/toke
   await shot(page, "quota-tenant-admin");
 
   // Dòng tóm tắt ở đầu trang (đọc được cho tenant_admin) + tab Hồ sơ chỉ xem (không nút Sửa).
-  await expect(page.getByTestId("tenant-summary")).toBeVisible();
+  await expect(page.getByTestId("tenant-summary")).toHaveCount(0); // F11: dòng tóm tắt đầu trang đã gỡ
   await page.getByRole("tab", { name: "Hồ sơ" }).click();
   await expect(page.getByRole("button", { name: /^Sửa / })).toHaveCount(0);
 });

@@ -15,7 +15,7 @@ test("CR-121 · tab Hồ sơ là mặc định, không còn tab Tổng quan; dò
   await page.goto(`/tenants/${TENANT_ID.acme}`);
   await expect(page.getByRole("tab", { name: "Hồ sơ", selected: true })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Tổng quan" })).toHaveCount(0);
-  await expect(page.getByTestId("tenant-summary")).toContainText("người dùng");
+  await expect(page.getByTestId("tenant-summary")).toHaveCount(0); // F11: không còn dòng tóm tắt đầu trang
   for (const name of ["Thông tin công ty", "Liên hệ và lãnh đạo", "Phòng ban"]) {
     await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
   }

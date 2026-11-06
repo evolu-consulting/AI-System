@@ -82,11 +82,11 @@ test("CR-112 · tab Ứng dụng & Gói của acme: bộ 'Không chuẩn' → Qu
   const level = card.getByRole("radiogroup", { name: "Mức dùng Sổ Hợp Tác" });
   const addon = card.getByRole("switch", { name: "Bật Kiểm tra hạn mức duyệt" });
   const save = page.getByRole("button", { name: "Lưu", exact: true });
-  await expect(save).toBeDisabled();
+  await expect(save).toHaveCount(0); // F11: thanh lưu chỉ hiện khi có thay đổi
 
   await level.getByRole("radio", { name: "Quản trị" }).click();
   await addon.click();
-  await expect(page.getByText("Chưa lưu: cấp 3, thu hồi 0 · bật 1 gói, tắt 0 gói")).toBeVisible();
+  await expect(save).toBeVisible();
   await expect(card.getByRole("radio", { name: "Quản trị" })).toBeChecked();
   await save.click(); // chỉ bật/cấp ⇒ không hỏi xác nhận
   await expect(toast(page, "Đã lưu tính năng cho")).toBeVisible();

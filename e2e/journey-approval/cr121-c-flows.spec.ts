@@ -47,6 +47,22 @@ test.beforeAll(async () => {
     adminUser: `${t.key}-admin`,
     adminPw: j.temp_password ?? "",
   };
+  // Nhóm mà quy trình duyệt cần (F6: thiếu ⇒ gán báo "công ty chưa có nhóm …"): quản trị công ty tạo ở Thành viên › Nhóm (API cùng đường).
+  const ta = await apiLogin({
+    base: API,
+    tenantKey: company.key,
+    username: company.adminUser,
+    password: company.adminPw,
+  });
+  for (const key of ["pb-ke-toan", "pb-giam-doc"]) {
+    const r = await fetch(`${API}/admin/groups`, {
+      method: "POST",
+      headers: { ...ta.headers, "content-type": "application/json" },
+      body: JSON.stringify({ key, name: key, description: null }),
+    });
+    if (r.status >= 400)
+      throw new Error(`tạo nhóm ${key}: ${r.status} ${(await r.text()).slice(0, 160)}`);
+  }
   // Quy trình thư viện RIÊNG của spec (nhân bản + xuất bản), không dùng/ẩn dữ liệu mẫu.
   await cloneAndPublishFlow(HUB, platform, {
     fromKey: "e2e-mua-kd",
@@ -67,7 +83,9 @@ test("1 · platform_admin: Chưa dùng ứng dụng ⇒ bật Sổ Hợp Tác �
   await page.goto(`${ADMIN_URL}/tenants/${company.id}?tab=processes`);
   const status = page.getByTestId(`flows-status-${SLOT}`);
   // F6: công ty mới CHƯA dùng Sổ Hợp Tác ⇒ việc nói rõ "Chưa dùng ứng dụng" và không có nút Gán
-  await expect(page.getByTestId(`flows-job-${SLOT}`)).toContainText("Chưa dùng ứng dụng");
+  await expect(
+    page.getByTestId("flows-app-contracts").getByTestId("flows-app-off-note"),
+  ).toBeVisible(); // F13: ghi chú ở hàng nhóm Sổ Hợp Tác
   await expect(page.getByTestId(`flows-assign-${SLOT}`)).toHaveCount(0);
   // hành trình D5: bật Sổ Hợp Tác ở tab Ứng dụng (mức Sửa) bằng UI rồi mới gán
   await page.getByRole("tab", { name: "Ứng dụng" }).click();
@@ -80,20 +98,15 @@ test("1 · platform_admin: Chưa dùng ứng dụng ⇒ bật Sổ Hợp Tác �
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(page.getByText("Đã lưu tính năng cho")).toBeVisible();
   await page.getByRole("tab", { name: "Quy trình" }).click();
-  const offNote = page.getByTestId(`flows-job-${SLOT}`).getByText("Chưa dùng ứng dụng");
-  // ghi nhận nếu tab Quy trình còn dữ liệu cũ ngay sau khi bật app (không tải lại) rồi tải lại để đi tiếp
-  const stale = await offNote.isVisible();
-  await page.reload();
-  await expect(page.getByTestId(`flows-job-${SLOT}`)).not.toContainText("Chưa dùng ứng dụng");
-  expect
-    .soft(stale, "tab Quy trình còn hiện Chưa dùng ứng dụng ngay sau khi bật app (cache cũ)")
-    .toBe(false);
+  // F8: lưu mức app xong sang tab Quy trình phải cập nhật NGAY, không cần tải lại
+  await expect(
+    page.getByTestId("flows-app-contracts").getByTestId("flows-app-off-note"),
+  ).toHaveCount(0);
   // công ty mới chưa có luật gán: việc chạy theo mẫu mặc định của khe (không bật tay gì), chưa có quy trình riêng
   const job = page.getByTestId(`flows-job-${SLOT}`);
   await expect(job).not.toContainText(FLOW);
   // bật app ở tab Ứng dụng đã cho công ty luật mặc định của riêng mình ⇒ không còn nhãn "mặc định hệ thống"
   await expect(page.getByTestId(`flows-system-default-${SLOT}`)).toHaveCount(0);
-  const summary = page.getByTestId("tenant-summary");
 
   await page.getByTestId(`flows-assign-${SLOT}`).click();
   const panel = page.getByTestId(`flows-assign-panel-${SLOT}`);
@@ -113,7 +126,6 @@ test("1 · platform_admin: Chưa dùng ứng dụng ⇒ bật Sổ Hợp Tác �
   // F1: dòng việc đổi tên sang bản vừa gán, nhãn mặc định hệ thống mất, tóm tắt "x/y việc có quy trình" tăng
   await expect(job).toContainText(FLOW);
   await expect(page.getByTestId(`flows-system-default-${SLOT}`)).toHaveCount(0);
-  await expect(summary).toContainText("việc có quy trình");
 
   // Q11: sơ đồ (canvas) mặc định; chọn danh sách bước ⇒ nhớ sau khi tải lại. Esc rồi mở lại ngăn vẫn có công tắc (F1).
   await page.getByTestId(`flows-open-${SLOT}`).click();
