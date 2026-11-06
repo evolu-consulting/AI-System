@@ -57,8 +57,8 @@ beforeAll(async () => {
   const [r] = await o<
     { id: string }[]
   >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app,
-      published_version, enabled) values (null, 'e1b-real', 'Nhận HĐ', ${st}::text::jsonb,
-      '{"event":"contract.uploaded"}'::jsonb, 'contracts', 1, true) returning id::text as id`;
+      published_version, enabled, slot) values (null, 'e1b-real', 'Nhận HĐ', ${st}::text::jsonb,
+      '{"event":"contract.uploaded"}'::jsonb, 'contracts', 1, true, 'contracts.intake') returning id::text as id`;
   lib = r?.id as string;
   await o`insert into hub.process_def_releases (def_id, rel_version, name, stages) values (${lib}, 1, 'Nhận HĐ', ${st}::text::jsonb)`;
   await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${X}, ${lib}, true)`;

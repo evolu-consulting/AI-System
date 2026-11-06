@@ -67,7 +67,8 @@ async function libDef(key: string, trigger: object, group?: string): Promise<str
   const [r] = await o<
     { id: string }[]
   >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app,
-      published_version) values (null, ${key}, ${key}, ${st}::text::jsonb, ${o.json(trigger as never)}, 'contracts', 1)
+      published_version, slot) values (null, ${key}, ${key}, ${st}::text::jsonb, ${o.json(trigger as never)}, 'contracts', 1,
+      'contracts.approval')
     returning id::text as id`;
   await o`insert into hub.process_def_releases (def_id, rel_version, name, stages)
     values (${r?.id as string}, 1, ${key}, ${st}::text::jsonb)`;
