@@ -18,8 +18,10 @@ describe("CR-121 c22 · registry màn Hệ thống", () => {
       "transfer",
     ]);
   });
-  test("tenant_admin chỉ thấy Chi phí · Nhật ký · Góp ý, member không thấy gì", () => {
-    expect(ids("tenant_admin")).toEqual(["usage", "audit", "feedback"]);
+  test("tenant_admin thấy Chi phí · Nhật ký · Góp ý · Nguồn (dữ liệu công ty mình), member không thấy gì", () => {
+    expect(ids("tenant_admin")).toEqual(["usage", "audit", "feedback", "sources"]);
+    // module đóng băng tắt ⇒ Nguồn ẩn kể cả với tenant_admin
+    expect(ids("tenant_admin", false)).toEqual(["usage", "audit", "feedback"]);
     expect(ids("member")).toEqual([]);
     expect(ids(undefined)).toEqual([]);
   });

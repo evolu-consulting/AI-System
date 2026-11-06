@@ -1,6 +1,6 @@
 // CR-121 · c22 · MỘT nguồn danh sách lối vào của màn "Hệ thống" (`/system`): trang hub đọc từ đây.
-// Lọc theo vai giống quyền của route đích: platform_admin thấy hết; tenant_admin chỉ Chi phí · Nhật ký · Góp ý
-// (API đích tự ép công ty của họ: usage/feedback/audit). Module đóng băng (Nguồn, Import/Export) ẩn khi cờ tắt.
+// Lọc theo vai giống quyền của route đích: platform_admin thấy hết; tenant_admin thấy Chi phí · Nhật ký · Góp ý · Nguồn
+// (API đích tự ép công ty của họ: usage/feedback/audit/sources). Module đóng băng (Nguồn, Import/Export) ẩn khi cờ tắt.
 import type { Role } from "@ai/contracts/common";
 import { isFrozenPath } from "@/features/shell/lib/nav";
 
@@ -71,7 +71,8 @@ export const SYSTEM_ENTRIES: readonly SystemEntry[] = [
     to: "/sources",
     labelKey: "nav.sources",
     descKey: "system.hub.sources",
-    roles: PLATFORM,
+    // API `/admin/sources` ép công ty của tenant_admin (readTenant/writeTenant; local_path chỉ platform; ẩn đường dẫn) — test cách ly P-b/pfs1/sources-authz.
+    roles: BOTH,
   },
   {
     id: "dlcSteps",
