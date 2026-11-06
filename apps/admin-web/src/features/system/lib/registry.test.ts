@@ -5,12 +5,13 @@ const ids = (role: Parameters<typeof systemEntriesFor>[0], frozen = true) =>
   systemEntriesFor(role, frozen).map((e) => e.id);
 
 describe("CR-121 c22 · registry màn Hệ thống", () => {
-  test("platform_admin thấy đủ 8 mục", () => {
+  test("platform_admin thấy đủ 9 mục (có Danh mục tính năng)", () => {
     expect(ids("platform_admin")).toEqual([
       "usage",
       "audit",
       "feedback",
       "health",
+      "features",
       "secrets",
       "sources",
       "dlcSteps",
@@ -28,6 +29,7 @@ describe("CR-121 c22 · registry màn Hệ thống", () => {
       "audit",
       "feedback",
       "health",
+      "features",
       "secrets",
       "dlcSteps",
     ]);

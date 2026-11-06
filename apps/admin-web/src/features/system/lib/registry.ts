@@ -9,6 +9,7 @@ export type SystemEntryId =
   | "audit"
   | "feedback"
   | "health"
+  | "features"
   | "secrets"
   | "sources"
   | "dlcSteps"
@@ -18,6 +19,7 @@ export type SystemTo =
   | "/audit"
   | "/feedback"
   | "/system-health"
+  | "/features"
   | "/secrets"
   | "/sources"
   | "/dlc-steps"
@@ -48,6 +50,13 @@ export const SYSTEM_ENTRIES: readonly SystemEntry[] = [
     to: "/system-health",
     labelKey: "system.title",
     descKey: "system.hub.health",
+    roles: PLATFORM,
+  },
+  {
+    id: "features",
+    to: "/features",
+    labelKey: "nav.features",
+    descKey: "system.hub.features",
     roles: PLATFORM,
   },
   {

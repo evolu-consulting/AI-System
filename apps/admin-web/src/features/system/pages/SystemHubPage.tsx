@@ -1,4 +1,4 @@
-// CR-121 · c22 · `/system` "Hệ thống": cổng vào các màn quản trị chung (Chi phí · Nhật ký · Góp ý · Tình trạng · Secrets · Nguồn · Bước DLC · Import/Export).
+// CR-121 · c22 · `/system` "Hệ thống": cổng vào các màn quản trị chung (Chi phí · Nhật ký · Góp ý · Tình trạng · Danh mục tính năng · Secrets · Nguồn · Bước DLC · Import/Export).
 // Danh sách đọc từ registry (một nguồn), lọc theo vai; chỉ link, không sửa trang đích.
 import { Link } from "@tanstack/react-router";
 import {
@@ -7,6 +7,7 @@ import {
   BarChart3,
   Database,
   KeyRound,
+  ListChecks,
   MessageSquare,
   ScrollText,
   Workflow,
@@ -24,6 +25,7 @@ const ICONS: Record<SystemEntryId, ComponentType<{ className?: string }>> = {
   audit: ScrollText,
   feedback: MessageSquare,
   health: Activity,
+  features: ListChecks,
   secrets: KeyRound,
   sources: Database,
   dlcSteps: Workflow,
