@@ -13,7 +13,8 @@ import type { SlotCandidate } from "../lib/slot-candidates";
 import { AssignErrorNote } from "./AssignErrorNote";
 import { RulesSection } from "./RulesSection";
 
-const SEL = "h-9 min-w-0 w-72 rounded-md border border-input bg-background px-2 text-body";
+const SEL =
+  "h-9 min-w-0 w-full max-w-72 rounded-md border border-input bg-background px-2 text-body";
 
 function Body({
   tenantId,

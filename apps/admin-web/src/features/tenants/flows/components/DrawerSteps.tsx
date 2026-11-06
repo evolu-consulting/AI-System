@@ -88,6 +88,7 @@ export function DrawerSteps({
           pending={steps.isPending}
           error={steps.error}
           view={mode}
+          showTitle={false}
         />
       ) : (
         <p className="text-caption text-muted-foreground">{t("tenants.flows.noneChosen")}</p>

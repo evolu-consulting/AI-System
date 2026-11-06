@@ -1,6 +1,7 @@
 // CR-121 c11 · Tpl-Detail "Luật định tuyến": bảng ĐỌC (điều kiện bằng lời nghiệp vụ → quy trình, thứ tự, Mặc định cuối) + nút "Sửa luật"
 // mở bộ sửa `RoutingRules` (form cũ). Dùng chung cho platform_admin và tenant_admin.
 import type { ProcessRouting } from "@ai/contracts/hub-admin";
+import { Info } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -25,14 +26,21 @@ export function RulesSection(p: {
   return (
     <div className="space-y-2" data-testid={`flows-rules-${p.slot}`}>
       <div className="flex items-center gap-2">
-        <h4 className="text-label font-semibold">{t("tenants.flows.rulesTitle")}</h4>
-        <span className="text-caption text-muted-foreground" title={t("tenants.flows.rulesInfo")}>
-          {t("tenants.flows.rulesInfo")}
+        <h4 className="whitespace-nowrap text-label font-semibold">
+          {t("tenants.flows.rulesTitle")}
+        </h4>
+        <span
+          role="img"
+          aria-label={t("tenants.flows.rulesInfo")}
+          title={t("tenants.flows.rulesInfo")}
+          className="text-muted-foreground"
+        >
+          <Info aria-hidden className="size-3.5" />
         </span>
         <Button
           size="sm"
           variant="outline"
-          className="ml-auto"
+          className="ml-auto whitespace-nowrap"
           aria-expanded={edit}
           data-testid={`flows-edit-rules-${p.slot}`}
           onClick={() => setEdit(!edit)}
@@ -44,10 +52,10 @@ export function RulesSection(p: {
         {rows.map((r) => (
           <li
             key={`${r.order ?? "default"}`}
-            className="flex flex-wrap items-center gap-2 rounded-md border border-border px-2 py-1 text-body"
+            className="grid grid-cols-[1.25rem_minmax(0,1fr)_auto_minmax(0,1.3fr)] items-center gap-2 rounded-md border border-border px-2 py-1 text-body"
           >
             <span className="w-5 text-caption text-muted-foreground">{r.order ?? ""}</span>
-            <span className="min-w-0 flex-1">
+            <span className="min-w-0 truncate">
               {r.isDefault
                 ? t("tenants.flows.rulesDefault")
                 : [

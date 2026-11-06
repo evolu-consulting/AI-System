@@ -88,12 +88,15 @@ export function FlowRowsView({
   pending,
   error,
   view,
+  showTitle = true,
 }: {
   rows: StepRow[] | null;
   pending: boolean;
   error: unknown;
   /** CR-121 c11 (Q11): chỉ sơ đồ (canvas) hoặc chỉ bảng bước (list); vắng ⇒ cả hai như cũ. */
   view?: "canvas" | "list";
+  /** Tiêu đề "Các bước của quy trình…" — tắt khi nơi dùng đã có tiêu đề (ngăn việc). */
+  showTitle?: boolean;
 }) {
   const { t } = useTranslation();
   const who = useWho();
@@ -103,7 +106,7 @@ export function FlowRowsView({
     return <p className="text-caption text-muted-foreground">{t("appcfg.flow.unavailable")}</p>;
   return (
     <div className="space-y-3" data-testid="slot-flow">
-      <h4 className="text-label font-semibold">{t("appcfg.flow.title")}</h4>
+      {showTitle ? <h4 className="text-label font-semibold">{t("appcfg.flow.title")}</h4> : null}
       {view === "list" ? null : <Diagram rows={rows} who={who} />}
       {view === "canvas" ? null : (
         <Table>

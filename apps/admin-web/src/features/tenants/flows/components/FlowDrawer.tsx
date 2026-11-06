@@ -1,6 +1,7 @@
 // CR-121 c11 · ngăn chi tiết một việc (bấm hàng): tóm tắt, các bước (canvas mặc định), Gán/Đổi + luật định tuyến + Mặc định, Đang chạy.
 import { useTranslation } from "react-i18next";
 import { DetailDrawer } from "@/components/shared/list/DetailDrawer";
+import { Button } from "@/components/ui/button";
 import type { FlowJob } from "../lib/flow-rows";
 import { DrawerAssign } from "./DrawerAssign";
 import { DrawerRunning } from "./DrawerRunning";
@@ -38,11 +39,16 @@ export function FlowDrawer({
           : undefined
       }
       line={job ? lineOf(job, t) : null}
+      footer={
+        <Button type="button" onClick={onClose} data-testid="flows-drawer-done">
+          {t("tenants.flows.rulesDone")}
+        </Button>
+      }
     >
       {job ? (
         <div className="flex flex-col gap-6" data-testid="flows-drawer">
           <DrawerSteps
-            key={`:`}
+            key={`${job.slot}:${job.defId ?? "none"}`}
             tenantId={tenantId}
             slot={job.slot}
             defId={job.defId}
