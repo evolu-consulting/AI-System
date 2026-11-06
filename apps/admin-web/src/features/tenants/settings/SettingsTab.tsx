@@ -5,13 +5,14 @@ import type { TenantDetail } from "@ai/contracts/tenants";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOnline } from "@/components/shared/ConnectionBanner";
+import { notifyError } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { TenantQuotaReadonly } from "../components/quota/TenantQuotaReadonly";
 import { TenantQuotaTab } from "../components/quota/TenantQuotaTab";
 import { TenantDefaultAppCard } from "../components/TenantDefaultAppCard";
 import { TenantInfoForm } from "../components/TenantInfoForm";
 import type { TenantInfoValues } from "../lib/schemas";
-import { saveOrder } from "./save-order";
+import { type FlowAction, type FlowEvent, flow, IDLE } from "./save-order";
 
 const INFO_FORM = "settings-info-form";
 const QUOTA_FORM = "settings-quota-form";
@@ -111,11 +112,37 @@ export function SettingsTab(p: Props) {
   const locked = p.tenant.status === "locked";
   const dirty = p.isPlatform && (infoDirty || quotaDirty);
   const both = infoDirty && quotaDirty;
-  const save = () => {
-    const first = saveOrder({ info: infoDirty, quota: quotaDirty })[0];
-    const id = first === "info" ? INFO_FORM : QUOTA_FORM;
+  // MỘT lần bấm Lưu: Thông tin rồi Quota tuần tự (máy trạng thái ở save-order.ts); lỗi ⇒ nói rõ phần nào đã lưu, phần nào chưa.
+  const flowRef = useRef(IDLE);
+  const version = useRef(p.tenant.version);
+  version.current = p.tenant.version;
+  const submit = (id: string) =>
     (document.getElementById(id) as HTMLFormElement | null)?.requestSubmit();
+  const dispatch = (e: FlowEvent) => {
+    const [next, actions] = flow(flowRef.current, e);
+    flowRef.current = next;
+    for (const a of actions as FlowAction[]) {
+      if (a === "submit-info") submit(INFO_FORM);
+      else if (a === "submit-quota") submit(QUOTA_FORM);
+      else if (a === "info-failed-quota-skipped")
+        notifyError(t("tenants.settings.partial.infoFailed"));
+      else if (a === "quota-failed-after-info")
+        notifyError(t("tenants.settings.partial.quotaFailed"));
+    }
   };
+  const save = () =>
+    dispatch({
+      t: "click",
+      dirty: { info: infoDirty, quota: quotaDirty },
+      version: p.tenant.version,
+    });
+  // Lời gọi lưu Thông tin kết thúc (pending true → false): chuyển sang Quota khi đã có `version` mới, hoặc báo lỗi.
+  const wasPending = useRef(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ phản ứng khi `pending` đổi
+  useEffect(() => {
+    if (wasPending.current && !p.pending) dispatch({ t: "infoSettled", version: version.current });
+    wasPending.current = p.pending;
+  }, [p.pending]);
   return (
     <div className="space-y-8 pb-20" data-testid="settings-tab">
       {locked ? <LockedBanner tenant={p.tenant} isPlatform={p.isPlatform} /> : null}
@@ -149,6 +176,7 @@ export function SettingsTab(p: Props) {
             formId={QUOTA_FORM}
             hideBar
             tenant={p.tenant}
+            onSaveResult={(ok) => dispatch({ t: "quotaSettled", ok })}
             onDirtyChange={(d) => {
               setQuotaDirty(d);
               p.onQuotaDirty(d);

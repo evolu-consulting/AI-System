@@ -22,6 +22,8 @@ type Args = {
   tenant: TenantDetail;
   onDirtyChange: (dirty: boolean) => void;
   onReloadTenant: () => void;
+  /** CR-121 c14b · kết quả lần lưu (thanh lưu chung nối Thông tin → Quota). */
+  onSaveResult?: (ok: boolean) => void;
 };
 
 /** Toast lỗi lưu (bỏ qua UNAUTHORIZED: phiên hết hạn đã có hộp thoại riêng). */
@@ -61,7 +63,7 @@ function useQuotaDraft(baseline: QuotaRow[] | null, onDirtyChange: (dirty: boole
   return { draft, setDraft, touched, setTouched, dirty };
 }
 
-export function useQuotaTab({ tenant, onDirtyChange, onReloadTenant }: Args) {
+export function useQuotaTab({ tenant, onDirtyChange, onReloadTenant, onSaveResult }: Args) {
   const { t, i18n } = useTranslation();
   const query = useTenantQuotas(tenant.id, true);
   const options = useQuotaFeatureOptions(tenant.id, true);
@@ -75,9 +77,16 @@ export function useQuotaTab({ tenant, onDirtyChange, onReloadTenant }: Args) {
   );
   const { draft, setDraft, touched, setTouched, dirty } = useQuotaDraft(baseline, onDirtyChange);
 
+  const failToast = useFailToast();
   const save = useTenantQuotaSave(tenant.id, {
-    onSaved: () => notifySuccess(t("tenants.toast.saved", { key: tenant.key })),
-    onFail: useFailToast(),
+    onSaved: () => {
+      notifySuccess(t("tenants.toast.saved", { key: tenant.key }));
+      onSaveResult?.(true);
+    },
+    onFail: (err) => {
+      failToast(err);
+      onSaveResult?.(false);
+    },
     onReload: () => {
       onReloadTenant();
       void query.refetch().then((r) => {

@@ -23,6 +23,8 @@ type Props = {
   /** CR-121 c14b · id của <form> cho thanh lưu chung; `hideBar` ẩn thanh lưu riêng. */
   formId?: string;
   hideBar?: boolean;
+  /** Kết quả lần lưu Quota (thanh lưu chung). */
+  onSaveResult?: (ok: boolean) => void;
 };
 
 const monthLabel = (month: string) => month.split("-").reverse().join("/");

@@ -896,10 +896,14 @@
       }
     },
     "settings": {
+      "partial": {
+        "infoFailed": "Nothing saved: Info could not be saved so Quota was not sent. Fix Info (or reload if someone edited first), then press Save.",
+        "quotaFailed": "Info was saved but Quota was not. Check the Quota fields (or reload if someone edited first), then press Save to save Quota."
+      },
       "copy": "Copy",
       "copied": "Copied",
       "copyFail": "Could not copy. Select the code and copy it by hand.",
-      "unsavedBoth": "Unsaved changes in Info and Quota. They save one after the other; press Save twice.",
+      "unsavedBoth": "Unsaved changes in Info and Quota. One Save stores both.",
       "lockedBanner": "The company is locked — users cannot sign in.",
       "lockedWho": {
         "platform": "Data is kept. You can unlock it in the Lock company section below.",

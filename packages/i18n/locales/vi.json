@@ -896,10 +896,14 @@
       }
     },
     "settings": {
+      "partial": {
+        "infoFailed": "Chưa lưu gì: Thông tin không lưu được nên Quota chưa được gửi. Sửa lỗi ở Thông tin (hoặc tải lại nếu có người sửa trước) rồi bấm Lưu.",
+        "quotaFailed": "Đã lưu Thông tin nhưng chưa lưu Quota. Kiểm tra các ô Quota (hoặc tải lại nếu có người sửa trước) rồi bấm Lưu để lưu Quota."
+      },
       "copy": "Chép",
       "copied": "Đã chép",
       "copyFail": "Không chép được. Hãy chọn mã và chép tay.",
-      "unsavedBoth": "Có thay đổi chưa lưu ở Thông tin và Quota. Lưu lần lượt, bấm Lưu hai lần.",
+      "unsavedBoth": "Có thay đổi chưa lưu ở Thông tin và Quota. Bấm Lưu một lần để lưu cả hai.",
       "lockedBanner": "Công ty đang bị khoá — người dùng không đăng nhập được.",
       "lockedWho": {
         "platform": "Dữ liệu được giữ nguyên. Bạn mở khoá lại ở khối Khoá công ty bên dưới.",
