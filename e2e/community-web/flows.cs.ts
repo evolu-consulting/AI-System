@@ -5,10 +5,12 @@
 //  3. Đối tác báo cáo một bài của chủ quản (menu ⋯) ⇒ chủ quản vào "Báo cáo vi phạm", thấy tiêu đề bài + lý do ⇒ Ẩn bài.
 import { expect, test } from "@playwright/test";
 import { apiLogin, approvePost, createPost, pageFetch } from "../_kit/api";
+import { enableFlowTriggers } from "../_kit/flows";
 import {
-  assignProcessUi,
+  assignFlowUi,
+  flowRows,
   loginPlatformAdminUi,
-  openJobDrawer,
+  openCompanyFlows,
   openTenantAppsTab,
 } from "../_kit/ui";
 import { openAs, postByTitle, TENANT, USERNAME } from "./_stack";
@@ -33,11 +35,14 @@ test("1 · platform admin gán quy trình duyệt bài cho công ty (đường t
     process.env.SEED_ADMIN_PASSWORD ?? "",
   );
   await openTenantAppsTab(page, TENANT_NAME);
-  // CR-121 c11: gán ở công ty › Quy trình › ngăn của việc (không còn khối trong thẻ app)
-  const box = await openJobDrawer(page, "community.post-moderation");
-  await expect(box).toBeVisible();
-  await assignProcessUi(box); // thư viện có ít nhất một quy trình duyệt bài; đã gán thì bỏ qua
-  await expect(box.getByTestId(/^admin-assigned-[0-9a-f-]{36}$/)).toHaveCount(1);
+  // CR-122 U2: gán ở công ty › Quy trình = MỘT danh sách flow (không còn việc/ngăn Gán): chọn flow duyệt bài trong Thư viện → Gán
+  const box = await openCompanyFlows(page);
+  const pick = box.getByRole("combobox", { name: "Flow trong Thư viện" });
+  const names = await pick.locator("option[value]:not([value=''])").allTextContents();
+  const moderation = names.find((n) => /bài/i.test(n));
+  if (moderation) await assignFlowUi(box, moderation); // đã gán rồi thì không còn trong ô chọn ⇒ bỏ qua
+  await expect(flowRows(box).filter({ hasText: /bài/i })).not.toHaveCount(0);
+  await enableFlowTriggers(TENANT); // G3: cờ FLOW_TRIGGERS bật cho công ty test (bóng → thật)
   await ctx.close();
 });
 

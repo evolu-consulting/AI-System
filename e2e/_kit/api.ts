@@ -153,6 +153,50 @@ export async function tenantIdByKey(admin: string, s: Session, key: string): Pro
   return hit.id;
 }
 
+/** Id quy trình thư viện theo TÊN (duyệt các trang `GET /process-defs`). Ném lỗi rõ khi không có. */
+export async function libraryDefIdByName(hub: string, s: Session, name: string): Promise<string> {
+  for (let cursor = ""; ; ) {
+    const page = await call<{
+      items: { id: string; name: string }[];
+      next_cursor: string | null;
+    }>(`${hub}/process-defs${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`, {
+      method: "GET",
+      token: s.token,
+    });
+    const hit = page.json.items.find((d) => d.name === name);
+    if (hit) return hit.id;
+    if (!page.json.next_cursor) throw new Error(`libraryDefIdByName: không thấy "${name}"`);
+    cursor = page.json.next_cursor;
+  }
+}
+
+/** CR-122 · platform_admin gán flow Thư viện cho công ty (`POST /tenants/:tid/company-flows`) — phần chuẩn bị, không phải bước được kiểm. */
+export async function assignCompanyFlow(
+  hub: string,
+  s: Session,
+  tenantId: string,
+  flowId: string,
+): Promise<void> {
+  await call(`${hub}/tenants/${tenantId}/company-flows`, {
+    method: "POST",
+    token: s.token,
+    body: JSON.stringify({ flow_id: flowId }),
+  });
+}
+
+/** CR-122 · danh sách flow công ty (`GET /tenants/:tid/company-flows`). */
+export async function companyFlows(
+  hub: string,
+  s: Session,
+  tenantId: string,
+): Promise<{ id: string; flow_id: string; name: string; enabled: boolean; kind: string }[]> {
+  const r = await call<{ items: never[] }>(`${hub}/tenants/${tenantId}/company-flows`, {
+    method: "GET",
+    token: s.token,
+  });
+  return r.json.items;
+}
+
 type DefShape = {
   id: string;
   version: number;

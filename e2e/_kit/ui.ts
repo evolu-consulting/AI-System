@@ -17,6 +17,22 @@ export async function loginPlatformAdminUi(
   await expect(page.getByRole("heading", { level: 1, name: "Tổng quan" })).toBeVisible();
 }
 
+/** Quản trị CÔNG TY đăng nhập ai-admin (admin-web) bằng mã công ty + tên đăng nhập; chờ tiêu đề "Tổng quan". */
+export async function loginTenantAdminUi(
+  page: Page,
+  adminUrl: string,
+  tenantKey: string,
+  username: string,
+  password: string,
+): Promise<void> {
+  await page.goto(`${adminUrl}/login`);
+  await page.getByRole("textbox", { name: "Mã công ty" }).fill(tenantKey);
+  await page.getByRole("textbox", { name: "Tên đăng nhập" }).fill(username);
+  await page.getByLabel("Mật khẩu", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Tổng quan" })).toBeVisible();
+}
+
 /**
  * CR-121 c10 · từ ai-admin đã đăng nhập: mở trang chi tiết công ty `tenantName` đi đường người dùng đi
  * (menu "Công ty" → tìm → bấm hàng → "Mở trang chi tiết"); thanh bên không còn danh sách công ty.
@@ -38,16 +54,18 @@ export async function openTenantAppsTab(page: Page, tenantName: string | RegExp)
   await page.getByRole("tab", { name: "Ứng dụng" }).click();
 }
 /**
- * CR-121 c11 · mở công ty › tab "Quy trình" rồi ngăn chi tiết của việc `slot` (nơi DUY NHẤT gán quy trình).
- * Trả hộp `admin-assigned-<slot>` của ngăn Gán (platform_admin) để dùng với `assignProcessUi`.
+ * CR-122 U2 · công ty › tab "Quy trình" = MỘT danh sách flow (`company_flows`; thay "việc → luật → ngăn Gán" của CR-121).
+ * Mở tab, trả hộp `company-flows`. Dòng flow: `flowRows(box)`; dòng theo tên: `flowRow(box, name)`.
  */
-export async function openJobDrawer(page: Page, slot: string): Promise<Locator> {
+export async function openCompanyFlows(page: Page): Promise<Locator> {
   await page.getByRole("tab", { name: "Quy trình" }).click();
-  await page.getByTestId(`flows-open-${slot}`).click();
-  const box = page.getByTestId(`flows-assign-panel-${slot}`).getByTestId(`admin-assigned-${slot}`);
+  const box = page.getByTestId("company-flows");
   await expect(box).toBeVisible();
   return box;
 }
+export const flowRows = (box: Locator): Locator => box.locator('li[data-testid^="company-flow-"]');
+export const flowRow = (box: Locator, name: string): Locator =>
+  flowRows(box).filter({ hasText: name });
 /** Giá trị `value` của lựa chọn có chữ `text` trong `<select>` (ném lỗi rõ nếu không có). */
 export async function optionValue(select: Locator, text: string): Promise<string> {
   const v = await select.locator("option", { hasText: text }).first().getAttribute("value");
@@ -56,25 +74,21 @@ export async function optionValue(select: Locator, text: string): Promise<string
 }
 
 /**
- * Gán quy trình thư viện vào hộp khe `admin-assigned-<slot>` (`box`) bằng UI. `name` vắng ⇒ lấy quy trình đầu tiên của thư viện.
- * Chạy lại được: đã gán đủ thì bỏ qua. Trả sau khi quy trình hiện trong danh sách đã gán.
+ * CR-122 U2 · platform_admin gán flow Thư viện `name` cho công ty (hộp `company-flows`): chọn ở ô "Flow trong Thư viện" → "Gán".
+ * Chạy lại được (đã có dòng thì bỏ qua). `name` vắng ⇒ lấy flow đầu tiên còn chọn được. Trả dòng vừa gán.
  */
-export async function assignProcessUi(box: Locator, name?: string): Promise<void> {
-  const assignedRows = box.getByTestId(/^admin-assigned-[0-9a-f-]{36}$/);
-  if (
-    name
-      ? (await assignedRows.filter({ hasText: name }).count()) > 0
-      : (await assignedRows.count()) > 0
-  )
-    return;
-  const pick = box.getByTestId("admin-assign-pick");
+export async function assignFlowUi(box: Locator, name?: string): Promise<Locator> {
+  if (name && (await flowRow(box, name).count()) > 0) return flowRow(box, name);
+  const pick = box.getByRole("combobox", { name: "Flow trong Thư viện" });
   const value = name
     ? await optionValue(pick, name)
     : await pick.locator("option[value]:not([value=''])").first().getAttribute("value");
-  if (!value) throw new Error("thư viện không có quy trình nào để gán");
+  if (!value) throw new Error("thư viện không có flow nào để gán");
   await pick.selectOption(value);
-  await box.getByTestId("admin-assign-add").click();
-  await expect(name ? assignedRows.filter({ hasText: name }) : assignedRows).toHaveCount(1);
+  await box.getByRole("button", { name: "Gán", exact: true }).click();
+  const row = name ? flowRow(box, name) : flowRows(box).last();
+  await expect(row).toBeVisible();
+  return row;
 }
 
 // ── tải lại an toàn ────────────────────────────────────────────────────────────────────────────────────────────────────────────

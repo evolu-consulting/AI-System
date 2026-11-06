@@ -4,17 +4,17 @@
 // Duyệt (người nhận = người gửi duyệt, tiêu đề có {ma_hd} {ten_hd}) → lưu nháp → xuất bản → gán cho công ty (không công tắc nào khác). Người dùng công ty
 // gửi duyệt HĐ, Ban Giám đốc duyệt ⇒ người tạo HĐ thấy thông báo ở chuông, tiêu đề mang đúng mã/tên HĐ (tên HĐ có hậu tố duy nhất của lượt chạy).
 import { expect, type Page, test } from "@playwright/test";
-import { assignProcessUi, openTenantPage } from "../_kit/ui";
+import { openTenantPage } from "../_kit/ui";
 import { uniqueSuffix } from "../_kit/unique";
 import { TAG } from "./_fixture";
 import {
+  apiAssignDef,
   approveAs,
   type Env,
   loginAdmin,
   loginCw,
   openProcessPanel,
   PROC,
-  SLOT,
   stepOf,
   U,
   uploadAndOpen,
@@ -93,11 +93,11 @@ test("1 · platform admin thêm bước Thông báo sau bước Duyệt, lưu nh
 test("2 · platform admin gán quy trình cho công ty mới (không công tắc nào khác)", async ({
   page,
 }) => {
+  // CR-122: ngăn Gán theo khe đã gỡ ⇒ gán đường khe cũ bằng API; tab Quy trình chỉ kiểm hiện danh sách.
+  await apiAssignDef(E, FLOW);
   await loginAdmin(page, E);
   await openTenantPage(page, E.tenantName);
-  const blk = await openProcessPanel(page);
-  await expect(blk).toBeVisible();
-  await assignProcessUi(blk.getByTestId(`admin-assigned-${SLOT}`), FLOW);
+  await expect(await openProcessPanel(page)).toBeVisible();
 });
 
 async function openBell(page: Page): Promise<void> {

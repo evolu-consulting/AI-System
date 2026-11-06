@@ -1,7 +1,16 @@
 // e2e-journey-approval · bước dùng chung của hành trình duyệt HĐ (stack `approval.ja.ts` và triển khai `deployed/21-*`): đăng nhập hai web,
 // platform admin gán quy trình + luật ở ai-admin, nhân viên tải HĐ, người duyệt bấm Đạt. Chỉ thao tác như người dùng thật (UI).
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
-import { loginPlatformAdminUi, openTenantAppsTab, optionValue, safeReload } from "../_kit/ui";
+import {
+  apiLogin,
+  assignProcess,
+  libraryDefIdByName,
+  type Session,
+  setRoutingRules,
+  tenantIdByKey,
+} from "../_kit/api";
+import { loginPlatformAdminUi, openCompanyFlows, openTenantAppsTab, safeReload } from "../_kit/ui";
+import { withOwner } from "../support/helpers";
 import { buyContract } from "./_fixture";
 
 export type Env = {
@@ -23,7 +32,6 @@ export const U = {
 export const PROC = { buy: "E2E Mua (Kinh doanh)", sell: "E2E Bán (Kinh doanh)" } as const;
 export const SLOT = "contracts.approval";
 const UUID = /\/contracts\/c\/([0-9a-f-]{36})/;
-const toast = (page: Page, text: string): Locator => page.getByText(text, { exact: false }).first();
 
 /** Đăng nhập Sổ Hợp Tác (workspace-web) bằng trang /login. */
 export async function loginCw(page: Page, e: Env, user: string): Promise<void> {
@@ -44,60 +52,68 @@ export async function loginAdmin(page: Page, e: Env): Promise<void> {
   await loginPlatformAdminUi(page, e.admin, e.adminUser, e.adminPw);
 }
 
-/**
- * CR-121 c11: mở tab "Quy trình" của công ty đang mở rồi ngăn của việc duyệt hợp đồng — NƠI DUY NHẤT gán quy trình + đặt luật
- * (khối trong thẻ app đã gỡ). Trả ngăn Gán (chứa `admin-assigned-*`, `admin-routing-*`).
- */
-export async function openProcessPanel(page: Page): Promise<Locator> {
-  await page.getByRole("tab", { name: "Quy trình" }).click();
-  await page.getByTestId(`flows-open-${SLOT}`).click();
-  const panel = page.getByTestId(`flows-assign-panel-${SLOT}`);
-  await expect(panel).toBeVisible();
-  return panel;
-}
-/** Platform admin: gán 2 quy trình cho công ty + 2 luật (Phòng Kinh doanh × Mua/Bán). Chạy lại được (đã đủ thì bỏ qua). */
-export async function adminAssignAndRoute(page: Page, e: Env): Promise<void> {
-  await openTenantAppsTab(page, e.tenantName);
-  const box = (await openProcessPanel(page)).getByTestId(`admin-assigned-${SLOT}`);
-  for (const name of [PROC.buy, PROC.sell]) {
-    const assigned = box.getByTestId(/^admin-assigned-[0-9a-f-]{36}$/).filter({ hasText: name });
-    if ((await assigned.count()) > 0) continue;
-    const pick = box.getByTestId("admin-assign-pick");
-    await pick.selectOption(await optionValue(pick, name));
-    await box.getByTestId("admin-assign-add").click();
-    await expect(toast(page, "Đã gán quy trình")).toBeVisible();
-    await expect(
-      box.getByTestId(/^admin-assigned-[0-9a-f-]{36}$/).filter({ hasText: name }),
-    ).toHaveCount(1);
-  }
-  const want = [
-    { process: PROC.buy, kind: "buy" },
-    { process: PROC.sell, kind: "sell" },
-  ];
-  await box.page().getByTestId(`flows-edit-rules-${SLOT}`).click(); // bảng luật đọc; "Sửa luật" mở form
-  const rules = box.getByTestId(/^admin-routing-rule-\d+$/);
-  const base = await rules.count(); // CR-120: dòng "Mặc định" của quy trình đang dùng đã có sẵn ở đầu danh sách
-  const done = await box
-    .getByTestId(/^admin-routing-rule-\d+-kind-buy$/)
-    .evaluateAll((els) => els.filter((e) => (e as HTMLInputElement).checked).length);
-  if (done > 0) return; // luật Mua đã đặt (chạy lại)
-  for (const [j, w] of want.entries()) {
-    const i = base + j;
-    await box.getByTestId("admin-routing-add").click();
-    const row = box.getByTestId(`admin-routing-rule-${i}`);
-    const sel = row.getByTestId(`admin-routing-rule-${i}-process`);
-    await sel.selectOption(await optionValue(sel, w.process));
-    await row.getByRole("checkbox", { name: "Phòng Kinh doanh" }).check();
-    await row.getByTestId(`admin-routing-rule-${i}-kind-${w.kind}`).check();
-  }
-  await box.getByTestId("admin-routing-save").click();
-  await expect(toast(page, "Đã lưu luật chọn quy trình")).toBeVisible();
+const need = (n: string): string => {
+  const v = process.env[n];
+  if (!v) throw new Error(`${n} chưa đặt (playwright.journey.config.ts)`);
+  return v;
+};
+async function platformSession(e: Env): Promise<{ s: Session; tenantId: string }> {
+  const api = need("JA_API_URL");
+  const s = await apiLogin({
+    base: api,
+    tenantKey: "platform",
+    username: e.adminUser,
+    password: e.adminPw,
+  });
+  return { s, tenantId: await tenantIdByKey(api, s, e.tenantKey) };
 }
 
-/** Khối Quy trình của công ty (ngăn việc ở công ty › Quy trình). */
+/**
+ * CR-122 U2: màn "Việc" + "Luật định tuyến" + ngăn Gán đã gỡ — tab "Quy trình" của công ty chỉ còn MỘT danh sách flow
+ * (`company-flows`). Mở công ty › tab Quy trình, trả hộp danh sách.
+ */
+export async function openProcessPanel(page: Page): Promise<Locator> {
+  return openCompanyFlows(page);
+}
+
+/**
+ * Gán quy trình thư viện `defName` cho công ty bằng API (đường khe cũ, cờ FLOW_TRIGGERS tắt) — UI gán theo khe đã gỡ ở CR-122.
+ * Gán bằng giao diện mới (danh sách flow) được kiểm ở `cr122-flows.spec.ts`.
+ */
+export async function apiAssignDef(e: Env, defName: string): Promise<string> {
+  const { s, tenantId } = await platformSession(e);
+  const hub = need("JA_HUB_URL");
+  const defId = await libraryDefIdByName(hub, s, defName);
+  await assignProcess(hub, s, tenantId, SLOT, defId);
+  return defId;
+}
+
+/** Platform admin: gán 2 quy trình cho công ty + 2 luật (Phòng Kinh doanh × Mua/Bán) bằng API. Chạy lại được (PUT thay cả danh sách). */
+export async function adminAssignAndRoute(_page: Page, e: Env): Promise<void> {
+  const { s, tenantId } = await platformSession(e);
+  const hub = need("JA_HUB_URL");
+  const kd = await withOwner(
+    (sql) =>
+      sql<
+        { id: string }[]
+      >`select id::text from admin.groups where tenant_id = ${tenantId} and key = 'pb-kinh-doanh'`,
+  );
+  const dept = kd[0]?.id;
+  if (!dept) throw new Error("công ty chưa có phòng pb-kinh-doanh");
+  const ids = {
+    buy: await apiAssignDef(e, PROC.buy),
+    sell: await apiAssignDef(e, PROC.sell),
+  };
+  await setRoutingRules(hub, s, tenantId, SLOT, [
+    { condition: { departmentIds: [dept], contractKinds: ["buy"] }, def_id: ids.buy },
+    { condition: { departmentIds: [dept], contractKinds: ["sell"] }, def_id: ids.sell },
+  ]);
+}
+
+/** Khối Quy trình của công ty (tab Quy trình). */
 export async function openProcessBlock(page: Page, e: Env): Promise<Locator> {
   await openTenantAppsTab(page, e.tenantName);
-  return openProcessPanel(page);
+  return openCompanyFlows(page);
 }
 
 /** Nhân viên tải HĐ mẫu lên bằng UI; chờ AI đọc xong (có nút "Xác nhận và lưu"). Trả id HĐ. */

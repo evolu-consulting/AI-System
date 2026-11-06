@@ -157,6 +157,14 @@ async function main(): Promise<void> {
         key: `e2e-d6-${sfx}`,
         name: `E2E D6 ${sfx}`,
       });
+    // CR-122 Q1: hai công ty MỚI cho hành trình flow (G1/G2 và các ca UI trình sửa) — cờ FLOW_TRIGGERS do spec bật.
+    if (sfx)
+      for (const k of ["c22", "c22u"] as const)
+        await provisionExtraJourneyTenant(admin, hubDb, {
+          pw: env("JA_USER_PW"),
+          key: `e2e-${k}-${sfx}`,
+          name: `E2E ${k.toUpperCase()} ${sfx}`,
+        });
   } finally {
     await admin.close();
     await hubDb.close();

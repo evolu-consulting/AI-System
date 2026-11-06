@@ -7,14 +7,14 @@
 // trang "Chi tiết lượt chạy" (admin) hiện đúng bước + nhật ký; công ty 1 không thấy dữ liệu công ty 2.
 import { expect, type Page, test } from "@playwright/test";
 import { apiLogin, cloneAndPublishFlow, type Session, tenantIdByKey } from "../_kit/api";
-import { assignProcessUi, openTenantPage } from "../_kit/ui";
+import { openTenantPage } from "../_kit/ui";
 import {
+  apiAssignDef,
   approveAs,
   type Env,
   loginAdmin,
   loginCw,
   openProcessPanel,
-  SLOT,
   stepOf,
   U,
   uploadAndOpen,
@@ -134,17 +134,16 @@ test("1 · platform admin nhân bản quy trình từ thư viện thành 2 bản
 test("2 · platform admin gán A cho công ty 1, B cho công ty 2 (không công tắc nào khác)", async ({
   browser,
 }) => {
+  // CR-122: ngăn Gán theo khe đã gỡ ⇒ gán đường khe cũ bằng API (cờ FLOW_TRIGGERS tắt); tab Quy trình chỉ kiểm hiện danh sách.
   const page = await ctxPage(browser);
   await loginAdmin(page, base as Env);
   for (const [e, name] of [
     [EA, PROC_A],
     [EB, PROC_B],
   ] as const) {
+    await apiAssignDef(e, name);
     await openTenantPage(page, e.tenantName);
-    const blk = await openProcessPanel(page);
-    await expect(blk).toBeVisible();
-    await expect(blk.getByTestId("tenant-engine-switch")).toHaveCount(0);
-    await assignProcessUi(blk.getByTestId(`admin-assigned-${SLOT}`), name);
+    await expect(await openProcessPanel(page)).toBeVisible();
   }
 });
 
