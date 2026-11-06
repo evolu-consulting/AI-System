@@ -6,7 +6,8 @@
 // đọc `fields`; luật khớp (đánh giá trong bộ nhớ) ⇒ +3 câu theo tập (nhảy stage, huỷ hẹn, audit + thread) — không phụ
 // thuộc số bước bị nhảy (plan-d2 §9, PD2-P04).
 import { evaluateBranch, skippedStages } from "../../domain/branch/branch.rules";
-import { evaluateWhen, ifTarget } from "../../domain/if/if.rules";
+import { evaluateWhen, factKeysOf, ifTarget } from "../../domain/if/if.rules";
+import { driftedIf, mergeTarget, outcomeOfStep, stagesAfter } from "../../domain/runs/finish.rules";
 import {
   firstIdxOfStep,
   runStatusOf,
@@ -15,7 +16,7 @@ import {
   stepJoin,
 } from "../../domain/runs/step.rules";
 import type { ProcessRunStatus } from "../../domain/types";
-import type { Clock, StepJoinLoad, StepRepo } from "../ports";
+import type { BranchEvent, Clock, StepJoinLoad, StepRepo } from "../ports";
 
 /** Kết quả sau ghi: `process_runs.status/current_step/current_stage_idx` mới. */
 export type StepOutcome = {
@@ -29,23 +30,47 @@ export type StepRepos = { steps: StepRepo; clock: Clock };
 const WAIT_KINDS: ReadonlySet<string> = new Set(["wait_until", "wait_for", "wait_event"]);
 
 /** CR-103 · node If: Đúng ⇒ luật 1 (`then_step`); Sai + có `else_step` ⇒ luật 2; Sai không `else_step` ⇒ null (bước kế). */
-async function ifTargetOf(
-  r: StepRepos,
-  runId: string,
-  load: StepJoinLoad,
-  o: { idx: number; ifx: NonNullable<NonNullable<StepJoinLoad["ifs"]>[number]> },
-): Promise<{ gotoStep: number; rule: number; stageIdx: number } | null> {
+type Target = {
+  gotoStep: number;
+  rule: number;
+  stageIdx: number;
+  facts?: NonNullable<BranchEvent["facts"]>;
+};
+
+/** Ngữ cảnh đánh giá node Nếu: fields theo key stage + input run (1 câu) + dữ kiện app HIỆN TẠI (≤ 1 câu, chỉ khi có vế `fact`). */
+export async function ifContext(r: StepRepos, runId: string, load: StepJoinLoad, keys: string[]) {
   const facts = await r.steps.ifFacts(runId);
   const byKey: Record<string, Readonly<Record<string, string | number>>> = {};
   (load.stageKeys ?? []).forEach((k, i) => {
     const f = facts.fieldsByIdx[String(i)];
     if (f) byKey[k] = f;
   });
-  const { matched } = evaluateWhen(o.ifx.when, byKey, facts.inputs);
-  if (!matched && o.ifx.elseStep === null) return null;
+  const app =
+    keys.length > 0 && load.pack && r.steps.readFacts
+      ? await r.steps.readFacts(load.pack, keys)
+      : null;
+  return { fieldsByStageKey: byKey, inputs: facts.inputs, facts: app };
+}
+
+/** CR-103 · node If: Đúng ⇒ luật 1 (`then_step`); Sai + có `else_step` ⇒ luật 2; Sai không `else_step` ⇒ null (bước kế). */
+async function ifTargetOf(
+  r: StepRepos,
+  runId: string,
+  load: StepJoinLoad,
+  o: { idx: number; ifx: NonNullable<NonNullable<StepJoinLoad["ifs"]>[number]> },
+): Promise<Target | null> {
+  const keys = factKeysOf(o.ifx.when);
+  const c = await ifContext(r, runId, load, keys);
+  const { matched, reads } = evaluateWhen(o.ifx.when, c.fieldsByStageKey, c.inputs, c.facts);
+  // CR-122 · vế `fact` ⇒ LUÔN ghi lần rẽ (cả Sai đi bước kế): lịch sử giá trị đã đọc + so lại ở Kết thúc (H2).
+  const facts = keys.length > 0 ? { matched, reads } : undefined;
+  if (!matched && o.ifx.elseStep === null) {
+    if (!facts || firstIdxOfStep(load.steps, load.step + 1) < 0) return null;
+    return { gotoStep: load.step + 1, rule: 2, stageIdx: o.idx, facts };
+  }
   const gotoStep = ifTarget(o.ifx, matched, load.step, Number.MAX_SAFE_INTEGER);
   if (gotoStep <= load.step || firstIdxOfStep(load.steps, gotoStep) < 0) return null;
-  return { gotoStep, rule: matched ? 1 : 2, stageIdx: o.idx };
+  return { gotoStep, rule: matched ? 1 : 2, stageIdx: o.idx, ...(facts ? { facts } : {}) };
 }
 
 /** PD2-R13 · bước đích nếu stage đứng một mình của `step` có luật rẽ nhánh khớp; ngược lại `null` (đi bước kế). */
@@ -53,7 +78,7 @@ async function branchTarget(
   r: StepRepos,
   runId: string,
   load: StepJoinLoad,
-): Promise<{ gotoStep: number; rule: number; stageIdx: number } | null> {
+): Promise<Target | null> {
   const idxs = stageIdxsOfStep(load.steps, load.step);
   const idx = idxs[0];
   if (idx === undefined || idxs.length !== 1) return null;
@@ -71,7 +96,7 @@ async function branchTarget(
 /** Khớp ⇒ stage bước (step, goto) ⇒ `skipped` + huỷ hẹn của chúng + sự kiện `branch`; trả bước đích. */
 async function takeBranch(r: StepRepos, runId: string, load: StepJoinLoad): Promise<number | null> {
   const b = await branchTarget(r, runId, load);
-  if (!b) return null;
+  if (!b) return mergeJump(r, runId, load);
   const ids = await r.steps.skipStages(runId, skippedStages(load.steps, load.step, b.gotoStep));
   // T19-perf · hai câu ghi độc lập gửi liền (pipeline); Postgres chạy theo thứ tự gửi ⇒ khoá hẹn vẫn trước (plan-d2 §8).
   await Promise.all([
@@ -81,16 +106,65 @@ async function takeBranch(r: StepRepos, runId: string, load: StepJoinLoad): Prom
       fromStep: load.step,
       toStep: b.gotoStep,
       rule: b.rule,
+      ...(b.facts ? { facts: b.facts } : {}),
     }),
   ]);
   return b.gotoStep;
 }
+
+/** CR-122 · FLOW2-FR-12 · cuối nhánh có `next_step` ⇒ nhảy tới bước gộp; stage giữa (nhánh kia) ⇒ `skipped` + huỷ hẹn (2 câu). */
+async function mergeJump(r: StepRepos, runId: string, load: StepJoinLoad): Promise<number | null> {
+  const to = mergeTarget(load.nextSteps ?? [], load.steps, load.step);
+  if (to === null || to === load.step + 1) return to;
+  const ids = await r.steps.skipStages(runId, skippedStages(load.steps, load.step, to));
+  await r.steps.cancelTimers(runId, ids, r.clock.now());
+  return to;
+}
+
+/**
+ * CR-122 · FLOW2-FR-15 · bước vừa xong có node Kết thúc ⇒ (H2) dữ kiện đã đổi khiến một node Nếu rẽ khác ⇒ dừng "Cần xử lý";
+ * ngược lại gọi `OutcomeHandler` của app TRONG tx này, bỏ qua mọi nhánh còn lại, chốt lượt `done`. Không phải bước Kết thúc ⇒ null.
+ */
+async function finishAt(
+  r: StepRepos,
+  runId: string,
+  load: StepJoinLoad,
+): Promise<StepOutcome | null> {
+  const fin = outcomeOfStep(load.outcomes ?? [], load.steps, load.step);
+  if (!fin) return null;
+  const first = firstIdxOfStep(load.steps, load.step);
+  const decisions = load.pack && r.steps.ifDecisions ? await r.steps.ifDecisions(runId) : [];
+  if (decisions.length > 0 && r.steps.needsAction) {
+    const keys = [
+      ...new Set(decisions.flatMap((d) => factKeysOf(load.ifs?.[d.stageIdx]?.when ?? NO_WHEN))),
+    ];
+    const ifIdx = driftedIf(decisions, load.ifs ?? [], await ifContext(r, runId, load, keys));
+    if (ifIdx !== null) {
+      const finishIdxs = stageIdxsOfStep(load.steps, load.step);
+      await r.steps.needsAction(runId, { finishIdxs, ifIdx, first });
+      return { kind: "wait", status: "needs_decision", step: load.step, stageIdx: first };
+    }
+  }
+  if (load.pack && r.steps.applyOutcome) await r.steps.applyOutcome(runId, load.pack, fin.outcome);
+  const rest = stagesAfter(load.steps, load.step);
+  if (rest.length > 0) {
+    const ids = await r.steps.skipStages(runId, rest);
+    await r.steps.cancelTimers(runId, ids, r.clock.now());
+  }
+  await r.steps.finish(runId, first);
+  return { kind: "finish", status: "done", step: load.step, stageIdx: first };
+}
+const NO_WHEN = { op: "and" as const, conds: [] };
 
 export async function settleStep(r: StepRepos, runId: string): Promise<StepOutcome | null> {
   const load = await r.steps.loadJoin(runId);
   if (!load) return null;
   const { steps, step, statuses } = load;
   const j = stepJoin({ steps, step, statuses });
+  if (j.kind !== "wait") {
+    const fin = await finishAt(r, runId, load);
+    if (fin) return fin;
+  }
   if (j.kind === "next_step") {
     const goto = await takeBranch(r, runId, load);
     const to = goto ?? j.step;

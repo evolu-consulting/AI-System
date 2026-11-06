@@ -45,7 +45,7 @@ describe("evaluateWhen", () => {
         n: "7",
         p: " mua sắm ".normalize("NFD"),
       });
-      expect(r).toEqual({ matched, hits });
+      expect(r).toEqual({ matched, hits, reads: [] });
     });
 });
 

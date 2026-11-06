@@ -132,14 +132,33 @@ export type StepJoinLoad = {
   ifs?: readonly (IfExec | null)[];
   /** CR-103 · fnr-if · `key` từng stage theo snapshot (nguồn `field` của node If gọi theo key). */
   stageKeys?: readonly string[];
+  /** CR-122 · bước gộp `next_step` của từng stage (vắng ⇒ undefined). */
+  nextSteps?: readonly (number | undefined)[];
+  /** CR-122 · node Kết thúc: `outcome` của từng stage (vắng ⇒ undefined). */
+  outcomes?: readonly (string | undefined)[];
+  /** CR-122 · bản ghi app của lượt (`pack_key`, `pack_record_id`) + sự kiện mở lượt (`snapshot.trigger.event`); vắng ⇒ null. */
+  pack?: FlowPackRef | null;
 };
+/** CR-122 · bản ghi app + sự kiện của lượt (tra `FactsReader`/`OutcomeHandler`). */
+export type FlowPackRef = { pack: string; recordId: string; event: string };
+/** CR-122 · dữ kiện app (= `FlowFacts` của kit, lớp 2 tự khai). */
+export type FlowFactsRead = Readonly<
+  Record<string, string | number | boolean | readonly string[] | null>
+>;
 /** CR-103 · fnr-if · dữ kiện đánh giá node If: `fields` output hiện hành theo `stage_idx` + input của run (`key` ⇒ giá trị). */
 export type IfFacts = {
   fieldsByIdx: Readonly<Record<string, Readonly<Record<string, string | number>>>>;
   inputs: Readonly<Record<string, string | number>>;
 };
 /** P-d2 T19 · PD2-R14 · sự kiện rẽ nhánh (thread `branch` + audit `branch` actor hệ thống). `rule` đếm từ 1. */
-export type BranchEvent = { stageIdx: number; fromStep: number; toStep: number; rule: number };
+export type BranchEvent = {
+  stageIdx: number;
+  fromStep: number;
+  toStep: number;
+  rule: number;
+  /** CR-122 · node Nếu có vế `fact`: kết quả + giá trị đã đọc (lịch sử "150.000.000 > 100.000.000 · Đúng"; so lại ở Kết thúc). */
+  facts?: { matched: boolean; reads: readonly { key: string; value: unknown }[] };
+};
 /** P-d2 T19s · D2-16 · ghi join bước; mọi câu lọc `(process_run_id|id, tenant_id)`. Gọi trong tx đã khoá run. */
 export type StepRepo = {
   /** 2 câu: đầu run (`current_step`, snapshot) + trạng thái mọi stage. `null` ⇒ không thấy run. */
@@ -166,6 +185,17 @@ export type StepRepo = {
   cancelTimers(runId: string, stageRunIds: readonly string[], now: Date): Promise<void>;
   /** T19 · 1 câu: audit `branch` + sự kiện thread `branch` (chỉ run bắt đầu từ phòng); đăng bởi poster SAU COMMIT. */
   branchEvent(runId: string, e: BranchEvent): Promise<void>;
+  /** CR-122 · ≤ 1 câu (của app): dữ kiện HIỆN TẠI qua `FactsReader` đã đăng ký; không reader / không thấy bản ghi ⇒ null. */
+  readFacts?(pack: FlowPackRef, keys: readonly string[]): Promise<FlowFactsRead | null>;
+  /** CR-122 · 1 câu: lần rẽ MỚI NHẤT của mỗi node Nếu có vế `fact` (audit `branch` có `facts`). */
+  ifDecisions?(runId: string): Promise<{ stageIdx: number; matched: boolean }[]>;
+  /** CR-122 · gọi `OutcomeHandler` của app TRONG tx này (idempotent phía app). Không handler ⇒ ném (rollback, không chốt lượt). */
+  applyOutcome?(runId: string, pack: FlowPackRef, outcome: string): Promise<void>;
+  /** CR-122 · H2 · 2 câu: stage bước Kết thúc ⇒ `needs_decision`; run ⇒ `needs_decision{reason: facts_changed, stage_idx: Nếu}`. */
+  needsAction?(
+    runId: string,
+    a: { finishIdxs: readonly number[]; ifIdx: number; first: number },
+  ): Promise<void>;
 };
 export type TxRepos = {
   readonly tenantId: string;

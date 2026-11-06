@@ -2,6 +2,7 @@
 // của run, rẽ Đúng/Sai theo bước. Chỉ khai báo kiểu (đợt này chưa đưa vào union `executor` của `./processes` — đợt wiring làm).
 // Không import `./processes` (file đó sẽ import file này) ⇒ không vòng import lúc chạy.
 import { z } from "zod";
+import { FACT_KEY_RE } from "../app-manifest/manifest";
 import { BRANCH_OPS, isIsoCalendarDate, ProcessStepSchema, STAGE_KEY_RE } from "../chat/processes";
 import { type ProcessDefIssue, resolveSteps } from "./process-steps";
 import { FIELD_KEY_RE } from "./process-tools";
@@ -20,6 +21,8 @@ export const CondFromSchema = z.discriminatedUnion("kind", [
     field: z.string().regex(FIELD_KEY_RE),
   }),
   z.strictObject({ kind: z.literal("input"), key: SourceKeySchema }),
+  /** CR-122 · FLOW2-FR-12 · dữ kiện HIỆN TẠI của bản ghi (app khai ở `AppEventDecl.facts`, đọc qua `FactsReader`). */
+  z.strictObject({ kind: z.literal("fact"), key: z.string().regex(FACT_KEY_RE) }),
 ]);
 export type CondFrom = z.infer<typeof CondFromSchema>;
 
@@ -74,6 +77,8 @@ type IfCtx = {
 function badCondCell(c: Cond, x: IfCtx): string | null {
   const own = x.steps[x.i] as number;
   let type: string | undefined;
+  // Dữ kiện: kiểu theo manifest app (không có ở đây) ⇒ chỉ kiểm phép so; kiểu/khoá kiểm với danh mục sự kiện khi lưu FlowDef.
+  if (c.from.kind === "fact") return BRANCH_OPS.includes(c.op) ? null : "op";
   if (c.from.kind === "field") {
     const f = c.from;
     const k = x.stages.findIndex((t, j) => t.key === f.stage_key && (x.steps[j] as number) < own);

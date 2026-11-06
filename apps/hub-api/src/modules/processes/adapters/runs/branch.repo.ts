@@ -48,6 +48,7 @@ async function branchEvent(tx: Tx, tenantId: string, runId: string, e: BranchEve
     from_step: e.fromStep,
     to_step: e.toStep,
     rule: e.rule,
+    ...(e.facts ? { facts: e.facts } : {}),
   };
   // PD2-R14 · audit actor hệ thống (actor_id NULL) + sự kiện thread (chỉ run bắt đầu từ phòng) — MỘT câu.
   await tx.execute(sql`with a as (

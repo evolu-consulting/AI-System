@@ -4,26 +4,42 @@
 import { resolveSteps } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { StepRepo } from "../../application/ports";
+import type { FlowPackRef, StepRepo } from "../../application/ports";
 import { type StepOutcome, settleStep } from "../../application/runs/settle-step.usecase";
 import type { BranchRule } from "../../domain/branch/branch-def.rules";
 import type { IfExec } from "../../domain/if/if.rules";
 import type { ProcessRunStatus, StageRunStatus } from "../../domain/types";
 import { branchWrites } from "./branch.repo";
+import { flowStepRepo } from "./flow-step.repo";
 import { ifFacts } from "./if-facts.repo";
 
 type SnapRule = { field: string; op: BranchRule["op"]; value: string | number; goto_step: number };
 type StepHead = {
   current_step: number;
+  pack_key: string | null;
+  pack_record_id: string | null;
   snapshot: {
+    trigger?: { event?: string };
     stages?: {
       key?: string;
       step?: number;
+      next_step?: number;
+      outcome?: string;
       executor?: { kind: string };
       after?: { branch?: SnapRule[] };
     }[];
   } | null;
 };
+
+/** CR-122 · bản ghi app + sự kiện của lượt (FlowDef mới có `trigger`); lượt cũ / không gắn gói ⇒ null. */
+const packOf = (h: StepHead): FlowPackRef | null => {
+  const event = h.snapshot?.trigger?.event;
+  return h.pack_key && h.pack_record_id && typeof event === "string"
+    ? { pack: h.pack_key, recordId: h.pack_record_id, event }
+    : null;
+};
+const intOr = (v: unknown): number | undefined =>
+  typeof v === "number" && Number.isInteger(v) ? v : undefined;
 
 /** Snapshot `after.branch` (snake_case contract) ⇒ luật domain; vắng/hỏng ⇒ `[]`. */
 const branchesOf = (stages: NonNullable<StepHead["snapshot"]>["stages"] & {}): BranchRule[][] =>
@@ -46,7 +62,10 @@ type SnapIf = {
   else_step?: number | null;
 };
 type SnapCond = {
-  from: { kind: "field"; stage_key: string; field: string } | { kind: "input"; key: string };
+  from:
+    | { kind: "field"; stage_key: string; field: string }
+    | { kind: "input"; key: string }
+    | { kind: "fact"; key: string };
   op: BranchRule["op"];
   value: string | number;
 };
@@ -72,11 +91,12 @@ const ifOf = (ex: SnapIf | undefined): IfExec | null =>
 export function stepRepo(tx: Tx, tenantId: string): StepRepo {
   return {
     ...branchWrites(tx, tenantId),
+    ...flowStepRepo(tx, tenantId),
     ifFacts: (runId) => ifFacts(tx, tenantId, runId),
     async loadJoin(runId) {
       // T19-perf · hai câu đọc độc lập gửi liền (pipeline postgres.js, một round-trip); run đã khoá ⇒ cùng ảnh.
       const [[h], rows] = await Promise.all([
-        tx.execute<StepHead>(sql`select current_step, snapshot from hub.process_runs
+        tx.execute<StepHead>(sql`select current_step, pack_key, pack_record_id, snapshot from hub.process_runs
     where id = ${runId} and tenant_id = ${tenantId}`),
         tx.execute<{ stage_idx: number; status: StageRunStatus }>(sql`select stage_idx,
     status from hub.stage_runs where process_run_id = ${runId} and tenant_id = ${tenantId}`),
@@ -91,6 +111,9 @@ export function stepRepo(tx: Tx, tenantId: string): StepRepo {
         branches: branchesOf(stages),
         ifs: stages.map((s) => ifOf(s?.executor as SnapIf | undefined)),
         stageKeys: stages.map((s) => s?.key ?? ""),
+        nextSteps: stages.map((s) => intOr(s?.next_step)),
+        outcomes: stages.map((s) => (typeof s?.outcome === "string" ? s.outcome : undefined)),
+        pack: packOf(h),
       };
     },
     async queueStep(runId, q) {
