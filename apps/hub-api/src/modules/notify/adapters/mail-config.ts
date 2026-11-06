@@ -1,11 +1,12 @@
 // CR-121 c21 (D4) · cấu hình gửi mail có MỘT nguồn = kho secret Hub: secret nền tảng (tenant_id NULL) kind `smtp_password`, giá trị là
-// JSON `{host, port, secure, user, from, password}` (mã hoá AES-GCM như mọi secret; không thêm kind ⇒ không migration).
+// JSON `{v:1, host, port, secure, user, from, password}` (mã hoá AES-GCM như mọi secret; không thêm kind ⇒ không migration).
 // Env `HUB_SMTP_*` + `SMTP_PASSWORD` chỉ KHỞI TẠO một lần (`seedMailSecret`): kho chưa có secret mail ⇒ chép từ env; đã có ⇒ giữ nguyên,
 // KHÔNG ghi đè. Mọi chỗ gửi mail đọc qua `mailConfigReader` (không đọc env). Giá trị secret không log, không đưa vào lỗi.
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Db } from "../../../lib/db";
+import { setMailConfigInvalid } from "../../../lib/mail-config-state";
 import type { NotifyCredentials } from "./credentials";
 import type { SmtpConfig } from "./smtp.transport";
 
@@ -18,6 +19,7 @@ const MAIL_KIND = "smtp_password" as const;
 const SEED_LOCK = 21_040_301;
 
 const MailConfigSchema = z.strictObject({
+  v: z.literal(1),
   host: z.string().min(1).max(253),
   port: z.number().int().min(1).max(65535),
   secure: z.boolean(),
@@ -37,6 +39,7 @@ export class MailConfigInvalid extends Error {
 
 export const encodeMailConfig = ({ smtp: s, password }: MailConfig): string =>
   JSON.stringify({
+    v: 1,
     host: s.host,
     port: s.port,
     secure: s.secure,
@@ -54,13 +57,22 @@ export function parseMailConfig(raw: string): MailConfig {
   }
   const r = MailConfigSchema.safeParse(json);
   if (!r.success) throw new MailConfigInvalid();
-  const { password, ...smtp } = r.data;
+  const { password, v: _v, ...smtp } = r.data;
   return { smtp, password };
 }
 
 /** Đọc cấu hình mail từ kho secret Hub (mỗi lần gọi: một tra id + một đọc bản mã). Chưa có ⇒ `SecretUseError("secret_missing")`. */
 export const mailConfigReader = (creds: NotifyCredentials) => (): Promise<MailConfig> =>
-  creds.use(MAIL_KIND, async (v) => parseMailConfig(v));
+  creds.use(MAIL_KIND, async (v) => {
+    try {
+      const c = parseMailConfig(v);
+      setMailConfigInvalid(false);
+      return c;
+    } catch (err) {
+      if (err instanceof MailConfigInvalid) setMailConfigInvalid(true); // cờ cho ops check, không lộ giá trị
+      throw err;
+    }
+  });
 
 export type MailSeedResult = "seeded" | "exists";
 

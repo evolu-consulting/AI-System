@@ -16,6 +16,7 @@ import { hubCredentials } from "./credentials";
 import {
   encodeMailConfig,
   type MailConfig,
+  MailConfigInvalid,
   mailConfigReader,
   type SealSecret,
   seedMailSecret,
@@ -116,6 +117,30 @@ describe("CR-121 c21 · ops check notify_config", () => {
     expect(bad.status).toBe("warn");
     expect(bad.message).toContain("Chưa cấu hình mail");
     await seedMailSecret(db, seal, A);
+    expect((await round()).status).toBe("ok");
+  });
+
+  it("secret kiểu cũ (mật khẩu thô) ⇒ đọc lỗi MailConfigInvalid, check warn riêng, tạo lại đúng định dạng ⇒ ok", async () => {
+    await reset();
+    const id = crypto.randomUUID();
+    const s = sealHubSecret(
+      key,
+      { id, kind: "smtp_password", tenantId: null },
+      "mat-khau-tron-kieu-cu",
+    );
+    await o`insert into hub.secrets (id, kind, tenant_id, name, ciphertext, iv, key_version)
+      values (${id}, 'smtp_password', null, 'kieu-cu', ${Buffer.from(s.ciphertext)}, ${Buffer.from(s.iv)}, ${s.keyVersion})`;
+    const err = await read().then(
+      () => null,
+      (e) => e,
+    );
+    expect(err).toBeInstanceOf(MailConfigInvalid);
+    const bad = await round();
+    expect(bad.status).toBe("warn");
+    expect(bad.message).toContain("không đọc được");
+    await reset();
+    await seedMailSecret(db, seal, A);
+    expect(await read()).toEqual(A);
     expect((await round()).status).toBe("ok");
   });
 });

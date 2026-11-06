@@ -7,7 +7,7 @@ migration: không
 phụ thuộc: c20 (cùng registry.ts); spec docs/specs/cr121-c/spec.md D4
 ---
 ## Plan (ngắn)
-Cấu hình gửi mail MỘT nguồn = kho secret Hub. Dùng kind sẵn có `smtp_password` (secret nền tảng, `tenant_id NULL`); giá trị là JSON `{host, port, secure, user, from, password}` (mã hoá AES-GCM như mọi secret) ⇒ KHÔNG thêm kind, KHÔNG migration (CHECK `secrets_kind_ck` giữ nguyên). Env `HUB_SMTP_*` + `SMTP_PASSWORD` chỉ thành `mailSeed`: `seedMailSecret` chèn MỘT lần khi kho chưa có secret `smtp_password` nền tảng (một câu `INSERT … WHERE NOT EXISTS` dưới `pg_advisory_xact_lock` ⇒ nhiều instance vẫn đúng một hàng; có sẵn ⇒ không đụng, không ghi đè). Mọi lần gửi đọc kho qua `mailConfigReader` → `createStoredSmtpTransport` (lấy cấu hình ở lần gửi đầu, dựng transport một lần).
+Cấu hình gửi mail MỘT nguồn = kho secret Hub. Dùng kind sẵn có `smtp_password` (secret nền tảng, `tenant_id NULL`); giá trị là JSON `{v:1, host, port, secure, user, from, password}` (mã hoá AES-GCM như mọi secret) ⇒ KHÔNG thêm kind, KHÔNG migration (CHECK `secrets_kind_ck` giữ nguyên). Env `HUB_SMTP_*` + `SMTP_PASSWORD` chỉ thành `mailSeed`: `seedMailSecret` chèn MỘT lần khi kho chưa có secret `smtp_password` nền tảng (một câu `INSERT … WHERE NOT EXISTS` dưới `pg_advisory_xact_lock` ⇒ nhiều instance vẫn đúng một hàng; có sẵn ⇒ không đụng, không ghi đè). Mọi lần gửi đọc kho qua `mailConfigReader` → `createStoredSmtpTransport` (lấy cấu hình ở lần gửi đầu, dựng transport một lần).
 
 ## Làm
 - `notify/adapters/mail-config.ts` (mới): codec JSON (zod strict, lỗi ⇒ `MailConfigInvalid` message cố định), `seedMailSecret`, `mailConfigReader`.
@@ -29,7 +29,8 @@ Không đụng DLC. VAPID (`vapid_private_key`, `HUB_VAPID_*`) giữ nguyên (ng
 ## Quyết định trong lúc làm
 - Không thêm kind `smtp_config` (cần migration sửa CHECK; lát không có số migration): dùng JSON trong `smtp_password`. Hệ quả: secret `smtp_password` kiểu cũ (chỉ là mật khẩu thô) KHÔNG còn dùng được — lúc gửi ném `MailConfigInvalid`/retry; chưa có secret như vậy ở prod (notify `off`, tài khoản gửi để trống).
 - Seed chỉ khi có `SMTP_PASSWORD` (env zod có mặc định host/port nên không phân biệt được "đã đặt" với "mặc định"); relay không xác thực phải tạo secret thủ công.
-- Đổi cấu hình trong kho có hiệu lực sau khi Hub khởi động lại (transport cache một lần, như mật khẩu trước đây).
+- Đổi cấu hình trong kho CẦN KHỞI ĐỘNG LẠI Hub (transport cache một lần, như mật khẩu trước đây; không thêm TTL).
+- Secret sai định dạng: `mailConfigReader` bật cờ trong tiến trình (`lib/mail-config-state.ts`, mã `mail_config_invalid`, không giá trị); check `notify_config` đọc cờ ⇒ warn "Cấu hình mail không đọc được — tạo lại secret" (cờ chỉ có sau lần gửi/đọc đầu của instance đó). Không giải mã trong check. Thiếu `hubSecretsKey` khi có `mailSeed` ⇒ log warn `notify_mail_secret_seed_skipped` code `hub_secrets_key_missing`.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
@@ -44,6 +45,6 @@ Máy chủ gửi, cổng, tài khoản, địa chỉ người gửi và mật kh
 - Kịch bản: khi giá trị cấu hình mail trong kho sai định dạng thì báo lỗi cấu hình không lộ giá trị [test: apps/hub-api/src/modules/notify/adapters/mail-config.test.ts » không phải JSON / thiếu trường / thừa trường / sai kiểu ⇒ MailConfigInvalid, message không chứa giá trị]
 
 ## Việc còn lại
-- Quyết định nguồn mail thứ hai: admin-api (`SMTP_URL`, `MAIL_FROM`) — chuyển sang kho Hub (cần cổng đọc secret hoặc gọi Hub) hay chấp nhận hai nơi (vi phạm Luật GỐC 1).
+- NGUỒN MAIL THỨ HAI (điều phối sẽ xếp lát): admin-api (`SMTP_URL`, `MAIL_FROM`) — chuyển sang kho Hub (cần cổng đọc secret hoặc gọi Hub) hay chấp nhận hai nơi (vi phạm Luật GỐC 1).
 - UI tạo/sửa secret nền tảng `smtp_password` (TD-223); hiện chỉ qua seed env hoặc SQL.
-- Hiệu lực khi đổi cấu hình trong kho cần khởi động lại Hub (nếu cần nóng: đọc lại theo phiên bản secret).
+- Hiệu lực khi đổi cấu hình trong kho cần khởi động lại Hub (giữ cache, không thêm TTL).

@@ -66,7 +66,11 @@ function liveConfig(d: NotifyMountDeps, e: LiveEnv): LiveNotifyConfig {
 }
 
 async function seedFromEnv(d: NotifyMountDeps, seed: MailConfig | null | undefined): Promise<void> {
-  if (!seed || !d.hubSecretsKey) return;
+  if (!seed) return;
+  if (!d.hubSecretsKey) {
+    d.log.warn("notify_mail_secret_seed_skipped", { code: "hub_secrets_key_missing" });
+    return;
+  }
   try {
     const key = d.hubSecretsKey;
     const r = await seedMailSecret(d.db, (m, v) => sealHubSecret(key, m, v), seed);

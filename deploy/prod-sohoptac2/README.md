@@ -36,6 +36,9 @@ các cổng này; public bằng tên miền ⇒ đổi `S2_PUBLIC_*`, `CORS_ORIG
   nguồn duy nhất. `HUB_SMTP_*` + `SMTP_PASSWORD` trong `.env` chỉ khởi tạo kho MỘT lần (cần `HUB_NOTIFY_MODE=live`, kho chưa có secret mail,
   có `SMTP_PASSWORD`); kho đã có ⇒ không ghi đè, đổi cấu hình ở kho chứ không ở env. `HUB_NOTIFY_MODE` mặc định `off`; kho trống ⇒
   Admin › Tình trạng hệ thống hiện cảnh báo "Cấu hình gửi mail" (không chặn khởi động). Chờ người dùng cung cấp tài khoản gửi.
+  Đổi cấu hình trong kho CẦN KHỞI ĐỘNG LẠI Hub (transport giữ cache, không có TTL). Giá trị secret là JSON `{"v":1,host,port,secure,user,from,password}`;
+  hàng `smtp_password` sai định dạng (kiểu cũ/hỏng) ⇒ check "Cấu hình gửi mail" cảnh báo "không đọc được — tạo lại secret" (sau lần gửi đầu):
+  xoá hàng đó (`delete from hub.secrets where kind='smtp_password' and tenant_id is null;` bằng role chủ DB) rồi khởi động lại Hub để seed lại từ env.
   (Mailer riêng của admin-api — `SMTP_URL`/`MAIL_FROM` — chưa chuyển về kho, xem tasks CR-121 c21.)
 
 ## AI qua gói Claude (ai-sub)
