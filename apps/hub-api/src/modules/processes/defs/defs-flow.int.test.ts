@@ -197,6 +197,10 @@ const edgeBody = (version: number, fkey: string, ftype: string, node: string) =>
       stage("xong", 2, { outcome: "approved" }),
     ],
   }),
+  // CR-122 · lát A: "Bắt đầu khi" cấp bản ghi + dữ kiện cho MỌI cạnh ⇒ def kiểm cạnh KHÔNG có trigger (null ⇒ xoá), để trường
+  // `contract_id`/`date` chỉ đến từ bước trước.
+  trigger: null,
+  app: null,
   version,
 });
 
@@ -228,14 +232,14 @@ describe("CR-122 N2 · cạnh lệch giao diện + chạy tay", () => {
       edgeBody(cur.json.version, "date", "string", "core.wait-until"),
     );
     expect(r.status).toBe(200);
-    expect(r.json.warnings).toEqual([
-      {
-        from: "dau",
-        to: "giua",
-        missing: [],
-        typeMismatch: [{ key: "date", expected: "date", got: "string" }],
-      },
-    ]);
+    // Cạnh còn có tên hiển thị + nhãn (from_name/to_name/labels) ⇒ so phần lõi.
+    expect(r.json.warnings).toHaveLength(1);
+    expect(r.json.warnings[0]).toMatchObject({
+      from: "dau",
+      to: "giua",
+      missing: [],
+      typeMismatch: [{ key: "date", expected: "date", got: "string" }],
+    });
   });
 
   it("chạy tay: node của tính năng đã tắt ⇒ 422 FLOW_NODE_FEATURE_OFF, không mở lượt", async () => {
