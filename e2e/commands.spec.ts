@@ -63,6 +63,29 @@ test("ADM-FR-20 · M2-R26 · /commands → Công cụ AI (CR-121 c16): chip Lệ
   await expect(toolRow(page, "dich")).toContainText("Đang bật");
 });
 
+test("ADM-BR-06 · CR-121 F4b · menu hàng Công cụ AI: 'Tắt lệnh' /dich → PATCH enabled=false, toast 'Đã tắt /dich' + Hoàn tác; Hoàn tác → bật lại; hàng đổi 'Đang bật'/'Đang tắt'", async ({
+  page,
+}) => {
+  await loginAdmin(page);
+  await openPage(page, "/ai-tools?kind=command", "Công cụ AI");
+  const menu = page.getByRole("button", { name: "Thao tác /dich", exact: true });
+  const patched = () =>
+    page.waitForResponse(
+      (r) => r.url().includes("/admin/commands/") && r.request().method() === "PATCH",
+    );
+  let res = patched();
+  await menu.click();
+  await page.getByRole("menuitem", { name: "Tắt lệnh", exact: true }).click();
+  expect(JSON.parse((await res).request().postData() ?? "{}")).toMatchObject({ enabled: false });
+  await expect(toolRow(page, "dich")).toContainText("Đang tắt");
+  res = patched();
+  await toast(page, "Đã tắt /dich").getByRole("button", { name: "Hoàn tác" }).click();
+  expect(JSON.parse((await res).request().postData() ?? "{}")).toMatchObject({ enabled: true });
+  await expect(toolRow(page, "dich")).toContainText("Đang bật");
+  await menu.click();
+  await expect(page.getByRole("menuitem", { name: "Tắt lệnh", exact: true })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Bật lệnh", exact: true })).toHaveCount(0);
+});
 test("ADM-BR-06 · ADM-FR-20 · editor /dich (công tắc chuyển từ danh sách): tắt 'Bật command' → Lưu (PATCH kèm version, enabled=false) → toast; bật lại → Lưu", async ({
   page,
 }) => {

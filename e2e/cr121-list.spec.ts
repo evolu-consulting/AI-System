@@ -11,8 +11,7 @@ test("CR-121 · c16 · /ai-tools (thay /commands): chip loại Lệnh → danh s
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/commands", "Công cụ AI"); // /commands (danh sách) chuyển tới /ai-tools?kind=command
-  await expect(page).toHaveURL(/\/ai-tools\?.*kind=command/);
+  await openPage(page, "/ai-tools?kind=command", "Công cụ AI");
   const shown = page.getByText(/^\d+ trong \d+ công cụ$/);
   const chip = page.getByRole("button", { name: /^Lệnh\s*\d+$/ });
   await expect(chip).toHaveAttribute("aria-pressed", "true");
@@ -28,7 +27,7 @@ test("CR-121 · c16 · /ai-tools: bấm cả hàng lệnh mở ngăn có 'Mở t
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/commands", "Công cụ AI");
+  await openPage(page, "/ai-tools?kind=command", "Công cụ AI");
   await page.getByRole("row", { name: /(?<![\w-])dich(?![\w-])/ }).click();
   const drawer = page.getByRole("dialog");
   await expect(drawer).toBeVisible();
@@ -40,7 +39,8 @@ test("CR-121 · /features: lọc không khớp → 'Không có tính năng khớ
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/features", "Features");
+  await page.goto("/features");
+  await expect(page.getByRole("heading", { level: 1, name: "Features" })).toBeVisible();
   await page.getByRole("searchbox").fill("zzz-khong-co");
   await expect(page.getByText("Không có tính năng khớp bộ lọc")).toBeVisible();
   await page.getByRole("button", { name: "Xoá bộ lọc" }).click();

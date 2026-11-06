@@ -84,3 +84,33 @@ test("ADM-FR-55 · M3-AC08 · command editor (CR-121 c16: danh sách /commands g
   expect(await dbValue("commands", ID.command.dich, "enabled")).toBe(true);
   await expect(sw).toBeChecked();
 });
+
+test("ADM-FR-55 · M3-AC08 · CR-121 F4b · menu hàng Công cụ AI: 'Tắt lệnh' /dich khi người kia sửa ngay trước lúc lưu → ConflictDialog (diff dòng enabled); Tải bản mới → toast, lệnh vẫn bật", async ({
+  page,
+  request,
+}) => {
+  await loginAdmin(page);
+  await page.goto("/ai-tools?kind=command");
+  await expect(page.getByRole("heading", { level: 1, name: "Công cụ AI" })).toBeVisible();
+  const mine = await versionOf("commands", ID.command.dich);
+  const api = await apiAsAdmin(request);
+  // Menu hàng đọc bản mới trước khi PATCH ⇒ chen bản của người kia ngay trước PATCH của mình để có lệch version thật.
+  let injected = false;
+  await page.route(`**/admin/commands/${ID.command.dich}`, async (route) => {
+    if (route.request().method() === "PATCH" && !injected) {
+      injected = true;
+      const theirs = await api.patch(`/admin/commands/${ID.command.dich}`, {
+        version: mine,
+        description: { vi: "Đã đổi" },
+      });
+      expect(theirs.status()).toBe(200);
+    }
+    await route.continue();
+  });
+  await page.getByRole("button", { name: "Thao tác /dich", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Tắt lệnh", exact: true }).click();
+  await expectConflictBody(page, { entity: "command", latest: mine + 1, mine, user: "admin" });
+  await expectDiff(page, { latest: mine + 1, fields: ["enabled"], absent: ["workflow_id"] });
+  await reloadLatest(page, mine + 1);
+  expect(await dbValue("commands", ID.command.dich, "enabled")).toBe(true);
+});

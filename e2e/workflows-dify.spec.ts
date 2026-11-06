@@ -9,23 +9,25 @@ test.beforeAll(() => {
 
 const CONSOLE = "https://dify.example.com/app/0b9f2c1e-1111-4222-8333-444455556666";
 
-test("dify-workflows · menu hàng có 'Mở trong Dify' (target _blank, noopener, link /workflow) khi API trả console_url", async ({
+test("dify-workflows · ngăn chi tiết Công cụ AI có 'Mở trong Dify' (target _blank, noopener, link /workflow) khi API trả console_url (CR-121 F4)", async ({
   page,
 }) => {
-  await page.route(/\/admin\/workflows\?/, async (route) => {
-    const res = await route.fetch();
-    const body = await res.json();
-    body.items = body.items.map((w: Record<string, unknown>) => ({
-      ...w,
-      console_url: `${CONSOLE}/workflow`,
-    }));
-    await route.fulfill({ response: res, json: body });
-  });
+  await page.route(
+    new RegExp(`/admin/workflows/${ID.workflow.translate}(\\?|$)`),
+    async (route) => {
+      const res = await route.fetch();
+      const body = await res.json();
+      await route.fulfill({ response: res, json: { ...body, console_url: `${CONSOLE}/workflow` } });
+    },
+  );
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
-  const row = page.getByRole("table", { name: "Workflow Dify (tool AI)" }).getByRole("row").nth(1);
-  await row.getByRole("button", { name: "Thao tác khác" }).click();
-  const link = page.getByRole("menuitem", { name: "Mở trong Dify" });
+  await openPage(page, "/ai-tools?kind=workflow", "Công cụ AI");
+  await page
+    .getByRole("table", { name: "Công cụ AI" })
+    .getByRole("row")
+    .filter({ hasText: "Workflow translate" })
+    .click();
+  const link = page.getByRole("link", { name: "Mở trong Dify" });
   await expect(link).toHaveAttribute("href", `${CONSOLE}/workflow`);
   await expect(link).toHaveAttribute("target", "_blank");
   await expect(link).toHaveAttribute("rel", /noopener/);

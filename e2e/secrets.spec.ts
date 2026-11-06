@@ -152,7 +152,7 @@ test("ADM-FR-50 · M2-R01 · M2-R04 · validate: tên 'a' → 'Chỉ dùng chữ
   await expect(drawer.getByText("Tên secret đã tồn tại")).toBeVisible();
 });
 
-test("ADM-FR-50 · M2-R04 · AC-A06 · Thay giá trị: dialog 'DIFY_TRANSLATE_KEY', dòng hiện tại •••• 7f3a, ô Giá trị mới TRỐNG, DependencyList translate; lưu → toast + nút 'Xem các workflow dùng secret này' → /workflows?secret=; không rò LEAK_2", async ({
+test("ADM-FR-50 · M2-R04 · AC-A06 · Thay giá trị: dialog 'DIFY_TRANSLATE_KEY', dòng hiện tại •••• 7f3a, ô Giá trị mới TRỐNG, DependencyList translate; lưu → toast + nút 'Xem các workflow dùng secret này' → /ai-tools?kind=workflow&secret= (chip 'Dùng secret …'); không rò LEAK_2", async ({
   page,
 }) => {
   await loginAdmin(page);
@@ -178,8 +178,14 @@ test("ADM-FR-50 · M2-R04 · AC-A06 · Thay giá trị: dialog 'DIFY_TRANSLATE_K
   await expect(t).toBeVisible();
   expect(await leaksOnPage(page, traffic, leakForms(LEAK_2))).toEqual([]);
   await t.getByRole("button", { name: "Xem các workflow dùng secret này" }).click();
-  // CR-121 c16: /workflows chuyển sang Công cụ AI (chưa có bộ lọc theo secret — xem báo cáo lát: Lỗi sản phẩm).
-  await expect(page).toHaveURL(/\/ai-tools\?.*kind=workflow/);
+  // CR-121 F4: nút trỏ tới Công cụ AI lọc theo secret (chip "Dùng secret X").
+  await expect(page).toHaveURL(/\/ai-tools\?(?=.*kind=workflow)(?=.*secret=DIFY_TRANSLATE_KEY)/);
+  await expect(page.getByText("Dùng secret DIFY_TRANSLATE_KEY")).toBeVisible();
+  await expect(
+    page
+      .getByRole("table", { name: "Công cụ AI" })
+      .getByRole("row", { name: /Workflow translate/ }),
+  ).toBeVisible();
 });
 
 test("ADM-FR-50 · M2-R04 · Sửa ghi chú: chỉ có ô Ghi chú (không có ô giá trị); lưu → hàng đổi ghi chú, •••• 7f3a giữ nguyên", async ({

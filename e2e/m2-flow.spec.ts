@@ -95,8 +95,9 @@ test("ADM-FR-50 · M2-AC09 · admin seed → Secrets (thêm) → Workflows (tạ
   await expect(page).toHaveURL(/\/commands\/[0-9a-f-]{36}$/);
 
   // 4. Features: tạo feature chứa command, cấp cho acme
-  // CR-121: Features không còn mục sidebar; trang /features vào bằng URL.
-  await page.goto("/features");
+  // CR-121 F5: Features vào từ thẻ "Danh mục tính năng" ở màn Hệ thống.
+  await openSystemEntry(page, "Danh mục tính năng");
+  await expect(page).toHaveURL(/\/features$/);
   await expect(page.getByRole("heading", { level: 1, name: "Features" })).toBeVisible();
   await page.getByRole("link", { name: "+ Tạo feature" }).click();
   await expect(page).toHaveURL(/\/features\/new$/);
@@ -117,11 +118,16 @@ test("ADM-FR-50 · M2-AC09 · admin seed → Secrets (thêm) → Workflows (tạ
   await page.getByRole("option", { name: /acme/ }).click();
   await expect(toast(page, "Đã cấp Gói E2E cho acme")).toBeVisible();
 
-  // 5. Xoá translate-e2e bị chặn (API; CR-121 c16 đã gỡ danh sách /workflows cùng nút Xoá): 409 liệt kê command /dich-e2e
-  const blocked = await page.request.delete(`/admin/workflows/${wfId}`);
-  expect(blocked.status()).toBe(409);
-  expect(JSON.stringify(await blocked.json())).toContain("dich-e2e");
-  // Dữ liệu cuối + không rò secret
+  // 5. Xoá translate-e2e từ menu hàng Công cụ AI (CR-121 F4) bị chặn: hộp thoại liệt kê lệnh /dich-e2e
+  await page.goto("/ai-tools?kind=workflow");
+  await page.getByRole("searchbox", { name: "Tìm công cụ" }).fill("translate");
+  await page.getByRole("button", { name: "Thao tác Translate e2e", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Xoá", exact: true }).click();
+  const blocked = page.getByRole("alertdialog", { name: /Không xoá được translate-e2e/ });
+  await expect(blocked).toBeVisible();
+  await expect(blocked.getByRole("link", { name: "/dich-e2e" })).toBeVisible();
+  await blocked.getByRole("button", { name: "Đóng" }).click();
+  expect(wfId).not.toBe(""); // Dữ liệu cuối + không rò secret
   const [ent] = await withOwner(
     (sql) => sql`select count(*)::int as n from admin.feature_entitlements e
       join admin.features f on f.id = e.feature_id join admin.tenants t on t.id = e.tenant_id

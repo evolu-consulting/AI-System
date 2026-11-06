@@ -1,4 +1,4 @@
-// ADM-FR-55 · M3-AC08 · ConflictDialog cho Workflow: editor + công tắc ở danh sách — câu CÓ {user} (A4, workflow có updated_by).
+// ADM-FR-55 · M3-AC08 · ConflictDialog cho Workflow: editor + Bật/Tắt ở menu hàng Công cụ AI (CR-121 F4) — câu CÓ {user} (A4, workflow có updated_by).
 // TECH-DEBT #14: sau Ghi đè/Tải bản mới form dựng lại đúng version. Test-plan E-CW.
 import { expect, type Page, test } from "@playwright/test";
 import {
@@ -66,24 +66,29 @@ test("ADM-FR-55 · M3-AC08 · workflow editor: Tải bản mới → toast v2, �
   expect(await versionOf("workflows", ID.workflow.translate)).toBe(latest + 1);
 });
 
-test("ADM-FR-55 · M3-AC08 · workflow danh sách: bật report-export khi người kia đã sửa → ConflictDialog (diff một dòng enabled); Tải bản mới → toast + hàng cập nhật; không còn nút 'Tải lại'", async ({
+test("ADM-FR-55 · M3-AC08 · workflow menu hàng Công cụ AI: bật report-export khi người kia sửa ngay trước lúc lưu → ConflictDialog (diff một dòng enabled); Tải bản mới → toast + hàng cập nhật", async ({
   page,
   request,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
-  const row = page
-    .getByRole("table", { name: "Workflow Dify (tool AI)" })
-    .getByRole("row")
-    .filter({ hasText: "report-export" });
+  await openPage(page, "/ai-tools?kind=workflow", "Công cụ AI");
+  const table = page.getByRole("table", { name: "Công cụ AI" });
   const mine = await versionOf("workflows", ID.workflow.reportExport);
   const api = await apiAsAdmin(request);
-  const theirs = await api.patch(`/admin/workflows/${ID.workflow.reportExport}`, {
-    version: mine,
-    name: "Report export sửa",
+  // Menu hàng luôn đọc bản mới trước khi PATCH ⇒ chen bản của người kia ngay trước PATCH của mình để có lệch version thật.
+  let injected = false;
+  await page.route(`**/admin/workflows/${ID.workflow.reportExport}`, async (route) => {
+    if (route.request().method() === "PATCH" && !injected) {
+      injected = true;
+      const theirs = await api.patch(`/admin/workflows/${ID.workflow.reportExport}`, {
+        version: mine,
+        name: "Report export sửa",
+      });
+      expect(theirs.status()).toBe(200);
+    }
+    await route.continue();
   });
-  expect(theirs.status()).toBe(200);
-  await row.getByRole("button", { name: "Thao tác khác" }).click();
+  await page.getByRole("button", { name: "Thao tác Workflow report-export", exact: true }).click();
   await page.getByRole("menuitem", { name: "Bật", exact: true }).click();
   await expectConflictBody(page, { entity: "workflow", latest: mine + 1, mine, user: "admin" });
   await expectDiff(page, {
@@ -93,5 +98,5 @@ test("ADM-FR-55 · M3-AC08 · workflow danh sách: bật report-export khi ngư�
   });
   await reloadLatest(page, mine + 1);
   expect(await dbValue("workflows", ID.workflow.reportExport, "enabled")).toBe(false);
-  await expect(row).toContainText("Report export sửa");
+  await expect(table.getByRole("row").filter({ hasText: "Report export sửa" })).toBeVisible();
 });

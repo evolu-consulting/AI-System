@@ -8,14 +8,16 @@ test.beforeAll(() => {
   resetFixture();
 });
 
-/** Hàng bảng Workflows theo key (không nhầm 'report-tax' với 'report-tax-2'). */
+/** CR-121 F4: danh sách workflow nay là `/ai-tools?kind=workflow` (bảng "Công cụ AI"); tên hiển thị seed = "Workflow <key>". */
+const LIST = "/ai-tools?kind=workflow";
+const openList = (page: Page, path = LIST) => openPage(page, path, "Công cụ AI");
+/** Hàng bảng Công cụ AI theo key (không nhầm 'report-tax' với 'report-tax-2'). */
 const wfRow = (page: Page, key: string) =>
   page
-    .getByRole("table", { name: "Workflow Dify (tool AI)" })
-    .getByRole("row")
-    .filter({ hasText: new RegExp(`(?<![\\w-])${key}(?![\\w-])`) });
+    .getByRole("table", { name: "Công cụ AI" })
+    .getByRole("row", { name: new RegExp(`(?<![\\w-])${key}(?![\\w-])`) });
 const rowMenu = async (page: Page, key: string, item: string) => {
-  await wfRow(page, key).getByRole("button", { name: "Thao tác khác" }).click();
+  await page.getByRole("button", { name: `Thao tác Workflow ${key}`, exact: true }).click();
   await page.getByRole("menuitem", { name: item, exact: true }).click();
 };
 /** Mở trang editor (mới/sửa) và chờ ô Key ở tab Thông tin (không phụ thuộc nhãn heading). */
@@ -27,42 +29,41 @@ const desc = (n: number) => "d".repeat(n);
 const descBox = (page: Page) => page.getByRole("textbox", { name: "Mô tả", exact: true });
 const DESC_ERR = "Mô tả dài 20–400 ký tự";
 
-test("ADM-FR-14 · M2-R26 · /workflows: heading, bảng, chip Tất cả 5 / Bật 4 / Tắt 1 / Chưa gắn 1, hàng report-tax có 'Chưa gắn'; chip 'Chưa gắn' → URL status=unattached và API attached=false; tìm kiếm", async ({
+test("ADM-FR-14 · M2-R26 · /ai-tools?kind=workflow (CR-121 F4): bảng Công cụ AI, chip Workflow 5 đang bấm, nút 'Tạo workflow'; tìm 'invoice' còn invoice-check; ?secret= → chip 'Dùng secret …' chỉ còn workflow dùng secret đó, bỏ chip → đủ lại; /workflows?secret= cũ chuyển hướng", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
-  await expect(page.getByRole("table", { name: "Workflow Dify (tool AI)" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "+ Khai báo workflow" })).toBeVisible();
-  for (const [label, n] of [
-    ["Tất cả", 5],
-    ["Bật", 4],
-    ["Tắt", 1],
-    ["Chưa gắn", 1],
-  ] as const) {
-    await expect(page.getByRole("radio", { name: new RegExp(`${label}\\s*${n}`) })).toBeVisible();
-  }
-  await expect(wfRow(page, "report-tax")).toContainText("Chưa gắn");
-  const resp = page.waitForResponse(
-    (r) => r.url().includes("/admin/workflows") && r.url().includes("attached=false"),
+  await openList(page);
+  await expect(page.getByRole("table", { name: "Công cụ AI" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Tạo workflow" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Workflow\s*5$/ })).toHaveAttribute(
+    "aria-pressed",
+    "true",
   );
-  await page.getByRole("radio", { name: /Chưa gắn/ }).click();
-  await resp;
-  await expect(page).toHaveURL(/status=unattached/);
-  await expect(wfRow(page, "report-tax")).toBeVisible();
-  await expect(wfRow(page, "translate")).toHaveCount(0);
-  await page.getByRole("radio", { name: /Tất cả/ }).click();
-  await page.getByRole("searchbox", { name: "Tìm theo tên, key, mô tả…" }).fill("invoice");
+  await expect(page).toHaveURL(/kind=workflow/);
+  await expect(wfRow(page, "report-tax")).toBeVisible({ timeout: 20_000 }); // lần tải đầu của bảng gộp (usage) trên stack lạnh
+  await expect(wfRow(page, "translate")).toBeVisible();
+  await page.getByRole("searchbox", { name: "Tìm công cụ" }).fill("invoice");
   await expect(wfRow(page, "invoice-check")).toBeVisible();
   await expect(wfRow(page, "translate")).toHaveCount(0);
+  await openList(page, `${LIST}&secret=DIFY_INVOICE_KEY`);
+  const chip = page.getByText("Dùng secret DIFY_INVOICE_KEY");
+  await expect(chip).toBeVisible();
+  await expect(wfRow(page, "report-tax")).toBeVisible();
+  await expect(wfRow(page, "translate")).toHaveCount(0);
+  await page.getByRole("button", { name: "Bỏ lọc secret DIFY_INVOICE_KEY" }).click();
+  await expect(chip).toHaveCount(0);
+  await expect(wfRow(page, "translate")).toBeVisible();
+  await page.goto("/workflows?secret=DIFY_INVOICE_KEY");
+  await expect(page).toHaveURL(/\/ai-tools\?.*secret=DIFY_INVOICE_KEY/);
+  await expect(page.getByText("Dùng secret DIFY_INVOICE_KEY")).toBeVisible();
 });
-
 test("ADM-FR-10 · M2-AC07 · form khai báo: mô tả 19 ký tự → lỗi, 20 → hết lỗi, 400 ok, 401 → lỗi; Base URL ftp:// → lỗi; bỏ trống + Lưu → lỗi, không gửi request", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
-  await page.getByRole("link", { name: "+ Khai báo workflow" }).click();
+  await openList(page);
+  await page.getByRole("link", { name: "Tạo workflow" }).click();
   await expect(page).toHaveURL(/\/workflows\/new$/);
   const posts: string[] = [];
   page.on("request", (r) => {
@@ -92,7 +93,7 @@ test("ADM-FR-10 · M2-AC07 · form khai báo: mô tả 19 ký tự → lỗi, 20
   ).toBeVisible();
 });
 
-test("ADM-FR-14 · AC-A13 · khai báo workflow không gắn command/agent: lưu được → /workflows/<uuid>, badge 'Chưa gắn'; danh sách có nhãn 'Chưa gắn'", async ({
+test("ADM-FR-14 · AC-A13 · khai báo workflow không gắn command/agent: lưu được → /workflows/<uuid>, badge 'Chưa gắn'; danh sách Công cụ AI có hàng workflow mới", async ({
   page,
 }) => {
   await loginAdmin(page);
@@ -115,8 +116,11 @@ test("ADM-FR-14 · AC-A13 · khai báo workflow không gắn command/agent: lưu
   expect((await saved).status()).toBe(201);
   await expect(page).toHaveURL(/\/workflows\/[0-9a-f-]{36}$/);
   await expect(page.getByText("Chưa gắn").first()).toBeVisible();
-  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
-  await expect(wfRow(page, "report-tax-2")).toContainText("Chưa gắn");
+  await openList(page);
+  // tên nghiệp vụ "Report tax 2" (mã workflow không hiện trên bảng)
+  await expect(
+    page.getByRole("table", { name: "Công cụ AI" }).getByRole("row", { name: /Report tax 2/ }),
+  ).toBeVisible();
 });
 
 test("ADM-FR-11 · M2-R08 · SchemaEditor: Kiểu=select → hiện 'Lựa chọn 1'; mô tả tham số rỗng → lỗi; ↑↓ đổi thứ tự; xoá tham số; tối đa 50 → '+ Thêm tham số' bị khoá", async ({
@@ -182,11 +186,11 @@ test("ADM-FR-11 · M2-R08 · tab 'Model thấy gì': preview đúng tên tham s�
   expect(calls).toEqual([]);
 });
 
-test("ADM-FR-13 · AC-A05 · xoá translate (command /dich + agent …02a1): alertdialog 'Không xoá được translate' liệt kê link '/dich' và 'Agent …', nút Đóng; workflow vẫn còn", async ({
+test("ADM-FR-13 · AC-A05 · xoá translate từ menu hàng Công cụ AI (command /dich + agent …02a1): alertdialog 'Không xoá được translate' liệt kê link '/dich' và 'Agent …', nút Đóng; workflow vẫn còn", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
+  await openList(page);
   await rowMenu(page, "translate", "Xoá");
   const dialog = page.getByRole("alertdialog", { name: /Không xoá được translate/ });
   await expect(dialog).toBeVisible();
@@ -197,10 +201,18 @@ test("ADM-FR-13 · AC-A05 · xoá translate (command /dich + agent …02a1): ale
   await expect(wfRow(page, "translate")).toBeVisible();
 });
 
-test("ADM-FR-15 · M2-R10 · cột 'Đang được dùng bởi' mở Popover: command + agent; tab 'Đang được dùng bởi' của translate hiện cả hai", async ({
+test("ADM-FR-15 · M2-R10 · ngăn chi tiết Công cụ AI (bấm hàng translate): công tắc 'Bật toàn hệ thống' đang bật, Secret DIFY_TRANSLATE_KEY, 'Dùng bởi' có /dich + Agent …; tab 'Đang được dùng bởi' của editor hiện cả hai", async ({
   page,
 }) => {
   await loginAdmin(page);
+  await openList(page);
+  await wfRow(page, "translate").click();
+  await expect(page.getByRole("switch", { name: "Bật toàn hệ thống" })).toBeChecked();
+  await expect(page.getByText("DIFY_TRANSLATE_KEY").first()).toBeVisible();
+  const used = page.getByRole("region", { name: "Dùng bởi" });
+  await expect(used.getByRole("link", { name: "/dich" })).toBeVisible();
+  await expect(used).toContainText("Agent …");
+  await expect(page.getByRole("button", { name: "Xoá", exact: true })).toBeVisible();
   await openEditor(page, `/workflows/${ID.workflow.translate}`);
   await page.getByRole("tab", { name: "Đang được dùng bởi" }).click();
   const panel = page.getByRole("tabpanel");
@@ -208,11 +220,11 @@ test("ADM-FR-15 · M2-R10 · cột 'Đang được dùng bởi' mở Popover: co
   await expect(panel).toContainText("Agent …");
 });
 
-test("ADM-FR-13 · M2-R11 · xoá workflow không dùng (report-tax): alertdialog 'Xoá report-tax?' gõ key mới bật 'Xoá workflow' → biến mất khỏi bảng", async ({
+test("ADM-FR-13 · M2-R11 · xoá workflow không dùng (report-tax): alertdialog 'Xoá report-tax?' gõ key mới bật 'Xoá workflow' → biến mất khỏi bảng Công cụ AI", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
+  await openList(page);
   await rowMenu(page, "report-tax", "Xoá");
   const dialog = page.getByRole("alertdialog", { name: "Xoá report-tax?" });
   await expect(dialog).toBeVisible();
@@ -232,7 +244,7 @@ test("ADM-FR-13 · M2-AC06 · tắt translate khi còn command bật/agent → d
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/workflows", "Workflow Dify (tool AI)");
+  await openList(page);
   await rowMenu(page, "translate", "Tắt");
   const blocked = page.getByRole("alertdialog", { name: /Không tắt được translate/ });
   await expect(blocked).toBeVisible();
