@@ -16,7 +16,8 @@ phụ thuộc: spec docs/specs/cr121-c/spec.md
 | c10 · Nav 6 mục | 1 | `Main` | UI | thường | — |
 | c18 · gỡ `contracts-approval-engine` + cột `admin.features.app` | 1 | — (Q-1 lọc Ứng dụng) | migration + admin-api + admin-web | cao | — |
 | c16 · Công cụ AI + bật/tắt Dify theo công ty + "Dùng bởi" | 1→2 (sau c10, trước c11; D6; người dùng đồng ý) | `AiTools` | UI + API đọc | thường (endpoint role/cách ly) | c10 |
-| c11 · Công ty › Quy trình | 2 | `CompanyFlows`, `Tpl-Detail` | UI | thường | c9, c10, c16 |
+| c9b · launch bản riêng của công ty (bản sao `slot NULL`, không release: `ROUTE_SLOT_SQL`/`RESOLVE_SLOT_SQL`/`routing.repo.assignedOf` đọc `slot_body` bản riêng, rel = `source_rel_version`) — bẫy c9 | 2 (song song c16) | — | API hub-api (đường launch) | cao (Sonnet high + Opus low) | c9 |
+| c11 · Công ty › Quy trình | 2 | `CompanyFlows`, `Tpl-Detail` | UI | thường | c9, c9b, c10, c16 |
 | c19 · check vai app ↔ vai hub | 2 | — | ops check | cao | c18 |
 | c20 · tên công ty một nguồn (`company_name`) | 2 | — | migration pack-contracts + chuyển chỗ đọc + check | cao | c19 (cùng `registry.ts`) |
 | c12 · Công ty › Ứng dụng bảng + LevelControl + ⓘ | 3 | `Company` | UI | thường | c11, c18 |
@@ -24,7 +25,8 @@ phụ thuộc: spec docs/specs/cr121-c/spec.md
 | c14 · 5 tab công ty (platform_admin + tenant_admin) | 3 | `Tpl-Settings` | UI | thường | c13, c16 |
 | c21 · cấu hình mail một nguồn | 3 | — | config + ops check | cao | c20 |
 | c15 · Thư viện đối chiếu | 4 | `Library` | UI | thường | c13, c11 |
-| c17 · Trình sửa đối chiếu + chỉ xem + Sao chép | 4 | `Tpl-Editor` (đối chiếu `Tpl-Run`) | UI | thường | c9, c11, c15 |
+| c17 · Trình sửa đối chiếu + chỉ xem + Sao chép (+ mã lỗi `NOT_LIBRARY_DEF`, `SLOT_GONE` ở `features/processes/lib/errors.ts` + i18n) | 4 | `Tpl-Editor` (đối chiếu `Tpl-Run`) | UI | thường | c9, c11, c15 |
+| c22 · màn "Hệ thống" (mục nav thứ 6) gom Chi phí · Nhật ký · Góp ý · Secrets · Nguồn · Bước DLC (chỉ link) · Import/Export; tenant_admin thấy Chi phí/Nhật ký/Góp ý của công ty mình — bẫy c10 | 3 | `Main` | UI | thường | c10 |
 
 Nối tiếp: c9 ‖ c10 ‖ c18 (file không chung); c16 sau c10; c11 → c12 → c13 → c14; c15 → c17 (nối tiếp, KHÔNG song song). `ops/adapters/checks/registry.ts` sửa tuần tự c18 → c19 → c20 → c21. i18n: mỗi lát một namespace riêng (c18: `features.app.*`), merge driver JSON.
 
