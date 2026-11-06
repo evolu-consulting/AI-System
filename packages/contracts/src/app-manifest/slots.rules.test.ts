@@ -19,6 +19,7 @@ const app = (slots: AppSlotDecl[], key = "demo"): AppManifest => ({
   addons: [],
   nav: [],
   slots,
+  events: [],
 });
 const rules = (m: AppManifest[]) => appSlotIssues(m).map((i) => i.rule);
 

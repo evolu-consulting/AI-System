@@ -41,6 +41,15 @@ export type { ContextLabeler, ContextSource } from "./application/context.ports"
 export type { ExtDirectory, ExternalOrgResolver } from "./application/ext-org.ports";
 export type { FlowActError, FlowActOutcome, FlowSlotAdapter } from "./application/flow.ports";
 export { flowRuntime, flowRuntimeOn } from "./application/flow.ports";
+export type {
+  FactsReader,
+  FlowEventInput,
+  FlowFacts,
+  FlowFactValue,
+  OutcomeHandler,
+  OutcomeInput,
+  OutcomeResult,
+} from "./application/flow-events.ports";
 export type { KitTxRepos } from "./application/index-outbox";
 export type { Notifier, NotifyInput, NotifyTxRepos } from "./application/notify";
 export { orgForTenant } from "./application/pack-files.ports";

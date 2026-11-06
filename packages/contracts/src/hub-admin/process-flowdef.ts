@@ -1,0 +1,206 @@
+// CR-122 · ADR-0038 · FLOW2-FR-01/02/12/15 · flow-model.md mục A: MỘT định dạng `FlowDef` cho Thư viện, bản công ty, mẫu chạy thử.
+// `stages` = định dạng stage engine hiện có (`ProcessStageDefSchema`, + `next_step`, `outcome`); thêm `trigger {event, when?}`.
+// `parseFlowDef` nhận cả def/snapshot CŨ (không `trigger`) ⇒ hợp lệ để chạy nốt lượt cũ (`legacy: true`, không áp luật mới).
+// Không import vào `./processes` (file này import nó) ⇒ không vòng import; export qua `hub-admin/index.ts`.
+import { z } from "zod";
+import { APP_KEY_RE } from "../app-catalog";
+import {
+  type AppEventDecl,
+  type AppFactType,
+  FACT_KEY_RE,
+  FLOW_EVENT_KEY_RE,
+} from "../app-manifest/manifest";
+import { PROCESS_NAME_MAX, PROCESS_STAGES_MAX, ProcessKeySchema } from "../chat/processes";
+import { IF_CONDS_MAX, IF_CONDS_MIN, IF_VALUE_MAX } from "./process-if";
+import { resolveSteps } from "./process-steps";
+import { type ProcessStageDef, ProcessStageDefSchema } from "./processes";
+
+/** Trần số BƯỚC (không phải stage — một bước có ≤ 3 stage song song) của một flow. */
+export const FLOW_STEPS_MAX = 20;
+export const FLOW_OWNERS = ["library", "company"] as const;
+export type FlowOwner = (typeof FLOW_OWNERS)[number];
+/** So sánh dữ kiện: như `BRANCH_OPS` + `in` (thuộc danh sách, cho `enum`/`department`). */
+export const FACT_OPS = ["eq", "ne", "lt", "le", "gt", "ge", "in"] as const;
+export type FactOp = (typeof FACT_OPS)[number];
+export const FACT_IN_MAX = 50;
+
+export const FactCondSchema = z.strictObject({
+  fact: z.string().regex(FACT_KEY_RE),
+  op: z.enum(FACT_OPS),
+  value: z.union([
+    z.string().max(IF_VALUE_MAX),
+    z.number(),
+    z.boolean(),
+    z.array(z.string().max(IF_VALUE_MAX)).min(1).max(FACT_IN_MAX),
+  ]),
+});
+export type FactCond = z.infer<typeof FactCondSchema>;
+const WhenOp = z.enum(["and", "or"]);
+export const FactCondGroupSchema = z.strictObject({
+  op: WhenOp,
+  conds: z.array(FactCondSchema).min(IF_CONDS_MIN).max(IF_CONDS_MAX),
+});
+/** AND/OR lồng MỘT cấp, ≤ 6 vế mỗi cấp (FLOW2-FR-12) — cùng control dựng điều kiện cho Bắt đầu khi và Nếu (FR-16). */
+export const FactWhenSchema = z.strictObject({
+  op: WhenOp,
+  conds: z
+    .array(z.union([FactCondSchema, FactCondGroupSchema]))
+    .min(IF_CONDS_MIN)
+    .max(IF_CONDS_MAX),
+});
+export type FactWhen = z.infer<typeof FactWhenSchema>;
+
+/** Node Bắt đầu khi: sự kiện trong `AppManifest.events` + điều kiện tuỳ chọn trên dữ kiện lúc sự kiện. */
+export const FlowTriggerSchema = z.strictObject({
+  event: z.string().regex(FLOW_EVENT_KEY_RE),
+  when: FactWhenSchema.optional(),
+});
+export type FlowTrigger = z.infer<typeof FlowTriggerSchema>;
+
+/** Chỉ bản công ty: bản Thư viện đã sao (= `source_ref` + `source_rel_version` hiện có). */
+export const FlowSourceSchema = z.strictObject({
+  flow_key: ProcessKeySchema,
+  version: z.number().int().min(1),
+});
+
+export const FlowDefBaseSchema = z.strictObject({
+  key: ProcessKeySchema,
+  name: z.string().trim().min(1).max(PROCESS_NAME_MAX),
+  app: z.string().regex(APP_KEY_RE),
+  owner: z.enum(FLOW_OWNERS),
+  trigger: FlowTriggerSchema,
+  stages: z.array(ProcessStageDefSchema).min(1).max(PROCESS_STAGES_MAX),
+  source: FlowSourceSchema.nullable().default(null),
+  /** Số bản xuất bản; nháp ⇒ null. */
+  version: z.number().int().min(1).nullable().default(null),
+});
+type FlowDefParsed = z.infer<typeof FlowDefBaseSchema>;
+export type FlowDef = Omit<FlowDefParsed, "stages"> & { stages: ProcessStageDef[] };
+
+export const FLOW_DEF_RULES = [
+  "FLOW_TOO_MANY_STEPS",
+  "FLOW_NO_FINISH",
+  "FLOW_FINISH_NEXT",
+  "FLOW_NEXT_STEP_INVALID",
+  "FLOW_SOURCE_OWNER",
+  "FLOW_EVENT_UNKNOWN",
+  "FLOW_OUTCOME_UNKNOWN",
+  "FLOW_WHEN_INVALID",
+] as const;
+export type FlowDefRule = (typeof FLOW_DEF_RULES)[number];
+export type FlowDefIssue = { path: string; rule: FlowDefRule };
+const ISSUES_MAX = 20;
+
+type FlowDefShape = {
+  owner: FlowOwner;
+  trigger: FlowTrigger;
+  source?: unknown;
+  stages: readonly { step?: number; next_step?: number; outcome?: string }[];
+};
+
+function stageIssues(d: FlowDefShape, add: (p: string, r: FlowDefRule) => void): void {
+  const steps = resolveSteps(d.stages);
+  const count = steps.length === 0 ? 0 : Math.max(...steps) + 1;
+  if (new Set(steps).size > FLOW_STEPS_MAX) add("stages", "FLOW_TOO_MANY_STEPS");
+  if (!d.stages.some((s) => s.outcome !== undefined)) add("stages", "FLOW_NO_FINISH");
+  d.stages.forEach((s, i) => {
+    if (s.outcome !== undefined && s.next_step !== undefined)
+      add(`stages.${i}.next_step`, "FLOW_FINISH_NEXT");
+    const n = s.next_step;
+    if (n !== undefined && (n <= (steps[i] as number) || n >= count))
+      add(`stages.${i}.next_step`, "FLOW_NEXT_STEP_INVALID");
+  });
+}
+
+const ORDER_OPS: ReadonlySet<string> = new Set(["lt", "le", "gt", "ge"]);
+/** Vế điều kiện khớp kiểu dữ kiện app khai (null ⇒ hợp lệ). */
+function condOk(c: FactCond, type: AppFactType): boolean {
+  const v = c.value;
+  if (c.op === "in") return Array.isArray(v) && (type === "enum" || type === "department");
+  if (Array.isArray(v)) return false;
+  if (ORDER_OPS.has(c.op))
+    return type === "number" ? typeof v === "number" : type === "date" && typeof v === "string";
+  if (type === "number") return typeof v === "number";
+  if (type === "boolean") return typeof v === "boolean";
+  return typeof v === "string";
+}
+
+function whenIssues(w: FactWhen, ev: AppEventDecl, add: (p: string, r: FlowDefRule) => void) {
+  const types = new Map(ev.facts.map((f) => [f.key, f.type]));
+  const check = (c: FactCond, path: string) => {
+    const t = types.get(c.fact);
+    if (t === undefined || !condOk(c, t)) add(path, "FLOW_WHEN_INVALID");
+  };
+  w.conds.forEach((c, j) => {
+    const base = `trigger.when.conds.${j}`;
+    if ("fact" in c) check(c, base);
+    else
+      c.conds.forEach((g, k) => {
+        check(g, `${base}.conds.${k}`);
+      });
+  });
+}
+
+/**
+ * Luật chéo của FlowDef MỚI (≤ 20 bước, ≥ 1 Kết thúc, `next_step` tiến về sau, Kết thúc không đi tiếp, `source` chỉ ở bản công ty).
+ * `events` (sự kiện của app sở hữu flow) có ⇒ kiểm thêm: sự kiện thuộc app, `outcome` thuộc sự kiện, điều kiện đúng dữ kiện + kiểu.
+ * Luật từng loại node (If, Form, Chờ…) vẫn ở `processDefStageIssues` — Hub gọi khi lưu như cũ.
+ */
+export function flowDefIssues(d: FlowDefShape, events?: readonly AppEventDecl[]): FlowDefIssue[] {
+  const out: FlowDefIssue[] = [];
+  const add = (path: string, rule: FlowDefRule) => out.push({ path, rule });
+  stageIssues(d, add);
+  if (d.owner === "library" && d.source != null) add("source", "FLOW_SOURCE_OWNER");
+  if (events) {
+    const ev = events.find((e) => e.key === d.trigger.event);
+    if (!ev) add("trigger.event", "FLOW_EVENT_UNKNOWN");
+    else {
+      const outs = new Set(ev.outcomes.map((o) => o.key));
+      d.stages.forEach((s, i) => {
+        if (s.outcome !== undefined && !outs.has(s.outcome))
+          add(`stages.${i}.outcome`, "FLOW_OUTCOME_UNKNOWN");
+      });
+      if (d.trigger.when) whenIssues(d.trigger.when, ev, add);
+    }
+  }
+  return out.slice(0, ISSUES_MAX);
+}
+
+/** Hình + luật chéo (không có danh mục sự kiện — route gọi `flowDefIssues(def, manifest.events)` để kiểm đủ). */
+export const FlowDefSchema = FlowDefBaseSchema.superRefine((d, ctx) => {
+  for (const it of flowDefIssues(d)) {
+    ctx.addIssue({ code: "custom", path: it.path.split("."), message: it.rule });
+  }
+});
+
+/** Def/snapshot CŨ (trước CR-122): chỉ cần `stages` hợp lệ để engine chạy nốt; trường khác giữ nguyên. */
+export const LegacyFlowDefSchema = z.looseObject({
+  stages: z.array(ProcessStageDefSchema).min(1).max(PROCESS_STAGES_MAX),
+});
+export type LegacyFlowDef = z.infer<typeof LegacyFlowDefSchema>;
+
+export type ParsedFlowDef =
+  | { ok: true; legacy: false; def: FlowDef }
+  | { ok: true; legacy: true; def: LegacyFlowDef }
+  | { ok: false; issues: { path: string; message: string }[] };
+
+const zIssues = (e: z.ZodError) =>
+  e.issues.slice(0, ISSUES_MAX).map((i) => ({ path: i.path.join("."), message: i.message }));
+
+/**
+ * Đọc một def: có `trigger` ⇒ FlowDef mới (đủ luật); không có `trigger` ⇒ def cũ (`legacy`, chỉ kiểm `stages`) — lượt snapshot cũ
+ * (`after.branch`, `contracts-route`, `contracts-finalize`) vẫn chạy tới khi đóng (ADR-0038 Hệ quả).
+ */
+export function parseFlowDef(raw: unknown): ParsedFlowDef {
+  const isNew = typeof raw === "object" && raw !== null && "trigger" in raw;
+  if (isNew) {
+    const r = FlowDefSchema.safeParse(raw);
+    return r.success
+      ? { ok: true, legacy: false, def: r.data as FlowDef }
+      : { ok: false, issues: zIssues(r.error) };
+  }
+  const r = LegacyFlowDefSchema.safeParse(raw);
+  return r.success
+    ? { ok: true, legacy: true, def: r.data }
+    : { ok: false, issues: zIssues(r.error) };
+}

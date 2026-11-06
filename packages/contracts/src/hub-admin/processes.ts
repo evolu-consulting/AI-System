@@ -1,6 +1,7 @@
 // HUB-FR-104 · HUB-FR-105 · HUB-FR-117 · ADM-FR-65 · CR-056 · API quản trị quy trình (plan-contract §6). Hằng + thực thể
 // run export lại từ `chat/processes*` (một nguồn; Evolu Control xem run/token qua endpoint chat §3).
 import { z } from "zod";
+import { OUTCOME_KEY_RE } from "../app-manifest/manifest";
 import {
   PROCESS_DESC_MAX,
   PROCESS_INPUT_MAX,
@@ -239,6 +240,10 @@ export const ProcessStageDefSchema = z.strictObject({
   /** CR-103 · fnr-canvas · vị trí node trên canvas (chỉ UI; engine bỏ qua; vắng ở snapshot cũ). */
   ui: StageUiSchema.optional(),
   slot: z.record(z.string(), z.unknown()).optional(), // CR-105 · pl-slot-shape · mô tả bước của khe (engine bỏ qua)
+  /** CR-122 · FLOW2-FR-12 · bước gộp: xong stage này đi tiếp tới bước `next_step` (> bước của mình) thay vì bước kế. */
+  next_step: ProcessStepSchema.optional(),
+  /** CR-122 · FLOW2-FR-15 · node Kết thúc: khoá kết quả app khai (`AppEventDecl.outcomes`); luật ở `flowDefIssues`. */
+  outcome: z.string().regex(OUTCOME_KEY_RE).optional(),
 });
 type StageDefParsed = z.infer<typeof ProcessStageDefSchema>;
 type StageAfterParsed = StageDefParsed["after"];

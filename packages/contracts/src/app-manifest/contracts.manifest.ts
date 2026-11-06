@@ -1,5 +1,22 @@
 // CR-118 · manifest dữ liệu của app Sổ Hợp Tác (key catalog `contracts`). Đối tác KHÔNG bao giờ thấy app này.
-import type { AppManifest } from "./manifest";
+import type { AppFactDecl, AppManifest } from "./manifest";
+
+/** CR-122 · dữ kiện HĐ (cùng khoá với `APPROVAL_SLOT_FIELDS` cũ của gói ⇒ M1 backfill điều kiện không phải đổi tên). */
+const CONTRACT_FACTS: readonly AppFactDecl[] = [
+  { key: "total_value", label: "Giá trị hợp đồng", type: "number" },
+  {
+    key: "deal",
+    label: "Loại hợp đồng",
+    type: "enum",
+    options: [
+      { value: "buy", label: "Mua hàng" },
+      { value: "sell", label: "Bán hàng" },
+      { value: "referral", label: "Giới thiệu" },
+    ],
+  },
+  { key: "creator_department", label: "Phòng ban người tạo", type: "department" },
+  { key: "new_partner", label: "Đối tác mới", type: "boolean" },
+];
 
 export const CONTRACTS_MANIFEST: AppManifest = {
   key: "contracts",
@@ -75,6 +92,48 @@ export const CONTRACTS_MANIFEST: AppManifest = {
       defaultDefKey: "hd-tiep-nhan",
       allowedKinds: ["form", "review", "dify", "esign", "wait", "system"],
       trigger: "contract.uploaded",
+    },
+  ],
+  // CR-122 · flow-model.md mục C · FLOW2-FR-18.
+  events: [
+    {
+      key: "contract.submitted",
+      label: "Khi gửi duyệt hợp đồng",
+      facts: CONTRACT_FACTS,
+      outcomes: [
+        { key: "approved", label: "Đã duyệt", effect: "Hợp đồng có hiệu lực và được khoá." },
+        {
+          key: "rejected",
+          label: "Từ chối",
+          effect: "Hợp đồng bị từ chối, người gửi được báo lý do.",
+        },
+        { key: "returned", label: "Trả lại", effect: "Hợp đồng về Nháp để người gửi sửa." },
+      ],
+      decides: true,
+      required: true,
+      defaultFlowKey: "hd-mac-dinh",
+    },
+    {
+      key: "contract.uploaded",
+      label: "Khi tải hợp đồng lên",
+      facts: [
+        { key: "file_type", label: "Loại tệp", type: "string" },
+        { key: "uploader_department", label: "Phòng ban người tải", type: "department" },
+      ],
+      outcomes: [
+        { key: "accepted", label: "Đã nhận", effect: "Hợp đồng được nhận vào sổ." },
+        { key: "cancelled", label: "Huỷ", effect: "Bản tải lên bị huỷ." },
+      ],
+      decides: false,
+      required: false,
+    },
+    {
+      key: "contract.approved",
+      label: "Khi hợp đồng được duyệt",
+      facts: CONTRACT_FACTS,
+      outcomes: [{ key: "done", label: "Xong", effect: "Không đổi hợp đồng." }],
+      decides: false,
+      required: false,
     },
   ],
 };

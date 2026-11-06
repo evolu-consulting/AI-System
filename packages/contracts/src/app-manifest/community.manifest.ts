@@ -68,4 +68,50 @@ export const COMMUNITY_MANIFEST: AppManifest = {
       trigger: "report.created",
     },
   ],
+  // CR-122 · flow-model.md mục C · FLOW2-FR-18 (thay 3 khe trên). Brief F0: cả ba `decides` (kết quả đổi trạng thái bài/đơn/báo cáo).
+  events: [
+    {
+      key: "post.created",
+      label: "Khi đăng bài",
+      facts: [
+        { key: "post_kind", label: "Loại bài", type: "string" },
+        { key: "author_is_partner", label: "Người đăng là đối tác", type: "boolean" },
+      ],
+      outcomes: [
+        { key: "shown", label: "Hiện bài", effect: "Bài hiện trên Bảng tin." },
+        { key: "hidden", label: "Ẩn bài", effect: "Bài bị ẩn, người đăng được báo." },
+      ],
+      decides: true,
+      required: false,
+    },
+    {
+      key: "partner.join_requested",
+      label: "Khi có đối tác xin tham gia",
+      facts: [
+        { key: "company_name", label: "Tên công ty", type: "string" },
+        { key: "email", label: "Email", type: "string" },
+      ],
+      outcomes: [
+        { key: "accepted", label: "Nhận", effect: "Tạo liên kết đối tác." },
+        { key: "rejected", label: "Từ chối", effect: "Đơn bị từ chối, người xin được báo." },
+      ],
+      decides: true,
+      required: false,
+    },
+    {
+      key: "report.created",
+      label: "Khi có báo cáo vi phạm",
+      facts: [
+        { key: "report_kind", label: "Loại", type: "string" },
+        { key: "severity", label: "Mức", type: "string" },
+      ],
+      outcomes: [
+        { key: "hidden", label: "Ẩn", effect: "Nội dung bị ẩn." },
+        { key: "kept", label: "Giữ", effect: "Nội dung giữ nguyên." },
+        { key: "warned", label: "Cảnh báo", effect: "Người vi phạm nhận cảnh báo." },
+      ],
+      decides: true,
+      required: false,
+    },
+  ],
 };

@@ -46,6 +46,7 @@ export type SlotPreviewStep = {
   state: "run" | "skip" | "no_data";
 };
 
+/** @deprecated CR-122 · ADR-0038: thay bằng manifest `events[]` + `FactsReader`/`OutcomeHandler` (`flow-events.ports.ts`); gỡ ở R1. */
 export type SlotSpec = {
   /** `<gói>.<việc>` — khớp CHECK `process_slots_slot_ck` (0068). */
   key: string;

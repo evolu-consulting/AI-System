@@ -38,6 +38,7 @@ export type AppAction = AppGate & { key: string; label: string };
 /**
  * Khe quy trình của app (điểm cắm một quy trình thư viện cho từng công ty). CR-120 §2 · ADR-0036: mọi app khai báo ≥ 1 khe, và ≥ 1 khe
  * LUÔN BẬT (`required` + không `addon`) — kiểm bằng `bun run check:app-slots` (`appSlotIssues`).
+ * @deprecated CR-122 · ADR-0038: thay bằng `AppManifest.events` (`AppEventDecl`); giữ tới lát R1 (gỡ khe + `check:app-slots`).
  */
 export type AppSlotDecl = {
   /** `<app>.<việc>` — khớp CHECK `process_slots_slot_ck` (hub 0068) và tiền tố = `AppManifest.key`. */
@@ -76,5 +77,55 @@ export type AppManifest = {
   /** Feature thêm của app, kèm tên dễ hiểu (xem trước giải thích lý do ẩn). */
   addons: readonly { key: string; label: string }[];
   nav: readonly AppNavItem[];
+  /** @deprecated CR-122 · thay bằng `events`; gỡ ở R1. */
   slots: readonly AppSlotDecl[];
+  /** CR-122 · FLOW2-FR-17/18 · sự kiện làm flow chạy (node Bắt đầu khi); luật ở `appEventIssues` (`check:app-events`). */
+  events: readonly AppEventDecl[];
 };
+
+// ── CR-122 · ADR-0038 · flow-model.md mục C: sự kiện app (thay `AppSlotDecl`) ─────────────────────────────────────────────
+
+/** Kiểu dữ kiện (trường nghiệp vụ của bản ghi mà flow đọc được) — điều kiện Bắt đầu khi / Nếu so sánh theo kiểu này. */
+export const APP_FACT_TYPES = [
+  "number",
+  "string",
+  "enum",
+  "department",
+  "boolean",
+  "date",
+] as const;
+export type AppFactType = (typeof APP_FACT_TYPES)[number];
+export type AppFactDecl = {
+  /** `snake_case` (khớp `FACT_KEY_RE`) — khoá `fact` trong điều kiện của FlowDef và trong kết quả `FactsReader`. */
+  key: string;
+  label: string;
+  type: AppFactType;
+  /** Chỉ cho `enum`: giá trị + nhãn. */
+  options?: readonly { value: string; label: string }[];
+};
+/** Kết quả node Kết thúc mà app xử lý (`OutcomeHandler`); `effect` = câu "app sẽ làm gì" hiện trên node. */
+export type AppOutcomeDecl = { key: string; label: string; effect: string };
+export type AppEventDecl = {
+  /** `<thực thể>.<việc>` (khớp `FLOW_EVENT_KEY_RE`), vd `contract.submitted`; duy nhất trên mọi app. */
+  key: string;
+  /** Nhãn trên node Bắt đầu khi, vd "Khi gửi duyệt HĐ". */
+  label: string;
+  facts: readonly AppFactDecl[];
+  /** ≥ 1 — node Kết thúc của flow theo sự kiện này chỉ chọn trong danh sách này. */
+  outcomes: readonly AppOutcomeDecl[];
+  /** true ⇒ kết quả đổi trạng thái bản ghi: mỗi bản ghi chỉ MỘT lượt — flow khớp đầu tiên theo `position` (H1). */
+  decides: boolean;
+  /** true ⇒ công ty bật app phải có ≥ 1 flow đang bật không điều kiện cho sự kiện này (lưới cuối). */
+  required: boolean;
+  /** Khoá flow Thư viện mặc định (dạng `ProcessKey`); bắt buộc khi `required` (thiếu ⇒ `check:app-events` cảnh báo). */
+  defaultFlowKey?: string;
+};
+
+export const EVENT_LABEL_MAX = 120;
+export const EVENT_FACTS_MAX = 20;
+export const EVENT_OUTCOMES_MAX = 6;
+/** `<thực thể>.<việc>` — chữ thường, `_`/`-` trong từng phần. */
+export const FLOW_EVENT_KEY_RE = /^[a-z][a-z0-9_-]{0,39}\.[a-z][a-z0-9_-]{0,39}$/;
+/** Khoá dữ kiện / kết quả: snake_case. */
+export const FACT_KEY_RE = /^[a-z][a-z0-9_]{0,39}$/;
+export const OUTCOME_KEY_RE = FACT_KEY_RE;
