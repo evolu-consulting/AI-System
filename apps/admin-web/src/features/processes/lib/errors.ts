@@ -62,6 +62,23 @@ export function serverRules(err: unknown): string[] {
   return err.details.rules.map((r) => (typeof r === "string" ? r : ""));
 }
 
+/**
+ * CR-122 · E5b · `FLOW_NODE_CONFIG_INVALID` (422): `details.issues[{path, code}]`, path = `stages.<i>.executor.args.<khoá>` ⇒ lỗi theo ô
+ * trong panel node (khoá câu `process.admin.flow.esign.err.<code>`; mã lạ ⇒ câu chung của `apiError`).
+ */
+export function nodeConfigErrors(err: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!(err instanceof ApiError) || !isObj(err.details) || !Array.isArray(err.details.issues))
+    return out;
+  for (const i of err.details.issues) {
+    if (!isObj(i) || typeof i.path !== "string") continue;
+    out[i.path] =
+      typeof i.code === "string" ? `process.admin.flow.esign.err.${i.code}` : NODE_CFG_KEY;
+  }
+  return out;
+}
+export const NODE_CFG_KEY = "process.admin.apiError.FLOW_NODE_CONFIG_INVALID";
+
 const STAGE_SOURCE_PATH = /^stages\.\d+\.sources\.\d+\.source_key$/;
 const AUTOFIX_SOURCE_PATH = /^stages\.\d+\.autofix\.source_key$/;
 const TOOL_REF_PATH = /^stages\.\d+\.executor\.tool_key$/;

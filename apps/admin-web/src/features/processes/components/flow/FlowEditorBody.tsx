@@ -80,6 +80,11 @@ export function FlowEditorBody({
     bridge,
     stepName: (n: number) => stages.find((s) => s.step === n)?.name ?? `${n + 1}`,
     selectRef,
+    patchStage: (uid: string, patch: Partial<StageDraft>) =>
+      onChange(
+        trigger,
+        stages.map((s) => (s.uid === uid ? { ...s, ...patch } : s)),
+      ),
     trigger: { label: event?.label ?? trigger.event, summary, onOpen: () => setOpen((o) => !o) },
   };
   return (

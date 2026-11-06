@@ -8,7 +8,14 @@ import { useConflictSave } from "@/components/shared/conflict/use-conflict-save"
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { createDef, updateDef, useInvalidateDefs } from "../api";
 import { type DefDraft, toDraft, toInput, validateDraft } from "../lib/def-form";
-import { errorCode, processErrorSpec, serverErrors, serverPaths, serverRules } from "../lib/errors";
+import {
+  errorCode,
+  nodeConfigErrors,
+  processErrorSpec,
+  serverErrors,
+  serverPaths,
+  serverRules,
+} from "../lib/errors";
 import type { TeamSections } from "../lib/wait-form";
 import type { DraftState } from "./use-draft";
 
@@ -38,6 +45,10 @@ function useSaveFailure(d: DraftState) {
     const paths = serverPaths(err);
     const key = `process.admin.apiError.${code}`;
     if (code === "PROCESS_KEY_TAKEN") return d.showErrors({ key });
+    if (code === "FLOW_NODE_CONFIG_INVALID") {
+      const e = nodeConfigErrors(err);
+      if (Object.keys(e).length > 0) return d.showErrors(e);
+    }
     if (code && PATHED.has(code) && paths.length)
       return d.showErrors(serverErrors(code, paths, serverRules(err)));
     const spec = processErrorSpec(err);

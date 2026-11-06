@@ -8,7 +8,9 @@ import { isIf } from "../../lib/if-form";
 import { isSet } from "../../lib/set-form";
 import { isTool } from "../../lib/tool-form";
 import { isWait, isWaitFamily } from "../../lib/wait-form";
+import { usePalette } from "../../palette-api";
 import { useFlowCtx } from "../flow/flow-ctx";
+import { NodeConfigPanel } from "../flow/NodeConfigPanel";
 import { TextField } from "./Fields";
 import { StageActions } from "./StageActions";
 import { StageAdminModeNotice } from "./StageAdminModeNotice";
@@ -142,8 +144,18 @@ function AdvancedBox({ children }: { children: React.ReactNode }) {
 function ModuleBody(p: StageFormProps) {
   const { t } = useTranslation();
   const { stage } = p;
+  const flow = useFlowCtx();
+  const palette = usePalette(flow?.app ?? "", flow?.tenantId);
+  const node = palette.data?.find((n) => n.key === stage.node);
   if (isWait(stage)) return <StageWait {...p} />;
   if (isWaitFamily(stage)) return <StageTimedWait {...p} />;
+  // CR-122 · U2f · node có cấu hình riêng (manifest `config`): panel theo `options_path`, chỉ ở stage `config.stage` (stage tool).
+  if (
+    node?.config &&
+    stage.executor === "tool" &&
+    node.stages[node.config.stage]?.executor.kind === "tool"
+  )
+    return <NodeConfigPanel {...p} node={node} />;
   if (stage.executor === "notify" && stage.notifyRaw)
     return <NotifyBasics stage={stage} readOnly={p.readOnly} onChange={p.onChange} />;
   return (

@@ -514,6 +514,7 @@
     }
   },
   "apiError": {
+    "FLOW_NODE_CONFIG_INVALID": "The node settings are not valid. Check the highlighted fields.",
     "PROCESS_NOT_FOUND": "Process not found or you can't run it.",
     "TOO_MANY_PROCESS_RUNS": "Your company is running the maximum of {{max}} processes. Try again later.",
     "PROCESS_KEY_TAKEN": "This key is already used.",
@@ -1300,6 +1301,29 @@
       "set": "Set value",
       "finish": "Finish",
       "soon": "Not available yet"
+    },
+    "esign": {
+      "title": "E-sign settings",
+      "default": "From app settings",
+      "provider": "Provider",
+      "order": "Signing order",
+      "orders": { "parallel": "In parallel", "sequential": "One by one" },
+      "partner": "Partner signs",
+      "yes": "Yes",
+      "no": "No",
+      "due": "Due (days)",
+      "remind": "Remind every (hours)",
+      "signers": "Company signers (max {{max}})",
+      "group": "Group",
+      "unavailable": "Could not load e-sign options. Open the company copy to edit this.",
+      "disabled": "E-sign is not enabled for this company. Enable it in Settings › E-sign.",
+      "err": {
+        "ESIGN_DISABLED": "E-sign is not enabled.",
+        "PROVIDER_UNAVAILABLE": "This provider is not enabled for the company.",
+        "SIGNER_NOT_IN_TENANT": "The signer is not in this company.",
+        "NO_SIGNER": "This group has no usable signer.",
+        "DIRECTORY_UNAVAILABLE": "Could not check the directory, try again later."
+      }
     },
     "advanced": "Advanced",
     "moduleNote": "The provider, signers and other settings of this step come from the app settings. Open Advanced to tweak details.",

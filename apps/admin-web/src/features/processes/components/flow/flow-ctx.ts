@@ -3,6 +3,7 @@
 import type { AppEventDecl } from "@ai/contracts/app-manifest";
 import { createContext, useContext } from "react";
 import type { BridgeApi } from "../../hooks/use-bridge";
+import type { StageDraft } from "../../lib/draft-types";
 
 export type FlowCtx = {
   app: string;
@@ -17,6 +18,8 @@ export type FlowCtx = {
   bridge?: BridgeApi;
   /** Tên bước (0-based) cho tóm tắt node ("Chờ ký", "Kết thúc…"). */
   stepName?: (n: number) => string;
+  /** Sửa một stage khác theo uid (vd đặt giờ chờ của stage chờ ký khi đổi hạn ký ở stage gửi). */
+  patchStage?: (uid: string, patch: Partial<StageDraft>) => void;
   /** Workbench đăng ký hàm chọn node (bấm cảnh báo kiểm nối ⇒ chọn node trên canvas). */
   selectRef?: { current: ((uid: string) => void) | null };
 };

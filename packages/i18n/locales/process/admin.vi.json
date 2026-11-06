@@ -514,6 +514,7 @@
     }
   },
   "apiError": {
+    "FLOW_NODE_CONFIG_INVALID": "Cấu hình node không hợp lệ. Kiểm tra các ô được đánh dấu.",
     "PROCESS_NOT_FOUND": "Không tìm thấy quy trình hoặc bạn không được chạy.",
     "TOO_MANY_PROCESS_RUNS": "Công ty đang chạy tối đa {{max}} quy trình. Thử lại sau.",
     "PROCESS_KEY_TAKEN": "Ký hiệu này đã được dùng.",
@@ -1300,6 +1301,29 @@
       "set": "Ghi giá trị",
       "finish": "Kết thúc",
       "soon": "Chưa dùng được"
+    },
+    "esign": {
+      "title": "Cấu hình ký số",
+      "default": "Theo cài đặt ứng dụng",
+      "provider": "Nhà cung cấp",
+      "order": "Thứ tự ký",
+      "orders": { "parallel": "Song song", "sequential": "Lần lượt" },
+      "partner": "Đối tác ký",
+      "yes": "Có",
+      "no": "Không",
+      "due": "Hạn (ngày)",
+      "remind": "Nhắc mỗi (giờ)",
+      "signers": "Người ký phía công ty (tối đa {{max}})",
+      "group": "Nhóm",
+      "unavailable": "Chưa tải được lựa chọn ký số. Mở bản của công ty để chỉnh cấu hình này.",
+      "disabled": "Công ty chưa bật ký số. Bật ở Cài đặt › Ký số.",
+      "err": {
+        "ESIGN_DISABLED": "Công ty chưa bật ký số.",
+        "PROVIDER_UNAVAILABLE": "Nhà cung cấp này chưa bật cho công ty.",
+        "SIGNER_NOT_IN_TENANT": "Người ký không thuộc công ty.",
+        "NO_SIGNER": "Nhóm này chưa có người ký dùng được.",
+        "DIRECTORY_UNAVAILABLE": "Chưa kiểm được danh bạ, thử lại sau."
+      }
     },
     "advanced": "Nâng cao",
     "moduleNote": "Nhà cung cấp, người ký và các thiết lập khác của bước này lấy từ cài đặt của ứng dụng. Mở Nâng cao nếu cần chỉnh chi tiết.",
