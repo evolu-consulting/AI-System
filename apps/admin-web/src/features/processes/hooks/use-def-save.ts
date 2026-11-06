@@ -16,6 +16,7 @@ import {
   serverPaths,
   serverRules,
 } from "../lib/errors";
+import { fillDraftDefaults } from "../lib/node-defaults";
 import { blockedInfo } from "../lib/save-blocked";
 import type { TeamSections } from "../lib/wait-form";
 import type { DraftState } from "./use-draft";
@@ -105,7 +106,7 @@ export function useDefSave({
     },
   });
   const submit = async () => {
-    const draft = prepare ? prepare(d.draftRef.current) : d.draftRef.current;
+    const draft = fillDraftDefaults(prepare ? prepare(d.draftRef.current) : d.draftRef.current);
     const errors = validateDraft(draft, undefined, teams, tools);
     d.showErrors(errors);
     const blocked = blockedInfo(errors, draft.stages);

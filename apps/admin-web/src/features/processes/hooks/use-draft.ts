@@ -11,6 +11,7 @@ import {
   stageIndexesOf,
 } from "../lib/def-form";
 import { type EdgeRef, insertOnEdge } from "../lib/insert-on-edge";
+import { withNodeDefaults } from "../lib/node-defaults";
 import {
   addStageAsNewStep,
   addStageToStep,
@@ -73,7 +74,10 @@ function useStepMutations(ref: Ref, update: Update, select: (uid: string) => voi
   const addWith = (
     op: (st: StageDraft[], fresh: StageDraft) => StepOpResult<StageDraft>,
   ): StepOpResult<StageDraft> => {
-    const s = emptyStage();
+    const s = withNodeDefaults(
+      emptyStage(),
+      ref.current.stages.map((o) => o.key),
+    );
     const r = applySteps((st) => op(st, s));
     if ("stages" in r) select(s.uid);
     return r;
@@ -88,7 +92,10 @@ function useStepMutations(ref: Ref, update: Update, select: (uid: string) => voi
     addStepAfter: (step: number) => addWith((st, s) => insertStepAfter(st, step, s)),
     /** dlc-engine · thêm giai đoạn dựng sẵn (vd bước DLC từ khung bước DLC có sẵn) thành bước mới cuối. */
     addFresh: (make: (st: readonly StageDraft[]) => StageDraft) => {
-      const s = make(ref.current.stages);
+      const s = withNodeDefaults(
+        make(ref.current.stages),
+        ref.current.stages.map((o) => o.key),
+      );
       const r = applySteps((st) => addStageAsNewStep(st, s));
       if ("stages" in r) select(s.uid);
       return r;

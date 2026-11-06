@@ -20,6 +20,7 @@ import { APPLY_RULE_ERR, applyCrossErrors, normalizeApply } from "./apply-form";
 import { AUTOFIX_RULE_ERR, validateAutofixPart } from "./autofix-form";
 import { carryErrors, d2LiveErrors, toolSubmitErrors } from "./d2-validate";
 import { normalizeForm } from "./form-fields";
+import { fillDraftDefaults, followRename } from "./node-defaults";
 import { type InputDraft, inputsToDef, inputsToDraft, validateSourcesPart } from "./sources-form";
 import { emptyStage, intOrNull, num, stageToDraft, stageToInput } from "./stage-convert";
 import { slugKey } from "./stage-key";
@@ -66,7 +67,7 @@ export const emptyDraft = (): DefDraft => ({
 
 export function toDraft(d: ProcessDefInput | ProcessDef): DefDraft {
   const steps = resolveSteps(d.stages);
-  return {
+  return fillDraftDefaults({
     key: d.key,
     name: d.name,
     description: d.description,
@@ -78,7 +79,7 @@ export function toDraft(d: ProcessDefInput | ProcessDef): DefDraft {
     sources: [...d.sources],
     inputs: inputsToDraft(d.inputs),
     ...ttlDraft(d),
-  };
+  });
 }
 
 /** `ttl_days` vắng (bản nháp/def cũ) ⇒ mặc định 7; `null` ⇒ "Không hết hạn". */
@@ -243,6 +244,7 @@ export function patchStage(stages: StageDraft[], i: number, p: Partial<StageDraf
     if (next.keyAuto && p.name !== undefined) {
       const others = stages.filter((_, k) => k !== i).map((o) => o.key);
       next.key = slugKey(p.name, others);
+      return followRename(s, next);
     }
     return next;
   });

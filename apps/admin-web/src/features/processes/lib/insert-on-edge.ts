@@ -2,6 +2,7 @@
 // Bước mới nằm ngay sau bước nguồn (cạnh Đúng/Sai: ngay trước bước đích); mọi đích sau khi chèn đánh lại bằng `remapStepRefs`
 // (đã áp ở đây ⇒ nơi gọi KHÔNG remap lần nữa). Cạnh Đúng/Sai ⇒ nhánh đó trỏ vào bước mới, bước mới đi tiếp tới đích cũ.
 import type { StageDraft } from "./draft-types";
+import { withNodeDefaults } from "./node-defaults";
 import { insertStepAfter, type StepOpResult } from "./step-ops";
 import { remapStepRefs } from "./step-refs";
 
@@ -10,9 +11,14 @@ export type EdgeRef = { from: string; to: string; side?: "yes" | "no" };
 /** Chèn `fresh` vào cạnh `e`; trả mảng ĐÃ đánh lại đích. Lỗi (đủ số giai đoạn / cạnh không còn) ⇒ `error`. */
 export function insertOnEdge<T extends StageDraft>(
   stages: readonly T[],
-  fresh: T,
+  fresh0: T,
   e: EdgeRef,
 ): StepOpResult<T> {
+  // CR-122 · P14: bước mới tự có mã / tên tệp / mẫu kết quả (mã duy nhất trong flow).
+  const fresh = withNodeDefaults(
+    fresh0,
+    stages.map((s) => s.key),
+  ) as T;
   const src = stages.find((s) => s.uid === e.from);
   const dst = stages.find((s) => s.uid === e.to);
   if (!src || !dst) return { error: "process.admin.canvas.err.stagesMax" };

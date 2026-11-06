@@ -1,6 +1,6 @@
 // CR-122 · P8: chèn bước vào giữa một cạnh — đích (goto/next_step/Nếu) vẫn đúng sau khi chèn.
 import { describe, expect, test } from "bun:test";
-import { emptyStage } from "./def-form";
+import { emptyDraft, emptyStage, validateDraft } from "./def-form";
 import { insertOnEdge } from "./insert-on-edge";
 
 const st = (uid: string, step: number, o: object = {}) => ({ ...emptyStage(step), uid, ...o });
@@ -52,6 +52,28 @@ describe("insertOnEdge", () => {
     expect(n?.nextStep).toBe(t?.step); // bước mới đi tiếp tới đích cũ của Đúng
     expect(i?.ifx.no).toBe((f?.step ?? 0) + 1); // Sai vẫn tới f
     expect(f?.step).toBe(3);
+  });
+
+  test("P14 · chèn Thông báo ⇒ tự có mã/tên tệp/mẫu; validate không còn lỗi kỹ thuật; hai node cùng tên ⇒ mã duy nhất", () => {
+    const full = { filename: "x.md", template: "# x", sections: ["s"] };
+    const a = st("a", 0, { key: "a", name: "A", ...full });
+    const b = st("b", 1, { key: "b", name: "B", ...full });
+    const n1 = st("n1", 99, { name: "Thông báo", executor: "notify" });
+    const n2 = st("n2", 99, { name: "Thông báo", executor: "notify" });
+    const s1 = ok(insertOnEdge([a, b], n1, { from: "a", to: "b" }));
+    const s2 = ok(insertOnEdge(s1, n2, { from: "a", to: "n1" }));
+    const keys = s2.map((s) => s.key);
+    expect(new Set(keys).size).toBe(keys.length);
+    const got = s2.find((s) => s.uid === "n1");
+    expect(got?.key).toBe("thong-bao");
+    expect(got?.filename).toBe("thong-bao.md");
+    expect(got?.template).toBe("# Thông báo");
+    expect(s2.find((s) => s.uid === "n2")?.key).toBe("thong-bao-2");
+    const errs = validateDraft({ ...emptyDraft(), stages: s2 });
+    const tech = Object.keys(errs).filter((p) =>
+      /^stages\.\d+\.(key|output\.filename|output\.template|output\.required_sections)$/.test(p),
+    );
+    expect(tech).toEqual([]);
   });
 
   test("nguồn có next_step tường minh tới đích ⇒ next_step trỏ bước mới, bước mới đi tiếp tới đích", () => {
