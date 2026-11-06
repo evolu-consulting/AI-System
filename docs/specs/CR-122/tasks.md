@@ -27,7 +27,8 @@ Cờ: `FLOW_TRIGGERS` theo công ty (tắt = bóng: đường khe cũ mở lư�
 | A1 contracts | 2 | Sonnet high + Opus low soát | cao (HĐ, tenant) · đầy đủ | E1, E2 | — | `FLOW_TRIGGERS` |
 | A2 community | 2 | Sonnet high + Opus low soát | trung bình · nhanh + soát | E1, E2 | — | `FLOW_TRIGGERS` |
 | N1 node module (FR-25) + nới CHECK xuất bản | 2 | Opus medium (agent engine/contract) | thường · nhanh | F0, E1b | 0110 | — |
-| U2 danh sách công ty | 2 | Sonnet | thường · nhanh | E1, U1, N1 | — | — |
+| N2 kiểm nối + AI gợi ý cầu nối (FR-26) | 2 | Sonnet high (hub: kiểm IO + endpoint gợi ý qua Agent Hub) | thường · nhanh | N1 | — | — |
+| U2 danh sách công ty | 2 | Sonnet | thường · nhanh | E1, U1, N1, N2 | — | — |
 | M1 backfill + bóng | 2 | Sonnet high + Opus low soát (dữ liệu khách) | cao (migration) · đầy đủ | E1, A1, A2 | 0107 | `FLOW_TRIGGERS` |
 | Q1 e2e G1–G3 | 3 | Sonnet (qc, một agent) | — | U1+U2 đóng băng, M1, E3 | — | bật Demo |
 | R1 gỡ cũ | 3 | Sonnet (+ Opus low soát) | cao (xoá bảng) · đầy đủ | Q1 xanh, NiTi bật, 0 lượt cũ mở, người dùng xác nhận | 0108 | gỡ cờ |
