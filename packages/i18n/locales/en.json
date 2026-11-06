@@ -668,6 +668,7 @@
   },
   "tenants": {
     "flows": {
+      "systemDefaultShort": "Default",
       "appOffStatus": "App not in use",
       "err": {
         "appOff": "The company does not use {app}.",

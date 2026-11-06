@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import type { StepRow } from "@/features/apps/lib/flow-view";
 import { StepChips } from "@/features/processes/components/StepChips";
 import { type FlowJob, JOB_KEY, jobFallbackName } from "../lib/flow-rows";
-import { AppOffNote } from "./AssignErrorNote";
 
 export const GRID =
   "grid grid-cols-[minmax(0,1.1fr)_minmax(0,2fr)_minmax(0,1.3fr)_5rem_5rem] items-center gap-3";
@@ -18,7 +17,7 @@ export function useJobName() {
   };
 }
 
-function JobStatus({ job, tenantId }: { job: FlowJob; tenantId: string }) {
+function JobStatus({ job }: { job: FlowJob }) {
   const { t } = useTranslation();
   const on = job.status === "on";
   const label = job.appOff
@@ -32,9 +31,7 @@ function JobStatus({ job, tenantId }: { job: FlowJob; tenantId: string }) {
       data-testid={`flows-status-${job.slot}`}
     >
       <StatusBadge tone={on ? "ok" : "off"}>{t(label)}</StatusBadge>
-      {job.appOff ? (
-        <AppOffNote tenantId={tenantId} app={job.app} />
-      ) : job.reason ? (
+      {job.appOff ? null : job.reason ? (
         <span className="text-caption text-muted-foreground">
           {`· ${t(`tenants.flows.reason.${job.reason}`)}`}
         </span>
@@ -46,10 +43,8 @@ export function JobRow({
   job,
   steps,
   canChange,
-  tenantId,
   onOpen,
 }: {
-  tenantId: string;
   job: FlowJob;
   steps: readonly StepRow[] | null;
   canChange: boolean;
@@ -59,7 +54,7 @@ export function JobRow({
   const name = useJobName()(job);
   return (
     <div
-      className={`${GRID} border-t border-border px-3 py-2`}
+      className={`${GRID} border-t border-border px-3 py-2 ${job.appOff ? "opacity-60" : ""}`}
       data-testid={`flows-job-${job.slot}`}
       data-status={job.status}
     >
@@ -77,6 +72,15 @@ export function JobRow({
           {job.defId ? (
             <>
               {job.defName}
+              {job.source === "system" ? (
+                <span
+                  className="ml-2 rounded-full border border-border bg-muted px-2 text-caption text-muted-foreground"
+                  title={t("tenants.flows.systemDefault")}
+                  data-testid={`flows-system-default-${job.slot}`}
+                >
+                  {t("tenants.flows.systemDefaultShort")}
+                </span>
+              ) : null}
               {steps ? (
                 <span className="text-muted-foreground">{` · ${t("tenants.flows.steps", { n: steps.length })}`}</span>
               ) : null}
@@ -85,17 +89,9 @@ export function JobRow({
             <span className="text-muted-foreground">{t("tenants.flows.noneChosen")}</span>
           )}
         </span>
-        {job.source === "system" ? (
-          <span
-            className="text-caption text-muted-foreground"
-            data-testid={`flows-system-default-${job.slot}`}
-          >
-            {t("tenants.flows.systemDefault")}
-          </span>
-        ) : null}
         <StepChips steps={steps} />
       </div>
-      <JobStatus job={job} tenantId={tenantId} />
+      <JobStatus job={job} />
       <span className="text-body text-muted-foreground">
         {job.rules > 0 ? t("tenants.flows.rules", { n: job.rules }) : "—"}
       </span>

@@ -668,6 +668,7 @@
   },
   "tenants": {
     "flows": {
+      "systemDefaultShort": "Mặc định",
       "appOffStatus": "Chưa dùng ứng dụng",
       "err": {
         "appOff": "Công ty chưa dùng {app}.",

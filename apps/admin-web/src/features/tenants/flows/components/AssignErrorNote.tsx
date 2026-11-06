@@ -24,6 +24,27 @@ export function AppOffNote({ tenantId, app }: { tenantId: string; app: string })
   );
 }
 
+export function AppOffInline({ tenantId }: { tenantId: string }) {
+  const { t } = useTranslation();
+  return (
+    <span
+      className="whitespace-nowrap text-caption text-muted-foreground"
+      data-testid="flows-app-off-note"
+    >
+      {t("tenants.flows.appOffStatus")} —{" "}
+      <Link
+        to="/tenants/$tenantId"
+        params={{ tenantId }}
+        search={{ tab: "apps" }}
+        className="underline"
+        data-testid="flows-open-apps"
+      >
+        {t("tenants.flows.err.openApps")}
+      </Link>
+    </span>
+  );
+}
+
 export function AssignErrorNote({ tenantId, spec }: { tenantId: string; spec: AssignErrorSpec }) {
   const { t } = useTranslation();
   const tr = useTr();

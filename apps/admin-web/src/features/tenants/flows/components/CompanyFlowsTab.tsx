@@ -1,5 +1,7 @@
 // CR-121 c11 · R4 · tab "Quy trình" của công ty — NƠI DUY NHẤT gán quy trình cho công ty (artboard CompanyFlows + Tpl-Detail).
 // App → việc → quy trình đang gán (chip bước, Đang bật/tắt + lý do, số luật, Đổi/Gán). platform_admin + tenant_admin công ty mình.
+
+import { Info } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorState } from "@/components/shared/states/ErrorState";
@@ -8,6 +10,7 @@ import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { useCompanyFlows } from "../hooks/use-company-flows";
+import { AppOffInline } from "./AssignErrorNote";
 import { FlowDrawer } from "./FlowDrawer";
 import { GRID, JobRow } from "./JobRow";
 
@@ -39,12 +42,6 @@ export default function CompanyFlowsTab({
   const job = f.groups.flatMap((g) => g.jobs).find((j) => j.slot === open) ?? null;
   return (
     <div className="space-y-4" data-testid="company-flows">
-      <p className="text-body text-muted-foreground">
-        {t("tenants.flows.lead")}
-        <span className="ml-1 text-caption" title={t("tenants.flows.leadInfo")}>
-          {`(${t("tenants.flows.leadInfo")})`}
-        </span>
-      </p>
       {f.summary.total > 0 ? (
         <p className="text-caption text-muted-foreground" data-testid="flows-summary">
           {t("tenants.flows.summary", f.summary)}
@@ -64,7 +61,17 @@ export default function CompanyFlowsTab({
             role="presentation"
           >
             <span>{t("tenants.flows.col.job")}</span>
-            <span>{t("tenants.flows.col.process")}</span>
+            <span className="flex items-center gap-1">
+              {t("tenants.flows.col.process")}
+              <span
+                role="img"
+                aria-label={t("tenants.flows.lead")}
+                title={[t("tenants.flows.lead"), t("tenants.flows.leadInfo")].join(" ")}
+                data-testid="flows-lead-info"
+              >
+                <Info aria-hidden className="size-3.5" />
+              </span>
+            </span>
             <span>{t("tenants.flows.col.status")}</span>
             <span>{t("tenants.flows.col.rules")}</span>
             <span />
@@ -80,12 +87,12 @@ export default function CompanyFlowsTab({
                 <span className="rounded-full bg-muted px-2 text-caption text-muted-foreground">
                   {t("tenants.flows.appJobs", { n: g.jobs.length })}
                 </span>
+                {g.jobs.every((j) => j.appOff) ? <AppOffInline tenantId={tenant.id} /> : null}
               </div>
               {g.jobs.map((j) => (
                 <JobRow
                   key={j.slot}
                   job={j}
-                  tenantId={tenant.id}
                   steps={f.stepsOf(j.slot)}
                   canChange
                   onOpen={() => setOpen(j.slot)}
