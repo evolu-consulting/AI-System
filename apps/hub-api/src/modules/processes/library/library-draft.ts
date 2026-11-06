@@ -25,6 +25,7 @@ const MESSAGES: Record<HubAdminLibraryErrorCode, string> = {
   SLOT_SHAPE_UNSUPPORTED: "Stages cannot be represented by the slot",
   NOT_LIBRARY_DEF: "Process is not a shared library process",
   SLOT_GONE: "The slot of this process is no longer registered",
+  COPY_SOURCE_REMOVED: "The library process this copy was made from has been removed",
 };
 
 export function libError(code: HubAdminLibraryErrorCode, details?: unknown): AppError {

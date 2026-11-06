@@ -218,7 +218,7 @@ export class DefsService {
     if (cur.tenant_id === null || cur.slot !== null || cur.source_template_id === null) return null;
     if (cur.slot_body === null || cur.slot_body === undefined) return null;
     const srcSlot = await repo.sourceSlotOf(tx, cur.source_template_id);
-    if (srcSlot === null) throw libError("SLOT_UNKNOWN", { slot: null });
+    if (srcSlot === null) throw libError("COPY_SOURCE_REMOVED", { source: cur.source_template_id });
     const d = slotDraft(specOrThrow(srcSlot), input, {
       stages: cur.stages,
       slot_body: cur.slot_body,

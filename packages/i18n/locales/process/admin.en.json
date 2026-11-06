@@ -514,6 +514,7 @@
     "SLOT_GROUPS_MISSING": "Some tenant lacks a department code the process uses. See the missing codes below.",
     "SLOT_BODY_INVALID": "The Form content is not valid. See what is wrong below.",
     "NOT_LIBRARY_DEF": "This process is the company copy, not a shared one. Open it to edit directly.",
+    "COPY_SOURCE_REMOVED": "The original library process has been removed. This company copy still runs but cannot be edited. Ask the platform admin to restore the original, or assign another process in Company > Processes.",
     "SLOT_GONE": "The job that used this process no longer exists in the app. Pick another process in Company > Processes.",
     "SLOT_UNKNOWN": "The process slot does not exist (is the app turned off?)."
   },

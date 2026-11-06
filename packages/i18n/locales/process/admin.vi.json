@@ -515,6 +515,7 @@
     "SLOT_BODY_INVALID": "Nội dung Form chưa hợp lệ. Xem chỗ sai bên dưới.",
     "SLOT_UNKNOWN": "Khe quy trình không tồn tại (gói chưa bật?).",
     "NOT_LIBRARY_DEF": "Quy trình này là bản riêng của công ty, không phải quy trình dùng chung. Mở nó để sửa trực tiếp.",
+    "COPY_SOURCE_REMOVED": "Quy trình gốc trong thư viện đã bị gỡ — bản riêng vẫn chạy được nhưng không sửa được. Nhờ quản trị nền tảng khôi phục quy trình gốc, hoặc gán quy trình khác ở Công ty › Quy trình.",
     "SLOT_GONE": "Việc dùng quy trình này không còn trong ứng dụng nữa. Hãy chọn quy trình khác ở Công ty › Quy trình."
   },
   "validate": {

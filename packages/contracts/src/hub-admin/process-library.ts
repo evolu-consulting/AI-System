@@ -55,6 +55,8 @@ export const HUB_ADMIN_LIBRARY_ERRORS = {
   NOT_LIBRARY_DEF: 422,
   /** CR-121 c9 · `clone-for-company`: khe của def không còn đăng ký. */
   SLOT_GONE: 422,
+  /** CR-121 c17 · sửa bản riêng: def thư viện nguồn đã bị gỡ (xoá mềm) ⇒ chặn sửa; bản riêng vẫn chạy được. */
+  COPY_SOURCE_REMOVED: 422,
 } as const;
 export type HubAdminLibraryErrorCode = keyof typeof HUB_ADMIN_LIBRARY_ERRORS;
 

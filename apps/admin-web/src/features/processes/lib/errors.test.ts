@@ -30,7 +30,7 @@ describe("serverErrors", () => {
 
 describe("CR-121 c17 · mã lỗi Sao chép cho công ty này", () => {
   test("NOT_LIBRARY_DEF và SLOT_GONE có câu nghiệp vụ riêng (không rơi về lỗi chung)", () => {
-    for (const code of ["NOT_LIBRARY_DEF", "SLOT_GONE"]) {
+    for (const code of ["NOT_LIBRARY_DEF", "SLOT_GONE", "COPY_SOURCE_REMOVED"]) {
       const err = new ApiError(422, code as never, "x");
       expect(processErrorSpec(err).key).toBe(`process.admin.apiError.${code}`);
     }

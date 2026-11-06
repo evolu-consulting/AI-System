@@ -27,6 +27,7 @@ const KNOWN = new Set([
   // CR-121 c17 · Sao chép cho công ty này
   "NOT_LIBRARY_DEF",
   "SLOT_GONE",
+  "COPY_SOURCE_REMOVED",
 ]);
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 

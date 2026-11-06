@@ -352,3 +352,63 @@ describe("CR-121 c17 · sửa bản riêng lưu theo đường khe", () => {
     }).toEqual({ slot: null, step0: "Sửa riêng", rel: before?.rel, stageNames: true });
   });
 });
+
+describe("CR-121 c17 · soát: quyền, hình dạng, phiên bản, nguồn bị gỡ khi sửa bản riêng", () => {
+  const FIELDS = [
+    "key",
+    "name",
+    "description",
+    "input_hint",
+    "run_group_ids",
+    "token_budget",
+    "enabled",
+    "sources",
+    "inputs",
+    "ttl_days",
+  ];
+  async function mkCopy(key: string) {
+    for (const k of ["contracts-editor", "contracts-owner"])
+      await o`insert into admin.departments (tenant_id, group_id) values (${X}, ${dx.get(k) as string}) on conflict do nothing`;
+    const src = await libCopy(key, `QT ${key}`);
+    const id = (await call("A", "POST", CL(X, src), {})).json.def_id as string;
+    const g = (await call("A", "GET", `/process-defs/${id}`)).json;
+    return { src, id, g };
+  }
+  const put = (who: string, id: string, g: Json, stages: unknown, version = g.version) =>
+    call(who, "PUT", `/process-defs/${id}`, {
+      ...Object.fromEntries(FIELDS.map((k) => [k, g[k]])),
+      stages,
+      version,
+    });
+  const ver = async (id: string) =>
+    (await o`select version from hub.process_defs where id = ${id}`)[0]?.version;
+
+  it("tenant khác sửa bản riêng ⇒ 404 và hàng không đổi", async () => {
+    const { id, g } = await mkCopy("cc-x404");
+    const v0 = await ver(id);
+    expect((await put("AY", id, g, g.stages)).status).toBe(404);
+    expect(await ver(id)).toBe(v0);
+  });
+
+  it("stage không biểu diễn được bằng khe (song song/If) ⇒ 422 SLOT_SHAPE_UNSUPPORTED, version không đổi", async () => {
+    const { id, g } = await mkCopy("cc-shape");
+    const v0 = await ver(id);
+    const stages = structuredClone(g.stages) as Json[];
+    (stages[0] as Json).key = "zz-nhanh"; // khoá không thuộc dạng tuần tự của khe (như nhánh/song song)
+    const r = await put("A", id, g, stages);
+    expect({ s: r.status, c: r.json.error?.code }).toEqual({ s: 422, c: "SLOT_SHAPE_UNSUPPORTED" });
+    expect(await ver(id)).toBe(v0);
+  });
+
+  it("version cũ ⇒ 409; nguồn thư viện bị gỡ ⇒ 422 COPY_SOURCE_REMOVED", async () => {
+    const { src, id, g } = await mkCopy("cc-ver");
+    expect((await put("A", id, g, g.stages)).status).toBe(200); // bump version
+    expect((await put("A", id, g, g.stages)).status).toBe(409); // gửi lại version cũ
+    const g2 = (await call("A", "GET", `/process-defs/${id}`)).json;
+    await o`update hub.process_defs set deleted_at = now() where id = ${src}`;
+    const v0 = await ver(id);
+    const r = await put("A", id, g2, g2.stages);
+    expect({ s: r.status, c: r.json.error?.code }).toEqual({ s: 422, c: "COPY_SOURCE_REMOVED" });
+    expect(await ver(id)).toBe(v0);
+  });
+});
