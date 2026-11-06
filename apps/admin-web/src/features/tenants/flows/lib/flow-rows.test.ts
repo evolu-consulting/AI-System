@@ -162,3 +162,51 @@ describe("CR-121 c11 · ruleRows (bảng luật định tuyến)", () => {
     });
   });
 });
+
+describe("CR-121 f1 · nguồn quy trình đang dùng (luật công ty thắng mặc định hệ thống)", () => {
+  const rule = (def: string, isDefault: boolean) => ({
+    id: def,
+    priority: 0,
+    condition: {},
+    def_id: def,
+    is_default: isDefault,
+  });
+  it("công ty chưa có luật mặc định ⇒ source=system (mặc định hệ thống), không tính vào tóm tắt", () => {
+    const sys = jobOf(
+      "contracts",
+      slot("contracts.approval", D1, 1),
+      routing({ current_def_id: D1, rules: [] }),
+    );
+    expect(sys).toMatchObject({ source: "system", status: "on" });
+    expect(summaryOf([{ app: "contracts", jobs: [sys] }])).toEqual({ on: 0, total: 1 });
+  });
+  it("sau khi gán (có luật mặc định trỏ bản vừa gán) ⇒ dòng việc đổi sang bản đó, source=company, tóm tắt tăng", () => {
+    const before = jobOf(
+      "contracts",
+      slot("contracts.approval", D1, 1),
+      routing({ current_def_id: D1, current_def_name: "Mặc định HĐ", rules: [] }),
+    );
+    const after = jobOf(
+      "contracts",
+      slot("contracts.approval", D1, 1),
+      routing({
+        current_def_id: D2,
+        current_def_name: "Bản vừa gán",
+        processes: [{ def_id: D2, name: "Bản vừa gán", rel_version: 2 }],
+        rules: [rule(D2, true)],
+      }),
+    );
+    expect(after).toMatchObject({
+      defId: D2,
+      defName: "Bản vừa gán",
+      version: 2,
+      source: "company",
+    });
+    const sum = (j: typeof after) => summaryOf([{ app: "contracts", jobs: [j] }]).on;
+    expect([sum(before), sum(after)]).toEqual([0, 1]);
+  });
+  it("chưa có năng lực/luật: slot dùng mặc định (is_default) ⇒ system; chưa chọn ⇒ none", () => {
+    expect(jobOf("c", { ...slot("c.x", D1), is_default: true }, undefined).source).toBe("system");
+    expect(jobOf("c", slot("c.y"), undefined).source).toBe("none");
+  });
+});

@@ -20,7 +20,12 @@ export function useSlotRoutingActions(tenantId: string, slot: string) {
     setPending(true);
     try {
       await job();
+      // Một nguồn = luật định tuyến của công ty: sau mọi lần ghi làm tươi luật mọi việc, năng lực (tóm tắt), thân quy trình, bản thư viện/lượt chạy.
       await qc.invalidateQueries({ queryKey: key });
+      void qc.invalidateQueries({ queryKey: ["process", "routing", tenantId] });
+      void qc.invalidateQueries({ queryKey: ["process", "assigned", "caps", tenantId] });
+      void qc.invalidateQueries({ queryKey: ["process", "company-lib", tenantId] });
+      void qc.invalidateQueries({ queryKey: ["process", "company-runs", tenantId] });
       void qc.invalidateQueries({ queryKey: ["process", "tenant-slots"] });
       return { ok: true };
     } catch (e) {
@@ -38,6 +43,7 @@ export function useSlotRoutingActions(tenantId: string, slot: string) {
       try {
         const data: ProcessRouting = await putRouting(tenantId, slot, toPutBody(version, rules));
         qc.setQueryData(key, data);
+        void qc.invalidateQueries({ queryKey: ["process", "assigned", "caps", tenantId] });
         return { ok: true };
       } catch (e) {
         return { ok: false, spec: routingErrorOf(e) };

@@ -59,6 +59,14 @@ export function JobRow({
             <span className="text-muted-foreground">{t("tenants.flows.noneChosen")}</span>
           )}
         </span>
+        {job.source === "system" ? (
+          <span
+            className="text-caption text-muted-foreground"
+            data-testid={`flows-system-default-${job.slot}`}
+          >
+            {t("tenants.flows.systemDefault")}
+          </span>
+        ) : null}
         <StepChips steps={steps} />
       </div>
       <span

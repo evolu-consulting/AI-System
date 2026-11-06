@@ -668,6 +668,7 @@
   },
   "tenants": {
     "flows": {
+      "systemDefault": "Using the system default (no process assigned for this company yet)",
       "lead": "Each job uses one process taken from the Library.",
       "leadInfo": "Process templates are created and edited in the Process Library. Here the company only picks which template applies to which job.",
       "stepsMore": "+{n}",

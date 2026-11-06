@@ -41,15 +41,13 @@ export function FlowDrawer({
     >
       {job ? (
         <div className="flex flex-col gap-6" data-testid="flows-drawer">
-          {job.defId ? (
-            <DrawerSteps
-              key={`${job.slot}:${job.defId}`}
-              tenantId={tenantId}
-              slot={job.slot}
-              defId={job.defId}
-              isPlatform={isPlatform}
-            />
-          ) : null}
+          <DrawerSteps
+            key={`:`}
+            tenantId={tenantId}
+            slot={job.slot}
+            defId={job.defId}
+            isPlatform={isPlatform}
+          />
           <DrawerAssign
             tenantId={tenantId}
             slot={job.slot}

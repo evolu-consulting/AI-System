@@ -11,6 +11,49 @@ import { ApiError } from "@/lib/http";
 import { defStepsQuery, useLibraryView } from "../api";
 import { useFlowAssign } from "../hooks/use-flow-assign";
 
+function StepActions(p: {
+  tenantId: string;
+  defId: string | null;
+  copyId: string | null;
+  hasLibrary: boolean;
+  canCopy: boolean;
+  pending: boolean;
+  onCopy: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-wrap gap-2">
+      {p.defId && p.canCopy ? (
+        <Button size="sm" disabled={p.pending} data-testid="flows-copy" onClick={p.onCopy}>
+          {t("tenants.flows.copy")}
+        </Button>
+      ) : null}
+      {p.defId && p.hasLibrary ? (
+        <Button size="sm" variant="ghost" asChild>
+          <Link
+            to="/processes/$processId"
+            params={{ processId: p.defId }}
+            search={{ company: p.tenantId }}
+            data-testid="flows-open-detail"
+          >
+            {t("tenants.flows.openDetail")}
+          </Link>
+        </Button>
+      ) : null}
+      {p.copyId ? (
+        <Button size="sm" variant="outline" asChild>
+          <Link
+            to="/processes/$processId"
+            params={{ processId: p.copyId }}
+            data-testid="flows-open-editor"
+          >
+            {t("tenants.flows.openEditor")}
+          </Link>
+        </Button>
+      ) : null}
+    </div>
+  );
+}
 export function DrawerSteps({
   tenantId,
   slot,
@@ -19,16 +62,18 @@ export function DrawerSteps({
 }: {
   tenantId: string;
   slot: string;
-  defId: string;
+  /** `null` = việc chưa có quy trình: vẫn hiện công tắc Sơ đồ/Danh sách (không phụ thuộc dữ liệu vừa tải lại). */
+  defId: string | null;
   isPlatform: boolean;
 }) {
   const { t } = useTranslation();
   const [mode, setMode] = useViewMode();
-  const steps = useQuery(defStepsQuery(tenantId, slot, defId));
+  const steps = useQuery({ ...defStepsQuery(tenantId, slot, defId ?? ""), enabled: !!defId });
   const lib = useLibraryView(tenantId, defId, true);
   const act = useFlowAssign(tenantId, slot, isPlatform);
   // Bản riêng của công ty (không phải thư viện) ⇒ 422 NOT_LIBRARY_DEF ⇒ sửa thẳng.
-  const isCopy = lib.error instanceof ApiError && String(lib.error.code) === "NOT_LIBRARY_DEF";
+  const isCopy =
+    !!defId && lib.error instanceof ApiError && String(lib.error.code) === "NOT_LIBRARY_DEF";
   const copyId = isCopy ? defId : (lib.data?.company_copy?.def_id ?? null);
   return (
     <section className="space-y-3" aria-label={t("tenants.flows.stepsTitle")}>
@@ -37,12 +82,16 @@ export function DrawerSteps({
         <span className="ml-auto" />
         <ViewModeToggle mode={mode} set={setMode} />
       </div>
-      <FlowRowsView
-        rows={steps.data?.steps ?? null}
-        pending={steps.isPending}
-        error={steps.error}
-        view={mode}
-      />
+      {defId ? (
+        <FlowRowsView
+          rows={steps.data?.steps ?? null}
+          pending={steps.isPending}
+          error={steps.error}
+          view={mode}
+        />
+      ) : (
+        <p className="text-caption text-muted-foreground">{t("tenants.flows.noneChosen")}</p>
+      )}
       {lib.data && !isCopy ? (
         <p className="text-caption text-muted-foreground" data-testid="flows-library-readonly">
           {t(lib.data.company_copy ? "tenants.flows.hasCopy" : "tenants.flows.libraryReadOnly")}
@@ -51,41 +100,15 @@ export function DrawerSteps({
       {isCopy && lib.error ? (
         <p className="text-caption text-muted-foreground">{t("tenants.flows.ownCopy")}</p>
       ) : null}
-      <div className="flex flex-wrap gap-2">
-        {lib.data && !lib.data.company_copy ? (
-          <Button
-            size="sm"
-            disabled={act.pending}
-            data-testid="flows-copy"
-            onClick={() => void act.copy(defId)}
-          >
-            {t("tenants.flows.copy")}
-          </Button>
-        ) : null}
-        {lib.data ? (
-          <Button size="sm" variant="ghost" asChild>
-            <Link
-              to="/processes/$processId"
-              params={{ processId: defId }}
-              search={{ company: tenantId }}
-              data-testid="flows-open-detail"
-            >
-              {t("tenants.flows.openDetail")}
-            </Link>
-          </Button>
-        ) : null}
-        {copyId ? (
-          <Button size="sm" variant="outline" asChild>
-            <Link
-              to="/processes/$processId"
-              params={{ processId: copyId }}
-              data-testid="flows-open-editor"
-            >
-              {t("tenants.flows.openEditor")}
-            </Link>
-          </Button>
-        ) : null}
-      </div>
+      <StepActions
+        tenantId={tenantId}
+        defId={defId}
+        copyId={copyId}
+        hasLibrary={!!lib.data}
+        canCopy={!!lib.data && !lib.data.company_copy}
+        pending={act.pending}
+        onCopy={() => defId && void act.copy(defId)}
+      />
     </section>
   );
 }

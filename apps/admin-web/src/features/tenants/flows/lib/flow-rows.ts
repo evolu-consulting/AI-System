@@ -19,6 +19,11 @@ export type FlowJob = {
   rules: number;
   /** Có luật hay chưa đọc xong (luật đọc riêng từng việc). */
   routingLoaded: boolean;
+  /**
+   * Nguồn quy trình ĐANG DÙNG: `company` = luật/gán của công ty (một nguồn thật), `system` = công ty chưa có luật mặc định nên chạy mặc định
+   * của hệ thống (hiện nhãn "Đang dùng mặc định hệ thống"), `none` = chưa có quy trình.
+   */
+  source: "company" | "system" | "none";
 };
 
 export type FlowGroup = { app: string; jobs: FlowJob[] };
@@ -42,8 +47,24 @@ export function jobFallbackName(slot: string): string {
     .join(" ");
 }
 
+function sourceOf(
+  defId: string | null,
+  routing: ProcessRouting | undefined,
+  slotIsDefault: boolean,
+): FlowJob["source"] {
+  if (!defId) return "none";
+  if (routing) return routing.rules.some((r) => r.is_default) ? "company" : "system";
+  return slotIsDefault ? "system" : "company";
+}
+
+function reasonOf(defId: string | null, routing: ProcessRouting | undefined): OffReason | null {
+  if (!defId || routing?.active === false) return "noProcess";
+  return routing?.rules.find((r) => r.is_default && r.def_id === defId)?.unavailable ?? null;
+}
+
 /**
- * Một việc: trạng thái từ luật (nếu đã đọc) và từ năng lực công ty.
+ * Một việc: trạng thái từ luật
+ (nếu đã đọc) và từ năng lực công ty.
  * Tắt khi: việc tùy chọn chưa bật / chưa có quy trình (noProcess), quy trình mặc định đã bị xoá (deleted) hoặc chưa xuất bản (unpublished).
  */
 export function jobOf(
@@ -57,18 +78,15 @@ export function jobOf(
     routing && defId
       ? (routing.processes.find((p) => p.def_id === defId)?.rel_version ?? s.version)
       : s.version;
-  let reason: OffReason | null = null;
-  if (!defId || routing?.active === false) reason = "noProcess";
-  else {
-    const dflt = routing?.rules.find((r) => r.is_default && r.def_id === defId);
-    if (dflt?.unavailable) reason = dflt.unavailable;
-  }
+  const reason = reasonOf(defId, routing);
+  const source = sourceOf(defId, routing, s.is_default);
   return {
     slot: s.slot,
     app,
     defId,
     defName,
     version,
+    source,
     status: reason ? "off" : "on",
     reason,
     rules: routing ? routing.rules.filter((r) => !r.is_default).length : 0,
@@ -101,7 +119,11 @@ export function groupJobs(
 /** Dòng tóm tắt đầu trang: "x/y việc có quy trình". */
 export function summaryOf(groups: readonly FlowGroup[]): { on: number; total: number } {
   const all = groups.flatMap((g) => g.jobs);
-  return { on: all.filter((j) => j.status === "on").length, total: all.length };
+  // "Có quy trình" = công ty đã gán/đặt luật (mặc định hệ thống chưa tính) ⇒ gán xong thì số đổi ngay.
+  return {
+    on: all.filter((j) => j.status === "on" && j.source !== "system").length,
+    total: all.length,
+  };
 }
 
 /**
