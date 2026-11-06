@@ -197,31 +197,13 @@
     "main": "Điều hướng chính",
     "overview": "Tổng quan",
     "agents": "Agents",
-    "group": {
-      "access": "TRUY CẬP",
-      "features": "CHỨC NĂNG",
-      "security": "BẢO MẬT",
-      "system": "HỆ THỐNG",
-      "platform": "NỀN TẢNG",
-      "companies": "CÔNG TY",
-      "automation": "Tự động hoá"
-    },
     "automation": {
       "workflowsNote": "Workflow Dify là các tool AI: command và agent gọi chúng để làm việc.",
       "workflowsLink": "Cần luồng duyệt nghiệp vụ? Xem Quy trình nghiệp vụ →",
       "processesNote": "Quy trình nghiệp vụ là luồng duyệt do hub chạy (các bước, người duyệt, tự chạy tiếp).",
       "processesLink": "Cần tool AI cho command? Xem Workflow Dify →"
     },
-    "companies": {
-      "search": "Tìm công ty",
-      "create": "Tạo công ty",
-      "loading": "Đang tải công ty…",
-      "empty": "Chưa có công ty nào.",
-      "noMatch": "Không có công ty khớp.",
-      "error": "Không tải được danh sách công ty.",
-      "locked": "Đã khoá",
-      "list": "Danh sách công ty"
-    },
+    "companies": "Công ty",
     "tenants": "Công ty",
     "users": "Users",
     "partners": "Đối tác",
@@ -231,7 +213,7 @@
     "skip": "Bỏ qua điều hướng",
     "breadcrumb": "Đường dẫn",
     "commands": "Commands",
-    "workflows": "Workflow Dify (tool AI)",
+    "workflows": "Công cụ AI",
     "processes": "Quy trình",
     "processesNew": "Quy trình mới",
     "dlcSteps": "Bước DLC",
@@ -245,8 +227,9 @@
     "usageAnalytics": "Phân tích token",
     "audit": "Nhật ký",
     "feedback": "Góp ý",
-    "system": "Tình trạng hệ thống",
-    "transfer": "Import / Export"
+    "system": "Hệ thống",
+    "transfer": "Import / Export",
+    "aiTools": "Công cụ AI"
   },
   "topbar": {
     "platform": "Nền tảng",

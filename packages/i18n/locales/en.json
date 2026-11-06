@@ -197,31 +197,13 @@
     "main": "Main navigation",
     "overview": "Overview",
     "agents": "Agents",
-    "group": {
-      "access": "ACCESS",
-      "features": "FEATURES",
-      "security": "SECURITY",
-      "system": "SYSTEM",
-      "platform": "PLATFORM",
-      "companies": "COMPANIES",
-      "automation": "Automation"
-    },
     "automation": {
       "workflowsNote": "Dify workflows are AI tools: commands and agents call them to get work done.",
       "workflowsLink": "Need an approval flow? See Business processes →",
       "processesNote": "Business processes are approval flows run by the hub (steps, reviewers, automatic progress).",
       "processesLink": "Need an AI tool for a command? See Dify workflows →"
     },
-    "companies": {
-      "search": "Search companies",
-      "create": "Create company",
-      "loading": "Loading companies…",
-      "empty": "No companies yet.",
-      "noMatch": "No matching company.",
-      "error": "Could not load the company list.",
-      "locked": "Locked",
-      "list": "Company list"
-    },
+    "companies": "Companies",
     "tenants": "Companies",
     "users": "Users",
     "partners": "Partners",
@@ -231,7 +213,7 @@
     "skip": "Skip to content",
     "breadcrumb": "Breadcrumb",
     "commands": "Commands",
-    "workflows": "Dify workflows (AI tools)",
+    "workflows": "AI tools",
     "processes": "Processes",
     "processesNew": "New process",
     "dlcSteps": "DLC steps",
@@ -245,8 +227,9 @@
     "usageAnalytics": "Token analytics",
     "audit": "Audit log",
     "feedback": "Feedback",
-    "system": "System status",
-    "transfer": "Import / Export"
+    "system": "System",
+    "transfer": "Import / Export",
+    "aiTools": "AI tools"
   },
   "topbar": {
     "platform": "Platform",

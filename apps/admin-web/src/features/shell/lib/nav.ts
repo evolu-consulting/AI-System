@@ -1,15 +1,16 @@
-// ADM-FR-60, ADM-FR-04, ADM-FR-10 · mục menu theo role: Tổng quan; TRUY CẬP: Tenants (chỉ platform_admin), Users; HỆ THỐNG (cuối, M4): Chi phí & quota, Nhật ký (cả hai role), Import / Export (chỉ platform_admin).
-// CR-060 (P-b FS1): CHỨC NĂNG có thêm Nguồn (`/sources`, cả hai role, cùng cờ engine với Quy trình).
-// CR-054: CHỨC NĂNG có Agents (cả hai role; tenant_admin chỉ thấy Agents trong nhóm này).
-// CR-112 · ADM-FR-76/77 (Q9): sidebar lồng 3 nhóm. NỀN TẢNG (chỉ platform_admin): Ứng dụng · Features · Commands · Agents; TỰ ĐỘNG HOÁ: Workflow Dify · Quy trình (+ Nguồn).
-// dlc-step-library: TỰ ĐỘNG HOÁ của platform_admin thêm "Bước DLC" (thư viện bước DLC) sau Quy trình, cùng điều kiện engine quy trình.
-// CÔNG TY: danh sách công ty (nhóm động, vẽ ở SidebarCompanies) — platform_admin mọi công ty + tìm, tenant_admin chỉ công ty mình.
-// HỆ THỐNG: Secrets · Tình trạng · Chi phí toàn hệ thống · Nhật ký · Góp ý · Import/Export (tenant_admin: Chi phí, Nhật ký, Góp ý).
-// Người dùng / Nhóm / Đối tác / Phân quyền nằm trong workspace công ty; route cũ chuyển hướng (lib/legacy-redirect.ts).
+// CR-121 · R1 (c10) · sidebar 6 mục phẳng theo artboard `Main`: Tổng quan · Công ty · Ứng dụng · Quy trình · Công cụ AI · Hệ thống. Không nhóm, không tiêu đề nhóm.
+// platform_admin thấy đủ 6 (Quy trình chỉ khi engine quy trình bật); tenant_admin: Tổng quan · Công ty (công ty mình) · Quy trình (khi engine bật).
+// Features / Commands / Agents / Workflow Dify gộp vào "Công cụ AI" (`/ai-tools?kind=`; c10 tạm chuyển tới /workflows đến khi c16 thay).
+// Người dùng / Nhóm / Đối tác / Phân quyền nằm trong workspace công ty; route cũ chuyển hướng (tenants/lib/legacy-redirect.ts).
 import type { Role } from "@ai/contracts/common";
 
 export type NavId =
   | "overview"
+  | "companies"
+  | "apps"
+  | "processes"
+  | "aiTools"
+  | "system"
   | "agents"
   | "tenants"
   | "users"
@@ -17,148 +18,74 @@ export type NavId =
   | "features"
   | "commands"
   | "workflows"
-  | "processes"
   | "dlcSteps"
   | "sources"
   | "groups"
   | "access"
   | "secrets"
-  | "apps"
   | "usage"
   | "audit"
   | "feedback"
-  | "transfer"
-  | "system";
-type NavTo =
-  | "/"
-  | "/agents"
-  | "/tenants"
-  | "/users"
-  | "/partners"
-  | "/groups"
-  | "/access"
-  | "/features"
-  | "/commands"
-  | "/workflows"
-  | "/processes"
-  | "/dlc-steps"
-  | "/sources"
-  | "/secrets"
-  | "/apps"
-  | "/usage"
-  | "/audit"
-  | "/feedback"
-  | "/transfer"
-  | "/system";
+  | "transfer";
+type NavTo = "/" | "/tenants" | "/apps" | "/processes" | "/ai-tools" | "/system";
+/** Chỉ 6 mục sidebar; các NavId còn lại chỉ để vẽ breadcrumb. */
+export type SidebarNavId = "overview" | "companies" | "apps" | "processes" | "aiTools" | "system";
 export type NavItem = {
-  id: NavId;
+  id: SidebarNavId;
   to: NavTo;
   labelKey:
     | "nav.overview"
-    | "nav.agents"
-    | "nav.tenants"
-    | "nav.users"
-    | "nav.partners"
-    | "nav.features"
-    | "nav.commands"
-    | "nav.workflows"
-    | "nav.processes"
-    | "nav.dlcSteps"
-    | "nav.sources"
-    | "nav.groups"
-    | "nav.access"
-    | "nav.secrets"
+    | "nav.companies"
     | "nav.apps"
-    | "nav.usage"
-    | "nav.audit"
-    | "nav.feedback"
-    | "nav.transfer"
+    | "nav.processes"
+    | "nav.aiTools"
     | "nav.system";
 };
-export type NavGroup = {
-  labelKey:
-    | "nav.group.platform"
-    | "nav.group.companies"
-    | "nav.group.features"
-    | "nav.group.automation"
-    | "nav.group.system"
-    | null;
-  /** `companies` ⇒ nhóm động: SidebarNav vẽ danh sách công ty thay cho `items`. */
-  kind?: "companies";
-  items: NavItem[];
-};
 
-const COMPANIES_GROUP: NavGroup = { labelKey: "nav.group.companies", kind: "companies", items: [] };
-const item = (id: NavId, to: NavTo): NavItem => ({ id, to, labelKey: `nav.${id}` });
+const item = <I extends SidebarNavId>(id: I, to: NavTo): NavItem => ({
+  id,
+  to,
+  labelKey: `nav.${id}`,
+});
 const OVERVIEW = item("overview", "/");
-const AGENTS = item("agents", "/agents");
-const FEATURES = item("features", "/features");
-const COMMANDS = item("commands", "/commands");
-const WORKFLOWS = item("workflows", "/workflows");
-const PROCESSES = item("processes", "/processes");
-const DLC_STEPS = item("dlcSteps", "/dlc-steps");
-const SOURCES = item("sources", "/sources");
-const SECRETS = item("secrets", "/secrets");
+const COMPANIES = item("companies", "/tenants");
 const APPS = item("apps", "/apps");
-const USAGE = item("usage", "/usage");
-const AUDIT = item("audit", "/audit");
-const FEEDBACK = item("feedback", "/feedback");
-const TRANSFER = item("transfer", "/transfer");
-// CR-104 · Tình trạng hệ thống (ops-watch): chỉ platform_admin.
+const PROCESSES = item("processes", "/processes");
+const AI_TOOLS = item("aiTools", "/ai-tools");
 const SYSTEM = item("system", "/system");
 
-/** Tuỳ chọn bật mục theo cờ: `processes` = engine quy trình `on` (P-a FD2) — mặc định ẩn; kéo theo mục "Nguồn" (P-b FS1). */
-export type NavOptions = {
-  processes?: boolean;
-  /** F1 (CR-095) · `false` ⇒ ẩn mục module đóng băng (Transfer, Quy trình, Nguồn; Commands + danh mục Workflows luôn hiện). Vắng ⇒ hiện (test); SidebarNav truyền cờ build. */
-  frozen?: boolean;
-};
+/** Tuỳ chọn bật mục theo cờ: `processes` = engine quy trình `on` (P-a FD2) — mặc định ẩn. */
+export type NavOptions = { processes?: boolean };
 
 /** Đường dẫn của module đóng băng: cờ off ⇒ guard `_authed` chuyển về `/`. */
 // dify-workflows: danh mục Workflow Dify (/workflows, editor, lịch sử chạy) KHÔNG đóng băng.
-// CR-103 · `/processes*` KHÔNG còn gate theo cờ build: Hub quyết lúc chạy (`HUB_PROCESS_ROUTES=admin` ⇒ dò `/process-defs` 200);
-// `ProcessRouteGate` vẽ NotFound khi Hub báo off. `/sources` vẫn đóng băng (Hub không mount nguồn ở chế độ admin).
+// CR-103 · `/processes*` KHÔNG còn gate theo cờ build: Hub quyết lúc chạy; `/sources` vẫn đóng băng.
 const FROZEN_PREFIXES = ["/transfer", "/sources"];
 export const isFrozenPath = (pathname: string): boolean =>
   FROZEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
-/** Menu theo role. `member` không dùng khung quản trị nên không có mục nào. Mục "Quy trình" chỉ khi `opts.processes`. */
-export function navGroups(role: Role | undefined, opts: NavOptions = {}): NavGroup[] {
-  const on = opts.frozen !== false;
-  // CR-103 · "Quy trình" theo Hub (dò lúc chạy) kể cả khi cờ build đóng băng off; "Nguồn" vẫn cần cờ build on.
-  const proc = opts.processes ? [PROCESSES, ...(on ? [SOURCES] : [])] : [];
-  if (role === "platform_admin") {
-    return [
-      { labelKey: null, items: [OVERVIEW] },
-      {
-        labelKey: "nav.group.platform",
-        items: [APPS, FEATURES, COMMANDS, AGENTS],
-      },
-      {
-        labelKey: "nav.group.automation",
-        items: [WORKFLOWS, ...proc, ...(opts.processes ? [DLC_STEPS] : [])],
-      },
-      COMPANIES_GROUP,
-      {
-        labelKey: "nav.group.system",
-        items: [SECRETS, SYSTEM, USAGE, AUDIT, FEEDBACK, ...(on ? [TRANSFER] : [])],
-      },
-    ];
-  }
-  if (role === "tenant_admin") {
-    return [
-      { labelKey: null, items: [OVERVIEW] },
-      COMPANIES_GROUP,
-      ...(proc.length ? [{ labelKey: "nav.group.features" as const, items: proc }] : []),
-      { labelKey: "nav.group.system", items: [USAGE, AUDIT, FEEDBACK] },
-    ];
-  }
+/** Menu phẳng theo role (một danh sách). `member` không dùng khung quản trị nên không có mục nào. */
+export function navItems(role: Role | undefined, opts: NavOptions = {}): NavItem[] {
+  const proc = opts.processes ? [PROCESSES] : [];
+  if (role === "platform_admin") return [OVERVIEW, COMPANIES, APPS, ...proc, AI_TOOLS, SYSTEM];
+  if (role === "tenant_admin") return [OVERVIEW, COMPANIES, ...proc];
   return [];
 }
 
+export type AiToolKind = "workflow" | "command" | "agent";
+const AI_KINDS: readonly AiToolKind[] = ["workflow", "command", "agent"];
+/** `?kind=` hợp lệ của `/ai-tools`; giá trị lạ ⇒ undefined. */
+export const parseAiToolKind = (v: unknown): AiToolKind | undefined =>
+  AI_KINDS.find((k) => k === v);
+/**
+ * Điểm đến tạm của `/ai-tools` (c10): mọi `kind` → danh mục `/workflows`. c16 thay bằng màn Công cụ AI thật.
+ * `/commands` → `/ai-tools?kind=command`, `/agents` → `/ai-tools?kind=agent`.
+ */
+export const aiToolsDestination = (_kind: AiToolKind | undefined): "/workflows" => "/workflows";
+
 export type Crumb = {
   labelKey:
-    | NavItem["labelKey"]
+    | `nav.${NavId}`
     | "tenants.new.title"
     | "account.changePassword"
     | "account.twofa"
@@ -171,7 +98,7 @@ export type Crumb = {
   to?: string;
 };
 
-const CATALOG: Record<string, { labelKey: NavItem["labelKey"]; newKey: Crumb["labelKey"] }> = {
+const CATALOG: Record<string, { labelKey: `nav.${NavId}`; newKey: Crumb["labelKey"] }> = {
   workflows: { labelKey: "nav.workflows", newKey: "workflows.editor.titleNew" },
   commands: { labelKey: "nav.commands", newKey: "commands.editor.titleNew" },
   features: { labelKey: "nav.features", newKey: "features.editor.titleNew" },

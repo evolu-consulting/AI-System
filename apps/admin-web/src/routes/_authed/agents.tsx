@@ -1,5 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AgentsPage } from "@/features/agents/pages/AgentsPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { redirectLegacy } from "@/features/shell/lib/legacy-route";
 import { session } from "@/lib/auth/session";
 
@@ -10,6 +9,7 @@ export const Route = createFileRoute("/_authed/agents")({
   validateSearch: (s: Record<string, unknown>): { tenant?: string } => ({ tenant: str(s.tenant) }),
   beforeLoad: ({ search }) => {
     if (session.getState().me?.role === "tenant_admin") return redirectLegacy("agents", search);
+    // CR-121 R1: platform_admin → chip "Agent" của Công cụ AI.
+    throw redirect({ to: "/ai-tools", search: { kind: "agent" }, replace: true });
   },
-  component: AgentsPage,
 });

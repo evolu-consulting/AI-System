@@ -1,5 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { CommandsPage } from "@/features/commands/pages/CommandsPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export type CommandsSearch = {
   q?: string;
@@ -23,5 +22,8 @@ export const Route = createFileRoute("/_authed/commands/")({
       page: Number.isInteger(page) && page > 1 ? page : undefined,
     };
   },
-  component: CommandsPage,
+  // CR-121 R1: danh sách Lệnh nay là chip "Lệnh" của Công cụ AI (editor `/commands/new`, `/commands/<id>` giữ nguyên).
+  beforeLoad: () => {
+    throw redirect({ to: "/ai-tools", search: { kind: "command" }, replace: true });
+  },
 });
