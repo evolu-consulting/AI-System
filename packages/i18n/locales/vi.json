@@ -935,7 +935,6 @@
       "lockNote": "Khoá công ty: người dùng của công ty không đăng nhập được cho tới khi mở khoá.",
       "lockedNote": "Công ty đang bị khoá — người dùng không đăng nhập được."
     },
-    "summaryFlows": "{on}/{total} việc có quy trình",
     "agents": {
       "unavailable": "Cấp agent cho tenant làm ở Agent Forge. Mục này sẽ khả dụng khi Agent Hub sẵn sàng."
     },
@@ -956,7 +955,6 @@
       "zalo": "Zalo OA",
       "phones": "Điện thoại"
     },
-    "summary": "{users} người dùng · {apps} ứng dụng đang bật · {roles} vai",
     "company": {
       "card": {
         "info": "Thông tin công ty",
@@ -1074,7 +1072,7 @@
         "jobOff": "{job} chưa bật"
       },
       "accessList": "Theo từng tính năng",
-      "flowsCount": "Quy trình: {on} bật · {off} tắt",
+      "flowsCount": "{on}/{total} bật",
       "showDetail": "Chi tiết",
       "hideDetail": "Thu gọn",
       "attention": "Cần xử lý",
@@ -1090,7 +1088,7 @@
         "planRuns": "{n} lượt/tháng",
         "planUnlimited": "Không giới hạn"
       },
-      "title": "Ứng dụng & Gói",
+      "title": "Ứng dụng",
       "desc": "Chọn mức dùng cho từng ứng dụng của công ty. Tắt = tắt gói; Xem/Sửa/Quản trị = bật gói và cấp quyền theo mức (trần của công ty). Vai trong app chỉ có hiệu lực tới mức này.",
       "descReadOnly": "Ứng dụng và mức dùng của công ty (chỉ xem). Đơn vị vận hành nền tảng đổi mức.",
       "packOn": "Gói đang bật",

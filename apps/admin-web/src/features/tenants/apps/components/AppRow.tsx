@@ -1,5 +1,6 @@
 // CR-121 c12 · R3 · MỘT hàng app của bảng: Ứng dụng · Quyền truy cập · Trạng thái (+ lý do) · Thành viên · Quy trình ("2 bật · 1 tắt").
 // Chi tiết (tính năng thêm + thông tin gói/vai) mở dưới hàng. Chữ dài cắt + tooltip.
+import { ChevronDown, ChevronUp } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -35,7 +36,8 @@ export type AppRowProps = {
   onOpenFlows: () => void;
 };
 
-function StatusCell({ s, always }: { s: ReturnType<typeof rowStatus>; always: boolean }) {
+/** Lý do chỉ hiện khi KHÁC hiển nhiên (bật mà thiếu quy trình, quyền không chuẩn); "Đang bật/Đang tắt" tự nói lên. */
+function StatusCell({ s }: { s: ReturnType<typeof rowStatus> }) {
   const { t } = useTranslation();
   const jobName = useJobName();
   const tone = s.kind === "on" ? "ok" : s.kind === "off" ? "off" : "warn";
@@ -44,11 +46,7 @@ function StatusCell({ s, always }: { s: ReturnType<typeof rowStatus>; always: bo
       ? t("tenants.apps.reason.jobOff", { job: jobName({ slot: s.slot }) })
       : s.kind === "nonstandard"
         ? t("tenants.features.nonstandardHint")
-        : s.kind === "off"
-          ? t("tenants.apps.reason.levelOff")
-          : always
-            ? t("tenants.apps.reason.always")
-            : null;
+        : null;
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-1" data-status={s.kind}>
       <StatusBadge tone={tone}>{t(`tenants.apps.status.${s.kind}`)}</StatusBadge>
@@ -99,7 +97,29 @@ function Access({
       />
     );
   }
-  return <span className="text-caption text-muted-foreground">{t("tenants.apps.accessList")}</span>;
+  return null; // dạng danh sách: chỉnh từng tính năng ở phần chi tiết (mũi tên cuối hàng), không thêm chữ
+}
+
+function DetailToggle({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const { t } = useTranslation();
+  const label = t(open ? "tenants.apps.hideDetail" : "tenants.apps.showDetail");
+  return (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      className="ml-auto"
+      aria-expanded={open}
+      aria-label={label}
+      title={label}
+      onClick={onToggle}
+    >
+      {open ? (
+        <ChevronUp aria-hidden className="size-4" />
+      ) : (
+        <ChevronDown aria-hidden className="size-4" />
+      )}
+    </Button>
+  );
 }
 
 export const ROW_GRID =
@@ -134,7 +154,7 @@ export function AppRow(p: AppRowProps) {
         <div className="min-w-0">
           <Access p={p} name={name} level={level} />
         </div>
-        <StatusCell s={status} always={card.mode === "core"} />
+        <StatusCell s={status} />
         <span className="text-body">{p.members ?? "—"}</span>
         <span className="flex min-w-0 flex-wrap items-center gap-1">
           {p.flows ? (
@@ -146,23 +166,13 @@ export function AppRow(p: AppRowProps) {
               onClick={p.onOpenFlows}
             >
               <span className="truncate">
-                {t("tenants.apps.flowsCount", { on: p.flows.on, off: p.flows.off })}
+                {t("tenants.apps.flowsCount", { on: p.flows.on, total: p.flows.on + p.flows.off })}
               </span>
             </Button>
           ) : (
             "—"
           )}
-          {hasDetail ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto h-auto px-1 py-0 text-caption"
-              aria-expanded={open}
-              onClick={() => setOpen(!open)}
-            >
-              {t(open ? "tenants.apps.hideDetail" : "tenants.apps.showDetail")}
-            </Button>
-          ) : null}
+          {hasDetail ? <DetailToggle open={open} onToggle={() => setOpen(!open)} /> : null}
         </span>
       </div>
       {open ? (

@@ -935,7 +935,6 @@
       "lockNote": "Locking the company stops its users from signing in until it is unlocked.",
       "lockedNote": "The company is locked — users cannot sign in."
     },
-    "summaryFlows": "{on}/{total} jobs have a process",
     "agents": {
       "unavailable": "Agents are granted in Agent Forge. This will be available once Agent Hub is ready."
     },
@@ -956,7 +955,6 @@
       "zalo": "Zalo OA",
       "phones": "Phones"
     },
-    "summary": "{users} users · {apps} apps on · {roles} roles",
     "company": {
       "card": {
         "info": "Company information",
@@ -1074,7 +1072,7 @@
         "jobOff": "{job} is not on"
       },
       "accessList": "Per feature",
-      "flowsCount": "Processes: {on} on · {off} off",
+      "flowsCount": "{on}/{total} on",
       "showDetail": "Details",
       "hideDetail": "Collapse",
       "attention": "Needs attention",
@@ -1090,7 +1088,7 @@
         "planRuns": "{n} runs/month",
         "planUnlimited": "Unlimited"
       },
-      "title": "Apps & Packs",
+      "title": "Apps",
       "desc": "Pick the access level of each app for this company. Off = pack off; View/Edit/Admin = pack on with matching access (the company ceiling). Roles in the app only take effect up to this level.",
       "descReadOnly": "The company's apps and levels (read only). The platform operator changes them.",
       "packOn": "Pack on",

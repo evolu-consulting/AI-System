@@ -22,7 +22,6 @@ import { setLastTenant } from "@/lib/last-tenant";
 import { useTr } from "@/lib/use-translate";
 import { useTenantDetail } from "../api";
 import { TenantProfileTab } from "../components/profile/TenantProfileTab";
-import { TenantSummaryLine } from "../components/TenantSummaryLine";
 import { useLockFlow } from "../hooks/use-lock-flow";
 import { useTenantConflict } from "../hooks/use-tenant-conflict";
 import { slotsToValue, type TenantInfoValues } from "../lib/schemas";
@@ -49,14 +48,10 @@ function Header({
   /** ADM-FR-79 · "Onboard lại": mở wizard từ bước 2 (chỉ platform_admin). */
   onOnboard?: () => void;
 }) {
-  const { t, i18n } = useTranslation();
-  const date = new Date(tenant.created_at).toLocaleDateString(
-    i18n.language === "vi" ? "vi-VN" : "en-GB",
-  );
+  const { t } = useTranslation();
   return (
     <PageHeader
       title={tenant.name}
-      description={`${t("tenants.detail.createdAt", { date })} · ${t("tenants.detail.userCount", { users: tenant.user_count })}`}
       actions={
         <>
           {tenant.status === "locked" ? (
@@ -160,7 +155,6 @@ export function TenantDetailPage() {
             : undefined
         }
       />
-      <TenantSummaryLine tenantId={tenant.id} users={tenant.user_count} />
       <Tabs
         value={current}
         onValueChange={(v) => void navigate({ search: { tab: v as TenantTab }, replace: true })}

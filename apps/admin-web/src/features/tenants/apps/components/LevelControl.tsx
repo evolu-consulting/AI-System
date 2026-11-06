@@ -24,7 +24,7 @@ export function LevelControl({ value, available, ariaLabel, disabled, onChange }
       type="single"
       value={value}
       aria-label={ariaLabel}
-      className="grid w-full min-w-0 grid-cols-4"
+      className="grid w-full min-w-0 grid-cols-4 divide-x divide-border"
       // Bấm lại mức đang chọn trả giá trị rỗng: coi như chọn lại chính nó (chuẩn hoá bộ quyền không chuẩn).
       onValueChange={(v) => onChange((v || value) as AppLevel)}
     >
@@ -36,7 +36,7 @@ export function LevelControl({ value, available, ariaLabel, disabled, onChange }
             value={l}
             title={label}
             disabled={disabled || !available[l]}
-            className="h-9 min-w-0 rounded-none px-2 first:rounded-l-md last:rounded-r-md"
+            className="h-9 min-w-0 rounded-none px-2 text-body font-medium leading-none first:rounded-l-md last:rounded-r-md data-[state=on]:bg-primary/10 data-[state=on]:text-foreground"
           >
             <span className="min-w-0 truncate">{label}</span>
           </ToggleGroupItem>

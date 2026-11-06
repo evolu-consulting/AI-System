@@ -1,7 +1,7 @@
 // CR-121 c12 · R3 · "x bật · y tắt", dải Cần xử lý, trạng thái + lý do của hàng app.
 import { describe, expect, it } from "bun:test";
 import type { FlowGroup, FlowJob } from "../../flows/lib/flow-rows";
-import { attentionOf, flowCounts, rowStatus } from "./apps-table";
+import { appsOnCount, attentionOf, flowCounts, rowStatus } from "./apps-table";
 
 const job = (slot: string, status: "on" | "off"): FlowJob => ({
   slot,
@@ -62,5 +62,25 @@ describe("CR-121 c12 · rowStatus", () => {
       slot: "community.x",
     });
     expect(rowStatus({ mode: "levels" }, lv(), true, [])).toEqual({ kind: "on" });
+  });
+});
+
+describe("CR-121 f11 · appsOnCount (một cách đếm)", () => {
+  const card = (app: string, mode: string, keys: string[] = []) =>
+    ({
+      app,
+      mode,
+      levelFeatures: { read: keys[0] ? { key: keys[0] } : undefined },
+      addons: [],
+      main: undefined,
+    }) as never;
+  it("Cơ bản (luôn bật) không tính; y = số ứng dụng chọn được", () => {
+    const cards = [
+      card("core", "core"),
+      card("contracts", "levels", ["contracts-read"]),
+      card("community", "levels", ["community-read"]),
+    ];
+    expect(appsOnCount(cards, new Set(["contracts-read"]))).toEqual({ on: 1, total: 2 });
+    expect(appsOnCount(cards, new Set())).toEqual({ on: 0, total: 2 });
   });
 });

@@ -12,7 +12,7 @@ import { useSession } from "@/lib/auth/use-session";
 import { loadError } from "@/lib/load-error";
 import { useTr } from "@/lib/use-translate";
 import { AppsTable, AttentionStrip, StatTiles, type Tile } from "../../apps/components/AppsTable";
-import { attentionOf, flowCounts, isAppOn } from "../../apps/lib/apps-table";
+import { appsOnCount, attentionOf, flowCounts, isAppOn } from "../../apps/lib/apps-table";
 import { useCompanyFlows } from "../../flows/hooks/use-company-flows";
 import { useAppsTab } from "../../hooks/use-apps-tab";
 import { useTenantOverview } from "../../hooks/use-tenant-overview";
@@ -101,6 +101,7 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange }: Props) {
     };
   });
   const quota = overview.quota;
+  const appsOn = appsOnCount(a.cards, value);
   const tiles: Tile[] = [
     {
       label: t("tenants.apps.tile.users"),
@@ -109,8 +110,8 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange }: Props) {
     },
     {
       label: t("tenants.apps.tile.apps"),
-      value: String(onApp.size),
-      sub: `/ ${a.cards.length}`,
+      value: String(appsOn.on),
+      sub: `/ ${appsOn.total}`,
     },
     {
       label: t("tenants.apps.tile.runs"),
@@ -128,12 +129,7 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange }: Props) {
   return (
     <div className="space-y-6">
       <section aria-label={t("tenants.apps.title")} className="space-y-4">
-        <div>
-          <h2 className="text-h3 font-semibold">{t("tenants.apps.title")}</h2>
-          <p className="text-caption text-muted-foreground">
-            {t(readOnly ? "tenants.apps.descReadOnly" : "tenants.apps.desc")}
-          </p>
-        </div>
+        <h2 className="text-h3 font-semibold">{t("tenants.apps.title")}</h2>
         <AttentionStrip items={attention} onAssign={(slot) => go(FLOWS_TAB, slot)} />
         <AppsTable rows={rows} />
         <StatTiles tiles={tiles} onOpenFlows={() => go(FLOWS_TAB)} />

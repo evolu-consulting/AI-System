@@ -5,9 +5,8 @@ import { useTranslation } from "react-i18next";
 import { IconButton } from "@/components/shared/IconButton";
 import { useSession } from "@/lib/auth/use-session";
 import { cn } from "@/lib/utils";
+import { readCollapsed, writeCollapsed } from "../lib/sidebar-pref";
 import { SidebarNav } from "./SidebarNav";
-
-const STORAGE_KEY = "ai.sidebarCollapsed";
 
 function isTyping(target: EventTarget | null): boolean {
   return (
@@ -17,11 +16,11 @@ function isTyping(target: EventTarget | null): boolean {
 }
 
 function useCollapsed(): [boolean, () => void] {
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(STORAGE_KEY) === "1");
+  const [collapsed, setCollapsed] = useState(() => readCollapsed());
   const toggle = useCallback(
     () =>
       setCollapsed((c) => {
-        localStorage.setItem(STORAGE_KEY, c ? "0" : "1");
+        writeCollapsed(!c);
         return !c;
       }),
     [],

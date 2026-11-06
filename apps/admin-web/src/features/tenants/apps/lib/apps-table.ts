@@ -11,6 +11,17 @@ export function isAppOn(card: AppCard, draft: ReadonlySet<string>): boolean {
   return card.addons.some((f) => draft.has(f.key));
 }
 
+/**
+ * "Ứng dụng đang bật x / y": MỘT cách đếm cho mọi chỗ — Cơ bản (luôn bật, không phải lựa chọn) KHÔNG tính; y = số ứng dụng chọn được.
+ */
+export function appsOnCount(
+  cards: readonly AppCard[],
+  draft: ReadonlySet<string>,
+): { on: number; total: number } {
+  const choosable = cards.filter((c) => c.mode !== "core");
+  return { on: choosable.filter((c) => isAppOn(c, draft)).length, total: choosable.length };
+}
+
 export type FlowCount = { on: number; off: number };
 
 /** "x bật · y tắt" của từng app (app không có việc ⇒ không có mục). */
