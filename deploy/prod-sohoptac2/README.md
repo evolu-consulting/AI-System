@@ -39,7 +39,7 @@ các cổng này; public bằng tên miền ⇒ đổi `S2_PUBLIC_*`, `CORS_ORIG
   Đổi cấu hình trong kho CẦN KHỞI ĐỘNG LẠI Hub (transport giữ cache, không có TTL). Giá trị secret là JSON `{"v":1,host,port,secure,user,from,password}`;
   hàng `smtp_password` sai định dạng (kiểu cũ/hỏng) ⇒ check "Cấu hình gửi mail" cảnh báo "không đọc được — tạo lại secret" (sau lần gửi đầu):
   xoá hàng đó (`delete from hub.secrets where kind='smtp_password' and tenant_id is null;` bằng role chủ DB) rồi khởi động lại Hub để seed lại từ env.
-  (Mailer riêng của admin-api — `SMTP_URL`/`MAIL_FROM` — chưa chuyển về kho, xem tasks CR-121 c21.)
+  Mail của admin-api (cảnh báo quota…) cũng đi qua kho này (CR-121 c21b): admin-api gọi hub-api `POST /internal/mail` bằng `ADMIN_HUB_URL` + `HUB_INTERNAL_TOKEN` (`gen-env.sh` đã sinh sẵn, KHÔNG cần đổi env). **Deploy:** admin-api không còn đọc `SMTP_URL`/`MAIL_FROM` — xoá hai dòng đó khỏi `.env` trên máy chủ nếu có (vô hại nếu để, bị bỏ qua); cần deploy hub-api TRƯỚC hoặc cùng admin-api (admin-api mới gọi endpoint mới của hub); kho chưa có cấu hình mail ⇒ mail quota không gửi (alert giữ `pending`) cho tới khi có cấu hình.
 
 ## AI qua gói Claude (ai-sub)
 - `gen-env.sh` chép MỘT lần `~/.claude/.credentials.json` + `~/.claude.json` của user `evoc` vào `./claude-home` (700/600) và chép

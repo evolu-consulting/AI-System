@@ -5,6 +5,7 @@ export * from "./attachments";
 export * from "./autofix";
 export * from "./credential";
 export * from "./errors";
+export * from "./mail-relay";
 export * from "./mcp";
 export * from "./source-credential";
 export * from "./sources";

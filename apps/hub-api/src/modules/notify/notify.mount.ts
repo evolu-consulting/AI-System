@@ -17,6 +17,7 @@ import { type NotifyMode, type Transports, transportsFor } from "./adapters/tran
 import type { VapidConfig } from "./adapters/webpush.transport";
 import { drain } from "./application/dispatch.usecase";
 import { InboxService } from "./application/inbox.service";
+import type { EmailTransport } from "./application/ports";
 
 export type NotifyDeps = {
   mode?: NotifyMode;
@@ -85,13 +86,18 @@ async function seedFromEnv(d: NotifyMountDeps, seed: MailConfig | null | undefin
 const DEFAULT_EVERY_MS = 2000;
 const DEFAULT_BASE_URL = "http://localhost:3300";
 
-export function mountNotify<E extends Env>(app: Hono<E>, d: NotifyMountDeps): void {
+/** Trả cổng email của transport đang dùng (null khi thông báo tắt) — cho `/internal/mail` (admin-api gửi qua Hub, CR-121 c21b). */
+export function mountNotify<E extends Env>(
+  app: Hono<E>,
+  d: NotifyMountDeps,
+): { email: EmailTransport | null } {
   const n = d.notify ?? {};
   const inbox = new InboxService(inboxRepo(d.db));
   app.route(NOTIFICATIONS_PREFIX, notifyRoutes(inbox, { publicKey: n.vapidPublicKey ?? null }));
   const transports =
     n.transports ?? transportsFor(n.mode ?? "off", n.live && liveConfig(d, n.live));
-  if (!transports || !n.worker) return;
+  if (!transports) return { email: null };
+  if (!n.worker) return { email: transports.email };
   // Khởi tạo kho secret mail từ env MỘT lần (không ghi đè); worker đợi xong lượt này rồi mới gửi.
   const seeded = seedFromEnv(d, n.live?.mailSeed);
   const deps = {
@@ -111,4 +117,5 @@ export function mountNotify<E extends Env>(app: Hono<E>, d: NotifyMountDeps): vo
     log: d.log,
     signal: d.signal,
   });
+  return { email: transports.email };
 }

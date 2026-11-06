@@ -26,9 +26,6 @@ export const EnvSchema = z.object({
   JWT_KID: z.string().min(1).max(64),
   /** 32 byte base64 (`^[A-Za-z0-9+/]{43}=$`), mã hoá secret (M2-R02). */
   SECRET_MASTER_KEY: z.string().refine(isMasterKeyB64),
-  /** Vắng = tắt gửi mail (cảnh báo lúc khởi động). ADM-FR-41, plan-cd §10. */
-  SMTP_URL: z.url({ protocol: /^smtps?$/ }).optional(),
-  MAIL_FROM: z.string().max(200).optional(),
   /** Gốc admin-web cho link trong mail cảnh báo quota (plan M4 §7). ADM-FR-41. */
   ADMIN_WEB_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:3000"),
   /** app-catalog · URL khởi tạo cho `admin.app_catalog` (chỉ điền hàng còn rỗng lúc khởi động); vắng ⇒ để trống. */

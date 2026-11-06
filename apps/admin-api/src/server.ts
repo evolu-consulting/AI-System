@@ -87,7 +87,10 @@ async function main(): Promise<void> {
   } catch (err) {
     fail("env", err);
   }
-  if (!env.SMTP_URL) logger.warn("mailer-disabled", { reason: "SMTP_URL vắng, không gửi mail" });
+  if (!env.ADMIN_HUB_URL || !env.HUB_INTERNAL_TOKEN)
+    logger.warn("mailer-disabled", {
+      reason: "ADMIN_HUB_URL/HUB_INTERNAL_TOKEN vắng, không gửi mail (mail đi qua Hub)",
+    });
   const keys = await loadJwtKeys(env).catch((err) => fail("jwt", err));
   let secretKey: ReturnType<typeof parseMasterKey>;
   try {
@@ -112,7 +115,7 @@ async function main(): Promise<void> {
       dummyHash,
       legacySunset: env.LEGACY_HASH_SUNSET,
       secretKey,
-      mailer: createMailer(env),
+      mailer: createMailer({ url: env.ADMIN_HUB_URL, token: env.HUB_INTERNAL_TOKEN }),
       adminWebUrl: env.ADMIN_WEB_URL,
       frozenModules: env.ADMIN_FROZEN_MODULES === "on",
       difyConsoleUrl: env.DIFY_CONSOLE_URL,

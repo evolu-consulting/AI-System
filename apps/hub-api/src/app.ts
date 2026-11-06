@@ -23,6 +23,7 @@ import { mountH3b } from "./app.h3b";
 import { mountH4a } from "./app.h4a";
 import { mountMcp, sharedWorkflowInvoker } from "./app.mcp";
 import { withPackBridges } from "./app.n2";
+import { mountNotifyAndRelay } from "./app.notify";
 import { processAgentRunner, runDrivers, slotDefaultsOf, startRunLoops } from "./app.runner";
 import {
   mountRoomAgents,
@@ -49,7 +50,6 @@ import { mountApplyResult } from "./modules/internal/apply.routes";
 import { mountSourceCredential } from "./modules/internal/source-credential.routes";
 import type { KhRuntime } from "./modules/kh/kh.mount";
 import { NOTIFICATIONS_PREFIX } from "./modules/notify/adapters/notify.routes";
-import { mountNotify } from "./modules/notify/notify.mount";
 import { mountOps, OPS_PREFIX } from "./modules/ops/ops.mount";
 import type { ContextLabeler } from "./modules/packs/kit/public";
 import { checkPackAccess, externalFirewall, packAccessInput } from "./modules/packs/kit/public";
@@ -372,7 +372,7 @@ export function createApp(cfg: AppConfig, depsIn: AppDeps = {}): Hono<AppVars> {
   if (config) mountPacks(app, { ...deps, config, esign }); // N1 · `/pack/:k/me` + route gói (pkdemo)
   slotDefaultsOf(deps, config); // CR-120 · sau khi gói đã đăng ký khe
   if (deps.db) {
-    mountNotify(app, { ...deps, db: deps.db, log: logger }); // N3
+    mountNotifyAndRelay(app, { ...deps, db: deps.db, log: logger }); // N3 + CR-121 c21b
     mountOps(app, { ...deps, db: deps.db, log: logger }); // CR-104 · ops-watch (không phụ thuộc module đóng băng)
   }
   if (deps.db && config) mountMcp(app, { ...deps, db: deps.db, config, log: logger, kh });

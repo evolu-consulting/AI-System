@@ -19,7 +19,9 @@ export const HUB_INTERNAL_ERRORS = {
   // P-c2 (plan §3.5): `POST /internal/jobs/:id/apply-result`.
   APPLY_NOT_EXPECTED: 409,
   APPLY_RESULT_EXISTS: 409,
-} as const satisfies Record<string, 400 | 401 | 404 | 409 | 413 | 415 | 422 | 500 | 503>;
+  // CR-121 c21b: `POST /internal/mail` — SMTP từ chối/lỗi mạng (cấu hình chưa có ⇒ NOT_CONFIGURED 409).
+  MAIL_SEND_FAILED: 502,
+} as const satisfies Record<string, 400 | 401 | 404 | 409 | 413 | 415 | 422 | 500 | 502 | 503>;
 
 export type HubInternalErrorCode = keyof typeof HUB_INTERNAL_ERRORS;
 export type HubInternalErrorStatus = (typeof HUB_INTERNAL_ERRORS)[HubInternalErrorCode];

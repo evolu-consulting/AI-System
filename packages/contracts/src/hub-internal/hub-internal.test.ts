@@ -29,6 +29,7 @@ describe("HUB-FR-89 · hub-internal", () => {
       AUTOFIX_RESULT_EXISTS: 409,
       APPLY_NOT_EXPECTED: 409,
       APPLY_RESULT_EXISTS: 409,
+      MAIL_SEND_FAILED: 502,
     });
     for (const code of Object.keys(HUB_INTERNAL_ERRORS)) {
       expect(ErrorResponseSchema.safeParse({ error: { code, message: "m" } }).success).toBe(true);
