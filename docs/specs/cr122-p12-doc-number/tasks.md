@@ -17,9 +17,10 @@ Lý do: số chứng từ có "/", dấu, khoảng trắng làm lỗi khi up và
 - i18n `packages/i18n/locales/contracts/v2f.{vi,en}.json`
 
 ## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
 
-### MODIFIED contracts/số-chứng-từ
-#### Yêu cầu
+### MODIFIED sht/chung-tu.md
+#### Yêu cầu: Số chứng từ không ký tự đặc biệt
 Số chứng từ chỉ gồm chữ không dấu, số và dấu gạch ngang, tối đa 50 ký tự; web chuẩn hoá khi gõ/dán/AI đọc và báo lỗi dưới ô; server chặn 422 path `number`; số cũ chưa sửa không chặn lưu.
 - Kịch bản: số "2026/11-xyz" chuẩn hoá thành "2026-11-XYZ" [test: packages/contracts/src/pack-contracts/doc-number.test.ts]
 - Kịch bản: tạo tay / PATCH với số có "/" ⇒ lỗi path number; PATCH không có khoá number không bị ảnh hưởng [test: packages/contracts/src/pack-contracts/doc-number.test.ts]
