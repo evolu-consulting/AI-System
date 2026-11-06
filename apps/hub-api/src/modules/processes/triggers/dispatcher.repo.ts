@@ -54,15 +54,21 @@ export async function insertFlowEvents(tx: Tx, evs: readonly FlowEventInput[]): 
   return r?.n ?? 0;
 }
 
-/** Sự kiện hết lượt thử mà Hub chết giữa chừng (attempts = 5, lease đã qua, chưa xong) ⇒ chốt lỗi `lease_exhausted`. MỘT câu. */
-export async function closeExhausted(tx: Tx, now: Date): Promise<number> {
-  const r = await tx.execute<{
+/** Sự kiện hết lượt thử mà Hub chết giữa chừng (attempts = 5, lease đã qua, chưa xong) ⇒ chốt lỗi `lease_exhausted`. MỘT câu.
+ *  P11b · trả sự kiện đã chốt (bộ điều phối báo app "không mở được lượt"). */
+export async function closeExhausted(
+  tx: Tx,
+  now: Date,
+): Promise<{ id: string; tenant_id: string; event: string; ref: string }[]> {
+  return tx.execute<{
     id: string;
+    tenant_id: string;
+    event: string;
+    ref: string;
   }>(sql`update hub.flow_events set processed_at = ${now.toISOString()}::timestamptz,
       error = 'lease_exhausted'
     where processed_at is null and attempts >= ${FLOW_EVENT_ATTEMPTS_MAX}
-      and next_at <= ${now.toISOString()}::timestamptz returning id`);
-  return r.length;
+      and next_at <= ${now.toISOString()}::timestamptz returning id, tenant_id, event, ref`);
 }
 
 /**

@@ -152,29 +152,38 @@ const STAGE_KEY = /^s(\d+)$/;
  * DUYỆT của run đã tới (có task review hoặc đang mở), đúng `s<idx>` của engine; nhánh chưa tới / node tự động không hiện.
  */
 export function runCardSteps(sv: EngineStepsView, x: CardExtras = {}): CardStep[] {
-  return sv.steps.flatMap((st) => {
-    const m = STAGE_KEY.exec(st.key);
-    if (!m || (!st.task_ref && !st.task && st.status !== "open")) return [];
-    return [
-      {
-        idx: Number(m[1]),
-        key: st.key,
-        name: st.name ?? st.key,
-        kind: "review" as const,
-        status: st.status,
-        group_id: st.group_id ?? null,
-        head_only: false,
-        escalated_group_id: st.escalated_group_id,
-        due_at: st.due_at,
-        escalated: st.escalated,
-        decided_by: st.decided_by,
-        decided_at: st.decided_at,
-        feedback: st.feedback,
-        skip_when: null,
-        ...ownerFields(st, x),
-      },
-    ];
-  });
+  const reached = (st: EngineStageView) => !!st.task_ref || !!st.task || st.status === "open";
+  const shown = sv.steps.filter((st) => STAGE_KEY.test(st.key) && reached(st));
+  // P11b · chưa có bước mở (vừa gắn run, node tự động đang chạy) ⇒ hiện bước KẾ TIẾP đang chờ, thẻ không trống.
+  if (!shown.some((s) => s.status === "open")) {
+    const next = sv.steps.find(
+      (st) => STAGE_KEY.test(st.key) && !reached(st) && WAITING.has(st.status),
+    );
+    if (next) shown.push(next);
+  }
+  return shown.map((st) => runCardStep(st, x));
+}
+const WAITING = new Set<CardStepStatus>(["pending", "running"]);
+
+function runCardStep(st: EngineStageView, x: CardExtras): CardStep {
+  const m = STAGE_KEY.exec(st.key);
+  return {
+    idx: Number(m?.[1]),
+    key: st.key,
+    name: st.name ?? st.key,
+    kind: "review" as const,
+    status: st.status,
+    group_id: st.group_id ?? null,
+    head_only: false,
+    escalated_group_id: st.escalated_group_id,
+    due_at: st.due_at,
+    escalated: st.escalated,
+    decided_by: st.decided_by,
+    decided_at: st.decided_at,
+    feedback: st.feedback,
+    skip_when: null,
+    ...ownerFields(st, x),
+  };
 }
 
 /** Bước đang mở (stage `s<i>` mở) — bước người dùng đầu tiên có trạng thái `open`. */
@@ -198,6 +207,8 @@ export type EngineCardInput = {
     feedback: string | null;
     /** CR-107 · run đang gắn; `null` ⇒ lượt kẹt chưa có run; vắng ⇒ không biết (coi như có run). */
     engineRunId?: string | null;
+    /** CR-122 · P11b · lần ghi cuối của lượt (ISO) — đo thời gian chờ FLOW_STARTING. */
+    updatedAt?: string | null;
   };
   flow: readonly FlowStep[];
   facts: FlowFacts;
@@ -215,6 +226,15 @@ export function blockReasonOf(flow: readonly FlowStep[], idx: number, starter: s
     : ("not_reviewer" as const);
 }
 
+const FLOW_STARTING_CODE = "FLOW_STARTING";
+/** CR-122 · P11b · trần chờ bộ điều phối mở flow (vòng nền 2 s; quá trần ⇒ coi như kẹt, cho Mở lại). */
+export const FLOW_START_STALE_MS = 120_000;
+const flowStartStale = (i: EngineCardInput): boolean => {
+  const at = i.approval.updatedAt ? Date.parse(i.approval.updatedAt) : Number.NaN;
+  const now = (i.extras?.now ?? new Date()).getTime();
+  return Number.isFinite(at) && now - at > FLOW_START_STALE_MS;
+};
+
 /** CR-107 · lượt `level1`: run `needs_decision` ⇒ lý do + lúc mở quyết định của engine; run đã kết thúc bất thường / lượt kẹt chưa có
  *  run ⇒ `stalled` + lý do đã ghi ở lượt (`feedback`, vd `ENGINE_RUN_FAILED`, `FLOW_GROUP_MISSING:<mã>`); còn lại ⇒ null. */
 export function attentionOf(i: EngineCardInput): EngineAttention | null {
@@ -227,8 +247,8 @@ export function attentionOf(i: EngineCardInput): EngineAttention | null {
       since: sv.decision?.at ?? null,
     };
   const noRun = i.approval.engineRunId === null;
-  // CR-122 · P11 · đang chờ bộ điều phối mở flow (vài giây) — không phải kẹt, không mời "Mở lại".
-  if (noRun && i.approval.feedback === "FLOW_STARTING") return null;
+  // CR-122 · P11/P11b · đang chờ bộ điều phối mở flow: còn mới (≤ 2 phút) ⇒ không phải kẹt; quá ⇒ "kẹt: chưa mở được quy trình".
+  if (noRun && i.approval.feedback === FLOW_STARTING_CODE && !flowStartStale(i)) return null;
   if (noRun || (sv !== null && isTerminalRun(sv.status)))
     return { kind: "stalled", reason: i.approval.feedback, since: null };
   return null;

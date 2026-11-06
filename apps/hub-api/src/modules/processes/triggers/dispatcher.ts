@@ -16,6 +16,12 @@ import {
 } from "./dispatcher.repo";
 import { flowTriggerTenants } from "./flags";
 import { type EventPlan, FLOW_EVENT_ATTEMPTS_MAX, planEvent, retryDelayMs } from "./match.rules";
+import {
+  NL_START_FAILED,
+  type NotLaunched,
+  notifyNotLaunched,
+  notLaunchedReason,
+} from "./not-launched";
 
 export type LaunchResult = { runId: string } | "duplicate";
 /** Lỗi KHÔNG thử lại (cấu hình: flow Thư viện chưa có bản công ty, người gây sự kiện không được chạy…) — ghi `refused`. */
@@ -88,30 +94,59 @@ async function handle(
   cands: readonly CandidateRow[],
   on: boolean,
   now: Date,
-): Promise<{ f: EventFinish; launched: number }> {
+): Promise<{ f: EventFinish; launched: number; nl: string | null }> {
   const info = EVENT_INFO.get(e.event);
   if (!info)
-    return { f: { id: e.id, retryAt: null, error: "unknown_event", outcome: {} }, launched: 0 };
+    return {
+      f: { id: e.id, retryAt: null, error: "unknown_event", outcome: {} },
+      launched: 0,
+      nl: null,
+    };
   const mine = cands.filter((c) => c.tenantId === e.tenant_id && c.event === e.event);
   const plan = planEvent(mine, e.facts, info.decides);
   const base = { skipped: plan.skipped, none: plan.run.length === 0 };
   if (!on) {
     const outcome = { ...base, shadow: true, would_run: plan.run.map((c) => c.companyFlowId) };
-    return { f: { id: e.id, retryAt: null, error: null, outcome }, launched: 0 };
+    return { f: { id: e.id, retryAt: null, error: null, outcome }, launched: 0, nl: null };
   }
-  if (!e.actor_id && plan.run.length > 0) {
+  const planned = plan.run.length;
+  if (!e.actor_id && planned > 0) {
     const outcome = { ...base, ran: [] };
-    return { f: { id: e.id, retryAt: null, error: "no_actor", outcome }, launched: 0 };
+    const nl = notLaunchedReason({ ...NONE, planned, noActor: true });
+    return { f: { id: e.id, retryAt: null, error: "no_actor", outcome }, launched: 0, nl };
   }
   const { ran, refused, errors } = await runPlan(d, e, info.app, plan);
-  return { f: finishOf(e, now, { ...base, ran, refused }, errors), launched: ran.length };
+  const f = finishOf(e, now, { ...base, ran, refused }, errors);
+  // CR-122 · P11b · chốt xong mà không có lượt ⇒ báo app (bản ghi không kẹt "đang mở quy trình").
+  const nl = notLaunchedReason({
+    planned,
+    ran: ran.length,
+    refused: refused.map((r) => r.reason),
+    errors: errors.length,
+    retrying: f.retryAt !== null,
+    noActor: false,
+  });
+  return { f, launched: ran.length, nl };
 }
+
+const NONE = { planned: 0, ran: 0, refused: [], errors: 0, retrying: false, noActor: false };
+const appOf = (event: string) => EVENT_INFO.get(event)?.app;
 
 /** Một lượt điều phối; trả số liệu (test gọi trực tiếp, vòng nền lặp khi còn việc). */
 export async function dispatchOnce(d: DispatcherDeps): Promise<DispatchStats> {
   const now = (d.now ?? (() => new Date()))();
   const { evs, cands, on } = await withHubScope(d.db, SYS, async (tx) => {
-    await closeExhausted(tx, now); // soát E1 #1: hết 5 lượt mà Hub chết ⇒ không kẹt mãi
+    const dead = await closeExhausted(tx, now); // soát E1 #1: hết 5 lượt mà Hub chết ⇒ không kẹt mãi
+    await notifyNotLaunched(
+      tx,
+      appOf,
+      dead.map((x) => ({
+        tenantId: x.tenant_id,
+        event: x.event,
+        ref: x.ref,
+        reason: NL_START_FAILED,
+      })),
+    );
     const evs = await claimEvents(tx, now, d.batch ?? 50, d.leaseMs ?? 120_000);
     if (evs.length === 0) return { evs, cands: [], on: new Set<string>() };
     const cands = await candidatesOf(tx, evs);
@@ -120,13 +155,18 @@ export async function dispatchOnce(d: DispatcherDeps): Promise<DispatchStats> {
   });
   if (evs.length === 0) return { claimed: 0, launched: 0, failed: 0 };
   const done: EventFinish[] = [];
+  const nls: NotLaunched[] = [];
   let launched = 0;
   for (const e of evs) {
     const r = await handle(d, e, cands, on.has(e.tenant_id), now);
     done.push(r.f);
     launched += r.launched;
+    if (r.nl) nls.push({ tenantId: e.tenant_id, event: e.event, ref: e.ref, reason: r.nl });
   }
-  await withHubScope(d.db, SYS, (tx) => finishEvents(tx, now, done));
+  await withHubScope(d.db, SYS, async (tx) => {
+    await finishEvents(tx, now, done);
+    await notifyNotLaunched(tx, appOf, nls);
+  });
   return { claimed: evs.length, launched, failed: done.filter((f) => f.error).length };
 }
 

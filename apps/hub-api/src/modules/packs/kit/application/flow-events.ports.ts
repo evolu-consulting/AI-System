@@ -64,4 +64,12 @@ export type OutcomeHandler<TX = unknown> = {
    * ghi (vd thẻ duyệt HĐ). Phải idempotent + có điều kiện (CAS); trả false = không gắn (bản ghi không chờ lượt). Ném ⇒ tx rollback.
    */
   launched?(tx: TX, input: Omit<OutcomeInput, "outcome" | "actorId">): Promise<boolean>;
+  /**
+   * CR-122 · P11b · sự kiện của bản ghi đã chốt mà KHÔNG mở được lượt nào (0 flow khớp / từ chối / hết lượt thử) — gọi TRONG tx chốt
+   * lô của bộ điều phối. `reason` = mã máy (vd `FLOW_NOT_ASSIGNED`, `FLOW_GROUP_MISSING:<mã>`). Có điều kiện (CAS), không ném.
+   */
+  notLaunched?(
+    tx: TX,
+    input: { tenantId: string; event: string; ref: string; reason: string },
+  ): Promise<boolean>;
 };

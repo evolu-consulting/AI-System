@@ -68,6 +68,7 @@ type StateRow = {
   a_eat?: string | null;
   a_erm?: string | null;
   a_ovr?: string[] | null;
+  a_upd?: string | null;
   owner?: string | null;
   deal: string | null;
   v: unknown;
@@ -94,6 +95,7 @@ const toState = (r: StateRow): ApprovalState => ({
           esignAt: r.a_eat ?? null,
           esignRemindedAt: r.a_erm ?? null,
           overrideTasks: r.a_ovr ?? [],
+          updatedAt: r.a_upd ?? null,
         }
       : null,
   owner: r.owner ?? null,
@@ -111,7 +113,7 @@ function stateQ(tx: Tx, tid: string): ApprovalRepo["state"] {
         a.status as a_status, a.started_by as a_by, a.feedback as a_fb, a.mode as a_mode, a.engine_run_id as a_run, a.flow_steps as a_steps, c.deal,
         a.esign_status as a_es, a.esign_reason as a_er, c.owner_user_id as owner,
         (a.esign_status = 'sending' and a.esign_at < now() - make_interval(mins => ${ESIGN_SENDING_STALE_MIN}::int)) as a_est,
-        ${ISO("a.esign_at")} as a_eat, ${ISO("a.esign_reminded_at")} as a_erm,
+        ${ISO("a.esign_at")} as a_eat, ${ISO("a.esign_reminded_at")} as a_erm, ${ISO("a.updated_at")} as a_upd,
         (select array_agg((e.data->>'task_id') || ':' || e.actor_user_id::text) from contracts.contract_events e
           where e.contract_id = c.id and e.tenant_id = c.tenant_id and e.type = ${OVERRIDE_EVENT}
             and e.data->>'run_id' = a.id::text) as a_ovr,

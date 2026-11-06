@@ -72,6 +72,15 @@ export function contractFlowRepo(tx: Tx, tid: string): ContractFlowRepo {
           and x.status = 'level1' and x.mode = 'machine' and x.engine_run_id is null returning x.id`);
       return rows.length > 0;
     },
+    async rearmFlow(cid, aid) {
+      // P11b · "Mở lại" lượt chờ flow chưa có run ⇒ về FLOW_STARTING (rồi phát lại sự kiện với event_id mới). CAS chưa run.
+      const rows = await tx.execute<{
+        id: string;
+      }>(sql`update contracts.approvals x set feedback = ${FLOW_STARTING}, updated_at = now()
+        where x.id = ${aid}::uuid and x.tenant_id = ${tid}::uuid and x.contract_id = ${cid}::uuid
+          and x.status = 'level1' and x.mode = 'engine' and x.engine_run_id is null returning x.id`);
+      return rows.length > 0;
+    },
     async readFacts(cid) {
       if (!UUID.test(cid)) return null;
       const [r] = await tx.execute<{ facts: unknown; started_by: string | null }>(sql`
@@ -169,6 +178,27 @@ export async function attachFlowRun(
         updated_at = now()
       from c where x.id = c.run_id and x.tenant_id = ${tid}::uuid and x.contract_id = c.id
         and x.status = 'level1' and x.mode = 'engine' and x.engine_run_id is null
+      returning x.id`);
+    return rows.length > 0;
+  });
+}
+
+/**
+ * CR-122 · P11b · `OutcomeHandler.notLaunched` cho `contract.submitted`: lượt CÒN chờ flow (`FLOW_STARTING`, chưa run) ⇒ ghi lý do (mã
+ * máy, web dịch kèm cách sửa) ⇒ thẻ báo "kẹt" + Mở lại. CAS ⇒ lượt đã có run / đã đổi lý do không bị đè. MỘT câu.
+ */
+export async function markFlowNotLaunched(
+  tx: Tx,
+  i: { tenantId: string; ref: string; reason: string },
+): Promise<boolean> {
+  const tid = i.tenantId;
+  if (!UUID.test(i.ref) || !UUID.test(tid)) return false;
+  return withPackRoleInTx(tx, CONTRACTS_PACK, tid, async () => {
+    const rows = await tx.execute<{ id: string }>(sql`update contracts.approvals x
+        set feedback = ${i.reason.slice(0, 200)}, updated_at = now()
+      from contracts.contracts c
+      where c.id = ${i.ref}::uuid and c.tenant_id = ${tid}::uuid and x.id = c.run_id and x.tenant_id = ${tid}::uuid
+        and x.status = 'level1' and x.mode = 'engine' and x.engine_run_id is null and x.feedback = ${FLOW_STARTING}
       returning x.id`);
     return rows.length > 0;
   });

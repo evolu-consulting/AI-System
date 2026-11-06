@@ -60,6 +60,7 @@ import { createManual } from "./application/create-manual.usecase";
 import { handleExtractJob } from "./application/extract-job.usecase";
 import type { SourceFileText, TaxRegistry } from "./application/extraction.ports";
 import { createExtractionQueue, type ExtractionQueue } from "./application/extraction-queue";
+import { withFlowResend } from "./application/flow-resend.usecase";
 import type { myApprovals } from "./application/mywork-approvals.usecase";
 import type { PatchApprovalGuard } from "./application/patch-fields.usecase";
 import {
@@ -279,7 +280,7 @@ export function contractsAiModule(
     ...(eng
       ? {
           engine: eng.start,
-          reopen: eng.reopen,
+          reopen: withFlowResend(eng.reopen, { uow, flow: gate }), // CR-122 · P11b · lượt chờ flow ⇒ phát lại sự kiện
           retry: eng.retry,
           cancelReopen: eng.cancelReopen,
           card: eng.card({ port: () => flow.engine?.port, uow, jobs, redo }),

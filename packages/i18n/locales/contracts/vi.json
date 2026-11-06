@@ -593,7 +593,11 @@
             "FLOW_MISSING": "chưa có quy trình duyệt được xuất bản, cần quản trị viên gán rồi bấm Mở lại",
             "FLOW_ROUTE_NONE": "không có luật chọn quy trình nào khớp phòng ban của người khởi tạo và chưa đặt luật mặc định — quản trị công ty cần thêm luật hoặc đặt mặc định (Cài đặt › Ứng dụng & quy trình), rồi bấm Mở lại",
             "FLOW_ROUTE_UNAVAILABLE": "quy trình được chọn cho phòng ban này đã bị xoá hoặc chưa xuất bản — quản trị công ty cần sửa luật chọn quy trình (Cài đặt › Ứng dụng & quy trình), rồi bấm Mở lại",
-            "CANCELLED_BY_OWNER": "lượt duyệt đã bị huỷ, bấm Mở lại để chạy lượt mới"
+            "CANCELLED_BY_OWNER": "lượt duyệt đã bị huỷ, bấm Mở lại để chạy lượt mới",
+            "FLOW_NOT_ASSIGNED": "chưa có quy trình duyệt cho loại hợp đồng này — quản trị gán quy trình ở Công ty › Quy trình, rồi bấm Mở lại",
+            "FLOW_REFUSED": "quy trình duyệt không mở được cho người gửi (tính năng của quy trình đang tắt hoặc người gửi không còn hoạt động) — quản trị kiểm tra ở Công ty › Quy trình, rồi bấm Mở lại",
+            "FLOW_START_FAILED": "hệ thống chưa mở được quy trình duyệt sau nhiều lần thử — bấm Mở lại; vẫn lỗi thì báo quản trị",
+            "FLOW_STARTING": "quy trình duyệt chưa mở được sau 2 phút — bấm Mở lại để gửi lại"
           }
         },
         "release": {

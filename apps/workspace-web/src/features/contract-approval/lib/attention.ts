@@ -12,6 +12,11 @@ const STALLED_KNOWN = new Set([
   "FLOW_ROUTE_NONE",
   "FLOW_ROUTE_UNAVAILABLE",
   "CANCELLED_BY_OWNER",
+  // CR-122 · P11b · flow theo sự kiện không mở được lượt (bộ điều phối báo) / chờ quá 2 phút
+  "FLOW_NOT_ASSIGNED",
+  "FLOW_REFUSED",
+  "FLOW_START_FAILED",
+  "FLOW_STARTING",
 ]);
 const GROUP_PREFIX = "FLOW_GROUP_MISSING";
 

@@ -23,6 +23,8 @@ export type ContractFlowRepo = {
    * `FLOW_STARTING` ⇒ máy cũ không còn quyết / khoá HĐ được; bộ điều phối gắn run (`attachFlowRun`). Có điều kiện, chạy lại vô hại.
    */
   holdForFlow?(contractId: string, approvalId: string): Promise<boolean>;
+  /** CR-122 · P11b · Mở lại lượt chờ flow chưa có run ⇒ về FLOW_STARTING (CAS); sau đó phát lại `contract.submitted` (event_id mới). */
+  rearmFlow?(contractId: string, approvalId: string): Promise<boolean>;
   /** Chạy `fn` (với repo trên tx CON) trong SAVEPOINT: lỗi ⇒ rollback về savepoint + log, tx bản ghi chạy tiếp (chỉ khi cờ TẮT = bóng). */
   shadow?(event: string, fn: (repo: ContractFlowRepo) => Promise<unknown>): Promise<void>;
 };

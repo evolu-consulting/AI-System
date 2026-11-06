@@ -593,7 +593,11 @@
             "FLOW_MISSING": "no approval flow is published; an admin must assign one, then press Reopen",
             "FLOW_ROUTE_NONE": "no process rule matches the starter's department and there is no default rule; a company admin must add a rule or set a default (Settings > Apps & processes), then press Reopen",
             "FLOW_ROUTE_UNAVAILABLE": "the process chosen for this department was deleted or is not published; a company admin must fix the routing rules (Settings > Apps & processes), then press Reopen",
-            "CANCELLED_BY_OWNER": "the approval run was cancelled; press Reopen to start a new one"
+            "CANCELLED_BY_OWNER": "the approval run was cancelled; press Reopen to start a new one",
+            "FLOW_NOT_ASSIGNED": "no approval process is assigned for this contract type; an admin must assign one in Company > Processes, then press Reopen",
+            "FLOW_REFUSED": "the approval process could not start for the sender (a feature of the process is off or the sender is inactive); an admin must check Company > Processes, then press Reopen",
+            "FLOW_START_FAILED": "the system could not start the approval process after several tries; press Reopen, and tell an admin if it fails again",
+            "FLOW_STARTING": "the approval process has not started after 2 minutes; press Reopen to send it again"
           }
         },
         "release": {
