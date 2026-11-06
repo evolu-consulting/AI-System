@@ -1,4 +1,4 @@
-// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-122 · Q1 · ca UI của trình sửa flow (canvas) trên stack thật `playwright.journey.config.ts`, công ty MỚI `e2e-c22u-<hậu tố>`:
 //  1) menu "+ Thêm bước" gom nhóm (Cơ bản · …) và liệt kê node dựng sẵn;
 //  2) cạnh vàng (Ký số cần `contract_id` mà bước trước không có) ⇒ ô "Gợi ý cầu nối" ⇒ Bỏ / Nhận (route AI giả: AI thật cần agent `flow-bridge` đã seed);
@@ -6,14 +6,7 @@
 // Dữ liệu riêng: flow Thư viện `c22u-ed-<hậu tố>` (xem `_kit/flows.ts`: dựng bằng SQL — Lỗi sản phẩm #1) gán qua API, bản sao do quản trị công ty tạo ở UI.
 import { expect, type Page, test } from "@playwright/test";
 import { apiLogin, assignCompanyFlow, type Session } from "../_kit/api";
-import {
-  bridgeSet,
-  createLibraryFlow,
-  enableFlowTriggers,
-  finish,
-  ifFact,
-  plainSet,
-} from "../_kit/flows";
+import { createLibraryFlow, enableFlowTriggers, finish, ifFact, plainSet } from "../_kit/flows";
 import { flowRows, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
 import { U } from "./_journey";
 
@@ -115,66 +108,11 @@ test("1 · menu '+ Thêm bước': một nút, nhóm Cơ bản + node dựng s�
   await page.keyboard.press("Escape");
 });
 
-async function mockBridge(page: Page): Promise<void> {
-  const cors = {
-    "access-control-allow-origin": ADMIN,
-    "access-control-allow-credentials": "true",
-    "access-control-allow-headers": "authorization,content-type,x-app",
-    "access-control-allow-methods": "POST,OPTIONS",
-  };
-  await page.route("**/process-defs/bridge-suggest", (route) =>
-    route.request().method() === "OPTIONS"
-      ? route.fulfill({ status: 204, headers: cors })
-      : route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          headers: cors,
-          body: JSON.stringify({
-            ok: true,
-            stage: bridgeSet(1),
-            explain_vi: "Chép giá trị hợp đồng sang trường amount để Ký số đọc được.",
-            explain_en: "Copy the contract value into amount so e-signing can read it.",
-          }),
-        }),
-  );
-}
-
-test("2 · cạnh vàng ⇒ Gợi ý cầu nối (route AI giả): Bỏ rồi hỏi lại rồi Nhận ⇒ chèn node Ghi giá trị giữa flow", async ({
-  page,
-}) => {
-  test.fixme(
-    true,
-    "A (gd0 cbcf74bb8): Ký số tự nhận contract_id ⇒ stack không còn cạnh vàng để cầu nối; cần node có đầu vào thiếu thật",
-  );
-  await mockBridge(page);
-  await openCopy(page);
-  await addEsign(page);
-  const bridge = page.getByTestId("canvas-bridge");
-  await expect(bridge).toBeVisible();
-  await expect(bridge).toContainText("Thiếu contract_id");
-
-  // Hỏi ⇒ xem trước node mờ + lời giải thích; Bỏ ⇒ về trạng thái chưa hỏi
-  await bridge.getByRole("button", { name: "Gợi ý cầu nối" }).click();
-  await expect(page.getByTestId("bridge-text")).toContainText("Chép giá trị hợp đồng");
-  await expect(bridge).toContainText("Ghi giá trị (đề xuất)");
-  await bridge.getByRole("button", { name: "Bỏ", exact: true }).click();
-  await expect(bridge.getByRole("button", { name: "Gợi ý cầu nối" })).toBeVisible();
-
-  // Hỏi lại ⇒ Nhận ⇒ node Ghi giá trị thật nằm giữa Nếu và Ký số
-  await bridge.getByRole("button", { name: "Gợi ý cầu nối" }).click();
-  await bridge.getByRole("button", { name: "Nhận", exact: true }).click();
-  await expect(
-    page.getByRole("application", CANVAS).getByText("Ghi giá trị").first(),
-  ).toBeVisible();
-});
+// Đã xoá (CR-122 Q1): ca 'cầu nối' (gd0 cbcf74bb8: Ký số tự nhận contract_id ⇒ không còn cạnh vàng) và ca 4 'cấu hình Ký số' (stack journey không có nhà cung cấp ký số; phủ ở unit/int).
 
 test("3 · node Ký số trên bản công ty: panel cấu hình riêng hiện trạng thái rõ khi công ty chưa bật ký số", async ({
   page,
 }) => {
-  test.fixme(
-    true,
-    "Lỗi sản phẩm #7: thêm node Ký số từ menu '+ Thêm bước' ở bản công ty làm trình sửa văn 'Something went wrong!' (error boundary)",
-  );
   await openCopy(page);
   await addEsign(page);
   await page
@@ -184,30 +122,4 @@ test("3 · node Ký số trên bản công ty: panel cấu hình riêng hiện t
     .click();
   // stack hành trình KHÔNG có nhà cung cấp ký số (ESIGN_PROVIDERS) ⇒ panel nói rõ lý do + cách sửa, không ô trống bí ẩn
   await expect(page.getByTestId("esign-disabled")).toContainText("Công ty chưa bật ký số");
-});
-
-// U2f: chọn nhà cung cấp + người ký, đặt sai MỘT ô ⇒ lỗi hiện đúng ô đó khi lưu. Cần UAT/stack bật feature, entitlement ký số, nhóm và nhà
-// cung cấp (hub khởi động lại mới thấy node) — stack journey chưa có ⇒ viết sẵn, gỡ `fixme` khi stack có nhà cung cấp ký số.
-test("4 · cấu hình Ký số: chọn nhà cung cấp + người ký; một ô sai ⇒ lỗi đúng ô (Hạn, Nhắc, Người ký)", async ({
-  page,
-}) => {
-  test.fixme(
-    true,
-    "stack journey chưa có nhà cung cấp ký số (ESIGN_PROVIDERS) — panel 'node-config' không hiện",
-  );
-  await openCopy(page);
-  await addEsign(page);
-  await page
-    .getByRole("application", CANVAS)
-    .getByRole("button", { name: /Ký số/ })
-    .first()
-    .click();
-  const cfg = page.getByTestId("node-config");
-  await expect(cfg).toBeVisible();
-  await cfg.getByRole("combobox", { name: "Nhà cung cấp" }).click();
-  await page.getByRole("option").nth(1).click();
-  await cfg.getByRole("checkbox").first().check();
-  await cfg.getByLabel("Hạn (ngày)").fill("0");
-  await expect(cfg.getByLabel("Hạn (ngày)")).toBeVisible();
-  await expect(cfg.getByRole("alert")).toHaveCount(1);
 });
