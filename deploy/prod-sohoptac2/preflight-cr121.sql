@@ -76,7 +76,7 @@ eff AS (
   SELECT t.*,
     (SELECT r.def_id FROM hub.process_routing_rules r WHERE r.tenant_id = t.id AND r.slot = 'contracts.approval' AND r.is_default) AS rule_def,
     (SELECT s.default_def_id FROM hub.process_slots s WHERE s.slot = 'contracts.approval') AS slot_def,
-    EXISTS (SELECT 1 FROM hub.process_routing_rules r WHERE r.tenant_id = t.id AND r.slot = 'contracts.approval' AND r.source = 'admin') AS has_admin
+    EXISTS (SELECT 1 FROM hub.process_routing_rules r WHERE r.tenant_id = t.id AND r.slot = 'contracts.approval' AND to_jsonb(r) ->> 'source' = 'admin') AS has_admin  -- cột source có từ hub 0096; prod có thể chưa có ⇒ đọc qua jsonb để không lỗi
   FROM ten t),
 chk AS (
   SELECT e.*, coalesce(e.rule_def, e.slot_def) AS def_id,
