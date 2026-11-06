@@ -53,8 +53,15 @@ async function seed(
   const hubRunId = crypto.randomUUID();
   const [s] = await o<
     { id: string }[]
-  >`insert into hub.stage_runs (tenant_id, process_run_id, stage_idx, status,
-      current_run_id) values (${tid}, ${r?.id as string}, 0, 'running', ${hubRunId}) returning id`;
+  >`insert into hub.stage_runs (tenant_id, process_run_id, stage_idx, status)
+    values (${tid}, ${r?.id as string}, 0, 'running') returning id`;
+  // `current_run_id` có FK tới `hub.runs` ⇒ dựng lần chạy hub của stage trước khi gắn.
+  await o`insert into hub.runs (id, tenant_id, user_id, conversation_id, flow_id, status, config_version,
+      user_message_id, answer_message_id, process_run_id, stage_run_id)
+    select ${hubRunId}, r.tenant_id, r.started_by, r.conversation_id, r.flow_id, 'running', 1,
+      gen_random_uuid(), gen_random_uuid(), r.id, ${s?.id as string}
+    from hub.process_runs r where r.id = ${r?.id as string}`;
+  await o`update hub.stage_runs set current_run_id = ${hubRunId} where id = ${s?.id as string}`;
   return { runId: r?.id as string, stageRunId: s?.id as string, hubRunId };
 }
 
