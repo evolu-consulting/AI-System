@@ -22,6 +22,7 @@ import {
   applyPostOutcome,
   applyReportOutcome,
   factsOf,
+  openReviewForFlow,
 } from "./flow-events.repo";
 
 export const COMMUNITY_PACK = "community";
@@ -52,6 +53,13 @@ export function communityOutcomeHandler(): OutcomeHandler<Tx> {
         h.apply(tx, i.tenantId, i.ref, t as never),
       );
     },
+    // CR-122 · P13 · lượt flow mở cho `post.created` ⇒ bài sang "chờ người duyệt" CÙNG tx tạo run (CAS, idempotent).
+    launched: (tx, i) =>
+      i.event === EV_POST
+        ? withPackRoleInTx(tx, COMMUNITY_PACK, i.tenantId, () =>
+            openReviewForFlow(tx, i.tenantId, i.ref),
+          )
+        : Promise.resolve(false),
   };
 }
 

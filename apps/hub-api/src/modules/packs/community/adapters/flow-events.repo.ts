@@ -110,6 +110,19 @@ export async function applyPostOutcome(
   return result(r as Applied);
 }
 
+/**
+ * CR-122 · P13 · `OutcomeHandler.launched` cho `post.created`: flow đã mở lượt cho bài đang chờ ⇒ bỏ `mod_screen = running` (agent screen
+ * cũ không chạy khi cờ bật — chờ nó quá hạn 2 phút mới mở là nguyên nhân duyệt chậm) ⇒ bài vào "chờ người duyệt" ngay. CAS: chỉ
+ * khi còn pending + running (bài sửa/mở lại giữa chừng hay đã quyết ⇒ không đụng). MỘT câu.
+ */
+export async function openReviewForFlow(tx: Tx, tenantId: string, ref: string): Promise<boolean> {
+  if (uuids([ref]).length === 0) return false;
+  const rows = await tx.execute<{ id: string }>(sql`update community.posts set mod_screen = null
+    where id = ${ref}::uuid and tenant_id = ${tenantId}::uuid and moderation = 'pending' and mod_screen = 'running'
+    returning id`);
+  return rows.length > 0;
+}
+
 /** Nhận ⇒ approved + liên kết công ty đối tác (nhãn xin) CÙNG câu; Từ chối ⇒ rejected. Chỉ khi đang chờ. */
 export async function applyJoinOutcome(
   tx: Tx,

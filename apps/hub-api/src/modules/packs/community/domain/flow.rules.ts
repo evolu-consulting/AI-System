@@ -73,7 +73,8 @@ export type ModRow = {
 /** Bài đang chờ người duyệt quyết (screen xong mà gắn cờ/lỗi, hoặc screen treo quá hạn). */
 export function awaitingReview(r: ModRow, now: number): boolean {
   if (r.moderation !== "pending") return false;
-  if (r.mod_screen === "flagged" || r.mod_screen === "error") return true;
+  // CR-122 · P13 · `null` khi đang chờ = không có screen cũ: flow đã mở lượt (`launched`) ⇒ người duyệt quyết ngay, không chờ quá hạn
+  if (r.mod_screen === null || r.mod_screen === "flagged" || r.mod_screen === "error") return true;
   return r.mod_screen === "running" && !!r.mod_at && now - Date.parse(r.mod_at) > SCREEN_STALE_MS;
 }
 

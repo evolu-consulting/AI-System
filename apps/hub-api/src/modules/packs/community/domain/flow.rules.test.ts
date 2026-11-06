@@ -73,6 +73,11 @@ describe("awaitingReview", () => {
     );
     expect(awaitingReview({ moderation: "none", mod_screen: null, mod_at: null }, T0)).toBe(false);
   });
+  it("CR-122 P13 · pending + không screen (flow đã mở lượt) ⇒ chờ người duyệt ngay, không đợi quá hạn", () => {
+    expect(awaitingReview({ moderation: "pending", mod_screen: null, mod_at: null }, T0)).toBe(
+      true,
+    );
+  });
 });
 
 describe("decideModeration", () => {
