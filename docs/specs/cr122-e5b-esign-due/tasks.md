@@ -31,7 +31,7 @@ phụ thuộc: E5 (e54910129)
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-### MODIFIED current/pack-contracts/esign-node-config.md
+### ADDED current/pack-contracts/esign-node-due.md
 #### Yêu cầu: Hạn ký và nhắc của node áp lúc chạy
 Hạn ký và chu kỳ nhắc đặt ở node được lưu theo phong bì; vòng quét ký số đọc phong bì trước, trống thì dùng bước Ký số cũ.
 - Kịch bản: khi phong bì có hạn và chu kỳ nhắc ngắn hơn bước Ký số cũ thì vòng quét nhắc và chuyển cấp theo phong bì, phong bì trống thì theo bước cũ [test: apps/hub-api/src/modules/packs/contracts/adapters/esign-sweep-envelope.int.test.ts » phong bì có hạn/nhắc ⇒ nhắc + quá hạn, phong bì trống ⇒ theo bước Ký số cũ (chưa tới hạn)]
