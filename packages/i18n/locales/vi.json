@@ -1439,7 +1439,8 @@
       "disk": "Đĩa server",
       "stuck": "Hàng đợi / run kẹt",
       "slo": "SLO / hồi quy",
-      "flow_coverage": "Quy trình hiển thị cho tenant"
+      "flow_coverage": "Quy trình hiển thị cho tenant",
+      "app_roles": "Vai theo ứng dụng"
     },
     "history": {
       "title": "Lịch sử (50 sự kiện gần nhất)",

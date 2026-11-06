@@ -1439,7 +1439,8 @@
       "disk": "Server disk",
       "stuck": "Queue / stuck runs",
       "slo": "SLO / regressions",
-      "flow_coverage": "Processes visible to tenants"
+      "flow_coverage": "Processes visible to tenants",
+      "app_roles": "App roles"
     },
     "history": {
       "title": "History (last 50 events)",
