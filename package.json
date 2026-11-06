@@ -115,6 +115,7 @@
     "check:contract-name": "bun tools/scripts/src/check-contract-name.ts",
     "check:app-slots": "bun tools/scripts/src/check-app-slots.ts",
     "check:app-events": "bun tools/scripts/src/check-app-events.ts",
+    "flow:shadow-diff": "bun --env-file=.env.local apps/hub-api/scripts/flow-shadow-diff.ts",
     "check:boundaries": "bun tools/scripts/src/check-boundaries.ts",
     "test:lock:verify": "bun tools/scripts/src/test-lock.ts verify",
     "test:lock:write": "bun tools/scripts/src/test-lock.ts write",

@@ -12,16 +12,21 @@ import {
   formatEventIssue,
 } from "@ai/contracts/app-manifest";
 
-const STRICT_DEFAULT_FLOW = false;
+/** M1 (hub 0107) đã đổi flow mặc định thành FlowDef có `trigger` ⇒ sự kiện `required` thiếu flow mặc định là LỖI. */
+const STRICT_DEFAULT_FLOW = true;
 const MIGRATIONS_HUB = join(import.meta.dir, "../../../packages/db/migrations-hub");
 
-/** Khoá flow mặc định (`defaultFlowKey`) xuất hiện dạng chuỗi SQL `'<khoá>'` trong ít nhất một migration hub. */
+/**
+ * Khoá flow mặc định (`defaultFlowKey`) xuất hiện dạng chuỗi SQL `'<khoá>'` trong ít nhất một migration hub MÀ CŨNG nói tới `trigger`
+ * (seed khe cũ 0069 chỉ có khoá, không có trigger ⇒ không đủ; 0107 đặt trigger lên chính flow đó).
+ */
 export function seededKeysIn(
   sqlTexts: readonly string[],
   manifests: readonly AppManifest[],
 ): Set<string> {
   const keys = manifests.flatMap((m) => m.events.flatMap((e) => e.defaultFlowKey ?? []));
-  return new Set(keys.filter((k) => sqlTexts.some((t) => t.includes(`'${k}'`))));
+  const withTrigger = sqlTexts.filter((t) => /\btrigger\b/i.test(t));
+  return new Set(keys.filter((k) => withTrigger.some((t) => t.includes(`'${k}'`))));
 }
 
 function main(): void {
