@@ -194,7 +194,7 @@ export async function createLibraryFlow(
       input_hint: "",
       run_group_ids: [],
       token_budget: null,
-      enabled: !o.withGroupKeys, // tạo tắt: bật mới đòi group_id (lỗi #6); bật lại bằng DB sau khi ghi stages
+      enabled: true,
       sources: [],
       inputs: [],
       stages: stripped,
@@ -216,7 +216,7 @@ export async function createLibraryFlow(
   if (o.withGroupKeys)
     await withOwner(async (sql) => {
       const st = JSON.stringify(o.stages);
-      await sql`update hub.process_defs set stages = ${st}::text::jsonb, enabled = true where id = ${def.id}::uuid`;
+      await sql`update hub.process_defs set stages = ${st}::text::jsonb where id = ${def.id}::uuid`;
       await sql`update hub.process_def_releases set stages = ${st}::text::jsonb where def_id = ${def.id}::uuid`;
     });
   return def.id;
