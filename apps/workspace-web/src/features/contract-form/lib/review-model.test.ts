@@ -98,6 +98,11 @@ describe("form xác nhận", () => {
     });
     expect(lineOfItem(item()).product_id).toBe("");
   });
+  it("CR-122 p12: số chứng từ AI đọc có / hoặc dấu ⇒ chuẩn hoá trước khi điền", () => {
+    const d = detail();
+    d.fields.number = f("hđ 2026/11-xyz");
+    expect(formOfConfirm(d).number).toBe("HD-2026-11-XYZ");
+  });
 });
 
 describe("ô tô vàng", () => {

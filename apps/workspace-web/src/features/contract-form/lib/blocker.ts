@@ -1,4 +1,5 @@
 // Chặn lưu của form HĐ (nhập tay + bước xác nhận): số không đọc được / thiếu ô bắt buộc / dòng chưa gắn SP ⇒ câu báo; ổn ⇒ null.
+import { isValidDocNumber } from "@ai/contracts/pack-contracts";
 import type { TFunction } from "i18next";
 import { PARTNER_ROLE } from "./deal";
 import { type FormState, missingRequired, readNumbers, unlinkedLines } from "./form-model";
@@ -9,7 +10,11 @@ export function blockerMessage(
   t: TFunction,
   onChecked: () => void,
   onMissing?: (msg: string) => void,
+  /** Số chứng từ đã lưu: chưa sửa ⇒ không chặn (CR-122 p12). */
+  savedNumber?: string,
 ): string | null {
+  if (form.number !== savedNumber && !isValidDocNumber(form.number.trim()))
+    return t("contracts.cform.numberBad");
   const n = readNumbers(form);
   if (n.bad.length) {
     const names = n.bad.map((b) => t(`contracts.cform.bad.${b.key}`, { name: b.name }));

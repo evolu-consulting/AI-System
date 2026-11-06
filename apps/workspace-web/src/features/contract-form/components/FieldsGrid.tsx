@@ -1,5 +1,6 @@
 // V2-F · HD-01/09 · mockup `fieldsHTML`: lưới ô thông tin hợp đồng dùng chung (nhập tay, xác nhận sau upload, sửa ở trang chi tiết).
 // Ô bắt buộc có dấu * và viền đỏ khi thiếu; nhãn đối tác + ô hoa hồng/giá trị đi theo loại; giá trị để trống ⇒ placeholder tự cộng.
+import { DOC_NUMBER_MAX, isValidDocNumber, normalizeDocNumber } from "@ai/contracts/pack-contracts";
 import { type ReactNode, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
@@ -26,6 +27,8 @@ type Props = {
   unsure?: ReadonlySet<TextKey>;
   /** DOC-ui-list: form Giao dịch — nhãn "Tên giao dịch / Số chứng từ / Ngày giao dịch", bỏ ô chỉ của HĐ (kết thúc, nhắc hạn, người ký). */
   dealMode?: boolean;
+  /** CR-122 p12: số chứng từ đã lưu (HĐ cũ có thể còn "/"): chưa sửa ⇒ không báo lỗi, chỉ gợi ý bản chuẩn hoá. */
+  numberSaved?: string | undefined;
 };
 
 function Row({
@@ -87,6 +90,35 @@ type TextOpts = {
   hint?: string | undefined;
 };
 
+type NumState = { kind: "ok" } | { kind: "bad" } | { kind: "legacy"; suggestion: string };
+
+/** Số đã lưu từ trước (có "/"…) mà người dùng chưa sửa ⇒ không báo lỗi, chỉ gợi ý bản chuẩn hoá. */
+function numberState(value: string, saved: string | undefined): NumState {
+  if (isValidDocNumber(value)) return { kind: "ok" };
+  if (saved === undefined || value !== saved) return { kind: "bad" };
+  const suggestion = normalizeDocNumber(value);
+  return isValidDocNumber(suggestion) ? { kind: "legacy", suggestion } : { kind: "bad" };
+}
+
+function NumberNote({ num, onUse }: { num: NumState; onUse: (v: string) => void }) {
+  const { t } = useTranslation();
+  if (num.kind === "bad")
+    return (
+      <span role="alert" data-testid="cf-number-error" className="text-[12px] text-late">
+        {t("contracts.cform.numberBad")}
+      </span>
+    );
+  if (num.kind !== "legacy") return null;
+  return (
+    <span data-testid="cf-number-suggest" className="text-[12px] text-dim">
+      {t("contracts.cform.numberSuggest", { value: num.suggestion })}{" "}
+      <button type="button" className="underline" onClick={() => onUse(num.suggestion)}>
+        {t("contracts.cform.numberUse")}
+      </button>
+    </span>
+  );
+}
+
 function TextField({
   k,
   label,
@@ -97,6 +129,7 @@ function TextField({
   locked,
   badges,
   unsure,
+  numberSaved,
 }: {
   k: TextKey;
   label: string;
@@ -107,7 +140,10 @@ function TextField({
   locked?: boolean;
   badges?: readonly FieldBadge[];
   unsure?: boolean;
+  numberSaved?: string | undefined;
 }) {
+  const num = numberState(k === "number" ? f.number : "", numberSaved);
+  const numBad = num.kind === "bad";
   return (
     <Row id={`cf-${k}`} label={label} req={o.req} span={o.span} badges={badges} unsure={unsure}>
       <div className="relative">
@@ -128,11 +164,14 @@ function TextField({
           }
           placeholder={o.ph}
           aria-invalid={o.bad || undefined}
-          onChange={(e) => onSet(k, e.target.value)}
+          onChange={(e) =>
+            onSet(k, k === "number" ? normalizeDocNumber(e.target.value, true) : e.target.value)
+          }
+          maxLength={k === "number" ? DOC_NUMBER_MAX : undefined}
           className={cn(
             "field",
             o.mono && "font-mono",
-            o.bad && "border-late",
+            (o.bad || numBad) && "border-late",
             o.suffix && "pr-12",
           )}
         />
@@ -143,6 +182,7 @@ function TextField({
         )}
       </div>
       {o.hint && <span className="text-[12px] text-dim">{o.hint}</span>}
+      {num.kind !== "ok" && <NumberNote num={num} onUse={(v) => onSet(k, v)} />}
     </Row>
   );
 }
@@ -180,6 +220,7 @@ export function FieldsGrid({
   badges,
   unsure,
   dealMode,
+  numberSaved,
 }: Props) {
   const { t } = useTranslation();
   const L = (k: string) => t(`contracts.cform.${k}`);
@@ -197,6 +238,7 @@ export function FieldsGrid({
       locked={lockedKeys?.has(k) || o.locked}
       badges={badges?.[k]}
       unsure={unsure?.has(k)}
+      numberSaved={numberSaved}
     />
   );
   const referral = f.deal === "referral";

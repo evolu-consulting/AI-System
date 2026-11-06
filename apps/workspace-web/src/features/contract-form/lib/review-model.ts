@@ -1,11 +1,12 @@
 // V2-G · BA §4.2 "Upload và xác nhận" · HD-02/HD-08: luật thuần của màn xác nhận sau khi AI đọc — form điền sẵn từ HĐ đã đọc, trường AI chưa
 // chắc (tô vàng), đổi Mua↔Bán dựng lại đối tác/người ký, mốc AI tìm thấy (giữ/bỏ, hạn mặc định), thân `POST /contracts/:id/review`.
-import type {
-  ContractDeal,
-  ContractDetail,
-  ContractItem,
-  ReviewMilestone,
-  ReviewSaveRequest,
+import {
+  type ContractDeal,
+  type ContractDetail,
+  type ContractItem,
+  normalizeDocNumber,
+  type ReviewMilestone,
+  type ReviewSaveRequest,
 } from "@ai/contracts/pack-contracts";
 import { dealOf } from "./deal";
 import { fieldKeyOf, formOfDetail, patchOfForm } from "./detail-form";
@@ -37,7 +38,9 @@ export function lineOfItem(it: ContractItem): LineState {
 
 /** Form xác nhận: thông tin điền sẵn từ `fields` + dòng hàng AI đọc + hoa hồng đã lưu. */
 export function formOfConfirm(c: Detail): FormState {
-  return { ...formOfDetail(c), items: c.items.map(lineOfItem) };
+  const f = formOfDetail(c);
+  // CR-122 p12: AI đọc ra số chứng từ có "/", dấu… ⇒ chuẩn hoá trước khi điền.
+  return { ...f, number: normalizeDocNumber(f.number), items: c.items.map(lineOfItem) };
 }
 
 /** Đổi loại HĐ: đối tác + người ký dựng lại từ `fields` đã đọc theo phía mới (Mua ⇒ bên bán, Bán ⇒ bên mua) để PATCH không thấy "đổi"

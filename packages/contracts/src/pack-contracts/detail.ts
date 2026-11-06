@@ -6,6 +6,7 @@ import {
   ContractAppendixRefSchema,
   ContractParentRefSchema,
 } from "./appendix";
+import { DocNumberSchema } from "./doc-number";
 import { ContractDocSchema } from "./doc-types";
 import { AiReadSchema } from "./extract";
 import {
@@ -110,7 +111,11 @@ export type ContractDetail = z.infer<typeof ContractDetailSchema>;
 
 type PatchShape = { [K in ContractFieldKey]: z.ZodOptional<z.ZodNullable<z.ZodType>> };
 const PATCH_SHAPE = Object.fromEntries(
-  CONTRACT_FIELD_KEYS.map((k) => [k, fieldValueSchema(k).optional()]),
+  CONTRACT_FIELD_KEYS.map((k) => [
+    k,
+    // CR-122 p12: chỉ khoá `number` được gửi lên (đã đổi) mới bị kiểm định dạng; số cũ có "/" không đụng tới thì không bị chặn.
+    k === "number" ? DocNumberSchema.nullable().optional() : fieldValueSchema(k).optional(),
+  ]),
 ) as PatchShape;
 
 /** Khoá lạ ⇒ route trả 422 `FIELD_UNKNOWN`, sai kiểu ⇒ 422 `FIELD_INVALID` (plan §1). */

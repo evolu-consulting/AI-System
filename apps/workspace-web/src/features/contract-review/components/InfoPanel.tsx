@@ -61,6 +61,7 @@ export function InfoPanel({
           lockedKeys={confirm ? undefined : (lockedKeys ?? LOCKED_AFTER_SAVE)}
           badges={badgesOf(c, t("contracts.cform.unsure"))}
           unsure={confirm?.unsure}
+          numberSaved={confirm ? undefined : String(c.fields.number?.value ?? "")}
         />
       </div>
     </Panel>

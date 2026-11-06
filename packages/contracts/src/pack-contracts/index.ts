@@ -9,6 +9,7 @@ export * from "./deals";
 export * from "./delete-contract";
 export * from "./delivery";
 export * from "./detail";
+export * from "./doc-number";
 export * from "./doc-types";
 export * from "./errors";
 export * from "./esign";

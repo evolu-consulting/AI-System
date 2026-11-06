@@ -2,6 +2,7 @@
 // cảnh báo, trích lại, nhập tay. Khoá/kiểu = `R/api/app/contracts/{fields,extract,manual}.py`.
 import { z } from "zod";
 import { VersionSchema } from "../common";
+import { DocNumberSchema } from "./doc-number";
 import { DocTypeSchema } from "./doc-types";
 import {
   CONTRACT_DAYS_MAX,
@@ -210,7 +211,7 @@ export const ManualContractRequestSchema = z
     commission_pct: pct.nullable().optional(),
     commission_fixed: money().nullable().optional(),
     direction: ContractDirectionSchema.optional(),
-    number: optText(CONTRACT_TEXT_MAX),
+    number: DocNumberSchema.nullable().optional(),
     title: nfcText(CONTRACT_TITLE_MAX).min(1),
     partner_name: nfcText(CONTRACT_TEXT_MAX).min(1),
     partner_tax_id: optText(20),
