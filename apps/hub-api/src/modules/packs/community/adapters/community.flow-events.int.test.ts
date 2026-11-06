@@ -93,11 +93,12 @@ beforeAll(async () => {
   const h = new Hono<PackGuardVars>();
   h.use("*", async (ctx, next) => {
     const who = ctx.req.header("x-who") as Who;
+    const org = who === "s1a" ? c.S1 : who === "b2" ? c.B2 : null;
     ctx.set("user", {
       userId: c[who],
       tenantId: c.A,
       role: who === "hA" ? "tenant_admin" : "member",
-      ...(who === "b2" ? { userKind: "external", extOrgId: c.B2 } : { userKind: "internal" }),
+      ...(org ? { userKind: "external", extOrgId: org } : { userKind: "internal" }),
     } as never);
     await next();
   });
@@ -138,14 +139,14 @@ describe("sự kiện flow Community [CR-122 A2]", () => {
     ).toBe("flagged");
   });
 
-  it("cờ bật: bài ⇒ post.created cùng tx (event_id theo bài, facts đúng), không chạy screen cũ; Hiện/Ẩn idempotent", async () => {
+  it("cờ bật: bài ⇒ post.created cùng tx, Hiện/Ẩn idempotent", async () => {
     triggersOn = true;
     const id = await newPost();
     const ev = await row(events(`post.created:${id}`));
     expect(ev).toMatchObject({
       event: "post.created",
       ref: id,
-      facts: { post_kind: "sell", author_is_partner: false },
+      facts: { post_kind: "sell", author_is_partner: true },
       actor: c.s1a,
     });
     const st = () =>
@@ -170,7 +171,7 @@ describe("sự kiện flow Community [CR-122 A2]", () => {
     ).toBe("rejected");
   });
 
-  it("cờ bật: đối tác xin tham gia ⇒ partner.join_requested; Nhận ⇒ liên kết công ty, idempotent", async () => {
+  it("cờ bật: đơn xin tham gia ⇒ partner.join_requested, Nhận idempotent", async () => {
     triggersOn = true;
     const r = await call("b2", "POST", "/join-requests", {
       company: "Công ty Số Hai",
@@ -199,7 +200,7 @@ describe("sự kiện flow Community [CR-122 A2]", () => {
     expect(pc[0]?.labels).toContain("supplier");
   });
 
-  it("cờ bật: báo cáo ⇒ report.created; Ẩn ⇒ resolved + ẩn bài, idempotent", async () => {
+  it("cờ bật: báo cáo ⇒ report.created, Ẩn idempotent", async () => {
     triggersOn = true;
     const post = await newPost();
     const r = await call("hM", "POST", `/posts/${post}/report`, { reason: "Quảng cáo rác" });

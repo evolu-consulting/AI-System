@@ -23,3 +23,6 @@ Phạm vi đã kiểm: docs/specs/CR-122/ (spec.md, tasks.md "Bản đồ file")
 
 ## Chưa kiểm
 flow-model.md và ADR-0038 không đọc lại toàn văn (spec tuyên bố là nguồn đã chốt); đợt 2–3 (E3, A1, A2, U2, M1, Q1, R1).
+
+## Lát A2 · community (2026-11-06, một vòng)
+READY, không lỗ hổng Cao mới. Mặc định áp: (1) gói không import `processes` — ghi sự kiện qua hàm DB `hub.emit_flow_event` (0109); (2) role `community_rw` tạo SAU hub 0109 ⇒ GRANT USAGE `hub` + EXECUTE hàm đặt ở migration gói `0010_emit_flow_event_grant` (idempotent); (3) OutcomeHandler chạy tx engine nên chuyển tạm role gói + `app.*`, idempotent bằng so-sánh-và-đặt trạng thái chờ (không thêm cột); (4) cờ tắt giữ khe cũ — gỡ `flow-slots` ở R1. Trung bình: chuông bài mới khi flow Hiện bài và mở lại lượt khi sửa bài chưa làm (xem tasks A2 "Việc còn lại"). Bẫy cho A1: contracts_rw cũng cần GRANT tương tự trong migration gói contracts.
