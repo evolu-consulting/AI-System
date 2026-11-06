@@ -9,6 +9,7 @@ import type { Db, Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { EsignSweepRepo, EsignSweptRow } from "../application/esign-sweep";
+import type { EsignTurnSigner } from "../domain/esign-sweep.rules";
 import { contractCodeSql } from "./contract-name.sql";
 
 type Row = {
@@ -32,6 +33,7 @@ const done = (x: "m" | "p") =>
 
 export function esignSweepRepo(tx: Tx, t: string): EsignSweepRepo {
   return {
+    sweepEnvelopes: esignEnvelopeSweep(tx, t),
     async sweep({ now, staleMin, limit }) {
       const at = now.toISOString();
       const rows = await tx.execute<Row>(sql`with
@@ -91,6 +93,67 @@ export function esignSweepRepo(tx: Tx, t: string): EsignSweepRepo {
         }),
       );
     },
+  };
+}
+
+type EnvRow = {
+  id: string;
+  cid: string;
+  owner: string | null;
+  label: string | null;
+  signers: EsignTurnSigner[] | string | null;
+  remind: boolean;
+  overdue: boolean;
+  first: boolean;
+};
+
+/**
+ * CR-122 · E5c · MỘT câu quét PHONG BÌ mở của node Ký số (không có bước Ký số kiểu cũ của lượt hiện tại — nhánh `approvals` ở trên giữ
+ * nguyên): đọc `due_h`/`remind_every_h` của phong bì, mốc gửi = `created_at`. Nhắc khi `max(gửi, nhắc cuối) + chu kỳ ≤ now` ⇒ ghi `reminded_at`
+ * (quét lại / instance khác không nhắc trùng); quá hạn ⇒ ghi `expired_at` lần đầu (`first` ⇒ chuông một lần) — hàng quá hạn trả mỗi lượt
+ * tới khi phong bì thôi mở (huỷ ở nhà cung cấp hụt ⇒ thử lại). Quá hạn thì không nhắc nữa. `FOR UPDATE SKIP LOCKED`, lô ≤ `limit`.
+ */
+export function esignEnvelopeSweep(
+  tx: Tx,
+  t: string,
+): NonNullable<EsignSweepRepo["sweepEnvelopes"]> {
+  return async ({ now, limit }) => {
+    const at = now.toISOString();
+    const rows = await tx.execute<EnvRow>(sql`with
+      o as (select e.id, e.contract_id as cid, c.owner_user_id as owner, ${contractCodeSql("c")} as label, e.signers,
+          (z.remind and not z.overdue) as remind, z.overdue, (e.expired_at is null) as first, e.created_at
+        from contracts.esign_envelopes e
+        join contracts.contracts c on c.id = e.contract_id and c.tenant_id = e.tenant_id
+        cross join lateral (select
+            (coalesce(e.remind_every_h, 0) > 0
+              and greatest(e.created_at, coalesce(e.reminded_at, e.created_at)) + make_interval(hours => e.remind_every_h)
+                <= ${at}::timestamptz) as remind,
+            (e.due_h is not null and e.created_at + make_interval(hours => e.due_h) <= ${at}::timestamptz) as overdue) z
+        where e.tenant_id = ${t}::uuid and e.status in ('sent', 'delivered')
+          and (e.due_h is not null or e.remind_every_h is not null) and (z.remind or z.overdue)
+          and not exists (select 1 from contracts.approvals a
+            where a.tenant_id = e.tenant_id and a.id = c.run_id and a.esign_status in ('sending', 'sent')
+              and a.flow_steps->-1->>'kind' = 'esign')
+        order by e.created_at, e.id limit ${limit}::int
+        for update of e skip locked),
+      u as (update contracts.esign_envelopes x set
+          reminded_at = case when o.remind then ${at}::timestamptz else x.reminded_at end,
+          expired_at = case when o.overdue and x.expired_at is null then ${at}::timestamptz else x.expired_at end
+        from o where x.id = o.id and x.tenant_id = ${t}::uuid returning x.id)
+      select o.id, o.cid, o.owner, o.label, o.signers, o.remind, o.overdue, o.first
+      from o where o.id in (select id from u) order by o.created_at, o.id`);
+    return rows.map((r) => ({
+      envelopeId: r.id,
+      contractId: r.cid,
+      owner: r.owner,
+      label: (r.label ?? "").slice(0, 120),
+      signers: (typeof r.signers === "string"
+        ? JSON.parse(r.signers)
+        : (r.signers ?? [])) as EsignTurnSigner[],
+      remind: r.remind === true,
+      overdue: r.overdue === true,
+      first: r.first === true,
+    }));
   };
 }
 

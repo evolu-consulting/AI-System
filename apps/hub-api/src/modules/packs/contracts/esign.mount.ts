@@ -169,7 +169,7 @@ export function esignModule(
       completed = fn;
     },
     bindView: (v) => bindWriters(packWriters(db, v, "contracts")),
-    startSweep: esignSweepStarter(db, d.signal, esignSyncOf(db, providers, u)),
+    startSweep: esignSweepStarter(db, d.signal, esignSyncOf(db, providers, u), u.expireOpen),
   };
 }
 type Writers = (who: PackWho, ids: readonly string[]) => Promise<ReadonlySet<string>>;
@@ -179,9 +179,11 @@ export function esignSweepDeps(
   db: Db,
   tenants: () => Promise<readonly string[]>,
   sync?: EsignSyncDeps,
+  expire?: EsignSweepDeps["expire"],
 ): EsignSweepDeps {
   return {
     ...(sync ? { sync } : {}),
+    ...(expire ? { expire } : {}), // CR-122 · E5c
     uow: createPackUow(db, "contracts", (tx: Tx, t: string) => ({
       esignSweep: esignSweepRepo(tx, t),
     })),
@@ -202,7 +204,12 @@ async function contractsTenants(view: PackAccessView): Promise<string[]> {
 
 /** esign-sweep · vòng nền mỗi `CONTRACTS_ESIGN_SWEEP_EVERY_MS` (mặc định 5'); chỉ ở `APP_ENV` development/production và
  *  `CONTRACTS_ESIGN_SWEEP` ≠ off (test gọi `sweepEsignOnce` trực tiếp). Trả hàm bật một lần khi có cổng quyền (`view`). */
-function esignSweepStarter(db: Db, signal: AbortSignal | undefined, sync: EsignSyncDeps) {
+function esignSweepStarter(
+  db: Db,
+  signal: AbortSignal | undefined,
+  sync: EsignSyncDeps,
+  expire: EsignSweepDeps["expire"],
+) {
   let started = false;
   return (view: PackAccessView) => {
     const env = process.env.APP_ENV;
@@ -213,7 +220,7 @@ function esignSweepStarter(db: Db, signal: AbortSignal | undefined, sync: EsignS
     started = true;
     const every = Number(process.env.CONTRACTS_ESIGN_SWEEP_EVERY_MS);
     startEsignSweeper({
-      ...esignSweepDeps(db, () => contractsTenants(view), sync),
+      ...esignSweepDeps(db, () => contractsTenants(view), sync, expire),
       everyMs: Number.isInteger(every) && every >= 1000 ? every : 300_000,
       ...(signal ? { signal } : {}),
     });

@@ -10,6 +10,30 @@ export const errName = (e: unknown) => (e instanceof Error ? e.name : "unknown")
 type Run = <T>(fn: (r: { esign: ESignRepo }) => Promise<T>) => Promise<T>;
 type Warn = ((msg: string, meta: Record<string, unknown>) => void) | undefined;
 
+/** `reason` của phong bì node Ký số bị huỷ vì quá hạn (E5c). */
+export const EXPIRED = "esign-expired";
+
+/** CR-122 · E5c · huỷ phong bì QUÁ HẠN: huỷ ở nhà cung cấp OK ⇒ `voided` (reason `esign-expired`); hụt ⇒ giữ nguyên, trả false (vòng quét thử lại). */
+export function voidForExpiry(warn: Warn) {
+  return async (p: ESignProvider | null, e: EnvelopeRow, run: Run): Promise<boolean> => {
+    const fail = (err: unknown) => {
+      warn?.("esign-expire-failed", { envelope: e.id, error: errName(err) });
+      return false;
+    };
+    const ok = p ? await p.voidEnvelope(e.envelopeId, EXPIRED).then(() => true, fail) : false;
+    if (ok)
+      await run((r) =>
+        r.esign.update(e.envelopeId, {
+          status: "voided",
+          reason: EXPIRED,
+          completedAt: null,
+          signers: e.signers,
+        }),
+      );
+    return ok;
+  };
+}
+
 /** Trả true khi đã huỷ được ở nhà cung cấp (hàng ⇒ `voided`). */
 export function voidForReopen(warn: Warn) {
   return async (p: ESignProvider | null, e: EnvelopeRow, run: Run): Promise<boolean> => {

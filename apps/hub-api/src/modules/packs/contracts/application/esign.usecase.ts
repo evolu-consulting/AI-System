@@ -24,9 +24,10 @@ import type {
   ESignRepo,
 } from "./esign.ports";
 import type { ESignAnchors } from "./esign-anchor.usecase";
+import { esignExpire } from "./esign-expire";
 import { esignNodeApi, type NodeDirectory, type SendNodeOpts } from "./esign-node.usecase";
 import { storeSignedFile } from "./esign-signed-file";
-import { errName, VOID_PENDING, voidForReopen } from "./esign-void";
+import { errName, VOID_PENDING, voidForExpiry, voidForReopen } from "./esign-void";
 
 export { ESignFail } from "./esign.helpers";
 
@@ -59,6 +60,7 @@ const RETURN_PATH = (id: string) => new RegExp(`/contracts/(?:c/)?${id}/?$`); //
 export function esignUsecase(d: ESignDeps) {
   /** Adapter khả dụng của khoá (cần FileBox) hoặc null. */
   const voidAt = voidForReopen(d.warn);
+  const voidExpired = voidForExpiry(d.warn);
   const avail = (key: string | null | undefined): ESignProvider | null =>
     key && d.files ? d.providers.get(key) : null;
   const tenantRun =
@@ -289,6 +291,8 @@ export function esignUsecase(d: ESignDeps) {
       avail,
       directory: d.directory,
     }),
+    /** CR-122 · E5c · phong bì của node quá hạn ⇒ huỷ + bắn `esign.voided` (`esign-expire.ts`). */
+    expireOpen: esignExpire({ ...d, avail, voidExpired }),
 
     /** esign-flow · K4 mở lại HĐ: phong bì đang mở ⇒ huỷ ở nhà cung cấp + ghi `voided` (bản đã ký cũ giữ lịch sử). Không ném. */
     async voidOpen(who: PackWho, id: string): Promise<boolean> {
