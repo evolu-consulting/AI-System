@@ -1,4 +1,4 @@
-// CR-122 · A2 · FLOW2-FR-12/15/19 · int 3 sự kiện Community trên route + RLS + hub thật: (1) cờ FLOW_TRIGGERS tắt ⇒ không sự kiện; bật ⇒
+// CR-122 · A2 · FLOW2-FR-12/15/19 · int 3 sự kiện Community trên route + RLS + hub thật: (1) cờ FLOW_TRIGGERS tắt ⇒ vẫn có sự kiện + bóng, 0 lượt mới; bật ⇒
 // `post.created` / `partner.join_requested` / `report.created` ghi CÙNG tx bản ghi (role `community_rw` qua `hub.emit_flow_event`),
 // event_id ổn định, facts đúng manifest; (2) FactsReader đọc dữ kiện hiện tại; (3) OutcomeHandler chạy trong tx engine, idempotent,
 // đổi trạng thái bài / đơn / báo cáo; (4) chặn đọc chéo tenant.
@@ -10,6 +10,7 @@ import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
 import { type Cast, seedCast } from "../../../../../../../tests/acceptance/com-c3/_support/cast";
 import { mapError } from "../../../../lib/errors";
+import { dispatchOnce } from "../../../processes/triggers/dispatcher";
 import { pgExternalOrgResolver } from "../../kit/adapters/ext-org.pg";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import { type CommunityFlowPorts, communityModule } from "../community.mount";
@@ -130,13 +131,40 @@ afterAll(async () => {
 });
 
 describe("sự kiện flow Community [CR-122 A2]", () => {
-  it("cờ tắt ⇒ giữ đường khe cũ: không ghi sự kiện, agent screen vẫn chạy", async () => {
+  it("cờ tắt ⇒ đường khe cũ vẫn chạy (agent screen), app VẪN phát sự kiện; bộ điều phối chỉ ghi bóng, 0 lượt mới", async () => {
     triggersOn = false;
     const id = await newPost();
-    expect(await events(`post.created:${id}`)).toHaveLength(0);
+    expect(await events(`post.created:${id}`)).toHaveLength(1);
     expect(
       (await row(sql`select mod_screen from community.posts where id = ${id}::uuid`)).mod_screen,
     ).toBe("flagged");
+    const [d] = await sql<
+      { id: string }[]
+    >`insert into hub.process_defs (tenant_id, key, name, description,
+        input_hint, run_group_ids, stages, token_budget, enabled, sources, inputs, trigger)
+      select ${c.A}::uuid, 'm1-bai', 'm1-bai', '', input_hint, run_group_ids, stages, token_budget, true, sources, inputs,
+        ${sql.json({ event: "post.created" })} from hub.process_defs
+      where key = 'hd-mac-dinh' and tenant_id is null returning id::text as id`;
+    const [cf] = await sql<
+      { id: string }[]
+    >`insert into hub.company_flows (tenant_id, flow_id, enabled, position)
+      values (${c.A}::uuid, ${d?.id as string}::uuid, true, 0) returning id::text as id`;
+    const launched: string[] = [];
+    await dispatchOnce({
+      db,
+      launch: async (_e, cand) => {
+        launched.push(cand.defKey);
+        return { runId: crypto.randomUUID() };
+      },
+      now: () => new Date(Date.now() + 60_000),
+    });
+    expect(launched).toEqual([]);
+    const ev = await row(sql`select outcome, processed_at is not null as done from hub.flow_events
+      where tenant_id = ${c.A}::uuid and event_id = ${`post.created:${id}`}`);
+    expect(ev).toMatchObject({ done: true, outcome: { shadow: true, would_run: [cf?.id] } });
+    const runs = await row(sql`select count(*)::int as n from hub.process_runs
+      where tenant_id = ${c.A}::uuid and flow_event_id is not null`);
+    expect(runs.n).toBe(0);
   });
 
   it("cờ bật: bài ⇒ post.created cùng tx, Hiện/Ẩn idempotent", async () => {

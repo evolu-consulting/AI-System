@@ -37,8 +37,8 @@ export function contractFlowGate(db: Db): ContractFlowGate {
               where tenant_id = ${tenantId}::uuid and flow_triggers) as on`,
           ),
         );
-        if (r?.on !== true) return FLOW_OFF;
-        return { on: true, departments: await depts(tenantId, userId) };
+        // Cờ tắt vẫn đọc phòng ban: app phát sự kiện để bộ điều phối ghi bóng (so với đường khe cũ), cờ chỉ quyết có mở lượt hay không.
+        return { on: r?.on === true, departments: await depts(tenantId, userId) };
       } catch (e) {
         logger.warn("contract-flow-gate-failed", {
           error: e instanceof Error ? e.name : "unknown",

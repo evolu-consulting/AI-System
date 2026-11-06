@@ -24,9 +24,24 @@ export type ContractFlowTxRepos = { contractFlow?: ContractFlowRepo | undefined 
 /** Kết quả đọc cờ TRƯỚC tx (role gói không đọc `hub.tenant_flow_settings`): bật ⇒ bắn sự kiện, KHÔNG mở lượt theo đường cũ. */
 export type FlowPrep = { on: boolean; departments: readonly string[] | null };
 export const FLOW_OFF: FlowPrep = { on: false, departments: null };
+/** Sự kiện được phát khi cổng đã trả lời (cờ bật HOẶC tắt = bóng); không cổng / lỗi cổng / chưa tới bước ⇒ `FLOW_OFF` ⇒ không phát. */
+export const flowEmits = (p: FlowPrep): boolean => p !== FLOW_OFF;
 /** `prepare` đọc cờ `flowTriggersOn(tenant)` (+ phòng ban người gây sự kiện khi bật). Không ném: lỗi ⇒ tắt (đường cũ). */
 export type ContractFlowGate = {
   prepare(tenantId: string, userId: string): Promise<FlowPrep>;
+};
+
+/** Cờ bật ⇒ repo bắt buộc; cờ tắt ⇒ bóng (bộ điều phối chỉ ghi "lẽ ra chạy", đường cũ vẫn mở lượt), chưa nối repo ⇒ bỏ qua. */
+export const emitFlow = async (
+  r: ContractFlowTxRepos,
+  prep: FlowPrep | undefined,
+  ev: Exclude<ContractEvent, "contract.uploaded">,
+  ids: [contractId: string, approvalId: string],
+  actor: string,
+): Promise<void> => {
+  if (!prep || !flowEmits(prep)) return;
+  const o = { actor, departments: prep.departments };
+  await (prep.on ? requireFlow(r) : r.contractFlow)?.emitContract(ev, ids[0], ids[1], o);
 };
 
 /** Bắn trong tx đang mở; cờ bật mà repo chưa nối ⇒ ném (không im lặng nuốt sự kiện). */

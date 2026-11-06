@@ -127,6 +127,9 @@ async function agentText(d: FlowDeps, who: PackWho, key: string, prompt: string,
 export const triggersEnabled = async (d: FlowDeps | undefined, tenantId: string) =>
   !!d?.triggersOn && (await d.triggersOn(tenantId));
 
+/** Có nối cổng cờ ⇒ app luôn phát sự kiện (cờ tắt = bóng: bộ điều phối chỉ ghi "lẽ ra chạy", đường khe cũ vẫn mở lượt). */
+export const emitsEvents = (d: FlowDeps | undefined): boolean => !!d?.triggersOn;
+
 /** Ghi sự kiện CÙNG tx bản ghi; `event_id` ổn định theo bản ghi ⇒ ghi lại không mở lượt thứ hai. */
 export const emitEvent = (
   tx: Tx,
@@ -231,7 +234,6 @@ export type JoinInput = {
 export async function createJoin(d: FlowDeps, a: Access, input: JoinInput): Promise<repo.JoinRow> {
   if (a.org === null) throw new AppError("JOIN_HOST_NOT_ALLOWED", 403, "Hosts are already members");
   const org = a.org;
-  const trig = await triggersEnabled(d, a.who.tenantId);
   try {
     return await d.uow.tenant(a.who, async ({ tx }) => {
       const id = await repo.insertJoin(tx, {
@@ -240,7 +242,7 @@ export async function createJoin(d: FlowDeps, a: Access, input: JoinInput): Prom
         org,
         ...input,
       });
-      if (trig)
+      if (emitsEvents(d))
         await emitEvent(
           tx,
           a.who,
@@ -307,7 +309,6 @@ export async function createReport(
   postId: string,
   reason: string,
 ): Promise<repo.ReportRow> {
-  const trig = await triggersEnabled(d, a.who.tenantId);
   const row = await d.uow.tenant(a.who, async ({ tx }) => {
     const [post] = await repo.modRows(tx, [postId]);
     if (!post) throw appError("NOT_FOUND");
@@ -320,7 +321,7 @@ export async function createReport(
     });
     if (!id) throw new AppError("REPORT_DUPLICATE", 409, "Already reported");
     // loại/mức do agent triage điền sau (nền, bên dưới) ⇒ lúc này chưa có; node Nếu đọc lại giá trị hiện tại qua FactsReader
-    if (trig)
+    if (emitsEvents(d))
       await emitEvent(
         tx,
         a.who,

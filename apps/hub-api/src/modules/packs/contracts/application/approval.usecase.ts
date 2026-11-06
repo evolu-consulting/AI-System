@@ -16,7 +16,13 @@ import {
 import { EV_APPROVED, EV_SUBMITTED } from "../domain/contract-flow-events.rules";
 import type { ApprovalState, ApprovalTxRepos, ApprovalUow, OpenOutcome } from "./approval.ports";
 import type { EngineCard } from "./approval-engine-card.usecase";
-import { type ContractFlowGate, FLOW_OFF, type FlowPrep, requireFlow } from "./contract-flow.ports";
+import {
+  type ContractFlowGate,
+  type ContractFlowTxRepos,
+  emitFlow,
+  FLOW_OFF,
+  type FlowPrep,
+} from "./contract-flow.ports";
 
 /** Group duyệt: id theo khoá của tenant (thiếu ⇒ vắng) + Group của user (cache cấu hình, 0 SQL khi nóng). */
 export type ApprovalGroups = {
@@ -88,7 +94,7 @@ export function startApproval(d: ApprovalDeps) {
     const prep = initial === "level1" ? await flowPrep(d.flow, who) : FLOW_OFF;
     const out = await d.uow.tenant(who, async (r) => {
       const o = await r.approval.open(id, aid, who.userId, initial);
-      if (o === "ok" && prep.on) await emitSubmitted(r, id, aid, who.userId, prep);
+      if (o === "ok" && initial === "level1") await emitSubmitted(r, id, aid, who.userId, prep); // cờ tắt ⇒ chỉ để ghi bóng
       return o;
     });
     if (out === "ok" && initial === "extracting")
@@ -133,18 +139,13 @@ export const flowPrep = (g: ContractFlowGate | undefined, who: PackWho): Promise
   g ? g.prepare(who.tenantId, who.userId) : Promise.resolve(FLOW_OFF);
 
 /** `contract.submitted` CÙNG tx với lúc lượt vào `level1`; `event_id` theo LƯỢT (gửi lại = lượt mới = sự kiện mới). */
-export async function emitSubmitted(
-  r: Parameters<typeof requireFlow>[0],
+export const emitSubmitted = (
+  r: ContractFlowTxRepos,
   contractId: string,
   approvalId: string,
   actor: string,
   prep: FlowPrep,
-): Promise<void> {
-  await requireFlow(r).emitContract(EV_SUBMITTED, contractId, approvalId, {
-    actor,
-    departments: prep.departments,
-  });
-}
+): Promise<void> => emitFlow(r, prep, EV_SUBMITTED, [contractId, approvalId], actor);
 
 const NOBODY = { userId: "", inLevel1: false, inLevel2: false };
 async function engineViewOf(
@@ -210,12 +211,8 @@ async function finalizeOrLevel2(
 ): Promise<"ok" | null> {
   if (await r.approval.finalize(c.contractId, c.approvalId, who.userId, level2Passed)) {
     await linkOnConfirm(r, who, c);
-    // CR-122 A1 · `contract.approved` CÙNG tx với lúc HĐ được duyệt (cờ bật).
-    if (c.prep?.on)
-      await requireFlow(r).emitContract(EV_APPROVED, c.contractId, c.approvalId, {
-        actor: who.userId,
-        departments: c.prep.departments,
-      });
+    // CR-122 A1 · `contract.approved` CÙNG tx với lúc HĐ được duyệt (cờ tắt ⇒ chỉ bóng).
+    await emitFlow(r, c.prep, EV_APPROVED, [c.contractId, c.approvalId], who.userId);
     return "ok";
   }
   if (level2Passed) return null;

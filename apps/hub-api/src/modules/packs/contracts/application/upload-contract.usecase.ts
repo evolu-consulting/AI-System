@@ -13,7 +13,7 @@ import {
   sniffFileType,
   uploadDay,
 } from "../domain/upload.rules";
-import { type ContractFlowGate, FLOW_OFF, requireFlow } from "./contract-flow.ports";
+import { type ContractFlowGate, FLOW_OFF, flowEmits, requireFlow } from "./contract-flow.ports";
 import {
   type ContractFileStore,
   type ExtractionStarter,
@@ -194,8 +194,9 @@ async function persist(
       ? await r.upload.insertVersion(row, i.supersedes)
       : await r.upload.insert(row);
     await r.outbox.enqueue([{ entity: "contract", entity_id: out.id, op: "upsert" }]);
-    if (prep.on)
-      await requireFlow(r).emitUploaded(out.id, {
+    if (flowEmits(prep))
+      // cờ tắt ⇒ chỉ để ghi bóng
+      await (prep.on ? requireFlow(r) : r.contractFlow)?.emitUploaded(out.id, {
         fileType: s.type,
         actor: i.who.userId,
         departments: prep.departments,

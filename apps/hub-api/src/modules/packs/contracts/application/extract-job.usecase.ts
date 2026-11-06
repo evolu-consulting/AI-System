@@ -46,8 +46,7 @@ export function handleExtractJob(d: ExtractJobDeps) {
       const st = aid
         ? await d.uow.tenant(who, async (r) => {
             const s = await r.approval.afterExtraction(job.contractId, aid);
-            if (s === "level1" && prep.on)
-              await emitSubmitted(r, job.contractId, aid, who.userId, prep);
+            if (s === "level1") await emitSubmitted(r, job.contractId, aid, who.userId, prep);
             return s;
           })
         : null;

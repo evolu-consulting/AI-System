@@ -27,6 +27,7 @@ import { type Access, otherOrgNames } from "./community-access";
 import { attachableFiles } from "./files.repo";
 import {
   emitEvent,
+  emitsEvents,
   type FlowDeps,
   moderationEnabled,
   openModeration,
@@ -165,7 +166,7 @@ export async function create(
     );
     // CR-120: khe duyệt bài có def ⇒ mở lượt trong CÙNG tx (bài ẩn với người khác tới khi duyệt)
     if (moderated) await openModeration(tx, id);
-    if (trig)
+    if (emitsEvents(flows))
       await emitEvent(tx, a.who, EV_POST, id, postFacts({ type: input.type, author_org: a.org }));
     return postById(tx, id);
   });

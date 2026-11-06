@@ -95,8 +95,8 @@ describe("A1 · gửi duyệt (startApproval level1)", () => {
     expect(h.emitted[0]?.key).toMatch(/^[0-9a-f-]{36}$/); // id lượt duyệt
     expect(h.started).toEqual([]);
   });
-  it("cờ TẮT: không ghi sự kiện, vẫn mở run theo đường cũ", async () => {
-    const h = harness({ on: false, departments: null });
+  it("cờ TẮT: vẫn ghi sự kiện (bóng) và mở run theo đường cũ", async () => {
+    const h = harness({ on: false, departments: ["pb-kd"] });
     await startApproval({
       uow: h.uow,
       flow: h.gate,
@@ -104,7 +104,8 @@ describe("A1 · gửi duyệt (startApproval level1)", () => {
       jobs: { enqueue: async () => {} },
       groups: {},
     } as never)(who, CID, "level1");
-    expect(h.emitted).toEqual([]);
+    expect(h.emitted).toHaveLength(1);
+    expect(h.emitted[0]).toMatchObject({ event: "contract.submitted", departments: ["pb-kd"] });
     expect(h.started).toEqual([CID]);
   });
   it("không cổng (test cũ): như cờ tắt", async () => {
@@ -149,7 +150,7 @@ describe("A1 · sau AI đọc (handleExtractJob → level1)", () => {
     });
     expect(h.started).toEqual([]);
   });
-  it("cờ TẮT: giữ đường cũ", async () => {
+  it("cờ TẮT: giữ đường cũ, vẫn ghi sự kiện bóng", async () => {
     const h = harness({ on: false, departments: null });
     await handleExtractJob({
       run: async () => "ok",
@@ -157,7 +158,7 @@ describe("A1 · sau AI đọc (handleExtractJob → level1)", () => {
       flow: h.gate,
       engine: h.engine,
     } as never)(job);
-    expect(h.emitted).toEqual([]);
+    expect(h.emitted).toHaveLength(1);
     expect(h.started).toEqual([CID]);
   });
 });
