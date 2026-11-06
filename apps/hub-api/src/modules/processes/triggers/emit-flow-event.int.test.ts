@@ -31,7 +31,7 @@ afterAll(async () => {
 });
 
 describe("CR-122 E1b · hub.emit_flow_event", () => {
-  it("role gói ghi được sự kiện cho tenant của mình; gọi lại cùng event_id ⇒ NULL, vẫn một dòng", async () => {
+  it("role gói ghi được sự kiện cho tenant của mình, gọi lại cùng event_id ⇒ NULL, vẫn một dòng", async () => {
     const ids = await asPack(X, async (tx) => [
       (await emit(tx, X, "own:1"))[0]?.id,
       (await emit(tx, X, "own:1"))[0]?.id,
@@ -43,7 +43,7 @@ describe("CR-122 E1b · hub.emit_flow_event", () => {
     expect(n?.n).toBe(1);
   });
 
-  it("ghi cho tenant khác / chưa đặt tenant ⇒ 42501; không đọc thẳng được bảng", async () => {
+  it("ghi cho tenant khác / chưa đặt tenant ⇒ 42501, không đọc thẳng được bảng", async () => {
     expect(await pgCode(() => asPack(X, (tx) => emit(tx, Y, "cross:1")))).toBe("42501");
     expect(await pgCode(() => asPack(null, (tx) => emit(tx, X, "none:1")))).toBe("42501");
     expect(await pgCode(() => asPack(X, (tx) => tx`select 1 from hub.flow_events limit 1`))).toBe(

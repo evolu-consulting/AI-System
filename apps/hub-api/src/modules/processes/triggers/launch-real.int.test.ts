@@ -81,7 +81,7 @@ const deps = () =>
   }) as unknown as ProcessDeps;
 
 describe("CR-122 E1b · mở lượt thật từ sự kiện", () => {
-  it("flow Thư viện được gán: một sự kiện ⇒ một lượt (snapshot bản xuất bản); gửi lại / mở lại ⇒ vẫn một", async () => {
+  it("flow Thư viện được gán: một sự kiện ⇒ một lượt (snapshot bản xuất bản), gửi lại / mở lại ⇒ vẫn một", async () => {
     const launch = flowLaunchOf(deps());
     await emit("real:1");
     const s = await dispatchOnce({ db, launch, now: () => T0 });

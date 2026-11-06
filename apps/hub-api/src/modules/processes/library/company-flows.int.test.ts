@@ -112,7 +112,7 @@ afterAll(async () => {
 });
 
 describe("CR-122 E1b · company-flows", () => {
-  it("gán: platform_admin được, tenant_admin 403; vai: member 403, công ty khác 404; def công ty khác 422 và không lộ", async () => {
+  it("gán: platform_admin được, tenant_admin 403, vai: member 403, công ty khác 404, def công ty khác 422 và không lộ", async () => {
     expect((await call("A", "POST", P(X), { flow_id: lib })).status).toBe(403);
     const a = await call("P", "POST", P(X), { flow_id: lib });
     expect(a.status).toBe(201);
@@ -135,7 +135,7 @@ describe("CR-122 E1b · company-flows", () => {
     await o`delete from hub.company_flows where flow_id = ${defY}`;
   });
 
-  it("tắt flow không điều kiện cuối của sự kiện required ⇒ 409; có flow khác không điều kiện thì tắt được", async () => {
+  it("tắt flow không điều kiện cuối của sự kiện required ⇒ 409, có flow khác không điều kiện thì tắt được", async () => {
     const l = await call("A", "GET", P(X));
     const id = rowOf(l.json, lib)?.id as string;
     const t = await call("A", "PATCH", `${P(X)}/${id}`, { enabled: false });
@@ -144,7 +144,7 @@ describe("CR-122 E1b · company-flows", () => {
     expect((await call("A", "PATCH", `${P(X)}/${id}`, { enabled: false })).status).toBe(409);
   });
 
-  it("sao chép để sửa: bản công ty Tắt chưa xuất bản, Group mã → id; lần hai trả bản cũ; công ty thiếu phòng ⇒ 422 nêu mã", async () => {
+  it("sao chép để sửa: bản công ty Tắt chưa xuất bản, Group mã → id, lần hai trả bản cũ, công ty thiếu phòng ⇒ 422 nêu mã", async () => {
     const l = await call("A", "GET", P(X));
     const id = rowOf(l.json, lib)?.id as string;
     const c1 = await call("A", "POST", `${P(X)}/${id}/clone`);
@@ -165,7 +165,7 @@ describe("CR-122 E1b · company-flows", () => {
     expect([cy.status, cy.json.error?.code ?? cy.json.code]).toEqual([422, "GROUPS_MISSING"]);
   });
 
-  it("xuất bản bản sao ⇒ bản sao Bật + gốc Tắt (replaced_by); quay về bản gốc ⇒ đảo lại, bản sao giữ (reverted)", async () => {
+  it("xuất bản bản sao ⇒ bản sao Bật + gốc Tắt (replaced_by), quay về bản gốc ⇒ đảo lại, bản sao giữ (reverted)", async () => {
     const l = await call("A", "GET", P(X));
     const orig = rowOf(l.json, lib);
     const copy = (l.json.items as Json[]).find((x) => x.kind === "company");
@@ -187,7 +187,7 @@ describe("CR-122 E1b · company-flows", () => {
     expect(orig?.id).toBeTruthy();
   });
 
-  it("xếp thứ tự: đủ id ⇒ position theo mảng; thiếu/lạ ⇒ 422", async () => {
+  it("xếp thứ tự: đủ id ⇒ position theo mảng, thiếu/lạ ⇒ 422", async () => {
     const l = await call("A", "GET", P(X));
     const ids = (l.json.items as Json[]).map((x) => x.id).reverse();
     const r = await call("A", "PUT", `${P(X)}/order`, { ids });
