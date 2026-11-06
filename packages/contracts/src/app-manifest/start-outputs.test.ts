@@ -1,7 +1,7 @@
 // CR-122 · A · đầu ra Bắt đầu khi (bản ghi + dữ kiện) có ở MỌI cạnh; flow "Duyệt HĐ" (G1) không còn báo thiếu contract_id;
 // issue có nhãn + tên bước; input lượt từ sự kiện.
 import { describe, expect, it } from "bun:test";
-import { flowEdgeIssues } from "../hub-admin/process-flow-edges";
+import { type EdgeDef, flowEdgeIssues } from "../hub-admin/process-flow-edges";
 import { CONTRACTS_MANIFEST } from "./contracts.manifest";
 import { defStartOutputs, eventOf, nodesFor, recordInputsOf } from "./index";
 
@@ -43,11 +43,11 @@ describe("CR-122 · A · bản ghi tự nối", () => {
   });
 
   it("flow G1 có app + trigger ⇒ 0 issue (Ký số tự nhận contract_id qua mọi bước)", () => {
-    expect(flowEdgeIssues(G1(true), palette)).toEqual([]);
+    expect(flowEdgeIssues(G1(true) as unknown as EdgeDef, palette)).toEqual([]);
   });
 
   it("không có trigger ⇒ vẫn báo thiếu, kèm tên bước + nhãn trường", () => {
-    const r = flowEdgeIssues(G1(false), palette);
+    const r = flowEdgeIssues(G1(false) as unknown as EdgeDef, palette);
     expect(r[0]).toMatchObject({
       to: "gui-ky",
       to_name: "Gửi ký số",
