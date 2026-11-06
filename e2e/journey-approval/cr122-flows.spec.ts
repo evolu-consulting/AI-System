@@ -139,27 +139,21 @@ test("G1.1 · platform_admin gán flow Thư viện cho công ty ⇒ dòng 'Đư�
 test("G1.1b · mở dòng được gán (chỉ xem): canvas có node Bắt đầu khi và Nếu", async ({
   browser,
 }) => {
-  test.fixme(
-    true,
-    "Lỗi sản phẩm #2: LibraryReadOnlyView chỉ vẽ slot_body, flow mới không có canvas",
-  );
   const page = await ctxPage(browser);
   await loginPlatformAdminUi(page, E.admin, E.adminUser, E.adminPw);
   await openTenantPage(page, E.tenantName);
   const row = flowRow(await openCompanyFlows(page), FLOW);
   await row.getByRole("link", { name: "Mở", exact: true }).click();
-  await expect(page.getByTestId("flow-trigger-node")).toBeVisible();
-  await expect(page.getByTestId("if-node")).toBeVisible();
+  const canvas = page.getByTestId("library-flow-canvas");
+  await expect(canvas).toBeVisible();
+  await expect(canvas.getByTestId("flow-trigger-node")).toBeVisible();
+  await expect(canvas.getByTestId("if-node")).toBeVisible();
 });
 
 test("G1.2 · HĐ 150 tr: Nếu rẽ nhánh Đúng ⇒ chờ Kế toán; duyệt ⇒ HĐ khoá, nhánh Sai (Giám đốc) không mở", async ({
   browser,
 }) => {
   test.setTimeout(300_000);
-  test.fixme(
-    true,
-    "Lỗi sản phẩm #4 (nghi): HĐ ĐẦU TIÊN của công ty sau khi gán flow không mở lượt trong 135 s, trong khi HĐ gửi sau đó (ca G2) chạy đúng — độ trễ nạp cấu hình/bộ điều phối. G1 đầy đủ được kiểm bằng G2.",
-  );
   // Lượt đầu sau khi vừa gán flow có thể chưa thấy flow mới (cấu hình hub nạp lại định kỳ): thử tối đa 2 HĐ, ghi nhận độ trễ.
   let sent = await submit(browser, "g1");
   const first = await isOpen(sent.emp, BIG)
