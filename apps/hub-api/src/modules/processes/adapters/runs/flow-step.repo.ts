@@ -23,7 +23,7 @@ export function flowStepRepo(tx: Tx, tenantId: string): FlowStepRepo {
         from hub.audit_log
         where tenant_id = ${tenantId} and entity = 'process_run' and entity_id = ${runId}
           and action = 'branch' and summary ? 'facts'
-        order by (summary->>'stage_idx')::int, created_at desc, id desc`);
+        order by (summary->>'stage_idx')::int, seq desc`);
       return [...rows].map((r) => ({ stageIdx: Number(r.stage_idx), matched: r.matched === true }));
     },
     async applyOutcome(runId, p, outcome) {
