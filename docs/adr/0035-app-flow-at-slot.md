@@ -1,5 +1,7 @@
 # ADR-0035 · App chạy theo flow tại khe (FlowRuntime + FlowSlotAdapter)
 
+> **Bị thay bởi ADR-0038** (2026-11-06, CR-122): mô hình khe + `FlowSlotAdapter` được thay bằng trigger theo sự kiện. Nội dung dưới giữ làm lịch sử.
+
 Trạng thái: **Accepted** (người dùng, 2026-11-04 — CR-118 PHẦN B, 26 câu theo mặc định: câu 13 = mức 2, câu 14 = chỉ `contracts.approval`, câu 17 = node `form` do người của phòng ban bước làm, đối tác không bao giờ là người làm). Liên quan: ADR-0017 (engine bền), ADR-0030 (duyệt HĐ trên engine — bổ sung, không đảo), ADR-0031 (cổng gói↔gói), `docs/current/engine/thu-vien-quy-trinh.md` (khe, gán, snapshot).
 
 ## Bối cảnh

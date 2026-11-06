@@ -3,6 +3,7 @@
 Cập nhật: 2026-10-27 · Người cập nhật: docs-architect (đóng đợt CR-097, contract-flow, góp ý Trello, giao hàng theo %)
 
 ## Đang ở đâu
+- **2026-11-06 CR-122 đã chốt mô hình, chờ readiness** (flow theo sự kiện, `company_flows`, node Công cụ; thay khe CR-118/120/121). Spec/lát: `docs/specs/CR-122/`, ADR-0038, nguồn `docs/platform/flow-model.md`. Chưa code.
 - **2026-11-06 CR-120 + CR-121 CODE XONG trên `platform/gd0` tại `6890d847` — CHƯA deploy, CHƯA push.** Mọi lát đã merge. `verify:wave` chạy 5 lần: lượt 1 có 29 ca đỏ mới; lượt 5 còn 1 ca chat streaming chập chờn dưới tải (chạy riêng 74/74 xanh). Review Opus cuối đợt: 2 Cao đã sửa (F-3), các Trung đã sửa (F-4). Đã kiểm tay trên trình duyệt 2026-11-06. [CR-120](CHANGE-REQUESTS.md), [CR-121](CHANGE-REQUESTS.md).
   - **Lát quá 60 phút (nguyên nhân):** D-4 65 (phạm vi phình); R-2 60; C-2 74 (chờ evotest, seed CHECK); D-3 60; D-5 60; A-2 75 (sửa unit cũ đỏ + rebase); D-6 85 (phạm vi phình: contract + khe + input HĐ); C-7 ~25 + fix vòng 2 (endpoint chung `/pack/nav`); W1/W2 >40 (API 529 + nhiều lượt e2e); R-5 7 lượt evotest (chẩn đoán đếm SQL).
   - **Checklist trước deploy:**

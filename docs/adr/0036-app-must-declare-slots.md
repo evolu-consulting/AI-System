@@ -1,5 +1,7 @@
 # ADR-0036 · Mọi app phải khai báo khe flow; gán quy trình có một nguồn
 
+> **Bị thay bởi ADR-0038** (2026-11-06, CR-122): khe thay bằng sự kiện app (`events[]`), gán + luật định tuyến thay bằng `company_flows`. Nội dung dưới giữ làm lịch sử.
+
 Trạng thái: **Accepted** (người dùng, 2026-11-05 — CR-120 "Flow là xương sống thật"). Liên quan: ADR-0017 (engine bền), ADR-0030,
 ADR-0035 (FlowRuntime + FlowSlotAdapter), `docs/specs/CR-120/spec.md`.
 
