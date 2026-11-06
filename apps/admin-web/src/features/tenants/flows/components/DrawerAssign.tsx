@@ -8,7 +8,7 @@ import { useLibraryDefs } from "@/features/processes/library-api";
 import { useFlowDepartments, useTenantRouting } from "../../api-routing";
 import { useFlowAssign } from "../hooks/use-flow-assign";
 import { slotCandidates } from "../lib/slot-candidates";
-import { RoutingRules } from "./RoutingRules";
+import { RulesSection } from "./RulesSection";
 import { SlotRouting } from "./SlotRouting";
 
 function TenantSwap({
@@ -60,7 +60,7 @@ function TenantSwap({
           ))}
         </ul>
       )}
-      <RoutingRules
+      <RulesSection
         key={data.version}
         tenantId={tenantId}
         slot={slot}

@@ -30,12 +30,12 @@ Không: Ứng dụng (c12), gỡ chỗ gán 3/4 (c13: tab Quy trình + ngăn Cô
 - Perf: số lần gọi = 1 (năng lực) + số việc đăng ký (luật) + số việc có quy trình (thân quy trình, PK read); lượt đang chạy chỉ gọi khi mở ngăn (1 lần theo việc). Không chạm đường nóng.
 
 ## Khác biệt so với artboard (chưa chụp ảnh — điều phối chụp ở UAT)
-- Chip bước hiện tối đa 12 + "…"; không có icon theo loại bước (chỉ số).
-- "Đang chạy" nằm trong ngăn của việc (không mở rộng ngay dưới hàng); không hiện mã HĐ vì tóm tắt lượt chạy không có mã HĐ (hiện tên quy trình · bước n/N · đang chờ · người gửi).
-- Ngăn dùng `DetailDrawer` chung; luật định tuyến dùng bộ sửa `RoutingRules` sẵn có (dạng form), chưa theo dòng "Mặc định → quy trình" của artboard.
-- Nút chế độ xem là ký tự (◇ / ≡) có nhãn + tooltip, chưa dùng icon lucide.
-- Dòng tóm tắt "x/y việc có quy trình" đặt trong tab (khung công ty chung ở c14).
-- Bản thư viện chỉ xem: sơ đồ + ghi chú + nút "Sao chép cho công ty này"; chưa mở trang trình sửa chỉ-xem đầy đủ (c17).
+- Chip bước hiện TÊN bước nối mũi tên, tối đa 4 + `+N` (tooltip đủ); chưa có icon theo loại bước.
+- Nút chế độ xem dùng lucide `Network`/`List` + nhãn/tooltip Sơ đồ/Danh sách.
+- Luật định tuyến: bảng ĐỌC (điều kiện bằng lời nghiệp vụ → quy trình, thứ tự, dòng Mặc định cuối) + nút `Sửa luật` mở form `RoutingRules` cũ. Còn khác: chưa kéo-thả đổi thứ tự trên bảng, chưa chip bước trong cột quy trình của bảng luật, sửa vẫn bằng form.
+- `Đang chạy` nằm trong ngăn của việc; tóm tắt lượt chạy chưa có nhãn bản ghi (HĐ) ⇒ hiện tên việc + giờ bắt đầu + bước hiện tại + người gửi (không id thô). Còn thiếu: mã HĐ — cần API thêm `record_label` vào tóm tắt lượt chạy.
+- Ngăn dùng `DetailDrawer` chung; dòng tóm tắt "x/y việc có quy trình" đặt trong tab (khung công ty chung ở c14).
+- Bản thư viện chỉ xem: sơ đồ + ghi chú + nút "Sao chép cho công ty này"; trang trình sửa chỉ-xem đầy đủ để c17.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
@@ -61,4 +61,4 @@ Thẻ app ở tab Ứng dụng của công ty không còn khối gán quy trình
 ## Việc còn lại
 - Chỗ đọc `TenantProcessSlots` (đã gỡ hết): `TenantFeaturesTab.tsx` (import + prop `slots`); chỉ còn nhắc trong comment `apps/pages/AppDetailPage.tsx:2`. Chỗ gán cũ còn lại tạm: `processes/components/flows/RulesPanel.tsx` (import `RoutingRules` vị trí mới), tab Quy trình + ngăn Công ty `/apps/$appKey`, `flowsMode` — gỡ ở c13.
 - c12: bỏ prop `slots` của `AppCard`; c13: dọn comment AppDetailPage.
-- Bẫy: `GET /process-runs?slot=` trả lượt theo snapshot (lượt trước CR-118 không lọt); lượt chạy không có mã HĐ.
+- Bẫy: `GET /process-runs?slot=` trả lượt theo snapshot (lượt trước CR-118 không lọt); tóm tắt lượt chạy chưa có nhãn HĐ.

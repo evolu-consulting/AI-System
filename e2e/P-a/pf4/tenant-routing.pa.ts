@@ -105,6 +105,7 @@ test("platform gán quy trình vào tập của tenant và bỏ gán quy trình 
     // hub-routing-backfill · quy trình chạy khi không có luật (gán cũ) gắn nhãn "Đang dùng".
     await expect(details.getByTestId(`admin-assigned-in-use-${P1}`)).toHaveText("Đang dùng");
 
+    await expect(p.getByTestId(`flows-rules-${SLOT}`)).toBeVisible(); // bảng luật (đọc); form sửa mở bằng "Sửa luật"
     await details.getByTestId("admin-assign-pick").selectOption(P2);
     await details.getByTestId("admin-assign-add").click();
     await expect.poll(() => calls).toContain(`PUT ${P2}`);

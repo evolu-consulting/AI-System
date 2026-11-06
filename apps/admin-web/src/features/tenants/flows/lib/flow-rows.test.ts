@@ -2,7 +2,7 @@
 import { describe, expect, it } from "bun:test";
 import type { CapabilityApp } from "@ai/contracts/capabilities";
 import type { ProcessRouting } from "@ai/contracts/hub-admin";
-import { groupJobs, jobFallbackName, jobOf, summaryOf, withDefault } from "./flow-rows";
+import { groupJobs, jobFallbackName, jobOf, ruleRows, summaryOf, withDefault } from "./flow-rows";
 
 const D1 = "11111111-1111-4111-8111-111111111111";
 const D2 = "22222222-2222-4222-8222-222222222222";
@@ -125,5 +125,40 @@ describe("CR-121 c11 · withDefault (tenant_admin đổi quy trình)", () => {
     const out = withDefault({ rules: [] }, D1);
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ defId: D1, isDefault: true });
+  });
+});
+
+describe("CR-121 c11 · ruleRows (bảng luật định tuyến)", () => {
+  it("thứ tự theo ưu tiên, Mặc định cuối không đánh số, phòng ban tra tên, quy trình lấy tên từ tập gán", () => {
+    const rows = ruleRows(
+      {
+        processes: [
+          { def_id: D1, name: "Duyệt 1 cấp", rel_version: 1 },
+          { def_id: D2, name: "Duyệt 2 cấp", rel_version: 1 },
+        ],
+        rules: [
+          { id: "d", priority: 0, condition: {}, def_id: D1, is_default: true },
+          {
+            id: "a",
+            priority: 1,
+            condition: { departmentIds: ["x", "y"], contractKinds: ["buy"] },
+            def_id: D2,
+            is_default: false,
+            unavailable: "unpublished",
+          },
+        ],
+      },
+      (id) => (id === "x" ? "Phòng Kinh doanh" : ""),
+    );
+    expect(rows.map((r) => [r.order, r.flowName, r.isDefault])).toEqual([
+      [1, "Duyệt 2 cấp", false],
+      [null, "Duyệt 1 cấp", true],
+    ]);
+    expect(rows[0]).toMatchObject({
+      kinds: ["buy"],
+      depts: ["Phòng Kinh doanh"],
+      unknownDepts: 1,
+      unavailable: "unpublished",
+    });
   });
 });

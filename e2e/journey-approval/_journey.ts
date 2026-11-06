@@ -74,6 +74,7 @@ export async function adminAssignAndRoute(page: Page, e: Env): Promise<void> {
     { process: PROC.buy, kind: "buy" },
     { process: PROC.sell, kind: "sell" },
   ];
+  await box.page().getByTestId(`flows-edit-rules-${SLOT}`).click(); // bảng luật đọc; "Sửa luật" mở form
   const rules = box.getByTestId(/^admin-routing-rule-\d+$/);
   const base = await rules.count(); // CR-120: dòng "Mặc định" của quy trình đang dùng đã có sẵn ở đầu danh sách
   const done = await box

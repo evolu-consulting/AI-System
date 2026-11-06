@@ -56,7 +56,12 @@ export function FlowDrawer({
             jobName={jobName(job)}
             isPlatform={isPlatform}
           />
-          <DrawerRunning tenantId={tenantId} slot={job.slot} isPlatform={isPlatform} />
+          <DrawerRunning
+            tenantId={tenantId}
+            slot={job.slot}
+            jobName={jobName(job)}
+            isPlatform={isPlatform}
+          />
         </div>
       ) : null}
     </DetailDrawer>

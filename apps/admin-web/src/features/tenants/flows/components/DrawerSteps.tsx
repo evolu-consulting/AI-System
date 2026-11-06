@@ -2,6 +2,7 @@
 // Bản thư viện: CHỈ XEM + "Sao chép cho công ty này"; bản riêng của công ty: "Mở trình sửa".
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { List, Network } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { FlowRowsView } from "@/features/apps/components/SlotFlowView";
@@ -28,7 +29,11 @@ function ModeToggle({ mode, set }: { mode: ViewMode; set: (m: ViewMode) => void 
           data-testid={`flows-view-${m}`}
           onClick={() => set(m)}
         >
-          <span aria-hidden>{m === "canvas" ? "◇" : "≡"}</span>
+          {m === "canvas" ? (
+            <Network aria-hidden className="size-4" />
+          ) : (
+            <List aria-hidden className="size-4" />
+          )}
         </Button>
       ))}
     </span>

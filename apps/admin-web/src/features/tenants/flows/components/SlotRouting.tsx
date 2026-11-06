@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useTenantDepartments, useTenantRouting } from "../../api-routing";
 import { useSlotRoutingActions } from "../hooks/use-slot-routing";
 import type { SlotCandidate } from "../lib/slot-candidates";
-import { RoutingRules } from "./RoutingRules";
+import { RulesSection } from "./RulesSection";
 
 const SEL = "h-9 min-w-0 w-72 rounded-md border border-input bg-background px-2 text-body";
 
@@ -129,7 +129,7 @@ function Body({
             : k(`err.${err.kind}`)}
         </p>
       )}
-      <RoutingRules
+      <RulesSection
         key={data.version}
         tenantId={tenantId}
         slot={slot}

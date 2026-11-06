@@ -121,3 +121,41 @@ export function withDefault(routing: Pick<ProcessRouting, "rules">, defId: strin
     { key: "default", departmentIds: [], contractKinds: [], defId, isDefault: true },
   ];
 }
+
+export type RuleRow = {
+  /** Thứ tự xét (1..n); luật Mặc định = null (luôn cuối). */
+  order: number | null;
+  kinds: string[];
+  /** Tên phòng ban đã biết; phòng ban chưa tra được tên đếm vào `unknownDepts`. */
+  depts: string[];
+  unknownDepts: number;
+  flowName: string;
+  unavailable: "deleted" | "unpublished" | null;
+  isDefault: boolean;
+};
+
+/** Luật định tuyến ⇒ dòng bảng đọc (điều kiện bằng lời nghiệp vụ · quy trình · thứ tự), Mặc định cuối. */
+export function ruleRows(
+  routing: Pick<ProcessRouting, "rules" | "processes" | "current_def_id" | "current_def_name">,
+  deptName: (id: string) => string,
+): RuleRow[] {
+  const nameOf = (id: string): string =>
+    routing.processes.find((p) => p.def_id === id)?.name ??
+    (routing.current_def_id === id ? (routing.current_def_name ?? "") : "");
+  const sorted = [...routing.rules].sort(
+    (a, b) => Number(a.is_default) - Number(b.is_default) || a.priority - b.priority,
+  );
+  let n = 0;
+  return sorted.map((r) => {
+    const names = (r.condition.departmentIds ?? []).map(deptName);
+    return {
+      order: r.is_default ? null : ++n,
+      kinds: [...(r.condition.contractKinds ?? [])],
+      depts: names.filter((x) => x !== ""),
+      unknownDepts: names.filter((x) => x === "").length,
+      flowName: nameOf(r.def_id),
+      unavailable: r.unavailable ?? null,
+      isDefault: r.is_default,
+    };
+  });
+}
