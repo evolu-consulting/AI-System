@@ -53,10 +53,14 @@ export function CompanyPane({
             id="co-name"
             className={FIELD}
             maxLength={60}
-            value={c.name ?? ""}
-            placeholder={tenantName}
-            onChange={(e) => set({ ...c, name: e.target.value || null })}
+            readOnly
+            value={c.name ?? tenantName}
+            title={s("nameHint")}
+            aria-describedby="co-name-hint"
           />
+          <p id="co-name-hint" className="mt-1 text-xs text-muted-foreground">
+            {s("nameHint")}
+          </p>
         </SettingsRow>
         <SettingsRow label={s("app")} htmlFor="co-app">
           <input

@@ -1,4 +1,5 @@
-// V2-L · CD-01 · V2-A (cờ duyệt): cài đặt công ty — nhận diện (tên, tên ứng dụng, logo, màu, giao diện), tên/MST của chính công ty và
+// V2-L · CD-01 · V2-A (cờ duyệt): cài đặt công ty — nhận diện (tên ứng dụng, logo, màu, giao diện), tên/MST của chính công ty và
+// CR-121 c20: TÊN công ty chỉ đọc từ `admin.tenants.name` (`contracts.tenant_name()`); `c.name` của thân PUT bị bỏ qua (đổi tên ở Admin).
 // cờ duyệt hợp đồng. Mỗi hàm MỘT câu, văn bản cố định (dữ liệu qua tham số). Tx `PackUow` (role `contracts_rw`, RLS FORCE).
 import type { CompanyIn } from "@ai/contracts/pack-contracts";
 import type { Tx } from "@ai/db";
@@ -12,7 +13,7 @@ export function companyRepo(tx: Tx, tid: string) {
   const company = (): Promise<StoredCompany> =>
     one<StoredCompany>(
       tx,
-      sql`select jsonb_build_object('company', jsonb_build_object('name', s.company_name, 'app_name', s.app_name,
+      sql`select jsonb_build_object('company', jsonb_build_object('name', contracts.tenant_name(), 'app_name', s.app_name,
           'logo', s.logo, 'accent', s.accent, 'theme', s.theme, 'own_names', to_jsonb(s.own_names),
           'own_tax_ids', to_jsonb(s.own_tax_ids)), 'version', s.version, 'updated_at', s.updated_at) as j
         from contracts.company_settings s where s.tenant_id = ${tid}::uuid`,
@@ -21,14 +22,14 @@ export function companyRepo(tx: Tx, tid: string) {
   const saveCompany = (c: CompanyIn): Promise<NonNullable<StoredCompany>> =>
     one<NonNullable<StoredCompany>>(
       tx,
-      sql`insert into contracts.company_settings as s (tenant_id, company_name, app_name, logo, accent, theme, own_names, own_tax_ids)
-        values (${tid}::uuid, ${c.name}, ${c.app_name}, ${c.logo}, ${c.accent}, ${c.theme},
+      sql`insert into contracts.company_settings as s (tenant_id, app_name, logo, accent, theme, own_names, own_tax_ids)
+        values (${tid}::uuid, ${c.app_name}, ${c.logo}, ${c.accent}, ${c.theme},
           array(select jsonb_array_elements_text(${JSON.stringify(c.own_names)}::jsonb)),
           array(select jsonb_array_elements_text(${JSON.stringify(c.own_tax_ids)}::jsonb)))
-        on conflict (tenant_id) do update set company_name = excluded.company_name, app_name = excluded.app_name,
+        on conflict (tenant_id) do update set app_name = excluded.app_name,
           logo = excluded.logo, accent = excluded.accent, theme = excluded.theme, own_names = excluded.own_names,
           own_tax_ids = excluded.own_tax_ids, version = s.version + 1, updated_by = excluded.updated_by, updated_at = now()
-        returning jsonb_build_object('company', jsonb_build_object('name', s.company_name, 'app_name', s.app_name,
+        returning jsonb_build_object('company', jsonb_build_object('name', contracts.tenant_name(), 'app_name', s.app_name,
           'logo', s.logo, 'accent', s.accent, 'theme', s.theme, 'own_names', to_jsonb(s.own_names),
           'own_tax_ids', to_jsonb(s.own_tax_ids)), 'version', s.version, 'updated_at', s.updated_at) as j`,
     );

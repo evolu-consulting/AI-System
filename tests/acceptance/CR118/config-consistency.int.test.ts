@@ -1,6 +1,6 @@
 // CR-118 · cr118-config-consistency · int trên hub-api + admin-api THẬT (khung N1, gói `pkdemo` + `community`):
 // (1) hub_api chỉ SELECT `packs.pack_agents` (ghi bị chặn) và agent của app đọc từ bảng qua ConfigCache (0 SQL khi nóng);
-// (2) brand công ty và `default_app` bump `config_version` CÙNG transaction ⇒ ETag `/pack/me` đổi + `config.changed` tới đúng
+// (2) brand công ty (tên = admin.tenants.name đổi qua admin-api, c20) và `default_app` bump `config_version` CÙNG transaction ⇒ ETag `/pack/me` đổi + `config.changed` tới đúng
 // tenant trong một vòng LISTEN; `home` theo default_app khi user đọc được gói đó, không thì theo quyền; tenant khác không bị chạm.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
@@ -36,10 +36,16 @@ const bumpHub = async () => {
   await c.sql`select pg_notify('hub_config_changed', json_build_object('v', 1, 'version', ${v?.v ?? 1}::int)::text)`;
   return v?.v ?? 0;
 };
-const setBrand = (tid: string, name: string) =>
-  c.sql`insert into contracts.company_settings (tenant_id, company_name, app_name)
-    values (${tid}, ${name}, ${name}) on conflict (tenant_id) do update
-    set company_name = excluded.company_name, app_name = excluded.app_name`;
+// CR-121 c20: tên công ty đổi ở ADMIN (admin.tenants.name, qua admin-api ⇒ config_changed kèm tenant_id); app_name là brand riêng của gói.
+const setBrand = async (tid: string, name: string) => {
+  await c.sql`insert into contracts.company_settings (tenant_id, app_name)
+    values (${tid}, ${name}) on conflict (tenant_id) do update set app_name = excluded.app_name`;
+};
+const renameTenant = async (tid: string, name: string) => {
+  const t = (await c.admin.call("GET", `/admin/tenants/${tid}`)).json;
+  const r = await c.admin.call("PATCH", `/admin/tenants/${tid}`, { version: t.version, name });
+  expect({ status: r.status }).toEqual({ status: 200 });
+};
 const setTenantDefault = async (tid: string, app: string | null) => {
   const r = await c.admin.call("PUT", `/admin/tenants/${tid}/default-app`, { app });
   expect({ status: r.status }).toEqual({ status: 200 });
@@ -126,17 +132,24 @@ describe("CR-118 · config-consistency · packs.pack_agents cho hub_api", () => 
 
 describe("CR-118 · config-consistency · brand + default_app bump version", () => {
   it("đổi brand acme ⇒ config.changed tới phiên acme, ETag + brand mới, beta không nhận, brand beta giữ nguyên, nóng 0 SQL", async () => {
-    await setBrand(T.beta, "Beta Co");
+    await setBrand(T.beta, "Beta App");
+    await renameTenant(T.beta, "Beta Co");
     const bBefore = await untilHubSettles(
       c.hub,
       () => me(P.an),
       (x) => x.json?.brand?.name === "Beta Co",
     );
+    await setBrand(T.acme, "Acme App");
+    await untilHubSettles(
+      c.hub,
+      () => me(P.hoa),
+      (x) => x.json?.brand?.app_name === "Acme App",
+    );
     const first = await me(P.hoa);
     const sa = await openMeStream(c.hub, await c.tok(P.hoa));
     const sb = await openMeStream(c.hub, await c.tok(P.an));
     try {
-      await setBrand(T.acme, `Acme ${Date.now() % 100000}`);
+      await renameTenant(T.acme, `Acme ${Date.now() % 100000}`);
       const ev = await sa.until((e) => e.event === "config.changed", 5_000);
       expect({ got: ev?.event ?? null }).toEqual({ got: "config.changed" });
       const tok = await c.tok(P.hoa);
@@ -147,7 +160,7 @@ describe("CR-118 · config-consistency · brand + default_app bump version", () 
       });
       expect(after.json.brand.name).toMatch(/^Acme \d+$/);
       // mốc có thứ tự trên kết nối beta: đổi beta ⇒ sb nhận đúng MỘT frame (của beta)
-      await setBrand(T.beta, "Beta Co 2");
+      await renameTenant(T.beta, "Beta Co 2");
       await sb.until((e) => e.event === "config.changed", 5_000);
       expect(sb.events.filter((e) => e.event === "config.changed").length).toBe(1);
       expect(bBefore.json.brand.name).toBe("Beta Co");

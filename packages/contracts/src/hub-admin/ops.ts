@@ -8,7 +8,7 @@ export const OPS_STATUSES = ["ok", "warn", "crit", "unknown"] as const;
 export const OpsStatusSchema = z.enum(OPS_STATUSES);
 export type OpsStatus = z.infer<typeof OpsStatusSchema>;
 
-/** 8 check v1 (bảng ở proposal §2) + `slo` (CR-117: SLO + phát hiện hồi quy) + `flow_coverage` (CR-120: bất biến dữ liệu quy trình) + `app_roles` (CR-121 c19: vai hub ↔ vai theo app). */
+/** 8 check v1 (bảng ở proposal §2) + `slo` (CR-117: SLO + phát hiện hồi quy) + `flow_coverage` (CR-120: bất biến dữ liệu quy trình) + `app_roles` (CR-121 c19: vai hub ↔ vai theo app) + `tenant_profile` (CR-121 c20: tên công ty một nguồn). */
 export const OPS_CHECK_KEYS = [
   "provider",
   "runs_failed",
@@ -21,6 +21,7 @@ export const OPS_CHECK_KEYS = [
   "slo",
   "flow_coverage",
   "app_roles",
+  "tenant_profile",
 ] as const;
 export const OpsCheckKeySchema = z.enum(OPS_CHECK_KEYS);
 export type OpsCheckKey = z.infer<typeof OpsCheckKeySchema>;
@@ -130,6 +131,14 @@ export const OPS_CHECK_META: Readonly<Record<OpsCheckKey, OpsCheckMeta>> = {
     crit: null,
     order: null,
     note: "crit khi vai hub (tenant_admin) và vai theo app lệch nhau (CR-121 D2: quy tắc 1,3,4,5); warn khi member vượt trần mức của app (quy tắc 2)",
+  },
+  tenant_profile: {
+    label: "Hồ sơ công ty",
+    unit: "count",
+    warn: null,
+    crit: null,
+    order: null,
+    note: "crit khi tên công ty bị lưu hai nơi (cột company_settings.company_name quay lại) hoặc công ty có tên rỗng (CR-121 D3: nguồn duy nhất admin.tenants.name)",
   },
 };
 

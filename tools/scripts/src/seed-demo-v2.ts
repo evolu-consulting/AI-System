@@ -168,11 +168,14 @@ async function loadD1({ tx, tenant, a, today }: Ctx): Promise<void> {
   await loadVersionChain(tx, tenant, today);
 }
 
-/** Tên pháp nhân của mình (Cài đặt công ty) — để HĐ tự nhận Mua/Bán. Luôn ghi đè tên giả của demo (không bao giờ tên thật của khách). */
+/** Tên pháp nhân của mình (Cài đặt công ty) — để HĐ tự nhận Mua/Bán. Luôn ghi đè tên giả của demo (không bao giờ tên thật của khách).
+ * CR-121 c20: tên công ty có MỘT nguồn `admin.tenants.name` ⇒ đặt ở đó; `company_settings` chỉ giữ tên ứng dụng + pháp nhân/MST. */
 async function loadCompany(tx: Tx, tenant: string): Promise<void> {
-  await tx`insert into contracts.company_settings (tenant_id, company_name, app_name, own_names, own_tax_ids)
-    values (${tenant}, ${OWN.name}, 'Sổ Hợp Tác', ${[OWN.name]}::text[], ${[OWN.tax]}::text[])
-    on conflict (tenant_id) do update set company_name = excluded.company_name, own_names = excluded.own_names, own_tax_ids = excluded.own_tax_ids`;
+  await tx`update admin.tenants set name = ${OWN.name}, version = version + 1, updated_at = now()
+    where id = ${tenant} and name <> ${OWN.name}`;
+  await tx`insert into contracts.company_settings (tenant_id, app_name, own_names, own_tax_ids)
+    values (${tenant}, 'Sổ Hợp Tác', ${[OWN.name]}::text[], ${[OWN.tax]}::text[])
+    on conflict (tenant_id) do update set own_names = excluded.own_names, own_tax_ids = excluded.own_tax_ids`;
 }
 
 const RENEWED = [

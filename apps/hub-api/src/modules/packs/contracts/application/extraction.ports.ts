@@ -112,7 +112,8 @@ export type ExtractionRepo = {
   saveResult(id: string, r: ExtractionResult & { expected: number }): Promise<boolean>;
   /** Tra MST lại (`needs_review`, `version = expected`): chỉ thay `warnings`, không tăng version. */
   saveWarnings(id: string, warnings: Warning[], expected: number): Promise<boolean>;
-  /** V2-L: tên + MST của chính công ty (`company_settings`) để đoán Mua/Bán; vắng ⇒ rỗng. */
+  /** V2-L: tên pháp nhân + MST của chính công ty (`company_settings.own_names/own_tax_ids` — cấu hình riêng của gói, KHÔNG phải
+   * tên công ty `admin.tenants.name`; CR-121 c20 giữ `own_names`) để đoán Mua/Bán; vắng ⇒ rỗng. */
   ownParties?(): Promise<OwnParties>;
   /** Còn `extracting` ⇒ UPDATE `extract_failed` + `error` (mã) + event; trả có ghi hay không. */
   saveFailure(id: string, code: string): Promise<boolean>;

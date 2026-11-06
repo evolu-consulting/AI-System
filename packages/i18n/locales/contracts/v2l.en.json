@@ -36,6 +36,7 @@
       },
       "co": {
         "name": "Company name",
+        "nameHint": "The company name comes from Admin (Company › Profile); change it there.",
         "app": "App name",
         "logo": "Logo",
         "logoUpload": "Upload logo",

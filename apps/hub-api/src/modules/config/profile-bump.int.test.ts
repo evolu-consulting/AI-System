@@ -36,9 +36,9 @@ describe("CR-118 · cr118-r1-fixes · brand bump profile_version", () => {
     });
     try {
       const v0 = await versions();
-      await o`insert into contracts.company_settings (tenant_id, company_name, app_name)
-        values (${A}, 'R1 Co', 'R1 App') on conflict (tenant_id) do update
-        set company_name = excluded.company_name, app_name = excluded.app_name`;
+      await o`insert into contracts.company_settings (tenant_id, app_name)
+        values (${A}, 'R1 App') on conflict (tenant_id) do update
+        set app_name = excluded.app_name`;
       await arrived;
       const v1 = await versions();
       const p = ProfileChangedPayloadSchema.parse(JSON.parse(got[0] ?? "null"));

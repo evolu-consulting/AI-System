@@ -145,11 +145,11 @@ describe("seed-refresh · fixture công ty evolu/demo", () => {
       where t.key = 'evolu' and g.key = ${ACCOUNTING.key}`;
     expect(grp[0]?.name).toEqual({ vi: "Phòng Kế toán", en: "Accounting" });
     expect((await sql`select 1 from admin.users where locale <> 'vi'`).length).toBe(0);
-    const brand = await sql`select t.key, cs.company_name, cs.app_name, cs.accent, cs.logo
+    const brand = await sql`select t.key, cs.app_name, cs.accent, cs.logo
       from contracts.company_settings cs join admin.tenants t on t.id = cs.tenant_id order by 1`;
     expect(brand.map((b) => b.key)).toEqual(["demo", "evolu"]);
     expect(brand.find((b) => b.key === "evolu")).toMatchObject({
-      company_name: "Evolu",
+      app_name: "Evolu Hợp Tác",
       logo: null,
     });
     expect(await emptyUrls()).toBe(0);

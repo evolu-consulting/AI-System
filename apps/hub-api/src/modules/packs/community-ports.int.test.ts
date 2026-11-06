@@ -96,10 +96,13 @@ beforeAll(async () => {
   await cloneDb("full");
   sql = openOwner(2);
   c = await seedCast(sql, 53);
-  await sql`insert into contracts.company_settings (tenant_id, company_name, app_name, logo, accent, theme,
+  // CR-121 c20: tên công ty = admin.tenants.name (một nguồn); company_settings chỉ giữ brand app.
+  await sql`update admin.tenants set name = 'Công ty Chủ Quản A' where id = ${c.A}::uuid`;
+  await sql`update admin.tenants set name = 'Công ty B' where id = ${c.B}::uuid`;
+  await sql`insert into contracts.company_settings (tenant_id, app_name, logo, accent, theme,
       own_names, own_tax_ids)
-    values (${c.A}::uuid, 'Công ty Chủ Quản A', 'Sổ A', ${LOGO}, 'rose', 'dark', '{"Pháp nhân A"}', '{"0101234567"}'),
-      (${c.B}::uuid, 'Công ty B', null, null, 'teal', 'auto', '{}', '{}')`;
+    values (${c.A}::uuid, 'Sổ A', ${LOGO}, 'rose', 'dark', '{"Pháp nhân A"}', '{"0101234567"}'),
+      (${c.B}::uuid, null, null, 'teal', 'auto', '{}', '{}')`;
   db = createDb(urls().hubApi, { max: 2 });
   app = build();
 }, 120_000);

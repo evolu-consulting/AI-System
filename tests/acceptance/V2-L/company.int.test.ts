@@ -1,5 +1,5 @@
 // V2-L · CD-01 · V2-A (cờ duyệt) · CD-06 thử tính · CD-02..05 mặc định: một đường chính mỗi endpoint mới (Luật 0b) + một test chặn đọc
-// chéo tenant cho bảng `company_settings`. Hub-api THẬT in-process. Đỏ NGAY nếu thiếu migration 0034.
+// chéo tenant cho bảng `company_settings` (CR-121 c20: tên công ty đọc từ admin.tenants.name). Hub-api THẬT in-process. Đỏ NGAY nếu thiếu migration 0034.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
   arrangeV2a,
@@ -84,8 +84,14 @@ describe("V2-L · cài đặt công ty", () => {
     expect([s.company.accent, s.company.own_tax_ids.length, s.approval_enabled, s.version]).toEqual(
       ["teal", 2, flipped, 1],
     );
+    // CR-121 c20: tên công ty = admin.tenants.name; `name` trong thân PUT bị bỏ qua (không phải nguồn).
+    const [tn] = await c.sql<
+      { name: string }[]
+    >`select name from admin.tenants where id = ${T.acme}`;
+    expect(tn?.name).not.toBe("NITI GROUP");
+    expect(s.company.name).toBe(tn?.name);
     const r = await ok(call(c, P.hoa, "GET", C));
-    expect(r.company).toMatchObject({ name: "NITI GROUP", logo: PNG, theme: "dark" });
+    expect(r.company).toMatchObject({ name: tn?.name, logo: PNG, theme: "dark" });
     expect(r.approval_enabled).toBe(flipped);
     const [a] = await c.sql<
       { n: number }[]
@@ -93,7 +99,7 @@ describe("V2-L · cài đặt công ty", () => {
       where tenant_id = ${T.acme} and (after ->> 'approval_enabled')::boolean = ${flipped}`;
     expect(a?.n).toBe(1);
     const again = await ok(call(c, P.lan, "PUT", C, body({ approval_enabled: flipped, name: "" })));
-    expect([again.company.name, again.version]).toEqual([null, 2]);
+    expect([again.company.name, again.version]).toEqual([tn?.name, 2]);
   });
 
   it("tenant khác không thấy cài đặt công ty của acme (RLS)", async () => {

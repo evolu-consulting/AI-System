@@ -10,6 +10,7 @@ import { publicHostsCheck } from "./public-hosts.check";
 import { runsFailedCheck } from "./runs-failed.check";
 import { sloCheck } from "./slo.check";
 import { stuckCheck } from "./stuck.check";
+import { tenantProfileCheck } from "./tenant-profile.check";
 import { tlsCheck } from "./tls.check";
 
 export const OPS_CHECKS: readonly OpsCheck[] = [
@@ -24,4 +25,5 @@ export const OPS_CHECKS: readonly OpsCheck[] = [
   sloCheck,
   flowCoverageCheck,
   appRolesCheck,
+  tenantProfileCheck,
 ];

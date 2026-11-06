@@ -33,6 +33,8 @@ const optName = (max: number) =>
 export const MST_RE = /^\d{10}(?:-?\d{3})?$/;
 
 export const CompanySchema = z.strictObject({
+  /** CR-121 c20: tên công ty = `admin.tenants.name` (chỉ đọc ở gói). Thân PUT vẫn nhận trường này để client cũ không bị 422 nhưng
+   *  server BỎ QUA; đổi tên ở Admin › Công ty › Hồ sơ. Phản hồi luôn trả tên của tenant. */
   name: optName(60),
   app_name: optName(40),
   logo: Logo.nullable(),

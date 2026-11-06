@@ -27,10 +27,10 @@ export const ACCOUNTING = {
   },
 } as const;
 
-/** Nhận diện công ty (company_settings) cho host của Community/Sổ Hợp Tác; logo null (không nhúng ảnh). */
+/** Brand app (company_settings: tên ứng dụng/màu) cho host của Community/Sổ Hợp Tác; logo null. Tên công ty = admin.tenants.name (CR-121 c20). */
 export const BRANDS = [
-  { tenant: "evolu", company: "Evolu", app: "Evolu Hợp Tác", accent: "teal" },
-  { tenant: "demo", company: "Demo Sổ Hợp Tác", app: "Sổ Hợp Tác", accent: "indigo" },
+  { tenant: "evolu", app: "Evolu Hợp Tác", accent: "teal" },
+  { tenant: "demo", app: "Sổ Hợp Tác", accent: "indigo" },
 ] as const;
 
 /** URL app cho dev (admin-api :3001 là API, không phải app). Chỉ điền ô còn rỗng, không đè giá trị admin đã sửa. */
@@ -133,15 +133,15 @@ async function writePackRoles(tx: Tx, r: TenantFixtureResult): Promise<void> {
   ).length;
 }
 
-/** 7: company_settings (tên/tên ứng dụng/màu; logo null) — chỉ tạo hàng thiếu, không đè chỉnh sửa. Gói contracts chưa cài ⇒ bỏ qua. */
+/** 7: company_settings (tên ứng dụng/màu; logo null) — chỉ tạo hàng thiếu, không đè chỉnh sửa. Gói contracts chưa cài ⇒ bỏ qua. */
 async function writeBrands(tx: Tx): Promise<number> {
   const [has] = await tx`select to_regclass('contracts.company_settings') is not null as ok`;
   if (!has?.ok) return 0;
   const rows = tx.json(BRANDS as never);
   return (
-    await tx`insert into contracts.company_settings (tenant_id, company_name, app_name, accent)
-      select tn.id, x.company, x.app, x.accent
-      from jsonb_to_recordset(${rows}::jsonb) as x(tenant text, company text, app text, accent text)
+    await tx`insert into contracts.company_settings (tenant_id, app_name, accent)
+      select tn.id, x.app, x.accent
+      from jsonb_to_recordset(${rows}::jsonb) as x(tenant text, app text, accent text)
       join admin.tenants tn on tn.key = x.tenant
       on conflict (tenant_id) do nothing returning tenant_id`
   ).length;

@@ -1440,7 +1440,8 @@
       "stuck": "Queue / stuck runs",
       "slo": "SLO / regressions",
       "flow_coverage": "Processes visible to tenants",
-      "app_roles": "App roles"
+      "app_roles": "App roles",
+      "tenant_profile": "Company profile"
     },
     "history": {
       "title": "History (last 50 events)",

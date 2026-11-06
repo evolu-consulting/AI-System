@@ -103,7 +103,7 @@ async function plan(tx: Tx, t: string): Promise<Plan> {
       where g.tenant_id = ${t} and not exists (select 1 from hub.agent_grants x join hub.agents a on a.id = x.agent_id
         and a.key = 'assistant' where x.tenant_id = g.tenant_id and x.subject_type = g.subject_type and x.subject_id = g.subject_id)) as grants,
     (select count(*)::int from knowledge.documents where tenant_id = ${t}) as docs,
-    exists (select 1 from contracts.company_settings where tenant_id = ${t} and company_name ilike '%niti%') as company,
+    exists (select 1 from admin.tenants where id = ${t} and name ilike '%niti%') as company,
     (select count(*)::int from contracts.companies where tenant_id = ${t} and (phone is null or contact_person is null)) as partners`;
   if (!r) throw new Error("demo-ai-fix: không đọc được hiện trạng");
   const s = await planAiSetup(tx, t, { forceDefault: true });
@@ -145,8 +145,11 @@ async function apply(tx: Tx, t: string, p: Plan): Promise<void> {
       for (const [i, c] of DOC_CHUNKS.entries())
         await tx`insert into knowledge.chunks (tenant_id, doc_id, ord, heading, body) values (${t}, ${d.id}, ${i}, ${c.heading}, ${c.body})`;
   }
-  await tx`update contracts.company_settings set company_name = ${OWN.name}, own_names = ${[OWN.name]}::text[]
-    where tenant_id = ${t} and company_name ilike '%niti%'`;
+  // CR-121 c20: tên công ty = admin.tenants.name (một nguồn). Sửa pháp nhân TRƯỚC (điều kiện đọc tên NITI), rồi đổi tên tenant.
+  await tx`update contracts.company_settings set own_names = ${[OWN.name]}::text[]
+    where tenant_id = ${t} and exists (select 1 from admin.tenants where id = ${t} and name ilike '%niti%')`;
+  await tx`update admin.tenants set name = ${OWN.name}, version = version + 1, updated_at = now()
+    where id = ${t} and name ilike '%niti%'`;
   for (const x of PARTNERS)
     if (x.phone)
       await tx`update contracts.companies set phone = coalesce(phone, ${x.phone}), contact_person = coalesce(contact_person, ${x.contact ?? null})

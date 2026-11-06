@@ -36,6 +36,7 @@
       },
       "co": {
         "name": "Tên công ty",
+        "nameHint": "Tên công ty lấy từ Admin (Công ty › Hồ sơ); đổi ở đó.",
         "app": "Tên ứng dụng",
         "logo": "Logo",
         "logoUpload": "Tải logo lên",

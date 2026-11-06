@@ -15,7 +15,7 @@ beforeAll(async () => {
     "2026-10-21",
   );
   // Mô phỏng demo đã nạp bản cũ: tên công ty NITI, đối tác thiếu điện thoại.
-  await w.sql`update contracts.company_settings set company_name = 'NITI GROUP' where tenant_id = ${w.A}`;
+  await w.sql`update admin.tenants set name = 'NITI GROUP' where id = ${w.A}`;
   await w.sql`insert into admin.groups (tenant_id, key, name) values (${w.A}, 'beta-testers', '{"vi":"Beta testers"}'::jsonb) on conflict do nothing`;
   await w.sql`update admin.users set email = 'demo-owner@example.invalid', display_name = 'demo-owner' where id = ${w.boss}`;
   await w.sql`update contracts.companies set phone = null, contact_person = null where tenant_id = ${w.A}`;
@@ -39,10 +39,8 @@ describe("demo-ai-fix", () => {
       partners: 0,
       grants: 0,
     });
-    const [c] = await w.sql<
-      { company_name: string }[]
-    >`select company_name from contracts.company_settings where tenant_id = ${w.A}`;
-    expect(c?.company_name).toBe("Công ty Demo");
+    const [c] = await w.sql<{ name: string }[]>`select name from admin.tenants where id = ${w.A}`;
+    expect(c?.name).toBe("Công ty Demo");
     const [d] = await w.sql<
       { n: number; t: number }[]
     >`select count(*)::int as n, (select count(*)::int from knowledge.chunks where tenant_id = ${w.A}) as t
