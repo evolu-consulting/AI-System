@@ -30,6 +30,8 @@ export type StageLike = {
   step: number;
   executor: { kind: string; tool_key?: string };
   slot?: Record<string, unknown> | undefined;
+  /** CR-122 · M1 · node Kết thúc của FlowDef (backfill thêm vào đuôi `stages` của def khe) — không thuộc dạng khe. */
+  outcome?: string | undefined;
 };
 
 export type FromStagesResult =
@@ -50,7 +52,9 @@ const isTool = (s: StageLike, tool: string) =>
  * `stage.slot` mang bước (review/Dify, gồm `when`), `finalize.slot.esign` mang bước Ký số đuôi. Khác (hai stage cùng bước =
  * song song, If, thiếu/đổi route/finalize, stage không có `slot`) ⇒ lỗi kèm khoá stage đầu tiên sai dạng.
  */
-export function fromStages(stages: readonly StageLike[]): FromStagesResult {
+export function fromStages(all: readonly StageLike[]): FromStagesResult {
+  // CR-122 · M1: def khe đã backfill có thêm node Kết thúc (`outcome`) sau `finalize` — bỏ đi, dạng khe không đổi.
+  const stages = all.at(-1)?.outcome !== undefined ? all.slice(0, -1) : all;
   const [first, route, ...tail] = stages;
   const finalize = tail.pop();
   if (!first || !route || !finalize) return bad(stages[0]?.key ?? "");

@@ -18,6 +18,11 @@ Flow Thư viện có "Bắt đầu khi" (trigger) và không có khe xuất bả
 - Kịch bản: khi xuất bản flow Thư viện có trigger rồi gán cho công ty thì sự kiện mở đúng một lượt chạy từ bản phát hành [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » tạo → xuất bản v1 → gán công ty → sự kiện mở đúng 1 lượt từ BẢN XUẤT BẢN; xuất bản lại ⇒ v2]
 - Kịch bản: khi flow Thư viện sai luật thì xuất bản trả 422 kèm đường dẫn và không có bản phát hành [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » flow lỗi ⇒ 422 PROCESS_DEF_INVALID + paths, không tạo bản xuất bản]
 - Kịch bản: khi xuất bản def theo khe cũ thì vẫn kiểm luật khe như trước [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » def theo khe cũ xuất bản như trước (luật khe + nút hệ thống)]
+- Kịch bản: khi flow Thư viện có trigger chưa gán cho công ty thì tenant_admin không thấy, gán rồi thì mở xem được [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » tenant_admin chỉ mở (chỉ đọc) def Thư viện có trigger khi ĐÃ gán cho công ty của mình]
+
+#### Yêu cầu: Def theo khe đã backfill (M1) vẫn sửa được theo đường khe
+Def khe có thêm node Kết thúc ở đuôi (hub 0111) vẫn dựng lại được body từ stages (canvas) và lưu theo đường khe; luật FlowDef không áp cho def khe / bản riêng lưu theo khe. Nhân bản def khe không chép trigger/app. Def mặc định của seed có `published_version` 2 vì M1 tạo release v+1 (test library.routes cập nhật theo).
+- Kịch bản: khi sửa bản riêng chỉ gửi stages có node Kết thúc đuôi thì body dựng lại và lưu được [test: apps/hub-api/src/modules/processes/library/clone-for-company.int.test.ts » PUT bản riêng (chỉ gửi stages) ⇒ slot_body được dựng lại + giữ, slot vẫn null, nguồn/bản không đổi]
 
 ## Việc còn lại
 - Không có (UI admin-web/e2e do vùng khác).

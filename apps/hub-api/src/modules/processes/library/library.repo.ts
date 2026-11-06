@@ -123,7 +123,8 @@ export async function insertClone(
       description, input_hint, run_group_ids, stages, token_budget, enabled, sources, inputs, ttl_days, slot, slot_body, trigger, app,
       created_by, updated_by)
     select null, ${w.key}, ${w.name}, description, input_hint, run_group_ids, stages, token_budget, enabled, sources,
-      inputs, ttl_days, slot, slot_body, trigger, app, ${w.actorId}, ${w.actorId}
+      inputs, ttl_days, slot, slot_body, case when slot is null then trigger end, case when slot is null then app end,
+      ${w.actorId}, ${w.actorId}
     from hub.process_defs where id = ${w.src} returning id::text as id`);
   if (!r) throw new Error("clone: không ghi được");
   return r.id;

@@ -227,7 +227,7 @@ describe("CR-105 · L2a · API thư viện quy trình", () => {
       ),
     }).toEqual({
       allSlot: true,
-      dflt: { label: "Sổ Hợp Tác · Duyệt hợp đồng", is_default: true, pv: 1, tc: 0 },
+      dflt: { label: "Sổ Hợp Tác · Duyệt hợp đồng", is_default: true, pv: 2, tc: 0 }, // pv 2: CR-122 M1 (hub 0111) tạo release v+1 cho def mặc định
       tpl: true,
       tplHasLib: false,
       tenantHidden: [],

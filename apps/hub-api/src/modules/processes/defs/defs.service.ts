@@ -298,7 +298,8 @@ export class DefsService {
       const copy = await this.#companyCopyDraft(tx, cur, raw);
       const { input, slot, body } = copy ?? this.#draft(u, cur.tenant_id, raw, cur);
       await guardInUse(tx, cur, { key: input.key, slot, enabled: input.enabled });
-      flowCheck(input, cur.tenant_id, cur);
+      // def khe / bản riêng lưu theo khe (kể cả đã backfill trigger) theo đường khe, không áp luật FlowDef.
+      if (slot === null && copy === null) flowCheck(input, cur.tenant_id, cur);
       await nodeCheck(this.d, cur.tenant_id, input);
       warnings = await edgeCheck(this.d, cur.tenant_id, input);
       // bản riêng sao từ thư viện: stage dùng khoá nhóm/tool của khe (không phải id nhóm) ⇒ kiểm tham chiếu như def thư viện

@@ -79,10 +79,14 @@ const visible = (s: DefScope) => {
     s.tenantId === null
       ? sql`d.tenant_id is null`
       : sql`(d.tenant_id = ${s.tenantId} or d.tenant_id is null)`;
-  // CR-122 · E6 · def Thư viện = có khe HOẶC (tenant NULL + có `trigger`); def có trigger của chính công ty vẫn thấy.
-  return s.library
-    ? base
-    : sql`(${base} and d.slot is null and (d.tenant_id is not null or d.trigger is null))`;
+  if (s.library) return base;
+  // CR-122 · E6 · def Thư viện = có khe HOẶC (tenant NULL + có `trigger`); def có trigger của chính công ty vẫn thấy, def Thư viện
+  // có trigger chỉ thấy (chỉ đọc) khi ĐÃ gán cho công ty của người xem (`company_flows`).
+  const assigned =
+    s.tenantId === null
+      ? sql`false`
+      : sql`exists (select 1 from hub.company_flows cf where cf.flow_id = d.id and cf.tenant_id = ${s.tenantId}::uuid)`;
+  return sql`(${base} and d.slot is null and (d.tenant_id is not null or d.trigger is null or ${assigned}))`;
 };
 
 export type ListOpts = DefScope & {

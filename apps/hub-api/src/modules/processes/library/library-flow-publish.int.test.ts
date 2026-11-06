@@ -50,6 +50,7 @@ const UP = userId(1260);
 const UX = userId(1261);
 const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
   P: { userId: UP, tenantId: X, role: "platform_admin" },
+  A: { userId: UX, tenantId: X, role: "tenant_admin" },
 };
 const T0 = new Date(Date.now() + 60_000);
 const EVENT = "contract.submitted";
@@ -65,10 +66,10 @@ const launch: FlowLaunch = async (e, c) => {
   return { runId: crypto.randomUUID() };
 };
 
-async function call(method: string, path: string, body?: unknown) {
+async function call(method: string, path: string, body?: unknown, who = "P") {
   const r = await app.request(path, {
     method,
-    headers: { "content-type": "application/json", "x-who": "P" },
+    headers: { "content-type": "application/json", "x-who": who },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   const text = await r.text();
@@ -207,6 +208,16 @@ describe("CR-122 E6 · xuất bản flow Thư viện có trigger", () => {
         (select count(*)::int from hub.process_def_releases where def_id = ${id}) as n,
         (select published_version from hub.process_defs where id = ${id}) as pv`;
     expect([n?.n, n?.pv]).toEqual([0, null]);
+  });
+
+  it("tenant_admin chỉ mở (chỉ đọc) def Thư viện có trigger khi ĐÃ gán cho công ty của mình", async () => {
+    const c = await call("POST", "/process-defs", body("e6-xem"));
+    const id = c.json.id as string;
+    await call("POST", `/process-defs/${id}/publish`, { version: c.json.version });
+    expect((await call("GET", `/process-defs/${id}`, undefined, "A")).status).toBe(404); // chưa gán ⇒ ẩn
+    expect((await call("POST", `/tenants/${X}/company-flows`, { flow_id: id })).status).toBe(201);
+    const g = await call("GET", `/process-defs/${id}`, undefined, "A");
+    expect([g.status, g.json.id]).toEqual([200, id]);
   });
 
   it("def theo khe cũ xuất bản như trước (luật khe + nút hệ thống)", async () => {
