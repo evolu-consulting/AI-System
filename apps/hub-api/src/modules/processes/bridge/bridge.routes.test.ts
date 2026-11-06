@@ -126,6 +126,26 @@ describe("CR-122 N2 · gợi ý cầu nối", () => {
     expect(p.mismatch.missing).toEqual(["contract_id"]);
     expect(p.run_inputs).toEqual([{ key: "contract-id", type: "string" }]);
     expect(c.prompt).not.toContain("DAU"); // không đưa tên/nội dung do người dùng đặt
+    expect(p.facts).toEqual([]); // def không có app/trigger ⇒ không có dữ kiện
+  });
+
+  test("CR-122 E4b · flow của app có trigger ⇒ prompt có facts (chỉ khoá + kiểu) của sự kiện, AI dùng được nguồn fact", async () => {
+    const { app, calls } = mount(() => ok(GOOD));
+    const d = { ...def(GAP), app: "contracts", trigger: { event: "contract.submitted" } };
+    const r = await post(app, "A", body({ def: d }));
+    expect(r.status).toBe(200);
+    const p = JSON.parse((calls[0] as Call).prompt);
+    expect(p.facts.length).toBeGreaterThan(0);
+    for (const f of p.facts as Record<string, unknown>[])
+      expect(Object.keys(f).sort()).toEqual(["key", "type"]);
+    // Sự kiện lạ ⇒ không dữ kiện; nguồn fact không thuộc sự kiện ⇒ đề xuất bị từ chối.
+    const bad = JSON.stringify({
+      ...JSON.parse(GOOD),
+      values: [{ key: "contract_id", type: "string", from: { kind: "fact", key: "khong_co" } }],
+    });
+    const m2 = mount(() => ok(bad));
+    const r2 = await post(m2.app, "A", body({ def: d }));
+    expect(r2.json.ok).toBe(false);
   });
 
   test("hai bước đã khớp ⇒ ok:false, không gọi AI, cạnh không có thật ⇒ 400", async () => {

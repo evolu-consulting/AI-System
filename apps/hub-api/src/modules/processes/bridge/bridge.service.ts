@@ -2,6 +2,7 @@
 // tenant_admin công ty mình / platform_admin) → bảng node theo tính năng công ty → cạnh có thật + có lệch (tất định, 0 lời gọi AI nếu đã
 // khớp) → giới hạn tần suất → agent Hub `flow-bridge` (AI client chung: trần token + usage theo tenant) với hạn giờ → zod → kiểm lại bằng
 // `flowEdgeIssues`. AI chỉ thấy tên/kiểu trường. Mọi lỗi AI ⇒ `ok: false` kèm lý do (không 5xx).
+import { getAppManifest } from "@ai/contracts/app-manifest";
 import {
   type BridgeSuggestRequest,
   type BridgeSuggestResponse,
@@ -19,6 +20,7 @@ import { paletteOf } from "../defs/node-features";
 import {
   BRIDGE_NO,
   bridgePromptOf,
+  eventFactsOf,
   parseBridgeReply,
   runInputsOf,
   verifyBridge,
@@ -91,7 +93,9 @@ export class BridgeService {
     if (!this.d.agent) return BRIDGE_NO.unavailable();
     this.#throttle(u);
     const toStage = def.stages[t];
+    const facts = eventFactsOf(def, getAppManifest); // CR-122 E4b · khoá + kiểu dữ kiện của sự kiện mở flow
     const prompt = bridgePromptOf({
+      facts,
       fromNode: def.stages[f]?.node ?? null,
       fromStep: resolveSteps(def.stages)[f], // CR-122 E4 · nguồn field của bước trước
       toNode: toStage?.node ?? null,
@@ -105,7 +109,7 @@ export class BridgeService {
     const reply = parseBridgeReply(text);
     if (!reply) return BRIDGE_NO.invalid();
     if (!reply.ok) return reply;
-    return verifyBridge(reply, { def, from, to, palette });
+    return verifyBridge(reply, { def, from, to, palette, facts });
   }
 
   /** Quá tần suất ⇒ 429 (`Retry-After`); chỉ tính khi thật sự sắp gọi AI. */

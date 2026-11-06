@@ -1,5 +1,7 @@
 // CR-122 · N2 · FLOW2-FR-26 · luật THUẦN của "Gợi ý cầu nối": dựng đầu vào cho AI (CHỈ tên/kiểu trường — không dữ liệu bản ghi), đọc + kiểm
 // câu trả lời của AI bằng zod, dựng stage `set` đầy đủ, rồi kiểm lại bằng `flowEdgeIssues` sau khi chèn. Không I/O.
+
+import type { AppEventDecl } from "@ai/contracts/app-manifest";
 import {
   BRIDGE_TEXT_MAX,
   type BridgeSuggestResponse,
@@ -117,6 +119,21 @@ export function bridgePromptOf(c: {
     mismatch: { missing: c.issue.missing, type: c.issue.typeMismatch },
     run_inputs: c.runInputs,
   });
+}
+
+/**
+ * CR-122 E4b · dữ kiện (CHỈ khoá + kiểu) của sự kiện mở flow: `def.app` → manifest → `events[trigger.event].facts`. Không app / không
+ * trigger / sự kiện lạ ⇒ rỗng (AI không dùng được nguồn `fact`). Không đọc giá trị bản ghi.
+ */
+export function eventFactsOf(
+  def: { app?: string | null; trigger?: { event: string } | null },
+  manifestOf: (app: string) => { events: readonly AppEventDecl[] } | undefined,
+): { key: string; type: string }[] {
+  const ev =
+    def.app && def.trigger
+      ? manifestOf(def.app)?.events.find((e) => e.key === def.trigger?.event)
+      : undefined;
+  return (ev?.facts ?? []).map((f) => ({ key: f.key, type: f.type }));
 }
 
 /** Đầu vào của quy trình mà `set` đọc được (kiểu field tương ứng); loại file/nguồn. */
