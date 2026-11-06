@@ -1,4 +1,4 @@
-// ADM-FR-66 · CR-056 · P-a F5: thẻ "Thông tin" của editor — tên, ký hiệu `!`, mô tả, gợi ý, Group được chạy, ngân sách, Bật.
+// ADM-FR-66 · CR-056 · P-a F5: thẻ "Thông tin" của editor — tên, mô tả, thời hạn; trường kỹ thuật (ký hiệu, nhóm, ngân sách, Bật) theo `variant`.
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/shared/panel/Panel";
@@ -10,22 +10,97 @@ import type { DefDraft, DraftErrors } from "../../lib/def-form";
 import { DefTtlField } from "./DefTtlField";
 import { TextField } from "./Fields";
 
+/**
+ * `full` = quy trình thường (tạo mới / mẫu): đủ trường. `library` / `copy` (CR-121 f18): chỉ trường nghiệp vụ (Tên, Mô tả, Thời hạn)
+ * + khối "Nâng cao" thu gọn. Bản riêng (`copy`) chạy qua khe/luật: ký hiệu, nhóm được chạy (Hub dựng lại `run_group_ids` rỗng từ khe),
+ * gợi ý nhập và công tắc "Bật" (bản riêng enabled=false vẫn chạy) KHÔNG có tác dụng ⇒ ẩn; chỉ còn giới hạn chi phí AI.
+ */
+export type InfoVariant = "full" | "library" | "copy";
 type Props = {
   draft: DefDraft;
   errors: DraftErrors;
   readOnly: boolean;
   refs: EditorRefs;
   patch: (p: Partial<DefDraft>) => void;
+  variant?: InfoVariant;
 };
 
-export function DefInfoCard({ draft, errors, readOnly, refs, patch }: Props) {
+function GroupsField({
+  draft,
+  readOnly,
+  refs,
+  patch,
+  error,
+}: Omit<Props, "errors" | "variant"> & { error?: string | undefined }) {
   const { t } = useTranslation();
-  const e = (f: string): string | undefined => (errors[f] ? t(errors[f] as string) : undefined);
   const gname = (id: string) =>
     refs.groups.find((g) => g.value === id)?.label ?? t("process.admin.editor.gone");
   return (
+    <div className="space-y-1.5">
+      <p className="text-label font-medium">{t("process.admin.editor.groups")}</p>
+      <ul className="flex flex-wrap gap-1.5">
+        {draft.groupIds.map((id) => (
+          <li
+            key={id}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-0.5 text-label"
+          >
+            {gname(id)}
+            {readOnly ? null : (
+              <button
+                type="button"
+                aria-label={t("process.admin.editor.removeGroup", { name: gname(id) })}
+                onClick={() => patch({ groupIds: draft.groupIds.filter((x) => x !== id) })}
+                className="rounded-full p-0.5 hover:bg-background focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+              >
+                <X aria-hidden className="size-3" />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {readOnly ? null : (
+        <RefPicker
+          label={t("process.admin.editor.addGroup")}
+          options={refs.groups.map((g) => ({ id: g.value, label: g.label }))}
+          selectedIds={draft.groupIds}
+          isLoading={refs.loading}
+          onPick={(id) => patch({ groupIds: [...draft.groupIds, id] })}
+        />
+      )}
+      {error ? <p className="text-caption text-destructive">{error}</p> : null}
+    </div>
+  );
+}
+
+export function DefInfoCard({ draft, errors, readOnly, refs, patch, variant = "full" }: Props) {
+  const { t } = useTranslation();
+  const e = (f: string): string | undefined => (errors[f] ? t(errors[f] as string) : undefined);
+  const full = variant === "full";
+  const budget = (
+    <TextField
+      id="pd-budget"
+      label={t(full ? "process.admin.editor.budget" : "process.admin.editor.budgetAi")}
+      type="number"
+      value={draft.budget}
+      error={e("token_budget")}
+      readOnly={readOnly}
+      onChange={(v) => patch({ budget: v })}
+    />
+  );
+  const enabled = (label: string) => (
+    <div className="flex items-center gap-2">
+      <Switch
+        id="pd-enabled"
+        checked={draft.enabled}
+        disabled={readOnly}
+        onCheckedChange={(v) => patch({ enabled: v })}
+      />
+      <Label htmlFor="pd-enabled">{label}</Label>
+    </div>
+  );
+  return (
     <Panel title={t("process.admin.editor.info")}>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className={full ? "grid gap-3 sm:grid-cols-2" : undefined}>
         <TextField
           id="pd-name"
           label={t("process.admin.editor.name")}
@@ -34,16 +109,18 @@ export function DefInfoCard({ draft, errors, readOnly, refs, patch }: Props) {
           readOnly={readOnly}
           onChange={(v) => patch({ name: v })}
         />
-        <TextField
-          id="pd-key"
-          label={t("process.admin.editor.key")}
-          value={draft.key}
-          prefix="!"
-          mono
-          error={e("key")}
-          readOnly={readOnly}
-          onChange={(v) => patch({ key: v.replace(/^!/, "") })}
-        />
+        {full ? (
+          <TextField
+            id="pd-key"
+            label={t("process.admin.editor.key")}
+            value={draft.key}
+            prefix="!"
+            mono
+            error={e("key")}
+            readOnly={readOnly}
+            onChange={(v) => patch({ key: v.replace(/^!/, "") })}
+          />
+        ) : null}
       </div>
       <TextField
         id="pd-desc"
@@ -55,68 +132,49 @@ export function DefInfoCard({ draft, errors, readOnly, refs, patch }: Props) {
         rows={2}
         onChange={(v) => patch({ description: v })}
       />
-      <TextField
-        id="pd-hint"
-        label={t("process.admin.editor.hint")}
-        value={draft.hint}
-        error={e("input_hint")}
-        readOnly={readOnly}
-        onChange={(v) => patch({ hint: v })}
-      />
-      <div className="space-y-1.5">
-        <p className="text-label font-medium">{t("process.admin.editor.groups")}</p>
-        <ul className="flex flex-wrap gap-1.5">
-          {draft.groupIds.map((id) => (
-            <li
-              key={id}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-0.5 text-label"
-            >
-              {gname(id)}
-              {readOnly ? null : (
-                <button
-                  type="button"
-                  aria-label={t("process.admin.editor.removeGroup", { name: gname(id) })}
-                  onClick={() => patch({ groupIds: draft.groupIds.filter((x) => x !== id) })}
-                  className="rounded-full p-0.5 hover:bg-background focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-                >
-                  <X aria-hidden className="size-3" />
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-        {readOnly ? null : (
-          <RefPicker
-            label={t("process.admin.editor.addGroup")}
-            options={refs.groups.map((g) => ({ id: g.value, label: g.label }))}
-            selectedIds={draft.groupIds}
-            isLoading={refs.loading}
-            onPick={(id) => patch({ groupIds: [...draft.groupIds, id] })}
-          />
-        )}
-        {e("run_group_ids") ? (
-          <p className="text-caption text-destructive">{e("run_group_ids")}</p>
-        ) : null}
-      </div>
-      <TextField
-        id="pd-budget"
-        label={t("process.admin.editor.budget")}
-        type="number"
-        value={draft.budget}
-        error={e("token_budget")}
-        readOnly={readOnly}
-        onChange={(v) => patch({ budget: v })}
-      />
       <DefTtlField draft={draft} error={e("ttl_days")} readOnly={readOnly} patch={patch} />
-      <div className="flex items-center gap-2">
-        <Switch
-          id="pd-enabled"
-          checked={draft.enabled}
-          disabled={readOnly}
-          onCheckedChange={(v) => patch({ enabled: v })}
-        />
-        <Label htmlFor="pd-enabled">{t("process.admin.editor.enabled")}</Label>
-      </div>
+      {full ? (
+        <>
+          <TextField
+            id="pd-hint"
+            label={t("process.admin.editor.hint")}
+            value={draft.hint}
+            error={e("input_hint")}
+            readOnly={readOnly}
+            onChange={(v) => patch({ hint: v })}
+          />
+          <GroupsField
+            draft={draft}
+            readOnly={readOnly}
+            refs={refs}
+            patch={patch}
+            error={e("run_group_ids")}
+          />
+          {budget}
+          {enabled(t("process.admin.editor.enabled"))}
+        </>
+      ) : (
+        <details className="rounded-md border border-border px-3 py-2" data-testid="def-advanced">
+          <summary className="cursor-pointer text-label font-medium">
+            {t("process.admin.editor.advanced")}
+          </summary>
+          <div className="mt-3 space-y-3">
+            {variant === "library" ? (
+              <TextField
+                id="pd-key"
+                label={t("process.admin.editor.keyInternal")}
+                value={draft.key}
+                mono
+                error={e("key")}
+                readOnly={readOnly}
+                onChange={(v) => patch({ key: v.replace(/^!/, "") })}
+              />
+            ) : null}
+            {budget}
+            {variant === "library" ? enabled(t("process.admin.editor.enabledLib")) : null}
+          </div>
+        </details>
+      )}
     </Panel>
   );
 }

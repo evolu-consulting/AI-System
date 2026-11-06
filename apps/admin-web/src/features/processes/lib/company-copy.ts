@@ -27,6 +27,10 @@ export const scopedTenantId = (
   company: string | undefined,
 ): string | undefined => (isPlatform && company ? company : picked);
 
+/** Kiểu thẻ "Thông tin": thư viện / bản riêng chỉ trường nghiệp vụ + "Nâng cao"; còn lại đủ trường. */
+export const infoVariant = (def: DefLike | undefined, lib: unknown): "full" | "library" | "copy" =>
+  lib ? "library" : isCompanyCopy(def, lib) ? "copy" : "full";
+
 /** Bản riêng DÙNG ĐƯỢC Form bước dọc chung ⇔ Hub trả `slot_body` (bản sao cũ chưa có body ⇒ chỉ Sơ đồ). */
 export const usesStepForm = <D extends DefLike>(def: D | undefined, lib: unknown): D | null =>
   def && isCompanyCopy(def, lib) && def.slot_body != null ? def : null;

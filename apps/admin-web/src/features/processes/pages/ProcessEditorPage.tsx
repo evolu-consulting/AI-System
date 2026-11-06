@@ -35,6 +35,7 @@ import { useEditorRefs } from "../hooks/use-editor-refs";
 import { useProcessTenant } from "../hooks/use-process-tenant";
 import {
   copyTenantId,
+  infoVariant,
   isCompanyCopy,
   scopedTenantId,
   usesStepForm,
@@ -211,6 +212,7 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
         readOnly={readOnly}
         refs={refs}
         patch={d.patch}
+        variant={infoVariant(def, lib)}
       />
       <SourcesCard
         draft={d.draft}

@@ -45,6 +45,10 @@
     "more": "Load more"
   },
   "editor": {
+    "advanced": "Advanced",
+    "keyInternal": "Internal process code",
+    "budgetAi": "AI cost limit per run (optional)",
+    "enabledLib": "Enabled",
     "copyBadge": "Company copy",
     "copySaveNote": "Saving applies right away to new runs; runs in progress keep the old version.",
     "stepsTab": "Steps",

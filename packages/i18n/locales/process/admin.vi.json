@@ -45,6 +45,10 @@
     "more": "Tải thêm"
   },
   "editor": {
+    "advanced": "Nâng cao",
+    "keyInternal": "Mã nội bộ của quy trình",
+    "budgetAi": "Giới hạn chi phí AI mỗi lượt (tuỳ chọn)",
+    "enabledLib": "Đang bật",
     "copyBadge": "Bản riêng của công ty",
     "copySaveNote": "Lưu là áp dụng ngay cho lượt chạy mới; lượt đang chạy giữ bản cũ.",
     "stepsTab": "Các bước",

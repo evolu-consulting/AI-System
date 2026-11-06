@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   companySearch,
   copyTenantId,
+  infoVariant,
   isCompanyCopy,
   scopedTenantId,
   usesStepForm,
@@ -45,5 +46,14 @@ describe("CR-121 f14 · platform mở bản riêng/lượt chạy của công ty
     expect(scopedTenantId(true, undefined, "t1")).toBe("t1");
     expect(scopedTenantId(true, "picked", undefined)).toBe("picked");
     expect(scopedTenantId(false, undefined, "t1")).toBeUndefined();
+  });
+});
+
+describe("CR-121 f18 · thẻ Thông tin chỉ trường nghiệp vụ", () => {
+  test("thư viện ⇒ library; bản riêng ⇒ copy; quy trình thường ⇒ full", () => {
+    expect(infoVariant({ source_template_id: "s1" }, {})).toBe("library");
+    expect(infoVariant({ source_template_id: "s1" }, null)).toBe("copy");
+    expect(infoVariant({ source_template_id: null }, null)).toBe("full");
+    expect(infoVariant(undefined, null)).toBe("full");
   });
 });
