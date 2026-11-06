@@ -14,6 +14,7 @@ import {
   leaksOnPage,
   loginAdmin,
   loginAs,
+  openSystemEntry,
   resetFixture,
   toast,
   withOwner,
@@ -39,7 +40,7 @@ async function configVersion(): Promise<number> {
 
 async function openTransfer(page: Page) {
   await loginAdmin(page);
-  await page.getByRole("link", { name: "Import / Export" }).click();
+  await openSystemEntry(page, /Import \/ Export/);
   await expect(page.getByRole("heading", { level: 1, name: "Import / Export" })).toBeVisible();
 }
 
@@ -247,7 +248,13 @@ test("ADM-FR-54 · E-TR-11 · binh (tenant_admin): không thấy 'Import / Expor
   page,
 }) => {
   await loginAs(page, "acme", "binh");
-  await expect(page.getByRole("link", { name: "Import / Export" })).toHaveCount(0);
+  await page
+    .getByRole("navigation", { name: "Điều hướng chính" })
+    .getByRole("link", { name: "Hệ thống", exact: true })
+    .click();
+  await expect(
+    page.getByTestId("system-hub").getByRole("link", { name: /Import \/ Export/ }),
+  ).toHaveCount(0);
   await page.goto("/transfer");
   await expect(
     page.getByRole("heading", { name: "Bạn không có quyền xem trang này" }),

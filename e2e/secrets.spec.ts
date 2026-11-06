@@ -11,6 +11,7 @@ import {
   loginToShell,
   loginUI,
   openPage,
+  openSystemEntry,
   PW,
   resetFixture,
   rowOf,
@@ -26,27 +27,26 @@ test.beforeAll(() => {
 
 const nav = (page: Page) => page.getByRole("navigation", { name: "Điều hướng chính" });
 
-test("ADM-BR-14 · M2-AC01 · menu: admin thấy Secrets/Workflows/Commands/Features; tenant_admin (binh) không thấy mục nào và /secrets → ForbiddenState, không gọi API secrets", async ({
+test("ADM-BR-14 · M2-AC01 · menu (CR-121 c10/c22): admin có Công cụ AI ở sidebar và Secrets trong Hệ thống; tenant_admin (binh) không có Công cụ AI/Secrets và /secrets → ForbiddenState, không gọi API secrets", async ({
   page,
   browser,
 }) => {
   await loginAdmin(page);
-  for (const name of ["Secrets", "Commands", "Features"]) {
-    await expect(nav(page).getByRole("link", { name, exact: true })).toBeVisible();
-  }
-  // CR-112 (nav.ts, nhóm NỀN TẢNG): "Workflows" là một liên kết trong sidebar (nhóm sổ xuống DLC-R15 không thuộc nhánh này).
-  await expect(
-    nav(page).getByRole("link", { name: "Workflow Dify (tool AI)", exact: true }),
-  ).toBeVisible();
+  await expect(nav(page).getByRole("link", { name: "Công cụ AI", exact: true })).toBeVisible();
+  await openSystemEntry(page, /Secrets/);
+  await expect(page).toHaveURL(/\/secrets$/);
   const ctx = await browser.newContext({ locale: "vi-VN", timezoneId: "Asia/Ho_Chi_Minh" });
   try {
     const other = await ctx.newPage();
     const calls: string[] = [];
     other.on("request", (r) => calls.push(r.url()));
     await loginToShell(other, "acme", "binh", PW);
-    for (const name of ["Secrets", "Commands", "Features", "Workflow Dify (tool AI)"]) {
-      await expect(nav(other).getByRole("link", { name, exact: true })).toHaveCount(0);
-    }
+    await expect(nav(other).getByRole("link", { name: "Công cụ AI", exact: true })).toHaveCount(0);
+    await nav(other).getByRole("link", { name: "Hệ thống", exact: true }).click();
+    await expect(other.getByTestId("system-hub")).toBeVisible();
+    await expect(
+      other.getByTestId("system-hub").getByRole("link", { name: /Secrets/ }),
+    ).toHaveCount(0);
     await other.goto("/secrets");
     await expect(
       other.getByRole("heading", { name: "Bạn không có quyền xem trang này" }),
@@ -56,7 +56,6 @@ test("ADM-BR-14 · M2-AC01 · menu: admin thấy Secrets/Workflows/Commands/Feat
     await ctx.close();
   }
 });
-
 test("ADM-FR-50 · M2-R26 · /secrets: heading, bảng, •••• 7f3a, chip Tất cả 3 / Đang dùng 2 / Chưa dùng 1; bấm chip đổi URL ?used=", async ({
   page,
 }) => {
@@ -251,7 +250,15 @@ test("ADM-FR-50 · M2-R28 · locale EN của user: heading 'Secrets', nút '+ Ad
     await loginUI(page, "platform", admin.username, admin.password);
     await page.waitForURL((u) => !u.pathname.startsWith("/login"));
     // Điều hướng trong app (không page.goto/reload) để giữ ngôn ngữ đã đặt lúc đăng nhập.
-    await page.getByRole("navigation").getByRole("link", { name: "Secrets", exact: true }).click();
+    // CR-121 c22: Secrets nằm trong Hệ thống (EN: System) → thẻ Secrets.
+    await page
+      .getByRole("navigation")
+      .getByRole("link", { name: /^(Hệ thống|System)$/ })
+      .click();
+    await page
+      .getByTestId("system-hub")
+      .getByRole("link", { name: /Secrets/ })
+      .click();
     await expect(page).toHaveURL(/\/secrets/);
     await expect(page.getByRole("heading", { level: 1, name: "Secrets" })).toBeVisible();
     await expect(page.getByRole("button", { name: "+ Add secret" })).toBeVisible();

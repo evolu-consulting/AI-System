@@ -17,11 +17,14 @@ const asBinh = async (page: Page) => {
   await expect(page.getByRole("heading", { level: 2, name: "Đối tác", exact: true })).toBeVisible();
 };
 
-test("ADM-FR-74 · tab 'Đối tác' trong workspace công ty có cho tenant_admin; thêm công ty → hiện trong bảng, 0/0 tài khoản", async ({
+test("ADM-FR-74 · mục con 'Đối tác' của tab Thành viên có cho tenant_admin; thêm công ty → hiện trong bảng, 0/0 tài khoản", async ({
   page,
 }) => {
   await asBinh(page);
-  await expect(page.getByRole("tab", { name: "Đối tác", selected: true })).toBeVisible();
+  // CR-121 c14: Đối tác là mục con của tab Thành viên (?view=partners), không còn tab riêng.
+  await expect(page.getByRole("tab", { name: "Thành viên", selected: true })).toBeVisible();
+  await expect(page.getByTestId("members-view-partners")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("tab", { name: "Đối tác" })).toHaveCount(0);
   await page.getByRole("button", { name: "+ Thêm công ty đối tác" }).first().click();
   const dialog = page.getByRole("dialog", { name: "Thêm công ty đối tác" });
   await dialog.getByRole("textbox", { name: "Tên công ty" }).fill(COMPANY);

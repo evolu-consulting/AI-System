@@ -1,4 +1,4 @@
-// CR-104 · ops-ui · e2e `/system` "Tình trạng hệ thống" (Hub thật, vòng nền tắt `HUB_OPS_WATCH=off`, kiểm bằng "Kiểm tra ngay").
+// CR-104 · ops-ui · e2e `/system-health` (CR-121 c22) "Tình trạng hệ thống" (Hub thật, vòng nền tắt `HUB_OPS_WATCH=off`, kiểm bằng "Kiểm tra ngay").
 import { expect, type Page, test } from "@playwright/test";
 import { PW } from "../../tests/acceptance/M1/_data";
 import { loginAdmin, loginToShell } from "../support/helpers";
@@ -10,9 +10,14 @@ test('platform_admin: 9 thẻ check, bấm "Kiểm tra ngay" cập nhật lúc k
   page,
 }) => {
   await loginAdmin(page);
-  await page.getByRole("link", { name: NAV }).click();
+  // CR-121 c22: Hệ thống (sidebar) → thẻ "Tình trạng hệ thống" → /system-health.
+  await page.getByRole("navigation").getByRole("link", { name: "Hệ thống", exact: true }).click();
+  await page
+    .getByTestId("system-hub")
+    .getByRole("link", { name: new RegExp(NAV) })
+    .click();
   await expect(h1(page)).toBeVisible();
-  await expect(page).toHaveURL(/\/system$/);
+  await expect(page).toHaveURL(/\/system-health$/);
 
   for (const label of [
     "Provider AI",
@@ -60,7 +65,7 @@ test("cấu hình: đổi tần suất → Lưu → tải lại vẫn giữ; ng�
   page,
 }) => {
   await loginAdmin(page);
-  await page.goto("/system");
+  await page.goto("/system-health");
   await expect(h1(page)).toBeVisible();
 
   const every = page.getByRole("spinbutton", { name: "Tần suất kiểm", exact: true });
@@ -105,7 +110,7 @@ test("cấu hình: đổi tần suất → Lưu → tải lại vẫn giữ; ng�
 
 test("tắt một check: thẻ xám 'Đã tắt'", async ({ page }) => {
   await loginAdmin(page);
-  await page.goto("/system");
+  await page.goto("/system-health");
   await page.getByRole("switch", { name: "Bật check Backup" }).click();
   await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expect(page.getByText("Đã lưu cấu hình")).toBeVisible();
@@ -114,10 +119,16 @@ test("tắt một check: thẻ xám 'Đã tắt'", async ({ page }) => {
   await expect(card.getByText("Đã tắt")).toBeVisible();
 });
 
-test("tenant_admin: không có mục menu, vào /system bị chặn", async ({ page }) => {
+test("tenant_admin: hub Hệ thống không có thẻ Tình trạng, vào /system-health bị chặn", async ({
+  page,
+}) => {
   await loginToShell(page, "acme", "binh", PW);
-  await expect(page.getByRole("link", { name: NAV })).toHaveCount(0);
-  await page.goto("/system");
+  await page.getByRole("navigation").getByRole("link", { name: "Hệ thống", exact: true }).click();
+  await expect(page).toHaveURL(/\/system$/);
+  await expect(
+    page.getByTestId("system-hub").getByRole("link", { name: new RegExp(NAV) }),
+  ).toHaveCount(0);
+  await page.goto("/system-health");
   await expect(
     page.getByRole("heading", { name: "Bạn không có quyền xem trang này" }),
   ).toBeVisible();

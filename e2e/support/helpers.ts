@@ -236,3 +236,16 @@ export async function apiAsAdmin(request: APIRequestContext) {
     del: (path: string) => request.delete(`${API_URL}${path}`, { headers }),
   };
 }
+
+/**
+ * CR-121 c22: Chi phí & quota, Nhật ký, Góp ý, Secrets, Import / Export… không còn trên sidebar;
+ * vào qua mục "Hệ thống" → thẻ lối vào (testid `system-hub`).
+ */
+export async function openSystemEntry(page: Page, entry: string | RegExp) {
+  await page
+    .getByRole("navigation", { name: "Điều hướng chính" })
+    .getByRole("link", { name: "Hệ thống", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/system$/);
+  await page.getByTestId("system-hub").getByRole("link", { name: entry }).click();
+}

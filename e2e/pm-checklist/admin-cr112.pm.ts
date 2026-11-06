@@ -7,26 +7,28 @@ const DEMO_PW = "1234567890"; // tools/hub-dev/src/fixture.ts DEMO_PASSWORD (fix
 const nav = (p: Page) => p.getByRole("navigation", { name: "Điều hướng chính" });
 const APPS = /Sổ Hợp Tác|Hợp đồng/;
 
-async function openEvolu(page: Page, tab: string) {
-  await nav(page)
-    .getByRole("list", { name: "Danh sách công ty" })
-    .getByRole("link", { name: /Evolu/ })
-    .click();
+/** CR-121 c10/c14: sidebar "Công ty" → bảng công ty → mã evolu → workspace 5 tab; Phân quyền là mục con của Thành viên. */
+async function openEvolu(page: Page, tab: string, view?: string) {
+  await nav(page).getByRole("link", { name: "Công ty", exact: true }).click();
+  await page.getByRole("table").getByRole("link", { name: "evolu", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: /Evolu/ })).toBeVisible();
   await page.getByRole("tab", { name: tab }).click();
   await expect(page.getByRole("tab", { name: tab, selected: true })).toBeVisible();
+  if (view) await page.getByTestId(`members-view-${view}`).click();
 }
 
 test("CR-112 · 1 · Evolu › Ứng dụng: Sổ Hợp Tác, Community, DLC kèm số vai và số người", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openEvolu(page, "Ứng dụng"); // CR-121: tab "Ứng dụng & Gói" đổi nhãn thành "Ứng dụng"
+  await openEvolu(page, "Ứng dụng");
   // Thực tế: thẻ Sổ Hợp Tác + Community kèm "Gói đang bật 3 vai 5 người"; DLC không có thẻ app riêng ở tab này.
-  for (const app of [APPS, /Community/]) {
-    const card = page.getByRole("region", { name: app }).first();
-    await expect(card).toBeVisible();
-    await expect(card).toContainText(/3 vai\s*5 người/);
+  // CR-121 c12: bảng Ứng dụng (mỗi app một hàng); số vai/người nằm ở phần "Chi tiết" của hàng.
+  for (const id of ["contracts", "community"]) {
+    const row = page.getByTestId(`apps-row-${id}`);
+    await expect(row).toBeVisible();
+    await row.getByRole("button", { name: "Chi tiết" }).click();
+    await expect(row).toContainText(/3 vai\s*5 người/);
   }
 });
 
@@ -34,7 +36,7 @@ test("CR-112 · 2 · Phân quyền: mỗi app 3 vai (Toàn quyền/Nhân viên/C
   page,
 }) => {
   await loginAdmin(page);
-  await openEvolu(page, "Phân quyền");
+  await openEvolu(page, "Thành viên", "access");
   const tables = page.getByRole("table", { name: /^Vai của / });
   await expect(tables).toHaveCount(3);
   for (let i = 0; i < 3; i++)
@@ -51,7 +53,7 @@ test("CR-112 · 3 · Tạo vai 'Kiểm soát' (Xem) cho Sổ Hợp Tác, gán ro
   page,
 }) => {
   await loginAdmin(page);
-  await openEvolu(page, "Phân quyền");
+  await openEvolu(page, "Thành viên", "access");
   const block = page.getByRole("region", { name: APPS }).first();
   await block.getByRole("button", { name: "Tạo vai" }).click();
   const dlg = page.getByRole("dialog", { name: /Tạo vai/ });
@@ -87,21 +89,24 @@ test("CR-112 · 4 · evolu/julian.bui: chỉ thấy công ty mình, không nhóm
   page,
 }) => {
   await loginUI(page, "evolu", "julian.bui", DEMO_PW);
+  // CR-121 c10: sidebar phẳng; tenant_admin chỉ có công ty MÌNH (không có danh sách công ty, không nhóm NỀN TẢNG).
   await expect(nav(page).getByText("NỀN TẢNG", { exact: true })).toHaveCount(0);
-  await expect(
-    nav(page).getByRole("list", { name: "Danh sách công ty" }).getByRole("link"),
-  ).toHaveCount(1);
+  await expect(nav(page).getByRole("link", { name: "Ứng dụng", exact: true })).toHaveCount(0);
+  await nav(page).getByRole("link", { name: "Công ty", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: /Evolu/ })).toBeVisible();
   await page.goto("/users");
   await expect(page.getByRole("tab", { name: "Thành viên", selected: true })).toBeVisible();
-  await page.getByRole("tab", { name: "Phân quyền" }).click();
-  await expect(page.getByRole("tab", { name: "Phân quyền", selected: true })).toBeVisible();
+  await expect(page.getByTestId("members-view-users")).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId("members-view-access").click();
+  await expect(page.getByTestId("members-view-access")).toHaveAttribute("aria-pressed", "true");
 });
 
 test("CR-112 · 5 · Thêm công ty: wizard 4 bước; mã trùng `evolu` báo lỗi ở bước 1", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await nav(page).getByRole("link", { name: "Tạo công ty" }).click();
+  await nav(page).getByRole("link", { name: "Công ty", exact: true }).click();
+  await page.getByRole("link", { name: "Thêm công ty" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Thêm công ty" })).toBeVisible();
   const steps = page.getByRole("navigation", { name: "Các bước thêm công ty" });
   await expect(steps.getByRole("listitem")).toHaveCount(4);

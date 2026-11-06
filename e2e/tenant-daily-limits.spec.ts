@@ -77,7 +77,8 @@ test("tenant-quotas · platform_admin đặt lượt tải 50/ngày, thấy đã
   const a = seedAdmin();
   await loginToShell(page, "platform", a.username, a.password);
   await page.goto(`/tenants/${TENANT_ID.acme}`);
-  await page.getByRole("tab", { name: /Quota/ }).click();
+  // CR-121 c14/c14b: Quota nằm trong tab Cài đặt (không còn tab riêng).
+  await page.getByRole("tab", { name: "Cài đặt" }).click();
   const card = page.getByRole("region", { name: "Hạn mức theo ngày" });
   await expect(card).toBeVisible();
   await expect(card.getByTestId("daily-used-uploads")).toContainText("12");

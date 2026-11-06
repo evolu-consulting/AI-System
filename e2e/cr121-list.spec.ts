@@ -7,34 +7,35 @@ test.beforeAll(() => {
   resetFixture();
 });
 
-test("CR-121 · /commands: phễu → chọn Tắt → chip + n / tổng; bỏ chip → đủ lại", async ({
+test("CR-121 · c16 · /ai-tools (thay /commands): chip loại Lệnh → danh sách còn đúng n công cụ; bỏ chip → đủ lại", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/commands", "Commands");
-  const total = page.getByText(/^\d+ \/ \d+$/);
-  await expect(total).toBeVisible();
-  await page.getByRole("button", { name: "Lọc" }).click();
-  await page.getByRole("menuitemradio", { name: /^Tắt/ }).click();
-  await expect(page.getByRole("button", { name: /Bỏ lọc Trạng thái: Tắt/ })).toBeVisible();
-  await expect(total).toHaveText(/^2 \/ 5$/);
-  await page.getByRole("button", { name: /Bỏ lọc Trạng thái: Tắt/ }).click();
-  await expect(total).toHaveText(/^5 \/ 5$/);
+  await openPage(page, "/commands", "Công cụ AI"); // /commands (danh sách) chuyển tới /ai-tools?kind=command
+  await expect(page).toHaveURL(/\/ai-tools\?.*kind=command/);
+  const shown = page.getByText(/^\d+ trong \d+ công cụ$/);
+  const chip = page.getByRole("button", { name: /^Lệnh\s*\d+$/ });
+  await expect(chip).toHaveAttribute("aria-pressed", "true");
+  const n = Number(((await chip.textContent()) ?? "").replace(/\D/g, ""));
+  expect(n).toBeGreaterThan(0);
+  await expect(shown).toHaveText(new RegExp(`^${n} trong ${n} công cụ$`));
+  await chip.click(); // bỏ chip Lệnh
+  await expect(chip).toHaveAttribute("aria-pressed", "false");
+  await expect(shown).not.toHaveText(new RegExp(`^${n} trong ${n} công cụ$`));
 });
 
-test("CR-121 · /commands: bấm cả hàng mở ngăn có 'Mở trang chi tiết'; Esc đóng", async ({
+test("CR-121 · c16 · /ai-tools: bấm cả hàng lệnh mở ngăn có 'Mở trang lệnh'; Esc đóng", async ({
   page,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/commands", "Commands");
-  await page.getByRole("row", { name: /\/dich(?![\w-])/ }).click();
+  await openPage(page, "/commands", "Công cụ AI");
+  await page.getByRole("row", { name: /(?<![\w-])dich(?![\w-])/ }).click();
   const drawer = page.getByRole("dialog");
   await expect(drawer).toBeVisible();
-  await expect(drawer.getByRole("link", { name: "Mở trang chi tiết" })).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Mở trang lệnh" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(drawer).toHaveCount(0);
 });
-
 test("CR-121 · /features: lọc không khớp → 'Không có tính năng khớp bộ lọc' + Bỏ lọc; ngăn đóng bằng nút Đóng", async ({
   page,
 }) => {

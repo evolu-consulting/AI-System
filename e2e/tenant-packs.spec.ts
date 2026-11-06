@@ -60,17 +60,18 @@ test("ADM-FR-78 · đặt mức Sửa ⇒ bật gói + entitlement Xem/Sửa (g�
   await loginToShell(page, "platform", a.username, a.password);
   await page.goto(`/tenants/${TENANT_ID.acme}`);
   await page.getByRole("tab", { name: "Ứng dụng" }).click();
-  const card = page.getByRole("region", { name: "Sổ Hợp Tác" });
-  await expect(card).toContainText("Đang: Tắt");
-  await expect(card).toContainText("Gói chưa bật");
-  const level = card.getByRole("radiogroup", { name: "Mức dùng Sổ Hợp Tác" });
+  // CR-121 c12: bảng Ứng dụng — mỗi app một hàng (apps-row-<app>), trạng thái "Đang bật/Đang tắt" + LevelControl.
+  const card = page.getByTestId("apps-row-contracts");
+  await expect(card).toContainText("Đang tắt");
+  const level = card.getByLabel("Mức dùng Sổ Hợp Tác");
   const save = page.getByRole("button", { name: "Lưu", exact: true });
 
   await level.getByRole("radio", { name: "Sửa" }).click();
   await expect(page.getByText("Chưa lưu: cấp 2, thu hồi 0 · bật 1 gói, tắt 0 gói")).toBeVisible();
   await save.click();
   await expect(toast(page, "Đã lưu tính năng cho")).toBeVisible();
-  await expect(card).toContainText("Gói đang bật");
+  await expect(card).toContainText("Đang bật");
+  await expect.poll(() => calls).toEqual(["PUT contracts"]); // chờ server giả nhận lệnh (hàng "Đang bật" đã hiện từ bản nháp)
   expect(calls).toEqual(["PUT contracts"]);
   expect(await acmeKeys()).toEqual(["contracts-read", "contracts-write"]);
 
@@ -84,7 +85,7 @@ test("ADM-FR-78 · đặt mức Sửa ⇒ bật gói + entitlement Xem/Sửa (g�
 
   await save.click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Lưu", exact: true }).click();
-  await expect(card).toContainText("Gói chưa bật");
-  expect(calls).toEqual(["PUT contracts", "DELETE contracts"]);
+  await expect(card).toContainText("Đang tắt");
+  await expect.poll(() => calls).toEqual(["PUT contracts", "DELETE contracts"]);
   expect(await acmeKeys()).toEqual([]);
 });

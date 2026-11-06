@@ -1,4 +1,4 @@
-// ADM-FR-55 · M3-AC08 · ConflictDialog cho Command: editor + Switch ở danh sách — câu CÓ {user} (A4). Test-plan E-CC.
+// ADM-FR-55 · M3-AC08 · ConflictDialog cho Command: editor (gồm công tắc Bật command) — câu CÓ {user} (A4). Test-plan E-CC.
 // (Ca AC-A07 hai phiên v7 → v8 → v9 của /dich nằm ở m3-flow.spec.ts.)
 import { expect, type Page, test } from "@playwright/test";
 import {
@@ -9,7 +9,7 @@ import {
   reloadLatest,
   versionOf,
 } from "./support/conflict";
-import { apiAsAdmin, ID, loginAdmin, openPage, resetFixture } from "./support/helpers";
+import { apiAsAdmin, ID, loginAdmin, resetFixture } from "./support/helpers";
 
 test.describe.configure({ mode: "serial" });
 test.beforeEach(() => {
@@ -61,17 +61,13 @@ test("ADM-FR-55 · M3-AC08 · command editor: Tải bản mới → toast, ô M�
   expect(await versionOf("commands", ID.command.dich)).toBe(latest);
 });
 
-test("ADM-FR-55 · M3-AC08 · command danh sách: tắt switch 'Bật command /dich' khi người kia đã sửa → ConflictDialog (diff dòng enabled); Tải bản mới → toast, switch về trạng thái server (bật)", async ({
+test("ADM-FR-55 · M3-AC08 · command editor (CR-121 c16: danh sách /commands gộp vào Công cụ AI, công tắc bật/tắt ở editor): tắt switch 'Bật command' khi người kia đã sửa → ConflictDialog (diff dòng enabled); Tải bản mới → toast, switch về trạng thái server (bật)", async ({
   page,
   request,
 }) => {
   await loginAdmin(page);
-  await openPage(page, "/commands", "Commands");
-  const sw = page
-    .getByRole("table", { name: "Commands" })
-    .getByRole("row")
-    .filter({ hasText: /(?<![\w-])dich(?![\w-])/ })
-    .getByRole("switch", { name: "Bật command /dich" });
+  await page.goto(`/commands/${ID.command.dich}`);
+  const sw = page.getByRole("switch", { name: "Bật command" });
   await expect(sw).toBeChecked();
   const mine = await versionOf("commands", ID.command.dich);
   const api = await apiAsAdmin(request);
@@ -81,6 +77,7 @@ test("ADM-FR-55 · M3-AC08 · command danh sách: tắt switch 'Bật command /d
   });
   expect(theirs.status()).toBe(200);
   await sw.click();
+  await page.getByRole("button", { name: "Lưu", exact: true }).click();
   await expectConflictBody(page, { entity: "command", latest: mine + 1, mine, user: "admin" });
   await expectDiff(page, { latest: mine + 1, fields: ["enabled"], absent: ["workflow_id"] });
   await reloadLatest(page, mine + 1);

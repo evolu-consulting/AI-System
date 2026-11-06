@@ -1,7 +1,15 @@
 // ADM-FR-42 · M4-R07 · R08 · R09 · M4-AC03 · AC13 · e2e Chi phí & quota (test-plan-ab-e2e E5–E9). Nhãn: plan-frontend §6.
 import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
-import { ID, insertUsage, loginAdmin, loginAs, resetFixture, withOwner } from "./support/helpers";
+import {
+  ID,
+  insertUsage,
+  loginAdmin,
+  loginAs,
+  openSystemEntry,
+  resetFixture,
+  withOwner,
+} from "./support/helpers";
 import { ACME, GLOBEX, KT } from "./support/m4-ab";
 
 test.beforeEach(() => {
@@ -23,7 +31,7 @@ test("ADM-FR-42 · E5 · platform_admin: link 'Chi phí & quota' → combobox Te
 }) => {
   await seedTwoTenants();
   await loginAdmin(page);
-  await page.getByRole("link", { name: "Chi phí & quota" }).click();
+  await openSystemEntry(page, /Chi phí & quota/);
   await expect(page.getByRole("heading", { level: 1, name: "Chi phí & quota" })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Tenant" })).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Kỳ" })).toBeVisible();
