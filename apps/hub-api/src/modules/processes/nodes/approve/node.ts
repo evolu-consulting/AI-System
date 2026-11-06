@@ -26,7 +26,8 @@ export function ensureApproveStage<S extends DefStage>(s: S): S {
       ...s.output,
       template: APPROVE_TEMPLATE,
       required_sections: [APPROVE_RESULT_SECTION],
-      fields: [{ key: APPROVE_DECISION_FIELD, type: "string" }],
+      // `required` bắt buộc theo `ProcessStageDefSchema` (thiếu ⇒ def đã lưu không đọc lại được bằng `parseFlowDef`).
+      fields: [{ key: APPROVE_DECISION_FIELD, type: "string", required: true }],
     },
     answerer: { kind: "starter" },
     token_budget: null,
