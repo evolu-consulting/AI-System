@@ -145,6 +145,11 @@ export function bridgeSet(step: number): Json {
   };
 }
 
+/** Node Ghi giá trị trống (bước thường, không node bảng ⇒ không có đầu ra khai báo). */
+export function plainSet(key: string, name: string, step: number): Json {
+  return { ...base(key, name, step), executor: { kind: "set", values: [] }, after: auto };
+}
+
 /** Node Kết thúc (`outcome` của sự kiện). */
 export function finish(key: string, name: string, step: number, outcome: string): Json {
   return {

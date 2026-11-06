@@ -12,6 +12,7 @@ import {
   esignNode,
   finish,
   ifFact,
+  plainSet,
   seedLibraryFlow,
 } from "../_kit/flows";
 import { flowRows, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
@@ -34,7 +35,8 @@ const CANVAS = { name: "Canvas quy trình" };
 let tenantId = "";
 let copyFlowId = "";
 
-/** 0 Nếu (giá trị > 100 tr: Đúng→1 Ký số · Sai→3 Kết thúc) · 1-2 Ký số (gửi + chờ) · 3 Kết thúc Đã duyệt. */
+/** 0 Nếu (giá trị > 100 tr: Đúng→1 Nhận dữ liệu · Sai→4 Kết thúc) · 1 Nhận dữ liệu · 2-3 Ký số (gửi + chờ) · 4 Kết thúc Đã duyệt.
+ *  Cạnh vàng: Nhận dữ liệu (không đầu ra) → Ký số (cần contract_id). Chèn cầu nối SAU bước 1 ⇒ Kết thúc dời 4→5, Đúng vẫn →1. */
 const stages = () => [
   ifFact(
     "nhanh",
@@ -42,10 +44,11 @@ const stages = () => [
     0,
     { fact: "total_value", op: "gt", value: 100_000_000 },
     1,
-    3,
+    4,
   ),
-  ...esignNode(1),
-  finish("xong", "Đã duyệt", 3, "approved"),
+  plainSet("nhan", "Nhận dữ liệu", 1),
+  ...esignNode(2),
+  finish("xong", "Đã duyệt", 4, "approved"),
 ];
 
 async function adminSession(): Promise<Session> {
@@ -172,7 +175,8 @@ test("2 · cạnh vàng ⇒ Gợi ý cầu nối (route AI giả): Bỏ rồi h�
   };
   const stepOf = (k: string) => def.stages.find((x) => x.key === k)?.step;
   const iff = def.stages.find((x) => x.key === "nhanh")?.executor;
-  expect(stepOf("cau-noi"), "node cầu nối nằm ngay sau Nếu").toBe(1);
-  expect(iff?.then_step, "Đúng ⇒ vẫn là Ký số").toBe(stepOf("ky-gui"));
-  expect(iff?.else_step, "Sai ⇒ vẫn là Kết thúc").toBe(stepOf("xong"));
+  expect(stepOf("cau-noi"), "node cầu nối nằm ngay sau Nhận dữ liệu").toBe(2);
+  expect(stepOf("ky-gui"), "Ký số dời +1").toBe(3);
+  expect(iff?.then_step, "Đúng ⇒ vẫn là Nhận dữ liệu").toBe(stepOf("nhan"));
+  expect(iff?.else_step, "Sai ⇒ vẫn là Kết thúc (đã dời)").toBe(stepOf("xong"));
 });
