@@ -10,6 +10,7 @@ import { useFlowForm } from "../../hooks/use-flow-form";
 import { FLOW_MAX_STEPS } from "../../lib/flow-form";
 import { DEFAULT_FIELDS } from "../../lib/flow-when";
 import type { PublishIssue } from "../../lib/publish-issues";
+import { canAddStep, stepCounter } from "../../lib/step-limit";
 import type { LibraryDef, SlotInfo } from "../../library-api";
 import { FlowAddNodes } from "./FlowAddNodes";
 import { type BarIssue, FlowFormHeader, FlowStatusBar, issueText } from "./FlowStatusBar";
@@ -55,7 +56,7 @@ export function FlowFormEditor({
     );
   const groups = slot?.group_keys ?? [];
   const general = issues.filter((i) => i.index === null);
-  const full = steps.length >= FLOW_MAX_STEPS;
+  const full = !canAddStep(steps.length);
   const barIssues: BarIssue[] = [
     ...issues.map((i) => ({ index: i.index, text: issueText(t, i.index, i.code) })),
     ...publishIssues.map((i) => ({
@@ -86,7 +87,7 @@ export function FlowFormEditor({
           data-testid="flow-counter"
           title={f("counterHint", { max: FLOW_MAX_STEPS })}
         >
-          {steps.length}/{FLOW_MAX_STEPS}
+          {stepCounter(steps.length)}
         </span>
       </div>
       <ol className="space-y-3">

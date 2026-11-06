@@ -4,18 +4,22 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DataTable } from "@/components/shared/DataTable";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { EmptyState } from "@/components/shared/states/EmptyState";
 import { HubLoadError } from "@/components/shared/states/HubLoadError";
 import { LoadingState } from "@/components/shared/states/LoadingState";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FlowRowsView } from "@/features/apps/components/SlotFlowView";
 import { rowsFromSlotBody } from "@/features/apps/lib/flow-view";
 import { cloneForCompany, useLibraryView } from "@/features/tenants/flows/api";
 import { ApiError } from "@/lib/http";
 import { useViewMode } from "../../hooks/use-view-mode";
 import { processErrorSpec } from "../../lib/errors";
+import { runColumns } from "../editor/EditorRunsTab";
 import { ViewModeToggle } from "../ViewModeToggle";
 
 type Props = { tenantId: string; defId: string; fallback: ReactNode };
@@ -84,14 +88,33 @@ export function LibraryReadOnlyView({ tenantId, defId, fallback }: Props) {
           </Button>
         )}
       </Alert>
-      <section className="space-y-3" aria-label={t("tenants.flows.stepsTitle")}>
-        <div className="flex items-center gap-2">
-          <h2 className="text-label font-semibold">{t("tenants.flows.stepsTitle")}</h2>
-          <span className="ml-auto" />
-          <ViewModeToggle mode={mode} set={setMode} />
-        </div>
-        <FlowRowsView rows={rows} pending={false} error={null} view={mode} />
-      </section>
+      <Tabs defaultValue="steps">
+        <TabsList>
+          <TabsTrigger value="steps">{t("process.admin.editor.stepsTab")}</TabsTrigger>
+          <TabsTrigger value="runs">{t("process.admin.editor.tab.runs")}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="steps">
+          <section className="space-y-3" aria-label={t("tenants.flows.stepsTitle")}>
+            <div className="flex items-center gap-2">
+              <h2 className="text-label font-semibold">{t("tenants.flows.stepsTitle")}</h2>
+              <span className="ml-auto" />
+              <ViewModeToggle mode={mode} set={setMode} />
+            </div>
+            <FlowRowsView rows={rows} pending={false} error={null} view={mode} />
+          </section>
+        </TabsContent>
+        <TabsContent value="runs">
+          {/* chỉ lượt của CÔNG TY NÀY chạy đúng quy trình này (Hub lọc theo def_id + công ty) */}
+          <DataTable
+            caption={t("process.admin.editor.tab.runs")}
+            columns={runColumns(t)}
+            rows={v.runs}
+            getRowKey={(r) => r.id}
+            isLoading={false}
+            empty={<EmptyState message={t("process.admin.editor.runs.empty")} />}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

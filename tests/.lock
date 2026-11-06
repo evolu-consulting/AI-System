@@ -86,8 +86,9 @@ c9e5a2ddb6cc6e214013cca1331dfeff96026968e28fe68569343f480e8e6626  e2e/P-a/pf3/ou
 7d29e0642514fd8d436cf09401d6e395b38cd0c7c1c2d1d615d05268efb8b48d  e2e/P-a/pf4/admin-editor.pa.ts
 352411bdff2453649c79629d3487ed25fc39759c626a5a011f7927ba146c822e  e2e/P-a/pf4/admin-processes.pa.ts
 8e5e84bce3303cb30dea6870ab0081f099a0c51b9f6a5d69dbd9db8ac800f10f  e2e/P-a/pf4/admin-runs.pa.ts
+9f26924efbe53941efa48d853754b8639e74f5ec13f5a0a5986e906ab932d69a  e2e/P-a/pf4/editor-steps.pa.ts
 df1df1fc1c3d03706247f3fec0c8bfc57a810fa28a4b7e73c15fdb28a98e8b81  e2e/P-a/pf4/library-readonly-copy.pa.ts
-ca22731aabfdf2e09b44e36e7aede4d2e6e83ba6566ddfc6c264b3c17e961b2b  e2e/P-a/pf4/process-library.pa.ts
+9aa6307c79dcbf6625bcb494aff7a71949deaf3896e3a1b3f93af001cf924dc9  e2e/P-a/pf4/process-library.pa.ts
 073bf6c7cc900dd859acbbc4bb378754f15069c58fb7c424b293371ec0d9963e  e2e/P-a/pf4/tenant-routing.pa.ts
 72603518958efdf91c519864563ad874c5fb85941fa208165b52742df5210f8d  e2e/P-a/pf4/token.pa.ts
 aa4a57b7b7f35b91a29f8b318e4a28f2c54f036bc7b4351fe56a15b428caef21  e2e/P-a/playwright.pa.config.ts
@@ -499,7 +500,7 @@ f1ad28f6a89916884619a58b896029fa076d5ac792b514606a632db85f9a6e1a  e2e/fnr-showca
 c0b35554b9cc214deddc17d56d1c98e67625d37d28e8a333066bff8b3dcdf9ff  e2e/journey-approval/_journey.ts
 519b2ef8ba5527642a883c6803a30ae85b59b040574b343ce96bc154c37a1b3d  e2e/journey-approval/approval.ja.ts
 8475de8455f3d1734c5295a76929eecccc0cea3f14608c340ec8db7e1530aa66  e2e/journey-approval/cr121-d-journey.spec.ts
-4401e1a369d6f96c9c9a043e8552a20177ab993af9a9789a34b9430b6b313c10  e2e/journey-approval/cr121-d6b-notify.spec.ts
+4026b84f6ef3533e8673be97980202aff561ac059fc895ddb14c10de075be2bd  e2e/journey-approval/cr121-d6b-notify.spec.ts
 405ca45f0e5360ef2bd2dadf8287e479a21ac3ac162b7ac7df44e6ed2eeccf47  e2e/journey-approval/cr121-editor.spec.ts
 68a220fb199849eee74c1e48cfce55002cc15274737774bcb39c80fac1f0a878  e2e/journey-approval/playwright.journey.config.ts
 4e471120bb500260af668c3a0ac117fecfcd80bf1046ddb6764be82b9ac4e606  e2e/journey-approval/refresh-reload.ja.ts

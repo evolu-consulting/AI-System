@@ -5,9 +5,16 @@ import { Button } from "@/components/ui/button";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
 
 /** `version` (đã lưu) hiện thành chữ trạng thái thay cho toast — toast ở góc dưới phải sẽ che nút Lưu. */
-type Props = { dirty: boolean; pending: boolean; formId: string; version?: number };
+type Props = {
+  dirty: boolean;
+  pending: boolean;
+  formId: string;
+  version?: number;
+  /** CR-121 c17b · bản RIÊNG của công ty (sửa thẳng, không Xuất bản): nói rõ lưu là áp dụng ngay cho lượt mới. */
+  companyCopy?: boolean;
+};
 
-export function ProcessSaveBar({ dirty, pending, formId, version }: Props) {
+export function ProcessSaveBar({ dirty, pending, formId, version, companyCopy }: Props) {
   const { t } = useTranslation();
   const lib = useLibraryCanvas() !== null; // CR-105 UX: quy trình khe ⇒ "Lưu nháp" (khác "Xuất bản")
   return (
@@ -18,6 +25,11 @@ export function ProcessSaveBar({ dirty, pending, formId, version }: Props) {
           : version === undefined
             ? null
             : t("common.savedVersion", { n: version })}
+        {companyCopy ? (
+          <span className="block" data-testid="copy-save-note">
+            {t("process.admin.editor.copySaveNote")}
+          </span>
+        ) : null}
       </div>
       <Button variant="outline" asChild>
         <Link to="/processes">{t("common.cancel")}</Link>

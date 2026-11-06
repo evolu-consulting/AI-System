@@ -46,6 +46,8 @@
     "more": "Tải thêm"
   },
   "editor": {
+    "copySaveNote": "Lưu là áp dụng ngay cho lượt chạy mới; lượt đang chạy giữ bản cũ.",
+    "stepsTab": "Các bước",
     "libReadonly": "Quy trình dùng chung — chỉ xem.",
     "copied": "Đã sao chép và gán cho công ty này",
     "copyFailed": "Không sao chép được: {{reason}}",
@@ -780,6 +782,7 @@
       "UNREACHABLE_STEP": "Bước không tới được ({{path}})."
     },
     "publish": {
+      "buttonNext": "Xuất bản v{{v}}",
       "button": "Xuất bản",
       "saveFirst": "Lưu thay đổi trước khi xuất bản.",
       "title": "Xuất bản “{{name}}”",
@@ -823,7 +826,7 @@
       "done": "Đã cập nhật gán cho {{n}} tenant"
     },
     "preview": {
-      "button": "Xem trước đường đi",
+      "button": "Xem trước bằng HĐ mẫu",
       "title": "Xem trước đường đi “{{name}}”",
       "body": "Nhập loại hợp đồng và giá trị mẫu: bước nào chạy, bước nào bị bỏ qua. Không ghi gì.",
       "value": "Giá trị mẫu (VND)",
@@ -906,7 +909,7 @@
       "remove": "Xoá bước",
       "addStep": "Thêm bước duyệt",
       "addEsign": "Thêm bước Ký số",
-      "maxReached": "Đã đủ số bước tối đa.",
+      "maxReached": "Tối đa 20 bước — xoá bớt một bước để thêm bước mới.",
       "discard": "Bỏ thay đổi",
       "rules": {
         "title": "Luật duyệt",
@@ -991,7 +994,8 @@
     "count": "{{n}} quy trình",
     "title": "Thư viện quy trình",
     "saveDraft": "Lưu nháp",
-    "assignedCount": "{{n}} tenant đã gán",
+    "assignedCount": "{{n}} công ty đang dùng",
+    "usedByVersion": "{{n}} công ty đang dùng v{{v}}",
     "saveHint": "Lưu nháp chưa áp dụng cho tenant — bấm Xuất bản để áp dụng.",
     "status": {
       "draft": "Nháp",

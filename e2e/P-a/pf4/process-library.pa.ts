@@ -60,7 +60,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await expect(toolbar.getByText("Nháp", { exact: true })).toBeVisible();
     const name = (await p.getByRole("heading", { level: 1 }).innerText()).trim();
     // thanh trên: không lỗi i18n; chỉ MỘT công tắc (Sơ đồ / Danh sách); gợi ý "Lưu nháp…" hiện khi chưa xuất bản
-    await expect(toolbar).toContainText("0 tenant đã gán");
+    await expect(toolbar).toContainText("0 công ty đang dùng");
     await expect(toolbar).not.toContainText("returned an object");
     await expect(p.getByRole("tab", { name: "Danh sách" })).toHaveCount(0);
     await expect(toolbar.getByText(/Lưu nháp chưa áp dụng cho tenant/)).toBeVisible();
@@ -106,7 +106,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     ).toHaveValue("Pháp chế (canvas)");
     await toolbar.getByRole("button", { name: "Sơ đồ", exact: true }).click();
     // Xuất bản (hiện tác động) ⇒ "Đã xuất bản v1"
-    await toolbar.getByRole("button", { name: "Xuất bản", exact: true }).click();
+    await toolbar.getByRole("button", { name: /^Xuất bản v\d+$/ }).click();
     const pub = p.getByRole("dialog");
     await expect(pub.getByTestId("publish-impact")).toContainText("tenant đang dùng");
     await pub.getByRole("button", { name: "Xuất bản", exact: true }).click();

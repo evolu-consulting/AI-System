@@ -121,6 +121,9 @@ const prepareLibraryDraft = (d: DefDraft): DefDraft => ({
   ...d,
   stages: normalizeSlotStages(d.stages),
 });
+/** Bản riêng của công ty (sao từ thư viện): sửa thẳng, không Xuất bản. */
+const isCompanyCopy = (def: { source_template_id?: string | null } | undefined, lib: unknown) =>
+  !!def?.source_template_id && !lib;
 const prepareFor = (lib: LibraryDef | null) => (lib ? prepareLibraryDraft : undefined);
 const slotExtra = (lib: LibraryDef | null) => (lib ? { slot: lib.slot } : undefined);
 
@@ -206,6 +209,7 @@ function Editor({ processId }: ProcessEditorPageProps) {
           pending={save.pending}
           formId={FORM_ID}
           version={processId === undefined ? undefined : version}
+          companyCopy={isCompanyCopy(def, lib)}
         />
       )}
     </form>

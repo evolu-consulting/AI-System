@@ -46,6 +46,8 @@
     "more": "Load more"
   },
   "editor": {
+    "copySaveNote": "Saving applies right away to new runs; runs in progress keep the old version.",
+    "stepsTab": "Steps",
     "libReadonly": "Shared process — view only.",
     "copied": "Copied and assigned to this company",
     "copyFailed": "Could not copy: {{reason}}",
@@ -780,6 +782,7 @@
       "UNREACHABLE_STEP": "Unreachable step ({{path}})."
     },
     "publish": {
+      "buttonNext": "Publish v{{v}}",
       "button": "Publish",
       "saveFirst": "Save changes before publishing.",
       "title": "Publish “{{name}}”",
@@ -823,7 +826,7 @@
       "done": "Updated assignments for {{n}} tenants"
     },
     "preview": {
-      "button": "Preview path",
+      "button": "Preview with a sample contract",
       "title": "Preview the path of “{{name}}”",
       "body": "Enter a contract type and a sample value: which steps run and which are skipped. Nothing is written.",
       "value": "Sample value (VND)",
@@ -906,7 +909,7 @@
       "remove": "Remove step",
       "addStep": "Add approval step",
       "addEsign": "Add e-sign step",
-      "maxReached": "Maximum number of steps reached.",
+      "maxReached": "Maximum 20 steps — remove a step to add a new one.",
       "discard": "Discard changes",
       "rules": {
         "title": "Approval rules",
@@ -991,7 +994,8 @@
     "count": "{{n}} processes",
     "title": "Process library",
     "saveDraft": "Save draft",
-    "assignedCount": "{{n}} tenants assigned",
+    "assignedCount": "{{n}} companies using it",
+    "usedByVersion": "{{n}} companies using v{{v}}",
     "saveHint": "Saving a draft does not apply it to tenants — press Publish to apply.",
     "status": {
       "draft": "Draft",

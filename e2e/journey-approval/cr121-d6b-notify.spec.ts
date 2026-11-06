@@ -81,7 +81,10 @@ test("1 · platform admin thêm bước Thông báo sau bước Duyệt, lưu nh
   await page.getByRole("button", { name: "Danh sách", exact: true }).click();
   await expect(page.getByTestId(NOTIFY_STEP).getByLabel("Tiêu đề")).toHaveValue(/\{ten_hd\}/);
 
-  await page.getByRole("button", { name: "Xuất bản", exact: true }).first().click();
+  await page
+    .getByRole("button", { name: /^Xuất bản v\d+$/ })
+    .first()
+    .click();
   const pub = page.getByRole("dialog");
   await pub.getByRole("button", { name: "Xuất bản", exact: true }).click();
   await expect(page.getByText(/Đã xuất bản v\d+/).first()).toBeVisible();

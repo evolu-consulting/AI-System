@@ -11,6 +11,8 @@ import { useCloneFlow } from "../../hooks/use-clone-flow";
 import { isDlcSlotKey } from "../../lib/dlc-slot";
 import { processErrorSpec } from "../../lib/errors";
 import type { PublishIssue } from "../../lib/publish-issues";
+import { editorModeOf, viewModeOf } from "../../lib/step-limit";
+import { readViewMode, writeViewMode } from "../../lib/view-mode";
 import { type LibraryDef, setSlotDefault, useLibraryRefresh, useSlots } from "../../library-api";
 import { AssignTenantsDialog } from "./AssignTenantsDialog";
 import { CloneDialog } from "./CloneDialog";
@@ -38,7 +40,12 @@ export function LibraryEditorBody({ def, canvasDirty, formDirty, onFormDirty, ca
   const refresh = useLibraryRefresh();
   const slots = useSlots(true);
   const dlcSteps = useDlcStepTemplates(isDlcSlotKey(def.slot));
-  const [mode, setMode] = useState<EditorMode>("canvas");
+  // Q11: Sơ đồ (canvas) mặc định, "Danh sách" (= Form) là chế độ phụ; nhớ theo người dùng (cùng `view-mode.ts` với mọi nơi xem quy trình).
+  const [mode, setModeState] = useState<EditorMode>(() => editorModeOf(readViewMode()));
+  const setMode = (m: EditorMode) => {
+    writeViewMode(viewModeOf(m));
+    setModeState(m);
+  };
   const [action, setAction] = useState<LibraryAction | null>(null);
   // CR-121 D-3: lỗi xuất bản (bước, trường, câu sửa) hiện ở thanh trạng thái Form; bản nháp đổi ⇒ lỗi cũ hết hiệu lực.
   const [pubIssues, setPubIssues] = useState<PublishIssue[]>([]);

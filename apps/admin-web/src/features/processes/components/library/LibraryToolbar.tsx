@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { isDlcSlotKey } from "../../lib/dlc-slot";
 import { statusOf } from "../../lib/library-list";
 import { canAssign, canSetDefault, publishState } from "../../lib/library-view";
+import { nextVersion } from "../../lib/step-limit";
 import type { LibraryDef } from "../../library-api";
 
 export type EditorMode = "canvas" | "form";
@@ -23,6 +24,17 @@ type Props = {
 /** dlc-engine · khe DLC chỉ có Canvas (Form chỉ hiểu bước duyệt của khe hợp đồng). */
 const modesOf = (slot: string | null | undefined): readonly EditorMode[] =>
   isDlcSlotKey(slot) ? ["canvas"] : ["canvas", "form"];
+
+/** "X công ty đang dùng vN" (đã xuất bản) · "X công ty đang dùng" (nháp). */
+function usedByText(
+  def: LibraryDef,
+  L: (k: string, o?: Record<string, string | number>) => string,
+) {
+  const n = def.tenant_count ?? 0;
+  return def.published_version == null
+    ? L("assignedCount", { n })
+    : L("usedByVersion", { n, v: def.published_version });
+}
 
 export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Props) {
   const { t } = useTranslation();
@@ -55,8 +67,7 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
           <StatusBadge tone="ok">{L("defaultBadge", { slot: def.slot_label ?? "" })}</StatusBadge>
         ) : null}
         <span className="text-caption text-muted-foreground">
-          {L("usedFor", { slot: def.slot_label ?? def.slot ?? "" })} ·{" "}
-          {L("assignedCount", { n: def.tenant_count ?? 0 })}
+          {L("usedFor", { slot: def.slot_label ?? def.slot ?? "" })} · {usedByText(def, L)}
         </span>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button
@@ -66,7 +77,7 @@ export function LibraryToolbar({ def, mode, dirty, busy, onMode, onAction }: Pro
             onClick={() => onAction("publish")}
           >
             <Upload aria-hidden className={ic} />
-            {L("publish.button")}
+            {L("publish.buttonNext", { v: nextVersion(def.published_version) })}
           </Button>
           <Button
             type="button"

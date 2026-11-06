@@ -2,6 +2,7 @@
 
 import type { ProcessRunSummary } from "@ai/contracts/hub-admin";
 import { Link } from "@tanstack/react-router";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { type Column, DataTable } from "@/components/shared/DataTable";
 import { EmptyState } from "@/components/shared/states/EmptyState";
@@ -28,11 +29,10 @@ function StageCell({ run }: { run: ProcessRunSummary }) {
   );
 }
 
-export function EditorRunsTab({ processKey, tenantId }: Props) {
-  const { t } = useTranslation();
-  const q = useTenantRuns(processKey, tenantId);
+/** Cột bảng lượt chạy — dùng chung tab Lượt chạy của trình sửa và của trang chỉ-xem thư viện (c17b). */
+export function runColumns(t: TFunction): Column<ProcessRunSummary>[] {
   const L = (k: string) => t(`process.admin.editor.runs.col.${k}`);
-  const columns: Column<ProcessRunSummary>[] = [
+  return [
     {
       id: "run",
       header: L("run"),
@@ -59,6 +59,12 @@ export function EditorRunsTab({ processKey, tenantId }: Props) {
     },
     { id: "started", header: L("started"), cell: (r) => formatClock(r.started_at) },
   ];
+}
+
+export function EditorRunsTab({ processKey, tenantId }: Props) {
+  const { t } = useTranslation();
+  const q = useTenantRuns(processKey, tenantId);
+  const columns = runColumns(t);
   const err = q.error;
   return (
     <DataTable
