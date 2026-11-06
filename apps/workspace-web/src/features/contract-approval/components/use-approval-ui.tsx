@@ -21,7 +21,7 @@ import {
   approvalView,
   showLinkDialog,
 } from "../lib/approval";
-import { releaseNoteKey } from "../lib/engine-card";
+import { releaseNoteKey, submittedForReview } from "../lib/engine-card";
 import { isDraftConfirm, movedToStep } from "../lib/moved-to";
 import { ApprovalButtons, ApprovalNote, ExtractedValue, ReasonForm } from "./ApprovalParts";
 import { ApprovalTimeline } from "./ApprovalTimeline";
@@ -37,6 +37,7 @@ export type ApprovalUi = {
   /** Đã tải trạng thái duyệt + bước hiện tại (null = tenant tắt duyệt / chưa có lượt) — cho luật nút đầu trang. */
   loaded: boolean;
   step: string | null;
+  submitted: boolean;
 };
 
 type LinkStep = { target: ProductLinkTarget; label: string | undefined };
@@ -141,6 +142,8 @@ export function useApprovalUi(o: {
     view: v,
     loaded: ap.approval !== undefined,
     step: ap.approval?.step ?? null,
+    /** P11e · đã gửi duyệt (không còn là nháp chờ "Xác nhận và lưu"). */
+    submitted: submittedForReview(ap.approval),
   };
 }
 

@@ -115,7 +115,8 @@ function ContractBody({
     approvalConfirm: ap.view.confirm,
     edited: info.edited,
   });
-  const confirm = c.status === "needs_review";
+  // P11e · đã gửi duyệt (lượt engine, bước soạn đã qua) ⇒ không còn gợi ý "bản nháp … bấm Xác nhận và lưu".
+  const confirm = c.status === "needs_review" && !ap.submitted;
   const { canSave } = rule;
   const key = leadKey(c.status);
   const lead = key ? t(key) : <DetailLead c={c} partner={partnerOf(c)} />;

@@ -31,8 +31,14 @@ export const engineAdvancing = (a: ContractApproval | undefined): boolean =>
   a.needs_reopen !== true &&
   // CR-107: run chờ quyết/kẹt (`attention`) không phải "đang chuyển bước" — chờ người xử lý, không tải lại vô hạn.
   !a.attention &&
-  (a.steps?.length ?? 0) > 0 &&
+  // CR-122 · P11e · vừa "Xác nhận và lưu" khi công ty bật flow theo sự kiện: lượt chờ bộ điều phối mở quy trình (chưa có run, chưa
+  // có bước) — PHẢI tải lại tới khi run gắn + bước mở (trước sửa: không bước ⇒ ngừng tải ⇒ trang đứng mãi).
+  ((a.steps?.length ?? 0) > 0 || a.engine_run_id === null) &&
   openStepOf(a) === null;
+
+/** CR-122 · P11e · HĐ đã gửi đi (lượt engine, bước soạn không còn mở) ⇒ không còn là "bản nháp chờ bấm Xác nhận và lưu". */
+export const submittedForReview = (a: ContractApproval | undefined): boolean =>
+  a?.mode === "engine" && a.step === "level1" && openStepOf(a)?.idx !== 0;
 
 /** Ghi chú khi người xem không quyết được bước đang mở: vì sao (chỉ xem / người gửi / chỉ trưởng phòng / không thuộc nhóm). */
 function blockedNote(a: ContractApproval, open: ApprovalCardStep, write: boolean): string {
