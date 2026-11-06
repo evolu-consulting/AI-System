@@ -1,9 +1,16 @@
 // CR-102 · com-c3 · nối gói `community` (lớp 4): `PackUow` (role `community_rw`, RLS người xem theo `packs.viewer_ext_org()`)
 // + cổng kit `ExternalOrgResolver` (danh bạ) + route `/pack/community/*`. `packs.mount.ts` gọi `mountCommunity`.
 import { packFeatureKey } from "@ai/contracts/packs";
-import type { Db } from "@ai/db";
+import type { Db, Tx } from "@ai/db";
 import { type Env, Hono } from "hono";
-import type { ExternalOrgResolver, PackAccessView, PackGuardVars, PackWho } from "../kit/public";
+import type {
+  ExternalOrgResolver,
+  FactsReader,
+  OutcomeHandler,
+  PackAccessView,
+  PackGuardVars,
+  PackWho,
+} from "../kit/public";
 import {
   createPackUow,
   flowAdapterSlots,
@@ -19,6 +26,7 @@ import {
 import { COMMUNITY_KEY } from "./adapters/community-access";
 import type { CommunityDeps } from "./adapters/community-deps";
 import { filesRoutes } from "./adapters/files.routes";
+import { communityFactsReaders, communityOutcomeHandler } from "./adapters/flow-ports";
 import { communityFlowSlots } from "./adapters/flow-slots";
 import { flowsRoutes } from "./adapters/flows.routes";
 import type { FlowAgents, FlowDeps } from "./adapters/flows.service";
@@ -90,6 +98,7 @@ export function communityModule(
     agents: fo.agents,
     moderationOn: fo.moderationOn,
     background: fo.background,
+    triggersOn: fo.triggersOn,
     warn: (m, meta) => console.warn(m, meta),
     onApproved: async (p, tenantId) => {
       await events.emitNewPost({
@@ -104,6 +113,8 @@ export function communityModule(
       });
     },
   };
+  // CR-122 · A2: đăng ký FactsReader + OutcomeHandler của engine lúc mount (đăng ký lại ⇒ thay, vô hại)
+  fo.registerPorts?.({ readers: communityFactsReaders(uow), handler: communityOutcomeHandler() });
   const d: CommunityDeps = {
     view,
     resolver,
@@ -147,7 +158,12 @@ export type CommunityFlowOpts = {
   background?: ((p: Promise<unknown>) => void) | undefined;
   /** Seam test của cờ `HUB_FLOW_RUNTIME` (vắng ⇒ env). */
   runtimeOn?: boolean | undefined;
+  /** CR-122: cờ `FLOW_TRIGGERS` theo công ty (nối hub ở `community-flow.mount.ts`); vắng ⇒ tắt (đường khe cũ). */
+  triggersOn?: ((tenantId: string) => Promise<boolean>) | undefined;
+  /** CR-122: nơi engine nhận reader/handler của app (nối `processes/adapters/runs/flow-ports` ở `community-flow.mount.ts`). */
+  registerPorts?: ((p: CommunityFlowPorts) => void) | undefined;
 };
+export type CommunityFlowPorts = { readers: FactsReader[]; handler: OutcomeHandler<Tx> };
 
 /** Gắn dưới `<prefix>/community`; "Mở SHT" = `CONTRACTS_WEB_URL` (vắng ⇒ "/"). */
 export function mountCommunity<E extends Env>(

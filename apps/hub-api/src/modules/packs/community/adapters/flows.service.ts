@@ -18,7 +18,17 @@ import {
   screenPrompt,
   triagePrompt,
 } from "../domain/flow.rules";
+import {
+  type CommunityEvent,
+  EV_JOIN,
+  EV_REPORT,
+  eventIdOf,
+  type Facts,
+  joinFacts,
+  reportFacts,
+} from "../domain/flow-events.rules";
 import type { Access } from "./community-access";
+import { emitFlowEvent } from "./flow-events.repo";
 import * as repo from "./flows.repo";
 import { upsertPartner } from "./org.repo";
 
@@ -46,6 +56,9 @@ export type FlowDeps = {
   moderationOn?: ((tenantId: string) => Promise<boolean>) | undefined;
   /** Seam test: nhận promise việc nền (await để chờ xong, không ngủ). */
   background?: ((p: Promise<unknown>) => void) | undefined;
+  /** CR-122 · cờ `FLOW_TRIGGERS` của công ty (hub `tenant_flow_settings`). Bật ⇒ ghi sự kiện flow cùng tx bản ghi và bỏ đường khe cũ
+   *  (agent screen); vắng/tắt ⇒ giữ nguyên đường khe cũ (bóng). */
+  triggersOn?: ((tenantId: string) => Promise<boolean>) | undefined;
   /** Bài được duyệt (tự động hoặc tay) ⇒ phát chuông bài mới. */
   onApproved?: ((row: repo.ModPostRow, tenantId: string) => Promise<void>) | undefined;
   agentTimeoutMs?: number;
@@ -108,6 +121,28 @@ async function agentText(d: FlowDeps, who: PackWho, key: string, prompt: string,
     return null;
   }
 }
+
+// ---------------------------------------------------------------- CR-122 · sự kiện flow
+/** Công ty bật `FLOW_TRIGGERS`? Gọi TRƯỚC khi mở tx bản ghi (không giữ tx gói khi hỏi hub). */
+export const triggersEnabled = async (d: FlowDeps | undefined, tenantId: string) =>
+  !!d?.triggersOn && (await d.triggersOn(tenantId));
+
+/** Ghi sự kiện CÙNG tx bản ghi; `event_id` ổn định theo bản ghi ⇒ ghi lại không mở lượt thứ hai. */
+export const emitEvent = (
+  tx: Tx,
+  who: PackWho,
+  event: CommunityEvent,
+  ref: string,
+  facts: Facts,
+): Promise<boolean> =>
+  emitFlowEvent(tx, {
+    tenantId: who.tenantId,
+    event,
+    ref,
+    eventId: eventIdOf(event, ref),
+    facts,
+    actorId: who.userId,
+  });
 
 // ---------------------------------------------------------------- post-moderation
 /** Khe duyệt bài bật cho tenant? Gọi TRƯỚC khi mở tx tạo bài (không giữ tx gói khi hỏi hub). */
@@ -196,6 +231,7 @@ export type JoinInput = {
 export async function createJoin(d: FlowDeps, a: Access, input: JoinInput): Promise<repo.JoinRow> {
   if (a.org === null) throw new AppError("JOIN_HOST_NOT_ALLOWED", 403, "Hosts are already members");
   const org = a.org;
+  const trig = await triggersEnabled(d, a.who.tenantId);
   try {
     return await d.uow.tenant(a.who, async ({ tx }) => {
       const id = await repo.insertJoin(tx, {
@@ -204,6 +240,14 @@ export async function createJoin(d: FlowDeps, a: Access, input: JoinInput): Prom
         org,
         ...input,
       });
+      if (trig)
+        await emitEvent(
+          tx,
+          a.who,
+          EV_JOIN,
+          id,
+          joinFacts({ company: input.company, email: input.email }),
+        );
       const [row] = await repo.joinRows(tx, [id]);
       return row as repo.JoinRow;
     });
@@ -263,6 +307,7 @@ export async function createReport(
   postId: string,
   reason: string,
 ): Promise<repo.ReportRow> {
+  const trig = await triggersEnabled(d, a.who.tenantId);
   const row = await d.uow.tenant(a.who, async ({ tx }) => {
     const [post] = await repo.modRows(tx, [postId]);
     if (!post) throw appError("NOT_FOUND");
@@ -274,6 +319,15 @@ export async function createReport(
       reason,
     });
     if (!id) throw new AppError("REPORT_DUPLICATE", 409, "Already reported");
+    // loại/mức do agent triage điền sau (nền, bên dưới) ⇒ lúc này chưa có; node Nếu đọc lại giá trị hiện tại qua FactsReader
+    if (trig)
+      await emitEvent(
+        tx,
+        a.who,
+        EV_REPORT,
+        id,
+        reportFacts({ triage_kind: null, triage_level: null }),
+      );
     const [r] = await repo.reportRows(tx, [id]);
     return r as repo.ReportRow;
   });

@@ -21,15 +21,18 @@ import {
 } from "../domain/audience.rules";
 import { type Fields, storeComment, storeContent } from "../domain/content.rules";
 import { mediaKindOf } from "../domain/file.rules";
+import { EV_POST, postFacts } from "../domain/flow-events.rules";
 import { priceChanged } from "../domain/notify.rules";
 import { type Access, otherOrgNames } from "./community-access";
 import { attachableFiles } from "./files.repo";
 import {
+  emitEvent,
   type FlowDeps,
   moderationEnabled,
   openModeration,
   reopenModeration,
   startScreen,
+  triggersEnabled,
 } from "./flows.service";
 import type { CommunityEvents } from "./notify.events";
 import { partnerRows } from "./org.repo";
@@ -137,6 +140,7 @@ export async function create(
     otherOrgNames(a),
   );
   const moderated = await moderationEnabled(flows, a.who.tenantId);
+  const trig = await triggersEnabled(flows, a.who.tenantId); // CR-122: bật ⇒ sự kiện `post.created` thay agent screen của khe cũ
   const row = await uow.tenant(a.who, async ({ tx }) => {
     if (a.org !== null) {
       const me = (await partnerRows(tx)).find((p) => p.ext_org_id === a.org);
@@ -161,11 +165,14 @@ export async function create(
     );
     // CR-120: khe duyệt bài có def ⇒ mở lượt trong CÙNG tx (bài ẩn với người khác tới khi duyệt)
     if (moderated) await openModeration(tx, id);
+    if (trig)
+      await emitEvent(tx, a.who, EV_POST, id, postFacts({ type: input.type, author_org: a.org }));
     return postById(tx, id);
   });
   const post = found(row);
   if (moderated && flows) {
-    startScreen(flows, a.who, post.id); // agent `screen` chạy nền; chuông bài mới phát khi được duyệt
+    // agent `screen` chạy nền; chuông bài mới phát khi được duyệt. Cờ flow bật ⇒ flow quyết (OutcomeHandler), không chạy screen cũ.
+    if (!trig) startScreen(flows, a.who, post.id);
     return { row: post, contactDetected: content.contactDetected };
   }
   // review Cao-1: chuông phát SAU commit (không giữ kết nối tx trong lúc hỏi chủ quản / sổ SHT)

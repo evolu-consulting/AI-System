@@ -10,6 +10,8 @@ import { type AgentCaller, createAgentCaller } from "../../lib/ai-client/agent-c
 import { createHubAiClient, type TenantLimitsOf } from "../../lib/ai-client/ai-client.env";
 import type { Redis } from "../../lib/redis";
 import { agentSpecOf } from "../agents/agent-spec.service";
+import { registerFactsReader, registerOutcomeHandler } from "../processes/adapters/runs/flow-ports";
+import { flowTriggersOn } from "../processes/triggers/flags";
 import type { CommunityFlowOpts } from "./community/community.mount";
 import { SLOT_MODERATION } from "./community/domain/flow.rules";
 
@@ -26,6 +28,13 @@ export function communityAgents(
 export function communityFlowPorts(db: Db, agents: AgentCaller | undefined): CommunityFlowOpts {
   return {
     agents,
+    // CR-122 · A2: cờ `FLOW_TRIGGERS` (một nguồn: `processes/triggers/flags`) + đăng ký cổng app cho engine lúc mount
+    triggersOn: (tenantId) =>
+      withHubScope(db, { kind: "system" }, (tx) => flowTriggersOn(tx, tenantId)),
+    registerPorts: ({ readers, handler }) => {
+      for (const r of readers) registerFactsReader(r);
+      registerOutcomeHandler(handler);
+    },
     moderationOn: async (tenantId) => {
       const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
         tx.execute<{ on: boolean }>(sql`select (
