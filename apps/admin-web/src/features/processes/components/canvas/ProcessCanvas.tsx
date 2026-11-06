@@ -6,6 +6,7 @@
 // `linkable` ⇒ kéo cổng "Từ chối" của bước nào có cổng cũng nối được (`ops.linkReject` kiểm đích đứng trước).
 import { FlowCanvas, type FlowLabels, toEdge } from "@ai/flow-canvas";
 import {
+  COL_W,
   HEADER_H,
   HEADER_NODE_H,
   JOIN_H,
@@ -20,13 +21,15 @@ import type { Edge, Node, XYPosition } from "@xyflow/react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { countAtStep } from "../../lib/step-ops";
+import { useFlowCtx } from "../flow/flow-ctx";
 import { type CanvasHandlers, HandlersCtx } from "./canvas-ctx";
 import { IfNode } from "./IfNode";
 import { StageNode } from "./StageNode";
 import type { StageView } from "./stage-view";
 import { stepHeaderLabels } from "./stage-view";
+import { TriggerNode } from "./TriggerNode";
 
-const nodeTypes = { stage: StageNode, if: IfNode };
+const nodeTypes = { stage: StageNode, if: IfNode, trigger: TriggerNode };
 
 export type ProcessCanvasProps = CanvasHandlers & {
   views: readonly StageView[];
@@ -99,7 +102,56 @@ const approveEdge = (e: Edge, label: string): Edge => ({
   labelBgStyle: { fill: "var(--color-card)" },
 });
 
-function useFlowGraph(p: ProcessCanvasProps, approve: string) {
+type TriggerInfo = { label: string; summary: string } | null;
+
+/** CR-122 · U2c: node "Bắt đầu khi" ở cột đầu (x = −1 cột), nối tới mọi giai đoạn của bước đầu. */
+function triggerPart(views: readonly StageView[], t: TriggerInfo): { node: Node[]; edges: Edge[] } {
+  if (!t) return { node: [], edges: [] };
+  const node: Node = {
+    id: "trigger",
+    type: "trigger",
+    position: { x: -COL_W, y: HEADER_H },
+    measured: NODE_SIZE.stage,
+    selectable: false,
+    focusable: false,
+    draggable: false,
+    data: t,
+  };
+  const edges = views
+    .filter((v) => v.step === 0)
+    .map((v) =>
+      toEdge({ id: `trigger>${v.uid}`, source: "trigger", target: v.uid, kind: "forward" }),
+    );
+  return { node: [node], edges };
+}
+
+type WarnEdges = readonly { from: string; to: string }[];
+const NO_WARN: WarnEdges = [];
+
+/** CR-122 · FR-26 · cạnh vàng: bước sau cần đầu vào mà bước trước không có (nét vàng + nhãn, không chỉ màu). */
+function warnStyle(edges: Edge[], warn: WarnEdges, label: string): Edge[] {
+  if (warn.length === 0) return edges;
+  const bad = new Set(warn.map((w) => `${w.from}>${w.to}`));
+  return edges.map((e) =>
+    bad.has(`${e.source}>${e.target}`)
+      ? {
+          ...e,
+          label,
+          style: { stroke: "var(--color-warning)", strokeWidth: 2.5 },
+          labelStyle: { fill: "var(--color-warning)", fontSize: 12 },
+          labelBgStyle: { fill: "var(--color-card)" },
+        }
+      : e,
+  );
+}
+
+function useFlowGraph(
+  p: ProcessCanvasProps,
+  approve: string,
+  trig: TriggerInfo,
+  warn: WarnEdges,
+  warnLabel: string,
+) {
   const { views, selected, readOnly } = p;
   return useMemo(() => {
     const dlc = views.some((v) => v.dlc);
@@ -117,8 +169,14 @@ function useFlowGraph(p: ProcessCanvasProps, approve: string) {
     const edges = linked.map((e) =>
       e.kind === "forward" && gated(e.source) ? approveEdge(toEdge(e), approve) : toEdge(e),
     );
-    return { nodes, edges, steps: lay.steps, dlc };
-  }, [views, selected, readOnly, approve]);
+    const tp = triggerPart(views, trig);
+    return {
+      nodes: [...tp.node, ...nodes],
+      edges: warnStyle([...tp.edges, ...edges], warn, warnLabel),
+      steps: lay.steps,
+      dlc,
+    };
+  }, [views, selected, readOnly, approve, trig, warn, warnLabel]);
 }
 
 function useCanvasLabels(dlc: boolean): Partial<FlowLabels> {
@@ -150,7 +208,21 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
   const handlers = useRef<CanvasHandlers>(p);
   handlers.current = p;
   const { t } = useTranslation();
-  const g = useFlowGraph(p, t("process.admin.library.dlc.approve"));
+  const tc = useFlowCtx()?.trigger;
+  const tLabel = tc?.label;
+  const tSummary = tc?.summary;
+  const trig = useMemo(
+    () => (tLabel === undefined ? null : { label: tLabel, summary: tSummary ?? "" }),
+    [tLabel, tSummary],
+  );
+  const warn = useFlowCtx()?.warnEdges ?? NO_WARN;
+  const g = useFlowGraph(
+    p,
+    t("process.admin.library.dlc.approve"),
+    trig,
+    warn,
+    t("process.admin.flow.bridge.edge"),
+  );
   const labels = useCanvasLabels(g.dlc);
   const onAddToStep = useCallback((step: number) => handlers.current.ops.add(step), []);
   const onConnect = useCallback(

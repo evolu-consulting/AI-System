@@ -18,3 +18,5 @@ Thumbs.db
 
 # e2e-isolation: làn e2e c?a worktree
 .e2e-lane
+
+apps/admin-web/dist-uat122/

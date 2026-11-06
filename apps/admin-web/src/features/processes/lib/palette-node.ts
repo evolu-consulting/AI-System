@@ -47,23 +47,29 @@ export function edgeProblems(
 ): EdgeProblem[] {
   const byKey = new Map(nodes.map((n) => [n.key, n]));
   const steps = [...new Set(stages.map((s) => s.step))].sort((a, b) => a - b);
-  const out: EdgeProblem[] = [];
-  steps.forEach((st, i) => {
+  return steps.flatMap((st, i) => {
     const next = steps[i + 1];
-    if (next === undefined) return;
+    if (next === undefined) return [];
+    const a = stages.find((s) => s.step === st);
     const prevOuts = stages.filter((s) => s.step === st).flatMap((s) => outputsOf(s, byKey));
-    for (const b of stages.filter((s) => s.step === next)) {
-      const a = stages.find((s) => s.step === st);
-      if (!a) continue;
-      for (const is of edgeIssues(prevOuts, inputsOf(b, byKey)))
-        out.push({
-          from: a.uid,
-          to: b.uid,
-          rule: is.rule,
-          key: is.key,
-          ...(is.rule === "type" ? { expected: is.expected, got: is.got } : {}),
-        });
-    }
+    // hai stage của CÙNG một node bảng (vd Ký số = gửi + chờ) nối với nhau bên trong node, không phải cạnh giữa hai node.
+    return stages
+      .filter((b) => b.step === next && !!a && !(b.node && a.node === b.node))
+      .flatMap((b) => pairProblems(a as StageDraft, b, prevOuts, inputsOf(b, byKey)));
   });
-  return out;
+}
+
+function pairProblems(
+  a: StageDraft,
+  b: StageDraft,
+  prevOuts: readonly AppNodeIo[],
+  ins: readonly AppNodeIo[],
+): EdgeProblem[] {
+  return edgeIssues(prevOuts, ins).map((is) => ({
+    from: a.uid,
+    to: b.uid,
+    rule: is.rule,
+    key: is.key,
+    ...(is.rule === "type" ? { expected: is.expected, got: is.got } : {}),
+  }));
 }

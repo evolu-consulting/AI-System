@@ -17,7 +17,7 @@ import { AssignFlow } from "./AssignFlow";
 
 /** Cùng lưới cho tiêu đề và mọi dòng ⇒ cột thẳng mép. */
 const GRID =
-  "grid grid-cols-[1.5rem_minmax(0,1.3fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,auto)] items-center gap-3";
+  "grid grid-cols-[1.5rem_minmax(0,1.3fr)_minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)_19rem] items-center gap-3";
 
 function triggerText(r: CompanyFlowRow, cond: string): string {
   const ev = eventsOfApp(r.app).find((e) => e.key === r.trigger_event);

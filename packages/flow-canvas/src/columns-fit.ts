@@ -53,7 +53,11 @@ function runFit(
   return done.then(() => {
     // quá rộng cho cả mức zoom nhỏ nhất ⇒ neo mép trái (bước đầu luôn thấy), phần còn lại kéo ngang
     const v = rf.getViewport();
-    if (v.zoom <= minZoom + 0.001) void rf.setViewport({ ...v, x: 16 });
+    // (neo theo mép trái của node ngoài cùng — có thể < 0 khi canvas có cột đầu như node "Bắt đầu khi")
+    if (v.zoom <= minZoom + 0.001) {
+      const left = getNodesBounds(rf.getNodes()).x;
+      void rf.setViewport({ ...v, x: 16 - left * v.zoom });
+    }
   });
 }
 

@@ -1,10 +1,11 @@
 // CR-122 · U1 · FLOW2-FR-02/15/16: thân MỘT trình sửa flow cho Thư viện lẫn bản công ty — node Bắt đầu khi ở đầu, bảng node theo
 // manifest + canvas (children), lỗi theo `flowDefIssues`. Canvas mặc định; trigger giữ ở state của trang (gửi kèm khi Lưu).
 import type { FlowTrigger } from "@ai/contracts/hub-admin";
-import { type ReactNode, useMemo } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type DefDraft, toInput } from "../../lib/def-form";
 import type { StageDraft } from "../../lib/draft-types";
+import { whenSummary } from "../../lib/fact-when";
 import {
   eventOf,
   type FlowMeta,
@@ -15,6 +16,7 @@ import {
 import { edgeProblems } from "../../lib/palette-node";
 import { usePalette } from "../../palette-api";
 import { BridgeIssues } from "./BridgeIssues";
+import { OP_SYMBOL } from "./FactWhenEditor";
 import { FlowContext } from "./flow-ctx";
 import { TriggerCard } from "./TriggerCard";
 
@@ -57,20 +59,34 @@ export function FlowEditorBody({
     const r = retargetEvent(trigger, stages, next);
     onChange(r.trigger, r.stages);
   };
+  const [open, setOpen] = useState(false);
+  const summary = whenSummary(trigger.when, event?.facts ?? [], (o) => OP_SYMBOL[o], {
+    and: t("process.admin.flow.and").toLowerCase(),
+    or: t("process.admin.flow.or").toLowerCase(),
+  });
+  const ctx = {
+    app: meta.app,
+    tenantId,
+    event,
+    warnEdges: problems.map((x) => ({ from: x.from, to: x.to })),
+    trigger: { label: event?.label ?? trigger.event, summary, onOpen: () => setOpen((o) => !o) },
+  };
   return (
-    <FlowContext.Provider value={{ app: meta.app, tenantId, event }}>
+    <FlowContext.Provider value={ctx}>
       <div className="space-y-4" data-testid="flow-editor">
-        <TriggerCard
-          app={meta.app}
-          trigger={trigger}
-          readOnly={readOnly}
-          onEvent={onEvent}
-          onWhen={(when) => {
-            const { when: _w, ...rest } = trigger;
-            onChange(when ? { ...rest, when } : rest);
-          }}
-          error={whenErr ? t(`process.admin.flow.err.${whenErr.key}`) : undefined}
-        />
+        {open || whenErr ? (
+          <TriggerCard
+            app={meta.app}
+            trigger={trigger}
+            readOnly={readOnly}
+            onEvent={onEvent}
+            onWhen={(when) => {
+              const { when: _w, ...rest } = trigger;
+              onChange(when ? { ...rest, when } : rest);
+            }}
+            error={whenErr ? t(`process.admin.flow.err.${whenErr.key}`) : undefined}
+          />
+        ) : null}
         {others.length > 0 && !readOnly ? (
           <ul className="space-y-1" role="alert" data-testid="flow-issues">
             {[...new Set(others.map((i) => i.key))].map((k) => (

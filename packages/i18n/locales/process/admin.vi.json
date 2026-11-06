@@ -1308,6 +1308,7 @@
     "bridge": {
       "missing": "Bước sau cần “{{key}}”, bước trước không có.",
       "type": "Bước sau cần “{{key}}” kiểu {{expected}}, bước trước cho kiểu {{got}}.",
+      "edge": "Thiếu dữ liệu",
       "suggest": "Gợi ý cầu nối",
       "none": "Chưa có gợi ý. Thêm node Ghi giá trị để nối hai bước.",
       "accept": "Nhận",

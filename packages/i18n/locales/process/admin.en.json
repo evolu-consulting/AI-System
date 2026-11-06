@@ -1308,6 +1308,7 @@
     "bridge": {
       "missing": "The next step needs “{{key}}”, the previous step does not provide it.",
       "type": "The next step needs “{{key}}” as {{expected}}, the previous one gives {{got}}.",
+      "edge": "Missing input",
       "suggest": "Suggest a bridge",
       "none": "No suggestion. Add a Set value node to connect the two steps.",
       "accept": "Accept",
