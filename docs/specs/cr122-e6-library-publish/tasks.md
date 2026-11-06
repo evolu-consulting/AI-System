@@ -11,6 +11,7 @@ Làn nhanh (một agent). Migration 0110 đã nới CHECK; lát này đưa servi
 - Perf: không chạm đường nóng (publish = thao tác quản trị; thêm 0 câu SQL cho đường khe, `impact` flow = 1 câu).
 
 ## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Xuất bản flow Thư viện theo sự kiện
