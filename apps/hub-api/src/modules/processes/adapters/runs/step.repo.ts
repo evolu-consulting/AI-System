@@ -8,6 +8,7 @@ import type { FlowPackRef, StepRepo } from "../../application/ports";
 import { type StepOutcome, settleStep } from "../../application/runs/settle-step.usecase";
 import type { BranchRule } from "../../domain/branch/branch-def.rules";
 import type { IfExec } from "../../domain/if/if.rules";
+import { type WaitEventExec, waitBranchRules } from "../../domain/timers/wait-event-branch.rules";
 import type { ProcessRunStatus, StageRunStatus } from "../../domain/types";
 import { branchWrites } from "./branch.repo";
 import { flowStepRepo } from "./flow-step.repo";
@@ -67,7 +68,7 @@ const branchesOf = (stages: NonNullable<StepHead["snapshot"]>["stages"] & {}): B
           value: r.value,
           gotoStep: r.goto_step,
         }))
-      : approveRules(s),
+      : [...approveRules(s), ...waitBranchRules(s?.executor as WaitEventExec | undefined)],
   );
 
 /** CR-103 · snapshot `executor` kind `if` (snake_case) ⇒ domain `IfExec`; stage khác / hỏng ⇒ `null`. */

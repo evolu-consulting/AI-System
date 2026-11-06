@@ -36,9 +36,33 @@ export type WaitForExecutor = z.infer<typeof WaitForExecutorSchema>;
 /** CR-120 · G4 · `wait_event`: chờ sự kiện theo khoá (gói bắn qua `signalEvent`), hết `timeout_h` giờ ⇒ chạy tiếp (ghi "hết hạn"). */
 export const WAIT_EVENT_KEY_RE = /^[a-z][a-z0-9_.-]{1,63}$/;
 export const WAIT_EVENT_TIMEOUT_H = { min: 1, max: 8760 } as const;
+/** CR-122 · E3 · sự kiện khác cũng kết thúc chờ (vd `esign.declined`, `esign.voided`) — tối đa 3. */
+export const WAIT_EVENT_ALSO_MAX = 3;
+/** Khoá rẽ khi hết hạn chờ (field output `event` = `timeout`). */
+export const WAIT_EVENT_TIMEOUT_KEY = "timeout";
 export const WaitEventExecutorSchema = z.strictObject({
   kind: z.literal("wait_event"),
   event: z.string().regex(WAIT_EVENT_KEY_RE),
   timeout_h: z.number().int().min(WAIT_EVENT_TIMEOUT_H.min).max(WAIT_EVENT_TIMEOUT_H.max),
+  also_events: z.array(z.string().regex(WAIT_EVENT_KEY_RE)).max(WAIT_EVENT_ALSO_MAX).optional(),
+  /**
+   * CR-122 · E3 · rẽ theo sự kiện đã nhận (`on` = khoá sự kiện hoặc `timeout`) ⇒ bước `goto_step` (> bước của mình). Vắng ⇒ bước kế.
+   * Output của stage có field `event` (khoá đã nhận / `timeout`) để node sau đọc.
+   */
+  branches: z
+    .array(
+      z.strictObject({
+        on: z.string().regex(WAIT_EVENT_KEY_RE),
+        goto_step: z.number().int().min(0).max(255),
+      }),
+    )
+    .max(WAIT_EVENT_ALSO_MAX + 2)
+    .optional(),
 });
+
+/** Khoá sự kiện mà stage `wait_event` chờ (chính + phụ). */
+export const waitEventKeys = (e: { event: string; also_events?: readonly string[] }): string[] => [
+  e.event,
+  ...(e.also_events ?? []),
+];
 export type WaitEventExecutor = z.infer<typeof WaitEventExecutorSchema>;

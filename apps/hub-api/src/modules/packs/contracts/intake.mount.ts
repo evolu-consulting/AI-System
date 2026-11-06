@@ -1,6 +1,7 @@
 // CR-120 · cr120-contracts-flow · nối khe `contracts.intake`: tool bước (`adapters/intake.tools.ts`) trên `PackUow` của gói + hook
 // "ký xong" của use case ký số. Tách khỏi `packs.mount.ts`/`esign.mount.ts` (trần 400 dòng). Không esign (vắng module) ⇒ tool gửi ký ném lỗi
 // rõ ràng (stage `tool_failed`), tool đọc/nhắc vẫn chạy.
+
 import { ESignSignerSchema } from "@ai/contracts/pack-contracts";
 import type { Db, Tx } from "@ai/db";
 import type { PackRunsBridge, PackToolDef, SlotSpec } from "../kit/public";
@@ -8,6 +9,7 @@ import { createPackUow, slotRegistry } from "../kit/public";
 import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { intakeTools } from "./adapters/intake.tools";
+import type { ESignEvent } from "./domain/esign-event.rules";
 import type { ESignModule } from "./esign.mount";
 
 const repos = (tx: Tx, t: string) => ({
@@ -20,7 +22,9 @@ export function intakeWiring(
   esign: ESignModule | undefined,
 ): {
   tools: PackToolDef[];
-  bindCompleted: (fn: (tenantId: string, contractId: string) => Promise<unknown>) => void;
+  bindCompleted: (
+    fn: (tenantId: string, contractId: string, event: ESignEvent) => Promise<unknown>,
+  ) => void;
 } {
   const uow = createPackUow(db, "contracts", repos);
   return {
@@ -66,11 +70,13 @@ export function mountIntake(
   slotRegistry.register(intakeSlotSpec);
   const { tools, bindCompleted } = intakeWiring(db, d.esign);
   for (const t of tools) d.packTools?.register(t);
-  bindCompleted(async (tenantId, contractId) => {
+  // CR-122 E3 · bắn đúng khoá theo trạng thái cuối (đã ký / từ chối / huỷ). Webhook + vòng đồng bộ trùng ⇒ `signalEvent` chỉ thả
+  // stage đang chờ một lần (khoá run; lần sau stage đã xong ⇒ không còn chờ khoá đó).
+  bindCompleted(async (tenantId, contractId, event) => {
     await d.packRuns?.port?.signalEvent(
       tenantId,
       { pack: "contracts", record_id: contractId },
-      "esign.completed",
+      event,
     );
   });
 }

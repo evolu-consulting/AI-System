@@ -1,6 +1,7 @@
 // HUB-FR-143 · HUB-FR-144 · PD-R11/R15 · K1/K3 · plan §4.6 (Bắn), §6 · `StageTimerRepo` gắn tx + `tenantId` của UoW: khoá
 // stage của hẹn (SAU run, TRƯỚC timer), `requeue` (retry) và `finishWait` (wait_until: .md "Đã chờ tới …" + stage `done` +
 // join bước như P-b2). MỌI câu lọc `tenant_id` kể cả scope system. Sự kiện/kick/thread vào outbox (phát SAU COMMIT).
+
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { UserEvent } from "../../../../lib/user-stream";
@@ -12,6 +13,12 @@ import type { RecipientsDefer } from "../../core/recipients-defer";
 import { enqueueThread } from "../../core/thread";
 import type { RunState } from "../../domain/runs/run-state.rules";
 import { waitedText, waitOutputMd } from "../../domain/timers/due-at.rules";
+import {
+  TIMEOUT_KEY,
+  WAIT_EVENT_FIELD,
+  type WaitEventExec,
+  waitKeysOf,
+} from "../../domain/timers/wait-event-branch.rules";
 import type { ProcessRunStatus, StageRunStatus } from "../../domain/types";
 import { persistStage } from "../../runs/step-persist";
 import { type SnapshotStages, waitOriginalDue } from "./timer-origin";
@@ -118,8 +125,8 @@ async function finishWait(
   const s = await stageOf(c.tx, c.tenantId, runId, stageRunId);
   if (!h || !s) return;
   const name = h.snapshot.stages?.[s.stage_idx]?.name ?? "";
-  const md = await waitMd(c, { runId, h, s, w, name });
-  const outputId = await insertOutput(c.tx, { tenantId: c.tenantId, runId, stage: s, md });
+  const { md, fields } = await waitMd(c, { runId, h, s, w, name });
+  const outputId = await insertOutput(c.tx, { tenantId: c.tenantId, runId, stage: s, md, fields });
   const step = await persistStage(c.tx, {
     runId,
     tenantId: c.tenantId,
@@ -141,20 +148,28 @@ async function waitMd(
     w: { dueAt: Date; timezone: string };
     name: string;
   },
-): Promise<string> {
+): Promise<{ md: string; fields: Record<string, string> | null }> {
   const { h, s, w, name } = x;
   const ex = h.snapshot.stages?.[s.stage_idx]?.executor;
-  if (ex?.kind === "wait_event" && ex.event) {
+  const keys = waitKeysOf(ex as WaitEventExec | undefined);
+  if (keys.length > 0) {
     // `signalEvent` ghi sự kiện TRƯỚC khi thả stage ⇒ stage tiêu thụ sự kiện chưa dùng = đã nhận; không có = hết hạn.
-    const got = await c.tx.execute(sql`update hub.process_run_events set consumed_by = ${x.s.id}
-      where tenant_id = ${c.tenantId} and process_run_id = ${x.runId} and event = ${ex.event}
-        and consumed_by is null returning 1`);
-    return waitOutputMd(
-      name,
-      got.length > 0
-        ? `Đã nhận sự kiện ${ex.event}.`
-        : `Hết hạn chờ sự kiện ${ex.event}; chạy tiếp.`,
-    );
+    // CR-122 E3 · nhiều khoá (đã ký / từ chối / huỷ): MỘT câu tiêu thụ sự kiện nhận SỚM nhất ⇒ field `event` để rẽ bước.
+    const got = await c.tx.execute<{
+      event: string;
+    }>(sql`update hub.process_run_events e set consumed_by = ${x.s.id}
+      where e.ctid = (select ctid from hub.process_run_events
+        where tenant_id = ${c.tenantId} and process_run_id = ${x.runId} and consumed_by is null
+          and event = any(array(select jsonb_array_elements_text(${JSON.stringify(keys)}::jsonb)))
+        order by received_at, array_position(array(select jsonb_array_elements_text(${JSON.stringify(keys)}::jsonb)), event)
+        limit 1 for update)
+      returning e.event`);
+    const won = got[0]?.event ?? TIMEOUT_KEY;
+    const text =
+      won === TIMEOUT_KEY
+        ? `Hết hạn chờ sự kiện ${keys[0]}; chạy tiếp.`
+        : `Đã nhận sự kiện ${won}.`;
+    return { md: waitOutputMd(name, text), fields: { [WAIT_EVENT_FIELD]: won } };
   }
   // `due_at` có thể đã bị lùi (#4) ⇒ output in mốc cấu hình gốc, không in giờ đã lùi.
   const target = await waitOriginalDue(c.tx, c.tenantId, {
@@ -164,7 +179,7 @@ async function waitMd(
     timezone: w.timezone,
     dueAt: w.dueAt,
   });
-  return waitOutputMd(name, waitedText(target, w.timezone));
+  return { md: waitOutputMd(name, waitedText(target, w.timezone)), fields: null };
 }
 
 type WaitStep = Awaited<ReturnType<typeof persistStage>>;
@@ -210,14 +225,21 @@ async function stageOf(
 /** Output .md Hub sinh (content inline, như stage Áp — không blob/attachment); trả id. */
 async function insertOutput(
   tx: Tx,
-  o: { tenantId: string; runId: string; stage: StageRow; md: string },
+  o: {
+    tenantId: string;
+    runId: string;
+    stage: StageRow;
+    md: string;
+    fields?: Record<string, string> | null;
+  },
 ): Promise<string> {
   const id = crypto.randomUUID();
   const { tenantId, runId, stage: s, md } = o;
+  const fields = o.fields ? JSON.stringify(o.fields) : null;
   await tx.execute(sql`insert into hub.process_outputs (id, tenant_id, process_run_id, stage_run_id, stage_idx,
-      version, attempt, content, template_ok, template_missing, round)
+      version, attempt, content, template_ok, template_missing, round, fields)
     select ${id}, ${tenantId}, ${runId}, ${s.id}, ${s.stage_idx}, coalesce(max(version), 0) + 1, ${s.attempt},
-      ${md}, true, '{}'::text[], ${s.round}
+      ${md}, true, '{}'::text[], ${s.round}, ${fields}::jsonb
     from hub.process_outputs where stage_run_id = ${s.id} and tenant_id = ${tenantId}`);
   return id;
 }

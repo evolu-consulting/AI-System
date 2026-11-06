@@ -5,6 +5,8 @@ import { sql } from "drizzle-orm";
 import type { StepRepo } from "../../application/ports";
 import { factsReaderFor, outcomeHandlerFor } from "./flow-ports";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 type FlowStepRepo = Required<
   Pick<StepRepo, "readFacts" | "ifDecisions" | "applyOutcome" | "needsAction">
 >;
@@ -29,16 +31,18 @@ export function flowStepRepo(tx: Tx, tenantId: string): FlowStepRepo {
     async applyOutcome(runId, p, outcome) {
       const h = outcomeHandlerFor(p.pack, p.event);
       if (!h) throw new Error(`OutcomeHandler chưa đăng ký: ${p.pack} · ${p.event}`);
-      // TODO(CR-122 A1): người quyết bước cuối — node Duyệt ghi `fields.decided_by` vào output (gates/approve-out.ts); join bước chưa
-      // đọc nó ⇒ hệ thống (null). App tự đọc người duyệt từ lịch sử nếu cần.
-      await h.apply(tx, {
-        tenantId,
-        runId,
-        event: p.event,
-        ref: p.recordId,
-        outcome,
-        actorId: null,
-      });
+      // CR-122 E3 · người quyết bước cuối = `fields.decided_by` của node Duyệt đã xong gần nhất (gates/approve-out.ts) — 1 câu;
+      // không có node Duyệt ⇒ hệ thống (null).
+      const [a] = await tx.execute<{
+        actor: string | null;
+      }>(sql`select o.fields->>'decided_by' as actor
+        from hub.stage_runs s
+        join hub.process_outputs o on o.id = s.current_output_id and o.tenant_id = s.tenant_id
+        where s.process_run_id = ${runId} and s.tenant_id = ${tenantId} and s.status = 'done'
+          and jsonb_typeof(o.fields) = 'object' and o.fields ? 'decided_by'
+        order by s.stage_idx desc limit 1`);
+      const actorId = a?.actor && UUID_RE.test(a.actor) ? a.actor : null;
+      await h.apply(tx, { tenantId, runId, event: p.event, ref: p.recordId, outcome, actorId });
     },
     async needsAction(runId, a) {
       const decision = {

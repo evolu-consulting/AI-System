@@ -2,6 +2,7 @@
 // ngược `ESIGN_PROVIDER=x`), mỗi nhà cung cấp khả dụng khi đủ cấu hình — seam test `provider`/`providers` ưu tiên; repo trong `PackUow`
 // (tenant + system), FileBox theo org tenant, tên/email user hiện tại (`admin.users` qua hub scope), map webhook envelope ⇒ tenant (role
 // `contracts_job`). Webhook gắn TRƯỚC JWT (`app.ts`). Thêm nhà cung cấp (MISA…) = adapter + một nhánh `adapterOf` + mục `PROVIDER_META`.
+
 import { ESignSignerSchema } from "@ai/contracts/pack-contracts";
 import { packFeatureKey } from "@ai/contracts/packs";
 import type { Db, Tx } from "@ai/db";
@@ -28,6 +29,7 @@ import { type EsignSweepDeps, startEsignSweeper } from "./application/esign-swee
 import { type EsignSyncDeps, esignSyncEnv } from "./application/esign-sync";
 import { metaOf, providerEntriesOf } from "./domain/esign.providers";
 import { docusignConfigOf } from "./domain/esign.rules";
+import { type ESignEvent, esignEventOf } from "./domain/esign-event.rules";
 
 type EnvMap = Record<string, string | undefined>;
 const repos = (tx: Tx, t: string) => ({ esign: esignRepo(tx, t), esignFlow: esignFlowRepo(tx, t) });
@@ -79,8 +81,11 @@ export type ESignModule = ESignUsecase & {
   /** esign-flow-fix · gắn kiểm quyền ghi gói của người ký công ty (cần cổng quyền của `packs.mount`). */
   bindWriters(w: Writers): void;
   bindView(view: PackAccessView): void;
-  /** CR-120 · G6 · phong bì ký XONG ⇒ gọi hook (gói bắn sự kiện `esign.completed` cho run khe `contracts.intake`); lỗi hook không làm hỏng đồng bộ. */
-  bindCompleted(fn: (tenantId: string, contractId: string) => Promise<unknown>): void;
+  /** CR-120 · G6 · CR-122 E3 · phong bì sang trạng thái CUỐI ⇒ gọi hook với khoá sự kiện (`esign.completed|declined|voided`) — gói bắn
+   *  cho lượt đang chờ; lỗi hook không làm hỏng đồng bộ. */
+  bindCompleted(
+    fn: (tenantId: string, contractId: string, event: ESignEvent) => Promise<unknown>,
+  ): void;
   /** esign-sweep · bật vòng nền bước Ký số (một lần; tắt ngoài dev/prod hoặc `CONTRACTS_ESIGN_SWEEP=off`). */
   startSweep(view: PackAccessView): void;
 };
@@ -91,7 +96,9 @@ export function esignModule(
 ): ESignModule {
   const uow = createPackUow(db, "contracts", repos);
   let flow: EsignFlow | null = null;
-  let completed: ((tenantId: string, contractId: string) => Promise<unknown>) | null = null;
+  let completed:
+    | ((tenantId: string, contractId: string, event: ESignEvent) => Promise<unknown>)
+    | null = null;
   const providers = registryOf(d.esign);
   const u = esignUsecase({
     providers,
@@ -112,8 +119,9 @@ export function esignModule(
     }),
     onStatus: async (tid, id, st) => {
       await flow?.onStatus(tid, id, st);
-      if (st === "completed")
-        await completed?.(tid, id).catch((e: unknown) =>
+      const ev = esignEventOf(st);
+      if (ev)
+        await completed?.(tid, id, ev).catch((e: unknown) =>
           logger.warn("esign-completed-hook-failed", {
             contract_id: id,
             error: e instanceof Error ? e.name : "unknown",

@@ -13,7 +13,8 @@ export function runEventRepo(tx: Tx, tenantId: string): RunEventRepo {
       const rows = await tx.execute(sql`select 1 from hub.process_runs r,
           jsonb_array_elements(r.snapshot->'stages') with ordinality as s(e, ord)
         where r.id = ${runId} and r.tenant_id = ${tenantId}
-          and s.e->'executor'->>'kind' = 'wait_event' and s.e->'executor'->>'event' = ${event}
+          and s.e->'executor'->>'kind' = 'wait_event'
+          and (s.e->'executor'->>'event' = ${event} or coalesce(s.e->'executor'->'also_events', '[]'::jsonb) ? ${event})
           and s.ord - 1 >= r.current_stage_idx
         limit 1`);
       return rows.length > 0;
@@ -43,7 +44,8 @@ export function runEventRepo(tx: Tx, tenantId: string): RunEventRepo {
         from hub.stage_runs s join hub.process_runs r on r.id = s.process_run_id and r.tenant_id = s.tenant_id
         where s.tenant_id = ${tenantId} and s.process_run_id = ${runId} and s.status = 'waiting_timer'
           and r.snapshot->'stages'->(s.stage_idx)->'executor'->>'kind' = 'wait_event'
-          and r.snapshot->'stages'->(s.stage_idx)->'executor'->>'event' = ${event}
+          and (r.snapshot->'stages'->(s.stage_idx)->'executor'->>'event' = ${event}
+            or coalesce(r.snapshot->'stages'->(s.stage_idx)->'executor'->'also_events', '[]'::jsonb) ? ${event})
         order by s.stage_idx`);
       return rows.map((x) => x.id);
     },
