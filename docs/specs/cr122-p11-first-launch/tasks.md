@@ -41,18 +41,42 @@ Chẩn đoán lỗi sản phẩm #4 (q1-e2e): "HĐ đầu tiên sau khi gán flo
 - Test: int `triggers/first-launch.int.test.ts` thêm ca thật (gói contracts: HĐ level1 cờ bật ⇒ 1 `dispatchOnce` ⇒ thẻ `mode engine`,
   bước "Duyệt giá trị lớn" `open`, approve máy cũ ⇒ APPROVAL_NOT_OPEN) + perf int event→task mở ≤ 5 s ở vòng thật.
 
+## Đã làm (lượt 2, điều phối giao)
+- (a) `contract-flow.repo.ts` `holdForFlow` + `approval.usecase.ts` `emitSubmitted` (và heal ở `approval-sweep.ts`): cờ bật ⇒ CÙNG tx
+  ghi `contract.submitted`, lượt `mode='engine'`, `engine_run_id=null`, `feedback='FLOW_STARTING'` (CAS `mode='machine'`).
+- (b) `OutcomeHandler.launched?` (kit) ⇒ `flow-launch.ts` truyền `onCreated` ⇒ `start.service.ts` gọi CÙNG tx tạo run ⇒ contracts
+  `attachFlowRun` (CAS `engine_run_id is null`, khoá HĐ trước, `approvalWrite`; `flow_steps = null` vì CHECK 1..20 phần tử).
+- (c) `approval-engine-card.rules.ts`: `flow_steps` rỗng ⇒ `runCardSteps` dựng bước từ `stepsView` (stage Duyệt đã tới, `s<idx>`);
+  `attentionOf`: chưa run + `FLOW_STARTING` ⇒ không "kẹt".
+- `dispatcher.ts`: `flow_events.error` ghi kèm nguyên nhân gốc (drizzle bọc "Failed query") — trước đây không chẩn đoán được.
+
 ## Không làm / Chạm
-Không sửa code trong lát này (hết 50 phút cho chẩn đoán). Triệu chứng (B) community 200 s: CHƯA điều tra.
+(B) community 200 s: CHƯA điều tra (khác gói `community`, không dùng thẻ duyệt HĐ ⇒ không cùng gốc chắc chắn); để lát sau.
+UI web không đổi (thẻ dùng `steps` sẵn có).
+
+## Test
+- `processes/triggers/first-launch-contract.int.test.ts` (evotest int, xanh 3/3): một `dispatchOnce` ⇒ run gắn + task "Duyệt giá trị
+  lớn" mở, máy cũ duyệt ⇒ APPROVAL_NOT_OPEN, HĐ `needs_review`; cờ TẮT ⇒ máy cũ khoá HĐ như trước; perf vòng thật sự kiện → task mở
+  84 ms (ngưỡng ≤ 5 s). Đỏ trước sửa: bằng chứng trace e2e (mode machine → locked).
+- `domain/approval-engine-card.flow.rules.test.ts` (unit, 2 ca). Không hồi quy: `contract-flow.int`, `first-launch.int`, `launch-real.int` xanh.
 
 ## Quyết định trong lúc làm
-- Dừng ở chẩn đoán thay vì vá dở máy trạng thái run (Luật 0c: lõi run giao Opus medium, có int trạng thái).
+- Gắn run trong CÙNG tx tạo run (không tx riêng sau đó) ⇒ không có cửa sổ run mồ côi bị vòng quét huỷ (`openPackRuns`/`attachedRuns`).
+- `flow_steps = null` (không `[]`): ràng buộc `approvals_flow_steps_ck`; thẻ coi null ≡ rỗng.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-Không thay đổi hành vi (lý do: lát chẩn đoán, chưa sửa code; Delta thật đi cùng lát sửa).
+### MODIFIED engine/flow-runtime.md
+#### Yêu cầu: Thẻ duyệt HĐ khi công ty bật flow theo sự kiện
+Công ty bật FLOW_TRIGGERS: HĐ vào bước duyệt ⇒ lượt duyệt chờ flow (máy cũ không còn duyệt/khoá HĐ); bộ điều phối mở lượt flow và gắn
+vào thẻ duyệt cùng lúc tạo lượt; thẻ hiện các bước Duyệt của lượt flow. Công ty tắt cờ: giữ đường cũ.
+- Kịch bản: gửi HĐ, một lượt điều phối ⇒ bước "Duyệt giá trị lớn" mở; duyệt kiểu cũ bị từ chối, HĐ không khoá [test: apps/hub-api/src/modules/processes/triggers/first-launch-contract.int.test.ts » level1 ⇒ chờ flow, một dispatchOnce ⇒ run gắn vào lượt + task 'Duyệt giá trị lớn' mở, máy cũ duyệt ⇒ APPROVAL_NOT_OPEN, HĐ không khoá]
+- Kịch bản: công ty cờ tắt ⇒ máy cũ duyệt và khoá HĐ như trước [test: apps/hub-api/src/modules/processes/triggers/first-launch-contract.int.test.ts » công ty cờ TẮT: lượt giữ máy cũ (không chờ flow), duyệt máy cũ khoá HĐ như trước]
+- Kịch bản: sự kiện tới task mở ≤ 5 s ở vòng thật [test: apps/hub-api/src/modules/processes/triggers/first-launch-contract.int.test.ts » perf · vòng thật: sự kiện → task Duyệt mở ≤ 5 s]
+- Kịch bản: thẻ dựng bước từ lượt flow, chờ mở flow không báo kẹt [test: apps/hub-api/src/modules/packs/contracts/domain/approval-engine-card.flow.rules.test.ts » flow_steps rỗng ⇒ bước = stage Duyệt đã tới (s1 mở, s2 nhánh chưa tới bị ẩn), task + can_act theo stage mở]
 
 ## Việc còn lại
-- [ ] Sửa (a)(b)(c) + int đỏ→xanh + perf int.
-- [ ] Gỡ `fixme` G1.2/G2 (qc) sau khi sửa.
+- [ ] Soát Opus low diff máy trạng thái run (Luật 0d.3).
+- [ ] qc gỡ `fixme` G1.2/G2 và chạy e2e journey một lần cuối đợt.
 - [ ] Điều tra (B) community: bước duyệt bài mở chậm tới 200 s.

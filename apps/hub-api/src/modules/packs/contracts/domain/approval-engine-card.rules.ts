@@ -36,6 +36,9 @@ export type EngineStageView = {
   task: { id: string; can_act: boolean; override?: boolean } | null;
   /** CR-113 · id task review gần nhất của stage (khớp lần "duyệt thay" đã ghi). */
   task_ref?: string | null;
+  /** CR-122 · P11 · tên stage + Group (khớp `PackStepView`) — thẻ của lượt flow (không có mẫu chụp) dựng bước từ đây. */
+  name?: string;
+  group_id?: string | null;
 };
 export type EngineStepsView = {
   status: string;
@@ -117,6 +120,7 @@ export function cardSteps(
   facts: FlowFacts,
   x: CardExtras = {},
 ): CardStep[] {
+  if (flow.length === 0 && sv) return runCardSteps(sv, x);
   const byKey = new Map((sv?.steps ?? []).map((s) => [s.key, s]));
   const own = flow.filter((s): s is FlowEngineStep => s.kind !== "esign"); // esign-flow · Ký số không là stage
   return own.map((s, i) => {
@@ -139,6 +143,37 @@ export function cardSteps(
       skip_when: (st?.status ?? "pending") === "pending" ? willSkip(s, i, facts) : null,
       ...ownerFields(st, x),
     };
+  });
+}
+
+const STAGE_KEY = /^s(\d+)$/;
+/**
+ * CR-122 · P11 · lượt flow theo sự kiện (FlowDef: Nếu / Duyệt / Thông báo / Kết thúc — không có mẫu chụp dạng khe): bước của thẻ = stage
+ * DUYỆT của run đã tới (có task review hoặc đang mở), đúng `s<idx>` của engine; nhánh chưa tới / node tự động không hiện.
+ */
+export function runCardSteps(sv: EngineStepsView, x: CardExtras = {}): CardStep[] {
+  return sv.steps.flatMap((st) => {
+    const m = STAGE_KEY.exec(st.key);
+    if (!m || (!st.task_ref && !st.task && st.status !== "open")) return [];
+    return [
+      {
+        idx: Number(m[1]),
+        key: st.key,
+        name: st.name ?? st.key,
+        kind: "review" as const,
+        status: st.status,
+        group_id: st.group_id ?? null,
+        head_only: false,
+        escalated_group_id: st.escalated_group_id,
+        due_at: st.due_at,
+        escalated: st.escalated,
+        decided_by: st.decided_by,
+        decided_at: st.decided_at,
+        feedback: st.feedback,
+        skip_when: null,
+        ...ownerFields(st, x),
+      },
+    ];
   });
 }
 
@@ -192,6 +227,8 @@ export function attentionOf(i: EngineCardInput): EngineAttention | null {
       since: sv.decision?.at ?? null,
     };
   const noRun = i.approval.engineRunId === null;
+  // CR-122 · P11 · đang chờ bộ điều phối mở flow (vài giây) — không phải kẹt, không mời "Mở lại".
+  if (noRun && i.approval.feedback === "FLOW_STARTING") return null;
   if (noRun || (sv !== null && isTerminalRun(sv.status)))
     return { kind: "stalled", reason: i.approval.feedback, since: null };
   return null;

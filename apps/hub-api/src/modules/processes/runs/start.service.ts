@@ -30,7 +30,7 @@ import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { enqueueThread } from "../core/thread";
 import { canRun } from "../domain/runs/run-access.rules";
-import { attachFlowEvent } from "./flow-event-attach";
+import { attachFlowEvent, type FlowEventAttach } from "./flow-event-attach";
 import { runDefIdsFor } from "./run-def-filter";
 import { labelOf, runRecordLabels } from "./run-record-labels";
 import * as repo from "./runs.repo";
@@ -176,13 +176,9 @@ export class StartService {
       /** contract-flow S1a · bản ghi gói của run — CHỈ `PackRunsPort.start` truyền (route công khai không). */
       packRef?: { pack: string; recordId: string };
       /** CR-122 · E1 · lượt mở từ sự kiện (bộ điều phối): ghi cùng tx tạo run; unique (sự kiện × flow) ⇒ 23505 khi mở lại. */
-      flowEvent?: {
-        eventRowId: string;
-        companyFlowId: string;
+      flowEvent?: FlowEventAttach & {
         /** E1b · flow Thư viện được gán: def (bản xuất bản, Group đã đổi sang id công ty) đọc sẵn ở scope system. */
         def?: repo.StartDefRow;
-        /** CR-122 · A · bản ghi + dữ kiện của sự kiện ⇒ nối vào `inputs` của run (khoá đã có thắng). */
-        recordInputs?: readonly { key: string; type: string; text?: string; value?: string }[];
       };
     } = {},
   ): Promise<ProcessRunSummary> {

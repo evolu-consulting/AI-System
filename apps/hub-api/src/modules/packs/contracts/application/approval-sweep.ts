@@ -134,11 +134,13 @@ async function openHealed(d: SweepDeps, t: string, healed: SweepCounts["healedLe
     if (prep?.on) {
       await d.uow.system(t, async (r) => {
         const run = await r.approval?.runOf(h.contractId);
-        if (run?.runId)
-          await requireFlow(r).emitContract(EV_SUBMITTED, h.contractId, run.runId, {
-            actor: h.userId,
-            departments: prep.departments,
-          });
+        if (!run?.runId) return;
+        const repo = requireFlow(r);
+        await repo.emitContract(EV_SUBMITTED, h.contractId, run.runId, {
+          actor: h.userId,
+          departments: prep.departments,
+        });
+        await repo.holdForFlow?.(h.contractId, run.runId); // CR-122 · P11 · như `emitSubmitted`
       });
       continue;
     }

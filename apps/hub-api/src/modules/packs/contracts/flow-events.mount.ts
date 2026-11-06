@@ -12,7 +12,11 @@ import {
   flowPortRegistry,
   type OutcomeHandler,
 } from "../kit/public";
-import { applyContractOutcome, contractFlowRepo } from "./adapters/contract-flow.repo";
+import {
+  applyContractOutcome,
+  attachFlowRun,
+  contractFlowRepo,
+} from "./adapters/contract-flow.repo";
 import { creatorDepartmentsOf } from "./adapters/flow-facts.repo";
 import { type ContractFlowGate, FLOW_OFF, type FlowPrep } from "./application/contract-flow.ports";
 import {
@@ -85,6 +89,9 @@ export function contractsOutcomeHandler(): OutcomeHandler<Tx> {
       if (NO_OP[input.event] === input.outcome) return "applied";
       throw new Error(`contracts outcome chưa hỗ trợ: ${input.event} · ${input.outcome}`);
     },
+    // CR-122 · P11 · lượt flow mở cho `contract.submitted` ⇒ gắn vào thẻ duyệt CÙNG tx tạo run (CAS).
+    launched: (tx, input) =>
+      input.event === EV_SUBMITTED ? attachFlowRun(tx, input) : Promise.resolve(false),
   };
 }
 

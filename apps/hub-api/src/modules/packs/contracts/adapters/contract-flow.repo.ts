@@ -13,7 +13,7 @@ import {
   shadowEmit,
   withPackRoleInTx,
 } from "../../kit/public";
-import type { ContractFlowRepo } from "../application/contract-flow.ports";
+import { type ContractFlowRepo, FLOW_STARTING } from "../application/contract-flow.ports";
 import {
   APPROVAL_STATUS_OF,
   CONTRACTS_PACK,
@@ -62,6 +62,15 @@ export function contractFlowRepo(tx: Tx, tid: string): ContractFlowRepo {
         select hub.emit_flow_event(c.tenant_id, ${id}, 'contract.uploaded', c.id::text, ${facts}::jsonb, ${o.actor}::uuid) as id
         from contracts.contracts c where c.id = ${cid}::uuid and c.tenant_id = ${tid}::uuid`);
       return rows[0]?.id != null;
+    },
+    async holdForFlow(cid, aid) {
+      const rows = await tx.execute<{
+        id: string;
+      }>(sql`update contracts.approvals x set mode = 'engine',
+          engine_run_id = null, feedback = ${FLOW_STARTING}, updated_at = now()
+        where x.id = ${aid}::uuid and x.tenant_id = ${tid}::uuid and x.contract_id = ${cid}::uuid
+          and x.status = 'level1' and x.mode = 'machine' and x.engine_run_id is null returning x.id`);
+      return rows.length > 0;
     },
     async readFacts(cid) {
       if (!UUID.test(cid)) return null;
@@ -138,6 +147,31 @@ async function linkPending(tx: Tx, tid: string, i: OutcomeInput, a: Applied): Pr
   if (!by) return;
   const out = await productLinksRepo(tx, tid).link(i.ref, links, by);
   if (out.kind !== "ok") throw new Error(`contracts outcome: product-links ${out.kind}`);
+}
+
+/**
+ * CR-122 · P11 · `OutcomeHandler.launched` cho `contract.submitted` (TRONG tx tạo run, role hub ⇒ đổi sang role gói): lượt đang chờ
+ * flow (`mode engine`, CHƯA có run, khoá HĐ trước như `attach`) ⇒ `engine_run_id = run`, `flow_steps = []` (thẻ dựng bước từ run),
+ * bỏ lý do. CAS `engine_run_id is null` ⇒ mở lại / hai Hub không gắn đè. MỘT câu.
+ */
+export async function attachFlowRun(
+  tx: Tx,
+  i: { tenantId: string; runId: string; ref: string },
+): Promise<boolean> {
+  const tid = i.tenantId;
+  if (!UUID.test(i.ref) || !UUID.test(i.runId)) return false;
+  return withPackRoleInTx(tx, CONTRACTS_PACK, tid, async () => {
+    await approvalWrite(tx); // CR-109: cờ tx-local cho policy ghi HĐ (khoá FOR UPDATE)
+    const rows = await tx.execute<{ id: string }>(sql`with c as (
+        select id, run_id from contracts.contracts
+        where id = ${i.ref}::uuid and tenant_id = ${tid}::uuid and status = 'needs_review' for update)
+      update contracts.approvals x set engine_run_id = ${i.runId}::uuid, flow_steps = null, feedback = null,
+        updated_at = now()
+      from c where x.id = c.run_id and x.tenant_id = ${tid}::uuid and x.contract_id = c.id
+        and x.status = 'level1' and x.mode = 'engine' and x.engine_run_id is null
+      returning x.id`);
+    return rows.length > 0;
+  });
 }
 
 /**

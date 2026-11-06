@@ -18,6 +18,11 @@ export type ContractFlowRepo = {
   readFacts(
     contractId: string,
   ): Promise<{ facts: Record<string, unknown>; startedBy: string | null } | null>;
+  /**
+   * CR-122 · P11 · cờ BẬT, lượt vừa vào `level1` + đã ghi `contract.submitted`: lượt chuyển `mode = 'engine'`, chưa có run, lý do
+   * `FLOW_STARTING` ⇒ máy cũ không còn quyết / khoá HĐ được; bộ điều phối gắn run (`attachFlowRun`). Có điều kiện, chạy lại vô hại.
+   */
+  holdForFlow?(contractId: string, approvalId: string): Promise<boolean>;
   /** Chạy `fn` (với repo trên tx CON) trong SAVEPOINT: lỗi ⇒ rollback về savepoint + log, tx bản ghi chạy tiếp (chỉ khi cờ TẮT = bóng). */
   shadow?(event: string, fn: (repo: ContractFlowRepo) => Promise<unknown>): Promise<void>;
 };
@@ -26,6 +31,8 @@ export type ContractFlowTxRepos = { contractFlow?: ContractFlowRepo | undefined 
 /** Kết quả đọc cờ TRƯỚC tx (role gói không đọc `hub.tenant_flow_settings`): bật ⇒ bắn sự kiện, KHÔNG mở lượt theo đường cũ. */
 export type FlowPrep = { on: boolean; departments: readonly string[] | null };
 export const FLOW_OFF: FlowPrep = { on: false, departments: null };
+/** CR-122 · P11 · lý do của lượt đang chờ bộ điều phối mở flow (thẻ không báo "kẹt" với lý do này). */
+export const FLOW_STARTING = "FLOW_STARTING";
 /** Sự kiện được phát khi cổng đã trả lời (cờ bật HOẶC tắt = bóng); không cổng / lỗi cổng / chưa tới bước ⇒ `FLOW_OFF` ⇒ không phát. */
 export const flowEmits = (p: FlowPrep): boolean => p !== FLOW_OFF;
 /** `prepare` đọc cờ `flowTriggersOn(tenant)` (+ phòng ban người gây sự kiện khi bật). Không ném: lỗi ⇒ tắt (đường cũ). */

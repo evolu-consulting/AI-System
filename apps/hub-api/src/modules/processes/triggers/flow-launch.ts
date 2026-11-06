@@ -4,10 +4,12 @@
 // E1b · flow Thư viện được gán (`defTenantId` null) chạy THẲNG bản xuất bản mới nhất: đọc def + Group theo mã (scope system, 2 câu),
 // đổi mã → id công ty; thiếu ⇒ `FlowLaunchRefused`. Lỗi 4xx của engine ⇒ `FlowLaunchRefused` (không thử lại); lỗi khác ⇒ ném.
 import { eventOf, recordInputsOf } from "@ai/contracts/app-manifest";
+import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
+import { outcomeHandlerFor } from "../adapters/runs/flow-ports";
 import { nodeFeatureMiss } from "../defs/node-features";
 import { libraryFlowDef, type StartDefRow } from "../runs/runs.repo";
 import { type ProcessDepsCore, StartService } from "../runs/start.service";
@@ -50,15 +52,26 @@ async function libraryDefFor(
   return { ...out.def, stages: b.stages };
 }
 
+/** CR-122 · P11 · app gắn run vào bản ghi CÙNG tx tạo run (vd thẻ duyệt HĐ ⇒ `mode engine` + `engine_run_id`, CAS). */
+function onCreatedOf(e: ClaimedEvent, app: string) {
+  const h = outcomeHandlerFor(app, e.event);
+  if (!h?.launched || !UUID.test(e.ref)) return undefined;
+  const launched = h.launched.bind(h);
+  return (tx: Tx, runId: string) =>
+    launched(tx, { tenantId: e.tenant_id, runId, event: e.event, ref: e.ref });
+}
+
 function launchOpts(e: ClaimedEvent, c: CandidateRow, app: string, def: StartDefRow | undefined) {
   // CR-122 · A · input của lượt = bản ghi (`record` = ref) + dữ kiện lúc sự kiện ⇒ node/tool cần `contract_id` tự nhận.
   const recordInputs = recordInputsOf(eventOf(app, e.event), e.ref, e.facts ?? {});
+  const onCreated = onCreatedOf(e, app);
   return {
     flowEvent: {
       eventRowId: e.id,
       companyFlowId: c.companyFlowId,
       recordInputs,
       ...(def ? { def } : {}),
+      ...(onCreated ? { onCreated } : {}),
     },
     ...(UUID.test(e.ref) ? { packRef: { pack: app, recordId: e.ref } } : {}),
   };

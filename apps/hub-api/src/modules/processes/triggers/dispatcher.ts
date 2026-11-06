@@ -41,6 +41,13 @@ const EVENT_INFO = new Map(
   ),
 );
 
+/** CR-122 · P11 · lỗi SQL bọc (drizzle "Failed query") ⇒ kèm nguyên nhân gốc để `flow_events.error` chẩn đoán được. */
+function errText(err: unknown): string {
+  const base = err instanceof Error ? err.message : String(err);
+  const cause = err instanceof Error && err.cause instanceof Error ? err.cause.message : "";
+  return cause ? `${cause} · ${base}` : base;
+}
+
 async function runPlan(
   d: DispatcherDeps,
   e: ClaimedEvent,
@@ -55,7 +62,7 @@ async function runPlan(
       const r = await d.launch(e, c, app);
       ran.push({ companyFlowId: c.companyFlowId, runId: r === "duplicate" ? null : r.runId });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errText(err);
       if (err instanceof FlowLaunchRefused)
         refused.push({ companyFlowId: c.companyFlowId, reason: msg });
       else errors.push(`${c.defKey}: ${msg}`);

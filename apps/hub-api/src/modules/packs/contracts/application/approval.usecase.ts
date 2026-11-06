@@ -22,6 +22,7 @@ import {
   emitFlow,
   FLOW_OFF,
   type FlowPrep,
+  requireFlow,
 } from "./contract-flow.ports";
 
 /** Group duyệt: id theo khoá của tenant (thiếu ⇒ vắng) + Group của user (cache cấu hình, 0 SQL khi nóng). */
@@ -139,13 +140,17 @@ export const flowPrep = (g: ContractFlowGate | undefined, who: PackWho): Promise
   g ? g.prepare(who.tenantId, who.userId) : Promise.resolve(FLOW_OFF);
 
 /** `contract.submitted` CÙNG tx với lúc lượt vào `level1`; `event_id` theo LƯỢT (gửi lại = lượt mới = sự kiện mới). */
-export const emitSubmitted = (
+export const emitSubmitted = async (
   r: ContractFlowTxRepos,
   contractId: string,
   approvalId: string,
   actor: string,
   prep: FlowPrep,
-): Promise<void> => emitFlow(r, prep, EV_SUBMITTED, [contractId, approvalId], actor);
+): Promise<void> => {
+  await emitFlow(r, prep, EV_SUBMITTED, [contractId, approvalId], actor);
+  // CR-122 · P11 · cờ bật ⇒ CÙNG tx: lượt chờ flow (`mode engine` + FLOW_STARTING) — máy cũ không còn duyệt/khoá HĐ được.
+  if (prep.on) await requireFlow(r).holdForFlow?.(contractId, approvalId);
+};
 
 const NOBODY = { userId: "", inLevel1: false, inLevel2: false };
 async function engineViewOf(
