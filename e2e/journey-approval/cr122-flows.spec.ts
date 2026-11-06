@@ -154,10 +154,6 @@ test("G1.2 · HĐ 150 tr: Nếu rẽ nhánh Đúng ⇒ chờ Kế toán; duyệt
   browser,
 }) => {
   test.setTimeout(300_000);
-  test.fixme(
-    true,
-    "Lỗi sản phẩm #4 còn lại: sau #6 + gd0, HĐ đầu (và HĐ g1b gửi lại) vẫn không mở 'Duyệt giá trị lớn' trong 45+90 s, trong khi HĐ ca G2 chạy đúng",
-  );
   // Lượt đầu sau khi vừa gán flow có thể chưa thấy flow mới (cấu hình hub nạp lại định kỳ): thử tối đa 2 HĐ, ghi nhận độ trễ.
   let sent = await submit(browser, "g1");
   const first = await isOpen(sent.emp, BIG)
@@ -179,10 +175,6 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   browser,
 }) => {
   test.setTimeout(420_000);
-  test.fixme(
-    true,
-    "Lỗi sản phẩm #4 còn lại: HĐ ĐẦU TIÊN sau khi gán flow không mở 'Duyệt giá trị lớn' trong 90 s (HĐ A của ca này khi G1.2 bị bỏ qua)",
-  );
   // HĐ A gửi TRƯỚC khi sao chép: dừng ở bước nhánh Đúng (Kế toán)
   const a = await submit(browser, "g2a");
   await expect(isOpen(a.emp, BIG)).toBeVisible({ timeout: 90_000 });
