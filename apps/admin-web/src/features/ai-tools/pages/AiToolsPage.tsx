@@ -13,6 +13,7 @@ import { AiToolsEmpty } from "../components/AiToolsEmpty";
 import { AiToolsTable } from "../components/AiToolsTable";
 import { AiToolsToolbar } from "../components/AiToolsToolbar";
 import { useAiToolsView } from "../hooks/use-ai-tools-view";
+import { useCommandRowActions } from "../hooks/use-command-row-actions";
 import { useWorkflowRowActions } from "../hooks/use-workflow-row-actions";
 
 function loadError(e: Error | null) {
@@ -24,6 +25,7 @@ function AiToolsContent() {
   const { t } = useTranslation();
   const v = useAiToolsView();
   const wf = useWorkflowRowActions();
+  const cmd = useCommandRowActions();
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
@@ -75,6 +77,7 @@ function AiToolsContent() {
           }
           activeId={v.activeId}
           workflowActions={wf}
+          commandActions={cmd}
           onOpen={(x) => v.patch({ tool: x.id })}
         />
         {v.total > 0 ? (
@@ -112,6 +115,7 @@ function AiToolsContent() {
         workflowActions={wf}
       />
       {wf.dialogs}
+      {cmd.dialogs}
     </div>
   );
 }

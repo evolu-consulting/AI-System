@@ -1692,52 +1692,13 @@
     "empty": "No secrets yet. Secrets store Dify app keys so workflows can call them."
   },
   "workflows": {
-    "list": {
-      "title": "Dify workflows (AI tools)",
-      "subtitle": "Shared catalog. Commands and agents both pick workflows from here. Declare first, attach later is fine.",
-      "create": "+ Declare workflow",
-      "search": "Search by name, key, description…"
-    },
-    "guide": {
-      "title": "Declare a workflow",
-      "s1": {
-        "title": "Build it on Dify",
-        "body": "Build the workflow with a Claude session and get the app key"
-      },
-      "s2": {
-        "title": "Declare it here",
-        "body": "Pick the secret, declare inputs, write the description. Unattached is fine"
-      },
-      "s3": {
-        "title": "Attach to a command or agent",
-        "body": "Commands in Evolu Control · agents in Agent Forge"
-      },
-      "dismiss": {
-        "aria": "Hide the guide"
-      }
-    },
-    "filter": {
-      "all": "All",
-      "on": "Enabled",
-      "off": "Disabled",
-      "unattached": "Unattached",
-      "secret": "Secret: {name}",
-      "clearSecret": "Clear secret filter"
-    },
-    "col": {
-      "workflow": "Workflow",
-      "type": "Type",
-      "usedBy": "Used by",
-      "status": "Status",
-      "sideEffect": "Confirm"
-    },
+    "col": {},
     "unattached": "Unattached",
     "menu": {
       "openDify": "Open in Dify",
       "edit": "Edit",
       "enable": "Enable",
       "disable": "Disable",
-      "createCommand": "Create command",
       "delete": "Delete"
     },
     "createCommandFrom": "Create a command from this workflow",
@@ -1859,10 +1820,6 @@
       "deleted": "Deleted {name}",
       "enabled": "Enabled {name}",
       "disabled": "Disabled {name}"
-    },
-    "empty": {
-      "cta": "+ Declare your first workflow",
-      "text": "No workflows yet. Build a workflow on Dify (with a Claude session) → put the app key in a secret → declare inputs and description here."
     },
     "error": {
       "difyAppId": "App ID may only contain letters, digits and - (max 64 characters)",
@@ -2051,54 +2008,12 @@
     "duplicate": {
       "hint": "Copy of /{name}: disabled, no aliases."
     },
-    "list": {
-      "title": "Commands",
-      "subtitle": "Short commands users type in Chat and the Extension; each calls one workflow.",
-      "create": "+ New command",
-      "search": "Search by name, alias, description…",
-      "col": {
-        "name": "Name",
-        "description": "Description",
-        "workflow": "Workflow",
-        "feature": "Feature",
-        "mode": "Mode",
-        "status": "Status",
-        "updated": "Updated"
-      },
-      "filter": {
-        "feature": "Feature",
-        "workflow": "Workflow",
-        "allFeatures": "All features",
-        "allWorkflows": "All workflows"
-      },
-      "enMissing": "EN missing",
-      "toggle": {
-        "aria": "Enable command /{name}"
-      },
-      "workflowOff": "Enable workflow {key} first",
-      "menu": {
-        "edit": "Edit",
-        "duplicate": "Duplicate",
-        "delete": "Delete"
-      },
-      "noFeature": "No feature",
-      "drawer": {
-        "kind": "Command",
-        "aliases": "Aliases"
-      },
-      "what": "commands"
-    },
     "delete": {
       "title": "Delete /{name}?",
       "body": "Commands are a system-wide catalog: deleting /{name} removes it for EVERY company (users of {features} can no longer type it). To remove it from one company only, remove the feature from the command or revoke that company's feature. This can't be undone.",
       "bodyNoFeature": "Commands are a system-wide catalog: deleting /{name} removes it for EVERY company. This can't be undone.",
       "typeToConfirm": "Type {name} to confirm",
       "submit": "Delete command"
-    },
-    "empty": {
-      "cta": "+ Create your first command",
-      "noWorkflow": "Add a workflow first",
-      "text": "No commands yet. A command lets users call a workflow with a short command like /dich."
     },
     "header": {
       "delete": "Delete",
@@ -3331,7 +3246,9 @@
       "label": "Actions for {name}",
       "open": "View details",
       "edit": "Open detail page",
-      "runs": "Run history"
+      "runs": "Run history",
+      "enableCommand": "Turn command on",
+      "disableCommand": "Turn command off"
     },
     "shown": "{shown} of {total} tools",
     "more": "Show more",

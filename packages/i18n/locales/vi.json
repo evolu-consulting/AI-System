@@ -1692,52 +1692,13 @@
     "empty": "Chưa có secret nào. Secret lưu app key Dify để workflow gọi được."
   },
   "workflows": {
-    "list": {
-      "title": "Workflow Dify (tool AI)",
-      "subtitle": "Catalog dùng chung. Command và agent đều chọn workflow từ đây. Khai báo trước, gắn sau cũng được.",
-      "create": "+ Khai báo workflow",
-      "search": "Tìm theo tên, key, mô tả…"
-    },
-    "guide": {
-      "title": "Khai báo workflow",
-      "s1": {
-        "title": "Tạo trên Dify",
-        "body": "Dựng workflow bằng Claude session, lấy app key"
-      },
-      "s2": {
-        "title": "Khai báo ở đây",
-        "body": "Chọn secret, khai báo input, viết mô tả. Chưa gắn cũng được"
-      },
-      "s3": {
-        "title": "Gắn cho command hoặc agent",
-        "body": "Command ở Evolu Control · agent ở Agent Forge"
-      },
-      "dismiss": {
-        "aria": "Ẩn hướng dẫn"
-      }
-    },
-    "filter": {
-      "all": "Tất cả",
-      "on": "Bật",
-      "off": "Tắt",
-      "unattached": "Chưa gắn",
-      "secret": "Secret: {name}",
-      "clearSecret": "Bỏ lọc secret"
-    },
-    "col": {
-      "workflow": "Workflow",
-      "type": "Loại",
-      "usedBy": "Đang được dùng bởi",
-      "status": "Trạng thái",
-      "sideEffect": "Xác nhận"
-    },
+    "col": {},
     "unattached": "Chưa gắn",
     "menu": {
       "openDify": "Mở trong Dify",
       "edit": "Sửa",
       "enable": "Bật",
       "disable": "Tắt",
-      "createCommand": "Tạo command",
       "delete": "Xoá"
     },
     "createCommandFrom": "Tạo command từ workflow này",
@@ -1859,10 +1820,6 @@
       "deleted": "Đã xoá {name}",
       "enabled": "Đã bật {name}",
       "disabled": "Đã tắt {name}"
-    },
-    "empty": {
-      "cta": "+ Khai báo workflow đầu tiên",
-      "text": "Chưa có workflow nào. Tạo workflow trên Dify (bằng Claude session) → dán app key vào secret → khai báo input và mô tả ở đây."
     },
     "error": {
       "difyAppId": "Mã app chỉ gồm chữ, số và dấu - (tối đa 64 ký tự)",
@@ -2051,54 +2008,12 @@
     "duplicate": {
       "hint": "Bản sao của /{name}: đã tắt, không có alias."
     },
-    "list": {
-      "title": "Commands",
-      "subtitle": "Lệnh ngắn người dùng gõ trong Chat và Extension, mỗi lệnh gọi một workflow.",
-      "create": "+ Tạo command",
-      "search": "Tìm theo tên, alias, mô tả…",
-      "col": {
-        "name": "Tên",
-        "description": "Mô tả",
-        "workflow": "Workflow",
-        "feature": "Feature",
-        "mode": "Chế độ",
-        "status": "Trạng thái",
-        "updated": "Cập nhật"
-      },
-      "filter": {
-        "feature": "Feature",
-        "workflow": "Workflow",
-        "allFeatures": "Tất cả feature",
-        "allWorkflows": "Tất cả workflow"
-      },
-      "enMissing": "EN thiếu",
-      "toggle": {
-        "aria": "Bật command /{name}"
-      },
-      "workflowOff": "Bật workflow {key} trước",
-      "menu": {
-        "edit": "Sửa",
-        "duplicate": "Nhân bản",
-        "delete": "Xoá"
-      },
-      "noFeature": "Chưa gắn feature",
-      "drawer": {
-        "kind": "Lệnh",
-        "aliases": "Tên gọi khác"
-      },
-      "what": "lệnh"
-    },
     "delete": {
       "title": "Xoá /{name}?",
       "body": "Command là danh mục chung của cả hệ thống: xoá /{name} sẽ gỡ nó ở MỌI công ty (người dùng các feature {features} không gõ được nữa). Muốn bỏ khỏi một công ty: bỏ feature khỏi command, hoặc thu hồi feature của công ty đó. Thao tác này không hoàn tác được.",
       "bodyNoFeature": "Command là danh mục chung của cả hệ thống: xoá /{name} sẽ gỡ nó ở MỌI công ty. Thao tác này không hoàn tác được.",
       "typeToConfirm": "Gõ {name} để xác nhận",
       "submit": "Xoá command"
-    },
-    "empty": {
-      "cta": "+ Tạo command đầu tiên",
-      "noWorkflow": "Khai báo workflow trước",
-      "text": "Chưa có command nào. Command giúp người dùng gọi workflow bằng một lệnh ngắn như /dich."
     },
     "header": {
       "delete": "Xoá",
@@ -3331,7 +3246,9 @@
       "label": "Thao tác {name}",
       "open": "Xem chi tiết",
       "edit": "Mở trang chi tiết",
-      "runs": "Lịch sử chạy"
+      "runs": "Lịch sử chạy",
+      "enableCommand": "Bật lệnh",
+      "disableCommand": "Tắt lệnh"
     },
     "shown": "{shown} trong {total} công cụ",
     "more": "Xem thêm",

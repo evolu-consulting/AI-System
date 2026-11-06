@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Translate } from "@/lib/format";
 import { useTr } from "@/lib/use-translate";
+import type { CommandRowActions } from "../hooks/use-command-row-actions";
 import type { WorkflowRowActions } from "../hooks/use-workflow-row-actions";
 import { type AiToolKind, idTail, initial, moreCompanies } from "../lib/ai-tools";
 
@@ -66,10 +67,12 @@ function RowMenu({
   tool,
   onOpen,
   actions,
+  commandActions,
 }: {
   tool: AiTool;
   onOpen: (t: AiTool) => void;
   actions: WorkflowRowActions;
+  commandActions: CommandRowActions;
 }) {
   const { t } = useTranslation();
   const tr = useTr();
@@ -117,6 +120,11 @@ function RowMenu({
             </Link>
           </DropdownMenuItem>
         ) : null}
+        {tool.kind === "command" ? (
+          <DropdownMenuItem onSelect={() => void commandActions.toggleById(tool.id, !tool.enabled)}>
+            {t(tool.enabled ? "aiTools.menu.disableCommand" : "aiTools.menu.enableCommand")}
+          </DropdownMenuItem>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -132,13 +140,14 @@ type Props = {
   activeId: string | undefined;
   onOpen: (t: AiTool) => void;
   workflowActions: WorkflowRowActions;
+  commandActions: CommandRowActions;
 };
 
 export function AiToolsTable(p: Props) {
   const active = p.rows?.find((r) => r.id === p.activeId);
   const { t } = useTranslation();
   const tr = useTr();
-  const { onOpen, workflowActions } = p;
+  const { onOpen, workflowActions, commandActions } = p;
   const columns = useMemo<Column<AiTool>[]>(
     () => [
       {
@@ -190,10 +199,17 @@ export function AiToolsTable(p: Props) {
         id: "actions",
         header: <span className="sr-only">{t("aiTools.col.actions")}</span>,
         className: "w-12",
-        cell: (r) => <RowMenu tool={r} onOpen={onOpen} actions={workflowActions} />,
+        cell: (r) => (
+          <RowMenu
+            tool={r}
+            onOpen={onOpen}
+            actions={workflowActions}
+            commandActions={commandActions}
+          />
+        ),
       },
     ],
-    [t, tr, onOpen, workflowActions],
+    [t, tr, onOpen, workflowActions, commandActions],
   );
   return (
     <DataTable
