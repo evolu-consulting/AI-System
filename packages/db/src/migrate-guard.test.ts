@@ -60,10 +60,10 @@ describe("fix-migrate-guard · journalDrift", () => {
     const T_HUB = "__drizzle_migrations_hub";
     const tags = ["0029_k1_kh", "0030_h4b2_models", "0068_process_library"];
     const olds = ACCEPTED_EDITS.filter((a) => a.table === T_HUB && tags.includes(a.tag));
-    expect(olds.map((a) => a.tag).sort()).toEqual([...tags].sort());
-    // DB prod: toàn bộ journal đã áp, riêng 3 tag mang hash cũ.
+    expect([...new Set(olds.map((a) => a.tag))].sort()).toEqual([...tags].sort());
+    // DB prod sohoptac2 (đọc 2026-11-06): toàn bộ journal đã áp, riêng 3 tag mang hash bản trước fd7385677 (mục cuối mỗi tag).
     const rows = journal.map((e) => ({
-      hash: olds.find((a) => a.tag === e.tag)?.dbHash ?? e.hash,
+      hash: olds.findLast((a) => a.tag === e.tag)?.dbHash ?? e.hash,
       created_at: e.when,
     }));
     expect(journalDrift(T_HUB, journal, rows)).toEqual([]);
