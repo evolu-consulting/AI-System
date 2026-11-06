@@ -9,7 +9,7 @@ Luật: ≤ 4 agent/đợt (D1), lát ≤ 60 phút (D2), Sonnet viết / Opus ch
 |---|---|---|---|
 | 0105 | 1805400000000 | E1 | `hub.flow_events` (hàng đợi sự kiện, unique `(tenant_id, event_id)`, RLS) |
 | 0106 | 1805500000000 | E1 | `hub.company_flows` (+ cột `trigger`/`source` của FlowDef, index chọn flow khớp, RLS) |
-| 0107 | 1805600000000 | M1 | backfill khe → `FlowDef` + `company_flows` (theo tập, chạy lại vô hại) |
+| 0107 | — | bỏ trống | M1 đổi sang 0111 (0109/0110 đã áp trên máy khác sẽ bỏ qua `when` nhỏ hơn) |
 | 0108 | 1805700000000 | R1 | gỡ bảng/view khe cũ (bản phát hành SAU, khi 0 lượt cũ mở) |
 | 0109 | 1805800000000 | dự phòng | lát nào phát sinh (xin điều phối, không tự lấy) |
 
@@ -29,7 +29,7 @@ Cờ: `FLOW_TRIGGERS` theo công ty (tắt = bóng: đường khe cũ mở lư�
 | N1 node module (FR-25) + nới CHECK xuất bản | 2 | Opus medium (agent engine/contract) | thường · nhanh | F0, E1b | 0110 | — |
 | N2 kiểm nối + AI gợi ý cầu nối (FR-26) | 2 | Sonnet high (hub: kiểm IO + endpoint gợi ý qua Agent Hub) | thường · nhanh | N1 | — | — |
 | U2 danh sách công ty | 2 | Sonnet | thường · nhanh | E1, U1, N1, N2 | — | — |
-| M1 backfill + bóng | 2 | Sonnet high + Opus low soát (dữ liệu khách) | cao (migration) · đầy đủ | E1, A1, A2 | 0107 | `FLOW_TRIGGERS` |
+| M1 backfill + bóng | 2 | Sonnet high + Opus low soát (dữ liệu khách) | cao (migration) · đầy đủ | E1, A1, A2 | 0111 | `FLOW_TRIGGERS` |
 | Q1 e2e G1–G3 | 3 | Sonnet (qc, một agent) | — | U1+U2 đóng băng, M1, E3 | — | bật Demo |
 | R1 gỡ cũ | 3 | Sonnet (+ Opus low soát) | cao (xoá bảng) · đầy đủ | Q1 xanh, NiTi bật, 0 lượt cũ mở, người dùng xác nhận | 0108 | gỡ cờ |
 
@@ -75,7 +75,7 @@ Cờ: `FLOW_TRIGGERS` theo công ty (tắt = bóng: đường khe cũ mở lư�
 - **Perf:** không. **Sau U2: ĐÓNG BĂNG UI (U1+U2).**
 
 ### M1 · backfill + cờ bóng (Sonnet high + Opus low soát)
-- **FILE:** `packages/db/migrations-hub/0107_*.sql` + journal; `tools/scripts/src/` (mô phỏng 4 HĐ mẫu mỗi công ty, thay `check-app-slots.ts` bằng `check-app-events.ts`); `apps/hub-api/src/modules/ops/adapters/checks/flow-coverage.check.ts` (sự kiện bắt buộc × công ty thiếu flow không điều kiện = 0; so lệch bóng); `tools/scripts/src/seed-niti.ts`, `rename-process-defs.ts`; `deploy/prod-sohoptac2/preflight-cr121.sql` (kiểm bổ sung).
+- **FILE:** `packages/db/migrations-hub/0111_*.sql` + journal; `tools/scripts/src/` (mô phỏng 4 HĐ mẫu mỗi công ty, thay `check-app-slots.ts` bằng `check-app-events.ts`); `apps/hub-api/src/modules/ops/adapters/checks/flow-coverage.check.ts` (sự kiện bắt buộc × công ty thiếu flow không điều kiện = 0; so lệch bóng); `tools/scripts/src/seed-niti.ts`, `rename-process-defs.ts`; `deploy/prod-sohoptac2/preflight-cr121.sql` (kiểm bổ sung).
 - **Xong khi:** int backfill (chạy hai lần vô hại, "công ty cũ thấy dữ liệu"); mô phỏng đường đi mới = cũ; 28 run cũ không đổi; Opus low soát diff dữ liệu khách. **Perf:** migration theo tập, một câu mỗi bảng.
 
 ### Q1 · e2e G1–G3 (Sonnet, một agent qc)
@@ -171,7 +171,7 @@ Kiểm: ~90 mục đường dẫn trong cột FILE (kể cả thư mục và m�
 - `apps/workspace-web/src/features/settings/components/FlowRules.tsx`, `apps/RoutingEditor.tsx` — (không có trong bảng FILE) — gỡ theo FR-23.
 
 ### M1
-- `packages/db/migrations-hub/0107_*.sql` (mới) + `meta/_journal.json` — backfill theo tập, when 1805600000000.
+- `packages/db/migrations-hub/0111_*.sql` (mới) + `meta/_journal.json` — backfill theo tập, when 1806100000000.
 - `tools/scripts/src/check-app-slots.ts` — thay bằng `check-app-events.ts` (mới); root `package.json` dòng 116 `check:app-slots`.
 - `tools/scripts/src/seed-niti.ts`, `rename-process-defs.ts` — seed/đổi tên; bật đủ cấu hình (D7).
 - `apps/hub-api/src/modules/ops/adapters/checks/flow-coverage.check.ts` — sự kiện bắt buộc × công ty thiếu flow không điều kiện = 0; so lệch bóng.

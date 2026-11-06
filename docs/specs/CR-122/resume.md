@@ -13,6 +13,6 @@ Luật cho brief agent: `docs/specs/CR-122/agent-rules.txt`. Tasks, bản đồ 
 | A2 | cr122-a2-community | 1 | community bắn post.created/partner.join_requested/report.created (decides), tương tự A1. Cần 0109. |
 
 ## Sau đó
-U2 (agent UI: bật Duyệt/Ký số/fact trong Nếu, next_step, trigger/Kết thúc thành node trên canvas, danh sách flow công ty; chụp + soát căn mép một lần) · E3 ký số · M1 backfill 0107 (+ STRICT_DEFAULT_FLOW=true) · Q1 e2e G1–G3 trên Demo prod (cần người dùng đăng nhập + xác nhận deploy) · R1 gỡ cũ 0108 (người dùng xác nhận).
+U2 (agent UI: bật Duyệt/Ký số/fact trong Nếu, next_step, trigger/Kết thúc thành node trên canvas, danh sách flow công ty; chụp + soát căn mép một lần) · E3 ký số · M1 backfill 0111 (+ STRICT_DEFAULT_FLOW=true) · Q1 e2e G1–G3 trên Demo prod (cần người dùng đăng nhập + xác nhận deploy) · R1 gỡ cũ 0108 (người dùng xác nhận).
 
 Cách nối lại: mỗi lát mở agent mới trỏ vào worktree, bảo nó `git -C <wt> status` và `diff` để xem phần dở, rồi làm tiếp theo bảng trên. Gộp xong thì `git reset -q; bun run slice:merge <lát> --no-test`, `test:lock:verify`, push github, rồi `slice:rm`.

@@ -95,7 +95,7 @@ WITH todo AS (
     AND hub.m1_can_finish(d.stages) AND hub.m1_can_finish(rl.stages)),
 ins AS (
   INSERT INTO hub.process_def_releases (def_id, rel_version, name, stages, slot_body, note)
-  SELECT t.id, t.next_v, t.rname, hub.m1_finish(t.rstages, t.outcome, t.label), t.rbody, 'CR-122 M1 backfill (hub 0107)'
+  SELECT t.id, t.next_v, t.rname, hub.m1_finish(t.rstages, t.outcome, t.label), t.rbody, 'CR-122 M1 backfill (hub 0111)'
   FROM todo t
   RETURNING def_id)
 UPDATE hub.process_defs d SET trigger = jsonb_build_object('event', t.event), app = t.app,
@@ -124,7 +124,7 @@ DO $m1$
 BEGIN
   IF to_regclass('admin.groups') IS NULL OR to_regclass('admin.feature_entitlements') IS NULL
      OR to_regclass('admin.tenants') IS NULL OR to_regclass('admin.features') IS NULL THEN
-    RAISE NOTICE 'hub 0107: bỏ qua company_flows (chưa có schema admin)';
+    RAISE NOTICE 'hub 0111: bỏ qua company_flows (chưa có schema admin)';
     RETURN;
   END IF;
 
@@ -242,7 +242,7 @@ BEGIN
   WHERE w.replaced_by_flow IS NOT NULL AND cf.tenant_id = w.tenant_id AND cf.flow_id = w.flow_id
     AND cf.replaced_by IS NULL AND cf.off_reason = 'replaced' AND NOT cf.enabled;
 
-  RAISE NOTICE 'hub 0107: % luật điều kiện không chuyển được (đường khe cũ vẫn chạy), % dòng company_flows',
+  RAISE NOTICE 'hub 0111: % luật điều kiện không chuyển được (đường khe cũ vẫn chạy), % dòng company_flows',
     (SELECT count(*) FROM m1_rules WHERE NOT is_default AND wh IS NULL), (SELECT count(*) FROM hub.company_flows);
 END $m1$;
 --> statement-breakpoint
@@ -251,7 +251,7 @@ DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM hub.process_defs WHERE key = 'hd-mac-dinh' AND tenant_id IS NULL AND deleted_at IS NULL
              AND trigger IS NULL) THEN
-    RAISE WARNING 'hub 0107: flow mặc định hd-mac-dinh chưa có trigger (stages đầy hoặc thiếu release) — Hub báo ops';
+    RAISE WARNING 'hub 0111: flow mặc định hd-mac-dinh chưa có trigger (stages đầy hoặc thiếu release) — Hub báo ops';
   END IF;
 END $$;
 --> statement-breakpoint

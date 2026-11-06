@@ -1,7 +1,7 @@
 // CR-122 · ADR-0038 · FLOW2-FR-17 · `bun run check:app-events` (thay dần `check:app-slots`, R1 gỡ cái cũ): mọi app trong `APP_MANIFESTS`
 // khai ≥ 1 sự kiện đúng hợp đồng `AppEventDecl`; sự kiện `required` có flow mặc định trong seed Thư viện (migration hub).
 // Luật ở `appEventIssues` (unit: events.rules.test.ts). BẪY: flow mặc định hiện chỉ là def khe cũ (chưa có `trigger`) ⇒ thiếu/không
-// có trong seed mới CẢNH BÁO; M1 (0107 backfill FlowDef) bật `STRICT_DEFAULT_FLOW = true` để đỏ.
+// có trong seed mới CẢNH BÁO; M1 (0111 backfill FlowDef) bật `STRICT_DEFAULT_FLOW = true` để đỏ.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -12,13 +12,13 @@ import {
   formatEventIssue,
 } from "@ai/contracts/app-manifest";
 
-/** M1 (hub 0107) đã đổi flow mặc định thành FlowDef có `trigger` ⇒ sự kiện `required` thiếu flow mặc định là LỖI. */
+/** M1 (hub 0111) đã đổi flow mặc định thành FlowDef có `trigger` ⇒ sự kiện `required` thiếu flow mặc định là LỖI. */
 const STRICT_DEFAULT_FLOW = true;
 const MIGRATIONS_HUB = join(import.meta.dir, "../../../packages/db/migrations-hub");
 
 /**
  * Khoá flow mặc định (`defaultFlowKey`) xuất hiện dạng chuỗi SQL `'<khoá>'` trong ít nhất một migration hub MÀ CŨNG nói tới `trigger`
- * (seed khe cũ 0069 chỉ có khoá, không có trigger ⇒ không đủ; 0107 đặt trigger lên chính flow đó).
+ * (seed khe cũ 0069 chỉ có khoá, không có trigger ⇒ không đủ; 0111 đặt trigger lên chính flow đó).
  */
 export function seededKeysIn(
   sqlTexts: readonly string[],
