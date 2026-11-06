@@ -47,3 +47,24 @@ Chưa quét Grep đầy đủ; các cụm "đề xuất", "nếu cần", "c19 x�
 
 ## Chưa kiểm
 Artboard `.dc.html` (nhãn); BA/INDEX/CODEMAP; symbol code cũ ngoài `defs.routes.ts`; trần kích thước (spec ~16 KB > 12 KB: Thấp, cắt văn xuôi).
+
+---
+## Lần 2 (2026-11-06) — Kết luận: READY
+Phạm vi: diff e741d245..70d66e9f của spec.md/tasks.md (chỉ đối chiếu lỗ hổng Chặn/Cao lần 1 + Q8 vai tenant_admin + Q11 canvas mặc định). Chưa đọc lại toàn bộ.
+
+| # lần 1 | Kết quả | Bằng chứng |
+|---|---|---|
+| 1 Chặn endpoint clone | Đóng | spec R9 dòng 134: `POST /tenants/:tid/process-defs/:id/clone-for-company`, res `{def_id,source_template_id,rel_version,created}`; tasks c9: 201/200/422 `NOT_LIBRARY_DEF`,`SLOT_GONE` |
+| 2 Chặn vai tenant_admin | Đóng | Q8 (spec:24) + R9 dòng 135 `GET /tenants/:tid/process-library/:id`: tenant lạ 404, member 403, kiểm ở service, int chặn chéo tenant |
+| 3 Rủi ro | Đóng | tasks cột Rủi ro: c9/c18/c19/c20/c21 `cao`; c16 ghi thường kèm endpoint role |
+| 4,5 Migration | Đóng | tasks: 0037/0076/0103 (hub chỉ nếu cần), giao `when` trước |
+| 6 c15‖c17 | Đóng | "c15 → c17 (KHÔNG song song)" |
+| 7 File cụ thể | Đóng | mục "Phạm vi file + xong khi + perf" từng lát có đường dẫn |
+| 8,10 Xong khi/perf | Đóng | mỗi lát có "Xong khi" và "Perf" |
+| 9 D2 | Đóng | quy tắc 2 = cảnh báo (tasks c19, Q10) |
+| 11 e2e D5 | Đóng | c11 (D5 + tenant_admin Sao chép/Gán), c14 (5 tab), c16 (Dify) |
+| 12 Cách ly | Đóng | R9 dòng 136 c16 platform_admin only/403; c20 `/pack/me` qua tenant phiên + int chéo tenant |
+| 13 R8 | Đóng | spec:121 chỉ đổi luật trỏ đúng def nguồn; 14 chuỗi toast: spec:122 |
+| Q11 mới | Đạt | spec:126-128 mặc định canvas, khoá `processView`, lỗi ⇒ canvas; `view-mode.ts` c11 tạo, c15/c17 dùng lại |
+
+Thấp còn lại: spec.md ~24 KB vượt trần 12 KB (cắt văn xuôi); artboard Tpl-Detail/Tpl-Editor có thể vẽ danh sách bước làm mặc định ⇒ Q11 thắng, c15/c17 đối chiếu khi code; quét từ mơ hồ đầy đủ chưa chạy lại (đã chỉ đối chiếu diff).
