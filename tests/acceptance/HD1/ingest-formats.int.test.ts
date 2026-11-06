@@ -1,7 +1,7 @@
 // CR-122 p9 · FLOW2-FR-27 · route multipart thật: 3 ảnh ⇒ 1 PDF lưu FileBox; > 50 ảnh ⇒ 422 FILE_TOO_MANY_PAGES không lưu gì;
 // HEIC ⇒ 415 báo đúng tên định dạng. FileBox giả FB1, DB test của ô (khuôn `upload.int.test.ts`). Ảnh PNG tự tạo.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { zlibSync } from "fflate";
+import { deflateSync as zlibSync } from "node:zlib";
 import { arrange, CBASE, type CtxN1, P, startHd1 } from "./_support/hd1";
 
 let c: CtxN1;

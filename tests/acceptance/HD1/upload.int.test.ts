@@ -190,23 +190,22 @@ describe("HD-AC10 · loại tệp (magic bytes) và kích thước", () => {
       await c.sql`select data->>'mime' as mime from contracts.contract_events order by id`;
     expect(evs.map((e) => e.mime)).toEqual(["application/pdf", "image/jpeg"]);
   });
-  it("D-09 · zip KHÔNG phải DOCX (thiếu word/document.xml, vd xlsx) đặt tên .docx ⇒ 415", async () => {
+  // CR-122 p9: xlsx/pptx/odt nay là "office" (lấy chữ) — chỉ zip không có phần nhận dạng nào mới bị 415.
+  it("D-09 · zip KHÔNG phải DOCX/office (không có phần nhận dạng) đặt tên .docx ⇒ 415", async () => {
     await arrange(c);
     const bytes = buildZip([
       { name: "[Content_Types].xml", data: u8("<Types/>") },
-      { name: "xl/workbook.xml", data: u8("<workbook/>") },
+      { name: "misc/data.xml", data: u8("<x/>") },
     ]);
     const r = await upload(c, P.hoa, { bytes, name: "bang.docx", type: DOCX_MIME });
     expect([r.status, r.json?.error?.code]).toEqual([415, "FILE_TYPE"]);
     await expectNothingWritten();
   });
-  it("D-09 · ngoài phạm vi ⇒ 415: GIF, WebP, HEIC, HTML, tệp rỗng", async () => {
+  // CR-122 p9: GIF/WebP (ảnh model nhận) và HTML (tệp chữ) nay được nhận; còn HEIC và tệp rỗng vẫn bị từ chối.
+  it("D-09 · ngoài phạm vi ⇒ 415: HEIC, tệp rỗng", async () => {
     await arrange(c);
     const cases: [string, Uint8Array][] = [
-      ["a.gif", u8("GIF89a....")],
-      ["a.webp", u8("RIFF\0\0\0\0WEBPVP8 ")],
       ["a.heic", new Uint8Array([0, 0, 0, 0x18, ...u8("ftypheic")])],
-      ["a.html", u8("<html></html>")],
       ["a.pdf", new Uint8Array(0)],
     ];
     for (const [name, bytes] of cases) {
