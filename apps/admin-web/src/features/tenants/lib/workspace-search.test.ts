@@ -45,6 +45,10 @@ describe("CR-121 c16 · ?tab=workflow-tools cũ", () => {
       to: "/ai-tools",
       notice: "company-tools",
     });
+    expect(legacyTabRedirect(validateWorkspaceSearch(s))).toEqual({
+      to: "/ai-tools",
+      notice: "company-tools",
+    }); // chạy lại trên kết quả
     expect(legacyTabRedirect(validateWorkspaceSearch({ tab: "members" }))).toBeNull();
     expect(legacyTabRedirect(validateWorkspaceSearch({}))).toBeNull();
   });

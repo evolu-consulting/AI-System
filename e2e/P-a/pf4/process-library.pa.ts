@@ -43,8 +43,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     // Có nhiều quy trình mặc định của khe (HĐ + 3 khe DLC từ hub 0070) ⇒ chỉ kiểm hàng mặc định HĐ có mặt, không kiểm vị trí đầu.
     await expect(base).toBeVisible();
     await expect(p.getByRole("combobox", { name: "Tenant" })).toHaveCount(0);
-    await expect(p.getByText("Nhân bản → chỉnh → xuất bản → gán cho tenant")).toBeVisible();
-    await expect(p.getByRole("button", { name: "Tạo từ quy trình mặc định" })).toBeVisible();
+    await expect(p.getByRole("button", { name: "Tạo quy trình" })).toBeVisible();
 
     // Nhân bản ⇒ hộp thoại nhập TÊN (ký hiệu tự sinh) ⇒ mở nháp mới
     await base.getByRole("button", { name: "Nhân bản" }).click();

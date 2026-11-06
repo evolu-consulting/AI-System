@@ -21,8 +21,21 @@ test("CR-121 c17 · thư viện chỉ xem ⇒ Sao chép ⇒ bản riêng sửa �
         )[0]?.id as string,
     );
     expect(libId).toBeTruthy();
+    // điều kiện của Hub cho phép xem thư viện: có bản phát hành đúng published_version (chẩn đoán rõ nếu thiếu dữ liệu mồi)
+    const rel = await withSql(
+      async (sql) =>
+        (
+          await sql`select count(*)::int as n from hub.process_def_releases r join hub.process_defs d on d.id = r.def_id and r.rel_version = d.published_version where d.id = ${libId}`
+        )[0]?.n as number,
+    );
+    expect({ libId, rel }).toEqual({ libId, rel: 1 });
+    // pf4/editor-steps (cùng job) có thể đã sao chép thư viện này cho Acme: đưa về trạng thái "chưa sao chép" để kiểm sao chép LẦN ĐẦU
+    await withSql(
+      (sql) =>
+        sql`update hub.process_defs set deleted_at = now() where tenant_id = ${ACME} and source_template_id = ${libId} and deleted_at is null`,
+    );
     await adminLogin(p);
-    await p.goto(`${ADMIN_URL}/processes/${libId}`);
+    await p.goto(`${ADMIN_URL}/processes/${libId}?company=${ACME}`);
 
     // chỉ xem: nói rõ, có nút Sao chép, KHÔNG có sửa/xuất bản; sơ đồ là chế độ mặc định, chuyển được sang danh sách
     const view = p.getByTestId("library-readonly");
@@ -53,7 +66,7 @@ test("CR-121 c17 · thư viện chỉ xem ⇒ Sao chép ⇒ bản riêng sửa �
     expect(again.json.created).toBe(false);
     expect(p.url()).toContain(again.json.def_id);
     // mở lại thư viện: thay nút Sao chép bằng "Mở bản riêng"
-    await p.goto(`${ADMIN_URL}/processes/${libId}`);
+    await p.goto(`${ADMIN_URL}/processes/${libId}?company=${ACME}`);
     await expect(p.getByTestId("library-open-copy")).toBeVisible();
     await expect(p.getByTestId("library-copy")).toHaveCount(0);
   } finally {

@@ -49,6 +49,7 @@ export default defineConfig({
     "**/cr121-editor*.spec.ts",
     "**/cr121-d-journey*.spec.ts",
     "**/cr121-d6b*.spec.ts",
+    "**/cr121-c-flows*.spec.ts",
   ],
   workers: 1,
   fullyParallel: false,

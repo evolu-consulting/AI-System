@@ -22,7 +22,7 @@ test("tenant_admin mở công ty mình: đúng 5 tab theo thứ tự, không cò
   await expect(page).toHaveURL(/view=groups/);
   // Quota nằm trong Cài đặt
   await page.getByRole("tab", { name: "Cài đặt" }).click();
-  await expect(page.getByRole("heading", { name: "Quota" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Quota", exact: true })).toBeVisible();
   await expect(page.getByTestId("settings-lock")).toHaveCount(0); // khoá công ty chỉ platform_admin
 });
 
@@ -35,11 +35,11 @@ test("platform_admin: cùng 5 tab; URL cũ ?tab=groups ⇒ Thành viên › Nhó
   await expect(page.getByTestId("members-view-groups")).toHaveAttribute("aria-pressed", "true");
   await page.goto(`/tenants/${TENANT_ID.acme}?tab=quota`);
   await expect(page.getByRole("tab", { name: "Cài đặt", selected: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Quota" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Quota", exact: true })).toBeVisible();
   await page.goto(`/tenants/${TENANT_ID.acme}?tab=features`);
   await expect(page.getByRole("tab", { name: "Ứng dụng", selected: true })).toBeVisible();
   await expect(page.getByTestId("settings-lock")).toHaveCount(0);
   await page.getByRole("tab", { name: "Cài đặt" }).click();
   await expect(page.getByTestId("settings-lock")).toBeVisible(); // Khoá công ty nằm ở Cài đặt
-  await expect(page.getByTestId("tenant-summary")).toContainText("việc có quy trình");
+  // dòng tóm tắt "x/y việc có quy trình" cần Hub (stack gốc không có) ⇒ kiểm ở hành trình journey-approval/cr121-c-flows.spec.ts
 });

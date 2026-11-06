@@ -3,7 +3,7 @@
 // tenant_admin: bản thư viện chỉ xem có tab "Lượt chạy"; bản riêng sau Sao chép ghi "Lưu là áp dụng ngay…" và không có Xuất bản.
 import { expect, type Page, test } from "@playwright/test";
 import { seedAdmin } from "../../support/helpers";
-import { ADMIN_URL, adminLogin, settle, withSql } from "../_pa-support";
+import { ACME, ADMIN_URL, adminLogin, settle, withSql } from "../_pa-support";
 
 test.afterEach(() => settle());
 
@@ -60,7 +60,7 @@ test("CR-121 c17b · tenant_admin: thư viện chỉ xem có tab Lượt chạy;
   try {
     const id = await libraryId();
     await adminLogin(p);
-    await p.goto(`${ADMIN_URL}/processes/${id}`);
+    await p.goto(`${ADMIN_URL}/processes/${id}?company=${ACME}`);
     await expect(p.getByRole("tab", { name: "Lượt chạy" })).toBeVisible();
     await p.getByRole("tab", { name: "Lượt chạy" }).click();
     await p.getByRole("tab", { name: "Các bước" }).click();

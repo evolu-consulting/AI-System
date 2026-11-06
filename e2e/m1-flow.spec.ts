@@ -13,7 +13,7 @@ test("ADM-FR-01 · M1-AC08 · admin seed → Tenants → tạo tenant → mật 
   await loginToShell(page, "platform", admin.username, admin.password);
   const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
   await expect(nav).toBeVisible();
-  await nav.getByRole("link", { name: "CÔNG TY", exact: true }).click();
+  await nav.getByRole("link", { name: "Công ty", exact: true }).click();
   await page.getByRole("link", { name: "Thêm công ty" }).click();
 
   await page.getByRole("textbox", { name: "Mã công ty" }).fill("umbrella");

@@ -68,6 +68,8 @@ export function validateWorkspaceSearch(s: Record<string, unknown>): WorkspaceSe
     view: oneOf(s.view, MEMBER_VIEWS) ?? old?.view,
     mode: oneOf(s.mode, ACCESS_MODES) ?? oldAccessMode,
     at: old?.at ?? (s.at === "quota" ? "quota" : undefined),
-    legacy: s.tab === "workflow-tools" ? "workflow-tools" : undefined,
+    // validateSearch của router chạy lại trên kết quả của chính nó (đã mất `tab`) ⇒ giữ cả `legacy` đã đặt.
+    legacy:
+      s.tab === "workflow-tools" || s.legacy === "workflow-tools" ? "workflow-tools" : undefined,
   };
 }

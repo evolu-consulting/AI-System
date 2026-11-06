@@ -26,7 +26,7 @@ test.beforeAll(async () => {
     password: seedAdmin().password,
   });
   const t = await createIsolatedTenant(ADMIN, s, "c16");
-  company = { id: (t.json as { id: string }).id, name: t.name };
+  company = { id: (t.json as { tenant: { id: string } }).tenant.id, name: t.name };
   await withOwner(async (sql) => {
     const [sec] = await sql<
       { id: string }[]

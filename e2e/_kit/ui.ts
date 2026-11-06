@@ -17,18 +17,26 @@ export async function loginPlatformAdminUi(
   await expect(page.getByRole("heading", { level: 1, name: "Tổng quan" })).toBeVisible();
 }
 
-/** Từ ai-admin đã đăng nhập: mở công ty `tenantName` ở thanh bên rồi tab "Ứng dụng & Gói". */
-export async function openTenantAppsTab(page: Page, tenantName: string | RegExp): Promise<void> {
+/**
+ * CR-121 c10 · từ ai-admin đã đăng nhập: mở trang chi tiết công ty `tenantName` đi đường người dùng đi
+ * (menu "Công ty" → tìm → bấm hàng → "Mở trang chi tiết"); thanh bên không còn danh sách công ty.
+ */
+export async function openTenantPage(page: Page, tenantName: string | RegExp): Promise<void> {
   const name = typeof tenantName === "string" ? new RegExp(tenantName) : tenantName;
-  await page
-    .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("list", { name: "Danh sách công ty" })
-    .getByRole("link", { name })
-    .click();
+  await page.goto(`${new URL(page.url()).origin}/tenants`); // = menu "Công ty"
+  await expect(page.getByRole("table", { name: "Công ty" })).toBeVisible();
+  const q = typeof tenantName === "string" ? tenantName : tenantName.source.replace(/\\/g, "");
+  await page.getByRole("searchbox").first().fill(q);
+  await page.getByRole("row", { name }).first().click();
+  await page.getByRole("dialog").getByRole("link", { name: "Mở trang chi tiết" }).click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
-  await page.getByRole("tab", { name: "Ứng dụng" }).click();
 }
 
+/** Như `openTenantPage` rồi sang tab "Ứng dụng". */
+export async function openTenantAppsTab(page: Page, tenantName: string | RegExp): Promise<void> {
+  await openTenantPage(page, tenantName);
+  await page.getByRole("tab", { name: "Ứng dụng" }).click();
+}
 /**
  * CR-121 c11 · mở công ty › tab "Quy trình" rồi ngăn chi tiết của việc `slot` (nơi DUY NHẤT gán quy trình).
  * Trả hộp `admin-assigned-<slot>` của ngăn Gán (platform_admin) để dùng với `assignProcessUi`.

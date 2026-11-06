@@ -117,6 +117,7 @@ test("CR-121 · c13 · /apps/contracts?tab=processes cũ ⇒ Tổng quan + thôn
   page,
 }) => {
   await fakePacks(page, TENANT_ID.acme);
+  await sync("contracts", true, "read"); // có công ty đang dùng app ⇒ thông báo có link tới Quy trình của công ty đó
   await loginAdmin(page);
   await page.goto("/apps/contracts?tab=processes");
   const note = page.getByTestId("app-assign-note");
@@ -139,6 +140,7 @@ test("CR-118 · F3 · Xem trước acme: đối tác không thấy nhóm Sổ H�
   page,
 }) => {
   await fakePacks(page, TENANT_ID.acme);
+  await sync("contracts", true, "write"); // acme dùng Sổ Hợp Tác ở mức Sửa (điều kiện của phép xem trước)
   await loginAdmin(page);
   await page.goto("/apps/contracts?tab=preview");
   await expect(page.getByText("Chọn một công ty để xem họ thấy gì.")).toBeVisible();

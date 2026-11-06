@@ -5,9 +5,9 @@
 // 2) tenant_admin công ty đó: Xem bản thư viện chỉ xem ⇒ "Sao chép cho công ty này" (tự gán thay bản cũ) ⇒ "Mở trình sửa" ⇒ Đổi về bản cũ.
 // Cần stack hành trình (playwright.journey.config.ts: JA_* env, quy trình thư viện `e2e-mua-kd`). VIẾT, CHƯA CHẠY (luật 5d; điều phối chạy cuối đợt).
 import { expect, test } from "@playwright/test";
-import { apiLogin, cloneAndPublishFlow, createIsolatedTenant, type Session } from "./_kit/api";
-import { loginPlatformAdminUi } from "./_kit/ui";
-import { uniqueSuffix } from "./_kit/unique";
+import { apiLogin, cloneAndPublishFlow, createIsolatedTenant, type Session } from "../_kit/api";
+import { loginPlatformAdminUi } from "../_kit/ui";
+import { uniqueSuffix } from "../_kit/unique";
 
 const need = (n: string): string => {
   const v = process.env[n];
@@ -25,6 +25,12 @@ let platform: Session;
 
 test.describe.configure({ mode: "serial" });
 
+/** Ngăn chi tiết của việc đã mở (sau Esc có thể đã đóng) thì giữ nguyên, chưa mở thì bấm tên việc. */
+async function openJob(page: import("@playwright/test").Page): Promise<void> {
+  if (!(await page.getByTestId("flows-view-canvas").isVisible()))
+    await page.getByTestId(`flows-open-${SLOT}`).click();
+}
+
 test.beforeAll(async () => {
   platform = await apiLogin({
     base: API,
@@ -33,17 +39,13 @@ test.beforeAll(async () => {
     password: need("SEED_ADMIN_PASSWORD"),
   });
   const t = await createIsolatedTenant(API, platform, "c11");
-  const j = t.json as {
-    id: string;
-    first_admin?: { temp_password?: string };
-    temp_password?: string;
-  };
+  const j = t.json as { tenant: { id: string }; temp_password?: string };
   company = {
-    id: j.id,
+    id: j.tenant.id,
     key: t.key,
     name: t.name,
     adminUser: `${t.key}-admin`,
-    adminPw: j.first_admin?.temp_password ?? j.temp_password ?? "",
+    adminPw: j.temp_password ?? "",
   };
   // Quy trình thư viện RIÊNG của spec (nhân bản + xuất bản), không dùng/ẩn dữ liệu mẫu.
   await cloneAndPublishFlow(HUB, platform, {
@@ -64,8 +66,8 @@ test("1 · platform_admin gán từ đầu: Đang tắt · chưa gán ⇒ Gán �
   );
   await page.goto(`${ADMIN_URL}/tenants/${company.id}?tab=processes`);
   const status = page.getByTestId(`flows-status-${SLOT}`);
-  await expect(status).toContainText("Đang tắt");
-  await expect(status).toContainText("chưa gán quy trình");
+  // công ty mới chưa có luật gán: việc chạy theo mẫu mặc định của khe (không bật tay gì), chưa có quy trình riêng
+  await expect(page.getByTestId(`flows-job-${SLOT}`)).not.toContainText(FLOW);
 
   await page.getByTestId(`flows-assign-${SLOT}`).click();
   const panel = page.getByTestId(`flows-assign-panel-${SLOT}`);
@@ -78,13 +80,14 @@ test("1 · platform_admin gán từ đầu: Đang tắt · chưa gán ⇒ Gán �
   await page.keyboard.press("Escape");
   // gán xong là chạy: không công tắc nào khác
   await expect(status).toContainText("Đang bật");
+  await expect(page.getByTestId("tenant-summary")).toContainText("việc có quy trình"); // c14: dòng đầu trang
 
   // Q11: sơ đồ (canvas) mặc định; chọn danh sách bước ⇒ nhớ sau khi tải lại.
-  await page.getByTestId(`flows-open-${SLOT}`).click();
+  await openJob(page);
   await expect(page.getByTestId("flows-view-canvas")).toHaveAttribute("aria-pressed", "true");
   await page.getByTestId("flows-view-list").click();
   await page.reload();
-  await page.getByTestId(`flows-open-${SLOT}`).click();
+  await openJob(page);
   await expect(page.getByTestId("flows-view-list")).toHaveAttribute("aria-pressed", "true");
   await page.getByTestId("flows-view-canvas").click(); // trả mặc định cho các spec sau
 });
@@ -101,6 +104,13 @@ test("2 · tenant_admin công ty mình: bản thư viện chỉ xem ⇒ Sao ché
   await page.getByRole("textbox", { name: "Tên đăng nhập" }).fill(company.adminUser);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(company.adminPw);
   await page.getByRole("button", { name: "Đăng nhập", exact: true }).click();
+  // mật khẩu tạm ⇒ phải đặt mật khẩu mới trước khi vào khung (M1-AC06)
+  await expect(page).toHaveURL(/\/change-password/);
+  const fresh = `Mk-${SFX}-9x`;
+  await page.getByLabel("Mật khẩu mới", { exact: true }).fill(fresh);
+  await page.getByLabel("Nhập lại mật khẩu mới", { exact: true }).fill(fresh);
+  await page.getByRole("button", { name: "Đặt mật khẩu và tiếp tục" }).click();
+  await expect(page).not.toHaveURL(/\/change-password/);
   await page.goto(`${ADMIN_URL}/tenants/${company.id}?tab=processes`);
   await expect(page.getByTestId(`flows-status-${SLOT}`)).toContainText("Đang bật");
 

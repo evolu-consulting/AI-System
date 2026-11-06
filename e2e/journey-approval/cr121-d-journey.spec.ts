@@ -7,7 +7,7 @@
 // trang "Chi tiết lượt chạy" (admin) hiện đúng bước + nhật ký; công ty 1 không thấy dữ liệu công ty 2.
 import { expect, type Page, test } from "@playwright/test";
 import { apiLogin, cloneAndPublishFlow, type Session, tenantIdByKey } from "../_kit/api";
-import { assignProcessUi } from "../_kit/ui";
+import { assignProcessUi, openTenantPage } from "../_kit/ui";
 import {
   approveAs,
   type Env,
@@ -140,11 +140,7 @@ test("2 · platform admin gán A cho công ty 1, B cho công ty 2 (không công 
     [EA, PROC_A],
     [EB, PROC_B],
   ] as const) {
-    await page
-      .getByRole("navigation", { name: "Điều hướng chính" })
-      .getByRole("list", { name: "Danh sách công ty" })
-      .getByRole("link", { name: new RegExp(e.tenantName) })
-      .click();
+    await openTenantPage(page, e.tenantName);
     const blk = await openProcessPanel(page);
     await expect(blk).toBeVisible();
     await expect(blk.getByTestId("tenant-engine-switch")).toHaveCount(0);

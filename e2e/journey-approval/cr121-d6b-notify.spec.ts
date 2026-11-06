@@ -4,7 +4,7 @@
 // Duyệt (người nhận = người gửi duyệt, tiêu đề có {ma_hd} {ten_hd}) → lưu nháp → xuất bản → gán cho công ty (không công tắc nào khác). Người dùng công ty
 // gửi duyệt HĐ, Ban Giám đốc duyệt ⇒ người tạo HĐ thấy thông báo ở chuông, tiêu đề mang đúng mã/tên HĐ (tên HĐ có hậu tố duy nhất của lượt chạy).
 import { expect, type Page, test } from "@playwright/test";
-import { assignProcessUi } from "../_kit/ui";
+import { assignProcessUi, openTenantPage } from "../_kit/ui";
 import { uniqueSuffix } from "../_kit/unique";
 import { TAG } from "./_fixture";
 import {
@@ -94,11 +94,7 @@ test("2 · platform admin gán quy trình cho công ty mới (không công tắc
   page,
 }) => {
   await loginAdmin(page, E);
-  await page
-    .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("list", { name: "Danh sách công ty" })
-    .getByRole("link", { name: new RegExp(E.tenantName) })
-    .click();
+  await openTenantPage(page, E.tenantName);
   const blk = await openProcessPanel(page);
   await expect(blk).toBeVisible();
   await assignProcessUi(blk.getByTestId(`admin-assigned-${SLOT}`), FLOW);

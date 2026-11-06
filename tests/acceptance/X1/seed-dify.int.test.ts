@@ -123,8 +123,12 @@ const cfg = () => n("select config_version as n from admin.config_meta");
 const writes = (s: Stub) =>
   s.calls.filter((c) => ["POST", "PUT", "PATCH", "DELETE"].includes(c.method));
 
+// Mốc audit sau khi DB dựng xong: migration admin (vd. 0037 gỡ feature cũ) có thể ghi audit delete trước kịch bản — chỉ đếm dòng do seed sinh ra.
+let auditBase = 0;
+
 beforeAll(async () => {
   env = await createM2Env();
+  auditBase = await auditMax();
   await runHubMigrations({ url: OWNER_URL, appEnv: "test" });
   dir = mkdtempSync(join(tmpdir(), "qc-x1-seed-"));
   dify = startStub(() => json(500, { message: "Dify stub: seed không được gọi Dify" }));
@@ -297,9 +301,11 @@ describe("X1-AC16 · dry-run → apply → idempotent → rotate", () => {
         `select count(*)::int as n from admin.audit_log where seq > ${a0} and entity = 'secret' and action = 'update'`,
       ),
     ).toBe(5);
-    expect(await n("select count(*)::int as n from admin.audit_log where action = 'delete'")).toBe(
-      0,
-    );
+    expect(
+      await n(
+        `select count(*)::int as n from admin.audit_log where seq > ${auditBase} and action = 'delete'`,
+      ),
+    ).toBe(0);
   }, 120_000);
 });
 
