@@ -99,8 +99,17 @@ export class CompanyLibraryService {
         relVersion: src.published_version,
         actorId: u.userId,
       });
-      const move = { tenantId, slot: src.slot, from: src.id, to: newId, actorId: u.userId };
-      const moved = await this.#assign(tx, move);
+      // flow (không khe) gán qua company_flows, không có luật khe để chuyển
+      const moved =
+        src.slot === null
+          ? 0
+          : await this.#assign(tx, {
+              tenantId,
+              slot: src.slot,
+              from: src.id,
+              to: newId,
+              actorId: u.userId,
+            });
       const done = {
         def_id: newId,
         source_template_id: src.id,
@@ -132,8 +141,10 @@ export class CompanyLibraryService {
     const src = await co.readGlobalDef(tx, defId);
     if (!src || src.deleted) throw notFound();
     const slot = src.slot;
-    if (slot === null) throw libError("NOT_LIBRARY_DEF");
-    if (!listSlots().some((s) => s.key === slot)) throw libError("SLOT_GONE", { slot });
+    // flow theo sự kiện (CR-122): không khe nhưng có `trigger` ⇒ vẫn là def thư viện
+    if (slot === null && src.trigger == null) throw libError("NOT_LIBRARY_DEF");
+    if (slot !== null && !listSlots().some((s) => s.key === slot))
+      throw libError("SLOT_GONE", { slot });
     if (src.published_version === null) throw libError("PROCESS_NOT_PUBLISHED");
     return { ...src, slot, published_version: src.published_version };
   }

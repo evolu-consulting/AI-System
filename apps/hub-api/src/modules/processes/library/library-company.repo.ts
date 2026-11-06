@@ -65,10 +65,10 @@ export async function insertCompanyCopy(
     id: string;
   }>(sql`insert into hub.process_defs (tenant_id, key, name, description,
       input_hint, stages, token_budget, enabled, sources, inputs, ttl_days, source_template_id, source_rel_version,
-      slot_body, created_by, updated_by)
+      slot_body, trigger, app, created_by, updated_by)
     select ${w.tenantId}, ${w.key}, ${w.name}, description, input_hint, ${JSON.stringify(w.stages)}::jsonb, token_budget,
       false, '[]'::jsonb, inputs, ttl_days, id, ${w.relVersion}, ${JSON.stringify(w.slotBody ?? null)}::jsonb,
-      ${w.actorId}, ${w.actorId}
+      trigger, app, ${w.actorId}, ${w.actorId}
     from hub.process_defs where id = ${w.src} and tenant_id is null returning id::text as id`);
   if (!r) throw new Error("cloneForCompany: không ghi được bản riêng");
   return r.id;
