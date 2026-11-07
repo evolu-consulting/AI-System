@@ -8,8 +8,8 @@ import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { safeErrorFields } from "../../../lib/errors";
-import type { RunFile } from "../../attachments/run-files.rules";
-import { type Staged, storageKey } from "../../attachments/storage";
+import type { RunFile } from "../../attachments/public";
+import { type Staged, storageKey } from "../../attachments/public";
 import type { ProcessDeps } from "../core/ports";
 
 // Cục bộ (không import team-runner ⇒ tránh vòng no-circular): cùng dạng `Deps` của team-runner.

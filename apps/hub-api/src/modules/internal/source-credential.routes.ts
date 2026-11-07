@@ -7,8 +7,8 @@ import { type Context, type Env, Hono } from "hono";
 import type { Db } from "../../lib/db";
 import { safeErrorFields, toErrorBody } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
-import type { SecretKey } from "../secrets/secrets.crypto";
-import { HubSecretReader } from "../secrets/secrets.use";
+import type { SecretKey } from "../secrets/public";
+import { HubSecretReader } from "../secrets/public";
 import { type SourceCredentialResult, SourceCredentialService } from "./source-credential.service";
 
 const NO_STORE = { "Cache-Control": "no-store" };

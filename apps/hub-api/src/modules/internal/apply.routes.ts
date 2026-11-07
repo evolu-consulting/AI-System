@@ -13,7 +13,7 @@ import { bodyLimit } from "hono/body-limit";
 import type { Db } from "../../lib/db";
 import { safeErrorFields, toErrorBody } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
-import type { AttachmentStorage } from "../attachments/storage";
+import type { AttachmentStorage } from "../attachments/public";
 import { type ApplyReportResult, InternalApplyService } from "./apply.service";
 
 const NO_STORE = { "Cache-Control": "no-store" };

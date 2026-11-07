@@ -8,7 +8,7 @@ import {
   checkRoomSendable,
   normalizeAttachmentIds,
   roomFileRefs,
-} from "../../attachments/room-files";
+} from "../../attachments/public";
 import type { Me } from "../manage/rooms.repo";
 import type { RoomMessageRow } from "../rooms.map";
 import { roomFilesAllowed } from "../rooms.rules";

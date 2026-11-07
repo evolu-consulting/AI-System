@@ -3,7 +3,7 @@
 import type { StepRole } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import { RUNNABLE_RUNTIMES } from "../../agents/agent-access.rules";
+import { RUNNABLE_RUNTIMES } from "../../agents/public";
 import type { ConfigSnapshot } from "../../config/public";
 import type { ProcessDeps } from "../core/ports";
 

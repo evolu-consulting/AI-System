@@ -12,8 +12,7 @@ import type { Logger } from "../../../lib/logger";
 import { startLoop } from "../../../lib/loop";
 import type { Redis } from "../../../lib/redis";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
-import { messageEvents } from "../../rooms/room-events";
-import { toRoomMessage } from "../../rooms/rooms.map";
+import { messageEvents, toRoomMessage } from "../../rooms/public";
 import * as repo from "./core.repo";
 
 export const THREAD_RECONCILE_MS = 5_000;

@@ -4,7 +4,7 @@
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
-import type { HubSecretReader } from "../../secrets/secrets.use";
+import type { HubSecretReader } from "../../secrets/public";
 
 export type NotifySecretKind = "smtp_password" | "vapid_private_key";
 

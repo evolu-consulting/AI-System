@@ -2,7 +2,7 @@
 // chữ Dify (≤ `JOB_DELTA_TEXT_MAX`) thành một sự kiện, `seq` liền mạch sau `job.started` (1) — cùng đường chuyển tiếp
 // `DeltaSink` với job Runtime (P11). Sự kiện được phát ra **trong lúc** Dify còn chạy (generator chờ lời gọi xong).
 import { JOB_DELTA_TEXT_MAX, type RunEvent } from "@ai/contracts/hub";
-import { chunkDelta } from "../../stream/delta.rules";
+import { chunkDelta } from "../../stream/public";
 
 export class DifyDeltaFeed {
   readonly #items: RunEvent[] = [];

@@ -11,18 +11,22 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
+import type { AttachmentStorage, RunFile } from "../../attachments/public";
 import {
   AttachmentContentMissing,
   AttachmentUnavailable,
   type UploadTrace,
-} from "../../attachments/attachment-dify";
-import type { RunFile } from "../../attachments/run-files.rules";
-import type { AttachmentStorage } from "../../attachments/storage";
-import { stepLabel } from "../../conversations/conversations.rules";
-import { type CredentialService, isCredentialError } from "../../dify/credential.service";
-import type { DifyClient, DifyRunOutcome } from "../../dify/dify.client";
-import { difyUser } from "../../dify/dify.rules";
-import { difyRunMeta, recordDifyRunOnly, recordDifyUsage } from "../../dify/dify.usage";
+} from "../../attachments/public";
+import { stepLabel } from "../../conversations/public";
+import type { DifyClient, DifyRunOutcome } from "../../dify/public";
+import {
+  type CredentialService,
+  difyRunMeta,
+  difyUser,
+  isCredentialError,
+  recordDifyRunOnly,
+  recordDifyUsage,
+} from "../../dify/public";
 import { chunkText } from "../../orchestrator/public";
 import type { RunContext, RunDriver, SseWriter } from "../../runs/public";
 import type { PreparedCommand } from "../commands.service";

@@ -12,9 +12,14 @@ import type { Logger } from "../../lib/logger";
 import { chunkText, deltaEmit, flowHistoryWindowOf } from "../orchestrator/public";
 import { type AgentRunner, type JobOutcome, runJob } from "../runner/public";
 import type { RunContext, RunDriver, RunOutcome, SseWriter } from "../runs/public";
-import { chunkDelta, type Reconciled, reconcileStream } from "../stream/delta.rules";
-import { deltaSinkFor } from "../stream/delta-sink";
-import { gapTrace, reconcileTrace } from "../stream/stream-trace";
+import {
+  chunkDelta,
+  deltaSinkFor,
+  gapTrace,
+  type Reconciled,
+  reconcileStream,
+  reconcileTrace,
+} from "../stream/public";
 import { directText } from "./mention.rules";
 import type { DirectRunStart } from "./mention.service";
 

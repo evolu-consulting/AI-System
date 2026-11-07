@@ -5,7 +5,7 @@ import type { StageRunStatus } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { clipEntityName, dbHubAudit } from "../../../lib/hub-audit";
-import type { RunFile } from "../../attachments/run-files.rules";
+import type { RunFile } from "../../attachments/public";
 import { agentWorkflowIds } from "../../config/public";
 import type { ProcessRunInput } from "../../runs/public";
 import type { ProcessDeps } from "../core/ports";

@@ -15,7 +15,7 @@ import {
   credentialJobAllows,
   credentialUsername,
 } from "../processes/public";
-import { type HubSecretReader, isSecretUseError } from "../secrets/secrets.use";
+import { type HubSecretReader, isSecretUseError } from "../secrets/public";
 import { bearerJobToken } from "./credential.service";
 import * as repo from "./source-credential.repo";
 

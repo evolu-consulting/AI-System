@@ -2,7 +2,7 @@
 // `tests/acceptance/H4a/rules/agents-rules.test.ts`). Không I/O. Trùng ý mô tả định nghĩa ở `@ai/contracts/studio`.
 import { ALLOWED_TOOLS } from "@ai/contracts/hub";
 import type { AgentRuntime, AgentWarning } from "@ai/contracts/studio";
-import { RUNNABLE_RUNTIMES } from "../../agents/agent-access.rules";
+import { RUNNABLE_RUNTIMES } from "../../agents/public";
 
 export {
   descriptionOverlap,

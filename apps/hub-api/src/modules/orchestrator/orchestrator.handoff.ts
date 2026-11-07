@@ -7,16 +7,14 @@
 import type { AgentResult, HistoryItem } from "@ai/contracts/hub";
 import {
   type ArtifactRef,
-  inputOf,
-  renderEnvelope,
-  shouldInline,
-} from "../artifacts/artifact.rules";
-import {
   compactHistory,
+  inputOf,
   KEEP_LAST_TURNS,
   olderBody,
+  renderEnvelope,
+  shouldInline,
   splitHistory,
-} from "../artifacts/history.rules";
+} from "../artifacts/public";
 import type { AgentConfig } from "../config/public";
 import type { HandoffHint } from "./orchestrator.prompt";
 import { canPassThrough } from "./orchestrator.rules";

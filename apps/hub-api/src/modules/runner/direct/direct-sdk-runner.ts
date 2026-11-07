@@ -17,10 +17,10 @@ import {
 import type { TokenBucket } from "../../../lib/ai-client/token-bucket";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
-import { stepLabel } from "../../conversations/conversations.rules";
+import { stepLabel } from "../../conversations/public";
 import type { SseEventBody } from "../../runs/public";
-import { chunkDelta } from "../../stream/delta.rules";
-import { type ChatTokenGate, gatedRun } from "../../usage/chat-token-gate";
+import { chunkDelta } from "../../stream/public";
+import { type ChatTokenGate, gatedRun } from "../../usage/public";
 import type { AgentRunner, AgentTask } from "../job/job-agent-runner.types";
 import { nowLine } from "../job/now-line.rules";
 import { syntheticFailed } from "../runner.rules";

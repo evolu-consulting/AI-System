@@ -15,7 +15,7 @@ import type { Db } from "../../lib/db";
 import { hashJobToken, isJobToken } from "../../lib/job-token";
 import type { Logger } from "../../lib/logger";
 import type { CatalogSnapshot } from "../config/public";
-import { type CredentialService, isCredentialError } from "../dify/credential.service";
+import { type CredentialService, isCredentialError } from "../dify/public";
 import * as repo from "./credential.repo";
 
 export type DifyCredentialResult =

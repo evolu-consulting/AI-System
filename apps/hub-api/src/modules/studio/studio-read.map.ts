@@ -3,7 +3,7 @@
 import type { ProviderItemSchema, WorkflowItemSchema } from "@ai/contracts/studio";
 import { InputSchemaSchema } from "@ai/contracts/workflows";
 import type { z } from "zod";
-import { difyAgentInput } from "../dify/dify.rules";
+import { difyAgentInput } from "../dify/public";
 
 type Usable = z.infer<typeof WorkflowItemSchema>["usable_for"][number];
 export type ListMeta<T> = {

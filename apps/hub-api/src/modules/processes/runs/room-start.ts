@@ -1,6 +1,6 @@
 // HUB-FR-105 · HUB-FR-113 · T1 · PF1 · `!key` ở timeline phòng: tin gọi user + run + outbox `block` (một tx, khoá §10);
 // trùng `client_msg_id` ⇒ tin cũ, không tạo run; lỗi (404/429) ⇒ ROLLBACK (không lưu tin). Thân ở `StartService`.
-import type { RoomProcessSender } from "../../rooms/messages/messages.service";
+import type { RoomProcessSender } from "../../rooms/public";
 import type { ProcessDeps } from "../core/ports";
 import { StartService } from "./start.service";
 

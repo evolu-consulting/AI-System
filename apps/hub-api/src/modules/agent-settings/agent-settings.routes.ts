@@ -9,7 +9,7 @@ import { Hono } from "hono";
 import { requireAdminRole } from "../../lib/admin-role.middleware";
 import type { AuthVars } from "../../lib/auth.middleware";
 import { parseAdminQuery, parseWith, readJson } from "../../lib/http";
-import { tenantOf } from "../agent-grants/agent-grants.routes";
+import { tenantOf } from "../agent-grants/public";
 import type { AgentSettingsService } from "./agent-settings.service";
 
 export function agentSettingsRoutes(svc: AgentSettingsService): Hono<AuthVars> {

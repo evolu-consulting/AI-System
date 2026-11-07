@@ -8,12 +8,10 @@
 // step `detail.upload`; upload lỗi/hết hạn ⇒ step `workflow` mở-đóng `failed`, `run.failed`, không job.
 import type { Db } from "../../../lib/db";
 import type { Logger } from "../../../lib/logger";
-import type { UploadTrace } from "../../attachments/attachment-dify";
-import type { RunFile } from "../../attachments/run-files.rules";
-import type { AttachmentStorage } from "../../attachments/storage";
-import { stepLabel } from "../../conversations/conversations.rules";
-import type { CredentialService } from "../../dify/credential.service";
-import { difyUser } from "../../dify/dify.rules";
+import type { AttachmentStorage, RunFile, UploadTrace } from "../../attachments/public";
+import { stepLabel } from "../../conversations/public";
+import type { CredentialService } from "../../dify/public";
+import { difyUser } from "../../dify/public";
 import type { WorkflowJobOutcome, WorkflowJobRunner } from "../../runner/public";
 import { buildWorkflowJobPayload } from "../../runner/public";
 import type { RunContext, RunDriver } from "../../runs/public";

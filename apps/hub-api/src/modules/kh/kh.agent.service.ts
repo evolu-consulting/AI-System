@@ -8,15 +8,16 @@ import type { Tx } from "@ai/db";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { appError } from "../../lib/errors";
 import { validationError } from "../../lib/http";
-import { changedFields } from "../studio/agents/agents.map";
 import {
   type AgentDbRow,
+  agentDetail,
   agentKhIds,
   bumpAgentVersion,
+  changedFields,
   readAgent,
-} from "../studio/agents/agents.port";
-import { agentDetail } from "../studio/agents/agents.service";
-import { type StudioWriteDeps, withConfigWrite } from "../studio/studio-write";
+  type StudioWriteDeps,
+  withConfigWrite,
+} from "../studio/public";
 import { validateAgentKh } from "./kh.agent.rules";
 import { khError } from "./kh.errors";
 import * as repo from "./kh.repo";

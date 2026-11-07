@@ -8,7 +8,7 @@ import type { Db } from "../../../lib/db";
 import { appError, safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import type { Redis } from "../../../lib/redis";
-import type { ConversationService } from "../../conversations/conversations.service";
+import type { ConversationService } from "../../conversations/public";
 import { runErrorText } from "../run-errors";
 import { lastEventIdOf, toRun } from "../run-view";
 import * as repo from "../runs.repo";

@@ -12,7 +12,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { dbHubAudit } from "../../../lib/hub-audit";
-import { withConfigWrite } from "../../studio/studio-write";
+import { withConfigWrite } from "../../studio/public";
 import type { ProcessDeps } from "../core/ports";
 import * as repo from "./dlc-steps.repo";
 import { dlcStepAudit } from "./dlc-steps.rules";

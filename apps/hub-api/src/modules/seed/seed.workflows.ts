@@ -3,7 +3,7 @@
 
 import type { DifyAppType } from "@ai/contracts/hub";
 import type { WorkflowInput } from "@ai/contracts/workflows";
-import { difyAgentInput } from "../dify/dify.rules";
+import { difyAgentInput } from "../dify/public";
 import {
   DIFY_RUNTIMES,
   type DifyRuntime,

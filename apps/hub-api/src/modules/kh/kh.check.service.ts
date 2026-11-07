@@ -9,7 +9,7 @@ import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
 import { appError } from "../../lib/errors";
 import type { HubAuditWriter } from "../../lib/hub-audit";
-import { isSecretUseError } from "../secrets/secrets.use";
+import { isSecretUseError } from "../secrets/public";
 import { evaluateKhCheck, type KhProbe, khCheckShouldContinue } from "./kh.check.rules";
 import type { KhClient, KhConn } from "./kh.client";
 import * as repo from "./kh.repo";

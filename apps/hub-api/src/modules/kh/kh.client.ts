@@ -11,7 +11,7 @@ import {
   type KhWarningCode,
 } from "@ai/contracts/hub-admin";
 import type { KhConfig } from "../../config/env";
-import type { HubSecretReader } from "../secrets/secrets.use";
+import type { HubSecretReader } from "../secrets/public";
 import type { KhHit } from "./kh.check.rules";
 import { classifyKhFailure, type KhFailure, khUrlPolicy, parseKhProjects } from "./kh.rules";
 

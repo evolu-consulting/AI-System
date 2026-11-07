@@ -16,7 +16,7 @@ import type { Logger } from "../../lib/logger";
 import { bindRunFiles, type RunKind } from "../attachments/run-files";
 import type { RunFile } from "../attachments/run-files.rules";
 import { isAgreeReply } from "../mcp/confirm.rules";
-import type { MentionPlan } from "../mention/mention.service";
+import type { MentionPlan } from "../mention/public";
 import { type ConfirmTag, decideConfirmations, preconfirm } from "./confirm.repo";
 import { overLimit } from "./run-limit.rules";
 import * as repo from "./runs.repo";

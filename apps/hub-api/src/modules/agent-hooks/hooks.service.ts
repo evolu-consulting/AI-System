@@ -6,17 +6,18 @@ import type { AgentHooksRequest, AgentWriteResponse } from "@ai/contracts/studio
 import type { Tx } from "@ai/db";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { appError } from "../../lib/errors";
-import { changedFields } from "../studio/agents/agents.map";
 import {
   type AgentDbRow,
+  agentDetail,
   agentHooks,
   bumpAgentVersion,
+  changedFields,
   readAgent,
   replaceAgentHooks,
+  type StudioWriteDeps,
+  withConfigWrite,
   workflowsByIds,
-} from "../studio/agents/agents.port";
-import { agentDetail } from "../studio/agents/agents.service";
-import { type StudioWriteDeps, withConfigWrite } from "../studio/studio-write";
+} from "../studio/public";
 import { HOOK_APP_TYPE } from "./hooks.rules";
 
 async function lockAgent(tx: Tx, id: string, version: number): Promise<AgentDbRow> {

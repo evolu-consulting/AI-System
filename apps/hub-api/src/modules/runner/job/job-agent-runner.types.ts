@@ -16,8 +16,8 @@ import type { RunFile } from "../../attachments/run-files.rules";
 import type { AgentConfig, CatalogSnapshot, ConfigSnapshot } from "../../config/public";
 import type { KhJobPreparer } from "../../kh/kh.job";
 import type { SseEventBody } from "../../runs/public";
-import type { DeltaGap, DeltaSink } from "../../stream/delta-sink";
-import type { ChatTokenGate } from "../../usage/chat-token-gate";
+import type { DeltaGap, DeltaSink } from "../../stream/public";
+import type { ChatTokenGate } from "../../usage/public";
 import type { RunStreamReader } from "../run-stream-reader";
 import type { AgentRole, RunRef } from "../runner.rules";
 export type AgentTask = {

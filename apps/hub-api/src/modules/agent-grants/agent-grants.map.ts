@@ -6,7 +6,7 @@ import {
   type AgentGrantRow,
   type AgentGrantSubject,
 } from "@ai/contracts/hub-admin";
-import { RUNNABLE_RUNTIMES } from "../agents/agent-access.rules";
+import { RUNNABLE_RUNTIMES } from "../agents/public";
 import type { ListAgentRow, ListGrantRow, SubjectRow } from "./agent-grants.repo";
 
 export function subjectRef(s: SubjectRow): AgentGrantSubject {

@@ -14,7 +14,7 @@ import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
 import { appError } from "../../lib/errors";
 import type { HubAuditWriter } from "../../lib/hub-audit";
-import { type StudioAudit, withConfigWrite } from "../studio/studio-write";
+import { type StudioAudit, withConfigWrite } from "../studio/public";
 import { khError } from "./kh.errors";
 import * as repo from "./kh.repo";
 import {

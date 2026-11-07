@@ -4,7 +4,7 @@ import type { Tx } from "@ai/db";
 import { runSteps } from "@ai/db/schema/hub";
 import { and, eq, sql } from "drizzle-orm";
 import { insertStep } from "../../lib/run-steps";
-import { type DifyUsageRow, difyUsageSelect } from "../dify/dify.usage";
+import { type DifyUsageRow, difyUsageSelect } from "../dify/public";
 
 export type TokenJob = {
   id: string;

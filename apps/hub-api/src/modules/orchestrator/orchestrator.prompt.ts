@@ -1,9 +1,8 @@
 // HUB-FR-20 · H1-R05, R06 · `prompt` + khối định dạng của job Orchestrator (plan H1 §6.2–6.3). Thuần.
 import { type HistoryItem, OrchestratorDecisionSchema } from "@ai/contracts/hub";
 import { z } from "zod";
-import type { HubAgentRef } from "../agents/agent-access.rules";
-import type { NoMatchPolicy } from "../agents/default-agent.rules";
-import { type FileBrief, orchestratorFilesBlock } from "../attachments/run-files.rules";
+import type { HubAgentRef, NoMatchPolicy } from "../agents/public";
+import { type FileBrief, orchestratorFilesBlock } from "../attachments/public";
 
 /** Mỗi tin trong `<history>` ≤ 4000 ký tự (§6.2). */
 export const HISTORY_ITEM_MAX = 4000;

@@ -10,7 +10,7 @@ import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
 import { AppError, appError } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
-import { routeMessage } from "../mention/mention-parse.rules";
+import { routeMessage } from "../mention/public";
 import type { RunService } from "../runs/public";
 import type { PrepareMention } from "./ports";
 

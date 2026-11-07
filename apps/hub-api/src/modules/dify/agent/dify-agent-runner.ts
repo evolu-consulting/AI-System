@@ -14,14 +14,14 @@ import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import type { CatalogWorkflow } from "../../commands/public";
 import { type CatalogSnapshot, tenantKeyOf } from "../../config/public";
-import { stepLabel } from "../../conversations/conversations.rules";
+import { stepLabel } from "../../conversations/public";
 import {
   type ChatBinding,
   type ChatGrant,
   type ChatToolTokens,
   chatTokenTtlS,
   HUB_TOOL_TOKEN_INPUT,
-} from "../../mcp/chat-token";
+} from "../../mcp/public";
 import type { AgentRunner, AgentTask } from "../../runner/public";
 import { packToolKeys, syntheticFailed } from "../../runner/public";
 import type { SseEventBody } from "../../runs/public";

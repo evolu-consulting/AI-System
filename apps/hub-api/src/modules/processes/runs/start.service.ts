@@ -14,16 +14,16 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { publishUserEvents } from "../../../lib/user-stream";
-import { lockFor } from "../../rooms/manage/rooms.service";
 import {
   advanceRead,
   bumpSeq,
   fanout,
   findByClientId,
+  lockFor,
+  messageEvents,
   type SendResult,
-} from "../../rooms/messages/messages.service";
-import { messageEvents } from "../../rooms/room-events";
-import { toRoomMessage } from "../../rooms/rooms.map";
+  toRoomMessage,
+} from "../../rooms/public";
 import { runTimesOf, withRunTimes } from "../adapters/runs/run-list.repo";
 import type { Bang } from "../core/bang.rules";
 import { processError } from "../core/errors";

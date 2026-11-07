@@ -13,7 +13,7 @@ import { type Context, Hono } from "hono";
 import { blobResponse } from "../../lib/blob-body";
 import { mapError, safeErrorFields, toErrorBody } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
-import { contentLengthOf } from "../attachments/attachments.routes";
+import { contentLengthOf } from "../attachments/public";
 import { type InternalAttachmentService, OCTET } from "./attachments.service";
 
 /** Câu tĩnh plan-errors §1 (cùng thân H2a `credential.routes`). */

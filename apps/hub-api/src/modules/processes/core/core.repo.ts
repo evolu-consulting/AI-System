@@ -10,7 +10,7 @@ import {
   reviewTasks,
 } from "@ai/db/schema/hub-processes";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
-import type { FanoutRow } from "../../rooms/room-events";
+import type { FanoutRow } from "../../rooms/public";
 import { REMIND_AFTER_H } from "../domain/limits";
 import { reviewTaskTiming } from "../domain/notify/remind.rules";
 

@@ -11,7 +11,7 @@ import type { Logger } from "../../../lib/logger";
 import { startLoop } from "../../../lib/loop";
 import type { Redis } from "../../../lib/redis";
 import { publishUserEvents, type UserEvent } from "../../../lib/user-stream";
-import { bindRoomOutputs } from "../../attachments/room-files";
+import { bindRoomOutputs } from "../../attachments/public";
 import { type RoomMessageRow, toRoomMessage } from "../rooms.map";
 import { agentMessageView, roomOutputsVisible, shouldBindRoomOutputs } from "./room-agent.rules";
 import * as repo from "./room-post.repo";

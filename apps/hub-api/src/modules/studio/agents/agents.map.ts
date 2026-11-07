@@ -7,7 +7,7 @@ import type {
   AgentWarning,
   SimilarAgent,
 } from "@ai/contracts/studio";
-import { RUNNABLE_RUNTIMES } from "../../agents/agent-access.rules";
+import { RUNNABLE_RUNTIMES } from "../../agents/public";
 import { hasDifyInput } from "../studio-read.map";
 import type { AgentDbRow, AgentListDbRow, OrchScope, WorkflowDbRow } from "./agents.repo";
 import { agentWarnings, type WorkflowRef } from "./agents.rules";

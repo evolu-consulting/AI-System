@@ -3,14 +3,14 @@
 // kết cục run theo plan-errors §4 (`file_rejected` ⇒ `reason` cho hint). Log `dify-upload` (không tên file, không key).
 import type { ChatRunErrorCode } from "@ai/contracts/chat";
 import type { Logger } from "../../../lib/logger";
+import type { RunFile } from "../../attachments/public";
 import {
   AttachmentContentMissing,
   type AttachmentDifyDeps,
   difyFileInput,
   type UploadTrace,
   uploadToDify,
-} from "../../attachments/attachment-dify";
-import type { RunFile } from "../../attachments/run-files.rules";
+} from "../../attachments/public";
 import type { WorkflowInputValue } from "../catalog.types";
 import type { PreparedCommand } from "../commands.service";
 

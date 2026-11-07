@@ -17,7 +17,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { dbHubAudit } from "../../../lib/hub-audit";
-import { type StudioAudit, withConfigWrite } from "../../studio/studio-write";
+import { type StudioAudit, withConfigWrite } from "../../studio/public";
 import type { ProcessDeps } from "../core/ports";
 import { defError, toProcessDef } from "../defs/defs.map";
 import { readDef } from "../defs/defs.repo";

@@ -5,7 +5,7 @@ import {
   type AgentRow,
   orchestratorIds,
   RUNNABLE_RUNTIMES,
-} from "../agents/agent-access.rules";
+} from "../agents/public";
 
 export type EffectiveInput = {
   snapshot: AccessSnapshot & {

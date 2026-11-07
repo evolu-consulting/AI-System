@@ -3,7 +3,7 @@
 import { SSE_CONTENT_TYPE } from "@ai/contracts/chat";
 import { Hono } from "hono";
 import type { AuthVars } from "../../lib/auth.middleware";
-import { meStreamEventAllowed } from "../chat-gate/chat-gate.rules";
+import { meStreamEventAllowed } from "../chat-gate/public";
 import { type MeStreamDeps, meEventStream, resumePlan } from "./me-stream.session";
 
 const SSE_HEADERS = {

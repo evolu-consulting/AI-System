@@ -6,8 +6,7 @@ import { sql } from "drizzle-orm";
 import type { Db } from "../../lib/db";
 import type { Logger } from "../../lib/logger";
 import type { CatalogSnapshot } from "../config/public";
-import type { CredentialService } from "../dify/credential.service";
-import type { DifyClient } from "../dify/dify.client";
+import type { CredentialService, DifyClient } from "../dify/public";
 import { type HookInputs, pickInputs } from "./hooks.rules";
 
 export type HookRow = { event: string; workflowId: string };

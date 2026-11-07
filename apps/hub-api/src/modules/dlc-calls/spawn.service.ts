@@ -8,10 +8,9 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../lib/auth.middleware";
 import type { Db } from "../../lib/db";
 import type { Logger } from "../../lib/logger";
-import type { AgentGrantsService } from "../agent-grants/agent-grants.service";
-import type { AgentHooksService } from "../agent-hooks/hooks.service";
-import type { AgentsService } from "../studio/agents/agents.service";
-import type { EntitlementsService } from "../studio/entitlements/entitlements.service";
+import type { AgentGrantsService } from "../agent-grants/public";
+import type { AgentHooksService } from "../agent-hooks/public";
+import type { AgentsService, EntitlementsService } from "../studio/public";
 
 export type SpawnRequest = {
   project: string;

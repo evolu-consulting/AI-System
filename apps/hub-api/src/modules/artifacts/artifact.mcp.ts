@@ -5,7 +5,7 @@
 // Không phân biệt "không có" với "của tenant/run khác".
 import { MCP_TOOLS_MAX } from "@ai/contracts/hub";
 import { z } from "zod";
-import { type McpToolDef, type ToolResult, toolError, toolText } from "../mcp/mcp.rules";
+import { type McpToolDef, type ToolResult, toolError, toolText } from "../mcp/public";
 import { artifactHandoffOn } from "./artifact.flag";
 import type { ArtifactStore } from "./artifact.service";
 

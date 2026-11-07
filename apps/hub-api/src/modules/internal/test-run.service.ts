@@ -15,10 +15,9 @@ import type { Logger } from "../../lib/logger";
 import type { CatalogWorkflow } from "../commands/public";
 import { type BoundCommand, bindCommandInputs } from "../commands/public";
 import type { ConfigCache, UserState } from "../config/public";
-import { stepLabel } from "../conversations/conversations.rules";
-import { type CredentialService, isCredentialError } from "../dify/credential.service";
-import type { DifyClient, DifyRunOutcome } from "../dify/dify.client";
-import { difyUser, maskSecret } from "../dify/dify.rules";
+import { stepLabel } from "../conversations/public";
+import type { DifyClient, DifyRunOutcome } from "../dify/public";
+import { type CredentialService, difyUser, isCredentialError, maskSecret } from "../dify/public";
 import { runErrorText } from "../runs/public";
 import { internalError } from "./test-run.errors";
 

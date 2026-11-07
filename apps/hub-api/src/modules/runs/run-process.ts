@@ -8,8 +8,7 @@ import type { AuthUser } from "../../lib/auth.middleware";
 import { appError } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import type { ConfigCache } from "../config/public";
-import { responderOf } from "../mention/mention.rules";
-import { type DirectRunStart, directOnSnapshot } from "../mention/mention.service";
+import { type DirectRunStart, directOnSnapshot, responderOf } from "../mention/public";
 import type { CreateRunInput, ProcessRunInput } from "./create-run";
 
 /** Người thực thi stage (`ProcessStageDef.executor`, id đã chụp trong snapshot run). */

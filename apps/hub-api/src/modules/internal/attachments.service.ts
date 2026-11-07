@@ -17,11 +17,12 @@ import { hashJobToken } from "../../lib/job-token";
 import type { Logger } from "../../lib/logger";
 import {
   type AttachmentService,
+  type AttachmentStorage,
   OutputClaimLost,
   type OutputJob,
+  storageLocatorOf,
   type UploadInput,
-} from "../attachments/attachments.service";
-import { type AttachmentStorage, storageLocatorOf } from "../attachments/storage";
+} from "../attachments/public";
 import * as repo from "./credential.repo";
 import { bearerJobToken } from "./credential.service";
 

@@ -5,12 +5,8 @@
 // D2-03). Không log tham số/kết quả.
 import type { CatalogWorkflow } from "../../../commands/public";
 import type { ConfigCache } from "../../../config/public";
-import type {
-  InvokeCaller,
-  InvokeFailure,
-  WorkflowInvoker,
-} from "../../../mcp/adapters/workflow-invoker";
-import { TOOL_ERROR_TEXT, type ToolErrorCode, type ToolResult } from "../../../mcp/mcp.rules";
+import type { InvokeCaller, InvokeFailure, WorkflowInvoker } from "../../../mcp/public";
+import { TOOL_ERROR_TEXT, type ToolErrorCode, type ToolResult } from "../../../mcp/public";
 import type { PackToolCatalog } from "../../../packs/kit/public";
 import type { ToolCallResult, ToolEndpoint, ToolInvoker } from "../../application/tools/tool.ports";
 

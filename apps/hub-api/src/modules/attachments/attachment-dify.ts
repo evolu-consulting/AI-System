@@ -4,7 +4,7 @@
 import type { DifyFileInput } from "@ai/contracts/hub";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
-import { type DifyUploadResult, uploadDifyFile } from "../dify/dify-upload";
+import { type DifyUploadResult, uploadDifyFile } from "../dify/public";
 import { difyFileType } from "./attachment.rules";
 import { availableFile } from "./attachments.repo";
 import type { RunFile } from "./run-files.rules";

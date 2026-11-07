@@ -4,8 +4,9 @@
 // Quyền: AU = `visibleAgents(accessInput(snapshot, who))` — đúng hàm mà `canDelegate` của vòng Orchestrator và `directOnSnapshot`
 // dùng (bật ∧ entitlement tenant ∧ grant user/group/tenant ∧ ≠ Orchestrator ∧ runtime chạy được) ⇒ không nới quyền.
 // Không áp khi: chính sách "không khớp" = `ask` (Orchestrator phải hỏi lại), `forbidden`, `direct` (CR-054 đã thẳng), AU ≠ 1.
-import { type AccessSubject, accessInput, visibleAgents } from "../agents/agent-access.rules";
-import type { DefaultRoute } from "../agents/default-agent.rules";
+
+import type { DefaultRoute } from "../agents/public";
+import { type AccessSubject, accessInput, visibleAgents } from "../agents/public";
 import type { AgentConfig, ConfigSnapshot } from "../config/public";
 
 export type FastRoute = { kind: "direct"; agent: AgentConfig; rule: "single_agent" };

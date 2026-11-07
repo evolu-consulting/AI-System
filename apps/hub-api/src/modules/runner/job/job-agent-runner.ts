@@ -21,12 +21,11 @@ import {
 } from "../../attachments/run-files.rules";
 import type { CatalogSnapshot } from "../../config/public";
 import { agentWorkflowIds, type ProfileConfig } from "../../config/public";
-import { stepLabel } from "../../conversations/conversations.rules";
+import { stepLabel } from "../../conversations/public";
 import type { KhJobItem } from "../../kh/kh.agent.rules";
 import { KH_QUERY_HINT } from "../../kh/kh.job";
-import { mcpToolsFor } from "../../mcp/mcp.rules";
-import { gatedRun } from "../../usage/chat-token-gate";
-import { noteChatUsage } from "../../usage/chat-usage";
+import { mcpToolsFor } from "../../mcp/public";
+import { gatedRun, noteChatUsage } from "../../usage/public";
 import {
   type AgentRole,
   buildJobPayload,

@@ -15,7 +15,7 @@ import type { KhRuntime } from "../../kh/kh.mount";
 import type { PackToolCatalog } from "../../packs/kit/public";
 import type { AgentRunner } from "../../runner/public";
 import type { RunDriver, RunService } from "../../runs/public";
-import type { HubSecretReader } from "../../secrets/secrets.use";
+import type { HubSecretReader } from "../../secrets/public";
 import type { AppCtx, SystemUow, TenantUow } from "../application/ports";
 import type { Bang } from "./bang.rules";
 import type { Clock } from "./clock";

@@ -15,7 +15,7 @@ import type { Db } from "../../lib/db";
 import { appError } from "../../lib/errors";
 import { validationError } from "../../lib/http";
 import type { HubAuditWriter } from "../../lib/hub-audit";
-import { type StudioAudit, withConfigWrite } from "../studio/studio-write";
+import { type StudioAudit, withConfigWrite } from "../studio/public";
 import { type SecretKey, sealHubSecret } from "./secrets.crypto";
 import { secretError, secretsNotConfigured } from "./secrets.errors";
 import * as repo from "./secrets.repo";

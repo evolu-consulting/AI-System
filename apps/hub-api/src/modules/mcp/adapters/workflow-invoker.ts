@@ -12,10 +12,15 @@ import type { AttachmentStorage } from "../../attachments/storage";
 import type { CatalogWorkflow, WorkflowInputValue } from "../../commands/public";
 import type { ConfigCache } from "../../config/public";
 import { tenantKeyOf } from "../../config/public";
-import { type CredentialService, isCredentialError } from "../../dify/credential.service";
-import type { DifyClient, DifyRunOutcome } from "../../dify/dify.client";
-import { difyUser, maskInputs } from "../../dify/dify.rules";
-import { difyRunMeta, recordDifyRunOnly } from "../../dify/dify.usage";
+import type { DifyClient, DifyRunOutcome } from "../../dify/public";
+import {
+  type CredentialService,
+  difyRunMeta,
+  difyUser,
+  isCredentialError,
+  maskInputs,
+  recordDifyRunOnly,
+} from "../../dify/public";
 import * as repo from "../mcp.repo";
 import { type ToolResult, toolError, toolText, toolTimeoutS } from "../mcp.rules";
 import { type StepCode, stepCodeOf } from "../mcp-call";

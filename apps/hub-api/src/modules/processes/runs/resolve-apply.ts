@@ -5,7 +5,7 @@ import type { SourcePin } from "@ai/contracts/hub-admin";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { publishUserEvents } from "../../../lib/user-stream";
-import type { ResolveReport } from "../../sources/resolve.bridge";
+import type { ResolveReport } from "../../sources/public";
 import * as core from "../core/core.repo";
 import type { ProcessDeps } from "../core/ports";
 import { firstIdxOfStep } from "../domain/runs/step.rules";

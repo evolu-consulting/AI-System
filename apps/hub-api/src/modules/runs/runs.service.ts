@@ -16,17 +16,12 @@ import { appError, safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import { beginRun } from "../../lib/otel";
 import type { Redis } from "../../lib/redis";
-import type { AccessSubject } from "../agents/agent-access.rules";
-import type { NoMatchPolicy } from "../agents/default-agent.rules";
+import type { AccessSubject, NoMatchPolicy } from "../agents/public";
 import { checkSendable } from "../attachments/run-files";
 import type { RunFile } from "../attachments/run-files.rules";
 import type { ConfigCache } from "../config/public";
 import { type ConfigSnapshot, type PickedOrchestrator, pickOrchestrator } from "../config/public";
-import {
-  type DirectRunStart,
-  directOnSnapshot,
-  type MentionPlan,
-} from "../mention/mention.service";
+import { type DirectRunStart, directOnSnapshot, type MentionPlan } from "../mention/public";
 import { setFinalSeq } from "./close/cancel.repo";
 import {
   type Created,

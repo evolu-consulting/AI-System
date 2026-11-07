@@ -14,7 +14,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { Db } from "../../../lib/db";
 import { appError } from "../../../lib/errors";
-import type { AgentSettingsService } from "../../agent-settings/agent-settings.service";
+import type { AgentSettingsService } from "../../agent-settings/public";
 import { readHubVersion } from "../studio-read.repo";
 import { toCellDetail, toMatrix } from "./entitlements.map";
 import {

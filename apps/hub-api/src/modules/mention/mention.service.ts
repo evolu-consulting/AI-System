@@ -4,7 +4,7 @@
 import type { Responder } from "@ai/contracts/chat";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { appError, isAppError } from "../../lib/errors";
-import { type AccessSubject, accessInput, visibleAgents } from "../agents/agent-access.rules";
+import { type AccessSubject, accessInput, visibleAgents } from "../agents/public";
 import type { AgentConfig, ConfigCache, ConfigSnapshot } from "../config/public";
 import {
   aliasTags,
