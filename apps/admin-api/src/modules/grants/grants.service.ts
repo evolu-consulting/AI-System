@@ -18,6 +18,9 @@ import { grantById, grantRows, toGrant } from "./grants.read";
 import * as repo from "./grants.repo";
 import { checkGrantFeatures, type RuleError } from "./grants.rules";
 
+/** Kiểu dòng grant đổi (module khác import qua service, không qua repo). */
+export type GrantChange = repo.GrantChange;
+
 export type GrantsCtx = { db: Db; hooks?: TestHooks };
 export type Call = { ctx: GrantsCtx; actor: Actor; scope: DbScope };
 

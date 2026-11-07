@@ -9,8 +9,7 @@ import { auditOf } from "../../lib/audit/audit.write";
 import { type ConfigCall, configWrite } from "../../lib/config/config-write";
 import { AppError, appError } from "../../lib/errors";
 import { afterLock } from "../../lib/test-hooks";
-import { insertDefaultRoles } from "../app-roles/app-roles.repo";
-import { assertDefaultGroupsFree } from "../app-roles/app-roles.service";
+import { assertDefaultGroupsFree, insertDefaultRoles } from "../app-roles/app-roles.service";
 import * as repo from "./packs.repo";
 import {
   entitledFeatureKeys,

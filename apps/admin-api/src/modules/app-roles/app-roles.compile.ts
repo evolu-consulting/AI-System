@@ -4,8 +4,7 @@
 // (`recordCompile`) ⇒ `configWrite` bump `config_version` + NOTIFY `config_changed` (vô hiệu cache quyền) sau commit.
 import type { ConfigSink, Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { GrantChange } from "../grants/grants.repo";
-import { grantAudit } from "../grants/grants.service";
+import { type GrantChange, grantAudit } from "../grants/grants.service";
 import { type CompileRole, compilePlan } from "./app-roles.rules";
 
 export type CompileResult = { added: GrantChange[]; removed: GrantChange[] };

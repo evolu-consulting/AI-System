@@ -1,14 +1,12 @@
 // CR-112 S1 · ADM-FR-80/81/82 · ADM-BR-15/16: nghiệp vụ vai theo app. Vai là nguồn; Group của vai là đơn vị thực thi. Tạo vai
 // tuỳ biến = Group mới + vai + grant theo mức (một tx `configWrite`); đổi mức ⇒ biên dịch lại; xoá chỉ vai tuỳ biến. Phân quyền:
 // platform_admin mọi tenant; tenant_admin chỉ tenant mình — tenant/vai của công ty khác ⇒ 404 (cùng body "không có").
-import {
-  APP_ROLE_ERRORS,
-  type AppRole,
-  type AppRoleCreateRequest,
-  type AppRoleErrorCode,
-  type AppRoleListQuery,
-  type AppRoleListResponse,
-  type AppRoleUpdateRequest,
+import type {
+  AppRole,
+  AppRoleCreateRequest,
+  AppRoleListQuery,
+  AppRoleListResponse,
+  AppRoleUpdateRequest,
 } from "@ai/contracts/app-roles";
 import { GroupNameSchema } from "@ai/contracts/groups";
 import { PACK_ACTIONS, PACK_ROLES, packFeatureKey } from "@ai/contracts/packs";
@@ -21,10 +19,9 @@ import {
   type Tx,
   withScope,
 } from "@ai/db";
-import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { auditOf } from "../../lib/audit/audit.write";
 import { configWrite } from "../../lib/config/config-write";
-import { AppError, appError } from "../../lib/errors";
+import { appError, roleError } from "../../lib/errors";
 import { uniqueViolation } from "../../lib/pg-errors";
 import type { TestHooks } from "../../lib/test-hooks";
 import { createGroupIn, tenantFilter } from "../groups/groups.service";
@@ -41,7 +38,7 @@ import {
 } from "./app-roles.rules";
 
 /** Cho importer (module khác không import repo trực tiếp — depcruise `no-cross-module-repo`). */
-export { insertDefaultRolesFor } from "./app-roles.repo";
+export { insertDefaultRoles, insertDefaultRolesFor } from "./app-roles.repo";
 
 /** Bật gói: Group vai mặc định đang thuộc vai tuỳ biến ⇒ 409 ROLE_GROUP_CONFLICT (không nhận nhầm Group, không cấp admin). */
 export async function assertDefaultGroupsFree(
@@ -54,20 +51,6 @@ export async function assertDefaultGroupsFree(
 }
 
 export type Call = { ctx: { db: Db; hooks?: TestHooks }; actor: Actor; scope: DbScope };
-
-const ROLE_MESSAGES: Record<AppRoleErrorCode, string> = {
-  DEFAULT_ROLE_PROTECTED: "Default roles cannot be deleted or change level",
-  ROLE_HAS_MEMBERS: "Role still has members",
-  PACK_NOT_ROLEABLE: "Roles are only available for installed business packs",
-  ROLE_GROUP_MANAGED: "This group belongs to a role; delete the role instead",
-  ROLE_KEY_RESERVED: "This role key is reserved for default roles",
-  ROLE_GROUP_CONFLICT: "A default role group key is used by a custom role",
-};
-
-export function roleError(code: AppRoleErrorCode, details?: unknown): AppError {
-  const status = APP_ROLE_ERRORS[code] as ContentfulStatusCode;
-  return new AppError(code, status, ROLE_MESSAGES[code], details);
-}
 
 const iso = (d: Date | string) => new Date(d).toISOString();
 

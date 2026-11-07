@@ -1,4 +1,6 @@
 // ADM-NFR-06, ADM-FR-01, ADM-FR-10 · lỗi có mã (CONVENTIONS §5, spec M0 §3.1, M1 §3). Status lấy từ API_ERRORS (một nguồn).
+
+import { APP_ROLE_ERRORS, type AppRoleErrorCode } from "@ai/contracts/app-roles";
 import { API_ERRORS, type ErrorCode } from "@ai/contracts/common";
 import type { ErrorResponse } from "@ai/contracts/errors";
 import { EXTERNAL_ORG_ERRORS, type ExternalOrgErrorCode } from "@ai/contracts/external-orgs";
@@ -93,6 +95,25 @@ const PROFILE_MESSAGES: Record<TenantProfileErrorCode, string> = {
 /** CR-121 · mã lỗi hồ sơ công ty (khối riêng `TENANT_PROFILE_ERRORS`). `details.fields` = trường sai. */
 export function tenantProfileError(code: TenantProfileErrorCode, details?: unknown): AppError {
   return new AppError(code, TENANT_PROFILE_ERRORS[code], PROFILE_MESSAGES[code], details);
+}
+
+const ROLE_MESSAGES: Record<AppRoleErrorCode, string> = {
+  DEFAULT_ROLE_PROTECTED: "Default roles cannot be deleted or change level",
+  ROLE_HAS_MEMBERS: "Role still has members",
+  PACK_NOT_ROLEABLE: "Roles are only available for installed business packs",
+  ROLE_GROUP_MANAGED: "This group belongs to a role; delete the role instead",
+  ROLE_KEY_RESERVED: "This role key is reserved for default roles",
+  ROLE_GROUP_CONFLICT: "A default role group key is used by a custom role",
+};
+
+/** CR-112 · mã lỗi vai theo app (khối riêng `APP_ROLE_ERRORS`); ở đây để service không phải biết kiểu status của HTTP. */
+export function roleError(code: AppRoleErrorCode, details?: unknown): AppError {
+  return new AppError(
+    code,
+    APP_ROLE_ERRORS[code] as ContentfulStatusCode,
+    ROLE_MESSAGES[code],
+    details,
+  );
 }
 
 export function isAppError(err: unknown, code?: ErrorCode): err is AppError {

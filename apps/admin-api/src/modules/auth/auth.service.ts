@@ -336,6 +336,11 @@ export async function updateMyPrefs(
 }
 
 /** Dùng bởi module tenants/users (không import repo auth): thu hồi phiên trong transaction của bên gọi. */
+/** Tra user theo id trong tx của người gọi (module khác — vd internal-tokens — đi qua service, không qua repo). */
+export function findUserById(tx: Tx, tenantId: string, userId: string) {
+  return repo.findUserById(tx, tenantId, userId);
+}
+
 export function revokeTenantSessions(tx: Tx, tenantId: string, reason: RevokeReason) {
   return repo.revokeTenantTokens(tx, tenantId, reason);
 }
