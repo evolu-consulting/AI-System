@@ -3,6 +3,7 @@
 // gửi `trigger` ⇒ giữ nguyên; `trigger_event` sinh để bộ điều phối chọn flow.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Role } from "@ai/contracts/common";
+import { MODULES } from "@ai/contracts/modules";
 import { tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
@@ -106,10 +107,17 @@ beforeAll(async () => {
     }),
     user: async () => undefined,
   };
-  app.route(
-    "/",
-    defsRoutes({ db, packTools: undefined, start: {}, config } as unknown as ProcessDeps),
-  );
+  // Cổng gói giả: tool gửi ký khả dụng cho công ty (cụm Ký số cần stage tool hợp lệ).
+  const packTools = {
+    available: async () => [
+      {
+        key: "contracts-esign-send",
+        sideEffect: false,
+        params: [{ name: "contract_id", type: "string", required: true }],
+      },
+    ],
+  };
+  app.route("/", defsRoutes({ db, packTools, start: {}, config } as unknown as ProcessDeps));
 }, 180_000);
 
 afterAll(async () => {
@@ -156,12 +164,15 @@ describe("CR-122 E1 · lưu def có trigger", () => {
 
   it("N1 · bước là node của tính năng đã tắt ⇒ 422 FLOW_NODE_FEATURE_OFF nêu tính năng, node bật ⇒ lưu được", async () => {
     const cur = await call("GET", `/process-defs/${id}`);
-    const withNode = (node: string) => ({
-      ...body({
-        stages: [stage("dau", 0, { node }), stage("xong", 1, { outcome: "approved" })],
-      }),
-      version: cur.json.version,
-    });
+    const withNode = (node: string) => {
+      const mid = nodeStages("dau", 0, node);
+      return {
+        ...body({
+          stages: [...mid, stage("xong", mid.length, { outcome: "approved" })],
+        }),
+        version: cur.json.version,
+      };
+    };
     const off = await call("PUT", `/process-defs/${id}`, withNode("community.show-post"));
     expect([off.status, off.json.error?.code ?? off.json.code]).toEqual([
       422,
@@ -173,6 +184,40 @@ describe("CR-122 E1 · lưu def có trigger", () => {
     expect(on.json.stages[0].node).toBe("contracts.esign");
   });
 });
+
+// Stage tool của node cần đủ tham số bắt buộc của tool (như defs-node-config.int.test).
+const toolArgs = (ex: object): object =>
+  (ex as { kind: string }).kind === "tool"
+    ? { ...ex, args: { contract_id: { from: "const", value: "x" } } }
+    : ex;
+
+/** Stage(s) của một node: node nhiều stage (vd Ký số) ⇒ trọn cụm liên tiếp lấy từ khai báo node trong MODULES (một nguồn). */
+const nodeStages = (key: string, step: number, node: string) => {
+  const decl = MODULES.flatMap((m) => m.nodes).find((n) => n.key === node);
+  const decls = decl && decl.stages.length > 1 ? decl.stages : [undefined];
+  return decls.map((d, i) =>
+    stage(i === 0 ? key : `${key}-${i}`, step + i, {
+      node,
+      // `real_action` giữ false: luật REAL_ACTION (bước thật phải đứng sau bước duyệt) không thuộc ý các ca này.
+      ...(d
+        ? {
+            executor: toolArgs(d.executor),
+            // Stage kế trong cụm nhận lại dữ kiện đầu vào của node từ stage trước ⇒ mỗi stage ra lại các trường đó.
+            output: {
+              filename: `${key}-${i}.md`,
+              template: "# x",
+              required_sections: ["x"],
+              fields: (decl?.inputs ?? []).map((f) => ({
+                key: f.key,
+                type: f.type,
+                required: false,
+              })),
+            },
+          }
+        : {}),
+    }),
+  );
+};
 
 /** Stage `set` chỉ có một field `fkey` (ghi hằng) — đủ để làm "bước trước có trường fkey". */
 const withField = (key: string, step: number, fkey: string, ftype: string, extra: object = {}) =>
@@ -189,20 +234,23 @@ const withField = (key: string, step: number, fkey: string, ftype: string, extra
     },
     ...extra,
   });
-const edgeBody = (version: number, fkey: string, ftype: string, node: string) => ({
-  ...body({
-    stages: [
-      withField("dau", 0, fkey, ftype),
-      stage("giua", 1, { node }),
-      stage("xong", 2, { outcome: "approved" }),
-    ],
-  }),
-  // CR-122 · lát A: "Bắt đầu khi" cấp bản ghi + dữ kiện cho MỌI cạnh ⇒ def kiểm cạnh KHÔNG có trigger (null ⇒ xoá), để trường
-  // `contract_id`/`date` chỉ đến từ bước trước.
-  trigger: null,
-  app: null,
-  version,
-});
+const edgeBody = (version: number, fkey: string, ftype: string, node: string) => {
+  const mid = nodeStages("giua", 1, node);
+  return {
+    ...body({
+      stages: [
+        withField("dau", 0, fkey, ftype),
+        ...mid,
+        stage("xong", 1 + mid.length, { outcome: "approved" }),
+      ],
+    }),
+    // CR-122 · lát A: "Bắt đầu khi" cấp bản ghi + dữ kiện cho MỌI cạnh ⇒ def kiểm cạnh KHÔNG có trigger (null ⇒ xoá), để trường
+    // `contract_id`/`date` chỉ đến từ bước trước.
+    trigger: null,
+    app: null,
+    version,
+  };
+};
 
 describe("CR-122 N2 · cạnh lệch giao diện + chạy tay", () => {
   it("thiếu trường BẮT BUỘC ⇒ 422 FLOW_EDGE_MISSING nêu cạnh + trường, không ghi, đủ trường ⇒ lưu, không warnings", async () => {
