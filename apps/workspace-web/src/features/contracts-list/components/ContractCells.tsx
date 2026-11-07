@@ -18,7 +18,15 @@ import { cn } from "~/lib/utils";
 import { COLUMN_KEYS, COLUMN_KEYS_DEAL, type ColumnKey } from "../lib/columns";
 import { deleteAction } from "../lib/delete-action";
 import { STATUS_VIEW, shortName, statusLabel } from "../lib/list-model";
-import { DEAL_TONE, dealOfRow, partnerOfRow, STAGE_TONE, stageView } from "../lib/row-view";
+import {
+  approvedLabel,
+  DEAL_TONE,
+  dealOfRow,
+  partnerOfRow,
+  STAGE_TONE,
+  type StageView,
+  stageView,
+} from "../lib/row-view";
 import { DocTypeTag, EyeIcon, SourceName } from "./ChildRows";
 
 export type RowCtx = {
@@ -123,11 +131,19 @@ function StageTag({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
       </Tag>
     );
   }
+  return <TrackedTag r={r} v={v} />;
+}
+
+/** HĐ đã vào theo dõi: giai đoạn (+ bước kế). CR-123 · u10b: lượt duyệt đã xong ⇒ "Đã duyệt · Đang hiệu lực"; quá hạn vẫn đỏ như cũ. */
+function TrackedTag({ r, v }: { r: ContractListRow; v: Extract<StageView, { kind: "stage" }> }) {
+  const { t } = useTranslation();
+  const approved = v.overdue ? null : approvedLabel(r.step_label, statusLabel(t, r.status));
+  const stage = v.overdue
+    ? t("contracts.cdetail.stageOver")
+    : t(`contracts.cdetail.stage.${v.stage}`);
   return (
     <>
-      <Tag tone={v.overdue ? "late" : STAGE_TONE[v.stage]}>
-        {v.overdue ? t("contracts.cdetail.stageOver") : t(`contracts.cdetail.stage.${v.stage}`)}
-      </Tag>
+      <Tag tone={v.overdue ? "late" : STAGE_TONE[v.stage]}>{approved ?? stage}</Tag>
       {v.step && (
         <span className={cn("mt-0.5 block text-[12.5px]", v.overdue ? "text-late" : "text-dim")}>
           {v.step}

@@ -32,13 +32,10 @@ describe("CR-123 u10 · nhãn bước hiện tại của HĐ trong danh sách", 
     );
     expect(stepLabelOf(v("waiting_timer", steps({ outcome: "waiting" })))).toBe("Chờ ký");
   });
-  it("bước soạn mở: chưa gửi ⇒ Chờ gửi duyệt; sau khi bị trả lại ⇒ Bị trả lại", () => {
+  it("bước soạn mở và chưa gửi ⇒ Chờ gửi duyệt", () => {
     expect(
       stepLabelOf(v("waiting_review", [s(0, "Xác nhận", "open"), s(1, "Duyệt", "pending")])),
     ).toBe("Chờ gửi duyệt");
-    expect(
-      stepLabelOf(v("waiting_review", [s(0, "Xác nhận", "open"), s(1, "Duyệt", "returned")])),
-    ).toBe("Bị trả lại");
   });
   it("CR-124 · run của event flow (from_run): bước duyệt đầu đang mở ⇒ Chờ <tên bước>, không phải Chờ gửi duyệt", () => {
     const run = v("waiting_review", [
@@ -48,10 +45,25 @@ describe("CR-123 u10 · nhãn bước hiện tại của HĐ trong danh sách", 
     expect(stepLabelOf(run, true)).toBe("Chờ Giám đốc duyệt");
     expect(stepLabelOf(run)).toBe("Chờ gửi duyệt");
   });
-  it("run xong ⇒ Đã duyệt / Bị từ chối; huỷ / lỗi ⇒ nhãn riêng; không có run ⇒ null", () => {
-    expect(stepLabelOf(v("done", [s(0, "A", "passed")]))).toBe("Đã duyệt");
-    expect(stepLabelOf(v("done", [s(0, "A", "passed"), s(1, "B", "rejected")]))).toBe("Bị từ chối");
+  it("CR-123 · u10b · kết cục cuối đọc rõ: Đã duyệt", () => {
+    expect(stepLabelOf(v("done", [s(0, "A", "passed"), s(1, "B", "passed")]))).toBe("Đã duyệt");
+  });
+  it("CR-123 · u10b · kết cục cuối đọc rõ: Từ chối (run xong hay đã huỷ đều là Từ chối khi có bước bị từ chối)", () => {
+    expect(stepLabelOf(v("done", [s(0, "A", "passed"), s(1, "B", "rejected")]))).toBe("Từ chối");
+    expect(stepLabelOf(v("cancelled", [s(0, "A", "passed"), s(1, "B", "rejected")]))).toBe(
+      "Từ chối",
+    );
+  });
+  it("CR-123 · u10b · kết cục cuối đọc rõ: Đã huỷ", () => {
+    expect(stepLabelOf(v("cancelled", [s(0, "A", "passed"), s(1, "B", "pending")]))).toBe("Đã huỷ");
     expect(stepLabelOf(v("cancelled", []))).toBe("Đã huỷ");
+  });
+  it("CR-123 · u10b · kết cục cuối đọc rõ: Trả lại — chờ sửa", () => {
+    expect(
+      stepLabelOf(v("waiting_review", [s(0, "Xác nhận", "open"), s(1, "Duyệt", "returned")])),
+    ).toBe("Trả lại — chờ sửa");
+  });
+  it("lỗi ⇒ Cần xử lý; không có run ⇒ null", () => {
     expect(stepLabelOf(v("needs_decision", []))).toBe("Cần xử lý");
     expect(stepLabelOf(null)).toBeNull();
   });

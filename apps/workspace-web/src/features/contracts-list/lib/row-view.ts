@@ -29,6 +29,15 @@ export const partnerOfRow = (
   deal: ContractDeal | null,
 ): string | null => (deal === "buy" ? r.seller : (r.buyer ?? r.seller));
 
+/**
+ * CR-123 · u10b: HĐ đã vào theo dõi (đang hiệu lực…) mà lượt duyệt kết thúc "Đã duyệt" ⇒ "Đã duyệt · <trạng thái HĐ>". Nhãn kết cục lấy
+ * từ `step_label` của API (cùng helper `stepLabelOf` với thẻ duyệt); nhãn khác (đang chờ…) không ghép — HĐ đang hiệu lực không chờ ai.
+ */
+export const approvedLabel = (
+  stepLabel: string | null | undefined,
+  statusText: string,
+): string | null => (stepLabel === "Đã duyệt" ? `${stepLabel} · ${statusText}` : null);
+
 export type StageView =
   | { kind: "status" }
   | { kind: "stage"; stage: ContractStage; overdue: boolean; step: string | null };

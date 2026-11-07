@@ -280,6 +280,15 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   ).toBeVisible({
     timeout: 60_000,
   });
+  // CR-123 · u10b · HĐ đã duyệt xong (G1.2) đọc "Đã duyệt · …", không chỉ "Đang thực hiện"
+  await expect(
+    b.emp
+      .locator("main")
+      .getByText(/^Đã duyệt · /)
+      .first(),
+  ).toBeVisible({
+    timeout: 60_000,
+  });
   await b.emp.screenshot({ path: testInfo.outputPath("cr123-u10-list-steps.png") });
   await approveAs(await ctxPage(browser), E, U.director, b.id, BIG);
   await b.emp.goto(`${E.cw}/contracts/c/${b.id}`);
