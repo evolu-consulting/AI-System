@@ -23,10 +23,10 @@ export const CONTRACTS_INTAKE_DEF = {
 } as const;
 
 export const CONTRACTS_INTAKE_INPUTS = [
-  { key: "contract-id", label: "Hợp đồng", type: "text", required: true },
+  { key: "contract_id", label: "Hợp đồng", type: "text", required: true },
 ];
 
-const contractArg = { contract_id: { from: "input", key: "contract-id" } };
+const contractArg = { contract_id: { from: "input", key: "contract_id" } };
 const auto = { kind: "auto", branch: [] };
 const base = {
   instruction: "",

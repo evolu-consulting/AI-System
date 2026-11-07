@@ -7,10 +7,10 @@ import {
   WaitTimeSchema,
 } from "../chat/processes";
 import { FIELD_KEY_RE } from "./process-tools";
-import { SourceKeySchema } from "./sources";
+import { InputKeySchema } from "./sources";
 /** P-d1 · nguồn ngày của `wait_until`: input run kiểu `date` hoặc field `date` của output stage ở bước nhỏ hơn. */
 export const WaitFromSchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("input"), key: SourceKeySchema }),
+  z.strictObject({ kind: z.literal("input"), key: InputKeySchema }),
   z.strictObject({
     kind: z.literal("field"),
     stage_key: z.string().regex(STAGE_KEY_RE),

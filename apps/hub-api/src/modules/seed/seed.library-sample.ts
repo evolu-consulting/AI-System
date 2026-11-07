@@ -52,7 +52,7 @@ export async function writeLibrarySample(tx: Tx): Promise<boolean> {
       token_budget, enabled, sources, inputs, slot, slot_body, published_version)
     values (${s.id}, null, ${s.key}, ${s.name}, 'Mẫu thử (dev/test): duyệt HĐ mặc định + Kế toán duyệt.', 'Mã hợp đồng',
       '{}'::uuid[], ${stages}::jsonb, null, true, '[]'::jsonb,
-      '[{"key":"contract-id","label":"Hợp đồng","type":"text","required":true}]'::jsonb, ${s.slot}, ${slotBody}::jsonb, 1)
+      '[{"key":"contract_id","label":"Hợp đồng","type":"text","required":true}]'::jsonb, ${s.slot}, ${slotBody}::jsonb, 1)
     on conflict (id) do nothing returning id`;
   await tx`insert into hub.process_def_releases (def_id, rel_version, name, stages, slot_body, note)
     values (${s.id}, 1, ${s.name}, ${stages}::jsonb, ${slotBody}::jsonb, 'seed dev')

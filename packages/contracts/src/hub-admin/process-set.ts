@@ -5,7 +5,7 @@ import { z } from "zod";
 import { FACT_KEY_RE } from "../app-manifest/manifest";
 import { PROCESS_INPUT_MAX, ProcessStepSchema } from "../chat/processes";
 import { FIELD_KEY_RE } from "./process-tools";
-import { SourceKeySchema } from "./sources";
+import { InputKeySchema } from "./sources";
 
 /** Key của flow mẫu (seed `tools/scripts/src/seed-flow-showcase.ts`; trang `/processes/showcase` tìm def theo key này). */
 export const FLOW_SHOWCASE_KEY = "flow-showcase";
@@ -18,7 +18,7 @@ export const SET_VALUES_MAX = 20;
  * `set`, khoá có trong output bước đó) · dữ kiện HIỆN TẠI của bản ghi (`fact`, đọc qua `FactsReader` như node Nếu).
  */
 export const SetFromSchema = z.union([
-  z.strictObject({ input: SourceKeySchema }),
+  z.strictObject({ input: InputKeySchema }),
   z.strictObject({ const: z.union([z.string().max(PROCESS_INPUT_MAX), z.number()]) }),
   z.strictObject({
     kind: z.literal("field"),

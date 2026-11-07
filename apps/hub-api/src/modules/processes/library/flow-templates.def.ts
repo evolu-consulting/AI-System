@@ -1,7 +1,7 @@
 // CR-122 · B · flow MẪU của Thư viện theo sự kiện `contract.submitted` (đã xuất bản, `trigger` + `app`, KHÔNG khe): "Duyệt 2 cấp",
 // "Duyệt theo giá trị", "Duyệt theo phòng ban". Nguồn sự thật của dữ liệu seed (`flow-templates.seed.ts`). Duyệt theo MÃ Group
 // (`group_key`) — công ty sao mẫu ra thì E1b đổi mã → id Group của công ty lúc chạy. Từ chối ⇒ Kết thúc · Từ chối, Trả lại ⇒ Kết thúc ·
-// Trả lại (HĐ về Nháp). KHÔNG chèn node Ghi giá trị: bước dùng đầu vào `contract-id` của HĐ (lát A nối dữ liệu hồ sơ cho mọi bước).
+// Trả lại (HĐ về Nháp). KHÔNG chèn node Ghi giá trị: bước dùng đầu vào `contract_id` của HĐ (lát A nối dữ liệu hồ sơ cho mọi bước).
 import type { ProcessDefInput } from "@ai/contracts/hub-admin";
 import { normalizeStage } from "../nodes/registry";
 
@@ -10,7 +10,7 @@ type DefStage = ProcessDefInput["stages"][number];
 export const FLOW_TEMPLATE_EVENT = "contract.submitted";
 export const FLOW_TEMPLATE_APP = "contracts";
 export const FLOW_TEMPLATE_INPUTS = [
-  { key: "contract-id", label: "Hợp đồng", type: "text", required: true },
+  { key: "contract_id", label: "Hợp đồng", type: "text", required: true },
 ];
 
 const auto = { kind: "auto", branch: [] };
@@ -69,7 +69,7 @@ const esignSend = (step: number): Stage => ({
   executor: {
     kind: "tool",
     tool_key: "contracts-esign-send",
-    args: { contract_id: { from: "input", key: "contract-id" } },
+    args: { contract_id: { from: "input", key: "contract_id" } },
   },
   output: out("ky-so.md", [{ key: "status", type: "string", required: true }]),
   after: auto,

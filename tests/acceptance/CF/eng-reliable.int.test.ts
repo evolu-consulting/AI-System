@@ -96,7 +96,7 @@ describe("CR-107 · dọn run mồ côi", () => {
     const { runId: orphan } = await c.port.start(caller(PA.A), {
       process_key: "contracts-approval",
       input: id,
-      inputs: [{ type: "text", key: "contract-id", text: id }],
+      inputs: [{ type: "text", key: "contract_id", text: id }],
       ref: { pack: "contracts", record_id: id },
     });
     const fresh = (await c.sweepOnce()) as unknown as { orphans: number };

@@ -6,7 +6,7 @@ import { FACT_KEY_RE } from "../app-manifest/manifest";
 import { BRANCH_OPS, isIsoCalendarDate, ProcessStepSchema, STAGE_KEY_RE } from "../chat/processes";
 import { type ProcessDefIssue, resolveSteps } from "./process-steps";
 import { FIELD_KEY_RE } from "./process-tools";
-import { SourceKeySchema } from "./sources";
+import { InputKeySchema } from "./sources";
 
 /** Số điều kiện tối thiểu / tối đa của một node If. */
 export const IF_CONDS_MIN = 1;
@@ -20,7 +20,7 @@ export const CondFromSchema = z.discriminatedUnion("kind", [
     stage_key: z.string().regex(STAGE_KEY_RE),
     field: z.string().regex(FIELD_KEY_RE),
   }),
-  z.strictObject({ kind: z.literal("input"), key: SourceKeySchema }),
+  z.strictObject({ kind: z.literal("input"), key: InputKeySchema }),
   /** CR-122 · FLOW2-FR-12 · dữ kiện HIỆN TẠI của bản ghi (app khai ở `AppEventDecl.facts`, đọc qua `FactsReader`). */
   z.strictObject({ kind: z.literal("fact"), key: z.string().regex(FACT_KEY_RE) }),
 ]);

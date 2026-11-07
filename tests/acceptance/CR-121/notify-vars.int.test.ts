@@ -69,7 +69,7 @@ const STAGES = [
   }),
 ];
 const INPUTS = [
-  { key: "contract-id", label: "HĐ", type: "text", required: true },
+  { key: "contract_id", label: "HĐ", type: "text", required: true },
   { key: "contract-number", label: "Số HĐ", type: "text", required: false },
   { key: "contract-title", label: "Tên HĐ", type: "text", required: false },
 ];
@@ -95,7 +95,7 @@ describe("CR-121 F-5 · input run theo HĐ đã xác nhận [R1]", () => {
       process_key: KEY,
       input: "HĐ",
       inputs: [
-        { type: "text", key: "contract-id", text: REC },
+        { type: "text", key: "contract_id", text: REC },
         { type: "text", key: "contract-title", text: "hop-dong-x.pdf" },
       ],
       ref: { pack: "contracts", record_id: REC },

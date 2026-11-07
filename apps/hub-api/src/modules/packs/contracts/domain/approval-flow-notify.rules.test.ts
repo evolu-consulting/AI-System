@@ -95,7 +95,7 @@ describe("CR-121 D-6 · Thông báo / Chờ tới trong khe duyệt HĐ", () => 
     });
     const keys = def.inputs.map((i) => i.key);
     for (const k of [
-      "contract-id",
+      "contract_id",
       "contract-title",
       "contract-value",
       "contract-owner",

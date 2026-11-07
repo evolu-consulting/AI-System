@@ -1,6 +1,5 @@
 // HUB-FR-146 · AC-H44 · PD2-R03/R05 · plan-d2-rules §1, D2-13/D2-29, Q-D2-2: dựng tham số gọi tool từ nguồn (input start /
 // trường output stage trước / hằng); phân loại lỗi gọi tool + quyết định thử lại (dùng chung `decideRetry`). Thuần, lớp 1.
-import { ioKeyOf } from "@ai/contracts/app-manifest";
 import type { JobErrorClass } from "../runs/job-error.rules";
 import { decideRetry, type RetryDecision, type RetryState } from "../runs/retry.rules";
 
@@ -16,13 +15,15 @@ export type BuiltArgs =
   | { ok: false; missing: string };
 
 /**
- * CR-122 · khoá input so khớp coi `-` và `_` là một: flow cũ/mẫu Thư viện khai `contract-id`, lượt mở từ sự kiện của app mang
- * `contract_id` (manifest) — cùng một khái niệm. Có đúng khoá ⇒ dùng đúng khoá.
+ * CR-122 p17 · CHỈ để tương thích SNAPSHOT lượt cũ: trước hub 0112 flow/lượt khai `contract-id`, nay mọi nơi dùng `contract_id`
+ * (một khoá). Lượt đang chạy giữ snapshot cũ (hub 0112 không đổi `process_runs`) ⇒ khi không có đúng khoá, thử khoá
+ * cùng chính tả `-`/`_`. Có đúng khoá ⇒ dùng đúng khoá. Gỡ khi hết lượt cũ.
  */
+const legacyKey = (key: string): string => key.replaceAll("-", "_");
 export function inputKeyOf(key: string, inputs: ReadonlyMap<string, unknown>): string | undefined {
   if (inputs.has(key)) return key;
-  const want = ioKeyOf(key);
-  for (const k of inputs.keys()) if (ioKeyOf(k) === want) return k;
+  const want = legacyKey(key);
+  for (const k of inputs.keys()) if (legacyKey(k) === want) return k;
   return undefined;
 }
 

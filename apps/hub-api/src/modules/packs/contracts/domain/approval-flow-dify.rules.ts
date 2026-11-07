@@ -10,7 +10,7 @@ const validValue = (v: unknown): v is number =>
  * ⇒ không thoả được ⇒ PUT 422 `DIFY_PARAM_UNSUPPORTED`; tham số tuỳ chọn lạ bị bỏ (không truyền).
  */
 export const DIFY_CONTRACT_INPUTS = {
-  contract_id: { key: "contract-id", type: "text", label: "Hợp đồng" },
+  contract_id: { key: "contract_id", type: "text", label: "Hợp đồng" },
   title: { key: "contract-title", type: "text", label: "Tiêu đề hợp đồng" },
   deal: { key: "contract-deal", type: "text", label: "Loại hợp đồng" },
   total_value: { key: "contract-value", type: "number", label: "Giá trị hợp đồng" },

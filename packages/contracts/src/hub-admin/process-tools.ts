@@ -24,13 +24,13 @@ import {
 /** Key trường output (dời từ `./processes` để file này dùng không vòng import; `./processes` re-export). */
 import { FIELD_KEY_RE } from "./field-key";
 import { type ProcessDefIssue, resolveSteps, type StepStageShape } from "./process-steps";
-import { SourceKeySchema } from "./sources";
+import { InputKeySchema } from "./sources";
 
 export { FIELD_KEY_RE };
 
 // ── Schema ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 export const ArgSourceSchema = z.discriminatedUnion("from", [
-  z.strictObject({ from: z.literal("input"), key: SourceKeySchema }),
+  z.strictObject({ from: z.literal("input"), key: InputKeySchema }),
   z.strictObject({
     from: z.literal("field"),
     stage_key: z.string().regex(STAGE_KEY_RE),

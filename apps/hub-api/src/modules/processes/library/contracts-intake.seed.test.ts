@@ -19,8 +19,9 @@ const SQL = readFileSync(
   ),
   "utf8",
 );
+// CR-122 p17 · 0093 bất biến vẫn ghi khoá cũ `contract-id`; hub 0112 đổi thành `contract_id` ⇒ so với builder sau phép đổi đó.
 const lits = [...SQL.matchAll(/'(\[\{.*?\}\])'::jsonb/g)].map((m) =>
-  JSON.parse((m[1] as string).replaceAll("''", "'")),
+  JSON.parse((m[1] as string).replaceAll("''", "'").replaceAll('"contract-id"', '"contract_id"')),
 );
 
 describe("CR-120 · seed 0093 contracts.intake", () => {
@@ -31,7 +32,7 @@ describe("CR-120 · seed 0093 contracts.intake", () => {
       s.key === "signed" ? { ...s, output: { ...s.output, fields: [] } } : s,
     );
     expect(lits.find((j) => Array.isArray(j) && j[0]?.key === "extract")).toEqual(built);
-    expect(lits.find((j) => Array.isArray(j) && j[0]?.key === "contract-id")).toEqual(
+    expect(lits.find((j) => Array.isArray(j) && j[0]?.key === "contract_id")).toEqual(
       CONTRACTS_INTAKE_INPUTS,
     );
     expect(SQL).toContain(`'${CONTRACTS_INTAKE_DEF.id}'`);

@@ -60,7 +60,7 @@ export type SlotSpec = {
   fields?: readonly SlotField[];
   /** CR-121 D-0 · danh mục node khe hỗ trợ; vắng ⇒ rỗng (`slotNodes`). */
   nodes?: readonly SlotNode[];
-  /** Khoá input run bắt buộc (vd `contract-id`). */
+  /** Khoá input run bắt buộc (vd `contract_id`). */
   requiredInputs: readonly string[];
   /** Tool hệ thống mà def của khe phải có (nút khoá trên canvas). */
   systemTools: readonly string[];

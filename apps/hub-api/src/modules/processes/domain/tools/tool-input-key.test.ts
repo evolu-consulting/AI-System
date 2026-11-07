@@ -1,4 +1,4 @@
-// CR-122 · khoá input `contract-id` (mẫu/flow cũ) ⇄ `contract_id` (lượt mở từ sự kiện) là một.
+// CR-122 p17 · tương thích snapshot lượt CŨ: khoá `contract-id` (trước hub 0112) ⇄ `contract_id` (một khoá chuẩn).
 import { describe, expect, it } from "bun:test";
 import { buildToolArgs, inputKeyOf } from "./tool-run.rules";
 

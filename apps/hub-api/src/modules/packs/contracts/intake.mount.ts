@@ -55,7 +55,7 @@ export const intakeSlotSpec: SlotSpec = {
   key: "contracts.intake",
   label: "Sổ Hợp Tác · Tiếp nhận hợp đồng",
   packKey: "contracts",
-  requiredInputs: ["contract-id"],
+  requiredInputs: ["contract_id"],
   systemTools: [],
   validate: () => [],
   compile: (b) => (Array.isArray(b) ? b : []),

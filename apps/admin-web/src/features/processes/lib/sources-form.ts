@@ -3,6 +3,7 @@
 import {
   DEF_INPUTS_MAX,
   DEF_SOURCES_MAX,
+  INPUT_KEY_RE,
   INPUT_LABEL_MAX,
   INPUT_OPTION_LEN,
   INPUT_OPTIONS_MAX,
@@ -11,7 +12,6 @@ import {
   MUST_KNOW_MAX,
   type ProcessInputDef,
   SOURCE_GLOB_MAX,
-  SOURCE_KEY_RE,
   STAGE_ALLOWLIST_MAX,
   STAGE_SOURCES_MAX,
   type StageSource,
@@ -113,7 +113,7 @@ function validateInputs(inputs: readonly InputDraft[], e: Errors) {
   if (inputs.length > DEF_INPUTS_MAX) e.inputs = `${E}err.input.max`;
   inputs.forEach((x, j) => {
     const at = (f: string) => `inputs.${j}.${f}`;
-    if (!SOURCE_KEY_RE.test(x.key)) e[at("key")] = `${E}err.input.key`;
+    if (!INPUT_KEY_RE.test(x.key)) e[at("key")] = `${E}err.input.key`;
     else if (inputs.some((o, k) => k < j && o.key === x.key)) e[at("key")] = `${E}err.input.keyDup`;
     if (x.label.trim() === "" || x.label.trim().length > INPUT_LABEL_MAX)
       e[at("label")] = `${E}err.input.label`;

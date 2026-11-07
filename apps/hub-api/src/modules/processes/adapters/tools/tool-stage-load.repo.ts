@@ -16,6 +16,8 @@ type LoadRow = {
   timeout_s: number | null;
   inputs: RawInput[] | null;
   src_fields: Record<string, Record<string, string | number> | null> | null;
+  /** Khoá stage trước (gần → xa) đã chạy, không `skipped` — nguồn tự nối đầu vào node (p17). */
+  upstream?: string[] | null;
   started_by: string;
   workflow_id: string | null;
   side_effect: boolean | null;
@@ -55,6 +57,9 @@ export async function loadCallRow(
         from hub.stage_runs o left join hub.process_outputs po
           on po.id = o.current_output_id and po.tenant_id = o.tenant_id
         where o.process_run_id = r.id and o.tenant_id = r.tenant_id) as src_fields,
+      (select array_agg(r.snapshot->'stages'->(o.stage_idx::int)->>'key' order by o.stage_idx desc)
+        from hub.stage_runs o where o.process_run_id = r.id and o.tenant_id = r.tenant_id
+          and o.stage_idx < s.stage_idx and o.status <> 'skipped') as upstream,
       w.id as workflow_id, w.side_effect, (st->>'real_action')::boolean as real_action, w.input_schema,
       w.enabled as wf_enabled, (t.workflow_id is not null) as switch_on,
       w.name as wf_name, w.app_type, w.base_url, w.output_field,
@@ -96,14 +101,44 @@ export function autoArgKeys(
   return nodeInputs.flatMap((i) => (!have.has(i.key) && runInputs.has(i.key) ? [i.key] : []));
 }
 
-/** Nguồn khai rõ + (CR-122 · A) đầu vào của node (manifest) chưa có nguồn mà trùng khoá với input lượt (bản ghi / dữ kiện). */
-function argsOf(r: LoadRow, inputs: ReadonlyMap<string, string>): Record<string, ArgSource> {
+/**
+ * CR-122 p17 · đầu vào của node (manifest) chưa có nguồn và KHÔNG có trong input lượt ⇒ lấy từ output của stage gần nhất phía trước
+ * (`upstream` = khoá stage trước, gần → xa) có trường cùng khoá — đường của node "Ghi giá trị" (cầu nối AI) nối X → Y. Thuần.
+ */
+export function fieldArgSources(
+  nodeInputs: readonly { key: string }[],
+  taken: ReadonlySet<string>,
+  upstream: readonly string[],
+  fields: ReadonlyMap<string, Readonly<Record<string, unknown>> | null>,
+): Record<string, ArgSource> {
+  const out: Record<string, ArgSource> = {};
+  for (const i of nodeInputs) {
+    if (taken.has(i.key)) continue;
+    const stageKey = upstream.find((s) => {
+      const f = fields.get(s);
+      return f !== null && f !== undefined && Object.hasOwn(f, i.key);
+    });
+    if (stageKey !== undefined) out[i.key] = { from: "field", stageKey, field: i.key };
+  }
+  return out;
+}
+
+/** Nguồn khai rõ + (CR-122 · A) đầu vào của node chưa có nguồn mà trùng khoá với input lượt, rồi (p17) với output stage trước. */
+function argsOf(
+  r: LoadRow,
+  inputs: ReadonlyMap<string, string>,
+  fields: ReadonlyMap<string, Readonly<Record<string, unknown>> | null>,
+): Record<string, ArgSource> {
   const args: Record<string, ArgSource> = Object.fromEntries(
     Object.entries(r.args ?? {}).map(([n, a]) => [n, argOf(a)]),
   );
   const node = r.node_key ? nodeByKey(Object.values(APP_MANIFESTS), r.node_key) : undefined;
   for (const k of autoArgKeys(node?.inputs ?? [], Object.keys(args), inputs))
     args[k] = { from: "input", key: k };
+  Object.assign(
+    args,
+    fieldArgSources(node?.inputs ?? [], new Set(Object.keys(args)), r.upstream ?? [], fields),
+  );
   return args;
 }
 
@@ -116,7 +151,8 @@ export function toLoad(r: LoadRow): ToolCallLoad {
     if (t !== undefined) inputs.set(v.key, t);
     inputTypes.set(v.key, v.type);
   }
-  const args = argsOf(r, inputs);
+  const fields = new Map(Object.entries(r.src_fields ?? {}));
+  const args = argsOf(r, inputs, fields);
   return {
     stageName: r.stage_name,
     toolKey: r.tool_key,
@@ -129,7 +165,7 @@ export function toLoad(r: LoadRow): ToolCallLoad {
     outputFields: r.out_fields ?? [],
     inputs,
     inputTypes,
-    fields: new Map(Object.entries(r.src_fields ?? {})),
+    fields,
     startedBy: r.started_by,
     usable: r.usable === true,
     canRun: r.can_run === true,

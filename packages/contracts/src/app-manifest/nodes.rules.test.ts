@@ -88,8 +88,10 @@ describe("FLOW2-FR-26 · edgeIssues", () => {
       { key: "total_value", type: "string" as const, required: true },
     ];
     expect(edgeIssues(prev, [{ key: "contract_id", type: "string", required: true }])).toEqual([]);
-    // CR-122 · contract-id (flow cũ) ≡ contract_id (manifest) ⇒ không báo thiếu, không cần cầu nối
-    expect(edgeIssues(prev, [{ key: "contract-id", type: "string", required: true }])).toEqual([]);
+    // CR-122 p17 · khoá khớp TUYỆT ĐỐI: lệch chính tả (contract-id ≠ contract_id) ⇒ báo thiếu để AI gợi ý cầu nối
+    expect(edgeIssues(prev, [{ key: "contract-id", type: "string", required: true }])).toEqual([
+      { key: "contract-id", rule: "missing" },
+    ]);
     expect(
       edgeIssues(prev, [
         { key: "date", type: "date", required: true },

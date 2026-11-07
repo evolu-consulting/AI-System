@@ -185,7 +185,7 @@ export function defaultFlowFromSettings(
 }
 
 // ── Dịch ⇒ def engine ────────────────────────────────────────────────────────────────────────────────────────────────
-const ARGS = { contract_id: { from: "input", key: "contract-id" } } as const;
+const ARGS = { contract_id: { from: "input", key: "contract_id" } } as const;
 /** S3a · tham số `from_step` (= bước người dùng của stage) cho `contracts-route`: tool không biết stage đang chạy. */
 export const FROM_STEP_ARG = "from_step";
 const routeArgs = (from: number) => ({ ...ARGS, [FROM_STEP_ARG]: { from: "const", value: from } });
@@ -314,7 +314,7 @@ function stageOfStep(
   });
 }
 
-/** Input run: `contract-id` bắt buộc; có bước Dify ⇒ thêm dữ liệu HĐ (tuỳ chọn, `openRun` điền). */
+/** Input run: `contract_id` bắt buộc; có bước Dify ⇒ thêm dữ liệu HĐ (tuỳ chọn, `openRun` điền). */
 function defInputs(withDify: boolean, selects: readonly DifySelectBinding[] = []) {
   const names = Object.keys(DIFY_CONTRACT_INPUTS) as DifyParamName[];
   const base = names

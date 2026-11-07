@@ -60,7 +60,7 @@ const ok = (text: string): Reply => ({
 });
 const GOOD = JSON.stringify({
   ok: true,
-  values: [{ key: "contract_id", type: "string", from: { input: "contract-id" } }],
+  values: [{ key: "contract_id", type: "string", from: { input: "contract_id" } }],
   explain_vi: "Lấy mã hợp đồng từ đầu vào của lượt chạy.",
   explain_en: "Takes the contract id from the run input.",
 });
@@ -93,7 +93,7 @@ const def = (stages: object[]) => ({
   token_budget: null,
   enabled: true,
   sources: [],
-  inputs: [{ key: "contract-id", label: "Hợp đồng", type: "text", required: true }],
+  inputs: [{ key: "contract_id", label: "Hợp đồng", type: "text", required: true }],
 });
 const GAP = [stage("dau", 0), stage("ky", 1, { node: "contracts.esign" })];
 const body = (o: object = {}) => ({ def: def(GAP), from: "dau", to: "ky", ...o });
@@ -126,7 +126,7 @@ describe("CR-122 N2 · gợi ý cầu nối", () => {
     expect(Object.keys(p).sort()).toEqual(["facts", "from", "mismatch", "run_inputs", "to"]);
     expect(p.from.step).toBe(0);
     expect(p.mismatch.missing).toEqual(["contract_id"]);
-    expect(p.run_inputs).toEqual([{ key: "contract-id", type: "string" }]);
+    expect(p.run_inputs).toEqual([{ key: "contract_id", type: "string" }]);
     expect(c.prompt).not.toContain("DAU"); // không đưa tên/nội dung do người dùng đặt
     expect(p.facts).toEqual([]); // def không có app/trigger ⇒ không có dữ kiện
   });

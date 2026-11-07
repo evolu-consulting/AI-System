@@ -103,7 +103,7 @@ export const approvalSlotSpec: SlotSpec = {
   packKey: "contracts",
   fields: APPROVAL_SLOT_FIELDS,
   nodes: APPROVAL_SLOT_NODES,
-  requiredInputs: ["contract-id"],
+  requiredInputs: ["contract_id"],
   systemTools: [FLOW_TOOL_KEYS.route, FLOW_TOOL_KEYS.finalize],
   validate: validateApprovalBody,
   compile: compileSlotStages,

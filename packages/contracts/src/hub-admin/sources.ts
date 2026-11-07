@@ -21,6 +21,9 @@ export const SOURCE_KINDS = ["git_remote", "local_path", "library"] as const;
 export type SourceKind = (typeof SOURCE_KINDS)[number];
 
 export const SourceKeySchema = z.string().regex(SOURCE_KEY_RE);
+/** CR-122 p17 · khoá ĐẦU VÀO của quy trình / run (khác khoá nguồn: cho `_`, vd khoá bản ghi của app `contract_id`). */
+export const INPUT_KEY_RE = /^[a-z0-9_-]{2,32}$/;
+export const InputKeySchema = z.string().regex(INPUT_KEY_RE);
 export const SourceKindSchema = z.enum(SOURCE_KINDS);
 
 /** Glob tương đối gốc nguồn: không `..`, không mở đầu `/`, không ký tự null (PB-R06). `picomatch` ở Runtime. */
@@ -65,7 +68,7 @@ export const INPUT_TYPES = ["text", "select", "file", "source_ref", "date", "num
 /** HUB-FR-124 · khai báo đầu vào quy trình; `options` chỉ cho `select`. */
 export const ProcessInputDefSchema = z
   .strictObject({
-    key: SourceKeySchema,
+    key: InputKeySchema,
     label: z.string().trim().min(1).max(INPUT_LABEL_MAX),
     type: z.enum(INPUT_TYPES),
     required: z.boolean(),
@@ -81,31 +84,31 @@ export type ProcessInputDef = z.infer<typeof ProcessInputDefSchema>;
 export const ProcessInputValueSchema = z.discriminatedUnion("type", [
   z.strictObject({
     type: z.literal("text"),
-    key: SourceKeySchema,
+    key: InputKeySchema,
     text: z.string().max(PROCESS_INPUT_MAX),
   }),
   z.strictObject({
     type: z.literal("select"),
-    key: SourceKeySchema,
+    key: InputKeySchema,
     value: z.string().max(INPUT_OPTION_LEN),
   }),
-  z.strictObject({ type: z.literal("file"), key: SourceKeySchema, attachment_id: UuidSchema }),
+  z.strictObject({ type: z.literal("file"), key: InputKeySchema, attachment_id: UuidSchema }),
   z.strictObject({
     type: z.literal("source_ref"),
-    key: SourceKeySchema,
+    key: InputKeySchema,
     source_key: SourceKeySchema,
     branch: BranchSchema,
   }),
   /** P-d1 · chỉ hình dạng ở zod; ngày lịch thật kiểm ở luật domain lúc bắt đầu ⇒ 400 `inputs.<i>.value`. */
   z.strictObject({
     type: z.literal("date"),
-    key: SourceKeySchema,
+    key: InputKeySchema,
     value: z.string().min(1).max(10),
   }),
   /** P-d2 · D2-44 · chuỗi số 1–32; `Number.isFinite(Number(value.trim()))` kiểm ở luật domain lúc bắt đầu ⇒ 400. */
   z.strictObject({
     type: z.literal("number"),
-    key: SourceKeySchema,
+    key: InputKeySchema,
     value: z.string().min(1).max(32),
   }),
 ]);

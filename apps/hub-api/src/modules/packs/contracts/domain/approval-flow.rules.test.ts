@@ -395,12 +395,12 @@ describe("compileDef ⇒ def engine", () => {
       kind: "tool",
       tool_key: "risk-scan",
       args: {
-        contract_id: { from: "input", key: "contract-id" },
+        contract_id: { from: "input", key: "contract_id" },
         total_value: { from: "input", key: "contract-value" },
       },
     });
     expect(def.inputs.map((i) => i.key)).toEqual([
-      "contract-id",
+      "contract_id",
       "contract-title",
       "contract-deal",
       "contract-value",
@@ -408,14 +408,14 @@ describe("compileDef ⇒ def engine", () => {
     ]);
     expect(engineIssues(def)).toEqual([]);
   });
-  it("cf-dify · workflow thiếu / tham số bắt buộc không thoả ⇒ compile ném; không bước Dify ⇒ chỉ input contract-id", () => {
+  it("cf-dify · workflow thiếu / tham số bắt buộc không thoả ⇒ compile ném; không bước Dify ⇒ chỉ input contract_id", () => {
     const steps = [review("a", G.l1), dify("scan")];
     expect(() => compileDef({ steps }, ALL)).toThrow("approval-flow-dify-missing");
     expect(() =>
       compileDef({ steps }, ALL, new Map([["risk-scan", wf([p("x", "text", true)])]])),
     ).toThrow("approval-flow-dify-params");
     expect(compileDef({ steps: [review("a", G.l1)] }, ALL).inputs.map((i) => i.key)).toEqual([
-      "contract-id",
+      "contract_id",
     ]);
   });
   it("S3b · head_only vào stage review (chỉ khi bật), qua bộ kiểm engine", () => {

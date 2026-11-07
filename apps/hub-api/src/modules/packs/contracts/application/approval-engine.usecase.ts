@@ -190,7 +190,7 @@ export async function openRun(
     process_key: APPROVAL_PROCESS_KEY,
     input: c.id,
     inputs: [
-      { type: "text" as const, key: "contract-id", text: c.id },
+      { type: "text" as const, key: "contract_id", text: c.id },
       ...(facts ? difyRunInputs(facts, selects) : []),
       ...(facts && notifyWait
         ? notifyRunInputs({
