@@ -36,7 +36,7 @@ export function freshDlcStage(
   const base: StageDraft = tmpl
     ? { ...tmpl }
     : { ...emptyStage(), executor: "tool", tool: { ...emptyStage().tool, key: "dlc-step" } };
-  const { uiY: _y, ...rest } = base;
+  const { uiY: _y, uiX: _x, ...rest } = base;
   return {
     ...rest,
     uid: nextUid(),

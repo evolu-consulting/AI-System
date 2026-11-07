@@ -263,3 +263,20 @@ export function applyConnect(
   if (newRealViolation(st, patched)) return { error: "real" };
   return { stages: isolateApprovals(clearFree(patched, c.target)), field: r.field };
 }
+
+/**
+ * Các bước (0-based) mà stage `uid` nối tới được — cùng luật với kéo mũi tên: mọi bước KHÔNG phải tổ tiên / chính nó
+ * (đích sau nguồn ⇒ nối thẳng; đích trước ⇒ `arrowOrder` sắp lại). Ô chọn "Gộp tới" dùng đúng danh sách này.
+ */
+export function linkableSteps(stages: readonly StageDraft[], uid: string): number[] {
+  const s = stages.find((x) => x.uid === uid);
+  if (!s) return [];
+  const firstAt = (step: number) => stages.find((x) => x.step === step);
+  return [...new Set(stages.map((x) => x.step))]
+    .filter((step) => step !== s.step)
+    .sort((a, b) => a - b)
+    .filter((step) => {
+      const to = firstAt(step);
+      return !!to && (step > s.step || arrowOrder(stages, uid, to.uid).ok);
+    });
+}

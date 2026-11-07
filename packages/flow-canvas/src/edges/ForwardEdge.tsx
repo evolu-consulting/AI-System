@@ -1,16 +1,17 @@
 // CR-122 · P8: cạnh tiến có nút "+" chèn bước ở giữa (kiểu `forward`; vẫn vẽ nhãn "Duyệt"/"⚠" của host như cạnh mặc định).
-import { BaseEdge, type EdgeProps, getBezierPath } from "@xyflow/react";
+import { BaseEdge, type EdgeProps, getSmoothStepPath } from "@xyflow/react";
 import { memo } from "react";
 import { InsertSlot, useEdgeHover } from "./InsertSlot";
 
 function ForwardEdgeImpl(p: EdgeProps) {
-  const [path, lx, ly] = getBezierPath({
+  const [path, lx, ly] = getSmoothStepPath({
     sourceX: p.sourceX,
     sourceY: p.sourceY,
     sourcePosition: p.sourcePosition,
     targetX: p.targetX,
     targetY: p.targetY,
     targetPosition: p.targetPosition,
+    borderRadius: 12,
   });
   const { hover, on } = useEdgeHover();
   const hasLabel = p.label !== undefined && p.label !== "";

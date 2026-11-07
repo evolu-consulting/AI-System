@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { linkableSteps } from "../../lib/arrow-rules";
 import { useStepOptionLabel } from "../../lib/step-options";
 import { useFlowCtx } from "../flow/flow-ctx";
 import type { StageFormProps } from "./stage-form-props";
@@ -67,12 +68,17 @@ export const waitOutcomes = (w: { event?: string; also?: string[] }): string[] =
   ...new Set([...(w.event ? [w.event] : []), ...(w.also ?? []), "timeout"]),
 ];
 
-export function StageLinks({ stage, all, readOnly, onChange }: StageFormProps) {
+export function StageLinks({ stage, all, readOnly, onChange, onLink }: StageFormProps) {
   const { t } = useTranslation();
   const flow = useFlowCtx();
   const label = useStepOptionLabel(all);
   if (!flow) return null;
   const options = laterSteps(all, stage.step, label);
+  // "Gộp tới": mọi bước không tạo vòng lặp (cùng luật với kéo mũi tên); chọn bước trước ⇒ nối + sắp lại bước
+  const mergeOptions: Opt[] = linkableSteps(all, stage.uid).map((st) => ({
+    step: st,
+    label: label(st),
+  }));
   const none = t("process.admin.flow.link.next");
   const isWait = stage.executor === "wait_event";
   const branches = stage.wait.branches ?? [];
@@ -102,11 +108,15 @@ export function StageLinks({ stage, all, readOnly, onChange }: StageFormProps) {
         <StepSelect
           label={t("process.admin.flow.link.merge")}
           value={stage.nextStep ?? null}
-          options={options}
+          options={onLink ? mergeOptions : options}
           none={none}
           disabled={readOnly}
           testId="stage-next-step"
-          onChange={(v) => onChange({ nextStep: v ?? undefined } as Partial<typeof stage>)}
+          onChange={(v) => {
+            const to = v === null ? undefined : all.find((x) => x.step === v);
+            if (v !== null && v <= stage.step && to && onLink) return onLink(to.uid);
+            onChange({ nextStep: v ?? undefined } as Partial<typeof stage>);
+          }}
         />
       ) : null}
     </div>

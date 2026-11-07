@@ -143,6 +143,8 @@ export type StageDraft = {
   nextStep?: number;
   /** CR-103 · fnr-canvas · `y` đã lưu của node trên canvas (`ui.y`, chỉ-UI); vắng = bố cục tự động. */
   uiY?: number;
+  /** CR-123 · u13 · `x` đã lưu (`ui.x`) — chỉ cùng với `uiY` mới là vị trí kéo tay; vắng = bố cục ELK. */
+  uiX?: number;
   /** CR-123 · u5 · node mới thả từ menu/bảng mẫu đứng RIÊNG: chưa nối vào đâu cho tới khi kéo mũi tên tới nó. Chỉ ở bản nháp (không gửi Hub); Lưu bị chặn khi còn. */
   free?: boolean;
 };

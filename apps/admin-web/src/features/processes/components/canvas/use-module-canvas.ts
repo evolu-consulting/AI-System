@@ -48,7 +48,6 @@ export function useModuleCanvas(p: ProcessCanvasProps): Out {
       ...ops,
       setStep: (i, step) => ops.setStep(i, col.fromStep(step)),
       add: (step) => ops.add(step === undefined ? undefined : col.fromStep(step)),
-      dropNodes: (items, at) => ops.dropNodes(items, { ...at, step: col.fromStep(at.step) }),
       addStep: (step) => ops.addStep(col.fromStep(step + 1) - 1),
     },
   };

@@ -1,7 +1,7 @@
 // CR-123 · FLOW3-FR-14 · gộp cụm stage của node module thành MỘT ô (mẫu "Duyệt theo giá trị": Ký số = gửi + chờ, 3 đầu ra).
 import { describe, expect, test } from "bun:test";
 import { CONTRACTS_MANIFEST } from "@ai/contracts/app-manifest";
-import { layoutSteps } from "@ai/flow-canvas/pure";
+import { stepCount, stepEdges } from "@ai/flow-canvas/pure";
 import { collapseModules, connectStages, moduleEdges, type NodeInfo } from "./module-cluster";
 import type { StageView } from "./stage-view";
 
@@ -96,10 +96,11 @@ describe("FLOW3-FR-14 · collapseModules (mẫu Duyệt theo giá trị)", () =>
     const m = collapseModules(xs, info).views.find((v) => v.module);
     expect([m?.hasError, m?.errorKey]).toEqual([true, "k.err"]);
   });
-  test("bố cục: vào ô tới stage đầu, ra ô đi thẳng bước kế, số cột = 7", () => {
-    const lay = layoutSteps(c.views);
-    expect(lay.steps).toBe(7);
-    const fwd = lay.edges.filter((e) => e.kind === "forward").map((e) => `${e.source}>${e.target}`);
+  test("đồ thị: vào ô tới stage đầu, ra ô đi thẳng bước kế, số cột = 7", () => {
+    expect(stepCount(c.views)).toBe(7);
+    const fwd = stepEdges(c.views)
+      .filter((e) => e.kind === "forward")
+      .map((e) => `${e.source}>${e.target}`);
     expect(fwd).toContain("s2>s3");
     expect(fwd).toContain("s3>s5");
     expect(fwd.some((e) => e.includes("s4"))).toBe(false);

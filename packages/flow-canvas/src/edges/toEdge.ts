@@ -1,8 +1,8 @@
 // ADM-FR-71 · P-b2 · P-d2 (plan-frontend-d2 §10): cạnh xyflow dẫn xuất từ `LayoutEdge` — tách khỏi `ProcessCanvas` để file không tăng.
 import { type Edge, MarkerType } from "@xyflow/react";
-import type { Layout } from "../layout/columns";
+import type { LayoutEdge } from "../layout/graph";
 
-export function toEdge(e: Layout["edges"][number]): Edge {
+export function toEdge(e: LayoutEdge): Edge {
   const ends = { id: e.id, source: e.source, target: e.target, focusable: false };
   if (e.kind === "back")
     return {

@@ -1,7 +1,7 @@
 // CR-123 · p25 · FLOW3-FR-04..08 · nối canvas (`@ai/flow-canvas` `editing`) với bản nháp: thả từ bảng mẫu, nối lại cạnh, xoá, chép/dán, hoàn tác.
 // Luật hợp lệ KHÔNG viết lại ở đây: `connectPatch` (canvas-connect) cho nối / nối lại, `ops.*` (lib/canvas-edit, step-ops) cho phần còn lại.
 import type { FlowCommand, FlowEditing, FlowSelection, PaletteDrop } from "@ai/flow-canvas/pure";
-import { NODE_H, NODE_W, stepFromDropX } from "@ai/flow-canvas/pure";
+import { NODE_H, NODE_W } from "@ai/flow-canvas/pure";
 import type { Edge, Node } from "@xyflow/react";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -9,7 +9,6 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { PickedItem } from "../../hooks/use-canvas-edit";
 import type { StageOps } from "../../hooks/use-stage-ops";
 import { hasConfig } from "../../lib/canvas-edit";
-import { clampY } from "./canvas-parts";
 import type { StageView } from "./stage-view";
 
 type EdgeSel = { source: string; side?: "yes" | "no" | undefined };
@@ -18,7 +17,6 @@ type Latest = {
   views: readonly StageView[];
   nodes: readonly Node[];
   edges: readonly Edge[];
-  steps: number;
   ops: StageOps;
 };
 
@@ -40,10 +38,7 @@ function dropPalette(l: Latest, d: PaletteDrop): void {
   const items = parseItems(d.data);
   if (items.length === 0) return;
   // CR-123 · u5 · thả = node ĐỨNG RIÊNG tại điểm thả (không tự nối, không tự chèn lên cạnh); nối bằng mũi tên, chèn bằng nút "+" trên cạnh
-  l.ops.dropNodes(items, {
-    step: stepFromDropX(d.position.x - NODE_W / 2, l.steps),
-    y: clampY(d.position.y - NODE_H / 2, l.nodes),
-  });
+  l.ops.dropNodes(items, { x: d.position.x - NODE_W / 2, y: d.position.y - NODE_H / 2 });
 }
 
 const sideOpt = (e: Edge): { side?: "yes" | "no" } => {

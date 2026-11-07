@@ -112,7 +112,7 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     sources: stageSourcesToDraft(s.sources),
     mustKnow: mustKnowToDraft(s.must_know),
     autofix: autofixToDraft(s.autofix),
-    ...(s.ui ? { uiY: s.ui.y } : {}),
+    ...uiToDraft(s.ui),
     ...(s.outcome === undefined ? {} : { outcome: s.outcome }),
     ...(s.next_step === undefined ? {} : { nextStep: s.next_step }),
     ...(s.node === undefined ? {} : { node: s.node }),
@@ -176,7 +176,7 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
     sources: stageSourcesToDef(s.sources),
     must_know: mustKnowToDef(s.mustKnow),
     autofix: autofixToDef(s.autofix),
-    ...(s.uiY === undefined ? {} : { ui: { y: clampUiY(s.uiY) } }),
+    ...uiToDef(s),
     ...(s.outcome === undefined ? {} : { outcome: s.outcome }),
     ...(s.nextStep === undefined ? {} : { next_step: s.nextStep }),
     ...(s.node === undefined ? {} : { node: s.node }),
@@ -187,3 +187,13 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
 /** `ui.y` gửi Hub: làm tròn + kẹp trong biên contract. */
 const clampUiY = (y: number): number =>
   Math.min(Math.max(Math.round(y), STAGE_UI_Y.min), STAGE_UI_Y.max);
+
+/** CR-123 · u13 · `ui` của def → vị trí kéo tay của bản nháp (`uiY` + tuỳ chọn `uiX`). */
+const uiToDraft = (ui: { y: number; x?: number | undefined } | undefined) =>
+  ui ? { uiY: ui.y, ...(ui.x === undefined ? {} : { uiX: ui.x }) } : {};
+
+/** Bản nháp → `ui` gửi Hub (chỉ khi có `uiY`; `x` đi kèm nếu có). */
+const uiToDef = (s: { uiY?: number | undefined; uiX?: number | undefined }) =>
+  s.uiY === undefined
+    ? {}
+    : { ui: { y: clampUiY(s.uiY), ...(s.uiX === undefined ? {} : { x: clampUiY(s.uiX) }) } };

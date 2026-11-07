@@ -77,7 +77,16 @@ test("U4 · công ty sao chép flow, mở trình sửa, KÉO 'Thông báo' từ 
 
   const nodes = page.locator("[data-stage-uid]");
   await expect(nodes.first()).toBeVisible({ timeout: 30_000 });
-  const before = await nodes.count();
+  // CR-123 · u13: bố cục ELK tính bất đồng bộ (worker) ⇒ đợi số node ổn định rồi mới đếm
+  let before = 0;
+  await expect
+    .poll(async () => {
+      const n = await nodes.count();
+      const same = n === before;
+      before = n;
+      return same && n > 1;
+    })
+    .toBe(true);
   const pane = page.locator(".react-flow__pane").first();
   const paneBox = await pane.boundingBox();
   if (!paneBox) throw new Error("không thấy canvas");

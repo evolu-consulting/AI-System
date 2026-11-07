@@ -42,30 +42,6 @@ export function dropFreeEdges<E extends { source: string; target: string }>(
     : edges.filter((e) => !free.has(e.source) && !free.has(e.target));
 }
 
-/**
- * Cột có node đứng riêng vẫn có nút gộp `jN` (vì đếm > 1 stage): sau khi bỏ cạnh của node đứng riêng, nút gộp chỉ còn ≤ 1 cạnh vào ⇒ bỏ nút
- * và nối thẳng nguồn → đích (không vẽ nút gộp thừa, không đổi số cạnh của phần còn lại).
- */
-export function collapseLoneJoins<
-  N extends { id: string },
-  E extends { id: string; source: string; target: string },
->(nodes: readonly N[], edges: readonly E[]): { nodes: N[]; edges: E[] } {
-  let es = [...edges];
-  const gone = new Set<string>();
-  for (const id of nodes.map((n) => n.id).filter((i) => /^j\d+$/.test(i))) {
-    const ins = es.filter((e) => e.target === id);
-    if (ins.length > 1) continue;
-    const outs = es.filter((e) => e.source === id);
-    gone.add(id);
-    es = es.filter((e) => e.source !== id && e.target !== id);
-    const from = ins[0];
-    if (from)
-      for (const o of outs)
-        es.push({ ...o, id: `${from.source}>${o.target}`, source: from.source });
-  }
-  return { nodes: nodes.filter((n) => !gone.has(n.id)), edges: es };
-}
-
 /** Đặt node (cả cụm) `uid` thành bước MỚI ngay sau bước `afterStep` (-1 ⇒ đầu tiên); đích trỏ tới các bước sau được đánh lại. */
 export function placeAfter(
   stages: readonly StageDraft[],

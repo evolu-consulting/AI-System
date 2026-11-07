@@ -7,7 +7,7 @@ import {
   type ProcessStageDef,
   type ProcessToolItem,
 } from "@ai/contracts/hub-admin";
-import { layoutSteps } from "@ai/flow-canvas/pure";
+import { stepEdges } from "@ai/flow-canvas/pure";
 import {
   BRANCH_RULES_MAX as D_MAX,
   BRANCH_OPS as D_OPS,
@@ -339,9 +339,10 @@ describe("canvas: cạnh rẽ nhánh", () => {
     after: "auto" as const,
     branch,
   });
-  test("một cạnh mỗi luật hợp lệ, tới tiêu đề bước đích; đích sai/null bị bỏ", () => {
-    const l = layoutSteps([s("a", 0, [2, 0, null, 9, 3]), s("b", 1), s("c", 2), s("d", 3)]);
-    const br = l.edges.filter((e) => e.kind === "branch");
-    expect(br.map((e) => `${e.source}>${e.target}#${e.rule}`)).toEqual(["a>h2#1", "a>h3#5"]);
+  test("một cạnh mỗi luật hợp lệ, tới stage đầu của bước đích; đích sai/null bị bỏ", () => {
+    const br = stepEdges([s("a", 0, [2, 0, null, 9, 3]), s("b", 1), s("c", 2), s("d", 3)]).filter(
+      (e) => e.kind === "branch",
+    );
+    expect(br.map((e) => `${e.source}>${e.target}#${e.rule}`)).toEqual(["a>c#1", "a>d#5"]);
   });
 });

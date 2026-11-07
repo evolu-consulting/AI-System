@@ -68,7 +68,13 @@ export function normalizeSlotStages(stages: readonly StageDraft[]): StageDraft[]
     const auto = s.slotRaw?.kind === "notify" || s.slotRaw?.kind === "wait_until";
     const base = keep
       ? s
-      : { ...tmpl, uid: s.uid, uiY: s.uiY, ...(auto ? { after: "auto" as const } : {}) };
+      : {
+          ...tmpl,
+          uid: s.uid,
+          uiY: s.uiY,
+          uiX: s.uiX,
+          ...(auto ? { after: "auto" as const } : {}),
+        };
     const slot = {
       ...(isSlotStep(s) ? s.slotRaw : defaultReviewSlot(s.name)),
       name: s.name,

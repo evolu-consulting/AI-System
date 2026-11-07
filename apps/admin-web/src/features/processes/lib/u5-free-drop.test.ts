@@ -3,15 +3,7 @@
 import { describe, expect, test } from "bun:test";
 import { type ConnectStage, connectPatch } from "./canvas-connect";
 import { emptyStage, validateDraft } from "./def-form";
-import {
-  clearFree,
-  collapseLoneJoins,
-  dropFreeEdges,
-  FREE_ERR,
-  freeErrors,
-  isFree,
-  markFree,
-} from "./free-nodes";
+import { clearFree, dropFreeEdges, FREE_ERR, freeErrors, isFree, markFree } from "./free-nodes";
 import { blockedInfo } from "./save-blocked";
 
 const st = (uid: string, step: number, o: Record<string, unknown> = {}) => ({
@@ -68,19 +60,6 @@ describe("node đứng riêng", () => {
     expect(dropFreeEdges(edges, new Set(["b"]))).toEqual([{ source: "a", target: "c" }]);
     expect(dropFreeEdges(edges, new Set())).toHaveLength(3);
   });
-});
-
-test("cột có node đứng riêng: nút gộp thừa bị bỏ, nối thẳng nguồn tới đích", () => {
-  const nodes = [{ id: "a" }, { id: "j0" }, { id: "n" }];
-  const edges = [
-    { id: "a>j0", source: "a", target: "j0" },
-    { id: "j0>n", source: "j0", target: "n" },
-  ];
-  const r = collapseLoneJoins(nodes, edges);
-  expect(r.nodes.map((n) => n.id)).toEqual(["a", "n"]);
-  expect(r.edges.map((e) => e.id)).toEqual(["a>n"]);
-  const two = collapseLoneJoins(nodes, [...edges, { id: "b>j0", source: "b", target: "j0" }]);
-  expect(two.nodes).toHaveLength(3);
 });
 
 describe("mũi tên sai luật bị từ chối kèm lý do", () => {

@@ -39,8 +39,8 @@ export type StageView = {
   sys: "route" | "finalize" | null;
   /** CR-105 UX · bước duyệt của khe: số thứ tự (chỉ đếm bước duyệt), phòng ban, hạn, điều kiện bằng lời; stage khác ⇒ null. */
   slotInfo: { no: number; dept: string; dueH: number | null; cond: string | null } | null;
-  /** fnr-canvas · `y` đã lưu của node (`ui.y`); null = bố cục tự động. */
-  y: number | null;
+  /** CR-123 · u13 · vị trí người dùng kéo tay (ui.x + ui.y); null = bố cục tự động (ELK). */
+  pos: { x: number; y: number } | null;
   /** dlc-engine · bước DLC của khe: số thứ tự, việc, agent, có cổng duyệt (+ mã Group duyệt); stage khác ⇒ null. */
   dlc: { no: number; action: string; agent: string; gate: boolean; group: string | null } | null;
   /** dlc-engine · họ bước (dlc / review) để không nối hai loại; stage thường / hệ thống ⇒ null. */
@@ -157,7 +157,7 @@ export function stageViews(
     locked: isSystemStage(s),
     sys: sysKind(s),
     slotInfo: slotInfoOf(s, stages),
-    y: s.uiY ?? null,
+    pos: s.uiX !== undefined && s.uiY !== undefined ? { x: s.uiX, y: s.uiY } : null,
     dlc: dlcInfoOf(s, stages),
     family: stageFamily(s),
     src: s,
@@ -194,7 +194,8 @@ export const sameView = (a: StageView, b: StageView): boolean =>
   a.src === b.src &&
   a.errorKey === b.errorKey &&
   modKey(a.module) === modKey(b.module) &&
-  a.y === b.y &&
+  a.pos?.x === b.pos?.x &&
+  a.pos?.y === b.pos?.y &&
   a.backTo.join() === b.backTo.join();
 
 /**
@@ -203,20 +204,3 @@ export const sameView = (a: StageView, b: StageView): boolean =>
  */
 export const withoutSlotLinks = (views: StageView[]): StageView[] =>
   views.map((v) => ({ ...v, backTo: v.dlc?.gate ? v.backTo : [], branch: [] }));
-
-/**
- * CR-105 UX · tiêu đề cột "Bước n" của quy trình khe chỉ đếm BƯỚC DUYỆT (khớp nhãn "Bước n: tên"); cột chỉ có nút hệ thống
- * (route/finalize) không đánh số (`null`). Quy trình thường (không có bước khe / nút hệ thống) ⇒ `null` = giữ cách đếm cũ (step + 1).
- */
-export function stepHeaderLabels(
-  views: readonly Pick<StageView, "step" | "slotInfo" | "sys" | "dlc">[],
-): Map<number, number | null> | null {
-  if (!views.some((v) => v.slotInfo || v.sys || v.dlc)) return null;
-  const out = new Map<number, number | null>();
-  for (const v of views) {
-    const no = v.slotInfo?.no ?? v.dlc?.no;
-    if (no !== undefined) out.set(v.step, no);
-    else if (!out.has(v.step)) out.set(v.step, null);
-  }
-  return out;
-}

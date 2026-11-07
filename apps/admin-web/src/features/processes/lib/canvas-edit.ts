@@ -154,7 +154,7 @@ function cloneForPaste(c: StageDraft, taken: string[], suffix: string): StageDra
     taken,
   );
   taken.push(base.key);
-  const { uiY: _y, ...rest } = base;
+  const { uiY: _y, uiX: _x, ...rest } = base;
   return rest as StageDraft;
 }
 
@@ -220,12 +220,15 @@ export function placeFresh(
   fresh: readonly StageDraft[],
   step: number,
   y: number | undefined,
+  x?: number,
 ): StepOpResult<StageDraft> {
   let cur = [...stages];
   let after = step;
   for (const [k, f0] of fresh.entries()) {
     const f = withNodeDefaults(
-      k === 0 && y !== undefined ? { ...f0, uiY: Math.round(y) } : f0,
+      k === 0 && y !== undefined
+        ? { ...f0, uiY: Math.round(y), ...(x === undefined ? {} : { uiX: Math.round(x) }) }
+        : f0,
       cur.map((s) => s.key),
     );
     const r = k === 0 ? addStageToStep(cur, step, f) : insertStepAfter(cur, after, f);

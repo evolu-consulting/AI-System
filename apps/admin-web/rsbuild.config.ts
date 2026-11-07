@@ -1,7 +1,14 @@
 // ADM-NFR-06 · cấu hình build admin-web (plan-frontend M0 §3).
+import { createRequire } from "node:module";
 import { defineConfig } from "@rsbuild/core";
 import { pluginReact } from "@rsbuild/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/rspack";
+
+// CR-123 · u13 · ADR-0040: engine ELK chạy trong web worker; tệp worker phát NGUYÊN VĂN như tệp tĩnh (không đóng gói vào chunk nào, không nằm trong
+// ngân sách `check:bundle`), trình soạn flow tải lười bằng `new Worker("/static/elk/elk-worker.min.js")`.
+const elkWorker = createRequire(
+  new URL("../../packages/flow-canvas/package.json", import.meta.url),
+).resolve("elkjs/lib/elk-worker.min.js");
 
 // Backend admin-api: dev server và preview proxy `/auth`, `/admin` (cùng origin → cookie refresh không cần CORS).
 const ADMIN_API_URL = process.env.ADMIN_API_URL ?? "http://localhost:3001";
@@ -61,6 +68,7 @@ export default defineConfig({
   output: {
     // TS1: e2e song song build vào thư mục riêng của từng cấu hình (E2E_DIST_DIR), không đè thư mục dist chung.
     distPath: { root: process.env.E2E_DIST_DIR || "dist" },
+    copy: [{ from: elkWorker, to: "static/elk/elk-worker.min.js" }],
     // Mức tối thiểu Tailwind v4 hỗ trợ.
     overrideBrowserslist: ["chrome >= 111", "edge >= 111", "firefox >= 128", "safari >= 16.4"],
   },

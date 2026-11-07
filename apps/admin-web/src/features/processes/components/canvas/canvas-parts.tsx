@@ -1,31 +1,11 @@
 // CR-122 · tách từ ProcessCanvas (giữ file ≤ 400 dòng): các mảnh dựng sơ đồ — node "Bắt đầu khi", ô gợi ý cầu nối, cạnh vàng, nhãn "Duyệt", bóng "còn bước bên phải".
 import { toEdge } from "@ai/flow-canvas";
-import {
-  COL_W,
-  HEADER_H,
-  HEADER_NODE_H,
-  JOIN_H,
-  JOIN_W,
-  NODE_H,
-  NODE_W,
-  ROW_H,
-} from "@ai/flow-canvas/pure";
+import { NODE_H, NODE_W } from "@ai/flow-canvas/pure";
 import type { Edge, Node } from "@xyflow/react";
-import { ChevronRight } from "lucide-react";
 import type { BridgeApi } from "../../hooks/use-bridge";
 import { BRIDGE_W } from "./BridgeNode";
 import type { StageView } from "./stage-view";
-export const NODE_SIZE = {
-  stage: { width: NODE_W, height: NODE_H },
-  join: { width: JOIN_W, height: JOIN_H },
-  stepHeader: { width: NODE_W, height: HEADER_NODE_H },
-} as const;
-
-/** Kẹp y thả vào khung nội dung (dưới tiêu đề, không quá hàng thấp nhất + một hàng) để node không rơi khỏi vùng nhìn. */
-export function clampY(y: number, nodes: readonly Node[]): number {
-  const ys = nodes.filter((n) => n.type === "stage" || n.type === "if").map((n) => n.position.y);
-  return Math.min(Math.max(y, HEADER_H), Math.max(...ys, HEADER_H) + ROW_H);
-}
+export const NODE_SIZE = { width: NODE_W, height: NODE_H } as const;
 
 /** Cạnh tiến ra khỏi bước DLC có cổng = nhánh "Duyệt" (đi tiếp bước kế). */
 export const approveEdge = (e: Edge, label: string): Edge => ({
@@ -37,7 +17,7 @@ export const approveEdge = (e: Edge, label: string): Edge => ({
 
 export type TriggerInfo = { label: string; summary: string } | null;
 
-/** CR-122 · U2c: node "Bắt đầu khi" ở cột đầu (x = −1 cột), nối tới mọi giai đoạn của bước đầu. */
+/** CR-122 · U2c: node "Bắt đầu khi" (vị trí do ELK đặt), nối tới mọi giai đoạn của bước đầu. */
 export function triggerPart(
   views: readonly StageView[],
   t: TriggerInfo,
@@ -47,8 +27,8 @@ export function triggerPart(
   const node: Node = {
     id: "trigger",
     type: "trigger",
-    position: { x: -COL_W, y: HEADER_H },
-    measured: NODE_SIZE.stage,
+    position: { x: 0, y: 0 },
+    measured: NODE_SIZE,
     selectable: false,
     focusable: false,
     draggable: false,
@@ -126,19 +106,6 @@ export function warnStyle(edges: Edge[], warn: WarnEdges): Edge[] {
           labelBgStyle: { fill: "var(--color-card)" },
         }
       : e,
-  );
-}
-
-/** CR-122 · U2e: flow dài hơn khung ⇒ bóng mờ + mũi tên ở mép phải báo "còn bước bên phải" (kéo ngang để xem). */
-export function MoreRight({ label }: { label: string }) {
-  return (
-    <div
-      aria-hidden
-      title={label}
-      className="pointer-events-none absolute inset-y-0 right-0 flex w-14 items-center justify-end bg-gradient-to-l from-background to-transparent pr-1 text-muted-foreground"
-    >
-      <ChevronRight className="size-5" />
-    </div>
   );
 }
 

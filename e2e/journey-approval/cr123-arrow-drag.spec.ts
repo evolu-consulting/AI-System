@@ -164,6 +164,35 @@ async function settled(loc: Locator, name: string): Promise<Box> {
   if (!b) throw new Error(`${name}: không thấy phần tử`);
   return b;
 }
+/** CR-123 · u13 · điểm TRỐNG trong khung canvas (toạ độ so với khung) để thả node: bố cục ELK đặt node khắp khung, không chừa "dưới đáy" như bố cục cột. */
+async function emptySpot(page: Page): Promise<{ x: number; y: number }> {
+  const pane = await settled(
+    page.locator(".react-flow__pane").first(),
+    "khung canvas (điểm trống)",
+  );
+  const rects = await page
+    .locator(".react-flow__node, .react-flow__minimap, .react-flow__controls")
+    .evaluateAll((els) =>
+      els.map((e) => {
+        const r = e.getBoundingClientRect();
+        return { x: r.x, y: r.y, w: r.width, h: r.height };
+      }),
+    );
+  const stage = rects.find((r) => r.w > 100 && r.h > 60) ?? { w: 240, h: 104 };
+  const [w, h] = [stage.w, stage.h];
+  for (let cy = pane.y + pane.height - h / 2 - 8; cy > pane.y + h / 2; cy -= h / 2)
+    for (let cx = pane.x + w / 2 + 8; cx < pane.x + pane.width - w / 2; cx += w / 2) {
+      const hit = rects.some(
+        (r) =>
+          cx + w / 2 + 12 > r.x &&
+          cx - w / 2 - 12 < r.x + r.w &&
+          cy + h / 2 + 12 > r.y &&
+          cy - h / 2 - 12 < r.y + r.h,
+      );
+      if (!hit) return { x: cx - pane.x, y: cy - pane.y };
+    }
+  return { x: w / 2 + 8, y: pane.height - h / 2 - 8 };
+}
 /** Thu nhỏ tới khi node cuối nằm trọn trong khung canvas (đích của mũi tên phải THẤY được mới kéo tới được). */
 async function fitAll(page: Page): Promise<void> {
   const pane = page.locator(".react-flow__pane").first();
@@ -217,7 +246,7 @@ test("U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, k
   await page
     .getByRole("menuitem", { name: /^Duyệt/ })
     .first()
-    .dragTo(pane, { targetPosition: { x: pb.width * 0.45, y: pb.height * 0.85 }, force: true });
+    .dragTo(pane, { targetPosition: await emptySpot(page), force: true });
   const fresh = page.locator(".react-flow__node").filter({ has: page.getByTestId("free-hint") });
   await expect(fresh).toHaveCount(1);
   await expect(fresh).toContainText("Bước duyệt mới"); // u11 · tên mặc định + nhắc đặt tên (không chỉ "Duyệt")
@@ -294,16 +323,17 @@ test("U12 · mũi tên tới bước nằm trước (Thông báo → Kết thúc
   const alert = (re: RegExp | string) => page.getByRole("alert").filter({ hasText: re });
 
   // 1 · Kết thúc · Đã duyệt đứng trước Thông báo trong thứ tự bước, KHÔNG phải tổ tiên ⇒ nối được (các bước được sắp lại)
-  const before = await settled(end, "Kết thúc · Đã duyệt (trước)");
-  const tbBefore = await settled(node("Thông báo người tạo"), "Thông báo (trước)");
-  expect(before.x, "trước khi nối, Đã duyệt đứng trước Thông báo").toBeLessThan(tbBefore.x);
+  const [tbId, endId] = [
+    await node("Thông báo người tạo").getAttribute("data-id"),
+    await end.first().getAttribute("data-id"),
+  ];
   await arrow(page, node("Thông báo người tạo").getByTestId("port-next"), end);
   await expect(alert(/Chỉ nối được|vòng lặp/)).toHaveCount(0);
   await fitAll(page);
-  const tb = await settled(node("Thông báo người tạo"), "Thông báo");
-  const after = await settled(end, "Kết thúc · Đã duyệt (sau)");
-  expect(after.x, "sau khi nối, Đã duyệt đứng SAU Thông báo").toBeGreaterThan(tb.x);
-
+  await expect(
+    page.getByTestId(`rf__edge-${tbId}>${endId}`),
+    "mũi tên Thông báo → Kết thúc · Đã duyệt đã nối",
+  ).toHaveCount(1);
   // 2 · nối ngược về bước trước (tổ tiên) ⇒ bị từ chối kèm lý do
   await arrow(
     page,

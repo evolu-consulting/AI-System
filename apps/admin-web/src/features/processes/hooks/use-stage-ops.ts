@@ -107,11 +107,11 @@ export function useStageOps(d: DraftState) {
     setStep,
     split,
     moveColumn,
-    /** fnr-canvas · lưu vị trí dọc node (kéo tự do) / bỏ hết vị trí đã lưu ("Sắp xếp"). */
-    setY: (uid: string, y: number | undefined) => d.setUiY(uid, y),
+    /** CR-123 · u13 · lưu vị trí node người dùng kéo tay / bỏ hết vị trí đã lưu ("Sắp xếp", hoàn tác được). */
+    setPos: (uid: string, pos: { x: number; y: number } | undefined) => d.setUiPos(uid, pos),
     arranged,
     arrange: () => {
-      d.clearUiY();
+      d.clearUiPos();
       setNotice(null);
       setArranged((n) => n + 1);
     },

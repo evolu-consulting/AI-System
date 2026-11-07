@@ -1,19 +1,26 @@
 // ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend FB1/FB2/FB4/FB9, ADR-0013): canvas editor — lazy chunk `canvas`.
-// CR-118 · cr118-flow-canvas: khung xyflow, bố cục, node khung (tiêu đề cột, join), cạnh quay lại/rẽ nhánh, fit/kéo nằm ở `@ai/flow-canvas`
-// (mode "edit", layout "columns"); file này giữ phần NGHIỆP VỤ: dựng node giai đoạn từ bản nháp, luật thả (`ops.setStep` x chốt cột + `ops.setY`
-// y tự do, lưu `ui.y`; cột đầy ⇒ trượt về chỗ cũ). nodes/edges là DẪN XUẤT từ bản nháp (không giữ state riêng).
+// CR-118 · cr118-flow-canvas: khung xyflow, cạnh quay lại/rẽ nhánh, fit/kéo nằm ở `@ai/flow-canvas` (mode "edit", layout "flow");
+// CR-123 · u13: VỊ TRÍ node do ELK `layered` tính (gập hàng, cổng ra cố định thứ tự, cạnh vuông góc) mỗi khi cấu trúc đổi; node người dùng kéo tay
+// giữ vị trí đã lưu (`ui.x` + `ui.y`), "Sắp xếp" xoá vị trí tay. File này giữ phần NGHIỆP VỤ: dựng node giai đoạn từ bản nháp. nodes/edges là DẪN XUẤT từ bản nháp.
 // dlc-step-library: sơ đồ DLC ⇒ cạnh "Từ chối" tới NODE đích (không tới tiêu đề cột), cạnh tiến sau bước có cổng mang nhãn "Duyệt";
 // `linkable` ⇒ kéo cổng "Từ chối" của bước nào có cổng cũng nối được (`ops.linkReject` kiểm đích đứng trước).
-import { type EdgeInsertInfo, FlowCanvas, type FlowLabels, toEdge } from "@ai/flow-canvas";
-import { layoutSteps, stepFromDropX } from "@ai/flow-canvas/pure";
+import {
+  type EdgeInsertInfo,
+  FlowCanvas,
+  type FlowLabels,
+  type FlowPositions,
+  toEdge,
+  useFlowLayout,
+} from "@ai/flow-canvas";
+import { type FlowEdgeIn, type FlowNodeIn, stepEdges } from "@ai/flow-canvas/pure";
 import type { Edge, Node, XYPosition } from "@xyflow/react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { BridgeApi } from "../../hooks/use-bridge";
 import { useStagesMax } from "../../hooks/use-stages-max";
-import { collapseLoneJoins, dropFreeEdges, isFree } from "../../lib/free-nodes";
+import { exitHandle } from "../../lib/canvas-connect";
+import { dropFreeEdges, isFree } from "../../lib/free-nodes";
 import { applyJumps } from "../../lib/jump-edges";
-import { countAtStep } from "../../lib/step-ops";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
 import { BridgeNode } from "./BridgeNode";
@@ -21,9 +28,7 @@ import { type CanvasHandlers, HandlersCtx } from "./canvas-ctx";
 import {
   approveEdge,
   bridgePart,
-  clampY,
   editableEdges,
-  MoreRight,
   NO_WARN,
   NODE_SIZE,
   type TriggerInfo,
@@ -36,7 +41,6 @@ import { IfNode } from "./IfNode";
 import { moduleEdges } from "./module-cluster";
 import { StageNode } from "./StageNode";
 import type { StageView } from "./stage-view";
-import { stepHeaderLabels } from "./stage-view";
 import { TriggerNode } from "./TriggerNode";
 import { CanvasDialogs, useCanvasEditing } from "./use-canvas-editing";
 
@@ -59,60 +63,50 @@ export type ProcessCanvasProps = CanvasHandlers & {
   linkable?: boolean;
 };
 
-type Lay = ReturnType<typeof layoutSteps>;
+/** Cổng ra (id = `sourceHandle`) của node, từ trên xuống: Nếu ⇒ Đúng, Sai; ô module ⇒ các đầu ra khai báo (Ký xong / Từ chối / Hết hạn…). */
+function portsOf(v: StageView): string[] | undefined {
+  if (v.ifs != null) return ["yes", "no"];
+  const exits = v.module?.exits;
+  return exits && exits.length > 1 ? exits.map((x) => exitHandle(x.key, x.on)) : undefined;
+}
 
 function toNode(
-  n: Lay["nodes"][number],
-  byUid: Map<string, StageView>,
+  v: StageView,
+  at: { x: number; y: number },
   selected: string | undefined,
   readOnly: boolean | undefined,
-  labels: Map<number, number | null> | null,
   connectable: boolean,
 ): Node {
   // `measured` đặt sẵn (kích thước đã biết) ⇒ xyflow không ẩn node chờ đo mỗi lần bố cục đổi.
-  const isIfNode = n.kind === "stage" && byUid.get(n.id)?.ifs != null;
-  const base = {
-    id: n.id,
-    position: { x: n.x, y: n.y },
-    type: isIfNode ? "if" : n.kind,
-    measured: NODE_SIZE[n.kind],
-    selectable: false,
+  return {
+    id: v.uid,
+    position: at,
+    type: v.ifs != null ? "if" : "stage",
+    measured: NODE_SIZE,
+    selectable: connectable,
     focusable: false,
+    data: { v, selected: v.uid === selected, readOnly, connectable },
+    draggable: !readOnly && !v.locked,
   };
-  if (n.kind === "stage")
-    return {
-      ...base,
-      selectable: connectable,
-      data: { v: byUid.get(n.id), selected: n.id === selected, readOnly, connectable },
-      draggable: !readOnly && !byUid.get(n.id)?.locked,
-    };
-  const data =
-    n.kind === "stepHeader"
-      ? {
-          step: n.step,
-          full: n.full,
-          ...(labels ? { label: labels.get(n.step) ?? null } : {}),
-        }
-      : { count: n.count };
-  return { ...base, data, draggable: false };
 }
 
-function useFlowGraph(
+/** Đồ thị CẤU TRÚC (chưa có toạ độ): node + cạnh cuối cùng, và đầu vào của ELK. Chỉ đổi khi bản nháp đổi (không phụ thuộc chọn / kéo). */
+function useFlowStructure(
   p: ProcessCanvasProps,
   approve: string,
   trig: TriggerInfo,
-  warn: WarnEdges,
-  bridge: BridgeApi | undefined,
   insertable: boolean,
   connectable: boolean,
 ) {
-  const { views, selected, readOnly } = p;
+  const { views } = p;
   return useMemo(() => {
     const dlc = views.some((v) => v.dlc);
-    const lay = layoutSteps(views, dlc ? { back: "node" } : {});
     const byUid = new Map(views.map((v) => [v.uid, v]));
-    const labels = stepHeaderLabels(views);
-    const nodes = lay.nodes.map((n) => toNode(n, byUid, selected, readOnly, labels, connectable));
+    // CR-122 · C: flow có "Bắt đầu khi" bỏ cạnh quay lại tới bước đầu (không còn tiêu đề cột để neo)
+    const lay = stepEdges(
+      views.map((v) => ({ ...v, terminal: v.src.outcome !== undefined })),
+      { back: !trig },
+    );
     // dlc-engine · bước DLC và bước duyệt không nối với nhau (một sơ đồ chỉ một loại bước).
     const fam = (id: string) => byUid.get(id)?.family ?? null;
     const jumped = applyJumps(
@@ -123,7 +117,7 @@ function useFlowGraph(
         nextStep: v.src.nextStep,
         terminal: v.src.outcome !== undefined || v.src.executor === "wait_event",
       })),
-      lay.edges,
+      lay,
     );
     const linked = jumped.filter((e) => {
       const [a, b] = [fam(e.source), fam(e.target)];
@@ -141,36 +135,73 @@ function useFlowGraph(
       e.kind === "forward" && gated(e.source) ? approveEdge(mk(e), approve) : mk(e),
     );
     const tp = triggerPart(views, trig, connectable);
-    const bp = bridgePart(nodes, warn, bridge);
-    // CR-122 · C: flow bỏ hàng tiêu đề cột "Bước n" + nút + đầu cột (thêm bước qua menu "Thêm bước"); cạnh nối tới tiêu đề cũng bỏ.
-    const isHeader = (id: string) => /^h\d+$/.test(id);
-    const shown = trig ? nodes.filter((n) => n.type !== "stepHeader") : nodes;
-    const shownEdges = trig
-      ? edges.filter((e) => !isHeader(e.source) && !isHeader(e.target))
-      : edges;
     // node đứng riêng (vừa thả) không có cạnh tự động vào/ra: nối bằng mũi tên (CR-123 · u5)
     const free = new Set(views.filter((v) => isFree(v.src)).map((v) => v.uid));
-    const kept = collapseLoneJoins(
-      shown,
-      dropFreeEdges([...tp.edges, ...shownEdges, ...moduleEdges(views), ...bp.edges], free),
-    );
-    const all = warnStyle(kept.edges, warn);
+    const all = dropFreeEdges([...tp.edges, ...edges, ...moduleEdges(views)], free);
+    // ELK: cạnh quay lại không tham gia xếp tầng (giữ luồng trái → phải)
+    const flowEdges: FlowEdgeIn[] = all
+      .filter((e) => e.type !== "back")
+      .map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        sourceHandle: e.sourceHandle ?? null,
+      }));
+    const flowNodes: FlowNodeIn[] = [
+      ...(trig ? [{ id: "trigger" }] : []),
+      ...views.map((v) => ({ id: v.uid, ports: portsOf(v) })),
+    ];
+    return { edges: all, flowNodes, flowEdges, dlc, tp };
+  }, [views, approve, trig, insertable, connectable]);
+}
+
+/** Vị trí cuối: vị trí kéo tay (đã lưu) thắng; không có ⇒ toạ độ ELK; chưa có cả hai ⇒ node chưa hiện (chờ lượt bố cục đầu). */
+function placed(
+  pos: FlowPositions | null,
+  id: string,
+  manual: { x: number; y: number } | null | undefined,
+): { x: number; y: number } | null {
+  return manual ?? pos?.get(id) ?? null;
+}
+
+function useFlowGraph(
+  p: ProcessCanvasProps,
+  approve: string,
+  trig: TriggerInfo,
+  warn: WarnEdges,
+  bridge: BridgeApi | undefined,
+  insertable: boolean,
+  connectable: boolean,
+) {
+  const { views, selected, readOnly } = p;
+  const s = useFlowStructure(p, approve, trig, insertable, connectable);
+  const auto = useFlowLayout(s.flowNodes, s.flowEdges);
+  return useMemo(() => {
+    const stageNodes = views.flatMap((v) => {
+      const at = placed(auto, v.uid, v.pos);
+      return at ? [toNode(v, at, selected, readOnly, connectable)] : [];
+    });
+    const tAt = placed(auto, "trigger", null);
+    const trigger = s.tp.node.flatMap((n) => (tAt ? [{ ...n, position: tAt }] : []));
+    const bp = bridgePart(stageNodes, warn, bridge);
+    const nodes = [...trigger, ...stageNodes, ...bp.node];
+    const have = new Set(nodes.map((n) => n.id));
+    const all = warnStyle([...s.edges, ...bp.edges], warn)
+      .filter((e) => have.has(e.source) && have.has(e.target))
+      .map((e) => (e.type === undefined ? { ...e, type: "smoothstep" } : e)); // cạnh vuông góc (ELK `ORTHOGONAL`)
     return {
-      nodes: [...tp.node, ...kept.nodes, ...bp.node],
-      edges: connectable ? editableEdges(all, new Set(byUid.keys())) : all,
-      steps: lay.steps,
-      dlc,
+      nodes,
+      edges: connectable ? editableEdges(all, new Set(views.map((v) => v.uid))) : all,
+      ready: auto !== null,
+      dlc: s.dlc,
     };
-  }, [views, selected, readOnly, approve, trig, warn, bridge, insertable, connectable]);
+  }, [s, auto, views, selected, readOnly, warn, bridge, connectable]);
 }
 
 function useCanvasLabels(dlc: boolean): Partial<FlowLabels> {
   const { t } = useTranslation();
   return useMemo(
     () => ({
-      stepTitle: (n) => t("process.admin.canvas.step.title", { n }),
-      addToStep: (n) => t("process.admin.canvas.step.addTo", { n }),
-      join: (n) => t("process.admin.canvas.join", { n }),
       edgeBack: t(dlc ? "process.admin.library.dlc.reject" : "process.admin.canvas.edge.back"),
       edgeBranch: (n) => t("process.admin.canvas.edge.branch", { n }),
       yes: t("process.admin.canvas.if.yes"),
@@ -189,7 +220,6 @@ function useCanvasLabels(dlc: boolean): Partial<FlowLabels> {
 
 export default function ProcessCanvas(p: ProcessCanvasProps) {
   const [tick, setTick] = useState(0);
-  const [blocked, setBlocked] = useState<number | null>(null);
   const handlers = useRef<CanvasHandlers>(p);
   handlers.current = p;
   const { t } = useTranslation();
@@ -222,7 +252,7 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
     enabled: connectable,
     palette: !!flowCtx,
     compact: !!p.compact,
-    latest: { views: p.views, nodes: g.nodes, edges: g.edges, steps: g.steps, ops: p.ops },
+    latest: { views: p.views, nodes: g.nodes, edges: g.edges, ops: p.ops },
   });
   const renderEdgeInsert = useMemo(
     () =>
@@ -237,7 +267,6 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
         : undefined,
     [insertable, room],
   );
-  const onAddToStep = useCallback((step: number) => handlers.current.ops.add(step), []);
   const onConnect = useCallback(
     (c: { source: string; target: string; sourceHandle?: string | null }) => {
       const ops = handlers.current.ops;
@@ -247,41 +276,15 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
     [],
   );
 
-  const target = (node: Node, pos: XYPosition): { v: StageView; step: number } | null => {
-    const v = p.views.find((x) => x.uid === node.id);
-    return v ? { v, step: stepFromDropX(pos.x, g.steps) } : null;
-  };
-  const onDrag = (node: Node, pos: XYPosition) => {
-    const t0 = target(node, pos);
-    const full =
-      t0 && t0.step !== t0.v.step && countAtStep(p.views, t0.step, t0.v.uid) >= 3 ? t0.step : null;
-    setBlocked((prev) => (prev === full ? prev : full));
-  };
-  // CR-123 · p25 · kéo nhóm: cả nhóm dời cùng số cột (luật cột giữ như kéo một node); không đổi cột ⇒ lưu y từng node.
-  const dragGroup = (group: { id: string; pos: XYPosition }[], delta: number) => {
-    const uids = group.map((x) => x.id).filter((id) => p.views.some((v) => v.uid === id));
-    if (delta !== 0) p.ops.moveGroup(uids, delta);
-    else
-      for (const x of group) {
-        const y0 = g.nodes.find((n) => n.id === x.id)?.position.y ?? x.pos.y;
-        if (Math.abs(x.pos.y - y0) >= 1) p.ops.setY(x.id, clampY(x.pos.y, g.nodes));
-      }
-    setTick((n) => n + 1);
-  };
-  // fnr-canvas: kéo tự do — x chốt vào cột gần nhất (đổi bước theo luật cũ), y được LƯU (`ui.y`) khi thả; cột đầy ⇒ trượt về.
+  // CR-123 · u13: kéo tự do — vị trí (x, y) được LƯU (`ui.x` + `ui.y`) khi thả; thứ tự bước chỉ đổi bằng mũi tên.
   const onDragStop = (node: Node, pos: XYPosition, group?: { id: string; pos: XYPosition }[]) => {
-    setBlocked(null);
-    const t0 = target(node, pos);
-    if (group && group.length > 1 && t0) return dragGroup(group, t0.step - t0.v.step);
-    const y = pos.y;
-    const y0 = g.nodes.find((n) => n.id === node.id)?.position.y ?? y;
-    if (!t0) return;
-    const moved = t0.step !== t0.v.step;
-    if (moved) p.ops.setStep(t0.v.index, t0.step); // cột đầy ⇒ ops báo lỗi, bản nháp không đổi
-    // Đổi cột ⇒ node vào vị trí tự động của cột mới (bỏ `ui.y` cũ); cùng cột ⇒ lưu y (kẹp trong khung nội dung để không rơi ra ngoài).
-    if (moved) {
-      if (!(countAtStep(p.views, t0.step, t0.v.uid) >= 3)) p.ops.setY(t0.v.uid, undefined);
-    } else if (Math.abs(y - y0) >= 1) p.ops.setY(t0.v.uid, clampY(y, g.nodes));
+    const moved = group && group.length > 0 ? group : [{ id: node.id, pos }];
+    for (const m of moved) {
+      const at = g.nodes.find((n) => n.id === m.id)?.position;
+      const v = p.views.find((x) => x.uid === m.id);
+      if (v && (!at || Math.abs(m.pos.x - at.x) >= 1 || Math.abs(m.pos.y - at.y) >= 1))
+        p.ops.setPos(m.id, m.pos);
+    }
     setTick((n) => n + 1);
   };
 
@@ -291,31 +294,27 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
     >
       <HandlersCtx.Provider value={handlers}>
         <FlowCanvas
-          layout="columns"
+          layout="flow"
           mode={p.readOnly ? "view" : "edit"}
           nodes={g.nodes}
           edges={g.edges}
           nodeTypes={nodeTypes}
           labels={labels}
-          onAddToStep={onAddToStep}
           renderEdgeInsert={renderEdgeInsert}
-          blockedStep={blocked}
           controls={!p.compact}
           compact={p.compact}
-          fitSig={`${g.steps}:${p.views.length}`}
+          fitSig={`${g.ready}:${g.nodes.length}`}
           fitKey={p.fitKey}
           inset={p.inset}
           fitMin={p.fitMin}
           selectedId={p.selected}
           resetKey={tick}
-          onNodeDrag={onDrag}
           onNodeDragStop={onDragStop}
           onConnect={(p.linkable || connectable) && !p.readOnly ? onConnect : undefined}
           editing={ed.editing}
         />
         <CanvasDialogs pending={ed.pending} close={ed.close} views={p.views} ops={p.ops} />
       </HandlersCtx.Provider>
-      {trig && g.steps >= 4 ? <MoreRight label={t("process.admin.flow.moreRight")} /> : null}
     </div>
   );
 }

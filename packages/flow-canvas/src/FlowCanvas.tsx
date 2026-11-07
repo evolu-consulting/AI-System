@@ -1,5 +1,5 @@
-// CR-118 · @ai/flow-canvas · MỘT canvas xyflow cho mọi sơ đồ quy trình: `layout` = "columns" (editor admin) | "vertical" (sơ đồ duyệt),
-// `mode` = "view" | "edit". Nodes/edges do host dựng bằng hàm bố cục thuần của gói (`layoutSteps`/`buildFlowCanvas`) và đưa vào đây.
+// CR-118 · @ai/flow-canvas · MỘT canvas xyflow cho mọi sơ đồ quy trình: `layout` = "flow" (editor admin, bố cục ELK) | "vertical" (sơ đồ duyệt),
+// `mode` = "view" | "edit". Nodes/edges do host dựng bằng hàm bố cục thuần của gói (`stepEdges` + `useFlowLayout` / `buildFlowCanvas`) và đưa vào đây.
 // Kéo thả (edit): xyflow ở chế độ điều khiển chỉ phát `position`; ta ghi vị trí tạm để node đi theo chuột, thả xong thì xoá và báo host.
 // Chỉ nạp lười (`import()` ở host): kéo theo @xyflow/react.
 import "@xyflow/react/dist/base.css";
@@ -18,15 +18,13 @@ import {
   type XYPosition,
 } from "@xyflow/react";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { type ColumnsFitOptions, FIT, FIT_COMPACT, useColumnsFit } from "./columns-fit";
+
 import { type FlowHost, FlowHostCtx } from "./context";
 import { BackEdge } from "./edges/BackEdge";
 import { BranchEdge } from "./edges/BranchEdge";
 import { ForwardEdge } from "./edges/ForwardEdge";
 import type { FlowEditing } from "./editing";
 import { type FlowMode, interactionOf } from "./mode";
-import { JoinNode } from "./nodes/JoinNode";
-import { StepHeaderNode } from "./nodes/StepHeaderNode";
 import { VERTICAL_NODE_TYPES } from "./nodes/VerticalNodes";
 import {
   DEFAULT_LABELS,
@@ -36,8 +34,8 @@ import {
   type RenderStepInfo,
 } from "./theme";
 import { EditShell, useEditing } from "./use-editing";
+import { FIT, FIT_COMPACT, useViewFit, type ViewFitOptions } from "./view-fit";
 
-const COLUMNS_NODE_TYPES = { stepHeader: StepHeaderNode, join: JoinNode } satisfies NodeTypes;
 const EDGE_TYPES = { back: BackEdge, branch: BranchEdge, forward: ForwardEdge };
 const VERTICAL_EDGE_DEFAULTS = {
   markerEnd: { type: MarkerType.ArrowClosed },
@@ -46,7 +44,7 @@ const VERTICAL_EDGE_DEFAULTS = {
 const VERTICAL_FIT = { padding: 0.15, maxZoom: 1 };
 
 export type FlowCanvasProps = {
-  layout: "columns" | "vertical";
+  layout: "flow" | "vertical";
   mode: FlowMode;
   nodes: readonly Node[];
   edges: readonly Edge[];
@@ -56,7 +54,7 @@ export type FlowCanvasProps = {
   theme?: Partial<FlowTheme>;
   /** Dòng thông tin của node bước (sơ đồ duyệt). */
   renderInfo?: RenderStepInfo;
-  /** Hiện nút thêm giai đoạn ở tiêu đề cột (chỉ `edit`, `columns`). */
+  /** Hiện nút thêm giai đoạn ở tiêu đề cột (không còn: tiêu đề cột đã bỏ). */
   onAddToStep?: (step: number) => void;
   /** Cột đầy đang bị rê vào khi kéo. */
   blockedStep?: number | null;
@@ -64,7 +62,7 @@ export type FlowCanvasProps = {
   renderEdgeInsert?: FlowHost["renderEdgeInsert"];
   /** Hiện nút phóng/thu + fit (mặc định có). */
   controls?: boolean;
-  // ---- chỉ `columns` ----
+  // ---- chỉ `flow` ----
   compact?: boolean;
   fitSig?: string;
   fitKey?: number;
@@ -157,15 +155,15 @@ const ariaOf = (c: FlowLabels["controls"]) =>
   };
 
 function Flow(p: FlowCanvasProps) {
-  const columns = p.layout === "columns";
+  const flow = p.layout === "flow";
   const { host, labels } = useHostValue(p);
   const d = useDragOverlay(p);
   const fitRef = useRef<(() => void) | null>(null);
   const it = interactionOf(p.mode, p);
   const ev = useEditing(p.editing, d.nodes, p.edges as Edge[]);
   const nodeTypes = useMemo(
-    () => ({ ...(columns ? COLUMNS_NODE_TYPES : VERTICAL_NODE_TYPES), ...p.nodeTypes }),
-    [columns, p.nodeTypes],
+    () => ({ ...(flow ? {} : VERTICAL_NODE_TYPES), ...p.nodeTypes }),
+    [flow, p.nodeTypes],
   );
   const common = {
     nodes: ev.nodes,
@@ -208,9 +206,9 @@ function Flow(p: FlowCanvasProps) {
   return (
     <FlowHostCtx.Provider value={host}>
       <EditShell shell={ev.shell}>
-        {columns ? (
+        {flow ? (
           <>
-            <ColumnsFit
+            <ViewFit
               fitRef={fitRef}
               sig={p.fitSig ?? ""}
               fitKey={p.fitKey ?? 0}
@@ -251,9 +249,9 @@ function Flow(p: FlowCanvasProps) {
     </FlowHostCtx.Provider>
   );
 }
-/** Khung nhìn của canvas `columns` (đứng trong `ReactFlowProvider`, không vẽ gì). */
-function ColumnsFit(o: ColumnsFitOptions): null {
-  useColumnsFit(o);
+/** Khung nhìn của canvas sơ đồ (đứng trong `ReactFlowProvider`, không vẽ gì). */
+function ViewFit(o: ViewFitOptions): null {
+  useViewFit(o);
   return null;
 }
 

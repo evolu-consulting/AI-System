@@ -1,7 +1,7 @@
 // CR-123 · u12 · mũi tên chỉ bị từ chối khi tạo VÒNG LẶP (không theo "số bước" mà người dùng không thấy): đích nằm trước nguồn
 // mà không phải tổ tiên ⇒ sắp lại các bước; Bắt đầu khi → Ký số vẫn bị từ chối kèm lý do.
 import { describe, expect, test } from "bun:test";
-import { arrowOrder, triggerArrow } from "./arrow-rules";
+import { arrowOrder, linkableSteps, triggerArrow } from "./arrow-rules";
 import { connectPatch } from "./canvas-connect";
 import { emptyStage, type StageDraft } from "./def-form";
 
@@ -97,5 +97,15 @@ describe("Bắt đầu khi → Ký số", () => {
     expect(triggerArrow([st("a", 0), st("b", 1)], "a")).toMatchObject({
       stages: [{ uid: "a" }, { uid: "b" }],
     });
+  });
+});
+
+describe("linkableSteps (ô Gộp tới cùng luật với kéo mũi tên)", () => {
+  test("mọi bước không phải tổ tiên / chính nó: bước sau luôn được, bước trước chỉ khi không tạo vòng", () => {
+    // a → b (nhảy qua f); f đứng trước b, không ai trỏ tới
+    const flow = [st("a", 0, { nextStep: 2 }), st("f", 1, { outcome: "approved" }), st("b", 2)];
+    expect(linkableSteps(flow, "b")).toEqual([1]); // f nằm trước nhưng không phải tổ tiên ⇒ được; a là tổ tiên ⇒ không
+    expect(linkableSteps(flow, "a")).toEqual([1, 2]);
+    expect(linkableSteps([st("a", 0), st("b", 1), st("c", 2)], "c")).toEqual([]); // cả hai đều là tổ tiên
   });
 });

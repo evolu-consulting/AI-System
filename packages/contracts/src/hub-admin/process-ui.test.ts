@@ -26,7 +26,9 @@ describe("StageUiSchema / ProcessStageDefSchema.ui", () => {
     expect("ui" in ProcessStageDefSchema.parse(base)).toBe(false);
   });
   test("strict + biên: khoá lạ, NaN, ngoài biên ⇒ từ chối", () => {
-    expect(StageUiSchema.safeParse({ y: 1, x: 2 }).success).toBe(false);
+    expect(StageUiSchema.safeParse({ y: 1, z: 2 }).success).toBe(false);
+    expect(StageUiSchema.safeParse({ y: 1, x: 2 }).success).toBe(true); // u13: x tuỳ chọn (vị trí kéo tay)
+    expect(StageUiSchema.safeParse({ y: 1, x: STAGE_UI_Y.max + 1 }).success).toBe(false);
     expect(StageUiSchema.safeParse({ y: Number.NaN }).success).toBe(false);
     expect(StageUiSchema.safeParse({ y: STAGE_UI_Y.max + 1 }).success).toBe(false);
     expect(StageUiSchema.safeParse({ y: STAGE_UI_Y.min }).success).toBe(true);

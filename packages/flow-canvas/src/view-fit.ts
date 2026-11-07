@@ -1,4 +1,4 @@
-// ADM-FR-71 · fnr-canvas-fit · fnr-editor-drawer: khung nhìn của canvas `columns` — fit khi tải / "Sắp xếp" / đổi cỡ khung (chừa ngăn chi tiết),
+// ADM-FR-71 · fnr-canvas-fit · fnr-editor-drawer: khung nhìn của canvas sơ đồ (ELK) — fit khi tải / "Sắp xếp" / đổi cỡ khung (chừa ngăn chi tiết),
 // và pan chọn-node-dưới-ngăn vào vùng thấy. Chuyển nguyên từ admin-web `ProcessCanvas`.
 import {
   getNodesBounds,
@@ -8,7 +8,7 @@ import {
   useStore,
 } from "@xyflow/react";
 import { useEffect, useRef } from "react";
-import { COL_W, NODE_H, NODE_W, revealDx } from "./layout/columns";
+import { NODE_H, NODE_W, revealDx } from "./layout/geometry";
 
 // fnr-canvas-fit: editor vừa khung cả flow (thu tới 0.3 = mức zoom tối thiểu của canvas; dưới nữa thì người dùng kéo/zoom tay), vừa lại khi khung đổi cỡ.
 export const FIT = { padding: 0.08, maxZoom: 1, minZoom: 0.3 } as const;
@@ -36,16 +36,6 @@ function fitBesideDrawer(
   return rf.setViewport(v, { duration: ms });
 }
 
-/**
- * CR-123 · u11: zoom để khung rộng `width` (px) hiện trọn `cols` cột (≥ 1, chữ ≥ `minZoom`): lề trái 16px, cột kế tiếp bắt đầu đúng mép phải
- * khung (không lộ một mẩu node bị cắt). Hàm thuần.
- */
-export function snapColumnsZoom(width: number, minZoom: number): { cols: number; zoom: number } {
-  const avail = Math.max(width, 200) - 16;
-  const cols = Math.max(1, Math.floor(avail / (COL_W * minZoom)));
-  return { cols, zoom: Math.min(FIT.maxZoom, avail / (cols * COL_W)) };
-}
-
 /** Fit khi tải / "Sắp xếp" / đổi cỡ khung: cả flow vừa khung (chừa ngăn chi tiết nếu đang mở). */
 function runFit(
   rf: ReactFlowInstance,
@@ -62,12 +52,13 @@ function runFit(
       : rf.fitView({ ...FIT, minZoom, duration: ms });
   return done.then(() => {
     const v = rf.getViewport();
-    // Quá rộng cho mức zoom đọc được (`minZoom`) ⇒ KHÔNG thu nhỏ thêm: hiện trọn một số CỘT (không cắt nửa node ở mép phải), neo mép trái/trên,
-    // phần còn lại kéo ngang. Zoom chọn sao cho đúng `n` cột vừa khung (≥ minZoom, chữ vẫn đọc được).
+    // Quá lớn cho mức zoom đọc được (`minZoom`) ⇒ KHÔNG thu nhỏ thêm: giữ zoom đọc được, neo mép trái/trên, phần còn lại kéo để xem.
     if (v.zoom <= minZoom + 0.001) {
       const b = getNodesBounds(rf.getNodes());
-      const z = snapColumnsZoom(size.w - inset, minZoom).zoom;
-      void rf.setViewport({ x: 16 - b.x * z, y: 16 - b.y * z, zoom: z }, { duration: ms });
+      void rf.setViewport(
+        { x: 16 - b.x * minZoom, y: 16 - b.y * minZoom, zoom: minZoom },
+        { duration: ms },
+      );
     }
   });
 }
@@ -96,7 +87,7 @@ function revealNode(
   if (dx !== 0 || dy !== 0)
     void rf.setViewport({ ...v, x: v.x + dx, y: v.y + dy }, { duration: reduceMotion() ? 0 : 300 });
 }
-export type ColumnsFitOptions = {
+export type ViewFitOptions = {
   /** Đổi giá trị ⇒ fit lại (số bước + số giai đoạn do host ghép). */
   sig: string;
   /** Đổi giá trị ⇒ canvas fit lại khung nhìn (sau "Sắp xếp"). */
@@ -110,7 +101,7 @@ export type ColumnsFitOptions = {
   fitRef?: { current: (() => void) | null };
 };
 
-export function useColumnsFit(o: ColumnsFitOptions): void {
+export function useViewFit(o: ViewFitOptions): void {
   const rf = useReactFlow();
   // khung đổi cỡ (mở/đóng panel giai đoạn, resize cửa sổ) ⇒ fit lại; còn lại giữ pan/zoom của người dùng
   const box = useStore((s) => `${Math.round(s.width / 8)}x${Math.round(s.height / 8)}`);
@@ -153,7 +144,7 @@ export function useColumnsFit(o: ColumnsFitOptions): void {
       const added = [...ids].filter((i) => !p.ids.has(i));
       prev.current = { ...p, fitted: true, fitKey: opts.current.fitKey, box, ids };
       if (wantFit) return doFit();
-      const first = added.find((i) => !i.startsWith("h") && !i.startsWith("j"));
+      const first = added.find((i) => i !== "trigger" && !i.startsWith("bridge:"));
       if (first)
         revealNode(rf, first, { w: widthRef.current, h: heightRef.current }, inset.current);
     }, 60);

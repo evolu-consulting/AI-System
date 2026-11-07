@@ -21,6 +21,8 @@ export type StageFormProps = {
   onMove: (dir: -1 | 1) => void;
   /** Chuyển sang bước `step` (0-based). */
   onStep: (step: number) => void;
+  /** CR-123 · u13 · ô "Gộp tới" chọn bước nằm TRƯỚC: nối bằng cùng luật với kéo mũi tên (sắp lại bước, từ chối vòng lặp). */
+  onLink?: (targetUid: string) => void;
   onSplit: () => void;
   onRemove: () => void;
 };

@@ -55,21 +55,23 @@ function draftOps(update: Update) {
       update((d) => ({ ...d, stages: swapStepColumns(d.stages, i, dir) })),
     /** CR-123 · u3a · xoá một stage của node module ⇒ xoá CẢ cụm (Ký số = gửi + chờ); stage thường ⇒ như cũ. */
     removeStage: (i: number) => update((d) => ({ ...d, stages: removeCluster(d.stages, i) })),
-    /** fnr-canvas · lưu `y` của node `uid` (chỉ-UI); `undefined` ⇒ bỏ (về bố cục tự động). */
-    setUiY: (uid: string, y: number | undefined) =>
+    /** CR-123 · u13 · lưu vị trí kéo tay của node `uid` (chỉ-UI: `ui.x` + `ui.y`); `undefined` ⇒ bỏ (về bố cục tự động). */
+    setUiPos: (uid: string, pos: { x: number; y: number } | undefined) =>
       update((d) => ({
         ...d,
         stages: d.stages.map((s) => {
           if (s.uid !== uid) return s;
-          const { uiY: _y, ...rest } = s;
-          return y === undefined ? rest : { ...rest, uiY: Math.round(y) };
+          const { uiY: _y, uiX: _x, ...rest } = s;
+          return pos === undefined
+            ? rest
+            : { ...rest, uiX: Math.round(pos.x), uiY: Math.round(pos.y) };
         }),
       })),
-    /** fnr-canvas · "Sắp xếp": xoá mọi `y` đã lưu ⇒ bố cục tự động. */
-    clearUiY: () =>
+    /** "Sắp xếp": xoá mọi vị trí kéo tay ⇒ bố cục tự động (ELK). Một bước hoàn tác. */
+    clearUiPos: () =>
       update((d) => ({
         ...d,
-        stages: d.stages.map(({ uiY: _y, ...s }) => s),
+        stages: d.stages.map(({ uiY: _y, uiX: _x, ...s }) => s),
       })),
   };
 }

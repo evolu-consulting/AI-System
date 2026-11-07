@@ -77,10 +77,16 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
       if (e.target !== to)
         connect({ source: e.source, target: to, sourceHandle: e.side ?? e.handle ?? null });
     },
-    /** Thả node mới vào cột `step` (0-based) tại độ cao `y`; đầy ⇒ báo lý do. */
-    dropNodes: (items: PickedItem[], at: { step: number; y: number }) => {
+    /** Thả node mới tại điểm `at` (toạ độ sơ đồ): thành bước mới ở cuối (đứng riêng, vị trí lưu thành vị trí tay); đầy ⇒ báo lý do. */
+    dropNodes: (items: PickedItem[], at: { x: number; y: number }) => {
       const fresh = items.map((i) => ({ ...emptyStage(), ...i.patch, name: i.name }));
-      const r = placeFresh(stages(), fresh, safeDropStep(stages(), at.step), at.y);
+      const r = placeFresh(
+        stages(),
+        fresh,
+        safeDropStep(stages(), lastStep(stages()) + 1),
+        at.y,
+        at.x,
+      );
       if ("error" in r) return fail(r);
       // thả = node đứng riêng (chưa nối): luật Ký số cần bước duyệt ngay trước áp khi NỐI mũi tên / chèn trên cạnh / lưu, không áp ở điểm thả
       // KHÔNG chọn / mở ngăn chi tiết: ngăn phải đè lên canvas sẽ che đích của mũi tên (kéo nối không tới được)
