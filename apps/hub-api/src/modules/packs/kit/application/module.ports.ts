@@ -12,6 +12,8 @@ export type NodeBindingValidator = (
 /** Xử lý máy chủ của MỘT node (khoá `<app>.<node>`). Gọi nhiều lần cùng khoá ⇒ gộp (hợp tập tool, trường sau thắng). */
 export type NodeBinding = {
   key: string;
+  /** Bước cơ bản của lõi: `executor.kind` engine đang chạy (ghi nhận; không đổi cách engine chạy). */
+  executor?: string;
   /** Khoá tool các stage của node gọi (kiểm `MOD_TOOL_MISSING` với tool đã `bindTool`). */
   tools?: readonly string[];
   /** Schema args của tool để so với `configPort.schema` của node (MOD-FR-04 · `MOD_PORT_MISMATCH`). */

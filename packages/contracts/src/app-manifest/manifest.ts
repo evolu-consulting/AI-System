@@ -131,8 +131,16 @@ export type AppNodeExit = {
   label: { vi: string; en: string };
   on?: readonly string[];
 };
+/**
+ * CR-125 · m5 · tiền điều kiện node KHAI BÁO (nguồn duy nhất của luật "hành động thật cần người duyệt ngay trước", `process-real-rule.ts`):
+ * `before: "approval"` ⇒ stage hành động thật của node chỉ hợp lệ khi MỌI stage của bước liền trước là bước duyệt. Vắng ⇒ không đòi gì.
+ */
+export type NodeRequires = { before: "approval" };
+
 export type AppNodeDecl = {
   key: string;
+  /** CR-125 · m5 · tiền điều kiện của node (xem `NodeRequires`); picker, kéo thả, nối lại và lưu cùng đọc từ đây qua `MODULES`. */
+  requires?: NodeRequires;
   label: { vi: string; en: string };
   group: NodeGroup;
   /** 1..3 stage mẫu chèn vào flow (vd Ký số = tool gửi ký + chờ sự kiện ký). */

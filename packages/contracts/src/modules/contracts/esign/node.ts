@@ -9,6 +9,8 @@ export const ESIGN_NODE: FeatureNodeDecl = {
   group: "sign",
   kind: "app",
   feature: "contracts-write",
+  // CR-125 · m5 · Ký số là hành động thật: cần người duyệt ngay trước (trước đây luật cứng ở `process-real-rule.ts`, nay đọc từ khai báo).
+  requires: { before: "approval" },
   // E5 · nhà cung cấp, người ký công ty, đối tác ký, thứ tự, hạn, nhắc ghi ở `args` stage 0 (`EsignNodeConfig`, esign-node.ts).
   config: { stage: 0, options_path: "/pack/contracts/esign/options" },
   // CR-123 · FLOW3-FR-14 · Ký số là MỘT ô với 3 đầu ra: ký xong (đi tiếp) · từ chối / huỷ phong bì · hết hạn chờ.

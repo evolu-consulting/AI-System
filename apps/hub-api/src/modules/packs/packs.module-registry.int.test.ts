@@ -47,6 +47,7 @@ describe("sổ module · mount thật", () => {
     expect(flowPortRegistry.factsReaderFor("contracts", "contract.submitted")).toBeDefined();
     expect(flowPortRegistry.outcomeHandlerFor("contracts", "contract.submitted")).toBeDefined();
     expect(flowPortRegistry.outcomeHandlerFor("community", "post.created")).toBeDefined();
+    expect(moduleRegistry.bindingOf("core.if")?.executor).toBe("if"); // CR-125 m5 · bước cơ bản vào sổ khi mount
     expect(moduleRegistry.bindingOf("contracts.esign")?.tools).toEqual(["contracts-esign-send"]);
     expect(moduleRegistry.bindingOf("contracts.esign")?.optionsPath).toBe(
       "/pack/contracts/esign/options",

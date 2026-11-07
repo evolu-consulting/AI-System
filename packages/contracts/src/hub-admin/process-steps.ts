@@ -55,6 +55,8 @@ const ISSUES_MAX = 20;
 /** Hình tối thiểu của stage def mà luật cần (nhận cả bản nháp FE / snapshot cũ thiếu `back_to_steps`). */
 export type StepStageShape = {
   key: string;
+  /** Khoá node của stage (CR-125 m5): luật REAL_ACTION đọc tiền điều kiện `requires` của node từ `MODULES`. */
+  node?: string | undefined;
   step?: number;
   real_action: boolean;
   after: { kind: string; back_to_steps?: readonly number[] };
@@ -116,7 +118,11 @@ function stepIssues(stages: readonly StepStageShape[], out: Bucket[]): boolean {
 
 function realAndBackIssues(stages: readonly StepStageShape[], out: Bucket[]): void {
   const st = resolveSteps(stages);
-  const shape = stages.map((p, j) => ({ step: st[j] as number, after: p.after.kind }));
+  const shape = stages.map((p, j) => ({
+    step: st[j] as number,
+    after: p.after.kind,
+    node: p.node,
+  }));
   stages.forEach((s, i) => {
     const step = st[i] as number;
     if (s.real_action) {

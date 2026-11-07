@@ -6,6 +6,7 @@ import type { ConfigCache } from "../config/public";
 import { mountGuide } from "../guide/guide.mount";
 import { mountMyHistory } from "../my-history/my-history.mount";
 import { contractsActivitySource } from "./contracts/activity.mount";
+import { bindCoreNodes } from "./core/nodes/core-nodes.binding";
 import { type AgentHubBridge, mountDlc } from "./dlc/dlc.mount";
 import type { PackAccessView, PackRunsBridge, PackToolRegistry } from "./kit/public";
 import { tenantTz } from "./packs.tenant-config";
@@ -21,6 +22,7 @@ export type CoreToolsDeps = {
 
 /** Tool lõi chỉ đọc (không entitlement, tự lọc theo người gọi): app-guide + my-activity / my-chat-history (my-activity-rag). */
 export function mountCoreTools(d: CoreToolsDeps, view: PackAccessView): void {
+  bindCoreNodes(); // CR-125 · m5 · bước cơ bản vào sổ module (ghi nhận, không đổi engine)
   mountGuide(d.db, d.packTools, view);
   const contractsOn = d.packs?.contracts ?? true;
   mountMyHistory(d.db, d.packTools, {
