@@ -2,6 +2,7 @@
 // mặc định 22; platform_admin đổi (≤ trần 50), tenant_admin chỉ đọc; lưu def vượt ⇒ 422 `PROCESS_DEF_INVALID` + `stages_max`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Role } from "@ai/contracts/common";
+import { withHubScope } from "@ai/db/hub-scope";
 import { tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
@@ -101,21 +102,21 @@ describe("CR-122 p22 · số bước tối đa là cài đặt nền tảng", ()
   });
 
   it("đường hub_rw không ghi thẳng được bảng cài đặt nền tảng (chỉ hàm SECURITY DEFINER, khoá + giá trị được kiểm)", async () => {
-    const direct = await db
-      .execute(
+    const direct = await withHubScope(db, { kind: "system" }, (tx) =>
+      tx.execute(
         sql`insert into hub.platform_settings (key, value) values ('process.stages_max', '999'::jsonb)`,
-      )
-      .then(
-        () => null,
-        (e: unknown) => e,
-      );
+      ),
+    ).then(
+      () => null,
+      (e: unknown) => e,
+    );
     expect(direct).not.toBeNull();
-    const bad = await db
-      .execute(sql`select hub.set_platform_setting('process.stages_max', '999'::jsonb, null)`)
-      .then(
-        () => null,
-        (e: unknown) => e,
-      );
+    const bad = await withHubScope(db, { kind: "system" }, (tx) =>
+      tx.execute(sql`select hub.set_platform_setting('process.stages_max', '999'::jsonb, null)`),
+    ).then(
+      () => null,
+      (e: unknown) => e,
+    );
     expect(bad).not.toBeNull();
   });
 
