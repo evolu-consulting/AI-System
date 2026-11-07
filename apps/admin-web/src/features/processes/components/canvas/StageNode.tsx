@@ -11,11 +11,18 @@ import { useTranslation } from "react-i18next";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { useHandlers } from "./canvas-ctx";
 import { FINISH_CLASS, FlowNodeBody, isFinishView } from "./FlowNodeBody";
+import { NextPort } from "./OutPort";
 import { StageBody, stageButtonClass } from "./StageBody";
 import { onStageKeyDown } from "./stage-keys";
 import { type StageView, sameView } from "./stage-view";
 
-export type StageNodeData = { v: StageView; selected: boolean; readOnly: boolean };
+export type StageNodeData = {
+  v: StageView;
+  selected: boolean;
+  readOnly: boolean;
+  /** CR-122 · p22 · hiện cổng ra để kéo nối tay. */
+  connectable?: boolean;
+};
 export type StageNodeType = Node<StageNodeData, "stage">;
 
 /** Cổng ra "Từ chối" (id `back` = nguồn cạnh quay lại): nhãn chữ, nét warning như cạnh quay lại (không chỉ màu). */
@@ -44,7 +51,7 @@ function StageNodeImpl({ data }: NodeProps<StageNodeType>) {
   return (
     <div style={{ width: NODE_W, height: NODE_H }} className="pointer-events-auto">
       <HiddenHandle type="target" position={Position.Left} />
-      <HiddenHandle type="source" position={Position.Right} />
+      <NextPort connectable={data.connectable === true && !v.locked} />
       <HiddenHandle id="back-in" type="target" position={Position.Bottom} />
       {v.dlc?.gate ? (
         <RejectPort />
@@ -81,5 +88,6 @@ export const StageNode = memo(
   (a, b) =>
     sameView(a.data.v, b.data.v) &&
     a.data.selected === b.data.selected &&
-    a.data.readOnly === b.data.readOnly,
+    a.data.readOnly === b.data.readOnly &&
+    a.data.connectable === b.data.connectable,
 );

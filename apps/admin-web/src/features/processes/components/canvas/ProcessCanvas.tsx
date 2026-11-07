@@ -4,7 +4,6 @@
 // y tự do, lưu `ui.y`; cột đầy ⇒ trượt về chỗ cũ). nodes/edges là DẪN XUẤT từ bản nháp (không giữ state riêng).
 // dlc-step-library: sơ đồ DLC ⇒ cạnh "Từ chối" tới NODE đích (không tới tiêu đề cột), cạnh tiến sau bước có cổng mang nhãn "Duyệt";
 // `linkable` ⇒ kéo cổng "Từ chối" của bước nào có cổng cũng nối được (`ops.linkReject` kiểm đích đứng trước).
-import { PROCESS_STAGES_MAX } from "@ai/contracts/hub-admin";
 import { type EdgeInsertInfo, FlowCanvas, type FlowLabels, toEdge } from "@ai/flow-canvas";
 import {
   COL_W,
@@ -23,8 +22,10 @@ import { ChevronRight } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { BridgeApi } from "../../hooks/use-bridge";
+import { useStagesMax } from "../../hooks/use-stages-max";
 import { countAtStep } from "../../lib/step-ops";
 import { useFlowCtx } from "../flow/flow-ctx";
+import { useLibraryCanvas } from "../library/library-canvas-ctx";
 import { BRIDGE_W, BridgeNode } from "./BridgeNode";
 import { type CanvasHandlers, HandlersCtx } from "./canvas-ctx";
 import { EdgeInsertMenu } from "./EdgeInsertMenu";
@@ -65,6 +66,7 @@ function toNode(
   selected: string | undefined,
   readOnly: boolean | undefined,
   labels: Map<number, number | null> | null,
+  connectable: boolean,
 ): Node {
   // `measured` đặt sẵn (kích thước đã biết) ⇒ xyflow không ẩn node chờ đo mỗi lần bố cục đổi.
   const isIfNode = n.kind === "stage" && byUid.get(n.id)?.ifs != null;
@@ -79,7 +81,7 @@ function toNode(
   if (n.kind === "stage")
     return {
       ...base,
-      data: { v: byUid.get(n.id), selected: n.id === selected, readOnly },
+      data: { v: byUid.get(n.id), selected: n.id === selected, readOnly, connectable },
       draggable: !readOnly && !byUid.get(n.id)?.locked,
     };
   const data =
@@ -204,6 +206,7 @@ function useFlowGraph(
   warn: WarnEdges,
   bridge: BridgeApi | undefined,
   insertable: boolean,
+  connectable: boolean,
 ) {
   const { views, selected, readOnly } = p;
   return useMemo(() => {
@@ -211,7 +214,7 @@ function useFlowGraph(
     const lay = layoutSteps(views, dlc ? { back: "node" } : {});
     const byUid = new Map(views.map((v) => [v.uid, v]));
     const labels = stepHeaderLabels(views);
-    const nodes = lay.nodes.map((n) => toNode(n, byUid, selected, readOnly, labels));
+    const nodes = lay.nodes.map((n) => toNode(n, byUid, selected, readOnly, labels, connectable));
     // dlc-engine · bước DLC và bước duyệt không nối với nhau (một sơ đồ chỉ một loại bước).
     const fam = (id: string) => byUid.get(id)?.family ?? null;
     const linked = lay.edges.filter((e) => {
@@ -243,7 +246,7 @@ function useFlowGraph(
       steps: lay.steps,
       dlc,
     };
-  }, [views, selected, readOnly, approve, trig, warn, bridge, insertable]);
+  }, [views, selected, readOnly, approve, trig, warn, bridge, insertable, connectable]);
 }
 
 function useCanvasLabels(dlc: boolean): Partial<FlowLabels> {
@@ -285,6 +288,9 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
   );
   const warn = flowCtx?.warnEdges ?? NO_WARN;
   const insertable = !!flowCtx && !p.readOnly;
+  // CR-122 · p22 · kéo cổng ra để đặt đích: canvas sửa được, không phải canvas thư viện khe (ở đó chỉ cổng "Từ chối" của bước DLC).
+  const lib = useLibraryCanvas();
+  const connectable = !p.readOnly && !p.compact && !lib;
   const g = useFlowGraph(
     p,
     t("process.admin.library.dlc.approve"),
@@ -292,9 +298,10 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
     warn,
     flowCtx?.bridge,
     insertable,
+    connectable,
   );
   const labels = useCanvasLabels(g.dlc);
-  const room = PROCESS_STAGES_MAX - p.views.length;
+  const room = useStagesMax() - p.views.length;
   const renderEdgeInsert = useMemo(
     () =>
       insertable
@@ -311,7 +318,9 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
   const onAddToStep = useCallback((step: number) => handlers.current.ops.add(step), []);
   const onConnect = useCallback(
     (c: { source: string; target: string; sourceHandle?: string | null }) => {
-      if (c.sourceHandle === "back") handlers.current.ops.linkReject(c.source, c.target);
+      const ops = handlers.current.ops;
+      if (c.sourceHandle === "back") ops.linkReject(c.source, c.target);
+      else ops.connect(c);
     },
     [],
   );
@@ -367,7 +376,7 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
           resetKey={tick}
           onNodeDrag={onDrag}
           onNodeDragStop={onDragStop}
-          onConnect={p.linkable && !p.readOnly ? onConnect : undefined}
+          onConnect={(p.linkable || connectable) && !p.readOnly ? onConnect : undefined}
         />
       </HandlersCtx.Provider>
       {trig && g.steps >= 4 ? <MoreRight label={t("process.admin.flow.moreRight")} /> : null}

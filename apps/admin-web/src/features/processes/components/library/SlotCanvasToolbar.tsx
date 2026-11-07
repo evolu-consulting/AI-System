@@ -2,7 +2,6 @@
 // duyệt" (mặc định, như cũ), mũi tên mở menu "Thêm bước duyệt" / "Thêm bước DLC". Hai loại bước không nối với nhau trong một
 // sơ đồ (trộn ⇒ lỗi KIND_MIX, không lưu được). dlc-step-library: "Thêm bước DLC" là menu con chọn BƯỚC MẪU của thư viện
 // (tên + việc) hoặc "Bước trống".
-import { PROCESS_STAGES_MAX } from "@ai/contracts/hub-admin";
 import { Bell, ChevronDown, Clock, LayoutTemplate, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useStagesMax } from "../../hooks/use-stages-max";
 
 type Template = { id: string; name: string; action: string };
 type Props = {
@@ -69,7 +69,7 @@ export function SlotCanvasToolbar({
   onArrange,
 }: Props) {
   const { t } = useTranslation();
-  const full = count >= PROCESS_STAGES_MAX;
+  const full = count >= useStagesMax();
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="inline-flex">

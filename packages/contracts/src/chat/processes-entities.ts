@@ -18,7 +18,7 @@ import {
   PROCESS_INPUT_MAX,
   PROCESS_NAME_MAX,
   PROCESS_OUTPUT_MAX,
-  PROCESS_STAGES_MAX,
+  PROCESS_STAGES_CEILING,
   PROCESS_STEP_MAX,
   ProcessKeySchema,
   ProcessRunStatusSchema,
@@ -105,7 +105,7 @@ export const ProcessRunSummarySchema = z.strictObject({
   process: z.strictObject({ key: ProcessKeySchema, name: NameSchema, version: Int1 }),
   status: ProcessRunStatusSchema,
   current_stage_idx: StageIdxSchema,
-  stage_count: z.number().int().min(1).max(PROCESS_STAGES_MAX),
+  stage_count: z.number().int().min(1).max(PROCESS_STAGES_CEILING),
   started_by: UserRefSchema,
   origin: ProcessOriginSchema,
   started_at: IsoDateTime,
@@ -114,7 +114,7 @@ export const ProcessRunSummarySchema = z.strictObject({
   decision_reason: DecisionReasonSchema.optional(),
   /** P-b2 · bước hiện tại (nguồn thật; `current_stage_idx` = stage nhỏ nhất của bước). */
   current_step: ProcessStepSchema,
-  step_count: z.number().int().min(1).max(PROCESS_STAGES_MAX),
+  step_count: z.number().int().min(1).max(PROCESS_STAGES_CEILING),
   /** P-d1 · PD-R25 · `null` = không hết hạn; Hub luôn đặt (optional chỉ để mock FE cũ không vỡ — A4 G6). */
   expires_at: IsoDateTime.nullable().optional(),
   /** P-d2 · D2-45 · `due_at` sớm nhất của hẹn `wait_until` / `retry` còn mở của run; không có ⇒ `null` (Hub: T17b). */
@@ -258,7 +258,7 @@ export type BackEvent = z.infer<typeof BackEventSchema>;
 export const ProcessRunFullViewSchema = ProcessRunSummarySchema.extend({
   access: z.literal("full"),
   input: z.string().max(PROCESS_INPUT_MAX),
-  stages: z.array(StageViewSchema).max(PROCESS_STAGES_MAX),
+  stages: z.array(StageViewSchema).max(PROCESS_STAGES_CEILING),
   history: z.array(HistoryItemSchema).max(HISTORY_MAX),
   decision: RunDecisionSchema.nullable(),
   my_tasks: z.array(TaskDetailSchema).max(MY_TASKS_MAX),
@@ -289,7 +289,7 @@ export const ProcessRunTaskViewSchema = z.strictObject({
         autofix: AutofixStageViewSchema.optional(),
       }),
     )
-    .max(PROCESS_STAGES_MAX),
+    .max(PROCESS_STAGES_CEILING),
   my_tasks: z.array(TaskDetailSchema).max(MY_TASKS_MAX),
   outputs: z.array(OutputRefSchema).max(TASK_VIEW_OUTPUTS_MAX).optional(),
   can_cancel: z.boolean().optional(),
@@ -368,7 +368,7 @@ export const ProcessRunUsageSchema = z.strictObject({
         calls: z.array(UsageCallSchema).max(USAGE_STAGE_CALLS_MAX),
       }),
     )
-    .max(PROCESS_STAGES_MAX),
+    .max(PROCESS_STAGES_CEILING),
 });
 export type ProcessRunUsage = z.infer<typeof ProcessRunUsageSchema>;
 

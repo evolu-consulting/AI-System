@@ -3,10 +3,13 @@
 import type { DlcStepTemplate } from "@ai/contracts/hub-admin";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { notifyError } from "@/components/shared/toast";
+import { connectPatch } from "../lib/canvas-connect";
 import { emptyStage, type StageDraft } from "../lib/def-form";
 import { linkDlcReject } from "../lib/dlc-slot";
 import { freshDlcStage, freshReviewStage, freshSlotStage } from "../lib/fresh-stages";
 import type { EdgeRef } from "../lib/insert-on-edge";
+import { getStagesMax } from "../lib/stages-limit";
 import { stepLabel } from "../lib/step-label";
 import { columnNeighbor, type StepOpResult } from "../lib/step-ops";
 import type { DraftState } from "./use-draft";
@@ -14,6 +17,7 @@ import type { DraftState } from "./use-draft";
 type Notice = { uid?: string; error: string };
 const LIVE = "process.admin.canvas.live.";
 const LINK = "process.admin.library.dlc.link.";
+const CONNECT = "process.admin.canvas.connect.";
 
 type Report = (uid: string | undefined, r: StepOpResult<unknown>, before?: number) => void;
 
@@ -26,7 +30,7 @@ function useReport(d: DraftState) {
   const report: Report = (uid, r, before) => {
     if ("error" in r) {
       const step = stepLabel(r.step ?? 0);
-      setNotice({ uid, error: t(r.error, { step }) });
+      setNotice({ uid, error: t(r.error, { step, max: getStagesMax() }) });
       setLive(r.step === undefined ? "" : t(`${LIVE}rejected`, { step }));
       return;
     }
@@ -126,6 +130,15 @@ export function useStageOps(d: DraftState) {
     },
     /** dlc-step-library · kéo cổng "Từ chối" của bước `from` thả lên bước `to` (phải đứng trước) ⇒ `gate.back_to = [to]`. */
     linkReject: linkRejectOf(d, rep),
+    /** CR-122 · p22 · kéo cổng ra của node sang node đích ⇒ đặt "Sau đó đi tiếp" / Đúng / Sai; sai luật ⇒ không đổi + toast. */
+    connect: (c: { source: string; target: string; sourceHandle?: string | null }) => {
+      const r = connectPatch(d.draftRef.current.stages, c);
+      if (!r) return;
+      if (!r.ok) return notifyError(t(`${CONNECT}${r.error}`));
+      d.patchStage(r.index, r.patch as Partial<StageDraft>);
+      setNotice(null);
+      setLive(t(`${CONNECT}done.${r.field}`));
+    },
     clearNotice: () => setNotice(null),
   };
 }

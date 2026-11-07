@@ -5,7 +5,6 @@ import {
   PROCESS_KEY_RE,
   PROCESS_NAME_MAX,
   PROCESS_RUN_GROUPS_MAX,
-  PROCESS_STAGES_MAX,
   type ProcessDef,
   type ProcessDefInput,
   type ProcessToolItem,
@@ -25,6 +24,7 @@ import { type InputDraft, inputsToDef, inputsToDraft, validateSourcesPart } from
 import { emptyStage, intOrNull, num, stageToDraft, stageToInput } from "./stage-convert";
 import { slugKey } from "./stage-key";
 import { budgetOk, P, validateStage } from "./stage-validate";
+import { getStagesMax } from "./stages-limit";
 import { slotHasReviewer } from "./system-nodes";
 import { normalizeTool } from "./tool-form";
 import {
@@ -179,7 +179,7 @@ export function validateDraft(
   if (d.hint.length > PROCESS_DESC_MAX) e.input_hint = `${P}tooLong`;
   if (d.groupIds.length > PROCESS_RUN_GROUPS_MAX) e.run_group_ids = `${P}tooMany`;
   if (!budgetOk(d.budget)) e.token_budget = `${P}budget`;
-  if (d.stages.length < 1 || d.stages.length > PROCESS_STAGES_MAX) e.stages = `${P}stageCount`;
+  if (d.stages.length < 1 || d.stages.length > getStagesMax()) e.stages = `${P}stageCount`;
   d.stages.forEach((s, i) => {
     validateStage(normalizeForm(normalizeTool(normalizeWait(s))), i, d.stages, e);
     if (forEnable && s.after === "review" && s.groupId === "" && !slotHasReviewer(s))

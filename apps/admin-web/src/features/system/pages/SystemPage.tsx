@@ -19,6 +19,7 @@ import { useOpsStatus, useRunOpsCheck, useSaveOpsSettings } from "../api";
 import { CheckCard, TONE, when } from "../components/CheckCard";
 import { ConfigPanel } from "../components/ConfigPanel";
 import { HistoryTable } from "../components/HistoryTable";
+import { ProcessLimitPanel } from "../components/ProcessLimitPanel";
 import {
   buildDiagnosticText,
   isCheckKey,
@@ -174,6 +175,7 @@ function SystemContent() {
             ))}
           </div>
           <HistoryTable events={data.events} actorOf={actorOf} />
+          <ProcessLimitPanel />
           <ConfigPanel server={data.settings} saving={save.isPending} onSave={onSave} />
         </div>
       ) : null}

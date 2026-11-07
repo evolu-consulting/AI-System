@@ -1,12 +1,12 @@
 // ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend §1, FB3/FB7): bàn làm việc giai đoạn — thanh công cụ + tab Canvas/Danh sách
 // + panel bên chứa form của MỘT giai đoạn đang chọn (mặc định giai đoạn 1).
-import { PROCESS_STAGES_MAX } from "@ai/contracts/hub-admin";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
+import { useStagesMax } from "../../hooks/use-stages-max";
 import { isDlcStep } from "../../lib/dlc-slot";
 import { writeViewMode } from "../../lib/view-mode";
 import { useFitMin, useRegisterSelect } from "../flow/flow-ctx";
@@ -48,6 +48,7 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
   const { t } = useTranslation();
   const w = useWorkbench(d, refs);
   const lib = useLibraryCanvas();
+  const stagesMax = useStagesMax();
   const { ops } = w;
   const fitMin = useFitMin(!!lib);
   useRegisterSelect((uid) => w.select(uid, true));
@@ -81,7 +82,7 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
               {t("process.admin.canvas.readOnly")}
             </p>
           ) : (
-            <FlowToolbar ops={ops} count={w.stages.length} max={PROCESS_STAGES_MAX}>
+            <FlowToolbar ops={ops} count={w.stages.length} max={stagesMax}>
               {lib ? (
                 <SlotCanvasToolbar
                   count={w.stages.length}

@@ -1617,6 +1617,14 @@
       "fails": "lần lỗi",
       "runs": "lượt kiểm liên tiếp"
     },
+    "process": {
+      "title": "Giới hạn quy trình",
+      "desc": "Số bước tối đa của một quy trình, áp cho mọi công ty. Quy trình đã dài hơn vẫn chạy, nhưng không lưu thêm được.",
+      "label": "Số bước tối đa",
+      "range": "1–{max}, mặc định {default}",
+      "unit": "bước",
+      "saved": "Đã lưu giới hạn quy trình"
+    },
     "config": {
       "title": "Cấu hình",
       "desc": "Tần suất kiểm, bật/tắt từng check và ngưỡng cảnh báo. Có hiệu lực không cần khởi động lại.",

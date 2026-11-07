@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { BRANCH_RULES_MAX, gotoSteps, isStandalone } from "../../domain/branch-rules";
 import { emptyBranch } from "../../lib/branch-form";
 import { branchOff } from "../../lib/d2-validate";
+import { useStepOptionLabel } from "../../lib/step-options";
 import { BranchRuleRow, type CellErrors } from "./BranchRuleRow";
 import type { StageFormProps } from "./stage-form-props";
 
@@ -16,6 +17,7 @@ const CELLS = ["field", "op", "value", "goto_step"] as const;
 export function StageBranch(p: StageFormProps) {
   const { t } = useTranslation();
   const { stage, index, all, errors, readOnly, onChange } = p;
+  const label = useStepOptionLabel(all);
   if (branchOff(stage)) return null;
   const alone = isStandalone(all, index);
   const noFields = stage.fields.length === 0;
@@ -58,6 +60,7 @@ export function StageBranch(p: StageFormProps) {
           rule={r}
           fields={stage.fields}
           steps={steps}
+          optLabel={(s) => label(s - 1)}
           readOnly={readOnly || !alone}
           errors={cells(j)}
           onChange={(patch) => set(j, patch)}

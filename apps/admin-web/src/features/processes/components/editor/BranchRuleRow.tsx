@@ -17,6 +17,8 @@ export type BranchRuleRowProps = {
   rule: BranchDraft;
   fields: readonly FieldDraft[];
   steps: readonly number[];
+  /** CR-122 · p22 · nhãn ô chọn bước ("Bước N · tên"); số bước đếm từ 1. Vắng ⇒ "Bước N". */
+  optLabel?: (step: number) => string;
   readOnly: boolean;
   errors: CellErrors;
   onChange: (patch: Partial<BranchDraft>) => void;
@@ -74,7 +76,10 @@ function BranchRuleRowImpl(p: BranchRuleRowProps) {
         readOnly={readOnly}
         error={msg(errors.goto_step)}
         placeholder={t(`${K}gotoPh`)}
-        options={p.steps.map((s) => ({ value: String(s), label: t(`${K}gotoOpt`, { n: s }) }))}
+        options={p.steps.map((s) => ({
+          value: String(s),
+          label: p.optLabel?.(s) ?? t(`${K}gotoOpt`, { n: s }),
+        }))}
         onChange={(v) => p.onChange({ goto: Number(v) })}
       />
       {readOnly ? null : (

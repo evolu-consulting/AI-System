@@ -1,10 +1,10 @@
 // ADM-FR-71 · P-b2 (plan-frontend §1): thanh công cụ thẻ Giai đoạn — "Thêm giai đoạn" (bước mới cuối) và "Thêm bước"
 // (chèn bước mới sau bước của giai đoạn đang chọn); tắt khi đủ 10 giai đoạn.
-import { PROCESS_STAGES_MAX } from "@ai/contracts/hub-admin";
 import { LayoutTemplate, ListPlus, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { useStagesMax } from "../../hooks/use-stages-max";
 
 type Props = {
   count: number;
@@ -18,14 +18,30 @@ type Props = {
 
 export function CanvasToolbar({ count, onAddStage, onAddStep, onArrange, children }: Props) {
   const { t } = useTranslation();
-  const full = count >= PROCESS_STAGES_MAX;
+  const max = useStagesMax();
+  const full = count >= max;
+  const tip = full ? t("process.admin.canvas.err.stagesMax", { max }) : undefined;
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button type="button" variant="outline" size="sm" disabled={full} onClick={onAddStage}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={full}
+        title={tip}
+        onClick={onAddStage}
+      >
         <Plus aria-hidden className="size-4" />
         {t("process.admin.canvas.toolbar.addStage")}
       </Button>
-      <Button type="button" variant="outline" size="sm" disabled={full} onClick={onAddStep}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={full}
+        title={tip}
+        onClick={onAddStep}
+      >
         <ListPlus aria-hidden className="size-4" />
         {t("process.admin.canvas.toolbar.addStep")}
       </Button>
@@ -33,11 +49,7 @@ export function CanvasToolbar({ count, onAddStage, onAddStep, onArrange, childre
         <LayoutTemplate aria-hidden className="size-4" />
         {t("process.admin.canvas.toolbar.arrange")}
       </Button>
-      {full ? (
-        <span className="text-caption text-muted-foreground">
-          {t("process.admin.canvas.err.stagesMax")}
-        </span>
-      ) : null}
+      {full ? <span className="text-caption text-muted-foreground">{tip}</span> : null}
       <div className="ml-auto">{children}</div>
     </div>
   );

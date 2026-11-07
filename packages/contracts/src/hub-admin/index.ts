@@ -19,6 +19,7 @@ export * from "./process-flow-edges";
 export * from "./process-flowdef";
 export * from "./process-form";
 export * from "./process-if";
+export * from "./process-limits";
 export * from "./process-set";
 export * from "./process-trigger";
 export * from "./processes";

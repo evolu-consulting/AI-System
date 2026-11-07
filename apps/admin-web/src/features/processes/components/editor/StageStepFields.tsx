@@ -1,8 +1,8 @@
 // ADM-FR-71 · HUB-FR-104 · HUB-FR-118 · P-b2: "Chạy ở bước" (spinbutton, đếm từ 1) và "Nếu bị trượt" (chọn bước được quay lại).
-import { PROCESS_STAGES_MAX } from "@ai/contracts/hub-admin";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useStagesMax } from "../../hooks/use-stages-max";
 import type { StageDraft } from "../../lib/def-form";
 import { stepFromLabel, stepLabel } from "../../lib/step-label";
 import { TextField } from "./Fields";
@@ -73,6 +73,7 @@ function BackFields({ stage, all, readOnly, errors, index, onChange }: StageForm
 export function StageStepFields(p: StageFormProps) {
   const { t } = useTranslation();
   const { stage, index, errors } = p;
+  const stagesMax = useStagesMax();
   const stepErr = errors[`stages.${index}.step`];
   const msg = p.stepNotice ?? (stepErr ? t(stepErr, { step: stepLabel(stage.step) }) : undefined);
   return (
@@ -83,7 +84,7 @@ export function StageStepFields(p: StageFormProps) {
         description={t(`${P}stepHint`)}
         type="number"
         min={1}
-        max={PROCESS_STAGES_MAX}
+        max={stagesMax}
         value={String(stepLabel(stage.step))}
         error={msg}
         alert={!p.stepNotice}
@@ -91,7 +92,7 @@ export function StageStepFields(p: StageFormProps) {
         onChange={(v) => {
           const n = Math.round(Number(v));
           if (v.trim() !== "" && Number.isFinite(n))
-            p.onStep(stepFromLabel(Math.min(Math.max(n, 1), PROCESS_STAGES_MAX)));
+            p.onStep(stepFromLabel(Math.min(Math.max(n, 1), stagesMax)));
         }}
       />
       <fieldset className="space-y-2">

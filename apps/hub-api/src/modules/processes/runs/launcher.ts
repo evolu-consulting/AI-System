@@ -2,7 +2,7 @@
 // kiểm lại quyền (grant agent / nhóm bật) → tạo `hub.runs` stage (RunService) → sau COMMIT `launch` driver stage. Idempotent
 // theo `stage_runs.current_run_id` (P1-29/63). Mất quyền ⇒ needs_decision{permission_lost|user_inactive}. Thứ tự khoá §10.
 import {
-  PROCESS_STAGES_MAX,
+  PROCESS_STAGES_CEILING,
   PROCESS_STEP_STAGES_MAX,
   type ProcessRunStatus,
 } from "@ai/contracts/chat";
@@ -54,7 +54,7 @@ async function kick(d: LauncherDeps, self: StageLauncher, runId: string): Promis
   // (`events` + `more`) đếm theo trần RIÊNG (≤ số stage tối đa của def), không ăn trần stage-song-song của loại bất đồng bộ.
   let asyncRuns = 0;
   let sync = 0;
-  while (asyncRuns <= PROCESS_STEP_STAGES_MAX && sync <= PROCESS_STAGES_MAX) {
+  while (asyncRuns <= PROCESS_STEP_STAGES_MAX && sync <= PROCESS_STAGES_CEILING) {
     const r = await kickOnce(d, self, runId);
     if (!r.more) return;
     if (r.sync) sync++;

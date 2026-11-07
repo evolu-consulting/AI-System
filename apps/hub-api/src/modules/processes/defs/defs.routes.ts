@@ -8,10 +8,11 @@ import {
   ProcessDefTenantQuerySchema,
   ProcessEditorContextQuerySchema,
   RunProcessDefRequestSchema,
+  SaveProcessLimitsRequestSchema,
   UpdateProcessDefRequestSchema,
 } from "@ai/contracts/hub-admin";
 import { Hono } from "hono";
-import { requireAdminRole } from "../../../lib/admin-role.middleware";
+import { requireAdminRole, requirePlatformAdmin } from "../../../lib/admin-role.middleware";
 import type { AuthUser, AuthVars } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { parseAdminQuery, parseIdParam, parseJson } from "../../../lib/http";
@@ -19,6 +20,7 @@ import type { ProcessDeps } from "../core/ports";
 import { type DefScope, defScopeOf } from "./def.rules";
 
 import { DefsService } from "./defs.service";
+import { getLimits, saveLimits } from "./platform-limits";
 
 function scopeOf(user: AuthUser, queryTenantId: string | undefined): DefScope {
   const s = defScopeOf(user, queryTenantId);
@@ -34,6 +36,11 @@ export function defsRoutes(d: ProcessDeps): Hono<AuthVars> {
   r.use("/process-defs/*", requireAdminRole());
   r.use("/agent-teams", requireAdminRole());
   r.use("/process-editor/context", requireAdminRole());
+  r.get("/process-editor/limits", requireAdminRole(), async (c) => c.json(await getLimits(d.db)));
+  r.put("/process-editor/limits", requirePlatformAdmin(), async (c) => {
+    const b = await parseJson(c, SaveProcessLimitsRequestSchema);
+    return c.json(await saveLimits(d.db, c.var.user.userId, b.stages_max));
+  });
   r.get("/process-defs", async (c) => {
     const q = parseAdminQuery(c, ProcessDefListQuerySchema);
     return c.json(await svc.list(scopeOf(c.var.user, q.tenant_id), q));

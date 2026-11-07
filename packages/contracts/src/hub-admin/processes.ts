@@ -7,7 +7,7 @@ import {
   PROCESS_INPUT_MAX,
   PROCESS_NAME_MAX,
   PROCESS_RUN_GROUPS_MAX,
-  PROCESS_STAGES_MAX,
+  PROCESS_STAGES_CEILING,
   PROCESS_STEP_MAX,
   ProcessKeySchema,
   ProcessStepSchema,
@@ -286,7 +286,7 @@ export const ProcessDefInputBaseSchema = z.strictObject({
   run_group_ids: z.array(UuidSchema).max(PROCESS_RUN_GROUPS_MAX),
   /** CR-105 · def thư viện: Group được chạy theo mã (def tenant ⇒ vắng/rỗng). */
   run_group_keys: z.array(StageGroupKeySchema).max(PROCESS_RUN_GROUPS_MAX).optional(),
-  stages: z.array(ProcessStageDefSchema).min(1).max(PROCESS_STAGES_MAX),
+  stages: z.array(ProcessStageDefSchema).min(1).max(PROCESS_STAGES_CEILING),
   token_budget: z.number().int().min(STAGE_TOKEN_BUDGET.min).nullable(),
   enabled: z.boolean(),
   sources: z.array(SourceKeySchema).max(DEF_SOURCES_MAX).default([]),

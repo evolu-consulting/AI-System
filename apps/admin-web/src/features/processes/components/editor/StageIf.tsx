@@ -15,6 +15,7 @@ import {
   type IfDraft,
   ifErrorAt,
 } from "../../lib/if-form";
+import { useStepOptionLabel } from "../../lib/step-options";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { SelectField, TextField } from "./Fields";
 import type { StageFormProps } from "./stage-form-props";
@@ -30,6 +31,8 @@ export type StageIfProps = {
   sources: readonly CondSource[];
   /** Bước đích chọn được, đếm từ 1. */
   steps: readonly number[];
+  /** CR-122 · p22 · nhãn ô chọn bước ("Bước N · tên"); số bước đếm từ 1. Vắng ⇒ "Bước N". */
+  optLabel?: (step: number) => string;
   errors: Record<string, string>;
   readOnly: boolean;
   onChange: (patch: Partial<IfDraft>) => void;
@@ -45,7 +48,10 @@ export function StageIf(p: StageIfProps) {
   const setCond = (j: number, patch: Partial<CondDraft>) =>
     p.onChange({ conds: value.conds.map((c, k) => (k === j ? { ...c, ...patch } : c)) });
   const full = value.conds.length >= IF_CONDS_MAX;
-  const stepOpts = steps.map((s) => ({ value: String(s), label: t(`${K}stepOpt`, { n: s }) }));
+  const stepOpts = steps.map((s) => ({
+    value: String(s),
+    label: p.optLabel?.(s) ?? t(`${K}stepOpt`, { n: s }),
+  }));
   const groupErr = err(undefined);
   return (
     <fieldset
@@ -185,6 +191,7 @@ export function StageIf(p: StageIfProps) {
 /** Nối `StageIf` vào `StageForm`: nguồn = field stage bước nhỏ hơn + input khai báo; đích = bước sau (đếm từ 1). */
 export function StageIfForm(p: StageFormProps) {
   const { stage, index, all, defInputs, errors, readOnly, onChange } = p;
+  const label = useStepOptionLabel(all);
   return (
     <StageIf
       id={stage.uid}
@@ -195,6 +202,7 @@ export function StageIfForm(p: StageFormProps) {
         ...condSources(all, defInputs ?? [], stage.step),
       ]}
       steps={gotoSteps(all, stage.step).map((s) => s + 1)}
+      optLabel={(s) => label(s - 1)}
       errors={errors}
       readOnly={readOnly}
       onChange={(patch) => onChange({ ifx: { ...stage.ifx, ...patch } })}

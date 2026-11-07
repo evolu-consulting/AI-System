@@ -10,6 +10,15 @@ export const PROCESS_DESC_MAX = 500;
 export const PROCESS_INPUT_MAX = 8_000;
 /** CR-121 D-1 · 22 = 20 bước duyệt HĐ + `route` + `finalize` (migration hub 0097 nới CHECK theo). */
 export const PROCESS_STAGES_MAX = 22;
+/** CR-122 · p22 · MẶC ĐỊNH số bước tối đa của một quy trình (cài đặt nền tảng ghi đè, kẹp ≤ `PROCESS_STAGES_CEILING`). */
+export const PROCESS_STAGES_DEFAULT = PROCESS_STAGES_MAX;
+/** CR-122 · p22 · TRẦN CỨNG của schema + CHECK DB (migration hub 0115); cài đặt nền tảng không vượt được. */
+export const PROCESS_STAGES_CEILING = 50;
+/** Giá trị đọc từ cài đặt nền tảng → số bước tối đa hiệu lực (sai/thiếu ⇒ mặc định; kẹp 1…trần). */
+export function resolveStagesMax(v: unknown): number {
+  if (typeof v !== "number" || !Number.isInteger(v) || v < 1) return PROCESS_STAGES_DEFAULT;
+  return Math.min(v, PROCESS_STAGES_CEILING);
+}
 export const PROCESS_RUN_GROUPS_MAX = 20;
 export const PROCESS_OUTPUT_MAX = 200_000;
 export const FEEDBACK_MAX = 4_000;
@@ -202,11 +211,11 @@ export const StageIdxSchema = z
   .number()
   .int()
   .min(0)
-  .max(PROCESS_STAGES_MAX - 1);
+  .max(PROCESS_STAGES_CEILING - 1);
 
 // ── P-b2 · bước song song + quay lại + Bàn giao [HUB-FR-104][HUB-FR-118][HUB-FR-136] (plan P-b2 §1.1) ─────────────
 /** Bước 0-based (UI đếm từ 1 — G-4). */
-export const PROCESS_STEP_MAX = PROCESS_STAGES_MAX - 1;
+export const PROCESS_STEP_MAX = PROCESS_STAGES_CEILING - 1;
 export const PROCESS_STEP_STAGES_MAX = 3;
 /** Trần quay lại mặc định của run (`process_runs.back_limit`). */
 export const PROCESS_BACK_ROUNDS_MAX = 3;

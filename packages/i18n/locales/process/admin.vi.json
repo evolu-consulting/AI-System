@@ -58,6 +58,8 @@
     "copyFailed": "Không sao chép được: {{reason}}",
     "saveBlocked": "Chưa lưu được: {{reason}}",
     "saveBlockedStep": "Chưa lưu được — bước «{{step}}»: {{reason}}",
+    "stepOpt": "Bước {{n}}",
+    "stepOptNamed": "Bước {{n}} · {{names}}",
     "openCopy": "Mở bản riêng",
     "kind": "Loại: {{kind}} · bản dùng chung v{{n}}",
     "copySource": "Sao từ thư viện: {{name}} · v{{n}}",
@@ -565,6 +567,19 @@
       "yes": "Đúng",
       "no": "Sai"
     },
+    "connect": {
+      "dragNext": "Kéo sang bước muốn đi tiếp",
+      "dragIf": "Kéo sang bước khi {{label}}",
+      "notLater": "Chỉ nối được tới bước đứng sau.",
+      "ifReal": "Nhánh Nếu không thể tới bước có hành động thật — chọn bước khác.",
+      "noNext": "Bước này kết thúc hoặc chờ sự kiện, không có bước đi tiếp.",
+      "noPort": "Thả dây từ cổng Đúng hoặc Sai của node Nếu.",
+      "done": {
+        "next": "Đã đặt bước đi tiếp.",
+        "yes": "Đã đặt bước khi Đúng.",
+        "no": "Đã đặt bước khi Sai."
+      }
+    },
     "region": "Chi tiết giai đoạn",
     "drawer": {
       "close": "Đóng ngăn chi tiết"
@@ -620,7 +635,7 @@
     },
     "err": {
       "stepFull": "Bước {{step}} đã đủ 3 giai đoạn song song.",
-      "stagesMax": "Tối đa 10 giai đoạn.",
+      "stagesMax": "Quy trình tối đa {{max}} bước — đổi trong Cài đặt nền tảng.",
       "step": "Số bước không hợp lệ. Hãy kéo giai đoạn vào đúng cột.",
       "realStep": "Hành động thật chỉ dùng được khi mọi giai đoạn của bước trước đều có người kiểm.",
       "backTarget": "Chỉ quay lại được các bước đứng trước giai đoạn này."

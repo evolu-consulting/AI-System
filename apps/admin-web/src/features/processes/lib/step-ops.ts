@@ -1,6 +1,7 @@
 // HUB-FR-104 · P-b2 (plan-frontend FB6): phép đổi cấu trúc BƯỚC của bản nháp — hàm thuần, canvas/panel/StepList cùng gọi.
 // Bất biến sau mỗi phép: mảng không giảm theo `step`, bước liên tục 0,1,2…, `backTo` đã remap + chỉ trỏ bước < bước stage.
-import { PROCESS_STAGES_MAX, PROCESS_STEP_STAGES_MAX } from "@ai/contracts/hub-admin";
+import { PROCESS_STEP_STAGES_MAX } from "@ai/contracts/hub-admin";
+import { getStagesMax } from "./stages-limit";
 
 export type Stepped = { uid: string; step: number; backTo: number[]; after: "review" | "auto" };
 export const ERR_STEP_FULL = "process.admin.canvas.err.stepFull";
@@ -119,7 +120,7 @@ export function addStageToStep<T extends Stepped>(
   step: number,
   fresh: T,
 ): StepOpResult<T> {
-  if (stages.length >= PROCESS_STAGES_MAX) return { error: ERR_STAGES_MAX };
+  if (stages.length >= getStagesMax()) return { error: ERR_STAGES_MAX };
   const target = Math.min(Math.max(step, 0), lastStep(stages) + 1);
   if (countAtStep(stages, target) >= PROCESS_STEP_STAGES_MAX)
     return { error: ERR_STEP_FULL, step: target };
@@ -135,7 +136,7 @@ export function insertStepAfter<T extends Stepped>(
   step: number,
   fresh: T,
 ): StepOpResult<T> {
-  if (stages.length >= PROCESS_STAGES_MAX) return { error: ERR_STAGES_MAX };
+  if (stages.length >= getStagesMax()) return { error: ERR_STAGES_MAX };
   const at = stages.reduce((m, o, j) => (o.step <= step ? j + 1 : m), 0);
   const out = [...stages];
   out.splice(at, 0, { ...fresh, step: step + 0.5, backTo: [] });

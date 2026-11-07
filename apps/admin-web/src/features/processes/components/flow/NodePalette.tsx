@@ -28,7 +28,13 @@ export function NodePalette({ ops, count, max }: Props) {
     <div className="flex flex-wrap items-center gap-2 scroll-mt-40" data-testid="flow-palette">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" size="sm" disabled={full} data-testid="flow-add-step">
+          <Button
+            type="button"
+            size="sm"
+            disabled={full}
+            title={full ? t("process.admin.canvas.err.stagesMax", { max }) : undefined}
+            data-testid="flow-add-step"
+          >
             <Plus aria-hidden className="size-4" />
             {t("process.admin.flow.add")}
           </Button>
@@ -46,7 +52,7 @@ export function NodePalette({ ops, count, max }: Props) {
       </Button>
       {full ? (
         <span className="text-caption text-muted-foreground">
-          {t("process.admin.canvas.err.stagesMax")}
+          {t("process.admin.canvas.err.stagesMax", { max })}
         </span>
       ) : null}
     </div>

@@ -8,10 +8,17 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { useHandlers } from "./canvas-ctx";
+import { IfPort } from "./OutPort";
 import { onStageKeyDown } from "./stage-keys";
 import { type StageView, sameView } from "./stage-view";
 
-export type IfData = { v: StageView; selected: boolean; readOnly: boolean };
+export type IfData = {
+  v: StageView;
+  selected: boolean;
+  readOnly: boolean;
+  /** CR-122 · p22 · hiện cổng Đúng / Sai để kéo nối tay. */
+  connectable?: boolean;
+};
 export type IfType = Node<IfData, "if">;
 
 function IfImpl({ data }: NodeProps<IfType>) {
@@ -24,9 +31,10 @@ function IfImpl({ data }: NodeProps<IfType>) {
     <div style={{ width: NODE_W, height: NODE_H }} className="pointer-events-auto relative">
       <HiddenHandle type="target" position={Position.Left} />
       <HiddenHandle id="back" type="source" position={Position.Top} />
-      <HiddenHandle id="yes" type="source" position={Position.Right} />
-      {/* fnr-canvas: cả Đúng và Sai ra ở mũi phải (kiểu n8n) — cạnh smoothstep rẽ lên/xuống, không vòng dưới node. */}
-      <HiddenHandle id="no" type="source" position={Position.Right} />
+      {/* fnr-canvas: cả Đúng và Sai ra ở mép phải (kiểu n8n) — cạnh smoothstep rẽ lên/xuống, không vòng dưới node.
+          p22: sơ đồ sửa được ⇒ hai cổng có nhãn Đúng / Sai, kéo sang node đích để đặt "Đúng/Sai thì tới bước". */}
+      <IfPort id="yes" connectable={data.connectable === true} />
+      <IfPort id="no" connectable={data.connectable === true} />
       <svg
         aria-hidden
         viewBox="0 0 100 100"
@@ -74,5 +82,6 @@ export const IfNode = memo(
   (a, b) =>
     sameView(a.data.v, b.data.v) &&
     a.data.selected === b.data.selected &&
-    a.data.readOnly === b.data.readOnly,
+    a.data.readOnly === b.data.readOnly &&
+    a.data.connectable === b.data.connectable,
 );

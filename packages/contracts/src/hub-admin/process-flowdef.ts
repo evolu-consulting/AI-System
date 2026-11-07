@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { APP_KEY_RE } from "../app-catalog";
 import type { AppEventDecl, AppFactType } from "../app-manifest/manifest";
-import { PROCESS_NAME_MAX, PROCESS_STAGES_MAX, ProcessKeySchema } from "../chat/processes";
+import { PROCESS_NAME_MAX, PROCESS_STAGES_CEILING, ProcessKeySchema } from "../chat/processes";
 
 import { resolveSteps } from "./process-steps";
 import {
@@ -32,7 +32,7 @@ export const FlowDefBaseSchema = z.strictObject({
   app: z.string().regex(APP_KEY_RE),
   owner: z.enum(FLOW_OWNERS),
   trigger: FlowTriggerSchema,
-  stages: z.array(ProcessStageDefSchema).min(1).max(PROCESS_STAGES_MAX),
+  stages: z.array(ProcessStageDefSchema).min(1).max(PROCESS_STAGES_CEILING),
   source: FlowSourceSchema.nullable().default(null),
   /** Số bản xuất bản; nháp ⇒ null. */
   version: z.number().int().min(1).nullable().default(null),
@@ -175,7 +175,7 @@ export const FlowDefSchema = FlowDefBaseSchema.superRefine((d, ctx) => {
 
 /** Def/snapshot CŨ (trước CR-122): chỉ cần `stages` hợp lệ để engine chạy nốt; trường khác giữ nguyên. */
 export const LegacyFlowDefSchema = z.looseObject({
-  stages: z.array(ProcessStageDefSchema).min(1).max(PROCESS_STAGES_MAX),
+  stages: z.array(ProcessStageDefSchema).min(1).max(PROCESS_STAGES_CEILING),
 });
 export type LegacyFlowDef = z.infer<typeof LegacyFlowDefSchema>;
 

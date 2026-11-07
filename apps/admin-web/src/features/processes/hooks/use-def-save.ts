@@ -1,11 +1,17 @@
 // ADM-FR-66 · CR-056 · P-a F5: lưu quy trình — validate client, POST (mới) / PUT kèm `version` (409 ⇒ ConflictDialog),
 // lỗi Hub theo `paths` gắn vào ô và mở giai đoạn lỗi (plan-frontend-admin §1 "Validate").
-import type { ProcessDef, ProcessDefInput, ProcessToolItem } from "@ai/contracts/hub-admin";
+import {
+  type ProcessDef,
+  type ProcessDefInput,
+  type ProcessToolItem,
+  stagesMaxFromDetails,
+} from "@ai/contracts/hub-admin";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
+import { ApiError } from "@/lib/http";
 import { createDef, updateDef, useInvalidateDefs } from "../api";
 import { type DefDraft, toDraft, toInput, validateDraft } from "../lib/def-form";
 import {
@@ -47,6 +53,8 @@ function useSaveFailure(d: DraftState) {
     const paths = serverPaths(err);
     const key = `process.admin.apiError.${code}`;
     if (code === "PROCESS_KEY_TAKEN") return d.showErrors({ key });
+    const max = err instanceof ApiError ? stagesMaxFromDetails(err.details) : null;
+    if (max !== null) return notifyError(t("process.admin.canvas.err.stagesMax", { max }));
     if (code === "FLOW_NODE_CONFIG_INVALID") {
       const e = nodeConfigErrors(err);
       if (Object.keys(e).length > 0) return d.showErrors(e);

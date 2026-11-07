@@ -5,7 +5,7 @@ import { APP_KEY_RE } from "../app-catalog";
 import {
   PROCESS_LIST_LIMIT,
   PROCESS_NAME_MAX,
-  PROCESS_STAGES_MAX,
+  PROCESS_STAGES_CEILING,
   ProcessKeySchema,
 } from "../chat/processes";
 import { CountSchema, IsoDateTime, UuidSchema } from "../common";
@@ -42,7 +42,7 @@ export const LibraryListStepSchema = z.strictObject({
 });
 export const LIBRARY_LIST_ITEM_FIELDS = {
   slot: SlotKeySchema.nullable().optional(),
-  steps: z.array(LibraryListStepSchema).max(PROCESS_STAGES_MAX).optional(),
+  steps: z.array(LibraryListStepSchema).max(PROCESS_STAGES_CEILING).optional(),
   ...LIBRARY_DEF_FIELDS,
 };
 
@@ -204,7 +204,7 @@ export const ProcessDefListItemSchema = z.strictObject({
   name: z.string().min(1).max(PROCESS_NAME_MAX),
   enabled: z.boolean(),
   is_template: z.boolean(),
-  stage_count: z.number().int().min(1).max(PROCESS_STAGES_MAX),
+  stage_count: z.number().int().min(1).max(PROCESS_STAGES_CEILING),
   version: z.number().int().min(1),
   updated_at: IsoDateTime,
   active_runs: CountSchema,

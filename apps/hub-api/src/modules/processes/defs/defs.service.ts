@@ -61,6 +61,7 @@ import * as repo from "./defs.repo";
 import { edgeCheck, withWarnings } from "./edge-check";
 import { flowDefPaths } from "./flow-def.rules";
 import { nodeFeatureError, nodeFeatureMiss } from "./node-features";
+import { assertStagesWithinLimit } from "./platform-limits";
 import { listTeams, loadDefRefs } from "./teams.repo";
 
 type Scope = repo.DefScope;
@@ -179,6 +180,7 @@ export class DefsService {
     input: ProcessDefInput,
     lib = false,
   ): Promise<void> {
+    await assertStagesWithinLimit(tx, input.stages.length);
     const toolKeys = toolKeysOf(input.stages);
     const refs = lib
       ? await libraryRefs(tx, input.stages, this.d.packTools)

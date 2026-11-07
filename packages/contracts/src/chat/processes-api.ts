@@ -18,7 +18,7 @@ import {
   PROCESS_INPUT_MAX,
   PROCESS_LIST_LIMIT,
   PROCESS_NAME_MAX,
-  PROCESS_STAGES_MAX,
+  PROCESS_STAGES_CEILING,
   PROCESS_SYSTEM_SENDER,
   ProcessKeySchema,
   ProcessRunStatusSchema,
@@ -52,7 +52,7 @@ export const ProcessCatalogItemSchema = z.strictObject({
   name: z.string().min(1).max(PROCESS_NAME_MAX),
   description: z.string().max(PROCESS_DESC_MAX),
   input_hint: z.string().max(PROCESS_DESC_MAX),
-  stage_count: z.number().int().min(1).max(PROCESS_STAGES_MAX),
+  stage_count: z.number().int().min(1).max(PROCESS_STAGES_CEILING),
   /** HUB-FR-124 · C2 · khai báo đầu vào quy trình (`!key` form); server luôn gửi mảng (def không khai ⇒ []).
    * `optional` để tương thích FE/fixtures cũ (bổ sung không phá) — FS-9. */
   inputs: z.array(ProcessInputDefSchema).max(DEF_INPUTS_MAX).optional(),

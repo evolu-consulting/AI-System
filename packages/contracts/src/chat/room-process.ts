@@ -10,7 +10,7 @@ import {
   FEEDBACK_MAX,
   FORWARD_CHAIN_MAX,
   PROCESS_NAME_MAX,
-  PROCESS_STAGES_MAX,
+  PROCESS_STAGES_CEILING,
   ProcessStepSchema,
   StageAfterSchema,
   StageIdxSchema,
@@ -62,7 +62,7 @@ export const RoomProcessPartSchema = z.discriminatedUnion("kind", [
     kind: z.literal("block"),
     ...run,
     process: ProcessRefSchema,
-    stage_count: z.number().int().min(1).max(PROCESS_STAGES_MAX),
+    stage_count: z.number().int().min(1).max(PROCESS_STAGES_CEILING),
   }),
   z.strictObject({
     kind: z.literal("output"),

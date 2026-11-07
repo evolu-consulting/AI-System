@@ -57,6 +57,8 @@
     "copied": "Copied and assigned to this company",
     "copyFailed": "Could not copy: {{reason}}",
     "saveBlocked": "Not saved: {{reason}}",
+    "stepOpt": "Step {{n}}",
+    "stepOptNamed": "Step {{n}} · {{names}}",
     "saveBlockedStep": "Not saved — step \"{{step}}\": {{reason}}",
     "openCopy": "Open the company copy",
     "kind": "Type: {{kind}} · shared version v{{n}}",
@@ -565,6 +567,19 @@
       "yes": "True",
       "no": "False"
     },
+    "connect": {
+      "dragNext": "Drag to the step that comes next",
+      "dragIf": "Drag to the step for {{label}}",
+      "notLater": "You can only link to a later step.",
+      "ifReal": "An If branch cannot go to a step with a real action — pick another step.",
+      "noNext": "This step ends or waits for an event, so it has no next step.",
+      "noPort": "Drop the line from the True or False port of the If node.",
+      "done": {
+        "next": "Next step set.",
+        "yes": "Step for True set.",
+        "no": "Step for False set."
+      }
+    },
     "region": "Stage details",
     "drawer": {
       "close": "Close details"
@@ -620,7 +635,7 @@
     },
     "err": {
       "stepFull": "Step {{step}} already has 3 parallel stages.",
-      "stagesMax": "Up to 10 stages.",
+      "stagesMax": "A process has at most {{max}} steps — change it in Platform settings.",
       "step": "Invalid step numbers. Drag the stage into a valid column.",
       "realStep": "Real action needs every stage in the previous step to have a reviewer.",
       "backTarget": "You can only go back to steps before this stage."

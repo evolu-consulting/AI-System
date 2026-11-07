@@ -1,5 +1,11 @@
 // CR-104 · ops-ui · gọi Hub `/ops/*` (nơi duy nhất của trang `/system`): status (poll 60 s khi tab hiện), check ngay, lưu cấu hình.
-import type { OpsSettings, OpsSettingsResponse, OpsStatusResponse } from "@ai/contracts/hub-admin";
+import type {
+  OpsSettings,
+  OpsSettingsResponse,
+  OpsStatusResponse,
+  ProcessLimits,
+  SaveProcessLimitsRequest,
+} from "@ai/contracts/hub-admin";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";
@@ -28,6 +34,26 @@ export function useRunOpsCheck() {
   return useMutation({
     mutationFn: () => api<OpsStatusResponse>(url("/ops/check"), { method: "POST" }),
     onSuccess: (data) => qc.setQueryData(OPS_KEY, data),
+  });
+}
+
+/** CR-122 · p22 · số bước tối đa của quy trình (cài đặt nền tảng): đọc + lưu. Cùng khoá với trình sửa quy trình (`use-stages-max`). */
+const LIMITS_KEY = ["hub", "process-limits"] as const;
+
+export function useProcessLimits() {
+  return useQuery({
+    queryKey: LIMITS_KEY,
+    enabled: hubConfigured(),
+    queryFn: () => api<ProcessLimits>(url("/process-editor/limits")),
+  });
+}
+
+export function useSaveProcessLimits() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SaveProcessLimitsRequest) =>
+      api<ProcessLimits>(url("/process-editor/limits"), { method: "PUT", body }),
+    onSuccess: (data) => qc.setQueryData(LIMITS_KEY, data),
   });
 }
 

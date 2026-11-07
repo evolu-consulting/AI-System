@@ -1612,6 +1612,14 @@
       "fails": "failures",
       "runs": "consecutive runs"
     },
+    "process": {
+      "title": "Process limits",
+      "desc": "The maximum number of steps in one process, for every company. Longer processes keep running but cannot be saved with more steps.",
+      "label": "Maximum steps",
+      "range": "1–{max}, default {default}",
+      "unit": "steps",
+      "saved": "Process limit saved"
+    },
     "config": {
       "title": "Settings",
       "desc": "Check frequency, per-check switch and thresholds. Takes effect without a restart.",

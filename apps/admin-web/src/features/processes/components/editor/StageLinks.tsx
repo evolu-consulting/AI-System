@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useStepOptionLabel } from "../../lib/step-options";
 import { useFlowCtx } from "../flow/flow-ctx";
 import type { StageFormProps } from "./stage-form-props";
 
@@ -16,18 +17,16 @@ const NONE = "none";
 
 type Opt = { step: number; label: string };
 
-/** Các bước đứng SAU bước của stage (mỗi bước một mục, tên các stage nối bằng " + "). */
-function laterSteps(all: StageFormProps["all"], step: number): Opt[] {
+/** Các bước đứng SAU bước của stage (mỗi bước một mục "Bước N · tên"). */
+function laterSteps(
+  all: StageFormProps["all"],
+  step: number,
+  label: (step: number) => string,
+): Opt[] {
   const steps = [...new Set(all.filter((s) => s.step > step).map((s) => s.step))].sort(
     (a, b) => a - b,
   );
-  return steps.map((st) => ({
-    step: st,
-    label: all
-      .filter((s) => s.step === st)
-      .map((s) => s.name || s.key)
-      .join(" + "),
-  }));
+  return steps.map((st) => ({ step: st, label: label(st) }));
 }
 
 function StepSelect(p: {
@@ -71,8 +70,9 @@ export const waitOutcomes = (w: { event?: string; also?: string[] }): string[] =
 export function StageLinks({ stage, all, readOnly, onChange }: StageFormProps) {
   const { t } = useTranslation();
   const flow = useFlowCtx();
+  const label = useStepOptionLabel(all);
   if (!flow) return null;
-  const options = laterSteps(all, stage.step);
+  const options = laterSteps(all, stage.step, label);
   const none = t("process.admin.flow.link.next");
   const isWait = stage.executor === "wait_event";
   const branches = stage.wait.branches ?? [];
