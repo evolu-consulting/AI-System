@@ -434,7 +434,7 @@ ebb860458e023f120e9305ba36e0a05a69da1fbcf1d65372f64d89c09f314f74  e2e/contracts-
 49678173f3350eda52ff82033c3860063712c7e23b00d8276a73cc57047f4f51  e2e/contracts-web/rep3-engine.cw.ts
 706a04d7968e2e428e047d39e47816561c75ac9bd34f2339767c0bd536eb3406  e2e/contracts-web/scenes.cw.ts
 66fc771c8337d6738fc926e953c3427a607da19e1416eb376d4aa4481e8e2d89  e2e/contracts-web/transactions.cw.ts
-def99e9020691b4303ff5d4aa0c11bd99a362b8a9a404f42acebb48ef0d15edc  e2e/contracts-web/u2-contracts-ux.cw.ts
+88d03774b015b410acf48dce227fd8084ab49e8640b88de82c3ed88379067c3c  e2e/contracts-web/u2-contracts-ux.cw.ts
 354f3d5b1f450382a9e0ad27cdb39476a41e30fbef8dede597d1183588fa6050  e2e/contracts-web/ui-gating.cw.ts
 587a28af60f844221fe74b34ea4078479d87261500f7c2dc9c815af4bde50a53  e2e/contracts-web/v2f-detail.cw.ts
 d7e42da637fd5005751b814e8d8cf18d3f4689854c2cb5ad74771e79d0dc81a0  e2e/contracts-web/v2f-form.cw.ts
