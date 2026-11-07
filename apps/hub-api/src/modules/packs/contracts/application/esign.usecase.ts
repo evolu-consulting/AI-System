@@ -46,6 +46,7 @@ export type ESignDeps = {
   anchors?: ESignAnchors;
   /** esign-flow · phong bì sang trạng thái cuối (webhook/làm mới/ký thử) ⇒ cập nhật bước Ký số của luồng duyệt. */
   onStatus?: (tenantId: string, contractId: string, status: ESignStatus) => Promise<void>;
+  changed?: (tenantId: string, contractId: string, status: ESignStatus) => Promise<void>; // x6 · vừa gửi ⇒ đẩy thẻ
   /** esign-flow-fix · log cảnh báo (không thân/khoá). */
   warn?: (msg: string, meta: Record<string, unknown>) => void;
   /** CR-122 · E5 · danh bạ công ty cho node Ký số (Group + người ký theo tenant); vắng ⇒ node chỉ dùng người bắt đầu. */
@@ -75,7 +76,6 @@ export function esignUsecase(d: ESignDeps) {
     out(await d.uow.tenant(who, (r) => r.esign.settings()));
   const rowOut = (e: EnvelopeRow, viewerId?: string) =>
     envelopeOut(e, demoOf(e.provider), labelOf(d.providers.entries, e.provider), viewerId);
-
   /** Một lần GET trạng thái từ nhà cung cấp CỦA ENVELOPE ⇒ cập nhật hàng; ký xong ⇒ lưu bản đã ký (idempotent).
    *  `given` (ký thử): trạng thái đã biết, không hỏi nhà cung cấp. */
   const sync = async (
@@ -175,6 +175,7 @@ export function esignUsecase(d: ESignDeps) {
       await p.voidEnvelope(envelopeId, "duplicate").catch(() => null);
       throw new ESignFail("ESIGN_STATE", "already-open");
     }
+    await d.changed?.(who.tenantId, id, "sent").catch(() => undefined);
   };
 
   const state = async (who: PackWho, id: string): Promise<ESignStateOut> => {

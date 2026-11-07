@@ -1,4 +1,4 @@
-// HUB-FR-112 · CR-056 · sự kiện `/me/stream` của quy trình (plan-contract §5): hằng riêng, không đổi ME_STREAM_EVENTS.
+﻿// HUB-FR-112 · CR-056 · sự kiện `/me/stream` của quy trình (plan-contract §5): hằng riêng, không đổi ME_STREAM_EVENTS.
 import { z } from "zod";
 import { CountSchema, UuidSchema } from "../common";
 import {
@@ -15,6 +15,7 @@ export const ME_STREAM_PROCESS_EVENTS = [
   "review_task.created",
   "review_task.closed",
   "process.notice",
+  "esign.updated",
 ] as const;
 export type MeStreamProcessEventName = (typeof ME_STREAM_PROCESS_EVENTS)[number];
 
@@ -38,6 +39,12 @@ export const ProcessNoticeEventDataSchema = z.strictObject({
   notice: ProcessNoticeSchema,
   unread: CountSchema,
 });
+/** CR-125 · x6 · phong bì ký số của HĐ đổi trạng thái (gửi / ký xong / từ chối / huỷ) ⇒ thẻ ký số tải lại ngay, không poll. */
+export const EsignUpdatedEventDataSchema = z.strictObject({
+  contract_id: UuidSchema,
+  status: z.string().min(1).max(32),
+});
+export type EsignUpdatedEventData = z.infer<typeof EsignUpdatedEventDataSchema>;
 export type ProcessUpdatedEventData = z.infer<typeof ProcessUpdatedEventDataSchema>;
 export type ReviewTaskCreatedEventData = z.infer<typeof ReviewTaskCreatedEventDataSchema>;
 export type ReviewTaskClosedEventData = z.infer<typeof ReviewTaskClosedEventDataSchema>;
@@ -51,6 +58,7 @@ export const MeStreamProcessEventSchema = z.discriminatedUnion("event", [
   }),
   z.strictObject({ event: z.literal("review_task.closed"), data: ReviewTaskClosedEventDataSchema }),
   z.strictObject({ event: z.literal("process.notice"), data: ProcessNoticeEventDataSchema }),
+  z.strictObject({ event: z.literal("esign.updated"), data: EsignUpdatedEventDataSchema }),
 ]);
 export type MeStreamProcessEvent = z.infer<typeof MeStreamProcessEventSchema>;
 

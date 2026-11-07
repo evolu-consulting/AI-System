@@ -1,4 +1,4 @@
-// cf-esign-docusign · cổng ký số: nhà cung cấp (`ESignProvider` — DocuSign thật / giả), repo trong tx RLS của tenant, tệp FileBox,
+﻿// cf-esign-docusign · cổng ký số: nhà cung cấp (`ESignProvider` — DocuSign thật / giả), repo trong tx RLS của tenant, tệp FileBox,
 // thông tin user hiện tại. Lớp 2 — chỉ kiểu.
 import type { ESignStatus } from "../domain/esign.rules";
 
@@ -124,6 +124,8 @@ export type SignedFileNew = {
 };
 
 export type ESignRepo = {
+  /** CR-125 · x6 · người gửi + người ký công ty của phong bì mới nhất của HĐ (nhận `esign.updated`). */
+  watchers(contractId: string): Promise<string[]>;
   /** Cờ bật + nhà cung cấp mặc định đã chọn (chưa kiểm khả dụng). */
   settings(): Promise<{ enabled: boolean; defaultProvider: string | null }>;
   /** Lưu trường có mặt (vắng = giữ) + audit before/after. */

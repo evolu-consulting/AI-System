@@ -105,11 +105,12 @@ test("editor: Gửi ký với người ký đã sửa ⇒ Đang chờ ký ⇒ L�
   await panel.getByTestId("esign-menu").click();
   await expect(panel.getByTestId("esign-cancel")).toBeVisible();
   await panel.getByTestId("esign-menu").click();
-  // tự cập nhật: trạng thái đổi ở server ⇒ thẻ tự đổi (không bấm làm mới)
+  // CR-125 x6 · không poll: hub đẩy sự kiện qua `/me/stream`; dự phòng = tải lại khi quay lại cửa sổ (giả lập bằng visibilitychange)
   state = {
     ...base,
     envelope: env("completed", { completed_at: "2026-10-18T03:00:00.000Z", has_signed_file: true }),
   };
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
   await expect(panel.getByTestId("esign-status")).toContainText("Đã ký số lúc");
   await expect(panel.getByRole("button", { name: "Tải bản đã ký" })).toBeVisible();
 });

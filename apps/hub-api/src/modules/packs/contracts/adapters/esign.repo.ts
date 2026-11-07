@@ -1,4 +1,4 @@
-// cf-esign-docusign · repo ký số trong tx `PackUow` (role `contracts_rw`, RLS tenant + M1 của `contracts`): HĐ + tệp + đối tác (vai
+﻿// cf-esign-docusign · repo ký số trong tx `PackUow` (role `contracts_rw`, RLS tenant + M1 của `contracts`): HĐ + tệp + đối tác (vai
 // `partner_role_of` + liên hệ đầu tiên có email), envelope mới nhất, cờ bật ở `approval_settings`. Lọc `tenant_id` tường minh ngoài
 // RLS. `tenantOfEnvelope`: role `contracts_job` (chỉ đọc tenant_id, envelope_id) — map webhook ⇒ tenant.
 import type { ESignStatus } from "@ai/contracts/pack-contracts";
@@ -67,6 +67,21 @@ type CRaw = {
 
 export function esignRepo(tx: Tx, t: string): ESignRepo {
   return {
+    // CR-125 · x6 · người cần thấy thẻ ký số cập nhật ngay: người gửi + người ký công ty của phong bì mới nhất của HĐ (cùng tenant; MỘT câu).
+    watchers: async (contractId) => {
+      const [e] = await tx.execute<{
+        sent_by: string;
+        signers: { client_user_id?: string | null }[];
+      }>(sql`select sent_by::text as sent_by, signers from contracts.esign_envelopes
+        where tenant_id = ${t}::uuid and contract_id = ${contractId}::uuid
+        order by created_at desc limit 1`);
+      if (!e) return [];
+      const ids = [
+        e.sent_by,
+        ...e.signers.flatMap((s) => (s.client_user_id ? [s.client_user_id] : [])),
+      ];
+      return [...new Set(ids)];
+    },
     settings: async () => {
       const [r] = await tx.execute<{ on: boolean; dp: string | null }>(sql`select
           coalesce(s.esign_enabled, false) as on, s.esign_default_provider as dp

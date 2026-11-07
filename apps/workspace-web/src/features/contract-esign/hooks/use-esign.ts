@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
+import { listenProcessEvents } from "~/features/contract-approval/stream/process-stream";
 import {
   esignKey,
   fetchEsign,
@@ -14,10 +15,8 @@ import {
   signUrl,
   voidEsign,
 } from "../api";
+import { eventConcernsEsign } from "../lib/esign-push";
 import { esignErrKey, returnedFromSigning, signReturnUrl } from "../lib/esign-view";
-
-/** Chu kỳ hỏi trạng thái khi đang chờ ký (tab mở). */
-export const ESIGN_POLL_MS = 4000;
 
 export function useEsign(id: string) {
   const { t } = useTranslation();
@@ -26,12 +25,8 @@ export function useEsign(id: string) {
     queryKey: esignKey(id),
     queryFn: ({ signal }) => fetchEsign(id, signal),
     retry: false,
-    // CR-125 · x2 · tự cập nhật: chỉ hỏi trạng thái khi đang chờ ký và tab đang mở (react-query dừng khi tab ẩn); xong ⇒ dừng.
-    refetchInterval: (query) => {
-      const st = query.state.data?.envelope?.status;
-      return st === "sent" || st === "delivered" ? ESIGN_POLL_MS : false;
-    },
-    refetchIntervalInBackground: false,
+    // CR-125 · x6 · không poll (Luật 4c): hub đẩy `esign.updated` qua `/me/stream`; dự phòng duy nhất = tải lại khi quay lại cửa sổ.
+    refetchOnWindowFocus: true,
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -55,6 +50,20 @@ export function useEsign(id: string) {
       setBusy(false);
     }
   };
+
+  // CR-125 · x6 · nghe `/me/stream`: phong bì của HĐ này đổi ⇒ tải lại trạng thái (vài trăm ms). Nối lại sau đứt ⇒ tải lại một lần.
+  useEffect(() => {
+    const ac = new AbortController();
+    const reload = () => void qc.invalidateQueries({ queryKey: esignKey(id) });
+    void listenProcessEvents(
+      ac.signal,
+      (e) => {
+        if (eventConcernsEsign(e, id)) reload();
+      },
+      reload,
+    );
+    return () => ac.abort();
+  }, [id, qc]);
 
   // Quay về từ trang ký (DocuSign / ký thử) ⇒ làm mới MỘT lần rồi bỏ tham số khỏi URL.
   const once = useRef(false);

@@ -1,13 +1,15 @@
-// cf-esign-docusign + esign-multi · nối ký số: registry nhà cung cấp theo env `ESIGN_PROVIDERS` (danh sách theo thứ tự; tương thích
+﻿// cf-esign-docusign + esign-multi · nối ký số: registry nhà cung cấp theo env `ESIGN_PROVIDERS` (danh sách theo thứ tự; tương thích
 // ngược `ESIGN_PROVIDER=x`), mỗi nhà cung cấp khả dụng khi đủ cấu hình — seam test `provider`/`providers` ưu tiên; repo trong `PackUow`
 // (tenant + system), FileBox theo org tenant, tên/email user hiện tại (`admin.users` qua hub scope), map webhook envelope ⇒ tenant (role
 // `contracts_job`). Webhook gắn TRƯỚC JWT (`app.ts`). Thêm nhà cung cấp (MISA…) = adapter + một nhánh `adapterOf` + mục `PROVIDER_META`.
 
-import { ESignSignerSchema } from "@ai/contracts/pack-contracts";
+import { ESignSignerSchema, type ESignStatus } from "@ai/contracts/pack-contracts";
 import { packFeatureKey } from "@ai/contracts/packs";
 import type { Db, Tx } from "@ai/db";
 import type { Env, Hono } from "hono";
 import { logger } from "../../../lib/logger";
+import type { Redis } from "../../../lib/redis";
+import { publishUserEvents } from "../../../lib/user-stream";
 import type { PackAccessView, PackGuardVars, PackWho, PdfConverter } from "../kit/public";
 import { createPackUow, createPdfConverter, moduleRegistry, selfContactOf } from "../kit/public";
 import { fileboxClients, packFilebox } from "../packs.filebox";
@@ -94,7 +96,15 @@ export type ESignModule = ESignUsecase & {
 
 export function esignModule(
   db: Db,
-  d: { esign?: ESignSeam | undefined; files: ESignFiles | null; signal?: AbortSignal | undefined },
+  d: {
+    esign?: ESignSeam | undefined;
+    files: ESignFiles | null;
+    signal?: AbortSignal | undefined;
+    /** CR-125 · x6 · đẩy `esign.updated` tới người liên quan qua `/me/stream` (vắng ⇒ không đẩy; client vẫn tải lại khi quay lại cửa sổ). */
+    publish?:
+      | ((userIds: string[], contractId: string, status: ESignStatus) => Promise<void>)
+      | undefined;
+  },
 ): ESignModule {
   const uow = createPackUow(db, "contracts", repos);
   let flow: EsignFlow | null = null;
@@ -102,7 +112,21 @@ export function esignModule(
     | ((tenantId: string, contractId: string, event: ESignEvent) => Promise<unknown>)
     | null = null;
   const providers = registryOf(d.esign);
+  /** Đổi trạng thái phong bì ⇒ báo người gửi + người ký (lỗi đẩy không làm hỏng luồng ký). */
+  const push = async (tid: string, id: string, st: ESignStatus): Promise<void> => {
+    if (!d.publish) return;
+    await uow
+      .system(tid, (r) => r.esign.watchers(id))
+      .then((ids) => (ids.length > 0 ? d.publish?.(ids, id, st) : undefined))
+      .catch((e: unknown) =>
+        logger.warn("esign-push-failed", {
+          contract_id: id,
+          error: e instanceof Error ? e.name : "unknown",
+        }),
+      );
+  };
   const u = esignUsecase({
+    changed: push,
     providers,
     uow,
     files: d.files,
@@ -121,6 +145,7 @@ export function esignModule(
     }),
     directory: esignNodeDirectory(db), // CR-122 · E5
     onStatus: async (tid, id, st) => {
+      await push(tid, id, st);
       await flow?.onStatus(tid, id, st);
       const ev = esignEventOf(st);
       if (ev)
@@ -267,6 +292,7 @@ export function mountEsignWebhook<E extends Env>(
   d: {
     db?: Db | undefined;
     signal?: AbortSignal | undefined;
+    redis?: Redis | undefined;
     packs?:
       | {
           contracts?: boolean;
@@ -282,6 +308,16 @@ export function mountEsignWebhook<E extends Env>(
     esign: d.packs?.esign,
     files: fb ? fileboxClients(fb) : null,
     signal: d.signal,
+    publish: d.redis
+      ? (userIds, contractId, status) => {
+          const redis = d.redis as Redis;
+          return publishUserEvents(
+            redis,
+            [{ userIds, event: "esign.updated", data: { contract_id: contractId, status } }],
+            logger,
+          );
+        }
+      : undefined,
   });
   app.route(ESIGN_WEBHOOK_PATH, esignWebhookRoutes(u));
   return u;
