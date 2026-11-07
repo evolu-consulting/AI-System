@@ -17,7 +17,6 @@ const infoFrom =
     if (!n) return undefined;
     const pick = (l: { vi: string; en: string }) => (lang.startsWith("en") ? l.en : l.vi);
     return {
-      size: n.stages.length,
       exits: n.exits?.map((x) => ({ key: x.key, label: pick(x.label), on: x.on })),
     };
   };

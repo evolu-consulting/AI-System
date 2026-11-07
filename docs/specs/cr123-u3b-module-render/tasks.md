@@ -25,7 +25,8 @@ Unit `canvas/module-cluster.test.ts` (mẫu "Duyệt theo giá trị": một ô,
 
 ## Quyết định trong lúc làm
 - Gộp ở lớp bọc CanvasView (không đổi bản nháp/ops/uid) để `ProcessCanvas` không phải biết cụm; palette (`usePalette`) cấp nhãn đầu ra và số stage của node.
-- `moduleClusters` cục bộ (TODO đổi sang bản của @ai/contracts khi u3a gộp).
+- Cụm lấy từ `moduleClusters` của `@ai/contracts/hub-admin` (u3a). Cổng ra của ô có id `exit:<khoá>[:<on,…>]`; `connectPatch` đổi nguồn sang stage chờ (nhánh `wait.branches`, "Ký xong" ⇒ `nextStep`), luật đích: chỉ bước sau stage chờ.
+- Trần số bước tính theo số stage THẬT (`stageCount`), số cột/bước người dùng thấy đếm ô một lần.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
@@ -39,7 +40,8 @@ cạnh vào ô tới stage đầu, cạnh "đi tiếp" ra khỏi ô tới bướ
 - Kịch bản: khi gộp thì ô chiếm một cột và số cột đếm ô một lần [test: apps/admin-web/src/features/processes/components/canvas/module-cluster.test.ts » ô chiếm một cột: cột sau dồn trái, số cột đếm ô một lần]
 - Kịch bản: khi stage chờ có nhánh từ chối/hết hạn thì cạnh đi từ đúng đầu ra tới bước đích [test: apps/admin-web/src/features/processes/components/canvas/module-cluster.test.ts » nhánh Nếu và cạnh Từ chối/Hết hạn đổi theo cột đã gộp]
 - Kịch bản: khi vẽ bố cục thì cạnh vào ô tới stage đầu và cạnh ra đi thẳng bước kế [test: apps/admin-web/src/features/processes/components/canvas/module-cluster.test.ts » bố cục: vào ô tới stage đầu, ra ô đi thẳng bước kế, số cột = 7]
+- Kịch bản: khi kéo đầu ra Từ chối / Hết hạn / Ký xong sang bước sau thì đặt nhánh của stage chờ, đích không sau stage chờ thì báo lỗi [test: apps/admin-web/src/features/processes/lib/canvas-connect-exit.test.ts » Từ chối ⇒ declined + voided của stage chờ tới đích, giữ nhánh khác]
+- Kịch bản: khi tính chỗ còn lại cho trần số bước thì ô Ký số tính 2 stage [test: apps/admin-web/src/features/processes/components/canvas/module-cluster.test.ts » số stage thật (trần số bước) khác số ô: ô Ký số = 2 stage]
 
 ## Việc còn lại
-- Kéo cổng ra của ô (Từ chối → Kết thúc · Từ chối) để đổi nhánh của stage chờ: cần `connectPatch` xử lý `wait_event` (+ `ops.connect` đổi nguồn sang stage chờ).
-- Đổi `moduleClusters` cục bộ sang bản của contracts khi u3a gộp; `room` của menu "+" đang đếm ô gộp một lần (lệch 1 so với số stage).
+- Ảnh canvas trước/sau: `docs/specs/CR-123/shots/u3b-*`.

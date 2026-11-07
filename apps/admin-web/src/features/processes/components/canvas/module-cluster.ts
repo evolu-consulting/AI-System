@@ -1,45 +1,17 @@
 // CR-123 · FLOW3-FR-14 · node của app luôn là MỘT ô trên sơ đồ: gộp các stage liền nhau cùng `stage.node` (Ký số = gửi + chờ) thành MỘT
 // StageView mang `module` (đầu ra theo kết quả nghiệp vụ), đánh lại số cột cho ô chiếm đúng một cột. Hàm THUẦN (không React) để test nhanh.
 // Chỉ vẽ: bản nháp, `ops` và uid giữ nguyên — `fromStep` đổi cột đã gộp ⇄ bước thật cho lớp bọc `ops` (use-module-canvas).
+
+import { moduleClusters } from "@ai/contracts/hub-admin";
 import type { Edge, MarkerType } from "@xyflow/react"; // chỉ kiểu: file này nằm cả ở chunk chính (use-module-canvas), không kéo xyflow vào
 import { exitHandle } from "../../lib/canvas-connect";
 import type { StageDraft } from "../../lib/draft-types";
 import type { ModuleExit, ModuleInfo, StageView } from "./stage-view";
 
-export type ClusterStage = { uid: string; node?: string | undefined };
-export type Cluster = { node: string; uids: string[] };
-
-/**
- * Cụm stage liền nhau cùng `node` (≥ 2 stage). `sizeOf(node)` = số stage khai báo của node: cụm dài hơn thì cắt từng khúc
- * (hai node Ký số liền nhau ⇒ hai ô). TODO(CR-123 u3a): đổi sang `moduleClusters` của @ai/contracts khi u3a gộp (cùng chữ ký).
- */
-export function moduleClusters(
-  stages: readonly ClusterStage[],
-  sizeOf: (node: string) => number = () => Number.POSITIVE_INFINITY,
-): Cluster[] {
-  const out: Cluster[] = [];
-  let run: ClusterStage[] = [];
-  const flush = () => {
-    const node = run[0]?.node;
-    if (node) {
-      const size = Math.max(1, sizeOf(node));
-      for (let i = 0; i < run.length; i += size) {
-        const part = run.slice(i, i + size);
-        if (part.length > 1) out.push({ node, uids: part.map((s) => s.uid) });
-      }
-    }
-    run = [];
-  };
-  for (const s of stages) {
-    if (run.length > 0 && run[0]?.node !== s.node) flush();
-    run.push(s);
-  }
-  flush();
-  return out;
-}
+type Cluster = { node: string; uids: string[] };
 
 export type ExitDecl = { key: string; label: string; on?: readonly string[] | undefined };
-export type NodeInfo = { size: number; exits: readonly ExitDecl[] | undefined };
+export type NodeInfo = { exits: readonly ExitDecl[] | undefined };
 
 export type Collapsed = {
   views: StageView[];
@@ -65,7 +37,13 @@ function exitsOf(
         const uid = b.step === null || !x.on.includes(b.on) ? undefined : firstUidAtStep(b.step);
         if (uid !== undefined) to.add(uid);
       }
-    return { key: x.key, label: x.label, main: x.on === undefined, on: [...(x.on ?? [])], to: [...to] };
+    return {
+      key: x.key,
+      label: x.label,
+      main: x.on === undefined,
+      on: [...(x.on ?? [])],
+      to: [...to],
+    };
   });
 }
 
@@ -73,10 +51,10 @@ export function collapseModules(
   views: readonly StageView[],
   infoOf: (node: string) => NodeInfo | undefined,
 ): Collapsed {
-  const clusters = moduleClusters(
-    views.map((v) => ({ uid: v.uid, node: v.src.node })),
-    (n) => infoOf(n)?.size ?? Number.POSITIVE_INFINITY,
-  );
+  // luật cụm dùng chung với panel / xoá / sao chép / validator (u3a): `[start, end)` trong mảng stage
+  const clusters: Cluster[] = moduleClusters(
+    views.map((v) => ({ node: v.src.node, executor: v.src.executor })),
+  ).map((c) => ({ node: c.node, uids: views.slice(c.start, c.end).map((v) => v.uid) }));
   if (clusters.length === 0) return { views: [...views], head: new Map(), fromStep: (c) => c };
   const head = new Map<string, string>();
   for (const c of clusters) for (const u of c.uids) head.set(u, c.uids[0] as string);

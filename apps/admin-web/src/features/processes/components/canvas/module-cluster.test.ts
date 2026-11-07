@@ -43,7 +43,6 @@ const esign = CONTRACTS_MANIFEST.nodes.find((n) => n.key === "contracts.esign");
 const info = (k: string): NodeInfo | undefined =>
   k === "contracts.esign" && esign
     ? {
-        size: esign.stages.length,
         exits: (esign.exits ?? []).map((x) => ({ key: x.key, label: x.label.vi, on: x.on })),
       }
     : undefined;
@@ -67,25 +66,6 @@ const template = (): StageView[] => [
   view("s6", 6),
   view("s7", 7),
 ];
-
-describe("FLOW3-FR-14 · moduleClusters", () => {
-  test("chỉ gộp stage liền nhau cùng node; stage lẻ / khác node không thành cụm", () => {
-    const xs = [
-      { uid: "a", node: "x" },
-      { uid: "b", node: "x" },
-      { uid: "c" },
-      { uid: "d", node: "y" },
-    ];
-    expect(moduleClusters(xs)).toEqual([{ node: "x", uids: ["a", "b"] }]);
-  });
-  test("hai node cùng loại liền nhau cắt theo số stage khai báo", () => {
-    const xs = ["a", "b", "c", "d"].map((uid) => ({ uid, node: "x" }));
-    expect(moduleClusters(xs, () => 2).map((c) => c.uids)).toEqual([
-      ["a", "b"],
-      ["c", "d"],
-    ]);
-  });
-});
 
 describe("FLOW3-FR-14 · collapseModules (mẫu Duyệt theo giá trị)", () => {
   const c = collapseModules(template(), info);
