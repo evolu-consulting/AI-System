@@ -113,6 +113,13 @@ export function envelopeBody(i: CreateIn, anchors: string[] | null) {
   };
 }
 
+/**
+ * CR-122 · gửi PDF lên DocuSign (base64 trong JSON, +33%): HĐ scan 11 MB mất > 15 s ⇒ hạn cứng 15 s làm MỌI HĐ scan lớn gửi ký lỗi.
+ * Hạn theo dung lượng: 15 s + 6 s mỗi MB, trần 180 s (giới hạn tệp của DocuSign 25 MB).
+ */
+export const uploadTimeoutMs = (bytes: number): number =>
+  Math.min(180_000, TIMEOUT_MS + Math.ceil(bytes / (1024 * 1024)) * 6_000);
+
 export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider {
   const http = d.fetch ?? fetch;
   const nowS = d.nowS ?? (() => Math.floor(Date.now() / 1000));
@@ -152,7 +159,12 @@ export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider 
     return token.value;
   };
 
-  const api = async (method: string, path: string, body?: unknown): Promise<Response> => {
+  const api = async (
+    method: string,
+    path: string,
+    body?: unknown,
+    timeoutMs = TIMEOUT_MS,
+  ): Promise<Response> => {
     const res = await http(
       `${cfg.baseUri}/v2.1/accounts/${encodeURIComponent(cfg.accountId)}${path}`,
       {
@@ -162,7 +174,7 @@ export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider 
           ...(body === undefined ? {} : { "content-type": "application/json" }),
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-        signal: AbortSignal.timeout(TIMEOUT_MS),
+        signal: AbortSignal.timeout(timeoutMs),
       },
     ).catch((e: Error) => {
       throw new ESignProviderError(`api-network ${e.name}`);
@@ -193,7 +205,12 @@ export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider 
     },
     async createEnvelope(i) {
       const post = async (anchors: string[] | null) => {
-        const res = await api("POST", "/envelopes", envelopeBody(i, anchors));
+        const res = await api(
+          "POST",
+          "/envelopes",
+          envelopeBody(i, anchors),
+          uploadTimeoutMs(i.document.bytes.length),
+        );
         const j = (await res.json()) as { envelopeId?: string };
         if (!j.envelopeId) throw new ESignProviderError("create no-envelope-id");
         return j.envelopeId;
