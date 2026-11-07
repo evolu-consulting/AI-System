@@ -75,7 +75,11 @@ describe("CR-125 · x1 · signing[] (Chờ bạn ký)", () => {
   });
   it("1.000 phong bì: MỘT câu, ≤ 51 hàng, p95 thấp (đo thật)", async () => {
     await envelope(K[0] as string, "completed", [signer(me, 1, null)], 950, "pc-");
-    await envelope(K[1] as string, "sent", [signer(me, 1, null)], 50, "ps-");
+    // 50 phong bì MỞ (mỗi HĐ chỉ một phong bì mở) trên 50 HĐ riêng
+    const more = await contracts(o, T, 50, { from: 1200, createdBy: me, owner: me });
+    await o`insert into contracts.esign_envelopes (tenant_id, contract_id, provider, envelope_id, status, signers, sent_by)
+      select ${T}, c, 'misa', 'ps-' || c::text, 'sent', ${o.json([signer(me, 1, null)] as never)}, ${me}
+      from unnest(${more}::uuid[]) c`;
     const ms: number[] = [];
     let last: unknown[] = [];
     for (let i = 0; i < 30; i++) {
