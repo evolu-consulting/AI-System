@@ -46,6 +46,7 @@ export function createModuleRegistry(sinks: Sinks): ModuleRegistry {
             {
               tools: b.tools ?? [],
               ...(b.argsSchema ? { argsSchema: b.argsSchema } : {}),
+              ...(b.outputs ? { outputs: b.outputs } : {}),
             },
           ]),
       ),

@@ -116,6 +116,11 @@ export type AppNodeIo = {
   label?: { vi: string; en: string };
   /** CR-125 m4 · cách khắc phục khi đầu vào bắt buộc không có nguồn (vd "thêm bước Tải hợp đồng trước"). */
   fix?: { vi: string; en: string };
+  /**
+   * CR-125 · m8 · CHỈ đầu ra: đã khai (cổng đủ, nhãn nghiệp vụ) nhưng máy chủ CHƯA ghi giá trị này vào dữ liệu lượt chạy ⇒ không được dùng
+   * làm nguồn tự nối (`autoMapInputs`, cạnh flow). Bỏ cờ khi binding của node khai ghi được (`NodeBinding.outputs`). Sổ module kiểm hai chiều.
+   */
+  pending?: boolean;
 };
 /** Nhãn hai thứ tiếng của một đầu vào/ra; vắng ⇒ khoá. */
 export const ioLabel = (io: { key: string; label?: { vi: string; en: string } }) =>

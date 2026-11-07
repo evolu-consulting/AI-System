@@ -123,6 +123,49 @@ describe("moduleRegistry.verify (MOD-FR-02)", () => {
   });
 });
 
+describe("MOD_OUTPUT_UNBOUND (CR-125 m8)", () => {
+  const withOut: FeatureModule[] = [
+    {
+      app: "demo",
+      events: [],
+      nodes: [
+        {
+          ...(MODS[0]?.nodes[0] as FeatureModule["nodes"][number]),
+          outputs: [
+            {
+              key: "result",
+              type: "string",
+              required: true,
+              label: { vi: "Kết quả", en: "Result" },
+            },
+          ],
+        },
+      ],
+    },
+  ];
+  it("binding không ghi đầu ra đã khai ⇒ ném «Khởi động dừng» + câu tiếng Việt MOD_OUTPUT_UNBOUND", () => {
+    const r = createModuleRegistry(sinks());
+    r.bindTool({ pack: "demo", name: "demo-send" });
+    r.bindNode({ key: "demo.send", tools: ["demo-send"], argsSchema: PORT });
+    expect(() => r.verify(withOut)).toThrow(
+      /\[MOD_OUTPUT_UNBOUND\] Node «Gửi» khai đầu ra «Kết quả» \(result\) nhưng xử lý máy chủ chưa ghi/,
+    );
+  });
+  it("binding khai outputs khớp ⇒ xanh", () => {
+    const r = createModuleRegistry(sinks());
+    r.bindTool({ pack: "demo", name: "demo-send" });
+    r.bindNode({ key: "demo.send", tools: ["demo-send"], argsSchema: PORT, outputs: ["result"] });
+    expect(r.issues(withOut)).toEqual([]);
+  });
+  it("bindNode lặp cùng khoá: outputs của lần sau thắng, không mất outputs lần trước nếu lần sau không khai", () => {
+    const r = createModuleRegistry(sinks());
+    r.bindTool({ pack: "demo", name: "demo-send" });
+    r.bindNode({ key: "demo.send", tools: ["demo-send"], argsSchema: PORT, outputs: ["result"] });
+    r.bindNode({ key: "demo.send", validate: async () => [] });
+    expect(r.issues(withOut)).toEqual([]);
+  });
+});
+
 describe("đăng ký hộ sổ cũ (hành vi không đổi)", () => {
   it("bindEvent/bindNode chuyển nguyên đối tượng cho flowPortRegistry/nodeConfigRegistry, gộp tool khi bindNode lặp", () => {
     const s = sinks();

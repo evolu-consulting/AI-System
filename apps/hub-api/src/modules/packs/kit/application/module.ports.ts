@@ -18,6 +18,11 @@ export type NodeBinding = {
   tools?: readonly string[];
   /** Schema args của tool để so với `configPort.schema` của node (MOD-FR-04 · `MOD_PORT_MISMATCH`). */
   argsSchema?: AnySchema;
+  /**
+   * CR-125 · m8 · khoá đầu ra mà xử lý máy chủ THẬT SỰ ghi vào dữ liệu lượt chạy (`process_outputs.fields` của bước) khi node chạy.
+   * Phải khớp `outputs` (không `pending`) của khai báo — lệch ⇒ `MOD_OUTPUT_UNBOUND` lúc khởi động.
+   */
+  outputs?: readonly string[];
   /** Validator theo KHOÁ NODE ⇒ `nodeConfigRegistry.register`. */
   validate?: NodeBindingValidator;
   /** Validator theo KHOÁ TOOL ⇒ `nodeConfigRegistry.registerTool` (def gọi thẳng tool không mang `node` cũng bị kiểm). */

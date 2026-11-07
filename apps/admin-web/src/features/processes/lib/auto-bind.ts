@@ -20,12 +20,14 @@ export function mapSources(
     from: "start" as const,
   }));
   const fromSteps = [...new Set(placed)].flatMap((k) =>
-    (byKey.get(k)?.outputs ?? []).map((o) => ({
-      id: `${k}:${o.key}`,
-      key: o.key,
-      type: o.type,
-      from: "step" as const,
-    })),
+    (byKey.get(k)?.outputs ?? [])
+      .filter((o) => !o.pending) // CR-125 · m8 · đầu ra máy chủ chưa ghi không phải nguồn
+      .map((o) => ({
+        id: `${k}:${o.key}`,
+        key: o.key,
+        type: o.type,
+        from: "step" as const,
+      })),
   );
   return [...fromStart, ...fromSteps];
 }

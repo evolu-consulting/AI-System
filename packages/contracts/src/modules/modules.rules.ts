@@ -108,14 +108,71 @@ function portMismatch(decl: FeatureNodeDecl, args: z.ZodTypeAny | undefined): st
   return missing.length > 0 ? `thiếu «${missing.join("», «")}»` : "khác kiểu hoặc ràng buộc";
 }
 
+/** Khoá đầu ra node khai báo và máy chủ ghi được (không `pending`). */
+export const writableOutputKeys = (n: Pick<FeatureNodeDecl, "outputs">): string[] =>
+  n.outputs.filter((o) => o.pending !== true).map((o) => o.key);
+
+/**
+ * CR-125 · m8 · `MOD_OUTPUT_UNBOUND` hai chiều: đầu ra khai (không `pending`) mà binding không ghi ⇒ lỗi; binding ghi khoá không khai hoặc còn
+ * `pending` ⇒ lỗi (khai báo và máy chủ phải khớp, không để cổng "ma"). Chỉ xét khi node có binding.
+ */
+function outputIssues(
+  m: FeatureModule,
+  n: FeatureNodeDecl,
+  b: { outputs?: readonly string[] },
+  out: ModuleIssue[],
+): void {
+  const wrote = new Set(b.outputs ?? []);
+  const file = `packs/${m.app}/nodes/${n.key.split(".")[1] ?? n.key}/binding.ts`;
+  for (const o of n.outputs) {
+    const label = o.label?.vi ?? o.key;
+    if (o.pending !== true && !wrote.has(o.key))
+      out.push(
+        issue(
+          "MOD_OUTPUT_UNBOUND",
+          m.app,
+          n.key,
+          `Node «${n.label.vi}» khai đầu ra «${label}» (${o.key}) nhưng xử lý máy chủ chưa ghi giá trị này — ghi nó trong ${file} (outputs) hoặc đánh dấu pending: true ở node.ts.`,
+          o.key,
+        ),
+      );
+    else if (o.pending === true && wrote.has(o.key))
+      out.push(
+        issue(
+          "MOD_OUTPUT_UNBOUND",
+          m.app,
+          n.key,
+          `Node «${n.label.vi}»: đầu ra «${label}» (${o.key}) đã được máy chủ ghi — bỏ pending: true ở node.ts.`,
+          o.key,
+        ),
+      );
+  }
+  const declared = new Set(n.outputs.map((o) => o.key));
+  for (const k of wrote)
+    if (!declared.has(k))
+      out.push(
+        issue(
+          "MOD_OUTPUT_UNBOUND",
+          m.app,
+          n.key,
+          `Xử lý máy chủ của node «${n.label.vi}» ghi đầu ra «${k}» nhưng node.ts không khai — thêm vào outputs hoặc bỏ khỏi ${file}.`,
+          k,
+        ),
+      );
+}
+
 function nodeIssues(
   m: FeatureModule,
   n: FeatureNodeDecl,
   bound: BoundSummary,
   out: ModuleIssue[],
 ): void {
-  if (n.legacy === true || n.kind === "base") return;
+  if (n.legacy === true) return;
   const b = bound.nodes.get(n.key);
+  if (n.kind === "base") {
+    if (b) outputIssues(m, n, b, out);
+    return;
+  }
   if (!b) {
     out.push(
       issue(
@@ -140,6 +197,7 @@ function nodeIssues(
         ),
       );
   }
+  outputIssues(m, n, b, out);
   const why = portMismatch(n, b.argsSchema);
   if (why !== null)
     out.push(

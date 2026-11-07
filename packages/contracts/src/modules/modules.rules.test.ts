@@ -70,8 +70,8 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
   test("sổ hiện tại không có lỗi khi đủ binding giả lập (node app có binding, base không cần)", () => {
     const b = bound({
       nodes: new Map([
-        ["contracts.esign", { tools: ["contracts-esign-send"] }],
-        ["contracts.partner-send", { tools: ["contracts-partner-send"] }],
+        ["contracts.esign", { tools: ["contracts-esign-send"], outputs: ["event"] }],
+        ["contracts.partner-send", { tools: ["contracts-partner-send"], outputs: ["event"] }],
         ["community.show-post", { tools: [] }],
       ]),
       tools: new Set(["contracts-esign-send", "contracts-partner-send"]),

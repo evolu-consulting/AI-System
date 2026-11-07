@@ -27,7 +27,8 @@ export function edgeIssues(
   prevOutputs: readonly AppNodeIo[],
   nextInputs: readonly AppNodeIo[],
 ): EdgeIssue[] {
-  const out = new Map(prevOutputs.map((o) => [o.key, o.type]));
+  // CR-125 · m8 · đầu ra `pending` (máy chủ chưa ghi) không phải nguồn thật.
+  const out = new Map(prevOutputs.filter((o) => !o.pending).map((o) => [o.key, o.type]));
   const issues: EdgeIssue[] = [];
   for (const i of nextInputs) {
     const got = out.get(i.key);

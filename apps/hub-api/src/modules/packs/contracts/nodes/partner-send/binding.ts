@@ -13,6 +13,8 @@ export const partnerSendBinding = (): NodeBinding => {
   return {
     key: PARTNER_SEND_KEY,
     tools: [PARTNER_TOOL_KEY],
+    // CR-125 · m8 · stage chờ ghi `event` (xác nhận / trả lại / từ chối / hết hạn); `partner_reason` + `round` còn `pending` (cần ghi vào output).
+    outputs: ["event"],
     ...(schema ? { argsSchema: schema } : {}),
   };
 };

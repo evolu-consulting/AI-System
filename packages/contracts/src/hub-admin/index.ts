@@ -16,6 +16,7 @@ export * from "./ops-status";
 export * from "./process-bridge";
 export * from "./process-company-flows";
 export * from "./process-flow-edges";
+export * from "./process-flow-sources";
 export * from "./process-flowdef";
 export * from "./process-form";
 export * from "./process-if";

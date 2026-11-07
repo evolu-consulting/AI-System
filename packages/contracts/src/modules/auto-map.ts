@@ -50,6 +50,57 @@ export function mapAskMessage(
     : `«${node}» needs «${what}» — ${fix ?? `add a step that provides «${what}» first.`}`;
 }
 
+/** Một bước của flow ở dạng nguồn: định danh + đầu ra ĐÃ ghi được (không `pending`). */
+export type StepOutputs = { id: string; outputs: readonly AppNodeIo[] };
+
+/** Chỉ số các bước đi tới được `target` qua cạnh `edges` (tổ tiên), theo thứ tự topo. Cạnh đi từ chỉ số nhỏ → lớn ⇒ sắp tăng dần là đủ. */
+export function ancestorsOf(
+  edges: readonly (readonly [number, number])[],
+  target: number,
+): number[] {
+  const preds = new Map<number, number[]>();
+  for (const [a, b] of edges) preds.set(b, [...(preds.get(b) ?? []), a]);
+  const seen = new Set<number>();
+  const stack = [target];
+  while (stack.length > 0) {
+    const t = stack.pop() as number;
+    for (const p of preds.get(t) ?? []) {
+      if (seen.has(p)) continue;
+      seen.add(p);
+      stack.push(p);
+    }
+  }
+  return [...seen].sort((x, y) => x - y);
+}
+
+/**
+ * CR-125 · m8 · nguồn tại bước `target`: đầu ra "Bắt đầu khi" + đầu ra của MỌI bước đứng trước nó trên đường đi (topo), không phải chỉ
+ * "Bắt đầu khi". Đầu ra `pending` (máy chủ chưa ghi) không phải nguồn. `id` của nguồn bước = `<bước>:<khoá>`.
+ */
+export function mapSourcesAt(
+  start: readonly AppNodeIo[],
+  steps: readonly StepOutputs[],
+  edges: readonly (readonly [number, number])[],
+  target: number,
+): MapSource[] {
+  const fromStart = start.map(
+    (o): MapSource => ({ id: o.key, key: o.key, type: o.type, from: "start" }),
+  );
+  const fromSteps = ancestorsOf(edges, target).flatMap((i) =>
+    (steps[i]?.outputs ?? [])
+      .filter((o) => !o.pending)
+      .map(
+        (o): MapSource => ({
+          id: `${steps[i]?.id}:${o.key}`,
+          key: o.key,
+          type: o.type,
+          from: "step",
+        }),
+      ),
+  );
+  return [...fromStart, ...fromSteps];
+}
+
 /** Nối tự động: mỗi đầu vào có đúng một nguồn cùng khoá + kiểu ⇒ `bound`; đầu vào bắt buộc 0 hoặc ≥ 2 nguồn ⇒ `ask`. O(đầu vào × nguồn). */
 export function autoMapInputs(
   inputs: readonly AppNodeIo[],

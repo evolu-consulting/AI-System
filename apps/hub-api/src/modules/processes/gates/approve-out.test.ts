@@ -3,7 +3,7 @@
 import { describe, expect, it } from "bun:test";
 import { approveStageIssues, flowDefIssues } from "@ai/contracts/hub-admin";
 import { rerunIfTarget } from "../domain/runs/run-control.rules";
-import { approveOutcomeOf } from "./approve-out";
+import { approveFields, approveOutcomeOf } from "./approve-out";
 
 const ap = (reject_step: number | null, return_step: number | null) => ({
   executor: { kind: "approve", reject_step, return_step },
@@ -19,6 +19,24 @@ describe("approveOutcomeOf", () => {
     expect(approveOutcomeOf(ap(null, null), "reject")?.gate).toBe("reject");
     expect(approveOutcomeOf(ap(null, null), "fail")?.gate).toBe("fail");
     expect(approveOutcomeOf({ executor: { kind: "agent" } }, "reject")).toBeNull();
+  });
+});
+
+describe("approveFields (CR-125 m8 · đầu ra Duyệt)", () => {
+  it("ghi quyết định + người duyệt + góp ý; góp ý trống ⇒ không có khoá feedback", () => {
+    expect(approveFields({ decision: "rejected" }, "u1", " Thiếu điều khoản ")).toEqual({
+      decision: "rejected",
+      decided_by: "u1",
+      feedback: "Thiếu điều khoản",
+    });
+    expect(approveFields({ decision: "approved" }, "u1", undefined)).toEqual({
+      decision: "approved",
+      decided_by: "u1",
+    });
+    expect(Object.keys(approveFields({ decision: "approved" }, "u1", "  "))).toEqual([
+      "decision",
+      "decided_by",
+    ]);
   });
 });
 

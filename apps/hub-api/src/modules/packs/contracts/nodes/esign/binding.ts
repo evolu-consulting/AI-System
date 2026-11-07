@@ -37,6 +37,9 @@ export const esignBindingBase: NodeBinding = {
   tools: [INTAKE_TOOL_KEYS.esignSend],
   argsSchema: esignArgsSchema,
   optionsPath: "/pack/contracts/esign/options",
+  // CR-125 · m8 · stage chờ ghi `event` (đã ký / từ chối / huỷ / hết hạn) vào output của bước (`stage-timer.repo.ts` · WAIT_EVENT_FIELD).
+  // `signed_at` / `signer` / `envelope_id` còn `pending` ở khai báo: cần ghi dữ liệu phong bì lúc stage chờ xong (engine timer, lát Opus).
+  outputs: ["event"],
 };
 
 /** Phần cần use case: kiểm cấu hình lúc LƯU def, theo KHOÁ TOOL (def gọi thẳng tool không mang `node` cũng bị kiểm). */

@@ -11,7 +11,13 @@ const WaitUntilPort = z.strictObject({
   time: WaitTimeSchema,
 });
 
-const native = (key: string, vi: string, en: string, baseExecutor: string): FeatureNodeDecl => ({
+const native = (
+  key: string,
+  vi: string,
+  en: string,
+  baseExecutor: string,
+  outputs: FeatureNodeDecl["outputs"] = [],
+): FeatureNodeDecl => ({
   key,
   label: { vi, en },
   group: "message",
@@ -19,8 +25,41 @@ const native = (key: string, vi: string, en: string, baseExecutor: string): Feat
   baseExecutor,
   stages: [],
   inputs: [],
-  outputs: [],
+  outputs,
 });
+
+/** CR-125 · m8 · Duyệt: máy chủ ghi `decision` + `decided_by` + `feedback` vào dữ liệu của bước khi người duyệt quyết (`gates/approve-out.ts`). */
+export const APPROVE_OUTPUTS: FeatureNodeDecl["outputs"] = [
+  {
+    key: "decision",
+    type: "string",
+    required: true,
+    label: { vi: "Kết quả duyệt", en: "Approval decision" },
+  },
+  {
+    key: "decided_by",
+    type: "string",
+    required: false,
+    label: { vi: "Người duyệt", en: "Approver" },
+  },
+  {
+    key: "feedback",
+    type: "string",
+    required: false,
+    label: { vi: "Góp ý của người duyệt", en: "Approver feedback" },
+  },
+];
+
+/** Thông báo (chuông / email): người nhận thật sự được gửi tới. Chưa ghi vào dữ liệu lượt chạy (cần sửa node `notify` của engine) ⇒ `pending`. */
+const NOTIFY_OUTPUTS: FeatureNodeDecl["outputs"] = [
+  {
+    key: "sent_to",
+    type: "string",
+    required: false,
+    pending: true,
+    label: { vi: "Người nhận thông báo", en: "Notified recipients" },
+  },
+];
 
 export const CORE_MODULE: FeatureModule = {
   app: "core",
@@ -45,7 +84,7 @@ export const CORE_MODULE: FeatureModule = {
         },
       ],
       inputs: [],
-      outputs: [],
+      outputs: NOTIFY_OUTPUTS,
     },
     {
       key: "core.bell",
@@ -66,7 +105,7 @@ export const CORE_MODULE: FeatureModule = {
         },
       ],
       inputs: [],
-      outputs: [],
+      outputs: NOTIFY_OUTPUTS,
     },
     {
       key: "core.wait-until",
@@ -76,7 +115,18 @@ export const CORE_MODULE: FeatureModule = {
       baseExecutor: "wait_until",
       configPort: { schema: WaitUntilPort, widgets: { offset_days: "days", time: "text" } },
       stages: [{ executor: { kind: "wait_until", offset_days: 0, time: "09:00" } }],
-      inputs: [{ key: "date", type: "date", required: true }],
+      inputs: [
+        {
+          key: "date",
+          type: "date",
+          required: true,
+          label: { vi: "Ngày hẹn", en: "Target date" },
+          fix: {
+            vi: "thêm bước tạo «Ngày hẹn» trước, hoặc chọn «Bắt đầu khi» có ngày.",
+            en: "add a step that provides the target date first, or pick a trigger that has a date.",
+          },
+        },
+      ],
       outputs: [],
     },
     {
@@ -89,7 +139,7 @@ export const CORE_MODULE: FeatureModule = {
       inputs: [],
       outputs: [],
     },
-    native("core.approve", "Duyệt", "Approve", "approve"),
+    native("core.approve", "Duyệt", "Approve", "approve", APPROVE_OUTPUTS),
     native("core.if", "Nếu", "If", "if"),
     // Kết thúc = stage `set` mang `outcome` (xem `baseNodeOf`).
     native("core.end", "Kết thúc", "End", "set"),

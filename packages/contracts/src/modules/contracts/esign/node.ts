@@ -55,5 +55,35 @@ export const ESIGN_NODE: FeatureNodeDecl = {
       fix: { vi: "thêm bước Tải hợp đồng trước.", en: "add an Upload contract step first." },
     },
   ],
-  outputs: [{ key: "event", type: "string", required: true }],
+  // CR-125 · m8 · cổng ra đủ, nhãn nghiệp vụ. `event` (đã ký / từ chối / huỷ / hết hạn) do stage chờ ghi (`WAIT_EVENT_FIELD`) = «outcome».
+  // Ba cổng còn lại cần ghi dữ liệu phong bì vào lúc stage chờ xong (engine timer) ⇒ `pending` tới khi lát Opus làm.
+  outputs: [
+    {
+      key: "event",
+      type: "string",
+      required: true,
+      label: { vi: "Kết quả ký", en: "Signing outcome" },
+    },
+    {
+      key: "signed_at",
+      type: "date",
+      required: false,
+      pending: true,
+      label: { vi: "Thời điểm ký xong", en: "Signed at" },
+    },
+    {
+      key: "signer",
+      type: "string",
+      required: false,
+      pending: true,
+      label: { vi: "Người ký", en: "Signer" },
+    },
+    {
+      key: "envelope_id",
+      type: "string",
+      required: false,
+      pending: true,
+      label: { vi: "Mã phong bì ký", en: "Envelope id" },
+    },
+  ],
 };

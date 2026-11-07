@@ -1,6 +1,11 @@
 // CR-125 · m3 · MOD-FR-06 · luật THUẦN của công cụ sổ module: sinh `index.generated.ts`, kiểm tĩnh, scaffold `module:new`.
 // I/O nằm ở module-index.ts / check-modules.ts / module-new.ts (mỏng).
-import type { BoundSummary, FeatureModule, ModuleIssue } from "@ai/contracts/modules";
+import {
+  type BoundSummary,
+  type FeatureModule,
+  type ModuleIssue,
+  writableOutputKeys,
+} from "@ai/contracts/modules";
 
 export const NAME_RE = /^[a-z][a-z0-9-]*$/;
 export const STALE_MESSAGE =
@@ -127,7 +132,7 @@ export function staticIssues(inp: IndexInput): ModuleIssue[] {
 
 /** Tóm tắt binding "dễ tính" cho kiểm tĩnh: coi mọi node/tool/sự kiện đã có xử lý ⇒ chỉ còn luật không cần runtime (MOD_DUP). */
 export function staticBound(mods: readonly FeatureModule[]): BoundSummary {
-  const nodes = new Map<string, { tools: readonly string[] }>();
+  const nodes = new Map<string, { tools: readonly string[]; outputs: readonly string[] }>();
   const tools = new Set<string>();
   const facts = new Set<string>();
   const outcomes = new Set<string>();
@@ -135,7 +140,10 @@ export function staticBound(mods: readonly FeatureModule[]): BoundSummary {
     for (const n of m.nodes) {
       const ts = n.stages.flatMap((s) => (s.executor.kind === "tool" ? [s.executor.tool_key] : []));
       for (const t of ts) if (typeof t === "string") tools.add(t);
-      nodes.set(n.key, { tools: ts.filter((t): t is string => typeof t === "string") });
+      nodes.set(n.key, {
+        tools: ts.filter((t): t is string => typeof t === "string"),
+        outputs: writableOutputKeys(n),
+      });
     }
     for (const e of m.events) {
       facts.add(`${m.app}\0${e.key}`);
@@ -164,8 +172,27 @@ export const ${nodeConst(node)}: FeatureNodeDecl = {
   menu: { section: "business" },
   feature: "${app}-write",
   stages: [],
-  inputs: [],
-  outputs: [],
+  // Cổng vào (bước trước phải cấp) và cổng ra (bước sau nhận được), nhãn nghiệp vụ vi/en. fix = cách khắc phục khi thiếu nguồn.
+  inputs: [
+    {
+      key: "record_id",
+      type: "string",
+      required: true,
+      label: { vi: "Bản ghi", en: "Record" },
+      fix: { vi: "bắt đầu quy trình từ sự kiện của app này.", en: "start the flow from an event of this app." },
+    },
+  ],
+  // pending: true = máy chủ chưa ghi giá trị này vào dữ liệu lượt chạy (chưa dùng làm nguồn tự nối). Khi binding.ts đã ghi:
+  // thêm khoá vào outputs của binding và BỎ pending (sổ module kiểm hai chiều: MOD_OUTPUT_UNBOUND).
+  outputs: [
+    {
+      key: "result",
+      type: "string",
+      required: false,
+      pending: true,
+      label: { vi: "Kết quả", en: "Result" },
+    },
+  ],
 };
 `;
 }

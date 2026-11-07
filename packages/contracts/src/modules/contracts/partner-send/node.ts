@@ -48,7 +48,31 @@ export const PARTNER_SEND_NODE: FeatureNodeDecl = {
       type: "string",
       required: true,
       label: { vi: "Hợp đồng", en: "Contract" },
+      fix: { vi: "thêm bước Tải hợp đồng trước.", en: "add an Upload contract step first." },
     },
   ],
-  outputs: [{ key: "event", type: "string", required: true }],
+  // CR-125 · m8 · cổng ra đủ, nhãn nghiệp vụ. `event` (xác nhận / trả lại / từ chối / hết hạn) do stage chờ ghi = «partner_outcome».
+  // `partner_reason` (lý do đối tác nêu) và `round` (lần gửi) chưa vào dữ liệu lượt chạy ⇒ `pending` tới khi lát Opus làm.
+  outputs: [
+    {
+      key: "event",
+      type: "string",
+      required: true,
+      label: { vi: "Phản hồi của đối tác", en: "Partner reply" },
+    },
+    {
+      key: "partner_reason",
+      type: "string",
+      required: false,
+      pending: true,
+      label: { vi: "Lý do đối tác nêu", en: "Partner reason" },
+    },
+    {
+      key: "round",
+      type: "number",
+      required: false,
+      pending: true,
+      label: { vi: "Lần gửi thứ", en: "Send round" },
+    },
+  ],
 };

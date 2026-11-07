@@ -4,11 +4,24 @@
 import { CORE_MODULE } from "@ai/contracts/modules";
 import { type ModuleRegistry, moduleRegistry } from "../../kit/public";
 
+/**
+ * CR-125 · m8 · đầu ra mà engine ĐÃ ghi vào `process_outputs.fields` của bước cơ bản: Duyệt ghi `decision` + `decided_by` + `feedback`
+ * (`processes/gates/approve-out.ts`, cùng tx với quyết định). Thông báo (`sent_to`) engine chưa ghi ⇒ `pending` ở khai báo.
+ * Thêm đầu ra bước cơ bản = engine ghi + khoá ở đây + bỏ `pending` ở contracts (sổ module kiểm hai chiều).
+ */
+export const CORE_WRITTEN_OUTPUTS: Readonly<Record<string, readonly string[]>> = {
+  "core.approve": ["decision", "decided_by", "feedback"],
+};
+
 export function bindCoreNodes(registry: ModuleRegistry = moduleRegistry): string[] {
   const keys: string[] = [];
   for (const n of CORE_MODULE.nodes) {
     if (n.kind !== "base" || n.baseExecutor === undefined) continue;
-    registry.bindNode({ key: n.key, executor: n.baseExecutor });
+    registry.bindNode({
+      key: n.key,
+      executor: n.baseExecutor,
+      outputs: CORE_WRITTEN_OUTPUTS[n.key] ?? [],
+    });
     keys.push(n.key);
   }
   return keys;

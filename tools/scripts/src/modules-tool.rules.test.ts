@@ -1,5 +1,6 @@
 // CR-125 · m3 · MOD-FR-06 · unit luật công cụ sổ module.
 import { describe, expect, test } from "bun:test";
+import { MODULES, moduleIssues } from "@ai/contracts/modules";
 import {
   addNodeToModule,
   moduleSource,
@@ -7,6 +8,7 @@ import {
   nodeSource,
   renderIndex,
   scanNodePaths,
+  staticBound,
   staticIssues,
 } from "./modules-tool.rules";
 
@@ -76,5 +78,18 @@ describe("module:new", () => {
     expect(once).toContain('import { OTHER_ONE_NODE } from "./other-one/node";');
     expect(once).toContain("nodes: [SAMPLE_NODE, OTHER_ONE_NODE]");
     expect(addNodeToModule(once, "other-one")).toBe(once);
+  });
+});
+
+describe("module:new · cổng vào/ra (CR-125 m8)", () => {
+  test("node.ts sinh ra có khối inputs + outputs với nhãn vi/en, đầu ra mẫu pending", () => {
+    const src = nodeSource("demo", "sample");
+    expect(src).toContain("outputs: [");
+    expect(src).toContain('label: { vi: "Kết quả", en: "Result" }');
+    expect(src).toContain("pending: true");
+    expect(src).toContain('label: { vi: "Bản ghi", en: "Record" }');
+  });
+  test("check:modules tĩnh: sổ thật không lỗi (đầu ra không pending được coi là đã ghi)", () => {
+    expect(moduleIssues(MODULES, staticBound(MODULES))).toEqual([]);
   });
 });

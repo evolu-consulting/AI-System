@@ -26,7 +26,20 @@ export function approveOutcomeOf(
 }
 
 /**
- * Stage Duyệt ⇒ ghi `fields.decision` (+ người quyết) vào output hiện hành (1 câu) và trả yêu cầu cổng thực chạy; stage khác ⇒ `b`.
+ * CR-125 · m8 · các field Duyệt ghi vào dữ liệu lượt chạy (= `outputs` của node `core.approve`): quyết định, người quyết, góp ý (nếu có).
+ * Khoá phải khớp `CORE_WRITTEN_OUTPUTS["core.approve"]` (packs/core/nodes) — sổ module kiểm lúc khởi động.
+ */
+export function approveFields(
+  o: { decision: string },
+  userId: string,
+  feedback: string | undefined,
+): Record<string, string> {
+  const fb = feedback?.trim();
+  return { decision: o.decision, decided_by: userId, ...(fb ? { feedback: fb } : {}) };
+}
+
+/**
+ * Stage Duyệt ⇒ ghi `fields.decision` (+ người quyết + góp ý) vào output hiện hành (1 câu) và trả yêu cầu cổng thực chạy; stage khác ⇒ `b`.
  * Gọi SAU khi đã kiểm quyền/luật trên `b` gốc (Từ chối vẫn bắt buộc góp ý).
  */
 export async function approveDecide(
@@ -42,7 +55,7 @@ export async function approveDecide(
   const o = approveOutcomeOf(p.def, b.result);
   if (!o) return b;
   if (p.outputId) {
-    const fields = { decision: o.decision, decided_by: p.v.userId };
+    const fields = approveFields(o, p.v.userId, b.feedback);
     await tx.execute(sql`update hub.process_outputs
         set fields = coalesce(fields, '{}'::jsonb) || ${JSON.stringify(fields)}::jsonb
         where id = ${p.outputId} and tenant_id = ${p.tenantId}`);

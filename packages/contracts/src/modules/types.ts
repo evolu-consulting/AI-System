@@ -56,6 +56,7 @@ export const MODULE_ISSUE_CODES = [
   "MOD_PORT_MISMATCH",
   "MOD_EVENT_UNBOUND",
   "MOD_OUTCOME_UNBOUND",
+  "MOD_OUTPUT_UNBOUND",
   "MOD_ORPHAN_BINDING",
   "MOD_SIGNAL_ORPHAN",
   "MOD_PANEL_ORPHAN",
@@ -74,7 +75,11 @@ export type ModuleIssue = {
 
 /** Tóm tắt binding máy chủ (chỉ khoá + tham chiếu schema) để `moduleIssues` đối chiếu mà không I/O. */
 export type BoundSummary = {
-  nodes: ReadonlyMap<string, { tools: readonly string[]; argsSchema?: z.ZodTypeAny }>;
+  /** `outputs` = khoá đầu ra mà binding ghi được vào dữ liệu lượt chạy (CR-125 m8 · `MOD_OUTPUT_UNBOUND`). */
+  nodes: ReadonlyMap<
+    string,
+    { tools: readonly string[]; argsSchema?: z.ZodTypeAny; outputs?: readonly string[] }
+  >;
   tools: ReadonlySet<string>;
   /** `<app>\0<event>` */
   facts: ReadonlySet<string>;

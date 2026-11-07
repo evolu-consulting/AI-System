@@ -10,7 +10,17 @@ export const SHOW_POST_NODE: FeatureNodeDecl = {
   feature: "community-write",
   stages: [{ executor: { kind: "set", values: [] }, outcome: "shown" }],
   inputs: [
-    { key: "post_id", type: "string", required: true, label: { vi: "Bài đăng", en: "Post" } },
+    {
+      key: "post_id",
+      type: "string",
+      required: true,
+      label: { vi: "Bài đăng", en: "Post" },
+      fix: {
+        vi: "bắt đầu quy trình từ sự kiện «Khi đăng bài».",
+        en: "start the flow from the «When a post is created» event.",
+      },
+    },
   ],
+  // CR-125 · m8 · Hiện bài là bước cuối (kết quả `shown` do app xử lý), không có cổng ra cho bước sau.
   outputs: [],
 };

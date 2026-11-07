@@ -115,8 +115,9 @@ export function flowEdges(stages: readonly EdgeStage[]): [number, number][] {
   return out;
 }
 
-function ownOutputs(s: EdgeStage, node: EdgePaletteNode | undefined): AppNodeIo[] {
-  const out: AppNodeIo[] = [...(node?.outputs ?? [])];
+/** Đầu ra CỦA RIÊNG stage (node bảng đã ghi được + `output.fields` + khoá của node Ghi giá trị); đầu ra `pending` (CR-125 m8) không tính. */
+export function stageOwnOutputs(s: EdgeStage, node: EdgePaletteNode | undefined): AppNodeIo[] {
+  const out: AppNodeIo[] = (node?.outputs ?? []).filter((o) => !o.pending);
   const have = new Set(out.map((o) => o.key));
   for (const f of s.output?.fields ?? [])
     if (!have.has(f.key) && FACT_TYPES.has(f.type) && have.add(f.key))
@@ -139,7 +140,7 @@ function allOutputs(
   for (const [i, j] of edges) preds[j]?.push(i);
   const out: AppNodeIo[][] = [];
   stages.forEach((s, i) => {
-    const own = ownOutputs(s, nodeOf(s));
+    const own = stageOwnOutputs(s, nodeOf(s));
     out.push(
       PASS_KINDS.has(s.executor.kind)
         ? withUpstream(

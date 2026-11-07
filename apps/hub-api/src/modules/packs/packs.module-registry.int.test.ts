@@ -49,6 +49,14 @@ describe("sổ module · mount thật", () => {
     expect(flowPortRegistry.outcomeHandlerFor("community", "post.created")).toBeDefined();
     expect(moduleRegistry.bindingOf("core.if")?.executor).toBe("if"); // CR-125 m5 · bước cơ bản vào sổ khi mount
     expect(moduleRegistry.bindingOf("contracts.esign")?.tools).toEqual(["contracts-esign-send"]);
+    // CR-125 m8 · đầu ra mà binding thật ghi (khớp khai báo không pending ⇒ verify xanh)
+    expect(moduleRegistry.bindingOf("core.approve")?.outputs).toEqual([
+      "decision",
+      "decided_by",
+      "feedback",
+    ]);
+    expect(moduleRegistry.bindingOf("contracts.esign")?.outputs).toEqual(["event"]);
+    expect(moduleRegistry.bindingOf("contracts.partner-send")?.outputs).toEqual(["event"]);
     expect(moduleRegistry.bindingOf("contracts.esign")?.optionsPath).toBe(
       "/pack/contracts/esign/options",
     );
