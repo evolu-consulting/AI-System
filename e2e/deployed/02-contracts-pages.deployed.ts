@@ -40,9 +40,9 @@ test.afterAll(async () => {
 });
 
 test.describe("02 contracts-web", () => {
-  test("Tổng quan: khối Cần xử lý + Hợp đồng + Đối tác cần xem lại có dữ liệu", async () => {
+  test("Tổng quan: khối Hạn và nhắc việc + Hợp đồng + Đối tác cần xem lại có dữ liệu", async () => {
     await go("/contracts");
-    for (const h of ["Tổng quan", "Cần xử lý", "Hợp đồng"])
+    for (const h of ["Tổng quan", "Hạn và nhắc việc", "Hợp đồng"])
       await expect(page.getByRole("heading", { name: h }).first()).toBeVisible();
     // CR-101b: khối đối tác theo engine uy tín — HD8 "Đối tác cần xem lại", V2-E "Cần chú ý" (TQ-04).
     await expect(
@@ -59,7 +59,7 @@ test.describe("02 contracts-web", () => {
     await expect(page).toHaveURL(/\/contracts\/list$/);
   });
 
-  test("Cần xử lý (khối trong Tổng quan): có việc, hành động chọn kết quả hiện, không đổi dữ liệu", async () => {
+  test("Hạn và nhắc việc (khối trong Tổng quan): có việc, hành động chọn kết quả hiện, không đổi dữ liệu", async () => {
     await go("/contracts");
     // Có việc (quá hạn hoặc sắp tới hạn) — dữ liệu demo trôi theo ngày / PM bấm Bỏ qua nên không bắt buộc phải có việc quá hạn.
     expect(await bodyText(page)).toMatch(/quá hạn|Trễ \d+ ngày|còn \d+ ngày/);

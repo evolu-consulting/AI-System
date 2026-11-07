@@ -250,12 +250,12 @@
       "title": "Tổng quan",
       "today": "Hôm nay {{date}}",
       "work": {
-        "title": "Cần xử lý",
+        "title": "Hạn và nhắc việc",
         "count": "{{n}} việc",
         "late": "{{n}} quá hạn",
         "more": "Xem thêm {{n}} việc",
         "less": "Thu gọn",
-        "empty": "Không có việc cần xử lý."
+        "empty": "Không có hạn hay nhắc việc nào sắp tới."
       },
       "approvals": {
         "title": "Chờ tôi duyệt",

@@ -250,12 +250,12 @@
       "title": "Overview",
       "today": "Today {{date}}",
       "work": {
-        "title": "To do",
+        "title": "Deadlines and reminders",
         "count": "{{n}} tasks",
         "late": "{{n}} overdue",
         "more": "Show {{n}} more",
         "less": "Show less",
-        "empty": "Nothing needs your attention."
+        "empty": "No upcoming deadlines or reminders."
       },
       "approvals": {
         "title": "Waiting for my approval",
