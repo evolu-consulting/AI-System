@@ -19,6 +19,7 @@ Sửa 18 ca đỏ mới của wave e2e bc85f3a89 (root-1, contracts-web, N1, fnr
 - esign.cw.ts » editor: Gửi ký … Đã ký số — sau sự kiện đổi cửa sổ (visibilitychange) thẻ ký số KHÔNG tải lại: use-esign.ts dùng refetchOnWindowFocus nhưng query-client.ts có staleTime 30 s mặc định ⇒ dữ liệu còn resh nên không refetch; dự phòng x6 vô hiệu (đặt staleTime: 0 cho esignKey). Nghi lát CR-125 x6.
 
 ## Delta (so với docs/current)
-Không thay đổi hành vi (lý do: chỉ cập nhật e2e/baseline theo thay đổi UI đã gộp)
+Trạng thái gộp: chưa gộp
+Không thay đổi hành vi (lý do: cập nhật test theo UI đã đổi)
 
 ## Việc còn lại
