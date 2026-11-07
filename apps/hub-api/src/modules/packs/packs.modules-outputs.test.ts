@@ -27,7 +27,7 @@ describe("đầu ra khai báo × binding thật", () => {
       .filter((i) => i.code === "MOD_OUTPUT_UNBOUND");
     expect(issues).toEqual([]);
   });
-  it("Duyệt ghi decision/decided_by/feedback; Ký số, Gửi đối tác, Thông báo ghi đủ cổng (CR-125 m9)", () => {
+  it("Duyệt ghi decision/decided_by/feedback · Ký số, Gửi đối tác, Thông báo ghi đủ cổng (CR-125 m9)", () => {
     const r = realRegistry();
     expect(r.bindingOf("core.approve")?.outputs).toEqual(["decision", "decided_by", "feedback"]);
     expect(r.bindingOf("contracts.esign")?.outputs).toEqual([

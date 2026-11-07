@@ -83,7 +83,7 @@ const fieldsAt = async (runId: string, idx: number): Promise<Json> => {
 };
 
 describe("CR-125 m9 · đầu ra chạm trạng thái run (ghi thật)", () => {
-  it("Ký số xong ⇒ bước chờ có signed_at/signer/envelope_id; bắn lại không đổi; Thông báo sau đó dựng {signed_at} + ghi sent_to", async () => {
+  it("Ký số xong ⇒ bước chờ có signed_at/signer/envelope_id · bắn lại không đổi · Thông báo sau đó dựng {signed_at} + ghi sent_to", async () => {
     const REC = "c1250000-0000-4000-8000-000000000901";
     const runId = await startRun(
       "cr125-m9-esign",
@@ -109,7 +109,7 @@ describe("CR-125 m9 · đầu ra chạm trạng thái run (ghi thật)", () => {
     expect((sent?.sent_to ?? "").length).toBeGreaterThan(0);
   }, 60_000);
 
-  it("Gửi đối tác: trả lại sửa ⇒ bước chờ có round + partner_reason; dữ liệu của sự kiện khác không lẫn vào", async () => {
+  it("Gửi đối tác: trả lại sửa ⇒ bước chờ có round + partner_reason · dữ liệu của sự kiện khác không lẫn vào", async () => {
     const REC = "c1250000-0000-4000-8000-000000000902";
     const runId = await startRun(
       "cr125-m9-partner",

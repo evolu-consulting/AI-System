@@ -35,21 +35,21 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Bước chờ sự kiện ghi dữ liệu kèm sự kiện vào đầu ra của bước
 Gói bắn sự kiện kèm dữ liệu (khoá snake_case, giá trị vô hướng); khi sự kiện đó thả bước chờ, dữ liệu vào đầu ra của bước trong cùng giao dịch, không ghi đè kết quả sự kiện, bắn lại không đổi gì; sự kiện khác thắng ⇒ không lẫn dữ liệu.
-- Kịch bản: Ký số xong ⇒ bước chờ có thời điểm ký, người ký, mã phong bì; bắn lại không đổi; Thông báo sau đó hiện «Đã ký ngày {signed_at}» và ghi người nhận [test: tests/acceptance/CR-125/outputs-runstate.int.test.ts » Ký số xong ⇒ bước chờ có signed_at/signer/envelope_id; bắn lại không đổi; Thông báo sau đó dựng {signed_at} + ghi sent_to]
-- Kịch bản: đối tác trả lại sửa ⇒ bước chờ có lần gửi + lý do; công ty khác bắn cùng bản ghi không thả [test: tests/acceptance/CR-125/outputs-runstate.int.test.ts » Gửi đối tác: trả lại sửa ⇒ bước chờ có round + partner_reason; dữ liệu của sự kiện khác không lẫn vào]
+- Kịch bản: Ký số xong ⇒ bước chờ có thời điểm ký, người ký, mã phong bì; bắn lại không đổi; Thông báo sau đó hiện «Đã ký ngày {signed_at}» và ghi người nhận [test: tests/acceptance/CR-125/outputs-runstate.int.test.ts » Ký số xong ⇒ bước chờ có signed_at/signer/envelope_id · bắn lại không đổi · Thông báo sau đó dựng {signed_at} + ghi sent_to]
+- Kịch bản: đối tác trả lại sửa ⇒ bước chờ có lần gửi + lý do; công ty khác bắn cùng bản ghi không thả [test: tests/acceptance/CR-125/outputs-runstate.int.test.ts » Gửi đối tác: trả lại sửa ⇒ bước chờ có round + partner_reason · dữ liệu của sự kiện khác không lẫn vào]
 - Kịch bản: lọc dữ liệu kèm, chỉ áp cho sự kiện thắng [test: apps/hub-api/src/modules/processes/domain/timers/wait-event-data.rules.test.ts » đúng sự kiện thắng ⇒ gộp dữ liệu kèm, `event` không bị ghi đè]
 - Kịch bản: phong bì trạng thái cuối ⇒ đầu ra Ký số [test: apps/hub-api/src/modules/packs/contracts/domain/esign-outputs.rules.test.ts » ký xong ⇒ envelope_id + signed_at (ngày) + người ký theo thứ tự ký]
 
 #### Yêu cầu: Thông báo đọc đầu ra các bước trước
 Mẫu `{khoá}` của Thông báo lấy giá trị từ đầu ra các bước đứng trước và dữ liệu của lượt; Thông báo ghi người nhận (`sent_to`) vào đầu ra của bước.
-- Kịch bản: `{signed_at}` lấy từ đầu ra Ký số, input thắng khi trùng khoá [test: apps/hub-api/src/modules/processes/nodes/notify/notify-vars.test.ts » `{signed_at}` lấy từ đầu ra bước Ký số; bước sau đè bước trước; input thắng khi trùng]
+- Kịch bản: `{signed_at}` lấy từ đầu ra Ký số, input thắng khi trùng khoá [test: apps/hub-api/src/modules/processes/nodes/notify/notify-vars.test.ts » `{signed_at}` lấy từ đầu ra bước Ký số · bước sau đè bước trước · input thắng khi trùng]
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Cổng vào/ra đủ cho mọi node và tự nối từ bước trước
 Mọi đầu ra đã khai đều được máy chủ ghi (không còn đầu ra chờ); Ký số cấp đủ bốn cổng làm nguồn tự nối cho bước sau.
 - Kịch bản: không còn đầu ra pending [test: packages/contracts/src/modules/io-ports.test.ts » danh sách đầu ra CHƯA ghi (pending) — CR-125 m9: engine ghi hết ⇒ rỗng (node mới thêm pending thì ghi vào đây)]
 - Kịch bản: nguồn tại Thông báo gồm đủ cổng Ký số một lần [test: packages/contracts/src/modules/io-ports.test.ts » nguồn tại Thông báo = Bắt đầu khi + Duyệt (khớp theo executor) + Ký số MỘT lần (stage chờ, đủ 4 cổng)]
-- Kịch bản: binding thật khai đủ khoá [test: apps/hub-api/src/modules/packs/packs.modules-outputs.test.ts » Duyệt ghi decision/decided_by/feedback; Ký số, Gửi đối tác, Thông báo ghi đủ cổng (CR-125 m9)]
+- Kịch bản: binding thật khai đủ khoá [test: apps/hub-api/src/modules/packs/packs.modules-outputs.test.ts » Duyệt ghi decision/decided_by/feedback · Ký số, Gửi đối tác, Thông báo ghi đủ cổng (CR-125 m9)]
 
 ## Việc còn lại
 - (tuỳ chọn) lưu dữ liệu kèm cho sự kiện tới sớm ⇒ cần cột payload ở `hub.process_run_events` (migration).

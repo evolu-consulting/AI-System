@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { notifyFields, notifyVars, renderNotify } from "./notify.rules";
 
 describe("notifyVars (CR-125 m9)", () => {
-  test("`{signed_at}` lấy từ đầu ra bước Ký số; bước sau đè bước trước; input thắng khi trùng", () => {
+  test("`{signed_at}` lấy từ đầu ra bước Ký số · bước sau đè bước trước · input thắng khi trùng", () => {
     const vars = notifyVars({ contract_id: "c1", event: "từ-input" }, [
       { decision: "approved", event: "approve" },
       { event: "esign.completed", signed_at: "2026-11-07", round: 2, ok: true, x: null },
