@@ -104,6 +104,17 @@ function signersOf(s: string): unknown {
   return ok.map((m) => ({ kind: m[1]?.toLowerCase(), id: m[2] }));
 }
 
+/**
+ * CR-125 · m4 · CEO-review #2 · MỘT luật cho cấu hình node Ký số (panel, validator lúc lưu, tool lúc chạy): phải chọn người ký phía công ty
+ * (người hoặc phòng ban) — không còn «người bắt đầu lượt» ngầm (bước tự chạy sau duyệt không có người bắt đầu ⇒ dừng im lặng).
+ */
+export const ESIGN_NODE_NO_SIGNER_SELECTED = "NO_SIGNER_SELECTED";
+export function esignConfigIssues(c: EsignNodeConfig): { field: string; code: string }[] {
+  return c.company_signers?.length
+    ? []
+    : [{ field: "company_signers", code: ESIGN_NODE_NO_SIGNER_SELECTED }];
+}
+
 /** Giờ chờ của stage "chờ ký" theo hạn ký (ngày × 24); vắng ⇒ null (giữ `timeout_h` mặc định của node). */
 export const esignWaitTimeoutH = (c: EsignNodeConfig): number | null =>
   c.due_days === undefined ? null : c.due_days * 24;

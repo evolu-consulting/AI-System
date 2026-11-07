@@ -7,6 +7,7 @@ import {
   type ESignNodeCheckOut,
   type ESignNodeOptionsOut,
   type EsignNodeConfig,
+  esignConfigIssues,
 } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -126,6 +127,8 @@ export function EsignPanel(p: NodePanelProps) {
   if (!conf) return null;
   // lỗi theo ô: kiểm trực tiếp (`node-config/check`) hoặc lỗi lưu của server (`stages.<i>.executor.args.<khoá>`)
   const issue = (f: string) => {
+    const own = esignConfigIssues(cfg).find((x) => x.field === f); // CEO-review #2 · luật chung, hiện ngay tại ô
+    if (own) return t(`${K}err.${own.code}`);
     const i = check.data?.issues.find((x) => x.field === f);
     if (i) return t(`${K}err.${i.code}`, { defaultValue: i.code });
     const saved = p.errors[`stages.${p.index}.executor.args.${f}`];

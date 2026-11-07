@@ -8,7 +8,7 @@ const c = (value: string | number | boolean) => ({ from: "const", value });
 const tool = (args: Record<string, unknown>) => ({
   kind: "tool",
   tool_key: "contracts-esign-send",
-  args: { contract_id: c("x"), ...args },
+  args: { contract_id: c("x"), company_signers: c(`user:${U}`), ...args },
 });
 
 const seen: unknown[] = [];
@@ -59,6 +59,21 @@ describe("E5b · esignNodeValidator", () => {
         executor: tool({ due_days: { from: "input", key: "p" } }),
       }),
     ).toEqual([]);
+  });
+});
+
+describe("CEO-review #2 · chưa chọn người ký", () => {
+  it("Ký số không có người ký công ty ⇒ chặn lưu, path + mã NO_SIGNER_SELECTED (kiểm công ty không chạy)", async () => {
+    const before = seen.length;
+    const noSigner = {
+      kind: "tool",
+      tool_key: "contracts-esign-send",
+      args: { contract_id: c("x") },
+    };
+    expect(await validator("t1", { index: 4, node: ESIGN_NODE_KEY, executor: noSigner })).toEqual([
+      { path: "stages.4.executor.args.company_signers", code: "NO_SIGNER_SELECTED" },
+    ]);
+    expect(seen.length).toBe(before);
   });
 });
 

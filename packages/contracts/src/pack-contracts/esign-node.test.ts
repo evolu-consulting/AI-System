@@ -5,6 +5,7 @@ import {
   ESIGN_NODE_PARAMS,
   EsignNodeConfigSchema,
   encodeEsignNodeArgs,
+  esignConfigIssues,
   esignWaitTimeoutH,
 } from "./esign-node";
 
@@ -67,6 +68,13 @@ describe("E5 · EsignNodeConfig", () => {
     expect(decodeEsignNodeArgs({ provider: "Bad Key!" }).ok).toBe(true);
     expect(ESIGN_NODE_PARAMS).not.toContain("provider");
     expect("provider" in encodeEsignNodeArgs({ due_days: 2 })).toBe(false);
+  });
+
+  it("CEO-review #2 · thiếu người ký công ty ⇒ NO_SIGNER_SELECTED; có người/Group ⇒ hợp lệ", () => {
+    expect(esignConfigIssues({})).toEqual([
+      { field: "company_signers", code: "NO_SIGNER_SELECTED" },
+    ]);
+    expect(esignConfigIssues({ company_signers: [{ kind: "group", id: G }] })).toEqual([]);
   });
 
   it("hạn ký ⇒ giờ chờ của stage chờ ký", () => {

@@ -10,6 +10,7 @@ import {
   type ESignSignerIn,
   type EsignNodeConfig,
   type EsignNodeSigner,
+  esignConfigIssues,
 } from "@ai/contracts/pack-contracts";
 import type {
   NotifyTxRepos,
@@ -79,6 +80,8 @@ async function planSend(
   cfg: EsignNodeConfig,
   parsed: { name: string; email: string } | null,
 ) {
+  // CEO-review #2 · chưa chọn người ký ⇒ lỗi nghiệp vụ rõ (không dừng im lặng ở «Báo chủ hợp đồng»)
+  if (esignConfigIssues(cfg).length > 0) throw new Error("ESIGN_NODE_NO_SIGNER");
   const partner = cfg.partner_signs === false ? null : parsed;
   if (cfg.partner_signs === true && !partner) throw new Error("NO_PARTNER_EMAIL");
   const users = cfg.company_signers

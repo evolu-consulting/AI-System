@@ -99,7 +99,12 @@ describe("E5 · args của node ghi đè cài đặt ký số của app", () => 
     );
 
     // (1) không cấu hình node ⇒ như trước: mặc định công ty (selfsign), người ký = người bắt đầu (A), tuần tự
-    await send.run(CTX(A), { contract_id: K[0] as string });
+    // CEO-review #2 · không chọn người ký công ty ⇒ lỗi nghiệp vụ, không tạo phong bì
+    await expect(send.run(CTX(A), { contract_id: K[0] as string })).rejects.toThrow(
+      "ESIGN_NODE_NO_SIGNER",
+    );
+    expect(await envelope(K[0] as string)).toBeUndefined();
+    await send.run(CTX(A), { contract_id: K[0] as string, company_signers: `user:${A}` });
     const base = await envelope(K[0] as string);
     expect(base?.provider).toBe("selfsign");
     expect(base?.signers).toMatchObject([{ role: "company", order: 1, client_user_id: A }]);

@@ -60,7 +60,11 @@ const esignStage = (args: Record<string, unknown>, withNode = true) =>
     executor: {
       kind: "tool",
       tool_key: "contracts-esign-send",
-      args: { contract_id: { from: "const", value: "x" }, ...args },
+      args: {
+        contract_id: { from: "const", value: "x" },
+        company_signers: { from: "const", value: "user:11111111-1111-4111-8111-111111111111" },
+        ...args,
+      },
     },
   });
 /** Nửa sau của node Ký số (chờ ký xong): CR-123 FR-14 — node nhiều stage phải đi đủ cụm. */
@@ -134,6 +138,15 @@ afterAll(async () => {
 const codeOf = (r: { json: Json }) => r.json.error?.code ?? r.json.code;
 
 describe("E5b · lưu def kiểm cấu hình node", () => {
+  it("CEO-review #2 · Ký số chưa chọn người ký ⇒ 422 FLOW_NODE_CONFIG_INVALID, path company_signers, không lưu", async () => {
+    const st = esignStage({}) as { executor: { args: Record<string, unknown> } };
+    st.executor.args.company_signers = undefined;
+    const r = await call("POST", "/process-defs", body([st, waitStage()]));
+    expect(r.status).toBe(422);
+    expect(codeOf(r)).toBe("FLOW_NODE_CONFIG_INVALID");
+    expect(JSON.stringify(r.json)).toContain("stages.0.executor.args.company_signers");
+  });
+
   it("nhà cung cấp chưa bật ⇒ 422 FLOW_NODE_CONFIG_INVALID + path, không lưu", async () => {
     const r = await call(
       "POST",

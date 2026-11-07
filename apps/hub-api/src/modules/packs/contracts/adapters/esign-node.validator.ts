@@ -1,6 +1,10 @@
 // CR-122 · E5b · FLOW2-FR-25 · validator cấu hình node Ký số khi LƯU def: đọc `args` HẰNG của stage tool `contracts-esign-send`, kiểm dạng
 // (`decodeEsignNodeArgs`) rồi kiểm theo công ty (`checkNode`: nhà cung cấp đang bật, người/Group thuộc công ty). Path `stages.<i>.executor.args.<khoá>`.
-import { decodeEsignNodeArgs, type EsignNodeConfig } from "@ai/contracts/pack-contracts";
+import {
+  decodeEsignNodeArgs,
+  type EsignNodeConfig,
+  esignConfigIssues,
+} from "@ai/contracts/pack-contracts";
 import { constToolArgs, type NodeConfigValidator } from "../../kit/public";
 import { INTAKE_TOOL_KEYS } from "./intake.tools";
 
@@ -15,6 +19,8 @@ export function esignNodeValidator(check: Check): NodeConfigValidator {
     const base = `stages.${st.index}.executor.args`;
     const dec = decodeEsignNodeArgs(args);
     if (!dec.ok) return dec.issues.map((f) => ({ path: `${base}.${f}`, code: "INVALID" }));
+    const own = esignConfigIssues(dec.config);
+    if (own.length > 0) return own.map((i) => ({ path: `${base}.${i.field}`, code: i.code }));
     return (await check(tenantId, dec.config)).map((i) => ({
       path: `${base}.${i.field}`,
       code: i.code,

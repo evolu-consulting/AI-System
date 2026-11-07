@@ -43,17 +43,10 @@ describe("E5 · tool Ký số theo args của node", () => {
     expect(send.params.filter((p) => p.required).map((p) => p.name)).toEqual(["contract_id"]);
   });
 
-  it("không args ⇒ đúng đường cũ: send 4 tham số, người ký = người bắt đầu", async () => {
+  it("CEO-review #2 · không chọn người ký công ty ⇒ lỗi nghiệp vụ ESIGN_NODE_NO_SIGNER, không gửi", async () => {
     const { send, sent, asked } = make();
-    await send.run(CTX, { contract_id: ID });
-    expect(sent).toEqual([
-      [
-        "t1",
-        "u1",
-        ID,
-        [{ role: "company" }, { role: "partner", name: "Đối tác", email: "p@x.vn" }],
-      ],
-    ]);
+    await expect(send.run(CTX, { contract_id: ID })).rejects.toThrow("ESIGN_NODE_NO_SIGNER");
+    expect(sent).toEqual([]);
     expect(asked).toEqual([]);
   });
 
@@ -84,20 +77,25 @@ describe("E5 · tool Ký số theo args của node", () => {
 
   it("partner_signs=false ⇒ chỉ công ty ký (dù có email); =true mà thiếu email ⇒ lỗi", async () => {
     const a = make();
-    await a.send.run(CTX, { contract_id: ID, partner_signs: false, order: "sequential" });
+    await a.send.run(CTX, {
+      contract_id: ID,
+      partner_signs: false,
+      order: "sequential",
+      company_signers: `user:${U1}`,
+    });
     expect(a.sent[0]?.[3]).toEqual([{ role: "company" }]);
     const b = make(null);
-    await expect(b.send.run(CTX, { contract_id: ID, partner_signs: true })).rejects.toThrow(
-      "NO_PARTNER_EMAIL",
-    );
+    await expect(
+      b.send.run(CTX, { contract_id: ID, partner_signs: true, company_signers: `user:${U1}` }),
+    ).rejects.toThrow("NO_PARTNER_EMAIL");
     expect(b.sent).toEqual([]);
   });
 
   it("cấu hình sai ⇒ lỗi rõ theo khoá, không gửi", async () => {
     const { send, sent } = make();
-    await expect(send.run(CTX, { contract_id: ID, order: "random" })).rejects.toThrow(
-      "ESIGN_NODE_CONFIG_INVALID:order",
-    );
+    await expect(
+      send.run(CTX, { contract_id: ID, order: "random", company_signers: `user:${U1}` }),
+    ).rejects.toThrow("ESIGN_NODE_CONFIG_INVALID:order");
     expect(sent).toEqual([]);
   });
 });
