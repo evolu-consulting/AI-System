@@ -561,6 +561,13 @@
       "when": 1806800200000,
       "tag": "0086_partner_send_validate",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1806900100000,
+      "tag": "0087_partner_settings",
+      "breakpoints": true
     }
   ]
 }

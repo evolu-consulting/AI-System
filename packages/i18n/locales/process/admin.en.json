@@ -613,7 +613,13 @@
     },
     "module": {
       "done": "Done",
-      "exitHint": "Output: {{label}}"
+      "exitHint": "Output: {{label}}",
+      "enum": {
+        "auto": "Follow the contract value",
+        "normal": "Normal",
+        "important": "Important",
+        "critical": "Critical"
+      }
     },
     "connect": {
       "dragNext": "Drag to the step that comes next",

@@ -100,7 +100,12 @@ describe("CR-124 q1 · NFR-01 cách ly hộp thư", () => {
 
   it("kênh nền tảng chỉ khi bên nhận đã chấp nhận nối (chưa nối / đã chặn ⇒ 42501)", async () => {
     expect(await pgCode(() => as(C, UA, (tx) => send(tx, C, B)))).toBe("42501");
-    expect(await pgCode(() => as(A, UA, (tx) => send(tx, A, C)))).toBe("42501");
+    // q4 (hub 0122): B chặn TRƯỚC khi A xin ⇒ lần gửi được GIỮ im lặng (không lộ việc bị chặn), không tới B.
+    expect(await pgCode(() => as(A, UA, (tx) => send(tx, A, C)))).toBeNull();
+    const [held] = await o<
+      { status: string }[]
+    >`select status from hub.partner_mailbox where to_tenant = ${C} order by created_at desc limit 1`;
+    expect(held?.status).toBe("held");
     // email/manual không mang tenant nhận ⇒ không có đường receiver_flow.
     expect(
       await pgCode(() =>

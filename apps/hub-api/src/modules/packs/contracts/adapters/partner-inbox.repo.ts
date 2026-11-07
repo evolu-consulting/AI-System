@@ -40,8 +40,23 @@ export type InboxItem = {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+export type InboxSettings = { importantMin: number; criticalMin: number; ownerId: string | null };
+
 export function partnerInboxRepo(tx: Tx, tid: string) {
   return {
+    /** Ngưỡng mức quan trọng + người phụ trách HĐ nhận của công ty (chưa đặt ⇒ mặc định spec §6, owner trống). MỘT câu. */
+    async settings(): Promise<InboxSettings> {
+      const [r] = await tx.execute<{
+        imp: string | number;
+        cri: string | number;
+        owner: string | null;
+      }>(sql`
+        select important_min as imp, critical_min as cri, owner_user_id::text as owner
+        from contracts.partner_settings where tenant_id = ${tid}::uuid`);
+      return r
+        ? { importantMin: Number(r.imp), criticalMin: Number(r.cri), ownerId: r.owner }
+        : { importantMin: 500_000_000, criticalMin: 2_000_000_000, ownerId: null };
+    },
     async take(limit: number): Promise<TakenRow[]> {
       const rows = await tx.execute<{
         id: string;
@@ -72,7 +87,7 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
       }));
     },
     /** HĐ nhận + bản ghi nhận, MỘT câu theo tập. Trùng `(tenant, mailbox)` ⇒ bỏ qua (chạy lại vô hại). */
-    async insertBatch(items: readonly InboxItem[]): Promise<number> {
+    async insertBatch(items: readonly InboxItem[], ownerId: string | null = null): Promise<number> {
       if (items.length === 0) return 0;
       const j = JSON.stringify(
         items.map((i) => ({
@@ -99,9 +114,10 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
             message text, shared jsonb, file_ref text, pdf_sha256 text, expires_at timestamptz)),
         fresh as (select s.* from src s
           where not exists (select 1 from contracts.partner_inbox p where p.tenant_id = ${tid}::uuid and p.mailbox_id = s.mailbox_id)),
-        c as (insert into contracts.contracts (id, tenant_id, kind, doc_type, source, title, status, created_by, fields)
+        c as (insert into contracts.contracts (id, tenant_id, kind, doc_type, source, title, status, created_by,
+            owner_user_id, fields)
           select f.contract_id, ${tid}::uuid, 'contract', 'contract', 'partner_inbox', f.title, 'needs_review',
-            ${SYSTEM_USER}::uuid, f.fields from fresh f returning id),
+            ${SYSTEM_USER}::uuid, ${ownerId}::uuid, f.fields from fresh f returning id),
         i as (insert into contracts.partner_inbox (tenant_id, contract_id, mailbox_id, sender_name, sender_tax_code,
             sender_verified, round, prev_reason, importance, message, shared, file_ref, pdf_sha256, expires_at)
           select ${tid}::uuid, f.contract_id, f.mailbox_id, f.sender_name, f.sender_tax_code, f.sender_verified, f.round,
@@ -130,6 +146,16 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
 
 type Found = { mailbox_id: string; status: string; reason: string | null };
 
+/** Góp ý gần nhất của lượt chạy (stage Duyệt ghi `feedback` khi Trả lại/Từ chối); không có ⇒ null (dùng lý do dự phòng). MỘT câu. */
+async function reviewerReason(tx: Tx, tid: string, runId: string): Promise<string | null> {
+  if (!UUID.test(runId)) return null;
+  const [r] = await tx.execute<{ feedback: string | null }>(sql`
+    select btrim(feedback) as feedback from hub.stage_runs
+    where tenant_id = ${tid}::uuid and process_run_id = ${runId}::uuid and nullif(btrim(feedback), '') is not null
+    order by updated_at desc limit 1`);
+  return r?.feedback ? r.feedback.slice(0, 2000) : null;
+}
+
 /**
  * Kết thúc của flow nhận ⇒ trả lời gửi về bên gửi (spec §8c): Đồng ý/Trả lại/Từ chối ⇒ `hub.partner_reply(..., 'receiver_flow')` + trạng thái
  * bản ghi nhận + HĐ nhận, TRONG tx engine (đổi sang role gói như `contract.submitted`). Idempotent: đã áp đúng kết quả ⇒ `already_applied`.
@@ -139,6 +165,8 @@ export async function applyReceivedOutcome(tx: Tx, i: OutcomeInput): Promise<Out
     throw new Error(`contracts outcome chưa hỗ trợ: ${i.event} · ${i.outcome}`);
   const o: PartnerOutcome = i.outcome;
   const tid = i.tenantId;
+  // q4 · lý do của người duyệt bước cuối (góp ý Trả lại/Từ chối) đọc ở tx engine (role hub) TRƯỚC khi đổi sang role gói.
+  const fb = o === "confirmed" ? null : await reviewerReason(tx, tid, i.runId);
   return withPackRoleInTx(tx, "contracts", tid, async () => {
     const [f] =
       await tx.execute<Found>(sql`select mailbox_id::text, status, reason from contracts.partner_inbox
@@ -146,7 +174,7 @@ export async function applyReceivedOutcome(tx: Tx, i: OutcomeInput): Promise<Out
     if (!f) return "not_found";
     if (f.status === o) return "already_applied";
     if (f.status !== "pending") throw new Error(`contracts outcome: lần nhận đã ${f.status}`);
-    const reason = o === "confirmed" ? null : (f.reason ?? FALLBACK_REASON[o]);
+    const reason = o === "confirmed" ? null : (fb ?? f.reason ?? FALLBACK_REASON[o]);
     await tx.execute(
       sql`select hub.partner_reply(${f.mailbox_id}::uuid, ${o}, ${reason}, 'receiver_flow', null)`,
     );

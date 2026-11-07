@@ -32,7 +32,10 @@ export const CONTRACTS_MANIFEST: AppManifest = {
     admin: "contracts-admin",
   },
   // CR-121 D-4 · `contracts-approval-engine` không còn là add-on: gán quy trình cho khe duyệt là đủ (Luật GỐC 3 — không thao tác ẩn).
-  addons: [{ key: "han-muc-duyet", label: "Kiểm tra hạn mức duyệt" }],
+  addons: [
+    { key: "han-muc-duyet", label: "Kiểm tra hạn mức duyệt" },
+    { key: "contracts-partner-confirm", label: "Gửi hợp đồng cho đối tác xác nhận" },
+  ],
   nav: [
     { key: "overview", labelKey: "contracts.nav.overview", label: "Tổng quan", level: "read" },
     {
@@ -48,6 +51,13 @@ export const CONTRACTS_MANIFEST: AppManifest = {
       ],
     },
     { key: "partners", labelKey: "contracts.nav.partners", label: "Đối tác", level: "read" },
+    {
+      key: "partner-inbox",
+      labelKey: "contracts.nav.partner-inbox",
+      label: "Hợp đồng đối tác gửi",
+      level: "read",
+      addon: "contracts-partner-confirm",
+    },
     {
       key: "products",
       labelKey: "contracts.nav.products",
@@ -146,7 +156,7 @@ export const CONTRACTS_MANIFEST: AppManifest = {
     },
     // CR-124 · q3 · FLOW4-FR-08/11 · bên NHẬN: HĐ đối tác gửi tới (bản ghi riêng `source='partner_inbox'`) ⇒ flow nhận của công ty chạy.
     // Kết thúc của flow nhận tự thành câu trả lời gửi về bên gửi (OutcomeHandler ⇒ `hub.partner_reply`), không node «Trả lời» riêng.
-    // TODO(CR-124 q4): `required: true` + `defaultFlowKey` khi có 2 mẫu Thư viện «Nhận HĐ quan trọng/thường» (FLOW4-FR-10).
+    // FLOW4-FR-10: bật tính năng ⇒ luôn có ≥ 1 flow nhận bật không điều kiện; mẫu mặc định «Nhận HĐ thường» seed ở hub 0121.
     {
       key: "contract.received",
       record: CONTRACT_RECORD,
@@ -177,7 +187,8 @@ export const CONTRACTS_MANIFEST: AppManifest = {
         { key: "declined", label: "Từ chối", effect: "Bên gửi được báo từ chối kèm lý do." },
       ],
       decides: true,
-      required: false,
+      required: true,
+      defaultFlowKey: "hd-nhan-thuong",
     },
   ],
   // CR-122 · N1 · tín hiệu ký số (E3: phong bì sang trạng thái cuối) — CHỈ node Ký số / bước chờ dùng (`wait_event`); CR-125 m2: không còn là

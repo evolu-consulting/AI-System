@@ -22,21 +22,34 @@ export const PARTNER_REPLY_DAYS_MAX = 30;
 export const PartnerSendConfigSchema = z.object({
   /** Mã HĐ (đầu vào của flow, không phải ô cấu hình). */
   contract_id: z.string().optional(),
-  importance: z.enum(PARTNER_IMPORTANCE).optional(),
+  importance: z.enum(PARTNER_IMPORTANCE).optional().describe("Mức quan trọng"),
   /** `total_value,end_date` — tập con của `PARTNER_SEND_FIELDS`. */
   send_fields: z
     .string()
     .max(120)
     .regex(/^[a-z_]+(,[a-z_]+)*$/)
-    .optional(),
-  reply_days: z.coerce.number().int().min(1).max(PARTNER_REPLY_DAYS_MAX).optional(),
-  message: z.string().max(1000).optional(),
+    .optional()
+    .describe("Gửi kèm (PDF luôn có): total_value, start_date, end_date, payment_term"),
+  reply_days: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(PARTNER_REPLY_DAYS_MAX)
+    .optional()
+    .describe("Hạn trả lời (ngày)"),
+  message: z.string().max(1000).optional().describe("Lời nhắn"),
   /** Đổi đối tác so với HĐ (chọn từ danh bạ, q4). Vắng ⇒ lấy từ HĐ. */
   partner_tax_code: z
     .string()
     .regex(/^\d{10}(-\d{3})?$/)
-    .optional(),
-  partner_email: z.string().max(320).email().optional(),
+    .optional()
+    .describe("Gửi cho — mã số thuế (mặc định lấy từ hợp đồng)"),
+  partner_email: z
+    .string()
+    .max(320)
+    .email()
+    .optional()
+    .describe("Email liên hệ (mặc định lấy từ hợp đồng)"),
 });
 export type PartnerSendConfig = z.infer<typeof PartnerSendConfigSchema>;
 

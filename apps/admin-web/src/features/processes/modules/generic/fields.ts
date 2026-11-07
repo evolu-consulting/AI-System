@@ -79,12 +79,16 @@ export function readableKey(key: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** Trường của cổng cấu hình; bỏ đầu vào của flow (`contract_id` — tự nối, không phải ô cấu hình của node). */
+const configEntries = (shape: Record<string, unknown>): [string, unknown][] =>
+  Object.entries(shape).filter(([k]) => k !== "contract_id");
+
 export function fieldsOf(port: PortSchema): PanelField[] {
   const root = unwrap(port.schema).core;
   const shape = defOf(root).shape;
   if (!shape) return [];
   const out: PanelField[] = [];
-  for (const [key, raw] of Object.entries(shape)) {
+  for (const [key, raw] of configEntries(shape)) {
     const { core, required, description } = unwrap(raw);
     const d = defOf(core);
     const w = port.widgets?.[key];

@@ -38,6 +38,7 @@ import { type ContractsOverdueDeps, ledgerModule } from "./contracts/ledger.moun
 import { manageModule } from "./contracts/manage.mount";
 import { myWorkModule } from "./contracts/mywork.mount";
 import { mountContractsNav } from "./contracts/nav.mount";
+import { partnerModule } from "./contracts/partner-routes.mount";
 import { partnersModule, supplierScores } from "./contracts/partners.mount";
 import { priceScoutModule } from "./contracts/price-scout.mount";
 import { productsModule } from "./contracts/products.mount";
@@ -232,6 +233,7 @@ function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void
     ); // HD1 T10 + HD2 starter
   else app.route(base, uploadUnavailableRoutes(view)); // FileBox váº¯ng â‡’ 503 FILE_STORAGE_UNAVAILABLE (khÃ´ng 404)
   app.route(base, contractsRemind(d, view, db)); // HD4
+  app.route(base, partnerModule(db, view)); // CR-124 q4 · hộp «Hợp đồng đối tác gửi» + ghi nhận thủ công
   app.route(base, cksModule(db, view, { timeZoneOf: tenantTz(d) })); // HD9
   app.route(base, contractsLedger(d, view, db)); // HD7
   app.route(

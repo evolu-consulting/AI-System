@@ -729,6 +729,20 @@
       "when": 1806900100000,
       "tag": "0120_partner_email",
       "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1806900300000,
+      "tag": "0121_partner_receive_templates",
+      "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1806900400000,
+      "tag": "0122_partner_hold",
+      "breakpoints": true
     }
   ]
 }

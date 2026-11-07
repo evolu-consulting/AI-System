@@ -1,4 +1,4 @@
-// CR-124 · q3 · NFR-03 / Luật 4c · đường nhận lô = 3 câu SQL CỐ ĐỊNH (take → insertBatch → emitReceived), không phụ thuộc số dòng.
+// CR-124 · q3 · NFR-03 / Luật 4c · đường nhận lô = 4 câu SQL CỐ ĐỊNH (settings → take → insertBatch → emitReceived), không phụ thuộc số dòng.
 import { describe, expect, it } from "bun:test";
 import type { Tx } from "@ai/db";
 import { inboxItemsOf } from "../partner-mailbox.mount";
@@ -22,6 +22,7 @@ async function calls(n: number): Promise<number> {
   const tx = { execute: async () => (c++, []) } as unknown as Tx;
   const repo = partnerInboxRepo(tx, crypto.randomUUID());
   const items = inboxItemsOf(Array.from({ length: n }, (_, i) => row(i)));
+  await repo.settings();
   await repo.take(100);
   await repo.insertBatch(items);
   await repo.emitReceived(items);
@@ -29,9 +30,9 @@ async function calls(n: number): Promise<number> {
 }
 
 describe("partnerInboxRepo · số câu SQL mỗi lô", () => {
-  it("1 dòng và 100 dòng đều đúng 3 câu", async () => {
-    expect(await calls(1)).toBe(3);
-    expect(await calls(100)).toBe(3);
+  it("1 dòng và 100 dòng đều đúng 4 câu", async () => {
+    expect(await calls(1)).toBe(4);
+    expect(await calls(100)).toBe(4);
   });
   it("mức cuối = max(gợi ý, luật theo giá trị): 600 triệu gợi ý thường ⇒ quan trọng", () => {
     expect(inboxItemsOf([row(1)])[0]?.importance).toBe("important");

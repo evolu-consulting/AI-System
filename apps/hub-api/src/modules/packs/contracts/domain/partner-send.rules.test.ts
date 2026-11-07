@@ -21,9 +21,10 @@ describe("planChannel (FLOW4-FR-15)", () => {
     });
   });
   it("chưa nối / bị chặn / không trên nền tảng + có email ⇒ email, ghi lý do", () => {
+    // chưa nối ⇒ vẫn nền tảng nhưng GIỮ tới khi B chấp nhận (q4)
     expect(planChannel(route("pending"), "x@y.vn", null)).toMatchObject({
-      channel: "email",
-      why: "link_pending",
+      channel: "platform",
+      held: true,
     });
     expect(planChannel(route("blocked"), "x@y.vn", null)).toMatchObject({
       channel: "email",

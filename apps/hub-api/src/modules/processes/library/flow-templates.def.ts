@@ -41,9 +41,9 @@ const review = (group: string) => ({
   exclude_starter: true,
 });
 
-type Stage = Record<string, unknown>;
+export type Stage = Record<string, unknown>;
 /** Bước Duyệt (node Duyệt độc lập): Từ chối ⇒ `reject`, Trả lại ⇒ `ret` (bước Kết thúc). */
-const approve = (
+export const approve = (
   key: string,
   name: string,
   step: number,
@@ -97,7 +97,7 @@ const esignWait = (step: number, fail: number): Stage => ({
   output: out("cho-ky.md"),
   after: auto,
 });
-const finish = (step: number, outcome: string, label: string): Stage => ({
+export const finish = (step: number, outcome: string, label: string): Stage => ({
   ...base,
   key: `ket-thuc-${outcome}`,
   name: `Kết thúc · ${label}`,
@@ -147,7 +147,7 @@ const ifFact = (
   after: auto,
 });
 
-const norm = (xs: Stage[]): DefStage[] =>
+export const norm = (xs: Stage[]): DefStage[] =>
   xs.map((s) => normalizeStage(structuredClone(s) as unknown as DefStage));
 
 /** 1 · Trưởng phòng duyệt → Giám đốc duyệt → Ký số → Thông báo người tạo → Kết thúc · Đã duyệt. */

@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EsignSetting } from "~/features/contract-esign/components/EsignSetting";
+import { ReceiveSettings } from "~/features/partner-inbox/components/ReceiveSettings";
 import { useFlow } from "../hooks/use-flow";
 import type { CurrentFlow } from "../lib/current-flow";
 import { FlowCanvasLazy } from "./FlowCanvasLazy";
@@ -109,6 +110,7 @@ export function FlowCurrentPane({ owner }: { owner: boolean }) {
     <div>
       <FlowBlock q={q} />
       <EsignSetting owner={owner} />
+      <ReceiveSettings owner={owner} />
     </div>
   );
 }

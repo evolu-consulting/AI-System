@@ -44,7 +44,8 @@ describe("CR-124 q2 · nối đối tác (consent một lần)", () => {
     expect(await pgCode(() => as(A, (tx) => request(tx, A)))).toBe("22023"); // tự nối
     expect(await as(A, (tx) => request(tx, B))).toBe("pending");
     expect(await as(A, (tx) => request(tx, B))).toBe("pending");
-    expect(await pgCode(() => as(A, (tx) => send(tx, A, B)))).toBe("42501");
+    // q4 (hub 0122): đã xin nhưng chưa được chấp nhận ⇒ lần gửi được GIỮ (không tới B), không còn 42501.
+    expect(await as(A, (tx) => send(tx, A, B))).toBeTruthy();
     expect(await pgCode(() => inHub("none", (tx) => request(tx, B)))).toBe("42501");
   });
 
@@ -115,7 +116,8 @@ describe("CR-124 q2 · nối đối tác (consent một lần)", () => {
     expect(await as(B, (tx) => block(tx, C))).toBe(true);
     expect(await as(C, (tx) => request(tx, B))).toBe("pending"); // không phải 'blocked'
     expect(await as(C, (tx) => tx`select * from hub.partner_links_mine()`)).toHaveLength(0);
-    expect(await pgCode(() => as(C, (tx) => send(tx, C, B)))).toBe("42501");
+    // q4: chặn trước ⇒ lần gửi giữ IM LẶNG (không lộ việc bị chặn, không bao giờ tới B tới khi B bỏ chặn).
+    expect(await as(C, (tx) => send(tx, C, B))).toBeTruthy();
     const inB = await as(B, (tx) => tx`select * from hub.partner_links_mine()`);
     expect(inB.find((r) => r.other_tenant === C)).toMatchObject({
       direction: "in",

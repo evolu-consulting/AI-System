@@ -2356,6 +2356,10 @@
         "name": "Kiểm tra hạn mức duyệt",
         "desc": "Tự đối chiếu giá trị hợp đồng với hạn mức của người duyệt"
       },
+      "contracts-partner-confirm": {
+        "name": "Gửi hợp đồng cho đối tác xác nhận",
+        "desc": "Gửi hợp đồng cho công ty đối tác xác nhận và nhận hợp đồng đối tác gửi tới"
+      },
       "knowledge-read": {
         "name": "Xem tri thức",
         "desc": "Tìm kiếm và đọc tài liệu trong kho tri thức"

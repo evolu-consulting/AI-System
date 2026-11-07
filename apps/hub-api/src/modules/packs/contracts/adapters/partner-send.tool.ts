@@ -119,7 +119,7 @@ async function run(d: PartnerToolDeps, ctx: PackToolCtx, args: PackToolArgs) {
       by: ctx.userId,
     });
     return {
-      status: "sent",
+      status: plan.channel === "platform" && plan.held ? "held" : "sent",
       mailbox_id: mailboxId,
       channel: plan.channel,
       round,

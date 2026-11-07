@@ -1,0 +1,86 @@
+{
+  "contracts": {
+    "nav": { "partner-inbox": "Contracts from partners" },
+    "partner": {
+      "verified": "Verified",
+      "unverified": "Not verified",
+      "level": { "normal": "Normal", "important": "Important", "critical": "Critical" },
+      "channel": { "platform": "platform", "email": "email", "manual": "manual record" },
+      "settings": {
+        "title": "Contracts received from partners",
+        "important": "“Important” from value",
+        "critical": "“Critical” from value",
+        "unit": "million VND",
+        "owner": "Owner of received contracts",
+        "ownerNone": "Not set — company admins handle them",
+        "save": "Save",
+        "issue": {
+          "order": "The “Critical” threshold must be higher than “Important”.",
+          "negative": "The value cannot be negative."
+        }
+      },
+      "inbox": {
+        "title": "Contracts from partners",
+        "empty": "No contracts have been sent to you by partners yet.",
+        "error": "Could not load the inbox. Try reloading the page.",
+        "open": "Open"
+      },
+      "invite": {
+        "title": "{{sender}} wants to send you contracts",
+        "first": "First time · {{n}} waiting",
+        "accept": "Accept contracts from this company",
+        "block": "Block"
+      },
+      "in": {
+        "pending": "Waiting for your company to confirm · due {{until}}",
+        "confirmed": "Confirmed",
+        "returned": "Returned to sender",
+        "declined": "Declined",
+        "reason": "From {{sender}} · {{level}}",
+        "reasonRound": "Revision {{round}} from {{sender}} · last time: {{prev}}",
+        "yourReason": "Reason: {{reason}}",
+        "nextOpen": "Open to Agree / Return / Decline",
+        "nextNone": "{{sender}} was told · nothing more to do"
+      },
+      "out": {
+        "title": "Send to partner for confirmation",
+        "wait": "Waiting for {{to}} to confirm · sent {{since}}",
+        "waitManual": "Waiting for a manual record · {{to}} is not on the system",
+        "via": "Round {{round}} · sent via {{channel}}",
+        "reason": "Reason: {{reason}}",
+        "confirmed": "{{to}} confirmed",
+        "returned": "{{to}} returned it",
+        "declined": "{{to}} declined",
+        "expired": "Reply deadline passed",
+        "held": "Waiting for the receiving company to agree to connect",
+        "heldWhy": "First time sending to {{to}} · the contract arrives once they agree",
+        "heldNext": "Nothing more to do · or send by email",
+        "heldExpired": "The partner did not accept — expired",
+        "heldExpiredWhy": "The receiving company did not agree to connect in time",
+        "closed": "Closed",
+        "nextRecord": "Use “Record partner's answer” when they reply",
+        "nextOk": "The process moved on",
+        "nextFix": "Fix the contract and send it again",
+        "nextStop": "The process took the Declined branch",
+        "opt": { "confirmed": "Agree", "returned": "Return", "declined": "Decline" }
+      },
+      "record": {
+        "button": "Record partner's answer",
+        "outcome": "Answer",
+        "reason": "Reason",
+        "byName": "Person who answered",
+        "byTitle": "Job title",
+        "evidence": "Evidence (one file / note per line)",
+        "evidenceHint": "e.g. reply-email.png",
+        "save": "Record",
+        "cancel": "Cancel",
+        "fail": "Could not record it. Check the fields and try again.",
+        "need": {
+          "reason": "Return / Decline needs a reason",
+          "byName": "Enter who at the partner answered",
+          "evidence": "Manual record needs at least one piece of evidence"
+        }
+      }
+    }
+  }
+}

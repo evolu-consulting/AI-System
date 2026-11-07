@@ -34,6 +34,7 @@ type Parts = readonly [
   Part,
   Part,
   Part,
+  Part,
 ];
 
 const loadEn = (): Promise<Parts> =>
@@ -64,6 +65,7 @@ const loadEn = (): Promise<Parts> =>
     import("../locales/contracts/esign-anchor.en.json"),
     import("../locales/contracts/esignflow.en.json"),
     import("../locales/contracts/docframe.en.json"),
+    import("../locales/contracts/partner.en.json"),
     import("../locales/contracts/rep3.en.json"),
   ]);
 
@@ -95,6 +97,7 @@ const loadVi = (): Promise<Parts> =>
     import("../locales/contracts/esign-anchor.vi.json"),
     import("../locales/contracts/esignflow.vi.json"),
     import("../locales/contracts/docframe.vi.json"),
+    import("../locales/contracts/partner.vi.json"),
     import("../locales/contracts/rep3.vi.json"),
   ]);
 

@@ -23,6 +23,7 @@ import { shortName } from "~/features/contracts-list/lib/list-model";
 import { FramePanel } from "~/features/frame-panel/components/FramePanel";
 import { ContractLog } from "~/features/ledger/components/ContractLog";
 import { useMe } from "~/features/pack-state/hooks/use-me";
+import { PartnerSendPanel } from "~/features/partner-inbox/components/PartnerSendPanel";
 import { ProductLinkDialog } from "~/features/product-links/components/ProductLinkDialog";
 import { EditLogPanel } from "~/features/promote-deal/components/EditLogPanel";
 import { PromoteDeal } from "~/features/promote-deal/components/PromoteDeal";
@@ -168,6 +169,7 @@ function ContractBody({
           />
           <LockBanner id={id} view={lock} canUpdate={canUpdate} />
           {/* cf-esign-docusign · ký số sau khi duyệt xong (đã khoá). */}
+          <PartnerSendPanel id={id} write={write} />
           <EsignPanel id={id} locked={c.locked === true} write={write} />
           <VersionsPanels id={id} versions={c.versions} sup={sup} />
           <SaveNotice err={info.err ?? ap.err} />

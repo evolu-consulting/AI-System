@@ -1,0 +1,86 @@
+{
+  "contracts": {
+    "nav": { "partner-inbox": "Hợp đồng đối tác gửi" },
+    "partner": {
+      "verified": "Đã xác minh",
+      "unverified": "Chưa xác minh",
+      "level": { "normal": "Thường", "important": "Quan trọng", "critical": "Rất quan trọng" },
+      "channel": { "platform": "nền tảng", "email": "email", "manual": "ghi nhận thủ công" },
+      "settings": {
+        "title": "Nhận hợp đồng từ đối tác",
+        "important": "Mức «Quan trọng» từ giá trị",
+        "critical": "Mức «Rất quan trọng» từ giá trị",
+        "unit": "triệu đồng",
+        "owner": "Người phụ trách hợp đồng nhận",
+        "ownerNone": "Chưa chọn — quản trị công ty xử lý",
+        "save": "Lưu",
+        "issue": {
+          "order": "Ngưỡng «Rất quan trọng» phải lớn hơn ngưỡng «Quan trọng».",
+          "negative": "Giá trị không được âm."
+        }
+      },
+      "inbox": {
+        "title": "Hợp đồng đối tác gửi",
+        "empty": "Chưa có hợp đồng nào do đối tác gửi tới.",
+        "error": "Không tải được hộp thư. Thử tải lại trang.",
+        "open": "Mở"
+      },
+      "invite": {
+        "title": "{{sender}} muốn gửi hợp đồng cho bạn",
+        "first": "Lần đầu · {{n}} hợp đồng đang chờ",
+        "accept": "Nhận HĐ từ công ty này",
+        "block": "Chặn"
+      },
+      "in": {
+        "pending": "Chờ công ty bạn xác nhận · hạn {{until}}",
+        "confirmed": "Đã xác nhận",
+        "returned": "Đã trả lại bên gửi",
+        "declined": "Đã từ chối",
+        "reason": "Từ {{sender}} · {{level}}",
+        "reasonRound": "Bản sửa lần {{round}} từ {{sender}} · lần trước: {{prev}}",
+        "yourReason": "Lý do: {{reason}}",
+        "nextOpen": "Mở để Đồng ý / Trả lại / Từ chối",
+        "nextNone": "Đã báo {{sender}} · không cần làm gì thêm"
+      },
+      "out": {
+        "title": "Gửi đối tác xác nhận",
+        "wait": "Chờ {{to}} xác nhận · gửi {{since}}",
+        "waitManual": "Chờ ghi nhận thủ công · {{to}} chưa nhận qua hệ thống",
+        "via": "Vòng {{round}} · gửi qua {{channel}}",
+        "reason": "Lý do: {{reason}}",
+        "confirmed": "{{to}} đã xác nhận",
+        "returned": "{{to}} đã trả lại",
+        "declined": "{{to}} đã từ chối",
+        "expired": "Hết hạn trả lời",
+        "held": "Đang chờ công ty nhận đồng ý kết nối",
+        "heldWhy": "Lần đầu gửi cho {{to}} · hợp đồng sẽ tới khi họ đồng ý",
+        "heldNext": "Không cần làm gì thêm · hoặc gửi qua email",
+        "heldExpired": "Đối tác không nhận — hết hạn",
+        "heldExpiredWhy": "Công ty nhận chưa đồng ý kết nối trong hạn",
+        "closed": "Đã đóng",
+        "nextRecord": "Bấm «Ghi nhận kết quả đối tác» khi có trả lời",
+        "nextOk": "Quy trình đã đi tiếp",
+        "nextFix": "Sửa hợp đồng hoặc gửi qua email",
+        "nextStop": "Quy trình rẽ nhánh Từ chối",
+        "opt": { "confirmed": "Đồng ý", "returned": "Trả lại", "declined": "Từ chối" }
+      },
+      "record": {
+        "button": "Ghi nhận kết quả đối tác",
+        "outcome": "Kết quả",
+        "reason": "Lý do",
+        "byName": "Người đối tác trả lời",
+        "byTitle": "Chức vụ",
+        "evidence": "Bằng chứng (mỗi dòng một tệp / ghi chú)",
+        "evidenceHint": "vd: email-tra-loi.png",
+        "save": "Ghi nhận",
+        "cancel": "Huỷ",
+        "fail": "Không ghi nhận được. Kiểm tra lại rồi thử lần nữa.",
+        "need": {
+          "reason": "Trả lại / Từ chối cần lý do",
+          "byName": "Nhập tên người đối tác trả lời",
+          "evidence": "Kênh thủ công cần ít nhất một bằng chứng"
+        }
+      }
+    }
+  }
+}

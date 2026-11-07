@@ -49,6 +49,7 @@ const REGISTERED: ReadonlySet<string> = new Set([
   "contracts-write",
   "contracts-admin",
   "han-muc-duyet",
+  "contracts-partner-confirm",
   "knowledge-read",
   "knowledge-write",
   "knowledge-admin",

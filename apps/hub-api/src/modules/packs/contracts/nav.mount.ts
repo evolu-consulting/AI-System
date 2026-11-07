@@ -9,26 +9,35 @@ import {
   packAccessInput,
   packActionsFor,
   packNavRegistry,
+  tenantFeatureOn,
 } from "../kit/public";
 
 const KEY = "contracts";
 export const CONTRACTS_APPROVAL_SLOT = "contracts.approval";
+/** CR-124 · q4 · mục «Hợp đồng đối tác gửi» (cap `contracts.partner`): chỉ khi công ty bật tính năng `contracts-partner-confirm`. */
+export const PARTNER_INBOX_CAP = "contracts.partner";
+export const PARTNER_FEATURE = "contracts-partner-confirm";
 
 export function contractsNavSource(
   canRead: (u: AuthUser) => Promise<boolean>,
   runs: PackRunsBridge | undefined,
+  partnerOn: (u: AuthUser) => Promise<boolean> = async () => false,
 ): PackNavSource {
   return {
     pack: KEY,
     async caps(u) {
+      if (u.userKind === "external" || !(await canRead(u))) return [];
+      const out: { cap: string; count: number }[] = [];
+      if (await partnerOn(u)) out.push({ cap: PARTNER_INBOX_CAP, count: 0 });
       const port = runs?.port;
-      if (!port?.inboxOf || u.userKind === "external" || !(await canRead(u))) return [];
+      if (!port?.inboxOf) return out;
       const r = await port.inboxOf(
         { userId: u.userId, tenantId: u.tenantId, role: "member" },
         KEY,
         CONTRACTS_APPROVAL_SLOT,
       );
-      return r.approver ? [{ cap: "contracts.review", count: r.count }] : [];
+      if (r.approver) out.push({ cap: "contracts.review", count: r.count });
+      return out;
     },
   };
 }
@@ -38,5 +47,6 @@ export const mountContractsNav = (view: PackAccessView, runs: PackRunsBridge | u
     contractsNavSource(
       async (u) => packActionsFor(await packAccessInput(view, KEY, u)).includes("read"),
       runs,
+      (u) => tenantFeatureOn(view, PARTNER_FEATURE, u.tenantId),
     ),
   );

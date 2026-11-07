@@ -678,7 +678,12 @@
         "noFlow": "No process is applied to this company yet — ask the platform admin to assign one"
       },
       "empty": "This company has no flows yet. The platform admin assigns flows from the Library.",
-      "col": { "name": "Flow", "trigger": "Starts when", "source": "Source", "status": "Status" },
+      "col": {
+        "name": "Flow",
+        "trigger": "Starts when",
+        "source": "Source",
+        "status": "Status"
+      },
       "withCondition": "with condition",
       "assign": {
         "pick": "Library flow",
@@ -2350,6 +2355,10 @@
       "han-muc-duyet": {
         "name": "Approval limit check",
         "desc": "Automatically compare contract value against the approver's limit"
+      },
+      "contracts-partner-confirm": {
+        "name": "Send contracts to partners for confirmation",
+        "desc": "Send contracts to partner companies for confirmation and receive theirs"
       },
       "knowledge-read": {
         "name": "View knowledge",

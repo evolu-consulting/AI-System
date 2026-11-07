@@ -16,6 +16,33 @@ const schema = z.object({
   nested: z.object({ a: z.string() }).optional(),
 });
 
+describe("CR-124 q4 · node Gửi đối tác xác nhận dùng panel chung từ cổng cấu hình", () => {
+  const port = configPortOf("contracts.partner-send");
+  test("có cổng cấu hình, ô theo chữ nghiệp vụ và không lộ contract_id", () => {
+    expect(port).toBeDefined();
+    const fs = fieldsOf(port as NonNullable<typeof port>);
+    expect(fs.map((f) => f.key)).toEqual([
+      "importance",
+      "send_fields",
+      "reply_days",
+      "message",
+      "partner_tax_code",
+      "partner_email",
+    ]);
+    expect(fs.find((f) => f.key === "importance")).toMatchObject({
+      kind: "enum",
+      label: "Mức quan trọng",
+      options: ["auto", "normal", "important", "critical"],
+    });
+    expect(fs.find((f) => f.key === "reply_days")).toMatchObject({
+      kind: "number",
+      integer: true,
+      label: "Hạn trả lời (ngày)",
+    });
+    expect(hasNodePanel({ key: "contracts.partner-send" } as never)).toBe(true);
+  });
+});
+
 describe("fieldsOf", () => {
   const fs = fieldsOf({
     schema,

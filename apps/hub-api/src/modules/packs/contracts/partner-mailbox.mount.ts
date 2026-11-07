@@ -29,6 +29,7 @@ const PACK = "contracts";
 /** Lô lấy từ hộp thư ⇒ mục HĐ nhận: mức cuối = max(gợi ý A, luật bên nhận theo giá trị) — bên nhận không tin mức A tự khai (FR-08). */
 export function inboxItemsOf(
   rows: Awaited<ReturnType<ReturnType<typeof partnerInboxRepo>["take"]>>,
+  thresholds?: { important: number; critical: number },
 ): InboxItem[] {
   return rows.map((row) => {
     const p = row.payload;
@@ -43,7 +44,10 @@ export function inboxItemsOf(
     return {
       contractId: Bun.randomUUIDv7(),
       row,
-      importance: finalImportance(p.importance_hint, importanceByValue(sharedValueOf(shared))),
+      importance: finalImportance(
+        p.importance_hint,
+        importanceByValue(sharedValueOf(shared), thresholds),
+      ),
       title,
       fields,
       shared,
@@ -57,8 +61,12 @@ export function receiveInbox(db: Db) {
   return (tenantId: string, limit: number): Promise<number> =>
     withPackScope(db, { packKey: PACK, tenantId, userId: null }, async (tx: Tx) => {
       const repo = partnerInboxRepo(tx, tenantId);
-      const items = inboxItemsOf(await repo.take(limit));
-      const n = await repo.insertBatch(items);
+      const s = await repo.settings(); // q4 · ngưỡng mức + người phụ trách theo công ty nhận
+      const items = inboxItemsOf(await repo.take(limit), {
+        important: s.importantMin,
+        critical: s.criticalMin,
+      });
+      const n = await repo.insertBatch(items, s.ownerId);
       await repo.emitReceived(items);
       return n;
     });

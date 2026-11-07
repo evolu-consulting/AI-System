@@ -613,7 +613,13 @@
     },
     "module": {
       "done": "Xong",
-      "exitHint": "Đầu ra: {{label}}"
+      "exitHint": "Đầu ra: {{label}}",
+      "enum": {
+        "auto": "Tự theo giá trị hợp đồng",
+        "normal": "Thường",
+        "important": "Quan trọng",
+        "critical": "Rất quan trọng"
+      }
     },
     "connect": {
       "dragNext": "Kéo sang bước muốn đi tiếp",

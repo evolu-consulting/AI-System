@@ -37,7 +37,14 @@ export function finalImportance(hint: unknown, byRule: Importance): Importance {
 
 export type RouteInfo = { toTenant: string; name: string; verified: boolean; link: string };
 export type ChannelPlan =
-  | { channel: "platform"; toTenant: string; toEmail: null; toName: string; why: null }
+  | {
+      channel: "platform";
+      toTenant: string;
+      toEmail: null;
+      toName: string;
+      why: null;
+      held: boolean;
+    }
   | { channel: "email"; toTenant: null; toEmail: string; toName: string | null; why: string | null }
   | { channel: "manual"; toTenant: null; toEmail: null; toName: string | null; why: string | null };
 
@@ -50,13 +57,15 @@ export function planChannel(
   email: string | null,
   name: string | null,
 ): ChannelPlan {
-  if (route?.link === "accepted") {
+  // q4 · chưa nối nhưng công ty nhận trên nền tảng ⇒ vẫn kênh nền tảng: lần gửi được GIỮ tới khi B chấp nhận nối (hub 0122).
+  if (route && route.link !== "blocked") {
     return {
       channel: "platform",
       toTenant: route.toTenant,
       toEmail: null,
       toName: route.name,
       why: null,
+      held: route.link !== "accepted",
     };
   }
   const why =
