@@ -10,6 +10,10 @@ export type ProfileRow = ProfileCols & {
   ceoName: string | null;
   directorName: string | null;
   memberCount: number;
+  /** CR-124 q2 · danh bạ. */
+  directoryListed: boolean;
+  verifiedAt: Date | null;
+  verifiedByName: string | null;
 };
 
 export type DepartmentRow = {
@@ -28,7 +32,9 @@ export async function readProfileRow(tx: Tx, id: string): Promise<ProfileRow | n
       (select u.display_name from admin.users u where u.id = t.ceo_user_id) as ceo_name,
       (select u.display_name from admin.users u where u.id = t.director_user_id) as director_name,
       (select count(*)::int from admin.users u
-        where u.tenant_id = t.id and u.active and u.kind = 'internal') as member_count
+        where u.tenant_id = t.id and u.active and u.kind = 'internal') as member_count,
+      t.directory_listed, t.directory_verified_at,
+      (select u.display_name from admin.users u where u.id = t.directory_verified_by) as verified_by_name
     from admin.tenants t where t.id = ${id}`)) as unknown as Row[];
   const r = rows[0];
   if (!r) return null;
@@ -46,7 +52,41 @@ export async function readProfileRow(tx: Tx, id: string): Promise<ProfileRow | n
     ceoName: (r.ceo_name as string | null) ?? null,
     directorName: (r.director_name as string | null) ?? null,
     memberCount: Number(r.member_count),
+    directoryListed: r.directory_listed === true,
+    verifiedAt: r.directory_verified_at ? new Date(r.directory_verified_at as string) : null,
+    verifiedByName: (r.verified_by_name as string | null) ?? null,
   };
+}
+
+/** Bật/tắt "cho phép tìm thấy" (cột riêng — không đi qua PATCH hồ sơ) + tăng version như mọi ghi cấu hình công ty. */
+export async function setDirectoryListed(
+  tx: Tx,
+  id: string,
+  listed: boolean,
+  by: string,
+): Promise<void> {
+  await tx
+    .update(tenants)
+    .set({
+      directoryListed: listed,
+      version: sql`${tenants.version} + 1`,
+      updatedAt: sql`now()`,
+      updatedBy: by,
+    })
+    .where(eq(tenants.id, id));
+}
+
+/** Đặt/xoá "Đã xác minh" qua hàm DEFINER (DB chỉ cho phạm vi nền tảng). Trả TRUE khi có đổi. */
+export async function setDirectoryVerified(
+  tx: Tx,
+  id: string,
+  verified: boolean,
+  by: string,
+): Promise<boolean> {
+  const rows = (await tx.execute(
+    sql`select admin.directory_set_verified(${id}::uuid, ${verified}, ${by}::uuid) as ok`,
+  )) as unknown as Row[];
+  return rows[0]?.ok === true;
 }
 
 /** MỘT câu theo tập (không SQL theo hàng): phòng ban + trưởng phòng + số thành viên đang hoạt động. Trần 200. */

@@ -1011,6 +1011,15 @@
       "zalo": "Zalo OA",
       "phones": "Phones"
     },
+    "directory": {
+      "title": "Company directory",
+      "listed": "Allow other companies to find us and send us contracts",
+      "listedWhy": "When off, other companies cannot find you; they can still send by email.",
+      "needProfile": "Fill in the Legal name and Tax code above before turning this on.",
+      "verified": "Verified",
+      "verifiedWhy": "Turn on after checking the tax code with the tax authority.",
+      "verifiedBy": "Verified on {date} by {name}."
+    },
     "company": {
       "card": {
         "info": "Company information",

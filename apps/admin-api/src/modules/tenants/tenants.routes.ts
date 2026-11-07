@@ -2,7 +2,11 @@
 // CR-112: GET /:id mở cho tenant_admin — chỉ tenant mình (cổng `tenantWorkspaceGate` ở app.ts; tenant khác ⇒ 404).
 // Guard gắn theo từng route (không `*`) để không chặn router `/admin/tenants` mount sau.
 import {
+  DirectorySearchQuerySchema,
+  type DirectorySearchResponse,
   TenantCreateRequestSchema,
+  TenantDirectoryListedRequestSchema,
+  TenantDirectoryVerifiedRequestSchema,
   TenantListQuerySchema,
   TenantProfileUpdateRequestSchema,
   TenantUpdateRequestSchema,
@@ -12,6 +16,11 @@ import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib
 import { parseIdParam, parseJson, parseQuery } from "../../lib/http";
 import { requireTenantScope } from "../../lib/tenant-scope";
 import type { TestHooks } from "../../lib/test-hooks";
+import {
+  searchDirectory,
+  setDirectoryListed,
+  setDirectoryVerified,
+} from "./tenants.directory.service";
 import { getTenantProfile, updateTenantProfile } from "./tenants.profile.service";
 import {
   createTenant,
@@ -21,6 +30,17 @@ import {
   type TenantsCall,
   updateTenant,
 } from "./tenants.service";
+
+/** CR-124 q2 · `GET /admin/directory?q=` — danh bạ công ty (admin công ty/nền tảng; chỉ cột công khai, ≤ 20 dòng, loại công ty mình). */
+export function directoryRoutes(d: AuthDeps): Hono<AppVars> {
+  const r = new Hono<AppVars>();
+  r.get("/", requireAuth(d), requireRole("platform_admin", "tenant_admin"), async (c) => {
+    const { q } = parseQuery(c, DirectorySearchQuerySchema);
+    const items = await searchDirectory(d, c.get("scope"), q);
+    return c.json({ items } satisfies DirectorySearchResponse);
+  });
+  return r;
+}
 
 export function tenantsRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> {
   const r = new Hono<AppVars>();
@@ -54,6 +74,21 @@ export function tenantsRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars
     const id = parseIdParam(c);
     const input = await parseJson(c, TenantProfileUpdateRequestSchema);
     return c.json(await updateTenantProfile({ ...call(c), actor: c.get("actor") }, id, input));
+  });
+  // CR-124 q2 · danh bạ: công ty tự bật/tắt (service chỉ cho tenant_admin của chính công ty); nền tảng đặt "Đã xác minh".
+  r.put("/:id/directory", ...admins, async (c) => {
+    const id = parseIdParam(c);
+    const input = await parseJson(c, TenantDirectoryListedRequestSchema);
+    return c.json(
+      await setDirectoryListed({ ...call(c), actor: c.get("actor") }, id, input.listed),
+    );
+  });
+  r.put("/:id/directory-verified", ...platform, async (c) => {
+    const id = parseIdParam(c);
+    const input = await parseJson(c, TenantDirectoryVerifiedRequestSchema);
+    return c.json(
+      await setDirectoryVerified({ ...call(c), actor: c.get("actor") }, id, input.verified),
+    );
   });
   r.patch("/:id", ...platform, async (c) => {
     const id = parseIdParam(c);

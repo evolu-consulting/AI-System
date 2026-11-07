@@ -87,6 +87,7 @@ export function extOrgError(code: ExternalOrgErrorCode, details?: unknown): AppE
 
 const PROFILE_MESSAGES: Record<TenantProfileErrorCode, string> = {
   LEADER_NOT_MEMBER: "CEO and director must be active members of this company",
+  DIRECTORY_NEEDS_PROFILE: "Legal name and tax code are required to be listed in the directory",
 };
 
 /** CR-121 · mã lỗi hồ sơ công ty (khối riêng `TENANT_PROFILE_ERRORS`). `details.fields` = trường sai. */

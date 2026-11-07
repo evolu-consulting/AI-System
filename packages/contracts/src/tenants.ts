@@ -168,6 +168,8 @@ export type TenantDetail = z.infer<typeof TenantDetailSchema>;
 export const TENANT_PROFILE_ERRORS = {
   /** CEO/Giám đốc phải là thành viên đang hoạt động của chính công ty này. */
   LEADER_NOT_MEMBER: 422,
+  /** CR-124 q2 · bật danh bạ khi chưa có tên pháp lý hoặc mã số thuế. */
+  DIRECTORY_NEEDS_PROFILE: 422,
 } as const satisfies Record<string, 422>;
 export type TenantProfileErrorCode = keyof typeof TENANT_PROFILE_ERRORS;
 
@@ -213,8 +215,40 @@ export const TenantCompanyProfileSchema = z.strictObject({
   /** Số thành viên đang hoạt động (cùng nguồn "Thành viên"). */
   member_count: CountSchema,
   departments: z.array(TenantDepartmentSchema),
+  /** CR-124 q2 · công ty cho phép công ty khác tìm thấy trong danh bạ (mặc định tắt). */
+  directory_listed: z.boolean(),
+  /** CR-124 q2 · dấu "Đã xác minh" (quản trị nền tảng đặt); null = chưa xác minh. */
+  directory_verified: z.strictObject({ at: z.string(), by_name: z.string().nullable() }).nullable(),
 });
 export type TenantCompanyProfile = z.infer<typeof TenantCompanyProfileSchema>;
+
+/** `PUT /admin/tenants/:id/directory` — quản trị công ty bật/tắt "cho phép tìm thấy" (cần đã có tên pháp lý + MST). */
+export const TenantDirectoryListedRequestSchema = z.strictObject({ listed: z.boolean() });
+export type TenantDirectoryListedRequest = z.infer<typeof TenantDirectoryListedRequestSchema>;
+
+/** `PUT /admin/tenants/:id/directory-verified` — quản trị nền tảng đặt/xoá dấu "Đã xác minh". */
+export const TenantDirectoryVerifiedRequestSchema = z.strictObject({ verified: z.boolean() });
+export type TenantDirectoryVerifiedRequest = z.infer<typeof TenantDirectoryVerifiedRequestSchema>;
+
+/** `GET /admin/directory?q=` — tìm công ty trong danh bạ: MST đúng (10 số) hoặc tên ≥ 3 ký tự. */
+export const DirectorySearchQuerySchema = z.strictObject({ q: z.string().trim().min(3).max(100) });
+
+/**
+ * Một dòng danh bạ — CHỈ thông tin công khai (FLOW4-FR-04): không người dùng/liên hệ/số liệu. `tenant_id` là mã để gửi
+ * (uuid không bí mật). Test hợp đồng khoá đúng bộ cột này.
+ */
+export const DirectoryEntrySchema = z.strictObject({
+  tenant_id: UuidSchema,
+  legal_name: z.string(),
+  tax_code: z.string().nullable(),
+  address: z.string().nullable(),
+  verified: z.boolean(),
+});
+export type DirectoryEntry = z.infer<typeof DirectoryEntrySchema>;
+export const DirectorySearchResponseSchema = z.strictObject({
+  items: z.array(DirectoryEntrySchema).max(20),
+});
+export type DirectorySearchResponse = z.infer<typeof DirectorySearchResponseSchema>;
 
 /** Gửi trường nào sửa trường đó; `null`/chuỗi rỗng = xoá. Không có `name` (tên công ty sửa qua `PATCH /admin/tenants/:id`). */
 export const TenantProfileUpdateRequestSchema = z.strictObject({

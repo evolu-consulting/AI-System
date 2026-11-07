@@ -54,8 +54,14 @@ async function profileView(tx: Tx, id: string): Promise<TenantCompanyProfile> {
     director: person(p.directorUserId, p.directorName),
     member_count: p.memberCount,
     departments,
+    directory_listed: p.directoryListed,
+    directory_verified: p.verifiedAt
+      ? { at: p.verifiedAt.toISOString(), by_name: p.verifiedByName }
+      : null,
   };
 }
+
+export { profileView };
 
 /** Người gọi (vai + công ty) — service tự kiểm quyền, không chỉ dựa vào route (CR-121 F-4). */
 export type ProfileActor = { userId: string; role: Role; tenantId: string };

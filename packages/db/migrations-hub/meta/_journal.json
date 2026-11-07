@@ -708,6 +708,13 @@
       "when": 1806600000000,
       "tag": "0117_partner_mailbox",
       "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1806700000000,
+      "tag": "0118_partner_links_fn",
+      "breakpoints": true
     }
   ]
 }

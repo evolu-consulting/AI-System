@@ -77,6 +77,23 @@ export function useUpdateTenantProfile(id: string) {
   });
 }
 
+/** CR-124 q2 · công tắc danh bạ: `listed` (quản trị công ty) hoặc `verified` (quản trị nền tảng); trả hồ sơ mới. */
+export function useSetDirectory(id: string, kind: "listed" | "verified") {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (value: boolean) =>
+      api<TenantCompanyProfile>(
+        `/admin/tenants/${id}/${kind === "listed" ? "directory" : "directory-verified"}`,
+        { method: "PUT", body: { [kind]: value } },
+      ),
+    onSuccess: (res) => {
+      qc.setQueryData(PROFILE_KEY(id), res);
+      void qc.invalidateQueries({ queryKey: KEYS.detail(id) });
+      void qc.invalidateQueries({ queryKey: ["audit"] });
+    },
+  });
+}
+
 /** CR-121 · thành viên nội bộ đang hoạt động của công ty để chọn CEO/Giám đốc (≤ 200, theo tên). */
 export function useTenantMembers(id: string, enabled: boolean) {
   return useQuery({

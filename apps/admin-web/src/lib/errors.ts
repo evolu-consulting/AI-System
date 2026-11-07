@@ -122,6 +122,7 @@ const STATIC_KEYS: Partial<Record<string, string>> = {
   TENANT_REQUIRED: "common.tenantPicker.required",
   PLATFORM_TENANT_LOCKED: "errors.platformTenantLocked",
   LEADER_NOT_MEMBER: "tenants.error.leaderNotMember", // CR-121 (422 CEO/Giám đốc không thuộc công ty)
+  DIRECTORY_NEEDS_PROFILE: "tenants.directory.needProfile", // CR-124 q2 (422 bật danh bạ khi thiếu tên pháp lý/MST)
   EXTERNAL_ORG_INACTIVE: "errors.externalOrgInactive",
   USER_DEACTIVATED: "errors.userDeactivated",
   NAME_TAKEN: "partners.error.nameTaken",

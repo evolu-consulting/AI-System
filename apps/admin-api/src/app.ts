@@ -47,7 +47,7 @@ import { quotaBannerRoutes } from "./modules/quotas/quotas.banner";
 import { startQuotaListener } from "./modules/quotas/quotas.listener";
 import { quotasRoutes } from "./modules/quotas/quotas.routes";
 import { secretsRoutes } from "./modules/secrets/secrets.routes";
-import { tenantsRoutes } from "./modules/tenants/tenants.routes";
+import { directoryRoutes, tenantsRoutes } from "./modules/tenants/tenants.routes";
 import { exportRoutes, importRoutes } from "./modules/transfer/transfer.routes";
 import { usageRoutes } from "./modules/usage/usage.routes";
 import { usageAnalyticsRoutes } from "./modules/usage-analytics/analytics.routes";
@@ -164,6 +164,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
       ...(deps.dailyCounter ? { counter: deps.dailyCounter } : {}),
     }),
   ); // tenant-quotas
+  app.route("/admin/directory", directoryRoutes(ctx));
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
   app.route("/admin/tenants", packsRoutes({ ...ctx, hooks })); // N1 · PK-FR-05
   app.route("/admin/tenants", tenantDefaultAppRoutes(ctx)); // tenant-default-app

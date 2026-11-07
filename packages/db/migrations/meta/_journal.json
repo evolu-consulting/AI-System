@@ -267,6 +267,13 @@
       "when": 1803400000000,
       "tag": "0037_feature_app_col",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1803500000000,
+      "tag": "0038_tenant_directory",
+      "breakpoints": true
     }
   ]
 }

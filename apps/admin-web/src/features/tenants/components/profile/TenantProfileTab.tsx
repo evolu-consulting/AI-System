@@ -13,6 +13,7 @@ import { useTr } from "@/lib/use-translate";
 import { useTenantCompanyProfile, useTenantMembers, useUpdateTenantProfile } from "../../api";
 import { type ProfileTextField, validateField } from "../../lib/profile-fields";
 import { TenantProfileCard } from "../TenantProfileCard";
+import { DirectoryCard } from "./DirectoryCard";
 import { InlineField } from "./InlineField";
 import { PersonField } from "./PersonField";
 
@@ -188,6 +189,7 @@ export function TenantProfileTab({ tenant, canEdit, onSaveName }: Props) {
           </Link>
         </CardContent>
       </Card>
+      <DirectoryCard tenantId={tenant.id} profile={p} isPlatform={canEdit} />
       <TenantProfileCard profile={tenant.profile} />
     </div>
   );

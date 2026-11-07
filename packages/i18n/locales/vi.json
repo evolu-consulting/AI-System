@@ -1016,6 +1016,15 @@
       "zalo": "Zalo OA",
       "phones": "Điện thoại"
     },
+    "directory": {
+      "title": "Danh bạ công ty",
+      "listed": "Cho phép công ty khác tìm thấy và gửi hợp đồng cho chúng tôi",
+      "listedWhy": "Khi tắt, công ty khác không tìm thấy bạn; họ vẫn gửi được qua email.",
+      "needProfile": "Điền Tên pháp lý và Mã số thuế ở trên trước khi bật.",
+      "verified": "Đã xác minh",
+      "verifiedWhy": "Bật sau khi đối chiếu mã số thuế với cơ quan thuế.",
+      "verifiedBy": "Xác minh ngày {date} bởi {name}."
+    },
     "company": {
       "card": {
         "info": "Thông tin công ty",

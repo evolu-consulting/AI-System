@@ -1,7 +1,5 @@
-// ADM-NFR-06, ADM-NFR-07, ADM-FR-63 · schema `admin` M1 (spec M1 §4): tenants, users, refresh_tokens, features.
-// ADM-FR-62 · M3: `users_tenant_id_uq`; 4 bảng quyền ở `schema/permissions.ts`.
-// ADM-FR-51 · M4: `tenants.updated_by`, `users.updated_by` (M4-R17); 3 bảng vận hành ở `schema/ops.ts`.
-// ADM-FR-10, ADM-FR-20, ADM-FR-30, ADM-FR-31, ADM-FR-50 · + 6 bảng catalog M2 và `features.updated_by` (spec M2 §4).
+// ADM-NFR-06/07, ADM-FR-63 · schema `admin` M1 (spec M1 §4): tenants, users, refresh_tokens, features. M3: `users_tenant_id_uq`, quyền ở `permissions.ts`.
+// ADM-FR-51 · M4: `updated_by` (M4-R17), vận hành ở `ops.ts`. ADM-FR-10/20/30/31/50 · + 6 bảng catalog M2 và `features.updated_by` (spec M2 §4).
 // RLS, policy, role `admin_api`, hàm SECURITY DEFINER nằm ở migration custom 0002_admin_rls (không khai ở đây).
 import { sql } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
@@ -68,6 +66,9 @@ export const tenants = admin.table(
     contactPhone: text("contact_phone"),
     ceoUserId: uuid("ceo_user_id"),
     directorUserId: uuid("director_user_id"),
+    directoryListed: boolean("directory_listed").notNull().default(false),
+    directoryVerifiedAt: tsz("directory_verified_at"),
+    directoryVerifiedBy: uuid("directory_verified_by"),
   },
   (t) => [
     uniqueIndex("tenants_key_uq").on(t.key),
