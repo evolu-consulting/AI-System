@@ -6,6 +6,7 @@ import {
   type FlowDefIssue,
   type FlowTrigger,
   flowDefIssues,
+  type ProcessInputDef,
   parseFlowDef,
 } from "@ai/contracts/hub-admin";
 import type { StageDraft } from "./draft-types";
@@ -24,6 +25,29 @@ export const hasTrigger = (def: unknown): def is { trigger: FlowTrigger; app: st
   def !== null &&
   "trigger" in def &&
   typeof (def as { trigger?: unknown }).trigger === "object";
+
+/**
+ * CR-122 p17 · flow có `trigger`: lượt chạy mang khoá bản ghi của sự kiện (`contract_id`) làm input. Khai input của def phải CÓ khoá đó
+ * (bộ chọn nguồn + kiểm "nguồn có thật" đọc từ đây): khoá cũ cùng chính tả `-`/`_` (`contract-id`, dữ liệu trước hub 0112) đổi về khoá
+ * bản ghi; thiếu hẳn ⇒ thêm (không bắt buộc). Khoá khác giữ nguyên. Thuần.
+ */
+export function healFlowInputs(
+  inputs: readonly ProcessInputDef[],
+  def: { app?: string | null; trigger?: { event: string } | null },
+): ProcessInputDef[] {
+  const rec = eventOf(def.app ?? "", def.trigger?.event ?? "")?.record;
+  if (!rec) return [...inputs];
+  const norm = (k: string) => k.replaceAll("-", "_");
+  const has = inputs.some((i) => i.key === rec.key);
+  let renamed = has;
+  const out = inputs.map((i) => {
+    if (renamed || i.key === rec.key || norm(i.key) !== rec.key) return i;
+    renamed = true;
+    return { ...i, key: rec.key };
+  });
+  if (renamed) return out;
+  return [...out, { key: rec.key, label: rec.label.vi, type: "text", required: false }];
+}
 
 export type FlowMeta = {
   key: string;

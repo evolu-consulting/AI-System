@@ -45,7 +45,7 @@ import {
 } from "../lib/company-copy";
 import { type DefDraft, toDraft, withLiveErrors } from "../lib/def-form";
 import { processErrorSpec } from "../lib/errors";
-import { hasTrigger } from "../lib/flow-def";
+import { hasTrigger, healFlowInputs } from "../lib/flow-def";
 import { notFoundBack } from "../lib/route-guard";
 import { normalizeSlotStages } from "../lib/slot-canvas";
 import type { LibraryDef } from "../library-api";
@@ -74,7 +74,10 @@ function useLoadedDef(
     const key = data?.slot || data?.source_template_id ? `${data.id}:${data.version}` : data?.id;
     if (data && loaded.current !== key) {
       loaded.current = key ?? null;
-      d.load(toDraft(data));
+      // CR-122 p17 · flow theo sự kiện: input def luôn có khoá bản ghi của sự kiện (contract_id) để bộ chọn nguồn + kiểm đọc được.
+      d.load(
+        toDraft(hasTrigger(data) ? { ...data, inputs: healFlowInputs(data.inputs, data) } : data),
+      );
       setVersion(data.version);
     }
   }, [data]);

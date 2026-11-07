@@ -2,7 +2,7 @@
 // rồi xong bước ngay (không chờ người). Tiêu đề/nội dung là mẫu có biến `{khoá-input}` lấy từ input run. Không import `./processes`.
 import { z } from "zod";
 import { StageGroupKeySchema } from "./process-group-refs";
-import { SourceKeySchema } from "./sources";
+import { InputKeySchema } from "./sources";
 
 /** Chuông luôn có (thông báo trong app); `email` = gửi thêm mail theo tùy chọn của người nhận. */
 export const NOTIFY_CHANNELS = ["bell", "email"] as const;
@@ -15,7 +15,7 @@ export const NOTIFY_BODY_MAX = 2000;
 export const NotifyToSchema = z.discriminatedUnion("who", [
   z.strictObject({ who: z.literal("starter") }),
   z.strictObject({ who: z.literal("group"), group_key: StageGroupKeySchema }),
-  z.strictObject({ who: z.literal("input_user"), input: SourceKeySchema }),
+  z.strictObject({ who: z.literal("input_user"), input: InputKeySchema }),
 ]);
 export type NotifyTo = z.infer<typeof NotifyToSchema>;
 
