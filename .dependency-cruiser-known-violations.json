@@ -348,7 +348,17 @@
     "rule": {
       "severity": "error",
       "name": "no-circular"
-    }
+    },
+    "cycle": [
+      {
+        "name": "apps/dlc-workspace/src/deploy.routes.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "apps/dlc-workspace/src/app.ts",
+        "dependencyTypes": ["local", "type-only", "import"]
+      }
+    ]
   },
   {
     "type": "cycle",
@@ -357,7 +367,17 @@
     "rule": {
       "severity": "error",
       "name": "no-circular"
-    }
+    },
+    "cycle": [
+      {
+        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-engine.usecase.ts",
+        "dependencyTypes": ["local", "type-only", "import"]
+      },
+      {
+        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-engine-facts.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
   },
   {
     "type": "cycle",
@@ -366,7 +386,17 @@
     "rule": {
       "severity": "error",
       "name": "no-circular"
-    }
+    },
+    "cycle": [
+      {
+        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-flow.usecase.ts",
+        "dependencyTypes": ["local", "type-only", "import"]
+      },
+      {
+        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-engine.ports.ts",
+        "dependencyTypes": ["local", "type-only", "import"]
+      }
+    ]
   },
   {
     "type": "cycle",
@@ -375,7 +405,17 @@
     "rule": {
       "severity": "error",
       "name": "no-circular"
-    }
+    },
+    "cycle": [
+      {
+        "name": "apps/hub-api/src/modules/packs/contracts/application/flow-submit.usecase.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "apps/hub-api/src/modules/packs/contracts/application/approval.usecase.ts",
+        "dependencyTypes": ["local", "type-only", "import"]
+      }
+    ]
   },
   {
     "type": "cycle",
@@ -384,7 +424,17 @@
     "rule": {
       "severity": "error",
       "name": "no-circular"
-    }
+    },
+    "cycle": [
+      {
+        "name": "apps/hub-api/src/modules/processes/runs/launcher.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "apps/hub-api/src/modules/processes/runs/launcher-batch.ts",
+        "dependencyTypes": ["local", "import"]
+      }
+    ]
   },
   {
     "type": "cycle",
@@ -393,7 +443,17 @@
     "rule": {
       "severity": "error",
       "name": "no-circular"
-    }
+    },
+    "cycle": [
+      {
+        "name": "tests/acceptance/P-d/d1/_count.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "tests/acceptance/P-d/_support/pd.ts",
+        "dependencyTypes": ["local", "type-only", "import"]
+      }
+    ]
   },
   {
     "type": "cycle",
@@ -402,7 +462,17 @@
     "rule": {
       "severity": "warn",
       "name": "no-circular-legacy"
-    }
+    },
+    "cycle": [
+      {
+        "name": "apps/workspace-web/src/features/partners/lib/contacts.ts",
+        "dependencyTypes": ["local", "import"]
+      },
+      {
+        "name": "apps/workspace-web/src/features/partners/api.ts",
+        "dependencyTypes": ["local", "type-only", "import"]
+      }
+    ]
   },
   {
     "type": "dependency",

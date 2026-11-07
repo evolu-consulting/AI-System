@@ -98,3 +98,20 @@ describe("rebase tự giải baseline", () => {
     expect(rebaseResolvingLock(git, "platform/gd0", () => false).ok).toBe(false);
   });
 });
+
+describe("baseline giữ mọi trường của depcruise", () => {
+  const cyc = (via: string): BaselineEntry => ({
+    type: "cycle",
+    from: "a.ts",
+    to: "b.ts",
+    rule: { severity: "error", name: "no-circular" },
+    cycle: [{ name: via, dependencyTypes: ["import"] }],
+  });
+  test("mục cycle giữ nguyên đường vòng, không bị cắt trường", () => {
+    const out = normalizeBaseline([cyc("c.ts")]);
+    expect(out[0]?.cycle).toEqual([{ name: "c.ts", dependencyTypes: ["import"] }]);
+  });
+  test("hai vòng khác đường đi không bị gộp làm một", () => {
+    expect(normalizeBaseline([cyc("c.ts"), cyc("d.ts")])).toHaveLength(2);
+  });
+});

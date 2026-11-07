@@ -8,23 +8,27 @@ export type BaselineEntry = {
   from: string;
   to: string;
   rule: { severity: string; name: string };
+  /** Mục `type: "cycle"` mang đường vòng; MỌI trường khác của depcruise phải được giữ nguyên (không được bỏ). */
+  [extra: string]: unknown;
 };
 
 const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
-const keyOf = (e: BaselineEntry): string => `${e.rule.name}\0${e.from}\0${e.to}\0${e.type}`;
+/** Khoá nhận diện = luật, from, to, type + toàn bộ trường lạ (vd `cycle`) ⇒ hai mục khác đường vòng không bị gộp. */
+const keyOf = (e: BaselineEntry): string => {
+  const { type, from, to, rule, ...extra } = e;
+  return `${rule.name}\0${from}\0${to}\0${type}\0${JSON.stringify(extra)}`;
+};
 
-/** Sắp theo (luật, from, to, type) bằng so sánh điểm mã (không phụ thuộc locale), bỏ mục trùng, đặt lại thứ tự khoá. */
+/** Sắp theo khoá bằng so sánh điểm mã (không phụ thuộc locale), bỏ mục trùng, khoá cố định đứng trước; KHÔNG bỏ trường nào của mục. */
 export function normalizeBaseline(entries: readonly BaselineEntry[]): BaselineEntry[] {
   const seen = new Map<string, BaselineEntry>();
   for (const e of entries) seen.set(keyOf(e), e);
   return [...seen.values()]
     .sort((a, b) => cmp(keyOf(a), keyOf(b)))
-    .map((e) => ({
-      type: e.type,
-      from: e.from,
-      to: e.to,
-      rule: { severity: e.rule.severity, name: e.rule.name },
-    }));
+    .map((e) => {
+      const { type, from, to, rule, ...extra } = e;
+      return { type, from, to, rule: { ...rule }, ...extra };
+    });
 }
 
 /** Nội dung file: JSON 2 dấu cách + xuống dòng cuối, đã chuẩn hoá. */
