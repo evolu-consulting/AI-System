@@ -4,6 +4,7 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { type OutcomeInput, type OutcomeResult, withPackRoleInTx } from "../../kit/public";
+import { FLOW_STARTING } from "../application/contract-flow.ports";
 import {
   FALLBACK_REASON,
   type Importance,
@@ -30,12 +31,21 @@ export const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
 
 export type InboxItem = {
   contractId: string;
+  /** Lượt duyệt (`contracts.approvals`) của HĐ nhận: thẻ duyệt của quy trình nhận hiện ở trang HĐ như HĐ gửi duyệt (spec §8c). */
+  approvalId: string;
   row: TakenRow;
   importance: Importance;
   title: string;
   fields: Record<string, { value: unknown }>;
   shared: Record<string, unknown>;
   message: string | null;
+};
+
+/** Lượt duyệt của HĐ nhận khi flow nhận kết thúc: Đồng ý ⇒ done, Từ chối ⇒ rejected, Trả lại ⇒ cancelled (như `APPROVAL_STATUS_OF`). */
+const APPROVAL_STATUS_OF_RECEIVED: Record<PartnerOutcome, "done" | "rejected" | "cancelled"> = {
+  confirmed: "done",
+  declined: "rejected",
+  returned: "cancelled",
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -92,6 +102,7 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
       const j = JSON.stringify(
         items.map((i) => ({
           contract_id: i.contractId,
+          approval_id: i.approvalId,
           mailbox_id: i.row.id,
           title: i.title,
           fields: i.fields,
@@ -109,15 +120,19 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
         })),
       );
       const [r] = await tx.execute<{ n: number }>(sql`with src as (
-          select * from jsonb_to_recordset(${j}::jsonb) as x(contract_id uuid, mailbox_id uuid, title text, fields jsonb,
+          select * from jsonb_to_recordset(${j}::jsonb) as x(contract_id uuid, approval_id uuid, mailbox_id uuid, title text, fields jsonb,
             sender_name text, sender_tax_code text, sender_verified boolean, round int, prev_reason text, importance text,
             message text, shared jsonb, file_ref text, pdf_sha256 text, expires_at timestamptz)),
         fresh as (select s.* from src s
           where not exists (select 1 from contracts.partner_inbox p where p.tenant_id = ${tid}::uuid and p.mailbox_id = s.mailbox_id)),
         c as (insert into contracts.contracts (id, tenant_id, kind, doc_type, source, title, status, created_by,
-            owner_user_id, fields)
+            owner_user_id, run_id, fields)
           select f.contract_id, ${tid}::uuid, 'contract', 'contract', 'partner_inbox', f.title, 'needs_review',
-            ${SYSTEM_USER}::uuid, ${ownerId}::uuid, f.fields from fresh f returning id),
+            ${SYSTEM_USER}::uuid, ${ownerId}::uuid, f.approval_id, f.fields from fresh f returning id),
+        -- Lượt duyệt chờ bộ điều phối mở quy trình nhận (như HĐ gửi duyệt: holdForFlow); OutcomeHandler.launched gắn run vào đúng dòng này.
+        ap as (insert into contracts.approvals (id, tenant_id, contract_id, status, started_by, mode, feedback)
+          select f.approval_id, ${tid}::uuid, f.contract_id, 'level1', ${SYSTEM_USER}::uuid, 'engine', ${FLOW_STARTING}
+          from fresh f join c on c.id = f.contract_id returning 1),
         i as (insert into contracts.partner_inbox (tenant_id, contract_id, mailbox_id, sender_name, sender_tax_code,
             sender_verified, round, prev_reason, importance, message, shared, file_ref, pdf_sha256, expires_at)
           select ${tid}::uuid, f.contract_id, f.mailbox_id, f.sender_name, f.sender_tax_code, f.sender_verified, f.round,
@@ -190,7 +205,10 @@ export async function applyReceivedOutcome(tx: Tx, i: OutcomeInput): Promise<Out
       sql`select hub.partner_reply(${f.mailbox_id}::uuid, ${o}, ${reason}, 'receiver_flow', null)`,
     );
     await tx.execute(sql`with p as (update contracts.partner_inbox set status = ${o}, reason = ${reason}, replied_at = now()
-        where tenant_id = ${tid}::uuid and contract_id = ${i.ref}::uuid returning contract_id)
+        where tenant_id = ${tid}::uuid and contract_id = ${i.ref}::uuid returning contract_id),
+      ap as (update contracts.approvals x set status = ${APPROVAL_STATUS_OF_RECEIVED[o]}, engine_run_id = ${i.runId}::uuid,
+          decided_by = ${i.actorId}::uuid, decided_at = now(), updated_at = now()
+        from p where x.tenant_id = ${tid}::uuid and x.contract_id = p.contract_id and x.status = 'level1' returning 1)
       update contracts.contracts c set status = ${INBOX_CONTRACT_STATUS[o]},
         confirmed_at = case when ${o === "confirmed"}::boolean then now() else c.confirmed_at end,
         version = c.version + 1, updated_at = now()

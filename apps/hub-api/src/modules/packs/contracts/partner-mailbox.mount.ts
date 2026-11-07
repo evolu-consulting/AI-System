@@ -43,6 +43,7 @@ export function inboxItemsOf(
       typeof p.title === "string" && p.title ? p.title : `Hợp đồng từ ${row.senderName}`;
     return {
       contractId: Bun.randomUUIDv7(),
+      approvalId: Bun.randomUUIDv7(),
       row,
       importance: finalImportance(
         p.importance_hint,

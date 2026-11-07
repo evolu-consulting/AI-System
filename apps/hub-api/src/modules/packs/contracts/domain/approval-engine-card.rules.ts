@@ -1,4 +1,4 @@
-﻿// contract-flow S3b · luật thuần (lớp 1) của thẻ duyệt HĐ chạy trên engine: dòng thời gian stage của engine (`stepsView`) ⇒ các bước
+// contract-flow S3b · luật thuần (lớp 1) của thẻ duyệt HĐ chạy trên engine: dòng thời gian stage của engine (`stepsView`) ⇒ các bước
 // người dùng của mẫu chụp (bỏ stage `route`/`finalize`), bước đang mở + task + `can_act`, `finalizes_on_approve`, lý do bị chặn;
 // và kế hoạch cho hành động (Đạt / Trả lại / Từ chối / Đọc lại) trước khi gọi engine. Domain chỉ import builtin (ADR-0023): kiểu
 // vào là cấu trúc khớp `PackStepsView` của kit.
@@ -297,6 +297,7 @@ export function engineCardView(i: EngineCardInput) {
   const attention = attentionOf(i);
   return {
     mode: "engine" as const,
+    from_run: i.flow.length === 0 && i.sv != null,
     run_id: i.approval.id,
     /** CR-121 F-2 · id lượt chạy trên engine (`hub.process_runs`) — KHÁC `run_id` (= id lượt duyệt của gói); dùng cho `/process-runs/:id/detail`. */
     engine_run_id: i.approval.engineRunId ?? null,
@@ -353,5 +354,8 @@ export function planEngineAct(
     return { kind: "pass", taskId: task.id, finalizes: card.finalizes_on_approve };
   if (i.action === "reject") return { kind: "reject", taskId: task.id };
   if (i.action === "redo") return { kind: "redo", taskId: task.id, reextract: i.hasSource };
-  return open.idx === 0 ? err("APPROVAL_NOT_OPEN") : { kind: "fail_back", taskId: task.id };
+  // Bước 0 của thẻ máy cũ là bước soạn (không có nơi để trả về); với lượt flow theo sự kiện bước 0 là stage thật ⇒ Trả lại được.
+  return open.idx === 0 && !card.from_run
+    ? err("APPROVAL_NOT_OPEN")
+    : { kind: "fail_back", taskId: task.id };
 }

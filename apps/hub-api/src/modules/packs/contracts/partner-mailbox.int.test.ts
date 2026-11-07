@@ -126,6 +126,11 @@ describe("CR-124 q3 · gửi → nhận → trả lời", () => {
     const [c] =
       await o`select source, status, tenant_id::text as t from contracts.contracts where id = ${rows[0]?.id as string}::uuid`;
     expect(c).toMatchObject({ source: "partner_inbox", status: "needs_review", t: B });
+    // Thẻ duyệt: HĐ nhận có lượt duyệt chờ quy trình nhận (người duyệt của B quyết trên trang HĐ như HĐ gửi duyệt).
+    const [ap] =
+      await o`select a.status, a.mode, a.feedback, a.engine_run_id from contracts.approvals a
+      join contracts.contracts k on k.run_id = a.id and k.tenant_id = a.tenant_id where k.id = ${rows[0]?.id as string}::uuid`;
+    expect(ap).toMatchObject({ status: "level1", mode: "engine", engine_run_id: null });
     const ev =
       await o`select ref, tenant_id::text as t from hub.flow_events where event = 'contract.received'`;
     expect(ev).toHaveLength(1);
@@ -152,7 +157,27 @@ describe("CR-124 q3 · gửi → nhận → trả lời", () => {
     };
     const apply = () =>
       withHubScope(db, { kind: "system" }, (tx) => contractsOutcomeHandler().apply(tx, input));
+    // Bộ điều phối mở lượt flow nhận ⇒ `launched` gắn run vào thẻ duyệt của HĐ nhận (như contract.submitted).
+    const launched = await withHubScope(
+      db,
+      { kind: "system" },
+      (tx) =>
+        contractsOutcomeHandler().launched?.(tx, {
+          tenantId: B,
+          runId: input.runId,
+          event: input.event,
+          ref: input.ref,
+        }) ?? Promise.resolve(false),
+    );
+    expect(launched).toBe(true);
+    const [att] = await o`select a.engine_run_id::text as r, a.feedback from contracts.approvals a
+      join contracts.contracts k on k.run_id = a.id where k.id = ${input.ref}::uuid`;
+    expect(att).toMatchObject({ r: input.runId, feedback: null });
     expect(await apply()).toBe("applied");
+    const [done] =
+      await o`select a.status from contracts.approvals a join contracts.contracts k on k.run_id = a.id
+      where k.id = ${input.ref}::uuid`;
+    expect(done?.status).toBe("cancelled"); // Trả lại ⇒ lượt duyệt của HĐ nhận đóng
     expect(await apply()).toBe("already_applied");
     const st = await o`select status, reason from contracts.partner_inbox where tenant_id = ${B}`;
     expect(st[0]?.status).toBe("returned");

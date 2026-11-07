@@ -32,6 +32,15 @@ Trạng thái gộp: chưa gộp
 #### Yêu cầu: Chuỗi giao diện của app Hợp đồng không mất khi thêm mục «Hợp đồng đối tác gửi»
 Tệp bản dịch `partner` gộp sâu vào nhánh `nav` có sẵn, không ghi đè; menu và nút của Sổ Hợp Tác vẫn hiện chữ.
 - Kịch bản: khi nạp bản dịch thì `nav.partner-inbox` có và `nav.overview`, `approval.confirmSave` vẫn còn [test: packages/i18n/src/contracts-locales.test.ts » tệp `partner` gộp SÂU]
-
+#### Yêu cầu: Người duyệt bước ĐẦU của flow theo sự kiện có nút Đạt / Trả lại / Từ chối
+Thẻ duyệt dựng từ lượt flow theo sự kiện (`from_run`): bước 0 là stage thật (vd «Giám đốc duyệt»), không phải bước soạn «Gửi duyệt» của máy cũ. Người duyệt thấy Đạt/Trả lại/Từ chối; nhân viên không còn thấy «Bản nháp» sau khi đã gửi; Trả lại được ở bước 0.
+- Kịch bản: khi thẻ có from_run và bước 0 đang mở thì người có quyền thấy Đạt + Trả lại + Từ chối, không «Xác nhận và lưu» [test: apps/workspace-web/src/features/contract-approval/lib/engine-card.from-run.test.ts » from_run ⇒ Đạt + Trả lại + Từ chối, không «Xác nhận và lưu»]
+- Kịch bản: khi lượt flow có stage Duyệt ở bước 0 thì server đánh dấu from_run, cho người duyệt task và cho Trả lại [test: apps/hub-api/src/modules/packs/contracts/domain/approval-engine-card.flow.rules.test.ts » Trả lại được ở bước 0 của lượt flow]
+#### Yêu cầu: HĐ nhận từ đối tác có thẻ duyệt để người duyệt của bên nhận quyết
+HĐ nhận có lượt duyệt chờ quy trình nhận; bộ điều phối gắn run vào thẻ; flow nhận kết thúc thì lượt duyệt đóng theo kết quả.
+- Kịch bản: khi bộ chuyển tạo HĐ nhận thì có lượt duyệt `level1` chế độ engine chưa gắn run [test: apps/hub-api/src/modules/packs/contracts/partner-mailbox.int.test.ts » bộ chuyển tạo HĐ nhận riêng của B + contract.received]
+- Kịch bản: khi flow nhận được mở thì run gắn vào thẻ và khi kết thúc Trả lại thì lượt duyệt đóng [test: apps/hub-api/src/modules/packs/contracts/partner-mailbox.int.test.ts » Kết thúc flow nhận = Trả lại ⇒ lần gửi đóng + tín hiệu partner.returned đúng một lần]
 ## Việc còn lại
-- Hành trình đỏ ở bước 1: sau khi nhân viên A «Gửi duyệt» và quy trình mở bước «Giám đốc duyệt», trang HĐ của Giám đốc A KHÔNG có nút Đạt/Duyệt (`[data-approval=pass|approve]`) dù chuông báo 1 việc chờ — dừng sau 3 lượt theo quy tắc. Chưa rõ nguyên nhân (nghi: thẻ duyệt của flow có bước thật «Gửi đối tác» chưa gắn run vào thẻ, hoặc `pass` bị ẩn khi người xem cũng là quản trị xác nhận). Bước 2–3 + ảnh chụp các màn đối tác CHƯA chạy tới.
+- Hành trình vẫn đỏ, nay ở bước THẬT SỰ KẾ TIẾP (đã tiến 1 bước): sau khi sửa thẻ duyệt (`from_run`) Giám đốc A bấm Đạt được («Đã duyệt bởi E2E Giám đốc»), rồi stage tool `contracts-partner-send` của node «Gửi đối tác xác nhận» dừng NGAY (1 giây) ⇒ run `needs_decision`, thẻ «Gửi ký chưa được — cần xử lý». Nghi: tool `real_action` dừng ở `launchTool` (`realActionPre` null hoặc `toolDriver`/`mcpToolInvoker` từ chối tool gói). Chưa có log lý do (hub không in stage lỗi ra log e2e). Spec đã in `DIAG-STAGES`/`DIAG-AUDIT` (stage + `decision` + audit) khi thẻ vòng gửi không hiện — chạy lại 1 lượt sẽ ra nguyên nhân. Dừng theo giới hạn 2 lượt e2e.
+- Chưa có ảnh chụp các màn đối tác (spec ghi vào `test.info().outputPath`).
+- «Chờ gửi duyệt» ở cột Bước của danh sách HĐ (`approval-step-label.rules.ts`) vẫn coi stage idx 0 là bước soạn cho lượt flow theo sự kiện — cần cùng `from_run`.

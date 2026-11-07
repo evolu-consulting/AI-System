@@ -1,7 +1,12 @@
 // CR-122 · P11 · thẻ duyệt của lượt flow theo sự kiện (không có mẫu chụp `flow_steps`): bước = stage Duyệt của run đã tới, đúng
 // `s<idx>`; nhánh chưa tới không hiện; chờ bộ điều phối (`FLOW_STARTING`, chưa run) không báo "kẹt".
 import { describe, expect, it } from "bun:test";
-import { attentionOf, type EngineStageView, engineCardView } from "./approval-engine-card.rules";
+import {
+  attentionOf,
+  type EngineStageView,
+  engineCardView,
+  planEngineAct,
+} from "./approval-engine-card.rules";
 
 const st = (key: string, status: EngineStageView["status"], o: Partial<EngineStageView> = {}) =>
   ({
@@ -101,5 +106,35 @@ describe("CR-122 P11 · thẻ duyệt từ run flow", () => {
     };
     const v = engineCardView({ approval, flow: [], facts: NO_FACTS, sv, viewerId: "u1" });
     expect(v.steps.map((s) => [s.idx, s.name, s.status])).toEqual([[0, "Nếu", "running"]]);
+  });
+});
+
+describe("CR-124 q6 · lượt flow theo sự kiện có stage Duyệt ở idx 0 (Giám đốc duyệt là bước ĐẦU)", () => {
+  const sv = {
+    status: "waiting_review",
+    started_by: "u1",
+    steps: [
+      st("giam-doc", "open", {
+        idx: 0,
+        name: "Giám đốc duyệt",
+        task: { id: "t1", can_act: true },
+        task_ref: "t1",
+      }),
+    ],
+  };
+  const base = { approval, flow: [], facts: NO_FACTS, sv, viewerId: "u2" };
+  it("thẻ đánh dấu `from_run` (bước 0 là stage thật) + người duyệt có task để quyết", () => {
+    const v = engineCardView(base);
+    expect(v).toMatchObject({ from_run: true, task_id: "t1", can_act: true });
+    expect(v.steps.map((s) => [s.idx, s.status])).toEqual([[0, "open"]]);
+  });
+  it("Trả lại được ở bước 0 của lượt flow (không bị coi là bước soạn)", () => {
+    const p = planEngineAct({
+      ...base,
+      action: "return",
+      feedback: "sai đơn giá",
+      hasSource: false,
+    });
+    expect(p).toEqual({ kind: "fail_back", taskId: "t1" });
   });
 });

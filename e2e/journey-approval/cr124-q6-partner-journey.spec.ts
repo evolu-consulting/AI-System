@@ -27,6 +27,7 @@ import {
   partnerSendNode,
 } from "../_kit/flows";
 import { safeReload } from "../_kit/ui";
+import { withOwner } from "../support/helpers";
 import { confirmAndSave, type Env, loginCw, stepOf, U, uploadAndOpen } from "./_journey";
 
 const need = (n: string): string => {
@@ -76,12 +77,30 @@ async function sendFromA(browser: import("@playwright/test").Browser, tag: strin
 async function expectRound(page: Page, cw: string, id: string, text: RegExp) {
   await page.goto(`${cw}/contracts/c/${id}`);
   let n = 0;
-  await expect(async () => {
-    if (n++ > 0) await safeReload(page);
-    await expect(page.getByTestId("partner-round-status").first()).toHaveText(text, {
-      timeout: 5_000,
-    });
-  }).toPass({ timeout: 120_000 });
+  try {
+    await expect(async () => {
+      if (n++ > 0) await safeReload(page);
+      await expect(page.getByTestId("partner-round-status").first()).toHaveText(text, {
+        timeout: 5_000,
+      });
+    }).toPass({ timeout: 120_000 });
+  } catch (e) {
+    // Chẩn đoán: bước nào của lượt chạy dừng và vì sao (DB test, không dữ liệu nhạy cảm).
+    const rows = await withOwner(
+      (
+        sql,
+      ) => sql`select s.stage_idx, s.status, left(coalesce(s.feedback, ''), 200) as fb, r.status as run_status, left(coalesce(r.decision::text, ''), 300) as decision
+        from hub.stage_runs s join hub.process_runs r on r.id = s.process_run_id
+        where r.tenant_id = (select id from admin.tenants where key = ${EA.tenantKey}) order by r.started_at desc, s.stage_idx`,
+    );
+    const audit = await withOwner(
+      (sql) => sql`select action, left(summary::text, 300) as summary from hub.audit_log
+        where tenant_id = (select id from admin.tenants where key = ${EA.tenantKey}) order by seq desc limit 12`,
+    );
+    console.log("DIAG-STAGES", JSON.stringify(rows));
+    console.log("DIAG-AUDIT", JSON.stringify(audit));
+    throw e;
+  }
 }
 
 test.beforeAll(async () => {

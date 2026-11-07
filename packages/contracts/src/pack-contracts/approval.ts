@@ -1,4 +1,4 @@
-﻿// HD-FR-31…37 · HD3 spec §3: flow duyệt hợp đồng trên engine N2 (`/pack/contracts/contracts/:id/approval`,
+// HD-FR-31…37 · HD3 spec §3: flow duyệt hợp đồng trên engine N2 (`/pack/contracts/contracts/:id/approval`,
 // `/pack/contracts/approval-settings`). Chỉ thêm — không đổi schema HD1/HD2.
 import { z } from "zod";
 import { IsoDateTime } from "../common";
@@ -136,6 +136,8 @@ export const ContractApprovalSchema = z.strictObject({
   /** S3b · `engine` ⇒ lượt chạy trên engine quy trình (có `steps`); vắng ⇒ máy 2 bước cũ. */
   mode: z.enum(["machine", "engine"]).optional(),
   steps: z.array(ApprovalCardStepSchema).optional(),
+  /** CR-124 · q6 · thẻ dựng từ lượt FLOW THEO SỰ KIỆN: bước 0 là stage thật của quy trình (vd Duyệt) — KHÔNG phải bước soạn «Gửi duyệt» của máy cũ. */
+  from_run: z.boolean().optional(),
   /** fix-review · run đã kết thúc bất thường, lượt còn mở: owner/admin bấm "Mở lại quy trình" (POST .../approval/reopen). */
   needs_reopen: z.boolean().optional(),
   /** CR-107 · lượt engine cần owner/admin để ý (không đổi trạng thái HĐ): `needs_decision` ⇒ run kẹt chờ quyết (vd

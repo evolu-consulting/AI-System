@@ -38,7 +38,7 @@ export const engineAdvancing = (a: ContractApproval | undefined): boolean =>
 
 /** CR-122 · P11e · HĐ đã gửi đi (lượt engine, bước soạn không còn mở) ⇒ không còn là "bản nháp chờ bấm Xác nhận và lưu". */
 export const submittedForReview = (a: ContractApproval | undefined): boolean =>
-  a?.mode === "engine" && a.step === "level1" && openStepOf(a)?.idx !== 0;
+  a?.mode === "engine" && a.step === "level1" && (a.from_run === true || openStepOf(a)?.idx !== 0);
 
 /** Ghi chú khi người xem không quyết được bước đang mở: vì sao (chỉ xem / người gửi / chỉ trưởng phòng / không thuộc nhóm). */
 function blockedNote(a: ContractApproval, open: ApprovalCardStep, write: boolean): string {
@@ -62,7 +62,9 @@ export function engineApprovalView(
   if (!open)
     return engineAdvancing(a) ? { ...NONE, note: "contracts.approval.engine.advancing" } : NONE;
   if (!(o.write && a.can_act)) return { ...NONE, note: blockedNote(a, open, o.write) };
-  if (open.idx === 0) return { ...NONE, confirm: true, reject: true, redo: o.hasSource };
+  // Bước 0 là bước soạn («Xác nhận và lưu») CHỈ ở thẻ máy cũ; lượt flow theo sự kiện (`from_run`) bước 0 là stage thật (vd Duyệt) ⇒ Đạt / Trả lại / Từ chối.
+  if (open.idx === 0 && a.from_run !== true)
+    return { ...NONE, confirm: true, reject: true, redo: o.hasSource };
   return { ...NONE, reject: true, pass: true, back: true };
 }
 

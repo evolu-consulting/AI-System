@@ -95,11 +95,16 @@ export function contractsOutcomeHandler(): OutcomeHandler<Tx> {
       throw new Error(`contracts outcome chưa hỗ trợ: ${input.event} · ${input.outcome}`);
     },
     // CR-122 · P11 · lượt flow mở cho `contract.submitted` ⇒ gắn vào thẻ duyệt CÙNG tx tạo run (CAS).
+    // CR-124 · q6 · HĐ nhận (`contract.received`) cũng có lượt duyệt chờ run ⇒ gắn run vào thẻ như HĐ gửi duyệt (người duyệt của bên nhận thấy Đạt/Trả lại/Từ chối).
     launched: (tx, input) =>
-      input.event === EV_SUBMITTED ? attachFlowRun(tx, input) : Promise.resolve(true), // P11c · false = superseded
+      input.event === EV_SUBMITTED || input.event === EV_RECEIVED
+        ? attachFlowRun(tx, input)
+        : Promise.resolve(true), // P11c · false = superseded
     // CR-122 · P11b · không mở được lượt ⇒ thẻ ghi lý do (không kẹt mãi "đang mở quy trình").
     notLaunched: (tx, input) =>
-      input.event === EV_SUBMITTED ? markFlowNotLaunched(tx, input) : Promise.resolve(false),
+      input.event === EV_SUBMITTED || input.event === EV_RECEIVED
+        ? markFlowNotLaunched(tx, input)
+        : Promise.resolve(false),
   };
 }
 
