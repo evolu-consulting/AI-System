@@ -8,7 +8,6 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { stepLabelOf } from "../../packs/contracts/domain/approval-step-label.rules";
 import type { ProcessDeps } from "../core/ports";
 import { stepsView, stepsViewMany } from "./pack-runs-view";
 
@@ -104,13 +103,12 @@ describe("CR-123 · u10 · stepsViewMany (cột Bước của danh sách)", () =
       expect(many.get(id)?.steps).toEqual(one?.steps as never);
       expect(many.get(id)?.steps).toHaveLength(1);
     }
-    const labels = new Set([...many.values()].map((v) => stepLabelOf(v as never)));
-    expect([...labels].every((l) => l === null || /ký|Đã duyệt|Bị từ chối|Chờ/.test(l ?? ""))).toBe(
-      true,
-    );
-    // chờ ký ⇒ "Chờ <tên người ký> ký"
+    // chờ ký ⇒ bước Ký số gộp, trạng thái nghiệp vụ `waiting` + tên người ký (nhãn "Chờ <người ký> ký" dựng ở gói HĐ từ chính các trường này)
     const waiting = [...many.values()].find((v) => v.status === "waiting_timer");
-    expect(stepLabelOf(waiting as never)).toMatch(/^Chờ .+ ký$/);
+    expect(waiting?.steps[0]?.module).toMatchObject({
+      outcome: "waiting",
+      signer: expect.any(String),
+    });
   });
 
   it("trang 100 run trong 1000 run: một lô, p95 thấp (đo thật)", async () => {
