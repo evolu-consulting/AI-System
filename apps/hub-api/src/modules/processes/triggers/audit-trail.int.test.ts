@@ -15,24 +15,22 @@ import {
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../lib/db";
-import { approvalRepo } from "../../packs/contracts/adapters/approval.repo";
-import { approvalEngineRepo } from "../../packs/contracts/adapters/approval-engine.repo";
-import { contractFlowRepo } from "../../packs/contracts/adapters/contract-flow.repo";
-import { esignRepo } from "../../packs/contracts/adapters/esign.repo";
-import { manageRepo } from "../../packs/contracts/adapters/manage.repo";
-import { partnerInboxRepo } from "../../packs/contracts/adapters/partner-inbox.repo";
-import { partnerSendRepo } from "../../packs/contracts/adapters/partner-send.repo";
 import {
   actApproval,
-  getApproval,
-  startApproval,
-} from "../../packs/contracts/application/approval.usecase";
-import { engineCard } from "../../packs/contracts/application/approval-engine-card.usecase";
-import { getHistory } from "../../packs/contracts/application/manage.usecase";
-import {
+  approvalEngineRepo,
+  approvalRepo,
+  contractFlowRepo,
   contractsFactsReader,
   contractsOutcomeHandler,
-} from "../../packs/contracts/flow-events.mount";
+  engineCard,
+  esignRepo,
+  getApproval,
+  getHistory,
+  manageRepo,
+  partnerInboxRepo,
+  partnerSendRepo,
+  startApproval,
+} from "../../packs/contracts/testing";
 import { createPackUow } from "../../packs/kit/adapters/pack-uow";
 import {
   registerFactsReader,
