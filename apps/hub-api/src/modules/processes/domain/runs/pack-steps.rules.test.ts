@@ -38,13 +38,15 @@ describe("S1a · stageMeta / dueOf", () => {
       key: "s1",
       name: "Pháp chế",
       groupId: "g",
+      backTo: [],
     });
     expect(stageMeta({ key: "route", after: { kind: "auto" } }, 1)).toEqual({
       key: "route",
       name: "route",
       groupId: null,
+      backTo: [],
     });
-    expect(stageMeta(null, 2)).toEqual({ key: "#3", name: "#3", groupId: null });
+    expect(stageMeta(null, 2)).toEqual({ key: "#3", name: "#3", groupId: null, backTo: [] });
   });
   test("dueOf: null ⇒ null; chuỗi/Date ⇒ ISO", () => {
     expect(dueOf(null)).toBeNull();
