@@ -5,6 +5,7 @@ import type { PackToolCtx } from "../../kit/application/pack-tools.ports";
 import { INTAKE_TOOL_KEYS, intakeTools } from "./intake.tools";
 
 const ID = "11111111-1111-4111-8111-111111111111";
+const SIGNER = { company_signers: "user:u1" }; // CEO-review #2: Ký số phải chọn người ký công ty (không còn «người bắt đầu» ngầm)
 const CTX: PackToolCtx = { tenantId: "t1", userId: "u1", runId: null };
 
 function make(o: {
@@ -37,6 +38,7 @@ function make(o: {
   const tools = intakeTools({
     uow: { tenant: async (_w, fn) => fn(repos as never) },
     send: async (...a) => void log.sent.push(a),
+    nodeSigners: async (_t, entries) => entries.map((e) => e.id),
     parsePartner: (name, email) => (email.includes("@") ? { name, email } : null),
   });
   const tool = (k: string) => tools.find((t) => t.name === k) as (typeof tools)[number];
@@ -68,11 +70,13 @@ describe("CR-120 · intakeTools", () => {
     expect(b.log.reads).toBe(1);
   });
 
-  it("contracts-esign-send: có email đối tác ⇒ [company, partner]; không email ⇒ [company]; người ký công ty = người bắt đầu", async () => {
+  it("contracts-esign-send: có email đối tác ⇒ [company, partner]; không email ⇒ [company]; người ký công ty = người được chọn", async () => {
     const withP = make({
       contract: { number: "S1", title: "HĐ", partner: { name: "Đối tác A", email: "a@x.vn" } },
     });
-    expect(await withP.tool("contracts-esign-send").run(CTX, { contract_id: ID })).toEqual({
+    expect(
+      await withP.tool("contracts-esign-send").run(CTX, { contract_id: ID, ...SIGNER }),
+    ).toEqual({
       status: "sent",
     });
     expect(withP.log.sent).toEqual([
@@ -81,13 +85,17 @@ describe("CR-120 · intakeTools", () => {
         "u1",
         ID,
         [{ role: "company" }, { role: "partner", name: "Đối tác A", email: "a@x.vn" }],
+        undefined,
+        { companyUsers: ["u1"] },
       ],
     ]);
     const noP = make({
       contract: { number: null, title: "HĐ", partner: { name: "B", email: null } },
     });
-    await noP.tool("contracts-esign-send").run(CTX, { contract_id: ID });
-    expect(noP.log.sent).toEqual([["t1", "u1", ID, [{ role: "company" }]]]);
+    await noP.tool("contracts-esign-send").run(CTX, { contract_id: ID, ...SIGNER });
+    expect(noP.log.sent).toEqual([
+      ["t1", "u1", ID, [{ role: "company" }], undefined, { companyUsers: ["u1"] }],
+    ]);
   });
 
   it("contracts-obligation-remind: chuông cho người bắt đầu, dedup theo HĐ; trùng ⇒ already", async () => {
