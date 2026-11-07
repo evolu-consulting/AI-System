@@ -1,8 +1,8 @@
 ---
 id: CR-124
 tên: Gửi đối tác xác nhận hợp đồng (liên công ty) + quy trình nhận theo mức quan trọng
-mã yêu cầu: FLOW4-FR-01..14, FLOW4-NFR-01..04
-trạng thái: Intake 2026-11-07 (người dùng chốt hướng), chưa làm — làm SAU video demo CR-122/123
+mã yêu cầu: FLOW4-FR-01..17, FLOW4-NFR-01..04
+trạng thái: Intake 2026-11-07 (người dùng chốt hướng + đồng ý thiết kế node/kênh/bên nhận "Yes, update spec"), chưa làm — làm SAU video demo CR-122/123
 liên quan: CR-122 (sự kiện, node module FLOW2-FR-25, node Ký số), CR-123 FR-11 (một nơi chọn quy trình), CR-121 (hồ sơ công ty `admin.tenants`)
 ---
 # CR-124 · Gửi đối tác xác nhận hợp đồng
@@ -21,7 +21,8 @@ Công ty A gửi một hợp đồng cho công ty B xác nhận ngay trong quy t
 ## 3. Node "Gửi đối tác xác nhận" (node module của contracts)
 - Khai trong `contracts.manifest.ts › nodes[]` như `contracts.esign` (FLOW2-FR-25): nhóm "Đối tác", khoá tính năng `contracts-partner-confirm`; **2 stage**: tool `contracts-partner-send` (`real_action`) + `wait_event` `partner.confirmed` với `also_events: [partner.returned, partner.declined]`, `timeout_h` theo cấu hình (mặc định 168). Không executor mới.
 - Cấu hình node (một panel, chữ nghiệp vụ): **Gửi cho** (đối tác của HĐ — mặc định lấy từ HĐ; đổi được trong danh bạ), **Mức quan trọng** (Thường / Quan trọng / Rất quan trọng; mặc định "Tự theo giá trị HĐ" — xem §6), **Gửi kèm** (PDF HĐ luôn có + chọn trường: giá trị, ngày hiệu lực, hạn thanh toán, sản phẩm), **Hạn trả lời** (ngày), **Lời nhắn**.
-- Đầu ra rẽ được (như Ký số): **Đồng ý · Trả lại · Từ chối · Hết hạn**. Trả lại kèm lý do (bắt buộc) ⇒ flow A thường nối về bước sửa / Kết thúc · Trả lại (H3).
+- **KHÔNG phải node kết thúc** (người dùng hỏi 2026-11-07): như Ký số, node gửi rồi tự chờ; có kết quả thì flow A **chạy tiếp** theo 4 nhánh rẽ được: **Đồng ý** (thường ⇒ Ký số → Kết thúc · Đã duyệt) · **Trả lại sửa** (lý do bắt buộc ⇒ về nhân viên phụ trách sửa rồi gửi lại: lần gửi mới, bên nhận thấy "bản sửa lần N") · **Từ chối** (⇒ Kết thúc · Từ chối) · **Hết hạn** (mặc định 7 ngày, nhắc trước 1 ngày ⇒ báo người phụ trách: Gửi lại / Ghi nhận thủ công / Dừng).
+- **Một node, ba kênh, cùng 4 nhánh** — hệ thống **tự chọn kênh**, người soạn flow không chọn: (1) đối tác là công ty trên nền tảng đã nối ⇒ **nền tảng** (§7); (2) chưa trên nền tảng/không cho tìm thấy nhưng có email liên hệ ⇒ **email tự động** do hệ thống gửi (§8); (3) không có email ⇒ **ghi nhận thủ công** (§8b). Kênh đã chọn hiện trên thẻ ("gửi qua nền tảng" / "gửi qua email").
 - Luật hợp lệ chung (CR-123): node là `real_action`; nhánh Nếu không trỏ thẳng tới nó; cần HĐ có tệp PDF (khác ⇒ lỗi khi lưu flow "Bước Gửi đối tác cần HĐ có tệp PDF").
 
 ## 4. Danh bạ công ty (công khai, tự nguyện)
@@ -60,6 +61,18 @@ Công ty A gửi một hợp đồng cho công ty B xác nhận ngay trong quy t
 - Chống lạm dụng: tối đa 30 lần mở/giờ/token, 5 lần gửi lại/HĐ/ngày, 200 email đối tác/công ty/ngày (cấu hình nền tảng); captcha không dùng (link riêng).
 - **Nhật ký:** mỗi lần mở/trả lời ghi thời điểm, IP rút gọn (/24), user-agent, tên + chức vụ người trả lời, băm PDF — hiện cho A ở lịch sử lần gửi. Ghi rõ "Xác nhận qua email, không phải chữ ký số".
 
+## 8b. Ghi nhận kết quả thủ công (kênh 3, và dự phòng cho kênh 1–2)
+- Thẻ HĐ của A luôn có nút **"Ghi nhận kết quả đối tác"** khi lần gửi đang chờ (cả khi gửi qua nền tảng/email — đối tác có thể trả lời bằng điện thoại, email riêng, bản giấy). Chỉ người phụ trách HĐ / quản trị gói.
+- Người ghi chọn **Đồng ý / Trả lại / Từ chối**, nhập lý do (bắt buộc với Trả lại/Từ chối), **đính kèm bằng chứng** (ảnh email, biên bản; ≥ 1 tệp khi kênh là thủ công), ghi "người bên đối tác trả lời: tên · chức vụ".
+- Ghi xong ⇒ cùng đường `hub.partner_reply` (nguồn `manual`, người ghi = người dùng A) ⇒ flow A đi tiếp đúng nhánh; lần gửi qua nền tảng/email còn mở bị đóng ("đã ghi nhận thủ công"), bên nhận thấy trạng thái đó.
+- Lịch sử ghi rõ "Ghi nhận thủ công bởi <người A> lúc <giờ> · bằng chứng". Không là chữ ký số.
+
+## 8c. Phía công ty nhận (có dùng nền tảng)
+- **Hộp "Hợp đồng đối tác gửi"** trong app Hợp đồng (mục riêng ở thanh trái): mỗi dòng = công ty gửi (dấu Đã xác minh) · tên HĐ · mức quan trọng · hạn trả lời · bước nội bộ hiện tại.
+- Mở một dòng ⇒ trang HĐ nhận (bản ghi riêng của B, §7) với thẻ duyệt của quy trình nhận; lời mời nối lần đầu hiện ngay đầu trang (§5).
+- **Trả lời tự động, không thêm node:** Kết thúc của quy trình nhận tự thành câu trả lời: Kết thúc · Đồng ý ⇒ Đồng ý; Trả lại ⇒ Trả lại sửa (kèm lý do người duyệt ghi); Từ chối ⇒ Từ chối. Không có node "Trả lời đối tác" riêng (một khái niệm ít hơn).
+- Mẫu Thư viện 3 quy trình nhận theo mức: **Thường** (một người xác nhận) · **Quan trọng** (Trưởng phòng → Giám đốc) · **Rất quan trọng** (Trưởng phòng → Pháp chế → Giám đốc, có thể thêm Ký số); công ty dùng mẫu hoặc sửa ở Công ty › Quy trình.
+
 ## 9. Trạng thái trên thẻ (3 dòng: trạng thái · lý do · bước kế)
 | Thẻ | Ví dụ |
 |---|---|
@@ -84,6 +97,9 @@ Thông báo: chuông + email cho người được giao ở B; chuông cho ngư�
 - **FLOW4-FR-12 Đường email.** Given B không dùng nền tảng; When A gửi; Then liên hệ B nhận email link; trả lời trên trang ⇒ A đi nhánh tương ứng, lịch sử ghi "qua email · tên · chức vụ · giờ".
 - **FLOW4-FR-13 Token.** Token hết hạn / đã dùng / sai ⇒ trang "Link đã hết hạn — liên hệ <tên công ty A>", không lộ nội dung; vượt hạn mức mở ⇒ 429.
 - **FLOW4-FR-14 Thẻ 3 dòng + thông báo** như §9 ở cả hai bên.
+- **FLOW4-FR-15 Tự chọn kênh.** Given B trên nền tảng và đã nối ⇒ kênh nền tảng; Given B không trên nền tảng có email ⇒ email tự động; Given không email ⇒ thẻ A "Chờ ghi nhận thủ công · đối tác chưa có email · Bấm Ghi nhận kết quả đối tác khi có trả lời".
+- **FLOW4-FR-16 Ghi nhận thủ công.** Given lần gửi đang chờ ở bất kỳ kênh; When người phụ trách A ghi Trả lại + lý do + tệp bằng chứng; Then flow A đi nhánh Trả lại, lần gửi đóng "đã ghi nhận thủ công", lịch sử có người ghi + bằng chứng; người không phụ trách ⇒ không thấy nút.
+- **FLOW4-FR-17 Gửi lại sau Trả lại.** Given A sửa HĐ sau nhánh Trả lại; When flow quay lại node gửi; Then lần gửi mới tới cùng đối tác, B thấy "bản sửa lần 2" + lý do lần trước, không tạo lời mời nối lại.
 - **NFR-01 (cách ly)** test: role gói A/B không SELECT được `hub.partner_mailbox`; gọi `partner_send` với `from_tenant` khác ⇒ 42501; `partner_reply` sai tenant ⇒ 42501. **NFR-02 (idempotent)** khoá `mailbox.id` ⇒ chạy lại / 2 Hub vẫn một HĐ nhận, một sự kiện. **NFR-03 (perf)** bộ chuyển theo lô, số câu SQL cố định mỗi lô; tìm danh bạ một câu SQL p95 ≤ 20 ms (index MST, trigram tên). **NFR-04 (một nguồn)** danh bạ đọc `admin.tenants`, không bảng sao.
 - **e2e hành trình (một lần cuối CR):** Demo gửi NiTi-test HĐ 600 triệu ⇒ NiTi chấp nhận nối ⇒ qua Kế toán + Giám đốc ⇒ Đồng ý ⇒ Demo sang Ký số; và gửi email cho công ty ngoài ⇒ Trả lại có lý do ⇒ Demo nhánh Trả lại.
 
