@@ -39,7 +39,9 @@ export function withFlowResend<T extends string>(
     return d.uow.tenant(who, async (r) => {
       const repo = requireFlow(r);
       // P11c · CAS chỉ khi ĐÃ kẹt thật; đang mở quy trình (bấm đúp / sự kiện đầu chưa xong) ⇒ 409, không phát thêm sự kiện
-      if (!(await repo.rearmFlow?.(id, a.id, hasRun))) return "flow_starting" as const;
+      // p24 · CAS theo run đã thấy: 0 hàng ⇒ lượt đã có run mới / đã có người Mở lại trước ⇒ not_stalled, không phát sự kiện
+      if (!(await repo.rearmFlow?.(id, a.id, a.engineRunId ?? null)))
+        return (hasRun ? "not_stalled" : "flow_starting") as "not_stalled" | "flow_starting";
       const key = `${a.id}.${crypto.randomUUID().slice(0, 8)}`; // event_id mới ⇒ không bị coi là trùng
       await repo.emitContract(EV_SUBMITTED, id, key, {
         actor: a.startedBy,

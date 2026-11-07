@@ -29,7 +29,7 @@ export type ContractFlowRepo = {
     links?: readonly unknown[] | null,
   ): Promise<boolean>;
   /** CR-122 · P11b · Mở lại lượt chờ flow chưa có run ⇒ về FLOW_STARTING (CAS); sau đó phát lại `contract.submitted` (event_id mới). */
-  rearmFlow?(contractId: string, approvalId: string, detachRun?: boolean): Promise<boolean>;
+  rearmFlow?(contractId: string, approvalId: string, seenRunId?: string | null): Promise<boolean>;
   /** Chạy `fn` (với repo trên tx CON) trong SAVEPOINT: lỗi ⇒ rollback về savepoint + log, tx bản ghi chạy tiếp (chỉ khi cờ TẮT = bóng). */
   shadow?(event: string, fn: (repo: ContractFlowRepo) => Promise<unknown>): Promise<void>;
 };

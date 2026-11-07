@@ -82,7 +82,7 @@ beforeAll(async () => {
   CG = (
     await contracts(o, G, 1, { from: 1302, createdBy: UG, status: "needs_review" })
   )[0] as string;
-  CX = await contracts(o, N, 6, { from: 1310, createdBy: UN, status: "needs_review" });
+  CX = await contracts(o, N, 7, { from: 1310, createdBy: UN, status: "needs_review" });
   await o`insert into admin.groups (tenant_id, key, name) values (${N}, 'pb-phap-che', '{"vi":"Pháp chế"}'::jsonb)`;
   lib = await libFlow("p11b-ok", "pb-phap-che");
   const missing = await libFlow("p11b-miss", "pb-khong-co");
@@ -300,6 +300,28 @@ describe("CR-122 p24 · Mở lại khi đã có run + sản phẩm lúc xác nh�
     expect(again?.feedback).toBeNull();
     expect(again?.run).not.toBeNull();
     expect(again?.run).not.toBe(first?.run as string);
+  });
+
+  it("p24 · hai Mở lại song song trên cùng run kẹt ⇒ đúng một sự kiện mới + một run mới; Mở lại muộn thấy run mới ⇒ not_stalled", async () => {
+    const id = CX[6] as string;
+    expect(await submitHd(who(), id, "level1")).toBe("ok");
+    expect(await dispatch()).toMatchObject({ launched: 1 });
+    const evCount = async () =>
+      (
+        await o<{ n: number }[]>`select count(*)::int as n from hub.flow_events
+          where tenant_id = ${N} and event = 'contract.submitted' and ref = ${id}`
+      )[0]?.n ?? 0;
+    const before = await evCount();
+    const outs = await Promise.all([resendWith(true)(who(), id), resendWith(true)(who(), id)]);
+    expect([...outs].sort()).toEqual(["not_stalled", "ok"]);
+    expect(await evCount()).toBe(before + 1);
+    expect(await dispatch()).toMatchObject({ launched: 1, failed: 0 });
+    expect(await runsOf(id)).toBe(2); // run kẹt cũ + đúng một run mới
+    // bấm muộn: đã thấy run CŨ trước khi lượt gắn run mới ⇒ CAS theo id run cũ trượt ⇒ không tháo run đang chạy, không phát thêm
+    const live = (await approvalOf(id))?.run;
+    expect(await resendWith(true)(who(), id)).toBe("ok"); // thấy run MỚI (đang là run kẹt theo stub) ⇒ hợp lệ, một sự kiện nữa
+    expect(await evCount()).toBe(before + 2);
+    expect((await approvalOf(id))?.run).not.toBe(live as string);
   });
 
   it("p24 · cờ flow bật: thẻ nháp luôn mở hộp SP (finalizes_on_approve), xác nhận kèm SP ⇒ pending_links", async () => {
