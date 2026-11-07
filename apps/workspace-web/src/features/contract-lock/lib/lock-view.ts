@@ -42,8 +42,11 @@ export const reopenRight = (
 export function lockView(
   c: Pick<ContractDetail, "locked" | "status" | "has_document">,
   owner: boolean,
+  /** Đã "Xác nhận và lưu" (lượt duyệt đang chạy) ⇒ không còn dải "Chưa xác nhận" — thẻ duyệt nói trạng thái. */
+  submitted = false,
 ): LockView {
-  const banner: LockBanner = c.locked ? "locked" : c.status === "needs_review" ? "pending" : null;
+  const pending = c.status === "needs_review" && !submitted;
+  const banner: LockBanner = c.locked ? "locked" : pending ? "pending" : null;
   return {
     banner,
     locked: c.locked,

@@ -23,6 +23,9 @@ describe("HD-FR-100 lockView", () => {
     expect(v.banner).toBe("pending");
     expect(v.lockedKeys).toBeUndefined();
   });
+  test("CR-122 · đã Xác nhận và lưu (lượt duyệt đang chạy) ⇒ không còn banner Chưa xác nhận", () => {
+    expect(lockView({ ...base, status: "needs_review" }, true, true).banner).toBeNull();
+  });
   test("không khoá, không chờ duyệt ⇒ không banner; thiếu văn bản ⇒ noDocument", () => {
     expect(lockView(base, false).banner).toBeNull();
     expect(lockView({ ...base, has_document: false }, false).noDocument).toBe(true);

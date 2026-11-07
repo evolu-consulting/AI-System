@@ -12,10 +12,10 @@ export function warningsOf(c: Pick<ContractDetail, "warnings">): ContractWarning
   );
 }
 
-/** Dòng phụ dưới tiêu đề theo trạng thái (`ContractPage.tsx:93`). */
-export function leadKey(status: string): string | null {
+/** Dòng phụ dưới tiêu đề theo trạng thái (`ContractPage.tsx:93`). Đã gửi duyệt ⇒ không còn "kiểm tra rồi xác nhận". */
+export function leadKey(status: string, submitted = false): string | null {
   if (status === "extracting") return "contracts.review.reading";
-  if (status === "needs_review") return "contracts.review.checkLead";
+  if (status === "needs_review" && !submitted) return "contracts.review.checkLead";
   return null;
 }
 

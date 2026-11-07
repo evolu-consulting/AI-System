@@ -100,7 +100,11 @@ function ContractBody({
   // K3b: bản đã bị thay chỉ đọc hoàn toàn.
   const { sup, write, owner, canUpdate } = versionGate(c, me);
   const [origOpen, setOrigOpen] = useState(false);
-  const lock = lockView(c, !sup && reopenRight(c, { owner, write, userId: me.user?.id }));
+  const lock = lockView(
+    c,
+    !sup && reopenRight(c, { owner, write, userId: me.user?.id }),
+    ap.submitted,
+  );
   const nav = useNavigate();
   // Thông báo thành công của thẻ duyệt ⇒ toast (không còn khối giữ chỗ trong trang).
   useEffect(() => {
@@ -118,7 +122,7 @@ function ContractBody({
   // P11e · đã gửi duyệt (lượt engine, bước soạn đã qua) ⇒ không còn gợi ý "bản nháp … bấm Xác nhận và lưu".
   const confirm = c.status === "needs_review" && !ap.submitted;
   const { canSave } = rule;
-  const key = leadKey(c.status);
+  const key = leadKey(c.status, ap.submitted);
   const lead = key ? t(key) : <DetailLead c={c} partner={partnerOf(c)} />;
   // Nút chỉ có khi HĐ có tệp gốc (nhập tay ⇒ không có); phụ lục có tệp riêng xem trong hộp thoại.
   const file = c.file

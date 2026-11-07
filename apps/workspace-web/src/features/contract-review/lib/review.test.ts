@@ -12,6 +12,7 @@ describe("S05 · màn HĐ", () => {
     expect(leadKey("extracting")).toBe("contracts.review.reading");
     expect(leadKey("needs_review")).toBe("contracts.review.checkLead");
     expect(leadKey("active")).toBeNull();
+    expect(leadKey("needs_review", true)).toBeNull(); // CR-122 · đã gửi duyệt
   });
   it("409 nghiệp vụ không bị báo 'người khác cập nhật': thiếu tồn ⇒ câu máy chủ + gợi ý; mốc đã xác nhận ⇒ câu riêng", () => {
     const t = (k: string) => k;
