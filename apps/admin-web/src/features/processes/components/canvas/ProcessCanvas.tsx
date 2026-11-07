@@ -1,7 +1,7 @@
 // ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend FB1/FB2/FB4/FB9, ADR-0013): canvas editor — lazy chunk `canvas`.
 // CR-118 · cr118-flow-canvas: khung xyflow, cạnh quay lại/rẽ nhánh, fit/kéo nằm ở `@ai/flow-canvas` (mode "edit", layout "flow");
-// CR-123 · u13: VỊ TRÍ node do ELK `layered` tính (gập hàng, cổng ra cố định thứ tự, cạnh vuông góc) mỗi khi cấu trúc đổi; node người dùng kéo tay
-// giữ vị trí đã lưu (`ui.x` + `ui.y`), "Sắp xếp" xoá vị trí tay. File này giữ phần NGHIỆP VỤ: dựng node giai đoạn từ bản nháp. nodes/edges là DẪN XUẤT từ bản nháp.
+// CR-123 · u13: VỊ TRÍ node do ELK `layered` tính (một dải theo thứ tự flow, cổng ra cố định thứ tự, cạnh vuông góc); node kéo tay giữ `ui.x` + `ui.y`, "Sắp xếp" xoá.
+// File này giữ phần NGHIỆP VỤ: dựng node giai đoạn từ bản nháp. nodes/edges là DẪN XUẤT từ bản nháp.
 // dlc-step-library: sơ đồ DLC ⇒ cạnh "Từ chối" tới NODE đích (không tới tiêu đề cột), cạnh tiến sau bước có cổng mang nhãn "Duyệt";
 // `linkable` ⇒ kéo cổng "Từ chối" của bước nào có cổng cũng nối được (`ops.linkReject` kiểm đích đứng trước).
 
@@ -78,6 +78,10 @@ export type ProcessCanvasProps = CanvasHandlers & {
   /** dlc-step-library · kéo cổng "Từ chối" của bước DLC sang bước đứng trước để đặt chỗ quay lại (Canvas thư viện, sửa được). */
   linkable?: boolean;
 };
+
+/** CR-125 · x10 · ràng buộc tầng cuối cho node Kết thúc. */
+const lastLayer = (v: StageView): { layer?: "last" } =>
+  isTerminalView(v) ? { layer: "last" } : {};
 
 /** Cổng ra (id = `sourceHandle`) của node, từ trên xuống: Nếu ⇒ Đúng, Sai; ô module ⇒ các đầu ra khai báo (Ký xong / Từ chối / Hết hạn…). */
 function portsOf(v: StageView): string[] | undefined {
@@ -167,17 +171,15 @@ function useFlowStructure(
         sourceHandle: e.sourceHandle ?? null,
       }));
     const flowNodes: FlowNodeIn[] = [
-      ...(trig ? [{ id: "trigger" }] : []),
-      ...views.map((v) => ({ id: v.uid, ports: portsOf(v) })),
+      ...(trig ? [{ id: "trigger", layer: "first" as const }] : []),
+      // CR-125 · x10: node Kết thúc xếp tầng CUỐI (một cột), không node mồ côi ở đầu sơ đồ
+      ...views.map((v) => ({ id: v.uid, ports: portsOf(v), ...lastLayer(v) })),
     ];
     return { edges: all, flowNodes, flowEdges, dlc, tp };
   }, [views, approve, trig, insertable, connectable]);
 }
 
-/**
- * CR-125 · x4 · đầu vào của `settlePositions`: vị trí kéo tay (đã lưu) + toạ độ ELK của từng node. Vị trí tay chỉ được giữ khi không đè node nào
- * (đè ⇒ node quay về toạ độ ELK); chưa có cả hai ⇒ node chưa hiện (chờ lượt bố cục đầu).
- */
+/** CR-125 · x4 · đầu vào `settlePositions`: vị trí tay (đã lưu) + toạ độ ELK; vị trí tay chỉ giữ khi không đè node nào, chưa có cả hai ⇒ node chưa hiện. */
 function settleItems(
   views: readonly StageView[],
   auto: FlowPositions | null,

@@ -48,12 +48,12 @@ const demo = {
 
 describe("toElkGraph", () => {
   const g = toElkGraph(demo.nodes, demo.edges);
-  test("layered, trái → phải, cạnh vuông góc, gập hàng theo tỉ lệ khung", () => {
+  test("layered, trái → phải, cạnh vuông góc, KHÔNG gập hàng (đọc theo thứ tự flow)", () => {
     expect(g.layoutOptions).toMatchObject({
       "elk.algorithm": "layered",
       "elk.direction": "RIGHT",
       "elk.edgeRouting": "ORTHOGONAL",
-      "elk.layered.wrapping.strategy": "MULTI_EDGE",
+      "elk.layered.wrapping.strategy": "OFF",
       "elk.aspectRatio": "2.4",
     });
     expect(toElkGraph([], [], { aspectRatio: 3 }).layoutOptions?.["elk.aspectRatio"]).toBe("3");
@@ -92,7 +92,7 @@ describe("toElkGraph", () => {
 });
 
 describe("layoutWithElk (ELK thật)", () => {
-  test("flow demo 8 bước: đi trái → phải, gập hàng, vừa khung 1100×458 ở zoom ≥ 0.65", async () => {
+  test("flow demo 8 bước: đi trái → phải, một dải, vừa khung 1100×458 ở zoom ≥ 0.55", async () => {
     const pos = await layoutWithElk(demo.nodes, demo.edges, engine);
     const at = (id: string) => pos.get(id) as { x: number; y: number };
     expect(pos.size).toBe(8);
@@ -102,9 +102,8 @@ describe("layoutWithElk (ELK thật)", () => {
     const ys = [...pos.values()].map((p) => p.y);
     const w = Math.max(...xs) + NODE_W - Math.min(...xs);
     const h = Math.max(...ys) + NODE_H - Math.min(...ys);
-    expect(new Set(ys.map((y) => Math.round(y / NODE_H))).size).toBeGreaterThan(1); // nhiều hàng
     const zoom = Math.min((1100 - 32) / w, (458 - 32) / h);
-    expect(zoom).toBeGreaterThanOrEqual(0.65); // x4: giãn hơn (0.75 → 0.65) để Ký số + 3 đầu ra không chen node kề
+    expect(zoom).toBeGreaterThanOrEqual(0.55); // x4: giãn hơn (0.75 → 0.65) để Ký số + 3 đầu ra không chen node kề
   });
 
   test("thứ tự cổng từ trên xuống: Ký xong → Từ chối → Hết hạn", async () => {

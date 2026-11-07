@@ -277,3 +277,37 @@ export function roundedPath(poly: readonly Pt[], r = 10): string {
   const last = poly[poly.length - 1];
   return last && poly.length > 1 ? `${d} L ${last.x} ${last.y}` : d;
 }
+
+/** Kích thước ước lượng của nhãn trên cạnh ("Từ chối", "Hết hạn"…) — dùng để tránh đè node. */
+export const LABEL_BOX = { w: 60, h: 20 } as const;
+
+const hits = (a: Rect, b: Rect): boolean =>
+  a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/**
+ * Vị trí nhãn của một cạnh: ưu tiên GIỮA đoạn đầu (ngay sau chấm đầu ra — các đầu ra cạnh nhau có nhãn ở chỗ riêng, không đè nhau dù cùng đích),
+ * không vừa thì lùi dần dọc đường tới chỗ hộp nhãn không đè node nào.
+ */
+export function labelPoint(poly: readonly Pt[], boxes: readonly Rect[]): Pt {
+  const a = poly[0];
+  const b = poly[1];
+  if (!a || !b) return a ?? { x: 0, y: 0 };
+  const total = polyLength(poly);
+  const first = Math.hypot(b.x - a.x, b.y - a.y);
+  const free = (c: Pt) =>
+    !boxes.some((r) =>
+      hits(
+        { x: c.x - LABEL_BOX.w / 2, y: c.y - LABEL_BOX.h / 2, w: LABEL_BOX.w, h: LABEL_BOX.h },
+        r,
+      ),
+    );
+  const dists = [
+    first / 2,
+    ...Array.from({ length: Math.ceil(total / 16) }, (_, i) => 24 + i * 16),
+  ];
+  for (const d of dists) {
+    const c = pointAt(poly, Math.min(d, total));
+    if (free(c)) return c;
+  }
+  return pointAt(poly, first / 2);
+}

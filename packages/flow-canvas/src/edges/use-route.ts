@@ -4,6 +4,7 @@ import { type EdgeProps, Position, useNodes } from "@xyflow/react";
 import { useMemo } from "react";
 import { NODE_H, NODE_W } from "../layout/geometry";
 import {
+  labelPoint,
   type Pt,
   pointAt,
   polyLength,
@@ -28,6 +29,8 @@ export type Routed = {
   mid: Pt;
   /** Điểm cách giữa `back` px về phía nguồn (đặt nhãn cạnh nút "+"). */
   at: (distance: number) => Pt;
+  /** Chỗ đặt nhãn: ngay sau chấm nguồn, tránh đè node (xem `labelPoint`). */
+  label: Pt;
 };
 
 /** Hộp mọi node của sơ đồ (toạ độ sơ đồ) — chuỗi khoá để `useMemo` không chạy lại khi node không đổi chỗ. */
@@ -63,6 +66,7 @@ export function useRoutedPath(p: EdgeProps, radius = 10): Routed {
       poly,
       mid: pointAt(poly, len / 2),
       at: (d: number) => pointAt(poly, len / 2 + d),
+      label: labelPoint(poly, boxes),
     };
   }, [p.sourceX, p.sourceY, p.targetX, p.targetY, sp, tp, key, radius]);
 }

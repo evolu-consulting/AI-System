@@ -15,7 +15,7 @@ export type FlowPositions = ReadonlyMap<string, { x: number; y: number }>;
 
 export function structureKey(nodes: readonly FlowNodeIn[], edges: readonly FlowEdgeIn[]): string {
   return JSON.stringify([
-    nodes.map((n) => [n.id, n.width, n.height, n.ports]),
+    nodes.map((n) => [n.id, n.width, n.height, n.ports, n.layer]),
     edges.map((e) => [e.id, e.source, e.target, e.sourceHandle ?? null]),
   ]);
 }
