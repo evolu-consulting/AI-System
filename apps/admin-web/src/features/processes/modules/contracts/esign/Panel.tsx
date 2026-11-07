@@ -90,26 +90,16 @@ function SignerPicker(p: {
     </div>
   );
 }
-/** CR-123 FR-13: "Ký bằng: <nhà cung cấp>" (đã đặt riêng cho bước bản cũ, hoặc mặc định của công ty) — đổi ở Cài đặt › Ký số, không ở bước. */
-function ProviderLine(p: {
-  providers: readonly { key: string; label: string }[];
-  providerKey: string | null | undefined;
-  error: string | undefined;
-}) {
+/** CR-125 · m4 · MOD-FR-11: node không chọn nhà cung cấp — người ký chọn cách ký lúc ký; cách khả dụng đặt ở Cài đặt › Ký số. */
+function SignChoiceLine() {
   const { t } = useTranslation();
-  const name = p.providers.find((x) => x.key === p.providerKey)?.label ?? p.providerKey;
   return (
     <div
       className="flex flex-wrap items-center gap-x-2 text-body"
       data-testid="esign-provider-line"
     >
-      <span>{t(`${K}signWith`, { name: name ?? t(`${K}noProvider`) })}</span>
+      <span>{t(`${K}signChooses`)}</span>
       <EsignSettingsLink />
-      {p.error ? (
-        <span role="alert" className="text-caption text-destructive">
-          {p.error}
-        </span>
-      ) : null}
     </div>
   );
 }
@@ -193,11 +183,7 @@ export function EsignPanel(p: NodePanelProps) {
   const toNum = (v: string) => (v.trim() === "" ? undefined : Math.trunc(Number(v)));
   return (
     <fieldset className="space-y-3" data-testid="node-config" aria-label={t(`${K}title`)}>
-      <ProviderLine
-        providers={o.providers}
-        providerKey={cfg.provider ?? o.default_provider}
-        error={issue("provider")}
-      />
+      <SignChoiceLine />
       <div className="grid grid-cols-2 items-start gap-3">
         <SelectField
           id={`${stage.uid}-order`}

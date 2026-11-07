@@ -25,11 +25,13 @@ type Raw = {
   completed_at: string | null;
   created_at: string;
   sent_by: string;
+  due_h: number | null;
+  remind_every_h: number | null;
 };
 const COLS =
   sql.raw(`e.id, e.contract_id, e.provider, e.envelope_id, e.status, e.signers, e.reason, e.signed_file_id,
   to_char(e.completed_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as completed_at,
-  to_char(e.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at, e.sent_by`);
+  to_char(e.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at, e.sent_by, e.due_h, e.remind_every_h`);
 const toRow = (r: Raw | undefined): EnvelopeRow | null =>
   r
     ? {
@@ -44,6 +46,8 @@ const toRow = (r: Raw | undefined): EnvelopeRow | null =>
         completedAt: r.completed_at,
         createdAt: r.created_at,
         sentBy: r.sent_by,
+        dueH: r.due_h ?? null,
+        remindEveryH: r.remind_every_h ?? null,
       }
     : null;
 

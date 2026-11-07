@@ -24,6 +24,8 @@ export type FlowCtx = {
   bridge?: BridgeApi;
   /** Tên bước (0-based) cho tóm tắt node ("Chờ ký", "Kết thúc…"). */
   stepName?: (n: number) => string;
+  /** CR-125 m4 · khoá node bảng đã có trong flow (nguồn cho tự nối đầu vào khi thêm node). */
+  nodeKeys?: readonly string[];
   /** Sửa một stage khác theo uid (vd đặt giờ chờ của stage chờ ký khi đổi hạn ký ở stage gửi). */
   patchStage?: (uid: string, patch: Partial<StageDraft>) => void;
   /** CR-123 · u3a · sửa NHIỀU stage trong MỘT lần đổi (cụm node module: tên, cấu hình + giờ chờ) — không để lần sau ghi đè lần trước. */

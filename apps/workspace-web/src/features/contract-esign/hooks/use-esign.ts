@@ -69,10 +69,10 @@ export function useEsign(id: string) {
       run(() => sendEsign(id, s, provider), t("contracts.esign.sent")),
     refresh: () => run(() => refreshEsign(id)),
     cancel: (reason: string) => run(() => voidEsign(id, reason)),
-    signNow: () =>
+    signNow: (provider?: string) =>
       run(async () => {
         const back = signReturnUrl(window.location.origin, id);
-        const { url } = await signUrl(id, back);
+        const { url } = await signUrl(id, back, provider);
         window.location.assign(url);
         return undefined;
       }),

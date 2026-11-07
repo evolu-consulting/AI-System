@@ -22,8 +22,11 @@ export const refreshEsign = (id: string) =>
   api<ESignStateOut>(`${base(id)}/refresh`, { method: "POST" });
 export const voidEsign = (id: string, reason: string) =>
   api<ESignStateOut>(`${base(id)}/void`, { method: "POST", body: { reason } });
-export const signUrl = (id: string, returnUrl: string) =>
-  api<{ url: string }>(`${base(id)}/sign-url`, { method: "POST", body: { return_url: returnUrl } });
+export const signUrl = (id: string, returnUrl: string, provider?: string) =>
+  api<{ url: string }>(`${base(id)}/sign-url`, {
+    method: "POST",
+    body: { return_url: returnUrl, ...(provider ? { provider } : {}) },
+  });
 export const signedLink = (id: string) => api<{ url: string }>(`${base(id)}/signed-link`);
 export const fetchEsignSettings = () => api<ESignSettingsOut>("/pack/contracts/esign/settings");
 export const saveEsignSettings = (patch: ESignSettingsIn) =>

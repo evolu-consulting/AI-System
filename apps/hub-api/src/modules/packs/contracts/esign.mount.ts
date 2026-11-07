@@ -20,10 +20,8 @@ import { esignAnchorRoutes } from "./adapters/esign-anchor.routes";
 import { activeUserOf, deptHeadOf, esignFlowRepo, packWriters } from "./adapters/esign-flow.repo";
 import { esignFlowRoutes } from "./adapters/esign-flow.routes";
 import { esignNodeDirectory } from "./adapters/esign-node.repo";
-import { esignNodeValidator } from "./adapters/esign-node.validator";
 import { escalateTargetsOf, esignSweepRepo } from "./adapters/esign-sweep.repo";
 import { esignSyncClaim } from "./adapters/esign-sync.repo";
-import { INTAKE_TOOL_KEYS } from "./adapters/intake.tools";
 import type { ESignFiles, ESignProvider, ESignRegistry } from "./application/esign.ports";
 import { type ESignUsecase, esignUsecase } from "./application/esign.usecase";
 import { esignAnchors } from "./application/esign-anchor.usecase";
@@ -33,6 +31,7 @@ import { type EsignSyncDeps, esignSyncEnv } from "./application/esign-sync";
 import { metaOf, providerEntriesOf } from "./domain/esign.providers";
 import { docusignConfigOf } from "./domain/esign.rules";
 import { type ESignEvent, esignEventOf } from "./domain/esign-event.rules";
+import { esignBindingChecks } from "./nodes/esign/binding";
 
 type EnvMap = Record<string, string | undefined>;
 const repos = (tx: Tx, t: string) => ({ esign: esignRepo(tx, t), esignFlow: esignFlowRepo(tx, t) });
@@ -136,10 +135,7 @@ export function esignModule(
   });
   // CR-122 · E5b · lưu def có node Ký số ⇒ server tự kiểm cấu hình (validator theo node, `processes/defs` gọi).
   // E5d · theo KHOÁ TOOL (không chỉ theo node): def gọi thẳng `contracts-esign-send` không mang `node` cũng bị kiểm.
-  moduleRegistry.bindNode({
-    key: "contracts.esign",
-    toolValidators: { [INTAKE_TOOL_KEYS.esignSend]: esignNodeValidator(u.checkNode) },
-  }); // CR-125 · m2 · đăng ký hộ `nodeConfigRegistry.registerTool` (hành vi không đổi)
+  moduleRegistry.bindNode(esignBindingChecks(u.checkNode)); // CR-125 · m4 · binding Ký số (nodes/esign/binding.ts) — validator theo khoá tool
   // esign-flow-fix · quyền ghi gói của người ký (cổng quyền cần cache cấu hình ⇒ gắn sau ở `packs.mount`).
   let writers: Writers | null = null;
   const active = activeUserOf(db);

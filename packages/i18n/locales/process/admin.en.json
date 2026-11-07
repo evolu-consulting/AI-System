@@ -232,7 +232,7 @@
         "fileUnsupported": "File inputs are not supported yet, so this feature cannot be chosen.",
         "err": {
           "pick": "Choose a feature.",
-          "argRequired": "Choose a source.",
+          "argRequired": "This step is missing data — take it from the trigger or an earlier step.",
           "TOOL_INVALID": "The feature is incomplete: fill every required input from a real source.",
           "TOOL_SIDE_EFFECT": "A feature with a real effect needs “Real action”.",
           "sideEffectLocked": "Real action is not available: every earlier step needs an approver.",
@@ -1425,6 +1425,7 @@
         "DIRECTORY_UNAVAILABLE": "Could not check the directory, try again later."
       },
       "signWith": "Sign with: {{name}}",
+      "signChooses": "How to sign: the signer chooses when signing",
       "noProvider": "no provider chosen",
       "change": "Change in Settings › E-sign"
     },

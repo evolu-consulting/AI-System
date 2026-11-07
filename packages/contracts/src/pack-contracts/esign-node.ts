@@ -4,7 +4,7 @@
 // dạng: logic (`EsignNodeConfig`, mảng) và dạng args (`encodeEsignNodeArgs`/`decodeEsignNodeArgs`, `company_signers` = chuỗi
 // `user:<uuid>,group:<uuid>`). Panel node dùng dạng logic; lưu def đổi sang dạng args.
 import { z } from "zod";
-import { ESignProviderKey, type ESignProviderOut } from "./esign";
+import type { ESignProviderOut } from "./esign";
 
 export const ESIGN_NODE_ORDERS = ["parallel", "sequential"] as const;
 export type EsignNodeOrder = (typeof ESIGN_NODE_ORDERS)[number];
@@ -19,8 +19,7 @@ export const EsignNodeSignerSchema = z.strictObject({
 export type EsignNodeSigner = z.infer<typeof EsignNodeSignerSchema>;
 
 export const EsignNodeConfigSchema = z.strictObject({
-  /** Nhà cung cấp (phải đang bật cho công ty). Vắng ⇒ mặc định của công ty. */
-  provider: ESignProviderKey.optional(),
+  // CR-125 · m4 · MOD-FR-11: node KHÔNG còn nhà cung cấp — người ký chọn cách ký lúc ký; `provider` cũ trong def đã lưu bị bỏ qua khi đọc.
   /** Người ký phía công ty: người cụ thể hoặc Group (mọi thành viên còn dùng được). Vắng ⇒ người bắt đầu lượt như trước. */
   company_signers: z.array(EsignNodeSignerSchema).min(1).max(ESIGN_NODE_SIGNERS_MAX).optional(),
   /** `true` ⇒ bắt buộc có đối tác ký (thiếu email ⇒ lỗi); `false` ⇒ chỉ công ty ký; vắng ⇒ có email thì đối tác ký như trước. */
@@ -36,7 +35,6 @@ export type EsignNodeConfig = z.infer<typeof EsignNodeConfigSchema>;
 
 /** Khoá tham số của tool `contracts-esign-send` (ngoài `contract_id`) — khớp `EsignNodeConfig`. */
 export const ESIGN_NODE_PARAMS = [
-  "provider",
   "company_signers",
   "partner_signs",
   "order",
@@ -52,7 +50,6 @@ const SIGNER_RE = /^(user|group):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4
 /** Cấu hình logic ⇒ `args` (giá trị đơn). Trường vắng không xuất hiện. */
 export function encodeEsignNodeArgs(c: EsignNodeConfig): EsignNodeArgs {
   const out: EsignNodeArgs = {};
-  if (c.provider !== undefined) out.provider = c.provider;
   if (c.company_signers)
     out.company_signers = c.company_signers.map((s) => `${s.kind}:${s.id}`).join(",");
   if (c.partner_signs !== undefined) out.partner_signs = c.partner_signs;

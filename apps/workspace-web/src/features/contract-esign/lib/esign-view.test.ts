@@ -71,6 +71,12 @@ describe("provider helpers", () => {
     expect(pickDefaultProvider(ps, "a")).toBe("b");
     expect(pickDefaultProvider([], null)).toBe("");
   });
+  it("CR-125 m4 · chọn cách ký: nhiều cách khả dụng ⇒ hỏi (chọn sẵn cách của phong bì); một cách ⇒ ký thẳng", () => {
+    const two = [P("docusign"), P("selfsign", true, false)];
+    expect(showProviderPicker(two)).toBe(true);
+    expect(pickDefaultProvider(two, "selfsign")).toBe("selfsign");
+    expect(showProviderPicker([P("docusign"), P("misa", false)])).toBe(false);
+  });
   it("mã lỗi mới có khoá riêng, lạ ⇒ unknown", () => {
     expect(esignErrKey("ESIGN_NOT_SIGNER")).toBe("contracts.esign.err.ESIGN_NOT_SIGNER");
     expect(esignErrKey("X")).toBe("contracts.esign.err.unknown");

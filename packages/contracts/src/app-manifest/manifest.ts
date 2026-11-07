@@ -114,6 +114,8 @@ export type AppNodeIo = {
   required: boolean;
   /** CR-122 · A · nhãn nghiệp vụ (UI ghi "Bước «Gửi ký số» cần «Hợp đồng»"); vắng ⇒ dùng `key`. */
   label?: { vi: string; en: string };
+  /** CR-125 m4 · cách khắc phục khi đầu vào bắt buộc không có nguồn (vd "thêm bước Tải hợp đồng trước"). */
+  fix?: { vi: string; en: string };
 };
 /** Nhãn hai thứ tiếng của một đầu vào/ra; vắng ⇒ khoá. */
 export const ioLabel = (io: { key: string; label?: { vi: string; en: string } }) =>

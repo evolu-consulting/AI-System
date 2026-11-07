@@ -42,11 +42,6 @@ export type EsignNodeDeps = {
 };
 
 export function esignNodeApi(d: EsignNodeDeps) {
-  const providerIssue = async (tenantId: string, key: string): Promise<Issues> => {
-    const s = await d.settingsOf(tenantId);
-    if (!s.enabled) return [{ field: "provider", code: "ESIGN_DISABLED" }];
-    return d.avail(key) ? [] : [{ field: "provider", code: "PROVIDER_UNAVAILABLE" }];
-  };
   const signerIssue = async (
     tenantId: string,
     entries: readonly EsignNodeSigner[],
@@ -78,9 +73,8 @@ export function esignNodeApi(d: EsignNodeDeps) {
 
     /** Kiểm cấu hình node lúc LƯU def: nhà cung cấp phải đang bật + khả dụng, người ký/Group thuộc công ty (còn dùng được). Lỗi theo khoá trường. */
     async checkNode(tenantId: string, c: EsignNodeConfig): Promise<Issues> {
-      const a = c.provider !== undefined ? await providerIssue(tenantId, c.provider) : [];
       const b = c.company_signers?.length ? await signerIssue(tenantId, c.company_signers) : [];
-      return [...a, ...b];
+      return [...b];
     },
 
     /** Người ký công ty của node: mục `user`/`group` ⇒ danh sách user (thứ tự khai, bỏ trùng, ≤ trần); mục lạ / rỗng ⇒ ném. */

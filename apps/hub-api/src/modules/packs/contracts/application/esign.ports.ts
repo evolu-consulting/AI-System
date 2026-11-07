@@ -99,6 +99,9 @@ export type EnvelopeRow = {
   completedAt: string | null;
   createdAt: string;
   sentBy: string;
+  /** CR-125 m4 · hạn ký + chu kỳ nhắc (giờ) của node, để gửi lại khi người ký đổi cách ký. */
+  dueH?: number | null;
+  remindEveryH?: number | null;
 };
 
 export type ContractForSign = {

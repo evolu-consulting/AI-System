@@ -53,7 +53,12 @@ export type IntakeToolDeps = {
 const CONTRACT = { name: "contract_id", type: "text", required: true, description: "Mã hợp đồng" };
 /** E5 · cấu hình node Ký số (tuỳ chọn; trống ⇒ cài đặt ký số chung của app). Giá trị đơn; `company_signers` = `user:<id>,group:<id>`. */
 const ESIGN_NODE_PARAM_DEFS: readonly PackToolDef["params"][number][] = [
-  { name: "provider", type: "text", required: false, description: "Nhà cung cấp ký số" },
+  {
+    name: "provider",
+    type: "text",
+    required: false,
+    description: "Đã bỏ — người ký chọn cách ký lúc ký (giá trị cũ bị bỏ qua)",
+  },
   { name: "company_signers", type: "text", required: false, description: "Người ký phía công ty" },
   { name: "partner_signs", type: "boolean", required: false, description: "Đối tác ký" },
   {
@@ -93,7 +98,7 @@ async function planSend(
     signers,
     node,
     signer: users?.[0] ?? ctx.userId,
-    custom: cfg.provider !== undefined || Object.keys(node).length > 0,
+    custom: Object.keys(node).length > 0,
   };
 }
 
@@ -159,7 +164,7 @@ function rawIntakeTools(d: IntakeToolDeps): PackToolDef[] {
           : null;
         const p = await planSend(d, ctx, cfg, parsed);
         // E5 · args GHI ĐÈ cài đặt app; không có cấu hình node ⇒ đúng đường cũ (4 tham số).
-        if (p.custom) await d.send(ctx.tenantId, p.signer, id, p.signers, cfg.provider, p.node);
+        if (p.custom) await d.send(ctx.tenantId, p.signer, id, p.signers, undefined, p.node);
         else await d.send(ctx.tenantId, p.signer, id, p.signers);
         return { status: "sent" };
       },

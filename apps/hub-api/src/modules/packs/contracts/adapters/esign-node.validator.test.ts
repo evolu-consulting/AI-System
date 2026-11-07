@@ -14,7 +14,7 @@ const tool = (args: Record<string, unknown>) => ({
 const seen: unknown[] = [];
 const validator = esignNodeValidator(async (_t, cfg) => {
   seen.push(cfg);
-  return cfg.provider === "nope" ? [{ field: "provider", code: "PROVIDER_UNAVAILABLE" }] : [];
+  return cfg.due_days === 7 ? [{ field: "due_days", code: "TOO_LONG" }] : [];
 });
 
 describe("E5b · esignNodeValidator", () => {
@@ -22,11 +22,10 @@ describe("E5b · esignNodeValidator", () => {
     const r = await validator("t1", {
       index: 2,
       node: ESIGN_NODE_KEY,
-      executor: tool({ provider: c("misa"), company_signers: c(`user:${U}`), due_days: c(3) }),
+      executor: tool({ company_signers: c(`user:${U}`), due_days: c(3) }),
     });
     expect(r).toEqual([]);
     expect(seen.at(-1)).toEqual({
-      provider: "misa",
       company_signers: [{ kind: "user", id: U }],
       due_days: 3,
     });
@@ -44,9 +43,9 @@ describe("E5b · esignNodeValidator", () => {
       await validator("t1", {
         index: 3,
         node: ESIGN_NODE_KEY,
-        executor: tool({ provider: c("nope") }),
+        executor: tool({ due_days: c(7) }),
       }),
-    ).toEqual([{ path: "stages.3.executor.args.provider", code: "PROVIDER_UNAVAILABLE" }]);
+    ).toEqual([{ path: "stages.3.executor.args.due_days", code: "TOO_LONG" }]);
   });
 
   it("stage không phải tool gửi ký / nguồn không hằng ⇒ bỏ qua", async () => {
@@ -57,7 +56,7 @@ describe("E5b · esignNodeValidator", () => {
       await validator("t1", {
         index: 0,
         node: ESIGN_NODE_KEY,
-        executor: tool({ provider: { from: "input", key: "p" } }),
+        executor: tool({ due_days: { from: "input", key: "p" } }),
       }),
     ).toEqual([]);
   });
@@ -69,11 +68,11 @@ describe("E5d · validator theo khoá tool", () => {
     nodeConfigRegistry.register("contracts.esign", validator);
     try {
       expect(
-        await nodeConfigRegistry.check("t1", [{ executor: tool({ provider: c("nope") }) }]),
-      ).toEqual([{ path: "stages.0.executor.args.provider", code: "PROVIDER_UNAVAILABLE" }]);
+        await nodeConfigRegistry.check("t1", [{ executor: tool({ due_days: c(7) }) }]),
+      ).toEqual([{ path: "stages.0.executor.args.due_days", code: "TOO_LONG" }]);
       // cùng hàm đăng ký theo node VÀ theo tool ⇒ chạy một lần (một lỗi)
       const both = await nodeConfigRegistry.check("t1", [
-        { node: "contracts.esign", executor: tool({ provider: c("nope") }) },
+        { node: "contracts.esign", executor: tool({ due_days: c(7) }) },
       ]);
       expect(both).toHaveLength(1);
     } finally {
@@ -89,12 +88,12 @@ describe("E5b · nodeConfigRegistry.check", () => {
     try {
       const out = await nodeConfigRegistry.check("t1", [
         { executor: { kind: "set" } },
-        { node: "e5b.test", executor: tool({ provider: c("nope") }) },
-        { node: "khac.node", executor: tool({ provider: c("nope") }) },
+        { node: "e5b.test", executor: tool({ due_days: c(7) }) },
+        { node: "khac.node", executor: tool({ due_days: c(7) }) },
         { node: "e5b.test", executor: tool({ order: c("random") }) },
       ]);
       expect(out).toEqual([
-        { path: "stages.1.executor.args.provider", code: "PROVIDER_UNAVAILABLE" },
+        { path: "stages.1.executor.args.due_days", code: "TOO_LONG" },
         { path: "stages.3.executor.args.order", code: "INVALID" },
       ]);
     } finally {

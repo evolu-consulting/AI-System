@@ -104,7 +104,7 @@ describe("E5 · args của node ghi đè cài đặt ký số của app", () => 
     expect(base?.provider).toBe("selfsign");
     expect(base?.signers).toMatchObject([{ role: "company", order: 1, client_user_id: A }]);
 
-    // (2) args ghi đè: nhà cung cấp misa (khác mặc định), người ký công ty = B (không phải người bắt đầu A), song song
+    // (2) args ghi đè (kèm `provider` cũ ⇒ bỏ qua): người ký công ty = B (không phải người bắt đầu A), song song
     await send.run(CTX(A), {
       contract_id: K[1] as string,
       provider: "misa",
@@ -113,7 +113,7 @@ describe("E5 · args của node ghi đè cài đặt ký số của app", () => 
       order: "parallel",
     });
     const over = await envelope(K[1] as string);
-    expect(over?.provider).toBe("misa");
+    expect(over?.provider).toBe("selfsign"); // CR-125 m4: `provider` cũ trong args bị bỏ qua — nhà cung cấp = mặc định công ty
     expect(over?.signers).toMatchObject([{ role: "company", order: 1, client_user_id: B }]);
   });
 
@@ -146,12 +146,7 @@ describe("E5 · args của node ghi đè cài đặt ký số của app", () => 
       default_provider: "selfsign",
       orders: ["parallel", "sequential"],
     });
-    expect(
-      await u.checkNode(T1, { provider: "misa", company_signers: [{ kind: "user", id: B }] }),
-    ).toEqual([]);
-    expect(await u.checkNode(T1, { provider: "docusign" })).toEqual([
-      { field: "provider", code: "PROVIDER_UNAVAILABLE" },
-    ]);
+    expect(await u.checkNode(T1, { company_signers: [{ kind: "user", id: B }] })).toEqual([]);
     expect(await u.checkNode(T1, { company_signers: [{ kind: "user", id: X }] })).toEqual([
       { field: "company_signers", code: "SIGNER_NOT_IN_TENANT" },
     ]);

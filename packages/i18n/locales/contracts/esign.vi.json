@@ -15,6 +15,7 @@
       "voided": "Đã huỷ ký",
       "reason": "Lý do: {{reason}}",
       "signNow": "Ký ngay",
+      "signMethodTitle": "Chọn cách ký",
       "refresh": "Làm mới trạng thái",
       "cancel": "Huỷ ký",
       "cancelReason": "Lý do huỷ",

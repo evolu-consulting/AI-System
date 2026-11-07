@@ -1,7 +1,7 @@
 ---
 id: CR-125
 tên: Module tính năng một khuôn (khai báo + xử lý máy chủ + panel cấu hình, chung một khoá)
-mã yêu cầu: MOD-FR-01..10, MOD-NFR-01..03
+mã yêu cầu: MOD-FR-01..12, MOD-NFR-01..03
 trạng thái: Intake nhanh 2026-11-07 (người dùng chấp nhận mọi mặc định), chưa làm
 liên quan: CR-122 (node module FLOW2-FR-25/26, `AppManifest.nodes/events`), CR-123 u3a (`process-module-nodes.ts`), CR-124 q3 (xây trên khuôn này), ADR-0037 (ranh giới module)
 ---
@@ -131,7 +131,8 @@ export const panelRegistry: { register(nodeKey: string, p: NodePanel): void; pan
 - **MOD-FR-08 Panel riêng.** Given `panelRegistry.register("contracts.esign", EsignPanel)`, Then Ký số dùng panel riêng; panel cũ viết tay (`FlowEsignFields`, phần esign trong `NodeConfigPanel`) gỡ trong cùng lát (D6). `[test: unit]`
 - **MOD-FR-09 Scaffold.** When `bun run module:new contracts partner-send`, Then sinh `contracts/modules/contracts/partner-send/node.ts`, `hub-api/packs/contracts/nodes/partner-send/binding.ts` (+ test mẫu), tuỳ chọn `--panel` sinh `Panel.tsx`, chạy lại `module:index`; `check:modules` xanh ngay (binding mẫu đủ). `[test: unit scaffold trên thư mục tạm]`
 - **MOD-FR-10 DLC không đụng.** Given node DLC hiện có, Then sổ ghi `legacy: true` từ khai báo hiện tại, không đòi binding, không di chuyển file DLC; `dlc:check` xanh. `[test: unit modules.rules legacy]`
-- **MOD-NFR-01 Hiệu năng.** Sổ dựng MỘT lần lúc khởi động, tra `Map` O(1), `verify` O(node + sự kiện + kết quả), < 10 ms với 100 node; `check:modules` < 3 s; trình sửa không thêm request (vẫn `palette-api`). `[test: unit đo verify 100 node]`
+- **MOD-FR-11 Người ký chọn cách ký (người dùng chốt 2026-11-07).** Given node Ký số, Then cấu hình node CHỈ khai AI ký (người ký công ty, đối tác, thứ tự) + hạn ký + nhắc; KHÔNG có nhà cung cấp. When người ký bấm «Ký ngay», Then chọn trong các cách công ty đã bật (DocuSign, Ký thử, MISA… = registry nhà cung cấp + cài đặt ký số của công ty); chỉ một cách khả dụng ⇒ ký thẳng, không hỏi. Cách khác loại phong bì đã gửi ⇒ huỷ phong bì cũ (không bắn `esign.voided`) và gửi lại cùng người ký/hạn/nhắc, chỉ khi chưa ai ký. Def đã lưu có `provider` vẫn chạy: trường bị bỏ qua khi đọc (không migration). `[test: unit esign-node (decode bỏ qua provider); unit esign-switch; unit esign-view (hỏi/ký thẳng); int esign-node]`
+- **MOD-FR-12 Tự nối đầu vào (người dùng chốt 2026-11-07).** Given thêm một node, Then mọi đầu vào có ĐÚNG MỘT nguồn (khoá + kiểu trùng; vd `contract_id` từ «Bắt đầu khi») được nối luôn; chỉ hỏi khi nhiều nguồn hoặc không có, bằng câu nghiệp vụ kèm cách khắc phục («Bước «Ký số» cần «Hợp đồng» — thêm bước Tải hợp đồng trước.»), thay câu kỹ thuật «Chọn nguồn cho thông tin này». MỘT hàm thuần `autoMapInputs` ở `packages/contracts/src/modules/auto-map.ts` cho trình sửa và kiểm lúc lưu. `[test: unit auto-map; unit auto-bind]`- **MOD-NFR-01 Hiệu năng.** Sổ dựng MỘT lần lúc khởi động, tra `Map` O(1), `verify` O(node + sự kiện + kết quả), < 10 ms với 100 node; `check:modules` < 3 s; trình sửa không thêm request (vẫn `palette-api`). `[test: unit đo verify 100 node]`
 - **MOD-NFR-02 Tương thích.** Def đã lưu có `stage.node` (vd `contracts.esign`) chạy và mở như cũ — khoá node không đổi; nếu buộc đổi khoá ⇒ bảng `aliases` trong contracts (không migration). `[test: int lưu/mở def có sẵn]`
 - **MOD-NFR-03 Lỗi dễ hiểu.** Mọi lỗi §3 nói node nào, thiếu gì, sửa ở file nào.
 

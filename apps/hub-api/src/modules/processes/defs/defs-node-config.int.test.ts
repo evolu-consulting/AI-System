@@ -98,7 +98,7 @@ beforeAll(async () => {
     "contracts-esign-send",
     esignNodeValidator(async (t, cfg) => {
       checked.push(t);
-      return cfg.provider === "nope" ? [{ field: "provider", code: "PROVIDER_UNAVAILABLE" }] : [];
+      return cfg.due_days === 7 ? [{ field: "due_days", code: "PROVIDER_UNAVAILABLE" }] : [];
     }),
   );
   app = new Hono<AuthVars>();
@@ -138,10 +138,10 @@ describe("E5b · lưu def kiểm cấu hình node", () => {
     const r = await call(
       "POST",
       "/process-defs",
-      body([esignStage({ provider: { from: "const", value: "nope" } }), waitStage()]),
+      body([esignStage({ due_days: { from: "const", value: "7" } }), waitStage()]),
     );
     expect([r.status, codeOf(r)]).toEqual([422, "FLOW_NODE_CONFIG_INVALID"]);
-    expect(JSON.stringify(r.json)).toContain("stages.0.executor.args.provider");
+    expect(JSON.stringify(r.json)).toContain("stages.0.executor.args.due_days");
     expect(checked).toEqual([X]); // kiểm theo ĐÚNG công ty của người lưu
     const [n] = await o<
       { n: number }[]
@@ -163,17 +163,17 @@ describe("E5b · lưu def kiểm cấu hình node", () => {
     const r = await call(
       "POST",
       "/process-defs",
-      body([esignStage({ provider: { from: "const", value: "nope" } }, false)]),
+      body([esignStage({ due_days: { from: "const", value: "7" } }, false)]),
     );
     expect([r.status, codeOf(r)]).toEqual([422, "FLOW_NODE_CONFIG_INVALID"]);
-    expect(JSON.stringify(r.json)).toContain("stages.0.executor.args.provider");
+    expect(JSON.stringify(r.json)).toContain("stages.0.executor.args.due_days");
   });
 
   it("cấu hình đúng ⇒ không bị chặn bởi mã FLOW_NODE_CONFIG_INVALID", async () => {
     const r = await call(
       "POST",
       "/process-defs",
-      body([esignStage({ provider: { from: "const", value: "misa" } }), waitStage()]),
+      body([esignStage({ due_days: { from: "const", value: "3" } }), waitStage()]),
     );
     expect(codeOf(r)).not.toBe("FLOW_NODE_CONFIG_INVALID");
     expect(codeOf(r)).not.toBe("FLOW_NODE_SPLIT");

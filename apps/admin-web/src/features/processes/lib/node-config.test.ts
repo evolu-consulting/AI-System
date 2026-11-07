@@ -9,12 +9,12 @@ describe("FLOW_NODE_CONFIG_INVALID → lỗi theo ô", () => {
   test("lỗi lưu theo ô", () => {
     const err = new ApiError(422, "FLOW_NODE_CONFIG_INVALID" as never, "x", {
       issues: [
-        { path: "stages.3.executor.args.provider", code: "PROVIDER_UNAVAILABLE" },
+        { path: "stages.3.executor.args.due_days", code: "PROVIDER_UNAVAILABLE" },
         { path: "stages.3.executor.args.company_signers" },
       ],
     });
     expect(nodeConfigErrors(err)).toEqual({
-      "stages.3.executor.args.provider": "process.admin.flow.esign.err.PROVIDER_UNAVAILABLE",
+      "stages.3.executor.args.due_days": "process.admin.flow.esign.err.PROVIDER_UNAVAILABLE",
       "stages.3.executor.args.company_signers": "process.admin.apiError.FLOW_NODE_CONFIG_INVALID",
     });
     expect(nodeConfigErrors(new Error("x"))).toEqual({});
@@ -33,7 +33,6 @@ describe("node-config", () => {
       args: { contract_id: { from: "field" as const, value: "x:y", kind: "string" as const } },
     };
     const cfg = {
-      provider: "docusign",
       company_signers: [{ kind: "user" as const, id: U }],
       due_days: 5,
     };

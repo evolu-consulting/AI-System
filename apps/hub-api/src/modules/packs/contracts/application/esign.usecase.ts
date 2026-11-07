@@ -27,6 +27,7 @@ import type { ESignAnchors } from "./esign-anchor.usecase";
 import { esignExpire } from "./esign-expire";
 import { esignNodeApi, type NodeDirectory, type SendNodeOpts } from "./esign-node.usecase";
 import { storeSignedFile } from "./esign-signed-file";
+import { esignSwitch } from "./esign-switch";
 import { errName, VOID_PENDING, voidForExpiry, voidForReopen } from "./esign-void";
 
 export { ESignFail } from "./esign.helpers";
@@ -201,16 +202,15 @@ export function esignUsecase(d: ESignDeps) {
     return e;
   };
 
-  /** Nhà cung cấp người ký chọn lúc "Ký ngay": chỉ phong bì loại "ca" (khả dụng, cùng loại); loại "envelope" chỉ nhận đúng khoá. */
-  const signerProvider = (e: EnvelopeRow, key: string | undefined): string | null => {
-    if (key === undefined || key === e.provider) return null;
-    const ok =
-      kindOf(d.providers.entries, e.provider) === "ca" &&
-      kindOf(d.providers.entries, key) === "ca" &&
-      avail(key) !== null;
-    if (!ok) throw new ESignFail("ESIGN_PROVIDER_UNAVAILABLE", "signer-provider");
-    return key;
-  };
+  /** CR-125 · m4 · MOD-FR-11 · đổi cách ký lúc ký khác loại phong bì (`esign-switch.ts`). */
+  const resolveChoice = esignSwitch({
+    uow: d.uow,
+    avail,
+    warn: d.warn,
+    send: (who, id, signers, key, node) => sendWith(tenantRun(who), who, id, signers, key, node),
+    reopen: openOf,
+    kindOf: (k) => kindOf(d.providers.entries, k),
+  });
 
   /** esign-anchor · cụm trong văn bản cho từng người ký (chỉ nhà cung cấp loại "envelope"); không đặt được ⇒ null (trang ký cuối).
    *  Lỗi đọc chữ không chặn gửi ký. */
@@ -319,12 +319,12 @@ export function esignUsecase(d: ESignDeps) {
       const u = new URL(returnUrl);
       if (!/^https?:$/.test(u.protocol) || !RETURN_PATH(id).test(u.pathname))
         throw new ESignFail("VALIDATION", "return_url");
-      const e = await openOf(who, id);
+      const { e, key: asked } = await resolveChoice(who, id, await openOf(who, id), providerKey);
       const me = e.signers.find((s) => s.role === "company" && s.client_user_id === who.userId);
       if (!me) throw new ESignFail("ESIGN_NOT_SIGNER", "not-company-signer");
       const p = avail(e.provider);
       if (!p) throw new ESignFail("ESIGN_DISABLED", "provider-unavailable");
-      const chosen = signerProvider(e, providerKey);
+      const chosen = asked ?? null;
       const row: EnvelopeRow = chosen
         ? {
             ...e,

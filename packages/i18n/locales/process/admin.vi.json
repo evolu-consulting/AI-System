@@ -232,7 +232,7 @@
         "fileUnsupported": "Thông tin kiểu tệp chưa dùng được trong quy trình, nên tính năng này chưa chọn được.",
         "err": {
           "pick": "Chọn một tính năng.",
-          "argRequired": "Chọn nguồn cho thông tin này.",
+          "argRequired": "Bước này còn thiếu thông tin — lấy từ «Bắt đầu khi» hoặc một bước trước.",
           "TOOL_INVALID": "Tính năng chưa điền đủ: điền mọi thông tin bắt buộc từ nguồn có thật (tối đa 20 thông tin, không dùng tệp).",
           "TOOL_SIDE_EFFECT": "Tính năng có tác động thật chỉ dùng được khi bước bật “Hành động thật”.",
           "sideEffectLocked": "Tính năng có tác động thật cần “Hành động thật”, nhưng bước này không bật được: mọi bước ở phía trước phải có người duyệt.",
@@ -1425,6 +1425,7 @@
         "DIRECTORY_UNAVAILABLE": "Chưa kiểm được danh bạ, thử lại sau."
       },
       "signWith": "Ký bằng: {{name}}",
+      "signChooses": "Cách ký: người ký chọn khi ký",
       "noProvider": "chưa chọn nhà cung cấp",
       "change": "Đổi ở Cài đặt › Ký số"
     },

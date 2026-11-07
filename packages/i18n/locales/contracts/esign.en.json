@@ -15,6 +15,7 @@
       "voided": "Signing cancelled",
       "reason": "Reason: {{reason}}",
       "signNow": "Sign now",
+      "signMethodTitle": "Choose how to sign",
       "refresh": "Refresh status",
       "cancel": "Cancel signing",
       "cancelReason": "Cancellation reason",

@@ -100,6 +100,7 @@ export function FlowEditorBody({
     bridge,
     stepName: (n: number) => stages.find((s) => s.step === n)?.name ?? `${n + 1}`,
     selectRef,
+    nodeKeys: stages.flatMap((s) => (s.node ? [s.node] : [])),
     patchStage: (uid: string, patch: Partial<StageDraft>) =>
       onChange(
         trigger,

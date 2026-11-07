@@ -19,7 +19,6 @@ describe("E5 · EsignNodeConfig", () => {
 
   it("logic ⇄ args: round-trip, args chỉ giá trị đơn", () => {
     const c = {
-      provider: "docusign",
       company_signers: [
         { kind: "user" as const, id: U },
         { kind: "group" as const, id: G },
@@ -48,18 +47,26 @@ describe("E5 · EsignNodeConfig", () => {
     ).toEqual({ ok: true, config: { partner_signs: false, due_days: 3, order: "sequential" } });
   });
 
-  it("sai ⇒ báo đúng khoá: Group/người sai dạng, quá trần, thứ tự lạ, nhà cung cấp sai dạng", () => {
+  it("sai ⇒ báo đúng khoá: Group/người sai dạng, quá trần, thứ tự lạ", () => {
     const bad = decodeEsignNodeArgs({
       company_signers: "user:abc",
       due_days: 999,
       order: "random",
-      provider: "Bad Key!",
     });
     expect(bad.ok).toBe(false);
-    if (!bad.ok)
-      expect(bad.issues.sort()).toEqual(["company_signers", "due_days", "order", "provider"]);
+    if (!bad.ok) expect(bad.issues.sort()).toEqual(["company_signers", "due_days", "order"]);
     const four = [U, U, U, U].map((id) => `user:${id}`).join(",");
     expect(decodeEsignNodeArgs({ company_signers: four }).ok).toBe(false); // ≤ 3 người ký công ty
+  });
+
+  it("CR-125 m4 · provider cũ bị bỏ qua (def đã lưu vẫn chạy, mã hoá không ghi lại)", () => {
+    expect(decodeEsignNodeArgs({ provider: "docusign", due_days: 2 })).toEqual({
+      ok: true,
+      config: { due_days: 2 },
+    });
+    expect(decodeEsignNodeArgs({ provider: "Bad Key!" }).ok).toBe(true);
+    expect(ESIGN_NODE_PARAMS).not.toContain("provider");
+    expect("provider" in encodeEsignNodeArgs({ due_days: 2 })).toBe(false);
   });
 
   it("hạn ký ⇒ giờ chờ của stage chờ ký", () => {

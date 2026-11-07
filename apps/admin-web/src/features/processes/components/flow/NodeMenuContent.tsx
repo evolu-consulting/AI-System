@@ -2,8 +2,10 @@
 // Công ty chỉ thấy bước nghiệp vụ (Duyệt, Nếu, Ký số, Chờ ký xong, Thông báo, Kết thúc); mục "Nâng cao" chỉ quản trị nền tảng thấy
 // (logic chia ở `lib/node-menu`). Chọn một node ⇒ `pick` nhận danh sách {patch, name} (node module có thể nhiều bước).
 import type { AppNodeDecl } from "@ai/contracts/app-manifest";
+import { startOutputsOf } from "@ai/contracts/app-manifest";
 import { FLOW_PALETTE_MIME } from "@ai/flow-canvas/pure";
 import { useTranslation } from "react-i18next";
+import { notifyInfo } from "@/components/shared/toast";
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -11,6 +13,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useSession } from "@/lib/auth/use-session";
+import { autoBindNode, mapSources } from "../../lib/auto-bind";
 import type { StageDraft } from "../../lib/def-form";
 import { finishPatch, type NodeEntry, nodesForApp } from "../../lib/flow-def";
 import { type MenuItem, splitMenu } from "../../lib/node-menu";
@@ -39,8 +42,18 @@ export function NodeMenuContent({ pick, room, align = "start", drag }: Props) {
     const patch = n.id === "finish" ? finishPatch(ctx.event) : n.patch;
     return [{ patch, name: t(`process.admin.flow.node.${n.id}`) }];
   };
+  const lang = i18n.language === "vi" ? ("vi" as const) : ("en" as const);
+  const byKey = new Map((palette.data ?? []).map((n) => [n.key, n]));
+  /** CR-125 · m4 · tự nối đầu vào có đúng một nguồn; đầu vào còn lại ⇒ câu nghiệp vụ (chỉ khi thật sự chọn, không khi vẽ menu). */
+  const bound = (n: AppNodeDecl) =>
+    autoBindNode(
+      n,
+      nodeToPatches(n),
+      mapSources(startOutputsOf(ctx.event), ctx.nodeKeys ?? [], byKey),
+      lang,
+    );
   const moduleItems = (n: AppNodeDecl): PickedNode[] =>
-    nodeToPatches(n).map((patch, i) => {
+    bound(n).patches.map((patch, i) => {
       const name = nodeLabel(n, i18n.language);
       return { patch, name: i === 0 ? name : `${name} ${i + 1}` };
     });
@@ -78,7 +91,10 @@ export function NodeMenuContent({ pick, room, align = "start", drag }: Props) {
         key={m.node.key}
         data-testid={`flow-node-${m.node.key}`}
         disabled={room < m.node.stages.length}
-        onSelect={() => pick(moduleItems(m.node))}
+        onSelect={() => {
+          for (const q of bound(m.node).asks) notifyInfo(q);
+          pick(moduleItems(m.node));
+        }}
         {...dragProps(moduleItems(m.node), room < m.node.stages.length)}
       >
         {nodeLabel(m.node, i18n.language)}

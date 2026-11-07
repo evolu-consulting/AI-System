@@ -12,6 +12,7 @@ import { INTAKE_TOOL_KEYS, intakeTools } from "./adapters/intake.tools";
 import { contractLabelOf, signInviteBell } from "./application/esign-flow.usecase";
 import type { ESignEvent } from "./domain/esign-event.rules";
 import type { ESignModule } from "./esign.mount";
+import { esignBindingBase } from "./nodes/esign/binding";
 import { mountPartnerSend } from "./partner-mailbox.mount";
 
 const repos = (tx: Tx, t: string) => ({
@@ -87,11 +88,7 @@ export function mountIntake(
   for (const t of tools) d.packTools?.register(t);
   // CR-125 · m2 · sổ module: tool bước + node Ký số (gửi ký = `contracts-esign-send`; cổng cấu hình nối ở m4)
   for (const t of tools) moduleRegistry.bindTool(t);
-  moduleRegistry.bindNode({
-    key: "contracts.esign",
-    tools: [INTAKE_TOOL_KEYS.esignSend],
-    optionsPath: "/pack/contracts/esign/options",
-  });
+  moduleRegistry.bindNode(esignBindingBase); // CR-125 · m4 · nodes/esign/binding.ts
   mountPartnerSend(d, db); // CR-124 · q3 · node «Gửi đối tác xác nhận» + cổng hộp thư liên công ty (bộ chuyển tắt mặc định)
   // CR-122 E3 · bắn đúng khoá theo trạng thái cuối (đã ký / từ chối / huỷ). Webhook + vòng đồng bộ trùng ⇒ `signalEvent` chỉ thả
   // stage đang chờ một lần (khoá run; lần sau stage đã xong ⇒ không còn chờ khoá đó).

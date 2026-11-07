@@ -76,7 +76,7 @@ describe("E5 · tool Ký số theo args của node", () => {
           { role: "company" },
           { role: "partner", name: "Đối tác", email: "p@x.vn" },
         ],
-        "docusign",
+        undefined, // CR-125 m4: `provider` cũ trong args bị bỏ qua (người ký chọn cách ký lúc ký)
         { companyUsers: [U1, U2], order: "parallel" },
       ],
     ]);

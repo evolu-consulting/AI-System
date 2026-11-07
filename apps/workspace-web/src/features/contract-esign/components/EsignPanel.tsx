@@ -1,11 +1,22 @@
 // cf-esign-docusign · khối "Ký số" ở chi tiết HĐ (trung lập nhà cung cấp): Gửi ký (owner/editor) ⇒ "Đang chờ ký" (Ký ngay cho người ký
 // nội bộ, Làm mới trạng thái, Huỷ) ⇒ "Đã ký số" + thời điểm + tải "Bản đã ký"; từ chối/huỷ ⇒ lý do + Gửi lại. Ký thử ⇒ nhãn rõ.
-import type { ESignEnvelopeOut } from "@ai/contracts/pack-contracts";
+import type {
+  ESignEnvelopeOut,
+  ESignProviderOut,
+  ESignStateOut,
+} from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useEsign } from "../hooks/use-esign";
-import { type EsignView, esignView, hintKey, statusKey } from "../lib/esign-view";
+import {
+  type EsignView,
+  esignView,
+  hintKey,
+  showProviderPicker,
+  statusKey,
+} from "../lib/esign-view";
 import { EsignSendDialog } from "./EsignSendDialog";
+import { EsignSignMethodDialog } from "./EsignSignMethodDialog";
 
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString("vi-VN") : "");
 
@@ -64,11 +75,13 @@ function Actions({
   es,
   resend,
   onSend,
+  onSignNow,
 }: {
   v: EsignView;
   es: Es;
   resend: boolean;
   onSend: () => void;
+  onSignNow: () => void;
 }) {
   const { t } = useTranslation();
   const b = (show: boolean, label: string, fn: () => unknown, cls = "btn-quiet") =>
@@ -84,7 +97,7 @@ function Actions({
     );
   return (
     <>
-      {b(v.canSignNow, "contracts.esign.signNow", es.signNow, "btn-primary")}
+      {b(v.canSignNow, "contracts.esign.signNow", onSignNow, "btn-primary")}
       {b(v.canRefresh, "contracts.esign.refresh", es.refresh)}
       {b(v.canDownload, "contracts.esign.download", es.download, "btn-primary")}
       {v.canSend && (
@@ -116,10 +129,35 @@ function Signers({ e }: { e: ESignEnvelopeOut }) {
   );
 }
 
+function MethodDialog(p: {
+  s: ESignStateOut;
+  e: ESignEnvelopeOut | null;
+  es: Es;
+  open: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <EsignSignMethodDialog
+      open={p.open}
+      providers={p.s.providers ?? []}
+      current={p.e?.provider ?? p.s.default_provider ?? null}
+      busy={p.es.busy}
+      onClose={p.onClose}
+      onSign={(k) => void p.es.signNow(k).then(p.onClose)}
+    />
+  );
+}
+
+/** «Ký ngay»: nhiều cách khả dụng ⇒ hộp chọn cách ký; một cách ⇒ ký thẳng (không hỏi). */
+const signNowOf =
+  (providers: ESignProviderOut[] | undefined, es: Es, ask: (o: boolean) => void) => () =>
+    showProviderPicker(providers) ? ask(true) : void es.signNow();
+
 export function EsignPanel({ id, locked, write }: { id: string; locked: boolean; write: boolean }) {
   const { t } = useTranslation();
   const es = useEsign(id);
   const [open, setOpen] = useState(false);
+  const [method, setMethod] = useState(false);
   const s = es.q.data;
   const v = esignView(s, { locked, write });
   if (v.mode === "hidden" || !s) return null;
@@ -153,6 +191,7 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
           v={v}
           es={es}
           resend={e !== null}
+          onSignNow={() => (showProviderPicker(s.providers) ? setMethod(true) : void es.signNow())}
           onSend={() => {
             es.clearErr();
             setOpen(true);
@@ -179,6 +218,7 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
         onClose={() => setOpen(false)}
         onSend={(rows, p) => void es.send(rows, p).then((ok) => ok && setOpen(false))}
       />
+      <MethodDialog s={s} e={e} es={es} open={method} onClose={() => setMethod(false)} />
     </section>
   );
 }
