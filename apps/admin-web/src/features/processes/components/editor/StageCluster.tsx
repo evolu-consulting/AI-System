@@ -4,6 +4,7 @@
 import { useTranslation } from "react-i18next";
 import type { StageDraft } from "../../lib/draft-types";
 import type { ModuleCluster } from "../../lib/module-cluster";
+import { hasNodePanel } from "../../modules/panel-registry";
 import { usePalette } from "../../palette-api";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { NodeConfigPanel } from "../flow/NodeConfigPanel";
@@ -42,7 +43,7 @@ export function StageCluster(p: StageFormProps & { cluster: ModuleCluster }) {
         readOnly={readOnly}
         onChange={rename}
       />
-      {node?.config && cfg ? (
+      {hasNodePanel(node) && node && cfg ? (
         <NodeConfigPanel
           {...p}
           stage={cfg}

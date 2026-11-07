@@ -9,6 +9,7 @@ import { draftClusterOf } from "../../lib/module-cluster";
 import { isSet } from "../../lib/set-form";
 import { isTool } from "../../lib/tool-form";
 import { isWait, isWaitFamily } from "../../lib/wait-form";
+import { hasNodePanel } from "../../modules/panel-registry";
 import { usePalette } from "../../palette-api";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { NodeConfigPanel } from "../flow/NodeConfigPanel";
@@ -154,9 +155,10 @@ function ModuleBody(p: StageFormProps) {
   if (isWaitFamily(stage)) return <StageTimedWait {...p} />;
   // CR-122 · U2f · node có cấu hình riêng (manifest `config`): panel theo `options_path`, chỉ ở stage `config.stage` (stage tool).
   if (
-    node?.config &&
+    node &&
+    hasNodePanel(node) &&
     stage.executor === "tool" &&
-    node.stages[node.config.stage]?.executor.kind === "tool"
+    node.stages[node.config?.stage ?? 0]?.executor.kind === "tool"
   )
     return <NodeConfigPanel {...p} node={node} />;
   if (stage.executor === "notify" && stage.notifyRaw)
