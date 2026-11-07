@@ -2,6 +2,7 @@
 // tool `contracts-route` thật (repo thật) rẽ theo giá trị SAU khi sửa, phòng con của "sales", đối tác mới; chặn đọc chéo tenant ở cả hai
 // nguồn; trần 20 bước: def 22 stage lưu qua `ensureDef` thật + run/stage ở bước cuối (21) qua CHECK đã nới (migration 0097).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { PROCESS_STAGES_CEILING } from "@ai/contracts/chat";
 import { contracts, groups, members, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
@@ -225,7 +226,8 @@ describe("CR-121 D-1 · trần 20 bước (migration 0097)", () => {
     expect(s).toBe(21);
     const err = await step(
       "step22",
-      o`update hub.process_runs set current_step = 22 where id = ${run}`.then(
+      // Trần CHECK là cài đặt nền tảng (hub 0115, CR-123 p22): bước hợp lệ 0..CEILING-1 ⇒ CEILING bị chặn (không còn cố định 22).
+      o`update hub.process_runs set current_step = ${PROCESS_STAGES_CEILING} where id = ${run}`.then(
         () => "",
         (e: Error) => e.message,
       ),
