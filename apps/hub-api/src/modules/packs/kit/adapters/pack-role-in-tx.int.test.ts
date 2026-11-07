@@ -3,7 +3,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createDb, type Db, type Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
-import { tenants } from "@ai/test-kit/builders";
+import { tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { sql } from "drizzle-orm";
@@ -62,6 +62,24 @@ describe("withPackRoleInTx [CR-122 A2b]", () => {
       expect(await scope(tx)).toEqual(before);
       expect((await tx.execute<{ ok: number }>(sql`select 1 as ok`))[0]?.ok).toBe(1);
     });
+  });
+
+  it("CR-122 · trigger DEFERRED của gói (HĐ bán sang hiệu lực) chạy dưới role gói, không lỗi lúc COMMIT bằng hub_api", async () => {
+    const [u] = (await users(o, T, 1, { from: 1260 })) as [string];
+    const [c] =
+      (await o`insert into contracts.contracts (tenant_id, title, status, created_by, deal, direction, kind)
+      values (${T}, 'HĐ bán', 'needs_review', ${u}, 'sell', 'sale', 'contract') returning id::text`) as unknown as [
+        { id: string },
+      ];
+    // trước sửa: COMMIT ném "permission denied for schema contracts" (contracts_v2d_sc_upd chạy bằng hub_api)
+    await withHubScope(db, { kind: "system" }, async (tx) => {
+      await withPackRoleInTx(tx, "contracts", T, async () => {
+        await tx.execute(sql`update contracts.contracts set status = 'active', confirmed_at = now()
+          where id = ${c?.id}::uuid`);
+      });
+    });
+    const [after] = await o`select status from contracts.contracts where id = ${c?.id ?? ""}::uuid`;
+    expect(after?.status).toBe("active");
   });
 
   it("khoá gói sai / tenant không phải uuid ⇒ lỗi trước khi đổi gì", async () => {

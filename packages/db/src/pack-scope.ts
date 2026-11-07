@@ -117,6 +117,10 @@ export async function withPackRoleInTx<T>(
   let out: T;
   try {
     out = await fn();
+    // CR-122 · trigger ràng buộc DEFERRED của gói (vd contracts v2d_sc_*: HĐ bán sang hiệu lực) mặc định chạy lúc COMMIT — khi đó
+    // role đã trả về `hub_api` (không USAGE schema gói) ⇒ "permission denied for schema contracts" ⇒ cả tx engine rollback,
+    // stage Kết thúc kẹt `queued`. Chạy ngay các kiểm tra đang hoãn dưới role gói trước khi trả role.
+    await tx.execute(sql`set constraints all immediate`);
   } catch (e) {
     await restore().catch(() => undefined); // tx đã hỏng ⇒ sẽ rollback, giữ lỗi gốc
     throw e;
