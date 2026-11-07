@@ -3,11 +3,12 @@
 // chạy Ở WEB trên dữ liệu thẻ đã tải: hành vi y hệt thẻ cũ, KHÔNG phụ thuộc cờ HUB_FLOW_RUNTIME và không thêm yêu cầu mạng.
 // Khác hub: nhãn phòng lấy từ `/groups` (tên phòng ban đầu của bước) và `overdue` suy theo `now` khi hub cũ không gửi.
 
-import type {
-  FlowSkipCondSchema,
-  FlowStepStatus,
-  FlowStepView,
-  FlowView,
+import {
+  type FlowSkipCondSchema,
+  type FlowStepStatus,
+  type FlowStepView,
+  type FlowView,
+  moduleFlowStep,
 } from "@ai/contracts/flow";
 import type {
   ApprovalCardStep,
@@ -65,6 +66,7 @@ function stepOf(s: ApprovalCardStep, groups: readonly ContractGroup[], now: numb
     skip_when: skipOf(s),
     ...(s.warning ? { warning: s.warning } : {}),
   };
+  if (s.outcome) return moduleFlowStep(base, s.outcome, s.signer);
   if (s.kind === "dify") return { ...base, kind: "dify", assignee: { kind: "system" } };
   // CR-121 D-6b · Thông báo = bước hệ thống (không ai làm); Chờ tới = bước chờ tới giờ hẹn (`due_at`).
   if (s.kind === "notify") return { ...base, kind: "system", assignee: { kind: "system" } };

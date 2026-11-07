@@ -32,6 +32,16 @@
       }
     },
     "approval": {
+      "module": {
+        "signer": "Người ký: {{who}}",
+        "outcome": {
+          "pending": "Chưa tới lượt",
+          "waiting": "Đang chờ ký",
+          "done": "Đã ký",
+          "declined": "Từ chối",
+          "expired": "Hết hạn"
+        }
+      },
       "notifyNoRecipient": "Không có ai nhận thông báo bước {{name}} — chọn người nhận trong Công ty › Quy trình",
       "card": {
         "state": {

@@ -41,7 +41,10 @@ export type EngineStageView = {
   group_id?: string | null;
   /** P11f · vị trí stage trong run (khớp `PackStepView.idx`). */
   idx?: number;
+  /** CR-123 · u6 · cụm node module đã gộp một dòng (khớp `PackStepView.module`). */
+  module?: { node: string; outcome: ModuleOutcome; signer?: string };
 };
+export type ModuleOutcome = "pending" | "waiting" | "done" | "declined" | "expired";
 export type EngineStepsView = {
   status: string;
   started_by: string;
@@ -77,6 +80,9 @@ export type CardStep = {
   skip_when: FlowCond[] | null;
   /** CR-113 · bước đã quyết: người của bước (`member`) hay chủ gói duyệt thay (`owner_override`); chưa quyết ⇒ vắng. */
   decided_as?: DecidedAs;
+  /** CR-123 · u6 · bước là cụm node module (Ký số): trạng thái nghiệp vụ Đang chờ / Đã ký / Từ chối / Hết hạn. */
+  outcome?: ModuleOutcome;
+  signer?: string;
   /** CR-113 · bước đang mở đã quá hạn (giờ server). */
   overdue?: boolean;
   /** CR-113 · tên Group nhận khi chuyển cấp đã xảy ra (vắng khi chưa chuyển cấp / không biết tên). */
@@ -169,7 +175,11 @@ export const stageAt = (sv: EngineStepsView | null | undefined, idx: number) =>
  * DUYỆT của run đã tới (có task review hoặc đang mở), theo vị trí stage engine; nhánh chưa tới / node tự động không hiện.
  */
 export function runCardSteps(sv: EngineStepsView, x: CardExtras = {}): CardStep[] {
-  const reached = (st: EngineStageView) => !!st.task_ref || !!st.task || st.status === "open";
+  const reached = (st: EngineStageView) =>
+    !!st.task_ref ||
+    !!st.task ||
+    st.status === "open" ||
+    (!!st.module && st.module.outcome !== "pending");
   const placed = sv.steps.filter((st) => stageIdx(st) !== null);
   const shown = placed.filter(reached);
   // P11b · chưa có bước mở (vừa gắn run, node tự động đang chạy) ⇒ hiện bước KẾ TIẾP đang chờ, thẻ không trống.
@@ -197,6 +207,12 @@ function runCardStep(st: EngineStageView, x: CardExtras): CardStep {
     decided_at: st.decided_at,
     feedback: st.feedback,
     skip_when: null,
+    ...(st.module
+      ? {
+          outcome: st.module.outcome,
+          ...(st.module.signer ? { signer: st.module.signer } : {}),
+        }
+      : {}),
     ...ownerFields(st, x),
   };
 }

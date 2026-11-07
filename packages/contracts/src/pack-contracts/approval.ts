@@ -90,6 +90,10 @@ export const ApprovalCardStepSchema = z.strictObject({
   skip_when: z.array(FlowCondSchema).nullable().optional(),
   /** CR-113 · bước đã quyết: người của bước (`member`) hay chủ gói "duyệt thay" (`owner_override`); chưa quyết ⇒ vắng. */
   decided_as: z.enum(["member", "owner_override"]).optional(),
+  /** CR-123 · u6 · bước là MỘT node module (Ký số gộp gửi + chờ): trạng thái nghiệp vụ; vắng ở bước thường / hub cũ. */
+  outcome: z.enum(["pending", "waiting", "done", "declined", "expired"]).optional(),
+  /** CR-123 · u6 · tên người / phòng ký công ty của bước module. */
+  signer: z.string().max(200).optional(),
   /** CR-113 · bước đang mở đã quá hạn (giờ server); vắng ở bước không mở. */
   overdue: z.boolean().optional(),
   /** CR-113 · tên Group nhận khi chuyển cấp đã xảy ra. */

@@ -32,6 +32,16 @@
       }
     },
     "approval": {
+      "module": {
+        "signer": "Signer: {{who}}",
+        "outcome": {
+          "pending": "Not started",
+          "waiting": "Waiting for signatures",
+          "done": "Signed",
+          "declined": "Declined",
+          "expired": "Expired"
+        }
+      },
       "notifyNoRecipient": "Nobody receives the notification for step {{name}} — choose recipients in Company > Processes",
       "card": {
         "state": {

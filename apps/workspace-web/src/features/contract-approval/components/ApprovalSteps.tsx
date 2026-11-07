@@ -7,6 +7,7 @@ import { rowStatusLines } from "../lib/card-status";
 import { skipReason, type TimelineRow } from "../lib/engine-card";
 import { rowOfFlowStep } from "../lib/flow-view";
 import { EsignStepRow } from "./EsignStepRow";
+import { ModuleStepRow } from "./ModuleStepRow";
 import { StatusLines, useCanAct } from "./StatusLines";
 
 type Esign = NonNullable<ContractApproval["esign"]>;
@@ -96,6 +97,8 @@ function ReviewStep({ step, ctx }: StepProps<"review"> | StepProps<"dify">) {
 
 /** esign ⇒ `EsignStepRow` cũ (dựng lại `esign` của thẻ từ bước; "Gửi lại" theo id HĐ = `ctx.refId`). */
 function EsignStep({ step, ctx }: StepProps<"esign">) {
+  if (step.outcome)
+    return <ModuleStepRow name={step.name} outcome={step.outcome} signer={step.signer} />;
   const e = step.esign;
   return (
     <EsignStepRow

@@ -16,6 +16,7 @@ import { dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules"
 import { alsoGroupsOf, canAct, headGate, overrideOnly } from "../domain/tasks/task-access.rules";
 import type { ProcessRunStatus } from "../domain/types";
 import { RESOLVE_SLOT_SQL } from "../library/slot-resolve.repo";
+import { collapseModuleSteps, signerNamesOf, signerRefs } from "./pack-runs-modules";
 
 type Ts = Date | string;
 type StageSnap = Parameters<typeof stageMeta>[0] & {
@@ -49,6 +50,8 @@ type Row = {
   escalate_group_id: string | null;
   /** S1b · trưởng phòng của Group assignee task (null = không có). */
   group_head: string | null;
+  /** CR-123 · u6 · sự kiện stage chờ đã tiêu thụ (null = không có). */
+  consumed_event: string | null;
 };
 type Grant = { task_id: string; user_id: string | null; group_id: string | null; via: string };
 
@@ -68,6 +71,7 @@ const rowsSql = (runId: string, tenantId: string) => sql`
     t.id as task_id, t.status as task_status, t.result, t.feedback, t.decided_by, t.decided_at,
     coalesce(nullif(du.display_name, ''), du.username) as decided_name,
     t.assignee_group_id, t.escalate_at, t.escalated_at, t.escalate_group_id,
+    (select e.event from hub.process_run_events e where e.consumed_by = s.id and e.tenant_id = r.tenant_id limit 1) as consumed_event,
     coalesce(${approverSql("r.snapshot->'stages'->(s.stage_idx::int)", "r.tenant_id")}, (select d.head_user_id from admin.departments d where d.group_id = t.assignee_group_id
       and d.tenant_id = r.tenant_id)) as group_head
   from hub.process_runs r
@@ -198,11 +202,20 @@ export async function stepsView(
                 where a.task_id = any(${`{${open.join(",")}}`}::uuid[]) and a.tenant_id = ${u.tenantId}`)),
           ];
     const can = canActFn(u, groupIds, grants);
+    const snaps = rows.map(
+      (r) => (typeof r.stage === "string" ? JSON.parse(r.stage) : r.stage) ?? {},
+    );
+    const names = await signerNamesOf(tx, u.tenantId, snaps.flatMap(signerRefs));
     return {
       run_id: runId,
       status: head.run_status,
       started_by: head.started_by,
-      steps: rows.map((r) => stepOf(r, can)),
+      steps: collapseModuleSteps(
+        rows.map((r) => stepOf(r, can)),
+        snaps,
+        rows.map((r) => ({ stageStatus: r.stage_status, consumed: r.consumed_event })),
+        names,
+      ),
       decision:
         head.run_status === "needs_decision"
           ? { ...decisionOf(head.run_decision), ...stageCode(rows) }
