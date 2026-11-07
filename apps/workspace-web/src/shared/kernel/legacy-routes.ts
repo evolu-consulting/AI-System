@@ -15,6 +15,7 @@ export const CONTRACTS_PAGES: ReadonlySet<string> = new Set([
   "notifications",
   "feedback",
   "approvals", // CR-121 C-7 · "Chờ tôi duyệt" (không được đổi thành `/contracts/c/approvals`)
+  "partner-inbox", // CR-124 · "Hợp đồng đối tác gửi" (trang gốc, không phải id HĐ cũ)
   // Route gốc của app (không phải id HĐ cũ): `/contracts/login?sso=none…` là form đăng nhập, KHÔNG được đổi thành `/contracts/c/login`.
   "login",
   "sso",

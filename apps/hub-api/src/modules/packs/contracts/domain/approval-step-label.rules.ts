@@ -16,7 +16,8 @@ export type StepLabelView = {
 
 const OPEN = new Set(["open", "running"]);
 
-export function stepLabelOf(v: StepLabelView | null | undefined): string | null {
+/** `fromRun` = thẻ dựng bước từ run (event flow; `from_run` của thẻ): bước đầu là bước duyệt thật ⇒ "Chờ <tên bước>", không phải bước soạn. */
+export function stepLabelOf(v: StepLabelView | null | undefined, fromRun = false): string | null {
   if (!v) return null;
   if (v.status === "done")
     return v.steps.some((s) => s.status === "rejected") ? "Bị từ chối" : "Đã duyệt";
@@ -29,7 +30,9 @@ export function stepLabelOf(v: StepLabelView | null | undefined): string | null 
     return who ? `Chờ ${who} ký` : "Chờ ký";
   }
   // bước soạn (đầu) đang mở sau khi bị trả lại ⇒ nói rõ "Bị trả lại", chưa trả lại ⇒ "Chờ gửi duyệt"
-  if (cur.idx === 0)
-    return v.steps.some((s) => s.status === "returned") ? "Bị trả lại" : "Chờ gửi duyệt";
+  if (cur.idx === 0 && !fromRun) return draftLabel(v);
   return `Chờ ${cur.name}`;
 }
+
+const draftLabel = (v: StepLabelView): string =>
+  v.steps.some((s) => s.status === "returned") ? "Bị trả lại" : "Chờ gửi duyệt";

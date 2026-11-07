@@ -142,7 +142,10 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
       return r?.n ?? 0;
     },
     /** `contract.received` cùng tx (hàm DEFINER, CHỈ tenant hiện tại). event_id = `partner:<mailbox>` như bộ chuyển q1 ⇒ trùng không phát đôi. */
-    async emitReceived(items: readonly InboxItem[]): Promise<number> {
+    async emitReceived(
+      items: readonly InboxItem[],
+      actorId: string | null = null,
+    ): Promise<number> {
       if (items.length === 0) return 0;
       const j = JSON.stringify(
         items.map((i) => ({
@@ -152,7 +155,7 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
         })),
       );
       const [r] = await tx.execute<{ n: number }>(sql`select count(e.id)::int as n from (
-          select hub.emit_flow_event(${tid}::uuid, x.event_id, 'contract.received', x.ref, x.facts, null) as id
+          select hub.emit_flow_event(${tid}::uuid, x.event_id, 'contract.received', x.ref, x.facts, ${actorId}::uuid) as id
           from jsonb_to_recordset(${j}::jsonb) as x(event_id text, ref text, facts jsonb)) e`);
       return r?.n ?? 0;
     },

@@ -64,20 +64,26 @@ export function toListFilter(q: ContractListInput, today?: string): ContractList
   };
 }
 
+/** `fromRuns` = id run mà thẻ duyệt dựng bước từ run (event flow) — bước đầu là bước duyệt, không phải bước soạn. */
+type StepLabels = (
+  who: PackWho,
+  runIds: readonly string[],
+  fromRuns: ReadonlySet<string>,
+) => Promise<Map<string, string | null>>;
+
 /** CR-123 · u10 · thêm MỘT khoá `step_label` vào từng hàng (null ⇒ giữ nhãn trạng thái); không có cầu ⇒ giữ nguyên hàng. */
 async function withStepLabels<Row>(
-  stepLabels:
-    | ((who: PackWho, runIds: readonly string[]) => Promise<Map<string, string | null>>)
-    | undefined,
+  stepLabels: StepLabels | undefined,
   who: PackWho,
   items: Row[],
-  runs: readonly { id: string; run: string }[] = [],
+  runs: readonly { id: string; run: string; from_run?: boolean }[] = [],
 ): Promise<Row[]> {
   const labels =
     stepLabels && runs.length > 0
       ? await stepLabels(
           who,
           runs.map((x) => x.run),
+          new Set(runs.filter((x) => x.from_run === true).map((x) => x.run)),
         )
       : new Map<string, string | null>();
   const runOf = new Map(runs.map((x) => [x.id, x.run]));
@@ -96,7 +102,7 @@ export function listContracts<Row>(d: {
   /** V2-A: ngày lịch tenant (giai đoạn/quá hạn); vắng ⇒ ngày UTC. */
   today?: (tenantId: string) => Promise<string>;
   /** CR-123 · u10 · nhãn bước hiện tại theo id run engine (MỘT lô cho cả trang, cùng nguồn thẻ duyệt); vắng ⇒ không có `step_label`. */
-  stepLabels?: (who: PackWho, runIds: readonly string[]) => Promise<Map<string, string | null>>;
+  stepLabels?: StepLabels;
 }): ListContracts<Row> {
   return async (who, q) => {
     const want = q.include === "progress";

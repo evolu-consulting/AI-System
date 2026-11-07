@@ -67,11 +67,11 @@ export function contractsModule(
     );
   const runs = clock.runs;
   const stepLabels = runs
-    ? async (who: PackWho, ids: readonly string[]) =>
+    ? async (who: PackWho, ids: readonly string[], fromRuns: ReadonlySet<string>) =>
         new Map(
           [
             ...((await runs.port?.stepsViewMany?.({ ...who, role: "member" }, ids)) ?? new Map()),
-          ].map(([k, v]) => [k, stepLabelOf(v)] as const),
+          ].map(([k, v]) => [k, stepLabelOf(v, fromRuns.has(k))] as const),
         )
     : undefined;
   const r = contractsRoutes(view, {

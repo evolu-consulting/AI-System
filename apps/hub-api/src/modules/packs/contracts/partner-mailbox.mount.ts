@@ -3,7 +3,9 @@
 // CÙNG tx; GỬI = đóng lần gửi + `signalEvent('partner.<kết quả>')` cho node chờ (qua cổng engine `packRuns`, gắn lười). Bộ chuyển chỉ chạy khi
 // `HUB_PARTNER_MAILBOX=on` (mặc định tắt) — gọi `mountPartnerSend` luôn vô hại (chỉ đăng ký).
 import type { Db, Tx } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
 import { withPackScope } from "@ai/db/pack-scope";
+import { sql } from "drizzle-orm";
 import {
   createPackUow,
   moduleRegistry,
@@ -57,6 +59,24 @@ export function inboxItemsOf(
   });
 }
 
+/**
+ * Người "gây" sự kiện `contract.received` (bộ điều phối cần người chạy flow nhận — thiếu ⇒ FLOW_REFUSED, HĐ nhận kẹt): người phụ trách công ty
+ * nhận đã đặt; chưa đặt ⇒ quản trị công ty (hoạt động, sớm nhất) rồi thành viên nội bộ sớm nhất. Một câu, chỉ khi chưa có người phụ trách.
+ */
+export async function receiveActorOf(
+  db: Db,
+  tenantId: string,
+  ownerId: string | null,
+): Promise<string | null> {
+  if (ownerId) return ownerId;
+  const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
+    tx.execute<{ id: string }>(sql`select u.id::text as id from admin.users u
+      where u.tenant_id = ${tenantId}::uuid and u.kind = 'internal' and u.active
+      order by (u.role = 'tenant_admin') desc, u.created_at, u.id limit 1`),
+  );
+  return r?.id ?? null;
+}
+
 /** Tenant NHẬN: 3 câu cố định mỗi lô, một tx scope tenant (system user null). */
 export function receiveInbox(db: Db) {
   return (tenantId: string, limit: number): Promise<number> =>
@@ -68,7 +88,10 @@ export function receiveInbox(db: Db) {
         critical: s.criticalMin,
       });
       const n = await repo.insertBatch(items, s.ownerId);
-      await repo.emitReceived(items);
+      await repo.emitReceived(
+        items,
+        items.length > 0 ? await receiveActorOf(db, tenantId, s.ownerId) : null,
+      );
       return n;
     });
 }

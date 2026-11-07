@@ -136,12 +136,13 @@ test.beforeAll(async () => {
     password: PW,
   });
   await setDirectoryListed(API, bAdmin, idB, true);
+  // Người duyệt của B = kế toán; quản trị (Giám đốc) là người nhận hộp thư (người gây sự kiện, bị loại khỏi duyệt).
   for (const [key, name] of [
     ["phong-kinh-doanh", "Phòng Kinh doanh"],
     ["ke-toan", "Kế toán"],
     ["giam-doc", "Giám đốc"],
   ] as const)
-    await createGroupWith(API, bAdmin, { key, name, usernames: [U.director] });
+    await createGroupWith(API, bAdmin, { key, name, usernames: [U.accounting] });
   // B: flow nhận mặc định (đường sự kiện bắt buộc) gán qua danh sách flow công ty.
   await enableFlowTriggers(EB.tenantKey);
   await assignCompanyFlow(
@@ -215,7 +216,7 @@ test("1 · gửi lần đầu: giữ chờ kết nối → B nhận lời mời 
   // B: flow nhận mặc định chạy ⇒ người xác nhận bấm Đạt
   const { approveAs } = await import("./_journey");
   const bApprover = await ctx(browser);
-  await approveAs(bApprover, EB, U.director, inboxId, "Người xác nhận");
+  await approveAs(bApprover, EB, U.accounting, inboxId, "Người xác nhận");
 
   // A: chạy tiếp «Đã xác nhận», HĐ khoá, thẻ vòng gửi «đã xác nhận»
   await expectRound(emp, EA.cw, id, /đã xác nhận/);
@@ -239,13 +240,16 @@ test("2 · «Trả lại sửa»: B trả lại có lý do ⇒ A thấy thẻ «
     if (n++ > 0) await safeReload(b);
     await expect(card.first()).toBeVisible({ timeout: 5_000 });
   }).toPass({ timeout: 120_000 });
-  await card.first().getByRole("link", { name: "Mở" }).click();
-  await b.waitForURL(/\/contracts\/c\/[0-9a-f-]{36}/);
-  await expect(stepOf(b, "Người xác nhận")).toHaveAttribute("data-status", "open", {
+  const href = (await card.first().getByRole("link", { name: "Mở" }).getAttribute("href")) ?? "";
+  // Người xác nhận (kế toán B) mở HĐ nhận và Trả lại có lý do.
+  const b2 = await ctx(browser);
+  await loginCw(b2, EB, U.accounting);
+  await b2.goto(`${EB.cw}${href}`);
+  await expect(stepOf(b2, "Người xác nhận")).toHaveAttribute("data-status", "open", {
     timeout: 60_000,
   });
-  await b.locator("[data-approval=return]").click();
-  const form = b.locator("[data-approval=reason]");
+  await b2.locator("[data-approval=return]").click();
+  const form = b2.locator("[data-approval=reason]");
   await form.getByRole("textbox").fill(REASON);
   await form.getByRole("button", { name: /^Trả lại/ }).click();
 

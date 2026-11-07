@@ -77,7 +77,7 @@ export type ContractListPage<Row> = {
   parents: ListParentRef[];
   progress?: unknown[];
   /** CR-123 · u10 · HĐ của trang có lượt engine (id HĐ ⇒ id run) — để đặt nhãn cột "Bước"; không ra ngoài API. */
-  step_runs?: { id: string; run: string }[];
+  step_runs?: { id: string; run: string; from_run?: boolean }[];
   /** CR-101 DOC-model (khi `filter.docs`). */
   docs?: unknown[];
   children?: unknown[];

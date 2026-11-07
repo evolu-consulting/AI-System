@@ -55,6 +55,7 @@ describe("legacyTarget · tuyến SHT cũ ở gốc → /contracts/…", () => {
       "/contracts/settings/members",
       "/contracts/notifications#prefs",
       "/contracts/approvals", // CR-121 C-7: trang "Chờ tôi duyệt", không phải id HĐ cũ
+      "/contracts/partner-inbox", // CR-124: hộp «Hợp đồng đối tác gửi», không phải id HĐ cũ
       "/community",
       "/community/profile/o1/info",
       "/login?next=%2Foverview",

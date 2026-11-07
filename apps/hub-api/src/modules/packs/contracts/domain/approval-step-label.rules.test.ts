@@ -40,6 +40,14 @@ describe("CR-123 u10 · nhãn bước hiện tại của HĐ trong danh sách", 
       stepLabelOf(v("waiting_review", [s(0, "Xác nhận", "open"), s(1, "Duyệt", "returned")])),
     ).toBe("Bị trả lại");
   });
+  it("CR-124 · run của event flow (from_run): bước duyệt đầu đang mở ⇒ Chờ <tên bước>, không phải Chờ gửi duyệt", () => {
+    const run = v("waiting_review", [
+      s(0, "Giám đốc duyệt", "open"),
+      s(1, "Gửi đối tác", "pending"),
+    ]);
+    expect(stepLabelOf(run, true)).toBe("Chờ Giám đốc duyệt");
+    expect(stepLabelOf(run)).toBe("Chờ gửi duyệt");
+  });
   it("run xong ⇒ Đã duyệt / Bị từ chối; huỷ / lỗi ⇒ nhãn riêng; không có run ⇒ null", () => {
     expect(stepLabelOf(v("done", [s(0, "A", "passed")]))).toBe("Đã duyệt");
     expect(stepLabelOf(v("done", [s(0, "A", "passed"), s(1, "B", "rejected")]))).toBe("Bị từ chối");

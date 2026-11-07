@@ -8,7 +8,7 @@ const page = {
   items: [{ id: "c1" }, { id: "c2" }, { id: "c3" }],
   parents: [],
   step_runs: [
-    { id: "c1", run: "r1" },
+    { id: "c1", run: "r1", from_run: true },
     { id: "c2", run: "r2" },
   ],
 };
@@ -24,8 +24,9 @@ describe("listContracts · step_label", () => {
     const calls: (readonly string[])[] = [];
     const out = await listContracts<{ id: string; step_label?: string | null }>({
       uow,
-      stepLabels: async (_w, ids) => {
+      stepLabels: async (_w, ids, fromRuns) => {
         calls.push(ids);
+        expect([...fromRuns]).toEqual(["r1"]);
         return new Map([
           ["r1", "Chờ Giám đốc ký"],
           ["r2", null],

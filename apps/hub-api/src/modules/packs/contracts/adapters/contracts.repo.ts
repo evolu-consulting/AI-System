@@ -54,7 +54,7 @@ type ListOut = {
   items: ListRowRaw[] | string;
   parents: ListParentRef[] | string;
   progress: ProgressRaw[] | string | null;
-  step_runs?: { id: string; run: string }[] | string | null;
+  step_runs?: { id: string; run: string; from_run?: boolean }[] | string | null;
   docs?: unknown[] | string | null;
   children?: { value: number | string | null }[] | string | null;
 };
@@ -148,7 +148,11 @@ async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | 
           and pc.id in (select k.parent_id from contracts.contracts k join p on k.id = p.id
             where k.tenant_id = ${tid}::uuid and k.parent_id is not null)), '[]'::json) as parents,
       ${progressOf(tid, today !== undefined)} as progress,
-      (select json_agg(json_build_object('id', k.id, 'run', a.engine_run_id)) from contracts.contracts k
+      (select json_agg(json_build_object('id', k.id, 'run', a.engine_run_id,
+        -- from_run: cùng luật thẻ duyệt (engineCardView) — lượt không có bước mẫu (trừ Ký số) ⇒ thẻ dựng bước từ run
+        'from_run', not exists (select 1 from jsonb_array_elements(
+          case when jsonb_typeof(a.flow_steps) = 'array' then a.flow_steps else '[]'::jsonb end) e
+          where e->>'kind' is distinct from 'esign'))) from contracts.contracts k
         join contracts.approvals a on a.id = k.run_id and a.tenant_id = k.tenant_id
         where k.id in (select p.id from p) and k.tenant_id = ${tid}::uuid and a.engine_run_id is not null) as step_runs,
       ${docsOf(tid, f.docs === true)} as docs, ${childrenOf(tid, f.docs === true)} as children`);

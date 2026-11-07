@@ -11,9 +11,14 @@ import { cloneDb, inPack, openOwner, pgCode, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { createPackUow } from "../kit/adapters/pack-uow";
 import type { PackToolCtx } from "../kit/public";
+import { approvalRepo } from "./adapters/approval.repo";
+import { contractsRepo } from "./adapters/contracts.repo";
 import { esignRepo } from "./adapters/esign.repo";
 import { partnerSendRepo } from "./adapters/partner-send.repo";
 import { partnerSendTool } from "./adapters/partner-send.tool";
+import { engineView } from "./application/approval-engine-card.usecase";
+import { listContracts } from "./application/list-contracts.usecase";
+import { stepLabelOf } from "./domain/approval-step-label.rules";
 import { contractsOutcomeHandler } from "./flow-events.mount";
 import { onPartnerReplies, receiveInbox } from "./partner-mailbox.mount";
 
@@ -22,6 +27,7 @@ let db: Db;
 let A = "";
 let B = "";
 let UA = "";
+let UB = "";
 let C: string[] = [];
 const signals: { tenantId: string; ref: string; event: string }[] = [];
 const TAX_B = "0101234567";
@@ -79,7 +85,7 @@ beforeAll(async () => {
   o = openOwner(2);
   [A, B] = (await tenants(o, 2, 1324)) as [string, string];
   [UA] = (await users(o, A, 1, { from: 1324 })) as [string];
-  await users(o, B, 1, { from: 1325 });
+  [UB] = (await users(o, B, 1, { from: 1325 })) as [string];
   await o`update admin.tenants set legal_name = 'Công ty A', tax_code = '0109999999' where id = ${A}`;
   await o`update admin.tenants set legal_name = 'Công ty B', tax_code = ${TAX_B}, directory_listed = true where id = ${B}`;
   C = await contracts(o, A, 3, { from: 1324, createdBy: UA, status: "active" });
@@ -132,9 +138,10 @@ describe("CR-124 q3 · gửi → nhận → trả lời", () => {
       join contracts.contracts k on k.run_id = a.id and k.tenant_id = a.tenant_id where k.id = ${rows[0]?.id as string}::uuid`;
     expect(ap).toMatchObject({ status: "level1", mode: "engine", engine_run_id: null });
     const ev =
-      await o`select ref, tenant_id::text as t from hub.flow_events where event = 'contract.received'`;
+      await o`select ref, tenant_id::text as t, actor_id::text as actor from hub.flow_events where event = 'contract.received'`;
     expect(ev).toHaveLength(1);
-    expect(ev[0]).toMatchObject({ ref: rows[0]?.id, t: B });
+    // Có người gây sự kiện (chưa đặt người phụ trách ⇒ quản trị/thành viên sớm nhất của B) — thiếu ⇒ bộ điều phối từ chối, HĐ nhận kẹt.
+    expect(ev[0]).toMatchObject({ ref: rows[0]?.id, t: B, actor: UB });
     const [mb] = await o`select status from hub.partner_mailbox where from_tenant = ${A}`;
     expect(mb?.status).toBe("delivered");
     // A không có dòng nào của B và ngược lại (HĐ nhận chỉ ở B).
@@ -173,6 +180,57 @@ describe("CR-124 q3 · gửi → nhận → trả lời", () => {
     const [att] = await o`select a.engine_run_id::text as r, a.feedback from contracts.approvals a
       join contracts.contracts k on k.run_id = a.id where k.id = ${input.ref}::uuid`;
     expect(att).toMatchObject({ r: input.runId, feedback: null });
+    // Người thấy (giám đốc B): bước duyệt ĐẦU của flow nhận là bước duyệt thật ⇒ thẻ `from_run` + quyết được, cột "Bước" = "Chờ <bước> duyệt".
+    const whoB = { tenantId: B, userId: UB, platform: true };
+    const bUow = createPackUow(db, "contracts", (tx, t) => ({
+      approval: approvalRepo(tx, t),
+      contracts: contractsRepo(tx, t),
+    }));
+    const appr = await bUow.tenant(whoB, (r) => r.approval.state(input.ref, { lock: false }));
+    const sv = {
+      run_id: input.runId,
+      status: "waiting_review",
+      started_by: UB,
+      steps: [
+        {
+          idx: 0,
+          key: "duyet-nhan",
+          name: "Giám đốc duyệt",
+          status: "open",
+          group_id: null,
+          escalated_group_id: null,
+          due_at: null,
+          escalated: false,
+          result: null,
+          decided_by: null,
+          decided_at: null,
+          feedback: null,
+          task: { id: "task-1", can_act: true },
+        },
+      ],
+    };
+    const card = await engineView({
+      port: () => ({ stepsView: async () => sv }) as never,
+      uow: bUow as never,
+      jobs: { enqueue: async () => {} },
+    })(whoB, appr as never);
+    expect(card).toMatchObject({
+      mode: "engine",
+      from_run: true,
+      can_act: true,
+      task_id: "task-1",
+    });
+    const labels: string[] = [];
+    const page = await listContracts<{ id: string; step_label?: string | null }>({
+      uow: bUow as never,
+      stepLabels: async (_w, ids, fromRuns) => {
+        expect(fromRuns.has(input.runId)).toBe(true);
+        labels.push(...ids);
+        return new Map([[input.runId, stepLabelOf(sv as never, fromRuns.has(input.runId))]]);
+      },
+    })(whoB, { sort: "updated_at", dir: "desc", page: 1, page_size: 20 } as never);
+    expect(labels).toEqual([input.runId]);
+    expect(page.items.find((x) => x.id === input.ref)?.step_label).toBe("Chờ Giám đốc duyệt");
     expect(await apply()).toBe("applied");
     const [done] =
       await o`select a.status from contracts.approvals a join contracts.contracts k on k.run_id = a.id
