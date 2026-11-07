@@ -1,5 +1,6 @@
 // HUB-FR-146 · AC-H44 · PD2-R03/R05 · plan-d2-rules §1, D2-13/D2-29, Q-D2-2: dựng tham số gọi tool từ nguồn (input start /
 // trường output stage trước / hằng); phân loại lỗi gọi tool + quyết định thử lại (dùng chung `decideRetry`). Thuần, lớp 1.
+import { ioKeyOf } from "@ai/contracts/app-manifest";
 import type { JobErrorClass } from "../runs/job-error.rules";
 import { decideRetry, type RetryDecision, type RetryState } from "../runs/retry.rules";
 
@@ -14,6 +15,17 @@ export type BuiltArgs =
   | { ok: true; values: Record<string, ToolArgValue> }
   | { ok: false; missing: string };
 
+/**
+ * CR-122 · khoá input so khớp coi `-` và `_` là một: flow cũ/mẫu Thư viện khai `contract-id`, lượt mở từ sự kiện của app mang
+ * `contract_id` (manifest) — cùng một khái niệm. Có đúng khoá ⇒ dùng đúng khoá.
+ */
+export function inputKeyOf(key: string, inputs: ReadonlyMap<string, unknown>): string | undefined {
+  if (inputs.has(key)) return key;
+  const want = ioKeyOf(key);
+  for (const k of inputs.keys()) if (ioKeyOf(k) === want) return k;
+  return undefined;
+}
+
 /** Giá trị của một nguồn; vắng (input không có, stage nguồn `skipped` = null, trường không có) ⇒ `undefined`. */
 function sourceValue(
   src: ArgSource,
@@ -23,9 +35,10 @@ function sourceValue(
 ): ToolArgValue | undefined {
   if (src.from === "const") return src.value;
   if (src.from === "input") {
-    const v = inputs.get(src.key);
-    if (v === undefined) return undefined;
-    return inputTypes?.get(src.key) === "number" ? Number(v) : v;
+    const key = inputKeyOf(src.key, inputs);
+    const v = key === undefined ? undefined : inputs.get(key);
+    if (v === undefined || key === undefined) return undefined;
+    return inputTypes?.get(key) === "number" ? Number(v) : v;
   }
   const f = fields.get(src.stageKey);
   return f ? f[src.field] : undefined;

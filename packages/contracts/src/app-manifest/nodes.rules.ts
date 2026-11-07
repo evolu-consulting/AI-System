@@ -23,14 +23,17 @@ export type EdgeIssue =
  * Nối node trước → node sau: mỗi đầu vào `required` của node sau phải có đầu ra cùng khoá ở node trước; cùng khoá mà khác kiểu ⇒
  * lệch kiểu (kể cả đầu vào không bắt buộc). Rỗng ⇒ nối được. N2 dùng để gợi ý chèn node Ghi giá trị làm cầu nối.
  */
+/** CR-122 · một khái niệm, một khoá: `contract-id` (flow cũ) ≡ `contract_id` (manifest) — lúc chạy hub so khớp y như vậy. */
+export const ioKeyOf = (key: string): string => key.replaceAll("-", "_");
+
 export function edgeIssues(
   prevOutputs: readonly AppNodeIo[],
   nextInputs: readonly AppNodeIo[],
 ): EdgeIssue[] {
-  const out = new Map(prevOutputs.map((o) => [o.key, o.type]));
+  const out = new Map(prevOutputs.map((o) => [ioKeyOf(o.key), o.type]));
   const issues: EdgeIssue[] = [];
   for (const i of nextInputs) {
-    const got = out.get(i.key);
+    const got = out.get(ioKeyOf(i.key));
     if (got === undefined) {
       if (i.required) issues.push({ key: i.key, rule: "missing" });
     } else if (got !== i.type) issues.push({ key: i.key, rule: "type", expected: i.type, got });
