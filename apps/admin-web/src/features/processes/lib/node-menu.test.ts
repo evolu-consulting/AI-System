@@ -25,13 +25,12 @@ const ids = (xs: ReturnType<typeof splitMenu>["business"]) =>
 
 describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", () => {
   const table = nodesForApp("contracts");
-  test("công ty: Duyệt · Nếu · Ký số · Chờ ký xong · Thông báo · Kết thúc, không có Nâng cao", () => {
+  test("công ty: Duyệt · Nếu · Ký số · Thông báo · Kết thúc, không có Nâng cao và không có 'Chờ ký xong' riêng", () => {
     const m = splitMenu({ app: "contracts", isPlatform: false, table, modules: MODULES });
     expect(ids(m.business)).toEqual([
       "approve",
       "if",
       "contracts.esign",
-      "waitEsign",
       "core.bell",
       "core.email",
       "finish",
@@ -47,13 +46,15 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
     expect(adv.at(-1)).toBe("set");
     expect(adv).not.toContain("approve");
   });
-  test("Chờ ký xong chỉ ở app Hợp đồng", () => {
-    const m = splitMenu({
-      app: "community",
-      isPlatform: false,
-      table: nodesForApp("community"),
-      modules: [],
-    });
-    expect(ids(m.business)).not.toContain("waitEsign");
+  test("không app nào có mục 'Chờ ký xong' riêng (kể cả nâng cao)", () => {
+    for (const app of ["contracts", "community"]) {
+      const m = splitMenu({
+        app,
+        isPlatform: true,
+        table: nodesForApp(app),
+        modules: MODULES,
+      });
+      expect([...ids(m.business), ...ids(m.advanced)]).not.toContain("waitEsign");
+    }
   });
 });

@@ -26,6 +26,8 @@ export type FlowCtx = {
   stepName?: (n: number) => string;
   /** Sửa một stage khác theo uid (vd đặt giờ chờ của stage chờ ký khi đổi hạn ký ở stage gửi). */
   patchStage?: (uid: string, patch: Partial<StageDraft>) => void;
+  /** CR-123 · u3a · sửa NHIỀU stage trong MỘT lần đổi (cụm node module: tên, cấu hình + giờ chờ) — không để lần sau ghi đè lần trước. */
+  patchStages?: (items: readonly { uid: string; patch: Partial<StageDraft> }[]) => void;
   /** Workbench đăng ký hàm chọn node (bấm cảnh báo kiểm nối ⇒ chọn node trên canvas). */
   selectRef?: { current: ((uid: string) => void) | null };
 };

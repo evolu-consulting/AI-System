@@ -63,6 +63,17 @@ const esignStage = (args: Record<string, unknown>, withNode = true) =>
       args: { contract_id: { from: "const", value: "x" }, ...args },
     },
   });
+/** Nửa sau của node Ký số (chờ ký xong): CR-123 FR-14 — node nhiều stage phải đi đủ cụm. */
+const waitStage = (step = 1, key = "cho-ky") =>
+  stage(key, step, {
+    node: "contracts.esign",
+    executor: {
+      kind: "wait_event",
+      event: "esign.completed",
+      also_events: ["esign.declined", "esign.voided"],
+      timeout_h: 168,
+    },
+  });
 const body = (stages: object[]) => ({
   key: "e5b-ky-so",
   name: "Ký số",
@@ -127,7 +138,7 @@ describe("E5b · lưu def kiểm cấu hình node", () => {
     const r = await call(
       "POST",
       "/process-defs",
-      body([esignStage({ provider: { from: "const", value: "nope" } })]),
+      body([esignStage({ provider: { from: "const", value: "nope" } }), waitStage()]),
     );
     expect([r.status, codeOf(r)]).toEqual([422, "FLOW_NODE_CONFIG_INVALID"]);
     expect(JSON.stringify(r.json)).toContain("stages.0.executor.args.provider");
@@ -142,7 +153,7 @@ describe("E5b · lưu def kiểm cấu hình node", () => {
     const r = await call(
       "POST",
       "/process-defs",
-      body([esignStage({ order: { from: "const", value: "random" } })]),
+      body([esignStage({ order: { from: "const", value: "random" } }), waitStage()]),
     );
     expect([r.status, codeOf(r)]).toEqual([422, "FLOW_NODE_CONFIG_INVALID"]);
     expect(JSON.stringify(r.json)).toContain("stages.0.executor.args.order");
@@ -162,8 +173,35 @@ describe("E5b · lưu def kiểm cấu hình node", () => {
     const r = await call(
       "POST",
       "/process-defs",
-      body([esignStage({ provider: { from: "const", value: "misa" } })]),
+      body([esignStage({ provider: { from: "const", value: "misa" } }), waitStage()]),
     );
     expect(codeOf(r)).not.toBe("FLOW_NODE_CONFIG_INVALID");
+    expect(codeOf(r)).not.toBe("FLOW_NODE_SPLIT");
+  });
+});
+
+describe("CR-123 · u3a · FR-14 · lưu def mà node Ký số bị tách ⇒ 422 FLOW_NODE_SPLIT nói tên bước", () => {
+  const split = [
+    esignStage({}),
+    stage("giua", 1), // stage lạ chen giữa cụm
+    waitStage(2),
+  ];
+  const noSave = async () => {
+    const [n] = await o<
+      { n: number }[]
+    >`select count(*)::int as n from hub.process_defs where key = 'e5b-ky-so'`;
+    return n?.n;
+  };
+  it("stage lạ chen giữa gửi và chờ ⇒ 422 + message có tên bước + cách sửa, không lưu", async () => {
+    const r = await call("POST", "/process-defs", body(split));
+    expect([r.status, codeOf(r)]).toEqual([422, "FLOW_NODE_SPLIT"]);
+    const text = JSON.stringify(r.json);
+    expect(text).toContain("Bước Ký số bị tách rời — xoá rồi thêm lại bước Ký số");
+    expect(text).toContain("stages.0");
+    expect(await noSave()).toBe(0);
+  });
+  it("thiếu nửa chờ (chỉ có bước gửi) ⇒ 422 FLOW_NODE_SPLIT", async () => {
+    const r = await call("POST", "/process-defs", body([esignStage({})]));
+    expect([r.status, codeOf(r)]).toEqual([422, "FLOW_NODE_SPLIT"]);
   });
 });

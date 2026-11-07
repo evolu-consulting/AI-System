@@ -88,6 +88,14 @@ export function FlowEditorBody({
         trigger,
         stages.map((s) => (s.uid === uid ? { ...s, ...patch } : s)),
       ),
+    patchStages: (items: readonly { uid: string; patch: Partial<StageDraft> }[]) =>
+      onChange(
+        trigger,
+        stages.map((s) => {
+          const it = items.find((x) => x.uid === s.uid);
+          return it ? { ...s, ...it.patch } : s;
+        }),
+      ),
     trigger: { label: event?.label ?? trigger.event, summary, onOpen: () => setOpen((o) => !o) },
   };
   return (

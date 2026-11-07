@@ -34,6 +34,13 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object
 export const errorCode = (err: unknown): string | null =>
   err instanceof ApiError ? String(err.code) : null;
 
+/** CR-123 · u3a · FR-14: tên bước bị tách (`details.nodes[0].label`) cho câu lỗi + cách sửa. */
+function splitNodeName(err: unknown): string {
+  const nodes = err instanceof ApiError && isObj(err.details) ? err.details.nodes : null;
+  const first: unknown = Array.isArray(nodes) ? nodes[0] : null;
+  return isObj(first) && typeof first.label === "string" ? first.label : "";
+}
+
 export function processErrorSpec(err: unknown): MessageSpec {
   const code = errorCode(err);
   if (code === "TOO_MANY_PROCESS_RUNS") {
@@ -42,6 +49,8 @@ export function processErrorSpec(err: unknown): MessageSpec {
       params: { max: processRunsMaxOf(err instanceof ApiError ? err.details : null) }, // N2-FR-04
     };
   }
+  if (code === "FLOW_NODE_SPLIT")
+    return { key: "process.admin.apiError.FLOW_NODE_SPLIT", params: { name: splitNodeName(err) } };
   if (code && KNOWN.has(code)) return { key: `process.admin.apiError.${code}` };
   if (err instanceof ApiError && err.status === 403) return { key: "state.forbiddenAction" };
   return describeError(err);

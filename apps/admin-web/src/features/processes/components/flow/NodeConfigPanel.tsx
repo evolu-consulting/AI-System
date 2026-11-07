@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useUserList } from "@/features/users/api";
 import { api } from "@/lib/http";
 import { hubUrl } from "@/lib/hub";
+import { draftClusterOf } from "../../lib/module-cluster";
 import { checkPathOf, constArgs, ESIGN_CODEC, withConfigArgs } from "../../lib/node-config";
 import { SelectField, TextField } from "../editor/Fields";
 import type { StageFormProps } from "../editor/stage-form-props";
@@ -144,12 +145,21 @@ export function NodeConfigPanel(p: StageFormProps & { node: AppNodeDecl }) {
     const next = { ...cfg, ...patch } as Record<string, unknown>;
     for (const k of Object.keys(next)) if (next[k] === undefined) delete next[k];
     const c = next as EsignNodeConfig;
-    p.onChange({ tool: withConfigArgs(stage.tool, codec.keys, codec.encode(c)) });
+    const own = { tool: withConfigArgs(stage.tool, codec.keys, codec.encode(c)) };
     // hạn ký ⇒ đặt luôn giờ chờ của stage chờ đi kèm (hợp đồng E5)
     const h = codec.waitH(c);
-    const wait = p.all.find((s) => s.node === node.key && s.executor === "wait_event");
-    if (h !== null && wait)
-      flow?.patchStage?.(wait.uid, { wait: { ...wait.wait, timeoutH: String(h) } });
+    // đúng cụm của node này (nhiều node Ký số trong một flow ⇒ không đụng cụm khác)
+    const cl = draftClusterOf(p.all, p.index);
+    const wait = p.all.find(
+      (s, j) => !!cl && j >= cl.start && j < cl.end && s.executor === "wait_event",
+    );
+    // hai stage đổi trong MỘT lần (không để lần sau ghi đè lần trước)
+    if (h !== null && wait && flow?.patchStages)
+      flow.patchStages([
+        { uid: stage.uid, patch: own },
+        { uid: wait.uid, patch: { wait: { ...wait.wait, timeoutH: String(h) } } },
+      ]);
+    else p.onChange(own);
   };
   if (opts.isPending) return <p className="text-caption text-muted-foreground">…</p>;
   if (opts.isError || !opts.data)

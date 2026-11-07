@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { isApply } from "../../lib/apply-form";
 import { isForm } from "../../lib/form-fields";
 import { isIf } from "../../lib/if-form";
+import { draftClusterOf } from "../../lib/module-cluster";
 import { isSet } from "../../lib/set-form";
 import { isTool } from "../../lib/tool-form";
 import { isWait, isWaitFamily } from "../../lib/wait-form";
@@ -20,6 +21,7 @@ import { StageApprove } from "./StageApprove";
 import { StageApproveBasics } from "./StageApproveBasics";
 import { StageAutofix } from "./StageAutofix";
 import { StageBranch } from "./StageBranch";
+import { StageCluster } from "./StageCluster";
 import { StageFormFields } from "./StageFormFields";
 import { StageGate } from "./StageGate";
 import { StageGeneral, StageLimits } from "./StageGeneral";
@@ -216,6 +218,9 @@ function FlowMain(p: StageFormProps) {
 
 function FlowForm(p: StageFormProps) {
   const { stage } = p;
+  // CR-123 · u3a · FR-14: stage của node module nhiều stage (Ký số) ⇒ MỘT panel cho cả ô, bấm stage nào cũng vậy.
+  const cluster = draftClusterOf(p.all, p.index);
+  if (cluster) return <StageCluster {...p} cluster={cluster} />;
   const mod = !!stage.node;
   const approve = stage.executor === "approve" && !mod;
   const tool = isTool(stage) && !mod;

@@ -8,6 +8,7 @@ import { emptyStage, type StageDraft } from "../lib/def-form";
 import { linkDlcReject } from "../lib/dlc-slot";
 import { freshDlcStage, freshReviewStage, freshSlotStage } from "../lib/fresh-stages";
 import type { EdgeRef } from "../lib/insert-on-edge";
+import { waitBranchDefaults } from "../lib/module-cluster";
 import { getStagesMax } from "../lib/stages-limit";
 import { stepLabel } from "../lib/step-label";
 import { columnNeighbor, type StepOpResult } from "../lib/step-ops";
@@ -72,6 +73,12 @@ export function useStageOps(d: DraftState) {
   };
   const edit = useCanvasEdit(d, say, t);
   const stageAt = (i: number) => d.draftRef.current.stages[i];
+  /** CR-123 · u3a · vừa chèn xong cụm (Ký số): nhánh bị từ chối / huỷ / hết hạn của stage chờ ⇒ node Kết thúc · Từ chối nếu có. */
+  const clusterDefaults = (waitUid: string) => {
+    const i = find(waitUid);
+    const patch = waitBranchDefaults(d.draftRef.current.stages, waitUid);
+    if (i >= 0 && patch) d.patchStage(i, patch);
+  };
   const setStep = (i: number, step: number) => {
     const s = stageAt(i);
     if (s) report(s.uid, d.moveToStep(i, step), s.step);
@@ -121,8 +128,21 @@ export function useStageOps(d: DraftState) {
     addSlotStep: (kind: "notify" | "wait_until", name: string) =>
       addVia(() => d.addFresh(() => freshSlotStage(kind, name))),
     /** CR-122 · U1 · thêm node từ bảng node (loại + tên nghiệp vụ) thành bước mới cuối. */
-    addNode: (patch: Partial<StageDraft>, name: string) =>
-      addVia(() => d.addFresh(() => ({ ...emptyStage(), ...patch, name }))),
+    addNode: (patch: Partial<StageDraft>, name: string) => {
+      const uid = addVia(() => d.addFresh(() => ({ ...emptyStage(), ...patch, name })));
+      if (uid) clusterDefaults(uid);
+      return uid;
+    },
+    /** CR-123 · u3a · FR-14 · xoá node trên canvas/danh sách: stage thuộc node module ⇒ xoá CẢ cụm (p25: Delete đi qua đây). */
+    remove: (uid: string) => {
+      const i = find(uid);
+      if (i >= 0) d.removeStage(i);
+    },
+    /** CR-123 · u3a · FR-14 · sao chép node: stage thuộc node module ⇒ sao chép CẢ cụm (p25: Ctrl+C/V đi qua đây). */
+    duplicate: (uid: string) => {
+      const i = find(uid);
+      if (i >= 0) report(undefined, d.duplicateStage(i));
+    },
     /** CR-122 · P8 · chèn các node (một node module có thể nhiều giai đoạn) vào GIỮA cạnh `edge`, nối tiếp nhau. */
     insertNodes: (items: { patch: Partial<StageDraft>; name: string }[], edge: EdgeRef) => {
       // nhánh Đúng/Sai của Nếu không được trỏ tới bước hành động thật (luật chung với ô chọn và nối tay)
@@ -139,6 +159,7 @@ export function useStageOps(d: DraftState) {
         if ("error" in r) return;
         from = fresh.uid;
       }
+      clusterDefaults(from);
     },
     /** dlc-step-library · kéo cổng "Từ chối" của bước `from` thả lên bước `to` (phải đứng trước) ⇒ `gate.back_to = [to]`. */
     linkReject: linkRejectOf(d, rep),

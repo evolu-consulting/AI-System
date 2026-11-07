@@ -9,9 +9,8 @@ import {
   type ProcessInputDef,
   parseFlowDef,
 } from "@ai/contracts/hub-admin";
-import type { StageDraft, WaitDraft } from "./draft-types";
+import type { StageDraft } from "./draft-types";
 import { stageToInput } from "./stage-convert";
-import { WAIT_EVENT_PATCH } from "./timed-wait-form";
 
 /** Sự kiện app khai (rỗng khi app chưa có manifest). */
 export const eventsOfApp = (app: string): readonly AppEventDecl[] =>
@@ -110,7 +109,7 @@ export function validateFlowDef(raw: unknown, app: string): FlowIssue[] {
 
 /** Một mục bảng node: nhãn nghiệp vụ (i18n), loại draft khi thêm, có dùng được hôm nay không. */
 export type NodeEntry = {
-  id: "approve" | "form" | "if" | "agent" | "tool" | "set" | "finish" | "waitEsign";
+  id: "approve" | "form" | "if" | "agent" | "tool" | "set" | "finish";
   /** Patch draft khi thêm (executor...). `null` = chưa có loại engine (E2/E3) ⇒ hiện nhưng tắt, kèm lý do. */
   patch: Partial<StageDraft> | null;
   /** Chỉ node app khai: cần app có sự kiện (mọi app có manifest). */
@@ -125,14 +124,7 @@ const NODE_TABLE: readonly NodeEntry[] = [
   { id: "tool", patch: { executor: "tool" } },
   { id: "set", patch: { executor: "set" } },
   { id: "finish", patch: { executor: "set" } },
-  // CR-123 · FR-12: "Chờ ký xong" — chờ sự kiện ký xong (khoá do hệ thống đặt, người dùng chọn kết quả từ danh sách)
-  {
-    id: "waitEsign",
-    patch: {
-      ...WAIT_EVENT_PATCH,
-      wait: { ...(WAIT_EVENT_PATCH.wait as WaitDraft), event: "esign.completed", timeoutH: "168" },
-    },
-  },
+  // CR-123 · FR-14: không còn mục "Chờ ký xong" riêng — chờ ký là nửa sau của node Ký số (một ô, chèn cả cụm).
 ];
 
 /** Bảng node của một app: không manifest/không sự kiện ⇒ chỉ node nền tảng; node app (Ký số) chỉ khi app khai sự kiện. */

@@ -548,6 +548,7 @@
     }
   },
   "apiError": {
+    "FLOW_NODE_SPLIT": "Bước {{name}} bị tách rời — xoá rồi thêm lại bước {{name}}.",
     "FLOW_NODE_CONFIG_INVALID": "Có bước chưa điền đúng. Mở các bước có ô báo lỗi để sửa.",
     "PROCESS_NOT_FOUND": "Không tìm thấy quy trình hoặc bạn không được chạy.",
     "TOO_MANY_PROCESS_RUNS": "Công ty đang chạy tối đa {{max}} quy trình. Thử lại sau.",
@@ -1375,8 +1376,7 @@
       "esign": "Ký số",
       "set": "Chuẩn bị dữ liệu",
       "finish": "Kết thúc",
-      "soon": "Chưa dùng được",
-      "waitEsign": "Chờ ký xong"
+      "soon": "Chưa dùng được"
     },
     "esign": {
       "title": "Cấu hình ký số",

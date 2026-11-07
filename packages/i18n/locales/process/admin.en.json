@@ -548,6 +548,7 @@
     }
   },
   "apiError": {
+    "FLOW_NODE_SPLIT": "The {{name}} step is split apart — delete it and add the {{name}} step again.",
     "FLOW_NODE_CONFIG_INVALID": "Some steps are not filled in correctly. Open the steps marked with an error.",
     "PROCESS_NOT_FOUND": "Process not found or you can't run it.",
     "TOO_MANY_PROCESS_RUNS": "Your company is running the maximum of {{max}} processes. Try again later.",
@@ -1375,8 +1376,7 @@
       "esign": "E-sign",
       "set": "Prepare data",
       "finish": "Finish",
-      "soon": "Not available yet",
-      "waitEsign": "Wait for signing"
+      "soon": "Not available yet"
     },
     "esign": {
       "title": "E-sign settings",

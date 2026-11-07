@@ -12,6 +12,7 @@ import {
 } from "../lib/def-form";
 import { emptyHistory, record, redo as redoH, undo as undoH } from "../lib/edit-history";
 import { type EdgeRef, insertOnEdge } from "../lib/insert-on-edge";
+import { duplicateCluster, removeCluster } from "../lib/module-cluster";
 import { withNodeDefaults } from "../lib/node-defaults";
 import {
   addStageAsNewStep,
@@ -19,7 +20,6 @@ import {
   insertStepAfter,
   moveInColumn,
   moveToStep,
-  removeStage,
   type StepOpResult,
   splitToNewStep,
   swapStepColumns,
@@ -46,7 +46,8 @@ function draftOps(update: Update) {
     /** dlc-step-library · Lên/Xuống của bước DLC: đổi chỗ cả bước (cột) với bước kề. */
     swapStep: (i: number, dir: -1 | 1) =>
       update((d) => ({ ...d, stages: swapStepColumns(d.stages, i, dir) })),
-    removeStage: (i: number) => update((d) => ({ ...d, stages: removeStage(d.stages, i) })),
+    /** CR-123 · u3a · xoá một stage của node module ⇒ xoá CẢ cụm (Ký số = gửi + chờ); stage thường ⇒ như cũ. */
+    removeStage: (i: number) => update((d) => ({ ...d, stages: removeCluster(d.stages, i) })),
     /** fnr-canvas · lưu `y` của node `uid` (chỉ-UI); `undefined` ⇒ bỏ (về bố cục tự động). */
     setUiY: (uid: string, y: number | undefined) =>
       update((d) => ({
@@ -120,6 +121,15 @@ function useStepMutations(ref: Ref, update: Update, select: (uid: string) => voi
     setStages: (stages: StageDraft[], remap = true, pickUid?: string) => {
       update((d) => ({ ...d, stages }), remap);
       if (pickUid) select(pickUid);
+    },
+    /** CR-123 · u3a · sao chép stage `i` KÈM cả cụm node module (bản sao nối tiếp sau cụm gốc, một bước hoàn tác); chọn bản sao đầu. */
+    duplicateStage: (i: number): StepOpResult<StageDraft> => {
+      const r = duplicateCluster(ref.current.stages, i);
+      if ("stages" in r) {
+        update((d) => ({ ...d, stages: r.stages }));
+        if (r.uids?.[0]) select(r.uids[0]);
+      }
+      return r;
     },
     moveToStep: (i: number, step: number) => applySteps((st) => moveToStep(st, i, step)),
     splitToNewStep: (i: number) => applySteps((st) => splitToNewStep(st, i)),
