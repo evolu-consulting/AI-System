@@ -1,4 +1,4 @@
-﻿// PK-FR-05 Â· PK-FR-09 Â· D-09 Â· N1 plan Â§9 Â· lá»›p 4 cá»§a module gÃ³i (gá»™p mount tá»‘i thiá»ƒu T5b `app.packs.ts`): `GET /pack/<k>/me`
+// PK-FR-05 Â· PK-FR-09 Â· D-09 Â· N1 plan Â§9 Â· lá»›p 4 cá»§a module gÃ³i (gá»™p mount tá»‘i thiá»ƒu T5b `app.packs.ts`): `GET /pack/<k>/me`
 // + route nghiá»‡p vá»¥ tá»«ng gÃ³i dÆ°á»›i `/pack/<k>`. Chá»— DUY NHáº¤T ná»‘i `modules/config` (ConfigCache thoáº£ cá»•ng `PackAccessView`) vÃ o
 // module gÃ³i. JWT á»Ÿ gá»‘c: `PACK_PREFIX` náº±m trong `PROTECTED_PREFIXES` cá»§a `app.ts` (401 trÆ°á»›c 404). GÃ³i `pkdemo` (D-08) chá»‰
 // ngoÃ i production: `deps.packs.pkdemo` Æ°u tiÃªn, váº¯ng â‡’ `pkdemoEnabled(appEnv)` (review m-04: chá»‰ khi khai bÃ¡o rÃµ dev/test).
@@ -214,13 +214,12 @@ function contractsCtx(d: PacksMountDeps & { db: Db }, view: PackAccessView, fb: 
 
 function mountContractsCore<E extends Env>(app: Hono<E>, cx: ContractsCtx): void {
   const { d, db, view, fb, base, timeZoneOf, ai } = cx;
-  // HD1 T7 + T8 (link tá»‡p) Â· HD5 ngÃ y giÃ¡ theo mÃºi tenant Â· HD3 seam duyá»‡t cho PATCH trÆ°á»ng (review S1)
   app.route(
     base,
     contractsModule(db, view, fb ? fileboxClients(fb) : null, {
       timeZoneOf,
       guard: ai.guard,
-      ...(d.packRuns ? { runs: d.packRuns } : {}), // CR-123 · u10 · cột "Bước" của danh sách
+      ...(d.packRuns ? { runs: d.packRuns } : {}), // HD1 T7/T8 · HD5 giá · HD3 seam duyệt · CR-123 u10 cột "Bước"
     }),
   );
   app.route(base, ai.routes); // HD2
