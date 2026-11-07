@@ -1,19 +1,17 @@
 // CR-102b · C7b/C8 · luật thuần của "Lưu báo giá" + gợi ý SHT dưới bài (chỉ chủ quản): nguồn nào được lưu, dựng thân cổng ghi,
 // chọn mặt hàng để hỏi sổ, gộp kết quả đọc thành gợi ý từng bài. Không DB/mạng.
 import type {
-  HostHint,
-  QuoteCompare,
-  QuoteInput,
-  QuotePreview,
-  QuoteWarning,
-} from "@ai/contracts/community";
-import type {
   HostBookOut,
+  HostHintView as HostHint,
   HostProductOut,
   QuoteCompare as PortCompare,
   QuoteInput as PortInput,
   QuoteWarning as PortWarning,
-} from "../application/pack-ports";
+  QuoteCompareView as QuoteCompare,
+  QuoteInputView as QuoteInput,
+  QuotePreviewView as QuotePreview,
+  QuoteWarningView as QuoteWarning,
+} from "./quote.types";
 
 export type QuoteSourcePost = { type: "sell" | "buy" | "note"; author_org: string | null };
 

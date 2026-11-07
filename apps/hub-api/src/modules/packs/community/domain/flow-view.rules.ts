@@ -1,12 +1,6 @@
 // CR-120 · cr120-community-flows · chiếu hàng của 3 khe Community sang `FlowView` (contract `@ai/contracts/flow`). Thuần; mode
 // `machine` (lượt do gói giữ). Task chỉ có khi người xem là người duyệt và bước duyệt đang mở (task id = cột `*task_id` của hàng).
-import type {
-  FlowActionDef,
-  FlowState,
-  FlowStepView,
-  FlowSummaryItem,
-  FlowView,
-} from "@ai/contracts/flow";
+
 import {
   AGENT_SCREEN,
   AGENT_TRIAGE,
@@ -19,6 +13,13 @@ import {
   SLOT_MODERATION,
   SLOT_REPORT,
 } from "./flow.rules";
+import type {
+  FlowActionDef,
+  FlowState,
+  FlowStepView,
+  FlowSummaryItem,
+  FlowView,
+} from "./flow-view.types";
 
 type Status = FlowStepView["status"];
 type Decided = {
@@ -274,7 +275,12 @@ export function reportView(r: ReportViewRow, o: { reviewer: boolean }): FlowView
 }
 
 /** Huy hiệu danh sách từ view (cùng luật state/phase/attention). */
-export const summaryOf = (v: FlowView): FlowSummaryItem => ({
+export const summaryOf = (v: {
+  ref: string;
+  state: FlowState;
+  phase: string | null;
+  tasks: readonly unknown[];
+}): FlowSummaryItem => ({
   ref: v.ref,
   state: v.state,
   phase: v.phase,

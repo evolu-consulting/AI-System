@@ -2,10 +2,12 @@
 // `/pack/:k/me` (kit) đã chiếm đường dẫn. Đối tác: chỉ công ty mình + hồ sơ chủ quản (HT-71/73/74); quản trị nhãn chỉ Admin
 // chủ quản (HT-82). Thông báo = C9 (ở đây trả rỗng).
 import {
+  COMMUNITY_BRAND_ACCENTS,
   type CommunitySettings,
   CommunitySettingsInputSchema,
   CommunitySettingsSchema,
   type CommunityViewer,
+  DEFAULT_BRAND_ACCENT,
   DEFAULT_SETTINGS,
   PartnerUpdateInputSchema,
   type Profile,
@@ -77,7 +79,9 @@ function viewerAndPartners(r: R, d: CommunityDeps, access: Acc): void {
     const a = await access(c);
     const row = d.brand ? await d.brand.brand(a.who.tenantId) : null;
     // CR-110 low: logo data URL tới ~1.5 MB ⇒ ETag mạnh (sha-256 thân JSON) + private cache 5 phút; If-None-Match khớp ⇒ 304.
-    const body = JSON.stringify(toCommunityBrand(row, a.dir.tenantName));
+    const body = JSON.stringify(
+      toCommunityBrand(row, a.dir.tenantName, COMMUNITY_BRAND_ACCENTS, DEFAULT_BRAND_ACCENT),
+    );
     const etag = `"${new Bun.CryptoHasher("sha256").update(body).digest("hex")}"`;
     const cache = { ETag: etag, "Cache-Control": "private, max-age=300" };
     const inm = c.req.header("if-none-match");

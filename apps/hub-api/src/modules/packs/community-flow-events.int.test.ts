@@ -8,12 +8,12 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
-import { type Cast, seedCast } from "../../../../../../../tests/acceptance/com-c3/_support/cast";
-import { mapError } from "../../../../lib/errors";
-import { dispatchOnce } from "../../../processes/triggers/dispatcher";
-import { pgExternalOrgResolver } from "../../kit/adapters/ext-org.pg";
-import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
-import { type CommunityFlowPorts, communityModule } from "../community.mount";
+import { type Cast, seedCast } from "../../../../../tests/acceptance/com-c3/_support/cast";
+import { mapError } from "../../lib/errors";
+import { dispatchOnce } from "../processes/triggers/dispatcher";
+import { type CommunityFlowPorts, communityModule } from "./community/community.mount";
+import { pgExternalOrgResolver } from "./kit/adapters/ext-org.pg";
+import type { PackAccessView, PackGuardVars } from "./kit/adapters/pack-guard.middleware";
 
 let sql: Sql;
 let db: Db;

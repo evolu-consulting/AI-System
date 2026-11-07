@@ -1,6 +1,9 @@
 // CR-110 · COM-FR-45 · COM-FR-43 · unit cho mapper brand + caps.
 import { describe, expect, it } from "bun:test";
 import { CommunityBrandSchema } from "@ai/contracts/community";
+
+const ACC = ["indigo", "blue", "teal", "green", "orange", "rose"] as const;
+
 import { toCommunityBrand, viewerCaps } from "./brand.rules";
 
 describe("toCommunityBrand [COM-FR-45]", () => {
@@ -11,13 +14,18 @@ describe("toCommunityBrand [COM-FR-45]", () => {
       logo: "data:image/png;base64,AA==",
       accent: "rose" as const,
     };
-    const b = toCommunityBrand({ ...row, own_tax_ids: ["0101234567"] } as never, "Tenant");
+    const b = toCommunityBrand(
+      { ...row, own_tax_ids: ["0101234567"] } as never,
+      "Tenant",
+      ACC,
+      "indigo",
+    );
     expect(b).toEqual(row);
     expect(CommunityBrandSchema.parse(b)).toEqual(row);
   });
 
   it("chưa có brand ⇒ tên tenant + indigo, logo/app null (P5-AC07)", () => {
-    expect(toCommunityBrand(null, "Tenant X")).toEqual({
+    expect(toCommunityBrand(null, "Tenant X", ACC, "indigo")).toEqual({
       name: "Tenant X",
       appName: null,
       logo: null,
@@ -26,7 +34,12 @@ describe("toCommunityBrand [COM-FR-45]", () => {
   });
 
   it("tên rỗng ⇒ tên tenant; màu lạ ⇒ indigo; chuỗi trắng ⇒ null", () => {
-    const b = toCommunityBrand({ name: " ", appName: "", logo: null, accent: "purple" }, "T");
+    const b = toCommunityBrand(
+      { name: " ", appName: "", logo: null, accent: "purple" },
+      "T",
+      ACC,
+      "indigo",
+    );
     expect(b).toEqual({ name: "T", appName: null, logo: null, accent: "indigo" });
   });
 });

@@ -1,4 +1,4 @@
-﻿// CR-122 · P13 · e2e `flows.cs.ts › 3`: bước duyệt bài của flow `post.created` mở rất chậm (chờ tới ~120-200 s, trước đó API trả
+// CR-122 · P13 · e2e `flows.cs.ts › 3`: bước duyệt bài của flow `post.created` mở rất chậm (chờ tới ~120-200 s, trước đó API trả
 // FLOW_TASK_NOT_OPEN). Cờ FLOW_TRIGGERS bật ⇒ bài vào "Chờ duyệt" nhưng giữ `mod_screen = running` (agent screen cũ không chạy, flow thay)
 // ⇒ `awaitingReview` chỉ true sau SCREEN_STALE_MS (2 phút). Sửa: bộ điều phối mở lượt ⇒ `launched` đưa bài sang "chờ người duyệt".
 // Đường thật: route đăng bài → sự kiện → MỘT dispatchOnce (flowLaunchOf thật) → hàng đợi duyệt + decide. Không ngủ chờ.
@@ -8,22 +8,22 @@ import { groups, members } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { Hono } from "hono";
-import { type Cast, seedCast } from "../../../../../../../tests/acceptance/com-c3/_support/cast";
-import { connectDb, type Db } from "../../../../lib/db";
-import { mapError } from "../../../../lib/errors";
+import { type Cast, seedCast } from "../../../../../tests/acceptance/com-c3/_support/cast";
+import { connectDb, type Db } from "../../lib/db";
+import { mapError } from "../../lib/errors";
 import {
   registerFactsReader,
   registerOutcomeHandler,
   unregisterFlowPorts,
-} from "../../../processes/adapters/runs/flow-ports";
-import type { ProcessDeps } from "../../../processes/core/ports";
-import { createStageLauncher } from "../../../processes/runs/launcher";
-import { dispatchOnce } from "../../../processes/triggers/dispatcher";
-import { setFlowTriggers } from "../../../processes/triggers/flags";
-import { flowLaunchOf } from "../../../processes/triggers/flow-launch";
-import { pgExternalOrgResolver } from "../../kit/adapters/ext-org.pg";
-import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
-import { communityModule } from "../community.mount";
+} from "../processes/adapters/runs/flow-ports";
+import type { ProcessDeps } from "../processes/core/ports";
+import { createStageLauncher } from "../processes/runs/launcher";
+import { dispatchOnce } from "../processes/triggers/dispatcher";
+import { setFlowTriggers } from "../processes/triggers/flags";
+import { flowLaunchOf } from "../processes/triggers/flow-launch";
+import { communityModule } from "./community/community.mount";
+import { pgExternalOrgResolver } from "./kit/adapters/ext-org.pg";
+import type { PackAccessView, PackGuardVars } from "./kit/adapters/pack-guard.middleware";
 
 let sql: Sql;
 let db: Db;
