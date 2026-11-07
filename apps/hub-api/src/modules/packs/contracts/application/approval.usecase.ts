@@ -172,7 +172,8 @@ export function getApproval(d: ApprovalDeps) {
     if (got.st.approval?.mode === "engine") return engineViewOf(d, who, got.st);
     // cr121-a2 · chỉ lượt máy cũ CÒN DỞ (mở trước khi gỡ máy cũ) đi nhánh này — quyết nốt qua `decide` cũ, không chuyển giữa chừng.
     const v = viewOf(got.st, await actorOf(d, who, got.s as ApprovalSettings));
-    return v.can_act && got.st.approval?.status === "level1" ? withFlowConfirm(d, who, v) : v;
+    if (!v.can_act || got.st.approval?.status !== "level1") return v;
+    return withFlowConfirm(await flowPrep(d.flow, who), v);
   };
 }
 
