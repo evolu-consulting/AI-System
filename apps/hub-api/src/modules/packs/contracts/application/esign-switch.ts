@@ -68,7 +68,8 @@ export const esignSwitch = (d: EsignSwitchDeps) => {
     d.uow.tenant(who, async (r) => {
       const cur = await r.esign.lockById(e.id);
       if (!cur || !isOpen(cur.status)) throw new ESignFail("ESIGN_STATE", "already-switched");
-      if (cur.signers.some((s) => s.signed_at !== null))
+      if (cur.signers.some((s) => s.signed_at != null))
+        // vắng khoá (hàng cũ) = chưa ký
         throw new ESignFail("ESIGN_STATE", "signing");
       const got = await r.esign.claimSwitch(e.id, now(), ESIGN_SWITCH_LEASE_MIN);
       if (!got) throw new ESignFail("ESIGN_STATE", "switch-in-progress");

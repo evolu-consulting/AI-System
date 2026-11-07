@@ -39,7 +39,7 @@ export type EsignTurnSigner = {
 };
 /** Đã ký: có `signed_at` hoặc trạng thái người ký `completed`/`signed` (DocuSign) — không phân biệt hoa thường. */
 export const signerDone = (s: EsignTurnSigner): boolean =>
-  s.signed_at !== null || ["completed", "signed"].includes((s.status ?? "").toLowerCase());
+  s.signed_at != null || ["completed", "signed"].includes((s.status ?? "").toLowerCase());
 
 /** Ai nhận chuông nhắc: có người ký công ty CHƯA ký mà mọi người `order` nhỏ hơn đã ký ⇒ "signer" (tới lượt công ty); ngược lại
  *  (công ty đã ký / chưa tới lượt vì đối tác ký trước) ⇒ "owner" (người phụ trách, "đang chờ đối tác ký"). Không có phong bì mở

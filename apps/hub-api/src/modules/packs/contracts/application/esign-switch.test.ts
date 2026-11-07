@@ -171,4 +171,12 @@ describe("CR-125 m4 · đổi cách ký", () => {
     ]);
     expect(events).toEqual(["voided"]);
   });
+
+  it("người ký hàng cũ không có khoá signed_at ⇒ coi là chưa ký, vẫn đổi được", async () => {
+    const { signed_at: _drop, ...noKey } = signer("company", 1);
+    const row = env({ signers: [noKey as never, signer("partner", 2)] });
+    const { sw, voided } = make({ row });
+    expect((await sw(WHO, "c1", row, "selfsign")).e.envelopeId).toBe("env-2");
+    expect(voided).toEqual(["env-1"]);
+  });
 });
