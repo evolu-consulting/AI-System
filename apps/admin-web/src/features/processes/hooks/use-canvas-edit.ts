@@ -5,6 +5,7 @@
 import { newRealViolation } from "@ai/contracts/hub-admin";
 import { useRef } from "react";
 import type { useTranslation } from "react-i18next";
+import { laterTarget, triggerArrow } from "../lib/arrow-rules";
 import { connectPatch } from "../lib/canvas-connect";
 import {
   type EditError,
@@ -15,13 +16,7 @@ import {
   resetEdges,
 } from "../lib/canvas-edit";
 import { emptyStage, type StageDraft } from "../lib/def-form";
-import {
-  clearFree,
-  connectToTrigger,
-  markFree,
-  placeAfterSource,
-  safeDropStep,
-} from "../lib/free-nodes";
+import { clearFree, markFree, safeDropStep } from "../lib/free-nodes";
 import { expandToClusters } from "../lib/module-cluster";
 import { getStagesMax } from "../lib/stages-limit";
 import { stepLabel } from "../lib/step-label";
@@ -50,9 +45,7 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
   };
   /** Mũi tên từ "Bắt đầu khi": tới node đứng riêng ⇒ thành bước đầu tiên; luật Ký số vẫn áp (qua `connectPatch`). */
   const connectFromTrigger = (target: string) => {
-    const refused = connectPatch(stages(), { source: "trigger", target });
-    if (refused && !refused.ok) return say.error(t(`${CONNECT}${refused.error}`));
-    const r = connectToTrigger(stages(), target);
+    const r = triggerArrow(stages(), target);
     if ("error" in r) return say.error(t(`${CONNECT}${r.error}`));
     d.setStages(r.stages, false);
     say.clear();
@@ -64,11 +57,10 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
     let r = connectPatch(st, c);
     // node đứng riêng nằm chưa sau nguồn ⇒ đặt nó thành bước mới ngay sau nguồn rồi nối (một bước hoàn tác)
     if (r && !r.ok && r.error === "notLater") {
-      const moved = placeAfterSource(st, c.source, c.target);
-      if (moved) {
-        st = moved;
-        r = connectPatch(st, c);
-      }
+      const fix = laterTarget(st, c.source, c.target); // u12: sắp lại bước, chỉ từ chối khi tạo VÒNG LẶP
+      if ("error" in fix) return say.error(t(`${CONNECT}${fix.error}`));
+      st = fix.stages;
+      r = connectPatch(st, c);
     }
     if (!r) return;
     if (!r.ok) return say.error(t(`${CONNECT}${r.error}`));

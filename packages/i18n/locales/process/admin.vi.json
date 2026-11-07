@@ -627,6 +627,7 @@
       "notFirst": "«Bắt đầu khi» chỉ nối được tới bước đầu tiên hoặc một bước chưa nối.",
       "dragIf": "Kéo sang bước khi {{label}}",
       "notLater": "Chỉ nối được tới bước đứng sau.",
+      "loop": "Không nối ngược lại bước trước — sẽ tạo vòng lặp",
       "ifReal": "Nhánh Nếu không thể tới bước có hành động thật — chọn bước khác.",
       "noNext": "Bước này kết thúc hoặc chờ sự kiện, không có bước đi tiếp.",
       "noPort": "Thả dây từ cổng Đúng hoặc Sai của bước Nếu.",
