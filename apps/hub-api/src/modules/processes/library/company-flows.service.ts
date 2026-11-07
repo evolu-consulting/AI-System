@@ -8,11 +8,13 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError, appError } from "../../../lib/errors";
+import { dbHubAudit } from "../../../lib/hub-audit";
 import { groupIdsByKey, groupMissingMessage } from "../defs/def-group-bind";
 import { libraryFlowDef } from "../runs/runs.repo";
 import { bindGroupKeys, groupKeysOf } from "../triggers/group-keys.rules";
 import * as r from "./company-flows.repo";
 import { companyAccess } from "./library-company.service";
+import { withConfigWrite } from "./routing.service";
 
 const SYS = { kind: "system" as const };
 const EVENTS = new Map(
@@ -193,8 +195,10 @@ export class CompanyFlowsService {
    * của sự kiện, thay bản gốc Thư viện (nếu có) — MỘT tx, số câu SQL cố định. Hợp đồng đang chờ giữ bản cũ (đã gắn def lúc gửi).
    * Def tự tạo chưa có dòng ⇒ tạo dòng Bật. Chặn khi còn bước duyệt chưa chọn nhóm.
    */
-  apply(u: AuthUser, tid: string, flowId: string) {
-    return this.#tx(u, tid, async (tx) => {
+  async apply(u: AuthUser, tid: string, flowId: string) {
+    companyAccess(u, tid);
+    // withConfigWrite: cùng tx ghi audit `company_flow.apply` + tăng phiên cấu hình (Hub nạp lại ngay, không chờ định kỳ)
+    const w = await withConfigWrite({ db: this.db, audit: dbHubAudit }, u, async (tx) => {
       let id = await r.rowIdOfFlow(tx, tid, flowId);
       if (!id) {
         if (!(await r.assignableDef(tx, tid, flowId)))
@@ -218,20 +222,40 @@ export class CompanyFlowsService {
           422,
           "Còn bước duyệt chưa chọn nhóm. Chọn nhóm cho mọi bước duyệt rồi áp dụng lại.",
         );
-      await this.#activate(tx, u, tid, row);
-      return { id, ...(await this.#list(tx, tid)) };
+      const replaced = await this.#activate(tx, u, tid, row);
+      return {
+        result: { id, ...(await this.#list(tx, tid)) },
+        audit: {
+          tenantId: tid,
+          action: "update",
+          entity: "process_def",
+          entityId: flowId,
+          entityName: "company_flow.apply",
+          before: { enabled: row.enabled, replaced_flow_id: null },
+          after: { enabled: true, replaced_flow_id: replaced },
+          summary: {
+            op: "company_flow.apply",
+            tenant_id: tid,
+            flow_id: flowId,
+            replaced_flow_id: replaced,
+          },
+        },
+      };
     });
+    return w.result;
   }
 
-  /** Bản công ty ⇒ Bật; bản gốc Thư viện của nó ⇒ Tắt (`replaced_by`) — một tx, không bao giờ cùng Bật. Row `row` đã khoá. */
-  async #activate(tx: Tx, u: AuthUser, tid: string, row: r.CfRow): Promise<void> {
+  /** Bản công ty ⇒ Bật; bản gốc Thư viện của nó ⇒ Tắt (`replaced_by`) — một tx, không bao giờ cùng Bật. Trả `flow_id` của bản gốc bị thay (hoặc null). */
+  async #activate(tx: Tx, u: AuthUser, tid: string, row: r.CfRow): Promise<string | null> {
     if (row.def_tenant_id === null)
       throw err("NOT_COMPANY_COPY", 422, "Chỉ xuất bản được bản công ty.");
     const orig = await r.originalRowOf(tx, tid, row.flow_id);
+    let replaced: string | null = null;
     if (orig) {
       const o = await this.#locked(tx, tid, orig);
       // bản công ty có điều kiện thay bản gốc không điều kiện ⇒ sự kiện `required` không được hết flow phủ mọi trường hợp
       if (o.enabled && row.has_condition) await this.#guardRequired(tx, tid, o);
+      replaced = o.flow_id;
       await r.setFlowState(tx, {
         tid,
         id: orig,
@@ -249,6 +273,7 @@ export class CompanyFlowsService {
       replacedBy: null,
       actor: u.userId,
     });
+    return replaced;
   }
 
   /** "Quay về bản gốc": bật lại gốc, tắt bản sao (giữ để dùng lại, lý do "đã quay về bản gốc") — một tx. */

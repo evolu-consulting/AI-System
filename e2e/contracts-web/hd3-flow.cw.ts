@@ -1,4 +1,4 @@
-// HD-FR-36 · HD-FR-34 · S05 · Luật 4b: thẻ duyệt của contracts-web (backend giả `page.route`, không AI thật). "Xác nhận" (cấp 1)
+﻿// HD-FR-36 · HD-FR-34 · S05 · Luật 4b: thẻ duyệt của contracts-web (backend giả `page.route`, không AI thật). "Xác nhận" (cấp 1)
 // lưu ô đã đổi TRƯỚC rồi quyết như mgmt-app; "Duyệt" (cấp 2); "Từ chối" bắt buộc lý do; người không quyết được thấy ghi chú, không
 // thấy nút; lỗi engine (người bắt đầu) hiện câu riêng. Chỉ chạy ở chế độ so (contracts-web).
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
@@ -74,7 +74,7 @@ test("HD-FR-36 · cấp 1 · Xác nhận: PATCH ô đã đổi rồi POST approv
   await expect(ex).toContainText("Giá trị AI đọc được");
   await expect(ex).toContainText("“Tổng giá trị theo bảng giá đính kèm”");
   await page.getByLabel("Giá trị").fill("250.000.000");
-  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await page.getByRole("button", { name: "Gửi duyệt" }).click();
   await expect(page.locator("[data-sonner-toast]").first()).toHaveText(
     "Đã lưu và xác nhận hợp đồng.",
   );

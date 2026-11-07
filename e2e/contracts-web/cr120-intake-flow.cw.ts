@@ -1,6 +1,6 @@
-// CR-120 · cr120-contracts-flow · khe `contracts.intake` trên UI contracts-web (backend giả `page.route`; chờ phần tử, không sleep):
+﻿// CR-120 · cr120-contracts-flow · khe `contracts.intake` trên UI contracts-web (backend giả `page.route`; chờ phần tử, không sleep):
 //  (1) màn xác nhận (tenant tắt duyệt) có gợi ý ngay cạnh "Lưu nháp": bản nháp chỉ bạn thấy;
-//  (2) "Xác nhận và lưu" ở thẻ duyệt engine ⇒ POST approve (qua route flow) đúng MỘT lần (không có bước "Gửi duyệt" tay) và hiện "Đã chuyển: <bước kế>";
+//  (2) "Gửi duyệt" ở thẻ duyệt engine ⇒ POST approve (qua route flow) đúng MỘT lần (không có bước "Gửi duyệt" tay) và hiện "Đã chuyển: <bước kế>";
 //  (3) HĐ nháp / không quyền xem (hub 404 "Not found") ⇒ MỘT câu chung, không lộ HĐ có tồn tại.
 // VIẾT, CHƯA CHẠY trong lát (e2e chạy một lần ở cuối bằng evotest).
 import type { ApprovalCardStep, ContractApproval } from "@ai/contracts/pack-contracts";
@@ -53,13 +53,11 @@ test("màn xác nhận (tenant tắt duyệt): gợi ý 'Bản nháp chỉ bạn
   await page.goto(`/contracts/c/${REVIEW_ID}`);
   await expect(page.getByRole("button", { name: "Lưu nháp" })).toBeVisible();
   await expect(page.getByTestId("draft-hint")).toHaveText(
-    "Bản nháp chỉ bạn thấy — bấm Xác nhận và lưu để chuyển duyệt",
+    "Bản nháp chỉ bạn thấy — bấm Gửi duyệt để chuyển cho người duyệt",
   );
 });
 
-test("Xác nhận và lưu (engine) ⇒ approve MỘT lần, hiện 'Đã chuyển: <bước kế>'", async ({
-  page,
-}) => {
+test("Gửi duyệt (engine) ⇒ approve MỘT lần, hiện 'Đã chuyển: <bước kế>'", async ({ page }) => {
   const d = asHub("editor");
   await page.addInitScript(() => {
     try {
@@ -71,20 +69,16 @@ test("Xác nhận và lưu (engine) ⇒ approve MỘT lần, hiện 'Đã chuy�
   });
   await page.route("**/auth/refresh", (r) => json(r, 200, d.grant));
   await page.route("**/pack/contracts/me", (r) => json(r, 200, d.packMe));
-  let state = engineCard([
-    step(0, "Xác nhận và lưu", "open"),
-    step(1, "Phòng Kế toán duyệt", "pending"),
-  ]);
+  let state = engineCard([step(0, "Gửi duyệt", "open"), step(1, "Phòng Kế toán duyệt", "pending")]);
   const posts: unknown[] = [];
   // CR-120/121: hành động đi route flow (một đường duy nhất); thẻ đọc lại qua GET `/approval`.
   await mockApprovalFlow(page, {
     card: () => state,
     onAct: (body) => {
       posts.push(body);
-      state = engineCard(
-        [step(0, "Xác nhận và lưu", "passed"), step(1, "Phòng Kế toán duyệt", "open")],
-        { can_act: false },
-      );
+      state = engineCard([step(0, "Gửi duyệt", "passed"), step(1, "Phòng Kế toán duyệt", "open")], {
+        can_act: false,
+      });
       return state;
     },
   });
@@ -95,7 +89,7 @@ test("Xác nhận và lưu (engine) ⇒ approve MỘT lần, hiện 'Đã chuy�
   );
   await page.goto(`/contracts/c/${contract.id}`);
   await expect(page.getByTestId("moved-to")).toHaveCount(0);
-  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await page.getByRole("button", { name: "Gửi duyệt" }).click();
   await expect(page.getByTestId("moved-to")).toHaveText("Đã chuyển: Phòng Kế toán duyệt");
   expect(posts).toEqual([{ action: "approve" }]); // một lần; không có lệnh "gửi duyệt" nào khác
 });

@@ -1,7 +1,7 @@
-// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-122 · p24 · HÀNH TRÌNH "chưa gán quy trình ⇒ lý do + Mở lại" trên stack thật `playwright.journey.config.ts` (công ty MỚI
-// `e2e-c22n-<hậu tố>`: cờ FLOW_TRIGGERS BẬT nhưng CHƯA gán flow nào). Nhân viên gửi HĐ ("Xác nhận và lưu") ⇒ bộ điều phối không có flow khớp
-// ⇒ thẻ duyệt nói rõ vì sao + cách sửa (quản trị gán quy trình) và chủ HĐ có nút "Mở lại"; thẻ KHÔNG còn nút "Xác nhận và lưu".
+// `e2e-c22n-<hậu tố>`: cờ FLOW_TRIGGERS BẬT nhưng CHƯA gán flow nào). Nhân viên gửi HĐ ("Gửi duyệt") ⇒ bộ điều phối không có flow khớp
+// ⇒ thẻ duyệt nói rõ vì sao + cách sửa (quản trị gán quy trình) và chủ HĐ có nút "Mở lại"; thẻ KHÔNG còn nút "Gửi duyệt".
 import { expect, test } from "@playwright/test";
 import { enableFlowTriggers } from "../_kit/flows";
 import { confirmAndSave, type Env, loginCw, U, uploadAndOpen } from "./_journey";
@@ -27,7 +27,7 @@ test.beforeAll(async () => {
   await enableFlowTriggers(KEY); // chỉ bật cờ; KHÔNG gán flow
 });
 
-test("chưa gán quy trình: thẻ nói rõ lý do + chủ HĐ có nút Mở lại, không còn Xác nhận và lưu", async ({
+test("chưa gán quy trình: thẻ nói rõ lý do + chủ HĐ có nút Mở lại, không còn Gửi duyệt", async ({
   browser,
 }) => {
   const page = await (
@@ -41,7 +41,7 @@ test("chưa gán quy trình: thẻ nói rõ lý do + chủ HĐ có nút Mở l�
     timeout: 60_000,
   });
   await expect(page.getByText("Công ty › Quy trình")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Xác nhận và lưu" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Gửi duyệt" })).toHaveCount(0);
   // người gửi không phải quản trị gói ⇒ chỉ được dặn báo chủ HĐ; quản trị (Giám đốc) mới có nút Mở lại
   const admin = await (
     await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } })

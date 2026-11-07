@@ -5,6 +5,7 @@ import { Panel } from "@/components/shared/panel/Panel";
 import { RefPicker } from "@/components/shared/RefPicker";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useSession } from "@/lib/auth/use-session";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import type { DefDraft, DraftErrors } from "../../lib/def-form";
 import { DefTtlField } from "./DefTtlField";
@@ -74,6 +75,7 @@ function GroupsField({
 
 export function DefInfoCard({ draft, errors, readOnly, refs, patch, variant = "full" }: Props) {
   const { t } = useTranslation();
+  const platform = useSession((s) => s.me?.role) === "platform_admin";
   const e = (f: string): string | undefined => (errors[f] ? t(errors[f] as string) : undefined);
   const full = variant === "full";
   const budget = (
@@ -153,7 +155,7 @@ export function DefInfoCard({ draft, errors, readOnly, refs, patch, variant = "f
           {budget}
           {enabled(t("process.admin.editor.enabled"))}
         </>
-      ) : (
+      ) : variant === "copy" && !platform ? null : ( // CR-123 u9: ngân sách token… chỉ cho quản trị nền tảng
         <details className="rounded-md border border-border px-3 py-2" data-testid="def-advanced">
           <summary className="cursor-pointer text-label font-medium">
             {t("process.admin.editor.advanced")}

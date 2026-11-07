@@ -1,4 +1,4 @@
-// Luồng 15 · các lỗi người dùng đã báo, kiểm trên máy chủ thật (tenant demo, dữ liệu giả). Mỗi test ghi rõ lỗi gốc.
+﻿// Luồng 15 · các lỗi người dùng đã báo, kiểm trên máy chủ thật (tenant demo, dữ liệu giả). Mỗi test ghi rõ lỗi gốc.
 // Dữ liệu tạo ra: hợp đồng + bản v2 tải lên có tên tệp/tiêu đề gắn E2E-DEPLOY (kèm SP tạo từ dòng HĐ, tên dòng cũng gắn thẻ) — dọn trong
 // afterAll qua API xoá HĐ (kèm SP mồ côi); góp ý E2E-DEPLOY đặt "Xong" ở admin-web. KHÔNG lưu luồng duyệt, KHÔNG gọi Trello (thẻ Trello
 // kiểm bằng log server: `docker logs` admin-api tìm "trello"), KHÔNG gửi email. Chỉ tenant demo (DEMO_USER, mật khẩu DEMO_PW).
@@ -202,7 +202,7 @@ test.describe("15 lỗi người dùng báo", () => {
     await expect(page).toHaveURL(/\/contracts\/list$/);
   });
 
-  test("[lỗi: SP trống sau xác nhận] 2b · đường bật duyệt: Xác nhận và lưu của thẻ duyệt ⇒ hộp «Gắn sản phẩm» ⇒ Xác nhận ⇒ HĐ khoá + có SP", async () => {
+  test("[lỗi: SP trống sau xác nhận] 2b · đường bật duyệt: Gửi duyệt của thẻ duyệt ⇒ hộp «Gắn sản phẩm» ⇒ Xác nhận ⇒ HĐ khoá + có SP", async () => {
     test.setTimeout(480_000);
     await setApproval(true); // bật duyệt cho tenant demo; luôn khôi phục ở finally (và afterAll)
     try {
@@ -227,9 +227,9 @@ test.describe("15 lỗi người dùng báo", () => {
         true,
       );
       const dlg = page.getByTestId("product-link-dialog");
-      const btn = page.getByRole("button", { name: "Xác nhận và lưu", exact: true });
+      const btn = page.getByRole("button", { name: "Gửi duyệt", exact: true });
       const pass = page.locator("[data-approval=pass], [data-approval=approve]").first();
-      // Bước soạn: Xác nhận và lưu; (engine) các bước duyệt kế: Đạt; bước cuối mở hộp Gắn SP.
+      // Bước soạn: Gửi duyệt; (engine) các bước duyệt kế: Đạt; bước cuối mở hộp Gắn SP.
       for (let i = 0; i < 4 && !(await getDetail(id2)).locked; i++) {
         const b = btn.or(pass).first();
         await expect(b).toBeVisible({ timeout: 30_000 });
@@ -287,7 +287,7 @@ test.describe("15 lỗi người dùng báo", () => {
     await expect(page.getByLabel("Tên hợp đồng")).toBeDisabled();
     await expect(page.getByRole("button", { name: "Lưu nháp" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Lưu thay đổi" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Xác nhận và lưu" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Gửi duyệt" })).toHaveCount(0);
   });
 
   test("[lỗi: chi tiết còn nút Xoá / Văn bản gốc / Nguồn hàng & lãi / Đọc lại] trang chi tiết đã bỏ các khối đó; danh sách có thùng rác xoá HĐ", async () => {
@@ -488,7 +488,7 @@ test.describe("15 app-perm · người dùng chỉ có Sổ Hợp Tác", () => {
 });
 
 test.describe("15 lỗi người dùng báo · đường tắt duyệt", () => {
-  test("[lỗi: SP trống sau xác nhận + hộp «Gắn sản phẩm» không tắt khi bấm liên tục] 2a · đường tắt duyệt: Xác nhận và lưu ⇒ hộp ⇒ Xác nhận (bấm nhanh 2 lần) ⇒ hộp đóng; F5 ⇒ đã khoá, dòng có SP", async () => {
+  test("[lỗi: SP trống sau xác nhận + hộp «Gắn sản phẩm» không tắt khi bấm liên tục] 2a · đường tắt duyệt: Gửi duyệt ⇒ hộp ⇒ Xác nhận (bấm nhanh 2 lần) ⇒ hộp đóng; F5 ⇒ đã khoá, dòng có SP", async () => {
     test.setTimeout(300_000);
     await setApproval(false); // tắt duyệt cho tenant demo; luôn khôi phục ở finally (và afterAll)
     try {
@@ -501,9 +501,9 @@ test.describe("15 lỗi người dùng báo · đường tắt duyệt", () => {
       // Nút của trang (testid confirm-save, khi không có lượt duyệt) hoặc của thẻ duyệt cấp 1 (lượt máy cũ vẫn mở khi tenant tắt duyệt).
       const confirm = page
         .getByTestId("confirm-save")
-        .or(page.getByRole("button", { name: "Xác nhận và lưu", exact: true }))
+        .or(page.getByRole("button", { name: "Gửi duyệt", exact: true }))
         .first();
-      await expect(confirm, "có nút «Xác nhận và lưu»").toBeVisible({ timeout: 30_000 });
+      await expect(confirm, "có nút «Gửi duyệt»").toBeVisible({ timeout: 30_000 });
       await confirm.click();
       const dlg = page.getByTestId("product-link-dialog");
       await expect(dlg).toContainText("Gắn sản phẩm");

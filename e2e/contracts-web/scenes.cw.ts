@@ -1,4 +1,4 @@
-// PK-FR-10 · nav-v2 (người dùng chốt 2026-10-20: cấu trúc trang + giao diện theo mockup NITI, thay D-02 "giống hệt mgmt-app"): cảnh màn hình
+﻿// PK-FR-10 · nav-v2 (người dùng chốt 2026-10-20: cấu trúc trang + giao diện theo mockup NITI, thay D-02 "giống hệt mgmt-app"): cảnh màn hình
 // contracts-web, 3 lớp — chữ (innerText chuẩn hoá, lệch 0 ký tự) · khung (bounding box ±2 px) · ảnh (toHaveScreenshot, ≤ 0,5 %) — so với
 // BASELINE của chính contracts-web ở `baseline/<platform>/`: S01 đăng nhập, Shell (sidebar mở/thu, mobile), S16 chuông, Tổng quan, S03/S04/S05.
 // `CW_MODE=capture` chụp từ contracts-web và GHI baseline (`bun run e2e:contracts:capture`; bản Linux: evotest `-Capture cw`); chế độ so đọc
@@ -70,7 +70,7 @@ const loginBoxes = {
 const FAILED_ID = contract.id.replace(/1$/, "2");
 const reviewBoxes = {
   heading: "main h1",
-  save: 'main button:text-is("Xác nhận và lưu")',
+  save: 'main button:text-is("Gửi duyệt")',
   file: 'main a:has-text("Xem hợp đồng gốc")',
   warnings: "main ul",
   firstField: "main input >> nth=0",

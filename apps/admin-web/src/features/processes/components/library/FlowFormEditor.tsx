@@ -154,12 +154,10 @@ export function FlowFormEditor({
           className="min-w-0 flex-1 text-label text-muted-foreground"
           data-testid="copy-save-note"
         >
-          {companyCopy ? t("process.admin.editor.applyNote") : null}
           {ap.active ? (
-            <ApplyStatusLine
-              status={form.dirty && ap.status.kind === "applied" ? { kind: "idle" } : ap.status}
-              needsApply={applyOnly}
-            />
+            <ApplyStatusLine status={ap.status} needsApply={applyOnly} dirty={form.dirty} />
+          ) : companyCopy ? (
+            t("process.admin.editor.applyNote")
           ) : null}
         </div>
         <Button type="button" variant="outline" disabled={!form.dirty} onClick={form.discard}>

@@ -27,22 +27,23 @@ export function ProcessSaveBar({ dirty, pending, formId, version, companyCopy, a
   return (
     <div className="sticky bottom-0 z-10 -mx-4 mt-6 flex flex-wrap items-center gap-3 border-t border-border bg-background/95 px-4 py-3 backdrop-blur">
       <div className="min-w-0 flex-1 text-label text-muted-foreground">
-        {dirty
-          ? t("common.unsaved")
-          : version === undefined
-            ? null
-            : t("common.savedVersion", { n: version })}
-        {mode.noteKey ? (
-          <span className="block" data-testid="copy-save-note">
-            {t(mode.noteKey)}
-          </span>
-        ) : null}
         {apply && companyCopy ? (
-          <ApplyStatusLine
-            status={dirty && apply.status.kind === "applied" ? { kind: "idle" } : apply.status}
-            needsApply={apply.needsApply && !dirty}
-          />
-        ) : null}
+          // CR-123 u9: bản công ty = MỘT dòng trạng thái (không "Đã lưu · vN" + ghi chú + xác nhận chồng nhau)
+          <ApplyStatusLine status={apply.status} needsApply={apply.needsApply} dirty={dirty} />
+        ) : (
+          <>
+            {dirty
+              ? t("common.unsaved")
+              : version === undefined
+                ? null
+                : t("common.savedVersion", { n: version })}
+            {mode.noteKey ? (
+              <span className="block" data-testid="copy-save-note">
+                {t(mode.noteKey)}
+              </span>
+            ) : null}
+          </>
+        )}
       </div>
       <Button variant="outline" asChild>
         <Link to="/processes">{t("common.cancel")}</Link>

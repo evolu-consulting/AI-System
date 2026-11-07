@@ -1,4 +1,4 @@
-// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-121 D-6b · HÀNH TRÌNH Thông báo sau bước duyệt (D5, không seed bật sẵn gì). Viết sẵn, CHẠY một lần cuối đợt (stack `playwright.journey.config.ts`).
 // Công ty MỚI `e2e-d6-<hậu tố>` (chưa quy trình/luật/gán). Platform admin, chỉ bằng UI: nhân bản quy trình mẫu → thêm bước "Thông báo" sau bước
 // Duyệt (người nhận = người gửi duyệt, tiêu đề có {ma_hd} {ten_hd}) → lưu nháp → xuất bản → gán cho công ty (không công tắc nào khác). Người dùng công ty
@@ -125,7 +125,7 @@ test("3 · người gửi duyệt thấy thông báo ở chuông sau khi Giám �
       timeout: 4_000,
     });
   }).toPass({ timeout: 60_000 });
-  await emp.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await emp.getByRole("button", { name: "Gửi duyệt" }).click();
   await expect(stepOf(emp, "Xác nhận hợp đồng")).toHaveAttribute("data-status", "passed", {
     timeout: 30_000,
   });

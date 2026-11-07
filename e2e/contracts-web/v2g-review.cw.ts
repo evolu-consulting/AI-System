@@ -1,4 +1,4 @@
-// V2-G · HD-02/HD-08 · BA §4.2 "Upload và xác nhận" · 5.5 · Luật 4b: màn xác nhận sau khi AI đọc — form V2-F điền sẵn, ô AI chưa chắc tô vàng, mốc AI
+﻿// V2-G · HD-02/HD-08 · BA §4.2 "Upload và xác nhận" · 5.5 · Luật 4b: màn xác nhận sau khi AI đọc — form V2-F điền sẵn, ô AI chưa chắc tô vàng, mốc AI
 // tìm thấy ở cột phải, gợi ý SP theo quy tắc nhận diện, Lưu = MỘT POST /review, Hủy không gửi gì, tenant tắt duyệt ⇒ HĐ có hiệu lực; khối Sản phẩm của
 // HĐ đã lưu gắn lại SP (PUT) và Tóm tắt hiện 5 mục AI. Backend giả `page.route`; chờ phần tử/yêu cầu, không sleep.
 import { expect, type Page, test } from "@playwright/test";
@@ -135,11 +135,11 @@ test("dòng chưa gắn SP chặn Lưu (5.5a) — không gửi /review", async (
   expect(review(sent)).toHaveLength(0);
 });
 
-test("tenant tắt duyệt: «Xác nhận và lưu» ⇒ nháp ⇒ hộp Gắn SP ⇒ MỘT POST /review mang products ⇒ `active`, hết thanh dính", async ({
+test("tenant tắt duyệt: «Gửi duyệt» ⇒ nháp ⇒ hộp Gắn SP ⇒ MỘT POST /review mang products ⇒ `active`, hết thanh dính", async ({
   page,
 }) => {
   const { sent } = await openReview(page, { saveStatus: "active" });
-  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await page.getByRole("button", { name: "Gửi duyệt" }).click();
   // atomic-confirm: bước 1 ghi nháp (không khoá), rồi hộp "Gắn sản phẩm" như khi bật duyệt.
   const dlg = page.getByTestId("product-link-dialog");
   await expect(dlg).toBeVisible();

@@ -47,6 +47,16 @@ const errText = (e: unknown, t: (k: string) => string): string =>
     ? t("contracts.list.categoryExists")
     : t("contracts.errors.unknown");
 
+/** CR-123 u9: người không có quyền tải/nhập (vd kế toán) không được gợi ý "Upload" — nói đúng phạm vi họ thấy. */
+function ListEmpty({ write }: { write: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <Empty title={t(write ? "contracts.list.emptyTitle" : "contracts.list.emptyTitleRole")}>
+      {t(write ? "contracts.list.emptyBody" : "contracts.list.emptyBodyRole")}
+    </Empty>
+  );
+}
+
 export function ContractsListPage() {
   const { t } = useTranslation();
   const { write, owner } = useMe();
@@ -220,7 +230,8 @@ export function ContractsListPage() {
         ) : list.error ? (
           <ErrorLine error={list.error} />
         ) : !table.total && !hasFilters(table) && !isDateActive(date) && docType === "all" ? (
-          <Empty title={t("contracts.list.emptyTitle")}>{t("contracts.list.emptyBody")}</Empty>
+          // CR-123 u9: người không có quyền tải/nhập (vd kế toán) không được gợi ý "Upload" — nói đúng phạm vi họ thấy
+          <ListEmpty write={write} />
         ) : !hasRows ? (
           <Empty title={t("contracts.list.noMatchTitle")}>{t("contracts.list.noMatchBody")}</Empty>
         ) : (

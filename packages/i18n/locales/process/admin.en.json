@@ -1433,6 +1433,10 @@
     "advanced": "Advanced",
     "moduleNote": "The provider, signers and other settings of this step come from the app settings. Open Advanced to tweak details.",
     "notify": {
+      "to": "Send to",
+      "toStarter": "Contract creator",
+      "toGroup": "Department",
+      "toGroupPh": "Do not send to a department",
       "title": "Title",
       "body": "Message"
     },

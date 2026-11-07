@@ -125,6 +125,13 @@ describe("CR-123 FR-10 · company-flows/apply", () => {
       (x) => x.trigger_event === "contract.submitted" && x.enabled,
     );
     expect(on.map((x) => x.id)).toEqual([copy.id]);
+    // audit trong cùng tx: ai áp dụng quy trình nào, thay bản gốc nào
+    const au = await o<
+      { summary: Json; actor_id: string }[]
+    >`select summary, actor_id::text as actor_id from hub.audit_log
+      where tenant_id = ${X} and entity_name = 'company_flow.apply' order by seq desc limit 1`;
+    expect(au[0]?.summary).toMatchObject({ flow_id: copy.flow_id, replaced_flow_id: lib });
+    expect(au[0]?.actor_id).toBe(WHO.A?.userId as string);
     const b = await call("A", "POST", `${P(X)}/apply`, { flow_id: copy.flow_id });
     expect(b.status).toBe(200);
     expect(rowOf(b.json, copy.flow_id)?.enabled).toBe(true);

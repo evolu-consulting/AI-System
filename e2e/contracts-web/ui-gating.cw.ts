@@ -1,4 +1,4 @@
-// UAT CR-095 B1 + B6 · Luật 4b: UI theo quyền, backend giả `page.route`. B1: /partners — viewer (`actions=[read]`) không thấy
+﻿// UAT CR-095 B1 + B6 · Luật 4b: UI theo quyền, backend giả `page.route`. B1: /partners — viewer (`actions=[read]`) không thấy
 // "+ Ghi việc" / "Chấm điểm", editor thấy. B6: thẻ duyệt — người không quyết được (`can_act=false`, vd người gửi ở cấp 2)
 // không thấy "Xác nhận"/"Duyệt"; sau khi bấm "Xác nhận" ở cấp 1 mà bước kế là cấp 2 không quyết được thì nút biến mất.
 import { expect, type Page, test } from "@playwright/test";
@@ -91,7 +91,7 @@ test("B6 · Xác nhận cấp 1 → cấp 2 người gửi không quyết đư�
     },
   });
   await page.goto(`/contracts/c/${contract.id}`);
-  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await page.getByRole("button", { name: "Gửi duyệt" }).click();
   await expect(
     page.getByText("Đang chờ Ban giám đốc duyệt (bạn không thể duyệt bước này)."),
   ).toBeVisible();

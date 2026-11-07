@@ -44,6 +44,7 @@ export function companyFlowsRoutes(d: ProcessDeps): Hono<AuthVars> {
     const b = await parseJson(c, EnabledSchema);
     return c.json(await svc.setEnabled(c.var.user, tid(c), id(c), b.enabled));
   });
+  // CHÚ Ý: `/apply` đăng ký TRƯỚC mọi `POST ${P}/:id` tương lai (Hono khớp theo thứ tự đăng ký — `/:id` đứng trước sẽ nuốt "apply" làm id).
   r.post(`${P}/apply`, async (c) => {
     const b = await parseJson(c, AssignSchema);
     return c.json(await svc.apply(c.var.user, tid(c), b.flow_id));

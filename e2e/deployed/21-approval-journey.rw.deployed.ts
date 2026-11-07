@@ -1,4 +1,4 @@
-// Luồng 21 · hành trình duyệt HĐ trên máy chủ thật, tenant RIÊNG `e2e-approval` (KHÔNG NiTi/Demo). Cùng các bước với stack
+﻿// Luồng 21 · hành trình duyệt HĐ trên máy chủ thật, tenant RIÊNG `e2e-approval` (KHÔNG NiTi/Demo). Cùng các bước với stack
 // `e2e/journey-approval/approval.ja.ts` (dùng chung `_journey.ts`): admin gán 2 quy trình + luật (gán là đủ, CR-121 D-4), nhân viên KD
 // tải HĐ + xác nhận, trưởng Kế toán và Giám đốc duyệt. GHI dữ liệu (gán/luật/feature của tenant e2e-, HĐ gắn thẻ E2E-JOURNEY) ⇒ project rw.
 // Tiền đề (idempotent, chạy MỘT lần trên máy chủ, xem docs/specs/e2e-journey-approval/tasks.md):
@@ -50,7 +50,7 @@ test("gán là đủ ⇒ Kế toán duyệt ⇒ Giám đốc duyệt ⇒ HĐ đ�
   const emp = await (await browser.newContext({ locale: "vi-VN" })).newPage();
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, `${RUN}b`);
-  await emp.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await emp.getByRole("button", { name: "Gửi duyệt" }).click();
   await expect(stepOf(emp, "Phòng Kế toán duyệt")).toBeVisible({ timeout: 60_000 });
   const acc = await (await browser.newContext({ locale: "vi-VN" })).newPage();
   await approveAs(acc, E, U.accounting, id, "Phòng Kế toán duyệt");

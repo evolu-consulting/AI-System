@@ -1,4 +1,4 @@
-// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // pm-checklist-e2e · CR-113 · checklist Sổ Hợp Tác (docs/PM-SETUP.md §5 bước 1–5) trên UI thật + 3 HĐ mẫu `[CR-113]` do seed tạo.
 // Mỗi người dùng đăng nhập ở context mới bằng trang đăng nhập của app (thay cho "đăng xuất, đăng nhập lại").
 // Quá hạn: seed đã đẩy escalate_at về quá khứ; thay vì chờ vòng 300 s, spec gọi MỘT lượt nhắc qua cổng điều khiển của stack (như test CF `remindOnce`).
@@ -25,12 +25,12 @@ async function openContract(page: Page, n: number, title: string) {
   await expect(page.getByText(title, { exact: false }).first()).toBeVisible();
   await expect(page.getByTestId("approval-step-0")).toBeVisible();
 }
-/** Bước 1 = bước xác nhận: form hợp đồng phải đủ trường bắt buộc rồi "Xác nhận và lưu" (seed chỉ có tiêu đề + giá trị). */
+/** Bước 1 = bước xác nhận: form hợp đồng phải đủ trường bắt buộc rồi "Gửi duyệt" (seed chỉ có tiêu đề + giá trị). */
 async function confirmStep1(page: Page) {
   await page.getByRole("textbox", { name: "Tên hợp đồng *" }).fill("HĐ mẫu CR-113");
   await page.getByRole("textbox", { name: "Nhà cung cấp *" }).fill("Nhà cung cấp mẫu");
   await page.getByRole("textbox", { name: "Hiệu lực từ *" }).fill("2026-11-01");
-  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await page.getByRole("button", { name: "Gửi duyệt" }).click();
 }
 const step = (p: Page, i: number) => p.getByTestId(`approval-step-${i}`);
 
@@ -64,8 +64,8 @@ test("CR-113 · 2 · HĐ chờ bước 1: bước 1 đang mở, julian.bui (Toà
   await login(page, "julian.bui");
   await openContract(page, 1, T.pending);
   await expect(step(page, 0)).toHaveAttribute("data-status", "open");
-  // Thực tế: ở bước 1 (soạn/kiểm) nút là "Xác nhận và lưu" (không có "Từ chối" khi HĐ chưa có văn bản); "Đạt / Trả lại" chỉ có từ bước 2.
-  await expect(page.getByRole("button", { name: "Xác nhận và lưu" })).toBeVisible();
+  // Thực tế: ở bước 1 (soạn/kiểm) nút là "Gửi duyệt" (không có "Từ chối" khi HĐ chưa có văn bản); "Đạt / Trả lại" chỉ có từ bước 2.
+  await expect(page.getByRole("button", { name: "Gửi duyệt" })).toBeVisible();
 });
 
 test("CR-113 · 3 · HĐ Toàn quyền duyệt thay: bước 1 có huy hiệu 'Duyệt thay · Toàn quyền', bước 2 chờ Pháp chế", async ({

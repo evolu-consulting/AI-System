@@ -1,4 +1,4 @@
-// ADM-FR-66 · CR-056 · P-a F5: editor quy trình tối thiểu (`/processes/new`, `/processes/$processId`) — Cấu hình · Lượt chạy
+﻿// ADM-FR-66 · CR-056 · P-a F5: editor quy trình tối thiểu (`/processes/new`, `/processes/$processId`) — Cấu hình · Lượt chạy
 // (plan-frontend-admin §1, board ②). `processId` vắng ⇒ tạo mới. Mẫu + tenant_admin ⇒ chỉ xem + "Chép mẫu".
 import type { FlowTrigger } from "@ai/contracts/hub-admin";
 import { useNavigate } from "@tanstack/react-router";
@@ -21,11 +21,10 @@ import { ApiError } from "@/lib/http";
 import { hubConfigured } from "@/lib/hub";
 import { copyDef, useProcessDef } from "../api";
 import { DefInfoCard } from "../components/editor/DefInfoCard";
+import { StagesFirst, TechCards } from "../components/editor/EditorCards";
 import { EditorRunsTab } from "../components/editor/EditorRunsTab";
-import { InputsCard } from "../components/editor/InputsCard";
 import { ProcessSaveBar } from "../components/editor/ProcessSaveBar";
-import { SourcesCard } from "../components/editor/SourcesCard";
-import { LimitsCard, StagesCard } from "../components/editor/StagesCard";
+import { LimitsCard } from "../components/editor/StagesCard";
 import { FlowEditorBody } from "../components/flow/FlowEditorBody";
 import { CompanyCopyBody } from "../components/library/CompanyCopyBody";
 import { LibraryEditorBody } from "../components/library/LibraryEditorBody";
@@ -39,6 +38,7 @@ import { useProcessTenant } from "../hooks/use-process-tenant";
 import {
   copyTenantId,
   infoVariant,
+  isBusinessView,
   isCompanyFlow,
   isCompanyOwned,
   scopedTenantId,
@@ -267,6 +267,7 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
       />
     );
   if (processId !== undefined && !def) return <LoadingState />;
+  const business = isBusinessView(def, lib, tenant.isPlatform);
   const form = (
     <form
       id={FORM_ID}
@@ -278,6 +279,8 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
       }}
     >
       {readOnly && processId ? <TemplateBanner id={processId} tenantId={tenant.tenantId} /> : null}
+      {/* CR-123 u9: người dùng công ty chỉ thấy sơ đồ các bước ngay đầu trang; Nguồn / Thông tin đầu vào là khái niệm kỹ thuật ⇒ chỉ quản trị nền tảng */}
+      <StagesFirst on={business} d={dv} readOnly={readOnly} refs={refs} />
       <DefInfoCard
         draft={d.draft}
         errors={errors}
@@ -286,16 +289,15 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
         patch={d.patch}
         variant={infoVariant(def, lib)}
       />
-      <SourcesCard
-        draft={d.draft}
-        errors={d.errors}
+      <TechCards
+        hide={business}
+        d={d}
+        dv={dv}
         readOnly={readOnly}
+        refs={refs}
         tenantId={tenant.tenantId}
         ready={tenant.ready}
-        patch={d.patch}
       />
-      <InputsCard draft={d.draft} errors={d.errors} readOnly={readOnly} patch={d.patch} />
-      <StagesCard d={dv} readOnly={readOnly} refs={refs} />
       <LimitsCard ttl={d.draft.ttl} noExpiry={d.draft.noExpiry} />
       {readOnly ? null : (
         <ProcessSaveBar

@@ -18,6 +18,13 @@ export const isCompanyFlow = (def: DefLike | undefined): boolean =>
 export const isCompanyOwned = (def: DefLike | undefined, lib: unknown): boolean =>
   isCompanyCopy(def, lib) || isCompanyFlow(def);
 
+/** CR-123 u9: người dùng công ty sửa bản của công ty ⇒ chỉ thấy phần nghiệp vụ (không Nguồn / Thông tin đầu vào / Nâng cao). Quản trị nền tảng thấy đủ. */
+export const isBusinessView = (
+  def: DefLike | undefined,
+  lib: unknown,
+  isPlatform: boolean,
+): boolean => !isPlatform && isCompanyOwned(def, lib);
+
 /** Thanh lưu theo loại: bản của công ty ⇒ "Lưu và áp dụng" + một dòng nói phạm vi; mẫu Thư viện ⇒ "Lưu nháp" (còn "Xuất bản" riêng). */
 export const saveModeOf = (
   companyOwned: boolean,

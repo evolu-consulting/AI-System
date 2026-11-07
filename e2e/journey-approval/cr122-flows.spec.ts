@@ -82,7 +82,7 @@ async function submit(
   const emp = await ctxPage(browser);
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, `${RUN}${tag}`, M150);
-  await emp.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await emp.getByRole("button", { name: "Gửi duyệt" }).click();
   return { emp, id };
 }
 const isOpen = (page: Page, name: string) =>
@@ -243,6 +243,12 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   const box2 = await openCompanyFlows(page);
   const copy2 = flowRows(box2).filter({ hasText: `Sao từ ${FLOW} · v1` });
   await copy2.getByRole("link", { name: "Mở", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Lưu và áp dụng" }).first()).toBeVisible();
+  // CR-123 u9 · góc giám đốc: không khái niệm kỹ thuật, sơ đồ ngay đầu trang
+  await expect(page.getByText("Nguồn của quy trình")).toHaveCount(0);
+  await expect(page.getByText("Thông tin đầu vào")).toHaveCount(0);
+  await expect(page.getByText("Khai báo nguồn")).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath("cr123-u9-editor-top.png") });
   await page.getByRole("button", { name: "Lưu và áp dụng" }).first().click();
   await expect(page.getByTestId("apply-status").first()).toContainText(
     "Đã áp dụng — hợp đồng gửi từ giờ dùng quy trình này",

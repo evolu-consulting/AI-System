@@ -3,6 +3,7 @@ import {
   companySearch,
   copyTenantId,
   infoVariant,
+  isBusinessView,
   isCompanyCopy,
   isCompanyFlow,
   isCompanyOwned,
@@ -11,6 +12,15 @@ import {
   usesStepForm,
   viewerTenantId,
 } from "./company-copy";
+
+describe("CR-123 u9 · công ty không thấy phần kỹ thuật", () => {
+  test("bản công ty: người công ty chỉ thấy nghiệp vụ, quản trị nền tảng thấy đủ", () => {
+    const own = { source_template_id: "s1" };
+    expect(isBusinessView(own, null, false)).toBe(true);
+    expect(isBusinessView(own, null, true)).toBe(false);
+    expect(isBusinessView({}, null, false)).toBe(false);
+  });
+});
 
 describe("CR-123 FR-10 · một nút cho công ty, Xuất bản chỉ cho mẫu Thư viện", () => {
   const flow = { tenant_id: "t1", trigger: { event: "x" } };

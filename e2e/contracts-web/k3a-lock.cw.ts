@@ -1,4 +1,4 @@
-// CR-097 K3a · HD-FR-100 · HD-FR-104 · Luật 4b: HĐ đã khoá — trường pháp lý chỉ đọc + banner "Đã xác nhận — đã khoá"; owner mở lại có lý do;
+﻿// CR-097 K3a · HD-FR-100 · HD-FR-104 · Luật 4b: HĐ đã khoá — trường pháp lý chỉ đọc + banner "Đã xác nhận — đã khoá"; owner mở lại có lý do;
 // người không phải owner không thấy link; Chờ duyệt có banner "Chưa xác nhận"; danh sách: 🔒, không còn "Thêm thủ công".
 // Backend giả `page.route`; không sleep.
 import { expect, test } from "@playwright/test";
@@ -39,7 +39,7 @@ test("HĐ khoá tuyệt đối: mọi ô (cả notice_days) chỉ đọc, ẩn L
   await expect(page.locator("p[role=status], p[role=alert]")).toHaveCount(0);
 });
 
-test("mở lại (tenant tắt duyệt): «Xác nhận và lưu» hiện ⇒ bấm ⇒ POST /review (không draft) ⇒ khoá lại", async ({
+test("mở lại (tenant tắt duyệt): «Gửi duyệt» hiện ⇒ bấm ⇒ POST /review (không draft) ⇒ khoá lại", async ({
   page,
 }) => {
   let confirmed = false;
@@ -79,7 +79,7 @@ test("mở lại (tenant tắt duyệt): «Xác nhận và lưu» hiện ⇒ b�
   });
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await expect(page.getByRole("button", { name: "Lưu nháp", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await page.getByRole("button", { name: "Gửi duyệt" }).click();
   // atomic-confirm: HĐ có dòng ⇒ hộp "Gắn sản phẩm" ⇒ MỘT POST /review mang `products` (không gọi /product-links sau khoá).
   await page.getByTestId("product-link-confirm").click();
   await expect(page.getByTestId("banner-locked")).toBeVisible();

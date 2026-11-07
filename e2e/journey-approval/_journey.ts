@@ -1,4 +1,4 @@
-// e2e-journey-approval · bước dùng chung của hành trình duyệt HĐ (stack `approval.ja.ts` và triển khai `deployed/21-*`): đăng nhập hai web,
+﻿// e2e-journey-approval · bước dùng chung của hành trình duyệt HĐ (stack `approval.ja.ts` và triển khai `deployed/21-*`): đăng nhập hai web,
 // platform admin gán quy trình + luật ở ai-admin, nhân viên tải HĐ, người duyệt bấm Đạt. Chỉ thao tác như người dùng thật (UI).
 import { expect, type Locator, type Page, type Response } from "@playwright/test";
 import {
@@ -116,7 +116,7 @@ export async function openProcessBlock(page: Page, e: Env): Promise<Locator> {
   return openCompanyFlows(page);
 }
 
-/** Nhân viên tải HĐ mẫu lên bằng UI; chờ AI đọc xong (có nút "Xác nhận và lưu"). Trả id HĐ. */
+/** Nhân viên tải HĐ mẫu lên bằng UI; chờ AI đọc xong (có nút "Gửi duyệt"). Trả id HĐ. */
 export async function uploadAndOpen(
   page: Page,
   e: Env,
@@ -134,7 +134,7 @@ export async function uploadAndOpen(
   await page.waitForURL(UUID, { timeout: 60_000 });
   const id = UUID.exec(page.url())?.[1] ?? "";
   expect(id).not.toBe("");
-  await expect(page.getByRole("button", { name: "Xác nhận và lưu" })).toBeVisible({
+  await expect(page.getByRole("button", { name: "Gửi duyệt" })).toBeVisible({
     timeout: 120_000,
   });
   // Nút xác nhận hiện sớm (P11d): chờ AI điền xong Tên + Nhà cung cấp (ô bắt buộc) rồi mới xác nhận, tránh bấm khi form còn trống.
@@ -150,11 +150,11 @@ export async function uploadAndOpen(
 export const stepOf = (page: Page, name: string): Locator =>
   page.getByTestId(/^approval-step-\d+$/).filter({ hasText: name });
 
-/** CR-122 W5: bấm "Xác nhận và lưu" tới khi nút biến mất. HĐ đầu tiên của công ty: thẻ có thể còn cũ lúc bấm (APPROVAL_NOT_OPEN ⇒ thẻ
+/** CR-122 W5: bấm "Gửi duyệt" tới khi nút biến mất. HĐ đầu tiên của công ty: thẻ có thể còn cũ lúc bấm (APPROVAL_NOT_OPEN ⇒ thẻ
  *  tự tải lại, nút còn) ⇒ bấm lại. KHÔNG chờ `approval-step-0`=open: trước khi xác nhận, thẻ có thể chưa có bước 0 hoặc bước 0 còn
  *  `pending` (W4 chờ `open` ⇒ treo 60 s). Bấm lần hai khi lần một đã nhận chỉ trả APPROVAL_NOT_OPEN, không tạo quyết thứ hai. */
 export async function confirmAndSave(page: Page): Promise<void> {
-  const btn = page.getByRole("button", { name: "Xác nhận và lưu" });
+  const btn = page.getByRole("button", { name: "Gửi duyệt" });
   await expect(btn).toBeVisible({ timeout: 60_000 }); // sau reload trang còn tải: chưa có nút ≠ đã xác nhận
   await expect(async () => {
     if (await btn.isVisible()) await btn.click({ timeout: 5_000 });

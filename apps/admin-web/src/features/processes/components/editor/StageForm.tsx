@@ -1,7 +1,13 @@
-// ADM-FR-66 · CR-056 · P-a F5 · P-b2 · P-d2: khung form một giai đoạn — `region "Giai đoạn n: <tên>"` (plan-frontend §1, e2e §2).
+﻿// ADM-FR-66 · CR-056 · P-a F5 · P-b2 · P-d2: khung form một giai đoạn — `region "Giai đoạn n: <tên>"` (plan-frontend §1, e2e §2).
 // Chi tiết từng phần ở StageGeneral/StageStepFields/StageGate/StageAnswerer/StageActions (tách — TECH-DEBT #136).
+import type { NotifyTo } from "@ai/contracts/hub-admin";
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { useGroupOptions } from "@/features/groups/api";
+import { useSession } from "@/lib/auth/use-session";
+import { pickLocalized } from "@/lib/localized";
 import { isApply } from "../../lib/apply-form";
 import { isForm } from "../../lib/form-fields";
 import { isIf } from "../../lib/if-form";
@@ -13,7 +19,7 @@ import { hasNodePanel } from "../../modules/panel-registry";
 import { usePalette } from "../../palette-api";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { NodeConfigPanel } from "../flow/NodeConfigPanel";
-import { TextField } from "./Fields";
+import { SelectField, TextField } from "./Fields";
 import { StageActions } from "./StageActions";
 import { StageAdminModeNotice } from "./StageAdminModeNotice";
 import { StageAnswerer } from "./StageAnswerer";
@@ -170,15 +176,67 @@ function ModuleBody(p: StageFormProps) {
   );
 }
 
-/** Gửi email / Thông báo chuông: tiêu đề + nội dung (người nhận và kênh đã đặt sẵn theo node). */
+/** CR-123 u9 · "Gửi cho": người tạo hợp đồng và/hoặc một phòng ban (chọn theo tên, không gõ mã). */
+function NotifyRecipients(p: {
+  id: string;
+  to: NotifyTo[];
+  readOnly: boolean;
+  onChange: (to: NotifyTo[]) => void;
+}) {
+  const { t } = useTranslation();
+  const flow = useFlowCtx();
+  const groups = useGroupOptions(flow?.tenantId, !!flow?.tenantId);
+  const starter = p.to.some((x) => x.who === "starter");
+  const group = p.to.find((x) => x.who === "group");
+  const rest = p.to.filter((x) => x.who === "input_user");
+  const build = (s: boolean, g: string): NotifyTo[] => [
+    ...(s ? [{ who: "starter" as const }] : []),
+    ...(g ? [{ who: "group" as const, group_key: g }] : []),
+    ...rest,
+  ];
+  const lang = useTranslation().i18n.language;
+  return (
+    <fieldset className="space-y-2 border-0 p-0" data-testid="notify-to">
+      <legend className="text-label font-medium">{t("process.admin.flow.notify.to")}</legend>
+      <Label className="flex items-center gap-2 font-normal">
+        <Checkbox
+          checked={starter}
+          disabled={p.readOnly}
+          onCheckedChange={(v) => p.onChange(build(v === true, group?.group_key ?? ""))}
+        />
+        {t("process.admin.flow.notify.toStarter")}
+      </Label>
+      <SelectField
+        id={`${p.id}-ngroup`}
+        label={t("process.admin.flow.notify.toGroup")}
+        value={group?.group_key ?? ""}
+        readOnly={p.readOnly}
+        placeholder={t("process.admin.flow.notify.toGroupPh")}
+        options={(groups.data ?? []).map((g) => ({
+          value: g.key,
+          label: pickLocalized(g.name, lang),
+        }))}
+        onChange={(v) => p.onChange(build(starter, v))}
+      />
+    </fieldset>
+  );
+}
+
+/** Gửi email / Thông báo chuông: Gửi cho + tiêu đề + nội dung (kênh đã đặt sẵn theo node). */
 function NotifyBasics(p: Pick<StageFormProps, "stage" | "readOnly" | "onChange">) {
   const { t } = useTranslation();
   const raw = p.stage.notifyRaw;
   if (!raw) return null;
-  const set = (patch: { title?: string; body?: string }) =>
+  const set = (patch: { title?: string; body?: string; to?: NotifyTo[] }) =>
     p.onChange({ notifyRaw: { ...raw, ...patch } });
   return (
     <div className="space-y-3" data-testid="notify-basics">
+      <NotifyRecipients
+        id={p.stage.uid}
+        to={raw.to}
+        readOnly={p.readOnly}
+        onChange={(to) => set({ to })}
+      />
       <TextField
         id={`${p.stage.uid}-ntitle`}
         label={t("process.admin.flow.notify.title")}
@@ -221,6 +279,8 @@ function FlowMain(p: StageFormProps) {
 function FlowForm(p: StageFormProps) {
   const { stage } = p;
   // CR-123 · u3a · FR-14: stage của node module nhiều stage (Ký số) ⇒ MỘT panel cho cả ô, bấm stage nào cũng vậy.
+  // CR-123 u9: "Nâng cao" (mã bước, người thực hiện, Tự sửa mã, Chạy tính năng…) chỉ cho quản trị nền tảng — công ty chỉ thấy phần nghiệp vụ
+  const isPlatform = useSession((s) => s.me?.role) === "platform_admin";
   const cluster = draftClusterOf(p.all, p.index);
   if (cluster) return <StageCluster {...p} cluster={cluster} />;
   const mod = !!stage.node;
@@ -233,12 +293,14 @@ function FlowForm(p: StageFormProps) {
       {stage.executor === "approve" ? <StageApprove {...p} /> : null}
       <StageLinks {...p} />
       <FlowMain {...p} />
-      <AdvancedBox>
-        <StageGeneral {...p} part="tech" />
-        <StageStepFields {...p} />
-        {approve ? <StageRemind {...p} skipRemind /> : null}
-        {tool || (mod && !isWaitFamily(stage) && !isWait(stage)) ? <Body {...p} /> : null}
-      </AdvancedBox>
+      {isPlatform ? (
+        <AdvancedBox>
+          <StageGeneral {...p} part="tech" />
+          <StageStepFields {...p} />
+          {approve ? <StageRemind {...p} skipRemind /> : null}
+          {tool || (mod && !isWaitFamily(stage) && !isWait(stage)) ? <Body {...p} /> : null}
+        </AdvancedBox>
+      ) : null}
       <StageActions {...p} />
     </section>
   );

@@ -1433,6 +1433,10 @@
     "advanced": "Nâng cao",
     "moduleNote": "Nhà cung cấp, người ký và các thiết lập khác của bước này lấy từ cài đặt của ứng dụng. Mở Nâng cao nếu cần chỉnh chi tiết.",
     "notify": {
+      "to": "Gửi cho",
+      "toStarter": "Người tạo hợp đồng",
+      "toGroup": "Phòng ban",
+      "toGroupPh": "Không gửi cho phòng ban",
       "title": "Tiêu đề",
       "body": "Nội dung"
     },

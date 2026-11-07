@@ -1,4 +1,4 @@
-// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-121 D-5 (R8) · HÀNH TRÌNH 2 CÔNG TY trên stack thật (không seed bật sẵn gì): hai công ty MỚI (hậu tố duy nhất, chưa quy trình/luật/gán).
 // Platform admin: nhân bản quy trình duyệt từ thư viện thành 2 bản khác nhau rồi xuất bản
 //   A = Kế toán → Giám đốc (CHỈ khi Giá trị ≥ 500 tr VÀ Loại = Mua) · B = 1 bước Giám đốc,
@@ -80,7 +80,7 @@ const cardOf = async (s: Session, id: string): Promise<Card> =>
   (await getJson<Card>(s, pack(`/contracts/${id}/approval`))).json;
 const stepStatus = (c: Card, name: string): string | undefined =>
   c.steps?.find((x) => x.name === name)?.status;
-/** Nhân viên Kinh doanh của công ty gửi duyệt một HĐ Mua giá trị `total` (tải lên + "Xác nhận và lưu"). Trả trang + id HĐ. */
+/** Nhân viên Kinh doanh của công ty gửi duyệt một HĐ Mua giá trị `total` (tải lên + "Gửi duyệt"). Trả trang + id HĐ. */
 async function submit(
   browser: import("@playwright/test").Browser,
   e: Env,
