@@ -118,7 +118,8 @@ function StageTag({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
                 : "grey"
         }
       >
-        {statusLabel(t, r.status)}
+        {/* CR-123 · u10: bước THẬT của lượt duyệt ("Chờ Giám đốc ký") thay nhãn trạng thái chung ("Chờ xác nhận") */}
+        {r.step_label ?? statusLabel(t, r.status)}
       </Tag>
     );
   }

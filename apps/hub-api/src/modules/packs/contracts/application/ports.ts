@@ -1,4 +1,4 @@
-// HD-FR-07 · D-03 · D-10 · HD1 plan §4 §6: cổng đọc của gói hợp đồng (lớp 2 — chỉ kiểu). Repo dựng trong tx `PackUow`
+﻿// HD-FR-07 · D-03 · D-10 · HD1 plan §4 §6: cổng đọc của gói hợp đồng (lớp 2 — chỉ kiểu). Repo dựng trong tx `PackUow`
 // (role `contracts_rw` + `app.tenant_id`, RLS FORCE). Kiểu DTO (`@ai/contracts`) chỉ ở adapter ⇒ cổng generic theo dòng/facets.
 import type { KitTxRepos } from "../../kit/public";
 import type { AppendixRepo } from "./appendix.usecase";
@@ -76,6 +76,8 @@ export type ContractListPage<Row> = {
   items: Row[];
   parents: ListParentRef[];
   progress?: unknown[];
+  /** CR-123 · u10 · HĐ của trang có lượt engine (id HĐ ⇒ id run) — để đặt nhãn cột "Bước"; không ra ngoài API. */
+  step_runs?: { id: string; run: string }[];
   /** CR-101 DOC-model (khi `filter.docs`). */
   docs?: unknown[];
   children?: unknown[];

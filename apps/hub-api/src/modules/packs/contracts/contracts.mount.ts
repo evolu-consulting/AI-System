@@ -1,4 +1,4 @@
-// HD-FR-07 · HD1 plan §2 §4 · N1 plan §9: nối gói `contracts` (lớp 4 của gói): `PackUow` (role `contracts_rw`) + use case +
+﻿// HD-FR-07 · HD1 plan §2 §4 · N1 plan §9: nối gói `contracts` (lớp 4 của gói): `PackUow` (role `contracts_rw`) + use case +
 // route. `packs.mount.ts` quyết có mount (`deps.packs.contracts`, vắng ⇒ bật) và gắn dưới `/pack/contracts`; client FileBox
 // theo org (`t_<tenant>`) do `packs.mount.ts` tiêm (vắng ⇒ `/file` của HĐ có tệp ⇒ 5xx, fail-closed).
 
@@ -7,7 +7,13 @@ import type { Db } from "@ai/db";
 import { probe } from "@ai/db/probe";
 import type { Hono } from "hono";
 import { logger } from "../../../lib/logger";
-import type { PackAccessView, PackFileboxClient, PackGuardVars } from "../kit/public";
+import type {
+  PackAccessView,
+  PackFileboxClient,
+  PackGuardVars,
+  PackRunsBridge,
+  PackWho,
+} from "../kit/public";
 import { createPackUow, memberNamesOf, packMembersRoutes, packTenantOnly } from "../kit/public";
 import { appendixRoutes } from "./adapters/appendix.routes";
 import { contractsRepos } from "./adapters/contracts.repo";
@@ -22,6 +28,7 @@ import { getFileLink } from "./application/get-file-link.usecase";
 import { getSource } from "./application/get-source.usecase";
 import { listContracts } from "./application/list-contracts.usecase";
 import { type PatchApprovalGuard, patchFields } from "./application/patch-fields.usecase";
+import { stepLabelOf } from "./domain/approval-step-label.rules";
 import { DEFAULT_TENANT_TZ, localDate } from "./domain/local-time.rules";
 import { uploadDay } from "./domain/upload.rules";
 
@@ -39,6 +46,8 @@ export type ContractsClock = {
   now?: () => Date;
   /** HD3 · review S1: seam duyệt cho PATCH trường (giai đoạn run + mở lại duyệt); vắng ⇒ hành vi HD1. */
   guard?: PatchApprovalGuard;
+  /** CR-123 · u10 · cầu engine để đặt nhãn cột "Bước" (một lô `stepsViewMany` cho cả trang); vắng ⇒ không có `step_label`. */
+  runs?: PackRunsBridge;
 };
 
 export function contractsModule(
@@ -56,8 +65,20 @@ export function contractsModule(
       (clock.now ?? (() => new Date()))(),
       await (clock.timeZoneOf?.(tid) ?? DEFAULT_TENANT_TZ),
     );
+  const runs = clock.runs;
+  const stepLabels = runs
+    ? async (who: PackWho, ids: readonly string[]) =>
+        new Map(
+          [
+            ...((await runs.port?.stepsViewMany?.({ ...who, role: "member" }, ids)) ?? new Map()),
+          ].map(([k, v]) => [k, stepLabelOf(v)] as const),
+        )
+    : undefined;
   const r = contractsRoutes(view, {
-    list: timed("contracts.list", listContracts({ uow, today })),
+    list: timed(
+      "contracts.list",
+      listContracts({ uow, today, ...(stepLabels ? { stepLabels } : {}) }),
+    ),
     facets: getFacets({ uow }),
     export: exportContracts({
       uow,

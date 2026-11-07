@@ -1,4 +1,4 @@
-// contract-flow S1a · đọc cho gói (`PackRunsPort.stepsView` + tìm task cho `act`), scope USER người xem (RLS T) + lọc
+﻿// contract-flow S1a · đọc cho gói (`PackRunsPort.stepsView` + tìm task cho `act`), scope USER người xem (RLS T) + lọc
 // `tenant_id` tường minh. stepsView = 2 câu cố định: (1) run × stage × task review gần nhất (+ tên người quyết),
 // (2) grant của task mở (chỉ khi có). `can_act` = `canAct` của engine (nguồn duy nhất). Luật trạng thái: `pack-steps.rules`.
 import { withHubScope } from "@ai/db/hub-scope";
@@ -29,6 +29,7 @@ type StageSnap = Parameters<typeof stageMeta>[0] & {
   } | null;
 };
 type Row = {
+  run_id: string;
   run_status: string;
   started_by: string;
   run_decision: unknown;
@@ -65,8 +66,8 @@ const userScope = (u: PackRunCaller) => ({
   tenantId: u.tenantId,
 });
 
-const rowsSql = (runId: string, tenantId: string) => sql`
-  select r.status as run_status, r.started_by, r.decision as run_decision, s.stage_idx, s.status as stage_status, s.last_error_code as stage_error, s.round,
+const rowsSql = (runIds: readonly string[], tenantId: string) => sql`
+  select r.id::text as run_id, r.status as run_status, r.started_by, r.decision as run_decision, s.stage_idx, s.status as stage_status, s.last_error_code as stage_error, s.round,
     r.snapshot->'stages'->(s.stage_idx::int) as stage,
     t.id as task_id, t.status as task_status, t.result, t.feedback, t.decided_by, t.decided_at,
     coalesce(nullif(du.display_name, ''), du.username) as decided_name,
@@ -79,8 +80,8 @@ const rowsSql = (runId: string, tenantId: string) => sql`
   left join lateral (select t.* from hub.review_tasks t where t.stage_run_id = s.id
     and t.tenant_id = s.tenant_id and t.kind = 'review' order by t.created_at desc, t.id desc limit 1) t on true
   left join admin.users du on du.id = t.decided_by and du.tenant_id = r.tenant_id
-  where r.id = ${runId} and r.tenant_id = ${tenantId}
-  order by s.stage_idx`;
+  where r.id = any(${`{${runIds.join(",")}}`}::uuid[]) and r.tenant_id = ${tenantId}
+  order by r.id, s.stage_idx`;
 
 type ActOf = (r: Row, stage: StageSnap) => { can: boolean; override: boolean };
 function stepOf(r: Row, canActOf: ActOf): PackStepView {
@@ -189,7 +190,7 @@ export async function stepsView(
   if (!UUID.test(runId)) return null;
   const groupIds = (await d.config.user(u.userId))?.groupIds ?? new Set<string>();
   return withHubScope(d.db, userScope(u), async (tx) => {
-    const rows = [...(await tx.execute<Row>(rowsSql(runId, u.tenantId)))];
+    const rows = [...(await tx.execute<Row>(rowsSql([runId], u.tenantId)))];
     const head = rows[0];
     if (!head) return null;
     const open = rows.flatMap((r) => (r.task_id && r.task_status === "open" ? [r.task_id] : []));
@@ -221,6 +222,46 @@ export async function stepsView(
           ? { ...decisionOf(head.run_decision), ...stageCode(rows) }
           : null,
     };
+  });
+}
+
+/** CR-123 · u10 · cột "Bước" của danh sách: NHIỀU run, CÙNG `rowsSql`/`stepOf`/`collapseModuleSteps` với `stepsView`; ≤ 2 SQL cố định, không `can_act`. */
+export async function stepsViewMany(
+  d: ProcessDeps,
+  u: PackRunCaller,
+  runIds: readonly string[],
+): Promise<Map<string, PackStepsView>> {
+  const ids = [...new Set(runIds)].filter((x) => UUID.test(x));
+  const out = new Map<string, PackStepsView>();
+  if (ids.length === 0) return out;
+  return withHubScope(d.db, userScope(u), async (tx) => {
+    const rows = [...(await tx.execute<Row>(rowsSql(ids, u.tenantId)))];
+    const snaps = rows.map(
+      (r) => (typeof r.stage === "string" ? JSON.parse(r.stage) : r.stage) ?? {},
+    );
+    const names = await signerNamesOf(tx, u.tenantId, snaps.flatMap(signerRefs));
+    const none: ActOf = () => ({ can: false, override: false });
+    for (const id of ids) {
+      const at = rows.flatMap((r, i) => (r.run_id === id ? [i] : []));
+      const head = rows[at[0] ?? -1];
+      if (!head) continue;
+      out.set(id, {
+        run_id: id,
+        status: head.run_status,
+        started_by: head.started_by,
+        steps: collapseModuleSteps(
+          at.map((i) => stepOf(rows[i] as Row, none)),
+          at.map((i) => snaps[i]),
+          at.map((i) => ({
+            stageStatus: (rows[i] as Row).stage_status,
+            consumed: (rows[i] as Row).consumed_event,
+          })),
+          names,
+        ),
+        decision: null,
+      });
+    }
+    return out;
   });
 }
 

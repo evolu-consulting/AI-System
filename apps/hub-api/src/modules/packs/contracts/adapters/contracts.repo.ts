@@ -1,4 +1,4 @@
-// HD-FR-07 · HD-NFR-01 · D-03 · D-07 · D-10 · HD1 plan §6 (Luật 4c): repo đọc gói hợp đồng trong tx `PackUow` (role
+﻿// HD-FR-07 · HD-NFR-01 · D-03 · D-07 · D-10 · HD1 plan §6 (Luật 4c): repo đọc gói hợp đồng trong tx `PackUow` (role
 // `contracts_rw`, RLS FORCE). SQL văn bản CỐ ĐỊNH cho mọi tổ hợp (chuẩn bị một lần/kết nối): mọi bộ lọc `($x is null or col = any($x))`,
 // mảng = MỘT tham số literal `{…}` (drizzle nở mảng JS thành danh sách). Lát tenant vật chất hoá một lần (`f`/`c` MATERIALIZED);
 // total + trang cùng câu. Chỉ cột sinh hẹp — KHÔNG đọc `fields`/`source_text` (TOAST). Mọi câu lọc `tenant_id` tường minh ngoài RLS.
@@ -54,6 +54,7 @@ type ListOut = {
   items: ListRowRaw[] | string;
   parents: ListParentRef[] | string;
   progress: ProgressRaw[] | string | null;
+  step_runs?: { id: string; run: string }[] | string | null;
   docs?: unknown[] | string | null;
   children?: { value: number | string | null }[] | string | null;
 };
@@ -147,6 +148,9 @@ async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | 
           and pc.id in (select k.parent_id from contracts.contracts k join p on k.id = p.id
             where k.tenant_id = ${tid}::uuid and k.parent_id is not null)), '[]'::json) as parents,
       ${progressOf(tid, today !== undefined)} as progress,
+      (select json_agg(json_build_object('id', k.id, 'run', a.engine_run_id)) from contracts.contracts k
+        join contracts.approvals a on a.id = k.run_id and a.tenant_id = k.tenant_id
+        where k.id in (select p.id from p) and k.tenant_id = ${tid}::uuid and a.engine_run_id is not null) as step_runs,
       ${docsOf(tid, f.docs === true)} as docs, ${childrenOf(tid, f.docs === true)} as children`);
   const out = rows[0] as ListOut;
   const items = parsed(out.items);
@@ -158,6 +162,7 @@ async function list(tx: Tx, tid: string, f: ContractListFilter, today: string | 
     items: items.map(toContractListRow),
     parents,
     progress,
+    step_runs: parsed(out.step_runs ?? []),
     ...(f.docs ? { docs: parsed(out.docs ?? []), children: listChildren(out.children) } : {}),
   };
 }

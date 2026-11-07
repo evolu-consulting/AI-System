@@ -1,4 +1,4 @@
-// N2-FR-01 · N2-D04 · N2-D08 · plan N2 §1–§2: cổng khởi chạy run quy trình TRONG cùng process cho gói (không HTTP nội bộ,
+﻿// N2-FR-01 · N2-D04 · N2-D08 · plan N2 §1–§2: cổng khởi chạy run quy trình TRONG cùng process cho gói (không HTTP nội bộ,
 // PK-BR-01). Lớp 2 — chỉ kiểu. Engine quy trình (`processes`) cài đặt và gắn vào cầu nối `PackRunsBridge` lúc mount; engine
 // tắt ⇒ cầu rỗng (gói trả 503 `PROCESS_ENGINE_OFF`).
 // contract-flow S1a · cầu v2: def gói (`ensureDef`), run gắn bản ghi gói (`ref`), quyết task (`act`, scope user ⇒ canAct/RLS
@@ -198,6 +198,8 @@ export type PackRunsPort = {
   groupIdsOf(tenantId: string, keys: readonly string[]): Promise<Map<string, string>>;
   /** S1a · dòng thời gian stage cho người xem (scope user, ≤ 2 câu SQL); run không thấy trong tenant ⇒ null. */
   stepsView(u: PackRunCaller, runId: string): Promise<PackStepsView | null>;
+  /** CR-123 · u10 · dòng thời gian của NHIỀU run (cột "Bước" của danh sách): cùng luật `stepsView`, ≤ 2 câu SQL cố định, không `can_act`. */
+  stepsViewMany?(u: PackRunCaller, runIds: readonly string[]): Promise<Map<string, PackStepsView>>;
   /** cf-dify · workflow trong catalog mà tenant được dùng (`admin.workflows` enabled ∧ công tắc tenant còn hiệu lực),
    *  scope system, MỘT câu lọc `tenant_id` tường minh; ≤ 200, theo khoá. Không gồm tool của gói. */
   workflowsOf(tenantId: string): Promise<PackWorkflow[]>;

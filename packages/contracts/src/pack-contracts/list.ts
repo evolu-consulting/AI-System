@@ -1,4 +1,4 @@
-// HD-FR-07 · HD-AC03 · HD-AC05 · D-03 · D-10 · D-18 · HD1 plan §1: ListQuery / ListRow / ListResponse / Facets gói hợp đồng.
+﻿// HD-FR-07 · HD-AC03 · HD-AC05 · D-03 · D-10 · D-18 · HD1 plan §1: ListQuery / ListRow / ListResponse / Facets gói hợp đồng.
 import { z } from "zod";
 import { CountSchema, IsoDateTime } from "../common";
 import { CONTRACT_DATE_FIELDS, CONTRACT_DUE_PRESETS } from "../light";
@@ -119,6 +119,8 @@ export const ContractListRowSchema = z.strictObject({
   /** CR-097 K2 · R18: số thứ tự phiên bản của hàng + số phiên bản của chuỗi (badge "vN" khi > 1). ListRow 22 khoá. */
   version_no: z.number().int().min(1),
   versions_count: z.number().int().min(1),
+  /** CR-123 · u10 · bước hiện tại bằng chữ nghiệp vụ ("Chờ Giám đốc ký"), cùng nguồn thẻ duyệt; null/vắng ⇒ dùng nhãn trạng thái. ListRow 23 khoá. */
+  step_label: z.string().max(160).nullable().optional(),
 });
 export type ContractListRow = z.infer<typeof ContractListRowSchema>;
 

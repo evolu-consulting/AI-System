@@ -1,4 +1,4 @@
-// HD-FR-07 · HD-BR-03 · HD-AC01/03/04/05 · D-03 · D-10 · plan §1 §2 §6: GET /pack/contracts/contracts (danh sách: lọc, sắp, phân trang
+﻿// HD-FR-07 · HD-BR-03 · HD-AC01/03/04/05 · D-03 · D-10 · plan §1 §2 §6: GET /pack/contracts/contracts (danh sách: lọc, sắp, phân trang
 // page/page_size/total) và /contracts/facets (cả tenant). Quyền viewer đọc được. Dữ liệu cụ thể, không ngẫu nhiên.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
@@ -417,7 +417,7 @@ describe("HD-AC05 · phân trang page/page_size/total (D-03; thay keyset cũ)", 
 });
 
 describe("HD-FR-07 · dòng tóm tắt ListRow (đủ cột màn danh sách)", () => {
-  it("HD-FR-07 · HĐ 1: 22 khoá ListRow (CR-097 K1 locked, K2 version_no/versions_count), giá trị đúng; KHÔNG có fields/source_text/clauses/search_key/signer_keys", async () => {
+  it("HD-FR-07 · HĐ 1: 23 khoá ListRow (CR-097 K1 locked, K2 version_no/versions_count, CR-123 u10 step_label), giá trị đúng; KHÔNG có fields/source_text/clauses/search_key/signer_keys", async () => {
     await dataset();
     const row = (await listOf(c, P.tam, { q: "HD-001" })).json.items[0];
     expect(Object.keys(row).sort()).toEqual(
@@ -444,6 +444,7 @@ describe("HD-FR-07 · dòng tóm tắt ListRow (đủ cột màn danh sách)", (
         "locked",
         "version_no",
         "versions_count",
+        "step_label",
       ].sort(),
     );
     expect({ ...row, value: Number(row.value), updated_at: undefined }).toMatchObject({

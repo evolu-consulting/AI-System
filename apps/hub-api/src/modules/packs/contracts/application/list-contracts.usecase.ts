@@ -1,4 +1,4 @@
-// HD-FR-07 · HD-AC03 · HD-AC04 · HD-AC05 · HD-BR-03 · D-03 · D-18 · HD1 plan §6: danh sách hợp đồng của tenant token —
+﻿// HD-FR-07 · HD-AC03 · HD-AC04 · HD-AC05 · HD-BR-03 · D-03 · D-18 · HD1 plan §6: danh sách hợp đồng của tenant token —
 // lọc/sắp/phân trang `page/page_size/total` trong MỘT câu SQL (tx RLS `PackUow`). `signer` ⇒ khoá người, `q` ⇒ mẫu LIKE đã fold.
 import type { PackUow, PackWho } from "../../kit/public";
 import { likePattern, personKey } from "../domain/fold.rules";
@@ -64,10 +64,39 @@ export function toListFilter(q: ContractListInput, today?: string): ContractList
   };
 }
 
+/** CR-123 · u10 · thêm MỘT khoá `step_label` vào từng hàng (null ⇒ giữ nhãn trạng thái); không có cầu ⇒ giữ nguyên hàng. */
+async function withStepLabels<Row>(
+  stepLabels:
+    | ((who: PackWho, runIds: readonly string[]) => Promise<Map<string, string | null>>)
+    | undefined,
+  who: PackWho,
+  items: Row[],
+  runs: readonly { id: string; run: string }[] = [],
+): Promise<Row[]> {
+  const labels =
+    stepLabels && runs.length > 0
+      ? await stepLabels(
+          who,
+          runs.map((x) => x.run),
+        )
+      : new Map<string, string | null>();
+  const runOf = new Map(runs.map((x) => [x.id, x.run]));
+  return items.map((it) =>
+    typeof it === "object" && it !== null
+      ? {
+          ...it,
+          step_label: labels.get(runOf.get((it as unknown as { id: string }).id) ?? "") ?? null,
+        }
+      : it,
+  );
+}
+
 export function listContracts<Row>(d: {
   uow: PackUow<{ contracts: Pick<ContractsReadRepo<Row, unknown>, "list"> }>;
   /** V2-A: ngày lịch tenant (giai đoạn/quá hạn); vắng ⇒ ngày UTC. */
   today?: (tenantId: string) => Promise<string>;
+  /** CR-123 · u10 · nhãn bước hiện tại theo id run engine (MỘT lô cho cả trang, cùng nguồn thẻ duyệt); vắng ⇒ không có `step_label`. */
+  stepLabels?: (who: PackWho, runIds: readonly string[]) => Promise<Map<string, string | null>>;
 }): ListContracts<Row> {
   return async (who, q) => {
     const want = q.include === "progress";
@@ -77,8 +106,9 @@ export function listContracts<Row>(d: {
         : undefined;
     const f = toListFilter(q, today);
     const p = await d.uow.tenant(who, (r) => r.contracts.list(f, want ? today : undefined));
+    const items = await withStepLabels(d.stepLabels, who, p.items, p.step_runs);
     return {
-      items: p.items,
+      items,
       total: p.total,
       parents: p.parents,
       ...(want ? { progress: p.progress ?? [] } : {}),

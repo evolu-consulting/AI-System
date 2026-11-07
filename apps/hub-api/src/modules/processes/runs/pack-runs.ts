@@ -1,4 +1,4 @@
-// N2-FR-01 · N2-D04 · N2-D08 · plan N2 §2: cài đặt `PackRunsPort` cho module gói (cùng process, không HTTP nội bộ).
+﻿// N2-FR-01 · N2-D04 · N2-D08 · plan N2 §2: cài đặt `PackRunsPort` cho module gói (cùng process, không HTTP nội bộ).
 // start = `POST /process-runs` origin none (kiểm def/Group/trần/inputs như route) nhưng hoãn kick; cancel = huỷ của người
 // bắt đầu (`GateService.cancel`); outcomes = MỘT câu theo tập trong scope user (RLS + lọc tenant tường minh).
 // contract-flow S1a · cầu v2: `ensureDef` (= `DefsService.create/update`, idempotent theo `pack_version`), `start` + `ref`,
@@ -34,7 +34,14 @@ import { resolveSlot, resolveSlotDef } from "../library/slot-resolve.repo";
 import { routeSlot } from "../library/slot-route.repo";
 import { defSourceRef } from "../library/source-ref";
 import { updatePackInputs } from "./pack-inputs";
-import { inboxOf, openTaskFor, openTasksOf, stepsView, UUID } from "./pack-runs-view";
+import {
+  inboxOf,
+  openTaskFor,
+  openTasksOf,
+  stepsView,
+  stepsViewMany,
+  UUID,
+} from "./pack-runs-view";
 import { signalPackEvent } from "./pack-signal";
 import { StartService } from "./start.service";
 
@@ -382,6 +389,7 @@ export function packRunsOf(d: ProcessDeps, sys?: Pick<SystemUow, "system">): Pac
     retryDecision: (u, runId) => retryDecision(d, gates, u, runId),
     ...sysReads(d),
     stepsView: (u, runId) => stepsView(d, u, runId),
+    stepsViewMany: (u, runIds) => stepsViewMany(d, u, runIds),
     openTasksOf: (u, packKey) => openTasksOf(d, u, packKey),
     inboxOf: (u, packKey, slot) => inboxOf(d, u, packKey, slot),
   };
