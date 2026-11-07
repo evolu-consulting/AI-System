@@ -105,7 +105,7 @@ test("CR-122 · p22 · số bước tối đa là cài đặt nền tảng: đ�
     const p = await ctx2.newPage();
     try {
       await open(p);
-      const add = p.getByTestId("flow-add-step");
+      const add = p.getByRole("button", { name: "Thêm bước", exact: true });
       await expect(add).toBeDisabled();
       await expect(add).toHaveAttribute("title", /tối đa 6 bước/);
       await p.screenshot({ path: `${SHOTS}/add-disabled.png` });
