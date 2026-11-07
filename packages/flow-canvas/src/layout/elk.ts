@@ -74,7 +74,8 @@ export function rootOptions(o: FlowLayoutOptions): Record<string, string> {
     "elk.edgeRouting": "ORTHOGONAL",
     // CR-125 · x4: đủ rộng cho node Ký số + 3 nhãn đầu ra nhô ra mép phải và mũi tên đi giữa hai tầng
     "elk.spacing.nodeNode": "56",
-    "elk.layered.spacing.nodeNodeBetweenLayers": "90",
+    // Dọc: tầng xếp theo chiều cao (cao hơn rộng) ⇒ khoảng giữa tầng nhỏ hơn để flow vừa khung; đủ chỗ cho cạnh + nhãn đầu ra
+    "elk.layered.spacing.nodeNodeBetweenLayers": o.direction === "DOWN" ? "70" : "90",
     "elk.spacing.edgeNode": "32",
     "elk.layered.wrapping.strategy": "MULTI_EDGE",
     "elk.aspectRatio": String(

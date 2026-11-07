@@ -16,7 +16,6 @@ import {
 } from "@ai/flow-canvas";
 import {
   collidesWith,
-  DEFAULT_ASPECT,
   type FlowEdgeIn,
   type FlowNodeIn,
   NODE_H,
@@ -209,7 +208,7 @@ function useFlowGraph(
   const dir = p.dir ?? "RIGHT";
   const auto = useFlowLayout(s.flowNodes, s.flowEdges, {
     direction: dir,
-    ...(dir === "DOWN" ? { aspectRatio: isNarrowScreen() ? 0.8 : DEFAULT_ASPECT } : {}),
+    ...(dir === "DOWN" ? { aspectRatio: isNarrowScreen() ? 0.8 : 1.8 } : {}),
   });
   return useMemo(() => {
     const at = settlePositions(settleItems(views, auto, trig, dir));
