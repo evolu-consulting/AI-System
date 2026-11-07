@@ -498,7 +498,10 @@
     "limitsTextNoTtl": "Không giới hạn thời gian chờ.",
     "limitsWait": "Lượt đang chờ tới ngày không tính vào 5 lượt cùng lúc.",
     "applyNote": "Áp dụng cho hợp đồng gửi từ bây giờ; hợp đồng đang chờ giữ bản cũ.",
-    "saveApply": "Lưu và áp dụng"
+    "saveApply": "Lưu và áp dụng",
+    "applied": "Đã áp dụng — hợp đồng gửi từ giờ dùng quy trình này",
+    "applyPending": "Đang áp dụng…",
+    "notApplied": "Chưa áp dụng — bấm Lưu và áp dụng để hợp đồng gửi từ giờ dùng quy trình này"
   },
   "run": {
     "title": "Lượt chạy · {{name}}",

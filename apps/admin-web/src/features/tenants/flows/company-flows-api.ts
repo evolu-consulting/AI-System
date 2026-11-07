@@ -14,10 +14,10 @@ const url = (tid: string, path = ""): string => {
 type List = { items: CompanyFlowRow[] };
 const key = (tid: string) => ["company-flows", tid] as const;
 
-export const useCompanyFlowList = (tid: string) =>
+export const useCompanyFlowList = (tid: string, enabled = true) =>
   useQuery({
     queryKey: key(tid),
-    enabled: hubConfigured(),
+    enabled: hubConfigured() && enabled && tid !== "",
     retry: false,
     queryFn: () => api<List>(url(tid)),
   });
@@ -26,7 +26,13 @@ export type FlowOp =
   | { op: "toggle"; id: string; enabled: boolean }
   | { op: "order"; ids: string[] }
   | { op: "assign"; flowId: string }
-  | { op: "clone" | "publish" | "revert"; id: string };
+  | { op: "clone" | "revert"; id: string };
+
+/** CR-123 FR-10 · "Lưu và áp dụng" (bước áp dụng, sau khi editor lưu def): bản công ty thành flow đang dùng của sự kiện — một tx ở Hub. */
+export async function applyCompanyFlow(tid: string, flowId: string): Promise<List> {
+  return api<List>(url(tid, "/apply"), { method: "POST", body: { flow_id: flowId } });
+}
+export const companyFlowsKey = key;
 
 function call(tid: string, a: FlowOp): Promise<List> {
   switch (a.op) {

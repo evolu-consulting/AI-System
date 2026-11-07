@@ -696,7 +696,7 @@
           "replaced": "Replaced by the company copy",
           "reverted": "Off · reverted to the original",
           "turned_off": "Off",
-          "not_published": "Off · not published"
+          "not_published": "Off · not applied (open it to edit and Save and apply)"
         }
       },
       "warn": {
@@ -705,7 +705,6 @@
       },
       "open": "Open",
       "clone": "Copy to edit",
-      "publish": "Publish",
       "revert": "Revert to original",
       "turnOn": "Turn on",
       "turnOff": "Turn off",
@@ -714,7 +713,9 @@
       "err": {
         "requiredLast": "A required event needs at least one active flow without conditions. Turn another one on first.",
         "pairActive": "The original and the company copy cannot both be on. Turn the other off or use Revert to original.",
-        "notPublished": "The flow is not published, so it cannot be turned on. Publish it first.",
+        "notPublished": "The flow is not applied yet, so it cannot be turned on. Open it, edit and press Save and apply.",
+        "groupMissing": "A review step has no group. Pick a group for every review step and apply again.",
+        "notAssignable": "The flow has no Start-when event. Choose a start event and apply again.",
         "generic": "Could not complete. Reload and try again."
       }
     },

@@ -43,6 +43,8 @@ type Args = {
   extra?: Record<string, unknown> | undefined;
   /** CR-105 · chuẩn hoá bản nháp trước khi kiểm + gửi (Canvas thư viện: `normalizeSlotStages`). */
   prepare?: ((d: DefDraft) => DefDraft) | undefined;
+  /** CR-123 FR-10 · bản của công ty: sau mỗi lần lưu thành công (kể cả "Ghi đè") gọi bước áp dụng — một nút "Lưu và áp dụng". */
+  afterSave?: (() => Promise<boolean>) | undefined;
 };
 const PATHED = new Set(["PROCESS_DEF_INVALID", "PROCESS_DEF_INCOMPLETE", "PROCESS_REF_INVALID"]);
 
@@ -117,6 +119,7 @@ export function useDefSave({
   tools,
   extra,
   prepare,
+  afterSave,
 }: Args) {
   const { t } = useTranslation();
   const invalidate = useInvalidateDefs();
@@ -128,6 +131,7 @@ export function useDefSave({
     setVersion(res.version);
     d.markSaved();
     void invalidate();
+    void afterSave?.();
   };
   const cs = useConflictSave<ProcessDefInput, ProcessDef>({
     entity: "process_def",

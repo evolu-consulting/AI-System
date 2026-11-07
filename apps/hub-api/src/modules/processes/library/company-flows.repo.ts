@@ -55,6 +55,13 @@ export async function lockCompanyFlow(
   return r ?? null;
 }
 
+/** Id dòng `company_flows` của (công ty, def) — chưa khoá; null khi def chưa có dòng. */
+export async function rowIdOfFlow(tx: Tx, tid: string, flowId: string): Promise<string | null> {
+  const [r] = await tx.execute<{ id: string }>(sql`select id from hub.company_flows
+    where tenant_id = ${tid}::uuid and flow_id = ${flowId}::uuid`);
+  return r?.id ?? null;
+}
+
 /** Def gán được cho công ty: Thư viện ĐÃ xuất bản có trigger, hoặc def của chính công ty có trigger. */
 export async function assignableDef(tx: Tx, tid: string, defId: string): Promise<boolean> {
   const [r] = await tx.execute<{ ok: boolean }>(sql`select true as ok from hub.process_defs d

@@ -44,6 +44,10 @@ export function companyFlowsRoutes(d: ProcessDeps): Hono<AuthVars> {
     const b = await parseJson(c, EnabledSchema);
     return c.json(await svc.setEnabled(c.var.user, tid(c), id(c), b.enabled));
   });
+  r.post(`${P}/apply`, async (c) => {
+    const b = await parseJson(c, AssignSchema);
+    return c.json(await svc.apply(c.var.user, tid(c), b.flow_id));
+  });
   r.post(`${P}/:id/clone`, async (c) => c.json(await svc.clone(c.var.user, tid(c), id(c)), 201));
   r.post(`${P}/:id/publish`, async (c) => c.json(await svc.publish(c.var.user, tid(c), id(c))));
   r.post(`${P}/:id/revert`, async (c) => c.json(await svc.revert(c.var.user, tid(c), id(c))));

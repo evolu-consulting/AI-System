@@ -701,7 +701,7 @@
           "replaced": "Đã thay bằng bản công ty",
           "reverted": "Tắt · đã quay về bản gốc",
           "turned_off": "Tắt",
-          "not_published": "Tắt · chưa xuất bản"
+          "not_published": "Tắt · chưa áp dụng (mở để sửa và Lưu và áp dụng)"
         }
       },
       "warn": {
@@ -710,7 +710,6 @@
       },
       "open": "Mở",
       "clone": "Sao chép để sửa",
-      "publish": "Xuất bản",
       "revert": "Quay về bản gốc",
       "turnOn": "Bật",
       "turnOff": "Tắt",
@@ -719,7 +718,9 @@
       "err": {
         "requiredLast": "Cần ít nhất một flow đang bật, không điều kiện cho sự kiện bắt buộc. Bật flow khác trước khi tắt.",
         "pairActive": "Bản gốc và bản công ty không bật cùng lúc. Tắt bản kia hoặc dùng Quay về bản gốc.",
-        "notPublished": "Flow chưa xuất bản nên chưa bật được. Xuất bản trước.",
+        "notPublished": "Quy trình chưa áp dụng nên chưa bật được. Mở quy trình, sửa rồi bấm Lưu và áp dụng.",
+        "groupMissing": "Còn bước duyệt chưa chọn nhóm. Chọn nhóm cho mọi bước duyệt rồi áp dụng lại.",
+        "notAssignable": "Quy trình chưa có Bắt đầu khi — chọn sự kiện bắt đầu rồi áp dụng lại.",
         "generic": "Không thực hiện được. Tải lại trang rồi thử lại."
       }
     },

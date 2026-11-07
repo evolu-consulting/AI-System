@@ -180,33 +180,74 @@ export class CompanyFlowsService {
     });
   }
 
-  /** Xuất bản bản công ty: lần đầu ⇒ bản sao Bật + gốc Tắt (`replaced_by`, "đã thay bằng …") — một tx, không bao giờ cùng Bật. */
+  /** Xuất bản bản công ty theo id dòng (đường cũ, UI không còn gọi — "Lưu và áp dụng" dùng `apply`). Cùng `#activate`. */
   publish(u: AuthUser, tid: string, id: string) {
     return this.#tx(u, tid, async (tx) => {
-      const row = await this.#locked(tx, tid, id);
-      if (row.def_tenant_id === null)
-        throw err("NOT_COMPANY_COPY", 422, "Chỉ xuất bản được bản công ty.");
-      const orig = await r.originalRowOf(tx, tid, row.flow_id);
-      if (orig) {
-        await this.#locked(tx, tid, orig);
-        await r.setFlowState(tx, {
+      await this.#activate(tx, u, tid, await this.#locked(tx, tid, id));
+      return this.#list(tx, tid);
+    });
+  }
+
+  /**
+   * CR-123 FLOW3-FR-10 · "Lưu và áp dụng" (bước áp dụng, sau khi editor lưu def): theo id def của công ty ⇒ bản đó thành flow đang dùng
+   * của sự kiện, thay bản gốc Thư viện (nếu có) — MỘT tx, số câu SQL cố định. Hợp đồng đang chờ giữ bản cũ (đã gắn def lúc gửi).
+   * Def tự tạo chưa có dòng ⇒ tạo dòng Bật. Chặn khi còn bước duyệt chưa chọn nhóm.
+   */
+  apply(u: AuthUser, tid: string, flowId: string) {
+    return this.#tx(u, tid, async (tx) => {
+      let id = await r.rowIdOfFlow(tx, tid, flowId);
+      if (!id) {
+        if (!(await r.assignableDef(tx, tid, flowId)))
+          throw err(
+            "FLOW_NOT_ASSIGNABLE",
+            422,
+            "Quy trình chưa có Bắt đầu khi — chọn sự kiện bắt đầu rồi áp dụng lại.",
+          );
+        id = await r.insertCompanyFlow(tx, {
           tid,
-          id: orig,
+          flowId,
           enabled: false,
-          offReason: "replaced",
-          replacedBy: id,
+          offReason: "not_published",
           actor: u.userId,
         });
       }
+      const row = await this.#locked(tx, tid, id);
+      if (row.no_group)
+        throw err(
+          "FLOW_GROUP_MISSING",
+          422,
+          "Còn bước duyệt chưa chọn nhóm. Chọn nhóm cho mọi bước duyệt rồi áp dụng lại.",
+        );
+      await this.#activate(tx, u, tid, row);
+      return { id, ...(await this.#list(tx, tid)) };
+    });
+  }
+
+  /** Bản công ty ⇒ Bật; bản gốc Thư viện của nó ⇒ Tắt (`replaced_by`) — một tx, không bao giờ cùng Bật. Row `row` đã khoá. */
+  async #activate(tx: Tx, u: AuthUser, tid: string, row: r.CfRow): Promise<void> {
+    if (row.def_tenant_id === null)
+      throw err("NOT_COMPANY_COPY", 422, "Chỉ xuất bản được bản công ty.");
+    const orig = await r.originalRowOf(tx, tid, row.flow_id);
+    if (orig) {
+      const o = await this.#locked(tx, tid, orig);
+      // bản công ty có điều kiện thay bản gốc không điều kiện ⇒ sự kiện `required` không được hết flow phủ mọi trường hợp
+      if (o.enabled && row.has_condition) await this.#guardRequired(tx, tid, o);
       await r.setFlowState(tx, {
         tid,
-        id,
-        enabled: true,
-        offReason: null,
-        replacedBy: null,
+        id: orig,
+        enabled: false,
+        offReason: "replaced",
+        replacedBy: row.id,
         actor: u.userId,
       });
-      return this.#list(tx, tid);
+    }
+    await r.setFlowState(tx, {
+      tid,
+      id: row.id,
+      enabled: true,
+      offReason: null,
+      replacedBy: null,
+      actor: u.userId,
     });
   }
 

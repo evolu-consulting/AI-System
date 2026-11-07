@@ -92,16 +92,6 @@ function Row(p: {
             {k("clone")}
           </Button>
         ) : null}
-        {a.publish ? (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={p.busy}
-            onClick={() => p.onOp({ op: "publish", id: r.id })}
-          >
-            {k("publish")}
-          </Button>
-        ) : null}
         {a.revert ? (
           <Button
             size="sm"
@@ -112,15 +102,17 @@ function Row(p: {
             {k("revert")}
           </Button>
         ) : null}
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={p.busy}
-          aria-pressed={r.enabled}
-          onClick={() => p.onOp({ op: "toggle", id: r.id, enabled: !r.enabled })}
-        >
-          {r.enabled ? k("turnOff") : k("turnOn")}
-        </Button>
+        {a.toggle ? (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={p.busy}
+            aria-pressed={r.enabled}
+            onClick={() => p.onOp({ op: "toggle", id: r.id, enabled: !r.enabled })}
+          >
+            {r.enabled ? k("turnOff") : k("turnOn")}
+          </Button>
+        ) : null}
       </div>
     </li>
   );

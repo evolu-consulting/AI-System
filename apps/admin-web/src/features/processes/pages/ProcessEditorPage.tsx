@@ -31,6 +31,7 @@ import { CompanyCopyBody } from "../components/library/CompanyCopyBody";
 import { LibraryEditorBody } from "../components/library/LibraryEditorBody";
 import { LibraryReadOnlyView } from "../components/library/LibraryReadOnlyView";
 import { ProcessRouteGate } from "../components/ProcessRouteGate";
+import { useApplyFlow } from "../hooks/use-apply-flow";
 import { useDefSave } from "../hooks/use-def-save";
 import { useDraft } from "../hooks/use-draft";
 import { useEditorRefs } from "../hooks/use-editor-refs";
@@ -184,6 +185,16 @@ function useFlowTrigger(data: unknown, draftDirty: boolean) {
   return { src, trig, setEdit, dirty, extra };
 }
 
+/** CR-123 FR-10: bản của công ty ⇒ lưu xong tự áp dụng (MỘT nút "Lưu và áp dụng"); loại khác không làm gì. */
+function useApplyForDef(
+  def: LibraryDef | undefined,
+  lib: LibraryDef | null,
+  id: string | undefined,
+) {
+  const ap = useApplyFlow(isCompanyOwned(def, lib) ? copyTenantId(def) : null, id);
+  return { ...ap, afterSave: ap.active ? ap.apply : undefined };
+}
+
 function FlowWrap(p: {
   ft: ReturnType<typeof useFlowTrigger>;
   def: LibraryDef | undefined;
@@ -227,7 +238,10 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
   // CR-122 · U1: flow có trigger = FlowDef mới; trigger sửa ở state riêng, gửi kèm khi Lưu.
   const ft = useFlowTrigger(q.data, d.dirty);
   const dirty = ft.dirty;
+  // CR-123 FR-10: bản của công ty ⇒ lưu xong tự áp dụng (một nút), không còn Xuất bản/Bật riêng
+  const ap = useApplyForDef(q.data, lib, processId);
   const save = useDefSave({
+    afterSave: ap.afterSave,
     extra: { ...slotExtra(lib), ...ft.extra },
     prepare: prepareFor(lib),
     id: processId,
@@ -290,6 +304,7 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
           formId={FORM_ID}
           version={processId === undefined ? undefined : version}
           companyCopy={isCompanyOwned(def, lib)}
+          apply={{ status: ap.status, needsApply: ap.needsApply }}
         />
       )}
     </form>

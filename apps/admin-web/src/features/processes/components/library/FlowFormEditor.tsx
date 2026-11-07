@@ -6,13 +6,15 @@ import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useApplyFlow } from "../../hooks/use-apply-flow";
 import { useFlowForm } from "../../hooks/use-flow-form";
-import { saveModeOf } from "../../lib/company-copy";
+import { copyTenantId, saveModeOf } from "../../lib/company-copy";
 import { FLOW_MAX_STEPS } from "../../lib/flow-form";
 import { DEFAULT_FIELDS } from "../../lib/flow-when";
 import type { PublishIssue } from "../../lib/publish-issues";
 import { canAddStep, stepCounter } from "../../lib/step-limit";
 import type { LibraryDef, SlotInfo } from "../../library-api";
+import { ApplyStatusLine } from "../editor/ApplyStatusLine";
 import { FlowAddNodes } from "./FlowAddNodes";
 import { type BarIssue, FlowFormHeader, FlowStatusBar, issueText } from "./FlowStatusBar";
 import { FlowStepCard } from "./FlowStepCard";
@@ -47,8 +49,11 @@ export function FlowFormEditor({
   const f = (k: string, o?: Record<string, string | number>) =>
     t(`process.admin.library.form.${k}`, o);
   const fields = slot?.fields && slot.fields.length > 0 ? slot.fields : DEFAULT_FIELDS;
-  const form = useFlowForm(def, onDirtyChange, fields);
+  // CR-123 FR-10: bản công ty ⇒ MỘT nút "Lưu và áp dụng" (lưu + thay bản đang dùng), không Xuất bản/Bật riêng
+  const ap = useApplyFlow(companyCopy ? copyTenantId(def) : null, def.id);
+  const form = useFlowForm(def, onDirtyChange, fields, ap.active ? ap.apply : undefined);
   const { steps, dispatch, issues } = form;
+  const applyOnly = ap.active && !form.dirty && ap.needsApply; // chưa sửa gì nhưng chưa áp dụng ⇒ chỉ áp dụng
   if (!form.canEdit)
     return (
       <Alert className="flex items-center gap-3" data-testid="flow-form-unsupported">
@@ -150,14 +155,22 @@ export function FlowFormEditor({
           data-testid="copy-save-note"
         >
           {companyCopy ? t("process.admin.editor.applyNote") : null}
+          {ap.active ? (
+            <ApplyStatusLine
+              status={form.dirty && ap.status.kind === "applied" ? { kind: "idle" } : ap.status}
+              needsApply={applyOnly}
+            />
+          ) : null}
         </div>
         <Button type="button" variant="outline" disabled={!form.dirty} onClick={form.discard}>
           {f("discard")}
         </Button>
         <Button
           type="button"
-          disabled={!form.dirty || issues.length > 0}
-          onClick={() => void form.save(steps)}
+          disabled={
+            (!form.dirty && !applyOnly) || issues.length > 0 || ap.status.kind === "pending"
+          }
+          onClick={() => void (form.dirty ? form.save(steps) : ap.apply())}
         >
           {t(saveModeOf(companyCopy, !companyCopy).labelKey)}
         </Button>

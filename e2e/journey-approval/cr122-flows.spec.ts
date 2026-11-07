@@ -193,11 +193,11 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   await orig.getByRole("button", { name: "Sao chép để sửa" }).click();
   const copy = flowRows(box).filter({ hasText: `Sao từ ${FLOW} · v1` });
   await expect(copy).toBeVisible();
-  await expect(copy).toContainText("Tắt · chưa xuất bản");
+  await expect(copy).toContainText("Tắt · chưa áp dụng");
   await expect(orig).toContainText("Đang dùng");
-  // 409 · bật bản chưa xuất bản
-  await copy.getByRole("button", { name: "Bật", exact: true }).click();
-  await expect(page.getByTestId("company-flow-error")).toContainText("Xuất bản trước");
+  // CR-123 FR-10: bản công ty không có Xuất bản/Bật riêng — chỉ "Mở" để sửa rồi "Lưu và áp dụng"
+  await expect(copy.getByRole("button", { name: "Bật", exact: true })).toHaveCount(0);
+  await expect(copy.getByRole("button", { name: "Xuất bản", exact: true })).toHaveCount(0);
 
   // Sửa người duyệt nhánh Đúng: Kế toán → Giám đốc (bản công ty, qua API của tenant_admin như trình sửa)
   const s = await dirSession();
@@ -237,13 +237,23 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   });
   expect(put.status, await put.clone().text()).toBeLessThan(300);
 
-  // Xuất bản ⇒ bản công ty Đang bật + gốc tự Tắt kèm lý do (một transaction)
+  // CR-123 FR-10 · mở bản công ty trong trình sửa ⇒ MỘT nút "Lưu và áp dụng" ⇒ dòng xác nhận; quay lại danh sách: bản công ty Đang dùng
+  // + gốc tự Tắt kèm lý do (một transaction), không phải bấm Xuất bản/Bật
   await page.reload();
   const box2 = await openCompanyFlows(page);
   const copy2 = flowRows(box2).filter({ hasText: `Sao từ ${FLOW} · v1` });
-  await copy2.getByRole("button", { name: "Xuất bản", exact: true }).click();
-  await expect(copy2).toContainText("Đang dùng");
-  const orig2 = flowRow(box2, FLOW).filter({ hasText: "Được gán" });
+  await copy2.getByRole("link", { name: "Mở", exact: true }).click();
+  await page.getByRole("button", { name: "Lưu và áp dụng" }).first().click();
+  await expect(page.getByTestId("apply-status").first()).toContainText(
+    "Đã áp dụng — hợp đồng gửi từ giờ dùng quy trình này",
+  );
+  await page.screenshot({ path: "test-results/cr123-u7-after-save-apply.png" });
+  await page.goBack();
+  await page.reload();
+  const box2b = await openCompanyFlows(page);
+  const copy2b = flowRows(box2b).filter({ hasText: `Sao từ ${FLOW} · v1` });
+  await expect(copy2b).toContainText("Đang dùng");
+  const orig2 = flowRow(box2b, FLOW).filter({ hasText: "Được gán" });
   await expect(orig2).toContainText("Đã thay bằng bản công ty");
   // 409 · bật gốc khi bản công ty đang bật
   await orig2.getByRole("button", { name: "Bật", exact: true }).click();

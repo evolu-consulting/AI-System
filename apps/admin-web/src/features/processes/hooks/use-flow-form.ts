@@ -25,6 +25,8 @@ export function useFlowForm(
   def: LibraryDef,
   onDirtyChange: (dirty: boolean) => void,
   fields?: readonly SlotFieldDto[],
+  /** CR-123 FR-10 · bản của công ty: lưu xong gọi bước áp dụng (thay toast "Đã lưu" — thanh lưu có dòng trạng thái riêng). */
+  afterSave?: () => Promise<boolean>,
 ) {
   const { t } = useTranslation();
   const refresh = useLibraryRefresh();
@@ -47,7 +49,8 @@ export function useFlowForm(
     entity: "process_def",
     mutate: ({ version, ...body }) => saveLibraryDef(def.id, { ...body, version }),
     onSaved: () => {
-      notifySuccess(t("common.saved"));
+      if (afterSave) void afterSave();
+      else notifySuccess(t("common.saved"));
       void refresh();
     },
     onFail: (err) => {

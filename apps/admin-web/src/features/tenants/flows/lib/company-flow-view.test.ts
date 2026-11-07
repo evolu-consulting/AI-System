@@ -41,7 +41,13 @@ describe("company-flow-view", () => {
   });
   test("hành động theo loại dòng", () => {
     expect(actionsOf(row("a", "x", 0, { kind: "assigned" })).clone).toBe(true);
-    expect(actionsOf(row("a", "x", 0, { kind: "assigned" })).publish).toBe(false);
+    // CR-123 FR-10: bản công ty không có Xuất bản/Bật riêng — chỉ Tắt khi đang bật; chưa áp dụng ⇒ phải mở trình sửa
+    const own = (o: object) => actionsOf(row("a", "x", 0, { kind: "company", ...o }));
+    expect(own({}).toggle).toBe(true);
+    expect(own({ enabled: false, off_reason: "not_published" }).toggle).toBe(false);
+    expect("publish" in own({})).toBe(false);
+    expect(actionsOf(row("a", "x", 0, { kind: "assigned", enabled: false })).toggle).toBe(true);
+    expect(errorKey("FLOW_GROUP_MISSING")).toBe("groupMissing");
     const src = { flow_key: "k1", version: 1, name: "Gốc" };
     expect(actionsOf(row("a", "x", 0, { source: src })).revert).toBe(true);
     expect(actionsOf(row("a", "x", 0, { source: src, enabled: false })).revert).toBe(false);

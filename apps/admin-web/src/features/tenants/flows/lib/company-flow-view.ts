@@ -24,19 +24,18 @@ export type RowActions = {
   open: true;
   toggle: boolean;
   clone: boolean;
-  publish: boolean;
   revert: boolean;
 };
 
 /**
- * Hành động hợp lệ của dòng: Sao chép chỉ cho flow được gán (chỉ xem); Xuất bản/Quay về bản gốc chỉ cho bản công ty
- * (quay về cần có nguồn và đang bật); Bật/Tắt cho mọi dòng.
+ * Hành động hợp lệ của dòng: Sao chép chỉ cho flow được gán (chỉ xem); Quay về bản gốc chỉ cho bản công ty (cần có nguồn và đang
+ * bật). CR-123 FR-10: bản công ty KHÔNG có Xuất bản/Bật riêng — "Lưu và áp dụng" ở trình sửa là đường duy nhất; chỉ còn Tắt khi đang bật.
+ * Bật/Tắt đầy đủ chỉ cho flow được gán từ Thư viện.
  */
 export const actionsOf = (r: CompanyFlowRow): RowActions => ({
   open: true,
-  toggle: true,
+  toggle: r.kind === "assigned" || r.enabled,
   clone: r.kind === "assigned",
-  publish: r.kind === "company",
   revert: r.kind === "company" && r.source !== null && r.enabled,
 });
 
@@ -66,6 +65,8 @@ const ERR: Record<string, string> = {
   FLOW_REQUIRED_LAST: "requiredLast",
   FLOW_PAIR_ACTIVE: "pairActive",
   FLOW_NOT_PUBLISHED: "notPublished",
+  FLOW_GROUP_MISSING: "groupMissing",
+  FLOW_NOT_ASSIGNABLE: "notAssignable",
 };
 /** Mã lỗi Hub → khoá i18n `tenants.companyFlows.err.*` (lạ ⇒ `generic`). */
 export const errorKey = (code: string | undefined): string => ERR[code ?? ""] ?? "generic";

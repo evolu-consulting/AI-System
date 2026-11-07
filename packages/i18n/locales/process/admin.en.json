@@ -498,7 +498,10 @@
     "limitsTextNoTtl": "No waiting limit.",
     "limitsWait": "Runs waiting for a date don't count toward the 5 concurrent runs.",
     "applyNote": "Applies to contracts sent from now on; contracts already waiting keep the old version.",
-    "saveApply": "Save and apply"
+    "saveApply": "Save and apply",
+    "applied": "Applied — contracts sent from now on use this flow",
+    "applyPending": "Applying…",
+    "notApplied": "Not applied yet — press Save and apply so contracts sent from now on use this flow"
   },
   "run": {
     "title": "Run · {{name}}",
