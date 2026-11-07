@@ -65,6 +65,8 @@ const esignSend = (step: number): Stage => ({
   key: "ky-so",
   name: "Ký số",
   step,
+  // CR-122 · bước của node module "Ký số" ⇒ editor hiện panel cấu hình riêng (người ký công ty, nhà cung cấp, hạn…)
+  node: "contracts.esign",
   real_action: true,
   executor: {
     kind: "tool",
@@ -80,6 +82,7 @@ const esignWait = (step: number, fail: number): Stage => ({
   key: "cho-ky",
   name: "Chờ ký xong",
   step,
+  node: "contracts.esign",
   executor: {
     kind: "wait_event",
     event: "esign.completed",
