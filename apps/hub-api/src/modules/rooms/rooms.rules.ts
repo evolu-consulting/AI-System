@@ -1,6 +1,6 @@
 // HUB-FR-96 · HUB-FR-97 · HUB-FR-98 · HUB-FR-100 · luật thuần phòng chat (X2a plan §8; spec X2a-R04…R18). Không I/O.
 import { ROOM_MEMBERS_MAX, ROOM_PREVIEW_MAX } from "@ai/contracts/chat";
-import { classifyBang } from "../processes/core/bang.rules";
+import { classifyBang } from "../processes/public";
 
 export type RoomKind = "dm" | "group";
 export type RoomRole = "owner" | "member";

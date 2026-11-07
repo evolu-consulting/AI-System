@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { RunFile } from "../../attachments/run-files.rules";
 import { runJob } from "../../runner/job/job-agent-runner";
-import { runErrorText } from "../../runs/run-errors";
+import { runErrorText } from "../../runs/public";
 import { jobFailOf, tokensOf } from "../adapters/runs/job-result";
 import { type MemberOutcome, type MemberResult, outcomeOf } from "../adapters/runs/team-failure";
 import { mapTeamError } from "./sources.rules";

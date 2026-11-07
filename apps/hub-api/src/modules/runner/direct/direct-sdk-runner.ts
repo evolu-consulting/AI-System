@@ -18,7 +18,7 @@ import type { TokenBucket } from "../../../lib/ai-client/token-bucket";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import { stepLabel } from "../../conversations/conversations.rules";
-import type { SseEventBody } from "../../runs/sse/sse-writer";
+import type { SseEventBody } from "../../runs/public";
 import { chunkDelta } from "../../stream/delta.rules";
 import { type ChatTokenGate, gatedRun } from "../../usage/chat-token-gate";
 import type { AgentRunner, AgentTask } from "../job/job-agent-runner.types";

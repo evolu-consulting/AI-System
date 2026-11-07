@@ -8,7 +8,7 @@ import type { Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
 import type { Logger } from "../../../lib/logger";
-import { queueTimeoutReason } from "../../runs/runs.rules";
+import { queueTimeoutReason } from "../../runs/public";
 import { EventQueue, JOB_POLL_MS } from "../job/job-agent-runner";
 import { slotCounts } from "../job/runner.repo";
 import type { RunStreamReader } from "../run-stream-reader";

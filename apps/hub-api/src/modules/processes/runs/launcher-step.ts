@@ -7,7 +7,7 @@ import { sql } from "drizzle-orm";
 import { clipEntityName, dbHubAudit } from "../../../lib/hub-audit";
 import type { RunFile } from "../../attachments/run-files.rules";
 import { agentWorkflowIds } from "../../config/public";
-import type { ProcessRunInput } from "../../runs/create-run";
+import type { ProcessRunInput } from "../../runs/public";
 import type { ProcessDeps } from "../core/ports";
 import { effectivePrevStep } from "../domain/branch/branch.rules";
 import { priorStageIdxs, realActionStepCheck } from "../domain/runs/step.rules";

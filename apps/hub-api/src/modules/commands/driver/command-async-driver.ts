@@ -19,7 +19,7 @@ import type {
   WorkflowJobOutcome,
   WorkflowJobRunner,
 } from "../../runner/workflow/workflow-job-runner";
-import type { RunContext, RunDriver } from "../../runs/runs.service";
+import type { RunContext, RunDriver } from "../../runs/public";
 import type { WorkflowInputValue } from "../catalog.types";
 import type { PreparedCommand } from "../commands.service";
 import {

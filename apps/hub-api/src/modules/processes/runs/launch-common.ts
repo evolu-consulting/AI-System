@@ -7,7 +7,7 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
 import type { UserEvent } from "../../../lib/user-stream";
-import type { ProcessStage, StageExecutor } from "../../runs/run-process";
+import type { ProcessStage, StageExecutor } from "../../runs/public";
 import type { ToolLaunch } from "../adapters/tools/tool-launch";
 import * as core from "../core/core.repo";
 import { processUpdated } from "../core/events";

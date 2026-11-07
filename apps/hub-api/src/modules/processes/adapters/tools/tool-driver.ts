@@ -3,8 +3,7 @@
 // Bọc `drain` (`handles.settled()`, Luật 4c). Lỗi bất ngờ ⇒ `tool_failed` (không để stage kẹt `running`), không ném tiếp.
 import { safeErrorFields } from "../../../../lib/errors";
 import type { Logger } from "../../../../lib/logger";
-import type { RunContext, RunDriver } from "../../../runs/runs.service";
-import type { RunOutcome } from "../../../runs/sse/sse-writer";
+import type { RunContext, RunDriver, RunOutcome } from "../../../runs/public";
 import type { MonotonicClock, SystemUow } from "../../application/ports";
 import {
   runToolStage,

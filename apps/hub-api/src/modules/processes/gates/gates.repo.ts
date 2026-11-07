@@ -4,7 +4,7 @@ import type { DecisionReason, StageRunStatus, TaskResult } from "@ai/contracts/c
 import { JOB_CANCEL_CHANNEL, type JobCancelPayload } from "@ai/contracts/hub";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
-import { runErrorText } from "../../runs/run-errors";
+import { runErrorText } from "../../runs/public";
 import { escalatedGroup, type GateTask } from "./gate-task.repo";
 
 // prod-fix2 · `GateTask`/`loadTask` tách sang `gate-task.repo.ts` (file ≤ 400 dòng); xuất lại để `g.loadTask` giữ nguyên.

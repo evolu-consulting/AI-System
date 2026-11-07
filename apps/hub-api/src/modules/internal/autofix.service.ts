@@ -15,7 +15,7 @@ import { safeErrorFields } from "../../lib/errors";
 import { hashJobToken } from "../../lib/job-token";
 import type { Logger } from "../../lib/logger";
 import { type AttachmentStorage, type Staged, storageKey } from "../attachments/storage";
-import { reportMatchesJob } from "../processes/runs/autofix.rules";
+import { reportMatchesJob } from "../processes/public";
 import * as repo from "./autofix.repo";
 import { bearerJobToken } from "./credential.service";
 

@@ -11,8 +11,7 @@ import type {
 } from "@ai/contracts/chat";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
-import { type Bang, classifyBang } from "../../processes/core/bang.rules";
-import { processError } from "../../processes/core/errors";
+import { type Bang, classifyBang, processError } from "../../processes/public";
 import { type RoomRoute, routeRoomMessage } from "../agents/room-agent.rules";
 import { threadRoot } from "../agents/room-context.repo";
 import * as rooms from "../manage/rooms.repo";

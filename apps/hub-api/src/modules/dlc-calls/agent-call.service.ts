@@ -11,7 +11,7 @@ import type { Db } from "../../lib/db";
 import { AppError, appError } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import { routeMessage } from "../mention/mention-parse.rules";
-import type { RunService } from "../runs/runs.service";
+import type { RunService } from "../runs/public";
 import type { PrepareMention } from "./ports";
 
 export const AGENT_CALL_MAX_WAIT_S = 86_400;

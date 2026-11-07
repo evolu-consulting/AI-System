@@ -25,7 +25,7 @@ import {
 import type { AgentRunner, AgentTask } from "../../runner/job/job-agent-runner";
 import { packToolKeys } from "../../runner/job/pack-tool-keys.rules";
 import { syntheticFailed } from "../../runner/runner.rules";
-import type { SseEventBody } from "../../runs/sse/sse-writer";
+import type { SseEventBody } from "../../runs/public";
 import { type CredentialService, isCredentialError } from "../credential.service";
 import type { DifyClient, DifyRunOutcome } from "../dify.client";
 import { difyUser } from "../dify.rules";

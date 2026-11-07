@@ -7,8 +7,8 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
-import { queueTimeoutReason } from "../../runs/runs.rules";
-import type { SseEventBody } from "../../runs/sse/sse-writer";
+import type { SseEventBody } from "../../runs/public";
+import { queueTimeoutReason } from "../../runs/public";
 import {
   blockedReason,
   eventFromJobRow,

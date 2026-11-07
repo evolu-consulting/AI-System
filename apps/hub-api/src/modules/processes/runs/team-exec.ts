@@ -7,7 +7,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { RunFile } from "../../attachments/run-files.rules";
-import type { RunContext } from "../../runs/runs.service";
+import type { RunContext } from "../../runs/public";
 import {
   bump,
   countCalls,

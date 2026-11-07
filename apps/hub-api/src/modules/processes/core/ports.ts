@@ -14,7 +14,7 @@ import type { ConfigCache } from "../../config/public";
 import type { KhRuntime } from "../../kh/kh.mount";
 import type { PackToolCatalog } from "../../packs/kit/public";
 import type { AgentRunner } from "../../runner/job/job-agent-runner";
-import type { RunDriver, RunService } from "../../runs/runs.service";
+import type { RunDriver, RunService } from "../../runs/public";
 import type { HubSecretReader } from "../../secrets/secrets.use";
 import type { AppCtx, SystemUow, TenantUow } from "../application/ports";
 import type { Bang } from "./bang.rules";

@@ -19,7 +19,7 @@ import { stepLabel } from "../conversations/conversations.rules";
 import { type CredentialService, isCredentialError } from "../dify/credential.service";
 import type { DifyClient, DifyRunOutcome } from "../dify/dify.client";
 import { difyUser, maskSecret } from "../dify/dify.rules";
-import { runErrorText } from "../runs/run-errors";
+import { runErrorText } from "../runs/public";
 import { internalError } from "./test-run.errors";
 
 export type TestRunDeps = {

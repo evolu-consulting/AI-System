@@ -14,7 +14,7 @@ import type { Logger } from "../../lib/logger";
 import type { Redis } from "../../lib/redis";
 import { USER_STREAM_FIELD, userStreamKey } from "../../lib/user-stream";
 import { compareStreamId } from "../runner/runner.rules";
-import { xreadPairs } from "../runs/sse/sse-reader";
+import { xreadPairs } from "../runs/public";
 import type { StreamInfo } from "./me-stream.rules";
 
 /** Một sự kiện đã đánh id Redis Stream (`stream.reset` không bao giờ đến từ Redis). */

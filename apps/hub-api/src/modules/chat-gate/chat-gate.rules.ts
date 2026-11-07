@@ -5,7 +5,7 @@
 import { ME_STREAM_PROCESS_EVENTS } from "@ai/contracts/chat";
 import type { Role } from "@ai/contracts/common";
 import { routeMessage } from "../mention/mention-parse.rules";
-import { classifyBang } from "../processes/core/bang.rules";
+import { classifyBang } from "../processes/public";
 
 /** Trùng `CHAT_APP_FEATURE` của admin-api (`app-catalog.rules.ts`). */
 export const CHAT_APP_FEATURE = "chat-app";
