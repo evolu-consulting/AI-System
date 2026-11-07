@@ -14,9 +14,9 @@ import { requirePlatformAdmin } from "../../../lib/admin-role.middleware";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
 import { readJson } from "../../../lib/http";
+import type { OpsRepo, OpsState } from "../application/ops.ports";
 import { OPS_MANUAL_GAP_MS, type OpsRoundDeps, runChecksNow } from "../application/ops.round";
-import { makeOverviewService } from "../application/overview.service";
-import type { OpsRepo, OpsState } from "./ops.repo";
+import type { OverviewService } from "../application/overview.service";
 
 export const OPS_PREFIX = "/ops";
 
@@ -61,13 +61,11 @@ const overviewQuery = (raw: Record<string, string>): OpsOverviewQuery => {
   return r.success ? r.data : OpsOverviewQuerySchema.parse({});
 };
 
-export function opsRoutes(d: OpsRoundDeps & { now?: () => Date }): Hono<AuthVars> {
+export function opsRoutes(
+  d: OpsRoundDeps & { now?: () => Date; overview: OverviewService },
+): Hono<AuthVars> {
   const now = d.now ?? (() => new Date());
-  const overview = makeOverviewService({
-    db: d.checkDeps.db,
-    now,
-    ...(d.checkDeps.statusDir ? { statusDir: d.checkDeps.statusDir } : {}),
-  });
+  const overview = d.overview;
   const r = new Hono<AuthVars>();
   r.use("*", requirePlatformAdmin());
   r.get("/overview", async (c) =>

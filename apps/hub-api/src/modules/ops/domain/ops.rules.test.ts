@@ -1,7 +1,9 @@
 // CR-104 · ops-core · unit luật thuần ops-watch: đến hạn, giới hạn "Kiểm tra ngay", chuyển trạng thái nào báo chuông, dedup.
 import { describe, expect, it } from "bun:test";
+import { OPS_CHECK_META, type OpsCheckKey } from "@ai/contracts/hub-admin";
 import { isDue, manualAllowed, notificationsFor, notifyKind, opsDedupKey } from "./ops.rules";
 
+const labelOf = (key: string): string => OPS_CHECK_META[key as OpsCheckKey]?.label ?? key;
 const T0 = new Date("2026-10-30T08:00:00Z");
 const after = (min: number) => new Date(T0.getTime() + min * 60_000);
 
@@ -58,24 +60,27 @@ describe("ops-watch · chuyển trạng thái ⇒ chuông", () => {
   });
 
   it("mục chuông: tiêu đề theo nhãn check, dedup theo check+trạng thái+changed_at", () => {
-    const items = notificationsFor([
-      {
-        check_key: "db_redis",
-        from_status: "ok",
-        to_status: "crit",
-        changed_at: T0,
-        message: "Redis không trả lời",
-        hint: "docker compose ps",
-      },
-      {
-        check_key: "disk",
-        from_status: "ok",
-        to_status: "ok",
-        changed_at: T0,
-        message: "",
-        hint: null,
-      },
-    ]);
+    const items = notificationsFor(
+      [
+        {
+          check_key: "db_redis",
+          from_status: "ok",
+          to_status: "crit",
+          changed_at: T0,
+          message: "Redis không trả lời",
+          hint: "docker compose ps",
+        },
+        {
+          check_key: "disk",
+          from_status: "ok",
+          to_status: "ok",
+          changed_at: T0,
+          message: "",
+          hint: null,
+        },
+      ],
+      labelOf,
+    );
     expect(items).toEqual([
       {
         kind: "ops.crit",

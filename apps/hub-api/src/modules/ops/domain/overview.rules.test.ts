@@ -51,6 +51,7 @@ describe("overview.rules · chuỗi 7 ngày / 24 giờ", () => {
       ],
       (r) => r.n,
       0,
+      7,
     );
     expect(s).toEqual([1, 0, 0, 0, 4, 0, 9]);
     expect(atWindow(s, 0)).toBe(9);
@@ -66,6 +67,7 @@ describe("overview.rules · chuỗi 7 ngày / 24 giờ", () => {
         { h: 24, ok: 9, err: 9 },
       ],
       now,
+      24,
     );
     expect(cols).toHaveLength(24);
     expect(cols[23]).toEqual({ hour_start: "2026-11-05T09:30:00.000Z", ok: 5, error: 1 });

@@ -1,6 +1,5 @@
 // CR-121 · cr121-c3a-overview-api · luật THUẦN của "Tổng quan admin platform": tỷ lệ, p95 phút, dựng chuỗi 7 ngày / 24 giờ từ
 // dòng gom theo cửa sổ, đếm từ kết quả check `flow_coverage`. Không DB, không đồng hồ (`now` truyền vào).
-import { OVERVIEW_HOURS, OVERVIEW_SERIES_DAYS } from "@ai/contracts/hub-admin";
 
 export const DAY_MS = 86_400_000;
 export const HOUR_MS = 3_600_000;
@@ -20,36 +19,37 @@ export function minutesOf(seconds: number | null | undefined): number | null {
 /** Dòng gom theo cửa sổ trượt: `k` = số cửa sổ lùi từ `now` (0 = 24 giờ gần nhất). */
 type Bucketed = { k: number };
 
-/** Dựng chuỗi 7 ngày CŨ → MỚI ([6] = k 0). Thiếu cửa sổ ⇒ `empty`; `k` ngoài 0–6 bị bỏ. */
+/** Dựng chuỗi `days` ngày (7) CŨ → MỚI (cuối = k 0). Thiếu cửa sổ ⇒ `empty`; `k` ngoài 0…days−1 bị bỏ. `days` truyền vào (contracts). */
 export function dailySeries<R extends Bucketed, T>(
   rows: readonly R[],
   pick: (r: R) => T,
   empty: T,
+  days: number,
 ): T[] {
-  const out: T[] = Array.from({ length: OVERVIEW_SERIES_DAYS }, () => empty);
+  const out: T[] = Array.from({ length: days }, () => empty);
   for (const r of rows) {
-    if (r.k >= 0 && r.k < OVERVIEW_SERIES_DAYS) out[OVERVIEW_SERIES_DAYS - 1 - r.k] = pick(r);
+    if (r.k >= 0 && r.k < days) out[days - 1 - r.k] = pick(r);
   }
   return out;
 }
 
 /** Giá trị của cửa sổ k (0 = hôm nay, 1 = hôm qua) trong chuỗi đã dựng. */
 export const atWindow = <T>(series: readonly T[], k: number): T =>
-  series[OVERVIEW_SERIES_DAYS - 1 - k] as T;
+  series[series.length - 1 - k] as T;
 
 export type HourRow = { h: number; ok: number; err: number };
 export type HourCol = { hour_start: string; ok: number; error: number };
 
-/** 24 cột CŨ → MỚI; cột [23] = giờ gần nhất [now−1h, now). `hour_start` = đầu cửa sổ giờ đó. */
-export function hourlyColumns(rows: readonly HourRow[], now: Date): HourCol[] {
-  const cols: HourCol[] = Array.from({ length: OVERVIEW_HOURS }, (_, i) => ({
-    hour_start: new Date(now.getTime() - (OVERVIEW_HOURS - i) * HOUR_MS).toISOString(),
+/** `hours` (24) cột CŨ → MỚI; cột cuối = giờ gần nhất [now−1h, now). `hour_start` = đầu cửa sổ giờ đó. `hours` truyền vào (contracts). */
+export function hourlyColumns(rows: readonly HourRow[], now: Date, hours: number): HourCol[] {
+  const cols: HourCol[] = Array.from({ length: hours }, (_, i) => ({
+    hour_start: new Date(now.getTime() - (hours - i) * HOUR_MS).toISOString(),
     ok: 0,
     error: 0,
   }));
   for (const r of rows) {
-    const col = cols[OVERVIEW_HOURS - 1 - r.h];
-    if (r.h >= 0 && r.h < OVERVIEW_HOURS && col) {
+    const col = cols[hours - 1 - r.h];
+    if (r.h >= 0 && r.h < hours && col) {
       col.ok = r.ok;
       col.error = r.err;
     }

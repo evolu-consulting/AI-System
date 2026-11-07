@@ -10,6 +10,15 @@
 import { OVERVIEW_AI_TOOL_STREAK } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import type {
+  CompaniesRow,
+  CoverageRow,
+  DifyRow,
+  InfraRow,
+  QuotaRow,
+  RunsRow,
+  Window,
+} from "../application/overview.ports";
 
 /** Khoá tenant nội bộ của nền tảng — không tính là công ty khách (như admin-api `overview.repo`). */
 export const PLATFORM_TENANT_KEY = "platform";
@@ -17,19 +26,6 @@ export const PLATFORM_TENANT_KEY = "platform";
 const ts = (d: Date) => sql`${d.toISOString()}::timestamptz`;
 const rows = async <T>(tx: Tx, q: ReturnType<typeof sql>): Promise<T[]> =>
   (await tx.execute(q)) as unknown as T[];
-
-export type Window = { now: Date; since1h: Date; since24: Date; since7: Date };
-export type Bucket = { k: number };
-
-export type RunsRow = {
-  started: (Bucket & { n: number; c: number })[];
-  finished: (Bucket & { ended: number; failed: number; done: number; p95_s: number | null })[];
-  hourly: { h: number; ok: number; err: number }[];
-  running: number;
-  needs_decision: number;
-  failed_24h: number;
-  stuck: number;
-};
 
 /**
  * Q1. `stuckBefore` = now − N giờ. `w` = các lượt BẮT ĐẦU trong 7 ngày + mọi lượt đang mở (một lần quét, CTE dùng lại nhiều nơi);
@@ -82,15 +78,6 @@ export async function runsAgg(tx: Tx, win: Window, stuckBefore: Date): Promise<R
   return r[0] as RunsRow;
 }
 
-export type DifyRow = {
-  errs: (Bucket & { n: number })[];
-  calls_1h: number;
-  errs_1h: number;
-  errs_24h: number;
-  failing_tools: number;
-  top: { id: string; name: string; errors: number } | null;
-};
-
 /**
  * Q2. Chỉ ĐẾM qua hàm DEFINER `hub.dify_run_counts` / `hub.dify_failing_tool_count` (hub 0102; không đọc thẳng `dify_runs`):
  * 7 lời gọi theo ngày (cửa sổ (now−(k+1)d, now−kd]) + 1 giờ + 24 giờ — mỗi dòng quét đúng một lần (chỉ mục `dify_runs_created_at_idx`).
@@ -122,14 +109,6 @@ export async function difyAgg(tx: Tx, win: Window): Promise<DifyRow> {
   );
   return r[0] as DifyRow;
 }
-
-export type QuotaRow = {
-  tenants_with_limit: number;
-  limit_usd: number;
-  used_usd: number;
-  near: number;
-  daily: (Bucket & { usd: number })[];
-};
 
 /**
  * Q3. Hạn mức TOÀN công ty (`feature_id is null`) của công ty khách đang hoạt động; % mỗi công ty = lớn nhất của các giới hạn đã đặt
@@ -175,8 +154,6 @@ export async function quotaAgg(
   return r[0] as QuotaRow;
 }
 
-export type CompaniesRow = { total: number; active_7d: number };
-
 /** Q4. Hoạt động = có lượt chạy quy trình hoặc dòng dùng AI trong 7 ngày (`exists` theo chỉ mục (tenant_id, thời gian)). */
 export async function companiesAgg(tx: Tx, win: Window): Promise<CompaniesRow> {
   const r = await rows<CompaniesRow>(
@@ -190,16 +167,6 @@ export async function companiesAgg(tx: Tx, win: Window): Promise<CompaniesRow> {
   );
   return r[0] as CompaniesRow;
 }
-
-export type InfraRow = {
-  queued: number;
-  oldest_wait_s: number | null;
-  timer_overdue_s: number | null;
-  slow_query_ms: number | null;
-  connections: number;
-  max_connections: number;
-  size_bytes: number;
-};
 
 /** Q5. `jobs_claim_idx` (một phần `queued`), `process_timers_due_idx`; số liệu DB từ catalog (không quét bảng dữ liệu). */
 export async function infraAgg(tx: Tx, now: Date): Promise<InfraRow> {
@@ -220,16 +187,6 @@ export async function infraAgg(tx: Tx, now: Date): Promise<InfraRow> {
   );
   return r[0] as InfraRow;
 }
-
-export type CoverageRow = {
-  status: string;
-  value: {
-    gap_count?: number;
-    gaps?: { tenant: string }[];
-    unrouted?: string[];
-    broken?: string[];
-  } | null;
-};
 
 /** Q6. Kết quả mới nhất của check `flow_coverage` (PK `check_key`); chưa chạy lượt kiểm nào ⇒ không có dòng. */
 export async function flowCoverageLatest(tx: Tx): Promise<CoverageRow | null> {

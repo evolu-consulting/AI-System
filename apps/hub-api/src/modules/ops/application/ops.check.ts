@@ -6,13 +6,15 @@ import type {
   OpsSettings,
   OpsStatus,
 } from "@ai/contracts/hub-admin";
-import type { Db } from "../../../lib/db";
-import type { Redis } from "../../../lib/redis";
+
+/** Cổng DB/Redis của check: application không biết kiểu cụ thể (Db/Redis); adapter `check-kit` ép về kiểu thật. Nối ở `ops.mount`. */
+export type OpsDbPort = object;
+export type OpsRedisPort = object;
 
 /** Phụ thuộc chung mọi check nhận (O2 đọc file trạng thái ở `statusDir`, gọi HTTP/TLS qua `fetch` + `signal`). */
 export type OpsCheckDeps = {
-  db: Db;
-  redis?: Redis;
+  db: OpsDbPort;
+  redis?: OpsRedisPort;
   fetch: typeof fetch;
   /** Thời điểm của lượt (đồng hồ giả trong test). */
   now: Date;

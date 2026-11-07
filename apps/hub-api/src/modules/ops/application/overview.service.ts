@@ -4,34 +4,23 @@
 
 import type { Role } from "@ai/contracts";
 import {
-  OpsHostStatusSchema,
   type OpsOverview,
   type OpsOverviewQuery,
   OVERVIEW_AI_TOOL_STREAK,
   OVERVIEW_CACHE_TTL_S,
+  OVERVIEW_HOURS,
+  OVERVIEW_SERIES_DAYS,
 } from "@ai/contracts/hub-admin";
-import type { Db } from "../../../lib/db";
-import { appError } from "../../../lib/errors";
-import { readStatusFile, systemRead } from "../adapters/checks/check-kit";
-import {
-  companiesAgg,
-  difyAgg,
-  flowCoverageLatest,
-  infraAgg,
-  quotaAgg,
-  runsAgg,
-  type Window,
-} from "../adapters/overview.repo";
 import {
   atWindow,
   type Cached,
   cacheKey,
   DAY_MS,
-  dailySeries,
+  dailySeries as dailySeriesOf,
   fresh,
   HOUR_MS,
   halfConfigured,
-  hourlyColumns,
+  hourlyColumns as hourlyColumnsOf,
   minutesOf,
   monthWindow,
   queueLagSeconds,
@@ -39,8 +28,20 @@ import {
   unroutedCompanies,
   usedPct,
 } from "../domain/overview.rules";
+import type { OverviewSource, Window } from "./overview.ports";
 
-export type OverviewDeps = { db: Db; statusDir?: string; now?: () => Date };
+export type OverviewDeps = {
+  /** Cổng nguồn dữ liệu (SQL + file host) — adapter `overview.source.ts`, nối ở `overview.wire.ts`. */
+  source: OverviewSource;
+  /** Lỗi 403 khi vai không phải platform_admin (adapter dựng `AppError`; application không biết HTTP). */
+  forbidden: () => Error;
+  now?: () => Date;
+};
+
+const dailySeries = <R extends { k: number }, T>(rows: readonly R[], pick: (r: R) => T, empty: T) =>
+  dailySeriesOf(rows, pick, empty, OVERVIEW_SERIES_DAYS);
+const hourlyColumns = (rows: Parameters<typeof hourlyColumnsOf>[0], now: Date) =>
+  hourlyColumnsOf(rows, now, OVERVIEW_HOURS);
 
 /** Đích các mục "Cần xử lý ngay" (trang đích + bộ lọc do màn hình Tổng quan/UI lát sau đảm nhiệm). */
 export const OVERVIEW_LINKS = {
@@ -64,18 +65,8 @@ async function compute(d: OverviewDeps, p: OpsOverviewQuery, now: Date): Promise
   };
   const stuckBefore = new Date(now.getTime() - p.stuck_hours * HOUR_MS);
   const [host, q] = await Promise.all([
-    readStatusFile(d, "host.json", OpsHostStatusSchema),
-    systemRead(d.db, async (tx) => {
-      const runs = await runsAgg(tx, win, stuckBefore);
-      const dify = await difyAgg(tx, win);
-      const quota = await quotaAgg(tx, win, monthWindow(now), p.quota_pct);
-      const cos = await companiesAgg(tx, win);
-      const t0 = performance.now();
-      const infra = await infraAgg(tx, now);
-      const pingMs = Math.round(performance.now() - t0);
-      const cov = await flowCoverageLatest(tx);
-      return { runs, dify, quota, cos, infra, pingMs, cov };
-    }),
+    d.source.hostStatus(),
+    d.source.read(win, stuckBefore, monthWindow(now), p.quota_pct),
   ]);
   const { runs, dify, quota, cos, infra, pingMs, cov } = q;
 
@@ -190,7 +181,7 @@ export function makeOverviewService(d: OverviewDeps): OverviewService {
   return {
     async get(p, role) {
       // Vai kiểm ngay trong service (không chỉ dựa vào route): không phải platform_admin ⇒ 403 trước mọi đọc DB/cache.
-      if (role !== "platform_admin") throw appError("FORBIDDEN");
+      if (role !== "platform_admin") throw d.forbidden();
       const key = cacheKey(p);
       const now = clock();
       const hit = cache.get(key);

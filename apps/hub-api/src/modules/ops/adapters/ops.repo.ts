@@ -17,20 +17,13 @@ import type { Db, Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { OpsCheckOutcome } from "../application/ops.check";
+import type { OpsRepo, OpsState } from "../application/ops.ports";
 import type { OpsNotifyItem, Transition } from "../domain/ops.rules";
 
 const SYSTEM = { kind: "system" } as const;
 /** Mốc thời gian làm tham số (driver không nhận `Date` trong `sql` thô). */
 const tsz = (d: Date) => sql`${d.toISOString()}::timestamptz`;
 const LOCK = sql`select pg_advisory_xact_lock(hashtext('hub.ops_watch'))`;
-
-export type OpsState = {
-  settings: OpsSettings;
-  updated_at: Date;
-  updated_by: string | null;
-  last_round_at: Date | null;
-  last_manual_at: Date | null;
-};
 
 type StateRow = {
   settings: unknown;
@@ -125,7 +118,7 @@ type CheckRowDb = Omit<OpsCheckRow, "checked_at" | "changed_at"> & {
 };
 type EventRowDb = Omit<OpsEvent, "id" | "at"> & { id: string | number; at: Date | string };
 
-export function opsRepo(db: Db) {
+export function opsRepo(db: Db): OpsRepo {
   return {
     state: (): Promise<OpsState> => withHubScope(db, SYSTEM, (tx) => stateTx(tx)),
 
@@ -257,5 +250,3 @@ export function opsRepo(db: Db) {
     },
   };
 }
-
-export type OpsRepo = ReturnType<typeof opsRepo>;

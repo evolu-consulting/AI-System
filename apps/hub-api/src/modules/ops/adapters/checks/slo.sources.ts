@@ -2,7 +2,7 @@
 // (tỷ lệ lỗi log, p95 route). Mỗi nguồn trả `null` khi không có số (thiếu/cũ/quá ít mẫu) — không bao giờ ném lỗi.
 import { type OpsSloStatus, OpsSloStatusSchema } from "@ai/contracts/hub-admin";
 import { sql } from "drizzle-orm";
-import type { Db } from "../../../../lib/db";
+import type { OpsDbPort } from "../../application/ops.check";
 import { readStatusFile, type StatusFile, systemRead } from "./check-kit";
 
 export type SloSamples = Record<string, number | null>;
@@ -62,7 +62,7 @@ export function samplesFromHost(f: StatusFile<OpsSloStatus>, now: Date): SloSamp
 }
 
 export async function collectSamples(d: {
-  db: Db;
+  db: OpsDbPort;
   now: Date;
   statusDir?: string;
 }): Promise<SloSamples> {

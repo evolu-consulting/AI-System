@@ -6,8 +6,8 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { captureSql, measure } from "@ai/test-kit/perf";
 import { connectDb, type Db } from "../../lib/db";
-import { makeOverviewService } from "./application/overview.service";
-import { seedBase } from "./ops.overview.fixture";
+import { makeOverviewServiceFor as makeOverviewService } from "./adapters/overview.wire";
+import { seedBase } from "./test/overview.fixture";
 
 const COMPANIES = 50;
 const RUNS = 10_000;

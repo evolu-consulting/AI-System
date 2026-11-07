@@ -1,6 +1,6 @@
 // CR-117 · ops-watch · luật thuần của check `slo`: định nghĩa SLO, trạng thái qua các lượt kiểm (chuỗi vi phạm liên tiếp + lịch sử
 // cho tốc độ đốt ngân sách), phán quyết warn/crit. Không I/O. Trạng thái nằm trong `value` của check (đọc lại qua `prev`).
-import type { OpsStatus } from "@ai/contracts/hub-admin";
+import type { OpsStatus } from "./ops.rules";
 
 export type SloUnit = "ms" | "s" | "pct";
 export type SloDef = {

@@ -1,101 +1,11 @@
 [
   {
     "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/application/ops.check.ts",
-    "to": "apps/hub-api/src/lib/db.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-application-inward-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/application/ops.check.ts",
-    "to": "apps/hub-api/src/lib/redis.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-application-inward-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/application/ops.round.ts",
-    "to": "apps/hub-api/src/modules/ops/adapters/ops.repo.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-application-inward-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/application/overview.service.ts",
-    "to": "apps/hub-api/src/lib/db.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-application-inward-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/application/overview.service.ts",
-    "to": "apps/hub-api/src/lib/errors.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-application-inward-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/application/overview.service.ts",
-    "to": "apps/hub-api/src/modules/ops/adapters/checks/check-kit.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-application-inward-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/application/overview.service.ts",
-    "to": "apps/hub-api/src/modules/ops/adapters/overview.repo.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-application-inward-only"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/kit/application/pack-nav.ports.ts",
     "to": "apps/hub-api/src/lib/auth.middleware.ts",
     "rule": {
       "severity": "error",
       "name": "ca-application-inward-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/domain/ops.rules.ts",
-    "to": "packages/contracts/src/hub-admin/index.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-domain-builtin-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/domain/overview.rules.ts",
-    "to": "packages/contracts/src/hub-admin/index.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-domain-builtin-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/domain/slo.rules.ts",
-    "to": "packages/contracts/src/hub-admin/index.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-domain-builtin-only"
     }
   },
   {
@@ -3466,15 +3376,6 @@
   },
   {
     "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/ops.overview.fixture.ts",
-    "to": "packages/test-kit/src/db.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-prod-import-test-kit"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/contracts/adapters/cr116-bench.harness.ts",
     "to": "packages/test-kit/src/builders.ts",
     "rule": {
@@ -3522,15 +3423,6 @@
     "type": "dependency",
     "from": "apps/admin-api/src/modules/internal-tokens/internal-tokens.routes.ts",
     "to": "apps/admin-api/src/modules/auth/auth.repo.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-routes-to-repo"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/ops/adapters/ops.routes.ts",
-    "to": "apps/hub-api/src/modules/ops/adapters/ops.repo.ts",
     "rule": {
       "severity": "error",
       "name": "no-routes-to-repo"

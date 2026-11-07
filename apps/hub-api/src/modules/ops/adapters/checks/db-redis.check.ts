@@ -2,6 +2,7 @@
 import { pingDb } from "../../../../lib/db";
 import { pingRedis } from "../../../../lib/redis";
 import type { OpsCheck } from "../../application/ops.check";
+import { asDb, asRedis } from "./check-kit";
 
 export const dbRedisCheck: OpsCheck = {
   key: "db_redis",
@@ -9,8 +10,8 @@ export const dbRedisCheck: OpsCheck = {
   async run(d) {
     const t0 = performance.now();
     const [db, redis] = await Promise.allSettled([
-      pingDb(d.db),
-      d.redis ? pingRedis(d.redis, 2_000) : Promise.resolve(),
+      pingDb(asDb(d.db)),
+      d.redis ? pingRedis(asRedis(d.redis), 2_000) : Promise.resolve(),
     ]);
     const ms = Math.round(performance.now() - t0);
     const down = [

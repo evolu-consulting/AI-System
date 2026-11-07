@@ -9,6 +9,7 @@ import type { Redis } from "../../lib/redis";
 import { OPS_CHECKS } from "./adapters/checks/registry";
 import { opsRepo } from "./adapters/ops.repo";
 import { OPS_PREFIX, opsRoutes } from "./adapters/ops.routes";
+import { makeOverviewServiceFor } from "./adapters/overview.wire";
 import type { OpsCheck } from "./application/ops.check";
 import { type OpsRoundDeps, runChecksOnce } from "./application/ops.round";
 
@@ -55,7 +56,12 @@ export function mountOps<E extends Env>(app: Hono<E>, d: OpsMountDeps): void {
   const o = d.ops ?? {};
   const deps = opsRoundDeps(d);
   const now = o.now ?? (() => new Date());
-  app.route(OPS_PREFIX, opsRoutes({ ...deps, now }));
+  const overview = makeOverviewServiceFor({
+    db: d.db,
+    now,
+    ...(o.statusDir ? { statusDir: o.statusDir } : {}),
+  });
+  app.route(OPS_PREFIX, opsRoutes({ ...deps, now, overview }));
   if (!o.watch) return;
   startLoop({
     name: "ops-watch",

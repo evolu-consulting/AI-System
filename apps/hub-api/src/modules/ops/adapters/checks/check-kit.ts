@@ -7,7 +7,12 @@ import type { Db, Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { z } from "zod";
-import type { OpsCheckDeps } from "../../application/ops.check";
+import type { Redis } from "../../../../lib/redis";
+import type { OpsCheckDeps, OpsDbPort, OpsRedisPort } from "../../application/ops.check";
+
+/** Cổng → kiểu thật (mount chỉ tiêm `Db`/`Redis`, xem `ops.mount.ts`). */
+export const asDb = (p: OpsDbPort): Db => p as Db;
+export const asRedis = (p: OpsRedisPort): Redis => p as Redis;
 
 /** Ngưỡng hiệu lực: cấu hình trên UI; `null` ⇒ mặc định của meta (check không dùng mức đó ⇒ `null`). */
 export function thresholds(
@@ -111,11 +116,11 @@ export const SYSTEM_READ_TIMEOUT_MS = 5_000;
  * bỏ kết quả chứ không huỷ câu SQL).
  */
 export function systemRead<T>(
-  db: Db,
+  db: OpsDbPort,
   fn: (tx: Tx) => Promise<T>,
   timeoutMs = SYSTEM_READ_TIMEOUT_MS,
 ): Promise<T> {
-  return withHubScope(db, { kind: "system" }, async (tx) => {
+  return withHubScope(asDb(db), { kind: "system" }, async (tx) => {
     await tx.execute(sql`select set_config('statement_timeout', ${String(timeoutMs)}, true)`);
     return fn(tx);
   });

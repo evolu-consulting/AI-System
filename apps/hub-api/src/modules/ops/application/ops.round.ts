@@ -1,10 +1,12 @@
 // CR-104 · ops-core · một lượt kiểm ops-watch. Nền (`runChecksOnce`): tick ngắn, chỉ chạy khi đến hạn theo `every_min` tính từ
 // `last_round_at` trong DB (đổi tần suất có hiệu lực không cần restart) và khi giành được lượt (nhiều instance ⇒ một lượt).
 // "Kiểm tra ngay" (`runChecksNow`): bỏ qua hạn, giới hạn 1 lần/phút. Check chạy NGOÀI tx (gọi mạng có hạn giờ); kết quả ghi một tx.
-import type { OpsSettings } from "@ai/contracts/hub-admin";
-import type { OpsRepo } from "../adapters/ops.repo";
+import { OPS_CHECK_META, type OpsCheckKey, type OpsSettings } from "@ai/contracts/hub-admin";
 import { isDue, manualAllowed, notificationsFor, type Transition } from "../domain/ops.rules";
 import { type OpsCheck, type OpsCheckDeps, type OpsCheckOutcome, runEnabled } from "./ops.check";
+import type { OpsRepo } from "./ops.ports";
+
+const labelOf = (key: string): string => OPS_CHECK_META[key as OpsCheckKey]?.label ?? key;
 
 export const OPS_MANUAL_GAP_MS = 60_000;
 
@@ -24,7 +26,7 @@ export type OpsRoundResult =
 async function round(d: OpsRoundDeps, settings: OpsSettings, now: Date): Promise<OpsRoundResult> {
   const prev = await d.repo.previous(new Date(now.getTime() - 2 * settings.every_min * 60_000));
   const results = await runEnabled(d.checks, { ...d.checkDeps, now, prev }, settings, d.timeoutMs);
-  const w = await d.repo.writeRound(results, now, notificationsFor);
+  const w = await d.repo.writeRound(results, now, (ts) => notificationsFor(ts, labelOf));
   return { ran: true, results, ...w };
 }
 

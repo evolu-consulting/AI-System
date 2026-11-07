@@ -1,6 +1,7 @@
 // CR-104 · ops-core · luật thuần của ops-watch: đến hạn lượt kiểm, chuyển trạng thái nào thì báo chuông, khoá dedup, nội dung chuông.
 // Không I/O (unit test trực tiếp).
-import { OPS_CHECK_META, type OpsCheckKey, type OpsStatus } from "@ai/contracts/hub-admin";
+/** Trạng thái một check (khớp `OpsStatus` của contracts; domain không import contracts — kiểu đi qua đây). */
+export type OpsStatus = "ok" | "warn" | "crit" | "unknown";
 
 /** Lượt kế tiếp đến hạn khi chưa từng kiểm hoặc đã qua `everyMin` phút kể từ lượt cuối (tính từ DB ⇒ đổi tần suất có hiệu lực ngay). */
 export function isDue(last: Date | null, everyMin: number, now: Date): boolean {
@@ -50,15 +51,16 @@ const STATUS_VI: Record<OpsStatus, string> = {
   unknown: "Không rõ",
 };
 
-const labelOf = (key: string): string => OPS_CHECK_META[key as OpsCheckKey]?.label ?? key;
-
 export type OpsNotifyItem = { kind: OpsNotifyKind; title: string; body: string; dedup_key: string };
 
 /**
  * Chuyển trạng thái ⇒ mục chuông (mỗi mục được DB nhân ra mọi platform_admin đang hoạt động). So với trạng thái ĐÃ BIẾT gần nhất
  * (bỏ qua `unknown`): `crit → unknown → crit` không báo lại; `warn → unknown → ok` vẫn báo hồi phục; sang `unknown` không báo.
  */
-export function notificationsFor(ts: readonly Transition[]): OpsNotifyItem[] {
+export function notificationsFor(
+  ts: readonly Transition[],
+  labelOf: (key: string) => string = (key) => key,
+): OpsNotifyItem[] {
   const out: OpsNotifyItem[] = [];
   for (const t of ts) {
     if (t.to_status === "unknown") continue;

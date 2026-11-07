@@ -12,8 +12,8 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { captureSql } from "@ai/test-kit/perf";
 import { connectDb, type Db } from "../../lib/db";
-import { makeOverviewService } from "./application/overview.service";
-import { insertDify, insertReviewWait, insertRuns, seedBase } from "./ops.overview.fixture";
+import { makeOverviewServiceFor as makeOverviewService } from "./adapters/overview.wire";
+import { insertDify, insertReviewWait, insertRuns, seedBase } from "./test/overview.fixture";
 
 const TA = tenantId(1301);
 const TB = tenantId(1302);
