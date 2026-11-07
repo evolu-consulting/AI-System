@@ -160,6 +160,13 @@ export type OverrideEvent = {
   action: string;
   actor: string;
 };
+/** CR-125 · một quyết định của người duyệt trên một bước. */
+export type DecisionEvent = {
+  stageKey: string;
+  action: "approve" | "return" | "reject";
+  feedback: string | null;
+  actor: string;
+};
 export type PendingLinksOp =
   | (PendingLinksOwner & { links: readonly unknown[] | null })
   | (PendingLinksOwner & { release: true });
@@ -199,6 +206,9 @@ export type ApprovalEngineRepo = {
   recordOverride?(contractId: string, approvalId: string, e: OverrideEvent): Promise<string | null>;
   /** CR-113 (review) · bù trừ: xoá bản ghi "duyệt thay" vừa chèn (id) khi engine không nhận quyết. */
   voidOverride?(eventId: string): Promise<boolean>;
+  /** CR-125 · nhật ký MỖI quyết định của người duyệt trên bước của run engine (`contract_events` `stage_decided`: người, bước,
+   *  approve|return|reject, góp ý) — hiện ở lịch sử HĐ. MỘT câu. */
+  recordDecision?(contractId: string, approvalId: string, e: DecisionEvent): Promise<void>;
   /** S3b · nhãn HĐ (số, tiêu đề) của các HĐ người dùng THẤY (RLS M1) — MỘT câu `= any`. */
   labels(
     ids: readonly string[],

@@ -32,7 +32,7 @@ type Repos = {
   };
   approvalEngine: Pick<
     ApprovalEngineRepo,
-    "setPendingLinks" | "recordOverride" | "voidOverride"
+    "setPendingLinks" | "recordOverride" | "voidOverride" | "recordDecision"
   > & {
     difyFacts?: ApprovalEngineRepo["difyFacts"];
   };
@@ -209,9 +209,44 @@ export function engineAct(d: EngineCardDeps) {
     const out = await exec(d, port, c, plan);
     // W1 · hai lần bấm song song của CÙNG người: lần chèn bản ghi thua đua (bù trừ xoá) còn lần trùng (không chèn) thắng ⇒ ghi
     // lại sau khi engine nhận quyết (idempotent, `on conflict do nothing`) — quyết duyệt thay không bao giờ thiếu audit.
-    if (out === "ok" && note) await noteOverride(d, c, inp.sv, plan.taskId);
+    if (out === "ok") await afterOk(d, c, inp.sv, plan, note);
     return out;
   };
+}
+
+/** Engine đã nhận quyết: ghi lại "duyệt thay" nếu thua đua (idempotent) + nhật ký quyết định (CR-125). */
+async function afterOk(
+  d: EngineCardDeps,
+  c: Ctx,
+  sv: Awaited<ReturnType<typeof input>>["sv"],
+  plan: Plan,
+  note: unknown,
+): Promise<void> {
+  // W1 · hai lần bấm song song của CÙNG người: lần chèn bản ghi thua đua (bù trừ xoá) còn lần trùng (không chèn) thắng.
+  if (note) await noteOverride(d, c, sv, plan.taskId);
+  if (plan.kind !== "redo") await noteDecision(d, c, sv, plan);
+}
+
+/** CR-125 · mỗi quyết định thật của người duyệt (Đạt / Trả lại / Từ chối) ⇒ một dòng lịch sử HĐ: ai · bước · kết quả · góp ý. Engine đã
+ *  nhận quyết rồi nên lỗi ghi chỉ cảnh báo (không đổi kết quả của người bấm). */
+async function noteDecision(
+  d: EngineCardDeps,
+  c: Ctx,
+  sv: Awaited<ReturnType<typeof input>>["sv"],
+  plan: Plan,
+): Promise<void> {
+  const step = sv?.steps.find((s) => s.task?.id === plan.taskId);
+  const aid = (c.st.approval as NonNullable<ApprovalState["approval"]>).id;
+  const action = plan.kind === "pass" ? "approve" : plan.kind === "reject" ? "reject" : "return";
+  const e = {
+    stageKey: step?.key ?? "",
+    action,
+    feedback: c.b.feedback?.trim() ? c.b.feedback.trim().slice(0, 1000) : null,
+    actor: c.who.userId,
+  } as const;
+  await d.uow
+    .tenant(c.who, async (r) => r.approvalEngine.recordDecision?.(c.id, aid, e))
+    .catch(() => d.warn?.("contract-approval-decision-log-failed", { contract_id: c.id }));
 }
 
 /** Review · engine không nhận (not_open / đua / lỗi) ⇒ bù trừ: xoá ĐÚNG bản ghi vừa chèn (lịch sử không hiện duyệt thay giả). */

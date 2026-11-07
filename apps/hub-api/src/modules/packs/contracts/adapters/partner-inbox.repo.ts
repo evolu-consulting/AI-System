@@ -144,7 +144,12 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
             sender_verified, round, prev_reason, importance, message, shared, file_ref, pdf_sha256, expires_at)
           select ${tid}::uuid, f.contract_id, f.mailbox_id, f.sender_name, f.sender_tax_code, f.sender_verified, f.round,
             f.prev_reason, f.importance, f.message, f.shared, f.file_ref, f.pdf_sha256, f.expires_at
-          from fresh f join c on c.id = f.contract_id returning 1)
+          from fresh f join c on c.id = f.contract_id returning 1),
+        -- CR-125 · nhận HĐ từ đối tác ⇒ một dòng lịch sử HĐ nhận (từ ai · vòng), cùng câu với HĐ nhận.
+        ev as (insert into contracts.contract_events (tenant_id, contract_id, type, data)
+          select ${tid}::uuid, f.contract_id, 'partner_received',
+            jsonb_strip_nulls(jsonb_build_object('from', f.sender_name, 'round', f.round))
+          from fresh f join c on c.id = f.contract_id)
         select (select count(*) from i)::int as n`);
       return r?.n ?? 0;
     },

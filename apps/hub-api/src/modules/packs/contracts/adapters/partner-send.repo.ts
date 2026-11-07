@@ -130,10 +130,14 @@ export function partnerSendRepo(tx: Tx, tid: string) {
       runId: string | null;
       by: string;
     }): Promise<void> {
-      await tx.execute(sql`insert into contracts.partner_sends
+      // CR-125 · gửi đối tác ⇒ cùng câu một dòng lịch sử HĐ (ai · gửi cho ai · vòng · kênh).
+      await tx.execute(sql`with s as (insert into contracts.partner_sends
           (tenant_id, contract_id, mailbox_id, round, channel, to_key, to_name, process_run_id, created_by)
         values (${tid}::uuid, ${o.contractId}::uuid, ${o.mailboxId}::uuid, ${o.round}, ${o.channel}, ${o.toKey},
-          ${o.toName}, ${o.runId}::uuid, ${o.by}::uuid)`);
+          ${o.toName}, ${o.runId}::uuid, ${o.by}::uuid))
+        insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+        select ${tid}::uuid, ${o.contractId}::uuid, 'partner_sent', ${o.by}::uuid,
+          jsonb_strip_nulls(jsonb_build_object('round', ${o.round}::int, 'channel', ${o.channel}::text, 'to', ${o.toName}::text))`);
     },
     /** Tên pháp lý/MST/dấu xác minh CÔNG KHAI của chính công ty (hiện ở lịch sử). */
     async self(): Promise<{ name: string; taxCode: string | null; verified: boolean } | null> {
@@ -147,12 +151,18 @@ export function partnerSendRepo(tx: Tx, tid: string) {
       rows: readonly { mailboxId: string; outcome: string; reason: string | null }[],
     ): Promise<number> {
       if (rows.length === 0) return 0;
-      const r = await tx.execute<{ id: string }>(sql`update contracts.partner_sends s
+      // CR-125 · đối tác trả lời ⇒ cùng câu một dòng lịch sử HĐ cho mỗi lần gửi vừa đóng (kết quả + lý do); chạy lại ⇒ 0 hàng ⇒ không ghi đôi.
+      const r = await tx.execute<{ id: string }>(sql`with u as (update contracts.partner_sends s
           set status = x.outcome, reason = x.reason, closed_at = now()
         from jsonb_to_recordset(${JSON.stringify(
           rows.map((r) => ({ mailbox_id: r.mailboxId, outcome: r.outcome, reason: r.reason })),
         )}::jsonb) as x(mailbox_id uuid, outcome text, reason text)
-        where s.tenant_id = ${tid}::uuid and s.mailbox_id = x.mailbox_id and s.status = 'open' returning s.id`);
+        where s.tenant_id = ${tid}::uuid and s.mailbox_id = x.mailbox_id and s.status = 'open'
+        returning s.id, s.contract_id, s.round, s.status, s.reason),
+        ev as (insert into contracts.contract_events (tenant_id, contract_id, type, data)
+          select ${tid}::uuid, u.contract_id, 'partner_replied',
+            jsonb_strip_nulls(jsonb_build_object('round', u.round, 'outcome', u.status, 'reason', u.reason)) from u)
+        select id from u`);
       return r.length;
     },
   };

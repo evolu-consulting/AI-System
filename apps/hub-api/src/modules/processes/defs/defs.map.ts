@@ -132,7 +132,20 @@ export const auditSnapshot = (r: DefRow): Record<string, unknown> => ({
   version: r.version,
   stage_count: r.stages.length,
   source_template_id: r.source_template_id,
+  // CR-125 · "đổi gì": danh sách bước (tên · loại) + sự kiện kích hoạt ⇒ so before/after thấy bước nào thêm/bớt/đổi.
+  steps: (r.stages as readonly { key?: unknown; name?: unknown; node?: unknown }[]).map((s) => ({
+    key: s.key ?? null,
+    name: typeof s.name === "string" ? s.name : null,
+    node: nodeKind(s.node),
+  })),
+  trigger: nodeKind((r.trigger as { event?: unknown } | null)?.event ?? null),
 });
+
+function nodeKind(n: unknown): string | null {
+  if (typeof n === "string") return n;
+  const k = (n as { kind?: unknown } | null)?.kind;
+  return typeof k === "string" ? k : null;
+}
 
 export function toTeams(teams: readonly TeamRow[], members: readonly MemberRow[]): AgentTeam[] {
   return teams.map((t) => ({

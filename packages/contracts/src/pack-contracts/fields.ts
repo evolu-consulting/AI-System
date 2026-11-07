@@ -75,6 +75,19 @@ export const CONTRACT_EVENT_TYPES = [
   "parent_changed",
   /** CR-113 · chủ gói "duyệt thay" một bước (`data: {stage, action}` — id nội bộ không trả ra). */
   "approval_override",
+  /** CR-125 · quyết định của người duyệt trên một bước (`data: {stage, action: approve|return|reject, feedback}`). */
+  "stage_decided",
+  /** CR-125 · ký số: gửi / đã ký / từ chối / huỷ / hết hạn / đổi nhà cung cấp. */
+  "esign_sent",
+  "esign_signed",
+  "esign_declined",
+  "esign_voided",
+  "esign_expired",
+  "esign_switched",
+  /** CR-125 · hộp thư đối tác: gửi / nhận / đối tác trả lời. */
+  "partner_sent",
+  "partner_received",
+  "partner_replied",
 ] as const;
 export const ContractEventTypeSchema = z.enum(CONTRACT_EVENT_TYPES);
 export type ContractEventType = z.infer<typeof ContractEventTypeSchema>;

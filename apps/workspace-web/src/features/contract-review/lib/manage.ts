@@ -35,6 +35,22 @@ const KNOWN = new Set([
   "approval_started",
   "approved",
   "approval_override", // CR-113 · "duyệt thay"
+  // CR-125 · quyết định từng bước, kết cục, ký số, đối tác
+  "rejected",
+  "returned",
+  "reopened",
+  "stage_approve",
+  "stage_return",
+  "stage_reject",
+  "esign_sent",
+  "esign_signed",
+  "esign_declined",
+  "esign_voided",
+  "esign_expired",
+  "esign_switched",
+  "partner_sent",
+  "partner_received",
+  "partner_replied",
   "feedback",
   "extract_requested",
   "created_manual",
@@ -53,11 +69,20 @@ function diffsOf(data: unknown): FieldDiff[] {
     .map((c) => ({ key: text(c.key), old: text(c.old), new: text(c.new) }));
 }
 
+/** CR-125 · `stage_decided` hiện theo kết quả (Đạt / Trả lại / Từ chối); kind lạ ⇒ `other`. */
+function kindOf(h: HistoryItem): string {
+  const t =
+    h.type === "stage_decided"
+      ? `stage_${text((h.data as { action?: unknown } | null)?.action)}`
+      : h.type;
+  return KNOWN.has(t) ? t : "other";
+}
+
 export function historyLine(h: HistoryItem): HistoryLine {
   const d = (h.data ?? {}) as { from?: unknown; to?: unknown };
   const pair = h.type === "owner_assigned" || h.type === "commission_edited";
   return {
-    kind: KNOWN.has(h.type) ? h.type : "other",
+    kind: kindOf(h),
     type: h.type,
     actor: h.actor_user_id,
     at: h.at,

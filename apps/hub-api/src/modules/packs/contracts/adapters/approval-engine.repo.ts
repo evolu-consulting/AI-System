@@ -210,6 +210,16 @@ function overrideQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["recordO
   };
 }
 
+/** CR-125 · nhật ký quyết định của người duyệt (mỗi bước: ai, lúc nào [at], Đạt/Trả lại/Từ chối, góp ý). MỘT câu chèn, không returning. */
+function decisionQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["recordDecision"]> {
+  return async (id, aid, e) => {
+    await tx.execute(sql`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+      values (${tid}::uuid, ${id}::uuid, 'stage_decided', ${e.actor}::uuid,
+        jsonb_strip_nulls(jsonb_build_object('run_id', ${aid}::text, 'stage', ${e.stageKey}::text,
+          'action', ${e.action}::text, 'feedback', ${e.feedback}::text)))`);
+  };
+}
+
 /** CR-113 (review) · bù trừ write-ahead: xoá ĐÚNG hàng vừa chèn (hàm SECURITY DEFINER 0071 — chỉ type duyệt thay, tenant + người của tx). */
 function voidOverrideQ(tx: Tx): NonNullable<ApprovalEngineRepo["voidOverride"]> {
   return async (eventId) => {
@@ -279,5 +289,6 @@ export function approvalEngineRepo(tx: Tx, tenantId: string): ApprovalEngineRepo
     finalize: finalizeQ(tx, tenantId),
     recordOverride: overrideQ(tx, tenantId),
     voidOverride: voidOverrideQ(tx),
+    recordDecision: decisionQ(tx, tenantId),
   };
 }

@@ -162,21 +162,54 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
       return rows.length === 1;
     },
     audit: async (actor, before, after) => {
-      await tx.execute(sql`insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after)
-        values (${t}::uuid, ${actor}::uuid, ${JSON.stringify(before)}::jsonb, ${JSON.stringify(after)}::jsonb)`);
+      // CR-125 · đổi nhà cung cấp ký giữa chừng: ngoài audit cấu hình, còn một dòng ở lịch sử HĐ (ai · từ nhà cung cấp nào sang nào).
+      const sw = (after as { esign_switch?: { contract_id?: string; provider?: string } })
+        .esign_switch;
+      const from =
+        (before as { esign_switch?: { provider?: string } }).esign_switch?.provider ?? null;
+      await tx.execute(sql`with a as (insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after)
+          values (${t}::uuid, ${actor}::uuid, ${JSON.stringify(before)}::jsonb, ${JSON.stringify(after)}::jsonb)),
+        ev as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+          select ${t}::uuid, c.id, 'esign_switched', ${actor}::uuid,
+            jsonb_strip_nulls(jsonb_build_object('from', ${from}::text, 'to', ${sw?.provider ?? null}::text))
+          from contracts.contracts c where c.id::text = ${sw?.contract_id ?? null}::text and c.tenant_id = ${t}::uuid)
+        select 1`);
     },
     insert: async (r) => {
-      const rows = await tx.execute(sql`insert into contracts.esign_envelopes
-          (tenant_id, contract_id, provider, envelope_id, signers, sent_by, due_h, remind_every_h)
-        values (${t}::uuid, ${r.contractId}::uuid, ${r.provider}, ${r.envelopeId}, ${JSON.stringify(r.signers)}::jsonb,
-          ${r.sentBy}::uuid, ${r.dueH ?? null}::int, ${r.remindEveryH ?? null}::int)
-        on conflict (tenant_id, contract_id) where status in ('sent', 'delivered') do nothing returning id`);
+      // CR-125 · gửi ký ⇒ một dòng lịch sử HĐ (người gửi, nhà cung cấp, danh sách người ký) cùng câu với phong bì.
+      const rows = await tx.execute(sql`with i as (insert into contracts.esign_envelopes
+            (tenant_id, contract_id, provider, envelope_id, signers, sent_by, due_h, remind_every_h)
+          values (${t}::uuid, ${r.contractId}::uuid, ${r.provider}, ${r.envelopeId}, ${JSON.stringify(r.signers)}::jsonb,
+            ${r.sentBy}::uuid, ${r.dueH ?? null}::int, ${r.remindEveryH ?? null}::int)
+          on conflict (tenant_id, contract_id) where status in ('sent', 'delivered') do nothing returning id, contract_id),
+        ev as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+          select ${t}::uuid, i.contract_id, 'esign_sent', ${r.sentBy}::uuid,
+            jsonb_build_object('provider', ${r.provider}::text,
+              'signers', (select coalesce(jsonb_agg(jsonb_build_object('role', s ->> 'role', 'name', s ->> 'name')), '[]'::jsonb)
+                from jsonb_array_elements(${JSON.stringify(r.signers)}::jsonb) s))
+          from i)
+        select id from i`);
       return rows.length === 1;
     },
     update: async (envelopeId, p) => {
-      await tx.execute(sql`update contracts.esign_envelopes set status = ${p.status}, reason = ${p.reason},
-          completed_at = ${p.completedAt}::timestamptz, signers = ${JSON.stringify(p.signers)}::jsonb, updated_at = now()
-        where tenant_id = ${t}::uuid and envelope_id = ${envelopeId}`);
+      // CR-125 · phong bì sang trạng thái cuối (đã ký / từ chối / huỷ / hết hạn) ⇒ MỘT dòng lịch sử HĐ (kèm ai đã ký lúc nào); gọi lại
+      // cùng trạng thái ⇒ không ghi đôi (so với trạng thái trước câu này).
+      await tx.execute(sql`with u as (update contracts.esign_envelopes set status = ${p.status}, reason = ${p.reason},
+            completed_at = ${p.completedAt}::timestamptz, signers = ${JSON.stringify(p.signers)}::jsonb, updated_at = now()
+          where tenant_id = ${t}::uuid and envelope_id = ${envelopeId} returning contract_id, status, reason, signers),
+        ev as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
+          select ${t}::uuid, u.contract_id,
+            case u.status when 'completed' then 'esign_signed' when 'declined' then 'esign_declined'
+              when 'voided' then 'esign_voided' else 'esign_expired' end,
+            null,
+            jsonb_strip_nulls(jsonb_build_object('reason', u.reason,
+              'signers', (select coalesce(jsonb_agg(jsonb_build_object('role', s ->> 'role', 'name', s ->> 'name',
+                'signed_at', s ->> 'signed_at')), '[]'::jsonb) from jsonb_array_elements(u.signers) s)))
+          from u
+          where u.status in ('completed', 'declined', 'voided', 'expired')
+            and (select o.status from contracts.esign_envelopes o
+              where o.tenant_id = ${t}::uuid and o.envelope_id = ${envelopeId}) is distinct from u.status)
+        select 1`);
     },
     attachSigned: async (envelopeId, f) => {
       const [lock] = await tx.execute<{ has: boolean }>(sql`select signed_file_id is not null as has
