@@ -55,8 +55,19 @@ describe("sổ module · mount thật", () => {
       "decided_by",
       "feedback",
     ]);
-    expect(moduleRegistry.bindingOf("contracts.esign")?.outputs).toEqual(["event"]);
-    expect(moduleRegistry.bindingOf("contracts.partner-send")?.outputs).toEqual(["event"]);
+    // CR-125 m9 · đủ cổng ra (không còn pending)
+    expect(moduleRegistry.bindingOf("contracts.esign")?.outputs).toEqual([
+      "event",
+      "signed_at",
+      "signer",
+      "envelope_id",
+    ]);
+    expect(moduleRegistry.bindingOf("contracts.partner-send")?.outputs).toEqual([
+      "event",
+      "partner_reason",
+      "round",
+    ]);
+    expect(moduleRegistry.bindingOf("core.bell")?.outputs).toEqual(["sent_to"]);
     expect(moduleRegistry.bindingOf("contracts.esign")?.optionsPath).toBe(
       "/pack/contracts/esign/options",
     );

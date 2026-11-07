@@ -28,6 +28,7 @@ function make(o: {
     esign: {
       contract: async () => (log.reads++, o.contract ?? null),
       lockForSign: async () => {},
+      latest: async () => ({ envelopeId: "env-1" }),
     },
     notify: {
       enqueue: async (rows: unknown[]) => {
@@ -79,6 +80,7 @@ describe("CR-120 · intakeTools", () => {
       await withP.tool("contracts-esign-send").run(CTX, { contract_id: ID, ...SIGNER }),
     ).toEqual({
       status: "sent",
+      envelope_id: "env-1", // CR-125 m9 · mã phong bì vừa tạo
     });
     expect(withP.log.sent).toEqual([
       [
