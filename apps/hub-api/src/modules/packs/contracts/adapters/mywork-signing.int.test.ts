@@ -33,9 +33,9 @@ const signer = (uid: string, order: number, signedAt: string | null) => ({
   status: signedAt ? "completed" : null,
   signed_at: signedAt,
 });
-async function envelope(cid: string, status: string, signers: object[], n = 1) {
+async function envelope(cid: string, status: string, signers: object[], n = 1, tag = "env-") {
   await o`insert into contracts.esign_envelopes (tenant_id, contract_id, provider, envelope_id, status, signers, sent_by)
-    select ${T}, ${cid}, 'misa', 'env-' || ${cid} || '-' || g, ${status}, ${o.json(signers as never)}, ${me}
+    select ${T}, ${cid}, 'misa', ${tag}::text || ${cid}::text || '-' || g, ${status}, ${o.json(signers as never)}, ${me}
     from generate_series(1, ${n}) g`;
 }
 
@@ -68,12 +68,14 @@ describe("CR-125 · x1 · signing[] (Chờ bạn ký)", () => {
     expect(rows.map((r) => r.contract_id).sort()).toEqual([K[0], K[5]].sort() as string[]);
   });
   it("người khác chỉ thấy phần của mình; tenant khác không thấy gì", async () => {
-    expect((await signing(T, other)).map((r) => r.contract_id)).toEqual([K[2] as string]);
+    expect((await signing(T, other)).map((r) => r.contract_id).sort()).toEqual(
+      [K[2], K[4]].sort() as string[],
+    ); // K4: thứ tự theo trường `order`, không theo vị trí trong mảng
     expect(await signing(T2, me)).toEqual([]);
   });
   it("1.000 phong bì: MỘT câu, ≤ 51 hàng, p95 thấp (đo thật)", async () => {
-    await envelope(K[0] as string, "completed", [signer(me, 1, null)], 950);
-    await envelope(K[1] as string, "sent", [signer(me, 1, null)], 50);
+    await envelope(K[0] as string, "completed", [signer(me, 1, null)], 950, "pc-");
+    await envelope(K[1] as string, "sent", [signer(me, 1, null)], 50, "ps-");
     const ms: number[] = [];
     let last: unknown[] = [];
     for (let i = 0; i < 30; i++) {
