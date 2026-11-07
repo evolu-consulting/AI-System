@@ -35,6 +35,7 @@ export type StageResult =
       sections?: Record<string, string>;
       summaries?: Record<string, string>;
       sourceReads?: readonly JobSourceRead[]; // P-b C18 · từ `job.result.source_reads`
+      fields?: Readonly<Record<string, string | number>>; // CR-125 m9 · trường Hub sinh (Thông báo `sent_to`), cùng INSERT
     }
   | { kind: "need_input"; question: string; choices: string[] }
   | { kind: "limit"; reason: DecisionReason }
@@ -181,8 +182,8 @@ async function dispatchEffects(
 type OutRow = { id: string; version: number; ok: boolean; missing: string[] };
 type WriteOutput = { out: OutRow; pending: PendingBlob | null };
 async function writeOutput(d: Deps, tx: Tx, c: Ctx): Promise<WriteOutput> {
-  const r = c.x.result as { text: string; sections?: Record<string, string>; summaries?: unknown };
-  const text = r.text;
+  const r = c.x.result as Extract<StageResult, { kind: "output" }>;
+  const { text } = r;
   const chk = checkTemplate(
     { requiredSections: c.def.output.required_sections, fields: c.def.output.fields as never },
     text,
@@ -203,7 +204,7 @@ async function writeOutput(d: Deps, tx: Tx, c: Ctx): Promise<WriteOutput> {
     values (${id}, ${c.head.tenant_id}, ${c.x.runId}, ${c.x.stageRunId}, ${c.idx},
       (select coalesce(max(version), 0) + 1 from hub.process_outputs where stage_run_id = ${c.x.stageRunId}),
       ${Number(c.stage.attempt)}, ${text}, ${r.sections ? JSON.stringify(r.sections) : null}::jsonb,
-      ${chk.fields ? JSON.stringify(chk.fields) : null}::jsonb,
+      ${chk.fields || r.fields ? JSON.stringify({ ...chk.fields, ...r.fields }) : null}::jsonb,
       ${r.summaries ? JSON.stringify(r.summaries) : null}::jsonb,
       ${ok}, ${missingArray(missing)}, ${att?.id ?? null},
       (select round from hub.stage_runs where id = ${c.x.stageRunId}))

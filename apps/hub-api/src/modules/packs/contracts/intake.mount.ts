@@ -10,8 +10,7 @@ import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { INTAKE_TOOL_KEYS, intakeTools } from "./adapters/intake.tools";
 import { contractLabelOf, signInviteBell } from "./application/esign-flow.usecase";
-import type { ESignEvent } from "./domain/esign-event.rules";
-import type { ESignModule } from "./esign.mount";
+import type { CompletedHook, ESignModule } from "./esign.mount";
 import { esignBindingBase } from "./nodes/esign/binding";
 import { mountPartnerSend } from "./partner-mailbox.mount";
 
@@ -25,9 +24,7 @@ export function intakeWiring(
   esign: ESignModule | undefined,
 ): {
   tools: PackToolDef[];
-  bindCompleted: (
-    fn: (tenantId: string, contractId: string, event: ESignEvent) => Promise<unknown>,
-  ) => void;
+  bindCompleted: (fn: CompletedHook) => void;
 } {
   const uow = createPackUow(db, "contracts", repos);
   return {
@@ -93,11 +90,13 @@ export function mountIntake(
   mountPartnerSend(d, db); // CR-124 · q3 · node «Gửi đối tác xác nhận» + cổng hộp thư liên công ty (bộ chuyển tắt mặc định)
   // CR-122 E3 · bắn đúng khoá theo trạng thái cuối (đã ký / từ chối / huỷ). Webhook + vòng đồng bộ trùng ⇒ `signalEvent` chỉ thả
   // stage đang chờ một lần (khoá run; lần sau stage đã xong ⇒ không còn chờ khoá đó).
-  bindCompleted(async (tenantId, contractId, event) => {
+  bindCompleted(async (tenantId, contractId, event, data) => {
+    // CR-125 m9 · `data` (mã phong bì, thời điểm ký, người ký) ⇒ đầu ra bước chờ của node Ký số, cùng tx thả bước.
     await d.packRuns?.port?.signalEvent(
       tenantId,
       { pack: "contracts", record_id: contractId },
       event,
+      data,
     );
   });
 }

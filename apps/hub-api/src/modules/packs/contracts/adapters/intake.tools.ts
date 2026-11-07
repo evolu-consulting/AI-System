@@ -32,7 +32,7 @@ export const INTAKE_TOOL_KEYS = {
 
 type R = {
   extraction: Pick<ExtractionRepo, "source">;
-  esign: Pick<ESignRepo, "contract" | "lockForSign">;
+  esign: Pick<ESignRepo, "contract" | "lockForSign" | "latest">;
 } & NotifyTxRepos;
 export type IntakeToolDeps = {
   uow: PackUow<R>;
@@ -169,7 +169,9 @@ function rawIntakeTools(d: IntakeToolDeps): PackToolDef[] {
         // E5 · args GHI ĐÈ cài đặt app; không có cấu hình node ⇒ đúng đường cũ (4 tham số).
         if (p.custom) await d.send(ctx.tenantId, p.signer, id, p.signers, undefined, p.node);
         else await d.send(ctx.tenantId, p.signer, id, p.signers);
-        return { status: "sent" };
+        // CR-125 m9 · mã phong bì vừa tạo (đầu ra `envelope_id` của stage gửi; stage chờ cũng ghi khi phong bì xong).
+        const e = await d.uow.tenant(who(ctx), (r) => r.esign.latest(id));
+        return e ? { status: "sent", envelope_id: e.envelopeId } : { status: "sent" };
       },
     },
     {

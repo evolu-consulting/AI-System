@@ -64,21 +64,11 @@ describe("cổng đủ nhãn nghiệp vụ", () => {
     expect(keys("core.email")).toEqual(["sent_to"]);
     expect(keys("core.if")).toEqual([]);
   });
-  test("danh sách đầu ra CHƯA ghi (pending) — lát engine làm xong thì bỏ khỏi đây và khỏi node.ts", () => {
+  test("danh sách đầu ra CHƯA ghi (pending) — CR-125 m9: engine ghi hết ⇒ rỗng (node mới thêm pending thì ghi vào đây)", () => {
     const pending = NODES.flatMap((n) =>
       n.outputs.filter((o) => o.pending).map((o) => `${n.key}:${o.key}`),
     );
-    expect(pending.sort()).toEqual(
-      [
-        "contracts.esign:envelope_id",
-        "contracts.esign:signed_at",
-        "contracts.esign:signer",
-        "contracts.partner-send:partner_reason",
-        "contracts.partner-send:round",
-        "core.bell:sent_to",
-        "core.email:sent_to",
-      ].sort(),
-    );
+    expect(pending).toEqual([]);
   });
 });
 
@@ -231,14 +221,18 @@ describe("flowMapSources · flow thật từ sổ MODULES", () => {
       stage("bao", "notify", "core.bell"),
     ],
   };
-  test("nguồn tại Thông báo = Bắt đầu khi + Duyệt (khớp theo executor) + Ký số MỘT lần; pending bỏ", () => {
+  test("nguồn tại Thông báo = Bắt đầu khi + Duyệt (khớp theo executor) + Ký số MỘT lần (stage chờ, đủ 4 cổng)", () => {
     const ids = flowMapSources(def, 3).map((s) => s.id);
     expect(ids).toContain("contract_id");
     expect(ids).toEqual(
       expect.arrayContaining(["duyet:decision", "duyet:decided_by", "duyet:feedback"]),
     );
-    expect(ids.filter((i) => i.startsWith("ky_"))).toEqual(["ky_cho:event"]);
-    expect(ids.some((i) => i.endsWith(":signed_at"))).toBe(false);
+    expect(ids.filter((i) => i.startsWith("ky_"))).toEqual([
+      "ky_cho:event",
+      "ky_cho:signed_at",
+      "ky_cho:signer",
+      "ky_cho:envelope_id",
+    ]);
   });
   test("bước đầu chỉ thấy Bắt đầu khi", () => {
     expect(flowMapSources(def, 0).every((s) => s.from === "start")).toBe(true);

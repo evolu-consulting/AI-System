@@ -15,10 +15,10 @@ import type { RunState } from "../../domain/runs/run-state.rules";
 import { waitedText, waitOutputMd } from "../../domain/timers/due-at.rules";
 import {
   TIMEOUT_KEY,
-  WAIT_EVENT_FIELD,
   type WaitEventExec,
   waitKeysOf,
 } from "../../domain/timers/wait-event-branch.rules";
+import { type WaitSignal, waitEventFields } from "../../domain/timers/wait-event-data.rules";
 import type { ProcessRunStatus, StageRunStatus } from "../../domain/types";
 import { persistStage } from "../../runs/step-persist";
 import { type SnapshotStages, waitOriginalDue } from "./timer-origin";
@@ -119,7 +119,7 @@ async function finishWait(
   c: Ctx,
   runId: string,
   stageRunId: string,
-  w: { dueAt: Date; timezone: string },
+  w: { dueAt: Date; timezone: string; signal?: WaitSignal },
 ): Promise<void> {
   const h = await head(c, runId);
   const s = await stageOf(c.tx, c.tenantId, runId, stageRunId);
@@ -145,10 +145,10 @@ async function waitMd(
     runId: string;
     h: Head;
     s: StageRow;
-    w: { dueAt: Date; timezone: string };
+    w: { dueAt: Date; timezone: string; signal?: WaitSignal };
     name: string;
   },
-): Promise<{ md: string; fields: Record<string, string> | null }> {
+): Promise<{ md: string; fields: Record<string, string | number> | null }> {
   const { h, s, w, name } = x;
   const ex = h.snapshot.stages?.[s.stage_idx]?.executor;
   const keys = waitKeysOf(ex as WaitEventExec | undefined);
@@ -174,7 +174,8 @@ async function waitMd(
       won === TIMEOUT_KEY
         ? `Hết hạn chờ sự kiện ${keys[0]}; chạy tiếp.`
         : `Đã nhận sự kiện ${won}.`;
-    return { md: waitOutputMd(name, text), fields: { [WAIT_EVENT_FIELD]: won } };
+    // CR-125 m9 · dữ liệu kèm sự kiện (thời điểm ký, người ký, mã phong bì, lý do đối tác…) vào CÙNG output, chỉ khi đúng sự kiện thắng.
+    return { md: waitOutputMd(name, text), fields: waitEventFields(won, w.signal) };
   }
   // `due_at` có thể đã bị lùi (#4) ⇒ output in mốc cấu hình gốc, không in giờ đã lùi.
   const target = await waitOriginalDue(c.tx, c.tenantId, {
@@ -235,7 +236,7 @@ async function insertOutput(
     runId: string;
     stage: StageRow;
     md: string;
-    fields?: Record<string, string> | null;
+    fields?: Record<string, string | number> | null;
   },
 ): Promise<string> {
   const id = crypto.randomUUID();

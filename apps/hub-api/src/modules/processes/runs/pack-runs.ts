@@ -385,7 +385,8 @@ export function packRunsOf(d: ProcessDeps, sys?: Pick<SystemUow, "system">): Pac
     },
     cancelSys: (tenantId, runId) => cancelSys(d, tenantId, runId),
     updateInputs: (r, patch) => updatePackInputs(d, r, patch), // CR-121 F-5
-    signalEvent: (tenantId, ref, event) => signalPackEvent(d, sys, { tenantId, ref, event }),
+    signalEvent: (tenantId, ref, event, data) =>
+      signalPackEvent(d, sys, { tenantId, ref, event, ...(data ? { data } : {}) }),
     retryDecision: (u, runId) => retryDecision(d, gates, u, runId),
     ...sysReads(d),
     stepsView: (u, runId) => stepsView(d, u, runId),

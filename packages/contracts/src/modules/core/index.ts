@@ -50,13 +50,12 @@ export const APPROVE_OUTPUTS: FeatureNodeDecl["outputs"] = [
   },
 ];
 
-/** Thông báo (chuông / email): người nhận thật sự được gửi tới. Chưa ghi vào dữ liệu lượt chạy (cần sửa node `notify` của engine) ⇒ `pending`. */
+/** Thông báo (chuông / email): người nhận thật sự được gửi tới (CR-125 m9 · node `notify` ghi tên người nhận vào output). */
 const NOTIFY_OUTPUTS: FeatureNodeDecl["outputs"] = [
   {
     key: "sent_to",
     type: "string",
     required: false,
-    pending: true,
     label: { vi: "Người nhận thông báo", en: "Notified recipients" },
   },
 ];

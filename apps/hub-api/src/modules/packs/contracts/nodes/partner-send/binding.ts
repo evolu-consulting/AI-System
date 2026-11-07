@@ -13,8 +13,9 @@ export const partnerSendBinding = (): NodeBinding => {
   return {
     key: PARTNER_SEND_KEY,
     tools: [PARTNER_TOOL_KEY],
-    // CR-125 · m8 · stage chờ ghi `event` (xác nhận / trả lại / từ chối / hết hạn); `partner_reason` + `round` còn `pending` (cần ghi vào output).
-    outputs: ["event"],
+    // CR-125 · m8 · stage chờ ghi `event` (xác nhận / trả lại / từ chối / hết hạn); m9 · + `round` / `partner_reason` kèm tín hiệu trả lời
+    // (`partnerReplyData`, partner-mailbox.mount.ts).
+    outputs: ["event", "partner_reason", "round"],
     ...(schema ? { argsSchema: schema } : {}),
   };
 };

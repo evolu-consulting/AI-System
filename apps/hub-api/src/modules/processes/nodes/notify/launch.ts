@@ -4,7 +4,7 @@
 // được đây thì `dedup_key` chặn gửi lần 2. Người nhận rỗng ⇒ vẫn xong, .md ghi cảnh báo + log warn. Gửi lỗi ⇒ vòng gửi thử lại.
 import { sql } from "drizzle-orm";
 import { logger } from "../../../../lib/logger";
-import { enqueueRunNotice } from "../../adapters/notify/run-notify.repo";
+import { enqueueRunNotice, priorStepFields } from "../../adapters/notify/run-notify.repo";
 import { stateOf } from "../../adapters/tools/tool-stage.repo";
 import * as core from "../../core/core.repo";
 import { processUpdated } from "../../core/events";
@@ -15,9 +15,11 @@ import { stageRowById } from "../../runs/step-persist";
 import { effects, headOf, type SnapStage } from "../../runs/team-runner";
 import {
   notifyDedupKey,
+  notifyFields,
   notifyKindOf,
   notifyOutputMd,
   notifyTargets,
+  notifyVars,
   renderNotify,
 } from "./notify.rules";
 
@@ -37,14 +39,17 @@ async function launchNotify(d: LauncherDeps, tx: Tx, c: LaunchCtx): Promise<Kick
   if (!head || !stage) return { kind: "skip" };
   const inputs = setInputsOf(c.head.inputs);
   const t = notifyTargets(ex, c.u.userId, inputs);
-  const title = renderNotify(ex.title, inputs, 200) || c.def.name;
+  // CR-125 m9 · mẫu `{khoá}` đọc cả đầu ra các bước trước (vd `{signed_at}` của Ký số); người nhận vẫn chỉ theo input.
+  const prior = await priorStepFields(tx, { tenantId, runId: c.runId, beforeIdx: c.idx });
+  const vars = notifyVars(inputs, prior);
+  const title = renderNotify(ex.title, vars, 200) || c.def.name;
   const sent = await enqueueRunNotice(tx, {
     runId: c.runId,
     tenantId,
     ...t,
     kind: notifyKindOf(ex),
     title,
-    body: renderNotify(ex.body, inputs, 2000),
+    body: renderNotify(ex.body, vars, 2000),
     dedupKey: notifyDedupKey(c.runId, c.stage.id, c.stage.round, c.stage.attempt),
   });
   if (sent.recipients === 0)
@@ -58,7 +63,11 @@ async function launchNotify(d: LauncherDeps, tx: Tx, c: LaunchCtx): Promise<Kick
     stageRunId: c.stage.id,
     hubRunId: "",
     jobId: null,
-    result: { kind: "output" as const, text: notifyOutputMd(c.def.name, { ...sent, title }) },
+    result: {
+      kind: "output" as const,
+      text: notifyOutputMd(c.def.name, { ...sent, title }),
+      fields: notifyFields(sent.names), // CR-125 m9 · `sent_to` cùng câu INSERT output
+    },
     tokens: 0,
   };
   const ctx = { x, head, stage, def, idx: c.idx, ev, next: tr.next, list: tr.effects };

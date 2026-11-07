@@ -36,6 +36,28 @@ export function renderNotify(tpl: string, inputs: Readonly<Record<string, string
   return out.trim().slice(0, max);
 }
 
+/**
+ * CR-125 m9 · biến mẫu `{khoá}` = đầu ra các bước trước (theo thứ tự stage, bước sau đè) + input của lượt (input THẮNG khi trùng khoá —
+ * giữ mẫu cũ). Chỉ giá trị chuỗi / số hữu hạn / đúng-sai.
+ */
+export function notifyVars(
+  inputs: Readonly<Record<string, string>>,
+  prior: readonly Readonly<Record<string, unknown>>[],
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const f of prior)
+    for (const [k, v] of Object.entries(f)) {
+      if (typeof v === "string") out[k] = v;
+      else if ((typeof v === "number" && Number.isFinite(v)) || typeof v === "boolean")
+        out[k] = String(v);
+    }
+  return { ...out, ...inputs };
+}
+
+/** CR-125 m9 · đầu ra `sent_to` (Người nhận thông báo): tên người nhận; không ai ⇒ không có khoá. */
+export const notifyFields = (names: string): Record<string, string> =>
+  names.trim() ? { sent_to: names.trim().slice(0, 1000) } : {};
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Người nhận đã tách: user id (người bắt đầu + user ở input) + mã Group. Id sai dạng bị bỏ (SQL còn lọc theo công ty của run). */
 export function notifyTargets(

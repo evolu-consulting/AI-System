@@ -98,6 +98,14 @@ export function receiveInbox(db: Db) {
     });
 }
 
+/** CR-125 m9 · đầu ra node «Gửi đối tác xác nhận» kèm tín hiệu trả lời: lần gửi + lý do đối tác nêu (vắng/rỗng ⇒ không có khoá). */
+export function partnerReplyData(r: Pick<PartnerReplyRow, "round" | "reason">) {
+  const out: Record<string, string | number> = { round: r.round };
+  const why = r.reason?.trim() ?? "";
+  if (why) out.partner_reason = why;
+  return out;
+}
+
 /** Tenant GỬI: nhóm theo tenant, mỗi tenant 1 câu đóng lần gửi; rồi 1 `signalEvent` mỗi trả lời (idempotent, thả stage chờ đúng một lần). */
 export function onPartnerReplies(db: Db, packRuns: () => PackRunsBridge | undefined) {
   return async (rows: readonly PartnerReplyRow[]): Promise<void> => {
@@ -113,6 +121,7 @@ export function onPartnerReplies(db: Db, packRuns: () => PackRunsBridge | undefi
           tenantId,
           { pack: PACK, record_id: r.ref },
           `partner.${r.outcome}`,
+          partnerReplyData(r),
         );
       }
     }

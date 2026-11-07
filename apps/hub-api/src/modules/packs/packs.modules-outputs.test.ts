@@ -27,13 +27,22 @@ describe("đầu ra khai báo × binding thật", () => {
       .filter((i) => i.code === "MOD_OUTPUT_UNBOUND");
     expect(issues).toEqual([]);
   });
-  it("Duyệt ghi decision/decided_by/feedback; Ký số và Gửi đối tác ghi event; Thông báo chưa ghi gì", () => {
+  it("Duyệt ghi decision/decided_by/feedback; Ký số, Gửi đối tác, Thông báo ghi đủ cổng (CR-125 m9)", () => {
     const r = realRegistry();
     expect(r.bindingOf("core.approve")?.outputs).toEqual(["decision", "decided_by", "feedback"]);
-    expect(r.bindingOf("contracts.esign")?.outputs).toEqual(["event"]);
-    expect(r.bindingOf("contracts.partner-send")?.outputs).toEqual(["event"]);
-    expect(r.bindingOf("core.bell")?.outputs).toEqual([]);
-    expect(Object.keys(CORE_WRITTEN_OUTPUTS)).toEqual(["core.approve"]);
+    expect(r.bindingOf("contracts.esign")?.outputs).toEqual([
+      "event",
+      "signed_at",
+      "signer",
+      "envelope_id",
+    ]);
+    expect(r.bindingOf("contracts.partner-send")?.outputs).toEqual([
+      "event",
+      "partner_reason",
+      "round",
+    ]);
+    expect(r.bindingOf("core.bell")?.outputs).toEqual(["sent_to"]);
+    expect(Object.keys(CORE_WRITTEN_OUTPUTS)).toEqual(["core.approve", "core.email", "core.bell"]);
   });
   it("gỡ khoá ghi của Duyệt ⇒ MOD_OUTPUT_UNBOUND nói rõ node, cổng và file", () => {
     const r = createModuleRegistry({

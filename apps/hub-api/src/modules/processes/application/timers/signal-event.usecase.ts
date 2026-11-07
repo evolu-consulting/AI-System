@@ -2,6 +2,7 @@
 // timer. Luôn ghi sự kiện (gói bắn trước khi run tới bước chờ ⇒ `enterTimedWait` thấy `already`); stage `wait_event` đang chờ đúng khoá
 // ⇒ huỷ hẹn hạn + `finishWait` (stage `done`, join bước, kick qua outbox). Run đã kết thúc / không thấy ⇒ `no_run` (không ghi).
 import { isTerminal } from "../../domain/runs/run-state.rules";
+import type { EventData } from "../../domain/timers/wait-event-data.rules";
 import type { TxRepos } from "../ports";
 
 export type SignalRepos = Pick<TxRepos, "runs" | "timers" | "stageTimers" | "runEvents">;
@@ -10,7 +11,7 @@ export type SignalOutcome = { kind: "no_run" } | { kind: "ok"; released: number 
 
 export async function signalEvent(
   r: SignalRepos,
-  i: { runId: string; event: string; now: Date; timezone?: string },
+  i: { runId: string; event: string; now: Date; timezone?: string; data?: EventData },
 ): Promise<SignalOutcome> {
   const run = await r.runs.lock(i.runId);
   if (!run || isTerminal(run.status)) return { kind: "no_run" };
@@ -26,6 +27,8 @@ export async function signalEvent(
     await r.stageTimers.finishWait(i.runId, stageRunId, {
       dueAt: i.now,
       timezone: i.timezone ?? "UTC",
+      // CR-125 m9 · dữ liệu kèm ghi vào output stage chờ CÙNG câu INSERT của `finishWait` (cùng tx; bắn lại ⇒ stage đã xong, không ghi).
+      ...(i.data ? { signal: { event: i.event, data: i.data } } : {}),
     });
     released++;
   }

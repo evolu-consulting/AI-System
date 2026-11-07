@@ -38,6 +38,7 @@ import { type EsignSyncDeps, esignSyncEnv } from "./application/esign-sync";
 import { metaOf, providerEntriesOf } from "./domain/esign.providers";
 import { docusignConfigOf } from "./domain/esign.rules";
 import { type ESignEvent, esignEventOf } from "./domain/esign-event.rules";
+import { esignOutputsOf } from "./domain/esign-outputs.rules";
 import { esignBindingChecks } from "./nodes/esign/binding";
 
 type EnvMap = Record<string, string | undefined>;
@@ -78,6 +79,14 @@ export function staticESignRegistry(ps: readonly ESignProvider[]): ESignRegistry
 
 export type ESignSeam = { provider?: ESignProvider | null; providers?: ESignProvider[] };
 
+/** Hook trạng thái cuối: khoá sự kiện + dữ liệu kèm (đầu ra node Ký số, `esignOutputsOf`). */
+export type CompletedHook = (
+  tenantId: string,
+  contractId: string,
+  event: ESignEvent,
+  data: Record<string, string>,
+) => Promise<unknown>;
+
 const registryOf = (s: ESignSeam | undefined): ESignRegistry => {
   if (s?.providers) return staticESignRegistry(s.providers);
   if (s && s.provider !== undefined) return staticESignRegistry(s.provider ? [s.provider] : []);
@@ -92,9 +101,7 @@ export type ESignModule = ESignUsecase & {
   bindView(view: PackAccessView): void;
   /** CR-120 · G6 · CR-122 E3 · phong bì sang trạng thái CUỐI ⇒ gọi hook với khoá sự kiện (`esign.completed|declined|voided`) — gói bắn
    *  cho lượt đang chờ; lỗi hook không làm hỏng đồng bộ. */
-  bindCompleted(
-    fn: (tenantId: string, contractId: string, event: ESignEvent) => Promise<unknown>,
-  ): void;
+  bindCompleted(fn: CompletedHook): void;
   /** esign-sweep · bật vòng nền bước Ký số (một lần; tắt ngoài dev/prod hoặc `CONTRACTS_ESIGN_SWEEP=off`). */
   startSweep(view: PackAccessView): void;
 };
@@ -113,9 +120,14 @@ export function esignModule(
 ): ESignModule {
   const uow = createPackUow(db, "contracts", repos);
   let flow: EsignFlow | null = null;
-  let completed:
-    | ((tenantId: string, contractId: string, event: ESignEvent) => Promise<unknown>)
-    | null = null;
+  let completed: CompletedHook | null = null;
+  // CR-125 m9 · phong bì vừa sang trạng thái cuối (đã cập nhật) ⇒ đầu ra node Ký số (mã phong bì, thời điểm ký, người ký). MỘT câu đọc.
+  // Đọc lỗi ⇒ vẫn bắn sự kiện (không dữ liệu kèm) — rẽ nhánh của flow không phụ thuộc phần phụ này.
+  const envelopeData = (tid: string, contractId: string): Promise<Record<string, string>> =>
+    uow
+      .system(tid, (r) => r.esign.latest(contractId))
+      .then((e) => (e ? esignOutputsOf(e) : {}))
+      .catch(() => ({}));
   const providers = registryOf(d.esign);
   /** Đổi trạng thái phong bì ⇒ báo người gửi + người ký (lỗi đẩy không làm hỏng luồng ký). */
   const push = async (tid: string, id: string, st: ESignStatus): Promise<void> => {
@@ -153,13 +165,15 @@ export function esignModule(
       await push(tid, id, st);
       await flow?.onStatus(tid, id, st);
       const ev = esignEventOf(st);
-      if (ev)
-        await completed?.(tid, id, ev).catch((e: unknown) =>
-          logger.warn("esign-completed-hook-failed", {
-            contract_id: id,
-            error: e instanceof Error ? e.name : "unknown",
-          }),
-        );
+      if (ev && completed)
+        await envelopeData(tid, id)
+          .then((data) => completed?.(tid, id, ev, data))
+          .catch((e: unknown) =>
+            logger.warn("esign-completed-hook-failed", {
+              contract_id: id,
+              error: e instanceof Error ? e.name : "unknown",
+            }),
+          );
     },
     warn: (m, meta) => logger.warn(m, meta),
   });

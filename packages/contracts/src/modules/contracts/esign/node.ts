@@ -56,7 +56,7 @@ export const ESIGN_NODE: FeatureNodeDecl = {
     },
   ],
   // CR-125 · m8 · cổng ra đủ, nhãn nghiệp vụ. `event` (đã ký / từ chối / huỷ / hết hạn) do stage chờ ghi (`WAIT_EVENT_FIELD`) = «outcome».
-  // Ba cổng còn lại cần ghi dữ liệu phong bì vào lúc stage chờ xong (engine timer) ⇒ `pending` tới khi lát Opus làm.
+  // CR-125 · m9 · ba cổng còn lại = dữ liệu phong bì kèm sự kiện `esign.*`, ghi cùng output stage chờ (hub esign-outputs.rules.ts).
   outputs: [
     {
       key: "event",
@@ -68,21 +68,18 @@ export const ESIGN_NODE: FeatureNodeDecl = {
       key: "signed_at",
       type: "date",
       required: false,
-      pending: true,
       label: { vi: "Thời điểm ký xong", en: "Signed at" },
     },
     {
       key: "signer",
       type: "string",
       required: false,
-      pending: true,
       label: { vi: "Người ký", en: "Signer" },
     },
     {
       key: "envelope_id",
       type: "string",
       required: false,
-      pending: true,
       label: { vi: "Mã phong bì ký", en: "Envelope id" },
     },
   ],

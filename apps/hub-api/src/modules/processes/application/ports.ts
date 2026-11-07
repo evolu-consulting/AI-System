@@ -4,6 +4,7 @@
 import type { BranchRule } from "../domain/branch/branch-def.rules";
 import type { IfExec } from "../domain/if/if.rules";
 import type { RetryState } from "../domain/runs/retry.rules";
+import type { WaitSignal } from "../domain/timers/wait-event-data.rules";
 import type {
   NoticeKind,
   ProcessRunStatus,
@@ -81,7 +82,12 @@ export type StageTimerRepo = {
   finishWait(
     runId: string,
     stageRunId: string,
-    w: { dueAt: Date; timezone: string },
+    w: {
+      dueAt: Date;
+      timezone: string;
+      /** CR-125 m9 · sự kiện vừa bắn + dữ liệu kèm ⇒ trường output stage chờ (chỉ khi đúng sự kiện thắng). */
+      signal?: WaitSignal;
+    },
   ): Promise<void>;
 };
 /** CR-120 · G4 · sự kiện run (`hub.process_run_events`) + stage `wait_event` đang chờ; mọi câu lọc `tenant_id`. */

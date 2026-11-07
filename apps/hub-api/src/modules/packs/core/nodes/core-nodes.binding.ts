@@ -6,11 +6,14 @@ import { type ModuleRegistry, moduleRegistry } from "../../kit/public";
 
 /**
  * CR-125 · m8 · đầu ra mà engine ĐÃ ghi vào `process_outputs.fields` của bước cơ bản: Duyệt ghi `decision` + `decided_by` + `feedback`
- * (`processes/gates/approve-out.ts`, cùng tx với quyết định). Thông báo (`sent_to`) engine chưa ghi ⇒ `pending` ở khai báo.
+ * (`processes/gates/approve-out.ts`, cùng tx với quyết định). CR-125 m9 · Thông báo (chuông / email) ghi `sent_to` = tên người nhận
+ * (`processes/nodes/notify/launch.ts`, cùng câu INSERT output).
  * Thêm đầu ra bước cơ bản = engine ghi + khoá ở đây + bỏ `pending` ở contracts (sổ module kiểm hai chiều).
  */
 export const CORE_WRITTEN_OUTPUTS: Readonly<Record<string, readonly string[]>> = {
   "core.approve": ["decision", "decided_by", "feedback"],
+  "core.email": ["sent_to"],
+  "core.bell": ["sent_to"],
 };
 
 export function bindCoreNodes(registry: ModuleRegistry = moduleRegistry): string[] {

@@ -52,7 +52,7 @@ export const PARTNER_SEND_NODE: FeatureNodeDecl = {
     },
   ],
   // CR-125 · m8 · cổng ra đủ, nhãn nghiệp vụ. `event` (xác nhận / trả lại / từ chối / hết hạn) do stage chờ ghi = «partner_outcome».
-  // `partner_reason` (lý do đối tác nêu) và `round` (lần gửi) chưa vào dữ liệu lượt chạy ⇒ `pending` tới khi lát Opus làm.
+  // CR-125 · m9 · `partner_reason` (lý do đối tác nêu) và `round` (lần gửi) kèm tín hiệu trả lời, ghi cùng output stage chờ.
   outputs: [
     {
       key: "event",
@@ -64,14 +64,12 @@ export const PARTNER_SEND_NODE: FeatureNodeDecl = {
       key: "partner_reason",
       type: "string",
       required: false,
-      pending: true,
       label: { vi: "Lý do đối tác nêu", en: "Partner reason" },
     },
     {
       key: "round",
       type: "number",
       required: false,
-      pending: true,
       label: { vi: "Lần gửi thứ", en: "Send round" },
     },
   ],
