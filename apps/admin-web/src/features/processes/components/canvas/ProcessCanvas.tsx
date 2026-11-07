@@ -5,7 +5,7 @@
 // dlc-step-library: sơ đồ DLC ⇒ cạnh "Từ chối" tới NODE đích (không tới tiêu đề cột), cạnh tiến sau bước có cổng mang nhãn "Duyệt";
 // `linkable` ⇒ kéo cổng "Từ chối" của bước nào có cổng cũng nối được (`ops.linkReject` kiểm đích đứng trước).
 import { type EdgeInsertInfo, FlowCanvas, type FlowLabels, toEdge } from "@ai/flow-canvas";
-import { layoutSteps, NODE_H, NODE_W, stepFromDropX } from "@ai/flow-canvas/pure";
+import { layoutSteps, stepFromDropX } from "@ai/flow-canvas/pure";
 import type { Edge, Node, XYPosition } from "@xyflow/react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";

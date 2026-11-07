@@ -1,5 +1,7 @@
 // CR-122 · U1 · FLOW2-FR-02/15/16: thân MỘT trình sửa flow cho Thư viện lẫn bản công ty — node Bắt đầu khi ở đầu, bảng node theo
 // manifest + canvas (children), lỗi theo `flowDefIssues`. Canvas mặc định; trigger giữ ở state của trang (gửi kèm khi Lưu).
+
+import { startOutputsOf } from "@ai/contracts/app-manifest";
 import type { FlowTrigger } from "@ai/contracts/hub-admin";
 import { type ReactNode, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -46,12 +48,16 @@ export function FlowEditorBody({
 }: Props) {
   const { t } = useTranslation();
   const palette = usePalette(meta.app, tenantId);
-  const problems = useMemo(() => edgeProblems(stages, palette.data ?? []), [stages, palette.data]);
+  const event = eventOf(meta.app, trigger.event);
+  const start = useMemo(() => startOutputsOf(event), [event]);
+  const problems = useMemo(
+    () => edgeProblems(stages, palette.data ?? [], start),
+    [stages, palette.data, start],
+  );
   const issues = useMemo(
     () => validateFlowDef(toFlowDef(stages, { ...meta, trigger }), meta.app),
     [stages, meta, trigger],
   );
-  const event = eventOf(meta.app, trigger.event);
   const whenErr = issues.find((i) => i.path.startsWith("trigger"));
   const others = issues.filter((i) => !i.path.startsWith("trigger"));
   const onEvent = (key: string) => {

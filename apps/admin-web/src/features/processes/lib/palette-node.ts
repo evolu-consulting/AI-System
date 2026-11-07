@@ -43,9 +43,14 @@ export type EdgeProblem = {
 };
 
 /** Cạnh vàng: mỗi cặp bước liền kề (bước k → bước k+1) mà đầu vào bắt buộc của sau không có ở đầu ra của trước / lệch kiểu. */
+/**
+ * `start` = đầu ra của node Bắt đầu khi (bản ghi HĐ + dữ kiện): có ở MỌI bước sau (flow bắt đầu từ một HĐ ⇒ bước nào cũng biết HĐ nào) nên
+ * không tính là thiếu — người dùng không bị nhắc "bước trước không có Hợp đồng" ở flow bắt đầu từ HĐ.
+ */
 export function edgeProblems(
   stages: readonly StageDraft[],
   nodes: readonly AppNodeDecl[],
+  start: readonly AppNodeIo[] = [],
 ): EdgeProblem[] {
   const byKey = new Map(nodes.map((n) => [n.key, n]));
   const steps = [...new Set(stages.map((s) => s.step))].sort((a, b) => a - b);
@@ -53,7 +58,10 @@ export function edgeProblems(
     const next = steps[i + 1];
     if (next === undefined) return [];
     const a = stages.find((s) => s.step === st);
-    const prevOuts = stages.filter((s) => s.step === st).flatMap((s) => outputsOf(s, byKey));
+    const prevOuts = [
+      ...start,
+      ...stages.filter((s) => s.step === st).flatMap((s) => outputsOf(s, byKey)),
+    ];
     // hai stage của CÙNG một node bảng (vd Ký số = gửi + chờ) nối với nhau bên trong node, không phải cạnh giữa hai node.
     return stages
       .filter((b) => b.step === next && !!a && !(b.node && a.node === b.node))

@@ -4,13 +4,15 @@
 export const BRANCH_OPS = ["eq", "ne", "lt", "le", "gt", "ge"] as const;
 export const BRANCH_RULES_MAX = 20;
 export type BranchOp = (typeof BRANCH_OPS)[number];
-export type BranchFieldType = "number" | "string" | "date";
+export type BranchFieldType = "number" | "string" | "date" | "boolean";
 
 const ORDER_OPS: readonly BranchOp[] = ["lt", "le", "gt", "ge"];
 
-/** Phép so sánh dùng được cho trường kiểu `type`: `lt…ge` chỉ cho Số/Ngày. */
+/** Phép so sánh dùng được cho trường kiểu `type`: `lt…ge` chỉ cho Số/Ngày; Có/Không chỉ "là / không là". */
 export function opsForType(type: string): readonly BranchOp[] {
-  return type === "string" ? BRANCH_OPS.filter((o) => !ORDER_OPS.includes(o)) : BRANCH_OPS;
+  return type === "string" || type === "boolean"
+    ? BRANCH_OPS.filter((o) => !ORDER_OPS.includes(o))
+    : BRANCH_OPS;
 }
 
 /** Stage `i` đứng một mình trong bước của nó (chỉ khi đó rẽ nhánh được). */

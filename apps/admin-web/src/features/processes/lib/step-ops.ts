@@ -6,7 +6,9 @@ import { getStagesMax } from "./stages-limit";
 export type Stepped = { uid: string; step: number; backTo: number[]; after: "review" | "auto" };
 export const ERR_STEP_FULL = "process.admin.canvas.err.stepFull";
 export const ERR_STAGES_MAX = "process.admin.canvas.err.stagesMax";
-export type StepOpError = typeof ERR_STEP_FULL | typeof ERR_STAGES_MAX;
+/** CR-123 · u4 · thả / chèn bước hành động thật (Ký số) mà bước ngay trước chưa có người duyệt. */
+export const ERR_REAL_NEEDS = "process.admin.canvas.err.realNeedsReview";
+export type StepOpError = typeof ERR_STEP_FULL | typeof ERR_STAGES_MAX | typeof ERR_REAL_NEEDS;
 /** `error` ⇒ không đổi gì; `step` = bước (0-based) bị đầy, để nội suy câu lỗi. */
 export type StepOpResult<T> = { stages: T[] } | { error: StepOpError; step?: number };
 

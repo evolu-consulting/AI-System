@@ -143,8 +143,11 @@ export function MoreRight({ label }: { label: string }) {
 
 /** CR-123 · p25: chỉ cạnh nối HAI giai đoạn (tiến thường hoặc Đúng/Sai) chọn / nối lại đầu đích / xoá được; cạnh còn lại (quay lại, nút gộp, cầu nối, bắt đầu) thì không. */
 export function editableEdges(edges: Edge[], uids: ReadonlySet<string>): Edge[] {
-  return edges.map((e) => {
+  return edges.map((e0) => {
+    let e = e0;
     const side = (e.data as { side?: string } | undefined)?.side;
+    // cổng Đúng/Sai ở node đã có nhãn chữ (IfPort) ⇒ cạnh không in nhãn lần nữa
+    if (side) e = { ...e, data: { ...e.data, noLabel: true } };
     const plain =
       uids.has(e.source) &&
       uids.has(e.target) &&

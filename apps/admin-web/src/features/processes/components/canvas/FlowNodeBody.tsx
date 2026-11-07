@@ -68,12 +68,14 @@ export function FlowNodeBody({ v }: { v: StageView }) {
   const mod = s.node ? palette.data?.find((n) => n.key === s.node) : undefined;
   const kind = mod ? nodeLabel(mod, i18n.language) : t(`process.admin.flow.node.${kindOf(s)}`);
   const summary = summaryOf(s, l);
+  // loại kỹ thuật ("Chuẩn bị dữ liệu", "Agent") không phải việc nghiệp vụ của giám đốc/sale ⇒ không hiện dưới tên bước
+  const hideKind = !mod && (kindOf(s) === "set" || kindOf(s) === "agent");
   return (
     <span className="block min-w-0 text-left">
       <span className="block truncate text-label font-medium" title={name}>
         {name}
       </span>
-      {kind !== name ? (
+      {kind !== name && !hideKind ? (
         <span className="block truncate text-caption text-muted-foreground">{kind}</span>
       ) : null}
       {summary ? (

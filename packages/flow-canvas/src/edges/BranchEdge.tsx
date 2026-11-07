@@ -66,17 +66,19 @@ function BranchEdgeImpl(p: EdgeProps) {
           on={on}
         />
       ) : null}
-      <EdgeLabelRenderer>
-        <span
-          data-testid={d?.side ? `if-edge-${d.side}` : undefined}
-          style={{ transform: `translate(-50%, -50%) translate(${lx}px, ${ly}px)` }}
-          className={`pointer-events-none absolute rounded-full px-2 py-0.5 text-caption font-medium ${
-            s?.pill ?? "rounded bg-accent text-accent-foreground"
-          }`}
-        >
-          {d?.side ? labels[d.side] : labels.edgeBranch(rule)}
-        </span>
-      </EdgeLabelRenderer>
+      {(p.data as { noLabel?: boolean } | undefined)?.noLabel ? null : (
+        <EdgeLabelRenderer>
+          <span
+            data-testid={d?.side ? `if-edge-${d.side}` : undefined}
+            style={{ transform: `translate(-50%, -50%) translate(${lx}px, ${ly}px)` }}
+            className={`pointer-events-none absolute rounded-full px-2 py-0.5 text-caption font-medium ${
+              s?.pill ?? "rounded bg-accent text-accent-foreground"
+            }`}
+          >
+            {d?.side ? labels[d.side] : labels.edgeBranch(rule)}
+          </span>
+        </EdgeLabelRenderer>
+      )}
     </>
   );
 }

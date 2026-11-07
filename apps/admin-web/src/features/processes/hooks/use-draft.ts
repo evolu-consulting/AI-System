@@ -1,5 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5: trạng thái bản nháp của editor — sửa ô, thêm/xoá/đổi chỗ giai đoạn, lỗi theo ô, giai đoạn đang chọn.
 import { useRef, useState } from "react";
+import { newRealViolation } from "../domain/tool-rules";
 import {
   type DefDraft,
   type DraftErrors,
@@ -12,11 +13,16 @@ import {
 } from "../lib/def-form";
 import { emptyHistory, record, redo as redoH, undo as undoH } from "../lib/edit-history";
 import { type EdgeRef, insertOnEdge } from "../lib/insert-on-edge";
+
+/** Khoá câu lý do khi thả / chèn một bước hành động thật (Ký số) mà bước ngay trước chưa có người duyệt. */
+export const REAL_NEEDS_REVIEW = ERR_REAL_NEEDS;
+
 import { duplicateCluster, removeCluster } from "../lib/module-cluster";
 import { withNodeDefaults } from "../lib/node-defaults";
 import {
   addStageAsNewStep,
   addStageToStep,
+  ERR_REAL_NEEDS,
   insertStepAfter,
   moveInColumn,
   moveToStep,
@@ -104,6 +110,9 @@ function useStepMutations(ref: Ref, update: Update, select: (uid: string) => voi
         make(ref.current.stages),
         ref.current.stages.map((o) => o.key),
       );
+      const probe = addStageAsNewStep(ref.current.stages, s);
+      if ("stages" in probe && newRealViolation(ref.current.stages, probe.stages))
+        return { error: ERR_REAL_NEEDS } as const;
       const r = applySteps((st) => addStageAsNewStep(st, s));
       if ("stages" in r) select(s.uid);
       return r;
@@ -111,6 +120,8 @@ function useStepMutations(ref: Ref, update: Update, select: (uid: string) => voi
     /** CR-122 · P8 · chèn giai đoạn dựng sẵn vào giữa một cạnh (đích đã đánh lại bên trong `insertOnEdge`). */
     insertOnEdge: (fresh: StageDraft, e: EdgeRef): StepOpResult<StageDraft> => {
       const r = insertOnEdge(ref.current.stages, fresh, e);
+      if ("stages" in r && newRealViolation(ref.current.stages, r.stages))
+        return { error: ERR_REAL_NEEDS } as const;
       if ("stages" in r) {
         update((d) => ({ ...d, stages: r.stages }), false);
         select(fresh.uid);

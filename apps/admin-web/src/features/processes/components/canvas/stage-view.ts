@@ -123,7 +123,7 @@ function executorLabel(
 ): string {
   if (isDlcStep(s)) return String(dlcOf(s).agent_key ?? "");
   if (isSlotStep(s)) return String(s.slotRaw?.department_group_key ?? "");
-  if (s.executor === "set" || s.executor === "form") return s.executor;
+  if (s.executor === "set" || s.executor === "form") return ""; // loại kỹ thuật: không hiện dưới tên bước
   if (s.executor === "tool") return tools.get(s.tool.key)?.name ?? s.tool.key;
   return labels.get(s.executor) ?? "";
 }

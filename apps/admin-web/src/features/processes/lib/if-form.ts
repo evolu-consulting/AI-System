@@ -8,7 +8,8 @@ export const IF_CONDS_MAX = 6;
 // CR-105 · kiểu CondDraft/IfDraft đặt ở `draft-types` (phá vòng draft-types ↔ if-form); re-export cho nơi dùng cũ.
 export type { CondDraft, IfDraft } from "./draft-types";
 /** Nguồn chọn được: stage (bước nhỏ hơn) có field khai báo + input của quy trình. */
-export type CondSource = { value: string; type: FieldDraft["type"]; label: string };
+/** `boolean` (Có/Không) chỉ có ở dữ kiện của sự kiện: chọn Có/Không thay vì gõ chữ; lưu vẫn là chuỗi "true"/"false". */
+export type CondSource = { value: string; type: FieldDraft["type"] | "boolean"; label: string };
 
 export const emptyCond = (): CondDraft => ({ from: "", type: "string", op: "eq", value: "" });
 export const emptyIf = (): IfDraft => ({ op: "and", conds: [emptyCond()], yes: null, no: null });
@@ -39,7 +40,7 @@ export function factSources(
 ): CondSource[] {
   return facts.map((f) => ({
     value: factSrc(f.key),
-    type: f.type === "number" || f.type === "date" ? f.type : "string",
+    type: f.type === "number" || f.type === "date" || f.type === "boolean" ? f.type : "string",
     label: f.label,
   }));
 }

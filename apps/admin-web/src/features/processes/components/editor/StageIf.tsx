@@ -39,6 +39,43 @@ export type StageIfProps = {
   onChange: (patch: Partial<IfDraft>) => void;
 };
 
+/** Ô giá trị của một điều kiện: Có/Không chọn từ danh sách (không gõ "true"), còn lại là ô nhập theo kiểu. */
+function CondValue(p: {
+  id: string;
+  type: string;
+  value: string;
+  readOnly: boolean;
+  error: string | undefined;
+  onChange: (v: string) => void;
+}) {
+  const { t } = useTranslation();
+  if (p.type === "boolean")
+    return (
+      <SelectField
+        id={p.id}
+        label={t(`${K}value`)}
+        value={p.value === "false" ? "false" : "true"}
+        readOnly={p.readOnly}
+        error={p.error}
+        options={[
+          { value: "true", label: t("process.admin.flow.yes") },
+          { value: "false", label: t("process.admin.flow.no") },
+        ]}
+        onChange={p.onChange}
+      />
+    );
+  return (
+    <TextField
+      id={p.id}
+      label={t(`${K}value`)}
+      type={p.type === "number" ? "number" : p.type === "date" ? "date" : "text"}
+      value={p.value}
+      readOnly={p.readOnly}
+      error={p.error}
+      onChange={p.onChange}
+    />
+  );
+}
 export function StageIf(p: StageIfProps) {
   const { t } = useTranslation();
   const { id, index, value, sources, steps, errors, readOnly } = p;
@@ -139,7 +176,12 @@ export function StageIf(p: StageIfProps) {
               onChange={(from) => {
                 const ft = sources.find((s) => s.value === from)?.type ?? "string";
                 const op = opsForType(ft).includes(c.op as never) ? c.op : "eq";
-                setCond(j, { from, type: ft, op, ...(ft === type ? {} : { value: "" }) });
+                setCond(j, {
+                  from,
+                  type: ft === "boolean" ? "string" : ft,
+                  op,
+                  ...(ft === type ? {} : { value: ft === "boolean" ? "true" : "" }),
+                });
               }}
             />
             <SelectField
@@ -150,15 +192,17 @@ export function StageIf(p: StageIfProps) {
               error={cell("op")}
               options={opsForType(type).map((o) => ({
                 value: o,
-                label: t(`process.admin.editor.stage.branch.ops.${o}`),
+                label:
+                  type === "boolean"
+                    ? t(`${K}${o === "eq" ? "opIs" : "opIsNot"}`)
+                    : t(`process.admin.editor.stage.branch.ops.${o}`),
               }))}
               onChange={(op) => setCond(j, { op })}
             />
             <div className="sm:col-span-2">
-              <TextField
+              <CondValue
                 id={`${id}-c${j}-value`}
-                label={t(`${K}value`)}
-                type={type === "number" ? "number" : type === "date" ? "date" : "text"}
+                type={type}
                 value={c.value}
                 readOnly={readOnly}
                 error={cell("value")}

@@ -2,13 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import { CONTRACTS_MANIFEST } from "@ai/contracts/app-manifest";
 import { layoutSteps } from "@ai/flow-canvas/pure";
-import {
-  collapseModules,
-  connectStages,
-  moduleClusters,
-  moduleEdges,
-  type NodeInfo,
-} from "./module-cluster";
+import { collapseModules, connectStages, moduleEdges, type NodeInfo } from "./module-cluster";
 import type { StageView } from "./stage-view";
 
 type Branch = { on: string; step: number | null };

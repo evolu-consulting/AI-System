@@ -90,6 +90,21 @@ export function missingRequiredArgs(
   return tool.params.filter((p) => p.required && !has(p.name)).map((p) => p.name);
 }
 
+/**
+ * CR-123 · u4 · một nguồn cho picker, kéo thả và lưu: sau phép `after`, stage hành động thật (Ký số…) NÀO vừa trở nên không hợp lệ
+ * (bước trước nó chưa phải toàn bước duyệt) so với `before` ⇒ trả uid; không có ⇒ null. Stage đã sai từ trước không chặn phép khác.
+ */
+export function newRealViolation(
+  before: readonly { uid: string; step: number; after: string; real: boolean }[],
+  after: readonly { uid: string; step: number; after: string; real: boolean }[],
+): string | null {
+  const bad = (xs: typeof after) =>
+    new Set(xs.filter((s, i) => s.real && !realActionAllowed(xs, i)).map((s) => s.uid));
+  const was = bad(before);
+  for (const uid of bad(after)) if (!was.has(uid)) return uid;
+  return null;
+}
+
 /** P-b2 REAL_ACTION · bật được "Hành động thật" ở stage `i` không: bước ≥ 1 và mọi stage của bước liền trước là review. */
 export function realActionAllowed(
   stages: readonly { step: number; after: string }[],

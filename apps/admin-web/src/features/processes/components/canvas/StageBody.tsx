@@ -30,7 +30,7 @@ function SlotBody({ v }: { v: StageView }) {
   return (
     <span className="block min-w-0 text-left">
       <span className="inline-block w-full truncate text-label font-medium" title={name}>
-        {t("process.admin.library.canvas.stageAria", { n: s.no, name })}
+        {name}
       </span>{" "}
       <span className="inline-block w-full truncate text-caption text-muted-foreground">
         {s.dept || t("process.admin.library.canvas.noDept")}
@@ -65,7 +65,7 @@ function DlcBody({ v }: { v: StageView }) {
   return (
     <span className="block min-w-0 text-left">
       <span className="inline-block w-full truncate text-label font-medium" title={name}>
-        {t("process.admin.library.canvas.stageAria", { n: s.no, name })}
+        {name}
       </span>{" "}
       <span className="inline-block w-full truncate text-caption text-muted-foreground">
         {`DLC · ${action}${s.agent ? ` · @${s.agent}` : ""}`}

@@ -4,6 +4,7 @@
 
 import { useRef } from "react";
 import type { useTranslation } from "react-i18next";
+import { newRealViolation } from "../domain/tool-rules";
 import { connectPatch } from "../lib/canvas-connect";
 import {
   type EditError,
@@ -18,7 +19,7 @@ import { expandToClusters } from "../lib/module-cluster";
 import { getStagesMax } from "../lib/stages-limit";
 import { stepLabel } from "../lib/step-label";
 import { lastStep } from "../lib/step-ops";
-import type { DraftState } from "./use-draft";
+import { type DraftState, REAL_NEEDS_REVIEW } from "./use-draft";
 
 const EDIT = "process.admin.canvas.edit.";
 const CONNECT = "process.admin.canvas.connect.";
@@ -69,6 +70,7 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
       const fresh = items.map((i) => ({ ...emptyStage(), ...i.patch, name: i.name }));
       const r = placeFresh(stages(), fresh, at.step, at.y);
       if ("error" in r) return fail(r);
+      if (newRealViolation(stages(), r.stages)) return say.error(t(REAL_NEEDS_REVIEW));
       d.setStages(r.stages, true, (fresh[0] as StageDraft).uid);
       say.live(t(`${EDIT}dropped`, { name: items[0]?.name ?? "" }));
     },

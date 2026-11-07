@@ -52,6 +52,7 @@ export default defineConfig({
     "**/cr122-flows*.spec.ts",
     "**/cr122-editor*.spec.ts",
     "**/cr122-p24*.spec.ts",
+    "**/cr123-*.spec.ts",
   ],
   workers: 1,
   fullyParallel: false,

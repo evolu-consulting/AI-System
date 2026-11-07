@@ -167,6 +167,8 @@
         "valid": "Valid",
         "from": "Take the date from",
         "fromPh": "Choose a date source…",
+        "opIs": "is",
+        "opIsNot": "is not",
         "fromInput": "Input · {{label}}",
         "fromField": "Stage {{n}} output · {{stage}} · {{field}}",
         "fromNone": "There is no date source yet. Add a Date input field, or declare a Date field in an earlier stage.",
@@ -246,6 +248,8 @@
         "or": "Any one is enough (OR)",
         "from": "If",
         "fromPh": "Choose a field or input…",
+        "opIs": "is",
+        "opIsNot": "is not",
         "op": "Compare",
         "value": "Value",
         "add": "Add condition",
@@ -700,6 +704,7 @@
       "stagesMax": "A process has at most {{max}} steps — change it in Platform settings.",
       "step": "Invalid step numbers. Drag the stage into a valid column.",
       "realStep": "Real action needs every stage in the previous step to have a reviewer.",
+      "realNeedsReview": "«E-signature» needs an Approval step right before it. Add the Approval first, then drop it again.",
       "backTarget": "You can only go back to steps before this stage."
     },
     "controls": {
@@ -1383,6 +1388,7 @@
       "finish": "Finish",
       "soon": "Not available yet"
     },
+    "toolOff": "«{{name}}» is not enabled for your company — turn it on in the Company page, then save again.",
     "esign": {
       "title": "E-sign settings",
       "default": "Default",

@@ -167,6 +167,8 @@
         "valid": "Hợp lệ",
         "from": "Lấy ngày từ",
         "fromPh": "Chọn nguồn ngày…",
+        "opIs": "là",
+        "opIsNot": "không là",
         "fromInput": "Thông tin đầu vào · {{label}}",
         "fromField": "Kết quả bước {{n}} · {{stage}} · {{field}}",
         "fromNone": "Chưa có nguồn ngày nào. Thêm trường đầu vào kiểu Ngày, hoặc khai báo trường kiểu Ngày ở bước trước.",
@@ -246,6 +248,8 @@
         "or": "Một điều kiện đúng là đủ (HOẶC)",
         "from": "Nếu",
         "fromPh": "Chọn trường hoặc đầu vào…",
+        "opIs": "là",
+        "opIsNot": "không là",
         "op": "So sánh",
         "value": "Giá trị",
         "add": "Thêm điều kiện",
@@ -700,6 +704,7 @@
       "stagesMax": "Quy trình tối đa {{max}} bước — đổi trong Cài đặt nền tảng.",
       "step": "Số bước không hợp lệ. Hãy kéo bước vào đúng cột.",
       "realStep": "Hành động thật chỉ dùng được khi mọi bước của bước trước đều có người kiểm.",
+      "realNeedsReview": "«Ký số» cần một bước Duyệt ngay trước nó. Thêm bước Duyệt trước rồi thả lại.",
       "backTarget": "Chỉ quay lại được các bước đứng trước bước này."
     },
     "controls": {
@@ -1383,6 +1388,7 @@
       "finish": "Kết thúc",
       "soon": "Chưa dùng được"
     },
+    "toolOff": "«{{name}}» chưa bật cho công ty — bật ở trang Công ty rồi lưu lại.",
     "esign": {
       "title": "Cấu hình ký số",
       "default": "Mặc định",
