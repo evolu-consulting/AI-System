@@ -60,6 +60,9 @@ test("CR-123 · p25 · nối lại đầu cạnh: Sai sang bước sau đổi đ
 }) => {
   await open(p);
   const noEdge = () => canvas(p).locator('[data-testid^="rf__edge-"][data-testid$="#no"]');
+  // CR-123 u13: minimap mặc định TẮT, bật bằng nút ở thanh điều khiển
+  await expect(canvas(p).locator(".react-flow__minimap")).toHaveCount(0);
+  await canvas(p).getByTestId("minimap-toggle").click();
   await expect(canvas(p).locator(".react-flow__minimap")).toBeVisible();
   // hai lần nối lại (Hoàn tất rồi Giám đốc duyệt) ⇒ chắc chắn có một lần khác đích hiện tại
   const id1 = (await noEdge().first().getAttribute("data-testid"))?.replace("rf__edge-", "") ?? "";
@@ -69,12 +72,10 @@ test("CR-123 · p25 · nối lại đầu cạnh: Sai sang bước sau đổi đ
   await expect(live(p, "Đã đặt bước khi Sai.").first()).toBeAttached();
   await p.screenshot({ path: `${SHOTS}/reconnect-ok.png` });
 
-  const g = await uidOf(p, "Giám đốc duyệt");
-  const h = await uidOf(p, "Hoàn tất");
-  await reconnect(p, `${g}>${h}`, "Nhập đề nghị");
-  await expect(
-    p.getByRole("alert").filter({ hasText: "Chỉ nối được tới bước đứng sau." }),
-  ).toBeVisible();
+  // CR-123 u12/CR-125 x9: nối ngược về bước đứng trước (tạo vòng lặp) bị từ chối kèm lý do; cạnh tiến bước Duyệt là đầu ra ô module nên dùng cạnh Sai
+  const id3 = (await noEdge().first().getAttribute("data-testid"))?.replace("rf__edge-", "") ?? "";
+  await reconnect(p, id3, "Nhập đề nghị");
+  await expect(p.getByRole("alert").filter({ hasText: "sẽ tạo vòng lặp" })).toBeVisible();
   await p.screenshot({ path: `${SHOTS}/reconnect-rejected.png` });
 });
 

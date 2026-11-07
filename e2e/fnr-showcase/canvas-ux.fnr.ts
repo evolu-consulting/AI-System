@@ -74,9 +74,7 @@ test("CR-122 · p22 · kéo về bước đứng trước ⇒ không đổi gì 
   try {
     await open(p);
     await drag(p, canvas(p).getByTestId("port-next").nth(1), node(p, "Nhập đề nghị"));
-    await expect(
-      p.getByRole("alert").filter({ hasText: "Chỉ nối được tới bước đứng sau." }),
-    ).toBeVisible();
+    await expect(p.getByRole("alert").filter({ hasText: "sẽ tạo vòng lặp" })).toBeVisible();
     await expect(p.getByText("Có thay đổi chưa lưu")).toHaveCount(0);
     await p.screenshot({ path: `${SHOTS}/connect-rejected.png` });
   } finally {

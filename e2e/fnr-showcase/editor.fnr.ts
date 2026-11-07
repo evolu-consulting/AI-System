@@ -273,14 +273,15 @@ test("CR-103 · editor · C · kéo node sang cột bước khác ⇒ bước đ
   await p.mouse.move(b.x + b.width / 2, b.y + b.height + 40, { steps: 12 });
   await p.mouse.up();
   await src.click();
-  await expect(stepSpin(p)).toHaveValue("2");
+  // CR-123 u13: kéo node là kéo TỰ DO (chỉ lưu vị trí ui); thứ tự bước chỉ đổi bằng mũi tên ⇒ bước vẫn 3.
+  await expect(stepSpin(p)).toHaveValue("3");
   const r = await save(p);
   expect(r.status, JSON.stringify(r.json).slice(0, 300)).toBe(200);
   await p.reload();
   await node(p, "Cuối").click();
-  await expect(stepSpin(p)).toHaveValue("2");
+  await expect(stepSpin(p)).toHaveValue("3");
   const saved = await getDef(d.id);
-  expect(saved.stages.find((s: Json) => s.key === "ba").step).toBe(1);
+  expect(saved.stages.find((s: Json) => s.key === "ba").step).toBe(2);
 });
 
 test("CR-103 · editor · D · đưa giai đoạn khác vào bước của node Nếu ⇒ Lưu bị từ chối với thông báo IF_INVALID, không lưu gì", async ({

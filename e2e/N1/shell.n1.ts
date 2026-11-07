@@ -247,7 +247,7 @@ test.describe("PK-FR-10 · shell mobile (390×844)", () => {
       "Tổng quan",
       "Hợp đồng & giao dịch",
       "Đối tác",
-      "Sản phẩm & Giá",
+      "Chờ tôi",
     ]);
     await expect(page.getByRole("navigation", { name: "Điều hướng chính" })).toBeHidden();
   });

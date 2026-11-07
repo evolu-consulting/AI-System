@@ -305,7 +305,7 @@ test.describe("điện thoại (390×844)", () => {
       "Tổng quan",
       "Hợp đồng & giao dịch",
       "Đối tác",
-      "Sản phẩm & Giá",
+      "Chờ tôi",
     ]);
     await expect(bottom.getByRole("link", { name: "Tổng quan" })).toHaveAttribute(
       "aria-current",

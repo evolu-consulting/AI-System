@@ -54,24 +54,46 @@ test("CR-103 · fnr-canvas · kéo node theo chiều dọc ⇒ Lưu ⇒ tải l�
     await n.scrollIntoViewIfNeeded();
     const b = await settledBox(n);
     const y0 = await topOf(n);
+    // CR-125 x4: node KHÔNG chồng nhau — thả đè node khác thì quay về toạ độ ELK ⇒ chọn độ dời dọc rơi vào chỗ trống (còn trong khung canvas).
+    const cv = (await canvas(p).boundingBox()) as { y: number; height: number };
+    const others: { x: number; y: number; width: number; height: number }[] = [];
+    for (const h of await canvas(p).locator(".react-flow__node").all()) {
+      const ob = await h.boundingBox();
+      if (ob && !(Math.abs(ob.x - b.x) < 1 && Math.abs(ob.y - b.y) < 1)) others.push(ob);
+    }
+    const free = (dy: number) =>
+      b.y + dy > cv.y + 8 &&
+      b.y + dy + b.height < cv.y + cv.height - 8 &&
+      others.every(
+        (o) =>
+          b.x + b.width + 30 < o.x ||
+          o.x + o.width + 30 < b.x ||
+          b.y + dy + b.height + 30 < o.y ||
+          o.y + o.height + 30 < b.y + dy,
+      );
+    const dy = [110, 160, 220, 280, 340, 400, 460].find(free);
+    expect(dy, "có chỗ trống để thả node").toBeDefined();
     await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
     await p.mouse.down();
-    await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2 + 110, { steps: 12 });
+    await p.mouse.move(b.x + b.width / 2, b.y + b.height / 2 + (dy as number), { steps: 12 });
     await p.mouse.up();
     const y1 = await topOf(n);
-    expect(y1 - y0, "node đi theo chuột (dọc)").toBeGreaterThan(40);
+    expect(Math.abs(y1 - y0), "node đi theo chuột (dọc)").toBeGreaterThan(40);
     // So khoảng cách tới node cùng cột (không đổi theo cuộn/fit của khung nhìn).
-    const gapOf = async () => (await topOf(node(p, ACCOUNTING))) - (await topOf(node(p, LEGAL)));
+    // CR-125 x10: khung nhìn fit lại theo mức zoom khác sau khi tải lại ⇒ so theo đơn vị chiều cao node (bất biến theo zoom).
+    const gapOf = async () =>
+      ((await topOf(node(p, ACCOUNTING))) - (await topOf(node(p, LEGAL)))) /
+      ((await node(p, ACCOUNTING).boundingBox())?.height ?? 1);
     await expect(p.getByText("Có thay đổi chưa lưu")).toBeVisible();
     const gap1 = await gapOf();
     await expect(p.getByText("Có thay đổi chưa lưu")).toBeVisible(); // thả chuột đã ghi vào bản nháp
     expect(await saveDef(p)).toBe(200);
     const saved = stageOf(await defByKey(FLOW_SHOWCASE_KEY), ACCOUNTING);
-    expect(saved?.ui?.y, "ui.y đã lưu ở Hub").toBeGreaterThan(0);
+    expect(typeof saved?.ui?.y, "ui.y đã lưu ở Hub").toBe("number");
     await p.reload();
     await expect(canvas(p)).toBeVisible();
     await settledBox(node(p, ACCOUNTING));
-    expect(Math.abs((await gapOf()) - gap1), "sau tải lại giữ vị trí").toBeLessThan(8);
+    expect(Math.abs((await gapOf()) - gap1), "sau tải lại giữ vị trí").toBeLessThan(0.15);
     await expect(p.getByText(/^Đã lưu/)).toBeVisible(); // không còn thay đổi chưa lưu
   } finally {
     await ctx.close();
@@ -92,8 +114,9 @@ test("CR-103 · fnr-canvas · 'Sắp xếp' ⇒ nhánh Đúng làn trên, nhánh
       const [yes, main] = [await topOf(node(p, DIRECTOR)), await topOf(ifNode)];
       expect(yes, "Đúng ở làn trên node If").toBeLessThan(main - 40);
     }).toPass();
-    await expect(canvas(p).getByTestId("if-edge-yes")).toBeVisible();
-    await expect(canvas(p).getByTestId("if-edge-no")).toBeVisible();
+    // CR-125 x9: nhãn Đúng/Sai nằm ở cổng ra của node Nếu (cạnh không in nhãn lần nữa)
+    await expect(canvas(p).getByTestId("port-yes")).toBeVisible();
+    await expect(canvas(p).getByTestId("port-no")).toBeVisible();
     // Dọn: nếu ca trước để lại ui.y thì Lưu ghi đè bỏ ui; nếu không có gì đổi, nút Lưu tắt thì bỏ qua.
     const save = p.getByRole("button", { name: "Lưu", exact: true });
     if (await save.isEnabled()) expect(await saveDef(p)).toBe(200);

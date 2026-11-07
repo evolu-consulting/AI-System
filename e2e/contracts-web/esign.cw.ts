@@ -110,7 +110,14 @@ test("editor: Gửi ký với người ký đã sửa ⇒ Đang chờ ký ⇒ L�
     ...base,
     envelope: env("completed", { completed_at: "2026-10-18T03:00:00.000Z", has_signed_file: true }),
   };
-  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await page.evaluate(() => {
+    const setVis = (v: string) => {
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => v });
+      document.dispatchEvent(new Event("visibilitychange", { bubbles: true }));
+    };
+    setVis("hidden");
+    setVis("visible");
+  });
   await expect(panel.getByTestId("esign-status")).toContainText("Đã ký số lúc");
   await expect(panel.getByRole("button", { name: "Tải bản đã ký" })).toBeVisible();
 });
