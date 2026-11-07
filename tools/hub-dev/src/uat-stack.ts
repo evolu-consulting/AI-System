@@ -6,22 +6,25 @@ import postgres from "postgres";
 import { ensureDemoFixture } from "./fixture";
 
 const REPO = process.cwd().replaceAll("\\", "/");
-const DB = "ai_system_uat122_test";
 const e = process.env as Record<string, string>;
+// Cổng / DB / Redis chỉnh được để nhiều stack UAT chạy cùng lúc không đụng nhau: UAT_PORT_BASE (web; admin-api +1, hub-api +2), UAT_DB, UAT_REDIS_DB.
+const BASE = Number(e.UAT_PORT_BASE ?? 3500);
+const DB = e.UAT_DB ?? "ai_system_uat122_test";
+const REDIS_DB = e.UAT_REDIS_DB ?? "12";
 const LOG = e.UAT_LOG ?? `${REPO}/.data/uat122-logs`;
 mkdirSync(LOG, { recursive: true });
 const swap = (u: string) => u.replace(/\/[^/?]+(\?|$)/, `/${DB}$1`);
-const API = "http://127.0.0.1:3501";
-const HUB = "http://127.0.0.1:3502";
-const WEB = 3500;
+const API = `http://127.0.0.1:${BASE + 1}`;
+const HUB = `http://127.0.0.1:${BASE + 2}`;
+const WEB = BASE;
 const env: Record<string, string> = {
   ...e,
   DATABASE_URL: swap(e.DATABASE_URL as string),
   ADMIN_API_DATABASE_URL: swap(e.ADMIN_API_DATABASE_URL as string),
   HUB_DATABASE_URL: swap(e.HUB_DATABASE_URL as string),
-  REDIS_URL: "redis://localhost:6379/12",
-  PORT: "3501",
-  HUB_PORT: "3502",
+  REDIS_URL: `redis://localhost:6379/${REDIS_DB}`,
+  PORT: String(BASE + 1),
+  HUB_PORT: String(BASE + 2),
   HUB_CORS_ORIGINS: `http://localhost:${WEB},http://127.0.0.1:${WEB}`,
   CORS_ORIGINS: `http://localhost:${WEB},http://127.0.0.1:${WEB}`,
   APP_ENV: "development",
@@ -36,7 +39,7 @@ const env: Record<string, string> = {
   HUB_ATTACH_DIR: `${REPO}/.data/uat122-attach`,
   HUB_PUBLIC_INTERNAL_URL: HUB,
   PUBLIC_STUDIO_URL: "",
-  E2E_DIST_DIR: "dist-uat122",
+  E2E_DIST_DIR: e.E2E_DIST_DIR ?? `dist-uat${BASE}`,
 };
 const kids: Bun.Subprocess[] = [];
 const sh = (args: string[]) => {
