@@ -1,4 +1,4 @@
-﻿// e2e/_kit · helper cấp API (không qua giao diện) để DỰNG dữ liệu hành trình: đăng nhập, gán quy trình, đặt luật, bật tính năng,
+// e2e/_kit · helper cấp API (không qua giao diện) để DỰNG dữ liệu hành trình: đăng nhập, gán quy trình, đặt luật, bật tính năng,
 // tạo tenant/user/phòng ban riêng. Chỉ dùng để chuẩn bị; bước người dùng nhìn thấy vẫn phải đi bằng UI (D5).
 // Dùng `fetch` chuẩn (Bun/Node ≥ 18), không cần trình duyệt. Mật khẩu/token không bao giờ được log.
 import type {
@@ -401,4 +401,64 @@ export async function approvePost(base: string, s: Session, postId: string): Pro
     undefined,
     s.fx,
   );
+}
+
+/** Id tính năng theo khoá (`GET /admin/features`). Ném lỗi rõ khi không có. */
+export async function featureIdByKey(admin: string, s: Session, key: string): Promise<string> {
+  const { json } = await call<{ items?: { id: string; key: string }[] }>(
+    `${admin}/admin/features?limit=200`,
+    { method: "GET", token: s.token },
+  );
+  const hit = json.items?.find((f) => f.key === key);
+  if (!hit) throw new Error(`featureIdByKey: không thấy tính năng "${key}"`);
+  return hit.id;
+}
+
+/** CR-124 · platform admin điền hồ sơ công ty (tên pháp lý + MST + địa chỉ) — `PATCH /admin/tenants/:id/profile` (đọc `version` trước). */
+export async function setCompanyProfile(
+  admin: string,
+  s: Session,
+  tenantId: string,
+  p: { legal_name: string; tax_code: string; address: string },
+): Promise<void> {
+  const url = `${admin}/admin/tenants/${tenantId}/profile`;
+  const cur = await call<{ version: number }>(url, { method: "GET", token: s.token });
+  await call(url, {
+    method: "PATCH",
+    token: s.token,
+    body: JSON.stringify({ version: cur.json.version, ...p }),
+  });
+}
+
+/** CR-124 · quản trị công ty bật/tắt "Cho phép công ty khác tìm thấy và gửi HĐ cho chúng tôi" — `PUT /admin/tenants/:id/directory`. */
+export async function setDirectoryListed(
+  admin: string,
+  s: Session,
+  tenantId: string,
+  listed: boolean,
+): Promise<void> {
+  await call(`${admin}/admin/tenants/${tenantId}/directory`, {
+    method: "PUT",
+    token: s.token,
+    body: JSON.stringify({ listed }),
+  });
+}
+
+/** Quản trị công ty tạo nhóm (`POST /admin/groups`) với khoá cho trước rồi thêm thành viên theo tên đăng nhập. Trả id nhóm. */
+export async function createGroupWith(
+  admin: string,
+  s: Session,
+  g: { key: string; name: string; usernames: string[] },
+): Promise<string> {
+  const made = await call<{ id: string }>(`${admin}/admin/groups`, {
+    method: "POST",
+    token: s.token,
+    body: JSON.stringify({ key: g.key, name: { vi: g.name, en: g.name }, description: null }),
+  });
+  await call(`${admin}/admin/groups/${made.json.id}/members`, {
+    method: "POST",
+    token: s.token,
+    body: JSON.stringify({ usernames: g.usernames }),
+  });
+  return made.json.id;
 }

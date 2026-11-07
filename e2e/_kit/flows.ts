@@ -127,6 +127,49 @@ export function esignNode(step: number): Json[] {
   ];
 }
 
+/**
+ * CR-124 · node «Gửi đối tác xác nhận» (`contracts.partner-send`): hai stage (tool gửi + chờ `partner.*`) cùng `node`; cấu hình là args HẰNG
+ * của stage tool (cùng schema với panel). Trả lại / Từ chối / Hết hạn rẽ tới `goto.returned|declined|expired`.
+ */
+export function partnerSendNode(
+  step: number,
+  cfg: Json,
+  goto: { returned: number; declined: number; expired: number },
+): Json[] {
+  const consts = Object.fromEntries(
+    Object.entries(cfg).map(([k, v]) => [k, { from: "const", value: v }]),
+  );
+  return [
+    {
+      ...base("gui-doi-tac", "Gửi đối tác xác nhận", step),
+      executor: {
+        kind: "tool",
+        tool_key: "contracts-partner-send",
+        args: { contract_id: { from: "input", key: "contract_id" }, ...consts },
+      },
+      real_action: true,
+      after: auto,
+      node: "contracts.partner-send",
+    },
+    {
+      ...base("cho-doi-tac", "Chờ đối tác xác nhận", step + 1),
+      executor: {
+        kind: "wait_event",
+        event: "partner.confirmed",
+        also_events: ["partner.returned", "partner.declined"],
+        timeout_h: 168,
+        branches: [
+          { on: "partner.returned", goto_step: goto.returned },
+          { on: "partner.declined", goto_step: goto.declined },
+          { on: "timeout", goto_step: goto.expired },
+        ],
+      },
+      after: auto,
+      node: "contracts.partner-send",
+    },
+  ];
+}
+
 /** Phản hồi giả của "Gợi ý cầu nối": node Ghi giá trị `amount ← giá trị HĐ` (stage đầy đủ, `step` do UI đặt lại khi chèn). */
 export function bridgeSet(step: number): Json {
   return {

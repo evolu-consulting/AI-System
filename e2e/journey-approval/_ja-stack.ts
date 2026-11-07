@@ -157,6 +157,15 @@ async function main(): Promise<void> {
         key: `e2e-d6-${sfx}`,
         name: `E2E D6 ${sfx}`,
       });
+    // CR-124 q6: hai công ty MỚI cho hành trình gửi đối tác (A gửi, B nhận). Chưa bật tính năng `contracts-partner-confirm`, chưa hồ sơ/danh bạ/flow:
+    // platform admin + quản trị B làm hết trong spec bằng đường thật (D5).
+    if (sfx)
+      for (const k of ["a", "b"] as const)
+        await provisionExtraJourneyTenant(admin, hubDb, {
+          pw: env("JA_USER_PW"),
+          key: `e2e-q6${k}-${sfx}`,
+          name: `E2E Q6${k.toUpperCase()} ${sfx}`,
+        });
     // CR-122 Q1: hai công ty MỚI cho hành trình flow (G1/G2 và các ca UI trình sửa) — cờ FLOW_TRIGGERS do spec bật.
     if (sfx)
       for (const k of ["c22", "c22u", "c22n", "q5", "u6"] as const)
