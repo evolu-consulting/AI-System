@@ -168,7 +168,7 @@
         "from": "Lấy ngày từ",
         "fromPh": "Chọn nguồn ngày…",
         "fromInput": "Thông tin đầu vào · {{label}}",
-        "fromField": "Kết quả bước {{n}} · {{bước}} · {{field}}",
+        "fromField": "Kết quả bước {{n}} · {{stage}} · {{field}}",
         "fromNone": "Chưa có nguồn ngày nào. Thêm trường đầu vào kiểu Ngày, hoặc khai báo trường kiểu Ngày ở bước trước.",
         "offset": "Chênh lệch (ngày)",
         "offsetHint": "Số âm = trước ngày gốc, 0 = đúng ngày, số dương = sau.",
@@ -499,7 +499,7 @@
   "run": {
     "title": "Lượt chạy · {{name}}",
     "viewOutput": "Xem kết quả",
-    "outputTitle": "Kết quả bước {{bước}} · v{{n}}",
+    "outputTitle": "Kết quả bước {{stage}} · v{{n}}",
     "noContent": "Không xem nội dung tin nhắn phòng ở đây.",
     "back": "Về danh sách",
     "tab": {
@@ -516,7 +516,7 @@
     },
     "decision": {
       "region": "Cần người quyết",
-      "title": "Quy trình dừng ở bước {{bước}}",
+      "title": "Quy trình dừng ở bước {{stage}}",
       "note": "Ghi chú (tuỳ chọn)",
       "waiting": "Đang chờ người có quyền quyết định",
       "done": "Đã ghi quyết định"
@@ -710,7 +710,7 @@
       "allow": "Tối đa 20 mẫu, mỗi mẫu là glob hợp lệ.",
       "AUTOFIX_EXECUTOR": "Bước tự sửa mã phải do agent thực hiện.",
       "AUTOFIX_REVIEW": "Bước tự sửa mã luôn phải qua người duyệt. Chọn \"Duyệt\" ở mục Sau bước.",
-      "AUTOFIX_MAX": "Mỗi quy trình chỉ có một bước tự sửa mã. Đã có ở bước \"{{bước}}\".",
+      "AUTOFIX_MAX": "Mỗi quy trình chỉ có một bước tự sửa mã. Đã có ở bước \"{{stage}}\".",
       "sourceKind": "Nguồn \"{{key}}\" thuộc loại {{kind}}, không sửa được. Chọn nguồn git_remote hoặc local_path."
     }
   },
@@ -727,7 +727,7 @@
     "note": "Nhánh đẩy lên có tên ai/<run>/<bước>. Không bao giờ đẩy thẳng nhánh mặc định.",
     "err": {
       "APPLY_NO_AUTOFIX": "Bước Áp phải đứng ngay sau bước tự sửa mã.",
-      "APPLY_MAX": "Mỗi quy trình chỉ có một bước Áp. Đã có ở bước \"{{bước}}\".",
+      "APPLY_MAX": "Mỗi quy trình chỉ có một bước Áp. Đã có ở bước \"{{stage}}\".",
       "APPLY_REAL": "Bước Áp phải bật \"Hành động thật\".",
       "APPLY_AFTER": "Bước Áp phải chạy tiếp sau khi xong, không có bước duyệt.",
       "APPLY_FIELDS": "Bước Áp không có nguồn, tự sửa mã, ngân sách token hay kiến thức cần biết."
