@@ -31,7 +31,7 @@ function Empty({ onAdd, readOnly }: { onAdd: () => void; readOnly: boolean }) {
       <p className="text-body text-muted-foreground">{t("process.admin.canvas.empty")}</p>
       {readOnly ? null : (
         <Button type="button" variant="outline" size="sm" autoFocus onClick={onAdd}>
-          {t("process.admin.canvas.toolbar.addStage")}
+          {t("process.admin.canvas.toolbar.addStep")}
         </Button>
       )}
     </div>
@@ -105,7 +105,6 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
               ) : (
                 <CanvasToolbar
                   count={w.stages.length}
-                  onAddStage={addStage}
                   onAddStep={() => ops.addStep(w.sel?.step ?? -1)}
                   onArrange={ops.arrange}
                 />
