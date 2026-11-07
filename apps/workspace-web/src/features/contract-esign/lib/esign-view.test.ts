@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+﻿import { describe, expect, it } from "bun:test";
 import type {
   ESignEnvelopeOut,
   ESignProviderOut,
@@ -105,18 +105,47 @@ describe("esignView", () => {
       canSend: false,
     });
   });
-  it("đang chờ: Ký ngay khi có người ký nhúng chưa ký; huỷ cần quyền ghi", () => {
-    const v = esignView(st({ envelope: env() }), { locked: true, write: true });
+  it("đang chờ, đến lượt người xem: Ký ngay + banner có hạn; huỷ cần quyền ghi; không còn nút làm mới", () => {
+    const e = env({ due_at: "2026-11-14T00:00:00Z" });
+    const v = esignView(st({ envelope: e }), { locked: true, write: true });
     expect(v).toMatchObject({
       mode: "pending",
       canSignNow: true,
       canCancel: true,
-      canRefresh: true,
+      dueAt: "2026-11-14T00:00:00Z",
+      waitingFor: null,
     });
+    expect("canRefresh" in v).toBe(false);
+  });
+  it("hub mới báo is_you: chỉ người ký thật mới có Ký ngay (admin khác chỉ thấy đang chờ)", () => {
+    const s0 = env().signers[0] as ESignEnvelopeOut["signers"][number];
+    const other = env({ signers: [{ ...s0, is_you: false }] });
+    const me = env({ signers: [{ ...s0, is_you: true }] });
+    expect(esignView(st({ envelope: other }), { locked: true, write: true })).toMatchObject({
+      canSignNow: false,
+      waitingFor: "A",
+    });
+    expect(esignView(st({ envelope: me }), { locked: true, write: true })).toMatchObject({
+      canSignNow: true,
+    });
+  });
+  it("đang chờ, người xem KHÔNG phải người ký: 'Đang chờ <tên> ký', không nút nào", () => {
+    const two = env({
+      signers: [
+        { ...env().signers[0], embedded: false, name: "Giám đốc Hùng", order: 1 },
+        { ...env().signers[0], embedded: false, name: "Đối tác B", order: 2, email: "b@x" },
+      ] as ESignEnvelopeOut["signers"],
+    });
+    expect(esignView(st({ envelope: two }), { locked: true, write: true })).toMatchObject({
+      mode: "pending",
+      canSignNow: false,
+      waitingFor: "Giám đốc Hùng",
+    });
+    // viewer chỉ đọc: cũng không nút; không có quyền huỷ
     expect(esignView(st({ envelope: env() }), { locked: true, write: false })).toMatchObject({
       canSignNow: false,
       canCancel: false,
-      canRefresh: false, // esign-fix · viewer không làm mới (có ghi)
+      waitingFor: "A",
     });
   });
   it("đã ký: tải bản đã ký; ký thử giữ cờ demo", () => {

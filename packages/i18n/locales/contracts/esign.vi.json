@@ -1,4 +1,4 @@
-{
+﻿{
   "contracts": {
     "esign": {
       "title": "Ký số",
@@ -16,7 +16,12 @@
       "reason": "Lý do: {{reason}}",
       "signNow": "Ký ngay",
       "signMethodTitle": "Chọn cách ký",
-      "refresh": "Làm mới trạng thái",
+      "more": "Thêm thao tác",
+      "cancelTitle": "Huỷ ký hợp đồng?",
+      "cancelWarn": "Người ký sẽ không ký được nữa. Muốn ký lại phải gửi lại.",
+      "waitingFor": "Đang chờ {{name}} ký",
+      "yourTurn": "Đến lượt bạn ký — hạn {{date}}",
+      "yourTurnNoDue": "Đến lượt bạn ký",
       "cancel": "Huỷ ký",
       "cancelReason": "Lý do huỷ",
       "download": "Tải bản đã ký",

@@ -1,4 +1,4 @@
-// cf-esign-docusign · trạng thái + thao tác ký số của một HĐ (một lần làm mới khi quay về từ trang ký, không poll nền).
+﻿// cf-esign-docusign · trạng thái + thao tác ký số của một HĐ (một lần làm mới khi quay về từ trang ký, không poll nền).
 import type { ESignSignerIn, ESignStateOut } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,9 @@ import {
 } from "../api";
 import { esignErrKey, returnedFromSigning, signReturnUrl } from "../lib/esign-view";
 
+/** Chu kỳ hỏi trạng thái khi đang chờ ký (tab mở). */
+export const ESIGN_POLL_MS = 4000;
+
 export function useEsign(id: string) {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -23,6 +26,12 @@ export function useEsign(id: string) {
     queryKey: esignKey(id),
     queryFn: ({ signal }) => fetchEsign(id, signal),
     retry: false,
+    // CR-125 · x2 · tự cập nhật: chỉ hỏi trạng thái khi đang chờ ký và tab đang mở (react-query dừng khi tab ẩn); xong ⇒ dừng.
+    refetchInterval: (query) => {
+      const st = query.state.data?.envelope?.status;
+      return st === "sent" || st === "delivered" ? ESIGN_POLL_MS : false;
+    },
+    refetchIntervalInBackground: false,
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -67,7 +76,6 @@ export function useEsign(id: string) {
     clearErr: () => setErr(null),
     send: (s: ESignSignerIn[], provider?: string) =>
       run(() => sendEsign(id, s, provider), t("contracts.esign.sent")),
-    refresh: () => run(() => refreshEsign(id)),
     cancel: (reason: string) => run(() => voidEsign(id, reason)),
     signNow: (provider?: string) =>
       run(async () => {

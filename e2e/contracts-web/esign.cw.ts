@@ -1,4 +1,4 @@
-// cf-esign-docusign · Luật 4b: khối "Ký số" ở chi tiết HĐ đã khoá — Gửi ký (người ký gợi ý sửa được, tuần tự) ⇒ "Đang chờ ký" ⇒
+﻿// cf-esign-docusign · Luật 4b: khối "Ký số" ở chi tiết HĐ đã khoá — Gửi ký (người ký gợi ý sửa được, tuần tự) ⇒ "Đang chờ ký" ⇒
 // Làm mới trạng thái ⇒ "Đã ký số" + tải bản đã ký; chưa cấu hình ⇒ "Chưa cấu hình ký số"; ký thử ⇒ nhãn không có giá trị pháp lý;
 // viewer không thấy "Gửi ký". Backend giả `page.route`; không sleep.
 import { expect, type Route, test } from "@playwright/test";
@@ -89,7 +89,8 @@ test("editor: Gửi ký với người ký đã sửa ⇒ Đang chờ ký ⇒ L�
   await expect(ok).toBeDisabled(); // email đối tác trống
   await dlg.getByLabel("Email 2").fill("b@partner.vn");
   await ok.click();
-  await expect(panel.getByTestId("esign-status")).toHaveText("Đang chờ ký");
+  // CR-125 x2 · đến lượt người ký: MỘT banner + MỘT nút "Ký ngay"; không còn "Làm mới trạng thái"; "Huỷ ký" trong menu "…".
+  await expect(panel.getByTestId("esign-turn")).toHaveText("Đến lượt bạn ký");
   expect(posts).toEqual([
     {
       signers: [
@@ -99,7 +100,16 @@ test("editor: Gửi ký với người ký đã sửa ⇒ Đang chờ ký ⇒ L�
     },
   ]);
   await expect(panel.getByRole("button", { name: "Ký ngay" })).toBeVisible();
-  await panel.getByRole("button", { name: "Làm mới trạng thái" }).click();
+  await expect(panel.getByRole("button", { name: "Làm mới trạng thái" })).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: "Huỷ ký" })).toHaveCount(0);
+  await panel.getByTestId("esign-menu").click();
+  await expect(panel.getByTestId("esign-cancel")).toBeVisible();
+  await panel.getByTestId("esign-menu").click();
+  // tự cập nhật: trạng thái đổi ở server ⇒ thẻ tự đổi (không bấm làm mới)
+  state = {
+    ...base,
+    envelope: env("completed", { completed_at: "2026-10-18T03:00:00.000Z", has_signed_file: true }),
+  };
   await expect(panel.getByTestId("esign-status")).toContainText("Đã ký số lúc");
   await expect(panel.getByRole("button", { name: "Tải bản đã ký" })).toBeVisible();
 });

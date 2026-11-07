@@ -1,4 +1,4 @@
-{
+﻿{
   "contracts": {
     "esign": {
       "title": "E-signature",
@@ -16,7 +16,12 @@
       "reason": "Reason: {{reason}}",
       "signNow": "Sign now",
       "signMethodTitle": "Choose how to sign",
-      "refresh": "Refresh status",
+      "more": "More actions",
+      "cancelTitle": "Cancel signing?",
+      "cancelWarn": "Signers will no longer be able to sign. To sign again the contract must be re-sent.",
+      "waitingFor": "Waiting for {{name}} to sign",
+      "yourTurn": "Your turn to sign — due {{date}}",
+      "yourTurnNoDue": "Your turn to sign",
       "cancel": "Cancel signing",
       "cancelReason": "Cancellation reason",
       "download": "Download signed copy",

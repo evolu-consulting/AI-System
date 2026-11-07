@@ -1,4 +1,4 @@
-// cf-esign-docusign + esign-multi · use case ký số HĐ, trung lập nhà cung cấp, NHIỀU nhà cung cấp song song (registry): gửi ký (HĐ đã
+﻿// cf-esign-docusign + esign-multi · use case ký số HĐ, trung lập nhà cung cấp, NHIỀU nhà cung cấp song song (registry): gửi ký (HĐ đã
 // duyệt xong/khoá + PDF; nhà cung cấp chỉ định hoặc mặc định công ty), xem trạng thái, "Ký ngay" (embedded, chỉ người ký công ty),
 // làm mới, huỷ, webhook + đồng bộ nền esign-sweep2 (map envelope ⇒ tenant qua bảng), lưu "Bản đã ký" vào FileBox idempotent. Lệnh sau
 // gửi dùng `provider` LƯU trên envelope. Gọi mạng NGOÀI tx. Thiếu cấu hình ⇒ tắt (409, không 500).
@@ -73,8 +73,8 @@ export function esignUsecase(d: ESignDeps) {
     settingsOut(d.providers.entries, d.files !== null, s, demoOf);
   const settings = async (who: PackWho): Promise<ESignSettingsOut> =>
     out(await d.uow.tenant(who, (r) => r.esign.settings()));
-  const rowOut = (e: EnvelopeRow) =>
-    envelopeOut(e, demoOf(e.provider), labelOf(d.providers.entries, e.provider));
+  const rowOut = (e: EnvelopeRow, viewerId?: string) =>
+    envelopeOut(e, demoOf(e.provider), labelOf(d.providers.entries, e.provider), viewerId);
 
   /** Một lần GET trạng thái từ nhà cung cấp CỦA ENVELOPE ⇒ cập nhật hàng; ký xong ⇒ lưu bản đã ký (idempotent).
    *  `given` (ký thử): trạng thái đã biết, không hỏi nhà cung cấp. */
@@ -188,7 +188,7 @@ export function esignUsecase(d: ESignDeps) {
     return {
       ...s,
       ready: got.c.locked && got.c.file?.mime === "application/pdf",
-      envelope: got.e ? rowOut(got.e) : null,
+      envelope: got.e ? rowOut(got.e, who.userId) : null,
       defaults: defaultSigners({ me, partner: got.c.partner }),
     };
   };

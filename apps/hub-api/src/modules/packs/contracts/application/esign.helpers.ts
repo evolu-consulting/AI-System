@@ -1,4 +1,4 @@
-// cf-esign-docusign + esign-multi · hàm thuần của use case ký số: map hàng ⇒ DTO, gộp trạng thái người ký, dựng người ký lưu (người ký
+﻿// cf-esign-docusign + esign-multi · hàm thuần của use case ký số: map hàng ⇒ DTO, gộp trạng thái người ký, dựng người ký lưu (người ký
 // công ty = CHÍNH tài khoản gửi), cài đặt hiệu lực từ registry (mặc định công ty ⇒ khả dụng đầu tiên).
 import type {
   ESignEnvelopeOut,
@@ -33,7 +33,12 @@ export const labelOf = (entries: readonly ESignProviderEntry[], key: string): st
 export const kindOf = (entries: readonly ESignProviderEntry[], key: string) =>
   entries.find((e) => e.key === key)?.kind ?? metaOf(key).kind;
 
-export const envelopeOut = (e: EnvelopeRow, demo: boolean, label: string): ESignEnvelopeOut => ({
+export const envelopeOut = (
+  e: EnvelopeRow,
+  demo: boolean,
+  label: string,
+  viewerId?: string,
+): ESignEnvelopeOut => ({
   id: e.id,
   provider: e.provider,
   provider_label: label,
@@ -45,6 +50,7 @@ export const envelopeOut = (e: EnvelopeRow, demo: boolean, label: string): ESign
     email: s.email,
     order: s.order,
     embedded: s.client_user_id !== null,
+    ...(viewerId === undefined ? {} : { is_you: s.client_user_id === viewerId }),
     status: s.status,
     signed_at: s.signed_at,
     provider: s.provider ?? null,
@@ -54,7 +60,15 @@ export const envelopeOut = (e: EnvelopeRow, demo: boolean, label: string): ESign
   completed_at: e.completedAt,
   created_at: e.createdAt,
   has_signed_file: e.signedFileId !== null,
+  due_at: dueAtOf(e.createdAt, e.dueH ?? null),
 });
+
+/** Hạn ký = lúc gửi + `due_h` giờ (ISO); không đặt hạn ⇒ null. */
+export function dueAtOf(createdAt: string, dueH: number | null): string | null {
+  if (dueH === null) return null;
+  const t = Date.parse(createdAt);
+  return Number.isFinite(t) ? new Date(t + dueH * 3_600_000).toISOString() : null;
+}
 
 /** Trạng thái người ký theo email từ nhà cung cấp; ký xong cả envelope mà không có chi tiết ⇒ coi mọi người đã ký. */
 export function mergeSigners(

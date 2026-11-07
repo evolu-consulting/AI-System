@@ -1,5 +1,9 @@
-// cf-esign-docusign · luật thuần khối "Ký số" ở chi tiết HĐ: chế độ hiển thị + nút được bấm theo trạng thái + quyền.
-import type { ESignProviderOut, ESignStateOut } from "@ai/contracts/pack-contracts";
+﻿// cf-esign-docusign · luật thuần khối "Ký số" ở chi tiết HĐ: chế độ hiển thị + nút được bấm theo trạng thái + quyền.
+import type {
+  ESignEnvelopeOut,
+  ESignProviderOut,
+  ESignStateOut,
+} from "@ai/contracts/pack-contracts";
 
 export type EsignMode =
   | "hidden"
@@ -16,18 +20,22 @@ export type EsignView = {
   canSend: boolean;
   canSignNow: boolean;
   canCancel: boolean;
-  canRefresh: boolean;
   canDownload: boolean;
   demo: boolean;
+  /** CR-125 · x2 · mode "pending": người ký tiếp theo CHƯA ký (tên) khi người xem KHÔNG phải người ký ⇒ "Đang chờ <tên> ký" không nút. */
+  waitingFor: string | null;
+  /** CR-125 · x2 · hạn ký của phong bì (ISO) — banner "Đến lượt bạn ký — hạn …". */
+  dueAt: string | null;
 };
 
 const none: Omit<EsignView, "mode"> = {
   canSend: false,
   canSignNow: false,
   canCancel: false,
-  canRefresh: false,
   canDownload: false,
   demo: false,
+  waitingFor: null,
+  dueAt: null,
 };
 
 /** `locked` = HĐ đã duyệt xong (khoá). Chưa khoá và chưa từng gửi ⇒ ẩn khối. */
@@ -39,25 +47,35 @@ export function esignView(
   const e = s.envelope;
   if (!e && !o.locked) return { mode: "hidden", ...none };
   const demo = e?.demo ?? s.demo;
-  if (e && (e.status === "sent" || e.status === "delivered"))
+  if (e && (e.status === "sent" || e.status === "delivered")) {
+    // CR-125 · x2 · lượt của người xem: có người ký nội bộ chưa ký ⇒ MỘT banner + MỘT nút "Ký ngay"; người khác ⇒ "Đang chờ <tên> ký", không nút.
+    const known = e.signers.some((x) => x.is_you !== undefined);
+    const mine =
+      o.write &&
+      e.signers.some((x) => (known ? x.is_you === true : x.embedded) && x.signed_at === null);
     return {
       ...none,
       mode: "pending",
       demo,
-      canRefresh: o.write, // esign-fix · làm mới có ghi ⇒ cần quyền ghi
-      canSignNow: o.write && e.signers.some((x) => x.embedded && x.signed_at === null),
+      canSignNow: mine,
       canCancel: o.write,
+      dueAt: e.due_at ?? null,
+      waitingFor: mine ? null : (nextSigner(e)?.name ?? null),
     };
+  }
   if (e?.status === "completed")
     return {
       ...none,
       mode: "signed",
       demo,
       canDownload: e.has_signed_file,
-      canRefresh: o.write && !e.has_signed_file,
     };
   return idleView(s, o.write, e !== null, demo);
 }
+
+/** Người ký kế tiếp chưa ký (theo thứ tự). */
+const nextSigner = (e: ESignEnvelopeOut) =>
+  [...e.signers].sort((a, b) => a.order - b.order).find((x) => x.signed_at === null);
 
 /** Chưa gửi / bị từ chối / bị huỷ: gửi (lại) được khi đủ cấu hình + bật + HĐ sẵn sàng + quyền ghi. */
 function idleView(s: ESignStateOut, write: boolean, had: boolean, demo: boolean): EsignView {

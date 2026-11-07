@@ -126,6 +126,26 @@ test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người k
   await expect(row).toContainText(`Người ký: ${signer}`);
   await expect(card.getByTestId(/^approval-step-/).filter({ hasText: /^Chờ ký/ })).toHaveCount(0); // không có dòng "Chờ ký" riêng
   await card.screenshot({ path: testInfo.outputPath("u6-1-dang-cho-ky.png") });
+  // CR-125 · x2 · thẻ ký số của NGƯỜI KÝ: MỘT banner "Đến lượt bạn ký" + MỘT nút "Ký ngay"; không "Làm mới trạng thái"; "Huỷ ký" trong menu "…".
+  const panel = emp.getByTestId("esign-panel");
+  await expect(panel.getByTestId("esign-turn")).toContainText("Đến lượt bạn ký");
+  await expect(panel.getByRole("button", { name: "Ký ngay" })).toHaveCount(1);
+  await expect(panel.getByRole("button", { name: "Làm mới trạng thái" })).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: "Huỷ ký" })).toHaveCount(0);
+  await panel.getByTestId("esign-menu").click();
+  await expect(panel.getByTestId("esign-cancel")).toBeVisible();
+  await panel.getByTestId("esign-menu").click();
+  await panel.screenshot({ path: testInfo.outputPath("x2-1-nguoi-ky.png") });
+
+  // — người KHÔNG phải người ký (giám đốc) thấy "Đang chờ <tên> ký", không nút nào —
+  const dir = await ctxPage(browser);
+  await loginCw(dir, E, U.director);
+  await dir.goto(`${E.cw}/contracts/c/${id}`);
+  const dp = dir.getByTestId("esign-panel");
+  await expect(dp.getByTestId("esign-status")).toContainText(`Đang chờ ${signer} ký`);
+  await expect(dp.getByRole("button")).toHaveCount(1); // chỉ nút "…" (Huỷ ký của người có quyền ghi), không Ký ngay
+  await expect(dp.getByRole("button", { name: "Ký ngay" })).toHaveCount(0);
+  await dp.screenshot({ path: testInfo.outputPath("x2-2-nguoi-khac.png") });
 
   // — người ký bấm "Ký ngay" (Ký thử) ⇒ Đã ký —
   await emp.getByRole("button", { name: "Ký ngay" }).click();

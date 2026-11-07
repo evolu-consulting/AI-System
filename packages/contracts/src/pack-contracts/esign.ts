@@ -1,4 +1,4 @@
-// cf-esign-docusign · ký số HĐ, trung lập nhà cung cấp (DocuSign / ký thử selfsign / CA VN sau này): contract `/pack/contracts/contracts/:id/esign*` + `/pack/contracts/esign/settings`.
+﻿// cf-esign-docusign · ký số HĐ, trung lập nhà cung cấp (DocuSign / ký thử selfsign / CA VN sau này): contract `/pack/contracts/contracts/:id/esign*` + `/pack/contracts/esign/settings`.
 import { z } from "zod";
 
 /** Mã lỗi ⇒ HTTP status. */
@@ -123,6 +123,8 @@ export type ESignSignerOut = {
   order: number;
   /** Người ký nội bộ ký ngay trong app (embedded). */
   embedded: boolean;
+  /** CR-125 · x2 · người xem CHÍNH là người ký này (so với tài khoản đang xem) — quyết "Đến lượt bạn ký"; vắng ⇒ hub cũ (dùng `embedded`). */
+  is_you?: boolean;
   status: string | null;
   signed_at: string | null;
   /** esign-multi · nhà cung cấp/chứng thư người này dùng khi ký (phong bì loại "ca"); null = theo phong bì. */
@@ -144,6 +146,8 @@ export type ESignEnvelopeOut = {
   created_at: string;
   /** Có "Bản đã ký" (tải qua `/contracts/:id/esign/signed`). */
   has_signed_file: boolean;
+  /** CR-125 · x2 · hạn ký = lúc gửi + `due_h` của phong bì (node Ký số đặt hạn); vắng/null ⇒ không đặt hạn. */
+  due_at?: string | null;
 };
 
 export type ESignStateOut = ESignSettingsOut & {
