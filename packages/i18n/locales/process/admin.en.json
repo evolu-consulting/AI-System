@@ -403,7 +403,7 @@
         }
       },
       "approver": "Who approves",
-      "approverPh": "Choose a department…",
+      "approverPh": "Choose an approver",
       "answerBy": "Time to respond (hours)",
       "answerByHint": "After this the approver is reminded. 4 to 168 hours."
     },

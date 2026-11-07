@@ -403,7 +403,7 @@
         }
       },
       "approver": "Ai duyệt",
-      "approverPh": "Chọn phòng ban…",
+      "approverPh": "Chọn người duyệt",
       "answerBy": "Hạn trả lời (giờ)",
       "answerByHint": "Quá hạn, hệ thống nhắc người duyệt. Từ 4 đến 168 giờ."
     },

@@ -360,6 +360,9 @@ test("U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, k
   await expect(page.getByTestId("approve-reject")).toContainText("Từ chối");
   await expect(page.getByTestId("approve-reject")).not.toContainText("Bước tiếp theo");
   await expect(page.getByTestId("approve-ret")).toContainText("Quay về bước duyệt trước");
+  // CR-125 · x5 · Duyệt mới KHÔNG có người duyệt mặc định (không "Beta testers"): ô hiện lời nhắc chọn
+  await expect(page.getByLabel("Ai duyệt")).toContainText("Chọn người duyệt");
+  await expect(page.getByLabel("Ai duyệt")).not.toContainText("Beta testers");
   await page.getByLabel("Ai duyệt").click();
   // CR-125 · x3 · ô "Ai duyệt" không lẫn nhóm kỹ thuật (Beta testers, nhóm vai của gói)
   await expect(page.getByRole("option", { name: /Beta testers|Chỉ xem|Sổ Hợp Tác/ })).toHaveCount(
@@ -490,6 +493,7 @@ test("U12b · trình tự demo: thả Duyệt (chung cột), Ký xong → Duyệ
   await page.getByLabel("Tên bước", { exact: true }).first().fill("Kế toán duyệt chi");
   await page.getByLabel("Ai duyệt").click();
   await page.getByRole("option").first().click();
+  await expect(page.getByLabel("Ai duyệt")).not.toContainText("Beta testers"); // CR-125 · x5 · lựa chọn đầu là nhóm nghiệp vụ
   await page.getByRole("button", { name: "Đóng ngăn chi tiết" }).click();
   await fitAll(page);
 
