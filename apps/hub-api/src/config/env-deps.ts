@@ -29,6 +29,7 @@ export type EnvAppDeps = Required<
     | "studioDist"
     | "processEngine"
     | "partnerMailbox"
+    | "trustProxyHops"
     | "frozenModules"
     | "processRoutes"
     | "fastRoute"
@@ -89,6 +90,7 @@ export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
     studioDist: env.HUB_STUDIO_DIST,
     processEngine: env.HUB_PROCESS_ENGINE === "on",
     partnerMailbox: env.HUB_PARTNER_MAILBOX === "on", // CR-124 · q1
+    ...(env.TRUST_PROXY_HOPS !== undefined ? { trustProxyHops: env.TRUST_PROXY_HOPS } : {}), // CR-124 · q5
     frozenModules: env.HUB_FROZEN_MODULES === "on",
     ...(env.HUB_PROCESS_ROUTES ? { processRoutes: env.HUB_PROCESS_ROUTES } : {}), // CR-103
     fastRoute: env.HUB_FAST_ROUTE === "on",

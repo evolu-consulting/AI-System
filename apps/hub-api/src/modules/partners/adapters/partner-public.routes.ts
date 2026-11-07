@@ -5,13 +5,13 @@
 // hạn mức theo IP + theo token (Redis, `window-limit.ts`); log request giấu token (`app.ts › redactPath`); `Cache-Control: no-store`, `noindex`, CSP chặt
 // (không script), `Referrer-Policy: no-referrer`. Trả lời ghi qua `hub.partner_email_reply` — CÙNG `partner_reply_apply` với đường nền tảng/thủ công.
 import { timingSafeEqual } from "node:crypto";
+import { forwardedIp } from "@ai/contracts/client-ip";
 import { type Context, Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { getCookie, setCookie } from "hono/cookie";
 import type { Logger } from "../../../lib/logger";
 import type { PartnerMailboxPort } from "../../packs/kit/public";
 import {
-  clientIp,
   EMAIL_LIMITS,
   type FormProblem,
   hashHex,
@@ -41,6 +41,8 @@ export type PartnerPublicDeps = {
   limit: WindowLimit;
   port: () => PartnerMailboxPort | undefined;
   log: Logger;
+  /** Số proxy tin cậy trước hub-api (`TRUST_PROXY_HOPS`); 0 ⇒ IP socket. */
+  hops: number;
 };
 
 type Ctx = Context;
@@ -59,9 +61,12 @@ const html = (c: Ctx, body: string, status: 200 | 303 | 403 | 404 | 410 | 422 | 
   return c.html(body, status);
 };
 
-function ipOf(c: Ctx): string | null {
-  const viaHeader = clientIp(c.req.raw.headers);
-  if (viaHeader) return viaHeader;
+/** IP client: có `hops` proxy tin cậy ⇒ phần tử thứ `hops` từ cuối của X-Forwarded-For (dùng chung với admin-api); không ⇒ IP socket. Không đọc được ⇒ null. */
+function ipOf(c: Ctx, hops: number): string | null {
+  if (hops > 0) {
+    const ip = forwardedIp(c.req.header("x-forwarded-for"), hops);
+    return ip && ip.length <= 64 ? ip : null;
+  }
   try {
     const srv = c.env as { requestIP?: (r: Request) => { address?: string } | null } | undefined;
     return srv?.requestIP?.(c.req.raw)?.address ?? null;
@@ -70,14 +75,14 @@ function ipOf(c: Ctx): string | null {
   }
 }
 
-/** Cùng nguồn gốc? `Sec-Fetch-Site` (trình duyệt hiện đại) → `Origin` so với Host → không tín hiệu ⇒ dựa vào cookie CSRF. */
+/** Cùng nguồn gốc? `Sec-Fetch-Site` (trình duyệt hiện đại) → `Origin` so với `Host` (KHÔNG tin X-Forwarded-Host) → không tín hiệu ⇒ dựa vào cookie CSRF. */
 export function sameSiteRequest(h: { get(n: string): string | null | undefined }): boolean {
   const sfs = h.get("sec-fetch-site");
   if (sfs) return sfs === "same-origin" || sfs === "none";
   const origin = h.get("origin");
   if (!origin) return true;
   try {
-    const host = (h.get("x-forwarded-host") ?? h.get("host") ?? "").split(",")[0]?.trim() ?? "";
+    const host = (h.get("host") ?? "").trim();
     return new URL(origin).hostname === host.replace(/:\d+$/, "");
   } catch {
     return false;
@@ -95,7 +100,7 @@ type Gate = { ok: true; ip: string | null; th: string } | { ok: false; res: Resp
 /** Cổng chung: hạn mức IP → khoá IP đoán link sai → dạng token → hạn mức token. */
 async function gate(c: Ctx, d: PartnerPublicDeps, kind: "open" | "pdf" | "reply"): Promise<Gate> {
   const token = c.req.param("token") ?? "";
-  const ip = ipOf(c);
+  const ip = ipOf(c, d.hops);
   const key = ip ?? "unknown";
   const tooMany = (retry: number): Gate => {
     c.header("Retry-After", String(retry));

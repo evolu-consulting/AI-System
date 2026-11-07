@@ -16,6 +16,7 @@ export function mountNotifyAndRelay<E extends Env>(
     internalToken?: string;
     redis?: Redis;
     partnerMailbox?: boolean;
+    trustProxyHops?: number;
     processLoops?: boolean;
   },
 ) {

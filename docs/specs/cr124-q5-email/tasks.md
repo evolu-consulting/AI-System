@@ -31,7 +31,8 @@ e2e một lần `journey-approval/cr124-q5-partner-email.spec.ts`.
 - Token do APP sinh (`crypto.getRandomValues` 32 byte, base64url 43 ký tự) và băm SHA-256 ở app; DB chỉ nhận băm. Tra theo băm qua chỉ mục duy nhất `token_hash` (băm không đảo được
   ⇒ so khớp chỉ mục không lộ thời gian có ích; không so chuỗi token).
 - Mỗi lần gửi/vòng = một dòng = một token; "một lần mỗi vòng": trả lời xong link chỉ XEM 7 ngày; hết hạn trả lời còn 7 ngày hiện "liên hệ <công ty gửi>" (không nội dung); sau đó như link sai.
-- Hạn mức (Redis cửa sổ cố định): mở 30/giờ/token · PDF 60/giờ/token · trả lời 10/giờ/token · 60 yêu cầu/phút/IP · 10 link sai/10 phút/IP ⇒ 429 + Retry-After. IP lấy phần CUỐI `X-Forwarded-For`.
+- Hạn mức (Redis cửa sổ cố định): mở 30/giờ/token · PDF 60/giờ/token · trả lời 10/giờ/token · 60 yêu cầu/phút/IP · 10 link sai/10 phút/IP ⇒ 429 + Retry-After. IP client = `forwardedIp(XFF, TRUST_PROXY_HOPS)` dùng chung với admin-api (`@ai/contracts/client-ip`); prod 3 hop.
+- nginx: `/partner-reply/` đi tới hub ở server 8081 (host app = HUB_NOTIFY_BASE_URL), bỏ khỏi 8083; access log (web + edge-proxy) chỉ ghi `/partner-reply/:token`, không ghi token. Host nginx TLS ngoài repo cần cùng quy tắc.
 - CSRF: cookie đôi (HttpOnly, SameSite=Strict, theo token) + `Sec-Fetch-Site`/`Origin`; PRG 303 sau POST. CSP `default-src 'none'` + `style-src 'unsafe-inline'` (không script), `frame-ancestors 'none'`.
 - Băm PDF ghi lúc gửi thư (đọc PDF qua cổng gói); trang chỉ phát PDF nếu băm còn khớp. PDF thiếu/không phải PDF ⇒ KHÔNG gửi thư (không link chết), thử lại theo bậc thang.
 - `email_sent_at`/trạng thái `delivered` ⇒ bộ chuyển q3 không đụng dòng email (chỉ lấy `channel='platform'`).
@@ -59,7 +60,8 @@ Link hết hạn ⇒ 410 chỉ hiện tên công ty gửi; quá 7 ngày hoặc s
 - Kịch bản: khi bên gửi ghi nhận thủ công thì link đóng và người dùng gói không gọi được hàm token [test: apps/hub-api/src/modules/partners/email.int.test.ts » bên GỬI đã ghi nhận thủ công ⇒ link đóng, người dùng gói không gọi được hàm token]
 - Kịch bản: khi vượt hạn mức mở hoặc đoán link sai thì 429 kèm Retry-After [test: apps/hub-api/src/modules/partners/email.int.test.ts » quá 30 lần mở/giờ/token ⇒ 429 + Retry-After, 10 link sai/IP ⇒ khoá IP]
 - Kịch bản: khi POST thiếu cookie, cookie lệch hoặc cross-site thì 403 và không ghi [test: apps/hub-api/src/modules/partners/email.int.test.ts » CSRF: thiếu cookie, cookie lệch hoặc Sec-Fetch-Site cross-site ⇒ 403 và không ghi]
-- Kịch bản: khi lấy IP và so cùng nguồn thì dùng phần cuối X-Forwarded-For và Sec-Fetch-Site/Origin [test: apps/hub-api/src/modules/partners/domain/email-link.rules.test.ts » IP rút gọn /24 và lấy IP cuối XFF (đầu do client tự khai)]
+- Kịch bản: khi có 1 hoặc 3 proxy tin cậy thì IP client là phần tử thứ hops từ cuối X-Forwarded-For và hai khách khác IP không chung xô hạn mức [test: apps/hub-api/src/modules/partners/domain/email-link.rules.test.ts » IP client theo số proxy tin cậy: 1 hop = phần tử cuối, 3 hop = thứ 3 từ cuối (đầu do client tự khai bị bỏ)]
+- Kịch bản: khi đối chiếu cùng nguồn thì chỉ so Origin với Host, bỏ qua X-Forwarded-Host [test: apps/hub-api/src/modules/partners/domain/email-link.rules.test.ts » hai khách khác IP qua 3 hop không dùng chung một xô, X-Forwarded-Host bị bỏ qua]
 #### Yêu cầu: Cách ly bảng nhật ký email
 `hub.partner_email_events` không đọc/ghi thẳng bởi role gói hay scope người dùng; nhật ký của một lần gửi chỉ bên gửi đọc được qua hàm.
 - Kịch bản: khi role gói / scope user / tenant khác truy cập thì bị chặn [test: apps/hub-api/src/modules/partners/email.int.test.ts » hub.partner_email_events: role gói và scope user không đọc/ghi thẳng bảng (NFR-01)]

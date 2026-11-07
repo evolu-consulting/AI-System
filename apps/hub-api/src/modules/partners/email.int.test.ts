@@ -35,6 +35,7 @@ const dispatch = () =>
 const mk = () =>
   partnerPublicRoutes({
     store: publicStore(db),
+    hops: 1, // XFF của test có đúng một IP (1 proxy tin cậy)
     limit: windowLimit({}),
     port: () => port,
     log: logger,

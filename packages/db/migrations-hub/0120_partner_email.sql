@@ -17,6 +17,9 @@ ALTER TABLE hub.partner_mailbox ADD COLUMN IF NOT EXISTS email_sent_at timestamp
 --> statement-breakpoint
 ALTER TABLE hub.partner_mailbox ADD COLUMN IF NOT EXISTS email_error text;
 --> statement-breakpoint
+-- Thời điểm bên GỬI đóng lần gửi (ghi thủ công / đóng): cửa sổ "link đóng chỉ xem 7 ngày" tính từ đây (hoặc `replied_at`), KHÔNG từ `updated_at`.
+ALTER TABLE hub.partner_mailbox ADD COLUMN IF NOT EXISTS closed_at timestamptz;
+--> statement-breakpoint
 -- Lô gửi email: dòng kênh email chưa gửi (bộ gửi lấy theo thuê, SKIP LOCKED).
 CREATE INDEX IF NOT EXISTS partner_mailbox_email_idx ON hub.partner_mailbox (created_at)
   WHERE channel = 'email' AND status = 'sent' AND email_sent_at IS NULL;
@@ -213,7 +216,7 @@ BEGIN
     WHEN m.status = 'replied' AND m.replied_by_source = 'email' THEN
       CASE WHEN m.replied_at > now() - interval '7 days' THEN 'replied' END
     WHEN m.status = 'closed' OR m.status = 'replied' THEN
-      CASE WHEN m.updated_at > now() - interval '7 days' THEN 'closed' END
+      CASE WHEN COALESCE(m.closed_at, m.replied_at, m.expires_at) > now() - interval '7 days' THEN 'closed' END
     WHEN m.status IN ('sent', 'delivered') AND m.expires_at > now() THEN 'open'
     ELSE CASE WHEN m.expires_at > now() - interval '7 days' THEN 'expired' END
   END;

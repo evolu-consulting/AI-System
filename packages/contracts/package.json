@@ -16,6 +16,7 @@
     "./auth-limit": "./src/auth-limit.ts",
     "./capabilities": "./src/capabilities.ts",
     "./chat": "./src/chat/index.ts",
+    "./client-ip": "./src/client-ip.ts",
     "./command-test": "./src/command-test.ts",
     "./commands": "./src/commands.ts",
     "./common": "./src/common.ts",

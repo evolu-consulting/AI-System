@@ -21,7 +21,12 @@ export function windowLimit(o: { redis?: Redis | undefined; now?: () => Date }):
     return { w, retryAfterS: Math.max(1, Math.ceil(((w + 1) * windowS * 1000 - t) / 1000)) };
   };
   const mem = (key: string, windowS: number, inc: number): number => {
-    if (local.size > 5000) local.clear(); // trần bộ nhớ khi không có Redis
+    // Trần bộ nhớ khi không có Redis: bỏ cửa sổ CŨ NHẤT (Map giữ thứ tự chèn), không xoá sạch (xoá sạch = reset hạn mức của mọi người).
+    while (local.size >= 5000) {
+      const oldest = local.keys().next().value;
+      if (oldest === undefined) break;
+      local.delete(oldest);
+    }
     const k = `${key}:${slot(windowS).w}`;
     const n = (local.get(k) ?? 0) + inc;
     local.set(k, n);

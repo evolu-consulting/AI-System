@@ -68,6 +68,8 @@ export type AppDeps = {
   processEngine?: boolean;
   /** CR-124 · q1 · = `HUB_PARTNER_MAILBOX==="on"`: chạy vòng bộ chuyển hộp thư liên công ty (cùng `processLoops`). Vắng ⇒ tắt. */
   partnerMailbox?: boolean;
+  /** CR-124 · q5 · = `TRUST_PROXY_HOPS`: số proxy tin cậy trước hub-api (IP client của trang công khai từ X-Forwarded-For). Vắng/0 ⇒ IP socket. */
+  trustProxyHops?: number;
   /**
    * F1 (CR-095) · module đóng băng (docs/platform/modules.md): `false` ⇒ KHÔNG mount route công khai của quy trình, phòng (`/rooms`), nguồn,
    * KH (`/studio/api/kh*`); engine quy trình vẫn chạy nội bộ theo `processEngine` (gói hợp đồng cần). Vắng ⇒ bật (test in-process

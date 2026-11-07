@@ -49,14 +49,6 @@ export function ipPrefix(ip: string | null): string | null {
   return null;
 }
 
-/** IP client: nginx nối IP kết nối thật vào CUỐI `X-Forwarded-For` (đầu danh sách do client tự khai, không tin). */
-export function clientIp(h: { get(name: string): string | undefined | null }): string | null {
-  const xff = h.get("x-forwarded-for");
-  const last = xff?.split(",").at(-1)?.trim();
-  const ip = last || h.get("x-real-ip")?.trim();
-  return ip && ip.length <= 64 ? ip : null;
-}
-
 const OUTCOME_OF: Record<string, Outcome> = {
   confirm: "confirmed",
   return: "returned",

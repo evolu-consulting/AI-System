@@ -26,6 +26,7 @@ export function mountPartnerPublic<E extends Env>(
   d: {
     db?: Db | undefined;
     partnerMailbox?: boolean | undefined;
+    trustProxyHops?: number | undefined;
     redis?: Redis | undefined;
     log: Logger;
     now?: () => Date;
@@ -36,6 +37,7 @@ export function mountPartnerPublic<E extends Env>(
     PARTNER_PUBLIC_PATH,
     partnerPublicRoutes({
       store: publicStore(d.db),
+      hops: d.trustProxyHops ?? 0,
       limit: windowLimit({ redis: d.redis, ...(d.now ? { now: d.now } : {}) }),
       port: () => partnerMailboxPort.get(),
       log: d.log,
