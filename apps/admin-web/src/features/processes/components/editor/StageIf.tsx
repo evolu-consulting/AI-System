@@ -187,7 +187,7 @@ export function StageIf(p: StageIfProps) {
                 const op = opsForType(ft).includes(c.op as never) ? c.op : "eq";
                 setCond(j, {
                   from,
-                  type: ft === "boolean" ? "string" : ft,
+                  type: ft,
                   op,
                   ...(ft === type ? {} : { value: ft === "boolean" ? "true" : "" }),
                 });

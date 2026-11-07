@@ -10,6 +10,19 @@ describe("compareFact", () => {
     expect(compareFact("ne", [], "x")).toBe(false);
     expect(compareFact("gt", undefined, 1)).toBe(false);
   });
+  it("CR-123 u15 · dữ kiện boolean so với boolean THẬT (và chuỗi cũ 'true'/'false' cho cùng kết quả)", () => {
+    expect(compareFact("eq", true, true)).toBe(true);
+    expect(compareFact("eq", false, true)).toBe(false);
+    expect(compareFact("ne", false, true)).toBe(true);
+    expect(compareFact("eq", false, false)).toBe(true);
+    for (const [v, want] of [
+      [true, true],
+      [false, true],
+      [true, false],
+    ] as const)
+      expect(compareFact("eq", v, want)).toBe(compareFact("eq", v, String(want)));
+    expect(compareFact("eq", null, true)).toBe(false); // chưa có dữ liệu ⇒ Sai
+  });
   it("boolean so với 'true'/'false'; danh sách eq = chứa, ne = không chứa", () => {
     expect(compareFact("eq", true, "true")).toBe(true);
     expect(compareFact("eq", false, "true")).toBe(false);

@@ -9,6 +9,9 @@ import { isCalendarDate } from "../runs/start-inputs.rules";
 /** Trần số điều kiện một node If (= `IF_CONDS_MAX` contract). */
 export const IF_CONDS_MAX = 6;
 type Value = string | number;
+/** CR-123 · u15 · vế phải của điều kiện: boolean THẬT cho dữ kiện Có/Không (chuỗi "true"/"false" của def cũ vẫn so đúng). */
+type Want = Value | boolean;
+const asValue = (w: Want): Value => (typeof w === "boolean" ? String(w) : w);
 export type IfFrom =
   | { kind: "field"; stageKey: string; field: string }
   | { kind: "input"; key: string }
@@ -17,7 +20,7 @@ export type IfFrom =
 export type FactValue = string | number | boolean | readonly string[] | null;
 /** Giá trị đã đọc của một vế `fact` (ghi lịch sử; `null` = chưa có dữ liệu). */
 export type FactRead = { key: string; value: FactValue };
-export type IfCond = { from: IfFrom; op: BranchOp; value: Value };
+export type IfCond = { from: IfFrom; op: BranchOp; value: Want };
 export type IfWhen = { op: "and" | "or"; conds: readonly IfCond[] };
 /** `then`/`else` 0-based; `elseStep = null` ⇒ Sai thì sang bước kế. */
 export type IfExec = { when: IfWhen; thenStep: number; elseStep: number | null };
@@ -42,16 +45,17 @@ export const factKeysOf = (when: IfWhen): string[] => [
   ...new Set(when.conds.flatMap((c) => (c.from.kind === "fact" ? [c.from.key] : []))),
 ];
 
-/** So một dữ kiện: boolean ⇔ "true"/"false"; danh sách: `eq` = có chứa, `ne` = không chứa; trống/`null` ⇒ sai (nhánh Sai). */
-export function compareFact(op: BranchOp, v: FactValue | undefined, want: Value): boolean {
+/** So một dữ kiện: boolean ⇔ boolean thật (hoặc "true"/"false" của def cũ); danh sách: `eq` = có chứa, `ne` = không chứa; trống/`null` ⇒ sai (nhánh Sai). */
+export function compareFact(op: BranchOp, v: FactValue | undefined, want: Want): boolean {
   if (v === undefined || v === null || v === "") return false;
-  if (typeof v === "boolean") return compare(op, String(v), want);
+  const w = asValue(want);
+  if (typeof v === "boolean") return compare(op, String(v), w);
   if (Array.isArray(v)) {
     if (v.length === 0) return false;
-    const has = v.some((x) => compare("eq", x, want));
+    const has = v.some((x) => compare("eq", x, w));
     return op === "eq" ? has : op === "ne" ? !has : false;
   }
-  return compare(op, v as Value, want);
+  return compare(op, v as Value, w);
 }
 
 const factOf = (facts: Readonly<Record<string, FactValue>> | null, key: string): FactValue =>
@@ -67,7 +71,7 @@ function plainHit(
   const src = f.kind === "field" ? (fieldsByStageKey[f.stageKey] ?? null) : inputs;
   const k = f.kind === "field" ? f.field : f.key;
   const v = src && Object.hasOwn(src, k) ? src[k] : undefined;
-  return v !== undefined && v !== null && compare(c.op, v, c.value);
+  return v !== undefined && v !== null && compare(c.op, v, asValue(c.value));
 }
 
 /**
@@ -117,7 +121,7 @@ const sideValue = (
 const sideHit = (c: IfCond, v: unknown): boolean =>
   c.from.kind === "fact"
     ? compareFact(c.op, v as FactValue, c.value)
-    : compare(c.op, v as Value, c.value);
+    : compare(c.op, v as Value, asValue(c.value));
 
 /**
  * CR-122 · P18 · Luật GỐC 3: khoá `fact`/`input` còn thiếu mà kết quả `when` PHỤ THUỘC vào (không tự coi là Sai). AND đã có vế

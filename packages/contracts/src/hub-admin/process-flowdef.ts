@@ -102,10 +102,6 @@ function condOk(c: FactCond, type: AppFactType): boolean {
   return typeof v === "string";
 }
 
-/** Vế Có/Không của node Nếu: chỉ "là / không là" + "true" / "false". */
-const ifBoolOk = (op: string, v: unknown): boolean =>
-  (op === "eq" || op === "ne") && (v === "true" || v === "false");
-
 function whenIssues(w: FactWhen, ev: AppEventDecl, add: (p: string, r: FlowDefRule) => void) {
   const types = new Map(ev.facts.map((f) => [f.key, f.type]));
   const check = (c: FactCond, path: string) => {
@@ -142,9 +138,9 @@ function ifFactIssues(
       if (c.from.kind !== "fact") return;
       const t = types.get(c.from.key ?? "");
       const cond = { fact: c.from.key ?? "", op: c.op, value: c.value } as FactCond;
-      // node Nếu (stage, `Cond.value` là chuỗi/số) so dữ kiện Có/Không bằng "true"/"false" (engine: `compareFact`); vế Bắt đầu khi (FactCond) dùng boolean thật.
-      const ok = t === "boolean" ? ifBoolOk(c.op, c.value) : t !== undefined && condOk(cond, t);
-      if (t === undefined || !ok) add(`stages.${i}.executor.when.conds.${j}`, "FLOW_WHEN_INVALID");
+      // CR-123 · u15 · MỘT dạng: vế Có/Không của node Nếu cũng là boolean thật (như vế Bắt đầu khi) ⇒ cùng `condOk`.
+      if (t === undefined || !condOk(cond, t))
+        add(`stages.${i}.executor.when.conds.${j}`, "FLOW_WHEN_INVALID");
     });
   });
 }

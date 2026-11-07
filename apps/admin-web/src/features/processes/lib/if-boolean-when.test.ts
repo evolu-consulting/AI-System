@@ -2,7 +2,7 @@
 import { describe, expect, test } from "bun:test";
 import { emptyStage } from "./def-form";
 import { eventOf, toFlowDef, validateFlowDef } from "./flow-def";
-import { draftToIf } from "./if-form";
+import { draftToIf, ifToDraft } from "./if-form";
 
 const ev = eventOf("contracts", "contract.submitted");
 const bool = ev?.facts.find((f) => f.type === "boolean");
@@ -28,7 +28,7 @@ const ifStage = (op: string, value: string) =>
     executor: "if",
     ifx: {
       op: "and",
-      conds: [{ from: `fact|${bool.key}`, type: "string", op, value }],
+      conds: [{ from: `fact|${bool.key}`, type: "boolean", op, value }],
       yes: 2,
       no: null,
     },
@@ -37,7 +37,7 @@ const issues = (stages: object[], m: object = meta) =>
   validateFlowDef(toFlowDef(stages as never, m as never), "contracts").map((i) => i.path);
 
 describe("điều kiện Có/Không", () => {
-  test("node Nếu 'là Có' / 'không là Không' (chuỗi true/false) qua luật Hub", () => {
+  test("node Nếu 'là Có' / 'không là Không' (boolean thật) qua luật Hub", () => {
     const end = stage(1, { outcome });
     for (const [op, v] of [
       ["eq", "true"],
@@ -46,18 +46,38 @@ describe("điều kiện Có/Không", () => {
     ] as const)
       expect(issues([ifStage(op, v), end]).filter((p) => p.includes("conds"))).toEqual([]);
   });
-  test("editor phát đúng chuỗi true/false, không phải chữ tự gõ", () => {
-    const c = draftToIf({
-      op: "and",
-      conds: [{ from: `fact|${bool.key}`, type: "string", op: "eq", value: "true" }],
+  test("CR-123 u15 · editor phát boolean THẬT (cùng dạng với Bắt đầu khi), đọc lại giữ đúng", () => {
+    const d = {
+      op: "and" as const,
+      conds: [{ from: `fact|${bool.key}`, type: "boolean" as const, op: "eq", value: "true" }],
       yes: 2,
       no: null,
-    }).when.conds[0];
-    expect(c?.value).toBe("true");
+    };
+    const e = draftToIf(d);
+    expect(e.when.conds[0]?.value).toBe(true);
+    expect(
+      draftToIf({ ...d, conds: [{ ...d.conds[0], value: "false" }] }).when.conds[0]?.value,
+    ).toBe(false);
+    expect(ifToDraft(e).conds[0]).toMatchObject({ type: "boolean", value: "true" });
   });
-  test("chữ lạ / phép thứ tự trên Có/Không vẫn bị chặn", () => {
+  test("def cũ lưu chuỗi 'true'/'false' ở vế dữ kiện ⇒ editor đọc thành Có/Không (lưu lại là boolean)", () => {
+    const old = {
+      kind: "if" as const,
+      when: {
+        op: "and" as const,
+        conds: [
+          { from: { kind: "fact" as const, key: bool.key }, op: "eq" as const, value: "false" },
+        ],
+      },
+      then_step: 1,
+      else_step: null,
+    };
+    const d = ifToDraft(old);
+    expect(d.conds[0]).toMatchObject({ type: "boolean", value: "false" });
+    expect(draftToIf(d).when.conds[0]?.value).toBe(false);
+  });
+  test("phép thứ tự trên Có/Không vẫn bị chặn", () => {
     const end = stage(1, { outcome });
-    expect(issues([ifStage("eq", "yes"), end])).toContain("stages.0.executor.when.conds.0");
     expect(issues([ifStage("gt", "true"), end])).toContain("stages.0.executor.when.conds.0");
   });
   test("Bắt đầu khi: dữ kiện Có/Không dùng boolean thật và qua luật Hub", () => {

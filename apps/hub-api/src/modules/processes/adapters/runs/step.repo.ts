@@ -1,7 +1,7 @@
 // HUB-FR-106 · HUB-FR-146 · P-d2 T19s (tách từ `runs/step-persist.ts`, không đổi hành vi; plan-d2 §3, §7, D2-16): `StepRepo`
 // gắn tx + `tenantId` — SQL join bước nguyên văn như trước tách. `settleStepTx` = vỏ cùng chữ ký cũ cho nơi gọi có `Tx`
 // (persistStage, wait-launch, asks). Chạy TRONG tx đã khoá `process_runs` FOR UPDATE (plan §7).
-import { resolveSteps } from "@ai/contracts/hub-admin";
+import { canonicalCondValue, resolveSteps } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { FlowPackRef, StepRepo } from "../../application/ports";
@@ -85,7 +85,7 @@ type SnapCond = {
     | { kind: "input"; key: string }
     | { kind: "fact"; key: string };
   op: BranchRule["op"];
-  value: string | number;
+  value: string | number | boolean;
 };
 const ifOf = (ex: SnapIf | undefined): IfExec | null =>
   ex?.kind === "if" && ex.when && Array.isArray(ex.when.conds)
@@ -98,7 +98,8 @@ const ifOf = (ex: SnapIf | undefined): IfExec | null =>
                 ? { kind: "field" as const, stageKey: c.from.stage_key, field: c.from.field }
                 : c.from,
             op: c.op,
-            value: c.value,
+            // CR-123 · u15 · snapshot cũ lưu "true"/"false" (chuỗi) ở vế dữ kiện ⇒ boolean khi đọc
+            value: canonicalCondValue(c.from, c.value),
           })),
         },
         thenStep: Number(ex.then_step),

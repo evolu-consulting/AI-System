@@ -48,7 +48,13 @@ export type BranchDraft = { field: string; op: string; value: string; goto: numb
 
 /** Nguồn một điều kiện: `field|<stage_key>|<field>` hoặc `input|<key>`; rỗng = chưa chọn. */
 /** `type` = kiểu nguồn đã chọn (Số ⇒ giá trị gửi là number). */
-export type CondDraft = { from: string; type: FieldDraft["type"]; op: string; value: string };
+/** `type` "boolean" ⇒ vế Có/Không của dữ kiện: giá trị UI "true"/"false" nhưng GỬI boolean thật (một dạng, như "Bắt đầu khi"). */
+export type CondDraft = {
+  from: string;
+  type: FieldDraft["type"] | "boolean";
+  op: string;
+  value: string;
+};
 export type IfDraft = {
   op: "and" | "or";
   conds: CondDraft[];

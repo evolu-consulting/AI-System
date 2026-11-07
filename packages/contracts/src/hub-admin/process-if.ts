@@ -26,11 +26,23 @@ export const CondFromSchema = z.discriminatedUnion("kind", [
 ]);
 export type CondFrom = z.infer<typeof CondFromSchema>;
 
-export const CondSchema = z.strictObject({
-  from: CondFromSchema,
-  op: z.enum(BRANCH_OPS),
-  value: z.union([z.string().max(IF_VALUE_MAX), z.number()]),
-});
+/**
+ * CR-123 · u15 · MỘT dạng giá trị cho vế Có/Không: BOOLEAN THẬT (`true`/`false`) — cùng dạng với vế "Bắt đầu khi" (`FactCond`).
+ * Def cũ lưu chuỗi "true"/"false" ở vế `fact` ⇒ đổi thành boolean khi đọc (schema + `canonicalCondValue` cho đường đọc JSON thô của engine).
+ */
+export const canonicalCondValue = (
+  from: { kind: string },
+  v: string | number | boolean,
+): string | number | boolean =>
+  from.kind === "fact" && (v === "true" || v === "false") ? v === "true" : v;
+
+export const CondSchema = z
+  .strictObject({
+    from: CondFromSchema,
+    op: z.enum(BRANCH_OPS),
+    value: z.union([z.string().max(IF_VALUE_MAX), z.number(), z.boolean()]),
+  })
+  .transform((c) => ({ ...c, value: canonicalCondValue(c.from, c.value) }));
 export type Cond = z.infer<typeof CondSchema>;
 
 export const WhenSchema = z.strictObject({
