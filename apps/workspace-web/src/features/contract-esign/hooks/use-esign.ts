@@ -15,7 +15,7 @@ import {
   signUrl,
   voidEsign,
 } from "../api";
-import { eventConcernsEsign } from "../lib/esign-push";
+import { ESIGN_QUERY_OPTS, eventConcernsEsign } from "../lib/esign-push";
 import { esignErrKey, returnedFromSigning, signReturnUrl } from "../lib/esign-view";
 
 export function useEsign(id: string) {
@@ -24,9 +24,8 @@ export function useEsign(id: string) {
   const q = useQuery({
     queryKey: esignKey(id),
     queryFn: ({ signal }) => fetchEsign(id, signal),
-    retry: false,
     // CR-125 · x6 · không poll (Luật 4c): hub đẩy `esign.updated` qua `/me/stream`; dự phòng duy nhất = tải lại khi quay lại cửa sổ.
-    refetchOnWindowFocus: true,
+    ...ESIGN_QUERY_OPTS,
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);

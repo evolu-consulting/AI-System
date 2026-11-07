@@ -1,6 +1,6 @@
 ﻿import { describe, expect, it } from "bun:test";
 import { parseMeStreamProcessEvent } from "@ai/contracts/chat";
-import { eventConcernsEsign } from "./esign-push";
+import { ESIGN_QUERY_OPTS, eventConcernsEsign } from "./esign-push";
 
 const CID = "0f3c2a10-8b1e-4c55-9d7a-1a2b3c4d5e6f";
 const ev = (event: string, data: unknown) => {
@@ -35,5 +35,12 @@ describe("eventConcernsEsign", () => {
       ),
     ).toBeNull();
     expect(parseMeStreamProcessEvent("esign.updated", "{hỏng")).toBeNull();
+  });
+});
+
+describe("ESIGN_QUERY_OPTS", () => {
+  it("staleTime 0 + tải lại khi quay lại cửa sổ (mặc định 30 s của app sẽ chặn focus-refetch)", () => {
+    expect(ESIGN_QUERY_OPTS.staleTime).toBe(0);
+    expect(ESIGN_QUERY_OPTS.refetchOnWindowFocus).toBe(true);
   });
 });
