@@ -30,6 +30,7 @@ Không UI chọn đối tác khi gửi / cảnh báo chưa xác minh (q3/q4), kh
 - Bật danh bạ chỉ khi đủ tên pháp lý + MST (422 `DIRECTORY_NEEDS_PROFILE`); tắt luôn được. Chỉ tenant_admin CHÍNH công ty bật/tắt (platform_admin không bật hộ: đây là sự đồng ý của công ty); platform_admin chỉ đặt Đã xác minh (route + service + hàm DB kiểm).
 - Tỉnh/thành và logo (spec §4) chưa có cột trong hồ sơ CR-121 ⇒ chưa trả; thêm khi hồ sơ có.
 - Consent nối: dòng (A → B) = "A xin gửi cho B". `request` cần B đang bật danh bạ và hoạt động (đọc `admin.tenants` bằng quyền chủ hàm; hub_ro vẫn không có cột mới). B chặn trước được (tạo dòng chặn). Chặn giữ `accepted_at` làm lịch sử; `accept` bỏ chặn. Sai bên / không có lời mời ⇒ 42501.
+- Soát Opus: cột `requested_at` (0118) phân biệt "A đã xin rồi bị chặn" với "B chặn trước" — chặn trước thì A không thấy dòng `out` (không lộ tên/MST của B) và `request` vẫn trả `pending`; `mine` chỉ trả `legal_name` (không rơi về tên khoá); `partner_link_block` từ chối id không có trong `admin.tenants`; hàm `directory_set_verified` chỉ là lớp phụ, cổng thật là route + service (audit chỉ ghi `Tenant` công khai + tên cờ).
 - B tắt danh bạ SAU khi đã chấp nhận ⇒ liên kết cũ vẫn hiệu lực (B có thể chặn); chỉ lời mời mới bị chặn. Xin duyệt khi review nếu muốn khoá cả gửi.
 - Hub chưa gọi hàm admin: kết nối `hub_api` chạy `hub.partner_link_request` đọc `admin.tenants` qua DEFINER (cùng DB).
 

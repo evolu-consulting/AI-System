@@ -65,7 +65,8 @@ BEGIN
   END IF;
 END $$;
 --> statement-breakpoint
--- Dấu "Đã xác minh": CHỈ phạm vi nền tảng (`app.scope = 'platform'`) đặt/xoá được — kiểm ở DB, không chỉ ở API. Trả TRUE khi đổi.
+-- Dấu "Đã xác minh": CHỈ phạm vi nền tảng (`app.scope = 'platform'`) đặt/xoá được. Lưu ý: `app.scope` là biến phiên mà admin-api tự đặt
+-- (ai có role admin_rw đặt được) ⇒ kiểm ở DB chỉ là lớp phụ chặn nhầm; cổng thật là route `requireRole(platform_admin)` + service. Trả TRUE khi đổi.
 CREATE OR REPLACE FUNCTION admin.directory_set_verified(p_tenant uuid, p_verified boolean, p_by uuid)
 RETURNS boolean
 LANGUAGE plpgsql

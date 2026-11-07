@@ -4,8 +4,14 @@
 --   request(B)  : A (tenant hiện tại) tạo lời mời; B phải đang bật "cho phép tìm thấy" (đọc admin.tenants bằng quyền chủ hàm).
 --   accept(A)   : CHỈ B (to_tenant = tenant hiện tại) chấp nhận lời mời tới mình; bỏ chặn nếu đang chặn.
 --   block(A)    : CHỈ B chặn A (cả khi A chưa gửi — chặn trước). Giữ accepted_at làm lịch sử.
---   mine()      : dòng mà tenant hiện tại là bên gửi ('out') hoặc nhận ('in'), kèm tên/MST công khai của bên kia.
+--   mine()      : dòng mà tenant hiện tại là bên gửi ('out') hoặc nhận ('in'), kèm tên pháp lý/MST công khai của bên kia.
 -- Sai bên / không có lời mời ⇒ 42501 (không lộ có hay không). `partner_send` (0117) giữ nguyên: vẫn cần accepted_at, chưa blocked_at.
+-- Chặn trước (B chặn A khi A chưa từng xin): dòng không có `requested_at` ⇒ A KHÔNG thấy dòng 'out' (không lộ tên/MST của B kể cả khi
+-- B không bật danh bạ) và `request` trả 'pending' như thường, không đổi gì. A xin rồi mới bị chặn ⇒ thấy 'blocked'.
+ALTER TABLE hub.partner_links ADD COLUMN IF NOT EXISTS requested_at timestamptz;
+--> statement-breakpoint
+UPDATE hub.partner_links SET requested_at = created_at WHERE requested_at IS NULL AND (accepted_at IS NOT NULL OR blocked_at IS NULL);
+--> statement-breakpoint
 CREATE OR REPLACE FUNCTION hub.partner_link_request(p_to_tenant uuid)
 RETURNS text
 LANGUAGE plpgsql
@@ -23,7 +29,8 @@ BEGIN
     RAISE EXCEPTION 'partner_link_request: công ty nhận không hợp lệ' USING ERRCODE = '22023';
   END IF;
   -- Đã có dòng (kể cả B chặn trước) ⇒ trả trạng thái hiện tại, không đổi, không cần B còn bật danh bạ.
-  SELECT CASE WHEN l.blocked_at IS NOT NULL THEN 'blocked' WHEN l.accepted_at IS NOT NULL THEN 'accepted' ELSE 'pending' END
+  SELECT CASE WHEN l.requested_at IS NULL AND l.accepted_at IS NULL THEN 'pending'  -- B chặn trước: không lộ
+              WHEN l.blocked_at IS NOT NULL THEN 'blocked' WHEN l.accepted_at IS NOT NULL THEN 'accepted' ELSE 'pending' END
     INTO v_status FROM hub.partner_links l WHERE l.from_tenant = v_tid AND l.to_tenant = p_to_tenant;
   IF FOUND THEN
     RETURN v_status;
@@ -31,7 +38,8 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM admin.tenants t WHERE t.id = p_to_tenant AND t.active AND t.directory_listed) THEN
     RAISE EXCEPTION 'partner_link_request: công ty nhận không bật cho phép tìm thấy' USING ERRCODE = '42501';
   END IF;
-  INSERT INTO hub.partner_links (from_tenant, to_tenant) VALUES (v_tid, p_to_tenant) ON CONFLICT DO NOTHING;
+  INSERT INTO hub.partner_links (from_tenant, to_tenant, requested_at) VALUES (v_tid, p_to_tenant, now())
+  ON CONFLICT DO NOTHING;
   RETURN 'pending';
 END $$;
 --> statement-breakpoint
@@ -71,6 +79,10 @@ BEGIN
   IF v_tid IS NULL OR p_from_tenant IS NULL OR p_from_tenant = v_tid THEN
     RAISE EXCEPTION 'partner_link_block: công ty không hợp lệ' USING ERRCODE = '42501';
   END IF;
+  -- partner_links không có FK sang admin.tenants (khác schema) ⇒ kiểm ở đây để không tạo dòng cho id tuỳ ý.
+  IF NOT EXISTS (SELECT 1 FROM admin.tenants t WHERE t.id = p_from_tenant) THEN
+    RAISE EXCEPTION 'partner_link_block: công ty không hợp lệ' USING ERRCODE = '42501';
+  END IF;
   INSERT INTO hub.partner_links (from_tenant, to_tenant, blocked_at) VALUES (p_from_tenant, v_tid, now())
   ON CONFLICT (from_tenant, to_tenant) DO UPDATE SET blocked_at = now() WHERE hub.partner_links.blocked_at IS NULL;
   GET DIAGNOSTICS v_n = ROW_COUNT;
@@ -94,12 +106,13 @@ BEGIN
     RAISE EXCEPTION 'partner_links_mine: chưa đặt tenant' USING ERRCODE = '42501';
   END IF;
   RETURN QUERY
-  SELECT x.direction, x.other, COALESCE(t.legal_name, t.name), t.tax_code, t.directory_verified_at IS NOT NULL,
+  SELECT x.direction, x.other, t.legal_name, t.tax_code, t.directory_verified_at IS NOT NULL,
          CASE WHEN x.blocked_at IS NOT NULL THEN 'blocked' WHEN x.accepted_at IS NOT NULL THEN 'accepted' ELSE 'pending' END,
          x.created_at, COALESCE(x.blocked_at, x.accepted_at)
     FROM (
       SELECT 'out'::text AS direction, l.to_tenant AS other, l.accepted_at, l.blocked_at, l.created_at
-        FROM hub.partner_links l WHERE l.from_tenant = v_tid
+        FROM hub.partner_links l
+       WHERE l.from_tenant = v_tid AND (l.requested_at IS NOT NULL OR l.accepted_at IS NOT NULL)
       UNION ALL
       SELECT 'in'::text, l.from_tenant, l.accepted_at, l.blocked_at, l.created_at
         FROM hub.partner_links l WHERE l.to_tenant = v_tid

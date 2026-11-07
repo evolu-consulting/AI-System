@@ -110,4 +110,20 @@ describe("CR-124 q2 · nối đối tác (consent một lần)", () => {
       await pgCode(() => as(A, (tx) => tx`update hub.partner_links set accepted_at = now()`)),
     ).toBe("42501");
   });
+
+  it("B chặn trước khi C chưa xin: C không thấy B (không lộ tên/MST), request vẫn pending, không gửi được", async () => {
+    expect(await as(B, (tx) => block(tx, C))).toBe(true);
+    expect(await as(C, (tx) => request(tx, B))).toBe("pending"); // không phải 'blocked'
+    expect(await as(C, (tx) => tx`select * from hub.partner_links_mine()`)).toHaveLength(0);
+    expect(await pgCode(() => as(C, (tx) => send(tx, C, B)))).toBe("42501");
+    const inB = await as(B, (tx) => tx`select * from hub.partner_links_mine()`);
+    expect(inB.find((r) => r.other_tenant === C)).toMatchObject({
+      direction: "in",
+      status: "blocked",
+    });
+    // Chặn id không phải công ty nào ⇒ 42501, không tạo dòng.
+    const ghost = tenantId(1499);
+    expect(await pgCode(() => as(B, (tx) => block(tx, ghost)))).toBe("42501");
+    expect((await link(ghost, B)).length).toBe(0);
+  });
 });
