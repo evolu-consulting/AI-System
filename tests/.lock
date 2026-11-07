@@ -1473,6 +1473,7 @@ bac03439f9d616e2aadf6a90ed7f315e4a0eae49f91ce1a3223229e480caeb5c  tests/acceptan
 bae5731b9aabdb8de905fcce7440fa242e2bef140e0c897e919c5b97053605cf  tests/acceptance/agents-background/background.int.test.ts
 bd711e3d6ecbb8ffa617f6ab8409e286d8ef21ec05589dedd08c05ba14d95f49  tests/acceptance/cf-esign/_support/esign.ts
 360df60b0f4fdb906309dc0cfeb6c888267b753243cf3241f0bcee54e289d96f  tests/acceptance/cf-esign/esign.int.test.ts
+389124e78772d0ddfa14b26644e0068f717b323f62b284d75140055a98b916d2  tests/acceptance/cf-esign/signer-visible.int.test.ts
 71c3c3343878fd1f14e4388e8d88bab943788122b98e08614304ee530225deb2  tests/acceptance/chat-fast/default-route.int.test.ts
 58255da17b89cf9a14ecf1976834d118849b5a2602f448302d9cec1e06c9d685  tests/acceptance/chat-fast/dispatch.perf.int.test.ts
 529e0c1e63831ade9c21d625f0029d8a906476f7ead81b455fb2d06053f36eb7  tests/acceptance/chat-fast/fast-route.int.test.ts

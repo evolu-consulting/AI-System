@@ -533,6 +533,13 @@
       "when": 1806600000000,
       "tag": "0082_supersede_on_confirm",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1806700000000,
+      "tag": "0083_esign_signer_visible",
+      "breakpoints": true
     }
   ]
 }
