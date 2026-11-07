@@ -44,8 +44,18 @@ Người dùng dựng flow bằng tay kéo-thả như công cụ vẽ quy trình
 - Lịch sử hoàn tác theo phiên sửa, không lưu DB.
 - Luật hợp lệ ở một module dùng chung cho ô chọn, kéo-thả và kiểm khi xuất bản (một nguồn).
 
+## Soát UX theo góc nhìn giám đốc/sale (2026-11-07) — `ux-audit.md` (33 điểm) + quyết định người dùng
+Nguyên tắc (người dùng): "mô hình đơn giản dễ hiểu mà đủ mạnh; người dùng chỉ là sale hoặc giám đốc công ty; đúng trên góc nhìn đó ở bề nổi".
+- **FLOW3-FR-09 · Công tắc "Dùng quy trình mới":** chỉ quản trị công ty (tenant admin) thấy; người dùng khác của công ty không thấy.
+- **FLOW3-FR-10 · Một nút cho công ty:** bản quy trình của công ty chỉ có "Lưu và áp dụng" (áp dụng cho HĐ gửi từ giờ; HĐ đang chờ giữ bản cũ). "Xuất bản" chỉ còn cho mẫu Thư viện của nền tảng.
+- **FLOW3-FR-11 · Một nơi chọn quy trình:** chỉ ở admin "Công ty › Quy trình". App Hợp đồng chỉ hiện quy trình đang áp dụng (chỉ đọc) + nút "Mở trang Quy trình"; gỡ màn sửa "luật chọn quy trình" trong app (D6: một control cho một việc).
+- **FLOW3-FR-12 · Menu "+" chỉ bước nghiệp vụ:** Duyệt, Nếu, Ký số, Chờ ký xong, Thông báo, Kết thúc. Agent, Công cụ, Chuẩn bị dữ liệu, Dify, DLC… vào "Nâng cao", chỉ quản trị nền tảng thấy.
+- **FLOW3-FR-13 · Chữ nghiệp vụ, không lộ kỹ thuật:** áp các đề xuất Chặn/Cao của `ux-audit.md` (panel Công cụ/Chờ sự kiện ẩn mã, Nếu đọc thành câu, Duyệt chọn từ danh sách không gõ mã, Ký số một nơi chọn nhà cung cấp, Kết thúc nói ảnh hưởng tới HĐ, lỗi chỉ đúng bước + cách sửa, thống nhất từ: Quy trình · Bước · Duyệt/Từ chối/Trả lại · Phòng ban, thẻ duyệt 3 dòng trạng thái · lý do · bước kế, "Cần xử lý" một chữ).
+
 ## Chia lát
-- **p22 (đang chạy):** FR-01, FR-02, FR-03 (kèm luật hợp lệ dùng chung).
+- **p22 (đã gộp):** FR-01, FR-02, FR-03 (kèm luật hợp lệ dùng chung).
+- **u1 (admin-web trình soạn + Công ty › Quy trình):** FR-09, FR-10, FR-12, FR-13 phần A/B của ux-audit.
+- **u2 (app Hợp đồng):** FR-11, FR-13 phần C của ux-audit.
 - **p25:** FR-04..FR-08 + thông báo thả sai; làm sau p22 gộp (cùng vùng trình sửa). UI một đợt, đóng băng sau đó (Luật 0d.4). e2e hành trình một lần cuối.
 
 ## Rủi ro
