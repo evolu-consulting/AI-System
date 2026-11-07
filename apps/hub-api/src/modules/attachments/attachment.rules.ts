@@ -5,6 +5,9 @@ import {
   ATTACH_FILENAME_MAX,
   type AttachMime,
 } from "@ai/contracts/chat";
+import { splitExt } from "../../shared/file-ext";
+
+export { splitExt };
 
 /** Đuôi được nhận (khoá `ATTACH_ALLOWED`, chữ thường). */
 export type AttachExt = keyof typeof ATTACH_ALLOWED;
@@ -65,17 +68,6 @@ export function displayName(decoded: string): string {
   if (ext === null) return cutUnits(name, ATTACH_FILENAME_MAX);
   const tail = `.${ext}`;
   return cutUnits(stem, ATTACH_FILENAME_MAX - tail.length) + tail;
-}
-
-const EXT_RE = /^[\p{L}\p{N}]{1,10}$/u;
-
-/** `.` cuối ở vị trí > 0, sau là 1–10 chữ/số Unicode → `{stem, ext}`; khác → `{stem: name, ext: null}`. */
-export function splitExt(name: string): { stem: string; ext: string | null } {
-  const dot = name.lastIndexOf(".");
-  if (dot <= 0) return { stem: name, ext: null };
-  const ext = name.slice(dot + 1);
-  if (!EXT_RE.test(ext)) return { stem: name, ext: null };
-  return { stem: name.slice(0, dot), ext };
 }
 
 /** Đuôi (không phân biệt hoa) ∈ `ATTACH_ALLOWED`; khác → null. */

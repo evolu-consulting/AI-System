@@ -7,8 +7,8 @@ import { ARG_NAME_RE, ArgFallbackSchema, type FeatureStatus } from "@ai/contract
 import { BETA_GROUP_KEY } from "@ai/contracts/groups";
 import { InputSchemaSchema } from "@ai/contracts/workflows";
 import { z } from "zod";
-import type { CatalogCommand, CatalogWorkflow } from "../commands/catalog.types";
-import { type CommandAccessInput, usableCommands } from "../commands/command-access.rules";
+import type { CatalogCommand, CatalogWorkflow } from "../../shared/catalog.types";
+import { type CommandAccessInput, usableCommands } from "../../shared/command-access.rules";
 import type { TenantState, UserState } from "./config.rules";
 
 export type CatalogFeature = { id: string; key: string; status: FeatureStatus };

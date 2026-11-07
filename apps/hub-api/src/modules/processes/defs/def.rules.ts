@@ -10,14 +10,16 @@ import {
   STAGE_SECTIONS_MAX,
   STAGE_TEMPLATE_MAX,
 } from "@ai/contracts/hub-admin";
+import type { HandoffShape } from "../../../shared/agent-stage.rules";
 import { branchStageIssues } from "../domain/branch/branch-def.rules";
 import { escalateGroupRefs } from "../domain/defs/escalate-def.rules";
 import { executorRefMiss, nodeDefIssues, nodeSpecOf, normalizeStage } from "../nodes/registry";
 import { normSection, sectionMap } from "../runs/template.rules";
+
 import { groupRefModeMiss, reviewHasGroup } from "./def-group-keys.rules";
 import type { DefRefs, RefKind, RefMiss } from "./def-refs";
 
-export type { DefRefs, RefKind, RefMiss };
+export type { DefRefs, HandoffShape, RefKind, RefMiss };
 export type DefCheck =
   | { ok: true }
   | { ok: false; code: "PROCESS_DEF_INVALID"; paths: string[]; rules: ProcessDefRule[] }
@@ -171,11 +173,6 @@ export function copyFromTemplate(
   };
 }
 
-/** Hình tối thiểu của stage cho luật thêm mục (`ensureHandoff`; K1 `khStartPlan` thêm "Tóm tắt"). */
-export type HandoffShape = {
-  executor: { kind: string };
-  output: { required_sections: string[]; template: string };
-};
 const HANDOFF_NORM = normSection(HANDOFF_SECTION);
 const HANDOFF_TPL = `\n\n## ${HANDOFF_SECTION}\n`;
 /** Heading cấp 2 `## Bàn giao` (NFC + trim + lowercase) — cùng `sectionMap` của `template.rules`. */

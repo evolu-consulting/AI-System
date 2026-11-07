@@ -2,7 +2,7 @@
 // (đã lọc `job_id` ở runner, A114), kiểm `seq` liền mạch (hở → ngừng chuyển tiếp + ghi `gap`), chuyển `job.delta` có
 // `kind ∈ accept` thành SSE `delta` ≤ 40 đơn vị UTF-16, cộng dồn S (`text`) theo phần đã phát thành công.
 import type { RunEvent } from "@ai/contracts/hub";
-import { isJobTerminal } from "../runner/runner.rules";
+import { isJobTerminal } from "../../shared/job-event.rules";
 import { chunkDelta, type DeltaKind, nextSeqOk, type StreamJob, streamAccept } from "./delta.rules";
 
 export type DeltaGap = { expected: number; seen: number };

@@ -1,5 +1,5 @@
 // ADR-0037 · cửa công khai DUY NHẤT của module `attachments`: module khác chỉ import file này (theo tên, không `export *`). Ruột là riêng của module.
-export type { AttachmentDifyDeps, UploadTrace } from "./attachment-dify";
+export type { AttachmentDifyDeps, DifyUploadTarget, UploadTrace } from "./attachment-dify";
 export {
   AttachmentContentMissing,
   AttachmentUnavailable,
@@ -18,7 +18,15 @@ export {
   roomRunFiles,
 } from "./room-files";
 export { roomFileWindow } from "./room-files.rules";
+export type { RunKind } from "./run-files";
+export { bindRunFiles, bindRunOutputs, checkSendable } from "./run-files";
 export type { FileBrief, RunFile } from "./run-files.rules";
-export { fileBrief, orchestratorFilesBlock } from "./run-files.rules";
+export {
+  agentFilesBlock,
+  fileBrief,
+  jobAttachments,
+  orchestratorFilesBlock,
+  withOutHint,
+} from "./run-files.rules";
 export type { AttachmentStorage, Staged } from "./storage";
 export { storageKey, storageLocatorOf } from "./storage";

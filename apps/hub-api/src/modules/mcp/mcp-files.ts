@@ -11,7 +11,7 @@ import {
   difyFileInput,
   type UploadTrace,
   uploadToDify,
-} from "../attachments/attachment-dify";
+} from "../attachments/public";
 import type { CatalogWorkflow, WorkflowInputValue } from "../commands/public";
 import {
   fileArg,

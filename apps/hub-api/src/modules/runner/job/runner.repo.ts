@@ -5,7 +5,7 @@ import type { Tx } from "@ai/db";
 import { jobs, providerState, runSteps } from "@ai/db/schema/hub";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { insertStep } from "../../../lib/run-steps";
-import type { KhJobItem } from "../../kh/kh.agent.rules";
+import type { KhJobItem } from "../../kh/public";
 import type { JobRow } from "../runner.rules";
 
 const NOW_MS = sql`date_trunc('milliseconds', now())`;

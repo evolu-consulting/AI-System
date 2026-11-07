@@ -4,8 +4,7 @@
 // Một query (`agent_kh` PK tiền tố `agent_id` + PK `kh_connections` + PK `agents`); bảng nền tảng, không RLS.
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
-import type { HandoffShape } from "../processes/public";
-import { agentIdOf as nodeAgentIdOf } from "../processes/public";
+import { type HandoffShape, agentIdOf as nodeAgentIdOf } from "../../shared/agent-stage.rules";
 import { type KhAgentConn, khJobConnections, khSummaryTarget } from "./kh.agent.rules";
 import type { KhRuntime } from "./kh.mount";
 import { khUsableNow } from "./kh.rules";

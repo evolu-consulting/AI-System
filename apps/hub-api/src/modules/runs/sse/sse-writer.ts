@@ -10,7 +10,7 @@ import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import { endRun, runSpanOf } from "../../../lib/otel";
 import type { Redis } from "../../../lib/redis";
-import { bindRunOutputs } from "../../attachments/run-files";
+import { bindRunOutputs } from "../../attachments/public";
 import { cancelJobs } from "../close/cancel.repo";
 import { runErrorTextFor } from "../run-errors";
 import * as repo from "../runs.repo";

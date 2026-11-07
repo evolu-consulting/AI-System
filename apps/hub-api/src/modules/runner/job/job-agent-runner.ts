@@ -12,18 +12,18 @@ import type { Span } from "@opentelemetry/api";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import { runSpanOf, setTokens, spanError, startSpan, traceparentOf } from "../../../lib/otel";
-import { artifactToolsGranted, jobVariant, withArtifactTools } from "../../artifacts/artifact.mcp";
 import {
   agentFilesBlock,
   jobAttachments,
   type RunFile,
   withOutHint,
-} from "../../attachments/run-files.rules";
+} from "../../../shared/run-files.rules";
+import { artifactToolsGranted, jobVariant, withArtifactTools } from "../../artifacts/public";
 import type { CatalogSnapshot } from "../../config/public";
 import { agentWorkflowIds, type ProfileConfig } from "../../config/public";
 import { stepLabel } from "../../conversations/public";
-import type { KhJobItem } from "../../kh/kh.agent.rules";
-import { KH_QUERY_HINT } from "../../kh/kh.job";
+import type { KhJobItem } from "../../kh/public";
+import { KH_QUERY_HINT } from "../../kh/public";
 import { mcpToolsFor } from "../../mcp/public";
 import { gatedRun, noteChatUsage } from "../../usage/public";
 import {

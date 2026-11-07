@@ -13,9 +13,9 @@ import {
 import type { Tx } from "@ai/db";
 import { appError } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
-import { bindRunFiles, type RunKind } from "../attachments/run-files";
-import type { RunFile } from "../attachments/run-files.rules";
-import { isAgreeReply } from "../mcp/confirm.rules";
+import type { RunFile } from "../../shared/run-files.rules";
+import { bindRunFiles, type RunKind } from "../attachments/public";
+import { isAgreeReply } from "../mcp/public";
 import type { MentionPlan } from "../mention/public";
 import { type ConfirmTag, decideConfirmations, preconfirm } from "./confirm.repo";
 import { overLimit } from "./run-limit.rules";

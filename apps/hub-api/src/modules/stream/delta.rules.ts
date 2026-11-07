@@ -1,5 +1,5 @@
 // WRK-FR-03 · H2b-R19, R22, R23 · luật delta khi stream (plan-rules, plan §5.5). Thuần.
-import { chunkText } from "../orchestrator/orchestrator.rules";
+import { chunkText } from "../../shared/chunk-text";
 
 export type DeltaKind = "answer" | "done" | "partial";
 

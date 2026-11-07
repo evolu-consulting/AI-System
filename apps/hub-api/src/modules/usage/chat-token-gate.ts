@@ -5,7 +5,7 @@
 import type { RunEvent } from "@ai/contracts/hub";
 import { estimateInputTokens, type UsageStore, utcDayStart } from "../../lib/ai-client/ai-client";
 import type { Logger } from "../../lib/logger";
-import { syntheticFailed } from "../runner/runner.rules";
+import { syntheticFailed } from "../../shared/job-event.rules";
 
 /** Phần output tối đa giữ chỗ cho một lượt chat (đủ rộng; còn ít hơn `MIN_OUTPUT_TOKENS` ⇒ chặn). */
 export const CHAT_HOLD_MAX_OUTPUT = 32_000;

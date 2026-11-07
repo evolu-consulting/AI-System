@@ -23,15 +23,24 @@ import {
   type WorkflowAsyncJob,
   WorkflowAsyncJobSchema,
 } from "@ai/contracts/hub";
+import {
+  FAILED_STATUSES,
+  isJobTerminal,
+  type JobFailedEvent,
+  STATUS_CODE,
+  syntheticFailed,
+  ZERO_USAGE,
+} from "../../shared/job-event.rules";
 import type { WorkflowJobInput } from "../commands/public";
 import type { AgentConfig, ProfileConfig } from "../config/public";
+
+export { isJobTerminal, type JobFailedEvent, syntheticFailed, ZERO_USAGE };
 
 export type AgentRole = "orchestrator" | "agent";
 /** Hub điền khi `runtime_options.max_turns` vắng (plan §2.2). */
 export const DEFAULT_MAX_TURNS: Record<AgentRole, number> = { agent: 30, orchestrator: 3 };
 /** H1-R21: agent mặc định chỉ đọc + tìm. */
 export const DEFAULT_AGENT_TOOLS: readonly AllowedTool[] = ["Read", "Grep"];
-export const ZERO_USAGE: TokenUsage = { input_tokens: 0, output_tokens: 0 };
 
 export type RunRef = {
   id: string;
@@ -164,48 +173,9 @@ export function blockedReason(
   return s.status === "cooldown" ? "quota" : "provider_unavailable";
 }
 
-export const isJobTerminal = (e: RunEvent): boolean =>
-  e.type === "job.result" || e.type === "job.failed";
-
 /** `HubJobErrorCode` ⊂ `ChatRunErrorCode` (plan §2.5): run lỗi cùng mã; `message` gốc của Runtime không ra client (P11). */
 export function runErrorCodeOf(code: HubJobErrorCode): ChatRunErrorCode {
   return code;
-}
-
-const FAILED_STATUSES = ["failed", "cancelled", "timed_out"] as const;
-type FailedStatus = (typeof FAILED_STATUSES)[number];
-/** Mã mặc định theo trạng thái khi `error_code` vắng/lạ. */
-const STATUS_CODE: Record<FailedStatus, HubJobErrorCode> = {
-  failed: "INTERNAL_ERROR",
-  cancelled: "CANCELLED",
-  timed_out: "TIMEOUT",
-};
-
-/** Sự kiện Hub tự dựng (không có trong `run:<id>`): `seq` 1, `at` = bây giờ. */
-export type JobFailedEvent = Extract<RunEvent, { type: "job.failed" }>;
-
-export function syntheticFailed(
-  jobId: string,
-  f: {
-    code: HubJobErrorCode;
-    reason: JobFailReason | null;
-    message: string;
-    status?: FailedStatus;
-  },
-  now = new Date(),
-): JobFailedEvent {
-  return {
-    v: HUB_CONTRACT_VERSION,
-    job_id: jobId,
-    seq: 1,
-    at: now.toISOString(),
-    type: "job.failed",
-    status: f.status ?? "failed",
-    code: f.code,
-    reason: f.reason,
-    message: f.message.slice(0, 500) || f.code,
-    usage: ZERO_USAGE,
-  };
 }
 
 export type JobRow = {

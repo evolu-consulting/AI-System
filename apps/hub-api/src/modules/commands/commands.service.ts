@@ -4,7 +4,7 @@
 import type { CommandMenuResponse, MessageContext } from "@ai/contracts/chat";
 import type { AuthUser } from "../../lib/auth.middleware";
 import { appError } from "../../lib/errors";
-import type { RunFile } from "../attachments/run-files.rules";
+import type { RunFile } from "../../shared/run-files.rules";
 import type { CatalogSnapshot, ConfigCache, UsableCatalogCommand } from "../config/public";
 import { tenantKeyOf, usableCatalogCommands } from "../config/public";
 import type { CatalogCommand, CatalogWorkflow, WorkflowInputValue } from "./catalog.types";

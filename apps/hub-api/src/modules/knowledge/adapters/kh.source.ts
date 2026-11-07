@@ -3,7 +3,7 @@
 // (env, vắng ⇒ TẮT, không gọi mạng): `KNOWLEDGE_KH_URL`, `KNOWLEDGE_KH_KEY` (secret — chỉ đọc lúc gọi), `KNOWLEDGE_KH_PROJECT`,
 // `KNOWLEDGE_KH_TENANTS` (uuid cách dấu phẩy, hoặc `*`; vắng ⇒ không tenant nào — KH là kho dùng chung),
 // `KNOWLEDGE_KH_TIMEOUT_MS` (200–30000, mặc định 800 — F-09: ngân sách tìm liên kết, KH trả muộn hơn ⇒ chỉ kết quả nội bộ).
-import { KhClient, type KhConn } from "../../kh/kh.client";
+import { KhClient, type KhConn } from "../../kh/public";
 import type { ExternalSource, Hit } from "../application/ports";
 import { parseKhHits } from "../domain/federation.rules";
 

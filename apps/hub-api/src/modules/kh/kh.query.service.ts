@@ -15,7 +15,7 @@ import type { Db } from "../../lib/db";
 import { safeErrorFields } from "../../lib/errors";
 import { dbHubAudit, type HubAuditWriter } from "../../lib/hub-audit";
 import type { Logger } from "../../lib/logger";
-import { type McpToolDef, type ToolResult, toolError } from "../mcp/mcp.rules";
+import { type McpToolDef, type ToolResult, toolError } from "../mcp/public";
 import {
   type KhJobItem,
   khResolveProject,

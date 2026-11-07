@@ -1,7 +1,8 @@
 // HUB-FR-133 · K1-AC05 · K1-AC07 · CR-073 · plan K1 §2.5, §3.5 · spec §3.0 (`/vector/add`), §3.4, §4 `snapshot.kh`: luật
 // thuần ghi `## Tóm tắt` vào KnowledgeHub — trích + cắt nội dung, subject/id ổn định, body, đích chốt lúc start. Không I/O.
 import { KH_BUDGET_CHARS, KH_SUMMARY_SECTION, KH_SUMMARY_WORDS } from "@ai/contracts/hub-admin";
-import { normSection, runsAsAgent, sectionMap } from "../processes/public";
+import { runsAsAgent } from "../../shared/agent-stage.rules";
+import { normSection, sectionMap } from "../../shared/template.rules";
 
 const SUBJECT_MAX = 128;
 

@@ -3,6 +3,8 @@ export type {
   AccessSnapshot,
   AccessSubject,
   AgentRow,
+  EntitlementRow,
+  GrantRow,
   HubAgentRef,
   VisibleAgentsInput,
 } from "./agent-access.rules";

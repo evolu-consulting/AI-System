@@ -1,8 +1,8 @@
 // HUB-FR-41 · kiểu ngữ cảnh run cho vòng chạy (RunDriver) — tách khỏi runs.service.ts cho gọn file ≤ 400 dòng (one-agent).
 import type { HistoryItem } from "@ai/contracts/hub";
 import type { Logger } from "../../lib/logger";
+import type { RunFile } from "../../shared/run-files.rules";
 import type { NoMatchPolicy } from "../agents/public";
-import type { RunFile } from "../attachments/run-files.rules";
 import type { ConfigSnapshot, PickedOrchestrator } from "../config/public";
 import type { DirectRunStart } from "../mention/public";
 import type { SseWriter } from "./sse/sse-writer";

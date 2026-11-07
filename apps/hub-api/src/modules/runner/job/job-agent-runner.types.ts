@@ -12,9 +12,9 @@ import type {
 } from "@ai/contracts/hub";
 import type { Db } from "../../../lib/db";
 import type { Logger } from "../../../lib/logger";
-import type { RunFile } from "../../attachments/run-files.rules";
+import type { RunFile } from "../../../shared/run-files.rules";
 import type { AgentConfig, CatalogSnapshot, ConfigSnapshot } from "../../config/public";
-import type { KhJobPreparer } from "../../kh/kh.job";
+import type { KhJobPreparer } from "../../kh/public";
 import type { SseEventBody } from "../../runs/public";
 import type { DeltaGap, DeltaSink } from "../../stream/public";
 import type { ChatTokenGate } from "../../usage/public";

@@ -1,6 +1,6 @@
 // HUB-FR-02, HUB-FR-03, HUB-BR-06, HUB-BR-08 · kiểu cache cấu hình + luật thuần (plan H1 §4 Cache, spec H1-R04, R15, R17).
 import { ORCHESTRATOR_RUNTIMES } from "@ai/contracts/studio";
-import type { EntitlementRow, GrantRow } from "../agents/agent-access.rules";
+import type { EntitlementRow, GrantRow } from "../../shared/agent-access.rules";
 
 /** H4a P9/QB1 · runtime được làm Orchestrator — một nguồn với Studio (`@ai/contracts/studio`). */
 const ORCH_RUNTIMES: ReadonlySet<string> = new Set(ORCHESTRATOR_RUNTIMES);
