@@ -2,9 +2,9 @@
 // là một ô trên sơ đồ ⇒ các stage mang cùng `node` phải đứng LIÊN TIẾP, đủ và đúng thứ tự như `stages` của manifest. Lưu mà cụm bị tách / thiếu /
 // đảo / có stage lạ chen giữa ⇒ 422 `FLOW_NODE_SPLIT` (nói rõ tên bước). Canvas, panel, menu, xoá/sao chép dùng `moduleClusters` / `clusterOf`.
 // O(số stage), không I/O. Stage nháp FE (`executor` là chuỗi) và stage Hub (`executor.kind`) đều đọc được.
-import { APP_MANIFESTS } from "../app-manifest/index";
 import type { AppNodeDecl } from "../app-manifest/manifest";
-import { nodesFor } from "../app-manifest/nodes.rules";
+import { MODULES } from "../modules/index.generated";
+import { toAppNode } from "../modules/modules.rules";
 
 /** Hình tối thiểu của stage mà luật cần. */
 export type ClusterStage = {
@@ -27,10 +27,10 @@ export type ClusterIssue = {
   path: string;
 };
 
-/** Node nhiều stage của mọi app (node một stage không thể bị tách). */
-const MULTI: readonly AppNodeDecl[] = nodesFor(Object.values(APP_MANIFESTS)).filter(
-  (n) => n.stages.length > 1,
-);
+/** Node nhiều stage của mọi app (node một stage không thể bị tách). CR-125 · m1 · đọc thẳng từ sổ `MODULES`. */
+const MULTI: readonly AppNodeDecl[] = MODULES.flatMap((m) => m.nodes)
+  .filter((n) => n.stages.length > 1)
+  .map(toAppNode);
 
 const kindOf = (s: ClusterStage): string =>
   typeof s.executor === "string" ? s.executor : s.executor.kind;

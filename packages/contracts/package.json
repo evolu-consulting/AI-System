@@ -35,6 +35,7 @@
     "./hub-admin": "./src/hub-admin/index.ts",
     "./hub-internal": "./src/hub-internal/index.ts",
     "./light": "./src/light.ts",
+    "./modules": "./src/modules/index.ts",
     "./notify": "./src/notify.ts",
     "./org": "./src/org.ts",
     "./overview": "./src/overview.ts",

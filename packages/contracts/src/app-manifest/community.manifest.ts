@@ -1,4 +1,6 @@
 // CR-118 · manifest dữ liệu của app Community (key catalog `community`). Đối tác thấy Bảng tin và Bài của tôi (đăng bài cần mức Sửa).
+import { MODULES } from "../modules/index.generated";
+import { nodesOfApp } from "../modules/modules.rules";
 import type { AppManifest } from "./manifest";
 
 const POST_RECORD = { key: "post_id", label: { vi: "Bài đăng", en: "Post" } } as const;
@@ -119,16 +121,6 @@ export const COMMUNITY_MANIFEST: AppManifest = {
       required: false,
     },
   ],
-  // CR-122 · N1 · FLOW2-FR-25 · "Hiện bài" = node Kết thúc đặt sẵn kết quả `shown` của `post.created` (app hiện bài qua OutcomeHandler).
-  nodes: [
-    {
-      key: "community.show-post",
-      label: { vi: "Hiện bài", en: "Show post" },
-      group: "content",
-      feature: "community-write",
-      stages: [{ executor: { kind: "set", values: [] }, outcome: "shown" }],
-      inputs: [{ key: "post_id", type: "string", required: true, label: POST_RECORD.label }],
-      outputs: [],
-    },
-  ],
+  // CR-125 · m1 · node của app khai ở `modules/community` (sổ `MODULES`, MỘT nguồn); đây là bản đọc lại.
+  nodes: nodesOfApp(MODULES, "community"),
 };
