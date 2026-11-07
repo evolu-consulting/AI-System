@@ -11,6 +11,11 @@ Wave cuối: int 8/8 shard xanh; e2e contracts-web đỏ lượt 2 do máy chủ
 - Ký số cần tệp PDF + cài đặt ký số của công ty bật; demo đang tải .md ⇒ cần PDF (pdf-lib).
 - Đã sửa (a7e0748fb): HĐ đã gửi duyệt không còn dải "Chưa xác nhận".
 
+## Đang làm (2026-11-07, "sửa hết rồi mới quay video")
+- p21 người ký (Giám đốc) xem được HĐ để ký · p22 canvas: kéo mũi tên nối bước, ô chọn bước có tên, số bước tối đa cấu hình trên platform · p24 nợ nhỏ (Mở lại sai lý do, pending_links, /me/stream, i18n, e2e chưa gán, nút cũ, RunHeader missing_fact, khoá Dify `_`).
+- Hàng chờ p25 (sau p22, cùng file canvas — người dùng: "làm nó power như drag drop"): kéo node từ bảng thả vào canvas/lên mũi tên; kéo đầu mũi tên nối lại; Delete xoá node/mũi tên + Ctrl+Z/Y; chọn nhiều + kéo nhóm; Ctrl+C/V node; minimap, phím tắt, tự sắp xếp; mọi thao tác kéo theo đúng luật picker, sai ⇒ báo lý do.
+- Đã sửa trong lượt quay: trigger DEFERRED của gói (HĐ bán) c9980d833 · node Ký số mẫu + hub 0113 d5142b3f5 · DocuSign hạn theo dung lượng 6c1230f96 · p17 0112/0114 8da9927f8.
+
 ## Việc kế
 1. Bật cờ "Dùng quy trình mới" cho công ty Demo (Công ty › Quy trình, platform_admin) ⇒ chạy G1–G3 trên prod (người dùng đăng nhập). Rồi `flow:shadow-diff` cho NiTi = 0 ⇒ bật NiTi.
 2. Video demo (local, `tools/demo/` trên nhánh slice/cr122-demo-video, worktree F:\workspace\evolu-wt\cr122-demo-video): quay lại sau các bản sửa p11d–p15 (bước 3 lưu Thông báo đã sửa ở p14; bước 5 xác nhận đã sửa).
