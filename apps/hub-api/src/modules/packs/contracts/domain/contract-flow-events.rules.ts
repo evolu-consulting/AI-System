@@ -6,7 +6,9 @@ export const CONTRACTS_PACK = "contracts";
 export const EV_SUBMITTED = "contract.submitted";
 export const EV_UPLOADED = "contract.uploaded";
 export const EV_APPROVED = "contract.approved";
-export const CONTRACT_EVENTS = [EV_SUBMITTED, EV_UPLOADED, EV_APPROVED] as const;
+/** CR-124 · q3 · bên NHẬN: HĐ đối tác gửi tới (ref = id HĐ nhận). */
+export const EV_RECEIVED = "contract.received";
+export const CONTRACT_EVENTS = [EV_SUBMITTED, EV_UPLOADED, EV_APPROVED, EV_RECEIVED] as const;
 export type ContractEvent = (typeof CONTRACT_EVENTS)[number];
 
 /** Khoá dữ kiện đã khai (`AppFactDecl.key`) theo sự kiện. */
@@ -14,6 +16,7 @@ export const FACT_KEYS: Record<ContractEvent, readonly string[]> = {
   [EV_SUBMITTED]: ["total_value", "deal", "creator_department", "new_partner"],
   [EV_APPROVED]: ["total_value", "deal", "creator_department", "new_partner"],
   [EV_UPLOADED]: ["file_type", "uploader_department"],
+  [EV_RECEIVED]: ["total_value", "importance", "contract_type", "new_partner", "sender_verified"],
 };
 
 /**

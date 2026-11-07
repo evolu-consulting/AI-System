@@ -547,6 +547,13 @@
       "when": 1806800000000,
       "tag": "0084_esign_signer_keep_view",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1806800100000,
+      "tag": "0085_partner_send",
+      "breakpoints": true
     }
   ]
 }

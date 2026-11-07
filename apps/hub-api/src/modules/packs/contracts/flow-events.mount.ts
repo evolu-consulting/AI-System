@@ -19,11 +19,13 @@ import {
   markFlowNotLaunched,
 } from "./adapters/contract-flow.repo";
 import { creatorDepartmentsOf } from "./adapters/flow-facts.repo";
+import { applyReceivedOutcome } from "./adapters/partner-inbox.repo";
 import { type ContractFlowGate, FLOW_OFF, type FlowPrep } from "./application/contract-flow.ports";
 import {
   CONTRACT_EVENTS,
   CONTRACTS_PACK,
   EV_APPROVED,
+  EV_RECEIVED,
   EV_SUBMITTED,
   EV_UPLOADED,
   isContractOutcome,
@@ -87,6 +89,8 @@ export function contractsOutcomeHandler(): OutcomeHandler<Tx> {
     async apply(tx, input) {
       if (input.event === EV_SUBMITTED && isContractOutcome(input.outcome))
         return applyContractOutcome(tx, input, input.outcome);
+      // CR-124 · q3 · Kết thúc flow NHẬN tự thành câu trả lời gửi về bên gửi (không node «Trả lời đối tác» riêng).
+      if (input.event === EV_RECEIVED) return applyReceivedOutcome(tx, input);
       if (NO_OP[input.event] === input.outcome) return "applied";
       throw new Error(`contracts outcome chưa hỗ trợ: ${input.event} · ${input.outcome}`);
     },

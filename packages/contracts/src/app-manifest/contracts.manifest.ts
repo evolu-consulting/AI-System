@@ -144,6 +144,41 @@ export const CONTRACTS_MANIFEST: AppManifest = {
       decides: false,
       required: false,
     },
+    // CR-124 · q3 · FLOW4-FR-08/11 · bên NHẬN: HĐ đối tác gửi tới (bản ghi riêng `source='partner_inbox'`) ⇒ flow nhận của công ty chạy.
+    // Kết thúc của flow nhận tự thành câu trả lời gửi về bên gửi (OutcomeHandler ⇒ `hub.partner_reply`), không node «Trả lời» riêng.
+    // TODO(CR-124 q4): `required: true` + `defaultFlowKey` khi có 2 mẫu Thư viện «Nhận HĐ quan trọng/thường» (FLOW4-FR-10).
+    {
+      key: "contract.received",
+      record: CONTRACT_RECORD,
+      label: "Khi nhận HĐ từ đối tác",
+      facts: [
+        { key: "total_value", label: "Giá trị hợp đồng", type: "number" },
+        {
+          key: "importance",
+          label: "Mức quan trọng",
+          type: "enum",
+          options: [
+            { value: "normal", label: "Thường" },
+            { value: "important", label: "Quan trọng" },
+            { value: "critical", label: "Rất quan trọng" },
+          ],
+        },
+        { key: "contract_type", label: "Loại hợp đồng", type: "string" },
+        { key: "new_partner", label: "Đối tác mới", type: "boolean" },
+        { key: "sender_verified", label: "Bên gửi đã xác minh", type: "boolean" },
+      ],
+      outcomes: [
+        { key: "confirmed", label: "Đồng ý", effect: "Bên gửi được báo đã xác nhận." },
+        {
+          key: "returned",
+          label: "Trả lại",
+          effect: "Bên gửi được báo trả lại kèm lý do để sửa rồi gửi lại.",
+        },
+        { key: "declined", label: "Từ chối", effect: "Bên gửi được báo từ chối kèm lý do." },
+      ],
+      decides: true,
+      required: false,
+    },
   ],
   // CR-122 · N1 · tín hiệu ký số (E3: phong bì sang trạng thái cuối) — CHỈ node Ký số / bước chờ dùng (`wait_event`); CR-125 m2: không còn là
   // sự kiện bắt đầu flow (không bộ đọc dữ kiện / xử lý kết quả ở máy chủ; không có def nào bắt đầu bằng chúng).
@@ -151,6 +186,10 @@ export const CONTRACTS_MANIFEST: AppManifest = {
     { key: "esign.completed", label: "Khi hợp đồng ký xong" },
     { key: "esign.declined", label: "Khi đối tác từ chối ký" },
     { key: "esign.voided", label: "Khi phong bì ký bị huỷ" },
+    // CR-124 · q3 · trả lời của đối tác (nền tảng / email / ghi nhận thủ công) — CHỈ node «Gửi đối tác xác nhận» chờ.
+    { key: "partner.confirmed", label: "Khi đối tác xác nhận" },
+    { key: "partner.returned", label: "Khi đối tác trả lại" },
+    { key: "partner.declined", label: "Khi đối tác từ chối" },
   ],
   // CR-125 · m1 · node của app khai ở `modules/contracts` (sổ `MODULES`, MỘT nguồn); đây là bản đọc lại.
   nodes: nodesOfApp(MODULES, "contracts"),

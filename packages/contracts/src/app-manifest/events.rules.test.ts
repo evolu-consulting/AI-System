@@ -35,12 +35,16 @@ describe("FLOW2-FR-17 · appEventIssues", () => {
       "contract.submitted",
       "contract.uploaded",
       "contract.approved",
+      "contract.received",
     ]);
     // CR-125 m2 · ký số là tín hiệu chờ, không phải sự kiện bắt đầu flow
     expect(APP_MANIFESTS.contracts?.signals?.map((s) => s.key)).toEqual([
       "esign.completed",
       "esign.declined",
       "esign.voided",
+      "partner.confirmed",
+      "partner.returned",
+      "partner.declined",
     ]);
     expect(keys("community")).toEqual(["post.created", "partner.join_requested", "report.created"]);
     const sub = APP_MANIFESTS.contracts?.events[0];

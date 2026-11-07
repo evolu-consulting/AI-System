@@ -715,6 +715,13 @@
       "when": 1806700000000,
       "tag": "0118_partner_links_fn",
       "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1806800000000,
+      "tag": "0119_partner_inbox_fn",
+      "breakpoints": true
     }
   ]
 }

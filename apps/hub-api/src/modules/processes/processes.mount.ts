@@ -7,6 +7,7 @@ import { safeErrorFields } from "../../lib/errors";
 import { KhWriter } from "../kh/kh.writer";
 import type { WorkflowInvoker } from "../mcp/adapters/workflow-invoker";
 import type { PackRunsBridge, PackToolCatalog } from "../packs/kit/public";
+import { partnerMailboxPort } from "../packs/kit/public";
 import { startPartnerMover } from "../partners/mailbox-mover";
 import type { RoomProcessSender } from "../rooms/messages/messages.service";
 import type { ResolveBridge } from "../sources/resolve.bridge";
@@ -259,5 +260,10 @@ function startBackground(o: {
   // CR-122 · E1 · bộ điều phối sự kiện → lượt (cờ FLOW_TRIGGERS tắt ⇒ chỉ ghi bóng). Test gọi `dispatchOnce` trực tiếp.
   startFlowDispatcher({ db: bg.db, launch: flowLaunchOf(bg), log: m.log }, { signal: m.signal });
   // CR-124 · q1 · hộp thư liên công ty ⇒ `contract.received` (bên nhận) / `partner.*` (bên gửi). Test gọi `partnerMoveOnce`.
-  if (m.partnerMailbox) startPartnerMover({ db: bg.db, log: m.log }, { signal: m.signal });
+  // q3 · cổng gói Hợp đồng (tạo HĐ nhận / báo kết quả về node chờ) đăng ký lúc mount gói, đọc mỗi lượt.
+  if (m.partnerMailbox)
+    startPartnerMover(
+      { db: bg.db, log: m.log, port: () => partnerMailboxPort.get() },
+      { signal: m.signal },
+    );
 }

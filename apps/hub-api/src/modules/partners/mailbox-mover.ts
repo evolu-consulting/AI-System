@@ -1,12 +1,27 @@
-﻿// CR-124 · q1 · spec §7 · FLOW4-FR-07/11 · NFR-02/03 · bộ chuyển hộp thư liên công ty. Một lượt (`partnerMoveOnce`) = MỘT tx
-// scope system, 3 câu cố định (đặt scope + giao `sent` + phát `replied`), không phụ thuộc số dòng. Vòng nền chạy liền khi còn
-// việc, hết việc nghỉ `idleMs` (Luật 4c). Bật bằng `HUB_PARTNER_MAILBOX=on` (mặc định tắt); test gọi `partnerMoveOnce`.
+﻿// CR-124 · q1/q3 · spec §7 · FLOW4-FR-07/11 · NFR-02/03 · bộ chuyển hộp thư liên công ty. Một lượt (`partnerMoveOnce`):
+//  - KHÔNG có cổng gói (`port`): MỘT tx scope system, 3 câu cố định (q1) — giao `sent` ⇒ `contract.received` tham chiếu + phát `replied`.
+//  - CÓ cổng gói Hợp đồng (q3): (1) tx system: tenant nhận còn việc (1 câu); (2) mỗi tenant nhận: gói mở tx scope tenant đó lấy lô + tạo HĐ nhận
+//    + sự kiện (3 câu cố định mỗi tenant, không phụ thuộc số dòng); (3) tx system: nhận lô `replied` (1) → gói đóng lần gửi + bắn tín hiệu cho
+//    node chờ (2 câu cố định mỗi tenant gửi + 1 `signalEvent` mỗi trả lời) → chốt lô + phát `partner.*` (1). Lỗi ở gói ⇒ rollback, lượt sau thử lại.
+// Vòng nền chạy liền khi còn việc, hết việc nghỉ `idleMs` (Luật 4c). Bật bằng `HUB_PARTNER_MAILBOX=on` (mặc định tắt); test gọi `partnerMoveOnce`.
 import type { Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
-import { deliverSent, emitReplies } from "./adapters/mailbox-mover.repo";
+import type { PartnerMailboxPort } from "../packs/kit/public";
+import {
+  claimReplies,
+  deliverSent,
+  emitReplies,
+  finishReplies,
+  pendingReceivers,
+} from "./adapters/mailbox-mover.repo";
 import { PARTNER_MOVE_BATCH, PARTNER_MOVE_IDLE_MS } from "./domain/mailbox-events.rules";
 
-export type PartnerMoverDeps = { db: Db; batch?: number };
+export type PartnerMoverDeps = {
+  db: Db;
+  batch?: number;
+  /** q3 · cổng gói Hợp đồng, đọc MỖI lượt (gói đăng ký lúc mount). Vắng / trả undefined ⇒ đường q1. */
+  port?: () => PartnerMailboxPort | undefined;
+};
 export type PartnerMoveStats = {
   delivered: number;
   receivedEvents: number;
@@ -16,8 +31,41 @@ export type PartnerMoveStats = {
 
 const SYS = { kind: "system" as const };
 
+async function moveWithPort(d: PartnerMoverDeps, port: PartnerMailboxPort, n: number) {
+  const tenants = await withHubScope(d.db, SYS, (tx) => pendingReceivers(tx, n));
+  let received = 0;
+  for (const t of tenants) received += await port.receive(t, n);
+  const r = await withHubScope(d.db, SYS, async (tx) => {
+    const rows = await claimReplies(tx, n);
+    if (rows.length === 0) return { moved: 0, emitted: 0 };
+    await port.onReplies(
+      rows.map((x) => ({
+        mailboxId: x.id,
+        tenantId: x.tenant_id,
+        ref: x.ref,
+        outcome: x.outcome,
+        reason: x.reason,
+        source: x.source,
+        round: x.round,
+      })),
+    );
+    return finishReplies(
+      tx,
+      rows.map((x) => x.id),
+    );
+  });
+  return {
+    delivered: received,
+    receivedEvents: received,
+    replied: r.moved,
+    replyEvents: r.emitted,
+  };
+}
+
 export async function partnerMoveOnce(d: PartnerMoverDeps): Promise<PartnerMoveStats> {
   const n = d.batch ?? PARTNER_MOVE_BATCH;
+  const port = d.port?.();
+  if (port) return moveWithPort(d, port, n);
   return withHubScope(d.db, SYS, async (tx) => {
     const s = await deliverSent(tx, n);
     const r = await emitReplies(tx, n);

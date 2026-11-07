@@ -93,7 +93,12 @@ export function contractFlowRepo(tx: Tx, tid: string): ContractFlowRepo {
     async readFacts(cid) {
       if (!UUID.test(cid)) return null;
       const [r] = await tx.execute<{ facts: unknown; started_by: string | null }>(sql`
-        select ${FACTS(null)} as facts, a.started_by
+        select ${FACTS(null)}
+          -- CR-124 · q3 · \`contract.received\`: mức quan trọng + dấu xác minh bên gửi (bản ghi nhận, cùng tenant) + loại HĐ — thêm cho MỌI HĐ,
+          -- khoá thừa vô hại (FactsReader chỉ chọn khoá được hỏi).
+          || coalesce((select jsonb_build_object('importance', i.importance, 'sender_verified', i.sender_verified)
+            from contracts.partner_inbox i where i.tenant_id = c.tenant_id and i.contract_id = c.id), '{}'::jsonb)
+          || jsonb_strip_nulls(jsonb_build_object('contract_type', c.type)) as facts, a.started_by
         from contracts.contracts c
         left join contracts.approvals a on a.id = c.run_id and a.tenant_id = c.tenant_id
         where c.id = ${cid}::uuid and c.tenant_id = ${tid}::uuid`);

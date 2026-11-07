@@ -36,6 +36,10 @@ export { packNavRegistry } from "./adapters/pack-nav-registry";
 export { withPackRoleInTx } from "./adapters/pack-role-in-tx";
 export { PackToolRegistry } from "./adapters/pack-tools.registry";
 export { createPackUow, packTenantOnly } from "./adapters/pack-uow";
+export {
+  createPartnerMailboxPortRegistry,
+  partnerMailboxPort,
+} from "./adapters/partner-mailbox-port";
 export { createPdfConverter } from "./adapters/pdf/index";
 export { recordLabelRegistry } from "./adapters/record-label-registry";
 export { shadowEmit } from "./adapters/shadow-emit";
@@ -96,6 +100,11 @@ export type {
   PackToolCtx,
   PackToolDef,
 } from "./application/pack-tools.ports";
+export type {
+  PartnerMailboxPort,
+  PartnerMailboxPortRegistry,
+  PartnerReplyRow,
+} from "./application/partner-mailbox.ports";
 export type { PackSystemUow, PackUow, PackWho } from "./application/ports";
 export type { RecordLabelRegistry, RecordLabelSource } from "./application/record-label.ports";
 export type {

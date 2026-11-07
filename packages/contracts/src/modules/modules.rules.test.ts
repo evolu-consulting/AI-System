@@ -50,7 +50,10 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
       "core.wait-until",
       "core.wait-for",
     ]);
-    expect(APP_MANIFESTS.contracts?.nodes.map((n) => n.key)).toEqual(["contracts.esign"]);
+    expect(APP_MANIFESTS.contracts?.nodes.map((n) => n.key)).toEqual([
+      "contracts.esign",
+      "contracts.partner-send",
+    ]);
     expect(APP_MANIFESTS.community?.nodes.map((n) => n.key)).toEqual(["community.show-post"]);
     // hình AppNodeDecl cũ: không lộ kind / baseExecutor / configPort
     for (const n of [...CORE_NODES, ...nodesOfApp(MODULES, "contracts")])
@@ -68,9 +71,10 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
     const b = bound({
       nodes: new Map([
         ["contracts.esign", { tools: ["contracts-esign-send"] }],
+        ["contracts.partner-send", { tools: ["contracts-partner-send"] }],
         ["community.show-post", { tools: [] }],
       ]),
-      tools: new Set(["contracts-esign-send"]),
+      tools: new Set(["contracts-esign-send", "contracts-partner-send"]),
     });
     expect(moduleIssues(MODULES, b)).toEqual([]);
   });
@@ -220,6 +224,9 @@ describe("moduleIssues (MOD-FR-01/04/10)", () => {
       "esign.completed",
       "esign.declined",
       "esign.voided",
+      "partner.confirmed",
+      "partner.returned",
+      "partner.declined",
     ]);
     expect(
       moduleIssues(mods, bound())
