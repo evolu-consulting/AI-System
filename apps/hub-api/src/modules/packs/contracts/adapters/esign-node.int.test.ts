@@ -10,6 +10,7 @@ import { urls } from "@ai/test-kit/env";
 import { createPackUow } from "../../kit/adapters/pack-uow";
 import type { ESignFiles } from "../application/esign.ports";
 import { esignModule } from "../esign.mount";
+import { intakeWiring } from "../intake.mount";
 import { fakeESign } from "./esign.fake";
 import { esignRepo } from "./esign.repo";
 import { selfsignProvider } from "./esign.selfsign";
@@ -40,7 +41,7 @@ beforeAll(async () => {
   [T1, T2] = (await tenants(o, 2, 961)) as [string, string];
   [A, B, C, D] = (await users(o, T1, 4, { from: 961 })) as [string, string, string, string];
   [X] = (await users(o, T2, 1, { from: 971 })) as [string];
-  K = await contracts(o, T1, 6, { from: 961, createdBy: A, owner: A });
+  K = await contracts(o, T1, 7, { from: 961, createdBy: A, owner: A });
   for (const [i, id] of K.entries()) {
     const fid = crypto.randomUUID();
     await o`insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
@@ -220,6 +221,25 @@ describe("E5b · danh bạ người ký: nhánh Group", () => {
     await send.run(CTX(A), { contract_id: K[4] as string });
     const base = await envelope(K[4] as string);
     expect([base?.due_h, base?.remind_every_h]).toEqual([null, null]);
+  });
+});
+
+describe("CR-122 · bước Ký số của flow báo chuông người ký", () => {
+  it("gửi qua intakeWiring (đường flow mới) ⇒ người ký công ty nhận chuông 'Mời ký số'", async () => {
+    const { u } = setup();
+    await u.saveSettings(
+      { tenantId: T1, userId: A },
+      { enabled: true, default_provider: "selfsign" },
+    );
+    const id = K[6] as string;
+    await o`update contracts.contracts set status = 'needs_review', confirmed_at = null, locked_at = null,
+        run_id = gen_random_uuid() where id = ${id}`;
+    const w = intakeWiring(db, u);
+    const send = w.tools.find((t) => t.name === "contracts-esign-send") as (typeof w.tools)[number];
+    await send.run(CTX(A), { contract_id: id, company_signers: `user:${C}`, partner_signs: false });
+    const bells = await o<{ title: string }[]>`select title from hub.notifications
+      where tenant_id = ${T1} and user_id = ${C} and link = ${`/contracts/c/${id}`}`;
+    expect(bells.map((b) => b.title)).toEqual([expect.stringMatching(/^Mời ký số HĐ/)]);
   });
 });
 

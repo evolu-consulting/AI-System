@@ -9,6 +9,7 @@ import { createPackUow, slotRegistry } from "../kit/public";
 import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { intakeTools } from "./adapters/intake.tools";
+import { contractLabelOf, signInviteBell } from "./application/esign-flow.usecase";
 import type { ESignEvent } from "./domain/esign-event.rules";
 import type { ESignModule } from "./esign.mount";
 
@@ -33,6 +34,15 @@ export function intakeWiring(
       send: async (tenantId, signer, contractId, signers, provider, node) => {
         if (!esign) throw new Error("ESIGN_UNAVAILABLE");
         await esign.sendSystem(tenantId, signer, contractId, signers, provider, node);
+        // CR-122 · bước Ký số của flow: chuông "Mời ký số" cho MỌI người ký công ty (đường cũ esign-flow đã có; flow mới thiếu ⇒
+        // giám đốc không biết tới lượt ký). Lỗi chuông không làm hỏng gửi ký.
+        const users = node?.companyUsers ?? [signer];
+        await uow
+          .system(tenantId, async (r) => {
+            const label = contractLabelOf(await r.esign.contract(contractId));
+            await r.notify.enqueue(users.map((u) => signInviteBell(u, contractId, label)));
+          })
+          .catch(() => undefined);
       },
       nodeSigners: async (tenantId, entries) => {
         if (!esign) throw new Error("ESIGN_UNAVAILABLE");
