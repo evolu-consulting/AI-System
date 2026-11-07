@@ -28,6 +28,7 @@ import { esignExpire } from "./esign-expire";
 import { esignNodeApi, type NodeDirectory, type SendNodeOpts } from "./esign-node.usecase";
 import { storeSignedFile } from "./esign-signed-file";
 import { esignSwitch } from "./esign-switch";
+import { patchOf, syncApply, syncable } from "./esign-sync-guard";
 import { errName, VOID_PENDING, voidForExpiry, voidForReopen } from "./esign-void";
 
 export { ESignFail } from "./esign.helpers";
@@ -88,18 +89,11 @@ export function esignUsecase(d: ESignDeps) {
     if (!p || !d.files) return;
     // esign-flow-fix · huỷ lần trước (mở lại HĐ) hụt ở nhà cung cấp ⇒ thử huỷ lại trước; vẫn hụt ⇒ đồng bộ như thường.
     if (isOpen(row.status) && row.reason === VOID_PENDING && (await voidAt(p, row, run))) return;
-    if (!isOpen(row.status) && !(row.status === "completed" && row.signedFileId === null)) return;
+    if (!syncable(row)) return;
     const info = given ?? (await p.getEnvelope(row.envelopeId));
     const st = mapEnvelopeStatus(info.status) ?? row.status;
     const signers = mergeSigners(row.signers, info, st);
-    await run((r) =>
-      r.esign.update(row.envelopeId, {
-        status: st,
-        reason: st === "declined" || st === "voided" ? info.reason : null,
-        completedAt: st === "completed" ? (info.completedAt ?? new Date().toISOString()) : null,
-        signers,
-      }),
-    );
+    if (!(await syncApply(run, row, patchOf(st, info, signers)))) return; // đang đổi cách ký / phong bì cũ đã bị thay ⇒ chỉ audit
     if (st === "completed" && row.signedFileId === null)
       await storeSignedFile(d.newId, p, d.files, tid, row, run);
     await finalHook(tid, row, st);

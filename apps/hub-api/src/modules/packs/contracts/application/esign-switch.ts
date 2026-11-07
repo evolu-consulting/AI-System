@@ -33,6 +33,8 @@ export type EsignSwitchDeps = {
 
 /** Lease giữ quyền đổi (phút) — tiến trình chết giữa chừng ⇒ hết lease bên khác đổi / quét hạn được. */
 export const ESIGN_SWITCH_LEASE_MIN = 10;
+/** CR-125 · m10 · `reason` của phong bì trong lúc giữ quyền đổi: webhook/đồng bộ của nó bị bỏ qua (chỉ audit, không tín hiệu). */
+export const ESIGN_SWITCHING = "switching";
 const H = 3_600_000;
 
 /** Hạn còn lại (giờ, làm tròn lên, ≥ 1) tính từ lúc gửi phong bì cũ — gửi lại không kéo dài hạn ký. */
@@ -87,7 +89,9 @@ export const esignSwitch = (d: EsignSwitchDeps) => {
       throw new ESignFail("ESIGN_RESEND_FAILED", "void");
     }
     await d.uow.tenant(who, async (r) => {
-      await r.esign.voidClaimed(e.id, "switch-provider");
+      // hàng đã đổi ngoài lease (lease hết hạn, bên khác chạm) ⇒ KHÔNG gửi lại (không sinh phong bì mồ côi)
+      if (!(await r.esign.voidClaimed(e.id, "switch-provider")))
+        throw new ESignFail("ESIGN_STATE", "already-switched");
       await r.esign.audit(
         who.userId,
         { esign_switch: { contract_id: id, provider: e.provider, envelope_id: e.envelopeId } },

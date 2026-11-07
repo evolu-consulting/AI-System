@@ -148,6 +148,19 @@ export type ESignRepo = {
   lockById(id: string): Promise<EnvelopeRow | null>;
   /** CR-125 · m4 · giành quyền ĐỔI cách ký (UPDATE có điều kiện: còn mở, chưa ai ký, không ai giữ lease còn hạn) ⇒ hàng; không ⇒ null. */
   claimSwitch(id: string, now: Date, leaseMin: number): Promise<EnvelopeRow | null>;
+  /** CR-125 · m10 · cập nhật từ webhook/đồng bộ: chỉ khi hàng còn `expect`, không đang đổi cách ký (lease còn hạn) và là phong bì mới nhất
+   *  của HĐ ⇒ true (được rẽ nhánh lượt); không ⇒ false (bỏ qua, không tín hiệu). */
+  syncUpdate(
+    envelopeId: string,
+    expect: ESignStatus,
+    p: {
+      status: ESignStatus;
+      reason: string | null;
+      completedAt: string | null;
+      signers: StoredSigner[];
+    },
+    leaseMin: number,
+  ): Promise<boolean>;
   /** Nhả lease đổi cách ký (huỷ ở nhà cung cấp hụt) — phong bì vẫn mở như cũ. */
   releaseSwitch(id: string): Promise<void>;
   /** Phong bì đã giành quyền ⇒ `voided` (chỉ khi còn mở) ⇒ true. */

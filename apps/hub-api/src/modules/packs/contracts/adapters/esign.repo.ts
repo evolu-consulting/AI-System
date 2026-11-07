@@ -11,6 +11,7 @@ import type {
   ESignRepo,
   StoredSigner,
 } from "../application/esign.ports";
+import { ESIGN_SWITCHING } from "../application/esign-switch";
 import { contractNameSql } from "./contract-name.sql";
 
 type Raw = {
@@ -157,8 +158,9 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
     claimSwitch: async (id, now, leaseMin) => {
       const at = now.toISOString();
       const [r] = await tx.execute<Raw>(sql`update contracts.esign_envelopes e
-        set expire_claimed_at = ${at}::timestamptz
+        set expire_claimed_at = ${at}::timestamptz, reason = ${ESIGN_SWITCHING}
         where e.tenant_id = ${t}::uuid and e.id = ${id}::uuid and e.status in ('sent', 'delivered')
+          and (e.reason is null or e.reason = ${ESIGN_SWITCHING})
           and not exists (select 1 from jsonb_array_elements(e.signers) s
             where coalesce(s->>'signed_at', '') <> '')
           and (e.expire_claimed_at is null
@@ -167,8 +169,23 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
       return toRow(r);
     },
     releaseSwitch: async (id) => {
-      await tx.execute(sql`update contracts.esign_envelopes set expire_claimed_at = null
-        where tenant_id = ${t}::uuid and id = ${id}::uuid and status in ('sent', 'delivered')`);
+      await tx.execute(sql`update contracts.esign_envelopes set expire_claimed_at = null, reason = null
+        where tenant_id = ${t}::uuid and id = ${id}::uuid and status in ('sent', 'delivered')
+          and reason = ${ESIGN_SWITCHING}`);
+    },
+    // CR-125 · m10 · cập nhật từ webhook/đồng bộ CHỈ khi hàng còn đúng trạng thái đã đọc, không đang bị đổi cách ký (lease còn hạn) và là
+    // phong bì MỚI NHẤT của HĐ — phong bì cũ đã bị thay không còn được rẽ nhánh lượt.
+    syncUpdate: async (envelopeId, expect, p, leaseMin) => {
+      const rows =
+        await tx.execute(sql`update contracts.esign_envelopes e set status = ${p.status}, reason = ${p.reason},
+          completed_at = ${p.completedAt}::timestamptz, signers = ${JSON.stringify(p.signers)}::jsonb, updated_at = now()
+        where e.tenant_id = ${t}::uuid and e.envelope_id = ${envelopeId} and e.status = ${expect}
+          and not (e.reason is not distinct from ${ESIGN_SWITCHING}
+            and e.expire_claimed_at > now() - make_interval(mins => ${leaseMin}::int))
+          and not exists (select 1 from contracts.esign_envelopes n where n.tenant_id = e.tenant_id
+            and n.contract_id = e.contract_id and (n.created_at, n.id) > (e.created_at, e.id))
+        returning e.id`);
+      return rows.length === 1;
     },
     voidClaimed: async (id, reason) => {
       const rows = await tx.execute(sql`update contracts.esign_envelopes
