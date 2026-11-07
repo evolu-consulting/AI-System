@@ -76,12 +76,12 @@
     "settings": {
       "sec": {
         "apps": "Apps & processes",
-        "appsHint": "Level, add-ons, assigned processes, department routing"
+        "appsHint": "Level, add-ons and the process in effect"
       },
       "apps": {
         "title": "Apps & processes",
-        "lead": "Processes are assigned to your company by the platform admin. You can only edit the department routing rules, not the process content.",
-        "allFlows": "View all processes",
+        "lead": "The contract approval process is chosen in one place only: Company > Processes. Here you can only see the process in effect.",
+        "allFlows": "Open the Processes page",
         "allFlowsFail": "Could not open the Processes page. Please try again.",
         "levelLabel": "Level",
         "level": { "off": "Off", "read": "Read", "write": "Read & write", "admin": "Admin" },
@@ -89,61 +89,14 @@
         "addonOn": "on",
         "addonOff": "off",
         "slotTitle": "Process in effect",
-        "slotOff": "Off — not enabled yet. It runs only after the platform admin assigns a process to your company.",
-        "noneAssigned": "No process is assigned to your company for this slot. Ask the platform admin to assign one.",
+        "slotOff": "This contract type has no approval process — a company admin chooses one in Company > Processes",
+        "noneAssigned": "This contract type has no approval process — a company admin chooses one in Company > Processes",
         "inUse": "In use",
-        "inUseOutside": "In use (slot default): {{name}}",
-        "noVersion": "unpublished",
+        "current": "In effect: {{name}}",
         "viewDiagram": "View diagram",
         "hideDiagram": "Hide diagram",
         "diagramUnavailable": "The diagram of this process cannot be viewed",
-        "loadFail": "Could not load data.",
-        "rules": "Process routing rules",
-        "rulesLead": "The first matching rule wins (top to bottom); if none matches the default rule is used. Pick only among assigned processes.",
-        "subDeptNote": "Picking a department also covers its sub-departments.",
-        "noRules": "No rules yet: contracts follow the slot's default process.",
-        "addRule": "Add rule",
-        "save": "Save rules",
-        "saving": "Saving…",
-        "saved": "Routing rules saved",
-        "discard": "Discard changes",
-        "reload": "Reload",
-        "tooMany": "50 rules reached.",
-        "rule": {
-          "n": "Rule {{n}}",
-          "up": "Move up",
-          "down": "Move down",
-          "remove": "Remove",
-          "process": "Process",
-          "default": "Default",
-          "defaultCond": "When no rule matches",
-          "pickDepartments": "Pick departments",
-          "pickKinds": "Contract kind",
-          "anyKind": "Any kind",
-          "kind": { "buy": "Purchase", "sell": "Sell", "referral": "Referral" },
-          "noDepartments": "The company has no departments.",
-          "unassigned": "(process no longer assigned)",
-          "unavailable": {
-            "deleted": "Process was deleted",
-            "unpublished": "Process not published"
-          }
-        },
-        "issue": {
-          "noDepartment": "Pick at least one department or contract kind, or make it the default.",
-          "notAssigned": "This process is no longer assigned to the company.",
-          "unavailable": "This rule's process cannot run: pick another process or remove the rule before saving.",
-          "deptGone": "A department no longer exists."
-        },
-        "err": {
-          "conflict": "Someone changed these rules before you. Reload, then edit again.",
-          "notAssigned": "The process is not assigned to the company by the platform admin.",
-          "unavailable": "A rule uses a deleted or unpublished process, so it cannot be saved. Remove the rule or pick another process.",
-          "deptInvalid": "A department does not belong to the company.",
-          "rulesInvalid": "Invalid rules: each normal rule needs departments or a contract kind, and only one default is allowed.",
-          "inUse": "The process is used by rules.",
-          "forbidden": "You are not allowed to edit routing rules.",
-          "other": "Could not save the rules. Try again later."
-        }
+        "loadFail": "Could not load data."
       },
       "cell": {
         "needOne": "At least one enabled criterion with a weight is required",

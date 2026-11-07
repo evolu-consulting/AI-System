@@ -78,7 +78,7 @@
       },
       "contracts": {
         "title": "Related contracts",
-        "stageFilter": "Filter by stage",
+        "stageFilter": "Filter by step",
         "stage": {
           "all": "All",
           "not_started": "Not started",
@@ -87,13 +87,13 @@
         },
         "emptyTitle": "No contracts",
         "emptyBody": "This partner has no confirmed contracts yet.",
-        "emptyFilter": "No contracts at this stage.",
+        "emptyFilter": "No contracts at this step.",
         "col": {
           "contract": "Contract",
           "deal": "Type",
           "value": "Value",
           "period": "Valid",
-          "stage": "Stage"
+          "stage": "Step"
         },
         "deal": {
           "buy": "Buy",

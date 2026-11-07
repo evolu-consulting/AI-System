@@ -63,6 +63,7 @@ function stepOf(s: ApprovalCardStep, groups: readonly ContractGroup[], now: numb
     decided_as: s.decided_as ?? null,
     feedback: s.feedback,
     skip_when: skipOf(s),
+    ...(s.warning ? { warning: s.warning } : {}),
   };
   if (s.kind === "dify") return { ...base, kind: "dify", assignee: { kind: "system" } };
   // CR-121 D-6b · Thông báo = bước hệ thống (không ai làm); Chờ tới = bước chờ tới giờ hẹn (`due_at`).

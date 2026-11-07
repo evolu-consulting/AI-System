@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
+import { useSession } from "~/features/auth/hooks/use-session";
 import { parseCap } from "~/features/product-suppliers/lib/scout";
+import { isCompanyAdmin } from "~/features/shell/lib/nav";
 import { SettingsGroup, SettingsRow } from "~/shared/ui/settings-layout";
 import { useSaveScoutQuota, useScoutQuota } from "../hooks/use-scout-settings";
 import { saveErrorText } from "../lib/scout-ui";
@@ -23,6 +25,8 @@ export function ScoutQuota({ owner }: { owner: boolean }) {
   const L = (k: string, o?: Record<string, unknown>) => t(`contracts.scout.${k}`, o);
   const q = useScoutQuota();
   const save = useSaveScoutQuota();
+  // CR-123 U2 · "token" là khái niệm kỹ thuật: người bán hàng / giám đốc không thấy; chỉ quản trị (công ty, nền tảng).
+  const admin = isCompanyAdmin(useSession((s) => s.me?.role));
   const d = q.data;
   const [v, setV] = useState<Draft | null>(null);
   useEffect(() => {
@@ -31,16 +35,18 @@ export function ScoutQuota({ owner }: { owner: boolean }) {
   }, [d]);
   if (!d || !v) return null;
   const keys = KEYS.filter((k) => d.can_override || !k.startsWith("platform_"));
+  // Ô token ẩn với người thường nhưng VẪN gửi lại giá trị cũ (thân PUT bắt buộc `tokens_month`).
+  const shown = keys.filter((k) => admin || !k.includes("tokens"));
   const parsed = Object.fromEntries(keys.map((k) => [k, parseCap(v[k])]));
   const bad = Object.values(parsed).includes(undefined);
   const lim = d.usage.searches_limit;
   return (
     <SettingsGroup title={L("quota.title")} sub={L("quota.hint")}>
       <p data-testid="scout-quota-usage" className="px-5 pt-3 text-caption text-dim">
-        {L("usage", { used: d.usage.searches, limit: lim == null ? L("unlimited") : lim })} ·{" "}
-        {L("quota.tokens", { n: d.usage.tokens })}
+        {L("usage", { used: d.usage.searches, limit: lim == null ? L("unlimited") : lim })}
+        {admin && ` · ${L("quota.tokens", { n: d.usage.tokens })}`}
       </p>
-      {keys.map((k) => (
+      {shown.map((k) => (
         <SettingsRow key={k} label={L(`quota.${k}`)} htmlFor={`scq-${k}`}>
           <input
             id={`scq-${k}`}

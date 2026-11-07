@@ -94,6 +94,8 @@ export const ApprovalCardStepSchema = z.strictObject({
   overdue: z.boolean().optional(),
   /** CR-113 · tên Group nhận khi chuyển cấp đã xảy ra. */
   escalated_to: z.string().max(200).optional(),
+  /** CR-123 U2 · bước Thông báo không có người nhận (bước vẫn xong): hub điền khi sẵn sàng; vắng ⇒ không cảnh báo. */
+  warning: z.literal("NOTIFY_NO_RECIPIENT").optional(),
 });
 export type ApprovalCardStep = z.infer<typeof ApprovalCardStepSchema>;
 

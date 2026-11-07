@@ -78,7 +78,7 @@
       },
       "contracts": {
         "title": "Hợp đồng liên quan",
-        "stageFilter": "Lọc theo giai đoạn",
+        "stageFilter": "Lọc theo bước",
         "stage": {
           "all": "Tất cả",
           "not_started": "Chưa bắt đầu",
@@ -87,13 +87,13 @@
         },
         "emptyTitle": "Không có hợp đồng",
         "emptyBody": "Đối tác này chưa có hợp đồng đã xác nhận.",
-        "emptyFilter": "Không có hợp đồng ở giai đoạn này.",
+        "emptyFilter": "Không có hợp đồng ở bước này.",
         "col": {
           "contract": "Hợp đồng",
           "deal": "Loại",
           "value": "Giá trị",
           "period": "Hiệu lực",
-          "stage": "Giai đoạn"
+          "stage": "Bước"
         },
         "deal": {
           "buy": "Mua",

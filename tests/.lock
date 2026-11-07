@@ -393,7 +393,7 @@ c6042a98431105024071eea17033cd5ae6e59022f93e04b91e9e370661a01103  e2e/contracts-
 a64b035937926c58f31343fe053f9bfa802e8075945ff79c3aa3e0e61a610a37  e2e/contracts-web/baseline/win32/v2f-detail-mobile.json
 0ac48d9222756af7a528a8dd5585e50f70e134444726c80ba46c83d4fca92ba8  e2e/contracts-web/baseline/win32/v2f-detail-mobile.png
 b6f033a32a5a9100692b9e940474d0e1a99bec1a494c78a0e862d2ecc7eb0844  e2e/contracts-web/bell.cw.ts
-64ea75e6e99e969e767e08589aa5aeac871b908f69360b515565cb36816daf37  e2e/contracts-web/contract-flow.cw.ts
+fc8d36e02a0a650837a10a675746a37d766c5e782ebfec8b3b6128d6de3ffe1f  e2e/contracts-web/contract-flow.cw.ts
 660a32785709de6f28a2762c7e17d9d072a190af47c742d931709eba713ce714  e2e/contracts-web/cr120-intake-flow.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 79bb89a541d5b98d6fce798e0496a526a1ae38aee89145d11a2eb6346601f7d9  e2e/contracts-web/dataset-contract.ts
@@ -434,6 +434,7 @@ ebb860458e023f120e9305ba36e0a05a69da1fbcf1d65372f64d89c09f314f74  e2e/contracts-
 49678173f3350eda52ff82033c3860063712c7e23b00d8276a73cc57047f4f51  e2e/contracts-web/rep3-engine.cw.ts
 706a04d7968e2e428e047d39e47816561c75ac9bd34f2339767c0bd536eb3406  e2e/contracts-web/scenes.cw.ts
 66fc771c8337d6738fc926e953c3427a607da19e1416eb376d4aa4481e8e2d89  e2e/contracts-web/transactions.cw.ts
+def99e9020691b4303ff5d4aa0c11bd99a362b8a9a404f42acebb48ef0d15edc  e2e/contracts-web/u2-contracts-ux.cw.ts
 354f3d5b1f450382a9e0ad27cdb39476a41e30fbef8dede597d1183588fa6050  e2e/contracts-web/ui-gating.cw.ts
 587a28af60f844221fe74b34ea4078479d87261500f7c2dc9c815af4bde50a53  e2e/contracts-web/v2f-detail.cw.ts
 d7e42da637fd5005751b814e8d8cf18d3f4689854c2cb5ad74771e79d0dc81a0  e2e/contracts-web/v2f-form.cw.ts

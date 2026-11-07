@@ -76,12 +76,12 @@
     "settings": {
       "sec": {
         "apps": "Ứng dụng & quy trình",
-        "appsHint": "Mức, add-on, quy trình đã gán, luật chọn theo phòng ban"
+        "appsHint": "Mức, add-on và quy trình đang áp dụng"
       },
       "apps": {
         "title": "Ứng dụng & quy trình",
-        "lead": "Quy trình do quản trị nền tảng gán cho công ty. Bạn chỉ sửa được luật chọn quy trình theo phòng ban, không sửa nội dung quy trình.",
-        "allFlows": "Xem tất cả quy trình",
+        "lead": "Quy trình duyệt hợp đồng được chọn một nơi duy nhất: Công ty › Quy trình. Ở đây chỉ xem quy trình đang áp dụng.",
+        "allFlows": "Mở trang Quy trình",
         "allFlowsFail": "Không mở được trang Quy trình. Vui lòng thử lại.",
         "levelLabel": "Mức",
         "level": { "off": "Tắt", "read": "Chỉ xem", "write": "Xem và ghi", "admin": "Quản trị" },
@@ -89,61 +89,14 @@
         "addonOn": "bật",
         "addonOff": "tắt",
         "slotTitle": "Quy trình đang áp dụng",
-        "slotOff": "Đang tắt — chưa bật. Quản trị nền tảng gán một quy trình cho công ty thì mới chạy.",
-        "noneAssigned": "Chưa có quy trình nào được gán cho công ty ở khe này. Liên hệ quản trị nền tảng để được gán.",
+        "slotOff": "Hợp đồng chưa có quy trình duyệt — quản trị công ty chọn tại Công ty › Quy trình",
+        "noneAssigned": "Hợp đồng chưa có quy trình duyệt — quản trị công ty chọn tại Công ty › Quy trình",
         "inUse": "Đang dùng",
-        "inUseOutside": "Đang dùng (mặc định của khe): {{name}}",
-        "noVersion": "chưa xuất bản",
+        "current": "Đang áp dụng: {{name}}",
         "viewDiagram": "Xem sơ đồ",
         "hideDiagram": "Ẩn sơ đồ",
         "diagramUnavailable": "Không xem được sơ đồ của quy trình này",
-        "loadFail": "Không tải được dữ liệu.",
-        "rules": "Luật chọn quy trình",
-        "rulesLead": "Luật đầu tiên khớp thắng (xét từ trên xuống); không khớp thì dùng luật mặc định. Chỉ chọn trong số quy trình đã được gán.",
-        "subDeptNote": "Chọn một phòng ban thì áp cả phòng ban con của nó.",
-        "noRules": "Chưa có luật nào: hợp đồng chạy theo quy trình mặc định của khe.",
-        "addRule": "Thêm luật",
-        "save": "Lưu luật",
-        "saving": "Đang lưu…",
-        "saved": "Đã lưu luật chọn quy trình",
-        "discard": "Bỏ thay đổi",
-        "reload": "Tải lại",
-        "tooMany": "Đã đủ 50 luật.",
-        "rule": {
-          "n": "Luật {{n}}",
-          "up": "Lên trên",
-          "down": "Xuống dưới",
-          "remove": "Xoá",
-          "process": "Quy trình",
-          "default": "Mặc định",
-          "defaultCond": "Khi không luật nào khớp",
-          "pickDepartments": "Chọn phòng ban",
-          "pickKinds": "Loại hợp đồng",
-          "anyKind": "Mọi loại hợp đồng",
-          "kind": { "buy": "Mua", "sell": "Bán", "referral": "Giới thiệu" },
-          "noDepartments": "Công ty chưa có phòng ban.",
-          "unassigned": "(quy trình không còn được gán)",
-          "unavailable": {
-            "deleted": "Quy trình đã bị xoá",
-            "unpublished": "Quy trình chưa xuất bản"
-          }
-        },
-        "issue": {
-          "noDepartment": "Chọn ít nhất một phòng ban hoặc loại hợp đồng, hoặc đặt làm mặc định.",
-          "notAssigned": "Quy trình này không còn được gán cho công ty.",
-          "deptGone": "Có phòng ban không còn tồn tại.",
-          "unavailable": "Quy trình của luật này không chạy được: hãy chọn quy trình khác hoặc xoá luật, rồi mới lưu được."
-        },
-        "err": {
-          "conflict": "Đã có người sửa luật này trước bạn. Hãy tải lại rồi sửa tiếp.",
-          "notAssigned": "Quy trình chưa được quản trị nền tảng gán cho công ty.",
-          "unavailable": "Có luật đang dùng quy trình đã xoá hoặc chưa xuất bản nên chưa lưu được. Hãy xoá hoặc đổi quy trình của luật đó.",
-          "deptInvalid": "Có phòng ban không thuộc công ty.",
-          "rulesInvalid": "Luật không hợp lệ: mỗi luật thường cần phòng ban hoặc loại hợp đồng và chỉ một luật mặc định.",
-          "inUse": "Quy trình đang được luật dùng.",
-          "forbidden": "Bạn không có quyền sửa luật chọn quy trình.",
-          "other": "Không lưu được luật. Thử lại sau."
-        }
+        "loadFail": "Không tải được dữ liệu."
       },
       "cell": {
         "needOne": "Cần ít nhất một tiêu chí bật có trọng số",

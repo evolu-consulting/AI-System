@@ -1,5 +1,5 @@
-// CR-118 §6 · §11.2 · Cài đặt › "Ứng dụng & quy trình" (quản trị công ty + chủ gói): mức, add-on, mỗi khe quy trình đã gán + luật chọn
-// quy trình theo phòng ban (ngoại lệ DUY NHẤT cho "chỉ xem": tenant admin sửa luật, không gán/sửa nội dung quy trình).
+// CR-118 §6 · §11.2 · Cài đặt › "Ứng dụng & quy trình" (quản trị công ty + chủ gói): mức, add-on, quy trình đang áp dụng.
+// CR-123 U2 (FLOW3-FR-11): CHỈ ĐỌC; chọn quy trình ở admin Công ty › Quy trình (nút "Mở trang Quy trình", SSO một lần).
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
@@ -8,7 +8,7 @@ import { paneSlots } from "../../lib/app-slots";
 import { flowEditorUrl } from "../../lib/editor-link";
 import { SlotCard } from "./SlotCard";
 
-/** CR-120 · một trang Quy trình duy nhất ở ai-admin liệt kê MỌI quy trình công ty có; Cài đặt chỉ giữ bộ sửa luật chọn. */
+/** CR-120 · CR-123 · một trang Quy trình duy nhất ở admin (Công ty › Quy trình): nơi DUY NHẤT chọn quy trình cho hợp đồng. */
 function AllFlowsLink() {
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
@@ -24,7 +24,7 @@ function AllFlowsLink() {
       type="button"
       data-testid="apps-all-flows"
       disabled={busy}
-      className="mb-4 text-label text-act underline"
+      className="btn btn-outline mb-4"
       onClick={() => void go()}
     >
       {t("contracts.settings.apps.allFlows")}

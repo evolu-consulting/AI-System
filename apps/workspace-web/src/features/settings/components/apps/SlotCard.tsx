@@ -1,24 +1,22 @@
-// CR-118 §6 · §11.2 · một khe của công ty: quy trình platform đã gán (tên + phiên bản + sơ đồ chỉ đọc, nạp lười) và bộ sửa luật.
-// Sơ đồ: MỌI quy trình đã gán xem được (nạp khi mở: `GET /tenants/:tid/process-routing/:slot/processes/:defId`).
+// CR-118 §6 · CR-123 U2 (FLOW3-FR-11) · quy trình đang áp dụng của một loại việc: CHỈ ĐỌC (tên + sơ đồ nạp lười). Chọn quy trình ở
+// admin Công ty › Quy trình (nút "Mở trang Quy trình" ở `AppsPane`); bộ sửa luật chọn đã gỡ khỏi ứng dụng (D6: một nơi chọn).
+// Sơ đồ: `GET /tenants/:tid/process-routing/:slot/processes/:defId`.
 import type { AssignedProcess } from "@ai/contracts/hub-admin";
 import { routingCurrent } from "@ai/web-kit/routing-current";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useDepartments, useRouting } from "../../hooks/use-apps-settings";
+import { useRouting } from "../../hooks/use-apps-settings";
 import { useRoutingDef } from "../../hooks/use-routing-def";
 import { FlowCanvasLazy } from "../FlowCanvasLazy";
-import { RoutingEditor } from "./RoutingEditor";
 
 function ProcessItem({
   tenantId,
   slot,
   p,
-  inUse,
 }: {
   tenantId: string;
   slot: string;
   p: AssignedProcess;
-  inUse: boolean;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -26,18 +24,7 @@ function ProcessItem({
   return (
     <li data-testid={`slot-process-${p.def_id}`} className="rounded-lg border border-rule p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <b className="text-label">{p.name}</b>
-        <span className="text-caption text-dim">
-          {p.rel_version !== null ? `v${p.rel_version}` : t("contracts.settings.apps.noVersion")}
-        </span>
-        {inUse && (
-          <span
-            data-testid={`slot-process-in-use-${p.def_id}`}
-            className="rounded-full bg-act/10 px-2 py-0.5 text-caption font-semibold text-act"
-          >
-            {t("contracts.settings.apps.inUse")}
-          </span>
-        )}
+        <b className="text-label">{t("contracts.settings.apps.current", { name: p.name })}</b>
         <button
           type="button"
           data-testid={`slot-diagram-toggle-${p.def_id}`}
@@ -68,9 +55,10 @@ function ProcessItem({
 export function SlotCard({ tenantId, slot }: { tenantId: string; slot: string }) {
   const { t } = useTranslation();
   const q = useRouting(tenantId, slot);
-  const depts = useDepartments(true);
   const a = (k: string) => t(`contracts.settings.apps.${k}`);
   const cur = q.data ? routingCurrent(q.data) : null;
+  // CR-123 U2 · FLOW3-FR-11: chỉ đọc. Quy trình đang áp dụng = đúng một dòng; chọn quy trình ở admin Công ty › Quy trình.
+  const applied = q.data?.processes.find((p) => p.def_id === cur?.markId) ?? null;
   return (
     <section
       data-testid={`apps-slot-${slot}`}
@@ -92,38 +80,20 @@ export function SlotCard({ tenantId, slot }: { tenantId: string; slot: string })
           {a("slotOff")}
         </p>
       )}
-      {q.data && q.data.processes.length === 0 && !cur?.off && (
+      {q.data && !applied && !cur?.off && !cur?.outside && (
         <p data-testid="slot-none-assigned" className="text-body text-dim">
           {a("noneAssigned")}
         </p>
       )}
       {cur?.outside && (
-        <p data-testid="slot-in-use-outside" className="mb-2 text-body text-dim">
-          {t("contracts.settings.apps.inUseOutside", { name: cur.outside.name })}
+        <p data-testid="slot-in-use-outside" className="text-body">
+          {t("contracts.settings.apps.current", { name: cur.outside.name })}
         </p>
       )}
-      {q.data && q.data.processes.length > 0 && (
-        <>
-          <ul className="mb-2 flex flex-col gap-2">
-            {q.data.processes.map((p) => (
-              <ProcessItem
-                key={p.def_id}
-                tenantId={tenantId}
-                slot={slot}
-                p={p}
-                inUse={cur?.markId === p.def_id}
-              />
-            ))}
-          </ul>
-          <RoutingEditor
-            key={q.data.version}
-            tenantId={tenantId}
-            slot={slot}
-            data={q.data}
-            departments={depts.data ?? []}
-            onReload={() => void q.refetch()}
-          />
-        </>
+      {applied && (
+        <ul className="flex flex-col gap-2">
+          <ProcessItem tenantId={tenantId} slot={slot} p={applied} />
+        </ul>
       )}
     </section>
   );

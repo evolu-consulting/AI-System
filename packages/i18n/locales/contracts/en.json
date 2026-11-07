@@ -73,7 +73,7 @@
         "source": "Source",
         "value": "Value",
         "dates": "Effective",
-        "stage": "Stage",
+        "stage": "Step",
         "actions": "Actions"
       },
       "search": "Search by name, partner, number, category…",
@@ -528,8 +528,8 @@
       "redo": "Read again",
       "rejectReason": "Reason for rejection",
       "redoReason": "What should be read again?",
-      "pass": "Pass",
-      "return": "Send back",
+      "pass": "Approve",
+      "return": "Return for edits",
       "returnReason": "What needs fixing? (feedback for the drafter)",
       "engine": {
         "title": "Approval steps",
@@ -561,12 +561,12 @@
         "status": {
           "pending": "Not yet",
           "open": "Awaiting review",
-          "passed": "Passed",
+          "passed": "Approved",
           "skipped": "Skipped",
           "returned": "Sent back",
           "rejected": "Rejected",
           "running": "Running automatically",
-          "failed": "Failed, needs attention"
+          "failed": "Needs action"
         },
         "blocked": {
           "starter": "You submitted this contract, so you cannot approve it yourself. Someone else in the reviewing group must.",
@@ -614,8 +614,8 @@
             "FLOW_GROUP_MISSING_ANY": "A department of the flow no longer exists — add it, then press Reopen",
             "FLOW_INVALID": "the approval flow is broken; an admin must fix it, then press Reopen",
             "FLOW_MISSING": "no approval flow is published; an admin must assign one, then press Reopen",
-            "FLOW_ROUTE_NONE": "no process rule matches the starter's department and there is no default rule; a company admin must add a rule or set a default (Settings > Apps & processes), then press Reopen",
-            "FLOW_ROUTE_UNAVAILABLE": "the process chosen for this department was deleted or is not published; a company admin must fix the routing rules (Settings > Apps & processes), then press Reopen",
+            "FLOW_ROUTE_NONE": "this contract has no approval process; a company admin must choose one in Company > Processes, then press Reopen",
+            "FLOW_ROUTE_UNAVAILABLE": "the process chosen for this contract was deleted or is not applied; a company admin must choose another in Company > Processes, then press Reopen",
             "CANCELLED_BY_OWNER": "the approval run was cancelled; press Reopen to start a new one",
             "FLOW_NOT_ASSIGNED": "no approval process is assigned for this contract type; an admin must assign one in Company > Processes, then press Reopen",
             "FLOW_REFUSED": "the approval process could not start for the sender (a feature of the process is off or the sender is inactive); an admin must check Company > Processes, then press Reopen",

@@ -1,4 +1,4 @@
-// contract-flow S4 · Luật 4b: thẻ duyệt trên engine (dòng thời gian + Đạt / Trả lại / Từ chối), chỉ-trưởng-phòng không có nút,
+// contract-flow S4 · Luật 4b: thẻ duyệt trên engine (dòng thời gian + Duyệt / Trả lại sửa / Từ chối), chỉ-trưởng-phòng không có nút,
 // lối vào chỉnh quy trình chỉ cho platform_admin (CR-105, form đã bỏ). Backend giả `page.route`; chờ phần tử, không sleep.
 // CR-120: hành động qua `/pack/contracts/flow/contracts.approval/…/actions/…`, dòng thời gian từ FlowView (`flow-mock.ts`).
 // VIẾT, CHƯA CHẠY (e2e chạy một lần cuối đợt).
@@ -98,10 +98,17 @@ test("dòng thời gian: tên bước, tên phòng, trạng thái, hạn quá h�
   await page.goto(`/contracts/c/${contract.id}`);
   const tl = page.locator("[data-approval=timeline]");
   await expect(tl.getByTestId("approval-step-0")).toContainText("Soạn & kiểm tra");
-  await expect(tl.getByTestId("approval-step-0")).toContainText("Đã đạt");
+  // CR-123 U2 · mỗi bước 3 dòng: trạng thái · lý do · bước kế (ai cần làm gì).
+  await expect(tl.getByTestId("approval-step-0")).toContainText("Đã duyệt");
   await expect(tl.getByTestId("approval-step-1")).toContainText("Kế toán");
-  await expect(tl.getByTestId("approval-step-1")).toContainText("Đang chờ duyệt");
-  await expect(tl.getByTestId("approval-step-1")).toContainText("quá hạn");
+  await expect(tl.getByTestId("approval-step-1")).toContainText("Đang chờ");
+  await expect(tl.getByTestId("approval-step-1")).toContainText("Quá hạn");
+  await expect(
+    tl.getByTestId("approval-step-1").locator("[data-approval=status-lines] p"),
+  ).toHaveCount(3);
+  await expect(tl.getByTestId("approval-step-1")).toContainText(
+    "Bạn cần: Duyệt, Trả lại sửa hoặc Từ chối",
+  );
 });
 
 test("luồng 2 bước: bước 1 bấm Đạt ⇒ POST approve (không kèm products khi chưa xác nhận HĐ)", async ({

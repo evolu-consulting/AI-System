@@ -32,25 +32,85 @@
       }
     },
     "approval": {
+      "notifyNoRecipient": "Nobody receives the notification for step {{name}} — choose recipients in Company > Processes",
+      "card": {
+        "state": {
+          "pending": "Not yet their turn",
+          "open": "Waiting for {{who}} to approve",
+          "openAnon": "Waiting for approval",
+          "passed": "Approved",
+          "skipped": "Step skipped",
+          "returned": "Returned for edits",
+          "rejected": "Rejected",
+          "running": "Running automatically",
+          "failed": "Needs action"
+        },
+        "reason": {
+          "pending": "Waiting for the previous step",
+          "openDue": "Due {{due}}",
+          "openOverdue": "{{n}} hours overdue (due {{due}})",
+          "openNoDue": "No due date",
+          "openEscalated": "Overdue, so it moved to {{group}}",
+          "passedBy": "By {{name}} at {{at}}",
+          "passedOwner": "{{name}} approved on their behalf (full rights) at {{at}}",
+          "passedAuto": "Moved on automatically",
+          "skipped": "The step's condition is not met",
+          "feedback": "“{{text}}”",
+          "returnedNone": "The approver asked for changes",
+          "rejectedNone": "No reason given",
+          "running": "The system is working on it",
+          "failed": "An automatic step failed"
+        },
+        "next": {
+          "pending": "{{who}} will be notified when it is their turn",
+          "pendingAnon": "Moves on automatically when it is its turn",
+          "openMe": "You need to: Approve, Return for edits or Reject",
+          "openOther": "Waiting for {{who}}; nothing for you to do yet",
+          "openOtherAnon": "Waiting for the approver; nothing for you to do yet",
+          "passed": "Moved to the next step",
+          "skipped": "Nothing to do",
+          "returned": "The drafter edits and sends it again",
+          "rejected": "The contract stops; the owner can reopen it",
+          "running": "Nothing to do, wait for it to finish",
+          "failed": "The owner presses Retry or Reopen process"
+        }
+      },
       "esign": {
         "status": {
           "pending": "Waiting for approval",
           "sending": "Sending for signature",
           "sent": "Sent, awaiting signatures",
           "completed": "Signed",
-          "needs_decision": "Needs decision"
+          "needs_decision": "Needs action"
+        },
+        "line": {
+          "reason": {
+            "pending": "E-signing starts once approval is done",
+            "sending": "The system is sending the document",
+            "sent": "The document was sent to all signers",
+            "sentNoDue": "Sent to all signers; no signing deadline",
+            "completed": "Everyone has signed"
+          },
+          "next": {
+            "pending": "Sent for signature automatically, nothing for you to do",
+            "sending": "Wait a few minutes",
+            "sent": "Waiting for signers; nothing for you to do yet",
+            "completed": "The contract is complete",
+            "resend": "Fix the cause above, then press Resend",
+            "owner": "The contract owner handles it (Resend or Reopen the contract)"
+          }
         },
         "reason": {
-          "NO_PARTNER_EMAIL": "Partner has no contact email. Add one, then resend.",
-          "NO_SIGNER": "Company signer could not be determined.",
-          "SEND_FAILED": "Sending for signature failed.",
-          "DECLINED": "A signer declined.",
-          "VOIDED": "The envelope was voided."
+          "NO_PARTNER_EMAIL": "The partner has no email. Add one in the partner details, then press Resend.",
+          "NO_SIGNER": "No company signer is set. Choose one in Company > Processes, then press Resend.",
+          "SEND_FAILED": "The e-signature service did not receive the document. Check Settings > E-signature, then press Resend.",
+          "DECLINED": "A signer declined. Ask them, edit the contract if needed, then press Resend.",
+          "VOIDED": "The signing request was voided. Press Resend to create a new one."
         },
         "resend": "Resend",
         "resent": "Sent for signature again.",
-        "stillBlocked": "Not sent yet, see the reason on the e-signature step.",
-        "resendFail": "Could not resend.",
+        "stillBlocked": "Not sent yet: fix the cause shown on the e-signature step, then press Resend.",
+        "resendFail": "Could not resend because the e-signature service did not answer. Try again in a few minutes; if it persists, ask a company admin to check Settings > E-signature.",
         "dueAt": "Due: {{at}}",
         "overdue": "Overdue",
         "remindedAt": "Reminded at {{at}}"
@@ -67,17 +127,17 @@
       "left": "{{n}}h left",
       "escalatedTo": "Escalated to {{name}}",
       "decidedBy": "Decided by {{name}}",
-      "attention": "Needs attention",
+      "attention": "Needs action",
       "status": {
         "pending": "Pending",
         "open": "In progress",
         "running": "Running",
-        "passed": "Passed",
+        "passed": "Approved",
         "skipped": "Skipped",
-        "returned": "Returned",
+        "returned": "Returned for edits",
         "rejected": "Rejected",
-        "failed": "Failed",
-        "needs_decision": "Needs a decision"
+        "failed": "Needs action",
+        "needs_decision": "Needs action"
       },
       "form": {
         "submit": "Submit",

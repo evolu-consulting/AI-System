@@ -33,6 +33,9 @@ export const staleAfterConfirm = (a: ContractApproval | undefined, confirmed: bo
 export const submittedAfter = (a: ContractApproval | undefined, confirmed: boolean): boolean =>
   staleAfterConfirm(a, confirmed) || submittedForReview(a);
 
+/** CR-123 U2 · người xem đang có nút quyết (Duyệt / Xác nhận) ⇒ dòng "bước kế" của thẻ nói "Bạn cần…". */
+export const canDecide = (v: ApprovalView): boolean => v.pass === true || v.approve || v.confirm;
+
 /** p24 · nút theo thẻ, trừ khi vừa xác nhận mà thẻ còn bản cũ (khi đó không còn nút nào). */
 export const viewAfterConfirm = (
   a: ContractApproval | undefined,

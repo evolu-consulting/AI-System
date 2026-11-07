@@ -1,12 +1,8 @@
-// CR-118 §6 · §11.2 · "Ứng dụng & quy trình" trong Cài đặt: năng lực của công ty (chỉ đọc) + luật chọn quy trình theo phòng ban.
-// `GET /hub-admin/tenants/:tid/capabilities` (tenant_admin: tenant mình, chỉ đọc) và `GET|PUT /tenants/:tid/process-routing/:slot`
-// (tenant_admin: tenant mình). Cùng origin: nginx/dev proxy chuyển `/hub-admin` + `/tenants` sang hub-api. Không gán quy trình ở đây (platform).
+// CR-118 §6 · §11.2 · "Ứng dụng & quy trình" trong Cài đặt: năng lực của công ty + quy trình đang áp dụng — CHỈ ĐỌC (CR-123 U2).
+// `GET /hub-admin/tenants/:tid/capabilities` và `GET /tenants/:tid/process-routing/:slot`. Cùng origin: nginx/dev proxy chuyển
+// `/hub-admin` + `/tenants` sang hub-api. `PUT process-routing` vẫn ở hub (admin-web dùng) nhưng app này KHÔNG gọi nữa.
 import type { TenantCapabilitiesResponse } from "@ai/contracts/capabilities";
-import type {
-  ProcessRouting,
-  ProcessRoutingDefView,
-  PutProcessRoutingRequest,
-} from "@ai/contracts/hub-admin";
+import type { ProcessRouting, ProcessRoutingDefView } from "@ai/contracts/hub-admin";
 import { api } from "@ai/web-kit/http";
 
 const enc = encodeURIComponent;
@@ -30,9 +26,6 @@ export const fetchCapabilities = (tid: string, signal?: AbortSignal) =>
 
 export const fetchRouting = (tid: string, slot: string, signal?: AbortSignal) =>
   api<ProcessRouting>(ROUTE(tid, slot), { signal });
-
-export const putRouting = (tid: string, slot: string, body: PutProcessRoutingRequest) =>
-  api<ProcessRouting>(ROUTE(tid, slot), { method: "PUT", body });
 
 export const fetchRoutingDef = (tid: string, slot: string, defId: string, signal?: AbortSignal) =>
   api<ProcessRoutingDefView>(DEF(tid, slot, defId), { signal });

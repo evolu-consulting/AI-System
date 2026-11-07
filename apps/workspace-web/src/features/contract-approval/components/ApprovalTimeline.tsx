@@ -10,8 +10,10 @@ import { useTranslation } from "react-i18next";
 import { FlowEditorLink } from "~/features/settings/components/FlowEditorLink";
 import { FlowPanel, flowViewKey, useFlowView } from "~/platform/flow";
 import { useGroups } from "../hooks/use-groups";
+import { noRecipientSteps } from "../lib/card-status";
 import { APPROVAL_SLOT, flowViewOfApproval, withGroupLabels } from "../lib/flow-view";
 import { APPROVAL_OVERRIDES } from "./ApprovalSteps";
+import { CanActContext } from "./StatusLines";
 
 /** Thẻ duyệt đổi (dữ liệu mới) ⇒ tải lại FlowView của hub; lần đầu không (query đang tải). */
 function useResyncView(id: string, a: ContractApproval) {
@@ -24,7 +26,19 @@ function useResyncView(id: string, a: ContractApproval) {
   }, [a, id, qc]);
 }
 
-export function ApprovalTimeline({ id, a }: { id: string; a: ContractApproval }) {
+export function ApprovalTimeline({
+  id,
+  a,
+  canAct = false,
+  owner = false,
+}: {
+  id: string;
+  a: ContractApproval;
+  /** Người xem là người cần quyết bước đang mở (dòng "bước kế" nói "Bạn cần…"). */
+  canAct?: boolean;
+  /** Chủ HĐ / quản trị gói: thấy cảnh báo "bước Thông báo không có người nhận" (CR-123 U2). */
+  owner?: boolean;
+}) {
   const { t } = useTranslation();
   const groups = useGroups(a.mode === "engine");
   const q = useFlowView({ slot: APPROVAL_SLOT, refId: id });
@@ -37,24 +51,37 @@ export function ApprovalTimeline({ id, a }: { id: string; a: ContractApproval })
       : q.data
         ? withGroupLabels(q.data, names)
         : flowViewOfApproval(a, id, names, Date.now());
+  const noRecipient = owner && view ? noRecipientSteps(view.steps) : [];
   return (
-    <FlowPanel
-      slot={APPROVAL_SLOT}
-      refId={id}
-      view={view}
-      overrides={APPROVAL_OVERRIDES}
-      frame={(steps) => (
-        <section data-approval="timeline" className="mb-4 rounded-xl border border-line p-4">
-          <div className="mb-1 flex items-center gap-3">
-            <h3 className="text-sm font-semibold">{t("contracts.approval.engine.title")}</h3>
-            <FlowEditorLink
-              testId="approval-edit-flow"
-              className="ml-auto text-caption text-act underline"
-            />
-          </div>
-          <ol>{steps}</ol>
-        </section>
-      )}
-    />
+    <CanActContext.Provider value={canAct}>
+      <FlowPanel
+        slot={APPROVAL_SLOT}
+        refId={id}
+        view={view}
+        overrides={APPROVAL_OVERRIDES}
+        frame={(steps) => (
+          <section data-approval="timeline" className="mb-4 rounded-xl border border-line p-4">
+            <div className="mb-1 flex items-center gap-3">
+              <h3 className="text-sm font-semibold">{t("contracts.approval.engine.title")}</h3>
+              <FlowEditorLink
+                testId="approval-edit-flow"
+                className="ml-auto text-caption text-act underline"
+              />
+            </div>
+            {noRecipient.map((name) => (
+              <p
+                key={name}
+                role="alert"
+                data-approval="notify-no-recipient"
+                className="mb-2 rounded-lg bg-act-soft px-3 py-2 text-caption font-medium text-late"
+              >
+                {t("contracts.approval.notifyNoRecipient", { name })}
+              </p>
+            ))}
+            <ol>{steps}</ol>
+          </section>
+        )}
+      />
+    </CanActContext.Provider>
   );
 }

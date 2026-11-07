@@ -77,6 +77,8 @@ const StepBase = {
   feedback: Text(4000).nullable(),
   /** Bước chưa tới sẽ bị bỏ qua theo dữ liệu hiện tại: điều kiện không thỏa; null = không bỏ qua. */
   skip_when: z.array(FlowSkipCondSchema).max(20).nullable(),
+  /** CR-123 U2 · bước Thông báo xong nhưng không có người nhận ⇒ thẻ nói rõ cho chủ HĐ (vắng ở hub cũ / bước khác). */
+  warning: z.literal("NOTIFY_NO_RECIPIENT").optional(),
 };
 export const FlowStepViewSchema = z.discriminatedUnion("kind", [
   z.strictObject({ ...StepBase, kind: z.literal("review") }),

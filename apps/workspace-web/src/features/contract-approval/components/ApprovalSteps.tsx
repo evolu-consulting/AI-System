@@ -3,9 +3,11 @@
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import type { StepOverrides, StepProps } from "~/platform/flow";
-import { hoursLeft, skipReason, type TimelineRow } from "../lib/engine-card";
+import { rowStatusLines } from "../lib/card-status";
+import { skipReason, type TimelineRow } from "../lib/engine-card";
 import { rowOfFlowStep } from "../lib/flow-view";
 import { EsignStepRow } from "./EsignStepRow";
+import { StatusLines, useCanAct } from "./StatusLines";
 
 type Esign = NonNullable<ContractApproval["esign"]>;
 
@@ -20,27 +22,12 @@ const DOT: Record<TimelineRow["status"], string> = {
   failed: "border-late bg-late",
 };
 
-function When({ r, now }: { r: TimelineRow; now: number }) {
-  const { t } = useTranslation();
-  if (!r.due) return null;
-  const late = r.due.flag === "overdue";
-  const h = hoursLeft(r.due.at, now);
-  return (
-    <span
-      className={late ? "font-semibold text-late" : "text-dim"}
-      data-approval-due={r.due.flag ?? "ok"}
-    >
-      {new Date(r.due.at).toLocaleString()}
-      {r.status === "open" &&
-        ` · ${t(late ? "contracts.approval.engine.overdue" : "contracts.approval.engine.left", { n: Math.abs(h) })}`}
-      {r.due.flag === "escalated" &&
-        ` · ${t("contracts.approval.engine.escalated", { group: r.escalatedTo ?? "" })}`}
-    </span>
-  );
-}
+const fmt = (iso: string) => new Date(iso).toLocaleString();
 
 export function Row({ r, now }: { r: TimelineRow; now: number }) {
   const { t } = useTranslation();
+  const canAct = useCanAct();
+  const lines = rowStatusLines(r, { canAct, now, fmt });
   return (
     <li
       data-testid={`approval-step-${r.idx}`}
@@ -67,11 +54,7 @@ export function Row({ r, now }: { r: TimelineRow; now: number }) {
                   .join(", "),
               })}
             </span>
-          ) : (
-            <span className="text-caption text-dim">
-              {t(`contracts.approval.engine.status.${r.status}`)}
-            </span>
-          )}
+          ) : null}
           {r.group ? <span className="text-caption text-dim">· {r.group}</span> : null}
           {r.headOnly ? (
             <span className="text-caption text-dim">
@@ -100,16 +83,7 @@ export function Row({ r, now }: { r: TimelineRow; now: number }) {
             </span>
           ) : null}
         </div>
-        <div className="text-caption">
-          <When r={r} now={now} />
-        </div>
-        {r.decidedBy && (
-          <div className="text-caption text-dim">
-            {t("contracts.approval.engine.decidedBy", { name: r.decidedBy })}
-            {r.decidedAt ? ` · ${new Date(r.decidedAt).toLocaleString()}` : ""}
-          </div>
-        )}
-        {r.feedback && <p className="mt-1 whitespace-pre-line text-caption">“{r.feedback}”</p>}
+        {!r.skipWhen && <StatusLines lines={lines} alert={r.status === "failed"} />}
       </div>
     </li>
   );

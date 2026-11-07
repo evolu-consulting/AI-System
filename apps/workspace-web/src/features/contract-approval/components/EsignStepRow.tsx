@@ -1,10 +1,13 @@
-// esign-flow · dòng "Ký số" cuối tiến trình duyệt: chờ duyệt xong / đang gửi / đã gửi chờ ký / đã ký xong / cần quyết (lý do) +
-// "Gửi lại" cho người phụ trách HĐ khi cần quyết (hoặc mở lại HĐ ở trang chi tiết). esign-sweep2 · "Hạn ký", nhãn "Quá hạn", "Đã nhắc lúc".
+// esign-flow · dòng "Ký số" cuối tiến trình duyệt: chờ duyệt xong / đang gửi / đã gửi chờ ký / đã ký xong / cần xử lý (lý do + cách sửa)
+// + "Gửi lại" cho người phụ trách HĐ (hoặc mở lại HĐ ở trang chi tiết). esign-sweep2 · "Hạn ký", nhãn "Quá hạn", "Đã nhắc lúc".
+// CR-123 U2 · 3 dòng trạng thái · lý do · bước kế (`card-status.ts`).
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { approvalKey, resendEsignStep } from "../api";
+import { esignStatusLines } from "../lib/card-status";
+import { StatusLines } from "./StatusLines";
 
 type Esign = NonNullable<ContractApproval["esign"]>;
 const DOT: Record<Esign["status"], string> = {
@@ -46,8 +49,8 @@ export function EsignStepRow({ id, e }: { id: string; e: Esign }) {
       <div className="min-w-0 flex-1 text-sm">
         <div className="flex flex-wrap items-center gap-x-2">
           <b>{e.name}</b>
-          <span className="text-caption text-dim">{k(`status.${e.status}`)}</span>
         </div>
+        <StatusLines lines={esignStatusLines(e)} alert={e.status === "needs_decision"} />
         {(e.due_at || e.reminded_at) && (
           <div className="flex flex-wrap items-center gap-x-2 text-caption text-dim">
             {e.due_at && (
@@ -68,11 +71,6 @@ export function EsignStepRow({ id, e }: { id: string; e: Esign }) {
                 {t("contracts.approval.esign.remindedAt", { at: when(e.reminded_at) })}
               </span>
             )}
-          </div>
-        )}
-        {e.reason && (
-          <div role="alert" className="text-caption text-late">
-            {k(`reason.${e.reason}`)}
           </div>
         )}
         {e.can_resend && (

@@ -32,25 +32,85 @@
       }
     },
     "approval": {
+      "notifyNoRecipient": "Không có ai nhận thông báo bước {{name}} — chọn người nhận trong Công ty › Quy trình",
+      "card": {
+        "state": {
+          "pending": "Chưa tới lượt",
+          "open": "Đang chờ {{who}} duyệt",
+          "openAnon": "Đang chờ duyệt",
+          "passed": "Đã duyệt",
+          "skipped": "Bỏ qua bước này",
+          "returned": "Đã trả lại sửa",
+          "rejected": "Đã từ chối",
+          "running": "Đang chạy tự động",
+          "failed": "Cần xử lý"
+        },
+        "reason": {
+          "pending": "Chờ bước trước xong",
+          "openDue": "Hạn {{due}}",
+          "openOverdue": "Quá hạn {{n}} giờ (hạn {{due}})",
+          "openNoDue": "Chưa đặt hạn",
+          "openEscalated": "Quá hạn nên đã chuyển cho {{group}}",
+          "passedBy": "Bởi {{name}} lúc {{at}}",
+          "passedOwner": "{{name}} duyệt thay (Toàn quyền) lúc {{at}}",
+          "passedAuto": "Hệ thống tự chuyển",
+          "skipped": "Điều kiện của bước không thỏa",
+          "feedback": "“{{text}}”",
+          "returnedNone": "Người duyệt yêu cầu sửa",
+          "rejectedNone": "Chưa ghi lý do",
+          "running": "Hệ thống đang xử lý",
+          "failed": "Bước tự động gặp lỗi"
+        },
+        "next": {
+          "pending": "Tới lượt sẽ báo {{who}}",
+          "pendingAnon": "Tới lượt sẽ tự chuyển tiếp",
+          "openMe": "Bạn cần: Duyệt, Trả lại sửa hoặc Từ chối",
+          "openOther": "Chờ {{who}}; bạn chưa cần làm gì",
+          "openOtherAnon": "Chờ người duyệt; bạn chưa cần làm gì",
+          "passed": "Đã chuyển sang bước kế",
+          "skipped": "Không cần làm gì",
+          "returned": "Người soạn sửa rồi gửi duyệt lại",
+          "rejected": "Hợp đồng dừng; người phụ trách mở lại nếu cần",
+          "running": "Không cần làm gì, chờ xong",
+          "failed": "Người phụ trách bấm Thử lại hoặc Mở lại quy trình"
+        }
+      },
       "esign": {
         "status": {
           "pending": "Chờ duyệt xong",
           "sending": "Đang gửi ký",
           "sent": "Đã gửi, chờ ký",
           "completed": "Đã ký xong",
-          "needs_decision": "Cần quyết"
+          "needs_decision": "Cần xử lý"
+        },
+        "line": {
+          "reason": {
+            "pending": "Ký số bắt đầu sau khi duyệt xong",
+            "sending": "Hệ thống đang gửi bản ký",
+            "sent": "Đã gửi bản ký cho các bên",
+            "sentNoDue": "Đã gửi bản ký; chưa đặt hạn ký",
+            "completed": "Mọi bên đã ký"
+          },
+          "next": {
+            "pending": "Hệ thống tự gửi ký, bạn không cần làm gì",
+            "sending": "Chờ ít phút",
+            "sent": "Chờ các bên ký; bạn chưa cần làm gì",
+            "completed": "Hợp đồng đã hoàn tất",
+            "resend": "Sửa nguyên nhân trên rồi bấm Gửi lại",
+            "owner": "Người phụ trách hợp đồng xử lý (Gửi lại hoặc Mở lại hợp đồng)"
+          }
         },
         "reason": {
-          "NO_PARTNER_EMAIL": "Đối tác chưa có email liên hệ. Thêm email rồi gửi lại.",
-          "NO_SIGNER": "Chưa xác định được người ký phía công ty.",
-          "SEND_FAILED": "Gửi ký không thành công.",
-          "DECLINED": "Có người từ chối ký.",
-          "VOIDED": "Phong bì ký đã bị huỷ."
+          "NO_PARTNER_EMAIL": "Đối tác chưa có email. Thêm email ở thông tin đối tác rồi bấm Gửi lại.",
+          "NO_SIGNER": "Chưa xác định người ký phía công ty. Chọn người ký trong Công ty › Quy trình rồi bấm Gửi lại.",
+          "SEND_FAILED": "Hệ thống ký số chưa nhận được bản ký. Kiểm tra Cài đặt › Ký số rồi bấm Gửi lại.",
+          "DECLINED": "Đối tác hoặc người ký đã từ chối ký. Hỏi lại họ, sửa hợp đồng nếu cần rồi bấm Gửi lại.",
+          "VOIDED": "Bản ký đã bị huỷ. Bấm Gửi lại để tạo bản ký mới."
         },
         "resend": "Gửi lại",
         "resent": "Đã gửi ký lại.",
-        "stillBlocked": "Chưa gửi được, xem lý do ở bước Ký số.",
-        "resendFail": "Không gửi lại được.",
+        "stillBlocked": "Chưa gửi được: sửa nguyên nhân ghi ở bước Ký số rồi bấm Gửi lại.",
+        "resendFail": "Không gửi lại được vì hệ thống ký số chưa trả lời. Thử lại sau ít phút; vẫn lỗi thì báo quản trị công ty kiểm tra Cài đặt › Ký số.",
         "dueAt": "Hạn ký: {{at}}",
         "overdue": "Quá hạn",
         "remindedAt": "Đã nhắc lúc {{at}}"
@@ -72,12 +132,12 @@
         "pending": "Chưa tới",
         "open": "Đang chờ",
         "running": "Đang chạy",
-        "passed": "Đạt",
+        "passed": "Đã duyệt",
         "skipped": "Bỏ qua",
-        "returned": "Đã trả lại",
-        "rejected": "Từ chối",
-        "failed": "Lỗi",
-        "needs_decision": "Cần quyết định"
+        "returned": "Đã trả lại sửa",
+        "rejected": "Đã từ chối",
+        "failed": "Cần xử lý",
+        "needs_decision": "Cần xử lý"
       },
       "form": {
         "submit": "Gửi",

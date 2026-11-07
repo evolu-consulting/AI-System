@@ -18,6 +18,7 @@ import {
   type ActResult,
   type ApprovalView,
   afterConfirm,
+  canDecide,
   showLinkDialog,
   submittedAfter,
   viewAfterConfirm,
@@ -92,7 +93,14 @@ export function useApprovalUi(o: {
           {t("contracts.approval.done.movedTo", { step: movedTo })}
         </p>
       )}
-      {ap.approval && <ApprovalTimeline id={o.id} a={ap.approval} />}
+      {ap.approval && (
+        <ApprovalTimeline
+          id={o.id}
+          a={ap.approval}
+          canAct={canDecide(v)}
+          owner={o.owner === true}
+        />
+      )}
       {attention && (
         <AttentionBanner
           attention={attention}
