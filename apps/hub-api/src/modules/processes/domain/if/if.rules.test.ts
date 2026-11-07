@@ -7,7 +7,49 @@ import {
   type IfStageShape,
   ifDefIssues,
   ifTarget,
+  missingKeysOf,
 } from "./if.rules";
+
+describe("CR-122 P18 · missingKeysOf (thiếu dữ kiện ⇒ không rẽ)", () => {
+  const fact = (key: string, op: IfCond["op"], value: string | number): IfCond => ({
+    from: { kind: "fact", key },
+    op,
+    value,
+  });
+  const gt = fact("total_value", "gt", 120_000_000);
+  it("trống / null / '' / không phải số khi so số ⇒ thiếu", () => {
+    const w = { op: "and" as const, conds: [gt] };
+    expect(missingKeysOf(w, {}, null)).toEqual(["total_value"]);
+    expect(missingKeysOf(w, {}, { total_value: null })).toEqual(["total_value"]);
+    expect(missingKeysOf(w, {}, { total_value: "" })).toEqual(["total_value"]);
+    expect(missingKeysOf(w, {}, { total_value: "abc" })).toEqual(["total_value"]);
+    expect(missingKeysOf(w, {}, { total_value: 0 })).toEqual([]);
+    expect(missingKeysOf(w, {}, { total_value: "150000000" })).toEqual([]);
+  });
+  it("input run trống ⇒ thiếu; field bước trước không xét", () => {
+    const w = {
+      op: "and" as const,
+      conds: [
+        { from: { kind: "input" as const, key: "amount" }, op: "ge" as const, value: 5 },
+        {
+          from: { kind: "field" as const, stageKey: "a", field: "x" },
+          op: "eq" as const,
+          value: "y",
+        },
+      ],
+    };
+    expect(missingKeysOf(w, { amount: "" }, null)).toEqual(["amount"]);
+    expect(missingKeysOf(w, { amount: 7 }, null)).toEqual([]);
+  });
+  it("kết quả đã rõ không cần vế thiếu (AND có vế Sai / OR có vế Đúng) ⇒ []", () => {
+    const deal = fact("deal", "eq", "buy");
+    expect(missingKeysOf({ op: "and", conds: [gt, deal] }, {}, { deal: "sell" })).toEqual([]);
+    expect(missingKeysOf({ op: "or", conds: [gt, deal] }, {}, { deal: "buy" })).toEqual([]);
+    expect(missingKeysOf({ op: "or", conds: [gt, deal] }, {}, { deal: "sell" })).toEqual([
+      "total_value",
+    ]);
+  });
+});
 
 const fld = (field: string, op: IfCond["op"], value: string | number): IfCond => ({
   from: { kind: "field", stageKey: "a", field },

@@ -586,6 +586,8 @@
           "confirmBody": "The current run will be cancelled and a new run will start from the beginning with the current flow.",
           "reason": {
             "tool_failed": "an automatic step failed and needs a decision",
+            "missing_fact": "{{keys}} is missing — fill it in on the contract, then press Retry",
+            "missing_fact_any": "Data needed to choose the approval branch is missing — complete the contract, then press Retry",
             "retry_exhausted": "an automatic step failed after several retries",
             "job_timeout": "an automatic step ran past its time limit",
             "other": "the approval needs someone to decide what to do next",

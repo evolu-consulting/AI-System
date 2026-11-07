@@ -108,6 +108,8 @@ export const ApprovalAttentionSchema = z.strictObject({
   since: z.string().max(40).nullable(),
   /** CR-122 · p19 · mã máy lỗi của bước tự động (vd `ESIGN_DISABLED`, `MISSING_ARG:contract_id`); vắng ở hub cũ. */
   code: z.string().max(64).nullable().optional(),
+  /** CR-122 · P18 · `reason = missing_fact`: NHÃN các dữ kiện còn trống (vd "Giá trị hợp đồng"). Vắng ở lý do khác / hub cũ. */
+  missing: z.array(z.string().max(120)).max(6).optional(),
 });
 export type ApprovalAttention = z.infer<typeof ApprovalAttentionSchema>;
 

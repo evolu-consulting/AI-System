@@ -47,7 +47,7 @@ export type EngineStepsView = {
   started_by: string;
   steps: EngineStageView[];
   /** CR-107 · decision mở của run `needs_decision` (lý do + lúc mở). */
-  decision?: { reason: string; at: string | null; code?: string | null } | null;
+  decision?: { reason: string; at: string | null; code?: string | null; missing?: string[] } | null;
 };
 /** CR-107 · lượt cần owner/admin để ý (không đổi trạng thái HĐ). `code` (p19) = mã máy lỗi của bước tự động (vd `ESIGN_DISABLED`). */
 export type EngineAttention = {
@@ -55,6 +55,8 @@ export type EngineAttention = {
   reason: string | null;
   since: string | null;
   code?: string | null;
+  /** CR-122 · P18 · `missing_fact`: khoá dữ kiện còn trống (usecase đổi sang nhãn trước khi trả thẻ). */
+  missing?: string[];
 };
 
 export type CardStep = {
@@ -259,6 +261,7 @@ export function attentionOf(i: EngineCardInput): EngineAttention | null {
       reason: sv.decision?.reason ?? null,
       since: sv.decision?.at ?? null,
       ...(sv.decision?.code ? { code: sv.decision.code } : {}),
+      ...(sv.decision?.missing?.length ? { missing: sv.decision.missing } : {}),
     };
   const noRun = i.approval.engineRunId === null;
   // CR-122 · P11/P11b · đang chờ bộ điều phối mở flow: còn mới (≤ 2 phút) ⇒ không phải kẹt; quá ⇒ "kẹt: chưa mở được quy trình".

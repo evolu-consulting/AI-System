@@ -191,6 +191,8 @@
   "timer_invalid_hint": "The date is missing or wrong, more than 730 days away, or after the run expires. Recalculate the date, skip the wait to continue, or cancel.",
   "tool_failed": "The tool call failed.",
   "tool_failed_hint": "The tool was turned off for the company, or it returned an error or a result that doesn't match. Review it, then choose what to do.",
+  "missing_fact": "Data needed for the branch is missing.",
+  "missing_fact_hint": "The If step's condition needs a field that is empty. Fill it in on the record, then choose Retry to branch on the new value, or cancel.",
   "facts_changed": "The record changed after the branch was taken.",
   "facts_changed_hint": "The value at the branch differs from the current value, so the result may be wrong. Rerun from the If step to branch on the new value."
 }

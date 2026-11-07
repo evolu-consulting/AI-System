@@ -15,6 +15,18 @@ describe("attentionText", () => {
     expect(attentionText({ kind: "needs_decision", reason: "zzz" }).key).toBe(`${B}.other`);
     expect(attentionText({ kind: "needs_decision", reason: null }).key).toBe(`${B}.other`);
   });
+  test("CR-122 P18 · missing_fact ⇒ nêu NHÃN trường còn thiếu (vắng nhãn ⇒ câu chung)", () => {
+    expect(
+      attentionText({
+        kind: "needs_decision",
+        reason: "missing_fact",
+        missing: ["Giá trị hợp đồng"],
+      }),
+    ).toEqual({ key: `${B}.missing_fact`, vars: { keys: "Giá trị hợp đồng" } });
+    expect(attentionText({ kind: "needs_decision", reason: "missing_fact" }).key).toBe(
+      `${B}.missing_fact_any`,
+    );
+  });
   test("stalled FLOW_GROUP_MISSING:<mã,…> ⇒ nêu mã phòng ban", () => {
     expect(
       attentionText({ kind: "stalled", reason: "FLOW_GROUP_MISSING:phap-che, ke-toan" }),

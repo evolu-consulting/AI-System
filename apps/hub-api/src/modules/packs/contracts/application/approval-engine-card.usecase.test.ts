@@ -142,6 +142,19 @@ describe("engineView", () => {
     expect(v.finalizes_on_approve).toBe(true);
     expect(v.steps).toHaveLength(2);
   });
+  it("CR-122 P18 · run dừng vì thiếu dữ kiện ⇒ attention nêu NHÃN trường (manifest), không lộ khoá", async () => {
+    const { d } = setup();
+    const decision = { reason: "missing_fact", at: null, missing: ["total_value"] };
+    const sv = { ...view("s0"), status: "needs_decision", decision };
+    const d2 = { ...d, port: () => ({ ...d.port(), stepsView: async () => sv }) as never };
+    const v = await engineView(d2)(who, state());
+    expect(v.attention).toEqual({
+      kind: "needs_decision",
+      reason: "missing_fact",
+      since: null,
+      missing: ["Giá trị hợp đồng"],
+    });
+  });
 });
 
 describe("engineAct", () => {

@@ -8,7 +8,7 @@ import { factsReaderFor, outcomeHandlerFor } from "./flow-ports";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type FlowStepRepo = Required<
-  Pick<StepRepo, "readFacts" | "ifDecisions" | "applyOutcome" | "needsAction">
+  Pick<StepRepo, "readFacts" | "ifDecisions" | "applyOutcome" | "needsAction" | "missingFact">
 >;
 
 export function flowStepRepo(tx: Tx, tenantId: string): FlowStepRepo {
@@ -56,6 +56,23 @@ export function flowStepRepo(tx: Tx, tenantId: string): FlowStepRepo {
           where process_run_id = ${runId} and tenant_id = ${tenantId}
             and stage_idx = any(array(select jsonb_array_elements_text(${JSON.stringify(a.finishIdxs)}::jsonb)::int))`),
         tx.execute(sql`update hub.process_runs set status = 'needs_decision', current_stage_idx = ${a.first},
+          decision = ${JSON.stringify(decision)}::jsonb, updated_at = now()
+          where id = ${runId} and tenant_id = ${tenantId}`),
+      ]);
+    },
+    async missingFact(runId, a) {
+      // CR-122 · P18 · Thử lại (`add_attempt`) = xếp lại stage Nếu ⇒ Nếu đọc lại dữ kiện HIỆN TẠI; Huỷ = kết thúc lượt.
+      const decision = {
+        reason: "missing_fact",
+        stage_idx: a.ifIdx,
+        missing: a.missing,
+        options: ["add_attempt", "cancel"],
+        at: new Date().toISOString(),
+      };
+      await Promise.all([
+        tx.execute(sql`update hub.stage_runs set status = 'needs_decision', finished_at = null, updated_at = now()
+          where process_run_id = ${runId} and tenant_id = ${tenantId} and stage_idx = ${a.ifIdx}`),
+        tx.execute(sql`update hub.process_runs set status = 'needs_decision', current_stage_idx = ${a.ifIdx},
           decision = ${JSON.stringify(decision)}::jsonb, updated_at = now()
           where id = ${runId} and tenant_id = ${tenantId}`),
       ]);

@@ -29,7 +29,7 @@ describe("PD2-C01 · enum nối cuối [plan-contract §6]", () => {
       chat.DECISION_REASONS?.length,
       chat.DECISION_REASONS?.at(22),
       chat.DECISION_REASONS?.at(-1),
-    ]).toEqual([24, "tool_failed", "facts_changed"]);
+    ]).toEqual([25, "tool_failed", "missing_fact"]); // CR-122 P18 nối cuối `missing_fact` (25)
     // CR-103 nối cuối `set`, `if`: tiền tố 5 giá trị cũ giữ nguyên.
     expect(chat.EXECUTOR_KINDS?.slice(0, 5)).toEqual([
       "agent",

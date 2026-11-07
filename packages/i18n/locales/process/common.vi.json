@@ -191,6 +191,8 @@
   "timer_invalid_hint": "Thiếu ngày, ngày sai, xa quá 730 ngày hoặc sau ngày hết hạn của lượt chạy. Chọn tính lại ngày hẹn, bỏ chờ để đi tiếp, hoặc huỷ.",
   "tool_failed": "Gọi tool bị lỗi.",
   "tool_failed_hint": "Tool đã bị tắt cho công ty, hoặc trả lỗi hay kết quả sai mẫu. Xem lại rồi chọn cách xử lý.",
+  "missing_fact": "Thiếu dữ liệu để rẽ nhánh.",
+  "missing_fact_hint": "Điều kiện của bước Nếu cần một trường còn trống. Điền vào bản ghi rồi chọn Thử lại để rẽ theo giá trị mới, hoặc huỷ.",
   "facts_changed": "Dữ liệu bản ghi đã đổi sau khi rẽ nhánh.",
   "facts_changed_hint": "Giá trị lúc rẽ khác giá trị hiện tại nên kết quả có thể sai. Chạy lại từ bước Nếu để rẽ theo giá trị mới."
 }

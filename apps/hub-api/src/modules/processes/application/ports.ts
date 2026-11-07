@@ -196,6 +196,8 @@ export type StepRepo = {
     runId: string,
     a: { finishIdxs: readonly number[]; ifIdx: number; first: number },
   ): Promise<void>;
+  /** CR-122 · P18 · 2 câu: stage Nếu ⇒ `needs_decision`; run ⇒ `needs_decision{reason: missing_fact, stage_idx, missing}`. */
+  missingFact?(runId: string, a: { ifIdx: number; missing: readonly string[] }): Promise<void>;
 };
 export type TxRepos = {
   readonly tenantId: string;

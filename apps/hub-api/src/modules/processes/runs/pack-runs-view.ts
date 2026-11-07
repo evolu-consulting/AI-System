@@ -152,13 +152,22 @@ function canActFn(
 }
 
 /** CR-107 · `process_runs.decision` jsonb `{reason, at}` ⇒ lý do + lúc mở quyết định (hỏng/vắng ⇒ lý do `unknown`). */
-function decisionOf(v: unknown): { reason: string; at: string | null } {
+function decisionOf(v: unknown): { reason: string; at: string | null; missing?: string[] } {
   const o = (typeof v === "string" ? JSON.parse(v) : v) as {
     reason?: unknown;
     at?: unknown;
+    missing?: unknown;
   } | null;
   const reason = typeof o?.reason === "string" ? o.reason : "unknown";
-  return { reason, at: typeof o?.at === "string" ? o.at : null };
+  // CR-122 · P18 · `missing_fact`: khoá dữ kiện còn trống (gói đổi sang nhãn).
+  const missing = Array.isArray(o?.missing)
+    ? o.missing.filter((k): k is string => typeof k === "string")
+    : [];
+  return {
+    reason,
+    at: typeof o?.at === "string" ? o.at : null,
+    ...(missing.length ? { missing } : {}),
+  };
 }
 
 /** CR-122 · p19 · mã máy của stage đang chờ quyết (tool lỗi vì sao) → thẻ HĐ nói rõ cách xử lý; vắng ⇒ không thêm trường. */

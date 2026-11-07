@@ -3,10 +3,12 @@
 //   đọc ở câu `state` (không thêm SQL của gói).
 // - `act`: Đạt = `act` pass (duyệt cuối: lưu `pending_links` TRONG tx gói TRƯỚC khi act; tool `contracts-finalize` áp cùng tx khoá);
 //   Trả lại = fail + về bước 0; Từ chối = reject (cần lý do) rồi ghi HĐ rejected; Đọc lại = huỷ run (system) ⇒ `extracting` + job.
+import { CONTRACTS_MANIFEST } from "@ai/contracts/app-manifest";
 import type { PackWho } from "../../kit/public";
 import { factsOf } from "../domain/approval-engine.rules";
 import {
   type EngineAction,
+  type EngineAttention,
   type EngineErrorCode,
   engineCardView,
   planEngineAct,
@@ -110,8 +112,18 @@ export function engineView(d: EngineCardDeps) {
       // esign-sweep2 · hạn ký / quá hạn / đã nhắc tính ở server (giờ server, không tin đồng hồ máy khách).
       { at: a?.esignAt ?? null, remindedAt: a?.esignRemindedAt ?? null, now: new Date() },
     );
-    return { ...engineCardView(await input(d, who, st)), esign };
+    const card = engineCardView(await input(d, who, st));
+    return { ...card, attention: withFactLabels(card.attention), esign };
   };
+}
+
+/** CR-122 · P18 · một nguồn nhãn: dữ kiện của manifest app (khoá lạ ⇒ giữ khoá, không mất thông tin). */
+const FACT_LABEL = new Map(
+  (CONTRACTS_MANIFEST.events ?? []).flatMap((e) => (e.facts ?? []).map((f) => [f.key, f.label])),
+);
+function withFactLabels(a: EngineAttention | null): EngineAttention | null {
+  if (!a?.missing) return a;
+  return { ...a, missing: a.missing.map((k) => FACT_LABEL.get(k) ?? k) };
 }
 
 type Ctx = { who: PackWho; id: string; st: ApprovalState; runId: string; b: EngineActBody };

@@ -13,7 +13,8 @@ function onAddAttempt(s: RunState): Transition {
       ["queue_stage"],
     );
   // D-PD04 · `retry_exhausted`/`timer_invalid` giữ `attempt` (không phải làm lại do góp ý); retry còn reset bộ đếm.
-  if (reason === "retry_exhausted" || reason === "timer_invalid")
+  // CR-122 · P18 · `missing_fact`: xếp lại stage Nếu (đọc lại dữ kiện), giữ `attempt`.
+  if (reason === "retry_exhausted" || reason === "timer_invalid" || reason === "missing_fact")
     return ok(
       withStage(s, { status: "queued" }, { status: "running" }),
       reason === "retry_exhausted" ? ["queue_stage", "reset_retry"] : ["queue_stage"],

@@ -136,11 +136,42 @@ describe("CR-122 · E2 · node Nếu dữ kiện + Kết thúc (đường thật
     expect(a?.summary.facts).toEqual({ matched: true, reads: [{ key: "value", value: 150 }] });
   });
 
-  it("trường trống ⇒ nhánh Sai, lịch sử ghi null", async () => {
+  it("CR-122 P18 · trường trống ⇒ KHÔNG rẽ: Nếu + run needs_decision{missing_fact, missing}; điền + chạy lại Nếu ⇒ đúng nhánh", async () => {
     facts = {};
     const runId = await seedRun(1, ["done", "done", "pending", "pending"]);
+    const out = await settle(runId);
+    expect({ kind: out?.kind, status: out?.status, step: out?.step }).toEqual({
+      kind: "wait",
+      status: "needs_decision",
+      step: 1,
+    });
+    expect(await stagesOf(runId)).toEqual(["done", "needs_decision", "pending", "pending"]);
+    const r = await runOf(runId);
+    expect(r?.decision).toMatchObject({
+      reason: "missing_fact",
+      stage_idx: 1,
+      missing: ["value"],
+      options: ["add_attempt", "cancel"],
+    });
+    const [cur] = await o<{ current_stage_idx: number }[]>`select current_stage_idx
+      from hub.process_runs where id = ${runId}`;
+    expect(cur?.current_stage_idx).toBe(1);
+    const [noBranch] = await o<{ n: number }[]>`select count(*)::int as n from hub.audit_log
+      where entity_id = ${runId} and action = 'branch'`;
+    expect(noBranch?.n).toBe(0); // không ghi lần rẽ nào
+    // Thử lại (add_attempt ⇒ stage Nếu queued ⇒ launcher chốt done rồi settle) sau khi điền giá trị: 50 ≤ 100 ⇒ Sai ⇒ bước 3.
+    facts = { value: 50 };
+    await o`update hub.process_runs set status = 'running', decision = null where id = ${runId}`;
+    await o`update hub.stage_runs set status = 'done' where process_run_id = ${runId} and stage_idx = 1`;
     expect((await settle(runId))?.step).toBe(3);
     expect(await stagesOf(runId)).toEqual(["done", "done", "skipped", "queued"]);
+  });
+
+  it("CR-122 P18 · số không hợp lệ cho phép so số ⇒ cũng là thiếu", async () => {
+    facts = { value: "abc" };
+    const runId = await seedRun(1, ["done", "done", "pending", "pending"]);
+    expect((await settle(runId))?.status).toBe("needs_decision");
+    expect((await runOf(runId))?.decision?.reason).toBe("missing_fact");
   });
 
   it("Kết thúc ⇒ OutcomeHandler cùng tx, run done, nhánh sau skipped, gọi lại ⇒ already_applied, không đổi", async () => {

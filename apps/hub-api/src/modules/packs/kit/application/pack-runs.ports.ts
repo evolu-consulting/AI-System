@@ -95,7 +95,7 @@ export type PackStepsView = {
   started_by: string;
   steps: PackStepView[];
   /** CR-107 · run `needs_decision`: lý do + lúc mở quyết định (`process_runs.decision`); không có ⇒ null/vắng. */
-  decision?: { reason: string; at: string | null; code?: string | null } | null;
+  decision?: { reason: string; at: string | null; code?: string | null; missing?: string[] } | null;
 };
 /** CR-107 · run gói CHƯA kết thúc (dọn run mồ côi). */
 export type PackOpenRun = { run_id: string; record_id: string };

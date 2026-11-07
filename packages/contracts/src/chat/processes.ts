@@ -132,6 +132,8 @@ export const DECISION_REASONS = [
   "tool_failed",
   // CR-122 · H2 · dữ kiện bản ghi đổi sau khi node Nếu rẽ (tới Kết thúc thì dừng, chạy lại từ Nếu).
   "facts_changed",
+  // CR-122 · P18 · node Nếu cần dữ kiện còn trống (vd chưa có Giá trị HĐ) ⇒ không rẽ, chờ điền rồi Thử lại.
+  "missing_fact",
 ] as const;
 export const DECISION_OPTIONS = ["add_attempt", "use_current", "cancel"] as const;
 export const NOTICE_KINDS = [

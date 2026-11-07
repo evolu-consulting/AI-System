@@ -62,6 +62,7 @@ const REASON: Record<DecisionReason, { vi: string; en: string }> = {
     vi: "dữ liệu bản ghi đổi sau khi rẽ nhánh",
     en: "record changed after branching",
   },
+  missing_fact: { vi: "thiếu dữ liệu để rẽ nhánh", en: "data needed for the branch is missing" },
 };
 
 const t = (l: ThreadLocale, vi: string, en: string): string => (l === "vi" ? vi : en);

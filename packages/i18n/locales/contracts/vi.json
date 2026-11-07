@@ -586,6 +586,8 @@
           "confirmBody": "Lượt chạy hiện tại sẽ bị huỷ và một lượt mới bắt đầu lại từ đầu theo quy trình hiện hành.",
           "reason": {
             "tool_failed": "một bước tự động gặp lỗi và cần người quyết định",
+            "missing_fact": "Thiếu {{keys}} — điền vào hợp đồng rồi bấm Thử lại",
+            "missing_fact_any": "Thiếu dữ liệu để chọn nhánh duyệt — điền đủ hợp đồng rồi bấm Thử lại",
             "retry_exhausted": "một bước tự động đã thử lại nhiều lần nhưng vẫn lỗi",
             "job_timeout": "một bước tự động chạy quá thời gian cho phép",
             "other": "quy trình cần người quyết định tiếp",

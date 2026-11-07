@@ -56,9 +56,14 @@ function toolCodeText(code: string): AttentionText {
 
 /** Lý do (mã máy) ⇒ khoá i18n (+ biến). Mã lạ/null ⇒ câu chung, không lộ mã thô (trừ mã lỗi bước tự động lạ: kèm mã để báo quản trị). */
 export function attentionText(
-  a: Pick<ApprovalAttention, "kind" | "reason"> & { code?: string | null },
+  a: Pick<ApprovalAttention, "kind" | "reason" | "missing"> & { code?: string | null },
 ): AttentionText {
   const reason = a.reason ?? "";
+  // CR-122 · P18 · điều kiện rẽ nhánh cần dữ liệu còn trống: nêu đúng NHÃN trường + cách khắc phục.
+  if (a.kind === "needs_decision" && reason === "missing_fact")
+    return a.missing?.length
+      ? { key: `${BASE}.missing_fact`, vars: { keys: a.missing.join(", ") } }
+      : { key: `${BASE}.missing_fact_any` };
   if (a.kind === "needs_decision" && reason === "tool_failed" && a.code)
     return toolCodeText(a.code);
   if (a.kind === "needs_decision")

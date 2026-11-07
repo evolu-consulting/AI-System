@@ -93,6 +93,56 @@ export function evaluateWhen(
   return { matched, hits, reads: [...reads].map(([key, value]) => ({ key, value })) };
 }
 
+const isBlank = (v: unknown): boolean =>
+  v === undefined || v === null || v === "" || (Array.isArray(v) && v.length === 0);
+const isNumeric = (v: unknown): boolean =>
+  (typeof v === "number" && Number.isFinite(v)) ||
+  (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)));
+
+/** Giá trị vế `fact`/`input` còn thiếu: trống, hoặc so số (vế phải là số / phép thứ tự) mà giá trị không phải số. */
+function condMissing(c: IfCond, v: unknown): boolean {
+  if (isBlank(v)) return true;
+  const numeric = typeof c.value === "number" || ORDER_OPS.has(c.op);
+  return numeric && !Array.isArray(v) && typeof v !== "boolean" && !isNumeric(v);
+}
+
+const sideValue = (
+  f: Exclude<IfFrom, { kind: "field" }>,
+  inputs: Readonly<Record<string, Value | null | undefined>>,
+  facts: Readonly<Record<string, FactValue>> | null,
+): unknown => {
+  if (f.kind === "fact") return factOf(facts, f.key);
+  return Object.hasOwn(inputs, f.key) ? inputs[f.key] : undefined;
+};
+const sideHit = (c: IfCond, v: unknown): boolean =>
+  c.from.kind === "fact"
+    ? compareFact(c.op, v as FactValue, c.value)
+    : compare(c.op, v as Value, c.value);
+
+/**
+ * CR-122 · P18 · Luật GỐC 3: khoá `fact`/`input` còn thiếu mà kết quả `when` PHỤ THUỘC vào (không tự coi là Sai). AND đã có vế
+ * biết chắc Sai / OR đã có vế biết chắc Đúng ⇒ kết quả đã rõ ⇒ []. Vế `field` (output bước trước) giữ như cũ.
+ */
+export function missingKeysOf(
+  when: IfWhen,
+  inputs: Readonly<Record<string, Value | null | undefined>>,
+  facts: Readonly<Record<string, FactValue>> | null = null,
+): string[] {
+  const missing: string[] = [];
+  let decided = false;
+  for (const c of when.conds) {
+    const f = c.from;
+    if (f.kind === "field") continue;
+    const v = sideValue(f, inputs, facts);
+    if (condMissing(c, v)) {
+      if (!missing.includes(f.key)) missing.push(f.key);
+      continue;
+    }
+    if (when.op === "and" ? !sideHit(c, v) : sideHit(c, v)) decided = true;
+  }
+  return decided ? [] : missing;
+}
+
 /** Bước nhảy tới: Đúng ⇒ `thenStep`; Sai ⇒ `elseStep ?? step + 1`. (`stepCount` để engine biết ≥ ⇒ run xong; ở đây chỉ chặn đích âm.) */
 export function ifTarget(exec: IfExec, matched: boolean, step: number, stepCount: number): number {
   const t = matched ? exec.thenStep : (exec.elseStep ?? step + 1);

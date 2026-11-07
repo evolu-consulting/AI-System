@@ -125,6 +125,15 @@ describe("engineCardView", () => {
       since: "2026-11-02T09:00:00.000Z",
     });
     expect(nd.needs_reopen).toBe(false);
+    // CR-122 P18 · missing_fact mang khoá dữ kiện còn trống (usecase đổi sang nhãn).
+    const miss = { reason: "missing_fact", at: null, missing: ["total_value"] };
+    const nm = engineCardView({ ...base, sv: { ...sv, status: "needs_decision", decision: miss } });
+    expect(nm.attention).toEqual({
+      kind: "needs_decision",
+      reason: "missing_fact",
+      since: null,
+      missing: ["total_value"],
+    });
     const ap = { ...base.approval, engineRunId: null, feedback: "FLOW_GROUP_MISSING:k2" };
     const noRun = engineCardView({ ...base, approval: ap, sv: null });
     expect(noRun.attention).toEqual({

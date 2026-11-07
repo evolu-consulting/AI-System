@@ -6,7 +6,7 @@
 // đọc `fields`; luật khớp (đánh giá trong bộ nhớ) ⇒ +3 câu theo tập (nhảy stage, huỷ hẹn, audit + thread) — không phụ
 // thuộc số bước bị nhảy (plan-d2 §9, PD2-P04).
 import { evaluateBranch, skippedStages } from "../../domain/branch/branch.rules";
-import { evaluateWhen, factKeysOf, ifTarget } from "../../domain/if/if.rules";
+import { evaluateWhen, factKeysOf, ifTarget, missingKeysOf } from "../../domain/if/if.rules";
 import { driftedIf, mergeTarget, outcomeOfStep, stagesAfter } from "../../domain/runs/finish.rules";
 import {
   firstIdxOfStep,
@@ -37,6 +37,9 @@ type Target = {
   facts?: NonNullable<BranchEvent["facts"]>;
 };
 
+/** CR-122 · P18 · node Nếu thiếu dữ kiện: khoá còn trống (theo thứ tự điều kiện). */
+type Missing = { missing: string[]; stageIdx: number };
+
 /** Ngữ cảnh đánh giá node Nếu: fields theo key stage + input run (1 câu) + dữ kiện app HIỆN TẠI (≤ 1 câu, chỉ khi có vế `fact`). */
 export async function ifContext(r: StepRepos, runId: string, load: StepJoinLoad, keys: string[]) {
   const facts = await r.steps.ifFacts(runId);
@@ -58,9 +61,12 @@ async function ifTargetOf(
   runId: string,
   load: StepJoinLoad,
   o: { idx: number; ifx: NonNullable<NonNullable<StepJoinLoad["ifs"]>[number]> },
-): Promise<Target | null> {
+): Promise<Target | Missing | null> {
   const keys = factKeysOf(o.ifx.when);
   const c = await ifContext(r, runId, load, keys);
+  // CR-122 · P18 · Luật GỐC 3: dữ kiện/input cần cho điều kiện còn trống ⇒ KHÔNG rẽ (không coi là Sai), dừng "Cần xử lý".
+  const missing = missingKeysOf(o.ifx.when, c.inputs, c.facts);
+  if (missing.length > 0 && r.steps.missingFact) return { missing, stageIdx: o.idx };
   const { matched, reads } = evaluateWhen(o.ifx.when, c.fieldsByStageKey, c.inputs, c.facts);
   // CR-122 · vế `fact` ⇒ LUÔN ghi lần rẽ (cả Sai đi bước kế): lịch sử giá trị đã đọc + so lại ở Kết thúc (H2).
   const facts = keys.length > 0 ? { matched, reads } : undefined;
@@ -78,7 +84,7 @@ async function branchTarget(
   r: StepRepos,
   runId: string,
   load: StepJoinLoad,
-): Promise<Target | null> {
+): Promise<Target | Missing | null> {
   const idxs = stageIdxsOfStep(load.steps, load.step);
   const idx = idxs[0];
   if (idx === undefined || idxs.length !== 1) return null;
@@ -94,9 +100,14 @@ async function branchTarget(
 }
 
 /** Khớp ⇒ stage bước (step, goto) ⇒ `skipped` + huỷ hẹn của chúng + sự kiện `branch`; trả bước đích. */
-async function takeBranch(r: StepRepos, runId: string, load: StepJoinLoad): Promise<number | null> {
+async function takeBranch(
+  r: StepRepos,
+  runId: string,
+  load: StepJoinLoad,
+): Promise<number | Missing | null> {
   const b = await branchTarget(r, runId, load);
   if (!b) return mergeJump(r, runId, load);
+  if ("missing" in b) return b;
   const ids = await r.steps.skipStages(runId, skippedStages(load.steps, load.step, b.gotoStep));
   // T19-perf · hai câu ghi độc lập gửi liền (pipeline); Postgres chạy theo thứ tự gửi ⇒ khoá hẹn vẫn trước (plan-d2 §8).
   await Promise.all([
@@ -167,6 +178,11 @@ export async function settleStep(r: StepRepos, runId: string): Promise<StepOutco
   }
   if (j.kind === "next_step") {
     const goto = await takeBranch(r, runId, load);
+    if (goto !== null && typeof goto === "object") {
+      // Stage Nếu ⇒ `needs_decision`; run ⇒ `needs_decision{missing_fact}` tại bước Nếu (Thử lại = chạy lại Nếu, đọc lại dữ kiện).
+      await r.steps.missingFact?.(runId, { ifIdx: goto.stageIdx, missing: goto.missing });
+      return { kind: "wait", status: "needs_decision", step, stageIdx: goto.stageIdx };
+    }
     const to = goto ?? j.step;
     const idxs = goto === null ? j.queue : stageIdxsOfStep(steps, goto);
     const next = firstIdxOfStep(steps, to);

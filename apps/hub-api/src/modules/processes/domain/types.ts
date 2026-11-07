@@ -46,7 +46,8 @@ export type DecisionReason =
   | "retry_exhausted"
   | "timer_invalid"
   | "tool_failed" // P-d2
-  | "facts_changed"; // CR-122 E2b · dữ kiện đổi sau khi Nếu rẽ
+  | "facts_changed" // CR-122 E2b · dữ kiện đổi sau khi Nếu rẽ
+  | "missing_fact"; // CR-122 P18 · Nếu cần dữ kiện còn trống ⇒ không rẽ
 export type TeamRunStatus =
   | "running"
   | "waiting_answer"
