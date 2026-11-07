@@ -228,10 +228,10 @@ adfcc9cbe48d43cc95018177a16b2e4ad0f8037b5c2dd36265ca74bc73ea449f  e2e/contracts-
 c8c0dc63b8eafc4f7036f1ee206333e845e0f9d008b00da4123f0884d1893bd0  e2e/contracts-web/baseline/linux/s01-login-light.png
 b3892784f1d8302d9367d559b8460cf4d9a5e44edbfea34cb95d1557a4f46e10  e2e/contracts-web/baseline/linux/s01-login-mobile.json
 1eb6c6b7cf2f525fea450ed3e3fcd57aa8bad11a7579373a304c3f0aa4552753  e2e/contracts-web/baseline/linux/s01-login-mobile.png
-1ef902d20a7a71375869b16a1326e0d80dff23c7e782d24191fdf8fc776acc8f  e2e/contracts-web/baseline/linux/s03-list-dark.json
-7d55fab9397384ebc18bfd8cd0fbb34f0004f31e6bb98b27ae53193f4415fd70  e2e/contracts-web/baseline/linux/s03-list-dark.png
-1ef902d20a7a71375869b16a1326e0d80dff23c7e782d24191fdf8fc776acc8f  e2e/contracts-web/baseline/linux/s03-list-light.json
-7d55fab9397384ebc18bfd8cd0fbb34f0004f31e6bb98b27ae53193f4415fd70  e2e/contracts-web/baseline/linux/s03-list-light.png
+5e76437b61a43272e280d01870af39a21b896f266624a9b8555b1c6c236581fb  e2e/contracts-web/baseline/linux/s03-list-dark.json
+4ab42f3729bf4b671e7865a3b2cf3219551fabee226b2d96573dccfd9f696cb8  e2e/contracts-web/baseline/linux/s03-list-dark.png
+5e76437b61a43272e280d01870af39a21b896f266624a9b8555b1c6c236581fb  e2e/contracts-web/baseline/linux/s03-list-light.json
+4ab42f3729bf4b671e7865a3b2cf3219551fabee226b2d96573dccfd9f696cb8  e2e/contracts-web/baseline/linux/s03-list-light.png
 853f77a7769f71fb6f09126c365264c1aadde24fde2514e5b4753dd05dda3e67  e2e/contracts-web/baseline/linux/s03-list-mobile.json
 79a7720bc4e21c7cfbb86d51ffc6055317b68f707afbbcd4fa879b021642b0ab  e2e/contracts-web/baseline/linux/s03-list-mobile.png
 8c1595e0be2a918223cf78a39fc916a2b26ef5a8c53cad92b909ebc1688d2eca  e2e/contracts-web/baseline/linux/s04-new-dark.json
@@ -324,9 +324,9 @@ adfcc9cbe48d43cc95018177a16b2e4ad0f8037b5c2dd36265ca74bc73ea449f  e2e/contracts-
 8e4e503cb01aa6342f468b8cd4c2048ec42ec1224a682209ea278ffb51bf18cc  e2e/contracts-web/baseline/win32/s01-login-light.png
 691ab131c03243bf4eb90483eb2a4838da5c5fabbd9d074152134a3f8d89e142  e2e/contracts-web/baseline/win32/s01-login-mobile.json
 134b6e87a27211570c2c824f7214c3ad940d1456fd82bd8dbd7136a1638a38fe  e2e/contracts-web/baseline/win32/s01-login-mobile.png
-c57c345a50a45a8d0517247103b7213a94bed565d0fb776fc4e95c186066e0cd  e2e/contracts-web/baseline/win32/s03-list-dark.json
+50151b2d52f046f223b2ab5bf3af78a3bbcee7717306a32c4deb2fc61a9b9fa7  e2e/contracts-web/baseline/win32/s03-list-dark.json
 785ab5bac6abdd87e37d0f35d4e196abca531db1b585bbc887a8a4b611f09186  e2e/contracts-web/baseline/win32/s03-list-dark.png
-c57c345a50a45a8d0517247103b7213a94bed565d0fb776fc4e95c186066e0cd  e2e/contracts-web/baseline/win32/s03-list-light.json
+50151b2d52f046f223b2ab5bf3af78a3bbcee7717306a32c4deb2fc61a9b9fa7  e2e/contracts-web/baseline/win32/s03-list-light.json
 785ab5bac6abdd87e37d0f35d4e196abca531db1b585bbc887a8a4b611f09186  e2e/contracts-web/baseline/win32/s03-list-light.png
 1988f7a06cbb276e48b2acc420c7ee328612edf9aea42b1c9beab2165f528933  e2e/contracts-web/baseline/win32/s03-list-mobile.json
 49ab2ae4678424f3ee6f2a0c19433b0d513c3ce32b2fc4cf2ec642bbb8472a0c  e2e/contracts-web/baseline/win32/s03-list-mobile.png
