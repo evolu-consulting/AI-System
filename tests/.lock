@@ -484,7 +484,7 @@ b888be206c54867f49c3b45d404b75cf92a5dca7c2b79c1fcdd65ecc2377c3d0  e2e/deployed/2
 23e376b5702968fa9047b1e3cf63375556be0503cb97b56995c7b6d29513c9dd  e2e/feature-ui.spec.ts
 4f2b7a3b9457d7520f9f211996552048b0f1975a5ee832344c16c2b31faee2aa  e2e/features.spec.ts
 cc6e8d4c9ba2e2cd1467b4aa60ebcb416cc1c68df58a5ef857910f2363babdc3  e2e/fnr-showcase/_seed.ts
-85d8393956b6e04946ad096f90ea2b571c5c5bca2d057a25a994b6e38990904c  e2e/fnr-showcase/canvas-ux.fnr.ts
+06526be34d00291d7e8ecaad906989a2dac5b7a0b1d40df3a9f22e004d38d9d4  e2e/fnr-showcase/canvas-ux.fnr.ts
 a53bce95aeff855a20c444855e207392dc5cabd47c6500baf5a2de8ec02879a4  e2e/fnr-showcase/canvas.fnr.ts
 4708094047251ca2fcbbedd0603ae1b099f161d32b19bd75e497142116a063d4  e2e/fnr-showcase/editor.fnr.ts
 846f48a7ad03f1c720ea621575b395485a83229155f8c737a49bf79e50e80c42  e2e/fnr-showcase/form-editor.fnr.ts

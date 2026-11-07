@@ -24,6 +24,7 @@ export function NextPort({ connectable }: Props) {
         background: "var(--color-card)",
         border: "2px solid var(--color-primary)",
         cursor: "crosshair",
+        zIndex: 2, // trên nút thân node (nút phủ kín node, DOM đứng sau cổng)
       }}
     />
   );
@@ -49,6 +50,7 @@ export function IfPort({ id, connectable }: Required<Pick<Props, "id">> & Props)
         height: "auto",
         background: "var(--color-card)",
         cursor: "crosshair",
+        zIndex: 2,
       }}
       className={`rounded-full border px-1.5 text-caption leading-4 ${
         yes ? "border-success text-success" : "border-destructive text-destructive"

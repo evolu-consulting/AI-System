@@ -77,7 +77,7 @@ test("CR-122 · p22 · số bước tối đa là cài đặt nền tảng: đ�
   const p = await ctx.newPage();
   try {
     await adminLogin(p);
-    await p.goto(`${ADMIN_URL}/system`);
+    await p.goto(`${ADMIN_URL}/system-health`);
     const box = p.getByTestId("process-limit");
     const input = box.getByTestId("process-stages-max");
     await expect(input).toHaveValue("22");
@@ -94,7 +94,7 @@ test("CR-122 · p22 · số bước tối đa là cài đặt nền tảng: đ�
     await p.screenshot({ path: `${SHOTS}/add-disabled.png` });
   } finally {
     // dọn: trả về mặc định để các ca khác không bị chặn
-    await p.goto(`${ADMIN_URL}/system`);
+    await p.goto(`${ADMIN_URL}/system-health`);
     const input = p.getByTestId("process-limit").getByTestId("process-stages-max");
     await input.fill("22");
     await p.getByTestId("process-limit").getByRole("button", { name: "Lưu" }).click();
