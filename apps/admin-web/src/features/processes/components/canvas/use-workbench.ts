@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { useStageOps } from "../../hooks/use-stage-ops";
+import { clusterIndexes } from "../../lib/module-cluster";
 import { isSystemStage } from "../../lib/system-nodes";
 import { readViewMode } from "../../lib/view-mode";
 import { type StageView, sameView, stageViews } from "./stage-view";
@@ -59,7 +60,11 @@ export function useWorkbench(d: DraftState, refs: EditorRefs) {
       });
   };
   const remove = (i: number) => {
-    const next = stages[i + 1] ?? stages[i - 1];
+    // CR-123 · u3a: node module xoá cả cụm ⇒ chọn stage kế NGOÀI cụm
+    const gone = new Set(clusterIndexes(stages, i));
+    const out = stages.filter((_, j) => !gone.has(j));
+    const after = out.find((s) => stages.indexOf(s) > i);
+    const next = after ?? out[out.length - 1];
     if (next) d.select(next.uid);
     d.removeStage(i);
   };

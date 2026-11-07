@@ -102,9 +102,10 @@ test("1 · menu '+ Thêm bước' (quản trị công ty, CR-123 FR-12): chỉ b
   await openCopy(page);
   await page.getByTestId("flow-add-step").click();
   const menu = page.getByRole("menu");
-  for (const id of ["approve", "if", "contracts.esign", "waitEsign", "finish"])
+  for (const id of ["approve", "if", "contracts.esign", "finish"])
     await expect(menu.getByTestId(`flow-node-${id}`)).toBeVisible();
-  for (const id of ["form", "agent", "tool", "set"])
+  // CR-123 FR-14: "Ký số" là MỘT mục chèn cả cụm (gửi + chờ); không còn "Chờ ký xong" riêng
+  for (const id of ["waitEsign", "form", "agent", "tool", "set"])
     await expect(menu.getByTestId(`flow-node-${id}`)).toHaveCount(0);
   await expect(menu.getByText("Nâng cao", { exact: true })).toHaveCount(0);
   await expect(menu.getByText("Lõi", { exact: true })).toHaveCount(0);

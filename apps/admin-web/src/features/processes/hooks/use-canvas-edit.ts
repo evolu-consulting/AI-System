@@ -14,6 +14,7 @@ import {
   resetEdges,
 } from "../lib/canvas-edit";
 import { emptyStage, type StageDraft } from "../lib/def-form";
+import { expandToClusters } from "../lib/module-cluster";
 import { getStagesMax } from "../lib/stages-limit";
 import { stepLabel } from "../lib/step-label";
 import { lastStep } from "../lib/step-ops";
@@ -66,7 +67,8 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
       say.live(t(`${EDIT}dropped`, { name: items[0]?.name ?? "" }));
     },
     /** Xoá node đã chọn (nối liền các cạnh vào/ra) và đặt lại các cạnh đã chọn về "Bước tiếp theo". */
-    removeSelection: (uids: string[], edges: EdgeSel[]) => {
+    removeSelection: (picked: string[], edges: EdgeSel[]) => {
+      const uids = expandToClusters(stages(), picked); // CR-123 · u3a: node module (Ký số) đi cả cụm
       const reset = resetEdges(stages(), edges, uids);
       let st = reset.stages;
       if (uids.length > 0) {
@@ -78,7 +80,8 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
       if (uids.includes(d.selected ?? "")) d.deselect();
       say.live(t(uids.length > 0 ? `${EDIT}removed` : `${EDIT}edgeReset`, { n: uids.length }));
     },
-    copy: (uids: string[]) => {
+    copy: (sel: string[]) => {
+      const uids = expandToClusters(stages(), sel); // CR-123 · u3a: node module (Ký số) đi cả cụm
       const picked = stages().filter((s) => uids.includes(s.uid));
       if (picked.length === 0) return say.error(t(`${EDIT}err.nothingSelected`));
       clip.current = picked;
@@ -98,8 +101,8 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
       say.live(t(`${EDIT}pasted`, { n: r.uids?.length ?? 0 }));
     },
     /** Kéo nhóm: dời cả nhóm `delta` bước (cột đầy ⇒ báo, không đổi). */
-    moveGroup: (uids: string[], delta: number) => {
-      const r = moveGroup(stages(), uids, delta);
+    moveGroup: (sel: string[], delta: number) => {
+      const r = moveGroup(stages(), expandToClusters(stages(), sel), delta);
       if ("error" in r) return fail(r);
       d.setStages(r.stages, true);
     },
