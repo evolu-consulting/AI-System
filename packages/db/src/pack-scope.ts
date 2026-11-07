@@ -92,6 +92,17 @@ export async function withPackScope<T>(
 
 type PrevScope = { role: string; tid: string; uid: string; kind: string; ext: string };
 
+/** Ràng buộc DEFERRABLE INITIALLY DEFERRED của schema gói: chạy ngay (IMMEDIATE) rồi đặt lại DEFERRED. Không có ⇒ không làm gì. */
+async function deferredPackChecksNow(tx: Tx, pack: string): Promise<void> {
+  const [r] = await tx.execute<{ names: string | null }>(sql`select string_agg(
+      quote_ident(n.nspname) || '.' || quote_ident(c.conname), ', ') as names
+    from pg_constraint c join pg_namespace n on n.oid = c.connamespace
+    where n.nspname = ${pack} and c.condeferrable and c.condeferred`);
+  if (!r?.names) return;
+  await tx.execute(sql.raw(`set constraints ${r.names} immediate`));
+  await tx.execute(sql.raw(`set constraints ${r.names} deferred`));
+}
+
 /** CR-122 A2b: chạy `fn` dưới role gói + tenant NGAY TRONG tx đang mở (tx engine), xong (kể cả `fn` ném) trả role/app.* như cũ.
  *  Dùng cho OutcomeHandler của gói. `pack` sai ⇒ PACK_KEY_INVALID; `tenantId` sai ⇒ TENANT_INVALID, trước khi đổi gì. */
 export async function withPackRoleInTx<T>(
@@ -119,8 +130,9 @@ export async function withPackRoleInTx<T>(
     out = await fn();
     // CR-122 · trigger ràng buộc DEFERRED của gói (vd contracts v2d_sc_*: HĐ bán sang hiệu lực) mặc định chạy lúc COMMIT — khi đó
     // role đã trả về `hub_api` (không USAGE schema gói) ⇒ "permission denied for schema contracts" ⇒ cả tx engine rollback,
-    // stage Kết thúc kẹt `queued`. Chạy ngay các kiểm tra đang hoãn dưới role gói trước khi trả role.
-    await tx.execute(sql`set constraints all immediate`);
+    // stage Kết thúc kẹt `queued`. Chạy ngay các kiểm tra đang hoãn CỦA GÓI dưới role gói, rồi trả chúng về hoãn — ràng buộc
+    // hoãn của hub (vd rooms 0011/0013) giữ nguyên (soát Opus).
+    await deferredPackChecksNow(tx, pack);
   } catch (e) {
     await restore().catch(() => undefined); // tx đã hỏng ⇒ sẽ rollback, giữ lỗi gốc
     throw e;

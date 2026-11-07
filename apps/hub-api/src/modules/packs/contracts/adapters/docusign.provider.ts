@@ -115,10 +115,11 @@ export function envelopeBody(i: CreateIn, anchors: string[] | null) {
 
 /**
  * CR-122 · gửi PDF lên DocuSign (base64 trong JSON, +33%): HĐ scan 11 MB mất > 15 s ⇒ hạn cứng 15 s làm MỌI HĐ scan lớn gửi ký lỗi.
- * Hạn theo dung lượng: 15 s + 6 s mỗi MB, trần 180 s (giới hạn tệp của DocuSign 25 MB).
+ * Hạn theo dung lượng: 15 s + 6 s mỗi MB, trần 110 s — PHẢI dưới hạn của bước tool (stage `timeout_s` 120, runBounded): hết hạn
+ * bước giữa lúc DocuSign có thể đã tạo phong bì ⇒ thử lại dễ tạo phong bì trùng (soát Opus).
  */
 export const uploadTimeoutMs = (bytes: number): number =>
-  Math.min(180_000, TIMEOUT_MS + Math.ceil(bytes / (1024 * 1024)) * 6_000);
+  Math.min(110_000, TIMEOUT_MS + Math.ceil(bytes / (1024 * 1024)) * 6_000);
 
 export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider {
   const http = d.fetch ?? fetch;
