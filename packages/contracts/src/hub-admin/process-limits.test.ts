@@ -4,9 +4,8 @@ import {
   PROCESS_STAGES_CEILING,
   PROCESS_STAGES_DEFAULT,
   resolveStagesMax,
-  SaveProcessLimitsRequestSchema,
-  stagesMaxFromDetails,
-} from "./processes";
+} from "../chat/processes";
+import { SaveProcessLimitsRequestSchema, stagesMaxFromDetails } from "./process-limits";
 
 describe("resolveStagesMax", () => {
   test("thiếu/sai ⇒ mặc định 22", () => {

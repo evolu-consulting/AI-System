@@ -500,7 +500,7 @@ e0ed7e38fc81473322c1c8fd0382772d66ab46cf6271e9c93eecf71850dd6f6b  e2e/journey-ap
 adbc5203c9596078d3a3aa46c8ca67a509135e83c77453a40fc6df651cc66d4d  e2e/journey-approval/cr121-d-journey.spec.ts
 56b86a4606aa7dad100d29a7d60e750c93cf83c97bb23491d5f8555d765c83f1  e2e/journey-approval/cr121-d6b-notify.spec.ts
 405ca45f0e5360ef2bd2dadf8287e479a21ac3ac162b7ac7df44e6ed2eeccf47  e2e/journey-approval/cr121-editor.spec.ts
-b98977ab6cefadd4effefdc53938f8b21a401c5c2f51fab12d7ade0bbd28c91f  e2e/journey-approval/cr122-canvas-ux.spec.ts
+a2ed1fe9f1a018f14fd090f03e34aa2992f948347904c8e6327e9d5076030f28  e2e/journey-approval/cr122-canvas-ux.spec.ts
 1e291e4662a1d0618bc083675ebb9b499ea83079231e8ec0da7c4542b3df0651  e2e/journey-approval/cr122-editor.spec.ts
 d71adb8e9ac396f10892a80ad40016ac1f4b566b670bb5a29c6d5e51240fae17  e2e/journey-approval/cr122-flows.spec.ts
 4a440cca95d7955e86d0bad9a63b780aad9a8b856263875f05967860742a5b54  e2e/journey-approval/playwright.journey.config.ts
