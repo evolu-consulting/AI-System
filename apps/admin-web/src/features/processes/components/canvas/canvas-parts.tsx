@@ -149,8 +149,9 @@ export function editableEdges(edges: Edge[], uids: ReadonlySet<string>): Edge[] 
       uids.has(e.source) &&
       uids.has(e.target) &&
       (e.type === undefined || e.type === "forward" || (e.type === "branch" && !!side));
+    const exit = (e.data as { exit?: boolean } | undefined)?.exit === true; // đầu ra ô module: nối lại được, chưa chọn/xoá riêng
     return plain
-      ? { ...e, selectable: true, reconnectable: "target" as const }
+      ? { ...e, selectable: !exit, reconnectable: "target" as const }
       : { ...e, selectable: false, reconnectable: false };
   });
 }

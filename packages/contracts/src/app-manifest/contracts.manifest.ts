@@ -167,6 +167,16 @@ export const CONTRACTS_MANIFEST: AppManifest = {
       feature: "contracts-write",
       // E5 · nhà cung cấp, người ký công ty, đối tác ký, thứ tự, hạn, nhắc ghi ở `args` stage 0 (`EsignNodeConfig`, esign-node.ts).
       config: { stage: 0, options_path: "/pack/contracts/esign/options" },
+      // CR-123 · FLOW3-FR-14 · Ký số là MỘT ô với 3 đầu ra: ký xong (đi tiếp) · từ chối / huỷ phong bì · hết hạn chờ.
+      exits: [
+        { key: "done", label: { vi: "Ký xong", en: "Signed" } },
+        {
+          key: "declined",
+          label: { vi: "Từ chối", en: "Declined" },
+          on: ["esign.declined", "esign.voided"],
+        },
+        { key: "expired", label: { vi: "Hết hạn", en: "Expired" }, on: ["timeout"] },
+      ],
       stages: [
         {
           executor: { kind: "tool", tool_key: "contracts-esign-send", args: {} },

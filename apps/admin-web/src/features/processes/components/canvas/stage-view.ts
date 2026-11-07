@@ -48,6 +48,25 @@ export type StageView = {
   /** CR-122 · U2d · bản nháp gốc (node flow đọc loại/tóm tắt/kết quả từ đây) + khoá i18n của lỗi đầu tiên (null = không lỗi). */
   src: StageDraft;
   errorKey: string | null;
+  /** CR-123 · FLOW3-FR-14 · ô GỘP của node module nhiều stage (chỉ canvas, do `collapseModules` gắn); stage thường ⇒ vắng. */
+  module?: ModuleInfo | undefined;
+};
+
+/** Một đầu ra của ô module: `to` = uid ô đích (cạnh nhánh); đầu ra "đi tiếp" (`main`) không có `to` (cạnh tiến do bố cục vẽ). */
+export type ModuleExit = {
+  key: string;
+  label: string;
+  main: boolean;
+  /** Khoá sự kiện / `timeout` của stage chờ gom về đầu ra này (rỗng với đầu ra đi tiếp). */
+  on: string[];
+  to: string[];
+};
+export type ModuleInfo = {
+  node: string;
+  uids: string[];
+  exits: ModuleExit[];
+  /** Mọi stage của cụm (kể cả stage đã gộp vào ô) — để kiểm luật nối đúng với bản nháp đầy đủ. */
+  members: StageDraft[];
 };
 
 const hasStageError = (errors: DraftErrors, i: number): boolean =>
@@ -146,6 +165,10 @@ export function stageViews(
   }));
 }
 
+/** Khoá so sánh của ô module (bỏ `members`: nội dung stage đã nằm ở `exits`/`src`). */
+const modKey = (m: ModuleInfo | undefined): string | undefined =>
+  m && JSON.stringify([m.node, m.uids, m.exits]);
+
 /** Hai mô hình có cùng nội dung hiển thị (dùng cho `memo` của node). */
 export const sameView = (a: StageView, b: StageView): boolean =>
   a.uid === b.uid &&
@@ -170,6 +193,7 @@ export const sameView = (a: StageView, b: StageView): boolean =>
   a.family === b.family &&
   a.src === b.src &&
   a.errorKey === b.errorKey &&
+  modKey(a.module) === modKey(b.module) &&
   a.y === b.y &&
   a.backTo.join() === b.backTo.join();
 

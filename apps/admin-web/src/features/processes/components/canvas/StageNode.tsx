@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { useHandlers } from "./canvas-ctx";
 import { FINISH_CLASS, FlowNodeBody, isFinishView } from "./FlowNodeBody";
+import { ModuleNode } from "./ModuleNode";
 import { NextPort } from "./OutPort";
 import { StageBody, stageButtonClass } from "./StageBody";
 import { onStageKeyDown } from "./stage-keys";
@@ -86,8 +87,12 @@ function StageNodeImpl({ data }: NodeProps<StageNodeType>) {
   );
 }
 
+/** CR-123 · FLOW3-FR-14: ô gộp của node module (`v.module`) vẽ bằng `ModuleNode`; stage thường như cũ. */
+const StageOrModule = (p: NodeProps<StageNodeType>) =>
+  p.data.v.module ? <ModuleNode {...p} /> : <StageNodeImpl {...p} />;
+
 export const StageNode = memo(
-  StageNodeImpl,
+  StageOrModule,
   (a, b) =>
     sameView(a.data.v, b.data.v) &&
     a.data.selected === b.data.selected &&

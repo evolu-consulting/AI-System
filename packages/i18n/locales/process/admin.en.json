@@ -597,6 +597,10 @@
       "yes": "True",
       "no": "False"
     },
+    "module": {
+      "done": "Done",
+      "exitHint": "Output: {{label}}"
+    },
     "connect": {
       "dragNext": "Drag to the step that comes next",
       "dragIf": "Drag to the step for {{label}}",
@@ -607,7 +611,8 @@
       "done": {
         "next": "Next step set.",
         "yes": "Step for True set.",
-        "no": "Step for False set."
+        "no": "Step for False set.",
+        "exit": "Step output set."
       }
     },
     "region": "Stage details",

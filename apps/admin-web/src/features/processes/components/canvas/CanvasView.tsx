@@ -4,8 +4,10 @@ import { Component, lazy, type ReactNode, Suspense, useMemo, useState } from "re
 import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FlowContext } from "../flow/flow-ctx";
 import type { ProcessCanvasProps } from "./ProcessCanvas";
 import { StepList } from "./StepList";
+import { useModuleCanvas } from "./use-module-canvas";
 
 type Props = ProcessCanvasProps;
 
@@ -41,6 +43,7 @@ function listOf(p: Props) {
 export function CanvasView(p: Props) {
   const { t } = useTranslation();
   const [attempt, setAttempt] = useState(0);
+  const m = useModuleCanvas(p); // CR-123 · FR-14: node module nhiều stage = một ô
   // biome-ignore lint/correctness/useExhaustiveDependencies: attempt chủ ý tạo lại lazy
   const Canvas = useMemo(() => lazy(loadCanvas), [attempt]);
   return (
@@ -78,7 +81,13 @@ export function CanvasView(p: Props) {
           </>
         }
       >
-        <Canvas {...p} />
+        {m.flow ? (
+          <FlowContext.Provider value={m.flow}>
+            <Canvas {...m.props} />
+          </FlowContext.Provider>
+        ) : (
+          <Canvas {...m.props} />
+        )}
       </Suspense>
     </Boundary>
   );

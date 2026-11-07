@@ -597,6 +597,10 @@
       "yes": "Đúng",
       "no": "Sai"
     },
+    "module": {
+      "done": "Xong",
+      "exitHint": "Đầu ra: {{label}}"
+    },
     "connect": {
       "dragNext": "Kéo sang bước muốn đi tiếp",
       "dragIf": "Kéo sang bước khi {{label}}",
@@ -607,7 +611,8 @@
       "done": {
         "next": "Đã đặt bước đi tiếp.",
         "yes": "Đã đặt bước khi Đúng.",
-        "no": "Đã đặt bước khi Sai."
+        "no": "Đã đặt bước khi Sai.",
+        "exit": "Đã đặt đầu ra của bước."
       }
     },
     "region": "Chi tiết bước",

@@ -122,6 +122,13 @@ export type AppNodeStage = {
   outcome?: string;
   real_action?: boolean;
 };
+/** CR-123 · FLOW3-FR-14 · một đầu ra nghiệp vụ của node nhiều stage (ô duy nhất trên sơ đồ). `on` vắng ⇒ đường thành công (đi tiếp
+ *  bước kế); có `on` ⇒ khoá sự kiện / `timeout` của stage chờ (`wait_event.branches[].on`) gom về đầu ra này. */
+export type AppNodeExit = {
+  key: string;
+  label: { vi: string; en: string };
+  on?: readonly string[];
+};
 export type AppNodeDecl = {
   key: string;
   label: { vi: string; en: string };
@@ -133,6 +140,8 @@ export type AppNodeDecl = {
   /** CR-122 · E5 · node có cấu hình riêng: panel ghi vào `args` của stage `stage` (chỉ số trong `stages`) và lấy lựa chọn từ
    *  `options_path` (`/pack/<app>/…`, GET). Vắng ⇒ node không có cấu hình. */
   config?: { stage: number; options_path: string };
+  /** CR-123 · FLOW3-FR-14 · đầu ra theo kết quả nghiệp vụ hiện trên ô node (vắng ⇒ một đầu ra "đi tiếp"). */
+  exits?: readonly AppNodeExit[];
   inputs: readonly AppNodeIo[];
   outputs: readonly AppNodeIo[];
 };

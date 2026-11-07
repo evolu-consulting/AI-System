@@ -11,6 +11,7 @@ import type { StageOps } from "../../hooks/use-stage-ops";
 import { connectPatch } from "../../lib/canvas-connect";
 import { hasConfig } from "../../lib/canvas-edit";
 import { clampY } from "./canvas-parts";
+import { connectStages } from "./module-cluster";
 import type { StageView } from "./stage-view";
 
 type EdgeSel = { source: string; side?: "yes" | "no" | undefined };
@@ -98,17 +99,19 @@ export function useCanvasEditing(a: Args) {
             selectable: true,
             miniMap: !a.compact,
             isValidConnection: (c) => {
-              const r = connectPatch(
-                ref.current.views.map((v) => v.src),
-                c,
-              );
+              const r = connectPatch(connectStages(ref.current.views), c);
               return r === null || r.ok;
             },
             onReconnect: (edgeId, to) => {
               const e = ref.current.edges.find((x) => x.id === edgeId);
               if (e)
                 ref.current.ops.reconnect(
-                  { source: e.source, target: e.target, ...sideOpt(e) },
+                  {
+                    source: e.source,
+                    target: e.target,
+                    ...sideOpt(e),
+                    handle: e.sourceHandle ?? null,
+                  },
                   to.target,
                 );
             },

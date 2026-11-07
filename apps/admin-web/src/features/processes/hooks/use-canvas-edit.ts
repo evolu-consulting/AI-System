@@ -53,10 +53,16 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
     connect,
     /** CR-123 · p25 · nối lại đầu đích của cạnh: cùng luật với kéo cổng ra (`connect`); đích không đổi ⇒ không làm gì. */
     reconnect: (
-      e: { source: string; side?: "yes" | "no" | undefined; target: string },
+      e: {
+        source: string;
+        side?: "yes" | "no" | undefined;
+        handle?: string | null | undefined;
+        target: string;
+      },
       to: string,
     ) => {
-      if (e.target !== to) connect({ source: e.source, target: to, sourceHandle: e.side ?? null });
+      if (e.target !== to)
+        connect({ source: e.source, target: to, sourceHandle: e.side ?? e.handle ?? null });
     },
     /** Thả node mới vào cột `step` (0-based) tại độ cao `y`; đầy ⇒ báo lý do. */
     dropNodes: (items: PickedItem[], at: { step: number; y: number }) => {

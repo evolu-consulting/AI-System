@@ -32,6 +32,7 @@ import {
 } from "./canvas-parts";
 import { EdgeInsertMenu } from "./EdgeInsertMenu";
 import { IfNode } from "./IfNode";
+import { moduleEdges } from "./module-cluster";
 import { StageNode } from "./StageNode";
 import type { StageView } from "./stage-view";
 import { stepHeaderLabels } from "./stage-view";
@@ -42,6 +43,8 @@ const nodeTypes = { stage: StageNode, if: IfNode, trigger: TriggerNode, bridge: 
 
 export type ProcessCanvasProps = CanvasHandlers & {
   views: readonly StageView[];
+  /** Số stage THẬT (views đã gộp ô module ít hơn) — tính chỗ còn lại cho trần số bước. Vắng ⇒ `views.length`. */
+  stageCount?: number;
   selected: string | undefined;
   /** Canvas thấp, vừa khít cả flow (trang showcase chỉ đọc). */
   compact?: boolean;
@@ -144,7 +147,7 @@ function useFlowGraph(
     const shownEdges = trig
       ? edges.filter((e) => !isHeader(e.source) && !isHeader(e.target))
       : edges;
-    const all = warnStyle([...tp.edges, ...shownEdges, ...bp.edges], warn);
+    const all = warnStyle([...tp.edges, ...shownEdges, ...moduleEdges(views), ...bp.edges], warn);
     return {
       nodes: [...tp.node, ...shown, ...bp.node],
       edges: connectable ? editableEdges(all, new Set(byUid.keys())) : all,
@@ -206,7 +209,7 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
     connectable,
   );
   const labels = useCanvasLabels(g.dlc);
-  const room = useStagesMax() - p.views.length;
+  const room = useStagesMax() - (p.stageCount ?? p.views.length); // ô module = số stage thật của cụm
   // CR-123 · p25: kéo từ bảng mẫu, nối lại, chọn nhiều, xoá, chép/dán, hoàn tác, minimap (chỉ canvas sửa được của trình soạn).
   const ed = useCanvasEditing({
     enabled: connectable,
