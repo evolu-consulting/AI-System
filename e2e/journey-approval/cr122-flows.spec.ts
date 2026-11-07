@@ -1,4 +1,4 @@
-﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-122 · Q1 · HÀNH TRÌNH G1 + G2 (spec §3) trên stack thật `playwright.journey.config.ts` (công ty MỚI `e2e-c22-<hậu tố>`, cờ FLOW_TRIGGERS bật cho
 // công ty test, dữ liệu riêng có hậu tố duy nhất):
 //  G1 · platform_admin gán flow "Duyệt HĐ Demo" (Bắt đầu khi → Nếu giá trị > 100 tr → Duyệt Kế toán / Duyệt Giám đốc → gộp → Thông báo → Kết thúc) cho công
@@ -290,6 +290,27 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
     timeout: 60_000,
   });
   await b.emp.screenshot({ path: testInfo.outputPath("cr123-u10-list-steps.png") });
+  // CR-125 · x1 · giám đốc vào Tổng quan thấy thẻ "Chờ bạn" (không còn "0 việc"), điện thoại có mục "Chờ tôi" số đỏ — cùng một nguồn
+  const dir = await ctxPage(browser);
+  await loginCw(dir, E, U.director);
+  await dir.goto(`${E.cw}/contracts`);
+  await expect(dir.getByTestId("waiting-for-me")).toContainText(
+    /Chờ bạn: \d+ ký · [1-9]\d* duyệt/,
+    {
+      timeout: 60_000,
+    },
+  );
+  await dir.screenshot({ path: testInfo.outputPath("cr125-x1-desktop.png") });
+  await dir.setViewportSize({ width: 375, height: 812 });
+  await dir.reload();
+  await expect(dir.getByTestId("bottom-waiting-count")).toHaveText(/^[1-9]\d*$/, {
+    timeout: 60_000,
+  });
+  await dir.screenshot({ path: testInfo.outputPath("cr125-x1-mobile.png") });
+  await dir.getByTestId("bottom-waiting").click();
+  await expect(dir.getByTestId("approvals-inbox")).toBeVisible();
+  await dir.screenshot({ path: testInfo.outputPath("cr125-x1-mobile-inbox.png") });
+  await dir.close();
   await approveAs(await ctxPage(browser), E, U.director, b.id, BIG);
   await b.emp.goto(`${E.cw}/contracts/c/${b.id}`);
   await expect(b.emp.getByTestId("banner-locked")).toBeVisible({ timeout: 60_000 });
