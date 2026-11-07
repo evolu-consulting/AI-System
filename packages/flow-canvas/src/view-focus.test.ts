@@ -1,6 +1,6 @@
 // CR-123 · u14 · khung nhìn đi theo node vừa thả / vừa nối: tính khung nhìn đích (hàm thuần).
 import { describe, expect, test } from "bun:test";
-import { type FocusBox, focusViewport } from "./view-focus";
+import { type FocusBox, fitGroup, focusViewport } from "./view-focus";
 
 const size = { w: 1100, h: 458 };
 const box = (x: number, y: number): FocusBox => ({ x, y, w: 240, h: 104 });
@@ -58,5 +58,21 @@ describe("focusViewport", () => {
       zoom: number;
     };
     expect(t.zoom).toBe(0.75);
+  });
+});
+
+describe("fitGroup (ngăn chi tiết mở)", () => {
+  const drawer = 460;
+  test("nhóm node vừa vùng thấy ở zoom ≥ sàn ⇒ giữ đủ", () => {
+    const g = [box(0, 0), box(300, 0), box(300, 150)];
+    expect(fitGroup(g, size, drawer, 0.6)).toHaveLength(3);
+  });
+  test("không vừa ⇒ bỏ dần node xa nhất, luôn giữ node chính (đầu danh sách)", () => {
+    const g = [box(0, 0), box(300, 0), box(1500, 0), box(3000, 0)];
+    const use = fitGroup(g, size, drawer, 0.6);
+    expect(use[0]).toBe(g[0]);
+    expect(use.length).toBeLessThan(g.length);
+    expect(use).toEqual(g.slice(0, use.length)); // chỉ cắt đuôi (xa nhất)
+    expect(fitGroup([box(0, 0)], size, drawer, 0.99)).toHaveLength(1);
   });
 });

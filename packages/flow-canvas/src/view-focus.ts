@@ -48,3 +48,25 @@ export function focusViewport(
     zoom: z,
   };
 }
+
+/**
+ * CR-125 · x4 · nhóm node cần thấy cùng lúc khi ngăn chi tiết mở: `boxes[0]` = node chính, còn lại xếp từ gần tới xa.
+ * Bỏ dần node xa nhất tới khi cả nhóm vừa vùng thấy được (khung trừ ngăn) ở zoom ≥ `floor`; node chính luôn được giữ.
+ */
+export function fitGroup(
+  boxes: readonly FocusBox[],
+  size: { w: number; h: number },
+  inset: number,
+  floor: number,
+  margin = 24,
+): FocusBox[] {
+  const availW = size.w - inset - 2 * margin;
+  const availH = size.h - 2 * margin;
+  const use = [...boxes];
+  while (use.length > 1) {
+    const u = union(use);
+    if (Math.min(availW / u.w, availH / u.h) >= floor) break;
+    use.pop();
+  }
+  return use;
+}

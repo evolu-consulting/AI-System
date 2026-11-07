@@ -9,7 +9,7 @@ import {
 } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 import { NODE_H, NODE_W } from "./layout/geometry";
-import { focusViewport } from "./view-focus";
+import { fitGroup, focusViewport } from "./view-focus";
 
 // fnr-canvas-fit: editor vừa khung cả flow (thu tới 0.3 = mức zoom tối thiểu của canvas; dưới nữa thì người dùng kéo/zoom tay), vừa lại khi khung đổi cỡ.
 export const FIT = { padding: 0.08, maxZoom: 1, minZoom: 0.3 } as const;
@@ -69,6 +69,9 @@ type Vp = { x: number; y: number; zoom: number };
 const sameVp = (a: Vp, b: Vp): boolean =>
   Math.abs(a.x - b.x) < 1 && Math.abs(a.y - b.y) < 1 && Math.abs(a.zoom - b.zoom) < 0.01;
 
+/** Mức zoom thấp nhất khi thu nhỏ để thấy node chọn + node kề bên trái ngăn chi tiết (thấp hơn mức fit đọc được; chữ node vẫn nhận ra). */
+const REVEAL_MIN = 0.55;
+
 /** CR-125 · x4 · khung nhìn đích để node chọn + node kề (vào/ra) nằm TRỌN trong vùng thấy được bên trái ngăn chi tiết (pan, thu nhỏ khi cần, không phóng to). */
 function revealSelection(
   rf: ReactFlowInstance,
@@ -77,27 +80,39 @@ function revealSelection(
   inset: number,
   minZoom: number,
 ): Vp | null {
-  if (!rf.getNode(sel)) return null;
-  const near = new Set([sel]);
+  const me = rf.getNode(sel);
+  if (!me) return null;
+  const near = new Set<string>();
   for (const e of rf.getEdges()) {
     if (e.source === sel) near.add(e.target);
     if (e.target === sel) near.add(e.source);
   }
-  const boxes = [...near].flatMap((i) => {
-    const m = rf.getNode(i);
-    if (!m || i.startsWith("bridge:")) return [];
-    // +PORT_PAD: nhãn đầu ra / chấm nối nhô ra khỏi mép phải node
-    return [
-      {
-        x: m.position.x,
-        y: m.position.y,
-        w: (m.measured?.width ?? NODE_W) + PORT_PAD,
-        h: m.measured?.height ?? NODE_H,
-      },
-    ];
+  // +PORT_PAD: nhãn đầu ra / chấm nối nhô ra khỏi mép phải node
+  const boxOf = (m: NonNullable<ReturnType<typeof rf.getNode>>) => ({
+    x: m.position.x,
+    y: m.position.y,
+    w: (m.measured?.width ?? NODE_W) + PORT_PAD,
+    h: m.measured?.height ?? NODE_H,
   });
-  return focusViewport(boxes, rf.getViewport(), size, inset, minZoom);
+  const main = boxOf(me);
+  const dist = (b: { x: number; y: number }) => Math.hypot(b.x - main.x, b.y - main.y);
+  const others = [...near]
+    .filter((i) => !i.startsWith("bridge:"))
+    .flatMap((i) => {
+      const m = rf.getNode(i);
+      return m ? [boxOf(m)] : [];
+    })
+    .sort((a, b) => dist(a) - dist(b));
+  const floor = Math.min(minZoom, REVEAL_MIN);
+  return focusViewport(
+    fitGroup([main, ...others], size, inset, floor),
+    rf.getViewport(),
+    size,
+    inset,
+    floor,
+  );
 }
+
 export type ViewFitOptions = {
   /** Đổi giá trị ⇒ fit lại (số bước + số giai đoạn do host ghép). */
   sig: string;
