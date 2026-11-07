@@ -547,13 +547,6 @@
       "when": 1806800000000,
       "tag": "0084_esign_signer_keep_view",
       "breakpoints": true
-    },
-    {
-      "idx": 81,
-      "version": "7",
-      "when": 1806900000000,
-      "tag": "0085_reviewer_decided_keep",
-      "breakpoints": true
     }
   ]
 }

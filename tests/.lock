@@ -105,7 +105,7 @@ e9a64c8733b12868aff5ea371be91a067769888e4645475245054d9c93ead958  e2e/P-b/playwr
 87d1cb6cfdaa67cf3956dbbf7633d93758a9516cce9f3f70b56e971a28e96867  e2e/P-b2/_pb2-data.ts
 3496d25d6cfec7e7aeacf94306ea2be6a312aa052094dac9e2473474a6f1c301  e2e/P-b2/_pb2-stack.ts
 5eb1939e58b1e637a733cbdd918c2f679a2924276b77a5a2e90ff9235ed361b0  e2e/P-b2/_pb2-support.ts
-43f0603ddaa13dd6c53f226a810c815495ab36aa4c8502ea4cfd727a72188b39  e2e/P-b2/admin/canvas.pb2.ts
+c17c3b44353f76dddacb8b5020752f2a43c4c4549941e56630d07e2475de7eef  e2e/P-b2/admin/canvas.pb2.ts
 04f367a6417f135451446f5ac51fe896724f3cf0b52b3a923bc22bc2d85bf93d  e2e/P-b2/chat/run.pb2.ts
 d6aecb675a57e354bf5703308168d0be1eb43975158cd472d52341c6a1c712ee  e2e/P-b2/playwright.pb2.config.ts
 8272af8b85a36f7cd69e8fe520c85ef4545edc3aa931db777b22092ae15b05cd  e2e/P-c/_pc-support.ts
@@ -611,7 +611,7 @@ af1a40e9d1a9352732b4b4e3e9a8b2cb099e3578db2a64b88bc0151f98c63047  tests/acceptan
 fe5b7da92635c949fe143b54f48e0b36484ece9a8fced83a12fa8f329006485d  tests/acceptance/CF/pack-runs-v2.int.test.ts
 378c338c57dc0a38c11f3d0a6bc9ec865caf05e99d620e66569dcbc9b73bd0e1  tests/acceptance/CF/pm-seed-cr113.int.test.ts
 a2cf21f501a2ec280c2d7db93dd61ecd056d05137d47675ed0ea6cc8f5269ff4  tests/acceptance/CF/prod-fix.int.test.ts
-96e868d9c2392b09d609682bf7cd0f279c084be9f85e2b304e20a9248c69d475  tests/acceptance/CF/reviewer-visible.int.test.ts
+7c0de5e3ee77b64f4b9eaddadd8be7bbcc279532c6afb0658fe002f58fc0178e  tests/acceptance/CF/reviewer-visible.int.test.ts
 7acc49aa171a5384d435c401517ee5ee5072533bf619c659439f4593c9249dde  tests/acceptance/CF/reviewer-visible.perf.int.test.ts
 c27d1d514abeabf8ee7a71f2228d0e88e9a4a604fa66425f9b0c62a8e8316f51  tests/acceptance/CF/run-detail-engine-id.int.test.ts
 cd6e259e02e4d31e734422168b67d0c3538e10146bb07e7800c457e66658c052  tests/acceptance/CR-050/flow-read.int.test.ts
