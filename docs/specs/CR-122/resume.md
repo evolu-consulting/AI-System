@@ -21,6 +21,8 @@ Wave cuối: int 8/8 shard xanh; e2e contracts-web đỏ lượt 2 do máy chủ
 - Nhãn "Đúng" của Nếu lặp hai lần trên cạnh; tên bước "Bước 2: Pháp chế" lặp với tiêu đề cột "Bước 2" ⇒ bỏ tiền tố "Bước N:" trong ô.
 - Luật "Ký số cần một người duyệt ngay trước" chưa có trong luật kéo-thả (chỉ chặn lúc lưu) ⇒ gộp vào module luật dùng chung (u3a).
 - e2e thả node từ bảng vào canvas trong trình soạn của công ty (journey) — p25 chỉ có unit.
+- Điều kiện Nếu trên dữ kiện Có/Không (vd "Đối tác mới"): đang cho phép "lớn hơn/nhỏ hơn" và gõ "true" ⇒ chỉ "là / không là" + chọn Có/Không (StageIf + branch-rules opsForType).
+- Video bản chính (người dùng 2026-11-07): khoe tạo node bằng kéo-thả + chỉnh điều kiện (thêm "Đối tác mới là Có", HOẶC) + kéo sai bị báo lý do.
 
 ## Việc kế
 1. Bật cờ "Dùng quy trình mới" cho công ty Demo (Công ty › Quy trình, platform_admin) ⇒ chạy G1–G3 trên prod (người dùng đăng nhập). Rồi `flow:shadow-diff` cho NiTi = 0 ⇒ bật NiTi.
