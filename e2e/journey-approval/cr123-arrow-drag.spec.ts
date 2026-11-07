@@ -445,6 +445,7 @@ test("U12 · mũi tên tới bước nằm trước (Thông báo → Kết thúc
   await expect(alert("Không nối ngược lại bước trước — sẽ tạo vòng lặp")).toBeVisible();
 
   // 3 · Bắt đầu khi → Ký số ⇒ toast nêu lý do (Ký số cần bước Duyệt ngay trước)
+  await fitAll(page); // sơ đồ là MỘT dải trái → phải (x10): thu về để cả "Bắt đầu khi" lẫn Ký số đều trong khung
   await arrow(
     page,
     page.locator(".react-flow__node-trigger").getByTestId("port-next"),
