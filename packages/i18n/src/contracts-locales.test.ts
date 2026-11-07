@@ -20,4 +20,18 @@ describe("contracts-locales", () => {
     const vi = (await loadContractsLocale("vi")) as { contracts: { app: { name: string } } };
     expect(vi.contracts.app.name).toBe("Sổ Hợp Tác");
   });
+
+  test("CR-124: tệp `partner` gộp SÂU — thêm mục menu «Hợp đồng đối tác gửi» mà KHÔNG làm mất các mục `nav` có sẵn (Sổ Hợp Tác)", async () => {
+    for (const l of ["vi", "en"] as const) {
+      const c = (
+        (await loadContractsLocale(l)) as {
+          contracts: { nav: Record<string, unknown>; approval: Record<string, unknown> };
+        }
+      ).contracts;
+      expect(c.nav["partner-inbox"]).toBeTruthy();
+      expect(c.nav.overview).toBeTruthy();
+      expect(c.nav.contracts).toBeTruthy();
+      expect(c.approval.confirmSave).toBeTruthy();
+    }
+  });
 });

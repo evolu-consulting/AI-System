@@ -115,8 +115,10 @@ const deepMerge = (a: unknown, b: unknown): unknown =>
 
 function merge([mod, cks, assistant, org, work, ledger, partners, v2f, v2g, ...tail]: Parts) {
   // REP-v3-ui: phần cuối (`rep3`) gộp SÂU vào các nhánh đã có (`pv2`, `settings`…) thay vì ghi đè cả nhánh.
+  // CR-124: `partner` (ngay trước `rep3`) cũng gộp SÂU — nó thêm khoá vào nhánh `nav` đã có (mục menu «Hợp đồng đối tác gửi»); gộp nông sẽ ghi đè cả `nav`.
+  const partner = tail[tail.length - 2] as Part;
   const rep3 = tail[tail.length - 1] as Part;
-  const rest = tail.slice(0, -1);
+  const rest = tail.slice(0, -2);
   // esign-flow: phần `esignflow` (ngay trước `docframe`) thêm khoá vào nhánh `flow`/`approval` đã có ⇒ gộp SÂU, không ghi đè nhánh.
   const [esignflow] = rest.splice(rest.length - 2, 1) as [Part];
   const base = mod.default as { contracts: Record<string, unknown> };
@@ -141,7 +143,8 @@ function merge([mod, cks, assistant, org, work, ledger, partners, v2f, v2g, ...t
     },
   };
   const withEf = deepMerge(merged.contracts, esignflow.default.contracts);
-  return { ...merged, contracts: deepMerge(withEf, rep3.default.contracts) };
+  const withPartner = deepMerge(withEf, partner.default.contracts);
+  return { ...merged, contracts: deepMerge(withPartner, rep3.default.contracts) };
 }
 
 /** Nạp bản dịch contracts-web của một ngôn ngữ khi cần (mỗi ngôn ngữ một chunk riêng). */
