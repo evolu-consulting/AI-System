@@ -362,82 +362,6 @@
   },
   {
     "type": "cycle",
-    "from": "apps/hub-api/src/modules/packs/contracts/application/approval-engine-facts.ts",
-    "to": "apps/hub-api/src/modules/packs/contracts/application/approval-engine.usecase.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-engine.usecase.ts",
-        "dependencyTypes": ["local", "type-only", "import"]
-      },
-      {
-        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-engine-facts.ts",
-        "dependencyTypes": ["local", "import"]
-      }
-    ]
-  },
-  {
-    "type": "cycle",
-    "from": "apps/hub-api/src/modules/packs/contracts/application/approval-engine.ports.ts",
-    "to": "apps/hub-api/src/modules/packs/contracts/application/approval-flow.usecase.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-flow.usecase.ts",
-        "dependencyTypes": ["local", "type-only", "import"]
-      },
-      {
-        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-engine.ports.ts",
-        "dependencyTypes": ["local", "type-only", "import"]
-      }
-    ]
-  },
-  {
-    "type": "cycle",
-    "from": "apps/hub-api/src/modules/packs/contracts/application/approval.usecase.ts",
-    "to": "apps/hub-api/src/modules/packs/contracts/application/flow-submit.usecase.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "apps/hub-api/src/modules/packs/contracts/application/flow-submit.usecase.ts",
-        "dependencyTypes": ["local", "import"]
-      },
-      {
-        "name": "apps/hub-api/src/modules/packs/contracts/application/approval.usecase.ts",
-        "dependencyTypes": ["local", "type-only", "import"]
-      }
-    ]
-  },
-  {
-    "type": "cycle",
-    "from": "apps/hub-api/src/modules/processes/runs/launcher-batch.ts",
-    "to": "apps/hub-api/src/modules/processes/runs/launcher.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "apps/hub-api/src/modules/processes/runs/launcher.ts",
-        "dependencyTypes": ["local", "import"]
-      },
-      {
-        "name": "apps/hub-api/src/modules/processes/runs/launcher-batch.ts",
-        "dependencyTypes": ["local", "import"]
-      }
-    ]
-  },
-  {
-    "type": "cycle",
     "from": "tests/acceptance/P-d/_support/pd.ts",
     "to": "tests/acceptance/P-d/d1/_count.ts",
     "rule": {
@@ -473,24 +397,6 @@
         "dependencyTypes": ["local", "type-only", "import"]
       }
     ]
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/community-optin.int.test.ts",
-    "to": "apps/hub-api/src/modules/processes/library/routing.repo.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-cross-module-repo"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/community-optin.int.test.ts",
-    "to": "apps/hub-api/src/modules/processes/library/slot-assign.repo.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-cross-module-repo"
-    }
   },
   {
     "type": "dependency",
@@ -571,51 +477,6 @@
     "rule": {
       "severity": "error",
       "name": "no-cross-module-repo"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/contracts/adapters/cr116-bench.harness.ts",
-    "to": "packages/test-kit/src/builders.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-prod-import-test-kit"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/contracts/adapters/cr116-bench.harness.ts",
-    "to": "packages/test-kit/src/db.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-prod-import-test-kit"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/contracts/adapters/cr116-bench.harness.ts",
-    "to": "packages/test-kit/src/env.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-prod-import-test-kit"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/contracts/adapters/cr116-bench.harness.ts",
-    "to": "packages/test-kit/src/perf.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-prod-import-test-kit"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/test-support/slot-default.ts",
-    "to": "packages/test-kit/src/db.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-prod-import-test-kit"
     }
   },
   {

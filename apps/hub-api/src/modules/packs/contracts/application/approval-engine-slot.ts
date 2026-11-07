@@ -21,7 +21,7 @@ import type {
   ApprovalEnginePort,
   EngineStartRequest,
 } from "./approval-engine.ports";
-import type { FlowGroups } from "./approval-flow.usecase";
+import type { FlowGroups } from "./approval-flow.ports";
 
 /** Quy trình thư viện nguồn của mẫu đang chạy. */
 export type SlotSource = {

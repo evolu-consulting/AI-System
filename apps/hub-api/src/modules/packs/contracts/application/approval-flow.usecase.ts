@@ -8,21 +8,10 @@ import type { FlowWhen } from "../domain/approval-flow.types";
 import { defaultEscalateOf, escalateOrder } from "../domain/approval-owner.rules";
 import { APPROVAL_SLOT, slotBodyOf, slotGroupKeys } from "../domain/approval-slot.rules";
 import type { ApprovalEngineBridge } from "./approval-engine.ports";
+import type { ApprovalFlowTxRepos, FlowGroups } from "./approval-flow.ports";
 
-export type ApprovalFlowRepo = {
-  settings(): Promise<ApprovalSettings>;
-};
-export type ApprovalFlowTxRepos = { approvalFlow: ApprovalFlowRepo };
+export type { ApprovalFlowRepo, ApprovalFlowTxRepos, FlowGroups } from "./approval-flow.ports";
 
-/** Group của tenant: id theo khoá (phân giải mã) + id nào còn tồn tại. */
-export type FlowGroups = {
-  idsOf(tenantId: string, keys: readonly string[]): Promise<ReadonlyMap<string, string>>;
-  existingIds(tenantId: string, ids: readonly string[]): Promise<ReadonlySet<string>>;
-  /** S3b · Group của tenant (id + tên) cho `GET /pack/contracts/groups`. */
-  list?(tenantId: string): Promise<{ id: string; name: string }[]>;
-  /** CR-108 · số thành viên còn dùng được mỗi Group (id ⇒ số); vắng ⇒ không hiện số người duyệt. */
-  memberCounts?(tenantId: string, ids: readonly string[]): Promise<ReadonlyMap<string, number>>;
-};
 /** cf-dify · workflow Dify trong catalog mà tenant được dùng (admin.workflows ∧ công tắc tenant). */
 export type FlowWorkflows = (tenantId: string) => Promise<DifyWorkflow[]>;
 export type ApprovalFlowDeps = {

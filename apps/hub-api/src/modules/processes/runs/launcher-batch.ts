@@ -14,7 +14,7 @@ import { publishUserEvents } from "../../../lib/user-stream";
 import type { StageLauncher } from "../core/ports";
 import { isTerminal } from "../domain/runs/run-state.rules";
 import { BATCH_TXS, type KickResult, type LauncherDeps } from "./launch-common";
-import { launchAfterCommit, plan } from "./launcher";
+import { launchAfterCommit, plan } from "./launcher-plan";
 import type { Head } from "./launcher-prompt";
 
 type Planned = { runId: string; r: KickResult } | { runId: string; error: unknown };

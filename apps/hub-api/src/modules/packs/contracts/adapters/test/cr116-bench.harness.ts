@@ -17,8 +17,8 @@ import {
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { type Cap, captureSql, latencyStats } from "@ai/test-kit/perf";
-import type { ContractListFilter } from "../application/ports";
-import { contractsRepo } from "./contracts.repo";
+import type { ContractListFilter } from "../../application/ports";
+import { contractsRepo } from "../contracts.repo";
 
 export const N = Number(process.env.CR116_N ?? 60);
 export const ROUNDS = 3;

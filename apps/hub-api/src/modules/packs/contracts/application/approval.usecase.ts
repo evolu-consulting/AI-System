@@ -15,6 +15,7 @@ import {
 } from "../domain/approval-machine.rules";
 import { EV_APPROVED, EV_SUBMITTED } from "../domain/contract-flow-events.rules";
 import type { ApprovalState, ApprovalTxRepos, ApprovalUow, OpenOutcome } from "./approval.ports";
+import type { ActOutcome, ApprovalAction, ContractApproval } from "./approval-act.types";
 import type { EngineCard } from "./approval-engine-card.usecase";
 import {
   type ContractFlowGate,
@@ -24,6 +25,8 @@ import {
   type FlowPrep,
 } from "./contract-flow.ports";
 import { submitOrNull, withFlowConfirm } from "./flow-submit.usecase";
+
+export type { ActOutcome, ApprovalAction, ContractApproval } from "./approval-act.types";
 
 /** Group duyệt: id theo khoá của tenant (thiếu ⇒ vắng) + Group của user (cache cấu hình, 0 SQL khi nóng). */
 export type ApprovalGroups = {
@@ -66,24 +69,6 @@ export type ApprovalDeps = {
 type ReopenOut = "ok" | "not_found" | "not_stalled" | "flow_invalid" | "flow_starting" | "failed";
 type EngineOwnerOp<T> = (who: PackWho, contractId: string) => Promise<T>;
 export type EngineStart = (who: PackWho, contractId: string) => Promise<unknown>;
-export type ContractApproval =
-  | ReturnType<typeof approvalView>
-  | Awaited<ReturnType<NonNullable<ApprovalDeps["card"]>["view"]>>;
-/** `products` (products-confirm): gắn/tạo SP cho dòng HĐ — áp TRONG tx chỉ khi bước này làm HĐ thành "đã xác nhận". */
-export type ApprovalAction = {
-  action: "approve" | "reject" | "redo" | "return";
-  feedback?: string;
-  products?: readonly ProductLink[];
-  /** CR-120 · FlowRuntime.act: task (+ giai đoạn thẻ) người bấm đang thấy; khác task/giai đoạn đang mở ⇒ APPROVAL_NOT_OPEN — kiểm
-   *  TRONG khoá (máy cũ) / theo task engine định quyết, nên bấm lại hay đua KHÔNG quyết bước kế. Route cũ không gửi (giữ y hệt). */
-  expect?: { taskId: string; step: string | null } | undefined;
-};
-export type ActOutcome =
-  | ContractApproval
-  | "not_found"
-  | "unavailable"
-  | { error: ApprovalErrorCode };
-
 /** Mở lượt duyệt; `extracting` ⇒ xếp lượt AI đọc sau commit. */
 export function startApproval(d: ApprovalDeps) {
   return async (

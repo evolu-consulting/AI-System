@@ -16,7 +16,7 @@ import type {
   RouteSlotFacts,
 } from "../../kit/public";
 import type { FlowStep } from "../domain/approval-flow.types";
-import type { ApprovalFlowRepo } from "./approval-flow.usecase";
+import type { ApprovalFlowRepo } from "./approval-flow.ports";
 import type { ContractFlowTxRepos } from "./contract-flow.ports";
 import type { ProductLinksRepo } from "./product-links.usecase";
 

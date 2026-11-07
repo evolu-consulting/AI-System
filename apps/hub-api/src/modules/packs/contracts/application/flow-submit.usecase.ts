@@ -6,7 +6,7 @@ import type { PackWho } from "../../kit/public";
 import type { ApprovalActor } from "../domain/approval-machine.rules";
 import { EV_SUBMITTED } from "../domain/contract-flow-events.rules";
 import type { ApprovalState, ApprovalUow } from "./approval.ports";
-import type { ActOutcome, ApprovalAction, ContractApproval } from "./approval.usecase";
+import type { ActOutcome, ApprovalAction, ContractApproval } from "./approval-act.types";
 import { emitFlow, type FlowPrep, requireFlow } from "./contract-flow.ports";
 
 /** Cờ bật + "Xác nhận và lưu" ở lượt máy cũ `level1` ⇒ gửi vào flow rồi trả thẻ mới; không áp dụng ⇒ null (đường cũ). */

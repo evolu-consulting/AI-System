@@ -1,7 +1,7 @@
 // CR-116 · cr116-bench-apps vòng 2 (CHỈ ĐO): (1) /sourcing — thời gian lập kế hoạch vs thực thi, nestloop, kết nối lạnh;
 // (2) `count(*)` + RLS từng dòng — đếm chính xác vs trần "1.000+" vs "có trang sau" vs ước lượng EXPLAIN vs bảng đếm;
 // (3) tìm `LIKE %q%` — tách nhánh câu (bỏ `$q is null or`) để GIN pg_trgm dùng được; (6) Bun.sql vs postgres.js + cắt kết nối giữa tx.
-// Dữ liệu/harness: `cr116-bench.harness.ts`. Chạy: `run-tests.ps1 -Step perf -Exclusive -Filter <file này>`.
+// Dữ liệu/harness: `test/cr116-bench.harness.ts`. Chạy: `run-tests.ps1 -Step perf -Exclusive -Filter <file này>`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { openOwner } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
@@ -17,7 +17,7 @@ import {
   totalOf,
   type Variant,
   v,
-} from "./cr116-bench.harness";
+} from "./test/cr116-bench.harness";
 
 const B = new Bench();
 beforeAll(() => B.setup(), 600_000);

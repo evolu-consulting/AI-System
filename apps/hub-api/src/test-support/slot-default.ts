@@ -1,7 +1,7 @@
 // CR-120 · cr120-single-source · CHỈ cho test int: gán def `defId` làm mặc định của tenant × khe ở NGUỒN DUY NHẤT (tập gán + đầu
 // luật + luật `is_default` priority 49) bằng kết nối owner — thay cho `insert into hub.process_slot_assignments` (view đó đã gỡ ở hub 0099, CR-121; bản cũ chỉ
 // đọc). Có sẵn luật mặc định ⇒ đổi def. Không dùng cho code chạy thật (đường thật: `upsertAssignment` / `ensureSlotDefaults`).
-import type { Sql } from "@ai/test-kit/db";
+import type { Sql } from "postgres";
 
 export async function setSlotDefault(
   o: Sql,

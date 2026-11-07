@@ -5,13 +5,14 @@ import type { FlowStep } from "../domain/approval-flow.types";
 import { type FlowFacts, factNeedsOf } from "../domain/approval-flow-cond.rules";
 import type {
   ApprovalEngineTxRepos,
+  ApprovalEngineUow,
   CreatorDepartments,
   EngineRunRow,
 } from "./approval-engine.ports";
-import type { ApprovalEngineDeps } from "./approval-engine.usecase";
-import type { FlowGroups } from "./approval-flow.usecase";
+import type { FlowGroups } from "./approval-flow.ports";
 /** CR-121 D-1 · nguồn dữ kiện mở rộng: `creatorDepartments` đi kèm `groups` (cùng nguồn Group của tenant, nối lúc mount). */
-export type FactsDeps = Pick<ApprovalEngineDeps, "uow"> & {
+export type FactsDeps = {
+  uow: ApprovalEngineUow;
   groups?:
     | (Partial<FlowGroups> & { creatorDepartments?: CreatorDepartments | undefined })
     | undefined;

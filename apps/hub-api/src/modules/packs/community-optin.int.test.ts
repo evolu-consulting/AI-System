@@ -9,15 +9,15 @@ import { enablePack, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { AppError } from "../../lib/errors";
-import { insertAssigned } from "../processes/library/routing.repo";
+import { defaultSlotsOf, ensureSlotDefaults } from "../processes/library/slot-defaults";
 import {
   deleteAssignment,
+  insertAssigned,
   releaseFromSet,
   upsertAssignment,
-} from "../processes/library/slot-assign.repo";
-import { defaultSlotsOf, ensureSlotDefaults } from "../processes/library/slot-defaults";
+} from "../processes/testing/slot-assign";
 import { SLOT_MODERATION } from "./community/domain/flow.rules";
-import { communitySlotSpecs } from "./community/domain/flow-slots.rules";
+import { communitySlotSpecs } from "./community/public";
 import { communityFlowPorts } from "./community-flow.mount";
 
 let sql: Sql;

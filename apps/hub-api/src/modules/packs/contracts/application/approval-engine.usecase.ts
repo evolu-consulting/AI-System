@@ -53,7 +53,7 @@ import {
   slotFlowOf,
   slotRunOf,
 } from "./approval-engine-slot";
-import type { FlowGroups } from "./approval-flow.usecase";
+import type { FlowGroups } from "./approval-flow.ports";
 import { type ContractFlowGate, type FlowPrep, requireFlow } from "./contract-flow.ports";
 import type { ProductLinksRepo } from "./product-links.usecase";
 
