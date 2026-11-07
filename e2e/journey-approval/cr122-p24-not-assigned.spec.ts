@@ -34,13 +34,21 @@ test("chưa gán quy trình: thẻ nói rõ lý do + chủ HĐ có nút Mở l�
     await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } })
   ).newPage();
   await loginCw(page, E, U.employee);
-  await uploadAndOpen(page, E, `p24${Date.now().toString(36)}`, 150_000_000);
+  const id = await uploadAndOpen(page, E, `p24${Date.now().toString(36)}`, 150_000_000);
   await confirmAndSave(page);
   // bộ điều phối chạy nền (≈ 2 s) ⇒ thẻ đổi sang "đang dừng" kèm lý do nghiệp vụ
   await expect(page.getByText("chưa có quy trình duyệt cho loại hợp đồng này")).toBeVisible({
     timeout: 60_000,
   });
   await expect(page.getByText("Công ty › Quy trình")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Mở lại/ }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Xác nhận và lưu" })).toHaveCount(0);
+  // người gửi không phải quản trị gói ⇒ chỉ được dặn báo chủ HĐ; quản trị (Giám đốc) mới có nút Mở lại
+  const admin = await (
+    await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } })
+  ).newPage();
+  await loginCw(admin, E, U.director);
+  await admin.goto(`${E.cw}/contracts/c/${id}`);
+  await expect(admin.getByRole("button", { name: /Mở lại/ }).first()).toBeVisible({
+    timeout: 30_000,
+  });
 });
