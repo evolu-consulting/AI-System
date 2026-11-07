@@ -36,7 +36,21 @@ const SNAP = {
   ],
 };
 
-async function seedRun(o2: { step: number; st: string[]; status?: string; decision?: string }) {
+/** Mẫu Thư viện: bước Duyệt mang `after: { kind: "review", branch: [] }` (không luật rẽ tự đặt). */
+const SNAP_EMPTY_BRANCH = {
+  ...SNAP,
+  stages: SNAP.stages.map((s) =>
+    s.key === "ok" ? { ...s, after: { kind: "review", branch: [] as never[] } } : s,
+  ),
+};
+
+async function seedRun(o2: {
+  step: number;
+  st: string[];
+  status?: string;
+  decision?: string;
+  snap?: unknown;
+}) {
   const [c] = await o<
     { id: string }[]
   >`insert into hub.conversations (tenant_id, user_id, title, title_norm)
@@ -46,7 +60,7 @@ async function seedRun(o2: { step: number; st: string[]; status?: string; decisi
   >`insert into hub.process_runs (tenant_id, process_def_id, def_version,
       snapshot, started_by, origin_kind, input, conversation_id, flow_id, current_step, current_stage_idx,
       pack_key, pack_record_id, status)
-    values (${tid}, ${defId}, 1, ${o.json(SNAP as never)}, ${uid}, 'admin', 'x', ${c?.id as string},
+    values (${tid}, ${defId}, 1, ${o.json((o2.snap ?? SNAP) as never)}, ${uid}, 'admin', 'x', ${c?.id as string},
       gen_random_uuid(), ${o2.step}, ${o2.step}, ${PACK}, gen_random_uuid(), ${o2.status ?? "running"}) returning id`;
   const runId = r?.id as string;
   for (const [i, s] of o2.st.entries()) {
@@ -117,6 +131,22 @@ describe("CR-122 · E2b · node Duyệt rẽ theo quyết định (đường th�
   it("Trả lại ⇒ return_step", async () => {
     const runId = await seedRun({ step: 1, st: DONE_AT_APPROVE, decision: "returned" });
     expect((await settle(runId))?.step).toBe(4);
+  });
+  it("Trả lại / Từ chối ⇒ đích của node Duyệt kể cả khi `after.branch` rỗng (mẫu Thư viện)", async () => {
+    const back = await seedRun({
+      step: 1,
+      st: DONE_AT_APPROVE,
+      decision: "returned",
+      snap: SNAP_EMPTY_BRANCH,
+    });
+    expect((await settle(back))?.step).toBe(4);
+    const no = await seedRun({
+      step: 1,
+      st: DONE_AT_APPROVE,
+      decision: "rejected",
+      snap: SNAP_EMPTY_BRANCH,
+    });
+    expect((await settle(no))?.step).toBe(3);
   });
   it("Từ chối rẽ tới Kết thúc khi hẹn còn mở ⇒ hẹn của nhánh bị bỏ và nhánh sau Kết thúc bị huỷ", async () => {
     const runId = await seedRun({ step: 1, st: DONE_AT_APPROVE, decision: "rejected" });

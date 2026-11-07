@@ -177,8 +177,12 @@ export async function reviewerReason(
   const decision = outcome === "declined" ? "rejected" : outcome === "returned" ? "returned" : null;
   if (!decision || !UUID.test(runId)) return null;
   const [r] = await tx.execute<{ feedback: string | null }>(sql`
-    select nullif(btrim(s.feedback), '') as feedback
+    select nullif(btrim(coalesce(s.feedback, tk.feedback)), '') as feedback
     from hub.stage_runs s join hub.process_outputs o on o.id = s.current_output_id and o.tenant_id = s.tenant_id
+      -- Duyệt rẽ nhánh (return_step/reject_step): cổng đi như Đạt ⇒ góp ý nằm ở task duyệt đã đóng của bước, không ở stage.
+      left join lateral (select t.feedback from hub.review_tasks t
+        where t.stage_run_id = s.id and t.tenant_id = s.tenant_id and t.status = 'closed'
+        order by t.decided_at desc nulls last limit 1) tk on true
     where s.tenant_id = ${tid}::uuid and s.process_run_id = ${runId}::uuid and s.status = 'done'
       and jsonb_typeof(o.fields) = 'object' and o.fields ->> 'decision' = ${decision}
     order by s.stage_idx desc limit 1`);

@@ -196,6 +196,15 @@ describe("CR-124 q4 · lý do gửi đối tác chỉ lấy từ bước quyết
     expect(await read(run, "returned")).toBeNull();
     expect(await read(run, "declined")).toBeNull();
   });
+  it("q6 · node Duyệt rẽ nhánh (cổng đi như Đạt): góp ý nằm ở task duyệt đã đóng của bước ⇒ vẫn lấy được", async () => {
+    const run = await fakeRun([["returned", null]]);
+    const [sr] = await o<
+      { id: string }[]
+    >`select id from hub.stage_runs where process_run_id = ${run}`;
+    await o`insert into hub.review_tasks (tenant_id, process_run_id, stage_run_id, kind, status, question, result, feedback, decided_at)
+      values (${B}, ${run}, ${sr?.id as string}, 'ask', 'closed', 'q', 'pass', 'Sai đơn giá mục 3', now())`;
+    expect(await read(run, "returned")).toBe("Sai đơn giá mục 3");
+  });
 });
 
 describe("CR-124 q4 · cài đặt nhận theo công ty", () => {

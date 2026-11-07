@@ -1,4 +1,4 @@
----
+﻿---
 id: cr124-q6-journey
 lát: cr124-q6-journey
 cr: CR-124
@@ -50,7 +50,13 @@ Cột «Bước» dùng cùng luật `from_run` với thẻ duyệt (lượt kh�
 #### Yêu cầu: Sự kiện «HĐ nhận» luôn có người gây sự kiện để flow nhận chạy được
 Bên nhận chưa đặt người phụ trách ⇒ lấy quản trị công ty (hoạt động, sớm nhất); thiếu người gây sự kiện thì bộ điều phối từ chối (FLOW_REFUSED) và HĐ nhận kẹt «Quy trình đang dừng».
 - Kịch bản: khi bộ chuyển tạo HĐ nhận thì sự kiện contract.received có actor là người dùng của công ty nhận [test: apps/hub-api/src/modules/packs/contracts/partner-mailbox.int.test.ts » bộ chuyển tạo HĐ nhận riêng của B + contract.received]
+#### Yêu cầu: Mẫu «Nhận HĐ …» không loại người gây sự kiện khỏi bước Duyệt
+HĐ nhận không có người gửi thật bên trong công ty nhận; người gây sự kiện (người phụ trách / quản trị) vẫn duyệt được. Hub 0124 đổi `exclude_starter` = false ở 2 mẫu (chỉ bản còn nguyên seed 0121).
+- Kịch bản: khi xem nguồn TS của mẫu nhận thì bước Duyệt có exclude_starter=false và seed 0124 khớp từng byte [test: apps/hub-api/src/modules/processes/library/flow-templates-receive.def.test.ts » seed hub 0121 (id, trigger) + 0124]
+#### Yêu cầu: Bước «Gửi đối tác xác nhận» nói chữ đối tác, không nói «ký»
+Thẻ duyệt dùng khoá node của bước module (`module_node`) để hiện «Đang chờ đối tác trả lời / Đối tác đã xác nhận / Đối tác từ chối / hết hạn» thay vì «Đang chờ ký / Đã ký».
+- Kịch bản: khi bước module có node contracts.partner-send thì thẻ dùng chữ đối tác [test: e2e/journey-approval/cr124-q6-partner-journey.spec.ts » 1 · gửi lần đầu]
 ## Việc còn lại
-- Hành trình đã tiến tới «B nhận → mở HĐ nhận»: lượt 1 (sau u6c) qua node Gửi đối tác; lỗi thật 1 = `/contracts/partner-inbox` bị đổi thành id HĐ (đã sửa, legacy-routes); lượt 2 = HĐ nhận «Quy trình đang dừng» vì sự kiện `contract.received` không có actor (đã sửa, người phụ trách ?? quản trị). CHƯA chạy lại e2e sau hai sửa này (hết 2 lượt) — cần 1 lượt xác nhận: bước kế dự kiến là Đạt của kế toán B (e2e đã đổi người duyệt B sang kế toán vì người gây sự kiện = Giám đốc bị loại khỏi duyệt, `exclude_starter` của mẫu nhận).
-- Cần quyết (sản phẩm): người phụ trách nhận HĐ (partner_settings.owner) chính là người gây sự kiện ⇒ bị loại khỏi duyệt bởi `exclude_starter: true` của mẫu «Nhận HĐ …» — nên đặt `exclude_starter: false` cho bước duyệt ở 2 mẫu nhận (hub 0121 đã seed, cần migration mới).
-- Ảnh chụp: mới có a-held, b-invite, b-inbox (lượt 2); chưa có a-confirmed/a-returned/b-settings/node panel. Ảnh a-held + b-inbox đã soát: ổn (thẻ A nêu rõ chờ kết nối; thẻ B 3 dòng đủ ý).
+- Hành trình `cr124-q6-partner-journey.spec.ts` XANH (3/3, evotest 20261107-180027). Lỗi thật đã sửa trên đường đi: nhãn «Bước» from_run; route `/contracts/partner-inbox` bị legacy-routes đổi thành id HĐ; `contract.received` thiếu actor (FLOW_REFUSED); mẫu nhận `exclude_starter` (hub 0124, journal thêm cả 0123 còn thiếu); Trả lại ở bước 0 của flow theo sự kiện (BACK_TARGET_INVALID ⇒ `fail_flow`); `after.branch` rỗng làm node Duyệt không rẽ Trả lại/Từ chối (step.repo); lý do Trả lại nằm ở review_tasks.feedback (reviewerReason); bước «Gửi đối tác» nói «Đã ký» (module_node).
+- Chưa chụp panel node «Gửi đối tác» ở editor admin (A). Ảnh khác đã soát: thẻ A chờ kết nối/đã xác nhận/đã trả lại + lý do, lời mời + hộp thư B, cài đặt nhận HĐ của B — ổn. Nợ giao diện nhỏ ngoài lát: tiêu đề HĐ bị bóp hẹp khi nhiều nút ở trạng thái bản nháp (a-returned); thẻ «Ký số: Công ty chưa bật ký số» hiện cho flow chỉ có Gửi đối tác.
+- Nợ có sẵn (không do lát): `packages/db/src/migrate-hub.int.test.ts` đỏ vì HUB_TABLES chưa có 3 bảng hộp thư q1; `tool-stage-load.repo.ts` lệch format (biome).

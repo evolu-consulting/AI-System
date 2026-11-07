@@ -142,7 +142,7 @@ test.beforeAll(async () => {
     ["ke-toan", "Kế toán"],
     ["giam-doc", "Giám đốc"],
   ] as const)
-    await createGroupWith(API, bAdmin, { key, name, usernames: [U.accounting] });
+    await createGroupWith(API, bAdmin, { key, name, usernames: [U.director, U.accounting] });
   // B: flow nhận mặc định (đường sự kiện bắt buộc) gán qua danh sách flow công ty.
   await enableFlowTriggers(EB.tenantKey);
   await assignCompanyFlow(
@@ -216,12 +216,13 @@ test("1 · gửi lần đầu: giữ chờ kết nối → B nhận lời mời 
   // B: flow nhận mặc định chạy ⇒ người xác nhận bấm Đạt
   const { approveAs } = await import("./_journey");
   const bApprover = await ctx(browser);
-  await approveAs(bApprover, EB, U.accounting, inboxId, "Người xác nhận");
+  await approveAs(bApprover, EB, U.director, inboxId, "Người xác nhận");
 
   // A: chạy tiếp «Đã xác nhận», HĐ khoá, thẻ vòng gửi «đã xác nhận»
   await expectRound(emp, EA.cw, id, /đã xác nhận/);
   await expect(emp.getByTestId("banner-locked")).toBeVisible({ timeout: 120_000 });
-  await expect(stepOf(emp, "Đã xác nhận")).toHaveAttribute("data-status", "passed");
+  // Bước «Gửi đối tác xác nhận» nói chữ đối tác (không «Đã ký»): đối tác đã xác nhận.
+  await expect(emp.getByTestId("approval-step-module")).toContainText("Đối tác đã xác nhận");
   await emp.screenshot({ path: shot("a-confirmed"), fullPage: true });
 });
 
@@ -240,16 +241,13 @@ test("2 · «Trả lại sửa»: B trả lại có lý do ⇒ A thấy thẻ «
     if (n++ > 0) await safeReload(b);
     await expect(card.first()).toBeVisible({ timeout: 5_000 });
   }).toPass({ timeout: 120_000 });
-  const href = (await card.first().getByRole("link", { name: "Mở" }).getAttribute("href")) ?? "";
-  // Người xác nhận (kế toán B) mở HĐ nhận và Trả lại có lý do.
-  const b2 = await ctx(browser);
-  await loginCw(b2, EB, U.accounting);
-  await b2.goto(`${EB.cw}${href}`);
-  await expect(stepOf(b2, "Người xác nhận")).toHaveAttribute("data-status", "open", {
+  await card.first().getByRole("link", { name: "Mở" }).click();
+  await b.waitForURL(/\/contracts\/c\/[0-9a-f-]{36}/);
+  await expect(stepOf(b, "Người xác nhận")).toHaveAttribute("data-status", "open", {
     timeout: 60_000,
   });
-  await b2.locator("[data-approval=return]").click();
-  const form = b2.locator("[data-approval=reason]");
+  await b.locator("[data-approval=return]").click();
+  const form = b.locator("[data-approval=reason]");
   await form.getByRole("textbox").fill(REASON);
   await form.getByRole("button", { name: /^Trả lại/ }).click();
 
@@ -257,7 +255,7 @@ test("2 · «Trả lại sửa»: B trả lại có lý do ⇒ A thấy thẻ «
   const round = emp.getByTestId("partner-round").first();
   await expect(round).toContainText(REASON);
   await expect(round).toContainText("Sửa hợp đồng");
-  await expect(stepOf(emp, "Trả lại sửa")).toBeVisible();
+  await expect(emp.getByTestId("banner-locked")).toHaveCount(0); // trả lại ⇒ HĐ chưa khoá, sửa được
   await emp.screenshot({ path: shot("a-returned"), fullPage: true });
 });
 

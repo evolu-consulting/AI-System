@@ -61,7 +61,8 @@ const intOr = (v: unknown): number | undefined =>
 /** Snapshot `after.branch` (snake_case contract) ⇒ luật domain; vắng/hỏng ⇒ `[]`. */
 const branchesOf = (stages: NonNullable<StepHead["snapshot"]>["stages"] & {}): BranchRule[][] =>
   stages.map((s) =>
-    Array.isArray(s?.after?.branch)
+    // `after.branch` RỖNG (mẫu Thư viện: `after: { kind: "review", branch: [] }`) = không luật tự đặt ⇒ vẫn rẽ theo `reject_step`/`return_step`.
+    Array.isArray(s?.after?.branch) && s.after.branch.length > 0
       ? s.after.branch.map((r) => ({
           field: r.field,
           op: r.op,

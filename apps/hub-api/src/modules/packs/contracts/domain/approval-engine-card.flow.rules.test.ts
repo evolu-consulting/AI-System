@@ -135,6 +135,7 @@ describe("CR-124 q6 · lượt flow theo sự kiện có stage Duyệt ở idx 0
       feedback: "sai đơn giá",
       hasSource: false,
     });
-    expect(p).toEqual({ kind: "fail_back", taskId: "t1" });
+    // Trả lại của flow theo sự kiện = nhánh của stage (không đích lùi `back_to_step` ⇒ không BACK_TARGET_INVALID).
+    expect(p).toEqual({ kind: "fail_flow", taskId: "t1" });
   });
 });

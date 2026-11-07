@@ -743,6 +743,20 @@
       "when": 1806900400000,
       "tag": "0122_partner_hold",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1806900500000,
+      "tag": "0123_partner_hold_validate",
+      "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1806900600000,
+      "tag": "0124_partner_receive_open_review",
+      "breakpoints": true
     }
   ]
 }

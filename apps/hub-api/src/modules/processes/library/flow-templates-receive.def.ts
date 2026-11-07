@@ -28,13 +28,34 @@ const ends = [
   finish(4, "returned", "Trả lại"),
 ];
 
+/** q6 · HĐ nhận không có người gửi thật bên trong công ty nhận: người gây sự kiện (người phụ trách / quản trị do hệ thống chọn) KHÔNG bị loại khỏi duyệt. */
+const open = (group: string) => ({
+  after: {
+    kind: "review",
+    group_id: null,
+    group_key: group,
+    back_to_steps: [],
+    remind_every_h: 24,
+    escalate: null,
+    branch: [],
+    exclude_starter: false,
+  },
+});
+
 const quanTrong = () => [
-  approve("ke-toan", "Kế toán duyệt", 0, "ke-toan", to),
-  approve("giam-doc", "Giám đốc duyệt", 1, "giam-doc", to),
+  approve("ke-toan", "Kế toán duyệt", 0, "ke-toan", to, open("ke-toan")),
+  approve("giam-doc", "Giám đốc duyệt", 1, "giam-doc", to, open("giam-doc")),
   ...ends,
 ];
 const thuong = () => [
-  approve("nguoi-xac-nhan", "Người xác nhận", 0, "phong-kinh-doanh", { reject: 2, ret: 3 }),
+  approve(
+    "nguoi-xac-nhan",
+    "Người xác nhận",
+    0,
+    "phong-kinh-doanh",
+    { reject: 2, ret: 3 },
+    open("phong-kinh-doanh"),
+  ),
   finish(1, "confirmed", "Đồng ý"),
   finish(2, "declined", "Từ chối"),
   finish(3, "returned", "Trả lại"),

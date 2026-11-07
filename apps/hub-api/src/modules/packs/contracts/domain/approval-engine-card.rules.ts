@@ -83,6 +83,8 @@ export type CardStep = {
   /** CR-123 · u6 · bước là cụm node module (Ký số): trạng thái nghiệp vụ Đang chờ / Đã ký / Từ chối / Hết hạn. */
   outcome?: ModuleOutcome;
   signer?: string;
+  /** CR-124 · q6 · khoá node của bước module (vd `contracts.partner-send`). */
+  module_node?: string;
   /** CR-113 · bước đang mở đã quá hạn (giờ server). */
   overdue?: boolean;
   /** CR-113 · tên Group nhận khi chuyển cấp đã xảy ra (vắng khi chưa chuyển cấp / không biết tên). */
@@ -211,6 +213,7 @@ function runCardStep(st: EngineStageView, x: CardExtras): CardStep {
       ? {
           outcome: st.module.outcome,
           ...(st.module.signer ? { signer: st.module.signer } : {}),
+          module_node: st.module.node,
         }
       : {}),
     ...ownerFields(st, x),
@@ -329,6 +332,8 @@ export type EnginePlan =
   | { kind: "error"; code: EngineErrorCode }
   | { kind: "pass"; taskId: string; finalizes: boolean }
   | { kind: "fail_back"; taskId: string }
+  /** CR-124 · q6 · lượt flow theo sự kiện (`from_run`): Trả lại = quyết `fail` KHÔNG đích lùi — nhánh «Trả lại» do chính stage Duyệt của flow quyết (`return_step`). */
+  | { kind: "fail_flow"; taskId: string }
   | { kind: "reject"; taskId: string }
   | { kind: "redo"; taskId: string; reextract: boolean };
 
@@ -354,8 +359,8 @@ export function planEngineAct(
     return { kind: "pass", taskId: task.id, finalizes: card.finalizes_on_approve };
   if (i.action === "reject") return { kind: "reject", taskId: task.id };
   if (i.action === "redo") return { kind: "redo", taskId: task.id, reextract: i.hasSource };
-  // Bước 0 của thẻ máy cũ là bước soạn (không có nơi để trả về); với lượt flow theo sự kiện bước 0 là stage thật ⇒ Trả lại được.
-  return open.idx === 0 && !card.from_run
-    ? err("APPROVAL_NOT_OPEN")
-    : { kind: "fail_back", taskId: task.id };
+  // Lượt flow theo sự kiện: bước 0 là stage thật; Trả lại = nhánh của stage (không lùi về bước soạn máy cũ).
+  if (card.from_run) return { kind: "fail_flow", taskId: task.id };
+  // Bước 0 của thẻ máy cũ là bước soạn (không có nơi để trả về).
+  return open.idx === 0 ? err("APPROVAL_NOT_OPEN") : { kind: "fail_back", taskId: task.id };
 }

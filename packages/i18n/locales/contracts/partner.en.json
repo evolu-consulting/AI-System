@@ -1,6 +1,20 @@
 {
   "contracts": {
     "nav": { "partner-inbox": "Contracts from partners" },
+    "approval": {
+      "module": {
+        "partner": {
+          "outcome": {
+            "pending": "Not started",
+            "waiting": "Waiting for the partner's reply",
+            "done": "Partner confirmed",
+            "declined": "Partner declined",
+            "expired": "No reply from the partner — expired",
+            "failed": "Could not send to the partner — needs attention"
+          }
+        }
+      }
+    },
     "partner": {
       "verified": "Verified",
       "unverified": "Not verified",

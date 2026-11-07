@@ -98,7 +98,14 @@ function ReviewStep({ step, ctx }: StepProps<"review"> | StepProps<"dify">) {
 /** esign ⇒ `EsignStepRow` cũ (dựng lại `esign` của thẻ từ bước; "Gửi lại" theo id HĐ = `ctx.refId`). */
 function EsignStep({ step, ctx }: StepProps<"esign">) {
   if (step.outcome)
-    return <ModuleStepRow name={step.name} outcome={step.outcome} signer={step.signer} />;
+    return (
+      <ModuleStepRow
+        name={step.name}
+        outcome={step.outcome}
+        signer={step.signer}
+        node={step.module_node}
+      />
+    );
   const e = step.esign;
   return (
     <EsignStepRow

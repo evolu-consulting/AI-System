@@ -66,7 +66,7 @@ function stepOf(s: ApprovalCardStep, groups: readonly ContractGroup[], now: numb
     skip_when: skipOf(s),
     ...(s.warning ? { warning: s.warning } : {}),
   };
-  if (s.outcome) return moduleFlowStep(base, s.outcome, s.signer);
+  if (s.outcome) return moduleFlowStep(base, s.outcome, s.signer, s.module_node);
   if (s.kind === "dify") return { ...base, kind: "dify", assignee: { kind: "system" } };
   // CR-121 D-6b · Thông báo = bước hệ thống (không ai làm); Chờ tới = bước chờ tới giờ hẹn (`due_at`).
   if (s.kind === "notify") return { ...base, kind: "system", assignee: { kind: "system" } };

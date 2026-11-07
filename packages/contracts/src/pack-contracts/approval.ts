@@ -94,6 +94,8 @@ export const ApprovalCardStepSchema = z.strictObject({
   outcome: z.enum(["pending", "waiting", "done", "declined", "expired", "failed"]).optional(),
   /** CR-123 · u6 · tên người / phòng ký công ty của bước module. */
   signer: z.string().max(200).optional(),
+  /** CR-124 · q6 · khoá node của bước module (vd `contracts.partner-send`) ⇒ thẻ dùng đúng chữ trạng thái. */
+  module_node: z.string().max(100).optional(),
   /** CR-113 · bước đang mở đã quá hạn (giờ server); vắng ở bước không mở. */
   overdue: z.boolean().optional(),
   /** CR-113 · tên Group nhận khi chuyển cấp đã xảy ra. */

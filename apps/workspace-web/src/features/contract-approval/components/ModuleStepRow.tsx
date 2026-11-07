@@ -16,11 +16,15 @@ export function ModuleStepRow({
   name,
   outcome,
   signer,
+  node,
 }: {
   name: string;
   outcome: Outcome;
   signer?: string | undefined;
+  /** Khoá node module: bước «Gửi đối tác xác nhận» dùng chữ riêng (không nói "ký"). */
+  node?: string | undefined;
 }) {
+  const kind = node === "contracts.partner-send" ? "partner" : "esign";
   const { t } = useTranslation();
   return (
     <li
@@ -42,7 +46,11 @@ export function ModuleStepRow({
           }
           data-module="outcome"
         >
-          {t(`contracts.approval.module.outcome.${outcome}`)}
+          {t(
+            kind === "partner"
+              ? `contracts.approval.module.partner.outcome.${outcome}`
+              : `contracts.approval.module.outcome.${outcome}`,
+          )}
         </p>
         {signer ? (
           <p className="text-caption text-dim" data-module="signer">

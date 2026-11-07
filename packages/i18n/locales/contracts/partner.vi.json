@@ -1,6 +1,20 @@
 {
   "contracts": {
     "nav": { "partner-inbox": "Hợp đồng đối tác gửi" },
+    "approval": {
+      "module": {
+        "partner": {
+          "outcome": {
+            "pending": "Chưa tới lượt",
+            "waiting": "Đang chờ đối tác trả lời",
+            "done": "Đối tác đã xác nhận",
+            "declined": "Đối tác từ chối",
+            "expired": "Đối tác không trả lời — hết hạn",
+            "failed": "Gửi đối tác chưa được — cần xử lý"
+          }
+        }
+      }
+    },
     "partner": {
       "verified": "Đã xác minh",
       "unverified": "Chưa xác minh",

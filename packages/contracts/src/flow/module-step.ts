@@ -8,11 +8,13 @@ export function moduleFlowStep(
   base: Base,
   outcome: NonNullable<FlowStepView["outcome"]>,
   signer?: string | null,
+  node?: string | null,
 ): FlowStepView {
   return {
     ...base,
     outcome,
     ...(signer ? { signer } : {}),
+    ...(node ? { module_node: node } : {}),
     kind: "esign",
     assignee: { kind: "system" },
     esign: { provider_status: "sent", reason: null, can_resend: false, reminded_at: null },
