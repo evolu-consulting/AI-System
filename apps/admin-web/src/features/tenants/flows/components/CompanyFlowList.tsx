@@ -13,6 +13,7 @@ import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { type FlowOp, useCompanyFlowOp } from "../company-flows-api";
 import { actionsOf, errorKey, groupByApp, reorderIds, statusKey } from "../lib/company-flow-view";
+import { canSeeFlowSwitch } from "../lib/flow-switch-access";
 import { AssignFlow } from "./AssignFlow";
 import { FlowSwitch } from "./FlowSwitch";
 
@@ -129,7 +130,8 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   const { t } = useTranslation();
   const tr = useTr();
   const op = useCompanyFlowOp(tenantId);
-  const isPlatform = useSession((s) => s.me?.role) === "platform_admin";
+  const role = useSession((s) => s.me?.role);
+  const isPlatform = role === "platform_admin";
   const [err, setErr] = useState<string | null>(null);
   const [ordering, setOrdering] = useState(false);
   const run = (a: FlowOp) => {
@@ -144,7 +146,7 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   };
   return (
     <div className="space-y-3" data-testid="company-flow-list">
-      {isPlatform ? <FlowSwitch tenantId={tenantId} /> : null}
+      {canSeeFlowSwitch(role) ? <FlowSwitch tenantId={tenantId} /> : null}
       {isPlatform ? (
         <AssignFlow
           assignedFlowIds={new Set(rows.map((r) => r.flow_id))}

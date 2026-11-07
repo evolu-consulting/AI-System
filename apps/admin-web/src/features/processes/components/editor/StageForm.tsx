@@ -17,6 +17,7 @@ import { StageAdminModeNotice } from "./StageAdminModeNotice";
 import { StageAnswerer } from "./StageAnswerer";
 import { StageApply } from "./StageApply";
 import { StageApprove } from "./StageApprove";
+import { StageApproveBasics } from "./StageApproveBasics";
 import { StageAutofix } from "./StageAutofix";
 import { StageBranch } from "./StageBranch";
 import { StageFormFields } from "./StageFormFields";
@@ -195,29 +196,41 @@ function NotifyBasics(p: Pick<StageFormProps, "stage" | "readOnly" | "onChange">
 }
 
 /** CR-122 · U2e · trình sửa node của FLOW: tên + phần nghiệp vụ ở trên; mã giai đoạn, người thực hiện, chạy ở bước… vào "Nâng cao". */
+function FlowMain(p: StageFormProps) {
+  const { stage } = p;
+  const { t } = useTranslation();
+  if (stage.node) return <ModuleBody {...p} />;
+  if (isWait(stage)) return <StageWait {...p} />;
+  if (isWaitFamily(stage)) return <StageTimedWait {...p} />;
+  if (isIf(stage)) return <StageIfForm {...p} />;
+  if (stage.executor === "approve") return null; // "Ai duyệt" + "Hạn trả lời" ở StageApproveBasics
+  // CR-123 FR-13: node Công cụ (tool) là kỹ thuật ⇒ phần chính chỉ một câu giải thích, chi tiết ở "Nâng cao"
+  if (isTool(stage))
+    return (
+      <p className="text-caption text-muted-foreground" data-testid="tool-note">
+        {t("process.admin.flow.toolNote")}
+      </p>
+    );
+  return <Body {...p} />;
+}
+
 function FlowForm(p: StageFormProps) {
   const { stage } = p;
   const mod = !!stage.node;
+  const approve = stage.executor === "approve" && !mod;
+  const tool = isTool(stage) && !mod;
   return (
     <section className="space-y-4 px-1" aria-label={stage.name}>
       <StageGeneral {...p} part="name" />
+      {approve ? <StageApproveBasics {...p} /> : null}
       {stage.executor === "approve" ? <StageApprove {...p} /> : null}
       <StageLinks {...p} />
-      {mod ? (
-        <ModuleBody {...p} />
-      ) : isWait(stage) ? (
-        <StageWait {...p} />
-      ) : isWaitFamily(stage) ? (
-        <StageTimedWait {...p} />
-      ) : isIf(stage) ? (
-        <StageIfForm {...p} />
-      ) : (
-        <Body {...p} />
-      )}
+      <FlowMain {...p} />
       <AdvancedBox>
         <StageGeneral {...p} part="tech" />
         <StageStepFields {...p} />
-        {mod && !isWaitFamily(stage) && !isWait(stage) ? <Body {...p} /> : null}
+        {approve ? <StageRemind {...p} skipRemind /> : null}
+        {tool || (mod && !isWaitFamily(stage) && !isWait(stage)) ? <Body {...p} /> : null}
       </AdvancedBox>
       <StageActions {...p} />
     </section>

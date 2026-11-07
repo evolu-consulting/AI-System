@@ -38,7 +38,8 @@ import { useProcessTenant } from "../hooks/use-process-tenant";
 import {
   copyTenantId,
   infoVariant,
-  isCompanyCopy,
+  isCompanyFlow,
+  isCompanyOwned,
   scopedTenantId,
   usesStepForm,
   viewerTenantId,
@@ -142,7 +143,9 @@ function LoadFailure({ error, onRetry }: { error: unknown; onRetry: () => void }
 
 /** CR-105 · def có khe + người xem là platform_admin ⇒ editor thư viện (Canvas|Form, xuất bản, gán…). */
 const libraryOf = (def: unknown, isPlatform: boolean): LibraryDef | null =>
-  isPlatform && ((def as LibraryDef | undefined)?.slot || hasTrigger(def))
+  isPlatform &&
+  ((def as LibraryDef | undefined)?.slot || hasTrigger(def)) &&
+  !isCompanyFlow(def as LibraryDef | undefined) // CR-123 FR-10: bản của công ty không phải mẫu Thư viện ⇒ không có "Xuất bản"
     ? (def as LibraryDef)
     : null;
 const isReadOnlyDef = (def: { is_template?: boolean } | undefined, isPlatform: boolean) =>
@@ -286,7 +289,7 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
           pending={save.pending}
           formId={FORM_ID}
           version={processId === undefined ? undefined : version}
-          companyCopy={isCompanyCopy(def, lib)}
+          companyCopy={isCompanyOwned(def, lib)}
         />
       )}
     </form>

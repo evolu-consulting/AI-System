@@ -15,6 +15,7 @@ import {
   type IfDraft,
   ifErrorAt,
 } from "../../lib/if-form";
+import { ifSentence } from "../../lib/if-sentence";
 import { useStepOptionLabel } from "../../lib/step-options";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { SelectField, TextField } from "./Fields";
@@ -53,6 +54,32 @@ export function StageIf(p: StageIfProps) {
     label: p.optLabel?.(s) ?? t(`${K}stepOpt`, { n: s }),
   }));
   const groupErr = err(undefined);
+  const stepName = (s: number | null) =>
+    s === null ? null : (p.optLabel?.(s) ?? t(`${K}stepOpt`, { n: s }));
+  const sentence = ifSentence({
+    join: value.op,
+    conds: value.conds,
+    fromLabel: (c) => sources.find((s) => s.value === c.from)?.label ?? c.from,
+    yes: stepName(value.yes),
+    no: stepName(value.no),
+    words: {
+      if: t(`${K}s.if`),
+      and: t(`${K}s.and`),
+      or: t(`${K}s.or`),
+      goTo: t(`${K}s.goTo`),
+      otherwise: t(`${K}s.otherwise`),
+      nextStep: t(`${K}nextStep`),
+      blank: t(`${K}s.blank`),
+      million: t(`${K}s.million`),
+      billion: t(`${K}s.billion`),
+      ops: Object.fromEntries(
+        ["eq", "ne", "lt", "le", "gt", "ge"].map((o) => [
+          o,
+          t(`process.admin.editor.stage.branch.ops.${o}`),
+        ]),
+      ),
+    },
+  });
   return (
     <fieldset
       aria-label={t(`${K}title`)}
@@ -66,17 +93,28 @@ export function StageIf(p: StageIfProps) {
       {sources.length === 0 ? (
         <p className="text-caption text-muted-foreground">{t(`${K}noSources`)}</p>
       ) : null}
-      <SelectField
-        id={`${id}-if-op`}
-        label={t(`${K}join`)}
-        value={value.op}
-        readOnly={readOnly}
-        options={[
-          { value: "and", label: t(`${K}and`) },
-          { value: "or", label: t(`${K}or`) },
-        ]}
-        onChange={(op) => p.onChange({ op: op === "or" ? "or" : "and" })}
-      />
+      {sentence ? (
+        <p
+          className="m-0 rounded-md bg-muted/50 px-3 py-2 text-body"
+          data-testid="if-sentence"
+          aria-live="polite"
+        >
+          {sentence}
+        </p>
+      ) : null}
+      {value.conds.length > 1 ? (
+        <SelectField
+          id={`${id}-if-op`}
+          label={t(`${K}join`)}
+          value={value.op}
+          readOnly={readOnly}
+          options={[
+            { value: "and", label: t(`${K}and`) },
+            { value: "or", label: t(`${K}or`) },
+          ]}
+          onChange={(op) => p.onChange({ op: op === "or" ? "or" : "and" })}
+        />
+      ) : null}
       {value.conds.map((c, j) => {
         const type = sources.find((s) => s.value === c.from)?.type ?? "string";
         const cell = (k: "from" | "op" | "value") => err(`when.conds.${j}.${k}`);

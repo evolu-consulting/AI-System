@@ -4,10 +4,34 @@ import {
   copyTenantId,
   infoVariant,
   isCompanyCopy,
+  isCompanyFlow,
+  isCompanyOwned,
+  saveModeOf,
   scopedTenantId,
   usesStepForm,
   viewerTenantId,
 } from "./company-copy";
+
+describe("CR-123 FR-10 · một nút cho công ty, Xuất bản chỉ cho mẫu Thư viện", () => {
+  const flow = { tenant_id: "t1", trigger: { event: "x" } };
+  test("flow của công ty (kể cả tự tạo) và bản sao thư viện là bản của công ty", () => {
+    expect(isCompanyFlow(flow)).toBe(true);
+    expect(isCompanyFlow({ trigger: { event: "x" } })).toBe(false);
+    expect(isCompanyOwned(flow, { slot: "s" })).toBe(true);
+    expect(isCompanyOwned({ source_template_id: "s1" }, null)).toBe(true);
+    expect(isCompanyOwned({ trigger: {} }, {})).toBe(false);
+    expect(infoVariant(flow, null)).toBe("copy");
+  });
+  test("công ty: Lưu và áp dụng, không Xuất bản; Thư viện: Lưu nháp + Xuất bản", () => {
+    const company = saveModeOf(true, false);
+    expect(company.labelKey).toBe("process.admin.editor.saveApply");
+    expect(company.noteKey).toBe("process.admin.editor.applyNote");
+    expect(company.canPublish).toBe(false);
+    const library = saveModeOf(false, true);
+    expect(library.canPublish).toBe(true);
+    expect(library.noteKey).toBeNull();
+  });
+});
 
 describe("CR-121 c17b · bản riêng dùng Form bước dọc chung", () => {
   const copy = { source_template_id: "s1", slot_body: { steps: [] } };

@@ -11,7 +11,8 @@ import type { StageFormProps } from "./stage-form-props";
 
 const K = "process.admin.editor.stage.";
 
-export function StageRemind(p: StageFormProps) {
+/** `skipRemind`: ô "Nhắc mỗi (giờ)" đã hiện ở phần chính của node Duyệt ("Hạn trả lời") — không lặp ở Nâng cao. */
+export function StageRemind(p: StageFormProps & { skipRemind?: boolean }) {
   const { t } = useTranslation();
   const { stage, index, errors, readOnly, refs, onChange } = p;
   if (stage.after !== "review") return null;
@@ -42,19 +43,21 @@ export function StageRemind(p: StageFormProps) {
         />
         <Label htmlFor={exId}>{t(`${K}excludeStarter`)}</Label>
       </div>
-      <TextField
-        id={`${stage.uid}-remind`}
-        label={t(`${K}remindEvery`)}
-        type="number"
-        min={4}
-        max={168}
-        value={stage.remind}
-        readOnly={readOnly}
-        description={t(`${K}remindHint`)}
-        alert
-        error={key(remindErr)}
-        onChange={(v) => onChange({ remind: v })}
-      />
+      {p.skipRemind ? null : (
+        <TextField
+          id={`${stage.uid}-remind`}
+          label={t(`${K}remindEvery`)}
+          type="number"
+          min={4}
+          max={168}
+          value={stage.remind}
+          readOnly={readOnly}
+          description={t(`${K}remindHint`)}
+          alert
+          error={key(remindErr)}
+          onChange={(v) => onChange({ remind: v })}
+        />
+      )}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Checkbox

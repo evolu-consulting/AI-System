@@ -96,15 +96,18 @@ test.beforeAll(async () => {
   await assignCompanyFlow(HUB, platform, tenantId, flowId);
 });
 
-test("1 · menu '+ Thêm bước': một nút, nhóm Cơ bản + node dựng sẵn (Duyệt, Nếu, Kết thúc…)", async ({
+test("1 · menu '+ Thêm bước' (quản trị công ty, CR-123 FR-12): chỉ bước nghiệp vụ, không có Nâng cao / Lõi", async ({
   page,
 }) => {
   await openCopy(page);
   await page.getByTestId("flow-add-step").click();
   const menu = page.getByRole("menu");
-  await expect(menu.getByText("Cơ bản", { exact: true })).toBeVisible();
-  for (const id of ["approve", "form", "if", "set", "finish"])
+  for (const id of ["approve", "if", "contracts.esign", "waitEsign", "finish"])
     await expect(menu.getByTestId(`flow-node-${id}`)).toBeVisible();
+  for (const id of ["form", "agent", "tool", "set"])
+    await expect(menu.getByTestId(`flow-node-${id}`)).toHaveCount(0);
+  await expect(menu.getByText("Nâng cao", { exact: true })).toHaveCount(0);
+  await expect(menu.getByText("Lõi", { exact: true })).toHaveCount(0);
   await page.keyboard.press("Escape");
 });
 

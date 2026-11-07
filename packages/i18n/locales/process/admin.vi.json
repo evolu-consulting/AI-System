@@ -1,13 +1,13 @@
 {
   "list": {
     "title": "Quy trình",
-    "subtitle": "Chuỗi giai đoạn do agent hoặc nhóm agent làm. Người kiểm bấm Đạt thì quy trình tự chạy tiếp, Chưa đạt thì agent làm lại theo góp ý.",
+    "subtitle": "Các bước duyệt hợp đồng của công ty: ai duyệt, theo thứ tự nào, khi nào nhờ người ký.",
     "tab": {
       "own": "Của công ty",
-      "templates": "Mẫu · chạy thử"
+      "templates": "Mẫu có sẵn"
     },
     "create": "Tạo quy trình",
-    "copy": "Chép mẫu",
+    "copy": "Dùng mẫu này",
     "run": {
       "button": "Chạy",
       "title": "Chạy quy trình {{name}}",
@@ -18,7 +18,7 @@
     "col": {
       "name": "Quy trình",
       "stages": "Số bước",
-      "running": "Lượt đang chạy",
+      "running": "Đang chạy",
       "updated": "Cập nhật",
       "enabled": "Bật"
     },
@@ -27,15 +27,15 @@
       "on": "Đang bật",
       "off": "Đang tắt"
     },
-    "empty": "Chưa có quy trình. Bấm Tạo quy trình để tạo mới hoặc chép từ mẫu.",
+    "empty": "Chưa có quy trình. Bấm Tạo quy trình để tạo mới hoặc dùng một mẫu có sẵn.",
     "template": "Mẫu",
     "delete": {
       "title": "Xoá quy trình?",
-      "body": "Gõ tên “{{name}}” để xoá. Lượt đang chạy vẫn giữ bản cũ.",
+      "body": "Gõ tên “{{name}}” để xoá. Hợp đồng đang chờ vẫn giữ bản cũ.",
       "prompt": "Gõ lại tên quy trình để xác nhận"
     },
     "toast": {
-      "copied": "Đã chép mẫu",
+      "copied": "Đã dùng mẫu",
       "deleted": "Đã xoá quy trình",
       "started": "Đã bắt đầu lượt chạy"
     },
@@ -51,10 +51,9 @@
     "budgetAi": "Giới hạn chi phí AI mỗi lượt (tuỳ chọn)",
     "enabledLib": "Đang bật",
     "copyBadge": "Bản riêng của công ty",
-    "copySaveNote": "Lưu là áp dụng ngay cho lượt chạy mới; lượt đang chạy giữ bản cũ.",
     "stepsTab": "Các bước",
     "libReadonly": "Quy trình dùng chung — chỉ xem.",
-    "copied": "Đã sao chép và gán cho công ty này",
+    "copied": "Đã áp dụng cho công ty. Hợp đồng gửi duyệt từ giờ theo quy trình này.",
     "copyFailed": "Không sao chép được: {{reason}}",
     "saveBlocked": "Chưa lưu được: {{reason}}",
     "saveBlockedStep": "Chưa lưu được — bước «{{step}}»: {{reason}}",
@@ -75,62 +74,71 @@
     "key": "Ký hiệu chạy",
     "desc": "Mô tả",
     "hint": "Gợi ý nhập",
-    "groups": "Group được chạy (để trống = cả công ty)",
+    "groups": "Phòng ban được chạy (để trống = cả công ty)",
     "budget": "Ngân sách token cả lượt (tuỳ chọn)",
     "enabled": "Bật",
     "stages": "Các bước",
-    "add": "Thêm giai đoạn",
-    "remove": "Xoá giai đoạn",
+    "add": "Thêm bước",
+    "remove": "Xoá bước",
     "up": "Lên",
     "down": "Xuống",
     "stage": {
-      "aria": "Giai đoạn {{n}}: {{name}}",
+      "aria": "Bước {{n}}: {{name}}",
       "name": "Tên bước",
-      "key": "Mã giai đoạn",
+      "key": "Mã bước",
       "executor": "Người thực hiện",
       "kind": {
         "agent": "Agent",
         "team": "Nhóm agent",
         "wait": "Chờ tới ngày",
-        "tool": "Gọi tool",
+        "tool": "Chạy tính năng",
         "set": "Chuẩn bị dữ liệu",
-        "if": "Nếu (rẽ Đúng/Sai)",
+        "if": "Nếu",
         "form": "Người điền form",
         "waitFor": "Chờ N giờ",
-        "waitEvent": "Chờ sự kiện"
+        "waitEvent": "Chờ ký xong"
       },
       "timedWait": {
         "hours": "Số giờ chờ",
-        "event": "Khoá sự kiện",
+        "event": "Mã sự kiện (kỹ thuật)",
         "eventHint": "Gói bắn sự kiện này (vd esign.completed) để bước chạy tiếp.",
         "timeoutH": "Hết hạn sau (giờ)",
         "timeoutHint": "Quá hạn mà chưa có sự kiện: bước tự chạy tiếp và ghi \"Hết hạn chờ\".",
-        "err": "Giá trị không hợp lệ."
+        "err": "Giá trị không hợp lệ.",
+        "eventPick": "Chờ",
+        "events": {
+          "completed": "Khi ký xong",
+          "declined": "Khi bị từ chối",
+          "voided": "Khi bị huỷ",
+          "other": "Sự kiện khác"
+        },
+        "timeoutFlow": "Nếu quá bao nhiêu giờ chưa có kết quả",
+        "timeoutHintFlow": "Quá hạn, quy trình đi tiếp ở nhánh “Hết hạn”."
       },
       "swap": {
-        "family": "Khác họ node — không đổi sang loại này được.",
-        "field_ref": "Giai đoạn {{by}} còn dùng trường “{{field}}” của giai đoạn này."
+        "family": "Khác họ bước — không đổi sang loại này được.",
+        "field_ref": "Bước {{by}} còn dùng trường “{{field}}” của bước này."
       },
       "instruction": "Hướng dẫn",
       "filename": "Tên tệp kết quả",
       "template": "Mẫu kết quả",
       "sections": "Mục bắt buộc",
       "fields": "Trường có cấu trúc",
-      "after": "Sau giai đoạn",
-      "review": "Duyệt bởi Group",
+      "after": "Sau bước này",
+      "review": "Duyệt bởi phòng ban",
       "auto": "Tự chạy tiếp",
-      "reviewGroup": "Nhóm kiểm",
+      "reviewGroup": "Phòng ban duyệt",
       "real": "Hành động thật",
-      "realLocked": "Cần mọi giai đoạn ở bước trước có người kiểm",
-      "adminModeReview": "Hub đang ở chế độ chỉ quản trị: chỉ admin thuộc Nhóm kiểm mới duyệt được (thành viên thường không có hộp việc).",
-      "adminModeAsk": "Hub đang ở chế độ chỉ quản trị: câu hỏi của AI ở giai đoạn này không trả lời được (hộp việc chat đang đóng băng) — lượt chạy sẽ chờ.",
+      "realLocked": "Cần mọi bước ở bước trước có người kiểm",
+      "adminModeReview": "Hub đang ở chế độ chỉ quản trị: chỉ admin thuộc Phòng ban duyệt mới duyệt được (thành viên thường không có hộp việc).",
+      "adminModeAsk": "Hub đang ở chế độ chỉ quản trị: câu hỏi của AI ở bước này không trả lời được (hộp việc chat đang đóng băng) — lượt chạy sẽ chờ.",
       "answerer": "Người trả lời",
       "starter": "Người bắt đầu",
-      "group": "Group",
+      "group": "Phòng ban",
       "user": "Người dùng",
-      "timeout": "Hạn giai đoạn (giây)",
-      "budget": "Ngân sách token giai đoạn",
-      "unnamed": "Giai đoạn mới",
+      "timeout": "Hạn bước (giây)",
+      "budget": "Ngân sách token bước",
+      "unnamed": "Bước mới",
       "removeSection": "Bỏ mục {{name}}",
       "addSection": "Thêm mục",
       "fieldKey": "Mã trường",
@@ -149,23 +157,23 @@
       "nextStep": "Chuyển sang bước sau",
       "splitStep": "Tách sang bước riêng",
       "back": "Nếu bị trượt",
-      "backHint": "Người duyệt có thể chọn quay lại khi chấm Chưa đạt. Tối đa 3 lần quay lại cho mỗi lần chạy.",
+      "backHint": "Người duyệt có thể chọn quay lại khi chấm Trả lại. Tối đa 3 lần quay lại cho mỗi lần chạy.",
       "backOption": "Quay lại bước {{step}}",
       "backOptionHint": "{{names}}",
       "backNone": "Bước đầu không có bước nào phía trước.",
       "wait": {
         "title": "Chờ tới ngày",
-        "hint": "Dừng giai đoạn này tới một ngày hẹn rồi tự chạy tiếp. Không dùng agent và không có bước duyệt.",
+        "hint": "Dừng bước này tới một ngày hẹn rồi tự chạy tiếp. Không dùng agent và không có bước duyệt.",
         "valid": "Hợp lệ",
         "from": "Lấy ngày từ",
         "fromPh": "Chọn nguồn ngày…",
         "fromInput": "Thông tin đầu vào · {{label}}",
-        "fromField": "Kết quả giai đoạn {{n}} · {{stage}} · {{field}}",
-        "fromNone": "Chưa có nguồn ngày nào. Thêm trường đầu vào kiểu Ngày, hoặc khai báo trường kiểu Ngày ở giai đoạn trước.",
+        "fromField": "Kết quả bước {{n}} · {{bước}} · {{field}}",
+        "fromNone": "Chưa có nguồn ngày nào. Thêm trường đầu vào kiểu Ngày, hoặc khai báo trường kiểu Ngày ở bước trước.",
         "offset": "Chênh lệch (ngày)",
         "offsetHint": "Số âm = trước ngày gốc, 0 = đúng ngày, số dương = sau.",
         "time": "Giờ trong ngày",
-        "tz": "Theo múi giờ công ty: {{tz}} ({{offset}}). Ngày hẹn được chốt lúc lượt chạy vào giai đoạn này; đổi múi giờ công ty sau đó không tính lại.",
+        "tz": "Theo múi giờ công ty: {{tz}} ({{offset}}). Ngày hẹn được chốt lúc lượt chạy vào bước này; đổi múi giờ công ty sau đó không tính lại.",
         "tzTemplate": "Quy trình mẫu: tính theo múi giờ của công ty chạy quy trình (mặc định {{tz}}).",
         "tzLoading": "Đang tải múi giờ…",
         "tzError": "Không tải được múi giờ công ty.",
@@ -181,30 +189,30 @@
           "source": "Chọn nguồn ngày.",
           "offset": "Từ −365 đến 365 ngày.",
           "time": "Nhập giờ dạng HH:mm, ví dụ 09:00.",
-          "WAIT_INVALID": "Nguồn ngày không hợp lệ. Chọn trường nhập kiểu Ngày hoặc trường Ngày của giai đoạn ở bước trước."
+          "WAIT_INVALID": "Nguồn ngày không hợp lệ. Chọn trường nhập kiểu Ngày hoặc trường Ngày của bước ở bước trước."
         }
       },
       "tool": {
-        "title": "Gọi tool",
-        "hint": "Gọi một workflow của công ty bằng quyền của người bắt đầu, không dùng agent. Kết quả được lọc theo các trường bạn khai báo ở mục Kết quả.",
-        "pick": "Tool",
-        "pickPh": "Chọn tool…",
+        "title": "Chạy tính năng",
+        "hint": "Chạy một tính năng của công ty bằng quyền của người bắt đầu. Kết quả được lọc theo các trường bạn khai báo ở mục Kết quả.",
+        "pick": "Tính năng",
+        "pickPh": "Chọn tính năng…",
         "option": "{{name}} · {{key}}",
-        "loading": "Đang tải tool…",
-        "loadError": "Không tải được danh sách tool.",
-        "empty": "Chưa có tool nào được bật cho công ty — liên hệ quản trị nền tảng",
-        "template": "Quy trình mẫu không chọn được “Gọi tool”. Chép mẫu về công ty để chọn tool.",
-        "sideEffect": "Tác dụng phụ",
-        "sideEffectNote": "Tool này tạo tác dụng thật. Giai đoạn cần bật “Hành động thật”, và mọi giai đoạn ở bước trước phải có người kiểm.",
-        "argSource": "Nguồn của tham số {{name}}",
-        "argValue": "Giá trị của tham số {{name}}",
+        "loading": "Đang tải danh sách tính năng…",
+        "loadError": "Không tải được danh sách tính năng.",
+        "empty": "Chưa có tính năng nào được bật cho công ty — liên hệ quản trị nền tảng",
+        "template": "Quy trình mẫu không chọn được “Chạy tính năng”. Dùng mẫu này để chọn.",
+        "sideEffect": "Việc này có tác động thật (gửi đi, ghi dữ liệu)",
+        "sideEffectNote": "Tính năng này tạo tác động thật. Bước cần bật “Hành động thật”, và mọi bước ở phía trước phải có người duyệt.",
+        "argSource": "Thông tin cần điền: {{name}} lấy từ đâu",
+        "argValue": "Giá trị của {{name}}",
         "from": {
           "const": "Giá trị cố định",
           "input": "Thông tin đầu vào",
-          "field": "Kết quả giai đoạn trước"
+          "field": "Kết quả bước trước"
         },
         "argPh": "Chọn nguồn…",
-        "fieldOpt": "Giai đoạn {{n}} · {{field}}",
+        "fieldOpt": "Bước {{n}} · {{field}}",
         "inputOpt": "{{key}} · {{label}}",
         "required": "bắt buộc",
         "paramType": {
@@ -219,43 +227,53 @@
           "true": "Có",
           "false": "Không"
         },
-        "fileUnsupported": "Tham số tệp chưa dùng được trong quy trình, nên tool này chưa chọn được.",
+        "fileUnsupported": "Thông tin kiểu tệp chưa dùng được trong quy trình, nên tính năng này chưa chọn được.",
         "err": {
-          "pick": "Chọn một tool.",
-          "argRequired": "Chọn nguồn cho tham số này.",
-          "TOOL_INVALID": "Tool chưa khai báo đủ: điền mọi tham số bắt buộc từ nguồn có thật (tối đa 20 tham số, không dùng tham số tệp).",
-          "TOOL_SIDE_EFFECT": "Tool có tác dụng phụ chỉ dùng được khi giai đoạn bật “Hành động thật”.",
-          "sideEffectLocked": "Tool có tác dụng phụ cần “Hành động thật”, nhưng giai đoạn này không bật được: mọi giai đoạn ở bước trước phải có người kiểm.",
+          "pick": "Chọn một tính năng.",
+          "argRequired": "Chọn nguồn cho thông tin này.",
+          "TOOL_INVALID": "Tính năng chưa điền đủ: điền mọi thông tin bắt buộc từ nguồn có thật (tối đa 20 thông tin, không dùng tệp).",
+          "TOOL_SIDE_EFFECT": "Tính năng có tác động thật chỉ dùng được khi bước bật “Hành động thật”.",
+          "sideEffectLocked": "Tính năng có tác động thật cần “Hành động thật”, nhưng bước này không bật được: mọi bước ở phía trước phải có người duyệt.",
           "ref": "Tính năng này chưa bật cho công ty hoặc không còn."
         }
       },
       "if": {
-        "title": "Nếu (rẽ Đúng/Sai)",
-        "hint": "Đứng một mình trong bước, chạy ngay. Điều kiện đúng thì nhảy tới bước Đúng, sai thì tới bước Sai (bỏ trống = bước kế). Bước bị nhảy qua hiện là “Bỏ qua”.",
+        "title": "Nếu",
+        "hint": "Điều kiện đúng thì đi tới bước “Thì đi tới”, không thì đi tới bước “Ngược lại”. Bỏ trống = bước tiếp theo. Bước bị bỏ qua hiện là “Bỏ qua”.",
         "noSources": "Chưa có trường kết quả ở bước trước hay đầu vào để so sánh.",
         "join": "Kết hợp điều kiện",
         "and": "Tất cả đều đúng (VÀ)",
         "or": "Một điều kiện đúng là đủ (HOẶC)",
         "from": "Nếu",
         "fromPh": "Chọn trường hoặc đầu vào…",
-        "op": "Phép so sánh",
+        "op": "So sánh",
         "value": "Giá trị",
         "add": "Thêm điều kiện",
         "remove": "Xoá điều kiện {{n}}",
         "delete": "Xoá",
-        "max": "Tối đa 6 điều kiện.",
-        "yes": "Đúng thì tới bước",
-        "no": "Sai thì tới bước",
+        "max": "Tối đa 6 điều kiện. Ví dụ: Giá trị > 100 triệu → Giám đốc duyệt.",
+        "yes": "Thì đi tới",
+        "no": "Ngược lại đi tới",
         "stepPh": "Chọn bước…",
-        "nextStep": "Bước kế",
+        "nextStep": "Bước tiếp theo",
         "stepOpt": "Bước {{n}}",
         "err": {
           "IF_INVALID": "Điều kiện Nếu chưa hợp lệ: kiểm tra nguồn, phép so sánh, giá trị và bước đích (phải đứng sau bước này)."
+        },
+        "s": {
+          "if": "Nếu",
+          "and": "và",
+          "or": "hoặc",
+          "goTo": "đi tới",
+          "otherwise": "ngược lại",
+          "blank": "…",
+          "million": "triệu",
+          "billion": "tỷ"
         }
       },
       "branch": {
         "title": "Rẽ nhánh",
-        "hint": "Luật đầu tiên khớp được dùng. Không khớp luật nào thì sang bước kế. Giai đoạn bị nhảy qua hiện là “Bỏ qua”.",
+        "hint": "Luật đầu tiên khớp được dùng. Không khớp luật nào thì sang bước tiếp theo. Bước bị nhảy qua hiện là “Bỏ qua”.",
         "field": "Nếu trường",
         "op": "Phép so sánh",
         "value": "Giá trị",
@@ -273,15 +291,15 @@
           "gt": "lớn hơn",
           "ge": "lớn hơn hoặc bằng"
         },
-        "locked": "Chỉ giai đoạn đứng một mình trong bước mới rẽ nhánh được.",
+        "locked": "Chỉ bước đứng một mình trong bước mới rẽ nhánh được.",
         "noFields": "Khai báo trường có cấu trúc ở mục Kết quả trước.",
         "max": "Tối đa 10 luật.",
         "err": {
-          "field": "Luật {{n}}: chọn trường của giai đoạn này.",
+          "field": "Luật {{n}}: chọn trường của bước này.",
           "op": "Luật {{n}}: phép so sánh này chỉ dùng cho trường Số hoặc Ngày.",
           "value": "Luật {{n}}: nhập giá trị đúng kiểu của trường.",
-          "goto": "Luật {{n}}: chọn bước đích, phải đứng sau giai đoạn này.",
-          "real": "Bước đích có Hành động thật nên giai đoạn này phải do người duyệt (Sau giai đoạn = Duyệt bởi Group).",
+          "goto": "Luật {{n}}: chọn bước đích, phải đứng sau bước này.",
+          "real": "Bước đích có Hành động thật nên bước này phải do người duyệt (Sau bước = Duyệt bởi Phòng ban).",
           "BRANCH_INVALID": "Luật rẽ nhánh chưa hợp lệ: kiểm tra trường, phép so sánh, giá trị và bước đích."
         }
       },
@@ -290,13 +308,13 @@
       "escalate": "Chuyển cấp nếu chưa ai kiểm",
       "escalateAfter": "Chuyển cấp sau (giờ)",
       "escalateGroup": "Chuyển cấp tới nhóm",
-      "escalateHint": "Nhóm này được thêm vào việc kiểm; nhóm kiểm ban đầu vẫn duyệt được. Chỉ chuyển cấp một lần và không tự chấm Đạt.",
+      "escalateHint": "Nhóm này được thêm vào việc kiểm; phòng ban duyệt ban đầu vẫn duyệt được. Chỉ chuyển cấp một lần và không tự chấm Duyệt.",
       "excludeStarter": "Người bắt đầu lượt chạy không được duyệt bước này",
       "err": {
         "remind": "Từ 4 đến 168 giờ.",
         "escalateAfter": "Từ 4 đến 2.160 giờ.",
-        "escalateGroup": "Chọn nhóm khác với nhóm kiểm.",
-        "ESCALATE_INVALID": "Cấu hình chuyển cấp chưa hợp lệ: chọn nhóm khác nhóm kiểm và thời gian từ 4 đến 2.160 giờ."
+        "escalateGroup": "Chọn nhóm khác với phòng ban duyệt.",
+        "ESCALATE_INVALID": "Cấu hình chuyển cấp chưa hợp lệ: chọn nhóm khác phòng ban duyệt và thời gian từ 4 đến 2.160 giờ."
       },
       "set": {
         "title": "Ghi giá trị (set)",
@@ -329,7 +347,7 @@
       },
       "form": {
         "title": "Trường của form",
-        "hint": "Người thuộc nhóm kiểm của bước này sẽ điền các trường dưới đây. Giá trị được ghi vào kết quả của bước để các bước sau và bước “Nếu” đọc được.",
+        "hint": "Người thuộc phòng ban duyệt của bước này sẽ điền các trường dưới đây. Giá trị được ghi vào kết quả của bước để các bước sau và bước “Nếu” đọc được.",
         "add": "Thêm trường",
         "field": "Trường {{n}}",
         "label": "Nhãn trường {{n}}",
@@ -379,11 +397,15 @@
           "generic": "Các trường form chưa hợp lệ, kiểm tra lại nhãn, mã và giới hạn.",
           "FORM_INVALID": "Bước điền form chưa hợp lệ: phải có người kiểm (nhóm), không dùng hành động thật, và kết quả phải khớp các trường form."
         }
-      }
+      },
+      "approver": "Ai duyệt",
+      "approverPh": "Chọn phòng ban…",
+      "answerBy": "Hạn trả lời (giờ)",
+      "answerByHint": "Quá hạn, hệ thống nhắc người duyệt. Từ 4 đến 168 giờ."
     },
     "limits": "Giới hạn của một lượt chạy",
-    "limitsText": "Tối đa 7 ngày · 5 lượt cùng lúc · làm lại ≤ 3 lần mỗi giai đoạn · nhắc người kiểm sau 1 ngày. Chạm giới hạn → “Cần người quyết”.",
-    "readonly": "Đây là quy trình mẫu, chỉ xem. Chép mẫu để chỉnh sửa.",
+    "limitsText": "Hợp đồng chờ quá 7 ngày sẽ báo người phụ trách.",
+    "readonly": "Đây là quy trình mẫu, chỉ xem. Dùng mẫu này để chỉnh sửa.",
     "runs": {
       "empty": "Chưa có lượt chạy nào",
       "waitUntil": "Chờ tới {{date}}",
@@ -393,14 +415,14 @@
         "run": "Lượt",
         "starter": "Người bắt đầu",
         "status": "Trạng thái",
-        "stage": "Giai đoạn",
+        "stage": "Bước",
         "started": "Bắt đầu"
       }
     },
     "choose": "Chọn…",
     "gone": "(đã tắt hoặc không còn)",
-    "removeGroup": "Bỏ Group {{name}}",
-    "addGroup": "Thêm Group",
+    "removeGroup": "Bỏ Phòng ban {{name}}",
+    "addGroup": "Thêm Phòng ban",
     "sources": {
       "title": "Nguồn của quy trình",
       "add": "Thêm nguồn",
@@ -409,17 +431,17 @@
       "declare": "Khai báo nguồn",
       "max": "Tối đa 20 nguồn cho một quy trình.",
       "gone": "Nguồn không còn tồn tại. Bỏ nguồn này trước khi lưu.",
-      "inUse": "Nguồn {{key}} đang được giai đoạn {{n}} dùng. Bỏ khỏi giai đoạn trước."
+      "inUse": "Nguồn {{key}} đang được bước {{n}} dùng. Bỏ khỏi bước trước."
     },
     "stageSources": {
-      "title": "Nguồn của giai đoạn",
+      "title": "Nguồn của bước",
       "allowlist": "Đường dẫn cho phép — {{key}}",
       "allowlistHint": "Mỗi dòng một mẫu (vd. docs/**/*.md). Để trống = cả nguồn, vẫn tính trần 50 MB / 2.000 tệp.",
-      "max": "Tối đa 5 nguồn mỗi giai đoạn.",
+      "max": "Tối đa 5 nguồn mỗi bước.",
       "none": "Hãy thêm nguồn cho quy trình ở thẻ “Nguồn của quy trình” trước.",
-      "notInDef": "Giai đoạn {{n}} dùng nguồn chưa nằm trong danh sách nguồn của quy trình.",
-      "autoOutput": "Giai đoạn này sẽ bắt buộc có mục “## Nguồn tham chiếu” trong kết quả (tự thêm).",
-      "budget": "Ngân sách mặc định 200.000 token nếu giai đoạn không đặt."
+      "notInDef": "Bước {{n}} dùng nguồn chưa nằm trong danh sách nguồn của quy trình.",
+      "autoOutput": "Bước này sẽ bắt buộc có mục “## Nguồn tham chiếu” trong kết quả (tự thêm).",
+      "budget": "Ngân sách mặc định 200.000 token nếu bước không đặt."
     },
     "inputs": {
       "title": "Thông tin đầu vào",
@@ -444,7 +466,7 @@
     },
     "mustKnow": {
       "label": "Điều phải biết trước khi làm",
-      "hint": "Mỗi dòng một mục. Agent sẽ hỏi những điều chưa biết (tối đa 3 lần hỏi mỗi giai đoạn)."
+      "hint": "Mỗi dòng một mục. Agent sẽ hỏi những điều chưa biết (tối đa 3 lần hỏi mỗi bước)."
     },
     "err": {
       "glob": {
@@ -468,14 +490,16 @@
     "ttl": "Thời hạn lượt chạy (ngày)",
     "ttlHint": "Lượt chạy chưa xong quá số ngày này sẽ hết hạn. Lượt đang chạy không đổi khi bạn sửa.",
     "noExpiry": "Không hết hạn",
-    "limitsTextTtl": "Tối đa {{days}} ngày · 5 lượt cùng lúc · làm lại ≤ 3 lần mỗi giai đoạn · nhắc người kiểm sau 1 ngày. Chạm giới hạn → “Cần người quyết”.",
-    "limitsTextNoTtl": "Không hết hạn · 5 lượt cùng lúc · làm lại ≤ 3 lần mỗi giai đoạn · nhắc người kiểm sau 1 ngày. Chạm giới hạn → “Cần người quyết”.",
-    "limitsWait": "Lượt đang chờ tới ngày không tính vào 5 lượt cùng lúc."
+    "limitsTextTtl": "Hợp đồng chờ quá {{days}} ngày sẽ báo người phụ trách.",
+    "limitsTextNoTtl": "Không giới hạn thời gian chờ.",
+    "limitsWait": "Lượt đang chờ tới ngày không tính vào 5 lượt cùng lúc.",
+    "applyNote": "Áp dụng cho hợp đồng gửi từ bây giờ; hợp đồng đang chờ giữ bản cũ.",
+    "saveApply": "Lưu và áp dụng"
   },
   "run": {
     "title": "Lượt chạy · {{name}}",
     "viewOutput": "Xem kết quả",
-    "outputTitle": "Kết quả giai đoạn {{stage}} · v{{n}}",
+    "outputTitle": "Kết quả bước {{bước}} · v{{n}}",
     "noContent": "Không xem nội dung tin nhắn phòng ở đây.",
     "back": "Về danh sách",
     "tab": {
@@ -484,7 +508,7 @@
       "log": "Nhật ký"
     },
     "col": {
-      "stage": "Giai đoạn",
+      "stage": "Bước",
       "executor": "Làm bởi",
       "status": "Trạng thái",
       "attempt": "Lần chạy",
@@ -492,7 +516,7 @@
     },
     "decision": {
       "region": "Cần người quyết",
-      "title": "Quy trình dừng ở giai đoạn {{stage}}",
+      "title": "Quy trình dừng ở bước {{bước}}",
       "note": "Ghi chú (tuỳ chọn)",
       "waiting": "Đang chờ người có quyền quyết định",
       "done": "Đã ghi quyết định"
@@ -505,7 +529,7 @@
     },
     "log": {
       "at": "Thời gian",
-      "stage": "Giai đoạn",
+      "stage": "Bước",
       "kind": "Loại",
       "actor": "Người",
       "detail": "Chi tiết",
@@ -524,23 +548,23 @@
     }
   },
   "apiError": {
-    "FLOW_NODE_CONFIG_INVALID": "Cấu hình node không hợp lệ. Kiểm tra các ô được đánh dấu.",
+    "FLOW_NODE_CONFIG_INVALID": "Có bước chưa điền đúng. Mở các bước có ô báo lỗi để sửa.",
     "PROCESS_NOT_FOUND": "Không tìm thấy quy trình hoặc bạn không được chạy.",
     "TOO_MANY_PROCESS_RUNS": "Công ty đang chạy tối đa {{max}} quy trình. Thử lại sau.",
     "PROCESS_KEY_TAKEN": "Ký hiệu này đã được dùng.",
-    "PROCESS_DEF_INCOMPLETE": "Chọn Group kiểm cho mọi giai đoạn có người kiểm trước khi bật.",
-    "PROCESS_REF_INVALID": "Agent/nhóm/Group này đã bị tắt hoặc không còn.",
+    "PROCESS_DEF_INCOMPLETE": "Chọn phòng ban duyệt cho mọi bước có người duyệt trước khi bật.",
+    "PROCESS_REF_INVALID": "Agent/nhóm/phòng ban này đã bị tắt hoặc không còn.",
     "TEMPLATE_READ_ONLY": "Mẫu chỉ do quản trị nền tảng sửa. Hãy chép mẫu.",
-    "SOURCE_NOT_FOUND": "Quy trình dùng nguồn mã mà tenant này chưa có. Tạo nguồn trước (mục Nguồn), rồi lưu lại.",
+    "SOURCE_NOT_FOUND": "Quy trình dùng một nguồn dữ liệu mà công ty chưa có. Tạo nguồn trước (mục Nguồn), rồi lưu lại.",
     "PROCESS_DEF_INVALID": "Quy trình chưa hợp lệ. Kiểm tra các ô báo lỗi.",
     "NOT_PROCESS_DECIDER": "Bạn không có quyền quyết định lượt chạy này.",
     "PROCESS_RUN_STATE": "Lượt chạy đã đổi trạng thái. Đã tải lại.",
     "NO_OUTPUT": "Chưa có bản kết quả nào để dùng.",
-    "PROCESS_IN_USE": "Quy trình đang là mặc định hoặc đang gán cho tenant: không xoá/tắt/đổi ký hiệu được.",
+    "PROCESS_IN_USE": "Quy trình này đang được công ty dùng. Vào Công ty › Quy trình, chọn quy trình khác rồi quay lại xoá hoặc tắt.",
     "PROCESS_NOT_PUBLISHED": "Quy trình chưa xuất bản. Xuất bản trước.",
     "PROCESS_PUBLISH_INVALID": "Quy trình chưa hợp lệ để xuất bản. Xem chỗ sai bên dưới.",
     "SLOT_SHAPE_UNSUPPORTED": "Khe này chỉ nhận các bước tuần tự (không song song, không nhánh). Sửa lại ở Sơ đồ.",
-    "SLOT_GROUPS_MISSING": "Có tenant thiếu phòng ban theo mã mà quy trình dùng. Xem mã thiếu bên dưới.",
+    "SLOT_GROUPS_MISSING": "Có công ty chưa có phòng ban mà quy trình cần. Thêm phòng ban đó ở Người dùng › Phòng ban rồi lưu lại.",
     "SLOT_BODY_INVALID": "Nội dung Form chưa hợp lệ. Xem chỗ sai bên dưới.",
     "SLOT_UNKNOWN": "Loại việc này chưa có trên hệ thống. Bật ứng dụng tương ứng cho công ty, hoặc nhờ quản trị nền tảng bổ sung.",
     "NOT_LIBRARY_DEF": "Quy trình này là bản riêng của công ty, không phải quy trình dùng chung. Mở nó để sửa trực tiếp.",
@@ -550,19 +574,19 @@
   "validate": {
     "nameRequired": "Nhập tên quy trình.",
     "keyFormat": "Ký hiệu 2–32 ký tự: chữ thường, số, dấu gạch ngang.",
-    "stageKeyDup": "Mã giai đoạn bị trùng.",
+    "stageKeyDup": "Mã bước bị trùng.",
     "fileName": "Tên tệp dạng ten-tep.md (chữ thường, số, . _ -).",
     "templateRequired": "Nhập mẫu kết quả.",
     "sectionRequired": "Cần ít nhất một mục bắt buộc.",
     "fieldKey": "Mã trường: chữ thường, số, gạch dưới, bắt đầu bằng chữ.",
-    "realAction": "Hành động thật cần giai đoạn ngay trước có người kiểm.",
+    "realAction": "Hành động thật cần bước ngay trước có người kiểm.",
     "timeout": "Từ 60 đến 3600 giây.",
     "budget": "Từ 1.000 đến 5.000.000 hoặc để trống.",
-    "stageCount": "Cần 1–10 giai đoạn.",
+    "stageCount": "Cần 1–10 bước.",
     "tooLong": "Nội dung quá dài.",
     "tooLongN": "Tối đa {{max}} ký tự.",
     "tooMany": "Quá số lượng cho phép.",
-    "stageKey": "Mã giai đoạn 1–32 ký tự: chữ thường, số, dấu gạch ngang.",
+    "stageKey": "Mã bước 1–32 ký tự: chữ thường, số, dấu gạch ngang.",
     "executor": "Chọn agent hoặc nhóm agent.",
     "answerer": "Chọn người trả lời."
   },
@@ -578,26 +602,26 @@
       "notLater": "Chỉ nối được tới bước đứng sau.",
       "ifReal": "Nhánh Nếu không thể tới bước có hành động thật — chọn bước khác.",
       "noNext": "Bước này kết thúc hoặc chờ sự kiện, không có bước đi tiếp.",
-      "noPort": "Thả dây từ cổng Đúng hoặc Sai của node Nếu.",
+      "noPort": "Thả dây từ cổng Đúng hoặc Sai của bước Nếu.",
       "done": {
         "next": "Đã đặt bước đi tiếp.",
         "yes": "Đã đặt bước khi Đúng.",
         "no": "Đã đặt bước khi Sai."
       }
     },
-    "region": "Chi tiết giai đoạn",
+    "region": "Chi tiết bước",
     "drawer": {
       "close": "Đóng ngăn chi tiết"
     },
     "toolbar": {
-      "addStage": "Thêm giai đoạn",
+      "addStage": "Thêm bước",
       "addStep": "Thêm bước",
       "arrange": "Sắp xếp"
     },
     "step": {
       "title": "Bước {{n}}",
       "parallel": "Bước {{n}} — chạy song song",
-      "addTo": "Thêm giai đoạn vào bước {{n}}"
+      "addTo": "Thêm bước vào bước {{n}}"
     },
     "join": "Chờ đủ {{n}}/{{n}}",
     "node": {
@@ -607,8 +631,8 @@
       "gateAuto": "Tự động",
       "error": "Có lỗi",
       "wait": "Chờ tới ngày",
-      "tool": "Gọi tool",
-      "sideEffect": "Tác dụng phụ",
+      "tool": "Chạy tính năng",
+      "sideEffect": "Tác động thật",
       "branch_one": "Rẽ nhánh · {{count}} luật",
       "branch_other": "Rẽ nhánh · {{count}} luật"
     },
@@ -619,31 +643,31 @@
     "list": {
       "branch": "Rẽ nhánh: luật {{n}} tới bước {{step}}"
     },
-    "empty": "Chưa có giai đoạn. Thêm giai đoạn đầu tiên.",
+    "empty": "Chưa có bước. Thêm bước đầu tiên.",
     "loading": "Đang tải sơ đồ…",
     "loadFailed": "Không tải được sơ đồ. Đang dùng dạng danh sách.",
     "retry": "Thử lại",
     "readOnly": "Quy trình mẫu: chỉ xem, không kéo thả được.",
     "confirmRemove": {
-      "title": "Xoá giai đoạn “{{name}}”?",
+      "title": "Xoá bước “{{name}}”?",
       "body": "Các lựa chọn “quay lại” trỏ tới bước này sẽ bị bỏ."
     },
     "shortcuts": {
       "title": "Phím tắt",
       "move": "Alt + ←/→: chuyển sang bước trước/sau · Alt + ↑/↓: đổi thứ tự trong bước",
-      "open": "Enter: mở chi tiết · Delete: xoá giai đoạn"
+      "open": "Enter: mở chi tiết · Delete: xoá bước"
     },
     "live": {
-      "moved": "Giai đoạn {{n}} chuyển sang bước {{step}}",
-      "reordered": "Giai đoạn {{n}} đổi thứ tự trong bước {{step}}",
-      "rejected": "Không chuyển được: bước {{step}} đã đủ 3 giai đoạn"
+      "moved": "Bước {{n}} chuyển sang bước {{step}}",
+      "reordered": "Bước {{n}} đổi thứ tự trong bước {{step}}",
+      "rejected": "Không chuyển được: bước {{step}} đã đủ 3 bước"
     },
     "err": {
-      "stepFull": "Bước {{step}} đã đủ 3 giai đoạn song song.",
+      "stepFull": "Bước {{step}} đã đủ 3 bước song song.",
       "stagesMax": "Quy trình tối đa {{max}} bước — đổi trong Cài đặt nền tảng.",
-      "step": "Số bước không hợp lệ. Hãy kéo giai đoạn vào đúng cột.",
-      "realStep": "Hành động thật chỉ dùng được khi mọi giai đoạn của bước trước đều có người kiểm.",
-      "backTarget": "Chỉ quay lại được các bước đứng trước giai đoạn này."
+      "step": "Số bước không hợp lệ. Hãy kéo bước vào đúng cột.",
+      "realStep": "Hành động thật chỉ dùng được khi mọi bước của bước trước đều có người kiểm.",
+      "backTarget": "Chỉ quay lại được các bước đứng trước bước này."
     },
     "controls": {
       "title": "Điều khiển canvas",
@@ -684,36 +708,36 @@
       "install": "Lệnh cài tối đa 1000 ký tự.",
       "source": "Chọn nguồn để tự sửa mã.",
       "allow": "Tối đa 20 mẫu, mỗi mẫu là glob hợp lệ.",
-      "AUTOFIX_EXECUTOR": "Stage tự sửa mã phải do agent thực hiện.",
-      "AUTOFIX_REVIEW": "Stage tự sửa mã luôn phải qua người duyệt. Chọn \"Duyệt\" ở mục Sau stage.",
-      "AUTOFIX_MAX": "Mỗi quy trình chỉ có một stage tự sửa mã. Đã có ở stage \"{{stage}}\".",
+      "AUTOFIX_EXECUTOR": "Bước tự sửa mã phải do agent thực hiện.",
+      "AUTOFIX_REVIEW": "Bước tự sửa mã luôn phải qua người duyệt. Chọn \"Duyệt\" ở mục Sau bước.",
+      "AUTOFIX_MAX": "Mỗi quy trình chỉ có một bước tự sửa mã. Đã có ở bước \"{{bước}}\".",
       "sourceKind": "Nguồn \"{{key}}\" thuộc loại {{kind}}, không sửa được. Chọn nguồn git_remote hoặc local_path."
     }
   },
   "apply": {
     "title": "Áp bản sửa",
     "kind": "Áp bản sửa",
-    "hint": "Đẩy nhánh và mở PR bằng bản sửa người vừa duyệt ở bước trước. Chạy bằng chương trình, không dùng agent. Chế độ áp lấy theo nguồn của stage tự sửa mã.",
+    "hint": "Đẩy nhánh và mở PR bằng bản sửa người vừa duyệt ở bước trước. Chạy bằng chương trình, không dùng agent. Chế độ áp lấy theo nguồn của bước tự sửa mã.",
     "realAction": "Hành động thật",
     "fixed": "Bật (cố định)",
     "after": {
       "fixed": "Chạy tiếp (cố định)"
     },
     "valid": "Hợp lệ",
-    "note": "Nhánh đẩy lên có tên ai/<run>/<stage>. Không bao giờ đẩy thẳng nhánh mặc định.",
+    "note": "Nhánh đẩy lên có tên ai/<run>/<bước>. Không bao giờ đẩy thẳng nhánh mặc định.",
     "err": {
-      "APPLY_NO_AUTOFIX": "Stage Áp phải đứng ngay sau stage tự sửa mã.",
-      "APPLY_MAX": "Mỗi quy trình chỉ có một stage Áp. Đã có ở stage \"{{stage}}\".",
-      "APPLY_REAL": "Stage Áp phải bật \"Hành động thật\".",
-      "APPLY_AFTER": "Stage Áp phải chạy tiếp sau khi xong, không có bước duyệt.",
-      "APPLY_FIELDS": "Stage Áp không có nguồn, tự sửa mã, ngân sách token hay kiến thức cần biết."
+      "APPLY_NO_AUTOFIX": "Bước Áp phải đứng ngay sau bước tự sửa mã.",
+      "APPLY_MAX": "Mỗi quy trình chỉ có một bước Áp. Đã có ở bước \"{{bước}}\".",
+      "APPLY_REAL": "Bước Áp phải bật \"Hành động thật\".",
+      "APPLY_AFTER": "Bước Áp phải chạy tiếp sau khi xong, không có bước duyệt.",
+      "APPLY_FIELDS": "Bước Áp không có nguồn, tự sửa mã, ngân sách token hay kiến thức cần biết."
     }
   },
   "showcase": {
-    "title": "Flow mẫu: Duyệt đề nghị chi",
+    "title": "Quy trình mẫu: Duyệt đề nghị chi",
     "subtitle": "Song song → chờ đủ → rẽ nhánh if/else. Chạy thử ngay, không cần AI.",
-    "missing": "Chưa có flow mẫu trong công ty này. Nhờ quản trị chạy lệnh seed flow mẫu (chỉ tenant demo).",
-    "canvas": "Sơ đồ flow (chỉ đọc)",
+    "missing": "Chưa có quy trình mẫu trong công ty này. Nhờ quản trị chạy lệnh seed quy trình mẫu (chỉ công ty demo).",
+    "canvas": "Sơ đồ quy trình (chỉ đọc)",
     "try": "Chạy thử",
     "run": "Chạy thử",
     "live": "Tiến độ trực tiếp",
@@ -727,8 +751,8 @@
       "number": "Nhập một số."
     },
     "swap": {
-      "title": "Đổi node",
-      "hint": "Kiểm tra \"canSwap\" đã được áp dụng: trình soạn thảo cho đổi node qua lại giữa các họ, trừ khi các bước sau đang dùng field của node này.",
+      "title": "Đổi bước",
+      "hint": "Kiểm tra \"canSwap\" đã được áp dụng: trình soạn thảo cho đổi bước qua lại giữa các họ, trừ khi các bước sau đang dùng field của bước này.",
       "family": {
         "work": "Làm việc",
         "wait": "Chờ",
@@ -739,16 +763,16 @@
       "no": "chỉ một loại",
       "can": {
         "ok": "Đổi được",
-        "family": "Khác họ node.",
+        "family": "Khác họ bước.",
         "field_ref": "Mất field bước sau đang dùng."
       },
-      "pick": "Giai đoạn"
+      "pick": "Bước"
     },
     "review": {
       "stage": "Duyệt: {{name}}",
-      "pass": "Đạt",
+      "pass": "Duyệt",
       "reject": "Từ chối",
-      "rejectNote": "Từ chối từ trang flow mẫu"
+      "rejectNote": "Từ chối từ trang quy trình mẫu"
     }
   },
   "library": {
@@ -800,14 +824,14 @@
       "status": "Trạng thái"
     },
     "inUse": {
-      "default": "Quy trình mặc định của khe: không xoá/tắt được. Đổi mặc định trước.",
-      "assigned": "Đang có tenant dùng: bỏ gán trước.",
-      "assignedN": "Đang được {{n}} tenant dùng — bỏ gán trước khi xoá",
+      "default": "Quy trình mặc định của loại việc: không xoá/tắt được. Đổi mặc định trước.",
+      "assigned": "Đang có công ty dùng: bỏ gán trước.",
+      "assignedN": "Đang được {{n}} công ty dùng — bỏ gán trước khi xoá",
       "published": "Đã xuất bản: chỉ xoá được bản nháp chưa xuất bản."
     },
     "system": {
       "badge": "Hệ thống",
-      "hint": "Nút hệ thống của khe: không xoá/đổi được",
+      "hint": "Nút hệ thống của loại việc: không xoá/đổi được",
       "locked": "Nút hệ thống của Sổ Hợp Tác: khoá, không xoá hoặc đổi.",
       "route": "Hệ thống: chọn bước kế",
       "finalize": "Hệ thống: hoàn tất"
@@ -821,15 +845,15 @@
       "button": "Xuất bản",
       "saveFirst": "Lưu thay đổi trước khi xuất bản.",
       "title": "Xuất bản “{{name}}”",
-      "body": "Chỉ bản xuất bản mới được chạy. Lượt mới của tenant đang dùng chạy bản này; lượt đang chạy giữ bản cũ.",
+      "body": "Sau khi xuất bản, hợp đồng gửi duyệt từ bây giờ sẽ theo quy trình mới. Hợp đồng đang chờ duyệt vẫn theo quy trình cũ.",
       "impact": "Tác động",
       "impactFail": "Không tải được tác động. Thử lại.",
-      "tenants": "{{n}} tenant đang dùng quy trình này.",
-      "runs": "{{n}} lượt đang chạy (giữ bản cũ).",
-      "defaultNote": "Đang là mặc định: áp cho mọi tenant chưa gán ở lượt duyệt kế tiếp.",
+      "tenants": "{{n}} công ty đang dùng quy trình này.",
+      "runs": "{{n}} hợp đồng đang chờ (giữ bản cũ).",
+      "defaultNote": "Đang là mặc định: áp cho mọi công ty chưa gán ở lượt duyệt kế tiếp.",
       "note": "Ghi chú bản (tuỳ chọn)",
       "submit": "Xuất bản",
-      "done": "Đã xuất bản bản v{{n}}"
+      "done": "Đã xuất bản. Hợp đồng gửi duyệt từ giờ theo quy trình này."
     },
     "releases": {
       "button": "Lịch sử",
@@ -840,17 +864,17 @@
       "latest": "mới nhất",
       "rollback": "Quay lại bản này",
       "confirmTitle": "Quay lại bản v{{n}}?",
-      "confirmBody": "Tạo bản mới có nội dung v{{n}}, áp cho lượt duyệt kế tiếp. Lượt đang chạy giữ bản cũ.",
+      "confirmBody": "Tạo bản mới có nội dung v{{n}}, áp dụng cho hợp đồng gửi duyệt từ bây giờ. Hợp đồng đang chờ giữ bản cũ.",
       "done": "Đã quay lại v{{from}} (bản mới v{{to}})"
     },
     "clone": {
-      "button": "Nhân bản",
-      "done": "Đã nhân bản thành bản nháp mới",
-      "title": "Nhân bản “{{name}}”",
-      "body": "Tạo bản nháp mới, chưa gán cho tenant nào. Chỉnh xong thì xuất bản rồi gán.",
+      "button": "Dùng mẫu này",
+      "done": "Đã tạo bản nháp từ mẫu",
+      "title": "Dùng mẫu “{{name}}”",
+      "body": "Tạo bản nháp mới, chưa gán cho công ty nào. Chỉnh xong thì xuất bản rồi gán.",
       "name": "Tên quy trình mới",
       "key": "Ký hiệu tự sinh: {{key}}",
-      "submit": "Nhân bản"
+      "submit": "Dùng mẫu này"
     },
     "assign": {
       "where": "Công ty gán quy trình này ở trang Công ty › Quy trình.",
@@ -871,12 +895,12 @@
     "default": {
       "button": "Đặt làm mặc định",
       "title": "Đặt “{{name}}” làm mặc định?",
-      "body": "{{slot}}: tenant chưa gán sẽ chạy quy trình này từ lượt duyệt kế tiếp. Tenant đã gán không đổi.",
+      "body": "{{slot}}: công ty chưa gán sẽ chạy quy trình này từ lượt duyệt kế tiếp. Công ty đã gán không đổi.",
       "confirm": "Đặt mặc định",
       "done": "“{{name}}” là quy trình mặc định"
     },
     "form": {
-      "lead": "Các bước duyệt tuần tự. Bước 1 cố định; Ký số luôn ở cuối. Phòng ban ghi theo mã (vd pb-ke-toan), mỗi tenant tự phân giải.",
+      "lead": "Các bước duyệt tuần tự. Bước 1 cố định; Ký số luôn ở cuối. Chọn phòng ban cho từng bước; mỗi công ty dùng phòng ban cùng tên của mình.",
       "firstName": "Bước đầu (luôn chạy)",
       "reviewStep": "Bước duyệt",
       "esignStep": "Ký số",
@@ -1028,7 +1052,7 @@
     "saveDraft": "Lưu nháp",
     "assignedCount": "{{n}} công ty đang dùng",
     "usedByVersion": "{{n}} công ty đang dùng v{{v}}",
-    "saveHint": "Lưu nháp chưa áp dụng cho tenant — bấm Xuất bản để áp dụng.",
+    "saveHint": "Lưu nháp chưa áp dụng cho công ty nào — bấm Xuất bản để áp dụng.",
     "status": {
       "draft": "Nháp",
       "off": "Đã tắt",
@@ -1082,8 +1106,8 @@
       "instruction": "Lời dặn thêm cho agent",
       "task": "Việc giao cho agent",
       "gate": "Chờ người duyệt sau bước này",
-      "gateGroup": "Group duyệt (mã)",
-      "backTo": "Khi Chưa đạt, được quay lại bước",
+      "gateGroup": "Phòng ban duyệt (mã)",
+      "backTo": "Khi Trả lại, được quay lại bước",
       "backToNone": "Không có bước DLC nào đứng trước.",
       "gateOffHint": "Bước chạy xong thì sang bước kế, không chờ người.",
       "gateOn": "Chờ duyệt",
@@ -1098,12 +1122,12 @@
         "INSTRUCTION_TOO_LONG": "Lời dặn quá dài (≤ 8000 ký tự).",
         "ROUNDS_INVALID": "Số vòng từ 1 đến 10.",
         "TIMEOUT_INVALID": "Hạn từ 5 đến 1440 phút.",
-        "GATE_GROUP_INVALID": "Nhập mã Group duyệt (vd dlc-editor).",
+        "GATE_GROUP_INVALID": "Nhập mã Phòng ban duyệt (vd dlc-editor).",
         "BACK_TARGET_INVALID": "Chỉ quay lại được bước DLC đứng trước.",
-        "KIND_MIX": "Bước duyệt và bước DLC không nối được với nhau trong một sơ đồ — xoá bước khác loại hoặc dùng quy trình của khe tương ứng."
+        "KIND_MIX": "Bước duyệt và bước DLC không nối được với nhau trong một sơ đồ — xoá bước khác loại hoặc dùng quy trình của loại việc tương ứng."
       },
       "reject": "Từ chối",
-      "rejectHint": "Kéo cổng này thả lên một bước đứng trước: khi người duyệt bấm Chưa đạt, quy trình quay lại bước đó.",
+      "rejectHint": "Kéo cổng này thả lên một bước đứng trước: khi người duyệt bấm Trả lại, quy trình quay lại bước đó.",
       "approve": "Duyệt",
       "approveNext": "Duyệt ⇒ sang bước kế tiếp.",
       "link": {
@@ -1145,7 +1169,7 @@
           "rounds": "Số vòng",
           "timeout": "Hạn bước (phút)",
           "gate": "Chờ người duyệt sau bước này",
-          "group": "Group duyệt",
+          "group": "Phòng ban duyệt",
           "reject": "Từ chối ⇒"
         },
         "gateNone": "Không",
@@ -1160,7 +1184,7 @@
           "name": "Nhập tên bước (≤ 80 ký tự).",
           "agent_key": "Chọn agent cho việc \"Agent tuỳ chọn\".",
           "instruction": "Lời dặn quá dài (≤ 8000 ký tự).",
-          "gate_group": "Nhập mã Group duyệt (vd dlc-editor).",
+          "gate_group": "Nhập mã Phòng ban duyệt (vd dlc-editor).",
           "reject_to": "Chỉ chọn được khi có cổng duyệt.",
           "max_rounds": "Số vòng từ 1 đến 10.",
           "timeout_min": "Hạn từ 5 đến 1440 phút.",
@@ -1289,7 +1313,7 @@
     "factsChanged": "Cần xử lý · dữ kiện đã đổi sau khi rẽ nhánh",
     "missingFact": "Thiếu {{keys}} — điền vào hợp đồng rồi Thử lại",
     "err": {
-      "packBound": "Lượt này thuộc quy trình duyệt của một gói (vd. duyệt hợp đồng) và đã kết thúc nên không chạy lại lượt hay chạy lại bước ở đây được. Hãy dùng \"Mở lại quy trình\" trên màn hình của gói.",
+      "packBound": "Hợp đồng này đã kết thúc. Muốn duyệt lại, mở hợp đồng và bấm “Mở lại quy trình”.",
       "state": "Trạng thái lượt chạy đã đổi nên thao tác không còn hợp lệ. Tải lại trang rồi thử lại.",
       "forbidden": "Bạn không có quyền thao tác này. Nhờ quản trị nền tảng hoặc quản trị công ty thực hiện.",
       "notFound": "Không tìm thấy lượt chạy (có thể đã bị xoá). Quay lại danh sách quy trình.",
@@ -1324,7 +1348,8 @@
       "esign": "Ký số",
       "set": "Chuẩn bị dữ liệu",
       "finish": "Kết thúc",
-      "soon": "Chưa dùng được"
+      "soon": "Chưa dùng được",
+      "waitEsign": "Chờ ký xong"
     },
     "esign": {
       "title": "Cấu hình ký số",
@@ -1341,7 +1366,7 @@
       "due": "Hạn (ngày)",
       "remind": "Nhắc mỗi (giờ)",
       "signers": "Người ký phía công ty (tối đa {{max}})",
-      "group": "Nhóm",
+      "group": "Phòng ban",
       "unavailable": "Chưa tải được lựa chọn ký số. Mở bản của công ty để chỉnh cấu hình này.",
       "disabled": "Công ty chưa bật ký số. Bật ở Cài đặt › Ký số.",
       "err": {
@@ -1350,7 +1375,10 @@
         "SIGNER_NOT_IN_TENANT": "Người ký không thuộc công ty.",
         "NO_SIGNER": "Nhóm này chưa có người ký dùng được.",
         "DIRECTORY_UNAVAILABLE": "Chưa kiểm được danh bạ, thử lại sau."
-      }
+      },
+      "signWith": "Ký bằng: {{name}}",
+      "noProvider": "chưa chọn nhà cung cấp",
+      "change": "Đổi ở Cài đặt › Ký số"
     },
     "advanced": "Nâng cao",
     "moduleNote": "Nhà cung cấp, người ký và các thiết lập khác của bước này lấy từ cài đặt của ứng dụng. Mở Nâng cao nếu cần chỉnh chi tiết.",
@@ -1364,29 +1392,27 @@
     "add": "Thêm bước",
     "moreActions": "Thao tác khác",
     "group": {
-      "basic": "Cơ bản",
-      "core": "Lõi",
       "advanced": "Nâng cao"
     },
-    "ifHint": "Đúng thì đi bước Đúng, sai thì đi bước Sai (trống = bước kế).",
+    "ifHint": "Nếu đúng thì đi bước “Thì đi tới”, không thì đi bước “Ngược lại” (trống = bước tiếp theo).",
     "link": {
-      "next": "Bước kế",
+      "next": "Bước tiếp theo",
       "merge": "Sau đó đi tiếp",
       "on": {
-        "completed": "Đã ký",
-        "declined": "Từ chối",
-        "voided": "Huỷ",
-        "timeout": "Hết hạn"
+        "completed": "Khi ký xong",
+        "declined": "Khi bị từ chối",
+        "voided": "Khi bị huỷ",
+        "timeout": "Khi hết hạn"
       }
     },
     "approve": {
-      "default": "Mặc định",
-      "reject": "Từ chối đi tới",
-      "return": "Trả lại đi tới"
+      "default": "Bước tiếp theo",
+      "reject": "Nếu từ chối, đi tới",
+      "return": "Nếu trả lại, đi tới"
     },
     "bridge": {
-      "missing": "{{from}} → {{to}}: thiếu “{{key}}”",
-      "type": "{{from}} → {{to}}: “{{key}}” sai kiểu ({{got}} thay vì {{expected}})",
+      "missing": "Bước “{{to}}” cần “{{key}}” nhưng bước trước chưa có",
+      "type": "Bước “{{to}}” cần “{{key}}” đúng loại ({{expected}}), nhưng đang nhận {{got}}",
       "edge": "Thiếu dữ liệu",
       "summary": "{{n}} chỗ nối thiếu dữ liệu",
       "chip": "Thiếu {{keys}}",
@@ -1394,26 +1420,29 @@
       "loading": "Đang gợi ý…",
       "ghost": "Ghi giá trị (đề xuất)",
       "suggest": "Gợi ý cầu nối",
-      "none": "Chưa có gợi ý. Thêm node Ghi giá trị để nối hai bước.",
+      "none": "Chưa có gợi ý. Nhờ quản trị nền tảng thêm bước “Chuẩn bị dữ liệu” để nối hai bước.",
       "accept": "Nhận",
       "dismiss": "Bỏ",
       "nodeName": "Chuẩn bị dữ liệu"
     },
     "finish": {
       "name": "Tên",
-      "outcome": "Kết quả"
+      "outcome": "Kết thúc với",
+      "effect": "Hợp đồng sẽ: {{effect}}",
+      "pick": "Chọn kết quả cho hợp đồng."
     },
     "err": {
-      "tooManySteps": "Flow tối đa 20 bước. Gộp bớt bước.",
-      "noFinish": "Thêm ít nhất một node Kết thúc.",
-      "finishNext": "Node Kết thúc là điểm cuối, không đi tiếp được.",
+      "tooManySteps": "Quy trình tối đa 20 bước. Gộp bớt bước.",
+      "noFinish": "Thêm bước Kết thúc ở cuối mỗi nhánh.",
+      "finishNext": "Bước Kết thúc là điểm cuối, không đi tiếp được.",
       "nextStepInvalid": "Bước gộp phải ở phía sau bước hiện tại.",
       "sourceOwner": "Chỉ bản công ty mới có nguồn sao.",
       "eventUnknown": "Chọn một sự kiện của ứng dụng.",
-      "outcomeUnknown": "Chọn kết quả thuộc sự kiện này cho node Kết thúc.",
+      "outcomeUnknown": "Chọn kết quả cho bước Kết thúc.",
       "whenInvalid": "Điều kiện dùng dữ kiện hoặc giá trị không hợp lệ cho sự kiện này.",
-      "noTrigger": "Flow chưa có node Bắt đầu khi.",
-      "invalid": "Flow chưa hợp lệ. Kiểm tra từng node."
-    }
+      "noTrigger": "Quy trình chưa có điều kiện “Bắt đầu khi”.",
+      "invalid": "Quy trình chưa hợp lệ. Mở từng bước có ô báo lỗi để sửa."
+    },
+    "toolNote": "Bước này chạy một tính năng của hệ thống. Chỉnh chi tiết ở “Nâng cao”."
   }
 }

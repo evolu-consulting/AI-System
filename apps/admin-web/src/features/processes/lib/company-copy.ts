@@ -1,9 +1,37 @@
 // CR-121 c17b · nhận diện bản RIÊNG của công ty (sao từ thư viện). Logic thuần.
-type DefLike = { source_template_id?: string | null; slot_body?: unknown };
+type DefLike = {
+  source_template_id?: string | null;
+  slot_body?: unknown;
+  tenant_id?: string | null;
+  trigger?: unknown;
+};
 
 /** Bản riêng = có nguồn thư viện và không phải editor thư viện (platform); sửa thẳng, không Xuất bản. */
 export const isCompanyCopy = (def: DefLike | undefined, lib: unknown): boolean =>
   !!def?.source_template_id && !lib;
+
+/** CR-123 · FR-10: quy trình (flow có trigger) thuộc MỘT công ty — kể cả tự tạo, không sao từ thư viện — không bao giờ là mẫu Thư viện. */
+export const isCompanyFlow = (def: DefLike | undefined): boolean =>
+  !!def?.tenant_id && typeof def.trigger === "object" && def.trigger !== null;
+
+/** Bản của công ty (sao từ thư viện hoặc flow riêng) ⇒ chỉ MỘT nút "Lưu và áp dụng"; "Xuất bản" chỉ có ở mẫu Thư viện. */
+export const isCompanyOwned = (def: DefLike | undefined, lib: unknown): boolean =>
+  isCompanyCopy(def, lib) || isCompanyFlow(def);
+
+/** Thanh lưu theo loại: bản của công ty ⇒ "Lưu và áp dụng" + một dòng nói phạm vi; mẫu Thư viện ⇒ "Lưu nháp" (còn "Xuất bản" riêng). */
+export const saveModeOf = (
+  companyOwned: boolean,
+  library: boolean,
+): { labelKey: string; noteKey: string | null; canPublish: boolean } =>
+  companyOwned
+    ? {
+        labelKey: "process.admin.editor.saveApply",
+        noteKey: "process.admin.editor.applyNote",
+        canPublish: false,
+      }
+    : library
+      ? { labelKey: "process.admin.library.saveDraft", noteKey: null, canPublish: true }
+      : { labelKey: "common.save", noteKey: null, canPublish: false };
 
 /** Công ty của bản riêng = `tenant_id` CỦA CHÍNH def (một nguồn) — không phụ thuộc `?company=` hay công ty đang chọn (tenant_admin: `tenantId` của hook luôn vắng). */
 export const copyTenantId = (def: { tenant_id?: string | null } | undefined): string | undefined =>
@@ -29,7 +57,7 @@ export const scopedTenantId = (
 
 /** Kiểu thẻ "Thông tin": thư viện / bản riêng chỉ trường nghiệp vụ + "Nâng cao"; còn lại đủ trường. */
 export const infoVariant = (def: DefLike | undefined, lib: unknown): "full" | "library" | "copy" =>
-  lib ? "library" : isCompanyCopy(def, lib) ? "copy" : "full";
+  lib ? "library" : isCompanyOwned(def, lib) ? "copy" : "full";
 
 /** Bản riêng DÙNG ĐƯỢC Form bước dọc chung ⇔ Hub trả `slot_body` (bản sao cũ chưa có body ⇒ chỉ Sơ đồ). */
 export const usesStepForm = <D extends DefLike>(def: D | undefined, lib: unknown): D | null =>

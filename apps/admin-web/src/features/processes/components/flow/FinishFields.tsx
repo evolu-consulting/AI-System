@@ -54,7 +54,15 @@ export function FinishFields({ stage, readOnly, onChange, onRemove }: Props) {
             ))}
           </SelectContent>
         </Select>
-        {cur ? <p className="text-caption text-muted-foreground">{cur.effect}</p> : null}
+        {cur ? (
+          <p className="text-caption text-muted-foreground" data-testid="finish-effect">
+            {t("process.admin.flow.finish.effect", { effect: cur.effect })}
+          </p>
+        ) : (
+          <p className="text-caption text-muted-foreground">
+            {t("process.admin.flow.finish.pick")}
+          </p>
+        )}
       </div>
       {readOnly ? null : (
         <Button type="button" variant="ghost" size="sm" onClick={onRemove}>

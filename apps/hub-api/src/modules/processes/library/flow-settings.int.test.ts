@@ -17,6 +17,8 @@ const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
   P: { userId: userId(1270), tenantId: X, role: "platform_admin" },
   A: { userId: userId(1271), tenantId: X, role: "tenant_admin" },
   M: { userId: userId(1272), tenantId: X, role: "member" },
+  /** quản trị của công ty KHÁC */
+  O: { userId: userId(1272), tenantId: tenantId(1272), role: "tenant_admin" },
 };
 let o: Sql;
 let db: Db;
@@ -59,10 +61,14 @@ afterAll(async () => {
 });
 
 describe("CR-122 P7 · flow-settings", () => {
-  it("platform_admin bật/tắt, tenant_admin 403, audit ghi cũ và mới", async () => {
-    expect((await call("A", "PUT", { flow_triggers: true })).status).toBe(403);
-    expect((await call("A", "GET")).status).toBe(403);
+  it("CR-123 FR-09: member và quản trị công ty khác 403, quản trị công ty mình đọc/đổi được", async () => {
     expect((await call("M", "GET")).status).toBe(403);
+    expect((await call("M", "PUT", { flow_triggers: true })).status).toBe(403);
+    expect((await call("O", "GET")).status).toBe(403);
+    expect((await call("O", "PUT", { flow_triggers: true })).status).toBe(403);
+    expect((await call("A", "GET")).json).toEqual({ flow_triggers: false });
+  });
+  it("platform_admin bật/tắt, audit ghi cũ và mới", async () => {
     expect((await call("P", "GET")).json).toEqual({ flow_triggers: false });
     expect((await call("P", "PUT", { flow_triggers: true })).json).toEqual({ flow_triggers: true });
     expect((await call("P", "GET")).json).toEqual({ flow_triggers: true });

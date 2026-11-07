@@ -236,7 +236,9 @@ test("ADM-FR-71 · E-PB2-12 · mẫu sdlc: chỉ xem — 2 câu thông báo; kh�
   page: p,
 }) => {
   await openTemplate(p, "sdlc");
-  await expect(p.getByText("Đây là quy trình mẫu, chỉ xem. Chép mẫu để chỉnh sửa.")).toBeVisible();
+  await expect(
+    p.getByText("Đây là quy trình mẫu, chỉ xem. Dùng mẫu này để chỉnh sửa."),
+  ).toBeVisible();
   await expect(p.getByText("Quy trình mẫu: chỉ xem, không kéo thả được.")).toBeVisible();
   await expect(p.getByRole("button", { name: "Thêm giai đoạn", exact: true })).toHaveCount(0);
   const first = canvas(p).getByRole("button", { name: /^Giai đoạn 1: / });

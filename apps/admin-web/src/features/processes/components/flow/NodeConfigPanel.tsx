@@ -18,6 +18,7 @@ import { hubUrl } from "@/lib/hub";
 import { checkPathOf, constArgs, ESIGN_CODEC, withConfigArgs } from "../../lib/node-config";
 import { SelectField, TextField } from "../editor/Fields";
 import type { StageFormProps } from "../editor/stage-form-props";
+import { EsignSettingsLink } from "./EsignSettingsLink";
 import { useFlowCtx } from "./flow-ctx";
 
 /** Giá trị đại diện "Theo cài đặt ứng dụng" (Radix Select không nhận value rỗng). */
@@ -89,6 +90,30 @@ function SignerPicker(p: {
     </div>
   );
 }
+/** CR-123 FR-13: "Ký bằng: <nhà cung cấp>" (đã đặt riêng cho bước bản cũ, hoặc mặc định của công ty) — đổi ở Cài đặt › Ký số, không ở bước. */
+function ProviderLine(p: {
+  providers: readonly { key: string; label: string }[];
+  providerKey: string | null | undefined;
+  error: string | undefined;
+}) {
+  const { t } = useTranslation();
+  const name = p.providers.find((x) => x.key === p.providerKey)?.label ?? p.providerKey;
+  return (
+    <div
+      className="flex flex-wrap items-center gap-x-2 text-body"
+      data-testid="esign-provider-line"
+    >
+      <span>{t(`${K}signWith`, { name: name ?? t(`${K}noProvider`) })}</span>
+      <EsignSettingsLink />
+      {p.error ? (
+        <span role="alert" className="text-caption text-destructive">
+          {p.error}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export function NodeConfigPanel(p: StageFormProps & { node: AppNodeDecl }) {
   const { t } = useTranslation();
   const flow = useFlowCtx();
@@ -159,21 +184,12 @@ export function NodeConfigPanel(p: StageFormProps & { node: AppNodeDecl }) {
   const toNum = (v: string) => (v.trim() === "" ? undefined : Math.trunc(Number(v)));
   return (
     <fieldset className="space-y-3" data-testid="node-config" aria-label={t(`${K}title`)}>
+      <ProviderLine
+        providers={o.providers}
+        providerKey={cfg.provider ?? o.default_provider}
+        error={issue("provider")}
+      />
       <div className="grid grid-cols-2 items-start gap-3">
-        <SelectField
-          id={`${stage.uid}-provider`}
-          label={t(`${K}provider`)}
-          value={cfg.provider ?? DEFAULT}
-          readOnly={readOnly}
-          error={issue("provider")}
-          options={[
-            { value: DEFAULT, label: dflt },
-            ...o.providers.map((x) => ({ value: x.key, label: x.label })),
-          ]}
-          onChange={(v) =>
-            set({ provider: v === DEFAULT ? undefined : (v as EsignNodeConfig["provider"]) })
-          }
-        />
         <SelectField
           id={`${stage.uid}-order`}
           label={t(`${K}order`)}

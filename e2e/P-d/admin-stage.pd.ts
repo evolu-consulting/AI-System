@@ -130,33 +130,33 @@ test("ADM-FR-71 · AC-H44 · PD2-E01 · stage 'Gọi tool': chọn 'Xuất HĐ �
   await openDef(p, "pd2-tool", "Gọi tool E2E");
   await node(p, "Xuất hoá đơn").click();
   await panel(p).getByRole("combobox", { name: "Người thực hiện" }).click();
-  await p.getByRole("option", { name: "Gọi tool" }).click();
-  const g = panel(p).getByRole("group", { name: "Gọi tool" });
-  await g.getByRole("combobox", { name: "Tool" }).click();
+  await p.getByRole("option", { name: "Chạy tính năng" }).click();
+  const g = panel(p).getByRole("group", { name: "Chạy tính năng" });
+  await g.getByRole("combobox", { name: "Tính năng" }).click();
   await expect(p.getByRole("option", { name: /Tải tệp · tai-tep/ })).toBeDisabled(); // tham số tệp
   await expect(p.getByRole("option", { name: /Hết hạn/ })).toHaveCount(0); // workflow tắt
   await p.getByRole("option", { name: /Ghi sổ · ghi-so/ }).click(); // có side_effect
-  await expect(g.getByText("Tác dụng phụ")).toBeVisible();
-  await g.getByRole("combobox", { name: "Tool" }).click();
+  await expect(g.getByText("Việc này có tác động thật (gửi đi, ghi dữ liệu)")).toBeVisible();
+  await g.getByRole("combobox", { name: "Tính năng" }).click();
   await p.getByRole("option", { name: TOOL_OPT }).click();
-  await expect(g.getByText("Tác dụng phụ")).toHaveCount(0);
-  await g.getByRole("combobox", { name: "Nguồn của tham số tong_tien" }).click();
+  await expect(g.getByText("Việc này có tác động thật (gửi đi, ghi dữ liệu)")).toHaveCount(0);
+  await g.getByRole("combobox", { name: "Thông tin cần điền: tong_tien lấy từ đâu" }).click();
   await p.getByRole("option", { name: "Kết quả giai đoạn trước" }).click();
-  await g.getByRole("combobox", { name: "Giá trị của tham số tong_tien" }).click();
+  await g.getByRole("combobox", { name: "Giá trị của tong_tien" }).click();
   await p.getByRole("option", { name: /Giai đoạn 1 · tong_tien/ }).click();
-  await g.getByRole("combobox", { name: "Nguồn của tham số ma_kh" }).click();
+  await g.getByRole("combobox", { name: "Thông tin cần điền: ma_kh lấy từ đâu" }).click();
   await p.getByRole("option", { name: "Giá trị cố định" }).click();
-  await g.getByLabel("Giá trị của tham số ma_kh").fill("KH1");
+  await g.getByLabel("Giá trị của ma_kh").fill("KH1");
   expect(await saveDef(p)).toBe(200);
 
   await p.reload();
   await node(p, "Xuất hoá đơn").click();
-  const g2 = panel(p).getByRole("group", { name: "Gọi tool" });
-  await expect(g2.getByRole("combobox", { name: "Tool" })).toContainText("Xuất HĐ");
-  await expect(g2.getByRole("combobox", { name: "Nguồn của tham số tong_tien" })).toContainText(
-    "Kết quả giai đoạn trước",
-  );
-  await expect(g2.getByLabel("Giá trị của tham số ma_kh")).toHaveValue("KH1");
+  const g2 = panel(p).getByRole("group", { name: "Chạy tính năng" });
+  await expect(g2.getByRole("combobox", { name: "Tính năng" })).toContainText("Xuất HĐ");
+  await expect(
+    g2.getByRole("combobox", { name: "Thông tin cần điền: tong_tien lấy từ đâu" }),
+  ).toContainText("Kết quả giai đoạn trước");
+  await expect(g2.getByLabel("Giá trị của ma_kh")).toHaveValue("KH1");
   const ex = (await stageOfDef("pd2-tool", 1))?.executor;
   expect(ex).toMatchObject({
     kind: "tool",
@@ -212,7 +212,7 @@ test("AC-H47 · PD2-E05 · công ty chưa bật tool: danh sách rỗng có thô
     await p.goto(`${new URL(p.url()).origin}/processes/${PD2_E2E.defGlobex}`);
     await node(p, "Xuất hoá đơn").click();
     await panel(p).getByRole("combobox", { name: "Người thực hiện" }).click();
-    await p.getByRole("option", { name: "Gọi tool" }).click();
+    await p.getByRole("option", { name: "Chạy tính năng" }).click();
   };
   await open();
   await expect(
@@ -222,8 +222,8 @@ test("AC-H47 · PD2-E05 · công ty chưa bật tool: danh sách rỗng có thô
   await p.context().clearCookies();
   await open();
   await panel(p)
-    .getByRole("group", { name: "Gọi tool" })
-    .getByRole("combobox", { name: "Tool" })
+    .getByRole("group", { name: "Chạy tính năng" })
+    .getByRole("combobox", { name: "Tính năng" })
     .click();
   await expect(p.getByRole("option", { name: /Ghi sổ · ghi-so/ })).toBeVisible();
   await expect(p.getByRole("option", { name: TOOL_OPT })).toHaveCount(0);

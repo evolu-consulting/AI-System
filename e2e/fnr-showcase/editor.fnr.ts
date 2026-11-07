@@ -242,7 +242,7 @@ test("CR-103 · editor · B · đổi node bị chặn khi bước sau dùng tr�
     await expect(o).toHaveAttribute("title", reason);
   }
   // khác họ nhưng vẫn có trường (agent, tool) ⇒ chọn được
-  for (const ok of ["Đọc HĐ", "Gọi tool"])
+  for (const ok of ["Đọc HĐ", "Chạy tính năng"])
     await expect(p.getByRole("option", { name: ok }), `${ok} chọn được`).not.toHaveAttribute(
       "aria-disabled",
       "true",
@@ -354,7 +354,7 @@ test("CR-103 · editor · E · node Nếu trỏ tới bước có Hành động 
     .or(ifx.getByLabel("Giá trị"))
     .first()
     .fill("1");
-  await ifx.getByRole("combobox", { name: "Đúng thì tới bước" }).click();
+  await ifx.getByRole("combobox", { name: "Thì đi tới" }).click();
   await p.getByRole("option", { name: "Bước 3" }).click();
   const puts: string[] = [];
   p.on("request", (q) => q.method() === "PUT" && puts.push(q.url()));

@@ -8,8 +8,8 @@ import { node, openDef, panel, seedPd, seedPd2Defs, seedPd2Tools } from "./_pd-s
 test.beforeAll(() => seedPd());
 
 const LOCKED_VI =
-  "Tool có tác dụng phụ cần “Hành động thật”, nhưng giai đoạn này không bật được: mọi giai đoạn ở bước trước phải có người kiểm.";
-const OLD_VI = "Tool có tác dụng phụ chỉ dùng được khi giai đoạn bật “Hành động thật”.";
+  "Tính năng có tác động thật cần “Hành động thật”, nhưng bước này không bật được: mọi bước ở phía trước phải có người duyệt.";
+const OLD_VI = "Tính năng có tác động thật chỉ dùng được khi bước bật “Hành động thật”.";
 
 test("ADM-FR-71 · AC-H44 · PD2-E06 · bước 0 'Gọi tool' chọn 'Ghi sổ · ghi-so' (tác dụng phụ) ⇒ 'Hành động thật' khoá + câu 'không bật được', không câu bảo bật", async ({
   page: p,
@@ -19,11 +19,11 @@ test("ADM-FR-71 · AC-H44 · PD2-E06 · bước 0 'Gọi tool' chọn 'Ghi sổ 
   await openDef(p, "pd2-tool", "Gọi tool E2E");
   await node(p, "Đọc hồ sơ").click();
   await panel(p).getByRole("combobox", { name: "Người thực hiện" }).click();
-  await p.getByRole("option", { name: "Gọi tool" }).click();
-  const g = panel(p).getByRole("group", { name: "Gọi tool" });
-  await g.getByRole("combobox", { name: "Tool" }).click();
+  await p.getByRole("option", { name: "Chạy tính năng" }).click();
+  const g = panel(p).getByRole("group", { name: "Chạy tính năng" });
+  await g.getByRole("combobox", { name: "Tính năng" }).click();
   await p.getByRole("option", { name: /Ghi sổ · ghi-so/ }).click();
-  await expect(g.getByText("Tác dụng phụ")).toBeVisible();
+  await expect(g.getByText("Việc này có tác động thật (gửi đi, ghi dữ liệu)")).toBeVisible();
 
   await expect(panel(p).getByRole("switch", { name: "Hành động thật" })).toBeDisabled();
   await expect(panel(p).getByText(LOCKED_VI)).toBeVisible();

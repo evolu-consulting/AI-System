@@ -7,6 +7,7 @@ import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDia
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useFlowForm } from "../../hooks/use-flow-form";
+import { saveModeOf } from "../../lib/company-copy";
 import { FLOW_MAX_STEPS } from "../../lib/flow-form";
 import { DEFAULT_FIELDS } from "../../lib/flow-when";
 import type { PublishIssue } from "../../lib/publish-issues";
@@ -148,7 +149,7 @@ export function FlowFormEditor({
           className="min-w-0 flex-1 text-label text-muted-foreground"
           data-testid="copy-save-note"
         >
-          {companyCopy ? t("process.admin.editor.copySaveNote") : null}
+          {companyCopy ? t("process.admin.editor.applyNote") : null}
         </div>
         <Button type="button" variant="outline" disabled={!form.dirty} onClick={form.discard}>
           {f("discard")}
@@ -158,7 +159,7 @@ export function FlowFormEditor({
           disabled={!form.dirty || issues.length > 0}
           onClick={() => void form.save(steps)}
         >
-          {t(companyCopy ? "common.save" : "process.admin.library.saveDraft")}
+          {t(saveModeOf(companyCopy, !companyCopy).labelKey)}
         </Button>
       </div>
       <LazyConflictDialog props={form.conflictProps} />

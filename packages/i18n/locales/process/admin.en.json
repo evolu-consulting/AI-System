@@ -1,13 +1,13 @@
 {
   "list": {
     "title": "Processes",
-    "subtitle": "A chain of stages done by agents or agent teams. When a reviewer passes a stage the process continues; if it needs rework the agent redoes it using the feedback.",
+    "subtitle": "The approval steps for your company's contracts: who approves, in what order, and when to ask for signatures.",
     "tab": {
       "own": "Company",
-      "templates": "Samples · trial runs"
+      "templates": "Ready-made templates"
     },
     "create": "Create process",
-    "copy": "Copy template",
+    "copy": "Use this template",
     "run": {
       "button": "Run",
       "title": "Run {{name}}",
@@ -27,15 +27,15 @@
       "on": "On",
       "off": "Off"
     },
-    "empty": "No processes yet. Choose Create process to start a new one or copy from a template.",
+    "empty": "No processes yet. Create one or use a ready-made template.",
     "template": "Template",
     "delete": {
       "title": "Delete process?",
-      "body": "Type “{{name}}” to delete. Running runs keep their snapshot.",
+      "body": "Type “{{name}}” to delete. Contracts already waiting keep the old version.",
       "prompt": "Type the process name to confirm"
     },
     "toast": {
-      "copied": "Template copied",
+      "copied": "Template used",
       "deleted": "Process deleted",
       "started": "Run started"
     },
@@ -51,10 +51,9 @@
     "budgetAi": "AI cost limit per run (optional)",
     "enabledLib": "Enabled",
     "copyBadge": "Company copy",
-    "copySaveNote": "Saving applies right away to new runs; runs in progress keep the old version.",
     "stepsTab": "Steps",
     "libReadonly": "Shared process — view only.",
-    "copied": "Copied and assigned to this company",
+    "copied": "Applied. Contracts sent for approval from now follow this process.",
     "copyFailed": "Could not copy: {{reason}}",
     "saveBlocked": "Not saved: {{reason}}",
     "stepOpt": "Step {{n}}",
@@ -92,20 +91,29 @@
         "agent": "Agent",
         "team": "Agent team",
         "wait": "Wait until date",
-        "tool": "Call tool",
+        "tool": "Run a feature",
         "set": "Prepare data",
-        "if": "If (true/false branch)",
+        "if": "If",
         "form": "Person fills a form",
         "waitFor": "Wait N hours",
-        "waitEvent": "Wait for event"
+        "waitEvent": "Wait for signing"
       },
       "timedWait": {
         "hours": "Hours to wait",
-        "event": "Event key",
+        "event": "Event key (technical)",
         "eventHint": "The app fires this event (e.g. esign.completed) to continue the step.",
         "timeoutH": "Expires after (hours)",
         "timeoutHint": "If the event never arrives the step continues and records \"Wait expired\".",
-        "err": "Invalid value."
+        "err": "Invalid value.",
+        "eventPick": "Wait for",
+        "events": {
+          "completed": "When signing is complete",
+          "declined": "When declined",
+          "voided": "When cancelled",
+          "other": "Other event"
+        },
+        "timeoutFlow": "If still no result after (hours)",
+        "timeoutHintFlow": "After this, the process continues on the “Expired” branch."
       },
       "swap": {
         "family": "Different node family — can't switch to this type.",
@@ -116,17 +124,17 @@
       "template": "Output template",
       "sections": "Required sections",
       "fields": "Structured fields",
-      "after": "After the stage",
-      "review": "Reviewed by a group",
+      "after": "After this step",
+      "review": "Approved by department",
       "auto": "Continue automatically",
-      "reviewGroup": "Reviewing group",
+      "reviewGroup": "Approving department",
       "real": "Real action",
       "realLocked": "Every stage in the previous step needs a reviewer",
       "adminModeReview": "Hub is in admin-only mode: only admins who belong to the review group can approve (regular members have no inbox).",
       "adminModeAsk": "Hub is in admin-only mode: AI questions at this stage cannot be answered (the chat inbox is frozen) — the run will wait.",
       "answerer": "Answerer",
       "starter": "The starter",
-      "group": "Group",
+      "group": "Department",
       "user": "User",
       "timeout": "Stage time limit (seconds)",
       "budget": "Stage token budget",
@@ -185,19 +193,19 @@
         }
       },
       "tool": {
-        "title": "Call tool",
-        "hint": "Calls one of the company's workflows with the starter's permissions, without an agent. The result is filtered by the fields you declare under Output.",
-        "pick": "Tool",
-        "pickPh": "Choose a tool…",
+        "title": "Run a feature",
+        "hint": "Runs a company feature as the person who started it.",
+        "pick": "Feature",
+        "pickPh": "Choose a feature…",
         "option": "{{name}} · {{key}}",
-        "loading": "Loading tools…",
-        "loadError": "Couldn't load the tool list.",
-        "empty": "No tool is enabled for your company yet — contact the platform admin",
-        "template": "Templates can't use “Call tool”. Copy the template to your company to pick a tool.",
-        "sideEffect": "Side effects",
-        "sideEffectNote": "This tool has real effects. The stage needs “Real action” on, and every stage in the previous step needs a reviewer.",
-        "argSource": "Source of parameter {{name}}",
-        "argValue": "Value of parameter {{name}}",
+        "loading": "Loading features…",
+        "loadError": "Could not load features.",
+        "empty": "No features are enabled for the company — contact the platform admin",
+        "template": "Templates cannot pick a feature. Use this template first.",
+        "sideEffect": "This has a real effect (sends, writes data)",
+        "sideEffectNote": "This feature has a real effect: the step needs “Real action” and every earlier step needs an approver.",
+        "argSource": "Where “{{name}}” comes from",
+        "argValue": "Value of {{name}}",
         "from": {
           "const": "Fixed value",
           "input": "Input",
@@ -219,43 +227,53 @@
           "true": "Yes",
           "false": "No"
         },
-        "fileUnsupported": "File parameters can't be used in processes yet, so this tool can't be picked.",
+        "fileUnsupported": "File inputs are not supported yet, so this feature cannot be chosen.",
         "err": {
-          "pick": "Choose a tool.",
-          "argRequired": "Choose a source for this parameter.",
-          "TOOL_INVALID": "The tool isn't fully set up: fill every required parameter from a real source (up to 20 parameters, no file parameters).",
-          "TOOL_SIDE_EFFECT": "A tool with side effects can only be used when the stage has “Real action” on.",
-          "sideEffectLocked": "A tool with side effects needs “Real action”, which this stage can't turn on: every stage in the previous step must have a reviewer.",
+          "pick": "Choose a feature.",
+          "argRequired": "Choose a source.",
+          "TOOL_INVALID": "The feature is incomplete: fill every required input from a real source.",
+          "TOOL_SIDE_EFFECT": "A feature with a real effect needs “Real action”.",
+          "sideEffectLocked": "Real action is not available: every earlier step needs an approver.",
           "ref": "This feature is not enabled for your company or no longer exists."
         }
       },
       "if": {
-        "title": "If (true/false branch)",
-        "hint": "Stands alone in its step and runs instantly. If the condition holds it jumps to the True step, otherwise to the False step (empty = next step). Skipped steps show as “Skipped”.",
+        "title": "If",
+        "hint": "If the condition holds go to the “Then” step, otherwise to the “Otherwise” step. Empty = the next step.",
         "noSources": "No result field in an earlier step or input to compare yet.",
         "join": "Combine conditions",
         "and": "All must hold (AND)",
         "or": "Any one is enough (OR)",
         "from": "If",
         "fromPh": "Choose a field or input…",
-        "op": "Comparison",
+        "op": "Compare",
         "value": "Value",
         "add": "Add condition",
         "remove": "Remove condition {{n}}",
         "delete": "Remove",
-        "max": "At most 6 conditions.",
-        "yes": "If true, go to step",
-        "no": "If false, go to step",
+        "max": "Up to 6 conditions.",
+        "yes": "Then go to",
+        "no": "Otherwise go to",
         "stepPh": "Choose a step…",
         "nextStep": "Next step",
         "stepOpt": "Step {{n}}",
         "err": {
           "IF_INVALID": "The If condition is invalid: check the source, comparison, value and target step (must come after this step)."
+        },
+        "s": {
+          "if": "If",
+          "and": "and",
+          "or": "or",
+          "goTo": "go to",
+          "otherwise": "otherwise",
+          "blank": "…",
+          "million": "million",
+          "billion": "billion"
         }
       },
       "branch": {
         "title": "Branch",
-        "hint": "The first matching rule wins. If none match, the run goes to the next step. Skipped stages show as “Skipped”.",
+        "hint": "The first matching rule is used; otherwise the next step. Skipped steps show as “Skipped”.",
         "field": "If field",
         "op": "Comparison",
         "value": "Value",
@@ -379,10 +397,14 @@
           "generic": "The form fields are not valid; check labels, keys and limits.",
           "FORM_INVALID": "The form step is invalid: it needs a review group, no real action, and its result must match the form fields."
         }
-      }
+      },
+      "approver": "Who approves",
+      "approverPh": "Choose a department…",
+      "answerBy": "Time to respond (hours)",
+      "answerByHint": "After this the approver is reminded. 4 to 168 hours."
     },
     "limits": "Run limits",
-    "limitsText": "Up to 7 days · 5 runs at once · at most 3 reworks per stage · reviewer reminder after 1 day. Hitting a limit → “Needs a decision”.",
+    "limitsText": "Contracts waiting more than 7 days alert the owner.",
     "readonly": "This is a template (read-only). Copy it to edit.",
     "runs": {
       "empty": "No runs yet",
@@ -468,9 +490,11 @@
     "ttl": "Run time limit (days)",
     "ttlHint": "A run not finished within this many days expires. Runs already in progress aren't affected when you edit.",
     "noExpiry": "No expiry",
-    "limitsTextTtl": "Up to {{days}} days · 5 runs at once · ≤ 3 reworks per stage · reviewer reminded after 1 day. Hitting a limit → “Needs a decision”.",
-    "limitsTextNoTtl": "No expiry · 5 runs at once · ≤ 3 reworks per stage · reviewer reminded after 1 day. Hitting a limit → “Needs a decision”.",
-    "limitsWait": "Runs waiting for a date don't count toward the 5 concurrent runs."
+    "limitsTextTtl": "Contracts waiting more than {{days}} days alert the owner.",
+    "limitsTextNoTtl": "No waiting limit.",
+    "limitsWait": "Runs waiting for a date don't count toward the 5 concurrent runs.",
+    "applyNote": "Applies to contracts sent from now on; contracts already waiting keep the old version.",
+    "saveApply": "Save and apply"
   },
   "run": {
     "title": "Run · {{name}}",
@@ -524,23 +548,23 @@
     }
   },
   "apiError": {
-    "FLOW_NODE_CONFIG_INVALID": "The node settings are not valid. Check the highlighted fields.",
+    "FLOW_NODE_CONFIG_INVALID": "Some steps are not filled in correctly. Open the steps marked with an error.",
     "PROCESS_NOT_FOUND": "Process not found or you can't run it.",
     "TOO_MANY_PROCESS_RUNS": "Your company is running the maximum of {{max}} processes. Try again later.",
     "PROCESS_KEY_TAKEN": "This key is already used.",
-    "PROCESS_DEF_INCOMPLETE": "Pick a reviewing group for every reviewed stage before enabling.",
-    "PROCESS_REF_INVALID": "This agent/team/group is disabled or gone.",
+    "PROCESS_DEF_INCOMPLETE": "Choose an approving department for every approval step before enabling.",
+    "PROCESS_REF_INVALID": "This agent/team/department was disabled or removed.",
     "TEMPLATE_READ_ONLY": "Only platform admins edit templates. Copy the template instead.",
-    "SOURCE_NOT_FOUND": "This process uses a code source this tenant doesn't have. Create the source first (Sources page), then save again.",
+    "SOURCE_NOT_FOUND": "The process uses a source the company does not have yet.",
     "PROCESS_DEF_INVALID": "The process isn't valid. Check the fields marked with errors.",
     "NOT_PROCESS_DECIDER": "You aren't allowed to decide this run.",
     "PROCESS_RUN_STATE": "The run's state changed. Reloaded.",
     "NO_OUTPUT": "There is no output version to use yet.",
-    "PROCESS_IN_USE": "The process is the default or assigned to tenants: it cannot be deleted, turned off or re-keyed.",
+    "PROCESS_IN_USE": "This process is in use. Pick another in Company › Processes first.",
     "PROCESS_NOT_PUBLISHED": "The process is not published. Publish it first.",
     "PROCESS_PUBLISH_INVALID": "The process is not valid to publish. See what is wrong below.",
     "SLOT_SHAPE_UNSUPPORTED": "This slot only accepts sequential steps (no parallel, no branches). Fix it in Diagram.",
-    "SLOT_GROUPS_MISSING": "Some tenant lacks a department code the process uses. See the missing codes below.",
+    "SLOT_GROUPS_MISSING": "A company is missing a department the process needs. Add it in Users › Departments.",
     "SLOT_BODY_INVALID": "The Form content is not valid. See what is wrong below.",
     "NOT_LIBRARY_DEF": "This process is the company copy, not a shared one. Open it to edit directly.",
     "COPY_SOURCE_REMOVED": "The original library process has been removed. This company copy still runs but cannot be edited. Ask the platform admin to restore the original, or assign another process in Company > Processes.",
@@ -607,8 +631,8 @@
       "gateAuto": "Automatic",
       "error": "Has errors",
       "wait": "Wait until date",
-      "tool": "Call tool",
-      "sideEffect": "Side effects",
+      "tool": "Run a feature",
+      "sideEffect": "Real effect",
       "branch_one": "Branch · {{count}} rule",
       "branch_other": "Branch · {{count}} rules"
     },
@@ -821,15 +845,15 @@
       "button": "Publish",
       "saveFirst": "Save changes before publishing.",
       "title": "Publish “{{name}}”",
-      "body": "Only the published version runs. New runs of tenants using it follow this version; running ones keep the old one.",
+      "body": "After publishing, contracts sent for approval from now follow the new process; contracts already waiting keep the old one.",
       "impact": "Impact",
       "impactFail": "Could not load the impact. Try again.",
-      "tenants": "{{n}} tenants use this process.",
-      "runs": "{{n}} runs in progress (keep the old version).",
+      "tenants": "{{n}} companies use this process.",
+      "runs": "{{n}} contracts waiting (keep the old version).",
       "defaultNote": "It is the default: applies to every unassigned tenant from the next approval run.",
       "note": "Release note (optional)",
       "submit": "Publish",
-      "done": "Published version v{{n}}"
+      "done": "Published. Contracts sent for approval from now follow this process."
     },
     "releases": {
       "button": "History",
@@ -840,17 +864,17 @@
       "latest": "latest",
       "rollback": "Roll back to this",
       "confirmTitle": "Roll back to v{{n}}?",
-      "confirmBody": "Creates a new version with the content of v{{n}}, applied to the next approval run. Running ones keep the old version.",
+      "confirmBody": "Creates a new version with v{{n}} content for contracts sent from now.",
       "done": "Rolled back to v{{from}} (new version v{{to}})"
     },
     "clone": {
-      "button": "Duplicate",
-      "done": "Duplicated into a new draft",
-      "title": "Duplicate “{{name}}”",
-      "body": "Creates a new draft, not assigned to any tenant. Edit it, publish, then assign.",
+      "button": "Use this template",
+      "done": "Draft created from the template",
+      "title": "Use template “{{name}}”",
+      "body": "Creates a new draft, not assigned to any company yet.",
       "name": "New process name",
       "key": "Generated key: {{key}}",
-      "submit": "Duplicate"
+      "submit": "Use this template"
     },
     "assign": {
       "where": "Companies assign this process on the Company › Processes page.",
@@ -876,7 +900,7 @@
       "done": "“{{name}}” is now the default process"
     },
     "form": {
-      "lead": "Sequential approval steps. Step 1 is fixed; e-sign is always last. Departments are written by code (e.g. pb-ke-toan), resolved per tenant.",
+      "lead": "Sequential approval steps; e-sign is always last.",
       "firstName": "First step (always runs)",
       "reviewStep": "Approval step",
       "esignStep": "E-sign",
@@ -1028,7 +1052,7 @@
     "saveDraft": "Save draft",
     "assignedCount": "{{n}} companies using it",
     "usedByVersion": "{{n}} companies using v{{v}}",
-    "saveHint": "Saving a draft does not apply it to tenants — press Publish to apply.",
+    "saveHint": "A saved draft is not applied to any company yet — press Publish.",
     "status": {
       "draft": "Draft",
       "off": "Off",
@@ -1289,7 +1313,7 @@
     "factsChanged": "Needs attention · data changed after the branch",
     "missingFact": "{{keys}} is missing — fill it in on the contract, then Retry",
     "err": {
-      "packBound": "This run belongs to a package's approval process (e.g. contract approval), and has ended, so neither the run nor a step can be rerun here. Use \"Reopen process\" on the package's own screen.",
+      "packBound": "This contract has finished. To approve again, open the contract and press “Reopen process”.",
       "state": "The run's state has changed, so this action no longer applies. Reload the page and try again.",
       "forbidden": "You are not allowed to do this. Ask a platform admin or your company admin.",
       "notFound": "Run not found (it may have been deleted). Go back to the process list.",
@@ -1324,7 +1348,8 @@
       "esign": "E-sign",
       "set": "Prepare data",
       "finish": "Finish",
-      "soon": "Not available yet"
+      "soon": "Not available yet",
+      "waitEsign": "Wait for signing"
     },
     "esign": {
       "title": "E-sign settings",
@@ -1341,7 +1366,7 @@
       "due": "Due (days)",
       "remind": "Remind every (hours)",
       "signers": "Company signers (max {{max}})",
-      "group": "Group",
+      "group": "Department",
       "unavailable": "Could not load e-sign options. Open the company copy to edit this.",
       "disabled": "E-sign is not enabled for this company. Enable it in Settings › E-sign.",
       "err": {
@@ -1350,7 +1375,10 @@
         "SIGNER_NOT_IN_TENANT": "The signer is not in this company.",
         "NO_SIGNER": "This group has no usable signer.",
         "DIRECTORY_UNAVAILABLE": "Could not check the directory, try again later."
-      }
+      },
+      "signWith": "Sign with: {{name}}",
+      "noProvider": "no provider chosen",
+      "change": "Change in Settings › E-sign"
     },
     "advanced": "Advanced",
     "moduleNote": "The provider, signers and other settings of this step come from the app settings. Open Advanced to tweak details.",
@@ -1364,29 +1392,27 @@
     "add": "Add step",
     "moreActions": "More actions",
     "group": {
-      "basic": "Basic",
-      "core": "Core",
       "advanced": "Advanced"
     },
-    "ifHint": "If true go to the True step, otherwise the False step (empty = next step).",
+    "ifHint": "If true go to “Then”, otherwise “Otherwise” (empty = next step).",
     "link": {
       "next": "Next step",
       "merge": "Then continue to",
       "on": {
-        "completed": "Signed",
-        "declined": "Declined",
-        "voided": "Cancelled",
-        "timeout": "Expired"
+        "completed": "When signed",
+        "declined": "When declined",
+        "voided": "When cancelled",
+        "timeout": "When expired"
       }
     },
     "approve": {
-      "default": "Default",
-      "reject": "On reject go to",
-      "return": "On return go to"
+      "default": "Next step",
+      "reject": "If rejected, go to",
+      "return": "If sent back, go to"
     },
     "bridge": {
-      "missing": "{{from}} → {{to}}: missing “{{key}}”",
-      "type": "{{from}} → {{to}}: “{{key}}” has the wrong type ({{got}} instead of {{expected}})",
+      "missing": "Step “{{to}}” needs “{{key}}” but the previous step does not provide it",
+      "type": "Step “{{to}}” needs “{{key}}” as {{expected}} but gets {{got}}",
       "edge": "Missing input",
       "summary": "{{n}} connections miss data",
       "chip": "Missing {{keys}}",
@@ -1394,26 +1420,29 @@
       "loading": "Suggesting…",
       "ghost": "Set value (suggested)",
       "suggest": "Suggest a bridge",
-      "none": "No suggestion. Add a Set value node to connect the two steps.",
+      "none": "No suggestion yet. Ask the platform admin to add a “Prepare data” step.",
       "accept": "Accept",
       "dismiss": "Dismiss",
       "nodeName": "Prepare data"
     },
     "finish": {
       "name": "Name",
-      "outcome": "Result"
+      "outcome": "Finish with",
+      "effect": "The contract will: {{effect}}",
+      "pick": "Choose the outcome for the contract."
     },
     "err": {
-      "tooManySteps": "A flow has at most 20 steps. Merge some steps.",
-      "noFinish": "Add at least one Finish node.",
-      "finishNext": "Finish is an end point and cannot continue.",
+      "tooManySteps": "A process has at most 20 steps. Merge some.",
+      "noFinish": "Add a Finish step at the end of every branch.",
+      "finishNext": "Finish is the last step.",
       "nextStepInvalid": "The join step must come after the current step.",
       "sourceOwner": "Only company copies have a source.",
       "eventUnknown": "Pick one of the app's events.",
-      "outcomeUnknown": "Pick a result that belongs to this event for the Finish node.",
+      "outcomeUnknown": "Choose an outcome for the Finish step.",
       "whenInvalid": "The condition uses a field or value that does not fit this event.",
-      "noTrigger": "The flow has no Starts when node.",
-      "invalid": "The flow is not valid. Check each node."
-    }
+      "noTrigger": "The process has no “Start when”.",
+      "invalid": "The process is not valid. Open each step with an error."
+    },
+    "toolNote": "This step runs a system feature. Details are under “Advanced”."
   }
 }
