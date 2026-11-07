@@ -1,7 +1,8 @@
 // CR-125 · x1 · "Chờ bạn ký" của thẻ Tổng quan + thanh dưới (`GET /my-work` → `signing[]`): đọc thật (role `hub_api`, RLS tenant): chỉ phong bì
-// CÒN MỞ mà MÌNH là người ký công ty chưa ký và ĐÃ TỚI LƯỢT; người khác / tenant khác không thấy; MỘT câu SQL cố định (≤ 51 hàng) —
+// CÒN MỞ mà MÌNH là người ký công ty chưa ký và ĐÃ TỚI LƯỢT; người khác / tenant khác không thấy; MỘT câu SQL cố định (≤ trần) —
 // 1.000 phong bì vẫn nhanh (in p50/p95 thật).
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { MYWORK_SOURCE_MAX } from "@ai/contracts/pack-contracts";
 import { createDb, type Db } from "@ai/db";
 import { contracts, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
@@ -73,7 +74,7 @@ describe("CR-125 · x1 · signing[] (Chờ bạn ký)", () => {
     ); // K4: thứ tự theo trường `order`, không theo vị trí trong mảng
     expect(await signing(T2, me)).toEqual([]);
   });
-  it("1.000 phong bì: MỘT câu, ≤ 51 hàng, p95 thấp (đo thật)", async () => {
+  it("1.000 phong bì: MỘT câu, ≤ trần, p95 thấp (đo thật)", async () => {
     await envelope(K[0] as string, "completed", [signer(me, 1, null)], 950, "pc-");
     // 50 phong bì MỞ (mỗi HĐ chỉ một phong bì mở) trên 50 HĐ riêng
     const more = await contracts(o, T, 50, { from: 1200, createdBy: me, owner: me });
@@ -92,7 +93,8 @@ describe("CR-125 · x1 · signing[] (Chờ bạn ký)", () => {
     console.log(
       `x1 perf · signing 1000 phong bì: p50 ${p(0.5).toFixed(1)} ms · p95 ${p(0.95).toFixed(1)} ms`,
     );
-    expect(last.length).toBeLessThanOrEqual(51);
+    expect(last.length).toBe(52); // 2 + 50 phong bì mở
+    expect(last.length).toBeLessThanOrEqual(MYWORK_SOURCE_MAX + 1);
     expect(p(0.95)).toBeLessThan(300);
   });
 });
