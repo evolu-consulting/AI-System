@@ -9,9 +9,14 @@ import type { Db, Tx } from "@ai/db";
 import type { Env, Hono } from "hono";
 import { logger } from "../../../lib/logger";
 import type { Redis } from "../../../lib/redis";
-import { publishUserEvents } from "../../../lib/user-stream";
 import type { PackAccessView, PackGuardVars, PackWho, PdfConverter } from "../kit/public";
-import { createPackUow, createPdfConverter, moduleRegistry, selfContactOf } from "../kit/public";
+import {
+  createPackUow,
+  createPdfConverter,
+  moduleRegistry,
+  packStreamPublish,
+  selfContactOf,
+} from "../kit/public";
 import { fileboxClients, packFilebox } from "../packs.filebox";
 import { docusignProvider } from "./adapters/docusign.provider";
 import { esignRepo, tenantOfEnvelope } from "./adapters/esign.repo";
@@ -285,6 +290,15 @@ export const esignUserRoutes = (view: PackAccessView, u: ESignModule): Hono<Pack
   return r.route("/", esignFlowRoutes(view, u.flow));
 };
 
+/** CR-125 · x6 · đẩy `esign.updated` qua cổng kit (không import hub trực tiếp). */
+const streamOf =
+  (redis: Redis) =>
+  (userIds: string[], contractId: string, status: ESignStatus): Promise<void> =>
+    packStreamPublish(redis, logger)(userIds, {
+      event: "esign.updated",
+      data: { contract_id: contractId, status },
+    });
+
 /** Gắn webhook `/pack/contracts/esign/webhook/:provider` — gọi TRƯỚC `requireAuth` (không JWT; nhà cung cấp tự xác thực) — và
  *  trả use case dùng chung cho route người dùng. Gói contracts tắt / không db ⇒ undefined. */
 export function mountEsignWebhook<E extends Env>(
@@ -308,16 +322,7 @@ export function mountEsignWebhook<E extends Env>(
     esign: d.packs?.esign,
     files: fb ? fileboxClients(fb) : null,
     signal: d.signal,
-    publish: d.redis
-      ? (userIds, contractId, status) => {
-          const redis = d.redis as Redis;
-          return publishUserEvents(
-            redis,
-            [{ userIds, event: "esign.updated", data: { contract_id: contractId, status } }],
-            logger,
-          );
-        }
-      : undefined,
+    publish: d.redis ? streamOf(d.redis) : undefined,
   });
   app.route(ESIGN_WEBHOOK_PATH, esignWebhookRoutes(u));
   return u;

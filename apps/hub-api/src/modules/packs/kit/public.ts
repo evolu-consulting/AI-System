@@ -1,4 +1,4 @@
-// Cửa công khai của kit gói cho module khác (ADR-0037): registry nhãn bản ghi + registry mục hàng việc của menu + kiểu.
+﻿// Cửa công khai của kit gói cho module khác (ADR-0037): registry nhãn bản ghi + registry mục hàng việc của menu + kiểu.
 
 export { createDocxConverter } from "./adapters/docx/index";
 export { pgExternalOrgResolver } from "./adapters/ext-org.pg";
@@ -48,6 +48,8 @@ export { packHosts } from "./adapters/pack-hosts";
 export { packNavRoutes } from "./adapters/pack-nav.route";
 export { packNavRegistry } from "./adapters/pack-nav-registry";
 export { withPackRoleInTx } from "./adapters/pack-role-in-tx";
+export type { PackStreamEvent, PackStreamPublish } from "./adapters/pack-stream-publish";
+export { packStreamPublish } from "./adapters/pack-stream-publish";
 export { PackToolRegistry } from "./adapters/pack-tools.registry";
 export { createPackUow, packTenantOnly } from "./adapters/pack-uow";
 export {
