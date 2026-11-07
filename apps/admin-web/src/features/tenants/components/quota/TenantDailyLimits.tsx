@@ -7,7 +7,7 @@ import { ErrorState } from "@/components/shared/states/ErrorState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApiError } from "@/lib/http";
+import { ApiError } from "@/lib/api-error";
 import { useDailyLimits } from "../../hooks/use-daily-limits";
 import { parseLimit } from "../../lib/daily-limits-draft";
 

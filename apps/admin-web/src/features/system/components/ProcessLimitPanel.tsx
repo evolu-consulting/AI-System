@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useProcessLimits, useSaveProcessLimits } from "../api";
+import { useProcessLimits, useSaveProcessLimits } from "../hooks/use-process-limits";
 
 export function ProcessLimitPanel() {
   const { t } = useTranslation();

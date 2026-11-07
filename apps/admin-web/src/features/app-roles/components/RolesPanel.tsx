@@ -10,7 +10,7 @@ import { LoadingState } from "@/components/shared/states/LoadingState";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
 import { Button } from "@/components/ui/button";
-import { ApiError } from "@/lib/http";
+import { ApiError } from "@/lib/api-error";
 import { useRolesDraft } from "../hooks/use-roles-draft";
 import { sortPacks } from "../lib/levels";
 import { CheckPermissionDialog } from "./CheckPermissionDialog";

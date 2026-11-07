@@ -8,7 +8,7 @@ import { NotFoundState } from "@/components/shared/states/NotFoundState";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ApiError } from "@/lib/http";
+import { ApiError } from "@/lib/api-error";
 import { isSkippable, nextStep, prevStep, stepNumber, type WizardStep } from "../../lib/wizard";
 import { WizardAppsStep, WizardPeopleStep, WizardReviewStep } from "./WizardSteps";
 

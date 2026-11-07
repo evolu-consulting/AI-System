@@ -14,9 +14,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useEffectiveAccess } from "@/features/access/api";
-import { ApiError } from "@/lib/http";
+import { ApiError } from "@/lib/api-error";
 import { pickLocalized } from "@/lib/localized";
+import { useEffectiveAccess } from "../hooks/use-effective-access";
 import { type ExplainSource, explainPacks } from "../lib/effective";
 import { LEVEL_KEY, packNameKey, roleLabel, sortPacks } from "../lib/levels";
 import { LevelBadge } from "./LevelBadge";

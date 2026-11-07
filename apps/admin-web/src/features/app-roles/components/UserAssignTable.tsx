@@ -18,8 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ApiError } from "@/lib/http";
-import { USERS_PAGE, useRoleUsers } from "../api";
+import { ApiError } from "@/lib/api-error";
+import { USERS_PAGE, useRoleUsers } from "../hooks/use-role-users";
 import type { RolesDraft } from "../hooks/use-roles-draft";
 import { levelsFromRoles } from "../lib/effective";
 import { LEVEL_KEY, packNameKey } from "../lib/levels";

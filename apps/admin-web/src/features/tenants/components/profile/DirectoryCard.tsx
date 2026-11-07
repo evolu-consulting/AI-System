@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { describeError } from "@/lib/errors";
 import { useTr } from "@/lib/use-translate";
-import { useSetDirectory } from "../../api";
+import { useSetDirectory } from "../../hooks/use-tenant-api";
 import { directoryView } from "../../lib/directory";
 
 type Props = { tenantId: string; profile: TenantCompanyProfile; isPlatform: boolean };

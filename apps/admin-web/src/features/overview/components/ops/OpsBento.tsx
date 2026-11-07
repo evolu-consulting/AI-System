@@ -3,7 +3,7 @@
 import { useTranslation } from "react-i18next";
 import { hubConfigured } from "@/lib/hub";
 import { loadError } from "@/lib/load-error";
-import { useOpsOverview } from "../../api";
+import { useOpsOverview } from "../../hooks/use-ops-overview";
 import { AttentionTile, HealthTile } from "./AttentionHealthTiles";
 import type { TileError } from "./BentoTile";
 import { KpiTiles, RunsTile } from "./KpiTiles";

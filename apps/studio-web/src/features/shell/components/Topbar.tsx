@@ -16,8 +16,8 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "#/components/
 import { FALLBACK_URLS } from "#/lib/apps";
 import { session } from "#/lib/auth/session";
 import { useSession } from "#/lib/auth/use-session";
-import { api } from "#/lib/http";
 import { fetchMyApps, requestSsoGrant } from "../hooks/use-apps";
+import { KIT_TRANSPORT } from "../transport";
 import { ConfigBadge } from "./ConfigBadge";
 import { SidebarNav } from "./SidebarNav";
 import { UserMenu } from "./UserMenu";
@@ -46,9 +46,6 @@ function Apps() {
     />
   );
 }
-
-/** Client HTTP riêng của studio-web (kit không biết token của web này). Dưới base `/studio`: API `/notifications` ở gốc origin. */
-const KIT_TRANSPORT = { request: api };
 
 /** TD #81: dưới `lg` sidebar ẩn ⇒ nút menu mở Sheet điều hướng (mẫu admin-web). */
 function MobileMenu() {

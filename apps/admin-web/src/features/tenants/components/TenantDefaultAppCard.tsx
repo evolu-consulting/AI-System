@@ -1,22 +1,13 @@
 // tenant-default-app · ô "App mặc định" của công ty (chỉ platform_admin, trang chi tiết tenant): app mở sau đăng nhập cho
 // thành viên chưa tự chọn. Giá trị rỗng = chưa đặt ⇒ Trang chủ AI System. Danh sách = catalog đang bật. Lưu ngay khi chọn.
-import type {
-  AppCatalogItem,
-  AppCatalogListResponse,
-  DefaultAppRequest,
-  TenantDefaultAppResponse,
-} from "@ai/contracts/app-catalog";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { AppCatalogItem } from "@ai/contracts/app-catalog";
 import { useTranslation } from "react-i18next";
 import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { describeError } from "@/lib/errors";
-import { api } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
-
-const keyOf = (id: string) => ["tenants", "default-app", id] as const;
-const pathOf = (id: string) => `/admin/tenants/${encodeURIComponent(id)}/default-app`;
+import { useAppCatalog, useDefaultApp, useSaveDefaultApp } from "../hooks/use-default-app";
 
 function label(name: AppCatalogItem["name"], lang: string, fallback: string): string {
   const n = name as Record<string, string | undefined>;
@@ -26,22 +17,10 @@ function label(name: AppCatalogItem["name"], lang: string, fallback: string): st
 export function TenantDefaultAppCard({ tenant }: { tenant: { id: string; name: string } }) {
   const { t, i18n } = useTranslation();
   const tr = useTr();
-  const qc = useQueryClient();
-  const current = useQuery({
-    queryKey: keyOf(tenant.id),
-    queryFn: () => api<TenantDefaultAppResponse>(pathOf(tenant.id)),
-  });
-  const apps = useQuery({
-    queryKey: ["apps"],
-    queryFn: () => api<AppCatalogListResponse>("/admin/apps"),
-  });
-  const save = useMutation({
-    mutationFn: (body: DefaultAppRequest) =>
-      api<TenantDefaultAppResponse>(pathOf(tenant.id), { method: "PUT", body }),
-    onSuccess: (r) => {
-      qc.setQueryData(keyOf(tenant.id), r);
-      notifySuccess(t("tenants.defaultApp.saved", { tenant: tenant.name }));
-    },
+  const current = useDefaultApp(tenant.id);
+  const apps = useAppCatalog();
+  const save = useSaveDefaultApp(tenant.id, {
+    onSaved: () => notifySuccess(t("tenants.defaultApp.saved", { tenant: tenant.name })),
     onError: (err) => {
       const spec = describeError(err);
       notifyError(tr(spec.key, spec.params));

@@ -17,9 +17,9 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import { FALLBACK_URLS } from "@/lib/apps";
 import { session } from "@/lib/auth/session";
 import { useSession } from "@/lib/auth/use-session";
-import { api, apiResponse } from "@/lib/http";
 import { fetchMyApps, requestSsoGrant } from "../hooks/use-apps";
 import { crumbsFor } from "../lib/nav";
+import { FEEDBACK_TRANSPORT, NOTIFY_TRANSPORT } from "../transport";
 import { AccountMenu } from "./AccountMenu";
 import { SidebarNav } from "./SidebarNav";
 
@@ -48,12 +48,6 @@ function Breadcrumbs() {
 }
 
 const ADMIN_APP_KEY = "admin";
-/** Client HTTP riêng của admin-web (kit không biết token của web này). */
-const FEEDBACK_TRANSPORT = {
-  request: api,
-  blob: async (path: string) => (await apiResponse(path)).blob(),
-};
-
 /** app-catalog · switcher dùng chung: danh sách từ `GET /me/apps`, chuyển phiên bằng mã một lần. */
 function Apps() {
   const { t, i18n } = useTranslation();
@@ -77,9 +71,6 @@ function Apps() {
     />
   );
 }
-
-/** Client HTTP + phiên riêng của admin-web (kit không biết token của web này). */
-const NOTIFY_TRANSPORT = { request: api };
 
 export function Topbar() {
   const { t } = useTranslation();

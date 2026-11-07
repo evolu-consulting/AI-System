@@ -12,7 +12,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { downloadAttachment, useUpdateFeedback } from "../api";
+import { downloadAttachment, useUpdateFeedback } from "../hooks/use-feedback-api";
 
 const SELECT = "h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground";
 

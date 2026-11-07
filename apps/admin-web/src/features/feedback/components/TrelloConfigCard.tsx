@@ -9,8 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError } from "@/lib/http";
-import { useCheckTrello, useClearTrello, useSaveTrello, useTrelloConfig } from "../api";
+import { ApiError } from "@/lib/api-error";
+import {
+  useCheckTrello,
+  useClearTrello,
+  useSaveTrello,
+  useTrelloConfig,
+} from "../hooks/use-feedback-api";
 
 const SOURCE_TONE = { db: "ok", env: "info", none: "warn" } as const;
 

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { loadError } from "@/lib/load-error";
 import { pickLocalized } from "@/lib/localized";
-import { useTenantQuotas } from "../../api";
+import { useTenantQuotas } from "../../hooks/use-tenant-api";
 import { quotaLines } from "../../lib/overview";
 
 const monthLabel = (month: string) => month.split("-").reverse().join("/");

@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTenantOptions } from "@/features/tenants/api";
+import { useTenantOptions } from "@/features/tenants/hooks/use-tenant-api";
 import { loadError } from "@/lib/load-error";
 import { RUNS_PAGE_SIZE, type RunsParams, useWorkflowRuns } from "../../hooks/use-workflow-queries";
 import { WorkflowRunsTable } from "./WorkflowRunsTable";

@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DetailDrawer } from "@/components/shared/list/DetailDrawer";
 import { useTr } from "@/lib/use-translate";
-import { useTenantFeatureStates } from "../api";
+import { useTenantFeatureStates } from "../hooks/use-tenant-api";
 import { buildCards, entitledKeys } from "../lib/feature-assign";
 import { type AppOn, appsOn } from "../lib/overview";
 

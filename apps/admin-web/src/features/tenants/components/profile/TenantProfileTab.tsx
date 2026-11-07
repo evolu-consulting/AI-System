@@ -7,10 +7,14 @@ import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";
 import { notifySuccess } from "@/components/shared/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ApiError } from "@/lib/api-error";
 import { describeError } from "@/lib/errors";
-import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
-import { useTenantCompanyProfile, useTenantMembers, useUpdateTenantProfile } from "../../api";
+import {
+  useTenantCompanyProfile,
+  useTenantMembers,
+  useUpdateTenantProfile,
+} from "../../hooks/use-tenant-api";
 import { type ProfileTextField, validateField } from "../../lib/profile-fields";
 import { TenantProfileCard } from "../TenantProfileCard";
 import { DirectoryCard } from "./DirectoryCard";
