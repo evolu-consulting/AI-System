@@ -133,10 +133,13 @@ function useDragOverlay(p: FlowCanvasProps) {
 }
 
 /** Thả dây nối không trúng handle đích (handle của node ẩn, không nối được) ⇒ lấy node dưới con trỏ làm đích. */
-function connectEndOf(onConnect: FlowCanvasProps["onConnect"]): OnConnectEnd | undefined {
+function connectEndOf(
+  onConnect: FlowCanvasProps["onConnect"],
+  reconnecting: { current: boolean },
+): OnConnectEnd | undefined {
   if (!onConnect) return undefined;
   return (ev, st) => {
-    if (st.isValid || !st.fromNode) return;
+    if (st.isValid || !st.fromNode || reconnecting.current) return;
     const pt = "changedTouches" in ev ? ev.changedTouches[0] : ev;
     const el = pt ? document.elementFromPoint(pt.clientX, pt.clientY) : null;
     const target = el?.closest(".react-flow__node")?.getAttribute("data-id");
@@ -179,7 +182,7 @@ function Flow(p: FlowCanvasProps) {
     onNodeDrag: d.onNodeDrag,
     onNodeDragStop: d.onNodeDragStop,
     onConnect: p.onConnect,
-    onConnectEnd: connectEndOf(p.onConnect),
+    onConnectEnd: connectEndOf(p.onConnect, ev.reconnecting),
     onNodeClick: p.onNodeClick && ((_: unknown, n: Node) => p.onNodeClick?.(n)),
   } as const;
   const furniture = (

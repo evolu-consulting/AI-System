@@ -54,7 +54,10 @@ function IfImpl({ data }: NodeProps<IfType>) {
         data-testid="if-node"
         aria-current={selected ? "true" : undefined}
         className="absolute inset-0 flex items-center justify-center px-14 text-center outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        onClick={(e) => h.onSelect(v.uid, e.detail === 0)}
+        onClick={(e) => {
+          // Shift/Ctrl/Cmd + nhấn = chọn nhiều trên canvas, không đổi bước đang mở ở ngăn chi tiết
+          if (!e.shiftKey && !e.ctrlKey && !e.metaKey) h.onSelect(v.uid, e.detail === 0);
+        }}
         onKeyDown={(e) =>
           onStageKeyDown(e, {
             uid: v.uid,

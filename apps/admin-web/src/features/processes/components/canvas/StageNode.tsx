@@ -64,7 +64,10 @@ function StageNodeImpl({ data }: NodeProps<StageNodeType>) {
         data-stage-uid={v.uid}
         aria-current={selected ? "true" : undefined}
         className={`${stageButtonClass(v, selected)} h-full overflow-hidden ${flow && isFinishView(v) ? FINISH_CLASS : ""}`}
-        onClick={(e) => h.onSelect(v.uid, e.detail === 0)}
+        onClick={(e) => {
+          // Shift/Ctrl/Cmd + nhấn = chọn nhiều trên canvas, không đổi bước đang mở ở ngăn chi tiết
+          if (!e.shiftKey && !e.ctrlKey && !e.metaKey) h.onSelect(v.uid, e.detail === 0);
+        }}
         onKeyDown={(e) =>
           onStageKeyDown(e, {
             uid: v.uid,

@@ -113,6 +113,8 @@ function usePaletteDrop(on: FlowEditing["onPaletteDrop"], focus: () => void) {
 }
 
 export type EditingView = {
+  /** Đang kéo đầu cạnh để nối lại — `onConnectEnd` của xyflow cũng chạy lúc này, `connectEndOf` bỏ qua để không báo hai lần. */
+  reconnecting: RefObject<boolean>;
   nodes: Node[];
   edges: Edge[];
   onNodesChange: (cs: NodeChange[]) => void;
@@ -169,7 +171,11 @@ export function useEditing(ed: FlowEditing | undefined, nodes: Node[], edges: Ed
     };
     cmd(c, out);
   };
+  const reconnecting = useRef(false);
   const reconnectEnd: OnReconnectEnd = (ev, edge, _t, st) => {
+    queueMicrotask(() => {
+      reconnecting.current = false;
+    });
     const pt = "changedTouches" in ev ? ev.changedTouches[0] : ev;
     const to = st.toNode?.id ?? (pt ? nodeAtPoint(pt.clientX, pt.clientY) : null);
     if (to)
@@ -192,9 +198,10 @@ export function useEditing(ed: FlowEditing | undefined, nodes: Node[], edges: Ed
     nodes: nodesOut,
     edges: edgesOut,
     onNodesChange: s.onNodes,
+    reconnecting,
     miniMap: !!ed?.miniMap,
     shell: ed ? shell : null,
-    flowProps: ed ? flowPropsOf(ed, s.onEdges, reconnectEnd) : {},
+    flowProps: ed ? flowPropsOf(ed, s.onEdges, reconnectEnd, reconnecting) : {},
   };
 }
 
@@ -202,6 +209,7 @@ function flowPropsOf(
   ed: FlowEditing,
   onEdgesChange: (cs: SelChange[]) => void,
   onReconnectEnd: OnReconnectEnd,
+  reconnecting: RefObject<boolean>,
 ): Partial<ReactFlowProps> {
   return {
     ...(ed.selectable
@@ -217,7 +225,16 @@ function flowPropsOf(
             ed.isValidConnection?.(c as Connection) ?? true,
         }
       : {}),
-    ...(ed.onReconnect ? { edgesReconnectable: false, onReconnect: NOOP, onReconnectEnd } : {}),
+    ...(ed.onReconnect
+      ? {
+          edgesReconnectable: false,
+          onReconnect: NOOP,
+          onReconnectEnd,
+          onReconnectStart: () => {
+            reconnecting.current = true;
+          },
+        }
+      : {}),
     zoomActivationKeyCode: ["Control", "Meta"],
   };
 }

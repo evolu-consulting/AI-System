@@ -72,7 +72,9 @@ test("CR-123 · p25 · nối lại đầu cạnh: Sai sang bước sau đổi đ
   const g = await uidOf(p, "Giám đốc duyệt");
   const h = await uidOf(p, "Hoàn tất");
   await reconnect(p, `${g}>${h}`, "Nhập đề nghị");
-  await expect(p.getByText("Chỉ nối được tới bước đứng sau.")).toBeVisible();
+  await expect(
+    p.getByRole("alert").filter({ hasText: "Chỉ nối được tới bước đứng sau." }),
+  ).toBeVisible();
   await p.screenshot({ path: `${SHOTS}/reconnect-rejected.png` });
 });
 
@@ -115,8 +117,9 @@ test("CR-123 · p25 · Shift+nhấn chọn nhiều, Ctrl+C / Ctrl+V nhân đôi 
   page: p,
 }) => {
   await open(p);
-  await node(p, "Nhập đề nghị").click();
-  await node(p, "Giám đốc duyệt").click({ modifiers: ["Shift"] });
+  // nhấn thường mở ngăn chi tiết (che bên phải) ⇒ nhấn thường node bên phải trước, Shift+nhấn node bên trái sau
+  await node(p, "Giám đốc duyệt").click();
+  await node(p, "Nhập đề nghị").click({ modifiers: ["Shift"] });
   await expect(canvas(p).locator(".react-flow__node.selected")).toHaveCount(2);
   await p.screenshot({ path: `${SHOTS}/multi-select.png` });
   await p.keyboard.press("Control+c");

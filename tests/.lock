@@ -485,8 +485,8 @@ b888be206c54867f49c3b45d404b75cf92a5dca7c2b79c1fcdd65ecc2377c3d0  e2e/deployed/2
 23e376b5702968fa9047b1e3cf63375556be0503cb97b56995c7b6d29513c9dd  e2e/feature-ui.spec.ts
 4f2b7a3b9457d7520f9f211996552048b0f1975a5ee832344c16c2b31faee2aa  e2e/features.spec.ts
 cc6e8d4c9ba2e2cd1467b4aa60ebcb416cc1c68df58a5ef857910f2363babdc3  e2e/fnr-showcase/_seed.ts
-071206f86a877899abfeb9f1f251768c1371953a4cedd39c277175f6ef81d75b  e2e/fnr-showcase/canvas-dnd.fnr.ts
-36d2ed9168068965e65a85435486f7bd49d80123b7e801a6342a7791ac4f446a  e2e/fnr-showcase/canvas-ux.fnr.ts
+11952673444a998c1bae5bc93acc754bf1931cbb0cb83cf83e9c5f001b69ebb8  e2e/fnr-showcase/canvas-dnd.fnr.ts
+f26c0a3959fecafb7275938fa8b74024ecf4a87bb8de6657dc089cca0a87bce3  e2e/fnr-showcase/canvas-ux.fnr.ts
 a53bce95aeff855a20c444855e207392dc5cabd47c6500baf5a2de8ec02879a4  e2e/fnr-showcase/canvas.fnr.ts
 32585959a97c3f8dd5f90e538aa2781805a9875410c361fbdcf059d3a455ff18  e2e/fnr-showcase/editor.fnr.ts
 1f70a126ea3dbe6475a817162f2f45b6c327a9944055b89bcac5cea731ea2e64  e2e/fnr-showcase/form-editor.fnr.ts
