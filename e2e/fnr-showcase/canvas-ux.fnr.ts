@@ -6,6 +6,7 @@ import { FLOW_SHOWCASE_KEY } from "@ai/contracts/hub-admin";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { ADMIN_URL, adminLogin, settle } from "../P-a/_pa-support";
 import { canvas, defByKey, node } from "../P-b2/_pb2-support";
+import { seedAdmin } from "../support/helpers";
 
 test.afterEach(() => settle());
 
@@ -19,8 +20,19 @@ async function open(p: Page): Promise<void> {
   await expect(node(p, "Giám đốc duyệt")).toBeVisible();
 }
 
+async function platformLogin(p: Page): Promise<void> {
+  const a = seedAdmin();
+  await p.goto(`${ADMIN_URL}/login`);
+  await p.getByRole("textbox", { name: "Mã công ty" }).fill("platform");
+  await p.getByRole("textbox", { name: "Tên đăng nhập" }).fill(a.username);
+  await p.getByLabel("Mật khẩu", { exact: true }).fill(a.password);
+  await p.getByRole("button", { name: "Đăng nhập", exact: true }).click();
+  await p.waitForURL((u) => !u.pathname.startsWith("/login"));
+}
+
 /** Kéo bằng chuột thật từ giữa `from` tới giữa `to` (xyflow cần các bước di chuyển trung gian). */
 async function drag(p: Page, from: Locator, to: Locator): Promise<void> {
+  await canvas(p).scrollIntoViewIfNeeded(); // toạ độ chuột là toạ độ khung nhìn
   await expect
     .poll(async () => JSON.stringify(await to.boundingBox()))
     .toBe(JSON.stringify(await to.boundingBox())); // canvas đã fit xong
@@ -74,31 +86,34 @@ test("CR-122 · p22 · số bước tối đa là cài đặt nền tảng: đ�
   browser,
 }) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  const p = await ctx.newPage();
-  try {
-    await adminLogin(p);
-    await p.goto(`${ADMIN_URL}/system-health`);
-    const box = p.getByTestId("process-limit");
-    const input = box.getByTestId("process-stages-max");
-    await expect(input).toHaveValue("22");
-    await input.fill("6");
+  const plat = await ctx.newPage();
+  const setLimit = async (v: string): Promise<void> => {
+    await plat.goto(`${ADMIN_URL}/system-health`);
+    const box = plat.getByTestId("process-limit");
+    await box.getByTestId("process-stages-max").fill(v);
     await box.getByRole("button", { name: "Lưu" }).click();
-    await expect(p.getByText("Đã lưu giới hạn quy trình")).toBeVisible();
-    await box.scrollIntoViewIfNeeded();
-    await p.screenshot({ path: `${SHOTS}/platform-setting.png` });
-    const d = await defByKey(FLOW_SHOWCASE_KEY);
-    await p.goto(`${ADMIN_URL}/processes/${d.id}`);
-    const add = p.getByTestId("flow-add-step");
-    await expect(add).toBeDisabled();
-    await expect(add).toHaveAttribute("title", /tối đa 6 bước/);
-    await p.screenshot({ path: `${SHOTS}/add-disabled.png` });
+    await expect(plat.getByText("Đã lưu giới hạn quy trình")).toBeVisible();
+  };
+  try {
+    await platformLogin(plat);
+    await plat.goto(`${ADMIN_URL}/system-health`);
+    await expect(plat.getByTestId("process-stages-max")).toHaveValue("22");
+    await setLimit("6");
+    await plat.getByTestId("process-limit").scrollIntoViewIfNeeded();
+    await plat.screenshot({ path: `${SHOTS}/platform-setting.png` });
+    const ctx2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const p = await ctx2.newPage();
+    try {
+      await open(p);
+      const add = p.getByTestId("flow-add-step");
+      await expect(add).toBeDisabled();
+      await expect(add).toHaveAttribute("title", /tối đa 6 bước/);
+      await p.screenshot({ path: `${SHOTS}/add-disabled.png` });
+    } finally {
+      await ctx2.close();
+    }
   } finally {
-    // dọn: trả về mặc định để các ca khác không bị chặn
-    await p.goto(`${ADMIN_URL}/system-health`);
-    const input = p.getByTestId("process-limit").getByTestId("process-stages-max");
-    await input.fill("22");
-    await p.getByTestId("process-limit").getByRole("button", { name: "Lưu" }).click();
-    await expect(input).toHaveValue("22");
+    await setLimit("22"); // dọn: trả mặc định để ca khác không bị chặn
     await ctx.close();
   }
 });
