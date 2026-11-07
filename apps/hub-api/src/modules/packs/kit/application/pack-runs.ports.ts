@@ -67,7 +67,7 @@ export type PackStepStatus =
   | "running" // cf-dify · bước Dify đang chạy
   | "failed"; // cf-dify · bước Dify lỗi hết lượt (needs_decision)
 /** CR-123 · u6 · trạng thái nghiệp vụ của một node module (Ký số): chưa tới · đang chờ · xong · từ chối · hết hạn. */
-export type PackModuleOutcome = "pending" | "waiting" | "done" | "declined" | "expired";
+export type PackModuleOutcome = "pending" | "waiting" | "done" | "declined" | "expired" | "failed";
 export type PackStepView = {
   /** CR-123 · u6 · bước này là CẢ cụm stage của một node module (gửi + chờ) — một dòng, trạng thái theo stage chờ. */
   module?: { node: string; outcome: PackModuleOutcome; signer?: string };

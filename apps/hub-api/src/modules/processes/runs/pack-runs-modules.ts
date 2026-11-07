@@ -56,10 +56,14 @@ const STATUS: Record<PackModuleOutcome, PackStepView["status"]> = {
   done: "passed",
   declined: "rejected",
   expired: "failed",
+  failed: "failed",
 };
 
 function outcomeOf(node: string, facts: readonly StageFact[]): PackModuleOutcome {
   const wait = facts.at(-1) as StageFact;
+  // Gửi/chờ lỗi hết lượt (run chờ người quyết) ⇒ KHÔNG nói "Đang chờ ký": việc chưa chạy được, cần xử lý.
+  if (facts.some((f) => f.stageStatus === "needs_decision" || f.stageStatus === "failed"))
+    return "failed";
   if (wait.stageStatus === "done") return exitKey(node, wait.consumed);
   const started = facts.some((f) => f.stageStatus !== "pending" && f.stageStatus !== "queued");
   return started ? "waiting" : "pending";
@@ -69,7 +73,9 @@ const SIGNER = /^(user|group):([0-9a-f-]{36})$/i;
 type ArgStage = { executor?: { args?: Record<string, unknown> } };
 /** Người ký công ty cấu hình ở `args.company_signers` của stage gửi (`user:<id>,group:<id>`) ⇒ khoá `kind:id`. */
 export function signerRefs(stage: unknown): string[] {
-  const raw = (stage as ArgStage | null)?.executor?.args?.company_signers;
+  const arg = (stage as ArgStage | null)?.executor?.args?.company_signers;
+  // Tham số của stage là nguồn giá trị `{from:"const", value}` (def lưu từ canvas); chuỗi trần giữ cho def cũ.
+  const raw = typeof arg === "object" && arg !== null ? (arg as { value?: unknown }).value : arg;
   if (typeof raw !== "string") return [];
   return raw.split(",").flatMap((p) => (SIGNER.test(p.trim()) ? [p.trim().toLowerCase()] : []));
 }

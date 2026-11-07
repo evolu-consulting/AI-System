@@ -1,4 +1,4 @@
-// HD-FR-31…37 · HD3 spec §3: flow duyệt hợp đồng trên engine N2 (`/pack/contracts/contracts/:id/approval`,
+﻿// HD-FR-31…37 · HD3 spec §3: flow duyệt hợp đồng trên engine N2 (`/pack/contracts/contracts/:id/approval`,
 // `/pack/contracts/approval-settings`). Chỉ thêm — không đổi schema HD1/HD2.
 import { z } from "zod";
 import { IsoDateTime } from "../common";
@@ -91,7 +91,7 @@ export const ApprovalCardStepSchema = z.strictObject({
   /** CR-113 · bước đã quyết: người của bước (`member`) hay chủ gói "duyệt thay" (`owner_override`); chưa quyết ⇒ vắng. */
   decided_as: z.enum(["member", "owner_override"]).optional(),
   /** CR-123 · u6 · bước là MỘT node module (Ký số gộp gửi + chờ): trạng thái nghiệp vụ; vắng ở bước thường / hub cũ. */
-  outcome: z.enum(["pending", "waiting", "done", "declined", "expired"]).optional(),
+  outcome: z.enum(["pending", "waiting", "done", "declined", "expired", "failed"]).optional(),
   /** CR-123 · u6 · tên người / phòng ký công ty của bước module. */
   signer: z.string().max(200).optional(),
   /** CR-113 · bước đang mở đã quá hạn (giờ server); vắng ở bước không mở. */

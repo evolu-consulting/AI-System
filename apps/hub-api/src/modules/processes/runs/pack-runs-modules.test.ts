@@ -1,7 +1,20 @@
-// CR-123 · u6 · FLOW3-FR-14 · gộp cụm node module (Ký số = gửi + chờ) thành MỘT bước với trạng thái nghiệp vụ.
+﻿// CR-123 · u6 · FLOW3-FR-14 · gộp cụm node module (Ký số = gửi + chờ) thành MỘT bước với trạng thái nghiệp vụ.
 import { describe, expect, test } from "bun:test";
 import type { PackStepView } from "../../packs/kit/public";
-import { collapseModuleSteps, type StageFact } from "./pack-runs-modules";
+import { collapseModuleSteps, type StageFact, signerRefs } from "./pack-runs-modules";
+
+const ID = "0a1b2c3d-0000-4000-8000-0123456789ab";
+describe("signerRefs", () => {
+  test("đọc cả nguồn const {from,value} lẫn chuỗi trần", () => {
+    const want = [`user:${ID}`, `group:${ID}`];
+    const v = `user:${ID},group:${ID}`;
+    expect(
+      signerRefs({ executor: { args: { company_signers: { from: "const", value: v } } } }),
+    ).toEqual(want);
+    expect(signerRefs({ executor: { args: { company_signers: v } } })).toEqual(want);
+    expect(signerRefs({ executor: { args: {} } })).toEqual([]);
+  });
+});
 
 const step = (idx: number, key: string, name: string): PackStepView => ({
   idx,
@@ -43,6 +56,7 @@ describe("collapseModuleSteps · Ký số", () => {
     ["declined", f("done", "done", "esign.declined"), "declined", "rejected"],
     ["voided", f("done", "done", "esign.voided"), "declined", "rejected"],
     ["expired", f("done", "done", null), "expired", "failed"],
+    ["failed", f("needs_decision", "pending"), "failed", "failed"],
   ] as const)("trạng thái %s", (_n, facts, outcome, status) => {
     const s = run([...facts])[1] as PackStepView;
     expect(s.module).toEqual({ node: "contracts.esign", outcome });

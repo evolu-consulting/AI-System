@@ -9,6 +9,7 @@ const DOT: Record<Outcome, string> = {
   done: "border-ok bg-ok",
   declined: "border-late bg-late",
   expired: "border-late bg-late",
+  failed: "border-late bg-late",
 };
 
 export function ModuleStepRow({
@@ -34,7 +35,11 @@ export function ModuleStepRow({
       <div className="min-w-0 flex-1 text-sm">
         <b>{name}</b>
         <p
-          className={outcome === "declined" || outcome === "expired" ? "text-late" : "text-dim"}
+          className={
+            outcome === "declined" || outcome === "expired" || outcome === "failed"
+              ? "text-late"
+              : "text-dim"
+          }
           data-module="outcome"
         >
           {t(`contracts.approval.module.outcome.${outcome}`)}

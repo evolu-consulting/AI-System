@@ -1,4 +1,4 @@
-// CR-118 · UW-FR-10/11/13/14 · ADR-0035: view model "app chạy theo flow tại khe" — hub `GET /pack/:k/flow/:slot/:ref`,
+﻿// CR-118 · UW-FR-10/11/13/14 · ADR-0035: view model "app chạy theo flow tại khe" — hub `GET /pack/:k/flow/:slot/:ref`,
 // `POST /pack/:k/flow/:slot/:ref/tasks/:id/actions/:action`, `POST /pack/:k/flow/:slot/summary`. Web vẽ theo loại bước
 // (`FLOW_STEP_KINDS`); map renderer `FlowStepRenderers<R>` bắt buộc đủ mọi loại ⇒ thiếu renderer = lỗi typecheck. Loại lạ trong
 // snapshot cũ không có ở đây: server luôn chiếu về một loại đã biết (`system` khi không có renderer riêng).
@@ -80,7 +80,7 @@ const StepBase = {
   /** CR-123 U2 · bước Thông báo xong nhưng không có người nhận ⇒ thẻ nói rõ cho chủ HĐ (vắng ở hub cũ / bước khác). */
   warning: z.literal("NOTIFY_NO_RECIPIENT").optional(),
   /** CR-123 · u6 · bước = MỘT node module (Ký số gộp gửi + chờ): trạng thái nghiệp vụ; vắng ở bước thường / hub cũ. */
-  outcome: z.enum(["pending", "waiting", "done", "declined", "expired"]).optional(),
+  outcome: z.enum(["pending", "waiting", "done", "declined", "expired", "failed"]).optional(),
   /** CR-123 · u6 · tên người / phòng ký công ty của bước module (cấu hình ở node); vắng ⇒ không hiện. */
   signer: Text(200).optional(),
 };

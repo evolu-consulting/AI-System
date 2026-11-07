@@ -39,7 +39,8 @@
           "waiting": "Waiting for signatures",
           "done": "Signed",
           "declined": "Declined",
-          "expired": "Expired"
+          "expired": "Expired",
+          "failed": "Could not send for signing — needs attention"
         }
       },
       "notifyNoRecipient": "Nobody receives the notification for step {{name}} — choose recipients in Company > Processes",

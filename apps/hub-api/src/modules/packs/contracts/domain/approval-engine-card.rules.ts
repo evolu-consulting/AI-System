@@ -44,7 +44,7 @@ export type EngineStageView = {
   /** CR-123 · u6 · cụm node module đã gộp một dòng (khớp `PackStepView.module`). */
   module?: { node: string; outcome: ModuleOutcome; signer?: string };
 };
-export type ModuleOutcome = "pending" | "waiting" | "done" | "declined" | "expired";
+export type ModuleOutcome = "pending" | "waiting" | "done" | "declined" | "expired" | "failed";
 export type EngineStepsView = {
   status: string;
   started_by: string;

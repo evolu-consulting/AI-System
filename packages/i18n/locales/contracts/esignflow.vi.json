@@ -39,7 +39,8 @@
           "waiting": "Đang chờ ký",
           "done": "Đã ký",
           "declined": "Từ chối",
-          "expired": "Hết hạn"
+          "expired": "Hết hạn",
+          "failed": "Gửi ký chưa được — cần xử lý"
         }
       },
       "notifyNoRecipient": "Không có ai nhận thông báo bước {{name}} — chọn người nhận trong Công ty › Quy trình",

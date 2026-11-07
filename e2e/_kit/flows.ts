@@ -173,6 +173,8 @@ export async function createLibraryFlow(
     app: string;
     trigger: Json;
     stages: Json[];
+    /** Đầu vào khai báo của flow (vd `contract_id` cho node Ký số); vắng ⇒ không có. */
+    inputs?: Json[];
   },
 ): Promise<string> {
   const h = { authorization: `Bearer ${token}`, "content-type": "application/json" };
@@ -188,7 +190,7 @@ export async function createLibraryFlow(
       token_budget: null,
       enabled: true,
       sources: [],
-      inputs: [],
+      inputs: o.inputs ?? [],
       stages: o.stages,
       trigger: o.trigger,
       app: o.app,

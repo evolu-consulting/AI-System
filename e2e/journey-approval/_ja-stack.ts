@@ -1,4 +1,4 @@
-// e2e-journey-approval · backend THẬT cho `playwright.journey.config.ts` — admin-api + hub-api (hai tiến trình riêng như prod) trên DB test
+﻿// e2e-journey-approval · backend THẬT cho `playwright.journey.config.ts` — admin-api + hub-api (hai tiến trình riêng như prod) trên DB test
 // riêng: reset → migrate (main/hub/gói) → hub:seed → admin-api → DỰNG TENANT `e2e-approval` bằng đúng đường seed-niti (onboardTenant +
 // createUser + vai gói + quy trình thư viện; KHÔNG gán quy trình, KHÔNG luật chọn, KHÔNG feature `contracts-approval-engine`) → hub-api.
 // Cấu hình hub GIỐNG prod (HUB_PROCESS_ENGINE=on, CONTRACTS_APPROVAL_ENGINE=on ⇒ engine chỉ chạy cho tenant có entitlement).
@@ -159,7 +159,7 @@ async function main(): Promise<void> {
       });
     // CR-122 Q1: hai công ty MỚI cho hành trình flow (G1/G2 và các ca UI trình sửa) — cờ FLOW_TRIGGERS do spec bật.
     if (sfx)
-      for (const k of ["c22", "c22u", "c22n", "q5"] as const)
+      for (const k of ["c22", "c22u", "c22n", "q5", "u6"] as const)
         await provisionExtraJourneyTenant(admin, hubDb, {
           pw: env("JA_USER_PW"),
           key: `e2e-${k}-${sfx}`,
@@ -183,6 +183,8 @@ async function main(): Promise<void> {
     HUB_PROCESS_ENGINE: "on",
     CONTRACTS_APPROVAL_ENGINE: "on",
     HUB_PARTNER_MAILBOX: "on", // CR-124 · q5 · bộ chuyển hộp thư liên công ty (mặc định prod: tắt)
+    // CR-123 u6b: "Ký thử" (selfsign, không mạng) cho hành trình thẻ duyệt có node Ký số; công ty nào bật ký số do spec đặt.
+    ESIGN_PROVIDERS: "selfsign",
     AI_PROVIDER: "subscription",
     AI_SUB_CLI_PATH: cli,
     // FileBox: prod dùng FileBox HTTP; ở đây FileBox GIẢ trong tiến trình (hợp đồng thật, tests/acceptance/FB1/_fbfake.ts)
