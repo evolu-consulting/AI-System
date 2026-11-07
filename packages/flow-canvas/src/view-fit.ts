@@ -9,6 +9,7 @@ import {
 } from "@xyflow/react";
 import { useEffect, useRef } from "react";
 import { NODE_H, NODE_W, revealDx } from "./layout/geometry";
+import { focusViewport } from "./view-focus";
 
 // fnr-canvas-fit: editor vừa khung cả flow (thu tới 0.3 = mức zoom tối thiểu của canvas; dưới nữa thì người dùng kéo/zoom tay), vừa lại khi khung đổi cỡ.
 export const FIT = { padding: 0.08, maxZoom: 1, minZoom: 0.3 } as const;
@@ -67,26 +68,6 @@ type Vp = { x: number; y: number; zoom: number };
 const sameVp = (a: Vp, b: Vp): boolean =>
   Math.abs(a.x - b.x) < 1 && Math.abs(a.y - b.y) < 1 && Math.abs(a.zoom - b.zoom) < 0.01;
 
-/** Node mới thêm nằm ngoài khung nhìn ⇒ pan MƯỢT (giữ zoom) tới khi thấy trọn node, chừa lề 24px và ngăn chi tiết. */
-function revealNode(
-  rf: ReactFlowInstance,
-  id: string,
-  size: { w: number; h: number },
-  inset: number,
-) {
-  const n = rf.getNode(id);
-  if (!n) return;
-  const v = rf.getViewport();
-  const w = (n.measured?.width ?? NODE_W) * v.zoom;
-  const h = (n.measured?.height ?? NODE_H) * v.zoom;
-  const left = n.position.x * v.zoom + v.x;
-  const top = n.position.y * v.zoom + v.y;
-  const [maxX, maxY] = [size.w - inset - 24, size.h - 24];
-  const dx = left < 24 ? 24 - left : left + w > maxX ? maxX - (left + w) : 0;
-  const dy = top < 24 ? 24 - top : top + h > maxY ? maxY - (top + h) : 0;
-  if (dx !== 0 || dy !== 0)
-    void rf.setViewport({ ...v, x: v.x + dx, y: v.y + dy }, { duration: reduceMotion() ? 0 : 300 });
-}
 export type ViewFitOptions = {
   /** Đổi giá trị ⇒ fit lại (số bước + số giai đoạn do host ghép). */
   sig: string;
@@ -99,6 +80,8 @@ export type ViewFitOptions = {
   selected: string | undefined;
   /** Nút "vừa khung" của Controls gọi hàm này (cùng luật fit: đọc được, không thu nhỏ tí hon). */
   fitRef?: { current: (() => void) | null };
+  /** CR-123 · u14 · node đang làm việc (node mới thả + node vừa nối; node mới ĐẦU): sau thả / nối / bố cục lại phải nằm trọn trong khung. */
+  focus?: readonly string[];
 };
 
 export function useViewFit(o: ViewFitOptions): void {
@@ -141,15 +124,55 @@ export function useViewFit(o: ViewFitOptions): void {
       const ids = new Set(nodes.map((n) => n.id));
       const untouched = p.vp !== null && sameVp(rf.getViewport(), p.vp);
       const wantFit = !p.fitted || p.fitKey !== opts.current.fitKey || (p.box !== box && untouched);
-      const added = [...ids].filter((i) => !p.ids.has(i));
       prev.current = { ...p, fitted: true, fitKey: opts.current.fitKey, box, ids };
-      if (wantFit) return doFit();
-      const first = added.find((i) => i !== "trigger" && !i.startsWith("bridge:"));
-      if (first)
-        revealNode(rf, first, { w: widthRef.current, h: heightRef.current }, inset.current);
+      if (wantFit) doFit();
     }, 60);
     return () => window.clearTimeout(id);
   }, [stepsKey]);
+  // CR-123 · u14 · sau thả / nối / ELK bố cục lại: node đang làm việc + node vừa nối ở TRỌN trong khung (pan/thu nhỏ mượt, zoom ≥ fitMin, không phóng to);
+  // chạy lại khi vị trí các node đó đổi (ELK xếp lại sau khi sửa) nhưng KHÔNG khi người dùng tự kéo/zoom khung nhìn.
+  const focusIds = o.focus ?? [];
+  const focusSig = useStore((s) =>
+    focusIds
+      .map((id) => {
+        const n = s.nodeLookup.get(id);
+        return n
+          ? `${id}@${Math.round(n.internals.positionAbsolute.x)},${Math.round(n.internals.positionAbsolute.y)}`
+          : id;
+      })
+      .join("|"),
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ khi vị trí node đang làm việc đổi
+  useEffect(() => {
+    if (focusIds.length === 0) return;
+    const id = window.setTimeout(() => {
+      const boxes = focusIds.flatMap((i) => {
+        const n = rf.getNode(i);
+        return n
+          ? [
+              {
+                x: n.position.x,
+                y: n.position.y,
+                w: n.measured?.width ?? NODE_W,
+                h: n.measured?.height ?? NODE_H,
+              },
+            ]
+          : [];
+      });
+      const to = focusViewport(
+        boxes,
+        rf.getViewport(),
+        { w: widthRef.current, h: heightRef.current },
+        inset.current,
+        opts.current.fitMin,
+      );
+      if (to)
+        void rf.setViewport(to, { duration: reduceMotion() ? 0 : 300 }).then(() => {
+          prev.current.vp = rf.getViewport();
+        });
+    }, 140);
+    return () => window.clearTimeout(id);
+  }, [focusSig]);
   // chọn node nằm dưới ngăn chi tiết ⇒ pan vào vùng thấy được (không đổi zoom, không fit lại khi mở/đóng ngăn)
   // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ khi đổi node chọn / bật tắt ngăn
   useEffect(() => {

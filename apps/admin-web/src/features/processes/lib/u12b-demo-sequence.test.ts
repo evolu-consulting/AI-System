@@ -2,9 +2,10 @@
 // Kết thúc. Trước đây: mũi tên giữa hai bước CÙNG CỘT bị báo "vòng lặp" (sai) và bước Duyệt còn chung cột ⇒ Hub 422 APPROVE_INVALID khi Lưu.
 import { describe, expect, test } from "bun:test";
 import { applyConnect, isolateApprovals, triggerArrow } from "./arrow-rules";
+import { connectPatch } from "./canvas-connect";
 import { placeFresh } from "./canvas-edit";
 import { emptyStage, type StageDraft } from "./def-form";
-import { approveAloneErrors, markFree, safeDropStep } from "./free-nodes";
+import { approveAloneErrors, endNextErrors, markFree, safeDropStep } from "./free-nodes";
 
 const st = (uid: string, step: number, o: Partial<StageDraft> = {}): StageDraft => ({
   ...emptyStage(step),
@@ -91,5 +92,35 @@ describe("bước Duyệt luôn đứng một mình", () => {
   test("approveAloneErrors chặn Lưu kèm lý do tại stages.i.step", () => {
     const e = approveAloneErrors([st("a", 0), approve("d", 1), st("b", 1)]);
     expect(Object.keys(e)).toEqual(["stages.1.step"]);
+  });
+});
+
+describe("u14 · Kết thúc là điểm cuối", () => {
+  const toCs = (xs: readonly StageDraft[]) =>
+    xs.map((s) => ({
+      uid: s.uid,
+      step: s.step,
+      executor: s.executor,
+      real: s.real,
+      outcome: s.outcome,
+      after: s.after,
+      ifx: { yes: s.ifx.yes, no: s.ifx.no },
+      node: s.node,
+      wait: s.wait,
+    }));
+  test("mũi tên xuất phát từ Kết thúc luôn bị từ chối (kể cả tới bước nằm trước / sau)", () => {
+    const s = baseline();
+    for (const target of ["tp", "if", "tb", "tc"])
+      expect(connectPatch(toCs(s), { source: "kt", target })).toMatchObject({
+        ok: false,
+        error: "noNext",
+      });
+    expect(applyConnect(s, { source: "kt", target: "tb" })).toEqual({ error: "noNext" });
+    expect(applyConnect(s, { source: "kt", target: "tc" })).toEqual({ error: "noNext" });
+  });
+  test("bản nháp còn 'Gộp tới' ở Kết thúc ⇒ lỗi chặn Lưu tại stages.i.nextStep", () => {
+    const s = baseline().map((x) => (x.uid === "kt" ? { ...x, nextStep: 6 } : x));
+    expect(Object.keys(endNextErrors(s))).toEqual(["stages.5.nextStep"]);
+    expect(endNextErrors(baseline())).toEqual({});
   });
 });

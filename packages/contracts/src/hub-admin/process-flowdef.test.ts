@@ -143,4 +143,16 @@ describe("FLOW2-FR-04 · def cũ (snapshot trước CR-122)", () => {
     expect(parseFlowDef({ stages: [] }).ok).toBe(false);
     expect(parseFlowDef(null).ok).toBe(false);
   });
+
+  test("u14 · Kết thúc là điểm cuối: có luật rẽ nhánh đi tiếp ⇒ FLOW_FINISH_NEXT", () => {
+    const withBranch = [
+      stage("a", { step: 0 }),
+      stage("b", {
+        step: 1,
+        outcome: "approved",
+        after: { kind: "auto", branch: [{ field: "x", op: "eq", value: "1", goto_step: 0 }] },
+      }),
+    ];
+    expect(rules(flow({ stages: withBranch }))).toContain("FLOW_FINISH_NEXT");
+  });
 });

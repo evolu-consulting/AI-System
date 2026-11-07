@@ -11,13 +11,13 @@ import { useTranslation } from "react-i18next";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { useHandlers } from "./canvas-ctx";
 import { CONNECT_TARGET } from "./connect-target";
-import { FINISH_CLASS, FlowNodeBody, isFinishView } from "./FlowNodeBody";
+import { FINISH_CLASS, FlowNodeBody, isFinishView, isTerminalView } from "./FlowNodeBody";
 import { ModuleNode } from "./ModuleNode";
 import { NextPort } from "./OutPort";
 import { StageBody, stageButtonClass } from "./StageBody";
 import { onStageKeyDown } from "./stage-keys";
 import type { StageNodeData, StageNodeType } from "./stage-node-type";
-import { sameView } from "./stage-view";
+import { type StageView, sameView } from "./stage-view";
 
 export type { StageNodeData, StageNodeType };
 
@@ -40,24 +40,34 @@ function RejectPort() {
   );
 }
 
-function StageNodeImpl({ data }: NodeProps<StageNodeType>) {
-  const h = useHandlers();
-  const { v, selected } = data;
-  const flow = useFlowCtx();
+/** Cổng ra của bước: "đi tiếp" + cổng quay lại / rẽ nhánh ẩn. Bước Kết thúc KHÔNG vẽ phần này (điểm cuối). */
+function OutPorts({ v, connectable }: { v: StageView; connectable: boolean }) {
   return (
-    <div
-      style={{ width: NODE_W, height: NODE_H }}
-      className={`pointer-events-auto ${CONNECT_TARGET}`}
-    >
-      <HiddenHandle type="target" position={Position.Left} />
-      <NextPort connectable={data.connectable === true && !v.locked} />
-      <HiddenHandle id="back-in" type="target" position={Position.Bottom} />
+    <>
+      <NextPort connectable={connectable} />
       {v.dlc?.gate ? (
         <RejectPort />
       ) : (
         <HiddenHandle id="back" type="source" position={Position.Top} />
       )}
       <HiddenHandle id="branch" type="source" position={Position.Bottom} />
+    </>
+  );
+}
+
+function StageNodeImpl({ data }: NodeProps<StageNodeType>) {
+  const h = useHandlers();
+  const { v, selected } = data;
+  const flow = useFlowCtx();
+  const end = !!flow && isTerminalView(v);
+  return (
+    <div
+      style={{ width: NODE_W, height: NODE_H }}
+      className={`pointer-events-auto ${CONNECT_TARGET}`}
+    >
+      <HiddenHandle type="target" position={Position.Left} />
+      <HiddenHandle id="back-in" type="target" position={Position.Bottom} />
+      {end ? null : <OutPorts v={v} connectable={data.connectable === true && !v.locked} />}
       <button
         type="button"
         data-stage-uid={v.uid}

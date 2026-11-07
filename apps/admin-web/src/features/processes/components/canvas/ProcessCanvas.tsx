@@ -14,7 +14,7 @@ import {
 } from "@ai/flow-canvas";
 import { type FlowEdgeIn, type FlowNodeIn, stepEdges } from "@ai/flow-canvas/pure";
 import type { Edge, Node, XYPosition } from "@xyflow/react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { BridgeApi } from "../../hooks/use-bridge";
 import { useStagesMax } from "../../hooks/use-stages-max";
@@ -37,6 +37,7 @@ import {
   warnStyle,
 } from "./canvas-parts";
 import { EdgeInsertMenu } from "./EdgeInsertMenu";
+import { isTerminalView } from "./FlowNodeBody";
 import { IfNode } from "./IfNode";
 import { moduleEdges } from "./module-cluster";
 import { StageNode } from "./StageNode";
@@ -104,7 +105,7 @@ function useFlowStructure(
     const byUid = new Map(views.map((v) => [v.uid, v]));
     // CR-122 · C: flow có "Bắt đầu khi" bỏ cạnh quay lại tới bước đầu (không còn tiêu đề cột để neo)
     const lay = stepEdges(
-      views.map((v) => ({ ...v, terminal: v.src.outcome !== undefined })),
+      views.map((v) => ({ ...v, terminal: isTerminalView(v) })),
       { back: !trig },
     );
     // dlc-engine · bước DLC và bước duyệt không nối với nhau (một sơ đồ chỉ một loại bước).
@@ -198,6 +199,38 @@ function useFlowGraph(
   }, [s, auto, views, selected, readOnly, warn, bridge, connectable]);
 }
 
+/**
+ * CR-123 · u14 · node đang làm việc: node mới thêm + hai đầu của cạnh mới (thả, nối, chèn, nối lại) — khung nhìn giữ chúng trọn trong khung sau mỗi lần ELK bố cục lại.
+ * Lần dựng đầu (mở flow) không tính; "Sắp xếp" (`fitKey` đổi) xoá để fit toàn sơ đồ không bị kéo lệch.
+ */
+function useFocusIds(
+  nodes: readonly Node[],
+  edges: readonly Edge[],
+  fitKey: number | undefined,
+): string[] {
+  const [focus, setFocus] = useState<string[]>([]);
+  const seen = useRef<{ nodes: Set<string>; edges: Set<string> } | null>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ khi "Sắp xếp"
+  useEffect(() => {
+    seen.current = null;
+    setFocus([]);
+  }, [fitKey]);
+  useEffect(() => {
+    if (nodes.length === 0) return;
+    const now = { nodes: new Set(nodes.map((n) => n.id)), edges: new Set(edges.map((e) => e.id)) };
+    const before = seen.current;
+    seen.current = now;
+    if (!before) return;
+    const work = (id: string) => id !== "trigger" && !id.startsWith("bridge:");
+    const ids = [
+      ...nodes.map((n) => n.id).filter((id) => !before.nodes.has(id) && work(id)),
+      ...edges.filter((e) => !before.edges.has(e.id)).flatMap((e) => [e.target, e.source]),
+    ].filter((id, i, all) => work(id) && now.nodes.has(id) && all.indexOf(id) === i);
+    if (ids.length > 0) setFocus(ids.slice(0, 3));
+  }, [nodes, edges]);
+  return focus;
+}
+
 function useCanvasLabels(dlc: boolean): Partial<FlowLabels> {
   const { t } = useTranslation();
   return useMemo(
@@ -246,6 +279,7 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
     insertable,
     connectable,
   );
+  const focusIds = useFocusIds(g.nodes, g.edges, p.fitKey);
   const labels = useCanvasLabels(g.dlc);
   const room = useStagesMax() - (p.stageCount ?? p.views.length); // ô module = số stage thật của cụm
   // CR-123 · p25: kéo từ bảng mẫu, nối lại, chọn nhiều, xoá, chép/dán, hoàn tác, minimap (chỉ canvas sửa được của trình soạn).
@@ -309,6 +343,7 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
           inset={p.inset}
           fitMin={p.fitMin}
           selectedId={p.selected}
+          focusIds={focusIds}
           resetKey={tick}
           onNodeDragStop={onDragStop}
           onConnect={(p.linkable || connectable) && !p.readOnly ? onConnect : undefined}

@@ -62,6 +62,8 @@ type FlowDefShape = {
     step?: number;
     next_step?: number;
     outcome?: string;
+    /** u14: Kết thúc cũng không được có luật rẽ nhánh đi tiếp. */
+    after?: { branch?: readonly unknown[] };
     executor?: {
       kind: string;
       when?: { conds?: readonly IfCondShape[] };
@@ -79,6 +81,8 @@ function stageIssues(d: FlowDefShape, add: (p: string, r: FlowDefRule) => void):
   d.stages.forEach((s, i) => {
     if (s.outcome !== undefined && s.next_step !== undefined)
       add(`stages.${i}.next_step`, "FLOW_FINISH_NEXT");
+    if (s.outcome !== undefined && (s.after?.branch?.length ?? 0) > 0)
+      add(`stages.${i}.after.branch`, "FLOW_FINISH_NEXT");
     const n = s.next_step;
     if (n !== undefined && (n <= (steps[i] as number) || n >= count))
       add(`stages.${i}.next_step`, "FLOW_NEXT_STEP_INVALID");

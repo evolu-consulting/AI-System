@@ -507,7 +507,7 @@ cff1dd28bdd2fbba6f15006c85e6e76bc299fe2d517b30a39a04f5ebc8a82fb4  e2e/journey-ap
 c13269cfcf12af57ca45019ee31084dcd5fd222ffca00448fbd591b42995468f  e2e/journey-approval/cr122-editor.spec.ts
 9396f9f7f684855a14219f14f5b2d4f4f87c7875d2b6fcd195b2ab43cd96888c  e2e/journey-approval/cr122-flows.spec.ts
 f17d2dc179c7dc2ca153ed3c7705ac1a9e3af9fccadcdf506b8d57246bec74d0  e2e/journey-approval/cr122-p24-not-assigned.spec.ts
-5fa66e427320fd3b4adabe74745efb1b78def379cf4c8e97371598e035b717c9  e2e/journey-approval/cr123-arrow-drag.spec.ts
+d17a66d4009dfce4fc5681d762b94952d0640a3c6e6e55dfb40bf54da5b4b3a3  e2e/journey-approval/cr123-arrow-drag.spec.ts
 18b99e223ad2b63100d591528fb46b6fe22fa8c20d7483b444264100b775f033  e2e/journey-approval/cr123-palette-drop.spec.ts
 604346b23e96897c7a86239c530ff8dfb166e8b2100274a1a0348cb1a092ce89  e2e/journey-approval/cr123-u6-run-card.spec.ts
 fe9dc3f40ceea231bfa7daf82a72e5f02dacb0b97d88afde8ed59d11ba0a86bb  e2e/journey-approval/cr124-q5-partner-email.spec.ts

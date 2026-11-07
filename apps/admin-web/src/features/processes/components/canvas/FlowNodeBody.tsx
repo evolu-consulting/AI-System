@@ -13,6 +13,9 @@ import type { StageView } from "./stage-view";
 const OPS = OP_SYMBOL as Record<string, string>;
 
 export const isFinishView = (v: StageView): boolean => v.src.outcome !== undefined;
+/** CR-123 · u14 · điểm cuối: bước Kết thúc, hoặc chờ sự kiện thường (không thuộc node module) — KHÔNG có cổng ra, không có cạnh đi tiếp. */
+export const isTerminalView = (v: StageView): boolean =>
+  isFinishView(v) || (v.src.executor === "wait_event" && v.module === undefined && !v.src.node);
 
 function useLabels() {
   const flow = useFlowCtx();

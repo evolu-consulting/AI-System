@@ -71,6 +71,8 @@ export type FlowCanvasProps = {
   inset?: number;
   fitMin?: number;
   selectedId?: string;
+  /** CR-123 · u14 · node đang làm việc (mới thả / vừa nối): khung nhìn giữ chúng trọn trong khung sau mỗi lần bố cục. */
+  focusIds?: readonly string[];
   /** Đổi giá trị ⇒ dựng lại mảng nodes (node bị từ chối trượt về vị trí gốc). */
   resetKey?: number;
   // ---- móc của host (edit) ----
@@ -214,6 +216,7 @@ function Flow(p: FlowCanvasProps) {
               compact={!!p.compact}
               fitMin={p.fitMin ?? FIT.minZoom}
               selected={p.selectedId}
+              focus={p.focusIds ?? []}
             />
             <ReactFlow
               {...common}

@@ -110,12 +110,13 @@ export function connectPatch(
   if (!src || !dst) return null;
   const fail = (error: ConnectError): ConnectResult => ({ ok: false, error, uid: src.uid });
   const wi = waitIndexOf(stages, index);
+  // CR-123 · u14 · bước Kết thúc (và chờ sự kiện không thuộc node module) là ĐIỂM CUỐI: không bao giờ là nguồn của mũi tên (kiểm TRƯỚC mọi luật khác)
+  if (src.outcome !== undefined || (wi < 0 && src.executor === "wait_event")) return fail("noNext");
   if (needsReview(src, dst, stages[wi >= 0 ? wi : index])) return fail("realNeeds");
   if (wi >= 0) return connectExit(stages, src, wi, dst, c.sourceHandle);
   if (dst.step <= src.step) return fail("notLater");
   if (src.executor === "if") return connectIf(stages, index, dst, c.sourceHandle);
 
-  if (src.outcome !== undefined || src.executor === "wait_event") return fail("noNext");
   const sequential = dst.step === src.step + 1;
   return { ok: true, index, field: "next", patch: { nextStep: sequential ? undefined : dst.step } };
 }

@@ -186,6 +186,26 @@ async function emptySpot(page: Page): Promise<{ x: number; y: number }> {
     }
   return { x: w / 2 + 8, y: pane.height - h / 2 - 8 };
 }
+/** CR-123 · u14 · node nằm TRỌN trong khung canvas (không bị cắt mép): khung nhìn đi theo node vừa thả / vừa nối (đợi hoạt ảnh pan xong). */
+async function expectInside(page: Page, loc: Locator, what: string): Promise<void> {
+  const pane = page.locator(".react-flow__pane").first();
+  await expect
+    .poll(
+      async () => {
+        const [p, b] = [await pane.boundingBox(), await loc.first().boundingBox()];
+        return (
+          !!p &&
+          !!b &&
+          b.x >= p.x - 1 &&
+          b.y >= p.y - 1 &&
+          b.x + b.width <= p.x + p.width + 1 &&
+          b.y + b.height <= p.y + p.height + 1
+        );
+      },
+      { message: `${what}: node phải nằm trọn trong khung canvas` },
+    )
+    .toBe(true);
+}
 /** Thu nhỏ tới khi node cuối nằm trọn trong khung canvas (đích của mũi tên phải THẤY được mới kéo tới được). */
 async function fitAll(page: Page): Promise<void> {
   const pane = page.locator(".react-flow__pane").first();
@@ -245,6 +265,7 @@ test("U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, k
   await expect(fresh).toContainText("Bước duyệt mới"); // u11 · tên mặc định + nhắc đặt tên (không chỉ "Duyệt")
   await expect(page.getByTestId("free-name-hint")).toHaveCount(1);
   await expect(page.getByRole("complementary", { name: /./ })).toHaveCount(0);
+  await expectInside(page, fresh, "sau khi thả Duyệt");
   await fitAll(page); // thả làm canvas fit lại ⇒ thu nhỏ để cả nguồn lẫn đích đều nằm trong khung
 
   // 2 · kéo đầu ra "Ký xong" của Ký số tới node mới ⇒ nối (node được đặt ngay sau Ký số), hết gợi ý
@@ -261,6 +282,11 @@ test("U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, k
   await expect(page.getByTestId("module-exit-done"), await dump()).toHaveCount(1);
   await arrow(page, page.getByTestId("module-exit-done"), fresh);
   await expect(page.getByTestId("free-hint")).toHaveCount(0);
+  await expectInside(
+    page,
+    page.locator(".react-flow__node").filter({ hasText: "Bước duyệt mới" }),
+    "sau khi nối Ký xong → Duyệt (ELK bố cục lại)",
+  );
   await fitAll(page);
 
   // 3 · chọn người duyệt cho node mới (Lưu cần), đóng ngăn, rồi kéo từ node mới tới Kết thúc · Đã duyệt
@@ -309,6 +335,16 @@ test("U12 · mũi tên tới bước nằm trước (Thông báo → Kết thúc
   await fitAll(page);
   const node = (name: string) =>
     page.locator(".react-flow__node").filter({ hasText: name }).first();
+  // CR-123 · u14 · bước Kết thúc là điểm cuối: KHÔNG có cổng ra; bước thường có
+  await expect(
+    page
+      .locator(".react-flow__node")
+      .filter({ hasText: "Kết thúc" })
+      .locator(".react-flow__handle.source"),
+  ).toHaveCount(0);
+  expect(
+    await node("Thông báo người tạo").locator(".react-flow__handle.source").count(),
+  ).toBeGreaterThan(0);
   const end = page
     .locator(".react-flow__node")
     .filter({ hasText: "Kết thúc" })

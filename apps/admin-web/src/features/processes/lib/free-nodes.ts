@@ -112,3 +112,15 @@ export function approveAloneErrors(stages: readonly StageDraft[]): DraftErrors {
     ),
   );
 }
+
+/** CR-123 · u14 · bước Kết thúc là điểm cuối: bản nháp (vd mở def cũ) còn "đi tiếp" ở Kết thúc ⇒ chặn Lưu kèm lý do tại `stages.i.nextStep`. */
+export const END_NEXT_ERR = "process.admin.canvas.err.endNext";
+export function endNextErrors(stages: readonly StageDraft[]): DraftErrors {
+  return Object.fromEntries(
+    stages.flatMap((s, i) =>
+      s.outcome !== undefined && s.nextStep !== undefined
+        ? [[`stages.${i}.nextStep`, END_NEXT_ERR] as const]
+        : [],
+    ),
+  );
+}

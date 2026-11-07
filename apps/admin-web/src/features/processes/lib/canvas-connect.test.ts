@@ -58,7 +58,7 @@ describe("connectPatch", () => {
     });
   });
   test("nút kết thúc không có bước đi tiếp; Nếu thả ngoài cổng Đúng/Sai bị từ chối; cổng Từ chối để nơi khác xử lý", () => {
-    expect(connectPatch(flow, { source: "e", target: "a" })).toMatchObject({ error: "notLater" });
+    expect(connectPatch(flow, { source: "e", target: "a" })).toMatchObject({ error: "noNext" }); // u14: Kết thúc không bao giờ là nguồn
     const fin = [st("f", 0, { outcome: "approved" }), st("g", 1)];
     expect(connectPatch(fin, { source: "f", target: "g" })).toMatchObject({ error: "noNext" });
     expect(connectPatch(flow, { source: "if", target: "c", sourceHandle: null })).toMatchObject({

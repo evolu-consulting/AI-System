@@ -723,6 +723,7 @@
       "stepFull": "Step {{step}} already has 3 parallel stages.",
       "stagesMax": "A process has at most {{max}} steps — change it in Platform settings.",
       "approveAlone": "An approval step must be on its own step - split it out or move it to another step.",
+      "endNext": "An end step is terminal and cannot have a next step - clear its merge target.",
       "step": "Invalid step numbers. Drag the stage into a valid column.",
       "realStep": "Real action needs every stage in the previous step to have a reviewer.",
       "realNeedsReview": "«E-signature» needs an Approval step right before it. Add the Approval first, then drop it again.",

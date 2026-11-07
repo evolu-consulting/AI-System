@@ -47,7 +47,7 @@ export type {
 
 import { dlcDraftErrors } from "./dlc-slot";
 import type { DefDraft, DraftErrors, StageDraft } from "./draft-types";
-import { approveAloneErrors, freeErrors } from "./free-nodes";
+import { approveAloneErrors, endNextErrors, freeErrors } from "./free-nodes";
 
 export { emptyStage, slugKey };
 
@@ -199,6 +199,7 @@ export function validateDraft(
   Object.assign(e, applyCrossErrors(d.stages), d2LiveErrors(d.stages, d.inputs, tools));
   Object.assign(e, dlcDraftErrors(d.stages)); // dlc-engine · luật bước DLC + KIND_MIX
   Object.assign(e, freeErrors(d.stages)); // CR-123 · u5 · node đứng riêng chưa nối
+  Object.assign(e, endNextErrors(d.stages)); // CR-123 · u14 · Kết thúc không đi tiếp
   Object.assign(e, approveAloneErrors(d.stages)); // CR-123 · u12b · bước Duyệt phải đứng một mình (hub: APPROVE_INVALID)
   return { ...toolSubmitErrors(d.stages, tools), ...e };
 }
