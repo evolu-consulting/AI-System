@@ -12,7 +12,7 @@ import {
   type UploadTrace,
   uploadToDify,
 } from "../attachments/attachment-dify";
-import type { CatalogWorkflow, WorkflowInputValue } from "../commands/catalog.types";
+import type { CatalogWorkflow, WorkflowInputValue } from "../commands/public";
 import {
   fileArg,
   TOOL_FILE_TEXT,

@@ -7,7 +7,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { parseJson, validationError } from "../../../lib/http";
-import { requireServiceToken } from "../../internal/test-run.auth";
+import { requireServiceToken } from "../../internal/public";
 import type { ProcessDeps } from "../core/ports";
 import { LibraryService } from "./library.service";
 

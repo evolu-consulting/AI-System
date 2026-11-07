@@ -23,7 +23,7 @@ import { type CredentialService, isCredentialError } from "../../dify/credential
 import type { DifyClient, DifyRunOutcome } from "../../dify/dify.client";
 import { difyUser } from "../../dify/dify.rules";
 import { difyRunMeta, recordDifyRunOnly, recordDifyUsage } from "../../dify/dify.usage";
-import { chunkText } from "../../orchestrator/orchestrator.rules";
+import { chunkText } from "../../orchestrator/public";
 import type { RunContext, RunDriver, SseWriter } from "../../runs/public";
 import type { PreparedCommand } from "../commands.service";
 import { type CommandFilesResult, uploadCommandFiles } from "./command-files";

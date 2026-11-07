@@ -3,7 +3,7 @@
 // job; `all_subscription` = mọi bước là provider `subscription`. Dựng từ danh sách trường cho phép (không spread hàng DB).
 import type { ProfileStep } from "@ai/contracts/hub";
 import type { ModelProfile, Ref } from "@ai/contracts/studio";
-import { pickStep, type StepView } from "../../runner/profile-step.rules";
+import { pickStep, type StepView } from "../../runner/public";
 import { allSubscription } from "./models.rules";
 import type { ModelProfileStep, ProfileDbRow, ProviderView } from "./profiles.repo";
 

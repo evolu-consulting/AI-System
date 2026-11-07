@@ -9,7 +9,7 @@ import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
 import { AttachmentContentMissing, type UploadTrace } from "../../attachments/attachment-dify";
 import type { AttachmentStorage } from "../../attachments/storage";
-import type { CatalogWorkflow, WorkflowInputValue } from "../../commands/catalog.types";
+import type { CatalogWorkflow, WorkflowInputValue } from "../../commands/public";
 import type { ConfigCache } from "../../config/public";
 import { tenantKeyOf } from "../../config/public";
 import { type CredentialService, isCredentialError } from "../../dify/credential.service";

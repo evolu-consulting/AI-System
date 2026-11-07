@@ -7,7 +7,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { safeErrorFields } from "../../../lib/errors";
 import { publishUserEvents } from "../../../lib/user-stream";
-import { runJob } from "../../runner/job/job-agent-runner";
+import { runJob } from "../../runner/public";
 import type { RunContext, RunDriver, RunOutcome } from "../../runs/public";
 import { agentFailureGate, releaseTeamRun } from "../adapters/runs/job-failure";
 import { type AgentOut, agentOutOf } from "../adapters/runs/job-result";

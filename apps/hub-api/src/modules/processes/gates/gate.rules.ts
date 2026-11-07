@@ -1,7 +1,7 @@
 // HUB-FR-107 · HUB-FR-109 · HUB-BR-28 · R-G01…R-G03, R-G05 · luật thuần cổng kiểm + gợi ý quy trình (plan-contract §7
 // "runs/start + gates (PF1)"). Thuần: không I/O. `suggestProcesses` dùng chung `levenshtein` (commands/suggest.rules).
 import type { StageRunStatus } from "@ai/contracts/chat";
-import { levenshtein } from "../../commands/suggest.rules";
+import { levenshtein } from "../../commands/public";
 
 /**
  * HUB-FR-109 · R-G01/R-G02 · "Hành động thật" chỉ được chạy khi stage ngay trước là **cổng duyệt đã Đạt** (review +

@@ -1,6 +1,6 @@
 // HUB-FR-91 · H2b-R02, R03, R07, R10 · luật tag `@` (plan-rules; câu chữ plan-errors §2). Thuần.
 import { RESPONDER_NAME_MAX, type Responder } from "@ai/contracts/chat";
-import { suggestCommands } from "../commands/suggest.rules";
+import { suggestCommands } from "../commands/public";
 
 export type MentionLocale = "vi" | "en";
 

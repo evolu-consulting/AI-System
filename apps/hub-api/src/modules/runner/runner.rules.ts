@@ -23,7 +23,7 @@ import {
   type WorkflowAsyncJob,
   WorkflowAsyncJobSchema,
 } from "@ai/contracts/hub";
-import type { WorkflowJobInput } from "../commands/catalog.types";
+import type { WorkflowJobInput } from "../commands/public";
 import type { AgentConfig, ProfileConfig } from "../config/public";
 
 export type AgentRole = "orchestrator" | "agent";

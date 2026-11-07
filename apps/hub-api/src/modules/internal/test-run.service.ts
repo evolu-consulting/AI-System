@@ -12,8 +12,8 @@ import {
 } from "@ai/contracts/hub-internal";
 import { validationError } from "../../lib/http";
 import type { Logger } from "../../lib/logger";
-import type { CatalogWorkflow } from "../commands/catalog.types";
-import { type BoundCommand, bindCommandInputs } from "../commands/commands.service";
+import type { CatalogWorkflow } from "../commands/public";
+import { type BoundCommand, bindCommandInputs } from "../commands/public";
 import type { ConfigCache, UserState } from "../config/public";
 import { stepLabel } from "../conversations/conversations.rules";
 import { type CredentialService, isCredentialError } from "../dify/credential.service";

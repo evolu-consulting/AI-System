@@ -7,7 +7,7 @@ import type { SourcesResolvedRequest } from "@ai/contracts/hub-internal";
 import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../lib/db";
 import { hashJobToken } from "../../lib/job-token";
-import { bearerJobToken } from "../internal/credential.service";
+import { bearerJobToken } from "../internal/public";
 import type { CheckWaiters, ResolveOutcome } from "./check.waiters";
 import type { ResolveBridge } from "./resolve.bridge";
 import * as repo from "./sources.repo";

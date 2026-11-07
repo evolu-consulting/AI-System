@@ -1,6 +1,6 @@
 // HUB-FR-99 · luật thuần `/me/stream` (X2a plan §7 bảng `Last-Event-ID`, §8; spec-isolation §1). Không I/O.
 import { STREAM_EVENT_ID_RE } from "@ai/contracts/chat";
-import { compareStreamId } from "../runner/runner.rules";
+import { compareStreamId } from "../runner/public";
 
 /** `XINFO STREAM`: id cuối đã sinh + id lớn nhất đã bị cắt (Redis 7). */
 export type StreamInfo = { lastGenerated: string; maxDeleted: string };

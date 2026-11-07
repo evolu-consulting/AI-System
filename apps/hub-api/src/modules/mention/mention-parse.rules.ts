@@ -1,6 +1,6 @@
 // HUB-FR-91 · H2b-R01, AC-01 · phân loại tin E12: lệnh `/`, tag `@`, chữ thường (plan-rules, plan P4). Thuần.
 // `classifyMessage` (H2a, test khoá) giữ nguyên — `routeMessage` bọc nó.
-import { classifyMessage } from "../commands/command-parse.rules";
+import { classifyMessage } from "../commands/public";
 
 export type Routed =
   | { kind: "text"; content: string }

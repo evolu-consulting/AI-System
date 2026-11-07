@@ -1,4 +1,4 @@
-// ADR-0037 Â· cá»­a cÃ´ng khai DUY NHáº¤T cá»§a module `processes`: module khÃ¡c chá»‰ import file nÃ y (theo tÃªn, khÃ´ng `export *`). Ruá»™t lÃ  riÃªng cá»§a module.
+// ADR-0037 · cửa công khai DUY NHẤT của module `processes`: module khác chỉ import file này (theo tên, không `export *`). Ruột là riêng của module.
 export type { Bang } from "./core/bang.rules";
 export { classifyBang } from "./core/bang.rules";
 export { processError } from "./core/errors";

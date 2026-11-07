@@ -12,7 +12,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { Db } from "../../../lib/db";
 import { safeErrorFields } from "../../../lib/errors";
 import type { Logger } from "../../../lib/logger";
-import type { CatalogWorkflow } from "../../commands/catalog.types";
+import type { CatalogWorkflow } from "../../commands/public";
 import { type CatalogSnapshot, tenantKeyOf } from "../../config/public";
 import { stepLabel } from "../../conversations/conversations.rules";
 import {
@@ -22,9 +22,8 @@ import {
   chatTokenTtlS,
   HUB_TOOL_TOKEN_INPUT,
 } from "../../mcp/chat-token";
-import type { AgentRunner, AgentTask } from "../../runner/job/job-agent-runner";
-import { packToolKeys } from "../../runner/job/pack-tool-keys.rules";
-import { syntheticFailed } from "../../runner/runner.rules";
+import type { AgentRunner, AgentTask } from "../../runner/public";
+import { packToolKeys, syntheticFailed } from "../../runner/public";
 import type { SseEventBody } from "../../runs/public";
 import { type CredentialService, isCredentialError } from "../credential.service";
 import type { DifyClient, DifyRunOutcome } from "../dify.client";

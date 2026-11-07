@@ -11,7 +11,7 @@ import { hashJobToken, isJobToken } from "../../lib/job-token";
 import type { Logger } from "../../lib/logger";
 import { traced } from "../../lib/otel";
 import type { ArtifactMcpTools } from "../artifacts/artifact.mcp";
-import type { CatalogWorkflow } from "../commands/catalog.types";
+import type { CatalogWorkflow } from "../commands/public";
 import type { ConfigCache } from "../config/public";
 import { agentWorkflowIds } from "../config/public";
 import { type KhJobCtx, type KhQueryService, khJobCtx } from "../kh/kh.query.service";

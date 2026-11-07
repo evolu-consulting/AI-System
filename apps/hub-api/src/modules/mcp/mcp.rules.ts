@@ -4,8 +4,8 @@
 import type { JobAttachment } from "@ai/contracts/hub";
 import { MCP_PROTOCOL_VERSIONS } from "@ai/contracts/hub-internal";
 import type { WorkflowInput } from "@ai/contracts/workflows";
-import type { CatalogWorkflow, WorkflowInputValue } from "../commands/catalog.types";
-import { appNeedsQuery } from "../commands/command-input.rules";
+import type { CatalogWorkflow, WorkflowInputValue } from "../commands/public";
+import { appNeedsQuery } from "../commands/public";
 
 export type RpcId = string | number;
 /** Không `id` = notification (→ 202). */

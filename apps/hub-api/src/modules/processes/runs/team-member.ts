@@ -4,7 +4,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import type { RunFile } from "../../attachments/run-files.rules";
-import { runJob } from "../../runner/job/job-agent-runner";
+import { runJob } from "../../runner/public";
 import { runErrorText } from "../../runs/public";
 import { jobFailOf, tokensOf } from "../adapters/runs/job-result";
 import { type MemberOutcome, type MemberResult, outcomeOf } from "../adapters/runs/team-failure";

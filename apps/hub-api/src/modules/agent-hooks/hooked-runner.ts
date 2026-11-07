@@ -8,7 +8,7 @@
 import { type RunEvent, SYSTEM_PROMPT_MAX } from "@ai/contracts/hub";
 import type { AgentHookEvent } from "@ai/contracts/studio";
 import type { Logger } from "../../lib/logger";
-import type { AgentRunner, AgentTask } from "../runner/job/job-agent-runner";
+import type { AgentRunner, AgentTask } from "../runner/public";
 import type { HookRow, HookRunner } from "./hook-runner";
 import { HOOK_TIMEOUT_MS, type HookInputs, personaProjectOf, withHookContext } from "./hooks.rules";
 import type { UserTokens } from "./user-token";

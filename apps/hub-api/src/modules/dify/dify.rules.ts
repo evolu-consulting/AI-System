@@ -3,7 +3,7 @@
 
 import type { DifyAppType } from "@ai/contracts/hub";
 import type { WorkflowInput } from "@ai/contracts/workflows";
-import type { WorkflowInputValue } from "../commands/catalog.types";
+import type { WorkflowInputValue } from "../commands/public";
 
 export type DifyRunBodyInput = {
   appType: DifyAppType;

@@ -1,7 +1,7 @@
 // HUB-FR-106 · D5 · D11 · T7s · adapter: kết quả job agent (`JobOutcome` của runner) ⇒ `StageResult` cho máy trạng thái
 // (xử lý job lỗi/huỷ/hết giờ tách khỏi driver). Thuần ánh xạ — không DB, không log nội dung.
 import type { AgentResult, TokenUsage } from "@ai/contracts/hub";
-import type { JobOutcome } from "../../../runner/job/job-agent-runner";
+import type { JobOutcome } from "../../../runner/public";
 import { totalTokens } from "../../core/limits.rules";
 import type { StageResult } from "../../runs/team-runner";
 

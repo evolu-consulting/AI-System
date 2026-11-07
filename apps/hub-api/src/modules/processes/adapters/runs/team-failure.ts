@@ -1,7 +1,7 @@
 // HUB-FR-114 · N4 · D7 · PB-R17 · T7s · adapter: xử lý job thành viên nhóm lỗi — mã job ⇒ lý do thành viên, lý do dừng
 // stage nhóm (`stopFail`), cộng bộ đếm sau mỗi lần gọi (`bump`). Tách khỏi `team-exec`/`team-member`; không log nội dung.
 import type { AgentResult } from "@ai/contracts/hub";
-import type { JobOutcome } from "../../../runner/job/job-agent-runner";
+import type { JobOutcome } from "../../../runner/public";
 import { addCall } from "../../runs/team-counters";
 import type { TeamDeps } from "../../runs/team-load";
 import type { StageResult } from "../../runs/team-runner";

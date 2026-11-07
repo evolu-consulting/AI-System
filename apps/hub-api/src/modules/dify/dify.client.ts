@@ -5,7 +5,7 @@
 // Không bao giờ log/ném app-key: thân lỗi upstream chỉ ra ngoài qua `maskSecret(…, apiKey)` (≤ 300).
 import { createSseParser } from "@ai/contracts/chat";
 import type { DifyAppType } from "@ai/contracts/hub";
-import type { WorkflowInputValue } from "../commands/catalog.types";
+import type { WorkflowInputValue } from "../commands/public";
 import {
   DIFY_FAILED_STATUSES,
   type DifyUsage,

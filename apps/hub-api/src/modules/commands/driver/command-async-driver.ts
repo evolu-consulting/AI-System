@@ -14,11 +14,8 @@ import type { AttachmentStorage } from "../../attachments/storage";
 import { stepLabel } from "../../conversations/conversations.rules";
 import type { CredentialService } from "../../dify/credential.service";
 import { difyUser } from "../../dify/dify.rules";
-import { buildWorkflowJobPayload } from "../../runner/runner.rules";
-import type {
-  WorkflowJobOutcome,
-  WorkflowJobRunner,
-} from "../../runner/workflow/workflow-job-runner";
+import type { WorkflowJobOutcome, WorkflowJobRunner } from "../../runner/public";
+import { buildWorkflowJobPayload } from "../../runner/public";
 import type { RunContext, RunDriver } from "../../runs/public";
 import type { WorkflowInputValue } from "../catalog.types";
 import type { PreparedCommand } from "../commands.service";

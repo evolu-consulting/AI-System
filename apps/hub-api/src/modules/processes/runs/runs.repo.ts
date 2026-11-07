@@ -6,7 +6,7 @@ import { type ProcessInputDef, stepGroups } from "@ai/contracts/hub-admin";
 import type { Tx } from "@ai/db";
 import { type SQL, sql } from "drizzle-orm";
 import { appError } from "../../../lib/errors";
-import { levenshtein } from "../../commands/suggest.rules";
+import { levenshtein } from "../../commands/public";
 import { CAP_COUNTED } from "../domain/runs/active-cap.rules";
 
 type Json = Record<string, unknown>;

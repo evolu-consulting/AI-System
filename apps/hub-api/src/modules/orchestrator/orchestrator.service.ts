@@ -11,7 +11,7 @@ import { artifactStoreFor } from "../artifacts/artifact.mount";
 import type { ArtifactSink } from "../artifacts/artifact.service";
 import { fileBrief } from "../attachments/run-files.rules";
 import type { UserState } from "../config/public";
-import { type AgentRunner, runJob } from "../runner/job/job-agent-runner";
+import { type AgentRunner, runJob } from "../runner/public";
 import type { RunContext, RunDriver, SseWriter } from "../runs/public";
 import { chunkDelta } from "../stream/delta.rules";
 import { DeltaSink } from "../stream/delta-sink";

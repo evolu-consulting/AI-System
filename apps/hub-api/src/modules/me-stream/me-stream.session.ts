@@ -9,7 +9,7 @@ import type { AuthUser } from "../../lib/auth.middleware";
 import { safeErrorFields } from "../../lib/errors";
 import type { Logger } from "../../lib/logger";
 import { deferredAbortClose } from "../../lib/sse-shutdown";
-import { compareStreamId } from "../runner/runner.rules";
+import { compareStreamId } from "../runner/public";
 import { evictOldest, parseStreamId, resumeDecision } from "./me-stream.rules";
 import type { UserEntry, UserStreamReader } from "./user-stream-reader";
 
