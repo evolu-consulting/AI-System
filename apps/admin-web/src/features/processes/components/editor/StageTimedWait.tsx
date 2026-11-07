@@ -1,6 +1,7 @@
 // CR-120 · G3/G4 · khối stage "Chờ N giờ" / "Chờ sự kiện": số giờ hoặc khoá sự kiện + hạn; "Sau giai đoạn" cố định = tự chạy tiếp.
 // CR-123 · FR-13 (ux-audit #13): trong trình sửa quy trình, "Chờ ký xong" chọn "Khi ký xong / bị từ chối / bị huỷ" từ danh sách —
 // không hiện mã sự kiện (ô gõ mã chỉ còn cho quản trị nền tảng).
+import { getAppManifest } from "@ai/contracts/app-manifest";
 import { useTranslation } from "react-i18next";
 import { useSession } from "@/lib/auth/use-session";
 import { useFlowCtx } from "../flow/flow-ctx";
@@ -9,20 +10,22 @@ import type { StageFormProps } from "./stage-form-props";
 
 const K = "process.admin.editor.stage.timedWait.";
 
-/** Sự kiện ký số người dùng chọn được (khoá do app Hợp đồng bắn). */
-export const SIGN_EVENTS = ["esign.completed", "esign.declined", "esign.voided"] as const;
+/** CR-125 · m6b · tín hiệu người dùng công ty chọn được ở "Chờ sự kiện": app khai `pick` trên tín hiệu (không còn danh sách ký số cứng ở đây). */
+export const pickSignals = (app: string | undefined): { key: string; label: string }[] =>
+  (app ? (getAppManifest(app)?.signals ?? []) : []).filter((s) => s.pick === true);
 
 /** Chọn sự kiện từ danh sách (người dùng công ty) hoặc gõ khoá (quản trị nền tảng / trình sửa cũ). */
 function EventField(p: {
   id: string;
   ev: string;
+  signals: readonly { key: string; label: string }[];
   pickList: boolean;
   readOnly: boolean;
   error: string | undefined;
   onChange: (v: string) => void;
 }) {
   const { t } = useTranslation();
-  const known = (SIGN_EVENTS as readonly string[]).includes(p.ev);
+  const known = p.signals.some((s) => s.key === p.ev);
   if (!p.pickList)
     return (
       <>
@@ -48,7 +51,10 @@ function EventField(p: {
       alert
       error={p.error}
       options={[
-        ...SIGN_EVENTS.map((e) => ({ value: e, label: t(`${K}events.${e.split(".")[1]}`) })),
+        ...p.signals.map((s) => ({
+          value: s.key,
+          label: t(`${K}events.${s.key.split(".")[1]}`, { defaultValue: s.label }),
+        })),
         ...(p.ev !== "" && !known ? [{ value: p.ev, label: t(`${K}events.other`) }] : []),
       ]}
       onChange={p.onChange}
@@ -68,7 +74,8 @@ export function StageTimedWait(p: StageFormProps) {
     return k ? t(k) : undefined;
   };
   const ev = w.event ?? "";
-  const known = (SIGN_EVENTS as readonly string[]).includes(ev);
+  const signals = pickSignals(flow?.app);
+  const known = signals.some((s) => s.key === ev);
   const pickList = !!flow && (known || ev === "" || !isPlatform);
   return (
     <fieldset aria-label={t(`${K}hours`)} className="space-y-3" data-testid="stage-timed-wait">
@@ -90,6 +97,7 @@ export function StageTimedWait(p: StageFormProps) {
           <EventField
             id={`${stage.uid}-we-event`}
             ev={ev}
+            signals={signals}
             pickList={pickList}
             readOnly={readOnly}
             error={err("event")}

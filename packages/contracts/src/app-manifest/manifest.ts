@@ -139,8 +139,16 @@ export type AppNodeExit = {
  */
 export type NodeRequires = { before: "approval" };
 
+/**
+ * CR-125 · m6b · vị trí của node trên menu "+" / bảng node (MỘT nguồn, không danh sách cứng ở web): `business` = bước nghiệp vụ mọi người thấy,
+ * `advanced` = "Nâng cao" (chỉ quản trị nền tảng); trong nhóm xếp theo `order` tăng dần (mặc định 50). Vắng `menu` ⇒ `advanced`.
+ */
+export type NodeMenu = { section: "business" | "advanced"; order?: number };
+export const NODE_MENU_ORDER_DEFAULT = 50;
+
 export type AppNodeDecl = {
   key: string;
+  menu?: NodeMenu;
   /** CR-125 · m5 · tiền điều kiện của node (xem `NodeRequires`); picker, kéo thả, nối lại và lưu cùng đọc từ đây qua `MODULES`. */
   requires?: NodeRequires;
   label: { vi: string; en: string };
@@ -183,7 +191,8 @@ export type AppFactDecl = {
 /** Kết quả node Kết thúc mà app xử lý (`OutcomeHandler`); `effect` = câu "app sẽ làm gì" hiện trên node. */
 export type AppOutcomeDecl = { key: string; label: string; effect: string };
 /** CR-125 · tín hiệu chờ của app (vd `esign.completed`): `<thực thể>.<việc>` như sự kiện nhưng chỉ node chờ dùng. */
-export type AppSignalDecl = { key: string; label: string };
+/** `pick` (CR-125 · m6b): tín hiệu hiện trong ô chọn của bước "Chờ sự kiện" cho người dùng công ty (không phải gõ khoá). */
+export type AppSignalDecl = { key: string; label: string; pick?: boolean };
 export type AppEventDecl = {
   /** `<thực thể>.<việc>` (khớp `FLOW_EVENT_KEY_RE`), vd `contract.submitted`; duy nhất trên mọi app. */
   key: string;

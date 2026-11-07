@@ -30,6 +30,7 @@ export const CORE_MODULE: FeatureModule = {
       key: "core.email",
       label: { vi: "Gửi email", en: "Send email" },
       group: "message",
+      menu: { section: "business", order: 50 },
       kind: "base",
       baseExecutor: "notify",
       stages: [
@@ -50,6 +51,7 @@ export const CORE_MODULE: FeatureModule = {
       key: "core.bell",
       label: { vi: "Thông báo chuông", en: "In-app notification" },
       group: "message",
+      menu: { section: "business", order: 40 },
       kind: "base",
       baseExecutor: "notify",
       stages: [

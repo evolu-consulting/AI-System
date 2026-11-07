@@ -32,8 +32,19 @@ import {
 type Executor = ProcessStageDef["executor"];
 type Ex<K extends ExecutorKind> = Extract<Executor, { kind: K }>;
 
+/** CR-125 · m6b · một mục của menu "+" / bảng node do loại bước CƠ BẢN này đóng góp (MỘT nguồn, thay `NODE_TABLE` cứng): `id` = khoá nhãn
+ *  `process.admin.flow.node.<id>` + testid `flow-node-<id>`; `patch` = phần draft khi thêm; `section`/`order` như `NodeMenu` của node module. */
+export type NodeMenuEntry = {
+  id: string;
+  section: "business" | "advanced";
+  order: number;
+  patch: Partial<StageDraft>;
+};
+
 export type FeNode<K extends ExecutorKind = ExecutorKind> = {
   kind: K;
+  /** Mục menu "+" của loại bước (vắng ⇒ không thêm trực tiếp từ menu). */
+  menu?: readonly NodeMenuEntry[];
   family: NodeFamily;
   /** Khoá i18n nhãn loại; agent/team = null (nhãn là tên agent/nhóm trong danh sách chọn). */
   labelKey: string | null;
@@ -58,6 +69,7 @@ const refToDef = (s: StageDraft): Executor => executorToDef(s.executor);
 export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
   agent: {
     kind: "agent",
+    menu: [{ id: "agent", section: "advanced", order: 20, patch: { executor: "" } }],
     family: NODE_FAMILY_OF.agent,
     labelKey: null,
     defaults: () => ({}),
@@ -95,6 +107,7 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
   },
   tool: {
     kind: "tool",
+    menu: [{ id: "tool", section: "advanced", order: 30, patch: { executor: "tool" } }],
     family: NODE_FAMILY_OF.tool,
     labelKey: "process.admin.editor.stage.kind.tool",
     defaults: () => ({ ...TOOL_PATCH }),
@@ -105,6 +118,10 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
   },
   set: {
     kind: "set",
+    menu: [
+      { id: "set", section: "advanced", order: 90, patch: { executor: "set" } },
+      { id: "finish", section: "business", order: 60, patch: { executor: "set" } },
+    ],
     family: NODE_FAMILY_OF.set,
     labelKey: "process.admin.editor.stage.kind.set",
     defaults: () => ({ ...SET_PATCH }),
@@ -115,6 +132,7 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
   },
   if: {
     kind: "if",
+    menu: [{ id: "if", section: "business", order: 20, patch: { executor: "if" } }],
     family: NODE_FAMILY_OF.if,
     labelKey: "process.admin.editor.stage.kind.if",
     defaults: () => ({ ...IF_PATCH }),
@@ -126,6 +144,7 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
   // CR-118 · node form: trường sửa ở `StageFormFields`; `fields` (output) đồng bộ ở `formPatch`/`normalizeForm`.
   form: {
     kind: "form",
+    menu: [{ id: "form", section: "advanced", order: 10, patch: { executor: "form" } }],
     family: NODE_FAMILY_OF.form,
     labelKey: "process.admin.editor.stage.kind.form",
     defaults: () => ({ ...FORM_PATCH }),
@@ -180,6 +199,14 @@ export const FE_NODES: { readonly [K in ExecutorKind]: FeNode<K> } = {
   // (nhãn, khối sửa đích Từ chối/Trả lại).
   approve: {
     kind: "approve",
+    menu: [
+      {
+        id: "approve",
+        section: "business",
+        order: 10,
+        patch: { executor: "approve", after: "review" },
+      },
+    ],
     family: NODE_FAMILY_OF.approve,
     labelKey: "process.admin.flow.node.approve",
     defaults: () => ({ executor: "approve", after: "review" }),

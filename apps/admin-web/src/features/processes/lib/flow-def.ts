@@ -9,6 +9,7 @@ import {
   type ProcessInputDef,
   parseFlowDef,
 } from "@ai/contracts/hub-admin";
+import { FE_NODES, type FeNode } from "../nodes/registry";
 import type { StageDraft } from "./draft-types";
 import { stageToInput } from "./stage-convert";
 
@@ -109,28 +110,29 @@ export function validateFlowDef(raw: unknown, app: string): FlowIssue[] {
 
 /** Một mục bảng node: nhãn nghiệp vụ (i18n), loại draft khi thêm, có dùng được hôm nay không. */
 export type NodeEntry = {
-  id: "approve" | "form" | "if" | "agent" | "tool" | "set" | "finish";
+  /** Khoá nhãn `process.admin.flow.node.<id>` + testid `flow-node-<id>`. */
+  id: string;
   /** Patch draft khi thêm (executor...). `null` = chưa có loại engine (E2/E3) ⇒ hiện nhưng tắt, kèm lý do. */
   patch: Partial<StageDraft> | null;
   /** Chỉ node app khai: cần app có sự kiện (mọi app có manifest). */
   appNode?: boolean;
+  /** Vị trí trên menu (nhóm + thứ tự) — cùng nghĩa với `NodeMenu` của node module. */
+  section: "business" | "advanced";
+  order: number;
 };
 
-const NODE_TABLE: readonly NodeEntry[] = [
-  { id: "approve", patch: { executor: "approve", after: "review" } },
-  { id: "form", patch: { executor: "form" } },
-  { id: "if", patch: { executor: "if" } },
-  { id: "agent", patch: { executor: "" } },
-  { id: "tool", patch: { executor: "tool" } },
-  { id: "set", patch: { executor: "set" } },
-  { id: "finish", patch: { executor: "set" } },
-  // CR-123 · FR-14: không còn mục "Chờ ký xong" riêng — chờ ký là nửa sau của node Ký số (một ô, chèn cả cụm).
-];
+// CR-125 · m6b: bảng bước cơ bản ĐỌC từ registry loại node (`FE_NODES[*].menu`), không còn danh sách cứng ở đây.
+// CR-123 · FR-14: không còn mục "Chờ ký xong" riêng — chờ ký là nửa sau của node Ký số (một ô, chèn cả cụm).
+const nodeTable = (): readonly NodeEntry[] =>
+  (Object.values(FE_NODES) as FeNode[])
+    .flatMap((n) => n.menu ?? [])
+    .map((m): NodeEntry => ({ id: m.id, patch: m.patch, section: m.section, order: m.order }))
+    .sort((a, b) => a.order - b.order);
 
 /** Bảng node của một app: không manifest/không sự kiện ⇒ chỉ node nền tảng; node app (Ký số) chỉ khi app khai sự kiện. */
 export function nodesForApp(app: string): readonly NodeEntry[] {
   const has = eventsOfApp(app).length > 0;
-  return NODE_TABLE.filter((n) => !n.appNode || has);
+  return nodeTable().filter((n) => !n.appNode || has);
 }
 
 /** Node Kết thúc mới: kết quả đầu tiên của sự kiện (Hub/validate báo nếu sự kiện đổi và kết quả không còn). */

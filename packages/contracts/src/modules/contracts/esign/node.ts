@@ -14,6 +14,7 @@ export const ESIGN_NODE: FeatureNodeDecl = {
   key: "contracts.esign",
   label: { vi: "Ký số", en: "E-signature" },
   group: "sign",
+  menu: { section: "business", order: 30 },
   kind: "app",
   feature: "contracts-write",
   // CR-125 · m5 · Ký số là hành động thật: cần người duyệt ngay trước (trước đây luật cứng ở `process-real-rule.ts`, nay đọc từ khai báo).

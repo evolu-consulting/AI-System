@@ -161,6 +161,7 @@ export const ${nodeConst(node)}: FeatureNodeDecl = {
   label: { vi: "${pascal(node)}", en: "${pascal(node)}" },
   group: "content",
   kind: "app",
+  menu: { section: "business" },
   feature: "${app}-write",
   stages: [],
   inputs: [],

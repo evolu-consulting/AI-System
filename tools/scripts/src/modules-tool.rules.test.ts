@@ -4,6 +4,7 @@ import {
   addNodeToModule,
   moduleSource,
   nameError,
+  nodeSource,
   renderIndex,
   scanNodePaths,
   staticIssues,
@@ -64,6 +65,12 @@ describe("module:new", () => {
     expect(nameError("app", "Demo")).toContain("không hợp lệ");
     expect(nameError("node", "show-post")).toBeNull();
   });
+  test(
+    "node.ts khung có menu nghiệp vụ ⇒ node mới hiện ở menu " + " với panel chung (CR-125 m6b)",
+    () => {
+      expect(nodeSource("demo", "sample")).toContain('menu: { section: "business" }');
+    },
+  );
   test("addNodeToModule thêm import + nodes[], idempotent", () => {
     const once = addNodeToModule(moduleSource("demo", "sample"), "other-one");
     expect(once).toContain('import { OTHER_ONE_NODE } from "./other-one/node";');

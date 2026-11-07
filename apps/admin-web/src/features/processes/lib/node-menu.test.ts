@@ -1,25 +1,20 @@
 import { describe, expect, test } from "bun:test";
-import type { AppNodeDecl } from "@ai/contracts/app-manifest";
+import { type AppNodeDecl, CONTRACTS_MANIFEST, CORE_NODES } from "@ai/contracts/app-manifest";
 import { nodesForApp } from "./flow-def";
 import { splitMenu } from "./node-menu";
 
-const mod = (key: string): AppNodeDecl =>
+const mod = (key: string, menu?: AppNodeDecl["menu"]): AppNodeDecl =>
   ({
     key,
     label: { vi: key, en: key },
+    ...(menu ? { menu } : {}),
     stages: [],
     inputs: [],
     outputs: [],
   }) as unknown as AppNodeDecl;
-const MODULES = [
-  "core.email",
-  "core.bell",
-  "core.wait-until",
-  "core.wait-for",
-  "contracts.esign",
-  "dify.run",
-  "dlc.step",
-].map(mod);
+// Node thật (menu khai ở `MODULES`) + hai node nâng cao giả lập (Dify, DLC không khai menu).
+const real = [...CORE_NODES, ...CONTRACTS_MANIFEST.nodes];
+const MODULES = [...real, mod("dify.run"), mod("dlc.step")];
 const ids = (xs: ReturnType<typeof splitMenu>["business"]) =>
   xs.map((x) => (x.kind === "table" ? x.entry.id : x.node.key));
 

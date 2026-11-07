@@ -194,9 +194,9 @@ export const CONTRACTS_MANIFEST: AppManifest = {
   // CR-122 · N1 · tín hiệu ký số (E3: phong bì sang trạng thái cuối) — CHỈ node Ký số / bước chờ dùng (`wait_event`); CR-125 m2: không còn là
   // sự kiện bắt đầu flow (không bộ đọc dữ kiện / xử lý kết quả ở máy chủ; không có def nào bắt đầu bằng chúng).
   signals: [
-    { key: "esign.completed", label: "Khi hợp đồng ký xong" },
-    { key: "esign.declined", label: "Khi đối tác từ chối ký" },
-    { key: "esign.voided", label: "Khi phong bì ký bị huỷ" },
+    { key: "esign.completed", label: "Khi hợp đồng ký xong", pick: true },
+    { key: "esign.declined", label: "Khi đối tác từ chối ký", pick: true },
+    { key: "esign.voided", label: "Khi phong bì ký bị huỷ", pick: true },
     // CR-124 · q3 · trả lời của đối tác (nền tảng / email / ghi nhận thủ công) — CHỈ node «Gửi đối tác xác nhận» chờ.
     { key: "partner.confirmed", label: "Khi đối tác xác nhận" },
     { key: "partner.returned", label: "Khi đối tác trả lại" },
