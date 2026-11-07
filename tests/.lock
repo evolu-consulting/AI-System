@@ -129,7 +129,7 @@ fa9d32e553dd9fb86b5fb6b2ffd64ee5f9724df4260c3ff3c028c2b7d758079d  e2e/P-d/chat-u
 9b9ab76d2d89c970fa291af89dd52b9da7ab78f29ae4cc0f147476fa69c8ad2a  e2e/P-d/playwright.pd.config.ts
 cff6d3a444d4df213cec19043dc397b865eafb42f3ce2cf8bc1e32254592c3bf  e2e/_kit/README.md
 f4e4444247846e5cbc9b32744dfc53b0fab5e59eb574e0f241a97d35cc86f29e  e2e/_kit/api.ts
-5a7fac9afdbd1ae7b38715e8117ca7f104d5033f6680516f39dedb68496505f8  e2e/_kit/canvas-geometry.ts
+6471c6a451ed0abf7060d81e40ef8fec72c4cc2d07f7d4be808942f1aeff79a6  e2e/_kit/canvas-geometry.ts
 6d1fbc893b02ce3995a5b20cc8eadb9ae40bc3e76a54df4ddb0542abc8a760c1  e2e/_kit/flows.ts
 612c19ec397b72b330bb599d22673c402e7ccd351228832311fe60877090d5b6  e2e/_kit/ui.ts
 e41ce3f1978a75fb03d268b213b64287ed8ea01dfee73ee8adc24bf5e5923f24  e2e/_kit/unique.ts
@@ -508,7 +508,7 @@ cff1dd28bdd2fbba6f15006c85e6e76bc299fe2d517b30a39a04f5ebc8a82fb4  e2e/journey-ap
 c13269cfcf12af57ca45019ee31084dcd5fd222ffca00448fbd591b42995468f  e2e/journey-approval/cr122-editor.spec.ts
 852d0f4439511c9d50e88a070fd628233d4460865e36643a58a53e185b049c34  e2e/journey-approval/cr122-flows.spec.ts
 f17d2dc179c7dc2ca153ed3c7705ac1a9e3af9fccadcdf506b8d57246bec74d0  e2e/journey-approval/cr122-p24-not-assigned.spec.ts
-dd43ddd318a680fdd23f436d6c36e8e3bda509bebcfd9a57f8719701c70295b8  e2e/journey-approval/cr123-arrow-drag.spec.ts
+c8b6fec56b963ce5adb52b8af8f2a9f8b806b1b574090213bd7ea2fab4c7f1d3  e2e/journey-approval/cr123-arrow-drag.spec.ts
 18b99e223ad2b63100d591528fb46b6fe22fa8c20d7483b444264100b775f033  e2e/journey-approval/cr123-palette-drop.spec.ts
 93d79b501102ec7a2417af08ddca6f808bc041121a1231a6bdb833942c6de34c  e2e/journey-approval/cr123-u6-run-card.spec.ts
 fe9dc3f40ceea231bfa7daf82a72e5f02dacb0b97d88afde8ed59d11ba0a86bb  e2e/journey-approval/cr124-q5-partner-email.spec.ts

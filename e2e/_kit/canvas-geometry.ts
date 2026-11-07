@@ -90,3 +90,24 @@ export async function expectExitEdgesAtPills(
     }, side);
   await expect.poll(verdict, { message: `${what}: cạnh phải bắt đầu ở chấm đầu ra` }).toBe("ok");
 }
+
+/** CR-125 · x11 · SAU "vừa khung" (mở lần đầu / nút vừa khung): hộp MỌI node nằm trọn trong khung canvas (không node nào — kể cả cột Kết thúc cuối — bị cắt mép). */
+export async function expectAllNodesInPane(page: Page, what: string): Promise<void> {
+  const verdict = async (): Promise<string> =>
+    page.evaluate(() => {
+      const pane = document.querySelector(".react-flow__pane")?.getBoundingClientRect();
+      const nodes = [...document.querySelectorAll<HTMLElement>(".react-flow__node")];
+      if (!pane || nodes.length < 2) return "chưa có khung / node";
+      const out = nodes.find((n) => {
+        const r = n.getBoundingClientRect();
+        return (
+          r.left < pane.left - 1 ||
+          r.top < pane.top - 1 ||
+          r.right > pane.right + 1 ||
+          r.bottom > pane.bottom + 1
+        );
+      });
+      return out ? `node ${out.getAttribute("data-id")} bị cắt khỏi khung` : "ok";
+    });
+  await expect.poll(verdict, { message: `${what}: mọi node phải nằm trọn trong khung` }).toBe("ok");
+}

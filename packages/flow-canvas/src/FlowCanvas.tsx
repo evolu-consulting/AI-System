@@ -185,7 +185,7 @@ function Flow(p: FlowCanvasProps) {
     edgesFocusable: false,
     deleteKeyCode: null,
     fitView: true,
-    minZoom: 0.3,
+    minZoom: FIT.minZoom,
     maxZoom: 1.5,
     nodesDraggable: it.nodesDraggable,
     nodesConnectable: it.nodesConnectable,

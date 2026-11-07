@@ -4,7 +4,11 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { FLOW_TEMPLATE_INPUTS } from "../../apps/hub-api/src/modules/processes/library/flow-templates.def";
 import { apiLogin, assignCompanyFlow } from "../_kit/api";
-import { expectEdgesClear, expectExitEdgesAtPills } from "../_kit/canvas-geometry";
+import {
+  expectAllNodesInPane,
+  expectEdgesClear,
+  expectExitEdgesAtPills,
+} from "../_kit/canvas-geometry";
 import { approve, enableFlowTriggers, esignNode, finish, notifyCreator } from "../_kit/flows";
 import { flowRow, flowRows, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
 import { viStorageState } from "../support/locale-vi";
@@ -310,6 +314,7 @@ test("U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, k
   await expect(copy).toBeVisible();
   await copy.getByRole("link", { name: "Mở", exact: true }).click();
   await expect(page.locator("[data-stage-uid]").first()).toBeVisible({ timeout: 30_000 });
+  await expectAllNodesInPane(page, "mở lần đầu"); // một luật vừa khung (x11): cả flow, kể cả cột Kết thúc, trong khung ngay khi mở
   await fitAll(page);
 
   // 1 · thả "Duyệt" ⇒ node đứng riêng; ngăn chi tiết KHÔNG tự mở (không che các đích của mũi tên)
@@ -405,6 +410,7 @@ test("U12 · mũi tên tới bước nằm trước (Thông báo → Kết thúc
   await expect(copy).toBeVisible();
   await copy.getByRole("link", { name: "Mở", exact: true }).click();
   await expect(page.locator("[data-stage-uid]").first()).toBeVisible({ timeout: 30_000 });
+  await expectAllNodesInPane(page, "mở lần đầu"); // một luật vừa khung (x11): cả flow, kể cả cột Kết thúc, trong khung ngay khi mở
   await fitAll(page);
   const node = (name: string) =>
     page.locator(".react-flow__node").filter({ hasText: name }).first();
@@ -473,6 +479,7 @@ test("U12b · trình tự demo: thả Duyệt (chung cột), Ký xong → Duyệ
   await expect(copy).toBeVisible();
   await copy.getByRole("link", { name: "Mở", exact: true }).click();
   await expect(page.locator("[data-stage-uid]").first()).toBeVisible({ timeout: 30_000 });
+  await expectAllNodesInPane(page, "mở lần đầu"); // một luật vừa khung (x11): cả flow, kể cả cột Kết thúc, trong khung ngay khi mở
   await fitAll(page);
   const node = (name: string | RegExp) =>
     page.locator(".react-flow__node").filter({ hasText: name }).first();
@@ -547,11 +554,13 @@ test("U12b · trình tự demo: thả Duyệt (chung cột), Ký xong → Duyệ
   //     lưu rồi mở lại giữ hướng Dọc (`ui.dir`).
   await expect(page.getByTestId("flow-layout-right")).toHaveAttribute("aria-pressed", "true");
   await fitAll(page);
+  await expectAllNodesInPane(page, "Ngang sau vừa khung (cột Kết thúc không bị cắt)");
   await expectExitEdgesAtPills(page, "right", "Ngang");
   await expectEdgesClear(page, "Ngang");
   await page.getByTestId("flow-layout-down").click();
   await expect(page.getByTestId("flow-layout-down")).toHaveAttribute("aria-pressed", "true");
   await page.locator(".react-flow__controls-fitview").click();
+  await expectAllNodesInPane(page, "Dọc sau vừa khung");
   await expectNoOverlap(page, "Dọc");
   await expectExitEdgesAtPills(page, "bottom", "Dọc");
   await expectEdgesClear(page, "Dọc");
