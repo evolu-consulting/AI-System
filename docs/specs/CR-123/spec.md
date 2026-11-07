@@ -52,7 +52,10 @@ Nguyên tắc (người dùng): "mô hình đơn giản dễ hiểu mà đủ m�
 - **FLOW3-FR-12 · Menu "+" chỉ bước nghiệp vụ:** Duyệt, Nếu, Ký số, Chờ ký xong, Thông báo, Kết thúc. Agent, Công cụ, Chuẩn bị dữ liệu, Dify, DLC… vào "Nâng cao", chỉ quản trị nền tảng thấy.
 - **FLOW3-FR-13 · Chữ nghiệp vụ, không lộ kỹ thuật:** áp các đề xuất Chặn/Cao của `ux-audit.md` (panel Công cụ/Chờ sự kiện ẩn mã, Nếu đọc thành câu, Duyệt chọn từ danh sách không gõ mã, Ký số một nơi chọn nhà cung cấp, Kết thúc nói ảnh hưởng tới HĐ, lỗi chỉ đúng bước + cách sửa, thống nhất từ: Quy trình · Bước · Duyệt/Từ chối/Trả lại · Phòng ban, thẻ duyệt 3 dòng trạng thái · lý do · bước kế, "Cần xử lý" một chữ).
 
+- **FLOW3-FR-14 · Node của app luôn là MỘT node trên sơ đồ** (người dùng 2026-11-07: "m tách node mà không xem lại à"): node module có nhiều stage bên trong (Ký số = gửi + chờ; sau này Gửi đối tác xác nhận) hiện **một ô** với các đầu ra theo kết quả nghiệp vụ (Ký số: Ký xong · Từ chối · Hết hạn), **một panel** cấu hình (người ký, nhà cung cấp, hạn ký, nhắc), menu "+" chỉ một mục (bỏ "Chờ ký xong" riêng). Xoá / sao chép / kéo đi cả cụm; validator chặn cụm bị tách hoặc thiếu stage. Không migration: def đã lưu có `node` (hub 0113) tự gộp. Nghiệm thu: Given flow mẫu "Duyệt theo giá trị" mở trên canvas Then thấy đúng một ô Ký số có 3 đầu ra; When kéo đầu ra "Từ chối" tới Kết thúc · Từ chối Then nhánh từ chối của phần chờ đổi theo; When xoá ô Ký số Then cả hai stage bị xoá, Ctrl+Z khôi phục cả hai; Given menu "+" của công ty Then không có mục "Chờ ký xong".
+
 ## Chia lát
+- **u3 (sau p25, cùng vùng canvas):** FLOW3-FR-14 + soát mọi node module đang hiện tách đôi.
 - **p22 (đã gộp):** FR-01, FR-02, FR-03 (kèm luật hợp lệ dùng chung).
 - **u1 (admin-web trình soạn + Công ty › Quy trình):** FR-09, FR-10, FR-12, FR-13 phần A/B của ux-audit.
 - **u2 (app Hợp đồng):** FR-11, FR-13 phần C của ux-audit.
