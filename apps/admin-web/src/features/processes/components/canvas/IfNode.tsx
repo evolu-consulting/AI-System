@@ -3,11 +3,11 @@
 
 import { HiddenHandle } from "@ai/flow-canvas";
 import { NODE_H, NODE_W } from "@ai/flow-canvas/pure";
-import { type Node, type NodeProps, Position } from "@xyflow/react";
+import type { Node, NodeProps } from "@xyflow/react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFlowCtx } from "../flow/flow-ctx";
-import { useHandlers } from "./canvas-ctx";
+import { sidesOf, useDir, useHandlers } from "./canvas-ctx";
 import { CONNECT_TARGET } from "./connect-target";
 import { IfPort } from "./OutPort";
 import { onStageKeyDown } from "./stage-keys";
@@ -27,14 +27,15 @@ function IfImpl({ data }: NodeProps<IfType>) {
   const flow = useFlowCtx();
   const h = useHandlers();
   const { v, selected } = data;
+  const sides = sidesOf(useDir());
   const name = v.name || t("process.admin.editor.stage.unnamed");
   return (
     <div
       style={{ width: NODE_W, height: NODE_H }}
       className={`pointer-events-auto relative ${CONNECT_TARGET}`}
     >
-      <HiddenHandle type="target" position={Position.Left} />
-      <HiddenHandle id="back" type="source" position={Position.Top} />
+      <HiddenHandle type="target" position={sides.in} />
+      <HiddenHandle id="back" type="source" position={sides.back} />
       {/* fnr-canvas: cả Đúng và Sai ra ở mép phải (kiểu n8n) — cạnh smoothstep rẽ lên/xuống, không vòng dưới node.
           p22: sơ đồ sửa được ⇒ hai cổng có nhãn Đúng / Sai, kéo sang node đích để đặt "Đúng/Sai thì tới bước". */}
       <IfPort id="yes" connectable={data.connectable === true} />

@@ -33,4 +33,13 @@ describe("StageUiSchema / ProcessStageDefSchema.ui", () => {
     expect(StageUiSchema.safeParse({ y: STAGE_UI_Y.max + 1 }).success).toBe(false);
     expect(StageUiSchema.safeParse({ y: STAGE_UI_Y.min }).success).toBe(true);
   });
+  test("CR-125 x9 · hướng bố cục `dir` (Ngang/Dọc): đứng riêng hoặc cùng vị trí tay, giá trị lạ / ui rỗng bị từ chối", () => {
+    expect(StageUiSchema.safeParse({ dir: "DOWN" }).success).toBe(true);
+    expect(StageUiSchema.safeParse({ y: 3, x: 4, dir: "RIGHT" }).success).toBe(true);
+    expect(StageUiSchema.safeParse({ dir: "LEFT" }).success).toBe(false);
+    expect(StageUiSchema.safeParse({}).success).toBe(false);
+    expect(ProcessStageDefSchema.parse({ ...base, ui: { dir: "DOWN" } }).ui).toEqual({
+      dir: "DOWN",
+    });
+  });
 });

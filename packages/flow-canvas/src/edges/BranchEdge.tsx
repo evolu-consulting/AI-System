@@ -2,16 +2,11 @@
 // - Luật `after.branch` cũ: từ giai đoạn tới tiêu đề bước đích, nét đứt màu chính + nhãn "Rẽ nhánh · luật n" (bezier).
 // - Node If: Đúng = nét liền màu thành công, Sai = nét đứt xám; smoothstep (rẽ vuông, không vòng dưới node) + nhãn viên thuốc
 //   (chữ, không chỉ màu).
-import {
-  BaseEdge,
-  EdgeLabelRenderer,
-  type EdgeProps,
-  getBezierPath,
-  getSmoothStepPath,
-} from "@xyflow/react";
+import { BaseEdge, EdgeLabelRenderer, type EdgeProps } from "@xyflow/react";
 import { memo } from "react";
 import { useFlowHost } from "../context";
 import { InsertSlot, useEdgeHover } from "./InsertSlot";
+import { useRoutedPath } from "./use-route";
 
 type Side = "yes" | "no";
 const SIDE_STYLE = {
@@ -30,17 +25,9 @@ const SIDE_STYLE = {
 function BranchEdgeImpl(p: EdgeProps) {
   const { labels } = useFlowHost();
   const d = p.data as { rule?: number; side?: Side } | undefined;
-  const geo = {
-    sourceX: p.sourceX,
-    sourceY: p.sourceY,
-    sourcePosition: p.sourcePosition,
-    targetX: p.targetX,
-    targetY: p.targetY,
-    targetPosition: p.targetPosition,
-  };
-  const [path, lx, ly] = d?.side
-    ? getSmoothStepPath({ ...geo, borderRadius: 14, offset: 16 })
-    : getBezierPath({ ...geo, curvature: 0.5 });
+  // CR-125 · x9: đường định tuyến né node; "+" ở GIỮA đường, nhãn Đúng/Sai lệch về phía nguồn để không đè nút.
+  const { path, mid, at } = useRoutedPath(p, 14);
+  const lab = d?.side ? at(-52) : mid;
   const rule = d?.rule ?? 1;
   const s = d?.side ? SIDE_STYLE[d.side] : null;
   const { hover, on } = useEdgeHover();
@@ -61,7 +48,7 @@ function BranchEdgeImpl(p: EdgeProps) {
       </g>
       {d?.side ? (
         <InsertSlot
-          p={{ source: p.source, target: p.target, side: d.side, x: lx + 44, y: ly }}
+          p={{ source: p.source, target: p.target, side: d.side, x: mid.x, y: mid.y }}
           hover={hover}
           on={on}
         />
@@ -70,7 +57,7 @@ function BranchEdgeImpl(p: EdgeProps) {
         <EdgeLabelRenderer>
           <span
             data-testid={d?.side ? `if-edge-${d.side}` : undefined}
-            style={{ transform: `translate(-50%, -50%) translate(${lx}px, ${ly}px)` }}
+            style={{ transform: `translate(-50%, -50%) translate(${lab.x}px, ${lab.y}px)` }}
             className={`pointer-events-none absolute rounded-full px-2 py-0.5 text-caption font-medium ${
               s?.pill ?? "rounded bg-accent text-accent-foreground"
             }`}

@@ -3,10 +3,10 @@
 // Đầu ra kéo nối tay được khi sơ đồ sửa được (`connectable`; luật ở `connectPatch`); cạnh từ đầu ra "đi tiếp" là cạnh tiến thường (handle đầu tiên trong DOM).
 import { HiddenHandle } from "@ai/flow-canvas";
 import { NODE_H, NODE_W } from "@ai/flow-canvas/pure";
-import { Handle, type NodeProps, Position } from "@xyflow/react";
+import { Handle, type NodeProps } from "@xyflow/react";
 import { useTranslation } from "react-i18next";
 import { exitHandle } from "../../lib/canvas-connect";
-import { useHandlers } from "./canvas-ctx";
+import { alongEdge, sidesOf, useDir, useHandlers } from "./canvas-ctx";
 import { CONNECT_TARGET } from "./connect-target";
 import { FlowNodeBody } from "./FlowNodeBody";
 import { stageButtonClass } from "./StageBody";
@@ -17,24 +17,25 @@ import type { ModuleExit, StageView } from "./stage-view";
 function ExitPort({ x, top, connectable }: { x: ModuleExit; top: string; connectable: boolean }) {
   const { t } = useTranslation();
   const label = x.label || t("process.admin.canvas.module.done");
+  const dir = useDir();
   return (
     <Handle
       id={exitHandle(x.key, x.on)}
       type="source"
-      position={Position.Right}
+      position={sidesOf(dir).out}
       isConnectable={connectable}
       title={t("process.admin.canvas.module.exitHint", { label })}
       aria-label={label}
       data-testid={`module-exit-${x.key}`}
       style={{
-        top,
+        ...alongEdge(dir, top),
         width: "auto",
         height: "auto",
         background: "var(--color-card)",
         cursor: connectable ? "crosshair" : "default",
         zIndex: 2,
       }}
-      className={`rounded-full border px-2 py-0.5 text-caption leading-4 transition-transform hover:scale-110 ${
+      className={`whitespace-nowrap rounded-full border px-2 py-0.5 text-caption leading-4 transition-transform hover:scale-110 ${
         x.main ? "border-success text-success" : "border-warning text-warning"
       }`}
     >
@@ -50,15 +51,16 @@ export function ModuleNode({ data }: NodeProps<StageNodeType>) {
   const h = useHandlers();
   const { v, selected } = data;
   const exits = v.module?.exits ?? [];
+  const sides = sidesOf(useDir());
   return (
     <div
       style={{ width: NODE_W, height: NODE_H }}
       className={`pointer-events-auto ${CONNECT_TARGET}`}
       data-testid="module-node"
     >
-      <HiddenHandle type="target" position={Position.Left} />
-      <HiddenHandle id="back-in" type="target" position={Position.Bottom} />
-      <HiddenHandle id="back" type="source" position={Position.Top} />
+      <HiddenHandle type="target" position={sides.in} />
+      <HiddenHandle id="back-in" type="target" position={sides.backIn} />
+      <HiddenHandle id="back" type="source" position={sides.back} />
       {exits.map((x, i) => (
         <ExitPort
           key={x.key}

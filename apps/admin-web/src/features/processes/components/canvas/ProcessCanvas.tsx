@@ -4,6 +4,8 @@
 // giữ vị trí đã lưu (`ui.x` + `ui.y`), "Sắp xếp" xoá vị trí tay. File này giữ phần NGHIỆP VỤ: dựng node giai đoạn từ bản nháp. nodes/edges là DẪN XUẤT từ bản nháp.
 // dlc-step-library: sơ đồ DLC ⇒ cạnh "Từ chối" tới NODE đích (không tới tiêu đề cột), cạnh tiến sau bước có cổng mang nhãn "Duyệt";
 // `linkable` ⇒ kéo cổng "Từ chối" của bước nào có cổng cũng nối được (`ops.linkReject` kiểm đích đứng trước).
+
+import type { LayoutDir } from "@ai/contracts/hub-admin";
 import {
   type EdgeInsertInfo,
   FlowCanvas,
@@ -14,10 +16,12 @@ import {
 } from "@ai/flow-canvas";
 import {
   collidesWith,
+  DEFAULT_ASPECT,
   type FlowEdgeIn,
   type FlowNodeIn,
+  NODE_H,
   NODE_W,
-  PORT_LABEL_W,
+  portExtent,
   type SettleItem,
   settlePositions,
   stepEdges,
@@ -30,10 +34,11 @@ import { useStagesMax } from "../../hooks/use-stages-max";
 import { exitHandle } from "../../lib/canvas-connect";
 import { dropFreeEdges, isFree } from "../../lib/free-nodes";
 import { applyJumps } from "../../lib/jump-edges";
+import { isNarrowScreen } from "../../lib/layout-dir";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
 import { BridgeNode } from "./BridgeNode";
-import { type CanvasHandlers, HandlersCtx } from "./canvas-ctx";
+import { type CanvasHandlers, DirCtx, HandlersCtx } from "./canvas-ctx";
 import {
   approveEdge,
   bridgePart,
@@ -48,7 +53,7 @@ import {
 import { EdgeInsertMenu } from "./EdgeInsertMenu";
 import { isTerminalView } from "./FlowNodeBody";
 import { IfNode } from "./IfNode";
-import { moduleEdges } from "./module-cluster";
+import { moduleEdges, withMainExit } from "./module-cluster";
 import { StageNode } from "./StageNode";
 import type { StageView } from "./stage-view";
 import { TriggerNode } from "./TriggerNode";
@@ -69,6 +74,8 @@ export type ProcessCanvasProps = CanvasHandlers & {
   inset?: number;
   /** CR-105 UX · mức zoom tối thiểu khi fit (quy trình khe: node đủ to đọc được; phần dư kéo ngang). Mặc định 0.3. */
   fitMin?: number;
+  /** CR-125 · x9 · hướng bố cục: `RIGHT` Ngang (mặc định) / `DOWN` Dọc — ELK, mép cổng vào/ra của node và vùng chừa cho nhãn đầu ra theo hướng này. */
+  dir?: LayoutDir;
   /** dlc-step-library · kéo cổng "Từ chối" của bước DLC sang bước đứng trước để đặt chỗ quay lại (Canvas thư viện, sửa được). */
   linkable?: boolean;
 };
@@ -147,7 +154,10 @@ function useFlowStructure(
     const tp = triggerPart(views, trig, connectable);
     // node đứng riêng (vừa thả) không có cạnh tự động vào/ra: nối bằng mũi tên (CR-123 · u5)
     const free = new Set(views.filter((v) => isFree(v.src)).map((v) => v.uid));
-    const all = dropFreeEdges([...tp.edges, ...edges, ...moduleEdges(views)], free);
+    const all = withMainExit(
+      dropFreeEdges([...tp.edges, ...edges, ...moduleEdges(views)], free),
+      views,
+    );
     // ELK: cạnh quay lại không tham gia xếp tầng (giữ luồng trái → phải)
     const flowEdges: FlowEdgeIn[] = all
       .filter((e) => e.type !== "back")
@@ -173,11 +183,15 @@ function settleItems(
   views: readonly StageView[],
   auto: FlowPositions | null,
   trig: TriggerInfo,
+  dir: LayoutDir,
 ): SettleItem[] {
-  const wide = (v: StageView) => ((portsOf(v)?.length ?? 0) > 1 ? NODE_W + PORT_LABEL_W : NODE_W);
+  const box = (v: StageView) => {
+    const x = portExtent(dir, portsOf(v)?.length ?? 0);
+    return { w: NODE_W + x.w, h: NODE_H + x.h };
+  };
   return [
     ...(trig ? [{ id: "trigger", auto: auto?.get("trigger") }] : []),
-    ...views.map((v) => ({ id: v.uid, manual: v.pos, auto: auto?.get(v.uid), w: wide(v) })),
+    ...views.map((v) => ({ id: v.uid, manual: v.pos, auto: auto?.get(v.uid), ...box(v) })),
   ];
 }
 
@@ -192,9 +206,13 @@ function useFlowGraph(
 ) {
   const { views, selected, readOnly } = p;
   const s = useFlowStructure(p, approve, trig, insertable, connectable);
-  const auto = useFlowLayout(s.flowNodes, s.flowEdges);
+  const dir = p.dir ?? "RIGHT";
+  const auto = useFlowLayout(s.flowNodes, s.flowEdges, {
+    direction: dir,
+    ...(dir === "DOWN" ? { aspectRatio: isNarrowScreen() ? 0.8 : DEFAULT_ASPECT } : {}),
+  });
   return useMemo(() => {
-    const at = settlePositions(settleItems(views, auto, trig));
+    const at = settlePositions(settleItems(views, auto, trig, dir));
     const stageNodes = views.flatMap((v) => {
       const pt = at.get(v.uid);
       return pt ? [toNode(v, pt, selected, readOnly, connectable)] : [];
@@ -206,14 +224,14 @@ function useFlowGraph(
     const have = new Set(nodes.map((n) => n.id));
     const all = warnStyle([...s.edges, ...bp.edges], warn)
       .filter((e) => have.has(e.source) && have.has(e.target))
-      .map((e) => (e.type === undefined ? { ...e, type: "smoothstep" } : e)); // cạnh vuông góc (ELK `ORTHOGONAL`)
+      .map((e) => (e.type === undefined ? { ...e, type: "routed" } : e)); // cạnh vuông góc NÉ node (CR-125 · x9)
     return {
       nodes,
       edges: connectable ? editableEdges(all, new Set(views.map((v) => v.uid))) : all,
       ready: auto !== null,
       dlc: s.dlc,
     };
-  }, [s, auto, views, trig, selected, readOnly, warn, bridge, connectable]);
+  }, [s, auto, views, trig, dir, selected, readOnly, warn, bridge, connectable]);
 }
 
 /**
@@ -271,6 +289,7 @@ function useCanvasLabels(dlc: boolean): Partial<FlowLabels> {
 
 export default function ProcessCanvas(p: ProcessCanvasProps) {
   const [tick, setTick] = useState(0);
+  const dir = p.dir ?? "RIGHT";
   const handlers = useRef<CanvasHandlers>(p);
   handlers.current = p;
   const { t } = useTranslation();
@@ -332,7 +351,7 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
   const onDragStop = (node: Node, pos: XYPosition, group?: { id: string; pos: XYPosition }[]) => {
     const moved = group && group.length > 0 ? group : [{ id: node.id, pos }];
     // CR-125 · x4: thả đè lên node khác ⇒ không lưu vị trí (node quay về chỗ cũ), sơ đồ không bao giờ có hai node chồng nhau
-    const items = settleItems(p.views, null, trig);
+    const items = settleItems(p.views, null, trig, dir);
     const cur = new Map(g.nodes.map((n) => [n.id, n.position]));
     for (const m of moved) cur.set(m.id, m.pos);
     for (const m of moved) {
@@ -347,32 +366,34 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
 
   return (
     <div
-      className={`${p.compact ? "h-[280px]" : trig ? "h-[min(62vh,460px)]" : "h-[min(70vh,640px)]"} relative overflow-hidden rounded-md border border-border bg-background`}
+      className={`${p.compact ? "h-[280px]" : trig ? "h-[min(62vh,520px)]" : "h-[min(70vh,640px)]"} relative overflow-hidden rounded-md border border-border bg-background`}
     >
-      <HandlersCtx.Provider value={handlers}>
-        <FlowCanvas
-          layout="flow"
-          mode={p.readOnly ? "view" : "edit"}
-          nodes={g.nodes}
-          edges={g.edges}
-          nodeTypes={nodeTypes}
-          labels={labels}
-          renderEdgeInsert={renderEdgeInsert}
-          controls={!p.compact}
-          compact={p.compact}
-          fitSig={`${g.ready}:${g.nodes.length}`}
-          fitKey={p.fitKey}
-          inset={p.inset}
-          fitMin={p.fitMin}
-          selectedId={p.selected}
-          focusIds={focusIds}
-          resetKey={tick}
-          onNodeDragStop={onDragStop}
-          onConnect={(p.linkable || connectable) && !p.readOnly ? onConnect : undefined}
-          editing={ed.editing}
-        />
-        <CanvasDialogs pending={ed.pending} close={ed.close} views={p.views} ops={p.ops} />
-      </HandlersCtx.Provider>
+      <DirCtx.Provider value={dir}>
+        <HandlersCtx.Provider value={handlers}>
+          <FlowCanvas
+            layout="flow"
+            mode={p.readOnly ? "view" : "edit"}
+            nodes={g.nodes}
+            edges={g.edges}
+            nodeTypes={nodeTypes}
+            labels={labels}
+            renderEdgeInsert={renderEdgeInsert}
+            controls={!p.compact}
+            compact={p.compact}
+            fitSig={`${g.ready}:${g.nodes.length}:${dir}`}
+            fitKey={p.fitKey}
+            inset={p.inset}
+            fitMin={p.fitMin}
+            selectedId={p.selected}
+            focusIds={focusIds}
+            resetKey={tick}
+            onNodeDragStop={onDragStop}
+            onConnect={(p.linkable || connectable) && !p.readOnly ? onConnect : undefined}
+            editing={ed.editing}
+          />
+          <CanvasDialogs pending={ed.pending} close={ed.close} views={p.views} ops={p.ops} />
+        </HandlersCtx.Provider>
+      </DirCtx.Provider>
     </div>
   );
 }

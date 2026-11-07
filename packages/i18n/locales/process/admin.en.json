@@ -645,7 +645,10 @@
     },
     "toolbar": {
       "addStep": "Add step",
-      "arrange": "Arrange"
+      "arrange": "Arrange",
+      "layout": "Flow direction",
+      "horizontal": "Horizontal",
+      "vertical": "Vertical"
     },
     "step": {
       "title": "Step {{n}}",

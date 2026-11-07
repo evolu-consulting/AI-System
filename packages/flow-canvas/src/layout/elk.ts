@@ -17,9 +17,13 @@ export type FlowEdgeIn = {
   sourceHandle?: string | null;
 };
 export type FlowLayoutOptions = {
-  /** Tỉ lệ rộng/cao khung nhìn để ELK gập hàng (mặc định 2.4 ≈ khung 1100×458 của editor). */
+  /** Tỉ lệ rộng/cao khung nhìn để ELK gập hàng (mặc định 2.4 ≈ khung 1100×458 của editor; Dọc: 0.9). */
   aspectRatio?: number;
+  /** CR-125 · x9 · hướng bố cục: `RIGHT` = Ngang (mặc định), `DOWN` = Dọc. Cổng ra ở mép phải (Ngang) / mép dưới (Dọc). */
+  direction?: FlowDirection;
 };
+
+export type FlowDirection = "RIGHT" | "DOWN";
 
 export type ElkPort = {
   id: string;
@@ -43,22 +47,39 @@ export type ElkNode = {
 export type ElkEngine = { layout: (g: ElkNode) => Promise<ElkNode> };
 
 export const DEFAULT_ASPECT = 2.4;
+/** Dọc: khung hẹp / cao hơn ⇒ ELK gập thành vài cột thay vì một dải dài. */
+export const DEFAULT_ASPECT_DOWN = 0.9;
 /** Chỗ chừa thêm bên phải node có ≥ 2 cổng ra (nhãn "Ký xong / Từ chối / Hết hạn" nhô ra khỏi mép). */
 export const PORT_LABEL_W = 48;
+/** Dọc: chỗ chừa thêm PHÍA DƯỚI node có ≥ 2 cổng ra (nhãn nhô ra khỏi mép dưới). */
+export const PORT_LABEL_H = 40;
+
+/** Mép của node nơi đặt cổng ra: Ngang ⇒ phải (EAST), Dọc ⇒ dưới (SOUTH). */
+export const portSide = (d: FlowDirection | undefined): "EAST" | "SOUTH" =>
+  d === "DOWN" ? "SOUTH" : "EAST";
+
+/** Kích thước THÊM của node có `ports` cổng ra theo hướng: {w, h} (Ngang chừa bên phải, Dọc chừa bên dưới). */
+export const portExtent = (
+  d: FlowDirection | undefined,
+  ports: number,
+): { w: number; h: number } =>
+  ports < 2 ? { w: 0, h: 0 } : d === "DOWN" ? { w: 0, h: PORT_LABEL_H } : { w: PORT_LABEL_W, h: 0 };
 export const portId = (node: string, handle: string): string => `${node}:${handle}`;
 
 /** Tuỳ chọn gốc: layered, trái → phải, cạnh vuông góc, gập hàng đa cạnh theo tỉ lệ khung. */
 export function rootOptions(o: FlowLayoutOptions): Record<string, string> {
   return {
     "elk.algorithm": "layered",
-    "elk.direction": "RIGHT",
+    "elk.direction": o.direction ?? "RIGHT",
     "elk.edgeRouting": "ORTHOGONAL",
     // CR-125 · x4: đủ rộng cho node Ký số + 3 nhãn đầu ra nhô ra mép phải và mũi tên đi giữa hai tầng
     "elk.spacing.nodeNode": "56",
     "elk.layered.spacing.nodeNodeBetweenLayers": "90",
     "elk.spacing.edgeNode": "32",
     "elk.layered.wrapping.strategy": "MULTI_EDGE",
-    "elk.aspectRatio": String(o.aspectRatio ?? DEFAULT_ASPECT),
+    "elk.aspectRatio": String(
+      o.aspectRatio ?? (o.direction === "DOWN" ? DEFAULT_ASPECT_DOWN : DEFAULT_ASPECT),
+    ),
   };
 }
 
@@ -75,11 +96,12 @@ export function toElkGraph(
     layoutOptions: rootOptions(o),
     children: nodes.map((n) => {
       const ports = n.ports ?? [];
+      const extra = portExtent(o.direction, ports.length);
       return {
         id: n.id,
-        // nhãn đầu ra nhô ra mép phải: node nhiều cổng chừa thêm chỗ bên phải để không đè node kề
-        width: n.width ?? NODE_W + (ports.length > 1 ? PORT_LABEL_W : 0),
-        height: n.height ?? NODE_H,
+        // nhãn đầu ra nhô ra mép có cổng (phải khi Ngang, dưới khi Dọc): node nhiều cổng chừa thêm chỗ để không đè node kề
+        width: n.width ?? NODE_W + extra.w,
+        height: n.height ?? NODE_H + extra.h,
         ...(ports.length > 0
           ? {
               layoutOptions: { "elk.portConstraints": "FIXED_ORDER" },
@@ -87,7 +109,11 @@ export function toElkGraph(
                 id: portId(n.id, p),
                 width: 1,
                 height: 1,
-                layoutOptions: { "elk.port.side": "EAST", "elk.port.index": String(i) },
+                layoutOptions: {
+                  "elk.port.side": portSide(o.direction),
+                  // mép dưới (SOUTH) ELK đánh số phải → trái: đảo để cổng đầu tiên nằm bên TRÁI như thứ tự trên màn hình
+                  "elk.port.index": String(o.direction === "DOWN" ? ports.length - 1 - i : i),
+                },
               })),
             }
           : {}),

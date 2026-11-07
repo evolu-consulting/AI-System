@@ -1,20 +1,13 @@
 // ADM-FR-71 · P-b2 (plan-frontend FB4): cạnh quay lại — từ đỉnh stage tới CẠNH DƯỚI tiêu đề bước đích (mũi tên không đè chữ tiêu đề, UAT L3), nét đứt màu warning + nhãn chữ "Quay lại"
 // (không chỉ màu).
-import { BaseEdge, EdgeLabelRenderer, type EdgeProps, getBezierPath } from "@xyflow/react";
+import { BaseEdge, EdgeLabelRenderer, type EdgeProps } from "@xyflow/react";
 import { memo } from "react";
 import { useFlowHost } from "../context";
+import { useRoutedPath } from "./use-route";
 
 function BackEdgeImpl(p: EdgeProps) {
   const { labels } = useFlowHost();
-  const [path, lx, ly] = getBezierPath({
-    sourceX: p.sourceX,
-    sourceY: p.sourceY,
-    sourcePosition: p.sourcePosition,
-    targetX: p.targetX,
-    targetY: p.targetY,
-    targetPosition: p.targetPosition,
-    curvature: 0.5,
-  });
+  const { path, mid } = useRoutedPath(p, 12);
   return (
     <>
       <BaseEdge
@@ -25,7 +18,7 @@ function BackEdgeImpl(p: EdgeProps) {
       />
       <EdgeLabelRenderer>
         <span
-          style={{ transform: `translate(-50%, -50%) translate(${lx}px, ${ly}px)` }}
+          style={{ transform: `translate(-50%, -50%) translate(${mid.x}px, ${mid.y}px)` }}
           className="pointer-events-none absolute rounded bg-warning-bg px-1.5 py-0.5 text-caption text-warning"
         >
           {labels.edgeBack}

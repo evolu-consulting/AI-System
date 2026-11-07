@@ -1,6 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5: trạng thái bản nháp của editor — sửa ô, thêm/xoá/đổi chỗ giai đoạn, lỗi theo ô, giai đoạn đang chọn.
 
-import { newRealViolation } from "@ai/contracts/hub-admin";
+import { type LayoutDir, newRealViolation } from "@ai/contracts/hub-admin";
 import { useRef, useState } from "react";
 import {
   type DefDraft,
@@ -19,6 +19,7 @@ import { type EdgeRef, insertOnEdge } from "../lib/insert-on-edge";
 export const REAL_NEEDS_REVIEW = ERR_REAL_NEEDS;
 
 import { approveDefaults } from "../lib/approve-rules";
+import { withLayoutDir } from "../lib/layout-dir";
 import { duplicateCluster, removeCluster } from "../lib/module-cluster";
 import { withNodeDefaults } from "../lib/node-defaults";
 import {
@@ -74,6 +75,9 @@ function draftOps(update: Update) {
         ...d,
         stages: d.stages.map(({ uiY: _y, uiX: _x, ...s }) => s),
       })),
+    /** CR-125 · x9 · đổi hướng bố cục (Ngang / Dọc): ghi `ui.dir` + bỏ vị trí tay, MỘT bước hoàn tác. */
+    setLayoutDir: (dir: LayoutDir) =>
+      update((d) => ({ ...d, stages: withLayoutDir(d.stages, dir) })),
   };
 }
 

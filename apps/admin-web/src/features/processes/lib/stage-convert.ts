@@ -1,6 +1,11 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-d2: đổi một giai đoạn qua lại giữa `ProcessStageDef` (contract) và `StageDraft` (editor) — tách từ
 // `def-form` (file ≤ 400 dòng). Hàm thuần: không React, không gọi API.
-import { type ProcessStageDef, STAGE_TIMEOUT_S, STAGE_UI_Y } from "@ai/contracts/hub-admin";
+import {
+  type LayoutDir,
+  type ProcessStageDef,
+  STAGE_TIMEOUT_S,
+  STAGE_UI_Y,
+} from "@ai/contracts/hub-admin";
 import { draftKindOf, type FeNode, feNodeOf } from "../nodes/registry";
 import { executorToDef, normalizeApply } from "./apply-form";
 import { autofixToDef, autofixToDraft, emptyAutofix } from "./autofix-form";
@@ -188,12 +193,27 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
 const clampUiY = (y: number): number =>
   Math.min(Math.max(Math.round(y), STAGE_UI_Y.min), STAGE_UI_Y.max);
 
-/** CR-123 · u13 · `ui` của def → vị trí kéo tay của bản nháp (`uiY` + tuỳ chọn `uiX`). */
-const uiToDraft = (ui: { y: number; x?: number | undefined } | undefined) =>
-  ui ? { uiY: ui.y, ...(ui.x === undefined ? {} : { uiX: ui.x }) } : {};
+/** CR-123 · u13 · `ui` của def → vị trí kéo tay của bản nháp (`uiY` + tuỳ chọn `uiX`); CR-125 · x9 · + hướng bố cục (`uiDir`). */
+const uiToDraft = (
+  ui: { y?: number | undefined; x?: number | undefined; dir?: LayoutDir | undefined } | undefined,
+) => ({
+  ...(ui?.y === undefined ? {} : { uiY: ui.y }),
+  ...(ui?.x === undefined ? {} : { uiX: ui.x }),
+  ...(ui?.dir === undefined ? {} : { uiDir: ui.dir }),
+});
 
-/** Bản nháp → `ui` gửi Hub (chỉ khi có `uiY`; `x` đi kèm nếu có). */
-const uiToDef = (s: { uiY?: number | undefined; uiX?: number | undefined }) =>
-  s.uiY === undefined
+/** Bản nháp → `ui` gửi Hub (vị trí tay khi có `uiY`, `x` đi kèm nếu có; hướng bố cục khi có `uiDir`). */
+const uiToDef = (s: {
+  uiY?: number | undefined;
+  uiX?: number | undefined;
+  uiDir?: LayoutDir | undefined;
+}) =>
+  s.uiY === undefined && s.uiDir === undefined
     ? {}
-    : { ui: { y: clampUiY(s.uiY), ...(s.uiX === undefined ? {} : { x: clampUiY(s.uiX) }) } };
+    : {
+        ui: {
+          ...(s.uiY === undefined ? {} : { y: clampUiY(s.uiY) }),
+          ...(s.uiY === undefined || s.uiX === undefined ? {} : { x: clampUiY(s.uiX) }),
+          ...(s.uiDir === undefined ? {} : { dir: s.uiDir }),
+        },
+      };

@@ -645,7 +645,10 @@
     },
     "toolbar": {
       "addStep": "Thêm bước",
-      "arrange": "Sắp xếp"
+      "arrange": "Sắp xếp",
+      "layout": "Hướng sơ đồ",
+      "horizontal": "Ngang",
+      "vertical": "Dọc"
     },
     "step": {
       "title": "Bước {{n}}",

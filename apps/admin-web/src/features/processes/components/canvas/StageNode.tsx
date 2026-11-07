@@ -9,7 +9,7 @@ import { Handle, type NodeProps, Position } from "@xyflow/react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFlowCtx } from "../flow/flow-ctx";
-import { useHandlers } from "./canvas-ctx";
+import { sidesOf, useDir, useHandlers } from "./canvas-ctx";
 import { CONNECT_TARGET } from "./connect-target";
 import { FINISH_CLASS, FlowNodeBody, isFinishView, isTerminalView } from "./FlowNodeBody";
 import { ModuleNode } from "./ModuleNode";
@@ -42,15 +42,16 @@ function RejectPort() {
 
 /** Cổng ra của bước: "đi tiếp" + cổng quay lại / rẽ nhánh ẩn. Bước Kết thúc KHÔNG vẽ phần này (điểm cuối). */
 function OutPorts({ v, connectable }: { v: StageView; connectable: boolean }) {
+  const sides = sidesOf(useDir());
   return (
     <>
       <NextPort connectable={connectable} />
       {v.dlc?.gate ? (
         <RejectPort />
       ) : (
-        <HiddenHandle id="back" type="source" position={Position.Top} />
+        <HiddenHandle id="back" type="source" position={sides.back} />
       )}
-      <HiddenHandle id="branch" type="source" position={Position.Bottom} />
+      <HiddenHandle id="branch" type="source" position={sides.branch} />
     </>
   );
 }
@@ -60,13 +61,14 @@ function StageNodeImpl({ data }: NodeProps<StageNodeType>) {
   const { v, selected } = data;
   const flow = useFlowCtx();
   const end = !!flow && isTerminalView(v);
+  const sides = sidesOf(useDir());
   return (
     <div
       style={{ width: NODE_W, height: NODE_H }}
       className={`pointer-events-auto ${CONNECT_TARGET}`}
     >
-      <HiddenHandle type="target" position={Position.Left} />
-      <HiddenHandle id="back-in" type="target" position={Position.Bottom} />
+      <HiddenHandle type="target" position={sides.in} />
+      <HiddenHandle id="back-in" type="target" position={sides.backIn} />
       {end ? null : <OutPorts v={v} connectable={data.connectable === true && !v.locked} />}
       <button
         type="button"

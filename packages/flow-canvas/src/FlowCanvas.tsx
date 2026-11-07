@@ -25,6 +25,7 @@ import { type FlowHost, FlowHostCtx } from "./context";
 import { BackEdge } from "./edges/BackEdge";
 import { BranchEdge } from "./edges/BranchEdge";
 import { ForwardEdge } from "./edges/ForwardEdge";
+import { RoutedEdge } from "./edges/RoutedEdge";
 import type { FlowEditing } from "./editing";
 import { type FlowMode, interactionOf } from "./mode";
 import { VERTICAL_NODE_TYPES } from "./nodes/VerticalNodes";
@@ -38,7 +39,12 @@ import {
 import { EditShell, useEditing } from "./use-editing";
 import { FIT, FIT_COMPACT, useViewFit, type ViewFitOptions } from "./view-fit";
 
-const EDGE_TYPES = { back: BackEdge, branch: BranchEdge, forward: ForwardEdge };
+const EDGE_TYPES = {
+  back: BackEdge,
+  branch: BranchEdge,
+  forward: ForwardEdge,
+  routed: RoutedEdge, // CR-125 · x9
+};
 const VERTICAL_EDGE_DEFAULTS = {
   markerEnd: { type: MarkerType.ArrowClosed },
   style: { strokeWidth: 1.5 },

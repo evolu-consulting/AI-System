@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { StageOps } from "../../hooks/use-stage-ops";
 import { useFlowCtx } from "./flow-ctx";
+import { LayoutDirControl } from "./LayoutDirControl";
 import { NodeMenuContent } from "./NodeMenuContent";
 
 type Props = {
@@ -60,6 +61,7 @@ export function NodePalette({ ops, count, max, dnd }: Props) {
         <LayoutTemplate aria-hidden className="size-4" />
         {t("process.admin.canvas.toolbar.arrange")}
       </Button>
+      <LayoutDirControl dir={ops.layoutDir} onChange={ops.setLayoutDir} />
       {full ? (
         <span className="text-caption text-muted-foreground">
           {t("process.admin.canvas.err.stagesMax", { max })}

@@ -1,19 +1,19 @@
 // CR-123 · FLOW3-FR-14 · lớp bọc của CanvasView: gộp cụm stage của node module thành MỘT ô trước khi vào `ProcessCanvas`
 // (views đã gộp + `ops` đổi cột đã gộp ⇄ bước thật + uid chọn/cảnh báo đổi sang stage đầu). Không có cụm / không phải flow ⇒ giữ nguyên.
-import type { AppNodeDecl } from "@ai/contracts/app-manifest";
+import { featureNodeByKey, MODULES } from "@ai/contracts/modules";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { usePalette } from "../../palette-api";
 import { type FlowCtx, useFlowCtx } from "../flow/flow-ctx";
 import { collapseModules, type NodeInfo } from "./module-cluster";
 import type { ProcessCanvasProps } from "./ProcessCanvas";
 
 type Out = { props: ProcessCanvasProps; flow: FlowCtx | null };
 
+/** CR-125 · x9 · đầu ra của node đọc từ sổ MODULES (nguồn duy nhất, không phụ thuộc palette theo công ty): ô Ký số luôn có đủ Ký xong / Từ chối / Hết hạn. */
 const infoFrom =
-  (nodes: readonly AppNodeDecl[] | undefined, lang: string) =>
+  (lang: string) =>
   (key: string): NodeInfo | undefined => {
-    const n = nodes?.find((x) => x.key === key);
+    const n = featureNodeByKey(MODULES, key);
     if (!n) return undefined;
     const pick = (l: { vi: string; en: string }) => (lang.startsWith("en") ? l.en : l.vi);
     return {
@@ -25,13 +25,8 @@ const infoFrom =
 export function useCollapsed(views: ProcessCanvasProps["views"]) {
   const flow = useFlowCtx();
   const { i18n } = useTranslation();
-  const palette = usePalette(flow?.app ?? "", flow?.tenantId);
-  const nodes = palette.data;
   const lang = i18n.language;
-  return useMemo(
-    () => (flow ? collapseModules(views, infoFrom(nodes, lang)) : null),
-    [flow, views, nodes, lang],
-  );
+  return useMemo(() => (flow ? collapseModules(views, infoFrom(lang)) : null), [flow, views, lang]);
 }
 
 export function useModuleCanvas(p: ProcessCanvasProps): Out {

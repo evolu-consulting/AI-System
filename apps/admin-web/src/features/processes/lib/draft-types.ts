@@ -1,6 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5 · P-d1: kiểu bản nháp của editor quy trình (tách khỏi `def-form` để các module `*-form` không import vòng).
 // Chỉ kiểu — không giá trị; `def-form` re-export cho nơi dùng cũ.
-import type { FormFieldType, ProcessStageDef, SetAs } from "@ai/contracts/hub-admin";
+import type { FormFieldType, LayoutDir, ProcessStageDef, SetAs } from "@ai/contracts/hub-admin";
 import type { AutofixDraft } from "./autofix-form";
 import type { InputDraft, StageSourceDraft } from "./sources-form";
 
@@ -151,6 +151,8 @@ export type StageDraft = {
   uiY?: number;
   /** CR-123 · u13 · `x` đã lưu (`ui.x`) — chỉ cùng với `uiY` mới là vị trí kéo tay; vắng = bố cục ELK. */
   uiX?: number;
+  /** CR-125 · x9 · hướng bố cục của CẢ flow (`ui.dir`): ghi trên mọi giai đoạn, đọc từ giai đoạn đầu có giá trị (`layoutDirOf`). */
+  uiDir?: LayoutDir;
   /** CR-123 · u5 · node mới thả từ menu/bảng mẫu đứng RIÊNG: chưa nối vào đâu cho tới khi kéo mũi tên tới nó. Chỉ ở bản nháp (không gửi Hub); Lưu bị chặn khi còn. */
   free?: boolean;
 };

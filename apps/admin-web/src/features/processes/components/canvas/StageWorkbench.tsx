@@ -1,5 +1,6 @@
 // ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend §1, FB3/FB7): bàn làm việc giai đoạn — thanh công cụ + tab Canvas/Danh sách
 // + panel bên chứa form của MỘT giai đoạn đang chọn (mặc định giai đoạn 1).
+import type { LayoutDir } from "@ai/contracts/hub-admin";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,9 @@ function Empty({ onAdd, readOnly }: { onAdd: () => void; readOnly: boolean }) {
     </div>
   );
 }
+
+/** CR-125 · x9 · hướng bố cục của canvas: Thư viện khe (có `lib`) luôn Ngang; trình sửa flow theo lựa chọn đã lưu. */
+const dirOf = (lib: unknown, dir: LayoutDir): LayoutDir => (lib ? "RIGHT" : dir);
 
 /** dlc-step-library · Canvas thư viện có bước DLC + sửa được ⇒ kéo cổng "Từ chối" nối được. */
 const linkableOf = (lib: unknown, readOnly: boolean, stages: DraftState["draft"]["stages"]) =>
@@ -136,6 +140,7 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
                 <div className="relative">
                   <CanvasView
                     {...viewProps}
+                    dir={dirOf(lib, ops.layoutDir)}
                     selected={w.open ? w.sel?.uid : undefined}
                     inset={w.open && window.innerWidth >= 768 ? DRAWER_W : 0}
                   />

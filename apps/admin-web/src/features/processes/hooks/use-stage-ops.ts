@@ -1,6 +1,6 @@
 // ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend §2): thao tác bước trên bản nháp + thông báo cho người dùng
 // (câu lỗi inline đã dịch, vùng `aria-live`). Canvas, StepList và panel cùng dùng một bộ.
-import type { DlcStepTemplate } from "@ai/contracts/hub-admin";
+import type { DlcStepTemplate, LayoutDir } from "@ai/contracts/hub-admin";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyBrief } from "@/components/shared/toast";
@@ -8,6 +8,7 @@ import { emptyStage, type StageDraft } from "../lib/def-form";
 import { linkDlcReject } from "../lib/dlc-slot";
 import { freshDlcStage, freshReviewStage, freshSlotStage } from "../lib/fresh-stages";
 import type { EdgeRef } from "../lib/insert-on-edge";
+import { layoutDirOf } from "../lib/layout-dir";
 import { waitBranchDefaults } from "../lib/module-cluster";
 import { getStagesMax } from "../lib/stages-limit";
 import { stepLabel } from "../lib/step-label";
@@ -110,6 +111,13 @@ export function useStageOps(d: DraftState) {
     /** CR-123 · u13 · lưu vị trí node người dùng kéo tay / bỏ hết vị trí đã lưu ("Sắp xếp", hoàn tác được). */
     setPos: (uid: string, pos: { x: number; y: number } | undefined) => d.setUiPos(uid, pos),
     arranged,
+    /** CR-125 · x9 · hướng bố cục đang dùng + đổi hướng (hoàn tác được, khung nhìn fit lại như "Sắp xếp"). */
+    layoutDir: layoutDirOf(d.draft.stages),
+    setLayoutDir: (dir: LayoutDir) => {
+      d.setLayoutDir(dir);
+      setNotice(null);
+      setArranged((n) => n + 1);
+    },
     arrange: () => {
       d.clearUiPos();
       setNotice(null);

@@ -4,6 +4,7 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { FLOW_TEMPLATE_INPUTS } from "../../apps/hub-api/src/modules/processes/library/flow-templates.def";
 import { apiLogin, assignCompanyFlow } from "../_kit/api";
+import { expectEdgesClear, expectExitEdgesAtPills } from "../_kit/canvas-geometry";
 import { approve, enableFlowTriggers, esignNode, finish, notifyCreator } from "../_kit/flows";
 import { flowRow, flowRows, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
 import { viStorageState } from "../support/locale-vi";
@@ -540,4 +541,22 @@ test("U12b · trình tự demo: thả Duyệt (chung cột), Ký xong → Duyệ
   await page.getByRole("button", { name: /Lưu và áp dụng/ }).click();
   await expect(page.getByText(/Chưa áp dụng/)).toHaveCount(0);
   expect(failed).toEqual([]);
+
+  // 5 · CR-125 · x9: Ngang — cạnh bắt đầu ở chấm, không đi dưới node; đổi sang Dọc ⇒ cổng ra ở mép dưới, vẫn không chồng / không cắt node,
+  //     lưu rồi mở lại giữ hướng Dọc (`ui.dir`).
+  await expect(page.getByTestId("flow-layout-right")).toHaveAttribute("aria-pressed", "true");
+  await fitAll(page);
+  await expectExitEdgesAtPills(page, "right", "Ngang");
+  await expectEdgesClear(page, "Ngang");
+  await page.getByTestId("flow-layout-down").click();
+  await expect(page.getByTestId("flow-layout-down")).toHaveAttribute("aria-pressed", "true");
+  await page.locator(".react-flow__controls-fitview").click();
+  await expectNoOverlap(page, "Dọc");
+  await expectExitEdgesAtPills(page, "bottom", "Dọc");
+  await expectEdgesClear(page, "Dọc");
+  await page.getByRole("button", { name: /Lưu và áp dụng/ }).click();
+  await expect(page.getByText(/Chưa áp dụng/)).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator("[data-stage-uid]").first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("flow-layout-down")).toHaveAttribute("aria-pressed", "true");
 });

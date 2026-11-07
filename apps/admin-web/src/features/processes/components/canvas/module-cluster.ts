@@ -135,6 +135,24 @@ export function moduleEdges(views: readonly StageView[]): Edge[] {
   );
 }
 
+/**
+ * CR-125 · x9 · cạnh tiến rời ô module phải bắt đầu ĐÚNG ở chấm của đầu ra "đi tiếp" (Ký xong): gán `sourceHandle` tường minh.
+ * Không gán thì xyflow lấy handle nguồn ĐẦU TIÊN trong DOM (cổng ẩn "back" ở mép trên) ⇒ cạnh đi vòng lên trên và quanh node.
+ * Chỉ đụng cạnh tiến (không `sourceHandle`, không phải cạnh quay lại) rời một ô module.
+ */
+export function withMainExit(edges: readonly Edge[], views: readonly StageView[]): Edge[] {
+  const main = new Map(
+    views.flatMap((v) => {
+      const x = v.module?.exits.find((e) => e.main);
+      return x ? [[v.uid, exitHandle(x.key, x.on)] as const] : [];
+    }),
+  );
+  return edges.map((e) => {
+    const h = main.get(e.source);
+    return h && !e.sourceHandle && e.type !== "back" ? { ...e, sourceHandle: h } : e;
+  });
+}
+
 /** Bản nháp ĐẦY ĐỦ các stage mà canvas đang vẽ (ô module trả lại mọi stage của cụm) — đầu vào của `connectPatch`. */
 export const connectStages = (views: readonly StageView[]): StageDraft[] =>
   views.flatMap((v) => (v.module ? v.module.members : [v.src]));

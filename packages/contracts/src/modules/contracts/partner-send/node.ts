@@ -13,6 +13,8 @@ export const PARTNER_SEND_NODE: FeatureNodeDecl = {
   group: "partner",
   kind: "app",
   feature: "contracts-partner-confirm",
+  // CR-125 · x9: bước nghiệp vụ ⇒ nhóm nghiệp vụ của menu "+" (sau Ký số); chỉ hiện khi công ty có tính năng trên (palette lọc theo `feature`).
+  menu: { section: "business", order: 35 },
   requires: { before: "approval" },
   configPort: {
     schema: PartnerSendConfigSchema,
