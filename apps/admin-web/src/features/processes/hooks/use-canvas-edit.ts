@@ -2,9 +2,9 @@
 // Luật nằm ở `lib/canvas-edit` + `lib/canvas-connect` + `lib/step-ops`; hook này chỉ gọi, rồi báo kết quả: lỗi ⇒ không đổi gì + toast nêu lý do
 // (kèm vùng aria-live), xong ⇒ câu ngắn vào vùng aria-live.
 
+import { newRealViolation } from "@ai/contracts/hub-admin";
 import { useRef } from "react";
 import type { useTranslation } from "react-i18next";
-import { newRealViolation } from "../domain/tool-rules";
 import { connectPatch } from "../lib/canvas-connect";
 import {
   type EditError,
@@ -45,6 +45,10 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
     const r = connectPatch(stages(), c);
     if (!r) return;
     if (!r.ok) return say.error(t(`${CONNECT}${r.error}`));
+    const patched = stages().map((s, i) =>
+      i === r.index ? { ...s, ...(r.patch as Partial<StageDraft>) } : s,
+    );
+    if (newRealViolation(stages(), patched)) return say.error(t(REAL_NEEDS_REVIEW));
     d.patchStage(r.index, r.patch as Partial<StageDraft>, false);
     say.clear();
     say.live(t(`${CONNECT}done.${r.field}`));
@@ -105,6 +109,7 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
       const after = base.length > 0 ? Math.max(...base.map((s) => s.step)) : lastStep(st);
       const r = pasteStages(st, clip.current, after, t(`${EDIT}copySuffix`));
       if ("error" in r) return fail(r);
+      if (newRealViolation(st, r.stages)) return say.error(t(REAL_NEEDS_REVIEW));
       d.setStages(r.stages, false);
       say.live(t(`${EDIT}pasted`, { n: r.uids?.length ?? 0 }));
     },
@@ -112,6 +117,7 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
     moveGroup: (sel: string[], delta: number) => {
       const r = moveGroup(stages(), expandToClusters(stages(), sel), delta);
       if ("error" in r) return fail(r);
+      if (newRealViolation(stages(), r.stages)) return say.error(t(REAL_NEEDS_REVIEW));
       d.setStages(r.stages, true);
     },
     undo: () => say.live(t(d.undo() ? `${EDIT}undone` : `${EDIT}nothingToUndo`)),

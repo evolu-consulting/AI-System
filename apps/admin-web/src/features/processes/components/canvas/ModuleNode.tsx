@@ -9,8 +9,8 @@ import { exitHandle } from "../../lib/canvas-connect";
 import { useHandlers } from "./canvas-ctx";
 import { FlowNodeBody } from "./FlowNodeBody";
 import { stageButtonClass } from "./StageBody";
-import type { StageNodeType } from "./StageNode";
 import { onStageKeyDown } from "./stage-keys";
+import type { StageNodeType } from "./stage-node-type";
 import type { ModuleExit, StageView } from "./stage-view";
 
 function ExitPort({ x, top, connectable }: { x: ModuleExit; top: string; connectable: boolean }) {

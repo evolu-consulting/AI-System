@@ -1,7 +1,14 @@
 // CR-123 · FLOW3-FR-13 (ux-audit #10): node "Nếu" đọc thành MỘT câu cho giám đốc/sale:
 // "Nếu Giá trị hợp đồng lớn hơn 100 triệu → đi tới Bước 3 · Giám đốc duyệt, ngược lại → đi tới Bước tiếp theo".
 // Thuần (nhận nhãn đã dịch), không React.
-export type SentenceCond = { from: string; op: string; value: string; type: string };
+export type SentenceCond = {
+  from: string;
+  op: string;
+  value: string;
+  type: string;
+  /** Dữ kiện Có/Không: đọc "Đối tác mới là Có", không phải "bằng true". */
+  bool?: boolean;
+};
 
 export type SentenceWords = {
   /** "Nếu" */
@@ -23,6 +30,8 @@ export type SentenceWords = {
   billion: string;
   /** phép so sánh → chữ ("lớn hơn") */
   ops: Readonly<Record<string, string>>;
+  /** Có/Không: "là" · "không là" · "Có" · "Không" (vắng ⇒ dùng `ops`). */
+  bool?: { is: string; isNot: string; yes: string; no: string };
 };
 
 /** 100000000 → "100 triệu", 2500000000 → "2,5 tỷ"; số lẻ/nhỏ giữ nguyên chữ số. */
@@ -39,6 +48,8 @@ export function friendlyNumber(raw: string, w: Pick<SentenceWords, "million" | "
 /** Một điều kiện: "Giá trị hợp đồng lớn hơn 100 triệu"; chưa chọn nguồn ⇒ null (câu chưa đủ). */
 export function condText(c: SentenceCond, w: SentenceWords, from: string): string | null {
   if (c.from === "") return null;
+  if (c.bool && w.bool)
+    return `${from} ${c.op === "ne" ? w.bool.isNot : w.bool.is} ${c.value.trim() === "false" ? w.bool.no : w.bool.yes}`;
   const value = c.type === "number" ? friendlyNumber(c.value, w) : c.value.trim();
   return `${from} ${w.ops[c.op] ?? c.op} ${value === "" ? w.blank : value}`;
 }

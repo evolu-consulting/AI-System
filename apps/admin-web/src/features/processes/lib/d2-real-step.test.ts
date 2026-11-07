@@ -1,10 +1,10 @@
 // HUB-FR-146 · HUB-BR-12 · AC-H44 · D2-49 · TECH-DEBT #204 (hướng A): stage "Gọi tool" có tác dụng phụ ở giai đoạn KHÔNG bật được
 // "Hành động thật" (bước 0, hoặc bước trước có giai đoạn không người kiểm) ⇒ câu lỗi riêng `sideEffectLocked` (path vẫn
 // `stages.<i>.real_action`), thay vì bảo người dùng bật công tắc đang bị khoá. Bật được ⇒ giữ `TOOL_SIDE_EFFECT`.
-// `realActionAllowed` (domain/tool-rules) = điều kiện mở công tắc. Nạp qua namespace ⇒ export vắng đỏ ở expect, không lỗi nạp file.
+// `realActionAllowed` (@ai/contracts/hub-admin) = điều kiện mở công tắc. Nạp qua namespace ⇒ export vắng đỏ ở expect, không lỗi nạp file.
 import { describe, expect, test } from "bun:test";
 import type { ProcessToolItem } from "@ai/contracts/hub-admin";
-import * as toolRules from "../domain/tool-rules";
+import * as toolRules from "@ai/contracts/hub-admin";
 import { d2LiveErrors, TOOL_ERR } from "./d2-validate";
 import type { StageDraft } from "./draft-types";
 import { emptyStage } from "./stage-convert";

@@ -131,11 +131,15 @@ export function whenSummary(
   facts: readonly AppFactDecl[],
   sym: (op: FactOp) => string,
   joiner: { and: string; or: string },
+  /** Có/Không: "Đối tác mới là Có" thay vì "= true" (cùng cách đọc với node Nếu). */
+  bool?: { is: string; isNot: string; yes: string; no: string },
 ): string {
   if (!when) return "";
   const label = (k: string) => facts.find((f) => f.key === k)?.label ?? k;
   const one = (c: FactCond) =>
-    `${label(c.fact)} ${sym(c.op)} ${Array.isArray(c.value) ? c.value.join(", ") : String(c.value)}`;
+    bool && facts.find((f) => f.key === c.fact)?.type === "boolean"
+      ? `${label(c.fact)} ${c.op === "ne" ? bool.isNot : bool.is} ${c.value === false || c.value === "false" ? bool.no : bool.yes}`
+      : `${label(c.fact)} ${sym(c.op)} ${Array.isArray(c.value) ? c.value.join(", ") : String(c.value)}`;
   const part = (x: WhenItem): string =>
     isGroup(x) ? `(${x.conds.map(one).join(` ${joiner[x.op]} `)})` : one(x);
   return (when.conds as WhenItem[]).map(part).join(` ${joiner[when.op]} `);

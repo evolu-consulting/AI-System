@@ -9,11 +9,11 @@ import {
   type ProcessDefInput,
   type ProcessToolItem,
   processDefStageIssues,
+  realActionAllowed,
   resolveSteps,
 } from "@ai/contracts/hub-admin";
 import { ttlIssueKey } from "../domain/error-keys";
 import { PROCESS_TTL_DAYS } from "../domain/limits";
-import { realActionAllowed } from "../domain/tool-rules";
 import { ttlFromValue, ttlIssue, ttlToValue } from "../domain/ttl-rules";
 import { APPLY_RULE_ERR, applyCrossErrors, normalizeApply } from "./apply-form";
 import { AUTOFIX_RULE_ERR, validateAutofixPart } from "./autofix-form";

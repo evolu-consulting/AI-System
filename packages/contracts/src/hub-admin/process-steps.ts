@@ -1,5 +1,6 @@
 // HUB-FR-104 · HUB-BR-38 · HUB-FR-118 · HUB-FR-136 · P-b2 (plan §1.2): hàm THUẦN về bước của def + cắt Bàn giao — dùng
 // chung server (superRefine, `validateProcessDef`, seed) và admin-web (editor canvas). Không import zod/schema (tránh vòng).
+
 import {
   ESCALATE_AFTER_H,
   HANDOFF_CHARS_PER_TOKEN,
@@ -8,6 +9,7 @@ import {
   WAIT_OFFSET_DAYS,
   WAIT_TIME_RE,
 } from "../chat/processes";
+import { realActionAllowed } from "./process-real-rule";
 
 export const PROCESS_DEF_RULES = [
   "KEY_DUP",
@@ -114,11 +116,12 @@ function stepIssues(stages: readonly StepStageShape[], out: Bucket[]): boolean {
 
 function realAndBackIssues(stages: readonly StepStageShape[], out: Bucket[]): void {
   const st = resolveSteps(stages);
+  const shape = stages.map((p, j) => ({ step: st[j] as number, after: p.after.kind }));
   stages.forEach((s, i) => {
     const step = st[i] as number;
     if (s.real_action) {
-      const prevAuto = stages.some((p, j) => st[j] === step - 1 && p.after.kind !== "review");
-      if (step === 0 || prevAuto)
+      // cùng MỘT luật với trình sửa (picker / kéo thả / lưu phía FE): `realActionAllowed`
+      if (!realActionAllowed(shape, i))
         out[i]?.real.push({ path: `stages.${i}.real_action`, rule: "REAL_ACTION" });
     }
     if (s.after.kind !== "review") return;

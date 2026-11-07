@@ -6,12 +6,12 @@ import {
   ifStageIssues,
   type ProcessDefIssue,
   type ProcessToolItem,
+  realActionAllowed,
   type ToolCatalogShape,
   type ToolStageDraft,
   toolStageIssues,
 } from "@ai/contracts/hub-admin";
 import { targetHasReal } from "../domain/branch-rules";
-import { realActionAllowed } from "../domain/tool-rules";
 import { branchToRules } from "./branch-form";
 import type { DraftErrors, StageDraft } from "./draft-types";
 import { formFieldErrors, isFormErrKey } from "./form-fields";

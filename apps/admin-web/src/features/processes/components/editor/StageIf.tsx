@@ -95,7 +95,10 @@ export function StageIf(p: StageIfProps) {
     s === null ? null : (p.optLabel?.(s) ?? t(`${K}stepOpt`, { n: s }));
   const sentence = ifSentence({
     join: value.op,
-    conds: value.conds,
+    conds: value.conds.map((c) => ({
+      ...c,
+      bool: sources.find((s) => s.value === c.from)?.type === "boolean",
+    })),
     fromLabel: (c) => sources.find((s) => s.value === c.from)?.label ?? c.from,
     yes: stepName(value.yes),
     no: stepName(value.no),
@@ -109,6 +112,12 @@ export function StageIf(p: StageIfProps) {
       blank: t(`${K}s.blank`),
       million: t(`${K}s.million`),
       billion: t(`${K}s.billion`),
+      bool: {
+        is: t(`${K}opIs`),
+        isNot: t(`${K}opIsNot`),
+        yes: t("process.admin.flow.yes"),
+        no: t("process.admin.flow.no"),
+      },
       ops: Object.fromEntries(
         ["eq", "ne", "lt", "le", "gt", "ge"].map((o) => [
           o,

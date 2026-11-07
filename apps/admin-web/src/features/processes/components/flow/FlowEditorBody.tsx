@@ -77,10 +77,21 @@ export function FlowEditorBody({
   });
   const [open, setOpen] = useState(false);
   const selectRef = useRef<((uid: string) => void) | null>(null);
-  const summary = whenSummary(trigger.when, event?.facts ?? [], (o) => OP_SYMBOL[o], {
-    and: t("process.admin.flow.and").toLowerCase(),
-    or: t("process.admin.flow.or").toLowerCase(),
-  });
+  const summary = whenSummary(
+    trigger.when,
+    event?.facts ?? [],
+    (o) => OP_SYMBOL[o],
+    {
+      and: t("process.admin.flow.and").toLowerCase(),
+      or: t("process.admin.flow.or").toLowerCase(),
+    },
+    {
+      is: t("process.admin.editor.stage.if.opIs"),
+      isNot: t("process.admin.editor.stage.if.opIsNot"),
+      yes: t("process.admin.flow.yes"),
+      no: t("process.admin.flow.no"),
+    },
+  );
   const ctx = {
     app: meta.app,
     tenantId,

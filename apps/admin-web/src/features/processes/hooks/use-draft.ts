@@ -1,6 +1,7 @@
 // ADM-FR-66 · CR-056 · P-a F5: trạng thái bản nháp của editor — sửa ô, thêm/xoá/đổi chỗ giai đoạn, lỗi theo ô, giai đoạn đang chọn.
+
+import { newRealViolation } from "@ai/contracts/hub-admin";
 import { useRef, useState } from "react";
-import { newRealViolation } from "../domain/tool-rules";
 import {
   type DefDraft,
   type DraftErrors,
@@ -82,6 +83,9 @@ function useStepMutations(ref: Ref, update: Update, select: (uid: string) => voi
     op: (stages: StageDraft[]) => StepOpResult<StageDraft>,
   ): StepOpResult<StageDraft> => {
     const r = op(ref.current.stages);
+    // luật chung (contracts): thêm / dời / tách làm một bước hành động thật mất người duyệt ngay trước ⇒ chặn, không đổi bản nháp
+    if ("stages" in r && newRealViolation(ref.current.stages, r.stages))
+      return { error: ERR_REAL_NEEDS } as const;
     if ("stages" in r) update((d) => ({ ...d, stages: r.stages }));
     return r;
   };
@@ -110,9 +114,6 @@ function useStepMutations(ref: Ref, update: Update, select: (uid: string) => voi
         make(ref.current.stages),
         ref.current.stages.map((o) => o.key),
       );
-      const probe = addStageAsNewStep(ref.current.stages, s);
-      if ("stages" in probe && newRealViolation(ref.current.stages, probe.stages))
-        return { error: ERR_REAL_NEEDS } as const;
       const r = applySteps((st) => addStageAsNewStep(st, s));
       if ("stages" in r) select(s.uid);
       return r;

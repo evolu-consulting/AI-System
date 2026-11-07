@@ -15,12 +15,14 @@ Hàng chờ UX canvas (docs/specs/CR-122/resume.md): giám đốc / sale mở fl
 3. Điều kiện Nếu trên dữ kiện Có/Không: chỉ "là / không là" + chọn Có/Không (`opsForType("boolean")`, `CondValue`).
 4. Bỏ loại kỹ thuật ("set", "form", "Chuẩn bị dữ liệu", "Agent") dưới tên bước.
 5. Nhãn Đúng/Sai không lặp trên cạnh (cổng IfPort đã có nhãn); bỏ tiền tố "Bước N:" trong ô bước của khe/DLC.
-6. Luật "bước hành động thật (Ký số) cần bước duyệt ngay trước" cho picker (chèn trên cạnh / thêm), kéo thả (thả từ menu) — một nguồn `realActionAllowed` ở `domain/tool-rules` (lưu dùng chính hàm đó), thêm `newRealViolation`; sai ⇒ lý do `process.admin.canvas.err.realNeedsReview`.
-7. e2e hành trình kéo-thả: `e2e/journey-approval/cr123-palette-drop.spec.ts` (+ khai trong playwright.journey.config.ts).
+6. Luật "bước hành động thật (Ký số) cần bước duyệt ngay trước": MỘT module `packages/contracts/src/hub-admin/process-real-rule.ts` (`realActionAllowed`, `newRealViolation`) — Hub lưu (REAL_ACTION), công tắc trình sửa, picker (chèn / thêm / dời / tách qua `applySteps`), thả, kéo nhóm, dán, nối lại đều gọi nó; sai ⇒ lý do `process.admin.canvas.err.realNeedsReview`. Bỏ bản chép ở `domain/tool-rules`.
+7. Câu Có/Không đọc "Đối tác mới là Có" (node Nếu và Bắt đầu khi) thay vì "bằng true".
+8. Phá vòng import `StageNode` ⇄ `ModuleNode` (kiểu dời sang `canvas/stage-node-type.ts`).
+9. e2e hành trình kéo-thả: `e2e/journey-approval/cr123-palette-drop.spec.ts` (+ khai trong playwright.journey.config.ts).
 
 ## Không làm / Chạm
 - Không CR-124 (đối tác / packs-contracts), không depcruise/tooling của slice arch, không DLC, không hub-api/engine/migration.
-- Luật bước duyệt chưa chặn khi KÉO node đã có sang chỗ khác (chỉ thả mới / chèn) — ghi hàng chờ.
+- Luật Ký số: `moveInColumn` / `swapStep` (đổi chỗ trong cột) chưa qua luật (không đổi bước của stage hành động thật, trừ DLC).
 - `PlainBody` ("Giai đoạn n: …") giữ nguyên: e2e P-b2 đóng băng so chuỗi đó.
 
 ## Test tối thiểu
@@ -43,6 +45,9 @@ Node trên canvas flow không hiện loại kỹ thuật dưới tên bước; l
 - Kịch bản: khi thả bước Ký số sau bước không phải duyệt thì bị chặn [test: apps/admin-web/src/features/processes/lib/u4-canvas-ux.test.ts » sau bước tự động ⇒ trả uid của bước hành động thật]
 - Kịch bản: khi bước Ghi giá trị hay Điền thông tin thì không hiện chữ kỹ thuật dưới tên [test: apps/admin-web/src/features/processes/lib/u4-canvas-ux.test.ts » u4 · bước Ghi giá trị / Điền thông tin không lộ chữ kỹ thuật dưới tên bước]
 - Kịch bản: khi kéo mục Thông báo từ menu Thêm bước thả vào canvas công ty thì thêm một node [test: e2e/journey-approval/cr123-palette-drop.spec.ts » U4 · công ty sao chép flow, mở trình sửa, KÉO 'Thông báo' từ menu Thêm bước thả vào canvas ⇒ thêm một node, node mới nằm trong sơ đồ]
+- Kịch bản: khi dữ kiện Có/Không thì câu đọc là Có hoặc Không thay vì bằng true [test: apps/admin-web/src/features/processes/lib/u4-canvas-ux.test.ts » u4 · câu Có/Không đọc như người nói]
+- Kịch bản: khi bước hành động thật mất người duyệt ngay trước thì luật chung của contracts báo bước đó [test: packages/contracts/src/hub-admin/process-real-rule.test.ts » process-real-rule · Ký số cần bước duyệt ngay trước]
+- Kịch bản: khi lưu, chèn, thả, kéo nhóm, dán hoặc nối lại thì mọi đường gọi cùng luật chung [test: apps/admin-web/src/features/processes/lib/u4-canvas-ux.test.ts » u4 · MỘT luật Ký số cần bước duyệt ngay trước — mọi đường gọi luật chung của contracts]
 
 ## Việc còn lại
 - Luật bước duyệt khi kéo node đã có; e2e kéo "Ký số" khi công ty đã bật tính năng ký số.

@@ -15,16 +15,10 @@ import { ModuleNode } from "./ModuleNode";
 import { NextPort } from "./OutPort";
 import { StageBody, stageButtonClass } from "./StageBody";
 import { onStageKeyDown } from "./stage-keys";
+import type { StageNodeData, StageNodeType } from "./stage-node-type";
 import { type StageView, sameView } from "./stage-view";
 
-export type StageNodeData = {
-  v: StageView;
-  selected: boolean;
-  readOnly: boolean;
-  /** CR-122 · p22 · hiện cổng ra để kéo nối tay. */
-  connectable?: boolean;
-};
-export type StageNodeType = Node<StageNodeData, "stage">;
+export type { StageNodeData, StageNodeType };
 
 /** Cổng ra "Từ chối" (id `back` = nguồn cạnh quay lại): nhãn chữ, nét warning như cạnh quay lại (không chỉ màu). */
 function RejectPort() {

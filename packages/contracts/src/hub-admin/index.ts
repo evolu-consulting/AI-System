@@ -21,6 +21,7 @@ export * from "./process-form";
 export * from "./process-if";
 export * from "./process-limits";
 export * from "./process-module-nodes";
+export * from "./process-real-rule";
 export * from "./process-set";
 export * from "./process-trigger";
 export * from "./processes";

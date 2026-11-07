@@ -3,11 +3,13 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { APP_MANIFESTS, CONTRACTS_MANIFEST, startOutputsOf } from "@ai/contracts/app-manifest";
+import { newRealViolation } from "@ai/contracts/hub-admin";
 import { stageViews } from "../components/canvas/stage-view";
 import { opsForType } from "../domain/branch-rules";
-import { newRealViolation } from "../domain/tool-rules";
 import { emptyStage } from "./def-form";
+import { whenSummary } from "./fact-when";
 import { factSources } from "./if-form";
+import { ifSentence } from "./if-sentence";
 import { edgeProblems } from "./palette-node";
 
 const load = (l: string) =>
@@ -107,4 +109,64 @@ test("u4 · bước Ghi giá trị / Điền thông tin không lộ chữ kỹ t
     { agents: [], teams: [], tools: [] },
   );
   expect(v.map((x) => x.executor)).toEqual(["", ""]);
+});
+
+describe("u4 · câu Có/Không đọc như người nói", () => {
+  const words = {
+    if: "Nếu",
+    and: "và",
+    or: "hoặc",
+    goTo: "đi tới",
+    otherwise: "ngược lại",
+    nextStep: "Bước tiếp theo",
+    blank: "…",
+    million: "triệu",
+    billion: "tỷ",
+    ops: { eq: "bằng" },
+    bool: { is: "là", isNot: "không là", yes: "Có", no: "Không" },
+  };
+  test("node Nếu: 'Đối tác mới là Có', không phải 'bằng true'", () => {
+    const s = ifSentence({
+      join: "and",
+      conds: [{ from: "f", op: "eq", value: "true", type: "string", bool: true }],
+      fromLabel: () => "Đối tác mới",
+      yes: "Bước 2",
+      no: null,
+      words,
+    });
+    expect(s).toContain("Đối tác mới là Có");
+    expect(s).not.toContain("true");
+  });
+  test("Bắt đầu khi: dữ kiện boolean đọc 'là Có' / 'không là Không'", () => {
+    const facts = [{ key: "np", label: "Đối tác mới", type: "boolean" }] as never;
+    const w = (op: string, value: unknown) =>
+      ({ op: "and", conds: [{ fact: "np", op, value }] }) as never;
+    const j = { and: "và", or: "hoặc" };
+    expect(whenSummary(w("eq", true), facts, () => "=", j, words.bool)).toBe("Đối tác mới là Có");
+    expect(whenSummary(w("ne", false), facts, () => "=", j, words.bool)).toBe(
+      "Đối tác mới không là Không",
+    );
+  });
+});
+
+describe("u4 · MỘT luật Ký số cần bước duyệt ngay trước — mọi đường gọi luật chung của contracts", () => {
+  const read = (p: string) => readFileSync(`${import.meta.dir}/../../../../../../${p}`, "utf8");
+  const app = "apps/admin-web/src/features/processes";
+  test("lưu (Hub REAL_ACTION) và công tắc trình sửa dùng realActionAllowed của contracts", () => {
+    expect(read("packages/contracts/src/hub-admin/process-steps.ts")).toContain(
+      "realActionAllowed(shape, i)",
+    );
+    for (const f of ["lib/def-form.ts", "lib/d2-validate.ts"])
+      expect(read(`${app}/${f}`)).toMatch(/realActionAllowed[^;]*from "@ai\/contracts\/hub-admin"/);
+    expect(read(`${app}/domain/tool-rules.ts`)).not.toContain("realActionAllowed");
+  });
+  test("picker (chèn trên cạnh / thêm / dời / tách) đi qua use-draft: applySteps + insertOnEdge", () => {
+    const d = read(`${app}/hooks/use-draft.ts`);
+    expect(d.match(/newRealViolation\(/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(d).toContain('newRealViolation } from "@ai/contracts/hub-admin"');
+  });
+  test("kéo thả: thả, kéo nhóm, dán và nối lại đều kiểm luật", () => {
+    const e = read(`${app}/hooks/use-canvas-edit.ts`);
+    expect(e.match(/newRealViolation\(/g)?.length).toBeGreaterThanOrEqual(4);
+  });
 });
