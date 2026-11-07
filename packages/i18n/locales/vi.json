@@ -674,11 +674,12 @@
         "off": "Đang dùng cách cũ",
         "confirm": "Hợp đồng của công ty này sẽ chạy theo quy trình mới. Bật?",
         "ok": "Bật",
-        "cancel": "Huỷ"
+        "cancel": "Huỷ",
+        "noFlow": "Chưa có quy trình nào được áp dụng cho công ty — liên hệ quản trị nền tảng để gán"
       },
-      "empty": "Công ty chưa có flow nào. Quản trị nền tảng gán flow từ Thư viện.",
+      "empty": "Công ty chưa có quy trình nào. Quản trị nền tảng gán quy trình từ Thư viện.",
       "col": {
-        "name": "Flow",
+        "name": "Quy trình",
         "trigger": "Bắt đầu khi",
         "source": "Nguồn",
         "status": "Trạng thái"

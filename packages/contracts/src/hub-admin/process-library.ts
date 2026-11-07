@@ -62,6 +62,8 @@ export const HUB_ADMIN_LIBRARY_ERRORS = {
   SLOT_GONE: 422,
   /** CR-121 c17 · sửa bản riêng: def thư viện nguồn đã bị gỡ (xoá mềm) ⇒ chặn sửa; bản riêng vẫn chạy được. */
   COPY_SOURCE_REMOVED: 422,
+  /** CR-123 · FR-09: bật "Dùng quy trình mới" khi công ty chưa có quy trình nào đang áp dụng (company_flows.enabled) ⇒ hợp đồng không có gì để chạy. */
+  FLOW_NONE_ASSIGNED: 422,
 } as const;
 export type HubAdminLibraryErrorCode = keyof typeof HUB_ADMIN_LIBRARY_ERRORS;
 

@@ -26,6 +26,7 @@ const MESSAGES: Record<HubAdminLibraryErrorCode, string> = {
   NOT_LIBRARY_DEF: "Process is not a shared library process",
   SLOT_GONE: "The slot of this process is no longer registered",
   COPY_SOURCE_REMOVED: "The library process this copy was made from has been removed",
+  FLOW_NONE_ASSIGNED: "The company has no active process assigned",
 };
 
 export function libError(code: HubAdminLibraryErrorCode, details?: unknown): AppError {

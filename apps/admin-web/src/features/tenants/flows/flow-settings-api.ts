@@ -3,7 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/http";
 import { hubConfigured, hubUrl } from "@/lib/hub";
 
-type Settings = { flow_triggers: boolean };
+/** `has_active_flow`: công ty có ít nhất một quy trình đang áp dụng (CR-123 FR-09) — chưa có ⇒ không bật được. */
+type Settings = { flow_triggers: boolean; has_active_flow: boolean };
 const key = (tid: string) => ["flow-settings", tid] as const;
 const url = (tid: string): string => {
   const u = hubUrl(`/tenants/${encodeURIComponent(tid)}/flow-settings`);

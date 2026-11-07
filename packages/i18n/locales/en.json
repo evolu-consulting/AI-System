@@ -674,7 +674,8 @@
         "off": "Using the old way",
         "confirm": "Contracts of this company will start running the new flows. Turn on?",
         "ok": "Turn on",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "noFlow": "No process is applied to this company yet — ask the platform admin to assign one"
       },
       "empty": "This company has no flows yet. The platform admin assigns flows from the Library.",
       "col": { "name": "Flow", "trigger": "Starts when", "source": "Source", "status": "Status" },

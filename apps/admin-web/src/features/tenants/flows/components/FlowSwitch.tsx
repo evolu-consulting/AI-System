@@ -21,6 +21,7 @@ export function FlowSwitch({ tenantId }: { tenantId: string }) {
   const [ask, setAsk] = useState(false);
   if (!q.data) return null;
   const on = q.data.flow_triggers;
+  const blocked = !on && !q.data.has_active_flow; // chưa có quy trình nào đang áp dụng ⇒ bật cũng không có gì để chạy
   return (
     <div
       className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
@@ -31,10 +32,15 @@ export function FlowSwitch({ tenantId }: { tenantId: string }) {
         <p className="m-0 text-caption text-muted-foreground" data-testid="flow-switch-status">
           {t(`tenants.companyFlows.newFlow.${on ? "on" : "off"}`)}
         </p>
+        {blocked ? (
+          <p className="m-0 text-caption text-warning" data-testid="flow-switch-reason">
+            {t("tenants.companyFlows.newFlow.noFlow")}
+          </p>
+        ) : null}
       </div>
       <Switch
         checked={on}
-        disabled={set.isPending}
+        disabled={set.isPending || blocked}
         aria-label={t("tenants.companyFlows.newFlow.label")}
         data-testid="flow-switch-toggle"
         onCheckedChange={(v) => (v ? setAsk(true) : set.mutate(false))}

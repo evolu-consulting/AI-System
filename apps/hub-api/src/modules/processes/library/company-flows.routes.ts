@@ -21,7 +21,7 @@ export function companyFlowsRoutes(d: ProcessDeps): Hono<AuthVars> {
   const svc = new CompanyFlowsService(d.db);
   const r = new Hono<AuthVars>();
   const fs = new FlowSettingsService(d.db);
-  r.use("/tenants/:tid/flow-settings", requireAdminRole()); // CR-122 · P7: vai platform_admin kiểm ở service
+  r.use("/tenants/:tid/flow-settings", requireAdminRole()); // CR-123 FR-09: platform_admin hoặc tenant_admin của chính công ty (kiểm ở service); member 403
   r.get("/tenants/:tid/flow-settings", async (c) => c.json(await fs.get(c.var.user, tid(c))));
   r.put("/tenants/:tid/flow-settings", async (c) => {
     const b = await parseJson(c, FlowSettingsSchema);

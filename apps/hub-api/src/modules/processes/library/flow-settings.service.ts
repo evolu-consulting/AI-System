@@ -1,14 +1,23 @@
 // CR-122 · P7 · cờ "dùng quy trình mới" theo công ty (`hub.tenant_flow_settings.flow_triggers`). platform_admin + quản trị công ty đó (CR-123 FR-09; kiểm ở đây);
 // mỗi lần ĐỔI giá trị ghi audit (ai · lúc nào · cũ → mới) qua `withConfigWrite`; đặt lại đúng giá trị cũ ⇒ không ghi.
-import type { Db } from "@ai/db";
+import type { Db, Tx } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
+import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import { dbHubAudit } from "../../../lib/hub-audit";
 import { flowTriggersOn, setFlowTriggers } from "../triggers/flags";
+import { libError } from "./library-draft";
 import { withConfigWrite } from "./routing.service";
 
-export type FlowSettings = { flow_triggers: boolean };
+export type FlowSettings = { flow_triggers: boolean; has_active_flow: boolean };
+
+async function hasActiveFlow(tx: Tx, tenantId: string): Promise<boolean> {
+  const r = await tx.execute<{ ok: boolean }>(
+    sql`select exists (select 1 from hub.company_flows where tenant_id = ${tenantId}::uuid and enabled) as ok`,
+  );
+  return r[0]?.ok === true;
+}
 
 export class FlowSettingsService {
   constructor(private readonly db: Db) {}
@@ -20,10 +29,15 @@ export class FlowSettingsService {
     throw appError("FORBIDDEN");
   }
 
+  #active(tenantId: string): Promise<boolean> {
+    return withHubScope(this.db, { kind: "system" }, (tx) => hasActiveFlow(tx, tenantId));
+  }
+
   async get(u: AuthUser, tenantId: string): Promise<FlowSettings> {
     this.#guard(u, tenantId);
     return withHubScope(this.db, { kind: "system" }, async (tx) => ({
       flow_triggers: await flowTriggersOn(tx, tenantId),
+      has_active_flow: await hasActiveFlow(tx, tenantId),
     }));
   }
 
@@ -32,6 +46,8 @@ export class FlowSettingsService {
     await withConfigWrite({ db: this.db, audit: dbHubAudit }, u, async (tx) => {
       const before = await flowTriggersOn(tx, tenantId);
       if (before === on) return { result: null, audit: null };
+      // CR-123 FR-09: quản trị công ty không tự gán quy trình ⇒ không cho bật khi chưa có quy trình nào đang áp dụng
+      if (on && !(await hasActiveFlow(tx, tenantId))) throw libError("FLOW_NONE_ASSIGNED");
       await setFlowTriggers(tx, tenantId, on);
       return {
         result: null,
@@ -47,6 +63,6 @@ export class FlowSettingsService {
         },
       };
     });
-    return { flow_triggers: on };
+    return { flow_triggers: on, has_active_flow: await this.#active(tenantId) };
   }
 }
