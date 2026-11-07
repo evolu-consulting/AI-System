@@ -85,7 +85,7 @@ export async function needContracts(sql: Sql): Promise<void> {
   });
 }
 export async function truncateAll(sql: Sql): Promise<void> {
-  await sql.unsafe(`truncate ${TABLES.map((t) => `contracts.${t}`).join(", ")}`);
+  await sql.unsafe(`truncate ${TABLES.map((t) => `contracts.${t}`).join(", ")} cascade`);
 }
 const J = (sql: Sql, v: unknown) => sql.json(v as postgres.JSONValue);
 
