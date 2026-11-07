@@ -56,7 +56,7 @@ const edges: E[] = [
     target: "no",
     sourceHandle: EXITS[1] ?? "",
     exit: 1,
-    label: "Từ chối",
+    label: "Từ chối · Hết hạn", // hai đầu ra cùng đích chung MỘT nhãn ghép (ở cạnh đầu tiên)
   },
   {
     id: "ky>no#t",
@@ -64,7 +64,6 @@ const edges: E[] = [
     target: "no",
     sourceHandle: EXITS[2] ?? "",
     exit: 2,
-    label: "Hết hạn",
   },
 ];
 
@@ -170,8 +169,7 @@ for (const dir of ["RIGHT", "DOWN"] as const) {
       const labels = routed
         .filter((r) => r.e.label)
         .map((r) => labelRect(r.poly, [...box.values()]));
-      expect(labels).toHaveLength(2);
-      expect(overlap(labels[0] as Rect, labels[1] as Rect)).toBe(false);
+      expect(labels).toHaveLength(1);
       for (const l of labels) for (const b of box.values()) expect(overlap(l, b)).toBe(false);
     });
     test("đường chính (Bắt đầu khi → … → Kế toán duyệt chi → Kết thúc) không quay đầu ngược chiều flow", async () => {

@@ -285,15 +285,16 @@ const hits = (a: Rect, b: Rect): boolean =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
 /**
- * Vị trí nhãn của một cạnh: ưu tiên GIỮA đoạn đầu (ngay sau chấm đầu ra — các đầu ra cạnh nhau có nhãn ở chỗ riêng, không đè nhau dù cùng đích),
- * không vừa thì lùi dần dọc đường tới chỗ hộp nhãn không đè node nào.
+ * Vị trí nhãn của một cạnh: ưu tiên GIỮA đoạn CUỐI (gần node đích — chỗ các cạnh cùng đích gộp lại, nhãn ghép nằm ở đó), tránh đè node;
+ * không vừa thì lùi dần về phía nguồn tới chỗ hộp nhãn không đè node nào.
  */
 export function labelPoint(poly: readonly Pt[], boxes: readonly Rect[]): Pt {
-  const a = poly[0];
-  const b = poly[1];
-  if (!a || !b) return a ?? { x: 0, y: 0 };
+  const n = poly.length;
+  const a = poly[n - 2];
+  const b = poly[n - 1];
+  if (!a || !b) return poly[0] ?? { x: 0, y: 0 };
   const total = polyLength(poly);
-  const first = Math.hypot(b.x - a.x, b.y - a.y);
+  const last = Math.hypot(b.x - a.x, b.y - a.y);
   const free = (c: Pt) =>
     !boxes.some((r) =>
       hits(
@@ -301,13 +302,13 @@ export function labelPoint(poly: readonly Pt[], boxes: readonly Rect[]): Pt {
         r,
       ),
     );
-  const dists = [
-    first / 2,
+  const fromEnd = [
+    last / 2,
     ...Array.from({ length: Math.ceil(total / 16) }, (_, i) => 24 + i * 16),
   ];
-  for (const d of dists) {
-    const c = pointAt(poly, Math.min(d, total));
+  for (const d of fromEnd) {
+    const c = pointAt(poly, Math.max(total - d, 0));
     if (free(c)) return c;
   }
-  return pointAt(poly, first / 2);
+  return pointAt(poly, total - last / 2);
 }

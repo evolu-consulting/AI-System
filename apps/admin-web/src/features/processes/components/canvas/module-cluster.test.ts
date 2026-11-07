@@ -82,8 +82,8 @@ describe("FLOW3-FR-14 · collapseModules (mẫu Duyệt theo giá trị)", () =>
     expect(c.views[0]?.ifs).toEqual({ yes: 1, no: 2 });
     const edges = moduleEdges(c.views);
     expect(edges.map((e) => [e.source, e.sourceHandle, e.target, e.label])).toEqual([
-      ["s3", "exit:declined:esign.declined,esign.voided", "s6", "Từ chối"],
-      ["s3", "exit:expired:timeout", "s6", "Hết hạn"],
+      ["s3", "exit:declined:esign.declined,esign.voided", "s6", "Từ chối · Hết hạn"], // một nhãn ghép cho hai đầu ra cùng đích (x10)
+      ["s3", "exit:expired:timeout", "s6", undefined],
     ]);
   });
   test("số stage thật (trần số bước) khác số ô: ô Ký số = 2 stage", () => {

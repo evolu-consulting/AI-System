@@ -109,32 +109,40 @@ export function collapseModules(
   };
 }
 
-/** Cạnh từ các đầu ra có tên của ô module (Từ chối, Hết hạn…) tới ô đích; đầu ra "đi tiếp" do bố cục vẽ như cạnh tiến thường. */
+/**
+ * Cạnh từ các đầu ra có tên của ô module (Từ chối, Hết hạn…) tới ô đích; đầu ra "đi tiếp" do bố cục vẽ như cạnh tiến thường.
+ * CR-125 · x10 · nhiều đầu ra cùng một đích (Từ chối + Hết hạn → Kết thúc · Từ chối) chung MỘT nhãn ghép ("Từ chối · Hết hạn") ở cạnh đầu tiên — nhãn không đè nhau.
+ */
 export function moduleEdges(views: readonly StageView[]): Edge[] {
   const color = "var(--color-warning)";
-  return views.flatMap((v) =>
-    (v.module?.exits ?? []).flatMap((x) =>
-      x.main
-        ? []
-        : x.to.map(
-            (to): Edge => ({
-              id: `${v.uid}>${to}#${x.key}`,
-              source: v.uid,
-              target: to,
-              sourceHandle: exitHandle(x.key, x.on),
-              data: { exit: true },
-              focusable: false,
-              label: x.label,
-              labelStyle: { fill: color, fontSize: 12 },
-              labelBgStyle: { fill: "var(--color-card)" },
-              markerEnd: { type: "arrowclosed" as MarkerType, color },
-              style: { stroke: color, strokeDasharray: "5 4" },
-            }),
-          ),
-    ),
-  );
+  return views.flatMap((v) => {
+    const pairs = (v.module?.exits ?? []).flatMap((x) =>
+      x.main ? [] : x.to.map((to) => ({ x, to })),
+    );
+    const joined = (to: string) =>
+      pairs
+        .filter((p) => p.to === to)
+        .map((p) => p.x.label)
+        .filter(Boolean)
+        .join(" · ");
+    return pairs.map(({ x, to }, i): Edge => {
+      const first = pairs.findIndex((p) => p.to === to) === i;
+      return {
+        id: `${v.uid}>${to}#${x.key}`,
+        source: v.uid,
+        target: to,
+        sourceHandle: exitHandle(x.key, x.on),
+        data: { exit: true },
+        focusable: false,
+        ...(first ? { label: joined(to) } : {}),
+        labelStyle: { fill: color, fontSize: 12 },
+        labelBgStyle: { fill: "var(--color-card)" },
+        markerEnd: { type: "arrowclosed" as MarkerType, color },
+        style: { stroke: color, strokeDasharray: "5 4" },
+      };
+    });
+  });
 }
-
 /**
  * CR-125 · x9 · cạnh tiến rời ô module phải bắt đầu ĐÚNG ở chấm của đầu ra "đi tiếp" (Ký xong): gán `sourceHandle` tường minh.
  * Không gán thì xyflow lấy handle nguồn ĐẦU TIÊN trong DOM (cổng ẩn "back" ở mép trên) ⇒ cạnh đi vòng lên trên và quanh node.

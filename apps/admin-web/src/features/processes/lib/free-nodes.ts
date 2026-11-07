@@ -20,7 +20,8 @@ export function clearFree(stages: readonly StageDraft[], uid: string): StageDraf
   const cluster = new Set(clusterIndexes(stages, at));
   return stages.map((s, i) => {
     if (!cluster.has(i) || s.free !== true) return s;
-    const { free: _free, ...rest } = s;
+    // CR-125 · x10: node đã nối vào flow ⇒ bỏ vị trí lúc thả (`ui.x/y`), ELK xếp theo thứ tự flow (không nằm lạc ở chỗ thả)
+    const { free: _free, uiX: _x, uiY: _y, ...rest } = s;
     return rest;
   });
 }
