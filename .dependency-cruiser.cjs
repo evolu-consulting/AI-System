@@ -67,7 +67,12 @@ module.exports = {
         "ADR-0023 (CR-088): lớp 2 `application/` chỉ import `domain/`, `application/`; cấm package npm, @ai/contracts, @ai/db, node:*/bun:*; ngoại lệ CR-121 B-3: cửa `modules/**/public.ts` (ADR-0037)",
       severity: "error",
       from: { path: "(^|/)apps/.+/application/", pathNot: "\\.test\\.tsx?$|^apps/workspace-web/" },
-      to: { pathNot: "(^|/)apps/.+/(domain|application)/|(^|/)modules/.+/public\\.ts$" },
+      // arch-a1: packages/contracts = shared kernel (kiểu + zod, được rule `contracts-pure`/`contracts-only-zod` giữ thuần, không I/O)
+      // ⇒ application được import (type lẫn schema runtime); mọi package/lớp ngoài vẫn cấm.
+      to: {
+        pathNot:
+          "(^|/)apps/.+/(domain|application)/|(^|/)modules/.+/public\\.ts$|(^|/)packages/contracts/src/",
+      },
     },
     {
       name: "ca-inner-no-cross-module",
@@ -81,6 +86,7 @@ module.exports = {
       to: { path: "modules/[^/]+/", pathNot: "modules/$1/" },
     },
     ...require("./.dependency-cruiser.boundaries.cjs"), // CR-121 B · ADR-0037
+    ...require("./.dependency-cruiser.contracts.cjs"), // arch-a1 · packages/contracts = shared kernel thuần
     {
       name: "pack-no-cross-pack",
       comment:
@@ -350,13 +356,6 @@ module.exports = {
       severity: "error",
       from: { path: "apps/[^/]+-api/" },
       to: { path: "apps/[^/]+-web/" },
-    },
-    {
-      name: "contracts-pure",
-      comment: "T-DEP-6: contracts chỉ là zod, không phụ thuộc db/app",
-      severity: "error",
-      from: { path: "(^|/)packages/contracts/" },
-      to: { path: ["(^|/)packages/db/", "(^|/)@ai/db(/|$)", "(^|/)apps/"] },
     },
     {
       name: "no-circular",

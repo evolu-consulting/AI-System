@@ -1,10 +1,9 @@
 // tool-evotest-cache · luật thuần của cache dựng chung trên evotest (không chạm đĩa; IO ở evotest-cache.lib.ts).
 // Khoá bản dựng = pkg + định danh mã nguồn (commit sạch ⇒ `c-<commit>`; chạy -Dirty ⇒ `h-<băm nội dung>`) + băm bun.lock +
 // bản bun + các biến môi trường được nhúng vào bundle (PUBLIC_*, NODE_ENV).
-import { createHash } from "node:crypto";
+import { sha256 } from "./evotest-cache.hash";
 
-export const sha256 = (s: string | Uint8Array): string =>
-  createHash("sha256").update(s).digest("hex");
+export { sha256 };
 
 /** Biến môi trường đổi NỘI DUNG bản dựng web: rsbuild nhúng `PUBLIC_*` vào bundle; NODE_ENV đổi chế độ dựng. Cổng/URL proxy (HUB_URL…) chỉ dùng lúc preview ⇒ không vào khoá. */
 export function buildEnvSubset(

@@ -1,5 +1,7 @@
 // CR-114 · hub-agent-handoff · luật thuần của kho artifact + bàn giao bằng tham chiếu. Không I/O.
-import { createHash } from "node:crypto";
+import { artifactKey } from "./artifact.hash";
+
+export { artifactKey };
 
 /** Dưới ngưỡng này dán thẳng nội dung rẻ hơn tham chiếu (phong bì + một lời gọi `artifact.get`). */
 export const INLINE_MAX_TOKENS = 300;
@@ -10,10 +12,6 @@ export const DEFAULT_TTL_DAYS = 30;
 /** Một lần `artifact.get` trả tối đa chừng này ký tự (agent hỏi tiếp bằng `range`). */
 export const GET_MAX_CHARS = 16_000;
 export const SHORT_LEN = 8;
-
-/** sha256 hex (64) của nội dung — khoá đầy đủ, chỉ dùng bên trong. */
-export const artifactKey = (body: string): string =>
-  createHash("sha256").update(body, "utf8").digest("hex");
 
 /** `art:` + 8 ký tự đầu — dạng lộ ra prompt/MCP. */
 export const shortKey = (key: string): string => `art:${key.slice(0, SHORT_LEN)}`;

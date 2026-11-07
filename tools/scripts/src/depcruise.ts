@@ -36,6 +36,8 @@ export function runDepcruise(opts: {
   bin: string;
   /** CR-121 ADR-0037: file baseline vi phạm cũ (`--ignore-known`); vi phạm trong đó không làm đỏ. */
   knownViolations?: string;
+  /** Cờ thêm cho depcruise (vd `--affected`, `--cache`). */
+  extra?: string[];
 }): { code: number; out: string } {
   const p = Bun.spawnSync(
     [
@@ -47,14 +49,82 @@ export function runDepcruise(opts: {
       "--output-type",
       opts.outputType,
       ...(opts.knownViolations ? ["--ignore-known", opts.knownViolations] : []),
+      ...(opts.extra ?? []),
     ],
     { cwd: opts.cwd, stdout: "pipe", stderr: "pipe" },
   );
   return { code: p.exitCode ?? 1, out: p.stdout.toString() + p.stderr.toString() };
 }
 
+type CruiseViolation = { rule: { name: string; severity: string }; from: string; to: string };
+type CruiseJson = { summary: { violations: CruiseViolation[]; totalCruised: number } };
+
+/** Tóm tắt kết quả json: số mới (error) / cảnh báo / đã biết (baseline) + vài vi phạm đầu — không in cả đồ thị. */
+export function summarizeCruise(json: CruiseJson, show = 10): { errors: number; text: string } {
+  const v = json.summary.violations;
+  const errors = v.filter((x) => x.rule.severity === "error");
+  const warns = v.filter((x) => x.rule.severity === "warn").length;
+  const known = v.filter((x) => x.rule.severity === "ignore").length;
+  const head = errors
+    .slice(0, show)
+    .map((x) => `  ${x.rule.name}: ${x.from} -> ${x.to}`)
+    .join("\n");
+  const more =
+    errors.length > show ? `\n  … +${errors.length - show} vi phạm nữa (bun run depcruise)` : "";
+  const text = `depcruise:affected: ${json.summary.totalCruised} module quét · ${errors.length} MỚI · ${warns} cảnh báo · ${known} đã biết (baseline)${errors.length ? `\n${head}${more}` : ""}`;
+  return { errors: errors.length, text };
+}
+
+/** Gốc so sánh cho `--affected`: điểm tách khỏi `platform/gd0` (fallback `main`); không có ⇒ undefined (quét hết). */
+function affectedBase(root: string): string | undefined {
+  for (const ref of ["platform/gd0", "main"]) {
+    if (!hasRef(ref, root)) continue;
+    const p = Bun.spawnSync(["git", "merge-base", ref, "HEAD"], { cwd: root, stdout: "pipe" });
+    const sha = p.stdout.toString().trim();
+    if (p.exitCode === 0 && sha) return sha;
+  }
+  return undefined;
+}
+
+/** `--affected`: depcruise chỉ báo file đổi so với gốc + file phụ thuộc chúng; cache nội dung ⇒ lần ấm vài giây. */
+function mainAffected(root: string): number {
+  const base = affectedBase(root);
+  if (!base) {
+    console.log("depcruise:affected: không có platform/gd0|main — quét đầy đủ");
+    return main(["--all"]);
+  }
+  const known = join(root, ".dependency-cruiser-known-violations.json");
+  const r = runDepcruise({
+    cwd: root,
+    targets: ["apps", "packages", "tools"].filter((d) => existsSync(join(root, d))),
+    config: join(root, ".dependency-cruiser.cjs"),
+    outputType: "json",
+    bin: depcruiseBin(root),
+    knownViolations: existsSync(known) ? known : undefined,
+    extra: ["--affected", base, ...CACHE_ARGS(root)],
+  });
+  let json: CruiseJson;
+  try {
+    json = JSON.parse(r.out) as CruiseJson;
+  } catch {
+    console.error(r.out.slice(0, 2000));
+    return 1;
+  }
+  const s = summarizeCruise(json);
+  (s.errors ? console.error : console.log)(s.text);
+  return s.errors ? 1 : 0;
+}
+
+const CACHE_ARGS = (root: string): string[] => [
+  "--cache",
+  join(root, "node_modules/.cache/dependency-cruiser"),
+  "--cache-strategy",
+  "content",
+];
+
 function main(argv: string[]): number {
   const root = repoRoot();
+  if (argv.includes("--affected")) return mainAffected(root);
   const full = argv.includes("--all") || !hasRef("main", root) || !hasRef("HEAD", root);
   const targets = full
     ? ["apps", "packages", "tools"].filter((d) => existsSync(join(root, d)))
@@ -76,6 +146,7 @@ function main(argv: string[]): number {
       outputType: "err",
       bin,
       knownViolations,
+      extra: full ? CACHE_ARGS(root) : undefined,
     });
     const text = r.out.trim();
     if (r.code === 0) console.log(text);

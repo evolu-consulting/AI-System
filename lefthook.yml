@@ -7,6 +7,9 @@ pre-commit:
       stage_fixed: true
     - name: check-size
       run: bun tools/scripts/src/check-size.ts --files {staged_files}
+    - name: depcruise-affected
+      glob: "*.{ts,tsx}"
+      run: bun tools/scripts/src/depcruise.ts --affected
     - name: check-case
       run: bun tools/scripts/src/check-case.ts
     - name: check-boundaries

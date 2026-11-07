@@ -1,7 +1,7 @@
-// tool-affected-modules · bao đóng ngược có lý do + cắt tại file lắp ráp.
+﻿// tool-affected-modules · bao đóng ngược có lý do + cắt tại file lắp ráp.
 import type { Graph } from "./lib/import-graph";
 import { isCompositionRoot } from "./test-affected.packs";
-import type { Scope } from "./test-affected.scope";
+import type { Scope } from "./test-affected.scope.types";
 
 /**
  * CR-121 B-2 (ADR-0037): `public.ts` của module là cửa hợp đồng. Đổi file trong module ⇒ kéo module đó + module import

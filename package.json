@@ -111,6 +111,7 @@
     "db:test:create": "bun --env-file=.env.local packages/db/src/test-db-cli.ts create",
     "db:test:drop": "bun --env-file=.env.local packages/db/src/test-db-cli.ts drop",
     "depcruise": "bun tools/scripts/src/depcruise.ts",
+    "depcruise:affected": "bun tools/scripts/src/depcruise.ts --affected",
     "check:pack-sql": "bun tools/scripts/src/check-pack-sql.ts",
     "check:contract-name": "bun tools/scripts/src/check-contract-name.ts",
     "check:app-slots": "bun tools/scripts/src/check-app-slots.ts",

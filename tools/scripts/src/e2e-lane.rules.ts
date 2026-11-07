@@ -1,8 +1,6 @@
 // e2e-isolation · "làn" (lane) e2e theo checkout: main = làn 0, mỗi worktree một làn 1..MAX_LANE.
 // Hàm thuần: cấp làn, suy cổng / tên DB / env-file từ làn, chọn Redis DB, lọc tiến trình cần dọn.
 // Phần I/O (file đăng ký, khoá, quét tiến trình) ở `e2e-lane.ts`.
-import { delimiter } from "node:path";
-
 /** Mỗi làn dịch cổng +3000 (khoảng cổng mặc định của e2e rộng ~2500: 3000..5500) ⇒ các làn không chồng nhau. */
 export const LANE_STEP = 3000;
 /** 14 làn: 5500 + 14*3000 = 47500 < 49152 (đầu dải cổng động của Windows). */
@@ -222,9 +220,6 @@ export function descendants(procs: readonly Proc[], root: number): number[] {
   walk(root, new Set([root]));
   return out;
 }
-
-/** `PATH` không cần ở đây; tách dấu ngăn để test không phụ thuộc OS. */
-export const PATH_DELIM = delimiter;
 
 /** Cùng URL nhưng đổi tên database (giữ user, mật khẩu, host, cổng). */
 const withDb = (url: string, name: string): string => {
