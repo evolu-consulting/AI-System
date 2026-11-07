@@ -58,12 +58,19 @@ export function NodeMenuContent({ pick, room, align = "start", drag }: Props) {
       return { patch, name: i === 0 ? name : `${name} ${i + 1}` };
     });
   /** Thuộc tính kéo của một mục menu (chỉ khi bật `drag` và mục không bị tắt). */
-  const dragProps = (items: PickedNode[], disabled: boolean) =>
+  const dragProps = (items: PickedNode[], disabled: boolean, fresh = false) =>
     drag && !disabled && items.length > 0
       ? {
           draggable: true,
           onDragStart: (e: React.DragEvent) => {
-            e.dataTransfer.setData(FLOW_PALETTE_MIME, JSON.stringify(items));
+            // node thả mới đặt tên mặc định "Bước duyệt mới" ⇒ người dùng thấy cần đặt tên lại (CR-123 · u11)
+            const named = fresh
+              ? items.map((i) => ({
+                  ...i,
+                  name: t("process.admin.canvas.free.newName", { label: i.name.toLowerCase() }),
+                }))
+              : items;
+            e.dataTransfer.setData(FLOW_PALETTE_MIME, JSON.stringify(named));
             e.dataTransfer.effectAllowed = "copy";
           },
           onDragEnd: drag.onEnd,
@@ -82,7 +89,7 @@ export function NodeMenuContent({ pick, room, align = "start", drag }: Props) {
         data-testid={`flow-node-${m.entry.id}`}
         disabled={!m.entry.patch}
         onSelect={() => pick(tableItems(m.entry))}
-        {...dragProps(tableItems(m.entry), !m.entry.patch)}
+        {...dragProps(tableItems(m.entry), !m.entry.patch, true)}
       >
         {t(`process.admin.flow.node.${m.entry.id}`)}
       </DropdownMenuItem>

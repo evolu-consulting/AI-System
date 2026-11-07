@@ -607,7 +607,9 @@
     "free": {
       "hint": "Kéo mũi tên để nối bước này",
       "blocked": "Bước «{{step}}» chưa được nối — kéo mũi tên từ bước trước tới bước này.",
-      "go": "Đến bước"
+      "go": "Đến bước",
+      "newName": "Bước {{label}} mới",
+      "nameHint": "Bấm vào bước để đặt tên"
     },
     "module": {
       "done": "Xong",
@@ -1401,6 +1403,7 @@
       "soon": "Chưa dùng được"
     },
     "toolOff": "«{{name}}» chưa bật cho công ty — bật ở trang Công ty rồi lưu lại.",
+    "toolOffShort": "Chưa bật {{name}}",
     "esign": {
       "title": "Cấu hình ký số",
       "default": "Mặc định",

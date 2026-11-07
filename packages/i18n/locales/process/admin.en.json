@@ -607,7 +607,9 @@
     "free": {
       "hint": "Drag an arrow to connect this step",
       "blocked": "Step «{{step}}» is not connected — drag an arrow from the previous step to it.",
-      "go": "Go to step"
+      "go": "Go to step",
+      "newName": "New {{label}} step",
+      "nameHint": "Click the step to name it"
     },
     "module": {
       "done": "Done",
@@ -1401,6 +1403,7 @@
       "soon": "Not available yet"
     },
     "toolOff": "«{{name}}» is not enabled for your company — turn it on in the Company page, then save again.",
+    "toolOffShort": "{{name}} is off",
     "esign": {
       "title": "E-sign settings",
       "default": "Default",

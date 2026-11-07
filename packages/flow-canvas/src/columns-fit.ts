@@ -8,7 +8,7 @@ import {
   useStore,
 } from "@xyflow/react";
 import { useEffect, useRef } from "react";
-import { NODE_W, revealDx } from "./layout/columns";
+import { COL_W, NODE_H, NODE_W, revealDx } from "./layout/columns";
 
 // fnr-canvas-fit: editor vừa khung cả flow (thu tới 0.3 = mức zoom tối thiểu của canvas; dưới nữa thì người dùng kéo/zoom tay), vừa lại khi khung đổi cỡ.
 export const FIT = { padding: 0.08, maxZoom: 1, minZoom: 0.3 } as const;
@@ -36,6 +36,16 @@ function fitBesideDrawer(
   return rf.setViewport(v, { duration: ms });
 }
 
+/**
+ * CR-123 · u11: zoom để khung rộng `width` (px) hiện trọn `cols` cột (≥ 1, chữ ≥ `minZoom`): lề trái 16px, cột kế tiếp bắt đầu đúng mép phải
+ * khung (không lộ một mẩu node bị cắt). Hàm thuần.
+ */
+export function snapColumnsZoom(width: number, minZoom: number): { cols: number; zoom: number } {
+  const avail = Math.max(width, 200) - 16;
+  const cols = Math.max(1, Math.floor(avail / (COL_W * minZoom)));
+  return { cols, zoom: Math.min(FIT.maxZoom, avail / (cols * COL_W)) };
+}
+
 /** Fit khi tải / "Sắp xếp" / đổi cỡ khung: cả flow vừa khung (chừa ngăn chi tiết nếu đang mở). */
 function runFit(
   rf: ReactFlowInstance,
@@ -51,17 +61,41 @@ function runFit(
       ? fitBesideDrawer(rf, size, inset, ms, minZoom)
       : rf.fitView({ ...FIT, minZoom, duration: ms });
   return done.then(() => {
-    // quá rộng cho cả mức zoom nhỏ nhất ⇒ neo mép trái (bước đầu luôn thấy), phần còn lại kéo ngang
     const v = rf.getViewport();
-    // (neo theo mép trái của node ngoài cùng — có thể < 0 khi canvas có cột đầu như node "Bắt đầu khi")
+    // Quá rộng cho mức zoom đọc được (`minZoom`) ⇒ KHÔNG thu nhỏ thêm: hiện trọn một số CỘT (không cắt nửa node ở mép phải), neo mép trái/trên,
+    // phần còn lại kéo ngang. Zoom chọn sao cho đúng `n` cột vừa khung (≥ minZoom, chữ vẫn đọc được).
     if (v.zoom <= minZoom + 0.001) {
-      // và neo mép TRÊN (lề đều 16px) thay vì để trống dọc.
       const b = getNodesBounds(rf.getNodes());
-      void rf.setViewport({ ...v, x: 16 - b.x * v.zoom, y: 16 - b.y * v.zoom });
+      const z = snapColumnsZoom(size.w - inset, minZoom).zoom;
+      void rf.setViewport({ x: 16 - b.x * z, y: 16 - b.y * z, zoom: z }, { duration: ms });
     }
   });
 }
 
+type Vp = { x: number; y: number; zoom: number };
+const sameVp = (a: Vp, b: Vp): boolean =>
+  Math.abs(a.x - b.x) < 1 && Math.abs(a.y - b.y) < 1 && Math.abs(a.zoom - b.zoom) < 0.01;
+
+/** Node mới thêm nằm ngoài khung nhìn ⇒ pan MƯỢT (giữ zoom) tới khi thấy trọn node, chừa lề 24px và ngăn chi tiết. */
+function revealNode(
+  rf: ReactFlowInstance,
+  id: string,
+  size: { w: number; h: number },
+  inset: number,
+) {
+  const n = rf.getNode(id);
+  if (!n) return;
+  const v = rf.getViewport();
+  const w = (n.measured?.width ?? NODE_W) * v.zoom;
+  const h = (n.measured?.height ?? NODE_H) * v.zoom;
+  const left = n.position.x * v.zoom + v.x;
+  const top = n.position.y * v.zoom + v.y;
+  const [maxX, maxY] = [size.w - inset - 24, size.h - 24];
+  const dx = left < 24 ? 24 - left : left + w > maxX ? maxX - (left + w) : 0;
+  const dy = top < 24 ? 24 - top : top + h > maxY ? maxY - (top + h) : 0;
+  if (dx !== 0 || dy !== 0)
+    void rf.setViewport({ ...v, x: v.x + dx, y: v.y + dy }, { duration: reduceMotion() ? 0 : 300 });
+}
 export type ColumnsFitOptions = {
   /** Đổi giá trị ⇒ fit lại (số bước + số giai đoạn do host ghép). */
   sig: string;
@@ -72,6 +106,8 @@ export type ColumnsFitOptions = {
   compact: boolean;
   fitMin: number;
   selected: string | undefined;
+  /** Nút "vừa khung" của Controls gọi hàm này (cùng luật fit: đọc được, không thu nhỏ tí hon). */
+  fitRef?: { current: (() => void) | null };
 };
 
 export function useColumnsFit(o: ColumnsFitOptions): void {
@@ -87,17 +123,42 @@ export function useColumnsFit(o: ColumnsFitOptions): void {
   const opts = useRef(o);
   opts.current = o;
   const stepsKey = `${o.sig}:${o.fitKey}:${box}`;
-  // chỉ khi số bước / số giai đoạn / "Sắp xếp" / cỡ khung đổi (`rf` ổn định)
+  const heightRef = useRef(0);
+  heightRef.current = height;
+  const prev = useRef({
+    fitKey: o.fitKey,
+    box: "",
+    ids: new Set<string>(),
+    vp: null as Vp | null,
+    fitted: false,
+  });
+  const doFit = () => {
+    const size = { w: widthRef.current, h: heightRef.current };
+    void runFit(rf, size, inset.current, opts.current.compact, opts.current.fitMin).then(() => {
+      prev.current.vp = rf.getViewport();
+    });
+  };
+  if (o.fitRef) o.fitRef.current = doFit;
+  // CR-123 · u11: fit CHỈ khi mở lần đầu / bấm "vừa khung" / "Sắp xếp" / khung đổi cỡ mà người dùng chưa kéo-zoom; thêm node KHÔNG fit lại
+  // (giữ zoom + pan của người dùng, chỉ pan mượt tới node mới nếu nó nằm ngoài khung nhìn).
   // biome-ignore lint/correctness/useExhaustiveDependencies: stepsKey chủ ý
   useEffect(() => {
-    const size = { w: width, h: height };
-    const id = window.setTimeout(
-      () => void runFit(rf, size, inset.current, opts.current.compact, opts.current.fitMin),
-      60,
-    );
+    const id = window.setTimeout(() => {
+      const nodes = rf.getNodes();
+      if (nodes.length === 0) return;
+      const p = prev.current;
+      const ids = new Set(nodes.map((n) => n.id));
+      const untouched = p.vp !== null && sameVp(rf.getViewport(), p.vp);
+      const wantFit = !p.fitted || p.fitKey !== opts.current.fitKey || (p.box !== box && untouched);
+      const added = [...ids].filter((i) => !p.ids.has(i));
+      prev.current = { ...p, fitted: true, fitKey: opts.current.fitKey, box, ids };
+      if (wantFit) return doFit();
+      const first = added.find((i) => !i.startsWith("h") && !i.startsWith("j"));
+      if (first)
+        revealNode(rf, first, { w: widthRef.current, h: heightRef.current }, inset.current);
+    }, 60);
     return () => window.clearTimeout(id);
   }, [stepsKey]);
-
   // chọn node nằm dưới ngăn chi tiết ⇒ pan vào vùng thấy được (không đổi zoom, không fit lại khi mở/đóng ngăn)
   // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ khi đổi node chọn / bật tắt ngăn
   useEffect(() => {

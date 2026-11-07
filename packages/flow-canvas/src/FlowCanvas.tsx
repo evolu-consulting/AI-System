@@ -160,6 +160,7 @@ function Flow(p: FlowCanvasProps) {
   const columns = p.layout === "columns";
   const { host, labels } = useHostValue(p);
   const d = useDragOverlay(p);
+  const fitRef = useRef<(() => void) | null>(null);
   const it = interactionOf(p.mode, p);
   const ev = useEditing(p.editing, d.nodes, p.edges as Edge[]);
   const nodeTypes = useMemo(
@@ -191,7 +192,9 @@ function Flow(p: FlowCanvasProps) {
   const furniture = (
     <>
       <Background gap={20} />
-      {p.controls === false ? null : <Controls showInteractive={false} />}
+      {p.controls === false ? null : (
+        <Controls showInteractive={false} onFitView={() => fitRef.current?.()} />
+      )}
       {ev.miniMap && !p.compact ? (
         <MiniMap
           pannable
@@ -208,6 +211,7 @@ function Flow(p: FlowCanvasProps) {
         {columns ? (
           <>
             <ColumnsFit
+              fitRef={fitRef}
               sig={p.fitSig ?? ""}
               fitKey={p.fitKey ?? 0}
               inset={p.inset ?? 0}

@@ -24,21 +24,26 @@ function useLabels() {
   };
 }
 
+const TECH_KINDS: ReadonlySet<string> = new Set(["set", "agent", "tool"]);
+
 function ErrorLine({ v, kind }: { v: StageView; kind: string }) {
   const { t } = useTranslation();
   if (!v.errorKey) return null;
   // lỗi "tool chưa bật" nói tên tính năng (loại node), không nói "tool"
-  const msg = v.errorKey.endsWith("stage.tool.err.ref")
+  const off = v.errorKey.endsWith("stage.tool.err.ref");
+  const msg = off
     ? t("process.admin.flow.toolOff", { name: kind })
     : t(v.errorKey, { defaultValue: t("process.admin.canvas.node.error") });
+  // CR-123 · u11: tính năng chưa bật ⇒ nhãn ngắn trên node (không tràn mép), câu đầy đủ + cách sửa ở tooltip; lỗi khác dài ⇒ tối đa 2 dòng
+  const shown = off ? t("process.admin.flow.toolOffShort", { name: kind }) : msg;
   return (
     <span
-      className="flex items-center gap-1 truncate text-caption text-destructive"
+      className="flex items-start gap-1 text-caption text-destructive"
       title={msg}
       data-testid="node-error"
     >
       <CircleAlert aria-hidden className="size-3 shrink-0" />
-      <span className="truncate">{msg}</span>
+      <span className="line-clamp-2">{shown}</span>
     </span>
   );
 }
@@ -70,7 +75,7 @@ export function FlowNodeBody({ v }: { v: StageView }) {
   const kind = mod ? nodeLabel(mod, i18n.language) : t(`process.admin.flow.node.${kindOf(s)}`);
   const summary = summaryOf(s, l);
   // loại kỹ thuật ("Chuẩn bị dữ liệu", "Agent") không phải việc nghiệp vụ của giám đốc/sale ⇒ không hiện dưới tên bước
-  const hideKind = !mod && (kindOf(s) === "set" || kindOf(s) === "agent");
+  const hideKind = !mod && TECH_KINDS.has(kindOf(s));
   return (
     <span className="block min-w-0 text-left">
       <span className="block truncate text-label font-medium" title={name}>
@@ -92,7 +97,15 @@ export function FlowNodeBody({ v }: { v: StageView }) {
           {t("process.admin.canvas.free.hint")}
         </span>
       ) : null}
-      {v.errorKey === FREE_ERR ? null : <ErrorLine v={v} kind={kind} />}
+      {s.free === true ? (
+        <span
+          className="block truncate text-caption text-muted-foreground"
+          data-testid="free-name-hint"
+        >
+          {t("process.admin.canvas.free.nameHint")}
+        </span>
+      ) : null}
+      {v.errorKey === FREE_ERR ? null : <ErrorLine v={v} kind={mod ? kind : name} />}
     </span>
   );
 }

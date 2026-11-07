@@ -158,6 +158,8 @@ test("U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, k
     .dragTo(pane, { targetPosition: { x: pb.width * 0.45, y: pb.height * 0.85 }, force: true });
   const fresh = page.locator(".react-flow__node").filter({ has: page.getByTestId("free-hint") });
   await expect(fresh).toHaveCount(1);
+  await expect(fresh).toContainText("Bước duyệt mới"); // u11 · tên mặc định + nhắc đặt tên (không chỉ "Duyệt")
+  await expect(page.getByTestId("free-name-hint")).toHaveCount(1);
   await expect(page.getByRole("complementary", { name: /./ })).toHaveCount(0);
   await fitAll(page); // thả làm canvas fit lại ⇒ thu nhỏ để cả nguồn lẫn đích đều nằm trong khung
 
@@ -181,7 +183,7 @@ test("U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, k
   const node = page
     .locator(".react-flow__node")
     .filter({ has: page.locator("[data-stage-uid]") })
-    .filter({ hasText: /^Duyệt$|Duyệt\s/ })
+    .filter({ hasText: "Bước duyệt mới" }) // CR-123 · u11: tên mặc định của bước Duyệt vừa thả
     .last();
   await node.locator("[data-stage-uid]").click();
   await page.getByLabel("Ai duyệt").click();
