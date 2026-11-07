@@ -4,7 +4,7 @@
 
 import { ESignSignerSchema } from "@ai/contracts/pack-contracts";
 import type { Db, Tx } from "@ai/db";
-import type { PackRunsBridge, PackToolDef, SlotSpec } from "../kit/public";
+import type { PackAccessView, PackRunsBridge, PackToolDef, SlotSpec } from "../kit/public";
 import { createPackUow, moduleRegistry, slotRegistry } from "../kit/public";
 import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
@@ -78,6 +78,8 @@ export function mountIntake(
     packRuns?: PackRunsBridge | undefined;
     esign?: ESignModule | undefined;
     packs?: { filebox?: { url: string; token: string } } | undefined; // q5 · PDF cho thư email
+    view?: PackAccessView | undefined; // q7 · cổng tính năng cho tool gửi đối tác
+    partnerMailbox?: boolean | undefined; // q7 · kênh hộp thư (HUB_PARTNER_MAILBOX)
   },
   db: Db,
 ): void {

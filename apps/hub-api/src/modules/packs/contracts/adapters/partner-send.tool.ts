@@ -13,13 +13,20 @@ import {
   replyDaysOf,
   toKeyOf,
 } from "../domain/partner-send.rules";
+import { withBusinessCodes } from "./intake.errors";
 import type { PartnerSendRepo } from "./partner-send.repo";
 
 export const PARTNER_TOOL_KEY = "contracts-partner-send";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type PartnerToolRepos = { partnerSend: PartnerSendRepo; esign: Pick<ESignRepo, "contract"> };
-export type PartnerToolDeps = { uow: PackUow<PartnerToolRepos> };
+export type PartnerToolDeps = {
+  uow: PackUow<PartnerToolRepos>;
+  /** Công ty có bật tính năng `contracts-partner-confirm` (cùng nguồn với cap menu). Vắng ⇒ coi là bật (test dựng tool trực tiếp). */
+  featureOn?: (tenantId: string) => Promise<boolean>;
+  /** Kênh hộp thư liên công ty bật trên hệ thống (`HUB_PARTNER_MAILBOX=on`). Vắng ⇒ coi là bật. false ⇒ từ chối TRƯỚC KHI ghi bất cứ gì. */
+  channelOn?: boolean;
+};
 
 const PARAMS: PackToolDef["params"] = [
   { name: "contract_id", type: "text", required: true, description: "Mã hợp đồng" },
@@ -57,8 +64,15 @@ export function partnerSendTool(d: PartnerToolDeps): PackToolDef {
       "Gửi hợp đồng cho đối tác xác nhận (nền tảng / email / ghi nhận thủ công — hệ thống tự chọn).",
     side_effect: true,
     params: PARAMS,
-    run: (ctx, args) => run(d, ctx, args),
+    // Lỗi nghiệp vụ (mã máy) ⇒ `PackToolBusinessError`: engine mở quyết định ngay với lý do trên thẻ, không thử lại vô ích.
+    run: withBusinessCodes((ctx, args) => run(d, ctx, args)),
   };
+}
+
+/** Chặn TRƯỚC khi đụng DB: kênh hệ thống tắt / công ty chưa bật tính năng ⇒ lỗi có mã (không ghi hàng mồ côi, không bỏ qua im lặng). */
+async function assertEnabled(d: PartnerToolDeps, tenantId: string): Promise<void> {
+  if (d.channelOn === false) throw new Error("PARTNER_CHANNEL_OFF");
+  if (d.featureOn && !(await d.featureOn(tenantId))) throw new Error("PARTNER_FEATURE_OFF");
 }
 
 type R = PartnerToolRepos;
@@ -78,6 +92,7 @@ async function planFor(r: R, cfg: Cfg, id: string) {
 }
 
 async function run(d: PartnerToolDeps, ctx: PackToolCtx, args: PackToolArgs) {
+  await assertEnabled(d, ctx.tenantId);
   const { cfg, id } = decodePartnerArgs(args);
   return d.uow.tenant({ tenantId: ctx.tenantId, userId: ctx.userId }, async (r) => {
     const last = await r.partnerSend.latest(id);

@@ -636,6 +636,7 @@ f4e1e120afdcd75c76dcf9ca53ca42ded719c9c58779936343c7c700dcba14f1  tests/acceptan
 fc81c8d8b4e3266f8bc0ef1f7dd4123a30b2c05fcd037606442025bfecd91870  tests/acceptance/CR-121/platform-reopen-engine.int.test.ts
 fb5d8256d582b66206152c188cddf4aea015963d26a08c11c2ea2ad7afe65076  tests/acceptance/CR-121/platform-reopen.int.test.ts
 9e57bffe222dc2f0df2e83dd038874e415854e1a5e0c71745ff7be9435f3c12b  tests/acceptance/CR-121/run-control.int.test.ts
+5af6c9e3d6c1f9ca235dbb1cde69ac749622c5410f63a3de6878cba95b7c65ea  tests/acceptance/CR-125/outputs-runstate.int.test.ts
 eb179f9d87593c358e90884922b33f8aafad54547753808c07e4d14557d6061b  tests/acceptance/CR118/approval-flow-runtime.int.test.ts
 4c128b43789651b6df543fad369caca5adce14a73261f7e682ef8b8176840a44  tests/acceptance/CR118/approval-flow-summary.perf.int.test.ts
 aff8fbafdade829813b2cba7420c706de9f862b5bd04a04c5a658ffa4b2e2061  tests/acceptance/CR118/capabilities.int.test.ts

@@ -9,12 +9,14 @@ import {
   flowReceiveState,
   moduleRegistry,
   orgForTenant,
+  type PackAccessView,
   type PackRunsBridge,
   type PackSystemUow,
   type PackToolDef,
   type PartnerMailboxPort,
   type PartnerReplyRow,
   partnerMailboxPort,
+  tenantFeatureOn,
 } from "../kit/public";
 import { fileboxClients, packFilebox } from "../packs.filebox";
 import { esignRepo } from "./adapters/esign.repo";
@@ -24,6 +26,7 @@ import { partnerSendTool } from "./adapters/partner-send.tool";
 import { FLOW_STARTING } from "./application/contract-flow.ports";
 import type { ESignFiles } from "./application/esign.ports";
 import { finalImportance, importanceByValue, sharedValueOf } from "./domain/partner-send.rules";
+import { PARTNER_FEATURE } from "./nav.mount";
 import { partnerSendBinding } from "./nodes/partner-send/binding";
 
 const PACK = "contracts";
@@ -156,6 +159,10 @@ export function mountPartnerSend(
     packTools?: { register(t: PackToolDef): void } | undefined;
     packRuns?: PackRunsBridge | undefined;
     packs?: { filebox?: { url: string; token: string } } | undefined;
+    /** q7 · cổng quyền gói (cùng nguồn tính năng với cap menu); vắng ⇒ tool không kiểm tính năng (chỉ test). */
+    view?: PackAccessView | undefined;
+    /** q7 · `HUB_PARTNER_MAILBOX=on`; vắng/false ⇒ tool TỪ CHỐI gửi (không ghi hàng mồ côi). */
+    partnerMailbox?: boolean | undefined;
   },
   db: Db,
   filesOverride?: ESignFiles | null,
@@ -164,7 +171,12 @@ export function mountPartnerSend(
     partnerSend: partnerSendRepo(tx, t),
     esign: esignRepo(tx, t),
   }));
-  const tool = partnerSendTool({ uow });
+  const view = d.view;
+  const tool = partnerSendTool({
+    uow,
+    channelOn: d.partnerMailbox === true,
+    ...(view ? { featureOn: (t: string) => tenantFeatureOn(view, PARTNER_FEATURE, t) } : {}),
+  });
   d.packTools?.register(tool);
   moduleRegistry.bindTool(tool);
   moduleRegistry.bindNode(partnerSendBinding());

@@ -16,8 +16,10 @@ import {
   type PackGuardVars,
   type PackUow,
   packGuard,
+  tenantFeatureOn,
 } from "../kit/public";
 import { type PartnerUiRepo, partnerUiRepo } from "./adapters/partner-ui.repo";
+import { PARTNER_FEATURE } from "./nav.mount";
 
 const KEY = "contracts";
 const UUID = z.uuid();
@@ -78,6 +80,16 @@ export function partnerModule(db: Db, view: PackAccessView): Hono<PackGuardVars>
     return { tenantId: u.tenantId, userId: u.userId };
   };
   const r = new Hono<PackGuardVars>();
+  // q7 · MỌI route `/partner/*` cần công ty đã bật tính năng `contracts-partner-confirm` — cùng nguồn (`tenantFeatureOn`) với cap menu.
+  r.use("/partner/*", async (c, next) => {
+    if (!(await tenantFeatureOn(view, PARTNER_FEATURE, c.get("user").tenantId)))
+      throw new AppError(
+        "PARTNER_FEATURE_OFF",
+        403,
+        "Công ty chưa bật Gửi đối tác xác nhận — nhờ quản trị nền tảng bật tính năng này.",
+      );
+    await next();
+  });
   r.get("/partner/inbox", packGuard(view, KEY, "read"), async (c) => {
     const out = await uow.tenant(who(c), async (x) => ({
       items: await x.ui.inbox(),

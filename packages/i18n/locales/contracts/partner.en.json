@@ -2,6 +2,17 @@
   "contracts": {
     "nav": { "partner-inbox": "Contracts from partners" },
     "approval": {
+      "engine": {
+        "attention": {
+          "reason": {
+            "tool": {
+              "PARTNER_FEATURE_OFF": "the company has not turned on Send to partner for confirmation — ask the platform admin to enable it, then press Retry",
+              "PARTNER_CHANNEL_OFF": "the partner sending channel is not turned on in the system — tell the platform admin, then press Retry",
+              "PARTNER_NEEDS_FILE": "the contract has no file to send to the partner — upload one, then press Retry"
+            }
+          }
+        }
+      },
       "module": {
         "partner": {
           "outcome": {

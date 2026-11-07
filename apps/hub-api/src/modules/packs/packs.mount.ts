@@ -155,7 +155,7 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
 /** HD1 (Ä‘á»c/sá»­a, táº£i lÃªn) + HD2 (trÃ­ch, nháº­p tay) + HD3 (flow duyá»‡t trÃªn engine: starter, tool gÃ³i, quÃ©t, tráº§n thao tÃ¡c). */
 function mountContracts<E extends Env>(
   app: Hono<E>,
-  d: PacksMountDeps & { db: Db },
+  d: PacksMountDeps & { db: Db; partnerMailbox?: boolean | undefined },
   view: PackAccessView,
   fb: PackFb | null,
 ): void {
@@ -165,7 +165,7 @@ function mountContracts<E extends Env>(
   mountContractsCore(app, cx);
   mountContractsMore(app, cx);
   mountAssistantTools(d.db, d.packTools, { timeZoneOf: tenantTz(d), view }); // M2-chat Â· tool Ä‘á»c cá»§a trá»£ lÃ½
-  mountContractsContext(d.db, d.packTools, d); // + CR-120 khe contracts.intake (tool bước, esign.completed) // one-agent Â· nhÃ£n HÄ/Ä‘á»‘i tÃ¡c Ä‘ang xem (khá»‘i ngá»¯ cáº£nh dock)
+  mountContractsContext(d.db, d.packTools, { ...d, view }); // + CR-120 khe contracts.intake (tool bước, esign.completed) // one-agent Â· nhÃ£n HÄ/Ä‘á»‘i tÃ¡c Ä‘ang xem (khá»‘i ngá»¯ cáº£nh dock)
 }
 
 type ContractsCtx = ReturnType<typeof contractsCtx>;

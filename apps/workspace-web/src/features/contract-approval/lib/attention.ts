@@ -46,6 +46,9 @@ const TOOL_CODES = new Set([
   "RESULT_TOO_LARGE",
   "OUTPUT_REJECTED",
   "TOOL_CRASH",
+  "PARTNER_FEATURE_OFF", // CR-124 · q7 · công ty chưa bật tính năng Gửi đối tác xác nhận
+  "PARTNER_CHANNEL_OFF", // CR-124 · q7 · kênh hộp thư liên công ty tắt trên hệ thống
+  "PARTNER_NEEDS_FILE",
 ]);
 const MISSING_ARG = "MISSING_ARG";
 
