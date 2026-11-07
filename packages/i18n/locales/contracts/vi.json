@@ -469,6 +469,8 @@
       "reopenConfirm": "Mở lại",
       "reopening": "Đang mở lại…",
       "reopened": "Đã mở lại — hợp đồng quay về Chờ duyệt.",
+      "signingTitle": "Đang ký số",
+      "signingBody": "Nội dung đã khoá để ký đúng bản đã duyệt. Ký xong hợp đồng mới có hiệu lực.",
       "pendingTitle": "Chưa xác nhận",
       "pendingBody": "Kiểm tra các trường AI chưa chắc rồi xác nhận để khoá hợp đồng.",
       "noDocument": "Chưa có văn bản",

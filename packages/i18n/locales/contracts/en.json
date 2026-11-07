@@ -469,6 +469,8 @@
       "reopenConfirm": "Reopen",
       "reopening": "Reopening…",
       "reopened": "Reopened — the contract is back in Needs review.",
+      "signingTitle": "Being signed",
+      "signingBody": "Content is locked so the approved version gets signed. The contract takes effect once signed.",
       "pendingTitle": "Not confirmed",
       "pendingBody": "Check the fields the AI was unsure about, then confirm to lock the contract.",
       "noDocument": "No document",

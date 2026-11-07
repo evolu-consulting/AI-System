@@ -2,7 +2,8 @@
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import type { TextKey } from "~/features/contract-form/lib/form-model";
 
-export type LockBanner = "locked" | "pending" | null;
+/** `signing` (CR-122): bước Ký số của flow đã khoá HĐ nhưng chưa xác nhận (còn `needs_review`). */
+export type LockBanner = "locked" | "signing" | "pending" | null;
 
 export type LockView = {
   banner: LockBanner;
@@ -46,7 +47,8 @@ export function lockView(
   submitted = false,
 ): LockView {
   const pending = c.status === "needs_review" && !submitted;
-  const banner: LockBanner = c.locked ? "locked" : pending ? "pending" : null;
+  const signing = c.locked && c.status === "needs_review";
+  const banner: LockBanner = signing ? "signing" : c.locked ? "locked" : pending ? "pending" : null;
   return {
     banner,
     locked: c.locked,

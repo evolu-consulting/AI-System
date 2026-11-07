@@ -113,15 +113,17 @@ function BannerBox({ id, view, canUpdate }: { id: string; view: LockView; canUpd
   const [open, setOpen] = useState(false);
   const [upOpen, setUpOpen] = useState(false);
   if (view.banner === null) return null;
-  if (view.banner === "pending")
+  if (view.banner === "pending" || view.banner === "signing") {
+    const k = view.banner;
     return (
       <div
-        data-testid="banner-pending"
+        data-testid={`banner-${k}`}
         className="mb-3 rounded-xl border border-soon-line bg-soon-bg px-4 py-3 text-sm text-soon"
       >
-        <b>{t("contracts.lock.pendingTitle")}</b> — {t("contracts.lock.pendingBody")}
+        <b>{t(`contracts.lock.${k}Title`)}</b> — {t(`contracts.lock.${k}Body`)}
       </div>
     );
+  }
   return (
     <div
       data-testid="banner-locked"
