@@ -32,7 +32,7 @@ async function openOwnDraft(page: Page, name: string): Promise<void> {
   await page.getByRole("button", { name: "Dùng mẫu này" }).click();
   await page.getByLabel("Tên quy trình mới").fill(name);
   await page.getByRole("dialog").getByRole("button", { name: "Dùng mẫu này" }).click();
-  await expect(page.getByText("Đã nhân bản thành bản nháp mới")).toBeVisible();
+  await expect(page.getByText("Đã tạo bản nháp từ mẫu")).toBeVisible();
   await page.getByRole("button", { name: "Danh sách", exact: true }).click();
   await expect(page.getByTestId("flow-form")).toBeVisible();
 }
