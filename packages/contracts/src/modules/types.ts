@@ -3,6 +3,9 @@
 import type { z } from "zod";
 import type { AppEventDecl, AppNodeDecl, AppSignalDecl } from "../app-manifest/manifest";
 
+/** Schema zod bất kỳ — để tầng application (hub-api) nhận kiểu schema mà không import thẳng zod. */
+export type AnySchema = z.ZodTypeAny;
+
 /** Gợi ý ô nhập cho panel chung (không phải code UI). */
 export type PortWidget =
   | "person"

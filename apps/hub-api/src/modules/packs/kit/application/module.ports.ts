@@ -1,7 +1,6 @@
 // CR-125 · m2 · MOD-FR-01/02/04 · cổng của SỔ MODULE phía máy chủ: mỗi node/sự kiện khai ở `@ai/contracts/modules` có ĐÚNG MỘT chỗ
 // đăng ký xử lý (tool, bộ đọc dữ kiện, xử lý kết quả, validator cấu hình, `options_path`). Lớp 2 — chỉ kiểu; không I/O.
-import type { FeatureModule, ModuleIssue } from "@ai/contracts/modules";
-import type { z } from "zod";
+import type { AnySchema, FeatureModule, ModuleIssue } from "@ai/contracts/modules";
 import type { FactsReader, OutcomeHandler } from "./flow-events.ports";
 
 /** Validator cấu hình node (cùng kiểu `nodeConfigRegistry`), khai ở đây để kit không vòng tham chiếu. */
@@ -16,7 +15,7 @@ export type NodeBinding = {
   /** Khoá tool các stage của node gọi (kiểm `MOD_TOOL_MISSING` với tool đã `bindTool`). */
   tools?: readonly string[];
   /** Schema args của tool để so với `configPort.schema` của node (MOD-FR-04 · `MOD_PORT_MISMATCH`). */
-  argsSchema?: z.ZodTypeAny;
+  argsSchema?: AnySchema;
   /** Validator theo KHOÁ NODE ⇒ `nodeConfigRegistry.register`. */
   validate?: NodeBindingValidator;
   /** Validator theo KHOÁ TOOL ⇒ `nodeConfigRegistry.registerTool` (def gọi thẳng tool không mang `node` cũng bị kiểm). */
