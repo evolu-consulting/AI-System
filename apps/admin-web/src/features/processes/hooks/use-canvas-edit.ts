@@ -15,7 +15,13 @@ import {
   resetEdges,
 } from "../lib/canvas-edit";
 import { emptyStage, type StageDraft } from "../lib/def-form";
-import { clearFree, markFree } from "../lib/free-nodes";
+import {
+  clearFree,
+  connectToTrigger,
+  markFree,
+  placeAfterSource,
+  safeDropStep,
+} from "../lib/free-nodes";
 import { expandToClusters } from "../lib/module-cluster";
 import { getStagesMax } from "../lib/stages-limit";
 import { stepLabel } from "../lib/step-label";
@@ -42,14 +48,34 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
     const key = e.error === "ifReal" ? `${CONNECT}ifReal` : `${EDIT}err.${e.error}`;
     say.error(known ? t(key) : t(e.error, { step: stepLabel(e.step ?? 0), max: getStagesMax() }));
   };
+  /** Mũi tên từ "Bắt đầu khi": tới node đứng riêng ⇒ thành bước đầu tiên; luật Ký số vẫn áp (qua `connectPatch`). */
+  const connectFromTrigger = (target: string) => {
+    const refused = connectPatch(stages(), { source: "trigger", target });
+    if (refused && !refused.ok) return say.error(t(`${CONNECT}${refused.error}`));
+    const r = connectToTrigger(stages(), target);
+    if ("error" in r) return say.error(t(`${CONNECT}${r.error}`));
+    d.setStages(r.stages, false);
+    say.clear();
+    say.live(t(`${CONNECT}done.first`));
+  };
   const connect = (c: { source: string; target: string; sourceHandle?: string | null }) => {
-    const r = connectPatch(stages(), c);
+    if (c.source === "trigger") return connectFromTrigger(c.target);
+    let st = stages();
+    let r = connectPatch(st, c);
+    // node đứng riêng nằm chưa sau nguồn ⇒ đặt nó thành bước mới ngay sau nguồn rồi nối (một bước hoàn tác)
+    if (r && !r.ok && r.error === "notLater") {
+      const moved = placeAfterSource(st, c.source, c.target);
+      if (moved) {
+        st = moved;
+        r = connectPatch(st, c);
+      }
+    }
     if (!r) return;
     if (!r.ok) return say.error(t(`${CONNECT}${r.error}`));
-    const patched = stages().map((s, i) =>
+    const patched = st.map((s, i) =>
       i === r.index ? { ...s, ...(r.patch as Partial<StageDraft>) } : s,
     );
-    if (newRealViolation(stages(), patched)) return say.error(t(REAL_NEEDS_REVIEW));
+    if (newRealViolation(st, patched)) return say.error(t(REAL_NEEDS_REVIEW));
     d.setStages(clearFree(patched, c.target), false); // có mũi tên tới node ⇒ hết đứng riêng
     say.clear();
     say.live(t(`${CONNECT}done.${r.field}`));
@@ -73,16 +99,16 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
     /** Thả node mới vào cột `step` (0-based) tại độ cao `y`; đầy ⇒ báo lý do. */
     dropNodes: (items: PickedItem[], at: { step: number; y: number }) => {
       const fresh = items.map((i) => ({ ...emptyStage(), ...i.patch, name: i.name }));
-      const r = placeFresh(stages(), fresh, at.step, at.y);
+      const r = placeFresh(stages(), fresh, safeDropStep(stages(), at.step), at.y);
       if ("error" in r) return fail(r);
       // thả = node đứng riêng (chưa nối): luật Ký số cần bước duyệt ngay trước áp khi NỐI mũi tên / chèn trên cạnh / lưu, không áp ở điểm thả
+      // KHÔNG chọn / mở ngăn chi tiết: ngăn phải đè lên canvas sẽ che đích của mũi tên (kéo nối không tới được)
       d.setStages(
         markFree(
           r.stages,
           fresh.map((f) => f.uid),
         ),
         true,
-        (fresh[0] as StageDraft).uid,
       );
       say.live(t(`${EDIT}dropped`, { name: items[0]?.name ?? "" }));
     },

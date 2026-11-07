@@ -1,7 +1,9 @@
 // CR-123 · u5 · FLOW3-FR-04: node thả từ menu / bảng mẫu đứng RIÊNG (`StageDraft.free`) — MỘT nguồn cho canvas (không vẽ cạnh tự động),
 // luật lưu (chặn kèm lý do), gợi ý trên node và nối mũi tên (gỡ cờ khi có mũi tên tới). Thuần.
 import type { DraftErrors, StageDraft } from "./draft-types";
-import { clusterIndexes } from "./module-cluster";
+import { clusterIndexes, moduleClusters } from "./module-cluster";
+import { normalizeSteps } from "./step-ops";
+import { remapStepRefs } from "./step-refs";
 
 /** Khoá câu lỗi: "chưa được nối — kéo mũi tên từ bước trước tới bước này". */
 export const FREE_ERR = "process.admin.canvas.err.unlinked";
@@ -62,4 +64,63 @@ export function collapseLoneJoins<
         es.push({ ...o, id: `${from.source}>${o.target}`, source: from.source });
   }
   return { nodes: nodes.filter((n) => !gone.has(n.id)), edges: es };
+}
+
+/** Đặt node (cả cụm) `uid` thành bước MỚI ngay sau bước `afterStep` (-1 ⇒ đầu tiên); đích trỏ tới các bước sau được đánh lại. */
+export function placeAfter(
+  stages: readonly StageDraft[],
+  uid: string,
+  afterStep: number,
+): StageDraft[] {
+  const at = stages.findIndex((s) => s.uid === uid);
+  const idx = new Set(clusterIndexes(stages, at));
+  const moving = stages
+    .filter((_, i) => idx.has(i))
+    .map((s, k) => ({ ...s, step: afterStep + 0.5 + k * 0.01 }));
+  const rest = stages.filter((_, i) => !idx.has(i));
+  const pos = rest.reduce((m, o, j) => (o.step <= afterStep ? j + 1 : m), 0);
+  const merged = [...rest];
+  merged.splice(pos, 0, ...moving);
+  return remapStepRefs(stages, normalizeSteps(merged));
+}
+
+/**
+ * Mũi tên từ `source` tới node ĐỨNG RIÊNG `target` nằm chưa sau nguồn ⇒ node được đặt thành bước mới ngay sau nguồn
+ * (người dùng chỉ kéo mũi tên, không phải nghĩ tới "bước"); không phải node đứng riêng ⇒ null (giữ luật "chỉ nối tới bước sau").
+ */
+export function placeAfterSource(
+  stages: readonly StageDraft[],
+  source: string,
+  target: string,
+): StageDraft[] | null {
+  const dst = stages.find((s) => s.uid === target);
+  const si = stages.findIndex((s) => s.uid === source);
+  if (!dst || !isFree(dst) || si < 0) return null;
+  const after = Math.max(...clusterIndexes(stages, si).map((i) => (stages[i] as StageDraft).step));
+  return placeAfter(stages, target, after);
+}
+
+/** Mũi tên từ "Bắt đầu khi": tới node đứng riêng ⇒ thành bước ĐẦU TIÊN; tới bước đầu sẵn có ⇒ không đổi; tới bước khác ⇒ lỗi. */
+export function connectToTrigger(
+  stages: readonly StageDraft[],
+  target: string,
+): { stages: StageDraft[] } | { error: "notFirst" } {
+  const dst = stages.find((s) => s.uid === target);
+  if (!dst) return { error: "notFirst" };
+  if (isFree(dst)) return { stages: clearFree(placeAfter(stages, target, -1), target) };
+  return dst.step === 0 ? { stages: [...stages] } : { error: "notFirst" };
+}
+
+/**
+ * Thả node vào cột `step`: cột đang chứa stage của một node module nhiều stage (Ký số = gửi + chờ) mà thả vào đó sẽ XEN node mới vào giữa cụm
+ * (cụm bị tách ⇒ hết là một ô, Lưu bị chặn) ⇒ dời sang bước ngay SAU cụm.
+ */
+export function safeDropStep(stages: readonly StageDraft[], step: number): number {
+  let out = step;
+  for (const c of moduleClusters(stages.map((s) => ({ node: s.node, executor: s.executor })))) {
+    const steps = stages.slice(c.start, c.end).map((s) => s.step);
+    const [lo, hi] = [Math.min(...steps), Math.max(...steps)];
+    if (out >= lo && out <= hi) out = hi + 1;
+  }
+  return out;
 }

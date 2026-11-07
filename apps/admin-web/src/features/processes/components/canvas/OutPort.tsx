@@ -19,13 +19,15 @@ export function NextPort({ connectable }: Props) {
       aria-label={label}
       data-testid="port-next"
       style={{
-        width: 12,
-        height: 12,
+        width: 18,
+        height: 18,
         background: "var(--color-card)",
         border: "2px solid var(--color-primary)",
         cursor: "crosshair",
         zIndex: 2, // trên nút thân node (nút phủ kín node, DOM đứng sau cổng)
       }}
+      // CR-123 · u8 · dễ nắm: chấm ≥ 14px (kể cả khi thu nhỏ), hover to lên + đổi màu, vùng bắt chuột rộng thêm 10px mỗi phía
+      className="transition-transform hover:scale-125 hover:bg-primary after:absolute after:-inset-2.5 after:content-['] after:rounded-full"
     />
   );
 }
@@ -52,7 +54,7 @@ export function IfPort({ id, connectable }: Required<Pick<Props, "id">> & Props)
         cursor: "crosshair",
         zIndex: 2,
       }}
-      className={`rounded-full border px-1.5 text-caption leading-4 ${
+      className={`rounded-full border px-2 py-0.5 text-caption leading-4 transition-transform hover:scale-110 ${
         yes ? "border-success text-success" : "border-destructive text-destructive"
       }`}
     >

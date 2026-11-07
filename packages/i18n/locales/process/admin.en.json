@@ -616,6 +616,7 @@
     "connect": {
       "dragNext": "Drag to the step that comes next",
       "realNeeds": "«E-signature» needs an Approval step right before it. Drag the arrow from an Approval step.",
+      "notFirst": "«Starts when» can only connect to the first step or to a step not connected yet.",
       "dragIf": "Drag to the step for {{label}}",
       "notLater": "You can only link to a later step.",
       "ifReal": "An If branch cannot go to a step with a real action — pick another step.",
@@ -625,7 +626,8 @@
         "next": "Next step set.",
         "yes": "Step for True set.",
         "no": "Step for False set.",
-        "exit": "Step output set."
+        "exit": "Step output set.",
+        "first": "Set as the first step."
       }
     },
     "region": "Stage details",

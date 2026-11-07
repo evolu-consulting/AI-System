@@ -182,6 +182,9 @@ function Flow(p: FlowCanvasProps) {
     onNodeDrag: d.onNodeDrag,
     onNodeDragStop: d.onNodeDragStop,
     onConnect: p.onConnect,
+    // CR-123 · u8 · dây nối đang kéo thấy rõ (màu chính, nét đậm) và bắt dính cổng trong 28px
+    connectionLineStyle: { stroke: "var(--color-primary)", strokeWidth: 2.5 },
+    connectionRadius: 28,
     onConnectEnd: connectEndOf(p.onConnect, ev.reconnecting),
     onNodeClick: p.onNodeClick && ((_: unknown, n: Node) => p.onNodeClick?.(n)),
   } as const;

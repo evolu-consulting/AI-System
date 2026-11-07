@@ -7,6 +7,7 @@ import { Handle, type NodeProps, Position } from "@xyflow/react";
 import { useTranslation } from "react-i18next";
 import { exitHandle } from "../../lib/canvas-connect";
 import { useHandlers } from "./canvas-ctx";
+import { CONNECT_TARGET } from "./connect-target";
 import { FlowNodeBody } from "./FlowNodeBody";
 import { stageButtonClass } from "./StageBody";
 import { onStageKeyDown } from "./stage-keys";
@@ -33,7 +34,7 @@ function ExitPort({ x, top, connectable }: { x: ModuleExit; top: string; connect
         cursor: connectable ? "crosshair" : "default",
         zIndex: 2,
       }}
-      className={`rounded-full border px-1.5 text-caption leading-4 ${
+      className={`rounded-full border px-2 py-0.5 text-caption leading-4 transition-transform hover:scale-110 ${
         x.main ? "border-success text-success" : "border-warning text-warning"
       }`}
     >
@@ -52,7 +53,7 @@ export function ModuleNode({ data }: NodeProps<StageNodeType>) {
   return (
     <div
       style={{ width: NODE_W, height: NODE_H }}
-      className="pointer-events-auto"
+      className={`pointer-events-auto ${CONNECT_TARGET}`}
       data-testid="module-node"
     >
       <HiddenHandle type="target" position={Position.Left} />

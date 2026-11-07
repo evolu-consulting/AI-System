@@ -1,4 +1,4 @@
-﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-122 · Q1 · ca UI của trình sửa flow (canvas) trên stack thật `playwright.journey.config.ts`, công ty MỚI `e2e-c22u-<hậu tố>`:
 //  1) menu "+ Thêm bước" gom nhóm (Cơ bản · …) và liệt kê node dựng sẵn;
 //  2) cạnh vàng (Ký số cần `contract_id` mà bước trước không có) ⇒ ô "Gợi ý cầu nối" ⇒ Bỏ / Nhận (route AI giả: AI thật cần agent `flow-bridge` đã seed);
@@ -6,7 +6,7 @@
 // Dữ liệu riêng: flow Thư viện `c22u-ed-<hậu tố>` (xem `_kit/flows.ts`: dựng bằng SQL — Lỗi sản phẩm #1) gán qua API, bản sao do quản trị công ty tạo ở UI.
 import { expect, type Page, test } from "@playwright/test";
 import { apiLogin, assignCompanyFlow, type Session } from "../_kit/api";
-import { createLibraryFlow, enableFlowTriggers, finish, ifFact, plainSet } from "../_kit/flows";
+import { approve, createLibraryFlow, enableFlowTriggers, finish, ifFact } from "../_kit/flows";
 import { flowRows, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
 import { U } from "./_journey";
 
@@ -38,16 +38,21 @@ const stages = () => [
     1,
     2,
   ),
-  plainSet("nhan", "Nhận dữ liệu", 1),
+  approve("duyet", "Duyệt", 1, "pb-ke-toan", {}),
   finish("xong", "Đã duyệt", 2, "approved"),
 ];
 
 /** Thêm node Ký số từ menu "+ Thêm bước" ⇒ cạnh vàng "Thiếu contract_id" (API lưu từ chối flow có cạnh thiếu nên không dựng sẵn được). */
 async function addEsign(page: Page): Promise<void> {
-  await page.getByTestId("flow-add-step").click();
+  // CR-123 · u8: Ký số cần bước Duyệt ngay trước ⇒ chèn bằng nút "+" trên cạnh đi ra từ bước Duyệt; thả / "+ Thêm bước" cuối flow bị chặn
+  const uid = await page
+    .locator("[data-stage-uid]")
+    .filter({ hasText: /^Duyệt/ })
+    .first()
+    .getAttribute("data-stage-uid");
+  await page.locator(`[data-testid^="flow-edge-insert-${uid}-"]`).first().click();
   await page.getByTestId("flow-node-contracts.esign").click();
 }
-
 async function adminSession(): Promise<Session> {
   return apiLogin({
     base: API,
@@ -119,13 +124,16 @@ test("3 · node Ký số trên bản công ty: panel cấu hình riêng hiện t
 }) => {
   await openCopy(page);
   await addEsign(page);
-  // thêm Ký số = 2 node (gửi + chờ sự kiện); panel tự mở ở node chờ (che canvas) ⇒ đóng, rồi mở node GỬI (đầu tiên, không phải "Ký số 2")
-  await page.getByRole("button", { name: "Đóng ngăn chi tiết" }).click();
-  await page
+  // thả = node đứng riêng, ngăn chi tiết không tự mở; Ký số là MỘT node ⇒ bấm vào đó để mở panel cấu hình
+  const esignBtn = page
     .getByRole("application", CANVAS)
     .getByRole("button", { name: /^Ký số(?! \d)/ })
-    .first()
-    .click();
+    .first();
+  await expect(
+    esignBtn,
+    `nút trên canvas: ${JSON.stringify(await page.getByRole("application", CANVAS).getByRole("button").allInnerTexts())}; toast: ${(await page.getByRole("alert").allInnerTexts()).join(" | ")}`,
+  ).toBeVisible();
+  await esignBtn.click();
   // stack hành trình KHÔNG có nhà cung cấp ký số (ESIGN_PROVIDERS) ⇒ panel nói rõ lý do + cách sửa, không ô trống bí ẩn
   await expect(page.getByTestId("esign-disabled")).toContainText("Công ty chưa bật ký số");
 });

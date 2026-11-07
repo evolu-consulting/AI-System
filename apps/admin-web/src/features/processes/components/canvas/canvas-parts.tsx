@@ -41,6 +41,7 @@ export type TriggerInfo = { label: string; summary: string } | null;
 export function triggerPart(
   views: readonly StageView[],
   t: TriggerInfo,
+  connectable = false,
 ): { node: Node[]; edges: Edge[] } {
   if (!t) return { node: [], edges: [] };
   const node: Node = {
@@ -51,7 +52,7 @@ export function triggerPart(
     selectable: false,
     focusable: false,
     draggable: false,
-    data: t,
+    data: { ...t, connectable },
   };
   const edges = views
     .filter((v) => v.step === 0)

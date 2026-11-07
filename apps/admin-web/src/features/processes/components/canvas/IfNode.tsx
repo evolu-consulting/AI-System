@@ -8,6 +8,7 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { useHandlers } from "./canvas-ctx";
+import { CONNECT_TARGET } from "./connect-target";
 import { IfPort } from "./OutPort";
 import { onStageKeyDown } from "./stage-keys";
 import { type StageView, sameView } from "./stage-view";
@@ -28,7 +29,10 @@ function IfImpl({ data }: NodeProps<IfType>) {
   const { v, selected } = data;
   const name = v.name || t("process.admin.editor.stage.unnamed");
   return (
-    <div style={{ width: NODE_W, height: NODE_H }} className="pointer-events-auto relative">
+    <div
+      style={{ width: NODE_W, height: NODE_H }}
+      className={`pointer-events-auto relative ${CONNECT_TARGET}`}
+    >
       <HiddenHandle type="target" position={Position.Left} />
       <HiddenHandle id="back" type="source" position={Position.Top} />
       {/* fnr-canvas: cả Đúng và Sai ra ở mép phải (kiểu n8n) — cạnh smoothstep rẽ lên/xuống, không vòng dưới node.

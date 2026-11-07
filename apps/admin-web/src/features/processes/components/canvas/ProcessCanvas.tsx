@@ -140,7 +140,7 @@ function useFlowGraph(
     const edges = linked.map((e) =>
       e.kind === "forward" && gated(e.source) ? approveEdge(mk(e), approve) : mk(e),
     );
-    const tp = triggerPart(views, trig);
+    const tp = triggerPart(views, trig, connectable);
     const bp = bridgePart(nodes, warn, bridge);
     // CR-122 · C: flow bỏ hàng tiêu đề cột "Bước n" + nút + đầu cột (thêm bước qua menu "Thêm bước"); cạnh nối tới tiêu đề cũng bỏ.
     const isHeader = (id: string) => /^h\d+$/.test(id);

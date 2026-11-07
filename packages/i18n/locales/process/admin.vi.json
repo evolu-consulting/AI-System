@@ -616,6 +616,7 @@
     "connect": {
       "dragNext": "Kéo sang bước muốn đi tiếp",
       "realNeeds": "«Ký số» cần một bước Duyệt ngay trước nó. Hãy kéo mũi tên từ một bước Duyệt tới đây.",
+      "notFirst": "«Bắt đầu khi» chỉ nối được tới bước đầu tiên hoặc một bước chưa nối.",
       "dragIf": "Kéo sang bước khi {{label}}",
       "notLater": "Chỉ nối được tới bước đứng sau.",
       "ifReal": "Nhánh Nếu không thể tới bước có hành động thật — chọn bước khác.",
@@ -625,7 +626,8 @@
         "next": "Đã đặt bước đi tiếp.",
         "yes": "Đã đặt bước khi Đúng.",
         "no": "Đã đặt bước khi Sai.",
-        "exit": "Đã đặt đầu ra của bước."
+        "exit": "Đã đặt đầu ra của bước.",
+        "first": "Đã đặt làm bước đầu tiên."
       }
     },
     "region": "Chi tiết bước",

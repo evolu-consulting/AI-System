@@ -141,7 +141,7 @@ export function StagePanel({ d, w, readOnly, refs, variant = "column" }: Props) 
       aria-label={t("process.admin.canvas.region")}
       className={
         drawer
-          ? "absolute inset-y-0 right-0 z-10 w-full overflow-y-auto border-l border-border bg-card p-3 shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:animate-in motion-safe:slide-in-from-right md:w-[460px]"
+          ? "absolute inset-y-0 right-0 z-10 w-full overflow-y-auto border-l border-border bg-card p-3 shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-ring motion-safe:animate-in motion-safe:slide-in-from-right md:w-[460px] transition-opacity [div:has(.react-flow__connectionline)>&]:pointer-events-none [div:has(.react-flow__connectionline)>&]:opacity-25"
           : "w-full shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-ring lg:max-h-[640px] lg:w-[420px] lg:overflow-y-auto"
       }
     >

@@ -10,6 +10,7 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { useHandlers } from "./canvas-ctx";
+import { CONNECT_TARGET } from "./connect-target";
 import { FINISH_CLASS, FlowNodeBody, isFinishView } from "./FlowNodeBody";
 import { ModuleNode } from "./ModuleNode";
 import { NextPort } from "./OutPort";
@@ -44,7 +45,10 @@ function StageNodeImpl({ data }: NodeProps<StageNodeType>) {
   const { v, selected } = data;
   const flow = useFlowCtx();
   return (
-    <div style={{ width: NODE_W, height: NODE_H }} className="pointer-events-auto">
+    <div
+      style={{ width: NODE_W, height: NODE_H }}
+      className={`pointer-events-auto ${CONNECT_TARGET}`}
+    >
       <HiddenHandle type="target" position={Position.Left} />
       <NextPort connectable={data.connectable === true && !v.locked} />
       <HiddenHandle id="back-in" type="target" position={Position.Bottom} />

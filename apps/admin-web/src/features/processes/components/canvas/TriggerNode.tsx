@@ -1,13 +1,13 @@
 // CR-122 · U2c · FLOW2-FR-02: node "Bắt đầu khi" — cột ĐẦU của canvas (x = −1 cột), nối tới mọi bước đầu. Bấm ⇒ mở thẻ sự kiện + điều kiện.
-import { HiddenHandle } from "@ai/flow-canvas";
 import { NODE_H, NODE_W } from "@ai/flow-canvas/pure";
-import { type Node, type NodeProps, Position } from "@xyflow/react";
+import type { Node, NodeProps } from "@xyflow/react";
 import { Play } from "lucide-react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFlowCtx } from "../flow/flow-ctx";
+import { NextPort } from "./OutPort";
 
-export type TriggerNodeData = { label: string; summary: string };
+export type TriggerNodeData = { label: string; summary: string; connectable?: boolean };
 export type TriggerNodeType = Node<TriggerNodeData, "trigger">;
 
 function TriggerNodeImpl({ data }: NodeProps<TriggerNodeType>) {
@@ -15,7 +15,7 @@ function TriggerNodeImpl({ data }: NodeProps<TriggerNodeType>) {
   const open = useFlowCtx()?.trigger?.onOpen;
   return (
     <div style={{ width: NODE_W, height: NODE_H }} className="pointer-events-auto">
-      <HiddenHandle type="source" position={Position.Right} />
+      <NextPort connectable={data.connectable === true} />
       <button
         type="button"
         data-testid="flow-trigger-node"
