@@ -722,6 +722,7 @@
     "err": {
       "stepFull": "Bước {{step}} đã đủ 3 bước song song.",
       "stagesMax": "Quy trình tối đa {{max}} bước — đổi trong Cài đặt nền tảng.",
+      "approveAlone": "Bước Duyệt phải đứng một mình trong bước — tách nó ra hoặc dời sang bước khác.",
       "step": "Số bước không hợp lệ. Hãy kéo bước vào đúng cột.",
       "realStep": "Hành động thật chỉ dùng được khi mọi bước của bước trước đều có người kiểm.",
       "realNeedsReview": "«Ký số» cần một bước Duyệt ngay trước nó. Thêm bước Duyệt trước rồi thả lại.",

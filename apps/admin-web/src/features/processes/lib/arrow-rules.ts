@@ -3,10 +3,12 @@
 // của nguồn ⇒ sắp lại các bước (thứ tự tô-pô ổn định) để bản nháp vẫn hợp lệ (mọi đích đều ở bước SAU). Thuần.
 // Đồ thị = các "ô" (một cột, hoặc cụm node module nhiều cột liên tiếp như Ký số) + cạnh theo `remapStepRefs` (goto / Đúng-Sai / Từ chối-Trả lại /
 // nextStep / ghi giá trị / nhánh chờ) + cạnh ngầm "bước kế". Kiểm vòng dùng `getOutgoers` của React Flow (mẫu "prevent cycles" trong tài liệu).
+
+import { newRealViolation } from "@ai/contracts/hub-admin";
 import { getOutgoers } from "@xyflow/react";
-import { connectPatch } from "./canvas-connect";
+import { type ConnectError, connectPatch } from "./canvas-connect";
 import type { StageDraft } from "./draft-types";
-import { connectToTrigger, placeAfterSource } from "./free-nodes";
+import { clearFree, connectToTrigger, isFree, placeAfter, placeAfterSource } from "./free-nodes";
 import { moduleClusters } from "./module-cluster";
 import { remapStepRefs } from "./step-refs";
 
@@ -192,7 +194,10 @@ export function triggerArrow(
   return connectToTrigger(stages, target);
 }
 
-/** Đích không đứng sau nguồn: node đứng riêng ⇒ đặt ngay sau nguồn; bước đã nối ⇒ sắp lại nếu không tạo vòng; còn lại `loop`. */
+/**
+ * Đích không đứng sau nguồn: node đứng riêng ⇒ đặt ngay sau nguồn; cùng cột song song với nguồn ⇒ tách đích ra bước mới ngay sau nguồn
+ * (hai bước cùng cột KHÔNG phải vòng lặp); bước đã nối ở trước ⇒ sắp lại nếu không tạo vòng; còn lại `loop`.
+ */
 export function laterTarget(
   stages: readonly StageDraft[],
   source: string,
@@ -200,6 +205,61 @@ export function laterTarget(
 ): { stages: StageDraft[] } | { error: "loop" } {
   const moved = placeAfterSource(stages, source, target);
   if (moved) return { stages: moved };
+  const s = stages.find((x) => x.uid === source);
+  const d = stages.find((x) => x.uid === target);
+  if (s && d && s.uid !== d.uid && s.step === d.step && !sameCluster(stages, s.uid, d.uid))
+    return { stages: placeAfter(stages, target, s.step) };
   const o = arrowOrder(stages, source, target);
   return o.ok ? { stages: o.stages } : { error: o.error };
+}
+
+const sameCluster = (stages: readonly StageDraft[], a: string, b: string): boolean =>
+  moduleClusters(stages.map((s) => ({ node: s.node, executor: s.executor }))).some((c) => {
+    const uids = stages.slice(c.start, c.end).map((s) => s.uid);
+    return uids.includes(a) && uids.includes(b);
+  });
+
+/** Bước Duyệt phải ĐỨNG MỘT MÌNH trong bước (hub: APPROVE_INVALID): bước Duyệt đang chung cột với bước khác ⇒ tách ra cột riêng ngay sau cột đó. */
+export function isolateApprovals(stages: readonly StageDraft[]): StageDraft[] {
+  let out = [...stages];
+  for (let guard = 0; guard < out.length; guard++) {
+    const shared = out.find(
+      (s) => s.executor === "approve" && out.some((o) => o.uid !== s.uid && o.step === s.step),
+    );
+    if (!shared) break;
+    out = placeAfter(out, shared.uid, shared.step);
+  }
+  return out;
+}
+
+export type ConnectOutcome =
+  | { stages: StageDraft[]; field: "yes" | "no" | "next" | "exit" }
+  | { error: ConnectError | "loop" | "real" };
+
+/**
+ * MỘT hàm cho mọi mũi tên giữa hai bước (kéo cổng ra, nối lại đầu đích): node vừa thả (đứng riêng) luôn thành bước MỚI ngay sau nguồn (không dính
+ * cột của bước khác); đích nằm trước / cùng cột ⇒ `laterTarget`; xong mọi bước Duyệt đều đứng một mình. `null` ⇒ không làm gì (thả lên chính nó…).
+ */
+export function applyConnect(
+  stages: readonly StageDraft[],
+  c: { source: string; target: string; sourceHandle?: string | null },
+): ConnectOutcome | null {
+  if (c.source === c.target) return null;
+  let st: readonly StageDraft[] = stages;
+  let r = connectPatch(st, c);
+  const dst = st.find((s) => s.uid === c.target);
+  const needMove = dst !== undefined && isFree(dst);
+  if (needMove || (r && !r.ok && r.error === "notLater")) {
+    const fix = laterTarget(st, c.source, c.target);
+    if ("error" in fix) return { error: fix.error };
+    st = fix.stages;
+    r = connectPatch(st, c);
+  }
+  if (!r) return null;
+  if (!r.ok) return { error: r.error };
+  const patched = st.map((s, i) =>
+    i === r.index ? { ...s, ...(r.patch as Partial<StageDraft>) } : s,
+  );
+  if (newRealViolation(st, patched)) return { error: "real" };
+  return { stages: isolateApprovals(clearFree(patched, c.target)), field: r.field };
 }

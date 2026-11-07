@@ -4,7 +4,14 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { FLOW_TEMPLATE_INPUTS } from "../../apps/hub-api/src/modules/processes/library/flow-templates.def";
 import { apiLogin, assignCompanyFlow } from "../_kit/api";
-import { approve, enableFlowTriggers, esignNode, finish, notifyCreator } from "../_kit/flows";
+import {
+  approve,
+  enableFlowTriggers,
+  esignNode,
+  finish,
+  ifFact,
+  notifyCreator,
+} from "../_kit/flows";
 import { flowRow, flowRows, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
 import { viStorageState } from "../support/locale-vi";
 import { U } from "./_journey";
@@ -20,6 +27,7 @@ const ADMIN = need("JA_ADMIN_URL");
 const TENANT_KEY = `e2e-c22-${SFX}`;
 const FLOW = `Kéo mũi tên u8 ${SFX}`;
 const FLOW12 = `Thứ tự mũi tên u12 ${SFX}`;
+const FLOW12B = `Trình tự demo u12b ${SFX}`;
 
 let tenantId = "";
 
@@ -53,6 +61,20 @@ test.beforeAll(async () => {
   tenantId = await enableFlowTriggers(TENANT_KEY);
   await makeFlow(platform, `c23-u8-${SFX}`, FLOW, stages);
   // CR-123 · u12: Kết thúc · Đã duyệt đứng TRƯỚC Thông báo trong thứ tự bước (Ký xong → Thông báo nhảy qua nó)
+  const gs = (await (
+    await fetch(
+      `${need("JA_API_URL")}/admin/users?tenant_id=${tenantId}&q=${U.director}&limit=50`,
+      {
+        headers: { authorization: `Bearer ${platform.token}` },
+      },
+    )
+  ).json()) as { items: { id: string; username: string }[] };
+  await makeFlow(
+    platform,
+    `c23-u12b-${SFX}`,
+    FLOW12B,
+    demoBaseline(stages, gs.items.find((u) => u.username === U.director)?.id ?? ""),
+  );
   await makeFlow(platform, `c23-u12-${SFX}`, FLOW12, [
     approve("duyet-dau", "Duyệt trưởng phòng", 0, "pb-ke-toan", { reject: 5 }),
     stages[1],
@@ -62,6 +84,30 @@ test.beforeAll(async () => {
     finish("tu-choi", "Từ chối", 5, "rejected"),
   ]);
 });
+/** Hub bắt buộc có người ký phía công ty khi lưu Ký số (`company_signers` = "loại:id"). */
+const withSigner = (s: unknown, group: string) => {
+  const x = s as { executor: { args: Record<string, unknown> } };
+  return {
+    ...x,
+    executor: {
+      ...x.executor,
+      args: {
+        ...x.executor.args,
+        company_signers: { from: "const", value: `user:${group}` },
+      },
+    },
+  };
+};
+
+/** Trưởng phòng duyệt → Ký số → Thông báo chuông → Kết thúc (nền của demo; Ký số cần Duyệt ngay trước nên không chèn Nếu ở giữa). */
+const demoBaseline = (stages: readonly unknown[], group: string): unknown[] => [
+  approve("duyet-dau", "Duyệt trưởng phòng", 0, "pb-ke-toan", { reject: 5 }),
+  withSigner(stages[1], group),
+  stages[2],
+  notifyCreator("bao", "Thông báo chuông", 3, "Đã duyệt"),
+  finish("xong", "Đã duyệt", 4, "approved"),
+  finish("tu-choi", "Từ chối", 5, "rejected"),
+];
 async function makeFlow(
   platform: { token: string },
   key: string,
@@ -273,4 +319,79 @@ test("U12 · mũi tên tới bước nằm trước (Thông báo → Kết thúc
     node("Ký số"),
   );
   await expect(alert(/cần một bước Duyệt ngay trước/)).toBeVisible();
+});
+
+test("U12b · trình tự demo: thả Duyệt (chung cột), Ký xong → Duyệt → Thông báo → Kết thúc, Bắt đầu khi → Ký số báo lý do, Lưu và áp dụng không 422", async ({
+  browser,
+}) => {
+  test.setTimeout(300_000);
+  const page = await (
+    await browser.newContext({
+      locale: "vi-VN",
+      storageState: viStorageState([ADMIN]),
+      viewport: { width: 1700, height: 1000 },
+    })
+  ).newPage();
+  await loginTenantAdminUi(page, ADMIN, TENANT_KEY, U.director, need("JA_USER_PW"));
+  await page.goto(`${ADMIN}/tenants/${tenantId}?tab=processes`);
+  const box = await openCompanyFlows(page);
+  await flowRow(box, FLOW12B).getByRole("button", { name: "Sao chép để sửa" }).click();
+  const copy = flowRows(box).filter({ hasText: `Sao từ ${FLOW12B} · v1` });
+  await expect(copy).toBeVisible();
+  await copy.getByRole("link", { name: "Mở", exact: true }).click();
+  await expect(page.locator("[data-stage-uid]").first()).toBeVisible({ timeout: 30_000 });
+  await fitAll(page);
+  const node = (name: string | RegExp) =>
+    page.locator(".react-flow__node").filter({ hasText: name }).first();
+  const alert = (re: RegExp | string) => page.getByRole("alert").filter({ hasText: re });
+
+  // 1 · thả Duyệt NGAY dưới Thông báo ⇒ rơi vào CỘT của Thông báo; đặt tên + người duyệt
+  const pane = page.locator(".react-flow__pane").first();
+  const pb = await settled(pane, "khung canvas (thả)");
+  const tbBox = await settled(node("Thông báo chuông"), "Thông báo");
+  await page.getByTestId("flow-add-step").click();
+  await page
+    .getByRole("menuitem", { name: /^Duyệt/ })
+    .first()
+    .dragTo(pane, {
+      targetPosition: { x: tbBox.x + tbBox.width / 2 - pb.x, y: pb.height * 0.85 },
+      force: true,
+    });
+  const fresh = page.locator(".react-flow__node").filter({ has: page.getByTestId("free-hint") });
+  await expect(fresh).toHaveCount(1);
+  await fresh.locator("[data-stage-uid]").click();
+  await page.getByLabel("Tên bước", { exact: true }).first().fill("Kế toán duyệt chi");
+  await page.getByLabel("Ai duyệt").click();
+  await page.getByRole("option").first().click();
+  await page.getByRole("button", { name: "Đóng ngăn chi tiết" }).click();
+  await fitAll(page);
+
+  // 2 · Ký xong → Kế toán duyệt chi → Thông báo → Kết thúc · Đã duyệt: KHÔNG bị báo vòng lặp / "chỉ nối được tới bước đứng sau"
+  const acc = node("Kế toán duyệt chi");
+  await arrow(page, page.getByTestId("module-exit-done"), acc);
+  await fitAll(page);
+  await arrow(page, acc.getByTestId("port-next"), node("Thông báo chuông"));
+  await fitAll(page);
+  const end = page
+    .locator(".react-flow__node")
+    .filter({ hasText: "Kết thúc" })
+    .filter({ hasText: "Đã duyệt" });
+  await arrow(page, node("Thông báo chuông").getByTestId("port-next"), end);
+  await expect(alert(/vòng lặp|Chỉ nối được/)).toHaveCount(0);
+  await fitAll(page);
+
+  // 3 · Bắt đầu khi → Ký số: cổng ra của Bắt đầu khi nằm trong khung (sau fit) và toast nêu lý do
+  const port = page.locator(".react-flow__node-trigger").getByTestId("port-next");
+  await arrow(page, port, node("Ký số"));
+  await expect(alert(/cần một bước Duyệt ngay trước/).first()).toBeVisible();
+
+  // 4 · Lưu và áp dụng: bước Duyệt đứng một mình ⇒ Hub không trả 422 PROCESS_DEF_INVALID / APPROVE_INVALID
+  const failed: string[] = [];
+  page.on("response", async (r) => {
+    if (r.status() === 422 && r.request().method() !== "GET")
+      failed.push(`${r.url()} ${(await r.text()).slice(0, 400)}`);
+  });
+  await page.getByRole("button", { name: /Lưu và áp dụng/ }).click();
+  await expect(page.getByText(/Chưa áp dụng/)).toHaveCount(0);
+  expect(failed).toEqual([]);
 });

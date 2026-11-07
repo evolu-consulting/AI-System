@@ -5,7 +5,7 @@
 import { newRealViolation } from "@ai/contracts/hub-admin";
 import { useRef } from "react";
 import type { useTranslation } from "react-i18next";
-import { laterTarget, triggerArrow } from "../lib/arrow-rules";
+import { applyConnect, triggerArrow } from "../lib/arrow-rules";
 import { connectPatch } from "../lib/canvas-connect";
 import {
   type EditError,
@@ -53,22 +53,11 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
   };
   const connect = (c: { source: string; target: string; sourceHandle?: string | null }) => {
     if (c.source === "trigger") return connectFromTrigger(c.target);
-    let st = stages();
-    let r = connectPatch(st, c);
-    // node đứng riêng nằm chưa sau nguồn ⇒ đặt nó thành bước mới ngay sau nguồn rồi nối (một bước hoàn tác)
-    if (r && !r.ok && r.error === "notLater") {
-      const fix = laterTarget(st, c.source, c.target); // u12: sắp lại bước, chỉ từ chối khi tạo VÒNG LẶP
-      if ("error" in fix) return say.error(t(`${CONNECT}${fix.error}`));
-      st = fix.stages;
-      r = connectPatch(st, c);
-    }
+    const r = applyConnect(stages(), c);
     if (!r) return;
-    if (!r.ok) return say.error(t(`${CONNECT}${r.error}`));
-    const patched = st.map((s, i) =>
-      i === r.index ? { ...s, ...(r.patch as Partial<StageDraft>) } : s,
-    );
-    if (newRealViolation(st, patched)) return say.error(t(REAL_NEEDS_REVIEW));
-    d.setStages(clearFree(patched, c.target), false); // có mũi tên tới node ⇒ hết đứng riêng
+    if ("error" in r)
+      return say.error(t(r.error === "real" ? REAL_NEEDS_REVIEW : `${CONNECT}${r.error}`));
+    d.setStages(r.stages, false); // có mũi tên tới node ⇒ hết đứng riêng; một bước hoàn tác
     say.clear();
     say.live(t(`${CONNECT}done.${r.field}`));
   };

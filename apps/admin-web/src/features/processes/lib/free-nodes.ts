@@ -124,3 +124,15 @@ export function safeDropStep(stages: readonly StageDraft[], step: number): numbe
   }
   return out;
 }
+
+/** Lỗi theo ô `stages.i.step` cho bước Duyệt đang chung cột với bước khác (chặn Lưu kèm lý do, không đợi hub trả 422). */
+export const APPROVE_ALONE_ERR = "process.admin.canvas.err.approveAlone";
+export function approveAloneErrors(stages: readonly StageDraft[]): DraftErrors {
+  return Object.fromEntries(
+    stages.flatMap((s, i) =>
+      s.executor === "approve" && stages.some((o) => o.uid !== s.uid && o.step === s.step)
+        ? [[`stages.${i}.step`, APPROVE_ALONE_ERR] as const]
+        : [],
+    ),
+  );
+}
