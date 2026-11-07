@@ -12,7 +12,16 @@ import {
   toEdge,
   useFlowLayout,
 } from "@ai/flow-canvas";
-import { type FlowEdgeIn, type FlowNodeIn, stepEdges } from "@ai/flow-canvas/pure";
+import {
+  collidesWith,
+  type FlowEdgeIn,
+  type FlowNodeIn,
+  NODE_W,
+  PORT_LABEL_W,
+  type SettleItem,
+  settlePositions,
+  stepEdges,
+} from "@ai/flow-canvas/pure";
 import type { Edge, Node, XYPosition } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -156,13 +165,20 @@ function useFlowStructure(
   }, [views, approve, trig, insertable, connectable]);
 }
 
-/** Vị trí cuối: vị trí kéo tay (đã lưu) thắng; không có ⇒ toạ độ ELK; chưa có cả hai ⇒ node chưa hiện (chờ lượt bố cục đầu). */
-function placed(
-  pos: FlowPositions | null,
-  id: string,
-  manual: { x: number; y: number } | null | undefined,
-): { x: number; y: number } | null {
-  return manual ?? pos?.get(id) ?? null;
+/**
+ * CR-125 · x4 · đầu vào của `settlePositions`: vị trí kéo tay (đã lưu) + toạ độ ELK của từng node. Vị trí tay chỉ được giữ khi không đè node nào
+ * (đè ⇒ node quay về toạ độ ELK); chưa có cả hai ⇒ node chưa hiện (chờ lượt bố cục đầu).
+ */
+function settleItems(
+  views: readonly StageView[],
+  auto: FlowPositions | null,
+  trig: TriggerInfo,
+): SettleItem[] {
+  const wide = (v: StageView) => ((portsOf(v)?.length ?? 0) > 1 ? NODE_W + PORT_LABEL_W : NODE_W);
+  return [
+    ...(trig ? [{ id: "trigger", auto: auto?.get("trigger") }] : []),
+    ...views.map((v) => ({ id: v.uid, manual: v.pos, auto: auto?.get(v.uid), w: wide(v) })),
+  ];
 }
 
 function useFlowGraph(
@@ -178,11 +194,12 @@ function useFlowGraph(
   const s = useFlowStructure(p, approve, trig, insertable, connectable);
   const auto = useFlowLayout(s.flowNodes, s.flowEdges);
   return useMemo(() => {
+    const at = settlePositions(settleItems(views, auto, trig));
     const stageNodes = views.flatMap((v) => {
-      const at = placed(auto, v.uid, v.pos);
-      return at ? [toNode(v, at, selected, readOnly, connectable)] : [];
+      const pt = at.get(v.uid);
+      return pt ? [toNode(v, pt, selected, readOnly, connectable)] : [];
     });
-    const tAt = placed(auto, "trigger", null);
+    const tAt = at.get("trigger");
     const trigger = s.tp.node.flatMap((n) => (tAt ? [{ ...n, position: tAt }] : []));
     const bp = bridgePart(stageNodes, warn, bridge);
     const nodes = [...trigger, ...stageNodes, ...bp.node];
@@ -196,7 +213,7 @@ function useFlowGraph(
       ready: auto !== null,
       dlc: s.dlc,
     };
-  }, [s, auto, views, selected, readOnly, warn, bridge, connectable]);
+  }, [s, auto, views, trig, selected, readOnly, warn, bridge, connectable]);
 }
 
 /**
@@ -314,7 +331,12 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
   // CR-123 · u13: kéo tự do — vị trí (x, y) được LƯU (`ui.x` + `ui.y`) khi thả; thứ tự bước chỉ đổi bằng mũi tên.
   const onDragStop = (node: Node, pos: XYPosition, group?: { id: string; pos: XYPosition }[]) => {
     const moved = group && group.length > 0 ? group : [{ id: node.id, pos }];
+    // CR-125 · x4: thả đè lên node khác ⇒ không lưu vị trí (node quay về chỗ cũ), sơ đồ không bao giờ có hai node chồng nhau
+    const items = settleItems(p.views, null, trig);
+    const cur = new Map(g.nodes.map((n) => [n.id, n.position]));
+    for (const m of moved) cur.set(m.id, m.pos);
     for (const m of moved) {
+      if (collidesWith(m.pos, m.id, items, cur)) continue;
       const at = g.nodes.find((n) => n.id === m.id)?.position;
       const v = p.views.find((x) => x.uid === m.id);
       if (v && (!at || Math.abs(m.pos.x - at.x) >= 1 || Math.abs(m.pos.y - at.y) >= 1))

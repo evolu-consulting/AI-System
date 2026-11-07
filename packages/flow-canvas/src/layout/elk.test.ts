@@ -6,6 +6,7 @@ import {
   type ElkNode,
   fallbackPositions,
   layoutWithElk,
+  PORT_LABEL_W,
   portId,
   positionsOf,
   toElkGraph,
@@ -59,7 +60,7 @@ describe("toElkGraph", () => {
   });
   test("node nhiều đầu ra có cổng ở mép phải, thứ tự cố định, kích thước mặc định", () => {
     const node = g.children?.find((c) => c.id === "ky");
-    expect(node).toMatchObject({ width: NODE_W, height: NODE_H });
+    expect(node).toMatchObject({ width: NODE_W + PORT_LABEL_W, height: NODE_H });
     expect(node?.layoutOptions).toEqual({ "elk.portConstraints": "FIXED_ORDER" });
     expect(
       node?.ports?.map((p) => [
@@ -91,7 +92,7 @@ describe("toElkGraph", () => {
 });
 
 describe("layoutWithElk (ELK thật)", () => {
-  test("flow demo 8 bước: đi trái → phải, gập hàng, vừa khung 1100×458 ở zoom ≥ 0.75", async () => {
+  test("flow demo 8 bước: đi trái → phải, gập hàng, vừa khung 1100×458 ở zoom ≥ 0.65", async () => {
     const pos = await layoutWithElk(demo.nodes, demo.edges, engine);
     const at = (id: string) => pos.get(id) as { x: number; y: number };
     expect(pos.size).toBe(8);
@@ -103,7 +104,7 @@ describe("layoutWithElk (ELK thật)", () => {
     const h = Math.max(...ys) + NODE_H - Math.min(...ys);
     expect(new Set(ys.map((y) => Math.round(y / NODE_H))).size).toBeGreaterThan(1); // nhiều hàng
     const zoom = Math.min((1100 - 32) / w, (458 - 32) / h);
-    expect(zoom).toBeGreaterThanOrEqual(0.75);
+    expect(zoom).toBeGreaterThanOrEqual(0.65); // x4: giãn hơn (0.75 → 0.65) để Ký số + 3 đầu ra không chen node kề
   });
 
   test("thứ tự cổng từ trên xuống: Ký xong → Từ chối → Hết hạn", async () => {

@@ -16,7 +16,7 @@ import {
   ifErrorAt,
 } from "../../lib/if-form";
 import { ifSentence } from "../../lib/if-sentence";
-import { useStepOptionLabel } from "../../lib/step-options";
+import { stepNames, useStepOptionLabel } from "../../lib/step-options";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { SelectField, TextField } from "./Fields";
 import type { StageFormProps } from "./stage-form-props";
@@ -34,6 +34,8 @@ export type StageIfProps = {
   steps: readonly number[];
   /** CR-122 · p22 · nhãn ô chọn bước ("Bước N · tên"); số bước đếm từ 1. Vắng ⇒ "Bước N". */
   optLabel?: (step: number) => string;
+  /** Tên bước (không "Bước N ·") cho câu mô tả; vắng ⇒ dùng `optLabel`. */
+  stepName?: (step: number) => string;
   errors: Record<string, string>;
   readOnly: boolean;
   onChange: (patch: Partial<IfDraft>) => void;
@@ -91,8 +93,9 @@ export function StageIf(p: StageIfProps) {
     label: p.optLabel?.(s) ?? t(`${K}stepOpt`, { n: s }),
   }));
   const groupErr = err(undefined);
+  // Câu chỉ nêu TÊN bước ("đi tới Trưởng phòng duyệt"); bước chưa đặt tên ⇒ "Bước N".
   const stepName = (s: number | null) =>
-    s === null ? null : (p.optLabel?.(s) ?? t(`${K}stepOpt`, { n: s }));
+    s === null ? null : (p.stepName?.(s) ?? p.optLabel?.(s) ?? t(`${K}stepOpt`, { n: s }));
   const sentence = ifSentence({
     join: value.op,
     conds: value.conds.map((c) => ({
@@ -294,6 +297,7 @@ export function StageIfForm(p: StageFormProps) {
       ]}
       steps={gotoSteps(all, stage.step).map((s) => s + 1)}
       optLabel={(s) => label(s - 1)}
+      stepName={(s) => stepNames(all, s - 1) || label(s - 1)}
       errors={errors}
       readOnly={readOnly}
       onChange={(patch) => onChange({ ifx: { ...stage.ifx, ...patch } })}

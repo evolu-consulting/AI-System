@@ -3,6 +3,7 @@ export * from "./editing";
 export * from "./layout/elk";
 export * from "./layout/geometry";
 export * from "./layout/graph";
+export * from "./layout/settle";
 export * from "./layout/vertical";
 export * from "./mode";
 export * from "./registry";

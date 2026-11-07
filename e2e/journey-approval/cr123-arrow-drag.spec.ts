@@ -206,6 +206,65 @@ async function expectInside(page: Page, loc: Locator, what: string): Promise<voi
     )
     .toBe(true);
 }
+/** CR-125 · x4 · node nằm TRỌN trong phần canvas còn thấy: trong khung, và không bị ngăn chi tiết (bên phải) đè lên. */
+async function expectBesideDrawer(
+  page: Page,
+  loc: Locator,
+  drawer: Locator,
+  what: string,
+): Promise<void> {
+  const pane = page.locator(".react-flow__pane").first();
+  await expect
+    .poll(
+      async () => {
+        const [p, d, b] = [
+          await pane.boundingBox(),
+          await drawer.boundingBox(),
+          await loc.first().boundingBox(),
+        ];
+        return (
+          !!p &&
+          !!d &&
+          !!b &&
+          b.x >= p.x - 1 &&
+          b.x + b.width <= d.x + 1 &&
+          b.y >= p.y - 1 &&
+          b.y + b.height <= p.y + p.height + 1
+        );
+      },
+      { message: `${what}: phải thấy trọn bên trái ngăn chi tiết` },
+    )
+    .toBe(true);
+}
+/** CR-125 · x4 · không hai node nào chồng nhau (hộp `.react-flow__node` giao nhau > 1px) — đợi bố cục lại / hoạt ảnh xong rồi kiểm cả cặp. */
+async function expectNoOverlap(page: Page, what: string): Promise<void> {
+  const clash = async (): Promise<string[]> => {
+    const rs = await page.locator(".react-flow__node").evaluateAll((els) =>
+      els.map((e) => {
+        const r = e.getBoundingClientRect();
+        return {
+          n: (e.textContent ?? "").trim().slice(0, 24),
+          x: r.x,
+          y: r.y,
+          w: r.width,
+          h: r.height,
+        };
+      }),
+    );
+    const out: string[] = [];
+    for (let i = 0; i < rs.length; i++)
+      for (let j = i + 1; j < rs.length; j++) {
+        const [a, b] = [rs[i], rs[j]];
+        if (!a || !b) continue;
+        const dx = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+        const dy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+        if (dx > 1 && dy > 1) out.push(`${a.n} × ${b.n}`);
+      }
+    return out;
+  };
+  await expect.poll(clash, { message: `${what}: node chồng nhau` }).toEqual([]);
+  expect((await page.locator(".react-flow__node").count()) > 1).toBe(true);
+}
 /** Thu nhỏ tới khi node cuối nằm trọn trong khung canvas (đích của mũi tên phải THẤY được mới kéo tới được). */
 async function fitAll(page: Page): Promise<void> {
   const pane = page.locator(".react-flow__pane").first();
@@ -287,6 +346,7 @@ test("U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, k
     page.locator(".react-flow__node").filter({ hasText: "Bước duyệt mới" }),
     "sau khi nối Ký xong → Duyệt (ELK bố cục lại)",
   );
+  await expectNoOverlap(page, "sau khi nối Ký xong → Duyệt");
   await fitAll(page);
 
   // 3 · chọn người duyệt cho node mới (Lưu cần), đóng ngăn, rồi kéo từ node mới tới Kết thúc · Đã duyệt
@@ -312,6 +372,7 @@ test("U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, k
     node.getByTestId("port-next"),
     page.locator(".react-flow__node").filter({ hasText: "Đã duyệt" }).first(),
   );
+  await expectNoOverlap(page, "sau khi nối Duyệt → Kết thúc · Đã duyệt");
 
   // 4 · Lưu và áp dụng thành công (không toast lỗi, hết nhắc "Chưa áp dụng")
   await page.getByRole("button", { name: /Lưu và áp dụng/ }).click();
@@ -444,6 +505,21 @@ test("U12b · trình tự demo: thả Duyệt (chung cột), Ký xong → Duyệ
     .filter({ hasText: "Đã duyệt" });
   await arrow(page, node("Thông báo chuông").getByTestId("port-next"), end);
   await expect(alert(/vòng lặp|Chỉ nối được/)).toHaveCount(0);
+  await fitAll(page);
+  await expectNoOverlap(page, "flow demo + Kế toán duyệt chi");
+
+  // 2b · CR-125 · x4: mở ngăn chi tiết của bước vừa thêm ⇒ bước đó và các node kề vẫn THẤY TRỌN bên trái ngăn (không bị ngăn che / cắt mép)
+  await acc.locator("[data-stage-uid]").click();
+  const drawer = page.getByRole("complementary", { name: /./ });
+  await expect(drawer).toHaveCount(1);
+  for (const [loc, what] of [
+    [acc, "Kế toán duyệt chi"],
+    [node("Thông báo chuông"), "Thông báo chuông (kề sau)"],
+    [page.getByTestId("module-node"), "Ký số (kề trước)"],
+  ] as const)
+    await expectBesideDrawer(page, loc, drawer, what);
+  await expectNoOverlap(page, "khi ngăn chi tiết mở");
+  await page.getByRole("button", { name: "Đóng ngăn chi tiết" }).click();
   await fitAll(page);
 
   // 3 · Bắt đầu khi → Ký số: cổng ra của Bắt đầu khi nằm trong khung (sau fit) và toast nêu lý do

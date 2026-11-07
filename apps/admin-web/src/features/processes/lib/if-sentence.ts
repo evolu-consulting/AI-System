@@ -55,7 +55,7 @@ export function condText(c: SentenceCond, w: SentenceWords, from: string): strin
 }
 
 /**
- * Câu hoàn chỉnh. `fromLabel` = nhãn nguồn của điều kiện; `yes`/`no` = nhãn bước đích đã dựng ("Bước 3 · Giám đốc duyệt"),
+ * Câu hoàn chỉnh. `fromLabel` = nhãn nguồn của điều kiện; `yes`/`no` = TÊN bước đích ("Giám đốc duyệt"; không kèm "Bước N ·"),
  * null = chưa chọn (Sai bỏ trống = Bước tiếp theo). Chưa có điều kiện hợp lệ nào ⇒ null.
  */
 export function ifSentence(a: {

@@ -43,6 +43,8 @@ export type ElkNode = {
 export type ElkEngine = { layout: (g: ElkNode) => Promise<ElkNode> };
 
 export const DEFAULT_ASPECT = 2.4;
+/** Chỗ chừa thêm bên phải node có ≥ 2 cổng ra (nhãn "Ký xong / Từ chối / Hết hạn" nhô ra khỏi mép). */
+export const PORT_LABEL_W = 48;
 export const portId = (node: string, handle: string): string => `${node}:${handle}`;
 
 /** Tuỳ chọn gốc: layered, trái → phải, cạnh vuông góc, gập hàng đa cạnh theo tỉ lệ khung. */
@@ -51,8 +53,10 @@ export function rootOptions(o: FlowLayoutOptions): Record<string, string> {
     "elk.algorithm": "layered",
     "elk.direction": "RIGHT",
     "elk.edgeRouting": "ORTHOGONAL",
-    "elk.spacing.nodeNode": "40",
-    "elk.layered.spacing.nodeNodeBetweenLayers": "60",
+    // CR-125 · x4: đủ rộng cho node Ký số + 3 nhãn đầu ra nhô ra mép phải và mũi tên đi giữa hai tầng
+    "elk.spacing.nodeNode": "56",
+    "elk.layered.spacing.nodeNodeBetweenLayers": "90",
+    "elk.spacing.edgeNode": "32",
     "elk.layered.wrapping.strategy": "MULTI_EDGE",
     "elk.aspectRatio": String(o.aspectRatio ?? DEFAULT_ASPECT),
   };
@@ -73,7 +77,8 @@ export function toElkGraph(
       const ports = n.ports ?? [];
       return {
         id: n.id,
-        width: n.width ?? NODE_W,
+        // nhãn đầu ra nhô ra mép phải: node nhiều cổng chừa thêm chỗ bên phải để không đè node kề
+        width: n.width ?? NODE_W + (ports.length > 1 ? PORT_LABEL_W : 0),
         height: n.height ?? NODE_H,
         ...(ports.length > 0
           ? {

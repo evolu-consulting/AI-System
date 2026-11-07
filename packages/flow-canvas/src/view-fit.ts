@@ -8,13 +8,14 @@ import {
   useStore,
 } from "@xyflow/react";
 import { useEffect, useRef } from "react";
-import { NODE_H, NODE_W, revealDx } from "./layout/geometry";
+import { NODE_H, NODE_W } from "./layout/geometry";
 import { focusViewport } from "./view-focus";
 
 // fnr-canvas-fit: editor vừa khung cả flow (thu tới 0.3 = mức zoom tối thiểu của canvas; dưới nữa thì người dùng kéo/zoom tay), vừa lại khi khung đổi cỡ.
 export const FIT = { padding: 0.08, maxZoom: 1, minZoom: 0.3 } as const;
 // `compact` (trang showcase, chỉ đọc): canvas thấp + cho thu nhỏ hơn để cả flow vừa khung và nằm giữa.
 export const FIT_COMPACT = { padding: 0.02, maxZoom: 1, minZoom: 0.4 } as const;
+const PORT_PAD = 40;
 const reduceMotion = (): boolean => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** Fit vào vùng canvas còn lại bên trái ngăn chi tiết rộng `inset` (px) — tự tính viewport, không dùng padding có đơn vị. */
@@ -68,6 +69,35 @@ type Vp = { x: number; y: number; zoom: number };
 const sameVp = (a: Vp, b: Vp): boolean =>
   Math.abs(a.x - b.x) < 1 && Math.abs(a.y - b.y) < 1 && Math.abs(a.zoom - b.zoom) < 0.01;
 
+/** CR-125 · x4 · khung nhìn đích để node chọn + node kề (vào/ra) nằm TRỌN trong vùng thấy được bên trái ngăn chi tiết (pan, thu nhỏ khi cần, không phóng to). */
+function revealSelection(
+  rf: ReactFlowInstance,
+  sel: string,
+  size: { w: number; h: number },
+  inset: number,
+  minZoom: number,
+): Vp | null {
+  if (!rf.getNode(sel)) return null;
+  const near = new Set([sel]);
+  for (const e of rf.getEdges()) {
+    if (e.source === sel) near.add(e.target);
+    if (e.target === sel) near.add(e.source);
+  }
+  const boxes = [...near].flatMap((i) => {
+    const m = rf.getNode(i);
+    if (!m || i.startsWith("bridge:")) return [];
+    // +PORT_PAD: nhãn đầu ra / chấm nối nhô ra khỏi mép phải node
+    return [
+      {
+        x: m.position.x,
+        y: m.position.y,
+        w: (m.measured?.width ?? NODE_W) + PORT_PAD,
+        h: m.measured?.height ?? NODE_H,
+      },
+    ];
+  });
+  return focusViewport(boxes, rf.getViewport(), size, inset, minZoom);
+}
 export type ViewFitOptions = {
   /** Đổi giá trị ⇒ fit lại (số bước + số giai đoạn do host ghép). */
   sig: string;
@@ -179,14 +209,14 @@ export function useViewFit(o: ViewFitOptions): void {
     const sel = o.selected;
     if (!sel || inset.current <= 0) return;
     const id = window.setTimeout(() => {
-      const n = rf.getNode(sel);
-      if (!n) return;
-      const v = rf.getViewport();
-      const left = n.position.x * v.zoom + v.x;
-      const right = left + (n.measured?.width ?? NODE_W) * v.zoom;
-      const dx = revealDx(left, right, widthRef.current, inset.current);
-      if (dx !== 0)
-        void rf.setViewport({ ...v, x: v.x + dx }, { duration: reduceMotion() ? 0 : 200 });
+      const to = revealSelection(
+        rf,
+        sel,
+        { w: widthRef.current, h: heightRef.current },
+        inset.current,
+        opts.current.fitMin,
+      );
+      if (to) void rf.setViewport(to, { duration: reduceMotion() ? 0 : 200 });
     }, 260);
     return () => window.clearTimeout(id);
   }, [o.selected, o.inset > 0]);
