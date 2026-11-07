@@ -1,11 +1,9 @@
 // CR-124 · q4 · FLOW4-FR-14/16/17 · khối «Gửi đối tác xác nhận» ở chi tiết HĐ (bên GỬI): mỗi vòng gửi một thẻ 3 dòng (trạng thái · lý do · bước kế).
 // Vòng đang chờ có nút «Ghi nhận kết quả đối tác» (người phụ trách/ghi được HĐ; người khác không thấy nút) ⇒ Đồng ý / Trả lại / Từ chối + lý do +
 // người bên đối tác trả lời + bằng chứng. Ẩn hẳn khi HĐ chưa từng gửi đối tác.
-import { ApiError } from "@ai/web-kit/http";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchRounds, partnerKeys, recordResult } from "../api";
+import { useRecordResult, useRounds } from "../hooks/use-partner-queries";
 import { needsReason, type Round, recordIssue, roundCard } from "../lib/partner-view";
 import { PartnerCard } from "./PartnerCard";
 
@@ -13,32 +11,12 @@ type Outcome = "confirmed" | "returned" | "declined";
 
 function RecordForm({ round, onDone }: { round: Round; onDone: () => void }) {
   const { t } = useTranslation();
-  const qc = useQueryClient();
   const [outcome, setOutcome] = useState<Outcome>("confirmed");
   const [reason, setReason] = useState("");
   const [byName, setByName] = useState("");
   const [byTitle, setByTitle] = useState("");
   const [evidence, setEvidence] = useState("");
-  const [err, setErr] = useState<string | null>(null);
-  const m = useMutation({
-    mutationFn: () =>
-      recordResult(round.mailbox_id, {
-        outcome,
-        ...(needsReason(outcome) ? { reason: reason.trim() } : {}),
-        by_name: byName.trim(),
-        ...(byTitle.trim() ? { by_title: byTitle.trim() } : {}),
-        evidence: evidence
-          .split("\n")
-          .map((x) => x.trim())
-          .filter(Boolean)
-          .map((name) => ({ name })),
-      }),
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["contracts", "partner"] });
-      onDone();
-    },
-    onError: (e) => setErr(e instanceof ApiError ? e.message : t("contracts.partner.record.fail")),
-  });
+  const m = useRecordResult(round.mailbox_id, onDone);
   const issue = recordIssue({
     outcome,
     reason,
@@ -52,7 +30,18 @@ function RecordForm({ round, onDone }: { round: Round; onDone: () => void }) {
       className="mt-2 grid max-w-xl gap-2 rounded-xl border border-rule bg-sunk p-3 text-sm"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!issue) m.mutate();
+        if (!issue)
+          m.mutate({
+            outcome,
+            ...(needsReason(outcome) ? { reason: reason.trim() } : {}),
+            by_name: byName.trim(),
+            ...(byTitle.trim() ? { by_title: byTitle.trim() } : {}),
+            evidence: evidence
+              .split("\n")
+              .map((x) => x.trim())
+              .filter(Boolean)
+              .map((name) => ({ name })),
+          });
       }}
     >
       <label className="grid gap-1">
@@ -108,9 +97,9 @@ function RecordForm({ round, onDone }: { round: Round; onDone: () => void }) {
           onChange={(e) => setEvidence(e.target.value)}
         />
       </label>
-      {err && (
+      {m.error && (
         <p role="alert" className="text-late">
-          {err}
+          {m.error}
         </p>
       )}
       <div className="flex gap-2">
@@ -133,11 +122,7 @@ function RecordForm({ round, onDone }: { round: Round; onDone: () => void }) {
 export function PartnerSendPanel({ id, write }: { id: string; write: boolean }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState<string | null>(null);
-  const q = useQuery({
-    queryKey: partnerKeys.rounds(id),
-    queryFn: ({ signal }) => fetchRounds(id, signal),
-    retry: false,
-  });
+  const q = useRounds(id);
   const rounds = q.data?.rounds ?? [];
   if (rounds.length === 0) return null;
   return (

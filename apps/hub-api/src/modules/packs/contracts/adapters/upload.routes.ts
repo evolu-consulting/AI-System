@@ -22,8 +22,8 @@ import type { PromoteContract } from "../application/promote-contract.usecase";
 import { type UploadDoc, UploadError } from "../application/upload-contract.ports";
 import type { UploadContract, UploadContractInput } from "../application/upload-contract.usecase";
 import { dealDbCode } from "../domain/deal.rules";
-import { imagesToPdf } from "../domain/images-pdf.rules";
 import { unreadableFormat } from "../domain/upload.rules";
+import { imagesToPdf } from "./images-pdf";
 import { scanLimits } from "./source-file-text";
 
 const CONTRACTS_KEY = "contracts";

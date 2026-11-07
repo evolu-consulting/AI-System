@@ -2,7 +2,7 @@
 // lõi ngoài `nodes/` không import `nodes/<kind>/*` (chỉ `nodes/registry*`).
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { EXECUTOR_KINDS } from "@ai/contracts/chat";
 import { NODE_FAMILY_OF, ProcessStageDefSchema } from "@ai/contracts/hub-admin";
 import { NODES, nodeSpecOf } from "./registry";
@@ -31,7 +31,15 @@ const ROOTS = [
   join(SRC, "hub-api", "src", "modules"),
   join(SRC, "admin-web", "src", "features", "processes"),
 ];
-const KIND_IMPORT = /from\s+["'][^"']*\/nodes\/(?!registry)[^"']+["']/;
+const KIND_IMPORT = /from\s+["']([^"']*\/nodes\/(?!registry)[^"']+)["']/g;
+/** Import tương đối được phân giải theo file: chỉ tính khi đích nằm trong cây `processes/…/nodes/<kind>` (thư mục `nodes/` riêng của
+ *  gói — `packs/<gói>/nodes/<kind>/binding` — là ruột của gói, không phải node lõi). Import không tương đối giữ luật cũ. */
+const hitsKind = (file: string, src: string): boolean =>
+  [...src.matchAll(KIND_IMPORT)].some(([, spec = ""]) => {
+    if (!spec.startsWith(".")) return true;
+    const target = resolve(dirname(file), spec).split(sep).join("/");
+    return /\/processes\/(?:.*\/)?nodes\/(?!registry)/.test(target);
+  });
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -47,7 +55,7 @@ describe("CR-103 · ranh giới import lõi ↔ node", () => {
   test("file ngoài `nodes/` chỉ import `nodes/registry*`, không `nodes/<kind>/*`", () => {
     const bad = ROOTS.flatMap((r) => walk(r))
       .filter((f) => !f.split(sep).includes("nodes"))
-      .filter((f) => KIND_IMPORT.test(readFileSync(f, "utf8")))
+      .filter((f) => hitsKind(f, readFileSync(f, "utf8")))
       .map((f) => relative(SRC, f));
     expect(bad).toEqual([]);
   });

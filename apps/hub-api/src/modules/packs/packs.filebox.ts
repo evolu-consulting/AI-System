@@ -1,8 +1,7 @@
 // T5f · FileBox của gói (tách khỏi `packs.mount.ts` giữ trần 400 dòng — cf-esign-docusign dùng chung). Chỗ duy nhất dựng
 // `FileboxClient` cho gói: `deps.packs.filebox` ưu tiên, vắng ⇒ env FB1 (`FILEBOX_URL` + `FILEBOX_TOKEN`, CA `FILEBOX_CA`).
 import { logger } from "../../lib/logger";
-import { FileboxClient } from "../attachments/filebox.client";
-import { envFileboxToken } from "../attachments/filebox-token";
+import { envFileboxToken, FileboxClient } from "../attachments/public";
 
 export type PackFb = { url: string; token: string; caPath?: string; publicPath?: string };
 

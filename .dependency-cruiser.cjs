@@ -53,13 +53,13 @@ module.exports = {
     {
       name: "ca-domain-builtin-only",
       comment:
-        "ADR-0023 (CR-088): lớp 1 `domain/` chỉ dùng built-in ECMAScript — chỉ import file trong `domain/`; cấm package npm, @ai/contracts, node:*/bun:*",
+        "ADR-0023 (CR-088): lớp 1 `domain/` chỉ dùng built-in ECMAScript — chỉ import file trong `domain/`; cấm package npm, node:*/bun:*, lớp khác. arch-a9: ngoại lệ `packages/contracts/src` (shared kernel kiểu + zod, giữ thuần bằng `contracts-only-zod`/`contracts-pure`) — cùng điều kiện với `ca-application-inward-only`",
       severity: "error",
       from: {
         path: "(^|/)(apps|packages)/.+/domain/",
         pathNot: "\\.test\\.tsx?$|^apps/workspace-web/",
       },
-      to: { pathNot: "(^|/)(apps|packages)/.+/domain/" },
+      to: { pathNot: "(^|/)(apps|packages)/.+/domain/|(^|/)packages/contracts/src/" },
     },
     {
       name: "ca-application-inward-only",

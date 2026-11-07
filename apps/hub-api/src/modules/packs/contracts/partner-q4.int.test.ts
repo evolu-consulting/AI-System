@@ -2,12 +2,12 @@
 // (2) ngưỡng mức + người phụ trách theo công ty nhận; (3) hộp thư/lời mời nối đọc qua API repo; (4) «Ghi nhận kết quả» chỉ cho lần gửi MỞ của chính công ty gửi.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createDb, type Db } from "@ai/db";
-import { withHubScope } from "@ai/db/hub-scope";
 import { contracts, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, inPack, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { createPackUow } from "../kit/adapters/pack-uow";
 import type { PackToolCtx } from "../kit/public";
+import { withSystemScope } from "../kit/testing/system-scope";
 import { esignRepo } from "./adapters/esign.repo";
 import { reviewerReason } from "./adapters/partner-inbox.repo";
 import { partnerSendRepo } from "./adapters/partner-send.repo";
@@ -179,7 +179,7 @@ describe("CR-124 q4 · lý do gửi đối tác chỉ lấy từ bước quyết
     return run;
   }
   const read = (run: string, outcome: "declined" | "returned") =>
-    withHubScope(db, { kind: "system" }, (tx) => reviewerReason(tx, B, run, outcome));
+    withSystemScope(db, { kind: "system" }, (tx) => reviewerReason(tx, B, run, outcome));
 
   it("Từ chối: lấy góp ý của bước Từ chối, KHÔNG lấy ghi chú nội bộ của người duyệt trước (đã Đạt)", async () => {
     const run = await fakeRun([

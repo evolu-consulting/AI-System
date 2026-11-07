@@ -4,7 +4,6 @@
 
 import type {
   FlowActionDef,
-  FlowSkipCondSchema,
   FlowState,
   FlowStepStatus,
   FlowStepView,
@@ -14,13 +13,12 @@ import type {
 } from "@ai/contracts/flow";
 import { moduleFlowStep } from "@ai/contracts/flow";
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
-import type { z } from "zod";
 
 export const APPROVAL_FLOW_SLOT = "contracts.approval";
 export const PRODUCT_LINKS_EXTENSION = "contracts.product-links";
 type Card = ContractApproval;
 type CardStep = NonNullable<Card["steps"]>[number];
-type SkipCond = z.infer<typeof FlowSkipCondSchema>;
+type SkipCond = NonNullable<FlowStepView["skip_when"]>[number];
 
 const STATE_OF: Record<string, FlowState> = {
   extract: "running",

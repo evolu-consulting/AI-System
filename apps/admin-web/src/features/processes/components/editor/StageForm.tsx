@@ -1,13 +1,12 @@
-﻿// ADM-FR-66 · CR-056 · P-a F5 · P-b2 · P-d2: khung form một giai đoạn — `region "Giai đoạn n: <tên>"` (plan-frontend §1, e2e §2).
+// ADM-FR-66 · CR-056 · P-a F5 · P-b2 · P-d2: khung form một giai đoạn — `region "Giai đoạn n: <tên>"` (plan-frontend §1, e2e §2).
 // Chi tiết từng phần ở StageGeneral/StageStepFields/StageGate/StageAnswerer/StageActions (tách — TECH-DEBT #136).
 import type { NotifyTo } from "@ai/contracts/hub-admin";
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { useGroupOptions } from "@/features/groups/api";
 import { useSession } from "@/lib/auth/use-session";
-import { pickLocalized } from "@/lib/localized";
+import { useGroupKeyOptions } from "../../hooks/use-group-key-options";
 import { isApply } from "../../lib/apply-form";
 import { isForm } from "../../lib/form-fields";
 import { isIf } from "../../lib/if-form";
@@ -185,7 +184,7 @@ function NotifyRecipients(p: {
 }) {
   const { t } = useTranslation();
   const flow = useFlowCtx();
-  const groups = useGroupOptions(flow?.tenantId, !!flow?.tenantId);
+  const groups = useGroupKeyOptions(flow?.tenantId, !!flow?.tenantId);
   const starter = p.to.some((x) => x.who === "starter");
   const group = p.to.find((x) => x.who === "group");
   const rest = p.to.filter((x) => x.who === "input_user");
@@ -194,7 +193,6 @@ function NotifyRecipients(p: {
     ...(g ? [{ who: "group" as const, group_key: g }] : []),
     ...rest,
   ];
-  const lang = useTranslation().i18n.language;
   return (
     <fieldset className="space-y-2 border-0 p-0" data-testid="notify-to">
       <legend className="text-label font-medium">{t("process.admin.flow.notify.to")}</legend>
@@ -212,10 +210,7 @@ function NotifyRecipients(p: {
         value={group?.group_key ?? ""}
         readOnly={p.readOnly}
         placeholder={t("process.admin.flow.notify.toGroupPh")}
-        options={(groups.data ?? []).map((g) => ({
-          value: g.key,
-          label: pickLocalized(g.name, lang),
-        }))}
+        options={groups}
         onChange={(v) => p.onChange(build(starter, v))}
       />
     </fieldset>

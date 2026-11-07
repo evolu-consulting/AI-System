@@ -3,11 +3,10 @@
 // CÙNG tx; GỬI = đóng lần gửi + `signalEvent('partner.<kết quả>')` cho node chờ (qua cổng engine `packRuns`, gắn lười). Bộ chuyển chỉ chạy khi
 // `HUB_PARTNER_MAILBOX=on` (mặc định tắt) — gọi `mountPartnerSend` luôn vô hại (chỉ đăng ký).
 import type { Db, Tx } from "@ai/db";
-import { withHubScope } from "@ai/db/hub-scope";
 import { withPackScope } from "@ai/db/pack-scope";
-import { sql } from "drizzle-orm";
 import {
   createPackUow,
+  flowReceiveState,
   moduleRegistry,
   orgForTenant,
   type PackRunsBridge,
@@ -73,19 +72,7 @@ export async function receiveStateOf(
   tenantId: string,
   ownerId: string | null,
 ): Promise<{ armed: boolean; actor: string | null }> {
-  const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
-    tx.execute<{ armed: boolean; actor: string | null }>(sql`select
-      (exists (select 1 from hub.tenant_flow_settings s where s.tenant_id = ${tenantId}::uuid and s.flow_triggers)
-        and exists (select 1 from hub.company_flows cf
-          join hub.process_defs d on d.id = cf.flow_id and d.deleted_at is null and (d.tenant_id = cf.tenant_id or d.tenant_id is null)
-          where cf.tenant_id = ${tenantId}::uuid and cf.enabled and d.trigger_event = 'contract.received')) as armed,
-      coalesce(
-        (select u.id::text from admin.users u where u.id = ${ownerId}::uuid and u.tenant_id = ${tenantId}::uuid
-          and u.kind = 'internal' and u.active and not u.locked_by_tenant),
-        (select u.id::text from admin.users u where u.tenant_id = ${tenantId}::uuid and u.role = 'tenant_admin'
-          and u.kind = 'internal' and u.active and not u.locked_by_tenant order by u.created_at, u.id limit 1)) as actor`),
-  );
-  return { armed: r?.armed === true, actor: r?.actor ?? null };
+  return flowReceiveState(db, { tenantId, ownerId, event: "contract.received" });
 }
 
 /** Tenant NHẬN: 3 câu cố định mỗi lô, một tx scope tenant (system user null). */

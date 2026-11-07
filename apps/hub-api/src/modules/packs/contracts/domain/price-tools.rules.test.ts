@@ -1,6 +1,6 @@
 // com-c10a · unit: định dạng tra giá / so sánh / tìm NCC (thuần).
 import { describe, expect, it } from "bun:test";
-import type { HostBookOut, HostPriceOut } from "../application/host-book.ports";
+import type { HostBookOut, HostPriceOut } from "./host-book.types";
 import { compareResult, lookupResult, NO_PRICE, suppliersResult } from "./price-tools.rules";
 
 const px = (o: Partial<HostPriceOut>): HostPriceOut => ({

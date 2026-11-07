@@ -1,7 +1,8 @@
 // com-c10a · tra giá / so sánh / tìm NCC cho trợ lý: định dạng thuần từ `HostBookOut` (không DB, không AI). Mọi số kèm nguồn + ngày;
 // rỗng ⇒ "chưa có giá"; không đoán; khác đơn vị không so; VAT không đồng nhất thì cờ cảnh báo.
-import type { HostBookOut, HostPriceOut, HostProductOut } from "../application/host-book.ports";
+
 import { foldVi } from "./fold.rules";
+import type { HostBookOut, HostPriceOut, HostProductOut } from "./host-book.types";
 
 export const NO_PRICE = "chưa có giá";
 type Band = "good" | "fair" | "watch" | "new" | null;

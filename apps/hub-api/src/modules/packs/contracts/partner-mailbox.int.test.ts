@@ -5,12 +5,12 @@
 // (5) chặn đọc chéo tenant cho `partner_sends` + `partner_inbox` + `hub.partner_inbox_take`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createDb, type Db } from "@ai/db";
-import { withHubScope } from "@ai/db/hub-scope";
 import { contracts, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, inPack, openOwner, pgCode, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { createPackUow } from "../kit/adapters/pack-uow";
 import type { PackToolCtx } from "../kit/public";
+import { withSystemScope } from "../kit/testing/system-scope";
 import { approvalRepo } from "./adapters/approval.repo";
 import { contractsRepo } from "./adapters/contracts.repo";
 import { esignRepo } from "./adapters/esign.repo";
@@ -167,9 +167,9 @@ describe("CR-124 q3 · gửi → nhận → trả lời", () => {
       actorId: null,
     };
     const apply = () =>
-      withHubScope(db, { kind: "system" }, (tx) => contractsOutcomeHandler().apply(tx, input));
+      withSystemScope(db, { kind: "system" }, (tx) => contractsOutcomeHandler().apply(tx, input));
     // Bộ điều phối mở lượt flow nhận ⇒ `launched` gắn run vào thẻ duyệt của HĐ nhận (như contract.submitted).
-    const launched = await withHubScope(
+    const launched = await withSystemScope(
       db,
       { kind: "system" },
       (tx) =>

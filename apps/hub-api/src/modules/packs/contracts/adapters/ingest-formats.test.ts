@@ -6,8 +6,8 @@ import { PDFDocument } from "pdf-lib";
 import { attachmentBlocks } from "../../../../lib/ai-client/anthropic.provider";
 import { cliArgs } from "../../../../lib/ai-client/claude-cli.provider";
 import { createUploadContract } from "../application/upload-contract.usecase";
-import { imagesToPdf } from "../domain/images-pdf.rules";
 import { sniffFileType, unreadableFormat } from "../domain/upload.rules";
+import { imagesToPdf } from "./images-pdf";
 import { pdfPageCounter } from "./pdf-pages";
 
 const enc = (s: string) => new TextEncoder().encode(s);

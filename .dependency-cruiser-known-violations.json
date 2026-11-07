@@ -10,60 +10,6 @@
   },
   {
     "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/contracts/domain/approval-flow-view.rules.ts",
-    "to": "node_modules/.bun/zod@4.6.5/node_modules/zod/index.d.cts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-domain-builtin-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/contracts/domain/approval-flow-view.rules.ts",
-    "to": "packages/contracts/src/flow/index.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-domain-builtin-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/contracts/domain/approval-flow-view.rules.ts",
-    "to": "packages/contracts/src/pack-contracts/index.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-domain-builtin-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/contracts/domain/images-pdf.rules.ts",
-    "to": "node_modules/.bun/pdf-lib@1.17.1/node_modules/pdf-lib/cjs/index.js",
-    "rule": {
-      "severity": "error",
-      "name": "ca-domain-builtin-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/contracts/domain/price-tools.rules.ts",
-    "to": "apps/hub-api/src/modules/packs/contracts/application/host-book.ports.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-domain-builtin-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/contracts/domain/summary-prompt.rules.ts",
-    "to": "packages/contracts/src/pack-contracts/index.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-domain-builtin-only"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/domain/dlc-detail.rules.ts",
     "to": "apps/hub-api/src/modules/packs/dlc/application/ports.ts",
     "rule": {
@@ -75,33 +21,6 @@
     "type": "dependency",
     "from": "apps/hub-api/src/modules/packs/dlc/domain/dlc-progress.rules.ts",
     "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-domain-builtin-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/processes/domain/form/form.rules.ts",
-    "to": "packages/contracts/src/hub-admin/index.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-domain-builtin-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/processes/domain/runs/run-log-text.rules.ts",
-    "to": "packages/contracts/src/chat/index.ts",
-    "rule": {
-      "severity": "error",
-      "name": "ca-domain-builtin-only"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/processes/domain/runs/run-timeline.rules.ts",
-    "to": "packages/contracts/src/chat/index.ts",
     "rule": {
       "severity": "error",
       "name": "ca-domain-builtin-only"
@@ -276,24 +195,6 @@
     "rule": {
       "severity": "error",
       "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/packs.filebox.ts",
-    "to": "apps/hub-api/src/modules/attachments/filebox-token.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/packs.filebox.ts",
-    "to": "apps/hub-api/src/modules/attachments/filebox.client.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
     }
   },
   {

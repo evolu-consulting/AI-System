@@ -9,6 +9,8 @@ export {
 export { contentLengthOf } from "./attachments.routes";
 export type { AttachmentService, OutputJob, UploadInput } from "./attachments.service";
 export { OutputClaimLost } from "./attachments.service";
+export { FileboxClient } from "./filebox.client";
+export { envFileboxToken } from "./filebox-token";
 export {
   bindRoomMessageFiles,
   bindRoomOutputs,

@@ -5,6 +5,7 @@ export { pgExternalOrgResolver } from "./adapters/ext-org.pg";
 export { externalFirewall } from "./adapters/external-firewall.middleware";
 export { flowRoutes } from "./adapters/flow.routes";
 export { flowPortRegistry } from "./adapters/flow-port-registry";
+export { flowReceiveState } from "./adapters/flow-receive-state";
 export { packMeRoutes } from "./adapters/me.route";
 export { memberNamesOf, selfContactOf } from "./adapters/member-names";
 export { packMembersRoutes } from "./adapters/members.route";

@@ -1,39 +1,18 @@
-﻿// com-c8-host-read · ADR-0031: cổng ĐỌC `HostBookReader` (gói community khai cùng hình dạng ở `application/*.ports.ts` của nó; contracts
+// com-c8-host-read · ADR-0031: cổng ĐỌC `HostBookReader` (gói community khai cùng hình dạng ở `application/*.ports.ts` của nó; contracts
 // cung cấp; `packs.mount.ts` tiêm sau — CHƯA nối Community). Kiểu thuần tự khai, không kiểu của gói kia. Chỉ đọc.
 import type { PackWho } from "../../kit/public";
-import type { HostHint, HostMatchHow } from "../domain/host-book.rules";
+import type { HostHint } from "../domain/host-book.rules";
+import type { HostBookOut, HostPriceOut } from "../domain/host-book.types";
+
+export type {
+  HostBookOut,
+  HostPartnerRep,
+  HostPriceOut,
+  HostProductOut,
+} from "../domain/host-book.types";
 
 /** Người gọi. `kind` do C1 thêm vào `PackWho`; vắng ⇒ coi là nội bộ (token người dùng), `external` ⇒ từ chối. */
 export type HostCaller = PackWho & { kind?: "internal" | "external" };
-
-export type HostPriceOut = {
-  supplierName: string;
-  supplierPartyKey: string | null;
-  price: number;
-  unit: string | null;
-  source: string;
-  seenOn: string;
-  /** null = chưa rõ. */
-  vatIncluded: boolean | null;
-  /** null = không hạn. */
-  expiresOn: string | null;
-};
-export type HostProductOut = {
-  /** Vị trí gợi ý trong lô vào. */
-  index: number;
-  hint: HostHint;
-  match: { id: string; name: string; unit: string | null; how: HostMatchHow } | null;
-  /** null ⇒ SP không theo dõi kho. */
-  onHand: string | null;
-  avgCost: number | null;
-  prices: HostPriceOut[];
-};
-export type HostPartnerRep = {
-  partyKey: string;
-  band: "good" | "fair" | "watch" | "new" | null;
-  score: number | null;
-};
-export type HostBookOut = { products: HostProductOut[]; partners: HostPartnerRep[] };
 
 export type HostBookReader = {
   read(
