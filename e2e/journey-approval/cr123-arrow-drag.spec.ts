@@ -296,7 +296,15 @@ test("U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, k
     .filter({ hasText: "Bước duyệt mới" }) // CR-123 · u11: tên mặc định của bước Duyệt vừa thả
     .last();
   await node.locator("[data-stage-uid]").click();
+  // CR-125 · x3 · Từ chối mặc định là node Kết thúc · Từ chối (không phải "Bước tiếp theo"), Trả lại về bước duyệt trước
+  await expect(page.getByTestId("approve-reject")).toContainText("Từ chối");
+  await expect(page.getByTestId("approve-reject")).not.toContainText("Bước tiếp theo");
+  await expect(page.getByTestId("approve-ret")).toContainText("Quay về bước duyệt trước");
   await page.getByLabel("Ai duyệt").click();
+  // CR-125 · x3 · ô "Ai duyệt" không lẫn nhóm kỹ thuật (Beta testers, nhóm vai của gói)
+  await expect(page.getByRole("option", { name: /Beta testers|Chỉ xem|Sổ Hợp Tác/ })).toHaveCount(
+    0,
+  );
   await page.getByRole("option").first().click();
   await page.getByRole("button", { name: "Đóng ngăn chi tiết" }).click();
   await arrow(

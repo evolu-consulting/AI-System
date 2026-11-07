@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { approveWarnings } from "../../lib/approve-rules";
 import type { StageFormProps } from "./stage-form-props";
 
 const DEFAULT = "default";
@@ -18,6 +19,11 @@ export function StageApprove({ stage, all, readOnly, onChange }: StageFormProps)
   const cur = stage.approve ?? { reject: null, ret: null };
   const later = all.filter((s) => s.step > stage.step);
   const steps = [...new Set(later.map((s) => s.step))];
+  const warned = new Set(
+    approveWarnings(all)
+      .filter((w) => w.uid === stage.uid)
+      .map((w) => w.field),
+  );
   const pick = (field: "reject" | "ret", label: string) => (
     <div className="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-2">
       <Label>{label}</Label>
@@ -32,7 +38,13 @@ export function StageApprove({ stage, all, readOnly, onChange }: StageFormProps)
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={DEFAULT}>{t("process.admin.flow.approve.default")}</SelectItem>
+          <SelectItem value={DEFAULT}>
+            {t(
+              field === "reject"
+                ? "process.admin.flow.approve.defaultReject"
+                : "process.admin.flow.approve.defaultReturn",
+            )}
+          </SelectItem>
           {steps.map((st) => (
             <SelectItem key={st} value={String(st)}>
               {later
@@ -43,6 +55,15 @@ export function StageApprove({ stage, all, readOnly, onChange }: StageFormProps)
           ))}
         </SelectContent>
       </Select>
+      {warned.has(field) ? (
+        <p
+          role="status"
+          data-testid={`approve-warn-${field}`}
+          className="col-start-2 text-caption text-warning"
+        >
+          {t(`process.admin.flow.approve.warn.${field}`, { name: stage.name || stage.key })}
+        </p>
+      ) : null}
     </div>
   );
   return (

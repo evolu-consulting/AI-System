@@ -1477,6 +1477,12 @@
     },
     "approve": {
       "default": "Bước tiếp theo",
+      "defaultReject": "Kết thúc · Từ chối",
+      "defaultReturn": "Quay về bước duyệt trước",
+      "warn": {
+        "reject": "«{{name}}»: Từ chối đang đi tiếp tới bước sau — chắc chưa?",
+        "ret": "«{{name}}»: Trả lại đang đi tiếp tới bước sau — chắc chưa?"
+      },
       "reject": "Nếu từ chối, đi tới",
       "return": "Nếu trả lại, đi tới"
     },

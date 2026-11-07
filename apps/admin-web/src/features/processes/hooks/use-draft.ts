@@ -18,6 +18,7 @@ import { type EdgeRef, insertOnEdge } from "../lib/insert-on-edge";
 /** Khoá câu lý do khi thả / chèn một bước hành động thật (Ký số) mà bước ngay trước chưa có người duyệt. */
 export const REAL_NEEDS_REVIEW = ERR_REAL_NEEDS;
 
+import { approveDefaults } from "../lib/approve-rules";
 import { duplicateCluster, removeCluster } from "../lib/module-cluster";
 import { withNodeDefaults } from "../lib/node-defaults";
 import {
@@ -122,7 +123,12 @@ function useStepMutations(ref: Ref, update: Update, select: (uid: string) => voi
     },
     /** CR-122 · P8 · chèn giai đoạn dựng sẵn vào giữa một cạnh (đích đã đánh lại bên trong `insertOnEdge`). */
     insertOnEdge: (fresh: StageDraft, e: EdgeRef): StepOpResult<StageDraft> => {
-      const r = insertOnEdge(ref.current.stages, fresh, e);
+      const r0 = insertOnEdge(ref.current.stages, fresh, e);
+      // CR-125 · x3 · node Duyệt chèn trên cạnh: mặc định Từ chối ⇒ Kết thúc · Từ chối, Trả lại ⇒ bước duyệt trước
+      const r =
+        "stages" in r0
+          ? { ...r0, stages: approveDefaults(r0.stages, fresh.uid, { back: true }) }
+          : r0;
       if ("stages" in r && newRealViolation(ref.current.stages, r.stages))
         return { error: ERR_REAL_NEEDS } as const;
       if ("stages" in r) {

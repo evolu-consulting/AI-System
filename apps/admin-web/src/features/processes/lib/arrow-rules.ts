@@ -6,6 +6,7 @@
 
 import { newRealViolation } from "@ai/contracts/hub-admin";
 import { getOutgoers } from "@xyflow/react";
+import { approveDefaults } from "./approve-rules";
 import { type ConnectError, connectPatch } from "./canvas-connect";
 import type { StageDraft } from "./draft-types";
 import { clearFree, connectToTrigger, isFree, placeAfter, placeAfterSource } from "./free-nodes";
@@ -261,7 +262,10 @@ export function applyConnect(
     i === r.index ? { ...s, ...(r.patch as Partial<StageDraft>) } : s,
   );
   if (newRealViolation(st, patched)) return { error: "real" };
-  return { stages: isolateApprovals(clearFree(patched, c.target)), field: r.field };
+  // CR-125 · x3 · node Duyệt vừa được nối: Trả lại ⇒ về bước duyệt đứng trước (vị trí đã chốt), Từ chối ⇒ Kết thúc · Từ chối nếu còn trống
+  const settled = isolateApprovals(clearFree(patched, c.target));
+  const wired = needMove ? approveDefaults(settled, c.target, { back: true }) : settled; // chỉ node VỪA thả (đứng riêng), không đè lựa chọn đã có
+  return { stages: wired, field: r.field };
 }
 
 /**

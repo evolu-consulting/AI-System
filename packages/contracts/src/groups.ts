@@ -15,6 +15,7 @@ import {
   UuidSchema,
   VersionSchema,
 } from "./common";
+import { PACK_ROLES } from "./packs";
 
 export const BETA_GROUP_KEY = "beta-testers";
 export const GROUP_KEY_RE = CATALOG_KEY_RE;
@@ -51,6 +52,15 @@ export function refineBeta<T extends z.ZodType<{ key: string; is_beta: boolean }
     path: ["is_beta"],
   });
 }
+
+/**
+ * CR-125 · x3 · MỘT nguồn cho "nhóm nào chọn làm người duyệt / người ký được": nhóm KỸ THUẬT thì không — Group thử nghiệm (`is_beta`) và Group vai của gói
+ * (`<gói>-owner|editor|viewer`, sinh khi bật gói; định nghĩa ở `PACK_ROLES`). Còn lại (phòng ban, chức danh do công ty tạo) chọn được. Không viết tên cứng ở nơi khác.
+ */
+export const isTechnicalGroup = (g: { key: string; is_beta?: boolean }): boolean =>
+  g.is_beta === true || g.key === BETA_GROUP_KEY || PACK_ROLES.some((r) => g.key.endsWith(`-${r}`));
+export const isApproverGroup = (g: { key: string; is_beta?: boolean }): boolean =>
+  !isTechnicalGroup(g);
 
 export const GroupRefSchema = refineBeta(z.strictObject(groupRefShape));
 export type GroupRef = z.infer<typeof GroupRefSchema>;

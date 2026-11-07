@@ -14,6 +14,7 @@ import { useConflictSave } from "@/components/shared/conflict/use-conflict-save"
 import { notifyBrief, notifyError, notifySuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/http";
 import { createDef, updateDef, useInvalidateDefs } from "../api";
+import { approveWarnings } from "../lib/approve-rules";
 import { autoBindArgs } from "../lib/auto-bind";
 import { type DefDraft, toDraft, toInput, validateDraft } from "../lib/def-form";
 import {
@@ -158,6 +159,9 @@ export function useDefSave({
       reportBlocked(blocked, draft.stages, d.select, t);
       return;
     }
+    // CR-125 · x3 · cảnh báo (không chặn): Từ chối / Trả lại đang đi tiếp tới bước sau, không phải Kết thúc
+    for (const w of approveWarnings(draft.stages))
+      notifyBrief(t(`process.admin.flow.approve.warn.${w.field}`, { name: w.name }));
     const body = { ...toInput(draft), ...extra } as ProcessDefInput;
     setPending(true);
     try {

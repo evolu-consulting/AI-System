@@ -5,6 +5,7 @@
 import { newRealViolation } from "@ai/contracts/hub-admin";
 import { useRef } from "react";
 import type { useTranslation } from "react-i18next";
+import { approveDefaults } from "../lib/approve-rules";
 import { applyConnect, triggerArrow } from "../lib/arrow-rules";
 import {
   type EditError,
@@ -89,9 +90,14 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
       if ("error" in r) return fail(r);
       // thả = node đứng riêng (chưa nối): luật Ký số cần bước duyệt ngay trước áp khi NỐI mũi tên / chèn trên cạnh / lưu, không áp ở điểm thả
       // KHÔNG chọn / mở ngăn chi tiết: ngăn phải đè lên canvas sẽ che đích của mũi tên (kéo nối không tới được)
+      // CR-125 · x3 · node Duyệt mới: Từ chối mặc định ⇒ Kết thúc · Từ chối (không phải "bước tiếp theo")
+      const withDefaults = fresh.reduce(
+        (st, f) => approveDefaults(st, f.uid, { back: false }),
+        r.stages,
+      );
       d.setStages(
         markFree(
-          r.stages,
+          withDefaults,
           fresh.map((f) => f.uid),
         ),
         true,

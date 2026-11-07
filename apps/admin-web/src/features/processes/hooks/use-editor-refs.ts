@@ -1,4 +1,5 @@
 // ADM-FR-66 · CR-056 · P-a F5: danh sách chọn của editor — agent đã bật, nhóm agent, Group, người dùng của tenant đang xem.
+import { isApproverGroup } from "@ai/contracts/groups";
 import type { AgentSettingsResponse, ProcessToolItem } from "@ai/contracts/hub-admin";
 import { useTranslation } from "react-i18next";
 import { useAgentSettings, useAgentUserOptions } from "@/features/agents/api";
@@ -16,6 +17,8 @@ export type EditorRefs = {
   agentKeys?: { key: string; label: string }[];
   teams: Option[];
   groups: Option[];
+  /** CR-125 · x3 · nhóm CHỌN LÀM NGƯỜI DUYỆT được (phòng ban, chức danh): bỏ nhóm kỹ thuật (`isApproverGroup`, một nguồn ở contracts). Vắng ⇒ dùng `groups`. */
+  approverGroups?: Option[];
   users: Option[];
   /** Nguồn của công ty (kind để dựng nhãn ô "Nguồn" của Tự sửa mã). */
   sources: SourceOption[];
@@ -57,6 +60,9 @@ export function useEditorRefs(tenantId: string | undefined, enabled: boolean): E
     agentKeys: agentKeysOf(settings.data?.agents ?? [], lang),
     teams: (teams.data?.items ?? []).map((x) => ({ value: `team:${x.id}`, label: x.name[lang] })),
     groups: (groups.data ?? []).map((g) => ({ value: g.id, label: pickLocalized(g.name, lang) })),
+    approverGroups: (groups.data ?? [])
+      .filter(isApproverGroup)
+      .map((g) => ({ value: g.id, label: pickLocalized(g.name, lang) })),
     users: (users.data ?? []).map((u) => ({ value: u.id, label: u.name || u.username })),
     sources: sources.data ?? [],
     teamSections: new Map(

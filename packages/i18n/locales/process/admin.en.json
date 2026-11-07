@@ -1477,8 +1477,14 @@
     },
     "approve": {
       "default": "Next step",
+      "defaultReject": "End · Rejected",
+      "defaultReturn": "Back to the previous approval",
+      "warn": {
+        "reject": "“{{name}}”: Reject continues to a later step — are you sure?",
+        "ret": "“{{name}}”: Return continues to a later step — are you sure?"
+      },
       "reject": "If rejected, go to",
-      "return": "If sent back, go to"
+      "return": "If returned, go to"
     },
     "bridge": {
       "missing": "Step “{{to}}” needs “{{key}}” but the previous step does not provide it",

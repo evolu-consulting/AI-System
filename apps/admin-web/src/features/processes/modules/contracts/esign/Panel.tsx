@@ -2,6 +2,7 @@
 // CR-122 · U2f · FLOW2-FR-25: panel cấu hình RIÊNG của node module (manifest `node.config { stage, options_path }`) — hiện cho Ký số:
 // nhà cung cấp, người ký công ty (≤ 3), đối tác ký, thứ tự, hạn, nhắc. Ô trống ⇒ "Theo cài đặt ứng dụng". Lựa chọn lấy từ `options_path`;
 // kiểm bằng `<…>/node-config/check` mỗi khi cấu hình đổi, lỗi hiện tại ô (`field`). Tổng quát theo manifest; bộ mã hoá ở `lib/node-config.ts`.
+import { isApproverGroup } from "@ai/contracts/groups";
 import {
   ESIGN_NODE_ORDERS,
   type ESignNodeCheckOut,
@@ -172,7 +173,7 @@ export function EsignPanel(p: NodePanelProps) {
     set({ company_signers: next.length > 0 ? next.slice(0, o.limits.signers_max) : undefined });
   };
   const choices = [
-    ...o.groups.map((g) => ({
+    ...o.groups.filter(isApproverGroup).map((g) => ({
       kind: "group" as const,
       id: g.id,
       label: `${t(`${K}group`)}: ${g.name}`,

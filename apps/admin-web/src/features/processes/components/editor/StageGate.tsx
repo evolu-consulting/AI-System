@@ -38,7 +38,11 @@ export function StageGate(p: StageFormProps) {
           value={stage.groupId}
           readOnly={readOnly}
           error={gErr ? t(gErr) : undefined}
-          options={withCurrent(refs.groups, stage.groupId, t("process.admin.editor.gone"))}
+          options={withCurrent(
+            refs.approverGroups ?? refs.groups,
+            stage.groupId,
+            t("process.admin.editor.gone"),
+          )}
           onChange={(v) => onChange({ groupId: v })}
         />
       ) : null}
