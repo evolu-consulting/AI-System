@@ -2,15 +2,15 @@
 // (dữ kiện HIỆN TẠI, tự lọc tenant) và `OutcomeHandler` (Đã duyệt / Từ chối / Trả lại, idempotent theo `(runId, outcome)`) đăng ký vào
 // sổ của kit — engine tra theo `(contracts, sự kiện)`. Đăng ký lại ⇒ thay (mount chạy lại vô hại).
 import type { Db, Tx } from "@ai/db";
-import { withHubScope } from "@ai/db/hub-scope";
 import { withPackScope } from "@ai/db/pack-scope";
-import { sql } from "drizzle-orm";
 import { logger } from "../../../lib/logger";
 import {
+  creatorDepartmentsOf,
   type FactsReader,
   type FlowFacts,
   moduleRegistry,
   type OutcomeHandler,
+  tenantFlowTriggersOn,
 } from "../kit/public";
 import {
   applyContractOutcome,
@@ -18,7 +18,6 @@ import {
   contractFlowRepo,
   markFlowNotLaunched,
 } from "./adapters/contract-flow.repo";
-import { creatorDepartmentsOf } from "./adapters/flow-facts.repo";
 import { applyReceivedOutcome } from "./adapters/partner-inbox.repo";
 import { type ContractFlowGate, FLOW_OFF, type FlowPrep } from "./application/contract-flow.ports";
 import {
@@ -38,14 +37,9 @@ export function contractFlowGate(db: Db): ContractFlowGate {
   return {
     async prepare(tenantId, userId): Promise<FlowPrep> {
       try {
-        const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
-          tx.execute<{ on: boolean }>(
-            sql`select exists (select 1 from hub.tenant_flow_settings
-              where tenant_id = ${tenantId}::uuid and flow_triggers) as on`,
-          ),
-        );
+        const on = await tenantFlowTriggersOn(db, tenantId);
         // Cờ tắt vẫn đọc phòng ban: app phát sự kiện để bộ điều phối ghi bóng (so với đường khe cũ), cờ chỉ quyết có mở lượt hay không.
-        return { on: r?.on === true, departments: await depts(tenantId, userId) };
+        return { on, departments: await depts(tenantId, userId) };
       } catch (e) {
         logger.warn("contract-flow-gate-failed", {
           error: e instanceof Error ? e.name : "unknown",

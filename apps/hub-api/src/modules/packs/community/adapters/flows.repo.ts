@@ -4,23 +4,13 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { Moderation, ReportAction, Screen } from "../domain/flow.rules";
-import type { JoinViewRow, ModViewRow, ReportViewRow } from "../domain/flow-view.rules";
+import type { JoinRow, ModPostRow, ReportRow } from "../domain/flow-rows.types";
+
+export type { JoinRow, ModPostRow, ReportRow } from "../domain/flow-rows.types";
 
 const arr = (ids: readonly string[]) => `{${ids.join(",")}}`;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const uuids = (ids: readonly string[]) => ids.filter((i) => UUID.test(i));
-
-export type ModPostRow = ModViewRow & {
-  type: "sell" | "buy" | "note";
-  author_org: string | null;
-  author_user_id: string;
-  author_name: string;
-  title: string;
-  title_masked: string;
-  body: string;
-  product: string | null;
-  created_at: string;
-};
 
 const MOD_COLS = sql`p.id::text as id, p.moderation, p.mod_screen, p.mod_reason, p.mod_task_id::text as mod_task_id,
   to_json(p.mod_at) #>> '{}' as mod_at, p.mod_decided_by::text as decided_by, p.mod_decided_name as decided_name, to_json(p.mod_decided_at) #>> '{}' as decided_at,
@@ -128,14 +118,6 @@ export async function decideModeration(
 }
 
 // ---- join_requests
-export type JoinRow = JoinViewRow & {
-  requester_user_id: string;
-  requester_org: string;
-  contact: string;
-  email: string;
-  reason: string;
-  labels: ("supplier" | "buyer")[];
-};
 const JOIN_COLS = sql`j.id::text as id, j.status, j.task_id::text as task_id, to_json(j.created_at) #>> '{}' as created_at, j.company, j.contact, j.email,
   j.reason, j.labels, j.requester_user_id::text as requester_user_id, j.requester_org::text as requester_org,
   j.decided_by::text as decided_by, j.decided_name, to_json(j.decided_at) #>> '{}' as decided_at, j.feedback`;
@@ -199,13 +181,6 @@ export async function decideJoin(
 }
 
 // ---- reports
-export type ReportRow = ReportViewRow & {
-  post_id: string;
-  post_title: string;
-  reporter_user_id: string;
-  reason: string;
-  created_at: string;
-};
 const REPORT_COLS = sql`r.id::text as id, r.post_id::text as post_id,
   coalesce((select case when (select packs.viewer_ext_org()) is null then p.title_raw else p.title_masked end from community.posts p where p.id = r.post_id), '') as post_title, r.reporter_user_id::text as reporter_user_id,
   r.reason, r.status, r.triage, r.triage_kind, r.triage_level, r.action, r.task_id::text as task_id, to_json(r.created_at) #>> '{}' as created_at,

@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { ApiError } from "@/lib/http";
+import { isApiError } from "@/lib/errors";
 import { useTr } from "@/lib/use-translate";
 import { type PartnerNameValues, partnerNameSchema } from "../lib/schemas";
 
@@ -40,7 +40,7 @@ export function PartnerNameDialog({ mode, initial, onSubmit, onError, onClose }:
     try {
       await onSubmit(v.name);
     } catch (err) {
-      if (err instanceof ApiError && (err.code as string) === "NAME_TAKEN") {
+      if (isApiError(err) && (err.code as string) === "NAME_TAKEN") {
         form.setError("name", { message: "partners.error.nameTaken" });
         return;
       }

@@ -4,11 +4,11 @@
 // (3) chặn đọc chéo tenant: FactsReader + OutcomeHandler của tenant khác không thấy / không đổi HĐ.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createDb, type Db } from "@ai/db";
-import { withHubScope } from "@ai/db/hub-scope";
 import { contracts, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { createPackUow } from "../../kit/adapters/pack-uow";
+import { withSystemScope } from "../../kit/testing/system-scope";
 import { actApproval, startApproval } from "../application/approval.usecase";
 import type { ContractFlowGate } from "../application/contract-flow.ports";
 import { contractsFactsReader, contractsOutcomeHandler } from "../flow-events.mount";
@@ -76,7 +76,7 @@ const apply = (
   outcome: string,
   actorId: string | null = null,
 ) =>
-  withHubScope(db, { kind: "system" }, (tx) =>
+  withSystemScope(db, { kind: "system" }, (tx) =>
     contractsOutcomeHandler().apply(tx, {
       tenantId: tenant,
       runId,

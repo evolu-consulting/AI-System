@@ -15,9 +15,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { ApiError } from "@/lib/http";
+import { isApiError } from "@/lib/errors";
 import { useTr } from "@/lib/use-translate";
-import { PARTNERS_PAGE_SIZE, useOrg, useOrgUsers } from "../api";
+import { PARTNERS_PAGE_SIZE, useOrg, useOrgUsers } from "../hooks/use-partner-data";
 import { usePartnerUserActions } from "../hooks/use-partner-user-actions";
 import { partnerUserColumns } from "./partner-user-columns";
 
@@ -42,7 +42,7 @@ function UsersTable({
     () => partnerUserColumns({ t, tr, orgActive, onAction: actions.onAction }),
     [t, tr, orgActive, actions.onAction],
   );
-  const err = list.error instanceof ApiError ? list.error : null;
+  const err = isApiError(list.error) ? list.error : null;
   return (
     <>
       <div className="mb-3 flex flex-wrap items-center gap-3">

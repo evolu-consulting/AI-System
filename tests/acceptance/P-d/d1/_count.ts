@@ -4,8 +4,7 @@
 // Bỏ câu điều khiển giao dịch (BEGIN/COMMIT/ROLLBACK/SAVEPOINT/RELEASE) và câu đặt phạm vi RLS đầu tx
 // (`select set_config('app.scope', …)` — hạ tầng scope, không phải câu của lô), câu nội bộ postgres.js nạp kiểu mảng
 // (`pg_catalog.pg_type`, một lần mỗi pool). Không chứa `it`.
-import type { HubPa } from "../../P-a/_support/pa";
-import type { Json } from "../_support/pd";
+import type { HubPa, Json } from "../../P-a/_support/pa";
 
 const TX_CTL =
   /^\s*((begin|commit|rollback|savepoint|release)\b|select set_config\('app\.scope'|select b\.oid, b\.typarray from pg_catalog\.pg_type|select "(hub_)?config_version" from "(admin|hub)"\."config_meta")/i;

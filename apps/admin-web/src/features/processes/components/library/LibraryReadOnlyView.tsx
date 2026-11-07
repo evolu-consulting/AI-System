@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FlowRowsView } from "@/features/apps/components/SlotFlowView";
 import { rowsFromSlotBody } from "@/features/apps/lib/flow-view";
 import { cloneForCompany, useLibraryView } from "@/features/tenants/flows/api";
-import { ApiError } from "@/lib/http";
+import { isApiError } from "@/lib/errors";
 import { useViewMode } from "../../hooks/use-view-mode";
 import { companySearch } from "../../lib/company-copy";
 import { processErrorSpec } from "../../lib/errors";
@@ -29,7 +29,7 @@ type Props = { tenantId: string; defId: string; fallback: ReactNode };
 
 /** Không phải quy trình thư viện (bản riêng của công ty ⇒ 422 NOT_LIBRARY_DEF; không thấy ⇒ 404) ⇒ để trình sửa/NotFound xử lý. */
 const notLibrary = (e: unknown): boolean =>
-  e instanceof ApiError && (e.status === 404 || String(e.code) === "NOT_LIBRARY_DEF");
+  isApiError(e) && (e.status === 404 || String(e.code) === "NOT_LIBRARY_DEF");
 
 function useCopyForCompany(tenantId: string, defId: string) {
   const { t } = useTranslation();

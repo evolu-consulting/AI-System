@@ -1,8 +1,12 @@
 // CR-107 · phân loại lỗi tool gói: lỗi nghiệp vụ ⇒ mã riêng ⇒ engine coi `business` (needs_decision ngay, không thử lại ~10,5');
 // lỗi khác (DB/mạng) ⇒ `UPSTREAM_ERROR` ⇒ `transient` (thử lại như cũ).
 import { describe, expect, it } from "bun:test";
-import { classifyToolError } from "../../../processes/domain/tools/tool-run.rules";
-import { PACK_TOOL_BUSINESS, PackToolBusinessError, packToolErrorCode } from "./pack-tool-error";
+import {
+  PACK_TOOL_BUSINESS,
+  PackToolBusinessError,
+  packToolErrorCode,
+} from "../../../packs/kit/domain/pack-tool-error";
+import { classifyToolError } from "./tool-run.rules";
 
 const cls = (code: string) =>
   classifyToolError({ code, httpStatus: null, sent: true, reason: null });

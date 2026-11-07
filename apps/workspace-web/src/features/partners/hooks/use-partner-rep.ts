@@ -18,6 +18,10 @@ import {
 } from "../api";
 import { noteOfLine } from "../lib/partner-v2";
 
+/** Mã lỗi API (rỗng khi không phải lỗi API) — component không import `web-kit/http`. */
+export const errCodeOf = (e: unknown): string => (e instanceof ApiError ? String(e.code) : "");
+export { refreshCompany } from "../api";
+
 /** 404 = đối tác chưa có việc/HĐ nào ở vai này để chấm — không phải lỗi. */
 export const isNotFound = (e: unknown): boolean => e instanceof ApiError && e.status === 404;
 

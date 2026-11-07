@@ -6,8 +6,8 @@
 // Danh bạ chuyển cấp đọc `admin.*` qua hub scope (như `deptHeadOf`).
 // CR-122 · E5b · hạn/nhắc: cột `esign_envelopes.due_h|remind_every_h` của phong bì MỞ đọc TRƯỚC (node Ký số đặt); trống ⇒ bước Ký số cũ.
 import type { Db, Tx } from "@ai/db";
-import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
+import { escalateTargetsOf as kitEscalateTargetsOf } from "../../kit/public";
 import { ESIGN_EXPIRE_LEASE_MIN } from "../application/esign-expire";
 import type { EsignSweepRepo, EsignSweptRow } from "../application/esign-sweep";
 import type { EsignTurnSigner } from "../domain/esign-sweep.rules";
@@ -162,25 +162,8 @@ export function esignEnvelopeSweep(
 }
 
 /** Người nhận chuyển cấp theo Group (cùng tenant): trưởng phòng của Group còn dùng được; không có ⇒ thành viên còn dùng được (≤ 50).
- *  MỘT câu cho cả lô (danh sách Group qua một tham số JSON). */
+ *  MỘT câu cho cả lô (kit đọc hộ `admin.*`). */
 export const escalateTargetsOf =
   (db: Db) =>
-  async (tenantId: string, groupIds: readonly string[]): Promise<Map<string, string[]>> => {
-    const out = new Map<string, string[]>();
-    if (groupIds.length === 0) return out;
-    const rows = await withHubScope(db, { kind: "system" }, (tx) =>
-      tx.execute<{ g: string; users: string[] | null }>(sql`
-        select g.id::text as g, coalesce(
-          (select array[u.id::text] from admin.departments dp join admin.users u on u.id = dp.head_user_id
-             and u.tenant_id = dp.tenant_id and u.active and not u.locked_by_tenant
-           where dp.tenant_id = g.tenant_id and dp.group_id = g.id limit 1),
-          array(select u.id::text from admin.group_members gm join admin.users u on u.id = gm.user_id
-              and u.tenant_id = gm.tenant_id and u.active and not u.locked_by_tenant
-            where gm.tenant_id = g.tenant_id and gm.group_id = g.id order by u.id limit ${MEMBERS_MAX}::int)) as users
-        from admin.groups g
-        where g.tenant_id = ${tenantId}::uuid
-          and g.id = any(array(select jsonb_array_elements_text(${JSON.stringify(groupIds)}::jsonb))::uuid[])`),
-    );
-    for (const r of rows) out.set(r.g, r.users ?? []);
-    return out;
-  };
+  (tenantId: string, groupIds: readonly string[]): Promise<Map<string, string[]>> =>
+    kitEscalateTargetsOf(db)(tenantId, groupIds, MEMBERS_MAX);

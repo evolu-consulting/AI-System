@@ -12,6 +12,13 @@ import {
   voidEvent,
 } from "../api";
 
+/** Sự kiện sổ của một đối tác (khối cờ đỏ ở Hồ sơ đối tác). */
+export const usePartnerEvents = (party: string) =>
+  useQuery({
+    queryKey: ledgerKeys.events(party),
+    queryFn: ({ signal }) => fetchPartnerEvents(party, signal),
+  });
+
 /** Đối tác của HĐ (khối "Ghi việc với …" cuối trang HĐ). */
 export function useContractPartner(contractId: string, enabled: boolean) {
   return useQuery({

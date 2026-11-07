@@ -4,6 +4,9 @@ import type { HubAdminErrorCode } from "@ai/contracts/hub-admin";
 import { formatClock } from "./format";
 import { ApiError } from "./http";
 
+/** Kiểm lỗi từ API (component không import `lib/http`). */
+export const isApiError = (e: unknown): e is ApiError => e instanceof ApiError;
+
 export type MessageSpec = { key: string; params?: Record<string, string | number> };
 
 /** Mọi key tĩnh mà `describeError` có thể trả về (test FE2 kiểm tồn tại trong vi.json/en.json). */

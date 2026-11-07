@@ -5,13 +5,13 @@ import {
   type PartnerRole,
   SEVERE_EVENT_TYPES,
 } from "@ai/contracts/pack-contracts";
-import { useQuery } from "@tanstack/react-query";
+
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { ErrorLine, Loading } from "~/components/shared/states";
-import { fetchPartnerEvents, ledgerKeys } from "~/features/ledger/api";
-import { useLedgerWrites } from "~/features/ledger/hooks/use-ledger";
+
+import { useLedgerWrites, usePartnerEvents } from "~/features/ledger/hooks/use-ledger";
 import { useAskVoid } from "~/features/ledger/hooks/use-void";
 import { isSevere, today } from "~/features/ledger/lib/ledger";
 import { useAct } from "~/features/ledger/lib/use-act";
@@ -153,10 +153,7 @@ export function FlagPanel({
   const { write, owner } = useMe();
   const { act, err, busy } = useAct();
   const askVoid = useAskVoid(act);
-  const q = useQuery({
-    queryKey: ledgerKeys.events(party),
-    queryFn: ({ signal }) => fetchPartnerEvents(party, signal),
-  });
+  const q = usePartnerEvents(party);
   const rows = (q.data ?? [])
     .filter((e) => isSevere(e.type))
     .slice()

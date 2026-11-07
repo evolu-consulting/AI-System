@@ -3,10 +3,9 @@
 // trạng thái sang `sending` (finalize chạy lại / hai instance không gửi hai phong bì). Danh bạ (trưởng phòng, thành viên có quyền gói)
 // đọc `admin.*` qua hub scope như `manage.members`.
 import type { Db, Tx } from "@ai/db";
-import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { PackWho } from "../../kit/public";
-import { type PackAccessView, packAccessInput } from "../../kit/public";
+import { activeMembersAmong, type PackAccessView, packAccessInput } from "../../kit/public";
 import {
   ESIGN_SENDING_STALE_MIN,
   type EsignFlowCurrent,
@@ -73,16 +72,8 @@ export function esignFlowRepo(tx: Tx, t: string): EsignFlowRepo {
   };
 }
 
-/** Trưởng phòng của Group (cùng tenant); không phòng/không trưởng ⇒ null. */
-export const deptHeadOf =
-  (db: Db) =>
-  async (tenantId: string, groupId: string): Promise<string | null> => {
-    const rows = await withHubScope(db, { kind: "system" }, (tx) =>
-      tx.execute<{ h: string | null }>(sql`select d.head_user_id as h from admin.departments d
-        where d.tenant_id = ${tenantId}::uuid and d.group_id = ${groupId}::uuid limit 1`),
-    );
-    return rows[0]?.h ?? null;
-  };
+/** Trưởng phòng của Group (cùng tenant); không phòng/không trưởng ⇒ null. Kit đọc hộ (`admin.*`). */
+export { activeUserOf, deptHeadOf } from "../../kit/public";
 
 /** Người trong `ids` là thành viên tenant còn dùng được VÀ thuộc Group được quyền `write` gói (MỘT câu; ngoài tenant ⇒ không có). */
 export function packWriters(db: Db, view: PackAccessView, packKey: string) {
@@ -91,27 +82,6 @@ export function packWriters(db: Db, view: PackAccessView, packKey: string) {
     const i = await packAccessInput(view, packKey, who);
     const groups = i.entitled && !i.featureOff ? i.grantedByAction.write : [];
     if (groups.length === 0) return new Set();
-    const rows = await withHubScope(
-      db,
-      { kind: "user", tenantId: who.tenantId, userId: who.userId },
-      (tx) =>
-        tx.execute<{ id: string }>(sql`select u.id from admin.users u
-        where u.tenant_id = ${who.tenantId}::uuid and u.active and not u.locked_by_tenant
-          and u.id = any(array(select jsonb_array_elements_text(${JSON.stringify(ids)}::jsonb))::uuid[])
-          and exists (select 1 from admin.group_members gm where gm.tenant_id = u.tenant_id and gm.user_id = u.id
-            and gm.group_id = any(array(select jsonb_array_elements_text(${JSON.stringify(groups)}::jsonb))::uuid[]))`),
-    );
-    return new Set(rows.map((r) => r.id));
+    return activeMembersAmong(db, who, ids, groups);
   };
 }
-
-/** esign-flow-fix · user còn dùng được của tenant (active, không bị khoá) — người ký công ty kiểm lại ngay trước khi gửi. */
-export const activeUserOf =
-  (db: Db) =>
-  async (tenantId: string, userId: string): Promise<boolean> => {
-    const rows = await withHubScope(db, { kind: "system" }, (tx) =>
-      tx.execute<{ id: string }>(sql`select id from admin.users
-        where tenant_id = ${tenantId}::uuid and id = ${userId}::uuid and active and not locked_by_tenant`),
-    );
-    return rows.length === 1;
-  };

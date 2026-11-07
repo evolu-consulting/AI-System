@@ -18,9 +18,9 @@ import { type Context, Hono } from "hono";
 import { parseIdParam, parseWith, readJson } from "../../../../lib/http";
 import type { PackGuardVars } from "../../kit/public";
 import { awaitingReview } from "../domain/flow.rules";
+import type { JoinRow, ModPostRow, ReportRow } from "../domain/flow-rows.types";
 import { accessOf } from "./community-access";
 import type { CommunityDeps } from "./community-deps";
-import type { JoinRow, ModPostRow, ReportRow } from "./flows.repo";
 import * as svc from "./flows.service";
 
 const modItem = (r: ModPostRow, now: number): ModerationItem => ({

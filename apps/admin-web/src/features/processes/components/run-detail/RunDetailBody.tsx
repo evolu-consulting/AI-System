@@ -7,8 +7,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifySuccess } from "@/components/shared/toast";
 import { cn } from "@/lib/utils";
-import { useRun } from "../../api";
 import type { ProcessTenant } from "../../hooks/use-process-tenant";
+import { useRun } from "../../hooks/use-run-live";
 import { companySearch } from "../../lib/company-copy";
 import {
   type ControlRole,

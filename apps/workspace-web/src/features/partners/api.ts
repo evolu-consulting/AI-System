@@ -32,13 +32,13 @@ import type {
   ScoringDraft,
 } from "@ai/contracts/pack-contracts";
 import { api } from "@ai/web-kit/http";
-import { wireOf } from "./lib/contacts";
+import { type PartnerContactDraft, wireOf } from "./lib/contacts";
 
 const BASE = "/pack/contracts";
 const enc = encodeURIComponent;
 
 /** Một người liên hệ khi lưu (chưa có `id`; thứ tự mảng = thứ tự hiển thị). */
-export type PartnerContactDraft = Omit<PartnerContactPerson, "id">;
+export type { PartnerContactDraft } from "./lib/contacts";
 
 export const partnerKeys = {
   list: (role: PartnerRole | "all") => ["partners", "list", role] as const,

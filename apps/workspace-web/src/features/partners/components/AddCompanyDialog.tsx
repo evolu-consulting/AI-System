@@ -1,7 +1,7 @@
 // GAP-D2 · #23: hộp "Thêm công ty" ở trang Đối tác — gõ MST ⇒ máy chủ tra Cục Thuế (CHỈ gửi MST) rồi lưu vào danh bạ công ty; hiện
 // tên/địa chỉ/trạng thái theo Cục Thuế. Cục Thuế chưa tra được ⇒ mời nhập tên (và địa chỉ) để lưu trước, sau tra lại được.
 import type { Company } from "@ai/contracts/pack-contracts";
-import { ApiError } from "@ai/web-kit/http";
+
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -12,8 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { refreshCompany } from "../api";
-import { useCreateCompany } from "../hooks/use-partner-rep";
+
+import { errCodeOf, refreshCompany, useCreateCompany } from "../hooks/use-partner-rep";
 import { type CompanyErr, companyErrKey, normalizeTax } from "../lib/company";
 
 function Result({ c, onRefresh, busy }: { c: Company; onRefresh: () => void; busy: boolean }) {
@@ -65,7 +65,7 @@ export function AddCompanyDialog({ onClose }: { onClose: () => void }) {
     create.mutate(body, {
       onSuccess: setDone,
       onError: (e) => {
-        const k = companyErrKey(e instanceof ApiError ? String(e.code) : "");
+        const k = companyErrKey(errCodeOf(e));
         if (k === "unavailable") setNeedName(true);
         setErr(k);
       },
@@ -77,7 +77,7 @@ export function AddCompanyDialog({ onClose }: { onClose: () => void }) {
       setDone(await refreshCompany(party));
       setErr(null);
     } catch (e) {
-      setErr(companyErrKey(e instanceof ApiError ? String(e.code) : ""));
+      setErr(companyErrKey(errCodeOf(e)));
     } finally {
       setRefreshing(false);
     }

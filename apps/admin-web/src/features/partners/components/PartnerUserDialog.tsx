@@ -19,8 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { describeError } from "@/lib/errors";
-import { ApiError } from "@/lib/http";
+import { describeError, isApiError } from "@/lib/errors";
+
 import { useTr } from "@/lib/use-translate";
 import { type PartnerUserValues, partnerUserSchema } from "../lib/schemas";
 
@@ -57,7 +57,7 @@ export function PartnerUserDialog({ onSubmit, onError, onClose }: Props) {
     try {
       await onSubmit({ ...v, email: v.email === "" ? null : v.email });
     } catch (err) {
-      const field = err instanceof ApiError ? FIELD_BY_CODE[err.code] : undefined;
+      const field = isApiError(err) ? FIELD_BY_CODE[err.code] : undefined;
       if (field) {
         const spec = describeError(err);
         form.setError(field, { message: spec.key });

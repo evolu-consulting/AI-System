@@ -18,6 +18,19 @@ export {
 } from "./adapters/node-config-registry";
 export type { PackBell } from "./adapters/pack-bell";
 export { packBell } from "./adapters/pack-bell";
+export type { DirectoryRow } from "./adapters/pack-directory";
+export {
+  activeMembersAmong,
+  activeUserOf,
+  CREATOR_DEPARTMENTS_SQL,
+  companyGroups,
+  creatorDepartmentsOf,
+  deptHeadOf,
+  directoryRows,
+  escalateTargetsOf,
+  internalMembersOfGroups,
+  tenantFlowTriggersOn,
+} from "./adapters/pack-directory";
 export type { PackFileboxClient } from "./adapters/pack-files.filebox";
 export { createPackFiles, packFilesRepo } from "./adapters/pack-files.filebox";
 export { packFilesRoutes } from "./adapters/pack-files.routes";
