@@ -16,8 +16,9 @@ const SQL = readFileSync(
   ),
   "utf8",
 );
+// CR-122 p17 · 0069 bất biến vẫn ghi khoá cũ `contract-id`; hub 0112/0114 đổi thành `contract_id` ⇒ so với builder sau phép đổi đó.
 const jsonLits = [...SQL.matchAll(/'(\[\{.*?\}\]|\{"steps".*?\})'::jsonb/g)].map((m) =>
-  JSON.parse((m[1] as string).replaceAll("''", "'")),
+  JSON.parse((m[1] as string).replaceAll("''", "'").replaceAll('"contract-id"', '"contract_id"')),
 );
 
 describe("CR-105 · seed 0069", () => {

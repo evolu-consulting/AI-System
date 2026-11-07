@@ -91,6 +91,37 @@ describe("CR-122 p17 · hub 0112 contract-id → contract_id", () => {
     expect(JSON.stringify(rel?.stages)).toContain("(contract-id)");
   });
 
+  it("DB mới (đủ migration): def mặc định của khe contracts.* khai input contract_id khớp args (không lệch)", async () => {
+    const rows = await o<
+      { slot: string; inp: string; st: string }[]
+    >`select slot, inputs::text as inp, stages::text as st
+      from hub.process_defs where slot in ('contracts.approval', 'contracts.intake') and tenant_id is null`;
+    expect(rows.map((r) => r.slot).sort()).toEqual(["contracts.approval", "contracts.intake"]);
+    for (const r of rows) {
+      expect(r.inp).toContain('"contract_id"');
+      expect(r.inp).not.toContain('"contract-id"');
+      expect(r.st).not.toContain('"contract-id"');
+    }
+  });
+
+  it("hub 0114 (sửa lỗi LIKE `_` của 0112): input cũ còn sót được đổi, khai cả hai khoá / dlc giữ nguyên, chạy lại vô hại", async () => {
+    const fix = readFileSync(
+      join(
+        import.meta.dir,
+        "../../../../../../packages/db/migrations-hub/0114_contract_id_inputs_fix.sql",
+      ),
+      "utf8",
+    );
+    const both = [...OLD_INPUTS, { ...OLD_INPUTS[0], key: "contract_id" }];
+    await o`update hub.process_defs set inputs = ${o.json(OLD_INPUTS as never)} where id = ${id["p17-draft"] as string}`;
+    await o`update hub.process_defs set inputs = ${o.json(both as never)} where id = ${id["p17-company"] as string}`;
+    await o.unsafe(fix);
+    await o.unsafe(fix);
+    expect((await defOf("p17-draft"))?.inputs).toEqual([{ ...OLD_INPUTS[0], key: "contract_id" }]);
+    expect((await defOf("p17-company"))?.inputs).toEqual(both);
+    expect((await defOf("p17-dlc"))?.inputs).toEqual(OLD_INPUTS);
+  });
+
   it("snapshot lượt đang chạy và def dlc.* không đổi", async () => {
     const [run] = await o<
       { snapshot: unknown; inputs: unknown }[]
