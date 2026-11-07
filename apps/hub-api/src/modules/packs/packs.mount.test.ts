@@ -3,7 +3,26 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { createModuleRegistry } from "./kit/public";
+import { mountedApps, verifyPackModules } from "./packs.modules-check";
 import { pkdemoEnabled } from "./packs.mount";
+
+describe("CR-125 m2 · MOD-FR-02 · verifyPackModules cuối mount", () => {
+  const none = () =>
+    createModuleRegistry({
+      flow: { registerFactsReader: () => undefined, registerOutcomeHandler: () => undefined },
+      nodes: { register: () => undefined, registerTool: () => undefined },
+    });
+  it("binding Ký số / sự kiện bị gỡ ⇒ ném câu «Khởi động dừng» + MOD_UNBOUND tiếng Việt", () => {
+    expect(() => verifyPackModules(["core", "contracts", "community"], none())).toThrow(
+      /^Khởi động dừng: \d+ lỗi module[\s\S]*\[MOD_UNBOUND\] Node «Ký số» \(contracts\.esign\) chưa có xử lý máy chủ/,
+    );
+  });
+  it("chỉ gắn core (không DB) ⇒ không đòi binding app", () => {
+    expect(() => verifyPackModules(mountedApps({}), none())).not.toThrow();
+    expect(mountedApps({ packs: { contracts: false } })).toEqual(["core"]);
+  });
+});
 
 const ROOT = join(import.meta.dir, "../../../../..");
 

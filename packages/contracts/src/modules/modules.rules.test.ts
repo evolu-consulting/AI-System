@@ -181,6 +181,13 @@ describe("moduleIssues (MOD-FR-01/04/10)", () => {
       ),
     ).toEqual(["MOD_ORPHAN_BINDING"]);
   });
+  test("MOD_ORPHAN_BINDING: khoá node không có dấu chấm ⇒ app «unknown»", () => {
+    const m: FeatureModule = { app: "demo", events: [], nodes: [] };
+    const out = moduleIssues([m], bound({ nodes: new Map([["nodot", { tools: [] }]]) }));
+    expect(out.map((i) => [i.code, i.app, i.key])).toEqual([
+      ["MOD_ORPHAN_BINDING", "unknown", "nodot"],
+    ]);
+  });
   test("withEvents ghép sự kiện của manifest vào module cùng app", () => {
     const mods = withEvents(MODULES, Object.values(APP_MANIFESTS));
     expect(mods.find((x) => x.app === "contracts")?.events.length).toBeGreaterThan(0);

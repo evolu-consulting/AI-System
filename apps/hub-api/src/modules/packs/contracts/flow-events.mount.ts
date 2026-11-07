@@ -9,7 +9,7 @@ import { logger } from "../../../lib/logger";
 import {
   type FactsReader,
   type FlowFacts,
-  flowPortRegistry,
+  moduleRegistry,
   type OutcomeHandler,
 } from "../kit/public";
 import {
@@ -101,7 +101,9 @@ export function contractsOutcomeHandler(): OutcomeHandler<Tx> {
 
 /** Gọi MỘT lần lúc mount gói Hợp đồng; trả cổng cờ cho các use case bắn sự kiện. */
 export function mountContractFlow(db: Db): ContractFlowGate {
-  flowPortRegistry.registerFactsReader(contractsFactsReader(db));
-  flowPortRegistry.registerOutcomeHandler(contractsOutcomeHandler());
+  moduleRegistry.bindEvent({
+    facts: contractsFactsReader(db),
+    outcome: contractsOutcomeHandler(),
+  }); // CR-125 · m2 · đăng ký hộ `flowPortRegistry` (hành vi không đổi)
   return contractFlowGate(db);
 }

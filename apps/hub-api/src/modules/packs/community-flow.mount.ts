@@ -10,10 +10,10 @@ import { type AgentCaller, createAgentCaller } from "../../lib/ai-client/agent-c
 import { createHubAiClient, type TenantLimitsOf } from "../../lib/ai-client/ai-client.env";
 import type { Redis } from "../../lib/redis";
 import { agentSpecOf } from "../agents/agent-spec.service";
-import { registerFactsReader, registerOutcomeHandler } from "../processes/adapters/runs/flow-ports";
 import { flowTriggersOn } from "../processes/triggers/flags";
 import type { CommunityFlowOpts } from "./community/community.mount";
 import { SLOT_MODERATION } from "./community/domain/flow.rules";
+import { moduleRegistry } from "./kit/public";
 
 /** Agent `community-screen`/`community-triage` qua AI client chung (trần token/usage theo tenant). */
 export function communityAgents(
@@ -32,8 +32,9 @@ export function communityFlowPorts(db: Db, agents: AgentCaller | undefined): Com
     triggersOn: (tenantId) =>
       withHubScope(db, { kind: "system" }, (tx) => flowTriggersOn(tx, tenantId)),
     registerPorts: ({ readers, handler }) => {
-      for (const r of readers) registerFactsReader(r);
-      registerOutcomeHandler(handler);
+      for (const r of readers) moduleRegistry.bindEvent({ facts: r });
+      moduleRegistry.bindEvent({ outcome: handler });
+      moduleRegistry.bindNode({ key: "community.show-post" }); // CR-125 · m2 · Hiện bài = kết quả `shown` do handler trên xử lý
     },
     moderationOn: async (tenantId) => {
       // CR-122: flow gán qua `company_flows` (sự kiện `post.created`, đang bật) + cờ FLOW_TRIGGERS bật ⇒ bài vào "Chờ duyệt" để flow quyết.

@@ -5,10 +5,10 @@
 import { ESignSignerSchema } from "@ai/contracts/pack-contracts";
 import type { Db, Tx } from "@ai/db";
 import type { PackRunsBridge, PackToolDef, SlotSpec } from "../kit/public";
-import { createPackUow, slotRegistry } from "../kit/public";
+import { createPackUow, moduleRegistry, slotRegistry } from "../kit/public";
 import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
-import { intakeTools } from "./adapters/intake.tools";
+import { INTAKE_TOOL_KEYS, intakeTools } from "./adapters/intake.tools";
 import { contractLabelOf, signInviteBell } from "./application/esign-flow.usecase";
 import type { ESignEvent } from "./domain/esign-event.rules";
 import type { ESignModule } from "./esign.mount";
@@ -84,6 +84,13 @@ export function mountIntake(
   slotRegistry.register(intakeSlotSpec);
   const { tools, bindCompleted } = intakeWiring(db, d.esign);
   for (const t of tools) d.packTools?.register(t);
+  // CR-125 · m2 · sổ module: tool bước + node Ký số (gửi ký = `contracts-esign-send`; cổng cấu hình nối ở m4)
+  for (const t of tools) moduleRegistry.bindTool(t);
+  moduleRegistry.bindNode({
+    key: "contracts.esign",
+    tools: [INTAKE_TOOL_KEYS.esignSend],
+    optionsPath: "/pack/contracts/esign/options",
+  });
   // CR-122 E3 · bắn đúng khoá theo trạng thái cuối (đã ký / từ chối / huỷ). Webhook + vòng đồng bộ trùng ⇒ `signalEvent` chỉ thả
   // stage đang chờ một lần (khoá run; lần sau stage đã xong ⇒ không còn chờ khoá đó).
   bindCompleted(async (tenantId, contractId, event) => {

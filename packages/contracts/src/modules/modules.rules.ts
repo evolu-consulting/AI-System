@@ -219,7 +219,8 @@ function orphanIssues(bound: BoundSummary, d: Dups, out: ModuleIssue[]): void {
       ),
     );
   for (const key of bound.nodes.keys())
-    if (!d.nodeOwner.has(key)) orphan(key.split(".")[0] ?? "", key, "node");
+    if (!d.nodeOwner.has(key))
+      orphan(key.includes(".") ? (key.split(".")[0] ?? "unknown") : "unknown", key, "node"); // khoá không có dấu chấm ⇒ app "unknown"
   for (const k of new Set([...bound.facts, ...bound.outcomes])) {
     if (d.eventKeys.has(k)) continue;
     const [app = "", ev = ""] = k.split(sep);

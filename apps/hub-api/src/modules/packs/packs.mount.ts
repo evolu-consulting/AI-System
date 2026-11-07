@@ -63,6 +63,7 @@ import {
 } from "./kit/public";
 import { afterPacksMounted } from "./packs.after-mount";
 import { fileboxClients, type PackFb, packFilebox } from "./packs.filebox";
+import { mountedApps, verifyPackModules } from "./packs.modules-check";
 import { envInt, tenantLimits, tenantTz } from "./packs.tenant-config";
 import { PKDEMO_KEY, pkdemoModule } from "./pkdemo/pkdemo.mount";
 
@@ -145,7 +146,8 @@ export function mountPacks<E extends Env>(app: Hono<E>, d: PacksMountDeps): Pack
     app.route(`${PACK_PREFIX}/${DLC_PACK}`, dlcRoutes(d.db, d.packRuns)); // dlc-chat-review · nội dung bước cho modal duyệt
     setChatUsageSink(chatUsageSink(d.db)); // M3 Â· usage chat (M2) â‡’ báº£ng usage chung cá»§a AI client
   }
-  afterPacksMounted(d); // Security L1 tool trùng catalog + CR-120 khe manifest thiếu SlotSpec/adapter
+  verifyPackModules(mountedApps(d)); // CR-125 m2 · khai báo module × binding máy chủ; thiếu ⇒ ném
+  afterPacksMounted(d); // Security L1tool trùng catalog + CR-120 khe manifest thiếu SlotSpec/adapter
   return view;
 }
 

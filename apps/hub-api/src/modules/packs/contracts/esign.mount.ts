@@ -9,12 +9,7 @@ import type { Db, Tx } from "@ai/db";
 import type { Env, Hono } from "hono";
 import { logger } from "../../../lib/logger";
 import type { PackAccessView, PackGuardVars, PackWho, PdfConverter } from "../kit/public";
-import {
-  createPackUow,
-  createPdfConverter,
-  nodeConfigRegistry,
-  selfContactOf,
-} from "../kit/public";
+import { createPackUow, createPdfConverter, moduleRegistry, selfContactOf } from "../kit/public";
 import { fileboxClients, packFilebox } from "../packs.filebox";
 import { docusignProvider } from "./adapters/docusign.provider";
 import { esignRepo, tenantOfEnvelope } from "./adapters/esign.repo";
@@ -141,7 +136,10 @@ export function esignModule(
   });
   // CR-122 · E5b · lưu def có node Ký số ⇒ server tự kiểm cấu hình (validator theo node, `processes/defs` gọi).
   // E5d · theo KHOÁ TOOL (không chỉ theo node): def gọi thẳng `contracts-esign-send` không mang `node` cũng bị kiểm.
-  nodeConfigRegistry.registerTool(INTAKE_TOOL_KEYS.esignSend, esignNodeValidator(u.checkNode));
+  moduleRegistry.bindNode({
+    key: "contracts.esign",
+    toolValidators: { [INTAKE_TOOL_KEYS.esignSend]: esignNodeValidator(u.checkNode) },
+  }); // CR-125 · m2 · đăng ký hộ `nodeConfigRegistry.registerTool` (hành vi không đổi)
   // esign-flow-fix · quyền ghi gói của người ký (cổng quyền cần cache cấu hình ⇒ gắn sau ở `packs.mount`).
   let writers: Writers | null = null;
   const active = activeUserOf(db);

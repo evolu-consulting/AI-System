@@ -8,6 +8,7 @@ export { flowPortRegistry } from "./adapters/flow-port-registry";
 export { packMeRoutes } from "./adapters/me.route";
 export { memberNamesOf, selfContactOf } from "./adapters/member-names";
 export { packMembersRoutes } from "./adapters/members.route";
+export { createModuleRegistry, moduleRegistry } from "./adapters/module-registry";
 export {
   constToolArgs,
   type NodeConfigIssue,
@@ -60,6 +61,12 @@ export type {
   OutcomeResult,
 } from "./application/flow-events.ports";
 export type { KitTxRepos } from "./application/index-outbox";
+export type {
+  EventBinding,
+  ModuleRegistry,
+  ModuleVerifyOpts,
+  NodeBinding,
+} from "./application/module.ports";
 export type { Notifier, NotifyInput, NotifyTxRepos } from "./application/notify";
 export { orgForTenant } from "./application/pack-files.ports";
 export type { PackNavCap, PackNavRegistry, PackNavSource } from "./application/pack-nav.ports";
