@@ -1,6 +1,6 @@
 // CR-124 · q4 · FLOW4-FR-06/16 · API màn hình «Hợp đồng đối tác» của app Hợp đồng (`/pack/contracts/partner/*`):
 //   GET  /partner/inbox                    — hộp «Hợp đồng đối tác gửi» + lời mời nối đang chờ (quyền read)
-//   POST /partner/invites/:from/accept|block — nhận / chặn công ty gửi (quyền write)
+//   POST /partner/invites/:from/accept|block — nhận / chặn công ty gửi (quyền admin: quyết định của CÔNG TY, không phải của người dùng)
 //   GET  /partner/sends/:contractId        — các vòng gửi của HĐ phía bên gửi (read)
 //   POST /partner/sends/:mailboxId/record  — «Ghi nhận kết quả đối tác» (write; chỉ lần gửi MỞ của HĐ người gọi thấy được)
 //   GET/PUT /partner/settings              — ngưỡng mức quan trọng + người phụ trách HĐ nhận (admin)
@@ -85,7 +85,7 @@ export function partnerModule(db: Db, view: PackAccessView): Hono<PackGuardVars>
     }));
     return c.json(out, 200);
   });
-  r.post("/partner/invites/:from/:act", packGuard(view, KEY, "write"), async (c) => {
+  r.post("/partner/invites/:from/:act", packGuard(view, KEY, "admin"), async (c) => {
     const from = parseWith(UUID, c.req.param("from"));
     const act = parseWith(z.enum(["accept", "block"]), c.req.param("act"));
     try {
@@ -122,7 +122,13 @@ export function partnerModule(db: Db, view: PackAccessView): Hono<PackGuardVars>
   );
   r.put("/partner/settings", packGuard(view, KEY, "admin"), async (c) => {
     const b = parseWith(SettingsBody, await readJson(c));
-    await uow.tenant(who(c), (x) => x.ui.saveSettings(b, c.get("user").userId));
+    const saved = await uow.tenant(who(c), (x) => x.ui.saveSettings(b, c.get("user").userId));
+    if (!saved)
+      throw new AppError(
+        "PARTNER_OWNER_INVALID",
+        422,
+        "Người phụ trách phải là thành viên đang dùng của công ty — chọn lại trong danh sách.",
+      );
     return c.json({ ok: true }, 200);
   });
   return r;

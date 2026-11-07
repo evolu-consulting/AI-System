@@ -16,4 +16,9 @@ SELECT packs.secure_table('contracts', 'partner_settings');
 --> statement-breakpoint
 REVOKE DELETE ON contracts.partner_settings FROM contracts_rw;
 --> statement-breakpoint
-GRANT EXECUTE ON FUNCTION hub.partner_link_invites() TO contracts_rw;
+DO $$
+BEGIN
+  IF to_regprocedure('hub.partner_link_invites()') IS NOT NULL AND to_regprocedure('hub.partner_is_member(uuid)') IS NOT NULL THEN
+    GRANT EXECUTE ON FUNCTION hub.partner_link_invites(), hub.partner_is_member(uuid) TO contracts_rw;
+  END IF;
+END $$;

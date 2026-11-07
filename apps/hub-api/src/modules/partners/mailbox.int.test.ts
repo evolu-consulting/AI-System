@@ -99,7 +99,8 @@ describe("CR-124 q1 · NFR-01 cách ly hộp thư", () => {
   });
 
   it("kênh nền tảng chỉ khi bên nhận đã chấp nhận nối (chưa nối / đã chặn ⇒ 42501)", async () => {
-    expect(await pgCode(() => as(C, UA, (tx) => send(tx, C, B)))).toBe("42501");
+    // q4: chưa có dòng nối ⇒ GIỮ (bên gửi không phân biệt được với chặn trước); không lộ việc đã/chưa bị chặn.
+    expect(await pgCode(() => as(C, UA, (tx) => send(tx, C, B)))).toBeNull();
     // q4 (hub 0122): B chặn TRƯỚC khi A xin ⇒ lần gửi được GIỮ im lặng (không lộ việc bị chặn), không tới B.
     expect(await pgCode(() => as(A, UA, (tx) => send(tx, A, C)))).toBeNull();
     const [held] = await o<

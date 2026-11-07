@@ -2,12 +2,14 @@
 // (2) ngưỡng mức + người phụ trách theo công ty nhận; (3) hộp thư/lời mời nối đọc qua API repo; (4) «Ghi nhận kết quả» chỉ cho lần gửi MỞ của chính công ty gửi.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createDb, type Db } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
 import { contracts, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, inPack, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { createPackUow } from "../kit/adapters/pack-uow";
 import type { PackToolCtx } from "../kit/public";
 import { esignRepo } from "./adapters/esign.repo";
+import { reviewerReason } from "./adapters/partner-inbox.repo";
 import { partnerSendRepo } from "./adapters/partner-send.repo";
 import { partnerSendTool } from "./adapters/partner-send.tool";
 import { partnerUiRepo } from "./adapters/partner-ui.repo";
@@ -156,7 +158,61 @@ describe("CR-124 q4 · mẫu Thư viện nhận (hub 0121)", () => {
   });
 });
 
+describe("CR-124 q4 · lý do gửi đối tác chỉ lấy từ bước quyết", () => {
+  /** Dựng lượt chạy giả (FK tắt bằng replica role — chỉ để kiểm câu đọc lý do): mỗi bước = [decision, feedback]. */
+  async function fakeRun(steps: [string, string | null][]): Promise<string> {
+    const run = crypto.randomUUID();
+    await o.begin(async (tx) => {
+      await tx`set local session_replication_role = replica`;
+      await tx`insert into hub.process_runs (id, tenant_id, process_def_id, def_version, snapshot, started_by, origin_kind, input,
+        conversation_id, flow_id, expires_at) values (${run}, ${B}, ${crypto.randomUUID()}, 1, '{}'::jsonb, ${UB}, 'admin', 'x',
+        ${crypto.randomUUID()}, ${crypto.randomUUID()}, now() + interval '1 day')`;
+      for (const [i, [decision, feedback]] of steps.entries()) {
+        const sr = crypto.randomUUID();
+        const out = crypto.randomUUID();
+        await tx`insert into hub.stage_runs (id, tenant_id, process_run_id, stage_idx, status, feedback, current_output_id)
+          values (${sr}, ${B}, ${run}, ${i}, 'done', ${feedback}, ${out})`;
+        await tx`insert into hub.process_outputs (id, tenant_id, process_run_id, stage_run_id, stage_idx, version, attempt, content, fields, template_ok)
+          values (${out}, ${B}, ${run}, ${sr}, ${i}, 1, 1, 'x', ${tx.json({ decision } as never)}, true)`;
+      }
+    });
+    return run;
+  }
+  const read = (run: string, outcome: "declined" | "returned") =>
+    withHubScope(db, { kind: "system" }, (tx) => reviewerReason(tx, B, run, outcome));
+
+  it("Từ chối: lấy góp ý của bước Từ chối, KHÔNG lấy ghi chú nội bộ của người duyệt trước (đã Đạt)", async () => {
+    const run = await fakeRun([
+      ["approved", "ghi chú nội bộ của Kế toán"],
+      ["rejected", "Điều khoản 3 chưa phù hợp"],
+    ]);
+    expect(await read(run, "declined")).toBe("Điều khoản 3 chưa phù hợp");
+  });
+  it("bước quyết không có góp ý ⇒ null (không lùi về ghi chú của bước trước)", async () => {
+    const run = await fakeRun([
+      ["approved", "ghi chú nội bộ của Kế toán"],
+      ["returned", null],
+    ]);
+    expect(await read(run, "returned")).toBeNull();
+    expect(await read(run, "declined")).toBeNull();
+  });
+});
+
 describe("CR-124 q4 · cài đặt nhận theo công ty", () => {
+  it("người phụ trách không thuộc công ty ⇒ không lưu (hàm DEFINER, một EXISTS)", async () => {
+    const save = (owner: string | null) =>
+      uow().tenant({ tenantId: B, userId: UB }, (x) =>
+        x.ui.saveSettings(
+          { important_min: 100_000_000, critical_min: 500_000_000, owner_user_id: owner },
+          UB,
+        ),
+      );
+    expect(await save(UA)).toBe(false); // UA thuộc công ty A
+    expect(await save(crypto.randomUUID())).toBe(false);
+    expect(await save(UB)).toBe(true);
+    expect(await save(null)).toBe(true);
+  });
+
   it("ngưỡng riêng + người phụ trách: 600 triệu với ngưỡng Rất quan trọng 500 triệu ⇒ critical, owner = người được đặt", async () => {
     await uow().tenant({ tenantId: B, userId: UB }, (x) =>
       x.ui.saveSettings(

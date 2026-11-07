@@ -3,7 +3,7 @@ id: cr124-q4-ui
 lát: cr124-q4-ui
 cr: CR-124
 làn: đầy đủ (RLS/tenant: hold/release hộp thư, cài đặt nhận, API ghi nhận thủ công)
-migration: admin 0039 (when 1806900000000) · hub 0122 (1806900400000) + 0121 (1806900300000) · contracts pack 0087 (1806900100000)
+migration: admin 0039 (when 1806900000000) · hub 0121 (1806900300000) + 0122 (1806900400000) + 0123 (1806900500000, VALIDATE tách) · contracts pack 0087 (1806900100000)
 phụ thuộc: q1–q3 đã gộp
 ---
 ## Plan (ngắn)
@@ -62,6 +62,14 @@ Lần gửi đang giữ hiện «Đang chờ công ty nhận đồng ý kết n�
 Quản trị đặt ngưỡng (triệu đồng) và người phụ trách ở Cài đặt › Quy trình; mục «Hợp đồng đối tác gửi» chỉ hiện khi công ty bật `contracts-partner-confirm`.
 - Kịch bản: khi nhập ngưỡng thì đổi triệu ⇄ đồng đúng và chặn ngưỡng Rất quan trọng ≤ Quan trọng [test: apps/workspace-web/src/features/partner-inbox/lib/receive-settings.test.ts » ngưỡng Rất quan trọng phải lớn hơn Quan trọng]
 - Kịch bản: khi node gửi đối tác được cấu hình thì panel chung dùng chữ nghiệp vụ và không lộ mã hợp đồng [test: apps/admin-web/src/features/processes/modules/panel-registry.test.ts » có cổng cấu hình, ô theo chữ nghiệp vụ và không lộ contract_id]
+#### Yêu cầu: Lý do gửi đối tác chỉ lấy từ bước quyết; nhận/chặn đối tác là quyết định của quản trị
+Lý do Trả lại/Từ chối gửi ra ngoài chỉ là góp ý của bước Duyệt đã rẽ nhánh — ghi chú nội bộ của người duyệt trước (đã Đạt) không bao giờ gửi đi; bước quyết không có góp ý ⇒ lý do dự phòng. Nhận hoặc chặn một công ty đối tác cần quyền admin của gói. Người phụ trách HĐ nhận phải là thành viên của chính công ty.
+- Kịch bản: khi bước Từ chối có góp ý và bước trước có ghi chú nội bộ thì chỉ góp ý của bước Từ chối được dùng [test: apps/hub-api/src/modules/packs/contracts/partner-q4.int.test.ts » KHÔNG lấy ghi chú nội bộ của người duyệt trước]
+- Kịch bản: khi bước quyết không có góp ý thì không lùi về ghi chú của bước trước [test: apps/hub-api/src/modules/packs/contracts/partner-q4.int.test.ts » bước quyết không có góp ý ⇒ null]
+- Kịch bản: khi đặt người phụ trách không thuộc công ty thì không lưu [test: apps/hub-api/src/modules/packs/contracts/partner-q4.int.test.ts » người phụ trách không thuộc công ty ⇒ không lưu]
+- Kịch bản: khi gọi nhận/chặn lời mời thì route đòi quyền admin của gói [test: thủ công — route khai `packGuard(view, "contracts", "admin")`, bộ guard dùng chung đã có test riêng]
+- Kịch bản: khi gửi tới công ty chưa có dòng nối hoặc đã chặn trước thì lần gửi cùng được giữ, bên gửi không phân biệt được [test: apps/hub-api/src/modules/partners/mailbox.int.test.ts » kênh nền tảng chỉ khi bên nhận đã chấp nhận nối]
+
 ## Việc còn lại
 - e2e hành trình (A gửi → hộp thư B → flow nhận của B duyệt → A đi tiếp «Đã xác nhận») + ảnh chụp các màn mới: THUỘC lát q6 của CR (Luật 0d.5 / Luật 3: e2e chỉ qc viết, MỘT lần cuối CR) — chưa viết, chưa chạy. Cần: bật `HUB_PARTNER_MAILBOX=on` trong `_ja-stack.ts`, 2 công ty có entitlement `contracts-partner-confirm`, nhóm `ke-toan`/`giam-doc`/`phong-kinh-doanh` ở công ty nhận, gán `hd-nhan-thuong`/`hd-nhan-quan-trong` qua danh sách flow.
 - Tải tệp bằng chứng lên FileBox; chép PDF sang FileBox của B (cố ý để lát sau).

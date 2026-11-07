@@ -96,14 +96,19 @@ export function partnerUiRepo(tx: Tx, tid: string) {
         owner_user_id: r?.owner ?? null,
       };
     },
+    /** Lưu cài đặt; người phụ trách (nếu có) phải là thành viên của CHÍNH công ty (hàm DEFINER, một EXISTS). Sai ⇒ false, không ghi. */
     async saveSettings(
       s: { important_min: number; critical_min: number; owner_user_id: string | null },
       by: string,
-    ) {
-      await tx.execute(sql`insert into contracts.partner_settings (tenant_id, important_min, critical_min, owner_user_id, updated_by)
-        values (${tid}::uuid, ${s.important_min}, ${s.critical_min}, ${s.owner_user_id}::uuid, ${by}::uuid)
+    ): Promise<boolean> {
+      const r = await tx.execute<{ tenant_id: string }>(sql`insert into contracts.partner_settings
+          (tenant_id, important_min, critical_min, owner_user_id, updated_by)
+        select ${tid}::uuid, ${s.important_min}, ${s.critical_min}, ${s.owner_user_id}::uuid, ${by}::uuid
+        where ${s.owner_user_id}::uuid is null or hub.partner_is_member(${s.owner_user_id}::uuid)
         on conflict (tenant_id) do update set important_min = excluded.important_min, critical_min = excluded.critical_min,
-          owner_user_id = excluded.owner_user_id, updated_by = excluded.updated_by, updated_at = now()`);
+          owner_user_id = excluded.owner_user_id, updated_by = excluded.updated_by, updated_at = now()
+        returning tenant_id::text`);
+      return r.length > 0;
     },
   };
 }

@@ -146,13 +146,24 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
 
 type Found = { mailbox_id: string; status: string; reason: string | null };
 
-/** Góp ý gần nhất của lượt chạy (stage Duyệt ghi `feedback` khi Trả lại/Từ chối); không có ⇒ null (dùng lý do dự phòng). MỘT câu. */
-async function reviewerReason(tx: Tx, tid: string, runId: string): Promise<string | null> {
-  if (!UUID.test(runId)) return null;
+/**
+ * Lý do gửi cho đối tác = góp ý CHỈ của bước Duyệt đã RẼ nhánh Từ chối/Trả lại (output `fields.decision` khớp kết quả), mới nhất. Ghi chú của người
+ * duyệt trước đó (đã Đạt) là nội bộ ⇒ KHÔNG BAO GIỜ gửi ra ngoài; bước quyết không có góp ý ⇒ null (dùng lý do dự phòng, không lùi về bước trước). MỘT câu.
+ */
+export async function reviewerReason(
+  tx: Tx,
+  tid: string,
+  runId: string,
+  outcome: PartnerOutcome,
+): Promise<string | null> {
+  const decision = outcome === "declined" ? "rejected" : outcome === "returned" ? "returned" : null;
+  if (!decision || !UUID.test(runId)) return null;
   const [r] = await tx.execute<{ feedback: string | null }>(sql`
-    select btrim(feedback) as feedback from hub.stage_runs
-    where tenant_id = ${tid}::uuid and process_run_id = ${runId}::uuid and nullif(btrim(feedback), '') is not null
-    order by updated_at desc limit 1`);
+    select nullif(btrim(s.feedback), '') as feedback
+    from hub.stage_runs s join hub.process_outputs o on o.id = s.current_output_id and o.tenant_id = s.tenant_id
+    where s.tenant_id = ${tid}::uuid and s.process_run_id = ${runId}::uuid and s.status = 'done'
+      and jsonb_typeof(o.fields) = 'object' and o.fields ->> 'decision' = ${decision}
+    order by s.stage_idx desc limit 1`);
   return r?.feedback ? r.feedback.slice(0, 2000) : null;
 }
 
@@ -166,7 +177,7 @@ export async function applyReceivedOutcome(tx: Tx, i: OutcomeInput): Promise<Out
   const o: PartnerOutcome = i.outcome;
   const tid = i.tenantId;
   // q4 · lý do của người duyệt bước cuối (góp ý Trả lại/Từ chối) đọc ở tx engine (role hub) TRƯỚC khi đổi sang role gói.
-  const fb = o === "confirmed" ? null : await reviewerReason(tx, tid, i.runId);
+  const fb = o === "confirmed" ? null : await reviewerReason(tx, tid, i.runId, o);
   return withPackRoleInTx(tx, "contracts", tid, async () => {
     const [f] =
       await tx.execute<Found>(sql`select mailbox_id::text, status, reason from contracts.partner_inbox

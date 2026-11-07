@@ -6,7 +6,7 @@
 ALTER TABLE hub.partner_mailbox DROP CONSTRAINT IF EXISTS partner_mailbox_status_ck;
 --> statement-breakpoint
 ALTER TABLE hub.partner_mailbox ADD CONSTRAINT partner_mailbox_status_ck
-  CHECK (status IN ('held', 'sent', 'delivered', 'replied', 'expired', 'closed'));
+  CHECK (status IN ('held', 'sent', 'delivered', 'replied', 'expired', 'closed')) NOT VALID; -- VALIDATE ở hub 0123 (không giữ khoá khi quét)
 --> statement-breakpoint
 CREATE OR REPLACE FUNCTION hub.partner_send(
   p_from_tenant uuid,
@@ -40,11 +40,12 @@ BEGIN
        SELECT 1 FROM hub.partner_links l
         WHERE l.from_tenant = v_tid AND l.to_tenant = p_to_tenant
           AND l.accepted_at IS NOT NULL AND l.blocked_at IS NULL) THEN
-    -- Chưa nối: có lời mời (hoặc B chặn trước) ⇒ GIỮ; đã bị chặn SAU khi A xin ⇒ từ chối rõ (A đi kênh email).
-    IF NOT EXISTS (SELECT 1 FROM hub.partner_links l
-                    WHERE l.from_tenant = v_tid AND l.to_tenant = p_to_tenant
-                      AND NOT (l.blocked_at IS NOT NULL AND l.requested_at IS NOT NULL)) THEN
-      RAISE EXCEPTION 'partner_send: công ty nhận chưa chấp nhận nhận HĐ qua nền tảng' USING ERRCODE = '42501';
+    -- Chưa nối: GIỮ lần gửi — cho cả 3 trường hợp BÊN GỬI KHÔNG PHÂN BIỆT ĐƯỢC: chưa có dòng nối, đã xin chờ B, hoặc B chặn TRƯỚC khi A xin
+    -- (giữ im lặng tới hết hạn). Chỉ khi A đã xin RỒI bị chặn (A đã biết) ⇒ từ chối rõ để A đi kênh email.
+    IF EXISTS (SELECT 1 FROM hub.partner_links l
+                WHERE l.from_tenant = v_tid AND l.to_tenant = p_to_tenant
+                  AND l.blocked_at IS NOT NULL AND l.requested_at IS NOT NULL) THEN
+      RAISE EXCEPTION 'partner_send: công ty nhận không nhận HĐ qua nền tảng' USING ERRCODE = '42501';
     END IF;
     v_status := 'held';
   END IF;
@@ -120,6 +121,28 @@ BEGIN
   RETURN v_n > 0;
 END $$;
 --> statement-breakpoint
+-- Người phụ trách HĐ nhận phải là thành viên (nội bộ, đang dùng) của CHÍNH công ty: gói không đọc dmin.users ⇒ hàm DEFINER trả boolean.
+CREATE OR REPLACE FUNCTION hub.partner_is_member(p_user uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, pg_temp
+AS $$
+DECLARE
+  v_tid uuid := NULLIF(current_setting('app.tenant_id', true), '')::uuid;
+BEGIN
+  IF v_tid IS NULL THEN
+    RAISE EXCEPTION 'partner_is_member: chưa đặt tenant' USING ERRCODE = '42501';
+  END IF;
+  RETURN p_user IS NOT NULL AND EXISTS (SELECT 1 FROM admin.users u
+    WHERE u.id = p_user AND u.tenant_id = v_tid AND u.active AND NOT u.locked_by_tenant AND u.kind = 'internal');
+END $$;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION hub.partner_is_member(uuid) FROM PUBLIC;
+--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION hub.partner_is_member(uuid) TO hub_rw;
+--> statement-breakpoint
 -- Lời mời nối ĐẾN tenant hiện tại (cho hộp «Hợp đồng đối tác gửi»): công ty gửi (tên/MST công khai) + số lần gửi đang giữ. Chỉ lời mời đã 'xin'.
 CREATE OR REPLACE FUNCTION hub.partner_link_invites()
 RETURNS TABLE (from_tenant uuid, from_name text, from_tax_code text, from_verified boolean, held integer, requested_at timestamptz)
@@ -151,6 +174,6 @@ GRANT EXECUTE ON FUNCTION hub.partner_link_invites() TO hub_rw;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'contracts_rw') THEN
-    GRANT EXECUTE ON FUNCTION hub.partner_link_invites() TO contracts_rw;
+    GRANT EXECUTE ON FUNCTION hub.partner_link_invites(), hub.partner_is_member(uuid) TO contracts_rw;
   END IF;
 END $$;
