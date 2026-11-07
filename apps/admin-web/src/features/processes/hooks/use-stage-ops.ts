@@ -1,10 +1,9 @@
-﻿// ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend §2): thao tác bước trên bản nháp + thông báo cho người dùng
+// ADM-FR-71 · HUB-FR-104 · P-b2 (plan-frontend §2): thao tác bước trên bản nháp + thông báo cho người dùng
 // (câu lỗi inline đã dịch, vùng `aria-live`). Canvas, StepList và panel cùng dùng một bộ.
 import type { DlcStepTemplate } from "@ai/contracts/hub-admin";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { notifyError } from "@/components/shared/toast";
-import { connectPatch } from "../lib/canvas-connect";
 import { emptyStage, type StageDraft } from "../lib/def-form";
 import { linkDlcReject } from "../lib/dlc-slot";
 import { freshDlcStage, freshReviewStage, freshSlotStage } from "../lib/fresh-stages";
@@ -12,6 +11,7 @@ import type { EdgeRef } from "../lib/insert-on-edge";
 import { getStagesMax } from "../lib/stages-limit";
 import { stepLabel } from "../lib/step-label";
 import { columnNeighbor, type StepOpResult } from "../lib/step-ops";
+import { useCanvasEdit } from "./use-canvas-edit";
 import type { DraftState } from "./use-draft";
 
 type Notice = { uid?: string; error: string };
@@ -61,6 +61,16 @@ export function useStageOps(d: DraftState) {
   const rep = useReport(d);
   const { notice, live, setNotice, setLive, find, report, t } = rep;
   const [arranged, setArranged] = useState(0);
+  // CR-123 · p25: lỗi thao tác kéo-thả ⇒ toast (đọc được bằng trình đọc màn hình) + vùng aria-live; xong ⇒ chỉ aria-live.
+  const say = {
+    error: (m: string) => {
+      notifyError(m);
+      setLive(m);
+    },
+    live: setLive,
+    clear: () => setNotice(null),
+  };
+  const edit = useCanvasEdit(d, say, t);
   const stageAt = (i: number) => d.draftRef.current.stages[i];
   const setStep = (i: number, step: number) => {
     const s = stageAt(i);
@@ -115,6 +125,8 @@ export function useStageOps(d: DraftState) {
       addVia(() => d.addFresh(() => ({ ...emptyStage(), ...patch, name }))),
     /** CR-122 · P8 · chèn các node (một node module có thể nhiều giai đoạn) vào GIỮA cạnh `edge`, nối tiếp nhau. */
     insertNodes: (items: { patch: Partial<StageDraft>; name: string }[], edge: EdgeRef) => {
+      // nhánh Đúng/Sai của Nếu không được trỏ tới bước hành động thật (luật chung với ô chọn và nối tay)
+      if (edge.side && items.some((i) => i.patch.real)) return say.error(t(`${CONNECT}ifReal`));
       let from = edge.from;
       for (const it of items) {
         const fresh = { ...emptyStage(), ...it.patch, name: it.name };
@@ -130,15 +142,7 @@ export function useStageOps(d: DraftState) {
     },
     /** dlc-step-library · kéo cổng "Từ chối" của bước `from` thả lên bước `to` (phải đứng trước) ⇒ `gate.back_to = [to]`. */
     linkReject: linkRejectOf(d, rep),
-    /** CR-122 · p22 · kéo cổng ra của node sang node đích ⇒ đặt "Sau đó đi tiếp" / Đúng / Sai; sai luật ⇒ không đổi + toast. */
-    connect: (c: { source: string; target: string; sourceHandle?: string | null }) => {
-      const r = connectPatch(d.draftRef.current.stages, c);
-      if (!r) return;
-      if (!r.ok) return notifyError(t(`${CONNECT}${r.error}`));
-      d.patchStage(r.index, r.patch as Partial<StageDraft>);
-      setNotice(null);
-      setLive(t(`${CONNECT}done.${r.field}`));
-    },
+    ...edit,
     clearNotice: () => setNotice(null),
   };
 }

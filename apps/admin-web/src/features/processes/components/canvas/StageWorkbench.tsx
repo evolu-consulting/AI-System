@@ -8,15 +8,13 @@ import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { useStagesMax } from "../../hooks/use-stages-max";
 import { isDlcStep } from "../../lib/dlc-slot";
-import { writeViewMode } from "../../lib/view-mode";
 import { useFitMin, useRegisterSelect } from "../flow/flow-ctx";
 import { FlowToolbar } from "../flow/NodePalette";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
 import { SlotCanvasToolbar } from "../library/SlotCanvasToolbar";
-import { ViewModeToggle } from "../ViewModeToggle";
 import { CanvasToolbar } from "./CanvasToolbar";
+import { CanvasTools } from "./CanvasTools";
 import { CanvasView } from "./CanvasView";
-import { ShortcutsHint } from "./ShortcutsHint";
 import { StagePanel } from "./StagePanel";
 import { StepList } from "./StepList";
 import { withoutSlotLinks } from "./stage-view";
@@ -82,7 +80,12 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
               {t("process.admin.canvas.readOnly")}
             </p>
           ) : (
-            <FlowToolbar ops={ops} count={w.stages.length} max={stagesMax}>
+            <FlowToolbar
+              ops={ops}
+              count={w.stages.length}
+              max={stagesMax}
+              dnd={w.mode === "canvas" && !lib}
+            >
               {lib ? (
                 <SlotCanvasToolbar
                   count={w.stages.length}
@@ -109,18 +112,7 @@ export function StageWorkbench({ d, readOnly, refs }: Props) {
               )}
             </FlowToolbar>
           )}
-          <div className="ml-auto flex items-center gap-1">
-            {lib ? null : (
-              <ViewModeToggle
-                mode={w.mode}
-                set={(m) => {
-                  writeViewMode(m);
-                  w.setMode(m);
-                }}
-              />
-            )}
-            <ShortcutsHint />
-          </div>
+          <CanvasTools d={d} w={w} readOnly={readOnly} lib={!!lib} />
         </div>
         {ops.notice ? (
           <p role="alert" className="mt-2 text-label text-destructive">

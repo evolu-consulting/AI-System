@@ -652,10 +652,38 @@
       "title": "Xoá bước “{{name}}”?",
       "body": "Các lựa chọn “quay lại” trỏ tới bước này sẽ bị bỏ."
     },
+    "edit": {
+      "undo": "Hoàn tác (Ctrl+Z)",
+      "redo": "Làm lại (Ctrl+Y)",
+      "undone": "Đã hoàn tác.",
+      "redone": "Đã làm lại.",
+      "nothingToUndo": "Không còn thao tác để hoàn tác.",
+      "nothingToRedo": "Không còn thao tác để làm lại.",
+      "dropped": "Đã thêm bước “{{name}}”.",
+      "removed": "Đã xoá {{n}} bước, các đường nối được nối liền.",
+      "edgeReset": "Đã đặt lại đường nối về bước tiếp theo.",
+      "copied": "Đã chép {{n}} bước. Nhấn Ctrl+V để dán.",
+      "pasted": "Đã dán {{n}} bước, đặt ngay sau bước đang chọn.",
+      "copySuffix": " (bản sao)",
+      "confirmMany": "Xoá {{n}} bước?",
+      "confirmBody": "Các đường nối vào và ra sẽ được nối liền. Có thể hoàn tác bằng Ctrl+Z.",
+      "err": {
+        "locked": "Bước hệ thống không xoá được.",
+        "last": "Quy trình cần ít nhất một bước.",
+        "empty": "Chọn một bước hoặc một đường nối trước.",
+        "already": "Đường nối này đã đi tới bước tiếp theo (mặc định).",
+        "nothingSelected": "Chọn bước muốn chép trước.",
+        "nothingToPaste": "Chưa chép bước nào. Chọn bước rồi nhấn Ctrl+C."
+      }
+    },
     "shortcuts": {
       "title": "Phím tắt",
       "move": "Alt + ←/→: chuyển sang bước trước/sau · Alt + ↑/↓: đổi thứ tự trong bước",
-      "open": "Enter: mở chi tiết · Delete: xoá bước"
+      "open": "Enter: mở chi tiết · Delete: xoá bước",
+      "edit": "Delete: xoá bước hoặc đường nối đã chọn · Ctrl+C / Ctrl+V: nhân đôi bước",
+      "undo": "Ctrl+Z: hoàn tác · Ctrl+Y: làm lại",
+      "select": "Shift + nhấn hoặc Shift + kéo khung: chọn nhiều bước, kéo cả nhóm",
+      "zoom": "Ctrl + lăn chuột: phóng to / thu nhỏ"
     },
     "live": {
       "moved": "Bước {{n}} chuyển sang bước {{step}}",
@@ -1388,6 +1416,7 @@
     },
     "moreRight": "Còn bước bên phải — kéo ngang để xem",
     "insertOnEdge": "Thêm bước vào giữa",
+    "dragHint": "Kéo vào sơ đồ: thả lên chỗ trống để thêm, thả lên mũi tên để chèn giữa.",
     "companies": "{{n}} công ty",
     "add": "Thêm bước",
     "moreActions": "Thao tác khác",

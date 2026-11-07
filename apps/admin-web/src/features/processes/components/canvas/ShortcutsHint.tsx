@@ -18,6 +18,10 @@ export function ShortcutsHint() {
         <p className="font-medium">{title}</p>
         <p>{t("process.admin.canvas.shortcuts.move")}</p>
         <p>{t("process.admin.canvas.shortcuts.open")}</p>
+        <p>{t("process.admin.canvas.shortcuts.edit")}</p>
+        <p>{t("process.admin.canvas.shortcuts.undo")}</p>
+        <p>{t("process.admin.canvas.shortcuts.select")}</p>
+        <p>{t("process.admin.canvas.shortcuts.zoom")}</p>
       </PopoverContent>
     </Popover>
   );

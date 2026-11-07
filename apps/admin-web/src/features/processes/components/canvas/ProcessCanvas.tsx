@@ -5,35 +5,38 @@
 // dlc-step-library: sơ đồ DLC ⇒ cạnh "Từ chối" tới NODE đích (không tới tiêu đề cột), cạnh tiến sau bước có cổng mang nhãn "Duyệt";
 // `linkable` ⇒ kéo cổng "Từ chối" của bước nào có cổng cũng nối được (`ops.linkReject` kiểm đích đứng trước).
 import { type EdgeInsertInfo, FlowCanvas, type FlowLabels, toEdge } from "@ai/flow-canvas";
-import {
-  COL_W,
-  HEADER_H,
-  HEADER_NODE_H,
-  JOIN_H,
-  JOIN_W,
-  layoutSteps,
-  NODE_H,
-  NODE_W,
-  ROW_H,
-  stepFromDropX,
-} from "@ai/flow-canvas/pure";
+import { layoutSteps, NODE_H, NODE_W, stepFromDropX } from "@ai/flow-canvas/pure";
 import type { Edge, Node, XYPosition } from "@xyflow/react";
-import { ChevronRight } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { BridgeApi } from "../../hooks/use-bridge";
 import { useStagesMax } from "../../hooks/use-stages-max";
+import { applyJumps } from "../../lib/jump-edges";
 import { countAtStep } from "../../lib/step-ops";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
-import { BRIDGE_W, BridgeNode } from "./BridgeNode";
+import { BridgeNode } from "./BridgeNode";
 import { type CanvasHandlers, HandlersCtx } from "./canvas-ctx";
+import {
+  approveEdge,
+  bridgePart,
+  clampY,
+  editableEdges,
+  MoreRight,
+  NO_WARN,
+  NODE_SIZE,
+  type TriggerInfo,
+  triggerPart,
+  type WarnEdges,
+  warnStyle,
+} from "./canvas-parts";
 import { EdgeInsertMenu } from "./EdgeInsertMenu";
 import { IfNode } from "./IfNode";
 import { StageNode } from "./StageNode";
 import type { StageView } from "./stage-view";
 import { stepHeaderLabels } from "./stage-view";
 import { TriggerNode } from "./TriggerNode";
+import { CanvasDialogs, useCanvasEditing } from "./use-canvas-editing";
 
 const nodeTypes = { stage: StageNode, if: IfNode, trigger: TriggerNode, bridge: BridgeNode };
 
@@ -53,12 +56,6 @@ export type ProcessCanvasProps = CanvasHandlers & {
 };
 
 type Lay = ReturnType<typeof layoutSteps>;
-
-const NODE_SIZE = {
-  stage: { width: NODE_W, height: NODE_H },
-  join: { width: JOIN_W, height: JOIN_H },
-  stepHeader: { width: NODE_W, height: HEADER_NODE_H },
-} as const;
 
 function toNode(
   n: Lay["nodes"][number],
@@ -81,6 +78,7 @@ function toNode(
   if (n.kind === "stage")
     return {
       ...base,
+      selectable: connectable,
       data: { v: byUid.get(n.id), selected: n.id === selected, readOnly, connectable },
       draggable: !readOnly && !byUid.get(n.id)?.locked,
     };
@@ -93,110 +91,6 @@ function toNode(
         }
       : { count: n.count };
   return { ...base, data, draggable: false };
-}
-
-/** Kẹp y thả vào khung nội dung (dưới tiêu đề, không quá hàng thấp nhất + một hàng) để node không rơi khỏi vùng nhìn. */
-function clampY(y: number, nodes: readonly Node[]): number {
-  const ys = nodes.filter((n) => n.type === "stage" || n.type === "if").map((n) => n.position.y);
-  return Math.min(Math.max(y, HEADER_H), Math.max(...ys, HEADER_H) + ROW_H);
-}
-
-/** Cạnh tiến ra khỏi bước DLC có cổng = nhánh "Duyệt" (đi tiếp bước kế). */
-const approveEdge = (e: Edge, label: string): Edge => ({
-  ...e,
-  label,
-  labelStyle: { fill: "var(--color-success)", fontSize: 12 },
-  labelBgStyle: { fill: "var(--color-card)" },
-});
-
-type TriggerInfo = { label: string; summary: string } | null;
-
-/** CR-122 · U2c: node "Bắt đầu khi" ở cột đầu (x = −1 cột), nối tới mọi giai đoạn của bước đầu. */
-function triggerPart(views: readonly StageView[], t: TriggerInfo): { node: Node[]; edges: Edge[] } {
-  if (!t) return { node: [], edges: [] };
-  const node: Node = {
-    id: "trigger",
-    type: "trigger",
-    position: { x: -COL_W, y: HEADER_H },
-    measured: NODE_SIZE.stage,
-    selectable: false,
-    focusable: false,
-    draggable: false,
-    data: t,
-  };
-  const edges = views
-    .filter((v) => v.step === 0)
-    .map((v) =>
-      toEdge({ id: `trigger>${v.uid}`, source: "trigger", target: v.uid, kind: "forward" }),
-    );
-  return { node: [node], edges };
-}
-
-type WarnEdges = readonly {
-  from: string;
-  to: string;
-  keys: string[];
-  labels: string[];
-  toName: string;
-}[];
-const NO_WARN: WarnEdges = [];
-
-/** CR-122 · U2d: ô gợi ý cầu nối dưới mỗi cạnh vàng; có đề xuất ⇒ thêm cạnh nét đứt qua ô (xem trước node Ghi giá trị mờ). */
-function bridgePart(
-  nodes: readonly Node[],
-  warn: WarnEdges,
-  api: BridgeApi | undefined,
-): { node: Node[]; edges: Edge[] } {
-  if (!api) return { node: [], edges: [] };
-  const out: { node: Node[]; edges: Edge[] } = { node: [], edges: [] };
-  for (const w of warn) {
-    const a = nodes.find((n) => n.id === w.from);
-    const b = nodes.find((n) => n.id === w.to);
-    if (!a || !b) continue;
-    const id = `bridge:${w.from}>${w.to}`;
-    const ok = api.ui(w).kind === "ok";
-    out.node.push({
-      id,
-      type: "bridge",
-      position: {
-        // ô đặt lệch về bên trái cạnh để câu không bị mép phải khung cắt
-        x: (a.position.x + NODE_W + b.position.x) / 2 - BRIDGE_W * 0.8,
-        y: Math.max(a.position.y, b.position.y) + NODE_H + 28,
-      },
-      measured: { width: BRIDGE_W, height: ok ? 150 : 76 },
-      selectable: false,
-      focusable: false,
-      draggable: false,
-      data: { from: w.from, to: w.to, keys: w.keys, labels: w.labels, toName: w.toName },
-    });
-    if (ok)
-      for (const [s, t] of [
-        [w.from, id],
-        [id, w.to],
-      ] as const)
-        out.edges.push({
-          ...toEdge({ id: `${s}>${t}`, source: s, target: t, kind: "forward" }),
-          style: { strokeDasharray: "5 4" },
-        });
-  }
-  return out;
-}
-
-/** CR-122 · FR-26 · cạnh vàng: bước sau cần đầu vào mà bước trước không có (nét vàng + nhãn, không chỉ màu). */
-function warnStyle(edges: Edge[], warn: WarnEdges): Edge[] {
-  if (warn.length === 0) return edges;
-  const bad = new Set(warn.map((w) => `${w.from}>${w.to}`));
-  return edges.map((e) =>
-    bad.has(`${e.source}>${e.target}`)
-      ? {
-          ...e,
-          label: "⚠",
-          style: { stroke: "var(--color-warning)", strokeWidth: 2.5 },
-          labelStyle: { fill: "var(--color-warning)", fontSize: 12 },
-          labelBgStyle: { fill: "var(--color-card)" },
-        }
-      : e,
-  );
 }
 
 function useFlowGraph(
@@ -217,7 +111,17 @@ function useFlowGraph(
     const nodes = lay.nodes.map((n) => toNode(n, byUid, selected, readOnly, labels, connectable));
     // dlc-engine · bước DLC và bước duyệt không nối với nhau (một sơ đồ chỉ một loại bước).
     const fam = (id: string) => byUid.get(id)?.family ?? null;
-    const linked = lay.edges.filter((e) => {
+    const jumped = applyJumps(
+      views.map((v) => ({
+        uid: v.uid,
+        step: v.step,
+        isIf: v.ifs != null,
+        nextStep: v.src.nextStep,
+        terminal: v.src.outcome !== undefined || v.src.executor === "wait_event",
+      })),
+      lay.edges,
+    );
+    const linked = jumped.filter((e) => {
       const [a, b] = [fam(e.source), fam(e.target)];
       return a === null || b === null || a === b;
     });
@@ -240,9 +144,10 @@ function useFlowGraph(
     const shownEdges = trig
       ? edges.filter((e) => !isHeader(e.source) && !isHeader(e.target))
       : edges;
+    const all = warnStyle([...tp.edges, ...shownEdges, ...bp.edges], warn);
     return {
       nodes: [...tp.node, ...shown, ...bp.node],
-      edges: warnStyle([...tp.edges, ...shownEdges, ...bp.edges], warn),
+      edges: connectable ? editableEdges(all, new Set(byUid.keys())) : all,
       steps: lay.steps,
       dlc,
     };
@@ -302,6 +207,13 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
   );
   const labels = useCanvasLabels(g.dlc);
   const room = useStagesMax() - p.views.length;
+  // CR-123 · p25: kéo từ bảng mẫu, nối lại, chọn nhiều, xoá, chép/dán, hoàn tác, minimap (chỉ canvas sửa được của trình soạn).
+  const ed = useCanvasEditing({
+    enabled: connectable,
+    palette: !!flowCtx,
+    compact: !!p.compact,
+    latest: { views: p.views, nodes: g.nodes, edges: g.edges, steps: g.steps, ops: p.ops },
+  });
   const renderEdgeInsert = useMemo(
     () =>
       insertable
@@ -335,10 +247,22 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
       t0 && t0.step !== t0.v.step && countAtStep(p.views, t0.step, t0.v.uid) >= 3 ? t0.step : null;
     setBlocked((prev) => (prev === full ? prev : full));
   };
+  // CR-123 · p25 · kéo nhóm: cả nhóm dời cùng số cột (luật cột giữ như kéo một node); không đổi cột ⇒ lưu y từng node.
+  const dragGroup = (group: { id: string; pos: XYPosition }[], delta: number) => {
+    const uids = group.map((x) => x.id).filter((id) => p.views.some((v) => v.uid === id));
+    if (delta !== 0) p.ops.moveGroup(uids, delta);
+    else
+      for (const x of group) {
+        const y0 = g.nodes.find((n) => n.id === x.id)?.position.y ?? x.pos.y;
+        if (Math.abs(x.pos.y - y0) >= 1) p.ops.setY(x.id, clampY(x.pos.y, g.nodes));
+      }
+    setTick((n) => n + 1);
+  };
   // fnr-canvas: kéo tự do — x chốt vào cột gần nhất (đổi bước theo luật cũ), y được LƯU (`ui.y`) khi thả; cột đầy ⇒ trượt về.
-  const onDragStop = (node: Node, pos: XYPosition) => {
+  const onDragStop = (node: Node, pos: XYPosition, group?: { id: string; pos: XYPosition }[]) => {
     setBlocked(null);
     const t0 = target(node, pos);
+    if (group && group.length > 1 && t0) return dragGroup(group, t0.step - t0.v.step);
     const y = pos.y;
     const y0 = g.nodes.find((n) => n.id === node.id)?.position.y ?? y;
     if (!t0) return;
@@ -377,22 +301,11 @@ export default function ProcessCanvas(p: ProcessCanvasProps) {
           onNodeDrag={onDrag}
           onNodeDragStop={onDragStop}
           onConnect={(p.linkable || connectable) && !p.readOnly ? onConnect : undefined}
+          editing={ed.editing}
         />
+        <CanvasDialogs pending={ed.pending} close={ed.close} views={p.views} ops={p.ops} />
       </HandlersCtx.Provider>
       {trig && g.steps >= 4 ? <MoreRight label={t("process.admin.flow.moreRight")} /> : null}
-    </div>
-  );
-}
-
-/** CR-122 · U2e: flow dài hơn khung ⇒ bóng mờ + mũi tên ở mép phải báo "còn bước bên phải" (kéo ngang để xem). */
-function MoreRight({ label }: { label: string }) {
-  return (
-    <div
-      aria-hidden
-      title={label}
-      className="pointer-events-none absolute inset-y-0 right-0 flex w-14 items-center justify-end bg-gradient-to-l from-background to-transparent pr-1 text-muted-foreground"
-    >
-      <ChevronRight className="size-5" />
     </div>
   );
 }

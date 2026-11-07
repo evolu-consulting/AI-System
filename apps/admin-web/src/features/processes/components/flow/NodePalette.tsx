@@ -2,6 +2,7 @@
 // Node dựng sẵn (Duyệt, Điền thông tin, Nếu, Agent, Công cụ, Ghi giá trị, Kết thúc) + node lõi/module từ `GET /process-palette`.
 // Chèn node bảng ghi `stage.node`; mỗi stage mẫu thành một bước mới cuối (muốn chèn giữa: nút "+" trên cạnh, `EdgeInsertMenu`).
 import { LayoutTemplate, Plus } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -9,7 +10,13 @@ import type { StageOps } from "../../hooks/use-stage-ops";
 import { useFlowCtx } from "./flow-ctx";
 import { NodeMenuContent } from "./NodeMenuContent";
 
-type Props = { ops: StageOps; count: number; max: number };
+type Props = {
+  ops: StageOps;
+  count: number;
+  max: number;
+  /** CR-123 · p25 · sơ đồ đang hiện ⇒ các mục menu kéo thả được vào sơ đồ. */
+  dnd?: boolean;
+};
 
 /** Có ngữ cảnh flow ⇒ bảng node theo manifest; không ⇒ thanh công cụ giai đoạn thường (children). */
 export function FlowToolbar({
@@ -19,14 +26,16 @@ export function FlowToolbar({
   return useFlowCtx() ? <NodePalette {...p} /> : children;
 }
 
-export function NodePalette({ ops, count, max }: Props) {
+export function NodePalette({ ops, count, max, dnd }: Props) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const ctx = useFlowCtx();
   if (!ctx) return null;
   const full = count >= max;
   return (
     <div className="flex flex-wrap items-center gap-2 scroll-mt-40" data-testid="flow-palette">
-      <DropdownMenu>
+      {/* dnd: không modal để thả được lên sơ đồ phía sau; kéo xong (onEnd) thì đóng menu */}
+      <DropdownMenu open={open} onOpenChange={setOpen} modal={!dnd}>
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
@@ -41,6 +50,7 @@ export function NodePalette({ ops, count, max }: Props) {
         </DropdownMenuTrigger>
         <NodeMenuContent
           room={max - count}
+          {...(dnd ? { drag: { onEnd: () => setOpen(false) } } : {})}
           pick={(items) => {
             for (const i of items) ops.addNode(i.patch, i.name);
           }}

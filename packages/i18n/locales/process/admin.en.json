@@ -652,10 +652,38 @@
       "title": "Remove stage “{{name}}”?",
       "body": "Any “go back” choices pointing to this step will be dropped."
     },
+    "edit": {
+      "undo": "Undo (Ctrl+Z)",
+      "redo": "Redo (Ctrl+Y)",
+      "undone": "Undone.",
+      "redone": "Redone.",
+      "nothingToUndo": "Nothing to undo.",
+      "nothingToRedo": "Nothing to redo.",
+      "dropped": "Added step “{{name}}”.",
+      "removed": "Removed {{n}} step(s); the links were joined up.",
+      "edgeReset": "Link reset to the next step.",
+      "copied": "Copied {{n}} step(s). Press Ctrl+V to paste.",
+      "pasted": "Pasted {{n}} step(s) right after the selected step.",
+      "copySuffix": " (copy)",
+      "confirmMany": "Remove {{n}} steps?",
+      "confirmBody": "Links into and out of them will be joined up. Ctrl+Z undoes this.",
+      "err": {
+        "locked": "System steps cannot be removed.",
+        "last": "A process needs at least one step.",
+        "empty": "Select a step or a link first.",
+        "already": "This link already goes to the next step (the default).",
+        "nothingSelected": "Select the steps to copy first.",
+        "nothingToPaste": "Nothing copied yet. Select steps and press Ctrl+C."
+      }
+    },
     "shortcuts": {
       "title": "Keyboard shortcuts",
       "move": "Alt + ←/→: move to previous/next step · Alt + ↑/↓: reorder within the step",
-      "open": "Enter: open details · Delete: remove stage"
+      "open": "Enter: open details · Delete: remove stage",
+      "edit": "Delete: remove the selected step or link · Ctrl+C / Ctrl+V: duplicate steps",
+      "undo": "Ctrl+Z: undo · Ctrl+Y: redo",
+      "select": "Shift + click or Shift + drag a box: select several steps and move them together",
+      "zoom": "Ctrl + mouse wheel: zoom in / out"
     },
     "live": {
       "moved": "Stage {{n}} moved to step {{step}}",
@@ -1388,6 +1416,7 @@
     },
     "moreRight": "More steps to the right — drag to see",
     "insertOnEdge": "Insert a step here",
+    "dragHint": "Drag into the diagram: drop on empty space to add, on an arrow to insert in between.",
     "companies": "{{n}} companies",
     "add": "Add step",
     "moreActions": "More actions",

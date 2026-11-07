@@ -8,6 +8,7 @@ import {
   Controls,
   type Edge,
   MarkerType,
+  MiniMap,
   type Node,
   type NodeChange,
   type NodeTypes,
@@ -22,6 +23,7 @@ import { type FlowHost, FlowHostCtx } from "./context";
 import { BackEdge } from "./edges/BackEdge";
 import { BranchEdge } from "./edges/BranchEdge";
 import { ForwardEdge } from "./edges/ForwardEdge";
+import type { FlowEditing } from "./editing";
 import { type FlowMode, interactionOf } from "./mode";
 import { JoinNode } from "./nodes/JoinNode";
 import { StepHeaderNode } from "./nodes/StepHeaderNode";
@@ -33,6 +35,7 @@ import {
   type FlowTheme,
   type RenderStepInfo,
 } from "./theme";
+import { EditShell, useEditing } from "./use-editing";
 
 const COLUMNS_NODE_TYPES = { stepHeader: StepHeaderNode, join: JoinNode } satisfies NodeTypes;
 const EDGE_TYPES = { back: BackEdge, branch: BranchEdge, forward: ForwardEdge };
@@ -72,10 +75,13 @@ export type FlowCanvasProps = {
   resetKey?: number;
   // ---- móc của host (edit) ----
   onNodeDrag?: (node: Node, pos: XYPosition) => void;
-  onNodeDragStop?: (node: Node, pos: XYPosition) => void;
+  /** `group` = mọi node vừa được kéo (kéo nhóm khi chọn nhiều), gồm cả node chính. */
+  onNodeDragStop?: (node: Node, pos: XYPosition, group?: { id: string; pos: XYPosition }[]) => void;
   /** Nối tay: thả lên handle đích hợp lệ HOẶC lên thân node (handle đích của node ẩn) — kể cả thả lên chính node nguồn. */
   onConnect?: (c: { source: string; target: string; sourceHandle?: string | null }) => void;
   onNodeClick?: (node: Node) => void;
+  /** CR-123 · p25: sửa tay nâng cao (kéo từ bảng mẫu, nối lại, chọn nhiều, phím tắt, minimap) — vắng ⇒ như cũ. */
+  editing?: FlowEditing;
 };
 
 function useHostValue(p: FlowCanvasProps): { host: FlowHost; labels: FlowLabels } {
@@ -118,9 +124,10 @@ function useDragOverlay(p: FlowCanvasProps) {
   const onNodeDrag = (_: unknown, node: Node) => p.onNodeDrag?.(node, posOf(node));
   const onNodeDragStop = (_: unknown, node: Node) => {
     const pos = posOf(node);
+    const group = Object.entries(lastPos.current).map(([id, at]) => ({ id, pos: at }));
     lastPos.current = {};
     setDrag({});
-    p.onNodeDragStop?.(node, pos);
+    p.onNodeDragStop?.(node, pos, group);
   };
   return { nodes, onNodesChange, onNodeDrag, onNodeDragStop };
 }
@@ -151,13 +158,14 @@ function Flow(p: FlowCanvasProps) {
   const { host, labels } = useHostValue(p);
   const d = useDragOverlay(p);
   const it = interactionOf(p.mode, p);
+  const ev = useEditing(p.editing, d.nodes, p.edges as Edge[]);
   const nodeTypes = useMemo(
     () => ({ ...(columns ? COLUMNS_NODE_TYPES : VERTICAL_NODE_TYPES), ...p.nodeTypes }),
     [columns, p.nodeTypes],
   );
   const common = {
-    nodes: d.nodes,
-    edges: p.edges as Edge[],
+    nodes: ev.nodes,
+    edges: ev.edges,
     nodeTypes,
     nodesFocusable: false,
     edgesFocusable: false,
@@ -178,44 +186,58 @@ function Flow(p: FlowCanvasProps) {
     <>
       <Background gap={20} />
       {p.controls === false ? null : <Controls showInteractive={false} />}
+      {ev.miniMap && !p.compact ? (
+        <MiniMap
+          pannable
+          zoomable
+          position="bottom-right"
+          style={{ background: "var(--color-card)" }}
+        />
+      ) : null}
     </>
   );
   return (
     <FlowHostCtx.Provider value={host}>
-      {columns ? (
-        <>
-          <ColumnsFit
-            sig={p.fitSig ?? ""}
-            fitKey={p.fitKey ?? 0}
-            inset={p.inset ?? 0}
-            compact={!!p.compact}
-            fitMin={p.fitMin ?? FIT.minZoom}
-            selected={p.selectedId}
-          />
+      <EditShell shell={ev.shell}>
+        {columns ? (
+          <>
+            <ColumnsFit
+              sig={p.fitSig ?? ""}
+              fitKey={p.fitKey ?? 0}
+              inset={p.inset ?? 0}
+              compact={!!p.compact}
+              fitMin={p.fitMin ?? FIT.minZoom}
+              selected={p.selectedId}
+            />
+            <ReactFlow
+              {...common}
+              {...ev.flowProps}
+              onNodesChange={(cs) => {
+                d.onNodesChange(cs);
+                ev.onNodesChange(cs);
+              }}
+              edgeTypes={EDGE_TYPES}
+              aria-label={labels.canvas}
+              ariaLabelConfig={ariaOf(labels.controls)}
+              fitViewOptions={p.compact ? FIT_COMPACT : FIT}
+              disableKeyboardA11y
+              zoomOnScroll={false}
+              preventScrolling={false}
+            >
+              {furniture}
+            </ReactFlow>
+          </>
+        ) : (
           <ReactFlow
             {...common}
-            onNodesChange={d.onNodesChange}
-            edgeTypes={EDGE_TYPES}
-            aria-label={labels.canvas}
-            ariaLabelConfig={ariaOf(labels.controls)}
-            fitViewOptions={p.compact ? FIT_COMPACT : FIT}
-            disableKeyboardA11y
-            zoomOnScroll={false}
-            preventScrolling={false}
+            defaultEdgeOptions={VERTICAL_EDGE_DEFAULTS}
+            fitViewOptions={VERTICAL_FIT}
+            onNodesChange={it.nodesDraggable ? d.onNodesChange : undefined}
           >
             {furniture}
           </ReactFlow>
-        </>
-      ) : (
-        <ReactFlow
-          {...common}
-          defaultEdgeOptions={VERTICAL_EDGE_DEFAULTS}
-          fitViewOptions={VERTICAL_FIT}
-          onNodesChange={it.nodesDraggable ? d.onNodesChange : undefined}
-        >
-          {furniture}
-        </ReactFlow>
-      )}
+        )}
+      </EditShell>
     </FlowHostCtx.Provider>
   );
 }

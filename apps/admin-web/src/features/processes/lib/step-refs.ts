@@ -28,7 +28,8 @@ const to1 = (v: number | null, m: Map<number, number>): number | null => {
   return n === null ? null : n + 1;
 };
 
-function remapOne(s: StageDraft, m: Map<number, number>): StageDraft {
+/** Đổi mọi đích bước của MỘT giai đoạn theo bảng `m` (bước cũ → mới; không có trong bảng ⇒ đích bị bỏ). */
+export function remapOne(s: StageDraft, m: Map<number, number>): StageDraft {
   const out: StageDraft = { ...s };
   out.branch = s.branch.map((r) => ({ ...r, goto: to1(r.goto, m) }));
   out.ifx = { ...s.ifx, yes: to1(s.ifx.yes, m), no: to1(s.ifx.no, m) };

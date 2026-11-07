@@ -10,6 +10,7 @@ import {
   snapshot,
   stageIndexesOf,
 } from "../lib/def-form";
+import { emptyHistory, record, redo as redoH, undo as undoH } from "../lib/edit-history";
 import { type EdgeRef, insertOnEdge } from "../lib/insert-on-edge";
 import { withNodeDefaults } from "../lib/node-defaults";
 import {
@@ -26,14 +27,20 @@ import {
 import { remapStepRefs } from "../lib/step-refs";
 
 /** `remap = false` ⇒ phép đã tự đánh lại đích bước (vd `insertOnEdge`), không remap lần hai. */
-type Update = (fn: (d: DefDraft) => DefDraft, remap?: boolean) => void;
+/** `key` = khoá gộp lịch sử hoàn tác (sửa liên tiếp cùng một ô); vắng ⇒ luôn là một bước riêng. */
+type Update = (fn: (d: DefDraft) => DefDraft, remap?: boolean, key?: string) => void;
 
 /** Các thao tác sửa bản nháp (không đụng accordion/lỗi). */
 function draftOps(update: Update) {
   return {
-    patch: (p: Partial<DefDraft>) => update((d) => ({ ...d, ...p })),
-    patchStage: (i: number, p: Partial<StageDraft>) =>
-      update((d) => ({ ...d, stages: patchStage(d.stages, i, p) })),
+    patch: (p: Partial<DefDraft>) => update((d) => ({ ...d, ...p }), true, `def:${Object.keys(p)}`),
+    /** `coalesce = false` ⇒ luôn là một bước hoàn tác riêng (vd nối cạnh trên canvas); gõ vào ô thì gộp. */
+    patchStage: (i: number, p: Partial<StageDraft>, coalesce = true) =>
+      update(
+        (d) => ({ ...d, stages: patchStage(d.stages, i, p) }),
+        true,
+        coalesce ? `stage:${i}:${Object.keys(p)}` : undefined,
+      ),
     moveInColumn: (i: number, dir: -1 | 1) =>
       update((d) => ({ ...d, stages: moveInColumn(d.stages, i, dir) })),
     /** dlc-step-library · Lên/Xuống của bước DLC: đổi chỗ cả bước (cột) với bước kề. */
@@ -109,6 +116,11 @@ function useStepMutations(ref: Ref, update: Update, select: (uid: string) => voi
       }
       return r;
     },
+    /** CR-123 · p25 · thay cả mảng giai đoạn (thả/xoá/dán/kéo nhóm trên canvas); `remap = false` khi phép đã tự đánh lại đích. */
+    setStages: (stages: StageDraft[], remap = true, pickUid?: string) => {
+      update((d) => ({ ...d, stages }), remap);
+      if (pickUid) select(pickUid);
+    },
     moveToStep: (i: number, step: number) => applySteps((st) => moveToStep(st, i, step)),
     splitToNewStep: (i: number) => applySteps((st) => splitToNewStep(st, i)),
   };
@@ -121,7 +133,8 @@ export function useDraft() {
   const [selected, setSelected] = useState<string | null>(() => draft.stages[0]?.uid ?? null);
   const ref = useRef(draft);
   ref.current = draft;
-  const update: Update = (fn, remap = true) => {
+  const hist = useRef(emptyHistory<DefDraft>());
+  const update: Update = (fn, remap = true, key) => {
     const prev = ref.current;
     const raw = fn(prev);
     // CR-122 · U2b: đổi/chèn/xoá bước ⇒ đánh lại mọi đích bước (goto, Nếu, Duyệt, gộp, chờ sự kiện) để không trỏ sai.
@@ -129,11 +142,22 @@ export function useDraft() {
       raw.stages === prev.stages || !remap
         ? raw
         : { ...raw, stages: remapStepRefs(prev.stages, raw.stages) };
+    if (next !== prev) hist.current = record(hist.current, prev, key, Date.now());
     ref.current = next;
     setDraft(next);
   };
+  /** Hoàn tác / làm lại (CR-123 · p25): trả `true` khi có gì để đổi. */
+  const step = (go: typeof undoH): boolean => {
+    const r = go(hist.current, ref.current);
+    if (!r) return false;
+    hist.current = r.h;
+    ref.current = r.value;
+    setDraft(r.value);
+    return true;
+  };
   /** Nạp bản mới (lần đầu mở / tải lại sau xung đột): coi là đã lưu, chọn giai đoạn đầu. */
   const load = (d: DefDraft) => {
+    hist.current = emptyHistory();
     ref.current = d;
     setDraft(d);
     setBase(snapshot(d));
@@ -158,6 +182,10 @@ export function useDraft() {
     draft,
     draftRef: ref,
     dirty: snapshot(draft) !== base,
+    undo: () => step(undoH),
+    redo: () => step(redoH),
+    canUndo: hist.current.past.length > 0,
+    canRedo: hist.current.future.length > 0,
     errors,
     selected,
     select: pick,
