@@ -8,6 +8,7 @@ import { contracts, groups, members, tenants, users } from "@ai/test-kit/builder
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { createPackUow } from "../../kit/adapters/pack-uow";
+import { nodeConfigRegistry } from "../../kit/public";
 import type { ESignFiles } from "../application/esign.ports";
 import { esignModule } from "../esign.mount";
 import { intakeWiring } from "../intake.mount";
@@ -52,6 +53,7 @@ beforeAll(async () => {
   db = createDb(urls().hubApi, { max: 4 });
 }, 60_000);
 afterAll(async () => {
+  nodeConfigRegistry.clear("contracts-esign-send"); // validator đăng ký toàn cục dùng db đã đóng ⇒ không để rò sang file int khác cùng tiến trình
   await db?.close();
   await o?.end({ timeout: 2 });
 });
@@ -218,7 +220,7 @@ describe("E5b · danh bạ người ký: nhánh Group", () => {
     expect(e?.signers.map((s) => s.order)).toEqual([1, 2]);
     expect([e?.due_h, e?.remind_every_h]).toEqual([72, 12]);
     // không cấu hình node ⇒ cột trống (sweep dùng bước Ký số cũ)
-    await send.run(CTX(A), { contract_id: K[4] as string });
+    await send.run(CTX(A), { contract_id: K[4] as string, company_signers: `user:${A}` });
     const base = await envelope(K[4] as string);
     expect([base?.due_h, base?.remind_every_h]).toEqual([null, null]);
   });
@@ -255,7 +257,7 @@ describe("CR-122 · Ký số giữa flow: HĐ chưa xác nhận", () => {
     await o`update contracts.contracts set status = 'needs_review', confirmed_at = null, locked_at = null,
         run_id = gen_random_uuid(), root_id = ${v1}, version_no = 2, supersedes_id = ${v1}
       where id = ${v2}`;
-    await send.run(CTX(B), { contract_id: v2 });
+    await send.run(CTX(B), { contract_id: v2, company_signers: `user:${B}` });
     expect((await envelope(v2))?.provider).toBe("selfsign");
     const st = async (id: string) =>
       (
@@ -266,7 +268,7 @@ describe("CR-122 · Ký số giữa flow: HĐ chưa xác nhận", () => {
     expect((await st(v1))?.superseded_at).toBeNull(); // khoá sớm KHÔNG thay bản cũ
     // chạy lại (Thử lại của bước) ⇒ không đổi người khoá
     await o`update contracts.esign_envelopes set status = 'voided' where contract_id = ${v2}`;
-    await send.run(CTX(A), { contract_id: v2 });
+    await send.run(CTX(A), { contract_id: v2, company_signers: `user:${A}` });
     expect((await st(v2))?.locked_by).toBe(B);
     // "Kết thúc · Đã duyệt" xác nhận ⇒ lúc này mới thay bản cũ
     await o`update contracts.contracts set status = 'active', confirmed_at = now() where id = ${v2}`;

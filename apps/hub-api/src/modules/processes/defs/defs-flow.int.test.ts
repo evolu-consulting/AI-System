@@ -113,7 +113,10 @@ beforeAll(async () => {
       {
         key: "contracts-esign-send",
         sideEffect: false,
-        params: [{ name: "contract_id", type: "string", required: true }],
+        params: [
+          { name: "contract_id", type: "string", required: true },
+          { name: "company_signers", type: "text", required: false },
+        ],
       },
     ],
   };
@@ -188,7 +191,13 @@ describe("CR-122 E1 · lưu def có trigger", () => {
 // Stage tool của node cần đủ tham số bắt buộc của tool (như defs-node-config.int.test).
 const toolArgs = (ex: object): object =>
   (ex as { kind: string }).kind === "tool"
-    ? { ...ex, args: { contract_id: { from: "const", value: "x" } } }
+    ? {
+        ...ex,
+        args: {
+          contract_id: { from: "const", value: "x" },
+          company_signers: { from: "const", value: `user:${userId(1231)}` }, // CEO-review #2 · người ký thật của công ty
+        },
+      }
     : ex;
 
 /** Stage(s) của một node: node nhiều stage (vd Ký số) ⇒ trọn cụm liên tiếp lấy từ khai báo node trong MODULES (một nguồn). */

@@ -139,7 +139,7 @@ const codeOf = (r: { json: Json }) => r.json.error?.code ?? r.json.code;
 
 describe("E5b · lưu def kiểm cấu hình node", () => {
   it("CEO-review #2 · Ký số chưa chọn người ký ⇒ 422 FLOW_NODE_CONFIG_INVALID, path company_signers, không lưu", async () => {
-    const st = esignStage({}) as { executor: { args: Record<string, unknown> } };
+    const st = esignStage({}) as unknown as { executor: { args: Record<string, unknown> } };
     st.executor.args.company_signers = undefined;
     const r = await call("POST", "/process-defs", body([st, waitStage()]));
     expect(r.status).toBe(422);
