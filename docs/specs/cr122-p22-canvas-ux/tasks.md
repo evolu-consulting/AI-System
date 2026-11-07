@@ -26,7 +26,7 @@ Ba yêu cầu của người dùng (2026-11-07) cho canvas quy trình:
 ## Test tối thiểu
 - unit: `canvas-connect.test.ts`, `step-options.test.ts`, `process-limits.test.ts` (contracts).
 - int: `defs-limits.int.test.ts` (endpoint + kiểm khi lưu), `migrate-hub.int.test.ts` (bảng mới).
-- e2e (viết, chạy ở đợt cuối): `e2e/journey-approval/cr122-canvas-ux.spec.ts`.
+- e2e (viết, chạy ở đợt cuối): `e2e/fnr-showcase/canvas-ux.fnr.ts` (3 ca).
 
 ## Quyết định trong lúc làm
 - Lưu cài đặt ở bảng khoá/giá trị mới `hub.platform_settings` (chưa có bảng cài đặt nền tảng chung; `ops_settings` là cấu hình ops-watch có schema chặt).
@@ -42,7 +42,7 @@ Trạng thái gộp: chưa gộp
 Trên canvas sửa được, node có cổng ra hiện ở mép phải: kéo sang node ở bước SAU thì đặt "Sau đó đi tiếp" của bước thường, hoặc "Đúng thì tới bước" / "Sai thì tới bước" của node Nếu (hai cổng có nhãn Đúng / Sai); ngăn chi tiết đổi ngay. Đích không ở bước sau, hoặc nhánh Nếu trỏ tới bước có hành động thật, thì không đổi gì và báo lý do bằng một câu tiếng Việt.
 - Kịch bản: khi kéo cổng Sai của node Nếu sang một node ở bước sau thì trường Sai đổi sang bước đó và giữ nguyên Đúng [test: apps/admin-web/src/features/processes/lib/canvas-connect.test.ts » Sai của Nếu ⇒ ifx.no (đếm từ 1), giữ nguyên Đúng]
 - Kịch bản: khi kéo về bước đứng trước hoặc nhánh Nếu tới bước có hành động thật thì bị từ chối kèm mã lỗi [test: apps/admin-web/src/features/processes/lib/canvas-connect.test.ts » đích không ở bước sau ⇒ lỗi, không đổi gì]
-- Kịch bản: khi kéo cổng Sai trên canvas thật thì ô "Sai thì tới bước" hiện bước vừa nối [test: e2e/journey-approval/cr122-canvas-ux.spec.ts » 1 · kéo cổng Sai của node Nếu sang bước sau ⇒ ô 'Sai thì tới bước' đổi ngay, hiện 'Bước N · tên']
+- Kịch bản: khi kéo cổng Sai trên canvas thật thì ô "Sai thì tới bước" hiện bước vừa nối [test: e2e/fnr-showcase/canvas-ux.fnr.ts » CR-122 · p22 · kéo cổng Sai của node Nếu sang bước sau ⇒ ô 'Sai thì tới bước' đổi ngay, các ô chọn hiện 'Bước N · tên']
 
 #### Yêu cầu: Ô chọn bước hiện tên bước
 Mọi ô chọn "tới bước" (Đúng/Sai, "Thì tới bước" của rẽ nhánh, "Sau đó đi tiếp", kết quả chờ) hiện "Bước N · <tên các giai đoạn trong bước>", nhiều giai đoạn nối bằng " / "; bước chưa đặt tên chỉ hiện "Bước N".
@@ -54,6 +54,6 @@ Quản trị nền tảng đặt số bước tối đa của một quy trình �
 - Kịch bản: khi giá trị thiếu hoặc sai thì dùng mặc định 22 và luôn kẹp ≤ 50 [test: packages/contracts/src/hub-admin/process-limits.test.ts » thiếu/sai ⇒ mặc định 22]
 
 ## Việc còn lại
-- Chạy e2e `cr122-canvas-ux.spec.ts` ở đợt cuối (cần stack hành trình).
+- Chạy e2e `canvas-ux.fnr.ts` (xem `playwright.fnr.config.ts`).
 - Ghi audit khi platform_admin đổi giới hạn (hiện chỉ lưu `updated_by/updated_at`).
 - Kiểm cài đặt ở `library.service` (lưu def thư viện) nếu muốn áp cho cả mẫu.

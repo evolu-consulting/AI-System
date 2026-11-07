@@ -484,6 +484,7 @@ b888be206c54867f49c3b45d404b75cf92a5dca7c2b79c1fcdd65ecc2377c3d0  e2e/deployed/2
 23e376b5702968fa9047b1e3cf63375556be0503cb97b56995c7b6d29513c9dd  e2e/feature-ui.spec.ts
 4f2b7a3b9457d7520f9f211996552048b0f1975a5ee832344c16c2b31faee2aa  e2e/features.spec.ts
 cc6e8d4c9ba2e2cd1467b4aa60ebcb416cc1c68df58a5ef857910f2363babdc3  e2e/fnr-showcase/_seed.ts
+85d8393956b6e04946ad096f90ea2b571c5c5bca2d057a25a994b6e38990904c  e2e/fnr-showcase/canvas-ux.fnr.ts
 a53bce95aeff855a20c444855e207392dc5cabd47c6500baf5a2de8ec02879a4  e2e/fnr-showcase/canvas.fnr.ts
 4708094047251ca2fcbbedd0603ae1b099f161d32b19bd75e497142116a063d4  e2e/fnr-showcase/editor.fnr.ts
 846f48a7ad03f1c720ea621575b395485a83229155f8c737a49bf79e50e80c42  e2e/fnr-showcase/form-editor.fnr.ts
@@ -500,7 +501,6 @@ e0ed7e38fc81473322c1c8fd0382772d66ab46cf6271e9c93eecf71850dd6f6b  e2e/journey-ap
 adbc5203c9596078d3a3aa46c8ca67a509135e83c77453a40fc6df651cc66d4d  e2e/journey-approval/cr121-d-journey.spec.ts
 56b86a4606aa7dad100d29a7d60e750c93cf83c97bb23491d5f8555d765c83f1  e2e/journey-approval/cr121-d6b-notify.spec.ts
 405ca45f0e5360ef2bd2dadf8287e479a21ac3ac162b7ac7df44e6ed2eeccf47  e2e/journey-approval/cr121-editor.spec.ts
-a2ed1fe9f1a018f14fd090f03e34aa2992f948347904c8e6327e9d5076030f28  e2e/journey-approval/cr122-canvas-ux.spec.ts
 1e291e4662a1d0618bc083675ebb9b499ea83079231e8ec0da7c4542b3df0651  e2e/journey-approval/cr122-editor.spec.ts
 d71adb8e9ac396f10892a80ad40016ac1f4b566b670bb5a29c6d5e51240fae17  e2e/journey-approval/cr122-flows.spec.ts
 4a440cca95d7955e86d0bad9a63b780aad9a8b856263875f05967860742a5b54  e2e/journey-approval/playwright.journey.config.ts
