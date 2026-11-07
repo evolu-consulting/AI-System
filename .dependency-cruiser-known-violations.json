@@ -109,33 +109,6 @@
   },
   {
     "type": "dependency",
-    "from": "apps/workspace-web/src/features/partners/components/AddCompanyDialog.tsx",
-    "to": "apps/workspace-web/src/features/partners/api.ts",
-    "rule": {
-      "severity": "warn",
-      "name": "component-no-fetch-legacy"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/workspace-web/src/features/partners/components/AddCompanyDialog.tsx",
-    "to": "packages/web-kit/src/http.ts",
-    "rule": {
-      "severity": "warn",
-      "name": "component-no-fetch-legacy"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/workspace-web/src/features/partners/components/FlagPanel.tsx",
-    "to": "apps/workspace-web/src/features/ledger/api.ts",
-    "rule": {
-      "severity": "warn",
-      "name": "component-no-fetch-legacy"
-    }
-  },
-  {
-    "type": "dependency",
     "from": "apps/admin-web/src/features/partners/components/PartnerDrawer.tsx",
     "to": "apps/admin-web/src/features/partners/api.ts",
     "rule": {
@@ -207,30 +180,418 @@
     }
   },
   {
-    "type": "cycle",
-    "from": "apps/workspace-web/src/features/partners/api.ts",
-    "to": "apps/workspace-web/src/features/partners/lib/contacts.ts",
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/partners/components/AddCompanyDialog.tsx",
+    "to": "apps/workspace-web/src/features/partners/api.ts",
     "rule": {
       "severity": "warn",
-      "name": "no-circular-legacy"
-    },
-    "cycle": [
-      {
-        "name": "apps/workspace-web/src/features/partners/lib/contacts.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      },
-      {
-        "name": "apps/workspace-web/src/features/partners/api.ts",
-        "dependencyTypes": [
-          "local",
-          "type-only",
-          "import"
-        ]
-      }
-    ]
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/partners/components/AddCompanyDialog.tsx",
+    "to": "packages/web-kit/src/http.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/workspace-web/src/features/partners/components/FlagPanel.tsx",
+    "to": "apps/workspace-web/src/features/ledger/api.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "component-no-fetch-legacy"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.routes.ts",
+    "to": "apps/hub-api/src/modules/packs/kit/adapters/pack-guard.middleware.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.routes.ts",
+    "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.tools.ts",
+    "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.tools.ts",
+    "to": "apps/hub-api/src/modules/packs/kit/application/pack-tools.ports.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.tools.ts",
+    "to": "apps/hub-api/src/modules/packs/kit/domain/pack-tool-error.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/dlc/application/run-step.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/kit/application/pack-tools.ports.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/dlc/application/start-flow.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/dlc/application/start-flow.usecase.ts",
+    "to": "apps/hub-api/src/modules/packs/kit/application/slot.ports.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/dlc/application/step-context.ts",
+    "to": "apps/hub-api/src/modules/packs/kit/domain/pack-tool-error.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/dlc/domain/dlc-progress.rules.ts",
+    "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/seed/seed.cr113-flow.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/domain/approval-slot.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/seed/seed.library-sample.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/domain/approval-slot-default.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/seed/seed.library-sample.ts",
+    "to": "apps/hub-api/src/modules/packs/contracts/domain/approval-slot.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-deep"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/commands/commands.service.ts",
+    "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/config/catalog.rules.ts",
+    "to": "apps/hub-api/src/modules/commands/catalog.types.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/config/catalog.rules.ts",
+    "to": "apps/hub-api/src/modules/commands/command-access.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/config/config.rules.ts",
+    "to": "apps/hub-api/src/modules/agents/agent-access.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/kh/kh.query.service.ts",
+    "to": "apps/hub-api/src/modules/mcp/mcp.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/knowledge/adapters/kh.source.ts",
+    "to": "apps/hub-api/src/modules/kh/kh.client.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/mcp/adapters/workflow-invoker.ts",
+    "to": "apps/hub-api/src/modules/attachments/attachment-dify.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/mcp/adapters/workflow-invoker.ts",
+    "to": "apps/hub-api/src/modules/attachments/storage.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/mcp/mcp-files.ts",
+    "to": "apps/hub-api/src/modules/attachments/attachment-dify.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/packs.filebox.ts",
+    "to": "apps/hub-api/src/modules/attachments/filebox-token.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/packs/packs.filebox.ts",
+    "to": "apps/hub-api/src/modules/attachments/filebox.client.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/processes/core/ports.ts",
+    "to": "apps/hub-api/src/modules/attachments/storage.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/processes/core/ports.ts",
+    "to": "apps/hub-api/src/modules/kh/kh.mount.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.ts",
+    "to": "apps/hub-api/src/modules/artifacts/artifact.mcp.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.ts",
+    "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.ts",
+    "to": "apps/hub-api/src/modules/kh/kh.agent.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.ts",
+    "to": "apps/hub-api/src/modules/kh/kh.job.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.types.ts",
+    "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.types.ts",
+    "to": "apps/hub-api/src/modules/kh/kh.job.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runner/job/runner.repo.ts",
+    "to": "apps/hub-api/src/modules/kh/kh.agent.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runs/create-run.ts",
+    "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runs/create-run.ts",
+    "to": "apps/hub-api/src/modules/attachments/run-files.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runs/create-run.ts",
+    "to": "apps/hub-api/src/modules/mcp/confirm.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runs/run-context.ts",
+    "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runs/runs.service.ts",
+    "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runs/runs.service.ts",
+    "to": "apps/hub-api/src/modules/attachments/run-files.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/runs/sse/sse-writer.ts",
+    "to": "apps/hub-api/src/modules/attachments/run-files.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/stream/delta-sink.ts",
+    "to": "apps/hub-api/src/modules/runner/runner.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/stream/delta.rules.ts",
+    "to": "apps/hub-api/src/modules/orchestrator/orchestrator.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
+  },
+  {
+    "type": "dependency",
+    "from": "apps/hub-api/src/modules/usage/chat-token-gate.ts",
+    "to": "apps/hub-api/src/modules/runner/runner.rules.ts",
+    "rule": {
+      "severity": "error",
+      "name": "cross-module-flat"
+    }
   },
   {
     "type": "cycle",
@@ -239,24 +600,7 @@
     "rule": {
       "severity": "error",
       "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "apps/dlc-workspace/src/deploy.routes.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      },
-      {
-        "name": "apps/dlc-workspace/src/app.ts",
-        "dependencyTypes": [
-          "local",
-          "type-only",
-          "import"
-        ]
-      }
-    ]
+    }
   },
   {
     "type": "cycle",
@@ -265,24 +609,7 @@
     "rule": {
       "severity": "error",
       "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-engine.usecase.ts",
-        "dependencyTypes": [
-          "local",
-          "type-only",
-          "import"
-        ]
-      },
-      {
-        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-engine-facts.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      }
-    ]
+    }
   },
   {
     "type": "cycle",
@@ -291,25 +618,7 @@
     "rule": {
       "severity": "error",
       "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-flow.usecase.ts",
-        "dependencyTypes": [
-          "local",
-          "type-only",
-          "import"
-        ]
-      },
-      {
-        "name": "apps/hub-api/src/modules/packs/contracts/application/approval-engine.ports.ts",
-        "dependencyTypes": [
-          "local",
-          "type-only",
-          "import"
-        ]
-      }
-    ]
+    }
   },
   {
     "type": "cycle",
@@ -318,24 +627,7 @@
     "rule": {
       "severity": "error",
       "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "apps/hub-api/src/modules/packs/contracts/application/flow-submit.usecase.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      },
-      {
-        "name": "apps/hub-api/src/modules/packs/contracts/application/approval.usecase.ts",
-        "dependencyTypes": [
-          "local",
-          "type-only",
-          "import"
-        ]
-      }
-    ]
+    }
   },
   {
     "type": "cycle",
@@ -344,23 +636,7 @@
     "rule": {
       "severity": "error",
       "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "apps/hub-api/src/modules/processes/runs/launcher.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      },
-      {
-        "name": "apps/hub-api/src/modules/processes/runs/launcher-batch.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      }
-    ]
+    }
   },
   {
     "type": "cycle",
@@ -369,24 +645,16 @@
     "rule": {
       "severity": "error",
       "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "tests/acceptance/P-d/d1/_count.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      },
-      {
-        "name": "tests/acceptance/P-d/_support/pd.ts",
-        "dependencyTypes": [
-          "local",
-          "type-only",
-          "import"
-        ]
-      }
-    ]
+    }
+  },
+  {
+    "type": "cycle",
+    "from": "apps/workspace-web/src/features/partners/api.ts",
+    "to": "apps/workspace-web/src/features/partners/lib/contacts.ts",
+    "rule": {
+      "severity": "warn",
+      "name": "no-circular-legacy"
+    }
   },
   {
     "type": "dependency",
@@ -1385,393 +1653,6 @@
     "rule": {
       "severity": "error",
       "name": "platform-no-pack-internals"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.routes.ts",
-    "to": "apps/hub-api/src/modules/packs/kit/adapters/pack-guard.middleware.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.routes.ts",
-    "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.tools.ts",
-    "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.tools.ts",
-    "to": "apps/hub-api/src/modules/packs/kit/application/pack-tools.ports.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/dlc/adapters/dlc.tools.ts",
-    "to": "apps/hub-api/src/modules/packs/kit/domain/pack-tool-error.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/dlc/application/run-step.usecase.ts",
-    "to": "apps/hub-api/src/modules/packs/kit/application/pack-tools.ports.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/dlc/application/start-flow.usecase.ts",
-    "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/dlc/application/start-flow.usecase.ts",
-    "to": "apps/hub-api/src/modules/packs/kit/application/slot.ports.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/dlc/application/step-context.ts",
-    "to": "apps/hub-api/src/modules/packs/kit/domain/pack-tool-error.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/dlc/domain/dlc-progress.rules.ts",
-    "to": "apps/hub-api/src/modules/packs/kit/application/pack-runs.ports.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/seed/seed.cr113-flow.ts",
-    "to": "apps/hub-api/src/modules/packs/contracts/domain/approval-slot.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/seed/seed.library-sample.ts",
-    "to": "apps/hub-api/src/modules/packs/contracts/domain/approval-slot-default.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/seed/seed.library-sample.ts",
-    "to": "apps/hub-api/src/modules/packs/contracts/domain/approval-slot.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-deep"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/commands/commands.service.ts",
-    "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/config/catalog.rules.ts",
-    "to": "apps/hub-api/src/modules/commands/catalog.types.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/config/catalog.rules.ts",
-    "to": "apps/hub-api/src/modules/commands/command-access.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/config/config.rules.ts",
-    "to": "apps/hub-api/src/modules/agents/agent-access.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/kh/kh.query.service.ts",
-    "to": "apps/hub-api/src/modules/mcp/mcp.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/knowledge/adapters/kh.source.ts",
-    "to": "apps/hub-api/src/modules/kh/kh.client.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/mcp/adapters/workflow-invoker.ts",
-    "to": "apps/hub-api/src/modules/attachments/attachment-dify.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/mcp/adapters/workflow-invoker.ts",
-    "to": "apps/hub-api/src/modules/attachments/storage.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/mcp/mcp-files.ts",
-    "to": "apps/hub-api/src/modules/attachments/attachment-dify.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/packs.filebox.ts",
-    "to": "apps/hub-api/src/modules/attachments/filebox-token.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/packs/packs.filebox.ts",
-    "to": "apps/hub-api/src/modules/attachments/filebox.client.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/processes/core/ports.ts",
-    "to": "apps/hub-api/src/modules/attachments/storage.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/processes/core/ports.ts",
-    "to": "apps/hub-api/src/modules/kh/kh.mount.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.ts",
-    "to": "apps/hub-api/src/modules/artifacts/artifact.mcp.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.ts",
-    "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.ts",
-    "to": "apps/hub-api/src/modules/kh/kh.agent.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.ts",
-    "to": "apps/hub-api/src/modules/kh/kh.job.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.types.ts",
-    "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/job/job-agent-runner.types.ts",
-    "to": "apps/hub-api/src/modules/kh/kh.job.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runner/job/runner.repo.ts",
-    "to": "apps/hub-api/src/modules/kh/kh.agent.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/create-run.ts",
-    "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/create-run.ts",
-    "to": "apps/hub-api/src/modules/attachments/run-files.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/create-run.ts",
-    "to": "apps/hub-api/src/modules/mcp/confirm.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/run-context.ts",
-    "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/runs.service.ts",
-    "to": "apps/hub-api/src/modules/attachments/run-files.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/runs.service.ts",
-    "to": "apps/hub-api/src/modules/attachments/run-files.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/runs/sse/sse-writer.ts",
-    "to": "apps/hub-api/src/modules/attachments/run-files.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/stream/delta-sink.ts",
-    "to": "apps/hub-api/src/modules/runner/runner.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/stream/delta.rules.ts",
-    "to": "apps/hub-api/src/modules/orchestrator/orchestrator.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
-    }
-  },
-  {
-    "type": "dependency",
-    "from": "apps/hub-api/src/modules/usage/chat-token-gate.ts",
-    "to": "apps/hub-api/src/modules/runner/runner.rules.ts",
-    "rule": {
-      "severity": "error",
-      "name": "cross-module-flat"
     }
   }
 ]

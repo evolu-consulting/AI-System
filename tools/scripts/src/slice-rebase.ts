@@ -19,26 +19,59 @@ export function onlyLockConflicts(unmerged: string[]): boolean {
   return unmerged.length > 0 && unmerged.every((f) => f === LOCK_FILE);
 }
 
-export type RebaseOutcome = { ok: boolean; out: string; lockResolved: number };
+export const BASELINE_FILE = ".dependency-cruiser-known-violations.json";
 
-export function rebaseResolvingLock(git: GitFn, base: string): RebaseOutcome {
+/** Có conflict và mọi file conflict đều thuộc nhóm tự giải được (tests/.lock; baseline khi có hàm sinh lại). */
+export function onlyResolvable(unmerged: string[], baselineOk: boolean): boolean {
+  return (
+    unmerged.length > 0 &&
+    unmerged.every((f) => f === LOCK_FILE || (baselineOk && f === BASELINE_FILE))
+  );
+}
+
+export type RebaseOutcome = {
+  ok: boolean;
+  out: string;
+  lockResolved: number;
+  baselineResolved: number;
+};
+
+/**
+ * Rebase tự giải conflict file sinh ra: lấy bản upstream; baseline vi phạm ranh giới thì SINH LẠI bằng `regenBaseline`
+ * (check-boundaries --write; trả false ⇒ dừng báo như cũ). File khác conflict ⇒ dừng, giữ hành vi cũ.
+ */
+export function rebaseResolvingLock(
+  git: GitFn,
+  base: string,
+  regenBaseline?: () => boolean,
+): RebaseOutcome {
   let r = git("rebase", base);
   let lockResolved = 0;
+  let baselineResolved = 0;
   for (let i = 0; !r.ok && i < MAX_STEPS; i++) {
     const unmerged = parseLines(git("diff", "--name-only", "--diff-filter=U").out);
-    if (!onlyLockConflicts(unmerged)) return { ok: false, out: r.out, lockResolved };
+    if (!onlyResolvable(unmerged, regenBaseline !== undefined))
+      return { ok: false, out: r.out, lockResolved, baselineResolved };
     // Khi rebase, "ours" = nhánh đích (upstream); bản lát sẽ được sinh lại sau rebase.
-    git("checkout", "--ours", "--", LOCK_FILE);
-    git("add", LOCK_FILE);
-    lockResolved++;
-    r = git("-c", "core.editor=true", "rebase", "--continue");
-    // Commit chỉ đổi lock → rỗng sau khi giải: bỏ qua nó.
-    if (!r.ok && parseLines(git("diff", "--name-only", "--diff-filter=U").out).length === 0) {
-      const s = git("status", "--porcelain").out;
-      if (!s.trim()) r = git("-c", "core.editor=true", "rebase", "--skip");
+    for (const f of unmerged) git("checkout", "--ours", "--", f);
+    if (unmerged.includes(BASELINE_FILE)) {
+      if (!regenBaseline?.()) return { ok: false, out: r.out, lockResolved, baselineResolved };
+      baselineResolved++;
     }
+    for (const f of unmerged) git("add", f);
+    lockResolved += unmerged.includes(LOCK_FILE) ? 1 : 0;
+    r = continueRebase(git);
   }
-  return { ok: r.ok, out: r.out, lockResolved };
+  return { ok: r.ok, out: r.out, lockResolved, baselineResolved };
+}
+
+/** `rebase --continue`; commit chỉ đổi file sinh ra → rỗng sau khi giải ⇒ bỏ qua nó. */
+function continueRebase(git: GitFn): GitResult {
+  const r = git("-c", "core.editor=true", "rebase", "--continue");
+  if (r.ok || parseLines(git("diff", "--name-only", "--diff-filter=U").out).length > 0) return r;
+  return git("status", "--porcelain").out.trim()
+    ? r
+    : git("-c", "core.editor=true", "rebase", "--skip");
 }
 
 /** Cổng sau rebase (hook pre-commit KHÔNG chạy khi rebase ⇒ lỗi ranh giới module lọt, ví dụ D-4). */

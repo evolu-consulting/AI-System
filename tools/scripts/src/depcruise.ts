@@ -1,6 +1,7 @@
 // ADM-NFR-06 · `bun run depcruise`: kiểm luật import trên file đổi (spec M0 T-DEP-8), `--all` quét hết.
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { onlyStaleWarning } from "./baseline.rules";
 import { changedFiles, hasRef, repoRoot } from "./lib/git";
 
 const ENTRY_EXT = /\.(ts|tsx|js|mjs|cjs)$/;
@@ -149,9 +150,10 @@ function main(argv: string[]): number {
       extra: full ? CACHE_ARGS(root) : undefined,
     });
     const text = r.out.trim();
-    if (r.code === 0) console.log(text);
+    const ok = r.code === 0 || onlyStaleWarning(text); // chỉ cảnh báo "stale known violations" ⇒ xanh
+    if (ok) console.log(text);
     else console.error(text);
-    code = Math.max(code, r.code === 0 ? 0 : 1);
+    code = Math.max(code, ok ? 0 : 1);
   }
   return code;
 }

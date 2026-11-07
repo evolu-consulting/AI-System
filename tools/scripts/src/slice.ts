@@ -170,7 +170,15 @@ function cmdMerge(name: string | undefined, noTest: boolean, noOpenspec: boolean
   else if (!run(dir, ["bun", "tools/scripts/src/openspec.ts", "check", name as string], true).ok)
     fail("openspec:check đỏ — sửa Delta trong tasks.md (hoặc --no-openspec khi khẩn cấp)");
   ensureMergeDriver(dir); // locale JSON gộp theo key (git config không nằm trong git)
-  const rb = rebaseResolvingLock((...a) => git(dir, ...a), BASE);
+  const rb = rebaseResolvingLock(
+    (...a) => git(dir, ...a),
+    BASE,
+    () => run(dir, ["bun", "tools/scripts/src/check-boundaries.ts", "--write"]).ok,
+  );
+  if (rb.baselineResolved > 0)
+    console.log(
+      `slice: tự giải ${rb.baselineResolved} conflict baseline ranh giới, sinh lại bằng check-boundaries --write`,
+    );
   if (!rb.ok) fail(`rebase lỗi (gỡ conflict trong ${dir}, rồi chạy lại):\n${rb.out}`);
   if (rb.lockResolved > 0) {
     console.log(

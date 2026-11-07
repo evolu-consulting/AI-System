@@ -7,6 +7,7 @@
 // Luật ở check-boundaries.rules.ts (unit: check-boundaries.test.ts); quét regex ~0,5 s thay vì depcruise ~30 s.
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { BASELINE_FILE, formatBaseline } from "./baseline.rules";
 import {
   type Comparison,
   compare,
@@ -20,7 +21,8 @@ import {
 } from "./check-boundaries.rules";
 import { repoRoot } from "./lib/git";
 
-export const BASELINE_FILE = ".dependency-cruiser-known-violations.json";
+export { BASELINE_FILE };
+
 const SRC_DIR = "apps/hub-api/src";
 const CODE = /\.(ts|tsx)$/;
 
@@ -49,8 +51,7 @@ function readBaseline(root: string): KnownViolation[] | null {
 
 /** depcruise `--ignore-known` dùng chung file; giữ nguyên mục của luật khác nếu sau này có. */
 function writeBaseline(root: string, vs: Violation[], rest: KnownViolation[]): void {
-  const body = JSON.stringify([...rest, ...toBaseline(vs)], null, 2);
-  writeFileSync(join(root, BASELINE_FILE), `${body}\n`);
+  writeFileSync(join(root, BASELINE_FILE), formatBaseline([...rest, ...toBaseline(vs)]));
 }
 
 type Ctx = {
