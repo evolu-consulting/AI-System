@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { onlyStaleWarning } from "./baseline.rules";
 import { changedFiles, hasRef, repoRoot } from "./lib/git";
+import { failNote } from "./slice-rm.rules";
 
 const ENTRY_EXT = /\.(ts|tsx|js|mjs|cjs)$/;
 const ENTRY_ROOT = /^(apps|packages|tools)\//;
@@ -152,7 +153,7 @@ function main(argv: string[]): number {
     const text = r.out.trim();
     const ok = r.code === 0 || onlyStaleWarning(text); // chỉ cảnh báo "stale known violations" ⇒ xanh
     if (ok) console.log(text);
-    else console.error(text);
+    else console.error(`${text}\n${failNote(text) ?? ""}`.trimEnd());
     code = Math.max(code, ok ? 0 : 1);
   }
   return code;

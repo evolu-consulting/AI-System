@@ -17,6 +17,7 @@ import { hardLimits } from "./res-check.rules";
 import { ensureMergeDriver } from "./setup-merge-driver";
 import { cmdPool, spawnRefill, takeFromPool } from "./slice.pool";
 import { postRebaseGates, rebaseResolvingLock, relockAfterRebase } from "./slice-rebase";
+import { isNotWorktreeError } from "./slice-rm.rules";
 
 const BASE = "platform/gd0";
 const POOL_SCRIPT = "tools/scripts/src/slice.ts";
@@ -213,7 +214,8 @@ function cmdRm(name: string | undefined, force: boolean): void {
   const { main, dir, branch } = paths(name);
   if (existsSync(dir)) {
     const r = git(main, "worktree", "remove", ...(force ? ["--force"] : []), dir);
-    if (!r.ok) fail(`${r.out}\n(thêm --force nếu chắc chắn bỏ thay đổi)`);
+    if (!r.ok && !isNotWorktreeError(r.out))
+      fail(`${r.out}\n(thêm --force nếu chắc chắn bỏ thay đổi)`);
   }
   rmSync(dir, { recursive: true, force: true }); // git để lại node_modules (đường dẫn dài/liên kết)
   git(main, "worktree", "prune");
