@@ -1,6 +1,7 @@
 // CR-122 p21 · người ký công ty của phong bì ĐANG MỞ thấy HĐ (chế độ thấy `org`, ngoài cây của chủ HĐ): HĐ `needs_review` đã khoá
 // bởi bước Ký số ⇒ người ký mở được HĐ + trạng thái ký số + "Ký ngay" (sign-url) + làm mới; editor không phải người ký vẫn 404;
-// tenant khác không thấy; phong bì xong/huỷ ⇒ hết thấy theo nhánh này. RLS thật (`contracts_rw`). DocuSign GIẢ cục bộ.
+// tenant khác không thấy; p21b (0084): ký xong/từ chối ⇒ vẫn đọc (không sửa), phong bì huỷ ⇒ hết thấy. RLS thật (`contracts_rw`).
+// DocuSign GIẢ cục bộ.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { arrange, CBASE, CK, insContract, insFile, P, pdf, T } from "../HD1/_support/hd1";
 import { untilHubSettles } from "../N1/_support/n1";
@@ -67,6 +68,17 @@ async function rlsRead(tenant: string, user: string, id: string): Promise<number
   });
 }
 
+/** UPDATE hàng HĐ dưới RLS thật như `user` (acme) ⇒ số hàng sửa được. */
+async function rlsUpdate(user: string, id: string): Promise<number> {
+  return c.sql.begin(async (tx) => {
+    await tx`select set_config('app.tenant_id', ${T.acme}, true), set_config('app.user_id', ${user}, true)`;
+    await tx`set local role contracts_rw`;
+    return (
+      await tx`update contracts.contracts set updated_at = now() where id = ${id} returning id`
+    ).length;
+  });
+}
+
 const get = (who: (typeof P)[keyof typeof P], id: string) =>
   c.hubCall(who, "GET", `${CBASE}/${id}`);
 
@@ -89,26 +101,25 @@ describe("CR-122 p21 · người ký công ty thấy HĐ đang chờ ký", () =>
     expect({ cuc: (await get(P.cuc, id)).status }).toEqual({ cuc: 404 });
     expect(await rlsRead(T.acme, P.cuc.id, id)).toBe(0);
     expect({ tam: (await get(P.tam, id)).status }).toEqual({ tam: 404 });
-    const upd = await c.sql.begin(async (tx) => {
-      await tx`select set_config('app.tenant_id', ${T.acme}, true), set_config('app.user_id', ${P.hoa.id}, true)`;
-      await tx`set local role contracts_rw`;
-      return (
-        await tx`update contracts.contracts set updated_at = now() where id = ${id} returning id`
-      ).length;
-    });
-    expect(upd).toBe(0);
+    expect(await rlsUpdate(P.hoa.id, id)).toBe(0);
     // tenant khác: cùng user id nhưng `app.tenant_id` khác ⇒ 0; owner tenant khác qua API ⇒ không thấy
     expect(await rlsRead(T.beta, P.hoa.id, id)).toBe(0);
     expect([403, 404]).toContain((await get(P.an, id)).status);
   }, 90_000);
 
-  it("phong bì xong hoặc huỷ ⇒ người ký hết thấy theo nhánh này", async () => {
-    for (const st of ["completed", "voided"]) {
+  it("ký xong hoặc từ chối ⇒ người ký vẫn đọc (không sửa), phong bì bị huỷ ⇒ hết thấy", async () => {
+    for (const [st, read, api] of [
+      ["completed", 1, 200],
+      ["declined", 1, 200],
+      ["voided", 0, 404],
+    ] as const) {
       const { id } = await setup();
       expect(await rlsRead(T.acme, P.hoa.id, id)).toBe(1);
       await c.sql`update contracts.esign_envelopes set status = ${st} where contract_id = ${id}`;
-      expect({ st, read: await rlsRead(T.acme, P.hoa.id, id) }).toEqual({ st, read: 0 });
-      expect({ st, api: (await get(P.hoa, id)).status }).toEqual({ st, api: 404 });
+      expect({ st, read: await rlsRead(T.acme, P.hoa.id, id) }).toEqual({ st, read });
+      expect({ st, api: (await get(P.hoa, id)).status }).toEqual({ st, api });
+      expect({ st, upd: await rlsUpdate(P.hoa.id, id) }).toEqual({ st, upd: 0 });
+      expect({ st, cuc: await rlsRead(T.acme, P.cuc.id, id) }).toEqual({ st, cuc: 0 });
     }
   }, 90_000);
 });

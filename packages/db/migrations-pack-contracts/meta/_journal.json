@@ -540,6 +540,13 @@
       "when": 1806700000000,
       "tag": "0083_esign_signer_visible",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1806800000000,
+      "tag": "0084_esign_signer_keep_view",
+      "breakpoints": true
     }
   ]
 }
