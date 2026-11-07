@@ -1,4 +1,4 @@
-// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-122 · Q1 · HÀNH TRÌNH G1 + G2 (spec §3) trên stack thật `playwright.journey.config.ts` (công ty MỚI `e2e-c22-<hậu tố>`, cờ FLOW_TRIGGERS bật cho
 // công ty test, dữ liệu riêng có hậu tố duy nhất):
 //  G1 · platform_admin gán flow "Duyệt HĐ Demo" (Bắt đầu khi → Nếu giá trị > 100 tr → Duyệt Kế toán / Duyệt Giám đốc → gộp → Thông báo → Kết thúc) cho công
@@ -173,7 +173,7 @@ test("G1.2 · HĐ 150 tr: Nếu rẽ nhánh Đúng ⇒ chờ Kế toán; duyệt
 
 test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt → Xuất bản (gốc tự Tắt) → HĐ B theo bản công ty, HĐ A giữ bản cũ → Quay về bản gốc", async ({
   browser,
-}) => {
+}, testInfo) => {
   test.setTimeout(420_000);
   // HĐ A gửi TRƯỚC khi sao chép: dừng ở bước nhánh Đúng (Kế toán)
   const a = await submit(browser, "g2a");
@@ -247,7 +247,7 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   await expect(page.getByTestId("apply-status").first()).toContainText(
     "Đã áp dụng — hợp đồng gửi từ giờ dùng quy trình này",
   );
-  await page.screenshot({ path: "test-results/cr123-u7-after-save-apply.png" });
+  await page.screenshot({ path: testInfo.outputPath("cr123-u7-after-save-apply.png") });
   await page.goBack();
   await page.reload();
   const box2b = await openCompanyFlows(page);
