@@ -28,10 +28,10 @@ export async function readStagesMax(tx: Tx): Promise<number> {
 }
 
 export async function writeStagesMax(tx: Tx, n: number, actor: string): Promise<void> {
-  await tx.execute(sql`
-    insert into hub.platform_settings as s (key, value, updated_by, updated_at)
-    values (${STAGES_MAX_KEY}, to_jsonb(${n}::int), ${actor}, now())
-    on conflict (key) do update set value = excluded.value, updated_by = excluded.updated_by, updated_at = excluded.updated_at`);
+  // hub_rw không INSERT/UPDATE trực tiếp được bảng (migration 0115): ghi qua hàm SECURITY DEFINER (khoá cho phép + kiểm 1…50).
+  await tx.execute(
+    sql`select hub.set_platform_setting(${STAGES_MAX_KEY}, to_jsonb(${n}::int), ${actor}::uuid)`,
+  );
 }
 
 /** Số stage vượt cài đặt nền tảng ⇒ 422 `PROCESS_DEF_INVALID` (`paths = ["stages"]`, `stages_max`). */

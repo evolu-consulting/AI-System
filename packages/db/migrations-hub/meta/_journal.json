@@ -694,6 +694,13 @@
       "when": 1806500000000,
       "tag": "0115_platform_settings_stages",
       "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1806550000000,
+      "tag": "0116_validate_stages_ck",
+      "breakpoints": true
     }
   ]
 }

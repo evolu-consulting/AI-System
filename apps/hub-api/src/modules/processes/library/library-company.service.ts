@@ -10,6 +10,7 @@ import { withHubScope } from "@ai/db/hub-scope";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { appError } from "../../../lib/errors";
 import type { ProcessDeps } from "../core/ports";
+import { assertStagesWithinLimit } from "../defs/platform-limits";
 import { labelOf, runRecordLabels } from "../runs/run-record-labels";
 import { listRuns, toSummary } from "../runs/runs.repo";
 import * as lib from "./library.repo";
@@ -88,6 +89,7 @@ export class CompanyLibraryService {
       }
       const rel = await lib.readRelease(tx, src.id, src.published_version);
       if (!rel) throw libError("PROCESS_NOT_PUBLISHED");
+      await assertStagesWithinLimit(tx, rel.stages.length); // CR-122 p22 · bản xuất bản cũ dài hơn trần mới ⇒ không sao chép
       const key = await co.freeCompanyKey(tx, tenantId, `${src.key.slice(0, KEY_BASE_MAX)}-copy`);
       const newId = await co.insertCompanyCopy(tx, {
         src: src.id,

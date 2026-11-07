@@ -5,6 +5,7 @@ import type { Role } from "@ai/contracts/common";
 import { tenantId, userId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
+import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
@@ -97,6 +98,25 @@ describe("CR-122 p22 · số bước tối đa là cài đặt nền tảng", ()
     const s = await call("P", "PUT", "/process-editor/limits", { stages_max: 3 });
     expect(s.status).toBe(200);
     expect((await call("A", "GET", "/process-editor/limits")).json.stages_max).toBe(3);
+  });
+
+  it("đường hub_rw không ghi thẳng được bảng cài đặt nền tảng (chỉ hàm SECURITY DEFINER, khoá + giá trị được kiểm)", async () => {
+    const direct = await db
+      .execute(
+        sql`insert into hub.platform_settings (key, value) values ('process.stages_max', '999'::jsonb)`,
+      )
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(direct).not.toBeNull();
+    const bad = await db
+      .execute(sql`select hub.set_platform_setting('process.stages_max', '999'::jsonb, null)`)
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(bad).not.toBeNull();
   });
 
   it("lưu quy trình vượt cài đặt ⇒ 422 kèm trần, nâng lên 30 thì lưu được 25 bước (DB nới CHECK)", async () => {

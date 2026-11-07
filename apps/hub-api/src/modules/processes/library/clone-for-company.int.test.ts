@@ -280,6 +280,19 @@ describe("CR-121 c9 · Sao chép cho công ty này", () => {
     ]);
     expect(await inSet(Y)).toEqual([r.json.def_id]);
   });
+
+  it("CR-122 p22 · bản xuất bản dài hơn số bước tối đa của nền tảng ⇒ 422 kèm trần, không tạo bản riêng", async () => {
+    const id = await libCopy("cc-limit", "Giới hạn bước");
+    await o`insert into hub.platform_settings (key, value) values ('process.stages_max', '1'::jsonb)`;
+    try {
+      const r = await call("AY", "POST", CL(Y, id), {});
+      expect(r.status).toBe(422);
+      expect((r.json.error?.details ?? r.json.details)?.stages_max).toBe(1);
+      expect((await privOf(Y, id)).length).toBe(0);
+    } finally {
+      await o`delete from hub.platform_settings where key = 'process.stages_max'`;
+    }
+  });
 });
 
 describe("CR-121 c9 · đọc chỉ-xem theo công ty", () => {
