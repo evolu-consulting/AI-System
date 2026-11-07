@@ -68,10 +68,13 @@ export function normalizeWait(s: StageDraft): StageDraft {
 }
 
 export function waitFromDef(ex: WaitExecutor): WaitDraft {
-  const from =
-    ex.from.kind === "input"
-      ? `input:${ex.from.key}`
-      : `field:${ex.from.stage_key}:${ex.from.field}`;
+  // node bảng "Chờ tới" của lõi (`core.nodes`) đặt sẵn giờ + ngày lệch mà CHƯA có nguồn ngày ⇒ để trống cho người dùng chọn (không vỡ trang)
+  const src = ex.from as WaitExecutor["from"] | undefined;
+  const from = !src
+    ? ""
+    : src.kind === "input"
+      ? `input:${src.key}`
+      : `field:${src.stage_key}:${src.field}`;
   return { source: from, offset: String(ex.offset_days), time: ex.time };
 }
 

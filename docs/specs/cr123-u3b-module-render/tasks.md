@@ -44,4 +44,5 @@ cạnh vào ô tới stage đầu, cạnh "đi tiếp" ra khỏi ô tới bướ
 - Kịch bản: khi tính chỗ còn lại cho trần số bước thì ô Ký số tính 2 stage [test: apps/admin-web/src/features/processes/components/canvas/module-cluster.test.ts » số stage thật (trần số bước) khác số ô: ô Ký số = 2 stage]
 
 ## Việc còn lại
-- Ảnh canvas trước/sau: `docs/specs/CR-123/shots/u3b-*`.
+- Ảnh nghiệm thu: `docs/specs/CR-123/shots/u3b/` (1 mẫu một ô Ký số 3 đầu ra · 2-3 kéo "Từ chối" sang Trả lại rồi về Kết thúc · Từ chối · 4 menu "Thêm bước" không có "Chờ ký xong").
+- Lỗi CŨ sửa kèm (không do u3a/u3b): mở flow trong trình soạn vỡ trang "Cannot read properties of undefined (reading 'kind')" — `waitFromDef` đọc `ex.from.kind` mà node lõi "Chờ tới" (core.nodes, CR-122 N1) đặt sẵn giờ nhưng KHÔNG có nguồn ngày; menu "Thêm bước" (p25 e2e6c8da1) dựng patch của mọi node nên vỡ cả trang. Sửa: `waitFromDef` chịu `from` vắng (nguồn trống); test `lib/palette-all-nodes.test.ts`.

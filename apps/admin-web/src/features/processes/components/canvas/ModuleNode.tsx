@@ -1,6 +1,6 @@
 // CR-123 · FLOW3-FR-14 · node của app (Ký số = gửi + chờ) là MỘT ô trên sơ đồ, cùng dáng `StageNode`: tên bước + loại node + tóm tắt,
 // bên phải là các đầu ra theo kết quả nghiệp vụ (Ký xong · Từ chối · Hết hạn). Chọn ô = chọn stage ĐẦU của cụm (panel gộp do u3a).
-// Đầu ra chỉ để đọc sơ đồ (không kéo nối tay ở đây); cạnh từ đầu ra "đi tiếp" là cạnh tiến thường (handle đầu tiên trong DOM).
+// Đầu ra kéo nối tay được khi sơ đồ sửa được (`connectable`; luật ở `connectPatch`); cạnh từ đầu ra "đi tiếp" là cạnh tiến thường (handle đầu tiên trong DOM).
 import { HiddenHandle } from "@ai/flow-canvas";
 import { NODE_H, NODE_W } from "@ai/flow-canvas/pure";
 import { Handle, type NodeProps, Position } from "@xyflow/react";
@@ -13,7 +13,7 @@ import type { StageNodeType } from "./StageNode";
 import { onStageKeyDown } from "./stage-keys";
 import type { ModuleExit, StageView } from "./stage-view";
 
-function ExitPort({ x, top }: { x: ModuleExit; top: string }) {
+function ExitPort({ x, top, connectable }: { x: ModuleExit; top: string; connectable: boolean }) {
   const { t } = useTranslation();
   const label = x.label || t("process.admin.canvas.module.done");
   return (
@@ -21,7 +21,7 @@ function ExitPort({ x, top }: { x: ModuleExit; top: string }) {
       id={exitHandle(x.key, x.on)}
       type="source"
       position={Position.Right}
-      isConnectable={false}
+      isConnectable={connectable}
       title={t("process.admin.canvas.module.exitHint", { label })}
       aria-label={label}
       data-testid={`module-exit-${x.key}`}
@@ -30,6 +30,7 @@ function ExitPort({ x, top }: { x: ModuleExit; top: string }) {
         width: "auto",
         height: "auto",
         background: "var(--color-card)",
+        cursor: connectable ? "crosshair" : "default",
         zIndex: 2,
       }}
       className={`rounded-full border px-1.5 text-caption leading-4 ${
@@ -58,7 +59,12 @@ export function ModuleNode({ data }: NodeProps<StageNodeType>) {
       <HiddenHandle id="back-in" type="target" position={Position.Bottom} />
       <HiddenHandle id="back" type="source" position={Position.Top} />
       {exits.map((x, i) => (
-        <ExitPort key={x.key} x={x} top={exitTop(i, exits.length)} />
+        <ExitPort
+          key={x.key}
+          x={x}
+          top={exitTop(i, exits.length)}
+          connectable={data.connectable === true}
+        />
       ))}
       <button
         type="button"
