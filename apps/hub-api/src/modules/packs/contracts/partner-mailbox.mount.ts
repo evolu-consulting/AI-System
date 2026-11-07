@@ -22,6 +22,7 @@ import { esignRepo } from "./adapters/esign.repo";
 import { type InboxItem, partnerInboxRepo } from "./adapters/partner-inbox.repo";
 import { type PartnerSendRepo, partnerSendRepo } from "./adapters/partner-send.repo";
 import { partnerSendTool } from "./adapters/partner-send.tool";
+import { FLOW_STARTING } from "./application/contract-flow.ports";
 import type { ESignFiles } from "./application/esign.ports";
 import { finalImportance, importanceByValue, sharedValueOf } from "./domain/partner-send.rules";
 import { partnerSendBinding } from "./nodes/partner-send/binding";
@@ -59,22 +60,32 @@ export function inboxItemsOf(
   });
 }
 
+/** Lý do thẻ HĐ nhận khi công ty nhận chưa có người phụ trách để chạy flow nhận (web dịch sang câu nghiệp vụ). */
+export const RECEIVE_NO_OWNER = "RECEIVE_NO_OWNER";
+
 /**
- * Người "gây" sự kiện `contract.received` (bộ điều phối cần người chạy flow nhận — thiếu ⇒ FLOW_REFUSED, HĐ nhận kẹt): người phụ trách công ty
- * nhận đã đặt; chưa đặt ⇒ quản trị công ty (hoạt động, sớm nhất) rồi thành viên nội bộ sớm nhất. Một câu, chỉ khi chưa có người phụ trách.
+ * MỘT câu hub cho lô HĐ nhận: (1) `armed` = cờ flow theo sự kiện của công ty BẬT và có flow nhận (`contract.received`) đang bật gán cho công ty;
+ * (2) người "gây" sự kiện = người phụ trách đã đặt nếu còn là thành viên nội bộ, hoạt động, không bị khoá; không thì quản trị công ty
+ * (`tenant_admin`) hoạt động, không bị khoá, sớm nhất; không có ⇒ null (KHÔNG lùi về thành viên bất kỳ).
  */
-export async function receiveActorOf(
+export async function receiveStateOf(
   db: Db,
   tenantId: string,
   ownerId: string | null,
-): Promise<string | null> {
-  if (ownerId) return ownerId;
+): Promise<{ armed: boolean; actor: string | null }> {
   const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
-    tx.execute<{ id: string }>(sql`select u.id::text as id from admin.users u
-      where u.tenant_id = ${tenantId}::uuid and u.kind = 'internal' and u.active
-      order by (u.role = 'tenant_admin') desc, u.created_at, u.id limit 1`),
+    tx.execute<{ armed: boolean; actor: string | null }>(sql`select
+      (exists (select 1 from hub.tenant_flow_settings s where s.tenant_id = ${tenantId}::uuid and s.flow_triggers)
+        and exists (select 1 from hub.company_flows cf
+          join hub.process_defs d on d.id = cf.flow_id and d.deleted_at is null and (d.tenant_id = cf.tenant_id or d.tenant_id is null)
+          where cf.tenant_id = ${tenantId}::uuid and cf.enabled and d.trigger_event = 'contract.received')) as armed,
+      coalesce(
+        (select u.id::text from admin.users u where u.id = ${ownerId}::uuid and u.tenant_id = ${tenantId}::uuid
+          and u.kind = 'internal' and u.active and not u.locked_by_tenant),
+        (select u.id::text from admin.users u where u.tenant_id = ${tenantId}::uuid and u.role = 'tenant_admin'
+          and u.kind = 'internal' and u.active and not u.locked_by_tenant order by u.created_at, u.id limit 1)) as actor`),
   );
-  return r?.id ?? null;
+  return { armed: r?.armed === true, actor: r?.actor ?? null };
 }
 
 /** Tenant NHẬN: 3 câu cố định mỗi lô, một tx scope tenant (system user null). */
@@ -87,11 +98,15 @@ export function receiveInbox(db: Db) {
         important: s.importantMin,
         critical: s.criticalMin,
       });
-      const n = await repo.insertBatch(items, s.ownerId);
-      await repo.emitReceived(
+      if (items.length === 0) return 0;
+      // Chỉ tạo lượt duyệt khi flow nhận ĐÃ SẴN SÀNG (cờ bật + có flow gán); chưa có người gây sự kiện ⇒ lượt kẹt với lý do rõ, không phát sự kiện.
+      const { armed, actor } = await receiveStateOf(db, tenantId, s.ownerId);
+      const n = await repo.insertBatch(
         items,
-        items.length > 0 ? await receiveActorOf(db, tenantId, s.ownerId) : null,
+        s.ownerId,
+        armed ? (actor ? FLOW_STARTING : RECEIVE_NO_OWNER) : null,
       );
+      if (!armed || actor) await repo.emitReceived(items, actor);
       return n;
     });
 }

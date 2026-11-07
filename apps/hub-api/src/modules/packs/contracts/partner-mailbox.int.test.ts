@@ -102,6 +102,10 @@ beforeAll(async () => {
     } as never)} where id = ${id}`;
   }
   await o`insert into hub.partner_links (from_tenant, to_tenant, requested_at, accepted_at) values (${A}, ${B}, now(), now())`;
+  // B: flow nhận SẴN SÀNG (cờ flow bật + flow «Nhận HĐ thường» của Thư viện gán) + người gây sự kiện = quản trị B ⇒ HĐ nhận có lượt duyệt.
+  await o`update admin.users set role = 'tenant_admin' where id = ${UB}`;
+  await o`insert into hub.tenant_flow_settings (tenant_id, flow_triggers) values (${B}, true)`;
+  await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${B}, '0c124000-0000-4000-8000-0000000000c2', true)`;
   db = createDb(urls().hubApi, { max: 4 });
 }, 60_000);
 afterAll(async () => {

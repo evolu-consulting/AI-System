@@ -36,6 +36,8 @@ export type EngineStageView = {
   task: { id: string; can_act: boolean; override?: boolean } | null;
   /** CR-113 · id task review gần nhất của stage (khớp lần "duyệt thay" đã ghi). */
   task_ref?: string | null;
+  /** CR-124 · q6 · đích lùi hợp lệ của stage (khớp `PackStepView.back_to_steps`). */
+  back_to_steps?: number[];
   /** CR-122 · P11 · tên stage + Group (khớp `PackStepView`) — thẻ của lượt flow (không có mẫu chụp) dựng bước từ đây. */
   name?: string;
   group_id?: string | null;
@@ -331,8 +333,8 @@ export type EngineErrorCode =
 export type EnginePlan =
   | { kind: "error"; code: EngineErrorCode }
   | { kind: "pass"; taskId: string; finalizes: boolean }
-  | { kind: "fail_back"; taskId: string }
-  /** CR-124 · q6 · lượt flow theo sự kiện (`from_run`): Trả lại = quyết `fail` KHÔNG đích lùi — nhánh «Trả lại» do chính stage Duyệt của flow quyết (`return_step`). */
+  | { kind: "fail_back"; taskId: string; backTo: number }
+  /** CR-124 · q6 · lượt flow theo sự kiện (`from_run`) mà stage KHÔNG có đích lùi: Trả lại = quyết `fail` không `back_to_step` — nhánh «Trả lại» do chính stage Duyệt quyết (`return_step`). */
   | { kind: "fail_flow"; taskId: string }
   | { kind: "reject"; taskId: string }
   | { kind: "redo"; taskId: string; reextract: boolean };
@@ -359,8 +361,15 @@ export function planEngineAct(
     return { kind: "pass", taskId: task.id, finalizes: card.finalizes_on_approve };
   if (i.action === "reject") return { kind: "reject", taskId: task.id };
   if (i.action === "redo") return { kind: "redo", taskId: task.id, reextract: i.hasSource };
-  // Lượt flow theo sự kiện: bước 0 là stage thật; Trả lại = nhánh của stage (không lùi về bước soạn máy cũ).
-  if (card.from_run) return { kind: "fail_flow", taskId: task.id };
-  // Bước 0 của thẻ máy cũ là bước soạn (không có nơi để trả về).
-  return open.idx === 0 ? err("APPROVAL_NOT_OPEN") : { kind: "fail_back", taskId: task.id };
+  if (card.from_run) {
+    // Lượt flow theo sự kiện: bước 0 là stage thật. Stage có đích lùi (`back_to_steps`) ⇒ lùi về đó; không ⇒ nhánh Trả lại của stage.
+    const back = stageAt(i.sv, open.idx)?.back_to_steps?.[0];
+    return typeof back === "number"
+      ? { kind: "fail_back", taskId: task.id, backTo: back }
+      : { kind: "fail_flow", taskId: task.id };
+  }
+  // Bước 0 của thẻ máy cũ là bước soạn (không có nơi để trả về); các bước sau lùi về bước soạn 0.
+  return open.idx === 0
+    ? err("APPROVAL_NOT_OPEN")
+    : { kind: "fail_back", taskId: task.id, backTo: 0 };
 }

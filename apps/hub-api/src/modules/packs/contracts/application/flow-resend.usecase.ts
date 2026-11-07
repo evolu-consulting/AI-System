@@ -4,7 +4,7 @@
 // mới (trước đây rơi sang đường cũ: tính lại mẫu duyệt cũ ⇒ ghi sai lý do FLOW_MISSING/FLOW_ROUTE_NONE lên thẻ).
 // Lượt khác (máy cũ, cờ tắt) ⇒ đi tiếp đường "Mở lại" cũ (`next`). Lớp 2: chỉ cổng.
 import type { PackWho } from "../../kit/public";
-import { EV_SUBMITTED } from "../domain/contract-flow-events.rules";
+import { EV_RECEIVED, EV_SUBMITTED } from "../domain/contract-flow-events.rules";
 import type { ApprovalUow } from "./approval.ports";
 import { type ContractFlowGate, requireFlow } from "./contract-flow.ports";
 
@@ -12,12 +12,23 @@ type Op<T> = (who: PackWho, contractId: string) => Promise<T>;
 
 /** Lượt engine `level1` đang mở (chưa run = chờ flow; có run = hasRun); khác ⇒ null. */
 async function liveApproval(uow: ApprovalUow, who: PackWho, id: string) {
-  const a = await uow.tenant(
-    who,
-    async (r) => (await r.approval.state(id, { lock: false }))?.approval,
-  );
+  const st = await uow.tenant(who, async (r) => r.approval.state(id, { lock: false }));
+  const a = st?.approval;
   if (a?.status !== "level1" || a.mode !== "engine") return null;
-  return { a, hasRun: !!a.engineRunId };
+  return { a, hasRun: !!a.engineRunId, received: st?.source === "partner_inbox" };
+}
+
+/**
+ * CR-124 · sự kiện phát lại + người gây. HĐ nhận từ đối tác không có "người gửi duyệt" thật (started_by = hệ thống) ⇒ `contract.received`,
+ * người gây = người bấm Mở lại; HĐ thường ⇒ `contract.submitted`, người gây = người gửi duyệt.
+ */
+function resendEmit(
+  cur: Awaited<ReturnType<typeof liveApproval>>,
+  who: PackWho,
+): { event: typeof EV_RECEIVED | typeof EV_SUBMITTED; actor: string } {
+  return cur?.received === true
+    ? { event: EV_RECEIVED, actor: who.userId }
+    : { event: EV_SUBMITTED, actor: cur?.a.startedBy ?? "" };
 }
 
 export function withFlowResend<T extends string>(
@@ -33,7 +44,8 @@ export function withFlowResend<T extends string>(
     const cur = d.flow ? await liveApproval(d.uow, who, id) : null;
     const a = cur?.a;
     const hasRun = cur?.hasRun === true;
-    const prep = a && d.flow ? await d.flow.prepare(who.tenantId, a.startedBy) : null;
+    const { event, actor } = resendEmit(cur, who);
+    const prep = a && d.flow ? await d.flow.prepare(who.tenantId, actor) : null;
     if (!a || !prep?.on || (hasRun && !d.stalled)) return next ? next(who, id) : "failed";
     if (hasRun && !(await d.stalled?.(who, id))) return "not_stalled" as const;
     return d.uow.tenant(who, async (r) => {
@@ -43,8 +55,8 @@ export function withFlowResend<T extends string>(
       if (!(await repo.rearmFlow?.(id, a.id, a.engineRunId ?? null)))
         return (hasRun ? "not_stalled" : "flow_starting") as "not_stalled" | "flow_starting";
       const key = `${a.id}.${crypto.randomUUID().slice(0, 8)}`; // event_id mới ⇒ không bị coi là trùng
-      await repo.emitContract(EV_SUBMITTED, id, key, {
-        actor: a.startedBy,
+      await repo.emitContract(event, id, key, {
+        actor,
         departments: prep.departments,
       });
       return "ok" as const;

@@ -138,4 +138,27 @@ describe("CR-124 q6 · lượt flow theo sự kiện có stage Duyệt ở idx 0
     // Trả lại của flow theo sự kiện = nhánh của stage (không đích lùi `back_to_step` ⇒ không BACK_TARGET_INVALID).
     expect(p).toEqual({ kind: "fail_flow", taskId: "t1" });
   });
+  it("stage có đích lùi (`back_to_steps`) ⇒ Trả lại lùi về đích đó (fail_back), không fail_flow", () => {
+    const withBack = {
+      ...base,
+      sv: {
+        ...sv,
+        steps: [
+          st("duyet-2", "open", {
+            idx: 0,
+            name: "Duyệt 2",
+            task: { id: "t2", can_act: true },
+            back_to_steps: [0],
+          }),
+        ],
+      },
+    };
+    const p = planEngineAct({
+      ...withBack,
+      action: "return",
+      feedback: "sửa lại",
+      hasSource: false,
+    });
+    expect(p).toEqual({ kind: "fail_back", taskId: "t2", backTo: 0 });
+  });
 });

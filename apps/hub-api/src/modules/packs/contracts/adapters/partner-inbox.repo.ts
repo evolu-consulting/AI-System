@@ -97,7 +97,12 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
       }));
     },
     /** HĐ nhận + bản ghi nhận, MỘT câu theo tập. Trùng `(tenant, mailbox)` ⇒ bỏ qua (chạy lại vô hại). */
-    async insertBatch(items: readonly InboxItem[], ownerId: string | null = null): Promise<number> {
+    async insertBatch(
+      items: readonly InboxItem[],
+      ownerId: string | null = null,
+      /** Lý do ban đầu của lượt duyệt (FLOW_STARTING = chờ bộ điều phối); null ⇒ KHÔNG tạo lượt duyệt (chưa có flow nhận sẵn sàng). */
+      approvalFeedback: string | null = FLOW_STARTING,
+    ): Promise<number> {
       if (items.length === 0) return 0;
       const j = JSON.stringify(
         items.map((i) => ({
@@ -128,11 +133,13 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
         c as (insert into contracts.contracts (id, tenant_id, kind, doc_type, source, title, status, created_by,
             owner_user_id, run_id, fields)
           select f.contract_id, ${tid}::uuid, 'contract', 'contract', 'partner_inbox', f.title, 'needs_review',
-            ${SYSTEM_USER}::uuid, ${ownerId}::uuid, f.approval_id, f.fields from fresh f returning id),
+            ${SYSTEM_USER}::uuid, ${ownerId}::uuid, case when ${approvalFeedback}::text is null then null else f.approval_id end, f.fields
+          from fresh f returning id),
         -- Lượt duyệt chờ bộ điều phối mở quy trình nhận (như HĐ gửi duyệt: holdForFlow); OutcomeHandler.launched gắn run vào đúng dòng này.
+        -- Chỉ khi flow nhận đã sẵn sàng (feedback không null): chưa sẵn sàng ⇒ HĐ nhận không có thẻ duyệt treo "đang mở quy trình".
         ap as (insert into contracts.approvals (id, tenant_id, contract_id, status, started_by, mode, feedback)
-          select f.approval_id, ${tid}::uuid, f.contract_id, 'level1', ${SYSTEM_USER}::uuid, 'engine', ${FLOW_STARTING}
-          from fresh f join c on c.id = f.contract_id returning 1),
+          select f.approval_id, ${tid}::uuid, f.contract_id, 'level1', ${SYSTEM_USER}::uuid, 'engine', ${approvalFeedback}::text
+          from fresh f join c on c.id = f.contract_id where ${approvalFeedback}::text is not null returning 1),
         i as (insert into contracts.partner_inbox (tenant_id, contract_id, mailbox_id, sender_name, sender_tax_code,
             sender_verified, round, prev_reason, importance, message, shared, file_ref, pdf_sha256, expires_at)
           select ${tid}::uuid, f.contract_id, f.mailbox_id, f.sender_name, f.sender_tax_code, f.sender_verified, f.round,
@@ -177,7 +184,7 @@ export async function reviewerReason(
   const decision = outcome === "declined" ? "rejected" : outcome === "returned" ? "returned" : null;
   if (!decision || !UUID.test(runId)) return null;
   const [r] = await tx.execute<{ feedback: string | null }>(sql`
-    select nullif(btrim(coalesce(s.feedback, tk.feedback)), '') as feedback
+    select coalesce(nullif(btrim(s.feedback), ''), nullif(btrim(tk.feedback), '')) as feedback
     from hub.stage_runs s join hub.process_outputs o on o.id = s.current_output_id and o.tenant_id = s.tenant_id
       -- Duyệt rẽ nhánh (return_step/reject_step): cổng đi như Đạt ⇒ góp ý nằm ở task duyệt đã đóng của bước, không ở stage.
       left join lateral (select t.feedback from hub.review_tasks t

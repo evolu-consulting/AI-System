@@ -315,8 +315,8 @@ async function exec(
   if (p.kind === "reject") return reject(d, port, c, p.taskId);
   if (p.kind === "redo") return p.reextract ? redo(d, port, c) : "ok";
   const fb = c.b.feedback ? { feedback: c.b.feedback } : {};
-  // from_run: không đích lùi (nhánh Trả lại do stage quyết); thẻ máy cũ: về bước soạn 0.
-  const back = p.kind === "fail_back" ? { back_to_step: 0 } : {};
+  // fail_back: lùi về `backTo` (thẻ máy cũ = bước soạn 0; flow theo sự kiện = đích trong back_to_steps); fail_flow: nhánh Trả lại của stage.
+  const back = p.kind === "fail_back" ? { back_to_step: p.backTo } : {};
   return decide(port, c, { task_id: p.taskId }, { result: "fail", ...fb, ...back });
 }
 /** fix-review · chỉ số bước người dùng ĐANG MỞ của run (null: không bước mở / run không thấy) — luật sửa trường: chỉ s0 mới sửa được. */

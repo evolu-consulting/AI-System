@@ -110,6 +110,7 @@ function stepOf(r: Row, canActOf: ActOf): PackStepView {
     feedback: r.feedback,
     task: r.task_id && r.task_status === "open" ? openTask(r.task_id, canActOf(r, stage)) : null,
     task_ref: r.task_id,
+    back_to_steps: m.backTo,
   };
 }
 const openTask = (id: string, a: { can: boolean; override: boolean }) =>

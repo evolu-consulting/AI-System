@@ -17,6 +17,7 @@ const STALLED_KNOWN = new Set([
   "FLOW_REFUSED",
   "FLOW_START_FAILED",
   "FLOW_STARTING",
+  "RECEIVE_NO_OWNER", // CR-124 · HĐ nhận từ đối tác: công ty nhận chưa có người phụ trách chạy flow nhận
 ]);
 const GROUP_PREFIX = "FLOW_GROUP_MISSING";
 /** p24 · mã lỗi hub ghi thẳng làm lý do ⇒ cùng câu với bản "FLOW_*" tương ứng. */

@@ -70,6 +70,7 @@ type StateRow = {
   a_ovr?: string[] | null;
   a_upd?: string | null;
   owner?: string | null;
+  src?: string | null;
   deal: string | null;
   v: unknown;
   threshold: string | number | null;
@@ -99,6 +100,7 @@ const toState = (r: StateRow): ApprovalState => ({
         }
       : null,
   owner: r.owner ?? null,
+  source: r.src ?? null,
   deal: r.deal,
   value: json(r.v),
   threshold: Number(r.threshold ?? APPROVAL_DEFAULTS.threshold),
@@ -111,7 +113,7 @@ function stateQ(tx: Tx, tid: string): ApprovalRepo["state"] {
     const [r] = await tx.execute<StateRow>(sql`
       select c.run_id, c.status, c.version, (c.source_text is not null or c.file_id is not null) as has_src,
         a.status as a_status, a.started_by as a_by, a.feedback as a_fb, a.mode as a_mode, a.engine_run_id as a_run, a.flow_steps as a_steps, c.deal,
-        a.esign_status as a_es, a.esign_reason as a_er, c.owner_user_id as owner,
+        a.esign_status as a_es, a.esign_reason as a_er, c.owner_user_id as owner, c.source as src,
         (a.esign_status = 'sending' and a.esign_at < now() - make_interval(mins => ${ESIGN_SENDING_STALE_MIN}::int)) as a_est,
         ${ISO("a.esign_at")} as a_eat, ${ISO("a.esign_reminded_at")} as a_erm, ${ISO("a.updated_at")} as a_upd,
         (select array_agg((e.data->>'task_id') || ':' || e.actor_user_id::text) from contracts.contract_events e

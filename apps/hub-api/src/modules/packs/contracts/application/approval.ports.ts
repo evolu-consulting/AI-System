@@ -39,6 +39,8 @@ export type ApprovalState = ContractRunRef & {
   } | null;
   /** esign-flow · người phụ trách HĐ (`owner_user_id`) — quyền "Gửi lại" bước Ký số. */
   owner?: string | null;
+  /** CR-124 · nguồn HĐ (`partner_inbox` = HĐ nhận từ đối tác ⇒ Mở lại phát `contract.received`, không phải `contract.submitted`). */
+  source?: string | null;
   /** S3b · loại HĐ (facts rẽ/`finalizes_on_approve`). */
   deal?: string | null;
   value: unknown;

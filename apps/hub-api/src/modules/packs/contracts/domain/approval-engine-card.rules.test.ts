@@ -165,7 +165,7 @@ describe("planEngineAct", () => {
     expect(plan("approve")).toEqual({ kind: "pass", taskId: "t-s0", finalizes: true });
   });
   it("Trả lại: chỉ từ bước ≥ 1; ở bước soạn ⇒ APPROVAL_NOT_OPEN; cần lý do", () => {
-    expect(plan("return", {}, "s1")).toEqual({ kind: "fail_back", taskId: "t-s1" });
+    expect(plan("return", {}, "s1")).toEqual({ kind: "fail_back", taskId: "t-s1", backTo: 0 });
     expect(plan("return")).toEqual({ kind: "error", code: "APPROVAL_NOT_OPEN" });
     expect(plan("return", { feedback: " " }, "s1")).toEqual({
       kind: "error",

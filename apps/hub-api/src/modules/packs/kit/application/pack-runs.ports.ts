@@ -92,6 +92,8 @@ export type PackStepView = {
   task: { id: string; can_act: boolean; override?: boolean } | null;
   /** CR-113 · id task review gần nhất của stage (mở hoặc đã đóng); vắng ⇒ không biết. */
   task_ref?: string | null;
+  /** CR-124 · q6 · bước (`after.back_to_steps`) mà quyết `fail` được phép lùi về; rỗng/vắng ⇒ stage không có đích lùi. */
+  back_to_steps?: number[];
 };
 export type PackStepsView = {
   run_id: string;

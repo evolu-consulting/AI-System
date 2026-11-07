@@ -40,14 +40,15 @@ export function stepStatusOf(f: StepFacts): PackStepStatus {
 type StageSnap = {
   key?: string;
   name?: string;
-  after?: { kind?: string; group_id?: string | null } | null;
+  after?: { kind?: string; group_id?: string | null; back_to_steps?: number[] | null } | null;
 } | null;
 
-/** Khoá/tên/Group duyệt của stage từ snapshot (snapshot hỏng ⇒ khoá `#i`). */
+/** Khoá/tên/Group duyệt/đích lùi (`after.back_to_steps`) của stage từ snapshot (snapshot hỏng ⇒ khoá `#i`). */
 export function stageMeta(stage: StageSnap, idx: number) {
   const key = stage?.key ?? `#${idx + 1}`;
   const groupId = stage?.after?.kind === "review" ? (stage.after.group_id ?? null) : null;
-  return { key, name: stage?.name ?? key, groupId };
+  const backTo = (stage?.after?.back_to_steps ?? []).filter(Number.isInteger);
+  return { key, name: stage?.name ?? key, groupId, backTo };
 }
 
 /** Hạn hiển thị = mốc chuyển cấp của task (= `created_at + after_h`); vắng ⇒ null. */
