@@ -206,6 +206,7 @@ function processHooks(
     // P-c2 · C13 · endpoint GitHub (seam ưu tiên env) + reader khoá nguồn cho driver stage Áp (mở PR).
     github: githubEndpointOf(deps),
     internalToken: deps.internalToken, // CR-105 · L5
+    partnerMailbox: deps.partnerMailbox === true, // CR-124 · q1 · bộ chuyển hộp thư liên công ty
     bridgeAgent: bridgeAgentOf(m), // CR-122 · N2 · "Gợi ý cầu nối" qua agent Hub `flow-bridge`
     publicRoutes: resolveProcessRoutes(deps), // F1 · CR-103 · off | admin (chỉ admin-web) | all
     secrets: new HubSecretReader({ db: m.db, key: deps.hubSecretsKey ?? null, log: logger }),

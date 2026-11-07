@@ -66,6 +66,8 @@ export type AppDeps = {
   studioDist?: string; // H4a · = `HUB_STUDIO_DIST` (dist Studio; vắng ⇒ `/studio` 404, P12).
   /** P-a D15 · = `HUB_PROCESS_ENGINE==="on"`; vắng ⇒ false (không mount route quy trình, `!` là chữ thường). */
   processEngine?: boolean;
+  /** CR-124 · q1 · = `HUB_PARTNER_MAILBOX==="on"`: chạy vòng bộ chuyển hộp thư liên công ty (cùng `processLoops`). Vắng ⇒ tắt. */
+  partnerMailbox?: boolean;
   /**
    * F1 (CR-095) · module đóng băng (docs/platform/modules.md): `false` ⇒ KHÔNG mount route công khai của quy trình, phòng (`/rooms`), nguồn,
    * KH (`/studio/api/kh*`); engine quy trình vẫn chạy nội bộ theo `processEngine` (gói hợp đồng cần). Vắng ⇒ bật (test in-process

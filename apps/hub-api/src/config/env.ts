@@ -77,6 +77,8 @@ export const EnvSchema = z.object({
     .optional(),
   // P-a D15 · cờ Process Engine: `off` (mặc định) ⇒ không mount route quy trình, `!` là chữ thường. Dev bật ở F6.
   HUB_PROCESS_ENGINE: z.enum(["on", "off"]).default("off"),
+  // CR-124 · q1 · bộ chuyển hộp thư liên công ty (`hub.partner_mailbox` ⇒ sự kiện flow hai bên). Mặc định tắt; cần HUB_PROCESS_ENGINE=on.
+  HUB_PARTNER_MAILBOX: z.enum(["on", "off"]).default("off"),
   // F1 (CR-095) · cờ module đóng băng (docs/platform/modules.md): `off` (mặc định) ⇒ không mount route công khai của quy trình,
   // phòng, nguồn, KH; engine quy trình vẫn chạy nội bộ khi `HUB_PROCESS_ENGINE=on` (gói hợp đồng dùng). Dev/test bật.
   HUB_FROZEN_MODULES: z.enum(["on", "off"]).default("off"),

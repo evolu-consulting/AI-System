@@ -7,6 +7,7 @@ import { safeErrorFields } from "../../lib/errors";
 import { KhWriter } from "../kh/kh.writer";
 import type { WorkflowInvoker } from "../mcp/adapters/workflow-invoker";
 import type { PackRunsBridge, PackToolCatalog } from "../packs/kit/public";
+import { startPartnerMover } from "../partners/mailbox-mover";
 import type { RoomProcessSender } from "../rooms/messages/messages.service";
 import type { ResolveBridge } from "../sources/resolve.bridge";
 import { DrainTracker } from "./adapters/drain";
@@ -100,6 +101,8 @@ export type ProcessMountDeps = Omit<
      * `admin` ⇒ chỉ defs/runs/gates/usage sau `requireAdminRole`; engine + vòng nền + cầu gói vẫn chạy. Vắng ⇒ `all`.
      */
     publicRoutes?: ProcessRoutesMode;
+    /** CR-124 · q1 · `HUB_PARTNER_MAILBOX=on` ⇒ vòng bộ chuyển hộp thư liên công ty (khi `processLoops !== false`). */
+    partnerMailbox?: boolean;
   };
 /** Điểm nối vào route có sẵn: `!` ở phòng (X2a/X2b) + Hỏi AI (C1). */
 export type ProcessMounted = { roomSender: RoomProcessSender; conversationStart: ProcessStartPort };
@@ -255,4 +258,6 @@ function startBackground(o: {
   startProcessReminder(bg, { signal: m.signal });
   // CR-122 · E1 · bộ điều phối sự kiện → lượt (cờ FLOW_TRIGGERS tắt ⇒ chỉ ghi bóng). Test gọi `dispatchOnce` trực tiếp.
   startFlowDispatcher({ db: bg.db, launch: flowLaunchOf(bg), log: m.log }, { signal: m.signal });
+  // CR-124 · q1 · hộp thư liên công ty ⇒ `contract.received` (bên nhận) / `partner.*` (bên gửi). Test gọi `partnerMoveOnce`.
+  if (m.partnerMailbox) startPartnerMover({ db: bg.db, log: m.log }, { signal: m.signal });
 }

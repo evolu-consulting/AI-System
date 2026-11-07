@@ -28,6 +28,7 @@ export type EnvAppDeps = Required<
     | "publicInternalUrl"
     | "studioDist"
     | "processEngine"
+    | "partnerMailbox"
     | "frozenModules"
     | "processRoutes"
     | "fastRoute"
@@ -87,6 +88,7 @@ export function envAppDeps(env: Env, log: Pick<Logger, "warn">): EnvAppDeps {
     maxConcurrentRuns: parseMaxConcurrentRuns(env.HUB_MAX_CONCURRENT_RUNS),
     studioDist: env.HUB_STUDIO_DIST,
     processEngine: env.HUB_PROCESS_ENGINE === "on",
+    partnerMailbox: env.HUB_PARTNER_MAILBOX === "on", // CR-124 · q1
     frozenModules: env.HUB_FROZEN_MODULES === "on",
     ...(env.HUB_PROCESS_ROUTES ? { processRoutes: env.HUB_PROCESS_ROUTES } : {}), // CR-103
     fastRoute: env.HUB_FAST_ROUTE === "on",
