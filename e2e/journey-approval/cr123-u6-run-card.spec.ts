@@ -2,7 +2,7 @@
 // CR-123 · u6b · FLOW3-FR-14 · HÀNH TRÌNH thẻ duyệt: HĐ đi qua bước Duyệt tới node Ký số (gửi + chờ) bằng "Ký thử" (selfsign, không cần DocuSign).
 // Thẻ phải có MỘT dòng "Ký số" với "Đang chờ ký" + tên người ký (không có dòng "Chờ ký" riêng); sau khi người ký bấm "Ký ngay" ⇒ "Đã ký".
 // Công ty MỚI `e2e-u6-<hậu tố>`; flow Thư viện dựng bằng SQL (như cr122-flows, `_kit/flows.ts`), gán bằng UI platform admin.
-import { writeFileSync } from "node:fs";
+
 import { expect, type Page, test } from "@playwright/test";
 import { apiLogin } from "../_kit/api";
 import {
@@ -15,7 +15,7 @@ import {
 } from "../_kit/flows";
 import { assignFlowUi, loginPlatformAdminUi, openCompanyFlows, openTenantPage } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
-import { approveAs, type Env, loginCw, U, uploadAndOpen } from "./_journey";
+import { approveAs, confirmAndSave, type Env, loginCw, U, uploadAndOpen } from "./_journey";
 
 const need = (n: string): string => {
   const v = process.env[n];
@@ -37,8 +37,7 @@ const SHOTS = "docs/specs/CR-123/shots/u6";
 const ctxPage = async (browser: import("@playwright/test").Browser): Promise<Page> =>
   (await browser.newContext({ locale: "vi-VN", viewport: { width: 1280, height: 900 } })).newPage();
 
-// FIXME(CR-123 u6b): bước gửi ký của run dừng `permission_lost` (người gửi HĐ chưa được quyền dùng tool `contracts-esign-send` trong cấu hình công ty mới) ⇒ cần cấp quyền tool trong chuẩn bị (D7) rồi gỡ fixme.
-test.fixme("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người ký, sau khi ký ⇒ Đã ký", async ({
+test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người ký, sau khi ký ⇒ Đã ký", async ({
   browser,
 }, testInfo) => {
   test.setTimeout(420_000);
@@ -110,25 +109,18 @@ test.fixme("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + ngư
   const emp = await ctxPage(browser);
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, Date.now().toString(36), 50_000_000);
-  await emp.getByRole("button", { name: "Gửi duyệt" }).click();
+  // Ký số chỉ nhận PDF (ESIGN_UNSUPPORTED_FILE): HĐ mẫu của stack là .md ⇒ đổi loại tệp của HĐ này (Ký thử không đọc nội dung tệp).
+  await withOwner(
+    (sql) => sql`update contracts.files set mime = 'application/pdf'
+      where id = (select file_id from contracts.contracts where id = ${id}::uuid)`,
+  );
+  await confirmAndSave(emp);
   await approveAs(await ctxPage(browser), E, U.accounting, id, "Duyệt hợp đồng");
 
   await emp.goto(`${E.cw}/contracts/c/${id}`);
   const card = emp.locator('[data-approval="timeline"]');
   const row = card.getByTestId("approval-step-module");
   await expect(row).toHaveCount(1, { timeout: 90_000 });
-  writeFileSync(testInfo.outputPath("u6-page.txt"), await emp.locator("body").innerText());
-  writeFileSync(
-    testInfo.outputPath("u6-stages.txt"),
-    JSON.stringify(
-      await withOwner(
-        (
-          sql,
-        ) => sql`select s.stage_idx, s.status, s.last_error_code, r.decision, r.input from hub.stage_runs s
-          join hub.process_runs r on r.id = s.process_run_id where r.pack_record_id = ${id}::uuid order by s.stage_idx`,
-      ),
-    ),
-  );
   await expect(row).toContainText("Ký số");
   await expect(row).toContainText("Đang chờ ký");
   await expect(row).toContainText(`Người ký: ${signer}`);
@@ -136,7 +128,6 @@ test.fixme("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + ngư
   await card.screenshot({ path: testInfo.outputPath("u6-1-dang-cho-ky.png") });
 
   // — người ký bấm "Ký ngay" (Ký thử) ⇒ Đã ký —
-  await emp.screenshot({ path: testInfo.outputPath("u6-page.png"), fullPage: true });
   await emp.getByRole("button", { name: "Ký ngay" }).click();
   await expect(emp).toHaveURL(/esign=return/, { timeout: 60_000 });
   await expect(row).toContainText("Đã ký", { timeout: 90_000 });

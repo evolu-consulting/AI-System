@@ -1,4 +1,4 @@
-// HUB-FR-146 · AC-H44 · D2-15/D2-30 · plan-d2 §4, §8, §10 S2/S9/S10: đọc `loadCall` của `ToolStageRepo` (MỘT câu SQL) và
+﻿// HUB-FR-146 · AC-H44 · D2-15/D2-30 · plan-d2 §4, §8, §10 S2/S9/S10: đọc `loadCall` của `ToolStageRepo` (MỘT câu SQL) và
 // ánh xạ hàng → `ToolCallLoad`; tách khỏi `tool-stage.repo.ts` để giữ trần 200 dòng adapter (PD-A03).
 import { APP_MANIFESTS, nodeByKey } from "@ai/contracts/app-manifest";
 import { InputSchemaSchema } from "@ai/contracts/workflows";
@@ -70,7 +70,7 @@ export async function loadCallRow(
     from hub.stage_runs s
     join hub.process_runs r on r.id = s.process_run_id and r.tenant_id = s.tenant_id
     cross join lateral (select r.snapshot->'stages'->(s.stage_idx::int) as st) x
-    left join hub.process_defs d on d.id = r.process_def_id and d.tenant_id = r.tenant_id
+    left join hub.process_defs d on d.id = r.process_def_id and (d.tenant_id = r.tenant_id or d.tenant_id is null)
     left join admin.workflows w on w.key = st->'executor'->>'tool_key'
     left join admin.tenant_workflow_tools t
       on t.workflow_id = w.id and t.tenant_id = r.tenant_id and t.revoked_at is null
@@ -193,3 +193,4 @@ export function toLoad(r: LoadRow): ToolCallLoad {
     },
   };
 }
+
