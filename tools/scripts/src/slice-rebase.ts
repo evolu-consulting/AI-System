@@ -78,6 +78,7 @@ function continueRebase(git: GitFn): GitResult {
 export const POST_REBASE_GATES: readonly { name: string; cmd: string[] }[] = [
   { name: "check:boundaries", cmd: ["bun", "tools/scripts/src/check-boundaries.ts"] },
   { name: "check:modules", cmd: ["bun", "tools/scripts/src/check-modules.ts"] },
+  { name: "depcruise:affected", cmd: ["bun", "tools/scripts/src/depcruise.ts", "--affected"] },
 ];
 
 export type GateResult = { ok: true } | { ok: false; gate: string; out: string };

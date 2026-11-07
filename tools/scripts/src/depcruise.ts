@@ -40,7 +40,9 @@ export function runDepcruise(opts: {
   knownViolations?: string;
   /** Cờ thêm cho depcruise (vd `--affected`, `--cache`). */
   extra?: string[];
-}): { code: number; out: string } {
+  /** Quá số mili giây này thì dừng depcruise (code = -1, timedOut = true). */
+  timeoutMs?: number;
+}): { code: number; out: string; timedOut: boolean } {
   const p = Bun.spawnSync(
     [
       process.execPath,
@@ -53,9 +55,19 @@ export function runDepcruise(opts: {
       ...(opts.knownViolations ? ["--ignore-known", opts.knownViolations] : []),
       ...(opts.extra ?? []),
     ],
-    { cwd: opts.cwd, stdout: "pipe", stderr: "pipe" },
+    {
+      cwd: opts.cwd,
+      stdout: "pipe",
+      stderr: "pipe",
+      ...(opts.timeoutMs ? { timeout: opts.timeoutMs } : {}),
+    },
   );
-  return { code: p.exitCode ?? 1, out: p.stdout.toString() + p.stderr.toString() };
+  const timedOut = p.exitedDueToTimeout === true;
+  return {
+    code: timedOut ? -1 : (p.exitCode ?? 1),
+    out: p.stdout.toString() + p.stderr.toString(),
+    timedOut,
+  };
 }
 
 type CruiseViolation = { rule: { name: string; severity: string }; from: string; to: string };
@@ -89,7 +101,7 @@ function affectedBase(root: string): string | undefined {
 }
 
 /** `--affected`: depcruise chỉ báo file đổi so với gốc + file phụ thuộc chúng; cache nội dung ⇒ lần ấm vài giây. */
-function mainAffected(root: string): number {
+function mainAffected(root: string, budgetSec?: number): number {
   const base = affectedBase(root);
   if (!base) {
     console.log("depcruise:affected: không có platform/gd0|main — quét đầy đủ");
@@ -104,7 +116,12 @@ function mainAffected(root: string): number {
     bin: depcruiseBin(root),
     knownViolations: existsSync(known) ? known : undefined,
     extra: ["--affected", base, ...CACHE_ARGS(root)],
+    timeoutMs: budgetSec ? budgetSec * 1000 : undefined,
   });
+  if (r.timedOut) {
+    console.warn(budgetNote(budgetSec ?? 0));
+    return 0;
+  }
   let json: CruiseJson;
   try {
     json = JSON.parse(r.out) as CruiseJson;
@@ -117,16 +134,38 @@ function mainAffected(root: string): number {
   return s.errors ? 1 : 0;
 }
 
+/** Lời nhắn khi hook pre-commit bỏ qua vì quá ngân sách thời gian (cổng đầy đủ ở slice:merge). */
+export const budgetNote = (sec: number): string =>
+  `depcruise:affected: quá ${sec} s — bỏ qua ở pre-commit; slice:merge sẽ kiểm đầy đủ (hoặc chạy bun run depcruise:affected)`;
+
+/** Cache dùng chung mọi worktree (đặt ở thư mục git chung; chiến lược `content` nên an toàn khi dùng chung). */
+export function sharedCacheDir(root: string): string {
+  const p = Bun.spawnSync(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"], {
+    cwd: root,
+    stdout: "pipe",
+  });
+  const common = p.stdout.toString().trim();
+  return p.exitCode === 0 && common
+    ? join(common, "depcruise-cache")
+    : join(root, "node_modules/.cache/dependency-cruiser");
+}
+
 const CACHE_ARGS = (root: string): string[] => [
   "--cache",
-  join(root, "node_modules/.cache/dependency-cruiser"),
+  sharedCacheDir(root),
   "--cache-strategy",
   "content",
 ];
 
+/** `--budget=<giây>` ⇒ số giây (> 0) hoặc undefined. */
+export function parseBudget(argv: string[]): number | undefined {
+  const b = argv.find((a) => a.startsWith("--budget="));
+  return b ? Number(b.slice("--budget=".length)) || undefined : undefined;
+}
+
 function main(argv: string[]): number {
   const root = repoRoot();
-  if (argv.includes("--affected")) return mainAffected(root);
+  if (argv.includes("--affected")) return mainAffected(root, parseBudget(argv));
   const full = argv.includes("--all") || !hasRef("main", root) || !hasRef("HEAD", root);
   const targets = full
     ? ["apps", "packages", "tools"].filter((d) => existsSync(join(root, d)))
@@ -135,6 +174,10 @@ function main(argv: string[]): number {
     console.log("depcruise: không có file đổi");
     return 0;
   }
+  return runBatches(root, targets, full);
+}
+
+function runBatches(root: string, targets: string[], full: boolean): number {
   const bin = depcruiseBin(root);
   const config = join(root, ".dependency-cruiser.cjs");
   const known = join(root, ".dependency-cruiser-known-violations.json");

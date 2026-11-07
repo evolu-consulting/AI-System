@@ -115,3 +115,11 @@ describe("baseline giữ mọi trường của depcruise", () => {
     expect(normalizeBaseline([cyc("c.ts"), cyc("d.ts")])).toHaveLength(2);
   });
 });
+
+describe("depcruise hook ngân sách", () => {
+  test("lời nhắn nêu số giây và nơi kiểm đầy đủ", async () => {
+    const { budgetNote } = await import("./depcruise");
+    expect(budgetNote(20)).toContain("quá 20 s");
+    expect(budgetNote(20)).toContain("slice:merge");
+  });
+});
