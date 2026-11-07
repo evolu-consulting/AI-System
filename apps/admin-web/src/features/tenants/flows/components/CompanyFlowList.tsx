@@ -2,17 +2,31 @@
 // = tên · Bắt đầu khi · nguồn · trạng thái + lý do · hành động. Kéo thả đổi thứ tự (chỉ có nghĩa cho sự kiện quyết định).
 import type { CompanyFlowRow } from "@ai/contracts/hub-admin";
 import { Link } from "@tanstack/react-router";
-import { GripVertical } from "lucide-react";
+import { GripVertical, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { eventsOfApp } from "@/features/processes/lib/flow-def";
 import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { type FlowOp, useCompanyFlowOp } from "../company-flows-api";
-import { actionsOf, errorKey, groupByApp, reorderIds, statusKey } from "../lib/company-flow-view";
+import {
+  actionsOf,
+  errorKey,
+  groupByApp,
+  menuOf,
+  reorderIds,
+  splitRows,
+  statusKey,
+} from "../lib/company-flow-view";
 import { canSeeFlowSwitch } from "../lib/flow-switch-access";
 import { AssignFlow } from "./AssignFlow";
 import { FlowSwitch } from "./FlowSwitch";
@@ -26,12 +40,50 @@ function triggerText(r: CompanyFlowRow, cond: string): string {
   return `${ev?.label ?? r.trigger_event}${r.has_condition ? ` · ${cond}` : ""}`;
 }
 
+/** CR-125 · x7 · menu "…" của dòng: Quay về bản gốc · Tắt/Bật (Sao chép để sửa là nút riêng vì là lối vào sửa). */
+function RowMenu(p: { r: CompanyFlowRow; busy: boolean; onOp: (a: FlowOp) => void }) {
+  const { t } = useTranslation();
+  const m = menuOf(p.r);
+  if (!m.revert && !m.toggle) return null;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={p.busy}
+          aria-label={t("tenants.companyFlows.more")}
+          data-testid="company-flow-more"
+        >
+          <MoreHorizontal aria-hidden className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {m.revert ? (
+          <DropdownMenuItem onSelect={() => p.onOp({ op: "revert", id: p.r.id })}>
+            {t("tenants.companyFlows.revert")}
+          </DropdownMenuItem>
+        ) : null}
+        {m.toggle ? (
+          <DropdownMenuItem
+            onSelect={() => p.onOp({ op: "toggle", id: p.r.id, enabled: m.toggle === "on" })}
+          >
+            {t(m.toggle === "on" ? "tenants.companyFlows.turnOn" : "tenants.companyFlows.turnOff")}
+          </DropdownMenuItem>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function Row(p: {
   r: CompanyFlowRow;
   tenantId: string;
   busy: boolean;
   /** Mục "Nâng cao: thứ tự" đang mở ⇒ mới cho kéo thả. */
   ordering: boolean;
+  /** CR-125 · x7 · dòng trong mục "Mẫu thư viện" (bản gốc đã được thay): chỉ "Mở". */
+  compact?: boolean;
   onOp: (a: FlowOp) => void;
   onDrop: (fromId: string, toId: string) => void;
 }) {
@@ -82,7 +134,7 @@ function Row(p: {
             {k("open")}
           </Link>
         </Button>
-        {a.clone ? (
+        {a.clone && !p.compact ? (
           <Button
             size="sm"
             variant="outline"
@@ -92,27 +144,7 @@ function Row(p: {
             {k("clone")}
           </Button>
         ) : null}
-        {a.revert ? (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={p.busy}
-            onClick={() => p.onOp({ op: "revert", id: r.id })}
-          >
-            {k("revert")}
-          </Button>
-        ) : null}
-        {a.toggle ? (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={p.busy}
-            aria-pressed={r.enabled}
-            onClick={() => p.onOp({ op: "toggle", id: r.id, enabled: !r.enabled })}
-          >
-            {r.enabled ? k("turnOff") : k("turnOn")}
-          </Button>
-        ) : null}
+        {p.compact ? null : <RowMenu r={r} busy={p.busy} onOp={p.onOp} />}
       </div>
     </li>
   );
@@ -126,6 +158,7 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   const isPlatform = role === "platform_admin";
   const [err, setErr] = useState<string | null>(null);
   const [ordering, setOrdering] = useState(false);
+  const { main, templates } = splitRows(rows);
   const run = (a: FlowOp) => {
     setErr(null);
     op.mutate(a, {
@@ -166,7 +199,7 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
           <span>{t("tenants.companyFlows.col.status")}</span>
           <span />
         </div>
-        {groupByApp(rows).map((g) => (
+        {groupByApp(main).map((g) => (
           <section key={g.app} aria-label={tr(`featmeta.app.${g.app}.name`)}>
             <h2 className="m-0 border-t border-border bg-muted/40 px-3 py-2 text-label font-semibold">
               {tr(`featmeta.app.${g.app}.name`)}
@@ -187,6 +220,33 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
           </section>
         ))}
       </div>
+      {templates.length > 0 ? (
+        <details
+          className="rounded-md border border-border px-3 py-2"
+          data-testid="company-flow-templates"
+        >
+          <summary className="cursor-pointer text-label font-medium">
+            {t("tenants.companyFlows.templates", { n: templates.length })}
+          </summary>
+          <p className="mt-2 text-caption text-muted-foreground">
+            {t("tenants.companyFlows.templatesHint")}
+          </p>
+          <ul className="m-0 mt-2 list-none rounded-md border border-border p-0">
+            {templates.map((r) => (
+              <Row
+                key={r.id}
+                r={r}
+                compact
+                tenantId={tenantId}
+                busy={op.isPending}
+                ordering={false}
+                onOp={run}
+                onDrop={onDrop}
+              />
+            ))}
+          </ul>
+        </details>
+      ) : null}
       <details
         className="rounded-md border border-border px-3 py-2"
         data-testid="company-flow-order"

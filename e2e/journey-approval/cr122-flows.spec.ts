@@ -184,7 +184,8 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   const orig = flowRow(box, FLOW).filter({ hasText: "Được gán" });
   await expect(orig).toContainText("Đang dùng");
   // 409 · tắt flow bắt buộc cuối cùng
-  await orig.getByRole("button", { name: "Tắt", exact: true }).click();
+  await orig.getByTestId("company-flow-more").click(); // CR-125 · x7: Tắt nằm trong menu "…"
+  await page.getByRole("menuitem", { name: "Tắt", exact: true }).click();
   await expect(page.getByTestId("company-flow-error")).toContainText(
     "Cần ít nhất một flow đang bật, không điều kiện",
   );
@@ -259,13 +260,13 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   const box2b = await openCompanyFlows(page);
   const copy2b = flowRows(box2b).filter({ hasText: `Sao từ ${FLOW} · v1` });
   await expect(copy2b).toContainText("Đang dùng");
-  const orig2 = flowRow(box2b, FLOW).filter({ hasText: "Được gán" });
+  // CR-125 · x7 · MỘT dòng cho quy trình đang dùng; bản gốc đã bị thay nằm trong mục "Mẫu thư viện" (gập), không có Bật để bấm nhầm
+  await expect(flowRows(box2b).filter({ hasText: FLOW, visible: true })).toHaveCount(1);
+  await box2b.getByTestId("company-flow-templates").locator("summary").click();
+  const orig2 = box2b.getByTestId("company-flow-templates").locator("li").filter({ hasText: FLOW });
   await expect(orig2).toContainText("Đã thay bằng bản công ty");
-  // 409 · bật gốc khi bản công ty đang bật
-  await orig2.getByRole("button", { name: "Bật", exact: true }).click();
-  await expect(page.getByTestId("company-flow-error")).toContainText(
-    "Bản gốc và bản công ty không bật cùng lúc",
-  );
+  await expect(orig2.getByRole("button", { name: "Bật", exact: true })).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath("cr125-x7-one-row.png"), fullPage: true });
 
   // HĐ B: đi bản công ty ⇒ chờ Giám đốc (không phải Kế toán); HĐ A (lượt cũ) vẫn chờ Kế toán
   const b = await submit(browser, "g2b");
@@ -322,7 +323,8 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   await page.reload();
   const box3 = await openCompanyFlows(page);
   const copy3 = flowRows(box3).filter({ hasText: `Sao từ ${FLOW} · v1` });
-  await copy3.getByRole("button", { name: "Quay về bản gốc" }).click();
+  await copy3.getByTestId("company-flow-more").click();
+  await page.getByRole("menuitem", { name: "Quay về bản gốc" }).click();
   await expect(flowRow(box3, FLOW).filter({ hasText: "Được gán" })).toContainText("Đang dùng");
   await expect(copy3).toContainText("Tắt · đã quay về bản gốc");
   const c = await submit(browser, "g2c");

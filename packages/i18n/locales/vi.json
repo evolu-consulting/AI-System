@@ -709,6 +709,9 @@
         "groupMissing": "Có bước duyệt chưa chọn nhóm (nhóm theo mã chưa có ở công ty) — mở để chọn nhóm khác"
       },
       "open": "Mở",
+      "more": "Thao tác khác",
+      "templates": "Mẫu thư viện ({{n}})",
+      "templatesHint": "Bản gốc của thư viện đã được bản công ty thay. Mở để xem; muốn dùng lại bản gốc, chọn Quay về bản gốc ở dòng quy trình công ty.",
       "clone": "Sao chép để sửa",
       "revert": "Quay về bản gốc",
       "turnOn": "Bật",

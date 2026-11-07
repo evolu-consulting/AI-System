@@ -39,6 +39,30 @@ export const actionsOf = (r: CompanyFlowRow): RowActions => ({
   revert: r.kind === "company" && r.source !== null && r.enabled,
 });
 
+/**
+ * CR-125 · x7 · MỘT dòng cho mỗi quy trình đang dùng: bản gốc Thư viện đã được bản công ty thay (`off_reason = replaced`) không còn là
+ * "một quy trình" của công ty ⇒ nằm trong mục "Mẫu thư viện" (gập), không chen vào danh sách chính.
+ */
+export const isReplacedOriginal = (
+  r: Pick<CompanyFlowRow, "kind" | "off_reason" | "enabled">,
+): boolean => r.kind === "assigned" && !r.enabled && r.off_reason === "replaced";
+
+export function splitRows(rows: readonly CompanyFlowRow[]): {
+  main: CompanyFlowRow[];
+  templates: CompanyFlowRow[];
+} {
+  return {
+    main: rows.filter((r) => !isReplacedOriginal(r)),
+    templates: rows.filter(isReplacedOriginal),
+  };
+}
+
+/** Mục trong menu "…" của dòng: Sao chép (chỉ khi chưa sao) đứng riêng ngoài menu; menu giữ Quay về bản gốc + Tắt/Bật. */
+export function menuOf(r: CompanyFlowRow): { revert: boolean; toggle: "off" | "on" | null } {
+  const a = actionsOf(r);
+  return { revert: a.revert, toggle: a.toggle ? (r.enabled ? "off" : "on") : null };
+}
+
 /** Đổi chỗ `fromId` tới vị trí của `toId` trong cùng app; trả danh sách id TOÀN BỘ (mọi app) theo thứ tự mới, hoặc null nếu không đổi. */
 export function reorderIds(
   rows: readonly CompanyFlowRow[],
