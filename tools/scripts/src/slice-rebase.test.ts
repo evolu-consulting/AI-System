@@ -2,14 +2,17 @@ import { describe, expect, test } from "bun:test";
 import { onlyLockConflicts, parseLines, postRebaseGates, relockAfterRebase } from "./slice-rebase";
 
 describe("slice-rebase · cổng sau rebase (check:boundaries)", () => {
-  test("mặc định chạy check:boundaries; xanh ⇒ ok", () => {
+  test("mặc định chạy check:boundaries rồi check:modules, xanh thì ok", () => {
     const seen: string[][] = [];
     const r = postRebaseGates((cmd) => {
       seen.push(cmd);
       return { ok: true, out: "" };
     });
     expect(r).toEqual({ ok: true });
-    expect(seen.map((c) => c.join(" "))).toEqual(["bun tools/scripts/src/check-boundaries.ts"]);
+    expect(seen.map((c) => c.join(" "))).toEqual([
+      "bun tools/scripts/src/check-boundaries.ts",
+      "bun tools/scripts/src/check-modules.ts",
+    ]);
   });
 
   test("vi phạm MỚI ⇒ dừng ở cổng đỏ, trả tên cổng + file vi phạm (đuôi ≤ 40 dòng), không chạy cổng sau", () => {

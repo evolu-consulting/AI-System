@@ -18,3 +18,6 @@ pre-commit:
     - name: check-app-slots
       glob: "packages/contracts/src/app-manifest/**"
       run: bun tools/scripts/src/check-app-slots.ts
+    - name: check-modules
+      glob: "packages/contracts/src/modules/**"
+      run: bun tools/scripts/src/check-modules.ts

@@ -44,6 +44,7 @@ export function rebaseResolvingLock(git: GitFn, base: string): RebaseOutcome {
 /** Cổng sau rebase (hook pre-commit KHÔNG chạy khi rebase ⇒ lỗi ranh giới module lọt, ví dụ D-4). */
 export const POST_REBASE_GATES: readonly { name: string; cmd: string[] }[] = [
   { name: "check:boundaries", cmd: ["bun", "tools/scripts/src/check-boundaries.ts"] },
+  { name: "check:modules", cmd: ["bun", "tools/scripts/src/check-modules.ts"] },
 ];
 
 export type GateResult = { ok: true } | { ok: false; gate: string; out: string };
