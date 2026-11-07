@@ -271,8 +271,15 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   const b = await submit(browser, "g2b");
   await expect(isOpen(b.emp, BIG)).toBeVisible({ timeout: 90_000 });
   // CR-123 · u10 · cột "Bước" của danh sách nói bước THẬT: HĐ A chờ Kế toán, HĐ B chờ Giám đốc (không còn "Chờ xác nhận" chung chung)
-  await b.emp.goto(`${E.cw}/contracts`);
-  await expect(b.emp.getByText(/^Chờ (?!xác nhận)/).first()).toBeVisible({ timeout: 60_000 });
+  await b.emp.goto(`${E.cw}/contracts/list`);
+  await expect(
+    b.emp
+      .locator("main")
+      .getByText(/^Chờ (?!xác nhận)/)
+      .first(),
+  ).toBeVisible({
+    timeout: 60_000,
+  });
   await b.emp.screenshot({ path: testInfo.outputPath("cr123-u10-list-steps.png") });
   await approveAs(await ctxPage(browser), E, U.director, b.id, BIG);
   await b.emp.goto(`${E.cw}/contracts/c/${b.id}`);
