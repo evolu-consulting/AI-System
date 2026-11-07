@@ -193,6 +193,26 @@ describe("CR-124 q3 · gửi → nhận → trả lời", () => {
 });
 
 describe("CR-124 q3 · NFR-01 chặn đọc chéo tenant (bảng mới)", () => {
+  it("hub.partner_inbox_take: thư 'sent' gửi tới B — A lấy 0 dòng và thư giữ nguyên; B lấy đúng 1", async () => {
+    const [m] = await inPack(
+      "contracts",
+      A,
+      (tx) => tx`select hub.partner_send(${A}::uuid, ${B}::uuid, null, 'platform', 'ref-take',
+        '{"title":"T"}'::jsonb, null, null, now() + interval '3 days', null)::text as id`,
+    );
+    const id = m?.id as string;
+    expect(
+      await inPack("contracts", A, (tx) => tx`select * from hub.partner_inbox_take(100)`),
+    ).toHaveLength(0);
+    const [still] = await o`select status from hub.partner_mailbox where id = ${id}::uuid`;
+    expect(still?.status).toBe("sent");
+    const taken = await inPack(
+      "contracts",
+      B,
+      (tx) => tx`select id::text from hub.partner_inbox_take(100)`,
+    );
+    expect(taken.map((r) => r.id)).toEqual([id]);
+  });
   it("partner_sends: tenant B không thấy lần gửi của A", async () => {
     const mine = await inPack("contracts", A, (tx) => tx`select id from contracts.partner_sends`);
     expect(mine.length).toBeGreaterThan(0);

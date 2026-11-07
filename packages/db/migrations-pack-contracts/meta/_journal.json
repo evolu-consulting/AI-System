@@ -554,6 +554,13 @@
       "when": 1806800100000,
       "tag": "0085_partner_send",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1806800200000,
+      "tag": "0086_partner_send_validate",
+      "breakpoints": true
     }
   ]
 }

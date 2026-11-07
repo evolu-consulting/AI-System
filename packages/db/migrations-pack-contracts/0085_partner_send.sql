@@ -5,14 +5,13 @@
 --     chỉ BẢN CHIA SẺ (tên/MST công khai bên gửi, trường A chọn, lời nhắn, mức, lý do lần trước). KHÔNG id/tenant của A, KHÔNG lịch sử duyệt của A.
 --     `file_ref` = tham chiếu tệp ở nơi gửi, chờ chép sang FileBox của B (q4/q5) — không dùng làm đường đọc chéo.
 -- (3) cả hai: RLS theo tenant (`packs.secure_table`), role gói không xoá. HĐ nhận: nới `contracts_deal_source_ck` thêm 'partner_inbox'.
+-- (VALIDATE constraint tách sang 0086 để không giữ khoá khi quét bảng contracts — cùng mẫu hub 0115/0116.)
 -- (4) cấp lại EXECUTE cho `contracts_rw` trên các hàm hub (hub 0117–0119 bỏ qua khi role chưa có lúc chạy).
 ALTER TABLE contracts.contracts DROP CONSTRAINT IF EXISTS contracts_deal_source_ck;
 --> statement-breakpoint
 ALTER TABLE contracts.contracts ADD CONSTRAINT contracts_deal_source_ck CHECK (
   (source IS NULL OR source IN ('invoice', 'verbal', 'message', 'quote', 'other', 'partner_inbox'))
   AND (doc_type <> 'deal' OR (source IS NOT NULL AND deal IS NOT NULL AND kind = 'contract'))) NOT VALID;
---> statement-breakpoint
-ALTER TABLE contracts.contracts VALIDATE CONSTRAINT contracts_deal_source_ck;
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS contracts.partner_sends (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

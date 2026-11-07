@@ -1,8 +1,8 @@
 // CR-124 · q3 · FLOW4-FR-01/02/15 · khai báo node «Gửi đối tác xác nhận» (module:new, khuôn CR-125). MỘT node, đầu ra theo kết quả nghiệp vụ:
 // Đã xác nhận · Trả lại sửa · Từ chối · Hết hạn. Hai stage: tool gửi (real_action) + chờ tín hiệu `partner.*` (máy chủ bắn khi bên nhận trả lời
 // / người phụ trách ghi nhận thủ công). Không executor mới. Binding máy chủ: packs/contracts/nodes/partner-send/binding.ts.
-// TODO(CR-125 m5): khai `requires: { before: "approval" }` khi trường tiền điều kiện của node có ở `AppNodeDecl` — KHÔNG cứng luật ở đây.
-// TODO(CR-124 q4): nhóm «Đối tác» (NODE_GROUPS chưa có) · khoá tính năng `contracts-partner-confirm` · panel riêng · `config.options_path`.
+// CR-124 FLOW4-FR-01: node đứng SAU Duyệt (gửi ra ngoài công ty chỉ khi HĐ đã được duyệt) ⇒ `requires: { before: "approval" }` (CR-125 m5, cùng Ký số).
+// TODO(CR-124 q4): khoá tính năng riêng `contracts-partner-confirm` (cần feature trong danh mục admin) · panel riêng · `config.options_path`.
 import type { FeatureNodeDecl } from "../../types";
 import { PARTNER_REPLY_DAYS_DEFAULT, PartnerSendConfigSchema } from "./config";
 
@@ -11,9 +11,10 @@ export const PARTNER_SEND_TOOL = "contracts-partner-send";
 export const PARTNER_SEND_NODE: FeatureNodeDecl = {
   key: "contracts.partner-send",
   label: { vi: "Gửi đối tác xác nhận", en: "Send to partner for confirmation" },
-  group: "message",
+  group: "partner",
   kind: "app",
   feature: "contracts-write",
+  requires: { before: "approval" },
   configPort: {
     schema: PartnerSendConfigSchema,
     widgets: { importance: "enum", reply_days: "days", message: "longtext" },

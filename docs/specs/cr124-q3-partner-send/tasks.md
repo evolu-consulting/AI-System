@@ -3,7 +3,7 @@ id: cr124-q3-partner-send
 lát: cr124-q3-partner-send
 cr: CR-124
 làn: đầy đủ (RLS/tenant, hộp thư liên công ty) — Opus soát diff RLS/grant sau
-migration: hub 0119 (when 1806800000000) · contracts pack 0085 (when 1806800100000)
+migration: hub 0119 (when 1806800000000) · contracts pack 0085 (when 1806800100000) + 0086 (when 1806800200000, VALIDATE tách riêng)
 phụ thuộc: q1 (hub 0117), q2 (hub 0118), CR-125 m1/m2/m3
 ---
 ## Plan (ngắn)
@@ -13,7 +13,7 @@ cổng `PartnerMailboxPort` ở kit để bộ chuyển hộp thư (hub `partner
 ## Làm
 - contracts: `modules/contracts/partner-send/{node,config}.ts` (4 đầu ra: Đã xác nhận · Trả lại sửa · Từ chối · Hết hạn; stage tool `real_action` + `wait_event partner.confirmed` also `returned|declined`, 168h); manifest thêm sự kiện `contract.received` (bên nhận) + tín hiệu `partner.*`.
 - hub 0119: `hub.partner_self()` / `partner_route(mst)` / `partner_inbox_take(n)` (DEFINER, kiểm `app.tenant_id`, REVOKE PUBLIC).
-- contracts 0085: `contracts.partner_sends` (bên gửi, tối đa 1 dòng `open` mỗi HĐ ⇒ idempotent) + `contracts.partner_inbox` (HĐ nhận, bản chia sẻ), RLS tenant, cấp EXECUTE hub.partner_* cho `contracts_rw`, nới `contracts_deal_source_ck` thêm `partner_inbox`.
+- contracts 0085: `contracts.partner_sends` (bên gửi, tối đa 1 dòng `open` mỗi HĐ ⇒ idempotent) + `contracts.partner_inbox` (HĐ nhận, bản chia sẻ), RLS tenant, cấp EXECUTE hub.partner_* cho `contracts_rw`, nới `contracts_deal_source_ck` thêm `partner_inbox` (NOT VALID; 0086 VALIDATE riêng).
 - hub-api: tool `contracts-partner-send` (tự chọn kênh nền tảng/email/thủ công; gửi lại sau Trả lại ⇒ vòng N + `prev_id`), binding `nodes/partner-send/binding.ts`, `partner-mailbox.mount.ts` (đăng ký cổng + tool), OutcomeHandler `contract.received` ⇒ `hub.partner_reply('receiver_flow')`, FactsReader thêm `importance/sender_verified/contract_type`.
 - bộ chuyển: có cổng gói ⇒ nhận theo từng tenant nhận (3 câu cố định mỗi lô), trả lời ⇒ gói đóng lần gửi + `signalEvent`; không cổng ⇒ đường q1 giữ nguyên. `HUB_PARTNER_MAILBOX` vẫn tắt mặc định.
 
@@ -25,8 +25,8 @@ unit: `partner-send.rules.test.ts`, `partner-inbox.repo.test.ts` (3 câu/lô), `
 
 ## Quyết định trong lúc làm
 - 4 đầu ra (có Trả lại sửa) theo spec §3/FR-02, không 3 như brief.
-- `requires: { before: "approval" }`: CHƯA khai (m5 chưa merge) — TODO trong `node.ts`, không cứng luật.
-- Nhóm node tạm `message` (NODE_GROUPS chưa có «Đối tác»); khoá tính năng tạm `contracts-write` (`contracts-partner-confirm` chưa có trong danh mục) — q4.
+- `requires: { before: "approval" }` khai ở `node.ts` (m5 đã merge): spec FLOW4-FR-01 đặt node SAU Duyệt (gửi ra ngoài công ty chỉ khi HĐ đã duyệt).
+- Nhóm node `partner` («Đối tác») thêm vào NODE_GROUPS. Khoá tính năng vẫn `contracts-write`: `contracts-partner-confirm` cần feature mới trong danh mục admin (migration admin + addon + i18n) — chờ điều phối giao số.
 - Chưa nối (`link` pending): gửi lời mời nối (idempotent) rồi đi kênh dự phòng email/thủ công; «giữ lần gửi tới khi B chấp nhận» để q4.
 - Lý do Trả lại/Từ chối của flow nhận: `OutcomeInput` không mang lý do ⇒ dùng lý do dự phòng (q4: lấy lý do người duyệt).
 - Mức quan trọng ngưỡng mặc định 500 triệu / 2 tỷ (hằng); công ty nhận đặt ngưỡng riêng = q4.

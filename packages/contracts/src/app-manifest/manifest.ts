@@ -102,7 +102,7 @@ export const NODE_EXECUTORS = [
 ] as const;
 export type NodeExecutor = (typeof NODE_EXECUTORS)[number];
 /** Nhóm trên bảng node. */
-export const NODE_GROUPS = ["message", "timing", "sign", "content"] as const;
+export const NODE_GROUPS = ["message", "timing", "sign", "content", "partner"] as const;
 export type NodeGroup = (typeof NODE_GROUPS)[number];
 export const NODE_STAGES_MAX = 3;
 export const NODE_IO_MAX = 20;
