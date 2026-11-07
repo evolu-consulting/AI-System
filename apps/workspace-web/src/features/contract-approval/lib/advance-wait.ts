@@ -24,6 +24,11 @@ export function eventConcernsRun(
   );
 }
 
+/** p24 · id để so với `process_run_id` của sự kiện = run TRÊN ENGINE (`engine_run_id`), KHÔNG phải `run_id` (= id lượt duyệt của gói —
+ *  trước đây so nhầm ⇒ thẻ không bao giờ nhận push). Hub cũ không trả `engine_run_id` (undefined) ⇒ giữ `run_id`. */
+export const pushRunIdOf = (a: ContractApproval | undefined): string | null =>
+  a ? (a.engine_run_id === undefined ? a.run_id : a.engine_run_id) : null;
+
 /** Lắng nghe push khi lượt engine ở cấp 1 và có run (kể cả đang `attention`: Thử lại ⇒ kết quả tới qua push). */
 export const shouldListen = (a: ContractApproval | undefined): boolean =>
   a?.mode === "engine" && a.step === "level1" && !!a.run_id;

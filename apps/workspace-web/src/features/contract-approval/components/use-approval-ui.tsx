@@ -18,10 +18,11 @@ import {
   type ActResult,
   type ApprovalView,
   afterConfirm,
-  approvalView,
   showLinkDialog,
+  submittedAfter,
+  viewAfterConfirm,
 } from "../lib/approval";
-import { releaseNoteKey, submittedForReview } from "../lib/engine-card";
+import { releaseNoteKey } from "../lib/engine-card";
 import { isDraftConfirm, movedToStep } from "../lib/moved-to";
 import { ApprovalButtons, ApprovalNote, ExtractedValue, ReasonForm } from "./ApprovalParts";
 import { ApprovalTimeline } from "./ApprovalTimeline";
@@ -57,8 +58,8 @@ export function useApprovalUi(o: {
   const ap = useApproval(o.id, o.contractKey);
   // confirm-flow: "Đọc lại" (trích lại kèm lý do) ẩn theo người dùng 2026-10-23 ⇒ hộp lý do chỉ còn "Từ chối".
   const [ask, setAsk] = useState<"reject" | "return" | null>(null);
-  const v = approvalView(ap.approval, { write: o.write, hasSource: o.hasSource });
   const [confirmed, setConfirmed] = useState(false);
+  const v = viewAfterConfirm(ap.approval, confirmed, { write: o.write, hasSource: o.hasSource });
   const { link, setLink, approve, confirmLinks } = useConfirmFlow(o.id, ap, () =>
     setConfirmed(true),
   );
@@ -143,7 +144,7 @@ export function useApprovalUi(o: {
     loaded: ap.approval !== undefined,
     step: ap.approval?.step ?? null,
     /** P11e · đã gửi duyệt (không còn là nháp chờ "Xác nhận và lưu"). */
-    submitted: submittedForReview(ap.approval),
+    submitted: submittedAfter(ap.approval, confirmed),
   };
 }
 

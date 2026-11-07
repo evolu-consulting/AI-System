@@ -20,6 +20,8 @@ export type HeadRow = {
   started_by: string | null;
   started_by_name: string | null;
   decision_reason: string | null;
+  /** p24 · `decision.missing` (jsonb mảng khoá) khi `missing_fact`. */
+  decision_missing?: unknown;
   is_test: boolean;
   started_at: string;
   finished_at: string | null;
@@ -40,7 +42,8 @@ export async function readHead(tx: Tx, runId: string, tenantId: string): Promise
   const [r] = await tx.execute<HeadRow>(sql`
     select r.id, r.tenant_id, t.name as tenant_name, r.snapshot, r.def_version, r.status, r.current_stage_idx,
       r.current_step, r.origin_kind, r.started_by, u.display_name as started_by_name,
-      r.decision->>'reason' as decision_reason, r.is_test,
+      r.decision->>'reason' as decision_reason,
+      case when jsonb_typeof(r.decision->'missing') = 'array' then r.decision->'missing' end as decision_missing, r.is_test,
       ${iso("r.started_at")} as started_at, ${iso("r.finished_at")} as finished_at,
       r.pack_key, r.pack_record_id,
       (select n.id from hub.process_runs n where n.rerun_of = r.id and n.tenant_id = r.tenant_id limit 1) as rerun_by

@@ -663,6 +663,8 @@
         "runLimit": "Công ty đang có {{max}} quy trình chạy cùng lúc (tối đa). Chờ một quy trình xong rồi thử lại.",
         "notOwner": "Chỉ quản trị gói hợp đồng mới xử lý được. Hãy báo chủ hợp đồng.",
         "groupMissing": "Quy trình vẫn còn thiếu phòng ban nên chưa mở lại được. Thêm phòng ban rồi thử lại.",
+        "flowStarting": "Quy trình duyệt đang được mở. Chờ ít phút rồi bấm Mở lại nếu thẻ vẫn báo dừng.",
+        "groupsMissing": "Quy trình dùng phòng ban mà công ty chưa có. Quản trị thêm phòng ban đó (hoặc sửa quy trình) rồi thử lại.",
         "engineUnavailable": "Hệ thống quy trình đang tạm không phản hồi. Vui lòng thử lại sau ít phút."
       }
     },

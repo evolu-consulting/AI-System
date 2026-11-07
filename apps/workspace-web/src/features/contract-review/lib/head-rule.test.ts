@@ -25,6 +25,13 @@ describe("lock-strict · thanh nút đầu trang HĐ", () => {
   test("tenant bật duyệt: không xác nhận được ⇒ Lưu nháp, KHÔNG có Xác nhận và lưu của trang", () => {
     expect(r({ approvalStep: "level1" })).toMatchObject({ draftSave: true, confirmSave: false });
   });
+  test("p24 · đã gửi duyệt (thẻ cũ sau Xác nhận và lưu) ⇒ không còn Xác nhận và lưu / Lưu nháp / thanh dính", () => {
+    expect(r({ submitted: true })).toMatchObject({
+      sticky: false,
+      draftSave: false,
+      confirmSave: false,
+    });
+  });
   test("chưa tải trạng thái duyệt ⇒ chưa hiện Xác nhận và lưu", () => {
     expect(r({ approvalLoaded: false })).toMatchObject({ draftSave: true, confirmSave: false });
   });

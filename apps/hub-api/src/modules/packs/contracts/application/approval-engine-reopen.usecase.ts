@@ -64,6 +64,19 @@ async function reopenStalled(
   return (await openRun(d, port, who, args)) === "started" ? "ok" : "not_stalled";
 }
 
+/** p24 · lượt engine `level1` ĐÃ kẹt (run kết thúc bất thường / chưa có run)? Cổng cho "Mở lại" của công ty bật flow (không ném). */
+export function engineRunStalled(d: ApprovalEngineDeps) {
+  return async (who: PackWho, id: string): Promise<boolean> => {
+    const port = d.bridge.port;
+    if (!port) return false;
+    try {
+      return typeof (await findStalled(d, port, who, id)) !== "string";
+    } catch {
+      return false;
+    }
+  };
+}
+
 export function reopenEngineApproval(d: ApprovalEngineDeps) {
   return async (who: PackWho, id: string): Promise<ReopenOutcome> => {
     const port = d.bridge.port;

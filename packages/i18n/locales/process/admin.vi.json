@@ -315,7 +315,12 @@
         "prevField": "Field của bước trước",
         "as": "Kiểu ghi",
         "asKeep": "Giữ nguyên",
-        "asType": { "number": "Số", "text": "Chữ", "date": "Ngày", "bool": "Đúng/sai" },
+        "asType": {
+          "number": "Số",
+          "text": "Chữ",
+          "date": "Ngày",
+          "bool": "Đúng/sai"
+        },
         "input": "Đầu vào",
         "value": "Giá trị",
         "add": "Thêm dòng",
@@ -1282,6 +1287,7 @@
       }
     },
     "factsChanged": "Cần xử lý · dữ kiện đã đổi sau khi rẽ nhánh",
+    "missingFact": "Thiếu {{keys}} — điền vào hợp đồng rồi Thử lại",
     "err": {
       "packBound": "Lượt này thuộc quy trình duyệt của một gói (vd. duyệt hợp đồng) và đã kết thúc nên không chạy lại lượt hay chạy lại bước ở đây được. Hãy dùng \"Mở lại quy trình\" trên màn hình của gói.",
       "state": "Trạng thái lượt chạy đã đổi nên thao tác không còn hợp lệ. Tải lại trang rồi thử lại.",
@@ -1325,7 +1331,10 @@
       "default": "Mặc định",
       "provider": "Nhà cung cấp",
       "order": "Thứ tự ký",
-      "orders": { "parallel": "Song song", "sequential": "Lần lượt" },
+      "orders": {
+        "parallel": "Song song",
+        "sequential": "Lần lượt"
+      },
       "partner": "Đối tác ký",
       "yes": "Có",
       "no": "Không",
@@ -1345,13 +1354,20 @@
     },
     "advanced": "Nâng cao",
     "moduleNote": "Nhà cung cấp, người ký và các thiết lập khác của bước này lấy từ cài đặt của ứng dụng. Mở Nâng cao nếu cần chỉnh chi tiết.",
-    "notify": { "title": "Tiêu đề", "body": "Nội dung" },
+    "notify": {
+      "title": "Tiêu đề",
+      "body": "Nội dung"
+    },
     "moreRight": "Còn bước bên phải — kéo ngang để xem",
     "insertOnEdge": "Thêm bước vào giữa",
     "companies": "{{n}} công ty",
     "add": "Thêm bước",
     "moreActions": "Thao tác khác",
-    "group": { "basic": "Cơ bản", "core": "Lõi", "advanced": "Nâng cao" },
+    "group": {
+      "basic": "Cơ bản",
+      "core": "Lõi",
+      "advanced": "Nâng cao"
+    },
     "ifHint": "Đúng thì đi bước Đúng, sai thì đi bước Sai (trống = bước kế).",
     "link": {
       "next": "Bước kế",

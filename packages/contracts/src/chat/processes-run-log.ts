@@ -133,6 +133,8 @@ export const RunDetailSchema = z.strictObject({
   /** Trạng thái + lý do dễ hiểu (vì sao dừng/không chạy, bước kế là gì). */
   status_text: I18nTextSchema,
   decision_reason: DecisionReasonSchema.nullable(),
+  /** CR-122 p24 · `missing_fact`: khoá dữ kiện còn trống (vắng ⇒ không có). */
+  decision_missing: z.array(z.string().max(80)).max(20).optional(),
   current_step: Int0,
   current_stage_idx: Int0,
   current_stage_name: z.string().max(200).nullable(),

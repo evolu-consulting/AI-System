@@ -19,6 +19,12 @@ const STALLED_KNOWN = new Set([
   "FLOW_STARTING",
 ]);
 const GROUP_PREFIX = "FLOW_GROUP_MISSING";
+/** p24 · mã lỗi hub ghi thẳng làm lý do ⇒ cùng câu với bản "FLOW_*" tương ứng. */
+const HUB_CODE_ALIAS: Record<string, string> = {
+  GROUPS_MISSING: GROUP_PREFIX,
+  APPROVAL_FLOW_STARTING: "FLOW_STARTING",
+};
+const normReason = (r: string | null | undefined): string => HUB_CODE_ALIAS[r ?? ""] ?? r ?? "";
 
 export type AttentionText = { key: string; vars?: { keys?: string; code?: string } };
 
@@ -58,7 +64,7 @@ function toolCodeText(code: string): AttentionText {
 export function attentionText(
   a: Pick<ApprovalAttention, "kind" | "reason" | "missing"> & { code?: string | null },
 ): AttentionText {
-  const reason = a.reason ?? "";
+  const reason = normReason(a.reason);
   // CR-122 · P18 · điều kiện rẽ nhánh cần dữ liệu còn trống: nêu đúng NHÃN trường + cách khắc phục.
   if (a.kind === "needs_decision" && reason === "missing_fact")
     return a.missing?.length

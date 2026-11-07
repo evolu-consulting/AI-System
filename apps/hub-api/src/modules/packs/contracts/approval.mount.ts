@@ -9,6 +9,7 @@ import { startEngineApproval } from "./application/approval-engine.usecase";
 import { type EngineCardDeps, engineCard } from "./application/approval-engine-card.usecase";
 import {
   cancelReopenEngineApproval,
+  engineRunStalled,
   reopenEngineApproval,
   retryEngineApproval,
 } from "./application/approval-engine-reopen.usecase";
@@ -78,6 +79,7 @@ export function approvalEngine(
   return {
     start: startEngineApproval(ed),
     reopen: reopenEngineApproval(ed),
+    stalled: engineRunStalled(ed), // p24 · "Mở lại" của công ty bật flow: chỉ mở lại khi run đã kẹt thật
     retry: retryEngineApproval(ed), // CR-107
     cancelReopen: cancelReopenEngineApproval(ed),
     tools: approvalEngineTools(ed),

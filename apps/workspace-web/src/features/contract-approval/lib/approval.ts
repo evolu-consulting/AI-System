@@ -3,7 +3,7 @@
 
 import type { FlowActionRequest } from "@ai/contracts/flow";
 import type { ApprovalActionRequest, ContractApproval } from "@ai/contracts/pack-contracts";
-import { engineApprovalView } from "./engine-card";
+import { engineApprovalView, submittedForReview } from "./engine-card";
 
 export type ApprovalView = {
   confirm: boolean;
@@ -24,6 +24,21 @@ const NONE: ApprovalView = {
   redo: false,
   note: null,
 };
+
+/** p24 · vừa "Xác nhận và lưu" thành công mà thẻ trên màn còn là bản máy cũ (chưa tải lại) ⇒ nút Xác nhận/Từ chối/Đọc lại đã hết nghĩa. */
+export const staleAfterConfirm = (a: ContractApproval | undefined, confirmed: boolean): boolean =>
+  confirmed && a?.mode !== "engine";
+
+/** Đã gửi duyệt (lượt engine qua bước soạn) HOẶC vừa xác nhận mà thẻ còn bản cũ. */
+export const submittedAfter = (a: ContractApproval | undefined, confirmed: boolean): boolean =>
+  staleAfterConfirm(a, confirmed) || submittedForReview(a);
+
+/** p24 · nút theo thẻ, trừ khi vừa xác nhận mà thẻ còn bản cũ (khi đó không còn nút nào). */
+export const viewAfterConfirm = (
+  a: ContractApproval | undefined,
+  confirmed: boolean,
+  o: { write: boolean; hasSource: boolean },
+): ApprovalView => (staleAfterConfirm(a, confirmed) ? NONE : approvalView(a, o));
 
 /** Ghi chú khi người xem không quyết được bước đang mở: nói rõ VÌ SAO (chỉ xem / không thuộc nhóm duyệt / người gửi). */
 function blockedNote(step: "level1" | "level2", a: ContractApproval, write: boolean): string {

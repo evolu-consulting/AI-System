@@ -1,5 +1,20 @@
 import { describe, expect, test } from "bun:test";
-import { type ApprovalView, afterConfirm, overflowOf, showDraftSave } from "./approval";
+import type { ContractApproval } from "@ai/contracts/pack-contracts";
+import {
+  type ApprovalView,
+  afterConfirm,
+  overflowOf,
+  showDraftSave,
+  staleAfterConfirm,
+} from "./approval";
+
+test("p24 · staleAfterConfirm: vừa xác nhận mà thẻ còn bản máy cũ ⇒ ẩn nút; thẻ engine ⇒ theo bước engine", () => {
+  const card = (mode: string | undefined) => ({ mode }) as unknown as ContractApproval;
+  expect(staleAfterConfirm(card("machine"), true)).toBe(true);
+  expect(staleAfterConfirm(card(undefined), true)).toBe(true);
+  expect(staleAfterConfirm(card("machine"), false)).toBe(false);
+  expect(staleAfterConfirm(card("engine"), true)).toBe(false);
+});
 
 const v = (o: Partial<ApprovalView>): ApprovalView => ({
   confirm: false,

@@ -75,13 +75,14 @@ export function contractFlowRepo(tx: Tx, tid: string): ContractFlowRepo {
           and x.status = 'level1' and x.mode = 'machine' and x.engine_run_id is null returning x.id`);
       return rows.length > 0;
     },
-    async rearmFlow(cid, aid) {
+    async rearmFlow(cid, aid, detachRun = false) {
       // P11b · "Mở lại" lượt chờ flow chưa có run ⇒ về FLOW_STARTING (rồi phát lại sự kiện với event_id mới). CAS chưa run.
+      // p24 · `detachRun`: run cũ ĐÃ kết thúc bất thường (người gọi đã kiểm) ⇒ bỏ gắn run cũ, mở lượt flow mới (không rơi sang máy cũ).
       const rows = await tx.execute<{
         id: string;
-      }>(sql`update contracts.approvals x set feedback = ${FLOW_STARTING}, updated_at = now()
+      }>(sql`update contracts.approvals x set feedback = ${FLOW_STARTING}, engine_run_id = null, updated_at = now()
         where x.id = ${aid}::uuid and x.tenant_id = ${tid}::uuid and x.contract_id = ${cid}::uuid
-          and x.status = 'level1' and x.mode = 'engine' and x.engine_run_id is null
+          and x.status = 'level1' and x.mode = 'engine' and (x.engine_run_id is null or ${detachRun}::boolean)
           -- P11c · chỉ khi ĐÃ kẹt thật: lý do khác FLOW_STARTING, hoặc FLOW_STARTING quá 2 phút (bấm đúp / sự kiện đầu đang chạy ⇒ 0 hàng)
           and (x.feedback is distinct from ${FLOW_STARTING}
             or x.updated_at < now() - make_interval(secs => ${FLOW_START_STALE_MS / 1000}::int))

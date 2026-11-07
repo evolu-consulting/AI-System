@@ -23,7 +23,7 @@ import {
   FLOW_OFF,
   type FlowPrep,
 } from "./contract-flow.ports";
-import { submitOrNull } from "./flow-submit.usecase";
+import { submitOrNull, withFlowConfirm } from "./flow-submit.usecase";
 
 /** Group duyệt: id theo khoá của tenant (thiếu ⇒ vắng) + Group của user (cache cấu hình, 0 SQL khi nóng). */
 export type ApprovalGroups = {
@@ -171,7 +171,8 @@ export function getApproval(d: ApprovalDeps) {
     if (!got.st) return null;
     if (got.st.approval?.mode === "engine") return engineViewOf(d, who, got.st);
     // cr121-a2 · chỉ lượt máy cũ CÒN DỞ (mở trước khi gỡ máy cũ) đi nhánh này — quyết nốt qua `decide` cũ, không chuyển giữa chừng.
-    return viewOf(got.st, await actorOf(d, who, got.s as ApprovalSettings));
+    const v = viewOf(got.st, await actorOf(d, who, got.s as ApprovalSettings));
+    return v.can_act && got.st.approval?.status === "level1" ? withFlowConfirm(d, who, v) : v;
   };
 }
 

@@ -9,7 +9,11 @@ import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../lib/db";
 import { approvalRepo } from "../../packs/contracts/adapters/approval.repo";
 import { contractFlowRepo } from "../../packs/contracts/adapters/contract-flow.repo";
-import { actApproval, startApproval } from "../../packs/contracts/application/approval.usecase";
+import {
+  actApproval,
+  getApproval,
+  startApproval,
+} from "../../packs/contracts/application/approval.usecase";
 import { withFlowResend } from "../../packs/contracts/application/flow-resend.usecase";
 import { contractsOutcomeHandler } from "../../packs/contracts/flow-events.mount";
 import { createPackUow } from "../../packs/kit/adapters/pack-uow";
@@ -78,7 +82,7 @@ beforeAll(async () => {
   CG = (
     await contracts(o, G, 1, { from: 1302, createdBy: UG, status: "needs_review" })
   )[0] as string;
-  CX = await contracts(o, N, 4, { from: 1310, createdBy: UN, status: "needs_review" });
+  CX = await contracts(o, N, 6, { from: 1310, createdBy: UN, status: "needs_review" });
   await o`insert into admin.groups (tenant_id, key, name) values (${N}, 'pb-phap-che', '{"vi":"Pháp chế"}'::jsonb)`;
   lib = await libFlow("p11b-ok", "pb-phap-che");
   const missing = await libFlow("p11b-miss", "pb-khong-co");
@@ -271,5 +275,47 @@ describe("CR-122 P11c · Mở lại an toàn + hook không chặn lô", () => {
       where moderation = 'pending' and mod_screen is null`;
     console.log(`P11c p13: community.posts pending + mod_screen null = ${r?.n}`);
     expect(r?.n).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("CR-122 p24 · Mở lại khi đã có run + sản phẩm lúc xác nhận", () => {
+  const who = () => ({ tenantId: N, userId: UN });
+  const resendWith = (stalled: boolean) =>
+    withFlowResend(undefined, { uow: uow() as never, flow: gateOn, stalled: async () => stalled });
+
+  it("p24 · Mở lại khi lượt đã có run kẹt: run còn chạy ⇒ not_stalled (run giữ nguyên); run kẹt ⇒ bỏ run cũ, mở lượt flow mới, không rơi sang máy cũ", async () => {
+    const id = CX[4] as string;
+    expect(await submitHd(who(), id, "level1")).toBe("ok");
+    expect(await dispatch()).toMatchObject({ launched: 1 });
+    const first = await approvalOf(id);
+    expect(first?.run).not.toBeNull();
+    // run còn chạy ⇒ không đụng
+    expect(await resendWith(false)(who(), id)).toBe("not_stalled");
+    expect((await approvalOf(id))?.run).toBe(first?.run as string);
+    // run đã kết thúc bất thường ⇒ mở lại bằng flow (event_id mới)
+    expect(await resendWith(true)(who(), id)).toBe("ok");
+    expect(await approvalOf(id)).toMatchObject({ run: null, feedback: "FLOW_STARTING" });
+    expect(await dispatch()).toMatchObject({ launched: 1, failed: 0 });
+    const again = await approvalOf(id);
+    expect(again?.feedback).toBeNull();
+    expect(again?.run).not.toBeNull();
+    expect(again?.run).not.toBe(first?.run as string);
+  });
+
+  it("p24 · cờ flow bật: thẻ nháp luôn mở hộp SP (finalizes_on_approve), xác nhận kèm SP ⇒ pending_links", async () => {
+    const id = CX[5] as string;
+    expect(await startApproval(ad())(who(), id, "level1")).toBe("ok");
+    const card = await getApproval(ad())(who(), id);
+    expect(card).toMatchObject({ can_act: true, finalizes_on_approve: true });
+    const links = [{ item_id: crypto.randomUUID(), product_id: crypto.randomUUID() }];
+    const out = await actApproval(ad())(who(), id, { action: "approve", products: links } as never);
+    expect(out && typeof out === "object" && "error" in out).toBe(false);
+    const [pl] = await o<
+      { pending_links: unknown }[]
+    >`select a.pending_links from contracts.approvals a
+      join contracts.contracts c on c.run_id = a.id where c.id = ${id}`;
+    const stored =
+      typeof pl?.pending_links === "string" ? JSON.parse(pl.pending_links) : pl?.pending_links;
+    expect(stored).toEqual(links);
   });
 });

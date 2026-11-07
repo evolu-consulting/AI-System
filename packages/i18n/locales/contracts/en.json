@@ -663,6 +663,8 @@
         "runLimit": "Your company already has {{max}} processes running (the maximum). Wait for one to finish and try again.",
         "notOwner": "Only the contracts pack admin can do this. Please tell the contract owner.",
         "groupMissing": "The flow still lacks a department, so it cannot be reopened. Add the department and try again.",
+        "flowStarting": "The approval process is being opened. Wait a few minutes, then press Reopen if the card still shows it as stopped.",
+        "groupsMissing": "The process uses a department your company does not have. An admin must add it (or edit the process), then try again.",
         "engineUnavailable": "The process engine is temporarily unavailable. Please try again in a few minutes."
       }
     },

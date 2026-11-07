@@ -280,7 +280,7 @@ export function contractsAiModule(
     ...(eng
       ? {
           engine: eng.start,
-          reopen: withFlowResend(eng.reopen, { uow, flow: gate }), // CR-122 · P11b · lượt chờ flow ⇒ phát lại sự kiện
+          reopen: withFlowResend(eng.reopen, { uow, flow: gate, stalled: eng.stalled }), // CR-122 · P11b · lượt chờ flow ⇒ phát lại sự kiện
           retry: eng.retry,
           cancelReopen: eng.cancelReopen,
           card: eng.card({ port: () => flow.engine?.port, uow, jobs, redo }),

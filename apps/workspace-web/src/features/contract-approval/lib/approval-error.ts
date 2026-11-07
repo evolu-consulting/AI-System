@@ -12,6 +12,9 @@ const KEYS: Record<string, string> = {
   EXTRACT_BUSY: "contracts.approval.errors.notOpen",
   // CR-107: Thử lại / Huỷ & mở lại / Mở lại.
   APPROVAL_GROUP_MISSING: "contracts.approval.errors.groupMissing",
+  // p24 · 409 Mở lại khi lượt đang chờ mở quy trình; 422 quy trình dùng phòng ban công ty chưa có
+  APPROVAL_FLOW_STARTING: "contracts.approval.errors.flowStarting",
+  GROUPS_MISSING: "contracts.approval.errors.groupsMissing",
   FORBIDDEN: "contracts.approval.errors.notOwner",
   PACK_FORBIDDEN: "contracts.approval.errors.notOwner",
   ENGINE_UNAVAILABLE: "contracts.approval.errors.engineUnavailable",

@@ -30,6 +30,15 @@ type Status = RunDetailStep["raw_status"];
 const num = (v: number | string | null): number | null => (v === null ? null : Number(v));
 const stageName = (d: SnapStageLite | null | undefined, idx: number) =>
   d?.name || `Bước ${idx + 1}`;
+/** p24 · `decision.missing` (jsonb mảng khoá, có thể chuỗi JSON) ⇒ `{decision_missing}`; rỗng/hỏng ⇒ không thêm trường. */
+export function missingOf(v: unknown): { decision_missing?: string[] } {
+  const a = typeof v === "string" ? (JSON.parse(v) as unknown) : v;
+  const keys = Array.isArray(a)
+    ? a.filter((k): k is string => typeof k === "string").slice(0, 20)
+    : [];
+  return keys.length ? { decision_missing: keys } : {};
+}
+
 const asReason = (r: string | null): DecisionReason | null =>
   r !== null && (DECISION_REASONS as readonly string[]).includes(r) ? (r as DecisionReason) : null;
 
@@ -143,6 +152,7 @@ export function toRunDetail(
       currentStageName: cur?.name ?? null,
     }),
     decision_reason: decisionReason,
+    ...missingOf(h.decision_missing),
     current_step: Number(h.current_step),
     current_stage_idx: Number(h.current_stage_idx),
     current_stage_name: cur?.name ?? null,

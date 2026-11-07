@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
 import { isFatalStreamError } from "../stream/process-stream";
-import { advanceDelay, eventConcernsRun, shouldListen } from "./advance-wait";
+import { advanceDelay, eventConcernsRun, pushRunIdOf, shouldListen } from "./advance-wait";
 
 const RUN = "11111111-1111-4111-8111-111111111111";
 const OTHER = "22222222-2222-4222-8222-222222222222";
@@ -15,6 +15,16 @@ describe("advanceDelay", () => {
     ]);
     expect(advanceDelay(10)).toBe(30000);
     expect(advanceDelay(5000)).toBe(30000);
+  });
+});
+
+describe("pushRunIdOf (p24)", () => {
+  const card = (o: Record<string, unknown>) => o as unknown as ContractApproval;
+  test("so với run TRÊN ENGINE (engine_run_id), không phải id lượt duyệt (run_id)", () => {
+    expect(pushRunIdOf(card({ run_id: OTHER, engine_run_id: RUN }))).toBe(RUN);
+    expect(pushRunIdOf(card({ run_id: OTHER, engine_run_id: null }))).toBeNull();
+    expect(pushRunIdOf(card({ run_id: OTHER }))).toBe(OTHER); // hub cũ không trả engine_run_id
+    expect(pushRunIdOf(undefined)).toBeNull();
   });
 });
 

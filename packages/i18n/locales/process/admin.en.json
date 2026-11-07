@@ -315,7 +315,12 @@
         "prevField": "Field of a previous step",
         "as": "Write as",
         "asKeep": "Keep as is",
-        "asType": { "number": "Number", "text": "Text", "date": "Date", "bool": "Yes/No" },
+        "asType": {
+          "number": "Number",
+          "text": "Text",
+          "date": "Date",
+          "bool": "Yes/No"
+        },
         "input": "Input",
         "value": "Value",
         "add": "Add row",
@@ -1282,6 +1287,7 @@
       }
     },
     "factsChanged": "Needs attention · data changed after the branch",
+    "missingFact": "{{keys}} is missing — fill it in on the contract, then Retry",
     "err": {
       "packBound": "This run belongs to a package's approval process (e.g. contract approval), and has ended, so neither the run nor a step can be rerun here. Use \"Reopen process\" on the package's own screen.",
       "state": "The run's state has changed, so this action no longer applies. Reload the page and try again.",
@@ -1325,7 +1331,10 @@
       "default": "Default",
       "provider": "Provider",
       "order": "Signing order",
-      "orders": { "parallel": "In parallel", "sequential": "One by one" },
+      "orders": {
+        "parallel": "In parallel",
+        "sequential": "One by one"
+      },
       "partner": "Partner signs",
       "yes": "Yes",
       "no": "No",
@@ -1345,13 +1354,20 @@
     },
     "advanced": "Advanced",
     "moduleNote": "The provider, signers and other settings of this step come from the app settings. Open Advanced to tweak details.",
-    "notify": { "title": "Title", "body": "Message" },
+    "notify": {
+      "title": "Title",
+      "body": "Message"
+    },
     "moreRight": "More steps to the right — drag to see",
     "insertOnEdge": "Insert a step here",
     "companies": "{{n}} companies",
     "add": "Add step",
     "moreActions": "More actions",
-    "group": { "basic": "Basic", "core": "Core", "advanced": "Advanced" },
+    "group": {
+      "basic": "Basic",
+      "core": "Core",
+      "advanced": "Advanced"
+    },
     "ifHint": "If true go to the True step, otherwise the False step (empty = next step).",
     "link": {
       "next": "Next step",

@@ -1,6 +1,6 @@
 // CR-121 · R-4 · unit: nguồn gắn lượt (`pack_key`/`pack_record_id` → `source`).
 import { describe, expect, it } from "bun:test";
-import { sourceOf, toRunDetail } from "./run-detail.map";
+import { missingOf, sourceOf, toRunDetail } from "./run-detail.map";
 import type { HeadRow, StageRow } from "./run-detail.repo";
 
 const ID = "0f1e2d3c-4b5a-4968-8777-665544332211";
@@ -23,6 +23,18 @@ describe("sourceOf", () => {
   it("không gắn gói ⇒ null", () => {
     expect(sourceOf(null, null)).toBeNull();
     expect(sourceOf("contracts", null)).toBeNull();
+  });
+});
+
+describe("missingOf (p24 · missing_fact)", () => {
+  it("mảng khoá (kể cả chuỗi JSON) ⇒ decision_missing; rỗng/hỏng ⇒ không trường", () => {
+    expect(missingOf(["total_value", "deal"])).toEqual({
+      decision_missing: ["total_value", "deal"],
+    });
+    expect(missingOf('["deal"]')).toEqual({ decision_missing: ["deal"] });
+    expect(missingOf([])).toEqual({});
+    expect(missingOf(null)).toEqual({});
+    expect(missingOf([1, null])).toEqual({});
   });
 });
 

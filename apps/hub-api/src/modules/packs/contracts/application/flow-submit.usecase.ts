@@ -21,6 +21,15 @@ export async function submitOrNull(
   return (await get(c.who, c.id)) ?? "not_found";
 }
 
+/** p24 · cờ flow BẬT: "Xác nhận và lưu" ở nháp `level1` luôn gửi vào flow ⇒ màn hình LUÔN mở hộp "Gắn sản phẩm" (SP chọn lúc xác nhận
+ *  giữ ở `pending_links`, gắn khi flow Đã duyệt) — không còn tuỳ ngưỡng giá trị của máy cũ (trước: HĐ lớn không có hộp ⇒ mất SP). */
+export function withFlowConfirm<V extends { finalizes_on_approve: boolean }>(
+  prep: FlowPrep,
+  v: V,
+): V {
+  return prep.on && !v.finalizes_on_approve ? { ...v, finalizes_on_approve: true } : v;
+}
+
 /** Lượt máy cũ cấp 1 = nháp chờ "Xác nhận và lưu" (cờ bật). */
 const isDraftLevel1 = (st: ApprovalState): boolean =>
   st.approval?.mode === "machine" && st.approval.status === "level1";

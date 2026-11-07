@@ -31,6 +31,22 @@ type Props = {
   onReopen: () => void;
 };
 
+/** CR-122 p24 · lượt dừng vì điều kiện Nếu thiếu dữ kiện ⇒ nêu trường còn thiếu + cách xử lý. */
+function MissingFact({
+  run,
+  T,
+}: {
+  run: RunDetail;
+  T: (k: string, o?: Record<string, unknown>) => string;
+}) {
+  if (run.decision_reason !== "missing_fact") return null;
+  return (
+    <span className="text-body text-warning" data-testid="run-missing-fact">
+      {T("missingFact", { keys: (run.decision_missing ?? []).join(", ") })}
+    </span>
+  );
+}
+
 export function RunHeader({
   run,
   controls,
@@ -136,6 +152,7 @@ export function RunHeader({
             {T("factsChanged")}
           </span>
         )}
+        <MissingFact run={run} T={T} />
         {run.is_test && <span className="text-caption text-muted-foreground">{T("isTest")}</span>}
       </div>
       {run.rerun_by && (

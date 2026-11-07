@@ -118,6 +118,7 @@ function ContractBody({
     approvalStep: ap.step,
     approvalConfirm: ap.view.confirm,
     edited: info.edited,
+    submitted: ap.submitted,
   });
   // P11e · đã gửi duyệt (lượt engine, bước soạn đã qua) ⇒ không còn gợi ý "bản nháp … bấm Xác nhận và lưu".
   const confirm = c.status === "needs_review" && !ap.submitted;

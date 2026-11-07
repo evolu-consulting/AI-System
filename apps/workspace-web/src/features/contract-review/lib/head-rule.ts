@@ -14,6 +14,8 @@ export type HeadRuleIn = {
   /** Thẻ duyệt đang cho người này "Xác nhận" (bật duyệt, cấp 1). */
   approvalConfirm: boolean;
   edited: boolean;
+  /** p24 · đã gửi duyệt (thẻ còn bản cũ / lượt chờ flow): không còn nút Xác nhận và lưu / Lưu nháp. */
+  submitted?: boolean;
 };
 
 export type HeadRule = {
@@ -28,7 +30,7 @@ export type HeadRule = {
 
 export function headRule(i: HeadRuleIn): HeadRule {
   const canSave = i.write && i.status !== "extracting" && !i.locked;
-  const review = i.status === "needs_review" && canSave;
+  const review = i.status === "needs_review" && canSave && !i.submitted;
   const off = i.approvalLoaded && i.approvalStep === null;
   return {
     canSave,
