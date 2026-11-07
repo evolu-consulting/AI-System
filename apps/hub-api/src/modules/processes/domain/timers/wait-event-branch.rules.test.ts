@@ -1,6 +1,6 @@
 // CR-122 · E3 · luật thuần chờ sự kiện nhiều kết quả + ánh xạ trạng thái phong bì ⇒ sự kiện gói.
 import { describe, expect, it } from "bun:test";
-import { esignEventOf } from "../../../packs/contracts/domain/esign-event.rules";
+import { esignEventOf } from "../../../packs/contracts/public";
 import { TIMEOUT_KEY, waitBranchRules, waitKeysOf, winningEvent } from "./wait-event-branch.rules";
 
 const ex = {

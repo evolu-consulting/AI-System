@@ -11,14 +11,9 @@ import {
   insertRun,
 } from "../../../../../../tests/acceptance/P-a/_support/process-fixtures";
 import { connectDb, type Db } from "../../../lib/db";
-import { approvalEngineTools } from "../../packs/contracts/adapters/approval-engine.tools";
-import type {
-  ApprovalEnginePort,
-  EngineStartRequest,
-} from "../../packs/contracts/application/approval-engine.ports";
-import { startEngineApproval } from "../../packs/contracts/application/approval-engine.usecase";
-import { FLOW_ROUTE_NONE } from "../../packs/contracts/domain/approval-engine.rules";
-import { APPROVAL_SLOT, compileSlotStages } from "../../packs/contracts/domain/approval-slot.rules";
+import { APPROVAL_SLOT, compileSlotStages, FLOW_ROUTE_NONE } from "../../packs/contracts/public";
+import type { ApprovalEnginePort, EngineStartRequest } from "../../packs/contracts/testing";
+import { approvalEngineTools, startEngineApproval } from "../../packs/contracts/testing";
 import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import type { ProcessDeps } from "../core/ports";
 import { packRunsOf, stampSlotRun } from "../runs/pack-runs";

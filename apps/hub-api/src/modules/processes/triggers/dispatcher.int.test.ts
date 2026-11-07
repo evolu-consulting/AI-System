@@ -8,7 +8,7 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { sql } from "drizzle-orm";
 import { connectDb, type Db } from "../../../lib/db";
-import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/domain/approval-slot-default.rules";
+import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/public";
 import { dispatchOnce, type FlowLaunch, FlowLaunchRefused } from "./dispatcher";
 import { insertFlowEvents } from "./dispatcher.repo";
 import { setFlowTriggers } from "./flags";

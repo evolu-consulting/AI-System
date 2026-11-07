@@ -8,11 +8,14 @@ import { contracts, groups, members, tenantId, userId, users } from "@ai/test-ki
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../lib/db";
-import { approvalRepo } from "../../packs/contracts/adapters/approval.repo";
-import { contractFlowRepo } from "../../packs/contracts/adapters/contract-flow.repo";
-import { actApproval, startApproval } from "../../packs/contracts/application/approval.usecase";
-import type { ContractFlowGate } from "../../packs/contracts/application/contract-flow.ports";
-import { contractsOutcomeHandler } from "../../packs/contracts/flow-events.mount";
+import type { ContractFlowGate } from "../../packs/contracts/testing";
+import {
+  actApproval,
+  approvalRepo,
+  contractFlowRepo,
+  contractsOutcomeHandler,
+  startApproval,
+} from "../../packs/contracts/testing";
 import { createPackUow } from "../../packs/kit/adapters/pack-uow";
 import { registerOutcomeHandler, unregisterFlowPorts } from "../adapters/runs/flow-ports";
 import type { ProcessDeps } from "../core/ports";

@@ -7,15 +7,15 @@ import { contracts, tenantId, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../lib/db";
-import { approvalRepo } from "../../packs/contracts/adapters/approval.repo";
-import { contractFlowRepo } from "../../packs/contracts/adapters/contract-flow.repo";
 import {
   actApproval,
+  approvalRepo,
+  contractFlowRepo,
+  contractsOutcomeHandler,
   getApproval,
   startApproval,
-} from "../../packs/contracts/application/approval.usecase";
-import { withFlowResend } from "../../packs/contracts/application/flow-resend.usecase";
-import { contractsOutcomeHandler } from "../../packs/contracts/flow-events.mount";
+  withFlowResend,
+} from "../../packs/contracts/testing";
 import { createPackUow } from "../../packs/kit/adapters/pack-uow";
 import { registerOutcomeHandler, unregisterFlowPorts } from "../adapters/runs/flow-ports";
 import type { ProcessDeps } from "../core/ports";

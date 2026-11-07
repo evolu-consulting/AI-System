@@ -10,7 +10,7 @@ import { enablePack, tenantId } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../lib/db";
-import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/domain/approval-slot-default.rules";
+import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/public";
 import { deleteAssignment, upsertAssignment, upsertSlotDefault } from "./slot-assign.repo";
 import { slotAssigned } from "./slot-assigned.repo";
 import { ensureSlotDefaults } from "./slot-defaults";

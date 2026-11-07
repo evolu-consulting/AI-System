@@ -15,7 +15,7 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { sql } from "drizzle-orm";
 import { connectDb, type Db } from "../../../lib/db";
-import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/domain/approval-slot-default.rules";
+import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/public";
 import { listDefs } from "../defs/defs.repo";
 import { usage } from "./library.repo";
 import { pickProcess, type RoutingRule } from "./routing.rules";

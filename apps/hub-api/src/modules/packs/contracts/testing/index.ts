@@ -1,0 +1,18 @@
+// CHỈ cho test (ADR-0037 `testing/`): int test của module khác (processes) dựng gói contracts thật — mount, tool, usecase, repo.
+// Code production không import file này (luật `no-prod-import-testing`); tới đây qua `public.ts` cho phần luật thuần.
+
+export { approvalRepo } from "../adapters/approval.repo";
+export { approvalEngineRepo } from "../adapters/approval-engine.repo";
+export { approvalEngineTools } from "../adapters/approval-engine.tools";
+export { contractFlowRepo } from "../adapters/contract-flow.repo";
+export { esignNodeValidator } from "../adapters/esign-node.validator";
+export { actApproval, getApproval, startApproval } from "../application/approval.usecase";
+export type { ApprovalEnginePort, EngineStartRequest } from "../application/approval-engine.ports";
+export { startEngineApproval } from "../application/approval-engine.usecase";
+export { engineCard } from "../application/approval-engine-card.usecase";
+export { slotFlowOf } from "../application/approval-engine-slot";
+export type { ContractFlowGate } from "../application/contract-flow.ports";
+export { withFlowResend } from "../application/flow-resend.usecase";
+export { approvalSlotSpec } from "../approval.mount";
+export { contractsFactsReader, contractsOutcomeHandler } from "../flow-events.mount";
+export { intakeSlotSpec } from "../intake.mount";

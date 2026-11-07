@@ -15,17 +15,19 @@ import {
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
-import { communitySlotSpecs } from "../../packs/community/domain/flow-slots.rules";
-import { approvalEngineTools } from "../../packs/contracts/adapters/approval-engine.tools";
-import type {
-  ApprovalEnginePort,
-  EngineStartRequest,
-} from "../../packs/contracts/application/approval-engine.ports";
-import { startEngineApproval } from "../../packs/contracts/application/approval-engine.usecase";
-import { approvalSlotSpec } from "../../packs/contracts/approval.mount";
-import { FLOW_ROUTE_UNAVAILABLE } from "../../packs/contracts/domain/approval-engine.rules";
-import { APPROVAL_SLOT, compileSlotStages } from "../../packs/contracts/domain/approval-slot.rules";
-import { intakeSlotSpec } from "../../packs/contracts/intake.mount";
+import { communitySlotSpecs } from "../../packs/community/public";
+import {
+  APPROVAL_SLOT,
+  compileSlotStages,
+  FLOW_ROUTE_UNAVAILABLE,
+} from "../../packs/contracts/public";
+import type { ApprovalEnginePort, EngineStartRequest } from "../../packs/contracts/testing";
+import {
+  approvalEngineTools,
+  approvalSlotSpec,
+  intakeSlotSpec,
+  startEngineApproval,
+} from "../../packs/contracts/testing";
 import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
 import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import type { ProcessDeps } from "../core/ports";

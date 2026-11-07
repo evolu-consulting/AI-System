@@ -16,19 +16,17 @@ import {
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { connectDb, type Db } from "../../../lib/db";
-import { approvalRepo } from "../../packs/contracts/adapters/approval.repo";
-import { approvalEngineRepo } from "../../packs/contracts/adapters/approval-engine.repo";
-import { contractFlowRepo } from "../../packs/contracts/adapters/contract-flow.repo";
 import {
   actApproval,
-  getApproval,
-  startApproval,
-} from "../../packs/contracts/application/approval.usecase";
-import { engineCard } from "../../packs/contracts/application/approval-engine-card.usecase";
-import {
+  approvalEngineRepo,
+  approvalRepo,
+  contractFlowRepo,
   contractsFactsReader,
   contractsOutcomeHandler,
-} from "../../packs/contracts/flow-events.mount";
+  engineCard,
+  getApproval,
+  startApproval,
+} from "../../packs/contracts/testing";
 import { createPackUow } from "../../packs/kit/adapters/pack-uow";
 import {
   registerFactsReader,

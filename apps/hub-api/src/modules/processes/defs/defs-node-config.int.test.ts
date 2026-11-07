@@ -9,7 +9,7 @@ import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
-import { esignNodeValidator } from "../../packs/contracts/adapters/esign-node.validator";
+import { esignNodeValidator } from "../../packs/contracts/testing";
 import { nodeConfigRegistry } from "../../packs/kit/public";
 import type { ProcessDeps } from "../core/ports";
 import { defsRoutes } from "./defs.routes";

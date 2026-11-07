@@ -3,11 +3,11 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { compileSlotStages } from "../../packs/contracts/domain/approval-slot.rules";
 import {
   APPROVAL_DEFAULT_DEF,
+  compileSlotStages,
   defaultSlotBody,
-} from "../../packs/contracts/domain/approval-slot-default.rules";
+} from "../../packs/contracts/public";
 
 const SQL = readFileSync(
   join(

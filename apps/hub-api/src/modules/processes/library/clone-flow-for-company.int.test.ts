@@ -9,7 +9,7 @@ import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
-import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/domain/approval-slot-default.rules";
+import { APPROVAL_DEFAULT_DEF } from "../../packs/contracts/public";
 import type { ProcessDeps } from "../core/ports";
 import { defsRoutes } from "../defs/defs.routes";
 import { libraryRoutes } from "./library.routes";

@@ -9,7 +9,7 @@ import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { attentionOf } from "../../../packs/contracts/domain/approval-engine-card.rules";
+import { attentionOf } from "../../../packs/contracts/public";
 import type { PackToolCatalog } from "../../../packs/kit/public";
 import type { TxRepos } from "../../application/ports";
 import { runToolStage } from "../../application/tools/run-tool-stage.usecase";

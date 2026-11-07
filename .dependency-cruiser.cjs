@@ -152,10 +152,10 @@ module.exports = {
     {
       name: "platform-no-pack-internals",
       comment:
-        "pack-boundary: code nền tảng chỉ chạm gói qua `packs.mount.ts` và cổng `kit/` (ports, registry, guard, uow, converters) — không import `packs/<gói>/**`",
+        "pack-boundary: code nền tảng chỉ chạm gói qua `packs.mount.ts`, cổng `kit/` (ports, registry, guard, uow, converters), cửa `packs/<gói>/public.ts` (ADR-0037) và `packs/<gói>/testing/` (chỉ test; `no-prod-import-testing` chặn code thật) — không import ruột `packs/<gói>/**`",
       severity: "error",
       from: { path: "apps/hub-api/src/", pathNot: "modules/packs/" },
-      to: { path: "modules/packs/(?!kit/|packs\\.mount)[^/]+/" },
+      to: { path: "modules/packs/(?!kit/|packs\\.mount|[^/]+/(?:public\\.ts|testing/))[^/]+/" },
     },
     {
       name: "pack-no-hub-schema",

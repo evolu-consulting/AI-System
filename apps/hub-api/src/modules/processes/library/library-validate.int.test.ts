@@ -9,12 +9,8 @@ import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
-import { approvalEngineTools } from "../../packs/contracts/adapters/approval-engine.tools";
-import { approvalSlotSpec } from "../../packs/contracts/approval.mount";
-import {
-  APPROVAL_DEFAULT_DEF,
-  defaultSlotBody,
-} from "../../packs/contracts/domain/approval-slot-default.rules";
+import { APPROVAL_DEFAULT_DEF, defaultSlotBody } from "../../packs/contracts/public";
+import { approvalEngineTools, approvalSlotSpec } from "../../packs/contracts/testing";
 import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
 import type { PackToolCatalog } from "../../packs/kit/application/pack-tools.ports";
 import type { ProcessDeps } from "../core/ports";

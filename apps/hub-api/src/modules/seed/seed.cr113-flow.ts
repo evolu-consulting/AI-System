@@ -3,7 +3,7 @@
 // KHÔNG đặt nhóm chuyển cấp (⇒ mặc định chuyển cấp về Toàn quyền khi quá hạn, CR-113); bước 2 "Pháp chế duyệt" đặt tường minh nhóm
 // chuyển cấp. Chủ gói (Toàn quyền = julian.bui) KHÔNG thuộc Group của bước nào ⇒ quyết bước nào cũng là "duyệt thay".
 // Idempotent (on conflict / where thiếu), số câu SQL cố định. Gọi từ `writeTenantFixtures` (cổng libSampleEnabled đã chặn production).
-import { compileSlotStages } from "../packs/contracts/domain/approval-slot.rules";
+import { compileSlotStages } from "../packs/contracts/public";
 import type { Tx } from "./seed.repo";
 
 export const CR113_TENANT = "evolu";

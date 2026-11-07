@@ -1,7 +1,7 @@
 // CR-120 · cr120-review-fixes · khe opt-in (3 khe Community) KHÔNG được cấp mặc định và không bị đòi "có quy trình hiển thị".
 import { describe, expect, it } from "bun:test";
 import { coverageSlotsOf } from "../ops/adapters/checks/flow-coverage.check";
-import { communitySlotSpecs } from "../packs/community/domain/flow-slots.rules";
+import { communitySlotSpecs } from "../packs/community/public";
 import { defaultSlotsOf } from "./library/slot-defaults";
 
 const list = () => [

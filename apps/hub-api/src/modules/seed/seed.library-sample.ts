@@ -4,10 +4,10 @@
 // khe. Idempotent: id cố định + ON CONFLICT DO NOTHING. Chặn production ở `libSampleEnabled` (và `hub:seed` prod không bật fixtures).
 import {
   compileSlotStages,
+  defaultSlotBody,
   type SlotFlowBody,
   validateSlotBody,
-} from "../packs/contracts/domain/approval-slot.rules";
-import { defaultSlotBody } from "../packs/contracts/domain/approval-slot-default.rules";
+} from "../packs/contracts/public";
 import type { Tx } from "./seed.repo";
 
 export const LIBRARY_SAMPLE = {

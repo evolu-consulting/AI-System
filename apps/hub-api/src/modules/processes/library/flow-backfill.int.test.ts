@@ -14,7 +14,7 @@ import { urls } from "@ai/test-kit/env";
 import { sql } from "drizzle-orm";
 import { insertRun } from "../../../../../../tests/acceptance/P-a/_support/process-fixtures";
 import { connectDb, type Db } from "../../../lib/db";
-import { APPROVAL_SLOT, compileSlotStages } from "../../packs/contracts/domain/approval-slot.rules";
+import { APPROVAL_SLOT, compileSlotStages } from "../../packs/contracts/public";
 import { dispatchOnce, type FlowLaunch } from "../triggers/dispatcher";
 import { insertFlowEvents } from "../triggers/dispatcher.repo";
 import { setFlowTriggers } from "../triggers/flags";

@@ -10,7 +10,7 @@ import {
   prepareDb,
   type Sql,
 } from "../../../../../tests/acceptance/H1/_fixtures";
-import { validateSlotBody } from "../packs/contracts/domain/approval-slot.rules";
+import { validateSlotBody } from "../packs/contracts/public";
 import { runHubSeed } from "./seed";
 import { CR113_DEF, CR113_SLOT_BODY, LEGAL_GROUP } from "./seed.cr113-flow";
 import { ACCOUNTING } from "./seed.tenant-fixtures";

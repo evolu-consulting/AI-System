@@ -1,8 +1,7 @@
 // CR-105 · L2a · B2 (viết TRƯỚC code): kiểm trước khi xuất bản def thư viện — đủ nút hệ thống của khe, không bước không tới được
 // (điều kiện không bao giờ đúng), luật khe (`SlotSpec.validate`). Thuần.
 import { describe, expect, it } from "bun:test";
-import { compileSlotStages } from "../../packs/contracts/domain/approval-slot.rules";
-import { defaultSlotBody } from "../../packs/contracts/domain/approval-slot-default.rules";
+import { compileSlotStages, defaultSlotBody } from "../../packs/contracts/public";
 import { publishIssues, whenSatisfiable } from "./library-publish.rules";
 
 const SYS = ["contracts-route", "contracts-finalize"];

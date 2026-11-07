@@ -1,7 +1,7 @@
 // CR-105 · L2b · int: `POST /process-defs/:id/preview` — đường chính (bước có `when` bị bỏ qua), chỉ platform_admin, không ghi.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { type CtxPa, startPa } from "../../../../../../tests/acceptance/P-a/_support/pa";
-import { approvalSlotSpec } from "../../packs/contracts/approval.mount";
+import { approvalSlotSpec } from "../../packs/contracts/testing";
 import { slotRegistry } from "../../packs/kit/adapters/slot-registry";
 
 const DEF = "c1050000-0000-4000-8000-000000000001";
