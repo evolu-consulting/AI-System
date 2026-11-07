@@ -10,6 +10,7 @@ import {
   pickDefaultProvider,
   returnedFromSigning,
   showProviderPicker,
+  signReturnUrl,
 } from "./esign-view";
 
 const st = (o: Partial<ESignStateOut> = {}): ESignStateOut => ({
@@ -128,6 +129,9 @@ describe("esignView", () => {
       write: true,
     });
     expect(v).toMatchObject({ mode: "failed", canSend: true });
+  });
+  it("CR-122 · trang quay về sau khi ký là /contracts/c/<id> (đường cũ làm mất ?esign=return)", () => {
+    expect(signReturnUrl("https://app.x", "abc")).toBe("https://app.x/contracts/c/abc");
   });
   it("returnedFromSigning", () => {
     expect(returnedFromSigning("?esign=return&event=signing_complete")).toBe(true);

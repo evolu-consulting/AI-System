@@ -114,6 +114,13 @@ export const esignErrKey = (code: string | undefined | null): string =>
   `contracts.esign.err.${code && ESIGN_ERR_CODES.has(code) ? code : "unknown"}`;
 
 /** Bỏ `?esign=return` (DocuSign/ký thử quay về) khỏi URL sau khi đã làm mới một lần. */
+/**
+ * Trang quay về sau khi ký: ĐÚNG trang chi tiết HĐ `/contracts/c/<id>` (CR-119). Đường cũ `/contracts/<id>` chuyển hướng làm mất
+ * `?esign=return` ⇒ không tự làm mới ⇒ ký xong vẫn thấy "Ký ngay", bước kế không chạy (CR-122, phát hiện khi quay demo).
+ */
+export const signReturnUrl = (origin: string, id: string): string =>
+  `${origin}/contracts/c/${encodeURIComponent(id)}`;
+
 export function returnedFromSigning(search: string): boolean {
   return new URLSearchParams(search).get("esign") === "return";
 }

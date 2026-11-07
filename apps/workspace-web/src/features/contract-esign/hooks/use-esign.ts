@@ -14,7 +14,7 @@ import {
   signUrl,
   voidEsign,
 } from "../api";
-import { esignErrKey, returnedFromSigning } from "../lib/esign-view";
+import { esignErrKey, returnedFromSigning, signReturnUrl } from "../lib/esign-view";
 
 export function useEsign(id: string) {
   const { t } = useTranslation();
@@ -71,7 +71,7 @@ export function useEsign(id: string) {
     cancel: (reason: string) => run(() => voidEsign(id, reason)),
     signNow: () =>
       run(async () => {
-        const back = `${window.location.origin}/contracts/${encodeURIComponent(id)}`;
+        const back = signReturnUrl(window.location.origin, id);
         const { url } = await signUrl(id, back);
         window.location.assign(url);
         return undefined;
