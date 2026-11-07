@@ -75,7 +75,7 @@ export type ToolStageRepo = {
   ): Promise<boolean>;
   /** needs_decision(reason) + task + thread (như `toDecision`); sự kiện vào outbox. */
   decide(
-    x: { runId: string; stageRunId: string; reason: ToolDecisionReason },
+    x: { runId: string; stageRunId: string; reason: ToolDecisionReason; code?: string },
     now: Date,
   ): Promise<void>;
 };

@@ -21,6 +21,7 @@ import type {
 import type { ESignRepo } from "../application/esign.ports";
 import type { SendNodeOpts } from "../application/esign.usecase";
 import type { ExtractionRepo } from "../application/extraction.ports";
+import { withBusinessCodes } from "./intake.errors";
 
 export const INTAKE_TOOL_KEYS = {
   extract: "contracts-extract",
@@ -116,6 +117,10 @@ function contractIdOf(args: PackToolArgs): string {
 const who = (ctx: PackToolCtx) => ({ tenantId: ctx.tenantId, userId: ctx.userId });
 
 export function intakeTools(d: IntakeToolDeps): PackToolDef[] {
+  return rawIntakeTools(d).map((t) => ({ ...t, run: withBusinessCodes(t.run) }));
+}
+
+function rawIntakeTools(d: IntakeToolDeps): PackToolDef[] {
   const base = { pack: "contracts", action: "write" as const, params: [CONTRACT] };
   return [
     {

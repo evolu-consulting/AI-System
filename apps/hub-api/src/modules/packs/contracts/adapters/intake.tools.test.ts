@@ -23,7 +23,10 @@ function make(o: {
   };
   const repos = {
     extraction: { source: async () => (log.reads++, o.src ?? null) },
-    esign: { contract: async () => (log.reads++, o.contract ?? null) },
+    esign: {
+      contract: async () => (log.reads++, o.contract ?? null),
+      lockForSign: async () => {},
+    },
     notify: {
       enqueue: async (rows: unknown[]) => {
         log.notify.push(...rows);

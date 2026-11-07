@@ -31,7 +31,7 @@ async function failStuck(d: ToolDriverDeps, link: ToolLink): Promise<void> {
     if (!(await r.runs.lock(link.runId))) return;
     if (!(await r.tools.lockRunning(link.stageRunId, link.hubRunId))) return;
     await r.tools.decide(
-      { runId: link.runId, stageRunId: link.stageRunId, reason: "tool_failed" },
+      { runId: link.runId, stageRunId: link.stageRunId, reason: "tool_failed", code: "TOOL_CRASH" },
       d.clock.now(),
     );
   });

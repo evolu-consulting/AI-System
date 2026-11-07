@@ -30,7 +30,7 @@ export type RunToolDeps = {
 const mark = (c: MonotonicClock): number => (c.monotonicMs ? c.monotonicMs() : c.now().getTime());
 export type Settle =
   | { kind: "ok"; md: string; fields: Record<string, string | number> }
-  | { kind: "decide"; reason: ToolDecisionReason }
+  | { kind: "decide"; reason: ToolDecisionReason; code?: string; toolKey?: string }
   | { kind: "fail"; failure: ToolFailure };
 /** `skip` = không còn việc (stage đã đổi / đua); `retry` = đã hẹn thử lại. Người gọi đóng `hub.runs`. */
 export type ToolStageOutcome =
@@ -49,7 +49,8 @@ export function settleOf(
     const { kind: _k, ...failure } = res;
     return { kind: "fail", failure };
   }
-  if (utf8Bytes(res.text) > TOOL_RESULT_MAX_BYTES) return { kind: "decide", reason: "tool_failed" };
+  if (utf8Bytes(res.text) > TOOL_RESULT_MAX_BYTES)
+    return { kind: "decide", reason: "tool_failed", code: "RESULT_TOO_LARGE" };
   let parsed: unknown;
   try {
     parsed = JSON.parse(res.text);
@@ -77,8 +78,18 @@ async function settleOkOrFail(r: TxRepos, x: ApplyIn, s: Extract<Settle, { kind:
   // `=== false`: cổng cũ trả `void` = đã ghi.
   if ((await r.tools.settleOk(ok, x.now)) !== false) return s;
   x.log?.warn("process-tool-output-rejected", { ...at, hub_run_id: x.link.hubRunId });
-  await r.tools.decide({ ...at, reason: "tool_failed" }, x.now);
+  await r.tools.decide({ ...at, reason: "tool_failed", code: "OUTPUT_REJECTED" }, x.now);
   return { kind: "decide", reason: "tool_failed" } as const;
+}
+
+/** CR-122 · p19 · mã máy của lỗi tool ghi vào `stage_runs.last_error_code` + log (không PII: chỉ khoá tool + mã). */
+function warnFailed(x: ApplyIn, toolKey: string | undefined, code: string): void {
+  x.log?.warn("process-tool-decision", {
+    run_id: x.link.runId,
+    stage_run_id: x.link.stageRunId,
+    tool_key: toolKey ?? null,
+    code,
+  });
 }
 
 /** Ghi kết quả vào stage đã khoá (tx2). */
@@ -88,7 +99,9 @@ async function apply(r: TxRepos, x: ApplyIn): Promise<ToolStageOutcome> {
   if (s.kind === "ok") return settleOkOrFail(r, x, s);
   if (s.kind === "decide" || !c) {
     const reason = s.kind === "decide" ? s.reason : "tool_failed";
-    await r.tools.decide({ ...at, reason }, now);
+    const code = s.kind === "decide" ? s.code : s.failure.code;
+    if (code) warnFailed(x, s.kind === "decide" ? s.toolKey : undefined, code);
+    await r.tools.decide({ ...at, reason, ...(code ? { code } : {}) }, now);
     return { kind: "decide", reason };
   }
   const f = { ...at, failure: s.failure, sideEffect: c.load.sideEffect, state: c.load.state };
@@ -98,7 +111,8 @@ async function apply(r: TxRepos, x: ApplyIn): Promise<ToolStageOutcome> {
     return { kind: "retry" };
   }
   const reason = toolReason(dec.reason);
-  await r.tools.decide({ ...at, reason }, now);
+  warnFailed(x, c.load.toolKey, s.failure.code);
+  await r.tools.decide({ ...at, reason, code: s.failure.code }, now);
   return { kind: "decide", reason };
 }
 

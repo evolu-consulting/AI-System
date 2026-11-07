@@ -16,6 +16,7 @@ function make(email: string | null = "p@x.vn") {
   const repos = {
     extraction: { source: async () => null },
     esign: {
+      lockForSign: async () => {},
       contract: async () => ({ number: "S1", title: "HĐ", partner: { name: "Đối tác", email } }),
     },
     notify: { enqueue: async () => 1 },

@@ -114,6 +114,10 @@ async function decide({ tx, tenantId, outbox, d }: Cx, s: Lock, x: DecideIn): Pr
   if (idx === undefined) return;
   const p = { runId: x.runId, tenantId, idx, stageRunId: x.stageRunId, reason: x.reason };
   const events = await toDecision(d, tx, p);
+  // CR-122 · p19 · mã máy của lỗi (≤ 64 ký tự: `stage_runs_retry_ck`) cho thẻ HĐ/chi tiết lượt; không PII.
+  if (x.code)
+    await tx.execute(sql`update hub.stage_runs set last_error_code = ${x.code.slice(0, 64)}
+      where id = ${x.stageRunId} and tenant_id = ${tenantId}`);
   const recipients = await core.runRecipients(tx, x.runId, tenantId);
   const st = { id: x.runId, status: "needs_decision" as const, stageIdx: idx };
   events.push(...processUpdated(recipients, st));

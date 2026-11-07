@@ -33,6 +33,7 @@ type Row = {
   run_decision: unknown;
   stage_idx: number;
   stage_status: string;
+  stage_error: string | null;
   round: number;
   stage: StageSnap | string;
   task_id: string | null;
@@ -62,7 +63,7 @@ const userScope = (u: PackRunCaller) => ({
 });
 
 const rowsSql = (runId: string, tenantId: string) => sql`
-  select r.status as run_status, r.started_by, r.decision as run_decision, s.stage_idx, s.status as stage_status, s.round,
+  select r.status as run_status, r.started_by, r.decision as run_decision, s.stage_idx, s.status as stage_status, s.last_error_code as stage_error, s.round,
     r.snapshot->'stages'->(s.stage_idx::int) as stage,
     t.id as task_id, t.status as task_status, t.result, t.feedback, t.decided_by, t.decided_at,
     coalesce(nullif(du.display_name, ''), du.username) as decided_name,
@@ -160,6 +161,12 @@ function decisionOf(v: unknown): { reason: string; at: string | null } {
   return { reason, at: typeof o?.at === "string" ? o.at : null };
 }
 
+/** CR-122 · p19 · mã máy của stage đang chờ quyết (tool lỗi vì sao) → thẻ HĐ nói rõ cách xử lý; vắng ⇒ không thêm trường. */
+function stageCode(rows: readonly Row[]): { code?: string } {
+  const code = rows.find((r) => r.stage_status === "needs_decision" && r.stage_error)?.stage_error;
+  return code ? { code } : {};
+}
+
 /** S1a · dòng thời gian stage của run cho người xem; run không thấy (RLS/tenant) ⇒ null. */
 export async function stepsView(
   d: ProcessDeps,
@@ -187,7 +194,10 @@ export async function stepsView(
       status: head.run_status,
       started_by: head.started_by,
       steps: rows.map((r) => stepOf(r, can)),
-      decision: head.run_status === "needs_decision" ? decisionOf(head.run_decision) : null,
+      decision:
+        head.run_status === "needs_decision"
+          ? { ...decisionOf(head.run_decision), ...stageCode(rows) }
+          : null,
     };
   });
 }

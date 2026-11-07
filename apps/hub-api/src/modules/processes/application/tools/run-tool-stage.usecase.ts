@@ -24,12 +24,14 @@ const mark = (c: MonotonicClock): number => (c.monotonicMs ? c.monotonicMs() : c
  * S2/S10 · thứ tự: người bắt đầu dùng được → quyền chạy → công tắc + workflow bật → cấu hình workflow đổi SAU khi lưu def:
  * M1/S4 `side_effect` mà stage không `real_action` (fail-closed: vắng `realAction` ⇒ chặn); m1 `input_schema` hỏng.
  */
-function preCallReason(l: ToolCallLoad): ToolDecisionReason | null {
-  if (!l.usable) return "user_inactive";
-  if (!l.canRun) return "permission_lost";
-  if (!l.switchOn || !l.wfEnabled) return "tool_failed";
-  if (l.sideEffect && l.realAction !== true) return "tool_failed";
-  if (l.inputSchemaOk === false) return "tool_failed";
+function preCallReason(l: ToolCallLoad): { reason: ToolDecisionReason; code?: string } | null {
+  if (!l.usable) return { reason: "user_inactive" };
+  if (!l.canRun) return { reason: "permission_lost" };
+  // CR-122 · p19 · mã máy ghi vào `last_error_code` để thẻ HĐ nói rõ vì sao dừng.
+  if (!l.switchOn || !l.wfEnabled) return { reason: "tool_failed", code: "TOOL_OFF" };
+  if (l.sideEffect && l.realAction !== true)
+    return { reason: "tool_failed", code: "NO_REAL_ACTION" };
+  if (l.inputSchemaOk === false) return { reason: "tool_failed", code: "INPUT_SCHEMA_INVALID" };
   return null;
 }
 
@@ -39,9 +41,17 @@ export async function runToolStage(d: RunToolDeps, link: ToolLink): Promise<Tool
   );
   if (!l) return { kind: "skip" };
   const pre = preCallReason(l);
-  if (pre) return settle(d, link, { kind: "decide", reason: pre }, null);
+  if (pre) return settle(d, link, { kind: "decide", ...pre, toolKey: l.toolKey }, null);
   const built = buildToolArgs(l.args, l.inputs, l.fields, l.inputTypes);
-  if (!built.ok) return settle(d, link, { kind: "decide", reason: "tool_failed" }, null);
+  if (!built.ok) {
+    const code = `MISSING_ARG:${built.missing}`;
+    return settle(
+      d,
+      link,
+      { kind: "decide", reason: "tool_failed", code, toolKey: l.toolKey },
+      null,
+    );
+  }
   const t0 = mark(d.clock);
   const res = await d.invoker.call({
     tenantId: link.tenantId,

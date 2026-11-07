@@ -106,6 +106,8 @@ export const ApprovalAttentionSchema = z.strictObject({
   kind: z.enum(["needs_decision", "stalled"]),
   reason: z.string().max(200).nullable(),
   since: z.string().max(40).nullable(),
+  /** CR-122 · p19 · mã máy lỗi của bước tự động (vd `ESIGN_DISABLED`, `MISSING_ARG:contract_id`); vắng ở hub cũ. */
+  code: z.string().max(64).nullable().optional(),
 });
 export type ApprovalAttention = z.infer<typeof ApprovalAttentionSchema>;
 

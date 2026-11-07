@@ -201,12 +201,14 @@ export class PackToolRegistry implements PackToolCatalog {
         this.#warn("pack-tool-timeout", { tool_key: key, run_id: ctx.runId });
       return r;
     } catch (err) {
+      const code = packToolErrorCode(err);
       this.#warn("pack-tool-failed", {
         tool_key: key,
         run_id: ctx.runId,
         error_name: err instanceof Error ? err.name : "unknown",
+        code, // CR-122 · p19 · mã máy (không PII) để tra "vì sao dừng"
       });
-      return failed(packToolErrorCode(err), t.side_effect); // CR-107 · nghiệp vụ ⇒ không thử lại
+      return failed(code, t.side_effect); // CR-107 · nghiệp vụ ⇒ không thử lại
     }
   }
 }

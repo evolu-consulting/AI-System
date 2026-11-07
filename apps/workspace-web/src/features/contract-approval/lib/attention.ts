@@ -20,11 +20,47 @@ const STALLED_KNOWN = new Set([
 ]);
 const GROUP_PREFIX = "FLOW_GROUP_MISSING";
 
-export type AttentionText = { key: string; vars?: { keys: string } };
+export type AttentionText = { key: string; vars?: { keys?: string; code?: string } };
 
-/** Lý do (mã máy) ⇒ khoá i18n (+ biến). Mã lạ/null ⇒ câu chung, không lộ mã thô. */
-export function attentionText(a: Pick<ApprovalAttention, "kind" | "reason">): AttentionText {
+/** CR-122 · p19 · mã lỗi bước tự động đã biết cách xử lý (`last_error_code` của stage) ⇒ câu "vì sao + làm gì". */
+const TOOL_CODES = new Set([
+  "ESIGN_DISABLED",
+  "ESIGN_PROVIDER_UNAVAILABLE",
+  "ESIGN_STATE",
+  "ESIGN_UNSUPPORTED_FILE",
+  "ESIGN_NOT_SIGNER",
+  "NO_PARTNER_EMAIL",
+  "ESIGN_NODE_NO_SIGNER",
+  "ESIGN_NODE_CONFIG_INVALID",
+  "CONTRACT_NOT_FOUND",
+  "TOOL_OFF",
+  "NO_REAL_ACTION",
+  "INPUT_SCHEMA_INVALID",
+  "RESULT_TOO_LARGE",
+  "OUTPUT_REJECTED",
+  "TOOL_CRASH",
+]);
+const MISSING_ARG = "MISSING_ARG";
+
+/** Mã lỗi tool ⇒ khoá i18n; mã lạ ⇒ câu chung kèm mã (để báo quản trị). */
+function toolCodeText(code: string): AttentionText {
+  const head = code.split(":")[0] ?? "";
+  if (head === MISSING_ARG)
+    return {
+      key: `${BASE}.tool.${MISSING_ARG}`,
+      vars: { keys: code.slice(MISSING_ARG.length + 1) },
+    };
+  if (TOOL_CODES.has(head)) return { key: `${BASE}.tool.${head}` };
+  return { key: `${BASE}.tool.UNKNOWN`, vars: { code: head.slice(0, 64) } };
+}
+
+/** Lý do (mã máy) ⇒ khoá i18n (+ biến). Mã lạ/null ⇒ câu chung, không lộ mã thô (trừ mã lỗi bước tự động lạ: kèm mã để báo quản trị). */
+export function attentionText(
+  a: Pick<ApprovalAttention, "kind" | "reason"> & { code?: string | null },
+): AttentionText {
   const reason = a.reason ?? "";
+  if (a.kind === "needs_decision" && reason === "tool_failed" && a.code)
+    return toolCodeText(a.code);
   if (a.kind === "needs_decision")
     return { key: `${BASE}.${DECISION_KNOWN.has(reason) ? reason : "other"}` };
   if (reason === GROUP_PREFIX || reason.startsWith(`${GROUP_PREFIX}:`)) {

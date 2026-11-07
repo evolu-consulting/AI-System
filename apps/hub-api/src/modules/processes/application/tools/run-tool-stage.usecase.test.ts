@@ -12,7 +12,11 @@ describe("settleOf", () => {
   });
   it("HUB-FR-146 · S12 · 'é' × 33000 (< 64 Ki ký tự, > 64 KB) ⇒ tool_failed", () => {
     const text = `{"so":1,"x":"${"é".repeat(33_000)}"}`;
-    expect(settleOf(l, { kind: "ok", text })).toEqual({ kind: "decide", reason: "tool_failed" });
+    expect(settleOf(l, { kind: "ok", text })).toEqual({
+      kind: "decide",
+      reason: "tool_failed",
+      code: "RESULT_TOO_LARGE",
+    });
   });
   it("HUB-FR-146 · D2-05 · không JSON / thiếu required ⇒ template_invalid; lỗi gọi ⇒ fail (T18-2 quyết thử lại)", () => {
     expect(settleOf(l, { kind: "ok", text: "x" })).toEqual({
@@ -166,7 +170,12 @@ describe("runToolStage · security P-d2 M1/m1 — kiểm lại cấu hình workf
     const res = { kind: "ok", text: '{"so":7}' };
     const { d, ev } = fakeDeps({ sideEffect: true, realAction: false, res });
     expect(await runToolStage(d, link)).toEqual({ kind: "decide", reason: "tool_failed" });
-    expect(ev).toEqual(["lockRun", "lockRunning", "decide:tool_failed"]);
+    expect(ev).toEqual([
+      "lockRun",
+      "lockRunning",
+      "warn:process-tool-decision",
+      "decide:tool_failed",
+    ]);
   });
   it("M1 · side_effect ở stage real_action ⇒ vẫn gọi (ok)", async () => {
     const res = { kind: "ok", text: '{"so":7}' };
@@ -178,6 +187,11 @@ describe("runToolStage · security P-d2 M1/m1 — kiểm lại cấu hình workf
     const res = { kind: "ok", text: '{"so":7}' };
     const { d, ev } = fakeDeps({ sideEffect: false, inputSchemaOk: false, res });
     expect(await runToolStage(d, link)).toEqual({ kind: "decide", reason: "tool_failed" });
-    expect(ev).toEqual(["lockRun", "lockRunning", "decide:tool_failed"]);
+    expect(ev).toEqual([
+      "lockRun",
+      "lockRunning",
+      "warn:process-tool-decision",
+      "decide:tool_failed",
+    ]);
   });
 });
