@@ -194,7 +194,14 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
     update: async (envelopeId, p) => {
       // CR-125 · phong bì sang trạng thái cuối (đã ký / từ chối / huỷ / hết hạn) ⇒ MỘT dòng lịch sử HĐ (kèm ai đã ký lúc nào); gọi lại
       // cùng trạng thái ⇒ không ghi đôi (so với trạng thái trước câu này).
-      await tx.execute(sql`with u as (update contracts.esign_envelopes set status = ${p.status}, reason = ${p.reason},
+      // Review · hai webhook giống hệt chạy song song: KHOÁ hàng và đọc trạng thái trước ở câu riêng (CTE `for update` cùng câu với UPDATE
+      // không thấy hàng đã bị chính câu sửa); câu thứ hai chờ khoá rồi đọc bản mới ⇒ không ghi dòng thứ hai. Cùng tx ⇒ khoá giữ tới commit.
+      const [pv] = await tx.execute<{
+        status: string;
+      }>(sql`select status from contracts.esign_envelopes
+        where tenant_id = ${t}::uuid and envelope_id = ${envelopeId} for update`);
+      const prev = pv?.status ?? null;
+      await tx.execute(sql`with        u as (update contracts.esign_envelopes set status = ${p.status}, reason = ${p.reason},
             completed_at = ${p.completedAt}::timestamptz, signers = ${JSON.stringify(p.signers)}::jsonb, updated_at = now()
           where tenant_id = ${t}::uuid and envelope_id = ${envelopeId} returning contract_id, status, reason, signers),
         ev as (insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
@@ -207,8 +214,7 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
                 'signed_at', s ->> 'signed_at')), '[]'::jsonb) from jsonb_array_elements(u.signers) s)))
           from u
           where u.status in ('completed', 'declined', 'voided', 'expired')
-            and (select o.status from contracts.esign_envelopes o
-              where o.tenant_id = ${t}::uuid and o.envelope_id = ${envelopeId}) is distinct from u.status)
+            and ${prev}::text is distinct from u.status)
         select 1`);
     },
     attachSigned: async (envelopeId, f) => {

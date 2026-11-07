@@ -189,7 +189,7 @@ function pendingQ(tx: Tx, tid: string): ApprovalEngineRepo["setPendingLinks"] {
  *  `engine_run_id`) — chỉ còn `run_id` (lượt, như event duyệt khác), `stage`, `action`. `e` = bí danh bảng event (hằng). */
 export const eventDataOut = (e: "e") =>
   sql.raw(
-    `(case when ${e}.type = '${OVERRIDE_EVENT}' then ${e}.data - 'task_id' - 'engine_run_id' else ${e}.data end)`,
+    `(case when ${e}.type in ('${OVERRIDE_EVENT}', 'stage_decided') then ${e}.data - 'task_id' - 'engine_run_id' else ${e}.data end)`,
   );
 
 /** CR-113 · "duyệt thay": MỘT câu chèn (không `returning` — người duyệt ngoài cây không đọc được hàng; FK HĐ kiểm tồn tại). Review ·
@@ -215,8 +215,10 @@ function decisionQ(tx: Tx, tid: string): NonNullable<ApprovalEngineRepo["recordD
   return async (id, aid, e) => {
     await tx.execute(sql`insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
       values (${tid}::uuid, ${id}::uuid, 'stage_decided', ${e.actor}::uuid,
-        jsonb_strip_nulls(jsonb_build_object('run_id', ${aid}::text, 'stage', ${e.stageKey}::text,
-          'action', ${e.action}::text, 'feedback', ${e.feedback}::text)))`);
+        jsonb_strip_nulls(jsonb_build_object('run_id', ${aid}::text, 'task_id', ${e.taskId}::text, 'stage', ${e.stageKey}::text,
+          'action', ${e.action}::text, 'feedback', ${e.feedback}::text)))
+      -- bấm đúp / thử lại cùng task ⇒ một dòng (index 0088)
+      on conflict (tenant_id, (data ->> 'task_id')) where type = 'stage_decided' do nothing`);
   };
 }
 

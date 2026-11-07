@@ -3,14 +3,13 @@ id: cr125-audit-trail
 lát: cr125-audit-trail
 cr: CR-125
 làn: nhanh
-migration: không
+migration: 0088 (index một phần stage_decided)
 phụ thuộc:
 ---
 ## Plan (ngắn)
 Câu hỏi: HĐ có đổi trạng thái theo flow? lượt chạy có được ghi? có audit không? Điều tra bằng code + một lượt int thật
 (`apps/hub-api/src/modules/processes/triggers/audit-trail.int.test.ts`, evotest XANH 4/4), rồi vá chỗ thiếu bằng bảng/cơ chế sẵn có
-(`contracts.contract_events` = lịch sử HĐ, `contracts.approval_settings_audit`, `hub.audit_log`). Không bảng audit mới, không migration
-(`contract_events.type` chỉ CHECK `^[a-z_]{2,40}$`).
+(`contracts.contract_events` = lịch sử HĐ, `contracts.approval_settings_audit`, `hub.audit_log`). Không bảng audit mới.
 
 ## Câu trả lời (sự kiện × 3 lớp)
 Cột 1 = `contracts.contracts.status`; cột 2 = log chạy (hub.process_runs / stage_runs / review_tasks); cột 3 = audit (ai · lúc nào · gì).
@@ -50,7 +49,7 @@ gửi) — người bấm có ở `partner_sent`.
 - UI: nhãn lịch sử (`gapa1.vi/en.json`, `contract-review/lib/manage.ts`, `fields.ts` kiểu event).
 
 ## Không làm / Chạm
-Không bảng/migration mới; không chạm canvas. Perf: không (mỗi sự kiện thêm đúng một INSERT trong câu CTE sẵn có).
+Không bảng mới (chỉ index 0088); không chạm canvas. Perf: không (mỗi sự kiện thêm đúng một INSERT trong câu CTE sẵn có).
 
 ## Test tối thiểu
 - int `apps/hub-api/src/modules/processes/triggers/audit-trail.int.test.ts` (evotest -Dirty XANH 4/4): Gửi duyệt → Đạt → Đã duyệt (status + lịch sử), Từ chối + lý do, ký số gửi/ký/đổi nhà cung cấp, đối tác gửi/trả lời — assert dòng DB và `getHistory`.
@@ -60,7 +59,8 @@ Không bảng/migration mới; không chạm canvas. Perf: không (mỗi sự ki
 
 ## Quyết định trong lúc làm
 - Một nguồn: lịch sử HĐ = `contract_events`; không thêm bảng. Audit cấu hình giữ ở `approval_settings_audit` / `hub.audit_log`.
-- Lỗi ghi `stage_decided` chỉ cảnh báo (engine đã nhận quyết) — các ghi còn lại cùng câu SQL với thay đổi trạng thái nên atomic.
+- `stage_decided` ghi ở tx gói RIÊNG sau khi engine nhận quyết (không cùng tx engine): lỗi ghi chỉ cảnh báo (có thể thiếu dòng), nhưng không bao giờ nhân đôi — unique index một phần `contract_events_stage_decided_uq` (migration 0088, when 1807000000000) + `on conflict do nothing` theo task. Các ghi còn lại cùng câu SQL với thay đổi trạng thái nên atomic.
+- esign webhook song song: khoá hàng + đọc trạng thái trước ở câu riêng, chỉ ghi `esign_*` khi thật sự chuyển trạng thái; test chạy bằng role hệ thống của gói (cả đường nhận đối tác) ghi được `contract_events` dưới RLS.
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp

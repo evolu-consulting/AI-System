@@ -239,6 +239,7 @@ async function noteDecision(
   const aid = (c.st.approval as NonNullable<ApprovalState["approval"]>).id;
   const action = plan.kind === "pass" ? "approve" : plan.kind === "reject" ? "reject" : "return";
   const e = {
+    taskId: plan.taskId,
     stageKey: step?.key ?? "",
     action,
     feedback: c.b.feedback?.trim() ? c.b.feedback.trim().slice(0, 1000) : null,

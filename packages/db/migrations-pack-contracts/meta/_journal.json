@@ -568,6 +568,13 @@
       "when": 1806900100000,
       "tag": "0087_partner_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1807000000000,
+      "tag": "0088_stage_decided_once",
+      "breakpoints": true
     }
   ]
 }

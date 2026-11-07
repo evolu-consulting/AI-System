@@ -20,6 +20,7 @@ import { approvalEngineRepo } from "../../packs/contracts/adapters/approval-engi
 import { contractFlowRepo } from "../../packs/contracts/adapters/contract-flow.repo";
 import { esignRepo } from "../../packs/contracts/adapters/esign.repo";
 import { manageRepo } from "../../packs/contracts/adapters/manage.repo";
+import { partnerInboxRepo } from "../../packs/contracts/adapters/partner-inbox.repo";
 import { partnerSendRepo } from "../../packs/contracts/adapters/partner-send.repo";
 import {
   actApproval,
@@ -156,6 +157,7 @@ const uow = () =>
     contractFlow: contractFlowRepo(tx, tid),
     esign: esignRepo(tx, tid),
     partnerSend: partnerSendRepo(tx, tid),
+    partnerInbox: partnerInboxRepo(tx, tid),
     ...manageRepo(tx, tid),
   }));
 function ad() {
@@ -323,5 +325,98 @@ describe("CR-125 · dấu vết duyệt HĐ theo sự kiện", () => {
       outcome: "returned",
       reason: "Sửa điều khoản thanh toán",
     });
+  });
+});
+
+describe("CR-125 review · idempotent + đúng role", () => {
+  it("hai webhook ký giống hệt chạy song song ⇒ đúng một esign_signed (role hệ thống)", async () => {
+    const s = [
+      {
+        role: "company",
+        name: "A",
+        email: "a@x.vn",
+        order: 1,
+        client_user_id: null,
+        status: null,
+        signed_at: "2026-11-07T01:00:00Z",
+      },
+    ] as never;
+    await uow().tenant(wa(), (r) =>
+      r.esign.insert({
+        contractId: C2,
+        provider: "mock",
+        envelopeId: "env-par",
+        signers: s,
+        sentBy: A,
+      }),
+    );
+    const p = {
+      status: "completed",
+      reason: null,
+      completedAt: "2026-11-07T01:00:00Z",
+      signers: s,
+    } as never;
+    await Promise.all([1, 2].map(() => uow().system(T, (r) => r.esign.update("env-par", p))));
+    const [n] = await o<{ n: number }[]>`select count(*)::int as n from contracts.contract_events
+      where tenant_id = ${T} and contract_id = ${C2} and type = 'esign_signed'`;
+    expect(n?.n).toBe(1);
+  });
+
+  it("bấm đúp cùng task ⇒ một dòng stage_decided; id nội bộ không lộ ra lịch sử", async () => {
+    const [aid] = await o<
+      { id: string }[]
+    >`select run_id::text as id from contracts.contracts where id = ${C2}`;
+    const e = {
+      taskId: crypto.randomUUID(),
+      stageKey: "s0",
+      action: "approve",
+      feedback: null,
+      actor: B,
+    } as never;
+    await Promise.all(
+      [1, 2].map(() =>
+        uow().tenant(wb(), async (r) => {
+          await r.approvalEngine.recordDecision?.(C2, aid?.id ?? C2, e);
+        }),
+      ),
+    );
+    const [n] = await o<{ n: number }[]>`select count(*)::int as n from contracts.contract_events
+      where tenant_id = ${T} and contract_id = ${C2} and type = 'stage_decided' and data ->> 'stage' = 's0'`;
+    expect(n?.n).toBe(1);
+    const h = await history(C2);
+    for (const x of h.filter((y) => y.type === "stage_decided"))
+      expect(x.data).not.toHaveProperty("task_id");
+  });
+
+  it("đường nhận đối tác + trả lời chạy bằng role hệ thống của gói vẫn ghi được contract_events", async () => {
+    const cid = crypto.randomUUID();
+    const row = {
+      id: crypto.randomUUID(),
+      round: 1,
+      prevReason: null,
+      payload: {},
+      fileRef: null,
+      pdfSha256: null,
+      expiresAt: new Date(Date.now() + 864e5).toISOString(),
+      senderName: "Công ty Gửi",
+      senderTaxCode: null,
+      senderVerified: false,
+    };
+    const item = {
+      contractId: cid,
+      approvalId: crypto.randomUUID(),
+      row,
+      importance: "normal",
+      title: "HĐ nhận",
+      fields: {},
+      shared: {},
+      message: null,
+    } as never;
+    expect(await uow().system(T, (r) => r.partnerInbox.insertBatch([item], B, null))).toBe(1);
+    const [n] = await o<
+      { n: number; who: string | null }[]
+    >`select count(*)::int as n, max(data ->> 'from') as who
+      from contracts.contract_events where tenant_id = ${T} and contract_id = ${cid} and type = 'partner_received'`;
+    expect(n).toMatchObject({ n: 1, who: "Công ty Gửi" });
   });
 });

@@ -134,10 +134,11 @@ export function partnerSendRepo(tx: Tx, tid: string) {
       await tx.execute(sql`with s as (insert into contracts.partner_sends
           (tenant_id, contract_id, mailbox_id, round, channel, to_key, to_name, process_run_id, created_by)
         values (${tid}::uuid, ${o.contractId}::uuid, ${o.mailboxId}::uuid, ${o.round}, ${o.channel}, ${o.toKey},
-          ${o.toName}, ${o.runId}::uuid, ${o.by}::uuid))
+          ${o.toName}, ${o.runId}::uuid, ${o.by}::uuid) returning contract_id, round, channel, to_name, created_by)
         insert into contracts.contract_events (tenant_id, contract_id, type, actor_user_id, data)
-        select ${tid}::uuid, ${o.contractId}::uuid, 'partner_sent', ${o.by}::uuid,
-          jsonb_strip_nulls(jsonb_build_object('round', ${o.round}::int, 'channel', ${o.channel}::text, 'to', ${o.toName}::text))`);
+        select ${tid}::uuid, s.contract_id, 'partner_sent', s.created_by,
+          jsonb_strip_nulls(jsonb_build_object('round', s.round, 'channel', s.channel, 'to', s.to_name))
+        from s`);
     },
     /** Tên pháp lý/MST/dấu xác minh CÔNG KHAI của chính công ty (hiện ở lịch sử). */
     async self(): Promise<{ name: string; taxCode: string | null; verified: boolean } | null> {

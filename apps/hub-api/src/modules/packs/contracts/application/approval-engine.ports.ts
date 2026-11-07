@@ -162,6 +162,7 @@ export type OverrideEvent = {
 };
 /** CR-125 · một quyết định của người duyệt trên một bước. */
 export type DecisionEvent = {
+  taskId: string;
   stageKey: string;
   action: "approve" | "return" | "reject";
   feedback: string | null;
