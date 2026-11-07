@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Panel } from "~/components/shared/layout";
-import { editLogKey, fetchEditLog } from "../api";
+import { editLogKey, fetchEditLog } from "../hooks/use-promote-api";
 import { logRows } from "../lib/edit-log";
 
 export function EditLogPanel({ id }: { id: string }) {

@@ -5,8 +5,8 @@ import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import { Tag } from "~/components/shared/tag";
 import { cn } from "~/lib/utils";
+import type { ColumnKey } from "../lib/columns";
 import type { ListFrameChild } from "../lib/doc-list";
-import type { ColumnKey } from "./ContractCells";
 
 const TD = "px-3 py-3";
 /** Nhãn loại chứng từ: HĐ nguyên tắc / Giao dịch (HĐ kinh tế không nhãn riêng, đã có Mua/Bán/Giới thiệu). */

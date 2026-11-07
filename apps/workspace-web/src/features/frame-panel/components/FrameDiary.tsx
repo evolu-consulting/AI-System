@@ -1,7 +1,6 @@
 // CR-101 DOC-ui-frame · R44 · R47: "Diễn biến" của HĐ nguyên tắc — chứng từ con xen mốc theo ngày (tên, nhãn, ngày, giá trị, giai đoạn).
 // Mốc của HĐ NT chỉ Nhắc gia hạn + Khác (hộp thêm/sửa mốc lọc loại). Mốc chưa xác nhận sửa được bằng bút.
 import type { ContractDetail, Milestone } from "@ai/contracts/pack-contracts";
-import { ApiError } from "@ai/web-kit/http";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,6 +11,7 @@ import { dealOf } from "~/features/contract-form/lib/deal";
 import { MilestoneDialog } from "~/features/contract-milestones/components/MilestoneDialog";
 import { useRefreshContract } from "~/features/contract-milestones/hooks/use-milestone-writes";
 import { saveErrorText } from "~/features/contract-review/lib/save-error";
+import { ApiError } from "~/lib/api-error";
 import { docErrorKey, FRAME_KINDS, mergeDiary } from "../lib/frame-view";
 
 const frameOrSaveError = (e: unknown, t: (k: string) => string): string => {

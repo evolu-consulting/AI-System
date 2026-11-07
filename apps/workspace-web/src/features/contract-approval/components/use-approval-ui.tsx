@@ -6,14 +6,14 @@ import type { ProductLink } from "@ai/contracts/pack-contracts";
 import { type ReactNode, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
-import { fetchProducts } from "~/features/contract-form/api";
-import { fetchContract } from "~/features/contract-review/api";
+import { fetchProducts } from "~/features/contract-form/hooks/use-form-api";
+import { fetchContract } from "~/features/contract-review/hooks/use-review-api";
 import {
   ProductLinkDialog,
   type ProductLinkTarget,
 } from "~/features/product-links/components/ProductLinkDialog";
-import { fetchApproval } from "../api";
 import { useApproval } from "../hooks/use-approval";
+import { fetchApproval } from "../hooks/use-approval-api";
 import {
   type ActResult,
   type ApprovalView,

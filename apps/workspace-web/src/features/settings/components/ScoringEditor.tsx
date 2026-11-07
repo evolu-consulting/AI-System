@@ -1,11 +1,11 @@
 // U3 · R45 · một vai của "Cách tính điểm": bật/tắt + trọng số (tổng 100), mức TỐT/KHÁ, số việc tối thiểu, khoảng tính, hệ số gần đây,
 // chỉnh tay ±10; "xem trước" N đối tác đổi mức; Lưu tăng phiên bản + ghi lịch sử (R46). Chỉ quản lý (`owner`) sửa.
 import type { PartnerRole, ScoreConfigOut, ScoringDraft } from "@ai/contracts/pack-contracts";
-import { ApiError } from "@ai/web-kit/http";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
 import { scoringIssue, weightSum } from "~/features/partners/lib/partner-score";
+import { ApiError } from "~/lib/api-error";
 import { SettingsGroup, SettingsRow, SettingsSwitch } from "~/shared/ui/settings-layout";
 import { useSaveScoring, useScoring } from "../hooks/use-scoring";
 import { same } from "../lib/data";

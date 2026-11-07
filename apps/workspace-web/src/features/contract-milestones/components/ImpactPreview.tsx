@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import { cn } from "~/lib/utils";
-import { type Fault, getImpact } from "../api";
+import { type Fault, getImpact } from "../hooks/use-milestone-api";
 
 export const impactKey = (id: string, at: string, fault: Fault | undefined) =>
   ["contracts", "obligation-impact", id, at, fault ?? null] as const;

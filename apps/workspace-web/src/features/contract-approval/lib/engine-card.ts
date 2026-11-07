@@ -7,7 +7,7 @@ import type {
   ContractGroup,
   FlowCond,
 } from "@ai/contracts/pack-contracts";
-import type { ApprovalView } from "./approval";
+import type { ApprovalView } from "./approval-view";
 
 const NONE: ApprovalView = {
   confirm: false,

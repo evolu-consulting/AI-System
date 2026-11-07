@@ -1,6 +1,6 @@
 // CR-097 K3a · HD-FR-100 · HD-FR-104 (BA 8.1/8.2): banner trạng thái của HĐ — "Đã xác nhận — đã khoá" (nút tải bản cập nhật chờ K3b,
 // owner có link mở lại có lý do) hoặc "Chưa xác nhận" (Chờ duyệt). Chỉ trình bày + hộp thoại mở lại.
-import { ApiError } from "@ai/web-kit/http";
+
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,9 +13,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { contractKey } from "~/features/contract-review/api";
+import { contractKey } from "~/features/contract-review/hooks/use-review-api";
 import { UploadVersionPanel } from "~/features/contract-versions/components/UploadVersionPanel";
-import { reopenContract } from "../api";
+import { ApiError } from "~/lib/api-error";
+import { reopenContract } from "../hooks/use-lock-api";
 import { type LockView, lockErrorKey } from "../lib/lock-view";
 
 const MAX = 500;

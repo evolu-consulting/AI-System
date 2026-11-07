@@ -1,9 +1,9 @@
 // cf-esign-docusign · ô "Ký số hợp đồng" trong Cài đặt › Quy trình duyệt: owner bật/tắt + chọn nhà cung cấp mặc định
 // (PUT /esign/settings); server chưa cấu hình ⇒ "Chưa cấu hình ký số", ô khoá; ký thử ⇒ nhãn không có giá trị pháp lý.
 import type { ESignProviderOut } from "@ai/contracts/pack-contracts";
-import { ApiError } from "@ai/web-kit/http";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
+import { ApiError } from "~/lib/api-error";
 import { useEsignSettings } from "../hooks/use-esign-settings";
 import { esignErrKey } from "../lib/esign-view";
 import { EsignAnchorSetting } from "./EsignAnchorSetting";

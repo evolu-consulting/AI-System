@@ -1,9 +1,9 @@
-﻿// DOC-ui-list · R30 UI: chọn "Thuộc HĐ nguyên tắc" cho Giao dịch — tìm theo tên/số (không giới hạn 100, mỗi lần lấy 20 khớp), chọn một,
+// DOC-ui-list · R30 UI: chọn "Thuộc HĐ nguyên tắc" cho Giao dịch — tìm theo tên/số (không giới hạn 100, mỗi lần lấy 20 khớp), chọn một,
 // bỏ chọn được. Gắn thật sau khi lưu (`POST /contracts/:id/attach`).
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchList, listKey } from "~/features/contracts-list/api";
+import { fetchList, listKey } from "~/features/contracts-list/hooks/use-list-api";
 
 const MAX = 20;
 const useDebounced = <T,>(v: T, ms: number): T => {

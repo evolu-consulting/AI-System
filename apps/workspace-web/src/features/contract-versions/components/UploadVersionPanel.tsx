@@ -1,11 +1,12 @@
-﻿// CR-097 K3b · HD-FR-101: "Tải bản cập nhật" — chọn tệp văn bản ĐÃ KÝ ⇒ một POST ⇒ mở bản nháp v(n+1).
-import { ApiError } from "@ai/web-kit/http";
+// CR-097 K3b · HD-FR-101: "Tải bản cập nhật" — chọn tệp văn bản ĐÃ KÝ ⇒ một POST ⇒ mở bản nháp v(n+1).
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExtractDialog } from "~/features/contracts-list/components/ExtractDialog";
-import { uploadVersion } from "../api";
+import { ApiError } from "~/lib/api-error";
+import { uploadVersion } from "../hooks/use-versions-api";
 import { versionErrorKey } from "../lib/versions";
 
 export function UploadVersionPanel({

@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { attachDocs, candidatesKey, fetchCandidates } from "../api";
+import { attachDocs, candidatesKey, fetchCandidates } from "../hooks/use-frame-api";
 import { attachCandidates, docErrorText } from "../lib/frame-view";
 
 type Props = {

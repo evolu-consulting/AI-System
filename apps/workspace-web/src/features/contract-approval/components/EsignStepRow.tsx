@@ -5,7 +5,7 @@ import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
-import { approvalKey, resendEsignStep } from "../api";
+import { approvalKey, resendEsignStep } from "../hooks/use-approval-api";
 import { esignStatusLines } from "../lib/card-status";
 import { StatusLines } from "./StatusLines";
 

@@ -11,9 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { contractKey } from "~/features/contract-review/api";
+import { contractKey } from "~/features/contract-review/hooks/use-review-api";
 import { docErrorText } from "~/features/frame-panel/lib/frame-view";
-import { promoteDeal } from "../api";
+import { promoteDeal } from "../hooks/use-promote-api";
 
 function PromoteDialog({ id, onClose }: { id: string; onClose: () => void }) {
   const { t } = useTranslation();

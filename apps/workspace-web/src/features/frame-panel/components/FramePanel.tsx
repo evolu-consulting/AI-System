@@ -8,7 +8,7 @@ import { viDate, vnd } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { Tag, type TagTone } from "~/components/shared/tag";
 import { useRefreshContract } from "~/features/contract-milestones/hooks/use-milestone-writes";
-import { detachFrame } from "../api";
+import { detachFrame } from "../hooks/use-frame-api";
 import { docErrorText, outsideCount, usageOf } from "../lib/frame-view";
 import { AttachDialog } from "./AttachDialog";
 

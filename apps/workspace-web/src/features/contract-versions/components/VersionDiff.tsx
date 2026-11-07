@@ -1,9 +1,9 @@
-﻿// CR-097 K3b · UC-04: so sánh hai phiên bản — bảng các trường pháp lý khác nhau.
+// CR-097 K3b · UC-04: so sánh hai phiên bản — bảng các trường pháp lý khác nhau.
 import type { ContractVersionRef } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { diffKey, fetchVersionDiff } from "../api";
+import { diffKey, fetchVersionDiff } from "../hooks/use-versions-api";
 import { defaultPair, diffRows } from "../lib/versions";
 
 export function VersionDiff({

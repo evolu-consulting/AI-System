@@ -15,6 +15,7 @@ import { viDate, vnd } from "~/components/shared/format";
 import { Tag } from "~/components/shared/tag";
 import { VersionBadge } from "~/features/contract-versions/components/VersionBadge";
 import { cn } from "~/lib/utils";
+import { COLUMN_KEYS, COLUMN_KEYS_DEAL, type ColumnKey } from "../lib/columns";
 import { deleteAction } from "../lib/delete-action";
 import { STATUS_VIEW, shortName, statusLabel } from "../lib/list-model";
 import { DEAL_TONE, dealOfRow, partnerOfRow, STAGE_TONE, stageView } from "../lib/row-view";
@@ -37,18 +38,7 @@ export type RowCtx = {
   onDelete?: (id: string) => void;
 };
 
-export const COLUMN_KEYS = ["title", "partner", "type", "value", "dates", "stage"] as const;
-/** DOC-ui-gaps: cột "Nguồn" chỉ hiện khi lọc Giao dịch (HĐ không có nguồn); chèn sau "Loại". */
-export const COLUMN_KEYS_DEAL = [
-  "title",
-  "partner",
-  "type",
-  "source",
-  "value",
-  "dates",
-  "stage",
-] as const;
-export type ColumnKey = (typeof COLUMN_KEYS_DEAL)[number];
+export { COLUMN_KEYS, COLUMN_KEYS_DEAL, type ColumnKey };
 export const columnKeysOf = (docType: string): readonly ColumnKey[] =>
   docType === "deal" ? COLUMN_KEYS_DEAL : COLUMN_KEYS;
 

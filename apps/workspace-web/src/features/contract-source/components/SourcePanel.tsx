@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
-import { fetchSourceText, sourceKey } from "../api";
+import { fetchSourceText, sourceKey } from "../hooks/use-source-api";
 import { locateQuote, splitHighlight } from "../lib/quote";
 
 export function SourcePanel({

@@ -4,14 +4,14 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "~/components/ui/dialog";
-import { fetchSourceText, sourceKey } from "~/features/contract-source/api";
+import { fetchSourceText, sourceKey } from "~/features/contract-source/hooks/use-source-api";
 import {
   contractKey,
   fetchContract,
   fetchOriginalBlob,
   isPreviewable,
   openOriginalFile,
-} from "../api";
+} from "../hooks/use-review-api";
 
 export type OriginalEntry = {
   id: string;

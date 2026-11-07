@@ -1,10 +1,11 @@
 // REP-v3-ui · engine V2-E · Cài đặt › "Điểm uy tín": 5 ô nhóm SP × vai (3 tab Tiêu chí · Thời gian · Loại việc) + "Mức & đánh giá" + thử tính.
 // Lưu riêng ở đây (thanh Lưu/Bỏ thay đổi của mục này), từng phần đã đổi; chỉ chủ sở hữu (`owner`) lưu được. Cấu hình điểm HD8 (`/scoring/:role`,
 // chỉnh tay ±10) không hiện ở engine này.
-import { ApiError } from "@ai/web-kit/http";
+
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "~/components/shared/toast";
+import { ApiError } from "~/lib/api-error";
 import { useRepState, useSaveRep } from "../hooks/use-rep";
 import { firstRepIssue, repAnyChanged, repChangedParts } from "../lib/rep-data";
 import type { CellTab, RepData, RepSel } from "../lib/rep-types";
