@@ -97,6 +97,24 @@ describe("CR-109 · người duyệt của bước thấy HĐ cần duyệt (ch�
     expect((await contractRow(c, id)).status).toBe("active");
   }, 90_000);
 
+  it("p21c · T đã quyết trên lượt đã xong từ lâu (> 90 ngày) vẫn đọc, không sửa; X và tenant khác không thấy", async () => {
+    const { id, run } = await openBy("B", 793, 10_000_000);
+    expect((await act(c, "T", id, "approve")).status).toBe(200);
+    await waitStatus(c.sql, run, "done");
+    await c.sql`update hub.review_tasks set decided_at = now() - interval '400 days'
+      where process_run_id = ${run} and decided_by = ${PA.T.id}`;
+    expect({ t: (await c.call("T", "GET", `${CBASE}/${id}`)).status }).toEqual({ t: 200 });
+    expect(await asUser(PA.T.id, id)).toEqual({ read: 1, updated: 0 });
+    expect({ x: (await c.call("X", "GET", `${CBASE}/${id}`)).status }).toEqual({ x: 404 });
+    expect(await asUser(PA.X.id, id)).toEqual({ read: 0, updated: 0 });
+    const other = await c.sql.begin(async (tx) => {
+      await tx`select set_config('app.tenant_id', ${T.beta}, true), set_config('app.user_id', ${PA.T.id}, true)`;
+      await tx`set local role contracts_rw`;
+      return (await tx`select id from contracts.contracts where id = ${id}`).length;
+    });
+    expect(other).toBe(0);
+  }, 90_000);
+
   it("T (ngoài cây) Từ chối bước 1 ⇒ HĐ bị từ chối ngay, vẫn đọc được, X vẫn 404", async () => {
     const { id, run } = await openBy("B", 792, 10_000_000);
     expect((await act(c, "T", id, "reject", "sai giá")).status).toBe(200);
