@@ -710,7 +710,7 @@
       },
       "open": "Open",
       "more": "More actions",
-      "templates": "Library templates ({{n}})",
+      "templates": "Library templates ({n})",
       "templatesHint": "Library originals already replaced by the company copy. Open to view; to use the original again, choose Revert to original on the company flow row.",
       "clone": "Copy to edit",
       "revert": "Revert to original",
