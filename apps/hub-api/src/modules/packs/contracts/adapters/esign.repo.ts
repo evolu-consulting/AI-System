@@ -102,6 +102,12 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
         where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid limit 1`);
       return r ? contractOf(r) : null;
     },
+    lockForSign: async (id, by) => {
+      await tx.execute(sql`update contracts.contracts c set locked_at = now(), locked_by = ${by}::uuid,
+          version = c.version + 1, updated_at = now()
+        where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid and c.locked_at is null
+          and c.status = 'needs_review' and c.run_id is not null`);
+    },
     latest: async (contractId) => {
       const [r] = await tx.execute<Raw>(sql`select ${COLS} from contracts.esign_envelopes e
         where e.tenant_id = ${t}::uuid and e.contract_id = ${contractId}::uuid

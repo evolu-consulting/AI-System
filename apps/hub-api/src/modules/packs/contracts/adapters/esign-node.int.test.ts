@@ -40,7 +40,7 @@ beforeAll(async () => {
   [T1, T2] = (await tenants(o, 2, 961)) as [string, string];
   [A, B, C, D] = (await users(o, T1, 4, { from: 961 })) as [string, string, string, string];
   [X] = (await users(o, T2, 1, { from: 971 })) as [string];
-  K = await contracts(o, T1, 5, { from: 961, createdBy: A, owner: A });
+  K = await contracts(o, T1, 6, { from: 961, createdBy: A, owner: A });
   for (const [i, id] of K.entries()) {
     const fid = crypto.randomUUID();
     await o`insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
@@ -220,5 +220,36 @@ describe("E5b · danh bạ người ký: nhánh Group", () => {
     await send.run(CTX(A), { contract_id: K[4] as string });
     const base = await envelope(K[4] as string);
     expect([base?.due_h, base?.remind_every_h]).toEqual([null, null]);
+  });
+});
+
+describe("CR-122 · Ký số giữa flow: HĐ chưa xác nhận", () => {
+  it("HĐ đang trong lượt duyệt ⇒ bước Ký số khoá HĐ rồi gửi; bản cũ chỉ bị thay khi xác nhận", async () => {
+    const { u, send } = setup();
+    await u.saveSettings(
+      { tenantId: T1, userId: A },
+      { enabled: true, default_provider: "selfsign" },
+    );
+    const [v1, v2] = [K[2] as string, K[5] as string];
+    // v2 của chuỗi v1, đang chờ duyệt (needs_review + run_id), chưa khoá — như sau "Xác nhận và lưu" của flow mới
+    await o`update contracts.contracts set status = 'needs_review', confirmed_at = null, locked_at = null,
+        run_id = gen_random_uuid(), root_id = ${v1}, version_no = 2, supersedes_id = ${v1}
+      where id = ${v2}`;
+    await send.run(CTX(B), { contract_id: v2 });
+    expect((await envelope(v2))?.provider).toBe("selfsign");
+    const st = async (id: string) =>
+      (
+        await o<{ status: string; locked_by: string | null; superseded_at: Date | null }[]>`
+          select status, locked_by, superseded_at from contracts.contracts where id = ${id}`
+      )[0];
+    expect(await st(v2)).toMatchObject({ status: "needs_review", locked_by: B });
+    expect((await st(v1))?.superseded_at).toBeNull(); // khoá sớm KHÔNG thay bản cũ
+    // chạy lại (Thử lại của bước) ⇒ không đổi người khoá
+    await o`update contracts.esign_envelopes set status = 'voided' where contract_id = ${v2}`;
+    await send.run(CTX(A), { contract_id: v2 });
+    expect((await st(v2))?.locked_by).toBe(B);
+    // "Kết thúc · Đã duyệt" xác nhận ⇒ lúc này mới thay bản cũ
+    await o`update contracts.contracts set status = 'active', confirmed_at = now() where id = ${v2}`;
+    expect((await st(v1))?.superseded_at).not.toBeNull();
   });
 });

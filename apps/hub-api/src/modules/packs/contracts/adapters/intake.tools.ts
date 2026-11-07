@@ -30,7 +30,7 @@ export const INTAKE_TOOL_KEYS = {
 
 type R = {
   extraction: Pick<ExtractionRepo, "source">;
-  esign: Pick<ESignRepo, "contract">;
+  esign: Pick<ESignRepo, "contract" | "lockForSign">;
 } & NotifyTxRepos;
 export type IntakeToolDeps = {
   uow: PackUow<R>;
@@ -142,7 +142,11 @@ export function intakeTools(d: IntakeToolDeps): PackToolDef[] {
         const node = decodeEsignNodeArgs(args);
         if (!node.ok) throw new Error(`ESIGN_NODE_CONFIG_INVALID:${node.issues.join(",")}`);
         const cfg = node.config;
-        const c = await d.uow.tenant(who(ctx), (r) => r.esign.contract(id));
+        // CR-122 · flow mới: HĐ chỉ xác nhận ở "Kết thúc · Đã duyệt" (sau Ký số) ⇒ khoá ở đây để ký đúng bản đã duyệt.
+        const c = await d.uow.tenant(who(ctx), async (r) => {
+          await r.esign.lockForSign(id, ctx.userId);
+          return r.esign.contract(id);
+        });
         if (!c) throw new Error("CONTRACT_NOT_FOUND");
         const email = c.partner?.email?.trim() ?? "";
         const parsed = email

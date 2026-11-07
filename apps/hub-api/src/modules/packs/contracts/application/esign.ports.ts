@@ -127,6 +127,11 @@ export type ESignRepo = {
   saveSettings(p: { enabled?: boolean; defaultProvider?: string }, actor: string): Promise<void>;
   /** HĐ thấy được (RLS + M1) hoặc null. */
   contract(id: string): Promise<ContractForSign | null>;
+  /**
+   * CR-122 · bước Ký số của flow: khoá HĐ (nội dung đóng băng khi ký) — chỉ HĐ đang trong lượt duyệt (`needs_review` + `run_id`),
+   * chưa khoá. Đã khoá ⇒ không đổi (chạy lại vô hại). Xác nhận (status active) vẫn ở "Kết thúc · Đã duyệt".
+   */
+  lockForSign(id: string, by: string): Promise<void>;
   latest(contractId: string): Promise<EnvelopeRow | null>;
   byEnvelope(envelopeId: string): Promise<EnvelopeRow | null>;
   /**

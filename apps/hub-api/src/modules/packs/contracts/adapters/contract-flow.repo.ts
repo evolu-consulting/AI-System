@@ -126,6 +126,9 @@ async function applyQ(tx: Tx, tid: string, i: OutcomeInput, o: ContractOutcome):
     u as (update contracts.contracts c set status = ${CONTRACT_STATUS[o]},
         confirmed_at = case when ${approved}::boolean then now() else c.confirmed_at end,
         confirmed_by = case when ${approved}::boolean then ${i.actorId}::uuid else c.confirmed_by end,
+        -- CR-122 · bước Ký số đã khoá HĐ; Từ chối / Trả lại ⇒ mở khoá (HĐ chưa xác nhận không giữ khoá)
+        locked_at = case when ${approved}::boolean then c.locked_at else null end,
+        locked_by = case when ${approved}::boolean then c.locked_by else null end,
         run_id = case when ${returned}::boolean then null else c.run_id end,
         version = c.version + 1, updated_at = now()
       from a0 where c.id = a0.contract_id and c.tenant_id = ${tid}::uuid returning c.id),

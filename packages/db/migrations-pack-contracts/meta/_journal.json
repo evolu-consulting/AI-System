@@ -526,6 +526,13 @@
       "when": 1806500000000,
       "tag": "0081_partner_pick_search_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1806600000000,
+      "tag": "0082_supersede_on_confirm",
+      "breakpoints": true
     }
   ]
 }
