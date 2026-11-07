@@ -2,6 +2,7 @@
 // lỗi nói rõ lỗi gì. Không "Giai đoạn n:", không tên tool/executor kỹ thuật. Node Kết thúc có hình riêng (viên thuốc) ở cột cuối.
 import { CircleAlert, Flag } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { FREE_ERR } from "../../lib/free-nodes";
 import { kindOf, summaryOf } from "../../lib/node-summary";
 import { nodeLabel } from "../../lib/palette-node";
 import { usePalette } from "../../palette-api";
@@ -83,7 +84,15 @@ export function FlowNodeBody({ v }: { v: StageView }) {
           {summary}
         </span>
       ) : null}
-      <ErrorLine v={v} kind={kind} />
+      {s.free === true ? (
+        <span
+          className="block truncate text-caption font-medium text-primary"
+          data-testid="free-hint"
+        >
+          {t("process.admin.canvas.free.hint")}
+        </span>
+      ) : null}
+      {v.errorKey === FREE_ERR ? null : <ErrorLine v={v} kind={kind} />}
     </span>
   );
 }

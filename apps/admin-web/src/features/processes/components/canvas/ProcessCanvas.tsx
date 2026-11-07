@@ -11,6 +11,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { BridgeApi } from "../../hooks/use-bridge";
 import { useStagesMax } from "../../hooks/use-stages-max";
+import { collapseLoneJoins, dropFreeEdges, isFree } from "../../lib/free-nodes";
 import { applyJumps } from "../../lib/jump-edges";
 import { countAtStep } from "../../lib/step-ops";
 import { useFlowCtx } from "../flow/flow-ctx";
@@ -147,9 +148,15 @@ function useFlowGraph(
     const shownEdges = trig
       ? edges.filter((e) => !isHeader(e.source) && !isHeader(e.target))
       : edges;
-    const all = warnStyle([...tp.edges, ...shownEdges, ...moduleEdges(views), ...bp.edges], warn);
+    // node đứng riêng (vừa thả) không có cạnh tự động vào/ra: nối bằng mũi tên (CR-123 · u5)
+    const free = new Set(views.filter((v) => isFree(v.src)).map((v) => v.uid));
+    const kept = collapseLoneJoins(
+      shown,
+      dropFreeEdges([...tp.edges, ...shownEdges, ...moduleEdges(views), ...bp.edges], free),
+    );
+    const all = warnStyle(kept.edges, warn);
     return {
-      nodes: [...tp.node, ...shown, ...bp.node],
+      nodes: [...tp.node, ...kept.nodes, ...bp.node],
       edges: connectable ? editableEdges(all, new Set(byUid.keys())) : all,
       steps: lay.steps,
       dlc,

@@ -10,7 +10,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
+import { notifyBrief, notifyError, notifySuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/http";
 import { createDef, updateDef, useInvalidateDefs } from "../api";
 import { type DefDraft, toDraft, toInput, validateDraft } from "../lib/def-form";
@@ -22,6 +22,7 @@ import {
   serverPaths,
   serverRules,
 } from "../lib/errors";
+import { FREE_ERR } from "../lib/free-nodes";
 import { fillDraftDefaults } from "../lib/node-defaults";
 import { blockedInfo } from "../lib/save-blocked";
 import type { TeamSections } from "../lib/wait-form";
@@ -79,6 +80,33 @@ function useRedirectAfterCreate(createdId: string | null, dirty: boolean) {
   }, [createdId, dirty, navigate]);
 }
 
+/** Lỗi chặn Lưu nói ra bằng toast: bước + câu sửa; node chưa nối ⇒ câu riêng + "Đến bước" (cuộn tới và chọn). */
+function reportBlocked(
+  blocked: NonNullable<ReturnType<typeof blockedInfo>>,
+  stages: readonly { uid: string }[],
+  select: (uid: string) => void,
+  t: (k: string, o?: Record<string, unknown>) => string,
+): void {
+  const reason = t(blocked.reasonKey);
+  const uid = blocked.index === null ? undefined : stages[blocked.index]?.uid;
+  if (blocked.reasonKey === FREE_ERR && uid) {
+    notifyBrief(t("process.admin.canvas.free.blocked", { step: blocked.stepName }), {
+      label: t("process.admin.canvas.free.go"),
+      onClick: () => {
+        select(uid);
+        document
+          .querySelector(`[data-stage-uid="${uid}"]`)
+          ?.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+      },
+    });
+    return;
+  }
+  notifyError(
+    blocked.stepName
+      ? t("process.admin.editor.saveBlockedStep", { step: blocked.stepName, reason })
+      : t("process.admin.editor.saveBlocked", { reason }),
+  );
+}
 export function useDefSave({
   id,
   tenantId,
@@ -120,12 +148,7 @@ export function useDefSave({
     const blocked = blockedInfo(errors, draft.stages);
     if (blocked) {
       // lỗi chặn Lưu không được im lặng: nói rõ bước nào + câu sửa (ô lỗi có thể nằm trong node đang đóng trên canvas)
-      const reason = t(blocked.reasonKey);
-      notifyError(
-        blocked.stepName
-          ? t("process.admin.editor.saveBlockedStep", { step: blocked.stepName, reason })
-          : t("process.admin.editor.saveBlocked", { reason }),
-      );
+      reportBlocked(blocked, draft.stages, d.select, t);
       return;
     }
     const body = { ...toInput(draft), ...extra } as ProcessDefInput;

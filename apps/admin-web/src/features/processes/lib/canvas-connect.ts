@@ -12,12 +12,14 @@ export type ConnectStage = {
   executor: string;
   real: boolean;
   outcome?: string | undefined;
+  /** `review` = bước duyệt. */
+  after?: string | undefined;
   ifx: { yes: number | null; no: number | null };
   /** CR-123 · khoá node module (`stage.node`) và khối chờ (cần `branches` + phần còn lại để ghi trả nguyên vẹn). */
   node?: string | undefined;
   wait?: ({ branches?: { on: string; step: number | null }[] | undefined } & object) | undefined;
 };
-export type ConnectError = "notLater" | "ifReal" | "noNext" | "noPort";
+export type ConnectError = "notLater" | "ifReal" | "noNext" | "noPort" | "realNeeds";
 export type ConnectResult =
   | {
       ok: true;
@@ -67,26 +69,52 @@ function connectExit(
   return { ok: true, index: wi, field: "exit", patch: { wait: { ...w.wait, branches } } };
 }
 
+/** CR-123 · u5 · "Bắt đầu khi" không phải bước duyệt ⇒ không nối thẳng tới bước hành động thật (Ký số). */
+function fromTrigger(stages: readonly ConnectStage[], target: string): ConnectResult | null {
+  const t = stages.find((s) => s.uid === target);
+  return t?.real ? { ok: false, error: "realNeeds", uid: t.uid } : null;
+}
+
+/** Ký số (hành động thật) cần bước DUYỆT ngay trước: mũi tên tới nó phải xuất phát từ bước duyệt (node Nếu có luật riêng `ifReal`). */
+function needsReview(
+  src: ConnectStage,
+  dst: ConnectStage,
+  from: ConnectStage | undefined,
+): boolean {
+  return dst.real && src.executor !== "if" && from?.after !== "review";
+}
+
+/** Node Nếu: cổng Đúng/Sai → `ifx.yes/no` (đếm từ 1 như ô chọn); đích không được là bước có `real_action`. */
+function connectIf(
+  stages: readonly ConnectStage[],
+  index: number,
+  dst: ConnectStage,
+  port: string | null | undefined,
+): ConnectResult {
+  const src = stages[index] as ConnectStage;
+  const fail = (error: ConnectError): ConnectResult => ({ ok: false, error, uid: src.uid });
+  if (port !== "yes" && port !== "no") return fail("noPort");
+  if (stages.some((s) => s.step === dst.step && s.real)) return fail("ifReal");
+  return { ok: true, index, field: port, patch: { ifx: { ...src.ifx, [port]: dst.step + 1 } } };
+}
+
 export function connectPatch(
   stages: readonly ConnectStage[],
   c: { source: string; target: string; sourceHandle?: string | null },
 ): ConnectResult | null {
   if (c.sourceHandle === "back") return null;
+  if (c.source === "trigger") return fromTrigger(stages, c.target);
   const index = stages.findIndex((s) => s.uid === c.source);
   const src = stages[index];
   const dst = stages.find((s) => s.uid === c.target);
   if (!src || !dst) return null;
   const fail = (error: ConnectError): ConnectResult => ({ ok: false, error, uid: src.uid });
   const wi = waitIndexOf(stages, index);
+  if (needsReview(src, dst, stages[wi >= 0 ? wi : index])) return fail("realNeeds");
   if (wi >= 0) return connectExit(stages, src, wi, dst, c.sourceHandle);
   if (dst.step <= src.step) return fail("notLater");
-  if (src.executor === "if") {
-    const port = c.sourceHandle;
-    if (port !== "yes" && port !== "no") return fail("noPort");
-    if (stages.some((s) => s.step === dst.step && s.real)) return fail("ifReal");
-    // `ifx.yes/no` đếm từ 1 (như ô chọn); StageView/contract 0-based.
-    return { ok: true, index, field: port, patch: { ifx: { ...src.ifx, [port]: dst.step + 1 } } };
-  }
+  if (src.executor === "if") return connectIf(stages, index, dst, c.sourceHandle);
+
   if (src.outcome !== undefined || src.executor === "wait_event") return fail("noNext");
   const sequential = dst.step === src.step + 1;
   return { ok: true, index, field: "next", patch: { nextStep: sequential ? undefined : dst.step } };

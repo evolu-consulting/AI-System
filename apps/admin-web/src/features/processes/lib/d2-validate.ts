@@ -1,5 +1,6 @@
 // HUB-FR-146 · HUB-FR-147 · AC-H44 · AC-H45 · P-d2 (plan-frontend-d2 §10, §13): validate "Gọi tool" + "Rẽ nhánh" của editor — gọi CÙNG hàm
 // contract với server (`toolStageIssues`, `branchStageIssues`) rồi đổi mã luật + path thành khoá câu lỗi theo ô. Thuần.
+
 import {
   type BranchStageDraft,
   branchStageIssues,
@@ -15,6 +16,7 @@ import { targetHasReal } from "../domain/branch-rules";
 import { branchToRules } from "./branch-form";
 import type { DraftErrors, StageDraft } from "./draft-types";
 import { formFieldErrors, isFormErrKey } from "./form-fields";
+import { FREE_ERR } from "./free-nodes";
 import { draftToIf, isIf } from "./if-form";
 import type { InputDraft } from "./sources-form";
 import { isSystemToolStage } from "./system-nodes";
@@ -210,7 +212,7 @@ export function carryErrors(
   const submit = toolSubmitErrors(stages, tools);
   return Object.fromEntries(
     Object.entries(errors).filter(([k, v]) =>
-      v === TOOL_ERR.argRequired ? !!submit[k] : !isD2Key(v),
+      v === TOOL_ERR.argRequired ? !!submit[k] : !isD2Key(v) && v !== FREE_ERR,
     ),
   );
 }

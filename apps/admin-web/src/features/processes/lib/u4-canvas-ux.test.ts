@@ -167,6 +167,6 @@ describe("u4 · MỘT luật Ký số cần bước duyệt ngay trước — m�
   });
   test("kéo thả: thả, kéo nhóm, dán và nối lại đều kiểm luật", () => {
     const e = read(`${app}/hooks/use-canvas-edit.ts`);
-    expect(e.match(/newRealViolation\(/g)?.length).toBeGreaterThanOrEqual(4);
+    expect(e.match(/newRealViolation\(/g)?.length).toBeGreaterThanOrEqual(3);
   });
 });

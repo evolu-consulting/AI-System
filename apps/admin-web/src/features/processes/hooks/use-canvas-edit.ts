@@ -15,6 +15,7 @@ import {
   resetEdges,
 } from "../lib/canvas-edit";
 import { emptyStage, type StageDraft } from "../lib/def-form";
+import { clearFree, markFree } from "../lib/free-nodes";
 import { expandToClusters } from "../lib/module-cluster";
 import { getStagesMax } from "../lib/stages-limit";
 import { stepLabel } from "../lib/step-label";
@@ -49,7 +50,7 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
       i === r.index ? { ...s, ...(r.patch as Partial<StageDraft>) } : s,
     );
     if (newRealViolation(stages(), patched)) return say.error(t(REAL_NEEDS_REVIEW));
-    d.patchStage(r.index, r.patch as Partial<StageDraft>, false);
+    d.setStages(clearFree(patched, c.target), false); // có mũi tên tới node ⇒ hết đứng riêng
     say.clear();
     say.live(t(`${CONNECT}done.${r.field}`));
   };
@@ -74,8 +75,15 @@ export function useCanvasEdit(d: DraftState, say: Say, t: T) {
       const fresh = items.map((i) => ({ ...emptyStage(), ...i.patch, name: i.name }));
       const r = placeFresh(stages(), fresh, at.step, at.y);
       if ("error" in r) return fail(r);
-      if (newRealViolation(stages(), r.stages)) return say.error(t(REAL_NEEDS_REVIEW));
-      d.setStages(r.stages, true, (fresh[0] as StageDraft).uid);
+      // thả = node đứng riêng (chưa nối): luật Ký số cần bước duyệt ngay trước áp khi NỐI mũi tên / chèn trên cạnh / lưu, không áp ở điểm thả
+      d.setStages(
+        markFree(
+          r.stages,
+          fresh.map((f) => f.uid),
+        ),
+        true,
+        (fresh[0] as StageDraft).uid,
+      );
       say.live(t(`${EDIT}dropped`, { name: items[0]?.name ?? "" }));
     },
     /** Xoá node đã chọn (nối liền các cạnh vào/ra) và đặt lại các cạnh đã chọn về "Bước tiếp theo". */

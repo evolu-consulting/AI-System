@@ -60,16 +60,14 @@ describe("connectPatch · đầu ra ô module", () => {
     const plain = connectPatch(flow, { source: "send", target: "n", sourceHandle: null });
     expect(plain).toMatchObject({ ok: true, index: 2, patch: { nextStep: undefined } });
   });
-  test("đích không sau stage chờ ⇒ notLater (không tính stage gửi); luật real_action của Nếu không áp", () => {
+  test("đích không sau stage chờ ⇒ notLater (không tính stage gửi); đích hành động thật cần nguồn là bước duyệt", () => {
     expect(
       connectPatch(flow, { source: "send", target: "wait", sourceHandle: DECLINED }),
     ).toMatchObject({ ok: false, error: "notLater" });
     const real = [...flow.slice(0, 5), st("no", 5, { outcome: "rejected", real: true })];
     expect(
       connectPatch(real, { source: "send", target: "no", sourceHandle: DECLINED }),
-    ).toMatchObject({
-      ok: true,
-    });
+    ).toMatchObject({ ok: false, error: "realNeeds" });
   });
   test("nối lại: cùng đường với kéo cổng (đổi đích của Từ chối)", () => {
     const r = connectPatch(flow, { source: "send", target: "n", sourceHandle: DECLINED });

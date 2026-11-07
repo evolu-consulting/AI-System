@@ -3,7 +3,7 @@
 import type { DlcStepTemplate } from "@ai/contracts/hub-admin";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError } from "@/components/shared/toast";
+import { notifyBrief } from "@/components/shared/toast";
 import { emptyStage, type StageDraft } from "../lib/def-form";
 import { linkDlcReject } from "../lib/dlc-slot";
 import { freshDlcStage, freshReviewStage, freshSlotStage } from "../lib/fresh-stages";
@@ -65,7 +65,7 @@ export function useStageOps(d: DraftState) {
   // CR-123 · p25: lỗi thao tác kéo-thả ⇒ toast (đọc được bằng trình đọc màn hình) + vùng aria-live; xong ⇒ chỉ aria-live.
   const say = {
     error: (m: string) => {
-      notifyError(m);
+      notifyBrief(m);
       setLive(m);
     },
     live: setLive,

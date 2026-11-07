@@ -5,7 +5,7 @@
 
 import { HiddenHandle } from "@ai/flow-canvas";
 import { NODE_H, NODE_W } from "@ai/flow-canvas/pure";
-import { Handle, type Node, type NodeProps, Position } from "@xyflow/react";
+import { Handle, type NodeProps, Position } from "@xyflow/react";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import { useFlowCtx } from "../flow/flow-ctx";
@@ -16,7 +16,7 @@ import { NextPort } from "./OutPort";
 import { StageBody, stageButtonClass } from "./StageBody";
 import { onStageKeyDown } from "./stage-keys";
 import type { StageNodeData, StageNodeType } from "./stage-node-type";
-import { type StageView, sameView } from "./stage-view";
+import { sameView } from "./stage-view";
 
 export type { StageNodeData, StageNodeType };
 

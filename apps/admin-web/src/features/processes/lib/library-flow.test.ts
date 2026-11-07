@@ -30,10 +30,14 @@ describe("blockedInfo", () => {
   });
   test("lỗi bước đứng trước nhất, kèm tên bước + khoá câu sửa", () => {
     const r = blockedInfo({ "stages.2.executor.args.x": "k2", "stages.0.name": "k0" }, stages);
-    expect(r).toEqual({ stepName: "Duyệt", reasonKey: "k0" });
+    expect(r).toEqual({ stepName: "Duyệt", reasonKey: "k0", index: 0 });
   });
   test("tên bước rỗng ⇒ số bước; lỗi chung ⇒ không tên bước", () => {
     expect(blockedInfo({ "stages.1.executor": "k" }, stages)?.stepName).toBe("2");
-    expect(blockedInfo({ name: "kn" }, stages)).toEqual({ stepName: null, reasonKey: "kn" });
+    expect(blockedInfo({ name: "kn" }, stages)).toEqual({
+      stepName: null,
+      reasonKey: "kn",
+      index: null,
+    });
   });
 });

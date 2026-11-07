@@ -47,6 +47,7 @@ export type {
 
 import { dlcDraftErrors } from "./dlc-slot";
 import type { DefDraft, DraftErrors, StageDraft } from "./draft-types";
+import { freeErrors } from "./free-nodes";
 
 export { emptyStage, slugKey };
 
@@ -161,7 +162,12 @@ export function withLiveErrors(
       if (i.rule === "TEAM_SECTION_UNOWNED") out[i.path] = TEAM_SECTION_KEY;
   }
   // dlc-engine · luật bước DLC + KIND_MIX hiện ngay trên canvas (không đợi Lưu).
-  return { ...out, ...d2LiveErrors(d.stages, d.inputs, tools), ...dlcDraftErrors(d.stages) };
+  return {
+    ...out,
+    ...d2LiveErrors(d.stages, d.inputs, tools),
+    ...dlcDraftErrors(d.stages),
+    ...freeErrors(d.stages),
+  };
 }
 
 /** Validate toàn bản nháp. `forEnable` ⇒ thêm luật "bật": mọi giai đoạn có người kiểm phải có Group. */
@@ -192,6 +198,7 @@ export function validateDraft(
   validateAutofixPart(eff, e);
   Object.assign(e, applyCrossErrors(d.stages), d2LiveErrors(d.stages, d.inputs, tools));
   Object.assign(e, dlcDraftErrors(d.stages)); // dlc-engine · luật bước DLC + KIND_MIX
+  Object.assign(e, freeErrors(d.stages)); // CR-123 · u5 · node đứng riêng chưa nối
   return { ...toolSubmitErrors(d.stages, tools), ...e };
 }
 

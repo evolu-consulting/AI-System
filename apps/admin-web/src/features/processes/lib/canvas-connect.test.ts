@@ -13,7 +13,7 @@ const st = (uid: string, step: number, o: Partial<ConnectStage> = {}): ConnectSt
 const flow = [
   st("a", 0),
   st("if", 1, { executor: "if" }),
-  st("c", 2),
+  st("c", 2, { after: "review" }),
   st("d", 3, { real: true }),
   st("e", 4, { outcome: "approved" }),
 ];

@@ -22,7 +22,7 @@ Người dùng dựng flow bằng tay kéo-thả như công cụ vẽ quy trình
 
 **FLOW3-FR-03 Giới hạn bước do platform cấu hình.** Given platform admin đặt giới hạn 30 (mặc định 22, trần cứng 50, giá trị ngoài 1..50 bị từ chối); When người dùng thêm bước thứ 31 hoặc xuất bản def quá giới hạn; Then bị chặn kèm câu "Flow tối đa 30 bước (do quản trị nền tảng đặt)". Giới hạn mới áp cho lần sửa/xuất bản kế; def cũ vượt giới hạn vẫn chạy, chỉ không xuất bản lại được cho tới khi rút gọn.
 
-**FLOW3-FR-04 Kéo node từ bảng mẫu.** Given bảng loại node; When kéo một loại thả lên vùng trống; Then node mới xuất hiện tại điểm thả; When thả lên một cạnh A→C; Then node chèn giữa (A→node→C) nếu hợp lệ.
+**FLOW3-FR-04 Kéo node từ bảng mẫu.** Given bảng loại node; When kéo một loại thả lên canvas; Then node mới xuất hiện ĐỨNG RIÊNG tại điểm thả (không tự nối, không tự chèn kể cả thả lên một cạnh) kèm gợi ý "Kéo mũi tên để nối bước này"; When kéo mũi tên từ đầu ra của bước trước tới node; Then node được nối (sai luật, vd Bắt đầu khi → Ký số ⇒ từ chối kèm toast lý do giữa-trên, tự đóng 4 giây); chèn giữa A→C chỉ bằng nút "+" trên cạnh; Lưu / Lưu và áp dụng khi còn node chưa nối ⇒ chặn: "Bước «X» chưa được nối — kéo mũi tên từ bước trước tới bước này", node viền lỗi, bấm thông báo cuộn tới và chọn bước.
 
 **FLOW3-FR-05 Nối lại và xoá.** When kéo đầu một cạnh sang node khác; Then cạnh nối lại nếu hợp lệ. When chọn node/cạnh rồi nhấn Delete; Then bị xoá, các cạnh vào/ra node được nối liền (A→B→C xoá B ⇒ A→C) hoặc báo nếu không nối liền hợp lệ được.
 

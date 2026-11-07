@@ -2,7 +2,7 @@
 // Hàm thuần: không React, không API.
 import type { DraftErrors, StageDraft } from "./draft-types";
 
-export type BlockedInfo = { stepName: string | null; reasonKey: string };
+export type BlockedInfo = { stepName: string | null; reasonKey: string; index: number | null };
 
 const stageIndex = (path: string): number | null => {
   const m = /^stages\.(\d+)(\.|$)/.exec(path);
@@ -23,7 +23,7 @@ export function blockedInfo(
   }
   if (best) {
     const name = stages[best.idx]?.name?.trim();
-    return { stepName: name || String(best.idx + 1), reasonKey: best.key };
+    return { stepName: name || String(best.idx + 1), reasonKey: best.key, index: best.idx };
   }
-  return { stepName: null, reasonKey: entries[0]?.[1] as string };
+  return { stepName: null, reasonKey: entries[0]?.[1] as string, index: null };
 }

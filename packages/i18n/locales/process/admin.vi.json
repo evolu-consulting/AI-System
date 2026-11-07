@@ -601,12 +601,18 @@
       "yes": "Đúng",
       "no": "Sai"
     },
+    "free": {
+      "hint": "Kéo mũi tên để nối bước này",
+      "blocked": "Bước «{{step}}» chưa được nối — kéo mũi tên từ bước trước tới bước này.",
+      "go": "Đến bước"
+    },
     "module": {
       "done": "Xong",
       "exitHint": "Đầu ra: {{label}}"
     },
     "connect": {
       "dragNext": "Kéo sang bước muốn đi tiếp",
+      "realNeeds": "«Ký số» cần một bước Duyệt ngay trước nó. Hãy kéo mũi tên từ một bước Duyệt tới đây.",
       "dragIf": "Kéo sang bước khi {{label}}",
       "notLater": "Chỉ nối được tới bước đứng sau.",
       "ifReal": "Nhánh Nếu không thể tới bước có hành động thật — chọn bước khác.",
@@ -705,6 +711,7 @@
       "step": "Số bước không hợp lệ. Hãy kéo bước vào đúng cột.",
       "realStep": "Hành động thật chỉ dùng được khi mọi bước của bước trước đều có người kiểm.",
       "realNeedsReview": "«Ký số» cần một bước Duyệt ngay trước nó. Thêm bước Duyệt trước rồi thả lại.",
+      "unlinked": "Bước chưa được nối — kéo mũi tên từ bước trước tới bước này.",
       "backTarget": "Chỉ quay lại được các bước đứng trước bước này."
     },
     "controls": {

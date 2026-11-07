@@ -81,13 +81,20 @@ test("U4 · công ty sao chép flow, mở trình sửa, KÉO 'Thông báo' từ 
   const pane = page.locator(".react-flow__pane").first();
   const paneBox = await pane.boundingBox();
   if (!paneBox) throw new Error("không thấy canvas");
-  const at = { x: paneBox.width * 0.5, y: paneBox.height * 0.82 };
+  const at = { x: paneBox.width * 0.88, y: paneBox.height * 0.55 };
 
-  // thả "Thông báo": thêm đúng một node
+  // u5 · thả "Thông báo" ⇒ node ĐỨNG RIÊNG: thêm đúng một node, KHÔNG có cạnh mới, có gợi ý nối
+  const edges = page.locator(".react-flow__edge");
+  const edgesBefore = await edges.count();
   await page.getByTestId("flow-add-step").click();
   await page
     .getByRole("menuitem", { name: /^Thông báo/ })
     .first()
-    .dragTo(pane, { targetPosition: at });
+    .dragTo(pane, { targetPosition: at, force: true });
   await expect(nodes).toHaveCount(before + 1);
+  await expect(edges).toHaveCount(edgesBefore);
+  const free = page.locator(".react-flow__node").filter({ has: page.getByTestId("free-hint") });
+  await expect(free).toHaveCount(1);
+  await expect(page.getByTestId("free-hint")).toContainText("Kéo mũi tên để nối bước này");
+  // (nối bằng kéo mũi tên + gỡ cờ: unit lib/u5-free-drop.test.ts; kéo chuột thật tới cổng chưa ổn định trong stack này — hàng chờ)
 });

@@ -21,16 +21,22 @@ const infoFrom =
     };
   };
 
-export function useModuleCanvas(p: ProcessCanvasProps): Out {
+/** Gộp cụm node module thành MỘT dòng/ô (flow có ngữ cảnh node); không phải flow ⇒ null. Canvas và danh sách bước dùng chung. */
+export function useCollapsed(views: ProcessCanvasProps["views"]) {
   const flow = useFlowCtx();
   const { i18n } = useTranslation();
   const palette = usePalette(flow?.app ?? "", flow?.tenantId);
   const nodes = palette.data;
   const lang = i18n.language;
-  const col = useMemo(
-    () => (flow ? collapseModules(p.views, infoFrom(nodes, lang)) : null),
-    [flow, p.views, nodes, lang],
+  return useMemo(
+    () => (flow ? collapseModules(views, infoFrom(nodes, lang)) : null),
+    [flow, views, nodes, lang],
   );
+}
+
+export function useModuleCanvas(p: ProcessCanvasProps): Out {
+  const flow = useFlowCtx();
+  const col = useCollapsed(p.views);
   if (!flow || !col || col.head.size === 0) return { props: p, flow };
   const { ops } = p;
   const props: ProcessCanvasProps = {

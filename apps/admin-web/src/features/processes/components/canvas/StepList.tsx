@@ -9,6 +9,7 @@ import type { StageOps } from "../../hooks/use-stage-ops";
 import { StageBody, stageButtonClass } from "./StageBody";
 import { onStageKeyDown } from "./stage-keys";
 import { type StageView, sameView } from "./stage-view";
+import { useCollapsed } from "./use-module-canvas";
 
 export type StepListProps = {
   views: readonly StageView[];
@@ -67,8 +68,22 @@ const Row = memo(
     a.p.readOnly === b.p.readOnly,
 );
 
-export function StepList(p: StepListProps) {
+export function StepList(p0: StepListProps) {
   const { t } = useTranslation();
+  // CR-123 · u5 · FR-14: node module nhiều stage là MỘT dòng (Ký số), không bao giờ "Chờ ký xong" riêng
+  const col = useCollapsed(p0.views);
+  const p: StepListProps = col
+    ? {
+        ...p0,
+        views: col.views,
+        selected:
+          p0.selected === undefined ? undefined : (col.head.get(p0.selected) ?? p0.selected),
+        ops: {
+          ...p0.ops,
+          add: (step) => p0.ops.add(step === undefined ? undefined : col.fromStep(step)),
+        },
+      }
+    : p0;
   const steps = [...new Set(p.views.map((v) => v.step))];
   if (steps.length === 0)
     return <p className="text-body text-muted-foreground">{t("process.admin.canvas.empty")}</p>;

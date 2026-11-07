@@ -107,6 +107,15 @@ export function StageBody({ v }: { v: StageView }) {
 function PlainBody({ v }: { v: StageView }) {
   const { t } = useTranslation();
   const name = v.name || t("process.admin.editor.stage.unnamed");
+  // CR-123 · u5 · node module nhiều stage (Ký số): MỘT dòng chỉ có tên — không lộ tên công cụ / huy hiệu kỹ thuật của stage đầu
+  if (v.module)
+    return (
+      <span className="block min-w-0 text-left">
+        <span className="inline-block w-full truncate text-label font-medium" title={name}>
+          {name}
+        </span>
+      </span>
+    );
   // Chỉ dùng phần tử inline / inline-block cách nhau đúng một dấu cách ⇒ `innerText` là MỘT dòng (e2e so sánh chuỗi).
   return (
     <span className="block min-w-0 text-left">

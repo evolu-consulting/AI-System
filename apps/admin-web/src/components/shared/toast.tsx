@@ -53,3 +53,12 @@ export function notifyError(message: string, action?: ToastAction): void {
     closeButton: true,
   });
 }
+
+/** CR-123 · u5 · lý do từ chối thao tác trên canvas (nối sai luật…): giữa-trên (không đè thanh Lưu), tự đóng sau 4 giây. */
+export function notifyBrief(message: string, action?: ToastAction): void {
+  let id: string | number = "";
+  id = toast.error(<span role="alert">{body(message, action, () => id)}</span>, {
+    duration: SUCCESS_TOAST_MS,
+    position: "top-center",
+  });
+}

@@ -8,10 +8,8 @@ import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import type { PickedItem } from "../../hooks/use-canvas-edit";
 import type { StageOps } from "../../hooks/use-stage-ops";
-import { connectPatch } from "../../lib/canvas-connect";
 import { hasConfig } from "../../lib/canvas-edit";
 import { clampY } from "./canvas-parts";
-import { connectStages } from "./module-cluster";
 import type { StageView } from "./stage-view";
 
 type EdgeSel = { source: string; side?: "yes" | "no" | undefined };
@@ -41,12 +39,7 @@ function parseItems(data: string): PickedItem[] {
 function dropPalette(l: Latest, d: PaletteDrop): void {
   const items = parseItems(d.data);
   if (items.length === 0) return;
-  // thả lên cạnh sửa được ⇒ chèn giữa; còn lại ⇒ thêm vào cuối cột dưới con trỏ
-  const e = d.edgeId ? l.edges.find((x) => x.id === d.edgeId && x.selectable === true) : undefined;
-  if (e) {
-    l.ops.insertNodes(items, { from: e.source, to: e.target, ...sideOpt(e) });
-    return;
-  }
+  // CR-123 · u5 · thả = node ĐỨNG RIÊNG tại điểm thả (không tự nối, không tự chèn lên cạnh); nối bằng mũi tên, chèn bằng nút "+" trên cạnh
   l.ops.dropNodes(items, {
     step: stepFromDropX(d.position.x - NODE_W / 2, l.steps),
     y: clampY(d.position.y - NODE_H / 2, l.nodes),
@@ -99,8 +92,9 @@ export function useCanvasEditing(a: Args) {
             selectable: true,
             miniMap: !a.compact,
             isValidConnection: (c) => {
-              const r = connectPatch(connectStages(ref.current.views), c);
-              return r === null || r.ok;
+              // vi phạm luật vẫn cho thả để `connect` báo LÝ DO bằng toast (không từ chối im lặng)
+              void c;
+              return true;
             },
             onReconnect: (edgeId, to) => {
               const e = ref.current.edges.find((x) => x.id === edgeId);

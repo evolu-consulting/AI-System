@@ -601,12 +601,18 @@
       "yes": "True",
       "no": "False"
     },
+    "free": {
+      "hint": "Drag an arrow to connect this step",
+      "blocked": "Step «{{step}}» is not connected — drag an arrow from the previous step to it.",
+      "go": "Go to step"
+    },
     "module": {
       "done": "Done",
       "exitHint": "Output: {{label}}"
     },
     "connect": {
       "dragNext": "Drag to the step that comes next",
+      "realNeeds": "«E-signature» needs an Approval step right before it. Drag the arrow from an Approval step.",
       "dragIf": "Drag to the step for {{label}}",
       "notLater": "You can only link to a later step.",
       "ifReal": "An If branch cannot go to a step with a real action — pick another step.",
@@ -705,6 +711,7 @@
       "step": "Invalid step numbers. Drag the stage into a valid column.",
       "realStep": "Real action needs every stage in the previous step to have a reviewer.",
       "realNeedsReview": "«E-signature» needs an Approval step right before it. Add the Approval first, then drop it again.",
+      "unlinked": "This step is not connected — drag an arrow from the previous step to it.",
       "backTarget": "You can only go back to steps before this stage."
     },
     "controls": {
