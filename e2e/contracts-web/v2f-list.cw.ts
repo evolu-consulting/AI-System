@@ -22,7 +22,7 @@ test("chỉ nút Upload (không còn Thêm thủ công) + cột theo mockup; kh�
     "Loại",
     "Giá trị",
     "Hiệu lực",
-    "Giai đoạn",
+    "Bước",
     "Thao tác",
   ]);
   await expect(page.getByRole("button", { name: /^Xoá/ })).toHaveCount(0);
