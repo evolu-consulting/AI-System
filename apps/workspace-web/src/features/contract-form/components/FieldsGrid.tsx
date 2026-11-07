@@ -1,8 +1,10 @@
 // V2-F · HD-01/09 · mockup `fieldsHTML`: lưới ô thông tin hợp đồng dùng chung (nhập tay, xác nhận sau upload, sửa ở trang chi tiết).
 // Ô bắt buộc có dấu * và viền đỏ khi thiếu; nhãn đối tác + ô hoa hồng/giá trị đi theo loại; giá trị để trống ⇒ placeholder tự cộng.
 import { DOC_NUMBER_MAX, isValidDocNumber, normalizeDocNumber } from "@ai/contracts/pack-contracts";
+import type { ComponentProps } from "react";
 import { type ReactNode, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DateInput } from "~/components/shared/date-picker/DateInput";
 import { vnd } from "~/components/shared/format";
 import { Tag } from "~/components/shared/tag";
 import { QuoteLine } from "~/features/contract-source/components/QuoteLine";
@@ -10,7 +12,6 @@ import { cn } from "~/lib/utils";
 import { autoTotal, type FormState, type RequiredKey, type TextKey } from "../lib/form-model";
 import { idKind, type PartnerSearchHit } from "../lib/partner-match";
 import { PartnerField } from "./PartnerField";
-
 export type FieldBadge = { kind: "warn" | "quote"; text: string };
 
 type Props = {
@@ -119,7 +120,7 @@ function NumberNote({ num, onUse }: { num: NumState; onUse: (v: string) => void 
   );
 }
 
-function TextField({
+function PlainTextField({
   k,
   label,
   o,
@@ -188,6 +189,28 @@ function TextField({
 }
 
 /** Chọn từ sổ ⇒ tên + MST/CCCD lấy từ sổ (chỉ đọc); bỏ chọn (gõ lại tên) ⇒ xoá số cũ để nhập tay. */
+/** CR-125 · x8 · ô ngày: bộ chọn ngày tiếng Việt chung (dd/mm/yyyy), không dùng ô ngày gốc của trình duyệt. */
+function DateField(p: ComponentProps<typeof PlainTextField>) {
+  const { k, o, f, label, onSet, badges, unsure } = p;
+  return (
+    <Row id={`cf-${k}`} label={label} req={o.req} span={o.span} badges={badges} unsure={unsure}>
+      <DateInput
+        id={`cf-${k}`}
+        name={k}
+        data-testid={`cf-${k}`}
+        disabled={p.disabled || p.locked || o.locked}
+        value={f[k]}
+        onChange={(e) => onSet(k, e.target.value)}
+        className={cn("w-full", o.bad && "border-late")}
+      />
+    </Row>
+  );
+}
+
+function TextField(p: ComponentProps<typeof PlainTextField>) {
+  return p.o.type === "date" ? <DateField {...p} /> : <PlainTextField {...p} />;
+}
+
 function usePickedPartner(onSet: Props["onSet"]) {
   const [picked, setPicked] = useState<PartnerSearchHit | null>(null);
   const pick = useCallback(

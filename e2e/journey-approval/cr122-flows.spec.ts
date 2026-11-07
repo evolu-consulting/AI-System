@@ -78,10 +78,12 @@ const stages = () => [
 async function submit(
   browser: import("@playwright/test").Browser,
   tag: string,
+  beforeSend?: (emp: Page) => Promise<void>,
 ): Promise<{ emp: Page; id: string }> {
   const emp = await ctxPage(browser);
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, `${RUN}${tag}`, M150);
+  await beforeSend?.(emp);
   await emp.getByRole("button", { name: "Gửi duyệt" }).click();
   return { emp, id };
 }
@@ -176,7 +178,17 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
 }, testInfo) => {
   test.setTimeout(420_000);
   // HĐ A gửi TRƯỚC khi sao chép: dừng ở bước nhánh Đúng (Kế toán)
-  const a = await submit(browser, "g2a");
+  // CR-125 · x8 · ô ngày là bộ chọn ngày tiếng Việt: hiện dd/mm/yyyy, lịch thứ Hai đầu tuần, tháng tiếng Việt
+  const a = await submit(browser, "g2a", async (emp) => {
+    const start = emp.getByTestId("cf-start_date");
+    await expect(start).toHaveValue(/^\d{2}\/\d{2}\/\d{4}$/);
+    await emp.getByRole("button", { name: "Chọn ngày" }).first().click();
+    const pop = emp.getByTestId("date-popover");
+    await expect(pop.getByText(/^Tháng \d{1,2} \d{4}$/)).toBeVisible();
+    await expect(pop.getByText("T2", { exact: true })).toBeVisible();
+    await emp.screenshot({ path: testInfo.outputPath("cr125-x8-date-picker.png") });
+    await emp.keyboard.press("Escape");
+  });
   await expect(isOpen(a.emp, BIG)).toBeVisible({ timeout: 90_000 });
 
   const page = await tenantAdmin(browser);
