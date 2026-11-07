@@ -41,6 +41,10 @@ beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
   db = connectDb(urls().hubApi, 4);
+  // B đã chấp nhận nhận HĐ từ A (q2/q3 sẽ có hàm ghi); C → B chưa nối, B chặn A → C không áp dụng.
+  await o`insert into hub.partner_links (from_tenant, to_tenant, accepted_at) values (${A}, ${B}, now())`;
+  await o`insert into hub.partner_links (from_tenant, to_tenant, accepted_at, blocked_at)
+    values (${A}, ${C}, now(), now())`;
 });
 afterAll(async () => {
   await db?.close();
@@ -94,6 +98,22 @@ describe("CR-124 q1 · NFR-01 cách ly hộp thư", () => {
     expect(await pgCode(() => inHub("none", (tx) => send(tx, A, B)))).toBe("42501");
   });
 
+  it("kênh nền tảng chỉ khi bên nhận đã chấp nhận nối (chưa nối / đã chặn ⇒ 42501)", async () => {
+    expect(await pgCode(() => as(C, UA, (tx) => send(tx, C, B)))).toBe("42501");
+    expect(await pgCode(() => as(A, UA, (tx) => send(tx, A, C)))).toBe("42501");
+    // email/manual không mang tenant nhận ⇒ không có đường receiver_flow.
+    expect(
+      await pgCode(() =>
+        as(
+          A,
+          UA,
+          (tx) => tx`select hub.partner_send(${A}::uuid, ${B}::uuid, 'b@x.vn', 'email',
+          null, '{}'::jsonb, null, null, now() + interval '1 day', null)`,
+        ),
+      ),
+    ).toBe("23514");
+  });
+
   it("partner_reply sai tenant ⇒ 42501, mine chỉ thấy dòng của mình, không lộ from_ref cho bên nhận", async () => {
     const id = await as(A, UA, (tx) => send(tx, A, B, "platform", "ref-mine"));
     expect(await pgCode(() => as(C, UA, (tx) => reply(tx, id, "confirmed", "receiver_flow")))).toBe(
@@ -124,7 +144,7 @@ describe("CR-124 q1 · NFR-01 cách ly hộp thư", () => {
     expect(Object.keys(mineB[0] ?? {})).not.toContain("payload");
   });
 
-  it("ghi nhận thủ công chỉ bởi bên gửi, kênh manual cần tệp bằng chứng, gọi lại cùng kết quả ⇒ false", async () => {
+  it("ghi nhận thủ công chỉ bởi bên gửi có người ghi, kênh manual cần 1–20 tệp bằng chứng, gọi lại cùng kết quả ⇒ false", async () => {
     const id = await as(A, UA, (tx) => send(tx, A, null, "manual"));
     expect(
       await pgCode(() => as(B, UB, (tx) => reply(tx, id, "returned", "manual", { files: ["f1"] }))),
@@ -132,9 +152,20 @@ describe("CR-124 q1 · NFR-01 cách ly hộp thư", () => {
     expect(
       await pgCode(() => as(A, UA, (tx) => reply(tx, id, "returned", "manual", { files: [] }))),
     ).toBe("22023");
-    expect(await as(A, UA, (tx) => reply(tx, id, "returned", "manual", { files: ["f1"] }))).toBe(
-      true,
+    const many = { files: Array.from({ length: 21 }, (_, i) => `f${i}`) };
+    expect(await pgCode(() => as(A, UA, (tx) => reply(tx, id, "returned", "manual", many)))).toBe(
+      "22023",
     );
+    // Không có người ghi (app.user_id rỗng) ⇒ 42501.
+    expect(
+      await pgCode(() => as(A, "", (tx) => reply(tx, id, "returned", "manual", { files: ["f1"] }))),
+    ).toBe("42501");
+    // recorded_by do người gọi gửi lên bị ghi đè bằng app.user_id.
+    expect(
+      await as(A, UA, (tx) =>
+        reply(tx, id, "returned", "manual", { files: ["f1"], recorded_by: UB }),
+      ),
+    ).toBe(true);
     expect(await as(A, UA, (tx) => reply(tx, id, "returned", "manual", { files: ["f1"] }))).toBe(
       false,
     );

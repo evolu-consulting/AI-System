@@ -28,6 +28,9 @@ Không UI, trang email, danh bạ, node manifest, HĐ nhận (q2–q5). Không s
 - Thêm cột `from_ref` (ref bản ghi phía A, chỉ trả cho A qua `mine`), `replied_at`, `reply_emitted_at` (chốt đã phát kết quả; giữ `status = replied` cho thẻ).
 - `partner_reply` gọi lại cùng kết quả + nguồn ⇒ FALSE (idempotent cho OutcomeHandler chạy lại); kết quả khác / hết hạn / đóng ⇒ 55000; không thấy hoặc sai tenant ⇒ 42501 (không lộ dòng tồn tại); nguồn `email` ⇒ 0A000 (TODO q5 đường token).
 - Kênh `manual` cần `evidence.files` ≥ 1; `evidence.recorded_by` = `app.user_id`.
+- Soát bảo mật (Opus, 5bd851090) — sửa: (a) `hub.partner_links {from_tenant, to_tenant, accepted_at, blocked_at}` (RLS chỉ system, chưa có hàm ghi) — `partner_send` kênh nền tảng cần nối đã chấp nhận, chưa nối/chặn ⇒ 42501; nhỏ nhất đủ chặn spam, q2/q3 thêm lời mời nối + chấp nhận/chặn (§5); (b) manual cần `app.user_id`, `evidence.recorded_by` luôn ghi đè; (c) bằng chứng ≤ 64 KB, ≤ 20 tệp (CHECK + 22023); (d) CHECK `channel = 'platform' OR to_tenant IS NULL`, receiver_flow chỉ kênh platform.
+- **prod: giữ `HUB_PARTNER_MAILBOX=off` tới khi q2/q3 xong.**
+- "Chỉ người phụ trách HĐ / quản trị gói" được ghi nhận thủ công (§8b) là kiểm ở tầng app (q3); hàm chỉ khoá theo tenant gửi + có người ghi.
 - `actor_id` của sự kiện = null (q3 quyết người chạy flow nhận; dispatcher hiện ghi `no_actor` nếu có flow khớp).
 
 ## Delta (so với docs/current)
@@ -39,7 +42,8 @@ Lần gửi HĐ giữa hai công ty là một dòng `hub.partner_mailbox` chỉ 
 - Kịch bản: khi role gói hoặc scope user đọc/ghi bảng hộp thư thì bị chặn [test: apps/hub-api/src/modules/partners/mailbox.int.test.ts » role gói và scope user không đọc/ghi thẳng bảng]
 - Kịch bản: khi gửi với from_tenant khác tenant hiện tại thì lỗi 42501 [test: apps/hub-api/src/modules/partners/mailbox.int.test.ts » partner_send giả from_tenant / chưa đặt tenant ⇒ 42501]
 - Kịch bản: khi trả lời từ tenant không phải bên nhận thì lỗi 42501, mỗi bên chỉ thấy dòng của mình [test: apps/hub-api/src/modules/partners/mailbox.int.test.ts » partner_reply sai tenant ⇒ 42501, mine chỉ thấy dòng của mình, không lộ from_ref cho bên nhận]
-- Kịch bản: khi bên gửi ghi nhận thủ công kèm bằng chứng thì lần gửi thành đã trả lời, bên nhận không ghi được [test: apps/hub-api/src/modules/partners/mailbox.int.test.ts » ghi nhận thủ công chỉ bởi bên gửi, kênh manual cần tệp bằng chứng, gọi lại cùng kết quả ⇒ false]
+- Kịch bản: khi gửi qua nền tảng tới công ty chưa chấp nhận nối hoặc đã chặn thì lỗi 42501 [test: apps/hub-api/src/modules/partners/mailbox.int.test.ts » kênh nền tảng chỉ khi bên nhận đã chấp nhận nối (chưa nối / đã chặn ⇒ 42501)]
+- Kịch bản: khi bên gửi ghi nhận thủ công kèm bằng chứng thì lần gửi thành đã trả lời, người ghi lấy từ phiên đăng nhập, bên nhận không ghi được [test: apps/hub-api/src/modules/partners/mailbox.int.test.ts » ghi nhận thủ công chỉ bởi bên gửi có người ghi, kênh manual cần 1–20 tệp bằng chứng, gọi lại cùng kết quả ⇒ false]
 - Kịch bản: khi hai Hub cùng chạy bộ chuyển hoặc chạy lại thì chỉ một sự kiện nhận và một sự kiện kết quả [test: apps/hub-api/src/modules/partners/mailbox.int.test.ts » hai worker + chạy lại ⇒ đúng một contract.received (bên nhận) và một partner.returned (bên gửi)]
 - Kịch bản: khi lô 5 hay 100 dòng thì số câu SQL như nhau [test: apps/hub-api/src/modules/partners/mailbox-mover.perf.int.test.ts » số câu SQL mỗi lô không phụ thuộc số dòng]
 

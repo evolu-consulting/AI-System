@@ -43,10 +43,14 @@ CREATE TABLE IF NOT EXISTS hub.partner_mailbox (
   CONSTRAINT partner_mailbox_target_ck CHECK (
     (channel <> 'platform' OR to_tenant IS NOT NULL) AND (channel <> 'email' OR to_email IS NOT NULL)),
   CONSTRAINT partner_mailbox_self_ck CHECK (to_tenant IS DISTINCT FROM from_tenant),
+  -- Chỉ kênh nền tảng có tenant nhận (email/manual: bên nhận không phải tenant ⇒ không có đường receiver_flow).
+  CONSTRAINT partner_mailbox_to_tenant_ck CHECK (channel = 'platform' OR to_tenant IS NULL),
   CONSTRAINT partner_mailbox_email_ck CHECK (to_email IS NULL OR (length(to_email) <= 320 AND to_email LIKE '%_@_%')),
   CONSTRAINT partner_mailbox_from_ref_ck CHECK (from_ref IS NULL OR length(from_ref) BETWEEN 1 AND 200),
   CONSTRAINT partner_mailbox_payload_ck CHECK (jsonb_typeof(payload) = 'object' AND pg_column_size(payload) <= 65536),
-  CONSTRAINT partner_mailbox_evidence_ck CHECK (evidence IS NULL OR jsonb_typeof(evidence) = 'object'),
+  CONSTRAINT partner_mailbox_evidence_ck CHECK (evidence IS NULL OR (jsonb_typeof(evidence) = 'object'
+    AND pg_column_size(evidence) <= 65536
+    AND (jsonb_typeof(evidence->'files') IS DISTINCT FROM 'array' OR jsonb_array_length(evidence->'files') <= 20))),
   CONSTRAINT partner_mailbox_sha_ck CHECK (pdf_sha256 IS NULL OR pdf_sha256 ~ '^[0-9a-f]{64}$'),
   CONSTRAINT partner_mailbox_file_ref_ck CHECK (file_ref IS NULL OR length(file_ref) BETWEEN 1 AND 500),
   CONSTRAINT partner_mailbox_reason_ck CHECK (reason IS NULL OR length(reason) <= 2000),
@@ -80,7 +84,35 @@ END $$;
 --> statement-breakpoint
 GRANT SELECT, UPDATE ON hub.partner_mailbox TO hub_rw;
 --> statement-breakpoint
--- partner_send: gọi trong tx của A; chỉ ghi from_tenant = tenant hiện tại. Kiểm B cho phép (§4) + nối (§5) + hạn mức: TODO q2/q3.
+-- Cổng đồng ý tối thiểu (soát bảo mật q1, spec §5): kênh nền tảng A → B chỉ khi B đã chấp nhận nhận HĐ từ A
+-- (`accepted_at` có, `blocked_at` không). Chưa có hàm ghi ở q1 (q2/q3 thêm lời mời nối + chấp nhận/chặn) ⇒ bật
+-- HUB_PARTNER_MAILBOX cũng không gửi được cho tenant tuỳ ý. RLS bật, chỉ policy hub_rw scope system, không quyền cho gói/user.
+CREATE TABLE IF NOT EXISTS hub.partner_links (
+  from_tenant uuid NOT NULL,
+  to_tenant uuid NOT NULL,
+  accepted_at timestamptz,
+  blocked_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT partner_links_pkey PRIMARY KEY (from_tenant, to_tenant),
+  CONSTRAINT partner_links_self_ck CHECK (from_tenant <> to_tenant)
+);
+--> statement-breakpoint
+ALTER TABLE hub.partner_links ENABLE ROW LEVEL SECURITY;
+--> statement-breakpoint
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'hub' AND tablename = 'partner_links'
+                 AND policyname = 'partner_links_system') THEN
+    CREATE POLICY partner_links_system ON hub.partner_links FOR ALL TO hub_rw
+      USING (current_setting('app.scope', true) = 'system')
+      WITH CHECK (current_setting('app.scope', true) = 'system');
+  END IF;
+END $$;
+--> statement-breakpoint
+GRANT SELECT ON hub.partner_links TO hub_rw;
+--> statement-breakpoint
+-- partner_send: gọi trong tx của A; chỉ ghi from_tenant = tenant hiện tại; kênh nền tảng cần nối đã chấp nhận (partner_links).
+-- Kiểm "cho phép tìm thấy" (§4) + hạn mức: TODO q2.
 CREATE OR REPLACE FUNCTION hub.partner_send(
   p_from_tenant uuid,
   p_to_tenant uuid,
@@ -107,6 +139,12 @@ BEGIN
   END IF;
   IF p_expires_at IS NULL OR p_expires_at <= now() OR p_expires_at > now() + interval '30 days' THEN
     RAISE EXCEPTION 'partner_send: hạn trả lời phải trong 30 ngày tới' USING ERRCODE = '22023';
+  END IF;
+  IF p_channel = 'platform' AND NOT EXISTS (
+       SELECT 1 FROM hub.partner_links l
+        WHERE l.from_tenant = v_tid AND l.to_tenant = p_to_tenant
+          AND l.accepted_at IS NOT NULL AND l.blocked_at IS NULL) THEN
+    RAISE EXCEPTION 'partner_send: công ty nhận chưa chấp nhận nhận HĐ qua nền tảng' USING ERRCODE = '42501';
   END IF;
   IF p_prev_id IS NOT NULL THEN
     -- Gửi lại sau Trả lại (FLOW4-FR-17): lần trước phải là của chính A, cùng bên nhận.
@@ -160,9 +198,16 @@ BEGIN
   IF p_outcome <> 'confirmed' AND length(btrim(COALESCE(p_reason, ''))) = 0 THEN
     RAISE EXCEPTION 'partner_reply: Trả lại / Từ chối cần lý do' USING ERRCODE = '22023';
   END IF;
+  IF p_source = 'manual' AND v_uid IS NULL THEN
+    RAISE EXCEPTION 'partner_reply: ghi nhận thủ công cần người ghi (app.user_id)' USING ERRCODE = '42501';
+  END IF;
+  IF p_evidence IS NOT NULL AND (jsonb_typeof(p_evidence) <> 'object' OR pg_column_size(p_evidence) > 65536
+     OR (jsonb_typeof(p_evidence->'files') = 'array' AND jsonb_array_length(p_evidence->'files') > 20)) THEN
+    RAISE EXCEPTION 'partner_reply: bằng chứng quá lớn (≤ 64 KB, ≤ 20 tệp)' USING ERRCODE = '22023';
+  END IF;
   SELECT * INTO m FROM hub.partner_mailbox WHERE id = p_mailbox_id FOR UPDATE;
   IF NOT FOUND
-     OR (p_source = 'receiver_flow' AND m.to_tenant IS DISTINCT FROM v_tid)
+     OR (p_source = 'receiver_flow' AND (m.channel <> 'platform' OR m.to_tenant IS DISTINCT FROM v_tid))
      OR (p_source = 'manual' AND m.from_tenant IS DISTINCT FROM v_tid) THEN
     RAISE EXCEPTION 'partner_reply: lần gửi không thuộc tenant hiện tại' USING ERRCODE = '42501';
   END IF;
@@ -180,8 +225,9 @@ BEGIN
   UPDATE hub.partner_mailbox
      SET status = 'replied', outcome = p_outcome, reason = NULLIF(btrim(COALESCE(p_reason, '')), ''),
          replied_by_source = p_source,
+         -- `recorded_by` luôn do hàm đặt từ `app.user_id` (khoá người gọi gửi lên bị bỏ — chống mạo danh người ghi).
          evidence = CASE WHEN p_evidence IS NULL AND v_uid IS NULL THEN NULL
-                         ELSE COALESCE(p_evidence, '{}'::jsonb)
+                         ELSE (COALESCE(p_evidence, '{}'::jsonb) - 'recorded_by')
                               || jsonb_strip_nulls(jsonb_build_object('recorded_by', v_uid)) END,
          replied_at = now(), updated_at = now()
    WHERE id = m.id;
