@@ -30,11 +30,11 @@ test("ADM-FR-71 · AC-H41 · PD-E01 · stage 'Chờ hạn' ⇒ 'Chờ tới ngà
   await p.getByRole("option", { name: "Chờ tới ngày" }).click();
   const g = panel(p).getByRole("group", { name: "Chờ tới ngày" });
   await g.getByRole("combobox", { name: "Lấy ngày từ" }).click();
-  await p.getByRole("option", { name: /Kết quả giai đoạn 1 · .*ngay_het_han/ }).click();
+  await p.getByRole("option", { name: /Kết quả bước 1 · .*ngay_het_han/ }).click();
   await g.getByRole("spinbutton", { name: "Chênh lệch (ngày)" }).fill("-3");
   await g.getByLabel("Giờ trong ngày").fill("09:00");
   await expect(g.getByRole("status")).toContainText("Theo múi giờ công ty: Asia/Ho_Chi_Minh");
-  const after = panel(p).getByRole("combobox", { name: "Sau giai đoạn" });
+  const after = panel(p).getByRole("combobox", { name: "Sau bước này" });
   await expect(after).toBeDisabled();
   await expect(after).toContainText("Chạy tiếp (cố định)");
   expect(await saveDef(p)).toBe(200);
@@ -111,7 +111,7 @@ test("ADM-FR-71 · AC-H41 · PD-E04 · nguồn ngày cùng bước ⇒ lỗi inl
   const g = panel(p).getByRole("group", { name: "Chờ tới ngày" });
   await expect(
     g.getByText(
-      "Nguồn ngày không hợp lệ. Chọn trường nhập kiểu Ngày hoặc trường Ngày của giai đoạn ở bước trước.",
+      "Nguồn ngày không hợp lệ. Chọn trường nhập kiểu Ngày hoặc trường Ngày của bước ở bước trước.",
     ),
   ).toBeVisible();
   await expect(panel(p)).toBeVisible();
@@ -141,9 +141,9 @@ test("ADM-FR-71 · AC-H44 · PD2-E01 · stage 'Gọi tool': chọn 'Xuất HĐ �
   await p.getByRole("option", { name: TOOL_OPT }).click();
   await expect(g.getByText("Việc này có tác động thật (gửi đi, ghi dữ liệu)")).toHaveCount(0);
   await g.getByRole("combobox", { name: "Thông tin cần điền: tong_tien lấy từ đâu" }).click();
-  await p.getByRole("option", { name: "Kết quả giai đoạn trước" }).click();
+  await p.getByRole("option", { name: "Kết quả bước trước" }).click();
   await g.getByRole("combobox", { name: "Giá trị của tong_tien" }).click();
-  await p.getByRole("option", { name: /Giai đoạn 1 · tong_tien/ }).click();
+  await p.getByRole("option", { name: /Bước 1 · tong_tien/ }).click();
   await g.getByRole("combobox", { name: "Thông tin cần điền: ma_kh lấy từ đâu" }).click();
   await p.getByRole("option", { name: "Giá trị cố định" }).click();
   await g.getByLabel("Giá trị của ma_kh").fill("KH1");
@@ -155,7 +155,7 @@ test("ADM-FR-71 · AC-H44 · PD2-E01 · stage 'Gọi tool': chọn 'Xuất HĐ �
   await expect(g2.getByRole("combobox", { name: "Tính năng" })).toContainText("Xuất HĐ");
   await expect(
     g2.getByRole("combobox", { name: "Thông tin cần điền: tong_tien lấy từ đâu" }),
-  ).toContainText("Kết quả giai đoạn trước");
+  ).toContainText("Kết quả bước trước");
   await expect(g2.getByLabel("Giá trị của ma_kh")).toHaveValue("KH1");
   const ex = (await stageOfDef("pd2-tool", 1))?.executor;
   expect(ex).toMatchObject({
@@ -216,7 +216,7 @@ test("AC-H47 · PD2-E05 · công ty chưa bật tool: danh sách rỗng có thô
   };
   await open();
   await expect(
-    panel(p).getByText("Chưa có tool nào được bật cho công ty — liên hệ quản trị nền tảng"),
+    panel(p).getByText("Chưa có tính năng nào được bật cho công ty — liên hệ quản trị nền tảng"),
   ).toBeVisible();
   await seedPd2Tools(["WS"]);
   await p.context().clearCookies();

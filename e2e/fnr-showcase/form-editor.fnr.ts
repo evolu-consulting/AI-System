@@ -83,7 +83,7 @@ const getDef = async (id: string): Promise<Json> => {
 };
 
 const canvas = (p: Page) => p.getByRole("application", { name: "Canvas quy trình" });
-const panel = (p: Page) => p.getByRole("complementary", { name: "Chi tiết giai đoạn" });
+const panel = (p: Page) => p.getByRole("complementary", { name: "Chi tiết bước" });
 async function save(p: Page): Promise<{ status: number; json: Json }> {
   const put = p.waitForResponse(
     (r) => r.request().method() === "PUT" && /\/process-defs\//.test(r.url()),
@@ -102,13 +102,13 @@ test("CR-118 · editor form · Canvas: thêm bước form + trường ⇒ Lưu 2
   await p.goto(`${ADMIN_URL}/processes/${id}`);
   await expect(canvas(p)).toBeVisible();
 
-  await p.getByRole("button", { name: "Thêm giai đoạn", exact: true }).click();
+  await p.getByRole("button", { name: "Thêm bước mới", exact: true }).click();
   await panel(p).getByLabel("Tên bước", { exact: true }).fill("Điền hồ sơ");
   await panel(p).getByRole("combobox", { name: "Người thực hiện" }).click();
   await p.getByRole("option", { name: "Người điền form" }).click();
   await expect(panel(p).getByTestId("stage-form-fields")).toBeVisible();
   // bước form luôn chờ người điền: chỉ còn "Duyệt bởi Group", chọn nhóm
-  await panel(p).getByRole("combobox", { name: "Nhóm kiểm" }).click();
+  await panel(p).getByRole("combobox", { name: "Phòng ban duyệt" }).click();
   await p.getByRole("option", { name: /Pháp chế/ }).click();
 
   // chưa có trường ⇒ câu lỗi tiếng Việt hiện ngay (live)
@@ -167,7 +167,7 @@ test("CR-118 · editor form · Canvas: thêm bước form + trường ⇒ Lưu 2
   await p.reload();
   await expect(canvas(p)).toBeVisible();
   await canvas(p)
-    .getByRole("button", { name: /^Giai đoạn 2: Điền hồ sơ/ })
+    .getByRole("button", { name: /^Bước 2: Điền hồ sơ/ })
     .click();
   await expect(panel(p).getByLabel("Nhãn trường 2")).toHaveValue("Hình thức");
 });
@@ -198,7 +198,7 @@ test("CR-118 · editor form · Danh sách: sửa trường của bước form c�
   await expect(canvas(p)).toBeVisible();
   // CR-121 F9: công tắc chế độ dùng chung `ViewModeToggle` (nút "Danh sách bước"), không còn tab
   await p.getByTestId("flows-view-list").click();
-  await p.getByRole("button", { name: /^Giai đoạn 2: Điền form/ }).click();
+  await p.getByRole("button", { name: /^Bước 2: Điền form/ }).click();
   const box = p.getByTestId("stage-form-fields");
   await expect(box.getByLabel("Nhãn trường 1")).toHaveValue("Họ tên");
 

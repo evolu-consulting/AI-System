@@ -1,5 +1,5 @@
 // CR-122 · p22 · canvas-ux · e2e trên flow mẫu "Duyệt đề nghị chi" (0 Nhập · 1 Pháp chế + Kế toán · 2 Kiểm tra hạn mức (Nếu) · 3 Giám đốc · 4 Hoàn tất):
-// (1) kéo cổng "Sai" của node Nếu sang "Giám đốc duyệt" ⇒ ô "Sai thì tới bước" đổi ngay và các ô chọn bước hiện "Bước N · tên";
+// (1) kéo cổng "Sai" của node Nếu sang "Giám đốc duyệt" ⇒ ô "Ngược lại đi tới" đổi ngay và các ô chọn bước hiện "Bước N · tên";
 // (2) kéo về bước đứng trước ⇒ không đổi gì, có câu báo lý do; (3) platform_admin đặt số bước tối đa = số bước hiện có ⇒ "Thêm bước" tắt + chú thích.
 // Không lưu flow (chỉ sửa bản nháp). Ảnh chụp: docs/specs/cr122-p22-canvas-ux/shots/. Chạy: xem `playwright.fnr.config.ts`.
 import { FLOW_SHOWCASE_KEY } from "@ai/contracts/hub-admin";
@@ -55,7 +55,7 @@ test("CR-122 · p22 · kéo cổng Sai của node Nếu sang bước sau ⇒ ô 
     await drag(p, canvas(p).getByTestId("port-no"), node(p, "Giám đốc duyệt"));
     await p.getByRole("button", { name: "Sắp xếp" }).click();
     await canvas(p).getByTestId("if-node").click();
-    const field = p.getByRole("combobox", { name: "Sai thì tới bước" });
+    const field = p.getByRole("combobox", { name: "Ngược lại đi tới" });
     await expect(field).toContainText("Bước 4 · Giám đốc duyệt");
     await field.click();
     await expect(p.getByRole("option", { name: "Bước 5 · Hoàn tất" })).toBeVisible();

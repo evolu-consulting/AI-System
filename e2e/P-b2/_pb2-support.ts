@@ -303,10 +303,10 @@ export async function openTemplate(p: Page, key: string): Promise<void> {
   await p.goto(`${ADMIN_URL}/processes/${item.id}`);
 }
 export const canvas = (p: Page) => p.getByRole("application", { name: "Canvas quy trình" });
-export const panel = (p: Page) => p.getByRole("complementary", { name: "Chi tiết giai đoạn" });
+export const panel = (p: Page) => p.getByRole("complementary", { name: "Chi tiết bước" });
 /** Nút stage `Giai đoạn n: <tên>` (n có thể đổi sau sắp xếp ⇒ khớp theo tên). */
 export const node = (p: Page, name: string) =>
-  p.getByRole("button", { name: new RegExp(`^Giai đoạn \\d+: ${name}`) });
+  p.getByRole("button", { name: new RegExp(`^Bước \\d+: ${name}`) });
 export const stepSpin = (p: Page) => panel(p).getByRole("spinbutton", { name: "Chạy ở bước" });
 export const saveDef = async (p: Page): Promise<number> => {
   const put = p.waitForResponse(

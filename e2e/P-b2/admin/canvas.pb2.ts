@@ -23,11 +23,11 @@ test("ADM-FR-71 · E-PB2-01 · mở pb2-canvas ⇒ application 'Canvas quy trìn
 }) => {
   await openCanvas(p);
   await expect(canvas(p)).toBeVisible();
-  await expect(canvas(p).getByRole("button", { name: /^Giai đoạn [1-4]: / })).toHaveCount(4);
+  await expect(canvas(p).getByRole("button", { name: /^Bước [1-4]: / })).toHaveCount(4);
   // fnr-editor-drawer (qc, người dùng chốt ngăn đóng mặc định 2026-10-29): ngăn đóng lúc tải; chọn node ⇒ ngăn mở.
   await expect(panel(p)).toHaveCount(0);
   await node(p, "Phân tích").click();
-  await expect(panel(p).getByRole("region", { name: "Giai đoạn 1: Phân tích" })).toBeVisible();
+  await expect(panel(p).getByRole("region", { name: "Bước 1: Phân tích" })).toBeVisible();
 });
 
 test("ADM-FR-71 · E-PB2-02 · click 'Giai đoạn 3: Test hồi quy' ⇒ panel đổi; spinbutton 'Chạy ở bước' = 2 (step+1)", async ({
@@ -35,9 +35,9 @@ test("ADM-FR-71 · E-PB2-02 · click 'Giai đoạn 3: Test hồi quy' ⇒ panel 
 }) => {
   await openCanvas(p);
   await canvas(p)
-    .getByRole("button", { name: /^Giai đoạn 3: Test hồi quy/ })
+    .getByRole("button", { name: /^Bước 3: Test hồi quy/ })
     .click();
-  await expect(panel(p).getByRole("region", { name: "Giai đoạn 3: Test hồi quy" })).toBeVisible();
+  await expect(panel(p).getByRole("region", { name: "Bước 3: Test hồi quy" })).toBeVisible();
   await expect(stepSpin(p)).toHaveValue("2");
 });
 
@@ -51,7 +51,7 @@ test("ADM-FR-71 · E-PB2-03 · focus Rà soát code + Alt+ArrowRight ⇒ status 
   await n.focus();
   await p.keyboard.press("Alt+ArrowRight");
   await expect(
-    p.getByRole("status").filter({ hasText: /^Giai đoạn \d+ chuyển sang bước 3$/ }),
+    p.getByRole("status").filter({ hasText: /^Bước \d+ chuyển sang bước 3$/ }),
   ).toBeVisible();
   await expect(stepSpin(p)).toHaveValue("3");
   expect(p.url()).toBe(url);
@@ -75,7 +75,7 @@ test("ADM-FR-71 · E-PB2-04 · kéo Tổng hợp (chuột) sang cột bước 2 
   await p.mouse.up();
   await src.click();
   await expect(stepSpin(p)).toHaveValue("2");
-  await expect(p.getByRole("button", { name: "Thêm giai đoạn vào bước 2" })).toHaveAttribute(
+  await expect(p.getByRole("button", { name: "Thêm bước vào bước 2" })).toHaveAttribute(
     "aria-disabled",
     "true",
   );
@@ -90,13 +90,13 @@ test("ADM-FR-71 · E-PB2-05 · pb2-full: Alt+ArrowRight 'Mở đầu' sang bư�
   await n.focus();
   await p.keyboard.press("Alt+ArrowRight");
   await expect(
-    p.getByRole("alert").filter({ hasText: "Bước 2 đã đủ 3 giai đoạn song song." }),
+    p.getByRole("alert").filter({ hasText: "Bước 2 đã đủ 3 bước song song." }),
   ).toBeVisible();
   await expect(
-    p.getByRole("status").filter({ hasText: "Không chuyển được: bước 2 đã đủ 3 giai đoạn" }),
+    p.getByRole("status").filter({ hasText: "Không chuyển được: bước 2 đã đủ 3 bước" }),
   ).toBeVisible();
   await expect(stepSpin(p)).toHaveValue("1");
-  await expect(p.getByRole("button", { name: "Thêm giai đoạn vào bước 2" })).toHaveAttribute(
+  await expect(p.getByRole("button", { name: "Thêm bước vào bước 2" })).toHaveAttribute(
     "aria-disabled",
     "true",
   );
@@ -148,8 +148,8 @@ test("ADM-FR-71 · AC-PB2-05 · E-PB2-08 · 'Hành động thật' của Tổng 
   await node(p, "Tổng hợp").click();
   await expect(panel(p).getByRole("switch", { name: "Hành động thật" })).toBeDisabled();
   await node(p, "Test hồi quy").click();
-  await panel(p).getByRole("combobox", { name: "Sau giai đoạn" }).click();
-  await p.getByRole("option", { name: "Duyệt bởi Group" }).click();
+  await panel(p).getByRole("combobox", { name: "Sau bước này" }).click();
+  await p.getByRole("option", { name: "Duyệt bởi phòng ban" }).click();
   await expect(p.getByRole("listbox")).toHaveCount(0); // Select đã đóng hẳn, Esc không bị popup nuốt
   await p.keyboard.press("Escape"); // fnr-editor-drawer (qc): ngăn đè lên node "Tổng hợp" ⇒ đóng ngăn (Esc) trước khi bấm node khác
   await node(p, "Tổng hợp").click();
@@ -169,10 +169,10 @@ test("ADM-FR-71 · E-PB2-09 · nút panel 'Chuyển sang bước sau' / 'Chuyể
   await node(p, "Test hồi quy").click();
   await expect(stepSpin(p)).toHaveValue("2");
   await panel(p).getByRole("button", { name: "Lên" }).click();
-  await expect(canvas(p).getByRole("button", { name: /^Giai đoạn 2: Test hồi quy/ })).toBeVisible();
+  await expect(canvas(p).getByRole("button", { name: /^Bước 2: Test hồi quy/ })).toBeVisible();
   await node(p, "Rà soát code").click();
   await panel(p).getByRole("button", { name: "Tách sang bước riêng" }).click();
-  await expect(p.getByRole("button", { name: "Thêm giai đoạn vào bước 2" })).not.toHaveAttribute(
+  await expect(p.getByRole("button", { name: "Thêm bước vào bước 2" })).not.toHaveAttribute(
     "aria-disabled",
     "true",
   );
@@ -189,9 +189,9 @@ test("ADM-FR-71 · E-PB2-10 · tab 'Danh sách' ⇒ danh sách theo bước + pa
   await openCanvas(p);
   await p.getByTestId("flows-view-list").click(); // CR-121 F9: công tắc Sơ đồ / Danh sách bước (không còn tablist)
   await expect(canvas(p)).toHaveCount(0);
-  await expect(p.getByRole("button", { name: /^Giai đoạn [1-4]: / })).toHaveCount(4);
-  await p.getByRole("button", { name: /^Giai đoạn 3: Test hồi quy/ }).click();
-  await expect(panel(p).getByRole("region", { name: "Giai đoạn 3: Test hồi quy" })).toBeVisible();
+  await expect(p.getByRole("button", { name: /^Bước [1-4]: / })).toHaveCount(4);
+  await p.getByRole("button", { name: /^Bước 3: Test hồi quy/ }).click();
+  await expect(panel(p).getByRole("region", { name: "Bước 3: Test hồi quy" })).toBeVisible();
 
   const ctx = await browser.newContext();
   const q = await ctx.newPage();
@@ -216,19 +216,17 @@ test("ADM-FR-71 · E-PB2-11 · focus node + Enter ⇒ panel mở, focus 'Tên gi
 }) => {
   test.fixme(
     true,
-    "Q1: đỏ sau CR-122 U2 (Enter mở panel nhưng focus không vào ô 'Tên giai đoạn') — chưa phân loại mới/cũ, báo agent canvas",
+    "Q1: đỏ sau CR-122 U2 (Enter mở panel nhưng focus không vào ô 'Tên bước') — chưa phân loại mới/cũ, báo agent canvas",
   );
   await openCanvas(p);
   const n = node(p, "Rà soát code");
   await n.focus();
   await p.keyboard.press("Enter");
-  await expect(
-    panel(p).getByRole("region", { name: /^Giai đoạn \d+: Rà soát code$/ }),
-  ).toBeVisible();
-  await expect(panel(p).getByRole("textbox", { name: "Tên giai đoạn" })).toBeFocused();
+  await expect(panel(p).getByRole("region", { name: /^Bước \d+: Rà soát code$/ })).toBeVisible();
+  await expect(panel(p).getByRole("textbox", { name: "Tên bước" })).toBeFocused();
   await n.focus();
   await p.keyboard.press("Delete");
-  await expect(p.getByRole("alertdialog", { name: "Xoá giai đoạn “Rà soát code”?" })).toBeVisible();
+  await expect(p.getByRole("alertdialog", { name: "Xoá bước “Rà soát code”?" })).toBeVisible();
 });
 
 // CR-121 c15: hộp "Tạo quy trình" theo công ty đã gỡ (c13) ⇒ mở mẫu sdlc thẳng theo id (Hub), kiểm chỉ-xem như cũ.
@@ -240,13 +238,13 @@ test("ADM-FR-71 · E-PB2-12 · mẫu sdlc: chỉ xem — 2 câu thông báo; kh�
     p.getByText("Đây là quy trình mẫu, chỉ xem. Dùng mẫu này để chỉnh sửa."),
   ).toBeVisible();
   await expect(p.getByText("Quy trình mẫu: chỉ xem, không kéo thả được.")).toBeVisible();
-  await expect(p.getByRole("button", { name: "Thêm giai đoạn", exact: true })).toHaveCount(0);
-  const first = canvas(p).getByRole("button", { name: /^Giai đoạn 1: / });
+  await expect(p.getByRole("button", { name: "Thêm bước", exact: true })).toHaveCount(0);
+  const first = canvas(p).getByRole("button", { name: /^Bước 1: / });
   const before = await first.innerText();
   await first.click();
   const v = await stepSpin(p).inputValue();
   await first.focus();
   await p.keyboard.press("Alt+ArrowRight");
   await expect(stepSpin(p)).toHaveValue(v);
-  await expect(canvas(p).getByRole("button", { name: /^Giai đoạn 1: / })).toHaveText(before);
+  await expect(canvas(p).getByRole("button", { name: /^Bước 1: / })).toHaveText(before);
 });

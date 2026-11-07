@@ -106,9 +106,9 @@ async function openEditor(p: Page, id: string, login = true): Promise<void> {
   await expect(canvas(p)).toBeVisible();
 }
 const canvas = (p: Page) => p.getByRole("application", { name: "Canvas quy trình" });
-const panel = (p: Page) => p.getByRole("complementary", { name: "Chi tiết giai đoạn" });
+const panel = (p: Page) => p.getByRole("complementary", { name: "Chi tiết bước" });
 const node = (p: Page, name: string) =>
-  canvas(p).getByRole("button", { name: new RegExp(`^Giai đoạn \\d+: ${name}`) });
+  canvas(p).getByRole("button", { name: new RegExp(`^Bước \\d+: ${name}`) });
 const stepSpin = (p: Page) => panel(p).getByRole("spinbutton", { name: "Chạy ở bước" });
 const execBox = (p: Page) => panel(p).getByRole("combobox", { name: "Người thực hiện" });
 async function save(p: Page): Promise<{ status: number; json: Json }> {
@@ -235,8 +235,8 @@ test("CR-103 · editor · B · đổi node bị chặn khi bước sau dùng tr�
   await openEditor(p, d.id);
   await node(p, "Thu thập").click();
   await execBox(p).click();
-  const reason = /Giai đoạn kiem-tra còn dùng trường “amount” của giai đoạn này\./;
-  for (const none of ["Chờ tới ngày", "Nếu (rẽ Đúng/Sai)", "Áp bản sửa"]) {
+  const reason = /Bước kiem-tra còn dùng trường “amount” của bước này\./;
+  for (const none of ["Chờ tới ngày", "Nếu", "Áp bản sửa"]) {
     const o = p.getByRole("option", { name: none });
     await expect(o, `${none} bị khoá`).toHaveAttribute("aria-disabled", "true");
     await expect(o).toHaveAttribute("title", reason);
@@ -344,7 +344,7 @@ test("CR-103 · editor · E · node Nếu trỏ tới bước có Hành động 
   await openEditor(p, d.id);
   await node(p, "Duyệt B").click();
   await execBox(p).click();
-  await p.getByRole("option", { name: "Nếu (rẽ Đúng/Sai)" }).click();
+  await p.getByRole("option", { name: "Nếu" }).click();
   const ifx = panel(p).getByTestId("stage-if");
   await expect(ifx).toBeVisible();
   await ifx.getByRole("combobox", { name: "Nếu" }).first().click();
