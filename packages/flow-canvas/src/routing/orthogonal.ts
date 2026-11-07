@@ -278,8 +278,8 @@ export function roundedPath(poly: readonly Pt[], r = 10): string {
   return last && poly.length > 1 ? `${d} L ${last.x} ${last.y}` : d;
 }
 
-/** Kích thước ước lượng của nhãn trên cạnh ("Từ chối", "Hết hạn"…) — dùng để tránh đè node. */
-export const LABEL_BOX = { w: 60, h: 20 } as const;
+/** Kích thước ước lượng của nhãn trên cạnh ("Từ chối · Hết hạn"…) — dùng để tránh đè node. */
+export const LABEL_BOX = { w: 112, h: 22 } as const;
 
 const hits = (a: Rect, b: Rect): boolean =>
   a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
