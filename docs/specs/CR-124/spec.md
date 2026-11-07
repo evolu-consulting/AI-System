@@ -128,6 +128,8 @@ Không thay Ký số (xác nhận ≠ chữ ký số); không sửa chung một 
 | q5 | Đường email: token, trang xem, rate limit, mời, nhật ký | Opus token/rate limit, Sonnet trang + email | hub `01xx` |
 | q6 | e2e hành trình §10 (một lần) + review/security cuối | Sonnet qc, Opus review | — |
 
+**CR-125:** q3 xây trên khuôn module CR-125 — chờ lát nền m4 (Ký số đã chuyển) merge, rồi tạo node bằng `bun run module:new contracts partner-send`.
+
 ## 15. Câu hỏi mở (mặc định đề xuất)
 1. **Nối một lần phía nhận?** — Có (§5); tắt được bởi B ("nhận mọi HĐ từ công ty đã xác minh").
 2. **Mức cuối do ai quyết?** — B: max(gợi ý A, luật B); B không thấy cách A tính.
