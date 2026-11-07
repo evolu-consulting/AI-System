@@ -5,6 +5,7 @@
 import "@xyflow/react/dist/base.css";
 import {
   Background,
+  ControlButton,
   Controls,
   type Edge,
   MarkerType,
@@ -17,6 +18,7 @@ import {
   ReactFlowProvider,
   type XYPosition,
 } from "@xyflow/react";
+import { Map as MapIcon } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { type FlowHost, FlowHostCtx } from "./context";
@@ -159,6 +161,8 @@ function Flow(p: FlowCanvasProps) {
   const { host, labels } = useHostValue(p);
   const d = useDragOverlay(p);
   const fitRef = useRef<(() => void) | null>(null);
+  // CR-123 · u13: minimap mặc định TẮT (bố cục ELK phủ khắp khung, minimap che node); bật bằng nút ở thanh điều khiển
+  const [mini, setMini] = useState(false);
   const it = interactionOf(p.mode, p);
   const ev = useEditing(p.editing, d.nodes, p.edges as Edge[]);
   const nodeTypes = useMemo(
@@ -188,20 +192,14 @@ function Flow(p: FlowCanvasProps) {
     onNodeClick: p.onNodeClick && ((_: unknown, n: Node) => p.onNodeClick?.(n)),
   } as const;
   const furniture = (
-    <>
-      <Background gap={20} />
-      {p.controls === false ? null : (
-        <Controls showInteractive={false} onFitView={() => fitRef.current?.()} />
-      )}
-      {ev.miniMap && !p.compact ? (
-        <MiniMap
-          pannable
-          zoomable
-          position="bottom-right"
-          style={{ background: "var(--color-card)" }}
-        />
-      ) : null}
-    </>
+    <Furniture
+      controls={p.controls !== false}
+      canMini={ev.miniMap && !p.compact}
+      mini={mini}
+      onMini={() => setMini((m) => !m)}
+      fitRef={fitRef}
+      label={labels.controls?.minimap ?? "Minimap"}
+    />
   );
   return (
     <FlowHostCtx.Provider value={host}>
@@ -260,5 +258,44 @@ export function FlowCanvas(p: FlowCanvasProps) {
     <ReactFlowProvider>
       <Flow {...p} />
     </ReactFlowProvider>
+  );
+}
+
+/** Nền chấm + thanh điều khiển (+ nút bật/tắt minimap, mặc định tắt: minimap che node ở góc dưới phải) + minimap. */
+function Furniture(p: {
+  controls: boolean;
+  canMini: boolean;
+  mini: boolean;
+  onMini: () => void;
+  fitRef: { current: (() => void) | null };
+  label: string;
+}) {
+  return (
+    <>
+      <Background gap={20} />
+      {p.controls ? (
+        <Controls showInteractive={false} onFitView={() => p.fitRef.current?.()}>
+          {p.canMini ? (
+            <ControlButton
+              onClick={p.onMini}
+              title={p.label}
+              aria-label={p.label}
+              aria-pressed={p.mini}
+              data-testid="minimap-toggle"
+            >
+              <MapIcon aria-hidden />
+            </ControlButton>
+          ) : null}
+        </Controls>
+      ) : null}
+      {p.mini && p.canMini ? (
+        <MiniMap
+          pannable
+          zoomable
+          position="bottom-right"
+          style={{ background: "var(--color-card)" }}
+        />
+      ) : null}
+    </>
   );
 }

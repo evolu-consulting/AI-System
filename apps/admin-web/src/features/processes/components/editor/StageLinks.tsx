@@ -10,6 +10,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { linkableSteps } from "../../lib/arrow-rules";
+import { exitHandle } from "../../lib/canvas-connect";
+import { draftClusterOf } from "../../lib/module-cluster";
 import { useStepOptionLabel } from "../../lib/step-options";
 import { useFlowCtx } from "../flow/flow-ctx";
 import type { StageFormProps } from "./stage-form-props";
@@ -81,6 +83,16 @@ export function StageLinks({ stage, all, readOnly, onChange, onLink }: StageForm
   }));
   const none = t("process.admin.flow.link.next");
   const isWait = stage.executor === "wait_event";
+  // "Theo kết quả chờ" của Ký số: cùng luật mũi tên (nguồn = cả cụm; chọn bước trước ⇒ nối từ đầu ra của cụm + sắp lại bước)
+  const waitOptions: Opt[] = linkableSteps(all, stage.uid).map((st) => ({
+    step: st,
+    label: label(st),
+  }));
+  const cluster = draftClusterOf(
+    all,
+    all.findIndex((x) => x.uid === stage.uid),
+  );
+  const headUid = cluster ? (all[cluster.start]?.uid ?? stage.uid) : stage.uid;
   const branches = stage.wait.branches ?? [];
   const setBranch = (on: string, step: number | null) => {
     const rest = branches.filter((b) => b.on !== on);
@@ -96,11 +108,16 @@ export function StageLinks({ stage, all, readOnly, onChange, onLink }: StageForm
                 defaultValue: on,
               })}
               value={branches.find((b) => b.on === on)?.step ?? null}
-              options={options}
+              options={onLink ? waitOptions : options}
               none={none}
               disabled={readOnly}
               testId={`wait-branch-${on}`}
-              onChange={(v) => setBranch(on, v)}
+              onChange={(v) => {
+                const to = v === null ? undefined : all.find((x) => x.step === v);
+                if (v !== null && v <= stage.step && to && onLink)
+                  return onLink(to.uid, { source: headUid, handle: exitHandle("link", [on]) });
+                setBranch(on, v);
+              }}
             />
           ))
         : null}

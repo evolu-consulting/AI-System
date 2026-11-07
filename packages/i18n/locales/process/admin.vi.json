@@ -733,6 +733,7 @@
       "title": "Điều khiển canvas",
       "zoomIn": "Phóng to",
       "zoomOut": "Thu nhỏ",
+      "minimap": "Bản đồ thu nhỏ",
       "fit": "Vừa khung"
     }
   },

@@ -212,6 +212,7 @@ function useCanvasLabels(dlc: boolean): Partial<FlowLabels> {
         zoomIn: t("process.admin.canvas.controls.zoomIn"),
         zoomOut: t("process.admin.canvas.controls.zoomOut"),
         fit: t("process.admin.canvas.controls.fit"),
+        minimap: t("process.admin.canvas.controls.minimap"),
       },
     }),
     [t, dlc],

@@ -6,7 +6,6 @@ import { newRealViolation } from "@ai/contracts/hub-admin";
 import { useRef } from "react";
 import type { useTranslation } from "react-i18next";
 import { applyConnect, triggerArrow } from "../lib/arrow-rules";
-import { connectPatch } from "../lib/canvas-connect";
 import {
   type EditError,
   moveGroup,
@@ -16,7 +15,7 @@ import {
   resetEdges,
 } from "../lib/canvas-edit";
 import { emptyStage, type StageDraft } from "../lib/def-form";
-import { clearFree, markFree, safeDropStep } from "../lib/free-nodes";
+import { markFree, safeDropStep } from "../lib/free-nodes";
 import { expandToClusters } from "../lib/module-cluster";
 import { getStagesMax } from "../lib/stages-limit";
 import { stepLabel } from "../lib/step-label";

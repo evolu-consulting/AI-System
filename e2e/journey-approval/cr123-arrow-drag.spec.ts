@@ -4,14 +4,7 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { FLOW_TEMPLATE_INPUTS } from "../../apps/hub-api/src/modules/processes/library/flow-templates.def";
 import { apiLogin, assignCompanyFlow } from "../_kit/api";
-import {
-  approve,
-  enableFlowTriggers,
-  esignNode,
-  finish,
-  ifFact,
-  notifyCreator,
-} from "../_kit/flows";
+import { approve, enableFlowTriggers, esignNode, finish, notifyCreator } from "../_kit/flows";
 import { flowRow, flowRows, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
 import { viStorageState } from "../support/locale-vi";
 import { U } from "./_journey";
@@ -241,7 +234,7 @@ test("U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, k
 
   // 1 · thả "Duyệt" ⇒ node đứng riêng; ngăn chi tiết KHÔNG tự mở (không che các đích của mũi tên)
   const pane = page.locator(".react-flow__pane").first();
-  const pb = await settled(pane, "khung canvas (thả)");
+  const _pb = await settled(pane, "khung canvas (thả)");
   await page.getByTestId("flow-add-step").click();
   await page
     .getByRole("menuitem", { name: /^Duyệt/ })
@@ -377,14 +370,13 @@ test("U12b · trình tự demo: thả Duyệt (chung cột), Ký xong → Duyệ
 
   // 1 · thả Duyệt NGAY dưới Thông báo ⇒ rơi vào CỘT của Thông báo; đặt tên + người duyệt
   const pane = page.locator(".react-flow__pane").first();
-  const pb = await settled(pane, "khung canvas (thả)");
-  const tbBox = await settled(node("Thông báo chuông"), "Thông báo");
+  const _pb = await settled(pane, "khung canvas (thả)");
   await page.getByTestId("flow-add-step").click();
   await page
     .getByRole("menuitem", { name: /^Duyệt/ })
     .first()
     .dragTo(pane, {
-      targetPosition: { x: tbBox.x + tbBox.width / 2 - pb.x, y: pb.height * 0.85 },
+      targetPosition: await emptySpot(page),
       force: true,
     });
   const fresh = page.locator(".react-flow__node").filter({ has: page.getByTestId("free-hint") });

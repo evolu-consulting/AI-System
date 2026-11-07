@@ -22,7 +22,9 @@ export type FlowLabels = {
   no: string;
   // khung canvas
   canvas: string | undefined;
-  controls: { title: string; zoomIn: string; zoomOut: string; fit: string } | undefined;
+  controls:
+    | { title: string; zoomIn: string; zoomOut: string; fit: string; minimap?: string }
+    | undefined;
 };
 
 export const DEFAULT_LABELS: FlowLabels = {

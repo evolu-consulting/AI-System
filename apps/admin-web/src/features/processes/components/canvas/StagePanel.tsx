@@ -122,7 +122,13 @@ function PanelBody({
       onChange={(p) => d.patchStage(index, p)}
       onMove={(dir) => ops.moveColumn(index, dir)}
       onStep={(step) => ops.setStep(index, step)}
-      onLink={(target) => ops.connect({ source: sel.uid, target })}
+      onLink={(target, from) =>
+        ops.connect({
+          source: from?.source ?? sel.uid,
+          target,
+          ...(from ? { sourceHandle: from.handle } : {}),
+        })
+      }
       onSplit={() => ops.split(index)}
       onRemove={() => w.remove(index)}
     />

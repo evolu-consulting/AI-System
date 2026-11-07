@@ -733,6 +733,7 @@
       "title": "Canvas controls",
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
+      "minimap": "Minimap",
       "fit": "Fit view"
     }
   },
