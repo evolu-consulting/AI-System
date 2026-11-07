@@ -30,7 +30,7 @@ const env = (over: Partial<EnvelopeRow> = {}): EnvelopeRow => ({
   ...over,
 });
 
-function make(opts: { selfsign?: boolean } = {}) {
+function make(opts: { selfsign?: boolean; failSend?: boolean } = {}) {
   const log: unknown[] = [];
   const voided: string[] = [];
   const adapter = (key: string) =>
@@ -45,7 +45,10 @@ function make(opts: { selfsign?: boolean } = {}) {
     avail: (k) =>
       k === "docusign" || (k === "selfsign" && opts.selfsign !== false) ? adapter(k) : null,
     warn: undefined,
-    send: async (...a) => void log.push(["send", ...a]),
+    send: async (...a) => {
+      log.push(["send", ...a]);
+      if (opts.failSend && a[3] === "selfsign") throw new Error("boom");
+    },
     reopen: async () => env({ provider: "selfsign", envelopeId: "env-2" }),
     kindOf: (k) => (k === "selfsign" ? "ca" : "envelope"),
   });
@@ -83,5 +86,14 @@ describe("CR-125 m4 · đổi cách ký", () => {
     const b = make({ selfsign: false });
     await expect(b.sw(WHO, "c1", env(), "selfsign")).rejects.toBeInstanceOf(ESignFail);
     expect(a.voided.concat(b.voided)).toEqual([]);
+  });
+
+  it("gửi lại thất bại sau khi huỷ ⇒ dựng lại phong bì trên cách đã gửi + lỗi nghiệp vụ ESIGN_RESEND_FAILED (Ký ngay bấm lại được)", async () => {
+    const { sw, log } = make({ failSend: true });
+    const err = await sw(WHO, "c1", env(), "selfsign").catch((x: unknown) => x);
+    expect(err).toBeInstanceOf(ESignFail);
+    expect((err as { code?: string }).code).toBe("ESIGN_RESEND_FAILED");
+    const sends = log.filter((l) => (l as unknown[])[0] === "send") as unknown[][];
+    expect(sends.map((s) => s[4])).toEqual(["selfsign", "docusign"]);
   });
 });

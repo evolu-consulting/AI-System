@@ -15,6 +15,7 @@ export const ESIGN_ERRORS = {
   ESIGN_WEBHOOK_REJECTED: 401,
   /** esign-multi · nhà cung cấp chỉ định không có / không khả dụng (thiếu cấu hình) / sai loại. */
   ESIGN_PROVIDER_UNAVAILABLE: 422,
+  ESIGN_RESEND_FAILED: 502,
   /** esign-multi · tài khoản gửi ký (người ký phía công ty) không có email. */
   ESIGN_SIGNER_NO_EMAIL: 422,
   /** esign-multi · "Ký ngay" chỉ cho đúng người ký phía công ty của phong bì. */

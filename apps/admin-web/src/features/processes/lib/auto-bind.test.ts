@@ -1,10 +1,13 @@
 // CR-125 · m4 · MOD-FR-12 · unit: tự nối khi thêm node Ký số vào flow bắt đầu từ hợp đồng.
 import { describe, expect, it } from "bun:test";
 import type { AppNodeDecl } from "@ai/contracts/app-manifest";
-import { ESIGN_NODE } from "@ai/contracts/modules";
+import { MODULES } from "@ai/contracts/modules";
 import { autoBindNode, mapSources } from "./auto-bind";
 import { nodeToPatches } from "./palette-node";
 
+const ESIGN_NODE = MODULES.flatMap((m) => m.nodes).find(
+  (n) => n.key === "contracts.esign",
+) as AppNodeDecl;
 const START = [{ key: "contract_id", type: "string" as const, required: true }];
 const byKey = new Map<string, AppNodeDecl>([[ESIGN_NODE.key, ESIGN_NODE]]);
 

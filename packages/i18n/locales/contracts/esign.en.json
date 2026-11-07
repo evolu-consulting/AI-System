@@ -42,6 +42,7 @@
       "notLegal": "Not legally binding",
       "err": {
         "ESIGN_PROVIDER_UNAVAILABLE": "This e-signature provider is unavailable, choose another one.",
+        "ESIGN_RESEND_FAILED": "Re-sending the envelope failed — press Sign now to try again.",
         "ESIGN_SIGNER_NO_EMAIL": "Your account has no email, so you cannot be a signer.",
         "ESIGN_NOT_SIGNER": "Only the company signer of this envelope can sign now.",
         "ESIGN_DISABLED": "E-signature is off or not configured.",

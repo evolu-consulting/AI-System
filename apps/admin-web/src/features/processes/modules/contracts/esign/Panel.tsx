@@ -1,4 +1,5 @@
-// CR-125 · m6a · MOD-FR-08: panel RIÊNG của Ký số, đăng ký ở panelRegistry (chuyển nguyên từ NodeConfigPanel, không đổi giao diện).`n// CR-122 · U2f · FLOW2-FR-25: panel cấu hình RIÊNG của node module (manifest `node.config { stage, options_path }`) — hiện cho Ký số:
+// CR-125 · m6a · MOD-FR-08: panel RIÊNG của Ký số, đăng ký ở panelRegistry (chuyển nguyên từ NodeConfigPanel, không đổi giao diện).
+// CR-122 · U2f · FLOW2-FR-25: panel cấu hình RIÊNG của node module (manifest `node.config { stage, options_path }`) — hiện cho Ký số:
 // nhà cung cấp, người ký công ty (≤ 3), đối tác ký, thứ tự, hạn, nhắc. Ô trống ⇒ "Theo cài đặt ứng dụng". Lựa chọn lấy từ `options_path`;
 // kiểm bằng `<…>/node-config/check` mỗi khi cấu hình đổi, lỗi hiện tại ô (`field`). Tổng quát theo manifest; bộ mã hoá ở `lib/node-config.ts`.
 import {

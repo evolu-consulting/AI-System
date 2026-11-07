@@ -1472,50 +1472,5 @@
       "severity": "error",
       "name": "platform-no-pack-internals"
     }
-  },
-  {
-    "type": "cycle",
-    "from": "apps/hub-api/src/modules/packs/contracts/application/approval-engine.usecase.ts",
-    "to": "apps/hub-api/src/modules/packs/contracts/application/approval-engine-facts.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    }
-  },
-  {
-    "type": "cycle",
-    "from": "apps/hub-api/src/modules/packs/contracts/application/approval-flow.usecase.ts",
-    "to": "apps/hub-api/src/modules/packs/contracts/application/approval-engine.ports.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    }
-  },
-  {
-    "type": "cycle",
-    "from": "apps/hub-api/src/modules/packs/contracts/application/flow-submit.usecase.ts",
-    "to": "apps/hub-api/src/modules/packs/contracts/application/approval.usecase.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    }
-  },
-  {
-    "type": "cycle",
-    "from": "apps/hub-api/src/modules/processes/runs/launcher.ts",
-    "to": "apps/hub-api/src/modules/processes/runs/launcher-batch.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    }
-  },
-  {
-    "type": "cycle",
-    "from": "tests/acceptance/P-d/d1/_count.ts",
-    "to": "tests/acceptance/P-d/_support/pd.ts",
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    }
   }
 ]

@@ -1,5 +1,6 @@
 // ADM-FR-66 · CR-056 · P-a F5: lưu quy trình — validate client, POST (mới) / PUT kèm `version` (409 ⇒ ConflictDialog),
 // lỗi Hub theo `paths` gắn vào ô và mở giai đoạn lỗi (plan-frontend-admin §1 "Validate").
+
 import {
   type ProcessDef,
   type ProcessDefInput,
@@ -13,6 +14,7 @@ import { useConflictSave } from "@/components/shared/conflict/use-conflict-save"
 import { notifyBrief, notifyError, notifySuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/http";
 import { createDef, updateDef, useInvalidateDefs } from "../api";
+import { autoBindArgs } from "../lib/auto-bind";
 import { type DefDraft, toDraft, toInput, validateDraft } from "../lib/def-form";
 import {
   errorCode,
@@ -146,7 +148,8 @@ export function useDefSave({
     },
   });
   const submit = async () => {
-    const draft = fillDraftDefaults(prepare ? prepare(d.draftRef.current) : d.draftRef.current);
+    const raw = fillDraftDefaults(prepare ? prepare(d.draftRef.current) : d.draftRef.current);
+    const draft = { ...raw, stages: autoBindArgs(raw.stages, raw.inputs, tools) }; // MOD-FR-12 · cùng `autoMapInputs` với trình sửa
     const errors = validateDraft(draft, undefined, teams, tools);
     d.showErrors(errors);
     const blocked = blockedInfo(errors, draft.stages);

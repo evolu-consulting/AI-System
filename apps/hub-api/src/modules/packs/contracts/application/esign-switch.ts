@@ -60,7 +60,14 @@ export const esignSwitch = (d: EsignSwitchDeps) => {
       ...(e.dueH ? { dueH: e.dueH } : {}),
       ...(e.remindEveryH ? { remindEveryH: e.remindEveryH } : {}),
     };
-    await d.send(who, id, signers, key, node);
+    try {
+      await d.send(who, id, signers, key, node);
+    } catch (x) {
+      // gửi lại thất bại sau khi đã huỷ phong bì cũ ⇒ dựng lại phong bì trên cách ĐÃ GỬI để «Ký ngay» còn bấm được; báo lỗi nghiệp vụ
+      d.warn?.("esign-switch-resend-failed", { contract_id: id, error: errName(x) });
+      await d.send(who, id, signers, e.provider, node).catch(() => undefined);
+      throw new ESignFail("ESIGN_RESEND_FAILED", "resend");
+    }
     return d.reopen(who, id);
   };
 
