@@ -144,21 +144,13 @@ export const CONTRACTS_MANIFEST: AppManifest = {
       decides: false,
       required: false,
     },
-    // CR-122 · N1 · sự kiện ký số (E3: phong bì sang trạng thái cuối) — node Ký số chờ các sự kiện này; flow cũng có thể bắt đầu khi.
-    ...(
-      [
-        ["esign.completed", "Khi hợp đồng ký xong"],
-        ["esign.declined", "Khi đối tác từ chối ký"],
-        ["esign.voided", "Khi phong bì ký bị huỷ"],
-      ] as const
-    ).map(([key, label]) => ({
-      key,
-      label,
-      facts: CONTRACT_FACTS,
-      outcomes: [{ key: "done", label: "Xong", effect: "Không đổi hợp đồng." }],
-      decides: false,
-      required: false,
-    })),
+  ],
+  // CR-122 · N1 · tín hiệu ký số (E3: phong bì sang trạng thái cuối) — CHỈ node Ký số / bước chờ dùng (`wait_event`); CR-125 m2: không còn là
+  // sự kiện bắt đầu flow (không bộ đọc dữ kiện / xử lý kết quả ở máy chủ; không có def nào bắt đầu bằng chúng).
+  signals: [
+    { key: "esign.completed", label: "Khi hợp đồng ký xong" },
+    { key: "esign.declined", label: "Khi đối tác từ chối ký" },
+    { key: "esign.voided", label: "Khi phong bì ký bị huỷ" },
   ],
   // CR-125 · m1 · node của app khai ở `modules/contracts` (sổ `MODULES`, MỘT nguồn); đây là bản đọc lại.
   nodes: nodesOfApp(MODULES, "contracts"),

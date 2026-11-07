@@ -81,6 +81,8 @@ export type AppManifest = {
   slots: readonly AppSlotDecl[];
   /** CR-122 · FLOW2-FR-17/18 · sự kiện làm flow chạy (node Bắt đầu khi); luật ở `appEventIssues` (`check:app-events`). */
   events: readonly AppEventDecl[];
+  /** CR-125 · tín hiệu CHỈ để node chờ (`wait_event`) — không phải sự kiện bắt đầu flow: không có dữ kiện/kết quả, không vào "Bắt đầu khi". */
+  signals?: readonly AppSignalDecl[];
   /** CR-122 · FLOW2-FR-25 · node của app trên bảng node (executor có sẵn + cấu hình đặt sẵn); luật ở `appNodeIssues`. */
   nodes: readonly AppNodeDecl[];
 };
@@ -170,6 +172,8 @@ export type AppFactDecl = {
 };
 /** Kết quả node Kết thúc mà app xử lý (`OutcomeHandler`); `effect` = câu "app sẽ làm gì" hiện trên node. */
 export type AppOutcomeDecl = { key: string; label: string; effect: string };
+/** CR-125 · tín hiệu chờ của app (vd `esign.completed`): `<thực thể>.<việc>` như sự kiện nhưng chỉ node chờ dùng. */
+export type AppSignalDecl = { key: string; label: string };
 export type AppEventDecl = {
   /** `<thực thể>.<việc>` (khớp `FLOW_EVENT_KEY_RE`), vd `contract.submitted`; duy nhất trên mọi app. */
   key: string;

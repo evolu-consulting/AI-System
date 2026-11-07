@@ -1,7 +1,7 @@
 // CR-125 · m1 · MOD-FR-01/04/05/10 · luật THUẦN của sổ module: `moduleIssues` (khai báo × tóm tắt binding), nhìn node theo app, node bảng,
 // khớp bước cơ bản cho def cũ. O(node + sự kiện + kết quả), không I/O.
 import { z } from "zod";
-import type { AppEventDecl, AppNodeDecl } from "../app-manifest/manifest";
+import type { AppEventDecl, AppNodeDecl, AppSignalDecl } from "../app-manifest/manifest";
 import type {
   BoundSummary,
   FeatureModule,
@@ -40,10 +40,18 @@ export function featureNodeByKey(
 /** Ghép sự kiện của manifest vào sổ (m1: sự kiện còn khai ở `AppManifest.events`). Module không có manifest giữ nguyên. */
 export function withEvents(
   mods: readonly FeatureModule[],
-  manifests: readonly { key: string; events: readonly AppEventDecl[] }[],
+  manifests: readonly {
+    key: string;
+    events: readonly AppEventDecl[];
+    signals?: readonly AppSignalDecl[] | undefined;
+  }[],
 ): FeatureModule[] {
-  const ev = new Map(manifests.map((m) => [m.key, m.events]));
-  return mods.map((m) => ({ ...m, events: ev.get(m.app) ?? m.events }));
+  const ev = new Map(manifests.map((m) => [m.key, m]));
+  return mods.map((m) => {
+    const mf = ev.get(m.app);
+    const signals = mf?.signals ?? m.signals;
+    return { ...m, events: mf?.events ?? m.events, ...(signals ? { signals } : {}) };
+  });
 }
 
 /**
@@ -228,6 +236,35 @@ function orphanIssues(bound: BoundSummary, d: Dups, out: ModuleIssue[]): void {
   }
 }
 
+/** Khoá tín hiệu mà node chờ: `wait_event.event` + `also_events` của stage, `exits[].on`. */
+function signalsOfNode(n: FeatureNodeDecl): string[] {
+  const fromStages = n.stages.flatMap((s) => {
+    const x = s.executor as { kind: string; event?: string; also_events?: readonly string[] };
+    return x.kind === "wait_event" ? [x.event ?? "", ...(x.also_events ?? [])] : [];
+  });
+  return [...fromStages, ...(n.exits ?? []).flatMap((ex) => ex.on ?? [])];
+}
+
+function waitedSignals(mods: readonly FeatureModule[]): Set<string> {
+  return new Set(mods.flatMap((m) => m.nodes.flatMap(signalsOfNode)));
+}
+
+/** Tín hiệu chờ không bị node nào dùng ⇒ `MOD_SIGNAL_ORPHAN` (tín hiệu không cần binding máy chủ, không vào "Bắt đầu khi"). */
+function signalIssues(mods: readonly FeatureModule[], out: ModuleIssue[]): void {
+  const used = waitedSignals(mods);
+  for (const m of mods)
+    for (const s of m.signals ?? [])
+      if (!used.has(s.key))
+        out.push(
+          issue(
+            "MOD_SIGNAL_ORPHAN",
+            m.app,
+            s.key,
+            `Tín hiệu «${s.label}» (${s.key}) không node nào chờ — xoá khỏi signals hoặc thêm node chờ nó.`,
+          ),
+        );
+}
+
 /**
  * Đối chiếu khai báo × binding. Node `legacy` (DLC) chỉ kiểm khoá trùng; node `base` không cần binding.
  * Mã `MOD_PANEL_ORPHAN` (admin-web) và `MOD_INDEX_STALE` (CI) do bên đó phát, không ở đây.
@@ -239,6 +276,7 @@ export function moduleIssues(mods: readonly FeatureModule[], bound: BoundSummary
     for (const n of m.nodes) if (dups.nodeOwner.get(n.key) === m.app) nodeIssues(m, n, bound, out);
     for (const e of m.events) eventIssues(m, e, bound, out);
   }
+  signalIssues(mods, out);
   orphanIssues(bound, dups, out);
   return out;
 }

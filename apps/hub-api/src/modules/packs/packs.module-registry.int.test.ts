@@ -30,7 +30,14 @@ afterAll(async () => {
 describe("sổ module · mount thật", () => {
   it("mountPacks (contracts + community) không ném, MODULES × binding thật ⇒ 0 lỗi", () => {
     const d = { db, config, appEnv: "test" as const };
+    const t0 = performance.now();
     expect(() => mountPacks(new Hono(), d)).not.toThrow();
+    const t1 = performance.now();
+    verifyPackModules(mountedApps(d));
+    // CR-125 m2 · đo thời gian khởi động: verify chỉ là phần nhỏ của mountPacks
+    console.log(
+      `module-registry boot: mountPacks(gồm verify)=${(t1 - t0).toFixed(1)}ms verify=${(performance.now() - t1).toFixed(2)}ms`,
+    );
     const mods = withEvents(MODULES, Object.values(APP_MANIFESTS));
     expect(moduleRegistry.issues(mods, { apps: mountedApps(d) })).toEqual([]);
     expect(mountedApps(d)).toEqual(["core", "contracts", "community"]);

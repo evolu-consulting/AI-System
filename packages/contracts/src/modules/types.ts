@@ -1,7 +1,7 @@
 // CR-125 · m1 · MOD-FR-01/05 · kiểu của sổ module tính năng: MỘT khai báo node (+ cổng zod) cho contracts / hub-api / admin-web.
 // Chỉ dữ liệu + zod (luật `contracts-only-zod`), không I/O. Kiểu `AppNodeDecl` giữ nguyên ở app-manifest (import KIỂU, không vòng lặp).
 import type { z } from "zod";
-import type { AppEventDecl, AppNodeDecl } from "../app-manifest/manifest";
+import type { AppEventDecl, AppNodeDecl, AppSignalDecl } from "../app-manifest/manifest";
 
 /** Gợi ý ô nhập cho panel chung (không phải code UI). */
 export type PortWidget =
@@ -42,6 +42,8 @@ export type FeatureModule = {
   nodes: readonly FeatureNodeDecl[];
   /** Sự kiện của app. m1: sự kiện vẫn khai ở `AppManifest.events` (ghép bằng `withEvents`); chuyển hẳn ở lát sau. */
   events: readonly AppEventDecl[];
+  /** Tín hiệu chỉ để node chờ (`wait_event`); không cần binding — phải có node dùng, không thì `MOD_SIGNAL_ORPHAN`. Ghép bằng `withEvents`. */
+  signals?: readonly AppSignalDecl[];
 };
 
 export const MODULE_ISSUE_CODES = [
@@ -52,6 +54,7 @@ export const MODULE_ISSUE_CODES = [
   "MOD_EVENT_UNBOUND",
   "MOD_OUTCOME_UNBOUND",
   "MOD_ORPHAN_BINDING",
+  "MOD_SIGNAL_ORPHAN",
   "MOD_PANEL_ORPHAN",
   "MOD_INDEX_STALE",
 ] as const;

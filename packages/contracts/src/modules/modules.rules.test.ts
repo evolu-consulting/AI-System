@@ -188,6 +188,45 @@ describe("moduleIssues (MOD-FR-01/04/10)", () => {
       ["MOD_ORPHAN_BINDING", "unknown", "nodot"],
     ]);
   });
+  test("tín hiệu chờ: không cần binding/dữ kiện, phải có node chờ (wait_event.event/also_events/exits.on) — không thì MOD_SIGNAL_ORPHAN", () => {
+    const waiter = appNode({
+      key: "demo.wait",
+      stages: [
+        {
+          executor: {
+            kind: "wait_event",
+            event: "demo.done",
+            also_events: ["demo.no"],
+            timeout_h: 1,
+          },
+        },
+      ],
+      exits: [{ key: "x", label: { vi: "x", en: "x" }, on: ["demo.exit"] }],
+    });
+    const sig = (key: string) => ({ key, label: `T ${key}` });
+    const m: FeatureModule = {
+      app: "demo",
+      events: [],
+      nodes: [waiter],
+      signals: [sig("demo.done"), sig("demo.no"), sig("demo.exit"), sig("demo.lonely")],
+    };
+    const out = moduleIssues([m], bound({ nodes: new Map([["demo.wait", { tools: [] }]]) }));
+    expect(out.map((i) => [i.code, i.key])).toEqual([["MOD_SIGNAL_ORPHAN", "demo.lonely"]]);
+    expect(out[0]?.message).toContain("Tín hiệu «T demo.lonely»");
+  });
+  test("withEvents ghép cả signals; sổ thật: Ký số dùng đủ 3 tín hiệu ký số ⇒ 0 lỗi tín hiệu", () => {
+    const mods = withEvents(MODULES, Object.values(APP_MANIFESTS));
+    expect(mods.find((x) => x.app === "contracts")?.signals?.map((s) => s.key)).toEqual([
+      "esign.completed",
+      "esign.declined",
+      "esign.voided",
+    ]);
+    expect(
+      moduleIssues(mods, bound())
+        .filter((i) => i.code === "MOD_SIGNAL_ORPHAN" || i.key.startsWith("esign."))
+        .map((i) => i.code),
+    ).toEqual([]);
+  });
   test("withEvents ghép sự kiện của manifest vào module cùng app", () => {
     const mods = withEvents(MODULES, Object.values(APP_MANIFESTS));
     expect(mods.find((x) => x.app === "contracts")?.events.length).toBeGreaterThan(0);

@@ -13,6 +13,7 @@ Sổ module máy chủ ở kit (`moduleRegistry`): gói đăng ký xử lý theo
 - `kit/application/module.ports.ts` (NodeBinding, EventBinding, ModuleRegistry), `kit/adapters/module-registry.ts` (`createModuleRegistry`, `moduleRegistry`), xuất qua `kit/public.ts`.
 - Đăng ký hộ sổ cũ, hành vi không đổi: `esign.mount` (validator tool → `nodeConfigRegistry.registerTool`), `flow-events.mount` (contracts FactsReader + OutcomeHandler), `community-flow.mount` (community readers/handler + node `show-post`), `intake.mount` (tool bước + node Ký số, `options_path`).
 - `packs.modules-check.ts`: `mountedApps` + `verifyPackModules`; `packs.mount.ts` gọi một dòng cuối mount (trước `afterPacksMounted`).
+- Tín hiệu chờ: `esign.completed/declined/voided` chuyển từ `events` sang `AppManifest.signals` (không dữ kiện/kết quả, không vào «Bắt đầu khi»); `moduleIssues` bỏ qua EVENT/OUTCOME_UNBOUND cho tín hiệu, tín hiệu không node nào chờ ⇒ `MOD_SIGNAL_ORPHAN`. Không có def/seed/migration nào bắt đầu bằng chúng (chỉ `wait_event`).
 - contracts `orphanIssues`: khoá node không có dấu chấm ⇒ app `unknown`.
 
 ## Không làm / Chạm
@@ -38,6 +39,8 @@ Khi hub khởi động, sau khi gắn mọi gói, sổ module đối chiếu kha
 - Kịch bản: khi chỉ gắn một phần app thì khai báo và binding của app không gắn bị bỏ qua [test: apps/hub-api/src/modules/packs/kit/adapters/module-registry.test.ts » apps lọc cả khai báo lẫn binding: app không gắn ⇒ bỏ qua]
 - Kịch bản: khi binding lặp cùng khoá hoặc đăng ký hộ thì sổ cũ (bộ đọc, xử lý kết quả, validator) nhận đúng đối tượng như trước [test: apps/hub-api/src/modules/packs/kit/adapters/module-registry.test.ts » bindEvent/bindNode chuyển nguyên đối tượng cho flowPortRegistry/nodeConfigRegistry, gộp tool khi bindNode lặp]
 - Kịch bản: khi có binding cho khoá node không dấu chấm thì lỗi ORPHAN ghi app «unknown» [test: packages/contracts/src/modules/modules.rules.test.ts » MOD_ORPHAN_BINDING: khoá node không có dấu chấm ⇒ app «unknown»]
+
+- Kịch bản: khi tín hiệu chờ ký số không có node nào chờ thì báo MOD_SIGNAL_ORPHAN, còn tín hiệu có node chờ thì không cần binding hay dữ kiện [test: packages/contracts/src/modules/modules.rules.test.ts » tín hiệu chờ: không cần binding/dữ kiện, phải có node chờ (wait_event.event/also_events/exits.on) — không thì MOD_SIGNAL_ORPHAN]
 
 ## Việc còn lại
 - m4: `configPort` Ký số = schema args tool ⇒ `argsSchema` vào `bindNode` (bật kiểm MOD_PORT_MISMATCH thật); m5: binding bước cơ bản core.
