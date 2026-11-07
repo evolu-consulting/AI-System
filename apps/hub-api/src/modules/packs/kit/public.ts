@@ -103,6 +103,7 @@ export type {
 export type {
   PartnerMailboxPort,
   PartnerMailboxPortRegistry,
+  PartnerPdf,
   PartnerReplyRow,
 } from "./application/partner-mailbox.ports";
 export type { PackSystemUow, PackUow, PackWho } from "./application/ports";

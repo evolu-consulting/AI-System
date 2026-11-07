@@ -23,3 +23,8 @@ export async function traceRequest<E extends Env>(
     }
   });
 }
+
+/** CR-124 · q5 · nhật ký request: giấu token của link công khai (`/partner-reply/<token>[/…]` ⇒ `/partner-reply/:token[/…]`) — token không bao giờ vào log. */
+export function redactPath(path: string): string {
+  return path.replace(/^(\/partner-reply)\/[^/]+/, "$1/:token");
+}

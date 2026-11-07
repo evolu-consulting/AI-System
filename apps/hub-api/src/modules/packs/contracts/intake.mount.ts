@@ -80,6 +80,7 @@ export function mountIntake(
     packTools?: { register(t: PackToolDef): void } | undefined;
     packRuns?: PackRunsBridge | undefined;
     esign?: ESignModule | undefined;
+    packs?: { filebox?: { url: string; token: string } } | undefined; // q5 · PDF cho thư email
   },
   db: Db,
 ): void {

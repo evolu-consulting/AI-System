@@ -31,6 +31,7 @@ export type MailSender = {
     to: { name: string; address: string };
     subject: string;
     text: string;
+    html?: string;
     messageId: string;
   }): Promise<unknown>;
 };
@@ -106,6 +107,7 @@ export function createSmtpTransport(
                 to: { name: m.toName, address: m.to },
                 subject: m.subject,
                 text: m.text,
+                ...(m.html ? { html: m.html } : {}),
                 messageId: `<${m.idempotencyKey}@${domain}>`,
               }),
         ),

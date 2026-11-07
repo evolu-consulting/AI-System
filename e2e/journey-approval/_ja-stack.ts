@@ -159,7 +159,7 @@ async function main(): Promise<void> {
       });
     // CR-122 Q1: hai công ty MỚI cho hành trình flow (G1/G2 và các ca UI trình sửa) — cờ FLOW_TRIGGERS do spec bật.
     if (sfx)
-      for (const k of ["c22", "c22u", "c22n"] as const)
+      for (const k of ["c22", "c22u", "c22n", "q5"] as const)
         await provisionExtraJourneyTenant(admin, hubDb, {
           pw: env("JA_USER_PW"),
           key: `e2e-${k}-${sfx}`,
@@ -182,6 +182,7 @@ async function main(): Promise<void> {
     HUB_CONFIG_POLL_S: "2",
     HUB_PROCESS_ENGINE: "on",
     CONTRACTS_APPROVAL_ENGINE: "on",
+    HUB_PARTNER_MAILBOX: "on", // CR-124 · q5 · bộ chuyển hộp thư liên công ty (mặc định prod: tắt)
     AI_PROVIDER: "subscription",
     AI_SUB_CLI_PATH: cli,
     // FileBox: prod dùng FileBox HTTP; ở đây FileBox GIẢ trong tiến trình (hợp đồng thật, tests/acceptance/FB1/_fbfake.ts)

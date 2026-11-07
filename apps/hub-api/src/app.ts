@@ -38,7 +38,7 @@ import type { Db } from "./lib/db";
 import { mapError, safeErrorFields, toErrorBody } from "./lib/errors";
 import { dbHubAudit } from "./lib/hub-audit";
 import { type Logger, logger } from "./lib/logger";
-import { traceRequest } from "./lib/request-span";
+import { redactPath, traceRequest } from "./lib/request-span";
 import { closeUnreadBody } from "./lib/unread-body";
 import { mountCapabilities } from "./modules/capabilities/capabilities.mount";
 import { chatGate } from "./modules/chat-gate/chat-gate.middleware";
@@ -327,7 +327,7 @@ function requestContext(config?: ConfigCache): MiddlewareHandler<AppVars> {
       c.res.headers.set(REQUEST_ID_HEADER, id);
       c.get("log").info("request", {
         method: c.req.method,
-        path: c.req.path,
+        path: redactPath(c.req.path), // CR-124 · q5 · token trong link email không vào log
         status: c.res.status,
         ms: Math.round((performance.now() - t0) * 10) / 10,
       });

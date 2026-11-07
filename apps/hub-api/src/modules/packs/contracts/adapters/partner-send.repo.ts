@@ -49,6 +49,20 @@ export function partnerSendRepo(tx: Tx, tid: string) {
           }
         : null;
     },
+    /** CR-124 · q5 · tệp (org + id FileBox + mime) theo `file_ref` của lần gửi — chỉ tệp CỦA tenant này, chưa xoá mềm. MỘT câu. */
+    async file(
+      ref: string,
+    ): Promise<{ org: string; fileId: string; mime: string | null; name: string | null } | null> {
+      if (!/^[0-9a-f-]{36}$/i.test(ref)) return null;
+      const [r] = await tx.execute<{
+        org: string;
+        file_id: string;
+        mime: string | null;
+        name: string | null;
+      }>(sql`select f.org, f.file_id, f.mime, f.name from contracts.files f
+        where f.id = ${ref}::uuid and f.tenant_id = ${tid}::uuid and f.deleted_at is null`);
+      return r ? { org: r.org, fileId: r.file_id, mime: r.mime, name: r.name } : null;
+    },
     /** Lần gửi gần nhất của HĐ (mở trước, rồi vòng cao nhất). */
     async latest(id: string): Promise<SendRow | null> {
       const [r] = await tx.execute<{

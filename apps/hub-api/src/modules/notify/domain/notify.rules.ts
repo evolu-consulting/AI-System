@@ -98,6 +98,8 @@ export type EmailMessage = {
   toName: string;
   subject: string;
   text: string;
+  /** CR-124 · q5 · phần HTML (tuỳ chọn); `text` luôn có làm bản dự phòng. */
+  html?: string;
 };
 export type PushMessage = {
   idempotencyKey: string;

@@ -7,15 +7,20 @@ import { withPackScope } from "@ai/db/pack-scope";
 import {
   createPackUow,
   moduleRegistry,
+  orgForTenant,
   type PackRunsBridge,
+  type PackSystemUow,
   type PackToolDef,
+  type PartnerMailboxPort,
   type PartnerReplyRow,
   partnerMailboxPort,
 } from "../kit/public";
+import { fileboxClients, packFilebox } from "../packs.filebox";
 import { esignRepo } from "./adapters/esign.repo";
 import { type InboxItem, partnerInboxRepo } from "./adapters/partner-inbox.repo";
-import { partnerSendRepo } from "./adapters/partner-send.repo";
+import { type PartnerSendRepo, partnerSendRepo } from "./adapters/partner-send.repo";
 import { partnerSendTool } from "./adapters/partner-send.tool";
+import type { ESignFiles } from "./application/esign.ports";
 import { finalImportance, importanceByValue, sharedValueOf } from "./domain/partner-send.rules";
 import { partnerSendBinding } from "./nodes/partner-send/binding";
 
@@ -80,13 +85,37 @@ export function onPartnerReplies(db: Db, packRuns: () => PackRunsBridge | undefi
   };
 }
 
+const PDF_MAX_BYTES = 25 * 1024 * 1024;
+
+/**
+ * CR-124 · q5 · PDF của HĐ gửi cho thư/trang xem của bên nhận chưa dùng nền tảng. Đọc trong tx tenant GỬI (RLS) đúng MỘT tệp theo `file_ref`;
+ * org phải = org của tenant; FileBox ngoài tx; mime PDF + chữ ký `%PDF-` + ≤ 25 MB. Khác ⇒ null (không lộ lý do).
+ */
+export function pdfOf(
+  uow: PackSystemUow<{ partnerSend: PartnerSendRepo }>,
+  files: ESignFiles | null,
+): NonNullable<PartnerMailboxPort["pdf"]> {
+  return async (tenantId, fileRef) => {
+    if (!files) return null;
+    const ref = await uow.system(tenantId, (r) => r.partnerSend.file(fileRef));
+    if (!ref || ref.org !== orgForTenant(tenantId)) return null;
+    if (ref.mime && !/^application\/pdf\b/i.test(ref.mime)) return null;
+    const bytes = await files(ref.org).getContent(ref.fileId);
+    if (!bytes || bytes.length === 0 || bytes.length > PDF_MAX_BYTES) return null;
+    const magic = new TextDecoder().decode(bytes.subarray(0, 5));
+    return magic === "%PDF-" ? { bytes, name: ref.name ?? "hop-dong.pdf" } : null;
+  };
+}
+
 /** Gọi MỘT lần lúc mount gói (từ `mountIntake`). */
 export function mountPartnerSend(
   d: {
     packTools?: { register(t: PackToolDef): void } | undefined;
     packRuns?: PackRunsBridge | undefined;
+    packs?: { filebox?: { url: string; token: string } } | undefined;
   },
   db: Db,
+  filesOverride?: ESignFiles | null,
 ): void {
   const uow = createPackUow(db, PACK, (tx: Tx, t: string) => ({
     partnerSend: partnerSendRepo(tx, t),
@@ -96,8 +125,14 @@ export function mountPartnerSend(
   d.packTools?.register(tool);
   moduleRegistry.bindTool(tool);
   moduleRegistry.bindNode(partnerSendBinding());
+  const fb = filesOverride === undefined ? packFilebox(d.packs) : null;
+  const files = filesOverride !== undefined ? filesOverride : fb ? fileboxClients(fb) : null;
+  const pdfUow = createPackUow(db, PACK, (tx: Tx, t: string) => ({
+    partnerSend: partnerSendRepo(tx, t),
+  }));
   partnerMailboxPort.set({
     receive: receiveInbox(db),
     onReplies: onPartnerReplies(db, () => d.packRuns),
+    pdf: pdfOf(pdfUow, files), // q5 · thư/trang xem email
   });
 }

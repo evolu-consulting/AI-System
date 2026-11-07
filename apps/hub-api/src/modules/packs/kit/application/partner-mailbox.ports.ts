@@ -18,7 +18,14 @@ export type PartnerMailboxPort = {
   receive(tenantId: string, limit: number): Promise<number>;
   /** Báo kết quả về tenant GỬI. Ném ⇒ bộ chuyển KHÔNG chốt `reply_emitted_at` (thử lại lượt sau); idempotent theo `mailboxId`. */
   onReplies(rows: readonly PartnerReplyRow[]): Promise<void>;
+  /**
+   * CR-124 · q5 · PDF của HĐ gửi (`fileRef` = tham chiếu tệp ghi ở lần gửi) trong tenant GỬI `tenantId` — cho thư/trang xem của bên nhận chưa dùng
+   * nền tảng. Chỉ trả khi tệp thuộc đúng tenant đó, là PDF thật (mime + chữ ký `%PDF-`) và ≤ 25 MB; khác ⇒ null. Không đọc gì khác của gói.
+   */
+  pdf?(tenantId: string, fileRef: string): Promise<PartnerPdf | null>;
 };
+
+export type PartnerPdf = { bytes: Uint8Array; name: string };
 
 export type PartnerMailboxPortRegistry = {
   set(p: PartnerMailboxPort | undefined): void;
