@@ -110,7 +110,7 @@ test.fixme("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + ngư
   const emp = await ctxPage(browser);
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, Date.now().toString(36), 50_000_000);
-  await emp.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await emp.getByRole("button", { name: "Gửi duyệt" }).click();
   await approveAs(await ctxPage(browser), E, U.accounting, id, "Duyệt hợp đồng");
 
   await emp.goto(`${E.cw}/contracts/c/${id}`);

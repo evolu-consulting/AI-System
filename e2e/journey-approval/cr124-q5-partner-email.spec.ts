@@ -1,4 +1,4 @@
-// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-124 · q5 · FLOW4-FR-12/13 · HÀNH TRÌNH đường email trên stack thật `playwright.journey.config.ts` (công ty MỚI `e2e-q5-<hậu tố>`, HUB_PARTNER_MAILBOX bật):
 //  nhân viên gửi HĐ ⇒ flow có node chờ `partner.confirmed` ⇒ người liên hệ của công ty ngoài MỞ LINK (không đăng nhập, ngữ cảnh trình duyệt trống)
 //  ⇒ xem đúng một HĐ ⇒ bấm Xác nhận ⇒ bộ chuyển phát `partner.confirmed` ⇒ lượt phía gửi CHẠY TIẾP (HĐ khoá · Đã duyệt). Cộng: dùng lại link ⇒ "đã ghi nhận".
@@ -64,7 +64,7 @@ test("mở link email ⇒ xem HĐ ⇒ Xác nhận ⇒ lượt phía gửi chạy
   ).newPage();
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, `${RUN}q5`, 600_000_000);
-  await emp.getByRole("button", { name: "Xác nhận và lưu" }).click();
+  await emp.getByRole("button", { name: "Gửi duyệt" }).click();
   // Lượt đầu sau khi vừa gán flow có thể chưa thấy flow mới (cấu hình hub nạp lại định kỳ): chờ thẻ có node chờ đối tác.
   const waiting = stepOf(emp, WAIT);
   await expect(waiting).toBeVisible({ timeout: 120_000 });
