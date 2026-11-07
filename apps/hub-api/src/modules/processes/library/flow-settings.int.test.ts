@@ -74,7 +74,7 @@ describe("CR-122 P7 · flow-settings", () => {
     expect((await call("A", "GET")).json.flow_triggers).toBe(false);
     const [d] = await o<{ id: string }[]>`insert into hub.process_defs
       (tenant_id, key, name, stages, trigger, app, published_version, enabled)
-      values (null, 'fs1271', 'Duyệt HĐ', '[]'::jsonb, '{"event":"contract.submitted"}'::jsonb, 'contracts', 1, true)
+      values (null, 'fs1271', 'Duyệt HĐ', '[{"key":"s0"}]'::jsonb, '{"event":"contract.submitted"}'::jsonb, 'contracts', 1, true)
       returning id::text as id`;
     await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${X}, ${d?.id as string}, true)`;
     expect((await call("A", "PUT", { flow_triggers: true })).json).toEqual({
