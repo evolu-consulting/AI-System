@@ -36,9 +36,9 @@ export type FlowCtx = {
 export const FlowContext = createContext<FlowCtx | null>(null);
 export const useFlowCtx = (): FlowCtx | null => useContext(FlowContext);
 
-/** Mức zoom tối thiểu khi fit canvas: flow (một dải trái → phải, không gập hàng; x10: 0.6 để cả flow demo vừa khung); Canvas thư viện cũ 0.7; mặc định của canvas. */
+/** Mức zoom tối thiểu khi fit canvas: flow (một dải trái → phải, không gập hàng; x10: 0.55 để cả flow demo vừa khung); Canvas thư viện cũ 0.7; mặc định của canvas. */
 export const useFitMin = (lib: boolean): number | undefined =>
-  useFlowCtx() ? 0.6 : lib ? 0.7 : undefined;
+  useFlowCtx() ? 0.55 : lib ? 0.7 : undefined;
 
 /** Workbench đăng ký hàm chọn node để ngoài canvas (cảnh báo kiểm nối) chọn đúng node. */
 export function useRegisterSelect(select: (uid: string) => void): void {

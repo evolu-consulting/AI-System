@@ -14,7 +14,7 @@ Giám đốc xem shot x9 `1-ngang.png`: (1) thứ tự flow vỡ — Ký số n�
 2. Node Kết thúc xếp tầng CUỐI (`layerConstraint = LAST`, node đầu "Bắt đầu khi" = FIRST) và `separateConnectedComponents = false` để node không có cạnh nào (Kết thúc · Trả lại) cũng vào cột cuối, không còn lạc ở đầu sơ đồ. Host đặt `layer` theo `isTerminalView`.
 3. Nhãn đầu ra: các đầu ra CÙNG đích (Từ chối + Hết hạn → Kết thúc · Từ chối) chung MỘT nhãn ghép "Từ chối · Hết hạn" ở cạnh đầu (`moduleEdges`), đặt ở đoạn cuối gần node đích, tránh đè node (`labelPoint`) — không còn hai nhãn đè nhau; chấm đầu ra vẫn mang tên riêng.
 3b. Node vừa thả rồi được NỐI vào flow (`clearFree`) bỏ vị trí lúc thả (`ui.x/y`) để ELK xếp theo thứ tự flow, không nằm lạc ở chỗ thả (nguyên nhân "Kế toán duyệt chi" lùi trái / xuống dưới).
-4. Mức zoom tối thiểu khi fit của canvas flow 0.75 → 0.6 để cả flow demo (một dải ~1800px) vừa khung 1100px; chữ vẫn đọc được, kéo / zoom tay như cũ.
+4. Mức zoom tối thiểu khi fit của canvas flow 0.75 → 0.55 để cả flow demo (một dải ~1800px) vừa khung 1100px; chữ vẫn đọc được, kéo / zoom tay như cũ.
 
 ## Không làm / Chạm
 - Không đổi định tuyến cạnh của x9 (bộ định tuyến né node dùng nguyên) và không đổi dữ liệu / contract. Cạnh Từ chối và Hết hạn tới cùng một đích vẫn chung đoạn cuối (hai nhãn tách ở đoạn đầu).
