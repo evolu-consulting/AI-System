@@ -134,6 +134,37 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
         returning ${COLS}`);
       return toRow(r);
     },
+    lockById: async (id) => {
+      const [r] = await tx.execute<Raw>(sql`select ${COLS} from contracts.esign_envelopes e
+        where e.tenant_id = ${t}::uuid and e.id = ${id}::uuid for update`);
+      return toRow(r);
+    },
+    claimSwitch: async (id, now, leaseMin) => {
+      const at = now.toISOString();
+      const [r] = await tx.execute<Raw>(sql`update contracts.esign_envelopes e
+        set expire_claimed_at = ${at}::timestamptz
+        where e.tenant_id = ${t}::uuid and e.id = ${id}::uuid and e.status in ('sent', 'delivered')
+          and not exists (select 1 from jsonb_array_elements(e.signers) s
+            where coalesce(s->>'signed_at', '') <> '')
+          and (e.expire_claimed_at is null
+            or e.expire_claimed_at <= ${at}::timestamptz - make_interval(mins => ${leaseMin}::int))
+        returning ${COLS}`);
+      return toRow(r);
+    },
+    releaseSwitch: async (id) => {
+      await tx.execute(sql`update contracts.esign_envelopes set expire_claimed_at = null
+        where tenant_id = ${t}::uuid and id = ${id}::uuid and status in ('sent', 'delivered')`);
+    },
+    voidClaimed: async (id, reason) => {
+      const rows = await tx.execute(sql`update contracts.esign_envelopes
+        set status = 'voided', reason = ${reason}, completed_at = null, updated_at = now()
+        where tenant_id = ${t}::uuid and id = ${id}::uuid and status in ('sent', 'delivered') returning id`);
+      return rows.length === 1;
+    },
+    audit: async (actor, before, after) => {
+      await tx.execute(sql`insert into contracts.approval_settings_audit (tenant_id, actor_user_id, before, after)
+        values (${t}::uuid, ${actor}::uuid, ${JSON.stringify(before)}::jsonb, ${JSON.stringify(after)}::jsonb)`);
+    },
     insert: async (r) => {
       const rows = await tx.execute(sql`insert into contracts.esign_envelopes
           (tenant_id, contract_id, provider, envelope_id, signers, sent_by, due_h, remind_every_h)

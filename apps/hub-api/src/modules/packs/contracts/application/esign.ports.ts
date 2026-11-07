@@ -142,6 +142,20 @@ export type ESignRepo = {
    * hoặc lease (`leaseMin` phút) đã hết ⇒ trả hàng (đã giữ); không ⇒ null. CHỈ bên giành được mới gọi nhà cung cấp.
    */
   claimExpire(id: string, now: Date, leaseMin: number): Promise<EnvelopeRow | null>;
+  /** CR-125 · m4 · `SELECT … FOR UPDATE` đúng hàng `id` (khoá tới hết tx) hoặc null. */
+  lockById(id: string): Promise<EnvelopeRow | null>;
+  /** CR-125 · m4 · giành quyền ĐỔI cách ký (UPDATE có điều kiện: còn mở, chưa ai ký, không ai giữ lease còn hạn) ⇒ hàng; không ⇒ null. */
+  claimSwitch(id: string, now: Date, leaseMin: number): Promise<EnvelopeRow | null>;
+  /** Nhả lease đổi cách ký (huỷ ở nhà cung cấp hụt) — phong bì vẫn mở như cũ. */
+  releaseSwitch(id: string): Promise<void>;
+  /** Phong bì đã giành quyền ⇒ `voided` (chỉ khi còn mở) ⇒ true. */
+  voidClaimed(id: string, reason: string): Promise<boolean>;
+  /** Audit ký số (cùng bảng audit cài đặt ký số: before/after jsonb). */
+  audit(
+    actor: string,
+    before: Record<string, unknown>,
+    after: Record<string, unknown>,
+  ): Promise<void>;
   /** Trùng envelope đang chờ của HĐ (index một phần) ⇒ false. */
   insert(r: {
     contractId: string;

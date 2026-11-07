@@ -204,9 +204,8 @@ export function esignUsecase(d: ESignDeps) {
 
   /** CR-125 · m4 · MOD-FR-11 · đổi cách ký lúc ký khác loại phong bì (`esign-switch.ts`). */
   const resolveChoice = esignSwitch({
-    uow: d.uow,
+    ...d, // uow, warn, now, onStatus
     avail,
-    warn: d.warn,
     send: (who, id, signers, key, node) => sendWith(tenantRun(who), who, id, signers, key, node),
     reopen: openOf,
     kindOf: (k) => kindOf(d.providers.entries, k),
