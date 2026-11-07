@@ -36,4 +36,4 @@ Trong lúc đổi cách ký (giữ quyền đổi), sự kiện của phong bì 
 - Kịch bản: khi webhook voided của phong bì cũ tới giữa lúc đổi cách ký thì luồng vẫn chờ phong bì mới và chỉ nhận đúng một sự kiện của phong bì mới [test: apps/hub-api/src/modules/packs/contracts/adapters/esign-switch-webhook.int.test.ts » trong lease chỉ audit, không tín hiệu, sau khi đổi chỉ phong bì mới tới lượt, một lần]
 
 ## Việc còn lại
-- L6 (wave review): `signed_at !== null` coi khoá vắng là đã ký — chưa sửa (ngoài phạm vi lát).
+Không. L6 (wave review) đã sửa: `signed_at != null` ở `esign-switch.ts` + `esign-sweep.rules.ts` (khoá vắng = chưa ký), unit trong `esign-switch.test.ts`.
