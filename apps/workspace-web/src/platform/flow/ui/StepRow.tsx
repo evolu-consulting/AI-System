@@ -3,6 +3,7 @@
 import type { FlowAssignee, FlowStepView } from "@ai/contracts/flow";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { viDateTime } from "~/components/shared/format";
 import type { AnyStepProps } from "./types";
 
 const DOT: Record<FlowStepView["status"], string> = {
@@ -69,7 +70,7 @@ export function StepFrame({
         </div>
         {step.due_at && (
           <div className={`text-caption ${late ? "font-semibold text-late" : "text-dim"}`}>
-            {new Date(step.due_at).toLocaleString()}
+            {viDateTime(step.due_at)}
             {step.status === "open"
               ? ` · ${t(step.overdue ? "contracts.flowPanel.late" : "contracts.flowPanel.left", {
                   n: Math.abs(Math.trunc((Date.parse(step.due_at) - now) / 3_600_000)),
@@ -80,7 +81,7 @@ export function StepFrame({
         {step.decided_by && (
           <div className="text-caption text-dim">
             {t("contracts.flowPanel.decidedBy", { name: step.decided_by.name })}
-            {step.decided_at ? ` · ${new Date(step.decided_at).toLocaleString()}` : ""}
+            {step.decided_at ? ` · ${viDateTime(step.decided_at)}` : ""}
           </div>
         )}
         {step.feedback && (

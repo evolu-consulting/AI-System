@@ -13,6 +13,20 @@ export const viDate = (iso: string | null | undefined): string => {
   return day.split("-").reverse().join("/");
 };
 
+/** CR-125 · x1 · ngày giờ dd/mm/yyyy HH:mm (múi giờ Việt Nam) — MỘT hàm cho mọi chỗ hiện giờ (không `toLocaleString()` theo máy: ra mm/dd ở máy Mỹ). */
+export const viDateTime = (iso: string | null | undefined): string => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  const time = d.toLocaleTimeString("en-GB", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `${viDate(iso)} ${time}`;
+};
+
 /** Tiền/đếm theo đồng: bỏ mọi ký tự không phải số ("91.500.000 đ" → 91500000). Rỗng → null; rác → NaN. */
 export const parseMoney = (s: string): number | null => {
   const t = s.trim();

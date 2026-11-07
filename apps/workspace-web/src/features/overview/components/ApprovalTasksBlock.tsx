@@ -3,6 +3,7 @@
 // `/contracts/approvals` (mục menu "Chờ tôi duyệt") — một component, hai nơi.
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { viDate } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { Tag } from "~/components/shared/tag";
 import { useMyApprovals } from "../hooks/use-overview";
@@ -39,10 +40,10 @@ export function ApprovalRowList({ rows }: { rows: readonly ApprovalRow[] }) {
               >
                 {r.due.late
                   ? t("contracts.overview.approvals.late", {
-                      date: new Date(r.due.at).toLocaleDateString(),
+                      date: viDate(r.due.at),
                     })
                   : t("contracts.overview.approvals.due", {
-                      date: new Date(r.due.at).toLocaleDateString(),
+                      date: viDate(r.due.at),
                     })}
               </span>
             )}

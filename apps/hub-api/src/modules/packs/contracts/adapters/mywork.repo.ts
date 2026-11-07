@@ -97,6 +97,32 @@ const payload = (t: string, w: Window) => sql`select jsonb_build_object(
 export function myWorkRepo(tx: Tx, t: string): MyWorkRepo {
   return {
     list: (w) => one<RawMyWork>(tx, sql`${sources(t, w)} ${payload(t, w)}`),
+    // CR-125 · x1 · HĐ chờ CHÍNH mình ký: phong bì còn mở, mình là người ký công ty chưa ký và đã đến lượt (không ai thứ tự nhỏ hơn còn chưa ký).
+    signing: async () => {
+      const rows = await tx.execute<{
+        contract_id: string;
+        number: string | null;
+        title: string | null;
+        since: string;
+      }>(
+        sql`select c.id as contract_id, c.number, ${contractLabelSql("c")} as title,
+            to_char(e.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as since
+          from contracts.esign_envelopes e
+          join contracts.contracts c on c.tenant_id = e.tenant_id and c.id = e.contract_id
+          where e.tenant_id = ${t}::uuid and e.status in ('sent', 'delivered')
+            and exists (select 1 from jsonb_array_elements(e.signers) m
+              where m->>'role' = 'company' and m->>'client_user_id' = ${ME}::text and coalesce(m->>'signed_at', '') = ''
+                and not exists (select 1 from jsonb_array_elements(e.signers) o2
+                  where coalesce(o2->>'signed_at', '') = '' and (o2->>'order')::int < (m->>'order')::int))
+          order by e.created_at, e.id limit ${LIM}::int`,
+      );
+      return [...rows].map((r) => ({
+        contract_id: r.contract_id,
+        contract_number: r.number,
+        contract_title: r.title,
+        since: r.since,
+      }));
+    },
     // Chỉ hàng của mình: hẹn nhắc của người khác ≡ không tồn tại (không lộ).
     // Hai bảng (hẹn nhắc CKS HD9 + hẹn nhắc chung W1) trong MỘT câu.
     doneFollowup: async (id) =>

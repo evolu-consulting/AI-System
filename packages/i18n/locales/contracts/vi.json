@@ -205,6 +205,7 @@
     },
     "nav": {
       "overview": "Tổng quan",
+      "waiting": "Chờ tôi",
       "contracts": "Hợp đồng & giao dịch",
       "partners": "Đối tác",
       "products": "Sản phẩm & Giá",
@@ -220,6 +221,14 @@
       "reports": "Báo cáo vi phạm",
       "approvals": "Chờ tôi duyệt",
       "pending": "{{n}} đang chờ"
+    },
+    "waiting": {
+      "title": "Chờ bạn: {{sign}} ký · {{approve}} duyệt",
+      "hint": "Hợp đồng đang chờ chính bạn quyết hoặc ký",
+      "open": "Xem",
+      "signTag": "Chờ bạn ký",
+      "signSection": "Chờ bạn ký",
+      "since": "gửi {{date}}"
     },
     "approvalsPage": {
       "title": "Chờ tôi duyệt",

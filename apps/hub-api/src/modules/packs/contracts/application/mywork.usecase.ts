@@ -4,7 +4,12 @@
 import type { PackUow, PackWho } from "../../kit/public";
 import { addDays, localDate } from "../domain/local-time.rules";
 import { buildMyWork, type RawMyWork } from "../domain/mywork.rules";
-import { MYWORK_AHEAD_DAYS, type MyWorkApproval, type MyWorkOut } from "../domain/mywork.types";
+import {
+  MYWORK_AHEAD_DAYS,
+  type MyWorkApproval,
+  type MyWorkOut,
+  type MyWorkSign,
+} from "../domain/mywork.types";
 
 /** Hạn "còn cho vào danh sách": đọc HĐ đã hết hạn quá 60 ngày thì bỏ (mgmt `ARCHIVE_AFTER_DAYS`). */
 export const ARCHIVE_AFTER_DAYS = 60;
@@ -12,6 +17,8 @@ export const ARCHIVE_AFTER_DAYS = 60;
 export type MyWorkWindow = { today: string; horizon: string; archive: string; tz: string };
 export type MyWorkRepo = {
   list(w: MyWorkWindow): Promise<RawMyWork>;
+  /** CR-125 · x1 · HĐ chờ CHÍNH mình ký (một câu SQL, ≤ MYWORK_SOURCE_MAX + 1 hàng); vắng ⇒ không có trường `signing`. */
+  signing?(): Promise<MyWorkSign[]>;
   /** Xong: hẹn nhắc của mình; `false` = không có hoặc không phải của mình (như nhau). */
   doneFollowup(id: string): Promise<boolean>;
   snoozeFollowup(id: string, localAt: string, tz: string): Promise<boolean>;
@@ -45,8 +52,13 @@ export function myWorkWindow(now: Date, tz: string): MyWorkWindow {
 export function myWork(d: Deps) {
   const list = async (who: PackWho): Promise<MyWorkOut> => {
     const w = myWorkWindow(d.now(), await d.timeZoneOf(who.tenantId));
-    const raw = await d.uow.tenant(who, ({ mywork: r }) => r.list(w));
-    const out = buildMyWork(raw, w.today);
+    // cùng tx: danh sách + việc ký của mình (một nguồn cho thẻ "Chờ bạn" và thanh dưới)
+    const { raw, signing } = await d.uow.tenant(who, async ({ mywork: r }) => ({
+      raw: await r.list(w),
+      signing: r.signing ? await r.signing() : undefined,
+    }));
+    const base = buildMyWork(raw, w.today);
+    const out = signing ? { ...base, signing } : base;
     return d.approvals ? { ...out, approvals: await d.approvals(who) } : out;
   };
   const done = async (who: PackWho, id: string): Promise<{ ok: true }> => {

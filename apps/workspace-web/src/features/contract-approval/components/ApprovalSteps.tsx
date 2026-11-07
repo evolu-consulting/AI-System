@@ -2,6 +2,7 @@
 // data-testid/data-status), esign = `EsignStepRow` cũ. Hai loại này thay renderer mặc định của registry (`StepOverrides`).
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
+import { viDateTime } from "~/components/shared/format";
 import type { StepOverrides, StepProps } from "~/platform/flow";
 import { rowStatusLines } from "../lib/card-status";
 import { skipReason, type TimelineRow } from "../lib/engine-card";
@@ -23,7 +24,7 @@ const DOT: Record<TimelineRow["status"], string> = {
   failed: "border-late bg-late",
 };
 
-const fmt = (iso: string) => new Date(iso).toLocaleString();
+const fmt = (iso: string) => viDateTime(iso);
 
 export function Row({ r, now }: { r: TimelineRow; now: number }) {
   const { t } = useTranslation();

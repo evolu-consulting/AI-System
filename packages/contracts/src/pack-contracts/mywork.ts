@@ -53,6 +53,15 @@ export type MyWorkApproval = {
   escalated: boolean;
 };
 
+/** CR-125 · x1 · HĐ đang chờ CHÍNH người xem ký (bước Ký số: người ký công ty có tên trong phong bì còn mở, đến lượt). */
+export type MyWorkSign = {
+  contract_id: string;
+  contract_number: string | null;
+  contract_title: string | null;
+  /** Lúc gửi ký (ISO) — HĐ chờ lâu nhất đứng trước. */
+  since: string;
+};
+
 export type MyWorkOut = {
   today: string;
   items: MyWorkItem[];
@@ -61,4 +70,6 @@ export type MyWorkOut = {
   truncated: boolean;
   /** S3b · việc duyệt HĐ trên engine (vắng khi duyệt engine tắt). */
   approvals?: MyWorkApproval[];
+  /** CR-125 · x1 · việc KÝ của người xem (cùng đọc với `approvals` ⇒ thẻ "Chờ bạn" đếm một nguồn). */
+  signing?: MyWorkSign[];
 };

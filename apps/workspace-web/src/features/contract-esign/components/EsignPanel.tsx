@@ -1,4 +1,4 @@
-﻿// cf-esign-docusign · khối "Ký số" ở chi tiết HĐ (trung lập nhà cung cấp): Gửi ký (owner/editor) ⇒ "Đang chờ ký" (Ký ngay cho người ký
+// cf-esign-docusign · khối "Ký số" ở chi tiết HĐ (trung lập nhà cung cấp): Gửi ký (owner/editor) ⇒ "Đang chờ ký" (Ký ngay cho người ký
 // nội bộ, Làm mới trạng thái, Huỷ) ⇒ "Đã ký số" + thời điểm + tải "Bản đã ký"; từ chối/huỷ ⇒ lý do + Gửi lại. Ký thử ⇒ nhãn rõ.
 import type {
   ESignEnvelopeOut,
@@ -7,6 +7,7 @@ import type {
 } from "@ai/contracts/pack-contracts";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { viDate, viDateTime } from "~/components/shared/format";
 import {
   Dialog,
   DialogContent,
@@ -25,8 +26,8 @@ import {
 import { EsignSendDialog } from "./EsignSendDialog";
 import { EsignSignMethodDialog } from "./EsignSignMethodDialog";
 
-const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString("vi-VN") : "");
-const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("vi-VN");
+const fmt = (iso: string | null) => (iso ? viDateTime(iso) : "");
+const fmtDate = (iso: string) => viDate(iso);
 
 function DemoTag() {
   const { t } = useTranslation();

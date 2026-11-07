@@ -34,10 +34,18 @@ export type MyWorkApproval = {
   due_at: string | null;
   escalated: boolean;
 };
+export type MyWorkSign = {
+  contract_id: string;
+  contract_number: string | null;
+  contract_title: string | null;
+  /** Lúc gửi ký (ISO) — HĐ chờ lâu nhất đứng trước. */
+  since: string;
+};
 export type MyWorkOut = {
   today: string;
   items: MyWorkItem[];
   counts: { late: number; today: number; upcoming: number };
   truncated: boolean;
   approvals?: MyWorkApproval[];
+  signing?: MyWorkSign[];
 };

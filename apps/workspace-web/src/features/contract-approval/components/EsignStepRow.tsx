@@ -4,6 +4,7 @@
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { viDateTime } from "~/components/shared/format";
 import { toast } from "~/components/shared/toast";
 import { approvalKey, resendEsignStep } from "../hooks/use-approval-api";
 import { esignStatusLines } from "../lib/card-status";
@@ -19,7 +20,7 @@ const DOT: Record<Esign["status"], string> = {
 };
 
 /** esign-sweep2 · mốc giờ (ISO từ server) theo giờ máy người xem. */
-const when = (iso: string) => new Date(iso).toLocaleString();
+const when = (iso: string) => viDateTime(iso);
 
 export function EsignStepRow({ id, e }: { id: string; e: Esign }) {
   const { t } = useTranslation();

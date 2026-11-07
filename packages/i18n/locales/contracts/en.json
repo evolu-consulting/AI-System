@@ -207,6 +207,7 @@
       "overview": "Overview",
       "contracts": "Contracts & transactions",
       "partners": "Partners",
+      "waiting": "Mine",
       "products": "Products & Prices",
       "community": "Community",
       "feed": "Feed",
@@ -220,6 +221,14 @@
       "reports": "Reported posts",
       "approvals": "Awaiting my approval",
       "pending": "{{n}} pending"
+    },
+    "waiting": {
+      "title": "Waiting for you: {{sign}} to sign · {{approve}} to approve",
+      "hint": "Contracts waiting for you to decide or sign",
+      "open": "View",
+      "signTag": "Waiting for your signature",
+      "signSection": "Waiting for your signature",
+      "since": "sent {{date}}"
     },
     "approvalsPage": {
       "title": "Awaiting my approval",

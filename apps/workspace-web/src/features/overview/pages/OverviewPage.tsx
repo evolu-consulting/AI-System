@@ -16,6 +16,7 @@ import { PartnersBlock } from "../components/PartnersBlock";
 import { RecsBlock } from "../components/RecsBlock";
 import { TodoBlock } from "../components/TodoBlock";
 import { TopPartnersBlock } from "../components/TopPartnersBlock";
+import { WaitingForMeCard } from "../components/WaitingForMeCard";
 import { PERIODS } from "../lib/overview";
 
 export function OverviewPage() {
@@ -54,6 +55,7 @@ export function OverviewPage() {
           </fieldset>
         }
       />
+      <WaitingForMeCard />
       <div className="mb-4">
         <KpiBlock data={q.data} loading={q.isLoading} error={q.error} period={period} />
       </div>

@@ -3,6 +3,7 @@
 import type { ApprovalAttention } from "@ai/contracts/pack-contracts";
 import { useTranslation } from "react-i18next";
 import { confirmDialog } from "~/components/shared/dialog-bus";
+import { viDateTime } from "~/components/shared/format";
 import { attentionActions, attentionText } from "../lib/attention";
 
 type Props = {
@@ -22,7 +23,7 @@ export function AttentionBanner({
   onCancelReopen,
   onReopen,
 }: Props) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const text = attentionText(attention);
   const can = attentionActions(attention, owner);
   const at = attention.since ? new Date(attention.since) : null;
@@ -48,7 +49,7 @@ export function AttentionBanner({
       {at && !Number.isNaN(at.getTime()) && (
         <p className="mt-1 text-muted">
           {t("contracts.approval.engine.attention.since", {
-            time: at.toLocaleString(i18n.language),
+            time: viDateTime(at.toISOString()),
           })}
         </p>
       )}

@@ -2,11 +2,12 @@
 // người gọi; chỉ tải khi mở khối.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { viDateTime } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
 import { useHistory, useMemberNames } from "../hooks/use-manage";
 import { type HistoryLine, historyLine } from "../lib/manage";
 
-const when = (iso: string): string => new Date(iso).toLocaleString();
+const when = (iso: string): string => viDateTime(iso);
 
 function Line({ h, nameOf }: { h: HistoryLine; nameOf: (id: string | null) => string | null }) {
   const { t } = useTranslation();
