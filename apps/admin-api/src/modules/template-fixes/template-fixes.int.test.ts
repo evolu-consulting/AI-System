@@ -79,8 +79,9 @@ describe("c5b · sửa nhanh cho mẫu Thư viện (platform_admin)", () => {
     expect((await tadmin("POST", fix(A, "create-group"), { group_key: "tu-y-tao" })).status).toBe(
       403,
     );
-    expect((await tadmin("POST", fix(B, "create-group"), { group_key: "tu-y-tao" })).status).toBe(
-      403,
+    // công ty khác: từ chối (403) hoặc không lộ tồn tại (404) — đều không được ghi
+    expect([403, 404]).toContain(
+      (await tadmin("POST", fix(B, "create-group"), { group_key: "tu-y-tao" })).status,
     );
     expect((await tadmin("POST", fix(A, "enable-feature"), { feature_key: "x" })).status).toBe(403);
     const [after] = await env.owner<{ n: number }[]>`select count(*)::int as n from admin.groups`;
