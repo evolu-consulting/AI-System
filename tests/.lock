@@ -538,10 +538,10 @@ c19aa08b6d7fe451d6f6187e9a101eda3021ec979222c5d11b6982ba5b6fe949  e2e/m4-usage.s
 51350d094e3c8a466a9090a7f61d01a088717f8f19969c2372d670626eb69739  e2e/ops/playwright.ops.config.ts
 1d32aec56a02719238e5768d64a22340c2b51a1a67ef0d6d707b76f8ded3fd2e  e2e/ops/system.ops.ts
 870133377eae9e6c297aa7ac6f5408ca730f3d733acfe415645802b5cccc6f58  e2e/partners.spec.ts
-84e4db7e4ae8044ffc54e9f3f7b13e9f708f8d78950db3d7829a240aa6b055f7  e2e/pm-checklist/_pm-stack.ts
+d8dbe509f4f0fc6dcc8a802e04df02b80d83ebe61233755aa525c25b8bda24a8  e2e/pm-checklist/_pm-stack.ts
 6b2e570f33d85ee140bd71ffb205d8207103f475e92a98f3243673f71659fd5e  e2e/pm-checklist/admin-cr112.pm.ts
 c7329d61f05c220a6cad36c1466c762156fdaaf56f5ea84261cea6bdd9e524a4  e2e/pm-checklist/admin-cr113-flow.pm.ts
-dcf2fc75b3c57ce921dcc2f5a0be30bca61e8a0bf2c28417a1becf0a26fc467e  e2e/pm-checklist/cw-cr113.pm.ts
+9817456d13ffe9fe27f2d07560b3c2298749b37df0d74f26c5cea6e5ac3412ed  e2e/pm-checklist/cw-cr113.pm.ts
 585553890a7d9dd632f4b340de1ed9387af36f69a40b4ffb6a29f7b3143ba5d9  e2e/pm-checklist/playwright.pm.config.ts
 d2b4a5ea412e75c211bd082ccd13abef72c2e34a4954c499a13feeef2a46aecb  e2e/secrets.spec.ts
 4d981c522670bcef4dda52aa84f2b194dccff6ae435d90e202cf77052ba5fdd9  e2e/smoke.spec.ts
@@ -1195,7 +1195,7 @@ eeff8e81411ac9890271ac70760a1c2dd6f8b3a0fbefa9aee87d558626e07692  tests/acceptan
 26144e8f1e1add0c98dfeaa94b62876d57de783360962bb034775c4933bb6fbb  tests/acceptance/P-a/step0/migration.int.test.ts
 4e02e5fe2717a92a204c4fbc7efd65d7e1428533e8ee71747f6c6e9c036b3ef5  tests/acceptance/P-a/step0/rls.int.test.ts
 233db66ef8c4d6b4441c96b6541252cc2aa80cc57a965e86a412e3a82ee2c7dc  tests/acceptance/P-a/step0/rules/bang.test.ts
-27d4b7cf3f4f1da6d461adf213738bb54019c791797c5ab75ff3f2c1d4169996  tests/acceptance/P-a/step0/rules/contracts-pa.test.ts
+a449a8d1ac191804149475206cbbc17314c4dbcea06f2a6c36ac74c4f95e3c12  tests/acceptance/P-a/step0/rules/contracts-pa.test.ts
 e56e2605f3003a8e2a1610d7af47d099263b4d38a803b2abe756113d320ff814  tests/acceptance/P-a/step0/rules/def.test.ts
 b1623f719e3d4b946756cc9280a8a1b3f1f17e1a736b55d8df376acc36c9e8c7  tests/acceptance/P-a/step0/rules/limits.test.ts
 d153ecc4dfd5f3bf04f6ad0e640ddba17336c33e67a2786a347bded6346eac56  tests/acceptance/P-a/step0/rules/process-state.test.ts

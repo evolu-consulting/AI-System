@@ -11,7 +11,7 @@ describe("resolveStagesMax", () => {
   test("thiếu/sai ⇒ mặc định 22", () => {
     for (const v of [undefined, null, "30", 0, -1, 2.5, Number.NaN])
       expect(resolveStagesMax(v)).toBe(PROCESS_STAGES_DEFAULT);
-    expect(PROCESS_STAGES_DEFAULT).toBe(22);
+    expect(PROCESS_STAGES_DEFAULT).toBe(50);
   });
   test("hợp lệ giữ nguyên, vượt trần bị kẹp 50", () => {
     expect(resolveStagesMax(5)).toBe(5);

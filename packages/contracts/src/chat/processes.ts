@@ -10,10 +10,10 @@ export const PROCESS_DESC_MAX = 500;
 export const PROCESS_INPUT_MAX = 8_000;
 /** CR-121 D-1 · 22 = 20 bước duyệt HĐ + `route` + `finalize` (migration hub 0097 nới CHECK theo). */
 export const PROCESS_STAGES_MAX = 22;
-/** CR-122 · p22 · MẶC ĐỊNH số bước tối đa của một quy trình (cài đặt nền tảng ghi đè, kẹp ≤ `PROCESS_STAGES_CEILING`). */
-export const PROCESS_STAGES_DEFAULT = PROCESS_STAGES_MAX;
 /** CR-122 · p22 · TRẦN CỨNG của schema + CHECK DB (migration hub 0115); cài đặt nền tảng không vượt được. */
 export const PROCESS_STAGES_CEILING = 50;
+/** MẶC ĐỊNH số bước tối đa của một quy trình (cài đặt nền tảng ghi đè, kẹp ≤ trần). Người dùng 2026-11-08: mở lên 50. */
+export const PROCESS_STAGES_DEFAULT = PROCESS_STAGES_CEILING;
 /** Giá trị đọc từ cài đặt nền tảng → số bước tối đa hiệu lực (sai/thiếu ⇒ mặc định; kẹp 1…trần). */
 export function resolveStagesMax(v: unknown): number {
   if (typeof v !== "number" || !Number.isInteger(v) || v < 1) return PROCESS_STAGES_DEFAULT;

@@ -1,5 +1,5 @@
 // CR-122 · p22 · cài đặt nền tảng "Số bước tối đa của một quy trình": `GET /process-editor/limits` (admin) · `PUT` (platform_admin).
-// Mặc định 22 (`PROCESS_STAGES_DEFAULT`), trần cứng 50 (`PROCESS_STAGES_CEILING`, cũng là CHECK DB — migration hub 0115).
+// Mặc định 50 (`PROCESS_STAGES_DEFAULT`), trần cứng 50 (`PROCESS_STAGES_CEILING`, cũng là CHECK DB — migration hub 0115).
 import { z } from "zod";
 import { PROCESS_STAGES_CEILING, PROCESS_STAGES_DEFAULT } from "../chat/processes";
 

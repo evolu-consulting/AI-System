@@ -1,5 +1,5 @@
 // CR-122 · p22 · int (Hono thật `defsRoutes` + DB thật, migration hub 0115): số bước tối đa là cài đặt nền tảng —
-// mặc định 22; platform_admin đổi (≤ trần 50), tenant_admin chỉ đọc; lưu def vượt ⇒ 422 `PROCESS_DEF_INVALID` + `stages_max`.
+// mặc định 50 (người dùng 2026-11-08); platform_admin đổi (≤ trần 50), tenant_admin chỉ đọc; lưu def vượt ⇒ 422 `PROCESS_DEF_INVALID` + `stages_max`.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Role } from "@ai/contracts/common";
 import { withHubScope } from "@ai/db/hub-scope";
@@ -91,9 +91,9 @@ afterAll(async () => {
 });
 
 describe("CR-122 p22 · số bước tối đa là cài đặt nền tảng", () => {
-  it("mặc định 22; platform_admin đổi, tenant_admin đọc được nhưng không đổi được; quá trần 50 bị từ chối", async () => {
+  it("mặc định 50; platform_admin đổi, tenant_admin đọc được nhưng không đổi được; quá trần 50 bị từ chối", async () => {
     const g = await call("A", "GET", "/process-editor/limits");
-    expect(g.json).toEqual({ stages_max: 22, ceiling: 50, default: 22 });
+    expect(g.json).toEqual({ stages_max: 50, ceiling: 50, default: 50 });
     expect((await call("A", "PUT", "/process-editor/limits", { stages_max: 5 })).status).toBe(403);
     expect((await call("P", "PUT", "/process-editor/limits", { stages_max: 51 })).status).toBe(400);
     const s = await call("P", "PUT", "/process-editor/limits", { stages_max: 3 });
