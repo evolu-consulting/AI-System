@@ -170,9 +170,10 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   ); // tenant-quotas
   app.route("/admin/directory", directoryRoutes(ctx));
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
+  // CR-125 UX-S7 · điều kiện + công tắc Đối tác xác nhận. PHẢI đứng TRƯỚC packsRoutes (`use("*")` chỉ-platform áp cho mọi đường dưới nó): GET mở cho quản trị công ty mình.
+  app.route("/admin/tenants", partnerConfirmRoutes({ ...ctx, hooks, hubUrl: deps.hubUrl }));
   app.route("/admin/tenants", packsRoutes({ ...ctx, hooks })); // N1 · PK-FR-05
   app.route("/admin/tenants", tenantDefaultAppRoutes(ctx)); // tenant-default-app
-  app.route("/admin/tenants", partnerConfirmRoutes({ ...ctx, hooks, hubUrl: deps.hubUrl })); // CR-125 UX-S7 · điều kiện + công tắc Đối tác xác nhận
   app.route("/admin/tenants", templateFixesRoutes({ ...ctx, hooks, hubUrl: deps.hubUrl })); // CR-125 c5b · bật tính năng / tạo nhóm cho mẫu Thư viện
   const frozenOn = deps.frozenModules !== false;
   mountAiToolsUsage(app, { ...ctx, hooks }, frozenOn); // c16: "Dùng bởi" không theo cờ đóng băng

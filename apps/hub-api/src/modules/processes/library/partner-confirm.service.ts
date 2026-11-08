@@ -19,7 +19,8 @@ const PARTNER_NODE = "contracts.partner-send";
 export class PartnerConfirmService {
   constructor(
     private readonly db: Db,
-    private readonly channelOn: boolean,
+    /** Đọc theo từng lần gọi (cờ do mount đặt; test đổi được). */
+    private readonly channelOn: () => boolean,
     private readonly packTools?: PackToolCatalog,
   ) {}
 
@@ -40,7 +41,7 @@ export class PartnerConfirmService {
       const templateId = tpl[0]?.id ?? null;
       const groups = templateId ? await this.#groups(tx, tid, templateId) : [];
       return {
-        channel: this.channelOn,
+        channel: this.channelOn(),
         receive_template_id: templateId,
         receive_flow: rows.some(
           (x) => x.enabled && x.trigger_event === RECEIVE_EVENT && !x.has_condition,

@@ -32,6 +32,57 @@
       "unverified": "Chưa xác minh",
       "level": { "normal": "Thường", "important": "Quan trọng", "critical": "Rất quan trọng" },
       "channel": { "platform": "nền tảng", "email": "email", "manual": "ghi nhận thủ công" },
+      "confirm": {
+        "title": "Đối tác xác nhận hợp đồng",
+        "off": "Đang tắt. Công ty chưa gửi hoặc nhận hợp đồng với đối tác được. Nhờ quản trị nền tảng bật tính năng này.",
+        "on": "Đang bật",
+        "ready": "Đang bật · sẵn sàng gửi và nhận",
+        "missing": "Đang bật · còn {{count}} điều kiện chưa xong",
+        "state": { "ok": "Xong", "todo": "Còn thiếu", "unknown": "Chưa rõ" },
+        "who": { "platform": "Nhờ quản trị nền tảng", "company": "Quản trị công ty làm" },
+        "item": {
+          "app": {
+            "ok": "Công ty đã dùng Sổ Hợp Tác.",
+            "todo": "Công ty chưa bật Sổ Hợp Tác.",
+            "unknown": "Chưa đọc được."
+          },
+          "feature": {
+            "ok": "Tính năng đã được bật cho công ty.",
+            "todo": "Tính năng chưa được bật cho công ty.",
+            "unknown": "Chưa đọc được."
+          },
+          "channel": {
+            "ok": "Kênh gửi nhận giữa các công ty đang chạy.",
+            "todo": "Hệ thống chưa bật kênh gửi nhận giữa các công ty.",
+            "unknown": "Chưa kiểm tra được kênh gửi nhận."
+          },
+          "profile": {
+            "ok": "Có Tên pháp lý và Mã số thuế.",
+            "todo": "Thiếu Tên pháp lý hoặc Mã số thuế của công ty.",
+            "unknown": "Chưa đọc được."
+          },
+          "listed": {
+            "ok": "Công ty cho phép công ty khác tìm thấy.",
+            "todo": "Công ty chưa cho phép tìm thấy. Bật ở Quản trị › Hồ sơ › Danh bạ công ty để nhận được hợp đồng.",
+            "unknown": "Chưa đọc được."
+          },
+          "receive_flow": {
+            "ok": "Có quy trình xử lý hợp đồng đối tác gửi tới.",
+            "todo": "Chưa có quy trình xử lý hợp đồng đối tác gửi tới.",
+            "unknown": "Chưa kiểm tra được quy trình."
+          },
+          "groups": {
+            "ok": "Nhóm xác nhận phía nhận đã có người.",
+            "todo": "Nhóm xác nhận chưa có hoặc chưa có thành viên. Thêm người vào nhóm để có người xác nhận.",
+            "unknown": "Chưa kiểm tra được nhóm xác nhận."
+          },
+          "send_flow": {
+            "ok": "Có quy trình gửi hợp đồng cho đối tác.",
+            "todo": "Chưa có quy trình nào có bước «Gửi đối tác xác nhận». Thêm bước này vào quy trình duyệt nếu công ty cần gửi.",
+            "unknown": "Chưa kiểm tra được quy trình gửi."
+          }
+        }
+      },
       "settings": {
         "title": "Nhận hợp đồng từ đối tác",
         "important": "Mức «Quan trọng» từ giá trị",

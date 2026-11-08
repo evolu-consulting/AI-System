@@ -132,7 +132,7 @@ describe("UX-S7 · Đối tác xác nhận hợp đồng (admin-api)", () => {
     ]);
   });
 
-  it("quản trị công ty KHÔNG cấp được: PUT ⇒ 403 (kể cả công ty của mình), không entitlement, không audit; công ty khác cũng không", async () => {
+  it("quản trị công ty KHÔNG cấp được: PUT ⇒ 403 (kể cả công ty của mình), không entitlement, không audit, công ty khác cũng không", async () => {
     await env.owner`delete from admin.feature_entitlements where tenant_id in (${A}, ${B})
       and feature_id in (select id from admin.features where key = 'contracts-partner-confirm')`;
     const [{ n: seq0 } = { n: "0" }] = await env.owner<
@@ -150,7 +150,8 @@ describe("UX-S7 · Đối tác xác nhận hợp đồng (admin-api)", () => {
   });
 
   it("quản trị công ty XEM được công ty mình (GET 200), công ty khác ⇒ 404", async () => {
-    expect((await call(tadmin, "GET", path(A))).status).toBe(200);
+    const own = await call(tadmin, "GET", path(A));
+    expect(own).toMatchObject({ status: 200 });
     expect((await call(tadmin, "GET", path(B))).status).toBe(404);
   });
 

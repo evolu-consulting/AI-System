@@ -29,7 +29,7 @@ export function companyFlowsRoutes(d: ProcessDeps): Hono<AuthVars> {
     return c.json(await fs.put(c.var.user, tid(c), b.flow_triggers));
   });
   // CR-125 · UX-S7 · phần Hub của danh sách điều kiện Đối tác xác nhận (admin-api gộp với hồ sơ/entitlement). Chỉ đọc.
-  const pc = new PartnerConfirmService(d.db, d.partnerMailbox === true, d.packTools);
+  const pc = new PartnerConfirmService(d.db, () => d.partnerMailbox === true, d.packTools);
   r.use("/tenants/:tid/partner-confirm/*", requireAdminRole());
   r.get("/tenants/:tid/partner-confirm/readiness", async (c) =>
     c.json(await pc.readiness(c.var.user, tid(c))),

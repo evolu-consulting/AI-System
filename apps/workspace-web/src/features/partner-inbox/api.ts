@@ -1,4 +1,5 @@
 // CR-124 · q4 · API hộp «Hợp đồng đối tác gửi» + vòng gửi + ghi nhận thủ công (`/pack/contracts/partner/*`).
+import type { PartnerChecklist } from "@ai/contracts/modules";
 import { api } from "@ai/web-kit/http";
 import type { InboxItem, Invite, Round } from "./lib/partner-view";
 import type { ReceiveSettings } from "./lib/receive-settings";
@@ -32,6 +33,10 @@ export const recordResult = (mailboxId: string, body: RecordIn) =>
     method: "POST",
     body,
   });
+
+/** CR-125 · UX-S7 · điều kiện «Đối tác xác nhận hợp đồng» của công ty mình (admin-api, quản trị công ty xem được). */
+export const fetchPartnerConfirm = (tenantId: string) =>
+  api<PartnerChecklist>(`/admin/tenants/${encodeURIComponent(tenantId)}/partner-confirm`);
 
 export const fetchReceiveSettings = () => api<ReceiveSettings>(`${BASE}/settings`);
 export const saveReceiveSettings = (s: ReceiveSettings) =>

@@ -187,6 +187,24 @@ test("2 · quản trị công ty chỉ xem: thấy trạng thái thật, không 
   await expect(card.locator('[data-testid^="partner-fix-"]')).toHaveCount(0);
   await expect(card).toContainText("Quản trị công ty làm");
   await page.screenshot({ path: shot("company-view"), fullPage: true });
+
+  // Cài đặt của Sổ Hợp Tác (quản trị công ty B): trạng thái thật + điều kiện, nói ai phải làm (rule 3), không có công tắc nào.
+  const cw = await ctx(browser);
+  await loginCw(cw, EB, U.director);
+  await cw.goto(`${EB.cw}/contracts/settings?sec=flow`);
+  const st = cw.getByTestId("partner-confirm-status");
+  await expect(st).toBeVisible({ timeout: 60_000 });
+  await expect(st).toHaveAttribute("data-on", "yes");
+  await expect(cw.getByTestId("partner-confirm-item-feature")).toHaveAttribute("data-state", "ok");
+  await expect(cw.getByTestId("partner-confirm-item-receive_flow")).toHaveAttribute(
+    "data-state",
+    "ok",
+  );
+  await expect(cw.getByTestId("partner-confirm-item-send_flow")).toContainText(
+    "Quản trị công ty làm",
+  );
+  await expect(cw.getByTestId("partner-receive-settings")).toBeVisible();
+  await cw.screenshot({ path: shot("cw-settings"), fullPage: true });
 });
 
 test("3 · công ty A gửi hợp đồng cho B: B thấy ở hộp thư đối tác, nhận lời mời, xác nhận ⇒ A thấy «đã xác nhận»", async ({

@@ -6,16 +6,36 @@ import { Num } from "~/features/settings/components/controls";
 import { SettingsGroup, SettingsRow } from "~/shared/ui/settings-layout";
 import { useReceiveSettings } from "../hooks/use-partner-queries";
 import { draftOf, type ReceiveDraft, settingsIssue, settingsOf } from "../lib/receive-settings";
+import { PartnerConfirmStatus } from "./PartnerConfirmStatus";
 
 export function ReceiveSettings({ owner }: { owner: boolean }) {
-  const { t } = useTranslation();
   const { on, settings, members, save } = useReceiveSettings(owner);
   const [d, setD] = useState<ReceiveDraft | null>(null);
   useEffect(() => {
     if (settings) setD(draftOf(settings));
   }, [settings]);
-  if (!owner || !on || !d) return null;
+  // UX-S7: trạng thái «Đối tác xác nhận» luôn hiện cho quản trị công ty (kể cả khi tắt — nói rõ thiếu gì, ai làm); ngưỡng + người phụ trách chỉ khi đã bật.
+  if (!owner) return null;
+  if (!on || !d) return <PartnerConfirmStatus owner={owner} />;
   const issue = settingsIssue(d);
+  return (
+    <>
+      <PartnerConfirmStatus owner={owner} />
+      <ReceiveGroup d={d} setD={setD} members={members} issue={issue} save={save} />
+    </>
+  );
+}
+
+type GroupProps = {
+  d: ReceiveDraft;
+  setD: (d: ReceiveDraft) => void;
+  members: ReturnType<typeof useReceiveSettings>["members"];
+  issue: ReturnType<typeof settingsIssue>;
+  save: ReturnType<typeof useReceiveSettings>["save"];
+};
+
+function ReceiveGroup({ d, setD, members, issue, save }: GroupProps) {
+  const { t } = useTranslation();
   return (
     <SettingsGroup title={t("contracts.partner.settings.title")}>
       <div data-testid="partner-receive-settings">
