@@ -170,13 +170,14 @@ test("2 · Phần 1 → 2 → 3: các thẻ điền / duyệt (dòng 3, 6, 10 ha
   }
   const status = emp.getByTestId("request-status");
   let shots = 0;
-  for (let round = 0; round < 60; round++) {
+  for (let round = 0; round < 100; round++) {
     await emp.goto(runUrl);
     if ((await status.getAttribute("data-status")) === "done") break;
     // mỗi người làm hết việc đang chờ mình; dòng cùng duyệt: cả hai nhóm đều có thẻ mở nên mỗi bên bấm «Đạt» phần của mình
     let moved = false;
     for (const p of people) moved = (await actOnWaiting(p)) || moved;
     if (moved && shots < 6) await shot(people[1] as Page, `02-buoc-${++shots}`);
+    if (!moved) await emp.waitForTimeout(5_000); // chờ hẹn canh chốt bước cha / lượt con (qc cr125-final-e2e: vòng không ngủ hết 60 lượt trước khi hẹn kịp chạy)
     // không có việc nào ⇒ đang chờ lượt con / hẹn canh chốt bước cha: nạp lại trang ở vòng sau (không ngủ chờ)
   }
   await emp.goto(runUrl);
