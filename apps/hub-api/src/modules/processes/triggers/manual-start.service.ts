@@ -1,7 +1,9 @@
 // CR-125 · cr125-manual-start-engine · bắt đầu quy trình bằng phiếu yêu cầu (vd «Tạo đề xuất mua hàng»). Thứ tự kiểm: flow có (404) →
 // flow bật + cờ FLOW_TRIGGERS của công ty (409 START_FLOW_OFF) → người gọi được bắt đầu (403 START_NOT_ALLOWED) → phiếu hợp lệ theo zod
 // của cấu hình node (422 START_FORM_INVALID, lỗi theo ô). Mở lượt qua ĐÚNG đường của sự kiện (`flowLaunchOf`: cổng tính năng node, mẫu
-// Thư viện, `process_runs_flow_event_uq`); `request_id` của client ⇒ `flow_events.event_id` ⇒ gửi trùng trả cùng lượt.
+// Thư viện, `process_runs_flow_event_uq`); băm (người × flow × `request_id`) ⇒ `flow_events.event_id` ⇒ chỉ CÙNG người gửi lại cùng
+// flow + mã mới trả lượt cũ.
+import { createHash } from "node:crypto";
 import {
   PROCESS_START_ERRORS,
   type ProcessStartErrorCode,
@@ -38,9 +40,14 @@ const MESSAGES: Record<ProcessStartErrorCode, string> = {
   START_NOT_ALLOWED: "You are not allowed to start this process",
   START_FORM_INVALID: "The request form is invalid",
   START_FLOW_OFF: "This process is not switched on for the company",
+  START_REQUEST_REUSED: "This request id belongs to another request",
 };
 export const startError = (code: ProcessStartErrorCode, details?: unknown): AppError =>
   new AppError(code, PROCESS_START_ERRORS[code], MESSAGES[code], details);
+
+/** Khoá chống trùng = băm (người gọi × flow công ty × request_id): mã trùng của người khác / flow khác là yêu cầu KHÁC. */
+export const startEventId = (actorId: string, companyFlowId: string, requestId: string): string =>
+  `start:${createHash("sha256").update(`${actorId}|${companyFlowId}|${requestId}`).digest("hex")}`;
 
 type Loaded = { row: StartFlowRow; cfg: StartFormConfig | null; allowed: boolean };
 
@@ -122,18 +129,22 @@ export class ManualStartService {
     const values = parsed.data as Record<string, unknown>;
     const title = renderStartTitle(f.cfg.title_template, values);
     const ref = `start:${req.request_id}`;
+    const cf = f.row.company_flow_id;
     const ev = await withHubScope(
       this.d.db,
       { kind: "user", tenantId: u.tenantId, userId: u.userId },
       (tx) =>
         upsertStartEvent(tx, {
           tenantId: u.tenantId,
-          eventId: ref,
+          eventId: startEventId(u.userId, cf, req.request_id),
           ref,
           facts: values,
           actorId: u.userId,
+          companyFlowId: cf,
         }),
     );
+    // Lưới an toàn (khoá đã gồm người × flow): sự kiện không phải của người gọi / mã này ⇒ 409, KHÔNG trả lượt của người khác.
+    if (ev.actor_id !== u.userId || ev.ref !== ref) throw startError("START_REQUEST_REUSED");
     if (ev.run_id) return { run_id: ev.run_id, created: false, title };
     const run = await this.#open(u, f, { id: ev.id, ref }, values, title);
     return { run_id: run.id, created: run.created, title };
@@ -180,7 +191,7 @@ export class ManualStartService {
     const id = await withHubScope(
       this.d.db,
       { kind: "user", tenantId: u.tenantId, userId: u.userId },
-      (tx) => runOfEvent(tx, ev.id),
+      (tx) => runOfEvent(tx, ev.id, f.row.company_flow_id),
     );
     if (!id) throw startError("START_FLOW_OFF", { reason: "not_launched" });
     return { id, created: false };

@@ -1,4 +1,9 @@
 {
+  "startForm": {
+    "err": {
+      "START_FIELD_RESERVED": "This field key is used by data the system writes (e.g. request title, record ids …_id). Use another key."
+    }
+  },
   "parallel": {
     "err": {
       "PARALLEL_GROUPS_MIN2": "Approving together needs at least 2 groups. Add a group, or turn off «approve together» to use one group.",

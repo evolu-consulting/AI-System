@@ -22,8 +22,9 @@ const WHO: Record<string, { userId: string; tenantId: string; role: Role }> = {
   A: { userId: userId(1291), tenantId: X, role: "member" }, // trong nhóm mua hàng
   B: { userId: userId(1292), tenantId: X, role: "member" }, // không trong nhóm
   O: { userId: userId(1293), tenantId: Y, role: "tenant_admin" }, // công ty khác
+  C: { userId: userId(1294), tenantId: X, role: "member" }, // cũng trong nhóm mua hàng
 };
-const GROUPS: Record<string, string[]> = { [userId(1291)]: [G_BUY] };
+const GROUPS: Record<string, string[]> = { [userId(1291)]: [G_BUY], [userId(1294)]: [G_BUY] };
 let o: Sql;
 let db: Db;
 let app: Hono<AuthVars>;
@@ -61,8 +62,12 @@ const call = async (who: string, method: string, path: string, body?: unknown) =
   return { status: r.status, json: t ? JSON.parse(t) : {} };
 };
 const codeOf = (j: { error?: { code?: string }; code?: string }) => j.error?.code ?? j.code;
-const start = (who: string, request_id: string, values: Record<string, unknown>) =>
-  call(who, "POST", "/processes/start", { flow_key: "mua-hang", request_id, values });
+const start = (
+  who: string,
+  request_id: string,
+  values: Record<string, unknown>,
+  flow_key = "mua-hang",
+) => call(who, "POST", "/processes/start", { flow_key, request_id, values });
 const GOOD = { item: "Máy in", amount: 12_500_000, need_by: "2026-12-01" };
 const rid = (n: number) => `0c000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
@@ -73,11 +78,21 @@ beforeAll(async () => {
   await o`insert into admin.tenants (id, key, name) values (${X}, 't1291', 'X'), (${Y}, 't1292', 'Y')`;
   await users(o, X, 2, { from: 1291 });
   await users(o, Y, 1, { from: 1293 });
+  await users(o, X, 1, { from: 1294 });
   const [d] = await o<
     { id: string }[]
   >`insert into hub.process_defs (tenant_id, key, name, stages, enabled)
     values (${X}, 'mua-hang', 'Mua hàng', ${JSON.stringify([START_STAGE])}::text::jsonb, true) returning id::text as id`;
   await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${X}, ${d?.id as string}, true)`;
+  const everyone = {
+    ...START_STAGE,
+    start_form: { ...START_STAGE.start_form, starters: { kind: "everyone" } },
+  };
+  const [d2] = await o<
+    { id: string }[]
+  >`insert into hub.process_defs (tenant_id, key, name, stages, enabled)
+    values (${X}, 'mua-hang-2', 'Mua hàng 2', ${JSON.stringify([everyone])}::text::jsonb, true) returning id::text as id`;
+  await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${X}, ${d2?.id as string}, true)`;
   await withHubScope(db, { kind: "system" }, (tx) => setFlowTriggers(tx, X, true));
   const deps = {
     db,
@@ -111,7 +126,10 @@ describe("CR-125 · bắt đầu quy trình bằng phiếu yêu cầu", () => {
   it("người trong nhóm thấy flow + phiếu, bắt đầu ⇒ một lượt với input là giá trị phiếu, gửi trùng ⇒ cùng lượt", async () => {
     const list = await call("A", "GET", "/processes/startable");
     expect(list.status).toBe(200);
-    expect(list.json.items.map((x: { flow_key: string }) => x.flow_key)).toEqual(["mua-hang"]);
+    expect(list.json.items.map((x: { flow_key: string }) => x.flow_key).sort()).toEqual([
+      "mua-hang",
+      "mua-hang-2",
+    ]);
     expect(list.json.items[0].form.fields.map((f: { key: string }) => f.key)).toEqual([
       "item",
       "amount",
@@ -136,12 +154,15 @@ describe("CR-125 · bắt đầu quy trình bằng phiếu yêu cầu", () => {
     expect(again.status).toBe(200);
     expect(again.json).toMatchObject({ run_id: r.json.run_id, created: false });
     const [n] = await o<{ n: number }[]>`select count(*)::int as n from hub.process_runs r
-      join hub.flow_events e on e.id = r.flow_event_id where e.tenant_id = ${X} and e.event_id = ${`start:${rid(1)}`}`;
+      join hub.flow_events e on e.id = r.flow_event_id where e.tenant_id = ${X} and e.ref = ${`start:${rid(1)}`}`;
     expect(n?.n).toBe(1);
   });
 
   it("người không trong nhóm ⇒ 403 START_NOT_ALLOWED, không thấy trong danh sách", async () => {
-    expect((await call("B", "GET", "/processes/startable")).json.items).toEqual([]);
+    const keys = (await call("B", "GET", "/processes/startable")).json.items.map(
+      (x: { flow_key: string }) => x.flow_key,
+    );
+    expect(keys).toEqual(["mua-hang-2"]); // flow «mọi người» vẫn thấy, flow theo nhóm thì không
     const r = await start("B", rid(2), GOOD);
     expect(r.status).toBe(403);
     expect(codeOf(r.json)).toBe("START_NOT_ALLOWED");
@@ -154,7 +175,7 @@ describe("CR-125 · bắt đầu quy trình bằng phiếu yêu cầu", () => {
     const f = (r.json.error?.details ?? r.json.details).fields;
     expect(Object.keys(f).sort()).toEqual(["amount", "extra", "item"]);
     const [n] = await o<{ n: number }[]>`select count(*)::int as n from hub.flow_events
-      where tenant_id = ${X} and event_id = ${`start:${rid(3)}`}`;
+      where tenant_id = ${X} and ref = ${`start:${rid(3)}`}`;
     expect(n?.n).toBe(0);
   });
 
@@ -164,7 +185,7 @@ describe("CR-125 · bắt đầu quy trình bằng phiếu yêu cầu", () => {
     expect(r.status).toBe(404);
     const [n] = await o<
       { n: number }[]
-    >`select count(*)::int as n from hub.flow_events where event_id = ${`start:${rid(4)}`}`;
+    >`select count(*)::int as n from hub.flow_events where ref = ${`start:${rid(4)}`}`;
     expect(n?.n).toBe(0);
   });
 
@@ -178,5 +199,20 @@ describe("CR-125 · bắt đầu quy trình bằng phiếu yêu cầu", () => {
     } finally {
       await withHubScope(db, { kind: "system" }, (tx) => setFlowTriggers(tx, X, true));
     }
+  });
+
+  it("cùng request_id — người khác ⇒ lượt riêng, cùng người flow khác ⇒ lượt riêng, cùng người cùng flow ⇒ cùng lượt", async () => {
+    const id = rid(6);
+    const a = await start("A", id, GOOD);
+    const c = await start("C", id, GOOD);
+    const a2 = await start("A", id, GOOD, "mua-hang-2");
+    expect([a.status, c.status, a2.status]).toEqual([201, 201, 201]);
+    expect(new Set([a.json.run_id, c.json.run_id, a2.json.run_id]).size).toBe(3);
+    const retry = await start("A", id, GOOD);
+    expect(retry.status).toBe(200);
+    expect(retry.json).toMatchObject({ run_id: a.json.run_id, created: false });
+    const [n] = await o<{ n: number }[]>`select count(*)::int as n from hub.process_runs r
+      join hub.flow_events e on e.id = r.flow_event_id where e.tenant_id = ${X} and e.ref = ${`start:${id}`}`;
+    expect(n?.n).toBe(3);
   });
 });

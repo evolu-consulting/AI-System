@@ -32,6 +32,17 @@ describe("core.start-form", () => {
     expect(s.safeParse({ item: "Bút", amount: 1, nope: 1 }).success).toBe(false);
     expect(s.safeParse({ item: "Bút", amount: 1, people: ["x"] }).success).toBe(false);
   });
+  test("mã ô trùng dữ liệu hệ thống ⇒ START_FIELD_RESERVED", () => {
+    for (const key of ["request_title", "contract_id", "supplier_id", "record"]) {
+      const r = StartFormConfigSchema.safeParse({
+        ...CFG,
+        fields: [{ key, label: "x", type: "text" }],
+      });
+      expect(r.success).toBe(false);
+      expect(r.error?.issues[0]?.message).toBe("START_FIELD_RESERVED");
+      expect(r.error?.issues[0]?.path).toEqual(["fields", 0, "key"]);
+    }
+  });
   test("khoá ô trùng ⇒ cấu hình sai", () => {
     const bad = { ...CFG, fields: [CFG.fields[0], CFG.fields[0]] };
     expect(StartFormConfigSchema.safeParse(bad).success).toBe(false);

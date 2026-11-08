@@ -11,6 +11,10 @@ import {
   PROCESS_START_ERRORS,
 } from "../../../packages/contracts/src/hub-admin/process-start";
 import {
+  START_FORM_CONFIG_CODES,
+  START_FORM_CONFIG_KEY,
+} from "../../../packages/contracts/src/modules/core/start-form/config";
+import {
   READINESS_CODES,
   READINESS_KEY,
 } from "../../../packages/contracts/src/modules/template-readiness";
@@ -27,6 +31,7 @@ export const CODE_SETS: readonly CodeSet[] = [
   { name: "publish-issue", codes: PUBLISH_ISSUE_CODES, prefix: PUBLISH_ISSUE_KEY },
   { name: "template-readiness", codes: READINESS_CODES, prefix: READINESS_KEY },
   { name: "parallel-approval", codes: PARALLEL_CODES, prefix: PARALLEL_KEY },
+  { name: "start-form-config", codes: START_FORM_CONFIG_CODES, prefix: START_FORM_CONFIG_KEY },
   {
     name: "process-start",
     codes: Object.keys(PROCESS_START_ERRORS),

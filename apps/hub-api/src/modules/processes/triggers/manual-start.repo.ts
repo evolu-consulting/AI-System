@@ -53,31 +53,50 @@ export async function groupIdsByKey(
 }
 
 /**
- * Ghi (hoặc lấy lại) sự kiện của MỘT lần bắt đầu: `event_id = start:<request_id>` duy nhất theo công ty ⇒ gửi trùng trả cùng sự kiện.
- * Ghi ở trạng thái đã chốt (`processed_at`) ⇒ bộ điều phối không nhận. Trả id sự kiện + lượt đã mở (nếu có). Scope user (RLS tenant).
+ * Ghi (hoặc lấy lại) sự kiện của MỘT lần bắt đầu: `event_id` = băm (người gọi × flow công ty × request_id) — duy nhất theo công ty ⇒
+ * chỉ CÙNG người, CÙNG flow, CÙNG mã mới trùng. Ghi ở trạng thái đã chốt (`processed_at`) ⇒ bộ điều phối không nhận. Trả id + người +
+ * ref của sự kiện (nơi gọi kiểm lại trước khi trả lượt cũ) và lượt đã mở của ĐÚNG flow. Scope user (RLS tenant).
  */
 export async function upsertStartEvent(
   tx: Tx,
-  e: { tenantId: string; eventId: string; ref: string; facts: unknown; actorId: string },
-): Promise<{ id: string; run_id: string | null }> {
-  const rows = await tx.execute<{ id: string; run_id: string | null }>(sql`with ins as (
+  e: {
+    tenantId: string;
+    eventId: string;
+    ref: string;
+    facts: unknown;
+    actorId: string;
+    companyFlowId: string;
+  },
+): Promise<{ id: string; actor_id: string | null; ref: string; run_id: string | null }> {
+  const rows = await tx.execute<{
+    id: string;
+    actor_id: string | null;
+    ref: string;
+    run_id: string | null;
+  }>(sql`with ins as (
       insert into hub.flow_events (tenant_id, event_id, event, ref, facts, actor_id, processed_at, outcome)
       values (${e.tenantId}::uuid, ${e.eventId}, ${START_FORM_EVENT}, ${e.ref}, ${JSON.stringify(e.facts)}::jsonb,
         ${e.actorId}::uuid, now(), '{"manual":true}'::jsonb)
-      on conflict (tenant_id, event_id) do nothing returning id),
-    ev as (select id from ins union all
-      select id from hub.flow_events where tenant_id = ${e.tenantId}::uuid and event_id = ${e.eventId})
-    select ev.id, (select r.id from hub.process_runs r where r.flow_event_id = ev.id limit 1) as run_id
+      on conflict (tenant_id, event_id) do nothing returning id, actor_id, ref),
+    ev as (select id, actor_id, ref from ins union all
+      select id, actor_id, ref from hub.flow_events where tenant_id = ${e.tenantId}::uuid and event_id = ${e.eventId})
+    select ev.id, ev.actor_id::text as actor_id, ev.ref, (select r.id from hub.process_runs r where r.flow_event_id = ev.id
+      and r.company_flow_id = ${e.companyFlowId}::uuid limit 1) as run_id
     from ev limit 1`);
   const r = rows[0];
   if (!r) throw new Error("start_event_missing");
   return r;
 }
 
-/** Lượt đã mở của sự kiện (sau `duplicate`). */
-export async function runOfEvent(tx: Tx, eventRowId: string): Promise<string | null> {
+/** Lượt đã mở của sự kiện × flow công ty (sau `duplicate`). */
+export async function runOfEvent(
+  tx: Tx,
+  eventRowId: string,
+  companyFlowId: string,
+): Promise<string | null> {
   const [r] = await tx.execute<{ id: string }>(
-    sql`select id from hub.process_runs where flow_event_id = ${eventRowId}::uuid limit 1`,
+    sql`select id from hub.process_runs where flow_event_id = ${eventRowId}::uuid
+      and company_flow_id = ${companyFlowId}::uuid limit 1`,
   );
   return r?.id ?? null;
 }

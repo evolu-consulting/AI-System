@@ -1,4 +1,9 @@
 {
+  "startForm": {
+    "err": {
+      "START_FIELD_RESERVED": "Mã ô này trùng với dữ liệu hệ thống tự ghi (vd tên yêu cầu, mã bản ghi …_id). Đặt mã khác cho ô."
+    }
+  },
   "parallel": {
     "err": {
       "PARALLEL_GROUPS_MIN2": "Duyệt cùng lúc cần ít nhất 2 nhóm. Thêm nhóm, hoặc bỏ «cùng duyệt» để dùng một nhóm.",

@@ -2,7 +2,8 @@
   "startError": {
     "START_NOT_ALLOWED": "Bạn không nằm trong nhóm được tạo yêu cầu này. Nhờ quản trị công ty thêm bạn vào nhóm được phép.",
     "START_FORM_INVALID": "Phiếu yêu cầu chưa hợp lệ. Sửa các ô báo lỗi rồi gửi lại.",
-    "START_FLOW_OFF": "Quy trình này đang tắt ở công ty nên chưa tạo yêu cầu được. Nhờ quản trị công ty bật nó ở Công ty › Quy trình."
+    "START_FLOW_OFF": "Quy trình này đang tắt ở công ty nên chưa tạo yêu cầu được. Nhờ quản trị công ty bật nó ở Công ty › Quy trình.",
+    "START_REQUEST_REUSED": "Phiếu này trùng mã với một yêu cầu khác. Mở lại phiếu mới rồi gửi."
   },
   "card": {
     "aria": "Quy trình {{name}}",

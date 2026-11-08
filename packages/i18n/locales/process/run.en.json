@@ -2,7 +2,8 @@
   "startError": {
     "START_NOT_ALLOWED": "You are not in a group allowed to create this request. Ask your company admin to add you to an allowed group.",
     "START_FORM_INVALID": "The request form is not valid. Fix the highlighted fields and send again.",
-    "START_FLOW_OFF": "This process is switched off for your company, so the request cannot be created. Ask your company admin to switch it on in Company › Processes."
+    "START_FLOW_OFF": "This process is switched off for your company, so the request cannot be created. Ask your company admin to switch it on in Company › Processes.",
+    "START_REQUEST_REUSED": "This form shares its id with another request. Open a new form and send again."
   },
   "card": {
     "aria": "Process {{name}}",

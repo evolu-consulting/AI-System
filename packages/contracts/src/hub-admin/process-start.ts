@@ -13,6 +13,8 @@ export const PROCESS_START_ERRORS = {
   START_NOT_ALLOWED: 403,
   START_FORM_INVALID: 422,
   START_FLOW_OFF: 409,
+  /** Lưới an toàn: sự kiện của khoá chống trùng không phải của người gọi / mã này (không trả lượt của người khác). */
+  START_REQUEST_REUSED: 409,
 } as const;
 export type ProcessStartErrorCode = keyof typeof PROCESS_START_ERRORS;
 export const PROCESS_START_ERROR_KEY = "process.run.startError";

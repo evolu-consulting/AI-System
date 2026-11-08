@@ -48,6 +48,23 @@ export const StartFormStartersSchema = z.discriminatedUnion("kind", [
 ]);
 export type StartFormStarters = z.infer<typeof StartFormStartersSchema>;
 
+/**
+ * Khoá input do hệ thống ghi vào lượt (tên yêu cầu, bản ghi / dữ kiện của sự kiện app) — ô phiếu không được trùng, kẻo đè hoặc bị đè
+ * (input khai trước thắng). Bản ghi của mọi app (`<x>_id`, `record`) cũng cấm.
+ */
+export const START_FORM_RESERVED_KEYS = [
+  "request_title",
+  "record",
+  "ref",
+  "event",
+  "contract_id",
+] as const;
+export const isReservedStartKey = (k: string): boolean =>
+  (START_FORM_RESERVED_KEYS as readonly string[]).includes(k) || /_id$/.test(k);
+/** Mã lỗi cấu hình phiếu (message của issue zod; i18n `process.admin.startForm.err.<mã>`). */
+export const START_FORM_CONFIG_CODES = ["START_FIELD_RESERVED"] as const;
+export const START_FORM_CONFIG_KEY = "process.admin.startForm.err";
+
 export const StartFormConfigSchema = z
   .strictObject({
     fields: z.array(StartFormFieldSchema).min(1).max(START_FORM_FIELDS_MAX),
@@ -58,6 +75,16 @@ export const StartFormConfigSchema = z
   .refine((c) => new Set(c.fields.map((f) => f.key)).size === c.fields.length, {
     message: "duplicate field key",
     path: ["fields"],
+  })
+  .superRefine((c, ctx) => {
+    c.fields.forEach((f, i) => {
+      if (isReservedStartKey(f.key))
+        ctx.addIssue({
+          code: "custom",
+          message: "START_FIELD_RESERVED",
+          path: ["fields", i, "key"],
+        });
+    });
   });
 export type StartFormConfig = z.infer<typeof StartFormConfigSchema>;
 
