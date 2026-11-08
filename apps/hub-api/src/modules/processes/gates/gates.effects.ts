@@ -29,6 +29,7 @@ import {
 } from "../runs/step-persist";
 import { stageRowOf, toDecision } from "../runs/team-runner";
 import * as g from "./gates.repo";
+import { openParallel, parallelGroupIds } from "./parallel-open";
 
 export type Locked = core.RunHead;
 export type Stage = Awaited<ReturnType<typeof stageRowOf>>;
@@ -332,6 +333,18 @@ async function openReview(
   const def = snapOf(run).stages[idx];
   const groupId = def?.after.kind === "review" ? def.after.group_id : null;
   const stage = await stageRowOf(tx, run.id, idx);
+  const outputId = stage?.current_output_id ?? null;
+  const groupIds = parallelGroupIds(def); // CR-125 · «A + B cùng duyệt» ⇒ mở lại thẻ cho mọi nhóm
+  if (groupIds)
+    return (
+      await openParallel(d, tx, {
+        tenantId: run.tenantId,
+        runId: run.id,
+        stageRunId,
+        outputId,
+        groupIds,
+      })
+    ).events;
   const taskId = await core.insertTask(tx, {
     tenantId: run.tenantId,
     runId: run.id,

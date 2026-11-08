@@ -13,6 +13,7 @@ import { askExcerpt } from "../core/task.rules";
 import { enqueueThread } from "../core/thread";
 import type { Effect, RunEvent, RunState } from "../domain/runs/run-state.rules";
 import { decisionAssignees, decisionOptionsFor } from "../domain/tasks/decision.rules";
+import { openParallel, parallelGroupIds } from "../gates/parallel-open";
 import { executorRefOf } from "./executor-ref";
 import { outputAttachment, type PendingBlob } from "./output-attachment";
 import { refsFeedback, type StageSourceCtx, stageRefsCheck } from "./stage-sources";
@@ -223,16 +224,12 @@ async function openReview(
   outputId: string | null,
 ): Promise<{ taskId: string; events: UserEvent[] }> {
   const groupId = c.def.after.kind === "review" ? c.def.after.group_id : null;
-  const taskId = await core.insertTask(tx, {
-    tenantId: c.head.tenant_id,
-    runId: c.x.runId,
-    stageRunId: c.x.stageRunId,
-    kind: "review",
-    remindAt: new Date(d.now().getTime() + 86_400_000),
-    outputId,
-    userIds: [],
-    groupId,
-  });
+  const p = { tenantId: c.head.tenant_id, runId: c.x.runId, stageRunId: c.x.stageRunId, outputId };
+  const groupIds = parallelGroupIds(c.def); // CR-125 · «A + B cùng duyệt» ⇒ một thẻ mỗi nhóm
+  if (groupIds) return openParallel(d, tx, { ...p, groupIds });
+  const at = new Date(d.now().getTime() + 86_400_000);
+  const t = { ...p, kind: "review" as const, remindAt: at, userIds: [], groupId };
+  const taskId = await core.insertTask(tx, t);
   return { taskId, events: await d.notifier.taskOpened(tx, taskId) };
 }
 

@@ -4,7 +4,8 @@
 
 import { z } from "zod";
 import { WAIT_OFFSET_DAYS, WaitTimeSchema } from "../../chat/processes";
-import type { FeatureModule, FeatureNodeDecl } from "../types";
+import { ApproveParallelSchema } from "../../hub-admin/process-approve";
+import type { FeatureModule, FeatureNodeDecl, PortSchema } from "../types";
 
 const WaitUntilPort = z.strictObject({
   offset_days: z.number().int().min(WAIT_OFFSET_DAYS.min).max(WAIT_OFFSET_DAYS.max),
@@ -49,6 +50,15 @@ export const APPROVE_OUTPUTS: FeatureNodeDecl["outputs"] = [
     label: { vi: "Góp ý của người duyệt", en: "Approver feedback" },
   },
 ];
+
+/**
+ * CR-125 · «A + B cùng duyệt»: cổng cấu hình của Duyệt = `after.parallel` của stage (vắng = một nhóm duyệt như cũ). Hình dạng ở
+ * `ApproveParallelSchema` (một nguồn với def); luật số nhóm / `min` ở `parallelStageIssues` (PARALLEL_GROUPS_MIN2 · PARALLEL_RULE_INVALID).
+ */
+export const APPROVE_CONFIG_PORT = {
+  schema: z.strictObject({ parallel: ApproveParallelSchema.optional() }),
+  widgets: { parallel: "department" },
+} as const satisfies PortSchema;
 
 /** Thông báo (chuông / email): người nhận thật sự được gửi tới (CR-125 m9 · node `notify` ghi tên người nhận vào output). */
 const NOTIFY_OUTPUTS: FeatureNodeDecl["outputs"] = [
@@ -138,7 +148,10 @@ export const CORE_MODULE: FeatureModule = {
       inputs: [],
       outputs: [],
     },
-    native("core.approve", "Duyệt", "Approve", "approve", APPROVE_OUTPUTS),
+    {
+      ...native("core.approve", "Duyệt", "Approve", "approve", APPROVE_OUTPUTS),
+      configPort: APPROVE_CONFIG_PORT,
+    },
     native("core.if", "Nếu", "If", "if"),
     // Kết thúc = stage `set` mang `outcome` (xem `baseNodeOf`).
     native("core.end", "Kết thúc", "End", "set"),

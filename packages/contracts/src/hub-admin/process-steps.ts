@@ -46,6 +46,9 @@ export const PROCESS_DEF_RULES = [
   "NOTIFY_INVALID",
   // CR-122 E2b · node Duyệt độc lập (`approveStageIssues`, hub-api nodes/approve).
   "APPROVE_INVALID",
+  // CR-125 · «A + B cùng duyệt» (`parallelStageIssues`, `process-approve.ts`).
+  "PARALLEL_GROUPS_MIN2",
+  "PARALLEL_RULE_INVALID",
 ] as const;
 export type ProcessDefRule = (typeof PROCESS_DEF_RULES)[number];
 export type ProcessDefIssue = { path: string; rule: ProcessDefRule };

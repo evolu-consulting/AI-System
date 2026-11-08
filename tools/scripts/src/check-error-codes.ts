@@ -1,6 +1,10 @@
 // CR-125 G1 · `bun run check:error-codes` (trong `bun run check` + cổng sau rebase của slice:merge): mã lỗi một nguồn (audit #12, check 7).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import {
+  PARALLEL_CODES,
+  PARALLEL_KEY,
+} from "../../../packages/contracts/src/hub-admin/process-approve";
 import { HUB_ADMIN_LIBRARY_ERRORS } from "../../../packages/contracts/src/hub-admin/process-library";
 import {
   READINESS_CODES,
@@ -18,6 +22,7 @@ import { readLocaleEntries } from "./lib/locale-files";
 export const CODE_SETS: readonly CodeSet[] = [
   { name: "publish-issue", codes: PUBLISH_ISSUE_CODES, prefix: PUBLISH_ISSUE_KEY },
   { name: "template-readiness", codes: READINESS_CODES, prefix: READINESS_KEY },
+  { name: "parallel-approval", codes: PARALLEL_CODES, prefix: PARALLEL_KEY },
   {
     name: "hub-admin-library",
     codes: Object.keys(HUB_ADMIN_LIBRARY_ERRORS),

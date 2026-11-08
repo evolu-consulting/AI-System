@@ -54,6 +54,7 @@ import {
 } from "./gates.effects";
 import * as g from "./gates.repo";
 import { assertHeadGate, reviewGroupMember } from "./head-gate.check";
+import { parallelStep, partialOut } from "./parallel-approve";
 import { assertDecisionAllowed, assertReviewAllowed, cancelRunOf, reviewOut } from "./review-out";
 
 /** P-b2 D8 · decision `back_limit` + `add_attempt` ⇒ `back.effects` (nâng trần rồi quay lại); còn lại như P-a. */
@@ -204,8 +205,7 @@ export class GateService {
     const task = await g.loadTask(tx, taskId);
     assertMayDecide(task, req, b);
     const idx = task.stage_idx;
-    // T19-perf · pipeline: khoá run (§10, câu ĐẦU) + 2 câu đọc gửi liền một round-trip; Postgres chạy tuần tự trên cùng
-    // kết nối ⇒ hai câu đọc chạy SAU khi đã giữ khoá run. Run không thấy ⇒ 404, kết quả đọc bỏ.
+    // T19-perf · khoá run (§10, câu ĐẦU) + 2 câu đọc gửi liền (cùng kết nối ⇒ đọc SAU khi giữ khoá). Run không thấy ⇒ 404.
     const [run, recipients, s] = await Promise.all([
       core.lockRun(tx, task.tenant_id, task.process_run_id),
       core.runRecipients(tx, task.process_run_id, task.tenant_id),
@@ -213,6 +213,9 @@ export class GateService {
     ]);
     assertHeadGate(run, idx, task, req); // run không thấy ⇒ 404 · S1b · head_only (snapshot đã khoá)
     assertReviewAllowed(run, idx, v.userId, b); // N2-FR-05 403 · P-b2 422 BACK_TARGET_INVALID — trước khi đóng task
+    const gx: Gx = { d: this.d, tx };
+    const par = await parallelStep(gx, { run, idx, task, b }); // CR-125 · cùng duyệt (run đã khoá)
+    if (par.partial) return partialOut(gx, { run, idx, task, b }, { ...v, groupIds, recipients });
     const pre = { run, idx, outputId: s?.current_output_id ?? null, taskId, v, form };
     const answer = await formPre(tx, pre); // CR-118 · stage form chỉ quyết qua gửi form (ghi output cùng tx)
     const def = snapOf(run).stages[idx];
@@ -235,15 +238,13 @@ export class GateService {
     if (!closed) throw processError("REVIEW_TASK_CLOSED");
     if (!t.ok) throw processError(t.code);
     const e: Eff = { run, idx, next: t.next, effects: t.effects, ref };
-    const gx: Gx = { d: this.d, tx };
     const { events, step, status, kick, cancel } = await reviewOut(gx, e, task, eb);
-    // D9 · decision mở cũ nhất (Chưa đạt chạm `back_limit` vừa ghi decision mới nhất) ∥ đọc thẻ task trả về: độc lập
-    // (`process_runs.decision` không thuộc `TaskDetail`) ⇒ pipeline.
+    // D9 · decision mở cũ nhất ∥ đọc thẻ task trả về: độc lập (`process_runs.decision` không thuộc `TaskDetail`) ⇒ pipeline.
     const [, details] = await Promise.all([
       refreshDecision(gx, run),
       loadTaskDetails(tx, { ...v, groupIds }, [taskId]),
     ]);
-    events.push(...processUpdated(recipients, updatedOf(run, status, step)));
+    events.push(...par.events, ...processUpdated(recipients, updatedOf(run, status, step)));
     const detail = details[0];
     if (!detail) throw notFound();
     const cancelRun = cancelRunOf(run, status); // N2-FR-02 · Từ chối ⇒ huỷ `hub.runs` sau COMMIT

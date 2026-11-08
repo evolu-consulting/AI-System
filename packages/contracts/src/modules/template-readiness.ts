@@ -75,8 +75,15 @@ function groupKeysOfStage(s: Obj): string[] {
     one(s.after.escalate);
     for (const k of Array.isArray(s.after.also_group_keys) ? s.after.also_group_keys : [])
       if (typeof k === "string") out.push(k);
+    for (const g of parallelGroupsOf(s.after)) one(g);
   }
   return out;
+}
+
+/** CR-125 · «A + B cùng duyệt»: mỗi nhóm của `after.parallel` là một nhóm duyệt cần có. */
+function parallelGroupsOf(after: Obj): unknown[] {
+  const p = after.parallel;
+  return isObj(p) && Array.isArray(p.groups) ? p.groups : [];
 }
 
 /** Mẫu (stages thô) cần gì. `mods` = `MODULES`. */

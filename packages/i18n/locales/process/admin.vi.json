@@ -1,4 +1,10 @@
 {
+  "parallel": {
+    "err": {
+      "PARALLEL_GROUPS_MIN2": "Duyệt cùng lúc cần ít nhất 2 nhóm. Thêm nhóm, hoặc bỏ «cùng duyệt» để dùng một nhóm.",
+      "PARALLEL_RULE_INVALID": "Điều kiện duyệt chưa hợp lệ: số nhóm cần đồng ý không được lớn hơn số nhóm, mỗi nhóm chỉ chọn một lần, và chỉ bước Duyệt mới cùng duyệt được."
+    }
+  },
   "list": {
     "title": "Quy trình",
     "subtitle": "Các bước duyệt hợp đồng của công ty: ai duyệt, theo thứ tự nào, khi nào nhờ người ký.",

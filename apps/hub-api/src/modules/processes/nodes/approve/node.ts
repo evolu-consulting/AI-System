@@ -5,6 +5,7 @@ import {
   approveStageIssues,
   NODE_FAMILY_OF,
   type ProcessDefInput,
+  parallelStageIssues,
   resolveSteps,
 } from "@ai/contracts/hub-admin";
 import type { DefIssue, DefStage, NodeSpec } from "../types";
@@ -13,8 +14,9 @@ export const APPROVE_RESULT_SECTION = "Quyết định";
 export const APPROVE_TEMPLATE = `# {name}\n\n## ${APPROVE_RESULT_SECTION}\n`;
 
 function approveIssuesOf(d: ProcessDefInput): DefIssue[] {
-  if (!d.stages.some((s) => s.executor.kind === "approve")) return [];
-  return approveStageIssues(d.stages, resolveSteps(d.stages));
+  const par = parallelStageIssues(d.stages); // CR-125 · `parallel` ở bước không phải Duyệt cũng bị báo
+  if (!d.stages.some((s) => s.executor.kind === "approve")) return par;
+  return [...approveStageIssues(d.stages, resolveSteps(d.stages)), ...par];
 }
 
 /** `approve`: Hub ép template/mục/field `decision`/answerer/nguồn; giữ `after` (Group, nhắc, chuyển cấp) và đích rẽ. */

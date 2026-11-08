@@ -20,7 +20,7 @@ import {
 } from "../chat/processes";
 import { IsoDateTime, UuidSchema } from "../common";
 import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "./autofix";
-import { ApproveExecutorSchema } from "./process-approve";
+import { ApproveExecutorSchema, ApproveParallelSchema } from "./process-approve";
 import { FormExecutorSchema } from "./process-form";
 import {
   AnswererGroupSchema,
@@ -215,8 +215,8 @@ export const ProcessStageDefSchema = z.strictObject({
       branch: AfterBranchSchema,
       /** N2-FR-05 · người bắt đầu run không được quyết task duyệt của stage này (vắng ở snapshot cũ ⇒ false). */
       exclude_starter: z.boolean().default(false),
-      /** contract-flow S1b · chỉ trưởng phòng của `group_id` quyết (không trưởng ⇒ cả nhóm; chuyển cấp không bị giới hạn). */
-      head_only: z.boolean().optional(),
+      head_only: z.boolean().optional(), // contract-flow S1b · chỉ trưởng phòng của `group_id` quyết (không trưởng ⇒ cả nhóm)
+      parallel: ApproveParallelSchema.optional(), // CR-125 · «A + B cùng duyệt» (bước Duyệt; luật `parallelStageIssues`)
       also_group_ids: z.array(UuidSchema).max(5).optional(), // prod-fix2 · Group cũng quyết (không head_only, chịu exclude_starter)
       approver_user_id: UuidSchema.optional(), // esign-flow · người duyệt cụ thể (cửa như head_only)
       group_key: StageGroupKeySchema.optional(), // CR-105 · def thư viện: Group duyệt theo mã

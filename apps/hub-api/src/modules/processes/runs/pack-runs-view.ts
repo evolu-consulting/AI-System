@@ -66,7 +66,7 @@ const userScope = (u: PackRunCaller) => ({
   tenantId: u.tenantId,
 });
 
-const rowsSql = (runIds: readonly string[], tenantId: string) => sql`
+const rowsSql = (runIds: readonly string[], tenantId: string, gs = new Set<string>()) => sql`
   select r.id::text as run_id, r.status as run_status, r.started_by, r.decision as run_decision, s.stage_idx, s.status as stage_status, s.last_error_code as stage_error, s.round,
     r.snapshot->'stages'->(s.stage_idx::int) as stage,
     t.id as task_id, t.status as task_status, t.result, t.feedback, t.decided_by, t.decided_at,
@@ -77,8 +77,8 @@ const rowsSql = (runIds: readonly string[], tenantId: string) => sql`
       and d.tenant_id = r.tenant_id)) as group_head
   from hub.process_runs r
   join hub.stage_runs s on s.process_run_id = r.id and s.tenant_id = r.tenant_id
-  left join lateral (select t.* from hub.review_tasks t where t.stage_run_id = s.id
-    and t.tenant_id = s.tenant_id and t.kind = 'review' order by t.created_at desc, t.id desc limit 1) t on true
+  left join lateral (select t.* from hub.review_tasks t where t.stage_run_id = s.id and t.tenant_id = s.tenant_id and t.kind = 'review' -- CR-125 cùng duyệt: thẻ mở, của nhóm người xem trước
+    order by (t.status = 'open') desc, (t.assignee_group_id = any(${`{${[...gs].filter((x) => UUID.test(x)).join(",")}}`}::uuid[])) desc, t.created_at desc, t.id desc limit 1) t on true
   left join admin.users du on du.id = t.decided_by and du.tenant_id = r.tenant_id
   where r.id = any(${`{${runIds.join(",")}}`}::uuid[]) and r.tenant_id = ${tenantId}
   order by r.id, s.stage_idx`;
@@ -191,7 +191,7 @@ export async function stepsView(
   if (!UUID.test(runId)) return null;
   const groupIds = (await d.config.user(u.userId))?.groupIds ?? new Set<string>();
   return withHubScope(d.db, userScope(u), async (tx) => {
-    const rows = [...(await tx.execute<Row>(rowsSql([runId], u.tenantId)))];
+    const rows = [...(await tx.execute<Row>(rowsSql([runId], u.tenantId, new Set(groupIds))))];
     const head = rows[0];
     if (!head) return null;
     const open = rows.flatMap((r) => (r.task_id && r.task_status === "open" ? [r.task_id] : []));
