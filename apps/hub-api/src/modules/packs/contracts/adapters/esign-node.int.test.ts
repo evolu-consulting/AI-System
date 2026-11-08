@@ -240,7 +240,7 @@ describe("CR-122 · bước Ký số của flow báo chuông người ký", () =
     const send = w.tools.find((t) => t.name === "contracts-esign-send") as (typeof w.tools)[number];
     await send.run(CTX(A), { contract_id: id, company_signers: `user:${C}`, partner_signs: false });
     const bells = await o<{ title: string }[]>`select title from hub.notifications
-      where tenant_id = ${T1} and user_id = ${C} and link = ${`/contracts/c/${id}`}`;
+      where tenant_id = ${T1} and user_id = ${C} and link = ${`/contracts/c/${id}#esign-panel`}`;
     expect(bells.map((b) => b.title)).toEqual([expect.stringMatching(/^Mời ký số HĐ/)]);
   });
 });

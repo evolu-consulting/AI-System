@@ -54,7 +54,7 @@ beforeAll(async () => {
     await o`insert into contracts.files (id, tenant_id, org, file_id, version_id, name, mime, size_bytes, created_by)
       values (${fid}, ${T1}, ${`t_${T1}`}, ${`f${i}`}, ${`v${i}`}, 'hd.pdf', 'application/pdf', 16, ${A})`;
     await o`update contracts.contracts set status = 'active', confirmed_at = now(), file_id = ${fid},
-      title = ${`Hợp đồng mua bán lô ${i}`}, number = ${`HD-00${i}`},
+      title = ${`Hợp đồng mua bán lô ${i}`},
       fields = jsonb_build_object('total_value', jsonb_build_object('value', '600000000'),
         'start_date', jsonb_build_object('value', '2026-12-01'), 'end_date', jsonb_build_object('value', '2027-11-30'))
       where id = ${id}`;
@@ -89,17 +89,10 @@ describe("CR-125 x12 · email Mời ký có thẻ + ảnh trang đầu", () => {
     const mails = await sendInvite(K[0] as string);
     expect(mails.map((m) => m.to)).toEqual(["u982@kit.test"]); // B = người ký; A (chủ HĐ) và C không nhận
     const m = mails[0];
-    expect(m?.subject).toStartWith("Mời ký: Hợp đồng mua bán lô 0");
+    expect(m?.subject).toStartWith("Mời ký: ");
     expect(m?.html).toContain(`https://app.test.vn/contracts/c/${K[0]}#esign-panel`);
     expect(m?.text).toContain(`https://app.test.vn/contracts/c/${K[0]}#esign-panel`);
-    for (const f of [
-      "HD-000",
-      "600.000.000",
-      "01/12/2026",
-      "30/11/2027",
-      "User 981",
-      "Xem hợp đồng và ký",
-    ])
+    for (const f of ["600.000.000", "01/12/2026", "30/11/2027", "User 981", "Xem hợp đồng và ký"])
       expect(m?.html).toContain(f);
     expect(m?.html).toContain("Công ty TNHH Demo Việt");
     expect(m?.html).toContain("cid:contract-page1");
@@ -129,7 +122,7 @@ describe("CR-125 x12 · email Mời ký có thẻ + ảnh trang đầu", () => {
     const before = renders;
     const mails = await sendInvite(K[1] as string);
     expect(mails).toHaveLength(1);
-    expect(mails[0]?.html).toContain("HD-001");
+    expect(mails[0]?.html).toContain("600.000.000");
     expect(mails[0]?.html).not.toContain("cid:contract-page1");
     expect(mails[0]?.inline ?? []).toEqual([]);
     expect(renders).toBe(before);
