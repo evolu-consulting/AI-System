@@ -32,11 +32,6 @@ const TABLE: Row[] = [
   ],
   ["access.tab.matrix", "Ma trận", "Matrix"],
   ["access.tab.check", "Kiểm tra quyền", "Access check"],
-  [
-    "access.selectTenant",
-    "Chọn một tenant để phân quyền cho tenant đó.",
-    "Choose a tenant to manage its access.",
-  ],
   ["access.matrix.title", "Ma trận feature × group", "Feature × group matrix"],
   ["access.matrix.aria", "Ma trận feature × group", "Feature × group matrix"],
   ["access.matrix.dirty_one", "{count} thay đổi chưa lưu", "{count} unsaved change"],
@@ -78,11 +73,6 @@ const TABLE: Row[] = [
   ],
   ["access.matrix.noGroupsCta", "Tạo group", "Create group"],
   [
-    "access.matrix.unopenedHint",
-    "Liên hệ nền tảng để mở feature này cho công ty.",
-    "Contact the platform to open this feature for the company.",
-  ],
-  [
     "access.toast.saved",
     "Đã lưu quyền · {added} cấp, {removed} thu. Thành viên thấy thay đổi trong vài giây.",
     "Saved · {added} granted, {removed} revoked. Members see the change within seconds.",
@@ -103,12 +93,6 @@ const TABLE: Row[] = [
     "core is available to everyone and needs no grant.",
   ],
   [
-    "access.error.batchFail",
-    "Không lưu được, chưa có thay đổi nào được áp dụng.",
-    "Couldn't save; none of the changes were applied.",
-  ],
-  ["access.check.title", "Kiểm tra quyền", "Access check"],
-  [
     "access.check.subtitle",
     'Trả lời "sao tôi không thấy lệnh X"',
     'Answers "why can\'t I see command X"',
@@ -120,13 +104,7 @@ const TABLE: Row[] = [
     "Chọn một người dùng để xem họ dùng được gì và vì sao.",
     "Choose a user to see what they can use, and why.",
   ],
-  [
-    "access.check.userNotFound",
-    "Không tìm thấy người dùng này trong tenant.",
-    "This user isn't in the tenant.",
-  ],
   ["access.check.search", "Tìm command", "Search commands"],
-  ["access.check.searchPlaceholder", "Tìm command, ví dụ kiemtra", "Search commands, e.g. kiemtra"],
   ["access.check.section.features", "Feature", "Features"],
   ["access.check.section.commands", "Command", "Commands"],
   ["access.check.section.agents", "Agent", "Agents"],
@@ -194,7 +172,6 @@ const TABLE: Row[] = [
     "Đang hiện {shown}/{total} group. Gõ để lọc.",
     "Showing {shown} of {total} groups. Type to filter.",
   ],
-  ["access.matrix.filterGroups", "Lọc group", "Filter groups"],
   ["access.reason.commandDisabled", "Command đang tắt.", "The command is disabled."],
   [
     "access.reason.workflowDisabled",
@@ -208,7 +185,6 @@ const TABLE: Row[] = [
   ["users.col.filter.group", "Group", "Group"],
   ["users.col.filter.allGroups", "Tất cả group", "All groups"],
   ["users.filter.groupChip", "Group: {key}", "Group: {key}"],
-  ["users.filter.groupNeedsTenant", "Chọn tenant trước", "Choose a tenant first"],
   ["users.groups.more", "Còn: {names}", "Also: {names}"],
   [
     "users.field.groupsReadonly",
@@ -216,7 +192,6 @@ const TABLE: Row[] = [
     "Edit membership on the Group page.",
   ],
   ["users.field.groupsNone", "Chưa thuộc group nào", "Not in any group"],
-  ["users.access.summary", "Thấy {visible}/{total} command", "Sees {visible} of {total} commands"],
   ["commands.access.col.groups", "Group được cấp", "Granted groups"],
   ["commands.access.col.visible", "Số user thấy", "Users who see it"],
   ["commands.access.groups.none", "Chưa group nào được cấp", "No group granted yet"],
@@ -248,7 +223,6 @@ const E2E_LABELS = [
   "Groups",
   "Quyền hiệu lực",
   "Mở Kiểm tra quyền",
-  "Chọn một tenant để phân quyền cho tenant đó.",
   "Chưa group nào được cấp",
 ];
 

@@ -3,7 +3,7 @@
 import { describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { CHAT_WEB, CHAT_WEB_ENABLED } from "./_gate";
+import { CHAT_WEB } from "./_gate";
 
 // CR-125 G4: token nằm ở gói chung web-kit (chat-web chỉ import).
 const CSS = join(CHAT_WEB, "../../packages/web-kit/src/styles/tokens.css");
@@ -77,7 +77,7 @@ const NON_TEXT: Array<[string, string]> = [
   ["warning-solid", "muted"],
 ];
 
-describe.skipIf(!CHAT_WEB_ENABLED)("contrast", () => {
+describe("contrast", () => {
   it("CHAT-AC-35 · globals.css tồn tại và có đủ khối :root và .dark [U-11]", () => {
     expect(existsSync(CSS)).toBe(true);
     const css = readFileSync(CSS, "utf8");

@@ -46,18 +46,11 @@ const TABLE: Row[] = [
     "The built-in beta-testers group can't be deleted",
   ],
   [
-    "groups.selectTenant",
-    "Chọn một tenant để xem group của tenant đó.",
-    "Choose a tenant to see its groups.",
-  ],
-  [
     "groups.empty.text",
     "Chưa có group nào. Tạo group để cấp feature cho cả phòng ban.",
     "No groups yet. Create a group to grant features to a whole team.",
   ],
-  ["groups.empty.cta", "+ Tạo group đầu tiên", "+ Create your first group"],
   ["groups.editor.titleNew", "Group mới", "New group"],
-  ["groups.editor.breadcrumb.new", "Group mới", "New group"],
   [
     "groups.summary",
     "{members} thành viên · {features} feature",
@@ -66,11 +59,6 @@ const TABLE: Row[] = [
   ["groups.field.key", "Key", "Key"],
   ["groups.field.name", "Tên", "Name"],
   ["groups.field.description", "Mô tả", "Description"],
-  [
-    "groups.field.keyLocked",
-    "Key không đổi được sau khi tạo",
-    "Key can't be changed after creation",
-  ],
   ["groups.field.descCount", "{n}/400", "{n}/400"],
   ["groups.create.submit", "Tạo group", "Create group"],
   ["groups.rename.button", "Đổi tên", "Rename"],
@@ -117,11 +105,6 @@ const TABLE: Row[] = [
     "Group chưa được cấp feature nào ngoài core.",
     "This group has no features beyond core.",
   ],
-  [
-    "groups.agents.body",
-    "Cấp agent cho group làm ở Agent Forge, khi Agent Hub sẵn sàng.",
-    "Granting agents to a group is done in Agent Forge once Agent Hub is ready.",
-  ],
   ["groups.delete.title", "Xoá {name}?", "Delete {name}?"],
   [
     "groups.delete.body",
@@ -156,11 +139,6 @@ const TABLE: Row[] = [
     "Use lowercase letters, digits and - only (2–32 chars)",
   ],
   [
-    "groups.error.keyTaken",
-    "Key đã được dùng trong tenant này",
-    "Key is already used in this tenant",
-  ],
-  [
     "groups.error.nameRequired",
     "Nhập tên group (tối đa 64 ký tự)",
     "Enter a group name (at most 64 characters)",
@@ -193,7 +171,6 @@ const E2E_LABELS = [
   "Mô tả",
   "Sửa",
   "Xoá",
-  "Chọn một tenant để xem group của tenant đó.",
 ];
 
 describe("ADM-FR-62 · M3-R24 · i18n VI/EN (groups)", () => {

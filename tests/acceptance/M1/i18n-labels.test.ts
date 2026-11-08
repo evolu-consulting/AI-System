@@ -105,15 +105,11 @@ const TABLE: Array<[string, string, string]> = [
   ["topbar.platform", "Nền tảng", "Platform"],
   ["account.menu", "Tài khoản của bạn", "Your account"],
   ["account.changePassword", "Đổi mật khẩu", "Change password"],
-  ["account.language", "Ngôn ngữ", "Language"],
   // M4 (Q2a, test-plan §5 K11): bỏ overview.welcome/soon/platform.body/tenant.body (Tổng quan thật, plan-frontend §7).
   ["tenants.badge.platform", "Nền tảng", "Platform"],
   // CR-121 c14: gỡ tenants.tab.unavailableBody (trang công ty 5 tab)
-  ["tenants.detail.createdAt", "Tạo lúc {date}", "Created {date}"],
-  ["tenants.detail.userCount", "{users} user", "{users} users"],
   ["tenants.toast.saved", "Đã lưu {key}", "Saved {key}"],
   ["tenants.error.nameRequired", "Nhập tên công ty", "Enter the company name"],
-  ["users.col.tenant", "Tenant", "Tenant"],
   ["users.filter.role.all", "Tất cả role", "All roles"],
   ["users.status.tempLocked", "Tạm khoá đến {time}", "Temporarily locked until {time}"],
   [
@@ -123,7 +119,6 @@ const TABLE: Array<[string, string, string]> = [
   ],
   ["users.error.displayNameMax", "Tối đa 64 ký tự", "At most 64 characters"],
   ["users.logoutAll.submit", "Đăng xuất", "Sign out"],
-  ["users.drawer.tenantLine", "Tenant: {key}", "Tenant: {key}"],
   [
     "users.drawer.copyAll.text",
     "Mã công ty: {tenant}\nTên đăng nhập: {username}\nMật khẩu tạm: {password}",
@@ -140,7 +135,6 @@ const TABLE: Array<[string, string, string]> = [
   ["common.loading", "Đang tải", "Loading"],
   ["common.stillLoading", "Vẫn đang tải…", "Still loading…"],
   ["common.saved", "Đã lưu", "Saved"],
-  ["common.reload", "Tải lại", "Reload"],
   ["state.error.title", "Không tải được dữ liệu", "Couldn't load data"],
   ["state.error.body", "{message} (mã {code})", "{message} (code {code})"],
   [
