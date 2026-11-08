@@ -39,7 +39,18 @@ test("quản trị community: sao chép flow Duyệt bài, thêm bước Duyệt
   const pane = page.locator(".react-flow__pane").first();
   const pb = await pane.boundingBox();
   if (!pb) throw new Error("không thấy canvas");
-  const before = await nodes.count();
+  // sơ đồ vẽ xong khi node Kết thúc (cuối dải) đã hiện và số node ngừng đổi qua hai lần đọc liên tiếp (bố cục chạy sau lần vẽ đầu ⇒ count() sớm có thể thấp hơn thật)
+  await expect(nodes.filter({ hasText: /^Kết thúc/ }).first()).toBeVisible({ timeout: 30_000 });
+  let prev = -1;
+  await expect
+    .poll(async () => {
+      const n = await nodes.count();
+      const same = n > 0 && n === prev;
+      prev = n;
+      return same;
+    })
+    .toBe(true);
+  const before = prev;
   await page.getByTestId("flow-add-step").click();
   await page
     .getByRole("menuitem", { name: /^Duyệt/ })

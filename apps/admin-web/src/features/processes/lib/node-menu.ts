@@ -25,7 +25,14 @@ const orderOf = (m: MenuItem): number =>
 const OWNER_OF = new Map(MODULES.flatMap((m) => m.nodes.map((n) => [n.key, m.app] as const)));
 export const ownerAppOf = (key: string): string | undefined => OWNER_OF.get(key);
 
-/** Node có dùng được cho flow của `app` + `event` không: đúng app (hoặc lõi) và mọi Kết thúc đặt sẵn đều là kết quả của sự kiện. */
+/**
+ * CR-125 · c6b · node chỉ là MỘT Kết thúc đặt sẵn kết quả (vd Hiện bài = Kết thúc · `shown`) ⇒ trùng mục "Kết thúc · <kết quả>" của menu.
+ * Luật Gốc 2 (một việc một nút): không hiện thêm; vẫn đăng ký ở MODULES vì flow đã lưu có thể mang khoá node này.
+ */
+export const isOutcomeOnlyNode = (n: AppNodeDecl): boolean =>
+  n.stages.length === 1 && n.stages[0]?.outcome !== undefined;
+
+/** Node có dùng được cho flow của `app` + `event` không: đúng app (hoặc lõi), không trùng mục Kết thúc, mọi Kết thúc đặt sẵn đều là kết quả của sự kiện. */
 export function nodeFitsFlow(
   n: AppNodeDecl,
   app: string,
@@ -33,6 +40,7 @@ export function nodeFitsFlow(
 ): boolean {
   const owner = ownerAppOf(n.key);
   if (owner !== undefined && owner !== "core" && owner !== app) return false;
+  if (isOutcomeOnlyNode(n)) return false;
   if (!event) return true;
   const outs = new Set(event.outcomes.map((o) => o.key));
   return n.stages.every((s) => s.outcome === undefined || outs.has(s.outcome));

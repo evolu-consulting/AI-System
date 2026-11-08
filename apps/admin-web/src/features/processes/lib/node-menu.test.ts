@@ -5,8 +5,9 @@ import {
   CONTRACTS_MANIFEST,
   CORE_NODES,
 } from "@ai/contracts/app-manifest";
+import { featureNodeByKey, MODULES as REGISTRY } from "@ai/contracts/modules";
 import { eventOf, finishPatch, nodesForApp } from "./flow-def";
-import { splitMenu } from "./node-menu";
+import { isOutcomeOnlyNode, splitMenu } from "./node-menu";
 
 const mod = (key: string, menu?: AppNodeDecl["menu"]): AppNodeDecl =>
   ({
@@ -47,7 +48,7 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
     expect(adv.at(-1)).toBe("set");
     expect(adv).not.toContain("approve");
   });
-  test("CR-125 c6 · B3: flow community thấy Hiện bài ở nhóm nghiệp vụ, KHÔNG thấy node hợp đồng, flow hợp đồng không thấy Hiện bài", () => {
+  test("CR-125 c6b · flow community không thấy node hợp đồng, flow hợp đồng không thấy node community", () => {
     // palette trả MỌI node (xấu nhất: Hub quên lọc app) ⇒ menu vẫn lọc theo app từ sổ MODULES
     const everyone = [...CORE_NODES, ...CONTRACTS_MANIFEST.nodes, ...COMMUNITY_MANIFEST.nodes];
     const post = eventOf("community", "post.created");
@@ -59,7 +60,7 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
       event: post,
     });
     const keys = ids(cm.business);
-    expect(keys).toContain("community.show-post");
+    expect(keys).toContain("core.bell");
     expect(keys).not.toContain("contracts.esign");
     expect(keys).not.toContain("contracts.partner-send");
     const ct = splitMenu({
@@ -72,15 +73,34 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
     expect([...ids(ct.business), ...ids(ct.advanced)]).not.toContain("community.show-post");
     expect(ids(ct.business)).toContain("contracts.esign");
   });
-  test("CR-125 c6 · B3: Hiện bài chỉ hiện khi sự kiện của flow khai kết quả `shown` (báo cáo vi phạm: không)", () => {
-    const m = splitMenu({
-      app: "community",
-      isPlatform: false,
-      table: nodesForApp("community"),
-      modules: COMMUNITY_MANIFEST.nodes,
-      event: eventOf("community", "report.created"),
-    });
-    expect(ids(m.business)).not.toContain("community.show-post");
+  test("CR-125 c6b · Hiện bài chỉ có MỘT lối là Kết thúc · Hiện bài, node community.show-post không hiện ở menu nào nhưng vẫn đăng ký", () => {
+    for (const isPlatform of [false, true]) {
+      const m = splitMenu({
+        app: "community",
+        isPlatform,
+        table: nodesForApp("community"),
+        modules: COMMUNITY_MANIFEST.nodes,
+        event: eventOf("community", "post.created"),
+      });
+      const all = [...ids(m.business), ...ids(m.advanced)];
+      expect(all).not.toContain("community.show-post");
+      const ends = m.business.flatMap((x) =>
+        x.kind === "table" && x.entry.outcome?.key === "shown" ? [x.entry.outcome.label] : [],
+      );
+      expect(ends).toEqual(["Hiện bài"]);
+    }
+    // flow đã lưu mang khoá node này vẫn mở được: node còn trong sổ MODULES
+    expect(featureNodeByKey(REGISTRY, "community.show-post")?.stages[0]?.outcome).toBe("shown");
+  });
+  test("CR-125 c6b · luật chung: node chỉ là một Kết thúc đặt sẵn kết quả thì trùng mục Kết thúc, node nhiều bước thì không", () => {
+    const end = { ...mod("x.end"), stages: [{ outcome: "shown" }] } as unknown as AppNodeDecl;
+    const two = {
+      ...mod("x.two"),
+      stages: [{ executor: { kind: "set" } }, { outcome: "shown" }],
+    } as unknown as AppNodeDecl;
+    expect(isOutcomeOnlyNode(end)).toBe(true);
+    expect(isOutcomeOnlyNode(two)).toBe(false);
+    expect(isOutcomeOnlyNode(mod("x.plain"))).toBe(false);
   });
   test("CR-125 c6 · B3: Kết thúc tách theo kết quả của sự kiện (community: Hiện bài / Ẩn bài, hợp đồng: Đã duyệt / Từ chối / Trả lại)", () => {
     const ends = (app: string, key: string) =>

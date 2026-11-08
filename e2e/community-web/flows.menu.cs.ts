@@ -85,7 +85,10 @@ test("quản trị community: menu + chữ trong trình sửa flow Duyệt bài 
   // B3 · menu "+ Thêm bước"
   await page.getByTestId("flow-add-step").click();
   const menu = page.getByRole("menu");
-  await expect(menu.getByTestId("flow-node-community.show-post")).toBeVisible();
+  // c6b · MỘT lối đăng bài: chỉ "Kết thúc · Hiện bài" (không thêm mục "Hiện bài" riêng)
+  await expect(menu.getByTestId("flow-node-community.show-post")).toHaveCount(0);
+  await expect(menu.getByRole("menuitem", { name: /Hiện bài/ })).toHaveCount(1);
+  await expect(menu.getByRole("menuitem", { name: /Ẩn bài/ })).toHaveCount(1);
   await expect(menu.getByTestId("flow-node-finish-shown")).toHaveText("Kết thúc · Hiện bài");
   await expect(menu.getByTestId("flow-node-finish-hidden")).toHaveText("Kết thúc · Ẩn bài");
   for (const id of [
@@ -105,12 +108,12 @@ test("quản trị community: menu + chữ trong trình sửa flow Duyệt bài 
   const status = page.getByTestId("apply-status").first();
   await expect(status).toContainText("bài đăng");
   await expect(status).not.toContainText(NO_CONTRACT);
-  await page
-    .locator("[data-stage-uid]")
-    .filter({ hasText: /Quản trị duyệt bài/ }) // bước Duyệt của flow mặc định Community (mẫu khe cũ có "Agent sàng lọc" không còn sao chép được)
-    .first()
-    .click();
-  await expect(page.getByText(/Chỉnh chi tiết ở/)).toHaveCount(0);
+  // mở lần lượt từng bước của bản sao (bản sao có thể đã được sửa ở ca khác) — không bước nào được nhắc tới "Nâng cao"
+  const steps = page.locator("[data-stage-uid]");
+  for (let i = 0; i < Math.min(await steps.count(), 4); i++) {
+    await steps.nth(i).click();
+    await expect(page.getByText(/Chỉnh chi tiết ở/)).toHaveCount(0);
+  }
   await page.screenshot({ path: testInfo.outputPath("c6-editor.png"), fullPage: true });
   await ctx.close();
 });

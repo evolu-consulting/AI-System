@@ -31,11 +31,10 @@ Trạng thái gộp: chưa gộp
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Menu "+" theo app và sự kiện của flow (CR-125 c6)
 Menu "+" chỉ có node của app của flow (cùng node lõi) và node mà kết quả Kết thúc đặt sẵn nằm trong `outcomes` của sự kiện; node community khai `menu` nghiệp vụ nên công ty thấy ở nhóm nghiệp vụ. Mục Kết thúc tách theo từng kết quả của sự kiện, nhãn "Kết thúc · <kết quả>".
-- Kịch bản: flow community thấy Hiện bài ở nhóm nghiệp vụ, không thấy node hợp đồng, flow hợp đồng không thấy Hiện bài [test: apps/admin-web/src/features/processes/lib/node-menu.test.ts » CR-125 c6 · B3: flow community thấy Hiện bài ở nhóm nghiệp vụ, KHÔNG thấy node hợp đồng, flow hợp đồng không thấy Hiện bài]
-- Kịch bản: flow báo cáo vi phạm không có Hiện bài vì sự kiện không khai kết quả đó [test: apps/admin-web/src/features/processes/lib/node-menu.test.ts » CR-125 c6 · B3: Hiện bài chỉ hiện khi sự kiện của flow khai kết quả `shown` (báo cáo vi phạm: không)]
+- Kịch bản: flow community không thấy node hợp đồng, flow hợp đồng không thấy node community [test: apps/admin-web/src/features/processes/lib/node-menu.test.ts » CR-125 c6b · flow community không thấy node hợp đồng, flow hợp đồng không thấy node community]
 - Kịch bản: Kết thúc community là Hiện bài / Ẩn bài, hợp đồng là Đã duyệt / Từ chối / Trả lại [test: apps/admin-web/src/features/processes/lib/node-menu.test.ts » CR-125 c6 · B3: Kết thúc tách theo kết quả của sự kiện (community: Hiện bài / Ẩn bài, hợp đồng: Đã duyệt / Từ chối / Trả lại)]
 - Kịch bản: Kết thúc chọn từ menu mang đúng kết quả đã chọn [test: apps/admin-web/src/features/processes/lib/node-menu.test.ts » CR-125 c6 · B3: Kết thúc chọn từ menu mang đúng kết quả đã chọn]
-- Kịch bản: quản trị community mở bản sao flow Duyệt bài, menu có Hiện bài + Kết thúc · Hiện bài / Ẩn bài, không có bước hợp đồng hay Nâng cao [test: e2e/community-web/flows.menu.cs.ts » quản trị community: menu + chữ trong trình sửa flow Duyệt bài đúng ngôn ngữ community]
+- Kịch bản: quản trị community mở bản sao flow Duyệt bài, menu có Kết thúc · Hiện bài / Ẩn bài (c6b: không còn mục node Hiện bài riêng), không có bước hợp đồng hay Nâng cao [test: e2e/community-web/flows.menu.cs.ts » quản trị community: menu + chữ trong trình sửa flow Duyệt bài đúng ngôn ngữ community]
 
 #### Yêu cầu: Chữ trong trình sửa theo bản ghi của sự kiện (CR-125 c6)
 Câu ở hộp bật quy trình, chân trang, thẻ Giới hạn dùng tên bản ghi từ `record.label` của sự kiện (hợp đồng, bài đăng, đơn tham gia…); công ty có nhiều app ⇒ nối "hợp đồng và bài đăng". Ghi chú bước công cụ không nhắc "Nâng cao" cho người dùng công ty.

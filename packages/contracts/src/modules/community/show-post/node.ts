@@ -8,8 +8,8 @@ export const SHOW_POST_NODE: FeatureNodeDecl = {
   group: "content",
   kind: "app",
   feature: "community-write",
-  // CR-125 · c6 · B3: bước nghiệp vụ của community ⇒ quản trị công ty thấy ngay ở menu "+" (không chui vào "Nâng cao").
-  menu: { section: "business", order: 55 },
+  // CR-125 · c6b · KHÔNG khai `menu`: "Hiện bài" chỉ là Kết thúc đặt sẵn kết quả `shown` — menu "+" đã có "Kết thúc · Hiện bài" (từ `outcomes`
+  // của sự kiện), nên node này không hiện thêm một lối thứ hai. Vẫn đăng ký ở sổ MODULES vì flow đã lưu có thể mang khoá node này.
   stages: [{ executor: { kind: "set", values: [] }, outcome: "shown" }],
   inputs: [
     {
