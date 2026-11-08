@@ -1,7 +1,7 @@
 ﻿// QC · qc-community-flow · hành trình "quản trị community sửa flow Duyệt bài trên canvas → Lưu và áp dụng" (stack community-web + ai-admin, CS_ADMIN_URL).
-// Hiện ĐỎ có chủ đích: Lưu bị chặn "Tính năng này chưa bật cho công ty" (xem docs/specs/qc-community-flow/tasks.md, lỗi B1). Xanh khi lỗi được sửa.
+// Lỗi B1 (docs/specs/qc-community-flow/tasks.md) đã sửa ở cr125-c5-template-readiness: mẫu dùng được ở công ty (readiness) + seed D7.
 import { expect, test } from "@playwright/test";
-import { loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
+import { flowRow, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
 
 // biome-ignore lint/suspicious/noUndeclaredEnvVars: biến e2e
 const ADMIN = process.env.CS_ADMIN_URL ?? "";
@@ -18,11 +18,14 @@ test("quản trị community: sao chép flow Duyệt bài, thêm bước Duyệt
   await loginTenantAdminUi(page, ADMIN, "demo", "demo-owner", OWNER_PW);
   await page.getByRole("link", { name: "Công ty" }).first().click();
   const box = await openCompanyFlows(page);
-  if ((await box.getByRole("link", { name: /^(Mở|Sửa)/ }).count()) < 2)
-    await box.getByRole("button", { name: "Sao chép để sửa" }).first().click();
-  await box
-    .getByRole("link", { name: /^(Mở|Sửa)/ })
+  // CR-125 c5 · công ty Community có sẵn flow "Quản trị duyệt bài" (seed bật Community ⇒ cùng có flow dùng được, D7); sao chép ⇒ áp dụng được.
+  const rows = flowRow(box, "Quản trị duyệt bài");
+  if ((await rows.count()) < 2)
+    await rows.first().getByRole("button", { name: "Sao chép để sửa" }).click();
+  await expect(rows).toHaveCount(2);
+  await rows
     .last()
+    .getByRole("link", { name: /^(Mở|Sửa)/ })
     .click();
   const nodes = page.locator("[data-stage-uid]");
   await expect(nodes.first()).toBeVisible({ timeout: 30_000 });

@@ -1,6 +1,7 @@
 // CR-122 · P15 · def CÔNG TY chỉ nhận id Group. Client cũ / bản sao từ Thư viện có thể còn mã (`group_key`) ⇒ đổi sang id của
 // chính công ty bằng đúng luật lúc chạy (`bindGroupKeys`). Mã không có nhóm ở công ty ⇒ 422 nói rõ mã (không để lọt tới PROCESS_REF_INVALID).
 import type { ProcessDefInput } from "@ai/contracts/hub-admin";
+import { groupKeyCandidates, mapGroupKey } from "@ai/contracts/modules";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { AppError } from "../../../lib/errors";
@@ -31,9 +32,18 @@ export async function groupIdsByKey(
   keys: readonly string[],
 ): Promise<Map<string, string>> {
   if (keys.length === 0) return new Map();
+  // CR-125 c5 · mã mẫu → nhóm CÓ THẬT của công ty: trùng mã, hoặc `<app>-admin` ⇒ `<app>-owner` (một luật `mapGroupKey`, cùng readiness).
   const gs = await tx.execute<{ id: string; key: string }>(sql`select id, key from admin.groups
-    where tenant_id = ${tenantId}::uuid and key in (select jsonb_array_elements_text(${JSON.stringify(keys)}::jsonb))`);
-  return new Map(gs.map((g) => [g.key, g.id]));
+    where tenant_id = ${tenantId}::uuid and key in (select jsonb_array_elements_text(${JSON.stringify(groupKeyCandidates(keys))}::jsonb))`);
+  const have = gs.map((g) => g.key);
+  const idOf = new Map(gs.map((g) => [g.key, g.id]));
+  return new Map(
+    keys.flatMap((k) => {
+      const hit = mapGroupKey(k, have);
+      const id = hit ? idOf.get(hit) : undefined;
+      return id ? [[k, id] as const] : [];
+    }),
+  );
 }
 
 export const groupMissingMessage = (keys: readonly string[]): string =>

@@ -17,6 +17,7 @@ import * as threads from "../../../apps/hub-api/src/modules/packs/community/adap
 import { storeComment } from "../../../apps/hub-api/src/modules/packs/community/domain/content.rules";
 import { pgExternalOrgResolver } from "../../../apps/hub-api/src/modules/packs/kit/adapters/ext-org.pg";
 import { createPackUow } from "../../../apps/hub-api/src/modules/packs/kit/adapters/pack-uow";
+import { ensureCommunityDefaultFlow } from "../../../apps/hub-api/src/modules/processes/library/flow-templates.community";
 import { type MapRow, POST_SAMPLES, type PostSample } from "./seed-community-demo.data";
 
 /** Ngữ cảnh đã dựng ở `runSeed`: tenant, admin chủ quản, user/công ty đối tác theo username. */
@@ -50,6 +51,18 @@ export async function enableCommunityPack(
       );
     throw e;
   }
+}
+
+/**
+ * D7 (CR-125 c5) · bật Community cho công ty ⇒ cùng lúc có flow duyệt bài mặc định mà gói ĐỦ DÙNG (mẫu chỉ cần bước lõi + nhóm chủ gói),
+ * để quản trị Community sao chép/sửa/áp dụng được ngay, không phải nhờ ai bật thêm gì. Idempotent.
+ */
+export async function enableCommunityDefaultFlow(
+  hub: Db,
+  tenantId: string,
+  hostUserId: string,
+): Promise<void> {
+  await ensureCommunityDefaultFlow(hub, tenantId, hostUserId);
 }
 
 const uowOf = (hub: Db) => createPackUow(hub, COMMUNITY_KEY, (tx) => ({ tx }));

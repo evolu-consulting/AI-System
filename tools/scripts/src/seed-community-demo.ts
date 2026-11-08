@@ -24,6 +24,7 @@ import type { Call } from "../../../apps/admin-api/src/modules/users/users.servi
 import {
   applyLabels,
   type CommunityCtx,
+  enableCommunityDefaultFlow,
   enableCommunityPack,
   seedPosts,
 } from "./seed-community-demo.apply";
@@ -230,6 +231,7 @@ export async function runSeed(db: Db, o: SeedOpts): Promise<SeedResult> {
   writeOut(res.mapFile, { tenant: o.tenantKey, partners: rows });
   res.passwordsFile = writePasswords(o, pw);
   await enableCommunityPack(db, c.actor.tenantId, c.actor.userId);
+  await enableCommunityDefaultFlow(o.hubDb ?? db, c.actor.tenantId, c.actor.userId); // D7 · cùng lúc có flow duyệt bài dùng được
   res.granted = await applyGrants(db, o);
   const cc: CommunityCtx = {
     hub: o.hubDb ?? db,

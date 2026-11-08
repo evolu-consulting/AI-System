@@ -9,13 +9,15 @@ import { sql } from "drizzle-orm";
 import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError, appError } from "../../../lib/errors";
 import { dbHubAudit } from "../../../lib/hub-audit";
+import type { PackToolCatalog } from "../../packs/kit/public";
 import { groupIdsByKey, groupMissingMessage } from "../defs/def-group-bind";
 import { libraryFlowDef } from "../runs/runs.repo";
 import { ensureFlowTriggersOn } from "../triggers/flags";
-import { bindGroupKeys, groupKeysOf } from "../triggers/group-keys.rules";
+import { bindGroupKeys } from "../triggers/group-keys.rules";
 import * as r from "./company-flows.repo";
 import { companyAccess } from "./library-company.service";
 import { withConfigWrite } from "./routing.service";
+import { notReadyError, type Readiness, readinessOf } from "./template-readiness";
 
 const SYS = { kind: "system" as const };
 const EVENTS = new Map(
@@ -70,7 +72,10 @@ export function toRows(rows: readonly r.CfRow[]): CompanyFlowRow[] {
 }
 
 export class CompanyFlowsService {
-  constructor(private readonly db: Db) {}
+  constructor(
+    private readonly db: Db,
+    private readonly packTools?: PackToolCatalog,
+  ) {}
 
   #tx<T>(u: AuthUser, tid: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
     companyAccess(u, tid);
@@ -97,6 +102,12 @@ export class CompanyFlowsService {
           422,
           "Quy trình không gán được: cần quy trình Thư viện đã xuất bản và có Bắt đầu khi.",
         );
+      // CR-125 c5 · công ty không bao giờ nhận mẫu mà nó không áp dụng được: thiếu tính năng/chức năng ⇒ chặn, nêu rõ cần bật gì.
+      const lib = await libraryFlowDef(tx, flowId);
+      if (lib) {
+        const rd = await readinessOf(tx, tid, lib.stages, this.packTools);
+        if (!rd.ready) throw notReadyError(rd, true);
+      }
       await r.insertCompanyFlow(tx, {
         tid,
         flowId,
@@ -106,6 +117,15 @@ export class CompanyFlowsService {
       });
       await ensureFlowTriggersOn(tx, tid); // CR-125 · c2: gán xong là dùng (không còn công tắc bắt buộc)
       return this.#list(tx, tid);
+    });
+  }
+
+  /** Mẫu Thư viện này dùng được ở công ty chưa (thiếu gì, nhóm khớp ra sao) — platform xem trước khi gán, công ty xem trước khi sao chép. */
+  readiness(u: AuthUser, tid: string, flowId: string): Promise<Readiness> {
+    return this.#tx(u, tid, async (tx) => {
+      const lib = await libraryFlowDef(tx, flowId);
+      if (!lib) throw appError("NOT_FOUND");
+      return readinessOf(tx, tid, lib.stages, this.packTools);
     });
   }
 
@@ -158,9 +178,19 @@ export class CompanyFlowsService {
       if (had) return { id: had, ...(await this.#list(tx, tid)) };
       const def = await libraryFlowDef(tx, row.flow_id);
       if (!def) throw err("FLOW_NOT_ASSIGNABLE", 422, "Quy trình Thư viện chưa có bản xuất bản.");
-      const keys = groupKeysOf(def.stages);
-      // CR-122 · P15 · bản công ty chỉ giữ id: mã → id của công ty; mã chưa có nhóm ⇒ để trống + cảnh báo (KHÔNG chặn sao chép).
-      const b = bindGroupKeys(def.stages, await groupIdsByKey(tx, tid, keys), { strip: true });
+      // CR-125 c5 · không trao bước không dùng được: mẫu cần tính năng/chức năng công ty chưa có ⇒ chặn, nói ai cần bật gì.
+      const rd = await readinessOf(tx, tid, def.stages, this.packTools);
+      if (!rd.ready) throw notReadyError(rd, u.role === "platform_admin");
+      // CR-122 · P15 · bản công ty chỉ giữ id: mã → id nhóm CÓ THẬT của công ty (trùng mã, hoặc `<app>-admin` ⇒ `<app>-owner`);
+      // chưa có nhóm ⇒ để trống ("Chọn người duyệt") + cảnh báo, KHÔNG chặn sao chép và KHÔNG đoán nhóm khác.
+      const idByTenantKey = await groupIdsByKey(tx, tid, Object.values(rd.groupMap));
+      const ids = new Map(
+        Object.entries(rd.groupMap).flatMap(([k, v]) => {
+          const id = idByTenantKey.get(v);
+          return id ? [[k, id] as const] : [];
+        }),
+      );
+      const b = bindGroupKeys(def.stages, ids, { strip: true });
       const key = await r.freeKey(tx, tid, `${row.flow_key.slice(0, 26)}-cty`);
       const flowId = await r.insertCopyDef(tx, {
         tid,

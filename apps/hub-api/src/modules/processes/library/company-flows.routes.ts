@@ -18,7 +18,7 @@ const OrderSchema = z.strictObject({ ids: z.array(UuidSchema).min(1).max(200) })
 const P = "/tenants/:tid/company-flows";
 
 export function companyFlowsRoutes(d: ProcessDeps): Hono<AuthVars> {
-  const svc = new CompanyFlowsService(d.db);
+  const svc = new CompanyFlowsService(d.db, d.packTools);
   const r = new Hono<AuthVars>();
   const fs = new FlowSettingsService(d.db);
   r.use("/tenants/:tid/flow-settings", requireAdminRole()); // CR-123 FR-09: platform_admin hoặc tenant_admin của chính công ty (kiểm ở service); member 403
@@ -36,6 +36,9 @@ export function companyFlowsRoutes(d: ProcessDeps): Hono<AuthVars> {
     const b = await parseJson(c, AssignSchema);
     return c.json(await svc.assign(c.var.user, tid(c), b.flow_id), 201);
   });
+  r.get(`${P}/readiness/:flowId`, async (c) =>
+    c.json(await svc.readiness(c.var.user, tid(c), UuidSchema.parse(c.req.param("flowId")))),
+  );
   r.put(`${P}/order`, async (c) => {
     const b = await parseJson(c, OrderSchema);
     return c.json(await svc.reorder(c.var.user, tid(c), b.ids));
