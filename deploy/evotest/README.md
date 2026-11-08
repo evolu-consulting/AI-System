@@ -33,3 +33,5 @@
 pg đích + runner; seed `app.seed.demo` (2 org) + `seed-plus.py`; chạy `mgmt-import` dry-run → apply → chạy lại, tóm tắt ở
 `.data/evotest-mgmt/<giờ>/summary.txt`. Giữ `.lock` của evotest (không chồng ngân sách); 6.5 CPU / 16 GB, cpu_shares 128 + `nice -n 19`;
 không cổng, dữ liệu tmpfs; dọn `down -v` + xoá thư mục + xoá image api. **Không bao giờ** đụng `sohoptac-*` (dữ liệu thật).
+
+- `-Step e2e -Filter` khớp TIỀN TỐ tên việc: `journey-approval-journey` kéo cả `-ms` và `-fsc`. Chọn đúng một việc: `-Filter journey-approval-journey-ms` (hoặc `-fsc`); chỉ việc gốc: `-Filter e2e/journey-approval/playwright.journey.config.ts`. Cấu hình con của journey có DB/Redis/cổng riêng trong `META` (`test-e2e-par.rules.ts`).

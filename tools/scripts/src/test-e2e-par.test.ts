@@ -196,6 +196,24 @@ describe("TS1 · test:e2e:par · env mỗi việc", () => {
     expect(e.TEST_DATABASE_URL).toMatch(/ai_system_e2e_x_e2e_new_playwright_test$/);
   });
 
+  it("journey -ms/-fsc/gốc: DB, Redis var và dịch cổng khác nhau (không đụng khi chạy cùng slot)", () => {
+    const cfgs = [
+      "e2e/journey-approval/playwright.journey.config.ts",
+      "e2e/journey-approval/playwright.journey-ms.config.ts",
+      "e2e/journey-approval/playwright.journey-fsc.config.ts",
+    ];
+    const jobs = planJobs({ configs: cfgs, specs: [], rootShards: 1 }, {});
+    expect(jobs.map((j) => j.name).sort()).toEqual([
+      "journey-approval-journey",
+      "journey-approval-journey-fsc",
+      "journey-approval-journey-ms",
+    ]);
+    const envs = jobs.map((j) => jobEnv(j, base, 11, dir));
+    expect(new Set(envs.map((e) => e.TEST_DATABASE_URL)).size).toBe(3);
+    const shifts = jobs.map((j) => j.meta.env?.E2E_PORT_SHIFT ?? "0");
+    expect(new Set(shifts).size).toBe(3);
+    for (const j of jobs) expect(j.meta.redis?.vars).toEqual(["JA_REDIS_DB"]);
+  });
   it("mỗi cấu hình dùng Redis có biến Redis khai báo; Redis DB e2e không đụng ô int (1–6)", () => {
     for (const [c, m] of Object.entries(META)) if (m.redis) expect(m.db, c).toBeTruthy();
     expect(Math.min(...REDIS_DBS)).toBeGreaterThan(6);

@@ -72,6 +72,19 @@ export const META: Record<string, Meta> = {
     redis: REDIS_DB("JA_REDIS_DB"),
     cost: 150,
   },
+  // Cấu hình con của journey (cùng stack, chỉ lọc spec): PHẢI có DB + Redis DB + dịch cổng RIÊNG, nếu không rơi vào `fallbackMeta` (DB chung `x_e2e_journey_approv`\n  // cho cả -ms/-fsc, cổng 3440 và `JA_REDIS_DB`=11 mặc định đụng việc `journey-approval-journey`). `E2E_PORT_SHIFT` (cộng thêm dịch làn) ⇒ cổng 3460.. (-ms) / 3490.. (-fsc).\n  // `--only` khớp TIỀN TỐ tên việc: `journey-approval-journey` kéo cả -ms và -fsc; chọn riêng việc gốc bằng đường dẫn cấu hình `e2e/journey-approval/playwright.journey.config.ts`.
+  "e2e/journey-approval/playwright.journey-ms.config.ts": {
+    db: "jams",
+    redis: REDIS_DB("JA_REDIS_DB"),
+    env: { E2E_PORT_SHIFT: "20" },
+    cost: 60,
+  },
+  "e2e/journey-approval/playwright.journey-fsc.config.ts": {
+    db: "jafsc",
+    redis: REDIS_DB("JA_REDIS_DB"),
+    env: { E2E_PORT_SHIFT: "50" },
+    cost: 60,
+  },
   "e2e/contracts-web/playwright.config.ts": { cost: 22 },
   // Mock thuần (không DB). Cổng web mặc định 3410 TRÙNG web của workspace-web stack (3410) ⇒ riêng 3470 để hai việc chạy cùng lúc trong một slot.
   "e2e/community-web/playwright.config.ts": { env: { COMMUNITY_E2E_PORT: "3470" }, cost: 25 },
