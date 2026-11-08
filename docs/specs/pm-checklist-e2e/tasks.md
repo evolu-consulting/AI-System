@@ -27,7 +27,7 @@ Không đổi sản phẩm.
 - Mỗi người dùng đăng nhập ở context mới qua trang đăng nhập (thay "đăng xuất, đăng nhập lại").
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: e2e + tài liệu)
 

@@ -18,7 +18,7 @@ OPS_PUBLIC_URLS chỉ ở chế độ domain (gen-env); rsync lỗi => ok=true,o
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa lỗi review CR-104)
 

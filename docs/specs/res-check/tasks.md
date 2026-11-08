@@ -27,7 +27,7 @@ Unit cho ngưỡng → khuyến nghị/cảnh báo/giới hạn cứng, phân lo
 - Số slot evotest máy chủ = 4 (mặc định của `run-tests.ps1 -Slots`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ dev)
 

@@ -16,7 +16,7 @@ Thêm project `ai` (03, 05, 06, 08, 12, 13: 15 test) chạy `--workers 2` song s
 `e2e/deployed/deployed.config.ts`. Không đổi spec.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ đổi cách chạy bộ e2e triển khai, không đổi sản phẩm).
 

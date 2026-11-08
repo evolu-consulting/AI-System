@@ -74,7 +74,7 @@ Không đụng prompt caching của `lib/ai-client` và logger (lát khác). Kh�
 - Rebase lên platform/gd0 (fast-sdk + otel): 3 commit gộp thành 1. Khi có `handoff`, lịch sử delegate đã nén nên KHÔNG gửi `historyTotal` (cửa sổ cache theo khối của fast-sdk chỉ áp khi lịch sử chưa nén); tắt cờ ⇒ y như fast-sdk.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED engine/agent-handoff.md
 #### Yêu cầu: Kho artifact theo nội dung

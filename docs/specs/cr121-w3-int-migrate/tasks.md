@@ -26,7 +26,7 @@ hub-h2c/h3a/h3b + seed-niti int trên evotest.
 Sửa test helper + seed, không sửa migration cũ 0068 (đã trên prod, checksum journal).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa test helper và script seed-niti idempotent; không đổi hành vi sản phẩm/migration).
 

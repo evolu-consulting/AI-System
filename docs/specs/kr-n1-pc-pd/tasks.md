@@ -27,7 +27,7 @@ evotest `-Step e2e -All -Filter N1|P-c|P-d`.
 Không bỏ/nới khẳng định nào: chỉ đổi nhãn/locale/thứ tự đăng nhập.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 Không thay đổi hành vi (lý do: chỉ cập nhật test e2e lỗi thời và dọn known-red; app giữ nguyên).
 
 ## Việc còn lại

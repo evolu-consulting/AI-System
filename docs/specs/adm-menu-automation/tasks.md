@@ -24,7 +24,7 @@ nav.test.ts (nhóm + thứ tự), typecheck, check:bundle, evotest e2e -Filter r
 - Link chéo từ Workflows chỉ hiện khi engine quy trình on; từ Quy trình chỉ cho platform_admin (Workflows chỉ platform).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ đổi nhãn menu/tiêu đề, gom nhóm sidebar và thêm dòng mô tả + link điều hướng; URL, quyền, API giữ nguyên)
 

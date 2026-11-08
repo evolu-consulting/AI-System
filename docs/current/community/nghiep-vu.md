@@ -213,3 +213,7 @@ Ngay lúc bấm menu (trang đích còn tải lười), thanh trái chỉ sáng 
 
 ### Dữ liệu mẫu dev/test (seed-refresh)
 Máy dev/test dựng mới có sẵn: chủ quản là owner gói, thương hiệu công ty (tên/tên ứng dụng/màu), đối tác + bài mẫu có đính kèm (tab "Ảnh & tệp" không rỗng), URL catalog điền sẵn. Không seed khi `appEnv=production` hoặc thiếu `HUB_SEED_FIXTURES`; seed cộng đồng demo chạy lại không trùng, liên hệ bị che, mật khẩu dev chỉ ở file.
+## CR-118 · Delta gộp 2026-11-09 (đợt cr125-wave)
+
+#### Yêu cầu: Dọn tệp đính kèm không dùng (nguồn: cr118-r2-server)
+Vòng nền Community xoá tệp không nằm trên bài nào sau 24 h (gồm tệp của bài đã xoá): xoá byte FileBox rồi mới xoá hàng; xoá byte lỗi ⇒ giữ hàng (đã đánh dấu, không tải/gắn được) để lượt sau làm lại. Lô ≤ limit, số câu SQL cố định mỗi lô, chạy lại không đổi kết quả; tệp < 24 h hoặc đang gắn được giữ. Gắn tệp và vòng dọn không cùng thắng: đã claim rồi gắn ⇒ 400; đang gắn (tx ghi bài khoá hàng `FOR KEY SHARE`) ⇒ claim bỏ qua. User không xoá cứng được tệp (RLS). Code: `packs/community/adapters/community-files-sweep`.

@@ -27,4 +27,4 @@ unit `adapters/checks/ops.checks.test.ts`; int `ops.checks.int.test.ts` (EXPLAIN
 
 ## Delta (so với docs/current)
 Không thay đổi hành vi (lý do: sửa lỗi review CR-104)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)

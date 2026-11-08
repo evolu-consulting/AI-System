@@ -82,7 +82,7 @@ tương đương theo cấu trúc. `runs/create-run.ts` chỉ thêm cờ `noUser
 - 2026-11-03: KHÔNG pipeline 3 câu khoá của `fireTimer` (đổi luật "run không thấy ⇒ không khoá stage/timer" mà unit test ghi rõ).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Bắn hẹn thử lại theo lô

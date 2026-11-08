@@ -23,7 +23,7 @@ Không đổi thuật toán chia/thời lượng, không sửa e2e, không thêm
 Không thêm tham số `--all` cho `evotest-shard.ts plan`: nó chỉ nhận danh sách job đã chọn, tên job không ánh xạ ngược sang cấu hình.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa lỗi công cụ test nội bộ evotest đúng hành vi đã tài liệu hóa — không -All thì bỏ module đóng băng khỏi lượt toàn bộ chia slot; không thuộc đặc tả sản phẩm)
 

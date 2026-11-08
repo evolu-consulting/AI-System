@@ -35,19 +35,12 @@ Unit: `flows-view.test.ts`, `engine-toggle.test.ts`. typecheck admin-web + works
 - Tên việc của khe: chỉ `contracts.approval` có nhãn ("Duyệt hợp đồng"); khe khác hiện mã khe (tenant không đọc được nhãn khe).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Một trang Quy trình cho công ty
 Trang `/processes` (admin-web) liệt kê mọi quy trình công ty có, nhóm theo app; mỗi dòng: tên, khi nào chạy (việc của khe + điều kiện luật), nguồn (Platform cung cấp / Công ty tạo), trạng thái (Đang dùng / Tắt), mở sơ đồ; không có tab; lọc bằng chip app/nguồn/trạng thái.
-- Kịch bản: khi routing có tập gán, luật và quy trình đang dùng thì dòng platform có nguồn "platform", trạng thái Đang dùng nếu là quy trình đang dùng hoặc có luật trỏ tới, còn lại Tắt, và quy trình đang dùng ngoài tập gán thành một dòng riêng [test: apps/admin-web/src/features/processes/lib/flows-view.test.ts » assignedRows]
-- Kịch bản: khi lọc theo app, nguồn, trạng thái thì chỉ giữ dòng khớp và nhóm theo thứ tự Sổ Hợp Tác, Community, Chung [test: apps/admin-web/src/features/processes/lib/flows-view.test.ts » companyRows / lọc / nhóm]
 - Kịch bản: khi tenant_admin mở trang Quy trình thì thấy một danh sách, không tab, mẫu nằm trong "Tạo quy trình" và "Chép mẫu" tạo quy trình Công ty tạo mặc định Tắt [test: e2e/P-a/pf4/admin-processes.pa.ts » E-P15a]
 - Kịch bản: khi tenant đã bật app thì trang Quy trình có ≥ 1 quy trình "Platform cung cấp" [test: e2e/deployed/20-flows-visible.ro.deployed.ts » demo-owner thấy ≥ 1 quy trình]
-#### Yêu cầu: Khối Quy trình duy nhất trong thẻ app của công ty
-Thẻ app ở trang công ty (platform) có một khối "Quy trình": công tắc "Duyệt theo quy trình" (feature `contracts-approval-engine`, không còn trong "Tính năng thêm"), tập gán và luật chọn mở sẵn, "Mặc định" là một dòng; không còn ô chọn/Gán/Về mặc định cũ.
-- Kịch bản: khi thẻ có feature engine thì công tắc theo bản nháp và feature đó bị bỏ khỏi danh sách tính năng thêm [test: apps/admin-web/src/features/tenants/lib/engine-toggle.test.ts » engineOf]
-- Kịch bản: khi platform gán thêm và bỏ gán quy trình ở khối Quy trình thì bỏ gán quy trình còn luật dùng bị 409 nêu luật [test: e2e/P-a/pf4/tenant-routing.pa.ts » platform gán quy trình vào tập của tenant]
-
 ## Việc còn lại
 - Chạy e2e MỘT lần cuối đợt (điều phối): `-Step e2e -All -Filter root,P-a`.

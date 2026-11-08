@@ -34,7 +34,7 @@ Unit `legacy-routes.test.ts`, `src/features/shell` xanh. e2e (evotest, 4 lượt
 - Không thêm known-red cho d6b ca 3: là lỗi thật của tính năng, không phải đỏ có sẵn (job không có ở base d4985a56).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa 3 chỗ triển khai lệch Delta đã duyệt của C-6/C-7/C-8 — căn lề Header, một nút trợ lý ở Community, route "Chờ tôi duyệt" — và 3 e2e sai thiết kế/môi trường; không đổi yêu cầu)
 

@@ -29,15 +29,15 @@ cấu hình đổi, KHÔNG ở migration) cấp mẫu khe cho tenant bật app c
   (one-off) coi "có luật mặc định" = đã gán.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Một nguồn gán quy trình (ADR-0036)
 Gán tenant × khe chỉ nằm ở tập gán + luật `is_default`; `process_slot_assignments` là VIEW chỉ đọc dẫn xuất (bảng cũ `_legacy`).
 - Kịch bản: khi chạy 0090/0091 trên DB có gán cũ thì launch của mọi tenant × dữ kiện lượt không đổi [test: apps/hub-api/src/modules/processes/library/slot-single-source.int.test.ts » launch không đổi cho mọi tenant × dữ kiện lượt, resolveSlot chỉ đổi ở tenant đã có luật (ghi rõ)]
 - Kịch bản: khi chạy lại 0090/0091/ensure thì không đổi gì; tenant bật app chưa có luật được cấp mẫu khe [test: apps/hub-api/src/modules/processes/library/slot-single-source.int.test.ts » ensureSlotDefaults (boot) cấp đúng tenant bật app chưa có luật, chạy lại vô hại]
-- Kịch bản: khi scope user đọc VIEW thì chỉ thấy tenant mình; ghi qua VIEW và đọc `_legacy` bị 42501 [test: apps/hub-api/src/modules/processes/library/slot-single-source.int.test.ts » VIEW process_slot_assignments = luật mặc định, chỉ đọc, RLS theo tenant, bảng _legacy không cấp cho hub_rw]
-- Kịch bản: khi VIEW vắng thì resolveSlot/routeSlot vẫn đúng [test: apps/hub-api/src/modules/processes/library/slot-single-source.int.test.ts » resolveSlot/routeSlot không đọc bảng gán cũ (bỏ VIEW tạm ⇒ vẫn trả đúng)]
+- Kịch bản: khi scope user đọc VIEW thì chỉ thấy tenant mình; ghi qua VIEW và đọc `_legacy` bị 42501 [test: apps/hub-api/src/modules/processes/library/slot-single-source.int.test.ts » CR-121 A1 · hub 0099 gỡ VIEW process_slot_assignments, gán hiệu lực đọc từ luật mặc định, bảng _legacy không cấp cho hub_rw và còn dữ liệu cũ]
+- Kịch bản: khi VIEW vắng thì resolveSlot/routeSlot vẫn đúng [test: apps/hub-api/src/modules/processes/library/slot-single-source.int.test.ts » resolveSlot/routeSlot chỉ đọc nguồn mới (không còn đối tượng process_slot_assignments)]
 - Kịch bản: khi tenant đọc chéo / ghi bảng gán thì bị chặn [test: apps/hub-api/src/modules/processes/library/library-rls.int.test.ts » chặn đọc chéo tenant bảng gán, release, khe]
 - Kịch bản: khi platform_admin PUT/DELETE gán cũ thì luật mặc định đổi/xoá, tập gán đồng bộ [test: apps/hub-api/src/modules/processes/library/routing-backfill.int.test.ts » PUT gán cũ ⇒ hiện trong routing, thay ⇒ bỏ def cũ khỏi tập, DELETE giữ def khi luật còn dùng]
 

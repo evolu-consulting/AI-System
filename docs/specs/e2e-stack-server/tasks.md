@@ -26,7 +26,7 @@ Không đổi hành vi app. Chỉ e2e + hạ tầng test.
 - Gọi hàm thư viện thay vì CLI seed (guard host `pg`).
 - `||=` (không `??=`) cho env mặc định vì `.env.example` đặt DEMO_OWNER_PW rỗng.
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ e2e + hạ tầng test, không đổi mã app).
 

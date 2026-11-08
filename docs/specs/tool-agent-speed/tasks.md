@@ -25,7 +25,7 @@ Không đụng `deploy/evotest/**`. Không đổi hành vi sản phẩm.
 - Helper API (`createIsolated*`, `grantFeature`) chưa có spec nào dùng, chưa được chạy thật; hai spec hiện tại chỉ dùng phần UI + `safeReload`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: lát công cụ test/hook; hành vi sản phẩm giữ nguyên. Hook pre-commit nay tự sửa format file đã stage, e2e dùng helper chung `e2e/_kit`).
 

@@ -28,7 +28,7 @@ Top 10 module đích theo số vi phạm trước lát (522 tổng): packs/kit 2
 - Luật depcruise `contracts-no-process-engine` (cấm gói contracts dùng cầu `PackRuns` của kit theo đường file) không nhìn được tên export qua `kit/public.ts` ⇒ 28 cạnh cũ của nó (đã đỏ ở base) nay biến mất khỏi báo cáo; ghi nợ: cần luật theo tên hoặc cổng riêng cho PackRuns.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: refactor import — thêm export vào `packs/kit/public.ts`, đổi đường import ngoài module sang cửa này, co baseline `check:boundaries`; runtime không đổi)
 

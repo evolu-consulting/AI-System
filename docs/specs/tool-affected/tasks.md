@@ -28,7 +28,7 @@ Không sửa `run-tests.ps1`, `remote.sh`, hook, merge driver. Không đổi `te
 - evotest luôn quarantine (container đặt `TEST_QUARANTINE=1`); `test:all` cục bộ vẫn nghiêm trừ khi truyền `--quarantine`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ dev, không đổi hành vi sản phẩm)
 

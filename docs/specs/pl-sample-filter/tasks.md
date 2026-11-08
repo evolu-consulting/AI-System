@@ -14,5 +14,5 @@ Lọc mẫu hẳn khỏi danh sách chính (người dùng yêu cầu, CR-105). 
 - e2e P-a/P-b/P-b2/fnr tra def theo key trong danh sách mặc định ⇒ đổi sang `kind=sample` (không chạy trong lát); UI e2e mở def tenant ở tab chính cần mở tab "Mẫu · chạy thử" (cuối đợt).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 Không thay đổi hành vi (lý do: sửa theo CR-105 lọc mẫu)

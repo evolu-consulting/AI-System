@@ -41,7 +41,7 @@ orchestrator/runner trên evotest.
   0 % (y hệt tắt cờ).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Ghi chú: `engine/agent-handoff.md` chưa có trong docs/current (Delta ADDED của hub-agent-handoff chưa gộp) ⇒ khối dưới là ADDED cùng file; khi gộp cuối đợt, docs-architect áp khối này SAU khối của hub-agent-handoff (ghi đè hai Yêu cầu cùng tên).
 

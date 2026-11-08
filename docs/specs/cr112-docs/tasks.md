@@ -22,7 +22,7 @@ Không code, không migration, không sửa `ba-admin.md`/`feature-ui/tasks.md` 
 - `current/admin` tách 5 file nhỏ theo mảng thay vì một file lớn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ tài liệu)
 

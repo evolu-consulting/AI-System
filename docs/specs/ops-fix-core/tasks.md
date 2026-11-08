@@ -28,7 +28,7 @@ Sửa 4 lỗi review phần lõi ops-watch (TB-1, Thấp 2–4) trong `apps/hub-
 - Migration 0066, journal `idx` 64 / `when` 1799100000000 (0065 giữ cho lát ops-checks).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa lỗi review CR-104)
 

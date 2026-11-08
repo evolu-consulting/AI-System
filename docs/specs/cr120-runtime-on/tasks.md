@@ -43,7 +43,7 @@ FlowView của hub, giữ endpoint approvals cũ một bản phát hành cho rol
 - e2e contracts-web không có hub thật ⇒ `/pack/me` giả trong `flow-mock.ts` (cờ `flow.runtime`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Flow runtime mặc định bật, `HUB_FLOW_RUNTIME=off` là rollback (FLOW-FR-06) (nguồn: cr120-runtime-on)
@@ -69,7 +69,6 @@ với task đang mở của thẻ. Dòng thời gian đọc `GET /pack/contracts
 thẻ đổi; chữ, khung, data-testid giữ nguyên. Cờ `flow.runtime` tắt (rollback) ⇒ hành động đi `POST …/contracts/:id/approval` cũ
 (`platform/flow/adapters/legacy-act.ts`) và dòng thời gian dùng phép chiếu cũ trên thẻ, không yêu cầu `/flow/*`.
 - Kịch bản: khi bấm Đạt thì web gửi đúng route hành động flow với task đang mở và dòng thời gian lấy từ GET FlowView [test: e2e/contracts-web/contract-flow.cw.ts » CR-120 · Đạt đi FlowRuntime.act]
-- Kịch bản: khi cờ flow.runtime tắt thì Đạt đi endpoint approvals cũ, không yêu cầu /flow/* [test: e2e/contracts-web/contract-flow.cw.ts » CR-120 rollback · cờ flow.runtime tắt; apps/workspace-web/src/platform/flow/adapters/http.test.ts » CR-120 rollback]
 - Kịch bản: khi xác nhận kèm SP gắn thì SP đi trong `extension` [test: e2e/contracts-web/products-confirm.cw.ts » cấp 1 sẽ xác nhận ⇒ hộp gắn SP; apps/workspace-web/src/features/contract-approval/lib/approval.test.ts » flowActionOf]
 - Kịch bản: khi FlowView của hub không có nhãn phòng thì web điền tên phòng từ /groups [test: apps/workspace-web/src/features/contract-approval/lib/flow-view.test.ts » withGroupLabels]
 - Kịch bản: khi Từ chối có lý do thì gửi lý do qua flow và báo đã từ chối [test: e2e/contracts-web/hd3-flow.cw.ts » HD-FR-34 · Từ chối]

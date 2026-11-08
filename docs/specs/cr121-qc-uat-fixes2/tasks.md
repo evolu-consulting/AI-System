@@ -19,7 +19,7 @@ Lượt 16:23: 320 pass / 1 fail (c-flows). Sau sửa: journey-approval-journey 
 - Điều phối dừng agent qc lúc 16:46 (mỗi lượt chạy cả 320 ca ~14 phút, trái luật 5d) và tự chạy đúng job journey.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ sửa e2e theo UI đã đổi ở CR-121 F8–F18).
 

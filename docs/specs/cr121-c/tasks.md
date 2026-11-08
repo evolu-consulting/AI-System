@@ -56,7 +56,7 @@ Lát này (chỉ tài liệu): `bun run openspec:check`.
 - Đường đọc chỉ-xem `GET /tenants/:tid/process-library/:id` là tên do spec đặt (người dùng chốt "đường đọc chỉ-xem theo tenant"), c9 có thể đổi tên nếu trùng quy ước, giữ nguyên ngữ nghĩa vai.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: lát chỉ thêm spec + kế hoạch cho CR-121 C; hành vi đổi ở các lát c9…c21, mỗi lát tự ghi Delta)
 

@@ -17,7 +17,7 @@ nhưng chuỗi chạy lại chưa có 0069 ⇒ ảnh chụp khác. Sửa như 00
 - 2026-10-31 không đổi 0069 (guard `LIKE '%set_default%'` + `ON CONFLICT DO NOTHING` đã idempotent); lỗi là chuỗi chạy lại của test thiếu file.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa test idempotent migration CR-105)
 

@@ -118,3 +118,7 @@ Admin không còn công tắc "Duyệt theo quy trình" và không liệt kê/c�
 
 ### Người duyệt của bước thấy HĐ ở chế độ `org` (reviewer-visible)
 Ở chế độ thấy `org`, ngoài cây quản lý của chủ HĐ, người quyết được một bước duyệt engine đang mở (thuộc Group của bước, được giao đích danh/chuyển tiếp, cửa trưởng phòng/người duyệt cụ thể, Group chuyển cấp, Group "cũng quyết") và người đã quyết một bước của HĐ ĐỌC được HĐ (chi tiết, thẻ duyệt, hàng con) và thấy nó trong "Việc của tôi". Chỉ đọc: không sửa trường/gán người; chỉ lệnh duyệt (Đạt/Chưa đạt/Từ chối/ghi Đã duyệt) ghi được hàng HĐ. Thành viên Group khác của bước đã đóng mà không quyết thì không thấy nữa. Chủ gói và chế độ `tenant` như cũ (cần migration 0070 trên prod).
+## CR-120 · Delta gộp 2026-11-09 (đợt cr125-wave)
+
+#### Yêu cầu: Menu tài khoản và đăng nhập quay về (nguồn: cr120-handson-fixes)
+Menu tài khoản đặt tên theo nơi mở (Cài đặt Sổ Hợp Tác / Cài đặt Community / Thành viên & điểm đối tác), mỗi mục một icon; đăng nhập từ trang quay về SSO về `/contracts`; route gốc của app nằm dưới `/contracts` không bị coi là id HĐ cũ; mã hợp đồng sai (400/422) hiện câu dịch "Không tìm thấy hợp đồng".

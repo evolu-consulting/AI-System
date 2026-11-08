@@ -18,7 +18,7 @@ Doc bàn giao DLC cho Rowan + CODEOWNERS + script dlc:check (chỉ đọc git).
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: tài liệu + công cụ dev)
 

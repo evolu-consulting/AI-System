@@ -42,7 +42,7 @@ UI, preview (D-2), kiểm xuất bản (D-2), gán bật engine (D-4), e2e. Nố
   0/1 đối tác mới trong tx.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: trần stage quy trình 22

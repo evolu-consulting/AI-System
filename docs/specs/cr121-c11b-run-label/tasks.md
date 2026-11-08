@@ -27,7 +27,7 @@ Máy trạng thái run, ghi dữ liệu, `ProcessRunSummarySchema` dùng chung.
 - Nhãn chỉ ở response danh sách (`ProcessRunListItem`), không nhét vào `ProcessRunSummarySchema` để không đổi 201 `POST /process-runs` và các nơi khác.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED engine/luot-chay-nhan-ban-ghi.md
 #### Yêu cầu: Lượt chạy hiện nhãn nghiệp vụ của bản ghi

@@ -196,3 +196,7 @@ Các mục dưới thắng nội dung cũ cùng chủ đề ở trên. Chi tiế
 
 ### Giao diện Tối (cr120-dark-tokens)
 - Mọi màu CSS Community lấy từ token shell (sáng + tối), màu thương hiệu từ `--brand-*`; không hex/rgb cứng ngoài `globals.css` (test chặn). Chữ bảng tin và trang Sổ Hợp Tác đạt tương phản AA (4.5:1; chữ lớn 3:1) ở Sáng và Tối.
+## CR-120 · Delta gộp 2026-11-09 (đợt cr125-wave)
+
+#### Yêu cầu: Thanh tab bảng tin không che bài đầu (nguồn: cr120-handson-fixes)
+Thanh tab sticky dính sát mép vùng cuộn, không đè thẻ bài đầu (dòng tác giả bài đầu luôn thấy) và không để khoảng trống lớn trên composer.

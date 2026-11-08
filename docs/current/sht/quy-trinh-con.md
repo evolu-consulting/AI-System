@@ -11,3 +11,8 @@ Trình sửa quy trình có bước "Quy trình con": chạy một quy trình kh
 - Kịch bản: khi một bước là quy trình con thì ô canvas có ba đầu ra Xong / Từ chối / Huỷ [test: apps/admin-web/src/features/processes/lib/subprocess-form.test.ts » panel + canvas + lỗi]
 - Kịch bản: quản trị công ty thêm Quy trình con, chọn "Mua hàng · Phần 2", lưu, canvas hiện ô và liên kết mở [test: thủ công — e2e `cr125-subprocess-ui.spec.ts` chờ lát engine gộp rồi chạy trên evotest]
 
+
+## CR-125 · Delta gộp 2026-11-09 (đợt cr125-wave)
+
+#### Yêu cầu: Lượt cha nhiều Quy trình con nối tiếp chạy tới Kết thúc (nguồn: cr125-fix-parent-timer)
+Lượt cha có nhiều bước Quy trình con nối tiếp: mỗi lượt con kết thúc ⇒ bước cha tương ứng chốt, bước kế chạy; con cuối xong ⇒ lượt cha tới Kết thúc và `done`, không còn hẹn mở. Code: `processes/nodes/subprocess/`.

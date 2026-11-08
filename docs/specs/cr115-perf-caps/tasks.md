@@ -37,7 +37,7 @@ Kết luận: bỏ cap CPU KHÔNG đổi số đo (p50 ±5 ms, p95 nhiễu 55–
 Tải nền máy chủ lúc đo 1,2–2,7; hai lượt đã phải chờ lượt `-Exclusive` của agent khác (khoá xếp hàng hoạt động đúng).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ cấu hình tài nguyên của công cụ chạy test evotest ở chế độ -Exclusive; không đổi mã sản phẩm).
 

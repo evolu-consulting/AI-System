@@ -26,7 +26,7 @@ Sửa: `EventStreamSession.start()` ghi `SSE_OPEN_FRAME` (`: open\n\n`, contract
 - Frame riêng `: open` (không dùng lại `: ping`) để log/trace phân biệt; parser coi như nhau.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: thêm dòng chú thích SSE mà mọi parser bỏ qua; chỉ giảm độ trễ mở stream, docs/current không mô tả luồng SSE run).
 

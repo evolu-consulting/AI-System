@@ -36,7 +36,7 @@ Unit `src/shell/nav.test.ts` (mục cùng dạng); e2e viết, chưa chạy: `e2
 FeedRail giữ nguyên (cột phải trong nội dung).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ gỡ icon không dùng và thêm thuộc tính test; thanh trái đã là một component từ CR-120)
 

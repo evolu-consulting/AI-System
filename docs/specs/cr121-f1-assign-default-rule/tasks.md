@@ -32,7 +32,7 @@ giữ xanh: `slot-assigned.int.test.ts`, `tests/acceptance/CF/engine-tenant-gate
 - Perf: không chạm đường nóng (thêm 1 SELECT + đường ghi sẵn có, chỉ platform_admin).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Gán nhiều quy trình cho tenant (platform_admin) (nguồn: cr118-flow-routing)

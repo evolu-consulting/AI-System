@@ -138,7 +138,7 @@ Cơ chế hiện đại:
 - **Chưa đo:** Redis down, PG restart toàn cụm.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ đo)
 

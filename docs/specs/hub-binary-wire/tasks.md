@@ -63,7 +63,7 @@ Không đổi mã chạy (Hub/Runtime) — giữ nguyên JSON. Chạm: tooling e
 - evotest `-Step py`: `src/agent_runtime/events` 9 pass; `queue + runtimes/cli + tests/acceptance/result_int_test.py` 190 pass + 3 đỏ cũ (trước khi ghi known-red: exit 1 với 3 đỏ MỚI; sau: exit 0 với 3 đỏ cũ).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: đo cho thấy không đường dây nào đạt ngưỡng đổi sang msgpack nên giữ JSON; phần còn lại chỉ là công cụ test evotest `-Step py`, perf test nền và bench).
 

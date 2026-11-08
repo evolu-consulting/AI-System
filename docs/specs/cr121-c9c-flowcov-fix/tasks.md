@@ -22,7 +22,7 @@ evotest int cả thư mục `apps/hub-api/src/modules/ops`.
 Mốc giờ giả trong file này phải duy nhất và tăng dần giữa các ca (ghi chú tại ca).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ sửa mốc giờ giả của một ca test để không trùng với ca c18)
 

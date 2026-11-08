@@ -22,7 +22,7 @@ Chỉ fixture + một dòng trong test.
 Đuôi `.txt` (không bị ignore; `git check-ignore` thoát 1).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: fixture của unit test công cụ dev)
 

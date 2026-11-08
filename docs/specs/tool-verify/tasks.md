@@ -25,7 +25,7 @@ Không deploy, không ghi lên prod (ssh chỉ `head`/`select`/`logs`); không s
 - Log nhạy cảm (token/mật khẩu/Bearer) bị che trước khi in; không in đường dẫn khoá ssh.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ dev, không đổi hành vi sản phẩm)
 

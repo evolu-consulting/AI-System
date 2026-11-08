@@ -22,6 +22,6 @@ Chỉ `docs/**`. Không gộp cr118-shell, cr118-deploy-kit (chưa merge). Khôn
 Mục MODIFIED được nối cuối file đích dưới "## CR-118 · Delta gộp" thay vì sửa tại chỗ; chỗ cũ trong community/nghiep-vu.md (đăng nhập/SSO riêng) đánh dấu "Thay bởi CR-118".
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: lát chỉ gộp tài liệu docs/current và cập nhật STATE/CODEMAP/INDEX)

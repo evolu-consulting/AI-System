@@ -28,7 +28,7 @@ Máy trạng thái run (settle/kick/retry/launch engine) không đổi — chỉ
 - Bản riêng công ty khác: điều kiện `d.tenant_id = <công ty đang launch>` trong fragment; test chèn dữ liệu xấu (luật Z trỏ bản riêng X) ⇒ `route_unavailable`/`resolveSlot=null`/lượt `stalled`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED engine/cong-ty-quy-trinh-ban-rieng.md
 #### Yêu cầu: Quy trình bản riêng của công ty chạy được

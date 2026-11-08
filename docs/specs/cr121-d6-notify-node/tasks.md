@@ -35,7 +35,7 @@ Editor/canvas UI, icon, i18n UI, e2e (Sonnet làm tiếp). admin-web `FE_NODES.n
 - SQL mỗi lần settle node notify = như node `set` + 1 câu (`enqueueRunNotice`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Node Thông báo (notify)

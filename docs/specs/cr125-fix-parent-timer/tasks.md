@@ -25,7 +25,7 @@ Hai lỗi từ lượt e2e cuối CR-125: (1) lượt cha «Quy trình mua hàng
   con kết thúc bằng hẹn giờ; không sửa engine khi chưa tái hiện được (timebox 0d.11c).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/duyet-cung-luc.md
 #### Yêu cầu: Lưu bước cùng duyệt không cần Group của bước

@@ -18,6 +18,6 @@ Nguyên nhân: -ms/-fsc không có trong META ⇒ fallbackMeta (DB chung, không
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ sửa harness e2e - META của test:e2e:par cho journey-ms/-fsc: DB, Redis DB, dịch cổng riêng; không đổi code sản phẩm).

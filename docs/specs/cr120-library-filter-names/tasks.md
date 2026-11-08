@@ -26,7 +26,7 @@ Unit: library-filter.test.ts, rename-process-defs.rules.test.ts. typecheck admin
 - Lọc app dùng chung `?app=` của CR-118.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Lọc danh sách thư viện bằng nút phễu

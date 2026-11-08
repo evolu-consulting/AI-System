@@ -23,7 +23,7 @@ Chạy trên evotest: `run-tests.ps1 -Step e2e -Filter root-1`.
 Lỗi do test/fake lỗi thời, không phải lỗi app.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ sửa fake/e2e cho khớp hành vi đã có của CR-112 review-fix)
 

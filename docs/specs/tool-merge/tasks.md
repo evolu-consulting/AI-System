@@ -24,7 +24,7 @@ Giảm conflict rebase của `slice:merge`: merge driver JSON theo key cho local
 - Relock sau rebase là commit riêng (không amend) để không viết lại commit của lát.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ dev)
 

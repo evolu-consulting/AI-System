@@ -40,7 +40,7 @@ platform_admin + route `/ops/*`. Check thật (O2), UI (O3), script host (O4) l�
 - Lỗi cấu hình trả 422 `OPS_SETTINGS_INVALID` (kèm `details.issues`); "Kiểm tra ngay" lần 2 trong 60 s ⇒ 429 `OPS_CHECK_RATE_LIMITED` + `Retry-After: 60`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: phần lõi CR-104, yêu cầu ở docs/specs/ops-watch)
 

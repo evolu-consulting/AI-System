@@ -20,7 +20,7 @@ unit: routing-active.rules, routing-current, flows-view, load-error, legacy-rout
 - Mục menu "Thành viên & điểm đối tác" giữ tên, đổi icon Users; admin-web không có các mục này (PrefsPanel chỉ giao diện/ngôn ngữ).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Trạng thái khe opt-in và khe tiếp nhận hợp đồng trong định tuyến

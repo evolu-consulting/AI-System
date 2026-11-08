@@ -19,5 +19,5 @@ Vòng 3 (chỉ sửa test): ca tenant_admin còn bấm sidebar "Quy trình" + `f
 Không đụng `admin-runs.pa`, `flag-off.pa`, `cr121-c-flows`, `workflows*.spec`, `conflict-workflows`. Không sửa code sản phẩm. Perf: không.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 Không thay đổi hành vi (lý do: sửa e2e theo CR-121 R2, không đổi code sản phẩm)

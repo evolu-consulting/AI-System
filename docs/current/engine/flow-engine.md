@@ -266,3 +266,28 @@ Sau bước Soạn thảo (có tệp), node tạo một hợp đồng trong Sổ
 
 ## CR-120 · Delta gộp 2026-11-09 (đợt cr125-wave)
 - **Bước `agent` trong FlowView (G1, cr120-community-flows):** bước do agent làm hiển thị như bước hệ thống kèm khoá agent và tóm tắt kết quả. Hàng của 3 khe Community (`community.post-moderation`, `community.partner-join`, `community.report`) được chiếu sang FlowView; task chỉ có khi người xem là người duyệt và bước duyệt đang mở (id task = `mod_task_id`). Body khe đổi số/loại bước ⇒ `SLOT_STEPS_FIXED` (khung bước cố định, chỉ đổi cấu hình).
+## CR-115/116/118/120/121 · Delta gộp 2026-11-09 (đợt cr125-wave)
+
+#### Yêu cầu: Bắn hẹn thử lại theo lô (nguồn: cr115-batch-launch, cr115-fix)
+Vòng nền bắn các hẹn `retry` tới hạn theo lô (≤ 100 mỗi lượt) trong một giao dịch rồi khởi chạy lại các bước của lô cùng lúc; kết quả (bước, lượt chạy, tin, job) giống hệt bắn từng hẹn. Một hẹn lỗi không làm hỏng hẹn khác: hẹn lỗi sau khi đã đánh dấu bắn thì được hoàn đánh dấu và bắn lại đúng một lần; cả giao dịch lô lỗi ⇒ bắn lại từng hẹn riêng, lỗi nữa thì lùi hạn từng hẹn. Hai Hub cùng quét vẫn bắn mỗi hẹn đúng một lần (mỗi bước một job). Lô nhiều tenant × người chạy đúng người bắt đầu; không giữ khoá theo người nên chat không phải chờ; tx khác giữ quy trình B cần hội thoại A không deadlock; lỗi kết nối sau khi ghi xong vẫn khởi chạy đủ, không trùng. Chỉ vòng hẹn giờ gom kick theo lô; mọi đường phát khác kick từng quy trình theo thứ tự cũ. Ngưỡng: 1.000 hẹn tới hạn ⇒ mỗi lượt ≤ 100, lượt 100 hẹn p50 ≤ 991 ms, p95 ≤ 1.226 ms. Code: `modules/processes/adapters/timers/timer-sweep`, `adapters/outbox`.
+
+#### Yêu cầu: Người nhận cập nhật lượt chạy theo lô; đọc đầu lượt chạy một lần mỗi bước (nguồn: cr116-apply-hub)
+Khi bắn một lô hẹn giờ, người nhận thông báo cập nhật lượt chạy (người bắt đầu, thành viên còn trong phòng nguồn, người được giao, thành viên nhóm của việc đang mở) được tính một lần cho cả lô (1 câu SQL), kết quả giống hệt tính từng lượt, không lộ người tenant khác (tenant lệch/không scope ⇒ rỗng). Khi một bước xong, engine khoá lượt chạy và đọc thông tin lượt chạy cùng nguồn đã ghim trong một lần đọc (1 câu thay 4). Code: `processes/core/run-recipients`.
+
+#### Yêu cầu: Hub khởi động khi thiếu schema gói tuỳ chọn; production thì dừng (nguồn: cr118-boot-packs, cr118-schema-caps-prod)
+Thiếu `packs.pack_agents` (hoặc cột default_app/profile_version chưa migrate) ⇒ môi trường test/development vẫn khởi động và phục vụ: agent gói rỗng, default_app null, cảnh báo một lần, `/health` 200; migrate muộn thì lần nạp lại cấu hình kế dò lại và thấy bảng. `APP_ENV=production` thiếu thì Hub dừng lúc khởi động và liệt kê phần thiếu (vd `packAgents`). Đủ schema ⇒ như cũ. Code: `modules/config/schema-caps`.
+
+#### Yêu cầu: Node chờ N giờ `wait_for` (G3) (nguồn: cr120-contracts-flow)
+Stage `wait_for` chờ N giờ (1…8760) kể từ lúc tới lượt bằng hẹn giờ bền; tới hạn ⇒ stage xong, run chạy tiếp; chưa tới hạn không đổi gì. Lưu stage chờ với `after` ≠ auto hoặc hành động thật ⇒ `WAIT_INVALID`.
+
+#### Yêu cầu: Node chờ sự kiện `wait_event` (G4) (nguồn: cr120-contracts-flow)
+Stage `wait_event` chờ sự kiện theo khoá do gói bắn cho bản ghi gói của run (lọc tenant tường minh); sự kiện thả đúng stage ngay và huỷ hẹn hạn; hết `timeout_h` không sự kiện ⇒ chạy tiếp, ghi "Hết hạn chờ". Sự kiện tới trước bước chờ được giữ và tiêu thụ khi vào bước; chỉ ghi khi run còn stage chờ đúng khoá (tránh sự kiện cũ qua bước chờ sau); mỗi sự kiện chỉ qua MỘT lần chờ; tenant khác bắn cùng bản ghi ⇒ không thả, không ghi.
+
+#### Yêu cầu: Def mặc định khe `contracts.intake` và tool gói (nguồn: cr120-contracts-flow)
+Khe `contracts.intake` có def thư viện mặc định (seed hub 0093): AI trích xuất → Xác nhận và lưu (form, nhắc 24 giờ, chuyển cấp 48 giờ) → duyệt theo luật → ký số (tool, hành động thật) → chờ ký → chờ ngày nghĩa vụ − 7 → nhắc nghĩa vụ. Tool gói: `contracts-extract` (đọc trạng thái trích), `contracts-esign-send` (người ký công ty = người bắt đầu), `contracts-obligation-remind` (chuông idempotent); HĐ không thấy ⇒ lỗi `CONTRACT_NOT_FOUND`. Code: `packs/contracts/adapters/intake.tools`.
+
+#### Yêu cầu: Trần stage quy trình 22 (nguồn: cr121-d1-facts)
+Quy trình có tối đa 22 stage (`PROCESS_STAGES_MAX` trong `packages/contracts/src/chat/processes.ts`), chỉ số stage/bước 0..21; DB nới CHECK (hub 0097). Mẫu duyệt HĐ tối đa 20 bước (+ route + finalize = 22 stage); 21 bước ⇒ `STEPS_MAX`.
+
+#### Yêu cầu: Duyệt bước DLC trong chat (nguồn: dlc-chat-review)
+Run của quy trình gói DLC (key `dlc-*`) đang chờ kiểm có nút "Xem và duyệt" trên thẻ run ở chat; modal hiện kết quả đầy đủ của bước; Duyệt cho quy trình đi tiếp; Từ chối (kèm lý do) quay lại bước gần nhất trong `back_to_steps` của điểm duyệt, không cấu hình ⇒ làm lại chính bước đó. Người bắt đầu run, người quyết task mở hoặc admin đọc được nội dung bước; thành viên khác ⇒ 404. Run không phải `dlc-*` không có điểm duyệt này. Code: `apps/chat-web/.../run-block/lib/dlc-review`, `packs/dlc/adapters/dlc.routes`.

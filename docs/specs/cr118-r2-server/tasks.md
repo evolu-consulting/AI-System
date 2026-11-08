@@ -47,7 +47,7 @@ int `apps/hub-api/src/modules/packs/community/adapters/community-files-sweep.int
 - Tenant tắt gói ⇒ vòng nền không quét tenant đó (giống các pha khác của vòng nền Community).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Xem sơ đồ quy trình đã gán (màn luật chọn quy trình)

@@ -22,7 +22,7 @@ Chỉ `e2e/features.spec.ts`. Không đổi mã sản phẩm.
 Chưa chứng minh được nguyên nhân gốc (không có trace); nếu còn đỏ sau chờ networkidle thì là lỗi sản phẩm đua `reset` form/feature trong `use-feature-conflict.ts` cần lát riêng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ thêm bước chờ đồng bộ trong e2e features.spec.ts)
 

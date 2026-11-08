@@ -24,7 +24,7 @@ Chỉ `known-red.rules.ts` + test. Không thêm hub-rls vào known-red (đỏ m�
 Dùng log text (có tiêu đề file) thay vì junit: junit có `file` mỗi ca nhưng không có chuỗi mô tả lồng nhau khớp khuôn id; log inline đã đúng file.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ dev, sửa lỗi gán file của quarantine)
 

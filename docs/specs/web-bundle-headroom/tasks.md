@@ -25,7 +25,7 @@ Không đổi ngân sách (162 KB). Không đổi hành vi. Contracts chỉ thê
 Số liệu: initial JS gzip 165888 B (162.0 KB) → xem báo cáo lát.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ chuyển hằng số sang module không phụ thuộc zod để zod rời JS tải ban đầu của workspace-web; giá trị và đường import cũ giữ nguyên).
 

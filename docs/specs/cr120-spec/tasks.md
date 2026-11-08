@@ -30,7 +30,7 @@ Không code, không migration.
 - `contracts.approval` giữ cổng add-on `contracts-approval-engine` (tenant thiếu add-on vẫn máy trạng thái, hiện qua LegacyMachineRenderer).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: lát chỉ viết spec/ADR/CR; hành vi đổi ở các lát cr120-* theo Delta riêng).
 

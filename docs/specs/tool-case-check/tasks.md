@@ -28,7 +28,7 @@ Windows (không phân biệt hoa/thường) gộp `tests/acceptance/cr118` và `
 - Chạy toàn repo thay vì chỉ file staged: `ls-files` nhanh, và collision có thể nằm ở thư mục cha đã tracked.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ)
 

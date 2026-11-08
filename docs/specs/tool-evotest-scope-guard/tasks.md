@@ -20,7 +20,7 @@ bun test tools/scripts/src/evotest-scope.test.ts; chạy thật run-tests.ps1 -S
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ dev evotest, không đổi hành vi sản phẩm; test: tools/scripts/src/evotest-scope.test.ts)
 

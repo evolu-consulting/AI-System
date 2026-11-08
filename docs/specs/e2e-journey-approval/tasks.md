@@ -30,7 +30,7 @@ Unit `seed-e2e-journey.test.ts`; e2e `approval.ja.ts` chạy MỘT lần trên e
 - Mật khẩu 4 tài khoản = env `JA_USER_PW` (stack, ngẫu nhiên) / `E2E_JOURNEY_PW` (máy chủ), không buộc đổi lần đầu.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: lát thêm tool seed tenant `e2e-`, e2e và int; quyền xem của người duyệt đã có từ CR-109 `contracts.reviewer_contract_ids` — int `CF/approver-visible-run` chỉ khoá lại, không sửa mã sản phẩm).
 

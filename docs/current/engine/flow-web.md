@@ -307,3 +307,8 @@ Bước form của lượt flow hiện trên thẻ HĐ như bước form thật:
 Giá trị «Đã điền» của thẻ và trang yêu cầu hiện tên tệp dạng liên kết; không mở được (không có quyền / đã xoá) ⇒ câu báo lỗi.
 - Kịch bản: khi trang yêu cầu có ô tệp "id1, id2" thì tách thành từng liên kết [test: apps/workspace-web/src/components/shared/attachments.test.ts » phiếu «Tạo yêu cầu»]
 
+
+## CR-121 · Delta gộp 2026-11-09 (đợt cr125-wave)
+
+#### Yêu cầu: Hành động của task đi một đường duy nhất (nguồn: cr121-a1-drop-legacy-view)
+`FlowRuntime.act` luôn gọi route flow của kit (`POST /pack/<k>/flow/:slot/:ref/tasks/:id/actions/:action`); đường dự phòng `legacy-act` (endpoint approvals cũ khi `HUB_FLOW_RUNTIME=off`) đã gỡ. Cờ runtime tắt ⇒ route 404 và lỗi `ApiError` hiện cho người dùng, không có yêu cầu tới endpoint cũ. Code: `apps/workspace-web/src/platform/flow/adapters/http.ts`.

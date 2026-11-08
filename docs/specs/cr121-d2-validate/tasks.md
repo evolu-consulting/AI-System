@@ -29,7 +29,7 @@ Không sửa admin-web, `packages/contracts/src/hub-admin/process-library.ts` (D
 - Perf: kiểm hợp lệ thuần + đúng một câu SQL (`firstMiss`) cho mọi mã phòng/người dùng của mọi tenant bị ảnh hưởng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Kiểm hợp lệ khi xuất bản và gán nói rõ cách sửa

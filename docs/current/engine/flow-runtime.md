@@ -180,3 +180,13 @@ Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: cr121-q1
 Nguồn gắn lượt hiển thị mã HĐ thật và tên HĐ do gói contracts đặt (một câu theo tập id, dưới RLS tenant của lượt); không có nhãn thì giữ "HĐ <8 ký tự id>".
 - Kịch bản: khi lượt gắn một HĐ có số HD-Q1-001 thì nguồn hiện "HĐ HD-Q1-001 · Thuê kho Q1" [test: apps/hub-api/src/modules/processes/runs/run-detail.int.test.ts » R-4 · nguồn hợp đồng và lượt đã chạy lại]
 - Kịch bản: khi gói không trả nhãn thì giữ nhãn cũ theo id [test: apps/hub-api/src/modules/processes/runs/run-detail.map.test.ts » gói hợp đồng ⇒ kind contract + nhãn HĐ + app_key]
+## CR-120/121 · Delta gộp 2026-11-09 (đợt cr125-wave)
+
+#### Yêu cầu: Flow runtime mặc định bật, `HUB_FLOW_RUNTIME=off` tắt (FLOW-FR-06) (nguồn: cr120-runtime-on, cr121-a1-drop-legacy-view)
+Route flow chung của kit gắn mặc định; chỉ `HUB_FLOW_RUNTIME=off` tắt (route 404, `/pack/me.flags["flow.runtime"]=false`); seam test thắng env. Deploy kit prod đặt mặc định `on`. Từ CR-121 không còn đường rollback ở web: `FlowRuntime.act` luôn gọi route flow (`legacy-act` và endpoint approvals cũ làm đường dự phòng đã gỡ), tắt runtime ⇒ lỗi 404 hiện cho người dùng. Code: `packs/kit/application/flow.ports.ts` (`flowRuntimeOn`).
+
+#### Yêu cầu: Hành động qua FlowRuntime idempotent, quyền như đường cũ (FLOW-FR-06) (nguồn: cr120-runtime-on)
+Hành động `contracts.approval` qua flow gọi CÙNG use case thẻ duyệt, kèm `expect {taskId, step}`; use case kiểm lại (trong khoá HĐ) nên bấm lại hoặc hai người đua cùng task chỉ quyết một lần (bấm lại ⇒ 409, bước kế vẫn mở). Quyền, mã lỗi (thiếu lý do…) như đường cũ; không vai ⇒ 403; đối tác 403; tenant khác 403/404, không đổi trạng thái.
+
+#### Yêu cầu: Rẽ theo dữ kiện hiện tại của HĐ (nguồn: cr121-d1-facts)
+Tool `contracts-route`/`contracts-finalize` xét điều kiện bước trên loại HĐ, giá trị, phòng ban người bắt đầu lượt (gồm phòng cha, `creator_department in [...]`) và đối tác mới (HĐ chưa gắn đối tác hoặc chưa có HĐ duyệt cùng đối tác ⇒ mới), đọc lại mỗi lần rẽ (sửa giá trị giữa lượt có hiệu lực ở lần rẽ sau); thiếu dữ liệu ⇒ bước chạy; không đọc dữ liệu tenant khác. `contracts-finalize` kiểm lại cùng dữ kiện. Code: `packs/contracts/adapters/flow-facts.repo`.

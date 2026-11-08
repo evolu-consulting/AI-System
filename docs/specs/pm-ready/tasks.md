@@ -33,7 +33,7 @@ Không đổi hành vi, migration, engine, DLC (`tests/external-owned.json`, ngo
 - Người ghi def thư viện: platform admin, không có thì tenant_admin của evolu.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: seed + tài liệu)
 

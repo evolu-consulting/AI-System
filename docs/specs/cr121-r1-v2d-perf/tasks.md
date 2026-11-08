@@ -30,7 +30,7 @@ không do Q-4. Chưa bắt được văn bản câu thừa (log wave chỉ có s
 câu nền đó trong `captureSql` — việc của test-kit, không phải của Q-4.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ đổi test-kit/test: V2-D/perf in văn bản các câu khi số câu lệch; hành vi sản phẩm không đổi).
 

@@ -25,7 +25,7 @@ evotest `-Step int -All -Filter packages/db/src/packs-install.int.test.ts` (mộ
 - Sửa ở test (tự đủ điều kiện tiền đề) thay vì ép thứ tự file: chia ô/slot sẽ lặp lại lỗi với bất kỳ file nào trông vào trạng thái file khác.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ sửa điều kiện tiền đề của một file int; không đổi mã sản phẩm hay hành vi hệ thống).
 

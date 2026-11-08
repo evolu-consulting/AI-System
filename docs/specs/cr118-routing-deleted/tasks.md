@@ -23,7 +23,7 @@ Không UI (sohoptac-web `attention.ts` chưa biết `FLOW_ROUTE_NONE`/`FLOW_ROUT
 - Kiểm "def còn chạy được" ở PUT bằng đọc scope system TRƯỚC tx ghi (tx tenant_admin là scope user, không đọc được def thư viện).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Quy trình đã gán bị xoá / chưa xuất bản

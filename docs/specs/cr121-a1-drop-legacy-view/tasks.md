@@ -29,7 +29,7 @@ Gỡ view cũ `hub.process_slot_assignments` (0091) và đường `legacy-act` (
 - Runtime flow tắt (`HUB_FLOW_RUNTIME=off`): `act` không còn đường dự phòng, route 404 ⇒ lỗi hiện cho người dùng (rollback bản phát hành CR-120 đã hết nhiệm vụ).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Gán tenant × khe = đúng một quy trình

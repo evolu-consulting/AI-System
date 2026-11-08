@@ -133,3 +133,44 @@ Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: cr121-f4
 - Kịch bản: khi xoá run gốc thì FK `rerun_of` là ON DELETE SET NULL [test: apps/hub-api/src/modules/ops/ops.f4-privacy.int.test.ts » FK đổi sang ON DELETE SET NULL (đã VALIDATE)]
 ## CR-121 · Delta gộp 2026-11-09 (đợt cr125-wave)
 - **Danh sách quy trình thư viện (pl-uat-fixes):** cột "Số bước" chỉ đếm bước duyệt (khớp "Bước n" trên Sơ đồ, không đếm nút hệ thống route/finalize). Bảng vừa 1440 px không cuộn ngang (tên khe ở dòng phụ dưới tên). Nút Xoá bị khoá hiện tooltip "Đang được N tenant dùng — bỏ gán trước khi xoá" (hoặc lý do mặc định của khe).
+## CR-118/120/121 · Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới đây thắng nội dung cũ cùng chủ đề ở trên (lát ghi cạnh tiêu đề; test chi tiết nằm trong `docs/specs/<lát>/tasks.md`).
+
+#### Yêu cầu: Một nguồn gán quy trình (ADR-0036) (nguồn: cr120-single-source, cr121-a1-drop-legacy-view, hub-routing-backfill)
+Gán tenant × khe chỉ nằm ở tập gán `process_tenant_defs` + luật `is_default` của `process_routing_rules` (thay "Gán tenant × khe = đúng một quy trình" ở trên). Bảng gán cũ đổi tên `_legacy` (không cấp cho `hub_rw`); view `process_slot_assignments` dựng tạm ở hub 0090/0091 đã gỡ ở hub 0099. Backfill 0089–0091 và `ensureSlotDefaults` (lúc khởi động) cấp mẫu khe cho tenant bật app chưa có luật; chạy lại vô hại; `resolveSlot`/`routeSlot` chỉ đọc nguồn mới. PUT/DELETE gán qua `/tenants/:tid/process-slots/:slot` đổi luật mặc định và tập gán đồng bộ (def cũ bị bỏ khỏi tập trừ khi luật còn dùng). Scope user chỉ thấy tenant mình. `flow_coverage` (ops) báo ok sau khi cấp mặc định. Code chính: `apps/hub-api/src/modules/processes/library/`.
+
+#### Yêu cầu: Gán nhiều quy trình cho tenant (platform_admin) — luật mặc định đi theo (nguồn: cr121-f1-assign-default-rule)
+Gán quy trình đã xuất bản của khe cho công ty (admin-web, Công ty › Quy trình) đồng thời đặt luật mặc định của khe = quy trình đó (`source='admin'`) trong cùng giao dịch; gán quy trình khác thì mặc định đổi theo; gán lại đúng mặc định thì không đổi (không bump). Bỏ gán quy trình đang là mặc định của khe thường ⇒ 409 kèm cách sửa (gán quy trình khác làm mặc định trước). Khe opt-in (vd duyệt bài Community): chưa gán ⇒ tắt; gán ⇒ bật và chạy đúng quy trình đó; bỏ gán mặc định duy nhất ⇒ tắt lại.
+
+#### Yêu cầu: Quy trình đang dùng và tập đã gán (nguồn: hub-routing-backfill, cr120-handson-fixes)
+`GET /tenants/:tid/process-routing/:slot` trả `current_def_id`/`current_def_name` (quy trình chạy khi không có luật: gán cũ, không có ⇒ mặc định khe) và `active` (khe opt-in chưa luật/chưa gán ⇒ `false`, UI hiện "Đang tắt"). Mọi khe manifest khai báo (kể cả `contracts.intake`) trả 200. Web gắn nhãn "Đang dùng"; def đang dùng ngoài tập gán thành dòng riêng. ⚠ Lệch code: mục chỉ đọc "Được platform gán" (spec hub-routing-backfill) không còn trong pps/admin-web/src (test ssigned-view đã gỡ) — cần chốt UI này còn hay đã bỏ.
+
+#### Yêu cầu: Chọn quy trình theo phòng ban và loại hợp đồng (nguồn: cr118-route-kind)
+Điều kiện luật `{departmentIds?, contractKinds?}` kết hợp AND; rỗng/vắng = mọi giá trị; `contractKinds` ∈ {buy, sell, referral}; luật thường cần ≥ 1 điều kiện (không ⇒ 422); loại ngoài enum ⇒ 400. Lượt duyệt HĐ gửi loại HĐ (`deal`) khi launch; khe không cung cấp loại bỏ qua điều kiện loại. Code: `routing.rules.ts`, `routing-launch`.
+
+#### Yêu cầu: Quy trình đã gán bị xoá / chưa xuất bản (nguồn: cr118-routing-deleted)
+Danh sách và sơ đồ quy trình đã gán bỏ quy trình đã xoá (404); tenant_admin chỉ thấy bản xuất bản, không thấy nháp. Luật trỏ quy trình không chạy được mang lý do `unavailable`; PUT luật chọn quy trình đó ⇒ 422 `ROUTING_PROCESS_UNAVAILABLE`; launch khớp luật đó ⇒ chặn `FLOW_ROUTE_UNAVAILABLE`.
+
+#### Yêu cầu: Xem sơ đồ quy trình đã gán (nguồn: cr118-r2-server)
+`GET /tenants/:tid/process-routing/:slot/processes/:defId` trả sơ đồ bản xuất bản đang dùng (`stages`, `slot_body`) của quy trình trong tập đã gán. platform_admin và tenant_admin chính tenant; tenant khác ⇒ 404; chưa gán ⇒ 404; member ⇒ 403; một câu SQL.
+
+#### Yêu cầu: Trang Quy trình duy nhất của công ty (nguồn: cr120-flows-one-page)
+`/processes` (admin-web) liệt kê mọi quy trình công ty có, nhóm theo app (Sổ Hợp Tác, Community, Chung); mỗi dòng: tên, khi nào chạy (việc của khe + điều kiện luật), nguồn (Platform cung cấp / Công ty tạo), trạng thái (Đang dùng / Tắt), mở sơ đồ. Không tab; lọc bằng chip app/nguồn/trạng thái; mẫu nằm trong "Tạo quy trình", "Chép mẫu" tạo quy trình Công ty tạo mặc định Tắt. ⚠ Lệch code: không tìm thấy lows-view/nhãn "Platform cung cấp" trong pps/admin-web/src và các test của lát (flows-view, engine-toggle) đã gỡ — trang/khối Quy trình trong thẻ app có thể đã đổi ở CR-125; cần chốt.
+
+#### Yêu cầu: Lọc thư viện bằng nút phễu và tên quy trình theo việc làm (nguồn: cr120-library-filter-names)
+Bảng Thư viện có phễu lọc App, Việc (nhãn khe), Trạng thái (Nháp/Đã xuất bản), Tenant (đã gán cho …/Chưa gán/Mặc định); bộ lọc hiện thành chip bỏ được, lưu ở URL (giá trị lạ bị bỏ), lọc phía client; chưa chọn app thì gom theo app. Tên quy trình mô tả các bước ("Duyệt 2 cấp: Kế toán → Giám đốc"), không chứa phòng ban/loại HĐ (thuộc luật); dòng phụ là nhãn khe. Script đổi tên một lần `tools/scripts/src/rename-process-defs`, chạy lại không đổi gì.
+
+#### Yêu cầu: Sao chép quy trình thư viện cho công ty và chạy bản riêng (nguồn: cr121-c9-runs-clone-api, cr121-c9b-company-copy-launch)
+Chuyển sang `cong-ty-quy-trinh.md` (sao chép, đọc chỉ xem, lọc lượt chạy) và `cong-ty-quy-trinh-ban-rieng.md` (chạy bản riêng).
+
+#### Yêu cầu: Danh mục trường điều kiện và node của khe (nguồn: cr121-d0-slot-contract)
+Mỗi khe khai trường nghiệp vụ dùng trong điều kiện bước (nhãn Việt, kiểu, toán tử, lựa chọn) và các loại node bằng đúng tính năng app chạy được; không khai ⇒ rỗng. Khe Sổ Hợp Tác · Duyệt hợp đồng: Giá trị HĐ, Loại HĐ, Phòng ban người tạo (tính cả phòng con, theo mã), Đối tác mới; node Duyệt, Trợ lý AI, Ký số, Thông báo (`notify`), Chờ tới (`wait_until`). Điều kiện hỗ trợ nhóm AND/OR lồng một cấp; trường chưa có dữ liệu ⇒ điều kiện đúng (bước vẫn chạy). Code: `packs/contracts/domain/approval-slot-catalog`.
+
+#### Yêu cầu: Kiểm hợp lệ khi xuất bản và gán nói rõ cách sửa; xem trước theo dữ kiện (nguồn: cr121-d2-validate)
+Xuất bản/gán trả 422 kèm danh sách `{bước, trường, câu Việt/Anh}`: loại bước app không hỗ trợ, điều kiện dùng trường chưa khai, quá số bước, ký số không ở cuối, bước duyệt thiếu phòng ban, mã phòng ban (kể cả trong điều kiện) không có ở công ty được gán (`SLOT_GROUPS_MISSING`: "Bước N: phòng ban '…' không có ở công ty …"); xuất bản: `PROCESS_PUBLISH_INVALID`. Xem trước nhận loại HĐ, giá trị, phòng ban người gửi, đối tác mới; bước có điều kiện thiếu dữ kiện ghi `no_data` (vẫn chạy).
+
+#### Yêu cầu: Trình dựng điều kiện bước (nguồn: cr121-d3-cond-editor)
+Mỗi bước (trừ bước đầu) có "Chỉ chạy khi": chọn trường trong danh mục khe, toán tử theo kiểu, giá trị; nhiều điều kiện ghép và/hoặc, nhóm lồng một cấp; trống = "Luôn chạy". Điều kiện thiếu giá trị chặn lưu/xuất bản, lỗi hiện ở thanh trạng thái và bấm nhảy tới bước.
+
+#### Yêu cầu: Node Thông báo (notify) và khe duyệt HĐ hỗ trợ Thông báo / Chờ tới (nguồn: cr121-d6-notify-node, cr121-d6b-notify-editor, cr121-f3-review-highs)
+Bước `notify` gửi chuông (tuỳ chọn mail) tới người bắt đầu / user ở input / thành viên Group theo mã của CÔNG TY CỦA RUN; tiêu đề + nội dung là mẫu thay biến input; ghi hàng gửi cùng giao dịch rồi xong bước. Khoá chống gửi trùng (run, stage run, vòng, lần thử): retry/sweep cùng vòng không gửi lại, trả lại/chạy lại sang vòng mới gửi đúng 1 lần. Không người nhận ⇒ bước vẫn xong, kết quả ghi `NOTIFY_NO_RECIPIENT` (chi tiết lượt chạy đánh dấu cảnh báo). User công ty khác không nhận. Lưu thiếu người nhận/kênh/tiêu đề ⇒ 422 `NOTIFY_INVALID`/`NOTIFY_*`; `wait_until` lệch ngày ngoài ±365 ⇒ `WAIT_OFFSET_RANGE`, giờ sai ⇒ `WAIT_TIME_INVALID`. Trong khe `contracts.approval` hai node tự sang bước kế (bước sau không được có điều kiện). Trình sửa (Form + Canvas) thêm bằng nút icon, chèn trước bước Ký số; thẻ duyệt (FlowView) chiếu cả hai bước; người gửi duyệt thấy thông báo ở chuông. Chạy lại bước không áp cho lượt gắn gói đã kết thúc: 409 `pack_bound` kèm hướng dẫn "Mở lại quy trình" của gói; lượt còn chạy thì chạy lại được.

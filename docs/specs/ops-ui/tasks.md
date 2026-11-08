@@ -30,6 +30,6 @@ O3 của `docs/specs/ops-watch` (CR-104): trang `/system` "Tình trạng hệ th
 - Lệnh chép được: đoạn trong dấu huyền (`…`) hoặc dòng `$ …` của gợi ý.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: giao diện CR-104, yêu cầu ở ops-watch)

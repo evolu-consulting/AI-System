@@ -17,7 +17,7 @@ phụ thuộc:
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ đăng ký 3 khe community vào `flowAdapterSlots` để bỏ log error giả lúc khởi động; luồng giữ nguyên. `contracts.intake` không có FlowSlotAdapter nên vẫn báo gap thật).
 

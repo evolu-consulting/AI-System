@@ -28,7 +28,7 @@ stage, hẹn, đuôi log hub. Log hub-api của stack journey ghi ra `.data/ja-h
   duyệt, chưa tới Phần 1–3 ⇒ chưa có dump cho Phần 3.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ thêm chẩn đoán khi e2e hỏng và ghi log hub của stack test ra tệp).
 

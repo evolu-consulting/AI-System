@@ -47,7 +47,7 @@ unit (khoá/ref/khoá thư mục/dựng một lần/kế hoạch xoá) + int bas
 - Lượt toàn bộ = int|e2e|all không `-Filter` (kể cả không `-All`): mới đúng ý "một lượt giữ cả máy chủ".
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: không thay đổi hành vi sản phẩm — chỉ hạ tầng test/evotest: cache dựng, mẫu DB, khoá lượt toàn bộ; không đổi mã sản phẩm nào).
 

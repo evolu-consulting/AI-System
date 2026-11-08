@@ -24,7 +24,7 @@ phụ thuộc:
 - Hết pool hoặc `worktree move`/`checkout` lỗi ⇒ rơi về đường dựng cũ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ dev)
 

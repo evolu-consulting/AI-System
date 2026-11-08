@@ -25,7 +25,7 @@ Hook PreToolUse chặn subagent ghi checkout chính ngoài worktree (4 lần age
 - Lối thoát: env `EVOLU_GUARD_ALLOW_AGENTS` / `EVOLU_GUARD_OFF=1` / `EVOLU_MAIN_ROOT`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ dev)
 

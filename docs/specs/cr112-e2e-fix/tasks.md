@@ -27,7 +27,7 @@ Unit `tools/scripts/src/e2e-lane.rules.test.ts` (ánh xạ làn → DB). e2e: `b
 - Làn 0 (main) chạy trực tiếp cũng dùng `ai_system_e2e_root_test` (không còn đụng `ai_system_test` của test int).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ test + hạ tầng test)
 

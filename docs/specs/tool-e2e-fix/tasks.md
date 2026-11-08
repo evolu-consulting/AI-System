@@ -23,7 +23,7 @@ Chỉ `test-e2e-par.{ts,rules.ts,test.ts}`.
 Tên nào trong `--only` không khớp cũng là lỗi (không chỉ khi 0 việc) để gõ sai không âm thầm bỏ mất một việc.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ dev, sửa lỗi script test)
 

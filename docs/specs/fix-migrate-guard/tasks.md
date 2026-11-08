@@ -34,7 +34,7 @@ Sự cố deploy 3f5e6b8c (2026-10-30): prod đã có `0064_agent_hooks` (nhánh
 - Hạn chế kiểm tổ tiên: VERSION hiện trên prod ghi 3f5e6b8c dù container chạy bản cũ (deploy.ps1 cũ ghi trước build/migrate).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chặn lỗi migration/deploy)
 

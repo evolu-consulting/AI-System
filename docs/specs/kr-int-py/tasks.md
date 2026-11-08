@@ -26,7 +26,7 @@ evotest: migrate-hub 7/7, chat-gate, test_confirm.py 8/8, result_int_test.py, lo
 - Số đo Lưu 200 dòng + 50 mốc (slot thường, nice 19): chạy riêng ~225–258 ms/lượt, song song nhiều lượt khác 423 ms (p95). Planning 110 ms + Execution 77 ms của câu CTE ②; trigger hàng `obligations_doc_frame` 18 ms + `obligations_v2e_cell` 19 ms (50 lần), `contract_items_v2j1_ins/upd` 13+15 ms. Tối ưu thật (trigger theo hàng → theo câu, giảm planning) cần lát riêng; chưa đo `-Exclusive` (cấm trong lát này).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED engine/runtime-events.md
 #### Yêu cầu: job.result không mang khoá null tuỳ chọn

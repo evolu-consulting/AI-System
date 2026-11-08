@@ -26,7 +26,7 @@ Vấn đề (Rowan 2026-11-03): demo DLC trên sohoptac2 dùng giao diện chat;
 - Quyền duyệt do Hub quyết (`POST /review-tasks/:id/decision`); lỗi hiện câu riêng (`reviewErrorMessage`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Duyệt bước DLC trong chat

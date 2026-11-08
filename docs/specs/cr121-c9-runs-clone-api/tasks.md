@@ -35,7 +35,7 @@ UI (c11/c17), admin-web i18n lỗi mới, engine D, DLC, `ROUTE_SLOT_SQL`/`RESOL
 - Perf: không thêm perf test (không chạm đường nóng có ngưỡng); chỉ index + số câu cố định.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED engine/cong-ty-quy-trinh.md
 #### Yêu cầu: Sao chép quy trình thư viện cho công ty

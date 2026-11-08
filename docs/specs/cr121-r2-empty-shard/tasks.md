@@ -31,7 +31,7 @@ Không chạy `verify:wave` thật. Chỉ `tools/scripts/src/wave-plan.rules.ts`
 - Số mảnh bị chặn bởi số thùng làm mỗi mảnh dài hơn trần 150 s khi ít slot; chấp nhận (đụng cổng là lỗi cứng, dài hơn chỉ là chậm).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: hạ tầng chạy test của cổng đợt; sửa cách chia mảnh e2e, không đổi hành vi sản phẩm)
 

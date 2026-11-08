@@ -27,7 +27,7 @@ apps/hub-api/src/modules/config/schema-caps.int.test.ts; e2e evotest `-Step e2e 
 - Dò theo `Db` (WeakMap) thay vì cờ toàn cục: test/instance dùng nhiều kết nối; lỗi dò ⇒ không nhớ, lần sau dò lại.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Hub khởi động khi thiếu schema gói tuỳ chọn

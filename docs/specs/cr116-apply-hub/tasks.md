@@ -41,7 +41,7 @@ perf: `bun run perf:probe` + `perf:compare` (timer.fire, remind, expire, chat.fi
   cùng hàng); khoá vẫn là câu đầu chạm `process_runs` của tx (§10).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Người nhận cập nhật lượt chạy theo lô

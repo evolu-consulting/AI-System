@@ -33,7 +33,7 @@ Unit: `evotest-summary.rules.test.ts` (6), `test-affected.test.ts` (parse `--e2e
 | int nhỏ, wall | 109 s | 38 s (lượt đầu của mirror 92 s: đẩy 20+ s một lần) |
 | e2e community-web, wall | 167 s (server 117 s, dựng web 58 s) | 100 s (server 82 s, cache dựng đã nóng) |
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ hạ tầng test/evotest — đường chuyển mã nguồn (mirror git + loại nhị phân bằng chứng docs), tóm tắt gọn, `verify:slice --e2e/-Dirty`; không đổi mã sản phẩm nào).
 ## Việc còn lại

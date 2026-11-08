@@ -35,7 +35,7 @@ Không đổi trần 8/10 (cần migration hub ⇒ D-1). Không SQL, không int.
 - Điều kiện mới lưu được qua API ngay sau D-0 nhưng chưa có dữ kiện ⇒ luôn "chưa có dữ liệu" ⇒ bước chạy (an toàn) tới khi D-1 gộp.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Danh mục trường điều kiện và node của khe (nguồn: cr121-d0-slot-contract)

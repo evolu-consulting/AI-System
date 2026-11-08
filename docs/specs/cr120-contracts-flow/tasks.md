@@ -44,7 +44,7 @@ contracts cho bước trích/ký số/nhắc nghĩa vụ (G6), def thư viện m
 - e2e hành trình thật (D5) chạy ở cuối đợt; khai khe/`SlotSpec` `contracts.intake` do cr120-slot-contract.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Node chờ N giờ `wait_for` (G3) (nguồn: cr120-contracts-flow)

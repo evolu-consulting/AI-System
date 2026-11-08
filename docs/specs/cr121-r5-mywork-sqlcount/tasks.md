@@ -29,7 +29,7 @@ Int: W1/mywork, W1/sourcing, V2-D/perf, V2-E/sqlcount, HD9/sqlcount, V2-A/perf, 
 Lọc theo mẫu văn bản nền (allowlist có lý do), không đếm-rồi-trừ; ALS không dùng được (R-1). Vòng chẩn đoán dài phải đặt timeout test riêng (mặc định 5 s làm test chồng chéo).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ đổi helper test `captureSql`/`expectQueryCounts`; sản phẩm không đổi).
 

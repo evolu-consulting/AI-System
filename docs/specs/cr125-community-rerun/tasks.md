@@ -25,7 +25,7 @@ Chạy lại cơ học bộ community-web sau khi thêm mục «Tạo yêu cầu
 ## Delta (so với docs/current)
 Không thay đổi hành vi (lý do: sửa test cũ, chỉ cập nhật chỉ số mục nav trong test; sản phẩm không đổi)
 
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ## Việc còn lại
 - Không có. Chưa gộp (slice:merge không chạy trong lát này).

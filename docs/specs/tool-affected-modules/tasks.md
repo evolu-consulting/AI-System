@@ -28,7 +28,7 @@ Unit bảng cho luật (`test-affected.scope.test.ts`, `test-affected.test.ts`, 
 - Mã nguồn nhắc tên bảng không lan theo importer (barrel = mọi thứ), chỉ chọn test của module/gói đó + test nhắc bảng trực tiếp.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ hạ tầng test — cách CHỌN test của `test:affected` (theo module, `--explain`, `--strict`); không đổi mã sản phẩm, không đổi cách dựng DB mẫu; luật được khoá bằng unit `tools/scripts/src/test-affected.scope.test.ts`).
 

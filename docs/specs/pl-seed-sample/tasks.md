@@ -29,7 +29,7 @@ Không sửa migration 0068/0069, không UI, không gán tenant, không đụng 
 - Nhóm `pb-ke-toan` lấy từ seed demo (`deploy/tenants/demo.yaml`); tenant thiếu nhóm thì lúc gán mới báo `SLOT_GROUPS_MISSING` (hành vi sẵn có).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ dữ liệu seed dev/test, không đổi hành vi sản phẩm hay production)
 

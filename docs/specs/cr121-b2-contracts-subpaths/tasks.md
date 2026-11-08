@@ -29,7 +29,7 @@ CR-121 phần B-2 (ADR-0037): (1) thay import barrel `@ai/contracts` bằng subp
 - Gate `test:affected` chỉ áp cho seed theo module (không áp cho seed rộng như migration/file gốc).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: refactor import — đổi đường dẫn import `@ai/contracts` → subpath, thêm `public.ts` cho module config, và logic chọn test của công cụ `test:affected`; runtime không đổi)
 

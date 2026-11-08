@@ -34,7 +34,7 @@ Không sửa hub-api (phần chạy), không migration, không DLC. `FE_NODES.no
 - Hub chiếu thẻ duyệt `approval-flow-view` chưa gửi bước notify/wait ở FlowView; workspace-web đã map (notify ⇒ system, wait_until ⇒ wait) khi dữ liệu có.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Trình sửa quy trình thêm và sửa bước Thông báo / Chờ tới

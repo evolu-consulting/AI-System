@@ -34,7 +34,7 @@ Cài đặt › Ứng dụng & quy trình (routing chỉ đọc `hub.process_ten
 - `current_def_*` tính cùng thứ tự `RESOLVE_SLOT_SQL` nhưng không đòi bản xuất bản (hiển thị, không launch).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Tập quy trình đã gán gồm cả gán theo đường cũ
@@ -47,10 +47,5 @@ Tenant gán quy trình qua `process_slot_assignments` (trước CR-118) có quy 
 GET `/tenants/:tid/process-routing/:slot` trả `current_def_id`/`current_def_name` = quy trình chạy khi không có luật (gán cũ, không có ⇒ mặc định khe); web gắn nhãn "Đang dùng".
 - Kịch bản: khi tenant gán cũ mở routing thì `current_def_id` = def gán; chưa gán ⇒ mặc định khe [test: apps/hub-api/src/modules/processes/library/routing-backfill.int.test.ts » GET routing: tenant gán cũ thấy quy trình + current_def_id, chưa gán ⇒ mặc định khe]
 - Kịch bản: khi danh sách quy trình có def đang dùng thì hàng đó có nhãn "Đang dùng"; def đang dùng ngoài tập ⇒ dòng riêng [test: packages/web-kit/src/routing-current.test.ts » routingCurrent]
-- Kịch bản: khi platform_admin mở "Quy trình được gán" của tenant thì quy trình gán cũ có nhãn "Đang dùng" [test: e2e/P-a/pf4/tenant-routing.pa.ts » platform gán quy trình vào tập của tenant và bỏ gán quy trình đang được luật dùng bị 409 nêu luật]
-
-#### Yêu cầu: Mục "Được platform gán" ở Quy trình nghiệp vụ › Của công ty (admin-web)
-Tab "Của công ty" của `/processes` (tenant_admin, hoặc platform_admin đang xem một tenant) có mục chỉ đọc "Được platform gán": mỗi khe của tenant (capabilities), quy trình đã gán (tên, phiên bản, "Đang dùng") + xem sơ đồ; gán/sửa vẫn chỉ platform, luật ở Cài đặt. Nạp lười.
-- Kịch bản: khi tenant có quy trình gán theo khe thì mục liệt kê theo khe với nhãn "Đang dùng"; mặc định khe ngoài tập ⇒ dòng riêng [test: apps/admin-web/src/features/processes/lib/assigned-view.test.ts » assigned-view]
 
 ## Việc còn lại

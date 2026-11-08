@@ -26,7 +26,7 @@ apps/hub-api/src/modules/config/schema-caps.test.ts, schema-caps-prod.int.test.t
 - Dò lại chỉ khi còn thiếu (prod đủ schema ⇒ nạp lại không thêm câu SQL nào).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Production không được lặng lẽ thiếu schema gói

@@ -22,7 +22,7 @@ Unit openspec.rules.test.ts + openspec.test.ts.
 Tiêu đề tìm bằng văn bản thường, phân biệt hoa/thường.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 Không thay đổi hành vi (lý do: công cụ kiểm tài liệu)
 
 ## Việc còn lại

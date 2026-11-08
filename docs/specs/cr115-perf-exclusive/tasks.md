@@ -40,7 +40,7 @@ Khi máy tải (số đã biết): PD-P14 p95 55–69 ms. Exclusive KHÔNG kéo 
 Nguyên nhân còn lại không phải tranh slot: tải nền máy chủ 1,4–2,9 (prod + dự án khác), và slot bị hạn `cpus: 1` cho PG + `nice 19` + `cpu_shares 128` (docker-compose.yml). Gợi ý lát sau: profile `perf` nới CPU của PG khi `-Exclusive` (máy đã yên).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ chạy test evotest và res:check; không đổi mã sản phẩm).
 

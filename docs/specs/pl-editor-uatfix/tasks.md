@@ -14,5 +14,5 @@ Sửa lỗi UAT editor thư viện (admin-web). B1: tool hệ thống của khe 
 - Dạng song song/If trên Canvas: Hub 422 `SLOT_SHAPE_UNSUPPORTED` hiện thành toast.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 Không thay đổi hành vi (lý do: sửa lỗi UAT theo CR-105 — editor thư viện)

@@ -27,7 +27,7 @@ Không kết nối prod trong lát; không đổi `deploy.ps1`, không migration
 - `HUB_FLOW_RUNTIME=off` ⇒ CHẶN (CR-121 gỡ legacy-act của web).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: script vận hành)
 

@@ -39,7 +39,7 @@ Không có (chỉ điều tra). Bằng chứng: các lượt evotest ở bảng 
 - Không sửa kỳ vọng test: hành vi không đổi; đỏ là chập chờn theo tải evotest.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ điều tra hồi quy e2e; kết luận chập chờn theo tải, không phải lỗi mã CR-113).
 

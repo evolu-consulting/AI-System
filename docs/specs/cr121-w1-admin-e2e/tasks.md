@@ -30,7 +30,7 @@ workspace-web, hub-api engine, DLC. Chỉ: `packages/i18n/locales/{vi,en}.json` 
 Không có ca loại (c) ⇒ `tests/known-red.json` không đổi.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa lỗi hiển thị i18n `n / tổng`/nhãn bỏ lọc và Esc đóng ngăn đúng như thiết kế ListPage đã duyệt; phần còn lại chỉ chỉnh e2e cho khớp thiết kế đã duyệt)
 

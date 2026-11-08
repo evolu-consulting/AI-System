@@ -33,7 +33,7 @@ Cả hai tuỳ chọn, AND, rỗng/vắng = mọi giá trị; luật thường c
 - Enum giữ bản sao ở `hub-admin/process-routing.ts` để không kéo zod gói hợp đồng vào hub-admin.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Chọn quy trình theo phòng ban và loại hợp đồng
@@ -42,7 +42,6 @@ Trạng thái gộp: chưa gộp
 - Kịch bản: khe không cung cấp loại ⇒ bỏ qua điều kiện loại [test: apps/hub-api/src/modules/processes/library/routing.rules.test.ts » khe không cung cấp loại ⇒ bỏ qua điều kiện loại]
 - Kịch bản: launch Kinh doanh+mua ⇒ A, Kinh doanh+bán ⇒ B, BGĐ+mua ⇒ C, BGĐ+bán ⇒ chặn [test: apps/hub-api/src/modules/processes/library/routing-launch.int.test.ts » cr118-route-kind · launch chọn theo phòng ban + loại HĐ]
 - Kịch bản: lưu luật có loại; loại ngoài enum ⇒ 400; không điều kiện ⇒ 422 [test: apps/hub-api/src/modules/processes/library/routing.routes.int.test.ts » cr118-route-kind · luật theo loại HĐ: lưu, loại ngoài enum ⇒ 400, không điều kiện ⇒ 422]
-- Kịch bản: tenant admin chọn "Mua" trong ô Loại hợp đồng ⇒ PUT gửi contractKinds [test: e2e/contracts-web/tenant-routing.cw.ts » cr118-route-kind · luật phòng ban + loại HĐ (Mua) ⇒ PUT gửi contractKinds]
 
 ## Việc còn lại
 - (không)

@@ -17,3 +17,8 @@ Bước Duyệt có `after.parallel` mở thẻ duyệt cho mọi nhóm cùng l�
 - Kịch bản: khi lưu quy trình có cùng duyệt sai (< 2 nhóm, `min` vượt số nhóm, trùng nhóm) thì báo mã lỗi có đường dẫn [test: apps/hub-api/src/modules/processes/gates/parallel-approve.test.ts » parallelStageIssues: < 2 nhóm ⇒ MIN2 — min > số nhóm / trùng nhóm / không phải Duyệt ⇒ RULE_INVALID]
 - Kịch bản: khi mẫu Thư viện có cùng duyệt thì mỗi mã nhóm là nhóm cần có và được gắn id khi gán/sao chép [test: apps/hub-api/src/modules/processes/gates/parallel-approve.test.ts » mã nhóm của `parallel`: cần có (mẫu) và gắn id khi mở lượt / sao chép]
 
+
+## CR-125 · Delta gộp 2026-11-09 (đợt cr125-wave)
+
+#### Yêu cầu: Lưu bước cùng duyệt không cần Group của bước (nguồn: cr125-fix-parent-timer)
+Bước Duyệt có `after.parallel.groups` (mỗi nhóm có `group_id` hoặc `group_key`) được coi là đã có Group duyệt; `after.group_id` của bước để `null` không còn bị 422 `PROCESS_DEF_INCOMPLETE`. Một nhóm thiếu cả id lẫn mã vẫn `INCOMPLETE`. Flow Thư viện có bước cùng duyệt theo mã nhóm tạo/bật được (201). Code: `processes/defs/def-group-keys.rules.ts`.

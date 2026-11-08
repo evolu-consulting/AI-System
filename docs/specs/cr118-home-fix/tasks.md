@@ -25,6 +25,6 @@ Không sửa `e2e/sohoptac-web/auth.ss.ts`, server, DLC.
 Test e2e đúng (thành viên SHT vào /overview); lỗi nằm ở dữ liệu seed stack, lộ ra khi feature-gate nối `apps` từ /pack/me.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa seed e2e stack và test; hành vi home đã mô tả ở sht/home-default-app.md).

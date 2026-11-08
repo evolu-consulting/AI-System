@@ -22,7 +22,7 @@ evotest e2e root@0 (9 spec): 43 xanh + workflows.spec xanh sau sửa lần cuố
 Xung đột phiên bản ở menu hàng: menu đọc bản mới trước PATCH nên test chen bản của người kia qua page.route ngay trước PATCH.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa e2e theo CR-121 F4/F4b/F5)
 

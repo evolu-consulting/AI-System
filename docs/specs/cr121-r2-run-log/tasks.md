@@ -40,7 +40,7 @@ API dữ liệu cho trang chi tiết lượt chạy (mockup `Tpl-Run.dc.html`); 
 - Không dùng `process_run_viewer`: trang chỉ cho admin (tenant_admin/platform_admin), RLS tenant + lọc `tenant_id` tường minh.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED engine/run-log.md
 #### Yêu cầu: Chi tiết lượt chạy cho admin (CR-121 R-2)

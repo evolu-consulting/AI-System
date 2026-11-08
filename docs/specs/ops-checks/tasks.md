@@ -29,4 +29,4 @@ Không chạm admin-web (O3) và deploy/ (O4). Chạm O1: `ops.check.ts` (+`prev
 
 ## Delta (so với docs/current)
 Không thay đổi hành vi (lý do: các check của CR-104, yêu cầu ở ops-watch)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)

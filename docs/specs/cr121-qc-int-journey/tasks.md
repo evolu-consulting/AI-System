@@ -17,7 +17,7 @@ phụ thuộc:
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: lát qc chỉ sửa test bám spec c10/c11/c13/c14/c16/c18 + một sửa nhỏ validateSearch giữ legacy=workflow-tools khi router chạy lại validateSearch; test: apps/admin-web/src/features/tenants/lib/workspace-search.test.ts)
 

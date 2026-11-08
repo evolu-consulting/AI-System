@@ -27,4 +27,4 @@ Quyết định sản phẩm không cần hỏi: các thay đổi app đã chố
 
 ## Delta (so với docs/current)
 Không thay đổi hành vi (lý do: chỉ cập nhật e2e theo hành vi app đã chốt, sửa hạ tầng e2e và gỡ đỏ có sẵn khỏi known-red)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)

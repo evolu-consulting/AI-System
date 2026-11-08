@@ -22,7 +22,7 @@ Seed 0069 để mã phòng ban trong `*_group_id` của `stage.slot` (do `compil
 - 2026-10-31 DB dev/test đã áp 0069 cũ giữ hàng cũ (ON CONFLICT DO NOTHING); admin-web `repairSlot` đỡ phía đọc.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa seed CR-105)
 

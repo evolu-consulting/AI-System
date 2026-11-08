@@ -31,7 +31,7 @@ Cắt: (1) bỏ CTE `unk` (thừa: `upd !== asked` đã bắt dòng lạ) · (2)
 - `v2j1_fill_group`: thêm bảng chuyển tiếp CŨ cho trigger UPDATE để dòng bỏ SP vẫn tính lại (hành vi như trước); chèn dòng không SP thoát sớm.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: tối ưu hiệu năng — cùng kết quả lưu, cùng `rep_cell`/`product_group` cuối cùng, cùng mã lỗi; chỉ đổi cách tính: CTE tự điền `rep_cell`, trigger hàng → trigger câu, bỏ CTE thừa).
 

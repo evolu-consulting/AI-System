@@ -71,7 +71,7 @@ Không thêm test (đã có): `tests/acceptance/P-d/d1/{remind-load,race,batch-q
   trạng thái, Opus). Ghi số thật vào TECH-DEBT #196/#254.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ đổi kế hoạch truy vấn — cùng tập hàng, index mới thay index cũ cùng tên — và hạ tầng test).
 

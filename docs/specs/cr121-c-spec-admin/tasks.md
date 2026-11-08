@@ -22,7 +22,7 @@ Không code, không test, không migration.
 Xem mục "Quyết định trong lúc làm" và câu hỏi mở ở `docs/specs/cr121-c/{spec,tasks}.md`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: lát chỉ thêm tài liệu spec/kế hoạch, không đổi code)
 

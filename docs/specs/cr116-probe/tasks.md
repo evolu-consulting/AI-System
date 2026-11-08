@@ -41,7 +41,7 @@ Kịch bản là perf test (chạy bằng runner, ngoài `test:int`/`test:perf` 
 - Mọi kịch bản `perf` gộp một lượt evotest (một khoá `-Exclusive`); `py` một lượt riêng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ đo — probe tắt mặc định, bật bằng PERF_PROBE=1 chỉ ghi dòng log, không đổi kết quả nghiệp vụ)
 

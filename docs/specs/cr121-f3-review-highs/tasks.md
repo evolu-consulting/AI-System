@@ -25,7 +25,7 @@ Không đổi UI (admin-web đã map 409 `pack_bound` ⇒ câu `packBound`). Run
 - Thông báo cũ (khoá không có round) không cần backfill: khoá mới khác dạng nên không đụng khoá cũ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Chạy lại bước không áp cho lượt gắn gói đã kết thúc

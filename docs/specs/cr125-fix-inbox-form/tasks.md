@@ -18,7 +18,7 @@ Tìm hồi quy: bước điền (form) ở waiting_review không vào «Chờ t�
 - evotest `journey-approval-journey-fsc`: 1 pass (71.8s).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ sửa spec e2e theo mẫu Phần 1 / tệp liên kết lượt đã gộp)
 

@@ -34,7 +34,7 @@ Không đổi contract SSE, không đổi `tests/acceptance/**` (harness `startH
 - Hoãn đóng thay vì đổi thứ tự trong harness: sửa ở phiên SSE thì đúng cho mọi nơi tắt (prod `server.ts`, mọi harness test).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa lỗi vòng đời tắt instance — luồng SSE vẫn đóng khi tắt như spec HUB-FR-42, chỉ hoãn một macrotask để Bun không treo `server.stop`; docs/current không mô tả tắt instance).
 

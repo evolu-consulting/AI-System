@@ -1,4 +1,4 @@
-﻿# Sổ Hợp Tác · Duyệt, khoá, ký số
+# Sổ Hợp Tác · Duyệt, khoá, ký số
 
 Cập nhật: 2026-10-27 · Gộp từ: contract-flow (CR-098, ADR-0030), engine-flag-tenant, M3-decouple/HD3 (máy cũ), k1-lock/lock-strict (CR-097), cf-esign-docusign, esign-multi, esign-anchor(+fix), esign-flow(+fix), esign-sweep, esign-sweep2.
 
@@ -277,3 +277,10 @@ Mục dưới thắng nội dung cũ cùng chủ đề ở trên (kể cả §1c
 ### Mục "Chờ tôi duyệt" (cr121-c7-approval-inbox-nav)
 Người có vai duyệt trong quy trình duyệt HĐ đang gán (hoặc đang có việc chờ) thấy mục "Chờ tôi duyệt" kèm số HĐ chờ sau "Hợp đồng"; mở ra danh sách HĐ chờ quyết. Rỗng ⇒ nói rõ vì sao và bước tiếp theo, kèm liên kết xem tất cả HĐ. Người khác không thấy; số chỉ đếm trong công ty.
 
+## CR-120/121 · Delta gộp 2026-11-09 (đợt cr125-wave)
+
+#### Yêu cầu: Thẻ duyệt quyết qua FlowRuntime, dòng thời gian đọc FlowView của hub (nguồn: cr120-runtime-on, cr121-a1-drop-legacy-view)
+Xác nhận/Duyệt/Trả lại/Từ chối (+ lý do, + SP gắn ở hộp "Gắn sản phẩm" = `extension`) gửi `POST /pack/contracts/flow/contracts.approval/:id/tasks/:task/actions/:action` với task đang mở của thẻ. Dòng thời gian đọc `GET /pack/contracts/flow/contracts.approval/:id` (tên phòng từ `/groups` khi FlowView thiếu nhãn), tải lại khi thẻ đổi; chữ, khung, data-testid giữ nguyên. Một đường duy nhất: đường rollback `POST …/contracts/:id/approval` + `legacy-act` mà CR-120 từng giữ đã gỡ ở CR-121 (xem `engine/flow-runtime.md`). Code: `apps/workspace-web/src/features/contract-approval/`.
+
+#### Yêu cầu: Điều kiện bước theo trường nghiệp vụ, AND/OR lồng một cấp (nguồn: cr121-d0-slot-contract)
+Điều kiện bước nhận thêm phòng ban người tạo (tính cả phòng con, theo mã) và đối tác mới, cùng nhóm AND/OR lồng một cấp; điều kiện cũ (loại HĐ, giá trị) giữ nguyên hình và nghĩa; lồng hai cấp, trường lạ, mã phòng sai dạng, quá số điều kiện ⇒ schema chặn; trường chưa có dữ liệu ⇒ điều kiện đúng (bước vẫn chạy). Số bước người dùng + route + finalize ≤ trần stage engine (22), vượt ⇒ chặn. Code: `packages/contracts/src/pack-contracts/approval-flow-cond`.

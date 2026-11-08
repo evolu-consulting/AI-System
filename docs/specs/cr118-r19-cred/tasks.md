@@ -26,7 +26,7 @@ unit `credential-choice.test.ts`; e2e `P-c2` (evotest, một lần).
 Không có thư viện DOM trong repo ⇒ test unit trên hàm thuần; hành vi thật kiểm bằng e2e E02.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: khôi phục hành vi đã mô tả ở HUB-FR-68 "tạo khoá xong tự chọn khoá" sau khi nâng React 19)
 

@@ -41,7 +41,7 @@ Sửa lỗi review cuối đợt của lô bắn hẹn `retry` + `kickMany` (`do
   phát; stage `queued` chờ quét mồ côi (`requeueOrphans`). Chấp nhận (hiếm, không mất trạng thái).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Bắn hẹn thử lại theo lô

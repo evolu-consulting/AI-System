@@ -35,7 +35,7 @@ Không chạy `verify:wave` thật, không đổi cấu hình e2e (khoá test). 
 - Các cấu hình cố định còn lại (cs 3400, ws 3410, community-web 3470, pm 3420, journey 3440, N1 3300, cw 3310…) đã khác nhau từng đôi nên chạy cùng slot được.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: hạ tầng chạy test; chỉ đổi dải cổng của mảnh gốc e2e để không đụng cổng cố định của cấu hình khác trong cùng slot)
 

@@ -42,7 +42,7 @@ H1/H2b orchestrator/runner trên evotest.
   agent hiển thị, một lần mỗi run và chỉ sau khi có artifact; lỗi ⇒ coi như không nhận (Orchestrator chép như cũ).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Ghi chú: `engine/agent-handoff.md` chưa có trong docs/current (Delta của hub-agent-handoff, fix114-handoff chưa gộp) ⇒ khối
 dưới là ADDED cùng file; khi gộp áp SAU hai lát trên (ghi đè Yêu cầu cùng tên).
@@ -57,6 +57,6 @@ Khi đã có kết quả bước lưu thành artifact, prompt Orchestrator có k
 
 #### Yêu cầu: RLS trên bảng artifact
 Bảng `hub.artifacts` và `hub.artifact_runs` (0084) bật RLS, mỗi bảng một policy tenant chỉ cho `hub_rw`.
-- Kịch bản: khi liệt kê bảng hub có RLS thì có artifacts và artifact_runs với policy chỉ cho hub_rw [test: packages/db/src/hub-rls.int.test.ts » RLS bật trên đúng 5 bảng hội thoại]
+- Kịch bản: khi liệt kê bảng hub có RLS thì có artifacts và artifact_runs với policy chỉ cho hub_rw [test: packages/db/src/hub-rls.int.test.ts » CR-125 B1 · S1c · mọi bảng hub/admin có tenant_id bật RLS + có policy (trừ allowlist có lý do)]
 
 ## Việc còn lại

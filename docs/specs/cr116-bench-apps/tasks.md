@@ -57,7 +57,7 @@ timeout) ⇒ tệ hơn. postgres.js 4.0.0 đã phát hành — chưa thử (cầ
 Chưa làm: (4) HD3 quét lô 100, (5) ETag/304 GET approval — hết thời gian.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ đo).
 

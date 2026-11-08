@@ -43,7 +43,7 @@ Không đổi logic sản phẩm, không DLC, không -Exclusive, không đổi s
 - Muốn ≤ 6 phút phải giảm CPU: (1) tổng ca e2e ≈ 2600 s xanh (cần bớt dựng stack lặp lại mỗi việc: 18 việc × 25–50 s; gộp các việc nhỏ dùng chung stack), (2) int ≈ 1700 s (rls-packs 58 s, lock-order, migrate-hub, N1/migrate là công việc thật, không ngủ), (3) bớt ca đỏ có sẵn (≈ 35 đỏ mới/lượt tốn ≥ 8 s mỗi ca), hoặc thêm lõi cho máy chủ evotest. Đây là việc ngoài phạm vi lát hạ tầng chia slot.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: hạ tầng chạy test, không đổi hành vi sản phẩm; chỉ đổi cách chia slot cổng đợt, đo thời lượng file int và bỏ chờ 5 s ở helper afterEach của test)
 

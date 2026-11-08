@@ -7,7 +7,7 @@ migration: không
 phụ thuộc: hub-otel
 ---
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa chính Delta chưa gộp của lát hub-otel — mặc định `LOG_FORMAT` quay về `json` ở mọi môi trường kể cả production, nên hành vi prod hiện hành không đổi; Yêu cầu "Log kv gọn cho agent đọc" trong `docs/specs/hub-otel/tasks.md` đã sửa tương ứng)
 

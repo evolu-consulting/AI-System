@@ -26,5 +26,5 @@ Unit e2e-lane.rules.test.ts (cấp làn, cổng, DB, Redis, reap).
 - Cổng: +3000/làn, tối đa 14 làn (< 49152).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 Không thay đổi hành vi (lý do: hạ tầng test e2e)

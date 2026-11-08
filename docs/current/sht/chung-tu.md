@@ -175,3 +175,6 @@ Nút chính cao ≥ 44 px ở điện thoại, nút trợ lý nổi ẩn trên t
 ## CR-121 · Delta gộp 2026-11-09 (đợt cr125-wave)
 - **Lọc ngày** trong danh sách HĐ không mất lựa chọn khi thao tác nhanh (cr121-r7-gapb-isolation): mỗi thao tác (đổi cột, đổi cửa sổ, nhập từ/đến) gộp lên bộ lọc đang có TRÊN URL tại lúc xử lý, không lên bộ lọc đã vẽ lần trước; hai lựa chọn liền nhau giữ cả hai (`date_field=action_deadline` và `due=overdue`), khoá URL khác không đổi.
 - **Thẻ duyệt** của lượt engine trả `engine_run_id` (khác `run_id` của gói) để trang "Chi tiết lượt chạy" mở được; xem `sht/duyet-ky-so.md`.
+
+#### Yêu cầu: Người công ty khác không lộ tồn tại HĐ/lượt duyệt (nguồn: cr121-f1-assign-default-rule)
+Đọc chi tiết HĐ hoặc lượt duyệt của công ty khác trả 404 `NOT_FOUND` như id không tồn tại (không 400).

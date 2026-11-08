@@ -29,7 +29,7 @@ Không đổi bun, không đổi timeout 30 s của test, không đụng test:e2
 - Một file treo = một đỏ MỚI mang tên `(treo) …` (không khớp known-red).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ hạ tầng test/evotest — watchdog cho `test:int:par` + cảnh báo im lặng ở `run-tests.ps1`; không đổi mã sản phẩm nào).
 

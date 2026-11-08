@@ -32,7 +32,7 @@ Không dời file; không đụng `packs/kit/**`, `packs/contracts/**`, `package
 - Vi phạm cũ đã hết không làm đỏ (chỉ nhắc `--write`); vi phạm khác tên với cùng tổng vẫn đỏ (so theo tập, không chỉ đếm).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: công cụ kiểm ranh giới import và một `public.ts` re-export; không đổi hành vi người dùng hay API)
 

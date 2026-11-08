@@ -23,7 +23,7 @@ Có sẵn: PD-P13 (`tests/acceptance/P-d/perf/background.perf.int.test.ts`), PD-
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ đổi thứ tự gửi câu trong tx lô nhắc, cùng tập câu và kết quả; tài liệu deploy).
 

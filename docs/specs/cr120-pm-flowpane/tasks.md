@@ -22,6 +22,6 @@ e2e pm-checklist-pm.
 Test cũ nhắm `.first()` khi menu chỉ có một mục Cài đặt; từ CR-120 one-shell menu có thêm "Cài đặt chung" ⇒ sửa test, không sửa sản phẩm.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: chỉ sửa bộ chọn của e2e pm-checklist sau khi menu có thêm mục "Cài đặt chung" của Community).

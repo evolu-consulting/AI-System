@@ -37,7 +37,7 @@ Tranh chấp test → đã chốt (mỗi test sửa một dòng):
 - H2b/orchestrator-tenant.int: chỉ thêm chẩn đoán (in log server khi thoát sớm), không đổi khẳng định.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: sửa test theo hành vi đã chốt của CR-119/CR-120 + guard chạy lại cho 3 migration hub cũ; DB mới và DB đã áp không đổi)
 

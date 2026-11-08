@@ -22,7 +22,7 @@ Soát luồng community trên stack local (web 3900, admin 3905, DB ai_system_co
 - Canvas OK: Ngang/Dọc không chồng node, cạnh không xuyên node (expectAllNodesInPane/expectEdgesClear xanh); kéo "Duyệt" vào canvas thêm 1 node + gợi ý nối. Chưa thử nối mũi tên bằng chuột (kéo cổng chưa ổn định theo ghi chú cr123-palette-drop).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 Không thay đổi hành vi (lý do: lát QC chỉ thêm e2e + ghi lỗi).
 

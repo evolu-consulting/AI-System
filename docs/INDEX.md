@@ -22,6 +22,7 @@
 | `current/sht/phap-ly-va-can-xu-ly.md` | Sổ Hợp Tác: cảnh báo pháp lý, nguồn Cần xử lý |
 | `current/sht/sp-va-gia.md` | Sổ Hợp Tác: SP & Giá (VAT, hạn, thay/gỡ mềm, Lịch sử giá) |
 | `current/engine/flow-engine.md` | Engine quy trình (CR-103): registry node, If, set, đổi node, canvas/drawer, showcase, `HUB_PROCESS_ROUTES`, catalog tool |
+| `current/engine/{cong-ty-quy-trinh,cong-ty-quy-trinh-ban-rieng,luot-chay-nhan-ban-ghi,run-log,agent-handoff,runtime-events}.md` · `current/web/hop-dong-review.md` | Sao chép/bản riêng quy trình công ty, nhãn lượt chạy, chi tiết lượt chạy + nhật ký bước, bàn giao artifact giữa agent, sự kiện runtime, màn xác nhận HĐ (CR-115/121) |
 | `current/engine/thu-vien-quy-trinh.md` | Thư viện quy trình (CR-105): gán quy trình theo tenant cho khe `contracts.approval`, lọc mẫu chạy thử, backfill |
 | `current/admin/README.md` | Admin hiện hành (CR-112 nhập Phần A): tổng quan, NFR; kèm `tenant-user.md`, `nhom-doi-tac.md`, `ung-dung-quyen.md`, `catalog-quota-audit.md` |
 | `current/admin/ghi-chu.md` | Admin: công ty/user đối tác (ngắn) |
