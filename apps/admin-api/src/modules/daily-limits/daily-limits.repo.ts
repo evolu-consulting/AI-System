@@ -1,6 +1,6 @@
 // tenant-quotas · adapter Drizzle cho `admin.tenant_daily_limits` (RLS admin_rw, scope platform) + tổng token AI hôm nay từ
 // `hub.usage_logs` (cùng công thức `hub.ai_tokens_since`). Số câu cố định: đọc 1 (+1 token), ghi 1.
-import { type Db, type Tx, tenantDailyLimits as tdl, tenants } from "@ai/db";
+import { type Tx, tenantDailyLimits as tdl, tenants } from "@ai/db";
 import { eq, sql } from "drizzle-orm";
 
 export type DailyLimitsRow = {
