@@ -19,16 +19,24 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await expect(links).toHaveText([
       "Tổng quan",
       "Hợp đồng & giao dịch",
+      "Tạo yêu cầu",
       "Đối tác",
       "Sản phẩm & Giá",
     ]);
     const hrefs: Record<string, string | null> = {};
-    for (const name of ["Tổng quan", "Hợp đồng & giao dịch", "Đối tác", "Sản phẩm & Giá"]) {
+    for (const name of [
+      "Tổng quan",
+      "Hợp đồng & giao dịch",
+      "Tạo yêu cầu",
+      "Đối tác",
+      "Sản phẩm & Giá",
+    ]) {
       hrefs[name] = await nav.getByRole("link", { name, exact: true }).getAttribute("href");
     }
     expect(hrefs).toEqual({
       "Tổng quan": "/contracts",
       "Hợp đồng & giao dịch": "/contracts/list",
+      "Tạo yêu cầu": "/contracts/requests",
       "Đối tác": "/contracts/partners",
       "Sản phẩm & Giá": "/contracts/products",
     });
@@ -242,10 +250,11 @@ test.describe("PK-FR-10 · shell mobile (390×844)", () => {
     await page.goto("/contracts/list");
     const bottom = page.getByRole("navigation", { name: "Điều hướng", exact: true });
     await expect(bottom).toBeVisible();
-    await expect(bottom.getByRole("link")).toHaveCount(4);
+    await expect(bottom.getByRole("link")).toHaveCount(5);
     await expect(bottom.getByRole("link")).toHaveText([
       "Tổng quan",
       "Hợp đồng & giao dịch",
+      "Tạo yêu cầu",
       "Đối tác",
       "Chờ tôi",
     ]);

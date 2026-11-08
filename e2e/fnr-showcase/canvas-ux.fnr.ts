@@ -33,9 +33,18 @@ async function platformLogin(p: Page): Promise<void> {
 /** Kéo bằng chuột thật từ giữa `from` tới giữa `to` (xyflow cần các bước di chuyển trung gian). */
 async function drag(p: Page, from: Locator, to: Locator): Promise<void> {
   await canvas(p).scrollIntoViewIfNeeded(); // toạ độ chuột là toạ độ khung nhìn
+  let prev = "";
   await expect
-    .poll(async () => JSON.stringify(await to.boundingBox()))
-    .toBe(JSON.stringify(await to.boundingBox())); // canvas đã fit xong
+    .poll(
+      async () => {
+        const cur = JSON.stringify(await to.boundingBox());
+        const same = cur === prev;
+        prev = cur;
+        return same;
+      },
+      { intervals: [300] },
+    )
+    .toBe(true); // canvas đã fit xong (hai lần đo liền nhau giống nhau)
   const a = await from.boundingBox();
   const b = await to.boundingBox();
   if (!a || !b) throw new Error("không thấy cổng hoặc node đích");
@@ -82,7 +91,7 @@ test("CR-122 · p22 · kéo về bước đứng trước ⇒ không đổi gì 
   }
 });
 
-test("CR-122 · p22 · số bước tối đa là cài đặt nền tảng: đặt = số bước hiện có ⇒ 'Thêm bước' tắt kèm chú thích; khôi phục 22", async ({
+test("CR-122 · p22 · số bước tối đa là cài đặt nền tảng: đặt = số bước hiện có ⇒ 'Thêm bước' tắt kèm chú thích; khôi phục mặc định", async ({
   browser,
 }) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -97,7 +106,7 @@ test("CR-122 · p22 · số bước tối đa là cài đặt nền tảng: đ�
   try {
     await platformLogin(plat);
     await plat.goto(`${ADMIN_URL}/system-health`);
-    await expect(plat.getByTestId("process-stages-max")).toHaveValue("22");
+    await expect(plat.getByTestId("process-stages-max")).toHaveValue("50");
     await setLimit("6");
     await plat.getByTestId("process-limit").scrollIntoViewIfNeeded();
     await plat.screenshot({ path: `${SHOTS}/platform-setting.png` });
@@ -113,7 +122,7 @@ test("CR-122 · p22 · số bước tối đa là cài đặt nền tảng: đ�
       await ctx2.close();
     }
   } finally {
-    await setLimit("22"); // dọn: trả mặc định để ca khác không bị chặn
+    await setLimit("50"); // dọn: trả mặc định (= PROCESS_STAGES_DEFAULT, trần) để ca khác không bị chặn
     await ctx.close();
   }
 });

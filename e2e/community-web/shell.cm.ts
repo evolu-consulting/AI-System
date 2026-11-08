@@ -9,7 +9,13 @@ const as = async (page: Page, id: string) => {
   await page.getByLabel("Chọn nhân vật").selectOption(id);
 };
 const SHT = "Sổ Hợp Tác";
-const SHT_PATHS = ["/contracts", "/contracts/list", "/contracts/partners", "/contracts/products"];
+const SHT_PATHS = [
+  "/contracts",
+  "/contracts/list",
+  "/contracts/requests",
+  "/contracts/partners",
+  "/contracts/products",
+];
 
 test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
   for (const [id, label] of [
@@ -40,7 +46,7 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
     });
   }
 
-  test("chủ quản có quyền (Admin): nhóm SHT + đúng 4 link TRONG app (<Link>, không biểu tượng ngoài), href = đường dẫn contracts, cùng tab", async ({
+  test("chủ quản có quyền (Admin): nhóm SHT + đúng 5 link TRONG app (<Link>, không biểu tượng ngoài), href = đường dẫn contracts, cùng tab", async ({
     page,
   }) => {
     await page.goto("/community");
@@ -49,11 +55,12 @@ test.describe("cách ly đối tác: DOM không có Sổ Hợp Tác", () => {
     await expect(g).toBeVisible();
     await expect(g).toContainText(SHT);
     const links = g.getByRole("link");
-    await expect(links).toHaveCount(4);
+    await expect(links).toHaveCount(5);
     await expect(g.locator(".ext")).toHaveCount(0); // không còn biểu tượng liên kết ngoài ↗
     const hrefs = await links.evaluateAll((els) => els.map((e) => e.getAttribute("href")));
     expect(hrefs).toEqual(SHT_PATHS);
     expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute("target")))).toEqual([
+      null,
       null,
       null,
       null,

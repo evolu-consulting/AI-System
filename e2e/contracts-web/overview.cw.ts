@@ -304,6 +304,7 @@ test.describe("điện thoại (390×844)", () => {
     await expect(bottom.getByRole("link")).toHaveText([
       "Tổng quan",
       "Hợp đồng & giao dịch",
+      "Tạo yêu cầu",
       "Đối tác",
       "Chờ tôi",
     ]);

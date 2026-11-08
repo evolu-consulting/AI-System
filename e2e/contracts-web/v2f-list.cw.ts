@@ -14,7 +14,7 @@ test("chỉ nút Upload (không còn Thêm thủ công) + cột theo mockup; kh�
   await installV2f(page);
   await page.goto("/contracts/list");
   await expect(page.getByRole("link", { name: "Thêm thủ công" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Upload hợp đồng" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Tải hợp đồng lên" })).toBeVisible();
   const heads = page.locator("main thead th");
   await expect(heads).toHaveText([
     "Hợp đồng",
@@ -111,7 +111,7 @@ test("«Upload hợp đồng» chọn file ⇒ POST multipart rồi mở HĐ v�
   );
   await page.goto("/contracts/list");
   const chooser = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: "Upload hợp đồng" }).click();
+  await page.getByRole("button", { name: "Tải hợp đồng lên" }).click();
   await (await chooser).setFiles({
     name: "hd.pdf",
     mimeType: "application/pdf",
@@ -127,5 +127,5 @@ test("viewer: không có nút thêm", async ({ page }) => {
   await page.goto("/contracts/list");
   await expect(page.getByText(first?.title ?? "").first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Thêm thủ công" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Upload hợp đồng" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Tải hợp đồng lên" })).toHaveCount(0);
 });

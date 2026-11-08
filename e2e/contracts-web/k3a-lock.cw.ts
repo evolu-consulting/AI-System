@@ -1,4 +1,4 @@
-﻿// CR-097 K3a · HD-FR-100 · HD-FR-104 · Luật 4b: HĐ đã khoá — trường pháp lý chỉ đọc + banner "Đã xác nhận — đã khoá"; owner mở lại có lý do;
+// CR-097 K3a · HD-FR-100 · HD-FR-104 · Luật 4b: HĐ đã khoá — trường pháp lý chỉ đọc + banner "Đã xác nhận — đã khoá"; owner mở lại có lý do;
 // người không phải owner không thấy link; Chờ duyệt có banner "Chưa xác nhận"; danh sách: 🔒, không còn "Thêm thủ công".
 // Backend giả `page.route`; không sleep.
 import { expect, test } from "@playwright/test";
@@ -137,7 +137,7 @@ test("HĐ không có văn bản: nhãn «Chưa có văn bản»", async ({ page 
 test("danh sách: không còn «Thêm thủ công»; hàng đã xác nhận có 🔒", async ({ page }) => {
   await installV2f(page);
   await page.goto("/contracts/list");
-  await expect(page.getByRole("button", { name: "Upload hợp đồng" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Tải hợp đồng lên" })).toBeVisible();
   await expect(page.getByText("Thêm thủ công")).toHaveCount(0);
   await expect(page.getByTestId("row-lock").first()).toBeVisible();
 });
