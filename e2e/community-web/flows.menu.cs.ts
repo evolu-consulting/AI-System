@@ -107,7 +107,7 @@ test("quản trị community: menu + chữ trong trình sửa flow Duyệt bài 
   await expect(status).not.toContainText(NO_CONTRACT);
   await page
     .locator("[data-stage-uid]")
-    .filter({ hasText: /Agent sàng lọc/ })
+    .filter({ hasText: /Quản trị duyệt bài/ }) // bước Duyệt của flow mặc định Community (mẫu khe cũ có "Agent sàng lọc" không còn sao chép được)
     .first()
     .click();
   await expect(page.getByText(/Chỉnh chi tiết ở/)).toHaveCount(0);
