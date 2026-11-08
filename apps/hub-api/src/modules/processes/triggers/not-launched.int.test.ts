@@ -85,7 +85,9 @@ beforeAll(async () => {
   CX = await contracts(o, N, 7, { from: 1310, createdBy: UN, status: "needs_review" });
   await o`insert into admin.groups (tenant_id, key, name) values (${N}, 'pb-phap-che', '{"vi":"Pháp chế"}'::jsonb)`;
   lib = await libFlow("p11b-ok", "pb-phap-che");
-  const missing = await libFlow("p11b-miss", "pb-khong-co");
+  // CR-125 c5b · mã `<app>-admin` KHÔNG tự đổi thành `<app>-owner` lúc mở lượt (chỉ sao chép/readiness mới map): G có `pb-owner` nhưng thiếu `pb-admin` ⇒ vẫn từ chối.
+  await o`insert into admin.groups (tenant_id, key, name) values (${G}, 'pb-owner', '{"vi":"Chủ gói"}'::jsonb)`;
+  const missing = await libFlow("p11b-miss", "pb-admin");
   await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${G}, ${missing}, true)`;
   await withHubScope(db, { kind: "system" }, async (tx) => {
     await setFlowTriggers(tx, N, true);
@@ -177,12 +179,12 @@ describe("CR-122 P11b · lượt chờ flow không mở được run", () => {
     expect(ev?.n).toBe(2); // sự kiện gốc + sự kiện gửi lại (không bị coi là trùng)
   });
 
-  it("flow cần nhóm công ty chưa có ⇒ lý do FLOW_GROUP_MISSING:<mã>", async () => {
+  it("flow cần nhóm công ty chưa có ⇒ lý do FLOW_GROUP_MISSING:<mã> (mã -admin không tự dùng nhóm -owner)", async () => {
     expect(await submitHd({ tenantId: G, userId: UG }, CG, "level1")).toBe("ok");
     expect(await dispatch()).toMatchObject({ claimed: 1, launched: 0 });
     expect(await approvalOf(CG)).toMatchObject({
       run: null,
-      feedback: "FLOW_GROUP_MISSING:pb-khong-co",
+      feedback: "FLOW_GROUP_MISSING:pb-admin",
       status: "level1",
     });
   });

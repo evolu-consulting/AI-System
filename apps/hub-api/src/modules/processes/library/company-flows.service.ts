@@ -183,13 +183,7 @@ export class CompanyFlowsService {
       if (!rd.copyable) throw notReadyError(rd, u.role === "platform_admin", true);
       // CR-122 · P15 · bản công ty chỉ giữ id: mã → id nhóm CÓ THẬT của công ty (trùng mã, hoặc `<app>-admin` ⇒ `<app>-owner`);
       // chưa có nhóm ⇒ để trống ("Chọn người duyệt") + cảnh báo, KHÔNG chặn sao chép và KHÔNG đoán nhóm khác.
-      const idByTenantKey = await groupIdsByKey(tx, tid, Object.values(rd.groupMap));
-      const ids = new Map(
-        Object.entries(rd.groupMap).flatMap(([k, v]) => {
-          const id = idByTenantKey.get(v);
-          return id ? [[k, id] as const] : [];
-        }),
-      );
+      const ids = await groupIdsByKey(tx, tid, Object.keys(rd.groupMap), { alias: true }); // CHỈ đường sao chép dùng alias
       const b = bindGroupKeys(def.stages, ids, { strip: true });
       const key = await r.freeKey(tx, tid, `${row.flow_key.slice(0, 26)}-cty`);
       const flowId = await r.insertCopyDef(tx, {

@@ -25,21 +25,25 @@ export const bindIfCompany = (
 ): Promise<ProcessDefInput> =>
   slotted || tenantId === null ? Promise.resolve(input) : bindCompanyGroupKeys(tx, tenantId, input);
 
-/** Mã → id Group của công ty (MỘT câu). */
+/**
+ * Mã → id Group của công ty (MỘT câu). KHỚP ĐÚNG MÃ (mặc định): lưu def công ty và mở lượt không bao giờ tự đổi nhóm duyệt.
+ * `{ alias: true }` (CHỈ đường sao chép/readiness của mẫu mới): `<app>-admin` ⇒ nhóm chủ gói `<app>-owner` (một luật `mapGroupKey`).
+ */
 export async function groupIdsByKey(
   tx: Tx,
   tenantId: string,
   keys: readonly string[],
+  opts: { alias?: boolean } = {},
 ): Promise<Map<string, string>> {
   if (keys.length === 0) return new Map();
-  // CR-125 c5 · mã mẫu → nhóm CÓ THẬT của công ty: trùng mã, hoặc `<app>-admin` ⇒ `<app>-owner` (một luật `mapGroupKey`, cùng readiness).
+  const wanted = opts.alias === true ? groupKeyCandidates(keys) : keys;
   const gs = await tx.execute<{ id: string; key: string }>(sql`select id, key from admin.groups
-    where tenant_id = ${tenantId}::uuid and key in (select jsonb_array_elements_text(${JSON.stringify(groupKeyCandidates(keys))}::jsonb))`);
+    where tenant_id = ${tenantId}::uuid and key in (select jsonb_array_elements_text(${JSON.stringify(wanted)}::jsonb))`);
   const have = gs.map((g) => g.key);
   const idOf = new Map(gs.map((g) => [g.key, g.id]));
   return new Map(
     keys.flatMap((k) => {
-      const hit = mapGroupKey(k, have);
+      const hit = opts.alias === true ? mapGroupKey(k, have) : idOf.has(k) ? k : null;
       const id = hit ? idOf.get(hit) : undefined;
       return id ? [[k, id] as const] : [];
     }),
