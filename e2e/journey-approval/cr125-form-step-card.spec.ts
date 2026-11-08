@@ -1,4 +1,4 @@
-// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-125 · cr125-form-step-card · HÀNH TRÌNH THẬT «Quy trình mua hàng · Phần 1» (đúng các bước của mẫu Thư viện đã seed) chạy TRỌN trên giao diện,
 // KHÔNG gửi form bằng API: nhân viên điền «Đề xuất» + đính kèm tệp ⇒ Trưởng bộ phận duyệt ⇒ Mua hàng điền báo giá + tệp ⇒ … ⇒ «Tạo PO» + tệp ⇒
 // Trưởng bộ phận duyệt PO ⇒ Kết thúc. Kiểm: bước form KHÔNG có Duyệt/Trả lại/Từ chối ở đầu trang, giá trị + tên tệp đã gửi hiện chỉ đọc ở thẻ
@@ -15,7 +15,7 @@ import {
   safeReload,
 } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
-import { approveAs, confirmAndSave, type Env, loginCw, U, uploadAndOpen } from "./_journey";
+import { approveAs, confirmAndSave, type Env, loginCw, stepOf, U, uploadAndOpen } from "./_journey";
 
 const need = (n: string): string => {
   const v = process.env[n];
@@ -46,6 +46,32 @@ const GROUP_MEMBERS: Record<string, string> = {
 };
 const stageKey = (i: number): string => (P1.stages[i] as { key: string }).key;
 const stageName = (i: number): string => (P1.stages[i] as { name: string }).name;
+/** Một nhóm của dòng «cùng duyệt»: người của nhóm bấm Duyệt phần mình; chưa phải nhóm cuối ⇒ bước vẫn mở, nút Duyệt của người này biến mất. */
+async function approvePart(
+  page: Page,
+  user: string,
+  id: string,
+  stepName: string,
+  last: boolean,
+): Promise<void> {
+  if (last) return approveAs(page, E, user, id, stepName);
+  await loginCw(page, E, user);
+  const isApproval = (r: import("@playwright/test").Response) =>
+    r.request().method() === "GET" && r.url().includes(`/contracts/${id}/approval`);
+  const first = page.waitForResponse(isApproval, { timeout: 30_000 });
+  await page.goto(`${E.cw}/contracts/c/${id}`);
+  await first;
+  const btn = page.locator("[data-approval=pass], [data-approval=approve]").first();
+  let n = 0;
+  await expect(async () => {
+    if (n++ > 0) await safeReload(page, { boot: isApproval });
+    await expect(stepOf(page, stepName)).toHaveAttribute("data-status", "open", { timeout: 4_000 });
+    await expect(btn).toBeVisible({ timeout: 4_000 });
+  }).toPass({ timeout: 60_000 });
+  await btn.click();
+  await expect(btn).toHaveCount(0, { timeout: 30_000 });
+  await expect(stepOf(page, stepName)).toHaveAttribute("data-status", "open");
+}
 const FILE_BODY = Buffer.from("hang,so_luong\nmay chu,2\n", "utf8");
 
 const ctxPage = async (browser: import("@playwright/test").Browser): Promise<Page> =>
@@ -115,8 +141,10 @@ test("Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm t�
     key: `fsc-p1-${SFX}`,
     name: FLOW,
     app: "contracts",
-    trigger: P1.trigger as Record<string, unknown>,
-    inputs: P1.inputs as Record<string, unknown>[],
+    // Mẫu Phần 1 của «Quy trình mua hàng» giờ là lượt con (NEVER_TRIGGER: điều kiện không bao giờ đúng, đầu vào = phiếu). Spec này chạy nó như quy
+    // trình theo sự kiện HĐ (thẻ HĐ): đặt lại «Bắt đầu khi» = khi gửi duyệt HĐ, đầu vào = mã HĐ.
+    trigger: { event: "contract.submitted" },
+    inputs: [{ key: "contract_id", type: "text", label: "Hợp đồng", required: false }],
     stages: P1.stages as unknown as Record<string, unknown>[],
   });
   const tenantId = await enableFlowTriggers(E.tenantKey);
@@ -166,8 +194,8 @@ test("Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm t�
   const tbp = await ctxPage(browser);
   await approveAs(tbp, E, TRUONG_BP, id, stageName(1));
   await expect(tbp.getByTestId(`flow-step-${stageKey(0)}`)).toContainText("Máy chủ Dell R760");
-  // tệp đính kèm hiện ở người sau (tên tệp chỉ người tải đọc được: `/attachments/:id` theo người tải ⇒ người khác thấy «Tệp đính kèm», xem tasks.md)
-  await expect(tbp.getByTestId(`flow-step-${stageKey(0)}`)).toContainText("Tệp đính kèm");
+  // tệp đính kèm hiện ở người sau: từ cr125-run-attachments tệp liên kết với lượt nên người xem lượt thấy TÊN tệp (không còn «Tệp đính kèm»)
+  await expect(tbp.getByTestId(`flow-step-${stageKey(0)}`)).toContainText("phieu-de-xuat.csv");
   await expect(tbp.getByTestId(`flow-step-${stageKey(0)}`).locator("form")).toHaveCount(0);
   await tbp.screenshot({ path: shot("02-truong-bo-phan-thay-de-xuat"), fullPage: true });
   await tbp.close();
@@ -182,34 +210,35 @@ test("Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm t�
     values: { nha_cung_cap_de_xuat: "Công ty An Phát", gia_de_xuat: "470000000" },
     files: { bang_so_sanh_gia: "so-sanh-gia.csv" },
   });
-  await approveAs(await ctxPage(browser), E, TRUONG_BP, id, stageName(5));
-  await approveAs(await ctxPage(browser), E, U.director, id, stageName(6));
+  // dòng 3 «cùng duyệt» (luật tất cả): Trưởng bộ phận duyệt phần mình (bước vẫn mở), rồi Tài chính duyệt ⇒ bước xong
+  await approvePart(await ctxPage(browser), TRUONG_BP, id, stageName(5), false);
+  await approvePart(await ctxPage(browser), U.director, id, stageName(5), true);
   // 4 Trình ngân sách (Tài chính) + hồ sơ ⇒ Giám đốc duyệt
-  await fillFormAs(await ctxPage(browser), U.director, id, 7, {
+  await fillFormAs(await ctxPage(browser), U.director, id, 6, {
     values: { ngan_sach_duoc_duyet: "480000000", ghi_chu_trinh_duyet: "Đã đối chiếu 3 báo giá" },
     files: { ho_so_trinh_ngan_sach: "ho-so-ngan-sach.csv" },
   });
-  await approveAs(await ctxPage(browser), E, U.director, id, stageName(8));
+  await approveAs(await ctxPage(browser), E, U.director, id, stageName(7));
   // 5 Tạo PO (Mua hàng) + tệp PO ⇒ Trưởng bộ phận duyệt PO ⇒ Kết thúc
   await fillFormAs(
     await ctxPage(browser),
     U.accounting,
     id,
-    9,
+    8,
     { values: { so_po: "PO-2026-001", gia_tri_po: "470000000" }, files: { tep_po: "po.csv" } },
     shot("03-tao-po-form"),
   );
-  await approveAs(await ctxPage(browser), E, TRUONG_BP, id, stageName(10));
+  await approveAs(await ctxPage(browser), E, TRUONG_BP, id, stageName(9));
 
   const fin = await ctxPage(browser);
   await loginCw(fin, E, U.employee);
   await fin.goto(`${E.cw}/contracts/c/${id}`);
   const tl = fin.locator('[data-approval="timeline"]');
   await expect(tl).toBeVisible({ timeout: 60_000 });
-  await expect(tl.getByTestId(`flow-step-${stageKey(9)}`)).toContainText("PO-2026-001", {
+  await expect(tl.getByTestId(`flow-step-${stageKey(8)}`)).toContainText("PO-2026-001", {
     timeout: 60_000,
   });
-  await expect(tl.getByTestId(`flow-step-${stageKey(9)}`)).toContainText("Tệp đính kèm");
+  await expect(tl.getByTestId(`flow-step-${stageKey(8)}`)).toContainText("po.csv");
   await expect(tl.locator('li[data-status="open"]')).toHaveCount(0, { timeout: 60_000 });
   await tl.screenshot({ path: shot("04-hoan-tat") });
 });

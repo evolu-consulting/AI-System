@@ -9,31 +9,19 @@ phụ thuộc:
 ## Plan (ngắn)
 Tìm hồi quy: bước điền (form) ở waiting_review không vào «Chờ tôi duyệt» / thẻ bước 1 không hiện (e2e cr125-form-step-card + cr125-purchase-full đỏ trên 84e58d6b0).
 
-## Chẩn đoán (tạm dừng theo điều phối, chưa sửa)
-- int hub `flow-form-step-card.int.test.ts` XANH trên 84e58d6b0 (4 pass): chiếu thẻ HĐ (kind form + task Gửi) và Gửi ở hub đúng ⇒ lỗi không ở hub-api contracts/flowViewOfCard.
-- Còn nghi (chưa kiểm): (1) web `RequestPage`/`RequestsPage` sau cr125-request-steps + cr125-run-attachments (trang yêu cầu giờ chuyển sang lượt gốc theo `root_run_id`; hộp «Chờ tôi duyệt» đọc `/me/review-tasks` lọc `status=open && can_act`); (2) e2e harness cr125-fix-ms-harness (bf657942e: journey -fsc DB/Redis/cổng riêng) — đổi môi trường e2e, không đổi sản phẩm; (3) cr125-contract-from-step (13a71e65c) chỉnh khoá/node Phần 2.
-- Bước kế: chạy int `manual-start`/`request-steps` + dò `/me/review-tasks` cho task form của nhóm được giao; chạy job fsc MỘT lần trên evotest rồi đọc dump.
+## Chẩn đoán (kết luận)
+- KHÔNG phải hồi quy của cr125-request-steps. Spec e2e `cr125-form-step-card` dùng `PURCHASE_TEMPLATES[0]` (Phần 1); cr125-purchase-parent (b477ae3d9) đổi Phần 1 thành lượt con: `trigger = NEVER_TRIGGER` (`contract.submitted` + điều kiện `total_value < -1` không bao giờ đúng), đầu vào = phiếu, và dòng 3 thành MỘT bước «cùng duyệt» (11 bước thay vì 12). ⇒ HĐ gửi duyệt không khớp luật định tuyến ⇒ thẻ HĐ «chưa có quy trình duyệt» (FLOW_ROUTE_NONE) ⇒ `flow-step-1-…` không hiện.
+- Sau khi gỡ điều kiện trên còn 2 lệch nữa của spec: (a) cr125-run-attachments ⇒ người xem lượt thấy TÊN tệp (không còn «Tệp đính kèm»); (b) chỉ số bước + bước cùng duyệt của mẫu mới.
 
 ## Làm
-
-## Không làm / Chạm
-
-## Test tối thiểu
-
-## Quyết định trong lúc làm
+- Sửa spec e2e (sản phẩm đúng): ghi đè `trigger` = `contract.submitted` + đầu vào `contract_id` khi chạy Phần 1 như quy trình theo sự kiện HĐ; chỉ số bước theo mẫu 11 bước; `approvePart` cho dòng cùng duyệt (TBP rồi Tài chính); khẳng định tên tệp.
+- evotest `journey-approval-journey-fsc`: 1 pass (71.8s).
 
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
-Xoá khối mẫu dưới đây rồi điền thật (kiểm bằng `bun run openspec:check`). Lát không đổi hành vi: thay bằng
-một dòng `Không thay đổi hành vi (lý do: …)`.
-```
-### MODIFIED sht/chung-tu.md
-#### Yêu cầu: <tên>
-<mô tả hành vi mới>
-- Kịch bản: khi … thì … [test: <path test> » <tiêu đề test>]  (hoặc [test: thủ công — <lý do>])
-(### ADDED <file mới>; ### REMOVED <file> + dòng "Lý do: …")
-```
+Không thay đổi hành vi (lý do: chỉ sửa spec e2e theo mẫu Phần 1 / tệp liên kết lượt đã gộp)
 
 ## Việc còn lại
+- `cr125-purchase-full` (cha 3 Phần) đỏ do lỗi khác (cha đứng ở Phần 1/hẹn canh) — xem cr125-fix-parent-timer-2.
 
