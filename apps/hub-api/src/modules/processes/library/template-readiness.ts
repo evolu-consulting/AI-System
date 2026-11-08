@@ -66,12 +66,16 @@ export async function readinessOf(
 }
 
 /** 422 nói thiếu gì và AI làm gì (quản trị nền tảng bật) — dùng cho gán (platform) và sao chép (công ty). */
-export function notReadyError(r: Readiness, forPlatform: boolean): AppError {
-  const who = forPlatform
-    ? "Bật tính năng cho công ty rồi gán lại."
-    : "Mẫu này chưa dùng được ở công ty bạn — nhờ quản trị nền tảng bật tính năng cần thiết rồi sao chép lại.";
-  return new AppError("FLOW_TEMPLATE_NOT_READY", 422, `${r.reasons.join(" ")} ${who}`.trim(), {
+export function notReadyError(r: Readiness, forPlatform: boolean, forCopy = false): AppError {
+  const reasons = forCopy ? r.copyReasons : r.reasons;
+  const locked = forCopy && r.ready; // chỉ vướng bước cố định: không ai bật thêm được gì
+  const who = locked
+    ? "Dùng bản dùng chung này nguyên trạng, hoặc chọn mẫu khác để sao chép."
+    : forPlatform
+      ? "Bật tính năng cho công ty rồi gán lại."
+      : "Mẫu này chưa dùng được ở công ty bạn — nhờ quản trị nền tảng bật tính năng cần thiết rồi sao chép lại.";
+  return new AppError("FLOW_TEMPLATE_NOT_READY", 422, `${reasons.join(" ")} ${who}`.trim(), {
     missing: r.missing,
-    reasons: r.reasons,
+    reasons,
   });
 }

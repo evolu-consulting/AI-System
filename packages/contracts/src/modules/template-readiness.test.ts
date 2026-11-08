@@ -43,6 +43,18 @@ describe("templateReadiness", () => {
     );
   });
 
+  test("bước khe cố định (slot): gán được (ready) nhưng không sao chép sửa được, không đòi tool", () => {
+    const n = templateNeeds(
+      [{ ...tool("Agent sàng lọc", "community-screen"), slot: { kind: "agent" } }],
+      MODULES,
+    );
+    const r = templateReadiness(n, none);
+    expect(r.ready).toBe(true);
+    expect(r.missing.tools).toEqual([]);
+    expect(r.copyable).toBe(false);
+    expect(r.copyReasons[0]).toContain("Agent sàng lọc");
+  });
+
   test("node requires approval đứng không ngay sau Duyệt ⇒ not ready", () => {
     const esign = { key: "e", name: "Ký số", node: "contracts.esign" };
     const bad = templateReadiness(templateNeeds([esign], MODULES), {

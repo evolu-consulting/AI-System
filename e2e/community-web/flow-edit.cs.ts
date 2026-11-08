@@ -27,6 +27,10 @@ test("quản trị community: sao chép flow Duyệt bài, thêm bước Duyệt
     .last()
     .getByRole("link", { name: /^(Mở|Sửa)/ })
     .click();
+  // thứ tự hàng không cố định: nếu mở trúng bản dùng chung (chỉ xem) thì sang "bản riêng" của công ty.
+  const own = page.getByRole("link", { name: "Mở bản riêng" });
+  await expect(page.getByTestId("flow-add-step").or(own)).toBeVisible({ timeout: 30_000 });
+  if (await own.isVisible()) await own.click();
   const nodes = page.locator("[data-stage-uid]");
   await expect(nodes.first()).toBeVisible({ timeout: 30_000 });
   const pane = page.locator(".react-flow__pane").first();

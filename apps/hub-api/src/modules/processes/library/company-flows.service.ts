@@ -180,7 +180,7 @@ export class CompanyFlowsService {
       if (!def) throw err("FLOW_NOT_ASSIGNABLE", 422, "Quy trình Thư viện chưa có bản xuất bản.");
       // CR-125 c5 · không trao bước không dùng được: mẫu cần tính năng/chức năng công ty chưa có ⇒ chặn, nói ai cần bật gì.
       const rd = await readinessOf(tx, tid, def.stages, this.packTools);
-      if (!rd.ready) throw notReadyError(rd, u.role === "platform_admin");
+      if (!rd.copyable) throw notReadyError(rd, u.role === "platform_admin", true);
       // CR-122 · P15 · bản công ty chỉ giữ id: mã → id nhóm CÓ THẬT của công ty (trùng mã, hoặc `<app>-admin` ⇒ `<app>-owner`);
       // chưa có nhóm ⇒ để trống ("Chọn người duyệt") + cảnh báo, KHÔNG chặn sao chép và KHÔNG đoán nhóm khác.
       const idByTenantKey = await groupIdsByKey(tx, tid, Object.values(rd.groupMap));

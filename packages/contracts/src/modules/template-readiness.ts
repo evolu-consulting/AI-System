@@ -16,6 +16,8 @@ export type TemplateNeeds = {
   groups: string[];
   /** Bước đặt sai thứ tự theo `requires` của node (vd gửi ra ngoài trước khi có bước Duyệt). */
   order: { node: string; stage: string; needs: "approval" }[];
+  /** Bước CỐ ĐỊNH của nền tảng (khe `slot`): chạy được khi được gán nhưng không sửa/lưu được trên bản sao của công ty. */
+  locked: string[];
 };
 
 export type TenantSide = {
@@ -40,6 +42,10 @@ export type TemplateReadiness = {
   groupMap: Record<string, string>;
   /** Câu tiếng Việt nói thiếu gì và ai cần làm gì; rỗng khi ready. */
   reasons: string[];
+  /** Sao chép để sửa được: ready và không có bước cố định của nền tảng. */
+  copyable: boolean;
+  /** Lý do không sao chép được (gồm `reasons` + bước cố định). */
+  copyReasons: string[];
 };
 
 const nameOf = (s: Obj): string => (typeof s.name === "string" && s.name ? s.name : String(s.key));
@@ -64,7 +70,7 @@ export function templateNeeds(
   stages: readonly unknown[],
   mods: readonly FeatureModule[],
 ): TemplateNeeds {
-  const needs: TemplateNeeds = { features: [], tools: [], groups: [], order: [] };
+  const needs: TemplateNeeds = { features: [], tools: [], groups: [], order: [], locked: [] };
   const groups = new Set<string>();
   stages.forEach((raw, i) => {
     if (!isObj(raw)) return;
@@ -72,7 +78,9 @@ export function templateNeeds(
     const node = typeof raw.node === "string" ? featureNodeByKey(mods, raw.node) : undefined;
     addOnce(needs.features, node?.feature, stage);
     const ex = isObj(raw.executor) ? raw.executor : {};
-    addOnce(needs.tools, ex.kind === "tool" ? ex.tool_key : undefined, stage);
+    // bước khe (`slot`): tool do nền tảng giữ, không đòi công ty có; chỉ là "cố định" (không sao chép sửa được)
+    if (isObj(raw.slot)) needs.locked.push(stage);
+    else addOnce(needs.tools, ex.kind === "tool" ? ex.tool_key : undefined, stage);
     for (const g of groupKeysOfStage(raw)) groups.add(g);
     if (node?.requires?.before === "approval" && !isApproval(stages[i - 1]))
       needs.order.push({ node: node.key, stage, needs: "approval" });
@@ -125,10 +133,18 @@ export function templateReadiness(needs: TemplateNeeds, tenant: TenantSide): Tem
     ),
     ...needs.order.map((o) => `Bước «${o.stage}» phải đứng ngay sau một bước Duyệt.`),
   ];
+  const copyReasons = [
+    ...reasons,
+    ...needs.locked.map(
+      (s) => `Bước «${s}» là bước cố định của nền tảng — không sửa được trên bản sao của công ty.`,
+    ),
+  ];
   return {
     ready: reasons.length === 0,
     missing: { features, tools, groups, order: needs.order },
     groupMap,
     reasons,
+    copyable: copyReasons.length === 0,
+    copyReasons,
   };
 }
