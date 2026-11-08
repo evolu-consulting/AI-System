@@ -1,5 +1,6 @@
 // CR-124 · q4 · thẻ 3 dòng hai phía + điều kiện hợp lệ ghi nhận thủ công (thuần).
 import { describe, expect, it } from "bun:test";
+import { PARTNER_DELETED_NAME } from "@ai/contracts/pack-contracts";
 import { type InboxItem, inboxCard, recordIssue, roundCard } from "./partner-view";
 
 const item = (o: Partial<InboxItem> = {}): InboxItem => ({
@@ -25,6 +26,20 @@ describe("thẻ hộp thư bên nhận", () => {
       "contracts.partner.in.reason",
       "contracts.partner.in.nextOpen",
     ]);
+  });
+  it("bên gửi đã bị xoá ⇒ tên hiện bằng khoá i18n «Công ty đã xoá», không phải chuỗi lưu", () => {
+    const c = inboxCard(item({ sender_name: PARTNER_DELETED_NAME }));
+    expect(c.lines[1]?.vars?.sender).toBe("contracts.partner.deletedCompany");
+    const r = roundCard({
+      mailbox_id: "m",
+      round: 1,
+      channel: "platform",
+      to_name: PARTNER_DELETED_NAME,
+      status: "confirmed",
+      reason: null,
+      created_at: "2026-11-01T00:00:00Z",
+    });
+    expect(r.lines[0]?.vars?.to).toBe("contracts.partner.deletedCompany");
   });
   it("bản sửa lần 2 hiện lý do lần trước", () => {
     const c = inboxCard(item({ round: 2, prev_reason: "sai đơn giá" }));

@@ -27,6 +27,7 @@
       }
     },
     "partner": {
+      "deletedCompany": "Deleted company",
       "verified": "Verified",
       "unverified": "Not verified",
       "level": { "normal": "Normal", "important": "Important", "critical": "Critical" },

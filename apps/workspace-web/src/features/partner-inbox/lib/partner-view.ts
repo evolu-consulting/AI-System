@@ -1,5 +1,6 @@
 // CR-124 · q4 · FLOW4-FR-14 · thẻ 3 dòng (trạng thái · lý do · bước kế) cho hộp «Hợp đồng đối tác gửi» (bên nhận) và vòng gửi (bên gửi).
 // Thuần (không React): trả KHOÁ i18n + tham số để test; không lộ id nội bộ, không tên người duyệt của bên kia (spec §9, câu 4).
+import { partnerDisplayName } from "@ai/contracts/pack-contracts";
 export type InboxItem = {
   contract_id: string;
   title: string;
@@ -39,7 +40,7 @@ const day = (iso: string) =>
 /** Bên NHẬN. pending ⇒ «Chờ bạn xác nhận · mở để Đồng ý / Trả lại / Từ chối»; xong ⇒ «Đã báo công ty gửi». */
 export function inboxCard(i: InboxItem): Card {
   const who = {
-    sender: i.sender_name,
+    sender: partnerDisplayName(i.sender_name),
     level: `contracts.partner.level.${i.importance}`,
     round: i.round,
   };
@@ -62,7 +63,7 @@ export function inboxCard(i: InboxItem): Card {
       i.reason
         ? { key: "contracts.partner.in.yourReason", vars: { reason: i.reason } }
         : { key: "contracts.partner.in.reason", vars: who },
-      { key: "contracts.partner.in.nextNone", vars: { sender: i.sender_name } },
+      { key: "contracts.partner.in.nextNone", vars: { sender: partnerDisplayName(i.sender_name) } },
     ],
   };
 }
@@ -111,7 +112,7 @@ function doneCard(r: Round, to: RoundVars): Card {
 
 export function roundCard(r: Round, now: Date = new Date()): Card {
   const to = {
-    to: r.to_name ?? "đối tác",
+    to: partnerDisplayName(r.to_name) ?? "đối tác",
     round: r.round,
     since: day(r.created_at),
     channel: `contracts.partner.channel.${r.channel}`,

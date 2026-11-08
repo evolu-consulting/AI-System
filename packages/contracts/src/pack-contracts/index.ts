@@ -29,6 +29,7 @@ export * from "./milestones";
 export * from "./mywork";
 export * from "./obligation-impact";
 export * from "./overview";
+export * from "./partner-deleted";
 export * from "./partner-roles";
 export * from "./partners";
 export * from "./price-scout";

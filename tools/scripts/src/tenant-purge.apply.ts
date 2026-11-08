@@ -6,6 +6,7 @@ import { CONFIG_CHANNEL, PROFILE_CHANNEL } from "@ai/contracts/config";
 import { HUB_CONFIG_CHANNEL, HUB_CONTRACT_VERSION } from "@ai/contracts/hub";
 import type postgres from "postgres";
 import { countRows, type Sql } from "./tenant-purge.db";
+import { anonymizePartner, type PartnerStats } from "./tenant-purge.partner";
 import {
   type Counts,
   type Plan,
@@ -125,7 +126,14 @@ async function bumpAndNotify(tx: Tx, tenantId: string): Promise<Versions> {
 export type AuditMeta = { actorId: string | null; operator: string; files: number };
 
 /** Một hàng audit platform (tenant_id NULL — chỉ platform thấy): ai/khi nào/tenant nào/bao nhiêu hàng. */
-async function auditPurge(tx: Tx, t: TenantRow, deleted: Counts, v: Versions, m: AuditMeta) {
+async function auditPurge(
+  tx: Tx,
+  t: TenantRow,
+  deleted: Counts,
+  v: Versions,
+  m: AuditMeta,
+  partner: PartnerStats,
+) {
   const tables = Object.fromEntries(Object.entries(deleted).filter(([, n]) => n > 0));
   const total = Object.values(deleted).reduce((s, n) => s + n, 0);
   const summary = {
@@ -135,6 +143,7 @@ async function auditPurge(tx: Tx, t: TenantRow, deleted: Counts, v: Versions, m:
     rows_total: total,
     tables,
     filebox_files: m.files,
+    partner,
   };
   await tx.unsafe(
     `insert into admin.audit_log (tenant_id, actor_id, actor_username, action, entity, entity_id, entity_name,
@@ -152,13 +161,14 @@ async function auditPurge(tx: Tx, t: TenantRow, deleted: Counts, v: Versions, m:
   );
 }
 
-export type Applied = { deleted: Counts; versions: Versions };
+export type Applied = { deleted: Counts; versions: Versions; partner: PartnerStats };
 
 /** Phần ghi của transaction (gọi bên trong `sql.begin`); lỗi ở bất kỳ bước nào ⇒ hoàn tác toàn bộ. */
 export async function applyPurge(tx: Tx, plan: Plan, t: TenantRow, m: AuditMeta): Promise<Applied> {
   await tx.unsafe("select 1 from admin.tenants where id = $1::uuid for update", [t.id]);
   const trigs = await userTriggers(tx, plan);
   await setTriggers(tx, trigs, false);
+  const partner = await anonymizePartner(tx, t.id); // trước khi xoá: cần id hộp thư để tìm bản sao phía bên kia
   const deleted = await deleteAll(tx, plan, t.id);
   await setTriggers(tx, trigs, true);
   const left = await countRows(tx, plan, t.id);
@@ -168,6 +178,6 @@ export async function applyPurge(tx: Tx, plan: Plan, t: TenantRow, m: AuditMeta)
       `còn hàng sau khi xoá (hoàn tác): ${rest.map(([r, n]) => `${r}=${n}`).join(", ")}`,
     );
   const versions = await bumpAndNotify(tx, t.id);
-  await auditPurge(tx, t, deleted, versions, m);
-  return { deleted, versions };
+  await auditPurge(tx, t, deleted, versions, m, partner);
+  return { deleted, versions, partner };
 }

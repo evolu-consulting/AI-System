@@ -27,6 +27,7 @@
       }
     },
     "partner": {
+      "deletedCompany": "Công ty đã xoá",
       "verified": "Đã xác minh",
       "unverified": "Chưa xác minh",
       "level": { "normal": "Thường", "important": "Quan trọng", "critical": "Rất quan trọng" },
