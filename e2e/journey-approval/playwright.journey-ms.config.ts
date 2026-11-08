@@ -6,5 +6,6 @@ import base from "./playwright.journey.config";
 export default defineConfig({
   ...base,
   testMatch: ["**/cr125-manual-start*.spec.ts"],
+  preserveOutput: "always",
   outputDir: "../../test-results/journey-ms",
 });

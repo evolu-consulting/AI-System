@@ -36,7 +36,11 @@ const FLOW = `Đề xuất mua hàng ${SFX}`;
 const SHOTS = "docs/specs/cr125-manual-start-ui";
 const ctxPage = async (browser: import("@playwright/test").Browser): Promise<Page> =>
   (await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } })).newPage();
-const shot = (page: Page, name: string) => page.screenshot({ path: `${SHOTS}/${name}.png` });
+/** Ảnh vào docs (xem lát) và vào thư mục kết quả của lượt chạy (evotest chỉ mang về thư mục này). */
+const shot = async (page: Page, name: string): Promise<void> => {
+  await page.screenshot({ path: `${SHOTS}/${name}.png` });
+  await page.screenshot({ path: test.info().outputPath(`${name}.png`) });
+};
 
 let tenantId = "";
 let runUrl = "";
