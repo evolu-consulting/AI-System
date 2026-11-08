@@ -306,6 +306,14 @@ async function enableFlowTriggers(tx: Tx, keys: readonly string[]): Promise<numb
 async function bumpIfChanged(tx: Tx, r: Cr125ConfigResult, keys: readonly string[]): Promise<void> {
   const touched = r.features + r.groups + r.groupMembers + r.companyFlows + r.flowFlags + r.esign;
   if (touched === 0 && r.libraryDefs === 0) return;
+  await notifyConfigChanged(tx, keys);
+}
+
+/**
+ * CR-126 · cr126-child-task-visible · báo cache cấu hình (admin + hub) như màn thành viên nhóm của admin-api: ghi nhóm/thành viên bằng SQL
+ * mà KHÔNG báo ⇒ Hub giữ `groupIds` cũ của người đã đăng nhập ⇒ việc giao cho nhóm không hiện trong «Chờ tôi duyệt». Một luật cho seed + e2e.
+ */
+export async function notifyConfigChanged(tx: Tx, keys: readonly string[]): Promise<void> {
   const [m] =
     await tx`update admin.config_meta set config_version = config_version + 1 returning config_version as v`;
   await tx`select pg_notify('config_changed',

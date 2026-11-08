@@ -8,7 +8,10 @@
 // KHÔNG chạy trong lát này — chạy MỘT lần ở đợt cuối. CHƯA BIẾT: việc của lượt CON không có HĐ có hiện ở «Chờ tôi duyệt» / mở được thẻ không.
 import { existsSync, readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
-import { writeCr125Config } from "../../apps/hub-api/src/modules/seed/seed.cr125-config";
+import {
+  notifyConfigChanged,
+  writeCr125Config,
+} from "../../apps/hub-api/src/modules/seed/seed.cr125-config";
 import { withOwner } from "../support/helpers";
 import { type Env, loginCw, U } from "./_journey";
 
@@ -69,6 +72,9 @@ test.beforeAll(async () => {
       join admin.users u on u.tenant_id = tn.id and u.username = x."user"
       where tn.key = ${E.tenantKey}
       on conflict do nothing`;
+    // cr126-child-task-visible · như màn thành viên nhóm: báo cache cấu hình ⇒ Hub thấy nhóm mới của người đã đăng nhập (không báo ⇒
+    // «Chờ tôi duyệt» trống với mọi người dù việc đã giao cho nhóm).
+    await sql.begin((tx) => notifyConfigChanged(tx as never, [E.tenantKey]));
   });
 });
 
@@ -175,8 +181,18 @@ async function dumpParent(): Promise<void> {
     );
     await q(
       "tasks",
-      sql`select * from hub.process_tasks where process_run_id in
-        (select id from hub.process_runs where id = ${pid} or parent_run_id = ${pid}) and closed_at is null`,
+      sql`select t.process_run_id, t.id, t.kind, t.status, t.assignee_group_id, s.stage_idx,
+        array(select coalesce(a.user_id::text, 'g:' || a.group_id::text) from hub.review_task_assignees a
+          where a.task_id = t.id) as assignees
+        from hub.review_tasks t join hub.stage_runs s on s.id = t.stage_run_id
+        where t.process_run_id in (select id from hub.process_runs where id = ${pid} or parent_run_id = ${pid})
+          and t.status = 'open' order by t.created_at`,
+    );
+    await q(
+      "members",
+      sql`select u.username, array_agg(g.key order by g.key) as groups from admin.group_members m
+        join admin.users u on u.id = m.user_id join admin.groups g on g.id = m.group_id
+        where m.tenant_id = (select tenant_id from hub.process_runs where id = ${pid}) group by u.username`,
     );
   }).catch((e) => out.push(`[dump] sql lỗi ${String(e)}`));
   const re = /process-timer|subprocess|settle|kick|error/i;
