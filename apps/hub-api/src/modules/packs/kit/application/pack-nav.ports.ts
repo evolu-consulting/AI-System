@@ -26,6 +26,25 @@ export type PackNavSource = {
   caps(user: PackNavViewer): Promise<PackNavCap[]>;
 };
 
+/**
+ * CR-125 G7 · cổng đếm số chờ của MỘT mục menu: gói cắm adapter đếm của mình (MỘT câu SQL theo tập, lọc `user.tenantId`, đi qua index);
+ * nguồn nav chỉ gọi `countedCap` — không tự viết SQL, không đếm theo hàng. Dùng lại được cho mọi gói (mục có badge).
+ */
+export type PackNavCountPort = {
+  count(user: PackNavViewer): Promise<number>;
+};
+
+/** Mục `cap` kèm số từ cổng đếm. Cổng vắng ⇒ 0 (mục hiện, không badge). Đếm lỗi ⇒ 0 (badge ẩn, không làm mất mục hay các mục khác của gói). */
+export async function countedCap(
+  cap: string,
+  port: PackNavCountPort | undefined,
+  user: PackNavViewer,
+): Promise<PackNavCap> {
+  if (!port) return { cap, count: 0 };
+  const n = await port.count(user).catch(() => 0);
+  return { cap, count: Number.isFinite(n) && n > 0 ? Math.floor(n) : 0 };
+}
+
 export type PackNavRegistry = {
   /** Đăng ký lại cùng khoá gói ⇒ thay. */
   register(src: PackNavSource): void;

@@ -89,7 +89,13 @@ export type {
 } from "./application/module.ports";
 export type { Notifier, NotifyInput, NotifyTxRepos } from "./application/notify";
 export { orgForTenant } from "./application/pack-files.ports";
-export type { PackNavCap, PackNavRegistry, PackNavSource } from "./application/pack-nav.ports";
+export type {
+  PackNavCap,
+  PackNavCountPort,
+  PackNavRegistry,
+  PackNavSource,
+} from "./application/pack-nav.ports";
+export { countedCap } from "./application/pack-nav.ports";
 export type { OwnedRunOutcome } from "./application/pack-run-outcome.usecase";
 export { ownedRunOutcome } from "./application/pack-run-outcome.usecase";
 export type {

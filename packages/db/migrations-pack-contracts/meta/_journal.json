@@ -582,6 +582,13 @@
       "when": 1807000100000,
       "tag": "0089_esign_invite_thumb",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1807000200000,
+      "tag": "0090_partner_inbox_pending_idx",
+      "breakpoints": true
     }
   ]
 }

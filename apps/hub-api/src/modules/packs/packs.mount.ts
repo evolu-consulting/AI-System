@@ -160,7 +160,7 @@ function mountContracts<E extends Env>(
   fb: PackFb | null,
 ): void {
   const cx = contractsCtx(d, view, fb);
-  mountContractsNav(view, d.packRuns); // CR-121 C-7 · mục "Chờ tôi duyệt" + số đếm cho `GET /pack/nav` (độc lập Community)
+  mountContractsNav(view, d.packRuns, d.db); // CR-121 C-7 · mục "Chờ tôi duyệt" + số đếm cho `GET /pack/nav` (độc lập Community)
   for (const t of cx.ai.tools) d.packTools?.register(t); // contract-flow S3a · tool engine duyệt HĐ (cờ bật)
   mountContractsCore(app, cx);
   mountContractsMore(app, cx);

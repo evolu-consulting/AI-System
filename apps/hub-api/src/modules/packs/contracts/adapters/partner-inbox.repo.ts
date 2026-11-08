@@ -67,6 +67,13 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
         ? { importantMin: Number(r.imp), criticalMin: Number(r.cri), ownerId: r.owner }
         : { importantMin: 500_000_000, criticalMin: 2_000_000_000, ownerId: null };
     },
+    /** CR-125 G7 · số HĐ đối tác gửi tới đang chờ công ty nhận (menu `contracts.partner`). MỘT câu theo tập; index `partner_inbox_mailbox_uq`/`list_idx` theo `tenant_id`. */
+    async pendingCount(): Promise<number> {
+      const [r] = await tx.execute<{ n: number }>(sql`
+        select count(*)::int as n from contracts.partner_inbox
+        where tenant_id = ${tid}::uuid and status = 'pending'`);
+      return r?.n ?? 0;
+    },
     async take(limit: number): Promise<TakenRow[]> {
       const rows = await tx.execute<{
         id: string;

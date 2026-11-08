@@ -34,6 +34,12 @@ describe("partnerInboxRepo · số câu SQL mỗi lô", () => {
     expect(await calls(1)).toBe(4);
     expect(await calls(100)).toBe(4);
   });
+  it("CR-125 G7 · số chờ cho menu = đúng 1 câu SQL, trả 0 khi không có hàng", async () => {
+    let c = 0;
+    const tx = { execute: async () => (c++, []) } as unknown as Tx;
+    expect(await partnerInboxRepo(tx, crypto.randomUUID()).pendingCount()).toBe(0);
+    expect(c).toBe(1);
+  });
   it("mức cuối = max(gợi ý, luật theo giá trị): 600 triệu gợi ý thường ⇒ quan trọng", () => {
     expect(inboxItemsOf([row(1)])[0]?.importance).toBe("important");
   });
