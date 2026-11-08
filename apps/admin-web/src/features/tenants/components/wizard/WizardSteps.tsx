@@ -5,7 +5,9 @@ import { Link } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
 import { LoadingState } from "@/components/shared/states/LoadingState";
+import type { WizardStep } from "../../lib/wizard";
 import { TenantOverview } from "../overview/TenantOverview";
+import { ReviewChecklist } from "./ReviewChecklist";
 
 const TenantFeaturesTab = lazy(() => import("../features/TenantFeaturesTab"));
 const RolesTab = lazy(() => import("@/features/app-roles/components/RolesPanel"));
@@ -15,7 +17,7 @@ type Dirty = { onDirtyChange: (dirty: boolean) => void };
 export function WizardAppsStep({ tenant, onDirtyChange }: { tenant: TenantDetail } & Dirty) {
   return (
     <Suspense fallback={<LoadingState />}>
-      <TenantFeaturesTab tenant={tenant} onDirtyChange={onDirtyChange} />
+      <TenantFeaturesTab tenant={tenant} onDirtyChange={onDirtyChange} inWizard />
     </Suspense>
   );
 }
@@ -40,13 +42,22 @@ export function WizardPeopleStep({ tenant, onDirtyChange }: { tenant: TenantDeta
   );
 }
 
-export function WizardReviewStep({ tenant }: { tenant: TenantDetail }) {
+export function WizardReviewStep({
+  tenant,
+  isPlatform,
+  onGo,
+}: {
+  tenant: TenantDetail;
+  isPlatform: boolean;
+  onGo: (s: WizardStep) => void;
+}) {
   const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <p className="text-body text-muted-foreground">
         {t("tenants.wizard.reviewHint", { name: tenant.name })}
       </p>
+      <ReviewChecklist tenant={tenant} isPlatform={isPlatform} onGo={onGo} />
       <TenantOverview tenant={tenant} />
     </div>
   );

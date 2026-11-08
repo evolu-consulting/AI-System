@@ -731,6 +731,8 @@
       "assign": {
         "pick": "Library flow",
         "placeholder": "Pick a flow to assign to this company",
+        "dialogTitle": "Assign a flow to the company",
+        "dialogHint": "Pick a flow from the Library; the company can use it right after assigning.",
         "add": "Assign"
       },
       "source": {
@@ -854,9 +856,18 @@
         "people": "Access & Users",
         "review": "Review"
       },
-      "peopleHint": "Assign users to roles per app. You can skip this and do it later in the Access tab.",
+      "peopleHint": "The company admin already has the Owner role in every app that is on. Assign more users to roles per app; you can skip this and do it later in the Access tab.",
       "addUsers": "Add users in the workspace",
       "reviewHint": "Summary of {name}'s setup. Click Finish to open the company workspace.",
+      "todo": {
+        "title": "Still missing",
+        "ok": "The company is ready to use: apps are on, with users and a process.",
+        "fix": "Fix",
+        "noApps": "No app is on yet — nobody can use anything.",
+        "noPeople": "Nobody has a role in {app} — nobody can open it.",
+        "noUsers": "No users besides the company admin yet.",
+        "noFlow": "No process assigned for {job} ({app})."
+      },
       "back": "Back",
       "next": "Continue",
       "skip": "Skip",

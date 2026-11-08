@@ -3,7 +3,12 @@
 // `packs.grant_agents` khoá + bump `hub.config_meta`, NOTIFY `hub_config_changed` trong tx) · đọc lại Group · bump + audit
 // (chỉ khi có đổi — bất biến M3-R15/M4 sự kiện ⇔ audit) · NOTIFY `config_changed` sau commit. Tắt = thu hồi 3 entitlement,
 // giữ Group/grant. Audit dùng enum M4 sẵn có (`grant`/`revoke` · entity `entitlement`, summary `op: pack.enable|disable`).
-import type { PackAction, PackListResponse, PackState } from "@ai/contracts/packs";
+import {
+  type PackAction,
+  type PackListResponse,
+  type PackState,
+  packGroupKey,
+} from "@ai/contracts/packs";
 import { type AuditInput, type DbScope, type Tx, withScope } from "@ai/db";
 import { auditOf } from "../../lib/audit/audit.write";
 import { type ConfigCall, configWrite } from "../../lib/config/config-write";
@@ -86,6 +91,7 @@ export function enablePack(
   tenantId: string,
   k: string,
   level?: PackAction,
+  opts?: { grantTenantAdmins?: boolean },
 ): Promise<PackState> {
   return configWrite(c, "entitlement.save", async (tx, ch) => {
     const feats = await target(c, tx, tenantId, k);
@@ -103,10 +109,19 @@ export function enablePack(
     const roles = await insertDefaultRoles(tx, tenantId, k);
     // UAT B4: trợ lý của gói cho 3 Group vai, cùng tx (không chờ `hub:seed`); NOTIFY Hub giao khi commit.
     await grantAgentsAndNotify(tx, { tenantIds: [tenantId], key: k, actorId });
+    // CR-125 · S1 · C1: quản trị công ty dùng được app ngay (vai Chủ gói); người thường chỉ vào vai khi được gán.
+    const admins = opts?.grantTenantAdmins
+      ? await repo.addTenantAdminsToOwner(tx, {
+          tenantId,
+          actorId,
+          ownerGroupKey: packGroupKey(k, "owner"),
+        })
+      : 0;
     if (ent > 0) ch.changed({ entity: "entitlement", tenantId });
-    if (grp + roles > 0) ch.changed({ entity: "group", tenantId });
+    if (grp + roles + admins > 0) ch.changed({ entity: "group", tenantId });
     if (grants > 0) ch.changed({ entity: "grant", tenantId });
-    if (ent + grp + grants + roles > 0) ch.audit(packAudit("pack.enable", k, tenantId, feats));
+    if (ent + grp + grants + roles + admins > 0)
+      ch.audit(packAudit("pack.enable", k, tenantId, feats));
     await afterLock(c.ctx.hooks, "entitlement.save", "rows");
     return packState(k, true, await repo.findGroups(tx, tenantId, packGroupKeys(k)));
   });

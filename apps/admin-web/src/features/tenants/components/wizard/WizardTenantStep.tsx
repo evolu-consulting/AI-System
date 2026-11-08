@@ -24,14 +24,16 @@ function Body({
   step,
   tenant,
   onDirtyChange,
+  onGo,
 }: {
   step: Props["step"];
   tenant: TenantDetail;
   onDirtyChange: (d: boolean) => void;
+  onGo: (s: WizardStep) => void;
 }) {
   if (step === "apps") return <WizardAppsStep tenant={tenant} onDirtyChange={onDirtyChange} />;
   if (step === "people") return <WizardPeopleStep tenant={tenant} onDirtyChange={onDirtyChange} />;
-  return <WizardReviewStep tenant={tenant} />;
+  return <WizardReviewStep tenant={tenant} isPlatform onGo={onGo} />;
 }
 
 export function WizardTenantStep({ step, tenant: q, onGo, onFinish, onExit }: Props) {
@@ -59,7 +61,7 @@ export function WizardTenantStep({ step, tenant: q, onGo, onFinish, onExit }: Pr
       </h2>
       <Card>
         <CardContent className="pt-6">
-          <Body step={step} tenant={q.data} onDirtyChange={setDirty} />
+          <Body step={step} tenant={q.data} onDirtyChange={setDirty} onGo={onGo} />
         </CardContent>
       </Card>
       <div className="flex flex-wrap items-center gap-2">

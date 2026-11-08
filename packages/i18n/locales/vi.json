@@ -731,6 +731,8 @@
       "assign": {
         "pick": "Quy trình trong Thư viện",
         "placeholder": "Chọn quy trình để gán cho công ty",
+        "dialogTitle": "Gán quy trình cho công ty",
+        "dialogHint": "Chọn quy trình trong Thư viện; công ty dùng được ngay sau khi gán.",
         "add": "Gán"
       },
       "source": {
@@ -854,9 +856,18 @@
         "people": "Phân quyền & Người dùng",
         "review": "Xem lại"
       },
-      "peopleHint": "Gán người dùng vào vai theo từng ứng dụng. Có thể bỏ qua và làm sau trong tab Phân quyền.",
+      "peopleHint": "Quản trị công ty đã có quyền Chủ gói ở mọi ứng dụng đã bật. Gán thêm người dùng vào vai theo từng ứng dụng; có thể bỏ qua và làm sau trong tab Phân quyền.",
       "addUsers": "Thêm người dùng ở workspace",
       "reviewHint": "Tóm tắt cấu hình của {name}. Bấm Hoàn tất để vào workspace công ty.",
+      "todo": {
+        "title": "Việc còn thiếu",
+        "ok": "Công ty dùng được ngay: đã bật ứng dụng, có người dùng và quy trình.",
+        "fix": "Sửa",
+        "noApps": "Chưa bật ứng dụng nào — công ty chưa dùng được gì.",
+        "noPeople": "Chưa ai có vai trong {app} — không ai vào dùng được.",
+        "noUsers": "Chưa có người dùng nào ngoài quản trị công ty.",
+        "noFlow": "Chưa gán quy trình cho {job} ({app})."
+      },
       "back": "Quay lại",
       "next": "Tiếp tục",
       "skip": "Bỏ qua",

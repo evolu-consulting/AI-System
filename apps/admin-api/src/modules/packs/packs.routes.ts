@@ -26,7 +26,7 @@ export function packsRoutes(d: AuthDeps & { hooks?: TestHooks }): Hono<AppVars> 
   r.put("/:tenant_id/packs/:pack_key", async (c) => {
     const [tenantId, k] = ids(c);
     const { level } = parseQuery(c, PackEnableQuerySchema);
-    return c.json(await enablePack(call(c), tenantId, k, level));
+    return c.json(await enablePack(call(c), tenantId, k, level, { grantTenantAdmins: true }));
   });
   r.delete("/:tenant_id/packs/:pack_key", async (c) => {
     const [tenantId, k] = ids(c);

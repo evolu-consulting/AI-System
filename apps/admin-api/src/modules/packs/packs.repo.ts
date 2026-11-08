@@ -103,6 +103,28 @@ export async function insertRoleGrants(
 }
 
 /**
+ * CR-125 · S1 · C1: quản trị công ty (`tenant_admin`, người nội bộ) của tenant vào Group chủ gói (`<k>-owner`) — một câu SQL, trùng ⇒ bỏ
+ * qua. Người dùng thường (`member`) không bao giờ được thêm ở đây. Trả số người mới vào.
+ */
+export async function addTenantAdminsToOwner(
+  tx: Tx,
+  g: { tenantId: string; actorId: string; ownerGroupKey: string },
+): Promise<number> {
+  const rows = await run<{ user_id: string }>(
+    tx,
+    sql`insert into admin.group_members (tenant_id, group_id, user_id, added_by)
+      select ${g.tenantId}::uuid, gr.id, u.id, ${g.actorId}::uuid
+      from admin.groups gr
+      join admin.users u on u.tenant_id = gr.tenant_id and u.role = 'tenant_admin' and u.kind = 'internal'
+      where gr.tenant_id = ${g.tenantId}::uuid and gr.key = ${g.ownerGroupKey}
+      order by u.id
+      on conflict (group_id, user_id) do nothing
+      returning user_id`,
+  );
+  return rows.length;
+}
+
+/**
  * UAT B4 · trợ lý AI của gói (`packs.pack_agents`): entitlement + grant 3 Group vai cho tenant — hàm SECURITY DEFINER
  * (`migrations-packs/0005`), cùng tx bật gói. Có đổi ⇒ đã khoá + bump `hub.config_meta`, trả version mới để NOTIFY
  * `hub_config_changed` trong tx (giao khi commit); không đổi ⇒ null.
