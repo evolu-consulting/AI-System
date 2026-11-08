@@ -16,6 +16,8 @@ export type FakeEnvelope = {
 export type FakeESign = ESignProvider & {
   envelopes: Map<string, FakeEnvelope>;
   complete(id: string, at?: string): void;
+  /** Một người ký (theo email, hoặc thứ tự `nth` khi trùng email) ký xong ở nhà cung cấp; phong bì còn mở nếu còn người chưa ký. */
+  completeSigner(id: string, email: string, at?: string, nth?: number): void;
   decline(id: string, reason: string): void;
 };
 
@@ -79,6 +81,15 @@ export function fakeESign(): FakeESign {
       e.status = "completed";
       e.completedAt = at;
       for (const s of e.signers) Object.assign(s, { status: "completed", signedAt: at });
+    },
+    completeSigner(id, email, at = "2026-10-27T03:00:00.000Z", nth = 0) {
+      const e = get(id);
+      const hit = e.signers.filter((s) => s.email.toLowerCase() === email.toLowerCase())[nth];
+      if (hit) Object.assign(hit, { status: "completed", signedAt: at });
+      if (e.signers.every((s) => s.status === "completed")) {
+        e.status = "completed";
+        e.completedAt = at;
+      }
     },
     decline(id, reason) {
       const e = get(id);

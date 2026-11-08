@@ -6,6 +6,7 @@ import type { ESignSettingsOut, ESignSignerIn, ESignStateOut } from "@ai/contrac
 import type { PackSystemUow, PackUow, PackWho } from "../../kit/public";
 import { contractNameOf } from "../domain/contract-name";
 import { defaultSigners, type ESignStatus, isOpen, mapEnvelopeStatus } from "../domain/esign.rules";
+import { isTurnOf } from "../domain/esign-signer.rules";
 import {
   ESignFail,
   envelopeOut,
@@ -26,11 +27,13 @@ import type {
   ESignRepo,
 } from "./esign.ports";
 import type { ESignAnchors } from "./esign-anchor.usecase";
+import { anchorsForOf } from "./esign-anchors-for";
 import { esignExpire } from "./esign-expire";
 import { esignNodeApi, type NodeDirectory, type SendNodeOpts } from "./esign-node.usecase";
 import { storeSignedFile } from "./esign-signed-file";
 import { esignSwitch } from "./esign-switch";
 import { patchOf, syncApply, syncable } from "./esign-sync-guard";
+import { freshTurnOf } from "./esign-turn";
 import { errName, VOID_PENDING, voidForExpiry, voidForReopen } from "./esign-void";
 
 export { ESignFail } from "./esign.helpers";
@@ -64,6 +67,7 @@ const RETURN_PATH = (id: string) => new RegExp(`/contracts/(?:c/)?${id}/?$`); //
 
 export function esignUsecase(d: ESignDeps) {
   /** Adapter khả dụng của khoá (cần FileBox) hoặc null. */
+  const nowIso = () => (d.now?.() ?? new Date()).toISOString();
   const voidAt = voidForReopen(d.warn);
   const voidExpired = voidForExpiry(d.warn);
   const avail = (key: string | null | undefined): ESignProvider | null =>
@@ -94,7 +98,7 @@ export function esignUsecase(d: ESignDeps) {
     if (!syncable(row)) return;
     const info = given ?? (await p.getEnvelope(row.envelopeId));
     const st = mapEnvelopeStatus(info.status) ?? row.status;
-    const signers = mergeSigners(row.signers, info, st);
+    const signers = mergeSigners(row.signers, info, st, nowIso());
     if (!(await syncApply(run, row, patchOf(st, info, signers)))) return; // đang đổi cách ký / phong bì cũ đã bị thay ⇒ chỉ audit
     if (st === "completed" && row.signedFileId === null)
       await storeSignedFile(d.newId, p, d.files, tid, row, run);
@@ -199,6 +203,9 @@ export function esignUsecase(d: ESignDeps) {
     return e;
   };
 
+  const freshTurn = freshTurnOf({ avail, sync, openOf, run: tenantRun, warn: d.warn });
+  const anchorsFor = anchorsForOf(d.anchors, (k) => kindOf(d.providers.entries, k));
+
   /** CR-125 · m4 · MOD-FR-11 · đổi cách ký lúc ký khác loại phong bì (`esign-switch.ts`). */
   const resolveChoice = esignSwitch({
     ...d, // uow, warn, now, onStatus
@@ -207,27 +214,6 @@ export function esignUsecase(d: ESignDeps) {
     reopen: openOf,
     kindOf: (k) => kindOf(d.providers.entries, k),
   });
-
-  /** esign-anchor · cụm trong văn bản cho từng người ký (chỉ nhà cung cấp loại "envelope"); không đặt được ⇒ null (trang ký cuối).
-   *  Lỗi đọc chữ không chặn gửi ký. */
-  const anchorsFor = async (
-    who: PackWho,
-    id: string,
-    p: ESignProvider,
-    stored: { role: "company" | "partner" }[],
-    bytes: Uint8Array,
-  ): Promise<string[] | null> => {
-    if (!d.anchors || kindOf(d.providers.entries, p.key) !== "envelope") return null;
-    const pick = await d.anchors
-      .pick(
-        who,
-        id,
-        stored.map((s) => s.role),
-        bytes,
-      )
-      .catch(() => null);
-    return pick?.mode === "text" ? pick.anchors : null;
-  };
 
   /** esign-sweep2 · đồng bộ MỘT phong bì đã biết tenant (webhook + vòng đồng bộ nền) qua cùng đường `sync` (hook `onStatus` khi xong). */
   const syncEnvelope = async (tid: string, key: string, envelopeId: string): Promise<boolean> => {
@@ -320,7 +306,12 @@ export function esignUsecase(d: ESignDeps) {
       const u = new URL(returnUrl);
       if (!/^https?:$/.test(u.protocol) || !RETURN_PATH(id).test(u.pathname))
         throw new ESignFail("VALIDATION", "return_url");
-      const { e, key: asked } = await resolveChoice(who, id, await openOf(who, id), providerKey);
+      const { e, key: asked } = await resolveChoice(
+        who,
+        id,
+        await freshTurn(who, id, await openOf(who, id)),
+        providerKey,
+      );
       const me = signerInTurn(e.signers, who.userId);
       const p = avail(e.provider);
       if (!p) throw new ESignFail("ESIGN_DISABLED", "provider-unavailable");

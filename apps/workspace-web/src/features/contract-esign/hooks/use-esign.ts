@@ -16,7 +16,33 @@ import {
   voidEsign,
 } from "../api";
 import { ESIGN_QUERY_OPTS, eventConcernsEsign } from "../lib/esign-push";
-import { esignErrKey, returnedFromSigning, signReturnUrl } from "../lib/esign-view";
+import { esignErrKey, shouldRefreshOnReturn, signReturnUrl } from "../lib/esign-view";
+
+/** Cờ "vừa rời trang đi ký" theo HĐ (sessionStorage; hỏng/vắng ⇒ coi như không có — vẫn còn tham số `?esign=return`). */
+const awayKey = (id: string) => `esign-away:${id}`;
+const away = {
+  has: (id: string): boolean => {
+    try {
+      return window.sessionStorage.getItem(awayKey(id)) !== null;
+    } catch {
+      return false;
+    }
+  },
+  set: (id: string) => {
+    try {
+      window.sessionStorage.setItem(awayKey(id), "1");
+    } catch {
+      /* không có kho ⇒ chỉ dựa vào tham số URL */
+    }
+  },
+  clear: (id: string) => {
+    try {
+      window.sessionStorage.removeItem(awayKey(id));
+    } catch {
+      /* bỏ qua */
+    }
+  },
+};
 
 export function useEsign(id: string) {
   const { t } = useTranslation();
@@ -29,6 +55,8 @@ export function useEsign(id: string) {
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  /** Lần cuối hỏi nhà cung cấp thành công (ISO) — hiện cạnh nút "Cập nhật trạng thái ký". */
+  const [checkedAt, setCheckedAt] = useState<string | null>(null);
   const msgOf = (e: unknown) => t(esignErrKey(e instanceof ApiError ? e.code : null));
 
   const run = async (
@@ -64,23 +92,46 @@ export function useEsign(id: string) {
     return () => ac.abort();
   }, [id, qc]);
 
-  // Quay về từ trang ký (DocuSign / ký thử) ⇒ làm mới MỘT lần rồi bỏ tham số khỏi URL.
+  /** Một lần hỏi hub làm mới phong bì từ nhà cung cấp (idempotent); thành công ⇒ ghi mốc kiểm tra. */
+  const refresh = async (): Promise<boolean> => {
+    const ok = await run(() => refreshEsign(id));
+    if (ok) setCheckedAt(new Date().toISOString());
+    return ok;
+  };
+
+  // Quay về từ trang ký (DocuSign / ký thử) ⇒ làm mới MỘT lần rồi bỏ tham số + cờ khỏi URL/phiên.
   const once = useRef(false);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: chạy một lần theo HĐ (`run` đổi mỗi render, có cờ `once`)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: chạy một lần theo HĐ (`refresh` đổi mỗi render, có cờ `once`)
   useEffect(() => {
-    if (once.current || !returnedFromSigning(window.location.search)) return;
+    if (once.current || !shouldRefreshOnReturn(window.location.search, away.has(id))) return;
     once.current = true;
+    away.clear(id);
     const u = new URL(window.location.href);
     u.searchParams.delete("esign");
     u.searchParams.delete("event");
     window.history.replaceState(null, "", u.toString());
-    void run(() => refreshEsign(id));
+    void refresh();
+  }, [id]);
+
+  // Nút Back từ trang ký (trang khôi phục từ bộ nhớ đệm, không chạy lại effect) ⇒ cùng một lần làm mới.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: gắn một lần theo HĐ
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted && away.has(id)) {
+        away.clear(id);
+        void refresh();
+      }
+    };
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
   }, [id]);
 
   return {
     q,
     busy,
     err,
+    checkedAt,
+    refresh,
     clearErr: () => setErr(null),
     send: (s: ESignSignerIn[], provider?: string) =>
       run(() => sendEsign(id, s, provider), t("contracts.esign.sent")),
@@ -89,6 +140,7 @@ export function useEsign(id: string) {
       run(async () => {
         const back = signReturnUrl(window.location.origin, id);
         const { url } = await signUrl(id, back, provider);
+        away.set(id);
         window.location.assign(url);
         return undefined;
       }),

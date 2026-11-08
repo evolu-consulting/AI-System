@@ -17,6 +17,7 @@ import {
 } from "~/components/ui/dialog";
 import { useEsign } from "../hooks/use-esign";
 import {
+  autoSignProvider,
   decideAutoSign,
   type EsignView,
   esignView,
@@ -147,6 +148,17 @@ function Actions({
           {t("contracts.esign.signNow")}
         </button>
       )}
+      {v.mode === "pending" && v.canCancel && (
+        <button
+          type="button"
+          className={`${BTN} btn-quiet`}
+          disabled={es.busy}
+          data-testid="esign-check"
+          onClick={() => void es.refresh()}
+        >
+          {t("contracts.esign.check")}
+        </button>
+      )}
       {v.canDownload && (
         <button
           type="button"
@@ -269,8 +281,12 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
       signed: s.envelope?.status === "completed",
       redirectsToProvider: redirectsToProvider(s),
     });
-    if (act === "open") signNowOf(s.providers, es, setMethod)();
-    else if (act === "focus") focusSignNow();
+    // `?ky=1` mở thẳng bằng cách ký đã có của phong bì / mặc định công ty; chỉ khi chưa xác định mới hỏi "Chọn cách ký".
+    if (act === "open") {
+      const key = autoSignProvider(s);
+      if (key) void es.signNow(key);
+      else signNowOf(s.providers, es, setMethod)();
+    } else if (act === "focus") focusSignNow();
   }, [s]);
   if (v.mode === "hidden" || !s) return null;
   const e = s.envelope;
@@ -297,6 +313,11 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
           </span>
         )}
         {v.demo && <DemoTag />}
+        {v.mode === "pending" && es.checkedAt && (
+          <span className="text-dim" data-testid="esign-checked">
+            {t("contracts.esign.checkedAt", { at: fmt(es.checkedAt) })}
+          </span>
+        )}
         <span className="flex-1" />
         <Actions
           v={v}

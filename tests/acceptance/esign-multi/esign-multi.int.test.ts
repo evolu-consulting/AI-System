@@ -214,6 +214,52 @@ describe("CR-125 · Ký ngay theo thứ tự ký", () => {
   });
 });
 
+describe("CR-125 · quay về từ DocuSign ⇒ làm mới một lần, ghi nhận người ký, đi tiếp", () => {
+  const lastEnv = () => [...c.ds.fake.envelopes.keys()].at(-1) as string;
+  it("giám đốc ký xong ở nhà cung cấp (webhook không tới) ⇒ refresh ghi signed_at và hết lượt, đối tác ký ⇒ refresh hoàn tất kèm bản đã ký, gọi lại idempotent", async () => {
+    const id = await setup();
+    expect(
+      (await c.hubCall(P.lan, "POST", `${CBASE}/${id}/esign`, { signers: SIGNERS })).status,
+    ).toBe(201);
+    c.ds.fake.completeSigner(lastEnv(), LAN_EMAIL);
+    const r1 = await c.hubCall(P.lan, "POST", `${CBASE}/${id}/esign/refresh`);
+    expect(r1.status).toBe(200);
+    expect(r1.json.envelope.status).toBe("sent");
+    expect(r1.json.envelope.signers[0]).toMatchObject({ is_you: true });
+    expect(r1.json.envelope.signers[0].signed_at).not.toBeNull();
+    expect(r1.json.envelope.signers[1].signed_at).toBeNull();
+    c.ds.fake.completeSigner(lastEnv(), "b@partner.test");
+    const r2 = await c.hubCall(P.lan, "POST", `${CBASE}/${id}/esign/refresh`);
+    expect(r2.json.envelope).toMatchObject({ status: "completed", has_signed_file: true });
+    const r3 = await c.hubCall(P.lan, "POST", `${CBASE}/${id}/esign/refresh`); // idempotent
+    expect(r3.status).toBe(200);
+    expect(r3.json.envelope).toMatchObject({ status: "completed", has_signed_file: true });
+  });
+
+  it("người ký trước (đối tác) đã ký ở nhà cung cấp nhưng hub chưa biết ⇒ Ký ngay của giám đốc không bị chặn lượt (hỏi nhà cung cấp một lần)", async () => {
+    const id = await setup();
+    const partnerFirst = [SIGNERS[1], SIGNERS[0]];
+    expect(
+      (await c.hubCall(P.lan, "POST", `${CBASE}/${id}/esign`, { signers: partnerFirst })).status,
+    ).toBe(201);
+    const early = await c.hubCall(P.lan, "POST", `${CBASE}/${id}/esign/sign-url`, {
+      return_url: RET(id),
+    });
+    expect({ s: early.status, code: codeOf(early) }).toEqual({
+      s: 409,
+      code: "ESIGN_NOT_YOUR_TURN",
+    });
+    c.ds.fake.completeSigner(lastEnv(), "b@partner.test");
+    const turn = await c.hubCall(P.lan, "POST", `${CBASE}/${id}/esign/sign-url`, {
+      return_url: RET(id),
+    });
+    expect(turn.status).toBe(200);
+    expect(turn.json.url).toContain("fake.docusign.test");
+    const st = await c.hubCall(P.lan, "GET", `${CBASE}/${id}/esign`);
+    expect(st.json.envelope.signers[0].signed_at).not.toBeNull();
+  });
+});
+
 describe("esign-multi · cách ly tenant", () => {
   it("default theo công ty (beta không bị acme đổi); beta không thấy/ký/làm mới envelope của acme (404)", async () => {
     const id = await setup();

@@ -1,10 +1,11 @@
-﻿import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import type {
   ESignEnvelopeOut,
   ESignProviderOut,
   ESignStateOut,
 } from "@ai/contracts/pack-contracts";
 import {
+  autoSignProvider,
   decideAutoSign,
   esignErrKey,
   esignView,
@@ -12,6 +13,7 @@ import {
   pickDefaultProvider,
   redirectsToProvider,
   returnedFromSigning,
+  shouldRefreshOnReturn,
   showProviderPicker,
   signReturnUrl,
 } from "./esign-view";
@@ -237,5 +239,38 @@ describe("esignView", () => {
   it("returnedFromSigning", () => {
     expect(returnedFromSigning("?esign=return&event=signing_complete")).toBe(true);
     expect(returnedFromSigning("")).toBe(false);
+  });
+});
+
+describe("CR-125 · quay về từ nhà cung cấp ký", () => {
+  it("làm mới khi có ?esign=return HOẶC cờ vừa rời đi ký (đường quay về mất tham số)", () => {
+    expect(shouldRefreshOnReturn("?esign=return&event=signing_complete", false)).toBe(true);
+    expect(shouldRefreshOnReturn("", true)).toBe(true);
+    expect(shouldRefreshOnReturn("?ky=1", false)).toBe(false);
+    expect(shouldRefreshOnReturn("", false)).toBe(false);
+  });
+  it("nhà cung cấp báo người ký completed mà chưa có signed_at ⇒ coi là đã ký (cùng luật hub): hết 'Ký ngay'", () => {
+    const s0 = env().signers[0] as ESignEnvelopeOut["signers"][number];
+    const done = env({ signers: [{ ...s0, is_you: true, status: "completed", signed_at: null }] });
+    expect(esignView(st({ envelope: done }), { locked: true, write: true })).toMatchObject({
+      canSignNow: false,
+    });
+    const todo = env({ signers: [{ ...s0, is_you: true, status: "sent", signed_at: null }] });
+    expect(esignView(st({ envelope: todo }), { locked: true, write: true }).canSignNow).toBe(true);
+  });
+  it("?ky=1 nhiều nhà cung cấp: có cách ký của phong bì / mặc định công ty ⇒ mở thẳng không hỏi, chưa xác định ⇒ null (mới hỏi)", () => {
+    const two = [P("docusign"), P("selfsign", true, false)];
+    expect(showProviderPicker(two)).toBe(true);
+    expect(autoSignProvider(st({ providers: two, envelope: env({ provider: "docusign" }) }))).toBe(
+      "docusign",
+    );
+    expect(
+      autoSignProvider(st({ providers: two, envelope: null, default_provider: "selfsign" })),
+    ).toBe("selfsign");
+    expect(
+      autoSignProvider(
+        st({ providers: two, envelope: null, default_provider: null, provider: null }),
+      ),
+    ).toBeNull();
   });
 });

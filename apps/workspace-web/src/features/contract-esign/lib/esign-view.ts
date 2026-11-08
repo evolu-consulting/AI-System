@@ -57,8 +57,8 @@ export function esignView(
       e.signers.some(
         (x) =>
           (known ? x.is_you === true : x.embedded) &&
-          x.signed_at === null &&
-          e.signers.every((p) => p.order >= x.order || p.signed_at !== null),
+          !hasSigned(x) &&
+          e.signers.every((p) => p.order >= x.order || hasSigned(p)),
       );
     return {
       ...none,
@@ -80,9 +80,13 @@ export function esignView(
   return idleView(s, o.write, e !== null, demo);
 }
 
+/** Cùng định nghĩa "đã ký" với hub (`isSigned`): có mốc `signed_at` HOẶC trạng thái người ký completed/signed. */
+const hasSigned = (x: { signed_at: string | null; status: string | null }): boolean =>
+  x.signed_at !== null || ["completed", "signed"].includes((x.status ?? "").toLowerCase());
+
 /** Người ký kế tiếp chưa ký (theo thứ tự). */
 const nextSigner = (e: ESignEnvelopeOut) =>
-  [...e.signers].sort((a, b) => a.order - b.order).find((x) => x.signed_at === null);
+  [...e.signers].sort((a, b) => a.order - b.order).find((x) => !hasSigned(x));
 
 /** Chưa gửi / bị từ chối / bị huỷ: gửi (lại) được khi đủ cấu hình + bật + HĐ sẵn sàng + quyền ghi. */
 function idleView(s: ESignStateOut, write: boolean, had: boolean, demo: boolean): EsignView {
@@ -174,3 +178,17 @@ export const hasSignIntent = (search: string): boolean =>
 export function returnedFromSigning(search: string): boolean {
   return new URLSearchParams(search).get("esign") === "return";
 }
+
+/**
+ * CR-125 · quay về từ trang ký ⇒ hỏi hub làm mới phong bì từ nhà cung cấp MỘT lần. Tin hiệu: `?esign=return` HOẶC cờ "vừa rời đi ký"
+ * (đặt lúc bấm Ký ngay) — đường quay về mất tham số (đăng nhập lại, chuyển hướng, nút Back) vẫn làm mới.
+ */
+export const shouldRefreshOnReturn = (search: string, leftToSign: boolean): boolean =>
+  returnedFromSigning(search) || leftToSign;
+
+/**
+ * CR-125 · `?ky=1`: mở thẳng trang ký bằng cách ký của phong bì (hoặc mặc định công ty) — KHÔNG hỏi "Chọn cách ký" dù có nhiều nhà cung cấp.
+ * Chỉ khi chưa có cách nào xác định (null) người dùng mới phải chọn.
+ */
+export const autoSignProvider = (s: ESignStateOut): string | null =>
+  s.envelope?.provider ?? s.default_provider ?? s.provider ?? null;
