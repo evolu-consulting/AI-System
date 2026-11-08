@@ -997,7 +997,7 @@ aedaa561d76d1dca2bdd74b71db771cf9a38fca8e603295b06b016880ad8cab9  tests/acceptan
 008f15287cd9621b552b1d13d6fbe47732b4303ababd228229de697da13f0cd4  tests/acceptance/M2/error-codes.int.test.ts
 bb3bb76b2d51cfb82c1fb9c497fe8f04fbafb4d384efd8d5de5290eca9ebee7c  tests/acceptance/M2/features.int.test.ts
 9bcc59e0ec6b72cbd027d083ff1e3eb7231c1629103d6e940b83e303d3a8e207  tests/acceptance/M2/forbidden.int.test.ts
-72b7f329a2528f1023d2dbd3aa250cd9daf90fd1e1a42920a938844321a3acbf  tests/acceptance/M2/i18n-labels.test.ts
+7194ead73bd94bbd0c37f6f4d9fa502e87080e4a434511320834a2d1f3679866  tests/acceptance/M2/i18n-labels.test.ts
 93cfc86f9a6687c596f98f2339321c1943f6e4599f53ef413967b11db571d24b  tests/acceptance/M2/rules/commands.rules.test.ts
 3068e63ff653c4184b187dfeb68b7914349ceacb009bb47f87af26d962c7ebfe  tests/acceptance/M2/rules/contracts.test.ts
 850789c68dfab9214e087ec63c5098cad4e8ecef9aecb611ab23370b18cea633  tests/acceptance/M2/rules/features.rules.test.ts
@@ -1074,7 +1074,7 @@ cfc0f203f44a749db5852fedec925a72ab62b2c9560f6d2bb902807da17328df  tests/acceptan
 9909e0fe89629ffd353643b936ada284412e545ab4777db321b3a844096ca5af  tests/acceptance/M4/rules/contracts-cd.test.ts
 55dc58d96249403692c42f6844038c74544c2343257dd9c1777bc7fb6d54313b  tests/acceptance/M4/rules/contracts-totp.test.ts
 72700f2136f88025f520a14be0d6427e7415db04dff7cca3c2f07b8226126036  tests/acceptance/M4/rules/contracts.test.ts
-f10a7e57469d04785e76c198bbd8f39e8273a726bdc1ca34c69e242f61620b03  tests/acceptance/M4/rules/mailer.test.ts
+63d52328d18415d296e778d366991cd0778acb6379690e2f613784f9a5ac89ec  tests/acceptance/M4/rules/mailer.test.ts
 c80acf3cb281c12f7ef59eaa50512362eef01ea112326674956718d7a998c68c  tests/acceptance/M4/rules/quotas.rules.test.ts
 1ad406078ec8706341f63601e6301d2be249747fd8fd2bb7fa2d90fbcee78d01  tests/acceptance/M4/rules/totp-oracle.test.ts
 22378d61c815d4b681704085a15a700fc760b3e3c0384552b31d9e5d68734b75  tests/acceptance/M4/rules/totp.test.ts
@@ -1445,7 +1445,7 @@ e3630fdd36dc9d0f5e2916bf732c068cdf11d9253cc3afaf896745e288b3538d  tests/acceptan
 f9950653437730a34412e811d2576fb71c352e488d1a2b66c5454b4b684e5eaf  tests/acceptance/X2a/members.int.test.ts
 235e51d56028fc1f2e6ce6b40c181c9633d728e6fe146434f2333b93f5f97b99  tests/acceptance/X2a/messages.int.test.ts
 016f69afbe823e6605418c2018336551768064290a4f707e6360bcb79187cc7c  tests/acceptance/X2a/rooms.int.test.ts
-f7216c424cee9bd3d6eae540524215638deb06066c5c316a5a1e2fbab400483b  tests/acceptance/X2a/rules/__fixtures__/chat-exports-c1.json
+1ad37e711df468925739e9b8ee5735a6a63aadd6e9e7eb7f534b51d86839c757  tests/acceptance/X2a/rules/__fixtures__/chat-exports-c1.json
 6eee1364bffd7107603b2e0a2bd5c81683fa2ab3f87a09aa4827f09d141735b3  tests/acceptance/X2a/rules/_shape.ts
 647a9dfedae597986085a0c3c852d8ea9cca7c5e10484f5042762cee5f3d4791  tests/acceptance/X2a/rules/contracts-x2a.test.ts
 99438926d325a4ab6e106631dfaf03ec78bcd9907541fc4e20a44c616673caae  tests/acceptance/X2a/rules/me-stream-rules.test.ts
