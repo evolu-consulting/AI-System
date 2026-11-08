@@ -13,6 +13,7 @@ import { branchToRules, rulesToBranch } from "./branch-form";
 import type { StageDraft } from "./draft-types";
 import { normalizeForm } from "./form-fields";
 import { emptyIf, normalizeIf } from "./if-form";
+import { parallelFromDef, parallelToDef } from "./parallel-form";
 import { emptySet, normalizeSet } from "./set-form";
 import { repairSlot } from "./slot-canvas";
 import {
@@ -107,6 +108,7 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     remind: remindFromDef(rv?.remind_every_h),
     escalate: escalateFromDef(rv?.escalate),
     ...(rv?.exclude_starter ? { excludeStarter: true } : {}),
+    ...(rv?.parallel ? { parallel: parallelFromDef(rv.parallel) } : {}),
     instruction: s.instruction,
     filename: s.output.filename,
     template: s.output.template,
@@ -182,6 +184,7 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
             remind_every_h: remindToDef(s),
             escalate: escalateToDef(s),
             ...(s.excludeStarter ? { exclude_starter: true } : {}),
+            ...(s.parallel ? { parallel: parallelToDef(s.parallel) } : {}),
             ...branch,
           }
         : { kind: "auto", ...branch },

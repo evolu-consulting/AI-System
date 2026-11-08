@@ -6,6 +6,7 @@ import { REMIND_EVERY_H } from "../../domain/limits";
 import { remindIssue } from "../../domain/remind-rules";
 import { useApproverField } from "../../hooks/use-group-key-options";
 import { SelectField, TextField } from "./Fields";
+import { StageApproveParallel } from "./StageApproveParallel";
 import type { StageFormProps } from "./stage-form-props";
 
 const K = "process.admin.editor.stage.";
@@ -20,17 +21,20 @@ export function StageApproveBasics(p: StageFormProps) {
     : errors[`stages.${index}.after.remind_every_h`];
   return (
     <div className="space-y-3" data-testid="stage-approve-basics">
-      <SelectField
-        id={`${stage.uid}-group`}
-        label={t(`${K}approver`)}
-        value={who.value}
-        readOnly={readOnly}
-        alert
-        placeholder={t(`${K}approverPh`)}
-        error={gErr ? t(gErr) : undefined}
-        options={who.options}
-        onChange={(v) => onChange({ ...who.patch(v), after: "review" })}
-      />
+      {stage.parallel ? null : (
+        <SelectField
+          id={`${stage.uid}-group`}
+          label={t(`${K}approver`)}
+          value={who.value}
+          readOnly={readOnly}
+          alert
+          placeholder={t(`${K}approverPh`)}
+          error={gErr ? t(gErr) : undefined}
+          options={who.options}
+          onChange={(v) => onChange({ ...who.patch(v), after: "review" })}
+        />
+      )}
+      <StageApproveParallel {...p} />
       <TextField
         id={`${stage.uid}-remind`}
         label={t(`${K}answerBy`)}

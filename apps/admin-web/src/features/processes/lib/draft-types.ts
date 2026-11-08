@@ -2,6 +2,7 @@
 // Chỉ kiểu — không giá trị; `def-form` re-export cho nơi dùng cũ.
 import type { FormFieldType, LayoutDir, ProcessStageDef, SetAs } from "@ai/contracts/hub-admin";
 import type { AutofixDraft } from "./autofix-form";
+import type { ParallelDraft } from "./parallel-form";
 import type { InputDraft, StageSourceDraft } from "./sources-form";
 import type { StartFormDraft } from "./start-form.types";
 
@@ -146,6 +147,8 @@ export type StageDraft = {
   node?: string;
   /** CR-122 · U2 · node Duyệt: bước (0-based, sau bước mình) khi Từ chối / Trả lại; null = hành vi cổng cũ. */
   approve?: { reject: number | null; ret: number | null };
+  /** CR-125 · cr125-parallel-approval-ui · «A + B cùng duyệt» (`after.parallel`; chỉ bước Duyệt). Vắng = một nhóm duyệt như cũ (`groupId`). */
+  parallel?: ParallelDraft;
   /** CR-122 · node Kết thúc: khoá kết quả app khai (`AppEventDecl.outcomes`); vắng = không phải Kết thúc. */
   outcome?: string;
   /** CR-122 · bước gộp (0-based, > bước của mình); vắng = đi tiếp bước kế. */

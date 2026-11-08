@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { FREE_ERR } from "../../lib/free-nodes";
 import { kindOf, summaryOf } from "../../lib/node-summary";
 import { nodeLabel } from "../../lib/palette-node";
+import { parallelNames, ruleText } from "../../lib/parallel-form";
 import { isStartForm, startFieldCount } from "../../lib/start-form";
 import { usePalette } from "../../palette-api";
 import { OP_SYMBOL } from "../flow/FactWhenEditor";
@@ -42,6 +43,20 @@ const startTexts = (
 
 const TECH_KINDS: ReadonlySet<string> = new Set(["set", "agent", "tool"]);
 
+/** Một dòng tóm tắt dưới tên node; Duyệt cùng lúc nói «Cùng duyệt: A + B · Tất cả» (CR-125). */
+function summaryLine(
+  s: StageView["src"],
+  l: Parameters<typeof summaryOf>[1],
+  t: (key: string, o?: Record<string, unknown>) => string,
+): string {
+  if (s.executor !== "approve" || !s.parallel) return summaryOf(s, l);
+  const r = ruleText(s.parallel);
+  return t("process.admin.parallel.summary", {
+    names: parallelNames(s.parallel),
+    rule: t(r.key, r.params),
+  });
+}
+
 /** Loại + MỘT dòng tóm tắt của node; loại kỹ thuật ("Chuẩn bị dữ liệu", "Agent") không phải việc nghiệp vụ của giám đốc/sale ⇒ `hideKind`. */
 function nodeTexts(
   s: StageView["src"],
@@ -54,7 +69,7 @@ function nodeTexts(
   if (st) return { ...st, hideKind: false };
   return {
     kind: mod ? nodeLabel(mod, lang) : t(`process.admin.flow.node.${kindOf(s)}`),
-    summary: summaryOf(s, l),
+    summary: summaryLine(s, l, t),
     hideKind: !mod && TECH_KINDS.has(kindOf(s)),
   };
 }

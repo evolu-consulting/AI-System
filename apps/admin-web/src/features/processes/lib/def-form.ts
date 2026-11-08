@@ -20,6 +20,7 @@ import { AUTOFIX_RULE_ERR, validateAutofixPart } from "./autofix-form";
 import { carryErrors, d2LiveErrors, toolSubmitErrors } from "./d2-validate";
 import { normalizeForm } from "./form-fields";
 import { fillDraftDefaults, followRename } from "./node-defaults";
+import { PARALLEL_KEY, parallelErrors } from "./parallel-form";
 import { type InputDraft, inputsToDef, inputsToDraft, validateSourcesPart } from "./sources-form";
 import { emptyStage, intOrNull, num, stageToDraft, stageToInput } from "./stage-convert";
 import { slugKey } from "./stage-key";
@@ -116,6 +117,9 @@ export const STEP_ERR: Record<string, string> = {
   STEP_INCOMPLETE: "process.admin.canvas.err.step",
   REAL_ACTION: "process.admin.canvas.err.realStep",
   BACK_TARGET_INVALID: "process.admin.canvas.err.backTarget",
+  // CR-125 · «A + B cùng duyệt»: lỗi lưu của máy chủ (path `stages.<i>.after.parallel.groups|rule`) hiện đúng câu cạnh ô
+  PARALLEL_GROUPS_MIN2: `${PARALLEL_KEY}.PARALLEL_GROUPS_MIN2`,
+  PARALLEL_RULE_INVALID: `${PARALLEL_KEY}.PARALLEL_RULE_INVALID`,
   ...AUTOFIX_RULE_ERR,
   ...APPLY_RULE_ERR,
 };
@@ -188,7 +192,14 @@ export function validateDraft(
   if (d.stages.length < 1 || d.stages.length > getStagesMax()) e.stages = `${P}stageCount`;
   d.stages.forEach((s, i) => {
     validateStage(normalizeForm(normalizeTool(normalizeWait(s))), i, d.stages, e);
-    if (forEnable && s.after === "review" && s.groupId === "" && !s.groupKey && !slotHasReviewer(s))
+    if (
+      forEnable &&
+      s.after === "review" &&
+      s.groupId === "" &&
+      !s.groupKey &&
+      !s.parallel &&
+      !slotHasReviewer(s)
+    )
       e[`stages.${i}.after.group_id`] = "process.admin.apiError.PROCESS_DEF_INCOMPLETE";
   });
   const eff = d.stages.map((s) => normalizeForm(normalizeTool(normalizeWait(normalizeApply(s)))));
@@ -201,6 +212,7 @@ export function validateDraft(
   Object.assign(e, freeErrors(d.stages)); // CR-123 · u5 · node đứng riêng chưa nối
   Object.assign(e, endNextErrors(d.stages)); // CR-123 · u14 · Kết thúc không đi tiếp
   Object.assign(e, approveAloneErrors(d.stages)); // CR-123 · u12b · bước Duyệt phải đứng một mình (hub: APPROVE_INVALID)
+  Object.assign(e, parallelErrors(d.stages, forEnable)); // CR-125 · «A + B cùng duyệt» (hub: PARALLEL_GROUPS_MIN2 / PARALLEL_RULE_INVALID)
   return { ...toolSubmitErrors(d.stages, tools), ...e };
 }
 

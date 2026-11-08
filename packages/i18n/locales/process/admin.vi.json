@@ -44,6 +44,25 @@
     }
   },
   "parallel": {
+    "toggle": "Duyệt cùng lúc nhiều nhóm",
+    "hint": "Mọi nhóm nhận thẻ duyệt cùng lúc. Ai từ chối hoặc trả lại thì bước dừng ngay.",
+    "group": "Nhóm {{n}}",
+    "label": "Tên hiện trên thẻ",
+    "add": "Thêm nhóm",
+    "remove": "Bỏ nhóm {{n}}",
+    "ruleLabel": "Khi nào bước được duyệt",
+    "minLabel": "Số nhóm cần đồng ý (tối đa {{max}})",
+    "rule": {
+      "all": "Tất cả",
+      "any": "Một trong số",
+      "min": "Ít nhất {{n}}"
+    },
+    "summary": "Cùng duyệt: {{names}} · {{rule}}",
+    "groupMissing": "Chọn nhóm cho mọi hàng, hoặc bỏ hàng chưa dùng.",
+    "closed": {
+      "enough": "Đã đủ người duyệt",
+      "declined": "Đã có người từ chối/trả lại"
+    },
     "err": {
       "PARALLEL_GROUPS_MIN2": "Duyệt cùng lúc cần ít nhất 2 nhóm. Thêm nhóm, hoặc bỏ «cùng duyệt» để dùng một nhóm.",
       "PARALLEL_RULE_INVALID": "Điều kiện duyệt chưa hợp lệ: số nhóm cần đồng ý không được lớn hơn số nhóm, mỗi nhóm chỉ chọn một lần, và chỉ bước Duyệt mới cùng duyệt được."
