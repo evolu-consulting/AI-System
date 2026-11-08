@@ -47,6 +47,14 @@
       "owner": "điều phối CR-125",
       "expires": "2026-11-15",
       "since": "2026-11-08"
+    },
+    {
+      "id": "process-library.pa.ts",
+      "suite": "e2e:P-a",
+      "reason": "Spec CR-105 lỗi thời so với trình sửa CR-122 (đã sửa tab 'Mẫu có sẵn' + 'Dùng mẫu này'; còn sai từ dòng 74 'Lưu nháp chưa áp dụng cho tenant', Form/nút hệ thống đã gỡ). Đỏ cả trên gd0; cần qc viết lại spec theo canvas duy nhất (2026-11-08, c3).",
+      "owner": "qc CR-125",
+      "expires": "2026-11-15",
+      "since": "2026-11-08"
     }
   ]
 }
