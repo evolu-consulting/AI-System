@@ -1247,8 +1247,8 @@ eccbcd0f1b9d7fd89db752b04d69b83d0deac50ce3dd0a9bd5bdd22aa1482cb0  tests/acceptan
 b109a4c404f1486501104a5dc19747d8835d69793cbe004342ca55a1917e143b  tests/acceptance/P-b2/rules/handoff-session.test.ts
 c4195f5295a2011395e314a09d6defa71b284e7b9d42fc2937496bb9410c6bcb  tests/acceptance/P-b2/rules/process-steps.test.ts
 afc9fd2171e42549f62b44bdd8d161e4bc89b8b449837b37decf1ac8a6db363f  tests/acceptance/P-b2/rules/step-rules.test.ts
-0f25a7b1d205b8c442092bb73914bc4d633c91c91de28c845462a3a04776951e  tests/acceptance/P-b2/s0/defs.int.test.ts
-5382acd80286025109ac48ac924c4c2b0f7b46ad40ee4b4311195fba26f023d2  tests/acceptance/P-b2/s0/migration.int.test.ts
+ce43fbd951f698bda0904180f09a03503c87d5549ed9605f6304f2eeedb8969c  tests/acceptance/P-b2/s0/defs.int.test.ts
+83e7d41bbe29685617f2dee0abed7ae05d2c4f76c8fff8a95f745d3362e01e4b  tests/acceptance/P-b2/s0/migration.int.test.ts
 3fa363ef700de8ad0cb16485ccf8549862cf96e78229abca65e07c812296a2c0  tests/acceptance/P-b2/tok/handoff.int.test.ts
 e5afe7da5d733bb43d11d621a01dd1e1b2772bac26bbcee47243405fc6859f10  tests/acceptance/P-b2/tok/resume.int.test.ts
 817f57d505d47b3a4fc38d383669a6479b8c8f89c3567a3d5bdc920c2f82f171  tests/acceptance/P-c/_support/pc.ts

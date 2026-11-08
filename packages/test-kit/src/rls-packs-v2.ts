@@ -1,6 +1,7 @@
 // CR-096 · bảng mới của gói `contracts` (V2-B/C/E/H/J2/L/M) khai cho bộ RLS theo hợp đồng (rls-packs.int.test.ts).
 import { tenantId, userId } from "./builders";
 import type { Sql } from "./db";
+import { partnerTables } from "./rls-packs-partner";
 import type { RlsTable } from "./rls-suite";
 
 const who = userId(901);
@@ -356,3 +357,4 @@ v2Tables.push(
     insert: (tx, t, pk) => tx.unsafe(impIns, [t, pk ?? `k-${crypto.randomUUID()}`]),
   },
 );
+v2Tables.push(...partnerTables); // CR-124

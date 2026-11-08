@@ -113,18 +113,19 @@ describe("M · migration 0024 [HUB-FR-104]", () => {
     >`select current_step, current_stage_idx from hub.process_runs where id = ${run.runId}`;
     expect(r).toEqual({ current_step: 0, current_stage_idx: 1 });
   });
-  it("HUB-FR-104 · M-04 · CHECK: current_step 10, back_rounds>back_limit, back_limit 101, round 0, back_to_step 10, reason lạ, event sai ⇒ 23514", async () => {
+  // CR-122 p22 (migration hub 0115): trần step 0..9 → 0..49 ⇒ biên sai của ca này là 50.
+  it("HUB-FR-104 · M-04 · CHECK: current_step 50, back_rounds>back_limit, back_limit 101, round 0, back_to_step 50, reason lạ, event sai ⇒ 23514", async () => {
     needPb2(ready);
     const id = run.runId;
     const s1 = run.stageRunIds[1] as string;
     const bad = {
-      step: await pgCode(sql`update hub.process_runs set current_step = 10 where id = ${id}`),
+      step: await pgCode(sql`update hub.process_runs set current_step = 50 where id = ${id}`),
       rounds: await pgCode(
         sql`update hub.process_runs set back_rounds = 4, back_limit = 3 where id = ${id}`,
       ),
       limit: await pgCode(sql`update hub.process_runs set back_limit = 101 where id = ${id}`),
       round: await pgCode(sql`update hub.stage_runs set round = 0 where id = ${s1}`),
-      backTo: await pgCode(sql`update hub.stage_runs set back_to_step = 10 where id = ${s1}`),
+      backTo: await pgCode(sql`update hub.stage_runs set back_to_step = 50 where id = ${s1}`),
       evStep: await pgCode(insEv(sql, ev(run, T.acme, { to_step: 1, from_step: 1 }))),
       evRound: await pgCode(insEv(sql, ev(run, T.acme, { round_after: 1 }))),
       evFb: await pgCode(insEv(sql, ev(run, T.acme, { feedback: "" }))),

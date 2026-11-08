@@ -41,6 +41,25 @@ export const EXTRA_TABLES: readonly ExtraTable[] = [
     reason:
       "bản phát hành của quy trình riêng tenant (process_defs.tenant_id NULL = thư viện chung, không đụng)",
   },
+  // CR-124 (hub 0117/0120): hộp thư liên công ty. Không có cột `tenant_id` (from_tenant/to_tenant) ⇒ vị từ tường minh. Dòng mà tenant
+  // là bên gửi HOẶC bên nhận đều thuộc dữ liệu của tenant (bản chia sẻ gửi đi / thư nhận được). Thứ tự xoá theo FK do orderTables lo:
+  // partner_email_events → partner_mailbox (con trước cha; prev_id tự tham chiếu bị bỏ qua).
+  {
+    rel: "hub.partner_email_events",
+    where:
+      "%.mailbox_id in (select m.id from hub.partner_mailbox m where m.from_tenant = $1::uuid or m.to_tenant = $1::uuid)",
+    reason: "sự kiện email (gửi/mở/trả lời) của thư thuộc tenant (gửi hoặc nhận)",
+  },
+  {
+    rel: "hub.partner_mailbox",
+    where: "(%.from_tenant = $1::uuid or %.to_tenant = $1::uuid)",
+    reason: "thư liên công ty tenant đã gửi hoặc nhận (kênh nền tảng/email/tay)",
+  },
+  {
+    rel: "hub.partner_links",
+    where: "(%.from_tenant = $1::uuid or %.to_tenant = $1::uuid)",
+    reason: "liên kết đồng ý nhận hợp đồng giữa các tenant, một trong hai đầu là tenant",
+  },
 ];
 
 /** Bảng có cột tên giống "tenant" nhưng đã xét là không chứa dữ liệu riêng một tenant. */

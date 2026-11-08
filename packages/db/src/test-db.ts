@@ -76,6 +76,12 @@ export async function rollbackJournalFrom(
   // 0099 gỡ view) còn lại thì PK `process_slot_assignments_pkey` trùng tên ⇒ áp lại lỗi. Phản ánh đúng trạng thái "trước 0068".
   if (from.some((e) => e.tag?.startsWith("0068_"))) {
     await owner.unsafe("drop table if exists hub.process_slot_assignments_legacy");
+    // 0068 dựng CHECK `process_defs_published_ck` bản chặt ("xuất bản ⇒ có khe"); 0110 mới nới cho flow có `trigger`. Flow mẫu Thư viện
+    // do migration gieo (0121 CR-124: trigger, không khe, đã xuất bản) vi phạm bản chặt khi áp lại ⇒ 23514. Trạng thái "trước 0068" không
+    // có flow trigger, nên bỏ cờ xuất bản của chúng (chỉ DB test; prod không bao giờ áp lại 0068 trên dữ liệu đã có).
+    await owner.unsafe(
+      "update hub.process_defs set published_version = null where slot is null and published_version is not null",
+    );
   }
   await owner.unsafe(
     `delete from drizzle.${HUB_TABLE} where created_at >= ${Math.min(...from.map((e) => e.when))}`,

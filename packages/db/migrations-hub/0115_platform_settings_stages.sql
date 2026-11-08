@@ -15,6 +15,8 @@ ALTER TABLE hub.platform_settings ENABLE ROW LEVEL SECURITY;
 --> statement-breakpoint
 -- Đọc: mọi đường hub (hub_rw/hub_ro). GHI: không có policy ghi ⇒ hub_rw không INSERT/UPDATE trực tiếp được (cũng không được GRANT);
 -- chỉ qua hàm SECURITY DEFINER bên dưới (khoá cho phép + kiểm giá trị); route `PUT /process-editor/limits` chỉ platform_admin.
+DROP POLICY IF EXISTS platform_settings_read ON hub.platform_settings;
+--> statement-breakpoint
 CREATE POLICY platform_settings_read ON hub.platform_settings FOR SELECT TO hub_rw, hub_ro USING (true);
 --> statement-breakpoint
 REVOKE ALL ON hub.platform_settings FROM PUBLIC;

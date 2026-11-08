@@ -94,20 +94,21 @@ describe("DF · luật bước khi lưu [AC-PB2-04][HUB-FR-104]", () => {
     const m = rulesOf(await post(defBody("pb2-df01", stages)));
     expect(m["stages.4.step"]).toBe("STEP_TOO_WIDE");
   });
-  it("AC-PB2-04 · DF-02 · 11 stage / step 10 / back_to_steps 10 phần tử ⇒ 400 VALIDATION_ERROR + issues[].path (không STEP_TOO_WIDE)", async () => {
+  // CR-122 p22 (migration hub 0115): trần cứng 10 → 50 (`PROCESS_STAGES_CEILING`); các biên của ca này dời theo: 51 stage / step 50 / 50 back_to_steps.
+  it("AC-PB2-04 · DF-02 · 51 stage / step 50 / back_to_steps 50 phần tử ⇒ 400 VALIDATION_ERROR + issues[].path (không STEP_TOO_WIDE)", async () => {
     needPb2(c.pb2);
-    const eleven = Array.from({ length: 11 }, (_, i) => s({ key: `k${i}`, step: i }));
+    const over = Array.from({ length: 51 }, (_, i) => s({ key: `k${i}`, step: i }));
     expect(
-      shapeErr(await post(defBody("pb2-df02a", eleven))).some((p) => p.startsWith("stages")),
+      shapeErr(await post(defBody("pb2-df02a", over))).some((p) => p.startsWith("stages")),
     ).toBe(true);
-    const step10 = [s({ key: "a", step: 0, review: KT }), s({ key: "b", step: 10 })];
-    expect(shapeErr(await post(defBody("pb2-df02b", step10)))).toContain("stages.1.step");
-    const tenBack = [
+    const step50 = [s({ key: "a", step: 0, review: KT }), s({ key: "b", step: 50 })];
+    expect(shapeErr(await post(defBody("pb2-df02b", step50)))).toContain("stages.1.step");
+    const fiftyBack = [
       s({ key: "a", step: 0, review: KT }),
-      s({ key: "b", step: 1, review: KT, back: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }),
+      s({ key: "b", step: 1, review: KT, back: Array.from({ length: 50 }, () => 0) }),
     ];
     expect(
-      shapeErr(await post(defBody("pb2-df02c", tenBack))).some((p) =>
+      shapeErr(await post(defBody("pb2-df02c", fiftyBack))).some((p) =>
         p.startsWith("stages.1.after"),
       ),
     ).toBe(true);

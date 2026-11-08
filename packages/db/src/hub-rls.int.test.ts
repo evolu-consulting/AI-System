@@ -194,12 +194,19 @@ const LATER_POLICY_TABLES = [
   "company_flows",
   "tenant_flow_settings",
   "tenant_flow_settings",
+  // CR-124 (0117/0120): hộp thư đối tác, liên kết đối tác, sự kiện email — chỉ scope system (bộ chuyển), 1 policy mỗi bảng, chỉ hub_rw;
+  // scope người dùng không có policy (đọc 0 hàng, ghi 42501). Không có cột tenant_id đơn (from_tenant/to_tenant) ⇒ không dùng policy tenant.
+  "partner_mailbox",
+  "partner_links",
+  "partner_email_events",
 ];
 /** 0022 (B4 · WRK-FR-27): agent_runtime đọc `hub.runs` cột (id, status), chỉ hàng `running`. */
 const RUNTIME_POLICIES = [
   { t: "runs", roles: "agent_runtime" },
   { t: "usage_daily", roles: "admin_rw" }, // usage-analytics (hub 0049): tổng hợp ngày, admin đọc theo scope
   { t: "usage_daily_dim", roles: "admin_rw" },
+  // CR-122 (0115): cài đặt cấp nền tảng — chỉ đọc (1 policy SELECT cho hub_rw + hub_ro), ghi qua hàm SECURITY DEFINER.
+  { t: "platform_settings", roles: "hub_rw,hub_ro" },
 ];
 
 describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {
