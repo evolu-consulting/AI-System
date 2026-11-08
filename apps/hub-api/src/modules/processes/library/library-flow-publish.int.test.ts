@@ -252,6 +252,28 @@ describe("CR-122 E6 · xuất bản flow Thư viện có trigger", () => {
     expect(after.group_id).toBe(gx.get("kinh-doanh") as string);
   });
 
+  // cr125-fix-parent-timer · bước «cùng duyệt» (`after.parallel`, mỗi nhóm theo mã) không có group_id/group_key của bước ⇒ lưu + bật được.
+  it("CR-125 · flow Thư viện có bước cùng duyệt (`after.parallel`, group_id null) ⇒ 201 bật", async () => {
+    const par = stage("cung-duyet", 1, {
+      executor: { kind: "approve", reject_step: null, return_step: null },
+      after: {
+        kind: "review",
+        group_id: null,
+        back_to_steps: [],
+        parallel: {
+          groups: [
+            { group_key: "ke-toan", label: "Kế toán" },
+            { group_key: "phap-che", label: "Pháp chế" },
+          ],
+          rule: "all",
+        },
+      },
+    });
+    const stages = [stage("dau", 0), par, stage("xong", 2, { outcome: "approved" })];
+    const c = await call("POST", "/process-defs", body("cr125-par", { stages, enabled: true }));
+    expect([c.status, c.json.enabled, c.json.error?.code]).toEqual([201, true, undefined]);
+  });
+
   // CR-122 · P15: def công ty lưu id; mã hợp lệ của công ty tự đổi sang id, mã lạ ⇒ 422 câu nghiệp vụ (không còn PROCESS_REF_INVALID).
   it("P6/P15 · def của công ty: group_key lạ ⇒ 422 GROUPS_MISSING nêu mã", async () => {
     const review = stage("duyet", 1, {

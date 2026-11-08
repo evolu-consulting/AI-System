@@ -175,6 +175,7 @@ let okDef = "";
 let noDef = "";
 let waitDef = "";
 let fileDef = "";
+let chainDef = "";
 const F1 = "7c1d2b6e-0000-4000-8000-0000000125f1"; // tệp truyền qua input_map
 const F2 = "7c1d2b6e-0000-4000-8000-0000000125f2"; // tệp của lượt cha, KHÔNG truyền
 
@@ -217,6 +218,25 @@ beforeAll(async () => {
       },
       end("ok", 2, "approved"),
       end("no", 3, "rejected"),
+    ],
+    AMOUNT,
+  );
+  // cr125-fix-parent-timer · như «Quy trình mua hàng»: 0 phiếu (set) · 1–3 Quy trình con (sp-wait) · 4 Kết thúc approved · 5 Kết thúc rejected.
+  const phase = (step: number) => ({
+    ...sub("sp-wait"),
+    key: `phan-${step}`,
+    step,
+    executor: { ...sub("sp-wait").executor, branches: [{ on: "rejected", goto_step: 5 }] },
+  });
+  chainDef = await def(
+    "p-chain",
+    [
+      { ...base("phieu", "Phiếu", 0), executor: { kind: "set", values: [] } },
+      phase(1),
+      phase(2),
+      phase(3),
+      end("ok", 4, "approved"),
+      end("no", 5, "rejected"),
     ],
     AMOUNT,
   );
@@ -351,6 +371,27 @@ describe("CR-125 · «Quy trình con» chạy thật", () => {
     const [n] = await o<{ n: number }[]>`select count(*)::int as n from hub.process_outputs
       where process_run_id = ${pid} and stage_idx = 0`;
     expect(n?.n).toBe(1);
+  });
+
+  it("cr125-fix-parent-timer · cha 3 Quy trình con nối tiếp, con xong lần lượt (đường hẹn giờ thật) ⇒ cha tới Kết thúc, lượt `done`", async () => {
+    const pid = await start(chainDef);
+    for (let phase = 0; phase < 3; phase++) {
+      const kids = await childrenOf(pid);
+      expect(kids.length).toBe(phase + 1);
+      const kid = kids.find((k) => k.status === "waiting_timer");
+      expect(kid).toBeDefined();
+      expect((await stagesOf(pid))[phase + 1]).toBe("waiting_timer");
+      // lượt con xong bằng đường thật: hẹn chờ của con tới hạn ⇒ vòng hẹn giờ chốt con ⇒ trigger 0129 kéo hẹn canh cha ⇒ chốt bước cha.
+      await o`update hub.process_timers set due_at = now() - interval '1 second'
+        where process_run_id = ${kid?.id as string} and fired_at is null and cancelled_at is null`;
+      for (let i = 0; i < 3 && (await stagesOf(pid))[phase + 1] === "waiting_timer"; i++)
+        await fireDue();
+      expect(await runOf(kid?.id as string)).toBe("done");
+      expect((await stagesOf(pid))[phase + 1]).toBe("done");
+    }
+    expect(await stagesOf(pid)).toEqual(["done", "done", "done", "done", "done", "skipped"]);
+    expect(await runOf(pid)).toBe("done");
+    expect(await openTimers(pid)).toBe(0);
   });
 
   it("lượt con lỗi ⇒ bước cha «Cần xử lý» (tool_failed)", async () => {

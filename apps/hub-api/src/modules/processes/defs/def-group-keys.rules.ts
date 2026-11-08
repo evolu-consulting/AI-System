@@ -48,8 +48,14 @@ export function groupRefModeMiss(d: ProcessDefInput, library: boolean): RefMiss 
   return null;
 }
 
-/** Stage review đã có Group duyệt (id hoặc mã tuỳ loại def) — luật INCOMPLETE khi bật. */
+/**
+ * Stage review đã có Group duyệt (id hoặc mã tuỳ loại def) — luật INCOMPLETE khi bật. CR-125 · bước «cùng duyệt» (`after.parallel`):
+ * nhóm nằm trong `parallel.groups` (mỗi nhóm có `group_id` hoặc `group_key`), `group_id` của bước được để `null`.
+ */
 export function reviewHasGroup(s: Stage, library: boolean): boolean {
   if (s.after.kind !== "review") return true;
+  const groups = s.after.parallel?.groups;
+  if (groups && groups.length > 0)
+    return groups.every((g) => (g.group_id ?? null) !== null || g.group_key !== undefined);
   return library ? s.after.group_key !== undefined : s.after.group_id !== null;
 }

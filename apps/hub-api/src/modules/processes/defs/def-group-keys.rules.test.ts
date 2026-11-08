@@ -3,6 +3,7 @@
 import { describe, expect, it } from "bun:test";
 import { type ProcessDefInput, ProcessDefInputBaseSchema } from "@ai/contracts/hub-admin";
 import { type DefCheck, validateProcessDef } from "./def.rules";
+import { reviewHasGroup } from "./def-group-keys.rules";
 import type { DefRefs } from "./def-refs";
 
 const AG = "0b8e8c2e-1f0a-4c55-9a51-000000000001";
@@ -95,6 +96,34 @@ describe("CR-105 · Group theo mã trong def thư viện", () => {
     expect(
       validateProcessDef(def({ group_id: G, escalate: { after_h: 24, group_id: G2 } }), refs),
     ).toEqual({ ok: true });
+  });
+
+  it("cr125-fix-parent-timer · bước cùng duyệt (`after.parallel`) có nhóm ⇒ đủ Group dù `group_id: null`, thiếu nhóm ⇒ INCOMPLETE", () => {
+    const st = (parallel: unknown) =>
+      ({ after: { kind: "review", group_id: null, parallel } }) as unknown as Parameters<
+        typeof reviewHasGroup
+      >[0];
+    const by = (groups: unknown[]) => st({ groups, rule: "all" });
+    const ids = by([
+      { group_id: G, label: "Kế toán" },
+      { group_id: G2, label: "Pháp chế" },
+    ]);
+    const keys = by([
+      { group_key: "ke-toan", label: "Kế toán" },
+      { group_key: "phap-che", label: "Pháp chế" },
+    ]);
+    expect(reviewHasGroup(ids, false)).toBe(true);
+    expect(reviewHasGroup(keys, true)).toBe(true);
+    expect(
+      reviewHasGroup(
+        by([
+          { group_id: G, label: "A" },
+          { group_id: null, label: "B" },
+        ]),
+        false,
+      ),
+    ).toBe(false);
+    expect(reviewHasGroup(st(undefined), false)).toBe(false);
   });
 
   it("escalate phải có đúng một trong group_id / group_key (hình dạng)", () => {
