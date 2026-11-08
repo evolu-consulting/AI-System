@@ -26,6 +26,7 @@ const repos = (tx: Tx, t: string) => ({
 export function intakeWiring(
   db: Db,
   esign: ESignModule | undefined,
+  packRuns?: PackRunsBridge | undefined,
 ): {
   tools: PackToolDef[];
   bindCompleted: (fn: CompletedHook) => void;
@@ -34,6 +35,13 @@ export function intakeWiring(
   return {
     tools: intakeTools({
       uow,
+      // cr125-contract-from-step · Ký số chỉ ký HĐ là bản ghi của chính lượt (có cầu engine ⇒ bắt buộc)
+      ...(packRuns
+        ? {
+            recordOfRun: async (t: string, r: string) =>
+              (await packRuns.port?.recordOf?.(t, r, "contracts")) ?? null,
+          }
+        : {}),
       send: async (tenantId, signer, contractId, signers, provider, node) => {
         if (!esign) throw new Error("ESIGN_UNAVAILABLE");
         await esign.sendSystem(tenantId, signer, contractId, signers, provider, node);
@@ -95,7 +103,7 @@ export function mountIntake(
   db: Db,
 ): void {
   slotRegistry.register(intakeSlotSpec);
-  const { tools, bindCompleted } = intakeWiring(db, d.esign);
+  const { tools, bindCompleted } = intakeWiring(db, d.esign, d.packRuns);
   for (const t of tools) d.packTools?.register(t);
   // CR-125 · m2 · sổ module: tool bước + node Ký số (gửi ký = `contracts-esign-send`; cổng cấu hình nối ở m4)
   for (const t of tools) moduleRegistry.bindTool(t);

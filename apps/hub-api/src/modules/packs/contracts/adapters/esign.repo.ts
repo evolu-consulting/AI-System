@@ -184,13 +184,13 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
         where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid limit 1`);
       return r ? contractOf(r) : null;
     },
-    lockForSign: async (id, by) => {
+    lockForSign: async (id, by, viaRun = false) => {
       await tx.execute(sql`update contracts.contracts c set locked_at = now(), locked_by = ${by}::uuid,
           version = c.version + 1, updated_at = now()
         where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid and c.locked_at is null
-          and c.status = 'needs_review'`);
-      // CR-125 · cr125-contract-from-step: bỏ `run_id is not null` — HĐ tạo từ bước quy trình («Tạo hợp đồng từ hồ sơ») chưa qua lượt
-      // duyệt của gói (không có hàng approvals) nhưng vẫn phải khoá để ký đúng bản đã soạn. Tool này chỉ chạy trong run của quy trình.
+          and c.status = 'needs_review' and (c.run_id is not null or ${viaRun}::boolean)`);
+      // CR-125 · cr125-contract-from-step: HĐ tạo từ bước quy trình («Tạo hợp đồng từ hồ sơ») chưa có hàng approvals của gói nhưng là bản ghi
+      // CỦA LƯỢT đang chạy (`viaRun`, tool kiểm với hub) ⇒ vẫn khoá được. HĐ bất kỳ khác (không lượt duyệt, không phải bản ghi của lượt) ⇒ không khoá.
     },
     latest: async (contractId) => {
       const [r] = await tx.execute<Raw>(sql`select ${COLS} from contracts.esign_envelopes e

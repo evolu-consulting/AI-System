@@ -23,7 +23,11 @@ import { createFromStepBinding } from "./nodes/create-from-step/binding";
 import { uploadContractFor } from "./upload.mount";
 
 /** Đọc nội dung tệp đính kèm của hub theo id, đúng công ty; không có / đã xoá / công ty khác ⇒ null. */
-export type AttachmentBytes = (tenantId: string, id: string) => Promise<StepFile | null>;
+export type AttachmentBytes = (
+  tenantId: string,
+  runId: string,
+  id: string,
+) => Promise<StepFile | null>;
 
 export type CreateFromStepMountDeps = {
   packTools?: { register(t: PackToolDef): void } | undefined;
@@ -70,16 +74,14 @@ export function mountCreateFromStep(
       : OFF);
   const tool = createFromStepTool({
     upload,
-    readFile: async (tenantId, id) => (bytes ? bytes(tenantId, id) : OFF()),
+    readFile: async (tenantId, runId, id) => (bytes ? bytes(tenantId, runId, id) : OFF()),
     timeZoneOf,
     link: {
-      recordOf: async (tenantId, runId) =>
-        (await d.packRuns?.port?.recordOf?.(tenantId, runId, "contracts")) ?? null,
-      attach: async (tenantId, runId, contractId) =>
-        (await d.packRuns?.port?.attachRecord?.(tenantId, runId, {
-          pack: "contracts",
-          record_id: contractId,
-        })) ?? false,
+      once: async (tenantId, runId, create) => {
+        const once = d.packRuns?.port?.linkOnce;
+        if (!once) return OFF();
+        return once(tenantId, runId, "contracts", create);
+      },
     },
   });
   d.packTools?.register(tool);

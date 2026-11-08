@@ -239,8 +239,13 @@ export type PackRunsPort = {
   ): Promise<number>;
   /** cr125-contract-from-step · bản ghi gói `pack` đã gắn vào lượt `runId` của `tenantId` (scope system, lọc tenant); chưa gắn ⇒ null. */
   recordOf?(tenantId: string, runId: string, pack: string): Promise<string | null>;
-  /** cr125-contract-from-step · gắn bản ghi gói vào lượt ĐANG CHẠY chưa có bản ghi (bất biến: lượt đã gắn không đổi). true = đã gắn. */
-  attachRecord?(tenantId: string, runId: string, ref: PackRunRef): Promise<boolean>;
+  /** cr125-contract-from-step · KHOÁ hàng lượt rồi: đã gắn bản ghi `pack` ⇒ trả bản đó; chưa ⇒ `create()` (giữ khoá) rồi gắn. Hai lời gọi đồng thời ⇒ một bản ghi. */
+  linkOnce?(
+    tenantId: string,
+    runId: string,
+    pack: string,
+    create: () => Promise<string>,
+  ): Promise<{ record_id: string; created: boolean }>;
 };
 
 /** Cầu nối dựng ở `app.ts`, engine gắn khi mount (khuôn `ResolveBridge`). */

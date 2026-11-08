@@ -635,6 +635,7 @@
               "CONTRACT_STEP_FILE_MISSING": "Chưa có file hợp đồng ở bước Soạn thảo — người soạn đính kèm file ở bước Soạn thảo, rồi bấm Thử lại",
               "CONTRACT_STEP_UPLOAD": "file hợp đồng không dùng được (loại file, số trang hoặc hạn mức tải lên trong ngày) — đính kèm lại file khác ở bước Soạn thảo rồi bấm Thử lại",
               "CONTRACT_STEP_STORAGE_OFF": "kho file của hệ thống chưa sẵn sàng để tạo hợp đồng — báo quản trị nền tảng, rồi bấm Thử lại",
+              "ESIGN_CONTRACT_NOT_IN_RUN": "hợp đồng này không thuộc lượt đang chạy nên không được gửi ký — báo quản trị kiểm tra quy trình",
               "CONTRACT_STEP_NO_RUN": "bước Tạo hợp đồng chỉ chạy trong một quy trình — báo quản trị",
               "TOOL_OFF": "tính năng của bước tự động đang tắt cho công ty — quản trị bật lại rồi bấm Thử lại",
               "NO_REAL_ACTION": "bước tự động có tác động thật chưa được cấp phép — quản trị bật \"thực hiện thật\" cho bước này trong quy trình",

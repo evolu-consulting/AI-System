@@ -22,12 +22,16 @@ export type StepFile = { name: string; bytes: Uint8Array };
 
 export type CreateFromStepDeps = {
   upload: UploadContract;
-  readFile: (tenantId: string, fileId: string) => Promise<StepFile | null>;
+  /** Chỉ tệp ĐÃ liên kết với lượt `runId` (hub.process_run_files) và đúng công ty; khác ⇒ null. */
+  readFile: (tenantId: string, runId: string, fileId: string) => Promise<StepFile | null>;
   timeZoneOf: (tenantId: string) => Promise<string>;
-  /** Cầu engine: HĐ đã gắn vào lượt (nếu có) + gắn HĐ vừa tạo vào lượt (chỉ khi lượt chưa gắn bản ghi nào). */
+  /** Cầu engine: khoá hàng lượt rồi «đã gắn HĐ ⇒ trả HĐ đó, chưa ⇒ tạo + gắn» (hai lời gọi đồng thời chỉ tạo một HĐ). */
   link: {
-    recordOf(tenantId: string, runId: string): Promise<string | null>;
-    attach(tenantId: string, runId: string, contractId: string): Promise<boolean>;
+    once(
+      tenantId: string,
+      runId: string,
+      create: () => Promise<string>,
+    ): Promise<{ record_id: string; created: boolean }>;
   };
 };
 
@@ -56,34 +60,35 @@ async function run(d: CreateFromStepDeps, ctx: PackToolCtx, args: Record<string,
   if (!runId) throw new Error(CREATE_FROM_STEP_NO_RUN);
   const plan = planCreateFromStep(args);
   if (!plan.ok) throw new Error(plan.code);
-  const existing = await d.link.recordOf(ctx.tenantId, runId);
-  if (existing) return { status: "exists", contract_id: existing };
-  const file = await d.readFile(ctx.tenantId, plan.plan.fileId);
-  if (!file) throw new Error(CREATE_FROM_STEP_FILE_MISSING);
-  const { title, counterparty, amount } = plan.plan;
-  // Đối tác vào bên bán (quy trình mua hàng); giá trị vào `total_value` — cùng luật trường với HĐ nhập tay.
-  const fields = manualFields({
-    direction: "purchase",
-    title,
-    partner_name: counterparty ?? "",
-    total_value: amount,
-    items: [],
-  });
-  const made = await d
-    .upload({
-      who: { tenantId: ctx.tenantId, userId: ctx.userId },
-      timeZone: await d.timeZoneOf(ctx.tenantId),
-      bytes: file.bytes,
-      name: file.name,
+  const { fileId, title, counterparty, amount } = plan.plan;
+  const out = await d.link.once(ctx.tenantId, runId, async () => {
+    const file = await d.readFile(ctx.tenantId, runId, fileId);
+    if (!file) throw new Error(CREATE_FROM_STEP_FILE_MISSING);
+    // Đối tác vào bên bán (quy trình mua hàng); giá trị vào `total_value` — cùng luật trường với HĐ nhập tay.
+    const fields = manualFields({
+      direction: "purchase",
       title,
-      kind: "contract",
-      parentId: null,
-      prefill: { fields },
-    })
-    .catch((e: unknown) => {
-      if (e instanceof UploadError) throw new Error(`${CREATE_FROM_STEP_UPLOAD_FAILED}:${e.code}`);
-      throw e;
+      partner_name: counterparty ?? "",
+      total_value: amount,
+      items: [],
     });
-  await d.link.attach(ctx.tenantId, runId, made.id);
-  return { status: "created", contract_id: made.id };
+    const made = await d
+      .upload({
+        who: { tenantId: ctx.tenantId, userId: ctx.userId },
+        timeZone: await d.timeZoneOf(ctx.tenantId),
+        bytes: file.bytes,
+        name: file.name,
+        title,
+        kind: "contract",
+        parentId: null,
+        prefill: { fields },
+      })
+      .catch((e: unknown) => {
+        if (e instanceof UploadError)
+          throw new Error(`${CREATE_FROM_STEP_UPLOAD_FAILED}:${e.code}`);
+        throw e;
+      });
+    return made.id;
+  });
+  return { status: out.created ? "created" : "exists", contract_id: out.record_id };
 }

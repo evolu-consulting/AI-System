@@ -21,4 +21,5 @@ export { agentIdOf, runsAsAgent } from "./nodes/registry";
 export type { CredentialJobShape } from "./runs/apply.rules";
 export { credentialJobAllows, credentialUsername } from "./runs/apply.rules";
 export { reportMatchesJob } from "./runs/autofix.rules";
+export { packRecordPort } from "./runs/pack-run-record"; // cr125-contract-from-step
 export { normSection, sectionMap } from "./runs/template.rules";

@@ -48,6 +48,8 @@ export type IntakeToolDeps = {
   ) => Promise<void>;
   /** CR-122 · E5 · mục người ký công ty của node (user/Group) ⇒ danh sách user (đã kiểm thuộc công ty); lỗi ⇒ ném. Vắng ⇒ node không dùng được `company_signers`. */
   nodeSigners?: (tenantId: string, entries: readonly EsignNodeSigner[]) => Promise<string[]>;
+  /** Bản ghi hợp đồng đã gắn vào lượt chạy `runId` (cầu engine); cho phép Ký số chỉ ký đúng HĐ của lượt. */
+  recordOfRun?: (tenantId: string, runId: string) => Promise<string | null>;
   /** Đối tác ký hợp lệ theo schema người ký đối tác; sai ⇒ null. */
   parsePartner: (name: string, email: string) => { name: string; email: string } | null;
 };
@@ -116,6 +118,13 @@ async function companyUsers(
   if (users.length === 0) throw new Error("ESIGN_NODE_NO_SIGNER");
   return users;
 }
+/** `recordOfRun` có (máy chủ thật) ⇒ bắt buộc có lượt và HĐ là bản ghi của lượt, nếu không `ESIGN_CONTRACT_NOT_IN_RUN`. Vắng (test dựng tool trực tiếp) ⇒ false. */
+async function ownsContract(d: IntakeToolDeps, ctx: PackToolCtx, id: string): Promise<boolean> {
+  if (!d.recordOfRun) return false;
+  const rec = ctx.processRunId ? await d.recordOfRun(ctx.tenantId, ctx.processRunId) : null;
+  if (rec?.toLowerCase() !== id.toLowerCase()) throw new Error("ESIGN_CONTRACT_NOT_IN_RUN");
+  return true;
+}
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function contractIdOf(args: PackToolArgs): string {
@@ -157,8 +166,10 @@ function rawIntakeTools(d: IntakeToolDeps): PackToolDef[] {
         if (!node.ok) throw new Error(`ESIGN_NODE_CONFIG_INVALID:${node.issues.join(",")}`);
         const cfg = node.config;
         // CR-122 · flow mới: HĐ chỉ xác nhận ở "Kết thúc · Đã duyệt" (sau Ký số) ⇒ khoá ở đây để ký đúng bản đã duyệt.
+        // cr125-contract-from-step · chỉ ký HĐ là bản ghi của CHÍNH lượt này (lượt theo sự kiện HĐ hoặc HĐ do «Tạo hợp đồng từ hồ sơ» gắn).
+        const viaRun = await ownsContract(d, ctx, id);
         const c = await d.uow.tenant(who(ctx), async (r) => {
-          await r.esign.lockForSign(id, ctx.userId);
+          await r.esign.lockForSign(id, ctx.userId, viaRun);
           return r.esign.contract(id);
         });
         if (!c) throw new Error("CONTRACT_NOT_FOUND");

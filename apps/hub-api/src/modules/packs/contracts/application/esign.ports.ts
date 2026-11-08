@@ -170,7 +170,8 @@ export type ESignRepo = {
    * CR-122 · bước Ký số của flow: khoá HĐ (nội dung đóng băng khi ký) — chỉ HĐ đang trong lượt duyệt (`needs_review` + `run_id`),
    * chưa khoá. Đã khoá ⇒ không đổi (chạy lại vô hại). Xác nhận (status active) vẫn ở "Kết thúc · Đã duyệt".
    */
-  lockForSign(id: string, by: string): Promise<void>;
+  /** Khoá HĐ `needs_review` để ký: chỉ khi HĐ có lượt duyệt của gói (`run_id`) HOẶC `viaRun` (HĐ chính là bản ghi của lượt chạy gọi — hub kiểm). */
+  lockForSign(id: string, by: string, viaRun?: boolean): Promise<void>;
   latest(contractId: string): Promise<EnvelopeRow | null>;
   byEnvelope(envelopeId: string): Promise<EnvelopeRow | null>;
   /**

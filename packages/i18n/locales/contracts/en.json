@@ -634,6 +634,7 @@
               "CONTRACT_STEP_FILE_MISSING": "there is no contract file at the Drafting step — the drafter attaches a file at the Drafting step, then press Retry",
               "CONTRACT_STEP_UPLOAD": "the contract file cannot be used (file type, page count or the daily upload limit) — attach a different file at the Drafting step, then press Retry",
               "CONTRACT_STEP_STORAGE_OFF": "the file storage is not ready to create the contract — tell the platform admin, then press Retry",
+              "ESIGN_CONTRACT_NOT_IN_RUN": "this contract does not belong to the running flow, so it cannot be sent for signing — tell the admin to check the flow",
               "CONTRACT_STEP_NO_RUN": "the Create contract step only runs inside a flow — tell the admin",
               "CONTRACT_NOT_FOUND": "the contract for this step was not found — tell an admin",
               "TOOL_OFF": "the feature behind this automatic step is turned off for the company — an admin turns it back on, then press Retry",
