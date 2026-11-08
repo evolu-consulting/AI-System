@@ -71,6 +71,10 @@ test("Menu: badge số cho Duyệt bài / Yêu cầu tham gia / Chờ tôi duy�
   await page.route("**/pack/contracts/my-work", (r) =>
     r.fulfill({ json: { followups: [], approvals: [] } }),
   );
+  // CR-126 · hộp việc đọc thêm `GET /me/review-tasks` (bước yêu cầu/quy trình): rỗng
+  await page.route("**/me/review-tasks*", (r) =>
+    r.fulfill({ json: { items: [], open_count: 0, next_cursor: null } }),
+  );
   await page.goto("/community");
   await page.getByLabel("Chọn nhân vật").selectOption("an");
   const side = page.getByTestId("shell-sidebar");

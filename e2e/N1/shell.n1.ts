@@ -253,11 +253,11 @@ test.describe("PK-FR-10 · shell mobile (390×844)", () => {
     await page.goto("/contracts/list");
     const bottom = page.getByRole("navigation", { name: "Điều hướng", exact: true });
     await expect(bottom).toBeVisible();
-    await expect(bottom.getByRole("link")).toHaveCount(5);
+    await expect(bottom.getByRole("link")).toHaveCount(4);
+    // CR-126 · «Yêu cầu» là mục `more` (không chiếm cột); «Việc của tôi» là cột riêng; Hợp đồng (primary) đứng đầu
     await expect(bottom.getByRole("link")).toHaveText([
-      "Tổng quan",
       "Hợp đồng & giao dịch",
-      "Yêu cầu",
+      "Tổng quan",
       "Đối tác",
       "Việc của tôi",
     ]);
