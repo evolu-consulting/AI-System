@@ -143,6 +143,8 @@ export const DECISION_REASONS = [
   "facts_changed",
   // CR-122 · P18 · node Nếu cần dữ kiện còn trống (vd chưa có Giá trị HĐ) ⇒ không rẽ, chờ điền rồi Thử lại.
   "missing_fact",
+  // cr125-fix-escalate-kick · kick ngay sau khi tạo lượt lỗi (mọi stage còn `pending`) ⇒ "không khởi động được — <mã>".
+  "start_failed",
 ] as const;
 export const DECISION_OPTIONS = ["add_attempt", "use_current", "cancel"] as const;
 export const NOTICE_KINDS = [

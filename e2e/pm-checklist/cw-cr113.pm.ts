@@ -74,9 +74,8 @@ test("CR-113 · 3 · HĐ Toàn quyền duyệt thay: bước 1 có huy hiệu 'D
   await expect(step(page, 1)).toHaveAttribute("data-status", "open");
 });
 
-// Khoảng trống sản phẩm (CR-125): flow theo sự kiện "Duyệt 2 cấp" không có hạn/chuyển cấp ở bước 1 (khe cũ có mặc định về Toàn quyền) ⇒ HĐ mẫu
-// không bao giờ "Quá hạn". Đặt `after.escalate` trong def flow thì lượt không mở được bước 1 (kick lỗi, mọi stage `pending`). Xem tasks.md.
-test.fixme("CR-113 · 5 · HĐ quá hạn: 'Quá hạn'; sau một lượt nhắc 'Đã chuyển cho …'; julian.bui quyết không còn là duyệt thay", async ({
+// cr125-fix-escalate-kick: mẫu "Duyệt 2 cấp" có hạn 72 h + chuyển cấp về Toàn quyền (`contracts-owner`) như khe cũ.
+test("CR-113 · 5 · HĐ quá hạn: 'Quá hạn'; sau một lượt nhắc 'Đã chuyển cho …'; julian.bui quyết không còn là duyệt thay", async ({
   page,
   request,
 }) => {

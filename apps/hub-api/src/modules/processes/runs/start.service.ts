@@ -32,6 +32,7 @@ import type { ProcessDeps } from "../core/ports";
 import { enqueueThread } from "../core/thread";
 import { canRun } from "../domain/runs/run-access.rules";
 import { attachFlowEvent, type FlowEventAttach } from "./flow-event-attach";
+import { kickOrFlag } from "./kick-failure";
 import { runDefIdsFor } from "./run-def-filter";
 import { labelOf, runRecordLabels } from "./run-record-labels";
 import * as repo from "./runs.repo";
@@ -385,11 +386,7 @@ export class StartService {
 
   async #afterCommit(runId: string | null, isRoom: boolean): Promise<void> {
     if (!runId) return;
-    try {
-      await this.d.launcher.kick(runId);
-    } catch {
-      this.d.log.warn("process-kick-failed", { run_id: runId });
-    }
+    await kickOrFlag(this.d, runId); // cr125-fix-escalate-kick · lỗi ⇒ log có mã + "không khởi động được"
     if (isRoom)
       try {
         await this.d.postThread(runId);

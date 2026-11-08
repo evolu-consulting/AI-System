@@ -63,6 +63,8 @@ const REASON: Record<DecisionReason, { vi: string; en: string }> = {
     en: "record changed after branching",
   },
   missing_fact: { vi: "thiếu dữ liệu để rẽ nhánh", en: "data needed for the branch is missing" },
+  // cr125-fix-escalate-kick · kick ngay sau khi tạo lượt lỗi.
+  start_failed: { vi: "không khởi động được bước đầu", en: "the first step could not start" },
 };
 
 const t = (l: ThreadLocale, vi: string, en: string): string => (l === "vi" ? vi : en);

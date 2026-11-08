@@ -194,5 +194,7 @@
   "missing_fact": "Thiếu dữ liệu để rẽ nhánh.",
   "missing_fact_hint": "Điều kiện của bước Nếu cần một trường còn trống. Điền vào bản ghi rồi chọn Thử lại để rẽ theo giá trị mới, hoặc huỷ.",
   "facts_changed": "Dữ liệu bản ghi đã đổi sau khi rẽ nhánh.",
-  "facts_changed_hint": "Giá trị lúc rẽ khác giá trị hiện tại nên kết quả có thể sai. Chạy lại từ bước Nếu để rẽ theo giá trị mới."
+  "facts_changed_hint": "Giá trị lúc rẽ khác giá trị hiện tại nên kết quả có thể sai. Chạy lại từ bước Nếu để rẽ theo giá trị mới.",
+  "start_failed": "Không khởi động được bước đầu.",
+  "start_failed_hint": "Lượt đã tạo nhưng bước đầu không mở được (thường do cấu hình bước, vd nhóm chuyển cấp). Sửa quy trình rồi chọn Thử lại, hoặc huỷ."
 }

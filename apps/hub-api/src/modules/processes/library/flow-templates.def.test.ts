@@ -105,6 +105,17 @@ describe("CR-122 B · flow mẫu Thư viện", () => {
     expect(d.stages[3]?.executor).toMatchObject({ kind: "tool", tool_key: "contracts-esign-send" });
   });
 
+  it("cr125-fix-escalate-kick · Duyệt 2 cấp: mọi bước Duyệt có hạn 72 h, quá hạn chuyển cấp về contracts-owner (như đường khe)", () => {
+    const d = flowDefOf(FLOW_TEMPLATES[0] as (typeof FLOW_TEMPLATES)[number]);
+    const esc = d.stages
+      .filter((s) => (s.executor as { kind: string }).kind === "approve")
+      .map((s) => (s.after as { escalate?: unknown }).escalate);
+    expect(esc).toEqual([
+      { after_h: 72, group_key: "contracts-owner" },
+      { after_h: 72, group_key: "contracts-owner" },
+    ]);
+  });
+
   it("flowEdgeIssues = 0", () => {
     for (const t of FLOW_TEMPLATES) expect(flowEdgeIssues(flowDefOf(t) as never, [])).toEqual([]);
   });

@@ -47,7 +47,8 @@ export type DecisionReason =
   | "timer_invalid"
   | "tool_failed" // P-d2
   | "facts_changed" // CR-122 E2b · dữ kiện đổi sau khi Nếu rẽ
-  | "missing_fact"; // CR-122 P18 · Nếu cần dữ kiện còn trống ⇒ không rẽ
+  | "missing_fact" // CR-122 P18 · Nếu cần dữ kiện còn trống ⇒ không rẽ
+  | "start_failed"; // cr125-fix-escalate-kick · kick sau khi tạo lượt lỗi
 export type TeamRunStatus =
   | "running"
   | "waiting_answer"

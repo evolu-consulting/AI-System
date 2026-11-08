@@ -3,6 +3,8 @@
 // (`group_key`) — công ty sao mẫu ra thì E1b đổi mã → id Group của công ty lúc chạy. Từ chối ⇒ Kết thúc · Từ chối, Trả lại ⇒ Kết thúc ·
 // Trả lại (HĐ về Nháp). KHÔNG chèn node Ghi giá trị: bước dùng đầu vào `contract_id` của HĐ (lát A nối dữ liệu hồ sơ cho mọi bước).
 import type { ProcessDefInput } from "@ai/contracts/hub-admin";
+import { APPROVAL_FLOW_DUE_DEFAULT_H } from "@ai/contracts/pack-contracts";
+import { packGroupKey } from "@ai/contracts/packs";
 import { normalizeStage } from "../nodes/registry";
 
 type DefStage = ProcessDefInput["stages"][number];
@@ -150,12 +152,23 @@ const ifFact = (
 export const norm = (xs: Stage[]): DefStage[] =>
   xs.map((s) => normalizeStage(structuredClone(s) as unknown as DefStage));
 
+/** cr125-fix-escalate-kick · CR-113 parity với đường khe: bước Duyệt có hạn mặc định (`APPROVAL_FLOW_DUE_DEFAULT_H`) và quá hạn ⇒ chuyển
+ *  cấp về Group Toàn quyền của app (`<app>-owner`, theo mã — E1b đổi mã → id công ty lúc mở lượt). */
+export const FLOW_TEMPLATE_ESCALATE = {
+  after_h: APPROVAL_FLOW_DUE_DEFAULT_H,
+  group_key: packGroupKey(FLOW_TEMPLATE_APP, "owner"),
+};
+const withDue = (s: Stage): Stage => ({
+  ...s,
+  after: { ...(s.after as Stage), escalate: { ...FLOW_TEMPLATE_ESCALATE } },
+});
+
 /** 1 · Trưởng phòng duyệt → Giám đốc duyệt → Ký số → Thông báo người tạo → Kết thúc · Đã duyệt. */
 const duyet2Cap = (): Stage[] => {
   const to = { reject: 6, ret: 7 };
   return [
-    approve("truong-phong", "Trưởng phòng duyệt", 0, "truong-phong", to),
-    approve("giam-doc", "Giám đốc duyệt", 1, "giam-doc", to),
+    withDue(approve("truong-phong", "Trưởng phòng duyệt", 0, "truong-phong", to)),
+    withDue(approve("giam-doc", "Giám đốc duyệt", 1, "giam-doc", to)),
     esignSend(2),
     esignWait(3, 6),
     notifyStarter(4),

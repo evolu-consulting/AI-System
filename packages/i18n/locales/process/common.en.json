@@ -194,5 +194,7 @@
   "missing_fact": "Data needed for the branch is missing.",
   "missing_fact_hint": "The If step's condition needs a field that is empty. Fill it in on the record, then choose Retry to branch on the new value, or cancel.",
   "facts_changed": "The record changed after the branch was taken.",
-  "facts_changed_hint": "The value at the branch differs from the current value, so the result may be wrong. Rerun from the If step to branch on the new value."
+  "facts_changed_hint": "The value at the branch differs from the current value, so the result may be wrong. Rerun from the If step to branch on the new value.",
+  "start_failed": "The first step could not start.",
+  "start_failed_hint": "The run was created but its first step could not open (usually a step setting, e.g. the escalation group). Fix the flow, then choose Retry, or cancel."
 }
