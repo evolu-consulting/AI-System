@@ -12,6 +12,7 @@ export type StartFlowRow = {
   enabled: boolean;
   key: string;
   name: string;
+  description: string;
   def_tenant_id: string | null;
   first_stage: unknown;
   nodes: string[] | null;
@@ -27,7 +28,7 @@ export async function startFlows(
   key: string | null,
 ): Promise<StartFlowRow[]> {
   return tx.execute<StartFlowRow>(sql`select cf.id as company_flow_id, cf.flow_id, cf.position, cf.enabled,
-      d.key, coalesce(r.name, d.name) as name, d.tenant_id as def_tenant_id, st.stages -> 0 as first_stage,
+      d.key, coalesce(r.name, d.name) as name, d.description, d.tenant_id as def_tenant_id, st.stages -> 0 as first_stage,
       (select jsonb_agg(distinct s ->> 'node') from jsonb_array_elements(st.stages) s where s ? 'node') as nodes
     from hub.company_flows cf
     join hub.process_defs d on d.id = cf.flow_id and d.deleted_at is null

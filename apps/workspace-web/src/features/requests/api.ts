@@ -4,6 +4,7 @@
 import type { ReviewTaskListResponse } from "@ai/contracts/chat";
 import { type Attachment, FILENAME_HEADER } from "@ai/contracts/chat";
 import type {
+  MyRequestsResponse,
   StartableResponse,
   StartProcessRequest,
   StartProcessResponse,
@@ -14,12 +15,15 @@ import { api } from "@ai/web-kit/http";
 export const requestKeys = {
   startable: ["requests", "startable"] as const,
   one: (id: string) => ["requests", "one", id] as const,
+  mine: ["requests", "mine"] as const,
   tasks: ["requests", "tasks"] as const,
   org: ["requests", "org"] as const,
 };
 
 export const fetchStartable = (signal?: AbortSignal) =>
   api<StartableResponse>("/processes/startable", { signal });
+export const fetchMyRequests = (signal?: AbortSignal) =>
+  api<MyRequestsResponse>("/processes/requests/mine", { signal });
 export const startRequest = (body: StartProcessRequest) =>
   api<StartProcessResponse>("/processes/start", { method: "POST", body });
 export const fetchRequest = (id: string, signal?: AbortSignal) =>

@@ -10,12 +10,15 @@ import { processError } from "../core/errors";
 import type { ProcessDeps } from "../core/ports";
 import { ManualRequestService } from "./manual-request.service";
 import { ManualStartService } from "./manual-start.service";
+import { MyRequestsService } from "./my-requests.service";
 
 export function manualStartRoutes(d: ProcessDeps): Hono<AuthVars> {
   const svc = new ManualStartService(d);
   const req = new ManualRequestService(d);
+  const mine = new MyRequestsService(d);
   const r = new Hono<AuthVars>();
   r.get("/processes/startable", async (c) => c.json({ items: await svc.startable(c.var.user) }));
+  r.get("/processes/requests/mine", async (c) => c.json(await mine.list(c.var.user))); // trước `:run_id`
   r.get("/processes/requests/:run_id", async (c) => {
     const id = c.req.param("run_id");
     if (!UuidSchema.safeParse(id).success)

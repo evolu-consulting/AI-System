@@ -832,7 +832,15 @@
       "empty": "No request types available to you",
       "emptyBody": "The company has not switched on a form-started process, or you are not in an allowed group. Ask your company admin to check Company › Processes.",
       "open": "Create",
-      "fields": "{{n}} fields",
+      "mineTitle": "Sent by me",
+      "mineEmpty": "You have not sent any request yet.",
+      "mineWaitingFor": "Waiting for {{who}}",
+      "mine": {
+        "waiting": "Waiting for approval",
+        "done": "Completed",
+        "returned": "Returned",
+        "rejected": "Rejected"
+      },
       "loadError": "Could not load the list. Try again later.",
       "newTitle": "Form: {{name}}",
       "back": "Back to the list",

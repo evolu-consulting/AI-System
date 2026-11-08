@@ -44,9 +44,24 @@ export type StartableFlow = {
   flow_key: string;
   name: string;
   company_flow_id: string;
+  /** Mô tả quy trình (rỗng ⇒ trang không hiện dòng mô tả). */
+  description: string;
   form: Pick<StartFormConfig, "fields" | "title_template">;
 };
 export type StartableResponse = { items: StartableFlow[] };
+
+/** CR-126 · `GET /processes/requests/mine`: nhóm trạng thái một chữ của yêu cầu mình đã gửi. */
+export const MY_REQUEST_WORDS = ["waiting", "done", "returned", "rejected"] as const;
+export type MyRequestWord = (typeof MY_REQUEST_WORDS)[number];
+export type MyRequestItem = {
+  run_id: string;
+  title: string;
+  created_at: string;
+  word: MyRequestWord;
+  /** Tên người/nhóm đang chờ (chỉ khi `word = waiting`); null ⇒ chưa rõ. */
+  waiting_for: string | null;
+};
+export type MyRequestsResponse = { items: MyRequestItem[] };
 
 /** Đọc lại cấu hình từ jsonb stage (bản lưu cũ/hỏng ⇒ null: flow không bắt đầu bằng phiếu được). */
 export function startFormOf(stage: unknown): StartFormConfig | null {
