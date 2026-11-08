@@ -237,6 +237,10 @@ export type PackRunsPort = {
     /** CR-125 m9 · dữ liệu kèm (khoá snake_case, giá trị vô hướng) ⇒ đầu ra của bước chờ khi sự kiện này thả nó (cùng tx). */
     data?: Readonly<Record<string, string | number>>,
   ): Promise<number>;
+  /** cr125-contract-from-step · bản ghi gói `pack` đã gắn vào lượt `runId` của `tenantId` (scope system, lọc tenant); chưa gắn ⇒ null. */
+  recordOf?(tenantId: string, runId: string, pack: string): Promise<string | null>;
+  /** cr125-contract-from-step · gắn bản ghi gói vào lượt ĐANG CHẠY chưa có bản ghi (bất biến: lượt đã gắn không đổi). true = đã gắn. */
+  attachRecord?(tenantId: string, runId: string, ref: PackRunRef): Promise<boolean>;
 };
 
 /** Cầu nối dựng ở `app.ts`, engine gắn khi mount (khuôn `ResolveBridge`). */

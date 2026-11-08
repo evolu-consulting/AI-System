@@ -52,6 +52,7 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
       "core.subprocess",
     ]);
     expect(APP_MANIFESTS.contracts?.nodes.map((n) => n.key)).toEqual([
+      "contracts.create-from-step",
       "contracts.esign",
       "contracts.partner-send",
     ]);
@@ -72,6 +73,10 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
     const b = bound({
       nodes: new Map([
         [
+          "contracts.create-from-step",
+          { tools: ["contracts-create-from-step"], outputs: ["contract_id"] },
+        ],
+        [
           "contracts.esign",
           {
             tools: ["contracts-esign-send"],
@@ -86,7 +91,11 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
         ["core.bell", { tools: [], outputs: ["sent_to"] }],
         ["community.show-post", { tools: [] }],
       ]),
-      tools: new Set(["contracts-esign-send", "contracts-partner-send"]),
+      tools: new Set([
+        "contracts-create-from-step",
+        "contracts-esign-send",
+        "contracts-partner-send",
+      ]),
     });
     expect(moduleIssues(MODULES, b)).toEqual([]);
   });

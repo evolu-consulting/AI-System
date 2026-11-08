@@ -4,7 +4,7 @@
 
 import type { DocxConverter, PackWho } from "../../kit/public";
 import { orgForTenant } from "../../kit/public";
-import { fillFields } from "../domain/fields.rules";
+import { type ContractFields, fillFields } from "../domain/fields.rules";
 import { nextDayStart } from "../domain/quota-reset.rules";
 import { plainText } from "../domain/text-formats.rules";
 import {
@@ -76,6 +76,9 @@ export type UploadContractInput = {
   supersedes?: string;
   /** CR-101 DOC-model: loại chứng từ + HĐ NT cha (vắng ⇒ HĐ kinh tế đứng riêng). */
   doc?: UploadDoc;
+  /** CR-125 · cr125-contract-from-step · HĐ tạo từ bước quy trình: trường điền sẵn (từ phiếu) ⇒ ghi thẳng `needs_review`, không mở
+   *  lượt duyệt, không xếp AI trích (người dùng đã nhập). Cùng đường ghi tệp + HĐ + quota với tải lên thường. */
+  prefill?: { fields: ContractFields };
 };
 export type UploadContractResult = {
   id: string;
@@ -140,7 +143,7 @@ export function createUploadContract(d: UploadContractDeps): UploadContract {
         text,
         org,
         ...up,
-        approvalId: d.starter.opensApproval && text.ok ? d.newId() : null,
+        approvalId: d.starter.opensApproval && text.ok && !i.prefill ? d.newId() : null,
       });
     } catch (e) {
       await d.counter.refund(i.who.tenantId, days).catch(() => undefined);
@@ -148,7 +151,7 @@ export function createUploadContract(d: UploadContractDeps): UploadContract {
       throw e;
     }
     const { approvalId, ...out } = row;
-    await startExtraction(d, i.who, row.id, approvalId);
+    if (!i.prefill) await startExtraction(d, i.who, row.id, approvalId);
     return out;
   };
 }
@@ -196,12 +199,13 @@ function uploadedRow(
     kind: i.kind,
     parentId: i.parentId,
     title: i.title,
-    status: s.text.ok ? "extracting" : "extract_failed",
-    error: s.text.ok ? null : s.type === "docx" ? "DOCX_UNREADABLE" : "TEXT_UNREADABLE",
-    fields: fillFields({}),
+    status: i.prefill ? "needs_review" : s.text.ok ? "extracting" : "extract_failed",
+    error:
+      i.prefill || s.text.ok ? null : s.type === "docx" ? "DOCX_UNREADABLE" : "TEXT_UNREADABLE",
+    fields: i.prefill?.fields ?? fillFields({}),
     sourceText: s.text.ok ? s.text.markdown : null,
     userId: i.who.userId,
-    approvalId: s.text.ok ? s.approvalId : null,
+    approvalId: s.text.ok && !i.prefill ? s.approvalId : null,
     ...(i.doc ? { doc: i.doc } : {}),
   };
 }
@@ -220,7 +224,7 @@ async function persist(
       : await r.upload.insert(row);
     await r.outbox.enqueue([{ entity: "contract", entity_id: out.id, op: "upsert" }]);
     await emitUploadedFlow(r, prep, out.id, s.type, i.who.userId);
-    return { ...out, approvalId: s.text.ok ? s.approvalId : null };
+    return { ...out, approvalId: s.text.ok && !i.prefill ? s.approvalId : null };
   });
 }
 /** Hạn mức tải lên/ngày (dùng chung: tải lên, nâng giao dịch thành HĐ — DOC-deals). Vượt ⇒ hoàn + `UPLOAD_QUOTA`. */

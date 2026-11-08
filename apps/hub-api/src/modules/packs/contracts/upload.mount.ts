@@ -66,14 +66,9 @@ function fileStore(client: (org: string) => PackFileboxClient): ContractFileStor
   };
 }
 
-export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
-  const uow = packTenantOnly(
-    createPackUow(d.db, KEY, (tx, tid) => ({
-      upload: uploadContractRepo(tx, tid),
-      contractFlow: contractFlowRepo(tx, tid), // CR-122 A1
-    })),
-  );
-  const q = {
+/** Bộ đếm + hạn mức tải lên/ngày (dùng chung: tải lên, nâng giao dịch, tạo HĐ từ bước quy trình). */
+function quotaDeps(d: UploadMountDeps) {
+  return {
     counter: d.redis ? redisUploadCounter(d.redis) : unavailableUploadCounter,
     limits: {
       tenant: envInt("CONTRACTS_UPLOADS_TENANT_DAY", CONTRACT_UPLOAD_TENANT_DAILY),
@@ -81,9 +76,22 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
     },
     ...(d.tenantLimitOf ? { tenantLimitOf: d.tenantLimitOf } : {}),
   };
-  const upload = createUploadContract({
+}
+
+/**
+ * Use case tải lên DUY NHẤT của gói. `flow: false` (cr125-contract-from-step) ⇒ không phát `contract.uploaded`: HĐ tạo từ bước của một
+ * quy trình đang chạy không được mở thêm một quy trình tiếp nhận khác. Mặc định như route tải lên.
+ */
+export function uploadContractFor(d: UploadMountDeps, o: { flow?: boolean } = {}) {
+  const uow = packTenantOnly(
+    createPackUow(d.db, KEY, (tx, tid) => ({
+      upload: uploadContractRepo(tx, tid),
+      contractFlow: contractFlowRepo(tx, tid), // CR-122 A1
+    })),
+  );
+  return createUploadContract({
     uow,
-    ...q,
+    ...quotaDeps(d),
     files: fileStore(d.filebox),
     docx: createDocxConverter(),
     officeText, // CR-122 p9: xlsx/pptx/odt ⇒ chữ
@@ -92,8 +100,13 @@ export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
     pdfPages: pdfPageCounter(scanLimits().maxPages), // CR-122 p9: quá trần trang ⇒ 422 FILE_TOO_MANY_PAGES
     newId: () => Bun.randomUUIDv7(),
     log: logger,
-    flow: contractFlowGate(d.db), // CR-122 A1
+    ...(o.flow === false ? {} : { flow: contractFlowGate(d.db) }), // CR-122 A1
   });
+}
+
+export function uploadModule(d: UploadMountDeps): Hono<PackGuardVars> {
+  const q = quotaDeps(d);
+  const upload = uploadContractFor(d);
   const maxBytes = contractsMaxBytes();
   // CR-101 DOC-deals · R10: nâng giao dịch thành HĐ (file ký + số), cùng kho tệp + kiểm loại tệp với tải lên.
   const promote = createPromoteContract({

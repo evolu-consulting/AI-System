@@ -40,6 +40,10 @@ const TOOL_CODES = new Set([
   "ESIGN_NODE_NO_SIGNER",
   "ESIGN_NODE_CONFIG_INVALID",
   "CONTRACT_NOT_FOUND",
+  "CONTRACT_STEP_FILE_MISSING", // cr125-contract-from-step · bước «Tạo hợp đồng từ hồ sơ»
+  "CONTRACT_STEP_UPLOAD",
+  "CONTRACT_STEP_STORAGE_OFF",
+  "CONTRACT_STEP_NO_RUN",
   "TOOL_OFF",
   "NO_REAL_ACTION",
   "INPUT_SCHEMA_INVALID",
@@ -55,6 +59,8 @@ const MISSING_ARG = "MISSING_ARG";
 /** Mã lỗi tool ⇒ khoá i18n; mã lạ ⇒ câu chung kèm mã (để báo quản trị). */
 function toolCodeText(code: string): AttentionText {
   const head = code.split(":")[0] ?? "";
+  // cr125-contract-from-step · form chưa có tệp ⇒ engine không dựng được args (`MISSING_ARG:file_id`) trước khi gọi tool ⇒ cùng câu «Chưa có file».
+  if (code === `${MISSING_ARG}:file_id`) return { key: `${BASE}.tool.CONTRACT_STEP_FILE_MISSING` };
   if (head === MISSING_ARG)
     return {
       key: `${BASE}.tool.${MISSING_ARG}`,

@@ -10,6 +10,8 @@ import type { ProcessDeps } from "../core/ports";
 import { cleanEventData, type EventData } from "../domain/timers/wait-event-data.rules";
 import { UUID } from "./pack-runs-view";
 
+export { packRecordPort } from "./pack-run-record"; // cr125-contract-from-step
+
 const PACK_KEY = /^[a-z][a-z0-9-]{0,39}$/;
 /** = `WAIT_EVENT_KEY_RE` của contract. */
 export const EVENT_KEY = /^[a-z][a-z0-9_.-]{1,63}$/;

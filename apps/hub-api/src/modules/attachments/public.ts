@@ -1,4 +1,6 @@
 // ADR-0037 · cửa công khai DUY NHẤT của module `attachments`: module khác chỉ import file này (theo tên, không `export *`). Ruột là riêng của module.
+
+export { attachmentBytesOf } from "./attachment-bytes";
 export type { AttachmentDifyDeps, DifyUploadTarget, UploadTrace } from "./attachment-dify";
 export {
   AttachmentContentMissing,

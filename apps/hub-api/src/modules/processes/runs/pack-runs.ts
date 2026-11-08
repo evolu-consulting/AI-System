@@ -43,7 +43,7 @@ import {
   stepsViewMany,
   UUID,
 } from "./pack-runs-view";
-import { signalPackEvent } from "./pack-signal";
+import { packRecordPort, signalPackEvent } from "./pack-signal";
 import { StartService } from "./start.service";
 
 const asUser = (u: PackRunCaller): AuthUser => u as AuthUser;
@@ -389,6 +389,7 @@ export function packRunsOf(d: ProcessDeps, sys?: Pick<SystemUow, "system">): Pac
     updateInputs: (r, patch) => updatePackInputs(d, r, patch), // CR-121 F-5
     signalEvent: (tenantId, ref, event, data) =>
       signalPackEvent(d, sys, { tenantId, ref, event, ...(data ? { data } : {}) }),
+    ...packRecordPort(d), // cr125-contract-from-step · recordOf / attachRecord
     retryDecision: (u, runId) => retryDecision(d, gates, u, runId),
     ...sysReads(d),
     stepsView: (u, runId) => stepsView(d, u, runId),

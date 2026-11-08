@@ -4,11 +4,15 @@
 
 import { ESignSignerSchema } from "@ai/contracts/pack-contracts";
 import type { Db, Tx } from "@ai/db";
+import type { Redis } from "ioredis";
+import type { AttachmentStorage } from "../../attachments/public";
+import type { ConfigCache } from "../../config/public";
 import type { PackAccessView, PackRunsBridge, PackToolDef, SlotSpec } from "../kit/public";
 import { createPackUow, moduleRegistry, slotRegistry } from "../kit/public";
 import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { INTAKE_TOOL_KEYS, intakeTools } from "./adapters/intake.tools";
+import { mountCreateFromStep } from "./create-from-step.mount";
 import { contractCodeLabel } from "./domain/contract-name";
 import type { CompletedHook, ESignModule } from "./esign.mount";
 import { esignBindingBase } from "./nodes/esign/binding";
@@ -84,6 +88,9 @@ export function mountIntake(
     packs?: { filebox?: { url: string; token: string } } | undefined; // q5 · PDF cho thư email
     view?: PackAccessView | undefined; // q7 · cổng tính năng cho tool gửi đối tác
     partnerMailbox?: boolean | undefined; // q7 · kênh hộp thư (HUB_PARTNER_MAILBOX)
+    redis?: Redis | undefined; // cr125-contract-from-step · hạn mức tải lên/ngày của use case tải lên
+    config?: ConfigCache | undefined; // múi giờ công ty
+    attachments?: { storage: AttachmentStorage } | undefined; // kho tệp đính kèm hub (bước Soạn thảo)
   },
   db: Db,
 ): void {
@@ -93,6 +100,7 @@ export function mountIntake(
   // CR-125 · m2 · sổ module: tool bước + node Ký số (gửi ký = `contracts-esign-send`; cổng cấu hình nối ở m4)
   for (const t of tools) moduleRegistry.bindTool(t);
   moduleRegistry.bindNode(esignBindingBase); // CR-125 · m4 · nodes/esign/binding.ts
+  mountCreateFromStep(d, db); // cr125-contract-from-step · node «Tạo hợp đồng từ hồ sơ»
   mountPartnerSend(d, db); // CR-124 · q3 · node «Gửi đối tác xác nhận» + cổng hộp thư liên công ty (bộ chuyển tắt mặc định)
   // CR-122 E3 · bắn đúng khoá theo trạng thái cuối (đã ký / từ chối / huỷ). Webhook + vòng đồng bộ trùng ⇒ `signalEvent` chỉ thả
   // stage đang chờ một lần (khoá run; lần sau stage đã xong ⇒ không còn chờ khoá đó).

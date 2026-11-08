@@ -47,7 +47,8 @@ export type UploadDoc = {
   creditLimit: number | null;
   orderTerms: string | null;
 };
-export type UploadStatus = "extracting" | "extract_failed";
+/** `needs_review` = HĐ tạo từ bước quy trình (`prefill`: trường đã có sẵn, không chạy AI trích). */
+export type UploadStatus = "extracting" | "extract_failed" | "needs_review";
 
 /** CR-097 K2 · kết quả ghi phiên bản mới (chuỗi của bản `supersedesId`). */
 export type InsertedVersion = {

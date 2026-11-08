@@ -188,7 +188,9 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
       await tx.execute(sql`update contracts.contracts c set locked_at = now(), locked_by = ${by}::uuid,
           version = c.version + 1, updated_at = now()
         where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid and c.locked_at is null
-          and c.status = 'needs_review' and c.run_id is not null`);
+          and c.status = 'needs_review'`);
+      // CR-125 · cr125-contract-from-step: bỏ `run_id is not null` — HĐ tạo từ bước quy trình («Tạo hợp đồng từ hồ sơ») chưa qua lượt
+      // duyệt của gói (không có hàng approvals) nhưng vẫn phải khoá để ký đúng bản đã soạn. Tool này chỉ chạy trong run của quy trình.
     },
     latest: async (contractId) => {
       const [r] = await tx.execute<Raw>(sql`select ${COLS} from contracts.esign_envelopes e
