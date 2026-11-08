@@ -5,8 +5,7 @@ import { type Browser, chromium, type Page } from "@playwright/test";
 // CR-125 · cr125-purchase-templates · CHẠY Phần 1–3 trên trình duyệt, mỗi vai một lần đăng nhập (một trình duyệt, tuần tự) ở Sổ Hợp Tác
 // (workspace-web): nhân viên tải «Phiếu đề xuất mua» + «Gửi duyệt» ⇒ từng nhóm mở «Chờ tôi duyệt» + thẻ hợp đồng, DUYỆT / TRẢ LẠI bằng nút
 // trên thẻ ⇒ ký số «Ký thử» bằng nút «Ký ngay» ⇒ ảnh từng vai và ảnh lượt chạy xong ở SHOTS.
-// GIỚI HẠN SẢN PHẨM (ghi ở tasks.md): thẻ Sổ Hợp Tác chưa vẽ bước «Điền thông tin» (form) — hiện như bước duyệt, không có ô nhập/đính kèm —
-// nên MỖI bước form được gửi bằng API của Hub (`POST /review-tasks/:id/form`) với đúng tài khoản của nhóm đó; mọi việc khác là UI.
+// CR-125 · cr125-form-step-card: bước «Điền thông tin» (form) cũng làm bằng UI — thẻ HĐ vẽ ô theo loại + ô tải tệp + «Gửi»; không còn gửi bằng API.
 import { PDFDocument } from "../../apps/hub-api/node_modules/pdf-lib";
 import { ADMIN_USER, DEMO_PW, ROLES, TENANT } from "./purchase-flow-data";
 import { login, platformToken } from "./purchase-flow-setup";
@@ -155,52 +154,35 @@ async function openStep(
   };
 }
 
-const sample = (f: Json): unknown =>
-  ({
-    text: "Mẫu hư cấu",
-    textarea: "Mô tả hư cấu",
-    number: 10,
-    money: 480_000_000,
-    date: "2026-11-20",
-    checkbox: true,
-  })[f.type as string];
-
-async function submitForm(ph: Phase, stepName: string, cid: string, tok: string): Promise<number> {
-  const spec = ph.steps.find((s) => s.name === stepName);
-  const values: Json = {};
-  if (spec?.kind === "form") {
-    const types: Record<string, string> = {
-      "Văn bản ngắn": "text",
-      "Văn bản dài": "textarea",
-      Số: "number",
-      "Số tiền (đồng)": "money",
-      Ngày: "date",
-    };
-    for (const f of spec.fields) {
-      const v = sample({ type: types[f.type] });
-      if (v !== undefined) values[f.label] = v;
+/** Bước form điền bằng GIAO DIỆN thẻ HĐ: ô theo loại + tải tệp (ô `file_ref`) rồi «Gửi» (không còn gửi bằng API). */
+async function fillFormUi(page: Page, stepName: string): Promise<void> {
+  const form = page.locator('[data-approval="timeline"] form[data-flow="form"]').first();
+  await form.waitFor({ timeout: 30_000 });
+  for (const f of await form.locator("[data-flow-field]").all()) {
+    const file = f.locator('input[type="file"]');
+    if (await file.count()) {
+      await file.setInputFiles({
+        name: "tep-demo.csv",
+        mimeType: "text/csv",
+        buffer: Buffer.from("hang,so_luong\nmay chu,2\n", "utf8"),
+      });
+      await f.getByTestId("file-item").waitFor({ timeout: 30_000 });
+      continue;
     }
+    const input = f.locator("input, textarea").first();
+    const mode = (await input.getAttribute("inputmode")) ?? "";
+    const type = (await input.getAttribute("type")) ?? "";
+    if (type === "checkbox") await input.check();
+    else if (mode === "numeric" || mode === "decimal") await input.fill("480000000");
+    else if (type === "date") await input.fill("2026-11-20");
+    else await input.fill("Mẫu hư cấu");
   }
-  const c = (await card(cid, tok)).json;
-  // khoá trường = mã tự sinh từ nhãn ở trình sửa; lấy đúng khoá từ định nghĩa bước của lượt chạy
-  const keys = await fieldKeys(ph, stepName);
-  const out: Json = {};
-  for (const [label, v] of Object.entries(values)) if (keys[label]) out[keys[label] as string] = v;
-  const r = await api(tok, u.hub, "POST", `/review-tasks/${c.task_id}/form`, { values: out });
-  if (r.status >= 300) log(`  form lỗi ${r.status} ${JSON.stringify(r.json).slice(0, 220)}`);
-  return r.status;
-}
-
-/** nhãn → khoá của các trường form ở bước `stepName` (đọc từ mẫu Thư viện đã dựng: khoá do trình sửa tự sinh từ nhãn). */
-async function fieldKeys(ph: Phase, stepName: string): Promise<Record<string, string>> {
-  const tok = await platformToken(u.api);
-  const list = (await api(tok, u.hub, "GET", "/process-defs?limit=200")).json.items as Json[];
-  const id = list.find((d) => d.name === ph.name)?.id;
-  const def = (await api(tok, u.hub, "GET", `/process-defs/${id}`)).json;
-  const st = (def.stages as Json[]).find((s) => s.name === stepName);
-  const map: Record<string, string> = {};
-  for (const f of (st?.executor?.fields ?? []) as Json[]) map[f.label as string] = f.key as string;
-  return map;
+  await form.getByRole("button", { name: "Gửi", exact: true }).click();
+  await page
+    .getByTestId(/^flow-step-/)
+    .filter({ hasText: stepName })
+    .and(page.locator('[data-status="passed"]'))
+    .waitFor({ timeout: 60_000 });
 }
 let TENANT_ID = "";
 
@@ -318,13 +300,12 @@ async function runPhase(b: Browser, k: number, opts: { loop?: boolean } = {}): P
     if (!user) throw new Error(`${tag}: không có vai cho nhóm ${gkey} (bước ${o.step.name})`);
     const name = String(o.step.name);
     const page = await loginAs(b, user);
-    const tok = await tokenOf(user);
     await shotInbox(page, `${tag}-${num()}-${user}-hop-viec`);
     await shotCard(page, cid, `${tag}-${num()}-${user}-the`);
     const isForm = ph.steps.find((s) => s.name === name)?.kind === "form";
     if (isForm) {
-      const st = await submitForm(ph, name, cid, tok);
-      log(`${tag}: ${user} (${gkey}) điền «${name}» bằng API → ${st}`);
+      await fillFormUi(page, name);
+      log(`${tag}: ${user} (${gkey}) điền «${name}» + tệp (UI)`);
     } else if (opts.loop && !looped && /Giám đốc duyệt ngân sách/.test(name)) {
       looped = true;
       await decide(page, cid, "return", "Ngân sách chưa đạt, làm lại bảng so sánh giá");

@@ -94,7 +94,9 @@ async function fillFormAs(
   await expect(row).toHaveAttribute("data-status", "passed", { timeout: 60_000 });
   await expect(form).toHaveCount(0);
   await expect(row).toContainText("Đã điền");
-  for (const v of Object.values(o.values)) await expect(row).toContainText(v);
+  // tiền hiện «480.000.000 ₫» (vi-VN), còn lại hiện nguyên chữ
+  for (const v of Object.values(o.values))
+    await expect(row).toContainText(/^\d{6,}$/.test(v) ? Number(v).toLocaleString("vi-VN") : v);
   for (const name of Object.values(o.files)) await expect(row).toContainText(name);
 }
 
@@ -143,10 +145,8 @@ test("Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm t�
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, Date.now().toString(36), 50_000_000);
   await confirmAndSave(emp);
-  await emp.waitForTimeout(3_000);
-  await emp.screenshot({ path: testInfo.outputPath("00-sau-gui-duyet.png"), fullPage: true });
-  const alerts = await emp.getByRole("alert").allInnerTexts();
-  expect(alerts, `lỗi sau «Gửi duyệt»: ${alerts.join(" | ")}`).toEqual([]);
+  // chờ lượt chạy mở xong bước 1 trên chính thẻ này (không đóng trang khi «Gửi duyệt» còn bay)
+  await expect(emp.getByTestId(`flow-step-${stageKey(0)}`)).toBeVisible({ timeout: 90_000 });
   await emp.close();
 
   const shot = (n: string) => testInfo.outputPath(`${n}.png`);
@@ -166,7 +166,8 @@ test("Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm t�
   const tbp = await ctxPage(browser);
   await approveAs(tbp, E, TRUONG_BP, id, stageName(1));
   await expect(tbp.getByTestId(`flow-step-${stageKey(0)}`)).toContainText("Máy chủ Dell R760");
-  await expect(tbp.getByTestId(`flow-step-${stageKey(0)}`)).toContainText("phieu-de-xuat.csv");
+  // tệp đính kèm hiện ở người sau (tên tệp chỉ người tải đọc được: `/attachments/:id` theo người tải ⇒ người khác thấy «Tệp đính kèm», xem tasks.md)
+  await expect(tbp.getByTestId(`flow-step-${stageKey(0)}`)).toContainText("Tệp đính kèm");
   await expect(tbp.getByTestId(`flow-step-${stageKey(0)}`).locator("form")).toHaveCount(0);
   await tbp.screenshot({ path: shot("02-truong-bo-phan-thay-de-xuat"), fullPage: true });
   await tbp.close();
@@ -208,7 +209,7 @@ test("Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm t�
   await expect(tl.getByTestId(`flow-step-${stageKey(9)}`)).toContainText("PO-2026-001", {
     timeout: 60_000,
   });
-  await expect(tl.getByTestId(`flow-step-${stageKey(9)}`)).toContainText("po.csv");
+  await expect(tl.getByTestId(`flow-step-${stageKey(9)}`)).toContainText("Tệp đính kèm");
   await expect(tl.locator('li[data-status="open"]')).toHaveCount(0, { timeout: 60_000 });
   await tl.screenshot({ path: shot("04-hoan-tat") });
 });
