@@ -670,10 +670,10 @@
     "companyFlows": {
       "newFlow": {
         "on": "Đang dùng quy trình mới: {record} từ giờ chạy theo quy trình đã áp dụng.",
-        "idle": "Chưa dùng quy trình mới — mở một quy trình rồi bấm Lưu và áp dụng để bắt đầu. {Record} từ giờ vẫn chạy cách cũ.",
+        "idle": "Chưa dùng quy trình mới — mở một quy trình rồi bấm Lưu và áp dụng để bắt đầu. Từ giờ {record} vẫn chạy cách cũ.",
         "none": "Chưa có quy trình nào được áp dụng cho công ty — liên hệ quản trị nền tảng để gán",
         "pause": "Tạm dừng quy trình mới",
-        "confirm": "{Record} từ giờ sẽ chạy theo cách cũ cho tới khi bạn Lưu và áp dụng lại một quy trình. {Record} đang chạy không bị ảnh hưởng.",
+        "confirm": "Từ giờ {record} sẽ chạy theo cách cũ cho tới khi bạn Lưu và áp dụng lại một quy trình. Những {record} đang chạy không bị ảnh hưởng.",
         "ok": "Tạm dừng",
         "cancel": "Huỷ"
       },

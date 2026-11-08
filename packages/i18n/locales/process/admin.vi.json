@@ -494,7 +494,7 @@
     "ttl": "Thời hạn lượt chạy (ngày)",
     "ttlHint": "Lượt chạy chưa xong quá số ngày này sẽ hết hạn. Lượt đang chạy không đổi khi bạn sửa.",
     "noExpiry": "Không hết hạn",
-    "limitsTextTtl": "{{Record}} chờ quá {{days}} ngày sẽ báo người phụ trách.",
+    "limitsTextTtl": "Khi {{record}} chờ quá {{days}} ngày, hệ thống báo người phụ trách.",
     "limitsTextNoTtl": "Không giới hạn thời gian chờ.",
     "limitsWait": "Lượt đang chờ tới ngày không tính vào 5 lượt cùng lúc.",
     "applyNote": "Áp dụng cho {{record}} phát sinh từ bây giờ; {{record}} đang chờ giữ bản cũ.",

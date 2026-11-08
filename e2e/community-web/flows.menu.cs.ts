@@ -54,15 +54,15 @@ test("quản trị community: menu + chữ trong trình sửa flow Duyệt bài 
   await page.getByRole("link", { name: "Công ty" }).first().click();
   const box = await openCompanyFlows(page);
 
-  // B4 · hộp xác nhận bật: tắt rồi bật lại ⇒ câu hỏi nói "Bài đăng", không "Hợp đồng"
-  const toggle = box.getByTestId("flow-switch-toggle");
-  if ((await toggle.getAttribute("aria-checked")) === "true") await toggle.click();
-  await toggle.click();
-  const ask = page.getByTestId("flow-switch-confirm");
-  await expect(ask).toContainText("Bài đăng của công ty này sẽ chạy theo quy trình mới");
+  // B4 · khối "quy trình mới" (c2: không còn công tắc, chỉ nút Tạm dừng): lời trạng thái + hộp xác nhận nói "bài đăng", không "hợp đồng"
+  await expect(box.getByTestId("flow-switch-status")).toContainText("bài đăng");
+  await expect(box.getByTestId("flow-switch-status")).not.toContainText(NO_CONTRACT);
+  await box.getByTestId("flow-pause").click();
+  const ask = page.getByTestId("flow-pause-confirm");
+  await expect(ask).toContainText("Từ giờ bài đăng sẽ chạy theo cách cũ");
   await expect(ask).not.toContainText(NO_CONTRACT);
   await page.screenshot({ path: testInfo.outputPath("c6-switch-on.png") });
-  await page.getByTestId("flow-switch-confirm-ok").click();
+  await ask.getByRole("button", { name: "Huỷ" }).click();
 
   // mở bản sao của flow Duyệt bài (sao chép nếu chưa có)
   if ((await box.getByRole("link", { name: /^(Mở|Sửa)/ }).count()) < 2)
@@ -92,7 +92,7 @@ test("quản trị community: menu + chữ trong trình sửa flow Duyệt bài 
   await page.keyboard.press("Escape");
 
   // B4 · thẻ Giới hạn + dòng trạng thái chân trang + panel bước: chữ community, không nhắc "Nâng cao"
-  await expect(page.getByText(/^Bài đăng chờ quá \d+ ngày/)).toBeVisible();
+  await expect(page.getByText(/Khi bài đăng chờ quá \d+ ngày/)).toBeVisible();
   const status = page.getByTestId("apply-status").first();
   await expect(status).toContainText("bài đăng");
   await expect(status).not.toContainText(NO_CONTRACT);
