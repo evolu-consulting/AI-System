@@ -1,5 +1,7 @@
 # Module nền tảng: đang dùng và đóng băng
 
+> **Phạm vi (2026-11-08):** file này chỉ còn là bảng đóng băng/mở khoá module theo CR-095…CR-118 (một số dòng cũ về `processes`/`dlc` đã lỗi thời: CR-120..125 chuyển flow sang `company_flows` + module tính năng). Kiến trúc lớp, cửa `public.ts`, cưỡng chế và khuôn module tính năng: **[architecture.md](architecture.md)** (một nguồn).
+
 CR-095 (người dùng duyệt 2026-10-19). App quản lý hợp đồng (contracts-web) là sản phẩm; Agent Hub giữ lại nhưng ở chế độ bảo trì tối thiểu.
 **Đóng băng** = không xoá mã/bảng, không sửa trừ khi lát yêu cầu; route công khai và UI tắt mặc định bằng cờ; suite test ra khỏi cổng hằng ngày.
 Bảng đã đối chiếu với mã (`apps/hub-api/src/app*.ts`, `apps/admin-api/src/app.ts`, import chéo giữa module).

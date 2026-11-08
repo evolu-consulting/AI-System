@@ -31,7 +31,7 @@ Không đổi hành vi: tsc hub-api, `check:boundaries`, `depcruise`, unit các 
 - Vòng sinh ra khi `public.ts` gom file nặng: gỡ cạnh gây vòng (giữ import sâu, vẫn trong baseline) thay vì đổi hành vi.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt CR-125 cuoi dot)
 
 Không thay đổi hành vi (lý do: refactor ranh giới module)
 

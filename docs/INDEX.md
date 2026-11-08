@@ -31,6 +31,7 @@
 | `current/sht/feature-gate-web.md` · `current/sht/home-default-app.md` | Web gộp: cờ OpenFeature; trang chủ theo `default_app` (CR-118) |
 | `current/engine/flow-runtime.md` · `current/engine/flow-web.md` | FlowRuntime của kit (contract, endpoint, khe `contracts.approval`); renderer flow + bước form phía web (CR-118) |
 | `platform/flow-model.md` · `specs/CR-122/` · `adr/0038-flow-trigger-model.md` | Mô hình flow theo sự kiện đã chốt (thay khe/luật định tuyến; CR-122, chưa code): nguồn, spec + lát, ADR |
+| `platform/architecture.md` · `current/engine/so-module-khoi-dong.md` | **Kiến trúc một nguồn** (lớp, cửa `public.ts`, cưỡng chế depcruise/check:modules, khuôn module tính năng CR-125, `module:new`); sổ module lúc khởi động + công cụ. `platform/modules.md` chỉ còn bảng đóng băng |
 | `current/web/web-hop-nhat.md` | Web hợp nhất `workspace-web`: một phiên, module lazy, `/pack/me`, đổi hướng cũ (CR-118) |
 | `specs/cr112-admin-config/README.md` | CR-112 cải tổ cấu hình ai-admin: spec master, ADM-FR-76..83, lát S1..S7 |
 | `adr/0033-app-roles-source-of-truth.md` | Vai theo app là nguồn quyền (`admin.app_roles` → Group) |

@@ -32,7 +32,7 @@ Unit domain ops (đã sửa chữ ký), int ops (round/fix/checks/overview/route
 - `roleError` đặt cạnh `extOrgError`/`tenantProfileError` trong `lib/errors.ts` (cùng mẫu khối lỗi riêng).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt CR-125 cuoi dot)
 
 Không thay đổi hành vi (lý do: Clean Architecture ops/admin-api)
 

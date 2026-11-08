@@ -45,5 +45,6 @@ Viết tắt đường dẫn: `H` = `apps/hub-api/src/modules/packs/contracts`, 
 | | [admin/cau-hinh-app.md](admin/cau-hinh-app.md) · [admin/nang-luc.md](admin/nang-luc.md) · [admin/slot-flow-review-badge.md](admin/slot-flow-review-badge.md) | CR-118: trang cấu hình app, năng lực `/pack/me`, huy hiệu khe |
 | Web gộp (CR-118) | [web/web-hop-nhat.md](web/web-hop-nhat.md) · [sht/feature-gate-web.md](sht/feature-gate-web.md) · [sht/home-default-app.md](sht/home-default-app.md) | Một web, một phiên, FeatureGate OpenFeature, home theo default_app |
 | Engine flow (CR-118) | [engine/flow-runtime.md](engine/flow-runtime.md) · [engine/flow-web.md](engine/flow-web.md) | FlowRuntime của kit, renderer + form phía web |
+| | [engine/so-module-khoi-dong.md](engine/so-module-khoi-dong.md) | Sổ module tính năng (CR-125): kiểm lúc khởi động, MOD_*, module:index/new, check:modules |
 
 Khu vực khác (Agent Hub lõi, Worker, Chat) chưa có `current/`; dùng `docs/design/**` + CODEMAP tới khi có.

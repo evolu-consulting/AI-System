@@ -32,7 +32,7 @@ tsc hub-api (0 lỗi) · unit hub-api (2429 pass; đỏ có sẵn seed.processes
 - `runsAsAgent`/`agentIdOf` cho kh nhân bản quy tắc "chỉ node agent có agentId" vào lá chung; test khớp registry chặn lệch.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt CR-125 cuoi dot)
 
 Không thay đổi hành vi (lý do: refactor ranh giới module, chỉ dời hàm/kiểu thuần và đổi specifier import)
 

@@ -5,7 +5,7 @@ Làn: nhanh (tooling/refactor). Nhánh `slice/arch-a1-depcruise`. Không chạm 
 ## Delta (so với docs/current)
 
 Không thay đổi hành vi (lý do: tooling/refactor — luật dependency-cruiser, tách file băm/kiểu, script kiểm; runtime không đổi).
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt CR-125 cuoi dot)
 
 ## Đã làm
 

@@ -22,6 +22,6 @@ unit admin-web, depcruise, build, check:bundle.
 Không.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt CR-125 cuoi dot)
 
 Không thay đổi hành vi (lý do: tách gọi API khỏi component)

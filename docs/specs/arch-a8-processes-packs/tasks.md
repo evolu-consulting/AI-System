@@ -30,7 +30,7 @@ tsc hub-api; `bun test apps/hub-api` (đỏ có sẵn: seed.processes K1 T5g, re
 
 ## Delta (so với docs/current)
 Không thay đổi hành vi (lý do: refactor import/tách file kiểu + luật dependency-cruiser; runtime không đổi).
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt CR-125 cuoi dot)
 
 ## Việc còn lại
 

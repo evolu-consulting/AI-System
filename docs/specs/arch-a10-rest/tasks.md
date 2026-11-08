@@ -35,7 +35,7 @@ tsc hub-api/admin-web/workspace-web; `bun test` hub-api + web partners/ledger/pr
 
 ## Delta (so với docs/current)
 Không thay đổi hành vi (lý do: tách file/hook/cổng kit + sửa import; SQL và hành vi runtime giữ nguyên).
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt CR-125 cuoi dot)
 
 ## Việc còn lại
 

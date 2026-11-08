@@ -35,7 +35,7 @@ tsc hub-api/admin-web/workspace-web; `bun test apps/hub-api` + partner-inbox + a
 
 ## Delta (so với docs/current)
 Không thay đổi hành vi (lý do: refactor import/tách hook/tách file + luật dependency-cruiser; runtime không đổi).
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt CR-125 cuoi dot)
 
 ## Việc còn lại
 

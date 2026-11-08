@@ -26,7 +26,7 @@ unit domain community; int community trên evotest; tsc hub-api.
 Không thêm cổng kit: vi phạm hub-modules/hub-scope chỉ nằm ở 2 file test tích hợp với engine processes ⇒ chuyển tầng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt CR-125 cuoi dot)
 
 Không thay đổi hành vi (lý do: Clean Architecture community)
 

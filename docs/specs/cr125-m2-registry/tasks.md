@@ -28,7 +28,7 @@ Không đụng admin-web, tools/scripts (m3), packs/dlc, domain community, engin
 - Perf: verify một lần lúc khởi động, O(node + sự kiện) (~10 node, ~8 sự kiện); không có SQL.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt CR-125 cuoi dot)
 
 ### ADDED engine/so-module-khoi-dong.md
 #### Yêu cầu: Kiểm module lúc khởi động

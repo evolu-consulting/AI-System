@@ -24,7 +24,7 @@ Unit `modules-tool.rules.test.ts`, `slice-rebase.test.ts`. Perf: `check:modules`
 - `module:new` cũng tạo/cập nhật `<app>/module.ts` để node vào sổ ngay.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt CR-125 cuoi dot)
 
 ### ADDED docs/current/platform/module-tooling.md
 #### Yêu cầu: Sinh sổ module từ thư mục
