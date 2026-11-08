@@ -2,6 +2,7 @@
 // stg-seed/dev-up làm) ⇒ MỌI mẫu Thư viện được gán cho công ty đều `templateReadiness` ready (tính năng, tool, nhóm đủ), ops-watch
 // (flow_flag, tenant_profile, cấu hình duyệt HĐ + danh mục feature) không cảnh báo, chạy lần hai đổi 0 hàng. Dữ liệu giả, email @demo.local.
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { parallelStageIssues } from "@ai/contracts/hub-admin";
 import { createDb, type Db } from "@ai/db";
 import { withHubScope } from "@ai/db/hub-scope";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
@@ -21,6 +22,8 @@ import {
   tenantProfileQuery,
 } from "../../../apps/hub-api/src/modules/ops/adapters/checks/tenant-profile.check";
 import type { PackToolCatalog } from "../../../apps/hub-api/src/modules/packs/kit/public";
+import { subprocessCheck } from "../../../apps/hub-api/src/modules/processes/defs/subprocess-check";
+import { PURCHASE_PARENT_ID } from "../../../apps/hub-api/src/modules/processes/library/purchase-templates";
 import { readinessOf } from "../../../apps/hub-api/src/modules/processes/library/template-readiness";
 import {
   APPROVAL_DEFAULT_FLOW_ID,
@@ -125,9 +128,9 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
   it("lần 1: tính năng, Ký thử, nhóm, mẫu Thư viện, flow mặc định, cờ flow_triggers đều có", async () => {
     const r = await seed();
     expect(r.cr125.features).toBeGreaterThan(0);
-    expect(r.cr125.companyFlows).toBe(6); // 3 flow × 2 công ty
+    expect(r.cr125.companyFlows).toBe(8); // (3 flow theo sự kiện + «Quy trình mua hàng» bắt đầu bằng phiếu) × 2 công ty
     expect(r.cr125.flowFlags).toBe(2);
-    expect(r.cr125.libraryDefs).toBe(7); // 3 mẫu duyệt HĐ + Community + 3 mẫu «Quy trình mua hàng»
+    expect(r.cr125.libraryDefs).toBe(8); // 3 mẫu duyệt HĐ + Community + 3 phần + «Quy trình mua hàng» (cha)
     const demo = ids.get("demo") as string;
     const [ps] =
       await sql`select esign_enabled, esign_default_provider from contracts.approval_settings where tenant_id = ${demo}`;
@@ -160,6 +163,7 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
         "community-duyet-bai",
         "hd-duyet-2-cap",
         "hd-nhan-thuong",
+        "quy-trinh-mua-hang",
       ]);
       expect(flows.map((f) => f.id)).toContain(APPROVAL_DEFAULT_FLOW_ID);
       expect(flows.map((f) => f.id)).toContain(RECEIVE_DEFAULT_FLOW_ID);
@@ -206,6 +210,42 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
         and not exists (select 1 from admin.group_members m where m.group_id = g.id)`;
       expect(empty.map((x) => x.key)).toEqual([]);
     }
+  }, 120_000);
+
+  it("«Quy trình mua hàng» (cha): readiness ready, guard Quy trình con (không vòng / sâu), cùng duyệt hợp lệ, 3 phần không gán và không bắt đầu theo sự kiện", async () => {
+    const parent = (
+      await sql`select d.key, d.stages, d.trigger from hub.process_defs d where d.id = ${PURCHASE_PARENT_ID}`
+    )[0] as { key: string; stages: unknown[]; trigger: unknown };
+    expect(parent.trigger).toMatchObject({ event: "contract.submitted", when: { op: "and" } }); // không bao giờ đúng
+    for (const t of ["evolu", "demo"]) {
+      const rd = await withHubScope(hub, { kind: "system" }, (tx) =>
+        readinessOf(tx, ids.get(t) as string, parent.stages, packTools),
+      );
+      expect([t, rd.ready, rd.reasons, rd.missing.groups]).toEqual([t, true, [], []]);
+    }
+    // Guard lưu def: 3 phần có thật trong Thư viện đã xuất bản, không vòng, độ sâu ≤ 3 (cha → phần = 1 cạnh).
+    await withHubScope(hub, { kind: "system" }, (tx) =>
+      subprocessCheck(tx, null, { key: parent.key, stages: parent.stages } as never),
+    );
+    // Cùng duyệt: dòng 3 / 6 / 10 của 3 phần hợp lệ trong DB (không phải bản trong bộ nhớ).
+    const phases = await sql`select key, stages, trigger from hub.process_defs
+      where tenant_id is null and key like 'mua-hang-%' order by key`;
+    expect(phases.map((p) => (p.trigger as { when?: unknown }).when !== undefined)).toEqual([
+      true,
+      true,
+      true,
+    ]);
+    expect(phases.flatMap((p) => parallelStageIssues(p.stages as never))).toEqual([]);
+    const counts = phases.map(
+      (p) =>
+        (p.stages as { after: { parallel?: unknown } }[]).filter((s) => s.after.parallel).length,
+    );
+    expect(counts).toEqual([1, 1, 1]);
+    // Ba phần chỉ chạy làm lượt con ⇒ KHÔNG có flow công ty nào của chúng (không mở trùng theo sự kiện).
+    const assigned =
+      await sql`select 1 from hub.company_flows cf join hub.process_defs d on d.id = cf.flow_id
+      where d.key like 'mua-hang-%'`;
+    expect(assigned.length).toBe(0);
   }, 120_000);
 
   it("ops-watch: flow_flag 0 công ty lệch; hồ sơ công ty, cấu hình duyệt HĐ, danh mục feature đều ok", async () => {

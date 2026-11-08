@@ -14,6 +14,8 @@ import {
   FLOW_TEMPLATE_EVENT,
   FLOW_TEMPLATE_INPUTS,
   FLOW_TEMPLATES,
+  PURCHASE_PARENT,
+  PURCHASE_PARENT_ID,
   PURCHASE_TEMPLATES,
 } from "../processes/public";
 import type { Tx } from "./seed.repo";
@@ -123,7 +125,7 @@ export const libraryRows = () => [
     trigger: { event: COMMUNITY_FLOW_TEMPLATE.event },
     app: COMMUNITY_FLOW_TEMPLATE.app,
   },
-  ...PURCHASE_TEMPLATES.map((t) => ({
+  ...[...PURCHASE_TEMPLATES, PURCHASE_PARENT].map((t) => ({
     id: t.id,
     key: t.key,
     name: t.name,
@@ -248,6 +250,29 @@ async function writeLibrary(tx: Tx): Promise<{ defs: number; releases: number }>
  * backfill hub 0111, hoặc admin đã đổi) ⇒ không thêm flow thứ hai tranh nhau. Dòng đã có (kể cả đã Tắt) giữ nguyên.
  */
 async function assignDefaultFlows(tx: Tx, keys: readonly string[]): Promise<number> {
+  const byEvent = await assignEventFlows(tx, keys);
+  const manual = await assignManualFlows(tx, keys);
+  return byEvent + manual;
+}
+
+/**
+ * «Quy trình mua hàng» (cha, bắt đầu bằng phiếu — không có sự kiện) gán cho công ty có `contracts-read`. Ba phần KHÔNG gán: chỉ chạy làm
+ * lượt con của node Quy trình con (đọc thẳng từ Thư viện), nên không có flow công ty nào mở lượt theo sự kiện HĐ ⇒ không mở trùng.
+ */
+async function assignManualFlows(tx: Tx, keys: readonly string[]): Promise<number> {
+  return (
+    await tx`insert into hub.company_flows (tenant_id, flow_id, enabled, position)
+      select tn.id, d.id, true, 0
+      from admin.tenants tn
+      join hub.process_defs d on d.id = ${PURCHASE_PARENT_ID}::uuid and d.deleted_at is null
+      join admin.features ft on ft.key = 'contracts-read' and ft.status <> 'off'
+      join admin.feature_entitlements en on en.feature_id = ft.id and en.tenant_id = tn.id and en.revoked_at is null
+      where tn.key = any(${[...keys]}::text[]) and tn.active
+      on conflict (tenant_id, flow_id) do nothing returning id`
+  ).length;
+}
+
+async function assignEventFlows(tx: Tx, keys: readonly string[]): Promise<number> {
   return (
     await tx`insert into hub.company_flows (tenant_id, flow_id, enabled, position)
       select tn.id, x.flow_id, true, 0

@@ -12,7 +12,11 @@ export {
   FLOW_TEMPLATE_INPUTS,
   FLOW_TEMPLATES,
 } from "./library/flow-templates.def";
-export { PURCHASE_TEMPLATES } from "./library/purchase-templates";
+export {
+  PURCHASE_PARENT,
+  PURCHASE_PARENT_ID,
+  PURCHASE_TEMPLATES,
+} from "./library/purchase-templates";
 export { agentIdOf, runsAsAgent } from "./nodes/registry";
 export type { CredentialJobShape } from "./runs/apply.rules";
 export { credentialJobAllows, credentialUsername } from "./runs/apply.rules";
