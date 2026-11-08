@@ -105,6 +105,10 @@ If `contract_events` or `contracts` is more than about 1M rows, or `stage_runs` 
 8. CR-125 B1 (`cr125-sec-hub-rls`): hub migration `0127_hub_rls_gap` (journal idx 110, when 1806900900000) bật RLS 9 bảng hub (audit_log, agent_grants, agent_entitlements, tenant_agent_defaults, agent_team_entitlements, orchestrator_settings, jobs, usage_logs, cli_sessions); KHÔNG FORCE. Chỉ ALTER + CREATE POLICY + một hàm (khoá ngắn, không quét bảng). hub-api mới có guard khởi động (`lib/db-guard.ts`): `HUB_DATABASE_URL` phải là `hub_api` (không superuser/BYPASSRLS/owner bảng hub/admin) — nếu không hub-api exit 1 với `DB role của hub-api không được là superuser/BYPASSRLS/owner…`. Trước deploy kiểm role (phải 0 hàng):
    ```sql
    select rolname from pg_roles where rolname='hub_api' and (rolsuper or rolbypassrls);
+   -- soát Opus 2026-11-08: cả hai phải false (hub_api không được là thành viên agent_runtime — policy USING(true) — hay s2_owner — guard sẽ exit)
+   select pg_has_role('hub_api','agent_runtime','MEMBER') as in_agent_runtime, pg_has_role('hub_api','s2_owner','MEMBER') as in_owner;
+   -- 0127 khoá ACCESS EXCLUSIVE 9 bảng trong một giao dịch: chạy khi đã dừng app (H1); nếu không dừng được thì đặt trước
+   -- SET lock_timeout='3s'; và chạy lại khi lỗi khoá, tránh xếp hàng sau giao dịch worker dài.
    select t.schemaname, t.tablename from pg_tables t where t.schemaname in ('hub','admin') and pg_has_role('hub_api', t.tableowner, 'MEMBER');
    ```
    Sau migrate (mỗi dòng rls=t, policies ≥ 1; ai_token_holds/dify_runs vẫn rls=f):
