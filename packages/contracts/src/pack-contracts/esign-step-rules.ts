@@ -1,5 +1,5 @@
 ﻿// CR-125 · c1 · MỘT luật bước Ký số của mẫu luồng duyệt (trước đây viết hai lần: hub `approval-flow-esign.rules.ts` và client admin
-// `flow-form.ts`) + MỘT bộ câu lỗi (VI/EN). Thuần, không I/O. Hub và admin-web cùng gọi `esignStepIssues`; chỉ khác cách đặt tên
+// `flow-form.ts`). Câu lỗi nằm ở i18n (một khoá mỗi mã, xem `publish-issue-codes.ts`). Thuần, không I/O. Hub và admin-web cùng gọi `esignStepIssues`; chỉ khác cách đặt tên
 // trường (mã phòng / id phòng) nên luật nhận cờ `hasGroup` / `hasUser` đã tính sẵn.
 import { APPROVAL_FLOW_DUE_H, APPROVAL_FLOW_REMIND_H } from "./approval-flow";
 
@@ -47,20 +47,3 @@ export function esignStepIssues(
     add("remind_every_h", "REMIND_RANGE");
   return out;
 }
-
-/** MỘT bộ câu lỗi bước Ký số (hub trả cho API, admin/workspace hiển thị) — i18n JSON bị test so khớp với bảng này. */
-export const ESIGN_STEP_TEXT: Record<
-  "ESIGN_MULTI" | "ESIGN_NOT_LAST" | "SIGNER_GROUP_REQUIRED" | "SIGNER_USER_REQUIRED",
-  { vi: string; en: string }
-> = {
-  ESIGN_MULTI: { vi: "Chỉ được một bước Ký số.", en: "Only one e-signature step is allowed." },
-  ESIGN_NOT_LAST: {
-    vi: "Bước Ký số phải là bước cuối.",
-    en: "The e-signature step must be last.",
-  },
-  SIGNER_GROUP_REQUIRED: {
-    vi: "Chọn phòng của người ký.",
-    en: "Choose the signer's department.",
-  },
-  SIGNER_USER_REQUIRED: { vi: "Chọn người ký.", en: "Choose the signer." },
-};

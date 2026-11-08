@@ -67,14 +67,14 @@ export const HUB_ADMIN_LIBRARY_ERRORS = {
 } as const;
 export type HubAdminLibraryErrorCode = keyof typeof HUB_ADMIN_LIBRARY_ERRORS;
 
-/** CR-121 D-2/D-3 · `step`/`field`/`message`(vi)/`message_en`: bước (mã hoặc số thứ tự), trường, câu sửa — trình sửa nhảy tới bước + hiện câu sửa. */
+/** CR-121 D-2/D-3 · CR-125 G1 · `step`/`field`/`code`/`params`: bước (mã hoặc số thứ tự), trường, mã lỗi + biến — web dịch bằng một khoá i18n mỗi mã. */
 export const SlotIssueSchema = z.strictObject({
   path: z.string(),
   rule: z.string(),
-  step: z.union([z.string(), z.number()]).optional(),
-  field: z.string().optional(),
-  message: z.string().optional(),
-  message_en: z.string().optional(),
+  step: z.union([z.string(), z.number()]).nullable().optional(),
+  field: z.string().nullable().optional(),
+  code: z.string().optional(),
+  params: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
 });
 /** `SLOT_BODY_INVALID` / `PROCESS_PUBLISH_INVALID`. */
 export const SlotIssuesDetailsSchema = z.strictObject({ issues: z.array(SlotIssueSchema).max(20) });

@@ -28,6 +28,8 @@ const KNOWN = new Set([
   "NOT_LIBRARY_DEF",
   "SLOT_GONE",
   "COPY_SOURCE_REMOVED",
+  // CR-123 FR-09 · CR-125 G1 · bật "Dùng quy trình mới" khi chưa gán quy trình nào
+  "FLOW_NONE_ASSIGNED",
 ]);
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 

@@ -1,8 +1,7 @@
 // CR-125 · c1 · MỘT luật bước Ký số (hub + admin-web) + MỘT bộ câu lỗi: luật thuần, và câu lỗi trong i18n khớp bảng chung.
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { ESIGN_STEP_TEXT, type EsignStepFacts, esignStepIssues } from "./esign-step-rules";
+import { type EsignStepFacts, esignStepIssues } from "./esign-step-rules";
+import { PUBLISH_ISSUE_CODES } from "./publish-issue-codes";
 
 const ok: EsignStepFacts = {
   due_h: 72,
@@ -43,18 +42,12 @@ describe("esignStepIssues", () => {
   });
 });
 
-describe("ESIGN_STEP_TEXT khớp i18n (một bộ câu lỗi)", () => {
-  const read = (rel: string) =>
-    JSON.parse(readFileSync(join(import.meta.dir, "../../../i18n/locales", rel), "utf8"));
-  test.each(["vi", "en"] as const)("contracts/esignflow.%s.json", (lng) => {
-    const err = read(`contracts/esignflow.${lng}.json`).contracts.flow.err;
-    for (const [code, t] of Object.entries(ESIGN_STEP_TEXT)) expect(err[code]).toBe(t[lng]);
-  });
-  test.each(["vi", "en"] as const)("process/admin.%s.json không còn bản riêng khác chữ", (lng) => {
-    const s = JSON.stringify(read(`process/admin.${lng}.json`));
-    for (const code of ["ESIGN_NOT_LAST", "SIGNER_GROUP_REQUIRED"] as const) {
-      const m = new RegExp(`"${code}":"([^"]*)"`).exec(s);
-      if (m) expect(m[1]).toBe(ESIGN_STEP_TEXT[code][lng]);
-    }
+describe("mã lỗi bước Ký số nằm trong danh sách mã chung (mỗi mã một khoá i18n)", () => {
+  test("mọi mã esignStepIssues phát ra đều có trong PUBLISH_ISSUE_CODES", () => {
+    const bad = { ...ok, due_h: 1, remind_every_h: 1, signer_mode: "dept_head" };
+    const out = esignStepIssues(bad, { index: 0, count: 2, ordinal: 2 });
+    expect(out.length).toBeGreaterThan(3);
+    for (const i of out) expect(PUBLISH_ISSUE_CODES).toContain(i.code);
+    expect(PUBLISH_ISSUE_CODES).toContain("SIGNER_USER_REQUIRED");
   });
 });

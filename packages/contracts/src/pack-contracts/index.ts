@@ -35,6 +35,7 @@ export * from "./price-scout";
 export * from "./product-links";
 export * from "./product-sources";
 export * from "./products";
+export * from "./publish-issue-codes";
 export * from "./reputation";
 export * from "./review";
 export * from "./service-customers";

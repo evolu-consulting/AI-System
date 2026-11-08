@@ -1,6 +1,10 @@
 // CR-105 · L3 · B1/B5: hộp thoại Xuất bản — hiện tác động (N tenant đang dùng, M lượt đang chạy giữ bản cũ) rồi xác nhận.
 // Hub kiểm trước (B2): lỗi 422 `PROCESS_PUBLISH_INVALID` / `SLOT_GROUPS_MISSING` hiện ngay trong hộp, kèm chỗ sai.
-
+import {
+  PUBLISH_ISSUE_CODES,
+  PUBLISH_ISSUE_KEY,
+  publishIssueParams,
+} from "@ai/contracts/pack-contracts";
 import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -31,7 +35,7 @@ type Props = {
 type Failure = { message: string; lines: string[] };
 
 export function PublishDialog({ def, open, onClose, onIssues }: Props) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const impact = useImpact(def.id, open);
   const refresh = useLibraryRefresh();
   const [note, setNote] = useState("");
@@ -53,7 +57,7 @@ export function PublishDialog({ def, open, onClose, onIssues }: Props) {
       onClose();
     } catch (err) {
       const s = processErrorSpec(err);
-      onIssues?.(publishIssuesOf(err, parseSlotBody(def.slot_body) ?? [], i18n.language));
+      onIssues?.(publishIssuesOf(err, parseSlotBody(def.slot_body) ?? [], t));
       setFail({
         message: t(s.key, s.params),
         lines: errorLines(detailsOf(err), ruleText),
@@ -63,8 +67,8 @@ export function PublishDialog({ def, open, onClose, onIssues }: Props) {
     }
   };
   const ruleText: RuleFormat = (path, code, arg) =>
-    code === "SYSTEM_TOOL_MISSING" || code === "UNREACHABLE_STEP"
-      ? t(`process.admin.library.rule.${code}`, { tool: arg ?? "", path })
+    PUBLISH_ISSUE_CODES.includes(code)
+      ? `${path}: ${t(`${PUBLISH_ISSUE_KEY}.${code}`, publishIssueParams(code, arg ?? ""))}`
       : null;
   const i = impact.data;
   return (

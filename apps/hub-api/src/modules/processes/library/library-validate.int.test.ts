@@ -118,9 +118,9 @@ describe("CR-121 · D-2 · kiểm khi xuất bản và gán", () => {
       field: "when",
       rule: "COND_FIELD_UNDECLARED:foo_field",
     });
-    expect(issue.message).toContain("Bước 3");
-    expect(issue.message).toContain("foo_field");
-    expect(issue.message_en).toContain("Step 3");
+    expect(issue).toMatchObject({ code: "COND_FIELD_UNDECLARED", params: { param: "foo_field" } });
+    expect(issue.message).toBeUndefined();
+    expect(issue.message_en).toBeUndefined();
   });
 
   it("gán: mã phòng ban trong điều kiện không có ở công ty ⇒ 422 nói bước + công ty + cách sửa", async () => {
@@ -151,9 +151,11 @@ describe("CR-121 · D-2 · kiểm khi xuất bản và gán", () => {
     expect(bad.json.error.code).toBe("SLOT_GROUPS_MISSING");
     const issue = bad.json.error.details.issues[0];
     expect(issue).toMatchObject({ step: 3, rule: "GROUP_MISSING_IN_TENANT" });
-    expect(issue.message).toContain("'sales'");
-    expect(issue.message).toContain("t1122");
-    expect(issue.message).toContain("tạo phòng ban");
+    expect(issue).toMatchObject({
+      code: "GROUP_MISSING_IN_TENANT",
+      params: { key: "sales", tenant: "t1122" },
+    });
+    expect(issue.message).toBeUndefined();
     const ok = await call("PUT", `/tenants/${X}/process-slots/${SLOT}`, { def_id: id });
     expect(ok.status).toBe(200);
   });

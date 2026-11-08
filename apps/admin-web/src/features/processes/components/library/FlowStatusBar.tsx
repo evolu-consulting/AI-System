@@ -1,10 +1,10 @@
 // CR-121 D-3: đầu trang trình sửa (Loại + nguồn + phiên bản) và thanh trạng thái (Nháp / Đã xuất bản, sẵn sàng hay còn lỗi).
 // Lỗi gồm kiểm phía client và lỗi xuất bản Hub trả (D-2: bước, trường, câu sửa); bấm một lỗi ⇒ nhảy tới đúng bước.
+import { PUBLISH_ISSUE_KEY, publishIssueParams } from "@ai/contracts/pack-contracts";
 import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { REMIND_MAX, REMIND_MIN } from "../../lib/flow-form";
 import { statusOf } from "../../lib/library-list";
 import type { LibraryDef } from "../../library-api";
 
@@ -112,6 +112,6 @@ export const issueText = (
   index: number | null,
   code: string,
 ): string => {
-  const msg = t(`process.admin.library.form.err.${code}`, { min: REMIND_MIN, max: REMIND_MAX });
+  const msg = t(`${PUBLISH_ISSUE_KEY}.${code}`, publishIssueParams(code));
   return index === null ? msg : t("process.admin.library.form.stepIssue", { n: index + 1, msg });
 };

@@ -1,15 +1,21 @@
-﻿// CR-121 D-2 · unit: mỗi mã luật có câu tiếng Việt nói cách sửa + bản Anh; vị trí bước/trường đúng.
+﻿// CR-121 D-2 · CR-125 G1 · unit: Hub trả mã + biến + vị trí bước/trường (không câu chữ); web dịch bằng khoá i18n của mã.
 import { describe, expect, it } from "bun:test";
+import { PUBLISH_ISSUE_CODES } from "@ai/contracts/pack-contracts";
 import { explainIssue, missingGroupIssues } from "./library-publish.messages";
 
 describe("explainIssue", () => {
-  it("steps.N.field ⇒ bước đánh số từ 1 + trường", () => {
+  it("steps.N.field ⇒ bước đánh số từ 1 + trường + mã, không có câu chữ", () => {
     const e = explainIssue({ path: "steps.2.department_group_id", rule: "GROUP_REQUIRED" });
-    expect(e).toMatchObject({ step: 3, field: "department_group_id" });
-    expect(e.message).toBe(
-      "Bước 3: bước duyệt chưa chọn phòng ban — chọn phòng ban hoặc người duyệt cho bước này.",
-    );
-    expect(e.message_en.startsWith("Step 3:")).toBe(true);
+    expect(e).toEqual({
+      path: "steps.2.department_group_id",
+      rule: "GROUP_REQUIRED",
+      step: 3,
+      field: "department_group_id",
+      code: "GROUP_REQUIRED",
+      params: {},
+    });
+    expect(e).not.toHaveProperty("message");
+    expect(e).not.toHaveProperty("message_en");
   });
 
   it("stages.N.slot.when: stage 0 = bước 1, stage ≥ 2 = bước N (bỏ qua stage rẽ hệ thống)", () => {
@@ -19,22 +25,30 @@ describe("explainIssue", () => {
 
   it("mã có tham số: trường điều kiện chưa khai báo / thiếu nút hệ thống", () => {
     const f = explainIssue({ path: "steps.1.when", rule: "COND_FIELD_UNDECLARED:due_date" });
-    expect(f.message).toContain("'due_date'");
-    expect(f.message).toContain("Bước 2");
+    expect(f).toMatchObject({
+      step: 2,
+      code: "COND_FIELD_UNDECLARED",
+      params: { param: "due_date" },
+    });
     const s = explainIssue({ path: "stages", rule: "SYSTEM_TOOL_MISSING:contracts-route" });
-    expect(s).toMatchObject({ step: null });
-    expect(s.message).toContain("contracts-route");
+    expect(s).toMatchObject({ step: null, params: { param: "contracts-route" } });
   });
 
-  it("lỗi chung (không có bước) và ký số không ở cuối", () => {
-    expect(explainIssue({ path: "steps", rule: "STEPS_MAX" }).message).toContain("20 bước");
-    expect(explainIssue({ path: "steps.4", rule: "ESIGN_NOT_LAST" }).message).toContain(
-      "Bước Ký số phải là bước cuối.",
+  it("mã có giới hạn: biến lấy từ hằng chung", () => {
+    expect(explainIssue({ path: "steps", rule: "STEPS_MAX" }).params).toEqual({ max: 20 });
+    const r = explainIssue({ path: "steps.1.remind_every_h", rule: "REMIND_RANGE" });
+    expect(r.params).toMatchObject({ min: 4, max: 168 });
+    expect(explainIssue({ path: "steps.1", rule: "NOTIFY_TO_REQUIRED" }).code).toBe(
+      "NOTIFY_TO_REQUIRED",
     );
   });
 
-  it("mã lạ ⇒ câu chung vẫn có hướng xử lý", () => {
-    expect(explainIssue({ path: "steps.0", rule: "WHATEVER" }).message).toContain("WHATEVER");
+  it("mã lạ ⇒ vẫn trả mã gốc để web hiện câu chung kèm mã", () => {
+    expect(explainIssue({ path: "steps.0", rule: "WHATEVER" })).toMatchObject({
+      code: "WHATEVER",
+      step: 1,
+    });
+    expect(PUBLISH_ISSUE_CODES).not.toContain("WHATEVER");
   });
 });
 
@@ -49,15 +63,17 @@ describe("missingGroupIssues", () => {
       },
     ],
   };
-  it("một câu cho mỗi bước dùng mã; nêu tên công ty và cách sửa", () => {
+  it("một mã cho mỗi bước dùng mã; biến nêu mã phòng ban và công ty", () => {
     const r = missingGroupIssues(body, "congty-x", ["sales"]);
     expect(r).toHaveLength(1);
-    expect(r[0]).toMatchObject({ step: 2, rule: "GROUP_MISSING_IN_TENANT" });
-    expect(r[0]?.message).toBe(
-      "Bước 2: phòng ban 'sales' không có ở công ty congty-x — tạo phòng ban này ở công ty hoặc đổi điều kiện/phòng ban của bước.",
-    );
+    expect(r[0]).toMatchObject({
+      step: 2,
+      rule: "GROUP_MISSING_IN_TENANT",
+      code: "GROUP_MISSING_IN_TENANT",
+      params: { key: "sales", tenant: "congty-x" },
+    });
   });
-  it("không tìm ra bước ⇒ câu chung", () => {
+  it("không tìm ra bước ⇒ lỗi chung", () => {
     expect(missingGroupIssues({ steps: [] }, "t", ["z"])[0]?.step).toBeNull();
   });
 });
