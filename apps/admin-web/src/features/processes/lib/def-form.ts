@@ -188,7 +188,7 @@ export function validateDraft(
   if (d.stages.length < 1 || d.stages.length > getStagesMax()) e.stages = `${P}stageCount`;
   d.stages.forEach((s, i) => {
     validateStage(normalizeForm(normalizeTool(normalizeWait(s))), i, d.stages, e);
-    if (forEnable && s.after === "review" && s.groupId === "" && !slotHasReviewer(s))
+    if (forEnable && s.after === "review" && s.groupId === "" && !s.groupKey && !slotHasReviewer(s))
       e[`stages.${i}.after.group_id`] = "process.admin.apiError.PROCESS_DEF_INCOMPLETE";
   });
   const eff = d.stages.map((s) => normalizeForm(normalizeTool(normalizeWait(normalizeApply(s)))));

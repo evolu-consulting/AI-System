@@ -115,6 +115,7 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     step,
     backTo: s.after.kind === "review" ? [...(s.after.back_to_steps ?? [])] : [],
     groupId: s.after.kind === "review" ? (s.after.group_id ?? "") : "",
+    ...groupKeyDraft(s.after),
     real: s.real_action,
     answerer: a.kind,
     answererId: a.kind === "group" ? (a.group_id ?? "") : a.kind === "user" ? a.user_id : "",
@@ -129,6 +130,14 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     ...(s.slot ? { slotRaw: repairSlot(structuredClone(s.slot)) } : {}),
   };
 }
+
+/** Mã nhóm duyệt của mẫu Thư viện (`after.group_key`) ⇒ nháp. */
+const groupKeyDraft = (a: ProcessStageDef["after"]): { groupKey?: string } =>
+  a.kind === "review" && a.group_key ? { groupKey: a.group_key } : {};
+
+/** Nhóm duyệt khi lưu: mã (mẫu Thư viện) thì không có id, và ngược lại. */
+const reviewGroupToDef = (s: StageDraft): { group_id: string | null; group_key?: string } =>
+  s.groupKey ? { group_id: null, group_key: s.groupKey } : { group_id: s.groupId || null };
 
 function executorDef(s: StageDraft): ProcessStageDef["executor"] {
   const kind = draftKindOf(s.executor);
@@ -166,7 +175,7 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
       s.after === "review"
         ? {
             kind: "review",
-            group_id: s.groupId || null,
+            ...reviewGroupToDef(s),
             back_to_steps: s.backTo,
             remind_every_h: remindToDef(s),
             escalate: escalateToDef(s),

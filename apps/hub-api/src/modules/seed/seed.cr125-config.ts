@@ -14,6 +14,7 @@ import {
   FLOW_TEMPLATE_EVENT,
   FLOW_TEMPLATE_INPUTS,
   FLOW_TEMPLATES,
+  PURCHASE_TEMPLATES,
 } from "../processes/public";
 import type { Tx } from "./seed.repo";
 
@@ -34,6 +35,17 @@ export const TEMPLATE_GROUPS = [
   { key: "truong-phong", name: { vi: "Trưởng phòng", en: "Department head" } },
   { key: "giam-doc", name: { vi: "Giám đốc", en: "Director" } },
   { key: "phong-kinh-doanh", name: { vi: "Phòng Kinh doanh", en: "Sales" } },
+  // «Quy trình mua hàng» (3 mẫu Thư viện, cr125-purchase-templates): mọi mã nhóm mà Phần 1–3 trỏ tới (giam-doc đã có ở trên).
+  { key: "nhan-vien-phong-ban", name: { vi: "Nhân viên phòng ban", en: "Department staff" } },
+  { key: "truong-bo-phan", name: { vi: "Trưởng bộ phận", en: "Department manager" } },
+  { key: "mua-hang", name: { vi: "Mua hàng", en: "Purchasing" } },
+  { key: "truong-mua-hang", name: { vi: "Trưởng mua hàng", en: "Purchasing manager" } },
+  { key: "tai-chinh", name: { vi: "Tài chính", en: "Finance" } },
+  { key: "phap-che", name: { vi: "Pháp chế", en: "Legal" } },
+  { key: "ke-toan", name: { vi: "Kế toán", en: "Accounting" } },
+  { key: "ke-toan-truong", name: { vi: "Kế toán trưởng", en: "Chief accountant" } },
+  { key: "kho", name: { vi: "Kho", en: "Warehouse" } },
+  { key: "thu-quy", name: { vi: "Thủ quỹ", en: "Cashier" } },
 ] as const;
 
 /** Thành viên mẫu theo username (không email). Người vắng ⇒ bỏ qua. */
@@ -42,13 +54,21 @@ export const TEMPLATE_GROUP_MEMBERS: Record<string, Record<string, readonly stri
     "truong-phong": ["thomas.tran"],
     "giam-doc": ["julian.bui"],
     "phong-kinh-doanh": ["vio.ngo"],
+    ...purchaseMembers(["thomas.tran", "vio.ngo", "julian.bui"]),
   },
   demo: {
     "truong-phong": ["demo-editor"],
     "giam-doc": ["demo-owner"],
     "phong-kinh-doanh": ["demo-editor"],
+    ...purchaseMembers(["demo-editor", "demo-viewer", "demo-owner"]),
   },
 };
+
+/** Thành viên mẫu của các nhóm «mua hàng»: người dùng giả @demo.local của công ty fixture, xoay vòng (một người có thể giữ nhiều nhóm). */
+function purchaseMembers(users: readonly string[]): Record<string, readonly string[]> {
+  const keys = TEMPLATE_GROUPS.slice(3).map((g) => g.key);
+  return Object.fromEntries(keys.map((k, i) => [k, [users[i % users.length] as string]]));
+}
 
 /** Flow mặc định của công ty: gán khi công ty có tính năng đòi hỏi (cùng luật `templateReadiness`: tính năng bật mới gán). */
 export const DEFAULT_FLOWS = [
@@ -79,7 +99,7 @@ const ZERO: Cr125ConfigResult = {
   flowFlags: 0,
 };
 
-/** Mẫu Thư viện do seed ghi (id cố định): 3 mẫu duyệt HĐ + mẫu Community. */
+/** Mẫu Thư viện do seed ghi (id cố định): 3 mẫu duyệt HĐ + mẫu Community + 3 mẫu «Quy trình mua hàng». */
 export const libraryRows = () => [
   ...FLOW_TEMPLATES.map((t) => ({
     id: t.id,
@@ -103,6 +123,17 @@ export const libraryRows = () => [
     trigger: { event: COMMUNITY_FLOW_TEMPLATE.event },
     app: COMMUNITY_FLOW_TEMPLATE.app,
   },
+  ...PURCHASE_TEMPLATES.map((t) => ({
+    id: t.id,
+    key: t.key,
+    name: t.name,
+    description: t.description,
+    input_hint: t.input_hint,
+    stages: t.stages,
+    inputs: t.inputs,
+    trigger: t.trigger,
+    app: t.app,
+  })),
 ];
 
 export async function writeCr125Config(

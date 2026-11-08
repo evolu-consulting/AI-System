@@ -29,6 +29,7 @@ export function hasConfig(s: StageDraft): boolean {
     s.instruction.trim() ||
     s.executor ||
     s.groupId ||
+    s.groupKey ||
     s.tool.key ||
     s.set.rows.length ||
     s.formFields?.length ||

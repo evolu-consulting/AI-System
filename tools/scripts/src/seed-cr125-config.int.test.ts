@@ -127,7 +127,7 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
     expect(r.cr125.features).toBeGreaterThan(0);
     expect(r.cr125.companyFlows).toBe(6); // 3 flow × 2 công ty
     expect(r.cr125.flowFlags).toBe(2);
-    expect(r.cr125.libraryDefs).toBe(4);
+    expect(r.cr125.libraryDefs).toBe(7); // 3 mẫu duyệt HĐ + Community + 3 mẫu «Quy trình mua hàng»
     const demo = ids.get("demo") as string;
     const [ps] =
       await sql`select esign_enabled, esign_default_provider from contracts.approval_settings where tenant_id = ${demo}`;
@@ -175,6 +175,36 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
           [],
         ]);
       }
+    }
+  }, 120_000);
+
+  it("3 mẫu «Quy trình mua hàng» có trong Thư viện và templateReadiness ready cho công ty demo + evolu (đủ nhóm, có thành viên)", async () => {
+    for (const t of ["evolu", "demo"]) {
+      const tid = ids.get(t) as string;
+      const defs = await sql`select d.key, d.stages from hub.process_defs d
+        where d.tenant_id is null and d.key like 'mua-hang-%' and d.published_version = 1 order by d.key`;
+      expect(defs.map((d) => d.key)).toEqual([
+        "mua-hang-1-de-xuat-dat-hang",
+        "mua-hang-2-hop-dong",
+        "mua-hang-3-nhan-hang-thanh-toan",
+      ]);
+      for (const d of defs) {
+        const rd = await withHubScope(hub, { kind: "system" }, (tx) =>
+          readinessOf(tx, tid, d.stages as unknown[], packTools),
+        );
+        expect([t, d.key, rd.ready, rd.reasons, rd.missing.groups]).toEqual([
+          t,
+          d.key,
+          true,
+          [],
+          [],
+        ]);
+      }
+      const empty = await sql`select g.key from admin.groups g where g.tenant_id = ${tid}
+        and g.key in ('nhan-vien-phong-ban', 'truong-bo-phan', 'mua-hang', 'truong-mua-hang', 'tai-chinh', 'phap-che',
+          'ke-toan', 'ke-toan-truong', 'kho', 'thu-quy')
+        and not exists (select 1 from admin.group_members m where m.group_id = g.id)`;
+      expect(empty.map((x) => x.key)).toEqual([]);
     }
   }, 120_000);
 

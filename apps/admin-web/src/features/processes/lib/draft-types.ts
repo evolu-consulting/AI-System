@@ -106,6 +106,8 @@ export type StageDraft = {
   /** P-b2 · bước được phép quay lại khi Chưa đạt (< `step`); chỉ có nghĩa khi `after = review`. */
   backTo: number[];
   groupId: string;
+  /** Mẫu Thư viện (tenant NULL) chọn nhóm theo MÃ (fter.group_key), không id; có mã ⇒ groupId rỗng. */
+  groupKey?: string;
   real: boolean;
   answerer: "starter" | "group" | "user";
   answererId: string;

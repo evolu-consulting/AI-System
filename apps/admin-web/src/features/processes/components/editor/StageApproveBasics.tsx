@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { remindIssueKey } from "../../domain/error-keys";
 import { REMIND_EVERY_H } from "../../domain/limits";
 import { remindIssue } from "../../domain/remind-rules";
-import { withCurrent } from "../../hooks/use-editor-refs";
+import { useApproverField } from "../../hooks/use-group-key-options";
 import { SelectField, TextField } from "./Fields";
 import type { StageFormProps } from "./stage-form-props";
 
@@ -13,6 +13,7 @@ const K = "process.admin.editor.stage.";
 export function StageApproveBasics(p: StageFormProps) {
   const { t } = useTranslation();
   const { stage, index, errors, readOnly, refs, onChange } = p;
+  const who = useApproverField(stage, refs, t("process.admin.editor.gone"));
   const gErr = errors[`stages.${index}.after.group_id`];
   const rErr = remindIssue(stage.remind)
     ? remindIssueKey()
@@ -22,17 +23,13 @@ export function StageApproveBasics(p: StageFormProps) {
       <SelectField
         id={`${stage.uid}-group`}
         label={t(`${K}approver`)}
-        value={stage.groupId}
+        value={who.value}
         readOnly={readOnly}
         alert
         placeholder={t(`${K}approverPh`)}
         error={gErr ? t(gErr) : undefined}
-        options={withCurrent(
-          refs.approverGroups ?? refs.groups,
-          stage.groupId,
-          t("process.admin.editor.gone"),
-        )}
-        onChange={(v) => onChange({ groupId: v, after: "review" })}
+        options={who.options}
+        onChange={(v) => onChange({ ...who.patch(v), after: "review" })}
       />
       <TextField
         id={`${stage.uid}-remind`}

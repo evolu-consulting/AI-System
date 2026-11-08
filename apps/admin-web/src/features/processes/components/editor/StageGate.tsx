@@ -2,7 +2,7 @@
 import { useTranslation } from "react-i18next";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { withCurrent } from "../../hooks/use-editor-refs";
+import { useApproverField } from "../../hooks/use-group-key-options";
 import { canRealAction, type StageDraft } from "../../lib/def-form";
 import { isForm } from "../../lib/form-fields";
 import { SelectField } from "./Fields";
@@ -11,6 +11,7 @@ import type { StageFormProps } from "./stage-form-props";
 export function StageGate(p: StageFormProps) {
   const { t } = useTranslation();
   const { stage, index, errors, readOnly, refs, onChange } = p;
+  const who = useApproverField(stage, refs, t("process.admin.editor.gone"));
   const gErr = errors[`stages.${index}.after.group_id`];
   const rErr = errors[`stages.${index}.real_action`];
   const locked = !canRealAction(p.all, index);
@@ -35,15 +36,11 @@ export function StageGate(p: StageFormProps) {
         <SelectField
           id={`${stage.uid}-group`}
           label={t("process.admin.editor.stage.reviewGroup")}
-          value={stage.groupId}
+          value={who.value}
           readOnly={readOnly}
           error={gErr ? t(gErr) : undefined}
-          options={withCurrent(
-            refs.approverGroups ?? refs.groups,
-            stage.groupId,
-            t("process.admin.editor.gone"),
-          )}
-          onChange={(v) => onChange({ groupId: v })}
+          options={who.options}
+          onChange={(v) => onChange(who.patch(v))}
         />
       ) : null}
       {isForm(stage) ? null : (

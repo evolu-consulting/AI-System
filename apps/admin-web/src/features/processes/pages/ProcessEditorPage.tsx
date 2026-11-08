@@ -228,6 +228,9 @@ function FlowWrap(p: {
     </FlowEditorBody>
   );
 }
+/** Danh mục tool để kiểm ở máy khách: mẫu Thư viện ⇒ vắng (không kiểm). */
+const catalogOf = <T,>(lib: unknown, tools: T): T | undefined => (lib ? undefined : tools);
+
 function Editor({ processId, company }: ProcessEditorPageProps) {
   const { t } = useTranslation();
   const d = useDraft();
@@ -235,6 +238,8 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
   const [formDirty, setFormDirty] = useState(false);
   const refs = useEditorRefs(tenant.tenantId, tenant.ready);
   const lib = libraryOf(q.data, tenant.isPlatform);
+  // mẫu Thư viện không có công ty ⇒ không có danh mục tool theo công ty: bỏ kiểm "tool bật" ở máy khách (Hub kiểm bằng `libraryRefs` khi lưu)
+  const tools = catalogOf(lib, refs.tools);
   // CR-122 · U1: flow có trigger = FlowDef mới; trigger sửa ở state riêng, gửi kèm khi Lưu.
   const ft = useFlowTrigger(q.data, d.dirty);
   const dirty = ft.dirty;
@@ -250,9 +255,9 @@ function Editor({ processId, company }: ProcessEditorPageProps) {
     setVersion,
     d,
     teams: refs.teamSections,
-    tools: refs.tools,
+    tools,
   });
-  const errors = withLiveErrors(d.draft, d.errors, refs.teamSections, refs.tools);
+  const errors = withLiveErrors(d.draft, d.errors, refs.teamSections, tools);
   const dv = { ...d, errors };
   const def = q.data;
   const readOnly = isReadOnlyDef(def, tenant.isPlatform);
