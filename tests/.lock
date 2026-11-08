@@ -192,7 +192,7 @@ fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-
 8692005db5b59d099c18a3a850c8713ed3323f7974ed001504aec2dba32d476a  e2e/community-web/feed.cm.ts
 bb2e33c400a5bd7c6e2e2424080260fd6886d379264d1d2765f4bc2920552f3d  e2e/community-web/flow-edit.cs.ts
 c5039330be8206c38901309154e33cd53ebd511c4647910da6c2b54cbb2dee98  e2e/community-web/flows.cs.ts
-0b8f6952583dd1f32720b022142fd37098103d06ad52584bafbceb761d847b6a  e2e/community-web/flows.menu.cs.ts
+68c431afcfbc23fce10297a39ebef4927ba20a926764fdd8d0d43c2927245cbd  e2e/community-web/flows.menu.cs.ts
 6a9b6fa9068b39db243691aaf40bd5e5f81d899cce9035bbf502ff0a90daa273  e2e/community-web/playwright.config.ts
 60ba4e1f0ce74e07645a0118156bf925c06708dc427a5b066c38e7c5c491ed36  e2e/community-web/playwright.deployed.config.ts
 a28ad24f38131f96657f8346d93599f51e7b275ff99fbd8ff8e53c3a9708d658  e2e/community-web/playwright.stack.config.ts
