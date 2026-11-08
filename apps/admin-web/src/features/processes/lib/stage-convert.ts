@@ -130,13 +130,17 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     ...rawListsToDraft(s),
     autofix: autofixToDraft(s.autofix),
     ...uiToDraft(s.ui),
-    ...(s.outcome === undefined ? {} : { outcome: s.outcome }),
-    ...(s.next_step === undefined ? {} : { nextStep: s.next_step }),
-    ...(s.node === undefined ? {} : { node: s.node }),
-    ...(s.start_form ? { startForm: startFormToDraft(s.start_form) } : {}),
-    ...(s.slot ? { slotRaw: repairSlot(structuredClone(s.slot)) } : {}),
+    ...optionalDraftPart(s),
   };
 }
+
+const optionalDraftPart = (s: ProcessStageDef): Partial<StageDraft> => ({
+  ...(s.outcome === undefined ? {} : { outcome: s.outcome }),
+  ...(s.next_step === undefined ? {} : { nextStep: s.next_step }),
+  ...(s.node === undefined ? {} : { node: s.node }),
+  ...(s.start_form ? { startForm: startFormToDraft(s.start_form) } : {}),
+  ...(s.slot ? { slotRaw: repairSlot(structuredClone(s.slot)) } : {}),
+});
 
 /** Mã nhóm duyệt của mẫu Thư viện (`after.group_key`) ⇒ nháp. */
 const groupKeyDraft = (a: ProcessStageDef["after"]): { groupKey?: string } =>
@@ -158,6 +162,14 @@ function branchOf(s: StageDraft): ProcessStageDef["after"]["branch"] {
   return family === "wait" || family === "apply" || family === "control"
     ? []
     : branchToRules(s.branch, s.fields);
+}
+
+function answererToDef(s: StageDraft): ProcessStageDef["answerer"] {
+  return s.answerer === "group"
+    ? { kind: "group", group_id: s.answererId }
+    : s.answerer === "user"
+      ? { kind: "user", user_id: s.answererId }
+      : { kind: "starter" };
 }
 
 export function stageToInput(draft: StageDraft): ProcessStageDef {
@@ -192,12 +204,7 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
           }
         : { kind: "auto", ...branch },
     real_action: s.real,
-    answerer:
-      s.answerer === "group"
-        ? { kind: "group", group_id: s.answererId }
-        : s.answerer === "user"
-          ? { kind: "user", user_id: s.answererId }
-          : { kind: "starter" },
+    answerer: answererToDef(s),
     timeout_s: Number(s.timeout),
     token_budget: intOrNull(s.budget),
     sources: stageSourcesToDef(s.sources),

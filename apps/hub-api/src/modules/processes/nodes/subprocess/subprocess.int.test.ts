@@ -207,6 +207,8 @@ beforeAll(async () => {
   okDef = await def("p-ok", parentStages("sp-ok"), AMOUNT);
   noDef = await def("p-no", parentStages("sp-no"), AMOUNT);
   waitDef = await def("p-wait", parentStages("sp-wait"), AMOUNT);
+}, 120_000);
+beforeAll(async () => {
   // CR-125 · cr125-run-attachments: cha 0 Chờ 24 giờ · 1 Quy trình con (sp-ok) · 2 approved · 3 rejected — chờ để liên kết tệp vào cha TRƯỚC khi mở con.
   fileDef = await def(
     "p-file",
@@ -298,7 +300,9 @@ describe("CR-125 · «Quy trình con» chạy thật", () => {
     expect(await openTimers(kid?.id as string)).toBe(0);
     expect(await openTimers(pid)).toBe(0);
   });
+});
 
+describe("CR-125 · «Quy trình con» chạy thật · huỷ đồng thời, hết hạn", () => {
   it("huỷ cha ĐỒNG THỜI lượt con kết thúc (hai thứ tự khoá) ⇒ không lỗi, không chờ khoá, trạng thái nhất quán", async () => {
     // (1) cha đang bị khoá (tx huỷ giữ hàng cha) ⇒ tx kết thúc lượt con KHÔNG chờ hàng cha (lock_timeout 2 s ⇒ lỗi nếu chờ).
     const p1 = await start(waitDef);
@@ -346,7 +350,9 @@ describe("CR-125 · «Quy trình con» chạy thật", () => {
     expect(await expireRuns(d as unknown as ProcessBgDeps)).toBeGreaterThanOrEqual(1);
     expect([await runOf(pid), await runOf(kid?.id as string)]).toEqual(["expired", "cancelled"]);
   });
+});
 
+describe("CR-125 · «Quy trình con» chạy thật · hẹn canh, nối tiếp", () => {
   it("lượt con không còn (bị xoá / gỡ liên kết) ⇒ hẹn canh chốt cha đầu ra `cancelled` + reason", async () => {
     const pid = await start(waitDef);
     const [kid] = await childrenOf(pid);
@@ -394,7 +400,9 @@ describe("CR-125 · «Quy trình con» chạy thật", () => {
     expect(await runOf(pid)).toBe("done");
     expect(await openTimers(pid)).toBe(0);
   });
+});
 
+describe("CR-125 · «Quy trình con» chạy thật · việc chờ duyệt, lỗi", () => {
   it("cr125-fix-parent-timer-2 · bước điền đầu của lượt con ⇒ việc nằm trong «Chờ tôi duyệt» của thành viên nhóm", async () => {
     const gx = await groups(o, T, ["sp-nhap"]);
     const G = gx.get("sp-nhap") as string;
@@ -456,6 +464,22 @@ describe("CR-125 · «Quy trình con» guard khi lưu", () => {
     expect(await check(input("g-x", "khong-co"))).toBe("SUBPROCESS_NOT_FOUND");
     expect(await check(input("g-x", "sp-ok"))).toBe("ok");
   });
+});
+
+describe("CR-125 · «Quy trình con» guard khi lưu · vòng, tầng, tệp", () => {
+  const input = (key: string, defKey: string) =>
+    ({
+      key,
+      stages: [{ executor: { kind: "subprocess", def_key: defKey } }],
+    }) as unknown as ProcessDefInput;
+  const check = async (i: ProcessDefInput) => {
+    try {
+      await withHubScope(db, { kind: "system" }, (tx) => subprocessCheck(tx, T, i));
+      return "ok";
+    } catch (e) {
+      return e instanceof AppError ? e.code : String(e);
+    }
+  };
 
   it("gọi vòng A → B → A ⇒ SUBPROCESS_CYCLE (kể cả tự gọi chính mình)", async () => {
     await def("g-a", [{ executor: { kind: "subprocess", def_key: "g-b" } }]);

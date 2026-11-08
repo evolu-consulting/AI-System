@@ -35,7 +35,6 @@ describe("start-form (trình sửa)", () => {
     f = relabelStartField(f, 0, "Giá dự kiến");
     expect(f.fields[0]?.key).toBe("gia_du_kien");
   });
-
   test("draft → def → draft giữ nguyên ô, ai được bắt đầu, mẫu tên, def hợp lệ với phiếu của engine", () => {
     const s = fresh();
     const def = stageToInput({ ...s, step: 0 });
@@ -45,7 +44,6 @@ describe("start-form (trình sửa)", () => {
     expect(back.startForm?.fields.length).toBe(1);
     expect(startFormToDef(back.startForm as never)).toEqual(def.start_form as never);
   });
-
   test("thêm node phiếu ở ĐẦU flow đẩy các bước lùi một và đánh lại đích bước, gỡ thì dồn lại", () => {
     const a = { ...approve(), approve: { reject: null, ret: null } };
     const r = addStartFormFirst([a], fresh());
@@ -60,7 +58,9 @@ describe("start-form (trình sửa)", () => {
     const back = removeStartForm(r.stages);
     expect(back.map((s) => [s.executor, s.step])).toEqual([["approve", 0]]);
   });
+});
 
+describe("start-form (trình sửa)", () => {
   test("kiểm tại chỗ: cần ≥ 1 ô, nhãn, mã không trùng/không phải mã hệ thống, mẫu tên, nhóm khi chọn nhóm", () => {
     const s = fresh();
     const sf = s.startForm as NonNullable<StageDraft["startForm"]>;

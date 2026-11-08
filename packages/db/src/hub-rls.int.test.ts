@@ -162,7 +162,6 @@ describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", ()
     expect(await code(bad)).toBe("23505");
     expect(m).toBe(1);
   });
-
   test("WRK-FR-24 · agent_runtime không đọc bảng hội thoại / admin.*", async () => {
     // `runs`: 0022 cấp SELECT (id, status) + policy hàng `running` cho agent_runtime (WRK-FR-27) — cột khác vẫn 42501.
     for (const t of TABLES.filter((x) => x !== "runs"))
@@ -170,7 +169,6 @@ describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", ()
     expect(await code(rt`select tenant_id from hub.runs`)).toBe("42501");
     expect(await code(rt`select count(*) from admin.users`)).toBe("42501");
   });
-
   test("CR-125 B1 · S1c · mọi bảng hub/admin có tenant_id bật RLS + có policy (trừ allowlist có lý do)", async () => {
     const rows = await owner<{ t: string; rls: boolean; policies: number }[]>`
       select n.nspname || '.' || c.relname as t, c.relrowsecurity as rls,
@@ -192,7 +190,9 @@ describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", ()
     expect(stale).toEqual([]);
     expect(rows.length).toBeGreaterThan(40); // chặn truy vấn catalog lỗi trả rỗng
   });
+});
 
+describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {
   test("CR-125 B1 · S1c · role runtime không sở hữu bảng hub/admin (owner bỏ qua RLS khi chưa FORCE)", async () => {
     const owned = await owner<{ role: string; t: string }[]>`
       select r.role, t.schemaname || '.' || t.tablename as t

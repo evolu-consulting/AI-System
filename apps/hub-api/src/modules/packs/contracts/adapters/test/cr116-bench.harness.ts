@@ -190,9 +190,11 @@ export class Bench {
     label: string,
     rows: number,
     scope: Cap,
-    vs: Variant[],
-    key: (o: unknown) => string,
-    o: { explainOf?: number[]; info?: (out: unknown) => string } = {},
+    ...[vs, key, o = {}]: [
+      vs: Variant[],
+      key: (o: unknown) => string,
+      o?: { explainOf?: number[]; info?: (out: unknown) => string },
+    ]
   ): Promise<boolean> {
     const ms = new Map<string, number[]>(vs.map((v) => [v.name, []]));
     const outs = new Map<string, unknown>();

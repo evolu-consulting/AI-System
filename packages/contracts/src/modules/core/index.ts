@@ -24,8 +24,7 @@ const native = (
   key: string,
   vi: string,
   en: string,
-  baseExecutor: string,
-  outputs: FeatureNodeDecl["outputs"] = [],
+  ...[baseExecutor, outputs = []]: [baseExecutor: string, outputs?: FeatureNodeDecl["outputs"]]
 ): FeatureNodeDecl => ({
   key,
   label: { vi, en },

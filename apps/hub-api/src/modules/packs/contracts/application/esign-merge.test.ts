@@ -58,6 +58,9 @@ describe("mergeSigners", () => {
     );
     expect(r[0]?.signed_at).toBe("2026-11-08T02:00:00.000Z");
   });
+});
+
+describe("mergeSigners (thứ tự người nhận)", () => {
   it("nhà cung cấp trả người nhận KHÁC thứ tự ⇒ ghép theo recipientId (= vị trí + 1), kể cả trùng email", () => {
     const r = mergeSigners(
       [S(1, "d@x"), S(2, "d@x", "partner")],

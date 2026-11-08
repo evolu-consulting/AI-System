@@ -43,8 +43,10 @@ async function seedMailbox(
   from: string,
   to: string | null,
   channel: string,
-  status: string,
-  extra: { toEmail?: string; payload?: object; outcome?: string } = {},
+  ...[status, extra = {}]: [
+    status: string,
+    extra?: { toEmail?: string; payload?: object; outcome?: string },
+  ]
 ): Promise<string> {
   const r = await one(
     `insert into hub.partner_mailbox (from_tenant, to_tenant, to_email, channel, from_ref, payload, file_ref, pdf_sha256, status,
@@ -119,6 +121,59 @@ afterAll(async () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
+async function expectMailboxAnonymized(): Promise<void> {
+  const m1 = await one("select * from hub.partner_mailbox where id = $1::uuid", [ids.m1]);
+  expect(m1).toMatchObject({
+    from_tenant: X,
+    to_tenant: B,
+    status: "delivered",
+    payload: {},
+    from_ref: null,
+    file_ref: null,
+    pdf_sha256: null,
+  });
+  const m4 = await one("select * from hub.partner_mailbox where id = $1::uuid", [ids.m4]);
+  expect(m4).toMatchObject({
+    from_tenant: B,
+    to_tenant: X,
+    status: "replied",
+    outcome: "confirmed",
+    reason: null,
+    evidence: null,
+  });
+  const dump = JSON.stringify(
+    await sql`select to_jsonb(m) as j from hub.partner_mailbox m union all select to_jsonb(l) from hub.partner_links l`,
+  );
+  for (const s of [A, MST_A, "Tenant of", "ngoai@example.com", "Người ngoài", "của A"])
+    expect(dump.includes(s)).toBe(false);
+}
+
+async function expectCopiesAndLinksAnonymized(): Promise<void> {
+  // Bản sao phía B còn nối đúng hộp thư, nhưng tên/MST/bản chia sẻ của A đã mất.
+  const inbox = await one(
+    "select * from contracts.partner_inbox where tenant_id = $1::uuid and mailbox_id = $2::uuid",
+    [B, ids.m1],
+  );
+  expect(inbox).toMatchObject({
+    sender_name: PARTNER_DELETED_NAME,
+    sender_tax_code: null,
+    sender_verified: false,
+    message: null,
+    shared: {},
+    file_ref: null,
+    pdf_sha256: null,
+  });
+  const send = await one(
+    "select to_name, to_key from contracts.partner_sends where tenant_id = $1::uuid and mailbox_id = $2::uuid",
+    [B, ids.m4],
+  );
+  expect(send).toEqual({ to_name: PARTNER_DELETED_NAME, to_key: PARTNER_DELETED_KEY });
+  // Liên kết: lời mời chưa chấp nhận bị xoá, liên kết đã chấp nhận còn nhưng ẩn danh.
+  const links =
+    await sql`select from_tenant::text as f, to_tenant::text as t from hub.partner_links`;
+  expect(links.map((l) => [l.f, l.t])).toEqual([[X, B]]);
+}
+
 describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn danh bên bị xoá)", () => {
   it("xoá A giữ lịch sử của B và ẩn danh A thành «Công ty đã xoá»", async () => {
     const r = await purge(A, "Tenant 7301");
@@ -150,53 +205,8 @@ describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn dan
         await sql`select 1 from hub.partner_mailbox where from_tenant = ${A}::uuid or to_tenant = ${A}::uuid`
       ).length,
     ).toBe(0);
-    const m1 = await one("select * from hub.partner_mailbox where id = $1::uuid", [ids.m1]);
-    expect(m1).toMatchObject({
-      from_tenant: X,
-      to_tenant: B,
-      status: "delivered",
-      payload: {},
-      from_ref: null,
-      file_ref: null,
-      pdf_sha256: null,
-    });
-    const m4 = await one("select * from hub.partner_mailbox where id = $1::uuid", [ids.m4]);
-    expect(m4).toMatchObject({
-      from_tenant: B,
-      to_tenant: X,
-      status: "replied",
-      outcome: "confirmed",
-      reason: null,
-      evidence: null,
-    });
-    const dump = JSON.stringify(
-      await sql`select to_jsonb(m) as j from hub.partner_mailbox m union all select to_jsonb(l) from hub.partner_links l`,
-    );
-    for (const s of [A, MST_A, "Tenant of", "ngoai@example.com", "Người ngoài", "của A"])
-      expect(dump.includes(s)).toBe(false);
-    // Bản sao phía B còn nối đúng hộp thư, nhưng tên/MST/bản chia sẻ của A đã mất.
-    const inbox = await one(
-      "select * from contracts.partner_inbox where tenant_id = $1::uuid and mailbox_id = $2::uuid",
-      [B, ids.m1],
-    );
-    expect(inbox).toMatchObject({
-      sender_name: PARTNER_DELETED_NAME,
-      sender_tax_code: null,
-      sender_verified: false,
-      message: null,
-      shared: {},
-      file_ref: null,
-      pdf_sha256: null,
-    });
-    const send = await one(
-      "select to_name, to_key from contracts.partner_sends where tenant_id = $1::uuid and mailbox_id = $2::uuid",
-      [B, ids.m4],
-    );
-    expect(send).toEqual({ to_name: PARTNER_DELETED_NAME, to_key: PARTNER_DELETED_KEY });
-    // Liên kết: lời mời chưa chấp nhận bị xoá, liên kết đã chấp nhận còn nhưng ẩn danh.
-    const links =
-      await sql`select from_tenant::text as f, to_tenant::text as t from hub.partner_links`;
-    expect(links.map((l) => [l.f, l.t])).toEqual([[X, B]]);
+    await expectMailboxAnonymized();
+    await expectCopiesAndLinksAnonymized();
     // Audit ghi số liệu đối tác.
     const au = await one(
       "select summary -> 'partner' as p from admin.audit_log where entity_id = $1::uuid and action = 'delete'",
@@ -204,7 +214,9 @@ describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn dan
     );
     expect(au?.p).toMatchObject({ mailboxDeleted: 2, mailboxAnonymized: 3, copiesAnonymized: 3 });
   });
+});
 
+describe("tool-tenant-purge · đối tác hai bên (giữ lịch sử, ẩn danh bên bị xoá)", () => {
   it("id tombstone không dùng được làm tenant thật (CHECK admin 0040)", async () => {
     const code =
       await sql`insert into admin.tenants (id, key, name) values (${X}::uuid, 'tomb', 'Tomb')`.then(

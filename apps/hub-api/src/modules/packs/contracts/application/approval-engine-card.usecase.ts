@@ -209,7 +209,7 @@ export function engineAct(d: EngineCardDeps) {
     const out = await exec(d, port, c, plan);
     // W1 · hai lần bấm song song của CÙNG người: lần chèn bản ghi thua đua (bù trừ xoá) còn lần trùng (không chèn) thắng ⇒ ghi
     // lại sau khi engine nhận quyết (idempotent, `on conflict do nothing`) — quyết duyệt thay không bao giờ thiếu audit.
-    if (out === "ok") await afterOk(d, c, inp.sv, plan, note);
+    if (out === "ok") await afterOk(d, c, { sv: inp.sv, plan, note });
     return out;
   };
 }
@@ -218,10 +218,9 @@ export function engineAct(d: EngineCardDeps) {
 async function afterOk(
   d: EngineCardDeps,
   c: Ctx,
-  sv: Awaited<ReturnType<typeof input>>["sv"],
-  plan: Plan,
-  note: unknown,
+  o: { sv: Awaited<ReturnType<typeof input>>["sv"]; plan: Plan; note: unknown },
 ): Promise<void> {
+  const { sv, plan, note } = o;
   // W1 · hai lần bấm song song của CÙNG người: lần chèn bản ghi thua đua (bù trừ xoá) còn lần trùng (không chèn) thắng.
   if (note) await noteOverride(d, c, sv, plan.taskId);
   if (plan.kind !== "redo") await noteDecision(d, c, sv, plan);

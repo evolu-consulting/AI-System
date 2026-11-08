@@ -25,114 +25,119 @@ const asObj = (v: unknown): Record<string, unknown> => {
   return x && typeof x === "object" ? (x as Record<string, unknown>) : {};
 };
 
-export function partnerSendRepo(tx: Tx, tid: string) {
-  return {
-    /** HĐ cần gửi: tiêu đề, tệp, MST/tên đối tác theo hướng HĐ (sale ⇒ bên mua), các trường. */
-    async contract(id: string): Promise<SendContract | null> {
-      const [r] = await tx.execute<{
-        title: string;
-        file_id: string | null;
-        tax: string | null;
-        pname: string | null;
-        fields: unknown;
-      }>(sql`select ${contractNameSql("c")} as title, c.file_id::text as file_id,
+const contractAndFile = (tx: Tx, tid: string) => ({
+  /** HĐ cần gửi: tiêu đề, tệp, MST/tên đối tác theo hướng HĐ (sale ⇒ bên mua), các trường. */
+  async contract(id: string): Promise<SendContract | null> {
+    const [r] = await tx.execute<{
+      title: string;
+      file_id: string | null;
+      tax: string | null;
+      pname: string | null;
+      fields: unknown;
+    }>(sql`select ${contractNameSql("c")} as title, c.file_id::text as file_id,
           nullif(btrim(c.fields -> (case when c.direction = 'sale' then 'buyer' else 'supplier' end || '_tax_id') ->> 'value'), '') as tax,
           nullif(btrim(c.fields -> (case when c.direction = 'sale' then 'buyer' else 'supplier' end || '_name') ->> 'value'), '') as pname,
           c.fields
         from contracts.contracts c where c.id = ${id}::uuid and c.tenant_id = ${tid}::uuid`);
-      return r
-        ? {
-            title: r.title,
-            fileId: r.file_id,
-            partnerTax: r.tax,
-            partnerName: r.pname,
-            fields: asObj(r.fields),
-          }
-        : null;
-    },
-    /** CR-124 · q5 · tệp (org + id FileBox + mime) theo `file_ref` của lần gửi — chỉ tệp CỦA tenant này, chưa xoá mềm. MỘT câu. */
-    async file(
-      ref: string,
-    ): Promise<{ org: string; fileId: string; mime: string | null; name: string | null } | null> {
-      if (!/^[0-9a-f-]{36}$/i.test(ref)) return null;
-      const [r] = await tx.execute<{
-        org: string;
-        file_id: string;
-        mime: string | null;
-        name: string | null;
-      }>(sql`select f.org, f.file_id, f.mime, f.name from contracts.files f
+    return r
+      ? {
+          title: r.title,
+          fileId: r.file_id,
+          partnerTax: r.tax,
+          partnerName: r.pname,
+          fields: asObj(r.fields),
+        }
+      : null;
+  },
+  /** CR-124 · q5 · tệp (org + id FileBox + mime) theo `file_ref` của lần gửi — chỉ tệp CỦA tenant này, chưa xoá mềm. MỘT câu. */
+  async file(
+    ref: string,
+  ): Promise<{ org: string; fileId: string; mime: string | null; name: string | null } | null> {
+    if (!/^[0-9a-f-]{36}$/i.test(ref)) return null;
+    const [r] = await tx.execute<{
+      org: string;
+      file_id: string;
+      mime: string | null;
+      name: string | null;
+    }>(sql`select f.org, f.file_id, f.mime, f.name from contracts.files f
         where f.id = ${ref}::uuid and f.tenant_id = ${tid}::uuid and f.deleted_at is null`);
-      return r ? { org: r.org, fileId: r.file_id, mime: r.mime, name: r.name } : null;
-    },
-    /** Lần gửi gần nhất của HĐ (mở trước, rồi vòng cao nhất). */
-    async latest(id: string): Promise<SendRow | null> {
-      const [r] = await tx.execute<{
-        mailbox_id: string;
-        round: number;
-        status: string;
-        channel: PartnerChannel;
-        to_key: string | null;
-      }>(sql`select mailbox_id::text, round, status, channel, to_key from contracts.partner_sends
+    return r ? { org: r.org, fileId: r.file_id, mime: r.mime, name: r.name } : null;
+  },
+});
+
+const routing = (tx: Tx, tid: string) => ({
+  /** Lần gửi gần nhất của HĐ (mở trước, rồi vòng cao nhất). */
+  async latest(id: string): Promise<SendRow | null> {
+    const [r] = await tx.execute<{
+      mailbox_id: string;
+      round: number;
+      status: string;
+      channel: PartnerChannel;
+      to_key: string | null;
+    }>(sql`select mailbox_id::text, round, status, channel, to_key from contracts.partner_sends
         where tenant_id = ${tid}::uuid and contract_id = ${id}::uuid
         order by (status = 'open') desc, round desc limit 1`);
-      return r
-        ? {
-            mailboxId: r.mailbox_id,
-            round: r.round,
-            status: r.status,
-            channel: r.channel,
-            toKey: r.to_key,
-          }
-        : null;
-    },
-    /** Công ty nhận theo MST khớp đúng (chỉ công ty bật "cho phép tìm thấy") + trạng thái nối. */
-    async route(tax: string): Promise<RouteInfo | null> {
-      const [r] = await tx.execute<{
-        to_tenant: string;
-        name: string;
-        verified: boolean;
-        link: string;
-      }>(sql`select to_tenant::text, name, verified, link from hub.partner_route(${tax})`);
-      return r ? { toTenant: r.to_tenant, name: r.name, verified: r.verified, link: r.link } : null;
-    },
-    /** Lần đầu tới công ty chưa nối ⇒ gửi lời mời nối (idempotent, hàm DEFINER). */
-    async requestLink(toTenant: string): Promise<string> {
-      const [r] = await tx.execute<{ s: string }>(
-        sql`select hub.partner_link_request(${toTenant}::uuid) as s`,
-      );
-      return r?.s ?? "pending";
-    },
-    /** Ghi hộp thư (hàm DEFINER, `from_tenant` = tenant hiện tại). Hạn tính bằng giờ DB. */
-    async send(o: {
-      toTenant: string | null;
-      toEmail: string | null;
-      channel: PartnerChannel;
-      ref: string;
-      payload: Record<string, unknown>;
-      fileRef: string | null;
-      days: number;
-      prevId: string | null;
-    }): Promise<string> {
-      const [r] = await tx.execute<{
-        id: string;
-      }>(sql`select hub.partner_send(${tid}::uuid, ${o.toTenant}::uuid,
+    return r
+      ? {
+          mailboxId: r.mailbox_id,
+          round: r.round,
+          status: r.status,
+          channel: r.channel,
+          toKey: r.to_key,
+        }
+      : null;
+  },
+  /** Công ty nhận theo MST khớp đúng (chỉ công ty bật "cho phép tìm thấy") + trạng thái nối. */
+  async route(tax: string): Promise<RouteInfo | null> {
+    const [r] = await tx.execute<{
+      to_tenant: string;
+      name: string;
+      verified: boolean;
+      link: string;
+    }>(sql`select to_tenant::text, name, verified, link from hub.partner_route(${tax})`);
+    return r ? { toTenant: r.to_tenant, name: r.name, verified: r.verified, link: r.link } : null;
+  },
+  /** Lần đầu tới công ty chưa nối ⇒ gửi lời mời nối (idempotent, hàm DEFINER). */
+  async requestLink(toTenant: string): Promise<string> {
+    const [r] = await tx.execute<{ s: string }>(
+      sql`select hub.partner_link_request(${toTenant}::uuid) as s`,
+    );
+    return r?.s ?? "pending";
+  },
+});
+
+const outbound = (tx: Tx, tid: string) => ({
+  /** Ghi hộp thư (hàm DEFINER, `from_tenant` = tenant hiện tại). Hạn tính bằng giờ DB. */
+  async send(o: {
+    toTenant: string | null;
+    toEmail: string | null;
+    channel: PartnerChannel;
+    ref: string;
+    payload: Record<string, unknown>;
+    fileRef: string | null;
+    days: number;
+    prevId: string | null;
+  }): Promise<string> {
+    const [r] = await tx.execute<{
+      id: string;
+    }>(sql`select hub.partner_send(${tid}::uuid, ${o.toTenant}::uuid,
           ${o.toEmail}, ${o.channel}, ${o.ref}, ${JSON.stringify(o.payload)}::jsonb, ${o.fileRef}, null,
           now() + make_interval(days => ${o.days}::int), ${o.prevId}::uuid)::text as id`);
-      if (!r) throw new Error("PARTNER_SEND_FAILED");
-      return r.id;
-    },
-    async record(o: {
-      contractId: string;
-      mailboxId: string;
-      round: number;
-      channel: PartnerChannel;
-      toKey: string;
-      toName: string | null;
-      runId: string | null;
-      by: string;
-    }): Promise<void> {
-      // CR-125 · gửi đối tác ⇒ cùng câu một dòng lịch sử HĐ (ai · gửi cho ai · vòng · kênh).
-      await tx.execute(sql`with s as (insert into contracts.partner_sends
+    if (!r) throw new Error("PARTNER_SEND_FAILED");
+    return r.id;
+  },
+  async record(o: {
+    contractId: string;
+    mailboxId: string;
+    round: number;
+    channel: PartnerChannel;
+    toKey: string;
+    toName: string | null;
+    runId: string | null;
+    by: string;
+  }): Promise<void> {
+    // CR-125 · gửi đối tác ⇒ cùng câu một dòng lịch sử HĐ (ai · gửi cho ai · vòng · kênh).
+    await tx.execute(sql`with s as (insert into contracts.partner_sends
           (tenant_id, contract_id, mailbox_id, round, channel, to_key, to_name, process_run_id, created_by)
         values (${tid}::uuid, ${o.contractId}::uuid, ${o.mailboxId}::uuid, ${o.round}, ${o.channel}, ${o.toKey},
           ${o.toName}, ${o.runId}::uuid, ${o.by}::uuid) returning contract_id, round, channel, to_name, created_by)
@@ -140,21 +145,24 @@ export function partnerSendRepo(tx: Tx, tid: string) {
         select ${tid}::uuid, s.contract_id, 'partner_sent', s.created_by,
           jsonb_strip_nulls(jsonb_build_object('round', s.round, 'channel', s.channel, 'to', s.to_name))
         from s`);
-    },
-    /** Tên pháp lý/MST/dấu xác minh CÔNG KHAI của chính công ty (hiện ở lịch sử). */
-    async self(): Promise<{ name: string; taxCode: string | null; verified: boolean } | null> {
-      const [r] = await tx.execute<{ name: string; tax_code: string | null; verified: boolean }>(
-        sql`select name, tax_code, verified from hub.partner_self()`,
-      );
-      return r ? { name: r.name, taxCode: r.tax_code, verified: r.verified } : null;
-    },
-    /** Đóng lần gửi theo câu trả lời (tenant GỬI). Chạy lại ⇒ 0 hàng. MỘT câu cho cả lô. */
-    async closeReplies(
-      rows: readonly { mailboxId: string; outcome: string; reason: string | null }[],
-    ): Promise<number> {
-      if (rows.length === 0) return 0;
-      // CR-125 · đối tác trả lời ⇒ cùng câu một dòng lịch sử HĐ cho mỗi lần gửi vừa đóng (kết quả + lý do); chạy lại ⇒ 0 hàng ⇒ không ghi đôi.
-      const r = await tx.execute<{ id: string }>(sql`with u as (update contracts.partner_sends s
+  },
+});
+
+const replies = (tx: Tx, tid: string) => ({
+  /** Tên pháp lý/MST/dấu xác minh CÔNG KHAI của chính công ty (hiện ở lịch sử). */
+  async self(): Promise<{ name: string; taxCode: string | null; verified: boolean } | null> {
+    const [r] = await tx.execute<{ name: string; tax_code: string | null; verified: boolean }>(
+      sql`select name, tax_code, verified from hub.partner_self()`,
+    );
+    return r ? { name: r.name, taxCode: r.tax_code, verified: r.verified } : null;
+  },
+  /** Đóng lần gửi theo câu trả lời (tenant GỬI). Chạy lại ⇒ 0 hàng. MỘT câu cho cả lô. */
+  async closeReplies(
+    rows: readonly { mailboxId: string; outcome: string; reason: string | null }[],
+  ): Promise<number> {
+    if (rows.length === 0) return 0;
+    // CR-125 · đối tác trả lời ⇒ cùng câu một dòng lịch sử HĐ cho mỗi lần gửi vừa đóng (kết quả + lý do); chạy lại ⇒ 0 hàng ⇒ không ghi đôi.
+    const r = await tx.execute<{ id: string }>(sql`with u as (update contracts.partner_sends s
           set status = x.outcome, reason = x.reason, closed_at = now()
         from jsonb_to_recordset(${JSON.stringify(
           rows.map((r) => ({ mailbox_id: r.mailboxId, outcome: r.outcome, reason: r.reason })),
@@ -165,8 +173,14 @@ export function partnerSendRepo(tx: Tx, tid: string) {
           select ${tid}::uuid, u.contract_id, 'partner_replied',
             jsonb_strip_nulls(jsonb_build_object('round', u.round, 'outcome', u.status, 'reason', u.reason)) from u)
         select id from u`);
-      return r.length;
-    },
-  };
-}
+    return r.length;
+  },
+});
+
+export const partnerSendRepo = (tx: Tx, tid: string) => ({
+  ...contractAndFile(tx, tid),
+  ...routing(tx, tid),
+  ...outbound(tx, tid),
+  ...replies(tx, tid),
+});
 export type PartnerSendRepo = ReturnType<typeof partnerSendRepo>;

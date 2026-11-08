@@ -155,7 +155,7 @@ export function esignUsecase(d: ESignDeps) {
     if (!bytes) throw new ESignFail("ESIGN_PROVIDER", "file-unavailable");
     const title = contractNameOf(got.c) ?? "";
     // esign-anchor · ô ký trong văn bản HĐ (gửi tay lẫn gửi tự động của bước Ký số).
-    const anchors = await anchorsFor(who, id, p, stored, bytes);
+    const anchors = await anchorsFor(who, id, p, { stored, bytes });
     const { envelopeId } = await p.createEnvelope({
       anchors,
       subject: `Ky hop dong: ${title}`.slice(0, 100),
@@ -218,7 +218,7 @@ export function esignUsecase(d: ESignDeps) {
   const resolveChoice = esignSwitch({
     ...d, // uow, warn, now, onStatus
     avail,
-    send: (who, id, signers, key, node) => sendWith(tenantRun(who), who, id, signers, key, node),
+    send: (who, id, ...rest) => sendWith(tenantRun(who), who, id, ...rest),
     reopen: openOf,
     kindOf: (k) => kindOf(d.providers.entries, k),
   });

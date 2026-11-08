@@ -40,8 +40,7 @@ function revealSelection(
   rf: ReactFlowInstance,
   sel: string,
   size: { w: number; h: number },
-  inset: number,
-  minZoom: number,
+  ...[inset, minZoom]: [inset: number, minZoom: number]
 ): Vp | null {
   const me = rf.getNode(sel);
   if (!me) return null;
@@ -139,9 +138,25 @@ export function useViewFit(o: ViewFitOptions): void {
     }, 60);
     return () => window.clearTimeout(id);
   }, [stepsKey]);
+  const ctx: FitCtx = { rf, widthRef, heightRef, inset, opts, prev };
+  useFocusFollow(ctx, o.focus ?? []);
+  useRevealSelected(ctx, o.selected, o.inset > 0);
+}
+
+type Ref<T> = { current: T };
+type FitCtx = {
+  rf: ReactFlowInstance;
+  widthRef: Ref<number>;
+  heightRef: Ref<number>;
+  inset: Ref<number>;
+  opts: Ref<ViewFitOptions>;
+  prev: Ref<{ vp: Vp | null }>;
+};
+
+function useFocusFollow(ctx: FitCtx, focusIds: readonly string[]): void {
+  const { rf, widthRef, heightRef, inset, opts, prev } = ctx;
   // CR-123 · u14 · sau thả / nối / ELK bố cục lại: node đang làm việc + node vừa nối ở TRỌN trong khung (pan/thu nhỏ mượt, zoom ≥ fitMin, không phóng to);
   // chạy lại khi vị trí các node đó đổi (ELK xếp lại sau khi sửa) nhưng KHÔNG khi người dùng tự kéo/zoom khung nhìn.
-  const focusIds = o.focus ?? [];
   const focusSig = useStore((s) =>
     focusIds
       .map((id) => {
@@ -183,10 +198,14 @@ export function useViewFit(o: ViewFitOptions): void {
     }, 140);
     return () => window.clearTimeout(id);
   }, [focusSig]);
+}
+
+function useRevealSelected(ctx: FitCtx, selected: string | undefined, insetOn: boolean): void {
+  const { rf, widthRef, heightRef, inset, opts } = ctx;
   // chọn node nằm dưới ngăn chi tiết ⇒ pan vào vùng thấy được (không đổi zoom, không fit lại khi mở/đóng ngăn)
   // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ khi đổi node chọn / bật tắt ngăn
   useEffect(() => {
-    const sel = o.selected;
+    const sel = selected;
     if (!sel || inset.current <= 0) return;
     const id = window.setTimeout(() => {
       const to = revealSelection(
@@ -199,5 +218,5 @@ export function useViewFit(o: ViewFitOptions): void {
       if (to) void rf.setViewport(to, { duration: reduceMotion() ? 0 : 200 });
     }, 260);
     return () => window.clearTimeout(id);
-  }, [o.selected, o.inset > 0]);
+  }, [selected, insetOn]);
 }

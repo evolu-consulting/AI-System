@@ -89,7 +89,6 @@ describe("sau bố cục lại: không hai node nào giao nhau", () => {
     expect(pos.size).toBe(demoNodes.length);
     expect(intersections(items, pos, SETTLE_GAP)).toEqual([]);
   });
-
   test("flow demo + một bước thêm sau Ký xong (Kế toán duyệt chi)", async () => {
     const auto = await layoutWithElk(addedNodes, addedEdges, engine);
     const items = itemsOf(addedNodes, auto);
@@ -99,7 +98,6 @@ describe("sau bố cục lại: không hai node nào giao nhau", () => {
     // ELK tự nó đã không xếp chồng (không cần cứu): vị trí cuối = toạ độ ELK
     for (const n of addedNodes) expect(pos.get(n.id)).toEqual(auto.get(n.id));
   });
-
   test("bước thả tay đè lên node khác ⇒ quay về toạ độ ELK, thả chỗ trống thì giữ", async () => {
     const auto = await layoutWithElk(addedNodes, addedEdges, engine);
     const ok = auto.get("ok") as { x: number; y: number };
@@ -110,7 +108,6 @@ describe("sau bố cục lại: không hai node nào giao nhau", () => {
     expect(pos.get("ret")).toEqual(free); // không đè ⇒ giữ vị trí tay
     expect(intersections(items, pos, SETTLE_GAP)).toEqual([]);
   });
-
   test("hai bước thả tay đè nhau: chỉ một bước được giữ", async () => {
     const auto = await layoutWithElk(addedNodes, addedEdges, engine);
     const items = itemsOf(addedNodes, auto, {
@@ -122,19 +119,19 @@ describe("sau bố cục lại: không hai node nào giao nhau", () => {
     expect(pos.get("kt")).toEqual(auto.get("kt"));
     expect(intersections(items, pos, SETTLE_GAP)).toEqual([]);
   });
-
   test("toạ độ ELK tự nó đè nhau (dự phòng, kích thước lệch) ⇒ vẫn được tách ra", () => {
     const auto = new Map(addedNodes.map((n) => [n.id, { x: 100, y: 100 }]));
     const items = itemsOf(addedNodes, auto);
     const pos = settlePositions(items);
     expect(intersections(items, pos, SETTLE_GAP)).toEqual([]);
   });
-
   test("lưới dự phòng không chồng nhau", () => {
     const items = itemsOf(addedNodes, fallbackPositions(addedNodes));
     expect(intersections(items, settlePositions(items), SETTLE_GAP)).toEqual([]);
   });
+});
 
+describe("sau bố cục lại: không hai node nào giao nhau", () => {
   test("node chưa có toạ độ nào ⇒ chưa hiện, có vị trí tay mà chưa có ELK ⇒ hiện tại chỗ tay", () => {
     const pos = settlePositions([
       { id: "a" },

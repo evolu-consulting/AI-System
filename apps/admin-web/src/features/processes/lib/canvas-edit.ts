@@ -220,8 +220,7 @@ export function placeFresh(
   stages: readonly StageDraft[],
   fresh: readonly StageDraft[],
   step: number,
-  y: number | undefined,
-  x?: number,
+  ...[y, x]: [y: number | undefined, x?: number]
 ): StepOpResult<StageDraft> {
   let cur = [...stages];
   let after = step;

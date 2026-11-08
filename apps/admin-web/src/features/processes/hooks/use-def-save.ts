@@ -106,8 +106,7 @@ function reportBlocked(
   blocked: NonNullable<ReturnType<typeof blockedInfo>>,
   stages: readonly { uid: string }[],
   select: (uid: string) => void,
-  t: (k: string, o?: Record<string, unknown>) => string,
-  withGo = false,
+  ...[t, withGo = false]: [t: (k: string, o?: Record<string, unknown>) => string, withGo?: boolean]
 ): void {
   const reason = t(blocked.reasonKey);
   const uid = blocked.index === null ? undefined : stages[blocked.index]?.uid;

@@ -65,8 +65,9 @@ const P = (key: string, available = true, legal = true): ESignProviderOut => ({
   legal,
 });
 
+const D = { ky: true, myTurn: true, signed: false, redirectsToProvider: true };
+
 describe("CR-125 · ý định ký từ thư", () => {
-  const D = { ky: true, myTurn: true, signed: false, redirectsToProvider: true };
   it("decideAutoSign: tự mở CHỈ khi ky + đúng lượt + chưa ký + nhà cung cấp chỉ chuyển trang (DocuSign)", () => {
     expect(decideAutoSign(D)).toBe("open");
     expect(decideAutoSign({ ...D, ky: false })).toBe("none");
@@ -94,6 +95,9 @@ describe("CR-125 · ý định ký từ thư", () => {
     expect(redirectsToProvider(withP("khac"))).toBe(false);
     expect(redirectsToProvider(st())).toBe(false);
   });
+});
+
+describe("CR-125 · ý định ký từ thư", () => {
   it("M1 · người ký 2 mở link trước người ký 1 thì không có lượt và không tự mở", () => {
     const sg = (order: number, you: boolean, signed: string | null) => ({
       role: "company" as const,

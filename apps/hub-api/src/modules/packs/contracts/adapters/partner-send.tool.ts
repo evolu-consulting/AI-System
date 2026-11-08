@@ -91,18 +91,19 @@ async function planFor(r: R, cfg: Cfg, id: string) {
   return { c, plan: planChannel(route, email || null, c.partnerName) };
 }
 
+const alreadySent = (last: { mailboxId: string; channel: string; round: number }) => ({
+  status: "already_sent",
+  mailbox_id: last.mailboxId,
+  channel: last.channel,
+  round: last.round,
+});
+
 async function run(d: PartnerToolDeps, ctx: PackToolCtx, args: PackToolArgs) {
   await assertEnabled(d, ctx.tenantId);
   const { cfg, id } = decodePartnerArgs(args);
   return d.uow.tenant({ tenantId: ctx.tenantId, userId: ctx.userId }, async (r) => {
     const last = await r.partnerSend.latest(id);
-    if (last?.status === "open")
-      return {
-        status: "already_sent",
-        mailbox_id: last.mailboxId,
-        channel: last.channel,
-        round: last.round,
-      };
+    if (last?.status === "open") return alreadySent(last);
     const { c, plan } = await planFor(r, cfg, id);
     const toKey = toKeyOf(plan);
     const prev = prevMailboxOf(last, toKey);

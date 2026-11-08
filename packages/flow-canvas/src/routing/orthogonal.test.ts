@@ -66,6 +66,9 @@ describe("routeEdge cơ bản", () => {
     expect(polylineHitsAny(r, [wall], 1)).toBe(false);
     expect(r[0]).toEqual({ x: 100, y: 0 });
   });
+});
+
+describe("routeEdge cơ bản", () => {
   test("mọi đoạn vuông góc; roundedPath và pointAt khớp độ dài", () => {
     const r = routeEdge({
       from: { x: 0, y: 0 },

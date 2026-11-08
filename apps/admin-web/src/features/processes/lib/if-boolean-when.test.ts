@@ -80,6 +80,9 @@ describe("điều kiện Có/Không", () => {
     const end = stage(1, { outcome });
     expect(issues([ifStage("gt", "true"), end])).toContain("stages.0.executor.when.conds.0");
   });
+});
+
+describe("điều kiện Có/Không", () => {
   test("Bắt đầu khi: dữ kiện Có/Không dùng boolean thật và qua luật Hub", () => {
     const ok = {
       ...meta,

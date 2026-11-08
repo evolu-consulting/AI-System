@@ -49,6 +49,9 @@ describe("parsePublishIssues", () => {
       },
     ]);
   });
+});
+
+describe("parsePublishIssues", () => {
   test("thiếu step ⇒ suy từ path; thiếu code ⇒ lấy từ rule; mã lạ ⇒ câu chung; mục hỏng bị bỏ", () => {
     const out = parsePublishIssues(
       { issues: [{ path: "slot_body.steps.2.when", rule: "COND_DEPT_MISSING" }, 5, null] },

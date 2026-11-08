@@ -43,31 +43,31 @@ describe("depcruise chỉ cảnh báo stale", () => {
   });
 });
 
+const BASE = ".dependency-cruiser-known-violations.json";
+
+function fakeGit(conflicts: string[][]) {
+  const calls: string[] = [];
+  let step = 0;
+  const git = (...a: string[]) => {
+    calls.push(a.join(" "));
+    if (a[0] === "rebase" && a[1] !== "--continue") return { ok: false, out: "conflict" };
+    if (a[0] === "diff") return { ok: true, out: (conflicts[step] ?? []).join("\n") };
+    if (a.includes("--continue")) {
+      step++;
+      return step < conflicts.length ? { ok: false, out: "conflict" } : { ok: true, out: "" };
+    }
+    return { ok: true, out: "" };
+  };
+  return { git, calls };
+}
+
 describe("rebase tự giải baseline", () => {
-  const BASE = ".dependency-cruiser-known-violations.json";
   test("onlyResolvable", () => {
     expect(onlyResolvable([BASE], true)).toBe(true);
     expect(onlyResolvable([BASE], false)).toBe(false);
     expect(onlyResolvable([BASE, "src/a.ts"], true)).toBe(false);
     expect(onlyResolvable([], true)).toBe(false);
   });
-
-  function fakeGit(conflicts: string[][]) {
-    const calls: string[] = [];
-    let step = 0;
-    const git = (...a: string[]) => {
-      calls.push(a.join(" "));
-      if (a[0] === "rebase" && a[1] !== "--continue") return { ok: false, out: "conflict" };
-      if (a[0] === "diff") return { ok: true, out: (conflicts[step] ?? []).join("\n") };
-      if (a.includes("--continue")) {
-        step++;
-        return step < conflicts.length ? { ok: false, out: "conflict" } : { ok: true, out: "" };
-      }
-      return { ok: true, out: "" };
-    };
-    return { git, calls };
-  }
-
   test("chỉ baseline conflict ở mỗi commit lấy upstream, sinh lại, add, continue", () => {
     const { git, calls } = fakeGit([[BASE], [BASE]]);
     let regen = 0;
@@ -81,7 +81,6 @@ describe("rebase tự giải baseline", () => {
     expect(calls).toContain(`checkout --ours -- ${BASE}`);
     expect(calls).toContain(`add ${BASE}`);
   });
-
   test("file khác conflict dừng, không sinh lại", () => {
     const { git } = fakeGit([[BASE, "src/a.ts"]]);
     let regen = 0;
@@ -92,7 +91,6 @@ describe("rebase tự giải baseline", () => {
     expect(r.ok).toBe(false);
     expect(regen).toBe(0);
   });
-
   test("sinh lại thất bại vi phạm mới dừng báo", () => {
     const { git } = fakeGit([[BASE]]);
     expect(rebaseResolvingLock(git, "platform/gd0", () => false).ok).toBe(false);

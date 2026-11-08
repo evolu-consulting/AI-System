@@ -78,6 +78,115 @@ function CondValue(p: {
     />
   );
 }
+type CondRowProps = {
+  p: StageIfProps;
+  c: CondDraft;
+  j: number;
+  err: (cell: Parameters<typeof ifErrorAt>[2]) => string | undefined;
+  setCond: (j: number, patch: Partial<CondDraft>) => void;
+};
+
+function CondRow({ p, c, j, err, setCond }: CondRowProps) {
+  const { t } = useTranslation();
+  const { id, value, sources, readOnly } = p;
+  const type = sources.find((s) => s.value === c.from)?.type ?? "string";
+  const cell = (k: "from" | "op" | "value") => err(`when.conds.${j}.${k}`);
+  return (
+    <div
+      className="grid gap-2 rounded-md border border-border p-2.5 sm:grid-cols-2"
+      data-testid={`if-cond-${j + 1}`}
+    >
+      <SelectField
+        id={`${id}-c${j}-from`}
+        label={t(`${K}from`)}
+        value={c.from}
+        readOnly={readOnly}
+        error={cell("from")}
+        placeholder={t(`${K}fromPh`)}
+        options={sources.map((s) => ({
+          value: s.value,
+          label: s.label,
+        }))}
+        onChange={(from) => {
+          const ft = sources.find((s) => s.value === from)?.type ?? "string";
+          const op = opsForType(ft).includes(c.op as never) ? c.op : "eq";
+          setCond(j, {
+            from,
+            type: ft,
+            op,
+            ...(ft === type ? {} : { value: ft === "boolean" ? "true" : "" }),
+          });
+        }}
+      />
+      <SelectField
+        id={`${id}-c${j}-op`}
+        label={t(`${K}op`)}
+        value={c.op}
+        readOnly={readOnly}
+        error={cell("op")}
+        options={opsForType(type).map((o) => ({
+          value: o,
+          label:
+            type === "boolean"
+              ? t(`${K}${o === "eq" ? "opIs" : "opIsNot"}`)
+              : t(`process.admin.editor.stage.branch.ops.${o}`),
+        }))}
+        onChange={(op) => setCond(j, { op })}
+      />
+      <div className="sm:col-span-2">
+        <CondValue
+          id={`${id}-c${j}-value`}
+          type={type}
+          value={c.value}
+          readOnly={readOnly}
+          error={cell("value")}
+          onChange={(v) => setCond(j, { value: v })}
+        />
+      </div>
+      {readOnly || value.conds.length <= 1 ? null : (
+        <div className="flex items-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-label={t(`${K}remove`, { n: j + 1 })}
+            onClick={() => p.onChange({ conds: value.conds.filter((_, k) => k !== j) })}
+          >
+            <X aria-hidden className="size-4" />
+            {t(`${K}delete`)}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ifWords(t: (k: string) => string) {
+  return {
+    if: t(`${K}s.if`),
+    and: t(`${K}s.and`),
+    or: t(`${K}s.or`),
+    goTo: t(`${K}s.goTo`),
+    otherwise: t(`${K}s.otherwise`),
+    nextStep: t(`${K}nextStep`),
+    blank: t(`${K}s.blank`),
+    million: t(`${K}s.million`),
+    billion: t(`${K}s.billion`),
+    bool: {
+      is: t(`${K}opIs`),
+      isNot: t(`${K}opIsNot`),
+      yes: t("process.admin.flow.yes"),
+      no: t("process.admin.flow.no"),
+    },
+    ops: Object.fromEntries(
+      ["eq", "ne", "lt", "le", "gt", "ge"].map((o) => [
+        o,
+        t(`process.admin.editor.stage.branch.ops.${o}`),
+      ]),
+    ),
+  };
+}
+
 export function StageIf(p: StageIfProps) {
   const { t } = useTranslation();
   const { id, index, value, sources, steps, errors, readOnly } = p;
@@ -105,29 +214,7 @@ export function StageIf(p: StageIfProps) {
     fromLabel: (c) => sources.find((s) => s.value === c.from)?.label ?? c.from,
     yes: stepName(value.yes),
     no: stepName(value.no),
-    words: {
-      if: t(`${K}s.if`),
-      and: t(`${K}s.and`),
-      or: t(`${K}s.or`),
-      goTo: t(`${K}s.goTo`),
-      otherwise: t(`${K}s.otherwise`),
-      nextStep: t(`${K}nextStep`),
-      blank: t(`${K}s.blank`),
-      million: t(`${K}s.million`),
-      billion: t(`${K}s.billion`),
-      bool: {
-        is: t(`${K}opIs`),
-        isNot: t(`${K}opIsNot`),
-        yes: t("process.admin.flow.yes"),
-        no: t("process.admin.flow.no"),
-      },
-      ops: Object.fromEntries(
-        ["eq", "ne", "lt", "le", "gt", "ge"].map((o) => [
-          o,
-          t(`process.admin.editor.stage.branch.ops.${o}`),
-        ]),
-      ),
-    },
+    words: ifWords(t),
   });
   return (
     <fieldset
@@ -164,80 +251,10 @@ export function StageIf(p: StageIfProps) {
           onChange={(op) => p.onChange({ op: op === "or" ? "or" : "and" })}
         />
       ) : null}
-      {value.conds.map((c, j) => {
-        const type = sources.find((s) => s.value === c.from)?.type ?? "string";
-        const cell = (k: "from" | "op" | "value") => err(`when.conds.${j}.${k}`);
-        return (
-          <div
-            // biome-ignore lint/suspicious/noArrayIndexKey: điều kiện không có danh tính ổn định
-            key={j}
-            className="grid gap-2 rounded-md border border-border p-2.5 sm:grid-cols-2"
-            data-testid={`if-cond-${j + 1}`}
-          >
-            <SelectField
-              id={`${id}-c${j}-from`}
-              label={t(`${K}from`)}
-              value={c.from}
-              readOnly={readOnly}
-              error={cell("from")}
-              placeholder={t(`${K}fromPh`)}
-              options={sources.map((s) => ({
-                value: s.value,
-                label: s.label,
-              }))}
-              onChange={(from) => {
-                const ft = sources.find((s) => s.value === from)?.type ?? "string";
-                const op = opsForType(ft).includes(c.op as never) ? c.op : "eq";
-                setCond(j, {
-                  from,
-                  type: ft,
-                  op,
-                  ...(ft === type ? {} : { value: ft === "boolean" ? "true" : "" }),
-                });
-              }}
-            />
-            <SelectField
-              id={`${id}-c${j}-op`}
-              label={t(`${K}op`)}
-              value={c.op}
-              readOnly={readOnly}
-              error={cell("op")}
-              options={opsForType(type).map((o) => ({
-                value: o,
-                label:
-                  type === "boolean"
-                    ? t(`${K}${o === "eq" ? "opIs" : "opIsNot"}`)
-                    : t(`process.admin.editor.stage.branch.ops.${o}`),
-              }))}
-              onChange={(op) => setCond(j, { op })}
-            />
-            <div className="sm:col-span-2">
-              <CondValue
-                id={`${id}-c${j}-value`}
-                type={type}
-                value={c.value}
-                readOnly={readOnly}
-                error={cell("value")}
-                onChange={(v) => setCond(j, { value: v })}
-              />
-            </div>
-            {readOnly || value.conds.length <= 1 ? null : (
-              <div className="flex items-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  aria-label={t(`${K}remove`, { n: j + 1 })}
-                  onClick={() => p.onChange({ conds: value.conds.filter((_, k) => k !== j) })}
-                >
-                  <X aria-hidden className="size-4" />
-                  {t(`${K}delete`)}
-                </Button>
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {value.conds.map((c, j) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: dieu kien khong co danh tinh on dinh
+        <CondRow key={j} p={p} c={c} j={j} err={err} setCond={setCond} />
+      ))}
       {readOnly ? null : full ? (
         <p className="text-caption text-muted-foreground">{t(`${K}max`)}</p>
       ) : (

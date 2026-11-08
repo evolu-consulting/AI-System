@@ -107,7 +107,9 @@ describe("CR-125 UX-S7 · điều kiện Đối tác xác nhận (phần Hub)", 
     expect((await assign(X, RECEIVE_TPL)).status).toBe(201);
     expect((await get("A", X)).json.receive_flow).toBe(true);
   });
+});
 
+describe("CR-125 UX-S7 · điều kiện Đối tác xác nhận · flow, quyền", () => {
   it("flow công ty có bước «Gửi đối tác xác nhận» đang bật ⇒ send_flow=true; công ty khác không bị ảnh hưởng", async () => {
     expect((await get("AZ", Z)).json).toMatchObject({ send_flow: false, receive_flow: false });
     const stages = JSON.stringify([

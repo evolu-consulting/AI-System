@@ -61,8 +61,9 @@ const template = (): StageView[] => [
   view("s7", 7),
 ];
 
+const c = collapseModules(template(), info);
+
 describe("FLOW3-FR-14 · collapseModules (mẫu Duyệt theo giá trị)", () => {
-  const c = collapseModules(template(), info);
   test("đúng MỘT ô Ký số với 3 đầu ra Ký xong · Từ chối · Hết hạn", () => {
     const mods = c.views.filter((v) => v.module);
     expect(mods.length).toBe(1);
@@ -105,6 +106,9 @@ describe("FLOW3-FR-14 · collapseModules (mẫu Duyệt theo giá trị)", () =>
     expect(fwd).toContain("s3>s5");
     expect(fwd.some((e) => e.includes("s4"))).toBe(false);
   });
+});
+
+describe("FLOW3-FR-14 · collapseModules (mẫu Duyệt theo giá trị)", () => {
   test("không có cụm ⇒ giữ nguyên views", () => {
     const xs = [view("s0", 0), view("s1", 1)];
     const r = collapseModules(xs, info);

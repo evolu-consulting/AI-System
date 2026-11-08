@@ -135,11 +135,14 @@ const cookiePath = (token: string) => `/partner-reply/${token}`;
 async function formError(
   c: Ctx,
   d: PartnerPublicDeps,
-  g: { ip: string | null; th: string },
-  body: Record<string, unknown>,
-  problem: FormProblem,
-  csrf: string,
+  o: {
+    g: { ip: string | null; th: string };
+    body: Record<string, unknown>;
+    problem: FormProblem;
+    csrf: string;
+  },
 ): Promise<Response> {
+  const { g, body, problem, csrf } = o;
   const token = c.req.param("token") ?? "";
   const v = await d.store.view(g.th, { ip: null, ua: null, audit: false });
   if (!v) return invalid(c, d, g.ip ?? "unknown");
@@ -172,7 +175,7 @@ async function replyRoute(c: Ctx, d: PartnerPublicDeps): Promise<Response> {
       403,
     );
   const parsed = parseReplyForm(body);
-  if (!parsed.ok) return formError(c, d, g, body, parsed.problem, csrfCookie);
+  if (!parsed.ok) return formError(c, d, { g, body, problem: parsed.problem, csrf: csrfCookie });
   const code = await d.store.reply(g.th, parsed.form, {
     ip: ipPrefix(g.ip),
     ua: c.req.header("user-agent") ?? null,
@@ -182,50 +185,54 @@ async function replyRoute(c: Ctx, d: PartnerPublicDeps): Promise<Response> {
   return c.redirect(`/partner-reply/${token}`, 303); // ok/same/conflict/closed/expired: trang GET hiện đúng trạng thái đã ghi
 }
 
+async function openRoute(c: Ctx, d: PartnerPublicDeps): Promise<Response> {
+  const g = await gate(c, d, "open");
+  if (!g.ok) return g.res;
+  const token = c.req.param("token") ?? "";
+  const ua = c.req.header("user-agent") ?? null;
+  const v = await d.store.view(g.th, { ip: ipPrefix(g.ip), ua, audit: true });
+  if (!v) return invalid(c, d, g.ip ?? "unknown");
+  if (v.state === "expired" || v.state === "closed") return html(c, endedPage(v), 410);
+  if (v.state === "replied") return html(c, repliedPage(v, token));
+  const csrf = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString("hex");
+  setCookie(c, cookieName, csrf, {
+    httpOnly: true,
+    sameSite: "Strict",
+    path: cookiePath(token),
+    maxAge: 3600,
+    secure: c.req.header("x-forwarded-proto") === "https",
+  });
+  return html(c, openPage(v, { token, csrf }));
+}
+
+async function pdfRoute(c: Ctx, d: PartnerPublicDeps): Promise<Response> {
+  const g = await gate(c, d, "pdf");
+  if (!g.ok) return g.res;
+  const v = await d.store.view(g.th, { ip: null, ua: null, audit: false });
+  if (!v) return invalid(c, d, g.ip ?? "unknown");
+  const pdf =
+    (v.state === "open" || v.state === "replied") && v.file_ref
+      ? await d.port()?.pdf?.(v.from_tenant, v.file_ref)
+      : null;
+  // Tệp đã đổi so với bản chụp lúc gửi ⇒ không phát (bên nhận chỉ xem đúng bản đã gửi).
+  if (!pdf || (v.pdf_sha256 && (await sha256Hex(pdf.bytes)) !== v.pdf_sha256))
+    return html(
+      c,
+      messagePage("Không mở được bản PDF", "Vui lòng liên hệ công ty đã gửi hợp đồng."),
+      404,
+    );
+  harden(c, PDF_CSP);
+  c.header("Content-Type", "application/pdf");
+  c.header("Content-Disposition", 'inline; filename="hop-dong.pdf"');
+  return c.body(pdf.bytes as Uint8Array<ArrayBuffer>);
+}
+
 export function partnerPublicRoutes(d: PartnerPublicDeps): Hono {
   const r = new Hono();
 
-  r.get("/:token", async (c) => {
-    const g = await gate(c, d, "open");
-    if (!g.ok) return g.res;
-    const token = c.req.param("token");
-    const ua = c.req.header("user-agent") ?? null;
-    const v = await d.store.view(g.th, { ip: ipPrefix(g.ip), ua, audit: true });
-    if (!v) return invalid(c, d, g.ip ?? "unknown");
-    if (v.state === "expired" || v.state === "closed") return html(c, endedPage(v), 410);
-    if (v.state === "replied") return html(c, repliedPage(v, token));
-    const csrf = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString("hex");
-    setCookie(c, cookieName, csrf, {
-      httpOnly: true,
-      sameSite: "Strict",
-      path: cookiePath(token),
-      maxAge: 3600,
-      secure: c.req.header("x-forwarded-proto") === "https",
-    });
-    return html(c, openPage(v, { token, csrf }));
-  });
+  r.get("/:token", (c) => openRoute(c, d));
 
-  r.get("/:token/pdf", async (c) => {
-    const g = await gate(c, d, "pdf");
-    if (!g.ok) return g.res;
-    const v = await d.store.view(g.th, { ip: null, ua: null, audit: false });
-    if (!v) return invalid(c, d, g.ip ?? "unknown");
-    const pdf =
-      (v.state === "open" || v.state === "replied") && v.file_ref
-        ? await d.port()?.pdf?.(v.from_tenant, v.file_ref)
-        : null;
-    // Tệp đã đổi so với bản chụp lúc gửi ⇒ không phát (bên nhận chỉ xem đúng bản đã gửi).
-    if (!pdf || (v.pdf_sha256 && (await sha256Hex(pdf.bytes)) !== v.pdf_sha256))
-      return html(
-        c,
-        messagePage("Không mở được bản PDF", "Vui lòng liên hệ công ty đã gửi hợp đồng."),
-        404,
-      );
-    harden(c, PDF_CSP);
-    c.header("Content-Type", "application/pdf");
-    c.header("Content-Disposition", 'inline; filename="hop-dong.pdf"');
-    return c.body(pdf.bytes as Uint8Array<ArrayBuffer>);
-  });
+  r.get("/:token/pdf", (c) => pdfRoute(c, d));
 
   r.post(
     "/:token",

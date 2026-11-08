@@ -153,7 +153,9 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
       where f.key = 'han-muc-duyet'`;
     expect((han as { n: number }).n).toBe(0);
   }, 120_000);
+});
 
+describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
   it("mọi mẫu được gán cho công ty đều templateReadiness ready (tính năng, tool, nhóm đủ)", async () => {
     for (const t of ["evolu", "demo"]) {
       const tid = ids.get(t) as string;
@@ -181,7 +183,9 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
       }
     }
   }, 120_000);
+});
 
+describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
   it("3 mẫu «Quy trình mua hàng» có trong Thư viện và templateReadiness ready cho công ty demo + evolu (đủ nhóm, có thành viên)", async () => {
     for (const t of ["evolu", "demo"]) {
       const tid = ids.get(t) as string;
@@ -211,7 +215,9 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
       expect(empty.map((x) => x.key)).toEqual([]);
     }
   }, 120_000);
+});
 
+describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
   it("«Quy trình mua hàng» (cha): readiness ready, guard Quy trình con (không vòng / sâu), cùng duyệt hợp lệ, 3 phần không gán và không bắt đầu theo sự kiện", async () => {
     const parent = (
       await sql`select d.key, d.stages, d.trigger from hub.process_defs d where d.id = ${PURCHASE_PARENT_ID}`
@@ -247,7 +253,9 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
       where d.key like 'mua-hang-%'`;
     expect(assigned.length).toBe(0);
   }, 120_000);
+});
 
+describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
   it("ops-watch: flow_flag 0 công ty lệch; hồ sơ công ty, cấu hình duyệt HĐ, danh mục feature đều ok", async () => {
     const r = await withHubScope(hub, { kind: "system" }, async (tx) => ({
       flag: (await tx.execute<{ n: number; sample: string[] }>(flowFlagQuery()))[0],
@@ -279,7 +287,6 @@ describe("CR-125 · seed cấu hình công ty đủ trọn (D7)", () => {
     });
     expect([cov.status, cov.message]).toEqual(["ok", expect.any(String)]);
   }, 60_000);
-
   it("chạy lần hai: 0 hàng đổi (kết quả toàn 0, dấu vân tay bảng không đổi)", async () => {
     const before = await fingerprint();
     const again = await seed();

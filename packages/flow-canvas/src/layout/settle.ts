@@ -34,8 +34,7 @@ export function collidesWith(
   at: Pt,
   id: string,
   items: readonly SettleItem[],
-  pos: ReadonlyMap<string, Pt>,
-  gap = SETTLE_GAP,
+  ...[pos, gap = SETTLE_GAP]: [pos: ReadonlyMap<string, Pt>, gap?: number]
 ): boolean {
   const me = items.find((i) => i.id === id);
   const box = boxAt(at, me ?? { id });

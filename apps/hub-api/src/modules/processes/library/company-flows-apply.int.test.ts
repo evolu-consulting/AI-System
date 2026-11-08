@@ -151,7 +151,9 @@ describe("CR-123 FR-10 · company-flows/apply", () => {
     expect(rowOf(after.json, lib)?.enabled).toBe(true);
     expect(rowOf(after.json, copy.flow_id)?.enabled).toBe(false);
   });
+});
 
+describe("CR-123 FR-10 · company-flows/apply · lỗi, cách ly", () => {
   it("còn bước duyệt chưa chọn nhóm ⇒ 422 FLOW_GROUP_MISSING, không đổi gì", async () => {
     await call("P", "POST", P(Y), { flow_id: lib });
     const l = await call("AY", "GET", P(Y));

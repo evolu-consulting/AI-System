@@ -187,6 +187,16 @@ const statusOf = async (id: string) =>
 const history = async (id: string) =>
   (await getHistory({ uow: uow() as never })(wa(), id, 50)) ?? [];
 
+const companySigner = (signedAt: string | null) => ({
+  role: "company",
+  name: "A",
+  email: "a@x.vn",
+  order: 1,
+  client_user_id: null,
+  status: null,
+  signed_at: signedAt,
+});
+
 describe("CR-125 · dấu vết duyệt HĐ theo sự kiện", () => {
   it("gửi duyệt → Đạt ở bước → Kết thúc Đã duyệt: trạng thái đúng + lịch sử có ai/lúc nào/gì", async () => {
     expect(await startApproval(ad())(wa(), C1, "level1")).toBe("ok");
@@ -220,7 +230,9 @@ describe("CR-125 · dấu vết duyệt HĐ theo sự kiện", () => {
     expect(h.find((e) => e.type === "approval_started")?.actor_user_id).toBe(A);
     expect(h.find((e) => e.type === "approved")?.actor_user_id).toBeTruthy();
   });
+});
 
+describe("CR-125 · dấu vết duyệt HĐ theo sự kiện · từ chối", () => {
   it("Từ chối ở bước (có lý do): HĐ rejected + lịch sử ghi người từ chối, lý do", async () => {
     const card = (await getApproval(ad())(wb(), C2)) as { task_id: string | null };
     const out = await actApproval(ad())(wb(), C2, {
@@ -238,19 +250,11 @@ describe("CR-125 · dấu vết duyệt HĐ theo sự kiện", () => {
     });
     expect(h.some((e) => e.type === "rejected")).toBe(true);
   });
+});
 
+describe("CR-125 · dấu vết duyệt HĐ theo sự kiện · ký số, đối tác", () => {
   it("ký số: gửi, ký xong, đổi nhà cung cấp ⇒ lịch sử HĐ, gọi lại cùng trạng thái không ghi đôi", async () => {
-    const signers = [
-      {
-        role: "company",
-        name: "A",
-        email: "a@x.vn",
-        order: 1,
-        client_user_id: null,
-        status: null,
-        signed_at: null,
-      },
-    ] as never;
+    const signers = [companySigner(null)] as never;
     await uow().tenant(wa(), async (r) => {
       expect(
         await r.esign.insert({
@@ -295,7 +299,9 @@ describe("CR-125 · dấu vết duyệt HĐ theo sự kiện", () => {
       where tenant_id = ${T} and actor_user_id = ${A}`;
     expect(n?.n).toBeGreaterThanOrEqual(1);
   });
+});
 
+describe("CR-125 · dấu vết duyệt HĐ theo sự kiện · đối tác", () => {
   it("đối tác: gửi → trả lời (một lần) ⇒ lịch sử HĐ", async () => {
     const mailboxId = crypto.randomUUID();
     await uow().tenant(wa(), async (r) => {
@@ -359,7 +365,9 @@ describe("CR-125 review · idempotent + đúng role", () => {
       where tenant_id = ${T} and contract_id = ${C2} and type = 'esign_signed'`;
     expect(n?.n).toBe(1);
   });
+});
 
+describe("CR-125 review · bấm đúp", () => {
   it("bấm đúp cùng task ⇒ một dòng stage_decided; id nội bộ không lộ ra lịch sử", async () => {
     const [aid] = await o<
       { id: string }[]
@@ -385,7 +393,9 @@ describe("CR-125 review · idempotent + đúng role", () => {
     for (const x of h.filter((y) => y.type === "stage_decided"))
       expect(x.data).not.toHaveProperty("task_id");
   });
+});
 
+describe("CR-125 review · role hệ thống", () => {
   it("đường nhận đối tác + trả lời chạy bằng role hệ thống của gói vẫn ghi được contract_events", async () => {
     const cid = crypto.randomUUID();
     const row = {

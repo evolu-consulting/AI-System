@@ -256,7 +256,9 @@ describe("CR-125 · bước form trên thẻ HĐ", () => {
     );
     expect(((await cardOf(M)) as Card).steps[0]?.status).toBe("open");
   });
+});
 
+describe("CR-125 · bước form trên thẻ HĐ · giá trị, tệp", () => {
   it("giá trị sai ⇒ 422 FORM_VALUES_INVALID, bước vẫn mở; đúng ⇒ lưu output, bước Duyệt mở, thẻ người xem sau có giá trị", async () => {
     const taskId = ((await cardOf(M)) as Card).task_id as string;
     const gates = new GateService(deps());
@@ -282,7 +284,9 @@ describe("CR-125 · bước form trên thẻ HĐ", () => {
     // gửi lại cùng giá trị ⇒ idempotent (không lỗi)
     await gates.formSubmit(asUser(M, T), taskId, { values: VALUES });
   });
+});
 
+describe("CR-125 · bước form trên thẻ HĐ · tệp", () => {
   it("tệp bước form: người xem lượt (Kế toán, người tạo) mở được; người ngoài cùng công ty 404; công ty khác 404; không kéo tệp người khác vào lượt", async () => {
     const files = new AttachmentService({ db, storage: {} as never, tenantMaxBytes: 1 });
     const detail = (uid: string, tid = T) => files.get(asUser(uid, tid), FILE);

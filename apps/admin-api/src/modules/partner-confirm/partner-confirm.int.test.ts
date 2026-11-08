@@ -67,8 +67,7 @@ async function call(
   who: [string, string],
   method: string,
   p: string,
-  body?: unknown,
-  target = app,
+  ...[body, target = app]: [body?: unknown, target?: typeof app]
 ) {
   const token = await env.token(...who);
   const r = await target.fetch(
@@ -131,7 +130,9 @@ describe("UX-S7 · Đối tác xác nhận hợp đồng (admin-api)", () => {
       { tenant_id: A, action: "revoke" },
     ]);
   });
+});
 
+describe("UX-S7 · Đối tác xác nhận hợp đồng (admin-api)", () => {
   it("quản trị công ty KHÔNG cấp được: PUT ⇒ 403 (kể cả công ty của mình), không entitlement, không audit, công ty khác cũng không", async () => {
     await env.owner`delete from admin.feature_entitlements where tenant_id in (${A}, ${B})
       and feature_id in (select id from admin.features where key = 'contracts-partner-confirm')`;
@@ -148,13 +149,11 @@ describe("UX-S7 · Đối tác xác nhận hợp đồng (admin-api)", () => {
     expect(n?.n).toBe(0);
     expect((await call(platform, "PUT", path(A), { on: "yes" })).status).toBe(400);
   });
-
   it("quản trị công ty XEM được công ty mình (GET 200), công ty khác ⇒ 404", async () => {
     const own = await call(tadmin, "GET", path(A));
     expect(own).toMatchObject({ status: 200 });
     expect((await call(tadmin, "GET", path(B))).status).toBe(404);
   });
-
   it("Hub không trả lời / không cấu hình ⇒ vẫn 200, mục của Hub 'chưa rõ', chưa sẵn sàng", async () => {
     hubDown = true;
     const a = await call(platform, "GET", path(A));

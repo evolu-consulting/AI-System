@@ -224,7 +224,9 @@ describe("CR-125 · «A + B cùng duyệt» (đường thật)", () => {
     expect(applied).not.toContain(`${runId}:approved`);
     expect(await myStep(A, runId)).toMatchObject({ task: null });
   });
+});
 
+describe("CR-125 · «A + B cùng duyệt» (đường thật) · any, min", () => {
   it("any: một nhóm Đạt ⇒ bước Đạt ngay — thẻ nhóm kia đóng với lý do", async () => {
     const runId = await startRun("any", TWO);
     const t = await tasksOf(runId);
@@ -239,7 +241,9 @@ describe("CR-125 · «A + B cùng duyệt» (đường thật)", () => {
       code: "REVIEW_TASK_CLOSED",
     });
   });
+});
 
+describe("CR-125 · «A + B cùng duyệt» (đường thật) · min", () => {
   it("min 2/3: A Đạt ⇒ chờ — B Đạt ⇒ Đạt — thẻ C đóng", async () => {
     const runId = await startRun({ min: 2 }, THREE);
     const t = await tasksOf(runId);
@@ -280,7 +284,9 @@ describe("CR-125 · «A + B cùng duyệt» (đường thật)", () => {
       feedback: PARALLEL_CLOSED_BY_DECISION,
     });
   });
+});
 
+describe("CR-125 · «A + B cùng duyệt» (đường thật) · đồng thời", () => {
   it("hai người quyết CÙNG LÚC (any) ⇒ một người thắng, bước chuyển MỘT lần", async () => {
     const runId = await startRun("any", TWO);
     const t = await tasksOf(runId);

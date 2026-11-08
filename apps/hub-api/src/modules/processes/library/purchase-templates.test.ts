@@ -65,7 +65,9 @@ describe("mẫu Thư viện «Quy trình mua hàng»", () => {
     expect(s.map((x) => x.step)).toEqual(s.map((_, i) => i));
     expect(s.filter((x) => /^3 .*duyệt phương án/.test(x.name))).toHaveLength(1);
   });
+});
 
+describe("mẫu Thư viện «Quy trình mua hàng» · cùng duyệt, cha, nhóm", () => {
   it("dòng 3 / 6 / 10 duyệt CÙNG LÚC (luật tất cả), nhóm theo mã", () => {
     const rows = [
       [0, "3 ", ["truong-bo-phan", "tai-chinh"]],
@@ -79,7 +81,9 @@ describe("mẫu Thư viện «Quy trình mua hàng»", () => {
       expect([p.rule, p.groups.map((g) => g.group_key)]).toEqual(["all", [...keys]]);
     }
   });
+});
 
+describe("mẫu Thư viện «Quy trình mua hàng» · cha, nhóm", () => {
   it("«Quy trình mua hàng» (cha): phiếu 5 ô cho mọi người → 3 Quy trình con → Đã xong; từ chối / huỷ → Không mua", () => {
     const s = PURCHASE_PARENT.stages as (St & {
       node?: string;

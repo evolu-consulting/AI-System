@@ -34,7 +34,12 @@ const signer = (uid: string, order: number, signedAt: string | null) => ({
   status: signedAt ? "completed" : null,
   signed_at: signedAt,
 });
-async function envelope(cid: string, status: string, signers: object[], n = 1, tag = "env-") {
+async function envelope(
+  cid: string,
+  status: string,
+  signers: object[],
+  { n = 1, tag = "env-" }: { n?: number; tag?: string } = {},
+) {
   await o`insert into contracts.esign_envelopes (tenant_id, contract_id, provider, envelope_id, status, signers, sent_by)
     select ${T}, ${cid}, 'misa', ${tag}::text || ${cid}::text || '-' || g, ${status}, ${o.json(signers as never)}, ${me}
     from generate_series(1, ${n}) g`;
@@ -75,7 +80,7 @@ describe("CR-125 · x1 · signing[] (Chờ bạn ký)", () => {
     expect(await signing(T2, me)).toEqual([]);
   });
   it("1.000 phong bì: MỘT câu, ≤ trần, p95 thấp (đo thật)", async () => {
-    await envelope(K[0] as string, "completed", [signer(me, 1, null)], 950, "pc-");
+    await envelope(K[0] as string, "completed", [signer(me, 1, null)], { n: 950, tag: "pc-" });
     // 50 phong bì MỞ (mỗi HĐ chỉ một phong bì mở) trên 50 HĐ riêng
     const more = await contracts(o, T, 50, { from: 1200, createdBy: me, owner: me });
     await o`insert into contracts.esign_envelopes (tenant_id, contract_id, provider, envelope_id, status, signers, sent_by)

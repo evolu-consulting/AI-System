@@ -167,7 +167,9 @@ describe("CR-125 · bắt đầu quy trình bằng phiếu yêu cầu", () => {
     expect(r.status).toBe(403);
     expect(codeOf(r.json)).toBe("START_NOT_ALLOWED");
   });
+});
 
+describe("CR-125 · bắt đầu quy trình bằng phiếu yêu cầu · phiếu sai", () => {
   it("phiếu sai ⇒ 422 START_FORM_INVALID kèm lỗi theo ô, không mở lượt", async () => {
     const r = await start("A", rid(3), { amount: -5, extra: "x" });
     expect(r.status).toBe(422);
@@ -178,7 +180,9 @@ describe("CR-125 · bắt đầu quy trình bằng phiếu yêu cầu", () => {
       where tenant_id = ${X} and ref = ${`start:${rid(3)}`}`;
     expect(n?.n).toBe(0);
   });
+});
 
+describe("CR-125 · bắt đầu quy trình bằng phiếu yêu cầu · cách ly, cờ, trùng", () => {
   it("công ty khác không thấy, không bắt đầu được flow của X", async () => {
     expect((await call("O", "GET", "/processes/startable")).json.items).toEqual([]);
     const r = await start("O", rid(4), GOOD);

@@ -135,7 +135,9 @@ describe("CR-125 m4 · đổi cách ký (DB thật)", () => {
       after: { esign_switch: { contract_id: cid, provider: "selfsign" } },
     });
   });
+});
 
+describe("CR-125 m4 · đổi cách ký (DB thật) · hụt huỷ", () => {
   it("huỷ ở nhà cung cấp hụt ⇒ ESIGN_RESEND_FAILED, phong bì cũ vẫn mở; bấm lại đổi được", async () => {
     const cid = K[1] as string;
     const e = await seed(cid);

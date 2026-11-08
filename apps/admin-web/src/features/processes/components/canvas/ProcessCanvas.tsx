@@ -23,7 +23,6 @@ import {
   portExtent,
   type SettleItem,
   settlePositions,
-  stepEdges,
 } from "@ai/flow-canvas/pure";
 import type { Edge, Node, XYPosition } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -32,7 +31,6 @@ import type { BridgeApi } from "../../hooks/use-bridge";
 import { useStagesMax } from "../../hooks/use-stages-max";
 import { exitHandle } from "../../lib/canvas-connect";
 import { dropFreeEdges, isFree } from "../../lib/free-nodes";
-import { applyJumps } from "../../lib/jump-edges";
 import { isNarrowScreen } from "../../lib/layout-dir";
 import { useFlowCtx } from "../flow/flow-ctx";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
@@ -52,6 +50,7 @@ import {
 import { EdgeInsertMenu } from "./EdgeInsertMenu";
 import { isTerminalView } from "./FlowNodeBody";
 import { IfNode } from "./IfNode";
+import { linkedEdges } from "./linked-edges";
 import { moduleEdges, withMainExit } from "./module-cluster";
 import { StageNode } from "./StageNode";
 import type { StageView } from "./stage-view";
@@ -115,34 +114,13 @@ function useFlowStructure(
   p: ProcessCanvasProps,
   approve: string,
   trig: TriggerInfo,
-  insertable: boolean,
-  connectable: boolean,
+  ...[insertable, connectable]: [insertable: boolean, connectable: boolean]
 ) {
   const { views } = p;
   return useMemo(() => {
     const dlc = views.some((v) => v.dlc);
     const byUid = new Map(views.map((v) => [v.uid, v]));
-    // CR-122 · C: flow có "Bắt đầu khi" bỏ cạnh quay lại tới bước đầu (không còn tiêu đề cột để neo)
-    const lay = stepEdges(
-      views.map((v) => ({ ...v, terminal: isTerminalView(v) })),
-      { back: !trig },
-    );
-    // dlc-engine · bước DLC và bước duyệt không nối với nhau (một sơ đồ chỉ một loại bước).
-    const fam = (id: string) => byUid.get(id)?.family ?? null;
-    const jumped = applyJumps(
-      views.map((v) => ({
-        uid: v.uid,
-        step: v.step,
-        isIf: v.ifs != null,
-        nextStep: v.src.nextStep,
-        terminal: v.src.outcome !== undefined || v.src.executor === "wait_event",
-      })),
-      lay,
-    );
-    const linked = jumped.filter((e) => {
-      const [a, b] = [fam(e.source), fam(e.target)];
-      return a === null || b === null || a === b;
-    });
+    const linked = linkedEdges(views, trig);
     const gated = (id: string) => byUid.get(id)?.dlc?.gate === true;
     // CR-122 · P8: cạnh tiến giữa hai node có nút "+" (kiểu `forward`) khi sơ đồ sửa được và có bảng node.
     const mk = (e: (typeof linked)[number]): Edge => {

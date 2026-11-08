@@ -116,7 +116,9 @@ describe("c5b · sửa nhanh cho mẫu Thư viện (platform_admin)", () => {
         .status,
     ).toBe(503);
   });
+});
 
+describe("c5b · sửa nhanh cho mẫu Thư viện (platform_admin)", () => {
   it("create-group: tạo nhóm gợi ý ở đúng công ty A (audit create), trùng mã 409, mã sai 400, B không có", async () => {
     const key = "nhom-goi-y-c5b";
     await env.owner`delete from admin.groups where key = ${key}`;
@@ -136,7 +138,6 @@ describe("c5b · sửa nhanh cho mẫu Thư viện (platform_admin)", () => {
     >`select count(*)::int as n from admin.audit_log where entity = 'group' and action = 'create' and entity_name = ${key} and tenant_id = ${A}`;
     expect(a?.n).toBe(1);
   });
-
   it("vai khác platform_admin (tenant_admin, kể cả công ty của mình) ⇒ bị từ chối, không đổi dữ liệu", async () => {
     const tadmin = env.by("acme", "binh");
     const [before] = await env.owner<{ n: number }[]>`select count(*)::int as n from admin.groups`;

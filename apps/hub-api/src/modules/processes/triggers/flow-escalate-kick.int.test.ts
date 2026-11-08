@@ -205,7 +205,9 @@ describe("cr125-fix-escalate-kick · flow theo sự kiện có chuyển cấp �
     expect(t).toBeDefined();
     expect(t?.esc_at).toBeNull();
   });
+});
 
+describe("cr125-fix-escalate-kick · kick lỗi", () => {
   it("kick lỗi ⇒ log có mã + lượt 'Cần xử lý' start_failed (không pending mãi)", async () => {
     const w2 = { tenantId: T2, userId: A2 };
     const id = C2[1] as string;

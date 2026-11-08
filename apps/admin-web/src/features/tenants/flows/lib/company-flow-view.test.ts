@@ -76,6 +76,9 @@ describe("company-flow-view", () => {
       ),
     ).toBe(false);
   });
+});
+
+describe("company-flow-view", () => {
   test("menu …: Quay về bản gốc + Tắt cho bản công ty đang dùng, Bật cho flow được gán đang tắt, bản công ty chưa áp dụng không có gì", () => {
     const src = { flow_key: "k1", version: 1, name: "Gốc" };
     expect(menuOf(row("c", "x", 0, { kind: "company", source: src }))).toEqual({

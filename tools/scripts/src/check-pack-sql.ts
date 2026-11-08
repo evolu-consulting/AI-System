@@ -21,6 +21,16 @@ export const KNOWN_DEBT = new Set([
   "0015_hd8_partners.sql:admin",
   "0021_assistant_agent.sql:packs",
   "0022_v2a_milestones.sql:admin",
+  // TECH-DEBT #264: migration gói đã áp dụng trước CR-124/125, không sửa được.
+  "contracts/0039_one_assistant.sql:packs",
+  "contracts/0070_reviewer_visible.sql:hub",
+  "contracts/0070_reviewer_visible.sql:admin",
+  "contracts/0072_brand_bumps_config.sql:admin",
+  "contracts/0073_brand_bumps_profile.sql:admin",
+  "contracts/0076_company_name_one_source.sql:admin",
+  "contracts/0077_emit_flow_event_grant.sql:hub",
+  "community/0010_emit_flow_event_grant.sql:hub",
+  "knowledge/0006_scope_grants.sql:packs",
 ]);
 
 export type Finding = { line: number; ref: string; msg: string };
@@ -58,6 +68,13 @@ export function checkPackSql(schema: string, sql: string): Finding[] {
     .split("\n")
     .flatMap((text, i) => lineFindings(schema, text, i + 1));
 }
+function isKnownDebt(schema: string, file: string, q: string | undefined): boolean {
+  return (
+    (schema === "contracts" && KNOWN_DEBT.has(`${file}:${q}`)) ||
+    KNOWN_DEBT.has(`${schema}/${file}:${q}`)
+  );
+}
+
 function main(): number {
   const root = repoRoot();
   const dbDir = join(root, "packages/db");
@@ -68,7 +85,7 @@ function main(): number {
       const sql = readFileSync(join(dbDir, d, f), "utf8");
       for (const x of checkPackSql(schema, sql)) {
         const q = x.ref.split(".")[0];
-        if (KNOWN_DEBT.has(`${f}:${q}`) && schema === "contracts") continue;
+        if (isKnownDebt(schema, f, q)) continue;
         bad++;
         console.error(`pack-sql: ${d}/${f}:${x.line} ${x.ref} — ${x.msg}`);
       }

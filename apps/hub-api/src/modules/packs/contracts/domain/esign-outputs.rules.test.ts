@@ -45,6 +45,9 @@ describe("esignOutputsOf (CR-125 m9)", () => {
     expect(viDayOf("2026-11-07T16:59:59Z")).toBe("07/11/2026");
     expect(viDayOf("2026-11-07T17:00:00Z")).toBe("08/11/2026"); // 00:00 VN
   });
+});
+
+describe("esignOutputsOf (CR-125 m9) · người ký, từ chối", () => {
   test("người ký đã ký theo isSigned (trạng thái completed/signed dù không có mốc) vào tên", () => {
     const o = esignOutputsOf({
       envelopeId: "e",

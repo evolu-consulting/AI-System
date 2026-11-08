@@ -52,21 +52,115 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type InboxSettings = { importantMin: number; criticalMin: number; ownerId: string | null };
 
+async function settingsOf(tx: Tx, tid: string): Promise<InboxSettings> {
+  const [r] = await tx.execute<{
+    imp: string | number;
+    cri: string | number;
+    owner: string | null;
+  }>(sql`
+    select important_min as imp, critical_min as cri, owner_user_id::text as owner
+    from contracts.partner_settings where tenant_id = ${tid}::uuid`);
+  return r
+    ? { importantMin: Number(r.imp), criticalMin: Number(r.cri), ownerId: r.owner }
+    : { importantMin: 500_000_000, criticalMin: 2_000_000_000, ownerId: null };
+}
+
+async function takeRows(tx: Tx, limit: number): Promise<TakenRow[]> {
+  const rows = await tx.execute<{
+    id: string;
+    round: number;
+    prev_reason: string | null;
+    payload: unknown;
+    file_ref: string | null;
+    pdf_sha256: string | null;
+    expires_at: string | Date;
+    sender_name: string | null;
+    sender_tax_code: string | null;
+    sender_verified: boolean | null;
+  }>(sql`select id::text, round, prev_reason, payload, file_ref, pdf_sha256, expires_at, sender_name,
+      sender_tax_code, sender_verified from hub.partner_inbox_take(${limit}::int)`);
+  return rows.map((r) => ({
+    id: r.id,
+    round: r.round,
+    prevReason: r.prev_reason,
+    payload: (typeof r.payload === "string" ? JSON.parse(r.payload) : (r.payload ?? {})) as Record<
+      string,
+      unknown
+    >,
+    fileRef: r.file_ref,
+    pdfSha256: r.pdf_sha256,
+    expiresAt: new Date(r.expires_at).toISOString(),
+    senderName: r.sender_name ?? "Công ty đối tác",
+    senderTaxCode: r.sender_tax_code,
+    senderVerified: r.sender_verified === true,
+  }));
+}
+
+const insertJson = (items: readonly InboxItem[]) =>
+  JSON.stringify(
+    items.map((i) => ({
+      contract_id: i.contractId,
+      approval_id: i.approvalId,
+      mailbox_id: i.row.id,
+      title: i.title,
+      fields: i.fields,
+      sender_name: i.row.senderName,
+      sender_tax_code: i.row.senderTaxCode,
+      sender_verified: i.row.senderVerified,
+      round: i.row.round,
+      prev_reason: i.row.prevReason,
+      importance: i.importance,
+      message: i.message,
+      shared: i.shared,
+      file_ref: i.row.fileRef,
+      pdf_sha256: i.row.pdfSha256,
+      expires_at: i.row.expiresAt,
+    })),
+  );
+
+async function insertInboxBatch(
+  tx: Tx,
+  tid: string,
+  items: readonly InboxItem[],
+  o: { ownerId: string | null; approvalFeedback: string | null },
+): Promise<number> {
+  if (items.length === 0) return 0;
+  const j = insertJson(items);
+  const { ownerId, approvalFeedback } = o;
+  const [r] = await tx.execute<{ n: number }>(sql`with src as (
+        select * from jsonb_to_recordset(${j}::jsonb) as x(contract_id uuid, approval_id uuid, mailbox_id uuid, title text, fields jsonb,
+          sender_name text, sender_tax_code text, sender_verified boolean, round int, prev_reason text, importance text,
+          message text, shared jsonb, file_ref text, pdf_sha256 text, expires_at timestamptz)),
+      fresh as (select s.* from src s
+        where not exists (select 1 from contracts.partner_inbox p where p.tenant_id = ${tid}::uuid and p.mailbox_id = s.mailbox_id)),
+      c as (insert into contracts.contracts (id, tenant_id, kind, doc_type, source, title, status, created_by,
+          owner_user_id, run_id, fields)
+        select f.contract_id, ${tid}::uuid, 'contract', 'contract', 'partner_inbox', f.title, 'needs_review',
+          ${SYSTEM_USER}::uuid, ${ownerId}::uuid, case when ${approvalFeedback}::text is null then null else f.approval_id end, f.fields
+        from fresh f returning id),
+      -- Lượt duyệt chờ bộ điều phối mở quy trình nhận (như HĐ gửi duyệt: holdForFlow); OutcomeHandler.launched gắn run vào đúng dòng này.
+      -- Chỉ khi flow nhận đã sẵn sàng (feedback không null): chưa sẵn sàng ⇒ HĐ nhận không có thẻ duyệt treo "đang mở quy trình".
+      ap as (insert into contracts.approvals (id, tenant_id, contract_id, status, started_by, mode, feedback)
+        select f.approval_id, ${tid}::uuid, f.contract_id, 'level1', ${SYSTEM_USER}::uuid, 'engine', ${approvalFeedback}::text
+        from fresh f join c on c.id = f.contract_id where ${approvalFeedback}::text is not null returning 1),
+      i as (insert into contracts.partner_inbox (tenant_id, contract_id, mailbox_id, sender_name, sender_tax_code,
+          sender_verified, round, prev_reason, importance, message, shared, file_ref, pdf_sha256, expires_at)
+        select ${tid}::uuid, f.contract_id, f.mailbox_id, f.sender_name, f.sender_tax_code, f.sender_verified, f.round,
+          f.prev_reason, f.importance, f.message, f.shared, f.file_ref, f.pdf_sha256, f.expires_at
+        from fresh f join c on c.id = f.contract_id returning 1),
+      -- CR-125 · nhận HĐ từ đối tác ⇒ một dòng lịch sử HĐ nhận (từ ai · vòng), cùng câu với HĐ nhận.
+      ev as (insert into contracts.contract_events (tenant_id, contract_id, type, data)
+        select ${tid}::uuid, f.contract_id, 'partner_received',
+          jsonb_strip_nulls(jsonb_build_object('from', f.sender_name, 'round', f.round))
+        from fresh f join c on c.id = f.contract_id)
+      select (select count(*) from i)::int as n`);
+  return r?.n ?? 0;
+}
+
 export function partnerInboxRepo(tx: Tx, tid: string) {
   return {
     /** Ngưỡng mức quan trọng + người phụ trách HĐ nhận của công ty (chưa đặt ⇒ mặc định spec §6, owner trống). MỘT câu. */
-    async settings(): Promise<InboxSettings> {
-      const [r] = await tx.execute<{
-        imp: string | number;
-        cri: string | number;
-        owner: string | null;
-      }>(sql`
-        select important_min as imp, critical_min as cri, owner_user_id::text as owner
-        from contracts.partner_settings where tenant_id = ${tid}::uuid`);
-      return r
-        ? { importantMin: Number(r.imp), criticalMin: Number(r.cri), ownerId: r.owner }
-        : { importantMin: 500_000_000, criticalMin: 2_000_000_000, ownerId: null };
-    },
+    settings: (): Promise<InboxSettings> => settingsOf(tx, tid),
     /** CR-125 G7 · số HĐ đối tác gửi tới đang chờ công ty nhận (menu `contracts.partner`). MỘT câu theo tập; index `partner_inbox_mailbox_uq`/`list_idx` theo `tenant_id`. */
     async pendingCount(): Promise<number> {
       const [r] = await tx.execute<{ n: number }>(sql`
@@ -74,35 +168,7 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
         where tenant_id = ${tid}::uuid and status = 'pending'`);
       return r?.n ?? 0;
     },
-    async take(limit: number): Promise<TakenRow[]> {
-      const rows = await tx.execute<{
-        id: string;
-        round: number;
-        prev_reason: string | null;
-        payload: unknown;
-        file_ref: string | null;
-        pdf_sha256: string | null;
-        expires_at: string | Date;
-        sender_name: string | null;
-        sender_tax_code: string | null;
-        sender_verified: boolean | null;
-      }>(sql`select id::text, round, prev_reason, payload, file_ref, pdf_sha256, expires_at, sender_name,
-          sender_tax_code, sender_verified from hub.partner_inbox_take(${limit}::int)`);
-      return rows.map((r) => ({
-        id: r.id,
-        round: r.round,
-        prevReason: r.prev_reason,
-        payload: (typeof r.payload === "string"
-          ? JSON.parse(r.payload)
-          : (r.payload ?? {})) as Record<string, unknown>,
-        fileRef: r.file_ref,
-        pdfSha256: r.pdf_sha256,
-        expiresAt: new Date(r.expires_at).toISOString(),
-        senderName: r.sender_name ?? "Công ty đối tác",
-        senderTaxCode: r.sender_tax_code,
-        senderVerified: r.sender_verified === true,
-      }));
-    },
+    take: (limit: number): Promise<TakenRow[]> => takeRows(tx, limit),
     /** HĐ nhận + bản ghi nhận, MỘT câu theo tập. Trùng `(tenant, mailbox)` ⇒ bỏ qua (chạy lại vô hại). */
     async insertBatch(
       items: readonly InboxItem[],
@@ -110,55 +176,7 @@ export function partnerInboxRepo(tx: Tx, tid: string) {
       /** Lý do ban đầu của lượt duyệt (FLOW_STARTING = chờ bộ điều phối); null ⇒ KHÔNG tạo lượt duyệt (chưa có flow nhận sẵn sàng). */
       approvalFeedback: string | null = FLOW_STARTING,
     ): Promise<number> {
-      if (items.length === 0) return 0;
-      const j = JSON.stringify(
-        items.map((i) => ({
-          contract_id: i.contractId,
-          approval_id: i.approvalId,
-          mailbox_id: i.row.id,
-          title: i.title,
-          fields: i.fields,
-          sender_name: i.row.senderName,
-          sender_tax_code: i.row.senderTaxCode,
-          sender_verified: i.row.senderVerified,
-          round: i.row.round,
-          prev_reason: i.row.prevReason,
-          importance: i.importance,
-          message: i.message,
-          shared: i.shared,
-          file_ref: i.row.fileRef,
-          pdf_sha256: i.row.pdfSha256,
-          expires_at: i.row.expiresAt,
-        })),
-      );
-      const [r] = await tx.execute<{ n: number }>(sql`with src as (
-          select * from jsonb_to_recordset(${j}::jsonb) as x(contract_id uuid, approval_id uuid, mailbox_id uuid, title text, fields jsonb,
-            sender_name text, sender_tax_code text, sender_verified boolean, round int, prev_reason text, importance text,
-            message text, shared jsonb, file_ref text, pdf_sha256 text, expires_at timestamptz)),
-        fresh as (select s.* from src s
-          where not exists (select 1 from contracts.partner_inbox p where p.tenant_id = ${tid}::uuid and p.mailbox_id = s.mailbox_id)),
-        c as (insert into contracts.contracts (id, tenant_id, kind, doc_type, source, title, status, created_by,
-            owner_user_id, run_id, fields)
-          select f.contract_id, ${tid}::uuid, 'contract', 'contract', 'partner_inbox', f.title, 'needs_review',
-            ${SYSTEM_USER}::uuid, ${ownerId}::uuid, case when ${approvalFeedback}::text is null then null else f.approval_id end, f.fields
-          from fresh f returning id),
-        -- Lượt duyệt chờ bộ điều phối mở quy trình nhận (như HĐ gửi duyệt: holdForFlow); OutcomeHandler.launched gắn run vào đúng dòng này.
-        -- Chỉ khi flow nhận đã sẵn sàng (feedback không null): chưa sẵn sàng ⇒ HĐ nhận không có thẻ duyệt treo "đang mở quy trình".
-        ap as (insert into contracts.approvals (id, tenant_id, contract_id, status, started_by, mode, feedback)
-          select f.approval_id, ${tid}::uuid, f.contract_id, 'level1', ${SYSTEM_USER}::uuid, 'engine', ${approvalFeedback}::text
-          from fresh f join c on c.id = f.contract_id where ${approvalFeedback}::text is not null returning 1),
-        i as (insert into contracts.partner_inbox (tenant_id, contract_id, mailbox_id, sender_name, sender_tax_code,
-            sender_verified, round, prev_reason, importance, message, shared, file_ref, pdf_sha256, expires_at)
-          select ${tid}::uuid, f.contract_id, f.mailbox_id, f.sender_name, f.sender_tax_code, f.sender_verified, f.round,
-            f.prev_reason, f.importance, f.message, f.shared, f.file_ref, f.pdf_sha256, f.expires_at
-          from fresh f join c on c.id = f.contract_id returning 1),
-        -- CR-125 · nhận HĐ từ đối tác ⇒ một dòng lịch sử HĐ nhận (từ ai · vòng), cùng câu với HĐ nhận.
-        ev as (insert into contracts.contract_events (tenant_id, contract_id, type, data)
-          select ${tid}::uuid, f.contract_id, 'partner_received',
-            jsonb_strip_nulls(jsonb_build_object('from', f.sender_name, 'round', f.round))
-          from fresh f join c on c.id = f.contract_id)
-        select (select count(*) from i)::int as n`);
-      return r?.n ?? 0;
+      return insertInboxBatch(tx, tid, items, { ownerId, approvalFeedback });
     },
     /** `contract.received` cùng tx (hàm DEFINER, CHỈ tenant hiện tại). event_id = `partner:<mailbox>` như bộ chuyển q1 ⇒ trùng không phát đôi. */
     async emitReceived(

@@ -24,8 +24,9 @@ const MODULES = [...real, mod("dify.run"), mod("dlc.step")];
 const ids = (xs: ReturnType<typeof splitMenu>["business"]) =>
   xs.map((x) => (x.kind === "table" ? x.entry.id : x.node.key));
 
+const table = nodesForApp("contracts");
+
 describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", () => {
-  const table = nodesForApp("contracts");
   test("công ty: Duyệt · Nếu · Ký số · Thông báo · Kết thúc, không có Nâng cao và không có 'Chờ ký xong' riêng", () => {
     const m = splitMenu({ app: "contracts", isPlatform: false, table, modules: MODULES });
     expect(ids(m.business)).toEqual([
@@ -49,6 +50,9 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
     expect(adv.at(-1)).toBe("set");
     expect(adv).not.toContain("approve");
   });
+});
+
+describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", () => {
   test("CR-125 c6b · flow community không thấy node hợp đồng, flow hợp đồng không thấy node community", () => {
     // palette trả MỌI node (xấu nhất: Hub quên lọc app) ⇒ menu vẫn lọc theo app từ sổ MODULES
     const everyone = [...CORE_NODES, ...CONTRACTS_MANIFEST.nodes, ...COMMUNITY_MANIFEST.nodes];
@@ -93,6 +97,9 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
     // flow đã lưu mang khoá node này vẫn mở được: node còn trong sổ MODULES
     expect(featureNodeByKey(REGISTRY, "community.show-post")?.stages[0]?.outcome).toBe("shown");
   });
+});
+
+describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", () => {
   test("CR-125 c6b · luật chung: node chỉ là một Kết thúc đặt sẵn kết quả thì trùng mục Kết thúc, node nhiều bước thì không", () => {
     const end = { ...mod("x.end"), stages: [{ outcome: "shown" }] } as unknown as AppNodeDecl;
     const two = {

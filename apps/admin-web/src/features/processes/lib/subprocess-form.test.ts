@@ -60,7 +60,6 @@ describe("executor ⇄ bản nháp", () => {
       def_key: "x",
     });
   });
-
   test("ô ánh xạ trống bị bỏ khi gửi", () => {
     expect(
       subprocessToDef({ defKey: "x", inputMap: { a: "", "": "b", c: "c" } }).input_map,
@@ -68,7 +67,9 @@ describe("executor ⇄ bản nháp", () => {
       c: "c",
     });
   });
+});
 
+describe("executor ⇄ bản nháp", () => {
   test("stage đi qua stageToDraft / stageToInput nguyên vẹn (node + executor)", () => {
     const base = stageToInput({
       ...emptyStage(0),
@@ -89,7 +90,6 @@ describe("executor ⇄ bản nháp", () => {
     expect(back.subprocess).toEqual({ defKey: "mua-hang-p2", inputMap: { po_no: "po_no" } });
     expect(back.node).toBe(SUBPROCESS_NODE);
   });
-
   test("registry nhận ra loại subprocess; không rẽ nhánh theo luật", () => {
     expect(draftKindOf("subprocess")).toBe("subprocess" as never);
     expect(feNodeOf("subprocess" as never).family).toBe("control");
@@ -163,7 +163,6 @@ describe("panel + canvas + lỗi", () => {
     expect(panelRegistry.has(SUBPROCESS_NODE)).toBe(true);
     expect(hasNodePanel({ key: SUBPROCESS_NODE } as never)).toBe(true);
   });
-
   test("ô canvas: một stage subprocess thành ô module có ba đầu ra của sổ module; Từ chối / Huỷ vẽ cạnh theo branches", () => {
     const v = {
       uid: "s1",
@@ -199,7 +198,9 @@ describe("panel + canvas + lỗi", () => {
     expect(m?.exits.find((e) => e.key === "rejected")?.to).toEqual(["s2"]); // cạnh thật tới ô đích
     expect(m?.exits.find((e) => e.key === "cancelled")?.to).toEqual([]);
   });
+});
 
+describe("panel + canvas + lỗi", () => {
   test("kéo cổng Từ chối tới bước sau ⇒ ghi wait.branches; Hoàn tất ⇒ nextStep", () => {
     const st = (uid: string, step: number, executor: string) =>
       ({

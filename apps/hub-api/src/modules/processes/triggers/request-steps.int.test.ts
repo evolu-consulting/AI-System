@@ -42,13 +42,14 @@ const snap = (name: string) => ({
   ],
 });
 
-async function seedRun(
-  tid: string,
-  starter: string,
-  def: string,
-  conv: string,
-  name: string,
-): Promise<string> {
+async function seedRun(p: {
+  tid: string;
+  starter: string;
+  def: string;
+  conv: string;
+  name: string;
+}): Promise<string> {
+  const { tid, starter, def, conv, name } = p;
   const [r] = await o<
     { id: string }[]
   >`insert into hub.process_runs (tenant_id, process_def_id, def_version, snapshot, started_by, origin_kind, input,
@@ -74,9 +75,10 @@ beforeAll(async () => {
   >`insert into hub.conversations (tenant_id, user_id, title, title_norm)
     values (${X}, ${WHO.A?.userId as string}, 'c', 'c') returning id::text as id`;
   const a = WHO.A?.userId as string;
-  parent = await seedRun(X, a, d?.id as string, c?.id as string, "Cha");
-  child = await seedRun(X, a, d?.id as string, c?.id as string, "Phần 1");
-  grand = await seedRun(X, a, d?.id as string, c?.id as string, "Phần 1.1");
+  const base = { tid: X, starter: a, def: d?.id as string, conv: c?.id as string };
+  parent = await seedRun({ ...base, name: "Cha" });
+  child = await seedRun({ ...base, name: "Phần 1" });
+  grand = await seedRun({ ...base, name: "Phần 1.1" });
   const link = (c: string, p: string) => o`update hub.process_runs set parent_run_id = ${p},
       parent_stage_run_id = s.id, parent_attempt = s.attempt, parent_round = s.round
     from hub.stage_runs s where s.process_run_id = ${p} and s.stage_idx = 0 and hub.process_runs.id = ${c}`;

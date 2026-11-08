@@ -27,34 +27,55 @@ type Sinks = {
 const appOfKey = (key: string): string =>
   key.includes(".") ? (key.split(".")[0] ?? "") : "unknown";
 
+type RegState = {
+  nodes: ReadonlyMap<string, NodeBinding>;
+  tools: ReadonlyMap<string, string>;
+  facts: ReadonlySet<string>;
+  outcomes: ReadonlySet<string>;
+};
+
+function summarize(s: RegState, apps: ReadonlySet<string> | null): BoundSummary {
+  const { nodes, tools, facts, outcomes } = s;
+  const inApps = (app: string) => apps === null || apps.has(app);
+  const keep = (set: ReadonlySet<string>) =>
+    new Set([...set].filter((k) => inApps(k.split(SEP)[0] ?? "")));
+  return {
+    nodes: new Map(
+      [...nodes]
+        .filter(([k]) => inApps(appOfKey(k)))
+        .map(([k, b]) => [
+          k,
+          {
+            tools: b.tools ?? [],
+            ...(b.argsSchema ? { argsSchema: b.argsSchema } : {}),
+            ...(b.outputs ? { outputs: b.outputs } : {}),
+          },
+        ]),
+    ),
+    tools: new Set([...tools].filter(([, app]) => inApps(app)).map(([k]) => k)),
+    facts: keep(facts),
+    outcomes: keep(outcomes),
+  };
+}
+
+function failWith(found: readonly ModuleIssue[], opts?: ModuleVerifyOpts): void {
+  if (found.length === 0) return;
+  const text = [
+    `Khởi động dừng: ${found.length} lỗi module`,
+    ...found.map((i) => `- [${i.code}] ${i.message}`),
+  ].join("\n");
+  opts?.log?.(text, { issues: found.map((i) => ({ code: i.code, key: i.key })) });
+  throw new Error(text);
+}
+
 export function createModuleRegistry(sinks: Sinks): ModuleRegistry {
   const nodes = new Map<string, NodeBinding>();
   const tools = new Map<string, string>(); // khoá tool → app
   const facts = new Set<string>(); // `<app>\0<event>`
   const outcomes = new Set<string>();
 
-  const summary = (apps: ReadonlySet<string> | null): BoundSummary => {
-    const inApps = (app: string) => apps === null || apps.has(app);
-    const keep = (set: ReadonlySet<string>) =>
-      new Set([...set].filter((k) => inApps(k.split(SEP)[0] ?? "")));
-    return {
-      nodes: new Map(
-        [...nodes]
-          .filter(([k]) => inApps(appOfKey(k)))
-          .map(([k, b]) => [
-            k,
-            {
-              tools: b.tools ?? [],
-              ...(b.argsSchema ? { argsSchema: b.argsSchema } : {}),
-              ...(b.outputs ? { outputs: b.outputs } : {}),
-            },
-          ]),
-      ),
-      tools: new Set([...tools].filter(([, app]) => inApps(app)).map(([k]) => k)),
-      facts: keep(facts),
-      outcomes: keep(outcomes),
-    };
-  };
+  const state: RegState = { nodes, tools, facts, outcomes };
+  const summary = (apps: ReadonlySet<string> | null): BoundSummary => summarize(state, apps);
 
   const issues = (mods: readonly FeatureModule[], opts?: ModuleVerifyOpts): ModuleIssue[] => {
     const apps = opts?.apps ? new Set(opts.apps) : null;
@@ -90,14 +111,7 @@ export function createModuleRegistry(sinks: Sinks): ModuleRegistry {
     bindingOf: (key) => nodes.get(key),
     issues,
     verify(mods, opts) {
-      const found = issues(mods, opts);
-      if (found.length === 0) return;
-      const text = [
-        `Khởi động dừng: ${found.length} lỗi module`,
-        ...found.map((i) => `- [${i.code}] ${i.message}`),
-      ].join("\n");
-      opts?.log?.(text, { issues: found.map((i) => ({ code: i.code, key: i.key })) });
-      throw new Error(text);
+      failWith(issues(mods, opts), opts);
     },
   };
 }

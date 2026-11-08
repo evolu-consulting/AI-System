@@ -136,7 +136,9 @@ describe("CR-125 c5 · mẫu dùng được ở công ty", () => {
     expect(JSON.stringify(r.json)).toContain('"audience":"company"');
     await o`delete from hub.company_flows where tenant_id = ${X}`;
   });
+});
 
+describe("CR-125 c5 · mẫu dùng được ở công ty · sao chép", () => {
   it("mẫu dùng được: gán 201; công ty sao chép ⇒ nhóm duyệt = nhóm chủ gói của công ty, không cảnh báo thiếu nhóm", async () => {
     const a = await call("P", "POST", P(X), { flow_id: okTpl });
     expect(a.status).toBe(201);

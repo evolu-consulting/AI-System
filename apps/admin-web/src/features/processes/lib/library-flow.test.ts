@@ -18,6 +18,9 @@ describe("libraryFlowOf", () => {
     expect(f?.trigger.event).toBe("contract.submitted");
     expect(f?.draft.stages).toEqual([]);
   });
+});
+
+describe("libraryFlowOf", () => {
   // Lỗi sản phẩm: trình xem Thư viện (tenant_admin) và trình sửa của platform sập "Cannot read properties of undefined (reading 'map')"
   // vì stage biên dịch từ khe (slot + trigger) không có `sources` / `must_know` / `autofix` (Hub trả stage THÔ, chưa qua zod).
   test("stage biên dịch từ khe, thiếu sources/must_know/autofix ⇒ vẫn dựng được bản nháp", () => {

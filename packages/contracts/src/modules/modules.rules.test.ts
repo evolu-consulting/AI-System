@@ -69,6 +69,9 @@ describe("MODULES · một nguồn (MOD-FR-06)", () => {
     ];
     expect(clusterOf(stages, 1)).toEqual({ node: "contracts.esign", start: 0, end: 2 });
   });
+});
+
+describe("MODULES · một nguồn (MOD-FR-06)", () => {
   test("sổ hiện tại không có lỗi khi đủ binding giả lập (node app có binding, base không cần)", () => {
     const b = bound({
       nodes: new Map([
@@ -184,6 +187,9 @@ describe("moduleIssues (MOD-FR-01/04/10)", () => {
     expect(bad.map((i) => i.code)).toEqual(["MOD_PORT_MISMATCH"]);
     expect(bad[0]?.message).toContain("thiếu «signers»");
   });
+});
+
+describe("moduleIssues (MOD-FR-01/04/10)", () => {
   test("MOD_EVENT_UNBOUND, MOD_OUTCOME_UNBOUND, MOD_ORPHAN_BINDING", () => {
     const ev = {
       key: "demo.created",
@@ -215,6 +221,9 @@ describe("moduleIssues (MOD-FR-01/04/10)", () => {
       ["MOD_ORPHAN_BINDING", "unknown", "nodot"],
     ]);
   });
+});
+
+describe("moduleIssues (MOD-FR-01/04/10)", () => {
   test("tín hiệu chờ: không cần binding/dữ kiện, phải có node chờ (wait_event.event/also_events/exits.on) — không thì MOD_SIGNAL_ORPHAN", () => {
     const waiter = appNode({
       key: "demo.wait",

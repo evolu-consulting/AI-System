@@ -24,7 +24,6 @@ describe("templateReadiness", () => {
     expect(r.ready).toBe(true);
     expect(r.missing.groups).toEqual(["community-admin"]);
   });
-
   test("node có tính năng chưa bật ⇒ not ready, nêu tính năng và bước", () => {
     const n = templateNeeds([{ key: "k", name: "Hiện bài", node: "community.show-post" }], MODULES);
     const off = templateReadiness(n, none);
@@ -37,7 +36,6 @@ describe("templateReadiness", () => {
     const on = templateReadiness(n, { ...none, features: new Set(["community-write"]) });
     expect(on.ready).toBe(true);
   });
-
   test("stage tool không khả dụng ⇒ not ready; khả dụng ⇒ ready", () => {
     const n = templateNeeds([tool("Agent sàng lọc", "community-screen")], MODULES);
     expect(templateReadiness(n, none).missing.tools[0]?.key).toBe("community-screen");
@@ -45,7 +43,6 @@ describe("templateReadiness", () => {
       true,
     );
   });
-
   test("bước khe cố định (slot): gán được (ready) nhưng không sao chép sửa được, không đòi tool", () => {
     const n = templateNeeds(
       [{ ...tool("Agent sàng lọc", "community-screen"), slot: { kind: "agent" } }],
@@ -61,7 +58,9 @@ describe("templateReadiness", () => {
     });
     expect(r.missing.locked).toEqual(["Agent sàng lọc"]);
   });
+});
 
+describe("templateReadiness", () => {
   test("node requires approval đứng không ngay sau Duyệt ⇒ not ready", () => {
     const esign = { key: "e", name: "Ký số", node: "contracts.esign" };
     const bad = templateReadiness(templateNeeds([esign], MODULES), {
@@ -75,7 +74,6 @@ describe("templateReadiness", () => {
     });
     expect(good.missing.order).toEqual([]);
   });
-
   test("node nhiều stage (gửi + chờ ký) ⇒ chỉ stage đầu cần Duyệt ngay trước", () => {
     const send = { key: "s", name: "Ký số", node: "contracts.esign" };
     const wait = { key: "w", name: "Chờ ký", node: "contracts.esign" };
@@ -85,7 +83,6 @@ describe("templateReadiness", () => {
     });
     expect(r.missing.order).toEqual([]);
   });
-
   test("nhóm: trùng mã, <app>-admin ⇒ <app>-owner, lạ ⇒ chưa có nhóm (không đoán)", () => {
     expect(mapGroupKey("truong-phong", ["truong-phong"])).toBe("truong-phong");
     expect(mapGroupKey("community-admin", ["community-owner", "ketoan"])).toBe("community-owner");

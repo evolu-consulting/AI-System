@@ -50,6 +50,16 @@ export type ContractsClock = {
   runs?: PackRunsBridge;
 };
 
+const stepLabelsOf = (runs: PackRunsBridge | undefined) =>
+  runs
+    ? async (who: PackWho, ids: readonly string[], fromRuns: ReadonlySet<string>) =>
+        new Map(
+          [
+            ...((await runs.port?.stepsViewMany?.({ ...who, role: "member" }, ids)) ?? new Map()),
+          ].map(([k, v]) => [k, stepLabelOf(v, fromRuns.has(k))] as const),
+        )
+    : undefined;
+
 export function contractsModule(
   db: Db,
   view: PackAccessView,
@@ -60,20 +70,10 @@ export function contractsModule(
   const uow = packTenantOnly(createPackUow(db, CONTRACTS_KEY, contractsRepos));
   const link = filebox ? (org: string, fileId: string) => filebox(org).getLink(fileId) : null;
   // V2-A: ngày lịch tenant cho giai đoạn/quá hạn của mốc (cache múi giờ, 0 SQL khi nóng).
-  const today = async (tid: string) =>
-    localDate(
-      (clock.now ?? (() => new Date()))(),
-      await (clock.timeZoneOf?.(tid) ?? DEFAULT_TENANT_TZ),
-    );
-  const runs = clock.runs;
-  const stepLabels = runs
-    ? async (who: PackWho, ids: readonly string[], fromRuns: ReadonlySet<string>) =>
-        new Map(
-          [
-            ...((await runs.port?.stepsViewMany?.({ ...who, role: "member" }, ids)) ?? new Map()),
-          ].map(([k, v]) => [k, stepLabelOf(v, fromRuns.has(k))] as const),
-        )
-    : undefined;
+  const dayWith = (fmt: typeof localDate) => async (tid: string) =>
+    fmt((clock.now ?? (() => new Date()))(), await (clock.timeZoneOf?.(tid) ?? DEFAULT_TENANT_TZ));
+  const today = dayWith(localDate);
+  const stepLabels = stepLabelsOf(clock.runs);
   const r = contractsRoutes(view, {
     list: timed(
       "contracts.list",
@@ -100,11 +100,7 @@ export function contractsModule(
       attachParent: attachParent({ uow }),
       suggestParents: suggestParentsFor({ uow }),
       prices: getPrices({ uow }),
-      today: async (tid) =>
-        uploadDay(
-          (clock.now ?? (() => new Date()))(),
-          await (clock.timeZoneOf?.(tid) ?? DEFAULT_TENANT_TZ),
-        ),
+      today: dayWith(uploadDay),
     }),
   );
   r.route("/", visibilityRoutes(view, CONTRACTS_KEY, db)); // M1D-FR-04: chế độ thấy (tenant|org)

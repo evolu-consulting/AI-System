@@ -86,7 +86,12 @@ function edgesOf(stages: readonly StageDraft[], units: readonly Unit[]): E[] {
 }
 
 /** Mẫu "prevent cycles" của React Flow: từ `from` đi theo cạnh ra có tới được `to` không (cả `from === to`). */
-function reaches(nodes: G[], edges: E[], from: G, to: G, seen = new Set<string>()): boolean {
+function reaches(
+  nodes: G[],
+  edges: E[],
+  from: G,
+  ...[to, seen = new Set<string>()]: [to: G, seen?: Set<string>]
+): boolean {
   if (from.id === to.id) return true;
   if (seen.has(from.id)) return false;
   seen.add(from.id);

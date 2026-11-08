@@ -48,6 +48,9 @@ describe("CR-123 u10 · mã bước hiện tại của HĐ trong danh sách", ()
     expect(stepLabelOf(run, true)).toEqual({ code: "waiting_step", name: "Giám đốc duyệt" });
     expect(stepLabelOf(run)).toEqual({ code: "waiting_draft" });
   });
+});
+
+describe("CR-123 u10 · mã kết cục cuối của HĐ trong danh sách", () => {
   it("kết cục cuối: approved", () => {
     expect(stepLabelOf(v("done", [s(0, "A", "passed"), s(1, "B", "passed")]))).toEqual({
       code: "approved",

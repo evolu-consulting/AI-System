@@ -10,9 +10,9 @@ export const anchorsForOf =
     who: PackWho,
     id: string,
     p: ESignProvider,
-    stored: { role: "company" | "partner" }[],
-    bytes: Uint8Array,
+    doc: { stored: { role: "company" | "partner" }[]; bytes: Uint8Array },
   ): Promise<string[] | null> => {
+    const { stored, bytes } = doc;
     if (!anchors || kindOf(p.key) !== "envelope") return null;
     const pick = await anchors
       .pick(

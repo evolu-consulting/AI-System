@@ -157,19 +157,21 @@ describe("TS1 · test:e2e:par · lọc và số đo", () => {
   });
 });
 
-describe("TS1 · test:e2e:par · env mỗi việc", () => {
-  const base = {
-    TEST_DATABASE_URL: "postgres://ai:pw@localhost:5432/ai_system_test",
-    TEST_ADMIN_API_DATABASE_URL: "postgres://admin_api:pw@localhost:5432/ai_system_test",
-    REDIS_URL: "redis://localhost:6379",
-  };
-  const dir = { dist: "dist-e2e/x", clockFile: "/tmp/clock" };
-  const job = (cfg: string) => {
-    const j = planJobs({ configs: [cfg], specs: [], rootShards: 1 }, {})[0];
-    if (!j) throw new Error("no job");
-    return j;
-  };
+const base = {
+  TEST_DATABASE_URL: "postgres://ai:pw@localhost:5432/ai_system_test",
+  TEST_ADMIN_API_DATABASE_URL: "postgres://admin_api:pw@localhost:5432/ai_system_test",
+  REDIS_URL: "redis://localhost:6379",
+};
 
+const dir = { dist: "dist-e2e/x", clockFile: "/tmp/clock" };
+
+const job = (cfg: string) => {
+  const j = planJobs({ configs: [cfg], specs: [], rootShards: 1 }, {})[0];
+  if (!j) throw new Error("no job");
+  return j;
+};
+
+describe("TS1 · test:e2e:par · env mỗi việc", () => {
   it("DB riêng giữ nguyên user/mật khẩu; Redis DB theo biến của cấu hình", () => {
     const e = jobEnv(job("e2e/P-a/playwright.pa.config.ts"), base, 9, dir);
     expect(e.TEST_DATABASE_URL).toBe("postgres://ai:pw@localhost:5432/ai_system_e2e_pa_test");
@@ -180,7 +182,6 @@ describe("TS1 · test:e2e:par · env mỗi việc", () => {
     expect(e.E2E_DIST_DIR).toBe("dist-e2e/x");
     expect(e.E2E_CLOCK_FILE).toBeUndefined();
   });
-
   it("biến Redis dạng URL; việc không DB/Redis không có biến đó", () => {
     expect(jobEnv(job("e2e/chat/playwright.x2b.config.ts"), base, 11, dir).X2B_REDIS_URL).toBe(
       "redis://localhost:6379/11",
@@ -190,12 +191,10 @@ describe("TS1 · test:e2e:par · env mỗi việc", () => {
     expect(Object.keys(e)).toEqual(["E2E_DIST_DIR", "LOGIN_IP_MAX_ATTEMPTS"]);
     expect(e.LOGIN_IP_MAX_ATTEMPTS).toBe(E2E_LOGIN_IP_MAX);
   });
-
   it("cấu hình lạ nhận DB riêng (không dùng chung ai_system_test)", () => {
     const e = jobEnv(job("e2e/new/playwright.config.ts"), base, undefined, dir);
     expect(e.TEST_DATABASE_URL).toMatch(/ai_system_e2e_x_e2e_new_playwright_test$/);
   });
-
   it("journey -ms/-fsc/gốc: DB, Redis var và dịch cổng khác nhau (không đụng khi chạy cùng slot)", () => {
     const cfgs = [
       "e2e/journey-approval/playwright.journey.config.ts",

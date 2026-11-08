@@ -3,12 +3,30 @@ import { featureNodeByKey, MODULES } from "../modules";
 import { newRealViolation, realActionAllowed, requiresApprovalBefore } from "./process-real-rule";
 import { processDefStagePaths } from "./process-steps";
 
-const n = (uid: string, step: number, after: string, real = false, node?: string) => ({
+const n = (
+  uid: string,
+  step: number,
+  after: string,
+  ...[real = false, node]: [real?: boolean, node?: string]
+) => ({
   uid,
   step,
   after,
   real,
   node,
+});
+
+const st = (
+  key: string,
+  step: number,
+  after: string,
+  ...[node, real = false]: [node?: string, real?: boolean]
+) => ({
+  key,
+  step,
+  node,
+  real_action: real,
+  after: { kind: after },
 });
 
 describe("process-real-rule · Ký số cần bước duyệt ngay trước", () => {
@@ -78,13 +96,6 @@ describe("CR-125 m5 · tiền điều kiện do node khai báo (nguồn MODULES)
     expect(realActionAllowed([{ step: 0, after: "review", node: "zzz.unknown" }], 0)).toBe(false);
   });
   test("lưu (REAL_ACTION của Hub) đọc cùng khai báo: Ký số sau bước tự động ⇒ lỗi, node không đòi ⇒ không lỗi", () => {
-    const st = (key: string, step: number, after: string, node?: string, real = false) => ({
-      key,
-      step,
-      node,
-      real_action: real,
-      after: { kind: after },
-    });
     const bad = processDefStagePaths([
       st("a", 0, "auto"),
       st("k", 1, "auto", "contracts.esign", true),

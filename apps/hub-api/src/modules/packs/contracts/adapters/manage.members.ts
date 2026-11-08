@@ -12,7 +12,7 @@ export function packAssignees(db: Db, view: PackAccessView, packKey: string) {
     const i = await packAccessInput(view, packKey, who);
     const groups = i.entitled && !i.featureOff ? i.grantedByAction.read : [];
     if (groups.length === 0) return [];
-    return internalMembersOfGroups(db, who, groups, only, MEMBERS_MAX);
+    return internalMembersOfGroups(db, who, groups, { only, limit: MEMBERS_MAX });
   }
   return {
     list: (who: PackWho) => list(who),

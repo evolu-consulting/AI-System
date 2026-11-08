@@ -65,7 +65,9 @@ describe("flowViewOfRun", () => {
     expect(v.tasks[0]).toMatchObject({ task_id: U(501), kind: "review" });
     expect(v.tasks[0]?.actions.map((a) => a.key)).toEqual(["approve", "return", "reject"]);
   });
+});
 
+describe("flowViewOfRun · quyền xem, đích trả lại", () => {
   test("người xem không quyết được hoặc lượt đã xong ⇒ không có task", () => {
     const open = run([stage(0, { status: "open", task: { id: U(502), can_act: false } })]);
     expect(flowViewOfRun(open, U(1)).tasks).toEqual([]);

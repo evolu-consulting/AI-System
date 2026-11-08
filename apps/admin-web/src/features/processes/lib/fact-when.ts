@@ -130,9 +130,11 @@ export function whenSummary(
   when: FactWhen | null | undefined,
   facts: readonly AppFactDecl[],
   sym: (op: FactOp) => string,
-  joiner: { and: string; or: string },
-  /** Có/Không: "Đối tác mới là Có" thay vì "= true" (cùng cách đọc với node Nếu). */
-  bool?: { is: string; isNot: string; yes: string; no: string },
+  ...[joiner, bool]: [
+    joiner: { and: string; or: string },
+    /** Có/Không: "Đối tác mới là Có" thay vì "= true" (cùng cách đọc với node Nếu). */
+    bool?: { is: string; isNot: string; yes: string; no: string },
+  ]
 ): string {
   if (!when) return "";
   const label = (k: string) => facts.find((f) => f.key === k)?.label ?? k;

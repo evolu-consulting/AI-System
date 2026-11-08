@@ -90,7 +90,9 @@ describe("moduleRegistry.verify (MOD-FR-02)", () => {
     expect(msg).toContain("[MOD_UNBOUND] Node «Gửi» (demo.send) chưa có xử lý máy chủ");
     expect(logs).toEqual([msg]);
   });
+});
 
+describe("moduleRegistry.verify (MOD-FR-02) · lỗi binding", () => {
   it("tool chưa đăng ký ⇒ MOD_TOOL_MISSING; schema args khác cổng ⇒ MOD_PORT_MISMATCH (MOD-FR-04)", () => {
     const r = createModuleRegistry(sinks());
     r.bindNode({

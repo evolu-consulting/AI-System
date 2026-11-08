@@ -109,6 +109,11 @@ describe("CR-122 P11 · thẻ duyệt từ run flow", () => {
   });
 });
 
+const giveBack = (
+  o: Omit<Parameters<typeof planEngineAct>[0], "action" | "feedback" | "hasSource">,
+  feedback: string,
+) => planEngineAct({ ...o, action: "return", feedback, hasSource: false });
+
 describe("CR-124 q6 · lượt flow theo sự kiện có stage Duyệt ở idx 0 (Giám đốc duyệt là bước ĐẦU)", () => {
   const sv = {
     status: "waiting_review",
@@ -129,12 +134,7 @@ describe("CR-124 q6 · lượt flow theo sự kiện có stage Duyệt ở idx 0
     expect(v.steps.map((s) => [s.idx, s.status])).toEqual([[0, "open"]]);
   });
   it("Trả lại được ở bước 0 của lượt flow (không bị coi là bước soạn)", () => {
-    const p = planEngineAct({
-      ...base,
-      action: "return",
-      feedback: "sai đơn giá",
-      hasSource: false,
-    });
+    const p = giveBack(base, "sai đơn giá");
     // Trả lại của flow theo sự kiện = nhánh của stage (không đích lùi `back_to_step` ⇒ không BACK_TARGET_INVALID).
     expect(p).toEqual({ kind: "fail_flow", taskId: "t1" });
   });
@@ -153,12 +153,7 @@ describe("CR-124 q6 · lượt flow theo sự kiện có stage Duyệt ở idx 0
         ],
       },
     };
-    const p = planEngineAct({
-      ...withBack,
-      action: "return",
-      feedback: "sửa lại",
-      hasSource: false,
-    });
+    const p = giveBack(withBack, "sửa lại");
     expect(p).toEqual({ kind: "fail_back", taskId: "t2", backTo: 0 });
   });
 });

@@ -77,8 +77,7 @@ const issue = (
   code: ModuleIssueCode,
   app: string,
   key: string,
-  message: string,
-  detail?: string,
+  ...[message, detail]: [message: string, detail?: string]
 ): ModuleIssue =>
   detail === undefined ? { code, app, key, message } : { code, app, key, detail, message };
 

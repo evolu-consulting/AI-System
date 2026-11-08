@@ -148,6 +148,9 @@ describe("CR-122 · E2b · node Duyệt rẽ theo quyết định (đường th�
     });
     expect((await settle(no))?.step).toBe(3);
   });
+});
+
+describe("CR-122 · E2b · node Duyệt · Kết thúc, lượt huỷ", () => {
   it("Từ chối rẽ tới Kết thúc khi hẹn còn mở ⇒ hẹn của nhánh bị bỏ và nhánh sau Kết thúc bị huỷ", async () => {
     const runId = await seedRun({ step: 1, st: DONE_AT_APPROVE, decision: "rejected" });
     const ids = await o<

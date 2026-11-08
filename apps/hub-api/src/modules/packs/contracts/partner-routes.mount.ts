@@ -71,14 +71,59 @@ function businessError(e: unknown): never {
   throw e;
 }
 
+type PartnerUow = PackUow<{ ui: PartnerUiRepo }>;
+type PartnerRouter = Hono<PackGuardVars>;
+const who = (c: { get(k: "user"): { tenantId: string; userId: string } }) => {
+  const u = c.get("user");
+  return { tenantId: u.tenantId, userId: u.userId };
+};
+
+function sendRoutes(r: PartnerRouter, view: PackAccessView, uow: PartnerUow): void {
+  r.get("/partner/sends/:contractId", packGuard(view, KEY, "read"), async (c) => {
+    const id = parseWith(UUID, c.req.param("contractId"));
+    return c.json({ rounds: await uow.tenant(who(c), (x) => x.ui.sends(id)) }, 200);
+  });
+  r.post("/partner/sends/:mailboxId/record", packGuard(view, KEY, "write"), async (c) => {
+    const id = parseWith(UUID, c.req.param("mailboxId"));
+    const b = parseWith(RecordBody, await readJson(c));
+    try {
+      await uow.tenant(who(c), async (x) => {
+        if (!(await x.ui.openSend(id))) throw appError("NOT_FOUND");
+        await x.ui.recordManual(id, b.outcome, b.reason || null, {
+          by_name: b.by_name,
+          ...(b.by_title ? { by_title: b.by_title } : {}),
+          files: b.evidence,
+        });
+      });
+    } catch (e) {
+      if (e instanceof AppError) throw e;
+      businessError(e);
+    }
+    return c.json({ ok: true }, 200);
+  });
+}
+
+function settingsRoutes(r: PartnerRouter, view: PackAccessView, uow: PartnerUow): void {
+  r.get("/partner/settings", packGuard(view, KEY, "admin"), async (c) =>
+    c.json(await uow.tenant(who(c), (x) => x.ui.settings()), 200),
+  );
+  r.put("/partner/settings", packGuard(view, KEY, "admin"), async (c) => {
+    const b = parseWith(SettingsBody, await readJson(c));
+    const saved = await uow.tenant(who(c), (x) => x.ui.saveSettings(b, c.get("user").userId));
+    if (!saved)
+      throw new AppError(
+        "PARTNER_OWNER_INVALID",
+        422,
+        "Người phụ trách phải là thành viên đang dùng của công ty — chọn lại trong danh sách.",
+      );
+    return c.json({ ok: true }, 200);
+  });
+}
+
 export function partnerModule(db: Db, view: PackAccessView): Hono<PackGuardVars> {
-  const uow: PackUow<{ ui: PartnerUiRepo }> = createPackUow(db, KEY, (tx: Tx, t: string) => ({
+  const uow: PartnerUow = createPackUow(db, KEY, (tx: Tx, t: string) => ({
     ui: partnerUiRepo(tx, t),
   }));
-  const who = (c: { get(k: "user"): { tenantId: string; userId: string } }) => {
-    const u = c.get("user");
-    return { tenantId: u.tenantId, userId: u.userId };
-  };
   const r = new Hono<PackGuardVars>();
   // q7 · MỌI route `/partner/*` cần công ty đã bật tính năng `contracts-partner-confirm` — cùng nguồn (`tenantFeatureOn`) với cap menu.
   r.use("/partner/*", async (c, next) => {
@@ -107,41 +152,7 @@ export function partnerModule(db: Db, view: PackAccessView): Hono<PackGuardVars>
     }
     return c.json({ ok: true }, 200);
   });
-  r.get("/partner/sends/:contractId", packGuard(view, KEY, "read"), async (c) => {
-    const id = parseWith(UUID, c.req.param("contractId"));
-    return c.json({ rounds: await uow.tenant(who(c), (x) => x.ui.sends(id)) }, 200);
-  });
-  r.post("/partner/sends/:mailboxId/record", packGuard(view, KEY, "write"), async (c) => {
-    const id = parseWith(UUID, c.req.param("mailboxId"));
-    const b = parseWith(RecordBody, await readJson(c));
-    try {
-      await uow.tenant(who(c), async (x) => {
-        if (!(await x.ui.openSend(id))) throw appError("NOT_FOUND");
-        await x.ui.recordManual(id, b.outcome, b.reason || null, {
-          by_name: b.by_name,
-          ...(b.by_title ? { by_title: b.by_title } : {}),
-          files: b.evidence,
-        });
-      });
-    } catch (e) {
-      if (e instanceof AppError) throw e;
-      businessError(e);
-    }
-    return c.json({ ok: true }, 200);
-  });
-  r.get("/partner/settings", packGuard(view, KEY, "admin"), async (c) =>
-    c.json(await uow.tenant(who(c), (x) => x.ui.settings()), 200),
-  );
-  r.put("/partner/settings", packGuard(view, KEY, "admin"), async (c) => {
-    const b = parseWith(SettingsBody, await readJson(c));
-    const saved = await uow.tenant(who(c), (x) => x.ui.saveSettings(b, c.get("user").userId));
-    if (!saved)
-      throw new AppError(
-        "PARTNER_OWNER_INVALID",
-        422,
-        "Người phụ trách phải là thành viên đang dùng của công ty — chọn lại trong danh sách.",
-      );
-    return c.json({ ok: true }, 200);
-  });
+  sendRoutes(r, view, uow);
+  settingsRoutes(r, view, uow);
   return r;
 }

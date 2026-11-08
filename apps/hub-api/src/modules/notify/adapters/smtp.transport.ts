@@ -88,6 +88,28 @@ export function createStoredSmtpTransport(
   };
 }
 
+function buildMail(from: string, domain: string, m: EmailMessage) {
+  return {
+    from,
+    to: { name: m.toName, address: m.to },
+    subject: m.subject,
+    text: m.text,
+    ...(m.html ? { html: m.html } : {}),
+    ...(m.inline?.length
+      ? {
+          attachments: m.inline.map((a) => ({
+            cid: a.cid,
+            filename: `${a.cid}.jpg`,
+            contentType: a.contentType,
+            contentDisposition: "inline" as const,
+            content: Buffer.from(a.base64, "base64"),
+          })),
+        }
+      : {}),
+    messageId: `<${m.idempotencyKey}@${domain}>`,
+  };
+}
+
 export function createSmtpTransport(
   cfg: SmtpConfig,
   getPassword: () => Promise<string | undefined>,
@@ -109,25 +131,7 @@ export function createSmtpTransport(
         msgs.map((m) =>
           isUndeliverableEmail(m.to)
             ? Promise.reject(SKIPPED)
-            : s.sendMail({
-                from: cfg.from,
-                to: { name: m.toName, address: m.to },
-                subject: m.subject,
-                text: m.text,
-                ...(m.html ? { html: m.html } : {}),
-                ...(m.inline?.length
-                  ? {
-                      attachments: m.inline.map((a) => ({
-                        cid: a.cid,
-                        filename: `${a.cid}.jpg`,
-                        contentType: a.contentType,
-                        contentDisposition: "inline" as const,
-                        content: Buffer.from(a.base64, "base64"),
-                      })),
-                    }
-                  : {}),
-                messageId: `<${m.idempotencyKey}@${domain}>`,
-              }),
+            : s.sendMail(buildMail(cfg.from, domain, m)),
         ),
       );
       return out.map((r) =>

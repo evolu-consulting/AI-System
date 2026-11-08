@@ -74,7 +74,9 @@ describe("flowViewOfCard · bước form", () => {
     expect(t?.actions.map((a) => a.key)).toEqual(["submit"]);
     expect(t?.actions[0]?.input.kind).toBe("form");
   });
+});
 
+describe("flowViewOfCard · bước form đã gửi, người xem ngoài nhóm", () => {
   test("form đã gửi ⇒ giá trị chỉ đọc ở bước form; bước duyệt kế tiếp vẫn là review có Duyệt/Trả lại", () => {
     const values = { nha_cung_cap: "Công ty An Phát", gia_bao: 480000000, tep_bao_gia: U(77) };
     const v = flowViewOfCard(

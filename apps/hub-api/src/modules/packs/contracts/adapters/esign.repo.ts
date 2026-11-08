@@ -66,6 +66,45 @@ type CRaw = {
   has_partner: boolean;
 };
 
+type InviteRaw = {
+  title: string;
+  number: string | null;
+  partner: string | null;
+  value: string | null;
+  start_d: string | null;
+  end_d: string | null;
+  owner: string | null;
+  company: string | null;
+  sent_at: string | null;
+  due_at: string | null;
+  th: boolean;
+  file_row: string | null;
+  org: string | null;
+  file_id: string | null;
+  mime: string | null;
+};
+
+const inviteCardOf = (r: InviteRaw) => {
+  const num = r.value !== null && /^-?\d+(\.\d+)?$/.test(r.value) ? Number(r.value) : null;
+  return {
+    title: r.title,
+    number: r.number,
+    partner: r.partner,
+    value: num,
+    start: r.start_d,
+    end: r.end_d,
+    ownerId: r.owner,
+    company: r.company,
+    sentAt: r.sent_at,
+    dueAt: r.due_at,
+    thumbOn: r.th !== false,
+    file:
+      r.file_row && r.org && r.file_id
+        ? { fileRow: r.file_row, org: r.org, fileId: r.file_id, mime: r.mime }
+        : null,
+  };
+};
+
 export function esignRepo(tx: Tx, t: string): ESignRepo {
   return {
     // CR-125 · x6 · người cần thấy thẻ ký số cập nhật ngay: người gửi + người ký công ty của phong bì mới nhất của HĐ (cùng tenant; MỘT câu).
@@ -118,23 +157,8 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
           from up`);
     },
     inviteCard: async (id) => {
-      const [r] = await tx.execute<{
-        title: string;
-        number: string | null;
-        partner: string | null;
-        value: string | null;
-        start_d: string | null;
-        end_d: string | null;
-        owner: string | null;
-        company: string | null;
-        sent_at: string | null;
-        due_at: string | null;
-        th: boolean;
-        file_row: string | null;
-        org: string | null;
-        file_id: string | null;
-        mime: string | null;
-      }>(sql`select ${contractNameSql("c")} as title, c.number, p.name as partner,
+      const [r] =
+        await tx.execute<InviteRaw>(sql`select ${contractNameSql("c")} as title, c.number, p.name as partner,
           nullif(btrim(c.fields -> 'total_value' ->> 'value'), '') as value,
           nullif(btrim(c.fields -> 'start_date' ->> 'value'), '') as start_d,
           nullif(btrim(c.fields -> 'end_date' ->> 'value'), '') as end_d,
@@ -150,25 +174,7 @@ export function esignRepo(tx: Tx, t: string): ESignRepo {
           where x.tenant_id = c.tenant_id and x.contract_id = c.id order by x.created_at desc, x.id desc limit 1) e on true
         left join contracts.approval_settings st on st.tenant_id = c.tenant_id
         where c.id = ${id}::uuid and c.tenant_id = ${t}::uuid limit 1`);
-      if (!r) return null;
-      const num = r.value !== null && /^-?\d+(\.\d+)?$/.test(r.value) ? Number(r.value) : null;
-      return {
-        title: r.title,
-        number: r.number,
-        partner: r.partner,
-        value: num,
-        start: r.start_d,
-        end: r.end_d,
-        ownerId: r.owner,
-        company: r.company,
-        sentAt: r.sent_at,
-        dueAt: r.due_at,
-        thumbOn: r.th !== false,
-        file:
-          r.file_row && r.org && r.file_id
-            ? { fileRow: r.file_row, org: r.org, fileId: r.file_id, mime: r.mime }
-            : null,
-      };
+      return r ? inviteCardOf(r) : null;
     },
     contract: async (id) => {
       const [r] =

@@ -182,7 +182,9 @@ describe("contracts-create-from-step", () => {
       await o`select locked_at is not null as l from contracts.contracts where id = ${r.contract_id}`;
     expect(l?.l).toBe(true);
   });
+});
 
+describe("contracts-create-from-step · đồng thời, tệp thiếu", () => {
   it("hai lời gọi đồng thời cùng lượt ⇒ MỘT hợp đồng", async () => {
     const run = await mkRun(T1, A);
     const tool = makeTool(new Set([`${T1}:${run}:${FILE}`]));
@@ -216,7 +218,9 @@ describe("contracts-create-from-step", () => {
     const [pr] = await o`select pack_key from hub.process_runs where id = ${run}`;
     expect(pr?.pack_key).toBeNull(); // lỗi ⇒ lượt không bị gắn
   });
+});
 
+describe("contracts-create-from-step · tệp đính kèm, Ký số", () => {
   it("attachmentBytesOf: chỉ tệp đã liên kết với lượt (hub.process_run_files) đọc được", async () => {
     const run = await mkRun(T1, A);
     const mk = async () => {

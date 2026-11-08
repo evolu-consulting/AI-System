@@ -31,7 +31,9 @@ describe("CR-125 · cùng duyệt — luật thuần", () => {
       parallelGroupIds({ executor: { kind: "agent" }, after: { kind: "review", parallel: p } }),
     ).toBeNull();
   });
+});
 
+describe("CR-125 · cùng duyệt — luật lưu def, mã nhóm", () => {
   it("parallelStageIssues: < 2 nhóm ⇒ MIN2 — min > số nhóm / trùng nhóm / không phải Duyệt ⇒ RULE_INVALID", () => {
     const k = (key: string) => ({ group_key: key, label: key });
     expect(parallelStageIssues([approve({ groups: [k("a")], rule: "all" })])).toEqual([

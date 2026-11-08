@@ -89,9 +89,9 @@ export async function internalMembersOfGroups(
   db: Db,
   who: PackWho,
   groups: readonly string[],
-  only: string | undefined,
-  limit: number,
+  o: { only: string | undefined; limit: number },
 ): Promise<{ id: string; name: string }[]> {
+  const { only, limit } = o;
   const rows = await withHubScope(db, userScope(who), (tx) =>
     tx.execute<{
       id: string;

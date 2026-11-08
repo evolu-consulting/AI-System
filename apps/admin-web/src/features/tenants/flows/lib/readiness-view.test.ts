@@ -25,7 +25,6 @@ describe("readiness-view", () => {
     expect(readinessItems(base, false)).toEqual([]);
     expect(canProceed(base, false) && canProceed(base, true)).toBe(true);
   });
-
   it("thiếu tính năng ⇒ nút bật tính năng; thiếu nhóm ⇒ nút tạo nhóm nhưng KHÔNG chặn", () => {
     const r: TemplateReadiness = {
       ...base,
@@ -45,12 +44,10 @@ describe("readiness-view", () => {
     expect(items.filter(isBlocking).map((i) => i.kind)).toEqual(["feature"]);
     expect(canProceed(r, false)).toBe(false);
   });
-
   it("chỉ thiếu nhóm ⇒ vẫn gán/sao chép được", () => {
     const r: TemplateReadiness = { ...base, missing: { ...base.missing, groups: ["g"] } };
     expect(canProceed(r, false) && canProceed(r, true)).toBe(true);
   });
-
   it("bước cố định của nền tảng ⇒ gán được nhưng sao chép bị chặn, mục 'locked' chỉ hiện khi sao chép", () => {
     const r: TemplateReadiness = {
       ...base,
@@ -65,7 +62,9 @@ describe("readiness-view", () => {
     expect(canProceed(r, false)).toBe(true);
     expect(canProceed(r, true)).toBe(false);
   });
+});
 
+describe("readiness-view", () => {
   it("lỗi tải / lỗi nút sửa ⇒ khoá theo mã, mã lạ ⇒ default", () => {
     expect(loadErrorKey(new ApiError(403, "FORBIDDEN", "x"))).toBe(
       "tenants.companyFlows.readiness.loadFailed.FORBIDDEN",
@@ -83,7 +82,6 @@ describe("readiness-view", () => {
       "tenants.companyFlows.readiness.fixError.default",
     );
   });
-
   it("tool thiếu không có nút sửa; featureParts tách app + mức", () => {
     const r: TemplateReadiness = {
       ...base,

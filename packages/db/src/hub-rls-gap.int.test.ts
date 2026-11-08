@@ -128,7 +128,6 @@ describe("CR-125 B1 · RLS 9 bảng hub (0127, int)", () => {
     );
     expect(await hubSees({ kind: "system" })).toEqual(each([TA, TB], [null, TA, TB]));
   });
-
   test("CR-125 B1 · không scope ⇒ 0 hàng (orchestrator: chỉ hàng mặc định)", async () => {
     const seen = await tenantsOf(
       async (t) =>
@@ -139,7 +138,6 @@ describe("CR-125 B1 · RLS 9 bảng hub (0127, int)", () => {
     );
     expect(seen).toEqual(each([], [null]));
   });
-
   test("CR-125 B1 · user A ghi hàng tenant B ⇒ 42501, sửa hàng B ⇒ 0 hàng, orchestrator chỉ system ghi", async () => {
     const a: HubScope = { kind: "user", tenantId: TA, userId: ix(TA, 11) };
     const ins = withHubScope(hub, a, (tx) =>
@@ -166,7 +164,9 @@ describe("CR-125 B1 · RLS 9 bảng hub (0127, int)", () => {
     );
     expect(await code(own)).toBe("ok");
   });
+});
 
+describe("CR-125 B1 · RLS 9 bảng hub (0127, int)", () => {
   test("CR-125 B1 · hub.orchestrator_agent_ids() (DEFINER) trả agent điều phối mọi tenant cho scope user", async () => {
     const ids = await withHubScope(
       hub,
@@ -182,14 +182,12 @@ describe("CR-125 B1 · RLS 9 bảng hub (0127, int)", () => {
     );
     expect(ids).toEqual(expect.arrayContaining([ix(TA, 10), ix(TB, 10)]));
   });
-
   test("CR-125 B1 · agent_runtime thấy mọi tenant (jobs, usage_logs, cli_sessions)", async () => {
     for (const t of ["jobs", "usage_logs", "cli_sessions"]) {
       const rows = await rt.unsafe(`select tenant_id from hub.${t} order by 1`);
       expect(rows.map((r) => r.tenant_id)).toEqual([TA, TB]);
     }
   });
-
   test("CR-125 B1 · admin_rw: tenant A chỉ thấy A, platform thấy hết, không scope 0 (usage_logs, agent_grants)", async () => {
     const q = (tx: { execute: typeof admin.db.execute }, t: string) =>
       tx.execute(dsql.raw(`select tenant_id from hub.${t} order by 1`)) as unknown as Promise<

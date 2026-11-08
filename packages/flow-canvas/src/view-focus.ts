@@ -16,9 +16,7 @@ export function focusViewport(
   boxes: readonly FocusBox[],
   vp: FocusVp,
   size: { w: number; h: number },
-  inset: number,
-  minZoom: number,
-  margin = 24,
+  ...[inset, minZoom, margin = 24]: [inset: number, minZoom: number, margin?: number]
 ): FocusVp | null {
   if (boxes.length === 0) return null;
   const availW = size.w - inset - 2 * margin;
@@ -56,9 +54,7 @@ export function focusViewport(
 export function fitGroup(
   boxes: readonly FocusBox[],
   size: { w: number; h: number },
-  inset: number,
-  floor: number,
-  margin = 24,
+  ...[inset, floor, margin = 24]: [inset: number, floor: number, margin?: number]
 ): FocusBox[] {
   const availW = size.w - inset - 2 * margin;
   const availH = size.h - 2 * margin;

@@ -72,7 +72,9 @@ describe("sổ module · mount thật", () => {
       "/pack/contracts/esign/options",
     );
   });
+});
 
+describe("sổ module · mount lại, validator", () => {
   it("mount lần hai vô hại (đăng ký lại cùng khoá); verify lại vẫn xanh", () => {
     expect(() => mountPacks(new Hono(), { db, config, appEnv: "test" })).not.toThrow();
     expect(() => verifyPackModules(["core", "contracts", "community"])).not.toThrow();

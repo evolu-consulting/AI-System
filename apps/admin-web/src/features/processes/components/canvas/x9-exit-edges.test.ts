@@ -60,15 +60,15 @@ const demo = (): StageView[] => [
   view("s5", 5), // Kết thúc · Từ chối
 ];
 
-describe("cạnh rời ô Ký số bắt đầu ở chấm đầu ra của nó", () => {
-  const c = collapseModules(demo(), info);
-  const forward: Edge[] = stepEdges(c.views)
-    .filter((e) => e.kind === "forward")
-    .map((e) => ({ id: e.id, source: e.source, target: e.target }));
-  const all = withMainExit([...forward, ...moduleEdges(c.views)], c.views);
-  const ky = c.views.find((v) => v.module);
-  const exits = ky?.module?.exits ?? [];
+const c = collapseModules(demo(), info);
+const forward: Edge[] = stepEdges(c.views)
+  .filter((e) => e.kind === "forward")
+  .map((e) => ({ id: e.id, source: e.source, target: e.target }));
+const all = withMainExit([...forward, ...moduleEdges(c.views)], c.views);
+const ky = c.views.find((v) => v.module);
+const exits = ky?.module?.exits ?? [];
 
+describe("cạnh rời ô Ký số bắt đầu ở chấm đầu ra của nó", () => {
   test("Ký xong → Kế toán dùng chấm 'Ký xong' (không phải cổng ẩn ở mép trên)", () => {
     const main = exits.find((x) => x.main);
     const edge = all.find((e) => e.source === "s1" && e.target === "s3");
@@ -98,7 +98,9 @@ describe("cạnh rời ô Ký số bắt đầu ở chấm đầu ra của nó",
     ];
     expect(withMainExit(e, c.views)).toEqual(e);
   });
+});
 
+describe("cạnh rời ô Ký số bắt đầu ở chấm đầu ra của nó", () => {
   for (const direction of ["RIGHT", "DOWN"] as const) {
     test(`ELK (${direction}): mỗi cạnh của một đầu ra dùng CỔNG của đầu ra đó`, () => {
       const ports = exits.map((x) => exitHandle(x.key, x.on));

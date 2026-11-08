@@ -12,6 +12,17 @@ export type WindowLimit = {
 
 const PREFIX = "q:hub:partner-public:";
 
+const redisHit = async (redis: Redis, key: string, windowS: number, w: number) => {
+  const k = `${PREFIX}${key}:${w}`;
+  const out = await redis
+    .pipeline()
+    .incr(k)
+    .expire(k, windowS + 5)
+    .exec();
+  if (!out || out[0]?.[0]) throw new Error("redis");
+  return Number(out[0]?.[1]);
+};
+
 export function windowLimit(o: { redis?: Redis | undefined; now?: () => Date }): WindowLimit {
   const now = o.now ?? (() => new Date());
   const local = new Map<string, number>();
@@ -37,14 +48,7 @@ export function windowLimit(o: { redis?: Redis | undefined; now?: () => Date }):
       const { w, retryAfterS } = slot(windowS);
       if (o.redis) {
         try {
-          const k = `${PREFIX}${key}:${w}`;
-          const out = await o.redis
-            .pipeline()
-            .incr(k)
-            .expire(k, windowS + 5)
-            .exec();
-          if (!out || out[0]?.[0]) throw new Error("redis");
-          return { ok: Number(out[0]?.[1]) <= limit, retryAfterS };
+          return { ok: (await redisHit(o.redis, key, windowS, w)) <= limit, retryAfterS };
         } catch {
           // rơi xuống đếm trong tiến trình
         }

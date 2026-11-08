@@ -126,7 +126,9 @@ describe("CR-125 m4 · đổi cách ký", () => {
     expect(remainingDueH({ createdAt: at(100), dueH: 72 }, NOW)).toBe(1);
     expect(remainingDueH({ createdAt: at(1), dueH: null }, NOW)).toBeNull();
   });
+});
 
+describe("CR-125 m4 · đổi cách ký (từ chối, hụt)", () => {
   it("đã có người ký (theo hàng khoá) ⇒ ESIGN_STATE; cách chưa bật ⇒ ESIGN_PROVIDER_UNAVAILABLE; không huỷ gì", async () => {
     const signed = env({
       signers: [signer("company", 1, "2026-11-07T00:00:00Z"), signer("partner", 2)],
@@ -153,7 +155,9 @@ describe("CR-125 m4 · đổi cách ký", () => {
     expect(await codeOf(sw(WHO, "c1", env(), "selfsign"))).toBe("ESIGN_RESEND_FAILED");
     expect(log.map((l) => l[0])).toEqual(["lock", "claim", "release"]);
   });
+});
 
+describe("CR-125 m4 · đổi cách ký (gửi lại hụt)", () => {
   it("gửi lại hụt ⇒ dựng lại trên cách đã gửi + ESIGN_RESEND_FAILED; lượt vẫn chờ", async () => {
     const { sw, of, events } = make({ failSend: "new" });
     expect(await codeOf(sw(WHO, "c1", env(), "selfsign"))).toBe("ESIGN_RESEND_FAILED");

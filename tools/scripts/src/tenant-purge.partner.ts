@@ -98,6 +98,20 @@ export async function anonymizePartner(tx: Tx, tenantId: string): Promise<Partne
       : "");
   const DOOMED = doomed(copies);
   if (hasInbox || hasSends) await scrubNames(tx, tenantId, hasInbox, hasSends);
+  await anonymizeCopies(tx, tenantId, out, { hasInbox, hasSends });
+  await deleteDoomed(tx, tenantId, out, DOOMED);
+  await anonymizeMailbox(tx, tenantId, out);
+  await anonymizeLinks(tx, tenantId, out);
+  return out;
+}
+
+async function anonymizeCopies(
+  tx: Tx,
+  tenantId: string,
+  out: PartnerStats,
+  has: { hasInbox: boolean; hasSends: boolean },
+): Promise<void> {
+  const { hasInbox, hasSends } = has;
   // (1) Bản sao phía bên kia (gói contracts, tenant_id ≠ tenant bị xoá): tên/MST/bản chia sẻ của bên bị xoá.
   if (hasInbox)
     out.copiesAnonymized += await count(
@@ -114,6 +128,14 @@ export async function anonymizePartner(tx: Tx, tenantId: string): Promise<Partne
        where s.tenant_id <> $1::uuid and s.mailbox_id in (select m.id from hub.partner_mailbox m where m.to_tenant = $1::uuid)`,
       tenantId,
     );
+}
+
+async function deleteDoomed(
+  tx: Tx,
+  tenantId: string,
+  out: PartnerStats,
+  DOOMED: string,
+): Promise<void> {
   // (2) Hộp thư: xoá dòng không còn ai giữ (nhật ký email trước, rồi dòng; thread tham chiếu `prev_id` sang dòng bị xoá ⇒ NULL).
   await tx.unsafe(`delete from hub.partner_email_events where mailbox_id in (${DOOMED})`, [
     tenantId,
@@ -127,6 +149,9 @@ export async function anonymizePartner(tx: Tx, tenantId: string): Promise<Partne
     `delete from hub.partner_mailbox where id in (${DOOMED})`,
     tenantId,
   );
+}
+
+async function anonymizeMailbox(tx: Tx, tenantId: string, out: PartnerStats): Promise<void> {
   // (3) Dòng còn lại: bên bị xoá → tombstone, xoá dữ liệu của nó (bản chia sẻ/tệp nếu là bên gửi; bằng chứng/lý do trả lời nếu là bên nhận).
   out.mailboxAnonymized += await count(
     tx,
@@ -140,6 +165,9 @@ export async function anonymizePartner(tx: Tx, tenantId: string): Promise<Partne
        updated_at = now() where to_tenant = $1::uuid`,
     tenantId,
   );
+}
+
+async function anonymizeLinks(tx: Tx, tenantId: string, out: PartnerStats): Promise<void> {
   // (4) Liên kết: lời mời chưa chấp nhận / đầu kia đã xoá ⇒ xoá; còn lại ⇒ tombstone (trùng khoá chính với dòng tombstone sẵn có ⇒ xoá dòng trùng).
   out.linksDeleted = await count(
     tx,
@@ -161,5 +189,4 @@ export async function anonymizePartner(tx: Tx, tenantId: string): Promise<Partne
      where l.from_tenant = $1::uuid or l.to_tenant = $1::uuid`,
     tenantId,
   );
-  return out;
 }

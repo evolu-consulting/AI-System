@@ -6,6 +6,7 @@ export {
   useTenantFeatureStates,
   useTenantMembers,
   useTenantOptions,
+  useTenantPacks,
   useTenantQuotas,
   useUpdateTenantProfile,
 } from "../api";

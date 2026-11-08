@@ -27,7 +27,6 @@ describe("partnerChecklist", () => {
     expect(c.ready_to_receive).toBe(true);
     expect(c.items.every((i) => i.state === "ok")).toBe(true);
   });
-
   it("chưa cấp tính năng ⇒ tắt, nêu nút bật và AI làm (nền tảng)", () => {
     const c = partnerChecklist({ ...admin, feature: false }, hub);
     expect(c.on).toBe(false);
@@ -38,7 +37,6 @@ describe("partnerChecklist", () => {
       fix: "grant-feature",
     });
   });
-
   it("thiếu hồ sơ ⇒ nền tảng điền (Mở Hồ sơ); chưa cho tìm thấy ⇒ công ty làm, không có nút", () => {
     const c = partnerChecklist({ ...admin, tax_code: false, listed: false }, hub);
     expect(state(c, "profile")).toMatchObject({
@@ -51,7 +49,6 @@ describe("partnerChecklist", () => {
     expect(c.ready_to_receive).toBe(false);
     expect(c.ready_to_send).toBe(false); // hồ sơ cần cho cả hai hướng
   });
-
   it("chưa có flow nhận ⇒ nút Gán kèm id mẫu; chỉ chặn hướng nhận", () => {
     const c = partnerChecklist(admin, { ...hub, receive_flow: false });
     expect(state(c, "receive_flow")).toMatchObject({
@@ -61,14 +58,15 @@ describe("partnerChecklist", () => {
     expect(c.ready_to_receive).toBe(false);
     expect(c.ready_to_send).toBe(true);
   });
-
   it("chưa có flow gửi ⇒ công ty làm (Mở Quy trình); chỉ chặn hướng gửi", () => {
     const c = partnerChecklist(admin, { ...hub, send_flow: false });
     expect(state(c, "send_flow")).toMatchObject({ who: "company", fix: "open-flows" });
     expect(c.ready_to_send).toBe(false);
     expect(c.ready_to_receive).toBe(true);
   });
+});
 
+describe("partnerChecklist", () => {
   it("nhóm: thiếu nhóm ⇒ nền tảng tạo; có nhóm nhưng trống ⇒ công ty thêm người (không nút tạo)", () => {
     const missing = partnerChecklist(admin, {
       ...hub,
@@ -87,7 +85,6 @@ describe("partnerChecklist", () => {
     expect(state(empty, "groups")).toMatchObject({ state: "todo", who: "company" });
     expect(state(empty, "groups")?.fix).toBeUndefined();
   });
-
   it("Hub không trả lời ⇒ mục của Hub 'chưa rõ', chưa coi là sẵn sàng", () => {
     const c = partnerChecklist(admin, null);
     for (const k of ["channel", "receive_flow", "groups", "send_flow"])
@@ -95,7 +92,6 @@ describe("partnerChecklist", () => {
     expect(c.ready_to_receive).toBe(false);
     expect(c.ready_to_send).toBe(false);
   });
-
   it("kênh hệ thống tắt ⇒ chặn cả hai hướng, không có nút (hệ thống làm)", () => {
     const c = partnerChecklist(admin, { ...hub, channel: false });
     expect(state(c, "channel")?.state).toBe("todo");

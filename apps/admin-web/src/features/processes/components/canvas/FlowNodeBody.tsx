@@ -64,8 +64,7 @@ function nodeTexts(
   s: StageView["src"],
   mod: Parameters<typeof nodeLabel>[0] | undefined,
   l: ReturnType<typeof useLabels>,
-  t: (k: string, o?: Record<string, unknown>) => string,
-  lang: string,
+  ...[t, lang]: [t: (k: string, o?: Record<string, unknown>) => string, lang: string]
 ): { kind: string; summary: string; hideKind: boolean } {
   const st = startTexts(s, t);
   if (st) return { ...st, hideKind: false };

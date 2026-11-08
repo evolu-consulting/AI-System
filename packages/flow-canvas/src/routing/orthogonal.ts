@@ -124,9 +124,7 @@ function step(
   g: Grid,
   dist: Float64Array,
   prev: Int32Array,
-  heap: Heap,
-  st: number,
-  c: number,
+  ...[heap, st, c]: [heap: Heap, st: number, c: number]
 ): void {
   const ny = g.ys.length;
   const d = st & 3;

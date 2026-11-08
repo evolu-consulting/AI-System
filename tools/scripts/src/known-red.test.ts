@@ -169,37 +169,7 @@ describe("known-red · đọc dữ liệu", () => {
     expect(entries.length).toBeGreaterThanOrEqual(15);
     expect(entries.every((e) => e.expires >= "2026-11-17")).toBe(true);
     expect(new Set(entries.map((e) => e.suite + e.id)).size).toBe(entries.length);
-    const s = splitReds(
-      [
-        {
-          suite: "e2e:root-2",
-          name: "m4-usage.spec.ts › M4-R07 · M4-R08 · E7 · region 'Top feature theo số thu'",
-        },
-        {
-          suite: "e2e:root-1",
-          name: "cr052-login.spec.ts › [CR-052] công tắc EN/VI đổi sang tiếng Việt",
-        },
-        {
-          suite: "int",
-          name: "packages/db/src/migrate-hub.int.test.ts › HUB-FR-75 · runHubMigrations (int, ai_system_h1_test) > DB sạch (production): main → hub đủ bảng",
-        },
-        {
-          suite: "int",
-          name: "apps/hub-api/src/modules/chat-gate/chat-gate.int.test.ts › (unnamed)",
-        },
-        {
-          suite: "int",
-          name: "tests/acceptance/V2-G/perf.int.test.ts › V2-G perf > thời gian: Lưu 200 dòng + 50 mốc (tenant tắt duyệt) — p95",
-        },
-        { suite: "e2e:root-0", name: "m4-usage.spec.ts › E9 · ca không có trong danh sách" },
-        {
-          suite: "int",
-          name: "packages/db/src/migrate-hub.int.test.ts › HUB-FR-75 · role + GRANT (int) > x",
-        },
-      ],
-      entries,
-      "2026-11-03",
-    );
+    const s = splitReds(SAMPLE_REDS, entries, "2026-11-03");
     expect(s.known).toHaveLength(5);
     expect(s.fresh).toHaveLength(2);
     // hết hạn ⇒ cả năm thành đỏ mới
@@ -212,3 +182,31 @@ describe("known-red · đọc dữ liệu", () => {
     ).toHaveLength(5);
   });
 });
+
+const SAMPLE_REDS = [
+  {
+    suite: "e2e:root-2",
+    name: "m4-usage.spec.ts › M4-R07 · M4-R08 · E7 · region 'Top feature theo số thu'",
+  },
+  {
+    suite: "e2e:root-1",
+    name: "cr052-login.spec.ts › [CR-052] công tắc EN/VI đổi sang tiếng Việt",
+  },
+  {
+    suite: "int",
+    name: "packages/db/src/migrate-hub.int.test.ts › HUB-FR-75 · runHubMigrations (int, ai_system_h1_test) > DB sạch (production): main → hub đủ bảng",
+  },
+  {
+    suite: "int",
+    name: "apps/hub-api/src/modules/chat-gate/chat-gate.int.test.ts › (unnamed)",
+  },
+  {
+    suite: "int",
+    name: "tests/acceptance/V2-G/perf.int.test.ts › V2-G perf > thời gian: Lưu 200 dòng + 50 mốc (tenant tắt duyệt) — p95",
+  },
+  { suite: "e2e:root-0", name: "m4-usage.spec.ts › E9 · ca không có trong danh sách" },
+  {
+    suite: "int",
+    name: "packages/db/src/migrate-hub.int.test.ts › HUB-FR-75 · role + GRANT (int) > x",
+  },
+];

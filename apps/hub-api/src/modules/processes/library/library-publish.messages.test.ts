@@ -26,7 +26,9 @@ describe("explainIssue", () => {
     expect(explainIssue({ path: "stages.0.slot.when", rule: "UNREACHABLE_STEP" }).step).toBe(1);
     expect(explainIssue({ path: "stages.3.slot.when", rule: "UNREACHABLE_STEP" }).step).toBe(3);
   });
+});
 
+describe("explainIssue · mã có tham số", () => {
   it("mã có tham số: trường điều kiện chưa khai báo / thiếu nút hệ thống", () => {
     const f = explainIssue({ path: "steps.1.when", rule: "COND_FIELD_UNDECLARED:due_date" });
     expect(f).toMatchObject({

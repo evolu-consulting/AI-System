@@ -26,7 +26,9 @@ describe("CR-125 · subprocess.rules", () => {
       sub_ok: "true",
     });
   });
+});
 
+describe("CR-125 · subprocess.rules · nối đầu vào, vòng", () => {
   it("mappedValues: `<khoá>` = đầu vào lượt, `<bước>:<trường>` = output bước", () => {
     const p = { byStageKey: { pr: { total: 9 } }, inputs: { amount: "12" } };
     expect(mappedValues({ a: "amount", b: "pr:total", c: "pr:none", d: "missing" }, p)).toEqual({

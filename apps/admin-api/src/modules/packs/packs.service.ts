@@ -91,8 +91,7 @@ export function enablePack(
   c: PacksCall,
   tenantId: string,
   k: string,
-  level?: PackAction,
-  opts?: { grantTenantAdmins?: boolean },
+  ...[level, opts]: [level?: PackAction, opts?: { grantTenantAdmins?: boolean }]
 ): Promise<PackState> {
   return configWrite(c, "entitlement.save", async (tx, ch) => {
     const feats = await target(c, tx, tenantId, k);

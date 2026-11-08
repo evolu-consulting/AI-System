@@ -1,4 +1,4 @@
-﻿// CR-125 · UX-S7 (H7) · MỘT luật THUẦN "công ty đã dùng được Đối tác xác nhận hợp đồng chưa": danh sách điều kiện, mỗi điều kiện có
+// CR-125 · UX-S7 (H7) · MỘT luật THUẦN "công ty đã dùng được Đối tác xác nhận hợp đồng chưa": danh sách điều kiện, mỗi điều kiện có
 // trạng thái, AI phải làm (who) và nút làm hộ (fix) nếu nền tảng làm được. Dùng chung cho Quản trị nền tảng (Ứng dụng của công ty) và
 // Cài đặt của Sổ Hợp Tác (công ty chỉ xem). Phần dữ liệu: admin-api đọc `AdminPart`, Hub đọc `HubPart` (admin-api gộp lại).
 // Fix dùng đúng đường có sẵn: cấp tính năng (entitlement), Gán mẫu Thư viện (company-flows), Tạo nhóm theo gợi ý (template-fixes).
@@ -76,8 +76,7 @@ const item = (
   key: PartnerItemKey,
   ok: boolean | null,
   who: PartnerWho,
-  need: PartnerNeed,
-  extra: Pick<PartnerItem, "fix" | "params"> = {},
+  ...[need, extra = {}]: [need: PartnerNeed, extra?: Pick<PartnerItem, "fix" | "params">]
 ): PartnerItem => ({
   key,
   state: ok === null ? "unknown" : ok ? "ok" : "todo",

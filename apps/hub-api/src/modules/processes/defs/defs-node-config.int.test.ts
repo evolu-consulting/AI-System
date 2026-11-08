@@ -171,7 +171,9 @@ describe("E5b · lưu def kiểm cấu hình node", () => {
     expect([r.status, codeOf(r)]).toEqual([422, "FLOW_NODE_CONFIG_INVALID"]);
     expect(JSON.stringify(r.json)).toContain("stages.0.executor.args.order");
   });
+});
 
+describe("E5b · lưu def kiểm cấu hình node · khoá tool, cấu hình đúng", () => {
   it("E5d · def gọi thẳng tool gửi ký KHÔNG mang `node` vẫn bị kiểm (validator theo khoá tool)", async () => {
     const r = await call(
       "POST",

@@ -32,6 +32,29 @@ export type InviteDeps = {
   cache?: Map<string, Entry>;
 };
 
+type InviteCard = NonNullable<Awaited<ReturnType<ESignRepo["inviteCard"]>>>;
+
+function inviteData(
+  card: InviteCard,
+  o: { who: string; thumb: InviteThumb | null; nowIso: string },
+) {
+  return {
+    type: "esign_invite",
+    contract: {
+      title: card.title,
+      number: card.number,
+      partner: card.partner,
+      value: card.value,
+      start: card.start,
+      end: card.end,
+    },
+    requested_by: { name: o.who || null, company: card.company },
+    requested_at: card.sentAt ?? o.nowIso,
+    deadline: card.dueAt,
+    ...(o.thumb ? { thumb: o.thumb } : {}),
+  };
+}
+
 export function inviteNotice(d: InviteDeps) {
   const cache = d.cache ?? new Map<string, Entry>();
   const now = () => (d.now ?? (() => new Date()))().getTime();
@@ -75,21 +98,7 @@ export function inviteNotice(d: InviteDeps) {
       return {
         ...plain,
         link: signInviteLink(plain.link, id),
-        data: {
-          type: "esign_invite",
-          contract: {
-            title: card.title,
-            number: card.number,
-            partner: card.partner,
-            value: card.value,
-            start: card.start,
-            end: card.end,
-          },
-          requested_by: { name: who || null, company: card.company },
-          requested_at: card.sentAt ?? new Date(now()).toISOString(),
-          deadline: card.dueAt,
-          ...(thumb ? { thumb } : {}),
-        },
+        data: inviteData(card, { who, thumb, nowIso: new Date(now()).toISOString() }),
       };
     } catch {
       return plain;

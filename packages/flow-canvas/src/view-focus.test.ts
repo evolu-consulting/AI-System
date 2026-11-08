@@ -36,7 +36,9 @@ describe("focusViewport", () => {
     };
     expect(zoomed.zoom).toBe(0.8);
   });
+});
 
+describe("focusViewport", () => {
   test("không vừa ở 0.75 ⇒ chỉ cần thấy trọn node ĐẦU (node mới)", () => {
     const first = box(1000, 100);
     const t = focusViewport([first, box(3000, 100)], vp, size, 0, 0.75) as {

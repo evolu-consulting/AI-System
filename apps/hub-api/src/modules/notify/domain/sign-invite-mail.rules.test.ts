@@ -57,7 +57,9 @@ describe("CR-125 x12 · email Mời ký", () => {
     expect(m.text).toContain("không kèm hợp đồng");
     expect(m.html).toContain('name="viewport"');
   });
+});
 
+describe("CR-125 x12 · email Mời ký (ảnh, ngôn ngữ)", () => {
   it("không có ảnh ⇒ vẫn đủ thẻ, không CID; thoát HTML các trường người dùng", () => {
     const m = buildSignInviteMail({
       data: {
@@ -80,7 +82,9 @@ describe("CR-125 x12 · email Mời ký", () => {
     expect(m.subject).toStartWith("Please sign: ");
     expect(m.html).toContain("View contract and sign");
   });
+});
 
+describe("CR-125 x12 · email Mời ký (dữ liệu, emailOf)", () => {
   it("dữ liệu sai dạng ⇒ null (dùng thư văn bản thường), ảnh base64 sai bị bỏ", () => {
     expect(parseInviteData(null)).toBeNull();
     expect(parseInviteData({ type: "khac" })).toBeNull();

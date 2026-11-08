@@ -106,24 +106,27 @@ describe("MOD_OUTPUT_UNBOUND", () => {
   });
 });
 
-describe("tự nối từ đầu ra các bước trước", () => {
-  // Thông báo cần «Thời điểm ký» (date) — chỉ Ký số (bước trước) cấp; «Bắt đầu khi» không có.
-  const needSigned: AppNodeIo[] = [
-    {
-      key: "signed_at",
-      type: "date",
-      required: true,
-      label: { vi: "Thời điểm ký", en: "Signed at" },
-      fix: { vi: "thêm bước Ký số trước.", en: "add an E-signature step first." },
-    },
-  ];
-  const start = [out("contract_id")];
-  const opt = { node: "Thông báo" };
-  const edges = [
-    [0, 1],
-    [1, 2],
-  ] as const;
+// Thông báo cần «Thời điểm ký» (date) — chỉ Ký số (bước trước) cấp; «Bắt đầu khi» không có.
+const needSigned: AppNodeIo[] = [
+  {
+    key: "signed_at",
+    type: "date",
+    required: true,
+    label: { vi: "Thời điểm ký", en: "Signed at" },
+    fix: { vi: "thêm bước Ký số trước.", en: "add an E-signature step first." },
+  },
+];
 
+const start = [out("contract_id")];
+
+const opt = { node: "Thông báo" };
+
+const edges = [
+  [0, 1],
+  [1, 2],
+] as const;
+
+describe("tự nối từ đầu ra các bước trước", () => {
   test("nối được khi MỘT bước trước cấp đúng khoá + kiểu (không chỉ Bắt đầu khi)", () => {
     const steps = [
       { id: "approve", outputs: [out("decision")] },
@@ -136,6 +139,9 @@ describe("tự nối từ đầu ra các bước trước", () => {
     expect(r.bound).toEqual([{ key: "signed_at", source: "sign:signed_at", from: "step" }]);
     expect(r.ask).toEqual([]);
   });
+});
+
+describe("tự nối từ đầu ra các bước trước", () => {
   test("bước SAU hoặc nhánh khác không phải nguồn; thứ tự theo topo", () => {
     const steps = [
       { id: "x", outputs: [out("signed_at", { type: "date" })] },
@@ -174,6 +180,9 @@ describe("tự nối từ đầu ra các bước trước", () => {
       ),
     ).toEqual([0, 1]);
   });
+});
+
+describe("tự nối từ đầu ra các bước trước", () => {
   test("hai bước trước cùng cấp một khoá ⇒ HỎI (nhiều nguồn), câu nghiệp vụ", () => {
     const steps = [
       { id: "sign1", outputs: [out("signed_at", { type: "date" })] },
