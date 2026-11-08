@@ -19,12 +19,12 @@ test.beforeAll(() => seedPb());
 
 const sourcesCard = (p: Page) => p.getByRole("region", { name: "Nguồn của quy trình" });
 const inputsCard = (p: Page) => p.getByRole("region", { name: "Thông tin đầu vào" });
-const stage1 = (p: Page, name: string) => p.getByRole("region", { name: `Giai đoạn 1: ${name}` });
+const stage1 = (p: Page, name: string) => p.getByRole("region", { name: `Bước 1: ${name}` });
 // fnr-editor-drawer (qc, người dùng chốt ngăn chi tiết đóng mặc định 2026-10-29): bấm node giai đoạn 1 để mở ngăn.
 const openStage1 = (p: Page, name: string) =>
   p
     .getByRole("application", { name: "Canvas quy trình" })
-    .getByRole("button", { name: new RegExp(`^Giai đoạn 1: ${name}`) })
+    .getByRole("button", { name: new RegExp(`^Bước 1: ${name}`) })
     .click();
 
 async function openDef(p: Page, key: string, name: string): Promise<void> {
@@ -49,7 +49,7 @@ const readDef = async (id: string) =>
 const save = (p: Page) =>
   p.waitForResponse((r) => r.request().method() === "PUT" && /\/process-defs\//.test(r.url()));
 
-test("ADM-FR-69 · HUB-FR-121 · HUB-FR-124 · HUB-FR-125 · E-PB08 · editor: chọn nguồn cho quy trình, tập con + allowlist cho giai đoạn, must_know, inputs; Lưu ⇒ tải lại còn nguyên", async ({
+test("ADM-FR-69 · HUB-FR-121 · HUB-FR-124 · HUB-FR-125 · E-PB08 · editor: chọn nguồn cho quy trình, tập con + allowlist cho bước, must_know, inputs; Lưu ⇒ tải lại còn nguyên", async ({
   browser,
 }) => {
   const key = uniqKey("pb-ed");
@@ -65,16 +65,14 @@ test("ADM-FR-69 · HUB-FR-121 · HUB-FR-124 · HUB-FR-125 · E-PB08 · editor: c
 
     await openStage1(p, "Phân tích");
     const s1 = stage1(p, "Phân tích");
-    const grp = s1.getByRole("group", { name: "Nguồn của giai đoạn" });
+    const grp = s1.getByRole("group", { name: "Nguồn của bước" });
     await grp.getByRole("checkbox", { name: "ed-src-1" }).check();
     await expect(grp.getByRole("checkbox", { name: "ed-src-2" })).not.toBeChecked();
     await s1
       .getByRole("textbox", { name: "Đường dẫn cho phép — ed-src-1" })
       .fill("docs/**/*.md\nsrc/**");
     await expect(
-      s1.getByText(
-        "Giai đoạn này sẽ bắt buộc có mục “## Nguồn tham chiếu” trong kết quả (tự thêm).",
-      ),
+      s1.getByText("Bước này sẽ bắt buộc có mục “## Nguồn tham chiếu” trong kết quả (tự thêm)."),
     ).toBeVisible();
     await s1
       .getByRole("textbox", { name: "Điều phải biết trước khi làm" })
@@ -122,7 +120,7 @@ test("ADM-FR-69 · HUB-FR-121 · HUB-FR-124 · HUB-FR-125 · E-PB08 · editor: c
   }
 });
 
-test('ADM-FR-69 · HUB-FR-121 · PB-R06 · PB-R14 · E-PB09 · chặn: giai đoạn >5 nguồn (ô thứ 6 disabled), nguồn ngoài quy trình (không có ô), glob "../x", >10 mục must_know, bỏ nguồn đang được giai đoạn dùng', async ({
+test('ADM-FR-69 · HUB-FR-121 · PB-R06 · PB-R14 · E-PB09 · chặn: bước >5 nguồn (ô thứ 6 disabled), nguồn ngoài quy trình (không có ô), glob "../x", >10 mục must_know, bỏ nguồn đang được bước dùng', async ({
   browser,
 }) => {
   const key = uniqKey("pb-lim");
@@ -143,12 +141,12 @@ test('ADM-FR-69 · HUB-FR-121 · PB-R06 · PB-R14 · E-PB09 · chặn: giai đo�
     await openDef(p, key, name);
     await openStage1(p, "Phân tích");
     const s1 = stage1(p, "Phân tích");
-    const grp = s1.getByRole("group", { name: "Nguồn của giai đoạn" });
+    const grp = s1.getByRole("group", { name: "Nguồn của bước" });
     // (a) tối đa 5 nguồn / giai đoạn
     for (const k of ED_SOURCES.slice(0, 5))
       await expect(grp.getByRole("checkbox", { name: k })).toBeChecked();
     await expect(grp.getByRole("checkbox", { name: "ed-src-6" })).toBeDisabled();
-    await expect(s1.getByText("Tối đa 5 nguồn mỗi giai đoạn.")).toBeVisible();
+    await expect(s1.getByText("Tối đa 5 nguồn mỗi bước.")).toBeVisible();
     // (b) nguồn ngoài quy trình không có ô chọn
     await expect(grp.getByRole("checkbox", { name: "app-repo" })).toHaveCount(0);
 
@@ -168,10 +166,10 @@ test('ADM-FR-69 · HUB-FR-121 · PB-R06 · PB-R14 · E-PB09 · chặn: giai đo�
     expect((await readDef(id)).version).toBe(before.version);
     await must.fill("Mục 1");
 
-    // (e) bỏ nguồn đang được giai đoạn dùng ⇒ chặn
+    // (e) bỏ nguồn đang được bước dùng ⇒ chặn
     await sourcesCard(p).getByRole("button", { name: "Bỏ nguồn ed-src-1" }).click();
     await expect(
-      p.getByText("Nguồn ed-src-1 đang được giai đoạn 1 dùng. Bỏ khỏi giai đoạn trước."),
+      p.getByText("Nguồn ed-src-1 đang được bước 1 dùng. Bỏ khỏi bước trước."),
     ).toBeVisible();
     await expect(sourcesCard(p).getByRole("button", { name: "Bỏ nguồn ed-src-1" })).toBeVisible();
   } finally {

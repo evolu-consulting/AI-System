@@ -76,9 +76,16 @@ export function notifyInfo(message: string): void {
   void show("info", message);
 }
 
-/** Lỗi: ở lại tới khi bấm đóng. */
-export function notifyError(message: string, action?: ToastAction): void {
-  void show("error", message, { action });
+/**
+ * Lỗi: ở lại tới khi bấm đóng. `position: "top-center"` cho màn có thanh Lưu ở góc dưới phải (trình sửa quy trình): toast
+ * ở lại không được đè nút Lưu, nếu không người dùng sửa xong cũng không bấm Lưu lại được.
+ */
+export function notifyError(
+  message: string,
+  action?: ToastAction,
+  position?: "top-center" | "bottom-right",
+): void {
+  void show("error", message, position ? { action, position } : { action });
 }
 
 /** Lý do từ chối thao tác trên canvas: giữa-trên (không đè thanh Lưu), tự đóng sau 4 giây. */

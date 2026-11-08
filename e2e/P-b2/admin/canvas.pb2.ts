@@ -17,6 +17,19 @@ import {
 } from "../_pb2-support";
 
 const openCanvas = (p: Page) => openDef(p, DEF_CANVAS.key, DEF_CANVAS.name);
+// CR-122 C / CR-123 u13: sơ đồ không còn nút "Thêm bước vào bước n" ở đầu cột (thêm bước qua menu "Thêm bước"; bước đổi bằng
+// panel / Alt+mũi tên / ô "Chạy ở bước", kéo node chỉ đổi vị trí) ⇒ nút đó chỉ còn ở dạng Danh sách; kiểm "đủ 3" ở đó.
+const addToStep2 = async (p: Page) => {
+  const puts: string[] = [];
+  p.on("request", (r) => {
+    if (r.method() === "PUT" && /\/process-defs\//.test(r.url())) puts.push(r.url());
+  });
+  await p.getByTestId("flows-view-list").click();
+  const add = p.getByRole("button", { name: "Thêm bước vào bước 2" });
+  await expect(add).toBeVisible();
+  expect(puts, "đổi cách xem Sơ đồ/Danh sách không được lưu quy trình").toHaveLength(0);
+  return add;
+};
 
 test("ADM-FR-71 · E-PB2-01 · mở pb2-canvas ⇒ application 'Canvas quy trình', 4 nút 'Giai đoạn n: …', panel 'Chi tiết giai đoạn' chọn sẵn Giai đoạn 1", async ({
   page: p,
@@ -58,7 +71,7 @@ test("ADM-FR-71 · E-PB2-03 · focus Rà soát code + Alt+ArrowRight ⇒ status 
   await expect(node(p, "Rà soát code")).toBeFocused();
 });
 
-test("ADM-FR-71 · E-PB2-04 · kéo Tổng hợp (chuột) sang cột bước 2 ⇒ bước đổi; cột đó có 3 giai đoạn ('Thêm giai đoạn vào bước 2' bị khoá)", async ({
+test("ADM-FR-71 · E-PB2-04 · kéo Tổng hợp (chuột) chỉ đổi vị trí, không đổi bước; 'Chuyển sang bước trước' ⇒ bước 2 đủ 3 giai đoạn ('Thêm bước vào bước 2' ở dạng Danh sách bị khoá)", async ({
   page: p,
 }) => {
   await openCanvas(p);
@@ -74,11 +87,10 @@ test("ADM-FR-71 · E-PB2-04 · kéo Tổng hợp (chuột) sang cột bước 2 
   await p.mouse.move(b.x + b.width / 2, b.y + b.height + 40, { steps: 12 });
   await p.mouse.up();
   await src.click();
+  await expect(stepSpin(p)).toHaveValue("3"); // kéo ngang không còn đổi bước (u13)
+  await panel(p).getByRole("button", { name: "Chuyển sang bước trước" }).click();
   await expect(stepSpin(p)).toHaveValue("2");
-  await expect(p.getByRole("button", { name: "Thêm bước vào bước 2" })).toHaveAttribute(
-    "aria-disabled",
-    "true",
-  );
+  await expect(await addToStep2(p)).toHaveAttribute("aria-disabled", "true");
 });
 
 test("ADM-FR-71 · E-PB2-05 · pb2-full: Alt+ArrowRight 'Mở đầu' sang bước 2 (đã 3) ⇒ alert 'Bước 2 đã đủ 3 giai đoạn song song.' + status; bước không đổi", async ({
@@ -96,10 +108,7 @@ test("ADM-FR-71 · E-PB2-05 · pb2-full: Alt+ArrowRight 'Mở đầu' sang bư�
     p.getByRole("status").filter({ hasText: "Không chuyển được: bước 2 đã đủ 3 bước" }),
   ).toBeVisible();
   await expect(stepSpin(p)).toHaveValue("1");
-  await expect(p.getByRole("button", { name: "Thêm bước vào bước 2" })).toHaveAttribute(
-    "aria-disabled",
-    "true",
-  );
+  await expect(await addToStep2(p)).toHaveAttribute("aria-disabled", "true");
 });
 
 test("ADM-FR-71 · HUB-FR-118 · E-PB2-06 · Tổng hợp: 'Nếu bị trượt' → 'Quay lại bước 2' (mô tả = tên giai đoạn) → Lưu → tải lại còn; node '↩ bước 2'; GET def back_to_steps [1] + 'Bàn giao'", async ({
@@ -172,10 +181,7 @@ test("ADM-FR-71 · E-PB2-09 · nút panel 'Chuyển sang bước sau' / 'Chuyể
   await expect(canvas(p).getByRole("button", { name: /^Bước 2: Test hồi quy/ })).toBeVisible();
   await node(p, "Rà soát code").click();
   await panel(p).getByRole("button", { name: "Tách sang bước riêng" }).click();
-  await expect(p.getByRole("button", { name: "Thêm bước vào bước 2" })).not.toHaveAttribute(
-    "aria-disabled",
-    "true",
-  );
+  await expect(await addToStep2(p)).not.toHaveAttribute("aria-disabled", "true");
 });
 
 test("ADM-FR-71 · E-PB2-10 · tab 'Danh sách' ⇒ danh sách theo bước + panel; chunk canvas lỗi ⇒ alert + 'Thử lại'; 700 px ⇒ mặc định Danh sách", async ({

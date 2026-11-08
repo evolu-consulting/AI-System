@@ -49,11 +49,11 @@ test("HUB-BR-34 · PC-R02 · E02 · def pc-bad: stage 'Sửa B' ⇒ alert AUTOFI
   const alerts = p.getByRole("alert");
   await expect(
     alerts.filter({
-      hasText: 'Stage tự sửa mã luôn phải qua người duyệt. Chọn "Duyệt" ở mục Sau stage.',
+      hasText: 'Bước tự sửa mã luôn phải qua người duyệt. Chọn "Duyệt" ở mục Sau bước.',
     }),
   ).toBeVisible();
   await expect(
-    alerts.filter({ hasText: 'Mỗi quy trình chỉ có một stage tự sửa mã. Đã có ở stage "Sửa A".' }),
+    alerts.filter({ hasText: 'Mỗi quy trình chỉ có một bước tự sửa mã. Đã có ở bước "Sửa A".' }),
   ).toBeVisible();
   await panel(p).getByRole("textbox", { name: "Lệnh kiểm thử" }).fill("");
   await expect(alerts.filter({ hasText: "Nhập lệnh kiểm thử (tối đa 1000 ký tự)." })).toBeVisible();

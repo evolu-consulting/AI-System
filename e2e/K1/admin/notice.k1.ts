@@ -37,7 +37,7 @@ async function clickOutput(p: Page): Promise<ReturnType<Page["getByRole"]>> {
     await p.keyboard.press("Escape");
   }
   await view.click();
-  const dlg = p.getByRole("dialog", { name: /Kết quả giai đoạn/ });
+  const dlg = p.getByRole("dialog", { name: /Kết quả bước/ });
   await expect(dlg).toBeVisible();
   return dlg;
 }

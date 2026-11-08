@@ -14,6 +14,7 @@ export function ViewModeToggle({ mode, set }: { mode: ViewMode; set: (m: ViewMod
       {MODES.map((m) => (
         <Button
           key={m}
+          type="button" // nằm trong form của trình sửa: thiếu type ⇒ bấm là LƯU quy trình
           size="sm"
           variant={mode === m ? "secondary" : "ghost"}
           aria-pressed={mode === m}

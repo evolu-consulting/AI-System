@@ -2,11 +2,23 @@
 // dừng lượt có lý do. Dữ liệu: run seed (a) của phòng riêng của spec; không bật/ẩn gì dùng chung. Đuôi `.k1.ts` (config K1, project admin).
 
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
-import { platformLogin } from "../../P-b/_pb-support";
+import { expect, type Page, test } from "@playwright/test";
+import { ADMIN_URL } from "../../P-a/_pa-support";
 import { adminLogin, DEF_PAR, mkRoom, seedPb2Run, settle, withSql } from "../../P-b2/_pb2-support";
+import { seedAdmin } from "../../support/helpers";
 
 test.afterEach(() => settle());
+
+// Stack K1 = P-b2: `platformLogin` của P-b trỏ cổng admin của P-b (4605, không chạy ở đây) ⇒ đăng nhập platform_admin qua ADMIN_URL của stack này.
+async function platformLogin(p: Page): Promise<void> {
+  const a = seedAdmin();
+  await p.goto(`${ADMIN_URL}/login`);
+  await p.getByRole("textbox", { name: "Mã công ty" }).fill("platform");
+  await p.getByRole("textbox", { name: "Tên đăng nhập" }).fill(a.username);
+  await p.getByLabel("Mật khẩu", { exact: true }).fill(a.password);
+  await p.getByRole("button", { name: "Đăng nhập", exact: true }).click();
+  await p.waitForURL((u) => !u.pathname.startsWith("/login"));
+}
 
 test("CR-121 R-3 · mở lượt chạy: mã lượt + quy trình + trạng thái kèm lý do, sơ đồ có bước; bấm bước ⇒ ngăn 'Nhật ký bước 1' (tab Cơ bản)", async ({
   page,

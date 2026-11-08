@@ -34,9 +34,9 @@ test("HUB-BR-34 · PC2-R01 · FC10 · E07 · def pc2-bad: stage 'Áp 2' ⇒ aler
   await node(p, "Áp 2").click();
   const alerts = p.getByRole("alert");
   await expect(
-    alerts.filter({ hasText: 'Mỗi quy trình chỉ có một stage Áp. Đã có ở stage "Áp 1".' }),
+    alerts.filter({ hasText: 'Mỗi quy trình chỉ có một bước Áp. Đã có ở bước "Áp 1".' }),
   ).toBeVisible();
   await expect(
-    alerts.filter({ hasText: "Stage Áp phải đứng ngay sau stage tự sửa mã." }),
+    alerts.filter({ hasText: "Bước Áp phải đứng ngay sau bước tự sửa mã." }),
   ).toBeVisible();
 });

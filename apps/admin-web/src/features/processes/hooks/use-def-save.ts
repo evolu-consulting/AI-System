@@ -60,7 +60,8 @@ function useSaveFailure(d: DraftState) {
     const key = `process.admin.apiError.${code}`;
     if (code === "PROCESS_KEY_TAKEN") return d.showErrors({ key });
     const max = err instanceof ApiError ? stagesMaxFromDetails(err.details) : null;
-    if (max !== null) return notifyError(t("process.admin.canvas.err.stagesMax", { max }));
+    if (max !== null)
+      return notifyError(t("process.admin.canvas.err.stagesMax", { max }), undefined, "top-center");
     if (code === "FLOW_NODE_CONFIG_INVALID") {
       const e = nodeConfigErrors(err);
       if (Object.keys(e).length > 0) return d.showErrors(e);
@@ -68,7 +69,7 @@ function useSaveFailure(d: DraftState) {
     if (code && PATHED.has(code) && paths.length)
       return d.showErrors(serverErrors(code, paths, serverRules(err)));
     const spec = processErrorSpec(err);
-    notifyError(t(spec.key, spec.params));
+    notifyError(t(spec.key, spec.params), undefined, "top-center"); // không đè nút Lưu
   };
 }
 
@@ -110,6 +111,8 @@ function reportBlocked(
     blocked.stepName
       ? t("process.admin.editor.saveBlockedStep", { step: blocked.stepName, reason })
       : t("process.admin.editor.saveBlocked", { reason }),
+    undefined,
+    "top-center", // toast lỗi ở lại tới khi đóng: không đè nút Lưu ở góc dưới phải
   );
 }
 export function useDefSave({

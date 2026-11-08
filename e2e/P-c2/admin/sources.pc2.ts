@@ -16,10 +16,9 @@ const modes = (d: Locator) => d.getByRole("radiogroup", { name: "Chế độ áp
 
 async function openSources(p: Page): Promise<void> {
   await adminLogin(p);
-  await p
-    .getByRole("navigation", { name: "Điều hướng chính" })
-    .getByRole("link", { name: "Nguồn", exact: true })
-    .click();
+  // CR-121 c10/c22: sidebar phẳng không còn mục "Nguồn" (gỡ có chủ đích); lối vào UI là thẻ "Nguồn của quy trình" ở trình sửa
+  // và hub Hệ thống ⇒ vào thẳng URL như P-b/sources.pb.ts.
+  await p.goto(new URL("/sources", p.url()).href);
   await expect(table(p)).toBeVisible();
 }
 async function newGit(p: Page, key: string, url: string): Promise<Locator> {
