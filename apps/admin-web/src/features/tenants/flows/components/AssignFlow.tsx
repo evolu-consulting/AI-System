@@ -1,6 +1,6 @@
 // CR-122 · U2b · FLOW2-FR-05: platform_admin gán một flow Thư viện cho công ty (POST company-flows). Chỉ hiện flow chưa gán.
 // CR-125 · c5b: chọn xong ⇒ hiện "mẫu dùng được ở công ty chưa" + nút một chạm (bật tính năng / tạo nhóm); chưa dùng được ⇒ không cho Gán.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useLibraryDefs } from "@/features/processes/library-api";
@@ -16,6 +16,11 @@ type Props = {
 export function AssignFlow({ tenantId, assignedFlowIds, busy, onAssign }: Props) {
   const { t } = useTranslation();
   const q = useLibraryDefs("library", true);
+  // danh sách Thư viện phân trang: nạp hết các trang để mẫu nào cũng chọn được (không dừng ở trang đầu)
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = q;
+  useEffect(() => {
+    if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
   const [pick, setPick] = useState("");
   const [ready, setReady] = useState(false);
   const options = (q.data?.pages ?? [])
