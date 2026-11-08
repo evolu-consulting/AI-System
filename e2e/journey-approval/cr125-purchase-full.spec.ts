@@ -95,6 +95,8 @@ const VALUE_BY_TYPE: Record<string, string> = {
 async function valueFor(field: Locator, input: Locator): Promise<string> {
   const type = (await input.getAttribute("type")) ?? "text";
   const numeric = ["numeric", "decimal"].includes((await input.getAttribute("inputmode")) ?? "");
+  // ô ngày của FormStep là input chữ có gợi ý dd/mm/yyyy (không phải type=date)
+  if (/dd\/mm\/yyyy/i.test((await input.getAttribute("placeholder")) ?? "")) return "20/11/2026";
   if (!numeric) return VALUE_BY_TYPE[type] ?? "Dữ liệu e2e";
   return /toán|tiền|giá|chi phí|₫/i.test((await field.textContent()) ?? "") ? "470000000" : "2";
 }
