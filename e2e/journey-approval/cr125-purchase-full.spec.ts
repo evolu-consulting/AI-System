@@ -10,6 +10,7 @@ import { existsSync, readFileSync } from "node:fs";
 import type { Locator, Page } from "@playwright/test";
 import {
   notifyConfigChanged,
+  PURCHASE_ROLE_GROUPS,
   writeCr125Config,
 } from "../../apps/hub-api/src/modules/seed/seed.cr125-config";
 import { withOwner } from "../support/helpers";
@@ -41,18 +42,11 @@ const ctxPage = async (browser: import("@playwright/test").Browser): Promise<Pag
   (await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } })).newPage();
 
 /** Nhóm duyệt của mẫu → tài khoản e2e (mỗi dòng cùng duyệt có ít nhất hai người khác nhau). */
-const MEMBERS: Record<string, string[]> = {
-  [U.director]: [
-    "nhan-vien-phong-ban",
-    "truong-bo-phan",
-    "mua-hang",
-    "truong-mua-hang",
-    "phap-che",
-    "giam-doc",
-    "kho",
-  ],
-  [U.accounting]: ["tai-chinh", "ke-toan", "ke-toan-truong", "thu-quy"],
-  [U.employee]: ["nhan-vien-phong-ban"],
+// Một nguồn với seed demo (`PURCHASE_ROLE_GROUPS`): e2e xanh ⇒ công ty demo chạy được đủ 11 bước.
+const MEMBERS: Record<string, readonly string[]> = {
+  [U.director]: PURCHASE_ROLE_GROUPS.director,
+  [U.accounting]: PURCHASE_ROLE_GROUPS.accounting,
+  [U.employee]: PURCHASE_ROLE_GROUPS.employee,
 };
 
 let runUrl = "";
