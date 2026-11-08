@@ -71,7 +71,10 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
     await expect(toolbar).toContainText("0 công ty");
     await expect(toolbar).not.toContainText("returned an object");
     await expect(p.getByRole("tab", { name: "Danh sách" })).toHaveCount(0);
-    await expect(toolbar.getByText(/Lưu nháp chưa áp dụng cho tenant/)).toBeVisible();
+    // CR-121 c15: «tenant» đổi thành «công ty»; gán công ty chỉ ở Công ty › Quy trình (liên kết «assign-where»); xuất bản ở nút «Xuất bản vN».
+    await expect(toolbar.getByText(/Lưu nháp chưa áp dụng cho công ty nào/)).toBeVisible();
+    await expect(toolbar.getByTestId("assign-where")).toBeVisible();
+    await expect(toolbar.getByRole("button", { name: /^Xuất bản v\d+/ })).toBeVisible();
     expect(name).toBe("Quy trình HĐ e2e");
     // CR-122: flow có Bắt đầu khi chỉ còn MỘT trình sửa canvas (Form theo khe + nút hệ thống đã gỡ) — sửa/xuất bản/hiện nút ở cr122-flows + cr122-editor.
     await p

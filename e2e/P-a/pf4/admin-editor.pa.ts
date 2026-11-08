@@ -1,7 +1,7 @@
 // ADM-FR-66 · e2e P-a PF4 · E-P15b (test-plan-e2e §2; plan-frontend-e2e §2 Editor): mở `hoa-don-t` (fixture, Group kiểm sẵn)
 // ⇒ `region "Bước 1: Đọc hoá đơn"`, `combobox "Nhóm kiểm"`, `switch "Hành động thật"` disabled ở giai đoạn 1; đổi Nhóm
 // kiểm ⇒ "Lưu" ⇒ bật được; sửa song song (PUT /process-defs/:id trước) ⇒ ConflictDialog (409); mở mẫu `sdlc` ⇒ "Đây là quy trình mẫu, chỉ
-// xem. Chép mẫu để chỉnh sửa.".
+// xem. Dùng mẫu này để chỉnh sửa.".
 import { expect, test } from "@playwright/test";
 import { ADMIN_URL, adminLogin, hub, settle, tok } from "../_pa-support";
 
@@ -30,9 +30,10 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
     const s1 = p.getByRole("region", { name: "Bước 1: Đọc hoá đơn" });
     await expect(s1).toBeVisible();
     await expect(s1.getByRole("switch", { name: "Hành động thật" })).toBeDisabled();
-    await s1.getByRole("combobox", { name: "Nhóm kiểm" }).click();
+    // CR-123 u9/CR-125 x3: ô «Nhóm kiểm» đã thành «Phòng ban duyệt» (chọn từ nhóm nghiệp vụ, không gõ mã)
+    await s1.getByRole("combobox", { name: /Phòng ban duyệt|Ai duyệt/ }).click();
     await p.getByRole("option", { name: "Tech lead" }).click();
-    await p.getByRole("button", { name: "Lưu" }).click();
+    await p.getByRole("button", { name: /^Lưu/ }).first().click();
     await expect(p.getByRole("switch", { name: "Bật" })).toBeEnabled();
 
     // sửa song song: đổi mô tả qua API admin (Hub) trước khi Lưu ⇒ 409 ⇒ ConflictDialog
@@ -49,7 +50,7 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
       description: "Sửa ở nơi khác",
     });
     expect(put.status).toBe(200);
-    await p.getByRole("button", { name: "Lưu" }).click();
+    await p.getByRole("button", { name: /^Lưu/ }).first().click();
     const conflict = p.getByRole("alertdialog", { name: /Có người vừa lưu/ });
     await expect(conflict).toBeVisible();
     // ConflictDialog là modal (Escape/click nền không đóng) ⇒ đóng bằng "Tải bản mới" trước khi điều hướng
@@ -59,9 +60,9 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
     // mẫu: chỉ xem (mở thẳng mẫu sdlc theo id)
     await p.goto(`${ADMIN_URL}/processes/${await defId("template", "sdlc")}`);
     await expect(
-      p.getByText("Đây là quy trình mẫu, chỉ xem. Chép mẫu để chỉnh sửa."),
+      p.getByText("Đây là quy trình mẫu, chỉ xem. Dùng mẫu này để chỉnh sửa."),
     ).toBeVisible();
-    await expect(p.getByRole("button", { name: "Chép mẫu" })).toBeVisible();
+    await expect(p.getByRole("button", { name: "Dùng mẫu này" })).toBeVisible();
   } finally {
     await ctx.close();
   }
