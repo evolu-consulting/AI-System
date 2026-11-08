@@ -6,13 +6,15 @@ import { createDb, type Db } from "@ai/db";
 import { contracts, tenants, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
-import { dispatchRepo } from "../../../notify/adapters/dispatch.repo";
-import { FakeEmailTransport, FakePushTransport } from "../../../notify/adapters/transport.fake";
-import { type DispatchDeps, drain } from "../../../notify/application/dispatch.usecase";
-import type { ESignFiles } from "../application/esign.ports";
-import { esignModule } from "../esign.mount";
-import { intakeWiring } from "../intake.mount";
-import { selfsignProvider } from "./esign.selfsign";
+import {
+  type ESignFiles,
+  esignModule,
+  intakeWiring,
+  selfsignProvider,
+} from "../packs/contracts/testing";
+import { dispatchRepo } from "./adapters/dispatch.repo";
+import { FakeEmailTransport, FakePushTransport } from "./adapters/transport.fake";
+import { type DispatchDeps, drain } from "./application/dispatch.usecase";
 
 let o: Sql;
 let db: Db;
