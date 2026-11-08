@@ -42,7 +42,7 @@ Trình sửa quy trình có bước "Quy trình con": chạy một quy trình kh
 - Kịch bản: quản trị công ty thêm Quy trình con, chọn "Mua hàng · Phần 2", lưu, canvas hiện ô và liên kết mở [test: thủ công — e2e `cr125-subprocess-ui.spec.ts` chờ lát engine gộp rồi chạy trên evotest]
 
 ## Việc còn lại
-- e2e `cr125-subprocess-ui.spec.ts` CHƯA XANH (đã chạy 2 lần trên evotest, dừng theo lệnh): menu + thêm node + panel hiện đúng; ĐỎ ở bước chọn quy trình con — ô chọn lấy từ `GET /process-defs` của công ty (`modules/core/subprocess/use-child.ts`) nên KHÔNG thấy flow Thư viện được GÁN (chỉ có bản công ty / sao chép). Cần đổi nguồn danh sách sang danh sách flow công ty (`company-flows`, gồm flow được gán, trạng thái Đang dùng/Tắt) hoặc để spec Sao chép flow con trước. Chưa có ảnh `panel.png`/`canvas-node.png` (spec tự chụp khi xanh).
+- e2e `cr125-subprocess-ui.spec.ts` chưa chạy lại sau khi đổi nguồn ô chọn sang `company-flows` (gồm flow Thư viện được gán; lần chạy trước đỏ vì nguồn cũ `process-defs` không thấy flow gán) — chạy ở đợt e2e cuối; spec tự chụp `panel.png` / `canvas-node.png`. Số bước của quy trình con không có trong danh sách flow công ty ⇒ chỉ hiện khi nguồn là `process-defs`.
 - Cạnh Từ chối / Huỷ (branches) mới kiểm bằng unit (`subprocess-form.test.ts`: `connectPatch`, `collapseModules`), chưa qua e2e.
 - Ảnh `panel.png` / `canvas-node.png` lấy từ outputPath của lượt e2e evotest (xem báo cáo lát).
 - Nhãn cổng trên canvas là nhãn sổ module (Hoàn tất / Bị từ chối / Đã huỷ), không phải "Xong / Từ chối / Huỷ" như yêu cầu ban đầu — đổi ở `packages/contracts/src/modules/core/subprocess.ts` (lát engine sở hữu) nếu muốn.

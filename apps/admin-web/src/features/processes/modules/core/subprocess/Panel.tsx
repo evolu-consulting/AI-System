@@ -96,7 +96,10 @@ function ChildPicker(p: {
         options={pickable.map((o) => ({
           id: o.key,
           label: o.name,
-          hint: `${t(`${K}status.${o.status}`)} · ${t(`${K}steps`, { count: o.steps })}`,
+          hint:
+            o.steps === undefined
+              ? t(`${K}status.${o.status}`)
+              : `${t(`${K}status.${o.status}`)} · ${t(`${K}steps`, { count: o.steps })}`,
         }))}
         selectedIds={p.d.defKey ? [p.d.defKey] : []}
         isLoading={p.isLoading}
@@ -131,7 +134,8 @@ function ChosenSummary(p: {
       >
         <span className="font-medium">{chosen.name}</span>
         <span className="text-caption text-muted-foreground">
-          {t(`${K}status.${chosen.status}`)} · {t(`${K}steps`, { count: chosen.steps })}
+          {t(`${K}status.${chosen.status}`)}
+          {chosen.steps === undefined ? "" : ` · ${t(`${K}steps`, { count: chosen.steps })}`}
         </span>
         <Link
           {...childEditorLink(chosen.id, p.tenantId)}

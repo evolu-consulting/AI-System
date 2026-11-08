@@ -44,7 +44,11 @@ export function SubprocessBody({ v }: { v: StageView }) {
           title={item?.name ?? defKey}
           data-testid="subprocess-child"
         >
-          {item ? `${item.name} · ${t(`${K}steps`, { count: item.stage_count })}` : defKey}
+          {item
+            ? item.stage_count === undefined
+              ? item.name
+              : `${item.name} · ${t(`${K}steps`, { count: item.stage_count })}`
+            : defKey}
         </span>
       )}
       {item ? (

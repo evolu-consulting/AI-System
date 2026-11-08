@@ -1,7 +1,7 @@
 // CR-125 · cr125-subprocess-ui · node "Quy trình con" (`core.subprocess`): một bước của quy trình cha CHẠY MỘT QUY TRÌNH KHÁC rồi quay lại.
 // Hình chốt với lát engine: stage `{ node: "core.subprocess", executor: { kind: "subprocess", def_key, input_map?, branches? } }`; đầu ra done /
 // rejected / cancelled (rejected + cancelled rẽ theo `branches`, done đi bước kế); kết quả `outcome` + `sub_<trường>`. Thuần (không React).
-import type { ProcessDef, ProcessDefListItem, SubprocessExecutor } from "@ai/contracts/hub-admin";
+import type { CompanyFlowRow, ProcessDef, SubprocessExecutor } from "@ai/contracts/hub-admin";
 import { SUBPROCESS_FIELD_PREFIX } from "@ai/contracts/hub-admin";
 import type { WaitDraft } from "./draft-types";
 import { emptyWait } from "./wait-form";
@@ -82,18 +82,38 @@ export const withChild = (d: SubprocessDraft, defKey: string): SubprocessDraft =
 
 // ── danh sách chọn ───────────────────────────────────────────────────────────
 
+/**
+ * Một quy trình có thể chọn làm con — hình chung của hai nguồn: danh sách flow của công ty (`company_flows`, gồm flow Thư viện được GÁN) và
+ * danh sách `process-defs` (platform sửa Thư viện). `id` = id def (mở bằng `/processes/$id`).
+ */
+export type ChildSource = {
+  id: string;
+  key: string;
+  name: string;
+  enabled: boolean;
+  published_version?: number | null | undefined;
+  stage_count?: number | undefined;
+};
+
+/** Dòng danh sách flow công ty → nguồn chọn (bản đã xuất bản = có `rel_version`; đang bật = `enabled`). */
+export const childSourceOfFlow = (r: CompanyFlowRow): ChildSource => ({
+  id: r.flow_id,
+  key: r.flow_key,
+  name: r.name,
+  enabled: r.enabled,
+  published_version: r.rel_version,
+});
+
 export type ChildStatus = "published" | "enabled" | "draft";
 
 /** Trạng thái hiện cạnh tên: Đã xuất bản (thư viện) · Đang bật (của công ty) · Nháp (chưa chọn được). */
-export function childStatus(
-  d: Pick<ProcessDefListItem, "enabled" | "published_version">,
-): ChildStatus {
+export function childStatus(d: Pick<ChildSource, "enabled" | "published_version">): ChildStatus {
   if (d.published_version != null) return "published";
   return d.enabled ? "enabled" : "draft";
 }
 
 /** Chọn làm quy trình con được khi đã xuất bản hoặc đang bật. */
-export const childPickable = (d: Pick<ProcessDefListItem, "enabled" | "published_version">) =>
+export const childPickable = (d: Pick<ChildSource, "enabled" | "published_version">) =>
   childStatus(d) !== "draft";
 
 export type ChildOption = {
@@ -101,7 +121,8 @@ export type ChildOption = {
   id: string;
   name: string;
   status: ChildStatus;
-  steps: number;
+  /** Số bước của quy trình con (vắng ⇒ danh sách flow công ty không kèm số bước). */
+  steps: number | undefined;
   disabled: boolean;
 };
 
@@ -110,7 +131,7 @@ export type ChildOption = {
  * Nháp vẫn hiện nhưng không chọn được (cho người dùng biết vì sao thiếu).
  */
 export function childOptions(
-  defs: readonly ProcessDefListItem[],
+  defs: readonly ChildSource[],
   selfKey: string | undefined,
 ): ChildOption[] {
   return defs
