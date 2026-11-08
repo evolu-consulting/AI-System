@@ -190,7 +190,7 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
           onClose={() => setCopying(null)}
           onConfirm={() => run({ op: "clone", id: copying.id })}
         />
-      ) : null}{" "}
+      ) : null}
       {canSeeFlowSwitch(role) ? <FlowSwitch tenantId={tenantId} words={words} /> : null}
       {isPlatform ? (
         <AssignFlow

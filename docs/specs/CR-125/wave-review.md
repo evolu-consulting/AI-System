@@ -91,3 +91,6 @@ If `contract_events` or `contracts` is more than about 1M rows, or `stage_runs` 
 3. Feature `contracts-partner-confirm` must stay unassigned while the mailbox is off (M1/M2): `select e.tenant_id from admin.feature_entitlements e join admin.features f on f.id=e.feature_id where f.key='contracts-partner-confirm' and e.revoked_at is null;` should return 0 rows.
 4. After deploy: `curl -sI https://<admin-host>/static/elk/elk-worker.min.js` must return `200` and `Content-Type: application/javascript`, about 1.5 MB. An HTML response means `try_files` fell back to index.html and the flow editor layout is broken.
 5. Prod divergence (memory 2026-10-30): check `VERSION` and A0 hashes against the journal. `migrate-guard` fails hard on a mismatch.
+
+6. CR-125 c5b: admin-api cần `ADMIN_HUB_URL` (đã có cho mail và Chạy thử; kiểm `grep ADMIN_HUB_URL .env`). Route `/admin/tenants/:id/template-fixes/enable-feature` hỏi readiness của Hub bằng token người gọi qua URL này; vắng thì nút "Bật tính năng cho công ty" trả 503 `HUB_NOT_CONFIGURED`. Không cần `HUB_INTERNAL_TOKEN` cho route này.
+7. CR-125 c5b: trước khi gỡ hẳn mẫu khe cũ Community, chạy SQL kiểm ở `docs/specs/cr125-c5b-readiness-ui/tasks.md` (mục Checklist deploy).
