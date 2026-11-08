@@ -131,3 +131,28 @@ theo form trong snapshot run, bỏ trường lạ, ghi field vào output stage v
 - Kịch bản: khi gửi hai lần cùng giá trị thì một kết quả, một audit, giá trị khác sau khi đóng thì 409 [test: tests/acceptance/CR118/form-node.int.test.ts » idempotent: gửi 2 lần cùng giá trị ⇒ 200 cả hai, một output, một audit, giá trị khác sau khi đóng ⇒ 409]
 - Kịch bản: khi bước sau là If trên field form thì rẽ theo giá trị đã gửi [test: tests/acceptance/CR118/form-node.int.test.ts » If bước sau đọc field form: so_tien > 100 ⇒ nhảy bước 3 (bước 2 skipped), run done]
 - Kịch bản: khi def đổi trường sau khi run bắt đầu thì run cũ vẫn kiểm theo snapshot [test: tests/acceptance/CR118/form-node.int.test.ts » snapshot: def sửa sau khi run bắt đầu (đổi trường) ⇒ run cũ vẫn kiểm theo form lúc bắt đầu]
+
+## CR-124/125 · Delta gộp 2026-11-08 (đợt cr124-cr125)
+
+#### Yêu cầu: Hành động thật cần người duyệt ngay trước do node khai báo (nguồn: cr125-m5-base)
+Điều kiện «bước hành động thật phải có bước duyệt ngay trước» không cố định trong code mà do node khai báo (`requires.before = approval` trong khai báo module); picker, kéo thả, nối lại và kiểm khi lưu cùng đọc khai báo đó. Ký số khai điều kiện này nên giữ nguyên hành vi; node không khai thì không bị đòi; stage không thuộc node nào giữ mặc định đòi người duyệt.
+- Kịch bản: khi thêm hoặc kéo Ký số sau một bước tự động thì bị từ chối, sau bước duyệt thì được [test: packages/contracts/src/hub-admin/process-real-rule.test.ts » Ký số khai requires.before = approval, hành vi như cũ qua khoá node]
+- Kịch bản: khi lưu quy trình có Ký số sau bước tự động thì báo REAL_ACTION, còn node không khai điều kiện thì không báo [test: packages/contracts/src/hub-admin/process-real-rule.test.ts » lưu (REAL_ACTION của Hub) đọc cùng khai báo: Ký số sau bước tự động ⇒ lỗi, node không đòi ⇒ không lỗi]
+- Kịch bản: khi node có khai báo mà không có điều kiện thì được bật hành động thật ở mọi bước [test: packages/contracts/src/hub-admin/process-real-rule.test.ts » node có khai báo mà không có requires ⇒ không đòi gì (kể cả bước 0)]
+- Kịch bản: khi stage không có node hoặc node lạ thì vẫn đòi người duyệt ngay trước [test: packages/contracts/src/hub-admin/process-real-rule.test.ts » stage không node / node lạ giữ mặc định cũ (đòi người duyệt)]
+- Kịch bản: khi mount gói thì bước cơ bản của lõi vào sổ module và sổ không báo lỗi [test: apps/hub-api/src/modules/packs/core/nodes/core-nodes.binding.test.ts » module core: không lỗi sổ (không thiếu, không thừa binding)]
+
+#### Yêu cầu: Cổng vào/ra đủ cho mọi node và tự nối từ bước trước (nguồn: cr125-m8-io-ports, cr125-m9-outputs-runstate)
+Mỗi node trong sổ module khai đủ đầu vào + đầu ra có nhãn nghiệp vụ vi/en; đầu ra máy chủ chưa ghi được đánh dấu chờ và không làm nguồn tự nối. Tự nối đầu vào lấy nguồn từ «Bắt đầu khi» và đầu ra các bước đứng trước; nhiều nguồn hoặc không có thì hỏi bằng câu nghiệp vụ.
+- Kịch bản: Thông báo cần «Thời điểm ký», đúng một bước Ký số phía trước cấp ⇒ nối luôn; hai bước cùng cấp ⇒ hỏi chọn; không bước nào ⇒ «thêm bước Ký số trước» [test: packages/contracts/src/modules/io-ports.test.ts » tự nối từ đầu ra các bước trước]
+- Kịch bản: mọi cổng của mọi node có nhãn vi/en và đầu vào bắt buộc có cách khắc phục [test: packages/contracts/src/modules/io-ports.test.ts » cổng đủ nhãn nghiệp vụ]
+- Kịch bản: flow Duyệt → Ký số → Thông báo ⇒ nguồn tại Thông báo gồm kết quả duyệt, kết quả ký (một lần), không gồm cổng chờ [test: packages/contracts/src/modules/io-ports.test.ts » flowMapSources · flow thật từ sổ MODULES]
+
+Mọi đầu ra đã khai đều được máy chủ ghi (không còn đầu ra chờ); Ký số cấp đủ bốn cổng làm nguồn tự nối cho bước sau.
+- Kịch bản: không còn đầu ra pending [test: packages/contracts/src/modules/io-ports.test.ts » danh sách đầu ra CHƯA ghi (pending) — CR-125 m9: engine ghi hết ⇒ rỗng (node mới thêm pending thì ghi vào đây)]
+- Kịch bản: nguồn tại Thông báo gồm đủ cổng Ký số một lần [test: packages/contracts/src/modules/io-ports.test.ts » nguồn tại Thông báo = Bắt đầu khi + Duyệt (khớp theo executor) + Ký số MỘT lần (stage chờ, đủ 4 cổng)]
+- Kịch bản: binding thật khai đủ khoá [test: apps/hub-api/src/modules/packs/packs.modules-outputs.test.ts » Duyệt ghi decision/decided_by/feedback · Ký số, Gửi đối tác, Thông báo ghi đủ cổng (CR-125 m9)]
+
+#### Yêu cầu: module:new sinh khối cổng vào/ra (nguồn: cr125-m8-io-ports)
+Scaffold node mới có khối inputs (nhãn + cách khắc phục) và outputs (nhãn, đầu ra mẫu đánh dấu chờ) để hub lên ngay.
+- Kịch bản: nodeSource có outputs với nhãn vi/en và pending [test: tools/scripts/src/modules-tool.rules.test.ts » module:new · cổng vào/ra (CR-125 m8)]

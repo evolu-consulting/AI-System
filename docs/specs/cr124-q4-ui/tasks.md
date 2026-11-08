@@ -31,7 +31,7 @@ unit: `partner-view.test.ts`, `partner-send.rules.test.ts`, `partner-inbox.repo.
 - Số migration hub 0122 / pack 0087 do slice tự lấy (số kế tiếp trống); admin 0039 do điều phối giao.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### ADDED sht/gui-doi-tac-q4.md
 #### Yêu cầu: Lần gửi đầu tới công ty chưa nối được giữ tới khi công ty nhận chấp nhận

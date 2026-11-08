@@ -99,3 +99,28 @@ chữ, khung, `data-testid`/`data-status`, nhãn quá hạn/chuyển cấp/bỏ 
 - Kịch bản: khi lượt chạy bằng máy cũ thì FlowPanel không vẽ dòng bước, chỉ đánh dấu legacy [test: apps/workspace-web/src/platform/flow/ui/flow-ui.test.tsx » lượt machine ⇒ LegacyMachineRenderer (không dòng bước)]
 - Kịch bản: khi thẻ có bước Ký số thì bước này nối cuối danh sách [test: apps/workspace-web/src/features/contract-approval/lib/flow-view.test.ts » slot/ref/state/phase + bước Ký số nối cuối · tasks rỗng (nút thẻ do useApprovalUi)]
 - Kịch bản: khi e2e thẻ duyệt hiện có chạy thì vẫn xanh [test: e2e/contracts-web/contract-flow.cw.ts » dòng thời gian: tên bước, tên phòng, trạng thái, hạn quá hạn]
+
+## CR-124/125 · Delta gộp 2026-11-08 (đợt cr124-cr125)
+
+#### Yêu cầu: Người ký chọn cách ký lúc ký (nguồn: cr125-m4-esign)
+Node Ký số chỉ khai người ký, hạn ký và nhắc; không chọn nhà cung cấp. Lúc bấm «Ký ngay», người ký chọn trong các cách công ty đã bật; chỉ một cách thì ký thẳng. Def cũ có `provider` vẫn chạy (trường bị bỏ qua).
+- Kịch bản: args cũ có `provider` ⇒ đọc cấu hình vẫn hợp lệ, trường bị bỏ qua [test: packages/contracts/src/pack-contracts/esign-node.test.ts » CR-125 m4 · provider cũ bị bỏ qua]
+- Kịch bản: người ký chọn cách khác loại phong bì ⇒ huỷ phong bì cũ và gửi lại cùng người ký/hạn [test: apps/hub-api/src/modules/packs/contracts/application/esign-switch.test.ts » CR-125 m4 · đổi cách ký]
+- Kịch bản: nhiều cách khả dụng ⇒ hỏi; một cách ⇒ ký thẳng [test: apps/workspace-web/src/features/contract-esign/lib/esign-view.test.ts » CR-125 m4 · chọn cách ký]
+
+#### Yêu cầu: Thêm node tự nối đầu vào có đúng một nguồn (nguồn: cr125-m4-esign)
+Thêm node tự nối mọi đầu vào có đúng một nguồn (vd mã hợp đồng từ «Bắt đầu khi»); chỉ hỏi khi nhiều nguồn hoặc không có, bằng câu nghiệp vụ kèm cách khắc phục.
+- Kịch bản: một nguồn ⇒ nối, không hỏi; không nguồn ⇒ «cần … — thêm bước Tải hợp đồng trước» [test: packages/contracts/src/modules/auto-map.test.ts » autoMapInputs]
+- Kịch bản: thêm Ký số vào flow bắt đầu từ hợp đồng ⇒ `contract_id` được nối vào tham số tool [test: apps/admin-web/src/features/processes/lib/auto-bind.test.ts » autoBindNode]
+
+#### Yêu cầu: Lịch sử HĐ ghi mọi quyết định duyệt, ký số và trao đổi với đối tác (nguồn: cr125-audit-trail)
+Mỗi quyết định Đạt/Trả lại/Từ chối ở một bước duyệt, mỗi lần gửi ký / ký xong / từ chối / huỷ / đổi nhà cung cấp ký, mỗi lần gửi–nhận–trả lời đối tác đều thêm một dòng "Lịch sử thay đổi" của HĐ (người, thời điểm, nội dung); sự kiện lặp lại không ghi đôi. "Lưu và áp dụng" flow ghi `hub.audit_log` kèm danh sách bước trước/sau.
+- Kịch bản: khi người duyệt Đạt bước thì lịch sử HĐ có `stage_decided` với người duyệt [test: apps/hub-api/src/modules/processes/triggers/audit-trail.int.test.ts » gửi duyệt → Đạt ở bước → Kết thúc Đã duyệt: trạng thái đúng + lịch sử có ai/lúc nào/gì]
+- Kịch bản: khi người duyệt Từ chối kèm lý do thì HĐ `rejected` và lịch sử ghi lý do [test: apps/hub-api/src/modules/processes/triggers/audit-trail.int.test.ts » Từ chối ở bước (có lý do): HĐ rejected + lịch sử ghi người từ chối, lý do]
+- Kịch bản: khi gửi ký, ký xong, đổi nhà cung cấp (webhook gửi lại) thì mỗi việc đúng một dòng [test: apps/hub-api/src/modules/processes/triggers/audit-trail.int.test.ts » ký số: gửi, ký xong, đổi nhà cung cấp ⇒ lịch sử HĐ, gọi lại cùng trạng thái không ghi đôi]
+- Kịch bản: khi gửi đối tác và đối tác trả lời thì lịch sử có hai dòng, trả lời chạy lại không ghi đôi [test: apps/hub-api/src/modules/processes/triggers/audit-trail.int.test.ts » đối tác: gửi → trả lời (một lần) ⇒ lịch sử HĐ]
+- Kịch bản: khi "Lưu và áp dụng" thêm một bước thì audit before/after khác nhau ở `steps` [test: apps/hub-api/src/modules/processes/defs/audit-snapshot.test.ts » thêm một bước ⇒ steps before/after khác nhau]
+
+#### Yêu cầu: Đổi cách ký không làm lượt rời bước chờ (nguồn: cr125-m10-switch-void-race)
+Trong lúc đổi cách ký (giữ quyền đổi), sự kiện của phong bì cũ từ nhà cung cấp chỉ được ghi audit, không báo cho luồng; sau khi đổi xong chỉ sự kiện của phong bì mới báo cho luồng, mỗi sự kiện một lần.
+- Kịch bản: khi webhook voided của phong bì cũ tới giữa lúc đổi cách ký thì luồng vẫn chờ phong bì mới và chỉ nhận đúng một sự kiện của phong bì mới [test: apps/hub-api/src/modules/packs/contracts/adapters/esign-switch-webhook.int.test.ts » trong lease chỉ audit, không tín hiệu, sau khi đổi chỉ phong bì mới tới lượt, một lần]

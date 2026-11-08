@@ -26,7 +26,7 @@ Unit `flow-canvas/layout/settle.test.ts` (ELK thật: flow demo + một bước 
 - Kéo thả đè lên node khác thì node quay về chỗ cũ (không lưu), thay vì đẩy node khác đi.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Sơ đồ không bao giờ có hai node chồng nhau, ngăn chi tiết không che node đang sửa (nguồn: CR-125 x4)

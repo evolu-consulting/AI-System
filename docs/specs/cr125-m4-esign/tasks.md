@@ -26,7 +26,7 @@ unit: auto-map, auto-bind, esign-node (decode), esign-switch, esign-view; int se
 - Tự nối chỉ nối nguồn «Bắt đầu khi» thành tham số tool; nguồn từ bước trước vẫn do người dùng chọn (chỉ hỏi khi không có nguồn nào).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Người ký chọn cách ký lúc ký

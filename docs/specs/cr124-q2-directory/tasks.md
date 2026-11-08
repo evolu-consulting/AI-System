@@ -35,7 +35,7 @@ Không UI chọn đối tác khi gửi / cảnh báo chưa xác minh (q3/q4), kh
 - Hub chưa gọi hàm admin: kết nối `hub_api` chạy `hub.partner_link_request` đọc `admin.tenants` qua DEFINER (cùng DB).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### ADDED platform/company-directory.md
 #### Yêu cầu: Danh bạ công ty tự nguyện (CR-124 FLOW4-FR-03/04/05, NFR-03/04)

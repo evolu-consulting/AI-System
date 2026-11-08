@@ -23,7 +23,7 @@ Unit `lib/x5-approver-default.test.ts`; e2e `cr123-arrow-drag.spec.ts` (U8, U12b
 - Không đặt mặc định nào cho người duyệt (nếu sau này cần, phải lấy từ `isApproverGroup`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Bước Duyệt mới chưa có người duyệt và buộc chọn trước khi Lưu (nguồn: CR-125 x5)

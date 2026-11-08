@@ -63,7 +63,7 @@ Không bảng mới (chỉ index 0088); không chạm canvas. Perf: không (mỗ
 - esign webhook song song: khoá hàng + đọc trạng thái trước ở câu riêng, chỉ ghi `esign_*` khi thật sự chuyển trạng thái; test chạy bằng role hệ thống của gói (cả đường nhận đối tác) ghi được `contract_events` dưới RLS.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Lịch sử HĐ ghi mọi quyết định duyệt, ký số và trao đổi với đối tác

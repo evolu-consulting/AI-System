@@ -22,7 +22,7 @@ Int `esign-push.int.test.ts` (Redis + DB thật: webhook/đồng bộ ⇒ chỉ 
 Người nhận lấy trong tx hệ thống của tenant phong bì (role job không đọc `signers` — giữ nguyên quyền hẹp của nó). Lỗi đẩy chỉ log, không làm hỏng luồng ký.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Thẻ ký số tự cập nhật bằng sự kiện đẩy

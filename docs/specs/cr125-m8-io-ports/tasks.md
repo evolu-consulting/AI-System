@@ -33,7 +33,7 @@ unit: io-ports.test (contracts), modules-tool.rules.test, module-registry.test, 
 - Cụm nhiều stage cùng node (Ký số) chỉ tính đầu ra một lần (stage cuối cụm) để không thành «nhiều nguồn».
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Cổng vào/ra đủ cho mọi node và tự nối từ bước trước

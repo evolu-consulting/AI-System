@@ -18,7 +18,7 @@ QC e2e CR-105: bỏ test form Quy trình duyệt cũ (flow-editor xoá; contract
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 Không thay đổi hành vi (lý do: chỉ sửa e2e theo CR-105)
 

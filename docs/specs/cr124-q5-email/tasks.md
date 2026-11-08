@@ -40,7 +40,7 @@ e2e một lần `journey-approval/cr124-q5-partner-email.spec.ts`.
   ở thẻ HĐ bên gửi (hàm `partner_email_history` đã có, UI = q4).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### ADDED sht/doi-tac-tra-loi-qua-email.md
 #### Yêu cầu: Gửi thư tiếng Việt cho bên nhận chưa dùng nền tảng với link riêng có token băm

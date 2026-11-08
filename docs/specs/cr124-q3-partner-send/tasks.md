@@ -34,7 +34,7 @@ unit: `partner-send.rules.test.ts`, `partner-inbox.repo.test.ts` (3 câu/lô), `
 - `required: false` cho `contract.received` tới khi có 2 mẫu Thư viện (FLOW4-FR-10) — q4.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### ADDED sht/gui-doi-tac-xac-nhan.md
 #### Yêu cầu: Node «Gửi đối tác xác nhận» tạo lần gửi và tự chọn kênh
@@ -45,7 +45,7 @@ Một node, tool gửi chạy trong tx của tenant gửi, tạo đúng một l�
 #### Yêu cầu: Bên nhận có bản ghi riêng và mức quan trọng do bên nhận quyết
 Bộ chuyển mở tx trong scope tenant nhận, tạo HĐ nhận `source='partner_inbox'` + `contract.received` cùng tx; mức cuối = max(gợi ý bên gửi, luật theo giá trị); chạy lại không đôi.
 - Kịch bản: khi bộ chuyển chạy thì B có HĐ nhận riêng và sự kiện, A không có dòng nào của B, chạy lại không tạo thêm [test: apps/hub-api/src/modules/packs/contracts/partner-mailbox.int.test.ts » bộ chuyển tạo HĐ nhận riêng của B + contract.received]
-- Kịch bản: khi nhận lô bất kỳ cỡ thì đúng 3 câu SQL [test: apps/hub-api/src/modules/packs/contracts/adapters/partner-inbox.repo.test.ts » 1 dòng và 100 dòng đều đúng 3 câu]
+- Kịch bản: khi nhận lô bất kỳ cỡ thì đúng 4 câu SQL [test: apps/hub-api/src/modules/packs/contracts/adapters/partner-inbox.repo.test.ts » 1 dòng và 100 dòng đều đúng 4 câu]
 #### Yêu cầu: Kết thúc flow nhận tự thành câu trả lời; kết quả quay về node chờ
 Kết thúc của flow nhận (Đồng ý / Trả lại / Từ chối) gọi `hub.partner_reply`; bộ chuyển đóng lần gửi và bắn `partner.<kết quả>` cho node chờ đúng một lần.
 - Kịch bản: khi flow nhận kết thúc Trả lại thì lần gửi đóng và node chờ nhận `partner.returned` một lần [test: apps/hub-api/src/modules/packs/contracts/partner-mailbox.int.test.ts » Kết thúc flow nhận = Trả lại ⇒ lần gửi đóng + tín hiệu partner.returned đúng một lần]

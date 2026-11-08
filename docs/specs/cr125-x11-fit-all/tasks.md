@@ -24,7 +24,7 @@ Unit `flow-canvas/src/fit.test.ts`; e2e `cr123-arrow-drag.spec.ts` (mở lần �
 - Mức zoom tối thiểu 0.15 thay 0.3 (canvas) để flow ~12 node vẫn vừa một khung 1100px; kéo/zoom tay như cũ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: "Vừa khung" luôn đưa cả flow vào khung, ở mọi trình sửa (nguồn: CR-125 x11)

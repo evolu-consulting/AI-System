@@ -24,7 +24,7 @@ Xem commit: sửa test cũ (known-red, e2e configs, i18n bị gỡ, schema đổ
 - theme-parity (PK-FR-10): token sáng + sidebar (và tối: secondary/accent/sidebar...) lệch admin-web (tím #6e56f0) vs contracts trong workspace-web (indigo #4f46e5); nghi lát CR-121 admin palette / workspace-web hợp nhất; cần chốt bên nào là chuẩn rồi đồng bộ CSS hoặc cập nhật DARK_DRIFT/LIGHT_DRIFT.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 Không thay đổi hành vi (lý do: chỉ sửa test/fixture/mock cũ; lỗi sản phẩm ghi ở mục Lỗi sản phẩm)
 

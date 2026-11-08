@@ -23,7 +23,7 @@ unit `company-flow-view.test.ts`; journey e2e G2 (đi qua menu "…" + mục M�
 - Bản công ty đã "Quay về bản gốc" (Tắt · đã quay về bản gốc) vẫn là dòng chính — còn việc để làm (mở lại / dùng lại).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Nhân bản rồi gán

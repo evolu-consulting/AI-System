@@ -34,7 +34,7 @@ Không UI, trang email, danh bạ, node manifest, HĐ nhận (q2–q5). Không s
 - `actor_id` của sự kiện = null (q3 quyết người chạy flow nhận; dispatcher hiện ghi `no_actor` nếu có flow khớp).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### ADDED engine/flow-runtime.md
 #### Yêu cầu: Hộp thư liên công ty (CR-124 FLOW4-NFR-01/02/03)

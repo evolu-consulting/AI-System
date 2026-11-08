@@ -30,7 +30,7 @@ unit: wait-event-data.rules.test, esign-outputs.rules.test, notify-vars.test, io
 - Đọc phong bì lỗi ⇒ vẫn bắn sự kiện không dữ liệu kèm (rẽ nhánh không phụ thuộc phần phụ).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Bước chờ sự kiện ghi dữ liệu kèm sự kiện vào đầu ra của bước

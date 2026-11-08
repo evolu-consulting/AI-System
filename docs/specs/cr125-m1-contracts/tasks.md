@@ -29,7 +29,7 @@ Không chạm hub-api, admin-web, DLC, engine/FlowDef, DB. Sự kiện (`events`
 - Cổng Chờ khoảng chưa khai (hằng giờ ở `hub-admin/process-wait.ts`, import sẽ kéo vòng lặp) ⇒ m5/m6.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 Không thay đổi hành vi (lý do: gom khai báo node vào sổ MODULES, CORE_NODES/AppManifest.nodes/process-module-nodes đọc lại cùng nội dung; thêm kiểu + luật moduleIssues chưa được hub-api/admin-web gọi)
 
 ## Việc còn lại

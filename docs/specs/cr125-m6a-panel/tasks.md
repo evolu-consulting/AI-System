@@ -24,7 +24,7 @@ Spec `docs/specs/CR-125/spec.md` §m6a (MOD-FR-07/08). Sổ panel theo khoá nod
 - Nhãn ô = `.describe()` của trường zod trong decl; vắng ⇒ tên trường đọc được. Có/Không/"Theo cài đặt" dùng lại chữ của panel Ký số.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Panel cấu hình node theo sổ

@@ -28,7 +28,7 @@ Unit: `flow-canvas/layout/direction.test.ts`, `routing/orthogonal.test.ts`, `can
 - Đổi hướng bỏ vị trí tay (toạ độ của hướng cũ không dùng được ở hướng mới).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Sơ đồ có hướng Ngang / Dọc, cạnh bắt đầu ở chấm đầu ra và không đi dưới node (nguồn: CR-125 x9)

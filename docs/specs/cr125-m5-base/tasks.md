@@ -28,7 +28,7 @@ Không đụng admin-web (m6a), cấu hình/nhà cung cấp Ký số (m4), DLC, 
 - Hạn chế đã biết: bước Áp / tool tự đứng vẫn dùng mặc định cứng đó cho tới khi chuyển thành node có khai báo (lát sau).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Hành động thật cần người duyệt ngay trước do node khai báo

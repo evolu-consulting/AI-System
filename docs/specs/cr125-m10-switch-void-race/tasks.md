@@ -28,7 +28,7 @@ evotest int (-Dirty): esign-switch-webhook, esign-switch, esign-sync, esign-push
 - Webhook lặp cho cùng phong bì: UPDATE có điều kiện theo trạng thái đã đọc ⇒ chỉ một lần tín hiệu.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Đổi cách ký không làm lượt rời bước chờ

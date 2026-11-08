@@ -22,7 +22,7 @@ Unit `esign-view.test.ts`, `esign-due-at.test.ts`; e2e mock `esign.cw.ts`; hành
 `is_you` do server tính (client_user_id = người xem) vì `embedded` chỉ nói người ký ký trong app, không nói ai đang xem; hub cũ không có `is_you` ⇒ dùng `embedded` như trước.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Thẻ ký số theo lượt người xem

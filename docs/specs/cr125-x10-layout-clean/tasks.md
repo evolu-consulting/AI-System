@@ -26,7 +26,7 @@ Unit/acceptance `flow-canvas/layout/clean-layout.test.ts` (flow demo + Kế toá
 - Không gập hàng ⇒ flow dài hơn khung phải kéo / thu nhỏ (thay vì đọc ngược): chọn đọc đúng thứ tự thay vì vừa khung bằng mọi giá.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Sơ đồ đọc được như văn bản: bước sau nằm sau bước trước, Kết thúc gom cuối, ít cắt nhau (nguồn: CR-125 x10)

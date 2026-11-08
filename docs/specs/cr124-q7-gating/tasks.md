@@ -25,7 +25,7 @@ unit `partner-routes.gate.test.ts` (403 cho cả 6 route); int `partner-gating.i
 - UI ẩn bảng «Vòng gửi đối tác» khi 403 (truy vấn lỗi ⇒ không có vòng); không thêm code web.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### ADDED sht/gui-doi-tac-cong-tinh-nang.md
 #### Yêu cầu: Các route đối tác chỉ mở khi công ty bật tính năng Gửi đối tác xác nhận

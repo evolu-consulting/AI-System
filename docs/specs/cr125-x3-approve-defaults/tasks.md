@@ -26,7 +26,7 @@ Unit `lib/x3-approve-rules.test.ts` (mặc định, cảnh báo, nhóm chọn đ
 - Cảnh báo khi Lưu là toast không chặn (người dùng đã bấm Lưu có chủ ý), kèm cảnh báo cố định ngay dưới ô chọn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Node Duyệt: Từ chối / Trả lại có mặc định an toàn và người duyệt chỉ chọn được nhóm nghiệp vụ (nguồn: CR-125 x3)

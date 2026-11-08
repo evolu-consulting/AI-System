@@ -23,7 +23,7 @@ unit `date-math.test.ts` (10 ca); journey e2e G2 (ô ngày hợp đồng hiện 
 - Ô vẫn gõ được ISO (`2027-01-01`) để e2e/dán dữ liệu cũ không vỡ; sai ngày (31/04, 09/30) bị bỏ qua và ô trả về giá trị cũ khi rời ô.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Danh sách hợp đồng

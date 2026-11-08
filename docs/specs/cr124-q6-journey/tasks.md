@@ -26,7 +26,7 @@ unit: `contracts-locales.test.ts` (gộp sâu). e2e: `cr124-q6-partner-journey.s
 - Ảnh chụp ghi vào thư mục kết quả của ca (`test.info().outputPath`) để evotest kéo về.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### ADDED sht/gui-doi-tac-giao-dien.md
 #### Yêu cầu: Chuỗi giao diện của app Hợp đồng không mất khi thêm mục «Hợp đồng đối tác gửi»

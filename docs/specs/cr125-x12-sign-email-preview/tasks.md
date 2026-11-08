@@ -32,7 +32,7 @@ unit: `sign-invite-mail.rules.test.ts`, `esign-invite.test.ts`, `page-thumb.test
 - Bước Ký số của flow gửi cho MỌI người ký công ty đã chọn: mỗi người một chuông + một email (ảnh dùng chung nhờ cache).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### ADDED sht/email-moi-ky-so.md
 #### Yêu cầu: Email Mời ký có thẻ tóm tắt hợp đồng và ảnh trang đầu, chỉ tới người ký

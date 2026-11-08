@@ -26,9 +26,11 @@ Sửa trên nháp; chỉ bản xuất bản được chạy; xuất bản kiểm
 - Kịch bản: khi quy trình thiếu nút `contracts-finalize` hoặc có bước không tới được thì xuất bản bị từ chối 422 chỉ rõ bước sai [test: apps/hub-api/src/modules/processes/library/library-publish.rules.test.ts » thiếu nút hệ thống hoặc bước không tới được ⇒ từ chối]
 - Kịch bản: khi quay lại bản 2 từ bản 4 thì có bản 5 nội dung bằng bản 2 và nháp về bản 2 [test: apps/hub-api/src/modules/processes/library/library.routes.int.test.ts » quay lại tạo bản mới bằng bản cũ]
 
-#### Yêu cầu: Nhân bản rồi gán
-Nhân bản mọi quy trình (kể cả đang dùng) thành nháp mới cùng khe, chưa gán; sửa bản nhân bản không ảnh hưởng tenant nào.
-- Kịch bản: khi nhân bản A thành A′ và sửa A′ thì lượt mới của tenant đang gán A vẫn chạy A [test: apps/hub-api/src/modules/processes/library/library.routes.int.test.ts » nhân bản tạo nháp mới không ảnh hưởng tenant đang gán]
+#### Yêu cầu: Nhân bản rồi gán (nguồn: cr125-x7-flows-one-row)
+Nhân bản mọi quy trình (kể cả đang dùng) thành nháp mới cùng khe, chưa gán; sửa bản nhân bản không ảnh hưởng tenant nào. Danh sách quy trình của công ty chỉ hiện MỘT dòng cho quy trình đang dùng với "Mở" và menu "…" (Quay về bản gốc, Tắt); bản gốc Thư viện đã được bản công ty thay nằm trong mục "Mẫu thư viện" gập.
+- Kịch bản: khi bản công ty thay bản gốc thì danh sách chính chỉ còn bản công ty và bản gốc vào mục Mẫu thư viện [test: apps/admin-web/src/features/tenants/flows/lib/company-flow-view.test.ts » CR-125 · x7 · một dòng cho mỗi quy trình đang dùng: bản gốc đã bị thay vào mục Mẫu thư viện]
+- Kịch bản: khi mở menu … của dòng thì có Quay về bản gốc và Tắt cho bản công ty đang dùng [test: apps/admin-web/src/features/tenants/flows/lib/company-flow-view.test.ts » menu …: Quay về bản gốc + Tắt cho bản công ty đang dùng, Bật cho flow được gán đang tắt, bản công ty chưa áp dụng không có gì]
+- Kịch bản: khi quản trị công ty áp dụng bản công ty thì danh sách còn một dòng hiện, bản gốc nằm trong Mẫu thư viện không có nút Bật [test: e2e/journey-approval/cr122-flows.spec.ts » G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt → Xuất bản (gốc tự Tắt) → HĐ B theo bản công ty, HĐ A giữ bản cũ → Quay về bản gốc]
 
 #### Yêu cầu: Editor một chỗ, hai cách xem, xem trước đường đi
 Editor ai-admin có nút Canvas/Form; nút hệ thống khoá; khe `contracts.approval` chỉ nhận dạng tuần tự; xem trước tô bước chạy/bỏ qua theo loại HĐ + giá trị mẫu.

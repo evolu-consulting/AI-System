@@ -178,3 +178,5 @@ A. **Sau M4:** (1) người dùng test service admin; (2) chạy lại e2e toàn
 
 ## Bị chặn
 - TECH-DEBT #150 (đổi contract `STAGE_KEY_RE`) chờ người dùng duyệt; không chặn mốc.
+
+- 2026-11-08 gộp current (cr124-/cr125-/qc-): 31 lát, 0 mục Chưa rõ; cr124-q3 'đúng 3 câu SQL' sửa thành 4 theo test thật.

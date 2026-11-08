@@ -25,7 +25,7 @@ Unit `lib/m6b-registry.test.ts` (fixture module như `module:new demo sample`: v
 - Bước cơ bản (Duyệt/Nếu/Kết thúc/Điền thông tin/Agent/Công cụ/Ghi giá trị) lấy menu từ registry loại bước phía editor (đã là nguồn duy nhất của `executor`), không thêm node vào `core` (giữ nguyên MOD-FR-05).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Menu "+", palette và panel đọc node từ một nguồn khai báo (nguồn: CR-125 m6b)

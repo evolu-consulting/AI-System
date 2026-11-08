@@ -26,7 +26,7 @@ unit `waiting.test.ts`, `format-datetime.test.ts`; int + đo `mywork-signing.int
 - "Một nguồn": thẻ và thanh dưới đếm từ cùng `GET /my-work` (`approvals` = cùng `openTasksOf` với "Chờ tôi duyệt").
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr124-cr125)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Danh sách hợp đồng
