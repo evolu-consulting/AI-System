@@ -20,5 +20,6 @@ export function useInbox() {
   const runByTask = new Map(
     (tasks.data?.items ?? []).map((i) => [i.task.id, i.process_run.id] as const),
   );
-  return { work, requests, runByTask, count: waitingOf(work.data).total + extra };
+  const itemByTask = new Map((tasks.data?.items ?? []).map((i) => [i.task.id, i] as const));
+  return { work, requests, runByTask, itemByTask, count: waitingOf(work.data).total + extra };
 }

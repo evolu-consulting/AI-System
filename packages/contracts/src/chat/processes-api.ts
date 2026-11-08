@@ -148,6 +148,14 @@ export const ReviewTaskListItemSchema = z.strictObject({
     process: ProcessRefSchema,
     status: ProcessRunStatusSchema,
     started_by: UserRefSchema,
+    /** CR-126 · điều đang được duyệt, lấy từ phiếu của lượt (vắng ⇒ lượt không bắt đầu bằng phiếu). `amount` = số tiền (đồng) dạng chuỗi. */
+    request: z
+      .strictObject({
+        title: z.string().nullable(),
+        partner: z.string().nullable(),
+        amount: z.string().nullable(),
+      })
+      .optional(),
   }),
 });
 export type ReviewTaskListItem = z.infer<typeof ReviewTaskListItemSchema>;

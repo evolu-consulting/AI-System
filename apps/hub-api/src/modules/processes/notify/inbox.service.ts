@@ -28,6 +28,7 @@ import {
   type TaskPageRow,
   unreadNoticeCount,
 } from "./inbox.repo";
+import { requestSummary } from "./task-request-summary.rules";
 
 type Scope = { kind: "user"; tenantId: string; userId: string };
 const scopeOf = (u: AuthUser): Scope => ({
@@ -109,6 +110,7 @@ export function listReviewTasks(
                 process: { key: r.proc_key, name: r.proc_name },
                 status: r.run_status,
                 started_by: startedByRef(r),
+                request: requestSummary(r.stage0, r.inputs, r.p_stage0, r.p_inputs),
               },
             },
           ]

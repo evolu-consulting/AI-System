@@ -101,5 +101,10 @@ describe("CR-126 · việc đầu của lượt con hiện trong «Chờ tôi du
     await cache.poll();
     expect(await waiting(EMP)).toContain(kid);
     expect(await waiting(DIR)).toContain(kid);
+    // CR-126 · mỗi dòng nói điều đang duyệt: lượt con lấy số tiền + tên yêu cầu từ phiếu của lượt cha (cùng câu SQL)
+    const item = (await listReviewTasks(d, as(DIR), { status: "open", limit: 50 })).items.find(
+      (i) => i.process_run.id === kid,
+    );
+    expect(item?.process_run.request?.amount).toBe("1000000");
   });
 });

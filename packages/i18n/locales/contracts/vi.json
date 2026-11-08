@@ -250,7 +250,12 @@
       "emptyBody": "Việc sẽ xuất hiện ở đây khi tới bước do bạn phụ trách. Số trên menu cũng tự cập nhật.",
       "open": "Mở",
       "emptyNext": "Xem tất cả hợp đồng",
-      "loadError": "Không tải được danh sách. Thử tải lại trang."
+      "loadError": "Không tải được danh sách. Thử tải lại trang.",
+      "filter": {
+        "all": "Tất cả",
+        "approve": "Cần duyệt",
+        "sign": "Cần ký"
+      }
     },
     "productsPage": {
       "title": "Sản phẩm & Giá",

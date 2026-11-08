@@ -250,7 +250,12 @@
       "emptyBody": "Tasks appear here when they reach a step you are responsible for. The number in the menu updates automatically.",
       "open": "Open",
       "emptyNext": "View all contracts",
-      "loadError": "Could not load the list. Try reloading the page."
+      "loadError": "Could not load the list. Try reloading the page.",
+      "filter": {
+        "all": "All",
+        "approve": "To approve",
+        "sign": "To sign"
+      }
     },
     "productsPage": {
       "title": "Products & Prices",

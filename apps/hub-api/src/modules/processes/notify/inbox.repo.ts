@@ -37,6 +37,12 @@ export type TaskPageRow = {
   started_by: string;
   sb_display: string | null;
   sb_username: string | null;
+  /** CR-126 · phiếu của lượt (cùng câu SQL): inputs + ô phiếu bước 0 của snapshot. */
+  inputs: unknown;
+  stage0: unknown;
+  /** Lượt cha (lượt con của «Quy trình mua hàng» không có phiếu riêng ⇒ lấy phiếu của lượt cha). */
+  p_inputs: unknown;
+  p_stage0: unknown;
 };
 
 /** Task gán cho người xem theo `status`, mới trước; trả `limit + 1` để biết còn trang. */
@@ -49,9 +55,12 @@ export async function listTaskPage(
     select t.id as task_id, t.created_at,
       pr.id as run_id, pr.status as run_status,
       pr.snapshot->>'key' as proc_key, pr.snapshot->>'name' as proc_name,
-      pr.started_by, su.display_name as sb_display, su.username as sb_username
+      pr.started_by, su.display_name as sb_display, su.username as sb_username,
+      pr.inputs, pr.snapshot->'stages'->0 as stage0,
+      par.inputs as p_inputs, par.snapshot->'stages'->0 as p_stage0
     from hub.review_tasks t
     join hub.process_runs pr on pr.id = t.process_run_id and pr.tenant_id = t.tenant_id
+    left join hub.process_runs par on par.id = pr.parent_run_id and par.tenant_id = t.tenant_id
     left join admin.users su on su.id = pr.started_by and su.tenant_id = t.tenant_id
     where t.tenant_id = ${v.tenantId} and t.status = ${q.status} and ${mine(v)} ${before(q.cursor)}
     order by t.created_at desc, t.id desc
