@@ -2,6 +2,7 @@
 // Mỗi hàm MỘT câu, lọc `tenant_id` tường minh + RLS gói. Lời mời nối / trả lời đi qua hàm DEFINER `hub.partner_*` (gói không đọc hộp thư).
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
+import { contractNameSql } from "./contract-name.sql";
 
 export type InboxRow = {
   contract_id: string;
@@ -44,7 +45,7 @@ export type SendRow = {
 export function partnerUiRepo(tx: Tx, tid: string) {
   return {
     inbox: (): Promise<InboxRow[]> =>
-      tx.execute<InboxRow>(sql`select i.contract_id::text, c.title, i.sender_name, i.sender_tax_code, i.sender_verified,
+      tx.execute<InboxRow>(sql`select i.contract_id::text, ${contractNameSql("c")} as title, i.sender_name, i.sender_tax_code, i.sender_verified,
           i.round, i.prev_reason, i.importance, i.message, i.expires_at, i.status, i.reason,
           c.owner_user_id::text as owner_user_id, i.created_at
         from contracts.partner_inbox i join contracts.contracts c on c.id = i.contract_id and c.tenant_id = i.tenant_id

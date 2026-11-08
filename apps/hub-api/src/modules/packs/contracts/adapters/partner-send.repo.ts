@@ -3,6 +3,7 @@
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import type { PartnerChannel, RouteInfo } from "../domain/partner-send.rules";
+import { contractNameSql } from "./contract-name.sql";
 
 export type SendContract = {
   title: string;
@@ -34,7 +35,7 @@ export function partnerSendRepo(tx: Tx, tid: string) {
         tax: string | null;
         pname: string | null;
         fields: unknown;
-      }>(sql`select c.title, c.file_id::text as file_id,
+      }>(sql`select ${contractNameSql("c")} as title, c.file_id::text as file_id,
           nullif(btrim(c.fields -> (case when c.direction = 'sale' then 'buyer' else 'supplier' end || '_tax_id') ->> 'value'), '') as tax,
           nullif(btrim(c.fields -> (case when c.direction = 'sale' then 'buyer' else 'supplier' end || '_name') ->> 'value'), '') as pname,
           c.fields
