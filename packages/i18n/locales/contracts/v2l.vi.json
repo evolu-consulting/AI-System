@@ -168,9 +168,11 @@
     "flow": {
       "current": {
         "title": "Quy trình duyệt đang áp dụng: {{name}} · v{{version}}",
-        "lead": "Mục này chỉ để xem. Muốn đổi quy trình, liên hệ quản trị nền tảng.",
-        "defaultBadge": "Đang áp dụng",
-        "defaultHelp": "Công ty bạn chưa được gán quy trình riêng, đang dùng quy trình mặc định của hệ thống.",
+        "lead": "Đây là quy trình đang chạy cho hợp đồng của công ty, cùng dữ liệu với trang Quy trình. Quản trị công ty đổi quy trình ở trang Quy trình.",
+        "noFlow": "Công ty chưa có quy trình duyệt hợp đồng nào đang bật. Quản trị công ty thêm và bật quy trình ở trang Quy trình.",
+        "openPage": "Mở trang Quy trình",
+        "branches": "Quy trình có rẽ nhánh theo điều kiện: các bước dưới đây là những bước có thể chạy; xem sơ đồ đầy đủ ở trang Quy trình.",
+        "others": "Còn {{count}} quy trình khác cũng đang bật, xét theo thứ tự ở trang Quy trình.",
         "saveNote": "Mục này chỉ để xem nên không có gì cần lưu.",
         "editLink": "Chỉnh quy trình duyệt",
         "openFail": "Không mở được trang chỉnh quy trình.",

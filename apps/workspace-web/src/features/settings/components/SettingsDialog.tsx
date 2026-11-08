@@ -3,15 +3,7 @@
 // Bản nháp giữ khi đóng hộp thoại; tên/màu/giao diện nháp áp ngay lên sidebar, menu, nút (kho `brandStore`), đóng chưa lưu ⇒ trở về đã lưu.
 
 import { toast } from "@ai/web-kit/ui/toast";
-import {
-  Blocks,
-  Building2,
-  GitBranch,
-  type LucideIcon,
-  Search,
-  Star,
-  TrendingUp,
-} from "lucide-react";
+import { Building2, GitBranch, type LucideIcon, Search, Star, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -20,7 +12,6 @@ import {
   type SettingsNavGroup,
   SettingsSection,
 } from "~/shared/ui/settings-layout";
-import { useCanSeeApps } from "../hooks/use-apps-settings";
 import { brandOf, useSaveSettings, useSettingsState } from "../hooks/use-settings";
 import { brandStore } from "../lib/brand";
 import { settingsBus, useSettingsOpen } from "../lib/bus";
@@ -42,19 +33,14 @@ const SECTION_ICON: Record<SectionId, LucideIcon> = {
   biz: TrendingUp,
   scout: Search,
   flow: GitBranch,
-  apps: Blocks,
 };
 
-/** CR-118 §11.2 · "Ứng dụng & quy trình" chỉ cho quản trị công ty + chủ gói. */
-const sectionsOf = (apps: boolean): readonly SectionId[] =>
-  apps ? [...SECTIONS, "apps"] : SECTIONS;
-
-/** CR-108 · mục chỉ xem và không có nháp chưa lưu ⇒ ẩn thanh Lưu (ký số trong mục này tự lưu khi bấm). Mục `apps` lưu riêng từng khe. */
-const noSaveFor = (s: SectionId, dirty: boolean) => (s === "flow" && !dirty) || s === "apps";
+/** CR-108 · mục chỉ xem và không có nháp chưa lưu ⇒ ẩn thanh Lưu (ký số trong mục này tự lưu khi bấm). */
+const noSaveFor = (s: SectionId, dirty: boolean) => s === "flow" && !dirty;
 
 /** Mục có chấm cam "đã khác mặc định"? Điểm uy tín / dò giá / quy trình lưu riêng (không nằm trong bản nháp) ⇒ không chấm. */
 function sectionChanged(k: SectionId, vsDef: ReturnType<typeof changedParts> | null) {
-  if (!vsDef || k === "scout" || k === "flow" || k === "rep" || k === "apps") return false;
+  if (!vsDef || k === "scout" || k === "flow" || k === "rep") return false;
   return k === "co" ? vsDef.company : vsDef.biz;
 }
 
@@ -92,8 +78,6 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
   const [sec, setSec] = useState<SectionId>("co");
   const [saving, setSaving] = useState(false);
   const s = (k: string) => t(`contracts.settings.${k}`);
-  const apps = useCanSeeApps(owner);
-  const sections = sectionsOf(apps.visible);
 
   // Dữ liệu đã lưu đổi (mở lần đầu, sau khi Lưu) ⇒ bản nháp = bản mới (không đè nháp đang chỉnh dở: chỉ khi nháp chưa khác bản lưu cũ).
   const last = useRef<SettingsData | null>(null);
@@ -133,7 +117,7 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
   const groups: SettingsNavGroup[] = [
     {
       id: "contracts",
-      items: sections.map((k) => ({
+      items: SECTIONS.map((k) => ({
         id: k,
         label: s(`sec.${k}`),
         hint: s(`sec.${k}Hint`),
@@ -170,12 +154,7 @@ export function SettingsDialog({ owner, tenantName }: { owner: boolean; tenantNa
         onSelect={(id) => setSec(id as SectionId)}
       >
         <LoadState loading={loading} error={error} retry={retry} />
-        <SectionPanes
-          sec={sec}
-          owner={owner}
-          appsTenantId={apps.tenantId}
-          onGoFlow={() => setSec("flow")}
-        />
+        <SectionPanes sec={sec} owner={owner} />
         {isDraftSection(sec) && draft && saved && defaults && (
           <fieldset disabled={!owner || saving} className="min-w-0 border-0 p-0">
             {sec === "co" && (

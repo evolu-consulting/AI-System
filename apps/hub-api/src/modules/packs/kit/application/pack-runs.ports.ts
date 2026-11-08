@@ -1,10 +1,10 @@
-﻿// N2-FR-01 · N2-D04 · N2-D08 · plan N2 §1–§2: cổng khởi chạy run quy trình TRONG cùng process cho gói (không HTTP nội bộ,
+// N2-FR-01 · N2-D04 · N2-D08 · plan N2 §1–§2: cổng khởi chạy run quy trình TRONG cùng process cho gói (không HTTP nội bộ,
 // PK-BR-01). Lớp 2 — chỉ kiểu. Engine quy trình (`processes`) cài đặt và gắn vào cầu nối `PackRunsBridge` lúc mount; engine
 // tắt ⇒ cầu rỗng (gói trả 503 `PROCESS_ENGINE_OFF`).
 // contract-flow S1a · cầu v2: def gói (`ensureDef`), run gắn bản ghi gói (`ref`), quyết task (`act`, scope user ⇒ canAct/RLS
 // của engine), đọc dòng thời gian (`stepsView`) + lời gọi hệ thống lọc tenant tường minh.
 
-import type { ResolvedSlot, RoutedSlot, RouteSlotFacts } from "./slot.ports";
+import type { EventFlow, ResolvedSlot, RoutedSlot, RouteSlotFacts } from "./slot.ports";
 
 /** Người gọi = user của JWT (cấu trúc khớp `AuthUser`). */
 export type PackRunCaller = { userId: string; tenantId: string; role: string };
@@ -163,6 +163,8 @@ export type PackRunsPort = {
   ): Promise<"created" | "exists" | "synced">;
   /** CR-105 · quy trình đang chạy của khe cho tenant (gán ⇒ mặc định ⇒ bản xuất bản), MỘT câu scope system; không có ⇒ null. */
   resolveSlot(tenantId: string, slot: string): Promise<ResolvedSlot | null>;
+  /** CR-125 · S2 · flow đang chạy của công ty cho sự kiện (company_flows Bật), MỘT câu scope system; không có ⇒ null. */
+  eventFlow?(tenantId: string, event: string): Promise<EventFlow | null>;
   /** dlc-agent-flows · def thư viện `defKey` của khe ở bản xuất bản hiện hành (agent chỉ định quy trình, KHÔNG qua gán tenant);
    *  không có ⇒ null. Vắng (bản giả) ⇒ gói báo lỗi khi agent có chỉ định. */
   resolveSlotDef?(slot: string, defKey: string): Promise<ResolvedSlot | null>;

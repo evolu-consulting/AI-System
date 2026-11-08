@@ -1,7 +1,7 @@
 // CR-118 · UAT smoke trên stack sohoptac2-cr118 (web gộp). Chạy từ máy dev qua SSH tunnel: `playwright test -c e2e/stg/uat-cr118.config.ts`.
 // Env: UAT_WEB (vd http://127.0.0.1:28531), UAT_OWNER_PW, UAT_ADMIN_PW, UAT_PARTNERS_FILE (out/partners.json). Mật khẩu không in.
 // Ca: chủ quản/quản trị công ty · thành viên · đối tác: Community ↔ SHT không tải lại, tắt Community ẩn nav (SSE), đối tác gõ /contracts bị chặn,
-// Cài đặt › Ứng dụng & quy trình, bài Community kèm PDF (tải lên + tải về).
+// Cài đặt › Quy trình duyệt, bài Community kèm PDF (tải lên + tải về).
 import { readFileSync } from "node:fs";
 import { type APIRequestContext, expect, type Page, test } from "@playwright/test";
 
@@ -104,7 +104,7 @@ test("setup: tạo thành viên SHT thường (nhóm contracts-viewer + communit
   }
 });
 
-test("chủ quản/quản trị: Community ↔ SHT không tải lại trang; Cài đặt › Ứng dụng & quy trình", async ({
+test("chủ quản/quản trị: Community ↔ SHT không tải lại trang; Cài đặt › Quy trình duyệt", async ({
   page,
 }) => {
   await login(page, "demo-owner", [OWNER_PW]);
@@ -116,8 +116,12 @@ test("chủ quản/quản trị: Community ↔ SHT không tải lại trang; Cà
   await expect(page).toHaveURL(/\/community/);
   await expect(page.getByTestId("composer")).toBeVisible({ timeout: 30_000 });
   expect(await page.evaluate(() => (window as unknown as { __mark?: string }).__mark)).toBe("m1");
-  await page.goto("/contracts/settings?sec=apps");
-  await expect(page.getByTestId("apps-pane")).toBeVisible({ timeout: 30_000 });
+  await page.goto("/contracts/settings?sec=flow");
+  await expect(
+    page.getByTestId("flow-current-title").or(page.getByTestId("flow-none")),
+  ).toBeVisible({
+    timeout: 30_000,
+  });
 });
 
 test("Community: đăng bài kèm PDF, thẻ tệp + tải về (thật)", async ({ page }) => {

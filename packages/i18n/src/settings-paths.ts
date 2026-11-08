@@ -1,30 +1,12 @@
 // CR-125 c3 · một nguồn cho đường dẫn "Cài đặt › <mục>" trong câu hướng dẫn. Nhãn lấy từ `contracts.settings.sec.*` (v2l);
 // chuỗi chỉ ghi token `{{path:<khoá mục>}}` (vd `{{path:flow}}`), loader mở rộng lúc nạp ⇒ đổi tên mục chỉ sửa một chỗ.
 
-import enRep3 from "../locales/contracts/rep3.en.json";
-import viRep3 from "../locales/contracts/rep3.vi.json";
 import enSettings from "../locales/contracts/v2l.en.json";
 import viSettings from "../locales/contracts/v2l.vi.json";
 import type { Locale } from "./locales";
 
 type SettingsTree = { contracts: { settings: { title: string; sec: Record<string, string> } } };
-// `sec.apps` nằm ở rep3 (gộp sâu vào `settings.sec` lúc nạp) ⇒ ghép lại đúng như loader.
-const withApps = (
-  s: SettingsTree,
-  r: { contracts: { settings: { sec: Record<string, string> } } },
-): SettingsTree => ({
-  contracts: {
-    settings: {
-      ...s.contracts.settings,
-      sec: { ...s.contracts.settings.sec, ...r.contracts.settings.sec },
-    },
-  },
-});
-const TREES: Record<Locale, SettingsTree> = {
-  vi: withApps(viSettings, viRep3),
-  en: withApps(enSettings, enRep3),
-};
-
+const TREES: Record<Locale, SettingsTree> = { vi: viSettings, en: enSettings };
 export const PATH_SEPARATOR = " › ";
 const TOKEN = /\{\{path:(\w+)\}\}/g;
 

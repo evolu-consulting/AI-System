@@ -6,7 +6,6 @@ const raw = (steps: unknown[], extra: Record<string, unknown> = {}) => ({
   def_id: DEF,
   name: "Quy trình HĐ mặc định",
   rel_version: 4,
-  is_default: true,
   steps,
   ...extra,
 });
@@ -28,11 +27,18 @@ describe("current-flow · toCurrentFlow", () => {
     expect(f?.defId).toBe(DEF);
     expect(f?.name).toBe("Quy trình HĐ mặc định");
     expect(f?.version).toBe(4);
-    expect(f?.isDefault).toBe(true);
+    expect(f?.hasBranches).toBe(false);
+    expect(f?.otherFlows).toBe(0);
     expect(f?.steps.map((s) => [s.department, s.kind])).toEqual([
       ["Kinh doanh", "review"],
       [null, "dify"],
     ]);
+  });
+  test("CR-125 · S2: rẽ nhánh + số quy trình khác; bước kỹ thuật ẩn ⇒ có thể rỗng", () => {
+    const f = toCurrentFlow(raw([], { has_branches: true, other_flows: 2 }));
+    expect(f?.hasBranches).toBe(true);
+    expect(f?.otherFlows).toBe(2);
+    expect(f?.steps).toEqual([]);
   });
   test("sai hình (bản cũ có version / bước dạng chuỗi / thiếu def_id) ⇒ null", () => {
     expect(toCurrentFlow({ version: 3, is_default: false, steps: [] })).toBeNull();

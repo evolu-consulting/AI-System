@@ -2,6 +2,7 @@
 // kit `PackRunsPort` (S1a: ensureDef / start có ref / cancel / passedStages / lastApprover) bằng một adapter mỏng lúc mount.
 // Repo `approvalEngine` chạy trong tx `PackUow` (role `contracts_rw`, RLS FORCE) + `tenant_id` tường minh; mỗi hàm MỘT câu.
 import type {
+  EventFlow,
   KitTxRepos,
   PackActTarget,
   PackOpenRun,
@@ -53,6 +54,8 @@ export type ApprovalEnginePort = {
   ): Promise<unknown>;
   /** CR-105 · quy trình đang chạy của khe cho tenant (gán ⇒ mặc định ⇒ bản xuất bản); vắng/không có ⇒ đường cũ `readFlow`. */
   resolveSlot?(tenantId: string, slot: string): Promise<ResolvedSlot | null>;
+  /** CR-125 · S2 · flow Bật của công ty cho sự kiện (cùng nguồn tab Quy trình). */
+  eventFlow?(tenantId: string, event: string): Promise<EventFlow | null>;
   /** CR-118 §11.2 · chọn quy trình theo luật phòng ban của người khởi tạo; vắng ⇒ `resolveSlot`. */
   routeSlot?(
     tenantId: string,

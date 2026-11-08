@@ -7,6 +7,9 @@ describe("sectionFromKey", () => {
     for (const k of ["co", "rep", "biz", "scout", "flow"])
       expect(sectionFromKey(k)).toBe(k as never);
   });
+  test("CR-125 · khoá cũ apps ⇒ mục Quy trình duyệt (đã gộp một cửa)", () => {
+    expect(sectionFromKey("apps")).toBe("flow");
+  });
   test("khoá lạ ⇒ mục mặc định co", () => {
     expect(sectionFromKey("esign")).toBe("co");
     expect(sectionFromKey("CO")).toBe("co");

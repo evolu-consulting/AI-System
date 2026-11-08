@@ -1,7 +1,7 @@
 // CR-120 (part F) · bất biến "tenant đã bật app thì PHẢI thấy quy trình" trên prod (ro: chỉ đọc, không ghi dữ liệu, không gọi AI).
 // Sự cố gốc: tenant Demo không thấy quy trình nào vì danh sách tenant thấy đọc hub.process_tenant_defs còn việc gán nằm ở bảng cũ.
-// (1) demo-owner thấy ≥ 1 quy trình ở workspace-web Cài đặt › Ứng dụng & quy trình (`apps-slot-*` có `slot-process-*`, không có
-//     `slot-none-assigned`); (2) cùng người đó thấy ≥ 1 quy trình ở admin Quy trình (một trang) (mục này chỉ có
+// (1) demo-owner thấy ≥ 1 quy trình ở workspace-web Cài đặt › Quy trình duyệt (`flow-current-title`, không có
+//     `flow-none`); (2) cùng người đó thấy ≥ 1 quy trình ở admin Quy trình (một trang) (mục này chỉ có
 //     sau khi backfill đã lên prod; trước đó test này ĐỎ — đúng ý: đó là sự cố). (3) NiTi `tien`: bỏ qua nếu thiếu thông tin đăng nhập.
 // Thông tin đăng nhập: demo-owner qua DEMO_PW (runner e2e-deployed.ps1 nạp, như các spec khác). NiTi: env NITI_TENANT / NITI_USER
 // (mặc định `tien`) / NITI_PW — mật khẩu NiTi dùng một lần nên KHÔNG có trong runner; không đặt ⇒ bỏ qua. Không hardcode, không in.
@@ -13,21 +13,14 @@ const NITI_TENANT = process.env.NITI_TENANT ?? "";
 const NITI_USER = process.env.NITI_USER ?? "tien";
 const NITI_PW = process.env.NITI_PW ?? "";
 
-/** Cài đặt › Ứng dụng & quy trình: mọi khe hiện ra phải có ≥ 1 quy trình, không khe nào ở trạng thái "chưa gán". */
+/** CR-125 · S2 · Cài đặt › Quy trình duyệt (một cửa): công ty đã bật app phải thấy quy trình đang chạy (tên + bản), không "chưa có quy trình". */
 async function expectAppsPaneHasProcesses(page: Page): Promise<void> {
-  await page.goto(`${CW}/contracts/settings?sec=apps`);
-  const pane = page.getByTestId("apps-pane");
-  await expect(pane).toBeVisible({ timeout: 45_000 });
-  const slots = pane.locator('[data-testid^="apps-slot-"]');
-  await expect(slots.first()).toBeVisible({ timeout: 45_000 }); // có ít nhất một khe
-  await expect(pane.getByText(/Đang tải|Loading/)).toHaveCount(0, { timeout: 30_000 });
-  await expect(pane.getByTestId("slot-none-assigned")).toHaveCount(0);
-  await expect(pane.locator('[data-testid^="slot-process-"]').first()).toBeVisible();
-  expect(await pane.locator('[data-testid^="slot-process-"]').count()).toBeGreaterThanOrEqual(1);
+  await page.goto(`${CW}/contracts/settings?sec=flow`);
+  await expect(page.getByTestId("flow-current-title")).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByTestId("flow-none")).toHaveCount(0);
 }
-
 test.describe("20 quy trình hiển thị cho tenant (ro)", () => {
-  test("demo-owner thấy ≥ 1 quy trình ở Cài đặt › Ứng dụng & quy trình và ở admin Quy trình", async ({
+  test("demo-owner thấy ≥ 1 quy trình ở Cài đặt › Quy trình duyệt và ở admin Quy trình", async ({
     page,
   }) => {
     const errs = watchConsole(page);
@@ -59,7 +52,7 @@ test.describe("20 quy trình hiển thị cho tenant (ro)", () => {
       "NITI_TENANT / NITI_PW chưa đặt (mật khẩu NiTi dùng một lần)",
     );
 
-    test("tien thấy ≥ 1 quy trình ở Cài đặt › Ứng dụng & quy trình", async ({ page }) => {
+    test("tien thấy ≥ 1 quy trình ở Cài đặt › Quy trình duyệt", async ({ page }) => {
       await page.goto(`${CW}/login`);
       const pw = page.locator("input[type=password]").first();
       await pw.waitFor({ timeout: 45_000 });

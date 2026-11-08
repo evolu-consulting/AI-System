@@ -168,9 +168,11 @@
     "flow": {
       "current": {
         "title": "Approval process in effect: {{name}} · v{{version}}",
-        "lead": "This section is view-only. To change the process, contact the platform administrator.",
-        "defaultBadge": "In effect",
-        "defaultHelp": "Your company has not been assigned its own process, so it uses the system default process.",
+        "lead": "This is the process that runs for your company's contracts, from the same data as the Processes page. A company admin changes it on the Processes page.",
+        "noFlow": "Your company has no contract approval process switched on. A company admin adds and switches one on in the Processes page.",
+        "openPage": "Open the Processes page",
+        "branches": "This process branches on conditions: the steps below are the ones that may run; see the full diagram on the Processes page.",
+        "others": "{{count}} more process(es) are also on, checked in the order shown on the Processes page.",
         "saveNote": "This section is view-only, so there is nothing to save.",
         "editLink": "Edit approval process",
         "openFail": "Could not open the process editor.",

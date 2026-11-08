@@ -2,11 +2,11 @@
 // phòng ban theo TÊN (mã Group ⇒ id theo tenant ⇒ tên). Không còn lưu mẫu (PUT bỏ; sửa ở ai-admin). Cũng giữ `GET /dify-workflows`
 // và các kiểu cổng dùng chung (`FlowGroups`, `FlowMembers`). Lớp 2: chỉ cổng.
 import type { PackUow, PackWho } from "../../kit/public";
-import { type ApprovalSettings, PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
+import { PACK_OWNER_GROUP_KEY } from "../domain/approval-def.rules";
 import type { DifyWorkflow } from "../domain/approval-flow.rules";
 import type { FlowWhen } from "../domain/approval-flow.types";
 import { defaultEscalateOf, escalateOrder } from "../domain/approval-owner.rules";
-import { APPROVAL_SLOT, slotBodyOf, slotGroupKeys } from "../domain/approval-slot.rules";
+import { stepsOfStages } from "../domain/event-flow-steps.rules";
 import type { ApprovalEngineBridge } from "./approval-engine.ports";
 import type { ApprovalFlowTxRepos, FlowGroups } from "./approval-flow.ports";
 
@@ -76,8 +76,11 @@ export type CurrentFlow = {
   def_id: string;
   name: string;
   rel_version: number;
-  is_default: boolean;
   steps: CurrentFlowStep[];
+  /** CR-125 · S2 · flow có node Nếu (rẽ nhánh) ⇒ danh sách bước là các bước CÓ THỂ chạy, không phải một đường đi. */
+  has_branches: boolean;
+  /** CR-125 · S2 · số flow Bật khác cùng sự kiện (xét sau flow hiển thị). */
+  other_flows: number;
   /** CR-113 · chủ gói duyệt thay được mọi bước (ghi rõ "duyệt thay"); tên Group Toàn quyền (đích chuyển cấp mặc định). */
   owner_can_override: true;
   owner_group_name: string | null;
@@ -126,83 +129,61 @@ export function ownerView(
   return { name: owners[0] ? nameOf(owners[0]) : null, escalate };
 }
 
-/** Quy trình đang dùng cho tenant của `who`; khe chưa có bản xuất bản áp được / engine không nối ⇒ null (route trả 404). */
+/** CR-125 · S2 · sự kiện của flow duyệt hợp đồng (cùng sự kiện tab Quy trình ở admin và bộ điều phối). */
+export const CONTRACT_FLOW_EVENT = "contract.submitted";
+
+/**
+ * Quy trình ĐANG CHẠY của công ty cho hợp đồng = flow Bật đầu tiên của `company_flows` cho `contract.submitted` (CÙNG nguồn tab Quy trình ở
+ * admin; D6 — thay đường khe `resolveSlot` cũ). Phòng ban theo TÊN (id Group của công ty hoặc mã Thư viện ⇒ tên). Chưa có flow Bật /
+ * engine không nối ⇒ null (route trả 404 `NOT_FOUND`). Flow có node Nếu ⇒ `has_branches` (UI không liệt kê sai đường đi).
+ */
 export function readCurrentFlow(
   d: Pick<ApprovalFlowDeps, "engine" | "groups"> & Partial<Pick<ApprovalFlowDeps, "uow">>,
 ) {
   return async (who: PackWho): Promise<CurrentFlow | null> => {
-    const port = d.engine?.port;
-    if (!port?.resolveSlot) return null;
-    const r = await port.resolveSlot(who.tenantId, APPROVAL_SLOT);
-    const body = r ? slotBodyOf(r.slotBody) : null;
-    if (!r || !body) return null;
+    const f = await d.engine?.port?.eventFlow?.(who.tenantId, CONTRACT_FLOW_EVENT);
+    if (!f) return null;
+    const { steps: raw, branches } = stepsOfStages(f.stages);
     const l2 = await level2KeyOf(d, who);
-    const keys = [...new Set([...slotGroupKeys(body), PACK_OWNER_GROUP_KEY, ...(l2 ? [l2] : [])])];
+    const codes = [...new Set(raw.flatMap((s) => (s.groupKey ? [s.groupKey] : [])))];
+    const keys = [...new Set([...codes, PACK_OWNER_GROUP_KEY, ...(l2 ? [l2] : [])])];
     const [ids, list] = await Promise.all([
       d.groups.idsOf(who.tenantId, keys),
       d.groups.list ? d.groups.list(who.tenantId) : [],
     ]);
     const names = new Map(list.map((g) => [g.id, g.name]));
     const own = ownerView(ids, names, l2);
-    // Group bị xoá sau khi gán ⇒ giữ mã để người xem vẫn thấy bước dùng phòng nào.
-    const deptName = (k: string | null | undefined): string | null => {
-      if (!k) return null;
-      const id = ids.get(k);
-      return (id ? names.get(id) : undefined) ?? k;
+    const groupIdOf = (s: { groupId: string | null; groupKey: string | null }) =>
+      s.groupId ?? ids.get(s.groupKey ?? "") ?? null;
+    const deptName = (s: { groupId: string | null; groupKey: string | null }) => {
+      const id = groupIdOf(s);
+      return (id ? names.get(id) : undefined) ?? s.groupKey;
     };
-    // CR-108 · số người duyệt: MỘT câu cho mọi nhóm duyệt của bước (không truy vấn từng bước).
-    const approverKey = (s: (typeof body.steps)[number]): string | null | undefined =>
-      s.kind === "review"
-        ? s.department_group_key
-        : s.kind === "esign"
-          ? s.company_signer.department_group_key
-          : null;
+    // Số người duyệt: MỘT câu cho mọi nhóm duyệt của flow (không truy vấn từng bước).
     const deptIds = [
-      ...new Set(body.steps.map(approverKey).flatMap((k) => ids.get(k ?? "") ?? [])),
+      ...new Set(raw.flatMap((s) => (s.kind === "review" ? (groupIdOf(s) ?? []) : []))),
     ];
     const counts =
       deptIds.length > 0 && d.groups.memberCounts
         ? await d.groups.memberCounts(who.tenantId, deptIds)
         : new Map<string, number>();
-    const timing = (s: { due_h?: number; remind_every_h?: number | null }, ek?: string | null) => ({
-      ...(typeof s.due_h === "number" ? { due_h: s.due_h } : {}),
-      ...(typeof s.remind_every_h === "number" ? { remind_every_h: s.remind_every_h } : {}),
-      ...(ek && ids.has(ek) ? { escalate_group_name: deptName(ek) } : {}),
-    });
-    const approvers = (k: string | null | undefined, user?: string | null) => {
-      const n = user ? 1 : counts.get(ids.get(k ?? "") ?? "");
-      return n === undefined ? {} : { approver_count: n };
-    };
-    const steps = body.steps.map((s): CurrentFlowStep => {
-      if (s.kind === "dify") return { name: s.name, department_name: null, kind: "dify" };
-      // CR-121 D-6 · Thông báo (phòng nhận theo mã) / Chờ tới (không phòng).
-      if (s.kind === "notify")
-        return { name: s.name, department_name: deptName(s.to.group_key), kind: "notify" };
-      if (s.kind === "wait_until")
-        return { name: s.name, department_name: null, kind: "wait_until" };
-      if (s.kind === "esign")
-        return {
-          name: s.name,
-          department_name: deptName(s.company_signer.department_group_key),
-          kind: "esign",
-          ...timing(s, s.escalate_group_key),
-        };
+    const steps = raw.map((s): CurrentFlowStep => {
+      if (s.kind !== "review") return { name: s.name, department_name: null, kind: s.kind };
+      const n = counts.get(groupIdOf(s) ?? "");
       return {
         name: s.name,
-        department_name: deptName(s.department_group_key),
+        department_name: deptName(s),
         kind: "review",
-        when: s.when ?? null,
-        ...timing(s, s.escalate_group_key),
-        ...own.escalate(s),
-        ...approvers(s.department_group_key, s.approver_user_id),
+        ...(n === undefined ? {} : { approver_count: n }),
       };
     });
     return {
-      def_id: r.defId,
-      name: r.name,
-      rel_version: r.relVersion,
-      is_default: r.isDefault === true,
+      def_id: f.defId,
+      name: f.name,
+      rel_version: f.relVersion,
       steps,
+      has_branches: branches,
+      other_flows: f.others,
       owner_can_override: true,
       owner_group_name: own.name,
     };

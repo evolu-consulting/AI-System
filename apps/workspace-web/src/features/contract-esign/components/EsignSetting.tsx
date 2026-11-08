@@ -54,6 +54,24 @@ function ProviderSelect({
   );
 }
 
+/** CR-125 · S2 · trạng thái ký số khi người xem KHÔNG đổi được (không phải chủ gói / chưa cấu hình ký số): nói rõ trạng thái + lý do + ai làm, không có ô khoá. */
+function EsignStatus({ enabled, reason }: { enabled: boolean; reason: string }) {
+  const { t } = useTranslation();
+  return (
+    <div data-testid="esign-setting" className="mt-6 border-t border-rule pt-4">
+      <p className="flex items-center gap-3">
+        <span className="font-semibold">{t("contracts.esign.settingLabel")}</span>
+        <span className="text-caption text-dim" data-testid="esign-status">
+          {enabled ? t("contracts.esign.settingOn") : t("contracts.esign.settingOff")}
+        </span>
+      </p>
+      <p className="mt-1 text-caption text-dim" data-testid="esign-status-reason">
+        {reason}
+      </p>
+    </div>
+  );
+}
+
 export function EsignSetting({ owner }: { owner: boolean }) {
   const { t } = useTranslation();
   const { q, m } = useEsignSettings((e) =>
@@ -61,15 +79,22 @@ export function EsignSetting({ owner }: { owner: boolean }) {
   );
   const s = q.data;
   if (!s) return null;
+  if (!s.configured)
+    return <EsignStatus enabled={s.enabled} reason={t("contracts.esign.notConfigured")} />;
+  if (!owner)
+    return <EsignStatus enabled={s.enabled} reason={t("contracts.esign.settingOwnerOnly")} />;
   const providers = s.providers ?? [];
+  const save = (patch: Parameters<typeof m.mutate>[0]) =>
+    m.mutate(patch, { onSuccess: () => toast(t("contracts.esign.settingSaved")) });
   return (
     <div data-testid="esign-setting" className="mt-6 border-t border-rule pt-4">
       <label className="flex items-center gap-3">
         <input
           type="checkbox"
+          data-testid="esign-enabled"
           checked={s.enabled}
-          disabled={!owner || !s.configured || m.isPending}
-          onChange={(e) => m.mutate({ enabled: e.target.checked })}
+          disabled={m.isPending}
+          onChange={(e) => save({ enabled: e.target.checked })}
         />
         <span className="font-semibold">{t("contracts.esign.settingLabel")}</span>
         <span className="text-caption text-dim">
@@ -77,32 +102,30 @@ export function EsignSetting({ owner }: { owner: boolean }) {
         </span>
       </label>
       <p className="mt-1 text-caption text-dim">
-        {s.configured ? t("contracts.esign.settingHint") : t("contracts.esign.notConfigured")}
+        {t("contracts.esign.settingHint")}
         {s.demo ? ` · ${t("contracts.esign.demo")}` : ""}
       </p>
       {providers.length > 0 && (
         <ProviderSelect
           providers={providers}
           value={s.default_provider ?? ""}
-          disabled={!owner || !s.configured || m.isPending}
-          onChange={(key) => m.mutate({ default_provider: key })}
+          disabled={m.isPending}
+          onChange={(key) => save({ default_provider: key })}
         />
       )}
-      {s.configured && (
-        <div className="mt-3 text-[13px]" data-testid="esign-invite-thumb-setting">
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={s.invite_thumbnail}
-              disabled={!owner || m.isPending}
-              onChange={(e) => m.mutate({ invite_thumbnail: e.target.checked })}
-            />
-            <span className="font-semibold">{t("contracts.esign.inviteThumb")}</span>
-          </label>
-          <p className="mt-1 text-caption text-dim">{t("contracts.esign.inviteThumbHint")}</p>
-        </div>
-      )}
-      {s.configured && <EsignAnchorSetting owner={owner} />}
+      <div className="mt-3 text-[13px]" data-testid="esign-invite-thumb-setting">
+        <label className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            checked={s.invite_thumbnail}
+            disabled={m.isPending}
+            onChange={(e) => save({ invite_thumbnail: e.target.checked })}
+          />
+          <span className="font-semibold">{t("contracts.esign.inviteThumb")}</span>
+        </label>
+        <p className="mt-1 text-caption text-dim">{t("contracts.esign.inviteThumbHint")}</p>
+      </div>
+      <EsignAnchorSetting owner={owner} />
     </div>
   );
 }

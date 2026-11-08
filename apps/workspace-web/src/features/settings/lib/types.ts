@@ -10,4 +10,4 @@ export type SettingsData = {
 };
 export type SettingsState = { saved: SettingsData; defaults: SettingsData };
 
-export type SectionId = "co" | "rep" | "biz" | "scout" | "flow" | "apps";
+export type SectionId = "co" | "rep" | "biz" | "scout" | "flow";

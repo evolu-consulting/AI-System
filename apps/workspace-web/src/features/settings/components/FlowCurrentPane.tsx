@@ -1,22 +1,24 @@
-// CR-106: sơ đồ mặc định là canvas chỉ đọc (`FlowCanvasLazy`), công tắc "Sơ đồ | Danh sách".
-// CR-105 L4 · mục "Quy trình duyệt" trong Cài đặt: CHỈ ĐỌC. "Quy trình duyệt đang dùng: <tên> · v<N>", sơ đồ bước, xem trước
-// đường đi, lối vào ai-admin (chỉ người có quyền). Giữ công tắc ký số (`EsignSetting`, `PUT /approval-settings` ở nơi khác).
+// CR-125 · S2 · Cài đặt › "Quy trình duyệt" = MỘT cửa (thay "Ứng dụng & quy trình"): quy trình ĐANG CHẠY của công ty, đọc từ cùng nguồn với trang
+// Quy trình ở admin (`company_flows`, "Duyệt 2 cấp"…), chỉ đọc; nút "Mở trang Quy trình" cho quản trị công ty; chưa có quy trình Bật ⇒ nói rõ
+// ai làm gì ở đâu (không đẩy sang "quản trị nền tảng"). CR-106: canvas chỉ đọc + công tắc "Sơ đồ | Danh sách". Ký số: `EsignSetting`.
+import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSession } from "~/features/auth/hooks/use-session";
 import { EsignSetting } from "~/features/contract-esign/components/EsignSetting";
 import { ReceiveSettings } from "~/features/partner-inbox/components/ReceiveSettings";
+import { isCompanyAdmin } from "~/features/shell/lib/nav";
+import { ApiError } from "~/lib/api-error";
 import { useFlow } from "../hooks/use-flow";
 import type { CurrentFlow } from "../lib/current-flow";
+import { flowEditorUrl } from "../lib/editor-link";
 import { FlowCanvasLazy } from "./FlowCanvasLazy";
-import { FlowEditorLink } from "./FlowEditorLink";
 import { FlowLegend } from "./FlowLegend";
 import { FlowList } from "./FlowList";
-import { FlowPreview, usePreview } from "./FlowPreview";
-import { FlowRules } from "./FlowRules";
 
 type View = "canvas" | "list";
 
-/** CR-106: công tắc "Sơ đồ | Danh sách" (mặc định Sơ đồ = canvas chỉ đọc; Danh sách = `Diagram`). */
+/** CR-106: công tắc "Sơ đồ | Danh sách" (mặc định Sơ đồ = canvas chỉ đọc; Danh sách = `FlowList`). */
 function ViewToggle({ view, onChange }: { view: View; onChange: (v: View) => void }) {
   const { t } = useTranslation();
   return (
@@ -40,57 +42,83 @@ function ViewToggle({ view, onChange }: { view: View; onChange: (v: View) => voi
   );
 }
 
-/** Khối quy trình đã tải: tiêu đề, sơ đồ (canvas/danh sách), lối vào ai-admin, xem trước đường đi. */
+/** Lối vào trang Quy trình ở admin (SSO một lần) — chỉ quản trị công ty thấy. MỘT nút duy nhất cho việc "đổi quy trình". */
+function OpenFlowsPage() {
+  const { t } = useTranslation();
+  const role = useSession((s) => s.me?.role);
+  const [busy, setBusy] = useState(false);
+  if (!isCompanyAdmin(role)) return null;
+  const go = async () => {
+    setBusy(true);
+    const url = await flowEditorUrl();
+    setBusy(false);
+    if (url) window.location.assign(url);
+    else toast(t("contracts.flow.current.openFail"), "late");
+  };
+  return (
+    <button
+      type="button"
+      data-testid="flow-open-page"
+      disabled={busy}
+      className="btn btn-outline mb-4"
+      onClick={() => void go()}
+    >
+      {t("contracts.flow.current.openPage")}
+    </button>
+  );
+}
+
+/** Khối quy trình đã tải: tiêu đề (tên + bản), ghi chú rẽ nhánh / quy trình khác, sơ đồ (canvas/danh sách). */
 function FlowLoaded({ flow }: { flow: CurrentFlow }) {
   const { t } = useTranslation();
   const [view, setView] = useState<View>("canvas");
-  const preview = usePreview(flow);
+  const run = flow.steps.map(() => true);
   return (
     <>
-      <div className="mb-3 flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-semibold" data-testid="flow-current-title">
-          {t("contracts.flow.current.title", { name: flow.name, version: flow.version })}
-        </h2>
-        {flow.isDefault && (
-          <span
-            title={t("contracts.flow.current.defaultHelp")}
-            data-testid="flow-default-badge"
-            className="rounded-full bg-act-soft px-2.5 py-0.5 text-caption font-semibold text-act"
-          >
-            {t("contracts.flow.current.defaultBadge")}
-          </span>
-        )}
-      </div>
-      {flow.isDefault && (
-        <p className="mb-2 text-caption text-dim" data-testid="flow-default-help">
-          {t("contracts.flow.current.defaultHelp")}
-        </p>
-      )}
+      <h2 className="mb-2 text-lg font-semibold" data-testid="flow-current-title">
+        {t("contracts.flow.current.title", { name: flow.name, version: flow.version })}
+      </h2>
       <p className="mb-3 text-dim" data-testid="flow-readonly-lead">
         {t("contracts.flow.current.lead")}
       </p>
-      <ViewToggle view={view} onChange={setView} />
+      {flow.hasBranches && (
+        <p className="mb-2 text-caption text-dim" data-testid="flow-branches-note">
+          {t("contracts.flow.current.branches")}
+        </p>
+      )}
+      {flow.otherFlows > 0 && (
+        <p className="mb-2 text-caption text-dim" data-testid="flow-others-note">
+          {t("contracts.flow.current.others", { count: flow.otherFlows })}
+        </p>
+      )}
+      <OpenFlowsPage />
+      <div>
+        <ViewToggle view={view} onChange={setView} />
+      </div>
       {view === "canvas" ? (
         <>
-          <FlowCanvasLazy steps={flow.steps} run={preview.run} />
+          <FlowCanvasLazy steps={flow.steps} run={run} />
           <FlowLegend />
         </>
       ) : (
         <FlowList flow={flow} />
       )}
-      <FlowRules flow={flow} />
-      <FlowEditorLink
-        testId="flow-editor-link"
-        className="mb-4 block text-label text-act underline"
-      />
-      <FlowPreview flow={flow} p={preview} />
     </>
   );
 }
 
-/** Khối quy trình đang dùng; lỗi tải / chưa có bản ⇒ báo tại chỗ, KHÔNG che các cài đặt khác của mục (ký số). */
+/** Chưa có quy trình Bật (404) ⇒ nói rõ ai làm gì ở đâu; lỗi khác ⇒ báo + thử lại. KHÔNG che cài đặt khác của mục (ký số). */
 function FlowBlock({ q }: { q: ReturnType<typeof useFlow> }) {
   const { t } = useTranslation();
+  if (q.error instanceof ApiError && q.error.status === 404)
+    return (
+      <>
+        <p className="mb-3 text-body" data-testid="flow-none">
+          {t("contracts.flow.current.noFlow")}
+        </p>
+        <OpenFlowsPage />
+      </>
+    );
   if (q.isError)
     return (
       <p role="alert" className="mb-4 text-late">

@@ -281,9 +281,14 @@ export const ApprovalFlowCurrentSchema = z.strictObject({
   def_id: UuidSchema,
   name: z.string().min(1).max(200),
   rel_version: z.number().int().min(1),
-  /** true ⇒ tenant chưa được gán riêng, đang chạy mặc định của khe. */
-  is_default: z.boolean(),
-  steps: z.array(ApprovalFlowCurrentStepSchema).min(1).max(APPROVAL_FLOW_STEPS_MAX),
+  /** Đã gỡ ở CR-125 · S2 (không còn "mặc định của khe": flow đang chạy lấy từ `company_flows`); giữ tuỳ chọn cho client cũ. */
+  is_default: z.boolean().optional(),
+  /** CR-125 · S2 · các bước hiển thị của flow (Duyệt / Ký số / Thông báo); flow chỉ có bước kỹ thuật ⇒ rỗng. */
+  steps: z.array(ApprovalFlowCurrentStepSchema).max(APPROVAL_FLOW_STEPS_MAX),
+  /** CR-125 · S2 · flow có node Nếu (rẽ nhánh theo điều kiện) ⇒ danh sách là các bước CÓ THỂ chạy. */
+  has_branches: z.boolean().optional(),
+  /** CR-125 · S2 · số flow Bật khác cùng sự kiện (xét sau flow hiển thị). */
+  other_flows: z.number().int().min(0).optional(),
   /** CR-113 · chủ gói (Toàn quyền) duyệt thay được mọi bước — ghi rõ "duyệt thay" trên thẻ. */
   owner_can_override: z.literal(true).optional(),
   /** CR-113 · tên Group Toàn quyền (đích chuyển cấp mặc định); không có ở tenant ⇒ null. */

@@ -74,29 +74,6 @@
       }
     },
     "settings": {
-      "sec": {
-        "apps": "Ứng dụng & quy trình",
-        "appsHint": "Mức, tính năng thêm và quy trình đang áp dụng"
-      },
-      "apps": {
-        "title": "Ứng dụng & quy trình",
-        "lead": "Quy trình duyệt hợp đồng được chọn một nơi duy nhất: Công ty › Quy trình. Ở đây chỉ xem quy trình đang áp dụng.",
-        "allFlows": "Mở trang Quy trình",
-        "allFlowsFail": "Không mở được trang Quy trình. Vui lòng thử lại.",
-        "levelLabel": "Mức",
-        "level": { "off": "Tắt", "read": "Chỉ xem", "write": "Xem và ghi", "admin": "Quản trị" },
-        "noAddons": "Không có tính năng thêm.",
-        "slotMissing": "Chưa có quy trình — chọn ở mục Quy trình duyệt",
-        "addonOn": "bật",
-        "addonOff": "tắt",
-        "slotTitle": "Quy trình đang áp dụng",
-        "slotOff": "Hợp đồng chưa có quy trình duyệt — quản trị công ty chọn tại Công ty › Quy trình",
-        "noneAssigned": "Hợp đồng chưa có quy trình duyệt — quản trị công ty chọn tại Công ty › Quy trình",
-        "inUse": "Đang dùng",
-        "current": "Đang áp dụng: {{name}}",
-        "openFlow": "Xem sơ đồ ở mục Quy trình duyệt",
-        "loadFail": "Không tải được dữ liệu."
-      },
       "cell": {
         "needOne": "Cần ít nhất một tiêu chí bật có trọng số",
         "decayMonths": "Mốc tháng phải tăng dần và nằm trong khoảng tính điểm",

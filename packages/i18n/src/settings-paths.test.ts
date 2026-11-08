@@ -22,6 +22,6 @@ describe("CR-125 c3 · settings-paths", () => {
     });
   });
   test("danh sách mục", () => {
-    expect(settingsSectionKeys()).toEqual(["co", "rep", "biz", "scout", "flow", "apps"]);
+    expect(settingsSectionKeys()).toEqual(["co", "rep", "biz", "scout", "flow"]);
   });
 });

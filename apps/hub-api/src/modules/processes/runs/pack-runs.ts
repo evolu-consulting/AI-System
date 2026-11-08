@@ -1,4 +1,4 @@
-﻿// N2-FR-01 · N2-D04 · N2-D08 · plan N2 §2: cài đặt `PackRunsPort` cho module gói (cùng process, không HTTP nội bộ).
+// N2-FR-01 · N2-D04 · N2-D08 · plan N2 §2: cài đặt `PackRunsPort` cho module gói (cùng process, không HTTP nội bộ).
 // start = `POST /process-runs` origin none (kiểm def/Group/trần/inputs như route) nhưng hoãn kick; cancel = huỷ của người
 // bắt đầu (`GateService.cancel`); outcomes = MỘT câu theo tập trong scope user (RLS + lọc tenant tường minh).
 // contract-flow S1a · cầu v2: `ensureDef` (= `DefsService.create/update`, idempotent theo `pack_version`), `start` + `ref`,
@@ -30,6 +30,7 @@ import type { ProcessRunStatus } from "../domain/types";
 import { cancelEnd } from "../gates/gates.effects";
 import type * as g from "../gates/gates.repo";
 import { GateService } from "../gates/gates.service";
+import { eventFlowOf } from "../library/event-flow.repo";
 import { resolveSlot, resolveSlotDef } from "../library/slot-resolve.repo";
 import { routeSlot } from "../library/slot-route.repo";
 import { defSourceRef } from "../library/source-ref";
@@ -345,6 +346,7 @@ export function packRunsOf(d: ProcessDeps, sys?: Pick<SystemUow, "system">): Pac
       return { runId: s.id, kick: () => d.launcher.kick(s.id) };
     },
     resolveSlot: (tenantId, slot) => resolveSlot(d.db, tenantId, slot),
+    eventFlow: (tenantId, event) => eventFlowOf(d.db, tenantId, event),
     resolveSlotDef: (slot, key) => resolveSlotDef(d.db, slot, key),
     routeSlot: (tenantId, slot, userId, facts) => routeSlot(d.db, tenantId, slot, userId, facts),
     sourceRefOf: defSourceRef,

@@ -33,7 +33,10 @@ export type CurrentFlow = {
   defId: string;
   name: string;
   version: number;
-  isDefault: boolean;
+  /** CR-125 · S2 · flow có rẽ nhánh theo điều kiện (danh sách bước = các bước có thể chạy). */
+  hasBranches: boolean;
+  /** CR-125 · S2 · số quy trình khác cùng Bật. */
+  otherFlows: number;
   /** CR-113 · Toàn quyền duyệt thay được mọi bước (vắng ⇒ true: luật chung). */
   ownerCanOverride: boolean;
   ownerGroupName: string | null;
@@ -50,7 +53,8 @@ export function toCurrentFlow(raw: unknown): CurrentFlow | null {
     defId: d.def_id,
     name: d.name,
     version: d.rel_version,
-    isDefault: d.is_default,
+    hasBranches: d.has_branches ?? false,
+    otherFlows: d.other_flows ?? 0,
     ownerCanOverride: d.owner_can_override ?? true,
     ownerGroupName: d.owner_group_name ?? null,
     steps: d.steps.map((s, i) => ({

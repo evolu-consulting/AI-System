@@ -99,14 +99,6 @@ test("Cài đặt hiện quy trình đang dùng, không có form sửa", async (
   await expect(cv.getByText("3 người duyệt")).toBeVisible();
   await expect(cv.getByText("2 người duyệt")).toBeVisible();
   await expect(cv.getByText("Quá hạn ⇒ chuyển Kế toán (mặc định)")).toBeVisible();
-  // CR-113: hộp "Luật duyệt" dưới sơ đồ + chú giải chuyển cấp
-  const rules = dlg.getByTestId("flow-rules");
-  await expect(rules.getByTestId("flow-rule-owner")).toHaveText(
-    "Toàn quyền (Ban lãnh đạo) duyệt thay được mọi bước — lượt duyệt thay được ghi rõ.",
-  );
-  await expect(rules.getByTestId("flow-rule-escalate")).toHaveText(
-    "Bước có hạn: quá hạn tự chuyển cho Kế toán (mặc định Toàn quyền).",
-  );
   await expect(dlg.getByTestId("flow-legend")).toContainText("Quá hạn ⇒ chuyển cấp");
   await expect(cv.getByText("Giá trị ≥ 500.000.000")).toBeVisible();
   await expect(cv.getByText("Không thoả ⇒ bỏ qua")).toBeVisible();
@@ -114,13 +106,9 @@ test("Cài đặt hiện quy trình đang dùng, không có form sửa", async (
   await expect(dlg.getByTestId("flow-legend")).toContainText("Nhánh bỏ qua");
   await expect(dlg.getByTestId("flow-legend")).toContainText("Mờ = bị bỏ qua theo xem trước");
   // CR-108: giải thích mặc định + chỉ xem; thanh Lưu ẩn ở mục này
-  await expect(dlg.getByTestId("flow-default-badge")).toHaveText("Đang áp dụng");
-  await expect(dlg.getByTestId("flow-default-help")).toHaveText(
-    "Công ty bạn chưa được gán quy trình riêng, đang dùng quy trình mặc định của hệ thống.",
-  );
-  await expect(dlg.getByTestId("flow-readonly-lead")).toHaveText(
-    "Mục này chỉ để xem. Muốn đổi quy trình, liên hệ quản trị nền tảng.",
-  );
+  // CR-125 · S2: không còn "mặc định của khe" / nhãn "liên hệ quản trị nền tảng"; lead nói quản trị công ty đổi ở trang Quy trình
+  await expect(dlg.getByTestId("flow-default-badge")).toHaveCount(0);
+  await expect(dlg.getByTestId("flow-readonly-lead")).not.toContainText("quản trị nền tảng");
   await expect(page.getByRole("button", { name: "Lưu cài đặt" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Khôi phục tất cả" })).toHaveCount(0);
   await expect(page.getByTestId("settings-nosave-note")).toBeVisible();
@@ -137,47 +125,17 @@ test("Cài đặt hiện quy trình đang dùng, không có form sửa", async (
   // không form sửa: không nút thêm bước/lưu, không ô nhập tên bước
   await expect(dlg.getByRole("button", { name: /Thêm bước|Lưu quy trình/ })).toHaveCount(0);
   await expect(dlg.getByLabel("Tên bước")).toHaveCount(0);
-  // người không phải platform_admin không thấy lối vào ai-admin
-  await expect(dlg.getByTestId("flow-editor-link")).toHaveCount(0);
-  // xem trước: giá trị 50 ⇒ bước 2 bị bỏ qua; chip "500 triệu" ⇒ ô hiện 500.000.000 và bước 2 chạy
-  const val = dlg.getByLabel("Giá trị mẫu");
-  await val.fill("50");
-  await expect(dlg.getByTestId("flow-preview").getByRole("listitem").nth(1)).toHaveAttribute(
-    "data-run",
-    "false",
-  );
-  await expect(dlg.getByTestId("flow-preview-summary")).toHaveText(
-    "Hợp đồng này đi qua 1/2 bước: Soạn & kiểm tra",
-  );
-  // canvas làm mờ bước bị bỏ qua (CR-106)
-  await expect(dlg.getByTestId("flow-canvas").locator('[data-run="false"]')).toHaveCount(1);
-  await val.fill("1500000");
-  await expect(val).toHaveValue("1.500.000");
-  await dlg.getByTestId("flow-quick-m500").click();
-  await expect(val).toHaveValue("500.000.000");
-  await expect(dlg.getByTestId("flow-preview").getByRole("listitem").nth(1)).toHaveAttribute(
-    "data-run",
-    "true",
-  );
-  await expect(dlg.getByTestId("flow-preview-summary")).toHaveText(
-    "Hợp đồng này đi qua 2/2 bước: Soạn & kiểm tra → Giám đốc duyệt",
-  );
-  await dlg.getByTestId("flow-quick-m100").click();
-  await expect(val).toHaveValue("100.000.000");
-  await expect(dlg.getByTestId("flow-preview-summary")).toContainText("1/2");
-  await dlg.getByTestId("flow-quick-empty").click();
-  await expect(val).toHaveValue("");
-  await dlg.getByTestId("flow-quick-m500").click();
-  await dlg.getByTestId("flow-preview-summary").scrollIntoViewIfNeeded();
-  await page.screenshot({ path: `${SHOTS}/preview-500tr.png` });
+  // CR-125 · S2: không còn "Xem trước đường đi" / "Luật duyệt" (điều kiện nằm ở node Nếu của quy trình, xem ở trang Quy trình)
+  await expect(dlg.getByTestId("flow-preview")).toHaveCount(0);
+  await expect(dlg.getByTestId("flow-rules")).toHaveCount(0);
   // sang mục có ô sửa được ⇒ thanh Lưu hiện lại
   await dlg.getByRole("button", { name: /^Công ty/ }).click();
   await expect(page.getByRole("button", { name: "Lưu cài đặt" })).toBeVisible();
   expect(writes).toEqual([]);
 });
 
-test("platform_admin thấy lối vào ai-admin ở Cài đặt", async ({ page }) => {
+test("quản trị thấy nút Mở trang Quy trình ở Cài đặt", async ({ page }) => {
   await install(page, "platform_admin");
   const dlg = await open(page);
-  await expect(dlg.getByTestId("flow-editor-link")).toHaveText("Chỉnh quy trình duyệt");
+  await expect(dlg.getByTestId("flow-open-page")).toHaveText("Mở trang Quy trình");
 });

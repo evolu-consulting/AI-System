@@ -1,4 +1,4 @@
-﻿// Cửa công khai của kit gói cho module khác (ADR-0037): registry nhãn bản ghi + registry mục hàng việc của menu + kiểu.
+// Cửa công khai của kit gói cho module khác (ADR-0037): registry nhãn bản ghi + registry mục hàng việc của menu + kiểu.
 
 export { createDocxConverter } from "./adapters/docx/index";
 export { pgExternalOrgResolver } from "./adapters/ext-org.pg";
@@ -131,6 +131,7 @@ export type {
 export type { PackSystemUow, PackUow, PackWho } from "./application/ports";
 export type { RecordLabelRegistry, RecordLabelSource } from "./application/record-label.ports";
 export type {
+  EventFlow,
   ResolvedSlot,
   RoutedSlot,
   RouteSlotFacts,

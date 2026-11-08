@@ -1,6 +1,7 @@
-// CR-105 L4 · `GET /pack/contracts/approval-flow` CHỈ ĐỌC (route thật + pool hub_api + Group thật ở `admin.groups` + cổng engine thật
-// `resolveSlot`): tenant có gán ⇒ quy trình được gán (`is_default=false`), tenant chưa gán ⇒ mặc định của khe (`is_default=true`);
-// phòng ban theo TÊN của tenant (mã Group ⇒ tên); `PUT /approval-flow` không còn ⇒ 404. Seed def thư viện + release + gán trực tiếp.
+// CR-125 · S2 · `GET /pack/contracts/approval-flow` CHỈ ĐỌC, nguồn MỘT: flow Bật của `hub.company_flows` cho `contract.submitted` (cùng dữ liệu
+// tab Quy trình ở admin; route thật + pool hub_api + Group thật ở `admin.groups` + cổng engine thật `eventFlow`). Công ty có flow Bật ⇒ tên +
+// bản + bước theo thứ tự + tên phòng ban của công ty (mã Thư viện ⇒ tên; id Group ⇒ tên); công ty khác chưa có flow ⇒ 404 (không đọc chéo,
+// không còn "Quy trình mặc định" của khe); flow Tắt không tính; `PUT /approval-flow` không có ⇒ 404.
 import { afterAll, beforeAll, expect, it } from "bun:test";
 import { createDb, type Db as PackDb } from "@ai/db";
 import { enablePack, groups, members, tenants, users } from "@ai/test-kit/builders";
@@ -10,12 +11,10 @@ import { Hono } from "hono";
 import { connectDb, type Db } from "../../../../lib/db";
 import { mapError } from "../../../../lib/errors";
 import { packRunsPortForTest } from "../../../../test-support/pack-runs-port";
-import { setSlotDefault } from "../../../../test-support/slot-default";
 import { packGroups } from "../../kit/adapters/pack-groups";
 import type { PackAccessView, PackGuardVars } from "../../kit/adapters/pack-guard.middleware";
 import type { PackToolCatalog } from "../../kit/application/pack-tools.ports";
 import { listDifyWorkflows, readCurrentFlow } from "../application/approval-flow.usecase";
-import { APPROVAL_SLOT, compileSlotStages } from "../domain/approval-slot.rules";
 import { approvalFlowRoutes } from "./approval-flow.routes";
 
 let o: Sql;
@@ -24,57 +23,33 @@ let hubDb: Db;
 let A = "";
 let B = "";
 let own = "";
+let flowId = "";
 const F = { read: "f-r", write: "f-w", admin: "f-a" };
-const defs = { dflt: "", special: "" };
 
-const review = (
-  key: string,
-  name: string,
-  dept: string,
-  when: unknown = null,
-  extra: Record<string, unknown> = {},
-) => ({
-  kind: "review",
+const stage = (key: string, name: string, step: number, extra: Record<string, unknown>) => ({
   key,
   name,
-  department_group_id: null,
-  department_group_key: dept,
-  head_only: false,
-  due_h: 72,
-  remind_every_h: null,
-  escalate_group_id: null,
-  exclude_starter: false,
-  when,
+  step,
   ...extra,
 });
-const BODY = {
-  dflt: { steps: [review("kt", "Kế toán duyệt", "ke-toan")] },
-  special: {
-    steps: [
-      review("kt", "Kế toán duyệt", "ke-toan"),
-      review(
-        "gd",
-        "Giám đốc duyệt",
-        "giam-doc",
-        { op: "and", conds: [{ field: "total_value", op: "ge", value: 100_000_000 }] },
-        { due_h: 24, remind_every_h: 8, escalate_group_key: "ke-toan" },
-      ),
-    ],
-  },
-};
-
-async function libDef(key: string, name: string, body: unknown): Promise<string> {
-  const stages = JSON.stringify(compileSlotStages(body));
-  const [r] = await o<
-    { id: string }[]
-  >`insert into hub.process_defs (tenant_id, key, name, stages, slot, slot_body, published_version)
-    values (null, ${key}, ${name}, ${stages}::text::jsonb, ${APPROVAL_SLOT}, ${JSON.stringify(body)}::text::jsonb, 1)
-    returning id::text as id`;
-  const id = r?.id as string;
-  await o`insert into hub.process_def_releases (def_id, rel_version, name, stages, slot_body)
-    values (${id}, 1, ${name}, ${stages}::text::jsonb, ${JSON.stringify(body)}::text::jsonb)`;
-  return id;
-}
+const approve = (key: string, name: string, step: number, groupKey: string) =>
+  stage(key, name, step, {
+    executor: { kind: "approve", reject_step: 5, return_step: 6 },
+    after: { kind: "review", group_id: null, group_key: groupKey },
+  });
+const STAGES = [
+  approve("tp", "Trưởng phòng duyệt", 0, "ke-toan"),
+  approve("gd", "Giám đốc duyệt", 1, "giam-doc"),
+  stage("ky", "Ký số", 2, {
+    node: "contracts.esign",
+    executor: { kind: "tool", tool_key: "contracts-esign-send" },
+  }),
+  stage("cho", "Chờ ký xong", 3, { executor: { kind: "wait_event", event: "esign.completed" } }),
+  stage("end", "Kết thúc · Đã duyệt", 4, {
+    executor: { kind: "set", values: [] },
+    outcome: "approved",
+  }),
+];
 
 function app(tenant: string, user: string) {
   const view: PackAccessView = {
@@ -106,10 +81,7 @@ function app(tenant: string, user: string) {
   });
   h.route(
     "/",
-    approvalFlowRoutes(view, {
-      read: readCurrentFlow(d),
-      difyWorkflows: listDifyWorkflows({}),
-    }),
+    approvalFlowRoutes(view, { read: readCurrentFlow(d), difyWorkflows: listDifyWorkflows({}) }),
   );
   h.onError((e, c) => {
     const m = mapError(e);
@@ -121,8 +93,8 @@ function app(tenant: string, user: string) {
 beforeAll(async () => {
   await cloneDb("full");
   o = openOwner(2);
-  [A, B] = (await tenants(o, 2, 881)) as [string, string];
-  const us = (await users(o, A, 3, { from: 881 })) as [string, string, string];
+  [A, B] = (await tenants(o, 2, 882)) as [string, string];
+  const us = (await users(o, A, 3, { from: 882 })) as [string, string, string];
   own = us[0];
   await enablePack(o, [A, B], "contracts");
   for (const [t, n] of [
@@ -130,20 +102,20 @@ beforeAll(async () => {
     [B, "B"],
   ] as const) {
     const g = await groups(o, t, ["ke-toan", "giam-doc"]);
-    if (t === A) {
-      // CR-108 · 3 người ở Kế toán, 2 ở Giám đốc; 1 người (ở cả hai nhóm) đã ngừng ⇒ chỉ đếm người còn dùng được (2 và 1).
-      await members(o, A, g.get("ke-toan") as string, us);
-      await members(o, A, g.get("giam-doc") as string, [us[0], us[1]]);
-      await o`update admin.users set active = false where id = ${us[1]}`;
-    }
+    if (t === A) await members(o, A, g.get("ke-toan") as string, us);
     await o`update admin.groups set name = jsonb_build_object('vi', 'Kế toán ' || ${n}) where tenant_id = ${t} and key = 'ke-toan'`;
     await o`update admin.groups set name = jsonb_build_object('vi', 'Giám đốc ' || ${n}) where tenant_id = ${t} and key = 'giam-doc'`;
   }
-  defs.dflt = await libDef("pl-cur-default", "Quy trình HĐ mặc định", BODY.dflt);
-  defs.special = await libDef("pl-cur-special", "Quy trình riêng", BODY.special);
-  await o`insert into hub.process_slots (slot, default_def_id) values (${APPROVAL_SLOT}, ${defs.dflt})
-    on conflict (slot) do update set default_def_id = excluded.default_def_id`;
-  await setSlotDefault(o, A, APPROVAL_SLOT, defs.special); // CR-120 · gán = luật mặc định
+  // flow Thư viện "Duyệt 2 cấp" (đã xuất bản) gán cho A; B chỉ có bản TẮT ⇒ không tính
+  const st = JSON.stringify(STAGES);
+  const [r] = await o<
+    { id: string }[]
+  >`insert into hub.process_defs (tenant_id, key, name, stages, trigger, app, published_version, enabled)
+    values (null, 'cr125-s2-2cap', 'Duyệt 2 cấp', ${st}::text::jsonb, '{"event":"contract.submitted"}'::jsonb, 'contracts', 1, true)
+    returning id::text as id`;
+  flowId = r?.id as string;
+  await o`insert into hub.process_def_releases (def_id, rel_version, name, stages) values (${flowId}, 1, 'Duyệt 2 cấp', ${st}::text::jsonb)`;
+  await o`insert into hub.company_flows (tenant_id, flow_id, enabled, position) values (${A}, ${flowId}, true, 0), (${B}, ${flowId}, false, 0)`;
   packDb = createDb(urls().hubApi, { max: 3 });
   hubDb = connectDb(urls().hubApi, 2);
 }, 120_000);
@@ -156,20 +128,12 @@ type Out = {
   def_id: string;
   name: string;
   rel_version: number;
-  is_default: boolean;
-  steps: {
-    name: string;
-    department_name: string | null;
-    kind: string;
-    when?: unknown;
-    due_h?: number;
-    remind_every_h?: number;
-    escalate_group_name?: string | null;
-    approver_count?: number;
-  }[];
+  has_branches?: boolean;
+  other_flows?: number;
+  steps: { name: string; department_name: string | null; kind: string; approver_count?: number }[];
 };
 
-it("GET chỉ đọc quy trình đang dùng, PUT không còn", async () => {
+it("GET = flow Bật của company_flows: tên, bản, bước theo thứ tự, phòng ban theo tên công ty", async () => {
   const ra = await app(A, own).request("/approval-flow");
   const a = (await ra.json()) as Out;
   expect({
@@ -177,76 +141,30 @@ it("GET chỉ đọc quy trình đang dùng, PUT không còn", async () => {
     def_id: a.def_id,
     name: a.name,
     rel: a.rel_version,
-    is_default: a.is_default,
-    steps: a.steps.map((s) => [s.name, s.department_name, s.kind]),
-    when: a.steps[1]?.when,
+    branches: a.has_branches,
+    others: a.other_flows,
+    steps: a.steps.map((s) => [s.name, s.department_name, s.kind, s.approver_count]),
   }).toEqual({
     status: 200,
-    def_id: defs.special,
-    name: "Quy trình riêng",
+    def_id: flowId,
+    name: "Duyệt 2 cấp",
     rel: 1,
-    is_default: false,
+    branches: false,
+    others: 0,
     steps: [
-      ["Kế toán duyệt", "Kế toán A", "review"],
-      ["Giám đốc duyệt", "Giám đốc A", "review"],
+      ["Trưởng phòng duyệt", "Kế toán A", "review", 3],
+      ["Giám đốc duyệt", "Giám đốc A", "review", undefined],
+      ["Ký số", null, "esign", undefined],
     ],
-    when: { op: "and", conds: [{ field: "total_value", op: "ge", value: 100_000_000 }] },
   });
-  // CR-108 · trường thêm mỗi bước: hạn, nhắc, nhóm nhận khi quá hạn, số người duyệt (B không có thành viên ⇒ 0 / vắng)
-  const pick = (s?: Out["steps"][number]) => ({
-    due_h: s?.due_h,
-    remind: s?.remind_every_h,
-    esc: s?.escalate_group_name,
-    n: s?.approver_count,
-  });
-  expect(a.steps.map(pick)).toEqual([
-    // CR-113 · bước có hạn, không đặt nhóm ⇒ mặc định chuyển cấp về Toàn quyền (Group vai owner do `enablePack` tạo)
-    { due_h: 72, remind: undefined, esc: "contracts · owner", n: 2 },
-    { due_h: 24, remind: 8, esc: "Kế toán A", n: 1 },
-  ]);
-  // tenant chưa gán ⇒ mặc định của khe, tên phòng ban theo tenant của mình
-  const rb = await app(B, own).request("/approval-flow");
-  const b = (await rb.json()) as Out;
-  expect({
-    status: rb.status,
-    def_id: b.def_id,
-    is_default: b.is_default,
-    dept: b.steps.map((s) => s.department_name),
-  }).toEqual({
-    status: 200,
-    def_id: defs.dflt,
-    is_default: true,
-    dept: ["Kế toán B"],
-  });
-  // PUT không còn route
+});
+
+it("công ty chỉ có flow Tắt ⇒ 404 (không có 'mặc định của khe'), PUT không còn route", async () => {
+  expect((await app(B, own).request("/approval-flow")).status).toBe(404);
   const put = await app(A, own).request("/approval-flow", {
     method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ version: 1, steps: [] }),
   });
   expect(put.status).toBe(404);
-});
-
-it("CR-113 · chủ gói duyệt thay + chuyển cấp mặc định về Toàn quyền hiện trên GET", async () => {
-  type Out113 = Omit<Out, "steps"> & {
-    owner_can_override?: boolean;
-    owner_group_name?: string | null;
-    steps: (Out["steps"][number] & { escalate_default?: boolean })[];
-  };
-  const before = (await (await app(A, own).request("/approval-flow")).json()) as Out113;
-  await o`update admin.groups set name = jsonb_build_object('vi', 'Toàn quyền A') where tenant_id = ${A} and key = 'contracts-owner'`;
-  const a = (await (await app(A, own).request("/approval-flow")).json()) as Out113;
-  expect({
-    before: [before.owner_can_override, before.owner_group_name],
-    top: [a.owner_can_override, a.owner_group_name],
-    steps: a.steps.map((s) => [s.escalate_group_name, s.escalate_default]),
-  }).toEqual({
-    before: [true, "contracts · owner"],
-    top: [true, "Toàn quyền A"],
-    // bước 1 có hạn, không đặt ⇒ mặc định Toàn quyền; bước 2 đặt Kế toán ⇒ giữ tường minh
-    steps: [
-      ["Toàn quyền A", true],
-      ["Kế toán A", false],
-    ],
-  });
 });
