@@ -175,8 +175,21 @@ async function actOnWaiting(page: Page): Promise<boolean> {
  * (`approval-task-row` = duyệt, `signing-task-row` = ký; từ /my-work, loại trùng với dòng yêu cầu): mở thẻ HĐ → «Duyệt»/«Đạt»
  * (chờ API quyết định OK) hoặc «Ký ngay» (Ký thử, chờ trang trả về `esign=return`).
  */
+/** Trang yêu cầu của lượt CON đang chờ duyệt (người chỉ duyệt một dòng không xem được lượt gốc ⇒ vào thẳng lượt con, đúng quyền xem). */
+async function openChildRequest(page: Page): Promise<void> {
+  const id = runUrl.split("/").pop() ?? "";
+  const child = await withOwner(async (sql) => {
+    const rows = await sql`select c.id from hub.process_runs c
+      where c.status = 'waiting_review' and c.parent_run_id = (
+        select coalesce((select process_run_id from hub.stage_runs where id::text = ${id}), ${id}::uuid))
+      order by c.updated_at desc limit 1`;
+    return rows[0]?.id as string | undefined;
+  });
+  await page.goto(child ? `${E.cw}/contracts/requests/${child}` : runUrl);
+}
+
 async function approveOnRequestPage(page: Page): Promise<boolean> {
-  await page.goto(runUrl);
+  await openChildRequest(page);
   await expect(page.locator("[data-run]").first()).toBeVisible({ timeout: 30_000 });
   const approve = page.getByTestId("request-approve").first();
   await expect(approve)
@@ -204,19 +217,8 @@ async function approveOnCard(page: Page): Promise<boolean> {
   await expect(btn)
     .toBeVisible({ timeout: 20_000 })
     .catch(() => undefined);
-  if (!(await btn.isVisible())) {
-    // chẩn đoán: thẻ HĐ không có nút duyệt cho người này ⇒ in chữ + nút của trang
-    const buttons = await page.getByRole("button").allInnerTexts();
-    const text = (
-      (await page
-        .locator("main")
-        .innerText()
-        .catch(() => "")) || ""
-    ).replace(/\s+/g, " ");
-    console.log(`[card] ${page.url()} buttons=${JSON.stringify(buttons)} :: ${text.slice(0, 900)}`);
-    await page.screenshot({ path: test.info().outputPath(`card-${Date.now()}.png`) });
-    return false;
-  }
+  // Thẻ HĐ của Phần 2 là BẢN NHÁP («Gửi duyệt»): việc duyệt thuộc lượt con của yêu cầu, nút «Duyệt» nằm ở trang yêu cầu gốc ⇒ làm ở đó
+  if (!(await btn.isVisible())) return approveOnRequestPage(page);
   const [res] = await Promise.all([
     page.waitForResponse(
       (r) =>
