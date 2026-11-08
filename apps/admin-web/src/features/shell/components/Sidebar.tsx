@@ -37,6 +37,7 @@ function useCollapsed(): [boolean, () => void] {
 }
 
 export function UserFooter({ collapsed }: { collapsed: boolean }) {
+  const { t } = useTranslation();
   const name = useSession((s) => s.me?.display_name ?? "");
   const role = useSession((s) => s.me?.role ?? "");
   const tenant = useSession((s) => s.me?.tenant.key ?? "");
@@ -52,7 +53,7 @@ export function UserFooter({ collapsed }: { collapsed: boolean }) {
         <div className="min-w-0">
           <p className="truncate text-label font-medium text-foreground">{name}</p>
           <p className="truncate text-caption text-muted-foreground">
-            {role} · {tenant}
+            {t(`nav.roleName.${role}`, { defaultValue: role })} · {tenant}
           </p>
         </div>
       )}

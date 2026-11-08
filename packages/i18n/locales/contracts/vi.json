@@ -77,7 +77,7 @@
         "actions": "Thao tác"
       },
       "search": "Tìm theo tên, đối tác, số HĐ, loại…",
-      "add": "Upload hợp đồng",
+      "add": "Tải hợp đồng lên",
       "manual": "Thêm thủ công",
       "newCategory": "+ Loại mới",
       "newCategoryTitle": "Thêm loại hàng",
@@ -87,7 +87,7 @@
       "categoryAdded": "Đã thêm loại hàng",
       "categoryExists": "Loại hàng này đã có.",
       "emptyTitle": "Chưa có hợp đồng",
-      "emptyBody": "Bấm “Upload hợp đồng” để tải file lên, hoặc “Thêm thủ công” để nhập tay.",
+      "emptyBody": "Bấm “Tải hợp đồng lên” để tải file lên, hoặc “Thêm thủ công” để nhập tay.",
       "emptyTitleRole": "Chưa có hợp đồng nào dành cho bạn",
       "emptyBodyRole": "Bạn chỉ thấy hợp đồng đến lượt bạn duyệt, hoặc được giao cho bạn. Khi có hợp đồng cần bạn duyệt, nó sẽ hiện ở đây và trong “Chờ tôi duyệt”.",
       "noMatchTitle": "Không có hợp đồng khớp",
@@ -125,7 +125,7 @@
         },
         "busy": "Hệ thống đang bận chuyển file, thử lại sau ít giây.",
         "dialog": {
-          "title": "Upload hợp đồng",
+          "title": "Tải hợp đồng lên",
           "reading": "AI đang đọc {{name}}",
           "hide": "Ẩn",
           "steps": {

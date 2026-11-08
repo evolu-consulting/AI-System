@@ -10,8 +10,8 @@
         "deal": "Giao dịch"
       },
       "upload": {
-        "title": "Tải lên chứng từ",
-        "files": "{{count}} tệp. Chọn loại chứng từ áp cho cả lô.",
+        "title": "Tải hợp đồng lên",
+        "files": "{{count}} tệp. Chọn loại hợp đồng áp cho cả lô.",
         "type": { "contract": "Hợp đồng kinh tế", "framework": "Hợp đồng nguyên tắc" },
         "hint": {
           "contract": "Hợp đồng cụ thể; có thể thuộc một hợp đồng nguyên tắc.",

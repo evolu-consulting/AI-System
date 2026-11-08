@@ -122,7 +122,7 @@ test("ADM-FR-80 · ADM-FR-82 · platform_admin: 3 vai mặc định không sửa
   for (const n of ["Toàn quyền", "Nhân viên", "Chỉ xem", "Quản lý HĐ"]) {
     await expect(roleRow(page, n)).toBeVisible();
   }
-  await expect(page.getByText("Trần công ty: Quản trị")).toBeVisible();
+  await expect(page.getByText("Mức cao nhất công ty cho phép: Quản trị")).toBeVisible();
   await expect(page.getByRole("button", { name: "Sửa vai Toàn quyền" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Xoá vai Toàn quyền" })).toHaveCount(0);
   await expect(status(page, "Không có thay đổi")).toBeVisible();
@@ -219,7 +219,7 @@ test("ADM-BR-12 · công ty chỉ có entitlement tới Sửa ⇒ vai Toàn quy�
   );
   await loginAdmin(page);
   await page.goto("/access?tenant=acme");
-  await expect(page.getByText("Trần công ty: Sửa")).toBeVisible();
+  await expect(page.getByText("Mức cao nhất công ty cho phép: Sửa")).toBeVisible();
   await expect(roleRow(page, "Toàn quyền")).toContainText("không hiệu lực");
   await expect(roleRow(page, "Nhân viên")).not.toContainText("không hiệu lực");
   await expect(userRow(page, "an")).toContainText("Hợp đồng: Sửa");

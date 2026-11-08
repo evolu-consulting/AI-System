@@ -187,6 +187,11 @@
     "open": "Mở Evolu Copilot"
   },
   "nav": {
+    "roleName": {
+      "platform_admin": "Quản trị nền tảng",
+      "tenant_admin": "Quản trị công ty",
+      "member": "Thành viên"
+    },
     "main": "Điều hướng chính",
     "overview": "Tổng quan",
     "agents": "Agents",
@@ -198,7 +203,7 @@
     },
     "companies": "Công ty",
     "tenants": "Công ty",
-    "users": "Users",
+    "users": "Người dùng",
     "partners": "Đối tác",
     "collapse": "Thu gọn thanh bên",
     "expand": "Mở rộng thanh bên",
@@ -214,7 +219,7 @@
     "features": "Danh mục tính năng",
     "secrets": "Secrets",
     "apps": "Ứng dụng",
-    "groups": "Groups",
+    "groups": "Nhóm / phòng ban",
     "access": "Phân quyền",
     "usage": "Chi phí & quota",
     "usageAnalytics": "Phân tích token",
@@ -296,9 +301,9 @@
     "title": "Tổng quan",
     "subtitle": "{tenant} · tháng {month}",
     "kpi": {
-      "activeUsers": "Users đang hoạt động",
-      "groups": "Groups",
-      "runsMonth": "Số run tháng này",
+      "activeUsers": "Người dùng đang hoạt động",
+      "groups": "Nhóm / phòng ban",
+      "runsMonth": "Lượt chạy tháng này",
       "delta": "{sign}{pct}% so với tháng trước",
       "quota": "Quota tháng",
       "noData": "Chưa có dữ liệu từ Agent Hub"
@@ -1017,7 +1022,7 @@
       },
       "col": {
         "scope": "Phạm vi",
-        "runs": "Số run",
+        "runs": "Lượt chạy",
         "tokens": "Số token",
         "usd": "Số USD",
         "used": "Đã dùng tháng này"
@@ -1116,7 +1121,7 @@
       "kind": {
         "uploads": "Lượt tải hợp đồng/ngày",
         "actions": "Lượt thao tác AI/ngày",
-        "ai_tokens": "Token AI/ngày"
+        "ai_tokens": "Lượng AI dùng/ngày"
       },
       "defaultValue": "Mặc định: {value}",
       "unlimited": "Không giới hạn",
@@ -1277,7 +1282,7 @@
       "role": "Role",
       "lastLogin": "Đăng nhập gần nhất",
       "status": "Trạng thái",
-      "groups": "Groups",
+      "groups": "Nhóm / phòng ban",
       "filter": {
         "group": "Group",
         "allGroups": "Tất cả group"
@@ -1427,7 +1432,7 @@
         "none": "Chưa cấu hình"
       },
       "apiKey": "API key",
-      "token": "Token",
+      "token": "Lượng AI dùng",
       "listId": "List ID",
       "keep": "Để trống = giữ nguyên",
       "savedEnding": "Đã lưu, kết thúc bằng …{last4}",
@@ -1763,7 +1768,7 @@
         "trigger": "Kích hoạt",
         "status": "Trạng thái",
         "duration": "Thời lượng",
-        "tokens": "Token",
+        "tokens": "Lượng AI dùng",
         "error": "Lỗi",
         "ids": "Mã Dify"
       },
@@ -2292,7 +2297,7 @@
   },
   "groups": {
     "list": {
-      "title": "Groups",
+      "title": "Nhóm / phòng ban",
       "subtitle": "Nhóm người dùng của {tenant}. Cấp feature cho cả nhóm thay vì từng người.",
       "create": "+ Tạo group",
       "search": "Tìm theo tên, key…"
@@ -2570,7 +2575,7 @@
     "block": {
       "aria": "Ứng dụng {app}",
       "tableAria": "Vai của {app}",
-      "ceiling": "Trần công ty: {level}",
+      "ceiling": "Mức cao nhất công ty cho phép: {level}",
       "off": "Ứng dụng đang tắt cho công ty",
       "create": "Tạo vai"
     },
@@ -2712,7 +2717,7 @@
       "members": "{actor} đã đổi thành viên {name} (Thêm {a} · Bớt {r})",
       "passwordReset": "{actor} đã đặt lại mật khẩu của {subject}",
       "quota": "{actor} đã đổi quota {name}",
-      "entitlement": "{actor} đã đổi quyền feature {name} của {subject}"
+      "entitlement": "{actor} đã đổi quyền dùng tính năng {name} của {subject}"
     },
     "diff": {
       "caption": "Thay đổi",
@@ -2760,8 +2765,8 @@
     "csv": "Xuất CSV",
     "csvFailed": "Không xuất được CSV. Thử lại sau.",
     "kpi": {
-      "runs": "Số run",
-      "tokens": "Token",
+      "runs": "Lượt chạy",
+      "tokens": "Lượng AI dùng",
       "billable": "Số thu",
       "cost": "Chi phí thật",
       "margin": "Biên",
@@ -2779,8 +2784,8 @@
       "cost": "Chi phí thật",
       "feature": "Feature",
       "user": "User",
-      "runs": "Số run",
-      "tokens": "Token"
+      "runs": "Lượt chạy",
+      "tokens": "Lượng AI dùng"
     },
     "quotaCard": "Quota tháng",
     "topFeature": {
@@ -2794,7 +2799,7 @@
     "unpriced": "Chưa định giá",
     "unit": {
       "runs": "Run",
-      "tokens": "Token",
+      "tokens": "Lượng AI dùng",
       "usd": "USD"
     },
     "empty": {
@@ -2897,7 +2902,7 @@
       "bucket": "Mốc",
       "agent": "Agent / tính năng",
       "model": "Model",
-      "tokens": "Token",
+      "tokens": "Lượng AI dùng",
       "share": "Tỉ trọng",
       "calls": "Lượt gọi",
       "errors": "Lỗi",
@@ -2947,7 +2952,7 @@
         "commands": "Commands",
         "features": "Features",
         "tenants": "Tenants",
-        "groups": "Groups",
+        "groups": "Nhóm / phòng ban",
         "grants": "Grants"
       },
       "note": "Secret chỉ xuất tên, không xuất giá trị. Cấu hình agent xuất ở Agent Forge.",

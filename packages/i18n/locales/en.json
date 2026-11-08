@@ -187,6 +187,11 @@
     "open": "Open Evolu Copilot"
   },
   "nav": {
+    "roleName": {
+      "platform_admin": "Platform admin",
+      "tenant_admin": "Company admin",
+      "member": "Member"
+    },
     "main": "Main navigation",
     "overview": "Overview",
     "agents": "Agents",

@@ -98,7 +98,7 @@ test.describe("02 contracts-web", () => {
   test("Hợp đồng: không còn Thêm thủ công; /contracts/new chỉ cho tải lên văn bản", async () => {
     await go("/contracts/list");
     await expect(page.getByText("Thêm thủ công")).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /Upload hợp đồng/ }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Tải hợp đồng lên/ }).first()).toBeVisible();
     await go("/contracts/c/new");
     expect(await bodyText(page)).toContain("Hợp đồng phải tải lên từ văn bản đã ký");
     await expect(page.locator("input[name=title]")).toHaveCount(0);
