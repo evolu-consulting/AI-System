@@ -1,11 +1,19 @@
 // CR-125 · c5b · luật hiển thị readiness: thiếu gì, nút sửa nào, có bấm tiếp được không.
 import { describe, expect, it } from "bun:test";
 import type { TemplateReadiness } from "@ai/contracts/modules";
-import { canProceed, featureParts, isBlocking, readinessItems } from "./readiness-view";
+import { ApiError } from "@/lib/http";
+import {
+  canProceed,
+  featureParts,
+  fixErrorKey,
+  isBlocking,
+  loadErrorKey,
+  readinessItems,
+} from "./readiness-view";
 
 const base: TemplateReadiness = {
   ready: true,
-  missing: { features: [], tools: [], groups: [], order: [] },
+  missing: { features: [], tools: [], groups: [], order: [], locked: [] },
   groupMap: {},
   reasons: [],
   copyable: true,
@@ -47,7 +55,8 @@ describe("readiness-view", () => {
     const r: TemplateReadiness = {
       ...base,
       copyable: false,
-      copyReasons: ["Bước «Agent sàng lọc» là bước cố định của nền tảng — không sửa được."],
+      missing: { ...base.missing, locked: ["Agent sàng lọc"] },
+      copyReasons: [{ code: "READINESS_STEP_LOCKED", params: { stage: "Agent sàng lọc" } }],
     };
     expect(readinessItems(r, false)).toEqual([]);
     expect(readinessItems(r, true)).toEqual([
@@ -55,6 +64,24 @@ describe("readiness-view", () => {
     ]);
     expect(canProceed(r, false)).toBe(true);
     expect(canProceed(r, true)).toBe(false);
+  });
+
+  it("lỗi tải / lỗi nút sửa ⇒ khoá theo mã, mã lạ ⇒ default", () => {
+    expect(loadErrorKey(new ApiError(403, "FORBIDDEN", "x"))).toBe(
+      "tenants.companyFlows.readiness.loadFailed.FORBIDDEN",
+    );
+    expect(loadErrorKey(Object.assign(new Error("x"), { code: "HUB_UNCONFIGURED" }))).toBe(
+      "tenants.companyFlows.readiness.loadFailed.HUB_UNCONFIGURED",
+    );
+    expect(loadErrorKey(new Error("boom"))).toBe(
+      "tenants.companyFlows.readiness.loadFailed.default",
+    );
+    expect(fixErrorKey(new ApiError(422, "FEATURE_NOT_NEEDED", "x"))).toBe(
+      "tenants.companyFlows.readiness.fixError.FEATURE_NOT_NEEDED",
+    );
+    expect(fixErrorKey(new ApiError(500, "WHAT", "x"))).toBe(
+      "tenants.companyFlows.readiness.fixError.default",
+    );
   });
 
   it("tool thiếu không có nút sửa; featureParts tách app + mức", () => {

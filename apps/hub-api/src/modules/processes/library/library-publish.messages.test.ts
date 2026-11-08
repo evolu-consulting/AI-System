@@ -1,9 +1,13 @@
 ﻿// CR-121 D-2 · CR-125 G1 · unit: Hub trả mã + biến + vị trí bước/trường (không câu chữ); web dịch bằng khoá i18n của mã.
 import { describe, expect, it } from "bun:test";
-import { PUBLISH_ISSUE_CODES } from "@ai/contracts/pack-contracts";
+import { PUBLISH_ISSUE_CODES, PUBLISH_ISSUE_STEP_FIXTURE } from "@ai/contracts/pack-contracts";
 import { explainIssue, missingGroupIssues } from "./library-publish.messages";
 
 describe("explainIssue", () => {
+  it("hợp đồng bước TỪ 1: ra đúng mẫu dùng chung với web (PUBLISH_ISSUE_STEP_FIXTURE)", () => {
+    for (const f of PUBLISH_ISSUE_STEP_FIXTURE) expect(explainIssue(f.issue)).toMatchObject(f.wire);
+  });
+
   it("steps.N.field ⇒ bước đánh số từ 1 + trường + mã, không có câu chữ", () => {
     const e = explainIssue({ path: "steps.2.department_group_id", rule: "GROUP_REQUIRED" });
     expect(e).toEqual({

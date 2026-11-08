@@ -132,7 +132,8 @@ describe("CR-125 c5 · mẫu dùng được ở công ty", () => {
     >`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${X}, ${needFeature}, true) returning id::text as id`;
     const r = await call("A", "POST", `${P(X)}/${cf?.id}/clone`);
     expect([r.status, code(r)]).toEqual([422, "FLOW_TEMPLATE_NOT_READY"]);
-    expect(JSON.stringify(r.json)).toContain("quản trị nền tảng");
+    expect(JSON.stringify(r.json)).toContain("READINESS_FEATURE_MISSING");
+    expect(JSON.stringify(r.json)).toContain('"audience":"company"');
     await o`delete from hub.company_flows where tenant_id = ${X}`;
   });
 

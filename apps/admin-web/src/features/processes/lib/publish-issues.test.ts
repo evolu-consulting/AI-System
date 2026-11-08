@@ -1,5 +1,6 @@
 // CR-121 D-3 · CR-125 G1: đọc lỗi xuất bản 422 của Hub (mã + biến + bước, trường) → dòng hiển thị (web dịch) + chỉ số bước để nhảy tới.
 import { describe, expect, test } from "bun:test";
+import { PUBLISH_ISSUE_STEP_FIXTURE } from "@ai/contracts/pack-contracts";
 import { newReview } from "./flow-form";
 import { parsePublishIssues, type Translate } from "./publish-issues";
 
@@ -9,6 +10,12 @@ const t: Translate = (k, p) =>
   `${k.replace("process.admin.library.form.", "")}|${JSON.stringify(p ?? {})}`;
 
 describe("parsePublishIssues", () => {
+  test("hợp đồng bước TỪ 1: đọc đúng mẫu dùng chung với hub (PUBLISH_ISSUE_STEP_FIXTURE)", () => {
+    for (const f of PUBLISH_ISSUE_STEP_FIXTURE) {
+      const [i] = parsePublishIssues({ issues: [{ ...f.issue, ...f.wire }] }, steps, t);
+      expect(i?.index).toBe(f.index);
+    }
+  });
   test("dạng chuẩn {step,field,code,params}: khoá của mã + biến, kèm số bước", () => {
     const out = parsePublishIssues(
       {
@@ -21,7 +28,7 @@ describe("parsePublishIssues", () => {
             field: "department_group_key",
             params: {},
           },
-          { path: "x", rule: "DUE_RANGE", step: 0, params: { min: 4, max: 2160 } },
+          { path: "x", rule: "DUE_RANGE", step: 1, params: { min: 4, max: 2160 } },
         ],
       },
       steps,

@@ -20,6 +20,7 @@ export const PUBLISH_ISSUE_EXTRA_RULES = [
   "SYSTEM_TOOL_MISSING",
   "UNREACHABLE_STEP",
   "GROUP_MISSING_IN_TENANT",
+  "SLOT_LOCKED",
 ] as const;
 
 /** Mọi mã lỗi kiểm quy trình: luật mẫu luồng duyệt + luật riêng của thư viện. */

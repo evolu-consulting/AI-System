@@ -3,11 +3,15 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { hubConfigured } from "@/lib/hub";
 import { useTr } from "@/lib/use-translate";
 import {
   canProceed,
   featureParts,
+  fixErrorKey,
+  ITEM_CODE,
   isBlocking,
+  loadErrorKey,
   type ReadinessItem,
   readinessItems,
 } from "../lib/readiness-view";
@@ -27,18 +31,35 @@ function useLabel() {
   const { t } = useTranslation();
   const tr = useTr();
   return (i: ReadinessItem): string => {
+    if (i.kind === "group") return t("tenants.companyFlows.readiness.group", { key: i.key });
+    const code = ITEM_CODE[i.kind];
     if (i.kind === "feature") {
       const f = featureParts(i.key);
       const app = tr(`featmeta.app.${f.app}.name`);
       const lv = f.level ? tr(`tenants.companyFlows.readiness.level.${f.level}`) : "";
-      return t("tenants.companyFlows.readiness.feature", {
+      return t(`tenants.companyFlows.readiness.err.${code}`, {
         stage: i.stage,
         what: `${app} · ${lv}`.replace(/ · $/, ""),
       });
     }
-    if (i.kind === "group") return t("tenants.companyFlows.readiness.group", { key: i.key });
-    return t(`tenants.companyFlows.readiness.${i.kind}`, { stage: i.stage });
+    return t(`tenants.companyFlows.readiness.err.${code}`, { stage: i.stage });
   };
+}
+
+/** Không tải được kiểm tra: nói lý do theo mã lỗi + nút thử lại (Gán / Sao chép vẫn khoá, nhưng người dùng biết vì sao). */
+function LoadError(p: { error: unknown; retry: () => void }) {
+  const { t } = useTranslation();
+  const err = p.error ?? (hubConfigured() ? null : { code: "HUB_UNCONFIGURED" });
+  return (
+    <div className="space-y-2" data-testid="flow-readiness" data-ready="no">
+      <p role="alert" className="m-0 text-body text-destructive">
+        {t(loadErrorKey(err))}
+      </p>
+      <Button size="sm" variant="outline" data-testid="readiness-retry" onClick={p.retry}>
+        {t("tenants.companyFlows.readiness.retry")}
+      </Button>
+    </div>
+  );
 }
 
 export function ReadinessPanel(p: Props) {
@@ -51,13 +72,13 @@ export function ReadinessPanel(p: Props) {
   const { onState } = p;
   // biome-ignore lint/correctness/useExhaustiveDependencies: chỉ báo khi `ok` đổi
   useEffect(() => onState(ok), [ok]);
-  if (q.isPending)
+  if (q.isPending && q.fetchStatus !== "idle")
     return (
       <p className="text-caption text-muted-foreground">
         {t("tenants.companyFlows.readiness.loading")}
       </p>
     );
-  if (!r) return null;
+  if (!r) return <LoadError error={q.error} retry={() => q.refetch()} />;
   const items = readinessItems(r, p.copy);
   const blocked = items.some(isBlocking);
   return (
@@ -103,7 +124,7 @@ export function ReadinessPanel(p: Props) {
       ) : null}
       {fix.isError ? (
         <p role="alert" className="m-0 text-body text-destructive">
-          {t("tenants.companyFlows.readiness.fixFailed")}
+          {t(fixErrorKey(fix.error))}
         </p>
       ) : null}
       {blocked && !p.isPlatform ? (

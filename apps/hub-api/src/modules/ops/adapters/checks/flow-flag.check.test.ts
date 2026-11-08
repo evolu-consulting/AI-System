@@ -14,6 +14,8 @@ describe("flow_flag · evaluateFlowFlag", () => {
     expect(r.message).toContain("7 công ty");
     expect(r.message).toContain("A, B, C, D, E và 2 nữa");
     expect(r.hint).toContain("Lưu và áp dụng");
+    expect(r.hint).toContain("bật lại ở Cài đặt nếu không cố ý");
+    expect(r.hint).not.toContain("gỡ gán");
     expect(evaluateFlowFlag({ n: 1, sample: ["A"] }).message).not.toContain("nữa");
   });
 });

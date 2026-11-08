@@ -71,6 +71,7 @@ export type HubAdminLibraryErrorCode = keyof typeof HUB_ADMIN_LIBRARY_ERRORS;
 export const SlotIssueSchema = z.strictObject({
   path: z.string(),
   rule: z.string(),
+  /** Số thứ tự bước TỪ 1 (như màn hình: "Bước 3"; đổi sang chỉ số mảng bằng `issueStepIndex`); chuỗi = mã bước; null = lỗi chung. */
   step: z.union([z.string(), z.number()]).nullable().optional(),
   field: z.string().nullable().optional(),
   code: z.string().optional(),

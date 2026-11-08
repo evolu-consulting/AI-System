@@ -1092,6 +1092,7 @@
         "SYSTEM_TOOL_MISSING": "Thiếu bước hệ thống '{{param}}' — mở lại quy trình trong trình sửa và lưu để tạo lại.",
         "UNREACHABLE_STEP": "Điều kiện của bước không bao giờ đúng nên bước này không chạy — sửa hoặc xoá điều kiện.",
         "GROUP_MISSING_IN_TENANT": "Phòng ban '{{key}}' không có ở công ty {{tenant}} — tạo phòng ban này ở công ty hoặc đổi điều kiện/phòng ban của bước.",
+        "SLOT_LOCKED": "Bước cố định của nền tảng — không sửa được; dùng bản dùng chung hoặc chọn mẫu khác.",
         "unknown": "Không hợp lệ ({{rule}}) — sửa theo hướng dẫn rồi lưu lại.",
         "condValueEmpty": "Điều kiện chưa chọn giá trị (vd phòng ban).",
         "condFieldUnknown": "Điều kiện dùng trường mà ứng dụng này không hỗ trợ."

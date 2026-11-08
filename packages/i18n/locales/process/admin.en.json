@@ -1092,6 +1092,7 @@
         "SYSTEM_TOOL_MISSING": "Missing system step '{{param}}' — reopen and save the process to rebuild it.",
         "UNREACHABLE_STEP": "The condition can never hold so the step never runs — fix or remove it.",
         "GROUP_MISSING_IN_TENANT": "Department '{{key}}' does not exist in company {{tenant}} — create it there or change the step.",
+        "SLOT_LOCKED": "Fixed platform step — it cannot be edited; use the shared version or pick another template.",
         "unknown": "Invalid ({{rule}}) — fix and save again.",
         "condValueEmpty": "A condition has no value selected (e.g. department).",
         "condFieldUnknown": "A condition uses a field this app does not support."

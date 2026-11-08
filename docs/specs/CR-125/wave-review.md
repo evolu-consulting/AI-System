@@ -79,6 +79,9 @@ select rolname from pg_roles where rolname in ('contracts_rw','hub_rw','hub_ro',
 select count(*) from (select distinct f.tenant_id from hub.company_flows f where f.enabled) t
  where not exists (select 1 from hub.tenant_flow_settings s where s.tenant_id = t.tenant_id and s.flow_triggers);
 -- BEFORE migrate the same query lists the tenants that will be switched on (expect the 6 assigned by platform); ops-watch check `flow_flag` stays ok afterwards.
+-- A10a BEFORE migrate (final look, user already decided hub 0126 turns ALL of them on): list on prod the tenants with company_flows enabled but flow_triggers off, and SEND THIS LIST TO THE USER before running migrate.
+select distinct tn.key, tn.name from hub.company_flows f join admin.tenants tn on tn.id = f.tenant_id
+ where f.enabled and not exists (select 1 from hub.tenant_flow_settings s where s.tenant_id = f.tenant_id and s.flow_triggers) order by tn.key;
 ```
 
 ### B. Lock or size risk (decides whether to stop the apps during migrate)

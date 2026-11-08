@@ -682,13 +682,29 @@
         "okWarn": "Mẫu dùng được; còn lưu ý bên dưới.",
         "blockedPlatform": "Chưa gán được: công ty thiếu những thứ sau.",
         "blockedCompany": "Mẫu này chưa dùng được ở công ty bạn.",
-        "feature": "Bước «{stage}» cần tính năng {what} — công ty chưa được bật.",
-        "tool": "Bước «{stage}» dùng chức năng công ty chưa có.",
-        "order": "Bước «{stage}» phải đứng ngay sau một bước Duyệt.",
-        "locked": "Bước «{stage}» là bước cố định của nền tảng — không sửa được trên bản sao.",
+        "err": {
+          "READINESS_FEATURE_MISSING": "Bước «{stage}» cần tính năng {what} — công ty chưa được bật.",
+          "READINESS_TOOL_MISSING": "Bước «{stage}» dùng chức năng công ty chưa có.",
+          "READINESS_STEP_ORDER": "Bước «{stage}» phải đứng ngay sau một bước Duyệt.",
+          "READINESS_STEP_LOCKED": "Bước «{stage}» là bước cố định của nền tảng — không sửa được trên bản sao."
+        },
+        "loadFailed": {
+          "HUB_UNCONFIGURED": "Chưa kiểm được mẫu: chưa cấu hình kết nối tới Hub. Nhờ quản trị hệ thống kiểm tra rồi thử lại.",
+          "FORBIDDEN": "Chưa kiểm được mẫu: bạn không có quyền xem quy trình của công ty này.",
+          "NOT_FOUND": "Chưa kiểm được mẫu: mẫu này không còn trong Thư viện — chọn mẫu khác.",
+          "default": "Chưa kiểm được mẫu — kiểm tra kết nối rồi thử lại."
+        },
+        "retry": "Thử lại",
+        "fixError": {
+          "FEATURE_NOT_NEEDED": "Mẫu không còn cần tính năng này — bảng sẽ cập nhật lại, không cần bật thêm.",
+          "CORE_FEATURE_PROTECTED": "Tính năng lõi luôn bật theo gói của công ty — không bật riêng được.",
+          "HUB_UNREACHABLE": "Chưa nối được tới Hub — thử lại sau ít phút.",
+          "NOT_FOUND": "Tính năng hoặc mẫu không còn tồn tại — tải lại trang.",
+          "FORBIDDEN": "Chỉ quản trị nền tảng mới bật được — nhờ họ xử lý.",
+          "default": "Chưa sửa được. Thử lại hoặc kiểm tra quyền."
+        },
         "group": "Công ty chưa có nhóm duyệt «{key}» — bước duyệt sẽ mở ra để bạn chọn người duyệt.",
         "askPlatform": "Nhờ quản trị nền tảng bật tính năng cần thiết rồi quay lại sao chép.",
-        "fixFailed": "Chưa sửa được. Thử lại hoặc kiểm tra quyền.",
         "level": {
           "read": "Xem",
           "write": "Sửa",

@@ -30,7 +30,10 @@ describe("templateReadiness", () => {
     const off = templateReadiness(n, none);
     expect(off.ready).toBe(false);
     expect(off.missing.features).toEqual([{ key: "community-write", stage: "Hiện bài" }]);
-    expect(off.reasons[0]).toContain("community-write");
+    expect(off.reasons[0]).toEqual({
+      code: "READINESS_FEATURE_MISSING",
+      params: { stage: "Hiện bài", key: "community-write" },
+    });
     const on = templateReadiness(n, { ...none, features: new Set(["community-write"]) });
     expect(on.ready).toBe(true);
   });
@@ -52,7 +55,11 @@ describe("templateReadiness", () => {
     expect(r.ready).toBe(true);
     expect(r.missing.tools).toEqual([]);
     expect(r.copyable).toBe(false);
-    expect(r.copyReasons[0]).toContain("Agent sàng lọc");
+    expect(r.copyReasons[0]).toEqual({
+      code: "READINESS_STEP_LOCKED",
+      params: { stage: "Agent sàng lọc" },
+    });
+    expect(r.missing.locked).toEqual(["Agent sàng lọc"]);
   });
 
   test("node requires approval đứng không ngay sau Duyệt ⇒ not ready", () => {

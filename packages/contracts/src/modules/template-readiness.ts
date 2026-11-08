@@ -29,6 +29,18 @@ export type TenantSide = {
   groupKeys: readonly string[];
 };
 
+/** Mã lý do chặn: MỘT khoá i18n mỗi mã (`READINESS_KEY.<mã>`); `check:error-codes` giữ vậy. */
+export const READINESS_CODES = [
+  "READINESS_FEATURE_MISSING",
+  "READINESS_TOOL_MISSING",
+  "READINESS_STEP_ORDER",
+  "READINESS_STEP_LOCKED",
+] as const;
+export type ReadinessCode = (typeof READINESS_CODES)[number];
+export const READINESS_KEY = "tenants.companyFlows.readiness.err";
+/** `stage` = tên bước; `key` = khoá tính năng / tool (hai mã đầu). */
+export type ReadinessReason = { code: ReadinessCode; params: { stage: string; key?: string } };
+
 export type TemplateReadiness = {
   /** Không thiếu tính năng/tool/thứ tự — nhóm thiếu KHÔNG chặn (bước mở ra "Chọn người duyệt"). */
   ready: boolean;
@@ -37,15 +49,17 @@ export type TemplateReadiness = {
     tools: { key: string; stage: string }[];
     groups: string[];
     order: TemplateNeeds["order"];
+    /** Bước cố định của nền tảng (chỉ chặn Sao chép, không chặn Gán). */
+    locked: string[];
   };
   /** Mã nhóm của mẫu → mã nhóm có thật ở công ty (đã khớp theo tên/loại). Mã không có ở đây = chưa có nhóm. */
   groupMap: Record<string, string>;
-  /** Câu tiếng Việt nói thiếu gì và ai cần làm gì; rỗng khi ready. */
-  reasons: string[];
+  /** Lý do chặn (MÃ + biến, không có câu chữ — web dịch, G1); rỗng khi ready. */
+  reasons: ReadinessReason[];
   /** Sao chép để sửa được: ready và không có bước cố định của nền tảng. */
   copyable: boolean;
   /** Lý do không sao chép được (gồm `reasons` + bước cố định). */
-  copyReasons: string[];
+  copyReasons: ReadinessReason[];
 };
 
 const nameOf = (s: Obj): string => (typeof s.name === "string" && s.name ? s.name : String(s.key));
@@ -132,25 +146,27 @@ export function templateReadiness(needs: TemplateNeeds, tenant: TenantSide): Tem
     if (hit) groupMap[g] = hit;
     else groups.push(g);
   }
-  const reasons = [
-    ...features.map(
-      (f) => `Bước «${f.stage}» cần tính năng «${f.key}» — quản trị nền tảng cần bật cho công ty.`,
-    ),
-    ...tools.map(
-      (t) =>
-        `Bước «${t.stage}» dùng chức năng «${t.key}» công ty chưa có — quản trị nền tảng cần bật.`,
-    ),
-    ...needs.order.map((o) => `Bước «${o.stage}» phải đứng ngay sau một bước Duyệt.`),
+  const reasons: ReadinessReason[] = [
+    ...features.map((f) => ({
+      code: "READINESS_FEATURE_MISSING" as const,
+      params: { stage: f.stage, key: f.key },
+    })),
+    ...tools.map((t) => ({
+      code: "READINESS_TOOL_MISSING" as const,
+      params: { stage: t.stage, key: t.key },
+    })),
+    ...needs.order.map((o) => ({
+      code: "READINESS_STEP_ORDER" as const,
+      params: { stage: o.stage },
+    })),
   ];
-  const copyReasons = [
+  const copyReasons: ReadinessReason[] = [
     ...reasons,
-    ...needs.locked.map(
-      (s) => `Bước «${s}» là bước cố định của nền tảng — không sửa được trên bản sao của công ty.`,
-    ),
+    ...needs.locked.map((s) => ({ code: "READINESS_STEP_LOCKED" as const, params: { stage: s } })),
   ];
   return {
     ready: reasons.length === 0,
-    missing: { features, tools, groups, order: needs.order },
+    missing: { features, tools, groups, order: needs.order, locked: needs.locked },
     groupMap,
     reasons,
     copyable: copyReasons.length === 0,

@@ -1,7 +1,7 @@
 ﻿// CR-121 D-2 · CR-125 G1 · lỗi kiểm khi xuất bản / gán quy trình thư viện: Hub chỉ trả MÃ + BIẾN, không có câu chữ nào.
 // Mỗi vi phạm `{path, rule}` của khe ⇒ `{step, field, code, params}`: `step` đánh số từ 1 như màn hình sửa quy trình; web dịch bằng
 // MỘT khoá i18n mỗi mã (`PUBLISH_ISSUE_KEY.<code>`, xem `packages/contracts/.../publish-issue-codes.ts`). Thuần, không I/O.
-import { publishIssueParams } from "@ai/contracts/pack-contracts";
+import { issueStepNumber, publishIssueParams } from "@ai/contracts/pack-contracts";
 import type { PublishIssue } from "./library-publish.rules";
 
 export type IssueParams = Record<string, string | number>;
@@ -19,7 +19,7 @@ export type ExplainedIssue = PublishIssue & {
 /** `steps.2.when` ⇒ bước 3, trường `when`; `stages.3.slot.when` (stage 1 = rẽ hệ thống) ⇒ bước 3. */
 function locate(path: string): { step: number | null; field: string | null } {
   const s = /^steps\.(\d+)(?:\.(.+))?$/.exec(path);
-  if (s) return { step: Number(s[1]) + 1, field: s[2] ?? null };
+  if (s) return { step: issueStepNumber(Number(s[1])), field: s[2] ?? null };
   const g = /^stages\.(\d+)(?:\.slot\.(.+))?$/.exec(path);
   if (g) {
     const j = Number(g[1]);
@@ -53,7 +53,7 @@ export function missingGroupIssues(
     return idx.map((i) => ({
       path: i === null ? "steps" : `steps.${i}`,
       rule: "GROUP_MISSING_IN_TENANT",
-      step: i === null ? null : i + 1,
+      step: i === null ? null : issueStepNumber(i),
       field: "department_group_key",
       code: "GROUP_MISSING_IN_TENANT",
       params: { key: k, tenant },

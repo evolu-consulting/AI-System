@@ -682,13 +682,29 @@
         "okWarn": "The template works; see the notes below.",
         "blockedPlatform": "Cannot assign yet: the company is missing the following.",
         "blockedCompany": "This template cannot be used by your company yet.",
-        "feature": "Step \"{stage}\" needs {what} — not enabled for the company.",
-        "tool": "Step \"{stage}\" uses a function the company does not have.",
-        "order": "Step \"{stage}\" must come right after an approval step.",
-        "locked": "Step \"{stage}\" is fixed by the platform — it cannot be edited on a copy.",
+        "err": {
+          "READINESS_FEATURE_MISSING": "Step \"{stage}\" needs {what} — not enabled for the company.",
+          "READINESS_TOOL_MISSING": "Step \"{stage}\" uses a function the company does not have.",
+          "READINESS_STEP_ORDER": "Step \"{stage}\" must come right after an approval step.",
+          "READINESS_STEP_LOCKED": "Step \"{stage}\" is fixed by the platform — it cannot be edited on a copy."
+        },
+        "loadFailed": {
+          "HUB_UNCONFIGURED": "Could not check the template: the connection to the Hub is not configured. Ask a system administrator to check, then retry.",
+          "FORBIDDEN": "Could not check the template: you do not have permission to view this company's workflows.",
+          "NOT_FOUND": "Could not check the template: it is no longer in the Library — pick another.",
+          "default": "Could not check the template — check the connection and retry."
+        },
+        "retry": "Retry",
+        "fixError": {
+          "FEATURE_NOT_NEEDED": "The template no longer needs this feature — the list will refresh, nothing more to enable.",
+          "CORE_FEATURE_PROTECTED": "Core features are always on with the company's plan — they cannot be enabled separately.",
+          "HUB_UNREACHABLE": "Could not reach the Hub — try again in a few minutes.",
+          "NOT_FOUND": "The feature or template no longer exists — reload the page.",
+          "FORBIDDEN": "Only a platform administrator can enable this — ask them.",
+          "default": "Could not fix. Try again or check permissions."
+        },
         "group": "The company has no \"{key}\" approver group — the approval step will ask you to pick approvers.",
         "askPlatform": "Ask the platform administrator to enable the required features, then copy again.",
-        "fixFailed": "Could not fix. Try again or check permissions.",
         "level": {
           "read": "View",
           "write": "Edit",

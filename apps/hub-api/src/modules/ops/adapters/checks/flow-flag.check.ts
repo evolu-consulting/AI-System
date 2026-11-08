@@ -23,7 +23,7 @@ export function evaluateFlowFlag(a: FlowFlagAgg): OpsCheckResult {
     status: "warn",
     value: { count: a.n, sample: a.sample },
     message: `${a.n} công ty đã gán quy trình nhưng đang chạy cách cũ (cờ dùng quy trình mới tắt): ${a.sample.slice(0, SAMPLES).join(", ")}${more}`,
-    hint: "Admin › Công ty › Quy trình: bấm Lưu và áp dụng (hoặc gán lại) để bật; nếu cố ý tạm dừng thì gỡ gán các quy trình của công ty đó.",
+    hint: "Admin › Công ty › Quy trình: bấm Lưu và áp dụng (hoặc gán lại) để bật. Công ty đang tạm dừng quy trình — bật lại ở Cài đặt nếu không cố ý.",
   };
 }
 

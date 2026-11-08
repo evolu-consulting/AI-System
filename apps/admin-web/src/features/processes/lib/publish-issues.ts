@@ -1,6 +1,10 @@
 // CR-121 D-3: lỗi xuất bản từ Hub (422 `PROCESS_PUBLISH_INVALID` / `SLOT_BODY_INVALID`, D-2) → dòng hiển thị trên thanh trạng thái.
-// Dạng chuẩn `details.issues[] = {step, field, fix, path, rule}`; thiếu `step` ⇒ suy từ `path` (`…steps.N…` hoặc `stages.N…`, đếm từ 0).
-import { PUBLISH_ISSUE_CODES, PUBLISH_ISSUE_KEY } from "@ai/contracts/pack-contracts";
+// Dạng chuẩn `details.issues[] = {step, field, fix, path, rule}`; `step` số đếm TỪ 1 (hợp đồng); thiếu `step` ⇒ suy từ `path` (`…steps.N…` hoặc `stages.N…`, đếm từ 0).
+import {
+  issueStepIndex,
+  PUBLISH_ISSUE_CODES,
+  PUBLISH_ISSUE_KEY,
+} from "@ai/contracts/pack-contracts";
 import { ApiError } from "@/lib/http";
 import type { LibStep } from "./flow-form";
 import { splitRule } from "./library-view";
@@ -19,11 +23,12 @@ const PATH_STEP = /(?:^|\.)(?:steps|stages)\.(\d+)(?:\.([a-z_]+))?/;
 
 function indexOf(raw: Record<string, unknown>, steps: readonly LibStep[]): number | null {
   const s = raw.step;
-  if (typeof s === "number") return Number.isInteger(s) && s >= 0 ? s : null;
+  // `step` số = thứ tự TỪ 1 (hợp đồng `SlotIssueSchema`); đổi sang chỉ số mảng ở MỘT chỗ: `issueStepIndex`
+  if (typeof s === "number") return issueStepIndex(s);
   if (typeof s === "string") {
     const byKey = steps.findIndex((x) => x.key === s);
     if (byKey >= 0) return byKey;
-    if (/^\d+$/.test(s)) return Number(s);
+    if (/^\d+$/.test(s)) return issueStepIndex(Number(s));
   }
   const m = typeof raw.path === "string" ? PATH_STEP.exec(raw.path) : null;
   return m?.[1] !== undefined ? Number(m[1]) : null;

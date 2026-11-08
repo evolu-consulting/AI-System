@@ -3,6 +3,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { HUB_ADMIN_LIBRARY_ERRORS } from "../../../packages/contracts/src/hub-admin/process-library";
 import {
+  READINESS_CODES,
+  READINESS_KEY,
+} from "../../../packages/contracts/src/modules/template-readiness";
+import {
   PUBLISH_ISSUE_CODES,
   PUBLISH_ISSUE_KEY,
 } from "../../../packages/contracts/src/pack-contracts/publish-issue-codes";
@@ -13,6 +17,7 @@ import { readLocaleEntries } from "./lib/locale-files";
 /** Mã lỗi khai ở `packages/contracts` + khoá chuẩn của câu. Thêm bộ mã mới ⇒ thêm một dòng ở đây. */
 export const CODE_SETS: readonly CodeSet[] = [
   { name: "publish-issue", codes: PUBLISH_ISSUE_CODES, prefix: PUBLISH_ISSUE_KEY },
+  { name: "template-readiness", codes: READINESS_CODES, prefix: READINESS_KEY },
   {
     name: "hub-admin-library",
     codes: Object.keys(HUB_ADMIN_LIBRARY_ERRORS),

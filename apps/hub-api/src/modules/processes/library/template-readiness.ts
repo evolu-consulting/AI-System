@@ -65,17 +65,17 @@ export async function readinessOf(
   });
 }
 
-/** 422 nói thiếu gì và AI làm gì (quản trị nền tảng bật) — dùng cho gán (platform) và sao chép (công ty). */
+/**
+ * 422 nói thiếu gì (MÃ + biến, G1) và ai cần làm gì (`audience`) — dùng cho gán (platform) và sao chép (công ty). Không có câu chữ:
+ * web dịch `reasons[].code` bằng `READINESS_KEY.<mã>`.
+ */
 export function notReadyError(r: Readiness, forPlatform: boolean, forCopy = false): AppError {
   const reasons = forCopy ? r.copyReasons : r.reasons;
-  const locked = forCopy && r.ready; // chỉ vướng bước cố định: không ai bật thêm được gì
-  const who = locked
-    ? "Dùng bản dùng chung này nguyên trạng, hoặc chọn mẫu khác để sao chép."
-    : forPlatform
-      ? "Bật tính năng cho công ty rồi gán lại."
-      : "Mẫu này chưa dùng được ở công ty bạn — nhờ quản trị nền tảng bật tính năng cần thiết rồi sao chép lại.";
-  return new AppError("FLOW_TEMPLATE_NOT_READY", 422, `${reasons.join(" ")} ${who}`.trim(), {
+  // `locked`: chỉ vướng bước cố định, không ai bật thêm được gì
+  const audience = forCopy && r.ready ? "locked" : forPlatform ? "platform" : "company";
+  return new AppError("FLOW_TEMPLATE_NOT_READY", 422, "Template is not ready for this company", {
     missing: r.missing,
     reasons,
+    audience,
   });
 }

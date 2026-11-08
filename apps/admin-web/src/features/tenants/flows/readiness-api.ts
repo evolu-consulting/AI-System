@@ -15,7 +15,10 @@ export const useTemplateReadiness = (tid: string, flowId: string, enabled = true
     retry: false,
     queryFn: () => {
       const u = hubUrl(`/tenants/${enc(tid)}/company-flows/readiness/${enc(flowId)}`);
-      if (u === null) throw new Error("PUBLIC_HUB_URL chưa cấu hình: không gọi Hub");
+      if (u === null)
+        throw Object.assign(new Error("PUBLIC_HUB_URL is not configured"), {
+          code: "HUB_UNCONFIGURED",
+        });
       return api<TemplateReadiness>(u);
     },
   });
