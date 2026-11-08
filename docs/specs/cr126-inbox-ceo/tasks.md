@@ -1,38 +1,38 @@
----
+﻿---
 id: cr126-inbox-ceo
-lát: cr126-inbox-ceo
+lÃ¡t: cr126-inbox-ceo
 cr: CR-126
-làn: nhanh
-migration: không
-phụ thuộc:
+lÃ n: nhanh
+migration: khÃ´ng
+phá»¥ thuá»™c:
 ---
-## Plan (ngắn)
-«Việc của tôi» cho giám đốc: mỗi dòng nói điều đang duyệt «quy trình · đối tác · số tiền · người đề xuất · ngày»; một kiểu dòng cho ký / duyệt HĐ / việc yêu cầu, sắp theo hạn rồi chờ lâu nhất; chip Tất cả · Cần duyệt · Cần ký.
+## Plan (ngáº¯n)
+Â«Viá»‡c cá»§a tÃ´iÂ» cho giÃ¡m Ä‘á»‘c: má»—i dÃ²ng nÃ³i Ä‘iá»u Ä‘ang duyá»‡t Â«quy trÃ¬nh Â· Ä‘á»‘i tÃ¡c Â· sá»‘ tiá»n Â· ngÆ°á»i Ä‘á» xuáº¥t Â· ngÃ yÂ»; má»™t kiá»ƒu dÃ²ng cho kÃ½ / duyá»‡t HÄ / viá»‡c yÃªu cáº§u, sáº¯p theo háº¡n rá»“i chá» lÃ¢u nháº¥t; chip Táº¥t cáº£ Â· Cáº§n duyá»‡t Â· Cáº§n kÃ½.
 
-## Làm
-- Hub: `GET /me/review-tasks` thêm `process_run.request {title, partner, amount}` từ phiếu của lượt (cùng câu SQL, join lượt cha cho lượt con; không truy vấn thêm). `notify/task-request-summary.rules.ts`.
-- Web: `overview/lib/inbox.ts` (dựng dòng, tóm tắt, sắp, lọc), `InboxRowList.tsx`, `ApprovalsInboxPage`, `use-inbox` (+`itemByTask`), i18n vi+en.
+## LÃ m
+- Hub: `GET /me/review-tasks` thÃªm `process_run.request {title, partner, amount}` tá»« phiáº¿u cá»§a lÆ°á»£t (cÃ¹ng cÃ¢u SQL, join lÆ°á»£t cha cho lÆ°á»£t con; khÃ´ng truy váº¥n thÃªm). `notify/task-request-summary.ts`.
+- Web: `overview/lib/inbox.ts` (dá»±ng dÃ²ng, tÃ³m táº¯t, sáº¯p, lá»c), `InboxRowList.tsx`, `ApprovalsInboxPage`, `use-inbox` (+`itemByTask`), i18n vi+en.
 
-## Không làm / Chạm
-- Không đụng RequestPage/RequestsPage. Dòng duyệt HĐ không thuộc lượt quy trình chỉ có «số · tên HĐ» (`/my-work` chưa có đối tác/số tiền).
+## KhÃ´ng lÃ m / Cháº¡m
+- KhÃ´ng Ä‘á»¥ng RequestPage/RequestsPage. DÃ²ng duyá»‡t HÄ khÃ´ng thuá»™c lÆ°á»£t quy trÃ¬nh chá»‰ cÃ³ Â«sá»‘ Â· tÃªn HÄÂ» (`/my-work` chÆ°a cÃ³ Ä‘á»‘i tÃ¡c/sá»‘ tiá»n).
 
-## Test tối thiểu
-unit `task-request-summary.rules.test.ts`, `inbox.test.ts`; int: `purchase-child-task.int.test.ts` (số tiền lượt con lấy từ phiếu lượt cha).
+## Test tá»‘i thiá»ƒu
+unit `task-request-summary.test.ts`, `inbox.test.ts`; int: `purchase-child-task.int.test.ts` (sá»‘ tiá»n lÆ°á»£t con láº¥y tá»« phiáº¿u lÆ°á»£t cha).
 
-## Quyết định trong lúc làm
-- Đối tác = ô text có khoá/nhãn nói về đối tác/NCC/khách; tiền = ô kiểu `money` đầu tiên (phiếu chưa có kiểu «đối tác»).
-- «Cần duyệt» = mọi việc không phải ký.
+## Quyáº¿t Ä‘á»‹nh trong lÃºc lÃ m
+- Äá»‘i tÃ¡c = Ã´ text cÃ³ khoÃ¡/nhÃ£n nÃ³i vá» Ä‘á»‘i tÃ¡c/NCC/khÃ¡ch; tiá»n = Ã´ kiá»ƒu `money` Ä‘áº§u tiÃªn (phiáº¿u chÆ°a cÃ³ kiá»ƒu Â«Ä‘á»‘i tÃ¡cÂ»).
+- Â«Cáº§n duyá»‡tÂ» = má»i viá»‡c khÃ´ng pháº£i kÃ½.
 
-## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+## Delta (so vá»›i docs/current)
+Tráº¡ng thÃ¡i gá»™p: chÆ°a gá»™p
 
 ### MODIFIED sht/duyet-ky-so.md
-#### Yêu cầu: «Việc của tôi» nói rõ điều đang duyệt
-Mỗi dòng của «Việc của tôi» là một kiểu chung cho ký, duyệt HĐ và việc yêu cầu: nhãn bước, rồi «quy trình · đối tác/NCC · số tiền · người đề xuất · ngày» lấy từ phiếu của lượt (phần thiếu thì bỏ). Sắp theo hạn gần nhất, rồi việc chờ lâu nhất. Chip «Tất cả · Cần duyệt · Cần ký» lọc danh sách.
-- Kịch bản: khi lượt có phiếu thì `/me/review-tasks` trả số tiền của phiếu (lượt con lấy phiếu lượt cha) [test: apps/hub-api/src/modules/processes/nodes/subprocess/purchase-child-task.int.test.ts » CR-126 · việc đầu của lượt con hiện trong «Chờ tôi duyệt»]
-- Kịch bản: khi phiếu có ô tiền và ô nhà cung cấp thì tóm tắt lấy đúng hai ô, thiếu thì null [test: apps/hub-api/src/modules/processes/notify/task-request-summary.rules.test.ts » requestSummary]
-- Kịch bản: khi có việc ký, duyệt, yêu cầu thì sắp hạn trước rồi chờ lâu nhất và chip lọc đúng [test: apps/workspace-web/src/features/overview/lib/inbox.test.ts » inbox rows]
+#### YÃªu cáº§u: Â«Viá»‡c cá»§a tÃ´iÂ» nÃ³i rÃµ Ä‘iá»u Ä‘ang duyá»‡t
+Má»—i dÃ²ng cá»§a Â«Viá»‡c cá»§a tÃ´iÂ» lÃ  má»™t kiá»ƒu chung cho kÃ½, duyá»‡t HÄ vÃ  viá»‡c yÃªu cáº§u: nhÃ£n bÆ°á»›c, rá»“i Â«quy trÃ¬nh Â· Ä‘á»‘i tÃ¡c/NCC Â· sá»‘ tiá»n Â· ngÆ°á»i Ä‘á» xuáº¥t Â· ngÃ yÂ» láº¥y tá»« phiáº¿u cá»§a lÆ°á»£t (pháº§n thiáº¿u thÃ¬ bá»). Sáº¯p theo háº¡n gáº§n nháº¥t, rá»“i viá»‡c chá» lÃ¢u nháº¥t. Chip Â«Táº¥t cáº£ Â· Cáº§n duyá»‡t Â· Cáº§n kÃ½Â» lá»c danh sÃ¡ch.
+- Ká»‹ch báº£n: khi lÆ°á»£t cÃ³ phiáº¿u thÃ¬ `/me/review-tasks` tráº£ sá»‘ tiá»n cá»§a phiáº¿u (lÆ°á»£t con láº¥y phiáº¿u lÆ°á»£t cha) [test: apps/hub-api/src/modules/processes/nodes/subprocess/purchase-child-task.int.test.ts Â» CR-126 Â· viá»‡c Ä‘áº§u cá»§a lÆ°á»£t con hiá»‡n trong Â«Chá» tÃ´i duyá»‡tÂ»]
+- Ká»‹ch báº£n: khi phiáº¿u cÃ³ Ã´ tiá»n vÃ  Ã´ nhÃ  cung cáº¥p thÃ¬ tÃ³m táº¯t láº¥y Ä‘Ãºng hai Ã´, thiáº¿u thÃ¬ null [test: apps/hub-api/src/modules/processes/notify/task-request-summary.test.ts Â» requestSummary]
+- Ká»‹ch báº£n: khi cÃ³ viá»‡c kÃ½, duyá»‡t, yÃªu cáº§u thÃ¬ sáº¯p háº¡n trÆ°á»›c rá»“i chá» lÃ¢u nháº¥t vÃ  chip lá»c Ä‘Ãºng [test: apps/workspace-web/src/features/overview/lib/inbox.test.ts Â» inbox rows]
 
-## Việc còn lại
-- e2e chưa chạy (giữ testid cũ; `approval-tasks`/`signing-tasks` không còn, `requests-waiting` bao mọi dòng).
-- Dòng duyệt HĐ ngoài lượt quy trình chưa có đối tác/số tiền (cần thêm vào `/my-work`).
+## Viá»‡c cÃ²n láº¡i
+- e2e chÆ°a cháº¡y (giá»¯ testid cÅ©; `approval-tasks`/`signing-tasks` khÃ´ng cÃ²n, `requests-waiting` bao má»i dÃ²ng).
+- DÃ²ng duyá»‡t HÄ ngoÃ i lÆ°á»£t quy trÃ¬nh chÆ°a cÃ³ Ä‘á»‘i tÃ¡c/sá»‘ tiá»n (cáº§n thÃªm vÃ o `/my-work`).
