@@ -128,7 +128,7 @@ test('CHAT-AC-57 · E-P10 · đã chuyển 3 lần ⇒ nút khoá aria-disabled;
 
     // review: B chuyển cho H (ngoài Group) ⇒ lỗi
     await u.B.goto(`/rooms/${room.id}?flow=${rv.flowId}`);
-    const card = flowPane(u.B).getByRole("region", { name: "Kiểm Đọc hoá đơn" });
+    const card = flowPane(u.B).getByRole("region", { name: "Duyệt Đọc hoá đơn" });
     await card.getByRole("button", { name: /Chuyển|Nhờ người khác/ }).click();
     const d2 = u.B.getByRole("dialog");
     await d2.getByRole("searchbox", { name: "Tìm người" }).fill("QC Người 01");

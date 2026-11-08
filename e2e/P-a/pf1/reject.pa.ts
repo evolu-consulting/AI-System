@@ -29,7 +29,7 @@ test('N2-FR-02 · HD3 · B "Từ chối" ⇒ lý do bắt buộc; "Sai MST" ⇒ 
     await openThread(u.B, room.id);
     const pane = flowPane(u.B);
     await expect(outputMsg(pane)).toBeVisible();
-    const card = pane.getByRole("region", { name: "Kiểm Đọc hoá đơn" });
+    const card = pane.getByRole("region", { name: "Duyệt Đọc hoá đơn" });
     await card.getByRole("button", { name: "Từ chối", exact: true }).click();
     const reason = card.getByRole("textbox", { name: "Lý do từ chối (bắt buộc)" });
     await expect(reason).toBeFocused();

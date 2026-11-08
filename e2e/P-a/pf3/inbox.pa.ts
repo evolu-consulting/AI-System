@@ -22,7 +22,7 @@ test('CHAT-AC-54 · E-P11 · T có việc ⇒ "Chờ tôi kiểm" huy hiệu 1, 
     await expect(item).toHaveAttribute("href", new RegExp(`/runs/${r.runId}\\?task=`));
 
     await u.B.goto(`/rooms/${room.id}?flow=${r.flowId}`);
-    await passBtn(flowPane(u.B).getByRole("region", { name: "Kiểm Đọc hoá đơn" })).click();
+    await passBtn(flowPane(u.B).getByRole("region", { name: "Duyệt Đọc hoá đơn" })).click();
     await expect(item).toHaveCount(0);
     await expect(u.T.getByTestId("process-todo-badge")).toBeHidden();
     await expect(u.T.getByText("Không có việc nào chờ bạn")).toBeVisible();

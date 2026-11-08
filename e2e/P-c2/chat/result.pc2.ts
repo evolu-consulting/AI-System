@@ -23,7 +23,7 @@ test.afterEach(() => settle());
 
 const IDX = 1; // "Rà soát code" (seed a: waiting_review, task Kế toán)
 const region = (p: Page) => p.getByRole("region", { name: "Kết quả áp bản sửa" });
-const card = (p: Page) => p.getByRole("region", { name: "Kiểm Rà soát code" });
+const card = (p: Page) => p.getByRole("region", { name: "Duyệt Rà soát code" });
 
 async function openRun(room: string, apply: unknown, autofix?: unknown, who: "A" | "B" = "A") {
   const rm = await mkRoom(room);

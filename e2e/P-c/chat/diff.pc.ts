@@ -21,7 +21,7 @@ import {
 test.afterEach(() => settle());
 
 const IDX = 1; // "Rà soát code" (seed a: waiting_review, task Kế toán)
-const card = (p: Page) => p.getByRole("region", { name: "Kiểm Rà soát code" });
+const card = (p: Page) => p.getByRole("region", { name: "Duyệt Rà soát code" });
 const result = (p: Page) => p.getByRole("region", { name: "Kết quả tự sửa mã" });
 
 async function openGate(o: {

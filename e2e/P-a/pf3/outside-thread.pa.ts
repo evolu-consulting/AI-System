@@ -29,7 +29,7 @@ test('AC-H29 · T8 · E-P18 · T Đạt ở /runs/<id>?task= ⇒ B (thread mở)
 
     await u.T.goto(`/runs/${r.runId}?task=${r.taskId ?? ""}`);
     await expect(u.T.getByRole("link", { name: /Mở luồng trong phòng|Quay lại/ })).toHaveCount(0);
-    await passBtn(u.T.getByRole("region", { name: "Kiểm Đọc hoá đơn" })).click();
+    await passBtn(u.T.getByRole("region", { name: "Duyệt Đọc hoá đơn" })).click();
 
     const msg = taskResult(flowPane(u.B), "Thomas", "Đạt");
     await expect(msg).toBeVisible();

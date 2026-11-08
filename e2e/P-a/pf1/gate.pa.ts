@@ -35,7 +35,7 @@ test('CHAT-AC-53 · AC-H28 · E-P4 · B "Chưa đạt" ⇒ góp ý trống bị 
     await openThread(u.B, room.id);
     const pane = flowPane(u.B);
     await expect(outputMsg(pane)).toBeVisible();
-    const card = pane.getByRole("region", { name: "Kiểm Đọc hoá đơn" });
+    const card = pane.getByRole("region", { name: "Duyệt Đọc hoá đơn" });
     await expect(card).toBeVisible();
     await expect(pane.getByRole("textbox", { name: /sửa|chỉnh/i })).toHaveCount(0);
     const userBefore = await userMsgsInFlow("A", room.id, flowId);
@@ -79,10 +79,10 @@ test('CHAT-AC-53 · E-P5 · B (thread) và T (ngoài phòng /runs/:id?task=) b�
     const { runId } = await startUi(u.A, "!hoa-don-t HD-5");
     await rtScript(runId, 1, [{ kind: "hold" }]);
     await openThread(u.B, room.id);
-    const card = flowPane(u.B).getByRole("region", { name: "Kiểm Đọc hoá đơn" });
+    const card = flowPane(u.B).getByRole("region", { name: "Duyệt Đọc hoá đơn" });
     await expect(card).toBeVisible();
     await u.T.goto(`/runs/${runId}`);
-    const tCard = u.T.getByRole("region", { name: "Kiểm Đọc hoá đơn" });
+    const tCard = u.T.getByRole("region", { name: "Duyệt Đọc hoá đơn" });
     await expect(tCard).toBeVisible();
 
     await Promise.all([passBtn(card).click(), passBtn(tCard).click()]);

@@ -20,7 +20,7 @@ test.afterEach(() => settle());
 
 const strip = (p: Page, name: string) =>
   block(p, name).getByRole("list", { name: "Tiến độ quy trình" });
-const card = (p: Page, stage: string) => p.getByRole("region", { name: `Kiểm ${stage}` });
+const card = (p: Page, stage: string) => p.getByRole("region", { name: `Duyệt ${stage}` });
 const WENT_BACK = "Đã quay lại bước 1. Các giai đoạn sẽ chạy lại với góp ý của bạn.";
 const SUPERSEDED = "Giai đoạn này vừa được xử lý ở bước khác. Đã cập nhật.";
 
@@ -70,7 +70,7 @@ test("CHAT-AC-60 · E-PB2-21 · seed (a): B ở trang Run thấy 2 thẻ duyệt
     await u.B.goto(`/runs/${r.runId}`);
     const g = u.B.getByRole("group", { name: "Bước 2" });
     await expect(card(u.B, "Rà soát code")).toBeVisible();
-    await expect(g.getByRole("region", { name: /^Kiểm / })).toHaveCount(2);
+    await expect(g.getByRole("region", { name: /^Duyệt / })).toHaveCount(2);
   } finally {
     await u.close();
   }

@@ -76,17 +76,17 @@ test('SC-1 · E-S2 · sdlc: 3 cổng (B, T, B), nhờ trả lời A→H ở Inta
       .getByRole("article", { name: name })
       .getByRole("button", { name: "Duyệt ngay" })
       .click();
-    await passBtn(flowPane(u.B).getByRole("region", { name: "Kiểm Intake" })).click();
+    await passBtn(flowPane(u.B).getByRole("region", { name: "Duyệt Intake" })).click();
 
     // cổng 2: T (ngoài phòng) Chưa đạt ⇒ v2 ⇒ Đạt
     await openTodo(u.T);
-    const g2 = u.T.getByRole("region", { name: "Kiểm Sẵn sàng" });
+    const g2 = u.T.getByRole("region", { name: "Duyệt Sẵn sàng" });
     await failBtn(g2).click();
     await u.T.getByRole("textbox", { name: /^Góp ý cho / }).fill("Thiếu ma trận luật");
     await u.T.getByRole("button", { name: /Gửi góp ý/ }).click();
     await expect(outputMsg(pa, "Sẵn sàng", 2)).toBeVisible({ timeout: 30_000 });
     await openTodo(u.T);
-    await passBtn(u.T.getByRole("region", { name: "Kiểm Sẵn sàng" })).click();
+    await passBtn(u.T.getByRole("region", { name: "Duyệt Sẵn sàng" })).click();
 
     // cổng 3: B Review
     await u.B.goto(`/rooms/${room.id}`);
@@ -94,7 +94,7 @@ test('SC-1 · E-S2 · sdlc: 3 cổng (B, T, B), nhờ trả lời A→H ở Inta
       name: name,
     });
     await kb.getByRole("button", { name: "Duyệt ngay" }).click({ timeout: 60_000 });
-    await passBtn(flowPane(u.B).getByRole("region", { name: "Kiểm Review" })).click();
+    await passBtn(flowPane(u.B).getByRole("region", { name: "Duyệt Review" })).click();
 
     await expect(blk).toContainText("Hoàn tất", { timeout: 30_000 });
     for (const [who, r] of [

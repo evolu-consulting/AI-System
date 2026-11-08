@@ -100,7 +100,7 @@ test("CHAT-AC-59 · AC-H41 · PD-E08(b) · timer_invalid ⇒ thẻ quyết: 'Ng�
   }
 });
 
-test("CHAT-AC-59 · AC-H42 · PD-E08(c) · task review đã chuyển cấp ⇒ region 'Kiểm …' có 'Đã chuyển cấp'; Inbox của H có thẻ 'Việc ở … đã chuyển cấp tới nhóm của bạn'", async ({
+test("CHAT-AC-59 · AC-H42 · PD-E08(c) · task review đã chuyển cấp ⇒ region \"Duyệt …\" có 'Đã chuyển cấp'; Inbox của H có thẻ 'Việc ở … đã chuyển cấp tới nhóm của bạn'", async ({
   browser,
 }) => {
   const room = await mkRoom("EPD08C");
@@ -112,7 +112,7 @@ test("CHAT-AC-59 · AC-H42 · PD-E08(c) · task review đã chuyển cấp ⇒ r
       name: /^Việc ở .* đã chuyển cấp tới nhóm của bạn$/,
     });
     await expect(card).toBeVisible();
-    await expect(card.getByRole("region", { name: /^Kiểm / })).toContainText("Đã chuyển cấp");
+    await expect(card.getByRole("region", { name: /^Duyệt / })).toContainText("Đã chuyển cấp");
     expect(r.ready).toBe(true);
   } finally {
     await u.close();
