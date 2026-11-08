@@ -137,6 +137,10 @@ async function actOnWaiting(page: Page): Promise<boolean> {
     // cr126-child-task-visible-2 · các bước (lượt cha + con) tải SAU khung trang: chờ có lượt rồi mới xem form / nút Duyệt
     await expect(page.locator("[data-run]").first()).toBeVisible({ timeout: 30_000 });
     const approve = page.getByTestId("request-approve").first();
+    // form / nút Duyệt chỉ hiện khi danh sách việc của tôi (taskOf) tải xong — SAU khung các bước: chờ một trong hai (không có ⇒ việc đã xong)
+    await expect(page.locator('form[data-flow="form"]').first().or(approve))
+      .toBeVisible({ timeout: 15_000 })
+      .catch(() => undefined);
     if (await submitOpenForm(page)) acted = true;
     else if (await approve.isVisible()) {
       await approve.click();
