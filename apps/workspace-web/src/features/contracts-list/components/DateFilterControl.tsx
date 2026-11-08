@@ -1,6 +1,8 @@
 // Gap #10 · lọc ngày trong thanh công cụ: cột (hiệu lực đến | hạn chót) + cửa sổ (quá hạn, 30/60/90 ngày, khoảng tuỳ chọn). Trạng thái do
 // trang giữ trên URL; component chỉ hiển thị và gọi `onChange`.
+
 import { CONTRACT_DUE_PRESETS } from "@ai/contracts/light";
+import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -66,19 +68,17 @@ export function DateFilterControl({
       </select>
       {mode === "range" && (
         <>
-          <input
-            type="date"
+          <DateInput
             aria-label={t("contracts.list.date.from")}
-            className={SELECT}
+            inputClassName={SELECT}
             value={value.from ?? ""}
             max={value.to || undefined}
             onChange={(e) => onChange({ type: "from", value: e.target.value })}
           />
           <span className="text-dim">–</span>
-          <input
-            type="date"
+          <DateInput
             aria-label={t("contracts.list.date.to")}
-            className={SELECT}
+            inputClassName={SELECT}
             value={value.to ?? ""}
             min={value.from || undefined}
             onChange={(e) => onChange({ type: "to", value: e.target.value })}

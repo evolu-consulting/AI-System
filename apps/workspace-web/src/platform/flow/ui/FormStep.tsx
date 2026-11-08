@@ -1,7 +1,9 @@
 // CR-118 · UW-FR-12 · cr118-flow-web · renderer bước `form`: hiển thị + (người có task đang mở) điền và gửi qua
 // `POST /review-tasks/:id/form`. Nhãn/gợi ý render dạng TEXT (React escape) — không HTML. Lỗi sớm theo cùng giới hạn Hub
 // (`flowFormValuesSchema`); Hub vẫn kiểm lại theo snapshot (422 FORM_VALUES_INVALID ⇒ gắn lỗi vào trường).
+
 import type { FlowFormField } from "@ai/contracts/flow";
+import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { checkForm, emptyDraft, type FieldErrors, type FormDraft } from "../lib/form-values";
@@ -56,10 +58,10 @@ function Input({
       );
     case "date":
       return (
-        <input
+        <DateInput
           id={id}
-          type="date"
-          className={INPUT}
+          inputClassName={INPUT}
+          className="w-full"
           value={str}
           onChange={(e) => onChange(e.target.value)}
         />

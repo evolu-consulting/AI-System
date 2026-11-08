@@ -1,7 +1,9 @@
 // V2-F · HD-04 · mockup `confirmBox`: "Xác nhận xong" hỏi NGÀY thực tế; mốc trễ hạn (ngày thực tế > hạn) hỏi thêm LỖI của ai
 // (đối tác / mình / chưa rõ) — chỉ lỗi đối tác trừ điểm (V2-E). Gửi `POST /obligations/:id/settle`. MS-impact: khối tác động thật
 // (`GET /obligations/:id/impact`) theo ngày + lỗi đang chọn.
+
 import type { ContractDeal, Milestone } from "@ai/contracts/pack-contracts";
+import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PillRadio } from "~/components/shared/seg-button";
@@ -79,9 +81,8 @@ export function ConfirmBox({
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1 text-[13px]">
           <label htmlFor={`done-${m.id}`}>{L("doneDate")}</label>
-          <input
+          <DateInput
             id={`done-${m.id}`}
-            type="date"
             value={at}
             onChange={(e) => setAt(e.target.value)}
             className="field w-[170px] font-mono"

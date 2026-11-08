@@ -1,6 +1,8 @@
 // HD7-FR-04…06 · HD7-FR-12 · một đợt chưa xong — port `PartnerLog.tsx:125-175`: Đã thu/Đã trả (ngày trả, trễ N ngày), Đã nhắc,
 // Khách hẹn lại (ngày hẹn > hạn). Hạn đã qua tô đỏ.
+
 import type { Obligation } from "@ai/contracts/pack-contracts";
+import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate, vnd } from "~/components/shared/format";
@@ -27,8 +29,7 @@ function PayForm({ o, busy, act, done }: FormProps) {
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
       <span>{L("payOn", { who: receive ? L("customerPays") : L("wePay") })}</span>
-      <input
-        type="date"
+      <DateInput
         className="field h-8 w-[150px]"
         value={at}
         max={today()}
@@ -64,8 +65,7 @@ function LaterForm({ o, busy, act, done }: FormProps) {
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
       <span>{L("laterOn")}</span>
-      <input
-        type="date"
+      <DateInput
         className="field h-8 w-[150px]"
         value={to}
         min={o.due_date}

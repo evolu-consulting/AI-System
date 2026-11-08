@@ -1,5 +1,6 @@
 // V2-G · BA §4.2: cột phải ở bước xác nhận — các mốc AI tìm thấy trong văn bản (loại, tên, hạn, số tiền, trích dẫn); bỏ chọn mốc sai, sửa hạn.
 // Hạn để trống (AI không thấy ngày) hiện theo ngày hợp đồng (kết thúc ?? bắt đầu ?? hôm nay) và gửi đúng ngày đó khi Lưu.
+import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useTranslation } from "react-i18next";
 import { vnd } from "~/components/shared/format";
 import { Panel } from "~/components/shared/layout";
@@ -53,8 +54,7 @@ export function AiMilestonesPanel({
                     <span className="ml-auto font-mono text-[13px]">{vnd(r.amount)} đ</span>
                   )}
                 </div>
-                <input
-                  type="date"
+                <DateInput
                   className="field h-9 w-[170px]"
                   aria-label={L("aiMsDue", { title })}
                   disabled={disabled || !r.keep}

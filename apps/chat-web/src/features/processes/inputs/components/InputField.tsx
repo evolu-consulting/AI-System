@@ -1,5 +1,7 @@
 // HUB-FR-124 · AC-H37 · một trường của form `!key`, rẽ theo `type`: text / select / file / source_ref.
+
 import type { ProcessInputDef } from "@ai/contracts/hub-admin";
+import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
@@ -82,8 +84,7 @@ function Control(p: Props) {
   if (def.type === "file") return <FileControl {...p} />;
   if (def.type === "number")
     return <TypedControl {...p} type="number" bad="numberInvalid" msg={NUMBER_INPUT_INVALID_KEY} />;
-  if (def.type === "date")
-    return <TypedControl {...p} type="date" bad="dateInvalid" msg={DATE_INPUT_INVALID_KEY} />;
+  if (def.type === "date") return <DateControl {...p} />;
   return (
     <>
       <Textarea
@@ -102,14 +103,14 @@ function Control(p: Props) {
 }
 
 /** Ô `date` / `number` của trình duyệt: giá trị chuỗi, lỗi `bad` ⇒ câu `msg` dưới ô. */
-function TypedControl(p: Props & { type: "date" | "number"; bad: FieldError; msg: string }) {
+function TypedControl(p: Props & { type: "number"; bad: FieldError; msg: string }) {
   const { t } = useTranslation();
   return (
     <>
       <input
         // `number` dùng ô chữ + bàn phím số: ô `type=number` trả "" khi gõ sai (bong bóng gốc, mất câu i18n — UAT B-D2-1).
-        type={p.type === "number" ? "text" : p.type}
-        inputMode={p.type === "number" ? "decimal" : undefined}
+        type="text"
+        inputMode="decimal"
         data-input-type={p.type}
         className={SELECT_CLASS}
         aria-label={p.def.label}
@@ -121,6 +122,28 @@ function TypedControl(p: Props & { type: "date" | "number"; bad: FieldError; msg
       {p.error === p.bad && (
         <p role="alert" className="text-caption text-destructive">
           {t(p.msg)}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** Ô ngày dùng chung (dd/mm/yyyy, gõ hoặc chọn lịch); sai ngày ⇒ câu `dateInvalid` dưới ô. */
+function DateControl(p: Props) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <DateInput
+        aria-label={p.def.label}
+        inputClassName={SELECT_CLASS}
+        className="w-full"
+        value={p.value.value}
+        disabled={p.disabled}
+        onChange={(e) => p.onChange({ value: e.target.value })}
+      />
+      {p.error === "dateInvalid" && (
+        <p role="alert" className="text-caption text-destructive">
+          {t(DATE_INPUT_INVALID_KEY)}
         </p>
       )}
     </>

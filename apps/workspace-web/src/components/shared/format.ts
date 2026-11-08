@@ -1,4 +1,5 @@
 // PK-FR-10 · TF2 · định dạng số/ngày kiểu người Việt. Nguồn: reference/mgmt-app-contracts/web/src/components/ui.tsx:3-35 (port nguyên logic).
+import { isoToVi } from "@ai/web-kit/date-math";
 
 export const vnd = (n: number | null | undefined): string =>
   n == null ? "—" : n.toLocaleString("vi-VN");
@@ -10,7 +11,7 @@ export const viDate = (iso: string | null | undefined): string => {
     iso.length > 10 && iso.includes("T")
       ? new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" })
       : iso.slice(0, 10);
-  return day.split("-").reverse().join("/");
+  return isoToVi(day);
 };
 
 /** CR-125 · x1 · ngày giờ dd/mm/yyyy HH:mm (múi giờ Việt Nam) — MỘT hàm cho mọi chỗ hiện giờ (không `toLocaleString()` theo máy: ra mm/dd ở máy Mỹ). */

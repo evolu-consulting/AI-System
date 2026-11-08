@@ -1,5 +1,6 @@
 // Trường theo loại bài (mockup `.cfields`): Cần bán = hàng hoá, số lượng, giá/liên hệ; Cần mua = + khu vực, ngày cần.
 
+import { DateInput } from "@ai/web-kit/ui/DateInput";
 import type { Draft } from "../domain/compose";
 import { t } from "../i18n";
 
@@ -92,9 +93,8 @@ export function DraftFields({
         </F>
         {buy && (
           <F label={t("community.draft.neededBy")} err={errors.neededBy}>
-            <input
+            <DateInput
               className="field"
-              type="date"
               aria-label={t("community.draft.neededBy")}
               value={draft.neededBy}
               onChange={on("neededBy")}

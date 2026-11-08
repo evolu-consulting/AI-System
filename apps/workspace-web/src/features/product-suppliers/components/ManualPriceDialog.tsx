@@ -2,7 +2,7 @@
 import type { SupplierPriceKind } from "@ai/contracts/pack-contracts";
 import { type RefObject, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FIELD, Field } from "~/features/products/components/Field";
+import { FIELD, Field, FieldDate } from "~/features/products/components/Field";
 import { useSavePrices } from "../hooks/use-quote";
 import { type ManualPriceForm, manualPriceBody } from "../lib/suppliers";
 
@@ -86,13 +86,7 @@ export function ManualPriceDialog({
             maxLength={40}
             onChange={set("unit")}
           />
-          <Field
-            id="gd1-m-date"
-            label={L("date")}
-            type="date"
-            value={f.date}
-            onChange={set("date")}
-          />
+          <FieldDate id="gd1-m-date" label={L("date")} value={f.date} onChange={set("date")} />
         </div>
         <Field
           id="gd1-m-note"

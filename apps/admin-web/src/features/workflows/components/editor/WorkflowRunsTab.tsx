@@ -1,12 +1,14 @@
 // dify-workflows · tab "Lịch sử chạy" của workflow (platform_admin): lọc tenant/trạng thái/ngày, bảng lượt chạy Dify, phân trang
 // server. Nạp khi mở tab. Không hiện inputs/app-key; thông báo lỗi do Hub đã che secret.
+
 import { DIFY_RUN_STATUSES } from "@ai/contracts/workflow-runs";
+import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pagination } from "@/components/shared/Pagination";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { TenantPicker } from "@/components/shared/TenantPicker";
-import { Input } from "@/components/ui/input";
+import { INPUT_CLASS } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -73,16 +75,16 @@ export function WorkflowRunsTab({ workflowId }: { workflowId: string }) {
             ))}
           </SelectContent>
         </Select>
-        <Input
-          type="date"
+        <DateInput
+          inputClassName={INPUT_CLASS}
           aria-label={t("workflows.runs.from")}
           value={from}
           max={to || undefined}
           onChange={(e) => filter(() => setFrom(e.target.value))}
           className="w-40"
         />
-        <Input
-          type="date"
+        <DateInput
+          inputClassName={INPUT_CLASS}
           aria-label={t("workflows.runs.to")}
           value={to}
           min={from || undefined}

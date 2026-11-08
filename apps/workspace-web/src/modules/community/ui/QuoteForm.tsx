@@ -1,6 +1,8 @@
 // CR-102b · C7b · form "Lưu báo giá vào Sản phẩm & Giá" (mockup `.cbox`): điền sẵn từ bài, SP khớp + "Tạo sản phẩm mới", so giá với
 // giá đã ghi nhận, cảnh báo lệch > 30% / khác VAT, thông báo thay giá. Chỉ chủ quản thấy (nút chỉ có khi server trả `saveQuote`).
+
 import type { HostHint, PostView, QuotePreview } from "@ai/contracts/community";
+import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useEffect, useState } from "react";
 import { useApp } from "../application/ctx";
 import {
@@ -184,9 +186,8 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
         </div>
         <div>
           <label htmlFor="q-date">{t("community.quote.date")}</label>
-          <input
+          <DateInput
             id="q-date"
-            type="date"
             className="field"
             value={d.quotedAt}
             onChange={(e) => set({ quotedAt: e.target.value })}
@@ -194,9 +195,8 @@ export function QuoteForm({ post, supplier, commentId, itemIdx, onClose, onSaved
         </div>
         <div>
           <label htmlFor="q-exp">{t("community.quote.expires")}</label>
-          <input
+          <DateInput
             id="q-exp"
-            type="date"
             className="field"
             value={d.expiresOn}
             onChange={(e) => set({ expiresOn: e.target.value })}

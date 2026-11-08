@@ -10,7 +10,7 @@ import { today } from "~/features/ledger/lib/ledger";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { knownCatalogError, useAddLot, useCatalogProduct } from "../hooks/use-catalog";
 import { avgPreview, type LotForm, lotBody } from "../lib/catalog";
-import { FIELD, Field } from "./Field";
+import { FIELD, Field, FieldDate } from "./Field";
 
 const th = "px-4 py-2.5 text-left text-xs font-semibold text-dim bg-sunk";
 const td = "border-t border-rule-soft px-4 py-2.5 text-sm";
@@ -62,10 +62,9 @@ function LotFormBox({
             </select>
           </div>
         )}
-        <Field
+        <FieldDate
           id="gd1-l-date"
           label={L("date")}
-          type="date"
           value={f.date}
           max={today()}
           onChange={set("date")}
@@ -85,10 +84,9 @@ function LotFormBox({
           onChange={set("price")}
         />
         {comp.mode === "quota" && (
-          <Field
+          <FieldDate
             id="gd1-l-exp"
             label={L("expires")}
-            type="date"
             value={f.expires}
             min={f.date}
             onChange={set("expires")}

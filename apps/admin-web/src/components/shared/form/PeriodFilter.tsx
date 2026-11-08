@@ -1,9 +1,10 @@
 // ADM-FR-51, ADM-FR-52 · M4-R12 · lọc thời gian: nút `button "Thời gian: 30 ngày"` mở Popover có preset 7/30/90 ngày
 // và 2 ô ngày (plan-frontend D3, không react-day-picker). Chọn preset áp dụng ngay; tuỳ chọn cần bấm "Áp dụng".
+import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { INPUT_CLASS } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -57,9 +58,9 @@ export function PeriodFilter({ value, onChange, className }: Props) {
         </ToggleGroup>
         <div className="space-y-1.5">
           <Label htmlFor="period-from">{t("audit.period.from")}</Label>
-          <Input
+          <DateInput
+            inputClassName={INPUT_CLASS}
             id="period-from"
-            type="date"
             value={from}
             max={to || undefined}
             onChange={(e) => setFrom(e.target.value)}
@@ -67,9 +68,9 @@ export function PeriodFilter({ value, onChange, className }: Props) {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="period-to">{t("audit.period.to")}</Label>
-          <Input
+          <DateInput
+            inputClassName={INPUT_CLASS}
             id="period-to"
-            type="date"
             value={to}
             min={from || undefined}
             onChange={(e) => setTo(e.target.value)}

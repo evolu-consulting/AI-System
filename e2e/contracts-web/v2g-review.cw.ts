@@ -1,4 +1,4 @@
-﻿// V2-G · HD-02/HD-08 · BA §4.2 "Upload và xác nhận" · 5.5 · Luật 4b: màn xác nhận sau khi AI đọc — form V2-F điền sẵn, ô AI chưa chắc tô vàng, mốc AI
+// V2-G · HD-02/HD-08 · BA §4.2 "Upload và xác nhận" · 5.5 · Luật 4b: màn xác nhận sau khi AI đọc — form V2-F điền sẵn, ô AI chưa chắc tô vàng, mốc AI
 // tìm thấy ở cột phải, gợi ý SP theo quy tắc nhận diện, Lưu = MỘT POST /review, Hủy không gửi gì, tenant tắt duyệt ⇒ HĐ có hiệu lực; khối Sản phẩm của
 // HĐ đã lưu gắn lại SP (PUT) và Tóm tắt hiện 5 mục AI. Backend giả `page.route`; chờ phần tử/yêu cầu, không sleep.
 import { expect, type Page, test } from "@playwright/test";
@@ -44,8 +44,8 @@ test("cột phải: mốc AI tìm thấy (giữ/bỏ, hạn theo ngày HĐ khi A
   const list = page.getByTestId("ai-milestones");
   await expect(list.getByText("Giao hàng đợt 1", { exact: true })).toBeVisible();
   await expect(list.getByText("Thanh toán 50%", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Hạn mốc Giao hàng đợt 1")).toHaveValue("2026-03-01");
-  await expect(page.getByLabel("Hạn mốc Thanh toán 50%")).toHaveValue("2026-12-31");
+  await expect(page.getByLabel("Hạn mốc Giao hàng đợt 1")).toHaveValue("01/03/2026");
+  await expect(page.getByLabel("Hạn mốc Thanh toán 50%")).toHaveValue("31/12/2026");
   await expect(page.getByTestId("link-0").getByText("Gợi ý")).toBeVisible();
   await expect(page.getByLabel("Gắn dòng 1 với sản phẩm").locator("option:checked")).toHaveText(
     "Chữ ký số DN – USB Token",

@@ -137,7 +137,7 @@ test("CHAT-AC-59 · AC-H41 · PD-E08(d) · form '!pd-wait-input': ô ngày (type
     await p.getByRole("button", { name: "Gửi", exact: true }).click();
     const f = p.getByRole("dialog", { name: "Thông tin cho quy trình Chờ nhập ngày" });
     const date = f.getByLabel("Hạn");
-    await expect(date).toHaveAttribute("type", "date");
+    await expect(f.getByRole("button", { name: "Chọn ngày" })).toBeVisible();
     await date.fill("2026-12-14");
     const req = p.waitForRequest(
       (r) => r.method() === "POST" && new URL(r.url()).pathname === "/process-runs",

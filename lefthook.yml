@@ -15,6 +15,9 @@ pre-commit:
     - name: check-boundaries
       glob: "apps/hub-api/src/**"
       run: bun tools/scripts/src/check-boundaries.ts
+    - name: check-date-input
+      glob: "{apps,packages}/**/*.tsx"
+      run: bun tools/scripts/src/check-date-input.ts
     - name: check-app-slots
       glob: "packages/contracts/src/app-manifest/**"
       run: bun tools/scripts/src/check-app-slots.ts

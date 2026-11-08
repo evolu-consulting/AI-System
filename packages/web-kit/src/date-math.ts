@@ -21,6 +21,9 @@ export const VI_WEEKDAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"] as const;
 const p2 = (n: number): string => String(n).padStart(2, "0");
 export const isoOf = (y: number, m0: number, d: number): string => `${y}-${p2(m0 + 1)}-${p2(d)}`;
 
+/** ISO yyyy-mm-dd ⇒ dd/mm/yyyy (một bộ định dạng cho cả ô ngày lẫn `viDate`). */
+export const isoToVi = (iso: string): string => iso.slice(0, 10).split("-").reverse().join("/");
+
 /** Ngày có thật (28/29/30/31 đúng tháng, năm 1900–2999). */
 function real(y: number, m0: number, d: number): boolean {
   if (y < 1900 || y > 2999 || m0 < 0 || m0 > 11 || d < 1) return false;

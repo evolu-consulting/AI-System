@@ -124,7 +124,7 @@ c2819175148be556f76c37369dde90368aea7b55f49dafc76e3e8cfe9fd82f76  e2e/P-c2/playw
 005f30610e0958a4e03886522b7e0033a8ad34992e3da48645723c88cdddb702  e2e/P-d/admin-stage.pd.ts
 27b7439b42f4f9158c7a77b8fb00265b6de5d3de9000213cd0044df5d9869e20  e2e/P-d/admin-tenant.pd.ts
 ea143e8c08ca83e4c59cefa90e1cbd0b3a9b0ed70bff4dcb1da881f5573ff0ca  e2e/P-d/admin-uat-fixes.pd.ts
-063824b2ca90ff2fd2642e9987d371b75f72bd712a0d087614fb666ad5038ddf  e2e/P-d/chat-labels.pd.ts
+08561e0b7a9b3683fb7adc548d57b7700aaa8ad8cad60ef7568130b8613c6173  e2e/P-d/chat-labels.pd.ts
 fa9d32e553dd9fb86b5fb6b2ffd64ee5f9724df4260c3ff3c028c2b7d758079d  e2e/P-d/chat-uat-fixes.pd.ts
 9b9ab76d2d89c970fa291af89dd52b9da7ab78f29ae4cc0f147476fa69c8ad2a  e2e/P-d/playwright.pd.config.ts
 cff6d3a444d4df213cec19043dc397b865eafb42f3ce2cf8bc1e32254592c3bf  e2e/_kit/README.md
@@ -438,11 +438,11 @@ ebb860458e023f120e9305ba36e0a05a69da1fbcf1d65372f64d89c09f314f74  e2e/contracts-
 66fc771c8337d6738fc926e953c3427a607da19e1416eb376d4aa4481e8e2d89  e2e/contracts-web/transactions.cw.ts
 88d03774b015b410acf48dce227fd8084ab49e8640b88de82c3ed88379067c3c  e2e/contracts-web/u2-contracts-ux.cw.ts
 da024678489b6237926ec8684f23ef46c91218cb6ae8aa112b99d610a831c3a4  e2e/contracts-web/ui-gating.cw.ts
-587a28af60f844221fe74b34ea4078479d87261500f7c2dc9c815af4bde50a53  e2e/contracts-web/v2f-detail.cw.ts
+500669a2c42565a3696a723e67cc81aaee2ddd96fb658a9532575ee022b70ecf  e2e/contracts-web/v2f-detail.cw.ts
 d7e42da637fd5005751b814e8d8cf18d3f4689854c2cb5ad74771e79d0dc81a0  e2e/contracts-web/v2f-form.cw.ts
 19e26138b99ef8f9886e352395b7819afd5a55d821f6440ac4265ee6c6d5ff63  e2e/contracts-web/v2f-list.cw.ts
 0998eff940edf7e8918b8dd69d7a8621c0ac2b5a1c223cc55922c87769b972cc  e2e/contracts-web/v2f-support.ts
-8fbe12ab1d9855d8b7e834e1d6e2ed81f5ffa223457953c61b32e9b7a5181cd2  e2e/contracts-web/v2g-review.cw.ts
+295330b2c845aef488ffa01bbf1e9df1e15f9da396d8557e46c0aa0be101c5f4  e2e/contracts-web/v2g-review.cw.ts
 95a8ec1d40c2739a262e97c3026ac393c823b03deba60e6eefe6f33617140019  e2e/contracts-web/v2g-support.ts
 1c050465b6d1776af0c6a409d89b49e09953ef3cd84106f50ca98ef507846a06  e2e/contracts-web/v2h-customers.cw.ts
 b4ab8d3238e92b950faf446bbc711379ef725bf7182b3a980294849ed30fe4ae  e2e/contracts-web/v2i-partners.cw.ts

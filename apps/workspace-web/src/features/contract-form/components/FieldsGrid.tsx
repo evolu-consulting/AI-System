@@ -1,10 +1,10 @@
 // V2-F · HD-01/09 · mockup `fieldsHTML`: lưới ô thông tin hợp đồng dùng chung (nhập tay, xác nhận sau upload, sửa ở trang chi tiết).
 // Ô bắt buộc có dấu * và viền đỏ khi thiếu; nhãn đối tác + ô hoa hồng/giá trị đi theo loại; giá trị để trống ⇒ placeholder tự cộng.
 import { DOC_NUMBER_MAX, isValidDocNumber, normalizeDocNumber } from "@ai/contracts/pack-contracts";
+import { DateInput } from "@ai/web-kit/ui/DateInput";
 import type { ComponentProps } from "react";
 import { type ReactNode, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DateInput } from "~/components/shared/date-picker/DateInput";
 import { vnd } from "~/components/shared/format";
 import { Tag } from "~/components/shared/tag";
 import { QuoteLine } from "~/features/contract-source/components/QuoteLine";

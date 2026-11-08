@@ -158,7 +158,7 @@ test.describe("Dòng thời gian", () => {
     await page.goto(`/contracts/c/${ACTIVE_ID}`);
     await node(page, "Giao đợt 2").getByRole("button", { name: "Xác nhận xong" }).click();
     const box = page.getByTestId("confirm-box");
-    await expect(box.getByLabel("Ngày hoàn thành")).toHaveValue("2026-10-18");
+    await expect(box.getByLabel("Ngày hoàn thành")).toHaveValue("18/10/2026");
     await expect(box.getByText("Mốc trễ 8 ngày — lỗi của ai?")).toBeVisible();
     await box.getByRole("radio", { name: "Phía mình" }).click();
     await box.getByRole("button", { name: "Xác nhận" }).click();

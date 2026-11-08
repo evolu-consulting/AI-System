@@ -1,9 +1,9 @@
 // CR-125 · x8 · bộ chọn ngày: lưới tháng thứ Hai đầu tuần, tên tháng tiếng Việt, đọc dd/mm/yyyy, hiển thị bằng viDate (một nguồn).
 import { describe, expect, it } from "bun:test";
-import { viDate } from "../format";
 import {
   addMonths,
   inRange,
+  isoToVi,
   monthGrid,
   parseDate,
   todayVn,
@@ -55,7 +55,7 @@ describe("parseDate", () => {
     expect(parseDate("")).toBeNull();
   });
   it("hiển thị lại bằng viDate (một bộ định dạng) khớp phần đọc", () => {
-    expect(viDate(parseDate("3/9/2027"))).toBe("03/09/2027");
+    expect(isoToVi(parseDate("3/9/2027") ?? "")).toBe("03/09/2027");
   });
 });
 
