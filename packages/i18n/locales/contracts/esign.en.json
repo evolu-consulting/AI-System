@@ -40,7 +40,7 @@
       "signerDone": "signed",
       "settingLabel": "Contract e-signature",
       "settingHint": "Allow sending approved contracts for e-signature.",
-      "settingOwnerOnly": "Only the Contracts owner (Full access group) can switch this on or off. Ask them to open Settings › Approval process.",
+      "settingOwnerOnly": "Only the Contracts owner (Full access group) can switch this on or off. Ask them to open {{path:flow}}.",
       "settingSaved": "E-sign settings saved.",
       "inviteThumb": "Include the first-page image in signing invitation emails",
       "inviteThumbHint": "Signing invitations always carry a contract summary card; turn this on to add the first-page image (the contract itself is never attached).",

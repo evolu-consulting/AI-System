@@ -40,7 +40,7 @@
       "signerDone": "đã ký",
       "settingLabel": "Ký số hợp đồng",
       "settingHint": "Cho phép gửi hợp đồng đã duyệt đi ký số.",
-      "settingOwnerOnly": "Chỉ chủ gói Sổ Hợp Tác (nhóm Toàn quyền) bật hoặc tắt được. Nhờ người đó vào Cài đặt › Quy trình duyệt.",
+      "settingOwnerOnly": "Chỉ chủ gói Sổ Hợp Tác (nhóm Toàn quyền) bật hoặc tắt được. Nhờ người đó vào {{path:flow}}.",
       "settingSaved": "Đã lưu cài đặt ký số.",
       "inviteThumb": "Kèm ảnh trang đầu trong email mời ký",
       "inviteThumbHint": "Email mời ký luôn có thẻ tóm tắt hợp đồng; bật mục này để kèm thêm ảnh trang đầu (không đính kèm hợp đồng).",
