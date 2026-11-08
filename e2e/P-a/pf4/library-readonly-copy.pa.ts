@@ -37,14 +37,12 @@ test("CR-121 c17 · thư viện chỉ xem ⇒ Sao chép ⇒ bản riêng sửa �
     await adminLogin(p);
     await p.goto(`${ADMIN_URL}/processes/${libId}?company=${ACME}`);
 
-    // chỉ xem: nói rõ, có nút Sao chép, KHÔNG có sửa/xuất bản; sơ đồ là chế độ mặc định, chuyển được sang danh sách
+    // chỉ xem: nói rõ, có nút Sao chép, KHÔNG có sửa/xuất bản; sơ đồ chỉ đọc
     const view = p.getByTestId("library-readonly");
     await expect(view.getByText("Quy trình dùng chung — chỉ xem.")).toBeVisible();
     await expect(p.getByRole("button", { name: /^Xuất bản/ })).toHaveCount(0);
     await expect(p.getByRole("button", { name: "Lưu", exact: true })).toHaveCount(0);
-    await expect(p.getByTestId("flows-view-canvas")).toHaveAttribute("aria-pressed", "true");
-    await p.getByTestId("flows-view-list").click();
-    await expect(p.getByTestId("flows-view-list")).toHaveAttribute("aria-pressed", "true");
+    await expect(p.getByTestId("library-flow-canvas")).toBeVisible(); // flow Thư viện theo sự kiện (CR-122): chỉ có sơ đồ chỉ đọc
 
     // Sao chép ⇒ mở bản riêng (đường dẫn khác), ghi nguồn, sửa được
     await p.getByTestId("library-copy").click();

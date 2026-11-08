@@ -46,7 +46,7 @@ test("CR-121 c17b · tenant_admin: thư viện chỉ xem có tab Lượt chạy;
     await p.getByTestId("flows-view-list").first().click();
     await expect(p.getByTestId("flow-form")).toBeVisible();
     await expect(p.getByTestId("flow-counter")).toHaveText(/^\d+\/20$/);
-    await expect(p.getByTestId("copy-save-note")).toContainText("áp dụng ngay cho lượt chạy mới");
+    await expect(p.getByTestId("copy-save-note")).toContainText("Lưu và áp dụng");
     await expect(p.getByRole("button", { name: "Xem trước bằng HĐ mẫu" })).toBeVisible();
     await p.evaluate(() => localStorage.removeItem("processView"));
     await expect(p.getByRole("button", { name: /^Xuất bản/ })).toHaveCount(0);
