@@ -138,6 +138,7 @@ async function actOnWaiting(page: Page): Promise<boolean> {
         .getByTestId("requests-waiting")
         .or(page.getByTestId("approvals-empty"))
         .or(page.getByTestId("approval-tasks"))
+        .or(page.getByTestId("signing-tasks"))
         .first(),
     ).toBeVisible({ timeout: 30_000 });
   };
