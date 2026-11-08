@@ -83,6 +83,10 @@ export async function rollbackJournalFrom(
       "update hub.process_defs set published_version = null where slot is null and published_version is not null",
     );
   }
+  // 0115 tạo policy bằng CREATE POLICY trần (không re-runnable; file đã áp không được sửa — migrate-guard): gỡ trước khi áp lại.
+  if (from.some((e) => e.tag?.startsWith("0115_"))) {
+    await owner.unsafe("drop policy if exists platform_settings_read on hub.platform_settings");
+  }
   await owner.unsafe(
     `delete from drizzle.${HUB_TABLE} where created_at >= ${Math.min(...from.map((e) => e.when))}`,
   );
