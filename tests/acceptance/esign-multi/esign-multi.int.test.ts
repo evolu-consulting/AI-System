@@ -165,7 +165,7 @@ describe("esign-multi · gửi ký theo nhà cung cấp", () => {
 });
 
 describe("esign-multi · Ký ngay chỉ người ký công ty", () => {
-  it("user khác ⇒ 403 ESIGN_NOT_SIGNER; người gửi ⇒ ký thử hoàn tất; provider loại envelope khác ⇒ 422", async () => {
+  it("user khác ⇒ 403 ESIGN_NOT_SIGNER; người gửi ⇒ ký thử hoàn tất; cách ký không khả dụng ⇒ 422", async () => {
     const id = await setup();
     expect((await c.hubCall(P.lan, "PUT", SET, { default_provider: "selfsign" })).status).toBe(200);
     expect(
@@ -175,9 +175,10 @@ describe("esign-multi · Ký ngay chỉ người ký công ty", () => {
       return_url: RET(id),
     });
     expect({ s: other.status, code: codeOf(other) }).toEqual({ s: 403, code: "ESIGN_NOT_SIGNER" });
+    // CR-125 · m4: chọn cách khả dụng KHÁC loại (vd DocuSign) là đổi cách ký có chủ đích (esign-switch.int); 422 chỉ cho cách không khả dụng.
     const wrong = await c.hubCall(P.lan, "POST", `${CBASE}/${id}/esign/sign-url`, {
       return_url: RET(id),
-      provider: "docusign",
+      provider: "misa",
     });
     expect({ s: wrong.status, code: codeOf(wrong) }).toEqual({
       s: 422,
