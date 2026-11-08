@@ -79,7 +79,12 @@ export default defineConfig({
   projects: [
     {
       name: "journey",
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
+      // Container evotest không có GPU: tiến trình GPU của Chromium sập (exit 9) giữa ca dài ⇒ trình duyệt đóng. Tắt GPU.
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 900 },
+        launchOptions: { args: ["--disable-gpu", "--disable-dev-shm-usage"] },
+      },
     },
   ],
   webServer: [
