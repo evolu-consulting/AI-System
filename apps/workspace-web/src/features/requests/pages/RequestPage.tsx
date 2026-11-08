@@ -80,7 +80,11 @@ export function RequestPage({
               <div key={f.key} className="contents" data-testid={`request-field-${f.key}`}>
                 <dt className="text-sm text-dim">{f.label}</dt>
                 <dd className="m-0 whitespace-pre-wrap text-sm">
-                  {f.type === "money" ? money(f.value) : f.value}
+                  {f.type === "money"
+                    ? money(f.value)
+                    : f.type === "attachments"
+                      ? t("contracts.requests.filesCount", { count: f.value.split(", ").length })
+                      : f.value}
                 </dd>
               </div>
             ))}

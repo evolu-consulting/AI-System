@@ -891,7 +891,8 @@
         "failed": "Lỗi",
         "waiting_timer": "Đang chờ",
         "skipped": "Bỏ qua"
-      }
+      },
+      "filesCount": "{{count}} tệp đính kèm"
     }
   }
 }

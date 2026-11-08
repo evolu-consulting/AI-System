@@ -891,7 +891,8 @@
         "failed": "Error",
         "waiting_timer": "Waiting",
         "skipped": "Skipped"
-      }
+      },
+      "filesCount": "{{count}} attached file(s)"
     }
   }
 }
