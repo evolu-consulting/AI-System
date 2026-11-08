@@ -6,6 +6,7 @@ import { z } from "zod";
 import { WAIT_OFFSET_DAYS, WaitTimeSchema } from "../../chat/processes";
 import { ApproveParallelSchema } from "../../hub-admin/process-approve";
 import type { FeatureModule, FeatureNodeDecl, PortSchema } from "../types";
+import { START_FORM_NODE } from "./start-form/node";
 
 const WaitUntilPort = z.strictObject({
   offset_days: z.number().int().min(WAIT_OFFSET_DAYS.min).max(WAIT_OFFSET_DAYS.max),
@@ -155,5 +156,7 @@ export const CORE_MODULE: FeatureModule = {
     native("core.if", "Nếu", "If", "if"),
     // Kết thúc = stage `set` mang `outcome` (xem `baseNodeOf`).
     native("core.end", "Kết thúc", "End", "set"),
+    // CR-125 · cr125-manual-start-engine · stage đầu của flow bắt đầu bằng phiếu (`POST /processes/start`).
+    START_FORM_NODE,
   ],
 };

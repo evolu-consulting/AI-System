@@ -45,6 +45,7 @@ import { startProcessSweeper, sweepOnce } from "./runs/sweeps";
 import { warmBackgroundPool } from "./runs/warm-pool";
 import { startFlowDispatcher } from "./triggers/dispatcher";
 import { flowLaunchOf } from "./triggers/flow-launch";
+import { manualStartRoutes } from "./triggers/manual-start.routes";
 import { usageRoutes } from "./usage/usage.routes";
 
 /** Gốc route quy trình cần JWT (`app.ts` gắn `requireAuth`; `/me/*` đã có ở X2a). */
@@ -181,6 +182,7 @@ const ALL_ROUTES = [
   companyFlowsRoutes, // CR-122 · E1b
   paletteRoutes, // CR-122 · N1
   bridgeRoutes, // CR-122 · N2
+  manualStartRoutes, // CR-125 · bắt đầu bằng phiếu yêu cầu (người dùng workspace)
 ];
 
 /** CR-103 · `admin`: chặn role ở GỐC mọi tiền tố quy trình (JWT role, không dựa `X-App` do client đặt) ⇒ member 403. */

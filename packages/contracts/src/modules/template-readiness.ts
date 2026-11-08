@@ -1,6 +1,7 @@
 // CR-125 · c5 · MỘT luật THUẦN "mẫu Thư viện dùng được ở công ty chưa" (không I/O): tính năng cần (MODULES `feature` của node), tool cần
 // (stage tool), nhóm duyệt cần (`group_key`), thứ tự node (`requires`). Dùng chung cho: platform gán mẫu cho công ty, công ty sao chép mẫu,
 // seed/onboard (D7). Công ty KHÔNG BAO GIỜ nhận mẫu mà không áp dụng được.
+import { startFormGroupKeys } from "./core/start-form/config";
 import { featureNodeByKey } from "./modules.rules";
 import type { FeatureModule } from "./types";
 
@@ -77,6 +78,7 @@ function groupKeysOfStage(s: Obj): string[] {
       if (typeof k === "string") out.push(k);
     for (const g of parallelGroupsOf(s.after)) one(g);
   }
+  out.push(...startFormGroupKeys(s.start_form)); // CR-125 · «ai được bắt đầu» của phiếu yêu cầu = nhóm cần
   return out;
 }
 

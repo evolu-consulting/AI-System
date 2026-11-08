@@ -11,7 +11,7 @@ import type { AuthUser } from "../../../lib/auth.middleware";
 import { AppError } from "../../../lib/errors";
 import { outcomeHandlerFor } from "../adapters/runs/flow-ports";
 import { nodeFeatureMiss } from "../defs/node-features";
-import { FlowRunSuperseded } from "../runs/flow-event-attach";
+import { type FlowEventAttach, FlowRunSuperseded } from "../runs/flow-event-attach";
 import { libraryFlowDef, type StartDefRow } from "../runs/runs.repo";
 import { type ProcessDepsCore, StartService } from "../runs/start.service";
 import { type FlowLaunch, FlowLaunchRefused } from "./dispatcher";
@@ -62,9 +62,21 @@ function onCreatedOf(e: ClaimedEvent, app: string) {
     launched(tx, { tenantId: e.tenant_id, runId, event: e.event, ref: e.ref });
 }
 
-function launchOpts(e: ClaimedEvent, c: CandidateRow, app: string, def: StartDefRow | undefined) {
+/** CR-125 · bắt đầu bằng phiếu (`processes/start`): giá trị phiếu ⇒ input của lượt (cùng đường mở lượt với sự kiện). */
+export type LaunchExtra = { inputs?: FlowEventAttach["recordInputs"] };
+
+function launchOpts(
+  e: ClaimedEvent,
+  c: CandidateRow,
+  app: string,
+  def: StartDefRow | undefined,
+  x?: LaunchExtra,
+) {
   // CR-122 · A · input của lượt = bản ghi (`record` = ref) + dữ kiện lúc sự kiện ⇒ node/tool cần `contract_id` tự nhận.
-  const recordInputs = recordInputsOf(eventOf(app, e.event), e.ref, e.facts ?? {});
+  const recordInputs = [
+    ...recordInputsOf(eventOf(app, e.event), e.ref, e.facts ?? {}),
+    ...(x?.inputs ?? []),
+  ];
   const onCreated = onCreatedOf(e, app);
   return {
     flowEvent: {
@@ -90,9 +102,16 @@ async function featureMissFresh(d: ProcessDepsCore, tenantId: string, nodes: rea
   return nodeFeatureMiss(d.config, tenantId, nodes);
 }
 
-export function flowLaunchOf(d: ProcessDepsCore): FlowLaunch {
+export type FlowLaunchX = (
+  e: ClaimedEvent,
+  c: CandidateRow,
+  app: string,
+  x?: LaunchExtra,
+) => ReturnType<FlowLaunch>;
+
+export function flowLaunchOf(d: ProcessDepsCore): FlowLaunchX {
   const start = new StartService(d);
-  return async (e, c, app) => {
+  return async (e, c, app, x) => {
     if (!e.actor_id) throw new FlowLaunchRefused("no_actor");
     const off = await featureMissFresh(d, e.tenant_id, c.nodes);
     if (off) throw new FlowLaunchRefused(`FLOW_NODE_FEATURE_OFF:${off.node}`);
@@ -102,7 +121,7 @@ export function flowLaunchOf(d: ProcessDepsCore): FlowLaunch {
       const s = await start.createFromApi(
         u,
         { process_key: c.defKey, input: "", origin: { kind: "none" } },
-        launchOpts(e, c, app, def),
+        launchOpts(e, c, app, def, x),
       );
       return { runId: s.id };
     } catch (err) {

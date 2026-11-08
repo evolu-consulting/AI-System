@@ -103,6 +103,7 @@ describe("MOD-FR-05 · module core", () => {
       ["core.approve", "approve"],
       ["core.if", "if"],
       ["core.end", "set"],
+      ["core.start-form", "set"],
     ]);
   });
   test("def cũ không có stage.node khớp theo executor.kind", () => {

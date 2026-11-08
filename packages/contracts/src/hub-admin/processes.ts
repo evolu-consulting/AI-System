@@ -19,6 +19,7 @@ import {
   TtlDaysSchema,
 } from "../chat/processes";
 import { IsoDateTime, UuidSchema } from "../common";
+import { StartFormConfigSchema } from "../modules/core/start-form/config";
 import { AutofixCmdSchema, AutofixWriteAllowlistSchema } from "./autofix";
 import { ApproveExecutorSchema, ApproveParallelSchema } from "./process-approve";
 import { FormExecutorSchema } from "./process-form";
@@ -240,15 +241,14 @@ export const ProcessStageDefSchema = z.strictObject({
   token_budget: z.number().int().min(STAGE_TOKEN_BUDGET.min).max(STAGE_TOKEN_BUDGET.max).nullable(),
   sources: z.array(StageSourceSchema).max(STAGE_SOURCES_MAX).default([]),
   must_know: z.array(z.string().trim().min(1).max(MUST_KNOW_LEN)).max(MUST_KNOW_MAX).default([]),
-  /** P-c1 · vắng/null = stage thường (snapshot cũ đọc `?? null`). */
-  autofix: StageAutofixSchema.nullable().default(null),
-  /** CR-103 · fnr-canvas · vị trí node trên canvas (chỉ UI; engine bỏ qua; vắng ở snapshot cũ). */
-  ui: StageUiSchema.optional(),
+  autofix: StageAutofixSchema.nullable().default(null), // P-c1 · vắng/null = stage thường (snapshot cũ đọc `?? null`)
+  ui: StageUiSchema.optional(), // CR-103 · fnr-canvas · vị trí node trên canvas (chỉ UI; engine bỏ qua; vắng ở snapshot cũ)
   slot: z.record(z.string(), z.unknown()).optional(), // CR-105 · pl-slot-shape · mô tả bước của khe (engine bỏ qua)
   // CR-122 · FR-12 `next_step` = bước gộp (> bước mình) · FR-15 `outcome` = node Kết thúc (`flowDefIssues`) · FR-25 `node` = node bảng
   next_step: ProcessStepSchema.optional(),
   outcome: z.string().regex(OUTCOME_KEY_RE).optional(),
   node: z.string().regex(APP_NODE_KEY_RE).optional(),
+  start_form: StartFormConfigSchema.optional(), // CR-125 · cấu hình «Bắt đầu bằng phiếu yêu cầu» (node core.start-form, stage đầu)
 });
 type StageDefParsed = z.infer<typeof ProcessStageDefSchema>;
 type StageAfterParsed = StageDefParsed["after"];

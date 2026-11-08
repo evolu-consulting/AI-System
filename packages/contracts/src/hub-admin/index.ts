@@ -24,6 +24,7 @@ export * from "./process-limits";
 export * from "./process-module-nodes";
 export * from "./process-real-rule";
 export * from "./process-set";
+export * from "./process-start";
 export * from "./process-trigger";
 export * from "./processes";
 export * from "./secrets";
