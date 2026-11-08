@@ -21,7 +21,11 @@ const asRole = (user: string, pw: string) => {
 };
 const opts = { max: 1, onnotice: () => {} };
 const owner = postgres(OWNER, opts);
-const api = postgres(asRole("hub_api", "hub_api_dev_pw"), opts);
+// CR-125 (0127): audit_log/agent_grants có RLS ⇒ kiểm GRANT trong scope system (đặt lúc mở kết nối).
+const api = postgres(asRole("hub_api", "hub_api_dev_pw"), {
+  ...opts,
+  connection: { "app.scope": "system" },
+});
 const adm = postgres(asRole("admin_api", "admin_api_dev_pw"), opts);
 const rt = postgres(asRole("agent_runtime", "agent_runtime_dev_pw"), opts);
 

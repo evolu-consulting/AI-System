@@ -48,7 +48,7 @@ export async function agentCheck(
     entitled: boolean;
     background: boolean;
   }>(sql`select a.id, a.key, a.name, a.surface = 'background' as background,
-      exists (select 1 from hub.orchestrator_settings o where o.agent_id = a.id) as is_orch,
+      exists (select 1 from hub.orchestrator_agent_ids() o(agent_id) where o.agent_id = a.id) as is_orch,
       (e.agent_id is not null and e.revoked_at is null) as entitled
     from hub.agents a
     left join hub.agent_entitlements e on e.agent_id = a.id and e.tenant_id = ${tenantId}
@@ -165,7 +165,7 @@ export function listAgents(tx: Tx, tenantId: string, limit: number): Promise<Lis
   return tx.execute<ListAgentRow>(sql`select a.id, a.key, a.name, a.description, a.enabled, a.runtime
     from hub.agent_entitlements e join hub.agents a on a.id = e.agent_id
     where e.tenant_id = ${tenantId} and e.revoked_at is null
-      and not exists (select 1 from hub.orchestrator_settings o where o.agent_id = a.id)
+      and not exists (select 1 from hub.orchestrator_agent_ids() o(agent_id) where o.agent_id = a.id)
     order by a.key limit ${limit}`);
 }
 

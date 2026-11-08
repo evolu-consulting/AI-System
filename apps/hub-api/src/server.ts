@@ -7,6 +7,7 @@ import { createApp } from "./app";
 import { type Env, loadEnv } from "./config/env";
 import { attachEnvOf, envAppDeps } from "./config/env-deps";
 import { connectDb, type Db, pingDb } from "./lib/db";
+import { assertSafeDbRole } from "./lib/db-guard";
 import { safeErrorFields } from "./lib/errors";
 import { importJwtPublicKey } from "./lib/jwt";
 import { logger, setLogFormat, setMinLevel } from "./lib/logger";
@@ -30,10 +31,27 @@ function fail(step: string, err: unknown): never {
   process.exit(1);
 }
 
+/**
+ * CR-125 S1b: pool tri thức riêng (`KNOWLEDGE_DATABASE_URL`) — chỉ chặn superuser/BYPASSRLS. Không xét chủ bảng `knowledge`:
+ * role tri thức là thành viên role gói (SET), phía gói giữ `secure_table` riêng (sa-review B1 S1b). Vắng ⇒ dùng pool Hub (đã kiểm).
+ */
+async function assertKnowledgeRole(env: Env): Promise<void> {
+  if (!env.KNOWLEDGE_DATABASE_URL || env.KNOWLEDGE_DATABASE_URL === env.HUB_DATABASE_URL) return;
+  const k = connectDb(env.KNOWLEDGE_DATABASE_URL, 1);
+  try {
+    await assertSafeDbRole(k, []);
+  } finally {
+    await k.close();
+  }
+}
+
 async function openDb(env: Env): Promise<Db> {
   const db = connectDb(env.HUB_DATABASE_URL, env.HUB_DB_POOL_MAX, { spread: true });
   try {
     await pingDb(db);
+    // CR-125 S1b: role superuser/BYPASSRLS/owner bảng hub/admin ⇒ RLS mất tác dụng ⇒ không khởi động.
+    await assertSafeDbRole(db);
+    await assertKnowledgeRole(env);
     return db;
   } catch (err) {
     await db.close();

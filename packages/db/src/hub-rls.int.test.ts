@@ -132,82 +132,18 @@ describe("HUB-FR-75 · RLS hội thoại hub_rw (int)", () => {
   });
 });
 
-/** X2a (0011): mỗi phần tử = một policy (rooms 2, room_members 3, room_messages 2); CR-050 (0017): room_flow_reads 3. */
-const X2A_POLICY_TABLES = [
-  ...Array(2).fill("rooms"),
-  ...Array(3).fill("room_members"),
-  ...Array(2).fill("room_messages"),
-  ...Array(3).fill("room_flow_reads"),
-];
-/** P-a (0019): 6 bảng run 1 policy T; process_defs 4 (đọc + ghi system); notices 3; outbox 3; P-d1 (0036) process_timers 1. */
-const PA_POLICY_TABLES = [
-  ...["process_runs", "stage_runs", "team_runs", "process_outputs", "review_tasks"],
-  "review_task_assignees",
-  ...Array(4).fill("process_defs"),
-  ...Array(3).fill("process_notices"),
-  ...Array(3).fill("process_thread_events"),
-  // P-b2 (0024): nhật ký quay lại append-only — 1 policy T.
-  "process_back_events",
-  // P-c1 (0031): kết quả tự-sửa append-only — 1 policy T.
-  "autofix_results",
-  // P-c2 (0032): kết quả Áp — 1 policy T (UPDATE theo cột, C6).
-  "autofix_applies",
-  // P-d1 (0036): hẹn giờ bền — 1 policy T (readiness #89).
-  "process_timers",
-  // CR-120 (0093): sự kiện gói bắn cho node wait_event — 1 policy hub_rw.
-  "process_run_events",
-];
-/** Bảng RLS thêm sau H1 ngoài P-a (danh sách cũ chưa cập nhật — sửa cùng T6 P-d1): P-b 0021 (sources, source_job_reads),
- * X2b2 0023 (attachments thêm policy room_member_select), H4b-1 0028 (secrets), K1 0029 (kh_jobs, kh_stage_usage,
- * kh_writes) — mỗi cái 1 policy hub_rw. `runs_agent_runtime_select` (0022) kiểm riêng ở RUNTIME_POLICIES. */
-const LATER_POLICY_TABLES = [
-  "sources",
-  "source_job_reads",
-  "attachments",
-  "secrets",
-  "kh_jobs",
-  "kh_stage_usage",
-  "kh_writes",
-  // N3 (thông báo, hub 00xx): 4 bảng có RLS tenant, chỉ hub_rw — thêm sau khi N3 đóng (GX #176).
-  "notifications",
-  "notification_deliveries",
-  "notify_prefs",
-  "push_subscriptions",
-  // CR-105 (0068): gán tenant × khe (đọc T + ghi system = 2 policy), bản phát hành + khe (chỉ system, 1 policy mỗi bảng).
-  // CR-120 (0091): bảng gán đổi tên `_legacy` (giữ policy); tên cũ là VIEW security_invoker (không RLS riêng).
-  "process_slot_assignments_legacy",
-  "process_slot_assignments_legacy",
-  "process_def_releases",
-  "process_slots",
-  // CR-114 (0084): kho artifact + nối run ↔ artifact — RLS tenant (system hoặc user đúng tenant), 1 policy mỗi bảng, chỉ hub_rw.
-  "artifacts",
-  "artifact_runs",
-  // CR-118 §11.2 (0087): tập gán (đọc T + ghi system = 2 policy), đầu luật + luật (RLS tenant, 1 policy mỗi bảng).
-  "process_tenant_defs",
-  "process_tenant_defs",
-  "process_routings",
-  "process_routing_rules",
-  // dlc-step-library (0071): thư viện bước DLC — chỉ system, 1 policy.
-  "dlc_step_templates",
-  // CR-122 (0105/0106): sự kiện flow (1 policy), flow công ty (1 policy), cài đặt flow theo tenant (đọc T + ghi = 2 policy) — chỉ hub_rw.
-  "flow_events",
-  "company_flows",
-  "tenant_flow_settings",
-  "tenant_flow_settings",
-  // CR-124 (0117/0120): hộp thư đối tác, liên kết đối tác, sự kiện email — chỉ scope system (bộ chuyển), 1 policy mỗi bảng, chỉ hub_rw;
-  // scope người dùng không có policy (đọc 0 hàng, ghi 42501). Không có cột tenant_id đơn (from_tenant/to_tenant) ⇒ không dùng policy tenant.
-  "partner_mailbox",
-  "partner_links",
-  "partner_email_events",
-];
-/** 0022 (B4 · WRK-FR-27): agent_runtime đọc `hub.runs` cột (id, status), chỉ hàng `running`. */
-const RUNTIME_POLICIES = [
-  { t: "runs", roles: "agent_runtime" },
-  { t: "usage_daily", roles: "admin_rw" }, // usage-analytics (hub 0049): tổng hợp ngày, admin đọc theo scope
-  { t: "usage_daily_dim", roles: "admin_rw" },
-  // CR-122 (0115): cài đặt cấp nền tảng — chỉ đọc (1 policy SELECT cho hub_rw + hub_ro), ghi qua hàm SECURITY DEFINER.
-  { t: "platform_settings", roles: "hub_rw,hub_ro" },
-];
+/**
+ * CR-125 B1 · S1c: ngoại lệ của luật "bảng hub/admin có cột tenant_id ⇒ bật RLS + ít nhất một policy". Mỗi mục một lý do;
+ * mục lỗi thời (bảng mất hoặc đã bật RLS) làm test đỏ ⇒ gỡ khỏi danh sách. FORCE: 0128 (sau) mới bắt buộc.
+ */
+const HUB_RLS_ALLOWLIST: Readonly<Record<string, string>> = {
+  "hub.ai_token_holds":
+    "không GRANT trực tiếp; chỉ hàm SECURITY DEFINER 0043/0045 (lọc p_tenant_id)",
+  "hub.dify_runs":
+    "không GRANT hub_rw; ghi qua DEFINER hub.log_dify_run; đọc chỉ platform_admin (admin_rw)",
+};
+/** Role runtime: không được sở hữu (hay là thành viên của chủ) bảng hub/admin — owner bỏ qua RLS khi không FORCE. */
+const RUNTIME_ROLES = ["hub_api", "admin_api", "agent_runtime"] as const;
 
 describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", () => {
   test("HUB-FR-75 · withHubScope chạy lại khi 40001, không chạy lại lỗi khác", async () => {
@@ -235,23 +171,34 @@ describe("HUB-FR-75 · withHubScope thử lại, quyền role, policy (int)", ()
     expect(await code(rt`select count(*) from admin.users`)).toBe("42501");
   });
 
-  test("HUB-FR-75 · HUB-FR-96 · RLS bật trên đúng 5 bảng hội thoại (+ tool_confirmations H2a, attachments H2c, 3 bảng phòng X2a: 7 policy), policy chỉ cho hub_rw", async () => {
-    const rows = await owner<{ t: string; roles: string }[]>`
-      select c.relname as t, array_to_string(p.polroles::regrole[], ',') as roles
+  test("CR-125 B1 · S1c · mọi bảng hub/admin có tenant_id bật RLS + có policy (trừ allowlist có lý do)", async () => {
+    const rows = await owner<{ t: string; rls: boolean; policies: number }[]>`
+      select n.nspname || '.' || c.relname as t, c.relrowsecurity as rls,
+        (select count(*)::int from pg_policy p where p.polrelid = c.oid) as policies
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
-      left join pg_policy p on p.polrelid = c.oid
-      where n.nspname = 'hub' and c.relrowsecurity order by 1`;
-    const hubRw = [
-      ...TABLES,
-      "tool_confirmations",
-      "attachments",
-      ...X2A_POLICY_TABLES,
-      ...PA_POLICY_TABLES,
-      ...LATER_POLICY_TABLES,
-    ].map((t) => ({ t, roles: "hub_rw" }));
-    const key = (r: { t: string; roles: string }) => `${r.t}|${r.roles}`;
-    expect([...rows].sort((a, b) => key(a).localeCompare(key(b)))).toEqual(
-      [...hubRw, ...RUNTIME_POLICIES].sort((a, b) => key(a).localeCompare(key(b))),
-    );
+      where n.nspname in ('hub', 'admin') and c.relkind in ('r', 'p')
+        and exists (select 1 from pg_attribute a where a.attrelid = c.oid and a.attname = 'tenant_id'
+                    and a.attnum > 0 and not a.attisdropped)
+      order by 1`;
+    const missing = rows
+      .filter((r) => !(r.t in HUB_RLS_ALLOWLIST) && (!r.rls || r.policies === 0))
+      .map((r) => r.t);
+    expect(missing).toEqual([]);
+    // Allowlist lỗi thời: bảng không còn (hoặc mất tenant_id), hoặc đã bật RLS ⇒ gỡ mục.
+    const stale = Object.keys(HUB_RLS_ALLOWLIST).filter((k) => {
+      const r = rows.find((x) => x.t === k);
+      return !r || r.rls;
+    });
+    expect(stale).toEqual([]);
+    expect(rows.length).toBeGreaterThan(40); // chặn truy vấn catalog lỗi trả rỗng
+  });
+
+  test("CR-125 B1 · S1c · role runtime không sở hữu bảng hub/admin (owner bỏ qua RLS khi chưa FORCE)", async () => {
+    const owned = await owner<{ role: string; t: string }[]>`
+      select r.role, t.schemaname || '.' || t.tablename as t
+      from unnest(${RUNTIME_ROLES as unknown as string[]}::text[]) r(role)
+      join pg_tables t on t.schemaname in ('hub', 'admin') and pg_has_role(r.role, t.tableowner, 'MEMBER')
+      order by 1, 2`;
+    expect([...owned]).toEqual([]);
   });
 });

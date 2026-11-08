@@ -101,3 +101,18 @@ If `contract_events` or `contracts` is more than about 1M rows, or `stage_runs` 
 
 6. CR-125 c5b: admin-api cần `ADMIN_HUB_URL` (đã có cho mail và Chạy thử; kiểm `grep ADMIN_HUB_URL .env`). Route `/admin/tenants/:id/template-fixes/enable-feature` hỏi readiness của Hub bằng token người gọi qua URL này; vắng thì nút "Bật tính năng cho công ty" trả 503 `HUB_NOT_CONFIGURED`. Không cần `HUB_INTERNAL_TOKEN` cho route này.
 7. CR-125 c5b: trước khi gỡ hẳn mẫu khe cũ Community, chạy SQL kiểm ở `docs/specs/cr125-c5b-readiness-ui/tasks.md` (mục Checklist deploy).
+
+8. CR-125 B1 (`cr125-sec-hub-rls`): hub migration `0127_hub_rls_gap` (journal idx 110, when 1806900900000) bật RLS 9 bảng hub (audit_log, agent_grants, agent_entitlements, tenant_agent_defaults, agent_team_entitlements, orchestrator_settings, jobs, usage_logs, cli_sessions); KHÔNG FORCE. Chỉ ALTER + CREATE POLICY + một hàm (khoá ngắn, không quét bảng). hub-api mới có guard khởi động (`lib/db-guard.ts`): `HUB_DATABASE_URL` phải là `hub_api` (không superuser/BYPASSRLS/owner bảng hub/admin) — nếu không hub-api exit 1 với `DB role của hub-api không được là superuser/BYPASSRLS/owner…`. Trước deploy kiểm role (phải 0 hàng):
+   ```sql
+   select rolname from pg_roles where rolname='hub_api' and (rolsuper or rolbypassrls);
+   select t.schemaname, t.tablename from pg_tables t where t.schemaname in ('hub','admin') and pg_has_role('hub_api', t.tableowner, 'MEMBER');
+   ```
+   Sau migrate (mỗi dòng rls=t, policies ≥ 1; ai_token_holds/dify_runs vẫn rls=f):
+   ```sql
+   select c.relname, c.relrowsecurity rls, (select count(*) from pg_policy p where p.polrelid=c.oid) policies
+     from pg_class c join pg_namespace n on n.oid=c.relnamespace
+    where n.nspname='hub' and c.relname in ('audit_log','agent_grants','agent_entitlements','tenant_agent_defaults',
+      'agent_team_entitlements','orchestrator_settings','jobs','usage_logs','cli_sessions','ai_token_holds','dify_runs')
+    order by 1;
+   ```
+   Smoke sau deploy: trang cài đặt agent của tenant (danh sách agent, cờ điều phối), Admin hạn mức ngày (token AI đã dùng ≠ 0 khi có dùng), worker nhận job.

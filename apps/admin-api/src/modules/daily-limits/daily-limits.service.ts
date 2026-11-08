@@ -102,9 +102,12 @@ export async function getDailyLimits(
     if (!t) throw appError("NOT_FOUND");
     return t;
   });
-  // `hub.usage_logs` không RLS, ngoài transaction scope: bảng Hub chưa đủ cột (DB chỉ có migration Admin) ⇒ null ("—").
+  // CR-125 S1a: `hub.usage_logs` có RLS (0127, admin_rw đọc theo scope) ⇒ transaction scope riêng; bảng Hub chưa đủ cột
+  // (DB chỉ có migration Admin) ⇒ lỗi tách khỏi transaction trên ⇒ null ("—").
   const since = aiTokensSince(c.now(), t.row.aiTokensResetAt);
-  const ai = await aiTokensUsed(c.ctx.db, tenantId, since).catch(() => null);
+  const ai = await withScope(c.ctx.db, c.scope, (tx) => aiTokensUsed(tx, tenantId, since)).catch(
+    () => null,
+  );
   return view(c, tenantId, t, ai);
 }
 

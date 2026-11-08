@@ -2,6 +2,7 @@
 // thống + runtime + bật + model (= model riêng của agent ?? bước 0 profile — như `/agent-settings`). Studio sửa ⇒ lượt sau thấy
 // ngay (không cache: lời gọi agent luôn kèm lời gọi model, một câu SQL không đáng kể).
 import type { Db } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type { AgentSpec, AgentSpecOf } from "../../lib/ai-client/agent-call";
 
@@ -21,12 +22,15 @@ type Row = {
 export function agentSpecOf(db: Db): AgentSpecOf {
   return async (key, tenantId): Promise<AgentSpec | null> => {
     const t = tenantId ?? null;
-    const [r] = await db.db.execute<Row>(sql`select a.id, a.enabled, a.runtime, a.system_prompt,
+    // CR-125 S1a: `agent_entitlements` có RLS (0127) ⇒ đọc trong scope system (lời gọi nền, lọc tenant tường minh).
+    const [r] = await withHubScope(db, { kind: "system" }, (tx) =>
+      tx.execute<Row>(sql`select a.id, a.enabled, a.runtime, a.system_prompt,
         coalesce(a.model, p.steps -> 0 ->> 'model') as model,
         not (a.surface = 'background' and ${t}::uuid is not null and exists (
           select 1 from hub.agent_entitlements e
           where e.agent_id = a.id and e.tenant_id = ${t}::uuid and e.revoked_at is not null)) as entitled
-      from hub.agents a left join hub.model_profiles p on p.id = a.profile_id where a.key = ${key}`);
+      from hub.agents a left join hub.model_profiles p on p.id = a.profile_id where a.key = ${key}`),
+    );
     return r
       ? {
           id: r.id,

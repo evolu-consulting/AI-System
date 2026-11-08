@@ -12,7 +12,12 @@ let owner: Sql;
 let api: Sql;
 beforeAll(async () => {
   owner = await setupH3b();
-  api = postgres(HUB_API_URL, { max: 2, onnotice: () => {} });
+  // CR-125 (0127): audit_log/agent_grants có RLS ⇒ kiểm GRANT trong scope system (đặt lúc mở kết nối).
+  api = postgres(HUB_API_URL, {
+    max: 2,
+    onnotice: () => {},
+    connection: { "app.scope": "system" },
+  });
 }, 60_000);
 afterAll(async () => {
   await api?.end();

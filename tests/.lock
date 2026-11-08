@@ -815,7 +815,7 @@ a5528c529ae48d4ffe0f326b2a9f27d15dae8fc51c9c979167b13ebfda1d4dff  tests/acceptan
 1eb5a84ee6248a5d7f8a734798ff1ea3caccb89efac3b06ea40b8a27bcd5f1c3  tests/acceptance/H3b/_h3b-trace.ts
 5795c4150c9867496357116c2f961d0974f30c5a1ea70f7b189afcd1a310e1c5  tests/acceptance/H3b/_h3b.ts
 8903aa29109725910c0c1368c02b9c7f32796005b13a22cbde9f092d7a499301  tests/acceptance/H3b/cors.int.test.ts
-fa0f2c0c6a8746175c970125165209ce848b02833e1dcbe1dc8f5b358f4764d5  tests/acceptance/H3b/db-grants.int.test.ts
+3a452b8bac8bdba58a713cf0d06e2286c054715fba6ebfb3e446b4bfacc9889e  tests/acceptance/H3b/db-grants.int.test.ts
 2f692f3683315466929c326cb60748b52c2e9b1ec8cc5e7b7c3f5b547a479d7d  tests/acceptance/H3b/effective.int.test.ts
 c41d68109dddfd335fde7e27e691c9c5b90ef600e4bf75d61d695537adaddb48  tests/acceptance/H3b/grants-concurrency.int.test.ts
 f914e9ca09b21a81c5fe9c38df228d6c80c3082c09913242ff7bcdec124ca940  tests/acceptance/H3b/grants-list.int.test.ts

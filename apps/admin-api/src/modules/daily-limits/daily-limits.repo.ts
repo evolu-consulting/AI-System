@@ -78,9 +78,9 @@ export async function saveAiReset(
 }
 
 /** Token AI (input + output, chỉ dòng có `feature`) của tenant từ `since` — index `usage_logs_tenant_feature_key_at_idx`. */
-export async function aiTokensUsed(db: Db, tenantId: string, since: Date): Promise<number> {
+export async function aiTokensUsed(tx: Tx, tenantId: string, since: Date): Promise<number> {
   const rows =
-    (await db.db.execute(sql`select coalesce(sum(input_tokens::bigint + output_tokens::bigint), 0)::bigint as n
+    (await tx.execute(sql`select coalesce(sum(input_tokens::bigint + output_tokens::bigint), 0)::bigint as n
     from hub.usage_logs where tenant_id = ${tenantId}::uuid and at >= ${since.toISOString()}::timestamptz
       and feature is not null`)) as unknown as { n: string | number }[];
   return Number(rows[0]?.n ?? 0);

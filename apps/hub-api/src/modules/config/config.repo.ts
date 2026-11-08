@@ -9,6 +9,7 @@ import {
   tenants,
   users,
 } from "@ai/db";
+import { withHubScope } from "@ai/db/hub-scope";
 import {
   agentEntitlements,
   agents,
@@ -160,7 +161,10 @@ function groupAgentWorkflows(
 /** Ảnh Hub đọc trong một transaction REPEATABLE READ: `version` khớp đúng dữ liệu đi kèm. */
 export async function loadHubSnapshot(db: Db): Promise<ConfigSnapshot> {
   const caps = await hubSchemaCaps(db);
-  return db.db.transaction(
+  // CR-125 S1a: entitlements/grants/defaults/orchestrator có RLS (0127) ⇒ ảnh cấu hình đọc mọi tenant trong scope system.
+  return withHubScope(
+    db,
+    { kind: "system" },
     async (tx) => {
       const r = await readHubRows(tx, caps);
       return Object.freeze({

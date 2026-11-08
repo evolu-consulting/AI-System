@@ -49,7 +49,7 @@ export function listAgents(
     x as (
       select a.id, a.key, a.name, a.description, a.runtime, a.enabled,
         a.surface, a.serves, m.profile_key,
-        exists (select 1 from hub.orchestrator_settings o where o.agent_id = a.id) as is_orch,
+        exists (select 1 from hub.orchestrator_agent_ids() o(agent_id) where o.agent_id = a.id) as is_orch,
         e.agent_id is not null as has_row, e.revoked_at is null as row_live,
         m.model,
         (select pm.display_name from hub.provider_models pm where pm.value = m.model and pm.provider_key = m.provider_key
@@ -57,8 +57,8 @@ export function listAgents(
       from hub.agents a
       join m on m.id = a.id
       left join hub.agent_entitlements e on e.agent_id = a.id and e.tenant_id = ${tenantId}
-      where not exists (select 1 from hub.orchestrator_settings o where o.agent_id = a.id
-          and o.id is distinct from (select r.id from hub.orchestrator_settings r
+      where not exists (select 1 from hub.orchestrator_agent_ids() o(agent_id) where o.agent_id = a.id
+          and o.agent_id is distinct from (select r.agent_id from hub.orchestrator_settings r
             where r.tenant_id = ${tenantId} or r.tenant_id is null
             order by r.tenant_id nulls last limit 1)))
     select x.id, x.key, x.name, x.description, x.runtime, x.enabled,
