@@ -151,7 +151,8 @@ async function actOnWaiting(page: Page): Promise<boolean> {
     if (await submitOpenForm(page)) acted = true;
     else if (await approve.isVisible()) {
       await approve.click();
-      await expect(approve).toBeHidden({ timeout: 30_000 });
+      // một người ở HAI nhóm của dòng cùng duyệt (vd. Giám đốc: Pháp chế + Trưởng bộ phận) ⇒ nút Duyệt hiện lại cho phần nhóm kia: chờ «đã ghi nhận»
+      await expect(page.getByTestId("request-decided")).toBeVisible({ timeout: 30_000 });
       acted = true;
     }
   }
