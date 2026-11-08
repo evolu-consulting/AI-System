@@ -217,7 +217,7 @@
     },
     "nav": {
       "overview": "Tổng quan",
-      "waiting": "Chờ tôi",
+      "waiting": "Việc của tôi",
       "contracts": "Hợp đồng & giao dịch",
       "partners": "Đối tác",
       "products": "Sản phẩm & Giá",
@@ -231,9 +231,9 @@
       "review": "Bài chờ duyệt",
       "join": "Yêu cầu tham gia",
       "reports": "Báo cáo vi phạm",
-      "approvals": "Chờ tôi duyệt",
+      "approvals": "Việc của tôi",
       "pending": "{{n}} đang chờ",
-      "requests": "Tạo yêu cầu"
+      "requests": "Yêu cầu"
     },
     "waiting": {
       "title": "Chờ bạn: {{sign}} ký · {{approve}} duyệt",
@@ -244,10 +244,11 @@
       "since": "gửi {{date}}"
     },
     "approvalsPage": {
-      "title": "Chờ tôi duyệt",
-      "subtitle": "Hợp đồng đang chờ bạn quyết ở bước duyệt. Mở hợp đồng để duyệt, trả lại hoặc từ chối.",
-      "emptyTitle": "Hiện không có hợp đồng nào chờ bạn duyệt",
-      "emptyBody": "Hợp đồng sẽ xuất hiện ở đây khi tới bước duyệt do bạn phụ trách. Số trên menu cũng tự cập nhật.",
+      "title": "Việc của tôi",
+      "subtitle": "Mọi việc đang chờ bạn: duyệt hợp đồng, duyệt yêu cầu, điền phiếu. Mở việc để xử lý.",
+      "emptyTitle": "Hiện không có việc nào chờ bạn",
+      "emptyBody": "Việc sẽ xuất hiện ở đây khi tới bước do bạn phụ trách. Số trên menu cũng tự cập nhật.",
+      "open": "Mở",
       "emptyNext": "Xem tất cả hợp đồng",
       "loadError": "Không tải được danh sách. Thử tải lại trang."
     },
@@ -819,16 +820,13 @@
       }
     },
     "requests": {
-      "title": "Tạo yêu cầu",
+      "title": "Yêu cầu",
       "lead": "Chọn loại yêu cầu, điền phiếu rồi gửi. Người duyệt sẽ nhận việc ngay.",
       "quick": "Tạo yêu cầu",
       "empty": "Chưa có loại yêu cầu nào cho bạn",
       "emptyBody": "Công ty chưa bật quy trình bắt đầu bằng phiếu, hoặc bạn chưa thuộc nhóm được tạo. Nhờ quản trị công ty kiểm tra ở Công ty › Quy trình.",
       "open": "Tạo",
       "fields": "{{n}} ô",
-      "waitingTitle": "Việc chờ tôi",
-      "waitingEmpty": "Chưa có yêu cầu nào chờ bạn duyệt.",
-      "waitingOpen": "Xem và duyệt",
       "loadError": "Không tải được danh sách. Thử lại sau.",
       "newTitle": "Phiếu: {{name}}",
       "back": "Quay lại danh sách",

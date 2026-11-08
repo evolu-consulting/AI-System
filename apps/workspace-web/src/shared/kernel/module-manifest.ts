@@ -24,6 +24,8 @@ export type NavEntry = {
   mobile?: "primary" | "more";
   /** CR-120: khoá quyền động (vai + khe đã bật, server tính): vắng ⇒ luôn hiện; có ⇒ chỉ hiện khi `hasCap(cap)` đúng. */
   cap?: string;
+  /** CR-126: mục «Việc của tôi» — số đỏ = số dòng hộp việc (đếm ở máy khách từ `/my-work` + `/me/review-tasks`), không theo `cap`. */
+  inbox?: true;
 };
 
 /** Mục menu tài khoản do module đóng góp (vd Community: Tường nhà · Cài đặt chung). */

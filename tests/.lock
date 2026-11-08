@@ -61,7 +61,7 @@ dd825133ab18bc62f767467ce64746ab8d307810a3d2a2678f31319cea9dcd7f  e2e/K1/playwri
 0208e9181393ca569eaa958420ac862efa1218abd52f7616b1c28e6f2970c030  e2e/N1/_support.ts
 f9a31a227e49e354959bbcfc983e61593e23ab0e6582a4cb9a3c4ed71920e368  e2e/N1/login.n1.ts
 c1ddea86a757d4445bebf5f5f28c84c1e599f26e4aa864dbe7ab37e49492271e  e2e/N1/playwright.config.ts
-4ebde957d2d7bfb8986323aa74ea68730715bb719affe029023dbc55064c7727  e2e/N1/shell.n1.ts
+9cce49279e9f3f99c9184a2057abb9e5534d3417684ba2cd5715465d0880f061  e2e/N1/shell.n1.ts
 87a3880053a0a615ddc8d91f6ab6cb35b7af839a39d3bf425323e00232bbf9c4  e2e/N1/states.n1.ts
 d19de6d79792ec1473717d388f0a4a254dc851cb25f7d1d319eb86cad452ff17  e2e/N2/admin-n2.n2.ts
 263b799fcef70a7bf7973746821c7d7e169a847f3e934fab178666f673972285  e2e/N2/admin-popover.n2.ts
@@ -201,7 +201,7 @@ a28ad24f38131f96657f8346d93599f51e7b275ff99fbd8ff8e53c3a9708d658  e2e/community-
 fff170ff16cf7ff9655084235682c2d7b01873b1ce57a536705d97ea25d9e21d  e2e/community-web/roles.cs.ts
 0bc9487b75a36601de77af0a5c452a68fd4fb5c265ede697269650865157569b  e2e/community-web/settings.cm.ts
 8908afd7eb7f251f23ea5e5312a1bc8b6fe9699a8561854161135d6db7904f6b  e2e/community-web/shell.cm.ts
-4f59b7d4ad3fe0036accfb3cc17bf5e080937dd2411561c62a42de601408963a  e2e/community-web/sidebar-one.cm.ts
+8349b2c35ab58c49a48c9e1b633757b5d9e82d94714f5f9a60a6b0df4e721206  e2e/community-web/sidebar-one.cm.ts
 72c116043e644c7610ffc5d3f30aae8bca23c6908bdab635f21a3820dc393c42  e2e/community-web/template-readiness.cs.ts
 b345899fee5f07e8231a7ee4423b624f073e12c67af2bbda3ca7e0a1bbca926b  e2e/conflict-commands.spec.ts
 050ead1589157a3c1adfd87beadfa578732e86c83ffdc94c661af3c5bc731c91  e2e/conflict-features.spec.ts
@@ -436,7 +436,7 @@ cc8ac8e483da754e294311ff0808b1ed050f66ad6d9805a42ed15e253d692937  e2e/contracts-
 00f0ffa0c6a72412aa47ebe8c559b4a3c02b80e5bc00dba994082e3b1bb75366  e2e/contracts-web/legacy-routes.cw.ts
 77dcfe66cc073dd5d84ed343aa417fe0f42e5b915e65a262a6ebfe5ba328ccf3  e2e/contracts-web/ms-impact.cw.ts
 040acfe1c7bfa75a7719b35cf1ff8c04bb9ee85dc6014311ee9166a74f22b037  e2e/contracts-web/org-visibility.cw.ts
-7b0fc6ea7492cea5d7129fbe89627709771e4ea32f9a94d83d992f55383a241e  e2e/contracts-web/overview.cw.ts
+9d4000fb3feac2844a53a21a67681a9fd827da94078a37be6e92818ea7d6feae  e2e/contracts-web/overview.cw.ts
 ebb860458e023f120e9305ba36e0a05a69da1fbcf1d65372f64d89c09f314f74  e2e/contracts-web/playwright.config.ts
 9ddca015f7ec91561025d2aad8764e2c6fd422fd31c75c3986afd4352bf1f279  e2e/contracts-web/products-confirm.cw.ts
 49678173f3350eda52ff82033c3860063712c7e23b00d8276a73cc57047f4f51  e2e/contracts-web/rep3-engine.cw.ts
@@ -520,9 +520,9 @@ a8a5424f65ad2e89d88502e3437112b9e6c3d8352a8f4cc195110de24356c792  e2e/journey-ap
 fe9dc3f40ceea231bfa7daf82a72e5f02dacb0b97d88afde8ed59d11ba0a86bb  e2e/journey-approval/cr124-q5-partner-email.spec.ts
 1134af4edd746f16bfdba34cfc280ff081410c8b8bb60a876124117ec06dedd4  e2e/journey-approval/cr124-q6-partner-journey.spec.ts
 a8fdf2e685d882902b69e0ce1a4f95e461bd82e9ef93c8b06475241f57a2bc4c  e2e/journey-approval/cr125-form-step-card.spec.ts
-e4d0c5fb86e1fa50467e802d85c15403aa146602514ff034231c4bbd9db9aab0  e2e/journey-approval/cr125-manual-start.spec.ts
+bbf4a5dde65f29d8ff08001f961e5bd61663b9f4cac3d62741437f2b9b815349  e2e/journey-approval/cr125-manual-start.spec.ts
 8ddd03702fe58400216c4005b25f64902bb8447ff5d6b0a4bfa2baa7bc4416df  e2e/journey-approval/cr125-parallel-approval-ui.spec.ts
-8b178f91ee84f60372345fefe3a60b60a89ef8a259e9c33a779012d8ddeefb25  e2e/journey-approval/cr125-purchase-full.spec.ts
+634316d97f070996979f66ccca7679e8af04ebdf013c355445814bb906cfc630  e2e/journey-approval/cr125-purchase-full.spec.ts
 beb0907d2f95260fe2384246e0a2c995de56636252dd7f1ded7d70a5f189bb04  e2e/journey-approval/cr125-s1-onboard.spec.ts
 0956bfa06fef57a741e2e8d73e65f3fa4cc59f198ed4487d900327c273115b6a  e2e/journey-approval/cr125-s2-settings-flow.spec.ts
 c2ded0de7ef358c3d4d24ae5fe3c82d22266013906650c124b01f450f2b4aa25  e2e/journey-approval/cr125-s3-save-blocked.spec.ts

@@ -5,8 +5,8 @@ import { Link } from "@tanstack/react-router";
 import { ClipboardCheck } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useMyApprovals } from "~/features/overview/hooks/use-overview";
-import { waitingBadge, waitingOf } from "~/features/overview/lib/waiting";
+import { useInbox } from "~/features/overview/hooks/use-inbox";
+import { waitingBadge } from "~/features/overview/lib/waiting";
 import { pickBottomItems } from "~/shell/bottom-nav";
 import { MODULES } from "~/shell/modules";
 import { buildShellNav } from "~/shell/nav";
@@ -17,7 +17,7 @@ const ITEM =
 
 function WaitingItem() {
   const { t } = useTranslation();
-  const n = waitingBadge(waitingOf(useMyApprovals().data).total);
+  const n = waitingBadge(useInbox().count);
   return (
     <Link to="/contracts/approvals" className={ITEM} data-testid="bottom-waiting">
       <span className="relative">

@@ -219,7 +219,7 @@
       "overview": "Overview",
       "contracts": "Contracts & transactions",
       "partners": "Partners",
-      "waiting": "Mine",
+      "waiting": "My tasks",
       "products": "Products & Prices",
       "community": "Community",
       "feed": "Feed",
@@ -231,9 +231,9 @@
       "review": "Posts to review",
       "join": "Join requests",
       "reports": "Reported posts",
-      "approvals": "Awaiting my approval",
+      "approvals": "My tasks",
       "pending": "{{n}} pending",
-      "requests": "Create request"
+      "requests": "Requests"
     },
     "waiting": {
       "title": "Waiting for you: {{sign}} to sign · {{approve}} to approve",
@@ -244,10 +244,11 @@
       "since": "sent {{date}}"
     },
     "approvalsPage": {
-      "title": "Awaiting my approval",
-      "subtitle": "Contracts waiting for your decision at an approval step. Open a contract to approve, send back or reject it.",
-      "emptyTitle": "No contracts are waiting for your approval",
-      "emptyBody": "Contracts appear here when they reach an approval step you are responsible for. The number in the menu updates automatically.",
+      "title": "My tasks",
+      "subtitle": "Everything waiting for you: contract approvals, request approvals, forms to fill. Open a task to handle it.",
+      "emptyTitle": "Nothing is waiting for you",
+      "emptyBody": "Tasks appear here when they reach a step you are responsible for. The number in the menu updates automatically.",
+      "open": "Open",
       "emptyNext": "View all contracts",
       "loadError": "Could not load the list. Try reloading the page."
     },
@@ -819,16 +820,13 @@
       }
     },
     "requests": {
-      "title": "Create request",
+      "title": "Requests",
       "lead": "Pick a request type, fill in the form and send it. Approvers get the task right away.",
       "quick": "Create request",
       "empty": "No request types available to you",
       "emptyBody": "The company has not switched on a form-started process, or you are not in an allowed group. Ask your company admin to check Company › Processes.",
       "open": "Create",
       "fields": "{{n}} fields",
-      "waitingTitle": "Waiting for me",
-      "waitingEmpty": "No request is waiting for your approval.",
-      "waitingOpen": "Review",
       "loadError": "Could not load the list. Try again later.",
       "newTitle": "Form: {{name}}",
       "back": "Back to the list",

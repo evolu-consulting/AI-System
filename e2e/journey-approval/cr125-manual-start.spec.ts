@@ -167,7 +167,7 @@ test("2 · nhân viên: Tạo yêu cầu → điền phiếu (tải file) → g�
   // người duyệt: việc chờ tôi → thẻ có dữ liệu phiếu → Duyệt
   const boss = await ctxPage(browser);
   await loginCw(boss, E, U.director);
-  await boss.goto(`${E.cw}/contracts/requests`);
+  await boss.goto(`${E.cw}/contracts/approvals`);
   const row = boss.getByTestId("requests-waiting-row").filter({ hasText: "Đề xuất mua hàng" });
   await expect(row).toBeVisible({ timeout: 60_000 });
   await row.click();

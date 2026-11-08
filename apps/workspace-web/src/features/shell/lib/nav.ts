@@ -22,6 +22,8 @@ export type NavItem = {
   testId?: string;
   /** CR-121 C-7 · khoá quyền động (server tính, shell/use-flow-caps): có ⇒ chỉ hiện khi đúng. */
   cap?: string;
+  /** CR-126: số đỏ = số dòng hộp việc (xem NavEntry.inbox). */
+  inbox?: true;
   /** Chỉ sáng khi path đúng bằng `to` (Tổng quan = gốc app, mọi trang khác nằm dưới nó). */
   exact?: true;
   /** Tiền tố con cũng thuộc mục này (chi tiết `/contracts/c/<id>` → "Hợp đồng"). */
@@ -42,15 +44,16 @@ export const NAV: readonly NavItem[] = [
   { to: `${B}/partners`, labelKey: "contracts.nav.partners", icon: IconPartners },
   { to: `${B}/products`, labelKey: "contracts.nav.products", icon: IconBox },
 ];
-/** CR-121 C-7 · mục "Chờ tôi duyệt" (cap `contracts.review`): chỉ người có vai duyệt trong quy trình đang gán. Ngoài `NAV` (mục luôn hiện). */
+/** CR-126 · «Việc của tôi»: MỘT hộp việc (duyệt HĐ, ký, bước yêu cầu/quy trình, phiếu); luôn hiện. Thanh dưới đã có mục «Việc của tôi» riêng ⇒ `more`. */
 export const APPROVALS_NAV: NavItem = {
   to: `${B}/approvals`,
   labelKey: "contracts.nav.approvals",
   icon: ClipboardCheck,
   testId: "nav-contracts-approvals",
-  cap: "contracts.review",
+  inbox: true,
+  mobile: "more",
 };
-/** CR-125 · cr125-manual-start-ui · «Tạo yêu cầu»: bắt đầu quy trình bằng phiếu (đề xuất mua hàng…); luôn hiện, rỗng thì trang nói vì sao. */
+/** CR-125 · «Yêu cầu» (CR-126 đổi tên từ «Tạo yêu cầu»): bắt đầu quy trình bằng phiếu (đề xuất mua hàng…); luôn hiện, rỗng thì trang nói vì sao. */
 export const REQUESTS_NAV: NavItem = {
   to: `${B}/requests`,
   labelKey: "contracts.nav.requests",

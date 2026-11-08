@@ -78,7 +78,8 @@ test("Menu: badge số cho Duyệt bài / Yêu cầu tham gia / Chờ tôi duy�
   await expect(badge("/community/review")).toHaveText("3");
   await expect(badge("/community/join")).toHaveText("99+");
   await expect(badge("/community/reports")).toHaveCount(0); // 0 ⇒ không hiện badge
-  await expect(badge("/contracts/approvals")).toHaveText("2");
+  // CR-126 · số «Việc của tôi» đếm ở máy khách (my-work + review-tasks), không còn theo `contracts.review` ⇒ không việc = không badge
+  await expect(badge("/contracts/approvals")).toHaveCount(0);
   // badge 16 px, cùng kiểu chuông Header
   const h = await badge("/community/review").evaluate((el) =>
     Math.round(el.getBoundingClientRect().height),
@@ -87,20 +88,18 @@ test("Menu: badge số cho Duyệt bài / Yêu cầu tham gia / Chờ tôi duy�
   // trang Chờ tôi duyệt: rỗng ⇒ câu giải thích + bước kế
   await side.locator('[data-nav-item="/contracts/approvals"]').click();
   await expect(page).toHaveURL(/\/contracts\/approvals/);
-  await expect(page.getByTestId("approvals-empty")).toContainText(
-    "Hiện không có hợp đồng nào chờ bạn duyệt",
-  );
+  await expect(page.getByTestId("approvals-empty")).toContainText("Hiện không có việc nào chờ bạn");
   await expect(page.getByTestId("approvals-empty").getByRole("link")).toHaveText(
     "Xem tất cả hợp đồng",
   );
-  // người không có vai duyệt ⇒ không có mục
+  // CR-126 · «Việc của tôi» luôn hiện (không phụ thuộc vai duyệt)
   await page.unroute("**/pack/nav");
   await page.route("**/pack/nav", (r) =>
     r.fulfill({ json: { items: items.filter((i) => i.cap !== "contracts.review") } }),
   );
   await page.reload();
   await expect(side.locator('[data-nav-item="/contracts/list"]')).toBeVisible(); // thanh trái đã dựng lại
-  await expect(side.locator('[data-nav-item="/contracts/approvals"]')).toHaveCount(0);
+  await expect(side.locator('[data-nav-item="/contracts/approvals"]')).toBeVisible();
 });
 
 // CR-121 C-6 · cùng khung nhìn: biểu tượng menu cùng cỡ, cụm nút Header cùng testid, một nút trợ lý (assistant-fab) ở cả hai module.

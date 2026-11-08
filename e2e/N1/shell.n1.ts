@@ -19,7 +19,8 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     await expect(links).toHaveText([
       "Tổng quan",
       "Hợp đồng & giao dịch",
-      "Tạo yêu cầu",
+      "Yêu cầu",
+      "Việc của tôi",
       "Đối tác",
       "Sản phẩm & Giá",
     ]);
@@ -27,7 +28,8 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     for (const name of [
       "Tổng quan",
       "Hợp đồng & giao dịch",
-      "Tạo yêu cầu",
+      "Yêu cầu",
+      "Việc của tôi",
       "Đối tác",
       "Sản phẩm & Giá",
     ]) {
@@ -36,12 +38,13 @@ test.describe("PK-FR-10 · shell desktop (1440×900)", () => {
     expect(hrefs).toEqual({
       "Tổng quan": "/contracts",
       "Hợp đồng & giao dịch": "/contracts/list",
-      "Tạo yêu cầu": "/contracts/requests",
+      "Yêu cầu": "/contracts/requests",
+      "Việc của tôi": "/contracts/approvals",
       "Đối tác": "/contracts/partners",
       "Sản phẩm & Giá": "/contracts/products",
     });
-    // Không còn mục riêng cho So sánh giá / Sản phẩm CKS / Mua hàng / Việc của tôi.
-    for (const gone of ["So sánh giá", "Mua hàng", "Việc của tôi"]) {
+    // Không còn mục riêng cho So sánh giá / Sản phẩm CKS / Mua hàng.
+    for (const gone of ["So sánh giá", "Mua hàng"]) {
       await expect(nav.getByRole("link", { name: gone })).toHaveCount(0);
     }
   });
@@ -254,9 +257,9 @@ test.describe("PK-FR-10 · shell mobile (390×844)", () => {
     await expect(bottom.getByRole("link")).toHaveText([
       "Tổng quan",
       "Hợp đồng & giao dịch",
-      "Tạo yêu cầu",
+      "Yêu cầu",
       "Đối tác",
-      "Chờ tôi",
+      "Việc của tôi",
     ]);
     await expect(page.getByRole("navigation", { name: "Điều hướng chính" })).toBeHidden();
   });

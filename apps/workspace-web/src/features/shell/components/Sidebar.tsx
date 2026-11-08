@@ -4,6 +4,7 @@
 import { Link, useLinkProps } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { useInbox } from "~/features/overview/hooks/use-inbox";
 import { appNameOf, nameOf, useBrand } from "~/features/settings/lib/brand";
 import { cn } from "~/lib/utils";
 import type { NavEntry } from "~/shared/kernel/module-manifest";
@@ -88,6 +89,11 @@ function SideLink({
   );
 }
 
+/** CR-126 · số đỏ «Việc của tôi» = số dòng hộp việc (một hook với trang). */
+function InboxLink(p: { n: NavEntry; wide: boolean; current: boolean }) {
+  return <SideLink {...p} count={useInbox().count} />;
+}
+
 function Group({
   g,
   wide,
@@ -117,15 +123,19 @@ function Group({
       ) : (
         !first && <hr className="mx-3 my-1.5 border-rule-soft" />
       )}
-      {g.items.map((n) => (
-        <SideLink
-          key={n.to}
-          n={n}
-          wide={wide}
-          current={on === n}
-          count={n.cap ? badgeOf(n.cap) : 0}
-        />
-      ))}
+      {g.items.map((n) =>
+        n.inbox ? (
+          <InboxLink key={n.to} n={n} wide={wide} current={on === n} />
+        ) : (
+          <SideLink
+            key={n.to}
+            n={n}
+            wide={wide}
+            current={on === n}
+            count={n.cap ? badgeOf(n.cap) : 0}
+          />
+        ),
+      )}
     </div>
   );
 }

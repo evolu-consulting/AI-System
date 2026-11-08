@@ -1,7 +1,7 @@
 // CR-126 · cr126-child-task-visible-2 · «Việc chờ tôi» không nói «chưa có việc» khi đang tải / lỗi.
 import { describe, expect, it } from "bun:test";
 import type { ReviewTaskListResponse } from "@ai/contracts/chat";
-import { waitingView } from "./waiting";
+import { openTasks, waitingView } from "./waiting";
 
 const item = (status: string, can_act: boolean) =>
   ({ task: { id: `${status}-${can_act}`, status, can_act }, process_run: {} }) as never;
@@ -27,5 +27,12 @@ describe("waitingView", () => {
     };
     const v = waitingView(q);
     expect(v.kind === "list" ? v.items.map((i) => i.task.id) : []).toEqual(["open-true"]);
+  });
+  it("CR-126 · task đã có ở danh sách duyệt HĐ (skip) không đếm hai lần trong hộp «Việc của tôi»", () => {
+    const d = data([item("open", true)]);
+    expect(openTasks(d)).toHaveLength(1);
+    expect(openTasks(d, new Set(["open-true"]))).toHaveLength(0);
+    const q = { isPending: false, isError: false, data: d };
+    expect(waitingView(q, new Set(["open-true"])).kind).toBe("empty");
   });
 });

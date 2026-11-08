@@ -1,6 +1,5 @@
-// CR-121 C-7 · trang "Chờ tôi duyệt" (mục menu cap `contracts.review`): HĐ có bước duyệt đang chờ người xem — dữ liệu sẵn có
-// (`GET /my-work` → approvals[], cùng luật canAct của engine). Rỗng ⇒ nói vì sao + bước kế (không để trang trống).
-// CR-125 · x1: cùng đọc đó có `signing[]` — HĐ chờ chính người xem KÝ; hiện ngay dưới danh sách duyệt (thẻ "Chờ bạn" ở Tổng quan trỏ về đây).
+// CR-126 · «Việc của tôi» (/contracts/approvals): MỘT hộp việc — duyệt HĐ + ký (`GET /my-work`) và bước yêu cầu/quy trình/phiếu
+// (`GET /me/review-tasks`, gồm run con). Mỗi dòng: việc nào · bước nào · mở. Rỗng ⇒ nói vì sao + bước kế.
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { PageHead, Panel } from "~/components/shared/layout";
@@ -8,28 +7,28 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { ApprovalRowList } from "../components/ApprovalTasksBlock";
 import { BlockHead } from "../components/BlockHead";
 import { SigningRowList } from "../components/SigningRowList";
-import { useMyApprovals } from "../hooks/use-overview";
+import { useInbox } from "../hooks/use-inbox";
 import { approvalRows } from "../lib/approvals";
-import { waitingOf } from "../lib/waiting";
 
 export function ApprovalsInboxPage() {
   const { t } = useTranslation();
-  const q = useMyApprovals();
-  const rows = approvalRows(q.data?.approvals, Date.now());
-  const signing = q.data?.signing ?? [];
+  const { work, requests, count } = useInbox();
+  const rows = approvalRows(work.data?.approvals, Date.now());
+  const signing = work.data?.signing ?? [];
+  const loading = work.isPending || requests.kind === "loading";
   return (
     <div data-testid="approvals-inbox">
       <PageHead
         title={t("contracts.approvalsPage.title")}
         lead={t("contracts.approvalsPage.subtitle")}
       />
-      {q.isPending ? (
+      {loading ? (
         <Skeleton className="h-24 w-full" />
-      ) : q.isError ? (
-        <p role="alert" className="text-sm text-late">
+      ) : work.isError || requests.kind === "error" ? (
+        <p role="alert" className="text-sm text-late" data-testid="requests-waiting-error">
           {t("contracts.approvalsPage.loadError")}
         </p>
-      ) : waitingOf(q.data).total === 0 ? (
+      ) : count === 0 ? (
         <Panel className="px-6 py-10 text-center">
           <div data-testid="approvals-empty">
             <p className="text-body font-semibold">{t("contracts.approvalsPage.emptyTitle")}</p>
@@ -55,6 +54,30 @@ export function ApprovalsInboxPage() {
           {rows.length > 0 && (
             <Panel>
               <ApprovalRowList rows={rows} />
+            </Panel>
+          )}
+          {requests.kind === "list" && (
+            <Panel>
+              <ul data-testid="requests-waiting" className="m-0 list-none p-0">
+                {requests.items.map((i) => (
+                  <li key={i.task.id} className="border-b border-rule-soft last:border-b-0">
+                    <Link
+                      to="/contracts/requests/$runId"
+                      params={{ runId: i.process_run.id }}
+                      data-testid="requests-waiting-row"
+                      className="flex min-w-0 items-center gap-3 px-5 py-3 max-sm:px-4"
+                    >
+                      <b className="min-w-0 flex-1 truncate text-[14.5px] font-semibold">
+                        {i.process_run.process.name}
+                      </b>
+                      <span className="shrink-0 text-label text-dim">{i.task.stage_name}</span>
+                      <span className="text-sm font-medium text-act">
+                        {t("contracts.approvalsPage.open")}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </Panel>
           )}
         </div>

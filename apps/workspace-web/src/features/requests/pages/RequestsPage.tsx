@@ -1,12 +1,11 @@
-// CR-125 · cr125-manual-start-ui · «Tạo yêu cầu»: loại yêu cầu người xem được bắt đầu (`GET /processes/startable`) + việc chờ tôi duyệt
-// (`GET /me/review-tasks`). Rỗng ⇒ nói vì sao và nhờ ai.
+﻿// CR-125 · «Yêu cầu» (CR-126 đổi tên): loại yêu cầu người xem được bắt đầu (`GET /processes/startable`). Rỗng ⇒ nói vì sao và nhờ ai.
+// Việc chờ tôi nằm ở MỘT hộp: «Việc của tôi».
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { PageHead, Panel } from "~/components/shared/layout";
 import { Skeleton } from "~/components/ui/skeleton";
-import { fetchMyTasks, fetchStartable, requestKeys } from "../api";
-import { waitingView } from "../lib/waiting";
+import { fetchStartable, requestKeys } from "../api";
 
 export function RequestsPage() {
   const { t } = useTranslation();
@@ -15,12 +14,6 @@ export function RequestsPage() {
     queryFn: ({ signal }) => fetchStartable(signal),
     staleTime: 30_000,
   });
-  const tasks = useQuery({
-    queryKey: requestKeys.tasks,
-    queryFn: ({ signal }) => fetchMyTasks(signal),
-    retry: false,
-  });
-  const waiting = waitingView(tasks);
   return (
     <div data-testid="requests-page">
       <PageHead title={t("contracts.requests.title")} lead={t("contracts.requests.lead")} />
@@ -55,43 +48,6 @@ export function RequestsPage() {
                     {t("contracts.requests.fields", { n: f.form.fields.length })}
                   </span>
                   <span className="btn btn-primary btn-sm">{t("contracts.requests.open")}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-      )}
-      <h2 className="mb-2 mt-6 text-[15px] font-semibold">
-        {t("contracts.requests.waitingTitle")}
-      </h2>
-      {waiting.kind === "loading" ? (
-        <Skeleton className="h-12 w-full" />
-      ) : waiting.kind === "error" ? (
-        <p role="alert" className="text-sm text-late" data-testid="requests-waiting-error">
-          {t("contracts.requests.loadError")}
-        </p>
-      ) : waiting.kind === "empty" ? (
-        <p className="text-sm text-dim" data-testid="requests-waiting-empty">
-          {t("contracts.requests.waitingEmpty")}
-        </p>
-      ) : (
-        <Panel>
-          <ul data-testid="requests-waiting" className="m-0 list-none p-0">
-            {waiting.items.map((i) => (
-              <li key={i.task.id} className="border-b border-rule-soft last:border-b-0">
-                <Link
-                  to="/contracts/requests/$runId"
-                  params={{ runId: i.process_run.id }}
-                  data-testid="requests-waiting-row"
-                  className="flex min-w-0 items-center gap-3 px-5 py-3 max-sm:px-4"
-                >
-                  <b className="min-w-0 flex-1 truncate text-[14.5px] font-semibold">
-                    {i.process_run.process.name}
-                  </b>
-                  <span className="shrink-0 text-label text-dim">{i.task.stage_name}</span>
-                  <span className="text-sm font-medium text-act">
-                    {t("contracts.requests.waitingOpen")}
-                  </span>
                 </Link>
               </li>
             ))}

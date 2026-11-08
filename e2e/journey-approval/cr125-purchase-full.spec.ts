@@ -119,16 +119,20 @@ async function submitOpenForm(page: Page): Promise<boolean> {
 }
 
 /**
- * Việc đang chờ người này (hộp «Chờ tôi duyệt» của yêu cầu): mở từng việc ⇒ trang yêu cầu của lượt GỐC (việc của Phần 1/2/3 mở trang của
+ * Việc đang chờ người này (hộp MỘT «Việc của tôi», CR-126): mở từng việc ⇒ trang yêu cầu của lượt GỐC (việc của Phần 1/2/3 mở trang của
  * yêu cầu cha, nhìn vào lượt con), làm ngay tại đó: điền form (thẻ bước điền, «Gửi») hoặc bấm «Duyệt» (cùng RunStepActions với thẻ HĐ).
  */
 async function actOnWaiting(page: Page): Promise<boolean> {
   const rows = page.getByTestId("requests-waiting-row");
   // danh sách việc tải SAU trang: chờ có danh sách hoặc dòng «không có việc» rồi mới đếm (đếm ngay ⇒ 0 dù có việc)
   const loaded = async () => {
-    await page.goto(`${E.cw}/contracts/requests`);
+    await page.goto(`${E.cw}/contracts/approvals`);
     await expect(
-      page.getByTestId("requests-waiting").or(page.getByTestId("requests-waiting-empty")),
+      page
+        .getByTestId("requests-waiting")
+        .or(page.getByTestId("approvals-empty"))
+        .or(page.getByTestId("approval-tasks"))
+        .first(),
     ).toBeVisible({ timeout: 30_000 });
   };
   await loaded();
