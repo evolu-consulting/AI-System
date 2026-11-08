@@ -121,7 +121,8 @@ test("Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm t�
   await withOwner(async (sql) => {
     for (const [group, user] of Object.entries(GROUP_MEMBERS)) {
       await sql`insert into admin.groups (tenant_id, key, name, description)
-        values (${tenantId}::uuid, ${group}, ${group}, 'nhóm của mẫu Mua hàng (e2e)') on conflict (tenant_id, key) do nothing`;
+        values (${tenantId}::uuid, ${group}, ${sql.json({ vi: group, en: group })}, 'nhóm của mẫu Mua hàng (e2e)')
+        on conflict (tenant_id, key) do nothing`;
       await sql`insert into admin.group_members (tenant_id, group_id, user_id)
         select ${tenantId}::uuid, g.id, u.id from admin.groups g, admin.users u
         where g.tenant_id = ${tenantId}::uuid and g.key = ${group}
@@ -142,6 +143,10 @@ test("Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm t�
   await loginCw(emp, E, U.employee);
   const id = await uploadAndOpen(emp, E, Date.now().toString(36), 50_000_000);
   await confirmAndSave(emp);
+  await emp.waitForTimeout(3_000);
+  await emp.screenshot({ path: testInfo.outputPath("00-sau-gui-duyet.png"), fullPage: true });
+  const alerts = await emp.getByRole("alert").allInnerTexts();
+  expect(alerts, `lỗi sau «Gửi duyệt»: ${alerts.join(" | ")}`).toEqual([]);
   await emp.close();
 
   const shot = (n: string) => testInfo.outputPath(`${n}.png`);
