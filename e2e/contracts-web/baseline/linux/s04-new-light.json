@@ -1,5 +1,5 @@
 {
-  "text": "← Hợp đồng Thêm hợp đồng Hợp đồng phải tải lên từ văn bản đã ký Tải lên tệp PDF, DOCX hoặc ảnh; AI sẽ đọc để bạn kiểm tra và xác nhận. Upload hợp đồng",
+  "text": "← Hợp đồng Thêm hợp đồng Hợp đồng phải tải lên từ văn bản đã ký Tải lên tệp PDF, DOCX hoặc ảnh; AI sẽ đọc để bạn kiểm tra và xác nhận. Tải hợp đồng lên",
   "boxes": {
     "heading": {
       "x": 282,
@@ -16,7 +16,7 @@
     "upload": {
       "x": 303,
       "y": 256.546875,
-      "w": 149,
+      "w": 145,
       "h": 40
     }
   }
