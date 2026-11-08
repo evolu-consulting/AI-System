@@ -205,7 +205,7 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   await orig.getByTestId("company-flow-more").click(); // CR-125 · x7: Tắt nằm trong menu "…"
   await page.getByRole("menuitem", { name: "Tắt", exact: true }).click();
   await expect(page.getByTestId("company-flow-error")).toContainText(
-    "Cần ít nhất một flow đang bật, không điều kiện",
+    "Cần ít nhất một quy trình đang bật, không điều kiện",
   );
 
   // Sao chép để sửa ⇒ nháp "Sao từ …", bản gốc vẫn Đang bật

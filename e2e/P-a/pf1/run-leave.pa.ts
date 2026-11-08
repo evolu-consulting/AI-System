@@ -30,7 +30,7 @@ test('CHAT-AC-52 · U5 · E-P20 · X mở thread thấy tin + "Đang chờ …" 
     await u.X.goto(`/rooms/${room.id}?flow=${r.flowId}`);
     const pane = flowPane(u.X);
     await expect(outputMsg(pane)).toBeVisible();
-    await expect(waitingNote(pane, /Đang chờ .* kiểm/)).toBeVisible();
+    await expect(waitingNote(pane, /Đang chờ .* duyệt/)).toBeVisible();
     await expect(passBtn(pane)).toHaveCount(0);
     await expect(failBtn(pane)).toHaveCount(0);
 
