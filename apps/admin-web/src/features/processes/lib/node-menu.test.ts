@@ -32,6 +32,7 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
     expect(ids(m.business)).toEqual([
       "approve",
       "if",
+      "contracts.create-from-step", // CR-126 · «Tạo hợp đồng từ hồ sơ»
       "contracts.esign",
       "contracts.partner-send",
       "core.bell",

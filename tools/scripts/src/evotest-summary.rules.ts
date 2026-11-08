@@ -68,7 +68,7 @@ const HANDLERS: Handler[] = [
   [
     JOB,
     (m, a) => {
-      a.jobs.push({ ok: m[1] === "✓", name: m[2], pass: Number(m[3]), s: Number(m[4]) });
+      a.jobs.push({ ok: m[1] === "✓", name: m[2] ?? "", pass: Number(m[3]), s: Number(m[4]) });
     },
   ],
   [
@@ -80,7 +80,7 @@ const HANDLERS: Handler[] = [
   [
     NEW_RED,
     (m, a) => {
-      a.newReds.push(m[1]);
+      a.newReds.push(m[1] ?? "");
     },
   ],
   [
@@ -92,7 +92,7 @@ const HANDLERS: Handler[] = [
   [
     SETUP_ERR,
     (m, a) => {
-      if (!a.setupError) a.setupError = m[1];
+      if (!a.setupError) a.setupError = m[1] ?? null;
     },
   ],
 ];

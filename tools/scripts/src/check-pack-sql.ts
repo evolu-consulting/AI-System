@@ -31,6 +31,9 @@ export const KNOWN_DEBT = new Set([
   "contracts/0077_emit_flow_event_grant.sql:hub",
   "community/0010_emit_flow_event_grant.sql:hub",
   "knowledge/0006_scope_grants.sql:packs",
+  // TECH-DEBT #264 (CR-124 q3/q4, đã áp dụng prod): gói gọi hàm hub.partner_* — chuyển sang cổng packs.* khi làm lại hộp thư đối tác.
+  "contracts/0085_partner_send.sql:hub",
+  "contracts/0087_partner_settings.sql:hub",
 ]);
 
 export type Finding = { line: number; ref: string; msg: string };
