@@ -2,6 +2,7 @@
 // `digest.build`): gom bốn nguồn hàng thô (hẹn nhắc của mình, đợt thanh toán, hạn xử lý HĐ, nhắc hạn đã gửi) thành MỘT danh sách có
 // mức độ gấp. Thuần: không đọc DB/đồng hồ — `today` là ngày lịch tenant do tầng trên đưa vào (HD4 `localDate`).
 
+import { contractNameOf } from "./contract-name";
 import { daysBetween } from "./local-time.rules";
 import {
   MYWORK_MAX,
@@ -103,7 +104,7 @@ const blank = {
   subject: null,
 } satisfies Omit<MyWorkItem, "id" | "kind" | "tone" | "days" | "due">;
 
-const name = (n: { number: string | null; title: string | null }) => n.title ?? n.number;
+const name = contractNameOf;
 
 export function followupItem(f: RawFollowup, today: string): MyWorkItem {
   return {

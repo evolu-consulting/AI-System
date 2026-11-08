@@ -105,7 +105,7 @@ test("owner: «Mở lại» ⇒ hộp thoại bắt buộc lý do ⇒ POST /reop
   });
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByText("Mở lại để sửa lỗi trích xuất").click();
-  const dlg = page.getByRole("dialog", { name: "Mở lại hợp đồng" });
+  const dlg = page.getByRole("dialog", { name: "Mở lại quy trình" });
   const ok = dlg.getByTestId("reopen-confirm");
   await expect(ok).toBeDisabled();
   await dlg.getByLabel(/^Lý do mở lại/).fill("AI đọc sai giá trị hợp đồng");

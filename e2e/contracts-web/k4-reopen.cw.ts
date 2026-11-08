@@ -28,7 +28,7 @@ test("editor phụ trách: «Mở lại» ⇒ lý do bắt buộc ⇒ POST /reop
   });
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByTestId("reopen-link").click();
-  const dlg = page.getByRole("dialog", { name: "Mở lại hợp đồng" });
+  const dlg = page.getByRole("dialog", { name: "Mở lại quy trình" });
   await expect(dlg.getByTestId("reopen-confirm")).toBeDisabled();
   await dlg.getByLabel(/^Lý do mở lại/).fill("AI đọc sai số hợp đồng");
   reopened = true;
@@ -52,7 +52,7 @@ test("server từ chối mở lại (403 REOPEN_FORBIDDEN) ⇒ câu lỗi, HĐ v
   );
   await page.goto(`/contracts/c/${ACTIVE_ID}`);
   await page.getByTestId("reopen-link").click();
-  const dlg = page.getByRole("dialog", { name: "Mở lại hợp đồng" });
+  const dlg = page.getByRole("dialog", { name: "Mở lại quy trình" });
   await dlg.getByLabel(/^Lý do mở lại/).fill("thử");
   await dlg.getByTestId("reopen-confirm").click();
   await expect(dlg.getByRole("alert")).toHaveText(

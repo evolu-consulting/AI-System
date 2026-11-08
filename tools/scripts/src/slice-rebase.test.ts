@@ -12,6 +12,8 @@ describe("slice-rebase · cổng sau rebase (check:boundaries)", () => {
     expect(seen.map((c) => c.join(" "))).toEqual([
       "bun tools/scripts/src/check-boundaries.ts",
       "bun tools/scripts/src/check-modules.ts",
+      "bun tools/scripts/src/check-i18n-terms.ts",
+      "bun tools/scripts/src/check-settings-path.ts",
       "bun tools/scripts/src/depcruise.ts --affected",
     ]);
   });

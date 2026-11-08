@@ -575,8 +575,8 @@
     "SLOT_GROUPS_MISSING": "A company is missing a department the process needs. Add it in Users › Departments.",
     "SLOT_BODY_INVALID": "The Form content is not valid. See what is wrong below.",
     "NOT_LIBRARY_DEF": "This process is the company copy, not a shared one. Open it to edit directly.",
-    "COPY_SOURCE_REMOVED": "The original library process has been removed. This company copy still runs but cannot be edited. Ask the platform admin to restore the original, or assign another process in Company > Processes.",
-    "SLOT_GONE": "The job that used this process no longer exists in the app. Pick another process in Company > Processes.",
+    "COPY_SOURCE_REMOVED": "The original library process has been removed. This company copy still runs but cannot be edited. Ask the platform admin to restore the original, or assign another process in Company › Processes.",
+    "SLOT_GONE": "The job that used this process no longer exists in the app. Pick another process in Company › Processes.",
     "SLOT_UNKNOWN": "This kind of job is not available on the system. Turn on the matching app for the company, or ask the platform admin to add it."
   },
   "validate": {
@@ -1434,7 +1434,7 @@
       "signers": "Company signers (max {{max}})",
       "group": "Department",
       "unavailable": "Could not load e-sign options. Open the company copy to edit this.",
-      "disabled": "E-sign is not enabled for this company. Enable it in Settings › E-sign.",
+      "disabled": "E-sign is not enabled for this company. Enable it in {{path:flow}}.",
       "err": {
         "ESIGN_DISABLED": "E-sign is not enabled.",
         "PROVIDER_UNAVAILABLE": "This provider is not enabled for the company.",
@@ -1446,7 +1446,7 @@
       "signWith": "Sign with: {{name}}",
       "signChooses": "How to sign: the signer chooses when signing",
       "noProvider": "no provider chosen",
-      "change": "Change in Settings › E-sign"
+      "change": "Change in {{path:flow}}"
     },
     "advanced": "Advanced",
     "moduleNote": "The provider, signers and other settings of this step come from the app settings. Open Advanced to tweak details.",

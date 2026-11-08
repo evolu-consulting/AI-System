@@ -3,6 +3,7 @@
 // HD7: sổ đối tác (`contracts.ledger.*`); HD8: đối tác, điểm uy tín, giá hàng hoá (`contracts.partners.*`, `contracts.scoring.*`,
 // `contracts.goods.*`) — gộp vào cùng gốc `contracts`; V2-F: form + chi tiết hợp đồng (`contracts.cform.*`, `contracts.cdetail.*`).
 import type { Locale } from "./locales";
+import { expandPathTokens } from "./settings-paths";
 
 type Part = { default: { contracts: Record<string, unknown> } };
 /** Các tệp chuỗi theo thứ tự gộp: gốc, cks, assistant, org, work, ledger, partners, v2f, v2g, v2h, v2i, v2j2, v2l, v2m, v2gaps, gapa1, gape, k3b, g2, esign, legal, doclist, msimpact, esign-anchor, esignflow, docframe, rep3 (rep3 luôn CUỐI: gộp sâu; esignflow gộp sâu vào flow + approval). */
@@ -149,5 +150,5 @@ function merge([mod, cks, assistant, org, work, ledger, partners, v2f, v2g, ...t
 
 /** Nạp bản dịch contracts-web của một ngôn ngữ khi cần (mỗi ngôn ngữ một chunk riêng). */
 export async function loadContractsLocale(locale: Locale): Promise<Record<string, unknown>> {
-  return merge(await (locale === "en" ? loadEn() : loadVi()));
+  return expandPathTokens(merge(await (locale === "en" ? loadEn() : loadVi())), locale);
 }

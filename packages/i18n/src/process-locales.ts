@@ -1,6 +1,7 @@
 // CR-056 · P-a FD3: chuỗi quy trình (`process.<phần>.<tên>`) nạp lười, tách khỏi chuỗi chat/Admin. Mỗi phần một file
 // `locales/process/<phần>.{vi,en}.json` (nội dung = cây con của `process.<phần>`); PF chỉ sửa phần của mình.
 import type { Locale } from "./locales";
+import { expandPathTokens } from "./settings-paths";
 
 export const PROCESS_LOCALE_PARTS = [
   "common",
@@ -53,7 +54,10 @@ export async function loadProcessLocale(
   parts: readonly ProcessLocalePart[] = PROCESS_LOCALE_PARTS,
 ): Promise<Tree> {
   const loaded = await Promise.all(parts.map((p) => LOADERS[locale][p]()));
-  return { process: Object.fromEntries(parts.map((p, i) => [p, loaded[i]?.default ?? {}])) };
+  return expandPathTokens(
+    { process: Object.fromEntries(parts.map((p, i) => [p, loaded[i]?.default ?? {}])) },
+    locale,
+  );
 }
 
 /** Admin dùng `{x}` thay `{{x}}` (plan-frontend §7 của Admin): đổi cú pháp tham số của cả cây. */

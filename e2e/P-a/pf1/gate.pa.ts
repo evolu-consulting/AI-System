@@ -61,7 +61,9 @@ test('CHAT-AC-53 · AC-H28 · E-P4 · B "Chưa đạt" ⇒ góp ý trống bị 
     await expect(taskResult(px, "Hoa", "Chưa đạt")).toBeVisible();
     await expect(passBtn(px)).toHaveCount(0);
     await expect(failBtn(px)).toHaveCount(0);
-    await expect(waitingNote(px, /Đang chờ .* kiểm — chỉ người kiểm mới bấm được\./)).toBeVisible();
+    await expect(
+      waitingNote(px, /Đang chờ .* duyệt — chỉ người duyệt mới bấm được\./),
+    ).toBeVisible();
   } finally {
     await u.close();
   }

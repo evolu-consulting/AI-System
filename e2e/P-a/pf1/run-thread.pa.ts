@@ -52,11 +52,11 @@ test('CHAT-AC-52 · U1 · E-P3 · A gửi "!hoa-don-t HD-12" ⇒ A, B, X thấy 
     await expect(block(u.X)).toContainText("Đang chạy");
     await rtScript("hoa-don-t", 0, [{ kind: "done" }]);
     // trạng thái sống: chờ kiểm (không reload)
-    await expect(block(u.X)).toContainText(/Chờ kiểm|Đang chờ/);
+    await expect(block(u.X)).toContainText(/Chờ duyệt|Đang chờ/);
     await expect(block(u.B).getByRole("button", { name: "Kiểm ngay" })).toBeVisible();
     await expect(block(u.X).getByRole("button", { name: "Kiểm ngay" })).toHaveCount(0);
     await expect(
-      waitingNote(block(u.X), /Đang chờ .* kiểm — chỉ người kiểm mới bấm được\./),
+      waitingNote(block(u.X), /Đang chờ .* duyệt — chỉ người duyệt mới bấm được\./),
     ).toBeVisible();
     // timeline không có Đạt/Chưa đạt
     await expect(block(u.B).getByRole("button", { name: "Đạt", exact: true })).toHaveCount(0);

@@ -37,7 +37,7 @@ test("1 · platform admin gán quy trình duyệt bài cho công ty (đường t
   await openTenantAppsTab(page, TENANT_NAME);
   // CR-122 U2: gán ở công ty › Quy trình = MỘT danh sách flow (không còn việc/ngăn Gán): chọn flow duyệt bài trong Thư viện → Gán
   const box = await openCompanyFlows(page);
-  const pick = box.getByRole("combobox", { name: "Flow trong Thư viện" });
+  const pick = box.getByRole("combobox", { name: "Quy trình trong Thư viện" });
   const names = await pick.locator("option[value]:not([value=''])").allTextContents();
   const moderation = names.find((n) => /bài/i.test(n));
   if (moderation) await assignFlowUi(box, moderation); // đã gán rồi thì không còn trong ô chọn ⇒ bỏ qua

@@ -87,7 +87,7 @@ test.fixme("CR-118 · F1 · /apps → Sổ Hợp Tác: 5 tab, tab Công ty → a
     "aria-selected",
     "true",
   );
-  await expect(page.getByRole("radio", { name: "Bản nháp" })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "Nháp" })).toBeChecked();
   const admin = page.getByTestId("preview-company_admin");
   await page.getByRole("radio", { name: "Quản trị công ty" }).click();
   await expect(

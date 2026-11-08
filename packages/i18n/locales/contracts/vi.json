@@ -243,7 +243,7 @@
       "tabs": "Nhóm trang Sản phẩm & Giá",
       "catalog": "Sản phẩm",
       "prices": "So sánh giá",
-      "cks": "Sản phẩm CKS",
+      "cks": "Sản phẩm chữ ký số",
       "sourcing": "Mua hàng"
     },
     "overview": {
@@ -474,7 +474,7 @@
       "updateVersion": "Tải bản cập nhật",
       "soon": "Sắp có",
       "reopenLink": "Mở lại để sửa lỗi trích xuất",
-      "dialogTitle": "Mở lại hợp đồng",
+      "dialogTitle": "Mở lại quy trình",
       "dialogHint": "Hợp đồng quay về Chờ duyệt để sửa lỗi AI trích xuất; việc mở lại được ghi vào lịch sử.",
       "reasonLabel": "Lý do mở lại (bắt buộc)",
       "reopenConfirm": "Mở lại",
@@ -591,7 +591,7 @@
           "title": "Quy trình đang dừng: {{reason}}",
           "since": "Từ {{time}}",
           "retry": "Thử lại",
-          "cancelReopen": "Huỷ & mở lại",
+          "cancelReopen": "Huỷ và mở lại quy trình",
           "tellOwner": "Báo chủ hợp đồng để xử lý.",
           "confirmTitle": "Huỷ và mở lại quy trình?",
           "confirmBody": "Lượt chạy hiện tại sẽ bị huỷ và một lượt mới bắt đầu lại từ đầu theo quy trình hiện hành.",
@@ -603,9 +603,9 @@
             "job_timeout": "một bước tự động chạy quá thời gian cho phép",
             "other": "quy trình cần người quyết định tiếp",
             "tool": {
-              "ESIGN_DISABLED": "chưa bật ký số cho công ty — vào Cài đặt › Ký số bật lên rồi bấm Thử lại",
-              "ESIGN_PROVIDER_UNAVAILABLE": "nhà cung cấp ký số chưa sẵn sàng — vào Cài đặt › Ký số kiểm tra kết nối rồi bấm Thử lại",
-              "ESIGN_STATE": "hợp đồng đang có phong bì ký chưa xong hoặc chưa ở trạng thái gửi ký được — xử lý phong bì hiện có rồi bấm Thử lại",
+              "ESIGN_DISABLED": "chưa bật ký số cho công ty — vào {{path:flow}} bật lên rồi bấm Thử lại",
+              "ESIGN_PROVIDER_UNAVAILABLE": "nhà cung cấp ký số chưa sẵn sàng — vào {{path:flow}} kiểm tra kết nối rồi bấm Thử lại",
+              "ESIGN_STATE": "hợp đồng đang có bản ký chưa xong hoặc chưa ở trạng thái gửi ký được — xử lý bản ký hiện có rồi bấm Thử lại",
               "ESIGN_UNSUPPORTED_FILE": "ký số chỉ nhận tệp PDF — tải bản PDF lên hợp đồng rồi bấm Thử lại",
               "ESIGN_NOT_SIGNER": "người gửi không phải người ký phía công ty — nhờ người ký công ty bấm Thử lại",
               "NO_PARTNER_EMAIL": "đối tác chưa có email để ký — bổ sung email đối tác trong hợp đồng rồi bấm Thử lại",
@@ -632,7 +632,7 @@
             "FLOW_REFUSED": "quy trình duyệt không mở được cho người gửi (tính năng của quy trình đang tắt hoặc người gửi không còn hoạt động) — quản trị kiểm tra ở Công ty › Quy trình, rồi bấm Mở lại",
             "FLOW_START_FAILED": "hệ thống chưa mở được quy trình duyệt sau nhiều lần thử — bấm Mở lại; vẫn lỗi thì báo quản trị",
             "FLOW_STARTING": "quy trình duyệt chưa mở được sau 2 phút — bấm Mở lại để gửi lại",
-            "RECEIVE_NO_OWNER": "chưa có người phụ trách hợp đồng nhận — đặt ở Cài đặt › Quy trình, rồi bấm Mở lại"
+            "RECEIVE_NO_OWNER": "chưa có người phụ trách hợp đồng nhận — đặt ở {{path:flow}}, rồi bấm Mở lại"
           }
         },
         "release": {

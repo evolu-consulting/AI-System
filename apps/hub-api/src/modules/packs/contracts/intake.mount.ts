@@ -9,7 +9,7 @@ import { createPackUow, moduleRegistry, slotRegistry } from "../kit/public";
 import { esignRepo } from "./adapters/esign.repo";
 import { extractionRepo } from "./adapters/extraction.repo";
 import { INTAKE_TOOL_KEYS, intakeTools } from "./adapters/intake.tools";
-import { contractLabelOf } from "./application/esign-flow.usecase";
+import { contractCodeLabel } from "./domain/contract-name";
 import type { CompletedHook, ESignModule } from "./esign.mount";
 import { esignBindingBase } from "./nodes/esign/binding";
 import { mountPartnerSend } from "./partner-mailbox.mount";
@@ -39,7 +39,7 @@ export function intakeWiring(
         // CR-125 · x12 · chuông + dữ liệu thẻ/ảnh trang đầu (dựng NGOÀI tx; ảnh dựng một lần mỗi phiên bản HĐ).
         await (async () => {
           const label = await uow.system(tenantId, async (r) =>
-            contractLabelOf(await r.esign.contract(contractId)),
+            contractCodeLabel(await r.esign.contract(contractId)),
           );
           const notices = await Promise.all(
             users.map((u) => esign.invite(tenantId, contractId, u, label)),

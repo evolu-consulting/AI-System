@@ -129,7 +129,7 @@
       "auto": "Tự chạy tiếp",
       "reviewGroup": "Phòng ban duyệt",
       "real": "Hành động thật",
-      "realLocked": "Cần mọi bước ở bước trước có người kiểm",
+      "realLocked": "Cần mọi bước ở bước trước có người duyệt",
       "adminModeReview": "Hub đang ở chế độ chỉ quản trị: chỉ admin thuộc Phòng ban duyệt mới duyệt được (thành viên thường không có hộp việc).",
       "adminModeAsk": "Hub đang ở chế độ chỉ quản trị: câu hỏi của AI ở bước này không trả lời được (hộp việc chat đang đóng băng) — lượt chạy sẽ chờ.",
       "answerer": "Người trả lời",
@@ -399,7 +399,7 @@
           "optionDup": "Mã lựa chọn bị trùng.",
           "optionLabel": "Nhập tên lựa chọn (không dùng dấu < hoặc >).",
           "generic": "Các trường form chưa hợp lệ, kiểm tra lại nhãn, mã và giới hạn.",
-          "FORM_INVALID": "Bước điền form chưa hợp lệ: phải có người kiểm (nhóm), không dùng hành động thật, và kết quả phải khớp các trường form."
+          "FORM_INVALID": "Bước điền form chưa hợp lệ: phải có người duyệt (nhóm), không dùng hành động thật, và kết quả phải khớp các trường form."
         }
       },
       "approver": "Ai duyệt",
@@ -571,7 +571,7 @@
     "PROCESS_IN_USE": "Quy trình này đang được công ty dùng. Vào Công ty › Quy trình, chọn quy trình khác rồi quay lại xoá hoặc tắt.",
     "PROCESS_NOT_PUBLISHED": "Quy trình chưa xuất bản. Xuất bản trước.",
     "PROCESS_PUBLISH_INVALID": "Quy trình chưa hợp lệ để xuất bản. Xem chỗ sai bên dưới.",
-    "SLOT_SHAPE_UNSUPPORTED": "Khe này chỉ nhận các bước tuần tự (không song song, không nhánh). Sửa lại ở Sơ đồ.",
+    "SLOT_SHAPE_UNSUPPORTED": "Vị trí quy trình này chỉ nhận các bước tuần tự (không song song, không nhánh). Sửa lại ở Sơ đồ.",
     "SLOT_GROUPS_MISSING": "Có công ty chưa có phòng ban mà quy trình cần. Thêm phòng ban đó ở Người dùng › Phòng ban rồi lưu lại.",
     "SLOT_BODY_INVALID": "Nội dung Form chưa hợp lệ. Xem chỗ sai bên dưới.",
     "SLOT_UNKNOWN": "Loại việc này chưa có trên hệ thống. Bật ứng dụng tương ứng cho công ty, hoặc nhờ quản trị nền tảng bổ sung.",
@@ -587,7 +587,7 @@
     "templateRequired": "Nhập mẫu kết quả.",
     "sectionRequired": "Cần ít nhất một mục bắt buộc.",
     "fieldKey": "Mã trường: chữ thường, số, gạch dưới, bắt đầu bằng chữ.",
-    "realAction": "Hành động thật cần bước ngay trước có người kiểm.",
+    "realAction": "Hành động thật cần bước ngay trước có người duyệt.",
     "timeout": "Từ 60 đến 3600 giây.",
     "budget": "Từ 1.000 đến 5.000.000 hoặc để trống.",
     "stageCount": "Cần 1–10 bước.",
@@ -659,7 +659,7 @@
     "node": {
       "back": "↩ bước {{step}}",
       "real": "Hành động thật",
-      "gateReview": "Có người kiểm",
+      "gateReview": "Có người duyệt",
       "gateAuto": "Tự động",
       "error": "Có lỗi",
       "wait": "Chờ tới ngày",
@@ -728,7 +728,7 @@
       "approveAlone": "Bước Duyệt phải đứng một mình trong bước — tách nó ra hoặc dời sang bước khác.",
       "endNext": "Bước Kết thúc là điểm cuối, không có bước đi tiếp — bỏ «Gộp tới» của bước này.",
       "step": "Số bước không hợp lệ. Hãy kéo bước vào đúng cột.",
-      "realStep": "Hành động thật chỉ dùng được khi mọi bước của bước trước đều có người kiểm.",
+      "realStep": "Hành động thật chỉ dùng được khi mọi bước của bước trước đều có người duyệt.",
       "realNeedsReview": "«Ký số» cần một bước Duyệt ngay trước nó. Thêm bước Duyệt trước rồi thả lại.",
       "unlinked": "Bước chưa được nối — kéo mũi tên từ bước trước tới bước này.",
       "backTarget": "Chỉ quay lại được các bước đứng trước bước này."
@@ -1434,7 +1434,7 @@
       "signers": "Người ký phía công ty (tối đa {{max}})",
       "group": "Phòng ban",
       "unavailable": "Chưa tải được lựa chọn ký số. Mở bản của công ty để chỉnh cấu hình này.",
-      "disabled": "Công ty chưa bật ký số. Bật ở Cài đặt › Ký số.",
+      "disabled": "Công ty chưa bật ký số. Bật ở {{path:flow}}.",
       "err": {
         "ESIGN_DISABLED": "Công ty chưa bật ký số.",
         "PROVIDER_UNAVAILABLE": "Nhà cung cấp này chưa bật cho công ty.",
@@ -1446,7 +1446,7 @@
       "signWith": "Ký bằng: {{name}}",
       "signChooses": "Cách ký: người ký chọn khi ký",
       "noProvider": "chưa chọn nhà cung cấp",
-      "change": "Đổi ở Cài đặt › Ký số"
+      "change": "Đổi ở {{path:flow}}"
     },
     "advanced": "Nâng cao",
     "moduleNote": "Nhà cung cấp, người ký và các thiết lập khác của bước này lấy từ cài đặt của ứng dụng. Mở Nâng cao nếu cần chỉnh chi tiết.",

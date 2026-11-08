@@ -4,6 +4,7 @@
 // gửi dùng `provider` LƯU trên envelope. Gọi mạng NGOÀI tx. Thiếu cấu hình ⇒ tắt (409, không 500).
 import type { ESignSettingsOut, ESignSignerIn, ESignStateOut } from "@ai/contracts/pack-contracts";
 import type { PackSystemUow, PackUow, PackWho } from "../../kit/public";
+import { contractNameOf } from "../domain/contract-name";
 import { defaultSigners, type ESignStatus, isOpen, mapEnvelopeStatus } from "../domain/esign.rules";
 import {
   ESignFail,
@@ -139,7 +140,7 @@ export function esignUsecase(d: ESignDeps) {
     });
     const bytes = await d.files(file.org).getContent(file.fileId);
     if (!bytes) throw new ESignFail("ESIGN_PROVIDER", "file-unavailable");
-    const title = got.c?.title ?? "";
+    const title = contractNameOf(got.c) ?? "";
     // esign-anchor · ô ký trong văn bản HĐ (gửi tay lẫn gửi tự động của bước Ký số).
     const anchors = await anchorsFor(who, id, p, stored, bytes);
     const { envelopeId } = await p.createEnvelope({

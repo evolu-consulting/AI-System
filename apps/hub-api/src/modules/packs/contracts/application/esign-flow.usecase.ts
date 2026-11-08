@@ -14,6 +14,7 @@ import {
   signerOf,
   signersOf,
 } from "../domain/approval-flow-esign.rules";
+import { contractCodeLabel } from "../domain/contract-name";
 import type { ESignStatus } from "../domain/esign.rules";
 import type { ESignRepo } from "./esign.ports";
 
@@ -90,8 +91,6 @@ const bell = (user: string, id: string, title: string, body?: string): NotifyInp
 /** Chuông mời người ký công ty (một nguồn câu chữ cho đường cũ và bước Ký số của flow mới). */
 export const signInviteBell = (signer: string, id: string, label: string): NotifyInput =>
   bell(signer, id, `Mời ký số HĐ ${label}`, "Hợp đồng đã duyệt xong, chờ bạn ký.");
-export const contractLabelOf = (k: { number?: string | null; title?: string | null } | null) =>
-  (k?.number ?? k?.title ?? "").slice(0, 120);
 const needsBell = (owner: string, id: string, label: string, why: EsignReason) =>
   bell(
     owner,
@@ -102,7 +101,7 @@ const needsBell = (owner: string, id: string, label: string, why: EsignReason) =
 
 type Partner = { name: string; email: string } | null;
 type Contract = Awaited<ReturnType<ESignRepo["contract"]>>;
-const labelOf = (k: Contract) => contractLabelOf(k);
+const labelOf = (k: Contract) => contractCodeLabel(k);
 
 export function esignFlow(d: EsignFlowDeps) {
   const sys = <T>(tid: string, fn: (r: R) => Promise<T>) => d.uow.system(tid, fn);

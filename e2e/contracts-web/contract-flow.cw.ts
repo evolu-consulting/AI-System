@@ -251,7 +251,7 @@ test("CR-107 needs_decision: banner và nút theo quyền", async ({ page }) => 
   const banner = page.locator("[data-approval=attention]");
   await expect(banner).toContainText("Quy trình đang dừng");
   await expect(page.locator("[data-approval=retry]")).toHaveText("Thử lại");
-  await expect(page.locator("[data-approval=cancel-reopen]")).toHaveText("Huỷ & mở lại");
+  await expect(page.locator("[data-approval=cancel-reopen]")).toHaveText("Huỷ và mở lại quy trình");
   await page.unroute("**/pack/contracts/contracts/**");
   await install(page, NEEDS_DECISION(), "editor");
   await page.reload();

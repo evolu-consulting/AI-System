@@ -74,12 +74,12 @@ export async function optionValue(select: Locator, text: string): Promise<string
 }
 
 /**
- * CR-122 U2 · platform_admin gán flow Thư viện `name` cho công ty (hộp `company-flows`): chọn ở ô "Flow trong Thư viện" → "Gán".
+ * CR-122 U2 · platform_admin gán flow Thư viện `name` cho công ty (hộp `company-flows`): chọn ở ô "Quy trình trong Thư viện" → "Gán".
  * Chạy lại được (đã có dòng thì bỏ qua). `name` vắng ⇒ lấy flow đầu tiên còn chọn được. Trả dòng vừa gán.
  */
 export async function assignFlowUi(box: Locator, name?: string): Promise<Locator> {
   if (name && (await flowRow(box, name).count()) > 0) return flowRow(box, name);
-  const pick = box.getByRole("combobox", { name: "Flow trong Thư viện" });
+  const pick = box.getByRole("combobox", { name: "Quy trình trong Thư viện" });
   const value = name
     ? await optionValue(pick, name)
     : await pick.locator("option[value]:not([value=''])").first().getAttribute("value");

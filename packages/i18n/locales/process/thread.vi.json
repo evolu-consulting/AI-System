@@ -28,12 +28,12 @@
     "member": "Thành viên"
   },
   "wait": {
-    "review": "Đang chờ {{names}} kiểm — chỉ người kiểm mới bấm được.",
+    "review": "Đang chờ {{names}} duyệt — chỉ người duyệt mới bấm được.",
     "ask": "Đang chờ {{names}} trả lời",
     "decide": "Đang chờ {{names}} hoặc quản trị viên quyết định",
     "more": "{{first}} và {{count}} người khác",
     "group": "nhóm {{group}}",
-    "reviewEscalated": "Đang chờ {{names}} hoặc {{escalated}} (đã chuyển cấp) kiểm — chỉ người kiểm mới bấm được."
+    "reviewEscalated": "Đang chờ {{names}} hoặc {{escalated}} (đã chuyển cấp) duyệt — chỉ người duyệt mới bấm được."
   },
   "decision": {
     "stopped": "Quy trình dừng ở giai đoạn {{stage}}"

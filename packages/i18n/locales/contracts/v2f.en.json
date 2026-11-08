@@ -173,7 +173,7 @@
       "colDelivered": "Delivered",
       "colThisTime": "This delivery",
       "overStockWarn": "Delivering beyond stock, stock will go negative: {{list}}",
-      "overStockBlock": "Not enough stock: {{list}}. Turn on \"Allow delivery beyond stock\" in Settings › Company to deliver anyway.",
+      "overStockBlock": "Not enough stock: {{list}}. Turn on \"Allow delivery beyond stock\" in {{path:co}} to deliver anyway.",
       "overdrawnDone": "Delivered beyond stock: {{list}}",
       "amountLabel": "Amount",
       "amountPh": "e.g. 118000000",

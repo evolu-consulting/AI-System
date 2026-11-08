@@ -73,10 +73,10 @@ ace323079e642527c45c86da7d7388b21836ca06695783db981ef0e70cdee95a  e2e/P-a/_pa-ru
 3b77b3f70b3a8b0320cbe305e70052dd793df49b9f3d57107f97b38f82d7c8ae  e2e/P-a/pf1/ask-ai.pa.ts
 fc05c48f9cbf2931403f9075f094863f44783b256a23ef1bbbd3284dd892b33e  e2e/P-a/pf1/composer.pa.ts
 c6eef6ed40a050983db158075c6a01ddccd0ef6472a6156f35a0130f77e8e470  e2e/P-a/pf1/decide.pa.ts
-4a977de0d4eb898ad4750759dffcd94adda6811406c16c66740393bdf27f45b6  e2e/P-a/pf1/gate.pa.ts
+90e8dbe1bee3878a0dba427b1a91c79009dd3efede535f974f4d4cd58bfd6a92  e2e/P-a/pf1/gate.pa.ts
 53da4f2aa530f5c4962a0be8f0518b3192078a2c1b20f4c86d9c89fb60e0552f  e2e/P-a/pf1/reject.pa.ts
 9ce8efe825d37151231400f5aba1fc7c7158a1f3e885ac31ae7c7c1c99383a6b  e2e/P-a/pf1/run-leave.pa.ts
-e4d99b04d4b8273c08ce526f24ac49b09606efa1c67eba3b4507a06f0b073952  e2e/P-a/pf1/run-thread.pa.ts
+9ded99fb1498ee51d6329426882ce17ec7d74b7d17714f5da5940dc802db68f8  e2e/P-a/pf1/run-thread.pa.ts
 60b3d3bf3ae77fe7796eefdf47f8fb446272dccb608613af86575feea37d8bce  e2e/P-a/pf1/run-unread.pa.ts
 be1a62ffeac76dcd9a5d62b3b5c8a217e7db62663c81ced6b9aa5a8841f1afc7  e2e/P-a/pf2/ask.pa.ts
 61379c04e24287c205d43f0c4cf1d90423d9d0700615ddccf95888629955e59c  e2e/P-a/pf2/forward.pa.ts
@@ -132,13 +132,13 @@ cff6d3a444d4df213cec19043dc397b865eafb42f3ce2cf8bc1e32254592c3bf  e2e/_kit/READM
 f4e4444247846e5cbc9b32744dfc53b0fab5e59eb574e0f241a97d35cc86f29e  e2e/_kit/api.ts
 6471c6a451ed0abf7060d81e40ef8fec72c4cc2d07f7d4be808942f1aeff79a6  e2e/_kit/canvas-geometry.ts
 6d1fbc893b02ce3995a5b20cc8eadb9ae40bc3e76a54df4ddb0542abc8a760c1  e2e/_kit/flows.ts
-612c19ec397b72b330bb599d22673c402e7ccd351228832311fe60877090d5b6  e2e/_kit/ui.ts
+25c56e538690ad42508c1e70cecc4c1f9eb76ed5252c842fedac85d3e2404d8e  e2e/_kit/ui.ts
 e41ce3f1978a75fb03d268b213b64287ed8ea01dfee73ee8adc24bf5e5923f24  e2e/_kit/unique.ts
 8c572e905a5a971e740b014496380e823b898946b00421604fd6f63c16ba0780  e2e/access-check.spec.ts
 d2c81bd8128f68801f72cca23c5d001a99b89e6ec9bb84eb7d6d50c2f77d3332  e2e/access-command.spec.ts
 4a87da179947709e4d2ce0e06c906bb1554981100f60b252421a06ce5cd1aab0  e2e/access-matrix.spec.ts
 e3ba7a91541d2ecdec2de72b06f0136ab4e44e6603e33ebe313ee514648e1130  e2e/access-user-tab.spec.ts
-1392661b83e33939960521ee2fcf129d899b205e28f3c403999522e1f8fc80c8  e2e/app-config.spec.ts
+3e33ebfe5e76419cc5cefd6ca96c4afe269dcc55d72a187728c56b6ae585e7a7  e2e/app-config.spec.ts
 22b385c5f36d843933a64648e5fa4e5ca5c7d799d674e58a997efee369324283  e2e/app-roles.spec.ts
 f76d9d425bfc67d5e90dd485b991694f87ffe1ca89e2b9d46735cbbdd4293a57  e2e/auth.spec.ts
 5de980a383fd1124e706717faaf6f3504f1fb8203c480065037b2fd18642fc92  e2e/chat/_support.ts
@@ -190,7 +190,7 @@ e8431a9a7814943157d0b5be52eb265b6262724abd5296525125ebdb0be76bc6  e2e/community-
 727ca5551b7f762039d98f0dc4dea292c4b42d05ded4a605400ec3ed3ed2f769  e2e/community-web/contrast.cm.ts
 fd6353ad67d686e119572f2be733b1d3ede4eb761950c0e286fcd5c29801c125  e2e/community-web/deployed.support.ts
 8692005db5b59d099c18a3a850c8713ed3323f7974ed001504aec2dba32d476a  e2e/community-web/feed.cm.ts
-823246cd33a7066e0095e41c676012f82bd566f324f085bf24af7b2e398bdc6b  e2e/community-web/flows.cs.ts
+c5039330be8206c38901309154e33cd53ebd511c4647910da6c2b54cbb2dee98  e2e/community-web/flows.cs.ts
 6a9b6fa9068b39db243691aaf40bd5e5f81d899cce9035bbf502ff0a90daa273  e2e/community-web/playwright.config.ts
 60ba4e1f0ce74e07645a0118156bf925c06708dc427a5b066c38e7c5c491ed36  e2e/community-web/playwright.deployed.config.ts
 a28ad24f38131f96657f8346d93599f51e7b275ff99fbd8ff8e53c3a9708d658  e2e/community-web/playwright.stack.config.ts
@@ -395,7 +395,7 @@ c6042a98431105024071eea17033cd5ae6e59022f93e04b91e9e370661a01103  e2e/contracts-
 a64b035937926c58f31343fe053f9bfa802e8075945ff79c3aa3e0e61a610a37  e2e/contracts-web/baseline/win32/v2f-detail-mobile.json
 0ac48d9222756af7a528a8dd5585e50f70e134444726c80ba46c83d4fca92ba8  e2e/contracts-web/baseline/win32/v2f-detail-mobile.png
 b6f033a32a5a9100692b9e940474d0e1a99bec1a494c78a0e862d2ecc7eb0844  e2e/contracts-web/bell.cw.ts
-fc8d36e02a0a650837a10a675746a37d766c5e782ebfec8b3b6128d6de3ffe1f  e2e/contracts-web/contract-flow.cw.ts
+bdc94e0fad40b6be68edc447bce89f17311e86344a61061112134b830a5bc083  e2e/contracts-web/contract-flow.cw.ts
 9af2bca4766df7017047ee55ea9687f84444f3257135b6974450b4f39111537b  e2e/contracts-web/cr120-intake-flow.cw.ts
 9ab76dbe1cc70e16e4cfc2caab207b33953f52ad26ae42554e09d7be98ecbfb5  e2e/contracts-web/dataset-approval.ts
 79bb89a541d5b98d6fce798e0496a526a1ae38aee89145d11a2eb6346601f7d9  e2e/contracts-web/dataset-contract.ts
@@ -426,8 +426,8 @@ e9e3739d6d88f7040e9d1ba89f906ed5d012f0b9133c7d77dec843c1c758a721  e2e/contracts-
 7dabf6d2ccec6b6602106d4a1c50dc81279363e09055886063df9542cc690531  e2e/contracts-web/hd5-list.cw.ts
 78760c21f9f8df89a0f8f3737fd8ec37c916f0ab075623e7e535f24641183e9c  e2e/contracts-web/hd78-partners.cw.ts
 345ff5ca932bb5c13edd7164be2d372767bc390e49d984b75a7c11a150936c57  e2e/contracts-web/k2-versions.cw.ts
-6b911663bf4aa8a0b2a9d38a78da4ba75e069c2bc31ddefd322573d79cc3dbe4  e2e/contracts-web/k3a-lock.cw.ts
-25f4125f6b3e151b2a5b71aee883c8ec71857ea66d6ac92a8eabd1720bac5c57  e2e/contracts-web/k4-reopen.cw.ts
+c045c2adee74dfc240b564db53b72aa4013b771bf7b1a8ee1261f9de580bf89a  e2e/contracts-web/k3a-lock.cw.ts
+cc8ac8e483da754e294311ff0808b1ed050f66ad6d9805a42ed15e253d692937  e2e/contracts-web/k4-reopen.cw.ts
 00f0ffa0c6a72412aa47ebe8c559b4a3c02b80e5bc00dba994082e3b1bb75366  e2e/contracts-web/legacy-routes.cw.ts
 77dcfe66cc073dd5d84ed343aa417fe0f42e5b915e65a262a6ebfe5ba328ccf3  e2e/contracts-web/ms-impact.cw.ts
 040acfe1c7bfa75a7719b35cf1ff8c04bb9ee85dc6014311ee9166a74f22b037  e2e/contracts-web/org-visibility.cw.ts
@@ -494,7 +494,7 @@ a56032ef048d99e7e14593cd2b93b0caf31d5f914ed02fa9b1da8814c73b7248  e2e/fnr-showca
 6c43558b03c238613820a9aa81dab62eab64ed258589e511f6b1e0daf458057b  e2e/fnr-showcase/editor.fnr.ts
 c62fcaed0aee1d8f2c562a90aa40eddf9b51f86e989d16dc38248a13ed91e552  e2e/fnr-showcase/form-editor.fnr.ts
 f1ad28f6a89916884619a58b896029fa076d5ac792b514606a632db85f9a6e1a  e2e/fnr-showcase/playwright.fnr.config.ts
-aca3d1d6fd8c0b57f2f9c38732b22df6273442f07bc400a47319bd72f4bc686f  e2e/fnr-showcase/showcase.fnr.ts
+2931bc16d8a50890735c14d354cad36f46bfc400d7081b888e4a83d87fe283d2  e2e/fnr-showcase/showcase.fnr.ts
 7f39e94231ea6da60be5fb1a7940af8b2b0ea82ff3fa85a5737f5fbad7f5c6be  e2e/groups-editor.spec.ts
 8b6a73017627f4571d39e8dce3432dad766d41a08098080a78a47d796f1ab844  e2e/groups-grants.spec.ts
 fb620fe3807055aec394fb36dc02b2c036caff987c01a245e431377043d3870b  e2e/groups-list.spec.ts

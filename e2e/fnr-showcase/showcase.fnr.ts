@@ -30,7 +30,7 @@ test("CR-103 · R4 · 150 triệu mua sắm ⇒ duyệt song song ⇒ tới Giá
     for (const _ of [0, 1]) await run.getByRole("button", { name: "Duyệt" }).first().click();
     // Nhánh Đúng: Giám đốc duyệt ĐANG chờ kiểm (không phải Bỏ qua) và cả run chưa Hoàn tất.
     const director = run.getByRole("row").filter({ hasText: "Giám đốc duyệt" });
-    await expect(director).toContainText("Chờ kiểm");
+    await expect(director).toContainText("Chờ duyệt");
     await expect(director).not.toContainText("Bỏ qua");
     await expect(run.locator('[data-slot="badge"]').first()).not.toHaveText("Hoàn tất");
   } finally {

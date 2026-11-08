@@ -1,7 +1,7 @@
 {
   "status": {
     "running": "Đang chạy",
-    "waiting_review": "Chờ kiểm",
+    "waiting_review": "Chờ duyệt",
     "waiting_answer": "Chờ trả lời",
     "needs_decision": "Cần người quyết",
     "done": "Hoàn tất",

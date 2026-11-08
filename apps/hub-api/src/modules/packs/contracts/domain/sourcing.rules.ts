@@ -9,6 +9,7 @@ import {
   type PriceSource,
   resolver,
 } from "./appendix-pricing.rules";
+import { contractCodeOf } from "./contract-name";
 import { foldVi } from "./fold.rules";
 import {
   type SaleLine,
@@ -114,7 +115,7 @@ function familyLines(
       price: item.unit_price,
       valid_to: l.valid_to,
       contract_id: c.id,
-      number: c.number ?? c.title,
+      number: contractCodeOf(c),
       line: item.ord,
       kind: c.kind,
       status: c.status,

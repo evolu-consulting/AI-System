@@ -3,7 +3,7 @@
     "esign": {
       "title": "E-signature",
       "notConfigured": "E-signature is not configured",
-      "notEnabled": "E-signature is off for your company (Settings › Approval flow).",
+      "notEnabled": "E-signature is off for your company ({{path:flow}}).",
       "notReady": "A contract can be sent for signing once it is approved and has a PDF file.",
       "demo": "Test signature – no legal effect",
       "send": "Send for signing",

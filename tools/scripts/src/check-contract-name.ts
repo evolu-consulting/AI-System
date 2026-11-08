@@ -88,11 +88,75 @@ export function checkContractName(root: string): Finding[] {
   return applyAllowlist(found);
 }
 
+// CR-125 c3 · chế độ TS: hub-api + workspace-web không tự ghép tên/mã HĐ — dùng `domain/contract-name.ts` (hub) hoặc tên HĐ hub trả.
+export const TS_ROOTS = ["apps/hub-api/src", "apps/workspace-web/src"];
+const TS_DEFINITION = "apps/hub-api/src/modules/packs/contracts/domain/contract-name.ts";
+export const TS_PATTERNS: { re: RegExp; msg: string }[] = [
+  {
+    re: /\.number\s*\?\?\s*\w+\??\.title\b/,
+    msg: "tự ghép mã ⇒ tên HĐ (number ?? title) — dùng contractCodeOf/contractCodeLabel",
+  },
+  {
+    re: /\.title\s*\?\?\s*\w+\??\.number\b/,
+    msg: "tự ghép tên ⇒ mã HĐ (title ?? number) — dùng contractNameOf",
+  },
+  {
+    re: /\bfields\??\.title\??\.value\b/,
+    msg: "tự đọc fields.title.value làm tên HĐ — dùng tên HĐ hub trả",
+  },
+  { re: /\bc\?\.title\b/, msg: "đọc c?.title (tên file) làm tên HĐ — dùng contractNameOf" },
+];
+/** Chỗ TS được phép (đường dẫn từ gốc repo) + số lần tối đa + lý do. */
+export const TS_ALLOWLIST: { file: string; max: number; reason: string }[] = [
+  {
+    file: "apps/workspace-web/src/features/contract-review/pages/ContractReviewPage.tsx",
+    max: 1,
+    reason: "ContractDetail chưa có `name` từ hub (audit CR-125 #10); bỏ khi hub trả tên HĐ",
+  },
+];
+
+export function scanTsFile(file: string, src: string): Finding[] {
+  const out: Finding[] = [];
+  src.split("\n").forEach((raw, i) => {
+    const t = raw.trim();
+    if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) return;
+    const code = raw.replace(/\s\/\/.*$/, "");
+    for (const p of TS_PATTERNS) if (p.re.test(code)) out.push({ file, line: i + 1, msg: p.msg });
+  });
+  return out;
+}
+
+function walkTs(dir: string): string[] {
+  return readdirSync(dir).flatMap((n) => {
+    const p = join(dir, n);
+    if (statSync(p).isDirectory()) return n === "node_modules" || n === "dist" ? [] : walkTs(p);
+    return /\.tsx?$/.test(n) && !/\.(test|spec)\.tsx?$/.test(n) ? [p] : [];
+  });
+}
+
+export function checkContractNameTs(root: string): Finding[] {
+  const found = TS_ROOTS.flatMap((r) =>
+    walkTs(join(root, r)).flatMap((p) => {
+      const rel = relative(root, p).replaceAll("\\", "/");
+      if (rel === TS_DEFINITION) return [];
+      return scanTsFile(rel, readFileSync(p, "utf8"));
+    }),
+  );
+  const byFile = new Map<string, Finding[]>();
+  for (const f of found) byFile.set(f.file, [...(byFile.get(f.file) ?? []), f]);
+  return [...byFile].flatMap(([file, list]) =>
+    list.slice(TS_ALLOWLIST.find((a) => a.file === file)?.max ?? 0),
+  );
+}
+
 function main(): number {
+  const tsBad = checkContractNameTs(repoRoot());
+  for (const f of tsBad) console.error(`contract-name(ts): ${f.file}:${f.line} — ${f.msg}`);
   const bad = checkContractName(repoRoot());
   for (const f of bad) console.error(`contract-name: ${PACK_DIR}/${f.file}:${f.line} — ${f.msg}`);
-  console.log(bad.length === 0 ? "contract-name: sạch" : `contract-name: ${bad.length} vi phạm`);
-  return bad.length === 0 ? 0 : 1;
+  const n = bad.length + tsBad.length;
+  console.log(n === 0 ? "contract-name: sạch" : `contract-name: ${n} vi phạm`);
+  return n === 0 ? 0 : 1;
 }
 
 if (import.meta.main) process.exit(main());

@@ -820,61 +820,7 @@
         "communityReport": "Violation reports"
       }
     },
-    "slots": {
-      "routing": {
-        "title": "Assigned processes & department routing rules",
-        "loadFail": "Could not load assigned processes.",
-        "noneAssigned": "No process assigned: the company cannot see, pick or run one in this slot.",
-        "inUse": "In use",
-        "inUseOutside": "In use (slot default): {name}",
-        "slotMissing": "This slot has no process for the company yet. Ask the platform admin to assign the default process.",
-        "unassign": "Unassign",
-        "addPick": "Library process",
-        "addPlaceholder": "Pick a process",
-        "add": "Assign",
-        "assignedToast": "Process assigned",
-        "rulesLead": "The first matching rule wins (top to bottom); otherwise the default rule applies.",
-        "subDeptNote": "Picking a department also covers its sub-departments.",
-        "noRules": "No rules yet.",
-        "rule": "Rule {n}",
-        "up": "Move up",
-        "down": "Move down",
-        "remove": "Remove",
-        "process": "Process",
-        "default": "Default",
-        "defaultCond": "When no rule matches",
-        "noDepartments": "The company has no departments.",
-        "kinds": "Contract kind",
-        "anyKind": "Any contract kind",
-        "kindBuy": "Purchase",
-        "kindSell": "Sale",
-        "kindReferral": "Referral",
-        "unassigned": "(process no longer assigned)",
-        "unavailableDeleted": "Process was deleted",
-        "unavailableUnpublished": "Process not published",
-        "addRule": "Add rule",
-        "save": "Save rules",
-        "saved": "Routing rules saved",
-        "discard": "Discard changes",
-        "reload": "Reload",
-        "issue": {
-          "noDepartment": "Pick at least one department or contract kind, or make it the default.",
-          "notAssigned": "This process is no longer assigned.",
-          "deptGone": "A department no longer exists.",
-          "unavailable": "This rule's process cannot run: pick another process or remove the rule before saving."
-        },
-        "err": {
-          "conflict": "Someone changed these rules before you. Reload, then edit again.",
-          "notAssigned": "The process is not assigned to the company.",
-          "unavailable": "A rule uses a deleted or unpublished process, so it cannot be saved. Remove the rule or pick another process.",
-          "deptInvalid": "A department does not belong to the company.",
-          "rulesInvalid": "Invalid rules: normal rules need departments or a contract kind, only one default.",
-          "inUse": "Cannot unassign: the process is used by rule(s) {rules}. If it is the default process, assign another process as the default first; otherwise edit or remove those rules, then unassign.",
-          "forbidden": "Only the platform admin can assign processes.",
-          "other": "Could not complete. Try again later."
-        }
-      }
-    },
+    "slots": {},
     "list": {
       "title": "Companies",
       "subtitle": "Customer companies on the platform. Each has its own users, groups and quota.",

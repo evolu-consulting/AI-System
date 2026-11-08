@@ -43,7 +43,7 @@
           "failed": "Could not send for signing — needs attention"
         }
       },
-      "notifyNoRecipient": "Nobody receives the notification for step {{name}} — choose recipients in Company > Processes",
+      "notifyNoRecipient": "Nobody receives the notification for step {{name}} — choose recipients in Company › Processes",
       "card": {
         "state": {
           "pending": "Not yet their turn",
@@ -110,15 +110,15 @@
         },
         "reason": {
           "NO_PARTNER_EMAIL": "The partner has no email. Add one in the partner details, then press Resend.",
-          "NO_SIGNER": "No company signer is set. Choose one in Company > Processes, then press Resend.",
-          "SEND_FAILED": "The e-signature service did not receive the document. Check Settings > E-signature, then press Resend.",
+          "NO_SIGNER": "No company signer is set. Choose one in Company › Processes, then press Resend.",
+          "SEND_FAILED": "The e-signature service did not receive the document. Check {{path:flow}}, then press Resend.",
           "DECLINED": "A signer declined. Ask them, edit the contract if needed, then press Resend.",
           "VOIDED": "The signing request was voided. Press Resend to create a new one."
         },
         "resend": "Resend",
         "resent": "Sent for signature again.",
         "stillBlocked": "Not sent yet: fix the cause shown on the e-signature step, then press Resend.",
-        "resendFail": "Could not resend because the e-signature service did not answer. Try again in a few minutes; if it persists, ask a company admin to check Settings > E-signature.",
+        "resendFail": "Could not resend because the e-signature service did not answer. Try again in a few minutes; if it persists, ask a company admin to check {{path:flow}}.",
         "dueAt": "Due: {{at}}",
         "overdue": "Overdue",
         "remindedAt": "Reminded at {{at}}"

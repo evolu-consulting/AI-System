@@ -1,0 +1,72 @@
+{
+  "_doc": "CR-125 c3 · bảng thuật ngữ cho chữ người dùng công ty thấy. Mỗi dòng: từ chuẩn (prefer) + biến thể cấm (forbid, regex, so khớp trên GIÁ TRỊ vi.json, không phải khoá). scope.include/exclude là tiền tố đường dẫn trong packages/i18n/locales. Thêm ngoại lệ bằng cách thu hẹp scope, không bằng cách bỏ dòng. `bun run check:i18n-terms`.",
+  "terms": [
+    {
+      "prefer": "quy trình",
+      "forbid": ["\\bflow\\b"],
+      "flags": "i",
+      "scope": { "exclude": ["chat/", "studio/"] },
+      "note": "Admin/Hợp đồng gọi là quy trình; trong chat 'luồng' là luồng hội thoại (#18)"
+    },
+    {
+      "prefer": "tính năng thêm",
+      "forbid": ["\\badd-?on\\b"],
+      "flags": "i",
+      "scope": { "exclude": ["chat/", "studio/", "vi.json"] },
+      "note": "Người dùng công ty không thấy 'add-on' (#21). Admin nền tảng (vi.json gốc) được giữ"
+    },
+    {
+      "prefer": "bản ký",
+      "forbid": ["phong bì"],
+      "flags": "i",
+      "note": "envelope = 'bản ký' (#29)"
+    },
+    {
+      "prefer": "công ty",
+      "forbid": ["\\btenant(_admin)?\\b"],
+      "flags": "i",
+      "scope": { "include": ["contracts/", "process/"] },
+      "note": "Người dùng công ty không thấy 'tenant' (#22)"
+    },
+    {
+      "prefer": "khoảng/mục (không dùng 'khe')",
+      "forbid": ["\\bkhe\\b"],
+      "flags": "i",
+      "note": "'khe' là khái niệm kỹ thuật bị cấm (Luật GỐC 3, #25)"
+    },
+    {
+      "prefer": "ký số (không viết tắt)",
+      "forbid": ["\\bCKS\\b"],
+      "scope": { "include": ["contracts/", "process/"] },
+      "note": "Không lộ viết tắt CKS trong câu (#30)"
+    },
+    {
+      "prefer": "Nháp",
+      "forbid": ["^Bản nháp$"],
+      "note": "Nhãn trạng thái quy trình là 'Nháp' (#31)"
+    },
+    {
+      "prefer": "Đã ký",
+      "forbid": ["^Đã ký số$"],
+      "note": "Nhãn trạng thái người ký (#8)"
+    },
+    {
+      "prefer": "duyệt",
+      "forbid": ["phê duyệt", "người kiểm\\b", "chờ kiểm\\b"],
+      "flags": "i",
+      "scope": { "exclude": ["studio/", "chat/"] },
+      "note": "Một động từ duyệt cho trạng thái chờ (#14)"
+    },
+    {
+      "prefer": "Mở lại quy trình",
+      "forbid": ["^Mở lại hợp đồng$", "^Huỷ & mở lại$"],
+      "note": "Một việc 'mở lại để chạy lại' = một nút một tên (#19)"
+    },
+    {
+      "prefer": "người ký phía công ty",
+      "forbid": ["người ký bên mình"],
+      "flags": "i",
+      "note": "(#28)"
+    }
+  ]
+}

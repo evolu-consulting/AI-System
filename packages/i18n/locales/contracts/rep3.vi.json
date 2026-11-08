@@ -76,7 +76,7 @@
     "settings": {
       "sec": {
         "apps": "Ứng dụng & quy trình",
-        "appsHint": "Mức, add-on và quy trình đang áp dụng"
+        "appsHint": "Mức, tính năng thêm và quy trình đang áp dụng"
       },
       "apps": {
         "title": "Ứng dụng & quy trình",
@@ -85,7 +85,7 @@
         "allFlowsFail": "Không mở được trang Quy trình. Vui lòng thử lại.",
         "levelLabel": "Mức",
         "level": { "off": "Tắt", "read": "Chỉ xem", "write": "Xem và ghi", "admin": "Quản trị" },
-        "noAddons": "Không có add-on.",
+        "noAddons": "Không có tính năng thêm.",
         "addonOn": "bật",
         "addonOff": "tắt",
         "slotTitle": "Quy trình đang áp dụng",

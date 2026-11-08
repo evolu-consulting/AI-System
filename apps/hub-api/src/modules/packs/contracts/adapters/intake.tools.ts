@@ -22,6 +22,7 @@ import type {
 import type { ESignRepo } from "../application/esign.ports";
 import type { SendNodeOpts } from "../application/esign.usecase";
 import type { ExtractionRepo } from "../application/extraction.ports";
+import { contractCodeLabel } from "../domain/contract-name";
 import { withBusinessCodes } from "./intake.errors";
 
 export const INTAKE_TOOL_KEYS = {
@@ -183,7 +184,7 @@ function rawIntakeTools(d: IntakeToolDeps): PackToolDef[] {
         const id = contractIdOf(args);
         const c = await d.uow.tenant(who(ctx), (r) => r.esign.contract(id));
         if (!c) throw new Error("CONTRACT_NOT_FOUND");
-        const label = (c.number ?? c.title ?? "").slice(0, 120);
+        const label = contractCodeLabel(c);
         const n = await d.uow.tenant(who(ctx), (r) =>
           r.notify.enqueue([
             {

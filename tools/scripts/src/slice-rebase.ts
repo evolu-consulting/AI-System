@@ -79,6 +79,8 @@ export const POST_REBASE_GATES: readonly { name: string; cmd: string[] }[] = [
   { name: "check:boundaries", cmd: ["bun", "tools/scripts/src/check-boundaries.ts"] },
   { name: "check:modules", cmd: ["bun", "tools/scripts/src/check-modules.ts"] },
   { name: "check:date-input", cmd: ["bun", "tools/scripts/src/check-date-input.ts"] },
+  { name: "check:i18n-terms", cmd: ["bun", "tools/scripts/src/check-i18n-terms.ts"] },
+  { name: "check:settings-path", cmd: ["bun", "tools/scripts/src/check-settings-path.ts"] },
   { name: "depcruise:affected", cmd: ["bun", "tools/scripts/src/depcruise.ts", "--affected"] },
 ];
 
