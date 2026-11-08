@@ -4,8 +4,8 @@
 // nhóm CÙNG duyệt) → Phần 2 (dòng 6 ba nhóm cùng duyệt, Giám đốc, Ký số «Ký thử») → Phần 3 (dòng 10 cùng duyệt, thanh toán) → yêu cầu cha
 // «Đã xong». Cấu hình công ty đi đúng đường seed của sản phẩm (`writeCr125Config`: nhóm, mẫu Thư viện, flow «Quy trình mua hàng» đã gán);
 // chuẩn bị bằng SQL chỉ phần người dùng thật làm ở màn thành viên nhóm (gán 3 tài khoản e2e vào các nhóm duyệt).
-// Bước điền (form) của Phần 1–3: qua thẻ bước điền khi lát cr125-form-step-card đã gộp (`form-step-card`); chưa gộp thì kịch bản dừng ở
-// đó với lý do rõ (không giả lập). KHÔNG chạy trong lát này — chạy MỘT lần ở đợt cuối.
+// Bước điền (form) của Phần 1–3 làm bằng thẻ bước điền thật (lát cr125-form-step-card: cùng bộ chọn với `cr125-form-step-card.spec.ts`).
+// KHÔNG chạy trong lát này — chạy MỘT lần ở đợt cuối. CHƯA BIẾT: việc của lượt CON không có HĐ có hiện ở «Chờ tôi duyệt» / mở được thẻ không.
 import { expect, type Page, test } from "@playwright/test";
 import { writeCr125Config } from "../../apps/hub-api/src/modules/seed/seed.cr125-config";
 import { withOwner } from "../support/helpers";
@@ -71,34 +71,58 @@ test.beforeAll(async () => {
   });
 });
 
-/** Người duyệt bấm «Đạt» mọi thẻ đang mở của mình trên yêu cầu `runUrl`; trả true nếu bấm được ít nhất một thẻ. */
-async function approveOpenCards(page: Page): Promise<boolean> {
-  await page.goto(runUrl);
-  await expect(page.getByTestId("request-page")).toBeVisible({ timeout: 60_000 });
-  let acted = false;
-  for (let guard = 0; guard < 4; guard++) {
-    const btn = page.getByTestId("request-approve");
-    if (!(await btn.first().isVisible())) break;
-    await btn.first().click();
-    acted = true;
-    await expect(btn.first())
-      .toBeHidden({ timeout: 30_000 })
-      .catch(() => undefined);
-  }
-  return acted;
-}
+const FILE_BODY = Buffer.from("hang,so_luong\nmay chu,2\n", "utf8");
+const VALUE_BY_TYPE: Record<string, string> = {
+  number: "2",
+  date: "2026-11-20",
+  text: "Dữ liệu e2e",
+};
 
-/** Bước điền qua thẻ bước điền (lát cr125-form-step-card): điền ô còn trống bằng giá trị mẫu rồi gửi. */
-async function fillFormCards(page: Page): Promise<boolean> {
-  const card = page.getByTestId("form-step-card").first();
-  if (!(await card.isVisible())) return false;
-  for (const input of await card.locator("input[type=text]:visible, textarea:visible").all())
-    if ((await input.inputValue()) === "") await input.fill("Dữ liệu e2e");
-  await card.getByTestId("form-step-submit").click();
-  await expect(card).toBeHidden({ timeout: 30_000 });
+/**
+ * Bước điền (form) trên thẻ — đúng bộ chọn của `cr125-form-step-card.spec.ts`: `form[data-flow="form"]`, ô `[data-flow-field=<khoá>]`,
+ * tệp `input[type=file]` + `file-item`, nút «Gửi». Điền mọi ô còn trống (chữ / số / tiền / ngày / tệp) rồi gửi. Trả true nếu có form để gửi.
+ */
+async function submitOpenForm(page: Page): Promise<boolean> {
+  const form = page.locator('form[data-flow="form"]').first();
+  if (!(await form.isVisible())) return false;
+  for (const field of await form.locator("[data-flow-field]").all()) {
+    const file = field.locator('input[type="file"]');
+    if (await file.count()) {
+      await file.setInputFiles({ name: "tai-lieu.csv", mimeType: "text/csv", buffer: FILE_BODY });
+      await expect(field.getByTestId("file-item")).toContainText("tai-lieu.csv", {
+        timeout: 30_000,
+      });
+      continue;
+    }
+    const input = field.locator("input, textarea").first();
+    if ((await input.count()) === 0 || (await input.inputValue()) !== "") continue;
+    const type = (await input.getAttribute("type")) ?? "text";
+    const money = (await field.textContent())?.includes("₫") === true;
+    await input.fill(money ? "470000000" : (VALUE_BY_TYPE[type] ?? "Dữ liệu e2e"));
+  }
+  await form.getByRole("button", { name: "Gửi", exact: true }).click();
+  await expect(form).toHaveCount(0, { timeout: 60_000 });
   return true;
 }
 
+/** Việc đang chờ người này (hộp «Chờ tôi duyệt» của yêu cầu): mở từng việc, điền form (thẻ bước điền) hoặc bấm «Đạt» (nút duyệt của trang). */
+async function actOnWaiting(page: Page): Promise<boolean> {
+  await page.goto(`${E.cw}/contracts/requests`);
+  const rows = page.getByTestId("requests-waiting-row");
+  let acted = false;
+  for (let i = 0; i < (await rows.count()); i++) {
+    await page.goto(`${E.cw}/contracts/requests`);
+    await rows.nth(i).click();
+    const approve = page.locator("[data-approval=pass], [data-testid=request-approve]").first();
+    if (await submitOpenForm(page)) acted = true;
+    else if (await approve.isVisible()) {
+      await approve.click();
+      await expect(approve).toBeHidden({ timeout: 30_000 });
+      acted = true;
+    }
+  }
+  return acted;
+}
 test("1 · nhân viên: Tạo yêu cầu → phiếu «Đề xuất mua hàng» (tải file báo giá) → gửi", async ({
   browser,
 }) => {
@@ -132,26 +156,22 @@ test("2 · Phần 1 → 2 → 3: các thẻ điền / duyệt (dòng 3, 6, 10 ha
   test.setTimeout(900_000);
   const emp = await ctxPage(browser);
   await loginCw(emp, E, U.employee);
-  const boss = await ctxPage(browser);
-  await loginCw(boss, E, U.director);
-  const acc = await ctxPage(browser);
-  await loginCw(acc, E, U.accounting);
-
+  const people = [emp];
+  for (const user of [U.director, U.accounting]) {
+    const p = await ctxPage(browser);
+    await loginCw(p, E, user);
+    people.push(p);
+  }
   const status = emp.getByTestId("request-status");
   let shots = 0;
   for (let round = 0; round < 60; round++) {
     await emp.goto(runUrl);
     if ((await status.getAttribute("data-status")) === "done") break;
-    // dòng cùng duyệt: cả hai bên đều có thẻ mở ⇒ mỗi bên bấm Đạt phần của mình
-    const moved = [
-      await fillFormCards(emp),
-      await fillFormCards(boss),
-      await approveOpenCards(boss),
-      await fillFormCards(acc),
-      await approveOpenCards(acc),
-    ].some(Boolean);
-    if (moved && shots < 6) await shot(boss, `02-buoc-${++shots}`);
-    if (!moved) await emp.waitForTimeout(2_000); // chờ lượt con / hẹn canh chốt bước cha (tín hiệu server, không có sự kiện UI)
+    // mỗi người làm hết việc đang chờ mình; dòng cùng duyệt: cả hai nhóm đều có thẻ mở nên mỗi bên bấm «Đạt» phần của mình
+    let moved = false;
+    for (const p of people) moved = (await actOnWaiting(p)) || moved;
+    if (moved && shots < 6) await shot(people[1] as Page, `02-buoc-${++shots}`);
+    // không có việc nào ⇒ đang chờ lượt con / hẹn canh chốt bước cha: nạp lại trang ở vòng sau (không ngủ chờ)
   }
   await emp.goto(runUrl);
   await expect(status).toHaveAttribute("data-status", "done", { timeout: 30_000 });

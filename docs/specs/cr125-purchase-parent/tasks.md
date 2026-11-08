@@ -30,7 +30,7 @@ Không migration, không UI. 3 phần KHÔNG gán làm flow công ty (chỉ ch�
 
 ## Việc còn lại
 - Phần 2 «Ký số» cần `contract_id`, lượt cha không có HĐ ⇒ bước Ký số của Phần 2 chạy làm lượt con sẽ «Cần xử lý» cho tới khi có cách đưa HĐ vào (vd ô «Mã hợp đồng» ở phiếu hoặc bước tạo HĐ). Chưa quyết.
-- e2e `cr125-purchase-full` chưa chạy; bước điền (form) dùng thẻ `form-step-card` của lát cr125-form-step-card (chưa gộp lúc viết).
+- e2e `cr125-purchase-full` chưa chạy; bước điền (form) dùng bộ chọn thật của thẻ bước điền (`form[data-flow="form"]`, `[data-flow-field]`, `file-item`, «Gửi» — như `cr125-form-step-card.spec.ts`). CHƯA BIẾT: thẻ bước điền chỉ có ở thẻ HĐ (`/contracts/c/<id>`), mà việc của lượt con của «Quy trình mua hàng» không có HĐ — trang yêu cầu (`RequestPage`) chỉ có nút Duyệt/Từ chối cho việc `review` của lượt cha, không vẽ form. Kịch bản đi theo «Chờ tôi duyệt» (`requests-waiting-row`); nếu việc con không mở được form thì đây là khoảng trống UI cần một lát riêng.
 - Tệp báo giá của phiếu không đi vào Phần 1 (ô tệp không có trong đầu vào lượt con).
 
 ## Delta (so với docs/current)
