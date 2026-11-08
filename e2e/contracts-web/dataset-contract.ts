@@ -124,7 +124,8 @@ export function contractAsHub(status = contract.status) {
     id: c.id,
     kind: "contract",
     parent_id: null,
-    title: c.title,
+    // CR-125 c7: hub trả `title` = TÊN HĐ (contractNameSql: fields.title, trống ⇒ cột title) — mock phải cùng hình.
+    title: String(c.fields.title?.value ?? "").trim() || c.title,
     status,
     direction: null,
     owner_user_id: dataset.user.id,
