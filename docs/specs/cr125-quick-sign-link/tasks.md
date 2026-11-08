@@ -23,13 +23,13 @@ Unit `esign-invite.test.ts`, `esign-view.test.ts`; int `esign-invite.int.test.ts
 Không đúng lượt / đã ký ⇒ trang thường với trạng thái hiện có; `ky` luôn bị bỏ sau khi trạng thái tải xong.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/email-moi-ky-so.md
 #### Yêu cầu: Nút trong email Mời ký đưa thẳng tới bước ký
 Liên kết là `/contracts/c/<id>?ky=1#esign-panel`. Người ký đã đăng nhập, đúng lượt, chưa ký ⇒ trang tự mở bước ký như bấm "Ký ngay"; chưa đăng nhập ⇒ đăng nhập rồi quay lại đúng liên kết; không đúng lượt hoặc đã ký ⇒ trang HĐ thường. Tham số `ky` bị bỏ khỏi URL sau khi xử lý.
 - Kịch bản: khi dựng thẻ mời ký thì liên kết có `?ky=1` [test: apps/hub-api/src/modules/packs/contracts/application/esign-invite.test.ts » liên kết sâu tới thẻ ký]
-- Kịch bản: khi ky=1 nhưng không đúng lượt hoặc đã ký thì không tự ký [test: apps/workspace-web/src/features/contract-esign/lib/esign-view.test.ts » decideAutoSign: chỉ khi ky + đúng lượt + chưa ký]
+- Kịch bản: khi ky=1 nhưng không đúng lượt hoặc đã ký thì không tự ký [test: apps/workspace-web/src/features/contract-esign/lib/esign-view.test.ts » decideAutoSign: tự mở CHỈ khi ky]
 
 ## Việc còn lại
 Không có e2e mới (chưa viết); chạy hành trình thật ở cuối đợt.

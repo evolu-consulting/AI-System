@@ -177,3 +177,63 @@ Mỗi quyết định Đạt/Trả lại/Từ chối ở một bước duyệt, 
 #### Yêu cầu: Đổi cách ký không làm lượt rời bước chờ (nguồn: cr125-m10-switch-void-race)
 Trong lúc đổi cách ký (giữ quyền đổi), sự kiện của phong bì cũ từ nhà cung cấp chỉ được ghi audit, không báo cho luồng; sau khi đổi xong chỉ sự kiện của phong bì mới báo cho luồng, mỗi sự kiện một lần.
 - Kịch bản: khi webhook voided của phong bì cũ tới giữa lúc đổi cách ký thì luồng vẫn chờ phong bì mới và chỉ nhận đúng một sự kiện của phong bì mới [test: apps/hub-api/src/modules/packs/contracts/adapters/esign-switch-webhook.int.test.ts » trong lease chỉ audit, không tín hiệu, sau khi đổi chỉ phong bì mới tới lượt, một lần]
+
+## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
+
+#### Yêu cầu: Làm mới trạng thái ký không gọi nhà cung cấp quá dày (nguồn: cr125-esign-refresh-throttle)
+Làm mới trạng thái ký (và kiểm lượt khi «Ký ngay») chỉ hỏi nhà cung cấp nếu phong bì chưa được đồng bộ trong 10 giây gần nhất; trong cửa sổ đó trả trạng thái hiện có, vẫn thành công.
+- Kịch bản: khi bấm làm mới lần hai trong 10 giây thì trả trạng thái hiện có không gọi nhà cung cấp [test: tests/acceptance/esign-multi/esign-multi.int.test.ts » giám đốc ký xong ở nhà cung cấp (webhook không tới) ⇒ refresh ghi signed_at và hết lượt, bấm lại trong 10 s không gọi nhà cung cấp (giữ hạn mức API)]
+- Kịch bản: khi đủ 10 giây thì cho gọi lại [test: apps/hub-api/src/modules/packs/contracts/application/esign-throttle.test.ts » vừa đồng bộ < 10 s ⇒ bỏ qua, đủ 10 s ⇒ cho gọi lại, phong bì khác không ảnh hưởng]
+
+#### Yêu cầu: Ghép người ký theo mã người nhận (nguồn: cr125-esign-refresh-throttle)
+Trạng thái người ký từ nhà cung cấp được ghép theo mã người nhận (rồi thứ tự gửi + email, rồi vị trí) nên danh sách trả về khác thứ tự hoặc trùng email vẫn đúng người.
+- Kịch bản: khi nhà cung cấp trả người nhận khác thứ tự thì ghép theo mã người nhận [test: apps/hub-api/src/modules/packs/contracts/application/esign-merge.test.ts » nhà cung cấp trả người nhận KHÁC thứ tự ⇒ ghép theo recipientId (= vị trí + 1), kể cả trùng email]
+
+#### Yêu cầu: Quay về từ nhà cung cấp ký thì trạng thái được cập nhật (nguồn: cr125-fix-docusign-return)
+Khi người dùng quay về trang HĐ sau khi ký ở nhà cung cấp (có `?esign=return`, hoặc vừa rời trang để ký), web gọi MỘT lần làm mới phong bì từ nhà cung cấp; người ký được ghi nhận đã ký, hết «Đến lượt bạn ký», bước kế chạy khi phong bì xong. Thẻ ký số có nút «Cập nhật trạng thái ký» (kèm «Đã kiểm tra lúc …») cho lúc webhook chậm; gọi lại không đổi kết quả.
+- Kịch bản: khi nhà cung cấp báo giám đốc đã ký thì làm mới ghi signed_at, đối tác ký xong thì phong bì hoàn tất, gọi lại không đổi [test: tests/acceptance/esign-multi/esign-multi.int.test.ts » phong bì hoàn tất ở nhà cung cấp ⇒ refresh đầu tiên chuyển hoàn tất + lưu bản đã ký, gọi lại idempotent]
+- Kịch bản: khi quay về mất tham số URL thì cờ vừa rời đi ký vẫn kích hoạt làm mới [test: apps/workspace-web/src/features/contract-esign/lib/esign-view.test.ts » làm mới khi có ?esign=return HOẶC cờ vừa rời đi ký (đường quay về mất tham số)]
+- Kịch bản: khi nhà cung cấp báo người ký completed mà thiếu mốc giờ thì không còn Ký ngay [test: apps/workspace-web/src/features/contract-esign/lib/esign-view.test.ts » nhà cung cấp báo người ký completed mà chưa có signed_at ⇒ coi là đã ký (cùng luật hub): hết 'Ký ngay']
+- Kịch bản: khi hai người ký dùng chung email thì trạng thái ghép theo thứ tự [test: apps/hub-api/src/modules/packs/contracts/application/esign-merge.test.ts » cùng một email cho hai người ký ⇒ ghép lần lượt, không dồn cả hai về người đầu]
+
+#### Yêu cầu: «Ký ngay» không bị chặn lượt oan (nguồn: cr125-fix-docusign-return)
+Khi người ký trước đã ký ở nhà cung cấp mà hub chưa nhận (webhook trễ), `sign-url` hỏi nhà cung cấp một lần trước khi trả 409 `ESIGN_NOT_YOUR_TURN`.
+- Kịch bản: khi đối tác ký trước đã ký ở nhà cung cấp thì giám đốc bấm Ký ngay nhận được đường dẫn ký [test: tests/acceptance/esign-multi/esign-multi.int.test.ts » người ký trước (đối tác) đã ký ở nhà cung cấp nhưng hub chưa biết ⇒ Ký ngay của giám đốc không bị chặn lượt (hỏi nhà cung cấp một lần)]
+
+#### Yêu cầu: Link «Mời ký» (`?ky=1`) không hỏi cách ký khi đã xác định (nguồn: cr125-fix-docusign-return)
+Với `?ky=1` và nhiều nhà cung cấp, nếu phong bì đã có cách ký (hoặc công ty có mặc định) thì mở thẳng trang ký; hộp «Chọn cách ký» chỉ hiện khi người dùng thực sự phải chọn.
+- Kịch bản: khi phong bì đã có nhà cung cấp thì `?ky=1` mở thẳng không hỏi [test: apps/workspace-web/src/features/contract-esign/lib/esign-view.test.ts » ?ky=1 nhiều nhà cung cấp: có cách ký của phong bì / mặc định công ty ⇒ mở thẳng không hỏi, chưa xác định ⇒ null (mới hỏi)]
+
+#### Yêu cầu: Chuyển cấp trên flow theo sự kiện (nguồn: cr125-fix-escalate-kick)
+Bước Duyệt của flow theo sự kiện có chuyển cấp thì mở bình thường và task có hạn chuyển cấp về Group đích (id của snapshot, vắng thì
+mã Group của cùng công ty); không tìm được Group thì bước vẫn mở, không chuyển cấp. Mẫu "Duyệt 2 cấp" có hạn 72 h, quá hạn chuyển về
+Toàn quyền (`contracts-owner`) như đường khe.
+- Kịch bản: khi flow Thư viện có escalate theo mã ở bước đầu thì bước 0 chờ duyệt, task có hạn + Group Toàn quyền [test: apps/hub-api/src/modules/processes/triggers/flow-escalate-kick.int.test.ts » mở lượt ⇒ bước 0 chờ duyệt, task có hạn chuyển cấp về Group Toàn quyền, không có process-kick-failed]
+- Kịch bản: khi bản công ty mất Group chuyển cấp thì bước 0 vẫn mở, không chuyển cấp [test: apps/hub-api/src/modules/processes/triggers/flow-escalate-kick.int.test.ts » bản công ty: escalate thiếu Group (group_id null) ⇒ bước 0 vẫn mở, không chuyển cấp (trước sửa: vi phạm review_tasks_remind_ck)]
+- Kịch bản: khi mẫu "Duyệt 2 cấp" được dùng thì mọi bước Duyệt có hạn 72 h, chuyển cấp về contracts-owner [test: apps/hub-api/src/modules/processes/library/flow-templates.def.test.ts » cr125-fix-escalate-kick · Duyệt 2 cấp: mọi bước Duyệt có hạn 72 h, quá hạn chuyển cấp về contracts-owner (như đường khe)]
+
+#### Yêu cầu: Lượt không khởi động được (nguồn: cr125-fix-escalate-kick)
+Kick ngay sau khi tạo lượt lỗi thì không nuốt im lặng: log có run id + mã lỗi; lượt chưa chạy bước nào chuyển "Cần xử lý" lý do
+`start_failed` (mã lỗi ở bước đầu), có Thử lại / Huỷ, thay vì chờ mãi.
+- Kịch bản: khi kick lỗi thì log `process-kick-failed` có mã và lượt `needs_decision` start_failed [test: apps/hub-api/src/modules/processes/triggers/flow-escalate-kick.int.test.ts » kick lỗi ⇒ log có mã + lượt 'Cần xử lý' start_failed (không pending mãi)]
+
+#### Yêu cầu: Toàn quyền duyệt thay trên flow theo sự kiện (nguồn: cr125-fix-owner-override)
+Lượt duyệt HĐ mở từ flow theo sự kiện (company_flows + flow_triggers) có cùng luật "Toàn quyền duyệt thay" như đường khe: thành viên
+Group chủ app (`contracts-owner`) cùng công ty quyết được mọi bước duyệt, thẻ ghi "duyệt thay" và có bản ghi `approval_override`;
+người không thuộc Group bước, không Toàn quyền vẫn bị từ chối NOT_REVIEWER.
+- Kịch bản: khi cờ flow_triggers bật, flow được gán, chủ app duyệt bước của Group Kế toán thì được (duyệt thay, có audit); người ngoài bị NOT_REVIEWER [test: apps/hub-api/src/modules/processes/triggers/flow-owner-override.int.test.ts » contracts-owner quyết bước của Group khác (duyệt thay, audit), người ngoài bị NOT_REVIEWER]
+- Kịch bản: khi một stage duyệt đã có Group cũng quyết thì luật chung gộp thêm Group Toàn quyền, trừ chính Group gắn task [test: packages/contracts/src/flow/owner-override.test.ts » withOwnerOverride chỉ gắn stage review, gộp also sẵn có, không owner thì giữ nguyên]
+
+#### Yêu cầu: Link «Mời ký» (`?ky=1`) không tự ký thay người dùng (nguồn: cr125-fix-quicksign)
+Link `?ky=1` chỉ tự mở trang ký khi đến lượt người xem (mọi người ký có thứ tự nhỏ hơn đã ký) và nhà cung cấp chỉ chuyển sang trang ký riêng của họ (DocuSign). Với nhà cung cấp tự hoàn tất ký trong lời gọi `sign-url` (ký thử, CA), link chỉ cuộn tới và nhấn mạnh nút «Ký ngay»; chữ ký chỉ hoàn tất sau cú bấm của người dùng.
+- Kịch bản: khi nhà cung cấp tự hoàn tất ký thì `?ky=1` chỉ focus nút, không tự mở [test: apps/workspace-web/src/features/contract-esign/lib/esign-view.test.ts » H1 · nhà cung cấp tự hoàn tất ký (ký thử/CA) ⇒ chỉ focus nút, không bao giờ open]
+- Kịch bản: khi người ký 2 mở link trước người ký 1 thì không tự mở [test: apps/workspace-web/src/features/contract-esign/lib/esign-view.test.ts » M1 · người ký 2 mở link trước người ký 1 thì không có lượt và không tự mở]
+
+#### Yêu cầu: «Ký ngay» chỉ khi đến lượt (nguồn: cr125-fix-quicksign)
+`POST /esign/sign-url` trả 409 `ESIGN_NOT_YOUR_TURN` khi còn người ký có thứ tự nhỏ hơn chưa ký (hoặc người gọi đã ký); phong bì không đổi.
+- Kịch bản: khi đối tác ký trước chưa ký thì người ký công ty bấm Ký ngay bị 409 và phong bì không hoàn tất [test: tests/acceptance/esign-multi/esign-multi.int.test.ts » đối tác ký trước mà chưa ký ⇒ người ký công ty bấm Ký ngay = 409 ESIGN_NOT_YOUR_TURN, phong bì giữ nguyên (không hoàn tất)]
+
+#### Yêu cầu: Công tắc ký số trong Cài đặt làm việc thật (nguồn: cr125-ux-s2-current-flow)
+Chủ gói bật/tắt ký số ở Cài đặt › Quy trình duyệt và thấy "Đã lưu"; người không đổi được (không phải chủ gói / chưa cấu hình) thấy trạng thái và lý do, không có ô khoá.
+- Kịch bản: khi chủ gói bấm công tắc ký số thì lưu, báo đã lưu và tải lại vẫn giữ [test: e2e/journey-approval/cr125-s2-settings-flow.spec.ts » 3 · công tắc ký số trong Cài đặt bật được thật (lưu, tải lại vẫn bật)]
+

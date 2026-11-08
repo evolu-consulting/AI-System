@@ -34,7 +34,7 @@ unit `event-flow-steps.rules.test.ts`, `current-flow.test.ts`, `section-key.test
 - M5: gộp hai mục (Ứng dụng & quy trình / Quy trình duyệt) thành một ở Cài đặt; menu tài khoản còn "Cài đặt Sổ Hợp Tác" + "Cài đặt Community" là hai ứng dụng khác nhau (không gộp ở lát này).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/cai-dat-va-quyen.md
 #### Yêu cầu: Quy trình duyệt chỉ chọn ở một nơi

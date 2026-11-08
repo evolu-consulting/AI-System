@@ -33,7 +33,7 @@ Nguồn: `docs/specs/CR-125/ux-review-ceo.md` C1, H3 và ý "Xem lại = danh s�
 - Không chặn nút Hoàn tất: danh sách thiếu chỉ nhắc (quản trị đã dùng được ngay).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED sht/onboarding-cong-ty.md
 #### Yêu cầu: Quản trị công ty đầu tiên dùng được mọi app đã bật ngay sau onboarding

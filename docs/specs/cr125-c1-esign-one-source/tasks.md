@@ -26,7 +26,7 @@ Unit: `esign-step-rules.test.ts`, `esign-labels.test.ts`, `esign-signer.rules.te
 Nguồn trạng thái = phong bì; "Chờ duyệt xong" và "Cần xử lý" là trạng thái riêng của dòng thẻ (chưa có phong bì), giữ khoá riêng. Nhãn "Đã ký số lúc {at}" của khối Ký số là cùng nhãn "Đã ký số" kèm thời điểm.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Một mô hình trạng thái và một luật ký số

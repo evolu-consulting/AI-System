@@ -26,7 +26,7 @@ evotest int đúng các file đỏ (-Dirty).
 Xoá tenant (người dùng chốt 2026-11-08): KHÔNG xoá thư/liên kết hai bên; ẩn danh bên bị xoá bằng id tombstone (không đổi cấu trúc bảng ⇒ không migration), xoá dòng khi cả hai bên đã xoá. Lời mời nối chưa chấp nhận và lần gửi chưa giao thì xoá.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED sht/gui-doi-tac-xoa-cong-ty.md
 #### Yêu cầu: Xoá công ty giữ lịch sử của công ty còn lại, ẩn danh bên bị xoá

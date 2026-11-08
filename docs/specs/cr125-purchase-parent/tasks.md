@@ -34,7 +34,7 @@ Không migration, không UI. 3 phần KHÔNG gán làm flow công ty (chỉ ch�
 - Tệp báo giá của phiếu không đi vào Phần 1 (ô tệp không có trong đầu vào lượt con).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Mẫu «Quy trình mua hàng» chạy bằng phiếu và ba phần cùng duyệt

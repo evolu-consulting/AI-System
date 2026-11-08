@@ -27,7 +27,7 @@ Unit của file đã chạm (i18n settings-paths/process-locales/contracts-local
 Đặt hằng vào `light.ts` (đã là mẫu CR-118) thay vì nhân đôi hằng ở admin-web (một nguồn sự thật).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 Không thay đổi hành vi (lý do: tối ưu bundle)
 

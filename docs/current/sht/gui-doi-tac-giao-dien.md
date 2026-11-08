@@ -38,3 +38,13 @@ HĐ nhận không có người gửi thật bên trong công ty nhận; người
 #### Yêu cầu: Bước «Gửi đối tác xác nhận» nói chữ đối tác, không nói «ký» (nguồn: cr124-q6-journey)
 Thẻ duyệt dùng khoá node của bước module (`module_node`) để hiện «Đang chờ đối tác trả lời / Đối tác đã xác nhận / Đối tác từ chối / hết hạn» thay vì «Đang chờ ký / Đã ký».
 - Kịch bản: khi bước module có node contracts.partner-send thì thẻ dùng chữ đối tác [test: e2e/journey-approval/cr124-q6-partner-journey.spec.ts » 1 · gửi lần đầu]
+
+## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
+
+#### Yêu cầu: Số chờ trên mục hộp thư đối tác của menu (nguồn: cr125-g7-partner-count)
+Mục `contracts.partner` trên menu hiện số hợp đồng đối tác gửi tới đang chờ công ty nhận (trạng thái pending của công ty người xem), thay cho số 0 cố định; đếm bằng một câu theo tập, không phụ thuộc số thư.
+- Kịch bản: khi công ty có 3 thư chờ và 2 thư đã trả lời thì menu hiện số 3, công ty khác không lẫn [test: apps/hub-api/src/modules/packs/contracts/nav.mount.int.test.ts » mỗi công ty thấy đúng số của mình]
+- Kịch bản: khi một thư được trả lời thì số giảm theo trạng thái thật [test: apps/hub-api/src/modules/packs/contracts/nav.mount.int.test.ts » qua GET /pack/nav: trả lời một thư ⇒ số giảm theo trạng thái thật]
+- Kịch bản: khi công ty chưa bật tính năng nhận hợp đồng đối tác thì không có mục và không đếm [test: apps/hub-api/src/modules/packs/contracts/nav.mount.test.ts » tính năng tắt ⇒ không mục và không gọi cổng đếm]
+- Kịch bản: khi có 10.000 thư thì `/pack/nav` vẫn p95 ≤ 50 ms [test: apps/hub-api/src/modules/packs/contracts/nav.mount.perf.int.test.ts » p95 không vượt ngưỡng và số đúng (trước → sau)]
+

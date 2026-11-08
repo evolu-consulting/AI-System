@@ -225,3 +225,31 @@ Mọi đầu ra đã khai đều được máy chủ ghi (không còn đầu ra 
 #### Yêu cầu: module:new sinh khối cổng vào/ra (nguồn: cr125-m8-io-ports)
 Scaffold node mới có khối inputs (nhãn + cách khắc phục) và outputs (nhãn, đầu ra mẫu đánh dấu chờ) để hub lên ngay.
 - Kịch bản: nodeSource có outputs với nhãn vi/en và pending [test: tools/scripts/src/modules-tool.rules.test.ts » module:new · cổng vào/ra (CR-125 m8)]
+
+## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
+
+#### Yêu cầu: Mẫu «Quy trình mua hàng» chạy bằng phiếu và ba phần cùng duyệt (nguồn: cr125-purchase-parent)
+Thư viện có mẫu cha «Quy trình mua hàng» bắt đầu bằng phiếu «Đề xuất mua hàng» rồi chạy lần lượt Phần 1, 2, 3 như quy trình con; một phần bị từ chối hoặc huỷ thì kết thúc «Không mua». Dòng 3, 6, 10 của ba phần có nhiều nhóm duyệt cùng lúc (luật tất cả). Ba phần không tự mở theo sự kiện hợp đồng.
+- Kịch bản: khi seed cấu hình công ty thì mẫu cha qua templateReadiness, qua kiểm Quy trình con (không vòng, không quá sâu), dòng cùng duyệt hợp lệ và ba phần không có flow công ty [test: tools/scripts/src/seed-cr125-config.int.test.ts » «Quy trình mua hàng» (cha): readiness ready, guard Quy trình con (không vòng / sâu), cùng duyệt hợp lệ, 3 phần không gán và không bắt đầu theo sự kiện]
+- Kịch bản: khi xem mẫu cha và ba phần thì dòng 3, 6, 10 là một bước cùng duyệt theo mã nhóm, số bước và Trả lại vẫn đúng [test: apps/hub-api/src/modules/processes/library/purchase-templates.test.ts » dòng 3 / 6 / 10 duyệt CÙNG LÚC (luật tất cả), nhóm theo mã]
+- Kịch bản: khi nhân viên mở Tạo yêu cầu và gửi phiếu thì yêu cầu chạy qua ba phần tới Đã xong [test: thủ công — e2e/journey-approval/cr125-purchase-full.spec.ts chạy một lần ở đợt cuối]
+
+#### Yêu cầu: Node «Quy trình con» chạy một quy trình khác như một bước (nguồn: cr125-subprocess-engine)
+Bước `subprocess` mở đúng một lượt con cùng công ty khi tới lượt, chờ lượt con kết thúc rồi đi theo kết quả; output bước có `outcome` và
+dữ liệu cuối của lượt con dưới khoá `sub_<trường>`.
+- Kịch bản: khi lượt con xong bình thường thì bước cha đi đầu ra `done` với `sub_*`, lượt cha chạy tiếp tới Kết thúc [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » mở MỘT lượt con ⇒ con xong ⇒ cha đi tiếp `done` với dữ liệu `sub_*`, lượt cha xong]
+- Kịch bản: khi lượt con kết thúc Từ chối thì bước cha rẽ đầu ra `rejected` [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » con kết thúc Từ chối ⇒ cha rẽ đầu ra `rejected` (bước 2)]
+- Kịch bản: khi kick lại hoặc stage về hàng đợi cùng lần chạy thì không mở lượt con thứ hai [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » kick lại / stage về hàng đợi cùng lần chạy ⇒ không mở lượt con thứ hai]
+- Kịch bản: khi người dùng dừng lượt cha thì lượt con còn chạy bị huỷ [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » huỷ lượt cha ⇒ lượt con còn chạy bị huỷ, không hẹn mở nào cho cha]
+- Kịch bản: khi lượt con lỗi thì bước cha «Cần xử lý» như tool lỗi [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » lượt con lỗi ⇒ bước cha «Cần xử lý» (tool_failed)]
+- Kịch bản: khi huỷ cha đồng thời lượt con kết thúc thì không lỗi, không chờ khoá, trạng thái nhất quán [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » huỷ cha ĐỒNG THỜI lượt con kết thúc (hai thứ tự khoá) ⇒ không lỗi, không chờ khoá, trạng thái nhất quán]
+- Kịch bản: khi lượt cha hết hạn thì lượt con bị huỷ [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » lượt cha hết hạn ⇒ lượt con còn chạy bị huỷ]
+- Kịch bản: khi lượt con không còn thì cha đi đầu ra cancelled [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » lượt con không còn (bị xoá / gỡ liên kết) ⇒ hẹn canh chốt cha đầu ra `cancelled` + reason]
+- Kịch bản: khi hẹn canh tới lúc con còn chạy thì chờ tiếp và chỉ chốt một lần [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » hẹn canh tới khi con còn chạy ⇒ ghi hẹn canh kế, con xong ⇒ chốt MỘT lần (hẹn thừa bị bỏ)]
+#### Yêu cầu: Lưu quy trình có «Quy trình con» được kiểm (nguồn: cr125-subprocess-engine)
+Lưu def có bước `subprocess` trỏ quy trình không có / chưa xuất bản ⇒ 422 `SUBPROCESS_NOT_FOUND`; gọi vòng ⇒ `SUBPROCESS_CYCLE`; lồng quá 3 ⇒
+`SUBPROCESS_DEPTH`.
+- Kịch bản: khi trỏ quy trình không có thì bị chặn [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » quy trình không có ⇒ SUBPROCESS_NOT_FOUND, có ⇒ ok]
+- Kịch bản: khi A gọi B mà B gọi A thì bị chặn [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » gọi vòng A → B → A ⇒ SUBPROCESS_CYCLE (kể cả tự gọi chính mình)]
+- Kịch bản: khi lồng quá 3 tầng thì bị chặn [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » lồng quá 3 tầng ⇒ SUBPROCESS_DEPTH, đúng 3 ⇒ ok]
+

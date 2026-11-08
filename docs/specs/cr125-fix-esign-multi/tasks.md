@@ -17,7 +17,7 @@ phụ thuộc:
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 Không thay đổi hành vi (lý do: chỉ sửa test cũ giả định sai — sign-url với cách khả dụng khác loại là đổi cách ký có chủ đích của CR-125 m4; test dùng cách không khả dụng cho nhánh 422)
 

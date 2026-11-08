@@ -31,7 +31,7 @@ stage `{ key, name, node: "core.subprocess", executor: { kind: "subprocess", def
 - Quy trình chọn được = trong danh sách `GET /process-defs` của công ty (platform sửa Thư viện: cả bản Thư viện), đã xuất bản hoặc đang bật; không tự chọn chính nó (vòng gián tiếp: máy chủ trả `SUBPROCESS_CYCLE`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED sht/quy-trinh-con.md
 #### Yêu cầu: Bước "Quy trình con"

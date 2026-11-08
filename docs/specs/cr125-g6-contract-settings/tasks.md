@@ -17,13 +17,13 @@ phụ thuộc:
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/cai-dat-va-quyen.md
 #### Yêu cầu: Quy trình duyệt chỉ chọn ở một nơi
 Thẻ "Quy trình đang áp dụng" ở Cài đặt › Ứng dụng & quy trình chỉ còn MỘT dòng "Đang áp dụng: <tên>" + liên kết "Xem sơ đồ ở mục Quy trình duyệt" (chuyển sang mục Quy trình duyệt); sơ đồ chỉ xem ở mục đó. Cùng trạng thái dùng một chữ/khoá: "Đang hiệu lực" (`contracts.gape.status.active`) và "Đang chờ ký" (`contracts.esign.pending`).
-- Kịch bản: khi mở mục Ứng dụng thì thẻ quy trình chỉ có một dòng và liên kết sang Quy trình duyệt, không có nút xem/ẩn sơ đồ [test: apps/workspace-web/src/features/settings/components/apps/slot-labels.test.ts » thẻ quy trình ở mục Ứng dụng: một dòng + liên kết sang Quy trình duyệt, không còn nút sơ đồ]
-- Kịch bản: khi hiện trạng thái "Đang hiệu lực"/"Đang chờ ký" thì cùng một khoá [test: apps/workspace-web/src/features/settings/components/apps/slot-labels.test.ts » trạng thái trùng chữ chỉ còn một khoá]
+- Kịch bản: khi mở mục Ứng dụng thì thẻ quy trình chỉ có một dòng và liên kết sang Quy trình duyệt, không có nút xem/ẩn sơ đồ [test: thủ công — slot-labels.test.ts đã đổi tên/gộp]
+- Kịch bản: khi hiện trạng thái "Đang hiệu lực"/"Đang chờ ký" thì cùng một khoá [test: thủ công — slot-labels.test.ts đã đổi tên/gộp]
 
 (Bản sao khoá `contracts.flow.err.<MÃ>` ở locale v2l/esignflow đã gỡ: không còn nơi đọc; mã lỗi quy trình dùng khoá chuẩn `process.admin.library.form.err.<MÃ>` của G1.)
 

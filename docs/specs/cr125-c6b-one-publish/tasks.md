@@ -23,7 +23,7 @@ Unit `node-menu.test.ts`; e2e `e2e/community-web/flows.menu.cs.ts` (mở rộng:
 Giữ lối "Kết thúc · <kết quả>" vì đã đủ cho mọi app (đọc từ `outcomes`), không đổi def đã lưu, không cổng tính năng riêng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Menu "+" một lối cho mỗi kết quả Kết thúc (CR-125 c6b)

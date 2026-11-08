@@ -38,7 +38,7 @@ UI/canvas/e2e (lát cr125-subprocess-ui). Lượt cha hết hạn / lỗi hệ t
 - Lượt con không tính trần lượt/công ty (`packBound`), cùng người bắt đầu với cha.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Node «Quy trình con» chạy một quy trình khác như một bước

@@ -25,7 +25,7 @@ DLC, locale, hub, code component. Hệ quả: bản tối admin/chat/studio đ�
 - Không có ghi đè riêng nào ở app (APP_OVERRIDES rỗng).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED platform/token-mau.md
 #### Yêu cầu: Một gói token màu cho mọi app

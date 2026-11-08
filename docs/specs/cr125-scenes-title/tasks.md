@@ -18,7 +18,7 @@ Nguyên nhân: 766124523 (CR-125 c7) bỏ suy tên từ fields.title ở web, d�
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 Không thay đổi hành vi (lý do: chỉ sửa mock e2e `contractAsHub()` cho đúng hình hub sau CR-125 c7 — `title` = tên HĐ do contractNameSql tính, không phải tên file; sản phẩm đã đúng).
 

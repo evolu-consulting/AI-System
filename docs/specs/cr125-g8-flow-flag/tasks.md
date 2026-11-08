@@ -26,7 +26,7 @@ unit `flow-flag.check.test.ts`; int `flow-flag-backfill.int.test.ts`, `ops.flow-
 - Perf: check là một câu `exists`/`not exists` theo `tenant_id` (index `company_flows_enabled_idx`, PK `tenant_flow_settings`), không vòng lặp.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED ops/flow-flag.md
 #### Yêu cầu: Cảnh báo cấu hình quy trình nửa vời

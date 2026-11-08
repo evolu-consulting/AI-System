@@ -30,7 +30,7 @@ DLC, UI (nhãn "duyệt thay" đã có sẵn từ CR-113), migration.
 - Gắn lúc tạo run (snapshot bất biến) thay vì sửa def công ty ⇒ một nguồn: snapshot run; def/bản công ty không đổi.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Toàn quyền duyệt thay trên flow theo sự kiện

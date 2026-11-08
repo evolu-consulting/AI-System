@@ -26,7 +26,7 @@ Unit: `check-shared-limits.rules.test.ts`, `slice-rebase.test.ts`, `check-contra
 - #34 (đếm hộp thư đối tác) để lại: cần cổng đếm trong kit nav (đường nóng `/pack/nav`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 Không thay đổi hành vi (lý do: sửa chữ/hằng dùng chung, gỡ code và khoá i18n không còn dùng, thêm check tĩnh; số 4–168 và 4–2160 giữ nguyên giá trị)
 

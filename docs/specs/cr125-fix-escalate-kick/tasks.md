@@ -36,7 +36,7 @@ DLC, UI riêng cho `start_failed` (thẻ dùng `decision.reason` + `code` sẵn 
 - Chỉ "Duyệt 2 cấp" có hạn mặc định (brief); 2 mẫu kia giữ nguyên.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Chuyển cấp trên flow theo sự kiện

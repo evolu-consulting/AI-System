@@ -30,7 +30,7 @@ perf int: `contracts/nav.mount.perf.int.test.ts` (p95 `/pack/nav` ≤ 50 ms, tr�
 - Chưa có test perf `/pack/nav` từ trước ⇒ tạo mới, đặt ngưỡng p95 ≤ 50 ms (mẫu Luật 4c).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/gui-doi-tac-giao-dien.md
 #### Yêu cầu: Số chờ trên mục hộp thư đối tác của menu

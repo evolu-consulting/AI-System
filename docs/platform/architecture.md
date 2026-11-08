@@ -55,6 +55,21 @@ Thêm một node trên sơ đồ flow = **một thư mục mỗi tầng**, khôn
 - **Công cụ:** `bun run module:new <app> <node>` dựng `node.ts`, `node.test.ts`, cập nhật `module.ts`, chạy `module:index`, in đường dẫn `binding.ts` và panel tuỳ chọn cần tự viết; `bun run module:index` sinh lại index.
 - **Node đã chuyển:** Ký số (`contracts.esign`), Gửi đối tác xác nhận (`contracts.partner-send`, node đầu tiên làm mới theo khuôn), Hiện bài (`community.show-post`), các bước cơ bản `core`.
 
+### Node mới của quy trình dài (CR-126, 2026-11-08)
+
+| Node / khoá | Cổng vào → lối ra | Tầng chạy (runtime) | Tầng giao diện |
+|---|---|---|---|
+| `core.subprocess` «Quy trình con» (base, executor `subprocess`) | vào: `def_key`, `input_map`; ra `done` (+ `outcome`, `sub_<trường>`) / `rejected` / `cancelled` (rẽ qua `branches`) | hub `processes/nodes/subprocess/*` (mở MỘT lượt con, canh chốt, huỷ cha ⇒ huỷ con, lỗi con ⇒ `tool_failed`); chặn vòng `SUBPROCESS_CYCLE`, sâu ≤ 3, `SUBPROCESS_NOT_FOUND` | admin-web: panel chọn quy trình + ánh xạ + rẽ nhánh |
+| `core.start-form` «Phiếu yêu cầu» (base, stage ĐẦU) | vào: cấu hình phiếu (zod); ra: dữ liệu phiếu + tên yêu cầu làm đầu vào lượt | `hub-admin/process-start.ts` mở lượt từ phiếu (không cần sự kiện app); sai cấu hình ⇒ `START_FLOW_OFF` | workspace-web: form «Tạo yêu cầu» + tệp đính kèm; admin-web: editor phiếu |
+| Duyệt `after.parallel` (trên stage `approve`) | mỗi nhóm một thẻ duyệt cùng lúc; luật `all` / `any` / `min`; ra như Duyệt thường | hub: khoá lượt khi đếm phiếu, index thẻ mở theo nhóm (migration 0128) | thẻ duyệt hiện từng nhóm + tiến độ |
+| `contracts.create-from-step` «Tạo HĐ từ hồ sơ» | **chưa gộp vào `platform/gd0` tại thời điểm viết** — cập nhật khi lát `contract-from-step` merge | — | — |
+
+- **Quy ước:** phần chạy (trạng thái run, khoá, canh chốt) thuộc hub-api; contract/zod và UI thuộc `packages/contracts` + admin-web/workspace-web. Thẻ «bước làm việc» (form-step-card) và «bước trong yêu cầu» (request-steps) chỉ là hiển thị của cùng dữ liệu run.
+- **File theo lượt:** bảng nối `hub.process_run_files (process_run_id, attachment_id)` (migration 0130, RLS tenant). Quyền đọc tệp = quyền xem lượt (`process_run_viewer`); tệp phiếu đi theo vào lượt con; sweeper «chưa gắn quá 24 h» bỏ qua tệp đã có liên kết.
+- **Toàn quyền duyệt thay (owner-override):** MỘT luật chung `packages/contracts/src/flow/owner-override.ts` (`ownerAlsoGroups` / `withOwnerOverride`); `compileDef` (đường khe) và `flow-launch` (flow theo sự kiện) cùng dùng — không còn hai bản.
+- **RLS Hub + chốt chặn:** migration hub 0127 bật RLS 9 bảng còn hở; `apps/hub-api/src/lib/db-guard.ts` gọi khi mở DB, từ chối chạy bằng role superuser/BYPASSRLS/chủ bảng; test RLS suy từ catalog + `HUB_RLS_ALLOWLIST`.
+- **Kick lỗi ⇒ `start_failed`:** lượt vừa mở mà kick lỗi ở bước đầu (chưa stage nào chạy) ⇒ `needs_decision{reason: start_failed, code}` với Thử lại / Huỷ, thay vì treo `pending`; lượt đã chạy giữ cho vòng nền.
+
 ## 4. Sơ đồ canvas và PDF (quyết định liên quan)
 
 - Bố cục sơ đồ flow: **elkjs** `layered`, hướng Ngang/Dọc (`ui.dir`), chunk lazy, worker phục vụ tĩnh (`/static/elk/elk-worker.min.js`) — [ADR-0040](../adr/0040-elkjs-canvas-layout.md).

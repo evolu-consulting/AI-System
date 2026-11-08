@@ -152,3 +152,22 @@ Gói bắn sự kiện kèm dữ liệu (khoá snake_case, giá trị vô hướ
 #### Yêu cầu: Thông báo đọc đầu ra các bước trước (nguồn: cr125-m9-outputs-runstate)
 Mẫu `{khoá}` của Thông báo lấy giá trị từ đầu ra các bước đứng trước và dữ liệu của lượt; Thông báo ghi người nhận (`sent_to`) vào đầu ra của bước.
 - Kịch bản: `{signed_at}` lấy từ đầu ra Ký số, input thắng khi trùng khoá [test: apps/hub-api/src/modules/processes/nodes/notify/notify-vars.test.ts » `{signed_at}` lấy từ đầu ra bước Ký số · bước sau đè bước trước · input thắng khi trùng]
+
+## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
+
+#### Yêu cầu: Gửi form của bước chỉ do nhóm làm, lưu giá trị làm đầu ra, mở bước kế (nguồn: cr125-form-step-card)
+Gửi form (`POST /review-tasks/:id/form`) từ thẻ HĐ: chỉ người thuộc nhóm làm của bước được gửi (người ngoài nhóm và người công ty khác nhận 404); giá trị sai theo snapshot run ⇒ 422 `FORM_VALUES_INVALID` và bước vẫn mở; đúng ⇒ giá trị lưu ở đầu ra của bước, bước kế mở, người xem sau thấy giá trị đã gửi trên thẻ; gửi lại cùng giá trị không lỗi.
+- Kịch bản: khi người ngoài nhóm làm hoặc người công ty khác gửi form thì 404 và bước vẫn mở [test: apps/hub-api/src/modules/processes/triggers/flow-form-step-card.int.test.ts » quyền: người ngoài nhóm làm ⇒ 404]
+- Kịch bản: khi giá trị đúng thì đầu ra lưu đúng, bước Duyệt mở và thẻ người sau có giá trị [test: apps/hub-api/src/modules/processes/triggers/flow-form-step-card.int.test.ts » giá trị sai ⇒ 422 FORM_VALUES_INVALID, bước vẫn mở]
+- Kịch bản: khi Phần 1 «Mua hàng» chạy từ đầu tới PO thì mọi bước form điền được bằng giao diện kèm tệp [test: e2e/journey-approval/cr125-form-step-card.spec.ts » Phần 1 «Mua hàng»: mọi bước điền thông tin + đính kèm tệp làm trên giao diện, tới Kết thúc]
+
+#### Yêu cầu: Nhãn chờ duyệt thống nhất (nguồn: cr125-g2-wait-labels)
+Trạng thái run, ghi chú bước và dòng thời gian cùng dùng một nhãn "Đang chờ người duyệt"; admin-web dịch trạng thái `waiting_review` bằng khoá i18n.
+- Kịch bản: khi run ở waiting_review thì nhãn trạng thái và ghi chú bước giống nhau [test: apps/hub-api/src/modules/processes/domain/runs/run-log-text.rules.test.ts » CR-125 G2 · một nhãn chờ duyệt]
+- Kịch bản: khi admin xem run waiting_review thì dòng trạng thái lấy từ khoá i18n [test: apps/admin-web/src/features/processes/lib/run-detail-view.test.ts » runStatusLine (CR-125 G2)]
+
+#### Yêu cầu: Tệp đính kèm của lượt mở được bởi người xem lượt (nguồn: cr125-run-attachments)
+Tệp người điền ở phiếu «Tạo yêu cầu» hoặc bước form được liên kết vào lượt; mọi người xem được lượt (người tạo, người được giao, quản trị công ty) mở tệp qua `/attachments/:id/content`; người khác cùng công ty và công ty khác nhận 404. Lượt con nhận tệp được truyền qua `input_map`.
+- Kịch bản: khi người bước form tải tệp và gửi thì người duyệt bước sau mở được tệp, người ngoài cùng công ty và công ty khác nhận 404 [test: apps/hub-api/src/modules/processes/triggers/flow-form-step-card.int.test.ts » tệp bước form]
+- Kịch bản: khi lượt cha truyền tệp qua input_map thì lượt con kế thừa liên kết, tệp không truyền thì không [test: apps/hub-api/src/modules/processes/nodes/subprocess/subprocess.int.test.ts » tệp truyền qua input_map]
+

@@ -32,7 +32,7 @@ int: `library-validate.int.test.ts` (422 PROCESS_PUBLISH_INVALID / SLOT_GROUPS_M
 - Hub chỉ đánh số `step` từ 1; web vẫn suy chỉ số nhảy như trước (không đổi ở lát này).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Lỗi kiểm quy trình khi xuất bản / gán trả mã và biến, web dịch

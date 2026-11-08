@@ -274,3 +274,36 @@ Khi mở flow lần đầu, bấm nút vừa khung, "Sắp xếp" hoặc khung �
 - Kịch bản: khi flow demo rộng hơn khung thì fit thu nhỏ để mọi node nằm trong khung [test: packages/flow-canvas/src/fit.test.ts » flow demo rộng hơn khung: thu nhỏ tới mức cần, TOÀN BỘ node (kể cả cột cuối) nằm trong khung]
 - Kịch bản: khi ngăn chi tiết mở thì fit vào phần còn lại bên trái ngăn [test: packages/flow-canvas/src/fit.test.ts » ngăn chi tiết mở: fit vào phần còn lại bên trái ngăn]
 - Kịch bản: khi mở flow thật và bấm vừa khung ở cả Ngang và Dọc thì hộp mọi node nằm trọn trong khung canvas [test: e2e/journey-approval/cr123-arrow-drag.spec.ts » U12b · trình tự demo: thả Duyệt (chung cột), Ký xong → Duyệt → Thông báo → Kết thúc, Bắt đầu khi → Ký số báo lý do, Lưu và áp dụng không 422]
+
+## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
+
+#### Yêu cầu: Menu "+" theo app và sự kiện của flow (CR-125 c6) (nguồn: cr125-c6-community-editor)
+Menu "+" chỉ có node của app của flow (cùng node lõi) và node mà kết quả Kết thúc đặt sẵn nằm trong `outcomes` của sự kiện; node community khai `menu` nghiệp vụ nên công ty thấy ở nhóm nghiệp vụ. Mục Kết thúc tách theo từng kết quả của sự kiện, nhãn "Kết thúc · <kết quả>".
+- Kịch bản: flow community không thấy node hợp đồng, flow hợp đồng không thấy node community [test: apps/admin-web/src/features/processes/lib/node-menu.test.ts » CR-125 c6b · flow community không thấy node hợp đồng, flow hợp đồng không thấy node community]
+- Kịch bản: Kết thúc community là Hiện bài / Ẩn bài, hợp đồng là Đã duyệt / Từ chối / Trả lại [test: apps/admin-web/src/features/processes/lib/node-menu.test.ts » CR-125 c6 · B3: Kết thúc tách theo kết quả của sự kiện (community: Hiện bài / Ẩn bài, hợp đồng: Đã duyệt / Từ chối / Trả lại)]
+- Kịch bản: Kết thúc chọn từ menu mang đúng kết quả đã chọn [test: apps/admin-web/src/features/processes/lib/node-menu.test.ts » CR-125 c6 · B3: Kết thúc chọn từ menu mang đúng kết quả đã chọn]
+- Kịch bản: quản trị community mở bản sao flow Duyệt bài, menu có Kết thúc · Hiện bài / Ẩn bài (c6b: không còn mục node Hiện bài riêng), không có bước hợp đồng hay Nâng cao [test: e2e/community-web/flows.menu.cs.ts » quản trị community: menu + chữ trong trình sửa flow Duyệt bài đúng ngôn ngữ community]
+
+#### Yêu cầu: Chữ trong trình sửa theo bản ghi của sự kiện (CR-125 c6) (nguồn: cr125-c6-community-editor)
+Câu ở hộp bật quy trình, chân trang, thẻ Giới hạn dùng tên bản ghi từ `record.label` của sự kiện (hợp đồng, bài đăng, đơn tham gia…); công ty có nhiều app ⇒ nối "hợp đồng và bài đăng". Ghi chú bước công cụ không nhắc "Nâng cao" cho người dùng công ty.
+- Kịch bản: tên bản ghi lấy từ sự kiện, không sự kiện thì giữ hợp đồng, nhiều app thì nối [test: apps/admin-web/src/features/processes/lib/record-words.test.ts » công ty có flow của nhiều app ⇒ nối không trùng: 'hợp đồng và bài đăng']
+- Kịch bản: hộp bật, dòng trạng thái và thẻ Giới hạn của flow community nói bài đăng, không còn hợp đồng [test: e2e/community-web/flows.menu.cs.ts » quản trị community: menu + chữ trong trình sửa flow Duyệt bài đúng ngôn ngữ community]
+
+#### Yêu cầu: Menu "+" một lối cho mỗi kết quả Kết thúc (CR-125 c6b) (nguồn: cr125-c6b-one-publish)
+Node chỉ là một Kết thúc đặt sẵn kết quả (community: Hiện bài) không hiện ở menu "+" vì đã có "Kết thúc · <kết quả>"; node vẫn đăng ký để flow đã lưu mở được. Quyết định: giữ Kết thúc theo kết quả (ít đổi def đã lưu nhất, đủ cho mọi app).
+- Kịch bản: menu community chỉ có Kết thúc · Hiện bài, node Hiện bài không hiện cho cả công ty lẫn nền tảng nhưng còn trong sổ [test: apps/admin-web/src/features/processes/lib/node-menu.test.ts » CR-125 c6b · Hiện bài chỉ có MỘT lối là Kết thúc · Hiện bài, node community.show-post không hiện ở menu nào nhưng vẫn đăng ký]
+- Kịch bản: node chỉ một Kết thúc đặt sẵn bị ẩn, node nhiều bước thì không [test: apps/admin-web/src/features/processes/lib/node-menu.test.ts » CR-125 c6b · luật chung: node chỉ là một Kết thúc đặt sẵn kết quả thì trùng mục Kết thúc, node nhiều bước thì không]
+- Kịch bản: trong trình sửa flow Duyệt bài chỉ có một mục Hiện bài và một mục Ẩn bài [test: e2e/community-web/flows.menu.cs.ts » quản trị community: menu + chữ trong trình sửa flow Duyệt bài đúng ngôn ngữ community]
+
+#### Yêu cầu: Thẻ hợp đồng vẽ bước «Điền thông tin» (form) với ô nhập, tệp đính kèm và «Gửi» (nguồn: cr125-form-step-card)
+Bước form của lượt flow hiện trên thẻ HĐ như bước form thật: người thuộc nhóm làm thấy các ô theo loại (chữ, số, tiền, ngày, chọn, tick, tệp) và nút «Gửi» (không có Duyệt/Trả lại/Từ chối); «Gửi» ghi giá trị + tệp làm đầu ra của bước qua đường gửi form sẵn có và bước kế mở. Người ngoài nhóm không thấy ô nhập; bước đã gửi hiện giá trị chỉ đọc cho mọi người xem thẻ.
+- Kịch bản: khi bước form mở thì thẻ chiếu bước `form` kèm trường + nhóm làm và task «Gửi» chỉ cho người của nhóm làm [test: apps/hub-api/src/modules/packs/contracts/domain/approval-flow-view.form.test.ts » form đang mở, người xem thuộc nhóm làm ⇒ step form + task «Gửi» mang cả form (không Duyệt/Từ chối)]
+- Kịch bản: khi bước form đã gửi thì giá trị hiện chỉ đọc ở bước đó và bước duyệt kế vẫn có Duyệt/Trả lại [test: apps/hub-api/src/modules/packs/contracts/domain/approval-flow-view.form.test.ts » form đã gửi ⇒ giá trị chỉ đọc ở bước form]
+- Kịch bản: khi bước mở là form thì đầu trang thẻ không có nút Duyệt/Trả lại/Từ chối [test: apps/workspace-web/src/features/contract-approval/lib/engine-card.form.test.ts » người làm (can_act) ⇒ không nút Duyệt/Trả lại/Từ chối ở đầu trang]
+- Kịch bản: khi bước form đã xong thì thẻ hiện nhãn «Đã điền» và giá trị theo loại (tiền, ngày, ô tick, lựa chọn) [test: apps/workspace-web/src/platform/flow/ui/flow-ui.test.tsx » bước đã xong ⇒ nhãn «Đã điền» + giá trị theo loại (tiền, ngày, ô tick, lựa chọn), không form]
+- Kịch bản: khi trường là tệp thì ô là ô chọn tệp (tải ngay), không phải ô chữ [test: apps/workspace-web/src/platform/flow/ui/flow-ui.test.tsx » trường file_ref khi điền ⇒ ô chọn tệp (data-testid flow-file-<khoá>), không ô chữ]
+
+#### Yêu cầu: Tên tệp đã điền là liên kết mở tệp (nguồn: cr125-run-attachments)
+Giá trị «Đã điền» của thẻ và trang yêu cầu hiện tên tệp dạng liên kết; không mở được (không có quyền / đã xoá) ⇒ câu báo lỗi.
+- Kịch bản: khi trang yêu cầu có ô tệp "id1, id2" thì tách thành từng liên kết [test: apps/workspace-web/src/components/shared/attachments.test.ts » phiếu «Tạo yêu cầu»]
+

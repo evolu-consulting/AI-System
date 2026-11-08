@@ -26,7 +26,7 @@ Unit: `node-menu.test.ts` (lọc theo app/sự kiện, Kết thúc theo kết qu
 - Palette Hub vẫn lọc theo app; FE lọc lại theo MODULES để "một nguồn" (palette trả thừa cũng không lộ node app khác).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Menu "+" theo app và sự kiện của flow (CR-125 c6)

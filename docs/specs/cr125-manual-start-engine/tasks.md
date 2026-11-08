@@ -69,7 +69,7 @@ qua ĐÚNG đường của sự kiện (`flowLaunchOf` → `StartService.createF
 - `core/module.ts` thêm để `check:modules` đối chiếu `core/<node>/node.ts` (sổ tự sinh vẫn nhập `./core`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/flow-triggers.md
 #### Yêu cầu: Bắt đầu quy trình bằng phiếu yêu cầu

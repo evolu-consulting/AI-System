@@ -24,7 +24,7 @@ i18n:check, check:i18n-terms, test:lock:verify, openspec:check; evotest e2e: P-a
 Luật glossary tenant chỉ bắt tenant_admin/câu cụ thể ở vi.json (màn quản trị nền tảng vẫn dùng "tenant").
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 Không thay đổi hành vi (lý do: chỉ đổi nhãn/chữ hiển thị và khoá i18n còn thiếu; không đổi logic hay dữ liệu).
 

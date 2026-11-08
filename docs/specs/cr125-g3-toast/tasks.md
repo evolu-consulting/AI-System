@@ -24,7 +24,7 @@ Một toast duy nhất `packages/web-kit/src/ui/toast.tsx` (+ `toaster.tsx`) tha
 - `check:bundle` admin-web đỏ sẵn trên HEAD (js 187.4 KB > 174, chunk q 50.7 KB > 50), số liệu y hệt sau lát này.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED platform/toast-chung.md
 #### Yêu cầu: Một toast cho mọi app

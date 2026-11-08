@@ -22,7 +22,7 @@ Unit `domain/runs/as-calendar-date.test.ts`: hàm chuẩn hoá (ranh giới 00:0
 So theo ngày chỉ khi vế phải là ngày lịch `YYYY-MM-DD`; vế phải khác ⇒ so nguyên như cũ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Điều kiện và hẹn giờ theo ngày ký tính theo ngày Việt Nam

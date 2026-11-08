@@ -24,7 +24,7 @@ unit library-flow; e2e P-a một lần.
 Sửa ở `stageToDraft` (điểm chung mọi nơi đọc stage thô) thay vì chỉ ở `libraryFlowOf`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 Không thay đổi hành vi (lý do: sửa sập trang xem Thư viện do stage thô thiếu trường mặc định; hành vi hiển thị đã mô tả sẵn)
 

@@ -28,7 +28,7 @@ lượt con (Phần 1/2/3, `parent_run_id`) lồng dưới lượt cha — khôn
 - Tối đa 30 lượt con / 5 cấp mỗi trang; mỗi lượt ≤ 2 câu SQL (chưa đo perf).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Trang yêu cầu hiện toàn bộ bước của lượt và lượt con, làm việc ngay tại đó

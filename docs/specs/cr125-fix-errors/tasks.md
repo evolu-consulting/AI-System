@@ -27,7 +27,7 @@ Unit: contracts template-readiness, hub library-publish.messages + flow-flag, we
 - Mã readiness chỉ cho lý do CHẶN; nhóm thiếu chỉ là lưu ý (khoá `readiness.group`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/company-flows.md
 #### Yêu cầu: Lý do mẫu chưa dùng được là mã + biến, web dịch

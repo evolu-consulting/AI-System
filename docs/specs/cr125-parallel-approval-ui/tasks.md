@@ -29,7 +29,7 @@ Giao diện «A + B cùng duyệt» cho bước Duyệt: cấu hình `after.para
 - Thẻ đóng `superseded`: hub lưu lý do ở `review_tasks.feedback` (hằng `PARALLEL_CLOSED_BY_QUORUM` và «Đã có người từ chối/trả lại»); thẻ HĐ đã hiện `feedback` của bước (xem Kết quả e2e bên dưới).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED sht/duyet-cung-luc-giao-dien.md
 #### Yêu cầu: Cấu hình «Duyệt cùng lúc nhiều nhóm» ở trình sửa quy trình

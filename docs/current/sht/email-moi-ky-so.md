@@ -15,3 +15,11 @@ Tới lượt người ký công ty, hệ thống gửi đúng một email tiế
 - Kịch bản: khi nhiều người ký hoặc gửi lại cùng tệp thì chỉ dựng ảnh một lần [test: apps/hub-api/src/modules/packs/contracts/application/esign-invite.test.ts » perf: nhiều người ký / gửi lại cùng tệp ⇒ dựng ảnh đúng MỘT lần]
 - Kịch bản: khi công ty tắt cài đặt thì email không ảnh và không dựng [test: apps/hub-api/src/modules/notify/esign-invite.int.test.ts » công ty tắt 'Kèm ảnh trang đầu' ⇒ email vẫn có thẻ, KHÔNG ảnh và không dựng]
 - Kịch bản: khi PDF hợp lệ thì ảnh là JPEG ≤ 560 px dưới 120 KB, PDF hỏng thì null [test: apps/hub-api/src/modules/packs/contracts/adapters/page-thumb.test.ts » PDF hợp lệ ⇒ JPEG rộng ≤ 560 px, nhỏ hơn 120 KB]
+
+## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
+
+#### Yêu cầu: Nút trong email Mời ký đưa thẳng tới bước ký (nguồn: cr125-quick-sign-link)
+Liên kết là `/contracts/c/<id>?ky=1#esign-panel`. Người ký đã đăng nhập, đúng lượt, chưa ký ⇒ trang tự mở bước ký như bấm "Ký ngay"; chưa đăng nhập ⇒ đăng nhập rồi quay lại đúng liên kết; không đúng lượt hoặc đã ký ⇒ trang HĐ thường. Tham số `ky` bị bỏ khỏi URL sau khi xử lý.
+- Kịch bản: khi dựng thẻ mời ký thì liên kết có `?ky=1` [test: apps/hub-api/src/modules/packs/contracts/application/esign-invite.test.ts » liên kết sâu tới thẻ ký]
+- Kịch bản: khi ky=1 nhưng không đúng lượt hoặc đã ký thì không tự ký [test: apps/workspace-web/src/features/contract-esign/lib/esign-view.test.ts » decideAutoSign: tự mở CHỈ khi ky]
+

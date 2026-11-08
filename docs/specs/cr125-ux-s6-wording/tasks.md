@@ -25,7 +25,7 @@ i18n:check, check:i18n-terms, check:i18n-unused --strict, openspec:check, e2e ro
 Chân khung dùng t("nav.roleName.<role>") với defaultValue = role.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 Không thay đổi hành vi (lý do: chỉ đổi nhãn hiển thị i18n và một dòng hiển thị vai ở chân khung admin-web).
 

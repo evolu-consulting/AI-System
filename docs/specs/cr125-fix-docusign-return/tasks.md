@@ -28,7 +28,7 @@ Unit `esign-view.test.ts`, `esign-merge.test.ts`; int `tests/acceptance/esign-mu
 - Không poll nền (Luật 4c); chỉ làm mới theo sự kiện quay về / bấm nút / bị chặn lượt.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Quay về từ nhà cung cấp ký thì trạng thái được cập nhật

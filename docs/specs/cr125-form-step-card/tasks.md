@@ -30,7 +30,7 @@ Không đụng engine (máy trạng thái run), DLC, migration. Không `slice:me
 - `workspace-web` cần proxy `/review-tasks` + `/attachments` (rsbuild + nginx) — đã có từ cr125-manual-start-ui; lát này dựa vào đó (rebase gd0).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Thẻ hợp đồng vẽ bước «Điền thông tin» (form) với ô nhập, tệp đính kèm và «Gửi»

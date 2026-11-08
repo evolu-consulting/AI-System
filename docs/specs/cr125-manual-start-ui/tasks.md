@@ -38,7 +38,7 @@ Giao diện cho «bắt đầu quy trình bằng phiếu yêu cầu» (engine: `
 - Người/Phòng ban của phiếu lấy từ `/admin/org` (lỗi quyền ⇒ báo, không chọn được).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED engine/manual-start-ui.md
 #### Yêu cầu: Tạo yêu cầu từ phiếu ở workspace

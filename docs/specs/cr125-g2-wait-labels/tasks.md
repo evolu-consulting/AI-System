@@ -24,7 +24,7 @@ unit run-log-text.rules, run-timeline.rules, run-detail-view.
 Không thêm truy vấn/trường contract; mã trạng thái = `run.status` có sẵn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Nhãn chờ duyệt thống nhất

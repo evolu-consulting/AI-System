@@ -37,7 +37,7 @@ sa-review B1 (S1a + S1b + S1c), `docs/specs/CR-125/sa-review.md` § "B1 fix plan
 - Test hub_api kiểm GRANT thô (h3b) đặt `app.scope=system` bằng tham số kết nối.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED platform/hub-rls.md
 #### Yêu cầu: bảng hub có tenant_id luôn có RLS

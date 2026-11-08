@@ -27,7 +27,7 @@ Unit `esign-view.test.ts`, `esign.providers.test.ts`; int `tests/acceptance/esig
 - Đã ký rồi mà bấm sign-url lại ⇒ cũng `ESIGN_NOT_YOUR_TURN`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Link «Mời ký» (`?ky=1`) không tự ký thay người dùng

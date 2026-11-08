@@ -30,7 +30,7 @@ Không đổi contract, engine máy trạng thái, URL công khai. Không truy c
 - Ô `file` của lượt con vẫn không nhận input (như cũ); chỉ liên kết tệp.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Tệp đính kèm của lượt mở được bởi người xem lượt

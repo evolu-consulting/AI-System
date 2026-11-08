@@ -30,7 +30,7 @@ unit `flow-switch-access.test.ts`; int `company-flows-active.int.test.ts` (áp d
 - Gán lại quy trình khi công ty đang tạm dừng sẽ BẬT lại (hành động có chủ ý của platform/quản trị).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Nhân bản rồi gán

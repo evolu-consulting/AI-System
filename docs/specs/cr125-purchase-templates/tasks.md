@@ -37,7 +37,7 @@ unit: `purchase-templates.test.ts` (4) · `stage-convert.group-key.test.ts` (2) 
 - Bước form chạy bằng API Hub (`POST /review-tasks/:id/form`) trong `run`: thẻ Sổ Hợp Tác chưa vẽ bước form (xem Việc còn lại 1); duyệt / Trả lại / Ký ngay / Gửi duyệt / tải lên đều là UI.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/flow-templates.md
 #### Yêu cầu: Thư viện có sẵn 3 mẫu «Quy trình mua hàng» (Phần 1 Đề xuất → Đặt hàng, Phần 2 Hợp đồng, Phần 3 Nhận hàng → Thanh toán)

@@ -29,7 +29,7 @@ Một lượt evotest int `-Dirty` đúng các file trên; openspec:check; tsc h
 - Sửa test khoá (`tests/acceptance/**`) vì lỗi thời; relock.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 Không thay đổi hành vi (lý do: sửa 5 test lỗi thời + gộp câu SQL "chờ bạn ký" vào câu danh sách /my-work, kết quả trả về y nguyên).
 

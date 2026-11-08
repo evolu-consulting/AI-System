@@ -37,7 +37,7 @@ select slot, default_def_id from hub.process_slots where slot like 'community.%'
 ```
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/company-flows.md
 #### Yêu cầu: Platform thấy và sửa một chạm điều kiện của mẫu trước khi gán

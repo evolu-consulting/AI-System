@@ -88,3 +88,22 @@ gán thêm, không sửa nội dung quy trình. Thành viên/đối tác không 
 #### Yêu cầu: Token chỉ hiện cho quản trị
 Mức dùng và ô trần "token" ở Cài đặt › Dò giá chỉ hiện cho quản trị công ty/nền tảng; người bán hàng và giám đốc không thấy.
 - Kịch bản: khi người không phải quản trị mở mục Dò giá thì không thấy "token" [test: thủ công — hiển thị theo vai ở ScoutQuota, không có logic tách riêng để kiểm đơn vị]
+
+## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
+
+#### Yêu cầu: Quy trình duyệt chỉ chọn ở một nơi (nguồn: cr125-g6-contract-settings)
+Thẻ "Quy trình đang áp dụng" ở Cài đặt › Ứng dụng & quy trình chỉ còn MỘT dòng "Đang áp dụng: <tên>" + liên kết "Xem sơ đồ ở mục Quy trình duyệt" (chuyển sang mục Quy trình duyệt); sơ đồ chỉ xem ở mục đó. Cùng trạng thái dùng một chữ/khoá: "Đang hiệu lực" (`contracts.gape.status.active`) và "Đang chờ ký" (`contracts.esign.pending`).
+- Kịch bản: khi mở mục Ứng dụng thì thẻ quy trình chỉ có một dòng và liên kết sang Quy trình duyệt, không có nút xem/ẩn sơ đồ [test: thủ công — slot-labels.test.ts đã đổi tên/gộp]
+- Kịch bản: khi hiện trạng thái "Đang hiệu lực"/"Đang chờ ký" thì cùng một khoá [test: thủ công — slot-labels.test.ts đã đổi tên/gộp]
+
+(Bản sao khoá `contracts.flow.err.<MÃ>` ở locale v2l/esignflow đã gỡ: không còn nơi đọc; mã lỗi quy trình dùng khoá chuẩn `process.admin.library.form.err.<MÃ>` của G1.)
+
+#### Yêu cầu: Quy trình duyệt chỉ chọn ở một nơi (nguồn: cr125-ux-s2-current-flow)
+Cài đặt chỉ có MỘT mục quy trình ("Quy trình duyệt") và đọc cùng nguồn với trang Quy trình của công ty (flow Bật cho hợp đồng); không còn mục "Ứng dụng & quy trình" hay quy trình mặc định của khe; câu chưa có quy trình không đẩy sang quản trị nền tảng.
+- Kịch bản: khi công ty chưa có quy trình Bật thì Cài đặt nói quản trị công ty thêm ở trang Quy trình và chỉ có một mục quy trình [test: e2e/journey-approval/cr125-s2-settings-flow.spec.ts » 1 · chưa có quy trình Bật: Cài đặt nói rõ ai làm gì, không đẩy sang quản trị nền tảng, chỉ MỘT mục quy trình]
+- Kịch bản: khi quản trị gán flow thì Cài đặt hiện cùng tên với tab Quy trình [test: e2e/journey-approval/cr125-s2-settings-flow.spec.ts » 2 · platform admin gán flow ⇒ Cài đặt hiện CÙNG tên với tab Quy trình, không còn 'Quy trình HĐ mặc định']
+- Kịch bản: khi hỏi flow đang chạy thì lấy flow Bật của company_flows, flow Tắt không tính [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-current.int.test.ts » GET = flow Bật của company_flows: tên, bản, bước theo thứ tự, phòng ban theo tên công ty]
+- Kịch bản: khi chỉ có flow Tắt thì trả 404, không có mặc định của khe [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-current.int.test.ts » công ty chỉ có flow Tắt ⇒ 404 (không có 'mặc định của khe'), PUT không còn route]
+- Kịch bản: khi stage flow có bước duyệt/ký số/thông báo thì hiện đúng thứ tự, bỏ bước kỹ thuật [test: apps/hub-api/src/modules/packs/contracts/domain/event-flow-steps.rules.test.ts » Duyệt 2 cấp: hai bước duyệt + ký số + thông báo, bỏ Chờ ký xong / Kết thúc, theo thứ tự step]
+- Kịch bản: khi mở khoá cũ ?sec=apps thì vào mục Quy trình duyệt [test: apps/workspace-web/src/features/settings/lib/section-key.test.ts » CR-125 · khoá cũ apps ⇒ mục Quy trình duyệt (đã gộp một cửa)]
+

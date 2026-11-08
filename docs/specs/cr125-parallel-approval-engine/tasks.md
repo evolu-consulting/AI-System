@@ -54,7 +54,7 @@ Stage Duyệt (`executor.kind = "approve"`), trong `after` (kind `review`):
 - Thẻ người xem (`stepsView`): bước hiện thẻ MỞ của nhóm người xem; người đã Đạt thấy bước còn mở, `can_act: false` (chờ nhóm khác).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED engine/duyet-cung-luc.md
 #### Yêu cầu: Duyệt cùng lúc nhiều nhóm («A + B cùng duyệt»)

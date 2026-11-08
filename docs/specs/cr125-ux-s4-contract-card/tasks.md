@@ -32,7 +32,7 @@ unit: `approval-step-label.rules.test.ts`, `list-contracts-step.usecase.test.ts`
 - Nhãn HĐ cho thư duyệt lấy bằng `recordLabelRegistry` (đã có cho trang chạy), không đọc bảng gói từ engine; lỗi ⇒ bỏ nhãn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Danh sách hợp đồng

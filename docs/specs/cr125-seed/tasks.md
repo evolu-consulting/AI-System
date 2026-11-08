@@ -42,7 +42,7 @@ Staging sohoptac2: `bash deploy/stg-sohoptac2/up.sh` đã gọi sẵn (bước c
 - Nhóm mẫu dùng mã của mẫu (truong-phong, giam-doc, phong-kinh-doanh), tách khỏi `pb-ke-toan` hiện có: mẫu CR-122 B trỏ mã cố định; gộp mã nhóm là việc của lát mẫu sau.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED engine/seed-cau-hinh-cong-ty.md
 #### Yêu cầu: Công ty mẫu (dev/staging) có cấu hình đủ trọn

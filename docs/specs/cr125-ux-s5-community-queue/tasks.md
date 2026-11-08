@@ -40,7 +40,7 @@ Không chạm: contracts, admin-web, DLC, engine, migration. Chạm: hub-api com
 - Perf: không chạm đường nóng (một câu UPDATE theo PK trong tx chốt lô của dispatcher, chỉ cho sự kiện lỗi).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED docs/current/community/hang-cho-duyet-bai.md
 #### Yêu cầu: Bài không kẹt "đang kiểm tra" khi flow không mở được lượt

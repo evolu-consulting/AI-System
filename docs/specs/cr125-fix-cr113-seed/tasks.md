@@ -24,7 +24,7 @@ evotest -Step e2e -Filter pm-checklist-pm -Dirty: 13 pass.
 Sửa phía seed (giả định cũ), không đổi sản phẩm.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 Không thay đổi hành vi (lý do: chỉ sửa fixture/test e2e pm-checklist, không đổi code sản phẩm)
 
 ## Việc còn lại

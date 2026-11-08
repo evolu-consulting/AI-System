@@ -25,7 +25,7 @@ Unit `esign-signer-prefill.rules.test.ts`; e2e `e2e/journey-approval/cr125-s3-sa
 Prefill chỉ ở đường sao chép (không đổi lúc lưu/chạy). Không có nhóm duyệt ⇒ để trống, vẫn bị chặn có thông báo.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED platform/trinh-sua-flow.md
 #### Yêu cầu: Lưu và áp dụng không im lặng khi bước Ký số thiếu người ký

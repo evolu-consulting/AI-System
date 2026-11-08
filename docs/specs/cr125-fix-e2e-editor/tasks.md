@@ -34,7 +34,7 @@ evotest e2e: jobs "P-b2 P-b P-c P-c2" `-Dirty -Slots 4`, rồi "K1".
 - Không khôi phục mục "Nguồn" ở sidebar: gỡ có chủ đích (c10 sidebar phẳng); lối vào còn ở trình sửa quy trình và hub Hệ thống.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/company-flows.md
 #### Yêu cầu: Trình sửa quy trình — đổi cách xem và toast lỗi không cản nút Lưu

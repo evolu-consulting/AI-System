@@ -27,7 +27,7 @@ unit `template-readiness.test.ts`, `flow-templates.community.test.ts`; int `comp
 - Nhóm thiếu KHÔNG chặn sao chép (giữ P15); thiếu tính năng/tool/thứ tự thì chặn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED engine/company-flows.md
 #### Yêu cầu: Mẫu Thư viện chỉ trao cho công ty khi áp dụng được

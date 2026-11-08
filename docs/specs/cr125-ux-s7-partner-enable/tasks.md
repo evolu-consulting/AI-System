@@ -32,7 +32,7 @@ H7 (`docs/specs/CR-125/ux-review-ceo.md`): «Đối tác xác nhận hợp đồ
 - «Sẵn sàng» = đủ điều kiện cả gửi lẫn nhận; công ty chỉ nhận vẫn thấy «còn 1 điều kiện» (quy trình gửi) — nói rõ, không giấu.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### ADDED sht/gui-doi-tac-dieu-kien-bat.md
 #### Yêu cầu: Platform bật/tắt Đối tác xác nhận hợp đồng từ giao diện, kèm danh sách điều kiện

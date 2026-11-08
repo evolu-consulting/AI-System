@@ -105,3 +105,26 @@ Lưu def công ty nhận mã nhóm hợp lệ của chính công ty và tự đ�
 - Kịch bản: khi sao chép flow Thư viện có bước Duyệt theo mã thì bản sao có `group_id` và không còn `group_key`, rồi đổi người duyệt (PUT) trả 200 [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » P15 · sao chép flow Thư viện có Duyệt theo key]
 - Kịch bản: khi mã nhóm chưa có ở công ty thì vẫn sao chép được, có cảnh báo `group_missing` và chọn nhóm khác lưu được [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » P15 · mã nhóm chưa có ở công ty]
 - Kịch bản: khi công ty thiếu nhóm theo mã thì sao chép trả 201 kèm mã thiếu [test: apps/hub-api/src/modules/processes/library/company-flows.int.test.ts » sao chép để sửa]
+
+## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
+
+#### Yêu cầu: Nhân bản rồi gán (nguồn: cr125-c2-no-hidden-toggle)
+Nhân bản mọi quy trình (kể cả đang dùng) thành nháp mới cùng khe, chưa gán; sửa bản nhân bản không ảnh hưởng tenant nào. Với flow của công ty: "Lưu và áp dụng" hoặc gán quy trình là đủ để công ty dùng quy trình mới (cờ `flow_triggers` được đặt cùng giao dịch), không còn công tắc bật bắt buộc; chỉ còn nút "Tạm dừng quy trình mới" cho quản trị công ty. Quy tắc tương thích: công ty chưa từng áp dụng hoặc được gán quy trình sau thay đổi này giữ nguyên cờ (tắt ở prod) và chạy đúng như trước; hợp đồng đang chạy không bị ảnh hưởng.
+- Kịch bản: khi quản trị công ty bấm Lưu và áp dụng thì công ty dùng quy trình mới ngay, không cần bật công tắc nào khác [test: apps/hub-api/src/modules/processes/library/company-flows-active.int.test.ts » Lưu và áp dụng ⇒ cờ BẬT cùng giao dịch + audit ghi flow_triggers, không cần bật công tắc riêng]
+- Kịch bản: khi công ty có sẵn dòng gán nhưng chưa áp dụng thì vẫn chạy cách cũ như hôm nay [test: apps/hub-api/src/modules/processes/library/company-flows-active.int.test.ts » công ty có sẵn dòng gán nhưng chưa áp dụng ⇒ cờ TẮT (như trước), sao chép để sửa cũng không bật]
+- Kịch bản: khi tạm dừng rồi áp dụng lại thì dừng rồi dùng lại [test: apps/hub-api/src/modules/processes/library/company-flows-active.int.test.ts » tạm dừng (cứu hộ) ⇒ TẮT, áp dụng lại ⇒ BẬT lại]
+- Kịch bản: khi platform gán quy trình cho công ty thì công ty dùng ngay và công ty khác không đổi [test: apps/hub-api/src/modules/processes/library/company-flows-active.int.test.ts » platform gán quy trình cho công ty mới ⇒ BẬT, công ty không đụng tới ⇒ vẫn TẮT]
+- Kịch bản: khi xem khối quy trình mới thì chỉ có nút Tạm dừng lúc đang dùng, lúc chưa dùng chỉ có lời chỉ dẫn [test: apps/admin-web/src/features/tenants/flows/lib/flow-switch-access.test.ts » đang dùng ⇒ on (chỉ có nút Tạm dừng), có quy trình nhưng chưa dùng/đã tạm dừng ⇒ idle (chỉ lời chỉ dẫn), chưa có quy trình ⇒ none]
+
+#### Yêu cầu: Số bước trong lỗi xuất bản đếm từ 1 ở cả hub và web (nguồn: cr125-fix-errors)
+`step` là số thứ tự từ 1; web trỏ đúng bước bị lỗi. `SLOT_LOCKED` có câu hướng dẫn riêng.
+- Kịch bản: khi lỗi ở `steps.2` thì hub trả step 3 và web nhảy tới chỉ số 2 [test: apps/hub-api/src/modules/processes/library/library-publish.messages.test.ts » hợp đồng bước TỪ 1]
+- Kịch bản: khi web nhận step 3 thì chỉ số bước là 2 [test: apps/admin-web/src/features/processes/lib/publish-issues.test.ts » hợp đồng bước TỪ 1]
+
+#### Yêu cầu: Lỗi kiểm quy trình khi xuất bản / gán trả mã và biến, web dịch (nguồn: cr125-g1-error-codes)
+Hub trả mỗi vi phạm dạng `{path, rule, step, field, code, params}` (không có câu chữ); admin-web dịch bằng đúng một khoá i18n cho mỗi mã
+(`process.admin.library.form.err.<MÃ>`) với biến Hub trả, kèm "Bước N" khi có bước; mã lạ hiện câu chung kèm mã. Mã chưa có câu (`FLOW_NONE_ASSIGNED`) cũng có câu nói cách khắc phục.
+- Kịch bản: khi xuất bản quy trình có điều kiện dùng thông tin chưa khai báo thì Hub trả 422 với `code`=`COND_FIELD_UNDECLARED`, `params.param` và không có `message` [test: apps/hub-api/src/modules/processes/library/library-validate.int.test.ts » PROCESS_PUBLISH_INVALID]
+- Kịch bản: khi gán quy trình cho công ty thiếu mã phòng ban thì Hub trả `GROUP_MISSING_IN_TENANT` với `params.key` và `params.tenant` [test: apps/hub-api/src/modules/processes/library/library-publish.messages.test.ts » missingGroupIssues]
+- Kịch bản: khi Hub trả `DUE_RANGE` kèm `min`,`max` thì admin hiện câu của khoá mã đó kèm "Bước N" [test: apps/admin-web/src/features/processes/lib/publish-issues.test.ts » parsePublishIssues]
+

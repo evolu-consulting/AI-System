@@ -24,7 +24,7 @@ Unit `esign-throttle.test.ts` (đồng hồ giả), `esign-merge.test.ts`; int `
 - Int không có seam đồng hồ ⇒ kiểm hành vi trong cửa sổ (lần bấm thứ hai trả DB); ranh giới 10 s kiểm ở unit.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Làm mới trạng thái ký không gọi nhà cung cấp quá dày

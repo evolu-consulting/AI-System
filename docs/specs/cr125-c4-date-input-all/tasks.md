@@ -17,7 +17,7 @@ phụ thuộc:
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Mọi ô ngày dùng một bộ chọn ngày chung
 Mọi ô nhập ngày ở Sổ Hợp Tác, Admin và Chat (lọc, mốc, thanh toán, báo giá, form quy trình) là một ô duy nhất: hiện dd/mm/yyyy, gõ hoặc chọn lịch (thứ Hai đầu tuần, tháng tiếng Việt); giá trị lưu vẫn là yyyy-mm-dd. Không còn ô ngày gốc của trình duyệt (mm/dd theo máy Mỹ).

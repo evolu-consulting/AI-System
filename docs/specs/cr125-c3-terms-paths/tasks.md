@@ -26,7 +26,7 @@ Unit: settings-paths, 3 check mới, contract-name (TS + SQL), slice-rebase gate
 - Nút mở lại chung tên "Mở lại quy trình"; nút huỷ+mở lại = "Huỷ và mở lại quy trình".
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-docs-sync)
 
 Không thay đổi hành vi (lý do: chỉ đổi chữ hiển thị, gom helper tên/mã HĐ giữ nguyên thứ tự hiện có, thêm check tĩnh)
 

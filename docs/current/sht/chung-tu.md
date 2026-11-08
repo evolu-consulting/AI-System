@@ -136,3 +136,50 @@ Mọi ô ngày của app Sổ Hợp Tác dùng một bộ chọn ngày tiếng V
 #### Yêu cầu: Thẻ ký số tự cập nhật bằng sự kiện đẩy (nguồn: cr125-x6-sign-push)
 Thẻ ký số của người gửi/người ký cập nhật trong khoảng một giây khi phong bì đổi trạng thái, nhờ sự kiện đẩy; không hỏi trạng thái định kỳ; quay lại cửa sổ thì tải lại một lần.
 - Kịch bản: phong bì ký xong qua webhook/đồng bộ thì người gửi và người ký nhận sự kiện esign.updated, người khác thì không [test: apps/hub-api/src/modules/packs/contracts/adapters/esign-push.int.test.ts » esign.updated chỉ tới người gửi và người ký của đúng HĐ]
+
+## CR-125 · Delta gộp 2026-11-08 (đợt cr125-docs-sync)
+
+#### Yêu cầu: Một mô hình trạng thái và một luật ký số (nguồn: cr125-c1-esign-one-source)
+Thẻ duyệt và khối Ký số dùng cùng nhãn trạng thái ký; "đã ký" có một định nghĩa; ngày ký hiển thị theo giờ Việt Nam; luật và câu lỗi bước Ký số dùng chung giữa máy chủ và màn hình quản trị.
+- Kịch bản: ký lúc 01:30 giờ VN thì ngày hiển thị là ngày VN và đầu ra giữ mốc đầy đủ [test: apps/hub-api/src/modules/packs/contracts/domain/esign-outputs.rules.test.ts » ký 00:00–07:00 giờ VN (UTC hôm trước): đầu ra giữ mốc UTC, ngày hiển thị là ngày VN]
+
+#### Yêu cầu: Điều kiện và hẹn giờ theo ngày ký tính theo ngày Việt Nam (nguồn: cr125-c1b-signed-at-type)
+Điều kiện Nếu và bước Chờ tới dùng ngày ký (đầu ra mốc đầy đủ) tính theo ngày lịch Việt Nam.
+- Kịch bản: ký lúc 01:30 ngày 07/11 giờ VN thì điều kiện ngày ký bằng 07/11 đúng và hẹn giờ tính từ 07/11 [test: apps/hub-api/src/modules/processes/domain/runs/as-calendar-date.test.ts » ký 01:30 ngày 07/11 giờ VN: = 2026-11-07 đúng, = 2026-11-06 sai (cắt UTC sẽ ra ngược lại)]
+
+#### Yêu cầu: Mọi ô ngày dùng một bộ chọn ngày chung (nguồn: cr125-c4-date-input-all)
+Mọi ô nhập ngày ở Sổ Hợp Tác, Admin và Chat (lọc, mốc, thanh toán, báo giá, form quy trình) là một ô duy nhất: hiện dd/mm/yyyy, gõ hoặc chọn lịch (thứ Hai đầu tuần, tháng tiếng Việt); giá trị lưu vẫn là yyyy-mm-dd. Không còn ô ngày gốc của trình duyệt (mm/dd theo máy Mỹ).
+- Kịch bản: khi gõ "3/9/2027" thì ô hiểu là 03/09/2027 [test: packages/web-kit/src/date-math.test.ts » hiển thị lại bằng viDate (một bộ định dạng) khớp phần đọc]
+- Kịch bản: khi có `type="date"` trong mã giao diện ngoài component chung thì cổng check:date-input đỏ [test: tools/scripts/src/check-date-input.rules.test.ts » bắt type=date và datetime-local trong .tsx]
+- Kịch bản: khi người dùng chọn ngày ở form quy trình chat thì nút "Chọn ngày" hiện và gửi yyyy-mm-dd [test: e2e/P-d/chat-labels.pd.ts » PD-E08(d) · form '!pd-wait-input']
+
+#### Yêu cầu: Trang yêu cầu hiện toàn bộ bước của lượt và lượt con, làm việc ngay tại đó (nguồn: cr125-request-steps)
+Trang một yêu cầu (không phải hợp đồng) hiện đầy đủ các bước của lượt và các lượt con lồng dưới lượt cha; việc đang mở của người xem (điền thông tin rồi «Gửi», Duyệt, Trả lại, Từ chối) làm ngay trên trang. Việc của lượt con mở trang của yêu cầu gốc. Người không được xem lượt hoặc công ty khác nhận 404.
+- Kịch bản: khi người gửi mở yêu cầu có Quy trình con thì thấy bước của lượt cha và lượt con lồng nhau; người ngoài và công ty khác nhận 404 [test: apps/hub-api/src/modules/processes/triggers/request-steps.int.test.ts » CR-125 · cây bước của yêu cầu (cha + lượt con)]
+- Kịch bản: khi bước mở là bước điền thì người làm thấy một việc «Gửi», khi là bước duyệt thì thấy Duyệt, Trả lại, Từ chối [test: apps/hub-api/src/modules/packs/contracts/domain/approval-flow-view.run.test.ts » flowViewOfRun]
+- Kịch bản: khi mở việc của lượt con từ Chờ tôi duyệt thì trang chuyển sang yêu cầu gốc [test: apps/workspace-web/src/features/requests/lib/request-tree.test.ts » request-tree]
+- Kịch bản: khi task duyệt mở thì trang vẽ đủ nút theo hành động của hub [test: apps/workspace-web/src/platform/flow/ui/RunStepActions.test.tsx » RunStepActions]
+- Kịch bản: khi nhân viên tạo yêu cầu mua hàng thì mọi bước điền và duyệt của ba phần làm được từ trang yêu cầu [test: thủ công — e2e/journey-approval/cr125-purchase-full.spec.ts chạy một lần ở đợt cuối]
+
+#### Yêu cầu: Danh sách hợp đồng (nguồn: cr125-ux-s4-contract-card)
+Máy chủ trả mã bước của lượt duyệt (`step_label.code` + tên người ký / tên bước), không trả chữ tiếng Việt; trang web dịch bằng i18n và so sánh theo mã.
+- Kịch bản: khi bước duyệt đang mở thì hub trả mã waiting_step kèm tên bước [test: apps/hub-api/src/modules/packs/contracts/domain/approval-step-label.rules.test.ts » bước duyệt đang mở ⇒ waiting_step + tên bước]
+- Kịch bản: khi lượt duyệt kết thúc Đã duyệt thì dòng danh sách ghép Đã duyệt với trạng thái HĐ theo mã approved [test: apps/workspace-web/src/features/contracts-list/lib/approved-label.test.ts » mã approved ⇒ ghép với trạng thái HĐ]
+
+#### Yêu cầu: Tải hợp đồng lên khi đã bật ký số (nguồn: cr125-ux-s4-contract-card)
+Công ty đã bật ký số chỉ nhận tệp PDF lúc tải lên; tệp khác bị giữ lại kèm câu cách khắc phục.
+- Kịch bản: khi ký số bật và chọn tệp .md thì tệp không đi tiếp và hiện câu cần PDF [test: apps/workspace-web/src/features/contracts-list/lib/pdf-gate.test.ts » ký số bật ⇒ tệp không phải PDF bị giữ lại, PDF đi tiếp]
+
+#### Yêu cầu: Thẻ hợp đồng theo vai (nguồn: cr125-ux-s4-contract-card)
+Người duyệt thấy thẻ tóm tắt cùng ba nút, form sửa gập lại; sau gửi duyệt thẻ nói gửi cho ai và hạn bao lâu; bước hệ thống chỉ chủ HĐ thấy; Lịch sử thay đổi nằm ngay dưới các bước duyệt; ký thử có dòng giải thích.
+- Kịch bản: khi người duyệt mở thẻ thì chỉ thấy tóm tắt và nút Duyệt, form sửa gập trong khối Xem và sửa chi tiết [test: e2e/contracts-web/cr125-s4-card.cw.ts » người duyệt thấy thẻ tóm tắt, form sửa gập lại]
+- Kịch bản: khi bước kế có hạn thì sau gửi duyệt hiện Đã gửi <bước> · hạn N giờ [test: apps/workspace-web/src/features/contract-approval/lib/moved-to.test.ts » hạn của bước vừa mở]
+
+#### Yêu cầu: Tiêu đề thông báo duyệt có tên hợp đồng (nguồn: cr125-ux-s4-contract-card)
+Chuông/thư "Cần duyệt" của run gắn hợp đồng nêu hợp đồng nào, để hai thư cùng bước không trùng tiêu đề.
+- Kịch bản: khi run gắn HĐ có nhãn thì tiêu đề là Cần duyệt: <nhãn> · <bước> [test: apps/hub-api/src/modules/processes/domain/notify/pack-bell.rules.test.ts » có record_label ⇒ Cần duyệt: <nhãn> · <bước>]
+
+#### Yêu cầu: Điện thoại và Tổng quan (nguồn: cr125-ux-s4-contract-card)
+Nút chính cao ≥ 44 px ở điện thoại, nút trợ lý nổi ẩn trên thẻ hợp đồng; công ty chưa có số liệu thấy thẻ Bắt đầu nhanh; nhãn đăng nhập là Tên đăng nhập.
+- Kịch bản: khi công ty chưa có số liệu thì Tổng quan hiện thẻ Bắt đầu nhanh [test: apps/workspace-web/src/features/overview/components/QuickStartCard.test.ts » công ty chưa có số liệu ⇒ rỗng]
+
