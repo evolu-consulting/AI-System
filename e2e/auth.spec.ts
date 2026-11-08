@@ -58,13 +58,13 @@ test("ADM-FR-01 · UX · khi đang gửi nút hiện 'Đang đăng nhập…'", 
   }
 });
 
-test("ADM-FR-01 · BR-05 · binh (tenant_admin) vào khung: main + Tổng quan (region 'Users đang hoạt động', M4) · menu phẳng CR-121 c10 Tổng quan · Công ty (vào thẳng công ty mình) · Hệ thống, không có Ứng dụng/Công cụ AI/Import-Export", async ({
+test("ADM-FR-01 · BR-05 · binh (tenant_admin) vào khung: main + Tổng quan (region 'Người dùng đang hoạt động', M4) · menu phẳng CR-121 c10 Tổng quan · Công ty (vào thẳng công ty mình) · Hệ thống, không có Ứng dụng/Công cụ AI/Import-Export", async ({
   page,
 }) => {
   await loginToShell(page, "acme", "binh", PW);
   await expect(page.getByRole("main")).toBeVisible();
   // M4 (Q2a, test-plan §5 K10): Tổng quan thật thay câu chào (ui 7.2); menu thêm mục M4 theo role.
-  await expect(page.getByRole("region", { name: "Users đang hoạt động" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Người dùng đang hoạt động" })).toBeVisible();
   const nav = page.getByRole("navigation", { name: "Điều hướng chính" });
   await expect(nav.getByRole("link", { name: "Tổng quan", exact: true })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Công ty", exact: true })).toBeVisible();

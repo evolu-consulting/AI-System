@@ -203,7 +203,7 @@
     },
     "companies": "Công ty",
     "tenants": "Công ty",
-    "users": "Người dùng",
+    "users": "Users",
     "partners": "Đối tác",
     "collapse": "Thu gọn thanh bên",
     "expand": "Mở rộng thanh bên",
@@ -219,7 +219,7 @@
     "features": "Danh mục tính năng",
     "secrets": "Secrets",
     "apps": "Ứng dụng",
-    "groups": "Nhóm / phòng ban",
+    "groups": "Groups",
     "access": "Phân quyền",
     "usage": "Chi phí & quota",
     "usageAnalytics": "Phân tích token",
@@ -1022,7 +1022,7 @@
       },
       "col": {
         "scope": "Phạm vi",
-        "runs": "Lượt chạy",
+        "runs": "Số run",
         "tokens": "Số token",
         "usd": "Số USD",
         "used": "Đã dùng tháng này"
@@ -1121,7 +1121,7 @@
       "kind": {
         "uploads": "Lượt tải hợp đồng/ngày",
         "actions": "Lượt thao tác AI/ngày",
-        "ai_tokens": "Lượng AI dùng/ngày"
+        "ai_tokens": "Token AI/ngày"
       },
       "defaultValue": "Mặc định: {value}",
       "unlimited": "Không giới hạn",
@@ -1282,7 +1282,7 @@
       "role": "Role",
       "lastLogin": "Đăng nhập gần nhất",
       "status": "Trạng thái",
-      "groups": "Nhóm / phòng ban",
+      "groups": "Groups",
       "filter": {
         "group": "Group",
         "allGroups": "Tất cả group"
@@ -1432,7 +1432,7 @@
         "none": "Chưa cấu hình"
       },
       "apiKey": "API key",
-      "token": "Lượng AI dùng",
+      "token": "Token",
       "listId": "List ID",
       "keep": "Để trống = giữ nguyên",
       "savedEnding": "Đã lưu, kết thúc bằng …{last4}",
@@ -1768,7 +1768,7 @@
         "trigger": "Kích hoạt",
         "status": "Trạng thái",
         "duration": "Thời lượng",
-        "tokens": "Lượng AI dùng",
+        "tokens": "Token",
         "error": "Lỗi",
         "ids": "Mã Dify"
       },
@@ -2297,7 +2297,7 @@
   },
   "groups": {
     "list": {
-      "title": "Nhóm / phòng ban",
+      "title": "Groups",
       "subtitle": "Nhóm người dùng của {tenant}. Cấp feature cho cả nhóm thay vì từng người.",
       "create": "+ Tạo group",
       "search": "Tìm theo tên, key…"
@@ -2765,8 +2765,8 @@
     "csv": "Xuất CSV",
     "csvFailed": "Không xuất được CSV. Thử lại sau.",
     "kpi": {
-      "runs": "Lượt chạy",
-      "tokens": "Lượng AI dùng",
+      "runs": "Số run",
+      "tokens": "Token",
       "billable": "Số thu",
       "cost": "Chi phí thật",
       "margin": "Biên",
@@ -2784,8 +2784,8 @@
       "cost": "Chi phí thật",
       "feature": "Feature",
       "user": "User",
-      "runs": "Lượt chạy",
-      "tokens": "Lượng AI dùng"
+      "runs": "Số run",
+      "tokens": "Token"
     },
     "quotaCard": "Quota tháng",
     "topFeature": {
@@ -2799,7 +2799,7 @@
     "unpriced": "Chưa định giá",
     "unit": {
       "runs": "Run",
-      "tokens": "Lượng AI dùng",
+      "tokens": "Token",
       "usd": "USD"
     },
     "empty": {
@@ -2902,7 +2902,7 @@
       "bucket": "Mốc",
       "agent": "Agent / tính năng",
       "model": "Model",
-      "tokens": "Lượng AI dùng",
+      "tokens": "Token",
       "share": "Tỉ trọng",
       "calls": "Lượt gọi",
       "errors": "Lỗi",
@@ -2952,7 +2952,7 @@
         "commands": "Commands",
         "features": "Features",
         "tenants": "Tenants",
-        "groups": "Nhóm / phòng ban",
+        "groups": "Groups",
         "grants": "Grants"
       },
       "note": "Secret chỉ xuất tên, không xuất giá trị. Cấu hình agent xuất ở Agent Forge.",

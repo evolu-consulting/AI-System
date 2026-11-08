@@ -49,12 +49,12 @@ test("M4-R06 · E11 · admin cùng dữ liệu → không alert quota; binh khô
   await expect(page.getByRole("alert").filter({ hasText: "quota" })).toHaveCount(0);
 });
 
-test("ADM-FR-41 · E12 · binh '/': region Users đang hoạt động, Quota tháng (progressbar Run), Người dùng mới chưa đăng nhập, Thay đổi gần đây; link 'Xem nhật ký'", async ({
+test("ADM-FR-41 · E12 · binh '/': region Người dùng đang hoạt động, Quota tháng (progressbar Run), Người dùng mới chưa đăng nhập, Thay đổi gần đây; link 'Xem nhật ký'", async ({
   page,
 }) => {
   await seedAcmeRuns(1000, 100);
   await loginAs(page, "acme", "binh");
-  await expect(region(page, "Users đang hoạt động")).toBeVisible();
+  await expect(region(page, "Người dùng đang hoạt động")).toBeVisible();
   await expect(region(page, "Quota tháng").getByRole("progressbar", { name: "Run" })).toBeVisible();
   await expect(region(page, "Người dùng mới chưa đăng nhập")).toBeVisible();
   await expect(region(page, "Thay đổi gần đây")).toBeVisible();
