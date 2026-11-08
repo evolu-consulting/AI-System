@@ -41,4 +41,5 @@ người không thuộc Group bước, không Toàn quyền vẫn bị từ ch�
 - Kịch bản: khi một stage duyệt đã có Group cũng quyết thì luật chung gộp thêm Group Toàn quyền, trừ chính Group gắn task [test: packages/contracts/src/flow/owner-override.test.ts » withOwnerOverride chỉ gắn stage review, gộp also sẵn có, không owner thì giữ nguyên]
 
 ## Việc còn lại
-- Không.
+- Khoảng trống sản phẩm (escalation trên flow theo sự kiện): mẫu "Duyệt 2 cấp" không có `after.escalate`/hạn ⇒ không có "Quá hạn"/chuyển cấp như khe cũ. Đặt `after.escalate` (`{after_h, group_key}`) vào def bước 0 thì run mở nhưng kick lỗi, mọi stage_runs `pending`, bước 1 không mở (lỗi kick bị nuốt ở start.service `process-kick-failed`, chưa rõ nguyên nhân). cw-cr113 ca 5 đang `test.fixme`.
+- e2e pm-checklist-pm ca 2/4 viết lại cho nút "Duyệt/Trả lại sửa/Từ chối" và HĐ mẫu do edgar.nguyen tạo (thomas.tran bị loại vì là người tạo); chưa chạy lại sau lần sửa cuối.

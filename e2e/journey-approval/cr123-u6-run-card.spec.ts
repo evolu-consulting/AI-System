@@ -1,4 +1,4 @@
-﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-123 · u6b · FLOW3-FR-14 · HÀNH TRÌNH thẻ duyệt: HĐ đi qua bước Duyệt tới node Ký số (gửi + chờ) bằng "Ký thử" (selfsign, không cần DocuSign).
 // Thẻ phải có MỘT dòng "Ký số" với "Đang chờ ký" + tên người ký (không có dòng "Chờ ký" riêng); sau khi người ký bấm "Ký ngay" ⇒ "Đã ký".
 // Công ty MỚI `e2e-u6-<hậu tố>`; flow Thư viện dựng bằng SQL (như cr122-flows, `_kit/flows.ts`), gán bằng UI platform admin.
@@ -86,9 +86,6 @@ test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người k
         where id = ${flowId}::uuid`;
       await sql`update hub.process_def_releases set stages = replace(stages::text, 'SIGNER', ${`user:${uid}`})::jsonb
         where def_id = ${flowId}::uuid`;
-      await sql`insert into contracts.approval_settings (tenant_id, esign_enabled, esign_default_provider, updated_by)
-        values (${tenantId}::uuid, true, 'selfsign', ${uid}::uuid)
-        on conflict (tenant_id) do update set esign_enabled = true, esign_default_provider = 'selfsign'`;
     });
   });
   const signer = await withOwner(async (sql) => {
@@ -113,6 +110,15 @@ test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người k
   await withOwner(
     (sql) => sql`update contracts.files set mime = 'application/pdf'
       where id = (select file_id from contracts.contracts where id = ${id}::uuid)`,
+  );
+  // CR-125 · UX H6: công ty bật ký số ⇒ danh sách chỉ nhận PDF (hộp chọn loại không hiện với .md). Nên bật "Ký thử" SAU khi tải HĐ lên, trước khi gửi duyệt.
+  await withOwner(
+    (
+      sql,
+    ) => sql`insert into contracts.approval_settings (tenant_id, esign_enabled, esign_default_provider, updated_by)
+      select t.id, true, 'selfsign', u.id from admin.tenants t
+      join admin.users u on u.tenant_id = t.id and u.username = ${U.employee} where t.key = ${E.tenantKey}
+      on conflict (tenant_id) do update set esign_enabled = true, esign_default_provider = 'selfsign'`,
   );
   await confirmAndSave(emp);
   await approveAs(await ctxPage(browser), E, U.accounting, id, "Duyệt hợp đồng");
@@ -143,7 +149,9 @@ test("u6 · thẻ duyệt: MỘT dòng Ký số — Đang chờ ký + người k
   await dir.goto(`${E.cw}/contracts/c/${id}`);
   const dp = dir.getByTestId("esign-panel");
   await expect(dp.getByTestId("esign-status")).toContainText(`Đang chờ ${signer} ký`);
-  await expect(dp.getByRole("button")).toHaveCount(1); // chỉ nút "…" (Huỷ ký của người có quyền ghi), không Ký ngay
+  // Người có quyền ghi (không phải người ký): "Cập nhật trạng thái ký" (9a11b235f) + nút "…" (Huỷ ký); không Ký ngay.
+  await expect(dp.getByRole("button")).toHaveCount(2);
+  await expect(dp.getByRole("button", { name: "Cập nhật trạng thái ký" })).toHaveCount(1);
   await expect(dp.getByRole("button", { name: "Ký ngay" })).toHaveCount(0);
   await dp.screenshot({ path: testInfo.outputPath("x2-2-nguoi-khac.png") });
 

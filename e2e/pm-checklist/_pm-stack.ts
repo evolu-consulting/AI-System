@@ -150,14 +150,25 @@ async function main(): Promise<void> {
   const [t] = await owner<{ id: string }[]>`select id from admin.tenants where key = 'evolu'`;
   const [u] = await owner<
     { id: string }[]
-  >`select id from admin.users where tenant_id = ${t?.id ?? null} and username = 'thomas.tran'`;
-  if (!t || !u) throw new Error("pm-stack: thiếu tenant evolu hoặc thomas.tran");
+  >`select id from admin.users where tenant_id = ${t?.id ?? null} and username = 'edgar.nguyen'`;
+  if (!t || !u) throw new Error("pm-stack: thiếu tenant evolu hoặc edgar.nguyen");
   const lg = await fetch(`${API}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ tenant_key: "evolu", username: "julian.bui", password: DEMO_PASSWORD }),
   });
   const token = String(((await lg.json()) as { access_token: string }).access_token);
+  const diag = async (e: unknown): Promise<never> => {
+    // chẩn đoán: lượt mở HĐ mẫu không sẵn sàng ⇒ in lượt chạy + bước gần nhất (lý do nằm ở đây, không ở log kick)
+    const rs =
+      await owner`select to_jsonb(r) - 'snapshot' - 'inputs' as r from hub.process_runs r order by ctid desc limit 3`;
+    const ss =
+      await owner`select to_jsonb(s) - 'output' - 'input' as s from hub.stage_runs s order by ctid desc limit 6`.catch(
+        () => [],
+      );
+    console.error(`[pm] DIAG runs=${JSON.stringify(rs)} stages=${JSON.stringify(ss)}`);
+    throw e;
+  };
   await seedCr113Samples({
     sql: owner,
     tenantId: t.id,
@@ -171,7 +182,7 @@ async function main(): Promise<void> {
       const text = await res.text();
       return { status: res.status, json: (text ? JSON.parse(text) : {}) as Json };
     },
-  });
+  }).catch(diag);
 
   Bun.serve({
     port: READY_PORT,

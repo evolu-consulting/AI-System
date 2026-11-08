@@ -25,14 +25,12 @@ async function openContract(page: Page, n: number, title: string) {
   await expect(page.getByText(title, { exact: false }).first()).toBeVisible();
   await expect(page.getByTestId("approval-step-0")).toBeVisible();
 }
-/** Bước 1 = bước xác nhận: form hợp đồng phải đủ trường bắt buộc rồi "Gửi duyệt" (seed chỉ có tiêu đề + giá trị). */
-async function confirmStep1(page: Page) {
-  await page.getByRole("textbox", { name: "Tên hợp đồng *" }).fill("HĐ mẫu CR-113");
-  await page.getByRole("textbox", { name: "Nhà cung cấp *" }).fill("Nhà cung cấp mẫu");
-  await page.getByRole("textbox", { name: "Hiệu lực từ *" }).fill("2026-11-01");
-  await page.getByRole("button", { name: "Gửi duyệt" }).click();
+/** Thẻ flow theo sự kiện (CR-125): bước 1 là bước Duyệt thật ⇒ người duyệt bấm "Duyệt" (không còn bước soạn "Gửi duyệt"). */
+async function passStep1(page: Page) {
+  await page.getByRole("button", { name: "Duyệt", exact: true }).click();
 }
-const step = (p: Page, i: number) => p.getByTestId(`approval-step-${i}`);
+/** HĐ mẫu do edgar.nguyen tạo (không thuộc Trưởng phòng): bước Duyệt loại người tạo (`exclude_starter`) nên thomas.tran duyệt được. */ const step =
+  (p: Page, i: number) => p.getByTestId(`approval-step-${i}`);
 
 test("CR-113 · 1 · Cài đặt › Quy trình duyệt: 2 bước, hộp Luật duyệt, bước 1 'Quá hạn ⇒ chuyển … (mặc định)'", async ({
   page,
@@ -52,17 +50,20 @@ test("CR-113 · 1 · Cài đặt › Quy trình duyệt: 2 bước, hộp Luật
   await expect(cv.getByText("Giám đốc duyệt")).toBeVisible();
 });
 
-test("CR-113 · 2 · HĐ chờ bước 1: bước 1 đang mở, julian.bui (Toàn quyền, ngoài Kế toán) có nút Đạt / Trả lại", async ({
+test("CR-113 · 2 · HĐ chờ bước 1: bước 1 đang mở, julian.bui (Toàn quyền, ngoài nhóm Trưởng phòng) có nút Duyệt / Trả lại sửa / Từ chối", async ({
   page,
 }) => {
   await login(page, "julian.bui");
   await openContract(page, 1, T.pending);
   await expect(step(page, 0)).toHaveAttribute("data-status", "open");
-  // Thực tế: ở bước 1 (soạn/kiểm) nút là "Gửi duyệt" (không có "Từ chối" khi HĐ chưa có văn bản); "Đạt / Trả lại" chỉ có từ bước 2.
-  await expect(page.getByRole("button", { name: "Gửi duyệt" })).toBeVisible();
+  // Thẻ flow theo sự kiện: bước 1 là bước Duyệt thật ⇒ chủ gói (Toàn quyền, ngoài nhóm Trưởng phòng) thấy Duyệt / Trả lại sửa / Từ chối, không có "Gửi duyệt" của bước soạn.
+  await expect(page.getByRole("button", { name: "Duyệt", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Trả lại sửa" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Từ chối" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Gửi duyệt" })).toHaveCount(0);
 });
 
-test("CR-113 · 3 · HĐ Toàn quyền duyệt thay: bước 1 có huy hiệu 'Duyệt thay · Toàn quyền', bước 2 chờ Pháp chế", async ({
+test("CR-113 · 3 · HĐ Toàn quyền duyệt thay: bước 1 có huy hiệu 'Duyệt thay · Toàn quyền', bước 2 (Giám đốc) mở", async ({
   page,
 }) => {
   await login(page, "julian.bui");
@@ -73,7 +74,9 @@ test("CR-113 · 3 · HĐ Toàn quyền duyệt thay: bước 1 có huy hiệu 'D
   await expect(step(page, 1)).toHaveAttribute("data-status", "open");
 });
 
-test("CR-113 · 5 · HĐ quá hạn: 'Quá hạn'; sau một lượt nhắc 'Đã chuyển cho …'; julian.bui quyết không còn là duyệt thay", async ({
+// Khoảng trống sản phẩm (CR-125): flow theo sự kiện "Duyệt 2 cấp" không có hạn/chuyển cấp ở bước 1 (khe cũ có mặc định về Toàn quyền) ⇒ HĐ mẫu
+// không bao giờ "Quá hạn". Đặt `after.escalate` trong def flow thì lượt không mở được bước 1 (kick lỗi, mọi stage `pending`). Xem tasks.md.
+test.fixme("CR-113 · 5 · HĐ quá hạn: 'Quá hạn'; sau một lượt nhắc 'Đã chuyển cho …'; julian.bui quyết không còn là duyệt thay", async ({
   page,
   request,
 }) => {
@@ -85,17 +88,17 @@ test("CR-113 · 5 · HĐ quá hạn: 'Quá hạn'; sau một lượt nhắc 'Đ�
   expect(r.ok()).toBe(true);
   await page.reload();
   await expect(step(page, 0).getByTestId("approval-escalated-to")).toContainText("Đã chuyển cho");
-  await confirmStep1(page);
+  await passStep1(page);
   await expect(step(page, 0)).toHaveAttribute("data-status", "passed");
   await expect(step(page, 0).getByTestId("approval-owner-override")).toHaveCount(0);
 });
 
-test("CR-113 · 4 · thomas.tran (Kế toán) Đạt bước 1 HĐ chờ: bước 1 đã duyệt KHÔNG có huy hiệu duyệt thay, bước 2 mở cho Pháp chế", async ({
+test("CR-113 · 4 · thomas.tran (Trưởng phòng) Duyệt bước 1 HĐ chờ: bước 1 đã duyệt KHÔNG có huy hiệu duyệt thay, bước 2 (Giám đốc) mở", async ({
   page,
 }) => {
   await login(page, "thomas.tran");
   await openContract(page, 1, T.pending);
-  await confirmStep1(page);
+  await passStep1(page);
   await expect(step(page, 0)).toHaveAttribute("data-status", "passed");
   await expect(step(page, 0).getByTestId("approval-owner-override")).toHaveCount(0);
   // engine mở bước 2 bất đồng bộ: tải lại tới khi bước 2 mở

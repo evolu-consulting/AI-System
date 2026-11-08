@@ -81,7 +81,8 @@ test("1 · chưa có quy trình Bật: Cài đặt nói rõ ai làm gì, không 
   await openFlowSettings(page);
   const none = page.getByTestId("flow-none");
   await expect(none).toContainText("chưa có quy trình duyệt hợp đồng nào đang bật");
-  await expect(page.getByText(/quản trị nền tảng/i)).toHaveCount(0);
+  // Phạm vi = khối quy trình duyệt. Khối "Đối tác xác nhận" (S7) cùng mục Cài đặt có hợp lệ nhãn "Quản trị nền tảng làm" cho từng điều kiện.
+  await expect(none.getByText(/quản trị nền tảng/i)).toHaveCount(0);
   await expect(page.getByTestId("flow-open-page")).toBeVisible();
   const dlg = page.getByRole("dialog");
   await expect(dlg.getByRole("button", { name: /Ứng dụng & quy trình/ })).toHaveCount(0);
