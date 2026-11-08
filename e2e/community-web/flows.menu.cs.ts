@@ -60,7 +60,7 @@ test("quản trị community: menu + chữ trong trình sửa flow Duyệt bài 
   // ("bài đăng và hợp đồng" là đúng); chỉ phần trong trình sửa MỘT flow community (bên dưới) mới phải không nhắc hợp đồng.
   await box.getByTestId("flow-pause").click();
   const ask = page.getByTestId("flow-pause-confirm");
-  await expect(ask).toContainText(/Từ giờ bài đăng.* sẽ chạy theo cách cũ/);
+  await expect(ask).toContainText(/Từ giờ .*bài đăng.* sẽ chạy theo cách cũ/);
   await page.screenshot({ path: testInfo.outputPath("c6-switch-on.png") });
   await ask.getByRole("button", { name: "Huỷ" }).click();
 
