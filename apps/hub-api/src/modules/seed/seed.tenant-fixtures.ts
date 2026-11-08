@@ -7,6 +7,7 @@ import postgres from "postgres";
 import { z } from "zod";
 import { logger } from "../../lib/logger";
 import { type Cr113FlowResult, writeCr113Flow } from "./seed.cr113-flow";
+import { type Cr125ConfigResult, writeCr125Config } from "./seed.cr125-config";
 import { libSampleEnabled } from "./seed.library-sample";
 import type { Tx } from "./seed.repo";
 
@@ -53,6 +54,8 @@ export type TenantFixtureResult = {
   catalogUrls: number;
   /** pm-ready · CR-113: Group Pháp chế + quy trình duyệt HĐ mẫu (evolu). */
   cr113: Cr113FlowResult;
+  /** CR-125 · D7: tính năng app, "Ký thử", nhóm duyệt mẫu, mẫu Thư viện + flow mặc định, cờ flow_triggers. */
+  cr125: Cr125ConfigResult;
 };
 
 const keys = [...FIXTURE_TENANTS];
@@ -69,6 +72,16 @@ export async function writeTenantFixtures(tx: Tx, appEnv: string): Promise<Tenan
     brands: 0,
     catalogUrls: 0,
     cr113: { legalGroups: 0, legalMembers: 0, flowDefs: 0, flowReleases: 0, flowAssignments: 0 },
+    cr125: {
+      features: 0,
+      esign: 0,
+      groups: 0,
+      groupMembers: 0,
+      libraryDefs: 0,
+      libraryReleases: 0,
+      companyFlows: 0,
+      flowFlags: 0,
+    },
   };
   if (t.length > 0) {
     // 5: UI tiếng Việt mặc định — user tạo qua first_admin của POST /admin/tenants nhận locale mặc định `en`.
@@ -82,6 +95,7 @@ export async function writeTenantFixtures(tx: Tx, appEnv: string): Promise<Tenan
     await writePackRoles(tx, r);
     r.brands = await writeBrands(tx);
     r.cr113 = await writeCr113Flow(tx);
+    r.cr125 = await writeCr125Config(tx, keys);
   }
   if (appEnv === "development") r.catalogUrls = await writeCatalogUrls(tx);
   return r;

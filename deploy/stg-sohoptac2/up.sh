@@ -26,6 +26,8 @@ dc run --rm -T -e SEED_ADMIN_PASSWORD tool packages/db/src/seed.ts
 unset SEED_ADMIN_PASSWORD
 dc run --rm -T tool apps/hub-api/src/modules/seed/seed.ts
 dc run --rm -T tool tools/scripts/src/stg-seed.ts
+# CR-125 cr125-seed (D7): cấu hình công ty đủ trọn SAU khi tenant demo + gói đã có (tính năng, "Ký thử", nhóm duyệt, flow mặc định, cờ flow_triggers)
+dc run --rm -T tool apps/hub-api/src/modules/seed/seed.tenant-fixtures.ts
 dc up -d --remove-orphans admin-api hub-api agent-runtime web
 ok=0
 for i in $(seq 1 60); do

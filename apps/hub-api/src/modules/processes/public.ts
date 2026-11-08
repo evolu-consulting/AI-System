@@ -5,6 +5,13 @@ export { processError } from "./core/errors";
 export type { ProcessStartPort } from "./core/ports";
 export type { HandoffShape } from "./defs/def.rules";
 export type { RunAccess } from "./domain/runs/run-access.rules";
+export { COMMUNITY_FLOW_TEMPLATE } from "./library/flow-templates.community";
+export {
+  FLOW_TEMPLATE_APP,
+  FLOW_TEMPLATE_EVENT,
+  FLOW_TEMPLATE_INPUTS,
+  FLOW_TEMPLATES,
+} from "./library/flow-templates.def";
 export { agentIdOf, runsAsAgent } from "./nodes/registry";
 export type { CredentialJobShape } from "./runs/apply.rules";
 export { credentialJobAllows, credentialUsername } from "./runs/apply.rules";
