@@ -1,0 +1,107 @@
+// CR-125 · c6 · B3/B4 · quản trị community mở trình sửa flow "Duyệt bài" (stack community-web + ai-admin, đường thật):
+// menu "+ Thêm bước" có bước nghiệp vụ của community + Kết thúc theo kết quả Hiện bài / Ẩn bài, KHÔNG có bước hợp đồng / "Nâng cao";
+// hộp bật quy trình, dòng trạng thái ở chân trang, thẻ Giới hạn nói "bài đăng" (record.label của sự kiện), không còn chữ "hợp đồng".
+import { expect, test } from "@playwright/test";
+import { enableFlowTriggers } from "../_kit/flows";
+import {
+  assignFlowUi,
+  flowRows,
+  loginPlatformAdminUi,
+  loginTenantAdminUi,
+  openCompanyFlows,
+  openTenantAppsTab,
+} from "../_kit/ui";
+import { TENANT } from "./_stack";
+
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
+const ADMIN = process.env.CS_ADMIN_URL ?? "";
+// biome-ignore lint/suspicious/noUndeclaredEnvVars: biến môi trường của runner e2e (không khai báo trong turbo)
+const OWNER_PW = process.env.DEMO_OWNER_PW ?? "";
+const TENANT_NAME = "Demo Sổ Hợp Tác";
+const NO_CONTRACT = /hợp đồng/i;
+
+test("quản trị community: menu + chữ trong trình sửa flow Duyệt bài đúng ngôn ngữ community", async ({
+  browser,
+}, testInfo) => {
+  test.setTimeout(240_000);
+  // chuẩn bị bằng đường thật: platform gán quy trình duyệt bài (đã gán rồi thì bỏ qua) + cờ quy trình mới
+  const pctx = await browser.newContext({
+    locale: "vi-VN",
+    viewport: { width: 1440, height: 900 },
+  });
+  const pp = await pctx.newPage();
+  await loginPlatformAdminUi(
+    pp,
+    ADMIN,
+    process.env.SEED_ADMIN_USERNAME ?? "",
+    process.env.SEED_ADMIN_PASSWORD ?? "",
+  );
+  await openTenantAppsTab(pp, TENANT_NAME);
+  const pbox = await openCompanyFlows(pp);
+  const names = await pbox
+    .getByRole("combobox", { name: "Flow trong Thư viện" })
+    .locator("option[value]:not([value=''])")
+    .allTextContents();
+  const moderation = names.find((n) => /bài/i.test(n));
+  if (moderation) await assignFlowUi(pbox, moderation);
+  await expect(flowRows(pbox).filter({ hasText: /bài/i })).not.toHaveCount(0);
+  await enableFlowTriggers(TENANT);
+  await pctx.close();
+
+  const ctx = await browser.newContext({ locale: "vi-VN", viewport: { width: 1440, height: 900 } });
+  const page = await ctx.newPage();
+  await loginTenantAdminUi(page, ADMIN, "demo", "demo-owner", OWNER_PW);
+  await page.getByRole("link", { name: "Công ty" }).first().click();
+  const box = await openCompanyFlows(page);
+
+  // B4 · hộp xác nhận bật: tắt rồi bật lại ⇒ câu hỏi nói "Bài đăng", không "Hợp đồng"
+  const toggle = box.getByTestId("flow-switch-toggle");
+  if ((await toggle.getAttribute("aria-checked")) === "true") await toggle.click();
+  await toggle.click();
+  const ask = page.getByTestId("flow-switch-confirm");
+  await expect(ask).toContainText("Bài đăng của công ty này sẽ chạy theo quy trình mới");
+  await expect(ask).not.toContainText(NO_CONTRACT);
+  await page.screenshot({ path: testInfo.outputPath("c6-switch-on.png") });
+  await page.getByTestId("flow-switch-confirm-ok").click();
+
+  // mở bản sao của flow Duyệt bài (sao chép nếu chưa có)
+  if ((await box.getByRole("link", { name: /^(Mở|Sửa)/ }).count()) < 2)
+    await box.getByRole("button", { name: "Sao chép để sửa" }).first().click();
+  await box
+    .getByRole("link", { name: /^(Mở|Sửa)/ })
+    .last()
+    .click();
+  await expect(page.locator("[data-stage-uid]").first()).toBeVisible({ timeout: 30_000 });
+
+  // B3 · menu "+ Thêm bước"
+  await page.getByTestId("flow-add-step").click();
+  const menu = page.getByRole("menu");
+  await expect(menu.getByTestId("flow-node-community.show-post")).toBeVisible();
+  await expect(menu.getByTestId("flow-node-finish-shown")).toHaveText("Kết thúc · Hiện bài");
+  await expect(menu.getByTestId("flow-node-finish-hidden")).toHaveText("Kết thúc · Ẩn bài");
+  for (const id of [
+    "contracts.esign",
+    "contracts.partner-send",
+    "finish-approved",
+    "finish-rejected",
+  ])
+    await expect(menu.getByTestId(`flow-node-${id}`)).toHaveCount(0);
+  await expect(menu.getByText("Nâng cao", { exact: true })).toHaveCount(0);
+  await expect(menu).not.toContainText(NO_CONTRACT);
+  await page.screenshot({ path: testInfo.outputPath("c6-add-menu.png") });
+  await page.keyboard.press("Escape");
+
+  // B4 · thẻ Giới hạn + dòng trạng thái chân trang + panel bước: chữ community, không nhắc "Nâng cao"
+  await expect(page.getByText(/^Bài đăng chờ quá \d+ ngày/)).toBeVisible();
+  const status = page.getByTestId("apply-status").first();
+  await expect(status).toContainText("bài đăng");
+  await expect(status).not.toContainText(NO_CONTRACT);
+  await page
+    .locator("[data-stage-uid]")
+    .filter({ hasText: /Agent sàng lọc/ })
+    .first()
+    .click();
+  await expect(page.getByText(/Chỉnh chi tiết ở/)).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath("c6-editor.png"), fullPage: true });
+  await ctx.close();
+});

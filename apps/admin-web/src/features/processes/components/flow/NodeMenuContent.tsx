@@ -39,9 +39,14 @@ export function NodeMenuContent({ pick, room, align = "start", drag }: Props) {
   if (!ctx) return null;
   const tableItems = (n: NodeEntry): PickedNode[] => {
     if (!n.patch) return [];
-    const patch = n.id === "finish" ? finishPatch(ctx.event) : n.patch;
+    const patch = n.id === "finish" ? finishPatch(ctx.event, n.outcome?.key) : n.patch;
     return [{ patch, name: t(`process.admin.flow.node.${n.id}`) }];
   };
+  /** Nhãn mục bảng; Kết thúc theo kết quả của sự kiện ⇒ "Kết thúc · Hiện bài" (đọc từ manifest, không chữ cứng của app nào). */
+  const entryLabel = (n: NodeEntry): string =>
+    n.outcome
+      ? `${t(`process.admin.flow.node.${n.id}`)} · ${n.outcome.label}`
+      : t(`process.admin.flow.node.${n.id}`);
   const lang = i18n.language === "vi" ? ("vi" as const) : ("en" as const);
   const byKey = new Map((palette.data ?? []).map((n) => [n.key, n]));
   /** CR-125 · m4 · tự nối đầu vào có đúng một nguồn; đầu vào còn lại ⇒ câu nghiệp vụ (chỉ khi thật sự chọn, không khi vẽ menu). */
@@ -81,17 +86,18 @@ export function NodeMenuContent({ pick, room, align = "start", drag }: Props) {
     isPlatform,
     table: nodesForApp(ctx.app),
     modules: palette.data ?? [],
+    event: ctx.event,
   });
   const item = (m: MenuItem) =>
     m.kind === "table" ? (
       <DropdownMenuItem
-        key={m.entry.id}
-        data-testid={`flow-node-${m.entry.id}`}
+        key={m.entry.outcome ? `${m.entry.id}-${m.entry.outcome.key}` : m.entry.id}
+        data-testid={`flow-node-${m.entry.id}${m.entry.outcome ? `-${m.entry.outcome.key}` : ""}`}
         disabled={!m.entry.patch}
         onSelect={() => pick(tableItems(m.entry))}
         {...dragProps(tableItems(m.entry), !m.entry.patch, true)}
       >
-        {t(`process.admin.flow.node.${m.entry.id}`)}
+        {entryLabel(m.entry)}
       </DropdownMenuItem>
     ) : (
       <DropdownMenuItem

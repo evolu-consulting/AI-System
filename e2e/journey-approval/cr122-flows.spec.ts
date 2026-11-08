@@ -270,7 +270,7 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
   await page.screenshot({ path: testInfo.outputPath("cr123-u9-editor-top.png") });
   await page.getByRole("button", { name: "Lưu và áp dụng" }).first().click();
   await expect(page.getByTestId("apply-status").first()).toContainText(
-    "Đã áp dụng — hợp đồng gửi từ giờ dùng quy trình này",
+    "Đã áp dụng — hợp đồng từ giờ dùng quy trình này",
   );
   await page.screenshot({ path: testInfo.outputPath("cr123-u7-after-save-apply.png") });
   await page.goBack();

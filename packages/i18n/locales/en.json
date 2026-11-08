@@ -669,11 +669,11 @@
   "tenants": {
     "companyFlows": {
       "newFlow": {
-        "on": "Using the new flows: contracts sent from now on follow the applied flow.",
-        "idle": "Not using the new flows yet — open a flow and press Save and apply to start. Contracts sent from now on still run the old way.",
+        "on": "Using the new flows: every new {record} from now on follows the applied flow.",
+        "idle": "Not using the new flows yet — open a flow and press Save and apply to start. Every new {record} from now on still runs the old way.",
         "none": "No process is applied to this company yet — ask the platform admin to assign one",
         "pause": "Pause the new flows",
-        "confirm": "Contracts sent from now on will run the old way until you Save and apply a flow again. Contracts already running are not affected.",
+        "confirm": "Every new {record} from now on will run the old way until you Save and apply a flow again. Ones already running are not affected.",
         "ok": "Pause",
         "cancel": "Cancel"
       },

@@ -6,6 +6,7 @@ import { ttlToValue } from "../../domain/ttl-rules";
 import type { DraftState } from "../../hooks/use-draft";
 import type { EditorRefs } from "../../hooks/use-editor-refs";
 import { StageWorkbench } from "../canvas/StageWorkbench";
+import { useRecordWords } from "../flow/flow-ctx";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
 
 type Props = { d: DraftState; readOnly: boolean; refs: EditorRefs };
@@ -30,12 +31,13 @@ export function StagesCard({ d, readOnly, refs }: Props) {
 export function LimitsCard({ ttl, noExpiry }: { ttl: string; noExpiry: boolean }) {
   const { t } = useTranslation();
   const days = ttlToValue(ttl, noExpiry) ?? PROCESS_TTL_DAYS.default;
+  const words = useRecordWords();
   return (
     <Panel title={t("process.admin.editor.limits")}>
       <p className="text-body text-muted-foreground">
         {noExpiry
           ? t("process.admin.editor.limitsTextNoTtl")
-          : t("process.admin.editor.limitsTextTtl", { days })}
+          : t("process.admin.editor.limitsTextTtl", { days, ...words })}
       </p>
       <p className="text-caption text-muted-foreground">{t("process.admin.editor.limitsWait")}</p>
     </Panel>

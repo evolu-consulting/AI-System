@@ -15,6 +15,7 @@ import type { PublishIssue } from "../../lib/publish-issues";
 import { canAddStep, stepCounter } from "../../lib/step-limit";
 import type { LibraryDef, SlotInfo } from "../../library-api";
 import { ApplyStatusLine } from "../editor/ApplyStatusLine";
+import { useRecordWords } from "../flow/flow-ctx";
 import { FlowAddNodes } from "./FlowAddNodes";
 import { type BarIssue, FlowFormHeader, FlowStatusBar, issueText } from "./FlowStatusBar";
 import { FlowStepCard } from "./FlowStepCard";
@@ -46,6 +47,7 @@ export function FlowFormEditor({
   publishIssues = [],
 }: Props) {
   const { t } = useTranslation();
+  const words = useRecordWords();
   const f = (k: string, o?: Record<string, string | number>) =>
     t(`process.admin.library.form.${k}`, o);
   const fields = slot?.fields && slot.fields.length > 0 ? slot.fields : DEFAULT_FIELDS;
@@ -157,7 +159,7 @@ export function FlowFormEditor({
           {ap.active ? (
             <ApplyStatusLine status={ap.status} needsApply={applyOnly} dirty={form.dirty} />
           ) : companyCopy ? (
-            t("process.admin.editor.applyNote")
+            t("process.admin.editor.applyNote", words)
           ) : null}
         </div>
         <Button type="button" variant="outline" disabled={!form.dirty} onClick={form.discard}>

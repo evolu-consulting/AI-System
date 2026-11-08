@@ -256,6 +256,7 @@ function NotifyBasics(p: Pick<StageFormProps, "stage" | "readOnly" | "onChange">
 function FlowMain(p: StageFormProps) {
   const { stage } = p;
   const { t } = useTranslation();
+  const isPlatform = useSession((s) => s.me?.role) === "platform_admin";
   if (stage.node) return <ModuleBody {...p} />;
   if (isWait(stage)) return <StageWait {...p} />;
   if (isWaitFamily(stage)) return <StageTimedWait {...p} />;
@@ -265,7 +266,8 @@ function FlowMain(p: StageFormProps) {
   if (isTool(stage))
     return (
       <p className="text-caption text-muted-foreground" data-testid="tool-note">
-        {t("process.admin.flow.toolNote")}
+        {/* CR-125 · c6 · B4: "Nâng cao" là khái niệm của quản trị nền tảng — người dùng công ty không có mục đó, không nhắc tới */}
+        {t(isPlatform ? "process.admin.flow.toolNote" : "process.admin.flow.toolNoteCompany")}
       </p>
     );
   return <Body {...p} />;

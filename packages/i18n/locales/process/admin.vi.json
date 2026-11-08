@@ -408,7 +408,7 @@
       "answerByHint": "Quá hạn, hệ thống nhắc người duyệt. Từ 4 đến 168 giờ."
     },
     "limits": "Giới hạn của một lượt chạy",
-    "limitsText": "Hợp đồng chờ quá 7 ngày sẽ báo người phụ trách.",
+    "limitsText": "Chờ quá 7 ngày sẽ báo người phụ trách.",
     "readonly": "Đây là quy trình mẫu, chỉ xem. Dùng mẫu này để chỉnh sửa.",
     "runs": {
       "empty": "Chưa có lượt chạy nào",
@@ -494,14 +494,14 @@
     "ttl": "Thời hạn lượt chạy (ngày)",
     "ttlHint": "Lượt chạy chưa xong quá số ngày này sẽ hết hạn. Lượt đang chạy không đổi khi bạn sửa.",
     "noExpiry": "Không hết hạn",
-    "limitsTextTtl": "Hợp đồng chờ quá {{days}} ngày sẽ báo người phụ trách.",
+    "limitsTextTtl": "{{Record}} chờ quá {{days}} ngày sẽ báo người phụ trách.",
     "limitsTextNoTtl": "Không giới hạn thời gian chờ.",
     "limitsWait": "Lượt đang chờ tới ngày không tính vào 5 lượt cùng lúc.",
-    "applyNote": "Áp dụng cho hợp đồng gửi từ bây giờ; hợp đồng đang chờ giữ bản cũ.",
+    "applyNote": "Áp dụng cho {{record}} phát sinh từ bây giờ; {{record}} đang chờ giữ bản cũ.",
     "saveApply": "Lưu và áp dụng",
-    "applied": "Đã áp dụng — hợp đồng gửi từ giờ dùng quy trình này",
+    "applied": "Đã áp dụng — {{record}} từ giờ dùng quy trình này",
     "applyPending": "Đang áp dụng…",
-    "notApplied": "Chưa áp dụng — bấm Lưu và áp dụng để hợp đồng gửi từ giờ dùng quy trình này"
+    "notApplied": "Chưa áp dụng — bấm Lưu và áp dụng để {{record}} từ giờ dùng quy trình này"
   },
   "run": {
     "title": "Lượt chạy · {{name}}",
@@ -1522,6 +1522,7 @@
       "noTrigger": "Quy trình chưa có điều kiện “Bắt đầu khi”.",
       "invalid": "Quy trình chưa hợp lệ. Mở từng bước có ô báo lỗi để sửa."
     },
-    "toolNote": "Bước này chạy một tính năng của hệ thống. Chỉnh chi tiết ở “Nâng cao”."
+    "toolNote": "Bước này chạy một tính năng của hệ thống. Chỉnh chi tiết ở “Nâng cao”.",
+    "toolNoteCompany": "Bước này chạy một tính năng của hệ thống; nội dung do nền tảng cài sẵn."
   }
 }

@@ -119,6 +119,8 @@ export type NodeEntry = {
   /** Vị trí trên menu (nhóm + thứ tự) — cùng nghĩa với `NodeMenu` của node module. */
   section: "business" | "advanced";
   order: number;
+  /** CR-125 · c6 · mục Kết thúc theo MỘT kết quả của sự kiện (đọc từ `AppEventDecl.outcomes`): menu ghi "Kết thúc · <nhãn kết quả>". */
+  outcome?: { key: string; label: string };
 };
 
 // CR-125 · m6b: bảng bước cơ bản ĐỌC từ registry loại node (`FE_NODES[*].menu`), không còn danh sách cứng ở đây.
@@ -135,10 +137,10 @@ export function nodesForApp(app: string): readonly NodeEntry[] {
   return nodeTable().filter((n) => !n.appNode || has);
 }
 
-/** Node Kết thúc mới: kết quả đầu tiên của sự kiện (Hub/validate báo nếu sự kiện đổi và kết quả không còn). */
-export const finishPatch = (ev: AppEventDecl | undefined): Partial<StageDraft> => ({
+/** Node Kết thúc mới: kết quả chọn sẵn (mục menu theo kết quả) hoặc kết quả đầu tiên của sự kiện (Hub/validate báo nếu sự kiện đổi và kết quả không còn). */
+export const finishPatch = (ev: AppEventDecl | undefined, key?: string): Partial<StageDraft> => ({
   executor: "set",
-  outcome: ev?.outcomes[0]?.key ?? "",
+  outcome: key ?? ev?.outcomes[0]?.key ?? "",
 });
 
 /** Đổi sự kiện: điều kiện dùng dữ kiện không thuộc sự kiện mới bị bỏ; Kết thúc có kết quả lạ ⇒ về kết quả đầu. */

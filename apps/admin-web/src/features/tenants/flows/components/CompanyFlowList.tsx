@@ -13,7 +13,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { eventsOfApp } from "@/features/processes/lib/flow-def";
+import { eventOf, eventsOfApp } from "@/features/processes/lib/flow-def";
+import { joinRecordWords } from "@/features/processes/lib/record-words";
 import { useSession } from "@/lib/auth/use-session";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
@@ -151,9 +152,14 @@ function Row(p: {
 }
 
 export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: CompanyFlowRow[] }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tr = useTr();
   const op = useCompanyFlowOp(tenantId);
+  // CR-125 · c6 · B4: hộp xác nhận bật gọi đúng tên bản ghi của các flow công ty có (community ⇒ "bài đăng"), không cứng "hợp đồng"
+  const words = joinRecordWords(
+    rows.map((r) => eventOf(r.app, r.trigger_event)?.record?.label),
+    i18n.language === "vi" ? "vi" : "en",
+  );
   const role = useSession((s) => s.me?.role);
   const isPlatform = role === "platform_admin";
   const [err, setErr] = useState<string | null>(null);
@@ -171,7 +177,7 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   };
   return (
     <div className="space-y-3" data-testid="company-flow-list">
-      {canSeeFlowSwitch(role) ? <FlowSwitch tenantId={tenantId} /> : null}
+      {canSeeFlowSwitch(role) ? <FlowSwitch tenantId={tenantId} words={words} /> : null}
       {isPlatform ? (
         <AssignFlow
           assignedFlowIds={new Set(rows.map((r) => r.flow_id))}

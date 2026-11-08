@@ -8,6 +8,8 @@ export const SHOW_POST_NODE: FeatureNodeDecl = {
   group: "content",
   kind: "app",
   feature: "community-write",
+  // CR-125 · c6 · B3: bước nghiệp vụ của community ⇒ quản trị công ty thấy ngay ở menu "+" (không chui vào "Nâng cao").
+  menu: { section: "business", order: 55 },
   stages: [{ executor: { kind: "set", values: [] }, outcome: "shown" }],
   inputs: [
     {

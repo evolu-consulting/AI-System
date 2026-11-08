@@ -12,10 +12,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import type { RecordWords } from "@/features/processes/lib/record-words";
 import { useFlowSettings, useSetFlowTriggers } from "../flow-settings-api";
 import { switchStateOf } from "../lib/flow-switch-access";
 
-export function FlowSwitch({ tenantId }: { tenantId: string }) {
+/** `words` = tên bản ghi của các flow công ty đang có (hợp đồng / bài đăng…), đọc từ `record.label` của sự kiện (CR-125 · c6 · B4). */
+export function FlowSwitch({ tenantId, words }: { tenantId: string; words: RecordWords }) {
   const { t } = useTranslation();
   const q = useFlowSettings(tenantId);
   const set = useSetFlowTriggers(tenantId);
@@ -28,7 +30,7 @@ export function FlowSwitch({ tenantId }: { tenantId: string }) {
       data-testid="flow-switch"
     >
       <p className="m-0 min-w-0 text-label" data-testid="flow-switch-status">
-        {t(`tenants.companyFlows.newFlow.${state}`)}
+        {t(`tenants.companyFlows.newFlow.${state}`, words)}
       </p>
       {state === "on" ? (
         <Button
@@ -46,7 +48,7 @@ export function FlowSwitch({ tenantId }: { tenantId: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("tenants.companyFlows.newFlow.pause")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("tenants.companyFlows.newFlow.confirm")}
+              {t("tenants.companyFlows.newFlow.confirm", words)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

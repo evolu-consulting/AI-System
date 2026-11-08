@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import type { ApplyStatus } from "../../hooks/use-apply-flow";
 import { saveModeOf } from "../../lib/company-copy";
+import { useRecordWords } from "../flow/flow-ctx";
 import { useLibraryCanvas } from "../library/library-canvas-ctx";
 import { ApplyStatusLine } from "./ApplyStatusLine";
 
@@ -21,6 +22,7 @@ type Props = {
 
 export function ProcessSaveBar({ dirty, pending, formId, version, companyCopy, apply }: Props) {
   const { t } = useTranslation();
+  const words = useRecordWords();
   const lib = useLibraryCanvas() !== null; // CR-105 UX: quy trình khe ⇒ "Lưu nháp" (khác "Xuất bản")
   const mode = saveModeOf(!!companyCopy, lib); // CR-123 FR-10: bản của công ty ⇒ một nút "Lưu và áp dụng"
   const busy = pending || apply?.status.kind === "pending";
@@ -39,7 +41,7 @@ export function ProcessSaveBar({ dirty, pending, formId, version, companyCopy, a
                 : t("common.savedVersion", { n: version })}
             {mode.noteKey ? (
               <span className="block" data-testid="copy-save-note">
-                {t(mode.noteKey)}
+                {t(mode.noteKey, words)}
               </span>
             ) : null}
           </>

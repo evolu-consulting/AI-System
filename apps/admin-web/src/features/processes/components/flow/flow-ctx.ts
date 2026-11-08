@@ -2,8 +2,10 @@
 // `GET /process-palette`, form Kết thúc và vẽ node Bắt đầu khi trên canvas; vắng ⇒ trình sửa giai đoạn thường / flow cũ.
 import type { AppEventDecl } from "@ai/contracts/app-manifest";
 import { createContext, useContext } from "react";
+import { useTranslation } from "react-i18next";
 import type { BridgeApi } from "../../hooks/use-bridge";
 import type { StageDraft } from "../../lib/draft-types";
+import { type RecordWords, recordWordsOf } from "../../lib/record-words";
 
 export type FlowCtx = {
   app: string;
@@ -35,6 +37,13 @@ export type FlowCtx = {
 };
 export const FlowContext = createContext<FlowCtx | null>(null);
 export const useFlowCtx = (): FlowCtx | null => useContext(FlowContext);
+
+/** CR-125 · c6 · tên bản ghi của flow đang sửa (từ `record.label` của sự kiện) để chèn vào câu trạng thái/giới hạn; ngoài flow ⇒ "hợp đồng". */
+export function useRecordWords(): RecordWords {
+  const ev = useFlowCtx()?.event;
+  const { i18n } = useTranslation();
+  return recordWordsOf(ev, i18n.language === "vi" ? "vi" : "en");
+}
 
 /** Mức zoom tối thiểu khi fit canvas: flow (một dải trái → phải, không gập hàng; x10: 0.55 để cả flow demo vừa khung); Canvas thư viện cũ 0.7; mặc định của canvas. */
 export const useFitMin = (lib: boolean): number | undefined =>

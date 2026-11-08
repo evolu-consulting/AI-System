@@ -494,14 +494,14 @@
     "ttl": "Run time limit (days)",
     "ttlHint": "A run not finished within this many days expires. Runs already in progress aren't affected when you edit.",
     "noExpiry": "No expiry",
-    "limitsTextTtl": "Contracts waiting more than {{days}} days alert the owner.",
+    "limitsTextTtl": "A {{record}} waiting more than {{days}} days alerts the owner.",
     "limitsTextNoTtl": "No waiting limit.",
     "limitsWait": "Runs waiting for a date don't count toward the 5 concurrent runs.",
-    "applyNote": "Applies to contracts sent from now on; contracts already waiting keep the old version.",
+    "applyNote": "Applies to every new {{record}} from now on; ones already waiting keep the old version.",
     "saveApply": "Save and apply",
-    "applied": "Applied — contracts sent from now on use this flow",
+    "applied": "Applied — every new {{record}} from now on uses this flow",
     "applyPending": "Applying…",
-    "notApplied": "Not applied yet — press Save and apply so contracts sent from now on use this flow"
+    "notApplied": "Not applied yet — press Save and apply so every new {{record}} from now on uses this flow"
   },
   "run": {
     "title": "Run · {{name}}",
@@ -1522,6 +1522,7 @@
       "noTrigger": "The process has no “Start when”.",
       "invalid": "The process is not valid. Open each step with an error."
     },
-    "toolNote": "This step runs a system feature. Details are under “Advanced”."
+    "toolNote": "This step runs a system feature. Details are under “Advanced”.",
+    "toolNoteCompany": "This step runs a system feature; its content is preset by the platform."
   }
 }
