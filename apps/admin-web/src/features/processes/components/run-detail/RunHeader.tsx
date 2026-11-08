@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { copyText } from "@/lib/clipboard";
 import { formatClock } from "@/lib/format";
 import { companySearch } from "../../lib/company-copy";
-import { formatDuration, type RunControls } from "../../lib/run-detail-view";
+import { formatDuration, type RunControls, runStatusLine } from "../../lib/run-detail-view";
 import { RunStatusBadge } from "../run/RunStatusBadge";
 
 type Props = {
@@ -145,7 +145,7 @@ export function RunHeader({
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <RunStatusBadge status={run.status} />
         <span className="text-body" data-testid="run-status-text">
-          {run.status_text[lang]}
+          {runStatusLine(run.status, run.status_text[lang], (k) => t(k))}
         </span>
         {run.decision_reason === "facts_changed" && (
           <span className="text-body text-warning" data-testid="run-facts-changed">

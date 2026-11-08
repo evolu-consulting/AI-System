@@ -9,7 +9,18 @@ import {
   runStatusText,
   stepNote,
   stepStateOf,
+  WAITING_REVIEW_TEXT,
 } from "./run-log-text.rules";
+
+describe("CR-125 G2 · một nhãn chờ duyệt", () => {
+  it("trạng thái run, ghi chú bước đều dùng WAITING_REVIEW_TEXT", () => {
+    const run = { status: "waiting_review", decisionReason: null, currentStageName: null };
+    expect(runStatusText(run)).toEqual(WAITING_REVIEW_TEXT);
+    const base = { name: "B", lastErrorCode: null, retryCount: 0 };
+    expect(stepNote({ ...base, raw: "waiting_review" })).toEqual(WAITING_REVIEW_TEXT);
+    expect(WAITING_REVIEW_TEXT.vi).toBe("Đang chờ người duyệt");
+  });
+});
 
 describe("friendlyError", () => {
   it("mã đã biết ⇒ câu vi + en, không lộ mã", () => {

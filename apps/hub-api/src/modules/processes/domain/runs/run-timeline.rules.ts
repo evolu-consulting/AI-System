@@ -1,7 +1,13 @@
 // CR-121 · R-2 · dựng dòng thời gian lượt chạy từ (a) hàng run/stage và (b) các sự kiện đã gom bằng MỘT câu union
 // (task mở/nhắc/chuyển cấp/đóng, hẹn thử lại, quay lại, audit rẽ nhánh/huỷ/dừng/chạy lại). Thuần, lớp 1 (không I/O).
 import type { RunTimelineKind } from "@ai/contracts/chat";
-import { controlReasonText, friendlyError, type I18n, resultText } from "./run-log-text.rules";
+import {
+  controlReasonText,
+  friendlyError,
+  type I18n,
+  resultText,
+  WAITING_REVIEW_TEXT,
+} from "./run-log-text.rules";
 
 export type TlPerson = { id: string; display_name: string };
 export type TlRun = {
@@ -82,7 +88,7 @@ const FINISH_TEXT: Readonly<Record<string, I18n>> = {
 };
 
 const ASK_OF: Readonly<Record<string, I18n>> = {
-  review: { vi: "Chờ duyệt kết quả", en: "Waiting for a review" },
+  review: WAITING_REVIEW_TEXT,
   ask: { vi: "Trợ lý đặt câu hỏi, chờ trả lời", en: "The agent asked a question and is waiting" },
   decision: { vi: "Cần người quyết định", en: "A decision is needed" },
 };

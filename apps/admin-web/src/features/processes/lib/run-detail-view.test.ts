@@ -11,6 +11,7 @@ import {
   isPackBoundError,
   nodeKindOf,
   runControls,
+  runStatusLine,
 } from "./run-detail-view";
 
 describe("nodeKindOf", () => {
@@ -93,5 +94,20 @@ describe("lỗi + tiện ích", () => {
     expect(formatDuration(12_000)).toBe("12s");
     expect(formatDuration(185_000)).toBe("3m 05s");
     expect(formatDuration(3_720_000)).toBe("1h 02m");
+  });
+});
+
+describe("runStatusLine (CR-125 G2)", () => {
+  const t = (k: string) => `T:${k}`;
+  it("waiting_review ⇒ khoá i18n, giữ hậu tố bước", () => {
+    expect(runStatusLine("waiting_review", 'Đang chờ người duyệt — bước "A"', t)).toBe(
+      'T:process.run.line.reviewOther — bước "A"',
+    );
+    expect(runStatusLine("waiting_review", "Đang chờ người duyệt", t)).toBe(
+      "T:process.run.line.reviewOther",
+    );
+  });
+  it("trạng thái khác ⇒ nguyên văn hub", () => {
+    expect(runStatusLine("running", "Đang chạy", t)).toBe("Đang chạy");
   });
 });

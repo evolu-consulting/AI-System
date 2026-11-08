@@ -131,9 +131,15 @@ export function friendlyError(code: string | null | undefined, stageName: string
   return (f ?? retrying)(stageName);
 }
 
+/** CR-125 G2 · MỘT nhãn chờ duyệt (động từ "Duyệt") cho trạng thái run, ghi chú bước và dòng thời gian. */
+export const WAITING_REVIEW_TEXT: I18n = {
+  vi: "Đang chờ người duyệt",
+  en: "Waiting for a reviewer",
+};
+
 const STATUS_TEXT: Readonly<Record<string, I18n>> = {
   running: { vi: "Đang chạy", en: "Running" },
-  waiting_review: { vi: "Đang chờ người duyệt", en: "Waiting for a reviewer" },
+  waiting_review: WAITING_REVIEW_TEXT,
   waiting_answer: { vi: "Đang chờ người trả lời", en: "Waiting for an answer" },
   waiting_timer: { vi: "Đang chờ tới giờ hẹn", en: "Waiting for the scheduled time" },
   needs_decision: { vi: "Cần người quyết định", en: "Needs a decision" },
@@ -207,7 +213,7 @@ export function stepStateOf(raw: string, startedAt: string | null): RunStepState
 }
 
 const WAIT_NOTE: Readonly<Record<string, I18n>> = {
-  waiting_review: { vi: "Đang chờ người duyệt kết quả.", en: "Waiting for a reviewer." },
+  waiting_review: WAITING_REVIEW_TEXT,
   waiting_answer: { vi: "Đang chờ người trả lời câu hỏi.", en: "Waiting for someone to answer." },
   waiting_timer: { vi: "Đang chờ tới giờ hẹn.", en: "Waiting for the scheduled time." },
   queued: { vi: "Đang xếp hàng chờ chạy.", en: "Queued to run." },

@@ -108,3 +108,11 @@ export function formatDuration(ms: number | null): string {
   if (m > 0) return `${m}m ${String(sec).padStart(2, "0")}s`;
   return `${sec}s`;
 }
+
+/** CR-125 G2 · hub trả mã trạng thái + câu; chờ duyệt ⇒ web dịch bằng MỘT khoá (`process.run.line.reviewOther`), giữ phần "— bước …" của hub. */
+export const WAITING_REVIEW_KEY = "process.run.line.reviewOther";
+export function runStatusLine(status: string, hubText: string, t: (key: string) => string): string {
+  if (status !== "waiting_review") return hubText;
+  const i = hubText.indexOf(" — ");
+  return i < 0 ? t(WAITING_REVIEW_KEY) : `${t(WAITING_REVIEW_KEY)}${hubText.slice(i)}`;
+}

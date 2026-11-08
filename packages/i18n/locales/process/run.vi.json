@@ -6,8 +6,8 @@
   "line": {
     "running": "Đang chạy · Giai đoạn {{n}}/{{total}} · {{stage}}",
     "queued": "Đang xếp hàng · Giai đoạn {{n}}/{{total}}",
-    "reviewMe": "Chờ bạn kiểm",
-    "reviewOther": "Chờ người duyệt",
+    "reviewMe": "Chờ bạn duyệt",
+    "reviewOther": "Đang chờ người duyệt",
     "askMe": "Cần bạn trả lời",
     "askOther": "Chờ {{name}} trả lời",
     "decideMe": "Cần bạn quyết định",
@@ -54,8 +54,8 @@
     "done": "Đã huỷ lượt chạy"
   },
   "review": {
-    "region": "Kiểm {{stage}}",
-    "title": "{{agent}} cần bạn kiểm trước khi chạy tiếp",
+    "region": "Duyệt {{stage}}",
+    "title": "{{agent}} cần bạn duyệt trước khi chạy tiếp",
     "pass": "Đạt",
     "passHint": "Chạy tiếp giai đoạn kế",
     "fail": "Chưa đạt",
@@ -85,8 +85,8 @@
     "backLimitNote": "Đã hết {{max}} lần quay lại. Gửi sẽ chuyển cho người quyết.",
     "backInvalid": "Không quay lại được bước này nữa. Đã cập nhật.",
     "escalated": "Đã chuyển cấp",
-    "escalatedNote": "Việc này đã được chuyển cấp tới nhóm {{group}} vì chưa ai kiểm. Nhóm kiểm ban đầu vẫn kiểm được.",
-    "escalatedNoteH": "Việc này đã được chuyển cấp tới nhóm {{group}} vì chưa ai kiểm sau {{hours}} giờ. Nhóm kiểm ban đầu vẫn kiểm được."
+    "escalatedNote": "Việc này đã được chuyển cấp tới nhóm {{group}} vì chưa ai duyệt. Nhóm duyệt ban đầu vẫn duyệt được.",
+    "escalatedNoteH": "Việc này đã được chuyển cấp tới nhóm {{group}} vì chưa ai duyệt sau {{hours}} giờ. Nhóm duyệt ban đầu vẫn duyệt được."
   },
   "decision": {
     "region": "Cần người quyết",
