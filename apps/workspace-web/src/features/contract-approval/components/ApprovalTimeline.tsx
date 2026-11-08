@@ -45,13 +45,17 @@ export function ApprovalTimeline({
   useResyncView(id, a);
   const names = groups.data ?? [];
   // Engine mà chưa có bước nào ⇒ không vẽ gì (như thẻ cũ); `machine` ⇒ FlowPanel dùng LegacyMachineRenderer.
-  const view =
+  const full =
     (a.mode === "engine" && !a.steps?.length) || q.isPending
       ? null
       : q.data
         ? withGroupLabels(q.data, names)
         : flowViewOfApproval(a, id, names, Date.now());
-  const noRecipient = owner && view ? noRecipientSteps(view.steps) : [];
+  const noRecipient = owner && full ? noRecipientSteps(full.steps) : [];
+  // CR-125 · UX H5 · bước hệ thống (vd "Thông báo người tạo") chỉ chủ HĐ / quản trị gói thấy; người dùng thường không phải đọc
+  // "Chưa tới lượt · Chờ bước trước xong · Tới lượt sẽ báo …" của một bước không ai làm.
+  const view =
+    full && !owner ? { ...full, steps: full.steps.filter((s) => s.kind !== "system") } : full;
   return (
     <CanActContext.Provider value={canAct}>
       <FlowPanel

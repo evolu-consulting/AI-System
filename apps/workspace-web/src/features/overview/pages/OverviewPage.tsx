@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { PageHead } from "~/components/shared/layout";
+import { useMe } from "~/features/pack-state/hooks/use-me";
 import { cn } from "~/lib/utils";
 import { fetchOverview, overviewKeys } from "../api";
 import { ApprovalTasksBlock } from "../components/ApprovalTasksBlock";
@@ -13,6 +14,7 @@ import { ContractsBlock } from "../components/ContractsBlock";
 import { GroupsBlock } from "../components/GroupsBlock";
 import { KpiBlock } from "../components/KpiBlock";
 import { PartnersBlock } from "../components/PartnersBlock";
+import { isEmptyOverview, QuickStartCard } from "../components/QuickStartCard";
 import { RecsBlock } from "../components/RecsBlock";
 import { TodoBlock } from "../components/TodoBlock";
 import { TopPartnersBlock } from "../components/TopPartnersBlock";
@@ -22,6 +24,7 @@ import { PERIODS } from "../lib/overview";
 export function OverviewPage() {
   const { t } = useTranslation();
   const [period, setPeriod] = useState<OverviewPeriod>("month");
+  const { write } = useMe();
   // `today` là ngày theo múi tenant do máy chủ trả (không đọc đồng hồ máy).
   const q = useQuery({
     queryKey: overviewKeys.figures(period),
@@ -56,6 +59,7 @@ export function OverviewPage() {
         }
       />
       <WaitingForMeCard />
+      {isEmptyOverview(q.data) && <QuickStartCard write={write} />}
       <div className="mb-4">
         <KpiBlock data={q.data} loading={q.isLoading} error={q.error} period={period} />
       </div>

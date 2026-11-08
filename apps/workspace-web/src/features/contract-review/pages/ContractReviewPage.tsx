@@ -5,14 +5,16 @@ import type { ContractDetail } from "@ai/contracts/pack-contracts";
 import { toast } from "@ai/web-kit/ui/toast";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
+import { decideOnly } from "~/features/contract-approval/lib/approval";
 import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
 import { EsignPanel } from "~/features/contract-esign/components/EsignPanel";
 import { dealOf } from "~/features/contract-form/lib/deal";
+import type { TextKey } from "~/features/contract-form/lib/form-model";
 import { LockBanner } from "~/features/contract-lock/components/LockBanner";
 import { lockView, reopenRight } from "~/features/contract-lock/lib/lock-view";
 import { VersionsPanels } from "~/features/contract-versions/components/VersionsPanels";
@@ -36,6 +38,7 @@ import { LegalBanner } from "../components/LegalBanner";
 import { ManagePanel } from "../components/ManagePanel";
 import { OriginalFileHost } from "../components/OriginalFileDialog";
 import { ExtractFailed, SaveNotice } from "../components/ReviewParts";
+import { SummaryPanel } from "../components/SummaryPanel";
 import { useInfoForm } from "../hooks/use-info-form";
 import { headRule } from "../lib/head-rule";
 import { detailErrorKey } from "../lib/load-error";
@@ -56,6 +59,17 @@ const partnerOf = (c: ContractDetail): string => {
 
 // CR-125 c7 · `c.title` của chi tiết HĐ đã là TÊN HĐ do hub tính (contractNameSql) — không tự suy từ fields.title.
 const titleOf = (c: ContractDetail): string => c.title;
+
+/** CR-125 · UX H4 · gập khối sửa (native `<details>`, đóng sẵn) khi `on`; không gập ⇒ giữ nguyên bố cục cũ. */
+function Fold({ on, label, children }: { on: boolean; label: string; children: ReactNode }) {
+  if (!on) return <>{children}</>;
+  return (
+    <details data-testid="detail-fold" className="mb-4 rounded-xl border border-line px-4 py-3">
+      <summary className="cursor-pointer text-sm font-semibold">{label}</summary>
+      <div className="mt-3">{children}</div>
+    </details>
+  );
+}
 
 type Info = ReturnType<typeof useInfoForm>;
 type Approval = ReturnType<typeof useApprovalUi>;
@@ -80,6 +94,44 @@ function SaveButton({ info, ap, confirm }: { info: Info; ap: Approval; confirm: 
         {info.busy ? t("contracts.review.saving") : idle}
       </button>
     </>
+  );
+}
+
+/** Khối "Quản lý" + lưới thông tin; người duyệt (`reviewer`) thấy gập lại, không lặp "Tóm tắt" đã hiện ở thẻ trên. */
+function DetailSection(p: {
+  c: ContractDetail;
+  id: string;
+  write: boolean;
+  info: Info & { f: NonNullable<Info["f"]> };
+  reviewer: boolean;
+  canSave: boolean;
+  saveButton: ReactNode;
+  file: { href: string; name: string; onOpen: () => void } | null;
+  lockedKeys: ReadonlySet<TextKey> | undefined;
+}) {
+  const { t } = useTranslation();
+  const { c, info } = p;
+  return (
+    <Fold on={p.reviewer} label={t("contracts.review.foldEdit")}>
+      <ManagePanel c={c} write={p.write} />
+      {c.status === "extract_failed" ? (
+        <ExtractFailed file={p.file} id={p.id} write={p.write} error={c.error} />
+      ) : (
+        <DetailGrid
+          c={c}
+          f={info.f}
+          onSet={info.set}
+          canSave={p.canSave}
+          saveButton={p.saveButton}
+          write={p.write}
+          partner={partnerOf(c)}
+          today={todayIso()}
+          info={info}
+          lockedKeys={p.lockedKeys}
+          summary={!p.reviewer}
+        />
+      )}
+    </Fold>
   );
 }
 
@@ -122,6 +174,9 @@ function ContractBody({
   // P11e · đã gửi duyệt (lượt engine, bước soạn đã qua) ⇒ không còn gợi ý "bản nháp … bấm Xác nhận và lưu".
   const confirm = c.status === "needs_review" && !ap.submitted;
   const { canSave } = rule;
+  // CR-125 · UX H4 · người duyệt (đang có nút Duyệt/Từ chối/Trả lại, không phải bước xác nhận của người tạo) thấy THẺ TÓM TẮT + 3 nút;
+  // form sửa dài gập lại để mở khi cần.
+  const reviewer = decideOnly(ap.view, c.status);
   const key = leadKey(c.status, ap.submitted);
   const lead = key ? t(key) : <DetailLead c={c} partner={partnerOf(c)} />;
   // Nút chỉ có khi HĐ có tệp gốc (nhập tay ⇒ không có); phụ lục có tệp riêng xem trong hộp thoại.
@@ -171,7 +226,14 @@ function ContractBody({
           <EsignPanel id={id} locked={c.locked === true} write={write} />
           <VersionsPanels id={id} versions={c.versions} sup={sup} />
           <SaveNotice err={info.err ?? ap.err} />
+          {reviewer && (
+            <div className="mb-4">
+              <SummaryPanel c={c} partner={partnerOf(c)} />
+            </div>
+          )}
           {ap.section}
+          {/* CR-125 · UX M6 · "ai · làm gì · lúc nào" ở phần trên của thẻ (ngay dưới các bước duyệt), không còn dưới đáy trang. */}
+          <HistoryPanel id={id} />
           {/* atomic-confirm: "Xác nhận và lưu" (tắt duyệt) ⇒ hộp "Gắn sản phẩm" ⇒ một POST /review mang `products`. */}
           <ProductLinkDialog
             target={info.confirmSave.target}
@@ -189,23 +251,17 @@ function ContractBody({
             </div>
           )}
           <DeadlinePanel contract={c} write={write} queryKey={contractKey(id)} />
-          <ManagePanel c={c} write={write} />
-          {c.status === "extract_failed" ? (
-            <ExtractFailed file={file} id={id} write={write} error={c.error} />
-          ) : (
-            <DetailGrid
-              c={c}
-              f={info.f}
-              onSet={info.set}
-              canSave={canSave}
-              saveButton={confirm ? undefined : saveButton}
-              write={write}
-              partner={partnerOf(c)}
-              today={todayIso()}
-              info={info}
-              lockedKeys={lock.lockedKeys}
-            />
-          )}
+          <DetailSection
+            c={c}
+            id={id}
+            write={write}
+            info={info}
+            reviewer={reviewer}
+            canSave={canSave}
+            saveButton={confirm ? undefined : saveButton}
+            file={file}
+            lockedKeys={lock.lockedKeys}
+          />
           {/* ux-excel E3: bỏ "Hỏi về hợp đồng này" khỏi trang (còn "Trợ lý AI" nổi); mã tính năng giữ nguyên. */}
           <OriginalFileHost
             open={origOpen}
@@ -219,7 +275,6 @@ function ContractBody({
           {/* Bỏ "Nguồn hàng & lãi" khỏi chi tiết HĐ (người dùng 2026-10-23); feature `sourcing` giữ nguyên, chưa gắn. */}
           <ContractLog contractId={id} status={c.status} />
           {c.doc?.doc_type === "deal" && <EditLogPanel id={id} />}
-          <HistoryPanel id={id} />
           {/* "Xoá hợp đồng" chuyển sang biểu tượng thùng rác ở hàng danh sách (người dùng 2026-10-23). */}
         </div>
       </div>

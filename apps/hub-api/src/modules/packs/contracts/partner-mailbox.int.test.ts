@@ -225,7 +225,7 @@ describe("CR-124 q3 · gửi → nhận → trả lời", () => {
       task_id: "task-1",
     });
     const labels: string[] = [];
-    const page = await listContracts<{ id: string; step_label?: string | null }>({
+    const page = await listContracts<{ id: string; step_label?: unknown }>({
       uow: bUow as never,
       stepLabels: async (_w, ids, fromRuns) => {
         expect(fromRuns.has(input.runId)).toBe(true);
@@ -234,7 +234,10 @@ describe("CR-124 q3 · gửi → nhận → trả lời", () => {
       },
     })(whoB, { sort: "updated_at", dir: "desc", page: 1, page_size: 20 } as never);
     expect(labels).toEqual([input.runId]);
-    expect(page.items.find((x) => x.id === input.ref)?.step_label).toBe("Chờ Giám đốc duyệt");
+    expect(page.items.find((x) => x.id === input.ref)?.step_label).toEqual({
+      code: "waiting_step",
+      name: "Giám đốc duyệt",
+    });
     expect(await apply()).toBe("applied");
     const [done] =
       await o`select a.status from contracts.approvals a join contracts.contracts k on k.run_id = a.id

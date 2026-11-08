@@ -41,7 +41,11 @@ export function packBellTitle(kind: string, payload: Record<string, unknown>): s
   else if (kind === "run_finished") head = "Kết thúc duyệt";
   else head = OPENED[kind] ?? "Quy trình duyệt";
   const subject = kind === "run_finished" ? str(payload.process_name) || stage : stage;
-  return `${head}: ${subject}`.slice(0, TITLE_MAX);
+  // CR-125 · UX M2 · có nhãn bản ghi (vd tên hợp đồng) ⇒ "Cần duyệt: <nhãn> · <bước>" — hai thư cùng bước vẫn phân biệt được.
+  const record = str(payload.record_label);
+  return (
+    record && kind !== "run_finished" ? `${head}: ${record} · ${subject}` : `${head}: ${subject}`
+  ).slice(0, TITLE_MAX);
 }
 
 /** Mỗi notice ⇒ một mục chuông `approval.<kind>`; SQL bỏ hàng của run không gắn gói. */

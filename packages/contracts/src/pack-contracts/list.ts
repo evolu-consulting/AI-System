@@ -94,6 +94,23 @@ export const ContractExportQuerySchema = ContractListQuerySchema.omit({
 export type ContractExportQuery = z.infer<typeof ContractExportQuerySchema>;
 
 /** Dòng tóm tắt = cột màn danh sách S03 (D-02); trống ⇒ null. */
+/** CR-125 · SA H4 · mã bước hiện tại của HĐ trong danh sách (hub trả mã, web dịch). */
+export const ContractStepSchema = z.strictObject({
+  code: z.enum([
+    "rejected",
+    "approved",
+    "cancelled",
+    "attention",
+    "waiting_sign",
+    "waiting_draft",
+    "returned",
+    "waiting_step",
+  ]),
+  who: z.string().max(160).optional(),
+  name: z.string().max(160).optional(),
+});
+export type ContractStep = z.infer<typeof ContractStepSchema>;
+
 export const ContractListRowSchema = z.strictObject({
   id: z.uuid(),
   kind: ContractKindSchema,
@@ -119,8 +136,9 @@ export const ContractListRowSchema = z.strictObject({
   /** CR-097 K2 · R18: số thứ tự phiên bản của hàng + số phiên bản của chuỗi (badge "vN" khi > 1). ListRow 22 khoá. */
   version_no: z.number().int().min(1),
   versions_count: z.number().int().min(1),
-  /** CR-123 · u10 · bước hiện tại bằng chữ nghiệp vụ ("Chờ Giám đốc ký"), cùng nguồn thẻ duyệt; null/vắng ⇒ dùng nhãn trạng thái. ListRow 23 khoá. */
-  step_label: z.string().max(160).nullable().optional(),
+  /** CR-123 · u10 · bước hiện tại, cùng nguồn thẻ duyệt; null/vắng ⇒ dùng nhãn trạng thái. ListRow 23 khoá.
+   *  CR-125 · SA H4: MÃ bước (+ tên người ký / tên bước của khách), web dịch qua i18n `contracts.list.step.<code>`. */
+  step_label: ContractStepSchema.nullable().optional(),
 });
 export type ContractListRow = z.infer<typeof ContractListRowSchema>;
 

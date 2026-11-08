@@ -6,6 +6,7 @@ import type { NoticeKind } from "@ai/contracts/chat";
 import type { Tx } from "@ai/db";
 import { sql } from "drizzle-orm";
 import { type BellSource, convBellsOf, packBellsOf } from "../domain/notify/pack-bell.rules";
+import { runRecordLabels } from "../runs/run-record-labels";
 import type { InsertedNotice } from "./inbox.repo";
 
 export type NoticeRow = {
@@ -51,7 +52,7 @@ export async function writeNotices(
     })),
   );
   // contract-flow S1b · chuông gói cho run gắn bản ghi gói — CÙNG câu (không thêm round-trip; SQL bỏ run không gắn gói).
-  const bells = bellsJson(kind, candidates);
+  const bells = await bellsJson(tx, kind, candidates);
   const res = await noticeStatement(tx, kind, { json, bells }, createdAt.toISOString());
   // T6c · hàng có user ngoài tenant của hàng bị câu bỏ ⇒ chỉ hàng chèn thật mới có unread/sự kiện.
   const ids = new Set(res.ids);
@@ -69,19 +70,66 @@ export async function writeNotices(
   return { inserted, unread };
 }
 
-const bellsJson = (
+/**
+ * CR-125 · UX M2 · chuông của run gắn bản ghi gói mang thêm `record_label` (vd "HĐ 12/2026 · Mua văn phòng phẩm") để tiêu đề thư/chuông
+ * nói được HỢP ĐỒNG NÀO ("Cần duyệt: HĐ … · Giám đốc duyệt"). MỘT câu tra run (theo tập) + MỘT lần hỏi nhãn mỗi (tenant, gói); lỗi ⇒
+ * bỏ nhãn (fail-soft), không chặn chuông.
+ */
+async function withRecordLabels(tx: Tx, rows: readonly BellSource[]): Promise<BellSource[]> {
+  const ids = [...new Set(rows.map((r) => r.processRunId))];
+  if (ids.length === 0) return [...rows];
+  try {
+    type Rec = {
+      id: string;
+      tenant_id: string;
+      pack_key: string | null;
+      pack_record_id: string | null;
+    };
+    const recs: Rec[] =
+      await tx.execute<Rec>(sql`select pr.id::text as id, pr.tenant_id::text as tenant_id, pr.pack_key, pr.pack_record_id::text as pack_record_id
+      from hub.process_runs pr
+      where pr.id = any(array(select jsonb_array_elements_text(${JSON.stringify(ids)}::jsonb)::uuid)) and pr.pack_key is not null`);
+    const byTenant = new Map<string, Rec[]>();
+    for (const r of recs) byTenant.set(r.tenant_id, [...(byTenant.get(r.tenant_id) ?? []), r]);
+    const labelOfRun = new Map<string, string>();
+    await Promise.all(
+      [...byTenant].map(async ([tenantId, rs]) => {
+        const labels = await runRecordLabels(tenantId, rs);
+        for (const r of rs) {
+          const l =
+            r.pack_key && r.pack_record_id
+              ? labels.get(`${r.pack_key}:${r.pack_record_id}`)
+              : undefined;
+          if (l) labelOfRun.set(r.id, l);
+        }
+      }),
+    );
+    return rows.map((r) => {
+      const l = labelOfRun.get(r.processRunId);
+      return l ? { ...r, payload: { ...r.payload, record_label: l } } : r;
+    });
+  } catch {
+    return [...rows];
+  }
+}
+
+const bellsJson = async (
+  tx: Tx,
   kind: NoticeKind,
   ns: readonly { id: string; userId: string; row: NoticeRow }[],
 ) =>
   JSON.stringify(
     packBellsOf(
       kind,
-      ns.map((n) => ({
-        id: n.id,
-        userId: n.userId,
-        processRunId: n.row.processRunId,
-        payload: n.row.payload,
-      })),
+      await withRecordLabels(
+        tx,
+        ns.map((n) => ({
+          id: n.id,
+          userId: n.userId,
+          processRunId: n.row.processRunId,
+          payload: n.row.payload,
+        })),
+      ),
     ),
   );
 
@@ -142,7 +190,7 @@ export async function enqueuePackBells(
   rows: readonly BellSource[],
 ): Promise<void> {
   if (rows.length === 0) return;
-  const bells = JSON.stringify(packBellsOf(kind, rows));
+  const bells = JSON.stringify(packBellsOf(kind, await withRecordLabels(tx, rows)));
   await tx.execute(sql`select notify.enqueue_pack_runs(${bells}::jsonb) as n`);
 }
 

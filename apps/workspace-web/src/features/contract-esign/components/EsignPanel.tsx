@@ -313,6 +313,11 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
           </span>
         )}
         {v.demo && <DemoTag />}
+        {v.demo && (
+          <span className="text-caption text-dim" data-testid="esign-demo-hint">
+            {t("contracts.esign.demoHint")}
+          </span>
+        )}
         {v.mode === "pending" && es.checkedAt && (
           <span className="text-dim" data-testid="esign-checked">
             {t("contracts.esign.checkedAt", { at: fmt(es.checkedAt) })}

@@ -5,6 +5,7 @@ import type {
   ContractListRow,
   ContractProgress,
   ContractStage,
+  ContractStep,
 } from "@ai/contracts/pack-contracts";
 import { DEAL_TONE, STAGE_TONE } from "~/features/contract-form/lib/deal";
 
@@ -29,14 +30,21 @@ export const partnerOfRow = (
   deal: ContractDeal | null,
 ): string | null => (deal === "buy" ? r.seller : (r.buyer ?? r.seller));
 
+/** CR-125 · SA H4 · mã bước → khoá i18n (hub trả mã, web dịch; không so sánh với chữ tiếng Việt). */
+export const stepKey = (step: ContractStep): string =>
+  step.code === "waiting_sign" && step.who
+    ? "contracts.list.step.waiting_sign_who"
+    : `contracts.list.step.${step.code}`;
+
 /**
- * CR-123 · u10b: HĐ đã vào theo dõi (đang hiệu lực…) mà lượt duyệt kết thúc "Đã duyệt" ⇒ "Đã duyệt · <trạng thái HĐ>". Nhãn kết cục lấy
- * từ `step_label` của API (cùng helper `stepLabelOf` với thẻ duyệt); nhãn khác (đang chờ…) không ghép — HĐ đang hiệu lực không chờ ai.
+ * CR-123 · u10b: HĐ đã vào theo dõi (đang hiệu lực…) mà lượt duyệt kết thúc "Đã duyệt" ⇒ "Đã duyệt · <trạng thái HĐ>". Mã kết cục lấy
+ * từ `step_label` của API (cùng helper `stepLabelOf` với thẻ duyệt); mã khác (đang chờ…) không ghép — HĐ đang hiệu lực không chờ ai.
  */
 export const approvedLabel = (
-  stepLabel: string | null | undefined,
+  step: ContractStep | null | undefined,
+  approvedText: string,
   statusText: string,
-): string | null => (stepLabel === "Đã duyệt" ? `${stepLabel} · ${statusText}` : null);
+): string | null => (step?.code === "approved" ? `${approvedText} · ${statusText}` : null);
 
 export type StageView =
   | { kind: "status" }

@@ -1,7 +1,7 @@
 // CR-120 · "Đã chuyển: <bước>" sau Xác nhận và lưu (thuần).
 import { describe, expect, test } from "bun:test";
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
-import { isDraftConfirm, movedToStep } from "./moved-to";
+import { isDraftConfirm, movedToDueHours, movedToStep } from "./moved-to";
 
 const step = (idx: number, name: string, status: string) => ({ idx, name, status });
 const card = (steps: ReturnType<typeof step>[]) =>
@@ -24,5 +24,25 @@ describe("movedToStep / isDraftConfirm", () => {
     expect(movedToStep(card([step(0, "A", "passed"), step(1, "B", "pending")]))).toBeNull();
     expect(movedToStep(undefined)).toBeNull();
     expect(isDraftConfirm(undefined)).toBe(false);
+  });
+});
+
+// CR-125 · UX H5: "Đã gửi <bước> · hạn N giờ" — hạn lấy từ bước vừa mở.
+describe("movedToDueHours", () => {
+  const now = Date.parse("2026-11-08T00:00:00Z");
+  const withDue = (due: string | null) =>
+    ({
+      mode: "engine",
+      step: "level1",
+      steps: [
+        { idx: 0, name: "Xác nhận", status: "passed", due_at: null },
+        { idx: 1, name: "Trưởng phòng duyệt", status: "open", due_at: due },
+      ],
+    }) as unknown as ContractApproval;
+
+  test("hạn của bước vừa mở", () => {
+    expect(movedToDueHours(withDue("2026-11-09T00:00:00Z"), now)).toBe(24);
+    expect(movedToDueHours(withDue(null), now)).toBeNull();
+    expect(movedToDueHours(withDue("2026-11-07T00:00:00Z"), now)).toBeNull();
   });
 });

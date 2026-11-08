@@ -26,6 +26,7 @@ import {
   STAGE_TONE,
   type StageView,
   stageView,
+  stepKey,
 } from "../lib/row-view";
 import { DocTypeTag, EyeIcon, SourceName } from "./ChildRows";
 
@@ -127,7 +128,9 @@ function StageTag({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
         }
       >
         {/* CR-123 · u10: bước THẬT của lượt duyệt ("Chờ Giám đốc ký") thay nhãn trạng thái chung ("Chờ xác nhận") */}
-        {r.step_label ?? statusLabel(t, r.status)}
+        {r.step_label
+          ? t(stepKey(r.step_label), { who: r.step_label.who, name: r.step_label.name })
+          : statusLabel(t, r.status)}
       </Tag>
     );
   }
@@ -137,7 +140,9 @@ function StageTag({ r, ctx }: { r: ContractListRow; ctx: RowCtx }) {
 /** HĐ đã vào theo dõi: giai đoạn (+ bước kế). CR-123 · u10b: lượt duyệt đã xong ⇒ "Đã duyệt · Đang hiệu lực"; quá hạn vẫn đỏ như cũ. */
 function TrackedTag({ r, v }: { r: ContractListRow; v: Extract<StageView, { kind: "stage" }> }) {
   const { t } = useTranslation();
-  const approved = v.overdue ? null : approvedLabel(r.step_label, statusLabel(t, r.status));
+  const approved = v.overdue
+    ? null
+    : approvedLabel(r.step_label, t("contracts.list.step.approved"), statusLabel(t, r.status));
   const stage = v.overdue
     ? t("contracts.cdetail.stageOver")
     : t(`contracts.cdetail.stage.${v.stage}`);

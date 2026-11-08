@@ -47,7 +47,7 @@ export function HistoryPanel({ id }: { id: string }) {
   const q = useHistory(id, open);
   const nameOf = useMemberNames();
   return (
-    <Panel className="mt-4">
+    <Panel className="my-4">
       <button
         type="button"
         className="flex w-full items-center justify-between px-5 py-3.5 text-left"

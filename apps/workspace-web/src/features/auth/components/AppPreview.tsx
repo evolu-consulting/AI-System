@@ -40,6 +40,13 @@ export function AppPreview() {
       <div className="flex min-w-0 flex-1 flex-col gap-3.5 p-5">
         <div className="flex items-center gap-3">
           <h3 className="text-[20px] font-bold">{t("contracts.nav.contracts")}</h3>
+          {/* CR-125 · UX M3 · dữ liệu mẫu giả: nói rõ là hình minh hoạ để không bị nhầm là dữ liệu thật */}
+          <span
+            data-testid="login-preview-sample"
+            className="rounded-full bg-sunk px-2.5 py-1 text-[11.5px] font-medium text-dim"
+          >
+            {t("contracts.login.preview.sample")}
+          </span>
           <span className="ml-auto rounded-lg bg-act px-3 py-1.5 text-[12.5px] font-semibold text-on-act">
             {t("contracts.login.preview.add")}
           </span>

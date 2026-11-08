@@ -24,7 +24,7 @@ import {
   viewAfterConfirm,
 } from "../lib/approval";
 import { releaseNoteKey } from "../lib/engine-card";
-import { isDraftConfirm, movedToStep } from "../lib/moved-to";
+import { isDraftConfirm, movedToDueHours, movedToStep } from "../lib/moved-to";
 import { ApprovalButtons, ApprovalNote, ExtractedValue, ReasonForm } from "./ApprovalParts";
 import { ApprovalTimeline } from "./ApprovalTimeline";
 import { AttentionBanner } from "./AttentionBanner";
@@ -41,6 +41,18 @@ export type ApprovalUi = {
   step: string | null;
   submitted: boolean;
 };
+
+/** CR-125 · UX H5 · "Đã gửi <bước> · hạn N giờ" (bước có hạn) hoặc "Đã chuyển: <bước>". */
+function MovedText({ step, hours }: { step: string; hours: number | null }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {hours === null
+        ? t("contracts.approval.done.movedTo", { step })
+        : t("contracts.approval.done.movedToDue", { step, hours })}
+    </>
+  );
+}
 
 type LinkStep = { target: ProductLinkTarget; label: string | undefined };
 
@@ -90,7 +102,7 @@ export function useApprovalUi(o: {
     <>
       {movedTo && (
         <p role="status" data-testid="moved-to" className="mb-3 text-label font-medium text-ok">
-          {t("contracts.approval.done.movedTo", { step: movedTo })}
+          <MovedText step={movedTo} hours={movedToDueHours(ap.approval, Date.now())} />
         </p>
       )}
       {ap.approval && (

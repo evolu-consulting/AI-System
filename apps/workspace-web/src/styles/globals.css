@@ -158,6 +158,13 @@
     padding: 0 0.75rem;
     font-size: 13px;
   }
+  /* CR-125 · UX L1: điện thoại ⇒ nút chính/viền đủ 44 px để bấm bằng ngón tay (Ký ngay, Duyệt…). */
+  @media (max-width: 639px) {
+    .btn-primary,
+    .btn-outline {
+      min-height: 2.75rem;
+    }
+  }
   .chip[aria-pressed="true"] {
     background: var(--color-act-soft);
     border-color: transparent;

@@ -1,6 +1,7 @@
-﻿// HD-FR-07 · HD-AC03 · HD-AC04 · HD-AC05 · HD-BR-03 · D-03 · D-18 · HD1 plan §6: danh sách hợp đồng của tenant token —
+// HD-FR-07 · HD-AC03 · HD-AC04 · HD-AC05 · HD-BR-03 · D-03 · D-18 · HD1 plan §6: danh sách hợp đồng của tenant token —
 // lọc/sắp/phân trang `page/page_size/total` trong MỘT câu SQL (tx RLS `PackUow`). `signer` ⇒ khoá người, `q` ⇒ mẫu LIKE đã fold.
 import type { PackUow, PackWho } from "../../kit/public";
+import type { StepState } from "../domain/approval-step-label.rules";
 import { likePattern, personKey } from "../domain/fold.rules";
 import type {
   ContractListFilter,
@@ -69,9 +70,9 @@ type StepLabels = (
   who: PackWho,
   runIds: readonly string[],
   fromRuns: ReadonlySet<string>,
-) => Promise<Map<string, string | null>>;
+) => Promise<Map<string, StepState | null>>;
 
-/** CR-123 · u10 · thêm MỘT khoá `step_label` vào từng hàng (null ⇒ giữ nhãn trạng thái); không có cầu ⇒ giữ nguyên hàng. */
+/** CR-123 · u10 · thêm MỘT khoá `step_label` (CR-125: MÃ bước + tên, không phải chữ) vào từng hàng (null ⇒ giữ nhãn trạng thái); không có cầu ⇒ giữ nguyên hàng. */
 async function withStepLabels<Row>(
   stepLabels: StepLabels | undefined,
   who: PackWho,
@@ -85,7 +86,7 @@ async function withStepLabels<Row>(
           runs.map((x) => x.run),
           new Set(runs.filter((x) => x.from_run === true).map((x) => x.run)),
         )
-      : new Map<string, string | null>();
+      : new Map<string, StepState | null>();
   const runOf = new Map(runs.map((x) => [x.id, x.run]));
   return items.map((it) =>
     typeof it === "object" && it !== null

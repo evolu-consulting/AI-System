@@ -1,7 +1,7 @@
-// CR-123 · u10 · cột "Bước" của danh sách HĐ: bước hiện tại bằng chữ nghiệp vụ, suy từ CHÍNH dòng thời gian của thẻ duyệt
+// CR-123 · u10 · cột "Bước" của danh sách HĐ: bước hiện tại suy từ CHÍNH dòng thời gian của thẻ duyệt
 // (`stepsView`, Ký số đã gộp một bước ở u6) — không đọc nguồn thứ hai. Luật thuần, domain chỉ dùng kiểu cấu trúc.
-// "Chờ <tên bước>" (bước duyệt/chờ đang mở) · "Chờ <người ký> ký" (Ký số đang chờ) · "Chờ gửi duyệt" (bước soạn) ·
-// "Trả lại — chờ sửa" (có bước bị trả về soạn lại) · "Đã duyệt" · "Từ chối" · "Đã huỷ" · "Cần xử lý" · null (không có gì để nói ⇒ giữ nhãn trạng thái).
+// CR-125 · SA H4 · máy chủ trả MÃ (không trả chữ tiếng Việt): web dịch qua i18n (`contracts.list.step.<code>`) và so sánh theo mã.
+// waiting_step (+name) · waiting_sign (+who) · waiting_draft · returned · approved · rejected · cancelled · attention · null (giữ nhãn trạng thái).
 
 /** Khớp cấu trúc `PackStepsView` (chỉ trường dùng). */
 export type StepLabelView = {
@@ -14,26 +14,42 @@ export type StepLabelView = {
   }[];
 };
 
+export type StepCode =
+  | "rejected"
+  | "approved"
+  | "cancelled"
+  | "attention"
+  | "waiting_sign"
+  | "waiting_draft"
+  | "returned"
+  | "waiting_step";
+/** `who` = tên người ký (waiting_sign), `name` = tên bước (waiting_step): dữ liệu của khách, không phải nhãn. */
+export type StepState = { code: StepCode; who?: string; name?: string };
+
 const OPEN = new Set(["open", "running"]);
 
-/** `fromRun` = thẻ dựng bước từ run (event flow; `from_run` của thẻ): bước đầu là bước duyệt thật ⇒ "Chờ <tên bước>", không phải bước soạn. */
-export function stepLabelOf(v: StepLabelView | null | undefined, fromRun = false): string | null {
+/** `fromRun` = thẻ dựng bước từ run (event flow; `from_run` của thẻ): bước đầu là bước duyệt thật ⇒ waiting_step, không phải bước soạn. */
+export function stepLabelOf(
+  v: StepLabelView | null | undefined,
+  fromRun = false,
+): StepState | null {
   if (!v) return null;
   // kết cục cuối của lượt (một nguồn cho danh sách HĐ): bước bị từ chối là chứng cứ chắc nhất ⇒ thắng cả "huỷ" / "xong"
-  if (v.steps.some((s) => s.status === "rejected")) return "Từ chối";
-  if (v.status === "done") return "Đã duyệt";
-  if (v.status === "cancelled" || v.status === "expired") return "Đã huỷ";
-  if (v.status === "failed" || v.status === "needs_decision") return "Cần xử lý";
+  if (v.steps.some((s) => s.status === "rejected")) return { code: "rejected" };
+  if (v.status === "done") return { code: "approved" };
+  if (v.status === "cancelled" || v.status === "expired") return { code: "cancelled" };
+  if (v.status === "failed" || v.status === "needs_decision") return { code: "attention" };
   const cur = v.steps.find((s) => OPEN.has(s.status) || s.module?.outcome === "waiting");
   if (!cur) return null;
   if (cur.module) {
     const who = cur.module.signer?.trim();
-    return who ? `Chờ ${who} ký` : "Chờ ký";
+    return who ? { code: "waiting_sign", who } : { code: "waiting_sign" };
   }
-  // bước soạn (đầu) đang mở sau khi bị trả lại ⇒ nói rõ "Bị trả lại", chưa trả lại ⇒ "Chờ gửi duyệt"
-  if (cur.idx === 0 && !fromRun) return draftLabel(v);
-  return `Chờ ${cur.name}`;
+  // bước soạn (đầu) đang mở sau khi bị trả lại ⇒ "returned", chưa trả lại ⇒ "waiting_draft"
+  if (cur.idx === 0 && !fromRun) return draftState(v);
+  return { code: "waiting_step", name: cur.name };
 }
 
-const draftLabel = (v: StepLabelView): string =>
-  v.steps.some((s) => s.status === "returned") ? "Trả lại — chờ sửa" : "Chờ gửi duyệt";
+const draftState = (v: StepLabelView): StepState => ({
+  code: v.steps.some((s) => s.status === "returned") ? "returned" : "waiting_draft",
+});

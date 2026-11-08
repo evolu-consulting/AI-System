@@ -10,6 +10,17 @@ export function movedToStep(a: ContractApproval | undefined): string | null {
   return open && (open.idx >= 1 || a?.from_run === true) ? open.name : null;
 }
 
+/**
+ * CR-125 · UX H5 · hạn (giờ nguyên, làm tròn lên, ≥ 1) của bước vừa mở — để nói "Đã gửi <bước> · hạn N giờ" ngay sau khi gửi duyệt;
+ * bước chưa đặt hạn / hạn đã qua ⇒ null (không nói).
+ */
+export function movedToDueHours(a: ContractApproval | undefined, now: number): number | null {
+  const open = movedToStep(a) === null ? null : openStepOf(a);
+  if (!open?.due_at) return null;
+  const ms = Date.parse(open.due_at) - now;
+  return Number.isFinite(ms) && ms > 0 ? Math.max(1, Math.round(ms / 3_600_000)) : null;
+}
+
 /** Nút bấm lúc này là "Xác nhận và lưu" của bước soạn (bước mở có idx 0)? */
 export const isDraftConfirm = (a: ContractApproval | undefined): boolean =>
   a?.from_run !== true && openStepOf(a)?.idx === 0;

@@ -102,6 +102,7 @@
       "upload": {
         "title": "Contract uploads",
         "drop": "Drop files here to upload",
+        "needPdf": "E-signing needs a PDF file — convert to PDF and upload again: {{names}}",
         "close": "Close",
         "retry": "Retry",
         "state": {
@@ -166,6 +167,17 @@
       },
       "fileStorageUnavailable": "File storage (FileBox) is not configured — contact your administrator",
       "until": "until {{date}}",
+      "step": {
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled",
+        "attention": "Needs attention — open the contract to see why",
+        "waiting_sign": "Waiting for signature",
+        "waiting_sign_who": "Waiting for {{who}} to sign",
+        "waiting_draft": "Waiting to be sent for approval",
+        "returned": "Returned — waiting for edits",
+        "waiting_step": "Waiting: {{name}}"
+      },
       "view": "View",
       "viewAria": "View {{title}}",
       "viewContract": "View contract",
@@ -247,6 +259,12 @@
       "sourcing": "Sourcing"
     },
     "overview": {
+      "quickStart": {
+        "title": "Quick start",
+        "body": "No figures yet. Upload your first contract so it can be read and sent for approval.",
+        "bodyRole": "No figures yet. They will appear once the company has contracts.",
+        "cta": "Upload a contract"
+      },
       "title": "Overview",
       "today": "Today {{date}}",
       "work": {
@@ -418,7 +436,7 @@
       "tenant": "Company code",
       "tenantKnown": "Company: {{tenant}}.",
       "changeTenant": "Change company",
-      "email": "Email",
+      "email": "Username (Email)",
       "emailPlaceholder": "you@company.com",
       "password": "Password",
       "showPassword": "Show password",
@@ -452,6 +470,7 @@
       "showcaseTitle": "Contracts, partners and digital signatures — one assistant handles them.",
       "showcaseLead": "Sign in to see what needs doing today.",
       "preview": {
+        "sample": "Illustration — not real data",
         "add": "+ Add contract",
         "search": "Search by name, partner, contract no…",
         "colContract": "Contract",
@@ -555,7 +574,7 @@
         "overdueBadge": "Overdue",
         "escalatedTo": "Escalated to {{group}}",
         "waiting": "Waiting for the reviewer of this step.",
-        "advancing": "Moving on to the next review step…",
+        "advancing": "Sent for approval. Handing over to the next approver…",
         "willSkip": "Will be skipped ({{reason}})",
         "skipReason": {
           "deal": "contract type does not match the condition",
@@ -660,6 +679,7 @@
         "confirm": "Contract saved and confirmed.",
         "toLevel2": "Confirmed — waiting for the Board of Directors to approve",
         "movedTo": "Moved on: {{step}}",
+        "movedToDue": "Sent to {{step}} · due in {{hours}} h",
         "approve": "Contract approved.",
         "reject": "Contract rejected.",
         "redo": "Contract sent to be read again.",
@@ -699,6 +719,7 @@
       "saving": "Saving…",
       "saveDraft": "Save draft",
       "draftHint": "A draft is visible only to you — press Send for approval to pass it to the approvers",
+      "foldEdit": "View and edit contract details",
       "notFound": "Contract not found — go back to the list and pick another one.",
       "notVisible": "This contract has not been sent for approval yet, or you do not have access. Ask its creator to confirm it.",
       "savedDraft": "Draft saved. The contract is still awaiting confirmation — press Confirm to finish.",

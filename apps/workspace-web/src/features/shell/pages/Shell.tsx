@@ -24,6 +24,8 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
   const pathname = useNavPath();
   const layout = layoutOf(pathname);
   const inCommunity = pathname === "/community" || pathname.startsWith("/community/");
+  // CR-125 · UX L1 · thẻ hợp đồng trên điện thoại: nút trợ lý nổi che nút Duyệt/Ký ⇒ ẩn (vẫn có ở desktop).
+  const onCard = /^\/contracts\/c\/(?!new(?:\/|$))[^/]+\/?$/.test(pathname);
   const dock = useDock();
   useBrandSync(useShellPacks().contracts === true);
   const [pinned, setPinned] = useStoredBool(NAV_PINNED_KEY, true);
@@ -83,7 +85,11 @@ export function Shell({ user, write, owner }: { user: ShellUser; write: boolean;
           label={t("contracts.shell.openAssistant")}
           tooltip={t("contracts.shell.askAssistant")}
           icon={<IconRobot width={24} height={24} />}
-          className={cn(dock.open && "lg:hidden", dock.sheet && "hidden")}
+          className={cn(
+            dock.open && "lg:hidden",
+            dock.sheet && "hidden",
+            onCard && "max-md:hidden",
+          )}
         />
       )}
       {dock.sheet && (

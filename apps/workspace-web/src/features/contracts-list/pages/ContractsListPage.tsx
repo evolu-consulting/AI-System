@@ -26,11 +26,13 @@ import { DateFilterControl } from "../components/DateFilterControl";
 import { DocTypeFilter } from "../components/DocTypeFilter";
 import { ExportButtons } from "../components/ExportButtons";
 import { QueueExtractDialog } from "../components/ExtractDialog";
+import { NeedPdfNotice } from "../components/NeedPdfNotice";
 import { QuotaDialog } from "../components/QuotaDialog";
 import { DropOverlay, UploadPanel } from "../components/UploadPanel";
 import { UploadTypeGate } from "../components/UploadTypeDialog";
 import { useContractsList } from "../hooks/use-contracts-list";
 import { useDeleteDialog } from "../hooks/use-delete-dialog";
+import { usePdfGate } from "../hooks/use-pdf-gate";
 import { useRowFlow } from "../hooks/use-row-flow";
 import { useUploadQueue } from "../hooks/use-upload-queue";
 import {
@@ -98,6 +100,8 @@ export function ContractsListPage() {
   };
   // DOC-ui-gaps: tệp vừa chọn/thả chờ chọn loại chứng từ rồi mới vào hàng đợi.
   const [pending, setPending] = useState<File[] | null>(null);
+  // CR-125 · UX H6 · công ty đã bật ký số ⇒ chỉ nhận PDF; tệp khác bị giữ lại kèm cách khắc phục.
+  const { pick, notPdf } = usePdfGate(setPending);
   const queue = useUploadQueue((id) => void nav({ to: "/contracts/c/$id", params: { id } }));
   const keys = columnKeysOf(docType);
   const cols = useColumns(
@@ -152,7 +156,7 @@ export function ContractsListPage() {
     // Thân trang như mgmt-app (`index.css:78-82`: 16 px, line-height 1.55); khung list tự giữ cuộn (Shell `layoutOf` = board).
     <DropOverlay
       enabled={!!write}
-      onFiles={(fs) => fs.length && setPending(fs)}
+      onFiles={(fs) => fs.length && pick(fs)}
       className="text-base leading-[1.55] md:flex md:min-h-0 md:flex-1 md:flex-col"
     >
       <PageHead
@@ -171,7 +175,7 @@ export function ContractsListPage() {
                   onChange={(e) => {
                     const picked = Array.from(e.target.files ?? []);
                     e.target.value = "";
-                    if (picked.length) setPending(picked);
+                    if (picked.length) pick(picked);
                   }}
                 />
                 <Link
@@ -196,6 +200,7 @@ export function ContractsListPage() {
         }
       />
       {delDialog.node}
+      <NeedPdfNotice names={notPdf} />
       <UploadTypeGate
         files={pending}
         onCancel={() => setPending(null)}

@@ -29,7 +29,10 @@ export function DetailGrid({
   today,
   info,
   lockedKeys,
+  summary = true,
 }: {
+  /** CR-125 · UX H4: false ⇒ không vẽ "Tóm tắt" (trang người duyệt đã hiện thẻ tóm tắt ở trên). */
+  summary?: boolean;
   lockedKeys?: ReadonlySet<TextKey> | undefined;
   c: ContractDetail;
   f: FormState;
@@ -102,13 +105,15 @@ export function DetailGrid({
             <Timeline c={c} partner={partner} write={write} locked={c.locked} today={today} />
           )
         )}
-        <SummaryPanel
-          c={c}
-          partner={partner}
-          generateFor={
-            write && c.has_source && c.status !== "extracting" && !confirm ? c.id : undefined
-          }
-        />
+        {summary && (
+          <SummaryPanel
+            c={c}
+            partner={partner}
+            generateFor={
+              write && c.has_source && c.status !== "extracting" && !confirm ? c.id : undefined
+            }
+          />
+        )}
       </div>
     </div>
   );

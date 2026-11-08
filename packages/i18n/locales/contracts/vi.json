@@ -102,6 +102,7 @@
       "upload": {
         "title": "Tải lên hợp đồng",
         "drop": "Thả tệp vào đây để tải lên",
+        "needPdf": "Ký số cần tệp PDF — chuyển sang PDF rồi tải lại: {{names}}",
         "close": "Đóng",
         "retry": "Thử lại",
         "state": {
@@ -166,6 +167,17 @@
       },
       "fileStorageUnavailable": "Chưa cấu hình kho lưu file (FileBox) — liên hệ quản trị",
       "until": "đến {{date}}",
+      "step": {
+        "approved": "Đã duyệt",
+        "rejected": "Từ chối",
+        "cancelled": "Đã huỷ",
+        "attention": "Cần xử lý — mở hợp đồng xem lý do",
+        "waiting_sign": "Chờ ký",
+        "waiting_sign_who": "Chờ {{who}} ký",
+        "waiting_draft": "Chờ gửi duyệt",
+        "returned": "Trả lại — chờ sửa",
+        "waiting_step": "Chờ {{name}}"
+      },
       "view": "Xem",
       "viewAria": "Xem {{title}}",
       "viewContract": "Xem hợp đồng",
@@ -247,6 +259,12 @@
       "sourcing": "Mua hàng"
     },
     "overview": {
+      "quickStart": {
+        "title": "Bắt đầu nhanh",
+        "body": "Chưa có số liệu. Tải hợp đồng đầu tiên lên để hệ thống đọc và gửi duyệt.",
+        "bodyRole": "Chưa có số liệu. Số liệu sẽ hiện khi công ty có hợp đồng.",
+        "cta": "Tải hợp đồng lên"
+      },
       "title": "Tổng quan",
       "today": "Hôm nay {{date}}",
       "work": {
@@ -418,7 +436,7 @@
       "tenant": "Mã công ty",
       "tenantKnown": "Công ty: {{tenant}}.",
       "changeTenant": "Đổi công ty",
-      "email": "Email",
+      "email": "Tên đăng nhập (Email)",
       "emailPlaceholder": "ban@congty.vn",
       "password": "Mật khẩu",
       "showPassword": "Hiện mật khẩu",
@@ -452,6 +470,7 @@
       "showcaseTitle": "Cả hợp đồng, đối tác và chữ ký số — một trợ lý lo giúp.",
       "showcaseLead": "Đăng nhập để xem việc cần làm hôm nay.",
       "preview": {
+        "sample": "Hình minh hoạ — không phải dữ liệu thật",
         "add": "+ Thêm hợp đồng",
         "search": "Tìm theo tên, đối tác, số HĐ…",
         "colContract": "Hợp đồng",
@@ -555,7 +574,7 @@
         "overdueBadge": "Quá hạn",
         "escalatedTo": "Đã chuyển cho {{group}}",
         "waiting": "Đang chờ người duyệt bước này.",
-        "advancing": "Đang chuyển sang bước duyệt kế tiếp…",
+        "advancing": "Đã gửi duyệt. Đang giao cho người duyệt kế tiếp…",
         "willSkip": "Sẽ bỏ qua ({{reason}})",
         "skipReason": {
           "deal": "loại hợp đồng không thuộc điều kiện",
@@ -660,6 +679,7 @@
         "confirm": "Đã lưu và xác nhận hợp đồng.",
         "toLevel2": "Đã xác nhận — chờ Ban giám đốc duyệt",
         "movedTo": "Đã chuyển: {{step}}",
+        "movedToDue": "Đã gửi {{step}} · hạn {{hours}} giờ",
         "approve": "Đã duyệt hợp đồng.",
         "reject": "Đã từ chối hợp đồng.",
         "redo": "Đã gửi đọc lại hợp đồng.",
@@ -699,6 +719,7 @@
       "saving": "Đang lưu…",
       "saveDraft": "Lưu nháp",
       "draftHint": "Bản nháp chỉ bạn thấy — bấm Gửi duyệt để chuyển cho người duyệt",
+      "foldEdit": "Xem và sửa chi tiết hợp đồng",
       "notFound": "Không tìm thấy hợp đồng — quay lại danh sách để chọn hợp đồng khác.",
       "notVisible": "Hợp đồng chưa được gửi duyệt hoặc bạn không có quyền xem. Hãy nhờ người tạo xác nhận.",
       "savedDraft": "Đã lưu nháp. Hợp đồng vẫn chờ xác nhận — bấm Xác nhận để hoàn tất.",
