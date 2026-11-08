@@ -15,6 +15,7 @@ import { type ConfigCall, configWrite } from "../../lib/config/config-write";
 import { AppError, appError } from "../../lib/errors";
 import { afterLock } from "../../lib/test-hooks";
 import { assertDefaultGroupsFree, insertDefaultRoles } from "../app-roles/app-roles.service";
+import { membersAudit } from "../groups/groups.service";
 import * as repo from "./packs.repo";
 import {
   entitledFeatureKeys,
@@ -110,18 +111,20 @@ export function enablePack(
     // UAT B4: trợ lý của gói cho 3 Group vai, cùng tx (không chờ `hub:seed`); NOTIFY Hub giao khi commit.
     await grantAgentsAndNotify(tx, { tenantIds: [tenantId], key: k, actorId });
     // CR-125 · S1 · C1: quản trị công ty dùng được app ngay (vai Chủ gói); người thường chỉ vào vai khi được gán.
+    const ownerKey = packGroupKey(k, "owner");
     const admins = opts?.grantTenantAdmins
-      ? await repo.addTenantAdminsToOwner(tx, {
-          tenantId,
-          actorId,
-          ownerGroupKey: packGroupKey(k, "owner"),
-        })
-      : 0;
+      ? await repo.addTenantAdminsToOwner(tx, { tenantId, actorId, ownerGroupKey: ownerKey })
+      : { groupId: "", usernames: [] as string[] };
+    const nAdmins = admins.usernames.length;
     if (ent > 0) ch.changed({ entity: "entitlement", tenantId });
-    if (grp + roles + admins > 0) ch.changed({ entity: "group", tenantId });
+    if (grp + roles + nAdmins > 0) ch.changed({ entity: "group", tenantId });
     if (grants > 0) ch.changed({ entity: "grant", tenantId });
-    if (ent + grp + grants + roles + admins > 0)
-      ch.audit(packAudit("pack.enable", k, tenantId, feats));
+    if (ent + grp + grants + roles > 0) ch.audit(packAudit("pack.enable", k, tenantId, feats));
+    // Ai được làm Chủ gói luôn có dấu vết (kể cả khi gói đã bật từ trước): một dòng thành viên Group như gán tay.
+    if (nAdmins > 0)
+      ch.audit(
+        membersAudit({ id: admins.groupId, tenantId, key: ownerKey }, { added: admins.usernames }),
+      );
     await afterLock(c.ctx.hooks, "entitlement.save", "rows");
     return packState(k, true, await repo.findGroups(tx, tenantId, packGroupKeys(k)));
   });

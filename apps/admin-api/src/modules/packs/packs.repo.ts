@@ -109,19 +109,23 @@ export async function insertRoleGrants(
 export async function addTenantAdminsToOwner(
   tx: Tx,
   g: { tenantId: string; actorId: string; ownerGroupKey: string },
-): Promise<number> {
-  const rows = await run<{ user_id: string }>(
+): Promise<{ groupId: string; usernames: string[] }> {
+  // Chỉ quản trị đang hoạt động: không khoá bởi công ty (`locked_by_tenant`), không bị vô hiệu hoá (`active`/`deactivated_at`).
+  const rows = await run<{ group_id: string; username: string }>(
     tx,
-    sql`insert into admin.group_members (tenant_id, group_id, user_id, added_by)
-      select ${g.tenantId}::uuid, gr.id, u.id, ${g.actorId}::uuid
-      from admin.groups gr
-      join admin.users u on u.tenant_id = gr.tenant_id and u.role = 'tenant_admin' and u.kind = 'internal'
-      where gr.tenant_id = ${g.tenantId}::uuid and gr.key = ${g.ownerGroupKey}
-      order by u.id
-      on conflict (group_id, user_id) do nothing
-      returning user_id`,
+    sql`with ins as (
+        insert into admin.group_members (tenant_id, group_id, user_id, added_by)
+        select ${g.tenantId}::uuid, gr.id, u.id, ${g.actorId}::uuid
+        from admin.groups gr
+        join admin.users u on u.tenant_id = gr.tenant_id and u.role = 'tenant_admin' and u.kind = 'internal'
+          and u.active and u.deactivated_at is null and not u.locked_by_tenant
+        where gr.tenant_id = ${g.tenantId}::uuid and gr.key = ${g.ownerGroupKey}
+        order by u.id
+        on conflict (group_id, user_id) do nothing
+        returning group_id, user_id)
+      select ins.group_id, u.username from ins join admin.users u on u.id = ins.user_id order by u.username`,
   );
-  return rows.length;
+  return { groupId: rows[0]?.group_id ?? "", usernames: rows.map((r) => r.username) };
 }
 
 /**

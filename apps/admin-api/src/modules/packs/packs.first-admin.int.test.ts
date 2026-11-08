@@ -11,7 +11,9 @@ const API = process.env.TEST_ADMIN_API_DATABASE_URL;
 if (!OWNER || !API) throw new Error("TEST_DATABASE_URL/TEST_ADMIN_API_DATABASE_URL chưa đặt");
 
 const id = (n: number) => `01900000-0000-7000-8000-000000c125${String(n).padStart(2, "0")}`;
-const [PT, PA, TA, TB, ADMIN_A, MEMBER_A, ADMIN_B] = [1, 2, 3, 4, 5, 6, 7].map(id) as string[];
+const [PT, PA, TA, TB, ADMIN_A, MEMBER_A, ADMIN_B, OFF_A, LOCK_A] = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(
+  id,
+) as string[];
 const PK = "pkdemo";
 let owner: postgres.Sql;
 let db: ReturnType<typeof createDb>;
@@ -41,7 +43,20 @@ beforeAll(async () => {
       (${ADMIN_A as string}, ${TA as string}, 'admin-a', 'h', 'Admin A', 'tenant_admin', 'aa@x.test', 'internal', null),
       (${MEMBER_A as string}, ${TA as string}, 'lan', 'h', 'Lan', 'member', 'lan@x.test', 'internal', null),
       (${ADMIN_B as string}, ${TB as string}, 'admin-b', 'h', 'Admin B', 'tenant_admin', 'ab@x.test', 'internal', null)`;
+  // quản trị đã vô hiệu hoá / bị công ty khoá: KHÔNG được làm Chủ gói
+  await owner`insert into admin.users (id, tenant_id, username, password_hash, display_name, role, email, kind, active, deactivated_at)
+    values (${OFF_A as string}, ${TA as string}, 'admin-off', 'h', 'Off', 'tenant_admin', 'off@x.test', 'internal', false, now())`;
+  await owner`insert into admin.users (id, tenant_id, username, password_hash, display_name, role, email, kind, locked_by_tenant)
+    values (${LOCK_A as string}, ${TA as string}, 'admin-lock', 'h', 'Lock', 'tenant_admin', 'lock@x.test', 'internal', true)`;
 });
+
+/** Dòng nhật ký "thành viên Group" của Group Chủ gói: danh sách `added` theo thứ tự ghi. */
+const addedAudit = async (tenantId: string) =>
+  (
+    await owner<{ added: string[] }[]>`select a.summary->'added' as added from admin.audit_log a
+      join admin.groups g on g.id = a.entity_id
+      where a.tenant_id = ${tenantId} and g.key = ${`${PK}-owner`} and a.summary ? 'added' order by a.seq`
+  ).map((r) => r.added);
 afterAll(async () => {
   await db?.close();
   await owner?.end();
@@ -67,7 +82,15 @@ describe("CR-125 · S1 · quản trị công ty đầu tiên dùng được app 
     expect(await membersOf(TB as string, "owner")).toEqual([]);
     // lặp lại ⇒ không nhân đôi
     await enablePack(platform(), TA as string, PK, "write", { grantTenantAdmins: true });
+    expect(await membersOf(TA as string, "owner")).toEqual(["admin-a"]); // admin-off/admin-lock không vào
+    expect(await addedAudit(TA as string)).toEqual([["admin-a"]]); // vết ai được làm Chủ gói (chỉ lần đầu)
+  });
+
+  test("C1 · gói đã bật từ trước, quản trị bị gỡ khỏi Chủ gói ⇒ bật lại vẫn thêm VÀ ghi nhật ký", async () => {
+    await owner`delete from admin.group_members where tenant_id = ${TA as string}`;
+    await enablePack(platform(), TA as string, PK, undefined, { grantTenantAdmins: true });
     expect(await membersOf(TA as string, "owner")).toEqual(["admin-a"]);
+    expect(await addedAudit(TA as string)).toEqual([["admin-a"], ["admin-a"]]);
   });
 
   test("C1 · công ty B bật app ⇒ chỉ quản trị của B vào vai, không đụng quản trị của A", async () => {
