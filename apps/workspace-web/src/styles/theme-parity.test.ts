@@ -111,7 +111,6 @@ const MGMT_DARK_MAP: Record<string, string> = {
   "--card": "--color-panel",
   "--primary": "--color-act",
   "--border": "--color-rule",
-  "--input": "--color-field",
   "--foreground": "--color-ink",
   "--muted-foreground": "--color-dim",
   "--accent": "--color-act-soft",
@@ -122,7 +121,6 @@ const MGMT_DARK_MAP: Record<string, string> = {
   "--warning-bg": "--color-soon-bg",
   "--primary-strong": "--color-act-hover",
   "--primary-foreground": "--color-on-act",
-  "--ink-strong": "--color-pill",
 };
 
 describe("gói token ↔ mgmt-app", () => {
@@ -136,6 +134,10 @@ describe("gói token ↔ mgmt-app", () => {
     );
     const c = tokensOf(tokensCss, ".dark");
     expect(mgmt.size).toBeGreaterThan(25);
+    // Lệch có chủ đích (CR-125 tương phản): --input tối #686c99 (viền ô nhập ≥3:1 trên card), mgmt #3a3c58 chỉ 1.64:1.
+    expect(c.get("--input")).toBe("#686c99");
+    // --ink-strong tối #3730a3 + --on-ink #e0e7ff = 8.06:1 (mgmt --color-pill #c7d2fe cho 1.21:1).
+    expect(c.get("--ink-strong")).toBe("#3730a3");
     for (const [ours, theirs] of Object.entries(MGMT_DARK_MAP)) {
       expect({ [ours]: c.get(ours) }).toEqual({ [ours]: mgmt.get(theirs) });
     }
