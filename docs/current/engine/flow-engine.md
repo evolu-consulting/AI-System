@@ -263,3 +263,6 @@ Sau bước Soạn thảo (có tệp), node tạo một hợp đồng trong Sổ
 - Kịch bản: khi hợp đồng không phải bản ghi của lượt (vd tải lên chưa gửi duyệt) thì bước Ký số từ chối, không khoá, không tạo phong bì [test: apps/hub-api/src/modules/packs/create-from-step.int.test.ts » Ký số từ chối HĐ không phải bản ghi của lượt (không bỏ qua duyệt): HĐ tải lên chưa gửi duyệt không bị khoá/ký]
 - Kịch bản: khi ánh xạ ô bước thành tên, đối tác, giá trị thì chuẩn hoá và mặc định tên khi trống [test: packages/contracts/src/modules/contracts/create-from-step/node.test.ts » planCreateFromStep · ánh xạ input_map]
 
+
+## CR-120 · Delta gộp 2026-11-09 (đợt cr125-wave)
+- **Bước `agent` trong FlowView (G1, cr120-community-flows):** bước do agent làm hiển thị như bước hệ thống kèm khoá agent và tóm tắt kết quả. Hàng của 3 khe Community (`community.post-moderation`, `community.partner-join`, `community.report`) được chiếu sang FlowView; task chỉ có khi người xem là người duyệt và bước duyệt đang mở (id task = `mod_task_id`). Body khe đổi số/loại bước ⇒ `SLOT_STEPS_FIXED` (khung bước cố định, chỉ đổi cấu hình).

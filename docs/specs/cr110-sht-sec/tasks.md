@@ -24,13 +24,13 @@ Unit `section-key.test.ts`; e2e viết sẵn.
 - Có `sec` ⇒ về `/overview` (Shell giữ hộp thoại). Không phải chủ sở hữu ⇒ hộp thoại chỉ xem như hiện nay.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/cai-dat-va-quyen.md
 #### Yêu cầu: Mở Cài đặt thẳng một mục bằng đường dẫn
 `/settings?sec=<co|rep|biz|scout|flow>` mở hộp thoại Cài đặt ở mục đó rồi về Tổng quan; khoá lạ mở mục mặc định (Công ty); không có `sec` giữ nguyên chuyển sang Thành viên. Quyền xem/sửa theo hộp thoại hiện có.
 - Kịch bản: khi vào `/settings?sec=biz` thì hộp thoại mở ở mục Điểm kinh doanh [test: e2e/contracts-web/v2l-settings.cw.ts » CR-110: /settings?sec=biz mở thẳng hộp thoại ở mục Điểm kinh doanh, khoá lạ ⇒ mục Công ty]
-- Kịch bản: khi `sec` là khoá lạ thì mở mục Công ty [test: apps/contracts-web/src/features/settings/lib/section-key.test.ts » khoá lạ ⇒ mục mặc định co]
+- Kịch bản: khi `sec` là khoá lạ thì mở mục Công ty [test: apps/workspace-web/src/features/settings/lib/section-key.test.ts » khoá lạ ⇒ mục mặc định co]
 
 ## Việc còn lại
 qc relock e2e đã làm (`test:lock:write`).

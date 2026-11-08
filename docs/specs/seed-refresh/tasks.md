@@ -62,7 +62,7 @@ năng CR-105..111 chạy sẵn, không SQL/API tay. Một module mới `apps/hub
 - `demo-viewer` / `demo-editor` theo email `example.invalid` (khớp `deploy/tenants/demo.yaml`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Dữ liệu mẫu dev/test của Community

@@ -31,7 +31,7 @@ vai duyệt) + `community.flows.int.test.ts` (số đếm theo tenant, người 
 - PERF: endpoint tăng câu SQL cố định, chạy song song: +1 đếm community (chỉ người duyệt), +1 hub đếm việc duyệt HĐ (+1 nữa chỉ khi chưa có việc, để biết vai duyệt vì def/khe là bảng hệ thống). Đối tác / không có gói contracts: 0 câu thêm. Chưa đo p95 (không có perf test sẵn cho endpoint này).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Số chờ xử lý trên mục menu hàng việc (nguồn: cr121-c7-approval-inbox-nav)

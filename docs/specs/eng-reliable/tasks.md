@@ -53,7 +53,7 @@ Thẻ `GET …/approval` (lượt `mode='engine'`) thêm `attention: {kind, reas
 - Thiếu Group lúc `compileDef` (đua sau khi phân giải mã) ⇒ `FLOW_GROUP_MISSING` không kèm mã (chỉ có id).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Engine mở lượt theo quy trình gán cho tenant
@@ -76,7 +76,7 @@ Run engine của lượt `level1` ở `needs_decision` (vd `tool_failed`, `retry
 
 #### Yêu cầu: Lỗi logic của tool hệ thống không thử lại
 `contracts-route` / `contracts-finalize` ném lỗi nghiệp vụ (`PackToolBusinessError`: không thuộc run, thiếu bước bắt buộc, lượt không mở, gắn SP lỗi…) ⇒ registry trả mã nghiệp vụ (mặc định `PACK_TOOL_BUSINESS`) ⇒ engine phân loại `business` ⇒ `needs_decision` `tool_failed` ngay. Lỗi khác (DB, mạng) giữ `UPSTREAM_ERROR` ⇒ thử lại 30 s/2'/8' như cũ.
-- Kịch bản: khi lỗi nghiệp vụ thì mã nghiệp vụ được phân loại business; lỗi thường thì UPSTREAM_ERROR transient [test: apps/hub-api/src/modules/packs/kit/domain/pack-tool-error.test.ts » lỗi nghiệp vụ ⇒ mã nghiệp vụ ⇒ business · lỗi thường ⇒ UPSTREAM_ERROR ⇒ transient]
+- Kịch bản: khi lỗi nghiệp vụ thì mã nghiệp vụ được phân loại business; lỗi thường thì UPSTREAM_ERROR transient [test: apps/hub-api/src/modules/processes/domain/tools/pack-tool-error.test.ts » lỗi nghiệp vụ ⇒ mã nghiệp vụ ⇒ business · lỗi thường ⇒ UPSTREAM_ERROR ⇒ transient]
 - Kịch bản: khi finalize thiếu bước / route sai thì ném lỗi nghiệp vụ; lỗi hạ tầng giữ nguyên [test: apps/hub-api/src/modules/packs/contracts/application/approval-engine.usecase.test.ts » finalize thiếu bước / route sai ⇒ PackToolBusinessError · lỗi hạ tầng (repo ném) giữ nguyên]
 
 #### Yêu cầu: Dọn run engine mồ côi

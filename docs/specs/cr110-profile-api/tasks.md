@@ -62,7 +62,7 @@ trang con trỏ (limit=1 đi hết = một trang lớn, mới nhất trước, k
   nested loop `media_post_idx (post_id, position)`; không cần index/migration mới. Chưa đo EXPLAIN trên dữ liệu lớn (không phải đường nóng có ngưỡng).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Hồ sơ — tab "Ảnh & tệp" chỉ media bài người xem được thấy

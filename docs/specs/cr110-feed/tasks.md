@@ -27,10 +27,10 @@ e2e `feed.cm.ts` (chạy một lần cuối); không có logic thuần mới.
 - Bỏ bước chọn màu cá nhân trong e2e (COM-FR-39 bỏ ô chọn màu).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Bảng tin — cách ly đối tác trên thẻ bài
 Đối tác không bao giờ có trong DOM: nút Lưu báo giá, form báo giá, callout giá vốn, callout báo giá đã lưu, rail Đối tác.
-- Kịch bản: đối tác xem bảng tin thì không có Lưu báo giá / giá vốn / báo giá đã lưu / rail Đối tác [test: e2e/community-web/feed.cm.ts » đối tác: bài của NCC bị che liên hệ, không có Lưu báo giá, không chatbot, ghi chú chỉ chủ quản]
-- Kịch bản: chủ quản thấy nút Lưu báo giá và mở được form [test: e2e/community-web/feed.cm.ts » chủ quản: luồng theo từng công ty + audience preview + nút Lưu báo giá bật và mở form (C7b)]
+- Kịch bản: đối tác xem bảng tin thì không có Lưu báo giá / giá vốn / báo giá đã lưu / rail Đối tác [test: e2e/community-web/feed.cm.ts]
+- Kịch bản: chủ quản thấy nút Lưu báo giá và mở được form [test: e2e/community-web/feed.cm.ts]

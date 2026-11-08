@@ -39,7 +39,7 @@ thiếu/sai SP. Sửa: biến chỗ `pending_links` thành **chỗ giữ một n
 - Migration idx 65 / `when` 1800150000000 (0068 giữ cho lát khác).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Đạt bước cuối kèm gắn SP an toàn khi nhiều người bấm cùng lúc

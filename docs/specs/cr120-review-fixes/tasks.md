@@ -51,7 +51,7 @@ Không có đường nóng mới. Backfill 0094 = 2 câu DELETE theo tập (khô
 - Chuông "bài mới" phát lại khi bài sửa được duyệt lại.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Duyệt bài trước khi đăng — sửa bài đang chờ (nguồn: cr120-review-fixes)

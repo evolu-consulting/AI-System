@@ -1,4 +1,4 @@
-# Sổ Hợp Tác · Duyệt, khoá, ký số
+﻿# Sổ Hợp Tác · Duyệt, khoá, ký số
 
 Cập nhật: 2026-10-27 · Gộp từ: contract-flow (CR-098, ADR-0030), engine-flag-tenant, M3-decouple/HD3 (máy cũ), k1-lock/lock-strict (CR-097), cf-esign-docusign, esign-multi, esign-anchor(+fix), esign-flow(+fix), esign-sweep, esign-sweep2.
 
@@ -29,7 +29,7 @@ Bảng `contracts.approvals` có `mode ∈ machine | engine`. **Hàng cũ `machi
 Mỗi lần mở lượt duyệt (kể cả mở lại), gói tra quy trình theo tenant của HĐ: gán của khe `contracts.approval`, không có ⇒ mặc định; lấy bản xuất bản, phân giải mã phòng ban theo tenant, đồng bộ def tenant `contracts-approval` khi `source_ref` khác; lượt đang chạy giữ snapshot. Không còn đọc `contracts.approval_flows`.
 - Kịch bản: khi X gán A, Y gán B thì HĐ của X chạy các bước của A, HĐ của Y chạy các bước của B [test: apps/hub-api/src/modules/packs/contracts/application/approval-engine-slot.int.test.ts » X gán A, Y gán B chạy đúng quy trình]
 - Kịch bản: khi đổi gán X từ A sang B lúc một HĐ đang duyệt thì lượt đó chạy hết theo A, HĐ vào duyệt sau chạy B [test: apps/hub-api/src/modules/packs/contracts/application/approval-engine-slot.int.test.ts » đổi gán: lượt dở giữ snapshot, lượt mới chạy quy trình mới]
-- Kịch bản: khi Group theo mã đã bị xoá khỏi tenant thì lượt chạy máy 2 bước và log `contract-engine-flow-invalid` [test: apps/hub-api/src/modules/packs/contracts/application/approval-engine-slot.int.test.ts » thiếu Group lúc chạy ⇒ máy cũ]
+- Kịch bản: khi Group theo mã đã bị xoá khỏi tenant thì lượt kẹt `FLOW_GROUP_MISSING:<mã>` (không về máy cũ; xem mục CR-107 cuối file) [test: apps/hub-api/src/modules/packs/contracts/application/approval-engine-slot.int.test.ts » thiếu Group lúc chạy ⇒ lượt kẹt FLOW_GROUP_MISSING]
 - Kịch bản: khi mở lượt với 10.000 tenant và 500 bản phát hành thì `resolveSlot` p95 ≤ 5 ms với số câu SQL cố định [test: apps/hub-api/src/modules/processes/library/slot-resolve.perf.int.test.ts » resolveSlot p95 ≤ 5 ms]
 
 ### Yêu cầu: Chuyển mẫu cũ sang thư viện
@@ -41,7 +41,7 @@ Tenant có `contracts.approval_flows` (hoặc cài đặt duyệt khác mặc đ
 Xác nhận xong = khoá cứng (tenant tắt duyệt: bấm xác nhận là khoá; bật duyệt: khoá khi duyệt xong). Chi tiết thao tác được/không: `chung-tu.md` §4. Giao dịch (`deal`) không khoá. Mở lại: người phụ trách hoặc owner (`chung-tu.md` §4).
 
 ## 3. Cờ bật engine
-- Env `CONTRACTS_APPROVAL_ENGINE`: ≠ `on` ⇒ tắt hết (công tắc khẩn, chỉ máy cũ). `on` ⇒ chỉ công ty có feature `contracts-approval-engine` (entitlement còn hiệu lực, feature không `off`); thiếu ⇒ máy cũ (fail-closed). Cổng chỉ ở **mở lượt mới** (kể cả heal của sweep); lượt đã `engine` chạy nốt không cổng. Đọc từ cache cấu hình, 0 SQL. Cấp ở trang Features của Admin (migration admin 0026 cấp sẵn cho `demo` và tenant đã có lượt engine). Nguồn: engine-flag-tenant.
+- **Đã gỡ (CR-121 A-2/D-4).** Không còn env `CONTRACTS_APPROVAL_ENGINE`, cổng "đã gán quy trình", feature `contracts-approval-engine` hay ghi chú `engine_off`: mọi lượt duyệt MỚI luôn chạy engine (xem mục CR-121 cuối file).
 
 ## 4. Ký số (cf-esign-docusign, esign-multi, esign-anchor)
 - Cổng trung lập `ESignProvider`; registry nhiều nhà cung cấp song song (`H/domain/esign.providers.ts`): env **`ESIGN_PROVIDERS`** = danh sách theo thứ tự (`docusign`, `selfsign`, `misa`; khoá lạ/`none`/trùng bị bỏ). Đặt (khác rỗng) thì **thắng** `ESIGN_PROVIDER` (cũ, vẫn đọc khi vắng danh sách; `none` mặc định). Prod: `ESIGN_PROVIDERS=docusign,selfsign` (docusign đầu = mặc định). Mỗi nhà cung cấp có `kind`: docusign = `envelope`, selfsign/misa = `ca`. Khả dụng khi đủ cấu hình env + có FileBox; `misa` mới khai báo, chưa khả dụng (chờ Client ID, chưa có adapter).
@@ -80,7 +80,7 @@ Xác nhận xong = khoá cứng (tenant tắt duyệt: bấm xác nhận là kho
 Cài đặt: chọn mặc định (nhãn + mức pháp lý), công ty chỉ-đọc. Hộp Gửi ký: dropdown khi > 1 nhà cung cấp khả dụng; phong bì hiện tên nhà cung cấp. i18n vi/en. Log thiếu cấu hình: `esign-provider-not-configured {provider}`.
 
 ## Chưa rõ
-1. Trạng thái bật `CONTRACTS_APPROVAL_ENGINE` trên prod và công ty nào có feature `contracts-approval-engine`: STATE ghi "prod: chỉ demo" (2026-10-27), chưa kiểm env thật.
+1. (Đã hết hiệu lực từ CR-121: không còn cờ bật engine.)
 2. DocuSign: prod đang dùng sandbox (deploy 2026-10-27); định dạng Connect giả định JSON (`data.envelopeId`). CA Việt Nam: adapter MISA chưa có (chờ Client ID); lát `esign-cks` ("Chữ ký số của tôi", ký PAdES nối tiếp cho phong bì loại `ca`, điền `certificate_ref`) chưa làm.
 3. HĐ bị xoá để lại envelope mồ côi (vô hại, chưa dọn). (Mở lại HĐ đã huỷ phong bì đang mở — §4b.)
 7. Mốc nhắc/quá hạn của bước Ký số chưa có `*.perf.int.test.ts` (lô 200/tenant/lượt; tồn đọng lớn xả dần); thẻ HĐ chưa hiện lần kiểm nhà cung cấp gần nhất. Quyền mới của role `contracts_job` (0065) đã qua review security cuối đợt 2026-10-27.
@@ -236,4 +236,44 @@ Link `?ky=1` chỉ tự mở trang ký khi đến lượt người xem (mọi ng
 #### Yêu cầu: Công tắc ký số trong Cài đặt làm việc thật (nguồn: cr125-ux-s2-current-flow)
 Chủ gói bật/tắt ký số ở Cài đặt › Quy trình duyệt và thấy "Đã lưu"; người không đổi được (không phải chủ gói / chưa cấu hình) thấy trạng thái và lý do, không có ô khoá.
 - Kịch bản: khi chủ gói bấm công tắc ký số thì lưu, báo đã lưu và tải lại vẫn giữ [test: e2e/journey-approval/cr125-s2-settings-flow.spec.ts » 3 · công tắc ký số trong Cài đặt bật được thật (lưu, tải lại vẫn bật)]
+
+
+
+## CR-107/108/113/121 · Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới thắng nội dung cũ cùng chủ đề ở trên (kể cả §1c/§3). Kịch bản và test: `docs/specs/<lát>/tasks.md`.
+
+### Engine là đường duy nhất (cr121-a2-engine-only, cr121-d4-assign-engine)
+- Mọi lượt duyệt HĐ MỚI mở run engine theo luật định tuyến của khe `contracts.approval`: luật admin gán nếu có, không thì luật/mẫu mặc định của khe. Công ty không cần bật tính năng nào; không còn công tắc env hay ghi chú `engine_off`. Mở 2 lần đồng thời chỉ ra 1 lượt + 1 run.
+- Engine không mở được (vắng, ném lỗi) ⇒ lượt kẹt `ENGINE_RUN_FAILED` chờ "Mở lại quy trình", không về máy cũ.
+- Lượt `mode='machine'` mở trước đây, chưa gắn run, vẫn quyết nốt qua `decide` 2 bước cũ (cấp 1 → cấp 2 → Đã duyệt), không chuyển sang engine giữa chừng. Việc gỡ hẳn máy cũ chờ đếm lượt machine còn mở = 0 trên prod.
+- Ops-watch có check `flow_coverage` (crit, nêu tên công ty + cách sửa): còn lượt duyệt đang chạy mà khe hết luật gán, luật trỏ quy trình đã xoá/chưa xuất bản, hoặc run kẹt chờ quyết định; sửa xong thì xanh (`docs/current/ops/flow-coverage.md`).
+- Journey (cr121-d5): platform admin nhân bản quy trình từ thư viện, đặt điều kiện bước (vd Giám đốc chỉ khi Giá trị ≥ 500 tr và Loại = Mua), xuất bản, gán từng công ty; mỗi công ty chạy đúng quy trình mình, bước không thoả điều kiện bị bỏ qua, sửa giá trị HĐ đang chờ làm đổi bước theo giá trị mới, công ty này không thấy dữ liệu công ty kia.
+
+### Quy trình không mở được ⇒ lượt kẹt, không về máy cũ (eng-reliable, CR-107)
+- Mỗi lần mở lượt (kể cả mở lại) gói tra quy trình theo tenant của HĐ (gán của khe, không có ⇒ mặc định), lấy bản xuất bản, phân giải mã phòng ban theo tenant, đồng bộ def tenant `contracts-approval` khi `source_ref` khác; lượt đang chạy giữ snapshot. Quy trình không mở được (thiếu Group, body hỏng, khe không có bản) ⇒ lượt giữ `level1`, `mode='engine'`, chưa có run, `feedback` = `FLOW_GROUP_MISSING:<mã>` / `FLOW_INVALID` / `FLOW_MISSING`; thẻ `attention.kind = "stalled"`. Owner/admin "Mở lại quy trình" mở run khi quy trình đã hợp lệ (còn thiếu ⇒ 422 `APPROVAL_GROUP_MISSING`, ghi lý do mới).
+- Run `needs_decision` (vd `tool_failed`, `retry_exhausted`) không đổi trạng thái HĐ/lượt; thẻ có `attention {kind:"needs_decision", reason, since}`. Owner/admin gói: `POST …/approval/retry` (engine `add_attempt`, chạy lại bước lỗi) hoặc `POST …/approval/cancel-reopen` (huỷ run, ghi `CANCELLED_BY_OWNER`, mở run mới dưới người gửi theo quy trình hiện hành). Không chờ quyết ⇒ 409 `APPROVAL_NOT_OPEN`; không phải owner ⇒ 403. Lượt đang chạy/đã đóng: `attention = null`.
+- Lỗi logic của tool hệ thống (`contracts-route`/`contracts-finalize` ném `PackToolBusinessError`) ⇒ `needs_decision` `tool_failed` ngay, không thử lại; lỗi hạ tầng (DB, mạng) giữ `UPSTREAM_ERROR` thử lại 30 s/2'/8'.
+- Vòng quét mỗi tenant dọn run engine mồ côi: ≤ 100 run gói `contracts` chưa kết thúc, bắt đầu trước `now − 10'`, không gắn lượt nào ⇒ `cancelSys` (1 câu phía engine + 1 câu `= any` phía gói); kết quả quét có `orphans`. Tra quy trình `resolveSlot` p95 ≤ 5 ms, số câu SQL cố định.
+- Đạt bước cuối giữ chỗ `pending_links` (lần bấm, người, task) trong tx gói trước khi `act`; người khác Đạt cùng task bị chặn (`APPROVAL_NOT_OPEN`) tới khi trả chỗ hoặc quá 15 phút; chính người giữ giữ lại được; act lỗi chỉ trả đúng chỗ của lần bấm đó; gắn run mới xoá chỗ giữ. `contracts-finalize` áp đúng SP của người thắng (eng-links-race, eng-review-fix).
+
+### Thẻ duyệt (eng-card-ui, eng-review-fix, pl-uat-fixes, card-skip-label, cr113-approve-ui)
+- Khi `attention` có giá trị: banner "Quy trình đang dừng: <lý do>" kèm thời điểm. Owner/admin với `needs_decision` thấy **Thử lại** và **Huỷ & mở lại** (có hộp xác nhận); với `stalled` thấy **Mở lại quy trình**; người khác chỉ thấy "Báo chủ hợp đồng để xử lý". Lý do `FLOW_GROUP_MISSING:<mã>` nêu mã phòng ban cần thêm; mã lỗi 409/422/503/403 có câu tiếng Việt riêng.
+- Thẻ không poll vô hạn: nghe `/me/stream` (`process.updated`, `review_task.created` của đúng run) để tải lại; lưới an toàn giãn dần 2·4·8·16 s rồi giữ 30 s, chỉ khi đang chuyển bước và không có `attention`. Stream trả 4xx (trừ 408/429) thì dừng nối lại. Hub cho công ty không có Chat AI vẫn mở `/me/stream` nhưng chỉ phát sự kiện quy trình của chính user.
+- Sau khi một bước Đạt/bỏ qua mà bước kế chưa mở: ghi chú "Đang chuyển sang bước duyệt kế tiếp…" và tự tải lại tới khi bước mở; bước duyệt mở và người xem quyết được ⇒ Đạt / Trả lại / Từ chối (kể cả bước thêm từ quy trình thư viện).
+- Bước chưa tới mà `when` không thoả với HĐ hiện tại được trả kèm `skip_when`; thẻ hiện "Sẽ bỏ qua (giá trị < 500.000.000)" chữ mờ thay "Chưa đến"; giá trị trống ⇒ không báo bỏ qua.
+- Bước do Toàn quyền duyệt thay hiện "Duyệt thay · Toàn quyền"; bước quá hạn hiện "Quá hạn" và "Đã chuyển cho <nhóm>".
+
+### Chủ gói duyệt thay, quá hạn chuyển cấp (cr113-approve-rules, cr113-fix)
+- Thành viên Group Toàn quyền quyết được mọi bước engine. Khi không phải người của bước (Group duyệt / trưởng phòng / người cụ thể / Group chuyển cấp) thì lần quyết được ghi `approval_override` TRƯỚC khi engine nhận (ghi lỗi ⇒ không quyết; ghi lặp không nhân bản; Từ chối/Trả lại cũng ghi) và thẻ hiện `decided_as = owner_override`; ngược lại `member`. Bước đã chuyển cấp cho nhóm owner, hoặc owner thuộc Group bước ⇒ người của bước; bước head_only (owner không phải trưởng phòng) hoặc người cụ thể ⇒ duyệt thay.
+- Bước có hạn (`due_h`) không đặt nhóm chuyển cấp ⇒ quá hạn chuyển về Group Toàn quyền; đặt tường minh thắng; không hạn thì không chuyển cấp; lượt đang chạy giữ snapshot. Nhóm chuyển cấp tường minh đã xoá ⇒ Cài đặt › Quy trình duyệt báo lỗi cấu hình (không rơi về mặc định).
+- `GET /pack/contracts/approval-flow` trả `owner_can_override`, `owner_group_name` và mỗi bước review `escalate_default`.
+
+### Dữ liệu HĐ của lượt duyệt, tên HĐ, id lượt chạy (cr121-f5-notify-vars, cr121-q4-contract-name, cr121-f2)
+- Trước mỗi lần Đạt, gói cập nhật input lượt (số HĐ, tên, giá trị, người phụ trách, ngày) theo HĐ hiện tại; bản cũ không đè bản mới; lượt đã kết thúc/bản ghi khác không đổi; quy trình không có bước đọc dữ liệu HĐ thì bỏ qua. Thông báo sau bước duyệt dùng số và tên đã xác nhận.
+- Tên HĐ một nguồn: mọi nơi (danh sách, chi tiết, Việc của tôi, Chờ tôi duyệt, nhật ký, nhãn lượt, thông báo, sắp xếp theo tên) dùng trường "Tên hợp đồng"; chỉ khi trống mới dùng tên file lúc tải. Định nghĩa SQL duy nhất `contractNameSql` (`adapters/contract-name.sql.ts`); script `check-contract-name` chặn tự viết lại biểu thức hoặc đọc thô `c.title`.
+- Thẻ duyệt của lượt engine trả thêm `engine_run_id` (khác `run_id` = lượt duyệt của gói); trang "Chi tiết lượt chạy" của quản trị mở bằng id này; tenant_admin công ty khác nhận 404.
+- ⚠ Lệch code (cr121-f5): còn chỗ đọc `c.title` với ý tên HĐ chưa chuyển sang `contractNameSql` — context-label.repo.ts:18, esign-flow.repo.ts:69, esign-sweep.repo.ts:37, activity.repo.ts, mywork.repo.ts, intake.tools.ts:96, rep.sql.ts:250, transactions-read.sql.ts:13, manage.repo.ts:88, appendix.repo.ts:103, business.repo.ts:199; biểu thức tự viết lại ở followups.repo.ts:35, ledger-read.repo.ts:31, service-customers.repo.ts:52, todo.repo.ts:18. Danh sách/chi tiết (`contracts.repo.ts`) trả `title` thô; `contract_delete_log.title` còn là tên file; HĐ cũ chưa có "Tên hợp đồng" vẫn ra tên file.
+
+### Mục "Chờ tôi duyệt" (cr121-c7-approval-inbox-nav)
+Người có vai duyệt trong quy trình duyệt HĐ đang gán (hoặc đang có việc chờ) thấy mục "Chờ tôi duyệt" kèm số HĐ chờ sau "Hợp đồng"; mở ra danh sách HĐ chờ quyết. Rỗng ⇒ nói rõ vì sao và bước tiếp theo, kèm liên kết xem tất cả HĐ. Người khác không thấy; số chỉ đếm trong công ty.
 

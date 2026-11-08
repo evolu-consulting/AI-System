@@ -35,7 +35,7 @@ int `tests/acceptance/CF/reviewer-visible.int.test.ts` (đỏ trước: T nhận
 - Chủ gói (Toàn quyền) vẫn duyệt được mọi bước (giữ prod-fix2, cần người dùng xác nhận).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/cai-dat-va-quyen.md
 #### Yêu cầu: Người duyệt của bước thấy HĐ cần duyệt ở chế độ hiển thị org

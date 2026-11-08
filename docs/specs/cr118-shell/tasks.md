@@ -7,7 +7,7 @@ migration: không
 phụ thuộc: community-module (merged), move, capabilities (GET /pack/me)
 ---
 ## Plan (ngắn)
-`git mv` module Community vào `apps/sohoptac-web/src/modules/community`; shell đọc manifest (contracts + community), gắn cây route Community vào router TanStack có sẵn bằng `createCommunityRoutes` (lazy, chunk `community`), nav hai chiều theo quyền (`/pack/me`), i18n gộp một instance, CSS Community scoped, depcruise 1–5 nâng lên error.
+`git mv` module Community vào `apps/workspace-web/src/modules/community`; shell đọc manifest (contracts + community), gắn cây route Community vào router TanStack có sẵn bằng `createCommunityRoutes` (lazy, chunk `community`), nav hai chiều theo quyền (`/pack/me`), i18n gộp một instance, CSS Community scoped, depcruise 1–5 nâng lên error.
 
 ## Làm
 - Module: bỏ phiên/đăng nhập riêng (Login, session, auth, contracts-link, login.css); host cấp `CommunityHost{router, logout, openContracts, contractsHref}` qua `manifest.configureCommunityHost`; `RouterPort` dựng bằng `createRouterPort(LowRouter)` trên router TanStack; manifest: route khung `/community` (component lười, giữ trạng thái) + 4 route con; `legacyRedirect` (hash cũ `/community#/…` → URL chuẩn).
@@ -40,28 +40,28 @@ unit: router-port, manifest, scope CSS, i18n-merge, check-bundle community; type
 - Gộp chuông + dock; cổng OpenFeature; SSE `config.changed`; deploy-kit (Dockerfile/nginx/edge); quyền `data-accent` trên shell chung nếu cần.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: COM-FR-43 Link sang Sổ Hợp Tác là link trong app, cách ly đối tác bằng route + chunk
 Community chạy dưới `/community/*` của web gộp; mục Community trong sidebar Sổ Hợp Tác chỉ hiện khi `/pack/me` bật module `community`; link Sổ Hợp Tác trong Community là điều hướng nội bộ (không SSO, không đổi host). Đối tác (contracts tắt) chỉ thấy Community và trang chủ `/` đưa về `/community` (home theo quyền do platform/auth).
-- Kịch bản: khi người dùng là đối tác thì đối tác vào thẳng Community và gõ đường dẫn Sổ Hợp Tác thì về `/community` [test: e2e/sohoptac-web/auth.ss.ts » đối tác lần đầu: buộc đổi mật khẩu rồi vào /community]
-- Kịch bản: khi shell dựng route Community thì module chỉ nạp khi vào route (chunk riêng) [test: apps/sohoptac-web/src/modules/community/manifest.test.ts » một route khung /community (component lười) + route con tương đối, gắn vào route cha của host]
-- Kịch bản: khi vào `/community#/profile/<o>/<s>` (hash cũ) thì chuyển về `/community/profile/<o>/<s>` [test: apps/sohoptac-web/src/modules/community/domain/legacy-hash.test.ts » kết quả đọc lại được bằng parsePath]
+- Kịch bản: khi người dùng là đối tác thì đối tác vào thẳng Community và gõ đường dẫn Sổ Hợp Tác thì về `/community` [test: e2e/workspace-web/auth.ss.ts » đối tác lần đầu: buộc đổi mật khẩu rồi vào /community]
+- Kịch bản: khi shell dựng route Community thì module chỉ nạp khi vào route (chunk riêng) [test: apps/workspace-web/src/modules/community/manifest.test.ts » một route khung /community (component lười) + route con tương đối, gắn vào route cha của host]
+- Kịch bản: khi vào `/community#/profile/<o>/<s>` (hash cũ) thì chuyển về `/community/profile/<o>/<s>` [test: apps/workspace-web/src/modules/community/domain/legacy-hash.test.ts » kết quả đọc lại được bằng parsePath]
 
 ### ADDED web/web-hop-nhat.md
 #### Yêu cầu: UW-FR-07..09 Một i18n, CSS không rò, luật depcruise
 Hai bộ khoá `community.*` và `contracts.*` dùng chung một instance i18next, không khoá nào trùng; CSS Community nằm dưới `[data-mod="community"]` với biến `--cm-*`.
-- Kịch bản: khi gộp hai bộ khoá thì mỗi bộ có gốc riêng và không khoá nào trùng [test: apps/sohoptac-web/src/app/i18n-merge.test.ts » hai bộ khoá có gốc riêng và không khoá nào trùng ở vi và en]
-- Kịch bản: khi nạp CSS Community thì mọi selector bắt đầu bằng `[data-mod="community"]` [test: apps/sohoptac-web/src/modules/community/ui/styles/scope.test.ts » mọi selector có tiền tố data-mod community và biến chỉ --cm hoặc --lg]
+- Kịch bản: khi gộp hai bộ khoá thì mỗi bộ có gốc riêng và không khoá nào trùng [test: apps/workspace-web/src/app/i18n-merge.test.ts » hai bộ khoá có gốc riêng và không khoá nào trùng ở vi và en]
+- Kịch bản: khi nạp CSS Community thì mọi selector bắt đầu bằng `[data-mod="community"]` [test: apps/workspace-web/src/modules/community/ui/styles/scope.test.ts » mọi selector có tiền tố data-mod community và biến chỉ --cm hoặc --lg]
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: COM-FR-27 Ô đăng bản tin thu gọn/mở và đính kèm gộp
 Ô đăng bản tin có nút thu gọn về một dòng gợi ý và mở lại, trạng thái nhớ theo người dùng; nút Ảnh và Video gộp thành "Đính kèm" nhận nhiều tệp tải lên FileBox (server quét MIME, cỡ, loại), tệp hiện thành thẻ có Tải về.
 - Kịch bản: khi người dùng thu gọn ô đăng rồi tải lại thì ô vẫn thu gọn [test: e2e/community-web/composer.cm.ts » ô đăng thu gọn và mở lại, trạng thái được nhớ sau khi tải lại]
 - Kịch bản: khi chọn PDF bằng nút Đính kèm thì tệp được tải lên, đăng bài kèm thẻ tệp có tên, dung lượng và Tải về [test: e2e/community-web/composer.cm.ts » một nút Đính kèm thay Ảnh và Video: tải PDF lên, đăng bài và thấy thẻ tệp]
-- Kịch bản: khi lưu trạng thái ô đăng thì storage bị chặn không gây lỗi [test: apps/sohoptac-web/src/modules/community/application/composer-pref.test.ts » storage bị chặn thì không ném lỗi]
-- Kịch bản: khi tải tệp lỗi 413 415 503 thì báo đúng thông điệp tiếng Việt [test: apps/sohoptac-web/src/modules/community/domain/media.test.ts » 413 415 503 có khoá riêng, còn lại là lỗi chung]
+- Kịch bản: khi lưu trạng thái ô đăng thì storage bị chặn không gây lỗi [test: apps/workspace-web/src/modules/community/application/composer-pref.test.ts » storage bị chặn thì không ném lỗi]
+- Kịch bản: khi tải tệp lỗi 413 415 503 thì báo đúng thông điệp tiếng Việt [test: apps/workspace-web/src/modules/community/domain/media.test.ts » 413 415 503 có khoá riêng, còn lại là lỗi chung]
 
 #### Yêu cầu: COM-FR-41 Mục Sổ Hợp Tác nằm trong dialog Cài đặt Community
 Mục Sổ Hợp Tác hiển thị ngay trong dialog Cài đặt Community, chỉ khi module contracts bật và người dùng có quyền; mở mục không đổi URL ngoài `?settings=`.

@@ -50,24 +50,24 @@ Không so với `process_slots.default_def_id` lúc hỏi (platform đổi mẫu
 - Ops dùng dữ liệu hub (process_runs/defs/luật) vì không đọc được bảng gói.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Gán quy trình duyệt hợp đồng là đủ để HĐ mới duyệt theo quy trình
 Công ty được gán quy trình riêng cho khe "Duyệt hợp đồng" (luật chọn quy trình không phải mặc định của khe) thì hợp đồng MỚI vào bước duyệt chạy trên
 engine quy trình, không cần bật tính năng nào khác; công ty chưa gán vẫn duyệt theo cách cũ; bỏ gán thì HĐ mới về cách cũ, lượt đã chạy engine chạy nốt.
 Env `CONTRACTS_APPROVAL_ENGINE` ≠ `on` vẫn tắt hết (công tắc khẩn).
-- Kịch bản: khi công ty chưa gán thì HĐ mới ở máy cũ; gán quy trình riêng thì HĐ mới ở engine dù không có feature; bỏ gán thì HĐ mới về máy cũ và lượt đã engine giữ nguyên [test: tests/acceptance/CF/engine-tenant-gate.int.test.ts » chưa gán ⇒ máy cũ, gán ⇒ engine (không có feature/entitlement nào), bỏ gán ⇒ máy cũ]
+- Kịch bản: khi công ty chưa gán thì HĐ mới ở máy cũ; gán quy trình riêng thì HĐ mới ở engine dù không có feature; bỏ gán thì HĐ mới về máy cũ và lượt đã engine giữ nguyên [test: thủ công — file test đã chuyển/gỡ khi hợp nhất web (CR-118) hoặc gỡ máy cũ (CR-121)]
 - Kịch bản: platform đổi mẫu mặc định của khe thì công ty giữ luật tự cấp vẫn chưa gán; admin gán đúng mẫu mặc định thì đã gán, bỏ gán thì chưa gán [test: apps/hub-api/src/modules/processes/library/slot-assigned.int.test.ts » (a) tự cấp ⇒ chưa gán, platform đổi mẫu mặc định của khe ⇒ vẫn chưa gán]
 - Kịch bản: admin chủ động gán đúng mẫu mặc định [test: apps/hub-api/src/modules/processes/library/slot-assigned.int.test.ts » (b) admin chủ động gán đúng mẫu mặc định ⇒ đã gán, bỏ gán ⇒ cấp lại tự động ⇒ chưa gán]
 - Kịch bản: backfill phân loại luật tự cấp và luật admin [test: apps/hub-api/src/modules/processes/library/slot-assigned.int.test.ts » (c) backfill 0096: nguyên trạng tự cấp ⇒ 'auto', có dấu admin (người sửa đầu luật) ⇒ 'admin']
-- Kịch bản: cổng chỉ cho env on và đã gán [test: apps/hub-api/src/modules/packs/contracts/domain/approval-engine.rules.test.ts » chỉ env=on ∧ đã gán, chưa gán ⇒ máy cũ, env off/vắng tắt hết]
+- Kịch bản: cổng chỉ cho env on và đã gán [test: apps/hub-api/src/modules/packs/contracts/domain/approval-engine.rules.test.ts]
 
 ### MODIFIED sht/cai-dat-va-quyen.md
 #### Yêu cầu: Feature contracts-approval-engine không còn là công tắc hay danh mục hiển thị
 Admin không còn công tắc "Duyệt theo quy trình" và không liệt kê/cấp/thu hồi feature `contracts-approval-engine`; seed/onboard công ty không cấp feature đó;
 khe "Duyệt hợp đồng" không còn đòi add-on ở xem trước.
-- Kịch bản: feature ẩn không có trong nhóm danh mục và không bị cấp/thu hồi khi lưu thẻ app [test: apps/admin-web/src/features/tenants/lib/feature-assign.test.ts » CR-121 D-4 · feature ẩn (contracts-approval-engine) không vào entitledKeys và không bao giờ bị thu hồi/cấp khi lưu]
+- Kịch bản: feature ẩn không có trong nhóm danh mục và không bị cấp/thu hồi khi lưu thẻ app [test: apps/admin-web/src/features/tenants/lib/feature-assign.test.ts]
 - Kịch bản: duyệt theo quy trình không cần tính năng thêm ở xem trước [test: packages/contracts/src/app-manifest/preview.test.ts » CR-121 D-4 · duyệt theo quy trình KHÔNG cần tính năng thêm: đủ mức Sửa là hiện, khe chạy kèm quy trình đang gán]
 - Kịch bản: seed-niti không cấp feature engine [test: tools/scripts/src/seed-niti.int.test.ts » --apply tạo đủ và mật khẩu chỉ ở file, không ở log]
 

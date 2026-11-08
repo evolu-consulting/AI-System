@@ -28,15 +28,15 @@ unit `chat-gate.rules.test.ts`, `advance-wait.test.ts`; int `chat-gate.int.test.
 - Migration gói contracts kế tiếp phải dùng `when` > 1800150000000 (số file 0068 được, guard bắt nếu `when` nhỏ hơn).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Thẻ duyệt chờ engine bằng push, không poll vô hạn
 Hub cho công ty không có Chat AI mở `/me/stream` nhưng chỉ phát sự kiện quy trình của chính user. Thẻ duyệt dừng nối lại stream khi gặp 4xx (trừ 408/429); lưới tải lại giãn dần 2·4·8·16 s rồi giữ 30 s, không dừng sau 10 lần, chỉ khi đang chuyển bước và không có `attention`.
 - Kịch bản: khi công ty bị thu hồi chat-app mở /me/stream thì nhận process.updated của mình, không nhận sự kiện phòng hay của người khác [test: apps/hub-api/src/modules/chat-gate/chat-gate.int.test.ts » CR-107 · công ty bị thu hồi mở /me/stream]
 - Kịch bản: khi GET /me/stream thì cổng phân loại stream và chỉ cho sự kiện quy trình nếu không có Chat AI [test: apps/hub-api/src/modules/chat-gate/chat-gate.rules.test.ts » CR-107 · GET /me/stream ⇒ stream]
-- Kịch bản: khi stream trả 4xx thì dừng nối lại, 408/429/5xx thì nối lại [test: apps/contracts-web/src/features/contract-approval/lib/advance-wait.test.ts » isFatalStreamError]
-- Kịch bản: khi chờ chuyển bước thì độ trễ 2·4·8·16·30 s rồi giữ 30 s [test: apps/contracts-web/src/features/contract-approval/lib/advance-wait.test.ts » advanceDelay]
+- Kịch bản: khi stream trả 4xx thì dừng nối lại, 408/429/5xx thì nối lại [test: apps/workspace-web/src/features/contract-approval/lib/advance-wait.test.ts » isFatalStreamError]
+- Kịch bản: khi chờ chuyển bước thì độ trễ 2·4·8·16·30 s rồi giữ 30 s [test: apps/workspace-web/src/features/contract-approval/lib/advance-wait.test.ts » advanceDelay]
 
 #### Yêu cầu: Giữ chỗ Đạt duyệt cuối
 Chính người đang giữ chỗ được giữ lại cùng task (người khác vẫn bị chặn tới khi trả chỗ hoặc quá 15 phút); gắn run mới xoá chỗ giữ và SP chờ của run cũ.

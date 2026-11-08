@@ -23,21 +23,21 @@ CR-107 phần C — thẻ duyệt HĐ (contracts-web) hiện `attention` và h�
 - Mã 403 của gói không rõ ⇒ map theo mã `FORBIDDEN`/`PACK_FORBIDDEN`; mã lạ ⇒ câu chung.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED sht/duyet-ky-so.md
 #### Yêu cầu: Thẻ duyệt hiện lý do dừng và cho owner xử lý
 Khi `ContractApproval.attention` có giá trị, thẻ duyệt của HĐ hiện banner "Quy trình đang dừng: <lý do dễ hiểu>" kèm thời điểm. Owner/admin gói với `needs_decision` thấy **Thử lại** (`POST …/approval/retry`) và **Huỷ & mở lại** (`POST …/approval/cancel-reopen`, có hộp xác nhận); với `stalled` thấy **Mở lại quy trình**; người khác chỉ thấy "Báo chủ hợp đồng để xử lý". Mã lỗi 409/422/503/403 hiện câu tiếng Việt riêng.
-- Kịch bản: khi lý do là `FLOW_GROUP_MISSING:<mã>` thì banner nêu mã phòng ban cần thêm [test: apps/contracts-web/src/features/contract-approval/lib/attention.test.ts » attentionText]
-- Kịch bản: khi người xem là owner thì needs_decision có Thử lại + Huỷ & mở lại, người khác chỉ có câu báo chủ hợp đồng [test: apps/contracts-web/src/features/contract-approval/lib/attention.test.ts » attentionActions]
+- Kịch bản: khi lý do là `FLOW_GROUP_MISSING:<mã>` thì banner nêu mã phòng ban cần thêm [test: apps/workspace-web/src/features/contract-approval/lib/attention.test.ts » attentionText]
+- Kịch bản: khi người xem là owner thì needs_decision có Thử lại + Huỷ & mở lại, người khác chỉ có câu báo chủ hợp đồng [test: apps/workspace-web/src/features/contract-approval/lib/attention.test.ts » attentionActions]
 - Kịch bản: khi run needs_decision thì owner thấy banner + hai nút, editor thấy câu báo chủ HĐ [test: e2e/contracts-web/contract-flow.cw.ts » CR-107 needs_decision: banner và nút theo quyền]
 
 ### ADDED sht/duyet-ky-so.md
 #### Yêu cầu: Thẻ duyệt chờ engine bằng push, không poll vô hạn
 Thẻ duyệt không tải lại định kỳ khi có `attention`. Khi engine đang chuyển bước, thẻ nghe `/me/stream` (`process.updated`, `review_task.created` của đúng run) để tải lại; lưới an toàn tải lại giãn dần 2·4·8·16·30 s (trần 30 s, tối đa 10 lần) chỉ khi đang chuyển bước và không có `attention`.
-- Kịch bản: khi run ở needs_decision thì không còn coi là đang chuyển bước (hết poll) [test: apps/contracts-web/src/features/contract-approval/lib/engine-card.test.ts » engineAdvancing]
-- Kịch bản: khi chờ chuyển bước thì độ trễ tải lại là 2·4·8·16·30 s rồi dừng sau 10 lần [test: apps/contracts-web/src/features/contract-approval/lib/advance-wait.test.ts » advanceDelay]
-- Kịch bản: khi sự kiện quy trình tới thì chỉ tải lại nếu thuộc đúng run của thẻ [test: apps/contracts-web/src/features/contract-approval/lib/advance-wait.test.ts » eventConcernsRun]
+- Kịch bản: khi run ở needs_decision thì không còn coi là đang chuyển bước (hết poll) [test: apps/workspace-web/src/features/contract-approval/lib/engine-card.test.ts » engineAdvancing]
+- Kịch bản: khi chờ chuyển bước thì độ trễ tải lại là 2·4·8·16·30 s rồi dừng sau 10 lần [test: apps/workspace-web/src/features/contract-approval/lib/advance-wait.test.ts » advanceDelay]
+- Kịch bản: khi sự kiện quy trình tới thì chỉ tải lại nếu thuộc đúng run của thẻ [test: apps/workspace-web/src/features/contract-approval/lib/advance-wait.test.ts » eventConcernsRun]
 
 ## Việc còn lại
 - e2e chưa chạy (chạy một lần cuối đợt); chưa test tay luồng `/me/stream` thật với hub.

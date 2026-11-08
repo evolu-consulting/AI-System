@@ -38,7 +38,7 @@ Viết tắt đường dẫn: `H` = `apps/hub-api/src/modules/packs/contracts`, 
 | | [sht/cai-dat-va-quyen.md](sht/cai-dat-va-quyen.md) | Vai/quyền, màn Cài đặt, cờ và công tắc |
 | | [sht/phap-ly-va-can-xu-ly.md](sht/phap-ly-va-can-xu-ly.md) | Cảnh báo pháp lý, nguồn Cần xử lý |
 
-| Community (gói `community`) | [community/README.md](community/README.md) | Nghiệp vụ, ma trận hiển thị, Chưa rõ (CR-102) |
+| Community (gói `community`) | [community/README.md](community/README.md) · [community/i18n.md](community/i18n.md) | Nghiệp vụ, ma trận hiển thị, VI/EN, Chưa rõ (CR-102) |
 | Engine quy trình (CR-103) | [engine/flow-engine.md](engine/flow-engine.md) | Registry node, If, set, đổi node, canvas/drawer, showcase, route HUB_PROCESS_ROUTES, catalog tool |
 | | [engine/thu-vien-quy-trinh.md](engine/thu-vien-quy-trinh.md) | Thư viện quy trình (CR-105): khe, gán tenant, mặc định, xuất bản, nhân bản |
 | Admin (ngắn) | [admin/ghi-chu.md](admin/ghi-chu.md) | Người dùng ngoài / công ty đối tác, cổng admin-api cho đối tác |
@@ -65,3 +65,4 @@ File mới (mỗi file ghi nguồn lát; mục MODIFIED nằm cuối file cũ �
 - **ops/**: [ops-watch-flow-coverage.md](ops/ops-watch-flow-coverage.md)
 - **platform/**: [baseline-merge.md](platform/baseline-merge.md) · [giao-dich-db.md](platform/giao-dich-db.md) · [merge-abort.md](platform/merge-abort.md) · [tool-depcruise-exit.md](platform/tool-depcruise-exit.md)
 - **tools/**: [](tools/)
+| Sổ Hợp Tác bổ sung (CR-121/125) | [sht/ten-cong-ty-mot-nguon.md](sht/ten-cong-ty-mot-nguon.md) · [sht/mo-lai-platform-admin.md](sht/mo-lai-platform-admin.md) · [sht/thanh-duoi-dien-thoai.md](sht/thanh-duoi-dien-thoai.md) · [ops/flow-coverage.md](ops/flow-coverage.md) | Tên công ty một nguồn, platform admin mở lại HĐ/lượt kẹt, thanh dưới điện thoại, ops-watch flow_coverage |

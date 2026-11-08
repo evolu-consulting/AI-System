@@ -59,7 +59,7 @@ Int: admin chủ quản caps true + url; thành viên không quyền contracts f
 - Màu brand có 6 giá trị (thêm rose) trong `COMMUNITY_BRAND_ACCENTS`; `COMMUNITY_ACCENTS` (màu cá nhân) để lát cr110-settings bỏ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Quyền gói contracts của người xem (caps) và link Sổ Hợp Tác

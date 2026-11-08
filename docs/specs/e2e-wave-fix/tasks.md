@@ -27,13 +27,13 @@ e2e `--only=contracts-web`, `--only=P-a`, `--only=community-web` (feed.cm.ts 5/5
 Lỗi `getByRole('button',{name:'Cần bán'})` 2 phần tử là do test (substring), không do sản phẩm. Hai lỗi còn lại của feed.cm.ts (Bình luận p1 bị `.stickytop` che; swatch "Cam" bị `.wsside` che) là lỗi bố cục thật.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Bảng tin — composer và cài đặt trên màn rộng
 Khối composer + tab chỉ dính (sticky) khi composer thu gọn; composer mở rộng cuộn cùng trang. Màn Cài đặt canh giữa nội dung trong vùng chính, không bị thanh bên cố định (≥ 1224px) che.
-- Kịch bản: khi mở composer rồi bấm Bình luận ở bài p1 thì nút bấm được [test: e2e/community-web/feed.cm.ts » chủ quản: luồng theo từng công ty + audience preview + nút Lưu báo giá bật và mở form (C7b)]
-- Kịch bản: khi mở Cài đặt › Giao diện ở 1440 px thì chọn được màu "Cam" [test: e2e/community-web/feed.cm.ts » thông báo, hồ sơ, cài đặt màu chủ đạo]
+- Kịch bản: khi mở composer rồi bấm Bình luận ở bài p1 thì nút bấm được [test: e2e/community-web/feed.cm.ts]
+- Kịch bản: khi mở Cài đặt › Giao diện ở 1440 px thì chọn được màu "Cam" [test: e2e/community-web/feed.cm.ts]
 
 ## Việc còn lại
 Không.

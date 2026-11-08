@@ -33,7 +33,7 @@ Không đụng DLC. Không đổi `own_names/own_tax_ids`. Không chạy e2e (e2
 - Perf: migration = 1 UPDATE + 1 SELECT tổng hợp (không theo hàng). `/pack/me` brand: 1 câu SQL TRƯỚC → 1 câu SAU (tên là hàm trong cùng câu); nóng 0 SQL (đã có assert).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED sht/ten-cong-ty-mot-nguon.md
 #### Yêu cầu: Tên công ty chỉ có một nguồn là hồ sơ công ty ở Admin

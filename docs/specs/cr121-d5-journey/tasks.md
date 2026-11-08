@@ -28,7 +28,7 @@ Không đổi code sản phẩm. Chạm `tools/scripts/src/seed-e2e-journey.ts` 
 - Hành trình chỉ gán qua UI (không workaround luật); chờ lát F-1 (gán ⇒ luật mặc định = quy trình đã gán) rồi mới chạy lại.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Hai công ty gán hai quy trình khác nhau chạy đúng bước theo giá trị và loại HĐ

@@ -34,7 +34,7 @@ Không đổi nội dung trang, route, quyền, API; không đụng admin-web, D
 - Nhãn nút trợ lý Community đổi "Hỏi trợ lý giá" → "Hỏi trợ lý AI" (vi) / "Ask AI assistant" (en) theo yêu cầu điều phối; aria-label giữ nhãn riêng của từng module để e2e cũ không vỡ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Khung nhìn thống nhất giữa các module

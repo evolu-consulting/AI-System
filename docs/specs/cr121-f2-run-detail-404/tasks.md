@@ -29,7 +29,7 @@ Int một ca đường thật: gán quy trình thư viện qua service routing (
 - `FlowView.run.id` giữ nguyên (= id lượt duyệt, dùng cho hành động duyệt).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Thẻ duyệt hợp đồng chạy engine nêu id lượt chạy engine

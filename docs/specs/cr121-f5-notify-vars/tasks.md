@@ -44,7 +44,7 @@ Không đổi UI. Quy trình không có bước Dify/Thông báo/Chờ tới th�
 - Cập nhật input lỗi thì chỉ ghi cảnh báo `contract-approval-inputs-refresh-failed`, không chặn duyệt.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Dữ liệu HĐ của lượt duyệt theo bản đã xác nhận

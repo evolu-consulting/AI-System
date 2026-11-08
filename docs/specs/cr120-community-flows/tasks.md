@@ -50,7 +50,7 @@ Không chạm đường nóng có ngưỡng. Mỗi hàm repo MỘT câu SQL cố
 - Gán khe cho tenant (onboard) để bật duyệt bài: bật qua cấu hình quy trình (D7 ops-watch chưa có check riêng cho 3 khe).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Duyệt bài trước khi đăng (khe `community.post-moderation`) (nguồn: cr120-community-flows)

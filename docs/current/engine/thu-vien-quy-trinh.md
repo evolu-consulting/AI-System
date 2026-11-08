@@ -131,3 +131,5 @@ Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: cr121-f4
 `inboxOf` và mục nav contracts ghép người công ty này với công ty khác ⇒ 0 việc, không vai duyệt, không ghi gì. `POST /process-runs/:id/{stop,rerun-step,rerun}` với `:id` không phải uuid trả 404. Xoá run gốc không bị chặn bởi run chạy lại (`rerun_of` về NULL).
 - Kịch bản: khi ghép người A với công ty B (và ngược lại) thì 0 việc, không approver, không cap nav [test: tests/acceptance/CF/approval-inbox-count.int.test.ts » F-4 · ghép chéo (người A + công ty B, người B + công ty A) ⇒ 0 việc, không vai duyệt, không cap nav, không ghi gì]
 - Kịch bản: khi xoá run gốc thì FK `rerun_of` là ON DELETE SET NULL [test: apps/hub-api/src/modules/ops/ops.f4-privacy.int.test.ts » FK đổi sang ON DELETE SET NULL (đã VALIDATE)]
+## CR-121 · Delta gộp 2026-11-09 (đợt cr125-wave)
+- **Danh sách quy trình thư viện (pl-uat-fixes):** cột "Số bước" chỉ đếm bước duyệt (khớp "Bước n" trên Sơ đồ, không đếm nút hệ thống route/finalize). Bảng vừa 1440 px không cuộn ngang (tên khe ở dòng phụ dưới tên). Nút Xoá bị khoá hiện tooltip "Đang được N tenant dùng — bỏ gán trước khi xoá" (hoặc lý do mặc định của khe).

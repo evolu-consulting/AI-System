@@ -31,7 +31,7 @@ Không web, không migration, không đổi hành vi upload contracts.
 - Lượt/phút theo người không hoàn khi tải hỏng (chống dội); lượt ngày hoàn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Trần lượt tải tệp bài (CR-118 review)

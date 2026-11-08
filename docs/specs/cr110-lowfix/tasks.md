@@ -24,7 +24,7 @@ unit `revoke-message.test.ts`; int `community-ports.int.test.ts` (ETag/304).
 - `confirmBody` thêm tham số `{list}`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Brand chủ quản được cache bởi trình duyệt

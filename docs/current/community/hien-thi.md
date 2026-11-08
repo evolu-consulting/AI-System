@@ -167,3 +167,32 @@ Nhóm Sổ Hợp Tác trong menu trái là link trong app (`<Link>`), do manifes
 của Community.
 - Kịch bản: khi chủ quản có quyền thì nhóm Sổ Hợp Tác có đúng 4 link trong app, không biểu tượng ngoài [test: e2e/community-web/shell.cm.ts » chủ quản có quyền (Admin)]
 - Kịch bản: khi là đối tác hoặc thành viên không có quyền contracts thì DOM không có nhóm/đường dẫn Sổ Hợp Tác [test: e2e/community-web/shell.cm.ts » cách ly đối tác]
+## CR-110/120/121 · Delta gộp 2026-11-09 (đợt cr125-wave)
+Các mục dưới thắng nội dung cũ cùng chủ đề ở trên. Chi tiết kịch bản và test: `docs/specs/<lát>/tasks.md`.
+
+### Lớp vỏ, điều hướng, SSO (cr110-shell, cr110-sso, cr121-c6-shell-visual-parity)
+- Topbar hiện logo + tên công ty chủ quản (từ `GET /pack/community/brand`, cả với đối tác), ô tìm, chuông, avatar mở user-menu (Tường nhà · Cài đặt chung · Đăng xuất); không navtab, không bánh răng. Sidebar cố định (≤ 900 px là drawer) có nhóm Community (Bảng tin, Bài đăng của tôi) và nhóm Sổ Hợp Tác xổ/gập (nhớ trong localStorage, chịu lỗi localStorage). `#/settings` = Bảng tin + hộp thoại Cài đặt; hồ sơ `#/profile[/orgId][/section]`.
+- Nhóm Sổ Hợp Tác (4 link ngoài, cùng tab) chỉ có khi `caps.contracts` và có `contractsUrl`; đối tác và chủ quản thiếu quyền không có nhóm này trong DOM (không ẩn bằng CSS). Chưa có brand ⇒ chữ cái đầu + indigo.
+- Bấm link Sổ Hợp Tác xin mã SSO một lần rồi mở `<contracts>/sso#code=…&next=<đường dẫn>` (giữ `?sec=`); lỗi xin mã ⇒ mở URL thẳng; không có quyền contracts thì không làm gì.
+- Khung nhìn thống nhất giữa các module: icon menu trái cùng cỡ 20 px/nét 1.8 do Sidebar quyết; cụm nút phải của thanh trên (ô tìm theo khe, chuông + badge, góp ý) cùng testid ở mọi module; chỉ một nút trợ lý nổi tròn, tooltip "Hỏi trợ lý AI"; đệm vùng nội dung do khung cấp.
+
+### Cổng viewer và brand (cr110-ports, cr110-lowfix)
+- `GET /pack/community/viewer` trả `caps.contracts` (true chỉ khi chủ quản có quyền đọc gói contracts) và `contractsUrl` (gốc contracts-web khi `caps.contracts`, còn lại null). Đối tác luôn false/null.
+- `GET /pack/community/brand` trả brand công ty chủ quản của tenant trong token cho mọi account (cả đối tác), đúng 4 trường `{name, appName, logo, accent}` từ `/company`; chưa có ⇒ tên tenant + indigo; chặn chéo tenant. Có ETag mạnh + `Cache-Control: private, max-age=300`; `If-None-Match` khớp ⇒ 304.
+- Tiêu đề HTML tĩnh của community-web là "Community" (không chứa tên Sổ Hợp Tác); tiêu đề runtime chuyển sang tên công ty.
+
+### Hồ sơ công ty (cr110-profile-api, cr110-profile-ui)
+- Hero (cover, logo, tên, dòng phụ), số liệu, hàng tab theo registry section. Chủ quản 4 tab (Giới thiệu, Bài đăng, Đối tác, Ảnh & tệp); đối tác 3 tab, không tab Đối tác, không số Bạn bè, không câu về Sổ Hợp Tác. Section lạ về Bài đăng; `files` mở Ảnh & tệp.
+- `GET /pack/community/profile/:orgId/media`: đính kèm của bài công ty `orgId` mà người xem được thấy theo luật bảng tin (RLS), mới nhất trước, phân trang con trỏ. Đối tác chỉ xem hồ sơ công ty mình + chủ quản; công ty khác ⇒ 404; không bao giờ lộ media đối tác khác.
+- `GET /pack/community/partners?rep=1` gắn `reputation` (qua cổng `HostBookReader`) cho đối tác đã liên kết SHT khi người xem là chủ quản có quyền contracts; đối tác không nhận uy tín và không gọi cổng sổ. Tab Đối tác có cột Uy tín.
+
+### Cài đặt, màu (cr110-settings)
+- Hộp thoại Cài đặt 3 nhóm: Cá nhân (thông báo, ngôn ngữ), Công ty (màu chủ đạo, chỉ Admin chủ quản), Sổ Hợp Tác (deep-link contracts-web `sec=co|rep|biz|scout|flow`, flow chỉ xem; chỉ khi có quyền contracts). Đối tác chỉ có Cá nhân.
+- Màu chủ đạo thuộc công ty, không còn màu theo người dùng; server nhận `accent` cũ nhưng bỏ qua.
+
+### Bảng tin (cr110-feed, e2e-wave-fix)
+- Đối tác không bao giờ có trong DOM: nút Lưu báo giá, form báo giá, callout giá vốn, callout báo giá đã lưu, rail Đối tác. Chủ quản thấy nút Lưu báo giá và mở được form.
+- Composer + tab chỉ sticky khi composer thu gọn; composer mở rộng cuộn cùng trang. Màn Cài đặt canh giữa trong vùng chính, không bị sidebar cố định (≥ 1224 px) che.
+
+### Giao diện Tối (cr120-dark-tokens)
+- Mọi màu CSS Community lấy từ token shell (sáng + tối), màu thương hiệu từ `--brand-*`; không hex/rgb cứng ngoài `globals.css` (test chặn). Chữ bảng tin và trang Sổ Hợp Tác đạt tương phản AA (4.5:1; chữ lớn 3:1) ở Sáng và Tối.

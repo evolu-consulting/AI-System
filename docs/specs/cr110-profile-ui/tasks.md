@@ -27,15 +27,15 @@ Unit `lib/profile-sections.test.ts`; e2e mới (chưa chạy).
 - Chuyển tab = đổi hash `#/profile/<orgId>/<section>` (hồ sơ của mình dùng orgId của viewer).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Hồ sơ công ty kiểu Facebook — hero, số liệu, tab theo section
 Hồ sơ có hero (cover, logo, tên, dòng phụ), số liệu, hàng tab theo registry section. Chủ quản thấy 4 tab (Giới thiệu, Bài đăng, Đối tác, Ảnh & tệp); đối tác 3 tab, không tab Đối tác, không số Bạn bè, không câu về Sổ Hợp Tác. Section lạ về Bài đăng.
-- Kịch bản: khi đối tác mở hồ sơ thì chỉ có 3 tab và không có số Bạn bè [test: apps/community-web/src/lib/profile-sections.test.ts » registry hồ sơ]
-- Kịch bản: khi `#/profile/<id>/zzz` thì về Bài đăng, `files` mở Ảnh & tệp [test: apps/community-web/src/lib/profile-sections.test.ts » registry hồ sơ]
-- Kịch bản: khi chủ quản có quyền contracts mở tab Đối tác thì có cột Uy tín [test: apps/community-web/src/lib/profile-sections.test.ts » mock hồ sơ]
-- Kịch bản: khi mở Ảnh & tệp thì lưới phân trang con trỏ, "Xem thêm" [test: apps/community-web/src/lib/profile-sections.test.ts » mock hồ sơ]
+- Kịch bản: khi đối tác mở hồ sơ thì chỉ có 3 tab và không có số Bạn bè [test: apps/workspace-web/src/modules/community/domain/profile-sections.test.ts » registry hồ sơ]
+- Kịch bản: khi `#/profile/<id>/zzz` thì về Bài đăng, `files` mở Ảnh & tệp [test: apps/workspace-web/src/modules/community/domain/profile-sections.test.ts » registry hồ sơ]
+- Kịch bản: khi chủ quản có quyền contracts mở tab Đối tác thì có cột Uy tín [test: apps/workspace-web/src/modules/community/domain/profile-sections.test.ts » mock hồ sơ]
+- Kịch bản: khi mở Ảnh & tệp thì lưới phân trang con trỏ, "Xem thêm" [test: apps/workspace-web/src/modules/community/domain/profile-sections.test.ts » mock hồ sơ]
 
 ## Việc còn lại
 Chạy e2e `profile.cm.ts` một lần cuối đợt.

@@ -33,7 +33,7 @@ Không đổi quyền nào khác của platform_admin (đọc/ghi HĐ, duyệt�
 - Compare-and-set theo trạng thái khoá (không thêm `expected_version` vào schema để không đổi contract).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED sht/mo-lai-platform-admin.md
 #### Yêu cầu: Platform admin mở lại hợp đồng của một công ty

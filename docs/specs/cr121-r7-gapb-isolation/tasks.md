@@ -23,7 +23,7 @@ evotest contracts-web, ca Gap #10: lượt 1 mã cũ idle ×30 = 30 xanh (không
 - Sản phẩm không lưu "mốc ngày" theo người dùng (không vi phạm Luật GỐC 3 về trạng thái ẩn). Điểm yếu nhỏ của sản phẩm: hai ô ghi đè nhau theo `value` đã vẽ khi thao tác cực nhanh; có thể gộp theo `prev` của URL ở `setDate` nếu muốn bền hơn (chưa làm, ngoài phạm vi).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Lọc ngày trong danh sách hợp đồng không mất lựa chọn khi thao tác nhanh

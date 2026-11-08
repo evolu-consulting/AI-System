@@ -37,12 +37,12 @@ parse bởi `current-flow.ts`; không đổi backend/API. Platform admin sửa/g
   Chunk khởi tạo +0.4 KB gzip (171.0 → 171.4 KB). `check:bundle js > 150 KB` ĐÃ ĐỎ từ trước lát (171.0 KB khi chưa có CR-106), không sửa ở đây.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/cai-dat-va-quyen.md
 #### Yêu cầu: Cài đặt › Quy trình duyệt chỉ hiện quy trình đang dùng
 Sơ đồ quy trình đang dùng là canvas chỉ đọc (Bắt đầu → các bước → "Ghi Đã duyệt" khoá hệ thống; mỗi bước hiện tên, phòng ban, huy hiệu Có điều kiện / Ký số / Dify và tóm tắt điều kiện), có công tắc "Sơ đồ | Danh sách" (mặc định Sơ đồ). Dữ liệu vẫn từ `GET /approval-flow`, không sửa được ở đây; "Xem trước đường đi" làm mờ bước bị bỏ qua trên canvas.
-- Kịch bản: khi lập `buildFlowCanvas` cho quy trình 3 bước thì node là Bắt đầu, 3 bước theo thứ tự, "Ghi Đã duyệt" cuối cùng và bị khoá, nối tuần tự [test: apps/contracts-web/src/features/settings/lib/flow-canvas.test.ts » thứ tự: Bắt đầu → các bước → Ghi Đã duyệt (khoá), nối tuần tự]
-- Kịch bản: khi bước có điều kiện giá trị / loại HĐ thì node hiện huy hiệu "Có điều kiện" và câu điều kiện nối bằng và/hoặc [test: apps/contracts-web/src/features/settings/lib/flow-canvas.test.ts » nhãn điều kiện + huy hiệu: Có điều kiện / Ký số, phòng ban chỉ hiện khi khác tên bước]
-- Kịch bản: khi "Xem trước đường đi" bỏ qua một bước thì node của bước đó mờ đi [test: apps/contracts-web/src/features/settings/lib/flow-canvas.test.ts » run từ xem trước: bước bị bỏ qua ⇒ dim, cạnh vào bước đó mờ]
+- Kịch bản: khi lập `buildFlowCanvas` cho quy trình 3 bước thì node là Bắt đầu, 3 bước theo thứ tự, "Ghi Đã duyệt" cuối cùng và bị khoá, nối tuần tự [test: thủ công — file test đã chuyển/gỡ khi hợp nhất web (CR-118) hoặc gỡ máy cũ (CR-121)]
+- Kịch bản: khi bước có điều kiện giá trị / loại HĐ thì node hiện huy hiệu "Có điều kiện" và câu điều kiện nối bằng và/hoặc [test: thủ công — file test đã chuyển/gỡ khi hợp nhất web (CR-118) hoặc gỡ máy cũ (CR-121)]
+- Kịch bản: khi "Xem trước đường đi" bỏ qua một bước thì node của bước đó mờ đi [test: thủ công — file test đã chuyển/gỡ khi hợp nhất web (CR-118) hoặc gỡ máy cũ (CR-121)]
 - Kịch bản: khi owner mở Cài đặt › Quy trình duyệt thì thấy canvas `flow-canvas` mặc định, bấm "Danh sách" thì thấy `flow-diagram` [test: e2e/contracts-web/approval-current.cw.ts » Cài đặt hiện quy trình đang dùng, không có form sửa]

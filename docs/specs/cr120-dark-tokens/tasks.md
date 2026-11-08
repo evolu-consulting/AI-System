@@ -27,7 +27,7 @@ unit `no-literal-colors.test.ts` + `scope.test.ts`; một spec e2e `contrast.cm.
 - Nền toast tối (`#1f2033`) → `var(--ink)` với chữ `var(--background)` (đảo màu, đủ tương phản ở cả hai giao diện).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Giao diện Tối của Community đọc được (một bộ token với shell)

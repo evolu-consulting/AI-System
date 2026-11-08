@@ -28,14 +28,14 @@ Unit: `src/i18n/i18n.test.ts` (chọn ngôn ngữ, loader, rơi về VI, khoá d
 - Chữ có dấu bắt buộc giữ (regex dò, hậu tố tiền) đánh dấu `// i18n-ignore`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED current/community/i18n.md
 #### Yêu cầu: Community VI/EN (COM-FR-46)
 Giao diện community-web có hai ngôn ngữ vi/en từ một namespace `community.*`; thiếu bản EN thì hiện VI; ngôn ngữ chọn lưu `community.lang`, mặc định vi; không chuỗi tiếng Việt viết thẳng trong mã UI.
-- Kịch bản: khi chưa chọn ngôn ngữ thì dùng vi, đã lưu hoặc `/me` thì dùng giá trị đó [test: apps/community-web/src/i18n/i18n.test.ts » pickLocale]
-- Kịch bản: khi đổi sang en thì chuỗi hiện EN, khoá thiếu ở EN rơi về VI [test: apps/community-web/src/i18n/i18n.test.ts » loader + t]
-- Kịch bản: khi thêm chuỗi tiếng Việt có dấu vào mã UI thì test đỏ [test: apps/community-web/src/i18n/no-hardcoded-vi.test.ts » không có chuỗi tiếng Việt viết thẳng trong mã UI/lib (trừ test)]
+- Kịch bản: khi chưa chọn ngôn ngữ thì dùng vi, đã lưu hoặc `/me` thì dùng giá trị đó [test: apps/workspace-web/src/modules/community/i18n/i18n.test.ts]
+- Kịch bản: khi đổi sang en thì chuỗi hiện EN, khoá thiếu ở EN rơi về VI [test: apps/workspace-web/src/modules/community/i18n/i18n.test.ts » loader + t]
+- Kịch bản: khi thêm chuỗi tiếng Việt có dấu vào mã UI thì test đỏ [test: apps/workspace-web/src/modules/community/i18n/no-hardcoded-vi.test.ts » không có chuỗi tiếng Việt viết thẳng trong mã UI/lib (trừ test)]
 
 ## Việc còn lại
 Rà bản EN ở UAT (Q11). Các lát shell/feed/profile-ui/settings thêm khoá vào `community/{vi,en}.json`.

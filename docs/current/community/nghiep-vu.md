@@ -1,4 +1,4 @@
-﻿# Community — nghiệp vụ
+# Community — nghiệp vụ
 
 Nguồn: PDF 28/10/2026 (`docs/intake/community/source-pdf.txt`), Intake (`.../2026-10-28-intake.md`), CR-102/102a/102b. Trạng thái: đã chạy trên `platform/gd0` (c2d8eebf, đợt Community C1–C12, gộp 2026-10-28); **chưa deploy production**. Dòng "Gộp" ở từng mục = hành vi thực tế từ Delta các lát.
 
@@ -187,3 +187,29 @@ Mục dưới thắng nội dung cũ cùng chủ đề ở trên (lát: cr121-f4
 #### Yêu cầu: Admin công ty khác không xem/quyết được hàng đợi duyệt, yêu cầu tham gia, báo cáo (nguồn: cr121-f4-review-mediums)
 Người gọi thuộc công ty B (kể cả admin đủ quyền gói) không thấy hàng của công ty A trong hàng đợi/danh sách và không quyết được (403/404); dữ liệu công ty A không đổi.
 - Kịch bản: khi admin công ty B quyết bài/yêu cầu tham gia/báo cáo của công ty A thì 403 hoặc 404 và dữ liệu A giữ nguyên [test: apps/hub-api/src/modules/packs/community/adapters/community.cross-tenant.int.test.ts » admin công ty B: không thấy hàng đợi của A, quyết bài/yêu cầu tham gia/báo cáo của A ⇒ 403/404 và dữ liệu A không đổi]
+## CR-118/120/121 · Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới thắng nội dung cũ cùng chủ đề ở trên. Kịch bản/test: `docs/specs/<lát>/tasks.md`.
+
+### Trần lượt tải tệp bài (cr118-files-quota)
+`POST /pack/community/files` giữ một lượt trước khi đọc thân: vượt trần tenant/ngày, toàn hệ thống/ngày hoặc người/phút ⇒ 429 `UPLOAD_QUOTA` `{scope, limit, resets_at}`; tải hỏng sau khi giữ lượt được hoàn; tenant khác không bị ảnh hưởng. Chưa làm: web map 429/503 `UPLOAD_QUOTA_UNAVAILABLE` thành thông báo; Admin "Đặt lại hôm nay" chưa tính khoá `q:community:`.
+
+### Community trong web gộp (cr118-shell)
+- COM-FR-43: Community chạy dưới `/community/*` của web gộp; mục Community ở sidebar chỉ hiện khi `/pack/me` bật module `community`; link Sổ Hợp Tác là điều hướng nội bộ (không SSO). Đối tác (contracts tắt) chỉ thấy Community, gõ đường dẫn Sổ Hợp Tác thì về `/community`. Route Community tải lười (chunk riêng); hash cũ `/community#/profile/<o>/<s>` chuyển về `/community/profile/<o>/<s>`.
+- COM-FR-27: ô đăng bản tin thu gọn/mở, trạng thái nhớ theo người dùng (storage bị chặn không gây lỗi); nút Ảnh và Video gộp thành "Đính kèm" nhận nhiều tệp lên FileBox, hiện thẻ tệp có Tải về; lỗi 413/415/503 có thông điệp riêng.
+- COM-FR-41: mục Sổ Hợp Tác nằm trong dialog Cài đặt Community, chỉ khi contracts bật và có quyền; không đổi URL ngoài `?settings=`; đối tác không có nhóm này trong DOM.
+- Web hợp nhất (i18n một instance, CSS không rò): xem `docs/current/web/web-hop-nhat.md`.
+
+### Ba luồng Community (cr120-community-flows, cr120-review-fixes, cr120-community-flow-ui)
+- **Duyệt bài trước khi đăng** (khe `community.post-moderation`, opt-in): chỉ bật khi platform admin gán quy trình cho khe; bỏ gán ⇒ tắt và hub không cấp lại (backfill 0094 gỡ luật tự cấp, giữ luật admin sửa; gán khi đủ 50 luật ⇒ 409 `ROUTING_RULES_FULL`). Bài mới ở trạng thái chờ, chỉ người đăng và chủ quản thấy; agent sàng lọc chạy nền: sạch ⇒ đăng ngay; gắn cờ/lỗi/sai hình ⇒ vào hàng đợi Admin chủ quản (duyệt/từ chối, một lần); quá 2 phút chưa xong coi như lỗi. Từ chối ⇒ không lên bảng tin, tác giả vẫn thấy trạng thái và lý do. Tác giả sửa tiêu đề/nội dung/tệp bài đã duyệt hoặc đang chờ ⇒ mở lại lượt với task mới, bỏ kết quả sàng lọc cũ, quyết định theo task cũ bị 409; sửa không đổi nội dung thì giữ. Đối tác không tự đặt approved (trigger `posts_moderation_guard`). Tenant chưa gán khe: bài đăng như cũ.
+- **Đối tác xin tham gia** (khe `community.partner-join`): người công ty đối tác gửi form (công ty, liên hệ, email, lý do, nhãn); mỗi công ty một yêu cầu chờ (trùng 409). Tenant admin duyệt ⇒ liên kết đối tác với nhãn đã xin; từ chối ⇒ không liên kết, được gửi lại. Chủ quản không gửi form; thành viên thường không xem danh sách.
+- **Báo cáo vi phạm** (khe `community.report`): người xem thấy bài báo cáo được (mỗi người một lần mỗi bài, trùng 409). Agent phân loại (loại, mức) chạy nền; lỗi ⇒ vẫn xử lý tay. Admin chủ quản chọn ẩn bài / cảnh báo / bỏ qua, một lần (ẩn và ghi quyết định cùng thao tác). Đối tác chỉ xem báo cáo của mình.
+- `join_requests` và `reports` có RLS chặn chéo tenant.
+- UI: Hàng chờ duyệt bài (duyệt/từ chối kèm lý do; người khác đã xử lý ⇒ 409, báo và làm mới), trạng thái duyệt + lý do + gợi ý sửa trên "Bài đăng của tôi", form xin tham gia, báo cáo từ menu ⋯. Mục menu chỉ hiện đúng vai và khi khe bật.
+- Menu hàng việc (cr121-c7): Duyệt bài, Yêu cầu tham gia, Báo cáo vi phạm hiện badge số hàng chờ (0 ẩn, >99 hiện "99+"), server tính cùng lần gọi quyền menu, chỉ cho người duyệt trong công ty của họ; tải lại khi quay lại tab và sau mỗi thao tác duyệt.
+- Flow engine hiển thị bước `agent` và chiếu 3 khe sang FlowView: xem `docs/current/engine/flow-engine.md`.
+
+### Thanh trái theo đích điều hướng (cr121-c8-nav-flash)
+Ngay lúc bấm menu (trang đích còn tải lười), thanh trái chỉ sáng mục đích và khe tìm của thanh trên đổi theo module đích (Sổ Hợp Tác để trống). Mọi chỗ của khung đọc đường dẫn đích từ MỘT nguồn (lịch sử router), không từ route đã commit.
+
+### Dữ liệu mẫu dev/test (seed-refresh)
+Máy dev/test dựng mới có sẵn: chủ quản là owner gói, thương hiệu công ty (tên/tên ứng dụng/màu), đối tác + bài mẫu có đính kèm (tab "Ảnh & tệp" không rỗng), URL catalog điền sẵn. Không seed khi `appEnv=production` hoặc thiếu `HUB_SEED_FIXTURES`; seed cộng đồng demo chạy lại không trùng, liên hệ bị che, mật khẩu dev chỉ ở file.

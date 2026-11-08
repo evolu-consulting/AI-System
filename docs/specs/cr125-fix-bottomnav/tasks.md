@@ -23,7 +23,7 @@ Không đổi menu trái / desktop. Không có menu "Thêm" riêng trên điện
 Dùng lại `bottom?: false` có sẵn, thêm `mobile` thay vì sửa `.slice`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### ADDED sht/thanh-duoi-dien-thoai.md
 #### Yêu cầu: Thanh dưới điện thoại ưu tiên Hợp đồng và Bảng tin

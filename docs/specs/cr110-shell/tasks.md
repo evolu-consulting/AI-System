@@ -42,18 +42,18 @@ Unit: `nav.test.ts` (caps true/false ⇒ nhóm/mục, route hash, xổ/gập), `
   `button.iconbtn[aria-label="Thông báo"]` vẫn đúng). `roles.cs.ts`: không dùng `sht-link`/bánh răng ⇒ chưa thấy chỗ vỡ do lát này.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Lớp vỏ Community — Topbar thương hiệu, Sidebar, user-menu, hộp thoại Cài đặt
 Topbar hiện logo + tên công ty chủ quản (từ `GET /brand`, cả với đối tác), ô tìm, chuông, avatar mở user-menu (Tường nhà · Cài đặt chung · Đăng xuất); không navtab, không bánh răng. Sidebar cố định (≤ 900 px là drawer) có nhóm Community (Bảng tin, Bài đăng của tôi) và nhóm Sổ Hợp Tác xổ/gập (trạng thái nhớ trong localStorage). "Cài đặt chung" mở hộp thoại; `#/settings` = Bảng tin + hộp thoại.
-- Kịch bản: nhóm Sổ Hợp Tác chỉ có khi `caps.contracts` và có `contractsUrl`, 4 mục link ngoài [test: apps/community-web/src/lib/nav.test.ts » buildNav — nhóm Sổ Hợp Tác theo caps (I1/I3)]
-- Kịch bản: đối tác và chủ quản thiếu quyền không có nhóm SHT trong DOM (không CSS ẩn) [test: e2e/community-web/shell.cm.ts » cách ly đối tác: DOM không có Sổ Hợp Tác]
-- Kịch bản: chủ quản đủ quyền thấy 4 link SHT đúng href, cùng tab [test: e2e/community-web/shell.cm.ts » cách ly đối tác: DOM không có Sổ Hợp Tác]
-- Kịch bản: brand chủ quản hiện ở topbar, chưa có brand ⇒ chữ cái đầu + indigo [test: apps/community-web/src/lib/brand.test.ts » toBrandView]
-- Kịch bản: `#/settings` là Bảng tin + hộp thoại, hồ sơ giữ `#/profile[/orgId][/section]` [test: apps/community-web/src/lib/nav.test.ts » route hash]
-- Kịch bản: trạng thái xổ/gập chịu lỗi localStorage [test: apps/community-web/src/lib/nav.test.ts » trạng thái xổ/gập]
-- Kịch bản: user-menu role=menu, Esc đóng, Tường nhà mở hồ sơ, gập nhóm nhớ qua tải lại [test: e2e/community-web/shell.cm.ts » user-menu role=menu, Tường nhà mở hồ sơ mình, Esc đóng, sidebar xổ/gập nhớ qua tải lại]
+- Kịch bản: nhóm Sổ Hợp Tác chỉ có khi `caps.contracts` và có `contractsUrl`, 4 mục link ngoài [test: apps/workspace-web/src/modules/community/domain/nav.test.ts]
+- Kịch bản: đối tác và chủ quản thiếu quyền không có nhóm SHT trong DOM (không CSS ẩn) [test: e2e/community-web/shell.cm.ts]
+- Kịch bản: chủ quản đủ quyền thấy 4 link SHT đúng href, cùng tab [test: e2e/community-web/shell.cm.ts]
+- Kịch bản: brand chủ quản hiện ở topbar, chưa có brand ⇒ chữ cái đầu + indigo [test: apps/workspace-web/src/modules/community/domain/brand.test.ts » toBrandView]
+- Kịch bản: `#/settings` là Bảng tin + hộp thoại, hồ sơ giữ `#/profile[/orgId][/section]` [test: apps/workspace-web/src/modules/community/domain/nav.test.ts]
+- Kịch bản: trạng thái xổ/gập chịu lỗi localStorage [test: apps/workspace-web/src/modules/community/domain/nav.test.ts]
+- Kịch bản: user-menu role=menu, Esc đóng, Tường nhà mở hồ sơ, gập nhóm nhớ qua tải lại [test: e2e/community-web/shell.cm.ts]
 
 ## Việc còn lại
 - qc: relock e2e mới; sửa 2 chỗ ở `feed.cm.ts` nêu trên.

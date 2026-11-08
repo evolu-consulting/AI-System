@@ -129,3 +129,5 @@ Tab Feature của chi tiết công ty (platform_admin) hiện mỗi app một th
 - Kịch bản: khi chọn mức thì tập key = các mức thấp hơn + chính nó; bộ thiếu mức thấp bị nhận là không chuẩn [test: apps/admin-web/src/features/tenants/lib/feature-assign.test.ts » level ↔ keys]
 - Kịch bản: khi đổi mức/công tắc thì diff chỉ gồm cấp/thu hồi cần thiết, không đụng core [test: apps/admin-web/src/features/tenants/lib/feature-assign.test.ts » diffEntitlements]
 - Kịch bản: khi acme có bộ Sửa không chuẩn, chọn Quản trị + bật tính năng thêm rồi Lưu thì DB có đủ 4 entitlement; chuyển Tắt có xác nhận và thu hồi hết [test: e2e/feature-ui.spec.ts]
+## CR-110 · Delta gộp 2026-11-09 (đợt cr125-wave)
+- **Xác nhận thu hồi feature liệt kê tên (cr110-lowfix):** hộp xác nhận lưu tab Feature liệt kê tên thân thiện của mọi feature sẽ bị thu hồi, gồm tính năng thêm bị gỡ khi đặt app (vd Hợp đồng) về Tắt.

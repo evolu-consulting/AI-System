@@ -41,7 +41,7 @@ Cột `contracts.title` là tên file lúc tải lên; tên HĐ thật ở `fiel
 - Số câu SQL không đổi; sắp xếp `title` nay trên biểu thức (tập đã lọc, trước khi cắt trang như cũ).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Tên hợp đồng một nguồn ở mọi màn hình

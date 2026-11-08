@@ -30,13 +30,13 @@ unit `settings-sections.test.ts`; int `community.routes.int.test.ts` (accent cũ
 - Tiêu đề "Áp dụng cho cả công ty" (Q12) chỉ ở nhóm Công ty / Sổ Hợp Tác.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Hộp thoại Cài đặt theo quyền
 Nav 3 nhóm: Cá nhân (thông báo, ngôn ngữ), Công ty (màu chủ đạo, chỉ Admin chủ quản), Sổ Hợp Tác (deep-link contracts-web, chỉ khi có quyền contracts).
-- Kịch bản: khi đối tác mở Cài đặt thì chỉ có nhóm Cá nhân [test: apps/community-web/src/lib/settings-sections.test.ts » đối tác: chỉ Cá nhân (không Công ty, không SHT) dù server lỡ cấp caps]
-- Kịch bản: khi Admin có quyền contracts thì có 5 mục SHT với sec=co|rep|biz|scout|flow, flow chỉ xem [test: apps/community-web/src/lib/settings-sections.test.ts » Admin có quyền contracts: Cá nhân + Công ty + SHT với 5 mục deep-link, flow chỉ xem]
+- Kịch bản: khi đối tác mở Cài đặt thì chỉ có nhóm Cá nhân [test: apps/workspace-web/src/modules/community/domain/settings-sections.test.ts » đối tác: chỉ Cá nhân (không Công ty, không SHT) dù server lỡ cấp caps]
+- Kịch bản: khi Admin có quyền contracts thì có 5 mục SHT với sec=co|rep|biz|scout|flow, flow chỉ xem [test: apps/workspace-web/src/modules/community/domain/settings-sections.test.ts » Admin có quyền contracts: Cá nhân + Công ty + SHT với 5 mục deep-link, flow chỉ xem]
 #### Yêu cầu: Màu chủ đạo thuộc công ty
 Không còn màu theo người dùng; server nhận `accent` cũ nhưng bỏ qua.
 - Kịch bản: khi client cũ PUT /settings kèm accent thì 200 và accent không được lưu/trả lại [test: apps/hub-api/src/modules/packs/community/adapters/community.routes.int.test.ts]

@@ -22,13 +22,13 @@ Unit `routing-def.test.ts`; e2e `tenant-routing.cw.ts`.
 Dev proxy rsbuild đã phủ `/hub-admin` (test proxy có sẵn).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/cai-dat-va-quyen.md
 #### Yêu cầu: Cài đặt › Ứng dụng & quy trình (tenant tự sửa luật chọn quy trình)
 Sơ đồ chỉ đọc xem được cho MỌI quy trình đã gán của khe (không chỉ quy trình đang dùng); chỉ nạp khi người dùng mở; quy trình ngoài tập/lỗi (404) hoặc thân không đọc được ⇒ báo "không xem được".
-- Kịch bản: mở sơ đồ một quy trình đã gán ⇒ canvas hiện các bước, chưa mở thì không gọi API; 404 ⇒ báo không xem được [test: e2e/contracts-web/tenant-routing.cw.ts » sơ đồ xem được cho MỌI quy trình đã gán, nạp khi mở, 404 ⇒ báo không xem được]
-- Kịch bản: 404 ⇒ trạng thái không xem được; slot_body ⇒ bước canvas [test: apps/sohoptac-web/src/features/settings/lib/routing-def.test.ts » 404 (lỗi truy vấn) ⇒ unavailable (không xem được)]
+- Kịch bản: mở sơ đồ một quy trình đã gán ⇒ canvas hiện các bước, chưa mở thì không gọi API; 404 ⇒ báo không xem được [test: thủ công — file test đã chuyển/gỡ khi hợp nhất web (CR-118) hoặc gỡ máy cũ (CR-121)]
+- Kịch bản: 404 ⇒ trạng thái không xem được; slot_body ⇒ bước canvas [test: apps/workspace-web/src/features/settings/lib/routing-def.test.ts » 404 (lỗi truy vấn) ⇒ unavailable (không xem được)]
 
 ## Việc còn lại
 Không.

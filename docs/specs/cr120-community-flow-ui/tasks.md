@@ -38,7 +38,7 @@ Mỗi danh sách = 1 yêu cầu (limit 100 phía server), không yêu cầu theo
 - Báo cáo nên kèm tiêu đề bài (contract).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/nghiep-vu.md
 #### Yêu cầu: Màn hình 3 luồng Community (nguồn: cr120-community-flow-ui)

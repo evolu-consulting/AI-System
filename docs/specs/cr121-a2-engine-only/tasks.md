@@ -48,7 +48,7 @@ cho lượt duyệt MỚI. Gỡ env `CONTRACTS_APPROVAL_ENGINE`, cổng "đã g�
   phía gói ⇒ để lát gỡ máy cũ (Việc còn lại).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Lượt duyệt mới luôn chạy trên engine

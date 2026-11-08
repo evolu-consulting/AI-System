@@ -40,7 +40,7 @@ unit: `domain/approval-owner.rules.test.ts`, `application/approval-flow-owner.te
   ⇒ thấy event; có test int chế độ org.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Duyệt thay được ghi trước khi quyết, không mất audit

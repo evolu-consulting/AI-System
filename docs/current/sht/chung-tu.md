@@ -171,3 +171,7 @@ Chuông/thư "Cần duyệt" của run gắn hợp đồng nêu hợp đồng n�
 Nút chính cao ≥ 44 px ở điện thoại, nút trợ lý nổi ẩn trên thẻ hợp đồng; công ty chưa có số liệu thấy thẻ Bắt đầu nhanh; nhãn đăng nhập là Tên đăng nhập.
 - Kịch bản: khi công ty chưa có số liệu thì Tổng quan hiện thẻ Bắt đầu nhanh [test: apps/workspace-web/src/features/overview/components/QuickStartCard.test.ts » công ty chưa có số liệu ⇒ rỗng]
 
+
+## CR-121 · Delta gộp 2026-11-09 (đợt cr125-wave)
+- **Lọc ngày** trong danh sách HĐ không mất lựa chọn khi thao tác nhanh (cr121-r7-gapb-isolation): mỗi thao tác (đổi cột, đổi cửa sổ, nhập từ/đến) gộp lên bộ lọc đang có TRÊN URL tại lúc xử lý, không lên bộ lọc đã vẽ lần trước; hai lựa chọn liền nhau giữ cả hai (`date_field=action_deadline` và `due=overdue`), khoá URL khác không đổi.
+- **Thẻ duyệt** của lượt engine trả `engine_run_id` (khác `run_id` của gói) để trang "Chi tiết lượt chạy" mở được; xem `sht/duyet-ky-so.md`.

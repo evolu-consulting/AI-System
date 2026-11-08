@@ -29,13 +29,13 @@ Chạm: contracts-web contract-approval, admin-web processes, hub-api defs (list
 - Giữ nút Xoá/Nhân bản dạng nút trong dòng (e2e `process-library.pa.ts` còn đúng) thay vì gom vào menu "…".
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Thẻ duyệt tự cập nhật khi engine chuyển bước
 Sau khi một bước duyệt Đạt/bị bỏ qua, nếu bước kế chưa mở thì thẻ hiện ghi chú "Đang chuyển sang bước duyệt kế tiếp…" và tự tải lại mỗi 2 giây tới khi bước mở; bước duyệt mở và người xem quyết được ⇒ hiện Đạt / Trả lại / Từ chối (kể cả bước duyệt thêm từ quy trình thư viện).
-- Kịch bản: khi bước duyệt cuối mở và `can_act` thì có Đạt, không có Xác nhận [test: apps/contracts-web/src/features/contract-approval/lib/engine-card.test.ts » bước duyệt cuối (thêm từ quy trình thư viện) mở + can_act ⇒ Đạt, không Xác nhận]
-- Kịch bản: khi bước trước đã Đạt mà bước kế chưa mở thì có ghi chú chuyển bước và tự tải lại [test: apps/contracts-web/src/features/contract-approval/lib/engine-card.test.ts » đang chuyển bước (đã Đạt, bước kế chưa mở) ⇒ chưa nút, có ghi chú + tải lại, mở xong ⇒ hết]
+- Kịch bản: khi bước duyệt cuối mở và `can_act` thì có Đạt, không có Xác nhận [test: apps/workspace-web/src/features/contract-approval/lib/engine-card.test.ts » bước duyệt cuối (thêm từ quy trình thư viện) mở + can_act ⇒ Đạt, không Xác nhận]
+- Kịch bản: khi bước trước đã Đạt mà bước kế chưa mở thì có ghi chú chuyển bước và tự tải lại [test: apps/workspace-web/src/features/contract-approval/lib/engine-card.test.ts » đang chuyển bước (đã Đạt, bước kế chưa mở) ⇒ chưa nút, có ghi chú + tải lại, mở xong ⇒ hết]
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Danh sách quy trình thư viện — Số bước, bố cục, lý do khoá Xoá

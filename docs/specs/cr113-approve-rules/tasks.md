@@ -41,7 +41,7 @@ Không migration, không đổi máy trạng thái engine (escalation CR-085 có
 - File test mới dưới `tests/acceptance/CF/` ⇒ qc cần relock (`test:lock:write`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Chủ gói duyệt thay được mọi bước, ghi rõ "duyệt thay"
@@ -58,7 +58,7 @@ hạn không chuyển cấp; lượt đang chạy giữ snapshot.
 - Kịch bản: khi task quá hạn và vòng nhắc chạy thì chuyển cấp tới Toàn quyền, thẻ overdue + escalated_to [test: tests/acceptance/CF/owner-override.int.test.ts » bước có hạn không đặt nhóm ⇒ quá hạn chuyển cấp về Toàn quyền (đồng hồ giả, không ngủ)]
 #### Yêu cầu: Cài đặt › Quy trình duyệt hiện hai luật
 `GET /pack/contracts/approval-flow` trả `owner_can_override`, `owner_group_name` và mỗi bước review `escalate_default`.
-- Kịch bản: khi bước có hạn không đặt nhóm thì escalate_default=true và tên nhóm = Toàn quyền [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-current.int.test.ts » CR-113 · chủ gói duyệt thay + chuyển cấp mặc định về Toàn quyền hiện trên GET]
+- Kịch bản: khi bước có hạn không đặt nhóm thì escalate_default=true và tên nhóm = Toàn quyền [test: apps/hub-api/src/modules/packs/contracts/adapters/approval-flow-current.int.test.ts]
 
 ## Việc còn lại
 - qc relock cho file mới `tests/acceptance/CF/owner-override.int.test.ts`.

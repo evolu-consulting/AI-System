@@ -63,3 +63,5 @@ mỗi hàng có nhãn/mô tả bên trái và ô điều khiển bên phải; m�
 Mục Ứng dụng & quy trình liệt kê mọi khe của app theo manifest kèm tên và mục đích; khe công ty chưa có quy trình hiện cảnh báo thay vì bị ẩn.
 - Kịch bản: khi công ty bật Community mà chưa có khe nào thì vẫn thấy 3 khe với cảnh báo thiếu [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
 - Kịch bản: khe năng lực ngoài manifest vẫn hiện sau khe manifest [test: thủ công — test đã đổi tên/gộp sau lát, xem lịch sử git]
+#### Yêu cầu: UW-FR-07..09 Một i18n, CSS không rò, luật depcruise (nguồn: cr118-shell)
+Hai bộ khoá `community.*` và `contracts.*` dùng chung một instance i18next, mỗi bộ có gốc riêng và không khoá nào trùng (vi và en). CSS Community nằm dưới `[data-mod="community"]` với biến `--cm-*` (hoặc `--lg`); test chặn selector ngoài phạm vi.

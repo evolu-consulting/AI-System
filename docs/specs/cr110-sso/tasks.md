@@ -22,12 +22,12 @@ phụ thuộc:
 - Cùng tab (như trước). `grant` nạp lười `api/session` để unit test không cần `import.meta.env`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED community/hien-thi.md
 #### Yêu cầu: Chuyển sang Sổ Hợp Tác bằng SSO một lần
 Bấm link Sổ Hợp Tác xin mã SSO một lần và mở `<contracts>/sso#code=…&next=<đường dẫn>`; lỗi thì mở URL thẳng (contracts-web tự hiện đăng nhập); không có quyền contracts thì không làm gì.
-- Kịch bản: khi xin mã được thì điều hướng tới /sso#code kèm next [test: apps/community-web/src/lib/contracts-link.test.ts » có mã: đi tới <target_url>/sso#code=…&next=<path> (giữ ?sec=)]
-- Kịch bản: khi xin mã lỗi thì điều hướng URL thẳng [test: apps/community-web/src/lib/contracts-link.test.ts » lỗi xin mã (401/403/mạng): rơi về contractsUrl + path]
+- Kịch bản: khi xin mã được thì điều hướng tới /sso#code kèm next [test: thủ công — file test đã chuyển/gỡ khi hợp nhất web (CR-118) hoặc gỡ máy cũ (CR-121)]
+- Kịch bản: khi xin mã lỗi thì điều hướng URL thẳng [test: thủ công — file test đã chuyển/gỡ khi hợp nhất web (CR-118) hoặc gỡ máy cũ (CR-121)]
 
 ## Việc còn lại

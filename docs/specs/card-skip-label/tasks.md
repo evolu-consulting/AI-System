@@ -25,10 +25,10 @@ Unit: hub `approval-engine-card.rules.test.ts` (rule + mapping), web `engine-car
 - Bước đã `skipped` thật do engine ⇒ vẫn nhãn "Bỏ qua".
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr125-wave)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Thẻ duyệt báo trước bước sẽ bị bỏ qua
 Bước chưa tới (`pending`, không phải bước soạn) mà điều kiện `when` không thỏa với loại HĐ/giá trị hiện tại được trả kèm `skip_when` (các điều kiện không thỏa); thẻ hiện "Sẽ bỏ qua (giá trị < 500.000.000)" chữ mờ thay cho "Chưa đến". Giá trị trống ⇒ không báo bỏ qua.
 - Kịch bản: HĐ 100tr, bước 2 có `when` giá trị ≥ 500tr, bước 1 đang mở ⇒ bước 2 có `skip_when` = điều kiện đó; HĐ 5.000tr ⇒ null [test: apps/hub-api/src/modules/packs/contracts/domain/approval-engine-card.rules.test.ts » CR-109 · skip_when]
-- Kịch bản: dòng thời gian hiện nhãn bỏ qua chỉ cho bước pending có `skip_when`, đảo phép so ("≥ 500tr" ⇒ "< 500tr") [test: apps/contracts-web/src/features/contract-approval/lib/engine-card.test.ts » CR-109 · nhãn sẽ bỏ qua]
+- Kịch bản: dòng thời gian hiện nhãn bỏ qua chỉ cho bước pending có `skip_when`, đảo phép so ("≥ 500tr" ⇒ "< 500tr") [test: apps/workspace-web/src/features/contract-approval/lib/engine-card.test.ts » CR-109 · nhãn sẽ bỏ qua]

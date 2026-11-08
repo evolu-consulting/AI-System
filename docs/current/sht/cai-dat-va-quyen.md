@@ -95,3 +95,26 @@ Cài đặt chỉ có MỘT mục quy trình ("Quy trình duyệt") và đọc c
 - Kịch bản: khi stage flow có bước duyệt/ký số/thông báo thì hiện đúng thứ tự, bỏ bước kỹ thuật [test: apps/hub-api/src/modules/packs/contracts/domain/event-flow-steps.rules.test.ts » Duyệt 2 cấp: hai bước duyệt + ký số + thông báo, bỏ Chờ ký xong / Kết thúc, theo thứ tự step]
 - Kịch bản: khi mở khoá cũ ?sec=apps thì vào mục Quy trình duyệt [test: apps/workspace-web/src/features/settings/lib/section-key.test.ts » CR-125 · khoá cũ apps ⇒ mục Quy trình duyệt (đã gộp một cửa)]
 
+
+## CR-108/110/113/118/121 · Delta gộp 2026-11-09 (đợt cr125-wave)
+Mục dưới thắng nội dung cũ cùng chủ đề ở trên (kể cả §3b). Kịch bản và test: `docs/specs/<lát>/tasks.md`.
+
+### Mở thẳng một mục Cài đặt bằng đường dẫn (cr110-sht-sec)
+`/settings?sec=<co|rep|biz|scout|flow>` mở hộp thoại Cài đặt ở mục đó rồi về Tổng quan; khoá lạ mở mục mặc định (Công ty); không có `sec` giữ nguyên chuyển sang Thành viên. Quyền xem/sửa theo hộp thoại hiện có. Community dùng đường này cho nhóm Sổ Hợp Tác trong Cài đặt của nó.
+
+### Cài đặt › Quy trình duyệt (pl-tenant-canvas, flow-ui-clarity, cr113-approve-ui)
+- Quy trình đang dùng hiện là canvas chỉ đọc (Bắt đầu → các bước → "Ghi Đã duyệt" khoá hệ thống; mỗi bước có tên, phòng ban, huy hiệu Có điều kiện / Ký số / Dify, tóm tắt điều kiện); công tắc "Sơ đồ | Danh sách" mặc định Sơ đồ. "Xem trước đường đi" làm mờ bước bị bỏ qua.
+- `GET /approval-flow` trả thêm (nếu có) `due_h`, `remind_every_h`, `escalate_group_name`, `approver_count` (số thành viên còn dùng được của nhóm duyệt, một câu SQL cho cả quy trình); node và danh sách hiện "Hạn 24 giờ · nhắc mỗi 8 giờ", "3 người duyệt", "Quá hạn ⇒ chuyển <nhóm>" (kèm "(mặc định)" khi là nhóm mặc định); thiếu ⇒ ẩn.
+- Bước có điều kiện (không phải bước đầu): cạnh vào ghi điều kiện ("Giá trị ≥ 500.000.000"), thêm cạnh nét đứt từ node trước sang node sau nhãn "Không thoả ⇒ bỏ qua", sáng lên khi xem trước bỏ qua bước đó; chú giải dưới canvas.
+- Xem trước: ô "Giá trị mẫu" định dạng vi-VN khi gõ, nút nhanh "100 triệu", "500 triệu", "1 tỷ", "Để trống"; dòng "Hợp đồng này đi qua N/M bước: …".
+- Hộp "Luật duyệt" dưới sơ đồ: Toàn quyền duyệt thay được mọi bước (lượt duyệt thay được ghi rõ); bước có hạn quá hạn tự chuyển cho nhóm chuyển cấp (mặc định Toàn quyền).
+- Công ty chưa gán: huy hiệu "Đang dùng mặc định" + "Công ty bạn chưa được gán quy trình riêng, đang dùng quy trình mặc định của hệ thống."; lời dẫn "Mục này chỉ để xem. Muốn đổi quy trình, liên hệ quản trị nền tảng." Ở mục này, khi không có nháp chưa lưu, đầu hộp thoại thay "Khôi phục tất cả / Bỏ thay đổi / Lưu cài đặt" bằng ghi chú; sang mục khác thanh hiện lại.
+
+### Cài đặt › Ứng dụng & quy trình (cr118-def-path-fix, cr118-routing-diagram)
+Luật chọn quy trình trỏ tới quy trình đã xoá / chưa xuất bản (server trả `unavailable`) hiện nhãn "Quy trình đã bị xoá / chưa xuất bản"; lưu bị chặn tới khi sửa hoặc xoá luật (422 `ROUTING_PROCESS_UNAVAILABLE` ⇒ câu tiếng Việt). Hợp đồng đã đúng đường `/tenants/:tid/process-routing/...` (không `/hub-admin`). HĐ ngừng khởi tạo vì không có luật khớp / quy trình bị xoá ⇒ thẻ duyệt hiện câu rõ cho chủ/quản trị (`FLOW_ROUTE_NONE` / `FLOW_ROUTE_UNAVAILABLE`). Sơ đồ chỉ đọc xem được cho MỌI quy trình đã gán của khe, chỉ nạp khi mở; 404 hoặc thân không đọc được ⇒ "không xem được".
+
+### Feature `contracts-approval-engine` không còn là công tắc (cr121-d4-assign-engine)
+Admin không còn công tắc "Duyệt theo quy trình" và không liệt kê/cấp/thu hồi feature `contracts-approval-engine`; seed/onboard không cấp feature đó; khe "Duyệt hợp đồng" không còn đòi add-on ở xem trước (đủ mức Sửa là hiện).
+
+### Người duyệt của bước thấy HĐ ở chế độ `org` (reviewer-visible)
+Ở chế độ thấy `org`, ngoài cây quản lý của chủ HĐ, người quyết được một bước duyệt engine đang mở (thuộc Group của bước, được giao đích danh/chuyển tiếp, cửa trưởng phòng/người duyệt cụ thể, Group chuyển cấp, Group "cũng quyết") và người đã quyết một bước của HĐ ĐỌC được HĐ (chi tiết, thẻ duyệt, hàng con) và thấy nó trong "Việc của tôi". Chỉ đọc: không sửa trường/gán người; chỉ lệnh duyệt (Đạt/Chưa đạt/Từ chối/ghi Đã duyệt) ghi được hàng HĐ. Thành viên Group khác của bước đã đóng mà không quyết thì không thấy nữa. Chủ gói và chế độ `tenant` như cũ (cần migration 0070 trên prod).
