@@ -87,6 +87,12 @@ function executorPart(
   };
 }
 
+/** Stage THÔ (chưa qua zod) vẫn đọc được: stage biên dịch từ khe của Thư viện (xem chỉ đọc `process-library`) không mang các trường mặc định này. */
+const rawListsToDraft = (s: ProcessStageDef) => ({
+  sources: stageSourcesToDraft(s.sources ?? []),
+  mustKnow: mustKnowToDraft(s.must_know ?? []),
+});
+
 export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
   const a = s.answerer;
   const rv = s.after.kind === "review" ? s.after : null;
@@ -114,8 +120,7 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     answererId: a.kind === "group" ? (a.group_id ?? "") : a.kind === "user" ? a.user_id : "",
     timeout: String(s.timeout_s),
     budget: num(s.token_budget),
-    sources: stageSourcesToDraft(s.sources),
-    mustKnow: mustKnowToDraft(s.must_know),
+    ...rawListsToDraft(s),
     autofix: autofixToDraft(s.autofix),
     ...uiToDraft(s.ui),
     ...(s.outcome === undefined ? {} : { outcome: s.outcome }),

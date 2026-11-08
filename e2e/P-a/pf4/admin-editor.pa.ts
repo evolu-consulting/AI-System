@@ -1,5 +1,5 @@
 // ADM-FR-66 · e2e P-a PF4 · E-P15b (test-plan-e2e §2; plan-frontend-e2e §2 Editor): mở `hoa-don-t` (fixture, Group kiểm sẵn)
-// ⇒ `region "Giai đoạn 1: Đọc hoá đơn"`, `combobox "Nhóm kiểm"`, `switch "Hành động thật"` disabled ở giai đoạn 1; đổi Nhóm
+// ⇒ `region "Bước 1: Đọc hoá đơn"`, `combobox "Nhóm kiểm"`, `switch "Hành động thật"` disabled ở giai đoạn 1; đổi Nhóm
 // kiểm ⇒ "Lưu" ⇒ bật được; sửa song song (PUT /process-defs/:id trước) ⇒ ConflictDialog (409); mở mẫu `sdlc` ⇒ "Đây là quy trình mẫu, chỉ
 // xem. Chép mẫu để chỉnh sửa.".
 import { expect, test } from "@playwright/test";
@@ -25,9 +25,9 @@ test('ADM-FR-66 · E-P15b · editor: Nhóm kiểm + "Hành động thật" disab
     await p.goto(`${ADMIN_URL}/processes/${await defId("sample", "hoa-don-t")}`); // fnr-editor-drawer (qc, người dùng chốt ngăn chi tiết đóng mặc định 2026-10-29): bấm node để mở ngăn.
     await p
       .getByRole("application", { name: "Canvas quy trình" })
-      .getByRole("button", { name: /^Giai đoạn 1: Đọc hoá đơn/ })
+      .getByRole("button", { name: /^Bước 1: Đọc hoá đơn/ })
       .click();
-    const s1 = p.getByRole("region", { name: "Giai đoạn 1: Đọc hoá đơn" });
+    const s1 = p.getByRole("region", { name: "Bước 1: Đọc hoá đơn" });
     await expect(s1).toBeVisible();
     await expect(s1.getByRole("switch", { name: "Hành động thật" })).toBeDisabled();
     await s1.getByRole("combobox", { name: "Nhóm kiểm" }).click();
