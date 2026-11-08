@@ -35,6 +35,7 @@ describe("CR-123 FR-12 · menu + chỉ có bước nghiệp vụ cho công ty", 
       "contracts.partner-send",
       "core.bell",
       "core.email",
+      "core.subprocess",
       "finish",
     ]);
     expect(m.advanced).toEqual([]);
