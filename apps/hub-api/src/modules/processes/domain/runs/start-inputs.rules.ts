@@ -21,6 +21,22 @@ export function isCalendarDate(s: string): boolean {
   return dt.getUTCFullYear() === y && dt.getUTCMonth() === mo - 1 && dt.getUTCDate() === d;
 }
 
+const INSTANT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+const VN_DAY = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Ho_Chi_Minh",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * CR-125 · c1b · MỘT chỗ chuẩn hoá ngày: đầu ra kiểu `date` có thể mang MỐC ĐẦY ĐỦ (vd `signed_at` của Ký số, ISO UTC) ⇒ mọi phép so/hẹn
+ * giờ theo NGÀY quy mốc về ngày lịch Việt Nam (Asia/Ho_Chi_Minh) TRƯỚC khi so; giá trị đã là `YYYY-MM-DD` / không phải mốc ⇒ giữ nguyên.
+ */
+export function asCalendarDate(s: string): string {
+  return INSTANT_RE.test(s) && Number.isFinite(Date.parse(s)) ? VN_DAY.format(new Date(s)) : s;
+}
+
 /** D2-44 · input `number`: chuỗi (đã cắt khoảng trắng) đổi ra số hữu hạn. */
 export const isNumberText = (s: unknown): boolean =>
   typeof s === "string" && s.trim() !== "" && Number.isFinite(Number(s.trim()));

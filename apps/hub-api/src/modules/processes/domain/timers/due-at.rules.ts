@@ -1,6 +1,6 @@
 // HUB-FR-144 · PD-R13/R14/R15 · TZ-R04 · plan §4.7 · plan-domain §4.12: giờ địa phương → UTC theo IANA, không thư viện.
 // Thuần, lớp 1: chỉ built-in (`Intl`, `Date.UTC`); không đọc đồng hồ (CA-R05) — `now` truyền vào.
-import { isCalendarDate } from "../runs/start-inputs.rules";
+import { asCalendarDate, isCalendarDate } from "../runs/start-inputs.rules";
 
 const DAY_MS = 86_400_000;
 const HORIZON_DAYS = 730;
@@ -93,8 +93,9 @@ export function waitDueAt(i: {
   expiresAt: Date | null;
 }): WaitDue {
   if (i.base === null) return { ok: false, why: "missing" };
-  if (!isCalendarDate(i.base)) return { ok: false, why: "invalid" };
-  const dueAt = localToUtc(addDaysIso(i.base, i.offsetDays), i.time, i.tz);
+  const base = asCalendarDate(i.base); // mốc đầy đủ (vd signed_at) ⇒ ngày VN
+  if (!isCalendarDate(base)) return { ok: false, why: "invalid" };
+  const dueAt = localToUtc(addDaysIso(base, i.offsetDays), i.time, i.tz);
   if (i.expiresAt !== null && dueAt.getTime() > i.expiresAt.getTime())
     return { ok: false, why: "after_expiry" };
   if (dueAt.getTime() > i.now.getTime() + HORIZON_DAYS * DAY_MS)

@@ -4,7 +4,7 @@
 
 import { compare } from "../branch/branch.rules";
 import { BRANCH_OPS, type BranchOp } from "../branch/branch-def.rules";
-import { isCalendarDate } from "../runs/start-inputs.rules";
+import { asCalendarDate, isCalendarDate } from "../runs/start-inputs.rules";
 
 /** Trần số điều kiện một node If (= `IF_CONDS_MAX` contract). */
 export const IF_CONDS_MAX = 6;
@@ -70,8 +70,14 @@ function plainHit(
   const f = c.from;
   const src = f.kind === "field" ? (fieldsByStageKey[f.stageKey] ?? null) : inputs;
   const k = f.kind === "field" ? f.field : f.key;
-  const v = src && Object.hasOwn(src, k) ? src[k] : undefined;
-  return v !== undefined && v !== null && compare(c.op, v, asValue(c.value));
+  const raw = src && Object.hasOwn(src, k) ? src[k] : undefined;
+  const want = asValue(c.value);
+  // vế phải là NGÀY (YYYY-MM-DD) mà đầu ra là mốc đầy đủ (vd signed_at) ⇒ so theo ngày lịch VN (`asCalendarDate`).
+  const v =
+    typeof raw === "string" && typeof want === "string" && isCalendarDate(want)
+      ? asCalendarDate(raw)
+      : raw;
+  return v !== undefined && v !== null && compare(c.op, v, want);
 }
 
 /**
