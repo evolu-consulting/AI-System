@@ -48,6 +48,7 @@ beforeAll(async () => {
   [T1] = (await tenants(o, 1, 981)) as [string];
   [A, B, C] = (await users(o, T1, 3, { from: 981 })) as [string, string, string];
   K = await contracts(o, T1, 3, { from: 981, createdBy: A, owner: A });
+  await o`update admin.users set locale = 'vi' where id = ${B}`; // ngôn ngữ người ký
   await o`update admin.tenants set legal_name = 'Công ty TNHH Demo Việt' where id = ${T1}`;
   for (const [i, id] of K.entries()) {
     const fid = crypto.randomUUID();
