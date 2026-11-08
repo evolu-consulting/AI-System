@@ -5,7 +5,7 @@
 import type { Tx } from "@ai/db";
 import { childSettle, subFields } from "../../domain/runs/subprocess.rules";
 import { waitOutputMd } from "../../domain/timers/due-at.rules";
-import { armWatch, childResult } from "./subprocess.repo";
+import { armWatch, childResult } from "../runs/subprocess.repo";
 
 export type SubprocessOut =
   | { kind: "out"; md: string; fields: Record<string, string | number> }

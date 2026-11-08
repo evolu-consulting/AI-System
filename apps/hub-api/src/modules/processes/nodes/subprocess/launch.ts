@@ -8,6 +8,12 @@ import type { Tx } from "@ai/db";
 import { AppError } from "../../../../lib/errors";
 import { ifFacts } from "../../adapters/runs/if-facts.repo";
 import { settleStepTx } from "../../adapters/runs/step.repo";
+import {
+  ancestorDepth,
+  armWatch,
+  childOfStage,
+  linkChild,
+} from "../../adapters/runs/subprocess.repo";
 import { waitRepo } from "../../adapters/timers/wait.repo";
 import * as core from "../../core/core.repo";
 import { processUpdated } from "../../core/events";
@@ -18,7 +24,6 @@ import type { KickResult, LaunchCtx, LauncherDeps, NodeLauncher } from "../../ru
 import type { StartDefRow } from "../../runs/runs.repo";
 import { createRun } from "../../runs/start-inputs";
 import { toDecision } from "../../runs/team-runner";
-import { ancestorDepth, armWatch, childOfStage, linkChild } from "./subprocess.repo";
 import { resolveSubprocessDef } from "./subprocess-def";
 
 type Exec = { kind: "subprocess"; def_key: string; input_map?: Record<string, string> };

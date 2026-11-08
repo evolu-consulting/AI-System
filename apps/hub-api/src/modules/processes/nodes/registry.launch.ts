@@ -33,8 +33,4 @@ export const NODE_LAUNCHERS: Readonly<Record<ExecutorKind, NodeLauncher>> = {
   subprocess: subprocessLauncher,
 };
 
-/** CR-125 · «Quy trình con»: pha chốt trong `finishWait` + lượt con cần huỷ theo cha (lõi gọi qua registry, không import `nodes/<kind>`). */
-export { subprocessWaitOut } from "./subprocess/settle";
-export { liveChildren as liveChildRuns } from "./subprocess/subprocess.repo";
-
 export const nodeLauncherOf = (kind: ExecutorKind): NodeLauncher => NODE_LAUNCHERS[kind];

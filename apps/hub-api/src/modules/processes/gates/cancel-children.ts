@@ -2,13 +2,15 @@
 // khoá cha → con (cha đã khoá FOR UPDATE; con khoá theo id). Cùng hiệu ứng như `cancelEnd` của lượt thường: huỷ `hub.runs`, đóng stage +
 // hẹn + task, lượt `cancelled`, thread `run_end` + thông báo. Stage cha đã `cancelled` trước ⇒ trigger 0129 không ghi hẹn cho cha.
 import { SUBPROCESS_DEPTH_MAX } from "@ai/contracts/hub-admin";
+import type { Tx } from "@ai/db";
 import type { UserEvent } from "../../../lib/user-stream";
-import { bindTx } from "../adapters/hub-uow";
-import { cancelTimers } from "../application/timers/cancel-timers.usecase";
+import { cancelRunTimers, liveChildren } from "../adapters/runs/subprocess.repo";
+import type { ProcessDeps } from "../core/ports";
 import { enqueueThread } from "../core/thread";
-import { liveChildRuns } from "../nodes/registry.launch";
-import type { Gx } from "./gates.effects";
 import * as g from "./gates.repo";
+
+/** Lá phụ thuộc (chỉ repo): `gates.effects` / `runs/expire` gọi vào đây, không vòng import. */
+type Gx = { d: Pick<ProcessDeps, "now" | "notifier">; tx: Tx };
 
 export async function cancelChildren(
   gx: Gx,
@@ -17,13 +19,13 @@ export async function cancelChildren(
   const depth = p.depth ?? 0;
   if (depth >= SUBPROCESS_DEPTH_MAX) return [];
   const { d, tx } = gx;
-  const ids = await liveChildRuns(tx, p.tenantId, p.runId);
+  const ids = await liveChildren(tx, p.tenantId, p.runId);
   const events: UserEvent[] = [];
   for (const id of ids) {
     const now = d.now();
     await g.cancelStageRuns(tx, id, p.tenantId);
     await g.cancelStages(tx, id, p.tenantId);
-    await cancelTimers(bindTx(tx, p.tenantId).repos, id, { kind: "all" }, now);
+    await cancelRunTimers(tx, p.tenantId, id, now);
     await g.closeOpenTasks(tx, {
       runId: id,
       tenantId: p.tenantId,

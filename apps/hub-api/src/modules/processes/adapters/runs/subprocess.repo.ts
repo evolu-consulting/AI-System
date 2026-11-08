@@ -119,3 +119,14 @@ export async function liveChildren(tx: Tx, tenantId: string, runId: string): Pro
     order by id for update`);
   return rows.map((r) => r.id);
 }
+
+/** Huỷ mọi hẹn mở của một lượt (lượt con bị huỷ theo cha) — như `cancelTimers` kind `all`. */
+export async function cancelRunTimers(
+  tx: Tx,
+  tenantId: string,
+  runId: string,
+  now: Date,
+): Promise<void> {
+  await tx.execute(sql`update hub.process_timers set cancelled_at = ${now.toISOString()}::timestamptz
+    where tenant_id = ${tenantId} and process_run_id = ${runId} and fired_at is null and cancelled_at is null`);
+}

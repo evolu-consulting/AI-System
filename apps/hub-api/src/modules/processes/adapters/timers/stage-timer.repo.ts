@@ -20,8 +20,8 @@ import {
 } from "../../domain/timers/wait-event-branch.rules";
 import { type WaitSignal, waitEventFields } from "../../domain/timers/wait-event-data.rules";
 import type { ProcessRunStatus, StageRunStatus } from "../../domain/types";
-import { subprocessWaitOut } from "../../nodes/registry.launch";
 import { persistStage } from "../../runs/step-persist";
+import { subprocessWaitOut } from "./subprocess-settle";
 import { type SnapshotStages, waitOriginalDue } from "./timer-origin";
 
 export type RunFinishedNotifier = Pick<ProcessNotifier, "runFinished">;
