@@ -5,6 +5,7 @@ import { backupCheck } from "./backup.check";
 import { dbRedisCheck } from "./db-redis.check";
 import { diskCheck } from "./disk.check";
 import { flowCoverageCheck } from "./flow-coverage.check";
+import { flowFlagCheck } from "./flow-flag.check";
 import { notifyConfigCheck } from "./notify-config.check";
 import { providerCheck } from "./provider.check";
 import { publicHostsCheck } from "./public-hosts.check";
@@ -28,4 +29,5 @@ export const OPS_CHECKS: readonly OpsCheck[] = [
   appRolesCheck,
   tenantProfileCheck,
   notifyConfigCheck,
+  flowFlagCheck,
 ];

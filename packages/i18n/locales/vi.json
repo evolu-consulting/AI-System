@@ -1528,7 +1528,8 @@
       "flow_coverage": "Quy trình hiển thị cho công ty",
       "app_roles": "Vai theo ứng dụng",
       "tenant_profile": "Hồ sơ công ty",
-      "notify_config": "Cấu hình gửi mail"
+      "notify_config": "Cấu hình gửi mail",
+      "flow_flag": "Cờ quy trình công ty"
     },
     "history": {
       "title": "Lịch sử (50 sự kiện gần nhất)",

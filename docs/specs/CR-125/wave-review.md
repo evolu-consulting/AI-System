@@ -75,6 +75,10 @@ select id, contract_id, expire_claimed_at from contracts.esign_envelopes
 select id, tenant_id, key from hub.process_defs where stages::text like '%contracts-esign-send%' and stages::text like '%"provider"%';
 -- A9 role exists for pack grants (0085 grants hub fns to contracts_rw)
 select rolname from pg_roles where rolname in ('contracts_rw','hub_rw','hub_ro','admin_rw');
+-- A10 (CR-125 G8) AFTER migrate (hub 0126 turns flow_triggers on for every tenant with an enabled company flow): must return 0
+select count(*) from (select distinct f.tenant_id from hub.company_flows f where f.enabled) t
+ where not exists (select 1 from hub.tenant_flow_settings s where s.tenant_id = t.tenant_id and s.flow_triggers);
+-- BEFORE migrate the same query lists the tenants that will be switched on (expect the 6 assigned by platform); ops-watch check `flow_flag` stays ok afterwards.
 ```
 
 ### B. Lock or size risk (decides whether to stop the apps during migrate)

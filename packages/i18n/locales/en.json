@@ -1528,7 +1528,8 @@
       "flow_coverage": "Processes visible to companies",
       "app_roles": "App roles",
       "tenant_profile": "Company profile",
-      "notify_config": "Mail sending setup"
+      "notify_config": "Mail sending setup",
+      "flow_flag": "Company flow switch"
     },
     "history": {
       "title": "History (last 50 events)",

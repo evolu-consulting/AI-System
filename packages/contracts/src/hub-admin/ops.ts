@@ -23,6 +23,7 @@ export const OPS_CHECK_KEYS = [
   "app_roles",
   "tenant_profile",
   "notify_config",
+  "flow_flag",
 ] as const;
 export const OpsCheckKeySchema = z.enum(OPS_CHECK_KEYS);
 export type OpsCheckKey = z.infer<typeof OpsCheckKeySchema>;
@@ -148,6 +149,14 @@ export const OPS_CHECK_META: Readonly<Record<OpsCheckKey, OpsCheckMeta>> = {
     crit: null,
     order: null,
     note: "warn khi kho secret Hub chưa có cấu hình mail (secret nền tảng smtp_password) — chưa gửi được email (CR-121 D4: nguồn duy nhất = kho secret)",
+  },
+  flow_flag: {
+    label: "Cờ quy trình công ty",
+    unit: "count",
+    warn: null,
+    crit: null,
+    order: null,
+    note: "warn khi công ty có quy trình được gán đang bật mà cờ dùng quy trình mới tắt — HĐ chạy cách cũ (CR-125 G8, quy tắc D7)",
   },
 };
 
