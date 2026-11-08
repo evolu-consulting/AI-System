@@ -30,8 +30,8 @@ describe("request-form", () => {
         y: "invalid",
       },
     );
-    expect(startErrorKey("START_NOT_ALLOWED")).toBe("contracts.requests.err.START_NOT_ALLOWED");
-    expect(startErrorKey("START_FLOW_OFF")).toBe("contracts.requests.err.START_FLOW_OFF");
+    expect(startErrorKey("START_NOT_ALLOWED")).toBe("process.run.startError.START_NOT_ALLOWED");
+    expect(startErrorKey("START_FLOW_OFF")).toBe("process.run.startError.START_FLOW_OFF");
     expect(startErrorKey("NETWORK_ERROR")).toBe("contracts.requests.err.generic");
   });
 });

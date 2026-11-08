@@ -52,14 +52,15 @@ export function fieldErrorsOf(details: unknown): Record<string, string> {
   return Object.fromEntries(Object.entries(raw).map(([k, c]) => [k, map[c] ?? "invalid"]));
 }
 
-/** Mã lỗi API ⇒ khoá i18n câu nói theo ngôn ngữ nghiệp vụ (`contracts.requests.err.<mã>`); mã lạ ⇒ câu chung. */
-const KNOWN = new Set([
+/** Mã `START_*` ⇒ khoá DUY NHẤT `process.run.startError.<mã>` (một khoá một mã); mã khác ⇒ `contracts.requests.err.<mã>`; mã lạ ⇒ câu chung. */
+const START_CODES = new Set([
   "START_NOT_ALLOWED",
   "START_FORM_INVALID",
   "START_FLOW_OFF",
   "START_REQUEST_REUSED",
-  "TOO_MANY_PROCESS_RUNS",
-  "PROCESS_NOT_FOUND",
 ]);
+const OTHER_CODES = new Set(["TOO_MANY_PROCESS_RUNS", "PROCESS_NOT_FOUND"]);
 export const startErrorKey = (code: string): string =>
-  `contracts.requests.err.${KNOWN.has(code) ? code : "generic"}`;
+  START_CODES.has(code)
+    ? `process.run.startError.${code}`
+    : `contracts.requests.err.${OTHER_CODES.has(code) ? code : "generic"}`;

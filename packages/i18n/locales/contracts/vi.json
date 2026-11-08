@@ -871,10 +871,6 @@
         "format": "Định dạng chưa đúng.",
         "unknown": "Ô này không có trong phiếu.",
         "invalid": "Giá trị chưa hợp lệ.",
-        "START_NOT_ALLOWED": "Bạn không nằm trong nhóm được tạo yêu cầu này. Nhờ quản trị công ty thêm bạn vào nhóm được phép.",
-        "START_FORM_INVALID": "Phiếu chưa hợp lệ. Sửa các ô báo lỗi rồi gửi lại.",
-        "START_FLOW_OFF": "Quy trình này đang tắt ở công ty nên chưa tạo yêu cầu được. Nhờ quản trị công ty bật nó ở Công ty › Quy trình.",
-        "START_REQUEST_REUSED": "Phiếu này trùng mã với một yêu cầu khác. Mở lại phiếu mới rồi gửi.",
         "TOO_MANY_PROCESS_RUNS": "Công ty đang chạy quá nhiều yêu cầu cùng lúc. Chờ một lát rồi gửi lại.",
         "PROCESS_NOT_FOUND": "Không tìm thấy loại yêu cầu này. Mở lại từ danh sách.",
         "generic": "Chưa gửi được yêu cầu. Thử lại sau ít phút."

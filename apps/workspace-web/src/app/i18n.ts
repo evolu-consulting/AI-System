@@ -1,6 +1,7 @@
 // PK-FR-10 · TF1 · khởi tạo i18next cho contracts-web: chuỗi `contracts.*` nạp động; `ai.locale` đã lưu, không có thì en (CR-052).
 import { loadContractsLocale } from "@ai/i18n/contracts-locales";
 import { type Locale, SUPPORTED_LOCALES } from "@ai/i18n/locales";
+import { loadProcessLocale } from "@ai/i18n/process-locales";
 import { LOCALE_KEY } from "@ai/web-kit/prefs/prefs";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
@@ -41,8 +42,9 @@ const lazyBackend = {
   init() {},
   read(lng: string, _ns: string, cb: (err: unknown, data?: Record<string, unknown>) => void) {
     if (!isSupported(lng)) return cb(null, {});
-    loadContractsLocale(lng).then(
-      (r) => cb(null, r),
+    // CR-125 · «Tạo yêu cầu»: câu lỗi `START_*` là khoá DUY NHẤT `process.run.startError.*` (phần `run` của chuỗi quy trình), không chép sang contracts.
+    Promise.all([loadContractsLocale(lng), loadProcessLocale(lng, ["run"])]).then(
+      ([c, p]) => cb(null, { ...c, ...p }),
       (e) => cb(e),
     );
   },
