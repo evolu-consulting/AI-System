@@ -46,10 +46,10 @@ test("CR-113 · 1 · Cài đặt › Quy trình duyệt: 2 bước, hộp Luật
   await page.getByRole("menuitem", { name: "Cài đặt Sổ Hợp Tác", exact: true }).click();
   const dlg = page.getByRole("dialog", { name: "Cài đặt" });
   await dlg.getByRole("button", { name: /Quy trình duyệt/ }).click();
-  await expect(dlg.getByTestId("flow-current-title")).toContainText("Duyệt HĐ 2 cấp");
+  await expect(dlg.getByTestId("flow-current-title")).toContainText("Duyệt 2 cấp"); // CR-125 · S2: Cài đặt hiện flow Bật của company_flows (cùng tab Quy trình)
   const cv = dlg.getByTestId("flow-canvas");
-  await expect(cv.getByText("Kế toán duyệt")).toBeVisible();
-  await expect(cv.getByText("Pháp chế duyệt")).toBeVisible();
+  await expect(cv.getByText("Trưởng phòng duyệt")).toBeVisible();
+  await expect(cv.getByText("Giám đốc duyệt")).toBeVisible();
 });
 
 test("CR-113 · 2 · HĐ chờ bước 1: bước 1 đang mở, julian.bui (Toàn quyền, ngoài Kế toán) có nút Đạt / Trả lại", async ({
