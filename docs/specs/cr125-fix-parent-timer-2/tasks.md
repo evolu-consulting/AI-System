@@ -20,12 +20,18 @@ stage, hẹn, đuôi log hub. Log hub-api của stack journey ghi ra `.data/ja-h
   không ai trong 3 tài khoản thấy dòng ở «Chờ tôi duyệt» ⇒ không ai làm được. `cr125-form-step-card` đỏ cùng chỗ (thẻ bước 1 không hiện).
   ⇒ Phía engine của cha đúng (hẹn canh đúng, không trùng khoá); chỗ kẹt hiện tại là bước điền của lượt con không hiện cho người làm.
 
+- Sau rebase (e8b8aa844): int mới — bước điền đầu của lượt con nằm trong `/me/review-tasks` (`listTaskPage`) của thành viên nhóm ⇒ XANH
+  (backend đúng). Ảnh lượt hỏng: nhân viên THẤY form bước 1 trên trang yêu cầu. Nguyên nhân kẹt ở Phần 1 = spec e2e: `actOnWaiting`
+  đếm `requests-waiting-row` ngay sau `goto`, trước khi danh sách việc tải xong ⇒ 0 việc ⇒ không ai làm. Sửa: chờ `requests-waiting` hoặc
+  `requests-waiting-empty` rồi mới đếm.
+- Lượt e2e thứ 3 (sau sửa): test 2 hỏng ở bước đăng nhập (8,5 s, «Target page, context or browser has been closed») — lỗi hạ tầng trình
+  duyệt, chưa tới Phần 1–3 ⇒ chưa có dump cho Phần 3.
+
 ## Delta (so với docs/current)
 Trạng thái gộp: chưa gộp
 
 Không thay đổi hành vi (lý do: chỉ thêm chẩn đoán khi e2e hỏng và ghi log hub của stack test ra tệp).
 
 ## Việc còn lại
-- Bước điền (form) đầu của lượt con Phần 1 ở `waiting_review` nhưng không vào «Chờ tôi duyệt» / thẻ bước 1 không hiện (đỏ cả
-  `cr125-form-step-card`) — nghi hồi quy từ `cr125-request-steps` (61b40e07e) / `cr125-contract-from-step`; giao vùng contracts-web/requests.
-- Lỗi gốc «cha đứng sau Phần 3» chưa tái hiện được (e2e không qua nổi Phần 1); chạy lại e2e có dump sau khi sửa mục trên.
+- Chạy lại job journey MỘT lần (lượt trước hỏng đăng nhập do trình duyệt đóng) để dump tới Phần 3; lỗi gốc «cha đứng sau Phần 3» chưa
+  tái hiện được.

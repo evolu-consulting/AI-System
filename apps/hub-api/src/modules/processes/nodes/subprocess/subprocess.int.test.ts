@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import type { Role } from "@ai/contracts/common";
 import type { ProcessDefInput } from "@ai/contracts/hub-admin";
 import { withHubScope } from "@ai/db/hub-scope";
-import { users } from "@ai/test-kit/builders";
+import { groups, users } from "@ai/test-kit/builders";
 import { cloneDb, openOwner, type Sql } from "@ai/test-kit/db";
 import { urls } from "@ai/test-kit/env";
 import { sql } from "drizzle-orm";
@@ -21,6 +21,7 @@ import type { ProcessBgDeps, ProcessDeps } from "../../core/ports";
 import { subprocessCheck } from "../../defs/subprocess-check";
 import { cancelEnd } from "../../gates/gates.effects";
 import { actorRef } from "../../gates/gates.repo";
+import { listTaskPage } from "../../notify/inbox.repo";
 import { expireRuns } from "../../runs/expire";
 import { createStageLauncher } from "../../runs/launcher";
 import { StartService } from "../../runs/start.service";
@@ -392,6 +393,34 @@ describe("CR-125 · «Quy trình con» chạy thật", () => {
     expect(await stagesOf(pid)).toEqual(["done", "done", "done", "done", "done", "skipped"]);
     expect(await runOf(pid)).toBe("done");
     expect(await openTimers(pid)).toBe(0);
+  });
+
+  it("cr125-fix-parent-timer-2 · bước điền đầu của lượt con ⇒ việc nằm trong «Chờ tôi duyệt» của thành viên nhóm", async () => {
+    const gx = await groups(o, T, ["sp-nhap"]);
+    const G = gx.get("sp-nhap") as string;
+    const [B] = (await users(o, T, 1, { from: 12_590 })) as [string];
+    await o`insert into admin.group_members (tenant_id, group_id, user_id) values (${T}, ${G}, ${B})`;
+    const form = {
+      ...base("nhap", "Điền đề xuất", 0, ["noi_dung"]),
+      executor: {
+        kind: "form",
+        fields: [
+          { key: "noi_dung", type: "text", label: "Nội dung", max_len: 200, required: true },
+        ],
+      },
+      after: { kind: "review", group_id: G, back_to_steps: [], branch: [] },
+    };
+    await def("sp-form", [form, end("xong", 1, "approved")], AMOUNT);
+    const pid = await start(await def("p-form", parentStages("sp-form"), AMOUNT));
+    const [kid] = await childrenOf(pid);
+    expect(kid?.status).toBe("waiting_review");
+    const page = await withHubScope(db, { kind: "user", tenantId: T, userId: B }, (tx) =>
+      listTaskPage(tx, { tenantId: T, userId: B, groupIds: new Set([G]) } as never, {
+        status: "open",
+        limit: 20,
+      }),
+    );
+    expect(page.map((r) => r.run_id)).toContain(kid?.id as string);
   });
 
   it("lượt con lỗi ⇒ bước cha «Cần xử lý» (tool_failed)", async () => {

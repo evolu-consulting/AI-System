@@ -111,11 +111,19 @@ async function submitOpenForm(page: Page): Promise<boolean> {
  * yêu cầu cha, nhìn vào lượt con), làm ngay tại đó: điền form (thẻ bước điền, «Gửi») hoặc bấm «Duyệt» (cùng RunStepActions với thẻ HĐ).
  */
 async function actOnWaiting(page: Page): Promise<boolean> {
-  await page.goto(`${E.cw}/contracts/requests`);
   const rows = page.getByTestId("requests-waiting-row");
+  // danh sách việc tải SAU trang: chờ có danh sách hoặc dòng «không có việc» rồi mới đếm (đếm ngay ⇒ 0 dù có việc)
+  const loaded = async () => {
+    await page.goto(`${E.cw}/contracts/requests`);
+    await expect(
+      page.getByTestId("requests-waiting").or(page.getByTestId("requests-waiting-empty")),
+    ).toBeVisible({ timeout: 30_000 });
+  };
+  await loaded();
   let acted = false;
   for (let i = 0; i < (await rows.count()); i++) {
-    await page.goto(`${E.cw}/contracts/requests`);
+    await loaded();
+    if ((await rows.count()) <= i) break;
     await rows.nth(i).click();
     await expect(page.getByTestId("request-page")).toBeVisible({ timeout: 30_000 });
     // việc của lượt con ⇒ chuyển sang trang yêu cầu gốc (cùng URL với trang yêu cầu cha), lượt con nằm lồng dưới lượt cha
@@ -184,6 +192,13 @@ async function dumpParent(): Promise<void> {
   console.log(out.join("\n"));
 }
 
+/** Mỗi người làm hết việc đang chờ mình; true nếu có ai làm được. */
+async function actAll(people: readonly Page[]): Promise<boolean> {
+  let moved = false;
+  for (const p of people) moved = (await actOnWaiting(p)) || moved;
+  return moved;
+}
+
 // biome-ignore lint/correctness/noEmptyPattern: Playwright cần mẫu fixture rỗng
 test.afterEach(async ({}, info) => {
   if (info.status !== info.expectedStatus && info.title.startsWith("2 ")) await dumpParent();
@@ -235,10 +250,9 @@ test("2 · Phần 1 → 2 → 3: các thẻ điền / duyệt (dòng 3, 6, 10 ha
     await emp.goto(runUrl);
     if ((await status.getAttribute("data-status")) === "done") break;
     // mỗi người làm hết việc đang chờ mình; dòng cùng duyệt: cả hai nhóm đều có thẻ mở nên mỗi bên bấm «Đạt» phần của mình
-    let moved = false;
-    for (const p of people) moved = (await actOnWaiting(p)) || moved;
+    const moved = await actAll(people);
     idle = moved ? 0 : idle + 1;
-    if (idle >= 20) break; // không ai có việc 8 vòng liền ⇒ lượt cha kẹt: dừng sớm, afterEach in chẩn đoán
+    if (idle >= 20) break; // không ai có việc 20 vòng liền ⇒ lượt cha kẹt: dừng sớm, afterEach in chẩn đoán
     if (moved && shots < 6) await shot(people[1] as Page, `02-buoc-${++shots}`);
     if (!moved) await emp.waitForTimeout(5_000); // chờ hẹn canh chốt bước cha / lượt con (qc cr125-final-e2e: vòng không ngủ hết 60 lượt trước khi hẹn kịp chạy)
     // không có việc nào ⇒ đang chờ lượt con / hẹn canh chốt bước cha: nạp lại trang ở vòng sau (không ngủ chờ)
