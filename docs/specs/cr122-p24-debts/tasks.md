@@ -31,7 +31,7 @@ Không chạm pack-scope.ts, esign/RLS, canvas admin-web, DLC.
 - Mục 7 hiện khoá dữ kiện thô (chưa dịch sang nhãn trường): hub chưa có bảng nhãn cho admin.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Mở lại quy trình duyệt khi công ty dùng flow theo sự kiện

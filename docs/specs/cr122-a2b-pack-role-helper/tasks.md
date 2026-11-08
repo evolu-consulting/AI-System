@@ -27,7 +27,7 @@ Email không cần cho điều kiện nào đang có (không flow/seed nào đ�
 bằng cờ suy ra `email_domain` thay vì bỏ hẳn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 Không thay đổi hành vi (lý do: refactor nội bộ; đổi dữ kiện `email`→`email_domain` thuộc sự kiện mới của A2 chưa gộp, đã ghi ở Delta cr122-a2-community).
 
 ## Việc còn lại

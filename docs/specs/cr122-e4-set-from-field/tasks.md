@@ -24,7 +24,7 @@ map được `contract.value → amount`.
 - Bridge service chưa có danh mục sự kiện ⇒ chưa truyền `facts` cho AI (AI không dùng được nguồn fact tới khi nối manifest).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Ghi giá trị từ bước trước / dữ kiện

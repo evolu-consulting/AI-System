@@ -27,7 +27,7 @@ Unit `lib/u12-arrow-order.test.ts` (7); admin-web processes 478 pass; tsc admin-
 - `backTo` (cổng Từ chối quay lại) không tính là cạnh của đồ thị; `rebuild` đổi số và bỏ đích không còn đứng trước.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Mũi tên chỉ bị từ chối khi tạo vòng lặp (nguồn: CR-123 FLOW3-FR-04 u12)

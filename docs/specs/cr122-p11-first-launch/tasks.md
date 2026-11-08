@@ -65,7 +65,7 @@ UI web không đổi (thẻ dùng `steps` sẵn có).
 - `flow_steps = null` (không `[]`): ràng buộc `approvals_flow_steps_ck`; thẻ coi null ≡ rỗng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Thẻ duyệt HĐ khi công ty bật flow theo sự kiện

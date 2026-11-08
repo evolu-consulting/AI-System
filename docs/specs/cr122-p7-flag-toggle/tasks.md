@@ -28,12 +28,12 @@ Không migration (dùng action/entity audit có sẵn), không đổi bộ đi�
 - GET cũng chỉ platform_admin (UI chỉ hiện cho platform_admin).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Platform admin bật/tắt cờ "dùng quy trình mới" theo công ty
 Cờ `flow_triggers` của công ty được đọc/đặt qua `GET/PUT /tenants/:tid/flow-settings`, chỉ platform_admin; tenant_admin và member nhận 403. Mỗi lần đổi giá trị ghi audit (người đổi, lúc đổi, giá trị cũ và mới); đặt lại đúng giá trị hiện tại không ghi audit. Tab Quy trình của công ty có công tắc cho platform_admin, bật thì hỏi xác nhận một câu.
-- Kịch bản: khi platform_admin PUT `{flow_triggers:true}` rồi `false` thì GET trả đúng giá trị và audit có hai dòng (false→true, true→false); tenant_admin gọi nhận 403 [test: apps/hub-api/src/modules/processes/library/flow-settings.int.test.ts » platform_admin bật/tắt, tenant_admin 403, audit ghi cũ và mới]
+- Kịch bản: khi platform_admin PUT `{flow_triggers:true}` rồi `false` thì GET trả đúng giá trị và audit có hai dòng (false→true, true→false); tenant_admin gọi nhận 403 [test: apps/hub-api/src/modules/processes/library/flow-settings.int.test.ts]
 
 ## Việc còn lại
 - qc: e2e hành trình bật công tắc trên UI (viết ở đợt e2e cuối CR, testid trong mục Làm).

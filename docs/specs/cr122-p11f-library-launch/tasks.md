@@ -25,7 +25,7 @@ e2e G1.2 vẫn đỏ trên ba360d8f3: sau "Xác nhận và lưu" không có th�
   `engineCardView`, `planEngineAct` dùng chung. Thẻ dạng khe (khoá `s<i>`) giữ nguyên.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Thẻ duyệt hiện bước của lượt flow theo sự kiện

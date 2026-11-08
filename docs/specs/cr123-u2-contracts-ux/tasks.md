@@ -41,7 +41,7 @@ FLOW3-FR-11 + FLOW3-FR-13 phần C (`docs/specs/CR-123/ux-audit.md` dòng 24–3
 - Bước sau khi trả lại/từ chối: lý do = góp ý của người duyệt; tên người quyết không còn dòng riêng (chỉ có ở bước đã duyệt: "Bởi X lúc …").
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Thẻ duyệt hiển thị ba dòng cho mỗi bước

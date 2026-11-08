@@ -29,7 +29,7 @@ unit: `canvas-edit.test.ts`, `edit-history.test.ts`, `jump-edges.test.ts`, `flow
 - Xoá bước bằng Delete trên canvas hỏi xác nhận CHỈ khi bước đã có cấu hình; Ctrl+Z hoàn tác được.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Nối lại đầu cạnh trên canvas dùng cùng luật với kéo cổng ra

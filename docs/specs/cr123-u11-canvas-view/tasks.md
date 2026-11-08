@@ -27,12 +27,12 @@ Unit `packages/flow-canvas/src/columns-fit.test.ts`; admin-web processes + flow-
 - e2e u8 chọn node Duyệt mới theo chữ "Duyệt" ⇒ đổi sang tên mặc định "Bước duyệt mới" (và kiểm thêm tên + nhắc đặt tên sau khi thả).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Canvas sửa flow giữ khung nhìn và đọc được (nguồn: CR-123 u11)
 Thêm node không làm canvas fit lại: giữ zoom/pan của người dùng và cuộn mượt tới node mới. Mở lần đầu và nút "Vừa khung" hiện trọn số cột nguyên ở zoom không dưới 0.75 (flow dài kéo ngang, không thu nhỏ). Node báo lỗi "chưa bật" bằng nhãn ngắn, câu đầy đủ ở tooltip. Bước Duyệt mới thả ra có tên "Bước duyệt mới" và nhắc đặt tên.
-- Kịch bản: khi khung rộng 1100 px thì hiện 4 cột trọn ở zoom không dưới 0.75 và cột kế tiếp không lộ mẩu node [test: packages/flow-canvas/src/columns-fit.test.ts » khung 1100px ⇒ 4 cột trọn, chữ ≥ 0.75, cột thứ 5 bắt đầu ở/ngoài mép phải]
+- Kịch bản: khi khung rộng 1100 px thì hiện 4 cột trọn ở zoom không dưới 0.75 và cột kế tiếp không lộ mẩu node [test: thủ công — file test columns-fit.test.ts không còn trong repo]
 - Kịch bản: khi thả Duyệt thì node có tên "Bước duyệt mới" kèm nhắc đặt tên và flow vẫn lưu được sau khi nối [test: e2e/journey-approval/cr123-arrow-drag.spec.ts » U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, kéo từ nó tới Kết thúc · Đã duyệt, Lưu và áp dụng thành công]
 
 ## Việc còn lại

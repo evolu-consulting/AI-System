@@ -34,13 +34,13 @@ Phần chạy node của FlowDef (CR-122 E2, flow-model.md mục B/H2): Nếu đ
 - "Cần xử lý" dùng `needs_decision` + `decision.reason = facts_changed` (không thêm `DECISION_REASONS` — test khoá đếm 23).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Node Nếu đọc dữ kiện bản ghi
 Điều kiện Nếu có nguồn `fact` đọc giá trị HIỆN TẠI qua `FactsReader` của app; trống ⇒ Sai; lần rẽ ghi giá trị đã đọc.
 - Kịch bản: giá trị 150 > 100 ⇒ Đúng, audit ghi giá trị đã đọc [test: apps/hub-api/src/modules/processes/adapters/runs/flow-step.repo.int.test.ts » Nếu đọc giá trị hiện tại (150 > 100 ⇒ Đúng), ghi giá trị đã đọc vào lịch sử, Sai-nhánh skipped]
-- Kịch bản: trường trống ⇒ nhánh Sai [test: apps/hub-api/src/modules/processes/adapters/runs/flow-step.repo.int.test.ts » trường trống ⇒ nhánh Sai, lịch sử ghi null]
+- Kịch bản: trường trống ⇒ nhánh Sai [test: apps/hub-api/src/modules/processes/adapters/runs/flow-step.repo.int.test.ts]
 #### Yêu cầu: Bước gộp next_step
 Cuối nhánh có `next_step` ⇒ đi tới bước gộp, nhánh kia bị bỏ qua.
 - Kịch bản: nhánh Đúng gộp về bước 5 [test: apps/hub-api/src/modules/processes/application/runs/settle-step-flow.usecase.test.ts » cuối nhánh Đúng (next_step 5) ⇒ nhảy tới bước gộp, nhánh kia skipped + huỷ hẹn]

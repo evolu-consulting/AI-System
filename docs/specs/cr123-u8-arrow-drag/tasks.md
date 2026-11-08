@@ -28,7 +28,7 @@ Unit `lib/u8-arrow-drag.test.ts`; e2e `cr123-arrow-drag.spec.ts` + `cr122-editor
 - Ca đỏ `cr122-editor › 3` (đỏ cả trên base): Ký số cần bước duyệt ngay trước ⇒ chèn ở cuối flow (sau Kết thúc) bị chặn và ca không có node Ký số; ca nay có sẵn bước Duyệt và chèn bằng nút "+" trên cạnh đi ra từ Duyệt.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Kéo mũi tên nối bước dễ và không bị che (nguồn: CR-123 FLOW3-FR-04/05 u8)

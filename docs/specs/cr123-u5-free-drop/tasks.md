@@ -30,7 +30,7 @@ Unit: `lib/u5-free-drop.test.ts`, `lib/canvas-connect*.test.ts`, `lib/u4-canvas-
 - Cờ `free` chỉ ở bản nháp, không gửi Hub: Lưu bị chặn trước khi gửi nên không cần cột/migration.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Thả node từ bảng mẫu là node đứng riêng, nối bằng mũi tên (nguồn: CR-123 FLOW3-FR-04 u5)
@@ -39,7 +39,7 @@ Thả một loại node lên canvas tạo node mới ĐỨNG RIÊNG tại điể
 - Kịch bản: khi còn node đứng riêng thì Lưu bị chặn với tên bước và node có lỗi [test: apps/admin-web/src/features/processes/lib/u5-free-drop.test.ts » cùng một nguồn: freeErrors, validateDraft, blockedInfo (tên bước + chỉ số)]
 - Kịch bản: khi có mũi tên tới node thì hết đứng riêng, cả cụm Ký số [test: apps/admin-web/src/features/processes/lib/u5-free-drop.test.ts » markFree chỉ đánh dấu uid vừa thả, clearFree gỡ cờ của cả cụm node module]
 - Kịch bản: khi nối từ Bắt đầu khi hoặc bước tự động tới Ký số thì bị từ chối [test: apps/admin-web/src/features/processes/lib/u5-free-drop.test.ts » bước tự động tới Ký số bị từ chối, bước duyệt tới Ký số nối được]
-- Kịch bản: khi cột có node đứng riêng thì không vẽ nút gộp thừa [test: apps/admin-web/src/features/processes/lib/u5-free-drop.test.ts » cột có node đứng riêng: nút gộp thừa bị bỏ, nối thẳng nguồn tới đích]
+- Kịch bản: khi cột có node đứng riêng thì không vẽ nút gộp thừa [test: apps/admin-web/src/features/processes/lib/u5-free-drop.test.ts]
 
 ## Việc còn lại
 - Thu phóng tới bước khi bấm lỗi (cần API focus ở `@ai/flow-canvas`).

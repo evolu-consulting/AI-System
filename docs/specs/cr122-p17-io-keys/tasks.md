@@ -26,7 +26,7 @@ unit nodes.rules + tool-input-key; int contract-id-key (0112), tool-auto-args (c
 - Cầu nối tới tool: trước p17 `autoArgKeys` chỉ nhìn input lượt ⇒ output node Ghi giá trị KHÔNG tới bước tool (chỉ chạy khi args khai tường minh) ⇒ thêm nguồn field gần nhất (O(n) nhỏ, 1 cột SQL thêm trong câu sẵn có).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Một khoá bản ghi hợp đồng `contract_id` (CR-122 p17)

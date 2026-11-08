@@ -24,7 +24,7 @@ Qc một mình: sửa các ca e2e vỡ vì màn Việc/Luật định tuyến/kh
 1. Không có đường xuất bản flow Thư viện mới: `library.service.ts:77-89` (`#b2` → `specOrThrow(def.slot)` + `systemTools` `contracts-route/finalize` ở `approval.mount.ts:107`) và `library.repo.ts:19` (`IS_LIB` đòi `slot is not null`). Flow có trigger nhưng không khe ⇒ 404; có khe ⇒ PROCESS_PUBLISH_INVALID vì thiếu nút hệ thống. Tái hiện: POST /process-defs {trigger, app} rồi POST /process-defs/:id/publish.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 Không thay đổi hành vi (lý do: chỉ thêm/sửa test e2e và kit test).
 

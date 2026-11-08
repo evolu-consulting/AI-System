@@ -100,6 +100,59 @@ chữ, khung, `data-testid`/`data-status`, nhãn quá hạn/chuyển cấp/bỏ 
 - Kịch bản: khi thẻ có bước Ký số thì bước này nối cuối danh sách [test: apps/workspace-web/src/features/contract-approval/lib/flow-view.test.ts » slot/ref/state/phase + bước Ký số nối cuối · tasks rỗng (nút thẻ do useApprovalUi)]
 - Kịch bản: khi e2e thẻ duyệt hiện có chạy thì vẫn xanh [test: e2e/contracts-web/contract-flow.cw.ts » dòng thời gian: tên bước, tên phòng, trạng thái, hạn quá hạn]
 
+#### Yêu cầu: Cờ flow theo sự kiện tắt giữ đường duyệt cũ
+Công ty chưa bật `FLOW_TRIGGERS`: AI đọc xong ⇒ lượt duyệt mở run engine ngay theo quy trình khe (bản xuất bản hiện hành), thẻ duyệt có
+bước mở, Đạt đủ bước ⇒ HĐ Đã duyệt + khoá, như trước CR-122.
+- Kịch bản: khi cờ tắt và AI đọc xong HĐ dưới ngưỡng thì lượt mở run engine, thẻ có bước 0 mở, Đạt bước 0 ⇒ Đã duyệt + khoá [test: tests/acceptance/CF/flag-off-legacy.int.test.ts » cờ tắt ⇒ AI đọc xong mở run engine như cũ (bản xuất bản hiện hành, thẻ có bước mở) · Đạt bước 0 ⇒ Đã duyệt + khoá]
+
+#### Yêu cầu: Duyệt thay ghi đúng một lần khi bấm trùng
+Chủ gói bấm Đạt nhiều lần (kể cả song song) ở bước không thuộc Group của mình ⇒ đúng một bản ghi "duyệt thay", không mất khi lần bấm ghi
+bản ghi thua đua.
+- Kịch bản: khi chủ gói bấm Đạt hai lần song song thì có đúng 1 dòng duyệt thay và thẻ hiện owner_override [test: tests/acceptance/CF/owner-override.int.test.ts » review · H bấm Đạt hai lần liên tiếp (song song + lần nữa) ⇒ đúng 1 dòng duyệt thay]
+
+#### Yêu cầu: Người ký công ty thấy HĐ đang chờ ký
+Người ký công ty (`signers[].client_user_id`) của phong bì đang mở (sent/delivered) của một HĐ ĐỌC được HĐ đó (trang HĐ, trạng thái ký số,
+"Ký ngay", làm mới) dù ngoài cây quản lý của chủ HĐ (chế độ thấy `org`); không sửa được HĐ. Phong bì xong/huỷ/từ chối ⇒ hết thấy theo
+nhánh này. Chỉ trong tenant của mình.
+- Kịch bản: khi bước Ký số gửi phong bì cho người ký ngoài cây thì người đó mở HĐ, xem trạng thái, lấy link Ký ngay và làm mới được; editor không phải người ký và tenant khác vẫn không thấy [test: tests/acceptance/cf-esign/signer-visible.int.test.ts » người ký đọc HĐ + trạng thái + Ký ngay + làm mới, editor khác và tenant khác không thấy]
+- Kịch bản: khi phong bì xong hoặc bị huỷ thì người ký hết thấy HĐ theo nhánh này [test: tests/acceptance/cf-esign/signer-visible.int.test.ts » phong bì xong hoặc huỷ ⇒ người ký hết thấy theo nhánh này]
+
+#### Yêu cầu: Trang HĐ không ghi "Chưa xác nhận" sau khi đã gửi duyệt
+Sau "Xác nhận và lưu" (lượt duyệt đang mở) trang HĐ không còn dải/dòng dẫn "Chưa xác nhận". HĐ đã khoá do bước Ký số nhưng chưa xác nhận hiện dải "Đang ký số", không ghi "Đã xác nhận".
+- Kịch bản: khi đã Xác nhận và lưu và lượt duyệt đang chạy thì không còn dải "Chưa xác nhận" [test: apps/workspace-web/src/features/contract-lock/lib/lock-view.test.ts » CR-122 · đã Xác nhận và lưu (lượt duyệt đang chạy) ⇒ không còn banner Chưa xác nhận]
+- Kịch bản: khi bước Ký số đã khoá HĐ chưa xác nhận thì dải là "Đang ký số" [test: apps/workspace-web/src/features/contract-lock/lib/lock-view.test.ts » CR-122 · bước Ký số đã khoá HĐ chưa xác nhận ⇒ banner signing (không ghi 'Đã xác nhận')]
+- Kịch bản: khi HĐ đã gửi duyệt thì lời dẫn đầu trang không còn nhắc "chưa xác nhận" [test: apps/workspace-web/src/features/contract-review/lib/review.test.ts]
+
+#### Yêu cầu: Bước Ký số khoá HĐ trước khi gửi ký
+Bước Ký số giữa flow khoá HĐ (`lockForSign`) rồi mới gửi ký; Từ chối / Trả lại mở khoá. Migration contracts 0082: bản cũ chỉ bị thay (supersede) khi xác nhận, không phải lúc gửi ký.
+- Kịch bản: khi HĐ đang trong lượt duyệt thì bước Ký số khoá HĐ rồi gửi; bản cũ chỉ bị thay khi xác nhận [test: apps/hub-api/src/modules/packs/contracts/adapters/esign-node.int.test.ts]
+
+#### Yêu cầu: Bước Ký số/Chờ ký của mẫu Thư viện là node `contracts.esign`
+Các stage Ký số/Chờ ký của mẫu flow Thư viện là node `contracts.esign` nên trình sửa hiện ô chọn người ký; hub 0113 gán node này cho flow đã lưu.
+- Kịch bản: khi nạp mẫu Thư viện thì stage Ký số là node `contracts.esign` [test: apps/hub-api/src/modules/processes/library/flow-templates.seed.int.test.ts]
+- Kịch bản: khi chạy hub 0113 trên flow đã lưu thì stage Ký số được gán node `contracts.esign` [test: thủ công — chưa có test riêng cho 0113, ghi vào việc còn lại]
+
+#### Yêu cầu: Hạn tải phong bì DocuSign theo dung lượng tệp
+Hạn tạo phong bì = 15 s + 6 s mỗi MB, tối đa 110 s (nhỏ hơn hạn bước tool 120 s), để HĐ scan lớn không hết hạn sớm.
+- Kịch bản: khi tệp nhỏ thì hạn ≈ 15 s, 11 MB đủ > 60 s, trần 110 s [test: apps/hub-api/src/modules/packs/contracts/adapters/docusign.timeout.test.ts]
+
+#### Yêu cầu: Thẻ duyệt hiển thị ba dòng cho mỗi bước
+Mỗi bước trên thẻ duyệt hiện đúng ba dòng ngắn: trạng thái · lý do · bước kế (ai cần làm gì). Một chữ "Cần xử lý" cho trạng thái cần người xử lý.
+Lỗi gửi ký lại nói vì sao và cách sửa.
+- Kịch bản: khi bước duyệt đang mở thì thẻ hiện "Đang chờ <phòng> duyệt", hạn, và "Bạn cần: Duyệt, Trả lại sửa hoặc Từ chối" cho người duyệt [test: apps/workspace-web/src/features/contract-approval/lib/card-status.test.ts » rowStatusLines · mỗi trạng thái đủ 3 dòng]
+- Kịch bản: khi bước ký số lỗi thì lý do kèm cách sửa và bước kế theo quyền gửi lại [test: apps/workspace-web/src/features/contract-approval/lib/card-status.test.ts » esignStatusLines]
+- Kịch bản: khi xem thẻ ở trình duyệt thì mỗi bước có ba dòng [test: e2e/contracts-web/contract-flow.cw.ts » dòng thời gian: tên bước, tên phòng, trạng thái, hạn quá hạn]
+
+#### Yêu cầu: Người duyệt chỉ thấy Duyệt · Trả lại sửa · Từ chối
+Ở bước duyệt, người có quyền chỉ thấy ba nút Duyệt, Trả lại sửa, Từ chối (Từ chối và Trả lại bắt buộc ghi lý do). Không dùng chữ "Đạt" hay "Cần quyết".
+- Kịch bản: khi người duyệt mở thẻ thì đúng ba nút, không Xác nhận/Đọc lại [test: apps/workspace-web/src/features/contract-approval/lib/card-status.test.ts » nút theo vai (người duyệt chỉ thấy Duyệt · Trả lại sửa · Từ chối)]
+- Kịch bản: khi đọc chuỗi tiếng Việt của ứng dụng Hợp đồng thì không còn "Cần quyết", "Giai đoạn", "Đạt", "đi tới" [test: apps/workspace-web/src/features/contract-approval/lib/card-status.test.ts » từ vựng thẻ duyệt trong chuỗi contracts]
+
+#### Yêu cầu: Bước Thông báo không có người nhận được báo cho chủ hợp đồng
+Khi một bước Thông báo xong nhưng không có người nhận, thẻ duyệt hiện cho chủ hợp đồng dòng "Không có ai nhận thông báo bước <tên> — chọn người nhận trong Công ty › Quy trình" thay vì im lặng.
+- Kịch bản: khi hub gửi cờ cảnh báo ở bước Thông báo thì chủ hợp đồng thấy dòng cảnh báo [test: apps/workspace-web/src/features/contract-approval/lib/card-status.test.ts » noRecipientSteps (NOTIFY_NO_RECIPIENT)]
+- Kịch bản: khi xem thẻ ở trình duyệt thì dòng cảnh báo hiện cho chủ hợp đồng [test: e2e/contracts-web/u2-contracts-ux.cw.ts » chủ HĐ thấy cảnh báo bước Thông báo không có người nhận]
+
 ## CR-124/125 · Delta gộp 2026-11-08 (đợt cr124-cr125)
 
 #### Yêu cầu: Người ký chọn cách ký lúc ký (nguồn: cr125-m4-esign)

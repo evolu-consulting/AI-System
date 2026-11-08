@@ -27,7 +27,7 @@ Thêm nhánh quét theo PHONG BÌ cho node Ký số (HĐ không có bước Ký 
 - Quá hạn trả hàng mỗi vòng tới khi phong bì thôi mở (huỷ hụt ⇒ thử lại), chuông chỉ ở lần đầu (`expired_at` null).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED current/pack-contracts/esign-node-sweep.md
 #### Yêu cầu: Vòng quét nhắc và hết hạn theo phong bì của node Ký số

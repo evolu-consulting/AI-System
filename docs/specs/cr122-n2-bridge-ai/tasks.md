@@ -50,7 +50,7 @@ unit `process-flow-edges.test.ts` (contracts), `bridge.routes.test.ts` (Hono th�
 - Giới hạn tần suất trong bộ nhớ (một instance); lưới chính là trần token tenant của AI client.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED engine/flow-bridge.md
 #### Yêu cầu: Nối hai node lệch giao diện: kiểm tất định khi lưu và gợi ý cầu nối bằng AI (FLOW2-FR-26)

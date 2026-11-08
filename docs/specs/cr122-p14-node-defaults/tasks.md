@@ -9,7 +9,7 @@ Làn: nhanh · perf: không
 - Đổi tên khi `keyAuto` ⇒ mã, tên tệp, mẫu mặc định đi theo (`patchStage`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 

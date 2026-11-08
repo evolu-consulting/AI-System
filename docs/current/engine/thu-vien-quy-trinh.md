@@ -70,3 +70,38 @@ GET/PUT luật cho platform_admin và tenant_admin của chính tenant; thay c�
 - Kịch bản: tenant admin tenant khác ⇒ 404; member ⇒ 403 [test: apps/hub-api/src/modules/processes/library/routing.routes.int.test.ts » tenant admin tenant khác ⇒ 404, member ⇒ 403]
 - Kịch bản: ghi đồng thời cùng version ⇒ 409 [test: apps/hub-api/src/modules/processes/library/routing.routes.int.test.ts » ghi đồng thời ⇒ 409]
 - Kịch bản: RLS — scope user tenant khác không đọc được luật/tập gán [test: apps/hub-api/src/modules/processes/library/routing.routes.int.test.ts » RLS chặn đọc chéo tenant]
+
+#### Yêu cầu: Xuất bản flow Thư viện theo sự kiện
+Flow Thư viện có "Bắt đầu khi" (trigger) và không có khe xuất bản được như flow theo khe: lưu bản phát hành v+1 sau khi kiểm luật flow (bước Kết thúc, sự kiện/điều kiện của app, cạnh giữa các bước); không đòi khe hay nút hệ thống của khe. Flow sai luật ⇒ 422 kèm đường dẫn lỗi và không tạo bản phát hành. Flow đã xuất bản gán được cho công ty và chạy từ bản phát hành mới nhất.
+- Kịch bản: khi xuất bản flow Thư viện có trigger rồi gán cho công ty thì sự kiện mở đúng một lượt chạy từ bản phát hành [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » tạo → xuất bản v1 → gán công ty → sự kiện mở đúng 1 lượt từ BẢN XUẤT BẢN; xuất bản lại ⇒ v2]
+- Kịch bản: khi flow Thư viện sai luật thì xuất bản trả 422 kèm đường dẫn và không có bản phát hành [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » flow lỗi ⇒ 422 PROCESS_DEF_INVALID + paths, không tạo bản xuất bản]
+- Kịch bản: khi xuất bản def theo khe cũ thì vẫn kiểm luật khe như trước [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » def theo khe cũ xuất bản như trước (luật khe + nút hệ thống)]
+- Kịch bản: khi flow Thư viện có trigger chưa gán cho công ty thì tenant_admin không thấy, gán rồi thì mở xem được [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » tenant_admin chỉ mở (chỉ đọc) def Thư viện có trigger khi ĐÃ gán cho công ty của mình]
+
+#### Yêu cầu: Def theo khe đã backfill (M1) vẫn sửa được theo đường khe
+Def khe có thêm node Kết thúc ở đuôi (hub 0111) vẫn dựng lại được body từ stages (canvas) và lưu theo đường khe; luật FlowDef không áp cho def khe / bản riêng lưu theo khe. Nhân bản def khe không chép trigger/app. Def mặc định của seed có `published_version` 2 vì M1 tạo release v+1 (test library.routes cập nhật theo).
+- Kịch bản: khi sửa bản riêng chỉ gửi stages có node Kết thúc đuôi thì body dựng lại và lưu được [test: apps/hub-api/src/modules/processes/library/clone-for-company.int.test.ts » PUT bản riêng (chỉ gửi stages) ⇒ slot_body được dựng lại + giữ, slot vẫn null, nguồn/bản không đổi]
+
+#### Yêu cầu: Mẫu "Duyệt theo phòng ban" không cho ký khi chưa ai duyệt
+Hợp đồng của phòng ban không khớp điều kiện vẫn phải qua Trưởng phòng duyệt rồi mới tới Ký số.
+- Kịch bản: phòng ban khác X ⇒ nhóm Trưởng phòng duyệt ⇒ gộp ⇒ Ký số [test: apps/hub-api/src/modules/processes/library/flow-templates.def.test.ts]
+
+#### Yêu cầu: Xem và sao chép flow Thư viện theo sự kiện
+Flow Thư viện có "Bắt đầu khi" mở ra canvas chỉ đọc (có node Bắt đầu khi); công ty sao chép được thành bản riêng (chép trigger/app/các bước, giữ nguồn và phiên bản, chưa xuất bản). Lưu bị chặn luôn báo lý do và bước cần sửa.
+- Kịch bản: tenant_admin sao chép flow trigger đã gán ⇒ bản công ty có trigger, chưa xuất bản [test: apps/hub-api/src/modules/processes/library/clone-flow-for-company.int.test.ts]
+- Kịch bản: def có trigger ⇒ dựng canvas chỉ đọc [test: apps/admin-web/src/features/processes/lib/library-flow.test.ts]
+
+#### Yêu cầu: Flow Thư viện có node Duyệt theo mã Group không cần id
+Flow Thư viện (không thuộc công ty, có sự kiện kích hoạt) chấp nhận mã Group (`group_key`) ở node Duyệt khi lưu, bật và xuất bản; không đòi `group_id`. Khi gán cho công ty và mở lượt, mã được đổi sang id Group của công ty đó và task duyệt giao đúng nhóm.
+- Kịch bản: khi platform_admin tạo flow Thư viện có node Duyệt theo `group_key`, bật, xuất bản rồi gán công ty có Group mã đó thì lưu/xuất bản thành công và Group duyệt khi mở lượt là id Group của công ty [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » P6 · flow Thư viện có node Duyệt theo group_key: tạo + bật + xuất bản + gán công ty ⇒ Group duyệt = id của công ty]
+
+#### Yêu cầu: Def của công ty vẫn chỉ trỏ Group bằng id
+Lưu def công ty nhận mã nhóm hợp lệ của chính công ty và tự đổi sang id (phòng client cũ); mã không có nhóm ở công ty ⇒ 422 `GROUPS_MISSING` nêu mã.
+- Kịch bản: khi lưu def công ty có mã nhóm không tồn tại thì 422 `GROUPS_MISSING` "Nhóm <mã> chưa có ở công ty — chọn nhóm khác." [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » P6/P15 · def của công ty: group_key lạ]
+- Kịch bản: khi PUT bản sao với mã nhóm hợp lệ của công ty thì lưu thành id [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » P15 · sao chép flow Thư viện có Duyệt theo key]
+
+#### Yêu cầu: Sao chép flow Thư viện về công ty đổi người duyệt theo mã sang id
+"Sao chép để sửa" đổi mọi mã nhóm của flow Thư viện sang id nhóm của công ty và bỏ mã trong bản sao, nên bản sao sửa và lưu được. Mã chưa có nhóm ở công ty ⇒ ô nhóm để trống, vẫn sao chép được, dòng flow báo "Nhóm <mã> chưa có ở công ty — chọn nhóm khác".
+- Kịch bản: khi sao chép flow Thư viện có bước Duyệt theo mã thì bản sao có `group_id` và không còn `group_key`, rồi đổi người duyệt (PUT) trả 200 [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » P15 · sao chép flow Thư viện có Duyệt theo key]
+- Kịch bản: khi mã nhóm chưa có ở công ty thì vẫn sao chép được, có cảnh báo `group_missing` và chọn nhóm khác lưu được [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » P15 · mã nhóm chưa có ở công ty]
+- Kịch bản: khi công ty thiếu nhóm theo mã thì sao chép trả 201 kèm mã thiếu [test: apps/hub-api/src/modules/processes/library/company-flows.int.test.ts » sao chép để sửa]

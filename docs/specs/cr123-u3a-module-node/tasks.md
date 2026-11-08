@@ -29,7 +29,7 @@ unit: cụm (contracts + `lib/module-cluster`), menu; int: lưu cụm tách ⇒ 
 - `FlowCtx.patchStages` (nhiều stage một lần đổi) thay chuỗi `patchStage` — tránh lần sau ghi đè lần trước do đóng gói `stages` cũ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Node module là MỘT ô (cụm stage)

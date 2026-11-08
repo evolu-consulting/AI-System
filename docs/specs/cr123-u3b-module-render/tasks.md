@@ -29,7 +29,7 @@ Unit `canvas/module-cluster.test.ts` (mẫu "Duyệt theo giá trị": một ô,
 - Trần số bước tính theo số stage THẬT (`stageCount`), số cột/bước người dùng thấy đếm ô một lần.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Node module nhiều stage là một ô trên sơ đồ flow (nguồn: CR-123 FLOW3-FR-14)
@@ -39,7 +39,7 @@ cạnh vào ô tới stage đầu, cạnh "đi tiếp" ra khỏi ô tới bướ
 - Kịch bản: khi mở mẫu "Duyệt theo giá trị" thì thấy đúng một ô Ký số với ba đầu ra Ký xong, Từ chối, Hết hạn [test: apps/admin-web/src/features/processes/components/canvas/module-cluster.test.ts » đúng MỘT ô Ký số với 3 đầu ra Ký xong · Từ chối · Hết hạn]
 - Kịch bản: khi gộp thì ô chiếm một cột và số cột đếm ô một lần [test: apps/admin-web/src/features/processes/components/canvas/module-cluster.test.ts » ô chiếm một cột: cột sau dồn trái, số cột đếm ô một lần]
 - Kịch bản: khi stage chờ có nhánh từ chối/hết hạn thì cạnh đi từ đúng đầu ra tới bước đích [test: apps/admin-web/src/features/processes/components/canvas/module-cluster.test.ts » nhánh Nếu và cạnh Từ chối/Hết hạn đổi theo cột đã gộp]
-- Kịch bản: khi vẽ bố cục thì cạnh vào ô tới stage đầu và cạnh ra đi thẳng bước kế [test: apps/admin-web/src/features/processes/components/canvas/module-cluster.test.ts » bố cục: vào ô tới stage đầu, ra ô đi thẳng bước kế, số cột = 7]
+- Kịch bản: khi vẽ bố cục thì cạnh vào ô tới stage đầu và cạnh ra đi thẳng bước kế [test: apps/admin-web/src/features/processes/components/canvas/module-cluster.test.ts]
 - Kịch bản: khi kéo đầu ra Từ chối / Hết hạn / Ký xong sang bước sau thì đặt nhánh của stage chờ, đích không sau stage chờ thì báo lỗi [test: apps/admin-web/src/features/processes/lib/canvas-connect-exit.test.ts » Từ chối ⇒ declined + voided của stage chờ tới đích, giữ nhánh khác]
 - Kịch bản: khi tính chỗ còn lại cho trần số bước thì ô Ký số tính 2 stage [test: apps/admin-web/src/features/processes/components/canvas/module-cluster.test.ts » số stage thật (trần số bước) khác số ô: ô Ký số = 2 stage]
 

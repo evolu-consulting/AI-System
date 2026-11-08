@@ -28,7 +28,7 @@ quá 2 phút ⇒ kẹt, thẻ không trống bước sau khi gắn run.
 - Lý do lưu là MÃ (web dịch), theo khuôn `FLOW_GROUP_MISSING`/`FLOW_ROUTE_NONE` có sẵn.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Lượt duyệt chờ flow không kẹt khi không mở được quy trình

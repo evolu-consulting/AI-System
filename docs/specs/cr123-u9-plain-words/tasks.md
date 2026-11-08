@@ -27,7 +27,7 @@ unit `company-copy.test.ts` (isBusinessView); int `company-flows-apply.int.test.
 - perf: apply thêm ≤ 4 câu cố định (khoá cấu hình, tăng phiên, audit, NOTIFY); không phụ thuộc số flow.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Nhân bản rồi gán

@@ -29,7 +29,7 @@ Không đổi UI (admin-web gửi stage nguyên trạng).
 - Ca "task giao đúng nhóm": int kiểm đúng bước của `libraryDefFor` (bản xuất bản + `bindGroupKeys` với Group công ty) ⇒ `after.group_id` = id Group của công ty; chạy trọn mở lượt thật do e2e (nhánh q1) phủ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Flow Thư viện có node Duyệt theo mã Group không cần id
@@ -38,7 +38,7 @@ Flow Thư viện (không thuộc công ty, có sự kiện kích hoạt) chấp 
 
 #### Yêu cầu: Def của công ty vẫn chỉ trỏ Group bằng id
 Quy trình thuộc công ty không nhận `group_key` (mã chưa phân giải thì engine không chạy được).
-- Kịch bản: khi lưu def của công ty có node Duyệt theo `group_key` thì bị từ chối 422 `PROCESS_REF_INVALID` [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts » P6 · def của công ty vẫn chỉ theo id: group_key ⇒ 422]
+- Kịch bản: khi lưu def của công ty có node Duyệt theo `group_key` thì bị từ chối 422 `PROCESS_REF_INVALID` [test: apps/hub-api/src/modules/processes/library/library-flow-publish.int.test.ts]
 
 ## Việc còn lại
 - qc (nhánh slice/cr122-q1-e2e): bỏ `withGroupKeys` + ghi stages bằng SQL trong `e2e/_kit/flows.ts` (`createLibraryFlow`), tạo/bật/xuất bản qua API thẳng.

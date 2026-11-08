@@ -26,7 +26,7 @@ Câu gợi ý: "Bước «{to_name}» cần «{labels[k].vi}»". Kiểm cạnh p
 - Lưu def cập nhật một phần (body không có `trigger`/`app`) ⇒ kiểm cạnh không thấy đầu ra Bắt đầu khi (như cũ); trình sửa gửi trọn def.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Dữ liệu bản ghi tự nối

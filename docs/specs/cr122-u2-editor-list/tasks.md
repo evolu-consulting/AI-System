@@ -27,7 +27,7 @@ Danh sách flow công ty theo `/tenants/:tid/company-flows`, bảng node theo `/
 - Đích Duyệt lưu bước 0-based; đổi bước ở canvas có thể làm lệch đích (nợ: hub báo `APPROVE_INVALID` khi lưu).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED platform/danh-sach-flow-cong-ty.md
 #### Yêu cầu: Một danh sách flow của công ty (FLOW2-FR-05, FLOW2-FR-08, FLOW2-FR-20)
@@ -40,7 +40,7 @@ Công ty thấy MỘT danh sách flow nhóm theo app: tên, Bắt đầu khi, ng
 #### Yêu cầu: Kiểm nối hai bước và gợi ý cầu nối (FLOW2-FR-25, FLOW2-FR-26)
 Node chèn từ bảng ghi khoá node; bước sau thiếu đầu vào bắt buộc so với bước trước ⇒ cạnh vàng kèm câu nói rõ; gợi ý cầu nối cho xem trước, Nhận chèn node Ghi giá trị, Bỏ thì thôi.
 - Kịch bản: khi bước sau cần `date` mà bước trước không có thì báo thiếu [test: apps/admin-web/src/features/processes/lib/palette-node.test.ts » cạnh vàng: Chờ tới ngày cần `date` mà bước trước không có]
-- Kịch bản: khi nhận gợi ý thì thành node Ghi giá trị [test: apps/admin-web/src/features/processes/lib/palette-node.test.ts » nhận gợi ý cầu nối ⇒ node Ghi giá trị]
+- Kịch bản: khi nhận gợi ý thì thành node Ghi giá trị [test: apps/admin-web/src/features/processes/lib/palette-node.test.ts]
 
 ## Việc còn lại
 Xem "Không làm". Chụp + soát căn mép khi có stack; e2e qc.

@@ -34,7 +34,7 @@ Không engine chạy, migration, UI, DLC. `FlowView.slot` chưa bỏ (U2/E1 đ�
 - `OutcomeHandler<TX>` generic: kit lớp 2 không phụ thuộc `@ai/db`; E2 gắn `Tx` của `apply-settle.ts`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED current/engine/flow-def.md
 #### Yêu cầu: Một định dạng FlowDef có node Bắt đầu khi và Kết thúc (FLOW2-FR-01/02/12/15)

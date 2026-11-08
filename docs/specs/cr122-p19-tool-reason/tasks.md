@@ -31,7 +31,7 @@ unit `attention.tool.test.ts` (mã ⇒ khoá i18n, đủ vi+en), `intake.errors.
 - Mã lạ ⇒ câu chung kèm mã để báo quản trị; `retry_exhausted` giữ câu cũ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Bước tự động lỗi nói rõ vì sao và làm gì

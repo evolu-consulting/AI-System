@@ -26,7 +26,7 @@ unit `approval-step-label.rules.test.ts`, `list-contracts-step.usecase.test.ts`;
 - `tests/acceptance/HD1/list.int.test.ts` ĐỎ sẵn ở nền (`platform/gd0`, 39 ca: "cannot truncate a table referenced in a foreign key constraint") ⇒ không kiểm được ở đây; khoá 23 khoá vẫn được kiểm ở unit use case + journey.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Danh sách hợp đồng

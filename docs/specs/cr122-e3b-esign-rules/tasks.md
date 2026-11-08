@@ -19,7 +19,7 @@ Hoàn thiện node Ký số / Chờ sự kiện nhiều kết quả sau soát E3
 - Sự kiện tới SAU khi stage chờ đã xong vẫn có thể được ghi lại nếu snapshot còn một `wait_event` cùng khoá ở phía sau (`record` upsert đặt lại `consumed_by`) — giữ như CR-120 (một flow không nên có hai bước chờ cùng khoá; luật def đã chặn khoá trùng `WAIT_INVALID`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Luật lưu rẽ nhánh của Chờ sự kiện

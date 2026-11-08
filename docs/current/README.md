@@ -1,4 +1,4 @@
-﻿# docs/current — hành vi ĐANG chạy
+# docs/current — hành vi ĐANG chạy
 
 Mục đích: một chỗ sạch mô tả **hệ thống làm gì ngay bây giờ** (trên `platform/gd0`), để agent đọc thay vì lần qua nhiều spec/CR cũ. Đây là nguồn sự thật cho agent khi hỏi "hành vi hiện hành là gì". Không ghi kế hoạch, không ghi lịch sử.
 
@@ -48,4 +48,8 @@ Viết tắt đường dẫn: `H` = `apps/hub-api/src/modules/packs/contracts`, 
 | Gửi đối tác / danh bạ (CR-124/125) | [sht/gui-doi-tac-xac-nhan.md](sht/gui-doi-tac-xac-nhan.md) · [sht/gui-doi-tac-q4.md](sht/gui-doi-tac-q4.md) · [sht/gui-doi-tac-giao-dien.md](sht/gui-doi-tac-giao-dien.md) · [sht/gui-doi-tac-cong-tinh-nang.md](sht/gui-doi-tac-cong-tinh-nang.md) · [sht/doi-tac-tra-loi-qua-email.md](sht/doi-tac-tra-loi-qua-email.md) · [sht/email-moi-ky-so.md](sht/email-moi-ky-so.md) · [platform/company-directory.md](platform/company-directory.md) · [platform/partner-links.md](platform/partner-links.md) | Gửi đối tác xác nhận, hộp thư liên công ty, danh bạ, nối đối tác, email Mời ký |
 | | [engine/so-module-khoi-dong.md](engine/so-module-khoi-dong.md) | Sổ module tính năng (CR-125): kiểm lúc khởi động, MOD_*, module:index/new, check:modules |
 
+| Flow theo sự kiện (CR-122/123) | [engine/flow-def.md](engine/flow-def.md) · [engine/flow-def-save.md](engine/flow-def-save.md) · [engine/flow-triggers.md](engine/flow-triggers.md) · [engine/flow-templates.md](engine/flow-templates.md) · [engine/app-events.md](engine/app-events.md) · [engine/flow-events-emit.md](engine/flow-events-emit.md) | FlowDef, lưu, kích hoạt theo sự kiện, mẫu sạch, sự kiện app |
+| | [engine/company-flows.md](engine/company-flows.md) · [engine/company-flows-pair.md](engine/company-flows-pair.md) · [engine/node-palette.md](engine/node-palette.md) · [engine/flow-bridge.md](engine/flow-bridge.md) | Flow của công ty, cặp node module, bảng node, cầu nối AI |
+| | [pack-contracts/](pack-contracts/) · [contracts/partner-pick.md](contracts/partner-pick.md) · [web/hop-dong-partner-pick.md](web/hop-dong-partner-pick.md) · [community/su-kien-flow.md](community/su-kien-flow.md) | Sự kiện flow của Hợp đồng/Community, ký số theo node, chọn đối tác |
+| Trình soạn quy trình (CR-122/123) | [platform/trinh-sua-flow.md](platform/trinh-sua-flow.md) · [platform/canvas-flow-nghiep-vu.md](platform/canvas-flow-nghiep-vu.md) · [platform/node-config-panel.md](platform/node-config-panel.md) · [platform/danh-sach-flow-cong-ty.md](platform/danh-sach-flow-cong-ty.md) · [platform/kiem-noi-node.md](platform/kiem-noi-node.md) · [platform/dich-buoc-flow.md](platform/dich-buoc-flow.md) · [platform/node-bat-dau-khi-canvas.md](platform/node-bat-dau-khi-canvas.md) | Trình soạn, canvas, panel node, danh sách, kiểm nối |
 Khu vực khác (Agent Hub lõi, Worker, Chat) chưa có `current/`; dùng `docs/design/**` + CODEMAP tới khi có.

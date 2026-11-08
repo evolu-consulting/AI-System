@@ -28,7 +28,7 @@ Làm gọn UI trình sửa flow theo soát ảnh u2c: canvas vừa khung + chữ
 - Ô cầu nối là node canvas riêng (không popover trên cạnh) để kéo/zoom theo canvas.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED platform/canvas-flow-nghiep-vu.md
 #### Yêu cầu: Node flow nói ngôn ngữ nghiệp vụ, gợi ý cầu nối ngay trên canvas (FLOW2-FR-26)

@@ -29,7 +29,7 @@ phụ thuộc: E5 (e54910129)
 - Chỉ kiểm args HẰNG (`from: "const"`); nguồn `input`/`field` không kiểm tĩnh được, bỏ qua (runtime vẫn kiểm lại thành viên công ty).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED current/pack-contracts/esign-node-due.md
 #### Yêu cầu: Hạn ký và nhắc của node áp lúc chạy

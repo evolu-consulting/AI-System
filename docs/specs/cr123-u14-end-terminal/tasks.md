@@ -27,7 +27,7 @@ Unit: `view-focus.test.ts` (6), `u12b-demo-sequence.test.ts` (+2), contracts `pr
 - Node nhìn thấy "trọn" = trong khung trừ lề 24 px và ngăn chi tiết; không vừa ở zoom 0.75 ⇒ chỉ giữ node mới (đầu danh sách).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Kết thúc là điểm cuối; khung nhìn đi theo node đang làm việc (nguồn: CR-123 u14)

@@ -29,7 +29,7 @@ Phần UI còn lại của CR-122: đích bước ổn định khi đổi thứ 
 - Đích lưu theo số bước (hub chỉ nhận số), UI giữ đúng bằng remap theo `uid` stage trước/sau mỗi thay đổi bản nháp.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED platform/dich-buoc-flow.md
 #### Yêu cầu: Đích bước giữ đúng khi đổi thứ tự (FLOW2-FR-12)

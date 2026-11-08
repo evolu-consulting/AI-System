@@ -33,7 +33,7 @@ Hàng chờ UX canvas (docs/specs/CR-122/resume.md): giám đốc / sale mở fl
 - E2E không kéo "Ký số" vì công ty hành trình chưa bật tính năng ký số (menu không có mục) — luật được unit kiểm.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Canvas flow nói chữ nghiệp vụ, không nhắc sai, chặn thả sai chỗ (nguồn: CR-123 u4)

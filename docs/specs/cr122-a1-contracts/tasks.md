@@ -32,13 +32,13 @@ Gói Hợp đồng bắn `contract.submitted|uploaded|approved` vào `hub.flow_e
 - `OutcomeHandler` ghi bảng gói trong tx engine bằng `withPackRoleInTx` (helper chung kit, A2b); `actorId` do engine truyền (người duyệt cuối từ `fields.decided_by`, E3) ⇒ `confirmed_by`/`decided_by`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED current/pack-contracts/flow-events.md
 #### Yêu cầu: Hợp đồng bắn sự kiện flow cùng giao dịch
 Khi cờ flow của công ty bật, gửi duyệt / tải lên / duyệt xong ghi `contract.submitted|uploaded|approved` vào hàng đợi sự kiện cùng giao dịch với bản ghi; mã sự kiện ổn định theo bản ghi và lượt duyệt. Cờ tắt giữ đường cũ.
-- Kịch bản: khi cờ bật và gửi duyệt thì có đúng một sự kiện contract.submitted kèm dữ kiện của hợp đồng, gửi lại cùng lượt không tạo thêm [test: apps/hub-api/src/modules/packs/contracts/application/contract-flow.usecase.test.ts » cờ BẬT: ghi contract.submitted sau open, cùng tx, theo lượt, không gọi engine cũ]
-- Kịch bản: khi cờ tắt thì không ghi sự kiện và vẫn mở lượt theo đường cũ [test: apps/hub-api/src/modules/packs/contracts/application/contract-flow.usecase.test.ts » cờ TẮT: không ghi sự kiện, vẫn mở run theo đường cũ]
+- Kịch bản: khi cờ bật và gửi duyệt thì có đúng một sự kiện contract.submitted kèm dữ kiện của hợp đồng, gửi lại cùng lượt không tạo thêm [test: apps/hub-api/src/modules/packs/contracts/application/contract-flow.usecase.test.ts]
+- Kịch bản: khi cờ tắt thì không ghi sự kiện và vẫn mở lượt theo đường cũ [test: apps/hub-api/src/modules/packs/contracts/application/contract-flow.usecase.test.ts]
 - Kịch bản: khi hợp đồng của công ty khác thì đọc dữ kiện trả về rỗng [test: apps/hub-api/src/modules/packs/contracts/adapters/contract-flow.int.test.ts » FactsReader/OutcomeHandler của tenant khác không thấy và không đổi HĐ]
 #### Yêu cầu: Kết cục Kết thúc áp lên hợp đồng một lần
 Đã duyệt khoá hợp đồng và gắn sản phẩm, Từ chối, Trả lại về Nháp; gọi lại cùng lượt và kết cục trả `already_applied`.

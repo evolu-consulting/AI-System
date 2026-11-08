@@ -58,6 +58,63 @@ Khoá `doc` (optional ở zod): `frame` (`restricted`), `summary` (giai đoạn,
 4. `detail.doc` chưa có `source` và `summary.paid`: dòng Tệp giao dịch chỉ hiện tên tệp; HĐ NT chưa hiện tổng đã thanh toán. Ghi chú giao dịch (`DealCreateRequest.note`) chưa có.
 5. Trigger `doc_frame_check` lúc xác nhận con khi cha đổi đối tác sau khi gắn: mã lỗi hiển thị ở màn duyệt (`FRAME_PARTNER_MISMATCH`) chưa kiểm.
 
+#### Yêu cầu: Số chứng từ không ký tự đặc biệt
+Số chứng từ chỉ gồm chữ không dấu, số và dấu gạch ngang, tối đa 50 ký tự; web chuẩn hoá khi gõ/dán/AI đọc và báo lỗi dưới ô; server chặn 422 path `number`; số cũ chưa sửa không chặn lưu.
+- Kịch bản: số "2026/11-xyz" chuẩn hoá thành "2026-11-XYZ" [test: packages/contracts/src/pack-contracts/doc-number.test.ts]
+- Kịch bản: tạo tay / PATCH với số có "/" ⇒ lỗi path number; PATCH không có khoá number không bị ảnh hưởng [test: packages/contracts/src/pack-contracts/doc-number.test.ts]
+- Kịch bản: AI đọc số có "/" và dấu ⇒ form xác nhận điền bản chuẩn hoá [test: apps/workspace-web/src/features/contract-form/lib/review-model.test.ts]
+
+#### Yêu cầu: Đọc hợp đồng scan và ảnh bằng AI (FLOW2-FR-27)
+PDF không có lớp chữ và ảnh JPG/PNG được gửi thẳng cho AI đọc bằng thị giác thay vì dừng ở "cần OCR". Tệp từ 50 trang trở xuống được đọc hết (giới hạn cấu hình được).
+- Kịch bản: khi PDF scan thì agent được gọi kèm tệp và hợp đồng sang "Chờ rà soát", không còn PDF_NEEDS_OCR [test: apps/hub-api/src/modules/packs/contracts/application/extraction-pdf.test.ts » CR-122 p9 · PDF scan ⇒ KHÔNG còn PDF_NEEDS_OCR: agent được gọi kèm TỆP (không văn bản) ⇒ needs_review]
+- Kịch bản: khi PDF scan đúng 50 trang thì đọc hết [test: apps/hub-api/src/modules/packs/contracts/application/extraction-pdf.test.ts » CR-122 p9 · PDF scan 50 trang (đúng trần) ⇒ đọc hết]
+
+#### Yêu cầu: Từ chối tệp quá số trang ngay khi tải lên (FLOW2-FR-27)
+Tệp PDF (hoặc nhiều ảnh ghép lại) trên 50 trang bị từ chối ngay lúc tải lên bằng 422 `FILE_TOO_MANY_PAGES` kèm `{pages, limit}`: không lưu FileBox, không tạo hợp đồng nháp, không gọi AI. Chỗ chọn tệp hiện "Tệp có 72 trang, vượt giới hạn 50 trang. Hãy tách thành tệp ngắn hơn (ví dụ tách phụ lục) rồi tải lại."
+- Kịch bản: khi tải PDF 72 trang thì 422 và không chạm quota, FileBox hay hợp đồng [test: apps/hub-api/src/modules/packs/contracts/adapters/ingest-formats.test.ts » PDF 72 trang (trần 50) ⇒ 422 FILE_TOO_MANY_PAGES {pages, limit}, KHÔNG quota/FileBox/HĐ]
+- Kịch bản: khi hợp đồng cũ đã lưu quá trần thì báo quá lớn, không gọi AI [test: apps/hub-api/src/modules/packs/contracts/application/extraction-pdf.test.ts » CR-122 p9 · PDF scan 72 trang đã lưu từ trước (trần 50) ⇒ extract_failed PDF_TOO_LARGE, agent KHÔNG được gọi]
+
+#### Yêu cầu: Tải nhiều ảnh chụp trang cho một hợp đồng (FLOW2-FR-27)
+Tải lên được nhiều ảnh JPG/PNG cho MỘT hợp đồng; máy chủ ghép thành một PDF để lưu rồi đọc như PDF scan. Ghép nhiều ảnh chỉ nhận JPG/PNG; HEIC báo rõ "Định dạng HEIC chưa đọc được — hãy lưu sang PDF hoặc JPG".
+- Kịch bản: khi tải 3 ảnh thì lưu 1 PDF vào FileBox và hợp đồng đọc như PDF [test: apps/hub-api/src/modules/packs/contracts/adapters/ingest-formats.test.ts » PDF ghép đi qua tải lên: FileBox nhận đúng 1 tệp PDF, hàng HĐ mime pdf, trích được xếp lượt]
+- Kịch bản: khi tải 3 ảnh qua route multipart thật thì chỉ một PDF được lưu FileBox [test: tests/acceptance/HD1/ingest-formats.int.test.ts » 3 ảnh PNG ⇒ 201, MỘT PDF lưu FileBox (1 lần post), 1 hợp đồng mime pdf đang 'extracting']
+- Kịch bản: khi tải ảnh HEIC thì báo chưa đọc được HEIC [test: apps/hub-api/src/modules/packs/contracts/adapters/ingest-formats.test.ts » HEIC ⇒ FILE_TYPE kèm format=heic (không chạm FileBox)]
+
+#### Yêu cầu: Đường dự phòng đọc định dạng khác (FLOW2-FR-27)
+Định dạng chưa có đường riêng vẫn được đọc theo bảng "định dạng → cách đọc": ảnh model nhận (WEBP, GIF) gửi thẳng; tệp chữ và zip-office lấy chữ; định dạng còn lại báo rõ "Định dạng X chưa đọc được — hãy lưu sang PDF hoặc JPG" kèm gợi ý nhập tay.
+- Kịch bản: khi tải WEBP/GIF thì gửi thẳng AI như ảnh [test: apps/hub-api/src/modules/packs/contracts/adapters/ingest-fallback.test.ts » WEBP/GIF được nhận ra và nằm trong danh sách MIME đính kèm]
+- Kịch bản: khi tải tệp chữ (txt, csv, html, rtf, json) thì lấy chữ [test: apps/hub-api/src/modules/packs/contracts/adapters/ingest-fallback.test.ts » txt/csv/json nhận theo đuôi + UTF-8]
+- Kịch bản: khi tải xlsx/pptx/odt thì lấy chữ trong các XML [test: apps/hub-api/src/modules/packs/contracts/adapters/ingest-fallback.test.ts » nhận ra theo tên phần và lấy chữ]
+- Kịch bản: khi tải HEIC/TIFF/BMP thì báo chưa đọc được kèm tên định dạng [test: apps/hub-api/src/modules/packs/contracts/adapters/ingest-fallback.test.ts » HEIC/TIFF/BMP/doc cũ ⇒ có tên định dạng để báo 'chưa đọc được — hãy lưu sang PDF hoặc JPG']
+
+#### Yêu cầu: Lý do không đọc được hợp đồng
+Khối "Không đọc được hợp đồng này" nêu lý do nghiệp vụ (tệp hỏng / quá lớn / định dạng chưa hỗ trợ / hết lượt AI) kèm gợi ý "Nhập tay".
+- Kịch bản: khi lượt đọc lỗi PDF_TOO_LARGE thì trang rà soát nói tệp quá lớn và gợi ý Nhập tay [test: thủ công — chỉ đổi câu chữ hiển thị theo mã lỗi (ReviewParts.tsx FAIL_REASON)]
+
+#### Yêu cầu: Mở lại quy trình duyệt khi công ty dùng flow theo sự kiện
+Lượt chờ flow chưa có run hoặc có run đã kết thúc bất thường ⇒ "Mở lại" phát lại sự kiện gửi duyệt và nói đúng lý do; run đang chạy ⇒ báo bước duyệt đã đổi, không đụng. Thẻ báo đúng lý do (kể cả lỗi mở quy trình / thiếu phòng ban) bằng câu nghiệp vụ.
+- Kịch bản: Mở lại khi run flow đã kẹt ⇒ lượt mở lại bằng flow, không rơi sang máy cũ [test: apps/hub-api/src/modules/processes/triggers/not-launched.int.test.ts » p24 · Mở lại khi lượt đã có run kẹt]
+- Kịch bản: Mở lại khi run flow còn chạy ⇒ not_stalled, run giữ nguyên [test: apps/hub-api/src/modules/processes/triggers/not-launched.int.test.ts » p24 · Mở lại khi lượt đã có run kẹt]
+- Kịch bản: chưa gán quy trình ⇒ thẻ nêu lý do + Mở lại [test: e2e/journey-approval/cr122-p24-not-assigned.spec.ts » chưa gán quy trình: thẻ nói rõ lý do]
+
+#### Yêu cầu: Xác nhận và lưu giữ sản phẩm chọn lúc xác nhận khi bật flow
+Cờ flow bật ⇒ hộp "Gắn sản phẩm" luôn mở ở nháp (không tuỳ ngưỡng giá trị), SP lưu ở lượt và gắn khi flow Đã duyệt. Sau khi gửi duyệt, thẻ cũ không còn nút Xác nhận và lưu.
+- Kịch bản: xác nhận kèm SP ⇒ pending_links có SP, thẻ báo hộp SP [test: apps/hub-api/src/modules/processes/triggers/not-launched.int.test.ts » p24 · cờ flow bật: thẻ nháp luôn mở hộp SP]
+- Kịch bản: thẻ cũ sau xác nhận ẩn nút [test: apps/workspace-web/src/features/contract-review/lib/head-rule.test.ts » p24 · đã gửi duyệt]
+- Kịch bản: push theo run engine [test: apps/workspace-web/src/features/contract-approval/lib/advance-wait.test.ts » pushRunIdOf (p24)]
+
+#### Yêu cầu: Chi tiết lượt chạy nêu dữ liệu còn thiếu
+Lượt dừng vì `missing_fact` ⇒ đầu trang nêu "Thiếu <trường> — điền rồi Thử lại".
+- Kịch bản: RunDetail mang decision_missing [test: apps/hub-api/src/modules/processes/runs/run-detail.map.test.ts » missingOf (p24 · missing_fact)]
+
+#### Yêu cầu: Thẻ duyệt hiển thị Ký số là một dòng
+Bước Ký số (gửi + chờ ký xong) hiện MỘT dòng "Ký số" với trạng thái Đang chờ ký · Đã ký · Từ chối · Hết hạn, không tách "Chờ ký xong".
+- Kịch bản: khi cụm gửi+chờ ở trạng thái chờ/đã ký/từ chối/hết hạn thì thẻ có đúng một dòng Ký số với trạng thái tương ứng [test: apps/hub-api/src/modules/processes/runs/pack-runs-modules.test.ts » gửi + chờ = MỘT dòng 'Ký số' (không còn 'Chờ ký xong')]
+
+#### Yêu cầu: Bước tool của flow được gán chạy được không cần cấp quyền thủ công
+Flow Thư viện được gán cho công ty có bước Ký số: sau khi duyệt xong, bước gửi ký chạy như flow bản công ty; thẻ duyệt hiện MỘT dòng Ký số: Đang chờ ký rồi Đã ký, kèm người ký.
+- Kịch bản: duyệt xong thì Ký số Đang chờ ký kèm người ký, người ký bấm Ký ngay thì Đã ký [test: thủ công — e2e/journey-approval/cr123-u6-run-card.spec.ts (job journey-approval)]
+
 ## CR-124/125 · Delta gộp 2026-11-08 (đợt cr124-cr125)
 
 #### Yêu cầu: Thẻ ký số theo lượt người xem (nguồn: cr125-x2-sign-card)

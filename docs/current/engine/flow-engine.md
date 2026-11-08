@@ -132,6 +132,75 @@ theo form trong snapshot run, bỏ trường lạ, ghi field vào output stage v
 - Kịch bản: khi bước sau là If trên field form thì rẽ theo giá trị đã gửi [test: tests/acceptance/CR118/form-node.int.test.ts » If bước sau đọc field form: so_tien > 100 ⇒ nhảy bước 3 (bước 2 skipped), run done]
 - Kịch bản: khi def đổi trường sau khi run bắt đầu thì run cũ vẫn kiểm theo snapshot [test: tests/acceptance/CR118/form-node.int.test.ts » snapshot: def sửa sau khi run bắt đầu (đổi trường) ⇒ run cũ vẫn kiểm theo form lúc bắt đầu]
 
+#### Yêu cầu: Node Nếu đọc dữ kiện bản ghi
+Điều kiện Nếu có nguồn `fact` đọc giá trị HIỆN TẠI qua `FactsReader` của app; trống ⇒ Sai; lần rẽ ghi giá trị đã đọc.
+- Kịch bản: giá trị 150 > 100 ⇒ Đúng, audit ghi giá trị đã đọc [test: apps/hub-api/src/modules/processes/adapters/runs/flow-step.repo.int.test.ts » Nếu đọc giá trị hiện tại (150 > 100 ⇒ Đúng), ghi giá trị đã đọc vào lịch sử, Sai-nhánh skipped]
+- Kịch bản: trường trống ⇒ nhánh Sai [test: apps/hub-api/src/modules/processes/adapters/runs/flow-step.repo.int.test.ts » trường trống ⇒ nhánh Sai, lịch sử ghi null]
+
+#### Yêu cầu: Bước gộp next_step
+Cuối nhánh có `next_step` ⇒ đi tới bước gộp, nhánh kia bị bỏ qua.
+- Kịch bản: nhánh Đúng gộp về bước 5 [test: apps/hub-api/src/modules/processes/application/runs/settle-step-flow.usecase.test.ts » cuối nhánh Đúng (next_step 5) ⇒ nhảy tới bước gộp, nhánh kia skipped + huỷ hẹn]
+
+#### Yêu cầu: Node Kết thúc gọi OutcomeHandler
+Bước có `outcome` xong ⇒ app áp kết quả cùng tx chốt lượt, idempotent; giá trị đổi sau khi rẽ ⇒ "Cần xử lý".
+- Kịch bản: Kết thúc idempotent khi gọi lại [test: apps/hub-api/src/modules/processes/adapters/runs/flow-step.repo.int.test.ts » Kết thúc ⇒ OutcomeHandler cùng tx, run done, nhánh sau skipped, gọi lại ⇒ already_applied, không đổi]
+- Kịch bản: handler lỗi ⇒ rollback [test: apps/hub-api/src/modules/processes/adapters/runs/flow-step.repo.int.test.ts » handler ném ⇒ rollback: run KHÔNG done (thử lại sau)]
+- Kịch bản: dữ kiện đổi ⇒ Cần xử lý [test: apps/hub-api/src/modules/processes/adapters/runs/flow-step.repo.int.test.ts » H2 · giá trị đổi sau khi rẽ (150 ⇒ 50) ⇒ Cần xử lý, không gọi handler]
+
+#### Yêu cầu: Node Duyệt độc lập
+Người/Group của bước Duyệt / Từ chối / Trả lại; Từ chối, Trả lại rẽ tới bước đích (Kết thúc · Từ chối / Trả lại).
+- Kịch bản: Duyệt ⇒ bước kế [test: apps/hub-api/src/modules/processes/adapters/runs/flow-approve.int.test.ts » Duyệt ⇒ bước kế (Kết thúc · Đã duyệt)]
+- Kịch bản: Từ chối ⇒ bước đích [test: apps/hub-api/src/modules/processes/adapters/runs/flow-approve.int.test.ts » Từ chối ⇒ reject_step (bước 2 skipped)]
+- Kịch bản: Trả lại ⇒ bước đích [test: apps/hub-api/src/modules/processes/adapters/runs/flow-approve.int.test.ts » Trả lại ⇒ return_step]
+- Kịch bản: không đích ⇒ cổng cũ [test: apps/hub-api/src/modules/processes/gates/approve-out.test.ts » không đích ⇒ giữ hành vi cổng cũ, stage khác ⇒ null]
+
+#### Yêu cầu: Lượt đã kết thúc không bị chốt lại
+- Kịch bản: lượt huỷ, kết quả tới muộn ⇒ vẫn huỷ [test: apps/hub-api/src/modules/processes/adapters/runs/flow-approve.int.test.ts » lượt đã huỷ, kết quả tới muộn ⇒ vẫn cancelled, handler không bị gọi]
+
+#### Yêu cầu: Chạy lại từ Nếu
+- Kịch bản: chỉ lượt "dữ kiện đổi", bấm 2 lần ra 1 kết quả [test: apps/hub-api/src/modules/processes/gates/approve-out.test.ts » bấm lần 2 (đã running, decision null) / lý do khác / không phải Nếu ⇒ null]
+
+#### Yêu cầu: Kiểm vế dữ kiện khi lưu
+- Kịch bản: khoá lạ / sai kiểu bị chặn [test: apps/hub-api/src/modules/processes/gates/approve-out.test.ts » khoá lạ / sai kiểu ⇒ FLOW_WHEN_INVALID đúng đường dẫn]
+
+#### Yêu cầu: Chờ sự kiện nhiều kết quả (Ký số trong flow)
+Node Chờ sự kiện nhận nhiều khoá, ghi khoá đã nhận vào field `event`, rẽ bước theo `branches`.
+- Kịch bản: từ chối ký ⇒ rẽ nhánh Từ chối [test: apps/hub-api/src/modules/processes/adapters/timers/wait-event-esign.int.test.ts » từ chối ký ⇒ stage chờ xong (event = esign.declined), rẽ tới Kết thúc · Từ chối, nhánh Đã ký skipped]
+- Kịch bản: webhook hai lần ⇒ một kết quả [test: apps/hub-api/src/modules/processes/adapters/timers/wait-event-esign.int.test.ts » webhook trả về hai lần ⇒ một kết quả (lần 2 không thả, không thêm output)]
+- Kịch bản: trạng thái phong bì ⇒ khoá sự kiện [test: apps/hub-api/src/modules/processes/domain/timers/wait-event-branch.rules.test.ts » trạng thái cuối ⇒ khoá sự kiện, còn lại ⇒ null]
+
+#### Yêu cầu: Luật lưu rẽ nhánh của Chờ sự kiện
+- Kịch bản: on lạ / đích sai bị chặn [test: apps/hub-api/src/modules/processes/nodes/wait-for/wait-branches.rules.test.ts » on lạ / đích lùi / đích không có ⇒ WAIT_INVALID đúng đường dẫn]
+
+#### Yêu cầu: Chờ sự kiện có field `event` (kể cả def `wait_event` cũ khi lưu lại / chạy: output có `fields.event`)
+- Kịch bản: normalize khai field [test: apps/hub-api/src/modules/processes/nodes/wait-for/wait-branches.rules.test.ts » normalize khai field output `event`]
+
+#### Yêu cầu: Sự kiện trùng không sót
+- Kịch bản: hai sự kiện cùng chờ ⇒ dùng hết [test: apps/hub-api/src/modules/processes/adapters/timers/wait-event-esign.int.test.ts » hai sự kiện cùng chờ (webhook + đồng bộ) ⇒ thắng cái nhận sớm, MỌI dòng cùng khoá đã dùng (không sót cho bước chờ sau)]
+
+#### Yêu cầu: Kết thúc huỷ hẹn còn mở
+- Kịch bản: Từ chối rẽ tới Kết thúc [test: apps/hub-api/src/modules/processes/adapters/runs/flow-approve.int.test.ts » Từ chối rẽ tới Kết thúc khi hẹn còn mở ⇒ hẹn của nhánh bị bỏ và nhánh sau Kết thúc bị huỷ]
+
+#### Yêu cầu: OutcomeHandler nhận người duyệt (từ E3)
+`actorId` truyền cho MỌI `OutcomeHandler` = `fields.decided_by` của node Duyệt xong gần nhất (không có ⇒ null).
+- Kịch bản: thủ công — đã có trong E3 [test: thủ công — đọc trong `flow-step.repo.ts` applyOutcome, int E3 `flow-*` xanh]
+
+#### Yêu cầu: Ghi giá trị từ bước trước / dữ kiện
+- Kịch bản: map field bước trước + dữ kiện, sai dạng ⇒ null + audit [test: apps/hub-api/src/modules/processes/adapters/runs/set-sources.repo.int.test.ts » field bước trước + dữ kiện ⇒ amount = 150000000, kind, sai dạng ⇒ null + 1 dòng audit]
+- Kịch bản: chỉ input/hằng không thêm câu SQL [test: apps/hub-api/src/modules/processes/adapters/runs/set-sources.repo.int.test.ts » chỉ input/hằng ⇒ 0 câu SQL thêm]
+- Kịch bản: biến đổi kiểu [test: apps/hub-api/src/modules/processes/domain/set/set-from.rules.test.ts » number / text / date / bool, sai dạng ⇒ undefined]
+- Kịch bản: luật lưu nguồn field [test: apps/hub-api/src/modules/processes/domain/set/set-from.rules.test.ts » bước không đứng trước / khoá không có / kiểu sai ⇒ SET_INVALID ở from]
+
+#### Yêu cầu: Gợi ý cầu nối dùng được dữ kiện bản ghi
+- Kịch bản: prompt có khoá + kiểu dữ kiện của sự kiện [test: apps/hub-api/src/modules/processes/bridge/bridge.routes.test.ts » CR-122 E4b · flow của app có trigger ⇒ prompt có facts (chỉ khoá + kiểu) của sự kiện, AI dùng được nguồn fact]
+
+#### Yêu cầu: Dữ liệu bản ghi tự nối
+- Kịch bản: flow G1 không còn báo thiếu contract_id [test: packages/contracts/src/app-manifest/start-outputs.test.ts » flow G1 có app + trigger ⇒ 0 issue (Ký số tự nhận contract_id qua mọi bước)]
+- Kịch bản: issue có tên bước + nhãn trường [test: packages/contracts/src/app-manifest/start-outputs.test.ts » không có trigger ⇒ vẫn báo thiếu, kèm tên bước + nhãn trường]
+- Kịch bản: Ký số nhận contract_id thật không cần Ghi giá trị [test: apps/hub-api/src/modules/processes/adapters/tools/tool-auto-args.int.test.ts » contract.submitted ⇒ Ký số nhận đúng contract_id thật (không cần node Ghi giá trị)]
+- Kịch bản: nguồn khai rõ thắng [test: apps/hub-api/src/modules/processes/adapters/tools/tool-auto-args.int.test.ts » nguồn khai rõ thắng (args có contract_id ⇒ không ghi đè)]
+- Kịch bản: cầu nối không gọi AI khi đã khớp [test: apps/hub-api/src/modules/processes/bridge/bridge.routes.test.ts » CR-122 · A · flow của app có trigger ⇒ cạnh vào Ký số đã khớp (contract_id từ Bắt đầu khi), không gọi AI]
+
 ## CR-124/125 · Delta gộp 2026-11-08 (đợt cr124-cr125)
 
 #### Yêu cầu: Hành động thật cần người duyệt ngay trước do node khai báo (nguồn: cr125-m5-base)

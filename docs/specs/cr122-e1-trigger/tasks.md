@@ -30,7 +30,7 @@ Không node executor, `apply-settle.ts`, if/cond (E2); không admin-web (U1). Ch
 - `decides`/app của sự kiện đọc từ `APP_MANIFESTS` (một nguồn); sự kiện lạ ⇒ xong + `error = unknown_event`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED current/engine/flow-triggers.md
 #### Yêu cầu: Sự kiện app mở lượt cho flow đang bật khớp (FLOW2-FR-03/19/20)

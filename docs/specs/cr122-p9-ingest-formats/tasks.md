@@ -45,7 +45,7 @@ Mọi loại: > 50 trang hoặc > 20 MiB ⇒ từ chối. Không đọc được
 - Đếm trang chạy trong tiến trình hub-api (không qua Worker): pdf.js chỉ đọc xref/cây trang, tệp ≤ 20 MiB.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Đọc hợp đồng scan và ảnh bằng AI (FLOW2-FR-27)

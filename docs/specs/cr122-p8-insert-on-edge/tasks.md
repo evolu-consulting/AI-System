@@ -18,7 +18,7 @@ Làn: nhanh (UI + hàm thuần; không RLS/quyền/migration).
 
 ## Delta (so với docs/current)
 
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Chèn bước vào giữa hai bước bằng nút "+" trên cạnh

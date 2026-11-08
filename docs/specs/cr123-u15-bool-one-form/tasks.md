@@ -26,7 +26,7 @@ Unit: contracts `process-if-bool.test.ts` (schema + validator), `finish.rules.te
 - Chuỗi "true"/"false" ở vế dữ kiện KHÔNG phải boolean (dữ kiện kiểu chuỗi) cũng bị đổi: chấp nhận (không có dữ kiện chuỗi nào nhận "true"/"false" trong manifest).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Vế Có/Không của node Nếu là boolean thật ở mọi nơi (nguồn: CR-123 u15)

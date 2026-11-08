@@ -37,7 +37,7 @@ cấp 1) ⇒ `flow-submit.usecase.ts` CÙNG tx khoá HĐ: `holdForFlow` (+ SP ch
   ở `not-launched.int.test.ts` (log `P11c p13: …`): kết quả 0 bài (evotest 2026-11-07, 750b10ed1).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Mở lại lượt chờ flow không sinh lượt trùng

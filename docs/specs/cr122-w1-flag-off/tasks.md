@@ -35,7 +35,7 @@ Không sửa test acceptance/e2e đã khoá. Không đụng migration 0111.
   (hoặc bấm lại khi thấy câu "đã tải trạng thái mới"). Theo dõi UX: nút xác nhận hiện trên thẻ sắp đổi (hàng chờ sau deploy).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Cờ flow theo sự kiện tắt giữ đường duyệt cũ

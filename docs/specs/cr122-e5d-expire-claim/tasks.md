@@ -26,7 +26,7 @@ Huỷ phong bì quá hạn phải (B1) giành quyền bằng UPDATE có điều 
 - Lease 10 phút (`ESIGN_EXPIRE_LEASE_MIN`); lượt quét chỉ trả hàng quá hạn không còn lease.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED current/pack-contracts/esign-expire-claim.md
 #### Yêu cầu: Huỷ phong bì quá hạn chỉ một lần và đúng phong bì

@@ -28,7 +28,7 @@ Node "Bắt đầu khi" thành node thật ở cột đầu canvas (thay thẻ p
 - Ảnh lưu ở checkout chính theo yêu cầu điều phối; DB UAT `ai_system_uat122_test`, Redis db 12 (xoá khi 429 do đăng nhập lặp).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED platform/node-bat-dau-khi-canvas.md
 #### Yêu cầu: Bắt đầu khi là node thật trên canvas, Ghi giá trị chọn nguồn (FLOW2-FR-02, FLOW2-FR-26)

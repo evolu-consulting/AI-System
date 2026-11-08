@@ -10,7 +10,7 @@ phụ thuộc: E6
 Sửa lỗi sản phẩm qc tìm ở Q1: #2 xem chỉ đọc flow theo sự kiện, #3 Lưu bị chặn không báo, Sao chép flow theo sự kiện bị Hub từ chối (G2).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Xem và sao chép flow Thư viện theo sự kiện

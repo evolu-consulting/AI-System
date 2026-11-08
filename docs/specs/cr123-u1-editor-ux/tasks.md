@@ -29,7 +29,7 @@ Trình soạn quy trình + Công ty › Quy trình đọc bằng chữ nghiệp 
 - Liên kết "Đổi ở Cài đặt › Ký số" mở app Hợp đồng ở `/settings` bằng SSO một lần (tab mới).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Công tắc "Dùng quy trình mới" (FLOW3-FR-09)

@@ -24,7 +24,7 @@ Không sửa `tests/acceptance/**` (khoá qc). Không sửa migration/code sản
 - **HD-NFR-03 (đề xuất cho qc, hops.int.test.ts:195-216):** tải PDF thành công = 4 câu SQL, không phải 3. Câu thứ 4 là `select hub.emit_flow_event(... 'contract.uploaded' ...)` — A1 (FLOW2-FR-19) phát sự kiện CÙNG tx với hàng HĐ (cũng chạy ở chế độ bóng khi cờ tắt, trong savepoint nên savepoint không tính). Không thừa: đúng 1 câu cố định, không trong vòng lặp, không phụ thuộc số hàng; đã có 2 câu trước (set_config, CTE files+contracts+event) và outbox như cũ. p9 (đếm trang PDF) chạy trước tx, bằng bytes trong bộ nhớ, 0 SQL. Đề xuất ngưỡng mới: `sql: 4` (set_config, CTE, outbox, emit_flow_event) và sửa tiêu đề/comment "3 → 3+1 emit".
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 Không thay đổi hành vi (lý do: chỉ cập nhật test db cho bảng/policy hub 0105/0106 đã có; hai đề xuất sửa test acceptance gửi qc)
 

@@ -17,7 +17,7 @@ Lý do: số chứng từ có "/", dấu, khoảng trắng làm lỗi khi up và
 - i18n `packages/i18n/locales/contracts/v2f.{vi,en}.json`
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Số chứng từ không ký tự đặc biệt

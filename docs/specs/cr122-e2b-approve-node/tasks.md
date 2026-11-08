@@ -24,7 +24,7 @@ Phần dở của E2 (trừ node Công cụ): node Duyệt độc lập, "Chạy
 - `decision.options` của facts_changed = `["cancel"]`; "Chạy lại từ Nếu" là thao tác riêng.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Node Duyệt độc lập

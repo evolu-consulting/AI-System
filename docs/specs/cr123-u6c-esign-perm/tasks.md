@@ -22,7 +22,7 @@ Hành trình `journey-approval` (spec u6 xanh: Đang chờ ký + người ký, r
 Ký số chỉ nhận PDF (đúng sản phẩm): e2e đổi mime tệp mẫu của HĐ.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Bước tool của flow được gán chạy được không cần cấp quyền thủ công

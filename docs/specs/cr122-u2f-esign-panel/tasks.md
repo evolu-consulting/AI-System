@@ -23,7 +23,7 @@ Panel cấu hình riêng của node module theo manifest `config { stage, option
 `bun test apps/admin-web/src/features/processes/lib/node-config.test.ts` xanh (đường kiểm, mã hoá ⇄ args giữ `contract_id`, lỗi lưu theo ô).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED platform/node-config-panel.md
 #### Yêu cầu: Panel cấu hình riêng của node module (FLOW2-FR-25)

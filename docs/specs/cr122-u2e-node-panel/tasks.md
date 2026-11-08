@@ -21,7 +21,7 @@ Panel node của flow chỉ hiện phần nghiệp vụ; chi tiết kỹ thuật
 `bun test apps/admin-web/src/features/processes` xanh; ảnh `docs/specs/CR-122/shots/u2e-*.png`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 Không thay đổi hành vi (lý do: chỉ sắp xếp lại giao diện trình sửa node — chi tiết kỹ thuật vào mục Nâng cao, sửa nền header; không đổi dữ liệu hay luật).
 

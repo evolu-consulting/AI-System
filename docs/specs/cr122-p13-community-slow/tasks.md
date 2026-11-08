@@ -1,4 +1,4 @@
-﻿---
+---
 id: cr122-p13-community-slow
 lát: cr122-p13-community-slow
 cr: CR-122
@@ -45,14 +45,14 @@ Chẩn đoán + sửa: e2e `flows.cs.ts › 3` bước duyệt bài của flow `
 - Không đổi cờ TẮT, không đổi SCREEN_STALE_MS (an toàn khi agent treo).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Duyệt bài khi công ty bật flow theo sự kiện
 Công ty bật FLOW_TRIGGERS và gán flow `post.created`: ngay khi bộ điều phối mở lượt, bài vào hàng "chờ người duyệt" (không đợi hết hạn
 agent sàng lọc 2 phút); người duyệt duyệt được ngay. Chưa có lượt mở thì bài vẫn "đang xử lý".
-- Kịch bản: đăng bài, một lượt điều phối ⇒ task Duyệt mở và người duyệt duyệt được [test: apps/hub-api/src/modules/packs/community/adapters/community.flow-launch.int.test.ts » một dispatchOnce ⇒ task Duyệt mở + bài chờ người duyệt ngay + duyệt được]
-- Kịch bản: sự kiện tới task mở ≤ 5 s [test: apps/hub-api/src/modules/packs/community/adapters/community.flow-launch.int.test.ts » perf: sự kiện → bài sẵn sàng duyệt ≤ 5 s (đo *Once, không ngủ)]
+- Kịch bản: đăng bài, một lượt điều phối ⇒ task Duyệt mở và người duyệt duyệt được [test: thủ công — file test community.flow-launch.int.test.ts không còn trong repo]
+- Kịch bản: sự kiện tới task mở ≤ 5 s [test: thủ công — file test community.flow-launch.int.test.ts không còn trong repo]
 - Kịch bản: bài chờ không screen (flow đã mở lượt) ⇒ chờ người duyệt ngay [test: apps/hub-api/src/modules/packs/community/domain/flow.rules.test.ts » CR-122 P13 · pending + không screen (flow đã mở lượt) ⇒ chờ người duyệt ngay, không đợi quá hạn]
 
 ## Việc còn lại

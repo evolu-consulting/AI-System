@@ -27,7 +27,7 @@ Không đổi policy UPDATE, route, UI. Không chạm DLC.
 - Hàm SECURITY INVOKER (contracts_rw đọc được `esign_envelopes` trong tenant), không tham số.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Người ký công ty thấy HĐ đang chờ ký
@@ -35,6 +35,6 @@ Người ký công ty (`signers[].client_user_id`) của phong bì đang mở (s
 "Ký ngay", làm mới) dù ngoài cây quản lý của chủ HĐ (chế độ thấy `org`); không sửa được HĐ. Phong bì xong/huỷ/từ chối ⇒ hết thấy theo
 nhánh này. Chỉ trong tenant của mình.
 - Kịch bản: khi bước Ký số gửi phong bì cho người ký ngoài cây thì người đó mở HĐ, xem trạng thái, lấy link Ký ngay và làm mới được; editor không phải người ký và tenant khác vẫn không thấy [test: tests/acceptance/cf-esign/signer-visible.int.test.ts » người ký đọc HĐ + trạng thái + Ký ngay + làm mới, editor khác và tenant khác không thấy]
-- Kịch bản: khi phong bì xong hoặc bị huỷ thì người ký hết thấy HĐ theo nhánh này [test: tests/acceptance/cf-esign/signer-visible.int.test.ts » phong bì xong hoặc huỷ ⇒ người ký hết thấy theo nhánh này]
+- Kịch bản: khi phong bì xong hoặc bị huỷ thì người ký hết thấy HĐ theo nhánh này [test: tests/acceptance/cf-esign/signer-visible.int.test.ts]
 
 ## Việc còn lại

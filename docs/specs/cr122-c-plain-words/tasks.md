@@ -25,7 +25,7 @@ Unit của processes và tenants.
 Nhãn cầu nối rơi về khoá cho tới khi lát A cấp label.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 Không thay đổi hành vi (lý do: chỉ đổi chữ hiển thị và bố cục trình sửa flow, không đổi luật hay dữ liệu)
 

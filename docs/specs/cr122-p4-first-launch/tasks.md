@@ -10,7 +10,7 @@ phụ thuộc: E1b, A2
 Sửa lỗi sản phẩm qc tìm ở Q1: #4 HĐ đầu tiên sau khi gán flow không mở lượt (catalog tính năng cũ trong ConfigCache ⇒ từ chối không thử lại), #5 Community không "Chờ duyệt" khi flow `post.created` đã gán (moderationOn chỉ đọc luật khe).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Gán flow có hiệu lực ngay

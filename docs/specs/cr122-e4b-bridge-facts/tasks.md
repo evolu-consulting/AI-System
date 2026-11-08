@@ -14,7 +14,7 @@ Gợi ý cầu nối AI lấy danh mục dữ kiện của sự kiện mở flow
 - [x] Unit `bridge.routes.test.ts`: prompt có facts (chỉ key/type) khi flow có app + trigger; nguồn fact lạ ⇒ từ chối.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Gợi ý cầu nối dùng được dữ kiện bản ghi

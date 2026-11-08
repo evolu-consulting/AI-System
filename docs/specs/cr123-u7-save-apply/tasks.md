@@ -27,7 +27,7 @@ unit `company-flow-view.test.ts`; int `company-flows-apply.int.test.ts`; e2e G2 
 - perf: apply = số câu SQL cố định (≤ 9, không phụ thuộc số flow của công ty).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Nhân bản rồi gán

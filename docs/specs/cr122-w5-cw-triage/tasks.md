@@ -32,7 +32,7 @@ Phân loại 27 ca e2e đỏ MỚI ở wave CR-122 lượt 2 (contracts-web ×25
 - Không thêm known-red cho contracts-web: chạy lại khi máy rảnh là đủ chứng minh tải (T2).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 Không thay đổi hành vi (lý do: chỉ sửa helper e2e journey theo hành vi CR-122 đã chốt; ca contracts-web đỏ do tải máy chủ, không đổi code).
 

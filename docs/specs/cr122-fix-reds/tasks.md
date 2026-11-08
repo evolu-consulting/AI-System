@@ -10,7 +10,7 @@ phụ thuộc: B, A
 Sửa 2 unit đỏ có sẵn (uow-boundary, contracts-intake.seed), mẫu "Duyệt theo phòng ban" (nhánh khác X phải qua Trưởng phòng duyệt), helper nhãn cạnh `edgeIssueView`, bỏ skip `flowEdgeIssues = 0` của 3 mẫu.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/thu-vien-quy-trinh.md
 #### Yêu cầu: Mẫu "Duyệt theo phòng ban" không cho ký khi chưa ai duyệt

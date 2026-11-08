@@ -37,7 +37,7 @@ int backfill: chạy migration thật 3 lần ⇒ y hệt; contract.submitted ch
 - Công ty có luật nhưng không mặc định (như W) ⇒ không thêm mặc định (đúng đường cũ chặn `route_none`).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 Không thay đổi hành vi (lý do: cờ `FLOW_TRIGGERS` mặc định tắt — đường khe cũ vẫn mở lượt, người dùng không thấy khác; app chỉ phát thêm `flow_events` để ghi bóng; migration chỉ thêm `trigger`/`app`/node Kết thúc/release mới và dòng `company_flows` mà bộ điều phối chỉ ghi bóng; kiểm bằng int `flow-backfill.int.test.ts`).
 

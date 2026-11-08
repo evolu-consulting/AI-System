@@ -21,7 +21,7 @@ Làn: nhanh (không đổi RLS; chỉ đọc `partner_roles` ∪ `companies` dư
 
 ## Delta (so với docs/current)
 
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED contracts/partner-pick.md
 #### Yêu cầu: Tìm đối tác trong sổ có limit, index và cách ly tenant (nguồn: cr122-p10-partner-pick)

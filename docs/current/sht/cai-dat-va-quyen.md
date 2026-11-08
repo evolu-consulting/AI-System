@@ -79,3 +79,12 @@ gán thêm, không sửa nội dung quy trình. Thành viên/đối tác không 
 - Kịch bản: thêm/xoá/đổi thứ tự luật, chọn phòng ban, một mặc định, trần 50, kiểm trước khi lưu [test: packages/web-kit/src/routing-rules.test.ts » thêm xoá đổi thứ tự sửa luật và trần 50 luật]
 - Kịch bản: lỗi 409/422 của hợp đồng ánh xạ về loại lỗi để hiện tiếng Việt [test: packages/web-kit/src/routing-rules.test.ts » mã 409/422 của hợp đồng]
 - Kịch bản: contracts-web proxy `/hub-admin` và `/tenants` sang hub [test: apps/workspace-web/rsbuild.config.test.ts » proxy /hub-admin và /tenants chuyển sang hub-api]
+
+#### Yêu cầu: Quy trình duyệt chỉ chọn ở một nơi
+Ứng dụng Hợp đồng không còn sửa "luật chọn quy trình". Cài đặt › Ứng dụng & quy trình chỉ hiện quy trình đang áp dụng (chỉ đọc) và nút "Mở trang Quy trình" tới Công ty › Quy trình ở trang quản trị. Khi chưa có quy trình: "Hợp đồng chưa có quy trình duyệt — quản trị công ty chọn tại Công ty › Quy trình".
+- Kịch bản: khi quản trị công ty mở Cài đặt thì thấy "Đang áp dụng: <tên>", nút "Mở trang Quy trình", không có "Thêm luật"/"Lưu luật" [test: e2e/contracts-web/u2-contracts-ux.cw.ts » Cài đặt › Ứng dụng & quy trình: chỉ đọc, một nút Mở trang Quy trình]
+- Kịch bản: khi công ty chưa có quy trình thì thấy câu chỉ rõ ai chọn ở đâu [test: e2e/contracts-web/u2-contracts-ux.cw.ts » Cài đặt › Ứng dụng & quy trình: chưa có quy trình ⇒ nói rõ ai làm gì ở đâu]
+
+#### Yêu cầu: Token chỉ hiện cho quản trị
+Mức dùng và ô trần "token" ở Cài đặt › Dò giá chỉ hiện cho quản trị công ty/nền tảng; người bán hàng và giám đốc không thấy.
+- Kịch bản: khi người không phải quản trị mở mục Dò giá thì không thấy "token" [test: thủ công — hiển thị theo vai ở ScoutQuota, không có logic tách riêng để kiểm đơn vị]

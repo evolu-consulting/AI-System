@@ -28,7 +28,7 @@ e2e G1.2: người duyệt Kế toán bấm Đạt ở "Duyệt giá trị lớn
   `active`, lượt `done`. Đỏ trước sửa (`not_found`), xanh sau sửa; first-launch-contract / flow-branch-facts / not-launched xanh.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Người duyệt quyết bước Duyệt của lượt flow theo sự kiện

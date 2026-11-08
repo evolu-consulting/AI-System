@@ -17,7 +17,7 @@ phụ thuộc:
 ## Quyết định trong lúc làm
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 Không thay đổi hành vi (lý do: thêm e2e hành trình thẻ Ký số; sửa nhỏ đọc người ký từ nguồn `const` và trạng thái "failed" khi gửi ký lỗi)
 

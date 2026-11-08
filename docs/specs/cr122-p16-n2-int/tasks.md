@@ -22,7 +22,7 @@ evotest int đúng file defs-flow.int.test.ts.
 Dùng def không trigger thay vì đổi tên trường: giữ nguyên kịch bản (thiếu bắt buộc ⇒ 422; sai kiểu ⇒ warnings).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 Không thay đổi hành vi (lý do: chỉ sửa dữ liệu test cho khớp hành vi lát A đã có chủ ý — đầu ra Bắt đầu khi có ở mọi cạnh)
 

@@ -32,7 +32,7 @@ phụ thuộc: E1b (map mã Group → id lúc chạy), A (nối dữ liệu hồ
 - Phòng ban khác X ở mẫu 3 đi thẳng Ký số (không duyệt thêm) — brief không nêu nhánh còn lại.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED current/engine/flow-templates.md
 #### Yêu cầu: Thư viện có sẵn 3 flow mẫu duyệt hợp đồng

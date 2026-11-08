@@ -22,7 +22,7 @@ Chỉ tài liệu. Không merge.
 Hành vi khoá/banner và bước Ký số gom vào `sht/duyet-ky-so.md` (§2, §4b); trigger DEFERRED gom vào `engine/flow-runtime.md`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED sht/duyet-ky-so.md
 #### Yêu cầu: Trang HĐ không ghi "Chưa xác nhận" sau khi đã gửi duyệt

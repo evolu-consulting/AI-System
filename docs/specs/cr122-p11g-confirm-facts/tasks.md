@@ -23,7 +23,7 @@ e2e G1.2: HĐ 150 tr mà node Nếu "giá trị > 100 tr" ra Sai (thẻ hiện "
   `flow-launch.ts` truyền `e.event`. Node Nếu đọc dữ kiện HIỆN TẠI của HĐ qua `FactsReader` như thiết kế.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Node Nếu của lượt mở từ sự kiện đọc dữ kiện bản ghi

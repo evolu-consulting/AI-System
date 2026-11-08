@@ -27,7 +27,7 @@ Unit `lib/u12b-demo-sequence.test.ts` (8) + processes 486 pass; tsc admin-web s�
 - Minimap (góc dưới phải) che node thả ở góc đó: ghi nhận, chưa sửa (u13 gập hàng sẽ đỡ).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Mũi tên chỉ bị từ chối khi tạo vòng lặp thật; bước Duyệt luôn đứng một mình (nguồn: CR-123 u12b)

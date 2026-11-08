@@ -25,7 +25,7 @@ bạn thấy — bấm Xác nhận và lưu…" vẫn hiện.
 - `submittedForReview` (engine, cấp 1, bước soạn s0 không mở) ⇒ `useApprovalUi().submitted` ⇒ trang tắt gợi ý "bản nháp".
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Thẻ duyệt sau "Xác nhận và lưu" khi công ty bật flow theo sự kiện

@@ -36,7 +36,7 @@ dùng — như `facts_changed` không tạo task).
 - Acceptance khoá `contracts-pd2.test.ts` sửa 24→25 (nối cuối enum, cùng kiểu E2b) + relock.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-runtime.md
 #### Yêu cầu: Node Nếu không rẽ khi thiếu dữ kiện (CR-122 P18)

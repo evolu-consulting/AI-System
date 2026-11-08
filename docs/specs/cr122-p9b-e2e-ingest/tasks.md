@@ -26,7 +26,7 @@ Q1 báo journey `journey-approval` ca G1.2 đỏ ở `uploadAndOpen` (không th�
 - Không sửa code p9: bằng chứng cho thấy đường đọc `.md` nguyên vẹn; nguyên nhân nằm ở bước mở lượt duyệt.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 Không thay đổi hành vi (lý do: chẩn đoán + thêm unit hồi quy, không đổi code sản phẩm).
 

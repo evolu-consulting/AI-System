@@ -22,7 +22,7 @@ FLOW2-FR-25: bảng node = node lõi + node của module tính năng có sẵn (
 - Def Thư viện (tenant null) không kiểm tính năng lúc lưu (không có công ty); kiểm lúc mở lượt cho từng công ty ⇒ `refused: FLOW_NODE_FEATURE_OFF:<node>`.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED current/engine/node-palette.md
 #### Yêu cầu: Bảng node gồm node lõi và node của tính năng đang bật (FLOW2-FR-25/26)

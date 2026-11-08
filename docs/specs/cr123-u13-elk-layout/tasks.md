@@ -30,12 +30,12 @@ Unit flow-canvas 33 + admin-web processes 476 + contracts process-ui; tsc admin-
 - Minimap mặc định TẮT, bật bằng nút ở thanh điều khiển (bố cục ELK phủ khắp khung nên minimap luôn che node).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-web.md
 #### Yêu cầu: Sơ đồ flow xếp bằng ELK, gập hàng, cổng ra cố định thứ tự, cạnh vuông góc (nguồn: CR-123 u13, ADR-0040)
 Sơ đồ flow do ELK `layered` xếp khi mở lần đầu và khi cấu trúc đổi: đi trái → phải, gập thành nhiều hàng cho vừa khung, đầu ra nhiều nhánh (Ký số, Nếu) là cổng ở mép phải theo thứ tự cố định, cạnh vuông góc. Node người dùng kéo tay giữ vị trí; "Sắp xếp" xoá vị trí tay và hoàn tác được.
-- Kịch bản: khi xếp flow demo 8 bước thì các bước gập hàng và vừa khung 1100×458 ở chữ đọc được [test: packages/flow-canvas/src/layout/elk.test.ts » flow demo 8 bước: đi trái → phải, gập hàng, vừa khung 1100×458 ở zoom ≥ 0.75]
+- Kịch bản: khi xếp flow demo 8 bước thì các bước gập hàng và vừa khung 1100×458 ở chữ đọc được [test: packages/flow-canvas/src/layout/elk.test.ts]
 - Kịch bản: khi node có nhiều đầu ra thì cổng đi từ trên xuống theo thứ tự Ký xong, Từ chối, Hết hạn [test: packages/flow-canvas/src/layout/elk.test.ts » thứ tự cổng từ trên xuống: Ký xong → Từ chối → Hết hạn]
 - Kịch bản: khi dựng cạnh thì bước Kết thúc không có cạnh đi tiếp và node Nếu có đúng hai cạnh Đúng/Sai [test: packages/flow-canvas/src/layout/graph.test.ts » bước Kết thúc không có cạnh đi tiếp]
 - Kịch bản: khi thả node từ menu thì node thêm đúng một, đứng riêng ở chỗ thả [test: e2e/journey-approval/cr123-palette-drop.spec.ts » U4 · công ty sao chép flow, mở trình sửa, KÉO 'Thông báo' từ menu Thêm bước thả vào canvas ⇒ thêm một node, node mới nằm trong sơ đồ]

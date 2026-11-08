@@ -23,7 +23,7 @@ unit `approval-step-label.rules.test.ts` (mỗi kết cục một ca) + `approve
 - "Có hiệu lực" lấy đúng nhãn trạng thái đang dùng ở mọi nơi ("Đang hiệu lực") — không thêm chuỗi thứ hai cho cùng khái niệm.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Danh sách hợp đồng

@@ -41,7 +41,7 @@ Mọi trường tuỳ chọn; trống ⇒ cài đặt ký số chung của app n
 - Song song = mọi người ký cùng `order` 1 (envelope DocuSign `routingOrder` trùng); tuần tự = theo danh sách, đối tác sau.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED current/pack-contracts/esign-node-config.md
 #### Yêu cầu: Node Ký số có cấu hình riêng, ghi đè cài đặt chung

@@ -22,7 +22,7 @@ unit `pack-runs-modules.test.ts`.
 Stage chờ xong không có sự kiện tiêu thụ = hết hạn (timeout); sự kiện khớp `exits[].on` của node ⇒ nhánh đó, còn lại ⇒ xong.
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED sht/chung-tu.md
 #### Yêu cầu: Thẻ duyệt hiển thị Ký số là một dòng

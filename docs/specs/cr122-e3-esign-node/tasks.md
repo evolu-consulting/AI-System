@@ -25,7 +25,7 @@ Ký số thành node trong flow: **gửi ký** = tool gói `contracts-esign-send
 - Hai sự kiện cùng ghi trước khi thả ⇒ thắng sự kiện nhận sớm nhất (cùng lúc ⇒ thứ tự khai).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### MODIFIED engine/flow-engine.md
 #### Yêu cầu: Chờ sự kiện nhiều kết quả (Ký số trong flow)

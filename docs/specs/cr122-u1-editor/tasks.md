@@ -27,7 +27,7 @@ MỘT trình sửa cho flow có `trigger` (Thư viện + bản công ty): node B
 - Danh mục sự kiện lấy tĩnh từ `@ai/contracts/app-manifest` (không thêm API).
 
 ## Delta (so với docs/current)
-Trạng thái gộp: chưa gộp
+Trạng thái gộp: đã gộp 2026-11-08 (đợt cr122-cr123)
 
 ### ADDED platform/trinh-sua-flow.md
 #### Yêu cầu: Một trình sửa flow theo sự kiện của app (FLOW2-FR-02, FLOW2-FR-15, FLOW2-FR-16)
