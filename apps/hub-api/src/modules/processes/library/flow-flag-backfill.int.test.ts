@@ -45,10 +45,8 @@ beforeAll(async () => {
   o = openOwner(2);
   await o`insert into admin.tenants (id, key, name) values (${MISSING}, 't2311', 'M'), (${OFF}, 't2312', 'O'), (${ON}, 't2313', 'N'),
     (${NONE}, 't2314', 'X'), (${DISABLED}, 't2315', 'D'), (${BARE}, 't2316', 'B')`;
-  const [d] = await o<
-    { id: string }[]
-  >`insert into hub.process_defs (tenant_id, key, name, stages, published_version)
-    values (null, 'ffb-lib', 'ffb-lib', '[]'::jsonb, 1) returning id::text as id`;
+  const [d] = await o<{ id: string }[]>`insert into hub.process_defs (tenant_id, key, name, stages)
+    values (null, 'ffb-lib', 'ffb-lib', '[{"key":"dau"}]'::jsonb) returning id::text as id`;
   const flow = d?.id as string;
   await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${MISSING}, ${flow}, true), (${OFF}, ${flow}, true),
     (${ON}, ${flow}, true), (${DISABLED}, ${flow}, false)`;

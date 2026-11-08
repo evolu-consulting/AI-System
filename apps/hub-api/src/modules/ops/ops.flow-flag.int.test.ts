@@ -38,10 +38,8 @@ beforeAll(async () => {
   db = connectDb(urls().hubApi, 4);
   await o`insert into admin.tenants (id, key, name) values (${MISSING}, 't2301', 'Thiếu cờ'), (${OFF}, 't2302', 'Cờ tắt'),
     (${OK}, 't2303', 'Đủ'), (${NONE}, 't2304', 'Không gán'), (${DISABLED}, 't2305', 'Gán đã tắt')`;
-  const [d] = await o<
-    { id: string }[]
-  >`insert into hub.process_defs (tenant_id, key, name, stages, published_version)
-    values (null, 'ff-lib', 'ff-lib', '[]'::jsonb, 1) returning id::text as id`;
+  const [d] = await o<{ id: string }[]>`insert into hub.process_defs (tenant_id, key, name, stages)
+    values (null, 'ff-lib', 'ff-lib', '[{"key":"dau"}]'::jsonb) returning id::text as id`;
   const flow = d?.id as string;
   await o`insert into hub.company_flows (tenant_id, flow_id, enabled) values (${MISSING}, ${flow}, true), (${OFF}, ${flow}, true),
     (${OK}, ${flow}, true), (${DISABLED}, ${flow}, false)`;
