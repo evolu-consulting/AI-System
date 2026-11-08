@@ -1,10 +1,11 @@
-﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-122 · p24 · HÀNH TRÌNH "chưa gán quy trình ⇒ lý do + Mở lại" trên stack thật `playwright.journey.config.ts` (công ty MỚI
 // `e2e-c22n-<hậu tố>`: cờ FLOW_TRIGGERS BẬT nhưng CHƯA gán flow nào). Nhân viên gửi HĐ ("Gửi duyệt") ⇒ bộ điều phối không có flow khớp
 // ⇒ thẻ duyệt nói rõ vì sao + cách sửa (quản trị gán quy trình) và chủ HĐ có nút "Mở lại"; thẻ KHÔNG còn nút "Gửi duyệt".
-import { expect, test } from "@playwright/test";
+
 import { enableFlowTriggers } from "../_kit/flows";
 import { confirmAndSave, type Env, loginCw, U, uploadAndOpen } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

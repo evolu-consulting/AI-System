@@ -7,7 +7,7 @@
 //  2. Quản trị B thấy lời mời ở «Hợp đồng đối tác gửi», bấm «Nhận HĐ từ công ty này» ⇒ lần gửi được thả ⇒ HĐ nhận hiện ở hộp thư B.
 //  3. Flow nhận của B: người xác nhận bấm Đạt ⇒ A nhận `partner.confirmed` ⇒ flow A chạy tiếp «Đã xác nhận» ⇒ HĐ A khoá; thẻ A «đã xác nhận».
 //  4. Biến thể «Trả lại sửa»: B trả lại có lý do ⇒ A thấy thẻ «đã trả lại» + đúng lý do.
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import {
   apiLogin,
   assignCompanyFlow,
@@ -29,6 +29,7 @@ import {
 import { safeReload } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
 import { confirmAndSave, type Env, loginCw, stepOf, U, uploadAndOpen } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

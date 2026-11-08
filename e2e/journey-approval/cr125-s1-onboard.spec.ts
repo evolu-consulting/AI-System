@@ -2,9 +2,10 @@
 // CR-125 · S1 · C1 · HÀNH TRÌNH THẬT, không seed bật sẵn gì: platform admin lập công ty MỚI bằng wizard ở ai-admin (tạo công ty → bật Sổ Hợp
 // Tác → BỎ QUA bước Phân quyền → Xem lại → Hoàn tất); quản trị công ty đầu tiên đăng nhập bằng mật khẩu tạm (đổi mật khẩu) rồi mở Sổ Hợp Tác
 // và THẤY danh sách hợp đồng — không bao giờ gặp "Bạn chưa có quyền dùng gói Hợp đồng".
-import { expect, test } from "@playwright/test";
+
 import { toast } from "../support/helpers";
 import { type Env, loginAdmin } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

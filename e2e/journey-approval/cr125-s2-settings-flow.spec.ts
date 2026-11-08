@@ -3,7 +3,7 @@
 // chưa gán gì): (1) chưa có quy trình Bật ⇒ Cài đặt › Quy trình duyệt nói rõ ai làm gì (không đẩy sang quản trị nền tảng); (2) platform admin gán
 // flow Thư viện ở trang Quy trình (admin) ⇒ Cài đặt ở Sổ Hợp Tác hiện CÙNG tên quy trình với dòng ở tab Quy trình; không còn mục "Ứng dụng &
 // quy trình" / "Quy trình HĐ mặc định"; (3) công tắc ký số trong Cài đặt bật được thật (lưu rồi tải lại vẫn bật).
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { apiLogin } from "../_kit/api";
 import {
   approve,
@@ -21,6 +21,7 @@ import {
   safeReload,
 } from "../_kit/ui";
 import { type Env, loginCw, U } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

@@ -3,7 +3,7 @@
 // «Đề xuất mua hàng» bắt đầu bằng PHIẾU (ô: Tên hàng, Số lượng, Giá dự kiến, Lý do, File báo giá) + một bước Duyệt ⇒ nhân viên mở «Tạo yêu cầu»,
 // điền phiếu (tải file báo giá), gửi ⇒ trang yêu cầu ⇒ người duyệt thấy thẻ có dữ liệu phiếu ⇒ Duyệt ⇒ yêu cầu hoàn tất.
 // Chuẩn bị bằng API chỉ phần sản phẩm chưa làm bằng UI: flow Thư viện gốc (2 bước) — xem `cr122-flows.spec.ts`; phiếu + sửa + áp dụng đi bằng UI.
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { apiLogin } from "../_kit/api";
 import { approve, createLibraryFlow, enableFlowTriggers, finish } from "../_kit/flows";
 import {
@@ -16,6 +16,7 @@ import {
   openTenantPage,
 } from "../_kit/ui";
 import { type Env, loginCw, U } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

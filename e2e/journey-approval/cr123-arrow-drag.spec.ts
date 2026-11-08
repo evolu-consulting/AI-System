@@ -1,7 +1,7 @@
 // biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-123 · u8 · KÉO MŨI TÊN bằng chuột thật trong trình sửa flow CỦA CÔNG TY (lỗi người dùng báo: "không kéo mũi tên sang node khác được"):
 // thả "Duyệt" đứng riêng ⇒ kéo đầu ra "Ký xong" của Ký số tới nó (dây nối đi theo chuột) ⇒ kéo từ nó tới Kết thúc · Đã duyệt ⇒ "Lưu và áp dụng" thành công.
-import { expect, type Locator, type Page, test } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { FLOW_TEMPLATE_INPUTS } from "../../apps/hub-api/src/modules/processes/library/flow-templates.def";
 import { apiLogin, assignCompanyFlow } from "../_kit/api";
 import {
@@ -13,6 +13,7 @@ import { approve, enableFlowTriggers, esignNode, finish, notifyCreator } from ".
 import { flowRow, flowRows, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
 import { viStorageState } from "../support/locale-vi";
 import { U } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

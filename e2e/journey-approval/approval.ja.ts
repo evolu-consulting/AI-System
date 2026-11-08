@@ -4,7 +4,7 @@
 //  1. Tenant `e2e-approval` dựng như seed-niti (chưa gán gì). Platform admin ở ai-admin gán 2 quy trình + 2 luật (Phòng KD × Mua/Bán).
 //  2. CR-121 D-4: không còn công tắc "Duyệt theo quy trình" (gán là đủ). 3. Nhân viên tải HĐ + xác nhận ⇒ quy trình Mua (Kế toán → Giám đốc)
 //     chạy; trưởng Kế toán thấy bước mở + nút Đạt, duyệt; Giám đốc duyệt; HĐ đã duyệt (khoá).
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import {
   adminAssignAndRoute,
   approveAs,
@@ -17,6 +17,7 @@ import {
   U,
   uploadAndOpen,
 } from "./_journey";
+import { expect, test } from "./_test";
 
 // Không `serial`: ca ÂM (2) đỏ vì lỗ hổng sản phẩm không được chặn ca 3–4; workers=1 ⇒ vẫn chạy đúng thứ tự trong file.
 

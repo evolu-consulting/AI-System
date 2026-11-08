@@ -4,11 +4,12 @@
 // → panel nói quy trình con CẦN / TRẢ gì → Lưu và áp dụng → canvas có ô (tên, huy hiệu "quy trình con", Xong / Từ chối / Huỷ, liên kết "Mở quy trình con")
 // → bấm liên kết mở đúng quy trình con. Ảnh ô canvas + panel ghi vào docs/specs/cr125-subprocess-ui/.
 // Ảnh = outputPath của lượt chạy, sao vào docs/specs/cr125-subprocess-ui/ sau khi chạy evotest.
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { apiLogin, assignCompanyFlow } from "../_kit/api";
 import { approve, createLibraryFlow, enableFlowTriggers, finish } from "../_kit/flows";
 import { flowRows, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
 import { U } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

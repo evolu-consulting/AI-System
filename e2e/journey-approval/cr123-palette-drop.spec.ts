@@ -2,7 +2,7 @@
 // CR-123 · u4 · HÀNH TRÌNH kéo-thả (FLOW3-FR-04/08) trong trình sửa flow CỦA CÔNG TY trên stack thật `playwright.journey.config.ts`:
 // platform_admin dựng + gán flow Thư viện (chuẩn bị qua API) ⇒ tenant_admin "Sao chép để sửa" ⇒ mở trình sửa ⇒ menu "Thêm bước" ⇒ KÉO mục
 // "Thông báo" thả vào khoảng trống của canvas ⇒ thêm đúng MỘT node mới. (Luật "Ký số cần bước duyệt ngay trước" khi thả: unit `lib/u4-canvas-ux.test.ts`.)
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { apiLogin, assignCompanyFlow } from "../_kit/api";
 import {
   approve,
@@ -14,6 +14,7 @@ import {
 import { flowRow, flowRows, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
 import { viStorageState } from "../support/locale-vi";
 import { U } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

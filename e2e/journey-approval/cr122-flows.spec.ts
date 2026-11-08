@@ -7,7 +7,7 @@
 // Cùng 3 lỗi 409 của danh sách flow công ty (chưa xuất bản · gốc+bản công ty cùng bật · tắt flow bắt buộc cuối) và kéo thả thứ tự.
 // LỆCH SO VỚI SPEC (ghi ở docs/specs/cr122-q1-e2e/tasks.md): (1) flow Thư viện được dựng bằng SQL vì sản phẩm chưa xuất bản được flow mới (Lỗi sản phẩm
 // #1); (2) phòng ban dùng của stack hành trình (Kế toán/Giám đốc thay cho Pháp chế/Kế toán); (3) bước Ký số giả lập bị bỏ vì stack không có nhà cung cấp ký số.
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { apiLogin, companyFlows, type Session } from "../_kit/api";
 import {
   approve,
@@ -28,6 +28,7 @@ import {
 } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
 import { approveAs, type Env, loginCw, stepOf, U, uploadAndOpen } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

@@ -2,7 +2,7 @@
 // CR-125 · S3 · C3 · HÀNH TRÌNH: sao chép quy trình Thư viện có bước Ký số → (người ký được điền sẵn từ nhóm duyệt) → bỏ người ký →
 // "Lưu và áp dụng" KHÔNG được im lặng: thông báo nói bước nào thiếu gì + "Đến bước" → chọn người ký → lưu và áp dụng xong.
 // Công ty MỚI `e2e-s3-<hậu tố>`; flow Thư viện dựng như cr123-u6 (`_kit/flows.ts`), gán + sao chép bằng UI.
-import { expect, test } from "@playwright/test";
+
 import { apiLogin } from "../_kit/api";
 import {
   approve,
@@ -22,6 +22,7 @@ import {
 } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
 import { type Env, U } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

@@ -7,13 +7,14 @@
 // Bước điền (form) của Phần 1–3 làm bằng thẻ bước điền thật (lát cr125-form-step-card: cùng bộ chọn với `cr125-form-step-card.spec.ts`).
 // KHÔNG chạy trong lát này — chạy MỘT lần ở đợt cuối. CHƯA BIẾT: việc của lượt CON không có HĐ có hiện ở «Chờ tôi duyệt» / mở được thẻ không.
 import { existsSync, readFileSync } from "node:fs";
-import { expect, type Locator, type Page, test } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import {
   notifyConfigChanged,
   writeCr125Config,
 } from "../../apps/hub-api/src/modules/seed/seed.cr125-config";
 import { withOwner } from "../support/helpers";
 import { type Env, loginCw, U } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];
@@ -164,6 +165,68 @@ async function actOnWaiting(page: Page): Promise<boolean> {
       ]);
       expect(res.ok()).toBe(true);
       acted = true;
+    }
+  }
+  return (await actOnContractRows(page, loaded)) || acted;
+}
+
+/**
+ * cr126-journey-e2e · việc của Phần 2 «Hợp đồng» (đã có HĐ do «Tạo hợp đồng từ hồ sơ») hiện ở hộp MỘT dưới dạng dòng HĐ
+ * (`approval-task-row` = duyệt, `signing-task-row` = ký; từ /my-work, loại trùng với dòng yêu cầu): mở thẻ HĐ → «Duyệt»/«Đạt»
+ * (chờ API quyết định OK) hoặc «Ký ngay» (Ký thử, chờ trang trả về `esign=return`).
+ */
+async function approveOnCard(page: Page): Promise<boolean> {
+  const btn = page.locator("[data-approval=pass], [data-approval=approve]").first();
+  await expect(btn)
+    .toBeVisible({ timeout: 20_000 })
+    .catch(() => undefined);
+  if (!(await btn.isVisible())) return false;
+  const [res] = await Promise.all([
+    page.waitForResponse(
+      (r) =>
+        r.request().method() === "POST" &&
+        /\/review-tasks\/[^/]+\/decision|\/contracts\/[^/]+\/approval/.test(r.url()),
+      { timeout: 30_000 },
+    ),
+    btn.click(),
+  ]);
+  expect(res.ok()).toBe(true);
+  return true;
+}
+
+async function signOnCard(page: Page): Promise<boolean> {
+  const sign = page.getByRole("button", { name: "Ký ngay" }).first();
+  await expect(sign)
+    .toBeVisible({ timeout: 20_000 })
+    .catch(() => undefined);
+  if (!(await sign.isVisible())) return false;
+  await sign.click();
+  // > 1 cách ký ⇒ hộp «Chọn cách ký»: chọn «Ký thử» rồi xác nhận
+  const dlg = page.getByRole("dialog");
+  if (await dlg.isVisible().catch(() => false)) {
+    await dlg.getByText("Ký thử").first().click();
+    await dlg.getByRole("button", { name: /Ký/ }).last().click();
+  }
+  await expect(page).toHaveURL(/esign=return/, { timeout: 60_000 });
+  return true;
+}
+
+/** Làm dòng HĐ đầu tiên của loại `kind`; true nếu đã làm (dòng biến mất sau khi tải lại hộp). */
+async function actOnFirstContractRow(page: Page, kind: string): Promise<boolean> {
+  await page.getByTestId(kind).first().locator("a").first().click();
+  await expect(page).toHaveURL(/\/contracts\/c\/[0-9a-f-]{36}/, { timeout: 30_000 });
+  return kind === "approval-task-row" ? approveOnCard(page) : signOnCard(page);
+}
+
+async function actOnContractRows(page: Page, reload: () => Promise<void>): Promise<boolean> {
+  let acted = false;
+  for (const kind of ["approval-task-row", "signing-task-row"]) {
+    await reload();
+    // chặn vòng lặp vô hạn bằng số lần thử
+    for (let attempt = 0; attempt < 8 && (await page.getByTestId(kind).count()) > 0; attempt++) {
+      if (!(await actOnFirstContractRow(page, kind))) break;
+      acted = true;
+      await reload();
     }
   }
   return acted;

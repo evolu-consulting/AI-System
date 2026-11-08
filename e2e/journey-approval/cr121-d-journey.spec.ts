@@ -1,11 +1,11 @@
-﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-121 D-5 (R8) · HÀNH TRÌNH 2 CÔNG TY trên stack thật (không seed bật sẵn gì): hai công ty MỚI (hậu tố duy nhất, chưa quy trình/luật/gán).
 // Platform admin: nhân bản quy trình duyệt từ thư viện thành 2 bản khác nhau rồi xuất bản
 //   A = Kế toán → Giám đốc (CHỈ khi Giá trị ≥ 500 tr VÀ Loại = Mua) · B = 1 bước Giám đốc,
 // gán A cho công ty 1, B cho công ty 2 ở Công ty › Ứng dụng & Gói (KHÔNG bật công tắc nào). Người dùng mỗi công ty gửi duyệt HĐ 600 tr và
 // 100 tr (Mua) ⇒ đúng bước chạy/bỏ qua theo quy trình của công ty đó; sửa giá trị HĐ đang chờ 600 → 100 tr ⇒ bước Giám đốc bị bỏ qua khi tới;
 // trang "Chi tiết lượt chạy" (admin) hiện đúng bước + nhật ký; công ty 1 không thấy dữ liệu công ty 2.
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { apiLogin, cloneAndPublishFlow, type Session, tenantIdByKey } from "../_kit/api";
 import { openTenantPage } from "../_kit/ui";
 import {
@@ -20,6 +20,7 @@ import {
   U,
   uploadAndOpen,
 } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

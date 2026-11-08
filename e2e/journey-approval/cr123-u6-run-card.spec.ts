@@ -3,7 +3,7 @@
 // Thẻ phải có MỘT dòng "Ký số" với "Đang chờ ký" + tên người ký (không có dòng "Chờ ký" riêng); sau khi người ký bấm "Ký ngay" ⇒ "Đã ký".
 // Công ty MỚI `e2e-u6-<hậu tố>`; flow Thư viện dựng bằng SQL (như cr122-flows, `_kit/flows.ts`), gán bằng UI platform admin.
 
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { apiLogin } from "../_kit/api";
 import {
   approve,
@@ -16,6 +16,7 @@ import {
 import { assignFlowUi, loginPlatformAdminUi, openCompanyFlows, openTenantPage } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
 import { approveAs, confirmAndSave, type Env, loginCw, U, uploadAndOpen } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

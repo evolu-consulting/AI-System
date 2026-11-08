@@ -3,8 +3,9 @@
 // Máy chủ đã xoay token nhưng phản hồi mang Set-Cookie bị trình duyệt huỷ ⇒ lượt refresh kế tiếp trình token cũ. Phải được cấp lại (ân hạn ≤ 30 s).
 // Stack thật (admin-api + workspace-web), không mock: lỗi chỉ lộ khi phản hồi thật bị mất, nên ca 1 mô phỏng đúng việc đó bằng route.fetch (máy chủ
 // xử lý thật) + abort (trình duyệt không nhận phản hồi) rồi trả cookie cũ về — đúng trạng thái sau khi huỷ phản hồi.
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { type Env, loginCw, U } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

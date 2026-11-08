@@ -4,11 +4,12 @@
 //  2) cạnh vàng (Ký số cần `contract_id` mà bước trước không có) ⇒ ô "Gợi ý cầu nối" ⇒ Bỏ / Nhận (route AI giả: AI thật cần agent `flow-bridge` đã seed);
 //  3) Nhận cầu nối = chèn bước GIỮA flow ⇒ Lưu ⇒ đích của Nếu vẫn trỏ đúng node (dời +1), không lệch sang bước mới.
 // Dữ liệu riêng: flow Thư viện `c22u-ed-<hậu tố>` (xem `_kit/flows.ts`: dựng bằng SQL — Lỗi sản phẩm #1) gán qua API, bản sao do quản trị công ty tạo ở UI.
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { apiLogin, assignCompanyFlow, type Session } from "../_kit/api";
 import { approve, createLibraryFlow, enableFlowTriggers, finish, ifFact } from "../_kit/flows";
 import { flowRows, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
 import { U } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

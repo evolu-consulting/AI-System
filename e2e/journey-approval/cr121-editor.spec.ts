@@ -1,9 +1,10 @@
 // CR-121 D-3 · trình sửa quy trình thư viện: trình dựng điều kiện "Chỉ chạy khi" + chặn khi thiếu phòng ban. Viết sẵn, CHẠY một lần cuối đợt
 // (cùng stack thật `playwright.journey.config.ts`: tenant `e2e-approval`, quy trình thư viện "E2E Mua (Kinh doanh)" đã có từ seed journey).
 // Dữ liệu riêng: nhân bản quy trình mẫu thành bản nháp tên có hậu tố duy nhất — không sửa bản dùng chung.
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { uniqueSuffix } from "../_kit/unique";
 import { loginAdmin, PROC } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

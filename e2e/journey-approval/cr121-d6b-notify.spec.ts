@@ -3,7 +3,7 @@
 // Công ty MỚI `e2e-d6-<hậu tố>` (chưa quy trình/luật/gán). Platform admin, chỉ bằng UI: nhân bản quy trình mẫu → thêm bước "Thông báo" sau bước
 // Duyệt (người nhận = người gửi duyệt, tiêu đề có {ma_hd} {ten_hd}) → lưu nháp → xuất bản → gán cho công ty (không công tắc nào khác). Người dùng công ty
 // gửi duyệt HĐ, Ban Giám đốc duyệt ⇒ người tạo HĐ thấy thông báo ở chuông, tiêu đề mang đúng mã/tên HĐ (tên HĐ có hậu tố duy nhất của lượt chạy).
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { openTenantPage } from "../_kit/ui";
 import { uniqueSuffix } from "../_kit/unique";
 import { TAG } from "./_fixture";
@@ -19,6 +19,7 @@ import {
   U,
   uploadAndOpen,
 } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

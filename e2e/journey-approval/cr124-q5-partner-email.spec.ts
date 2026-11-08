@@ -1,15 +1,15 @@
-﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-124 · q5 · FLOW4-FR-12/13 · HÀNH TRÌNH đường email trên stack thật `playwright.journey.config.ts` (công ty MỚI `e2e-q5-<hậu tố>`, HUB_PARTNER_MAILBOX bật):
 //  nhân viên gửi HĐ ⇒ flow có node chờ `partner.confirmed` ⇒ người liên hệ của công ty ngoài MỞ LINK (không đăng nhập, ngữ cảnh trình duyệt trống)
 //  ⇒ xem đúng một HĐ ⇒ bấm Xác nhận ⇒ bộ chuyển phát `partner.confirmed` ⇒ lượt phía gửi CHẠY TIẾP (HĐ khoá · Đã duyệt). Cộng: dùng lại link ⇒ "đã ghi nhận".
 // LỆCH SO VỚI SPEC: dòng hộp thư kênh email được dựng bằng SQL (đường tạo dòng + gửi thư đã có int `partners/email.int.test.ts`, stack không có SMTP);
 // token là bản rõ do test tự chọn, DB chỉ giữ băm — đúng như dòng thật.
 import { createHash, randomBytes } from "node:crypto";
-import { expect, test } from "@playwright/test";
 import { apiLogin, assignCompanyFlow } from "../_kit/api";
 import { createLibraryFlow, enableFlowTriggers, finish, waitEvent } from "../_kit/flows";
 import { withOwner } from "../support/helpers";
 import { type Env, loginCw, stepOf, U, uploadAndOpen } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

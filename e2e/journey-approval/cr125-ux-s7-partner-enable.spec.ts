@@ -6,7 +6,7 @@
 //     như q6; quy trình GỬI của A dựng bằng API vì UI thêm node đã có spec editor riêng.)
 //  2. Quản trị công ty (B) mở Ứng dụng: thấy trạng thái thật, KHÔNG có công tắc/nút làm hộ (quyền cấp chỉ ở platform).
 //  3. A gửi hợp đồng cho B → B thấy ở hộp thư đối tác, nhận lời mời, xác nhận → A thấy «đã xác nhận».
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import {
   apiLogin,
   assignCompanyFlow,
@@ -33,6 +33,7 @@ import {
   U,
   uploadAndOpen,
 } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];

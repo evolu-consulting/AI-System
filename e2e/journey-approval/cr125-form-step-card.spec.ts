@@ -1,9 +1,9 @@
-﻿// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
+// biome-ignore-all lint/suspicious/noUndeclaredEnvVars: biến e2e/test, không ảnh hưởng cache build
 // CR-125 · cr125-form-step-card · HÀNH TRÌNH THẬT «Quy trình mua hàng · Phần 1» (đúng các bước của mẫu Thư viện đã seed) chạy TRỌN trên giao diện,
 // KHÔNG gửi form bằng API: nhân viên điền «Đề xuất» + đính kèm tệp ⇒ Trưởng bộ phận duyệt ⇒ Mua hàng điền báo giá + tệp ⇒ … ⇒ «Tạo PO» + tệp ⇒
 // Trưởng bộ phận duyệt PO ⇒ Kết thúc. Kiểm: bước form KHÔNG có Duyệt/Trả lại/Từ chối ở đầu trang, giá trị + tên tệp đã gửi hiện chỉ đọc ở thẻ
 // của người sau, người ngoài nhóm không thấy ô nhập. Công ty MỚI `e2e-fsc-<hậu tố>`; nhóm theo MÃ của mẫu dựng bằng SQL (cài đặt), mẫu gán bằng UI.
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { PURCHASE_TEMPLATES } from "../../apps/hub-api/src/modules/processes/library/purchase-templates";
 import { apiLogin } from "../_kit/api";
 import { createLibraryFlow, enableFlowTriggers } from "../_kit/flows";
@@ -16,6 +16,7 @@ import {
 } from "../_kit/ui";
 import { withOwner } from "../support/helpers";
 import { approveAs, confirmAndSave, type Env, loginCw, stepOf, U, uploadAndOpen } from "./_journey";
+import { expect, test } from "./_test";
 
 const need = (n: string): string => {
   const v = process.env[n];
