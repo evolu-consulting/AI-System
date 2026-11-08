@@ -1,4 +1,4 @@
-﻿// HUB-FR-112 Â· D12 Â· PF3 Â· nghiá»‡p vá»¥ `/me/review-tasks`, `/me/process-inbox`, `/me/process-inbox/read` (plan Â§5, Â§11;
+// HUB-FR-112 Â· D12 Â· PF3 Â· nghiá»‡p vá»¥ `/me/review-tasks`, `/me/process-inbox`, `/me/process-inbox/read` (plan Â§5, Â§11;
 // plan-contract Â§3 PF3, Â§7 `loadTaskDetails`). Äá»c dÆ°á»›i `withHubScope(user)`; `TaskDetail` + `can_act` qua `loadTaskDetails`
 // (B0) â€” khÃ´ng tá»± dá»±ng. NgÆ°á»i xem chá»‰ tháº¥y task gÃ¡n cho mÃ¬nh/Group mÃ¬nh (readiness #22).
 import {

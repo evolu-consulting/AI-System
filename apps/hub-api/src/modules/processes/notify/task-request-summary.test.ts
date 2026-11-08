@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import { requestSummary } from "./task-request-summary";
 
 const stage0 = {

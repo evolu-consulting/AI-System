@@ -1,4 +1,4 @@
-﻿---
+---
 id: cr126-inbox-ceo
 lÃ¡t: cr126-inbox-ceo
 cr: CR-126
