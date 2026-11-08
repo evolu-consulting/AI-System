@@ -690,11 +690,11 @@
         "okWarn": "Mẫu dùng được; còn lưu ý bên dưới.",
         "blockedPlatform": "Chưa gán được: công ty thiếu những thứ sau.",
         "blockedCompany": "Mẫu này chưa dùng được ở công ty bạn.",
-        "feature": "Bước «{{stage}}» cần tính năng {{what}} — công ty chưa được bật.",
-        "tool": "Bước «{{stage}}» dùng chức năng công ty chưa có.",
-        "order": "Bước «{{stage}}» phải đứng ngay sau một bước Duyệt.",
-        "locked": "Bước «{{stage}}» là bước cố định của nền tảng — không sửa được trên bản sao.",
-        "group": "Công ty chưa có nhóm duyệt «{{key}}» — bước duyệt sẽ mở ra để bạn chọn người duyệt.",
+        "feature": "Bước «{stage}» cần tính năng {what} — công ty chưa được bật.",
+        "tool": "Bước «{stage}» dùng chức năng công ty chưa có.",
+        "order": "Bước «{stage}» phải đứng ngay sau một bước Duyệt.",
+        "locked": "Bước «{stage}» là bước cố định của nền tảng — không sửa được trên bản sao.",
+        "group": "Công ty chưa có nhóm duyệt «{key}» — bước duyệt sẽ mở ra để bạn chọn người duyệt.",
         "askPlatform": "Nhờ quản trị nền tảng bật tính năng cần thiết rồi quay lại sao chép.",
         "fixFailed": "Chưa sửa được. Thử lại hoặc kiểm tra quyền.",
         "level": {
@@ -708,7 +708,7 @@
         }
       },
       "copy": {
-        "title": "Sao chép «{{name}}» để sửa",
+        "title": "Sao chép «{name}» để sửa",
         "hint": "Bản sao là của riêng công ty; sửa xong bấm Lưu và áp dụng.",
         "cancel": "Huỷ",
         "confirm": "Sao chép"

@@ -690,11 +690,11 @@
         "okWarn": "The template works; see the notes below.",
         "blockedPlatform": "Cannot assign yet: the company is missing the following.",
         "blockedCompany": "This template cannot be used by your company yet.",
-        "feature": "Step \"{{stage}}\" needs {{what}} — not enabled for the company.",
-        "tool": "Step \"{{stage}}\" uses a function the company does not have.",
-        "order": "Step \"{{stage}}\" must come right after an approval step.",
-        "locked": "Step \"{{stage}}\" is fixed by the platform — it cannot be edited on a copy.",
-        "group": "The company has no \"{{key}}\" approver group — the approval step will ask you to pick approvers.",
+        "feature": "Step \"{stage}\" needs {what} — not enabled for the company.",
+        "tool": "Step \"{stage}\" uses a function the company does not have.",
+        "order": "Step \"{stage}\" must come right after an approval step.",
+        "locked": "Step \"{stage}\" is fixed by the platform — it cannot be edited on a copy.",
+        "group": "The company has no \"{key}\" approver group — the approval step will ask you to pick approvers.",
         "askPlatform": "Ask the platform administrator to enable the required features, then copy again.",
         "fixFailed": "Could not fix. Try again or check permissions.",
         "level": {
@@ -708,7 +708,7 @@
         }
       },
       "copy": {
-        "title": "Copy \"{{name}}\" to edit",
+        "title": "Copy \"{name}\" to edit",
         "hint": "The copy belongs to your company; save with Save and apply when done.",
         "cancel": "Cancel",
         "confirm": "Copy"

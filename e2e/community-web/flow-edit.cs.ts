@@ -1,4 +1,4 @@
-﻿// QC · qc-community-flow · hành trình "quản trị community sửa flow Duyệt bài trên canvas → Lưu và áp dụng" (stack community-web + ai-admin, CS_ADMIN_URL).
+// QC · qc-community-flow · hành trình "quản trị community sửa flow Duyệt bài trên canvas → Lưu và áp dụng" (stack community-web + ai-admin, CS_ADMIN_URL).
 // Lỗi B1 (docs/specs/qc-community-flow/tasks.md) đã sửa ở cr125-c5-template-readiness: mẫu dùng được ở công ty (readiness) + seed D7.
 import { expect, test } from "@playwright/test";
 import { flowRow, loginTenantAdminUi, openCompanyFlows } from "../_kit/ui";
@@ -20,8 +20,10 @@ test("quản trị community: sao chép flow Duyệt bài, thêm bước Duyệt
   const box = await openCompanyFlows(page);
   // CR-125 c5 · công ty Community có sẵn flow "Quản trị duyệt bài" (seed bật Community ⇒ cùng có flow dùng được, D7); sao chép ⇒ áp dụng được.
   const rows = flowRow(box, "Quản trị duyệt bài");
-  if ((await rows.count()) < 2)
+  if ((await rows.count()) < 2) {
     await rows.first().getByRole("button", { name: "Sao chép để sửa" }).click();
+    await page.getByTestId("copy-confirm").click(); // hộp Sao chép: mẫu dùng được ⇒ xác nhận
+  }
   await expect(rows).toHaveCount(2);
   await rows
     .last()
