@@ -1,14 +1,5 @@
 {
   "contracts": {
-    "flow": {
-      "err": {
-        "ESIGN_MULTI": "Only one e-signature step is allowed.",
-        "ESIGN_NOT_LAST": "The e-signature step must be last.",
-        "SIGNER_GROUP_REQUIRED": "Choose the signer's department.",
-        "SIGNER_USER_REQUIRED": "Choose the signer.",
-        "USER_NOT_MEMBER": "This person is not in the company or cannot edit contracts."
-      }
-    },
     "approval": {
       "module": {
         "signer": "Signer: {{who}}",

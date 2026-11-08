@@ -6,9 +6,8 @@ import type { LocaleEntry } from "./lib/locale-files";
 export type CodeSet = { name: string; codes: readonly string[]; prefix: string };
 export type Issue = { file: string; line?: number; msg: string };
 
-/** Khoá ngoài khoá chuẩn nhưng được phép: trình sửa luồng của app khác dùng bộ khoá riêng của nó (gộp ở lát G6/G9, không thuộc G1). */
+/** Khoá ngoài khoá chuẩn nhưng được phép: trình sửa luồng của app khác dùng bộ khoá riêng của nó (admin-web). */
 export const SHARED_PREFIXES: readonly string[] = [
-  "contracts.flow.err.", // workspace-web · trình sửa luồng duyệt của công ty (v2l + esignflow)
   "process.admin.flow.err.", // admin-web · trình sửa luồng (client)
   "process.admin.flow.esign.err.", // admin-web · panel node Ký số (mã FLOW_NODE_CONFIG_INVALID, tập mã khác)
 ];

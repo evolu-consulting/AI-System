@@ -287,21 +287,9 @@
       "reload": "Tải lại",
       "err": {
         "nameEmpty": "Nhập tên bước.",
-        "GROUP_REQUIRED": "Chọn phòng ban.",
-        "DUE_RANGE": "Hạn xử lý phải là số giờ nguyên từ 4 đến 2160.",
-        "REMIND_RANGE": "Nhắc lại phải từ {{min}} đến {{max}} giờ.",
-        "ESCALATE_SAME_GROUP": "Nhóm chuyển cấp phải khác phòng ban duyệt.",
-        "FIRST_CONDITIONAL": "Bước đầu không có điều kiện.",
-        "FIRST_NOT_REVIEW": "Bước đầu phải là bước soạn và kiểm tra.",
         "whenEmpty": "Chọn loại hợp đồng hoặc giá trị, hoặc bỏ điều kiện.",
         "amountInvalid": "Số tiền phải là số không âm.",
-        "STEPS_MAX": "Tối đa 20 bước.",
-        "KEY_DUP": "Mã bước bị trùng.",
-        "AFTER_DIFY_CONDITIONAL": "Bước sau bước Dify không được có điều kiện.",
-        "difyEmpty": "Chưa chọn quy trình Dify.",
-        "DIFY_WORKFLOW_UNKNOWN": "Quy trình Dify này không còn trong danh mục của công ty.",
-        "DIFY_PARAM_UNSUPPORTED": "Quy trình Dify này có tham số bắt buộc mà hợp đồng không cung cấp được.",
-        "DIFY_INPUT_UNKNOWN": "Tham số này không có trong quy trình Dify."
+        "difyEmpty": "Chưa chọn quy trình Dify."
       },
       "difyFrom": "Lấy từ trường hợp đồng",
       "difyNoSend": "— Không gửi —",

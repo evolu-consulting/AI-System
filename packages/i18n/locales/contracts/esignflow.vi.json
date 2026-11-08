@@ -1,14 +1,5 @@
 {
   "contracts": {
-    "flow": {
-      "err": {
-        "ESIGN_MULTI": "Chỉ được một bước Ký số.",
-        "ESIGN_NOT_LAST": "Bước Ký số phải là bước cuối.",
-        "SIGNER_GROUP_REQUIRED": "Chọn phòng của người ký.",
-        "SIGNER_USER_REQUIRED": "Chọn người ký.",
-        "USER_NOT_MEMBER": "Người này không thuộc công ty hoặc không có quyền sửa hợp đồng."
-      }
-    },
     "approval": {
       "module": {
         "signer": "Người ký: {{who}}",
