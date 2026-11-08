@@ -4,7 +4,10 @@
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import { safeErrorFields } from "../../../lib/errors";
-import type { ProcessDepsCore } from "./start.service";
+import type { ProcessDeps } from "../core/ports";
+
+/** File lá (không import start.service): người gọi truyền deps + hàm kick. */
+export type KickFailureDeps = Pick<ProcessDeps, "db" | "log" | "now">;
 
 /** Mã máy ngắn của lỗi kick: mã AppError, hoặc SQLSTATE/constraint của Postgres (cả khi drizzle bọc ở `cause`), hoặc tên lỗi. */
 export function kickErrorCode(err: unknown): string {
@@ -25,9 +28,13 @@ export function kickErrorCode(err: unknown): string {
 }
 
 /** Kick lượt vừa tạo; lỗi ⇒ log có mã + đánh dấu "không khởi động được" (nếu chưa bước nào chạy). Không ném. */
-export async function kickOrFlag(d: ProcessDepsCore, runId: string): Promise<void> {
+export async function kickOrFlag(
+  d: KickFailureDeps,
+  kick: (runId: string) => Promise<unknown>,
+  runId: string,
+): Promise<void> {
   try {
-    await d.launcher.kick(runId);
+    await kick(runId);
   } catch (err) {
     const code = kickErrorCode(err);
     d.log.warn("process-kick-failed", { run_id: runId, code, ...safeErrorFields(err) });
@@ -38,7 +45,7 @@ export async function kickOrFlag(d: ProcessDepsCore, runId: string): Promise<voi
 }
 
 /** 2 câu, system scope: chỉ khi lượt `running` và chưa stage nào chạy (`pending`/`queued`) — CAS trong câu, không khoá dài. */
-async function markStartFailed(d: ProcessDepsCore, runId: string, code: string): Promise<void> {
+async function markStartFailed(d: KickFailureDeps, runId: string, code: string): Promise<void> {
   const decision = JSON.stringify({
     reason: "start_failed",
     code,

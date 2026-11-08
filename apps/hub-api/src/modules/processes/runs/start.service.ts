@@ -386,7 +386,7 @@ export class StartService {
 
   async #afterCommit(runId: string | null, isRoom: boolean): Promise<void> {
     if (!runId) return;
-    await kickOrFlag(this.d, runId); // cr125-fix-escalate-kick · lỗi ⇒ log có mã + "không khởi động được"
+    await kickOrFlag(this.d, (id) => this.d.launcher.kick(id), runId); // cr125-fix-escalate-kick · lỗi ⇒ log có mã + "không khởi động được"
     if (isRoom)
       try {
         await this.d.postThread(runId);
