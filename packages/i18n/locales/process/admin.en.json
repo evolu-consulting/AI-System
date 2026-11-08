@@ -1,7 +1,46 @@
 {
   "startForm": {
+    "title": "Request form",
+    "hint": "The starter fills this form before the process runs. Field keys are generated from labels.",
+    "fieldAria": "Field {{n}}",
+    "label": "Label",
+    "type": "Type",
+    "help": "Hint for the person filling in",
+    "required": "Required",
+    "key": "Key",
+    "up": "Move field {{n}} up",
+    "down": "Move field {{n}} down",
+    "remove": "Remove field {{n}}",
+    "add": "Add field",
+    "newField": "Field {{n}}",
+    "starters": "Who can start",
+    "startersWho": "Who can create this request",
+    "everyone": "Everyone in the company",
+    "groups": "Members of selected groups only",
+    "titleTemplate": "Request title",
+    "titleTemplateHelp": "Use {{token}} to insert a field value, e.g. Purchase request {{example}}",
+    "toggle": "Start with a request form",
+    "toggleHelp": "Employees open \"Create request\", fill in the form and the process runs. The \"Request form\" step is always first.",
+    "nodeKind": "Start with a form",
+    "nodeName": "Request form",
+    "nodeSummary": "{{count}} fields",
+    "types": {
+      "text": "Short text",
+      "longtext": "Long text",
+      "money": "Amount",
+      "date": "Date",
+      "people": "People",
+      "department": "Department",
+      "attachments": "Attachments"
+    },
     "err": {
-      "START_FIELD_RESERVED": "This field key is used by data the system writes (request_title, record, ref, event, contract_id). Use another key."
+      "START_FIELD_RESERVED": "This field key is used by data the system writes (request_title, record, ref, event, contract_id). Use another key.",
+      "fieldsMin": "The form needs at least one field.",
+      "labelRequired": "Enter a label for the field.",
+      "keyInvalid": "Invalid field key: lowercase letters, digits, underscore, starting with a letter.",
+      "keyDup": "Two fields share a key. Change one label.",
+      "titleRequired": "Enter a request title.",
+      "startersGroups": "Pick at least one group, or choose \"Everyone in the company\"."
     }
   },
   "parallel": {

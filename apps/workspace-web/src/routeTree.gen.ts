@@ -29,8 +29,11 @@ import { Route as AuthedContractsPartnersRouteImport } from './routes/_authed/co
 import { Route as AuthedContractsProductsRouteImport } from './routes/_authed/contracts/products'
 import { Route as AuthedContractsCIdRouteImport } from './routes/_authed/contracts/c/$id'
 import { Route as AuthedContractsCNewRouteImport } from './routes/_authed/contracts/c/new'
+import { Route as AuthedContractsRequestsIndexRouteImport } from './routes/_authed/contracts/requests/index'
+import { Route as AuthedContractsRequestsRunIdRouteImport } from './routes/_authed/contracts/requests/$runId'
 import { Route as AuthedContractsSettingsIndexRouteImport } from './routes/_authed/contracts/settings/index'
 import { Route as AuthedContractsSettingsMembersRouteImport } from './routes/_authed/contracts/settings/members'
+import { Route as AuthedContractsRequestsNewFlowKeyRouteImport } from './routes/_authed/contracts/requests/new/$flowKey'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -134,6 +137,18 @@ const AuthedContractsCNewRoute = AuthedContractsCNewRouteImport.update({
   path: '/c/new',
   getParentRoute: () => AuthedContractsRoute,
 } as any)
+const AuthedContractsRequestsIndexRoute =
+  AuthedContractsRequestsIndexRouteImport.update({
+    id: '/requests/',
+    path: '/requests/',
+    getParentRoute: () => AuthedContractsRoute,
+  } as any)
+const AuthedContractsRequestsRunIdRoute =
+  AuthedContractsRequestsRunIdRouteImport.update({
+    id: '/requests/$runId',
+    path: '/requests/$runId',
+    getParentRoute: () => AuthedContractsRoute,
+  } as any)
 const AuthedContractsSettingsIndexRoute =
   AuthedContractsSettingsIndexRouteImport.update({
     id: '/settings/',
@@ -144,6 +159,12 @@ const AuthedContractsSettingsMembersRoute =
   AuthedContractsSettingsMembersRouteImport.update({
     id: '/settings/members',
     path: '/settings/members',
+    getParentRoute: () => AuthedContractsRoute,
+  } as any)
+const AuthedContractsRequestsNewFlowKeyRoute =
+  AuthedContractsRequestsNewFlowKeyRouteImport.update({
+    id: '/requests/new/$flowKey',
+    path: '/requests/new/$flowKey',
     getParentRoute: () => AuthedContractsRoute,
   } as any)
 
@@ -167,8 +188,11 @@ export interface FileRoutesByFullPath {
   '/contracts/': typeof AuthedContractsIndexRoute
   '/contracts/c/$id': typeof AuthedContractsCIdRoute
   '/contracts/c/new': typeof AuthedContractsCNewRoute
+  '/contracts/requests/$runId': typeof AuthedContractsRequestsRunIdRoute
   '/contracts/settings/members': typeof AuthedContractsSettingsMembersRoute
+  '/contracts/requests/': typeof AuthedContractsRequestsIndexRoute
   '/contracts/settings/': typeof AuthedContractsSettingsIndexRoute
+  '/contracts/requests/new/$flowKey': typeof AuthedContractsRequestsNewFlowKeyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -188,8 +212,11 @@ export interface FileRoutesByTo {
   '/contracts': typeof AuthedContractsIndexRoute
   '/contracts/c/$id': typeof AuthedContractsCIdRoute
   '/contracts/c/new': typeof AuthedContractsCNewRoute
+  '/contracts/requests/$runId': typeof AuthedContractsRequestsRunIdRoute
   '/contracts/settings/members': typeof AuthedContractsSettingsMembersRoute
+  '/contracts/requests': typeof AuthedContractsRequestsIndexRoute
   '/contracts/settings': typeof AuthedContractsSettingsIndexRoute
+  '/contracts/requests/new/$flowKey': typeof AuthedContractsRequestsNewFlowKeyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -213,8 +240,11 @@ export interface FileRoutesById {
   '/_authed/contracts/': typeof AuthedContractsIndexRoute
   '/_authed/contracts/c/$id': typeof AuthedContractsCIdRoute
   '/_authed/contracts/c/new': typeof AuthedContractsCNewRoute
+  '/_authed/contracts/requests/$runId': typeof AuthedContractsRequestsRunIdRoute
   '/_authed/contracts/settings/members': typeof AuthedContractsSettingsMembersRoute
+  '/_authed/contracts/requests/': typeof AuthedContractsRequestsIndexRoute
   '/_authed/contracts/settings/': typeof AuthedContractsSettingsIndexRoute
+  '/_authed/contracts/requests/new/$flowKey': typeof AuthedContractsRequestsNewFlowKeyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -238,8 +268,11 @@ export interface FileRouteTypes {
     | '/contracts/'
     | '/contracts/c/$id'
     | '/contracts/c/new'
+    | '/contracts/requests/$runId'
     | '/contracts/settings/members'
+    | '/contracts/requests/'
     | '/contracts/settings/'
+    | '/contracts/requests/new/$flowKey'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -259,8 +292,11 @@ export interface FileRouteTypes {
     | '/contracts'
     | '/contracts/c/$id'
     | '/contracts/c/new'
+    | '/contracts/requests/$runId'
     | '/contracts/settings/members'
+    | '/contracts/requests'
     | '/contracts/settings'
+    | '/contracts/requests/new/$flowKey'
   id:
     | '__root__'
     | '/'
@@ -283,8 +319,11 @@ export interface FileRouteTypes {
     | '/_authed/contracts/'
     | '/_authed/contracts/c/$id'
     | '/_authed/contracts/c/new'
+    | '/_authed/contracts/requests/$runId'
     | '/_authed/contracts/settings/members'
+    | '/_authed/contracts/requests/'
     | '/_authed/contracts/settings/'
+    | '/_authed/contracts/requests/new/$flowKey'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -438,6 +477,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedContractsCNewRouteImport
       parentRoute: typeof AuthedContractsRoute
     }
+    '/_authed/contracts/requests/': {
+      id: '/_authed/contracts/requests/'
+      path: '/requests'
+      fullPath: '/contracts/requests/'
+      preLoaderRoute: typeof AuthedContractsRequestsIndexRouteImport
+      parentRoute: typeof AuthedContractsRoute
+    }
+    '/_authed/contracts/requests/$runId': {
+      id: '/_authed/contracts/requests/$runId'
+      path: '/requests/$runId'
+      fullPath: '/contracts/requests/$runId'
+      preLoaderRoute: typeof AuthedContractsRequestsRunIdRouteImport
+      parentRoute: typeof AuthedContractsRoute
+    }
     '/_authed/contracts/settings/': {
       id: '/_authed/contracts/settings/'
       path: '/settings'
@@ -450,6 +503,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/members'
       fullPath: '/contracts/settings/members'
       preLoaderRoute: typeof AuthedContractsSettingsMembersRouteImport
+      parentRoute: typeof AuthedContractsRoute
+    }
+    '/_authed/contracts/requests/new/$flowKey': {
+      id: '/_authed/contracts/requests/new/$flowKey'
+      path: '/requests/new/$flowKey'
+      fullPath: '/contracts/requests/new/$flowKey'
+      preLoaderRoute: typeof AuthedContractsRequestsNewFlowKeyRouteImport
       parentRoute: typeof AuthedContractsRoute
     }
   }
@@ -480,8 +540,11 @@ interface AuthedContractsRouteChildren {
   AuthedContractsIndexRoute: typeof AuthedContractsIndexRoute
   AuthedContractsCIdRoute: typeof AuthedContractsCIdRoute
   AuthedContractsCNewRoute: typeof AuthedContractsCNewRoute
+  AuthedContractsRequestsRunIdRoute: typeof AuthedContractsRequestsRunIdRoute
   AuthedContractsSettingsMembersRoute: typeof AuthedContractsSettingsMembersRoute
+  AuthedContractsRequestsIndexRoute: typeof AuthedContractsRequestsIndexRoute
   AuthedContractsSettingsIndexRoute: typeof AuthedContractsSettingsIndexRoute
+  AuthedContractsRequestsNewFlowKeyRoute: typeof AuthedContractsRequestsNewFlowKeyRoute
 }
 
 const AuthedContractsRouteChildren: AuthedContractsRouteChildren = {
@@ -495,8 +558,12 @@ const AuthedContractsRouteChildren: AuthedContractsRouteChildren = {
   AuthedContractsIndexRoute: AuthedContractsIndexRoute,
   AuthedContractsCIdRoute: AuthedContractsCIdRoute,
   AuthedContractsCNewRoute: AuthedContractsCNewRoute,
+  AuthedContractsRequestsRunIdRoute: AuthedContractsRequestsRunIdRoute,
   AuthedContractsSettingsMembersRoute: AuthedContractsSettingsMembersRoute,
+  AuthedContractsRequestsIndexRoute: AuthedContractsRequestsIndexRoute,
   AuthedContractsSettingsIndexRoute: AuthedContractsSettingsIndexRoute,
+  AuthedContractsRequestsNewFlowKeyRoute:
+    AuthedContractsRequestsNewFlowKeyRoute,
 }
 
 const AuthedContractsRouteWithChildren = AuthedContractsRoute._addFileChildren(

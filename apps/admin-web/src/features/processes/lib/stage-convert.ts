@@ -21,6 +21,7 @@ import {
   stageSourcesToDef,
   stageSourcesToDraft,
 } from "./sources-form";
+import { startFormToDef, startFormToDraft } from "./start-form";
 import { emptyTool, normalizeTool } from "./tool-form";
 import {
   emptyEscalate,
@@ -127,6 +128,7 @@ export function stageToDraft(s: ProcessStageDef, step: number): StageDraft {
     ...(s.outcome === undefined ? {} : { outcome: s.outcome }),
     ...(s.next_step === undefined ? {} : { nextStep: s.next_step }),
     ...(s.node === undefined ? {} : { node: s.node }),
+    ...(s.start_form ? { startForm: startFormToDraft(s.start_form) } : {}),
     ...(s.slot ? { slotRaw: repairSlot(structuredClone(s.slot)) } : {}),
   };
 }
@@ -199,6 +201,7 @@ export function stageToInput(draft: StageDraft): ProcessStageDef {
     ...(s.outcome === undefined ? {} : { outcome: s.outcome }),
     ...(s.nextStep === undefined ? {} : { next_step: s.nextStep }),
     ...(s.node === undefined ? {} : { node: s.node }),
+    ...(s.startForm ? { start_form: startFormToDef(s.startForm) } : {}),
     ...(s.slotRaw ? { slot: s.slotRaw } : {}),
   };
 }

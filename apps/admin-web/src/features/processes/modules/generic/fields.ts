@@ -11,7 +11,8 @@ export type FieldKind =
   | "enum"
   | "text"
   | "longtext"
-  | "date";
+  | "date"
+  | "attachments";
 
 export type PanelField = {
   key: string;
@@ -52,7 +53,9 @@ function unwrap(s: unknown): { core: unknown; required: boolean; description?: s
   return description === undefined ? { core: cur, required } : { core: cur, required, description };
 }
 
-const WIDGET_KIND: Record<PortWidget, FieldKind> = {
+/** `attachments` (tệp đính kèm — CR-125 phiếu yêu cầu) nằm ngoài `PortWidget` của m1: khai thêm ở đây cho panel chung. */
+const WIDGET_KIND: Record<PortWidget | "attachments", FieldKind> = {
+  attachments: "attachments",
   person: "person",
   people: "people",
   department: "department",
@@ -91,7 +94,7 @@ export function fieldsOf(port: PortSchema): PanelField[] {
   for (const [key, raw] of configEntries(shape)) {
     const { core, required, description } = unwrap(raw);
     const d = defOf(core);
-    const w = port.widgets?.[key];
+    const w = port.widgets?.[key] as PortWidget | "attachments" | undefined;
     const kind = w ? WIDGET_KIND[w] : KIND_OF_TYPE[d.type ?? ""];
     if (!kind) continue; // kiểu chưa hỗ trợ (object lồng…) ⇒ để panel riêng
     const f: PanelField = { key, kind, label: description ?? readableKey(key), required };

@@ -2,6 +2,8 @@
 import type { FlowTrigger } from "@ai/contracts/hub-admin";
 import { Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -19,9 +21,11 @@ type Props = {
   onEvent: (key: string) => void;
   onWhen: (w: FlowTrigger["when"] | null) => void;
   error?: string | undefined;
+  /** CR-125 · bắt đầu bằng phiếu yêu cầu: bật ⇒ thêm node «Phiếu yêu cầu» ở đầu flow; tắt ⇒ gỡ. */
+  startForm?: { on: boolean; onChange: (on: boolean) => void; error?: string | undefined };
 };
 
-export function TriggerCard({ app, trigger, readOnly, onEvent, onWhen, error }: Props) {
+export function TriggerCard({ app, trigger, readOnly, onEvent, onWhen, error, startForm }: Props) {
   const { t } = useTranslation();
   const events = eventsOfApp(app);
   const ev = events.find((e) => e.key === trigger.event);
@@ -65,6 +69,26 @@ export function TriggerCard({ app, trigger, readOnly, onEvent, onWhen, error }: 
             disabled={readOnly}
             onChange={onWhen}
           />
+        </div>
+      ) : null}
+      {startForm ? (
+        <div className="space-y-1" data-testid="flow-start-form-toggle">
+          <Label className="flex items-center gap-2 font-normal">
+            <Checkbox
+              checked={startForm.on}
+              disabled={readOnly}
+              onCheckedChange={(v) => startForm.onChange(v === true)}
+            />
+            {t("process.admin.startForm.toggle")}
+          </Label>
+          <p className="text-caption text-muted-foreground">
+            {t("process.admin.startForm.toggleHelp")}
+          </p>
+          {startForm.error ? (
+            <p role="alert" className="text-caption text-destructive">
+              {startForm.error}
+            </p>
+          ) : null}
         </div>
       ) : null}
       {error ? (

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { FREE_ERR } from "../../lib/free-nodes";
 import { kindOf, summaryOf } from "../../lib/node-summary";
 import { nodeLabel } from "../../lib/palette-node";
+import { isStartForm, startFieldCount } from "../../lib/start-form";
 import { usePalette } from "../../palette-api";
 import { OP_SYMBOL } from "../flow/FactWhenEditor";
 import { useFlowCtx } from "../flow/flow-ctx";
@@ -27,7 +28,36 @@ function useLabels() {
   };
 }
 
+/** CR-125 · node «Phiếu yêu cầu»: loại + MỘT dòng tóm tắt (số ô); stage khác ⇒ null. */
+const startTexts = (
+  s: StageView["src"],
+  t: (k: string, o?: Record<string, unknown>) => string,
+): { kind: string; summary: string } | null =>
+  isStartForm(s)
+    ? {
+        kind: t("process.admin.startForm.nodeKind"),
+        summary: t("process.admin.startForm.nodeSummary", { count: startFieldCount(s) }),
+      }
+    : null;
+
 const TECH_KINDS: ReadonlySet<string> = new Set(["set", "agent", "tool"]);
+
+/** Loại + MỘT dòng tóm tắt của node; loại kỹ thuật ("Chuẩn bị dữ liệu", "Agent") không phải việc nghiệp vụ của giám đốc/sale ⇒ `hideKind`. */
+function nodeTexts(
+  s: StageView["src"],
+  mod: Parameters<typeof nodeLabel>[0] | undefined,
+  l: ReturnType<typeof useLabels>,
+  t: (k: string, o?: Record<string, unknown>) => string,
+  lang: string,
+): { kind: string; summary: string; hideKind: boolean } {
+  const st = startTexts(s, t);
+  if (st) return { ...st, hideKind: false };
+  return {
+    kind: mod ? nodeLabel(mod, lang) : t(`process.admin.flow.node.${kindOf(s)}`),
+    summary: summaryOf(s, l),
+    hideKind: !mod && TECH_KINDS.has(kindOf(s)),
+  };
+}
 
 function ErrorLine({ v, kind }: { v: StageView; kind: string }) {
   const { t } = useTranslation();
@@ -75,10 +105,7 @@ export function FlowNodeBody({ v }: { v: StageView }) {
     );
   }
   const mod = s.node ? palette.data?.find((n) => n.key === s.node) : undefined;
-  const kind = mod ? nodeLabel(mod, i18n.language) : t(`process.admin.flow.node.${kindOf(s)}`);
-  const summary = summaryOf(s, l);
-  // loại kỹ thuật ("Chuẩn bị dữ liệu", "Agent") không phải việc nghiệp vụ của giám đốc/sale ⇒ không hiện dưới tên bước
-  const hideKind = !mod && TECH_KINDS.has(kindOf(s));
+  const { kind, summary, hideKind } = nodeTexts(s, mod, l, t, i18n.language);
   return (
     <span className="block min-w-0 text-left">
       <span className="block truncate text-label font-medium" title={name}>

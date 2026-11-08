@@ -25,6 +25,11 @@ export const proxy = {
   // M1D · Thành viên & phòng ban: `/admin/org*`, `/admin/groups*` (route SPA không dùng tiền tố này).
   "/admin": ADMIN_API_URL,
   "/pack": HUB_URL,
+  // CR-125 · cr125-manual-start-ui · «Tạo yêu cầu»: phiếu bắt đầu quy trình, tải tệp đính kèm, việc chờ tôi + quyết định (route SPA không dùng các tiền tố này).
+  "/processes": HUB_URL,
+  "/attachments": HUB_URL,
+  "/review-tasks": HUB_URL,
+  "/me/review-tasks": HUB_URL,
   // CR-118 §11.2 · tenant_admin sửa luật chọn quy trình + đọc năng lực của công ty mình (`/hub-admin/tenants/:tid/…`).
   "/hub-admin": HUB_URL,
   "/tenants": HUB_URL,

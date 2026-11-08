@@ -1,6 +1,7 @@
 // CR-125 · cr125-manual-start-engine · bắt đầu quy trình bằng phiếu yêu cầu: `GET /processes/startable` (flow người xem được bắt đầu,
 // kèm phiếu) + `POST /processes/start` (khoá flow + giá trị phiếu + mã yêu cầu của client = khoá chống gửi trùng). Mã lỗi một nguồn.
 import { z } from "zod";
+import type { ProcessRunView } from "../chat/processes-entities";
 import { UuidSchema } from "../common";
 import {
   START_FORM_NODE_KEY,
@@ -53,3 +54,10 @@ export function startFormOf(stage: unknown): StartFormConfig | null {
   const p = StartFormConfigSchema.safeParse(s.start_form);
   return p.success ? p.data : null;
 }
+
+/** `GET /processes/requests/:run_id`: trang «yêu cầu» — lượt (quyền xem như `GET /process-runs/:id`) + giá trị phiếu đã điền. */
+export type StartRequestView = {
+  run: ProcessRunView;
+  title: string;
+  fields: { key: string; label: string; type: string; value: string }[];
+};

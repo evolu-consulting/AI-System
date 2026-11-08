@@ -1,7 +1,46 @@
 {
   "startForm": {
+    "title": "Phiếu yêu cầu",
+    "hint": "Người bắt đầu điền phiếu này trước khi quy trình chạy. Mã của ô tự sinh từ nhãn.",
+    "fieldAria": "Ô {{n}}",
+    "label": "Nhãn",
+    "type": "Loại",
+    "help": "Gợi ý cho người điền",
+    "required": "Bắt buộc",
+    "key": "Mã",
+    "up": "Đưa ô {{n}} lên",
+    "down": "Đưa ô {{n}} xuống",
+    "remove": "Xoá ô {{n}}",
+    "add": "Thêm ô",
+    "newField": "Ô {{n}}",
+    "starters": "Ai được bắt đầu",
+    "startersWho": "Ai tạo được yêu cầu này",
+    "everyone": "Mọi người trong công ty",
+    "groups": "Chỉ thành viên các nhóm",
+    "titleTemplate": "Tên yêu cầu",
+    "titleTemplateHelp": "Dùng {{token}} để chèn giá trị của ô, ví dụ: Đề xuất mua {{example}}",
+    "toggle": "Bắt đầu bằng phiếu yêu cầu",
+    "toggleHelp": "Nhân viên mở «Tạo yêu cầu», điền phiếu rồi quy trình chạy. Bước «Phiếu yêu cầu» luôn đứng đầu.",
+    "nodeKind": "Bắt đầu bằng phiếu",
+    "nodeName": "Phiếu yêu cầu",
+    "nodeSummary": "{{count}} ô",
+    "types": {
+      "text": "Chữ ngắn",
+      "longtext": "Chữ dài",
+      "money": "Số tiền",
+      "date": "Ngày",
+      "people": "Người",
+      "department": "Phòng ban",
+      "attachments": "Tệp đính kèm"
+    },
     "err": {
-      "START_FIELD_RESERVED": "Mã ô này trùng với dữ liệu hệ thống tự ghi (tên yêu cầu, record, ref, event, contract_id). Đặt mã khác cho ô."
+      "START_FIELD_RESERVED": "Mã ô này trùng với dữ liệu hệ thống tự ghi (tên yêu cầu, record, ref, event, contract_id). Đặt mã khác cho ô.",
+      "fieldsMin": "Phiếu cần ít nhất một ô.",
+      "labelRequired": "Nhập nhãn cho ô.",
+      "keyInvalid": "Mã ô không hợp lệ: chữ thường, số, gạch dưới, bắt đầu bằng chữ.",
+      "keyDup": "Hai ô trùng mã. Đổi nhãn một trong hai ô.",
+      "titleRequired": "Nhập tên yêu cầu.",
+      "startersGroups": "Chọn ít nhất một nhóm được bắt đầu, hoặc chọn «Mọi người trong công ty»."
     }
   },
   "parallel": {

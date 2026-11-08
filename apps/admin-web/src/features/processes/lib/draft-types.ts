@@ -3,6 +3,7 @@
 import type { FormFieldType, LayoutDir, ProcessStageDef, SetAs } from "@ai/contracts/hub-admin";
 import type { AutofixDraft } from "./autofix-form";
 import type { InputDraft, StageSourceDraft } from "./sources-form";
+import type { StartFormDraft } from "./start-form";
 
 /** P-d1 · khối "Chờ tới ngày": nguồn ngày (`input:<key>` | `field:<stage_key>:<field>`), chênh (ngày, chữ), giờ `HH:mm`. */
 export type WaitDraft = {
@@ -153,6 +154,8 @@ export type StageDraft = {
   uiY?: number;
   /** CR-123 · u13 · `x` đã lưu (`ui.x`) — chỉ cùng với `uiY` mới là vị trí kéo tay; vắng = bố cục ELK. */
   uiX?: number;
+  /** CR-125 · cr125-manual-start-ui · phiếu yêu cầu của node «Bắt đầu bằng phiếu» (`stage.start_form`); chỉ có ở stage `node = core.start-form`. */
+  startForm?: StartFormDraft;
   /** CR-125 · x9 · hướng bố cục của CẢ flow (`ui.dir`): ghi trên mọi giai đoạn, đọc từ giai đoạn đầu có giá trị (`layoutDirOf`). */
   uiDir?: LayoutDir;
   /** CR-123 · u5 · node mới thả từ menu/bảng mẫu đứng RIÊNG: chưa nối vào đâu cho tới khi kéo mũi tên tới nó. Chỉ ở bản nháp (không gửi Hub); Lưu bị chặn khi còn. */

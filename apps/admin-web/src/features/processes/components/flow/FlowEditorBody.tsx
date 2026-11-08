@@ -17,6 +17,12 @@ import {
   validateFlowDef,
 } from "../../lib/flow-def";
 import { edgeProblems, groupProblems } from "../../lib/palette-node";
+import {
+  addStartFormFirst,
+  freshStartStage,
+  hasStartForm,
+  removeStartForm,
+} from "../../lib/start-form-ops";
 import { usePalette } from "../../palette-api";
 import { BridgeIssues } from "./BridgeIssues";
 import { OP_SYMBOL } from "./FactWhenEditor";
@@ -76,6 +82,21 @@ export function FlowEditorBody({
     onStages: (next) => onChange(trigger, next),
   });
   const [open, setOpen] = useState(false);
+  const [startErr, setStartErr] = useState<string | undefined>(undefined);
+  const onStartForm = (on: boolean) => {
+    setStartErr(undefined);
+    if (!on) return onChange(trigger, removeStartForm(stages));
+    const r = addStartFormFirst(
+      stages,
+      freshStartStage({
+        name: t("process.admin.startForm.nodeName"),
+        fieldLabel: t("process.admin.startForm.newField", { n: 1 }),
+        flowName: draft.name,
+      }),
+    );
+    if ("error" in r) return setStartErr(t(r.error));
+    onChange(trigger, r.stages);
+  };
   const selectRef = useRef<((uid: string) => void) | null>(null);
   const summary = whenSummary(
     trigger.when,
@@ -130,6 +151,7 @@ export function FlowEditorBody({
               onChange(when ? { ...rest, when } : rest);
             }}
             error={whenErr ? t(`process.admin.flow.err.${whenErr.key}`) : undefined}
+            startForm={{ on: hasStartForm(stages), onChange: onStartForm, error: startErr }}
           />
         ) : null}
         {others.length > 0 && !readOnly ? (

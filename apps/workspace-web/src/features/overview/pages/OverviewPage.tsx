@@ -2,6 +2,7 @@
 // trái Hạn và nhắc việc (V2-K `GET /my-work/todo`) · Theo nhóm SP · Đối tác cần xem lại; phải Hợp đồng · SP nên làm gì (V2-J1) · Giao dịch nhiều nhất (V2-E).
 import type { OverviewPeriod } from "@ai/contracts/pack-contracts";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
@@ -38,24 +39,33 @@ export function OverviewPage() {
         title={t("contracts.overview.title")}
         lead={today && t("contracts.overview.today", { date: viDate(today) })}
         actions={
-          <fieldset className="m-0 min-w-0 inline-flex rounded-lg border border-rule bg-sunk p-0.5">
-            <legend className="sr-only">{t("contracts.overview.period.label")}</legend>
-            {PERIODS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                aria-pressed={period === p}
-                data-period={p}
-                onClick={() => setPeriod(p)}
-                className={cn(
-                  "h-8 rounded-md px-3 text-label font-medium",
-                  period === p ? "bg-panel text-ink shadow-sm" : "text-dim hover:text-ink",
-                )}
-              >
-                {t(`contracts.overview.period.${p}`)}
-              </button>
-            ))}
-          </fieldset>
+          <>
+            <Link
+              to="/contracts/requests"
+              className="btn btn-primary btn-sm"
+              data-testid="quick-new-request"
+            >
+              {t("contracts.requests.quick")}
+            </Link>
+            <fieldset className="m-0 min-w-0 inline-flex rounded-lg border border-rule bg-sunk p-0.5">
+              <legend className="sr-only">{t("contracts.overview.period.label")}</legend>
+              {PERIODS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  aria-pressed={period === p}
+                  data-period={p}
+                  onClick={() => setPeriod(p)}
+                  className={cn(
+                    "h-8 rounded-md px-3 text-label font-medium",
+                    period === p ? "bg-panel text-ink shadow-sm" : "text-dim hover:text-ink",
+                  )}
+                >
+                  {t(`contracts.overview.period.${p}`)}
+                </button>
+              ))}
+            </fieldset>
+          </>
         }
       />
       <WaitingForMeCard />

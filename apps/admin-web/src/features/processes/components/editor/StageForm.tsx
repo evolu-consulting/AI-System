@@ -12,6 +12,7 @@ import { isForm } from "../../lib/form-fields";
 import { isIf } from "../../lib/if-form";
 import { draftClusterOf } from "../../lib/module-cluster";
 import { isSet } from "../../lib/set-form";
+import { isStartForm } from "../../lib/start-form";
 import { isTool } from "../../lib/tool-form";
 import { isWait, isWaitFamily } from "../../lib/wait-form";
 import { hasNodePanel } from "../../modules/panel-registry";
@@ -38,6 +39,7 @@ import { StageOutput } from "./StageOutput";
 import { StageRemind } from "./StageRemind";
 import { StageSet } from "./StageSet";
 import { StageSourcesField } from "./StageSourcesField";
+import { StageStartForm } from "./StageStartForm";
 import { StageStepFields } from "./StageStepFields";
 import { StageTimedWait } from "./StageTimedWait";
 import { StageWait } from "./StageWait";
@@ -257,6 +259,7 @@ function FlowMain(p: StageFormProps) {
   const { stage } = p;
   const { t } = useTranslation();
   const isPlatform = useSession((s) => s.me?.role) === "platform_admin";
+  if (isStartForm(stage)) return <StageStartForm {...p} />;
   if (stage.node) return <ModuleBody {...p} />;
   if (isWait(stage)) return <StageWait {...p} />;
   if (isWaitFamily(stage)) return <StageTimedWait {...p} />;
@@ -295,7 +298,9 @@ function FlowForm(p: StageFormProps) {
           <StageGeneral {...p} part="tech" />
           <StageStepFields {...p} />
           {approve ? <StageRemind {...p} skipRemind /> : null}
-          {tool || (mod && !isWaitFamily(stage) && !isWait(stage)) ? <Body {...p} /> : null}
+          {tool || (mod && !isStartForm(stage) && !isWaitFamily(stage) && !isWait(stage)) ? (
+            <Body {...p} />
+          ) : null}
         </AdvancedBox>
       ) : null}
       <StageActions {...p} />
