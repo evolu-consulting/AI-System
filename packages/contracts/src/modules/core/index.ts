@@ -156,11 +156,11 @@ export const CORE_MODULE: FeatureModule = {
       inputs: [],
       outputs: [],
     },
+    SUBPROCESS_NODE, // CR-125 · Quy trình con
     {
       ...native("core.approve", "Duyệt", "Approve", "approve", APPROVE_OUTPUTS),
       configPort: APPROVE_CONFIG_PORT,
     },
-    SUBPROCESS_NODE, // CR-125 · Quy trình con
     native("core.if", "Nếu", "If", "if"),
     // Kết thúc = stage `set` mang `outcome` (xem `baseNodeOf`).
     native("core.end", "Kết thúc", "End", "set"),

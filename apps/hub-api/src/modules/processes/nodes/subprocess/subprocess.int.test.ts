@@ -287,7 +287,7 @@ describe("CR-125 · «Quy trình con» guard khi lưu", () => {
     await def("g-d2", [{ executor: { kind: "subprocess", def_key: "g-d3" } }]);
     await def("g-d3", [{ executor: { kind: "subprocess", def_key: "g-d4" } }]);
     await def("g-d4", [{ executor: { kind: "subprocess", def_key: "g-d5" } }]);
-    await def("g-d5", []);
+    await def("g-d5", [{ executor: { kind: "set" } }]);
     expect(await check(input("g-d1", "g-d2"))).toBe("SUBPROCESS_DEPTH");
     expect(await check(input("g-d1", "g-d3"))).toBe("ok");
   });
