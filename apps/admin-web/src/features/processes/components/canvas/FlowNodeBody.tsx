@@ -130,7 +130,7 @@ export function FlowNodeBody({ v }: { v: StageView }) {
         <span className="block truncate text-caption text-muted-foreground">{kind}</span>
       ) : null}
       {summary ? (
-        <span className="block truncate text-caption text-muted-foreground" title={summary}>
+        <span className="line-clamp-2 text-caption text-muted-foreground" title={summary}>
           {summary}
         </span>
       ) : null}

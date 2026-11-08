@@ -22,9 +22,12 @@
           "returned": "Đã trả lại sửa",
           "rejected": "Đã từ chối",
           "running": "Đang chạy tự động",
-          "failed": "Cần xử lý"
+          "failed": "Cần xử lý",
+          "closed": "Đã đóng"
         },
         "reason": {
+          "closedEnough": "Đã đủ người duyệt",
+          "closedDeclined": "Đã có người từ chối/trả lại",
           "pending": "Chờ bước trước xong",
           "openDue": "Hạn {{due}}",
           "openOverdue": "Quá hạn {{n}} giờ (hạn {{due}})",
@@ -51,7 +54,8 @@
           "returned": "Người soạn sửa rồi gửi duyệt lại",
           "rejected": "Hợp đồng dừng; người phụ trách mở lại nếu cần",
           "running": "Không cần làm gì, chờ xong",
-          "failed": "Người phụ trách bấm Thử lại hoặc Mở lại quy trình"
+          "failed": "Người phụ trách bấm Thử lại hoặc Mở lại quy trình",
+          "closed": "Bước đã quyết xong; bạn không cần làm gì"
         }
       },
       "esign": {

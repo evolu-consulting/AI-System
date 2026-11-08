@@ -180,6 +180,7 @@ async function main(): Promise<void> {
         "s7b",
         "ms",
         "fsc",
+        "par",
       ] as const)
         await provisionExtraJourneyTenant(admin, hubDb, {
           pw: env("JA_USER_PW"),

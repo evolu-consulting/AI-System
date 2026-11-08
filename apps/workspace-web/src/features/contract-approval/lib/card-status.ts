@@ -40,6 +40,21 @@ function passedReason(r: TimelineRow, c: Ctx): Line {
   };
 }
 
+/** Lý do máy chủ ghi khi đóng thẻ nhóm còn lại của bước «cùng duyệt» (`gates/parallel-approve.ts`) → khoá i18n; lạ ⇒ hiện nguyên câu. */
+const CLOSED_REASON: Readonly<Record<string, string>> = {
+  "Đã đủ người duyệt": "closedEnough",
+  "Đã có người từ chối/trả lại": "closedDeclined",
+};
+
+function closedLines(text: string): StatusLines {
+  const known = CLOSED_REASON[text];
+  return {
+    state: { key: `${C}.state.closed` },
+    reason: known ? { key: `${C}.reason.${known}` } : feedbackLine(text, `${C}.reason.passedAuto`),
+    next: { key: `${C}.next.closed` },
+  };
+}
+
 /** Một bước duyệt / tự động / thông báo ⇒ 3 dòng. `who` = phòng duyệt, thiếu thì tên bước (không lộ id). */
 export function rowStatusLines(r: TimelineRow, c: Ctx): StatusLines {
   const who = r.group || r.name;
@@ -55,6 +70,8 @@ export function rowStatusLines(r: TimelineRow, c: Ctx): StatusLines {
             : { key: `${C}.next.openOtherAnon` },
       };
     case "passed":
+      // CR-125 · «cùng duyệt»: thẻ của nhóm KHÁC bị đóng (superseded) khi bước đã quyết xong ⇒ không phải «Đã duyệt» bởi họ: nói đóng + lý do
+      if (!r.decidedBy && r.feedback?.trim()) return closedLines(r.feedback.trim());
       return {
         state: { key: `${C}.state.passed` },
         reason: passedReason(r, c),

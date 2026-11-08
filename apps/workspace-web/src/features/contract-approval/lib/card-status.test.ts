@@ -29,6 +29,25 @@ const other = { ...me, canAct: false };
 const keys = (l: ReturnType<typeof rowStatusLines>) => [l.state.key, l.reason.key, l.next.key];
 const C = "contracts.approval.card";
 
+describe("CR-125 · cùng duyệt: thẻ nhóm khác bị đóng", () => {
+  const ctx = { canAct: false, now: 0, fmt: (s: string) => s };
+  test("bước xong, thẻ của mình bị đóng kèm lý do ⇒ «Đã đóng» + lý do, không «Đã duyệt / Hệ thống tự chuyển»", () => {
+    const l = rowStatusLines(
+      row({ status: "passed", decidedBy: null, feedback: "Đã có người từ chối/trả lại" }),
+      ctx,
+    );
+    expect(l.state.key).toBe("contracts.approval.card.state.closed");
+    expect(l.reason.key).toBe("contracts.approval.card.reason.closedDeclined");
+    expect(
+      rowStatusLines(row({ status: "passed", decidedBy: null, feedback: "Đã đủ người duyệt" }), ctx)
+        .reason.key,
+    ).toBe("contracts.approval.card.reason.closedEnough");
+  });
+  test("bước tự chuyển bình thường (không lý do) giữ nguyên «Đã duyệt»", () => {
+    const l = rowStatusLines(row({ status: "passed", decidedBy: null, feedback: null }), ctx);
+    expect(l.state.key).toBe("contracts.approval.card.state.passed");
+  });
+});
 describe("rowStatusLines · mỗi trạng thái đủ 3 dòng", () => {
   test("đang chờ: ai duyệt · hạn · bạn hay người khác cần làm", () => {
     const r = row({ due: { at: "2026-11-09T09:00:00Z", flag: null } });

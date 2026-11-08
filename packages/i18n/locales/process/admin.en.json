@@ -59,10 +59,6 @@
     },
     "summary": "Approve together: {{names}} · {{rule}}",
     "groupMissing": "Pick a group for every row, or remove the unused row.",
-    "closed": {
-      "enough": "Enough approvals already",
-      "declined": "Someone already rejected or sent it back"
-    },
     "err": {
       "PARALLEL_GROUPS_MIN2": "Approving together needs at least 2 groups. Add a group, or turn off «approve together» to use one group.",
       "PARALLEL_RULE_INVALID": "The approval condition isn't valid: the number of groups that must agree can't exceed the number of groups, each group can be picked once, and only an Approve step can approve together."

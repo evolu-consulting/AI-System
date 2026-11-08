@@ -22,9 +22,12 @@
           "returned": "Returned for edits",
           "rejected": "Rejected",
           "running": "Running automatically",
-          "failed": "Needs action"
+          "failed": "Needs action",
+          "closed": "Closed"
         },
         "reason": {
+          "closedEnough": "Enough approvals already",
+          "closedDeclined": "Someone already rejected or sent it back",
           "pending": "Waiting for the previous step",
           "openDue": "Due {{due}}",
           "openOverdue": "{{n}} hours overdue (due {{due}})",
@@ -51,7 +54,8 @@
           "returned": "The drafter edits and sends it again",
           "rejected": "The contract stops; the owner can reopen it",
           "running": "Nothing to do, wait for it to finish",
-          "failed": "The owner presses Retry or Reopen process"
+          "failed": "The owner presses Retry or Reopen process",
+          "closed": "The step is decided; nothing for you to do"
         }
       },
       "esign": {
