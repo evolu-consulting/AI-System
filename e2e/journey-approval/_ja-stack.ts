@@ -168,7 +168,7 @@ async function main(): Promise<void> {
         });
     // CR-122 Q1: hai công ty MỚI cho hành trình flow (G1/G2 và các ca UI trình sửa) — cờ FLOW_TRIGGERS do spec bật.
     if (sfx)
-      for (const k of ["c22", "c22u", "c22n", "q5", "u6", "s2", "s3"] as const)
+      for (const k of ["c22", "c22u", "c22n", "q5", "u6", "s2", "s3", "s7a", "s7b"] as const)
         await provisionExtraJourneyTenant(admin, hubDb, {
           pw: env("JA_USER_PW"),
           key: `e2e-${k}-${sfx}`,

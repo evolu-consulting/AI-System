@@ -664,6 +664,77 @@
     }
   },
   "tenants": {
+    "partner": {
+      "title": "Partner confirmation of contracts",
+      "switch": "Send and receive contracts with partner companies",
+      "hint": "Turn on so the company can send contracts to partners for confirmation and receive contracts partners send. All conditions below are needed.",
+      "loadError": "Could not read the partner confirmation conditions. Reload the page or try again later.",
+      "askPlatform": "Items done by the platform: ask a platform admin. Items done by the company: a company admin does them.",
+      "status": {
+        "off": "Off",
+        "ready": "On · ready to send and receive",
+        "missing": "On · {{count}} conditions not done yet"
+      },
+      "state": {
+        "ok": "Done",
+        "todo": "Missing",
+        "unknown": "Unknown"
+      },
+      "who": {
+        "platform": "Platform admin does this",
+        "company": "Company admin does this"
+      },
+      "fix": {
+        "grant-feature": "Turn on feature",
+        "open-profile": "Open Profile",
+        "open-flows": "Open Flows",
+        "assign-receive-flow": "Assign receiving flow",
+        "create-group": "Create group"
+      },
+      "item": {
+        "app": {
+          "ok": "The company uses the Contracts book.",
+          "todo": "The company has not turned on the Contracts book. Turn it on in the apps table above.",
+          "unknown": "Could not read."
+        },
+        "feature": {
+          "ok": "The feature is granted to the company.",
+          "todo": "The feature is not granted to the company. Use the switch above.",
+          "unknown": "Could not read."
+        },
+        "channel": {
+          "ok": "The channel between companies is running.",
+          "todo": "The system has not turned on the channel between companies. Ask a system admin to turn it on.",
+          "unknown": "Could not check the channel (Hub did not answer)."
+        },
+        "profile": {
+          "ok": "Legal name and tax code are set.",
+          "todo": "Legal name or tax code is missing. Fill them in on the Profile tab so partners find the right company.",
+          "unknown": "Could not read."
+        },
+        "listed": {
+          "ok": "The company can be found by other companies.",
+          "todo": "The company cannot be found yet. A company admin turns it on in Profile, Company directory, to receive contracts.",
+          "unknown": "Could not read."
+        },
+        "receive_flow": {
+          "ok": "There is a flow handling contracts partners send.",
+          "todo": "No flow handles contracts partners send. Assign the template \"Nhận HĐ thường\".",
+          "unknown": "Could not check the flow (Hub did not answer)."
+        },
+        "groups": {
+          "ok": "The confirming group on the receiving side has members.",
+          "todo": "Missing confirming group: {{groups}}. Create the group, then add people to it.",
+          "unknown": "Could not check the confirming group (Hub did not answer)."
+        },
+        "send_flow": {
+          "ok": "There is a flow that sends contracts to partners.",
+          "todo": "No flow has the \"Send to partner for confirmation\" step. Add it to the contract approval flow if the company needs to send.",
+          "unknown": "Could not check the sending flow (Hub did not answer)."
+        }
+      },
+      "emptyGroups": "Group {{empty}} has no members. Add people so someone can confirm."
+    },
     "companyFlows": {
       "newFlow": {
         "on": "Using the new flows: every new {record} from now on follows the applied flow.",

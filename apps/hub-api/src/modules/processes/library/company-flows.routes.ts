@@ -9,6 +9,7 @@ import { parseJson } from "../../../lib/http";
 import type { ProcessDeps } from "../core/ports";
 import { CompanyFlowsService } from "./company-flows.service";
 import { FlowSettingsService } from "./flow-settings.service";
+import { PartnerConfirmService } from "./partner-confirm.service";
 
 const FlowSettingsSchema = z.strictObject({ flow_triggers: z.boolean() });
 
@@ -27,6 +28,12 @@ export function companyFlowsRoutes(d: ProcessDeps): Hono<AuthVars> {
     const b = await parseJson(c, FlowSettingsSchema);
     return c.json(await fs.put(c.var.user, tid(c), b.flow_triggers));
   });
+  // CR-125 · UX-S7 · phần Hub của danh sách điều kiện Đối tác xác nhận (admin-api gộp với hồ sơ/entitlement). Chỉ đọc.
+  const pc = new PartnerConfirmService(d.db, d.partnerMailbox === true, d.packTools);
+  r.use("/tenants/:tid/partner-confirm/*", requireAdminRole());
+  r.get("/tenants/:tid/partner-confirm/readiness", async (c) =>
+    c.json(await pc.readiness(c.var.user, tid(c))),
+  );
   r.use(P, requireAdminRole());
   r.use(`${P}/*`, requireAdminRole());
   const tid = (c: { req: { param(k: string): string } }) => UuidSchema.parse(c.req.param("tid"));

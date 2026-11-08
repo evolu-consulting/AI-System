@@ -2,6 +2,7 @@
 // (Tắt/Xem/Sửa/Quản trị điều khiển CẢ gói lẫn entitlement) · Trạng thái + lý do · Thành viên · Quy trình ("2 bật · 1 tắt").
 // Dải "Cần xử lý" mở ngăn Gán ở tab Quy trình (Q5); 4 ô số chỉ xem. Lưu một lượt, một hộp xác nhận. Chỉ platform_admin sửa
 // (tenant_admin: xem). Nạp lười. (Giữ tên/đường dẫn file cũ để workspace không phải đổi dòng import.)
+import { CONTRACTS_PARTNER_CONFIRM_FEATURE } from "@ai/contracts/light";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -21,6 +22,7 @@ import { appsConfirmMessage, needsConfirm } from "../../lib/apps-confirm";
 import { packOf, roleStats } from "../../lib/apps-plan";
 import { detectLevel } from "../../lib/feature-assign";
 import type { MemberView, TenantTab } from "../../lib/workspace-tabs";
+import { PartnerConfirmCard } from "../../partner/PartnerConfirmCard";
 import { AppsSaveBar } from "./AppsSaveBar";
 
 type Props = {
@@ -81,7 +83,12 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange, inWizard }: P
   const onApp = new Set<string>(a.cards.filter((c) => isAppOn(c, value)).map((c) => c.app));
   const attention = attentionOf(flows.groups, (app) => onApp.has(app));
   const counts = flowCounts(flows.groups);
-  const rows = cards.map((card) => {
+  const rows = cards.map((shown) => {
+    // UX-S7 · "Đối tác xác nhận" có công tắc + điều kiện riêng ở thẻ phía trên: không còn công tắc thứ hai trong bảng (Luật GỐC 2).
+    const card = {
+      ...shown,
+      addons: shown.addons.filter((f) => f.key !== CONTRACTS_PARTNER_CONFIRM_FEATURE),
+    };
     const pack = packOf(card, a.packs);
     const level = detectLevel(card, value).level;
     return {
@@ -141,6 +148,7 @@ export default function TenantFeaturesTab({ tenant, onDirtyChange, inWizard }: P
           <AssignFlowDialog tenantId={tenant.id} open={assignOpen} onOpenChange={setAssignOpen} />
         ) : null}
         <AppsTable rows={rows} />
+        <PartnerConfirmCard tenantId={tenant.id} canEdit={!readOnly} onOpen={(tab) => go(tab)} />
         <StatTiles tiles={tiles} onOpenFlows={() => go(FLOWS_TAB)} />
         {readOnly ? null : (
           <AppsSaveBar

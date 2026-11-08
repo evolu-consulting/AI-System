@@ -43,6 +43,7 @@ import { internalTokensRoutes } from "./modules/internal-tokens/internal-tokens.
 import { orgRoutes } from "./modules/org/org.routes";
 import { overviewRoutes } from "./modules/overview/overview.routes";
 import { packsRoutes } from "./modules/packs/packs.routes";
+import { partnerConfirmRoutes } from "./modules/partner-confirm/partner-confirm.routes";
 import { quotaBannerRoutes } from "./modules/quotas/quotas.banner";
 import { startQuotaListener } from "./modules/quotas/quotas.listener";
 import { quotasRoutes } from "./modules/quotas/quotas.routes";
@@ -171,6 +172,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
   app.route("/admin/tenants", packsRoutes({ ...ctx, hooks })); // N1 · PK-FR-05
   app.route("/admin/tenants", tenantDefaultAppRoutes(ctx)); // tenant-default-app
+  app.route("/admin/tenants", partnerConfirmRoutes({ ...ctx, hooks, hubUrl: deps.hubUrl })); // CR-125 UX-S7 · điều kiện + công tắc Đối tác xác nhận
   app.route("/admin/tenants", templateFixesRoutes({ ...ctx, hooks, hubUrl: deps.hubUrl })); // CR-125 c5b · bật tính năng / tạo nhóm cho mẫu Thư viện
   const frozenOn = deps.frozenModules !== false;
   mountAiToolsUsage(app, { ...ctx, hooks }, frozenOn); // c16: "Dùng bởi" không theo cờ đóng băng

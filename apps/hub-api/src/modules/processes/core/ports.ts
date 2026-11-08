@@ -98,6 +98,8 @@ export type ProcessDeps = {
   runsPerTenant?: number;
   /** N2-FR-03 · tool của gói (registry ở `app.ts`); vắng ⇒ không có tool gói. */
   packTools?: PackToolCatalog;
+  /** CR-125 · UX-S7 · = `HUB_PARTNER_MAILBOX=on` (kênh hộp thư liên công ty) — màn "điều kiện Đối tác xác nhận" chỉ ĐỌC. */
+  partnerMailbox?: boolean;
   launcher: StageLauncher;
   notifier: ProcessNotifier;
   /** Sau COMMIT tx quy trình: đăng tin thread của run (`ThreadPoster.post`). */

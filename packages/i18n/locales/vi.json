@@ -664,6 +664,77 @@
     }
   },
   "tenants": {
+    "partner": {
+      "title": "Đối tác xác nhận hợp đồng",
+      "switch": "Gửi và nhận hợp đồng với công ty đối tác",
+      "hint": "Bật để công ty gửi hợp đồng cho đối tác xác nhận và nhận hợp đồng đối tác gửi tới. Cần đủ các điều kiện bên dưới.",
+      "loadError": "Chưa đọc được các điều kiện của Đối tác xác nhận. Tải lại trang hoặc thử lại sau.",
+      "askPlatform": "Mục nào do nền tảng làm: nhờ quản trị nền tảng. Mục do công ty làm: quản trị công ty thực hiện.",
+      "status": {
+        "off": "Đang tắt",
+        "ready": "Đang bật · sẵn sàng gửi và nhận",
+        "missing": "Đang bật · còn {{count}} điều kiện chưa xong"
+      },
+      "state": {
+        "ok": "Xong",
+        "todo": "Còn thiếu",
+        "unknown": "Chưa rõ"
+      },
+      "who": {
+        "platform": "Quản trị nền tảng làm",
+        "company": "Quản trị công ty làm"
+      },
+      "fix": {
+        "grant-feature": "Bật tính năng",
+        "open-profile": "Mở Hồ sơ",
+        "open-flows": "Mở Quy trình",
+        "assign-receive-flow": "Gán quy trình nhận",
+        "create-group": "Tạo nhóm"
+      },
+      "item": {
+        "app": {
+          "ok": "Công ty đã dùng Sổ Hợp Tác.",
+          "todo": "Công ty chưa bật Sổ Hợp Tác. Bật ở bảng ứng dụng phía trên.",
+          "unknown": "Chưa đọc được."
+        },
+        "feature": {
+          "ok": "Tính năng đã được cấp cho công ty.",
+          "todo": "Tính năng chưa được cấp cho công ty. Bật bằng công tắc ở trên.",
+          "unknown": "Chưa đọc được."
+        },
+        "channel": {
+          "ok": "Kênh gửi nhận giữa các công ty đang chạy.",
+          "todo": "Hệ thống chưa bật kênh gửi nhận giữa các công ty. Nhờ quản trị hệ thống bật.",
+          "unknown": "Chưa kiểm tra được kênh gửi nhận (Hub không trả lời)."
+        },
+        "profile": {
+          "ok": "Có Tên pháp lý và Mã số thuế.",
+          "todo": "Thiếu Tên pháp lý hoặc Mã số thuế. Điền ở tab Hồ sơ để đối tác tìm đúng công ty.",
+          "unknown": "Chưa đọc được."
+        },
+        "listed": {
+          "ok": "Công ty cho phép công ty khác tìm thấy.",
+          "todo": "Công ty chưa cho phép tìm thấy. Quản trị công ty bật ở Hồ sơ, mục Danh bạ công ty, để nhận được hợp đồng.",
+          "unknown": "Chưa đọc được."
+        },
+        "receive_flow": {
+          "ok": "Có quy trình xử lý hợp đồng đối tác gửi tới.",
+          "todo": "Chưa có quy trình xử lý hợp đồng đối tác gửi tới. Gán mẫu «Nhận HĐ thường».",
+          "unknown": "Chưa kiểm tra được quy trình (Hub không trả lời)."
+        },
+        "groups": {
+          "ok": "Nhóm xác nhận phía nhận đã có người.",
+          "todo": "Thiếu nhóm xác nhận: {{groups}}. Tạo nhóm rồi thêm người vào nhóm.",
+          "unknown": "Chưa kiểm tra được nhóm xác nhận (Hub không trả lời)."
+        },
+        "send_flow": {
+          "ok": "Có quy trình gửi hợp đồng cho đối tác.",
+          "todo": "Chưa có quy trình nào có bước «Gửi đối tác xác nhận». Thêm bước này vào quy trình duyệt hợp đồng nếu công ty cần gửi.",
+          "unknown": "Chưa kiểm tra được quy trình gửi (Hub không trả lời)."
+        }
+      },
+      "emptyGroups": "Nhóm {{empty}} chưa có thành viên. Thêm người vào nhóm để có người xác nhận."
+    },
     "companyFlows": {
       "newFlow": {
         "on": "Đang dùng quy trình mới: {record} từ giờ chạy theo quy trình đã áp dụng.",
