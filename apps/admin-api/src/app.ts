@@ -78,6 +78,8 @@ export type AppDeps = {
   adminWebUrl?: string;
   /** Hub cho "Chạy thử" lệnh (`ADMIN_HUB_URL` + `HUB_INTERNAL_TOKEN`); vắng ⇒ 503 `HUB_NOT_CONFIGURED`. */
   hub?: HubConfig;
+  /** CR-125 c5b · gốc Hub (`ADMIN_HUB_URL`) cho route sửa nhanh mẫu: hỏi readiness bằng token của người gọi; vắng ⇒ 503 `HUB_NOT_CONFIGURED`. */
+  hubUrl?: string;
   /** F1 (CR-095) · `false` ⇒ không mount `/admin/{workflows,commands,export,import}` + workflow-tools (đóng băng). Vắng ⇒ mount (test in-process); `server.ts` điền từ `ADMIN_FROZEN_MODULES` (mặc định off). */
   frozenModules?: boolean;
   /** dlc-dify · = `HUB_INTERNAL_TOKEN`; có ⇒ mount `POST /internal/tokens` (Hub xin access token thay user). */
@@ -169,7 +171,7 @@ function mountApi(app: Hono<AppVars>, deps: AppDeps): void {
   app.route("/admin/tenants", tenantsRoutes({ ...ctx, hooks }));
   app.route("/admin/tenants", packsRoutes({ ...ctx, hooks })); // N1 · PK-FR-05
   app.route("/admin/tenants", tenantDefaultAppRoutes(ctx)); // tenant-default-app
-  app.route("/admin/tenants", templateFixesRoutes({ ...ctx, hooks, hub: deps.hub })); // CR-125 c5b · bật tính năng / tạo nhóm cho mẫu Thư viện
+  app.route("/admin/tenants", templateFixesRoutes({ ...ctx, hooks, hubUrl: deps.hubUrl })); // CR-125 c5b · bật tính năng / tạo nhóm cho mẫu Thư viện
   const frozenOn = deps.frozenModules !== false;
   mountAiToolsUsage(app, { ...ctx, hooks }, frozenOn); // c16: "Dùng bởi" không theo cờ đóng băng
   if (frozenOn) mountWorkflowTools(app, { ...ctx, hooks });

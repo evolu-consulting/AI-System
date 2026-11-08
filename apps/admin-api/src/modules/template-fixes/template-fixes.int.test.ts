@@ -40,7 +40,7 @@ beforeAll(async () => {
       appEnv: "test",
       dummyHash: (await makeHashes()).pw,
       now: env.clock.now,
-      hub: { url: `http://localhost:${hubServer.port}`, token: "t" },
+      hubUrl: `http://localhost:${hubServer.port}`,
       // biome-ignore lint/suspicious/noExplicitAny: cùng cách M1 dựng app trong test
     } as any,
     // biome-ignore lint/suspicious/noExplicitAny: cùng cách M1 dựng app trong test

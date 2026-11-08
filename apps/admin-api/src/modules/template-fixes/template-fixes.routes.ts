@@ -6,7 +6,6 @@ import { z } from "zod";
 import { type AppVars, type AuthDeps, requireAuth, requireRole } from "../../lib/auth-middleware";
 import { parseIdParam, parseJson } from "../../lib/http";
 import type { TestHooks } from "../../lib/test-hooks";
-import type { HubConfig } from "../commands/commands.hub-client";
 import {
   createSuggestedGroup,
   enableFeatureForTemplate,
@@ -22,7 +21,7 @@ const GroupBody = z.strictObject({ group_key: GroupKeySchema });
 const P = "/:tenant_id/template-fixes";
 
 export function templateFixesRoutes(
-  d: AuthDeps & { hooks?: TestHooks; hub?: HubConfig | undefined },
+  d: AuthDeps & { hooks?: TestHooks; hubUrl?: string | undefined },
 ): Hono<AppVars> {
   const r = new Hono<AppVars>();
   r.use(`${P}/*`, requireAuth(d), requireRole("platform_admin"));
@@ -35,7 +34,7 @@ export function templateFixesRoutes(
     const b = await parseJson(c, FeatureBody);
     const tenantId = parseIdParam(c, "tenant_id");
     const readiness = await readinessFromHub(
-      d.hub,
+      d.hubUrl,
       c.req.header("authorization"),
       tenantId,
       b.flow_id,

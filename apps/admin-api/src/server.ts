@@ -132,6 +132,7 @@ async function main(): Promise<void> {
           ? { url: env.ADMIN_HUB_URL, token: env.HUB_INTERNAL_TOKEN }
           : undefined,
       internalToken: env.HUB_INTERNAL_TOKEN,
+      hubUrl: env.ADMIN_HUB_URL, // CR-125 c5b · hỏi readiness của Hub bằng chính token người gọi (không cần token nội bộ)
     },
   );
   const server = Bun.serve({ port: env.PORT, fetch: app.fetch });

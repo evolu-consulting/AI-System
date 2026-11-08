@@ -5,7 +5,6 @@
 import { suggestGroup } from "@ai/contracts/modules";
 import { withScope } from "@ai/db";
 import { AppError, appError } from "../../lib/errors";
-import type { HubConfig } from "../commands/commands.hub-client";
 import { grantEntitlement } from "../features/features.entitlements";
 import * as featuresRepo from "../features/features.repo";
 import type { Call as FeaturesCall } from "../features/features.service";
@@ -22,13 +21,13 @@ type Missing = { missing?: { features?: { key?: unknown }[] } };
 
 /** Hỏi Hub "mẫu này thiếu gì ở công ty này" bằng chính token của người gọi (cùng luật, cùng dữ liệu với màn Gán). */
 export async function readinessFromHub(
-  hub: HubConfig | undefined,
+  hubUrl: string | undefined,
   bearer: string | undefined,
   tenantId: string,
   flowId: string,
 ): Promise<Missing> {
-  if (!hub) throw new AppError("HUB_NOT_CONFIGURED", 503, "Hub connection is not configured");
-  const u = `${hub.url.replace(/\/$/, "")}/tenants/${encodeURIComponent(tenantId)}/company-flows/readiness/${encodeURIComponent(flowId)}`;
+  if (!hubUrl) throw new AppError("HUB_NOT_CONFIGURED", 503, "Hub connection is not configured");
+  const u = `${hubUrl.replace(/\/$/, "")}/tenants/${encodeURIComponent(tenantId)}/company-flows/readiness/${encodeURIComponent(flowId)}`;
   const r = await fetch(u, { headers: bearer ? { authorization: bearer } : {} }).catch(() => null);
   if (!r) throw new AppError("HUB_UNREACHABLE", 502, "Hub is unreachable");
   if (r.status === 404) throw appError("NOT_FOUND");
