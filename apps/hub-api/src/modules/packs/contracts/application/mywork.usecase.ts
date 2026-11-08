@@ -52,13 +52,10 @@ export function myWorkWindow(now: Date, tz: string): MyWorkWindow {
 export function myWork(d: Deps) {
   const list = async (who: PackWho): Promise<MyWorkOut> => {
     const w = myWorkWindow(d.now(), await d.timeZoneOf(who.tenantId));
-    // cùng tx: danh sách + việc ký của mình (một nguồn cho thẻ "Chờ bạn" và thanh dưới)
-    const { raw, signing } = await d.uow.tenant(who, async ({ mywork: r }) => ({
-      raw: await r.list(w),
-      signing: r.signing ? await r.signing() : undefined,
-    }));
+    // MỘT câu: danh sách + việc ký của mình (`raw.signing`; một nguồn cho thẻ "Chờ bạn" và thanh dưới)
+    const raw = await d.uow.tenant(who, ({ mywork: r }) => r.list(w));
     const base = buildMyWork(raw, w.today);
-    const out = signing ? { ...base, signing } : base;
+    const out = raw.signing ? { ...base, signing: raw.signing } : base;
     return d.approvals ? { ...out, approvals: await d.approvals(who) } : out;
   };
   const done = async (who: PackWho, id: string): Promise<{ ok: true }> => {

@@ -11,6 +11,7 @@ import { Hono } from "hono";
 import type { AuthVars } from "../../../lib/auth.middleware";
 import { connectDb, type Db } from "../../../lib/db";
 import { mapError } from "../../../lib/errors";
+import { nodeConfigRegistry } from "../../packs/kit/public";
 import type { ProcessDeps } from "../core/ports";
 import { defsRoutes } from "./defs.routes";
 
@@ -80,6 +81,10 @@ const body = (o: object = {}) => ({
 });
 
 beforeAll(async () => {
+  // Sổ validator node là singleton của process: test khác cùng process (mountPacks / esignModule) đăng ký validator giữ kết nối DB
+  // đã đóng ⇒ 500 CONNECTION_ENDED. Test này kiểm luật def, không kiểm cấu hình Ký số (đã có esign-node.int) ⇒ gỡ.
+  nodeConfigRegistry.clear("contracts.esign");
+  nodeConfigRegistry.clear("contracts-esign-send");
   await cloneDb("full");
   o = openOwner(2);
   db = connectDb(urls().hubApi, 4);

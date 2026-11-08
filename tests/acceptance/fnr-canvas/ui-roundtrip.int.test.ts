@@ -58,7 +58,7 @@ describe("fnr-canvas · ui.y round-trip", () => {
   }, 60_000);
 
   it("ui ngoài biên hoặc khoá lạ ⇒ 4xx, không lưu", async () => {
-    for (const ui of [{ y: 1e9 }, { y: 1, x: 2 }]) {
+    for (const ui of [{ y: 1e9 }, { y: 1, z: 2 }, { y: 1, x: 1e9 }, {}]) {
       const r = await c.call(
         "Adm",
         "POST",

@@ -17,7 +17,24 @@ const LIM = MYWORK_SOURCE_MAX + 1;
 
 type Window = Parameters<MyWorkRepo["list"]>[0];
 
-/** Năm nguồn (CTE), mỗi nguồn ≤ LIM hàng. */
+/**
+ * CR-125 · x1 · HĐ chờ CHÍNH mình ký: phong bì còn mở, mình là người ký công ty chưa ký và đã đến lượt (không ai thứ tự nhỏ hơn còn chưa ký).
+ * Một đoạn dùng chung cho CTE `sg` của câu danh sách (MỘT câu nghiệp vụ, Luật 4c) và `signing()` (đọc riêng, int/perf).
+ */
+const signingSelect = (
+  t: string,
+) => sql`select c.id as contract_id, c.number, ${contractLabelSql("c")} as title,
+            to_char(e.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as since, e.created_at, e.id
+          from contracts.esign_envelopes e
+          join contracts.contracts c on c.tenant_id = e.tenant_id and c.id = e.contract_id
+          where e.tenant_id = ${t}::uuid and e.status in ('sent', 'delivered')
+            and exists (select 1 from jsonb_array_elements(e.signers) m
+              where m->>'role' = 'company' and m->>'client_user_id' = ${ME}::text and coalesce(m->>'signed_at', '') = ''
+                and not exists (select 1 from jsonb_array_elements(e.signers) o2
+                  where coalesce(o2->>'signed_at', '') = '' and (o2->>'order')::int < (m->>'order')::int))
+          order by e.created_at, e.id limit ${LIM}::int`;
+
+/** Sáu nguồn (CTE), mỗi nguồn ≤ LIM hàng. */
 const sources = (t: string, w: Window) => sql`with ob as (
             select o.id, o.contract_id, o.direction, o.amount, o.due_date from contracts.obligations o
             where o.tenant_id = ${t}::uuid and o.status = 'open' and o.kind = 'payment' and o.due_date <= ${w.horizon}::date
@@ -60,7 +77,8 @@ const sources = (t: string, w: Window) => sql`with ob as (
                 and c.superseded_at is null
                 and c.action_deadline = r.deadline
               order by r.contract_id, r.sent_at desc) x
-            order by x.deadline, x.id limit ${LIM}::int)`;
+            order by x.deadline, x.id limit ${LIM}::int),
+          sg as (${signingSelect(t)})`;
 
 /** Gom năm nguồn thành MỘT jsonb (`RawMyWork`). */
 const payload = (t: string, w: Window) => sql`select jsonb_build_object(
@@ -92,30 +110,21 @@ const payload = (t: string, w: Window) => sql`select jsonb_build_object(
               from fu f
               left join contracts.cks_renewals rn on rn.tenant_id = ${t}::uuid and rn.id = f.renewal_id
               left join contracts.cks_customers cu on cu.tenant_id = ${t}::uuid and cu.id = coalesce(f.customer_id, rn.customer_id)),
-              '[]'::jsonb)) as j`;
+              '[]'::jsonb),
+            'signing', coalesce((select jsonb_agg(jsonb_build_object('contract_id', s.contract_id, 'contract_number', s.number,
+                'contract_title', s.title, 'since', s.since) order by s.created_at, s.id) from sg s), '[]'::jsonb)) as j`;
 
 export function myWorkRepo(tx: Tx, t: string): MyWorkRepo {
   return {
+    // `signing` đi cùng câu danh sách (cùng tx, MỘT câu); use case đọc `raw.signing`.
     list: (w) => one<RawMyWork>(tx, sql`${sources(t, w)} ${payload(t, w)}`),
-    // CR-125 · x1 · HĐ chờ CHÍNH mình ký: phong bì còn mở, mình là người ký công ty chưa ký và đã đến lượt (không ai thứ tự nhỏ hơn còn chưa ký).
     signing: async () => {
       const rows = await tx.execute<{
         contract_id: string;
         number: string | null;
         title: string | null;
         since: string;
-      }>(
-        sql`select c.id as contract_id, c.number, ${contractLabelSql("c")} as title,
-            to_char(e.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as since
-          from contracts.esign_envelopes e
-          join contracts.contracts c on c.tenant_id = e.tenant_id and c.id = e.contract_id
-          where e.tenant_id = ${t}::uuid and e.status in ('sent', 'delivered')
-            and exists (select 1 from jsonb_array_elements(e.signers) m
-              where m->>'role' = 'company' and m->>'client_user_id' = ${ME}::text and coalesce(m->>'signed_at', '') = ''
-                and not exists (select 1 from jsonb_array_elements(e.signers) o2
-                  where coalesce(o2->>'signed_at', '') = '' and (o2->>'order')::int < (m->>'order')::int))
-          order by e.created_at, e.id limit ${LIM}::int`,
-      );
+      }>(signingSelect(t));
       return [...rows].map((r) => ({
         contract_id: r.contract_id,
         contract_number: r.number,

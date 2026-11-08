@@ -10,6 +10,7 @@ import {
   type MyWorkItem,
   type MyWorkKind,
   type MyWorkOut,
+  type MyWorkSign,
   type MyWorkTone,
 } from "./mywork.types";
 
@@ -70,6 +71,8 @@ export type RawMyWork = {
   obligations: RawObligation[];
   deadlines: RawDeadline[];
   reminders: RawReminder[];
+  /** CR-125 · x1 · HĐ chờ CHÍNH mình ký — cùng câu SQL với bốn nguồn trên; vắng (repo/giả lập cũ) ⇒ không có trường `signing`. */
+  signing?: MyWorkSign[];
 };
 
 const KIND_RANK: Record<MyWorkKind, number> = {

@@ -213,17 +213,21 @@ export function startKhFake(key: string, projects: string[], host = "localhost")
       const url = new URL(req.url);
       let body: Json = null;
       if (req.method === "POST") body = await req.json().catch(() => null);
-      const res = await route(f, req, url.pathname, body);
+      // Ghi lời gọi LÚC TỚI (không đợi route): kịch bản `timeout` ngủ 2,5 s — ghi sau khi trả lời thì lời gọi lọt vào ca kế tiếp
+      // sau `reset()` (đua với beforeEach) ⇒ `callsTo` lệch. Trạng thái điền sau khi route xong.
       const k = readKey(req);
-      f.calls.push({
+      const call: KhCall = {
         method: req.method,
         path: url.pathname,
         sentKey: k.via !== null,
         via: k.via,
         keyOk: k.value === f.state.key,
         body,
-        status: res.status,
-      });
+        status: 0,
+      };
+      f.calls.push(call);
+      const res = await route(f, req, url.pathname, body);
+      call.status = res.status;
       return res;
     },
   });
