@@ -82,11 +82,20 @@ export function templateNeeds(
     if (isObj(raw.slot)) needs.locked.push(stage);
     else addOnce(needs.tools, ex.kind === "tool" ? ex.tool_key : undefined, stage);
     for (const g of groupKeysOfStage(raw)) groups.add(g);
-    if (node?.requires?.before === "approval" && !isApproval(stages[i - 1]))
+    if (node?.requires?.before === "approval" && needsApprovalBefore(stages, i))
       needs.order.push({ node: node.key, stage, needs: "approval" });
   });
   needs.groups = [...groups];
   return needs;
+}
+
+/** Node nhiều stage (Ký số = gửi + chờ): chỉ stage ĐẦU của cụm phải đứng ngay sau bước Duyệt. */
+function needsApprovalBefore(stages: readonly unknown[], i: number): boolean {
+  const cur = stages[i];
+  const prev = stages[i - 1];
+  const sameCluster =
+    isObj(cur) && isObj(prev) && typeof cur.node === "string" && prev.node === cur.node;
+  return !sameCluster && !isApproval(prev);
 }
 
 const isApproval = (s: unknown): boolean =>

@@ -69,6 +69,16 @@ describe("templateReadiness", () => {
     expect(good.missing.order).toEqual([]);
   });
 
+  test("node nhiều stage (gửi + chờ ký) ⇒ chỉ stage đầu cần Duyệt ngay trước", () => {
+    const send = { key: "s", name: "Ký số", node: "contracts.esign" };
+    const wait = { key: "w", name: "Chờ ký", node: "contracts.esign" };
+    const r = templateReadiness(templateNeeds([review("D", "x"), send, wait], MODULES), {
+      ...none,
+      features: new Set(["contracts-write"]),
+    });
+    expect(r.missing.order).toEqual([]);
+  });
+
   test("nhóm: trùng mã, <app>-admin ⇒ <app>-owner, lạ ⇒ chưa có nhóm (không đoán)", () => {
     expect(mapGroupKey("truong-phong", ["truong-phong"])).toBe("truong-phong");
     expect(mapGroupKey("community-admin", ["community-owner", "ketoan"])).toBe("community-owner");
