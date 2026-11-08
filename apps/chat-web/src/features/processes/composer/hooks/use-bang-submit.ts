@@ -2,11 +2,11 @@
 
 import type { ProcessInputValue } from "@ai/contracts/hub-admin";
 import { ApiError, type ApiErrorCode } from "@ai/web-kit/http";
+import { toast } from "@ai/web-kit/ui/toast";
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import type { SubmitResult } from "~/features/composer/hooks/use-send-error";
 import { isComposerError } from "~/features/composer/lib/send-error";
 import { needsForm } from "../../inputs/lib/inputs-rules";

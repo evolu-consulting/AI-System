@@ -12,7 +12,7 @@ export function useSessionRedirect(): void {
   useEffect(() => {
     const offExpired = session.on("expired", () => {
       const msg = t("session.expired");
-      void import("sonner").then(({ toast }) => toast.error(msg)); // CR-118 bundle: sonner tải lười
+      void import("@ai/web-kit/ui/toast").then(({ toast }) => toast.error(msg)); // CR-118 bundle: tải lười
       void router.navigate({
         to: "/login",
         search: { next: router.state.location.href },

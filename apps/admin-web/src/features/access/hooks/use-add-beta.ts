@@ -1,6 +1,7 @@
 // ADM-FR-34 · M3-R11 · "Thêm {user} vào beta-testers": POST members vào group `is_beta` của tenant rồi làm mới quyền hiệu lực.
+
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { useAddMembers, useGroupOptions } from "@/features/groups/api";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";

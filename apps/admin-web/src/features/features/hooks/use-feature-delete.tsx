@@ -1,10 +1,10 @@
 // ADM-FR-30 · M2-R21 (CR-055) · xoá feature ở danh sách: gõ key để xoá; command chỉ thuộc feature này được liệt kê
 // làm cảnh báo (sẽ thành "chưa gắn feature"), không chặn.
 import type { FeatureListItem } from "@ai/contracts/features";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
 import { FEATURE_KEYS, fetchFeatureDetail, useDeleteFeature } from "../api";
 import { FeatureDeleteDialogs, type PendingDelete } from "../components/FeatureDeleteDialogs";
 import { type CommandRef, exclusive } from "../lib/exclusive";

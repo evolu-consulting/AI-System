@@ -2,11 +2,11 @@
 // Version cho lần lưu kế tiếp lấy từ phản hồi lưu (không đợi refetch, không dựng lại form bằng `key`): form chỉ `reset`
 // khi lưu xong (giữ phần vừa gõ thêm) hoặc khi `Tải bản mới`.
 import type { Workflow } from "@ai/contracts/workflows";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useRef } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
-import { notifySuccess } from "@/components/shared/toast";
 import { useEditCounter } from "@/lib/use-edit-counter";
 import { useUpdateWorkflow } from "../api";
 import { toFormValues, toRequestBody, type WorkflowFormValues } from "../lib/schemas";

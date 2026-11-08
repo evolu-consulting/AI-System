@@ -1,7 +1,8 @@
 // HUB-FR-60 · H4a-R06 · xoá agent (cứng có điều kiện): 409 AGENT_IN_USE_AS_ORCHESTRATOR / HAS_HISTORY / HAS_ACCESS → toast theo mã.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { meQuery } from "#/features/shell/api";
 import { describeApiError } from "#/lib/api-error";
 import { AGENTS_KEY, deleteAgent } from "../api";

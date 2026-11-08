@@ -1,9 +1,10 @@
 // PK-FR-05 · PK-FR-10 · TF4 · `useMe`: người dùng (tên, tenant — từ phiên) + quyền gói (`write`/`owner` suy từ `actions` của
 // `GET /pack/contracts/me`). `/me` 401 sau khi web-kit đã refresh 1 lần ⇒ hết phiên: toast + đăng xuất (về `/login?next=`).
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { logout } from "~/features/auth/api";
 import { useSession } from "~/features/auth/hooks/use-session";
 import { session } from "~/features/auth/lib/session";

@@ -2,9 +2,9 @@
 // → khối "đang xử lý" cuối timeline. Chỉ người gửi lượt (`caller.id === me`) mở stream `GET /runs/:id/events`
 // (driver C1, `convId = room:<id>`); run hết trong `active_runs` (đã có tin agent / huỷ) → bỏ khỏi store.
 import type { RoomActiveRun, RoomMessage } from "@ai/contracts/chat";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { cancelRun } from "~/features/run/api";
 import { isTerminal } from "~/features/run/lib/reducer";
 import { runStore, useRuns } from "~/features/run/run-store";

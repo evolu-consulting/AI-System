@@ -9,7 +9,7 @@ import { legacyTarget } from "~/shared/kernel/legacy-routes";
 const hostChunk = import("~/components/shared/dialog-host");
 expectHost(hostChunk);
 const DialogHost = lazy(() => hostChunk.then((m) => ({ default: m.DialogHost })));
-const Toaster = lazy(() => import("~/components/ui/sonner").then((m) => ({ default: m.Toaster })));
+const Toaster = lazy(() => import("@ai/web-kit/ui/toaster").then((m) => ({ default: m.Toaster })));
 
 function Root() {
   return (

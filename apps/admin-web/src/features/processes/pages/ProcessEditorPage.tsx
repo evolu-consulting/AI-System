@@ -1,6 +1,7 @@
-﻿// ADM-FR-66 · CR-056 · P-a F5: editor quy trình tối thiểu (`/processes/new`, `/processes/$processId`) — Cấu hình · Lượt chạy
+// ADM-FR-66 · CR-056 · P-a F5: editor quy trình tối thiểu (`/processes/new`, `/processes/$processId`) — Cấu hình · Lượt chạy
 // (plan-frontend-admin §1, board ②). `processId` vắng ⇒ tạo mới. Mẫu + tenant_admin ⇒ chỉ xem + "Chép mẫu".
 import type { FlowTrigger } from "@ai/contracts/hub-admin";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -10,7 +11,6 @@ import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
 import { HubLoadError, HubNotConfigured } from "@/components/shared/states/HubLoadError";
 import { LoadingState } from "@/components/shared/states/LoadingState";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { UnsavedGuard } from "@/components/shared/UnsavedGuard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";

@@ -1,8 +1,8 @@
 // HUB-FR-78 · CR-054 · ngăn "Cấp quyền · <agent>": lựa chọn cục bộ, nhóm/người của tenant (Admin API), Lưu = POST/DELETE chênh lệch.
 import type { AgentGrantRow, AgentSettingsItem } from "@ai/contracts/hub-admin";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
 import { pickLocalized } from "@/lib/localized";
 import { useAgentGroupOptions, useAgentUserOptions, useSaveAgentGrants } from "../api";
 import { type GrantSelection, grantDiff, isEmptyDiff, selectionFromRows } from "../lib/grant-draft";

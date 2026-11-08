@@ -3,9 +3,9 @@
 // products-confirm: "Xác nhận"/"Duyệt" mà máy chủ báo sẽ xác nhận HĐ (`finalizes_on_approve`) ⇒ (lưu ô đã đổi) ⇒ hộp "Gắn sản phẩm"
 // ⇒ gửi lựa chọn cùng `approve`. Bước chỉ chuyển cấp 2 / HĐ không có dòng hàng ⇒ duyệt thẳng như trước.
 import type { ProductLink } from "@ai/contracts/pack-contracts";
+import { toast } from "@ai/web-kit/ui/toast";
 import { type ReactNode, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { fetchProducts } from "~/features/contract-form/hooks/use-form-api";
 import { fetchContract } from "~/features/contract-review/hooks/use-review-api";
 import {

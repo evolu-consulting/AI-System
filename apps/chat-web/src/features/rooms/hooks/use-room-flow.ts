@@ -4,11 +4,11 @@
 // lượt của mình đang chờ + tin không tag ⇒ kèm `answer_run_id`. `AGENT_NOT_FOUND`… giữ chữ trong ô; `FLOW_BUSY` → toast.
 import type { RoomActiveRun, RoomDetail, SendRoomMessageRequest } from "@ai/contracts/chat";
 import { ApiError } from "@ai/web-kit/http";
+import { toast } from "@ai/web-kit/ui/toast";
 import { type QueryClient, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { leadingTag } from "~/features/agents/lib/mention";
 import type { SubmitResult } from "~/features/composer/hooks/use-send-error";
 import { isComposerError } from "~/features/composer/lib/send-error";

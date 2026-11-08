@@ -2,11 +2,11 @@
 // ô `disabled` value rỗng, footer chỉ [Đóng] (D10: ẩn nút X). Lỗi giữ nguyên form để [Ghi đè]/sửa tên.
 
 import type { HubSecret, HubSecretKind } from "@ai/contracts/hub-admin";
+import { toast } from "@ai/web-kit/ui/toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { ConflictDialog } from "#/components/shared/conflict/ConflictDialog";
 import { useConflict } from "#/components/shared/conflict/use-conflict";
 import { Button } from "#/components/ui/button";

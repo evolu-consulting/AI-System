@@ -1,7 +1,8 @@
 // V2-N · dữ liệu khối Tổng quan: "Cần xử lý" (đọc + Bỏ qua/Đã xong) và khối Hợp đồng (facets + HĐ sắp hết hiệu lực).
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { FACETS_KEY, fetchFacets, fetchList, listKey } from "~/features/contracts-list/api";
 import { dismissTodo, fetchMyWork, fetchTodo, overviewKeys } from "../api";
 import { EXPIRING_QS } from "../lib/overview";

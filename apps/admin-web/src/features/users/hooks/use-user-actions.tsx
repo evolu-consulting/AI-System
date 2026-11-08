@@ -1,8 +1,8 @@
 // ADM-FR-04, ADM-FR-05, ADM-FR-08 · hành động trên user từ menu `⋯`: khoá / reset / đăng xuất mọi thiết bị / tắt 2FA (có xác nhận), mở khoá (ngay).
 import type { TempPasswordResponse, User } from "@ai/contracts/users";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { type ReactNode, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

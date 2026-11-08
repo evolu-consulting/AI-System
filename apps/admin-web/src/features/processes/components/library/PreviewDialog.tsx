@@ -1,7 +1,8 @@
 // CR-105 · L3 · B3: "Xem trước đường đi" — nhập loại HĐ + giá trị mẫu ⇒ Hub (thuần, không ghi) trả bước chạy / bỏ qua.
+
+import { notifyError } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

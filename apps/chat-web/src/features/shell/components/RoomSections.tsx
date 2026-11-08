@@ -1,11 +1,11 @@
 // HUB-FR-96, HUB-FR-100, HUB-FR-102 · CR-050: vùng "Tin nhắn & Nhóm" = 2 mục thu gọn được — "Nhóm" (phòng nhóm, `+` tạo
 // nhóm) và "Users" (DM đã có + mọi người trong danh bạ; bấm người chưa nhắn = mở DM ngay, POST /rooms {kind:"dm"}).
 import type { DirectoryUser } from "@ai/contracts/chat";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useRouter } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { usePersonSearch } from "~/features/directory/hooks/use-person-search";

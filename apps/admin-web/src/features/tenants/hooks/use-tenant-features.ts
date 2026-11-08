@@ -1,7 +1,8 @@
 // CR-111 · tab "Feature" của công ty: nạp trạng thái cấp, giữ bản nháp (tập key mong muốn), lưu một lượt bằng diff.
+
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { useApplyTenantEntitlements } from "@/features/features/api";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";

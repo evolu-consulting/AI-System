@@ -1,8 +1,8 @@
 // ADM-FR-67 · CR-056 · P-a F5: hộp thoại "Chạy quy trình {tên}" — nhập `input` ≤ 8000, lỗi 429/404 hiện trong hộp (plan-frontend-admin §1).
 import { PROCESS_INPUT_MAX, type ProcessDefListItem } from "@ai/contracts/hub-admin";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

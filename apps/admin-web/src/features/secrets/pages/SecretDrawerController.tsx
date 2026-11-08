@@ -1,9 +1,10 @@
 // ADM-FR-50 · M2-R04 · nối drawer với API: nạp secret khi thay giá trị/sửa ghi chú, lưu, ánh xạ lỗi server vào ô.
 // D10: không đưa giá trị vào toast/URL; mutation `gcTime: 0` + `reset()` sau khi xong.
+
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { normalizeSecretName } from "@/lib/normalize";

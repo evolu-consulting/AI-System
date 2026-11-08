@@ -1,8 +1,8 @@
 // HUB-FR-62 · H4a-R09 · ghi Orchestrator (mặc định / tạo / sửa / xoá bản tenant); sau ghi invalidate + `me` (badge hub config vN).
 import type { OrchestratorInput, OrchestratorWriteResponse } from "@ai/contracts/studio";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { AGENTS_KEY } from "#/features/agents/api";
 import { meQuery } from "#/features/shell/api";
 import { describeApiError } from "#/lib/api-error";

@@ -19,7 +19,8 @@
     "@ai/contracts": "workspace:*",
     "highlight.js": "11.12.0",
     "lucide-react": "1.49.0",
-    "radix-ui": "1.6.7"
+    "radix-ui": "1.6.7",
+    "sonner": "2.0.8"
   },
   "devDependencies": {
     "@ai/config": "workspace:*",

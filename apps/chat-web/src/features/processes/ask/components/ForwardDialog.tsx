@@ -1,8 +1,8 @@
 // CHAT-AC-57 · HUB-FR-111 · plan-frontend §4: hộp chọn người nhận (PersonPicker chọn 1) + lời nhắn. Lười (chỉ nạp khi mở).
 import type { DirectoryUser } from "@ai/contracts/chat";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,

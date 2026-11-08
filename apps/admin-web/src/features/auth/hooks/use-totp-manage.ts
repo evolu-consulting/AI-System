@@ -1,7 +1,8 @@
 // ADM-FR-08 · plan-frontend §8 · Tắt 2FA / Tạo lại mã dự phòng khi đã bật: sai mật khẩu hoặc mã → `twofa.error.wrongCreds`.
+
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

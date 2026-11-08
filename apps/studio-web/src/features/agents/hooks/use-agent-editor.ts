@@ -1,9 +1,9 @@
 // HUB-FR-60 · H4a-R03, R09, R12 · trạng thái editor: nháp, lỗi trường, dirty, lưu POST/PUT, xung đột 409 (ConflictDialog dùng chung).
 // Tải bản mới = nạp `details.current` (bỏ nháp); Ghi đè = gửi lại NHÁP với `version = details.current.version` (sau xác nhận).
 import type { Agent } from "@ai/contracts/studio";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { useConflict } from "#/components/shared/conflict/use-conflict";
 import {
   type AgentDraft,

@@ -1,10 +1,10 @@
 // ADM-FR-68 · FS4 · lưu nguồn: POST (mới) / PUT kèm `version` (409 ⇒ ConflictDialog). Lỗi server → ô (key/url/…) hoặc `alert` trong drawer,
 // luôn là CÂU TĨNH theo mã (không in `message` server). Hub chưa gửi `details.current` cho VERSION_CONFLICT ⇒ tự lấy bản mới để dựng hộp xung đột.
 import type { SourceUpdateRequest, SourceView } from "@ai/contracts/hub-admin";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { createSource, fetchSource, updateSource, useInvalidateSources } from "../api";

@@ -1,8 +1,9 @@
 // UC-02, UC-04, UC-05 · gửi tin (ô chính → flow mới; trong khung/chip ask → cùng flow), Chạy lại, Dừng, Thử lại nối.
 // Lỗi trước stream: `CMD_*` hiện trong composer (`SendErrorNotice`, không toast); 409 `FLOW_BUSY` → toast `toast.flowBusy`, khác → `toast.sendFailed`; composer giữ chữ khi `ok: false`.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { isComposerError } from "~/features/composer/lib/send-error";
 import type { RunState } from "../lib/reducer";
 import type { SendOutcome } from "../run-driver";

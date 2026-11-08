@@ -1,13 +1,14 @@
 // ADM-FR-60 · ADM-FR-79 · /tenants/new: wizard onboard 4 bước (Thông tin → Ứng dụng & Gói → Phân quyền/Người dùng → Xem lại).
 // Không giao dịch xuyên bước: bước 1 tạo công ty ngay; bước sau gọi endpoint có sẵn; trạng thái nằm trên URL (`?tenant=&step=`) nên
 // tải lại / bỏ ngang đều tiếp được (ở wizard hoặc ở workspace). "Onboard lại" mở thẳng bước 2 trên công ty có sẵn.
+
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { ForbiddenState } from "@/components/shared/states/ForbiddenState";
-import { notifySuccess } from "@/components/shared/toast";
 import { useSession } from "@/lib/auth/use-session";
 import { useTenantDetail } from "../api";
 import { WizardCompanyStep } from "../components/wizard/WizardCompanyStep";

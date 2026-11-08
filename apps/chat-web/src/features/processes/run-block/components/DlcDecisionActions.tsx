@@ -2,10 +2,10 @@
 // lý do + các nút quyết của engine (`add_attempt` = chạy lại bước, `cancel`...). Trước đây chỉ `waiting_review` có thẻ, nên khi
 // UI quy trình bị ẩn (PUBLIC_FROZEN_MODULES off) run kẹt `needs_decision` không ai thấy.
 import type { DecisionOption } from "@ai/contracts/chat";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { useProcessRun } from "../../shared/hooks/use-process-run";
 import { processKeys } from "../../shared/keys";

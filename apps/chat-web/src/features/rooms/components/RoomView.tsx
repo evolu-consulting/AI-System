@@ -1,7 +1,7 @@
+import { toast } from "@ai/web-kit/ui/toast";
 import { useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useSession } from "~/lib/auth/use-session";

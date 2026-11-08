@@ -1,10 +1,10 @@
 // HUB-FR-132 · section KnowledgeHub của Sửa agent: tick có thứ tự (≤ 5), lưu riêng, 409 → ConflictDialog.
 // Sau lưu: cache agent cập nhật bằng version mới + báo form chính (`onSynced`) để không lệch version.
 import type { Agent } from "@ai/contracts/studio";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { useConflict } from "#/components/shared/conflict/use-conflict";
 import { meQuery } from "#/features/shell/api";
 import { describeApiError, type MessageSpec } from "#/lib/api-error";

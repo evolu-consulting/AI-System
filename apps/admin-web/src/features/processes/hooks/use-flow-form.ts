@@ -1,10 +1,10 @@
 // CR-105 · L3: state + lưu của Form (slot_body). Lưu = `PUT /process-defs/:id` kèm `slot_body` (Hub biên dịch ra `stages`);
 // 409 ⇒ ConflictDialog (entity `process_def`); lỗi khác ⇒ toast theo mã Hub.
 import type { SlotFieldDto } from "@ai/contracts/hub-admin";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useEffect, useMemo, useReducer, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { defToInput } from "../lib/def-form";
 import { processErrorSpec } from "../lib/errors";
 import {

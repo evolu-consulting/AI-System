@@ -1,7 +1,8 @@
-﻿// CR-105 · UX: luồng Nhân bản — mở hộp thoại, gọi Hub với {key sinh từ tên, name}; trùng ký hiệu ⇒ thử `-2`, `-3`… rồi báo lỗi.
+// CR-105 · UX: luồng Nhân bản — mở hộp thoại, gọi Hub với {key sinh từ tên, name}; trùng ký hiệu ⇒ thử `-2`, `-3`… rồi báo lỗi.
+
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
 import type { CloneSource } from "../components/library/CloneDialog";
 import { errorCode, processErrorSpec } from "../lib/errors";
 import { slugKey } from "../lib/library-list";

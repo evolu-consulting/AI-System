@@ -2,6 +2,7 @@
 // CR-121 c13: 3 tab Tổng quan · Tính năng · Xem trước. Gán quy trình KHÔNG làm ở đây — chỉ link sang Công ty › Quy trình (AssignNote).
 import type { AppCreateRequest } from "@ai/contracts/app-catalog";
 import { getAppManifest, type PreviewRole } from "@ai/contracts/app-manifest";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,7 +12,6 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { LoadingState } from "@/components/shared/states/LoadingState";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
-import { notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/http";

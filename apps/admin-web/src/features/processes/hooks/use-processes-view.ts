@@ -1,8 +1,9 @@
 // ADM-FR-65 · CR-056 · P-a F5: dữ liệu + hành động của danh sách quy trình (tab, bộ lọc chip, chép/xoá/chạy/bật).
+
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { copyDef, deleteDef, useInvalidateDefs, useProcessDefs } from "../api";
 import type { CloneSource } from "../components/library/CloneDialog";
 import { processErrorSpec } from "../lib/errors";

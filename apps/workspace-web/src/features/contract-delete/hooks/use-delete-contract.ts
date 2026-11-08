@@ -2,10 +2,10 @@
 // `goList`: true (trang chi tiết) ⇒ về danh sách; false (xoá từ danh sách) ⇒ ở lại danh sách.
 
 import { ApiError } from "@ai/web-kit/http";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { deleteContract, deleteImpactKey, fetchDeleteImpact } from "../api";
 
 export function useDeleteContract(id: string, open: boolean, close: () => void, goList = true) {

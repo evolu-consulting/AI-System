@@ -1,8 +1,8 @@
 // tenant-default-app · ô "App mặc định" của công ty (chỉ platform_admin, trang chi tiết tenant): app mở sau đăng nhập cho
 // thành viên chưa tự chọn. Giá trị rỗng = chưa đặt ⇒ Trang chủ AI System. Danh sách = catalog đang bật. Lưu ngay khi chọn.
 import type { AppCatalogItem } from "@ai/contracts/app-catalog";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { describeError } from "@/lib/errors";

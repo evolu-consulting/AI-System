@@ -1,8 +1,9 @@
 // HUB-FR-67 · D8 · `button "Xoá profile"` → alertdialog "Xoá {key}?" → DELETE ?version=N. 409 PROFILE_IN_USE → alertdialog
 // "Không xoá được {key}" kèm badge `agents[].key`; VERSION_CONFLICT → toast + tải lại danh sách.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { ConfirmDialog } from "#/components/shared/ConfirmDialog";
 import { Button } from "#/components/ui/button";
 import { describeApiError } from "#/lib/api-error";

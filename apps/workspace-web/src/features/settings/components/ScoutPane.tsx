@@ -2,9 +2,9 @@
 // & token mỗi tháng của công ty (+ ô platform chỉ khi `can_override`). Lưu riêng từng khối (không theo nút Lưu cài đặt); chỉ quản lý lưu được
 // — người khác bấm Lưu nhận 403 ⇒ báo "không có quyền".
 import type { PriceScoutGroup } from "@ai/contracts/pack-contracts";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ScoutFields } from "~/features/product-suppliers/components/ScoutFields";
 import {

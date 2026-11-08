@@ -7,11 +7,11 @@ import {
   type ProcessToolItem,
   stagesMaxFromDetails,
 } from "@ai/contracts/hub-admin";
+import { notifyBrief, notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
-import { notifyBrief, notifyError, notifySuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/http";
 import { createDef, updateDef, useInvalidateDefs } from "../api";
 import { approveWarnings } from "../lib/approve-rules";

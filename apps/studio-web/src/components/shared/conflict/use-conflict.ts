@@ -1,8 +1,9 @@
 // HUB-FR-69 · hook của ConflictDialog: `capture(err, mineVersion)` mở hộp khi là VERSION_CONFLICT.
 // Feature cấp `buildRows(current)` (diff), `submit(version)` (gửi lại bản nháp với version mới nhất), `onReload(current)`.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { type ConflictInfo, parseConflict } from "#/lib/conflict";
 import type { ConflictDialogProps } from "./ConflictDialog";
 import type { DiffResult } from "./types";

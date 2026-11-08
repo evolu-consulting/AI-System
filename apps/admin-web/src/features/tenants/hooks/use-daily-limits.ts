@@ -1,7 +1,7 @@
 // tenant-quotas · trạng thái thẻ "Hạn mức theo ngày" (platform_admin): nháp 3 ô, lưu cả bộ, đặt lại hôm nay có xác nhận.
 import type { DailyLimitKind } from "@ai/contracts/daily-limits";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

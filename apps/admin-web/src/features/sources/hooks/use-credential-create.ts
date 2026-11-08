@@ -1,8 +1,8 @@
 // HUB-FR-68 · PC2-R10 · FC2 · tạo khoá nguồn: validate → mutate → map lỗi (field / conflict / alert). Token không vào URL/log/cache.
 import type { HubSecret } from "@ai/contracts/hub-admin";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
 import { useTr } from "@/lib/use-translate";
 import { useCreateCredential } from "../api";
 import { validateCredentialCreate } from "../lib/credential-schema";

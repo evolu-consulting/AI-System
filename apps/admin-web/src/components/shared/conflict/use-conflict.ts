@@ -1,8 +1,9 @@
 // ADM-FR-55 · M3-R20 · hook của ConflictDialog (≤ 50 dòng): `capture(err, mineVersion)` mở hộp khi là VERSION_CONFLICT.
 // Feature cấp `buildRows` (diff payload), `submit(version)` (gửi lại cùng body), `onReload(current)` (dựng lại form).
+
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
 import { type ConflictCurrent, type ConflictInfo, parseConflict } from "@/lib/conflict";
 import type { DiffResult } from "@/lib/diff-fields";
 import type { ConflictDialogProps, ConflictEntity } from "./ConflictDialog";

@@ -1,8 +1,8 @@
 // HUB-FR-131 · mockup 1b · xoá kết nối (`alertdialog`): "Secret không bị xoá."; 409 KH_CONNECTION_IN_USE ⇒ Alert trong hộp, không đóng.
 import type { KhConnection } from "@ai/contracts/hub-admin";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Alert, AlertDescription } from "#/components/ui/alert";
 import {
   AlertDialog,

@@ -1,11 +1,11 @@
 // ADM-FR-33 · ADM-FR-55 · đổi trạng thái feature ở danh sách (PATCH kèm version); 409 VERSION_CONFLICT → ConflictDialog
 // với `mine = {status}` (plan-frontend D6). Kết quả: "saved" | "conflict" | "failed".
 import type { FeatureDetail, FeatureListItem } from "@ai/contracts/features";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
-import { notifySuccess } from "@/components/shared/toast";
 import { FEATURE_KEYS, type FeatureStatusFilter, useUpdateFeature } from "../api";
 
 type Target = { f: FeatureListItem; status: FeatureStatusFilter };

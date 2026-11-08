@@ -1,8 +1,9 @@
 // ADM-FR-01, ADM-FR-02, ADM-FR-08 · CR-052 phương án C · màn Đăng nhập (Evolu Control): cột trái form 520px + cột phải showcase; < 1024px ẩn cột phải.
+
+import { Toaster } from "@ai/web-kit/ui/toaster";
 import { getRouteApi, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Toaster } from "@/components/ui/sonner";
 import { safeNext } from "@/lib/auth/next";
 import { session, type TotpVerifyResponse } from "@/lib/auth/session";
 import { useSession } from "@/lib/auth/use-session";

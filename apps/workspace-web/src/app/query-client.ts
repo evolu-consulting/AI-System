@@ -1,7 +1,8 @@
 // PK-FR-10 · TF1 · QueryClient dùng chung: không thử lại lỗi 4xx (403/404 là kết quả đúng), 5xx/mạng thử lại một lần.
 // TF4: lỗi gói chung (403 PACK_* ⇒ nạp lại `/me`, 409 ⇒ toast) gắn ở QueryCache/MutationCache.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
-import { toast } from "~/components/shared/toast";
 import { handlePackError } from "~/features/pack-state/lib/query-errors";
 import { i18n } from "./i18n";
 

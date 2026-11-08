@@ -1,7 +1,8 @@
 // HUB-FR-62 · H4a-R07 · "Đặt làm Orchestrator": đọc bản mặc định hiện tại (version + tham số giữ nguyên) rồi PUT với agent mới.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { orchestratorQuery, putOrchestratorDefault } from "#/features/orchestrator/api";
 import { meQuery } from "#/features/shell/api";
 import { describeApiError } from "#/lib/api-error";

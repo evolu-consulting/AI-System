@@ -1,8 +1,9 @@
 // ADM-FR-06 · /change-password (bắt buộc): card 400px ngoài khung; token hết hạn thay form bằng alert + "Đăng nhập lại".
+
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { BareLayout } from "@/features/shell/components/BareLayout";
 import { session } from "@/lib/auth/session";

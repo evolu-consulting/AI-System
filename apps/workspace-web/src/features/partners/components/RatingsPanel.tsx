@@ -7,11 +7,11 @@ import type {
   RepRatingRow,
   RepRole,
 } from "@ai/contracts/pack-contracts";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { viDate } from "~/components/shared/format";
 import { ErrorLine, Loading } from "~/components/shared/states";
-import { toast } from "~/components/shared/toast";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { useRateRep, useRepConfig, useRepDetail, useRepRatings } from "../hooks/use-rep-v2e";
 import { dataPointOf, needsReason } from "../lib/partner-v2e";

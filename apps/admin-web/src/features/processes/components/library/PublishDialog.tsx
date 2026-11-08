@@ -1,8 +1,9 @@
 // CR-105 · L3 · B1/B5: hộp thoại Xuất bản — hiện tác động (N tenant đang dùng, M lượt đang chạy giữ bản cũ) rồi xác nhận.
 // Hub kiểm trước (B2): lỗi 422 `PROCESS_PUBLISH_INVALID` / `SLOT_GROUPS_MISSING` hiện ngay trong hộp, kèm chỗ sai.
+
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

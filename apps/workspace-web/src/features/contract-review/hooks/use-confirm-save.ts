@@ -2,10 +2,10 @@
 // khoá) ⇒ hộp "Gắn sản phẩm" (HĐ có dòng) ⇒ MỘT `POST /review` {version, products}: xác nhận + khoá + gắn/tạo SP trong cùng tx.
 import type { ProductLink } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { fetchProducts } from "~/features/contract-form/api";
 import type { ProductLinkTarget } from "~/features/product-links/components/ProductLinkDialog";
 import { contractKey, fetchContract, saveReview } from "../api";

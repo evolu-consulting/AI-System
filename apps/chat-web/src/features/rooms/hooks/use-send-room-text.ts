@@ -3,9 +3,9 @@
 // Trả `SubmitResult` (D5): lỗi composer (`AGENT_NOT_FOUND`, `TOO_MANY_RUNS`…) hiện trong ô, giữ nội dung; mã khác → toast.
 
 import { ApiError } from "@ai/web-kit/http";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import type { SubmitResult } from "~/features/composer/hooks/use-send-error";
 import { isComposerError } from "~/features/composer/lib/send-error";
 import { sendKey } from "../lib/send-key";

@@ -2,10 +2,10 @@
 // lỗi ⇒ trả về giá trị đã lưu; 409 `ITEM_LOCKED` ⇒ câu riêng.
 import type { ContractItem } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { fetchProducts, PRODUCTS_KEY } from "~/features/contract-form/api";
 import type { LineState } from "~/features/contract-form/lib/form-model";
 import { lineOfItem } from "~/features/contract-form/lib/review-model";

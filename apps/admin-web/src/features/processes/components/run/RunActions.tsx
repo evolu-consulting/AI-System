@@ -1,10 +1,10 @@
 // ADM-FR-67 · CR-056 · P-a F5: "Cần người quyết" (3 lựa chọn + ghi chú, `can_decide`) và "Huỷ lượt chạy" (`can_cancel`).
 import type { ProcessRunFullView } from "@ai/contracts/chat";
 import { DECISION_REASONS } from "@ai/contracts/hub-admin";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";

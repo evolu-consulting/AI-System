@@ -1,8 +1,9 @@
 // ADM-FR-04, ADM-FR-63 · nối drawer với API: nạp user khi sửa, tạo/lưu, ánh xạ lỗi server vào đúng ô.
+
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

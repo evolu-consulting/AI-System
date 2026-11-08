@@ -1,10 +1,10 @@
 // CR-097 K3a · HD-FR-100 · HD-FR-104 (BA 8.1/8.2): banner trạng thái của HĐ — "Đã xác nhận — đã khoá" (nút tải bản cập nhật chờ K3b,
 // owner có link mở lại có lý do) hoặc "Chưa xác nhận" (Chờ duyệt). Chỉ trình bày + hộp thoại mở lại.
 
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import {
   Dialog,
   DialogContent,

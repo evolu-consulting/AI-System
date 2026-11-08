@@ -1,11 +1,11 @@
 // ADM-FR-65 · CR-056 · P-a F5: bật/tắt một quy trình từ danh sách — đọc `GET :id` rồi `PUT` đủ body + `version`;
 // 409 ⇒ ConflictDialog (entity `process_def`); `PROCESS_DEF_INCOMPLETE` ⇒ toast có nút mở editor.
 import type { ProcessDef, ProcessDefInput, ProcessDefListItem } from "@ai/contracts/hub-admin";
+import { notifyError } from "@ai/web-kit/ui/toast";
 import { useNavigate } from "@tanstack/react-router";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
-import { notifyError } from "@/components/shared/toast";
 import { fetchDef, updateDef, useInvalidateDefs } from "../api";
 import { defToInput } from "../lib/def-form";
 import { errorCode, processErrorSpec } from "../lib/errors";

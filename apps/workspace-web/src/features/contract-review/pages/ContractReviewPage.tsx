@@ -2,12 +2,12 @@
 // trạng thái, "Xem file gốc", thẻ duyệt (HD3), hai cột: [Thông tin · Sản phẩm] | [Dòng thời gian mốc · Tóm tắt]; "Ghi việc" (HD7) cuối trang.
 // Bước xác nhận sau upload (`needs_review`) dùng thanh Hủy/Lưu dính như form nhập tay. Đang đọc ⇒ tải lại mỗi 2 s.
 import type { ContractDetail } from "@ai/contracts/pack-contracts";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
-import { toast } from "~/components/shared/toast";
 import { useApprovalUi } from "~/features/contract-approval/components/use-approval-ui";
 import { DeadlinePanel } from "~/features/contract-deadline/components/DeadlinePanel";
 import { todayIso } from "~/features/contract-deadline/lib/deadline";

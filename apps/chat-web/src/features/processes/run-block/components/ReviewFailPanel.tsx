@@ -3,9 +3,9 @@
 // nhận kết quả. Lỗi: 409 đóng ⇒ toast "vừa được xử lý ở bước khác"; 422 đích ⇒ câu tĩnh (view được làm tươi).
 import { FEEDBACK_MAX, PROCESS_BACK_ROUNDS_MAX, type TaskDetail } from "@ai/contracts/chat";
 import { ApiError } from "@ai/web-kit/http";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "~/components/ui/radio-group";

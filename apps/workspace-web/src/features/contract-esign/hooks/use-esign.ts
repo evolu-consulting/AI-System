@@ -1,10 +1,10 @@
-﻿// cf-esign-docusign · trạng thái + thao tác ký số của một HĐ (một lần làm mới khi quay về từ trang ký, không poll nền).
+// cf-esign-docusign · trạng thái + thao tác ký số của một HĐ (một lần làm mới khi quay về từ trang ký, không poll nền).
 import type { ESignSignerIn, ESignStateOut } from "@ai/contracts/pack-contracts";
 import { ApiError } from "@ai/web-kit/http";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { listenProcessEvents } from "~/features/contract-approval/stream/process-stream";
 import {
   esignKey,

@@ -3,7 +3,7 @@
 import { createRootRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { lazy, Suspense } from "react";
 
-const Toaster = lazy(() => import("~/components/ui/sonner").then((m) => ({ default: m.Toaster })));
+const Toaster = lazy(() => import("@ai/web-kit/ui/toaster").then((m) => ({ default: m.Toaster })));
 
 function Root() {
   return (

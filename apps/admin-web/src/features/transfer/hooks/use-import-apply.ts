@@ -3,9 +3,9 @@
 
 import { SecretValueSchema } from "@ai/contracts/secrets";
 import type { ImportRequest } from "@ai/contracts/transfer";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError, type MessageSpec } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useImportCommit } from "../api";

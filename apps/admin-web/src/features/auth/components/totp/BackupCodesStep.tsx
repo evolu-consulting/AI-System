@@ -1,8 +1,9 @@
 // ADM-FR-08 · M4-R16 · ms §10.1 bước 3: 10 mã dự phòng (chỉ hiện một lần) · tải .txt · sao chép · tick → Hoàn tất.
+
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { Copy, Download, TriangleAlert } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";

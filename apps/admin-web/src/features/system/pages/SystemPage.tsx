@@ -1,6 +1,7 @@
 // CR-104 · ops-ui · `/system` "Tình trạng hệ thống" (chỉ platform_admin): tóm tắt, 8 thẻ check, lịch sử, Kiểm tra ngay,
 // Gói chẩn đoán (0 gọi mạng ngoài /ops/status), Cấu hình. Poll 60 s khi tab hiện (api.ts).
 import { OPS_CHECK_KEYS, type OpsSettings, type OpsStatusResponse } from "@ai/contracts/hub-admin";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { Download, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,7 +9,6 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ErrorState } from "@/components/shared/states/ErrorState";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/use-session";
 import { copyText } from "@/lib/clipboard";

@@ -4,10 +4,10 @@
 
 import type { ContractDeal, Milestone } from "@ai/contracts/pack-contracts";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PillRadio } from "~/components/shared/seg-button";
-import { toast } from "~/components/shared/toast";
 import { type Fault, useMilestoneWrites } from "../hooks/use-milestone-writes";
 import type { LinesEdit } from "../lib/delivery-lines";
 import { daysBetween } from "../lib/timeline";

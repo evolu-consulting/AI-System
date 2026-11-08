@@ -1,8 +1,8 @@
 // ADM-FR-62 · M3-R03, R05 · danh sách thành viên (phân trang server, `?q`) + bỏ khỏi group (toast có Hoàn tác 5 s).
 import type { Group } from "@ai/contracts/groups";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { getRouteApi } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { pickLocalized } from "@/lib/localized";

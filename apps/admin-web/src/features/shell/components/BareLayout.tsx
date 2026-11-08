@@ -1,6 +1,7 @@
 // ADM-FR-03 · bố cục ngoài khung (mẫu D): thẻ ở giữa, dùng cho login/đổi mật khẩu bắt buộc/member/404 chưa đăng nhập.
+
+import { Toaster } from "@ai/web-kit/ui/toaster";
 import type { ReactNode } from "react";
-import { Toaster } from "@/components/ui/sonner";
 
 type Props = { children: ReactNode; width?: "narrow" | "wide" };
 

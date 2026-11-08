@@ -1,11 +1,12 @@
 // ADM-FR-42 · usage-analytics · màn "Phân tích token" `/usage/analytics`: lọc (tenant chỉ platform, khoảng, xô, app/agent/
 // model/user/kết quả), KPI so kỳ trước, cột chồng theo app, "token đổ vào đâu" (app → agent → model + breakdown), quota
 // tháng, bản ghi thô (CSV, drill-down run).
+
+import { notifyError } from "@ai/web-kit/ui/toast";
 import { getRouteApi } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { NotFoundState } from "@/components/shared/states/NotFoundState";
-import { notifyError } from "@/components/shared/toast";
 import { loadError } from "@/lib/load-error";
 import { AnalyticsKpis } from "../components/AnalyticsKpis";
 import { BreakdownPanel } from "../components/BreakdownPanel";

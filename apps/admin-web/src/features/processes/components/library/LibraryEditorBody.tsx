@@ -1,11 +1,12 @@
 // CR-105 · L3: thân editor cho quy trình thư viện (def có `slot`): thanh công cụ + Canvas (editor sẵn có) | Form + hộp thoại
 // Xuất bản / Lịch sử / Gán / Xem trước / Đặt mặc định / Nhân bản. Canvas và Form chuyển được khi không có thay đổi chưa lưu
 // (chuyển đổi nằm ở Hub: Form lưu `slot_body`, Canvas lưu `stages` ⇒ `fromStages`).
+
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { useDlcStepTemplates } from "../../dlc-steps-api";
 import { useCloneFlow } from "../../hooks/use-clone-flow";
 import { isDlcSlotKey } from "../../lib/dlc-slot";

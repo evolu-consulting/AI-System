@@ -1,9 +1,9 @@
 // V2-GAPS · DT-01 → GAP-D2 · #24: sửa NHIỀU người liên hệ của đối tác ngay ở đầu trang chi tiết (tên, chức vụ, điện thoại, email,
 // người phụ trách bên mình). Lưu = thay cả danh sách; người đầu tiên hiện ở đầu trang. Dòng trống bị bỏ.
 import type { PartnerContactPerson } from "@ai/contracts/pack-contracts";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { useSaveContacts } from "../hooks/use-partner-rep";
 import { blankRow, CONTACTS_MAX, type ContactRow, draftsOf, rowsOf } from "../lib/contacts";
 

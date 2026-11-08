@@ -1,8 +1,8 @@
 // feedback · chi tiết một góp ý: nội dung, trang/app/phiên bản, tệp đính kèm, đổi trạng thái + trả lời (user thấy phản hồi trong khung góp ý).
 import { FEEDBACK_STATUSES, type FeedbackItem, type FeedbackStatus } from "@ai/contracts/feedback";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,

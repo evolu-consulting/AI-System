@@ -1,10 +1,10 @@
 // HUB-FR-68 · HUB-FR-69 · HUB-BR-30 · màn Secrets (ui-agent-studio §11): 3 tab theo `kind`, bảng, Sheet thêm/thay, xoá.
 // Giá trị chỉ ghi, không hiện lại (D3). `?kind=` chọn tab; `?drawer=new|<id>` mở Sheet.
 import { HUB_SECRET_KINDS, type HubSecret, type HubSecretKind } from "@ai/contracts/hub-admin";
+import { toast } from "@ai/web-kit/ui/toast";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { ConfirmDialog } from "#/components/shared/ConfirmDialog";
 import { EmptyState } from "#/components/shared/EmptyState";
 import { ErrorState } from "#/components/shared/ErrorState";

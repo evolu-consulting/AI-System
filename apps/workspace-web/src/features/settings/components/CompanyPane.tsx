@@ -6,9 +6,9 @@ import {
   type CompanyIn,
   MST_RE,
 } from "@ai/contracts/pack-contracts";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { BrandMark } from "~/features/shell/components/BrandMark";
 import {
   SettingsGroup,

@@ -1,6 +1,8 @@
 // HD-FR-51 · S03 · V2-F (HD-03 · mockup NITI "Hợp đồng"): thanh tìm + lọc + chọn cột, bảng (desktop) / thẻ (điện thoại) với cột Hợp đồng,
 // Đối tác, Loại, Giá trị, Hiệu lực, Giai đoạn (+ bước hiện tại, đỏ khi quá hạn), Thao tác (Xem); bấm hàng mở HĐ. Nút "Upload hợp đồng"
 // (cần quyền ghi; CR-097: bỏ "Thêm thủ công" — HĐ phải có văn bản đã ký). Dữ liệu phía server (HD1 list + `progress` V2-A). Nút Xoá ẩn tới V2-M (đảo sổ kho khi xoá).
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { Fragment, useMemo, useRef, useState } from "react";
@@ -8,7 +10,6 @@ import { useTranslation } from "react-i18next";
 import { promptDialog } from "~/components/shared/dialog-bus";
 import { PageHead, Panel } from "~/components/shared/layout";
 import { Empty, ErrorLine, Loading } from "~/components/shared/states";
-import { toast } from "~/components/shared/toast";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { ColumnFilters, ColumnPicker, Pager, TableTools, useColumns } from "~/features/table";
 import { CATEGORIES_KEY, createCategory, exportContracts } from "../api";

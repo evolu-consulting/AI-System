@@ -1,10 +1,10 @@
 // dlc-dify · section Hook của Sửa agent: mỗi sự kiện (như hook Claude CLI) chọn ≤ 1 workflow Dify; lưu riêng (PUT hooks),
 // 409 → ConflictDialog. Sau lưu: cache agent nhận version mới + báo form chính (`onSynced`) để không lệch version.
 import type { Agent, AgentHook, AgentHookEvent } from "@ai/contracts/studio";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { useConflict } from "#/components/shared/conflict/use-conflict";
 import { describeApiError, type MessageSpec } from "#/lib/api-error";
 import { AGENTS_KEY, agentQuery, putAgentHooks } from "../api";

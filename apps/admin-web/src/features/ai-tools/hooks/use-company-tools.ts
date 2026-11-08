@@ -1,8 +1,8 @@
 // CR-121 R6 · c16 (chuyển từ `features/tenants/hooks/use-tenant-tools.ts`, D6): "Công ty dùng" của một công cụ — bật (PUT, không hỏi)
 // / tắt (hỏi xác nhận, DELETE). Công tắc không optimistic: chờ server rồi làm mới; 404 ⇒ "không còn trong danh mục"; lỗi khác ⇒ toast.
 import type { WorkflowCompany } from "@ai/contracts/workflow-tools";
+import { notifyError, notifyInfo, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
-import { notifyError, notifyInfo, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

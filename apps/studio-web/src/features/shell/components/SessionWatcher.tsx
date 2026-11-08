@@ -19,7 +19,7 @@ export function SessionWatcher() {
         qc.clear();
         void router
           .navigate({ to: "/login", search: { next }, replace: true })
-          .then(() => import("sonner")) // CR-118 bundle: sonner tải lười
+          .then(() => import("@ai/web-kit/ui/toast")) // CR-118 bundle: tải lười
           .then(({ toast }) => toast.error(t("session.expired")));
       }),
     [router, qc, t],

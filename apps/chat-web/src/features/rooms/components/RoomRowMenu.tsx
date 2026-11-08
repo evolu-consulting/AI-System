@@ -2,11 +2,11 @@
 // Xoá nhóm (chủ). Chủ còn người khác muốn rời → chuyển quyền trong phòng (menu đầu phòng). DM: Ẩn hội thoại (DM dùng
 // chung với người kia nên không xoá hẳn; tin mới làm nó hiện lại — R07).
 import type { RoomSummary } from "@ai/contracts/chat";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useNavigate } from "@tanstack/react-router";
 import { MoreHorizontal } from "lucide-react";
 import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import {
   DropdownMenu,

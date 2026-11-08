@@ -2,10 +2,10 @@
 // + "Gửi lại" cho người phụ trách HĐ (hoặc mở lại HĐ ở trang chi tiết). esign-sweep2 · "Hạn ký", nhãn "Quá hạn", "Đã nhắc lúc".
 // CR-123 U2 · 3 dòng trạng thái · lý do · bước kế (`card-status.ts`).
 import type { ContractApproval } from "@ai/contracts/pack-contracts";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { viDateTime } from "~/components/shared/format";
-import { toast } from "~/components/shared/toast";
 import { approvalKey, resendEsignStep } from "../hooks/use-approval-api";
 import { esignStatusLines } from "../lib/card-status";
 import { StatusLines } from "./StatusLines";

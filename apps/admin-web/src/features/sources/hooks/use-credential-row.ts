@@ -1,8 +1,8 @@
 // HUB-FR-68 · PC2-R10 · FC2 · một khoá nguồn: thay token (rotate) + xoá. Token KHÔNG vào log/URL.
 import type { HubSecret } from "@ai/contracts/hub-admin";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { useDeleteCredential, useRotateCredential } from "../api";
 import { credentialTokenError } from "../lib/credential-schema";
 import { classifyCredentialError } from "../lib/errors";

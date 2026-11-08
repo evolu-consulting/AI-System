@@ -1,11 +1,11 @@
 // ADM-FR-62 · M3-R01 · form tạo group (/groups/new): POST (platform gửi tenant_id), `KEY_TAKEN` → ô Key, rồi sang editor.
 
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { pickLocalized } from "@/lib/localized";

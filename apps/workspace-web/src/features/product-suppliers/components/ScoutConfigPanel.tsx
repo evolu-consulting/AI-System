@@ -1,10 +1,10 @@
 // price-scout · "Cấu hình dò giá" trong tab NCC & giá của SP: giá trị đang áp (mặc định nhóm ⊕ ghi đè riêng), ô nào trùng mặc định nhóm có
 // nhãn "theo mặc định nhóm". Có quyền ghi ⇒ sửa + Lưu (chỉ gửi khoá khác mặc định) / "Dùng mặc định nhóm" (PUT {}). Ngoài: chỉ đọc.
 import type { PriceScoutProductOut } from "@ai/contracts/pack-contracts";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorLine, Loading } from "~/components/shared/states";
-import { toast } from "~/components/shared/toast";
 import { useProductScout, useSaveProductScout } from "../hooks/use-scout";
 import { overrideOf, type ScoutForm, scoutIssue, toProductForm } from "../lib/scout";
 import { ScoutProductFields } from "./ScoutProductFields";

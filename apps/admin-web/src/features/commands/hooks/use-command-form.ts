@@ -2,13 +2,13 @@
 // chặn gửi khi thiếu input bắt buộc, ánh xạ lỗi server vào đúng chỗ.
 import type { Command } from "@ai/contracts/commands";
 import type { Workflow } from "@ai/contracts/workflows";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { type Resolver, type UseFormReturn, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

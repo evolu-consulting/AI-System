@@ -1,9 +1,9 @@
 // ADM-FR-13 · AC-A05 · xoá workflow ở danh sách: còn dùng → hộp thoại chặn (command + agent); chưa dùng → gõ key.
 import type { WorkflowListItem } from "@ai/contracts/workflows";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/http";
 import { fetchWorkflowUsages, useDeleteWorkflow, WORKFLOW_KEYS } from "../api";
 import type { BlockedInfo } from "../components/list/WorkflowBlockedDialog";

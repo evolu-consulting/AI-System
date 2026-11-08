@@ -1,8 +1,8 @@
 // portal-home · "Ứng dụng mở khi đăng nhập": của tôi, và (tenant admin) mặc định cho cả công ty. Trống = trang chủ.
 import type { MeApp, PortalResponse } from "@ai/contracts/app-catalog";
 import { appLabel } from "@ai/web-kit/app-catalog/apps";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { useSetDefaultApp } from "../hooks/use-portal";
 
 function Pick(p: {

@@ -2,10 +2,10 @@
 
 import type { Group } from "@ai/contracts/groups";
 import type { AgentGrantListItem } from "@ai/contracts/hub-admin";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { HUB_KEYS, useGroupAgentGrants, useSetGroupAgentGrant } from "@/features/hub/api";
 import { useHubTenant } from "@/features/hub/hooks/use-hub-tenant";
 import { describeHubError } from "@/lib/errors";

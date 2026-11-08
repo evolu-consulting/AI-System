@@ -1,10 +1,10 @@
 // HD7-FR-12 · `act` của PartnerLog (mgmt `PartnerLog.tsx:57-68`): chạy một lệnh, làm mới mọi truy vấn đối tác, báo toast; lỗi giữ
 // nguyên điều đã gõ (trả false) và hiện câu theo mã API.
 import { ApiError } from "@ai/web-kit/http";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { LEDGER_ERRORS } from "./ledger";
 
 export type Act = (key: string, f: () => Promise<unknown>, okMsg?: string) => Promise<boolean>;

@@ -2,10 +2,10 @@
 // Quota (#quota), Khoá công ty. MỘT thanh lưu chung "Có thay đổi chưa lưu · Huỷ · Lưu" cho cả form Thông tin và form Quota; công ty đang khoá ⇒ banner.
 // Chỉ platform_admin sửa/khoá; tenant_admin xem (Quota rút gọn, không tiền).
 import type { TenantDetail } from "@ai/contracts/tenants";
+import { notifyError } from "@ai/web-kit/ui/toast";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOnline } from "@/components/shared/ConnectionBanner";
-import { notifyError } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { TenantQuotaReadonly } from "../components/quota/TenantQuotaReadonly";
 import { TenantQuotaTab } from "../components/quota/TenantQuotaTab";

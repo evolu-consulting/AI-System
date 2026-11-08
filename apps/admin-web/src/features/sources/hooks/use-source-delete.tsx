@@ -1,9 +1,9 @@
 // ADM-FR-68 · PB-R08 · xoá nguồn. Dòng có `used_by` ⇒ lấy bản mới (version + used_by) rồi gọi DELETE để server trả refs
 // (409 SOURCE_IN_USE) và mở BlockedDialog; không dùng ⇒ ConfirmDialog nhẹ. 409 lúc xác nhận (used_by cũ) cũng chuyển sang BlockedDialog.
 import type { SourceView } from "@ai/contracts/hub-admin";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";
 import { deleteSource, fetchSource, useInvalidateSources } from "../api";

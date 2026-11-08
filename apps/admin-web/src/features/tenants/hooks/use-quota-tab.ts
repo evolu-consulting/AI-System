@@ -1,9 +1,9 @@
 // ADM-FR-40 · trạng thái của tab Quota: dữ liệu server, bản nháp, bẩn/sạch, lưu (toast + 409) — để component chỉ trình bày.
 import type { QuotaSetResponse } from "@ai/contracts/quotas";
 import type { TenantDetail } from "@ai/contracts/tenants";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

@@ -2,6 +2,7 @@
 // Điểm kinh doanh) cuộn riêng; mục khác mặc định có chấm cam. Chỉ chủ sở hữu (contracts-owner) sửa được; người khác xem (mọi ô khoá).
 // Bản nháp giữ khi đóng hộp thoại; tên/màu/giao diện nháp áp ngay lên sidebar, menu, nút (kho `brandStore`), đóng chưa lưu ⇒ trở về đã lưu.
 
+import { toast } from "@ai/web-kit/ui/toast";
 import {
   Blocks,
   Building2,
@@ -13,7 +14,6 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import {
   SettingsDialogFrame,
   SettingsLayout,

@@ -1,9 +1,9 @@
 // CHAT-AC-53 · plan-frontend-thread §4: nút "Huỷ lượt chạy" + xác nhận. Dùng ở thanh trạng thái thread và `/runs/$id` (PF3).
 
 import { ApiError } from "@ai/web-kit/http";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,

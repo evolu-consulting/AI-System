@@ -1,11 +1,11 @@
 // CR-121 · R-3: thân trang "Chi tiết lượt chạy" (admin): đầu trang · sơ đồ · dòng thời gian · ngăn nhật ký bước · thao tác có lý do.
 
 import type { RunControlReason } from "@ai/contracts/chat";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifySuccess } from "@/components/shared/toast";
 import { cn } from "@/lib/utils";
 import type { ProcessTenant } from "../../hooks/use-process-tenant";
 import { useRun } from "../../hooks/use-run-live";

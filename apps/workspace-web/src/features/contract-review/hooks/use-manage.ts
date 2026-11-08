@@ -1,8 +1,9 @@
 // gap-a1 · thao tác trên trang chi tiết HĐ: AI đọc lại, giao người phụ trách, sửa hoa hồng %, tạo tóm tắt AI. Mỗi thao tác = một mutation,
 // xong thì làm mới chi tiết (kéo theo lịch sử) và báo toast; lỗi ⇒ toast câu theo mã máy chủ.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { fetchMembers, MEMBERS_KEY } from "~/features/contracts-list/api";
 import {
   ASSIGNEES_KEY,

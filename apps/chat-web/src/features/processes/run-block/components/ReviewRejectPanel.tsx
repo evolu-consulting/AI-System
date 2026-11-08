@@ -1,9 +1,9 @@
 // N2-FR-02 · HD-FR-36 · HD3: nút "Từ chối" của thẻ kiểm — lý do bắt buộc (≤ FEEDBACK_MAX), kết thúc lượt chạy. Lỗi engine
 // (người bắt đầu ở bước `exclude_starter` ⇒ 403 STARTER_CANNOT_REVIEW) hiện câu riêng; việc đã đóng ⇒ báo "đã có người quyết".
 import { FEEDBACK_MAX } from "@ai/contracts/chat";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { useReviewDecision } from "../hooks/use-review-actions";

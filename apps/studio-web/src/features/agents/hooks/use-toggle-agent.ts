@@ -1,8 +1,8 @@
 // HUB-FR-60 · H4a-R06, R09 · bật/tắt agent: PATCH optimistic; tắt → toast + Hoàn tác (PATCH ngược với version mới).
 import type { AgentList, AgentListItem } from "@ai/contracts/studio";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { meQuery } from "#/features/shell/api";
 import { describeApiError } from "#/lib/api-error";
 import { AGENTS_KEY, patchAgentEnabled } from "../api";

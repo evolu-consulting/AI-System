@@ -1,5 +1,7 @@
 // CR-121 c17 · Q1/Q9/Q11 · quy trình THƯ VIỆN mở từ Công ty › Quy trình: CHỈ XEM (sơ đồ mặc định, danh sách bước là chế độ phụ) + nút
 // "Sao chép cho công ty này" (bản riêng, TỰ GÁN thay bản cũ; bấm lần hai ⇒ 200 mở cùng bản). Không có sửa/Xuất bản ở đây.
+
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
@@ -9,7 +11,6 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/shared/states/EmptyState";
 import { HubLoadError } from "@/components/shared/states/HubLoadError";
 import { LoadingState } from "@/components/shared/states/LoadingState";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

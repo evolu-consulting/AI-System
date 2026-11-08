@@ -1,7 +1,8 @@
 // ADM-FR-08 · ms §10.1 bước 1: QR (`qr_svg` server trả, D2) + khoá nhập tay nhóm 4 + tên tài khoản.
+
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { Copy } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { copyText } from "@/lib/clipboard";
 import { groupSecret, type TotpSetup } from "../../lib/totp-steps";

@@ -1,8 +1,9 @@
 // price-scout · Cài đặt › trần lượt dò & token mỗi tháng (trống = theo mặc định hệ thống / không giới hạn). Ô `platform_*` chỉ hiện khi
 // `can_override` (platform_admin). Hiện mức đã dùng tháng này.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { useSession } from "~/features/auth/hooks/use-session";
 import { parseCap } from "~/features/product-suppliers/lib/scout";
 import { isCompanyAdmin } from "~/features/shell/lib/nav";

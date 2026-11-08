@@ -7,8 +7,8 @@ import {
   errorTitleKey,
   reportText,
 } from "@ai/web-kit/answer/error-map";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 
 export type ErrorCardProps = {

@@ -1,10 +1,10 @@
 // HUB-FR-66 · AC-H4b2-02 · D3 · "Kiểm tra key"/"Kiểm tra lại": mở hộp ngay, một request đồng bộ (server ≤ 10 s; UI chặn
 // 15 s), không polling. 404/READONLY/NOT_CONFIGURED ⇒ đóng hộp + toast. Chỉ giữ kết quả đã che key, không bao giờ giữ key.
 import type { ProviderCheckResult } from "@ai/contracts/studio";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { checkProvider, PROVIDERS_KEY } from "../api";
 import { failureAction, type Msg } from "../lib/check-text";
 

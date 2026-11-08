@@ -1,9 +1,9 @@
 // ADM-FR-74 · hành động trên công ty đối tác: thêm, đổi tên (hộp thoại tên), vô hiệu (xác nhận, không hoàn tác).
 import type { ExternalOrg } from "@ai/contracts/external-orgs";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifySuccess } from "@/components/shared/toast";
 import { useCreateOrg, useDeactivateOrg, useReactivateOrg, useRenameOrg } from "../api";
 import { PartnerNameDialog } from "../components/PartnerNameDialog";
 import { useReportError } from "./use-report-error";

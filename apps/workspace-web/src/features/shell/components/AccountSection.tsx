@@ -1,9 +1,10 @@
 // GAP-E #32/#30 · phần menu tài khoản: đổi mật khẩu + 2FA (trang của nền tảng qua SSO), Điều khoản + Bảo mật.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { Link } from "@tanstack/react-router";
 import { KeyRound, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { type AccountPage, accountPageUrl } from "../lib/account-link";
 
 const ITEM = "flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-label hover:bg-sunk";

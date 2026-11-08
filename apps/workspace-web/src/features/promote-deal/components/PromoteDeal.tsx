@@ -1,8 +1,9 @@
 // CR-101 DOC-ui-frame · R10: nút "Nâng thành hợp đồng" của giao dịch + hộp chọn file ký và số HĐ (bắt buộc); sau khi nâng HĐ bị khoá.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import {
   Dialog,
   DialogContent,

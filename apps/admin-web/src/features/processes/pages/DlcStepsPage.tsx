@@ -1,6 +1,7 @@
 // dlc-step-library · `/dlc-steps` (chỉ platform_admin, cùng điều kiện engine quy trình như thư viện): bảng BƯỚC DLC mẫu + thêm/sửa/
 // xoá. Canvas khe `dlc.*` chèn bước từ thư viện này ("Thêm bước DLC").
 import type { DlcStepTemplate } from "@ai/contracts/hub-admin";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -8,7 +9,6 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { PlatformOnly } from "@/components/shared/PlatformOnly";
 import { ErrorState } from "@/components/shared/states/ErrorState";
 import { TenantPicker } from "@/components/shared/TenantPicker";
-import { notifySuccess } from "@/components/shared/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

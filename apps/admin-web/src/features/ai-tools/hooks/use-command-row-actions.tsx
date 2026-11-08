@@ -1,12 +1,12 @@
 // CR-121 F4b · D6: bật/tắt lệnh ngay trên hàng Công cụ AI (thay công tắc của danh sách lệnh cũ). Đọc bản MỚI (version hiện tại);
 // tắt có "Hoàn tác" 5 s; 409 VERSION_CONFLICT ⇒ ConflictDialog với `mine = {enabled}`.
 import type { Command } from "@ai/contracts/commands";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { LazyConflictDialog } from "@/components/shared/conflict/LazyConflictDialog";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
-import { notifySuccess } from "@/components/shared/toast";
 import { COMMAND_KEYS, useUpdateCommand } from "@/features/commands/api";
 import { useWorkflowFail } from "@/features/workflows/hooks/use-workflow-fail";
 import { api } from "@/lib/http";

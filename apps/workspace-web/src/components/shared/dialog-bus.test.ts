@@ -1,16 +1,7 @@
 // PK-FR-10 · TF2 · confirmDialog / promptDialog / toast: hợp đồng gọi kiểu lệnh, không treo khi chưa có host.
-import { afterEach, describe, expect, mock, test } from "bun:test";
-
-const calls: string[] = [];
-mock.module("sonner", () => ({
-  toast: {
-    success: (m: string) => calls.push(`ok:${m}`),
-    error: (m: string) => calls.push(`late:${m}`),
-  },
-}));
+import { afterEach, describe, expect, test } from "bun:test";
 
 import { confirmDialog, expectHost, promptDialog, type Req, registerHost } from "./dialog-bus";
-import { toast } from "./toast";
 
 let unregister = () => {};
 afterEach(() => unregister());
@@ -44,14 +35,6 @@ describe("dialog-bus", () => {
     unregister = registerHost((r: Req) => r.resolve(true));
     off1();
     expect(await confirmDialog({ title: "x" })).toBe(true);
-  });
-});
-
-describe("toast", () => {
-  test("ok → success, late → error", async () => {
-    await toast("Đã lưu");
-    await toast("Lỗi", "late");
-    expect(calls).toEqual(["ok:Đã lưu", "late:Lỗi"]);
   });
 });
 

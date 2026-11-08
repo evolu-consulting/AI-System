@@ -2,12 +2,12 @@
 // trạng thái + lý do, nút icon Dừng / Chạy lại cả lượt.
 
 import type { RunDetail } from "@ai/contracts/chat";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { Link } from "@tanstack/react-router";
 import { Copy, RotateCcw, Square, Unlock } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { IconButton } from "@/components/shared/IconButton";
-import { notifySuccess } from "@/components/shared/toast";
 import { Button } from "@/components/ui/button";
 import { copyText } from "@/lib/clipboard";
 import { formatClock } from "@/lib/format";

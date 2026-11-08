@@ -1,9 +1,9 @@
 // ADM-FR-50 · M2-R05 · xoá secret: đang dùng → dialog chặn + DependencyList; không dùng → ConfirmDialog nặng (gõ lại tên).
 // 409 `SECRET_IN_USE` (race) chuyển sang dialog chặn với `details.used_by`. Không hiển thị giá trị ở đâu (D10).
 import type { Secret } from "@ai/contracts/secrets";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

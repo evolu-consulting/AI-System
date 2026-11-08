@@ -116,6 +116,7 @@ export const POST_REBASE_GATES: readonly { name: string; cmd: string[] }[] = [
   { name: "check:i18n-terms", cmd: ["bun", "tools/scripts/src/check-i18n-terms.ts"] },
   { name: "check:settings-path", cmd: ["bun", "tools/scripts/src/check-settings-path.ts"] },
   { name: "check:shared-limits", cmd: ["bun", "tools/scripts/src/check-shared-limits.ts"] },
+  { name: "check:toast", cmd: ["bun", "tools/scripts/src/check-toast.ts"] },
   { name: "depcruise:affected", cmd: ["bun", "tools/scripts/src/depcruise.ts", "--affected"] },
 ];
 

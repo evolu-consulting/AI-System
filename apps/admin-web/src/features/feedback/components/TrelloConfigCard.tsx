@@ -1,10 +1,10 @@
 // trello-config-ui · khối "Tích hợp › Trello" (chỉ platform_admin) trên trang Góp ý: nhập API key/token (ô mật khẩu, để trống =
 // giữ nguyên), list id; "Kiểm tra kết nối" chỉ đọc list (không tạo thẻ); "Xoá cấu hình" ⇒ dùng lại env. Không bao giờ hiện giá trị.
 import { TRELLO_LIST_ID_RE, type TrelloConfigView } from "@ai/contracts/trello-config";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

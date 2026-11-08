@@ -1,8 +1,9 @@
 // ADM-FR-60 · khung quản trị: skip-link, Sidebar, Topbar, banner mất kết nối, <main id="main">, Toaster, modal phiên hết hạn.
+
+import { Toaster } from "@ai/web-kit/ui/toaster";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ConnectionBanner } from "@/components/shared/ConnectionBanner";
-import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QuotaBanner } from "./QuotaBanner";
 import { SessionExpiredGate } from "./SessionExpiredGate";

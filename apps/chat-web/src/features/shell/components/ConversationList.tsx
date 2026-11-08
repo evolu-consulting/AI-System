@@ -1,7 +1,8 @@
 // CHAT-AC-19, CHAT-AC-21, CHAT-AC-22 · danh sách nhóm theo thời gian + tìm + tải thêm; trạng thái tải / rỗng / không khớp / lỗi.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useRouter } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import {

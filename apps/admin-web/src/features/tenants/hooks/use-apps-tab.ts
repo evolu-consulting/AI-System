@@ -1,9 +1,10 @@
 // CR-112 · ADM-FR-78 · tab "Ứng dụng & Gói": nạp trạng thái cấp + gói + vai, giữ bản nháp (tập key + ý định gói), lưu một lượt
 // theo kế hoạch (bật gói → entitlement → tắt gói). Lỗi từng phần: toast nêu phần đã lưu, bản nháp giữ nguyên để lưu tiếp.
+
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { useApplyTenantEntitlements } from "@/features/features/api";
 import { useOrgList } from "@/features/partners/api";
 import { useSession } from "@/lib/auth/use-session";

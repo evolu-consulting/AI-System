@@ -1,4 +1,4 @@
-﻿import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { onlyLockConflicts, parseLines, postRebaseGates, relockAfterRebase } from "./slice-rebase";
 
 describe("slice-rebase · cổng sau rebase (check:boundaries)", () => {
@@ -16,6 +16,7 @@ describe("slice-rebase · cổng sau rebase (check:boundaries)", () => {
       "bun tools/scripts/src/check-i18n-terms.ts",
       "bun tools/scripts/src/check-settings-path.ts",
       "bun tools/scripts/src/check-shared-limits.ts",
+      "bun tools/scripts/src/check-toast.ts",
       "bun tools/scripts/src/depcruise.ts --affected",
     ]);
   });

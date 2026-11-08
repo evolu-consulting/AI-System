@@ -1,9 +1,9 @@
 // ADM-FR-75 · hành động trên tài khoản đối tác: thêm (mật khẩu tạm một lần), đặt lại mật khẩu, khoá/mở khoá, vô hiệu (có xác nhận).
 import type { TempPasswordResponse, User } from "@ai/contracts/users";
+import { notifySuccess } from "@ai/web-kit/ui/toast";
 import { type ReactNode, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { notifySuccess } from "@/components/shared/toast";
 import {
   ResetPasswordDialog,
   type ResetResult,

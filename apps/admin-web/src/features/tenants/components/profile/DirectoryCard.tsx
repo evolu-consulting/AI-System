@@ -1,8 +1,8 @@
 // CR-124 q2 · Công ty › Hồ sơ › "Danh bạ công ty": quản trị công ty bật/tắt cho công ty khác tìm thấy (mặc định tắt);
 // quản trị nền tảng đặt "Đã xác minh" (hiện ngày + người xác minh). Chữ phổ thông, một dòng giải thích.
 import type { TenantCompanyProfile } from "@ai/contracts/tenants";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { describeError } from "@/lib/errors";

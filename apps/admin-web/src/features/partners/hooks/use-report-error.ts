@@ -1,6 +1,7 @@
 // ADM-FR-74 · báo lỗi API bằng toast bền (401 để modal phiên hết hạn lo).
+
+import { notifyError } from "@ai/web-kit/ui/toast";
 import { useCallback } from "react";
-import { notifyError } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

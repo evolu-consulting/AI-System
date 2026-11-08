@@ -3,7 +3,7 @@ import { lazy, Suspense } from "react";
 import { SessionWatcher } from "#/features/shell/components/SessionWatcher";
 
 // CR-118 bundle: Toaster (sonner) tải lười — không nằm trong JS ban đầu.
-const Toaster = lazy(() => import("#/components/ui/sonner").then((m) => ({ default: m.Toaster })));
+const Toaster = lazy(() => import("@ai/web-kit/ui/toaster").then((m) => ({ default: m.Toaster })));
 
 // Toaster ở gốc: toast `session.expired` hiện cả trên trang đăng nhập.
 export const Route = createRootRoute({

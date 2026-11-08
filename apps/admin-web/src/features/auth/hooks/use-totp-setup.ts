@@ -1,8 +1,9 @@
 // ADM-FR-08 · M4-R16 · plan-frontend §3.6, §8, D11 · điều phối luồng bật 2FA và bước lưu mã dự phòng.
 // Secret/mã dự phòng chỉ ở state của hook (không cache/URL/storage); reset là xoá.
+
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useReducer, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { session } from "@/lib/auth/session";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";

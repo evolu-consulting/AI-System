@@ -2,10 +2,10 @@
 // không tải lại; lỗi khác (VERSION_CONFLICT, 404, 5xx…) ⇒ hoàn ô + toast `access.errors.conflict` + tải lại ma trận.
 // Thành công ⇒ toast + invalidate ma trận và `me` (ConfigBadge vN).
 import type { EntitlementMatrix } from "@ai/contracts/studio";
+import { toast } from "@ai/web-kit/ui/toast";
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { meQuery } from "#/features/shell/api";
 import { ACCESS_KEY, grantEntitlement, matrixQuery, revokeEntitlement } from "../api";
 import { cellKey, grantedCell, indexCells, type Ref, withCell } from "../lib/matrix";

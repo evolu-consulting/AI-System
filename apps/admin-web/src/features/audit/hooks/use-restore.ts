@@ -1,7 +1,7 @@
 // ADM-FR-52 · M4-AC08 · M4-R13 · "Khôi phục bản trước": gọi mutation, toast thành công/lỗi; 403 → nạp lại phiên (plan-frontend §3.4, §8).
 import type { AuditItem } from "@ai/contracts/audit";
+import { notifyError, notifyInfo, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useCallback } from "react";
-import { notifyError, notifyInfo, notifySuccess } from "@/components/shared/toast";
 import { session } from "@/lib/auth/session";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";

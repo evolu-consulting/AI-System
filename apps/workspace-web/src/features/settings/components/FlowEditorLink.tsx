@@ -1,7 +1,8 @@
 // CR-105 L4 · nút/ liên kết "Chỉnh quy trình duyệt" → ai-admin; chỉ hiện cho người có quyền sửa (platform_admin).
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { useSession } from "~/features/auth/hooks/use-session";
 import { useFlow } from "../hooks/use-flow";
 import { canEditFlow, flowEditorUrl } from "../lib/editor-link";

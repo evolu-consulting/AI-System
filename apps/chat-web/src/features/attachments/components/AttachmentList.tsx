@@ -1,8 +1,8 @@
 // HUB-FR-44 · tệp trong tin (`Message.attachments`): bấm tải qua fetch có Authorization; `available=false` → xám.
 import type { AttachmentRef } from "@ai/contracts/chat";
+import { toast } from "@ai/web-kit/ui/toast";
 import { File, FileImage, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { cn } from "~/lib/utils";
 import { downloadAttachment, formatSize } from "../lib/download";
 

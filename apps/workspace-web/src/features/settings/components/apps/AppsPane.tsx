@@ -1,8 +1,9 @@
 // CR-118 §6 · §11.2 · Cài đặt › "Ứng dụng & quy trình" (quản trị công ty + chủ gói): mức, add-on, quy trình đang áp dụng.
 // CR-123 U2 (FLOW3-FR-11): CHỈ ĐỌC; chọn quy trình ở admin Công ty › Quy trình (nút "Mở trang Quy trình", SSO một lần).
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { useCapabilities } from "../../hooks/use-apps-settings";
 import { paneSlots } from "../../lib/app-slots";
 import { flowEditorUrl } from "../../lib/editor-link";

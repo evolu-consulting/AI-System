@@ -1,11 +1,11 @@
 // HUB-FR-66 · D4/D8/D10 · form Sheet Provider: tạo (POST) / sửa (PUT kèm version). Sheet đóng sau khi lưu thành công;
 // 409 phiên bản → ConflictDialog dùng chung; KEY_TAKEN/VALIDATION → lỗi dưới ô.
 import type { ProviderCreate, ProviderDetail } from "@ai/contracts/studio";
+import { toast } from "@ai/web-kit/ui/toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { ConflictDialog } from "#/components/shared/conflict/ConflictDialog";
 import { useConflict } from "#/components/shared/conflict/use-conflict";
 import { Button } from "#/components/ui/button";

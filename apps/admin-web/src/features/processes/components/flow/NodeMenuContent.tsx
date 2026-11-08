@@ -4,8 +4,8 @@
 import type { AppNodeDecl } from "@ai/contracts/app-manifest";
 import { startOutputsOf } from "@ai/contracts/app-manifest";
 import { FLOW_PALETTE_MIME } from "@ai/flow-canvas/pure";
+import { notifyInfo } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
-import { notifyInfo } from "@/components/shared/toast";
 import {
   DropdownMenuContent,
   DropdownMenuItem,

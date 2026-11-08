@@ -1,8 +1,9 @@
 // HUB-FR-66 · tab Providers: tải / rỗng / lỗi / không quyền / bảng; xoá (ConfirmDialog → InUseDialog); mở Sheet qua `?drawer=`.
 // T5b gắn CheckDialog + RunbookSheet qua `onCheck`/`onGuide`.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { ConfirmDialog } from "#/components/shared/ConfirmDialog";
 import { EmptyState } from "#/components/shared/EmptyState";
 import { ErrorState } from "#/components/shared/ErrorState";

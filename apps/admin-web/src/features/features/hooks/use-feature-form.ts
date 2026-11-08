@@ -1,12 +1,12 @@
 // ADM-FR-30 · form editor Feature: lưu (POST/PATCH kèm version), ánh xạ lỗi server. CR-055: bỏ command làm nó
 // "chưa gắn feature" chỉ cảnh báo ở tab Commands, không chặn lưu.
 import type { FeatureDetail } from "@ai/contracts/features";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { type Resolver, type UseFormReturn, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { pickLocalized } from "@/lib/localized";

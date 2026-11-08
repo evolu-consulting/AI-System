@@ -1,10 +1,10 @@
 // platform/gd0_dlc_fix · nút "Xem và duyệt" trên thẻ run DLC (chỉ key `dlc-*`) → modal: kết quả đầy đủ của bước + Duyệt / Từ chối.
 // Duyệt = `pass` (đi tiếp). Từ chối = `fail` + lý do + quay lại bước cấu hình cho điểm duyệt (lib/dlc-review). Lỗi ⇒ câu riêng.
 import { FEEDBACK_MAX, type ProcessRunSummary } from "@ai/contracts/chat";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,

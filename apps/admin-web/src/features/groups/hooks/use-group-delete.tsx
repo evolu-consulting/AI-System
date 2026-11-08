@@ -1,8 +1,8 @@
 // ADM-FR-62 · M3-R04 · xoá group (mức nặng: gõ key): nêu số thành viên/feature; `beta-testers` không có đường xoá.
 import type { GroupListItem } from "@ai/contracts/groups";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { pickLocalized } from "@/lib/localized";

@@ -1,9 +1,9 @@
 // ADM-FR-55 · M3-R20 · "Đổi tên group": PATCH kèm version, 409 → ConflictDialog (entity "group", câu có {user}, A4).
 // Version lấy từ `group.version` lúc bấm Lưu (query đã làm mới sau mỗi lần lưu thành công).
 import type { Group } from "@ai/contracts/groups";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
 import { useConflictSave } from "@/components/shared/conflict/use-conflict-save";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { pickLocalized } from "@/lib/localized";

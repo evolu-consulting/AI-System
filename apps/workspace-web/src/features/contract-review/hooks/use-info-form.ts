@@ -3,6 +3,7 @@
 // - Bước xác nhận sau khi AI đọc (`needs_review`): form dùng chung điền sẵn + dòng hàng AI đọc (kèm gợi ý SP) + mốc AI tìm thấy; "Lưu" = MỘT
 //   `POST /review` (trường, loại HĐ, dòng, mốc); "Hủy" = trả về giá trị đã đọc, KHÔNG gửi gì. "Xác nhận" (HD3) lưu trước rồi quyết cấp 1.
 import type { ContractDeal, ContractDetail } from "@ai/contracts/pack-contracts";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   type Dispatch,
@@ -14,7 +15,6 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { todayIso } from "~/features/contract-deadline/lib/deadline";
 import { fetchProducts, matchProduct, PRODUCTS_KEY } from "~/features/contract-form/api";
 import { patchOneLine, productIdsOf } from "~/features/contract-form/hooks/use-contract-form";

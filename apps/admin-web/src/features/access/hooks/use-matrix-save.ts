@@ -1,6 +1,7 @@
 // ADM-FR-32 · M3-R07, R08 · lưu ma trận qua MỘT batch; lỗi: không áp một phần, giữ nháp, làm mới ma trận (D10).
+
+import { notifyError, notifyInfo, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifyInfo, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

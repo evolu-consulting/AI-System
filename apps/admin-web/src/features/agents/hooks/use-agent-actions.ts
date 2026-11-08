@@ -1,8 +1,8 @@
 // HUB-FR-77 · CR-054 · thao tác hàng của màn Agents: đặt mặc định, đổi "Không khớp agent nào", bật/tắt cho công ty (+ toast).
 import type { AgentDefaults, AgentSettingsItem } from "@ai/contracts/hub-admin";
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeHubError, type MessageSpec } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { pickLocalized } from "@/lib/localized";

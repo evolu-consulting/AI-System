@@ -2,9 +2,9 @@
 // Trong thread (`useThreadBinding()`≠null): "Chưa đạt" đưa composer sang chế độ Góp ý. Ngoài thread: ô góp ý tại chỗ (inline).
 import { FEEDBACK_MAX, type ProcessRunFullView } from "@ai/contracts/chat";
 import { ApiError } from "@ai/web-kit/http";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { fetchAttachmentContent } from "~/features/attachments/api";

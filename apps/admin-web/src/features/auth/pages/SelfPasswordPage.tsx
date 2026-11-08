@@ -1,9 +1,10 @@
 // ADM-FR-06 · /account/password (tự đổi): card 480px; sai mật khẩu hiện tại → lỗi dưới ô; thành công → toast + quay lại.
+
+import { notifyError, notifySuccess } from "@ai/web-kit/ui/toast";
 import { useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { notifyError, notifySuccess } from "@/components/shared/toast";
 import { describeError } from "@/lib/errors";
 import { ApiError } from "@/lib/http";
 import { useTr } from "@/lib/use-translate";

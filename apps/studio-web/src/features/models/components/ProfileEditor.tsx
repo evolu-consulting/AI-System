@@ -1,9 +1,9 @@
 // HUB-FR-67 · AC-H4b2-03 · editor profile (cột phải): Tên (chỉ đọc khi sửa) + StepsEditor + [Lưu profile] (bật khi có thay đổi)
 // + [Xoá profile] (chỉ profile đã lưu). Lưu: POST {key, steps} / PUT {version, steps}; 409 phiên bản → ConflictDialog (D10).
 import type { ModelProfile } from "@ai/contracts/studio";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { ConflictDialog } from "#/components/shared/conflict/ConflictDialog";
 import { useConflict } from "#/components/shared/conflict/use-conflict";
 import { Button } from "#/components/ui/button";

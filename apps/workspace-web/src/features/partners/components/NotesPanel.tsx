@@ -1,12 +1,12 @@
 // V2-I · DT-05 · ghi chú về đối tác: người viết + ngày, thêm / xoá (người viết hoặc quản lý). Dòng lưu từ "Tìm trên internet" có nhãn nguồn.
 import type { PartnerNote } from "@ai/contracts/pack-contracts";
+import { toast } from "@ai/web-kit/ui/toast";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { confirmDialog } from "~/components/shared/dialog-bus";
 import { viDate } from "~/components/shared/format";
 import { ErrorLine, Loading } from "~/components/shared/states";
 import { Tag } from "~/components/shared/tag";
-import { toast } from "~/components/shared/toast";
 import { useMe } from "~/features/pack-state/hooks/use-me";
 import { useAddNote, useDeleteNote, useNotes } from "../hooks/use-partner-rep";
 

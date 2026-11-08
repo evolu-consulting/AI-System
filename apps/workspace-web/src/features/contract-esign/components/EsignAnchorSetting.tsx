@@ -1,8 +1,9 @@
 // esign-anchor · Cài đặt › Ký số: danh sách cụm tìm khối chữ ký trong văn bản HĐ cho Bên A (công ty) / Bên B (đối tác), mỗi dòng một
 // cụm theo thứ tự ưu tiên. Owner sửa (PUT /esign/anchors); người khác chỉ xem.
+
+import { toast } from "@ai/web-kit/ui/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "~/components/shared/toast";
 import { useEsignAnchors } from "../anchor-api";
 
 const lines = (s: string) =>
