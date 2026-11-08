@@ -39,7 +39,7 @@ test("quản trị community: menu + chữ trong trình sửa flow Duyệt bài 
   await openTenantAppsTab(pp, TENANT_NAME);
   const pbox = await openCompanyFlows(pp);
   const names = await pbox
-    .getByRole("combobox", { name: "Flow trong Thư viện" })
+    .getByRole("combobox", { name: "Quy trình trong Thư viện" })
     .locator("option[value]:not([value=''])")
     .allTextContents();
   const moderation = names.find((n) => /bài/i.test(n));
@@ -65,8 +65,10 @@ test("quản trị community: menu + chữ trong trình sửa flow Duyệt bài 
   await ask.getByRole("button", { name: "Huỷ" }).click();
 
   // mở bản sao của flow Duyệt bài (sao chép nếu chưa có)
-  if ((await box.getByRole("link", { name: /^(Mở|Sửa)/ }).count()) < 2)
+  if ((await box.getByRole("link", { name: /^(Mở|Sửa)/ }).count()) < 2) {
     await box.getByRole("button", { name: "Sao chép để sửa" }).first().click();
+    await page.getByTestId("copy-confirm").click(); // CR-125 c5b · hộp Sao chép nói mẫu dùng được trước khi sao chép
+  }
   await box
     .getByRole("link", { name: /^(Mở|Sửa)/ })
     .last()

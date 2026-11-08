@@ -73,7 +73,7 @@ test("1 · platform: mẫu chưa dùng được ⇒ Gán khóa, bấm sửa mộ
   );
   await openTenantAppsTab(page, TENANT_NAME);
   const box = await openCompanyFlows(page);
-  const pick = box.getByRole("combobox", { name: "Flow trong Thư viện" });
+  const pick = box.getByRole("combobox", { name: "Quy trình trong Thư viện" });
   await expect(pick.locator("option", { hasText: NAME })).toHaveCount(1, { timeout: 30_000 });
   await pick.selectOption({ label: NAME });
   const panel = box.getByTestId("flow-readiness");
