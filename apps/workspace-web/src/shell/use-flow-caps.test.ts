@@ -43,7 +43,7 @@ describe("C-7 · cap Sổ Hợp Tác + badge", () => {
   const sht = (n: PackNavResponse | null) => labelsOf(contractsManifest, capsOf(n));
   it("không có vai duyệt ⇒ không có mục Chờ tôi duyệt; có ⇒ đứng sau Hợp đồng (không cần Community)", () => {
     expect(sht(nav())).not.toContain("contracts.nav.approvals");
-    expect(sht(nav(["contracts.review", 0]))?.indexOf("contracts.nav.approvals")).toBe(2);
+    expect(sht(nav(["contracts.review", 0]))?.indexOf("contracts.nav.approvals")).toBe(3);
   });
   it("map cap → số: đúng số từng cap; cap vắng không có số", () => {
     const b = badgesOf(
