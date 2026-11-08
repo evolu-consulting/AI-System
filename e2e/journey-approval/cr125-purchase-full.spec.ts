@@ -295,10 +295,36 @@ async function dumpParent(): Promise<void> {
   console.log(out.join("\n"));
 }
 
+/** Chẩn đoán: hộp «Việc của tôi» của từng người (số dòng mỗi loại + chữ) và việc mở trong DB. */
+async function dumpInboxes(people: readonly Page[]): Promise<void> {
+  const out: string[] = [];
+  for (const p of people) {
+    await p.goto(`${E.cw}/contracts/approvals`);
+    await p.waitForTimeout(3_000);
+    const n = async (id: string) => p.getByTestId(id).count();
+    const text = (
+      (await p
+        .getByTestId("approvals-inbox")
+        .innerText()
+        .catch(() => "")) || ""
+    ).replace(/\s+/g, " ");
+    out.push(
+      `[inbox] req=${await n("requests-waiting-row")} appr=${await n("approval-task-row")} sign=${await n("signing-task-row")} :: ${text.slice(0, 500)}`,
+    );
+  }
+  console.log(out.join("\n"));
+  await dumpParent();
+}
+
+let idleRounds = 0;
+
 /** Mỗi người làm hết việc đang chờ mình; true nếu có ai làm được. */
 async function actAll(people: readonly Page[]): Promise<boolean> {
   let moved = false;
   for (const p of people) moved = (await actOnWaiting(p)) || moved;
+  // chẩn đoán sớm khi không ai làm được (lượt cha hết hạn ~10 phút sẽ huỷ lượt con): hộp từng người + việc đang mở
+  idleRounds = moved ? 0 : idleRounds + 1;
+  if (idleRounds === 4) await dumpInboxes(people);
   return moved;
 }
 
