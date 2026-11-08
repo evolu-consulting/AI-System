@@ -1,4 +1,4 @@
-// CR-125 · cr125-seed · rule D7 (cấu hình công ty đủ trọn) · phần CR-122..125 của fixture công ty (mở rộng `seed.tenant-fixtures`, KHÔNG phải
+﻿// CR-125 · cr125-seed · rule D7 (cấu hình công ty đủ trọn) · phần CR-122..125 của fixture công ty (mở rộng `seed.tenant-fixtures`, KHÔNG phải
 // seed song song): một công ty fixture có gói bật là chạy được từ đầu đến cuối, không công tắc tay:
 //   1. mọi tính năng của app đã bật (contracts, community — gồm `contracts-partner-confirm`), trừ `han-muc-duyet` (chỉ cấp tay trên prod);
 //   2. ký số demo "Ký thử" (`selfsign`): `approval_settings.esign_enabled` + nhà cung cấp mặc định. KHÔNG secret DocuSign (env `ESIGN_PROVIDERS`
@@ -22,6 +22,7 @@ import {
   PURCHASE_PHASE_KEYS,
   PURCHASE_TEMPLATES,
 } from "../processes/public";
+import { TEMPLATE_GROUP_MEMBERS } from "./seed.cr125-members";
 import type { Tx } from "./seed.repo";
 
 /** Ứng dụng có tính năng được cấp tự động (khi công ty đã có `<app>-read`). */
@@ -54,27 +55,7 @@ export const TEMPLATE_GROUPS = [
   { key: "thu-quy", name: { vi: "Thủ quỹ", en: "Cashier" } },
 ] as const;
 
-/** Thành viên mẫu theo username (không email). Người vắng ⇒ bỏ qua. */
-export const TEMPLATE_GROUP_MEMBERS: Record<string, Record<string, readonly string[]>> = {
-  evolu: {
-    "truong-phong": ["thomas.tran"],
-    "giam-doc": ["julian.bui"],
-    "phong-kinh-doanh": ["vio.ngo"],
-    ...purchaseMembers(["thomas.tran", "vio.ngo", "julian.bui"]),
-  },
-  demo: {
-    "truong-phong": ["demo-editor"],
-    "giam-doc": ["demo-owner"],
-    "phong-kinh-doanh": ["demo-editor"],
-    ...purchaseMembers(["demo-editor", "demo-viewer", "demo-owner"]),
-  },
-};
-
-/** Thành viên mẫu của các nhóm «mua hàng»: người dùng giả @demo.local của công ty fixture, xoay vòng (một người có thể giữ nhiều nhóm). */
-function purchaseMembers(users: readonly string[]): Record<string, readonly string[]> {
-  const keys = TEMPLATE_GROUPS.slice(3).map((g) => g.key);
-  return Object.fromEntries(keys.map((k, i) => [k, [users[i % users.length] as string]]));
-}
+export { PURCHASE_ROLE_GROUPS, TEMPLATE_GROUP_MEMBERS } from "./seed.cr125-members";
 
 /** Flow mặc định của công ty: gán khi công ty có tính năng đòi hỏi (cùng luật `templateReadiness`: tính năng bật mới gán). */
 export const DEFAULT_FLOWS = [
