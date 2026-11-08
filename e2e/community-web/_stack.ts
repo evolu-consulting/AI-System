@@ -47,7 +47,7 @@ export async function loginAs(page: Page, who: Who): Promise<void> {
   await pw.waitFor({ timeout: 45_000 });
   const tenant = page.getByRole("textbox", { name: /Mã công ty|Company code/ });
   if (await tenant.count()) await tenant.fill(TENANT);
-  await page.getByRole("textbox", { name: /^(Tên đăng nhập|Username|Email)$/ }).fill(USERNAME[who]);
+  await page.getByRole("textbox", { name: /^(Tên đăng nhập|Username|Email)/ }).fill(USERNAME[who]);
   await pw.fill(pwOf(who));
   await page.getByRole("button", { name: /^(Đăng nhập|Sign in)$/ }).click();
   // Đối tác mới: form đặt mật khẩu bắt buộc (mới + nhập lại) — chờ form đó HOẶC bảng tin (màn SPA, không tải lại trang).

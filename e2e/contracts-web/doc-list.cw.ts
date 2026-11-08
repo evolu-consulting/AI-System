@@ -182,7 +182,7 @@ test("tải lên chọn HĐ nguyên tắc: gửi doc_type + hạn mức + cách 
   page,
 }) => {
   const body = await postedForm(page, async () => {
-    const dlg = page.getByRole("dialog", { name: "Tải lên chứng từ" });
+    const dlg = page.getByRole("dialog", { name: "Tải hợp đồng lên" });
     await dlg.getByRole("radio", { name: /Hợp đồng nguyên tắc/ }).check();
     await dlg.getByLabel(/^Hạn mức công nợ/).fill("400.000.000");
     await dlg.getByLabel(/^Cách đặt hàng/).fill("Đặt qua email");
@@ -197,7 +197,7 @@ test("tải lên HĐ kinh tế thuộc HĐ nguyên tắc: gửi frame_root_id; m
   page,
 }) => {
   const body = await postedForm(page, async () => {
-    const dlg = page.getByRole("dialog", { name: "Tải lên chứng từ" });
+    const dlg = page.getByRole("dialog", { name: "Tải hợp đồng lên" });
     await dlg.getByTestId("frame-options").getByRole("button").first().click();
   });
   expect(body).toContain(`name="doc_type"\r\n\r\ncontract`);
@@ -221,7 +221,7 @@ test("tải lên: hạn mức không phải số ⇒ báo lỗi, không gửi; H
     .setInputFiles([
       { name: "hd.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.7 x") },
     ]);
-  const dlg = page.getByRole("dialog", { name: "Tải lên chứng từ" });
+  const dlg = page.getByRole("dialog", { name: "Tải hợp đồng lên" });
   await dlg.getByRole("radio", { name: /Hợp đồng nguyên tắc/ }).check();
   await dlg.getByLabel(/^Hạn mức công nợ/).fill("abc");
   await dlg.getByTestId("upload-confirm").click();
