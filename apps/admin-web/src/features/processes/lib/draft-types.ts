@@ -3,7 +3,7 @@
 import type { FormFieldType, LayoutDir, ProcessStageDef, SetAs } from "@ai/contracts/hub-admin";
 import type { AutofixDraft } from "./autofix-form";
 import type { InputDraft, StageSourceDraft } from "./sources-form";
-import type { StartFormDraft } from "./start-form";
+import type { StartFormDraft } from "./start-form.types";
 
 /** P-d1 · khối "Chờ tới ngày": nguồn ngày (`input:<key>` | `field:<stage_key>:<field>`), chênh (ngày, chữ), giờ `HH:mm`. */
 export type WaitDraft = {

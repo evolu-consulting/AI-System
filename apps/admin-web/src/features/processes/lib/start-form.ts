@@ -12,32 +12,14 @@ import {
 } from "@ai/contracts/modules";
 import type { DraftErrors, StageDraft } from "./draft-types";
 import { fieldKeyFromLabel } from "./form-fields";
+import type { StartFieldDraft, StartFormDraft } from "./start-form.types";
 
-export type { StartFormFieldType };
+export type { StartFieldDraft, StartFormDraft, StartFormFieldType };
 export { START_FORM_FIELD_TYPES, START_FORM_FIELDS_MAX, START_FORM_NODE_KEY };
 
 const E = "process.admin.startForm.err.";
 /** Khoá lỗi do `startFormErrors` tính lại mỗi lần render (không giữ lại từ lần Lưu trước). */
 export const isStartFormErrKey = (v: string): boolean => v.startsWith(E);
-
-export type StartFieldDraft = {
-  key: string;
-  /** Mã còn tự sinh từ nhãn (người dùng chưa sửa tay). */
-  keyAuto: boolean;
-  label: string;
-  type: StartFormFieldType;
-  required: boolean;
-  help: string;
-};
-export type StartFormDraft = {
-  fields: StartFieldDraft[];
-  starters: "everyone" | "groups";
-  /** Nhóm được bắt đầu theo MÃ (đúng cho cả mẫu Thư viện lẫn bản công ty). */
-  groupKeys: string[];
-  /** Nhóm theo id (giữ nguyên khi nạp bản đã lưu; ô chọn chỉ sửa theo mã). */
-  groupIds: string[];
-  title: string;
-};
 
 export const isStartForm = (s: Pick<StageDraft, "node">): boolean => s.node === START_FORM_NODE_KEY;
 
