@@ -3,7 +3,7 @@
 // chuyển cấp MỘT lần cho lần gửi đó (mốc chuyển cấp cũ hơn `esign_at` ⇒ của lần gửi trước, không tính). Câu quét SQL
 // (`adapters/esign-sweep.repo.ts`) viết lại đúng các vị từ này — sửa một chỗ phải sửa cả hai.
 
-import { isSigned } from "./esign-signer.rules";
+import { isSigned, isTurnOf } from "./esign-signer.rules";
 
 const H = 3_600_000;
 
@@ -47,11 +47,6 @@ export const signerDone = (s: EsignTurnSigner): boolean => isSigned(s);
  *  (`null`) ⇒ "signer" như cũ. Câu quét SQL viết lại đúng vị từ này. */
 export function remindTargetOf(signers: readonly EsignTurnSigner[] | null): "signer" | "owner" {
   if (signers === null) return "signer";
-  const turn = signers.some(
-    (m) =>
-      m.role === "company" &&
-      !signerDone(m) &&
-      signers.every((p) => p.order >= m.order || signerDone(p)),
-  );
+  const turn = signers.some((m) => m.role === "company" && isTurnOf(signers, m));
   return turn ? "signer" : "owner";
 }

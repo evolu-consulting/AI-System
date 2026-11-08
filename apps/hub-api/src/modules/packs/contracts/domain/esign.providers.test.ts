@@ -47,13 +47,19 @@ describe("providerEntriesOf", () => {
       label: "DocuSign",
       kind: "envelope",
       legal: true,
+      redirects: true,
       available: true,
     });
-    expect(on[1]).toMatchObject({ key: "selfsign", kind: "ca", legal: false });
+    expect(on[1]).toMatchObject({ key: "selfsign", kind: "ca", legal: false, redirects: false });
   });
-  it("khoá lạ (seam test) ⇒ nhãn = khoá, pháp lý theo demo", () => {
-    expect(metaOf("fake")).toEqual({ label: "fake", kind: "envelope", legal: true });
-    expect(metaOf("fake", true).legal).toBe(false);
+  it("khoá lạ (seam test) ⇒ nhãn = khoá, pháp lý + chuyển hướng theo demo", () => {
+    expect(metaOf("fake")).toEqual({
+      label: "fake",
+      kind: "envelope",
+      legal: true,
+      redirects: true,
+    });
+    expect(metaOf("fake", true)).toMatchObject({ legal: false, redirects: false });
   });
 });
 

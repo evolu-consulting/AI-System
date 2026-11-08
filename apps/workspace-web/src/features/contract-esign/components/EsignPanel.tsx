@@ -22,6 +22,7 @@ import {
   esignView,
   hasSignIntent,
   hintKey,
+  redirectsToProvider,
   showProviderPicker,
   statusKey,
 } from "../lib/esign-view";
@@ -138,7 +139,7 @@ function Actions({
       {v.canSignNow && (
         <button
           type="button"
-          className={`${BTN} btn-primary`}
+          className={`${BTN} btn-primary data-[hl=true]:ring-2 data-[hl=true]:ring-offset-2 data-[hl=true]:ring-act`}
           disabled={es.busy}
           data-testid="esign-sign-now"
           onClick={onSignNow}
@@ -208,6 +209,16 @@ const signNowOf =
   (providers: ESignProviderOut[] | undefined, es: Es, ask: (o: boolean) => void) => () =>
     showProviderPicker(providers) ? ask(true) : void es.signNow();
 
+/** CR-125 · `?ky=1` với nhà cung cấp tự hoàn tất ký (ký thử): chỉ cuộn tới + nhấn mạnh nút «Ký ngay» ít giây, KHÔNG gọi hub. */
+function focusSignNow() {
+  const b = document.querySelector<HTMLButtonElement>('[data-testid="esign-sign-now"]');
+  if (!b) return;
+  b.scrollIntoView({ block: "center", behavior: "smooth" });
+  b.focus({ preventScroll: true });
+  b.dataset.hl = "true";
+  window.setTimeout(() => delete b.dataset.hl, 3000);
+}
+
 /** Dòng trạng thái đầu thẻ: lượt người xem ⇒ banner "Đến lượt bạn ký — hạn …"; người khác ⇒ "Đang chờ <tên> ký"; còn lại theo trạng thái. */
 function Headline({
   v,
@@ -244,7 +255,7 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
   const s = es.q.data;
   const v = esignView(s, { locked, write });
   const kyDone = useRef(false);
-  // CR-125 · `?ky=1` (thư "Mời ký"): có trạng thái ⇒ MỘT lần quyết định; đúng lượt ⇒ chạy đúng thao tác của nút "Ký ngay"; luôn bỏ `ky` khỏi URL.
+  // CR-125 · `?ky=1` (thư "Mời ký"): có trạng thái ⇒ MỘT lần quyết định; đúng lượt ⇒ DocuSign (chỉ chuyển trang) tự mở, nhà cung cấp tự hoàn tất ký ⇒ chỉ nhấn mạnh nút; luôn bỏ `ky` khỏi URL.
   // biome-ignore lint/correctness/useExhaustiveDependencies: một lần khi trạng thái về (cờ kyDone)
   useEffect(() => {
     if (kyDone.current || !s || !hasSignIntent(window.location.search)) return;
@@ -252,10 +263,14 @@ export function EsignPanel({ id, locked, write }: { id: string; locked: boolean;
     const u = new URL(window.location.href);
     u.searchParams.delete("ky");
     window.history.replaceState(null, "", u.toString());
-    if (
-      decideAutoSign({ ky: true, myTurn: v.canSignNow, signed: s.envelope?.status === "completed" })
-    )
-      signNowOf(s.providers, es, setMethod)();
+    const act = decideAutoSign({
+      ky: true,
+      myTurn: v.canSignNow,
+      signed: s.envelope?.status === "completed",
+      redirectsToProvider: redirectsToProvider(s),
+    });
+    if (act === "open") signNowOf(s.providers, es, setMethod)();
+    else if (act === "focus") focusSignNow();
   }, [s]);
   if (v.mode === "hidden" || !s) return null;
   const e = s.envelope;

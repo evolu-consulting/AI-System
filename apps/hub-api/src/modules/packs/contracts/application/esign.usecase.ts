@@ -14,6 +14,7 @@ import {
   mergeSigners,
   sendableFile,
   settingsOut,
+  signerInTurn,
   storedSigners,
 } from "./esign.helpers";
 import type {
@@ -320,8 +321,7 @@ export function esignUsecase(d: ESignDeps) {
       if (!/^https?:$/.test(u.protocol) || !RETURN_PATH(id).test(u.pathname))
         throw new ESignFail("VALIDATION", "return_url");
       const { e, key: asked } = await resolveChoice(who, id, await openOf(who, id), providerKey);
-      const me = e.signers.find((s) => s.role === "company" && s.client_user_id === who.userId);
-      if (!me) throw new ESignFail("ESIGN_NOT_SIGNER", "not-company-signer");
+      const me = signerInTurn(e.signers, who.userId);
       const p = avail(e.provider);
       if (!p) throw new ESignFail("ESIGN_DISABLED", "provider-unavailable");
       const chosen = asked ?? null;

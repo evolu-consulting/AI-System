@@ -193,6 +193,26 @@ describe("esign-multi · Ký ngay chỉ người ký công ty", () => {
   });
 });
 
+describe("CR-125 · Ký ngay theo thứ tự ký", () => {
+  it("đối tác ký trước mà chưa ký ⇒ người ký công ty bấm Ký ngay = 409 ESIGN_NOT_YOUR_TURN, phong bì giữ nguyên (không hoàn tất)", async () => {
+    const id = await setup();
+    expect((await c.hubCall(P.lan, "PUT", SET, { default_provider: "selfsign" })).status).toBe(200);
+    const partnerFirst = [SIGNERS[1], SIGNERS[0]];
+    expect(
+      (await c.hubCall(P.lan, "POST", `${CBASE}/${id}/esign`, { signers: partnerFirst })).status,
+    ).toBe(201);
+    const early = await c.hubCall(P.lan, "POST", `${CBASE}/${id}/esign/sign-url`, {
+      return_url: RET(id),
+    });
+    expect({ s: early.status, code: codeOf(early) }).toEqual({
+      s: 409,
+      code: "ESIGN_NOT_YOUR_TURN",
+    });
+    const st = await c.hubCall(P.tam, "GET", `${CBASE}/${id}/esign`);
+    expect(st.json.envelope.status).not.toBe("completed");
+  });
+});
+
 describe("esign-multi · cách ly tenant", () => {
   it("default theo công ty (beta không bị acme đổi); beta không thấy/ký/làm mới envelope của acme (404)", async () => {
     const id = await setup();

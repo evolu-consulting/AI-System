@@ -80,6 +80,8 @@ export type ESignProviderEntry = {
   label: string;
   kind: "envelope" | "ca";
   legal: boolean;
+  /** CR-125 · `signUrl` chỉ chuyển sang trang ký của nhà cung cấp. */
+  redirects: boolean;
   available: boolean;
 };
 export type ESignRegistry = {

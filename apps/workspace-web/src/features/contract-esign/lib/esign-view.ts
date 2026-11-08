@@ -51,9 +51,15 @@ export function esignView(
   if (e && (e.status === "sent" || e.status === "delivered")) {
     // CR-125 · x2 · lượt của người xem: có người ký nội bộ chưa ký ⇒ MỘT banner + MỘT nút "Ký ngay"; người khác ⇒ "Đang chờ <tên> ký", không nút.
     const known = e.signers.some((x) => x.is_you !== undefined);
+    // CR-125 · cùng luật server (`isTurnOf`): chưa ký VÀ mọi người `order` nhỏ hơn đã ký ⇒ mới có nút "Ký ngay".
     const mine =
       o.write &&
-      e.signers.some((x) => (known ? x.is_you === true : x.embedded) && x.signed_at === null);
+      e.signers.some(
+        (x) =>
+          (known ? x.is_you === true : x.embedded) &&
+          x.signed_at === null &&
+          e.signers.every((p) => p.order >= x.order || p.signed_at !== null),
+      );
     return {
       ...none,
       mode: "pending",
@@ -128,6 +134,7 @@ export const ESIGN_ERR_CODES = new Set([
   "ESIGN_RESEND_FAILED",
   "ESIGN_SIGNER_NO_EMAIL",
   "ESIGN_NOT_SIGNER",
+  "ESIGN_NOT_YOUR_TURN",
 ]);
 export const esignErrKey = (code: string | undefined | null): string =>
   `contracts.esign.err.${code && ESIGN_ERR_CODES.has(code) ? code : "unknown"}`;
@@ -140,9 +147,26 @@ export const esignErrKey = (code: string | undefined | null): string =>
 export const signReturnUrl = (origin: string, id: string): string =>
   `${origin}/contracts/c/${encodeURIComponent(id)}`;
 
-/** CR-125 · `?ky=1` từ thư "Mời ký": chỉ tự mở trang ký khi đúng lượt người xem và chưa ký; còn lại hiện trang thường. */
-export const decideAutoSign = (i: { ky: boolean; myTurn: boolean; signed: boolean }): boolean =>
-  i.ky && i.myTurn && !i.signed;
+/**
+ * CR-125 · `?ky=1` từ thư "Mời ký" KHÔNG BAO GIỜ hoàn tất chữ ký khi chưa có cú bấm của người dùng:
+ * - `open`: đúng lượt + chưa ký + `sign-url` chỉ trả đường dẫn sang trang ký của nhà cung cấp (DocuSign — người dùng còn ký ở đó) ⇒ tự mở;
+ * - `focus`: đúng lượt nhưng `sign-url` tự hoàn tất ký (ký thử / CA) ⇒ chỉ cuộn tới + nhấn mạnh nút "Ký ngay";
+ * - `none`: không có `ky`, chưa đến lượt (theo thứ tự ký), hoặc đã ký ⇒ trang thường.
+ */
+export type AutoSign = "open" | "focus" | "none";
+export const decideAutoSign = (i: {
+  ky: boolean;
+  myTurn: boolean;
+  signed: boolean;
+  redirectsToProvider: boolean;
+}): AutoSign => {
+  if (!i.ky || !i.myTurn || i.signed) return "none";
+  return i.redirectsToProvider ? "open" : "focus";
+};
+
+/** Nhà cung cấp của phong bì đang mở chỉ chuyển người dùng sang trang ký của họ? (vắng cờ ⇒ false, an toàn). */
+export const redirectsToProvider = (s: ESignStateOut): boolean =>
+  s.providers?.find((p) => p.key === s.envelope?.provider)?.redirects_to_provider === true;
 
 export const hasSignIntent = (search: string): boolean =>
   new URLSearchParams(search).get("ky") === "1";

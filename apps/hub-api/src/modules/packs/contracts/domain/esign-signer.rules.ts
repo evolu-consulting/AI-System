@@ -5,3 +5,9 @@ export type SignerState = { signed_at?: string | null; status?: string | null };
 
 export const isSigned = (s: SignerState): boolean =>
   s.signed_at != null || ["completed", "signed"].includes((s.status ?? "").toLowerCase());
+
+/** CR-125 · đến lượt `m`: chưa ký và mọi người có `order` nhỏ hơn đã ký (cùng `order` ⇒ ký song song). Nhắc ký + "Ký ngay" dùng chung. */
+export const isTurnOf = (
+  signers: readonly (SignerState & { order: number })[],
+  m: SignerState & { order: number },
+): boolean => !isSigned(m) && signers.every((p) => p.order >= m.order || isSigned(p));

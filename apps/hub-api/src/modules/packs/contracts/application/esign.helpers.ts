@@ -9,6 +9,7 @@ import type {
 } from "@ai/contracts/pack-contracts";
 import { effectiveDefault, metaOf } from "../domain/esign.providers";
 import { isOpen } from "../domain/esign.rules";
+import { isTurnOf } from "../domain/esign-signer.rules";
 import type {
   ContractForSign,
   EnvelopeRow,
@@ -25,6 +26,14 @@ export class ESignFail extends Error {
     super(detail);
     this.name = "ESignFail";
   }
+}
+
+/** "Ký ngay": người ký công ty = tài khoản gọi (không phải ⇒ 403) VÀ đã đến lượt (chưa ký, mọi `order` nhỏ hơn đã ký ⇒ không thì 409). */
+export function signerInTurn(signers: readonly StoredSigner[], userId: string): StoredSigner {
+  const me = signers.find((s) => s.role === "company" && s.client_user_id === userId);
+  if (!me) throw new ESignFail("ESIGN_NOT_SIGNER", "not-company-signer");
+  if (!isTurnOf(signers, me)) throw new ESignFail("ESIGN_NOT_YOUR_TURN", "not-your-turn");
+  return me;
 }
 
 export const labelOf = (entries: readonly ESignProviderEntry[], key: string): string =>
@@ -140,6 +149,7 @@ export function settingsOut(
       kind: e.kind,
       available: e.available,
       legal: e.legal,
+      redirects_to_provider: e.redirects,
     })),
     default_provider: def,
     invite_thumbnail: s.inviteThumbnail,

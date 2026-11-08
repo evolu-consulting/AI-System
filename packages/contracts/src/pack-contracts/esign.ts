@@ -20,6 +20,8 @@ export const ESIGN_ERRORS = {
   ESIGN_SIGNER_NO_EMAIL: 422,
   /** esign-multi · "Ký ngay" chỉ cho đúng người ký phía công ty của phong bì. */
   ESIGN_NOT_SIGNER: 403,
+  /** CR-125 · "Ký ngay" chỉ khi đến lượt (mọi người ký có thứ tự nhỏ hơn đã ký) và người xem chưa ký. */
+  ESIGN_NOT_YOUR_TURN: 409,
 } as const;
 export type ESignErrorCode = keyof typeof ESIGN_ERRORS;
 
@@ -110,6 +112,9 @@ export type ESignProviderOut = {
   available: boolean;
   /** Có giá trị pháp lý (ký thử ⇒ false). */
   legal: boolean;
+  /** CR-125 · `sign-url` chỉ trả đường dẫn sang trang ký của nhà cung cấp (người dùng còn phải ký ở đó) ⇒ link `?ky=1` được tự mở.
+   *  false (ký thử, CA ký ngay trong lời gọi) ⇒ `?ky=1` chỉ cuộn tới + nhấn mạnh nút "Ký ngay", người dùng phải bấm. Vắng ⇒ coi là false. */
+  redirects_to_provider?: boolean;
 };
 
 export type ESignSettingsOut = {

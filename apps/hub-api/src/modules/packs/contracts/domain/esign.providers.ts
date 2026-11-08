@@ -7,18 +7,24 @@ type Env = Record<string, string | undefined>;
 /** Khớp `ESignProviderKind` của contract. */
 export type ESignProviderKind = "envelope" | "ca";
 
-export type ProviderMeta = { label: string; kind: ESignProviderKind; legal: boolean };
+/** `redirects` = `signUrl` chỉ trả đường dẫn sang trang ký của nhà cung cấp (không hoàn tất ký trong lời gọi) — CR-125 `?ky=1`. */
+export type ProviderMeta = {
+  label: string;
+  kind: ESignProviderKind;
+  legal: boolean;
+  redirects: boolean;
+};
 
 /** Nhà cung cấp biết tên (thứ tự ở đây KHÔNG quyết định thứ tự — env quyết định). */
 export const PROVIDER_META: Record<string, ProviderMeta> = {
-  docusign: { label: "DocuSign", kind: "envelope", legal: true },
-  selfsign: { label: "Ký thử", kind: "ca", legal: false },
-  misa: { label: "MISA eSign", kind: "ca", legal: true },
+  docusign: { label: "DocuSign", kind: "envelope", legal: true, redirects: true },
+  selfsign: { label: "Ký thử", kind: "ca", legal: false, redirects: false },
+  misa: { label: "MISA eSign", kind: "ca", legal: true, redirects: false },
 };
 
-/** Meta của khoá (khoá lạ — vd `fake` của test — ⇒ nhãn = khoá, loại envelope, pháp lý theo `demo`). */
+/** Meta của khoá (khoá lạ — vd `fake` của test — ⇒ nhãn = khoá, loại envelope, pháp lý + chuyển hướng theo `demo`). */
 export const metaOf = (key: string, demo = false): ProviderMeta =>
-  PROVIDER_META[key] ?? { label: key, kind: "envelope", legal: !demo };
+  PROVIDER_META[key] ?? { label: key, kind: "envelope", legal: !demo, redirects: !demo };
 
 /** Danh sách khoá theo env (đã chuẩn hoá: thường, bỏ trống/trùng/lạ/`none`). */
 export function providerKeysOf(env: Env): string[] {

@@ -10,6 +10,7 @@ import {
   esignView,
   hasSignIntent,
   pickDefaultProvider,
+  redirectsToProvider,
   returnedFromSigning,
   showProviderPicker,
   signReturnUrl,
@@ -25,6 +26,7 @@ const st = (o: Partial<ESignStateOut> = {}): ESignStateOut => ({
   defaults: [],
   providers: [],
   default_provider: "docusign",
+  invite_thumbnail: true,
   ...o,
 });
 const env = (o: Partial<ESignEnvelopeOut> = {}): ESignEnvelopeOut => ({
@@ -62,11 +64,58 @@ const P = (key: string, available = true, legal = true): ESignProviderOut => ({
 });
 
 describe("CR-125 · ý định ký từ thư", () => {
-  it("decideAutoSign: chỉ khi ky + đúng lượt + chưa ký", () => {
-    expect(decideAutoSign({ ky: true, myTurn: true, signed: false })).toBe(true);
-    expect(decideAutoSign({ ky: false, myTurn: true, signed: false })).toBe(false);
-    expect(decideAutoSign({ ky: true, myTurn: false, signed: false })).toBe(false);
-    expect(decideAutoSign({ ky: true, myTurn: true, signed: true })).toBe(false);
+  const D = { ky: true, myTurn: true, signed: false, redirectsToProvider: true };
+  it("decideAutoSign: tự mở CHỈ khi ky + đúng lượt + chưa ký + nhà cung cấp chỉ chuyển trang (DocuSign)", () => {
+    expect(decideAutoSign(D)).toBe("open");
+    expect(decideAutoSign({ ...D, ky: false })).toBe("none");
+    expect(decideAutoSign({ ...D, myTurn: false })).toBe("none");
+    expect(decideAutoSign({ ...D, signed: true })).toBe("none");
+  });
+  it("H1 · nhà cung cấp tự hoàn tất ký (ký thử/CA) ⇒ chỉ focus nút, không bao giờ open", () => {
+    expect(decideAutoSign({ ...D, redirectsToProvider: false })).toBe("focus");
+    expect(decideAutoSign({ ...D, redirectsToProvider: false, myTurn: false })).toBe("none");
+    expect(decideAutoSign({ ...D, redirectsToProvider: false, signed: true })).toBe("none");
+  });
+  it("redirectsToProvider đọc cờ của nhà cung cấp phong bì; vắng cờ/không thấy ⇒ false", () => {
+    const withP = (key: string) =>
+      st({
+        envelope: env({ provider: key }),
+        providers: [
+          { ...P("docusign"), redirects_to_provider: true },
+          { ...P("selfsign", true, false), redirects_to_provider: false },
+          { ...P("misa") },
+        ],
+      });
+    expect(redirectsToProvider(withP("docusign"))).toBe(true);
+    expect(redirectsToProvider(withP("selfsign"))).toBe(false);
+    expect(redirectsToProvider(withP("misa"))).toBe(false);
+    expect(redirectsToProvider(withP("khac"))).toBe(false);
+    expect(redirectsToProvider(st())).toBe(false);
+  });
+  it("M1 · người ký 2 mở link trước người ký 1 thì không có lượt và không tự mở", () => {
+    const sg = (order: number, you: boolean, signed: string | null) => ({
+      role: "company" as const,
+      name: `S${order}`,
+      email: `s${order}@x`,
+      order,
+      embedded: true,
+      is_you: you,
+      status: null,
+      signed_at: signed,
+      provider: null,
+      certificate_ref: null,
+    });
+    const view = (signers: ESignEnvelopeOut["signers"]) =>
+      esignView(st({ envelope: env({ signers }) }), { locked: true, write: true });
+    const early = view([sg(1, false, null), sg(2, true, null)]);
+    expect(early.canSignNow).toBe(false);
+    expect(early.waitingFor).toBe("S1");
+    expect(decideAutoSign({ ...D, myTurn: early.canSignNow })).toBe("none");
+    const turn = view([sg(1, false, "2026-11-01T00:00:00Z"), sg(2, true, null)]);
+    expect(turn.canSignNow).toBe(true);
+    expect(decideAutoSign({ ...D, myTurn: turn.canSignNow })).toBe("open");
+    // ký song song (cùng order) ⇒ ai cũng có lượt
+    expect(view([sg(1, false, null), sg(1, true, null)]).canSignNow).toBe(true);
   });
   it("hasSignIntent đọc ?ky=1", () => {
     expect(hasSignIntent("?ky=1")).toBe(true);
