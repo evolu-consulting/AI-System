@@ -51,7 +51,7 @@ test("CR-121 c17 · thư viện chỉ xem ⇒ Sao chép ⇒ bản riêng sửa �
       (u) => /\/processes\/[0-9a-f-]{36}/.test(u.pathname) && !u.pathname.includes(libId),
     );
     await expect(p.getByTestId("copy-source")).toContainText("Sao từ thư viện:");
-    await expect(p.getByRole("button", { name: "Lưu", exact: true })).toBeVisible();
+    await expect(p.getByRole("button", { name: "Lưu và áp dụng" })).toBeVisible(); // c2: bản riêng lưu là áp dụng
 
     // sao lần hai (hai admin bấm cùng lúc / bấm lại) ⇒ 200 created:false, đúng bản vừa tạo
     const again = await hub(
