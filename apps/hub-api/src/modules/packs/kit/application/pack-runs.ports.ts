@@ -4,6 +4,7 @@
 // contract-flow S1a · cầu v2: def gói (`ensureDef`), run gắn bản ghi gói (`ref`), quyết task (`act`, scope user ⇒ canAct/RLS
 // của engine), đọc dòng thời gian (`stepsView`) + lời gọi hệ thống lọc tenant tường minh.
 
+import type { FormField } from "@ai/contracts/hub-admin";
 import type { EventFlow, ResolvedSlot, RoutedSlot, RouteSlotFacts } from "./slot.ports";
 
 /** Người gọi = user của JWT (cấu trúc khớp `AuthUser`). */
@@ -94,6 +95,8 @@ export type PackStepView = {
   task_ref?: string | null;
   /** CR-124 · q6 · bước (`after.back_to_steps`) mà quyết `fail` được phép lùi về; rỗng/vắng ⇒ stage không có đích lùi. */
   back_to_steps?: number[];
+  /** CR-125 · cr125-form-step-card · stage `form` (bước «Điền thông tin»): trường của snapshot run + giá trị đã gửi (output của stage; null khi chưa gửi). */
+  form?: { fields: FormField[]; values: Record<string, unknown> | null };
 };
 export type PackStepsView = {
   run_id: string;

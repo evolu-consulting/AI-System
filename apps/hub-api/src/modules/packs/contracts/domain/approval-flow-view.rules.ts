@@ -4,6 +4,8 @@
 
 import type {
   FlowActionDef,
+  FlowFormField,
+  FlowFormValues,
   FlowState,
   FlowStepStatus,
   FlowStepView,
@@ -66,11 +68,22 @@ function stepOf(s: CardStep): FlowStepView {
   if (s.kind === "wait_until")
     return { ...base, kind: "wait", until: s.due_at, assignee: { kind: "system" } };
   const g = s.escalated && s.escalated_group_id ? s.escalated_group_id : s.group_id;
-  return {
-    ...base,
-    kind: "review",
-    assignee: { kind: "group", id: g, label: s.escalated_to ?? null, head_only: s.head_only },
+  const assignee = {
+    kind: "group" as const,
+    id: g,
+    label: s.escalated_to ?? null,
+    head_only: s.head_only,
   };
+  // CR-125 · cr125-form-step-card · bước «Điền thông tin» (work): chiếu `form` kèm trường + giá trị đã gửi ⇒ thẻ vẽ ô nhập, không phải Duyệt/Trả lại.
+  if (s.kind === "form" && s.form)
+    return {
+      ...base,
+      kind: "form",
+      assignee,
+      form: { fields: s.form.fields as FlowFormField[] },
+      values: (s.values as FlowFormValues | undefined) ?? null,
+    };
+  return { ...base, kind: "review", assignee };
 }
 
 const ESIGN_STATUS: Record<string, FlowStepStatus> = {
@@ -133,9 +146,29 @@ function actionsOf(card: Card, openIdx: number | null): FlowActionDef[] {
   return out;
 }
 
+/** CR-125 · task của bước form: MỘT hành động «Gửi» mang cả form; gửi qua `POST /review-tasks/:id/form` (đường ghi sẵn có của engine). */
+const submitActions = (form: NonNullable<CardStep["form"]>): FlowActionDef[] => [
+  {
+    key: "submit",
+    label: "Gửi",
+    style: "primary",
+    confirm: false,
+    input: { kind: "form", form: { fields: form.fields as FlowFormField[] } },
+  },
+];
+
 function tasksOf(card: Card): FlowTask[] {
   if (!card.can_act || !card.task_id) return [];
   const open = card.steps?.find((s) => s.status === "open") ?? null;
+  if (open?.kind === "form" && open.form)
+    return [
+      {
+        task_id: card.task_id,
+        step_key: open.key,
+        kind: "form",
+        actions: submitActions(open.form),
+      },
+    ];
   return [
     {
       task_id: card.task_id,

@@ -6,7 +6,9 @@ import type { FlowFormField } from "@ai/contracts/flow";
 import { DateInput } from "@ai/web-kit/ui/DateInput";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FileUploadField } from "~/components/shared/FileUploadField";
 import { checkForm, emptyDraft, type FieldErrors, type FormDraft } from "../lib/form-values";
+import { FormValuesView } from "./FormValues";
 import { StepFrame } from "./StepRow";
 import { FlowFormError, type StepProps } from "./types";
 
@@ -89,12 +91,12 @@ function Input({
       );
     case "file_ref":
       return (
-        <input
+        <FileUploadField
           id={id}
-          className={INPUT}
-          value={str}
-          spellCheck={false}
-          onChange={(e) => onChange(e.target.value)}
+          testId={`flow-file-${f.key}`}
+          label={f.label}
+          ids={str ? [str] : []}
+          onChange={(ids) => onChange(ids[0] ?? "")}
         />
       );
   }
@@ -129,6 +131,7 @@ export default function FormStep({ step, ctx }: StepProps<"form">) {
 
   return (
     <StepFrame step={step} now={ctx.now}>
+      {step.values && <FormValuesView fields={step.form.fields} values={step.values} />}
       {fillable && (
         <form
           data-flow="form"

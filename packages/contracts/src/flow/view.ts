@@ -3,7 +3,7 @@
 // (`FLOW_STEP_KINDS`); map renderer `FlowStepRenderers<R>` bắt buộc đủ mọi loại ⇒ thiếu renderer = lỗi typecheck. Loại lạ trong
 // snapshot cũ không có ở đây: server luôn chiếu về một loại đã biết (`system` khi không có renderer riêng).
 import { z } from "zod";
-import { FlowFormSchema, FlowFormValuesSchema } from "./form";
+import { FlowFormSchema, FlowFormValueSchema, FlowFormValuesSchema } from "./form";
 
 export const FLOW_REF_MAX_BATCH = 100;
 /** Khe `<gói>.<việc>` (khớp CHECK `process_slots_slot_ck`). */
@@ -99,7 +99,13 @@ export const FlowStepViewSchema = z.discriminatedUnion("kind", [
       reminded_at: At.nullable(),
     }),
   }),
-  z.strictObject({ ...StepBase, kind: z.literal("form"), form: FlowFormSchema }),
+  z.strictObject({
+    ...StepBase,
+    kind: z.literal("form"),
+    form: FlowFormSchema,
+    /** CR-125 · giá trị đã gửi (chỉ đọc ở các bước sau + lịch sử); vắng/null ⇒ chưa gửi. */
+    values: z.record(z.string(), FlowFormValueSchema).nullable().optional(),
+  }),
   z.strictObject({ ...StepBase, kind: z.literal("wait"), until: At.nullable() }),
   z.strictObject({ ...StepBase, kind: z.literal("system") }),
   /** CR-120 G1 · bước agent: khoá agent Hub + tóm tắt kết quả (text thuần, đã lọc ở server; null khi chưa chạy/lỗi). */

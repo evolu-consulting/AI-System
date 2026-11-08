@@ -2,6 +2,8 @@
 // `/pack/contracts/approval-settings`). Chỉ thêm — không đổi schema HD1/HD2.
 import { z } from "zod";
 import { IsoDateTime } from "../common";
+import { FlowFormValueSchema } from "../flow/form";
+import { FormFieldsSchema } from "../hub-admin/process-form";
 import { FlowCondSchema } from "./approval-flow";
 import { ProductLinksSchema } from "./product-links";
 
@@ -74,7 +76,7 @@ export const ApprovalCardStepSchema = z.strictObject({
   key: z.string().max(64),
   name: z.string().max(200),
   /** CR-121 D-6 · + bước Thông báo / Chờ tới (tự chạy như Dify, không Group). */
-  kind: z.enum(["review", "dify", "notify", "wait_until"]),
+  kind: z.enum(["review", "dify", "notify", "wait_until", "form"]),
   status: z.enum(APPROVAL_STEP_STATUSES),
   /** Group (phòng) duyệt; null ở bước Dify. UI đổi ra tên qua `GET /pack/contracts/groups`. */
   group_id: z.uuid().nullable(),
@@ -102,6 +104,9 @@ export const ApprovalCardStepSchema = z.strictObject({
   escalated_to: z.string().max(200).optional(),
   /** CR-123 U2 · bước Thông báo không có người nhận (bước vẫn xong): hub điền khi sẵn sàng; vắng ⇒ không cảnh báo. */
   warning: z.literal("NOTIFY_NO_RECIPIENT").optional(),
+  /** CR-125 · cr125-form-step-card · bước «Điền thông tin» (`kind: form`): trường của form trong snapshot run + giá trị đã gửi (đóng bước xong mới có). */
+  form: z.strictObject({ fields: FormFieldsSchema }).optional(),
+  values: z.record(z.string(), FlowFormValueSchema).optional(),
 });
 export type ApprovalCardStep = z.infer<typeof ApprovalCardStepSchema>;
 

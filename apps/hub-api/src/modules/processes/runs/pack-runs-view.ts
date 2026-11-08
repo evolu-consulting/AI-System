@@ -1,6 +1,7 @@
-﻿// contract-flow S1a · đọc cho gói (`PackRunsPort.stepsView` + tìm task cho `act`), scope USER người xem (RLS T) + lọc
+// contract-flow S1a · đọc cho gói (`PackRunsPort.stepsView` + tìm task cho `act`), scope USER người xem (RLS T) + lọc
 // `tenant_id` tường minh. stepsView = 2 câu cố định: (1) run × stage × task review gần nhất (+ tên người quyết),
 // (2) grant của task mở (chỉ khi có). `can_act` = `canAct` của engine (nguồn duy nhất). Luật trạng thái: `pack-steps.rules`.
+import type { FormField } from "@ai/contracts/hub-admin";
 import { withHubScope } from "@ai/db/hub-scope";
 import { sql } from "drizzle-orm";
 import type {
@@ -16,6 +17,7 @@ import { dueOf, stageMeta, stepStatusOf } from "../domain/runs/pack-steps.rules"
 import { alsoGroupsOf, canAct, headGate, overrideOnly } from "../domain/tasks/task-access.rules";
 import type { ProcessRunStatus } from "../domain/types";
 import { RESOLVE_SLOT_SQL } from "../library/slot-resolve.repo";
+import { decisionOf, formOf, stageCode } from "./pack-runs-extra";
 import { collapseModuleSteps, signerNamesOf, signerRefs } from "./pack-runs-modules";
 
 type Ts = Date | string;
@@ -27,6 +29,7 @@ type StageSnap = Parameters<typeof stageMeta>[0] & {
     head_only?: boolean;
     also_group_ids?: string[];
   } | null;
+  executor?: { kind?: string; fields?: FormField[] } | null;
 };
 type Row = {
   run_id: string;
@@ -53,6 +56,8 @@ type Row = {
   group_head: string | null;
   /** CR-123 · u6 · sự kiện stage chờ đã tiêu thụ (null = không có). */
   consumed_event: string | null;
+  /** CR-125 · `process_outputs.fields` của output hiện hành của stage (chỉ dùng cho stage `form`). */
+  form_values: unknown;
 };
 type Grant = { task_id: string; user_id: string | null; group_id: string | null; via: string };
 
@@ -73,6 +78,7 @@ const rowsSql = (runIds: readonly string[], tenantId: string, gs = new Set<strin
     coalesce(nullif(du.display_name, ''), du.username) as decided_name,
     t.assignee_group_id, t.escalate_at, t.escalated_at, t.escalate_group_id,
     (select e.event from hub.process_run_events e where e.consumed_by = s.id and e.tenant_id = r.tenant_id limit 1) as consumed_event,
+    o.fields as form_values,
     coalesce(${approverSql("r.snapshot->'stages'->(s.stage_idx::int)", "r.tenant_id")}, (select d.head_user_id from admin.departments d where d.group_id = t.assignee_group_id
       and d.tenant_id = r.tenant_id)) as group_head
   from hub.process_runs r
@@ -80,6 +86,7 @@ const rowsSql = (runIds: readonly string[], tenantId: string, gs = new Set<strin
   left join lateral (select t.* from hub.review_tasks t where t.stage_run_id = s.id and t.tenant_id = s.tenant_id and t.kind = 'review' -- CR-125 cùng duyệt: thẻ mở, của nhóm người xem trước
     order by (t.status = 'open') desc, (t.assignee_group_id = any(${`{${[...gs].filter((x) => UUID.test(x)).join(",")}}`}::uuid[])) desc, t.created_at desc, t.id desc limit 1) t on true
   left join admin.users du on du.id = t.decided_by and du.tenant_id = r.tenant_id
+  left join hub.process_outputs o on o.id = s.current_output_id and o.tenant_id = s.tenant_id
   where r.id = any(${`{${runIds.join(",")}}`}::uuid[]) and r.tenant_id = ${tenantId}
   order by r.id, s.stage_idx`;
 
@@ -111,8 +118,10 @@ function stepOf(r: Row, canActOf: ActOf): PackStepView {
     task: r.task_id && r.task_status === "open" ? openTask(r.task_id, canActOf(r, stage)) : null,
     task_ref: r.task_id,
     back_to_steps: m.backTo,
+    ...formOf(stage, r),
   };
 }
+
 const openTask = (id: string, a: { can: boolean; override: boolean }) =>
   a.can && a.override ? { id, can_act: true, override: true } : { id, can_act: a.can };
 
@@ -155,31 +164,6 @@ function canActFn(
     const can = canAct(v, task, { ...run, taskAssignee: assignee, status });
     return { can, override: can && overrideOnly(u.userId, groupIds, t) };
   };
-}
-
-/** CR-107 · `process_runs.decision` jsonb `{reason, at}` ⇒ lý do + lúc mở quyết định (hỏng/vắng ⇒ lý do `unknown`). */
-function decisionOf(v: unknown): { reason: string; at: string | null; missing?: string[] } {
-  const o = (typeof v === "string" ? JSON.parse(v) : v) as {
-    reason?: unknown;
-    at?: unknown;
-    missing?: unknown;
-  } | null;
-  const reason = typeof o?.reason === "string" ? o.reason : "unknown";
-  // CR-122 · P18 · `missing_fact`: khoá dữ kiện còn trống (gói đổi sang nhãn).
-  const missing = Array.isArray(o?.missing)
-    ? o.missing.filter((k): k is string => typeof k === "string")
-    : [];
-  return {
-    reason,
-    at: typeof o?.at === "string" ? o.at : null,
-    ...(missing.length ? { missing } : {}),
-  };
-}
-
-/** CR-122 · p19 · mã máy của stage đang chờ quyết (tool lỗi vì sao) → thẻ HĐ nói rõ cách xử lý; vắng ⇒ không thêm trường. */
-function stageCode(rows: readonly Row[]): { code?: string } {
-  const code = rows.find((r) => r.stage_status === "needs_decision" && r.stage_error)?.stage_error;
-  return code ? { code } : {};
 }
 
 /** S1a · dòng thời gian stage của run cho người xem; run không thấy (RLS/tenant) ⇒ null. */

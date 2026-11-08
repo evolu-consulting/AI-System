@@ -54,7 +54,10 @@ export function StepFrame({
         <div className="flex flex-wrap items-center gap-x-2">
           <b>{step.name}</b>
           <span className="text-caption text-dim">
-            {t(`contracts.flowPanel.status.${step.status}`, { defaultValue: step.status })}
+            {t(
+              `contracts.flowPanel.status.${step.kind === "form" && step.status === "passed" ? "filled" : step.status}`,
+              { defaultValue: step.status },
+            )}
           </span>
           <Assignee a={step.assignee} />
           {step.overdue && (

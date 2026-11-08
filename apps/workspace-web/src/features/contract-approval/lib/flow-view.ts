@@ -72,16 +72,22 @@ function stepOf(s: ApprovalCardStep, groups: readonly ContractGroup[], now: numb
   if (s.kind === "notify") return { ...base, kind: "system", assignee: { kind: "system" } };
   if (s.kind === "wait_until")
     return { ...base, kind: "wait", until: s.due_at, assignee: { kind: "system" } };
-  return {
-    ...base,
-    kind: "review",
-    assignee: {
-      kind: "group",
-      id: s.group_id,
-      label: nameOf(groups, s.group_id),
-      head_only: s.head_only,
-    },
+  const assignee = {
+    kind: "group" as const,
+    id: s.group_id,
+    label: nameOf(groups, s.group_id),
+    head_only: s.head_only,
   };
+  // CR-125 · dự phòng khi runtime tắt: bước form hiện đúng loại (chỉ xem; gửi form cần FlowView của hub có task).
+  if (s.kind === "form" && s.form)
+    return {
+      ...base,
+      kind: "form",
+      assignee,
+      form: { fields: s.form.fields },
+      values: s.values ?? null,
+    };
+  return { ...base, kind: "review", assignee };
 }
 
 const ESIGN_STATUS: Record<string, FlowStepStatus> = {

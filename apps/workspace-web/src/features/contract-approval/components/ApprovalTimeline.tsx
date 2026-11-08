@@ -9,6 +9,8 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { FlowEditorLink } from "~/features/settings/components/FlowEditorLink";
 import { FlowPanel, flowViewKey, useFlowView } from "~/platform/flow";
+import { notifyFlowNavChanged } from "~/shared/kernel/flow-nav-event";
+import { approvalKey } from "../api";
 import { useGroups } from "../hooks/use-groups";
 import { noRecipientSteps } from "../lib/card-status";
 import { APPROVAL_SLOT, flowViewOfApproval, withGroupLabels } from "../lib/flow-view";
@@ -40,6 +42,7 @@ export function ApprovalTimeline({
   owner?: boolean;
 }) {
   const { t } = useTranslation();
+  const qc = useQueryClient();
   const groups = useGroups(a.mode === "engine");
   const q = useFlowView({ slot: APPROVAL_SLOT, refId: id });
   useResyncView(id, a);
@@ -63,6 +66,12 @@ export function ApprovalTimeline({
         refId={id}
         view={view}
         overrides={APPROVAL_OVERRIDES}
+        // CR-125 · gửi form xong ⇒ tải lại thẻ duyệt (bước kế, nút Duyệt…) + số «Chờ tôi duyệt» ở menu.
+        onChanged={() => {
+          void qc.invalidateQueries({ queryKey: approvalKey(id) });
+          void qc.invalidateQueries({ queryKey: ["contracts", "list"] });
+          notifyFlowNavChanged();
+        }}
         frame={(steps) => (
           <section data-approval="timeline" className="mb-4 rounded-xl border border-line p-4">
             <div className="mb-1 flex items-center gap-3">

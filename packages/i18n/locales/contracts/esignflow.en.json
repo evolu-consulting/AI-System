@@ -113,9 +113,19 @@
         "returned": "Returned for edits",
         "rejected": "Rejected",
         "failed": "Needs action",
-        "needs_decision": "Needs action"
+        "needs_decision": "Needs action",
+        "filled": "Submitted"
+      },
+      "file": {
+        "uploading": "Uploading file...",
+        "failed": "Could not upload the file. Choose it again (PDF, image, Word, Excel, text; up to 20 MB).",
+        "remove": "Remove file {{name}}",
+        "attached": "Attached file",
+        "removed": "deleted"
       },
       "form": {
+        "yes": "Yes",
+        "no": "No",
         "submit": "Submit",
         "failed": "Could not submit the form. Try again.",
         "error": {

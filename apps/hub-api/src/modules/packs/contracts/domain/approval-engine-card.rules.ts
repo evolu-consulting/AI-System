@@ -45,6 +45,8 @@ export type EngineStageView = {
   idx?: number;
   /** CR-123 · u6 · cụm node module đã gộp một dòng (khớp `PackStepView.module`). */
   module?: { node: string; outcome: ModuleOutcome; signer?: string };
+  /** CR-125 · cr125-form-step-card · stage `form` (khớp `PackStepView.form`). */
+  form?: { fields: unknown[]; values: Record<string, unknown> | null };
 };
 export type ModuleOutcome = "pending" | "waiting" | "done" | "declined" | "expired" | "failed";
 export type EngineStepsView = {
@@ -68,7 +70,7 @@ export type CardStep = {
   idx: number;
   key: string;
   name: string;
-  kind: "review" | "dify" | "notify" | "wait_until";
+  kind: "review" | "dify" | "notify" | "wait_until" | "form";
   status: CardStepStatus;
   group_id: string | null;
   head_only: boolean;
@@ -91,6 +93,9 @@ export type CardStep = {
   overdue?: boolean;
   /** CR-113 · tên Group nhận khi chuyển cấp đã xảy ra (vắng khi chưa chuyển cấp / không biết tên). */
   escalated_to?: string;
+  /** CR-125 · bước «Điền thông tin»: trường của form + giá trị đã gửi (thẻ vẽ ô nhập / xem lại). */
+  form?: { fields: unknown[] };
+  values?: Record<string, unknown>;
 };
 
 /** CR-113 · dữ liệu phụ của thẻ: task đã "duyệt thay", giờ server, tên Group (id ⇒ tên). Vắng ⇒ không hiện trường tương ứng. */
@@ -200,10 +205,13 @@ function runCardStep(st: EngineStageView, x: CardExtras): CardStep {
     idx: stageIdx(st) as number,
     key: st.key,
     name: st.name ?? st.key,
-    kind: "review" as const,
+    kind: st.form ? ("form" as const) : ("review" as const),
     status: st.status,
     group_id: st.group_id ?? null,
     head_only: false,
+    ...(st.form
+      ? { form: { fields: st.form.fields }, ...(st.form.values ? { values: st.form.values } : {}) }
+      : {}),
     escalated_group_id: st.escalated_group_id,
     due_at: st.due_at,
     escalated: st.escalated,

@@ -62,6 +62,8 @@ export function engineApprovalView(
   if (!open)
     return engineAdvancing(a) ? { ...NONE, note: "contracts.approval.engine.advancing" } : NONE;
   if (!(o.write && a.can_act)) return { ...NONE, note: blockedNote(a, open, o.write) };
+  // CR-125 · bước «Điền thông tin»: người làm điền + «Gửi» ngay trên dòng bước (FlowPanel) ⇒ không có Duyệt/Trả lại/Từ chối ở đầu trang.
+  if (open.kind === "form") return NONE;
   // Bước 0 là bước soạn («Xác nhận và lưu») CHỈ ở thẻ máy cũ; lượt flow theo sự kiện (`from_run`) bước 0 là stage thật (vd Duyệt) ⇒ Đạt / Trả lại / Từ chối.
   if (open.idx === 0 && a.from_run !== true)
     return { ...NONE, confirm: true, reject: true, redo: o.hasSource };

@@ -134,6 +134,49 @@ describe("FormStep", () => {
   });
 });
 
+describe("FormStep · giá trị đã gửi (chỉ đọc) + ô tệp", () => {
+  test("bước đã xong ⇒ nhãn «Đã điền» + giá trị theo loại (tiền, ngày, ô tick, lựa chọn), không form", () => {
+    const s: Extract<FlowStepView, { kind: "form" }> = {
+      ...base,
+      kind: "form",
+      status: "passed",
+      form: {
+        fields: [
+          { key: "ncc", label: "Nhà cung cấp", type: "text", required: true, max_len: 50 },
+          { key: "gia", label: "Giá báo", type: "money", required: false, min: 0 },
+          { key: "han", label: "Hạn", type: "date", required: false },
+          { key: "ok", label: "Đã kiểm", type: "checkbox", required: false },
+          {
+            key: "loai",
+            label: "Loại",
+            type: "select",
+            required: false,
+            options: [{ value: "a", label: "Loại A" }],
+          },
+        ],
+      },
+      values: { ncc: "An <b>Phát", gia: 480000000, han: "2026-11-20", ok: true, loai: "a" },
+    };
+    const out = renderToStaticMarkup(<FormStep step={s} ctx={ctxOf(view([s]), true)} />);
+    expect(out).toContain("Đã điền");
+    expect(out).toContain("An &lt;b&gt;Phát");
+    expect(out).toContain("480.000.000 ₫");
+    expect(out).toContain("20/11/2026");
+    expect(out).toContain("Có");
+    expect(out).toContain("Loại A");
+    expect(out).not.toContain("<form");
+  });
+  test("trường file_ref khi điền ⇒ ô chọn tệp (data-testid flow-file-<khoá>), không ô chữ", () => {
+    const s: Extract<FlowStepView, { kind: "form" }> = {
+      ...formStep(),
+      form: { fields: [{ key: "tep", label: "Tệp báo giá", type: "file_ref", required: false }] },
+    };
+    const out = renderToStaticMarkup(<FormStep step={s} ctx={ctxOf(view([s]), true)} />);
+    expect(out).toContain('type="file"');
+    expect(out).toContain('data-testid="flow-file-tep"');
+  });
+});
+
 describe("FlowPanelBody (trạng thái)", () => {
   const sync: StepOverrides = {
     form: ((p: { step: FlowStepView }) => <li data-x="form">{p.step.name}</li>) as never,
