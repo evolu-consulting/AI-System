@@ -43,6 +43,12 @@ test("quản trị community: sao chép flow Duyệt bài, thêm bước Duyệt
     .first()
     .dragTo(pane, { targetPosition: { x: pb.width * 0.5, y: pb.height * 0.2 }, force: true });
   await expect(nodes).toHaveCount(before + 1);
+  // bước Duyệt mới chưa có người duyệt (không đoán nhóm): mở bước, chọn một người duyệt thật của công ty.
+  const ai = page.getByTestId("stage-approve-basics").getByLabel("Ai duyệt");
+  if (!(await ai.isVisible()))
+    await page.locator("[data-stage-uid]", { hasText: "Bước duyệt mới" }).click();
+  await expect(ai).toBeVisible();
+  await ai.selectOption({ index: 1 });
   await page.getByRole("button", { name: "Lưu và áp dụng" }).click();
   await expect(page.getByRole("alert").filter({ hasText: /Chưa lưu được/ })).toHaveCount(0);
 });
