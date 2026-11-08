@@ -113,6 +113,7 @@ export class ManualStartService {
         flow_key: f.row.key,
         name: f.row.name,
         company_flow_id: f.row.company_flow_id,
+        description: f.row.description ?? "",
         form: { fields: f.cfg?.fields ?? [], title_template: f.cfg?.title_template ?? "" },
       }));
   }

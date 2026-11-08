@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { PageHead, Panel } from "~/components/shared/layout";
 import { Skeleton } from "~/components/ui/skeleton";
 import { fetchStartable, requestKeys } from "../api";
+import { MyRequests } from "../components/MyRequests";
 
 export function RequestsPage() {
   const { t } = useTranslation();
@@ -44,9 +45,11 @@ export function RequestsPage() {
                   className="flex min-w-0 items-center gap-3 px-5 py-3 max-sm:px-4"
                 >
                   <b className="min-w-0 flex-1 truncate text-[14.5px] font-semibold">{f.name}</b>
-                  <span className="shrink-0 text-label text-dim">
-                    {t("contracts.requests.fields", { n: f.form.fields.length })}
-                  </span>
+                  {f.description ? (
+                    <span className="min-w-0 max-w-[40%] truncate text-label text-dim">
+                      {f.description}
+                    </span>
+                  ) : null}
                   <span className="btn btn-primary btn-sm">{t("contracts.requests.open")}</span>
                 </Link>
               </li>
@@ -54,6 +57,7 @@ export function RequestsPage() {
           </ul>
         </Panel>
       )}
+      <MyRequests />
     </div>
   );
 }

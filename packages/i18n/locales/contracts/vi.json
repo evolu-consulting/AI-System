@@ -827,7 +827,15 @@
       "empty": "Chưa có loại yêu cầu nào cho bạn",
       "emptyBody": "Công ty chưa bật quy trình bắt đầu bằng phiếu, hoặc bạn chưa thuộc nhóm được tạo. Nhờ quản trị công ty kiểm tra ở Công ty › Quy trình.",
       "open": "Tạo",
-      "fields": "{{n}} ô",
+      "mineTitle": "Đã gửi của tôi",
+      "mineEmpty": "Bạn chưa gửi yêu cầu nào.",
+      "mineWaitingFor": "Đang chờ {{who}}",
+      "mine": {
+        "waiting": "Đang chờ duyệt",
+        "done": "Đã hoàn tất",
+        "returned": "Bị trả lại",
+        "rejected": "Từ chối"
+      },
       "loadError": "Không tải được danh sách. Thử lại sau.",
       "newTitle": "Phiếu: {{name}}",
       "back": "Quay lại danh sách",
