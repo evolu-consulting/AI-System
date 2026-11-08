@@ -175,12 +175,48 @@ async function actOnWaiting(page: Page): Promise<boolean> {
  * (`approval-task-row` = duyệt, `signing-task-row` = ký; từ /my-work, loại trùng với dòng yêu cầu): mở thẻ HĐ → «Duyệt»/«Đạt»
  * (chờ API quyết định OK) hoặc «Ký ngay» (Ký thử, chờ trang trả về `esign=return`).
  */
+async function approveOnRequestPage(page: Page): Promise<boolean> {
+  await page.goto(runUrl);
+  await expect(page.locator("[data-run]").first()).toBeVisible({ timeout: 30_000 });
+  const approve = page.getByTestId("request-approve").first();
+  await expect(approve)
+    .toBeVisible({ timeout: 15_000 })
+    .catch(() => undefined);
+  if (!(await approve.isVisible())) return false;
+  const [res] = await Promise.all([
+    page.waitForResponse(
+      (r) => /\/review-tasks\/[^/]+\/decision/.test(r.url()) && r.request().method() === "POST",
+      { timeout: 30_000 },
+    ),
+    approve.click(),
+  ]);
+  expect(res.ok()).toBe(true);
+  return true;
+}
+
 async function approveOnCard(page: Page): Promise<boolean> {
-  const btn = page.locator("[data-approval=pass], [data-approval=approve]").first();
+  const btn = page
+    .locator(
+      "[data-approval=pass], [data-approval=approve], [data-testid=request-approve], [data-testid=approval-approve]",
+    )
+    .or(page.getByRole("button", { name: /^(Duyệt|Đạt)$/ }))
+    .first();
   await expect(btn)
     .toBeVisible({ timeout: 20_000 })
     .catch(() => undefined);
-  if (!(await btn.isVisible())) return false;
+  if (!(await btn.isVisible())) {
+    // chẩn đoán: thẻ HĐ không có nút duyệt cho người này ⇒ in chữ + nút của trang
+    const buttons = await page.getByRole("button").allInnerTexts();
+    const text = (
+      (await page
+        .locator("main")
+        .innerText()
+        .catch(() => "")) || ""
+    ).replace(/\s+/g, " ");
+    console.log(`[card] ${page.url()} buttons=${JSON.stringify(buttons)} :: ${text.slice(0, 900)}`);
+    await page.screenshot({ path: test.info().outputPath(`card-${Date.now()}.png`) });
+    return false;
+  }
   const [res] = await Promise.all([
     page.waitForResponse(
       (r) =>
