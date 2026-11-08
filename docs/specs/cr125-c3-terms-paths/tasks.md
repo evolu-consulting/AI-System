@@ -31,4 +31,4 @@ Trạng thái gộp: chưa gộp
 Không thay đổi hành vi (lý do: chỉ đổi chữ hiển thị, gom helper tên/mã HĐ giữ nguyên thứ tự hiện có, thêm check tĩnh)
 
 ## Việc còn lại
-Chạy e2e hành trình trên evotest, chụp 2 màn, relock test.
+P-a pf4: process-library sửa tên tab (Mẫu có sẵn). 3 spec (admin-editor, editor-steps, library-readonly-copy) đỏ cả trên gd0 do BUG SẢN PHẨM: admin-web /processes/<id> crash `reading 'map'` ⇒ ghi known-red, cần lát sửa editor. run-unread.pa.ts chập chờn.

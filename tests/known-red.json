@@ -23,6 +23,30 @@
       "owner": "điều phối CR-121",
       "expires": "2026-11-13",
       "since": "2026-11-06"
+    },
+    {
+      "id": "admin-editor.pa.ts",
+      "suite": "e2e:P-a",
+      "reason": "BUG SẢN PHẨM trên gd0: trang /processes/<id> của admin-web văng 'Something went wrong' (TypeError: Cannot read properties of undefined (reading 'map')) với quy trình thư viện/mẫu seed. Chưa sửa test để không che lỗi; cần lát sửa editor (2026-11-08, c3).",
+      "owner": "điều phối CR-125",
+      "expires": "2026-11-15",
+      "since": "2026-11-08"
+    },
+    {
+      "id": "editor-steps.pa.ts",
+      "suite": "e2e:P-a",
+      "reason": "BUG SẢN PHẨM trên gd0: trang /processes/<id> của admin-web văng 'Something went wrong' (TypeError: Cannot read properties of undefined (reading 'map')) với quy trình thư viện/mẫu seed. Chưa sửa test để không che lỗi; cần lát sửa editor (2026-11-08, c3).",
+      "owner": "điều phối CR-125",
+      "expires": "2026-11-15",
+      "since": "2026-11-08"
+    },
+    {
+      "id": "library-readonly-copy.pa.ts",
+      "suite": "e2e:P-a",
+      "reason": "BUG SẢN PHẨM trên gd0: trang /processes/<id> của admin-web văng 'Something went wrong' (TypeError: Cannot read properties of undefined (reading 'map')) với quy trình thư viện/mẫu seed. Chưa sửa test để không che lỗi; cần lát sửa editor (2026-11-08, c3).",
+      "owner": "điều phối CR-125",
+      "expires": "2026-11-15",
+      "since": "2026-11-08"
     }
   ]
 }

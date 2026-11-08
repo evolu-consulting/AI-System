@@ -35,7 +35,7 @@ test("sửa Form, xuất bản, gán tenant, canvas khoá nút hệ thống", as
 
     // danh sách thư viện: khe "Dùng cho" nằm dưới tên (CR-105 UAT, bảng vừa 1440px) + huy hiệu mặc định; mẫu chạy thử nằm ở tab riêng
     await expect(p.getByRole("tab", { name: "Thư viện" })).toBeVisible();
-    await expect(p.getByRole("tab", { name: /Mẫu · chạy thử/ })).toBeVisible();
+    await expect(p.getByRole("tab", { name: /Mẫu có sẵn/ })).toBeVisible();
     const table = p.getByRole("table", { name: "Quy trình" });
     await expect(table.getByRole("columnheader", { name: "Dùng cho" })).toHaveCount(0);
     const base = table.getByRole("row").filter({ hasText: "Quy trình HĐ mặc định" }).first();
