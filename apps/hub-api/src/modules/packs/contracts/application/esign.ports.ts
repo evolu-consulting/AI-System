@@ -17,7 +17,14 @@ export type ESignEnvelopeInfo = {
   status: string;
   reason: string | null;
   completedAt: string | null;
-  recipients: { email: string; status: string | null; signedAt: string | null }[];
+  recipients: {
+    email: string;
+    status: string | null;
+    signedAt: string | null;
+    /** Mã người nhận do NÚT GỬI đặt (DocuSign `recipientId` = vị trí + 1) — ghép người ký chính xác khi có. */
+    recipientId?: string | null;
+    routingOrder?: number | null;
+  }[];
 };
 
 /** Kết quả kiểm webhook của nhà cung cấp: chỉ envelopeId được tin (đã xác thực). */

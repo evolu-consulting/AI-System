@@ -79,8 +79,9 @@ export function dueAtOf(createdAt: string, dueH: number | null): string | null {
   return Number.isFinite(t) ? new Date(t + dueH * 3_600_000).toISOString() : null;
 }
 
-/** Trạng thái người ký theo email từ nhà cung cấp; ký xong cả envelope mà không có chi tiết ⇒ coi mọi người đã ký.
- *  CR-125 · cùng email xuất hiện nhiều lần (demo dùng một hộp thư cho nhiều người ký) ⇒ ghép lần lượt theo thứ tự, không dồn về người đầu.
+/** Trạng thái người ký từ nhà cung cấp; ký xong cả envelope mà không có chi tiết ⇒ coi mọi người đã ký.
+ *  Ghép người nhận ↔ người ký theo THỨ TỰ ƯU TIÊN: (1) `recipientId` (= vị trí + 1 lúc gửi) — chính xác kể cả khi nhà cung cấp trả
+ *  danh sách khác thứ tự / trùng email; (2) `routingOrder` + email; (3) email lần lượt theo vị trí (nhà cung cấp không báo mã).
  *  Nhà cung cấp báo người ký `completed` mà thiếu mốc giờ ⇒ lấy mốc phong bì / `fallbackAt` (không để "đã ký" mà `signed_at` rỗng). */
 export function mergeSigners(
   s: StoredSigner[],
@@ -89,24 +90,30 @@ export function mergeSigners(
   fallbackAt: string = new Date().toISOString(),
 ): StoredSigner[] {
   const used = new Set<number>();
-  return s.map((x) => {
-    const at = info.recipients.findIndex(
-      (y, i) => !used.has(i) && y.email.toLowerCase() === x.email.toLowerCase(),
+  const pick = (x: StoredSigner, n: number): number => {
+    const free = (i: number) => !used.has(i);
+    const sameMail = (i: number) =>
+      info.recipients[i]?.email.toLowerCase() === x.email.toLowerCase();
+    const idx = info.recipients.map((_, i) => i);
+    return (
+      idx.find((i) => free(i) && info.recipients[i]?.recipientId === String(n + 1)) ??
+      idx.find((i) => free(i) && sameMail(i) && info.recipients[i]?.routingOrder === x.order) ??
+      idx.find((i) => free(i) && sameMail(i) && info.recipients[i]?.recipientId == null) ??
+      -1
     );
+  };
+  return s.map((x, n) => {
+    const at = pick(x, n);
     const r = at >= 0 ? info.recipients[at] : undefined;
     if (at >= 0) used.add(at);
     if (r) {
       const done = isSigned({ status: r.status });
-      return {
-        ...x,
-        status: r.status,
-        signed_at: r.signedAt ?? (done ? (info.completedAt ?? fallbackAt) : null),
-      };
+      const when = r.signedAt ?? (done ? (info.completedAt ?? fallbackAt) : null);
+      return { ...x, status: r.status, signed_at: when };
     }
     return st === "completed" ? { ...x, status: "completed", signed_at: info.completedAt } : x;
   });
 }
-
 /** Gửi ký được: HĐ thấy được + đã duyệt xong (khoá) + chưa có envelope đang chờ + tệp PDF ⇒ tệp. */
 export function sendableFile(c: ContractForSign | null, e: EnvelopeRow | null) {
   if (!c) throw new ESignFail("NOT_FOUND", "contract");

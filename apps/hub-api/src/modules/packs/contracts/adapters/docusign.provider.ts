@@ -235,6 +235,8 @@ export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider 
         recipients?: {
           signers?: {
             email: string;
+            recipientId?: string;
+            routingOrder?: string;
             status?: string;
             signedDateTime?: string;
             declinedReason?: string;
@@ -251,6 +253,8 @@ export function docusignProvider(cfg: ESignConfig, d: Deps = {}): ESignProvider 
           email: s.email,
           status: s.status ?? null,
           signedAt: s.signedDateTime ?? null,
+          recipientId: s.recipientId ?? null,
+          routingOrder: s.routingOrder !== undefined ? Number(s.routingOrder) : null,
         })),
       };
     },

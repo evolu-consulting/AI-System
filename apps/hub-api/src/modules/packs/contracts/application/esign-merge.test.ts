@@ -2,7 +2,7 @@
 // `completed` thiếu mốc giờ vẫn có `signed_at` (một định nghĩa "đã ký" với web/hub).
 import { describe, expect, it } from "bun:test";
 import { mergeSigners } from "./esign.helpers";
-import type { StoredSigner } from "./esign.ports";
+import type { ESignEnvelopeInfo, StoredSigner } from "./esign.ports";
 
 const S = (
   order: number,
@@ -19,7 +19,7 @@ const S = (
   provider: null,
   certificate_ref: null,
 });
-const info = (recipients: { email: string; status: string | null; signedAt: string | null }[]) => ({
+const info = (recipients: ESignEnvelopeInfo["recipients"]) => ({
   status: "sent",
   reason: null,
   completedAt: null,
@@ -57,5 +57,33 @@ describe("mergeSigners", () => {
       "2026-11-08T02:00:00.000Z",
     );
     expect(r[0]?.signed_at).toBe("2026-11-08T02:00:00.000Z");
+  });
+  it("nhà cung cấp trả người nhận KHÁC thứ tự ⇒ ghép theo recipientId (= vị trí + 1), kể cả trùng email", () => {
+    const r = mergeSigners(
+      [S(1, "d@x"), S(2, "d@x", "partner")],
+      info([
+        { email: "d@x", status: "sent", signedAt: null, recipientId: "2", routingOrder: 2 },
+        {
+          email: "d@x",
+          status: "completed",
+          signedAt: "2026-11-08T01:00:00Z",
+          recipientId: "1",
+          routingOrder: 1,
+        },
+      ]),
+      "sent",
+    );
+    expect(r.map((x) => x.signed_at)).toEqual(["2026-11-08T01:00:00Z", null]);
+  });
+  it("không có recipientId ⇒ ghép theo routingOrder + email; không có cả hai ⇒ theo vị trí", () => {
+    const r = mergeSigners(
+      [S(1, "d@x"), S(2, "d@x", "partner")],
+      info([
+        { email: "d@x", status: "sent", signedAt: null, routingOrder: 2 },
+        { email: "d@x", status: "completed", signedAt: "2026-11-08T01:00:00Z", routingOrder: 1 },
+      ]),
+      "sent",
+    );
+    expect(r.map((x) => x.signed_at)).toEqual(["2026-11-08T01:00:00Z", null]);
   });
 });

@@ -6,7 +6,6 @@ import type { ESignSettingsOut, ESignSignerIn, ESignStateOut } from "@ai/contrac
 import type { PackSystemUow, PackUow, PackWho } from "../../kit/public";
 import { contractNameOf } from "../domain/contract-name";
 import { defaultSigners, type ESignStatus, isOpen, mapEnvelopeStatus } from "../domain/esign.rules";
-import { isTurnOf } from "../domain/esign-signer.rules";
 import {
   ESignFail,
   envelopeOut,
@@ -33,6 +32,7 @@ import { esignNodeApi, type NodeDirectory, type SendNodeOpts } from "./esign-nod
 import { storeSignedFile } from "./esign-signed-file";
 import { esignSwitch } from "./esign-switch";
 import { patchOf, syncApply, syncable } from "./esign-sync-guard";
+import { syncThrottle } from "./esign-throttle";
 import { freshTurnOf } from "./esign-turn";
 import { errName, VOID_PENDING, voidForExpiry, voidForReopen } from "./esign-void";
 
@@ -113,6 +113,14 @@ export function esignUsecase(d: ESignDeps) {
       .catch((e: unknown) =>
         d.warn?.("esign-flow-hook-failed", { contract_id: row.contractId, error: errName(e) }),
       );
+  };
+
+  /** Lệnh do người dùng bấm (làm mới, kiểm lượt của Ký ngay): phong bì vừa đồng bộ < 10 s ⇒ không gọi nhà cung cấp, dùng trạng thái trong DB. */
+  const gap = syncThrottle(() => d.now?.() ?? new Date());
+  const syncByUser = async (tid: string, row: EnvelopeRow, run: Run): Promise<void> => {
+    if (gap.recent(row.envelopeId)) return;
+    await sync(tid, row, run);
+    gap.mark(row.envelopeId);
   };
 
   /** Gửi ký trong `run` (tenant của người bấm, hoặc hệ thống cho bước Ký số tự động); người ký công ty = `who.userId`. */
@@ -203,7 +211,7 @@ export function esignUsecase(d: ESignDeps) {
     return e;
   };
 
-  const freshTurn = freshTurnOf({ avail, sync, openOf, run: tenantRun, warn: d.warn });
+  const freshTurn = freshTurnOf({ avail, sync: syncByUser, openOf, run: tenantRun, warn: d.warn });
   const anchorsFor = anchorsForOf(d.anchors, (k) => kindOf(d.providers.entries, k));
 
   /** CR-125 · m4 · MOD-FR-11 · đổi cách ký lúc ký khác loại phong bì (`esign-switch.ts`). */
@@ -293,7 +301,7 @@ export function esignUsecase(d: ESignDeps) {
         if (!(await r.esign.contract(id))) throw new ESignFail("NOT_FOUND", "contract");
         return r.esign.latest(id);
       });
-      if (e) await sync(who.tenantId, e, tenantRun(who));
+      if (e) await syncByUser(who.tenantId, e, tenantRun(who));
       return state(who, id);
     },
 
