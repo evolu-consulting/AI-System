@@ -73,6 +73,7 @@ async function openCopy(page: Page): Promise<void> {
       .filter({ hasText: "Được gán" })
       .getByRole("button", { name: "Sao chép để sửa" })
       .click();
+    await page.getByTestId("copy-confirm").click();
     copy = flowRows(box).filter({ hasText: "Sao từ" });
     await expect(copy).toBeVisible();
   }

@@ -210,6 +210,7 @@ test("G2 · tenant_admin: Sao chép → 3 lỗi 409 → sửa người duyệt �
 
   // Sao chép để sửa ⇒ nháp "Sao từ …", bản gốc vẫn Đang bật
   await orig.getByRole("button", { name: "Sao chép để sửa" }).click();
+  await page.getByTestId("copy-confirm").click();
   const copy = flowRows(box).filter({ hasText: `Sao từ ${FLOW} · v1` });
   await expect(copy).toBeVisible();
   await expect(copy).toContainText("Tắt · chưa áp dụng");

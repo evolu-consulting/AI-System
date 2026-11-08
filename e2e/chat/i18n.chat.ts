@@ -25,7 +25,7 @@ test("CHAT-AC-36 · chọn English: lời chào tiếng Anh, không lộ chuỗi
 
 const BODY_BG = () => getComputedStyle(document.body).backgroundColor;
 
-test("CHAT-AC-35 · theme T1: Tối đặt class dark + nền body rgb(15, 16, 32) (CR-049 #0F1020), nhớ sau tải lại, theo hệ thống [E-T1-theme]", async ({
+test("CHAT-AC-35 · theme T1: Tối đặt class dark + nền body rgb(14, 15, 28) (CR-125 G4 #0E0F1C), nhớ sau tải lại, theo hệ thống [E-T1-theme]", async ({
   page,
 }) => {
   await page.emulateMedia({ colorScheme: "light" });
@@ -36,7 +36,7 @@ test("CHAT-AC-35 · theme T1: Tối đặt class dark + nền body rgb(15, 16, 3
     .getByRole("radio", { name: "Tối" })
     .click();
   await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
-  expect(await page.evaluate(BODY_BG)).toBe("rgb(15, 16, 32)");
+  expect(await page.evaluate(BODY_BG)).toBe("rgb(14, 15, 28)");
   await page.reload();
   await expect(page.locator("html")).toHaveClass(/(^|\s)dark(\s|$)/);
   const dlg2 = await openSettings(page);

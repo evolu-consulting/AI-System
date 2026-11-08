@@ -40,7 +40,7 @@ test("ADM-FR-62 · M3-R01 · '+ Tạo group': key 'Ke Toan 2' → chuẩn hoá '
   await expect(toast(page, "Đã tạo Kế toán 2")).toBeVisible();
 });
 
-test("ADM-FR-62 · M3-R01 · key trùng 'ke-toan' → 'Key đã được dùng trong tenant này'; key sai 'a' → 'Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)'; không tạo group", async ({
+test("ADM-FR-62 · M3-R01 · key trùng 'ke-toan' → 'Key đã được dùng trong công ty này'; key sai 'a' → 'Chỉ dùng chữ thường không dấu, số, dấu - (2–32 ký tự)'; không tạo group", async ({
   page,
 }) => {
   await loginAs(page, "acme", "binh");
@@ -54,7 +54,7 @@ test("ADM-FR-62 · M3-R01 · key trùng 'ke-toan' → 'Key đã được dùng t
   ).toBeVisible();
   await key.fill("ke-toan");
   await page.getByRole("button", { name: "Tạo group" }).click();
-  await expect(page.getByText("Key đã được dùng trong tenant này")).toBeVisible();
+  await expect(page.getByText("Key đã được dùng trong công ty này")).toBeVisible();
   await expect(page).toHaveURL(/\/groups\/new/);
   const n = await withOwner(async (sql) => {
     const [r] = await sql`select count(*)::int as n from admin.groups where key = 'ke-toan'`;

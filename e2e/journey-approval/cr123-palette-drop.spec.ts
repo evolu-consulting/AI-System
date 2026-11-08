@@ -68,6 +68,7 @@ test("U4 · công ty sao chép flow, mở trình sửa, KÉO 'Thông báo' từ 
   await page.goto(`${ADMIN}/tenants/${tenantId}?tab=processes`);
   const box = await openCompanyFlows(page);
   await flowRow(box, FLOW).getByRole("button", { name: "Sao chép để sửa" }).click();
+  await page.getByTestId("copy-confirm").click();
   const copy = flowRows(box).filter({ hasText: `Sao từ ${FLOW} · v1` });
   await expect(copy).toBeVisible();
   await copy

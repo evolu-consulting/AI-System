@@ -310,6 +310,7 @@ test("U8 · thả Duyệt đứng riêng, kéo mũi tên 'Ký xong' tới nó, k
   await page.goto(`${ADMIN}/tenants/${tenantId}?tab=processes`);
   const box = await openCompanyFlows(page);
   await flowRow(box, FLOW).getByRole("button", { name: "Sao chép để sửa" }).click();
+  await page.getByTestId("copy-confirm").click();
   const copy = flowRows(box).filter({ hasText: `Sao từ ${FLOW} · v1` });
   await expect(copy).toBeVisible();
   await copy.getByRole("link", { name: "Mở", exact: true }).click();
@@ -406,6 +407,7 @@ test("U12 · mũi tên tới bước nằm trước (Thông báo → Kết thúc
   await page.goto(`${ADMIN}/tenants/${tenantId}?tab=processes`);
   const box = await openCompanyFlows(page);
   await flowRow(box, FLOW12).getByRole("button", { name: "Sao chép để sửa" }).click();
+  await page.getByTestId("copy-confirm").click();
   const copy = flowRows(box).filter({ hasText: `Sao từ ${FLOW12} · v1` });
   await expect(copy).toBeVisible();
   await copy.getByRole("link", { name: "Mở", exact: true }).click();
@@ -475,6 +477,7 @@ test("U12b · trình tự demo: thả Duyệt (chung cột), Ký xong → Duyệ
   await page.goto(`${ADMIN}/tenants/${tenantId}?tab=processes`);
   const box = await openCompanyFlows(page);
   await flowRow(box, FLOW12B).getByRole("button", { name: "Sao chép để sửa" }).click();
+  await page.getByTestId("copy-confirm").click();
   const copy = flowRows(box).filter({ hasText: `Sao từ ${FLOW12B} · v1` });
   await expect(copy).toBeVisible();
   await copy.getByRole("link", { name: "Mở", exact: true }).click();

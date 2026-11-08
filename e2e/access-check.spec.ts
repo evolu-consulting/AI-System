@@ -136,10 +136,10 @@ test("ADM-FR-34 · M3-R12 · lan: bao-cao thiếu thành viên beta → nút 'Th
   expect(n).toBe(1);
 });
 
-test("ADM-FR-36 · M3-R13 · username không có trong tenant → 'Không tìm thấy người dùng này trong tenant.'", async ({
+test("ADM-FR-36 · M3-R13 · username không có trong tenant → 'Không tìm thấy người dùng này trong công ty.'", async ({
   page,
 }) => {
   await loginAs(page, "acme", "binh");
   await page.goto("/access?tab=check&user=khong-co&tenant=acme");
-  await expect(page.getByText("Không tìm thấy người dùng này trong tenant.")).toBeVisible();
+  await expect(page.getByText("Không tìm thấy người dùng này trong công ty.")).toBeVisible();
 });
