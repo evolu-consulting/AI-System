@@ -23,6 +23,7 @@ Không (kịch bản thử tay trên stack UAT local, xem tài liệu).
 - Dựng 20 bước bằng payload API (trần 20 bước/flow); canvas UI dùng để tạo từ mẫu, Xuất bản, Gán, Sao chép, chụp Ngang/Dọc.
 
 ## Delta (so với docs/current)
+Trạng thái gộp: chưa gộp
 Không thay đổi hành vi (lý do: lát chỉ thêm kịch bản demo trong tools/demo và tài liệu thử nghiệm).
 
 ## Việc còn lại
