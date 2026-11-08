@@ -312,3 +312,13 @@ export async function revokeEntitlement(
     .returning({ id: featureEntitlements.featureId });
   return rows.length;
 }
+
+/** CR-125 c5b · id feature theo khoá (một nguồn với `findFeature`); vắng ⇒ null. */
+export async function featureIdByKey(tx: Tx, key: string): Promise<string | null> {
+  const [row] = await tx
+    .select({ id: features.id })
+    .from(features)
+    .where(eq(features.key, key))
+    .limit(1);
+  return row?.id ?? null;
+}

@@ -2,6 +2,7 @@
 import { useTranslation } from "react-i18next";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { type ListRow, statusOf } from "../../lib/library-list";
+import { isLegacySlotTemplate } from "../../lib/library-view";
 import { libraryConditions, stepsDisplay } from "../../lib/step-chips";
 import { StepChips } from "../StepChips";
 
@@ -47,6 +48,11 @@ export function UsedByCell({ row }: { row: ListRow }) {
         </span>
       )}
       {row.is_default ? <DefaultPill slotLabel={row.slot_label ?? ""} /> : null}
+      {isLegacySlotTemplate(row) ? (
+        <span data-testid="library-legacy-pill">
+          <StatusBadge tone="off">{t("tenants.companyFlows.legacy")}</StatusBadge>
+        </span>
+      ) : null}
     </span>
   );
 }

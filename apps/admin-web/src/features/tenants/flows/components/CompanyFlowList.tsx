@@ -30,6 +30,7 @@ import {
 } from "../lib/company-flow-view";
 import { canSeeFlowSwitch } from "../lib/flow-switch-access";
 import { AssignFlow } from "./AssignFlow";
+import { CopyDialog } from "./CopyDialog";
 import { FlowSwitch } from "./FlowSwitch";
 
 /** Cùng lưới cho tiêu đề và mọi dòng ⇒ cột thẳng mép. */
@@ -87,6 +88,8 @@ function Row(p: {
   compact?: boolean;
   onOp: (a: FlowOp) => void;
   onDrop: (fromId: string, toId: string) => void;
+  /** CR-125 · c5b · "Sao chép để sửa" mở hộp nói trước mẫu dùng được chưa. */
+  onCopy?: (r: CompanyFlowRow) => void;
 }) {
   const { t } = useTranslation();
   const k = (s: string, o?: Record<string, unknown>) => t(`tenants.companyFlows.${s}`, o);
@@ -140,7 +143,7 @@ function Row(p: {
             size="sm"
             variant="outline"
             disabled={p.busy}
-            onClick={() => p.onOp({ op: "clone", id: r.id })}
+            onClick={() => (p.onCopy ? p.onCopy(r) : p.onOp({ op: "clone", id: r.id }))}
           >
             {k("clone")}
           </Button>
@@ -164,6 +167,7 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   const isPlatform = role === "platform_admin";
   const [err, setErr] = useState<string | null>(null);
   const [ordering, setOrdering] = useState(false);
+  const [copying, setCopying] = useState<CompanyFlowRow | null>(null);
   const { main, templates } = splitRows(rows);
   const run = (a: FlowOp) => {
     setErr(null);
@@ -177,9 +181,20 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
   };
   return (
     <div className="space-y-3" data-testid="company-flow-list">
+      {copying ? (
+        <CopyDialog
+          tenantId={tenantId}
+          flowId={copying.flow_id}
+          name={copying.name}
+          isPlatform={isPlatform}
+          onClose={() => setCopying(null)}
+          onConfirm={() => run({ op: "clone", id: copying.id })}
+        />
+      ) : null}{" "}
       {canSeeFlowSwitch(role) ? <FlowSwitch tenantId={tenantId} words={words} /> : null}
       {isPlatform ? (
         <AssignFlow
+          tenantId={tenantId}
           assignedFlowIds={new Set(rows.map((r) => r.flow_id))}
           busy={op.isPending}
           onAssign={(flowId) => run({ op: "assign", flowId })}
@@ -220,6 +235,7 @@ export function CompanyFlowList({ tenantId, rows }: { tenantId: string; rows: Co
                   ordering={ordering}
                   onOp={run}
                   onDrop={onDrop}
+                  onCopy={setCopying}
                 />
               ))}
             </ul>

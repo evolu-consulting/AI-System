@@ -10,7 +10,7 @@ import {
   searchLibrary,
 } from "../lib/library-filter";
 import { sortLibraryRows } from "../lib/library-list";
-import { rowsForTab } from "../lib/library-view";
+import { hideLegacySlotTemplate, rowsForTab } from "../lib/library-view";
 import { type LibraryListItem, useAssignmentsOf } from "../library-api";
 
 type In = {
@@ -43,7 +43,8 @@ export function useLibraryRows(p: In) {
   );
   const rows = useMemo(() => {
     if (!items) return undefined;
-    const list = rowsForTab(items, templates, enabledFilter);
+    const tab = rowsForTab(items, templates, enabledFilter);
+    const list = library ? tab.filter((r) => !hideLegacySlotTemplate(r)) : tab; // CR-125 · c5b
     if (!library) return list;
     const sorted = sortLibraryRows(searchLibrary(applyLibFilter(list, libFilter, assigned), q)); // mặc định ghim đầu, còn lại mới cập nhật trước
     return libFilter.app ? sorted : groupByApp(sorted); // chưa chọn app ⇒ gom theo app (tiêu đề nhóm)

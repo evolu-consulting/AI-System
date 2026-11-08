@@ -157,3 +157,9 @@ export function templateReadiness(needs: TemplateNeeds, tenant: TenantSide): Tem
     copyReasons,
   };
 }
+
+/** Nhóm gợi ý từ mã nhóm của mẫu (MỘT nguồn cho nút "Tạo nhóm theo gợi ý" của web và route tạo nhóm của admin-api): tên = mã bỏ gạch ngang, viết hoa chữ đầu. */
+export function suggestGroup(key: string): { key: string; name: { vi: string } } {
+  const words = key.replace(/-/g, " ").trim();
+  return { key, name: { vi: words.charAt(0).toUpperCase() + words.slice(1) } };
+}

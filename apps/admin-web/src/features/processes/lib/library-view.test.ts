@@ -148,3 +148,21 @@ describe("cloneName", () => {
     expect(cloneName("x".repeat(200)).length).toBe(100);
   });
 });
+
+describe("CR-125 c5b · mẫu khe cũ của Community", () => {
+  const row = (slot: string | null, n: number, d = false) => ({
+    slot,
+    tenant_count: n,
+    is_default: d,
+    enabled: true,
+  });
+  test("ẩn khi không ai dùng và không mặc định; còn dùng hoặc mặc định ⇒ giữ (gắn Mẫu cũ)", async () => {
+    const { hideLegacySlotTemplate, isLegacySlotTemplate } = await import("./library-view");
+    expect(isLegacySlotTemplate(row("community.post-moderation", 0))).toBe(true);
+    expect(isLegacySlotTemplate(row("contracts.approval", 0))).toBe(false);
+    expect(hideLegacySlotTemplate(row("community.post-moderation", 0))).toBe(true);
+    expect(hideLegacySlotTemplate(row("community.post-moderation", 2))).toBe(false);
+    expect(hideLegacySlotTemplate(row("community.report", 0, true))).toBe(false);
+    expect(hideLegacySlotTemplate(row("contracts.approval", 0))).toBe(false);
+  });
+});

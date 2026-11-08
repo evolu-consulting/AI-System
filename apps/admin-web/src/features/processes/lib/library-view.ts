@@ -128,3 +128,12 @@ export function cloneName(name: string, max = 100): string {
   const base = name.replace(/(\s*\(bản sao\))+\s*$/u, "").trim();
   return `${base.slice(0, Math.max(1, max - COPY_SUFFIX.length))}${COPY_SUFFIX}`;
 }
+
+/**
+ * CR-125 · c5b · mẫu khe thời CR-120 của Community (`community.*`): bước tool khoá của khe, công ty không sao chép/sửa được trên canvas
+ * (readiness `copyable=false`). Không công ty nào dùng và không là mặc định của khe ⇒ ẨN khỏi Thư viện; còn dùng/mặc định ⇒ gắn "Mẫu cũ".
+ */
+export const isLegacySlotTemplate = (r: Pick<LibraryListItem, "slot">): boolean =>
+  r.slot?.startsWith("community.") === true;
+export const hideLegacySlotTemplate = (r: RowLike): boolean =>
+  isLegacySlotTemplate(r) && (r.tenant_count ?? 0) === 0 && r.is_default !== true;
